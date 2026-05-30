@@ -18,6 +18,14 @@
  *
  * Otherwise the bot lurks silently.
  *
+ * PER-USER MUTE: a user can address the bot with "mute me" (or "shut
+ * up", "be quiet", "leave me alone", ...) to make it stop replying to
+ * them and stop volunteering answers to their questions; "unmute me"
+ * (or "talk to me", "come back", ...) resumes.  Per-user, keyed by
+ * nick, persisted across restarts in data/<bot_file_base>_mute.json.
+ * Mute/unmute are always honored even while muted, so a user can
+ * always bring the bot back.
+ *
  * Run as a Synchronet service via services.ini:
  *   [GuruIRC]
  *   Cmd          = ?chat_llm_irc.js
@@ -236,6 +244,57 @@ function save_relay(state) {
     f.write(JSON.stringify(state, null, 2));
     f.close();
 }
+
+/* ---- Per-user mute ----
+ * A user can tell the bot "mute me" (and variants) to stop it replying
+ * to them AND auto-intervening on their questions; "unmute me" resumes.
+ * Persisted to data/<bot_file_base>_mute.json so a restart doesn't
+ * silently un-mute everyone.  Keyed by lowercased nick (IRC nicks are
+ * case-insensitive), matching the relay/seen convention.  IRC-only:
+ * this is the sole context where the guru speaks unprompted, so it's
+ * the only place there's anything to mute. */
+var IRC_MUTE_PATH = system.data_dir + BOT_FILE_BASE + "_mute.json";
+var muted_users   = null;   /* lazy { "<lc-nick>": muted_at_ts } */
+function load_mutes() {
+    if (muted_users !== null) return muted_users;
+    muted_users = {};
+    if (!file_exists(IRC_MUTE_PATH)) return muted_users;
+    var f = new File(IRC_MUTE_PATH);
+    if (!f.open("r")) return muted_users;
+    var raw = f.read(); f.close();
+    try { var s = JSON.parse(raw); if (s && s.users) muted_users = s.users; }
+    catch (e) { blog("load_mutes: corrupt " + IRC_MUTE_PATH + ": " + e); }
+    return muted_users;
+}
+function save_mutes() {
+    load_mutes();
+    var f = new File(IRC_MUTE_PATH);
+    if (!f.open("w")) return;
+    f.write(JSON.stringify({ users: muted_users }, null, 2));
+    f.close();
+}
+function is_muted(nick) {
+    return !!load_mutes()[String(nick).toLowerCase()];
+}
+function set_mute(nick, on) {
+    load_mutes();
+    var k = String(nick).toLowerCase();
+    if (on) muted_users[k] = time();
+    else delete muted_users[k];
+    save_mutes();
+}
+/* Classify a message (already stripped of the bot's address prefix) as
+ * a 'mute' / 'unmute' command, or null.  Trailing . or ! tolerated. */
+function mute_command(input) {
+    var s = String(input || "").toLowerCase()
+                .replace(/^\s+|\s+$/g, "").replace(/[.!]+$/, "");
+    if (/^(unmute|unmute me|talk to me|you can talk( again)?|come back|listen( up)?|resume)$/.test(s))
+        return "unmute";
+    if (/^(mute|mute me|shut up|stfu|be quiet|quiet|silence|hush|shush|stop talking( to me)?|leave me alone)$/.test(s))
+        return "mute";
+    return null;
+}
+
 function format_age(secs) {
     if (secs < 60) return Math.floor(secs) + "s";
     if (secs < 3600) return Math.floor(secs / 60) + "m";
@@ -782,11 +841,26 @@ function handle_privmsg(from_nick, target, text) {
     deliver_pending(target, from_nick);
 
     if (bot_addressed_in(text)) {
+        st.open_question = null;
         var input = strip_address(text);
         if (!input) input = text;
+        /* Mute/unmute commands are handled regardless of current mute
+         * state, so a muted user can always bring the bot back. */
+        var mc = mute_command(input);
+        if (mc === "mute") {
+            set_mute(from_nick, true);
+            irc_say(target, from_nick
+                + ": ok, i'll pipe down -- say \"unmute me\" when you want me back.");
+            return;
+        }
+        if (mc === "unmute") {
+            set_mute(from_nick, false);
+            irc_say(target, from_nick + ": back atcha -- what's up?");
+            return;
+        }
+        if (is_muted(from_nick)) return;   /* muted: stay silent */
         var reply = dispatch_chat(from_nick, input, target);
         if (reply) irc_say(target, from_nick + ": " + reply);
-        st.open_question = null;
         return;
     }
 
@@ -817,6 +891,8 @@ function check_intervention() {
         var chan = IRC_CHANNELS[i];
         var st = chan_state(chan);
         if (!st.open_question) continue;
+        /* Don't volunteer answers to a muted user's questions. */
+        if (is_muted(st.open_question.nick)) { st.open_question = null; continue; }
         var age = system.timer - st.open_question.when;
         if (age < INTERVENTION_WAIT) continue;
 
@@ -1066,5 +1142,11 @@ function main_loop() {
     shutdown();
 }
 
-load_seen_members();
-main_loop();
+/* Skip the IRC connection + main loop when loaded for testing
+ * (the loader sets CHAT_LLM_IRC_NO_MAIN=true first), so the adapter's
+ * helpers can be unit-tested via jsexec without connecting a duplicate
+ * bot.  Mirrors chat_llm.js's CHAT_LLM_NO_STANDALONE guard. */
+if (typeof CHAT_LLM_IRC_NO_MAIN == 'undefined') {
+    load_seen_members();
+    main_loop();
+}
