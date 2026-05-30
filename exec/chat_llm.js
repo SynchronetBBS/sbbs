@@ -773,12 +773,21 @@ function classify_intent(input) {
         return { tool: 'bbs_directory', args: a2 };
     }
 
+    /* "how many BBSes [are there|listed|in the list/directory/database]"
+     * -- UNFILTERED total count.  Must come AFTER the filtered
+     * "how many <X> bbses" / "how many bbses on <X>" rules above so a
+     * network/software filter always wins; only bare totals reach here.
+     * list mode with no filter returns total = full directory size. */
+    if (/how many\s+bbses?\s+(?:are\s+)?(?:there|listed|known|tracked|registered|in\s+total|total|in\s+(?:the\s+)?(?:synchronet\s+)?(?:bbs\s+)?(?:list|directory|database))\b/i.test(s)) {
+        return { tool: 'bbs_directory', args: { mode: 'list', limit: 1 } };
+    }
+
     /* --- git_commits (recent / search) -- check BEFORE by_author so
      * "what's been committed lately" doesn't accidentally land in
      * the by_author pattern with author="been". --- */
 
     /* "what's been committed lately" / "any recent Synchronet commits" */
-    if (/^\s*(?:what(?:['']?s|\s+has)\s+been\s+committed|any\s+recent\s+(?:synchronet\s+)?commits|recent\s+(?:synchronet\s+)?commits)(?:\s+(?:lately|recently))?\s*[?.!]*\s*$/i.test(s)) {
+    if (/^\s*(?:what(?:['']?s|\s+has)\s+been\s+committed|any\s+recent\s+(?:synchronet\s+)?commits|recent\s+(?:synchronet\s+)?commits)(?:\s+to\s+[\w.\/ -]+?)?(?:\s+(?:lately|recently))?\s*[?.!]*\s*$/i.test(s)) {
         return { tool: 'git_commits',
                  args: { kind: 'recent', limit: 5 } };
     }
@@ -859,7 +868,7 @@ function classify_intent(input) {
     /* "how many users / files / posts / emails / logons today" /
      * "today's stats" / "current stats" -- this_bbs(stats) covers
      * live counters even for the host BBS without naming it. */
-    if (/^\s*(?:how many|how much|what(?:['']?s)?)\s+(?:are\s+)?(?:the\s+)?(?:total\s+)?(?:users|logons|callers|posts|messages|emails|files|downloads|uploads|feedbacks?)\s+(?:downloaded|uploaded|sent|posted|today|this\s+(?:morning|afternoon|evening|day))/i.test(s)
+    if (/^\s*(?:how many|how much|what(?:['']?s)?)\s+(?:are\s+)?(?:the\s+)?(?:total\s+)?(?:users|logons|callers|posts|messages|emails|files|downloads|uploads|feedbacks?)\s+(?:(?:were|was|got|have\s+been|has\s+been)\s+)?(?:downloaded|uploaded|sent|posted|today|this\s+(?:morning|afternoon|evening|day))/i.test(s)
         || /^\s*(?:today['']?s|current|live)\s+(?:stats|counters|activity|numbers)/i.test(s)) {
         return { tool: 'this_bbs', args: { kind: 'stats' } };
     }
