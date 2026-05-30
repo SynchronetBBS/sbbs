@@ -180,6 +180,17 @@ var BOT_FILE_BASE = (function () {
     return name + "_" + proto;
 })();
 
+/* Per-persona subdirectory under data/chat/.  name = persona code before
+ * ':' (the index-sharing unit, shared with the terminal guru), proto =
+ * mode after ':' (default "irc").  The bot's persistent state
+ * (relay/mute/norelay/seen) lives here, alongside the RAG index and the
+ * per-speaker memory written by chat_llm.js.  The data-root chat log and
+ * .announce semfile keep using BOT_FILE_BASE (short hand-touch paths). */
+var PERSONA_NAME  = safe_id(String(PERSONA).split(":")[0] || "guru");
+var PERSONA_PROTO = safe_id(String(PERSONA).split(":")[1] || "irc");
+var PERSONA_DIR   = system.data_dir + "chat/" + PERSONA_NAME + "/";
+mkdir(PERSONA_DIR);   /* fire-and-forget; false if it already exists */
+
 /* Stop semfile -- the bot's main loop checks for this file's existence
  * every iteration.  When present, the bot sends a graceful QUIT to IRC
  * and exits BEFORE the services subsystem forces termination (which
@@ -231,7 +242,7 @@ var IRC_CHAT_LOG = system.data_dir + BOT_FILE_BASE + "_chat.log";
  * message to another user; drained by deliver_pending() when that
  * user next speaks in ANY channel the bot is in.  Persisted across
  * bot restarts so messages don't get lost on restart. */
-var IRC_RELAY_PATH = system.data_dir + "chat/" + BOT_FILE_BASE + "_relay.json";
+var IRC_RELAY_PATH = PERSONA_DIR + PERSONA_PROTO + "_relay.json";
 function load_relay() {
     if (!file_exists(IRC_RELAY_PATH)) return { messages: [] };
     var f = new File(IRC_RELAY_PATH);
@@ -259,7 +270,7 @@ function save_relay(state) {
  * case-insensitive), matching the relay/seen convention.  IRC-only:
  * this is the sole context where the guru speaks unprompted, so it's
  * the only place there's anything to mute. */
-var IRC_MUTE_PATH = system.data_dir + "chat/" + BOT_FILE_BASE + "_mute.json";
+var IRC_MUTE_PATH = PERSONA_DIR + PERSONA_PROTO + "_mute.json";
 var muted_users   = null;   /* lazy { "<lc-nick>": muted_at_ts } */
 function load_mutes() {
     if (muted_users !== null) return muted_users;
@@ -307,7 +318,7 @@ function mute_command(input) {
  * opts back in.  Persisted to data/chat/<bot_file_base>_norelay.json,
  * shared with the relay_message tool (which reads it before queuing),
  * the same way the relay queue is shared.  Lowercased-nick keyed. */
-var IRC_NORELAY_PATH = system.data_dir + "chat/" + BOT_FILE_BASE + "_norelay.json";
+var IRC_NORELAY_PATH = PERSONA_DIR + PERSONA_PROTO + "_norelay.json";
 var norelay_users    = null;   /* lazy { "<lc-nick>": optout_at_ts } */
 function load_norelay() {
     if (norelay_users !== null) return norelay_users;
@@ -683,7 +694,7 @@ function add_member(channel, nick) {
  * lets the bot accept a "tell funbot hi when you see them" relay
  * for funbot even when funbot isn't currently connected, as long as
  * the bot has seen funbot here at least once before. */
-var SEEN_FILE = system.data_dir + "chat/" + BOT_FILE_BASE + "_seen.json";
+var SEEN_FILE = PERSONA_DIR + PERSONA_PROTO + "_seen.json";
 var seen_members = {};   /* { channel_lower: { nick_lower: canonical } } */
 var seen_dirty = false;
 function chan_seen(name) {

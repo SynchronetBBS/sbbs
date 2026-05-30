@@ -134,7 +134,7 @@ function load_config(persona_code)
     /* BM25 retrieval knobs (step 3). The indexer (exec/chat_index.js)
      * writes the index file; we just need its path and top_k here. */
     cfg.index_top_k         = parseInt(cfg.index_top_k, 10)         || 5;
-    cfg.index_output        = cfg.index_output || 'chat/<persona>.idx';
+    cfg.index_output        = cfg.index_output || 'chat/<persona>/llm_rag.idx';
 
     /* Per-source BM25 score multipliers.  Comma-separated key=value
      * pairs where key matches the source identifier (the first
@@ -1894,7 +1894,11 @@ function ctx_from_user(useron, persona_code, persona_name, supports_utf8)
             name: persona_name || 'The Guru'
         },
         speaker: {
-            id:    useron ? ('user:' + useron.number) : 'user:0',
+            /* Zero-pad the user number to a 4-digit minimum, matching
+             * Synchronet's %04u convention for user-numbered data files
+             * (data/user/0001.*, data/file/0001.in, etc.) so the chat
+             * memory filename (data/chat/<name>/user_0001.json) lines up. */
+            id:    useron ? ('user:' + format('%04u', useron.number)) : 'user:0000',
             alias: useron ? useron.alias : 'tester',
             attrs: attrs
         },
@@ -1937,17 +1941,40 @@ function safe_id(id)
     return String(id).replace(/[<>:"\/\\|?*\x00-\x1f]/g, '_');
 }
 
+/* Split a persona code into its directory NAME (before the first ':')
+ * and its mode PROTO (after).  The name becomes a per-guru subdirectory
+ * under data/chat/ where the RAG index is shared across that guru's
+ * modes; the proto, when present, tags the per-(speaker, mode) files so
+ * the terminal guru ("guru") and the IRC bot ("guru:irc") don't collide
+ * on the same speaker.  Both parts are run through safe_id(). */
+function persona_parts(persona_code)
+{
+    var c = String(persona_code || 'default');
+    var i = c.indexOf(':');
+    if (i < 0) return { name: safe_id(c), proto: '' };
+    return { name: safe_id(c.slice(0, i)), proto: safe_id(c.slice(i + 1)) };
+}
+
+/* Directory holding a persona's files (RAG index, IRC state, memory):
+ * data/chat/<name>/.  Created on demand (mkdir is fire-and-forget --
+ * false when it already exists, which is fine). */
+function persona_dir(persona_code)
+{
+    var dir = system.data_dir + MEMORY_SUBDIR + '/'
+            + persona_parts(persona_code).name + '/';
+    mkdir(dir);
+    return dir;
+}
+
 function memory_path(ctx)
 {
-    var dir = system.data_dir + MEMORY_SUBDIR + '/';
-    /* Fire-and-forget: returns false if dir exists, which is fine.
-     * Matches the idiom in binarydecoder.js, init-fidonet.js, etc. */
-    mkdir(dir);
-    /* Sanitize BOTH speaker.id and persona.code -- persona codes can
-     * include sub-mode separators like "guru:irc", and ':' is reserved
-     * in Windows filenames.  safe_id() maps reserved chars to '_'. */
-    return dir + safe_id(ctx.speaker.id) + '.'
-               + safe_id(ctx.persona.code) + '.json';
+    /* data/chat/<name>/<speaker>[.<proto>].json -- the name lives in the
+     * directory; the proto (when the code has a ':mode' part) tags the
+     * mode so one speaker's memories under different modes of the same
+     * guru don't overwrite each other. */
+    var p = persona_parts(ctx.persona.code);
+    return persona_dir(ctx.persona.code) + safe_id(ctx.speaker.id)
+         + (p.proto ? '.' + p.proto : '') + '.json';
 }
 
 function empty_memory(ctx)

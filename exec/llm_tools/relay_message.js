@@ -15,13 +15,13 @@
  * load_relay()/deliver_pending().  Both sides read/write the same
  * JSON file; the tool side appends, the bot side drains. */
 var RELAY_PATH = (typeof system != 'undefined' && system.data_dir)
-    ? system.data_dir + 'chat/guru_irc_relay.json' : 'data/chat/guru_irc_relay.json';
+    ? system.data_dir + 'chat/guru/irc_relay.json' : 'data/chat/guru/irc_relay.json';
 
 /* Per-user relay opt-out set, shared with chat_llm_irc.js's
  * load_norelay()/save_norelay() (data/chat/guru_irc_norelay.json).
  * Read-only here: the tool refuses to queue for an opted-out recipient. */
 var NORELAY_PATH = (typeof system != 'undefined' && system.data_dir)
-    ? system.data_dir + 'chat/guru_irc_norelay.json' : 'data/chat/guru_irc_norelay.json';
+    ? system.data_dir + 'chat/guru/irc_norelay.json' : 'data/chat/guru/irc_norelay.json';
 function _is_norelay(nick, path) {
     path = path || NORELAY_PATH;
     if (typeof File == 'undefined') return false;
@@ -81,11 +81,17 @@ function _resolve_recipient(query, env) {
     var seen = (env && env.seen_members) || {};
     if (seen[ql]) return { canonical: seen[ql], source: 'seen' };
 
-    /* Source 2: chat history filenames.  Scan data/chat/ for files
-     * matching irc_<host>_<nick>.<persona>.json -- the embedded
-     * nick is the canonical case from when we recorded it. */
-    var chat_dir = (typeof system != 'undefined' && system.data_dir)
-        ? system.data_dir + 'chat' : null;
+    /* Source 2: chat history filenames.  Per-speaker memory now lives in
+     * the persona subdir (data/chat/<name>/); derive it from the relay
+     * queue path the bot passed in (same directory), falling back to
+     * data/chat for off-session callers.  Files are named
+     * irc_<host>_<nick>.<proto>.json -- the embedded nick is the
+     * canonical case from when we recorded it. */
+    var chat_dir = null;
+    if (env && env.relay_path)
+        chat_dir = String(env.relay_path).replace(/[\/\\][^\/\\]*$/, '');
+    else if (typeof system != 'undefined' && system.data_dir)
+        chat_dir = system.data_dir + 'chat';
     var history_nicks = {};
     if (chat_dir && typeof directory == 'function') {
         var files = [];

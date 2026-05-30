@@ -58,7 +58,7 @@ function load_config(persona)
 
     cfg.index_max_chunks = parseInt(cfg.index_max_chunks, 10) || 5000;
     cfg.index_top_k      = parseInt(cfg.index_top_k, 10)      || 5;
-    cfg.index_output     = cfg.index_output    || 'chat/<persona>.idx';
+    cfg.index_output     = cfg.index_output    || 'chat/<persona>/llm_rag.idx';
     cfg.index_sources    = cfg.index_sources   || 'msgs';
 
     return cfg;
@@ -268,8 +268,14 @@ function run(persona)
     var t1 = system.timer;
     var idx = build_index(all_chunks);
 
+    /* The index is shared across a guru's modes, so key the output path
+     * on the NAME part of the code only (before ':'), matching
+     * chat_llm.js's load_index().  `jsexec llm_index.js guru` and
+     * `... guru:irc` therefore both write data/chat/guru/llm_rag.idx. */
+    var idx_key = String(persona).split(':')[0]
+                      .replace(/[<>:"\/\\|?*\x00-\x1f]/g, '_');
     var output_path = system.data_dir
-                    + cfg.index_output.replace(/<persona>/g, persona);
+                    + cfg.index_output.replace(/<persona>/g, idx_key);
     write_index(idx, output_path);
 
     print('llm_index: wrote ' + output_path
