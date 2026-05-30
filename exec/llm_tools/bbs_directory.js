@@ -404,6 +404,44 @@ function _compact_bbs(entry) {
  * array (capped at `limit`) of compact BBS records.  All filtering
  * is done locally against sbbslist.json -- no finger probing (would
  * be too slow for 235 BBSes). */
+/* Per-BBS operating system, parsed from the autoverify finger result
+ * ("Synchronet BBS for <OS> Version ...") -- the same source and parse
+ * load/sbbslist_html.js uses for its OS-distribution chart.  Returns
+ * '' when the BBS hasn't been autoverified.  Token values seen in the
+ * wild: "Win32", "Linux", "FreeBSD". */
+function _bbs_os(bbs) {
+    if (bbs && bbs.entry && bbs.entry.autoverify
+        && bbs.entry.autoverify.last_success
+        && bbs.entry.autoverify.last_success.result) {
+        var ver = String(bbs.entry.autoverify.last_success.result);
+        var pfx = 'Synchronet BBS for ';
+        if (ver.indexOf(pfx) === 0) {
+            var os = ver.substring(pfx.length);
+            var sp = os.indexOf(' ');
+            if (sp > 0) return os.slice(0, sp);
+        }
+    }
+    return '';
+}
+
+/* Normalize an OS name (BBS-reported or user-supplied) to a canonical
+ * family so "Windows"/"Win32", "Mac OS X"/"Darwin", "Debian"/"Linux"
+ * compare equal.  Returns '' for empty input. */
+function _norm_os(s) {
+    s = String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!s) return '';
+    if (s.indexOf('win') === 0)                        return 'windows';
+    if (s.indexOf('freebsd') >= 0)                     return 'freebsd';
+    if (s.indexOf('openbsd') >= 0)                     return 'openbsd';
+    if (s.indexOf('netbsd') >= 0)                      return 'netbsd';
+    if (/(macosx|macos|osx|darwin|macintosh)/.test(s)) return 'macos';
+    if (/(linux|debian|ubuntu|raspbian|raspberrypi|fedora|centos|arch|gentoo|slackware|redhat)/.test(s))
+        return 'linux';
+    if (/(msdos|dos)/.test(s))                         return 'dos';
+    if (s.indexOf('os2') >= 0)                          return 'os2';
+    return s;
+}
+
 function list_bbses(args) {
     args = args || {};
     var kind  = String(args.kind  || 'recent').toLowerCase();
@@ -413,9 +451,10 @@ function list_bbses(args) {
     var filter_software = args.software ? String(args.software).toLowerCase() : '';
     var filter_network  = args.network  ? String(args.network).toLowerCase()  : '';
     var filter_sysop    = args.sysop    ? String(args.sysop).toLowerCase()    : '';
+    var filter_os       = args.os       ? _norm_os(args.os)                    : '';
 
     var list = _load_sbbslist();
-    /* Pre-filter by software / network / sysop if specified. */
+    /* Pre-filter by software / network / sysop / os if specified. */
     var pool = [];
     for (var i = 0; i < list.length; i++) {
         var e = list[i];
@@ -442,7 +481,35 @@ function list_bbses(args) {
             }
             if (!sm) continue;
         }
+        if (filter_os && _norm_os(_bbs_os(e)) !== filter_os)
+            continue;
         pool.push(e);
+    }
+
+    /* Empty filtered result: the 7B fabricates BBS names from an empty
+     * bbses[] unless explicitly told not to (observed: "which BBS does
+     * <unknown sysop> run?" -> invented BBSes).  Return a no-match note
+     * so the model says "no BBS on record" instead of guessing. */
+    if (pool.length === 0
+        && (filter_sysop || filter_os || filter_software || filter_network)) {
+        var _crit = filter_sysop  ? ('a sysop matching "' + filter_sysop + '"')
+                  : filter_os      ? ('the operating system "' + String(args.os) + '"')
+                  : filter_software ? ('the software "' + filter_software + '"')
+                  :                    ('the network "' + filter_network + '"');
+        return {
+            kind:   kind,
+            total:  0,
+            filters: {
+                software: filter_software || null,
+                network:  filter_network  || null,
+                sysop:    filter_sysop    || null,
+                os:       filter_os       || null
+            },
+            bbses:  [],
+            note:   'No BBS in the directory matches ' + _crit + '. Do NOT '
+                  + 'invent, guess, or name any BBS -- tell the user there '
+                  + 'is none on record for that.'
+        };
     }
 
     /* Sort by the requested kind. */
@@ -520,7 +587,8 @@ function list_bbses(args) {
         filters: {
             software: filter_software || null,
             network:  filter_network  || null,
-            sysop:    filter_sysop    || null
+            sysop:    filter_sysop    || null,
+            os:       filter_os       || null
         },
         bbses:   pool.slice(0, limit).map(_compact_bbs)
     };
@@ -616,7 +684,8 @@ function bbs_directory(args) {
             limit:    args.limit,
             software: args.software,
             network:  args.network,
-            sysop:    args.sysop
+            sysop:    args.sysop,
+            os:       args.os
         });
     }
 

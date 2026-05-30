@@ -422,10 +422,19 @@ function build_messages(cfg, user_input, ctx, sys_override)
              + ' someone asks how to leave the chat, the answer is "/Q".'
              + '  These keys DO NOT apply in IRC or private 1:1 chat.';
     } else if (ctx.mode == 'irc') {
-        sys += '\n\nIRC CONTEXT: this is an IRC channel -- standard IRC'
-             + ' client commands apply (/quit, /part, /msg, etc.),'
-             + ' NOT Synchronet terminal commands.  END YOUR REPLY WITH'
-             + ' A PERIOD, NOT A QUESTION (see STYLE).';
+        var irc_chan = ctx.channel ? ('the IRC channel ' + ctx.channel)
+                                   : 'an IRC channel';
+        sys += '\n\nIRC CONTEXT: this is ' + irc_chan + ' on the Synchronet'
+             + ' IRC network -- a shared public channel, NOT the '
+             + mctx.system_name + ' BBS.  The people here are IRC users from'
+             + ' many different boards (or none); do NOT assume they are on '
+             + mctx.system_name + ' or are its callers.  You are '
+             + mctx.system_name + '\'s guru visiting the channel -- never'
+             + ' greet anyone with "what brings you to ' + mctx.system_name
+             + '" or otherwise talk as if they are logged into it.  Standard'
+             + ' IRC client commands apply (/quit, /part, /msg, etc.), NOT'
+             + ' Synchronet terminal commands.  END YOUR REPLY WITH A PERIOD,'
+             + ' NOT A QUESTION (see STYLE).';
     }
 
     var messages = [{ role: 'system', content: sys }];
@@ -657,6 +666,25 @@ function classify_intent(input) {
                      args: { mode: 'lookup', name: nA } };
     }
 
+    /* "which/what BBS(es) does <sysop> run/operate?" -- sysop -> BBS
+     * direction (the inverse of "who runs <BBS>?" above).  list mode
+     * with a sysop filter returns the BBS(es) that sysop runs. */
+    m = s.match(/^\s*(?:which|what)\s+bbs(?:es)?\s+(?:does|do)\s+(.+?)\s+(?:runs?|operates?|manages?)\b/i);
+    if (m) {
+        var sop = m[1].replace(/^\s+|\s+$/g, '');
+        if (sop && _looks_like_proper_noun(sop))
+            return { tool: 'bbs_directory',
+                     args: { mode: 'list', sysop: sop, limit: 5 } };
+    }
+    /* "what BBS(es) is/are run/operated by <sysop>" (passive form) */
+    m = s.match(/\bbbs(?:es)?\s+(?:is\s+|are\s+)?(?:run|operated|managed)\s+by\s+(.+?)\s*[?.!]*\s*$/i);
+    if (m) {
+        var sop2 = m[1].replace(/^\s+|\s+$/g, '');
+        if (sop2 && _looks_like_proper_noun(sop2))
+            return { tool: 'bbs_directory',
+                     args: { mode: 'list', sysop: sop2, limit: 5 } };
+    }
+
     /* "is <X> [still] up/around/online/alive/reachable/reliable" --
      * status / reliability check.  Both feed bbs_directory(lookup),
      * which returns the autoverify summary for any answer. */
@@ -739,6 +767,18 @@ function classify_intent(input) {
     }
 
     /* --- bbs_directory (list mode) for BBS lists by network/software --- */
+
+    /* "how many/which/what BBSes (are) run/running/on <OS>" -- OS filter.
+     * Per-BBS OS comes from the autoverify finger result; bbs_directory's
+     * os arg filters on it.  Gated by _looks_like_os and checked BEFORE
+     * the software/network rules below so "how many Synchronet BBSes run
+     * FreeBSD" / "what BBSes are on Linux" filter by the OS, not by a
+     * companion software/network token. */
+    m = s.match(/\bbbses?\s+(?:are\s+)?(?:run(?:ning)?|on|under|using)\s+([A-Za-z][\w.\/ -]*?)\s*[?.!]*\s*$/i);
+    if (m && _looks_like_os(m[1])) {
+        return { tool: 'bbs_directory',
+                 args: { mode: 'list', os: m[1].replace(/^\s+|\s+$/g, ''), limit: 5 } };
+    }
 
     /* "what BBSes are on <network>" / "list BBSes on <X>" / "BBSes on <X>" */
     m = s.match(/(?:what|which|list)\s+bbses?\s+(?:are\s+)?(?:on|in|using|with|via)\s+(\w[\w.-]*)/i);
@@ -1057,6 +1097,13 @@ function _looks_like_proper_noun(s) {
  * Known networks vs software.  Case-insensitive substring match. */
 function _looks_like_network(w) {
     return /^(?:fidonet|fido|dove-net|dovenet|usenet|sync|syncnet|csdn|micronet|filegate|raidernet|agoranet|fsxnet)$/i.test(w);
+}
+
+/* Heuristic: does <w> name an operating system (not BBS software)?
+ * Routes "how many BBSes run <OS>" to bbs_directory's os filter
+ * instead of mis-binding the OS as a software/network value. */
+function _looks_like_os(w) {
+    return /^(?:(?:free|open|net)bsd|linux|debian|ubuntu|raspbian|raspberry\s*pi|windows|win(?:32|64|nt)?|mac\s*os(?:\s*x)?|macos|osx|darwin|os\/?2|ms-?dos|dos|solaris|haiku)$/i.test(String(w).replace(/^\s+|\s+$/g, ''));
 }
 
 /* Ollama-native /api/chat path.  Mirrors chat_openai's surface (return
