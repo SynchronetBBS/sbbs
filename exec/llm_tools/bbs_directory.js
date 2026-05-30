@@ -391,7 +391,8 @@ function _compact_bbs(entry) {
         location: entry.location || '',
         software: entry.software || '',
         address:  primary_addr,
-        first_online: entry.first_online || ''
+        first_online: entry.first_online || '',
+        users:    (entry.total && entry.total.users) || null
     };
 }
 
@@ -492,6 +493,18 @@ function list_bbses(args) {
         pool.sort(function (a, b) {
             return String(a.name || '').toLowerCase()
                  < String(b.name || '').toLowerCase() ? -1 : 1;
+        });
+        break;
+    case 'popular':
+    case 'users':
+    case 'busiest':
+        /* Most users.  sbbslist entries carry self-reported lifetime
+         * totals (entry.total.users); sort descending.  Answers "which
+         * BBS has the most users?" / "what's the most popular BBS?". */
+        pool.sort(function (a, b) {
+            var au = (a.total && a.total.users) || 0;
+            var bu = (b.total && b.total.users) || 0;
+            return bu - au;
         });
         break;
     default:
@@ -638,10 +651,13 @@ llm_tool_register({
               + 'mode="list" -- filtered list of BBSes.  Args: { mode, kind?, '
               + 'limit?, software?, network?, sysop? } -- all filters '
               + 'optional, combine freely.  kind values: "recent" (default), '
-              + '"oldest", "active", "reliable", "name".  Default limit 10, '
+              + '"oldest", "active", "reliable", "popular" (most users), '
+              + '"name".  Default limit 10, '
               + 'max 30.  Triggers: "what BBSes does <sysop> run?", "what '
               + 'BBSes are on <network>?", "what BBSes run <software>?", '
-              + '"what are the [recent/oldest/active] BBSes?".\n\n'
+              + '"what are the [recent/oldest/active] BBSes?", "which BBS '
+              + 'has the most users?" / "what\'s the most popular BBS?" -> '
+              + 'kind:"popular" (read users field).\n\n'
               + 'For COUNT questions ("how many BBSes [total / on FidoNet '
               + '/ running Mystic]") call list mode with the matching '
               + 'filter and read the "total" field -- it\'s the count '
@@ -681,7 +697,7 @@ llm_tool_register({
                     },
                     kind: {
                         type: 'string',
-                        'enum': ['recent','oldest','active','reliable','name'],
+                        'enum': ['recent','oldest','active','reliable','popular','name'],
                         description: 'Sort order (ONLY for mode=list).'
                     },
                     limit:    { type: 'integer', description: '1-30, default 10 (mode=list only).' },
