@@ -376,9 +376,28 @@ function crawl(opts)
                                   + 'repository.\n';
                     }
 
+                    /* Surface the post's first URL as a citable source
+                     * line, mirroring the wiki crawler's "Cite this URL
+                     * verbatim" pattern (format_retrieved_context emits
+                     * the chunk text verbatim, so this needs no runtime
+                     * change).  Message-base provenance carries no
+                     * canonical URL, so without this an announcement-
+                     * sourced answer (e.g. a SyncTERM release) states the
+                     * facts but has no link to cite.  First http(s) URL
+                     * only; fix a doubled scheme + trailing punctuation. */
+                    var cite_line = '';
+                    var _um = String(body).match(/https?:\/\/[^\s<>()\]\[]+/);
+                    if (_um) {
+                        var _curl = _um[0]
+                            .replace(/^https?:\/\/(https?:\/\/)/i, '$1')
+                            .replace(/[.,;:!?'")\]]+$/, '');
+                        if (/^https?:\/\/\S+\.\S/.test(_curl))
+                            cite_line = 'Cite this URL verbatim: ' + _curl + '\n';
+                    }
+
                     chunks.push({
                         id:         'msgs/' + sub.code + '/' + hdr.number,
-                        text:       src_header + '\n'
+                        text:       cite_line + src_header + '\n'
                                   + issue_tag
                                   + (subj ? subj + '\n' : '') + body,
                         provenance: 'Sub:' + grp.name + '/' + sub.name
