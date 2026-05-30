@@ -974,14 +974,23 @@ function classify_intent(input) {
         'ansi art scene', 'ascii art', 'naplps', 'ripscript', 'rip script',
         'bbs software directory'
     ];
-    var lc_padded = ' ' + s.toLowerCase().replace(/[?.!,]/g, ' ') + ' ';
-    for (var i = 0; i < ARCHIVE_TOPICS.length; i++) {
-        var t = ARCHIVE_TOPICS[i];
-        var needle = (t.charAt(0) === ' ') ? t : (' ' + t + ' ');
-        if (lc_padded.indexOf(needle.replace(/[?.!]/g, ' ')) >= 0) {
-            var qt = t.replace(/^\s+|\s+$/g, '').replace(/[?.!]/g, '');
-            return { tool: 'external_archives',
-                     args: { query: qt } };
+    /* Don't pre-route to the BBS-era archive when the query is a
+     * Synchronet how-to / config question that merely NAMES a topic
+     * ("how do I configure pkzip in sbbs?", "how to set up WWIV-style
+     * menus") -- those want the wiki, not lawsuit/history trivia.  Let
+     * them fall through to the model + (docstyle-boosted) wiki RAG.
+     * Pure-history phrasings ("how did the SJG raid happen", "tell me
+     * about pkzip") are NOT docstyle, so they still route here. */
+    if (!_is_docstyle_query(s)) {
+        var lc_padded = ' ' + s.toLowerCase().replace(/[?.!,]/g, ' ') + ' ';
+        for (var i = 0; i < ARCHIVE_TOPICS.length; i++) {
+            var t = ARCHIVE_TOPICS[i];
+            var needle = (t.charAt(0) === ' ') ? t : (' ' + t + ' ');
+            if (lc_padded.indexOf(needle.replace(/[?.!]/g, ' ')) >= 0) {
+                var qt = t.replace(/^\s+|\s+$/g, '').replace(/[?.!]/g, '');
+                return { tool: 'external_archives',
+                         args: { query: qt } };
+            }
         }
     }
 
@@ -1433,6 +1442,18 @@ var ENGAGEMENT_QUESTION_RX = new RegExp(
 function final_reply_postprocess(s)
 {
     if (!s) return s;
+
+    /* (0) HTML-entity decode.  The 7B model occasionally emits escaped
+     * characters -- "&lt;http://...&gt;" when it autolinks a URL in
+     * angle brackets, or "&amp;" inside a URL query string.  Output is
+     * plain text (IRC / terminal), so decode the common entities BEFORE
+     * markdown-stripping and URL validation -- otherwise the literal
+     * "&lt;...&gt;" reaches the user and "&amp;" breaks URL matching
+     * against the curated/wiki sets.  Decode &amp; LAST so we don't
+     * double-decode (e.g. "&amp;lt;" must stay "&lt;"). */
+    s = s.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+         .replace(/&quot;/g, '"').replace(/&#0*39;/g, "'").replace(/&apos;/g, "'")
+         .replace(/&amp;/g, '&');
 
     /* (1) Strip tool-name / JSON leakage.  The model sometimes writes
      * literal tool-call syntax into the user-facing content instead
