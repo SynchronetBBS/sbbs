@@ -99,7 +99,7 @@ function external_archives(args) {
         for (var k = 0; k < ek.length; k++) tags_lc.push(String(ek[k]).toLowerCase());
         var tag_hay = tags_lc.join(' ');
         var text_hay = (e.summary || '') + ' ' + (e.url || '');
-        var score = 0, distinct = 0, exact_tag = false;
+        var score = 0, distinct = 0, exact_tag = false, tag_match = false;
         for (var ti = 0; ti < terms.length; ti++) {
             /* Exact-tag match is the strongest signal: a query term
              * IS one of the entry's curated tags.  Counts as a tag
@@ -110,16 +110,17 @@ function external_archives(args) {
                 if (tags_lc[tj] === terms[ti]) { is_exact = true; break; }
             }
             if (is_exact) {
-                score += 2; distinct++; exact_tag = true;
+                score += 2; distinct++; exact_tag = true; tag_match = true;
             } else if (_matches_word(tag_hay, terms[ti])) {
-                score += 2; distinct++;
+                score += 2; distinct++; tag_match = true;
             } else if (_matches_word(text_hay, terms[ti])) {
                 score += 1; distinct++;
             }
         }
         if (score > 0) scored.push({ e: e, score: score,
                                      distinct: distinct,
-                                     exact_tag: exact_tag, idx: i });
+                                     exact_tag: exact_tag,
+                                     tag_match: tag_match, idx: i });
     }
     /* If the query has multiple specific terms, require either 2+
      * distinct term matches OR an exact-tag match.  A single-term
@@ -130,6 +131,21 @@ function external_archives(args) {
         scored = scored.filter(function (s) {
             return s.distinct >= 2 || s.exact_tag;
         });
+    }
+    /* Single-term relevance: if the one query term tag-matches some
+     * entry, keep only tag-matching entries -- drop entries that
+     * matched merely because their summary/url name-drops the term
+     * (e.g. "pcboard" pulling in Spitfire, whose summary reads
+     * "...alternative to PCBoard-class systems").  Multi-term /
+     * breadth queries are handled above and unaffected. */
+    if (terms.length === 1) {
+        var any_tag = false;
+        for (var st = 0; st < scored.length; st++) {
+            if (scored[st].tag_match) { any_tag = true; break; }
+        }
+        if (any_tag) {
+            scored = scored.filter(function (s) { return s.tag_match; });
+        }
     }
     scored.sort(function (a, b) {
         if (b.distinct !== a.distinct) return b.distinct - a.distinct;
