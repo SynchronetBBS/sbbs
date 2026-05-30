@@ -1472,7 +1472,15 @@ function final_reply_postprocess(s)
      * follow-on phrase ("for Vertrauen, here are...") reads cleanly. */
     s = s.replace(/\bbased on (?:the )?(?:response|result|output) from\s+\w+\([^)]*\)\s*,?\s*/gi, '');
     /* Inline pseudo-calls: this_bbs({kind: "stats"}) etc. */
-    s = s.replace(/\b(?:this_bbs|bbs_directory|lookup_bbs|list_bbses|relay_message|get_bbs_status|git_issues|git_commits)\s*\([^)]*\)/g, '');
+    s = s.replace(/\b(?:external_archives|this_bbs|bbs_directory|lookup_bbs|list_bbses|relay_message|get_bbs_status|git_issues|git_commits)\s*\([^)]*\)/g, '');
+    /* Bare tool-name leaks (no parens): the model sometimes names the
+     * internal tool in prose -- "linked from external_archives:", "the
+     * this_bbs tool shows", "via git_commits".  Strip an optional
+     * lead-in preposition/article, the tool name, an optional "tool",
+     * and a trailing colon.  The tool names are distinctive enough that
+     * this won't touch ordinary prose.  (Leftover whitespace is
+     * collapsed by the cleanup pass near the end of this function.) */
+    s = s.replace(/(?:\b(?:from|via|using|through|per|in|on|see|the)\s+)?(?:the\s+)?\b(?:external_archives|this_bbs|bbs_directory|lookup_bbs|list_bbses|relay_message|get_bbs_status|git_issues|git_commits)\b(?:\s+tool)?\s*:?/gi, ' ');
     /* Rewrite Synchronet GitLab project URLs that the model emitted
      * with gitlab.com (its training-data default) -- the project is
      * actually self-hosted at gitlab.synchro.net.  Only rewrites
