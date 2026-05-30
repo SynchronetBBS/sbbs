@@ -1558,6 +1558,22 @@ function final_reply_postprocess(s)
     s = s.replace(/[ \t]{2,}/g, ' ');
     s = s.replace(/^\s+|\s+$/g, '');
 
+    /* The model sometimes echoes an empty TOOL result as a mechanical
+     * "No results found for X" / "I couldn't find any info on X" -- which
+     * reads like a database error, not the guru.  Rewrite a whole-reply
+     * no-results admission into the guru's natural voice, preserving the
+     * topic.  Anchored to the full (trimmed) reply so it only fires when
+     * the WHOLE reply is that admission, never on a sentence that merely
+     * contains the word "found". */
+    s = s.replace(
+        /^\s*(?:sorry[,.!]?\s*)?(?:(?:i|we)\s+(?:couldn.?t|could\s+not|didn.?t|did\s+not|was\s+unable\s+to|wasn.?t\s+able\s+to)\s+(?:find|locate|turn\s+up|dig\s+up)\s+(?:any(?:thing)?\s+)?(?:results?|matches?|info(?:rmation)?|records?|details?|entries)?|(?:there\s+(?:are|were|is|was)\s+)?no\s+(?:results?|matches?|matching\s+\w+|info(?:rmation)?|records?|entries|data|hits|details?)\s*(?:found|were\s+found|are\s+available|was\s+returned|returned|to\s+show)?|(?:the\s+)?search\s+(?:returned|yielded|found|came\s+up\s+with)\s+(?:no|nothing|zero)\b[^.!?\n]*)\s*(?:\b(?:for|on|about|regarding|matching|related\s+to|named)\s+([^.!?\n]+?))?[.!]*\s*$/i,
+        function (m, topic) {
+            topic = (topic || '').replace(/^\s+|\s+$/g, '');
+            return topic
+                ? "haven't come across anything on " + topic + "."
+                : "haven't come across that one.";
+        });
+
     /* (4) Keep first sentence ending in '?', drop later '?'-sentences.
      * Walk through sentences split on '.', '!', '?' boundaries; once
      * we've kept one '?'-sentence, any subsequent sentence ending in
