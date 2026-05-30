@@ -1,5 +1,5 @@
 /*
- * llm_index/filebase.js -- source crawler for local Synchronet file bases
+ * llm_index/files.js -- source crawler for local Synchronet file bases
  *
  * Walks all libraries + directories visible to the running install,
  * skips non-public dirs (any with a non-empty access ARS), and emits
@@ -13,9 +13,9 @@
  *                            per-library dir exclusions: Lib/-tok/-tok.
  *                            Empty/missing = ALL libraries.
  *                            Examples:
- *                              filebase
- *                              filebase:Main,Music
- *                              filebase:Main/-sysop,Music
+ *                              files
+ *                              files:Main,Music
+ *                              files:Main/-sysop,Music
  *   opts.max_chunks       -- early-stop when this many files emitted
  *   opts.min_desc_length  -- skip files with NO useful description
  *                            (default: 20 chars combined desc+extdesc)
@@ -40,7 +40,7 @@
 /* Internal cap on file chunks emitted regardless of the orchestrator's
  * remaining-budget value.  Without it, an active install with hundreds
  * of dirs and large redistributable archives (Simtel, Walnut Creek,
- * etc.) can emit tens of thousands of chunks and starve msgbase of any
+ * etc.) can emit tens of thousands of chunks and starve msgs of any
  * budget.  2000 file chunks is plenty for grounding "got any X files?"
  * / "what's that file about?" queries. */
 var INTERNAL_CAP = 2000;
@@ -56,7 +56,7 @@ function crawl(opts)
 
     /* Parse opts.arg as a comma-separated allow-list of library names,
      * with optional per-library dir exclusion tokens (Lib/-token).
-     * Mirrors the msgbase crawler's syntax. */
+     * Mirrors the msgs crawler's syntax. */
     var allow_libs = null;
     var dir_excludes = {};
     if (opts.arg) {
@@ -99,7 +99,7 @@ function crawl(opts)
             var u = new User(parseInt(opts.access_user_num, 10));
             if (u && u.number) access_user = u;
         } catch (e) {
-            log(LOG_WARNING, 'llm_index/filebase: bad access_user_num '
+            log(LOG_WARNING, 'llm_index/files: bad access_user_num '
                 + opts.access_user_num + ': ' + e);
         }
     }
@@ -202,7 +202,7 @@ function crawl(opts)
                  * type queries.  Without this, the chunk text is just
                  * filename + desc, neither of which contains the words
                  * "file" / "uploaded" / "upload" / "library" -- so
-                 * msgbase posts that happen to mention "files" beat
+                 * msgs posts that happen to mention "files" beat
                  * actual file-area listings on file-finding queries.
                  *
                  * Include the LIBRARY (parent group) as well as the
@@ -214,7 +214,7 @@ function crawl(opts)
                            + ' file library by ' + uploader
                            + (date ? ' on ' + date : '');
                 chunks.push({
-                    id:         'filebase/' + dir.code + '/' + f.name,
+                    id:         'files/' + dir.code + '/' + f.name,
                     text:       header + '\n'
                               + f.name + (desc ? '\n' + desc : '')
                               + (text_body && text_body !== desc
@@ -231,13 +231,13 @@ function crawl(opts)
     }
 
     if (skipped_nonpublic)
-        log(LOG_INFO, 'llm_index/filebase: skipped ' + skipped_nonpublic
+        log(LOG_INFO, 'llm_index/files: skipped ' + skipped_nonpublic
             + ' non-public dirs');
     if (dedup_count)
-        log(LOG_INFO, 'llm_index/filebase: deduped ' + dedup_count
+        log(LOG_INFO, 'llm_index/files: deduped ' + dedup_count
             + ' duplicate filenames');
 
     return chunks;
 }
 
-this;  /* load({}, 'llm_index/filebase.js') exposes crawl() */
+this;  /* load({}, 'llm_index/files.js') exposes crawl() */

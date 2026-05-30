@@ -1,5 +1,5 @@
 /*
- * llm_index/msgbase.js -- source crawler for local Synchronet message bases
+ * llm_index/msgs.js -- source crawler for local Synchronet message bases
  *
  * Walks all groups + subs visible to the running install, reads non-deleted
  * non-private messages, and emits one chunk per message (subject + body).
@@ -13,8 +13,9 @@
  *                            with optional per-group sub exclusions in the
  *                            form group/-sub.  Set via source-spec syntax
  *                            in chat_llm.ini, e.g.:
- *                              index_sources = msgbase:Main,DOVE-Net
- *                              index_sources = msgbase:Main/-gitlog/-commits,DOVE-Net
+ *                              index_sources = msgs:Main,DOVE-Net
+ *                              index_sources = msgs:Main/-gitlog/-commits,DOVE-Net
+ *                              index_sources = msgs:+syncanno  (one sub by code)
  *                            Excludes apply CASE-INSENSITIVELY to sub
  *                            *code* OR sub *name*.  Use to skip bot-posted
  *                            subs that mirror GitLab webhooks (gitlog,
@@ -50,7 +51,7 @@ function crawl(opts)
             var u = new User(parseInt(opts.access_user_num, 10));
             if (u && u.number) access_user = u;
         } catch (e) {
-            log(LOG_WARNING, 'llm_index/msgbase: bad access_user_num '
+            log(LOG_WARNING, 'llm_index/msgs: bad access_user_num '
                 + opts.access_user_num + ': ' + e);
         }
     }
@@ -138,11 +139,6 @@ function crawl(opts)
                 if ((fsub.code || '').toLowerCase() === fs) {
                     sub_visit_list.push({ grp: groups[ag], sub: fsub });
                     visited_codes[fs] = true;
-                    /* Also force the parent group into allow_groups
-                     * so the access-check fallback doesn't skip it
-                     * if the user didn't list it. */
-                    if (allow_groups)
-                        allow_groups[(groups[ag].name || '').toLowerCase()] = true;
                     break;
                 }
             }
@@ -163,9 +159,12 @@ function crawl(opts)
         var grp = sub_visit_list[v].grp;
         var sub = sub_visit_list[v].sub;
 
-        /* Skip groups not in the allow-list (when one is set). */
+        /* Skip groups not in the allow-list (when one is set) -- but a
+         * +subcode is indexed standalone, without pulling in its parent
+         * group's other subs. */
         var grp_lower = (grp.name || '').toLowerCase();
-        if (allow_groups && !allow_groups[grp_lower]) {
+        if (allow_groups && !allow_groups[grp_lower]
+            && !force_subs[(sub.code || '').toLowerCase()]) {
             continue;
         }
         var excludes = sub_excludes[grp_lower] || [];
@@ -208,7 +207,7 @@ function crawl(opts)
                     }
                 }
                 if (skip) {
-                    log(LOG_DEBUG, 'llm_index/msgbase: skipping sub "'
+                    log(LOG_DEBUG, 'llm_index/msgs: skipping sub "'
                         + sub.name + '" (excluded)');
                     continue;
                 }
@@ -378,7 +377,7 @@ function crawl(opts)
                     }
 
                     chunks.push({
-                        id:         'msgbase/' + sub.code + '/' + hdr.number,
+                        id:         'msgs/' + sub.code + '/' + hdr.number,
                         text:       src_header + '\n'
                                   + issue_tag
                                   + (subj ? subj + '\n' : '') + body,
@@ -396,7 +395,7 @@ function crawl(opts)
                     });
                 }
             } catch (e) {
-                log(LOG_WARNING, 'llm_index/msgbase: '
+                log(LOG_WARNING, 'llm_index/msgs: '
                     + sub.code + ': ' + e);
             }
 
@@ -405,13 +404,13 @@ function crawl(opts)
     }
 
     if (dup_count)
-        log(LOG_INFO, 'llm_index/msgbase: deduped ' + dup_count
+        log(LOG_INFO, 'llm_index/msgs: deduped ' + dup_count
             + ' content-duplicate messages');
     if (skipped_nonpublic)
-        log(LOG_INFO, 'llm_index/msgbase: skipped ' + skipped_nonpublic
+        log(LOG_INFO, 'llm_index/msgs: skipped ' + skipped_nonpublic
             + ' non-public subs (non-empty read ARS)');
 
     return chunks;
 }
 
-this;  /* load({}, 'llm_index/msgbase.js') exposes crawl() */
+this;  /* load({}, 'llm_index/msgs.js') exposes crawl() */

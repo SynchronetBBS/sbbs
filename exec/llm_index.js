@@ -57,7 +57,7 @@ function load_config(persona)
     cfg.index_max_chunks = parseInt(cfg.index_max_chunks, 10) || 5000;
     cfg.index_top_k      = parseInt(cfg.index_top_k, 10)      || 5;
     cfg.index_output     = cfg.index_output    || 'chat/<persona>.idx';
-    cfg.index_sources    = cfg.index_sources   || 'msgbase';
+    cfg.index_sources    = cfg.index_sources   || 'msgs';
 
     return cfg;
 }
@@ -108,7 +108,7 @@ function load_source(name)
 
 function parse_source_spec(spec)
 {
-    /* "msgbase" or "dokuwiki:/path/to/data" */
+    /* "msgs" or "dokuwiki:/path/to/data" */
     var colon = spec.indexOf(':');
     if (colon < 0) return { name: spec.trim(), arg: null };
     return { name: spec.slice(0, colon).trim(), arg: spec.slice(colon + 1).trim() };
@@ -139,11 +139,11 @@ function build_index(chunks)
         /* Title tokens, stored as a prototype-less {tok:1} set so
          * bm25_search can do an O(1) lookup per (term, doc) pair to
          * decide whether to apply the title-match boost.  Title comes
-         * from the crawler (msgbase: subject, dokuwiki: first H1,
-         * filebase: filename, gitissue: issue title).  When a query
+         * from the crawler (msgs: subject, dokuwiki: first H1,
+         * files: filename, gitissue: issue title).  When a query
          * token matches a doc's title token, that doc's per-term BM25
          * contribution gets multiplied -- surfaces authoritative short
-         * pages (e.g. wiki howto:report) over long msgbase posts that
+         * pages (e.g. wiki howto:report) over long msgs posts that
          * happen to mention the same words in passing. */
         var title_tokens = null;
         if (c.title) {
@@ -162,8 +162,8 @@ function build_index(chunks)
             prov: c.provenance || '',
             len:  tokens.length,
             /* Unix-epoch authorship/publish time when the crawler can
-             * supply one (msgbase: when_written_time, dokuwiki: file
-             * mtime, gitlab: created_at/updated_at, filebase: f.time).
+             * supply one (msgs: when_written_time, dokuwiki: file
+             * mtime, gitlab: created_at/updated_at, files: f.time).
              * Used by bm25_search's recency decay; omitted/0 = treat
              * as ageless (no decay). */
             ts:   c.ts || 0,
@@ -217,7 +217,7 @@ function run(persona)
     persona = (persona || 'default').toLowerCase();
     var cfg = load_config(persona);
     /* Sources are SEMICOLON-separated (commas are reserved for source-arg
-     * lists, e.g. msgbase:Local,DOVE-Net,FsxNet). */
+     * lists, e.g. msgs:Local,DOVE-Net,FsxNet). */
     var sources = String(cfg.index_sources || '').split(';')
                       .map(function (s) { return s.trim(); })
                       .filter(function (s) { return s.length > 0; });
@@ -240,7 +240,7 @@ function run(persona)
                 arg:             spec.arg,
                 max_chunks:      per_source_max - all_chunks.length,
                 /* Pass the access-filter user number through to
-                 * crawlers that can use it (msgbase, filebase).
+                 * crawlers that can use it (msgs, files).
                  * The ini value (cfg.index_access_user) may be a
                  * user number OR an alias (e.g. "guest", "Guest");
                  * resolve_access_user() handles both. */
