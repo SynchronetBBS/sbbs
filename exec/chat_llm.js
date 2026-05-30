@@ -2514,10 +2514,11 @@ function bm25_search(idx, query_tokens, top_k, source_weights, recency_halflife_
      * wiki file-config pages (config:file_options, user:files) that get
      * WIKI_BOOST and outrank the actual files.  Boost filebase/ so the
      * real files win. */
-    /* Exclude docstyle ("how do I download X") so wiki how-tos aren't
-     * demoted -- only treat bare "is X available / where's X" as a
-     * file-lookup. */
-    var dl_intent  = _is_download_query(raw_query) && !_is_docstyle_query(raw_query);
+    /* Exclude how-to phrasing ("how do I download X") so wiki how-tos
+     * aren't demoted -- but DO keep "where can I download X" / "is X
+     * available" as file-lookups (those start with "where", which the
+     * broader docstyle check would have wrongly excluded). */
+    var dl_intent  = _is_download_query(raw_query) && !howto_intent;
     var DEF_BOOST  = 3.5;
     var FILE_BOOST = 4.0;
     for (var d in scores) {
