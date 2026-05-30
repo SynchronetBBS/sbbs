@@ -437,6 +437,39 @@ try {
 > an open item to pin a minimal synthetic reproducer); until then, treat the
 > "touch a non-NULL field first" rule as the reliable mitigation.
 
+### Syntax-checking / testing a module that acts at load time
+
+Some modules *do work* the moment they're loaded — start a server loop,
+connect a socket, emit a greeting (e.g. `chat_llm_irc.js` connects to IRC
+and runs its main loop at the bottom of the file). You can't just
+`load()` such a file to syntax-check it or exercise its helpers, because
+`load()` runs it — connecting a second bot / launching the loop.
+
+The idiom: gate the entry point behind a sentinel the loader can set, then
+`load()` with the sentinel set. `load()` compiles the **whole** file (so a
+real syntax error throws) but skips the side effect:
+
+```javascript
+/* bottom of the module: */
+if (typeof MYMOD_NO_MAIN == 'undefined') {
+    main_loop();              // skipped when loaded for testing
+}
+
+/* from a jsexec probe: */
+var MYMOD_NO_MAIN = true;
+load('mymod.js');             // compiles + defines functions; no main loop
+print(typeof some_helper);    // unit-test the helpers directly
+```
+
+Stock examples: `chat_llm.js`'s `CHAT_LLM_NO_STANDALONE`, `chat_llm_irc.js`'s
+`CHAT_LLM_IRC_NO_MAIN`. This guard-and-`load()` is the reliable way to
+syntax-check a side-effecting module without running it.
+
+`exec/syncjslint.js` is a **style** linter (jslint), **not** a syntax gate:
+it emits false positives on valid SpiderMonkey constructs (e.g. a `-` inside
+a regex character class → "Unexpected '-'") and halts on them. Use it for
+style review, not as a compile / pass-fail check.
+
 `system.temp_dir + name + Date.now()` is unique per run; the seven extensions
 above are the full set an SMB can produce.
 
