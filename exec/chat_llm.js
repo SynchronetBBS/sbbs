@@ -897,6 +897,36 @@ function classify_intent(input) {
         if (itopic) return { tool: 'git_issues',
                              args: { kind: 'search', query: itopic, limit: 5 } };
     }
+    /* "most recent / latest / last (open|closed) issue" -- singular and/or
+     * embedded (the plural-at-end form is handled above).  Catches e.g.
+     * "poem about the most recently closed gitlab issue", which otherwise
+     * had the model invent a lookup id (observed: git_issues lookup
+     * iid:12345 for "most recently closed issue"). */
+    m = s.match(/\b(?:most\s+recent(?:ly)?|latest|last)\s+(open|closed)?\s*(?:synchronet\s+|gitlab\s+)?issues?\b/i);
+    if (m) {
+        var rstate = m[1] ? m[1].toLowerCase() : 'opened';
+        if (rstate === 'open') rstate = 'opened';
+        return { tool: 'git_issues',
+                 args: { kind: 'recent', state: rstate, limit: 5 } };
+    }
+    /* Priority / recommendation queries -- "highest priority / most critical
+     * (etc.) issue", "which issue would you recommend".  The feed has no
+     * priority field, so route to recent OPEN issues: this grounds the model
+     * in REAL issues to choose from instead of inventing a number + title
+     * (observed fabrications: #12345 "Enhance Security Flags...", #98765,
+     * and a doubling-down second fake number after being corrected). */
+    if (/\b(?:recommend|suggest|prioriti[sz]e)\b[^?.!]*\bissues?\b/i.test(s)
+        || /\bissues?\b[^?.!]*\b(?:recommend|suggest|prioriti[sz]e)\b/i.test(s)
+        /* priority superlative ... issue, allowing an intervening adjective
+         * in the same clause ("most important OUTSTANDING issue", "most
+         * significant ONGOING issue") -- the [^?.!,;] gap stays inside one
+         * clause so unrelated "most important X, ... issue" doesn't match. */
+        || /\b(?:most\s+(?:critical|important|pressing|urgent|significant|notable|serious|outstanding)|highest[\s-]*priority|top[\s-]*priority|biggest)\b[^?.!,;]{0,30}\bissues?\b/i.test(s)
+        /* "which issue should be addressed/tackled next/first" */
+        || /\bissues?\b[^?.!]{0,40}\b(?:be\s+)?(?:addressed|tackled|fixed|worked\s+on|resolved|prioriti[sz]ed|done)\s+(?:next|first)\b/i.test(s)) {
+        return { tool: 'git_issues',
+                 args: { kind: 'recent', state: 'opened', limit: 5 } };
+    }
 
     /* --- this_bbs (host BBS contents / stats) --- */
 
