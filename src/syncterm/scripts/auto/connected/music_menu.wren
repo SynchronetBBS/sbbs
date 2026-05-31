@@ -4,10 +4,8 @@
 // modal ListView seeded with Host.musicNames; choosing an entry
 // updates CTerm.music and closes the modal.
 
-import "syncterm" for CTerm, Host, Input, Key, Screen
-import "ui_app"   for App
-import "ui_pane"  for Pane
-import "ui_list"  for ListView
+import "syncterm"  for CTerm, Host, Input, Screen
+import "ui_picker" for ListPicker
 
 class MusicMenu {
   // Entry point.  Wraps the modal flow in a child fiber so the
@@ -17,27 +15,9 @@ class MusicMenu {
   static run() {
     Fiber.new {
       Screen.modalRun(Fn.new {
-        var app  = App.new()
-        var pane = Pane.new()
-        pane.title    = "ANSI Music Setup"
-        pane.helpText = Host.musicHelp
-        pane.focused  = true
-        pane.onClose  = Fn.new { app.quit() }
-        app.root.add(pane)
-
-        var list = ListView.new()
-        list.items    = Host.musicNames
-        list.selected = CTerm.music
-        list.onSelect = Fn.new { |i, item|
-          CTerm.music = i
-          app.quit()
-        }
-        pane.add(list)
-        pane.fitContent()
-        pane.centerOnScreen()
-
-        app.bind(Key.escape, Fn.new { |k| app.quit() })
-        app.run()
+        var picked = ListPicker.pickWithSelection("ANSI Music Setup",
+            Host.musicHelp, Host.musicNames, CTerm.music)
+        if (picked >= 0) CTerm.music = picked
       })
       Input.setupMouseEvents()
     }.call()

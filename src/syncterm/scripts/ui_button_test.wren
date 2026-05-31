@@ -51,63 +51,63 @@ class UiButtonTest {
   static testEnterFiresOnPress_() {
     var b = Button.new("OK")
     b.bounds = Rect.new(1, 1, 6, 1)
-    var fired = [false]
-    b.onPress = Fn.new { fired[0] = true }
+    var fired = false
+    b.onPress = Fn.new { fired = true }
     var consumed = b.handle(KeyEvent.new(Key.enter))
-    check_(consumed && fired[0] == true,
+    check_(consumed && fired,
            "Button: Enter activates")
   }
 
   static testSpaceFiresOnPress_() {
     var b = Button.new("OK")
     b.bounds = Rect.new(1, 1, 6, 1)
-    var fired = [false]
-    b.onPress = Fn.new { fired[0] = true }
+    var fired = false
+    b.onPress = Fn.new { fired = true }
     var consumed = b.handle(KeyEvent.new(0x20))
-    check_(consumed && fired[0] == true,
+    check_(consumed && fired,
            "Button: Space activates")
   }
 
   static testRandomKeyDoesNotFire_() {
     var b = Button.new("OK")
     b.bounds = Rect.new(1, 1, 6, 1)
-    var fired = [false]
-    b.onPress = Fn.new { fired[0] = true }
+    var fired = false
+    b.onPress = Fn.new { fired = true }
     var consumed = b.handle(KeyEvent.new(0x41))   // 'A'
-    check_(!consumed && fired[0] == false,
+    check_(!consumed && !fired,
            "Button: random printable key does not activate")
   }
 
   static testMouseClickFiresOnPress_() {
     var b = Button.new("OK")
     b.bounds = Rect.new(5, 5, 6, 1)
-    var fired = [false]
-    b.onPress = Fn.new { fired[0] = true }
+    var fired = false
+    b.onPress = Fn.new { fired = true }
     var ev = MouseEvent.new(Mouse.button1Click, 6, 5, 6, 5)
     var consumed = b.handle(ev)
-    check_(consumed && fired[0] == true,
+    check_(consumed && fired,
            "Button: mouse click inside bounds activates")
   }
 
   static testMouseClickOutsideIgnored_() {
     var b = Button.new("OK")
     b.bounds = Rect.new(5, 5, 6, 1)
-    var fired = [false]
-    b.onPress = Fn.new { fired[0] = true }
+    var fired = false
+    b.onPress = Fn.new { fired = true }
     var ev = MouseEvent.new(Mouse.button1Click, 50, 50, 50, 50)
     var consumed = b.handle(ev)
-    check_(!consumed && fired[0] == false,
+    check_(!consumed && !fired,
            "Button: click outside bounds dropped")
   }
 
   static testMouseHoverIgnored_() {
     var b = Button.new("OK")
     b.bounds = Rect.new(5, 5, 6, 1)
-    var fired = [false]
-    b.onPress = Fn.new { fired[0] = true }
+    var fired = false
+    b.onPress = Fn.new { fired = true }
     var ev = MouseEvent.new(Mouse.move, 6, 5, 6, 5)
     var consumed = b.handle(ev)
-    check_(!consumed && fired[0] == false,
+    check_(!consumed && !fired,
            "Button: hover (Mouse.move) ignored")
   }
 

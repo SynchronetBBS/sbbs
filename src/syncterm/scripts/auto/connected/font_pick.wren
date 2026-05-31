@@ -40,8 +40,8 @@ class FontApp {
 
   static showUnsupported_() {
     var app = App.new()
-    Alert.show(app,
-        "Font cannot be changed in the current video output mode.")
+    var msg = "Font cannot be changed in the current video output mode."
+    Alert.runStandalone(app, msg)
   }
 
   // Build the (slot, name) list — Font.count includes empty entries
@@ -81,8 +81,8 @@ class FontApp {
       k = k + 1
     }
 
-    var picked = [-1]
-    var loadInsteadOfSelect = [false]
+    var picked = -1
+    var loadInsteadOfSelect = false
     var app  = App.new()
     var pane = Pane.new()
     pane.title    = "Font Setup"
@@ -105,7 +105,7 @@ class FontApp {
     list.items    = labels
     list.selected = preselect
     list.onSelect = Fn.new { |i, item|
-      picked[0] = i
+      picked = i
       app.quit()
     }
     pane.add(list)
@@ -121,18 +121,18 @@ class FontApp {
     app.bind(Key.escape, Fn.new { |k| app.quit() })
     if (ScreenSupports.loadableFonts) {
       app.bind(Key.insert, Fn.new { |k|
-        loadInsteadOfSelect[0] = true
+        loadInsteadOfSelect = true
         app.quit()
       })
     }
     app.run()
 
-    if (loadInsteadOfSelect[0]) {
+    if (loadInsteadOfSelect) {
       loadFromFile_()
       return
     }
-    if (picked[0] < 0) return
-    CTerm.altFont = slots[picked[0]]
+    if (picked < 0) return
+    CTerm.altFont = slots[picked]
   }
 
   static loadFromFile_() {

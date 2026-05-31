@@ -92,10 +92,8 @@ class MdLine {
 // ----- Wrap state ------------------------------------------------
 //
 // Pulled out of layout into its own class so layout doesn't have to
-// thread mutable line / word / counter state through closures —
-// closure upvalue reassignment in Wren needs the single-element-list
-// dance (wren.md §3) and at this scale a small stateful helper is
-// clearer than five `var x = [...]` shims.
+// thread mutable line / word / counter state through several small
+// closures.  At this scale a stateful helper is easier to follow.
 
 class MdWrapState {
   construct new(width, indent) {

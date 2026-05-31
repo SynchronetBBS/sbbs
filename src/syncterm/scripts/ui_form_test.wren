@@ -123,10 +123,10 @@ class UiFormTest {
     var f = Form.new()
     f.bounds = Rect.new(1, 1, 30, 10)
     f.addField("a:", TextInput.new())
-    var fired = [false]
-    f.onCancel = Fn.new { fired[0] = true }
+    var fired = false
+    f.onCancel = Fn.new { fired = true }
     var consumed = f.handle(KeyEvent.new(Key.escape))
-    check_(consumed && fired[0],
+    check_(consumed && fired,
            "Form: Esc fires onCancel")
   }
 

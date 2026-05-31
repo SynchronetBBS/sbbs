@@ -71,8 +71,7 @@ class UiDemo {
         ["LogView - severity-colored scroll buffer", Fn.new { runLogviewDemo_() }],
         ["TransferApp - fake transfer (worker thread)", Fn.new { runTransferDemo_() }],
       ]
-      var labels = []
-      for (d in demos) labels.add(d[0])
+      var labels = demos.map {|d| d[0] }.toList
 
       var list = ListView.new()
       var ib   = pane.innerBounds

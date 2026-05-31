@@ -180,20 +180,20 @@ class UiInputTest {
     var t = TextInput.new()
     t.bounds = Rect.new(1, 1, 10, 1)
     t.value  = "ok"
-    var fired = [null]
-    t.onSubmit = Fn.new {|s| fired[0] = s }
+    var fired = null
+    t.onSubmit = Fn.new {|s| fired = s }
     var consumed = t.handle(KeyEvent.new(Key.enter))
-    check_(consumed && fired[0] == "ok",
+    check_(consumed && fired == "ok",
            "TextInput Enter: fires onSubmit with value")
   }
 
   static testOnChangeFires_() {
     var t = TextInput.new()
     t.bounds = Rect.new(1, 1, 10, 1)
-    var seen = [null]
-    t.onChange = Fn.new {|s| seen[0] = s }
+    var seen = null
+    t.onChange = Fn.new {|s| seen = s }
     t.handle(KeyEvent.new(0x58))   // 'X'
-    check_(seen[0] == "X",
+    check_(seen == "X",
            "TextInput onChange: fires after edit with new value")
   }
 

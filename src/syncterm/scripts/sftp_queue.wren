@@ -284,7 +284,7 @@ class SftpQueue {
   // have entered their idle-poll loop on the result-queue side and
   // are ready to claim work.
   static start() {
-    if (__running == true) return
+    if (__running) return
     __jobs        = []
     __gen         = 0
     __running     = true
@@ -305,7 +305,7 @@ class SftpQueue {
   // queries return safe defaults.  The worker fibers detect
   // __running == false on their next iteration and exit cleanly.
   static stop() {
-    if (__running != true) return
+    if (!__running) return
     persistNow_()
     __running     = false
     __suspended   = false
@@ -330,20 +330,20 @@ class SftpQueue {
   //     for the next session rather than marking it FAILED)
   // Idempotent.
   static suspend() {
-    if (__running != true) return
+    if (!__running) return
     __suspended = true
     signalActive_()
   }
 
   // True after suspend() has been called; consumed by SftpApp's
   // tick to auto-quit once the workers have wound down.
-  static suspended { __suspended == true }
+  static suspended { __suspended ? true : false }
 
   // Set by Hook.onShellClose (sftp_queue_init.wren).  Workers
   // consult this on SFTP errors: when set, treat the error as a
   // shell-induced session end (suspend, leave ACTIVE for resume)
   // rather than a hard FAILED.
-  static shellClosed { __shellClosed == true }
+  static shellClosed { __shellClosed ? true : false }
   static shellClosed=(b) { __shellClosed = b }
 
   // Recompute CTerm.sftpActive from the live queue.  Called after
@@ -353,7 +353,7 @@ class SftpQueue {
   // false unconditionally while suspended — the workers are halting
   // and we want the disconnect path to proceed.
   static signalActive_() {
-    if (__suspended == true) {
+    if (__suspended) {
       CTerm.sftpActive = false
       return
     }
@@ -365,7 +365,7 @@ class SftpQueue {
   // Returns a fresh List<JobSnap>; never returns the live list.
   static snapshot {
     var out = []
-    if (__running != true) return out
+    if (!__running) return out
     for (j in __jobs) {
       out.add(JobSnap.new(j))
     }
@@ -374,7 +374,7 @@ class SftpQueue {
 
   // Generation counter — bumps on enqueue and every state
   // transition.  Consumers cache it and rebuild only on change.
-  static gen { __running == true ? __gen : 0 }
+  static gen { __running ? __gen : 0 }
 
   // ----- adaptive sizing --------------------------------------------
 
@@ -438,7 +438,7 @@ class SftpQueue {
   // True if any QUEUED or ACTIVE job exists.  Used by the C-side
   // bridge to decide whether to block teardown.
   static hasWork {
-    if (__running != true) return false
+    if (!__running) return false
     for (j in __jobs) {
       if (j.status == SftpQueue.QUEUED || j.status == SftpQueue.ACTIVE) return true
     }
@@ -447,7 +447,7 @@ class SftpQueue {
 
   // Status of a specific (dir, remote) job, or null if not in queue.
   static status(direction, remotePath) {
-    if (__running != true) return null
+    if (!__running) return null
     for (j in __jobs) {
       if (j.dir == direction && j.remote == remotePath) return j.status
     }
@@ -464,7 +464,7 @@ class SftpQueue {
   // the caller can keep a reference) or null if the queue isn't
   // running.
   static enqueue(direction, localPath, remotePath, total, localToken) {
-    if (__running != true) return null
+    if (!__running) return null
     var j = Job.new(direction, localPath, remotePath, total, localToken)
     __jobs.add(j)
     bump_()
@@ -482,7 +482,7 @@ class SftpQueue {
   // by the worker.  Terminal-state jobs are ignored.  Returns true
   // if a matching job was found and changed.
   static cancel(direction, remotePath) {
-    if (__running != true) return false
+    if (!__running) return false
     var hit = false
     for (j in __jobs) {
       if (j.dir == direction && j.remote == remotePath) {
@@ -507,7 +507,7 @@ class SftpQueue {
   // Flag every QUEUED / ACTIVE job for cancellation.  Used by the
   // degraded modal's "Hang up now" branch.
   static cancelAll() {
-    if (__running != true) return
+    if (!__running) return
     var changed = false
     for (j in __jobs) {
       if (j.status == SftpQueue.QUEUED) {
@@ -543,8 +543,8 @@ class SftpQueue {
   // queue is stopped or the SFTP session has gone away.
   static workerLoop_(direction) {
     while (true) {
-      if (__running != true) return
-      if (__suspended == true) return
+      if (!__running) return
+      if (__suspended) return
       if (!SFTP.available) {
         handleSftpDown_(direction)
         return
@@ -861,7 +861,7 @@ class SftpQueue {
   // "flush on every change" cadence.  At queue scale (<<100 jobs)
   // the cost is negligible.
   static persistNow_() {
-    if (__running != true) return
+    if (!__running) return
     var jobs = []
     for (j in __jobs) {
       var m = {
@@ -913,13 +913,11 @@ class SftpQueue {
     // rather than try()'s return — on success try() returns the
     // fiber's final value (which is the deserialized doc and could
     // be any non-null type); only fiber.error is null vs non-null
-    // on success vs abort.  Single-element list is the idiomatic
-    // upvalue-assignment indirection (wren.md §3.1).
-    var docCell = [null]
-    var fb = Fiber.new { docCell[0] = WON.deserialize(text) }
+    // on success vs abort.
+    var doc = null
+    var fb = Fiber.new { doc = WON.deserialize(text) }
     fb.try()
     if (fb.error != null) return
-    var doc = docCell[0]
     if (!(doc is Map)) return
     var ver = doc["version"]
     if (ver != 1) return
@@ -950,5 +948,3 @@ class SftpQueue {
     }
   }
 }
-
-

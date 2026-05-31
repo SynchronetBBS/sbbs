@@ -98,19 +98,19 @@ class UiCheckboxTest {
   static testOnChangeFires_() {
     var c = Checkbox.new("X")
     c.bounds = Rect.new(1, 1, 5, 1)
-    var got = [null]
-    c.onChange = Fn.new {|v| got[0] = v }
+    var got = null
+    c.onChange = Fn.new {|v| got = v }
     c.handle(KeyEvent.new(0x20))
-    check_(got[0] == true,
+    check_(got,
            "Checkbox: onChange fires with new value")
   }
 
   static testOnChangeNotFiredWhenSame_() {
     var c = Checkbox.new("X")
-    var fires = [0]
-    c.onChange = Fn.new {|v| fires[0] = fires[0] + 1 }
+    var fires = 0
+    c.onChange = Fn.new {|v| fires = fires + 1 }
     c.value = false   // already false
-    check_(fires[0] == 0,
+    check_(fires == 0,
            "Checkbox: assigning the same value does not fire onChange")
   }
 

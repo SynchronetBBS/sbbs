@@ -201,11 +201,11 @@ class App {
   // shouldn't try to push modals (its drainOnce_ would yield the
   // child, not the App).
   runChild(fn) {
-    var cell = [null]
-    var f = Fiber.new { cell[0] = fn.call() }
+    var result = null
+    var f = Fiber.new { result = fn.call() }
     f.try()
     while (!f.isDone) drainOnce_()
-    return cell[0]
+    return result
   }
 
   // ----- Status overlay ------------------------------------------

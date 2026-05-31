@@ -14,6 +14,7 @@ import "ui_style"     for Style, Glyphs, Theme
 import "ui_draw"      for Painter
 import "ui_pane"      for Pane
 import "ui_list"      for ListView
+import "ui_picker"    for ListPicker
 import "ui_input"     for TextInput
 import "ui_button"    for Button
 import "ui_checkbox"  for Checkbox

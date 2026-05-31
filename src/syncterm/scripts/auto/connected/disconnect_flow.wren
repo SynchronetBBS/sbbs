@@ -8,7 +8,7 @@
 
 import "syncterm" for Conn, Input, Screen
 import "ui_app"   for App
-import "ui_popup" for Confirm, Popup
+import "ui_popup" for Confirm
 
 class DisconnectFlow {
   static run(exitApp) {
@@ -17,15 +17,7 @@ class DisconnectFlow {
         var app = App.new()
         var msg = "Disconnect... Are you sure?\n\n" +
                   "Selecting Yes closes the connection."
-        var c   = Confirm.new(msg)
-        c.bounds     = Popup.centeredBounds_(msg, 1, 24)
-        // The Confirm dismissal pops itself off the modal stack;
-        // also quit the App so `app.run()` returns.  Without this
-        // wire-up run() would loop forever on an empty modal stack.
-        c.onDismiss  = Fn.new { |v| app.quit() }
-        app.pushModal(c)
-        app.run()
-        if (c.result == true) Conn.endSession(exitApp)
+        if (Confirm.runStandalone(app, msg)) Conn.endSession(exitApp)
       })
       Input.setupMouseEvents()
     }.call()

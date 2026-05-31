@@ -589,10 +589,10 @@ class UiWidgetTest {
 
   static testAppDispatchKeyHitsKeymap_() {
     var app   = App.new()
-    var fired = [false]
-    app.bind(Key.f1, Fn.new {|k| fired[0] = true })
+    var fired = false
+    app.bind(Key.f1, Fn.new {|k| fired = true })
     var consumed = app.dispatchKey_(KeyEvent.new(Key.f1))
-    check_(consumed && fired[0],
+    check_(consumed && fired,
            "App.dispatchKey_ hits keymap when no widget consumes")
   }
 
@@ -601,10 +601,10 @@ class UiWidgetTest {
     var leaf  = Probe.new()
     leaf.consume = true
     app.root.add(leaf)
-    var fired = [false]
-    app.bind(Key.enter, Fn.new {|k| fired[0] = true })
+    var fired = false
+    app.bind(Key.enter, Fn.new {|k| fired = true })
     app.dispatchKey_(KeyEvent.new(Key.enter))
-    check_(!fired[0],
+    check_(!fired,
            "App.dispatchKey_: widget consumption short-circuits keymap")
   }
 

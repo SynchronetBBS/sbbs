@@ -127,19 +127,19 @@ class UiSpinboxTest {
   static testOnChangeFires_() {
     var s = SpinBox.new()
     s.bounds = Rect.new(1, 1, 10, 1)
-    var got = [null]
-    s.onChange = Fn.new {|v| got[0] = v }
+    var got = null
+    s.onChange = Fn.new {|v| got = v }
     s.handle(KeyEvent.new(Key.up))
-    check_(got[0] == 1, "SpinBox: onChange fires with new value")
+    check_(got == 1, "SpinBox: onChange fires with new value")
   }
 
   static testOnChangeNotFiredWhenSame_() {
     var s = SpinBox.new()
     s.bounds = Rect.new(1, 1, 10, 1)
-    var fires = [0]
-    s.onChange = Fn.new {|v| fires[0] = fires[0] + 1 }
+    var fires = 0
+    s.onChange = Fn.new {|v| fires = fires + 1 }
     s.value = 0    // already 0
-    check_(fires[0] == 0, "SpinBox: same-value assign doesn't fire")
+    check_(fires == 0, "SpinBox: same-value assign doesn't fire")
   }
 
   static testMouseClickUpArrow_() {

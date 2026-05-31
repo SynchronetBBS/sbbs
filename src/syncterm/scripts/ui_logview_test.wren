@@ -18,7 +18,7 @@ class UiLogviewTest {
     testClear_()
     testLiveTailShowsLastLines_()
     testLiveTailFewerThanViewport_()
-    testTextTruncatedAtWidth_()
+    testTextWrapsAtWidth_()
     testSeverityStyles_()
     testPgUpEntersScrollMode_()
     testPgDnReturnsToLive_()
@@ -121,13 +121,14 @@ class UiLogviewTest {
            "fewer entries than viewport: row 0 has data, row 1 blank")
   }
 
-  static testTextTruncatedAtWidth_() {
+  static testTextWrapsAtWidth_() {
     var lv = LogView.new()
-    lv.bounds = Rect.new(1, 1, 5, 1)
+    lv.bounds = Rect.new(1, 1, 7, 2)
     lv.append(LogView.LEVEL_INFO, "abcdefghij")
     var sf = lv.draw()
-    check_(sf.cellAt(0, 0).ch == "a" && sf.cellAt(4, 0).ch == "e",
-           "text wider than bounds is truncated to width")
+    check_(sf.cellAt(0, 0).ch == "a" && sf.cellAt(6, 0).ch == "g" &&
+           sf.cellAt(0, 1).ch == "h" && sf.cellAt(2, 1).ch == "j",
+           "text wider than bounds wraps to the next row")
   }
 
   // Each severity bin paints with its own legacyAttr; spot-check the

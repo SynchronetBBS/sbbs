@@ -157,11 +157,11 @@ class UiRadioTest {
     var g = RadioGroup.new()
     g.items  = ["a", "b"]
     g.bounds = Rect.new(1, 1, 10, 2)
-    var got = [null]
-    g.onChange = Fn.new {|i, it| got[0] = [i, it] }
+    var got = null
+    g.onChange = Fn.new {|i, it| got = [i, it] }
     g.handle(KeyEvent.new(Key.down))
     g.handle(KeyEvent.new(0x20))
-    check_(got[0] != null && got[0][0] == 1 && got[0][1] == "b",
+    check_(got != null && got[0] == 1 && got[1] == "b",
            "RadioGroup: onChange fires with index + item")
   }
 
@@ -169,10 +169,10 @@ class UiRadioTest {
     var g = RadioGroup.new()
     g.items  = ["a", "b"]
     g.bounds = Rect.new(1, 1, 10, 2)
-    var fires = [0]
-    g.onChange = Fn.new {|i, it| fires[0] = fires[0] + 1 }
+    var fires = 0
+    g.onChange = Fn.new {|i, it| fires = fires + 1 }
     g.handle(KeyEvent.new(0x20))      // commits cursor==selected==0
-    check_(fires[0] == 0,
+    check_(fires == 0,
            "RadioGroup: committing same selection doesn't fire onChange")
   }
 

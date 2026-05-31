@@ -10,9 +10,12 @@
 //   if (Confirm.show(app, "Delete file?")) { ... }
 //   var name = Prompt.show(app, "Your name?", "default")
 //   if (name != null) { ... }   // null = cancelled
+//   Alert.runStandalone(App.new(), "No enclosing App is running")
 //
 // Each `show` is synchronous: the App's `modal()` pumps drain until
-// the popup pops itself, then control returns.
+// the popup pops itself, then control returns.  `runStandalone`
+// variants install their own App.run() driver for hook-style callers
+// that do not already have an App event loop routing key events.
 //
 // Keyboard:
 //   Alert    — any key (or Enter / Esc) dismisses; mouse-click OK works too.
@@ -318,6 +321,15 @@ class Popup is Pane {
     if (parent != null) parent.popModal()
     if (_onDismiss != null) _onDismiss.call(value)
   }
+
+  // Drive a popup in a fresh App.  Use this when there is no
+  // surrounding App.run()/runSync() already routing key events.
+  static runStandalone_(app, popup) {
+    popup.onDismiss = Fn.new { |v| app.quit() }
+    app.pushModal(popup)
+    app.run()
+    return popup.result
+  }
 }
 
 class Alert is Popup {
@@ -333,6 +345,13 @@ class Alert is Popup {
     var p = Alert.new(message)
     p.bounds = Popup.centeredBounds_(message, 1, 20)
     app.modal(p)
+    return null
+  }
+
+  static runStandalone(app, message) {
+    var p = Alert.new(message)
+    p.bounds = Popup.centeredBounds_(message, 1, 20)
+    Popup.runStandalone_(app, p)
     return null
   }
 
@@ -393,6 +412,12 @@ class Confirm is Popup {
     p.bounds = Popup.centeredBounds_(message, 1, 24)
     app.modal(p)
     return p.result
+  }
+
+  static runStandalone(app, message) {
+    var p = Confirm.new(message)
+    p.bounds = Popup.centeredBounds_(message, 1, 24)
+    return Popup.runStandalone_(app, p)
   }
 
   // Side-by-side Yes / No hard against the bottom frame, centred
@@ -458,6 +483,13 @@ class Prompt is Popup {
     p.bounds = Popup.centeredBounds_(message, 2, 30)
     app.modal(p)
     return p.result
+  }
+
+  static runStandalone(app, message) { runStandalone(app, message, null) }
+  static runStandalone(app, message, initial) {
+    var p = Prompt.new(message, initial)
+    p.bounds = Popup.centeredBounds_(message, 2, 30)
+    return Popup.runStandalone_(app, p)
   }
 
   // OK / Cancel hard against the bottom frame; input sits one

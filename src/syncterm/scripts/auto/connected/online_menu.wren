@@ -11,8 +11,7 @@
 
 import "syncterm" for BBS, ConnType, Conn, CTerm, Hook, Host, Input, Key, Screen
 import "ui_app"   for App
-import "ui_pane"  for Pane
-import "ui_list"  for ListView
+import "ui_picker" for ListPicker
 import "ui_popup" for Alert
 import "capture_menu"    for CaptureMenu
 import "music_menu"      for MusicMenu
@@ -137,36 +136,15 @@ class OnlineMenu {
   static run() {
     Fiber.new {
       var entries = buildEntries_()
-      var picked  = [-1]
+      var picked  = -1
 
       Screen.modalRun(Fn.new {
-        var app  = App.new()
-        var pane = Pane.new()
-        pane.title    = "SyncTERM Online Menu"
-        pane.helpText = helpText_
-        pane.focused  = true
-        pane.onClose  = Fn.new { app.quit() }
-        app.root.add(pane)
-
-        var labels = []
-        for (e in entries) labels.add(e[0])
-
-        var list = ListView.new()
-        list.items    = labels
-        list.onSelect = Fn.new { |i, item|
-          picked[0] = i
-          app.quit()
-        }
-        pane.add(list)
-        pane.fitContent()
-        pane.centerOnScreen()
-        app.bind(Key.escape, Fn.new { |k| app.quit() })
-        app.run()
+        var labels = entries.map {|e| e[0] }.toList
+        picked = ListPicker.pick("SyncTERM Online Menu", helpText_, labels)
       })
       Input.setupMouseEvents()
 
-      var sel = picked[0]
-      if (sel >= 0) entries[sel][1].call()
+      if (picked >= 0) entries[picked][1].call()
     }.call()
   }
 
@@ -180,11 +158,10 @@ class OnlineMenu {
     if (ct == ConnType.modem || ct == ConnType.serial || ct == ConnType.serialNoRts) {
       Screen.modalRun(Fn.new {
         var app = App.new()
-        app.bind(Key.escape, Fn.new { |k| app.quit() })
-        Alert.show(app,
+        var msg =
           "Not supported for this connection type.\n\n" +
-          "Cannot change the display rate for Modem/Serial connections.")
-        app.run()
+          "Cannot change the display rate for Modem/Serial connections."
+        Alert.runStandalone(app, msg)
       })
       Input.setupMouseEvents()
       return
@@ -201,74 +178,38 @@ class OnlineMenu {
       }
     }
 
-    var picked = [-1]
+    var picked = -1
     Screen.modalRun(Fn.new {
-      var app  = App.new()
-      var pane = Pane.new()
-      pane.title    = "Output Rate"
-      pane.helpText =
+      picked = ListPicker.pickWithSelection("Output Rate",
         "# Output Rate\n\n" +
         "The output rate is the rate in emulated \"bits per second\" to draw\n" +
         "incoming data on the screen.  This rate is a maximum, not guaranteed\n" +
         "to be attained.  In general, you will only use this option for ANSI\n" +
-        "animations."
-      pane.focused = true
-      pane.onClose = Fn.new { app.quit() }
-      app.root.add(pane)
-
-      var list = ListView.new()
-      list.items    = names
-      list.selected = idx
-      list.onSelect = Fn.new { |i, item|
-        picked[0] = i
-        app.quit()
-      }
-      pane.add(list)
-      pane.fitContent()
-      pane.centerOnScreen()
-      app.bind(Key.escape, Fn.new { |k| app.quit() })
-      app.run()
+        "animations.",
+        names, idx)
     })
     Input.setupMouseEvents()
 
-    if (picked[0] >= 0) CTerm.throttleSpeed = rates[picked[0]]
+    if (picked >= 0) CTerm.throttleSpeed = rates[picked]
   }
 
   // Log Level sub-list.  Indexes line up with Host.logLevelNames.
   // Wraps in its own Screen.modalRun (see outputRateFlow_).
   static logLevelFlow_() {
     var names  = Host.logLevelNames
-    var picked = [-1]
+    var picked = -1
 
     Screen.modalRun(Fn.new {
-      var app  = App.new()
-      var pane = Pane.new()
-      pane.title    = "Log Level"
-      pane.helpText =
+      picked = ListPicker.pickWithSelection("Log Level",
         "# Log Level\n\n" +
         "The log level changes the verbosity of messages shown in the transfer\n" +
         "window.  For the selected log level, messages of that level and those\n" +
-        "above it will be displayed."
-      pane.focused = true
-      pane.onClose = Fn.new { app.quit() }
-      app.root.add(pane)
-
-      var list = ListView.new()
-      list.items    = names
-      list.selected = Host.logLevel
-      list.onSelect = Fn.new { |i, item|
-        picked[0] = i
-        app.quit()
-      }
-      pane.add(list)
-      pane.fitContent()
-      pane.centerOnScreen()
-      app.bind(Key.escape, Fn.new { |k| app.quit() })
-      app.run()
+        "above it will be displayed.",
+        names, Host.logLevel)
     })
     Input.setupMouseEvents()
 
-    if (picked[0] >= 0) Host.logLevel = picked[0]
+    if (picked >= 0) Host.logLevel = picked
   }
 }
 

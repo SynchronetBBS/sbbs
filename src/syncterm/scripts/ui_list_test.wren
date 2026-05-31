@@ -279,14 +279,15 @@ class UiListTest {
   static testKeyEnterFiresOnSelect_() {
     var l = makeList_(3)
     l.bounds = Rect.new(1, 1, 10, 5)
-    var fired = [null, null]
+    var firedIndex = null
+    var firedItem  = null
     l.onSelect = Fn.new {|i, item|
-      fired[0] = i
-      fired[1] = item
+      firedIndex = i
+      firedItem  = item
     }
     l.selected = 2
     var consumed = l.handle(KeyEvent.new(Key.enter))
-    check_(consumed && fired[0] == 2 && fired[1] == "item-2",
+    check_(consumed && firedIndex == 2 && firedItem == "item-2",
            "ListView.handle Enter: fires onSelect with index + item")
   }
 

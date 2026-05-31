@@ -880,33 +880,34 @@ class WrenTest {
 
   // Scrollback as a SOURCE for Surface.putRect_ - exercises the
   // slot_to_surface_ extension that recognizes the Scrollback class
-  // and linearizes the ring before reading.  Push a marker into
-  // scrollback, blit the marker row into a fresh Surface, and
-  // verify the cells landed.
+  // and linearizes the ring before reading.  Push rows into the ring,
+  // write a marker into the pushed row, blit that row into a fresh
+  // Surface, and verify the cells landed.
   static testScrollbackAsSurfaceSource_() {
     if (Scrollback.width == 0) {
       check_(true, "Scrollback as source skipped (no ring)")
       return
     }
-    var ok
-    Screen.modalRun(Fn.new {
-      Screen.window.position = [1, 1]
-      Screen.window.clear()
-      CTerm.write("SCROLLBACK_BLIT_MARKER")
-      Scrollback.pushScreen()
-      var screenH = CTerm.height
-      var srcTop  = Scrollback.height - screenH
-      // Copy one row from Scrollback into a fresh Surface and check
-      // the marker text comes through.  putRect_ is the 7-arg foreign
-      // (src, srcX, srcY, srcW, srcH, dstX, dstY) on the dst Surface;
-      // src is the Scrollback class, recognized by slot_to_surface_.
-      var dst = Surface.new(Scrollback.width, 1)
-      dst.putRect_(Scrollback, 0, srcTop, Scrollback.width, 1, 0, 0)
-      var s = ""
-      for (i in 0...Scrollback.width) s = s + dst[i].ch
-      ok = s.contains("SCROLLBACK_BLIT_MARKER")
-      Scrollback.popScreen(screenH)
-    })
+    var marker = "SB_BLIT"
+    if (Scrollback.width < marker.count) {
+      check_(true, "Scrollback as source skipped (narrow ring)")
+      return
+    }
+    Scrollback.pushScreen()
+    var screenH = CTerm.height
+    var row = Scrollback.height - 1
+    for (i in 0...Scrollback.width) Scrollback.cellAt(i, row).ch = " "
+    for (i in 0...marker.count) Scrollback.cellAt(i, row).ch = marker[i]
+    // Copy one row from Scrollback into a fresh Surface and check
+    // the marker text comes through.  putRect_ is the 7-arg foreign
+    // (src, srcX, srcY, srcW, srcH, dstX, dstY) on the dst Surface;
+    // src is the Scrollback class, recognized by slot_to_surface_.
+    var dst = Surface.new(Scrollback.width, 1)
+    dst.putRect_(Scrollback, 0, row, Scrollback.width, 1, 0, 0)
+    var s = ""
+    for (i in 0...Scrollback.width) s = s + dst[i].ch
+    var ok = s.contains(marker)
+    Scrollback.popScreen(screenH)
     check_(ok, "Scrollback as Surface source for putRect_ blits cells")
   }
 

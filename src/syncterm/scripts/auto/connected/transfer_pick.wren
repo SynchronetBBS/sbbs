@@ -19,10 +19,10 @@
 //   begin_download's gate).  For plain XMODEM the user is prompted
 //   for a filename first (the wire stream has no header).
 
-import "syncterm" for BBS, CTerm, Emulation, Host, Input, Key, Screen, Transfer
+import "syncterm" for BBS, CTerm, Emulation, Host, Input, Screen, Transfer
 import "ui_app"     for App
 import "ui_pane"    for Pane
-import "ui_list"    for ListView
+import "ui_picker"  for ListPicker
 import "ui_popup"   for Prompt
 
 class UploadApp {
@@ -63,8 +63,7 @@ class UploadApp {
         if (batch) {
           var files = Host.pickFiles(BBS.ulDir, null, 0)
           if (files == null || files.count == 0) return
-          var paths = []
-          for (f in files) paths.add(f.toString)
+          var paths = files.map {|f| f.toString }.toList
           Transfer.uploadBatch(kind, paths, lastCh)
         } else {
           // Single-file picker.  ALLOWENTRY (= 1) lets the user type a
@@ -92,27 +91,7 @@ class UploadApp {
   }
 
   static pickProtocol_(items, title, helpText) {
-    var picked = [-1]
-    var app  = App.new()
-    var pane = Pane.new()
-    pane.title    = title
-    pane.helpText = helpText
-    pane.focused  = true
-    pane.onClose  = Fn.new { app.quit() }
-    app.root.add(pane)
-
-    var list = ListView.new()
-    list.items    = items
-    list.onSelect = Fn.new { |i, item|
-      picked[0] = i
-      app.quit()
-    }
-    pane.add(list)
-    pane.fitContent()
-    pane.centerOnScreen()
-    app.bind(Key.escape, Fn.new { |k| app.quit() })
-    app.run()
-    return picked[0]
+    return ListPicker.pick(title, helpText, items)
   }
 }
 
@@ -180,8 +159,7 @@ class DownloadApp {
     app.root.add(pane)
     pane.fitContent()
     pane.centerOnScreen()
-    var name = Prompt.show(app, "Filename", "")
-    return name
+    return Prompt.runStandalone(app, "Filename", "")
   }
 
   static downloadHelp_() {

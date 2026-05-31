@@ -5376,25 +5376,26 @@ dismissed with `app.popStatus(null)`.
 expect `app` to already be running — they call `app.modal(p)`, which
 pumps `drainOnce_()` on the existing run loop's input claim.  When
 you need a popup from a context with no enclosing app — a
-`Hook.onKey` handler being the canonical case — set up the App
-yourself and wire `Popup.onDismiss=` to quit it:
+`Hook.onKey` handler being the canonical case — use the standalone
+variants, which push the popup, wire `onDismiss` to `app.quit()`,
+and run the App so key events are routed:
 
 [source,wren]
 ----
 var app = App.new()
-var c   = Confirm.new("Disconnect... Are you sure?")
-c.bounds    = Popup.centeredBounds_(c.message, 1, 24)
-c.onDismiss = Fn.new { |v| app.quit() }
-app.pushModal(c)
-app.run()
-if (c.result == true) {
+if (Confirm.runStandalone(app, "Disconnect... Are you sure?")) {
   // user clicked Yes
 }
 ----
 
-`onDismiss=(fn)` fires from `dismissWith_` after the popup pops
-itself off the modal stack, with the dismissed value (Bool / String
-/ null depending on the popup subclass).  Without this wire-up
+Standalone helpers are available as `Alert.runStandalone(app, msg)`,
+`Confirm.runStandalone(app, msg)`, and
+`Prompt.runStandalone(app, msg, initial)`.
+
+For custom popup drivers, `onDismiss=(fn)` fires from `dismissWith_`
+after the popup pops itself off the modal stack, with the dismissed
+value (Bool / String / null depending on the popup subclass).  If you
+call `app.run()` yourself, wire `onDismiss` to `app.quit()`; otherwise
 `app.run()` would loop forever on an empty modal stack.
 
 === Help viewer [[ui-help]]

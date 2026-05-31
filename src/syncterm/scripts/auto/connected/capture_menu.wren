@@ -13,10 +13,8 @@
 // Help text and option labels are kept close to the historical uifc
 // dialog so muscle memory carries over.
 
-import "syncterm" for Capture, CTerm, Download, Host, Input, Key, Screen
-import "ui_app"   for App
-import "ui_pane"  for Pane
-import "ui_list"  for ListView
+import "syncterm"  for Capture, CTerm, Download, Host, Input, Screen
+import "ui_picker" for ListPicker
 
 class CaptureMenu {
   // Entry point.  Hook handlers wrap this in a child fiber so the
@@ -66,11 +64,7 @@ class CaptureMenu {
   //   2 = Binary           (one-shot screen save)
   //   3 = Binary with SAUCE
   static startFlow_() {
-    var picked = [-1]
-    var app  = App.new()
-    var pane = Pane.new()
-    pane.title    = "Capture Type"
-    pane.helpText =
+    var picked = ListPicker.pick("Capture Type",
       "# Capture Type\n" +
       "\n" +
       "ASCII\n" +
@@ -83,36 +77,21 @@ class CaptureMenu {
       ":  Same as Binary plus a SAUCE block\n" +
       "\n" +
       "**Raw** is useful for stealing ANSI screens from other systems.  \n" +
-      "Don't do that though.  :-)"
-    pane.focused = true
-    pane.onClose = Fn.new { app.quit() }
-    app.root.add(pane)
+      "Don't do that though.  :-)",
+      ["ASCII", "Raw", "Binary", "Binary with SAUCE"])
 
-    var list = ListView.new()
-    list.items    = ["ASCII", "Raw", "Binary", "Binary with SAUCE"]
-    list.onSelect = Fn.new { |i, item|
-      picked[0] = i
-      app.quit()
-    }
-    pane.add(list)
-    pane.fitContent()
-    pane.centerOnScreen()
-    app.bind(Key.escape, Fn.new { |k| app.quit() })
-    app.run()
-
-    var sel = picked[0]
-    if (sel < 0) {
+    if (picked < 0) {
       return
     }
-    var mask = (sel >= 2) ? "*.bin" : null
+    var mask = (picked >= 2) ? "*.bin" : null
     var file = Host.pickSavePath(Download, mask)
     if (file == null) {
       return
     }
-    if (sel >= 2) {
-      CTerm.saveScreenshot(file, sel > 2)
+    if (picked >= 2) {
+      CTerm.saveScreenshot(file, picked > 2)
     } else {
-      Capture.start(file, sel == 1)
+      Capture.start(file, picked == 1)
     }
   }
 
@@ -120,29 +99,9 @@ class CaptureMenu {
   // paused / active flows.  `action` is called with the chosen
   // index (>= 0) -- nothing happens on cancel.
   static pickAndAct_(title, helpText, items, action) {
-    var picked = [-1]
-    var app  = App.new()
-    var pane = Pane.new()
-    pane.title    = title
-    pane.helpText = helpText
-    pane.focused  = true
-    pane.onClose  = Fn.new { app.quit() }
-    app.root.add(pane)
-
-    var list = ListView.new()
-    list.items    = items
-    list.onSelect = Fn.new { |i, item|
-      picked[0] = i
-      app.quit()
-    }
-    pane.add(list)
-    pane.fitContent()
-    pane.centerOnScreen()
-    app.bind(Key.escape, Fn.new { |k| app.quit() })
-    app.run()
-
-    if (picked[0] >= 0) {
-      action.call(picked[0])
+    var picked = ListPicker.pick(title, helpText, items)
+    if (picked >= 0) {
+      action.call(picked)
     }
   }
 }

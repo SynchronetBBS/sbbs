@@ -1482,12 +1482,12 @@ class Host {
   // reset to null/false when the VM is torn down on disconnect.
   // Setters call CTerm.refreshStatus() so the indicator updates on
   // the next render pass without the writer having to do it.
-  static uploadArrow { __upArrow == true }
+  static uploadArrow { __upArrow ? true : false }
   static uploadArrow=(b) {
     __upArrow = b
     CTerm.refreshStatus()
   }
-  static downloadArrow { __downArrow == true }
+  static downloadArrow { __downArrow ? true : false }
   static downloadArrow=(b) {
     __downArrow = b
     CTerm.refreshStatus()
