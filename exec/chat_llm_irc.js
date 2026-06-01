@@ -224,7 +224,12 @@ function blog(msg) {
     log(LOG_INFO, msg);
     var f = new File(BOT_LOG_PATH);
     if (!f.open("a")) return;
-    var ts = new Date().toISOString();
+    /* Local-time ISO-8601 with offset (e.g. 2026-05-31T16:59:01-0700) via
+     * xpdev's strftime() -- local wallclock, matching the chat log and the
+     * rest of Synchronet's logs, unlike Date.toISOString()'s UTC.  No
+     * sub-second field (C strftime has none) and the offset uses the basic
+     * colon-less form. */
+    var ts = strftime("%Y-%m-%dT%H:%M:%S%z", time());
     f.write(ts + " " + msg + "\r\n");
     f.close();
 }
@@ -240,7 +245,7 @@ var IRC_CHAT_LOG = system.data_dir + BOT_FILE_BASE + "_chat.log";
 /* Pending message-relay queue.  Written by the relay_message tool
  * (llm_tools/relay_message.js) when a caller asks the bot to pass a
  * message to another user; drained by deliver_pending() when that
- * user next speaks in ANY channel the bot is in.  Persisted across
+ * user next joins or speaks in ANY channel the bot is in.  Persisted across
  * bot restarts so messages don't get lost on restart. */
 var IRC_RELAY_PATH = PERSONA_DIR + PERSONA_PROTO + "_relay.json";
 function load_relay() {
@@ -390,8 +395,10 @@ function deliver_pending(channel, speaker_nick) {
     for (var i = 0; i < deliver.length; i++) {
         var m = deliver[i];
         var age = format_age(now - (m.ts || now));
+        /* Quote the relayed body so it's unambiguous which part is the
+         * sender's verbatim words vs. the bot's framing. */
         irc_say(channel, speaker_nick + ": " + (m.from || "someone")
-                + " wanted me to tell you (" + age + " ago): " + m.text);
+                + " left you a message " + age + " ago: \"" + m.text + "\"");
     }
 }
 function log_chat_turn(speaker_nick, channel, input, reply, profile) {
@@ -909,7 +916,8 @@ function handle_privmsg(from_nick, target, text) {
 
     /* Deliver any pending relay messages addressed to this speaker.
      * Channel-agnostic: a message queued in #synchronet for "Bob"
-     * delivers the next time Bob speaks anywhere the bot's joined.
+     * delivers the next time Bob speaks anywhere the bot's joined (the
+     * JOIN handler delivers on entry too; whichever happens first wins).
      * Fires BEFORE address detection so the delivery isn't held
      * back waiting for the recipient to address the bot. */
     deliver_pending(target, from_nick);
@@ -1064,6 +1072,12 @@ function dispatch_line(parsed) {
             post_announce(jchan);
         } else {
             add_member(jchan, joiner);
+            /* A relay request is phrased "next time you SEE X" -- seeing
+             * X re-join the channel satisfies that, so drain any pending
+             * relays for them now rather than waiting for them to speak.
+             * deliver_pending() drains the queue, so this is idempotent
+             * with the speak-triggered delivery in handle_privmsg(). */
+            deliver_pending(jchan, joiner);
         }
         break;
     case "353":   /* RPL_NAMREPLY -- ":<server> 353 <us> = <chan> :<names>" */

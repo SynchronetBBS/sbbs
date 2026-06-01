@@ -295,58 +295,109 @@
             }
         }
 
-        /* --- relay_message --- */
+        /* --- relay_message ---
+         *
+         * Catch as many "pass this to <nick>" phrasings as possible
+         * DETERMINISTICALLY: whatever the router matches, the caller's
+         * VERBATIM text is what gets stored.  Anything that slips
+         * through to the model gets paraphrased (rewritten into 3rd
+         * person, given a preamble, once even turned into a poem), so
+         * breadth here is what stops that mangling.
+         *
+         * _nick    one recipient token (nick / BBS alias word).
+         * _notrcp  a negative lookahead rejecting words that are never a
+         *          relay target -- pronouns, articles, "everyone",
+         *          "about", ... -- so "tell me about X", "let me know Y",
+         *          "say hi to everyone" don't false-match as relays.
+         * rs       the input with a leading politeness / "can you
+         *          [please]" wrapper stripped, so the verb-anchored
+         *          patterns still fire on "please tell X", "could you let
+         *          Y know Z", "can you ask W to ...". */
+        var _nick   = '([A-Za-z][\\w._-]{0,30})';
+        var _notrcp = '(?!(?:me|us|you|y\'?all|everyone|everybody|them|they|'
+                    + 'him|her|it|about|a|an|the|my|your|our|this|that|some|'
+                    + 'someone|somebody|anyone|anybody)\\b|'
+                    + 'the\\s+(?:channel|sub|group|others?|rest)\\b)';
+        var rs = s.replace(
+            /^\s*(?:(?:hey|ok(?:ay)?|so|well|um+)[,\s]+)*(?:(?:can|could|would|will)\s+(?:you|u|ya)\s+)?(?:please\s+|pls\s+|plz\s+)?(?:go\s+(?:and\s+)?)?/i,
+            '');
 
-        /* "tell <X> <msg>" -- but NOT "tell me/us/everyone/the channel about". */
-        m = s.match(/^\s*tell\s+(?!me\b|us\b|everyone\b|them\b|him\b|her\b|the\s+(?:channel|sub|group))([A-Za-z][\w._-]{0,30})\s+(.+?)\s*[?.!]*\s*$/i);
-        if (m) {
-            var rcp = m[1];
-            var msg = m[2].replace(/^\s+|\s+$/g, '');
-            if (msg && msg.length >= 2) {
-                return { tool: 'relay_message',
-                         args: { recipient: rcp, text: msg } };
-            }
+        /* Shared "matched -> relay" helper: trim, length-gate, build. */
+        var rr;
+        function _relay(rcp, text, minlen) {
+            text = String(text).replace(/^\s+|\s+$/g, '');
+            if (text.length >= (minlen || 1))
+                return { tool: 'relay_message', args: { recipient: rcp, text: text } };
+            return null;
         }
+        /* Strip a "tell <rcp|him/her/them> / say [to] / let <X> know /
+         * message / give / pass [on/along] [to]" preamble off a captured
+         * message body so the stored text is just the message (used by
+         * the see / when-back patterns whose capture includes it). */
+        function _strip_preamble(rest, rcp) {
+            rest = String(rest).replace(/^\s+|\s+$/g, '');
+            var rcpe = rcp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            rest = rest.replace(new RegExp(
+                '^(?:tell|say(?:\\s+to)?|let|message|give|pass(?:\\s+(?:on|along))?(?:\\s+to)?)\\s+'
+                + '(?:' + rcpe + '|him|her|them|that)\\s+(?:know\\s+(?:that\\s+)?)?', 'i'), '');
+            return rest.replace(/^\s+|\s+$/g, '');
+        }
+
+        /* "tell <X> [that] <msg>" */
+        m = rs.match(new RegExp('^tell\\s+' + _notrcp + _nick + '\\s+(?:that\\s+)?(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
 
         /* "let <X> know [that] <msg>" */
-        m = s.match(/^\s*let\s+([A-Za-z][\w._-]{0,30})\s+know\s+(?:that\s+)?(.+?)\s*[?.!]*\s*$/i);
-        if (m) {
-            var rcp2 = m[1];
-            var msg2 = m[2].replace(/^\s+|\s+$/g, '');
-            if (msg2) {
-                return { tool: 'relay_message',
-                         args: { recipient: rcp2, text: msg2 } };
-            }
-        }
+        m = rs.match(new RegExp('^let\\s+' + _notrcp + _nick + '\\s+know\\s+(?:that\\s+)?(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 1))) return rr;
 
-        /* "next time you see <X>, tell <X|him/her/them> <msg>" /
-         * "when you see <X> next/again/here, ..." */
-        m = s.match(/^\s*(?:next\s+time|when)\s+you\s+see\s+([A-Za-z][\w._-]{0,30})(?:\s+(?:next|again|here))?\s*,?\s*(.+?)\s*[?.!]*\s*$/i);
-        if (m) {
-            var rcp3 = m[1];
-            var rest = m[2].replace(/^\s+|\s+$/g, '');
-            /* Strip "tell <rcp|him/her/them>" / "say <to>" / "let <X> know"
-             * preambles so the captured text is just the message body. */
-            rest = rest.replace(
-                new RegExp('^(?:tell|say(?:\\s+to)?|let|message|give)\\s+(?:'
-                    + rcp3.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                    + '|him|her|them|\\1)\\s+(?:know\\s+(?:that\\s+)?)?',
-                    'i'), '');
-            rest = rest.replace(/^\s+|\s+$/g, '');
-            if (rest && rest.length >= 2) {
-                return { tool: 'relay_message',
-                         args: { recipient: rcp3, text: rest } };
-            }
-        }
+        /* "ask <X> [to|if|whether|that] <msg>" */
+        m = rs.match(new RegExp('^ask\\s+' + _notrcp + _nick + '\\s+(?:to\\s+|if\\s+|whether\\s+|that\\s+)?(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
 
-        /* "pass on to <X> <msg>" / "pass <X> a message: <msg>" */
-        m = s.match(/^\s*pass\s+(?:on\s+)?to\s+([A-Za-z][\w._-]{0,30})\s*:?\s*(.+?)\s*[?.!]*\s*$/i);
-        if (m) {
-            var rcp4 = m[1];
-            var msg4 = m[2].replace(/^\s+|\s+$/g, '');
-            if (msg4) return { tool: 'relay_message',
-                               args: { recipient: rcp4, text: msg4 } };
-        }
+        /* "remind <X> [to|that|about] <msg>" */
+        m = rs.match(new RegExp('^remind\\s+' + _notrcp + _nick + '\\s+(?:to\\s+|that\\s+|about\\s+)?(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
+
+        /* "leave a message/note for <X>: <msg>" */
+        m = rs.match(new RegExp('^leave\\s+(?:a\\s+)?(?:message|note|word)\\s+(?:for|to|with)\\s+' + _nick + '\\s*[:,-]?\\s*(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
+
+        /* "send <X> a message: <msg>" */
+        m = rs.match(new RegExp('^send\\s+' + _notrcp + _nick + '\\s+(?:a\\s+)?(?:message|note|msg|word|line|dm|pm)\\s*[:,-]?\\s*(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
+        /* "send a message/dm to <X>: <msg>" */
+        m = rs.match(new RegExp('^send\\s+(?:a\\s+)?(?:message|note|msg|word|line|dm|pm)\\s+(?:to|for)\\s+' + _nick + '\\s*[:,-]?\\s*(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
+
+        /* "give <X> a message / heads-up: <msg>" */
+        m = rs.match(new RegExp('^give\\s+' + _notrcp + _nick + '\\s+(?:a\\s+)?(?:message|note|word|heads[\\s-]?up)\\s*[:,-]?\\s*(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
+
+        /* "next time / when / if / whenever you see <X> [next/again/here/...], <msg>" */
+        m = rs.match(new RegExp('^(?:next\\s+time|when|if|whenever)\\s+(?:you\\s+)?see\\s+' + _nick + '(?:\\s+(?:next|again|here|online|around))?\\s*,?\\s*(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], _strip_preamble(m[2], m[1]), 2))) return rr;
+
+        /* "when/whenever/once <X> is back/online/around/..., tell|say|... <msg>"
+         * -- requires both a presence verb AND a relay verb in the body so
+         * a conditional like "if X is a jerk, ignore him" doesn't match. */
+        m = rs.match(new RegExp('^(?:when|whenever|once)\\s+' + _nick + '\\s+(?:is|are|comes?|gets?|shows?|signs?|logs?|reappears?|returns?|pops?)\\b[^,]{0,30},\\s*((?:tell|say|let|give|pass|message|send)\\b.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], _strip_preamble(m[2], m[1]), 2))) return rr;
+
+        /* "pass [this/the word] [on/along] to <X> <msg>" */
+        m = rs.match(new RegExp('^pass\\s+(?:(?:this|that|it|along|the\\s+(?:word|message)|a\\s+(?:message|note))\\s+)?(?:on\\s+|along\\s+)?to\\s+' + _nick + '\\s*[:,-]?\\s*(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
+        /* "pass <X> a message: <msg>" */
+        m = rs.match(new RegExp('^pass\\s+' + _notrcp + _nick + '\\s+(?:a\\s+)?(?:message|note|word)\\s*[:,-]?\\s*(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
+
+        /* "message <X>: <msg>" (colon required -- avoids "message board" etc.) */
+        m = rs.match(new RegExp('^message\\s+' + _notrcp + _nick + '\\s*:\\s*(.+?)\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[1], m[2], 2))) return rr;
+
+        /* "say <msg> to <X>" / "say hi to <X>" (text first, nick last) */
+        m = rs.match(new RegExp('^say\\s+(.+?)\\s+to\\s+' + _notrcp + _nick + '\\s*[?.!]*\\s*$', 'i'));
+        if (m && (rr = _relay(m[2], m[1], 1))) return rr;
 
         /* --- external_archives for named BBS-era topics --- */
 

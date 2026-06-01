@@ -709,6 +709,118 @@ function _looks_like_os(w) {
     return /^(?:(?:free|open|net)bsd|linux|debian|ubuntu|raspbian|raspberry\s*pi|windows|win(?:32|64|nt)?|mac\s*os(?:\s*x)?|macos|osx|darwin|os\/?2|ms-?dos|dos|solaris|haiku)$/i.test(String(w).replace(/^\s+|\s+$/g, ''));
 }
 
+/* ---- Relay perspective rewrite ----
+ *
+ * A relay body is written from the SENDER's seat ("tell Dan you love
+ * his work" -- "you" = the bot, "his" = Dan).  Delivered verbatim it
+ * inverts when the RECIPIENT reads it ("you love his" now points the
+ * wrong way).  When the body carries person-dependent pronouns, ask
+ * the model to RE-ANCHOR them to the recipient's point of view.  This
+ * is a meaning-preserving rewrite, NOT a paraphrase: nothing is added,
+ * removed, or restyled -- only who-is-who pronouns move.  Pronoun-free
+ * bodies ("the build is fixed", "hi") skip the model entirely and stay
+ * byte-for-byte verbatim, so the common case keeps the deterministic,
+ * fabrication-proof path. */
+var RELAY_REWRITE_PRONOUNS =
+    /\b(?:you|your|yours|yourself|yourselves|he|him|his|she|her|hers|they|them|their|theirs)\b/i;
+
+var RELAY_REWRITE_PROMPT_DEFAULT =
+    'A bot named "@bot@" relays this one-line message from @sender@ to '
+  + '@recipient@. Rewrite ONLY its pronouns so it reads correctly when '
+  + '@recipient@ reads it. Work out who each pronoun refers to:\n'
+  + '- A 3rd-person pronoun (he/him/his/she/her/they/them/their) with NO '
+  + 'named person as its antecedent in the message refers to @recipient@: '
+  + 'rewrite it to "you"/"your". (e.g. "he\'s late" -> "you\'re late".)\n'
+  + '- A 3rd-person pronoun that clearly refers to a NAMED third party '
+  + '(e.g. "Rob ... he") stays unchanged.\n'
+  + '- "you"/"your" normally already means @recipient@ and stays "you"/"your" '
+  + '(e.g. "your commit" stays "your commit"). BUT if a "you" tells the bot '
+  + 'itself how it feels or what to do -- typically when the same message also '
+  + 'refers to @recipient@ in the 3rd person -- that "you" means the bot: '
+  + 'rewrite it to "I"/"my". (e.g. "you love his work" to Dan -> "I love your '
+  + 'work".)\n'
+  + '- "I"/"me"/"my" means @sender@ and stays unchanged.\n'
+  + 'Change ONLY pronoun words. Never turn an article ("the"/"a") or any '
+  + 'other non-pronoun word into a possessive, and leave every noun as-is. '
+  + 'Preserve the meaning, wording, and tone EXACTLY. Add NO names, '
+  + 'greetings, quotes, explanations, or new content. If nothing needs '
+  + 'changing, return the message unchanged. Output ONLY the rewritten message.';
+
+function relay_perspective_rewrite(cfg, text, recipient, sender, bot_name) {
+    text = String(text || '');
+    if (!text) return text;
+    if (cfg.relay_rewrite === false) return text;          /* sysop opt-out */
+    if (!RELAY_REWRITE_PRONOUNS.test(text)) return text;    /* nothing to anchor */
+
+    var sys = (cfg.relay_rewrite_prompt || RELAY_REWRITE_PROMPT_DEFAULT)
+        .replace(/@bot@/g,       bot_name  || 'the bot')
+        .replace(/@sender@/g,    sender    || 'someone')
+        .replace(/@recipient@/g, recipient || 'the recipient');
+
+    /* Pronoun re-anchoring is a subtle reference-resolution task a 7B
+     * does unreliably; relay_rewrite_model points this one small,
+     * infrequent call at a stronger model (e.g. qwen2.5:14b) without
+     * changing the main chat model. */
+    var rw_model = cfg.relay_rewrite_model || cfg.model;
+    var req = {
+        model:    rw_model,
+        messages: [ { role: 'system', content: sys },
+                    { role: 'user',   content: text } ],
+        stream:  false,
+        think:   false,
+        options: { temperature: 0, num_predict: 200, num_ctx: cfg.num_ctx || undefined }
+    };
+    /* Keep the rewrite model transient when it differs from the chat
+     * model, so the (faster) chat model stays the resident, warm one --
+     * a host that can't hold both in VRAM otherwise leaves whichever
+     * ran last pinned, evicting the chat model.  keep_alive 0 unloads
+     * the rewrite model right after this request; relay_rewrite_keep_alive
+     * (e.g. "30s") batches back-to-back relays.  Same-model rewrites just
+     * inherit the normal keep_alive (unloading would cool the chat model). */
+    if (rw_model !== cfg.model) {
+        req.keep_alive = (cfg.relay_rewrite_keep_alive !== undefined
+                          && cfg.relay_rewrite_keep_alive !== '')
+            ? cfg.relay_rewrite_keep_alive : 0;
+    } else if (cfg.keep_alive) {
+        req.keep_alive = cfg.keep_alive;
+    }
+
+    try {
+        var headers = { 'Authorization': 'Bearer ' + cfg.api_key };
+        var http = new HTTPRequest(undefined, undefined, headers, cfg.timeout);
+        var raw  = http.Post(cfg.endpoint, JSON.stringify(req), undefined, undefined,
+                             'application/json');
+        if (http.response_code != 200) return text;
+        var resp = JSON.parse(raw);
+        var out  = resp && resp.message && resp.message.content;
+        if (out === undefined || out === null) return text;
+        out = String(out).replace(/^\s+|\s+$/g, '');
+        /* Strip a wrapping quote pair the model sometimes adds. */
+        out = out.replace(/^["']([\s\S]*?)["']$/, '$1')
+                 .replace(/^\s+|\s+$/g, '');
+        if (!out) return text;
+        /* A perspective shift never sprouts newlines or balloons length;
+         * if it does, the model added content -- keep the original. */
+        if (/[\r\n]/.test(out)) out = out.split(/[\r\n]+/)[0].replace(/^\s+|\s+$/g, '');
+        if (!out || out.length > text.length * 2 + 40) return text;
+        return out;
+    } catch (e) {
+        log(LOG_WARNING, 'chat_llm: relay_perspective_rewrite failed: ' + e);
+        return text;
+    }
+}
+
+/* Re-anchor a relay body's pronouns in place before the tool stores it
+ * (no-op for non-relay tools or pronoun-free bodies). */
+function relay_rewrite_args(cfg, tool, args, env) {
+    if (tool != 'relay_message' || !args || typeof args.text != 'string' || !args.text)
+        return;
+    var sender = (env && env.speaker && (env.speaker.alias || env.speaker.name)) || '';
+    var nt = relay_perspective_rewrite(cfg, args.text, args.recipient || '',
+                                       sender, cfg.bot_name);
+    if (nt && nt !== args.text) args.text = nt;
+}
+
 /* Ollama-native /api/chat path.  Mirrors chat_openai's surface (return
  * value, opts breadcrumbs) but speaks Ollama's request/response shape:
  *   request:  { model, messages, stream, think, keep_alive, options:{
@@ -878,6 +990,10 @@ function chat_ollama(cfg, messages, opts)
                     norelay_path:      _ctx0.norelay_path
                 };
                 var pre_result;
+                /* Re-anchor a relay body's pronouns to the recipient's
+                 * POV before it's stored (no-op for non-relay tools and
+                 * pronoun-free bodies). */
+                relay_rewrite_args(cfg, intent.tool, intent.args, pre_env);
                 try {
                     pre_result = llm_tools_execute(intent.tool,
                                                     intent.args,
@@ -891,7 +1007,7 @@ function chat_ollama(cfg, messages, opts)
                  * returns first-person bot speech for every outcome --
                  * refusals (opt-out / unknown nick / per-recipient or
                  * per-sender cap) carry .error, a successful queue carries
-                 * .note ("Stored. Will deliver the next time X speaks...").
+                 * .note ("Stored. Will deliver the next time X joins or speaks...").
                  * qwen2.5:7b has been observed DISCARDING a refusal result
                  * and fabricating a delivery promise instead ("I'll make
                  * sure X knows"), telling the sender a message was relayed
@@ -1013,6 +1129,9 @@ function chat_ollama(cfg, messages, opts)
             var tc      = tool_calls[tci];
             var tc_name = (tc['function'] && tc['function'].name) || tc.name;
             var tc_args = (tc['function'] && tc['function'].arguments) || tc.arguments || {};
+            /* Re-anchor a relay body's pronouns before storing + logging,
+             * so the recorded tool call reflects what was actually queued. */
+            relay_rewrite_args(cfg, tc_name, tc_args, tc_env);
             opts._tool_calls.push(tc_name + '(' + JSON.stringify(tc_args) + ')');
             var tc_result;
             if (typeof llm_tools_execute == 'function') {

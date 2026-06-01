@@ -2,7 +2,7 @@
  * llm_tools/relay_message.js -- the relay_message tool.
  *
  * Stores a message to be delivered the next time a specific user
- * speaks in any channel the bot is in.  The drain side lives in
+ * joins or speaks in any channel the bot is in.  The drain side lives in
  * chat_llm_irc.js (load_relay() / deliver_pending()); both sides share
  * the data/guru_irc_relay.json queue file.
  *
@@ -77,7 +77,7 @@ function _resolve_recipient(query, env) {
      * is the bot's persisted "we have observed this nick here before"
      * set).  Lets a relay target a nick that was here yesterday but
      * isn't connected right now -- the relay queue holds it for them
-     * the next time they speak. */
+     * until they next join or speak. */
     var seen = (env && env.seen_members) || {};
     if (seen[ql]) return { canonical: seen[ql], source: 'seen' };
 
@@ -234,7 +234,7 @@ function relay_message(args, env) {
         source:    resolved.source,
         queued:    state.messages.length,
         note:      'Stored. Will deliver the next time ' + resolved.canonical
-                 + ' speaks in any channel I am in.'
+                 + ' joins or speaks in any channel I am in.'
     };
 }
 
@@ -247,7 +247,8 @@ llm_tool_register({
             name: 'relay_message',
             description:
                 'CALL THIS to store a message to be delivered the next time '
-              + 'a specific user speaks in any channel the bot is in.  Use '
+              + 'a specific user joins or speaks in any channel the bot is '
+              + 'in.  Use '
               + 'when the caller asks you to pass a message to someone who '
               + 'is not currently here.\n\n'
               + 'TRIGGER PHRASES:\n'
