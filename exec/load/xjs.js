@@ -7,14 +7,16 @@ function xjs_compile(filename) {
 	cwd=backslash(cwd.replace(/[^\\\/]*$/,''));
 	var ssjs_filename=filename+".ssjs";
 
-	// Probably a race condition on Win32
-	if(file_exists(ssjs_filename)) {
-		if(file_date(ssjs_filename)<=file_date(filename)) {
-			file_remove(ssjs_filename);
-		}
-	}
-
-	if(!file_exists(ssjs_filename)) {
+	// (Re)compile only when the cached .ssjs is missing or older than its
+	// source.  Use strict '<' so a cache written in the same wall-clock second
+	// as its source isn't treated as stale.  We deliberately do NOT remove the
+	// stale cache up front: the recompiled output is written to a unique temp
+	// file and atomically renamed into place below, so a concurrent request
+	// never observes a missing or half-written .ssjs.  (The old code did
+	// file_remove() then recompiled in place, leaving the file absent for the
+	// whole compile -- racing concurrent load()s into "Script file ... does not
+	// exist" / "creating ... No such file or directory" errors on a cold cache.)
+	if(!file_exists(ssjs_filename) || file_date(ssjs_filename)<file_date(filename)) {
 		var file = new File(filename);
 		if(!file.open("r",true,8192)) {
 			writeln("!ERROR " + file.error + " opening " + file.name);
@@ -80,12 +82,39 @@ function xjs_compile(filename) {
 			script += '\n';
 		}
 
-		var f=new File(ssjs_filename);
-		if(f.open("w",false)) {
-			f.write(script);
-			f.close();
-		} else {
+		// Write to a unique temp file, then move it into place.  file_rename()
+		// is atomic and replaces the target on POSIX; on Win32 it fails if the
+		// target exists, so fall back to remove-then-rename there (a far smaller
+		// window than recompiling in place).  Two random() draws make the temp
+		// name collision-proof across concurrent requests.
+		var tmp_filename=format("%s.%08x%08x.tmp", ssjs_filename, random(0x7fffffff), random(0x7fffffff));
+		var f=new File(tmp_filename);
+		if(!f.open("w",false)) {
 			throw new Error(format("%d (%s)", f.error, strerror(f.error)) + " creating " + f.name);
+		}
+		f.write(script);
+		f.close();
+		if(!file_rename(tmp_filename, ssjs_filename)) {
+			// POSIX rename() replaces the target atomically above and never gets
+			// here; reaching this point means Win32, where rename() won't
+			// overwrite an existing file.
+			if(file_exists(ssjs_filename) && file_date(ssjs_filename)>=file_date(filename)) {
+				// A concurrent request already produced an up-to-date cache, so
+				// ours is redundant.  Discard our temp WITHOUT removing the
+				// target -- removing it here is the residual race that left a
+				// concurrent load() with "Script file ... does not exist".
+				file_remove(tmp_filename);
+			}
+			else {
+				// Target is missing or genuinely stale (an actual source edit):
+				// replace it.  This leaves a brief absence window, but only on a
+				// real .xjs change -- rare, and not under cold-cache fan-out.
+				file_remove(ssjs_filename);
+				if(!file_rename(tmp_filename, ssjs_filename)) {
+					file_remove(tmp_filename);
+					throw new Error("error renaming " + tmp_filename + " to " + ssjs_filename);
+				}
+			}
 		}
 	}
 	return(ssjs_filename);
