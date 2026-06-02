@@ -96,6 +96,65 @@ TLS mode 4 (`MQTT_TLS_SBBS`) uses the BBS's own CA + cert internally — an *ext
 
 **MQTT protocol version** — `mosquitto_sub`/`-pub` default to v3.1.1 (4). Match the broker's expectation; for v5 add `-V 5`. Note that the level-as-user-property convention on Synchronet's bare `…/log` topics only works on v5.
 
+## Native access from Synchronet JavaScript (the `MQTT` object)
+
+`mosquitto_sub`/`-pub` are right for **shell diagnostics**, but inside Synchronet
+(a JS module, service, or a chat-bot tool) use the built-in **`MQTT` object** —
+it reads the broker address / port / credentials / TLS straight from the
+`[MQTT]` section of `main.ini`, so there are **no hardcoded broker details or
+secrets** in your script, and it speaks the same config the BBS itself uses.
+
+```javascript
+if (!system.mqtt_enabled)            // gate first -- false if [MQTT] Enabled=false
+    return;
+var mqtt = new MQTT;
+if (!mqtt.connect()) {               // no args: auto-configured from main.ini
+    log(LOG_WARNING, "MQTT connect failed: " + mqtt.error_str);
+    return;
+}
+mqtt.subscribe("sbbs/" + system.qwk_id + "/host/+/server/+");
+var msg;
+while ((msg = mqtt.read(1000, /* object: */ true)) !== false) {
+    // msg.topic, msg.data   (retained messages arrive immediately on connect)
+    print(msg.topic + " => " + msg.data);
+}
+```
+
+Key members (the object extends `Socket`, so socket props apply too):
+
+| Member | Purpose |
+|--------|---------|
+| `system.mqtt_enabled` | bool — is MQTT configured/on? **Gate every MQTT path on this.** |
+| `system.qwk_id` | the `<BBSID>` for building topics (`"sbbs/" + system.qwk_id + …`) |
+| `new MQTT` / `mqtt.connect()` | connect using `main.ini`'s broker/auth/TLS (no args) |
+| `mqtt.subscribe(topic [,qos])` / `mqtt.subscribe_qos` | subscribe (wildcards `+` / `#` allowed) |
+| `mqtt.read(timeout_ms, object)` | next message; `object=true` → `{topic,data}`, else raw; returns `false` on timeout |
+| `mqtt.publish(retain, qos, topic, data)` | publish (see control-plane warnings before using) |
+| `mqtt.broker_addr` / `broker_port` / `username` / `password` | the resolved connection settings (defaults from `main.ini`) |
+| `mqtt.error` / `error_str` / `library` | last-call result + library name/version |
+
+Stock JS examples in `exec/` (read these before writing your own):
+
+- **`mqtt_sub.js`** — generic subscriber (the `connect`/`subscribe`/`read` loop above).
+- **`mqtt_pub.js`** — generic publisher.
+- **`mqtt_spy.js`** — subscribe to a node's `…/output` and render the live screen.
+- **`mqtt_stats.js`** — *publishes* `system.stats` to `sbbs/<BBSID>/stats[/<field>]`.
+
+**Local object model vs. MQTT — pick the right source.** For *this instance's*
+own state, the JS object model is simpler and needs no broker: `system.stats`
+(logons/posts/uploads today, totals), `system.node_list` / the `Node`-status
+files, `bbs`/`client` in a session. Reach for MQTT specifically when you need
+what the local objects **cannot** give you: the **cross-host, whole-BBS** live
+picture (every member host's server states and client counts under one BBSID),
+or a push stream of `action/#` events. Don't round-trip through the broker for a
+number `system.stats` already has.
+
+**Read-only unless you mean it.** Everything under [Control plane](#control-plane--production-impacting-operations)
+(`recycle`, `pause`, `node/+/input`, `node/+/intr`, …) is a `publish()` away. A
+tool exposed to untrusted callers (an IRC bot, a public command) must
+**subscribe only** and never publish to a control topic. Treat MQTT data as
+read-only situational awareness there.
+
 ## Topic hierarchy at a glance
 
 All topics start with `sbbs/<BBSID>` where `<BBSID>` is the QWK BBS ID (SCFG → Message Options). Under that:
@@ -111,15 +170,21 @@ sbbs/<BBSID>/action/<KIND>/<KEY>        ← BBS-wide client actions (see Action 
 sbbs/<BBSID>/host/<HOSTNAME>            ← public host name (retained)
 sbbs/<BBSID>/host/<HOSTNAME>/login_attempts/<IP>  ← retained failed-login aggregate per IP
 sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>      ← server status line (state + counters)
+sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/state/<STATE>  ← retained per-state flag (e.g. .../state/ready)
+sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/served   ← total clients served since start (retained)
+sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/client   ← "<N> total\t<M> max" current/limit (retained)
+sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/client/list   ← tab-delimited rows, one per connected client (retained)
 sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/log      ← console log (level in v5 user property)
 sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/log/<N>  ← console log filtered to level N
-sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/client/action/<KIND>  ← per-server client events
+sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/client/action/<KIND>  ← per-server client events (connect/disconnect/update)
 sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/error_count           ← total errors since server start (retained)
 sbbs/<BBSID>/host/<HOSTNAME>/server/<SERVER>/max_concurrent/<IP>   ← retained term concurrent-connection strikes
 sbbs/<BBSID>/host/<HOSTNAME>/event/log[/<N>]      ← event-thread log
 ```
 
 `<SERVER>` is one of: `term` (Terminal), `mail` (Mail), `ftp` (FTP), `web` (Web), `srvc` (Services).
+
+**One BBSID spans every host.** All hosts that share a QWK ID publish under the same `sbbs/<BBSID>` tree, each as its own `host/<HOSTNAME>`. So a single subscription to `sbbs/<BBSID>/host/+/server/+` gives the live, **cross-host** state of the *whole* BBS (e.g. Vertrauen's `vert`, `git`, plus other member hosts) — something the in-process JS object model can't see, since it only knows its own instance. The server status line is tab-delimited: `<state>\t[<cur>/<max> clients]\t<served> served\t[<n> errors]`.
 
 ### Action topics (BBS-wide client events, non-retained)
 
