@@ -13,7 +13,10 @@ static void trigger_thread(void *args)
 		list_node_t *node;
 		pthread_mutex_lock(&jsrt_mutex);
 		for (node = listFirstNode(&rt_list); node; node = listNextNode(node))
-			JS_TriggerAllOperationCallbacks(static_cast<JSRuntime *>(node->data));
+			// Defensive: a NULL runtime must never reach the list, but skip one
+			// if it does rather than dereferencing it in the JS engine.
+			if (node->data != NULL)
+				JS_TriggerAllOperationCallbacks(static_cast<JSRuntime *>(node->data));
 		pthread_mutex_unlock(&jsrt_mutex);
 		SLEEP(100);
 	}
@@ -38,7 +41,11 @@ JSRuntime * jsrt_GetNew(int maxbytes, unsigned long timeout, const char *filenam
 	pthread_once(&jsrt_once, jsrt_init);
 	pthread_mutex_lock(&jsrt_mutex);
 	ret = JS_NewRuntime(maxbytes);
-	listPushNode(&rt_list, ret);
+	// JS_NewRuntime() returns NULL on failure (e.g. under memory pressure).
+	// Don't list a NULL runtime: trigger_thread would dereference it and crash
+	// the whole process in JS_TriggerAllOperationCallbacks.
+	if (ret != NULL)
+		listPushNode(&rt_list, ret);
 	pthread_mutex_unlock(&jsrt_mutex);
 	return ret;
 }
@@ -47,6 +54,11 @@ void jsrt_Release(JSRuntime *rt)
 {
 	list_node_t *node;
 
+	// Nothing to release for a failed (NULL) runtime; JS_DestroyRuntime(NULL)
+	// would itself crash.  Callers currently bail before getting here, but
+	// guard anyway to keep a NULL runtime from ever crashing us.
+	if (rt == NULL)
+		return;
 	pthread_mutex_lock(&jsrt_mutex);
 	node = listFindNode(&rt_list, rt, 0);
 	if (node)
