@@ -366,6 +366,26 @@ function root_index()
 	writeln("</ul>");
 }
 
+// Crawler guard (stopgap): the per-file ?view= path renders archive listings
+// and images and explodes the crawlable URL space (every file x view), while
+// the index materializes the entire file_area on each request -- a large
+// allocation in the 32-bit mozjs185 JS heap.  Aggressive bots ignore
+// robots.txt (webv4 already sends Disallow: /) and walk thousands of these,
+// exhausting the heap; mozjs185 then turns the allocation failure into an
+// access violation that crashes the whole in-process server (sbbsctrl) rather
+// than a catchable JS exception.  Deflect known crawlers from the heavy ?view=
+// queries with a cheap 429 -- they can still index the directory/library
+// listings, and real browsers are unaffected.  Remove once the SM128/64-bit
+// migration lands (OOM becomes catchable there).
+if(http_request.query["view"] !== undefined
+	&& /bot|crawl|spider|slurp|scrapy|wget|curl|python-requests|facebookexternalhit|ahrefs|semrush|mj12bot|dotbot|bytespider|gptbot|claudebot|amazonbot|baiduspider|yandex|petalbot/i
+		.test("" + (http_request.header["user-agent"] || ""))) {
+	http_reply.status = "429 Too Many Requests";
+	http_reply.header["Retry-After"] = "86400";
+	write("Automated crawling of file views is not permitted.");
+	exit();
+}
+
 if(http_request.virtual_path[http_request.virtual_path.length - 1] != '/') {
 	http_reply.status = "301 Moved";
 	http_reply.header.Location = http_request.virtual_path + '/';
