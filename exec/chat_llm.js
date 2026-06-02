@@ -821,6 +821,118 @@ function relay_rewrite_args(cfg, tool, args, env) {
     if (nt && nt !== args.text) args.text = nt;
 }
 
+/* ---- Unprompted acknowledgement line ----
+ *
+ * The IRC adapter calls this when a user makes a clear, brief reply to the
+ * bot's OWN last line and its deterministic gate has decided to react.
+ * Three kinds:
+ *   'closer'     -- a social acknowledgement ("ah ok", "thanks") -> brief
+ *                   warm closing line.
+ *   'correction' -- pushback ("no, that's wrong") -> a GRACIOUS concession
+ *                   that never re-asserts or argues.
+ *   'answer'     -- the bot's last line was a question and the user answered
+ *                   it -> a brief reaction that does NOT ask a new question
+ *                   or start a new topic (so it acknowledges without
+ *                   restarting the volley).
+ * Returns ONE short in-character line.  Always falls back to a fixed canned
+ * line if the model rambles, asks a question, or errors -- so the caller
+ * gets something short and safe (degrades to fixed-phrase acks, never
+ * silence with a half-formed reply). */
+var ACK_CLOSER_FALLBACKS = [
+    'np!', 'anytime!', 'glad that helped', 'sure thing', 'happy to help'
+];
+var ACK_CORRECTION_FALLBACKS = [
+    'ah, good catch -- thanks', 'noted, thanks', 'fair enough -- thanks for the correction',
+    'good point -- thanks'
+];
+var ACK_ANSWER_FALLBACKS = [
+    'ha, fair enough', 'right on', 'gotcha', 'fair enough', 'sounds about right'
+];
+function _ack_fallback(kind) {
+    var a = (kind === 'correction') ? ACK_CORRECTION_FALLBACKS
+          : (kind === 'answer')     ? ACK_ANSWER_FALLBACKS
+          :                           ACK_CLOSER_FALLBACKS;
+    return a[Math.floor(Math.random() * a.length)];
+}
+
+/* Classify a short, unaddressed message as a reaction to the bot's last
+ * line: 'closer' (social acknowledgement -- the WHOLE message is a brief
+ * "ok / thanks / makes sense"-type reply), 'correction' (pushback -- "no,
+ * that's wrong"), or null (not a reaction to ack).  Bounded to short
+ * messages so a real follow-up question or statement doesn't match.  Pure
+ * string shape test -- the IRC adapter's gate decides WHETHER this line is
+ * even eligible (immediately follows the bot's line, same speaker, etc.). */
+function ack_kind(text) {
+    var s = String(text || '').replace(/^\s+|\s+$/g, '');
+    if (!s || s.length > 120) return null;
+    /* Correction / pushback -- opens with a negation (but NOT "no idea /
+     * no problem / no worries / no thanks", which aren't corrections) or
+     * contains a clear "you're wrong" marker. */
+    if (/^(?:no+|nope|nah)\b(?!\s+(?:idea|problem|worries|worry|thanks?|clue|biggie|doubt|sweat|probs?))/i.test(s)
+        || /^(?:actually|wrong|incorrect)\b/i.test(s)
+        || /\b(?:that'?s\s+(?:wrong|not\s+right|incorrect|false|backwards)|not\s+(?:quite|right|correct|true)|you'?re\s+wrong|isn'?t\s+(?:right|correct))\b/i.test(s))
+        return 'correction';
+    /* Social closer -- the ENTIRE message is one or more brief
+     * acknowledgement words ("ah ok thanks", "got it, cool"). */
+    if (/^(?:(?:ah+|oh+|ok(?:ay)?|k+|kk|alright|aight|right|got\s?it|gotcha|i\s+see|makes\s+sense|fair(?:\s+enough)?|cool|nice|sweet|awesome|great|perfect|thanks?(?:\s+(?:a\s+lot|so\s+much|man|dude|mate))?|thx|ty|tysm|tnx|cheers|ta|noted|word|huh|interesting|neat|good\s+(?:to\s+know|stuff|point|call)|lol|lmao|haha+|hehe+|nice\s+one|np)[\s,.!]*)+$/i.test(s))
+        return 'closer';
+    return null;
+}
+
+function chat_llm_ack(cfg, bot_line, user_reply, kind) {
+    var canned = _ack_fallback(kind);
+    var sys;
+    if (kind === 'correction') {
+        sys = 'A user just corrected or pushed back on something you said. You are '
+            + '"@bot@", a friendly but humble BBS guru. Reply with ONE short, '
+            + 'gracious line that CONCEDES the point and thanks them -- do NOT '
+            + 're-assert, defend, or argue. Max ~12 words. No questions, no new '
+            + 'topics, no follow-up. Output only the line.';
+    } else if (kind === 'answer') {
+        sys = 'You asked the user a question and they just answered it. You are '
+            + '"@bot@", a friendly BBS guru. Reply with ONE short, warm line that '
+            + 'REACTS to their answer -- do NOT ask another question and do NOT '
+            + 'start a new topic. Max ~15 words. Output only the line.';
+    } else {
+        sys = 'A user just acknowledged something you said with a brief reaction '
+            + '("ok", "thanks", "makes sense", etc.). You are "@bot@", a friendly '
+            + 'BBS guru. Reply with ONE short, warm closing line. Max ~12 words. '
+            + 'No questions, no new topics, no follow-up. Output only the line.';
+    }
+    sys = sys.replace(/@bot@/g, cfg.bot_name || 'the guru');
+    var req = {
+        model: cfg.model,
+        messages: [
+            { role: 'system', content: sys },
+            { role: 'user',   content: 'You said: "' + String(bot_line || '').slice(0, 300)
+                + '"\nThey replied: "' + String(user_reply || '').slice(0, 200) + '"' }
+        ],
+        stream: false, think: false,
+        options: { temperature: 0.5, num_predict: 40, num_ctx: cfg.num_ctx || undefined }
+    };
+    if (cfg.keep_alive) req.keep_alive = cfg.keep_alive;
+    try {
+        var headers = { 'Authorization': 'Bearer ' + cfg.api_key };
+        var http = new HTTPRequest(undefined, undefined, headers, cfg.timeout);
+        var raw  = http.Post(cfg.endpoint, JSON.stringify(req), undefined, undefined,
+                             'application/json');
+        if (http.response_code != 200) return canned;
+        var resp = JSON.parse(raw);
+        var out  = resp && resp.message && resp.message.content;
+        if (out === undefined || out === null) return canned;
+        out = String(out).replace(/^\s+|\s+$/g, '');
+        if (/[\r\n]/.test(out)) out = out.split(/[\r\n]+/)[0].replace(/^\s+|\s+$/g, '');
+        out = out.replace(/^["']([\s\S]*?)["']$/, '$1').replace(/^\s+|\s+$/g, '');
+        /* An ack is short, declarative, single-line.  Reject empty, long,
+         * or question results -> safe canned fallback. */
+        if (!out || out.length > 80 || /\?\s*$/.test(out)) return canned;
+        return out;
+    } catch (e) {
+        log(LOG_WARNING, 'chat_llm: chat_llm_ack failed: ' + e);
+        return canned;
+    }
+}
+
 /* Ollama-native /api/chat path.  Mirrors chat_openai's surface (return
  * value, opts breadcrumbs) but speaks Ollama's request/response shape:
  *   request:  { model, messages, stream, think, keep_alive, options:{

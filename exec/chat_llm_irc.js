@@ -62,6 +62,32 @@
  *                                             for "high confidence"
  *                                             (default 8.0; baseline
  *                                             injection threshold is 3.5)
+ *   irc_intervention_min_tokens            -- minimum content-token count a
+ *                                             question must have to qualify
+ *                                             for intervention; a single
+ *                                             content word can't carry a
+ *                                             "high confidence" score
+ *                                             (default 2)
+ *   irc_ack_enabled                        -- acknowledge a clear, brief
+ *                                             reply to the bot's OWN last
+ *                                             line: a social closer ("ah
+ *                                             ok", "thanks"), a correction
+ *                                             ("no, that's wrong"), or an
+ *                                             answer to a question the bot
+ *                                             itself just asked. One short
+ *                                             in-character line, bare (no
+ *                                             nick prefix); never two in a
+ *                                             row (you always get the last
+ *                                             word). Default on; set false
+ *                                             to disable.
+ *   irc_ack_window                         -- max seconds after the bot's
+ *                                             line for a reply to count as
+ *                                             an ack (default 90)
+ *   irc_ack_cooldown                       -- minimum seconds between acks
+ *                                             per channel (default 90)
+ *   irc_ack_closer_chance                  -- probability (0..1) of acking a
+ *                                             social closer; corrections are
+ *                                             always handled (default 0.9)
  */
 
 load("sockdefs.js");
@@ -129,6 +155,17 @@ var IRC_NICKSERV_PASSWORD     = cfg.irc_nickserv_password || "";
 var INTERVENTION_WAIT         = parseInt(cfg.irc_intervention_wait, 10) || 120;
 var INTERVENTION_COOLDOWN     = parseInt(cfg.irc_intervention_cooldown, 10) || 900;
 var INTERVENTION_MIN_SCORE    = parseFloat(cfg.irc_intervention_min_score_per_token) || 8.0;
+var INTERVENTION_MIN_TOKENS   = parseInt(cfg.irc_intervention_min_tokens, 10) || 2;
+
+/* Unprompted acknowledgement of a clear, brief reply to the bot's own
+ * last line (a social closer or a correction).  Heavily gated; see
+ * ack_kind() + the ack block in handle_privmsg().  Default ON. */
+var ACK_ENABLED               = !/^(?:false|0|no|off)$/i.test(String(cfg.irc_ack_enabled));
+var ACK_WINDOW                = parseInt(cfg.irc_ack_window, 10) || 90;
+var ACK_COOLDOWN              = parseInt(cfg.irc_ack_cooldown, 10) || 90;
+var ACK_CLOSER_CHANCE         = (cfg.irc_ack_closer_chance !== undefined
+                                 && cfg.irc_ack_closer_chance !== '')
+                                ? parseFloat(cfg.irc_ack_closer_chance) : 0.9;
 
 /* Build the alias list -- names the bot answers to when uttered in
  * channel.  The current IRC nick is ALWAYS matched (added at lookup
@@ -314,6 +351,17 @@ function mute_command(input) {
         return "unmute";
     if (/^(mute|mute me|shut up|stfu|be quiet|quiet|silence|hush|shush|stop talking( to me)?|leave me alone)$/.test(s))
         return "mute";
+    /* Looser, conversational "go away" phrasings -- often embedded in a
+     * longer sentence ("fuck off and don't talk to me"), so matched as a
+     * substring rather than anchored.  The verb must follow the
+     * negative/stop word directly so we don't catch unrelated lines
+     * like "how do I stop spam to me".  Note the exact-match unmute
+     * test above already claimed a bare "talk to me", so the
+     * "don't talk to me" form here can't be misread as an unmute. */
+    if (/\b(don'?t|do not|stop|quit|no need to|never)\s+(talk|speak|respond|reply|messag|msg|pm|dm)\w*\s+(to\s+)?me\b/.test(s)
+        || (!/\?$/.test(s)
+            && /\b(go away|fuck off|piss off|buzz off|bugger off|get lost|leave me be)\b/.test(s)))
+        return "mute";
     return null;
 }
 
@@ -473,6 +521,13 @@ function reload_config_if_changed() {
     INTERVENTION_WAIT      = parseInt(cfg.irc_intervention_wait, 10) || 120;
     INTERVENTION_COOLDOWN  = parseInt(cfg.irc_intervention_cooldown, 10) || 900;
     INTERVENTION_MIN_SCORE = parseFloat(cfg.irc_intervention_min_score_per_token) || 8.0;
+    INTERVENTION_MIN_TOKENS = parseInt(cfg.irc_intervention_min_tokens, 10) || 2;
+    ACK_ENABLED            = !/^(?:false|0|no|off)$/i.test(String(cfg.irc_ack_enabled));
+    ACK_WINDOW             = parseInt(cfg.irc_ack_window, 10) || 90;
+    ACK_COOLDOWN           = parseInt(cfg.irc_ack_cooldown, 10) || 90;
+    ACK_CLOSER_CHANCE      = (cfg.irc_ack_closer_chance !== undefined
+                             && cfg.irc_ack_closer_chance !== '')
+                            ? parseFloat(cfg.irc_ack_closer_chance) : 0.9;
     STATIC_ALIASES         = build_aliases(cfg.irc_aliases);
     /* irc_nick / irc_network / irc_channels changes require a
      * reconnect to take effect -- we DON'T auto-reconnect on them
@@ -482,14 +537,21 @@ function reload_config_if_changed() {
         + JSON.stringify(STATIC_ALIASES)
         + " wait=" + INTERVENTION_WAIT
         + " cooldown=" + INTERVENTION_COOLDOWN
-        + " min_score=" + INTERVENTION_MIN_SCORE + ")");
+        + " min_score=" + INTERVENTION_MIN_SCORE
+        + " min_tokens=" + INTERVENTION_MIN_TOKENS + ")");
 }
 
 /* Open-question tracking.  Currently single-channel (we only joined
  * one); generalizing to multi-channel is a key:channel hash. */
 /* Per-channel state.  channel_name (lowercased) -> {
  *   open_question: { text, nick, when } | null,
- *   last_intervention: system.timer value or 0
+ *   last_intervention: system.timer value or 0,
+ *   last_bot: { nick, when, kind, text } | null,  // bot's most recent line;
+ *             kind 'reply'|'intervention' is substantive (ack-eligible),
+ *             set when the bot speaks to a user; nulled the moment any
+ *             user line is handled (so an ack only fires for a direct,
+ *             immediate reply with nobody in between).
+ *   last_ack: system.timer of the last acknowledgement (cooldown)
  * }
  * Independent per channel so a cooldown in #channel1 doesn't gag
  * the bot in #channel2. */
@@ -497,7 +559,8 @@ var channel_state = {};
 function chan_state(name) {
     var k = String(name).toLowerCase();
     if (!channel_state[k])
-        channel_state[k] = { open_question: null, last_intervention: 0 };
+        channel_state[k] = { open_question: null, last_intervention: 0,
+                             last_bot: null, last_ack: 0 };
     return channel_state[k];
 }
 
@@ -823,7 +886,12 @@ function is_high_confidence(question) {
     var idx = load_index(PERSONA, cfg);
     if (!idx) return false;
     var tokens = tokenize_query(question);
-    if (tokens.length === 0) return false;
+    /* A single content word can't carry a high-confidence score: the
+     * per-token average below is then just the raw BM25 hit with no
+     * averaging, so a lone high-salience term (a name like "Deuce", a
+     * corpus keyword like "binkp") trivially clears the floor.  Require
+     * a minimum number of content tokens before we'll volunteer. */
+    if (tokens.length < INTERVENTION_MIN_TOKENS) return false;
     var hits = bm25_search(idx, tokens, 1, cfg.index_source_weights);
     if (!hits.length) return false;
     var per_token = hits[0].score / tokens.length;
@@ -865,6 +933,32 @@ function strip_address(text) {
      * (commas, em-dashes) we leave alone to avoid changing meaning. */
     t = t.replace(/\s+([.!?])/g, "$1");
     return t.replace(/^\s+|\s+$/g, "");
+}
+
+/* True when `text` is essentially just a ping at another channel
+ * participant -- a bare nick optionally followed by '?' or address
+ * punctuation ("Deuce ?", "Deuce:", "nelgin?") -- rather than a
+ * question for the room.  These must NOT be recorded as open
+ * questions: the user is trying to get a specific person's attention,
+ * not asking the bot (or anyone) something it could answer.  Only
+ * fires when the lone remaining word names someone the bot has seen
+ * on this channel (current member or ever-seen) and isn't one of the
+ * bot's own address-names. */
+function is_nick_ping(channel, text) {
+    var s = String(text || "").replace(/^\s+|\s+$/g, "");
+    /* Drop a trailing '?' (and any space before it) plus any trailing
+     * address punctuation, then require what's left to be a single
+     * bare word. */
+    s = s.replace(/\s*\?+\s*$/, "").replace(/[:,;]+\s*$/, "")
+         .replace(/^\s+|\s+$/g, "");
+    if (!s || /\s/.test(s)) return false;   /* empty or multi-word */
+    var lc = s.toLowerCase();
+    /* An address to the bot itself is not a ping at someone else. */
+    var names = current_address_names();
+    for (var i = 0; i < names.length; i++)
+        if (names[i].toLowerCase() === lc) return false;
+    /* Must name someone the bot has actually seen in this channel. */
+    return !!chan_members(channel)[lc] || !!chan_seen(channel)[lc];
 }
 
 /* ---- Message handling ---- */
@@ -955,13 +1049,78 @@ function handle_privmsg(from_nick, target, text) {
         }
         if (is_muted(from_nick)) return;   /* muted: stay silent */
         var reply = dispatch_chat(from_nick, input, target);
-        if (reply) irc_say(target, from_nick + ": " + reply);
+        if (reply) {
+            irc_say(target, from_nick + ": " + reply);
+            /* Remember our line so a brief reply to it can be acknowledged. */
+            st.last_bot = { nick: from_nick, when: system.timer,
+                            kind: "reply", text: reply };
+        }
         return;
+    }
+
+    /* --- Acknowledgement: a brief, clear reply to the bot's OWN last line
+     * (a social closer like "ah ok / thanks", or a correction).  Read and
+     * CONSUME last_bot first -- any user line means the bot's prior line is
+     * no longer the immediately-preceding one, which also enforces "nobody
+     * spoke in between" and "never two acks in a row" (an ack doesn't set
+     * last_bot, so the next line can't ack again -- the user gets the last
+     * word). */
+    var lb = st.last_bot;
+    st.last_bot = null;
+
+    /* A "go away / stop talking to me" line right after the bot spoke
+     * TO this user -- its last line was a reply/intervention directed at
+     * them, still within the ack window -- is almost certainly aimed at
+     * the bot even though it didn't name it.  Honor it as a mute: this
+     * is the unaddressed counterpart to the "mute me" handling in the
+     * addressed branch above (where mute_command is only consulted when
+     * the bot is explicitly addressed).  Muting also drops any pending
+     * open_question from this user so check_intervention won't volunteer
+     * an answer to them either. */
+    if (lb && lb.nick === from_nick
+        && (lb.kind === "reply" || lb.kind === "intervention")
+        && (system.timer - lb.when) <= ACK_WINDOW
+        && mute_command(text) === "mute") {
+        set_mute(from_nick, true);
+        if (st.open_question && st.open_question.nick === from_nick)
+            st.open_question = null;
+        blog("auto-mute (unaddressed go-away) nick=" + from_nick
+             + " text=" + JSON.stringify(text));
+        return;
+    }
+
+    if (ACK_ENABLED && lb && lb.nick === from_nick
+        && (lb.kind === "reply" || lb.kind === "intervention")
+        && (system.timer - lb.when) <= ACK_WINDOW
+        && (system.timer - st.last_ack) >= ACK_COOLDOWN
+        && !is_muted(from_nick)
+        && !/\?\s*$/.test(text)) {
+        var akind = ack_kind(text);
+        /* If OUR last line was a question to them and they just answered it
+         * (a short reply that isn't a closer/correction -- the user's line
+         * is already known not to be a question), react too: ignoring an
+         * answer to a question we asked is the rude case. */
+        if (!akind && /\?\s*$/.test(String(lb.text || ""))
+            && text.replace(/^\s+|\s+$/g, "").length <= 80)
+            akind = "answer";
+        /* Closers are probabilistic; corrections and answers always react. */
+        if (akind && (akind !== "closer" || Math.random() < ACK_CLOSER_CHANCE)) {
+            var aline = chat_llm_ack(cfg, lb.text, text, akind);
+            if (aline) {
+                irc_say(target, aline);   /* bare -- no "nick: " prefix */
+                st.last_ack = system.timer;
+            }
+            return;
+        }
     }
 
     /* Track open question.  A new question replaces any previous
      * unanswered one in THIS channel (latest unanswered wins). */
     if (/\?\s*$/.test(text)) {
+        /* A bare ping at another participant ("Deuce ?") is not a
+         * question for the room -- don't arm an intervention on it.
+         * Leave any existing open_question untouched. */
+        if (is_nick_ping(target, text)) return;
         st.open_question = {
             text: text,
             nick: from_nick,
@@ -1008,7 +1167,13 @@ function check_intervention() {
         var reply = dispatch_chat(st.open_question.nick,
                                   st.open_question.text,
                                   chan);
-        if (reply) irc_say(chan, st.open_question.nick + ": " + reply);
+        if (reply) {
+            irc_say(chan, st.open_question.nick + ": " + reply);
+            /* An intervention is a substantive line too -- let the asker's
+             * brief reply to it be acknowledged. */
+            st.last_bot = { nick: st.open_question.nick, when: system.timer,
+                            kind: "intervention", text: reply };
+        }
         st.last_intervention = system.timer;
         st.open_question = null;
     }
