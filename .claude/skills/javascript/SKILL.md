@@ -143,57 +143,78 @@ nor the `finally` runs. (Verified: SIGTERM a spinning script with a `catch`, a
 disables auto-terminate before evaluating the handlers, so their **File I/O
 completes** during teardown.
 
-Net rule: **don't rely on `finally` for cleanup that must survive an
-operator-terminate / disconnect-reap — use `js.on_exit`.** (`finally` *does*
-run on the ordinary paths: normal return, a thrown/uncaught JS exception. It's
-specifically the forced-termination abort that skips it.)
+### ⚠️ Register `on_exit` at the script's top level — *not* inside a function
 
-### ⚠️ The handler runs in the script's GLOBAL scope — not where you registered it
+This is the subtle, expensive one, and it **differs by how the script was
+launched**. At exit the host calls `js_EvalOnExit(cx, obj, …)`; the handler
+string is compiled and executed against `obj`, and **`obj` depends on the
+launcher**:
 
-The handler string is compiled and executed against the **global object**
-(`JS_CompileScript` / `JS_ExecuteScript` in `js_EvalOnExit`). Name resolution
-therefore sees only **top-level** (global) `var`s / `function`s and
-global-object properties — **not** locals or functions nested inside the
-function that *called* `js.on_exit`. A nested handler silently throws at exit
-(`TypeError: <name> is not a function`) and your cleanup never runs:
+- **`jsexec`, login/logon/timed-event modules** run *in the global object*, and
+  the host evaluates on_exit against the **global** (`jsexec.cpp` passes
+  `js_glob`). That branch runs the global handler list **and recurses every
+  child scope**, so it finds a handler no matter where it was registered.
+- **Doors, and most `bbs.exec` / `;exec` invocations** (and `js.exec(file, {})`)
+  run in a *fresh child scope* object — `js_scope`, created in
+  `sbbs_t::js_execfile` (`exec.cpp:595`) — and the host evaluates on_exit against
+  **that `js_scope`** (`exec.cpp:701`). That non-global branch looks up **only
+  `js_scope`** and does **not** recurse. (`;exec` reaches this via
+  `str_cmds.js` → `bbs.exec`.)
+
+Meanwhile **registration** records the scope chain *at the moment you call
+`js.on_exit()`* (`JS_GetScopeChain`, `js_internal.cpp`): at the script's top
+level that's `js_scope`; **inside a function it's that function's call object** —
+a different object. So a handler registered inside a function is filed under the
+call object, which a door's `EvalOnExit(js_scope)` never looks at → it **silently
+never runs**:
 
 ```javascript
-// WRONG — flush() is nested in main(); at exit the handler can't see it:
+// WRONG in a door — registered inside main(), so it's filed under main()'s call
+// object; the door's EvalOnExit(js_scope) never looks there and the handler
+// SILENTLY never runs. (It "works" under jsexec, which recurses child scopes —
+// so a jsexec test passes while the real door is dead. This actually shipped.)
 function main() {
-    var game = ...;
-    function flush() { /* save game */ }      // local to main()
-    js.on_exit("flush()");                     // at exit -> TypeError: flush is not a function (silent)
+    g_game = ...;
+    js.on_exit("flush()");          // filed under main()'s scope, not js_scope
 }
 main();
 
-// RIGHT — handler AND the state it needs are global; main() wires the state:
-var g_game = null;                             // global state
-function flush() {                             // global function
-    if (!g_game) return;
-    /* save g_game */
+// RIGHT — register at TOP LEVEL (captured scope == js_scope, which is what the
+// host evaluates). Handler fn + its state are top-level too, so they're reachable.
+var g_game = null;                  // top-level state (lives in js_scope)
+function flush() { if (g_game) { /* save */ } }   // top-level function
+function main() { g_game = ...; }   // wires the state before exit
+if (typeof MYMOD_NO_MAIN == 'undefined') {
+    js.on_exit("flush()");          // registered at top level, before main()
+    main();
 }
-function main() {
-    var game = ...;
-    g_game = game;                             // hand the state out to global scope
-    js.on_exit("flush()");
-}
-main();
 ```
 
-This bites doors/modules that wrap everything in a `main()` (e.g. behind a
-`*_NO_MAIN` sentinel for headless syntax-checking, see "Syntax-checking … a
-module that acts at load time"). It's compatible with that pattern: top-level
-`var` / `function` **declarations** are side-effect-free, so they don't break
-the headless-load contract — only the `main()` *call* is gated. Keep the handler
-and its state at the top level and assign the state from inside `main()` before
-you register the handler.
+Top-level `var` / `function` **declarations** are side-effect-free, so this stays
+compatible with the `*_NO_MAIN` headless-syntax-check pattern (only the `main()`
+*call* is gated). Keep the handler and its state at top level; wire the state
+from inside `main()` before exit.
 
-**Testing caveat:** an in-process test that calls your module's functions
-directly **never exercises `on_exit`** — the handler only fires at real script
-termination. Cover it **out-of-process**: run the module under `jsexec` so it
-actually exits, then assert the side effect (e.g. the file it was supposed to
-write) **externally** (a shell wrapper). An in-process unit test will happily
-pass while the exit handler is dead.
+### Prefer `try/finally` for clean-unwind cleanup; use `on_exit` only as the forced-terminate backstop
+
+Because of the scope trap above — and because a door **disconnect is a clean
+unwind**, not a forced kill (carrier drop → `console.getstr` returns → your code
+returns normally) — the reliable place for "save on the way out" in a door is a
+**`try { … } finally { … }`** around your main loop. `finally` is *in scope* (it
+sees your locals directly), runs on every clean exit (disconnect, idle-hangup,
+normal return, `exit()`, thrown exception), and sidesteps the on_exit scope
+subtleties entirely. Reserve `js.on_exit` (registered at top level) for the one
+case `finally` misses: an **operator-terminate / recycle** (forced, uncatchable).
+Belt-and-suspenders: do the real work in `finally`, and keep a top-level
+`on_exit` that calls the same handler for the forced case.
+
+**Testing caveat:** an in-process test that calls your functions directly never
+exercises `on_exit` (it only fires at real termination) — *and* a `jsexec`
+wrapper does **not** reproduce a door's on_exit scope, because `jsexec` evaluates
+against the global and recurses child scopes while a door evaluates against the
+child `js_scope` and does not. So a green `jsexec` on_exit test can still be a
+door no-op. Treat `finally` as the dependable mechanism and verify door-only
+behavior on an actual node.
 
 ## load() and require()
 
