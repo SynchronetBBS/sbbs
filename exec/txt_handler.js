@@ -22,8 +22,11 @@ var lines = file.readAll(256 * 1024);
 var fileMtime = file.date;
 file.close();
 
-// Serve raw text if ?raw is in the query string
-if(is_web && http_request.query.raw != undefined) {
+// Serve raw text/plain (no HTML viewer) when ?raw is requested, or for
+// machine-read files like robots.txt that crawlers cannot parse if wrapped
+// in HTML (a text/html robots.txt is treated as absent -> bots crawl freely).
+var basename = filename.replace(/^.*[\/\\]/, '');
+if(is_web && (http_request.query.raw != undefined || /^robots\.txt$/i.test(basename))) {
 	http_reply.header["Content-Type"] = "text/plain; charset=utf-8";
 	write(lines.join("\n"));
 	exit();
