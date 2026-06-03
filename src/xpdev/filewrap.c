@@ -112,7 +112,13 @@ int xp_lockfile(int fd, off_t pos, off_t len, bool block)
 	if (result == -1 && errno != EINVAL)
 		return -1;
 #elif !defined(__QNX__) && !defined(__solaris__)
+	/* flock() isn't forced to a lock type by the fd's access mode the way
+	   fcntl() is, so mirror the fcntl path: a read-only fd takes a shared
+	   lock, so concurrent readers don't serialize. */
 	int op = LOCK_EX;
+	int flags = fcntl(fd, F_GETFL);
+	if (flags != -1 && (flags & (O_RDONLY | O_RDWR | O_WRONLY)) == O_RDONLY)
+		op = LOCK_SH;
 	if (!block)
 		op |= LOCK_NB;
 	/* use flock (doesn't work over NFS) */
