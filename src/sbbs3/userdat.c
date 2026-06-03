@@ -352,6 +352,24 @@ bool lockuserdat(int file, int user_number)
 	return attempt < LOOP_USERDAT;
 }
 
+/* Like lockuserdat() but takes a shared (read) lock, so multiple readers of the
+   same user record proceed concurrently (conflicting only with a writer).  Used
+   for read-only access (getuserdat), so user-record reads don't serialize - a
+   severe contention source when the user base is on a network (SMB) share. */
+bool rdlockuserdat(int file, int user_number)
+{
+	if (!VALID_USER_NUMBER(user_number))
+		return false;
+
+	off_t    offset = userdatoffset(user_number);
+	unsigned attempt = 0;
+	while (attempt < LOOP_USERDAT && rdlock(file, offset, USER_RECORD_LINE_LEN) == -1) {
+		attempt++;
+		FILE_RETRY_DELAY(attempt, LOCK_RETRY_DELAY);
+	}
+	return attempt < LOOP_USERDAT;
+}
+
 bool unlockuserdat(int file, int user_number)
 {
 	if (!VALID_USER_NUMBER(user_number))
@@ -392,7 +410,10 @@ int readuserdat(scfg_t* cfg, int user_number, char* userdat, size_t size, int in
 		return USER_SEEK_ERROR;
 	}
 
-	if (!lockuserdat(file, user_number)) {
+	/* Read-only access takes a shared lock (concurrent readers OK); when the
+	   lock is left held for a subsequent write (leave_locked), it must be an
+	   exclusive lock. */
+	if (!(leave_locked ? lockuserdat(file, user_number) : rdlockuserdat(file, user_number))) {
 		if (file != infile)
 			close(file);
 		return USER_LOCK_ERROR;

@@ -145,6 +145,29 @@ int unlock(int fd, off_t pos, off_t len)
 	return 0;
 }
 
+/* Sets a shared (read) lock on a portion of a file: allows concurrent readers,
+   conflicting only with an exclusive (write) lock.  Non-blocking, like lock(). */
+int rdlock(int fd, off_t pos, off_t len)
+{
+#if defined USE_FCNTL_LOCKS
+	struct flock alock = {0};
+
+	alock.l_type = F_RDLCK;     /* shared/read lock */
+	alock.l_whence = L_SET;     /* SEEK_SET */
+	alock.l_start = pos;
+	alock.l_len = len;
+
+	int result = fcntl(fd, F_SETLK, &alock);
+	if (result == -1 && errno != EINVAL)
+		return -1;
+#elif !defined(__QNX__) && !defined(__solaris__)
+	/* use flock (doesn't work over NFS) */
+	if (flock(fd, LOCK_SH | LOCK_NB) != 0 && errno != EOPNOTSUPP)
+		return -1;
+#endif
+	return 0;
+}
+
 /* Opens a file in specified sharing (file-locking) mode */
 /*
  * This is how it *SHOULD* work:
@@ -240,9 +263,11 @@ int sopen(const char *fn, int sh_access, int share, ...)
 
 #elif defined(_MSC_VER) || defined(__MINGW32__) || defined(__DMC__)
 
-#include <io.h>             /* tell */
+#include <io.h>             /* tell, _get_osfhandle */
 #include <stdio.h>          /* SEEK_SET */
 #include <sys/locking.h>    /* _locking */
+#include <errno.h>          /* errno, EACCES */
+#include <windows.h>        /* LockFileEx/UnlockFileEx, HANDLE, OVERLAPPED */
 
 /* Fix MinGW locking.h typo */
 #if defined LK_UNLOCK && !defined LK_UNLCK
@@ -251,16 +276,44 @@ int sopen(const char *fn, int sh_access, int share, ...)
 
 int unlock(int file, off_t offset, off_t size)
 {
-	int   i;
-	off_t pos;
+	HANDLE h = (HANDLE)_get_osfhandle(file);
+	if (h == INVALID_HANDLE_VALUE)
+		return -1;
 
-	pos = tell(file);
-	if (offset != pos)
-		(void)lseek(file, offset, SEEK_SET);
-	i = _locking(file, LK_UNLCK, (long)size);
-	if (offset != pos)
-		(void)lseek(file, pos, SEEK_SET);
-	return i;
+	LARGE_INTEGER off, len;
+	off.QuadPart = offset;
+	len.QuadPart = size;
+	OVERLAPPED ov = {0};
+	ov.Offset = off.LowPart;
+	ov.OffsetHigh = off.HighPart;
+	/* UnlockFileEx releases the lock on this range whether it was taken
+	   exclusively (lock/xp_lockfile) or shared (rdlock). */
+	if (!UnlockFileEx(h, 0, len.LowPart, len.HighPart, &ov))
+		return -1;
+	return 0;
+}
+
+/* Sets a shared (read) lock on a portion of a file: allows concurrent readers,
+   conflicting only with an exclusive (write) lock.  Non-blocking, like lock().
+   Uses LockFileEx (the only Windows API offering shared byte-range locks;
+   _locking() is exclusive-only). */
+int rdlock(int fd, off_t pos, off_t len)
+{
+	HANDLE h = (HANDLE)_get_osfhandle(fd);
+	if (h == INVALID_HANDLE_VALUE)
+		return -1;
+
+	LARGE_INTEGER off, sz;
+	off.QuadPart = pos;
+	sz.QuadPart = len;
+	OVERLAPPED ov = {0};
+	ov.Offset = off.LowPart;
+	ov.OffsetHigh = off.HighPart;
+	if (!LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY, 0, sz.LowPart, sz.HighPart, &ov)) {
+		errno = EACCES;
+		return -1;
+	}
+	return 0;
 }
 
 #endif  /* !__unix__ && (_MSC_VER || __MINGW32__ || __DMC__) */
@@ -418,6 +471,9 @@ FILE *_fsopen(const char *pszFilename, const char *pszMode, int shmode)
 #endif
 int xp_lockfile(int file, off_t offset, off_t size, bool block)
 {
+#if defined(__BORLANDC__)
+	/* Borland (legacy GUI builds) keeps the exclusive _locking()/locking()
+	   implementation; the LockFileEx path below is for MSVC/MinGW/DMC. */
 	int   i;
 	off_t pos;
 
@@ -430,6 +486,30 @@ int xp_lockfile(int file, off_t offset, off_t size, bool block)
 	if (offset != pos)
 		(void)lseek(file, pos, SEEK_SET);
 	return i;
+#else
+	/* Exclusive byte-range lock via LockFileEx so it pairs with UnlockFileEx
+	   (unlock()) and so rdlock() can take a *shared* lock on the same ranges -
+	   _locking() offers exclusive locks only, which serializes even read-only
+	   record reads (a severe problem over SMB - see GitLab #1153). */
+	HANDLE h = (HANDLE)_get_osfhandle(file);
+	if (h == INVALID_HANDLE_VALUE)
+		return -1;
+
+	DWORD flags = LOCKFILE_EXCLUSIVE_LOCK;
+	if (!block)
+		flags |= LOCKFILE_FAIL_IMMEDIATELY;
+	LARGE_INTEGER off, sz;
+	off.QuadPart = offset;
+	sz.QuadPart = size;
+	OVERLAPPED ov = {0};
+	ov.Offset = off.LowPart;
+	ov.OffsetHigh = off.HighPart;
+	if (!LockFileEx(h, flags, 0, sz.LowPart, sz.HighPart, &ov)) {
+		errno = EACCES;
+		return -1;
+	}
+	return 0;
+#endif
 }
 #endif // _WIN32
 

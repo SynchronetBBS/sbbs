@@ -68,6 +68,7 @@ DLLEXPORT int   fgetuserdat(scfg_t*, user_t*, int file);
 DLLEXPORT int   fputuserdat(scfg_t*, user_t*, int file);
 DLLEXPORT bool  format_userdat(scfg_t*, user_t*, char userdat[]);
 DLLEXPORT bool  lockuserdat(int file, int user_number);
+DLLEXPORT bool  rdlockuserdat(int file, int user_number);
 DLLEXPORT bool  unlockuserdat(int file, int user_number);
 DLLEXPORT int   putuserdat(scfg_t*, user_t*);   // Put user_t into user file
 DLLEXPORT int   newuserdat(scfg_t*, user_t*);   // Create new user in user file
