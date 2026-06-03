@@ -6105,6 +6105,14 @@ js_OperationCallback(JSContext *cx)
 		return JS_FALSE;
 	}
 
+	if (session->js_callback.auto_terminate && !session_check(session, nullptr, nullptr, 0)
+	    && ++session->js_callback.offline_counter >= 10) {
+		JS_ReportWarning(cx, "Disconnected");
+		session->js_callback.counter = 0;
+		JS_SetOperationCallback(cx, js_OperationCallback);
+		return JS_FALSE;
+	}
+
 	ret = js_CommonOperationCallback(cx, &session->js_callback);
 	JS_SetOperationCallback(cx, js_OperationCallback);
 

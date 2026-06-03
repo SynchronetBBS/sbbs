@@ -1024,6 +1024,14 @@ js_OperationCallback(JSContext *cx)
 		return JS_FALSE;
 	}
 
+	if (client->callback.auto_terminate && !socket_check(client->socket, nullptr, nullptr, 0)
+	    && ++client->callback.offline_counter >= 10) {
+		JS_ReportWarning(cx, "Disconnected");
+		client->callback.counter = 0;
+		JS_SetOperationCallback(cx, js_OperationCallback);
+		return JS_FALSE;
+	}
+
 	ret = js_CommonOperationCallback(cx, &client->callback);
 	JS_SetOperationCallback(cx, js_OperationCallback);
 
