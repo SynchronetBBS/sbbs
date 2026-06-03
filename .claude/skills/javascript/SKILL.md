@@ -122,6 +122,79 @@ differ by host:
 
 From Baja: `exec "?modname"` / `exec "*modname"` / `exec_bin "modname"`.
 
+## Script lifecycle: exit handlers (`js.on_exit`)
+
+`js.on_exit("<string>")` registers a string to **evaluate when the script
+terminates** (a LIFO stack — last registered runs first). It is Synchronet's
+`atexit` — there is **no `atexit()`**. Use it for "always run this cleanup no
+matter how we leave" (flush a save, release a lock, restore the terminal) in
+long-lived modules, services, and doors.
+
+**It fires on every exit path, including forced termination — and forced
+termination is NOT a catchable exception.** When the sysop terminates/recycles
+the node (or `jsexec` gets a SIGTERM), the engine aborts the script through its
+operation callback, which returns false after emitting only a *warning*
+("Terminated", `js_CommonOperationCallback` in `src/sbbs3/js_internal.cpp`).
+That is an **uncatchable** abort: no JS exception is thrown, so a surrounding
+`try { … } catch { … } finally { … }` does **not** engage — neither the `catch`
+nor the `finally` runs. (Verified: SIGTERM a spinning script with a `catch`, a
+`finally`, and an `on_exit` handler that each write a marker file — only the
+`on_exit` marker appears.) An `on_exit` handler still runs because `js_EvalOnExit`
+disables auto-terminate before evaluating the handlers, so their **File I/O
+completes** during teardown.
+
+Net rule: **don't rely on `finally` for cleanup that must survive an
+operator-terminate / disconnect-reap — use `js.on_exit`.** (`finally` *does*
+run on the ordinary paths: normal return, a thrown/uncaught JS exception. It's
+specifically the forced-termination abort that skips it.)
+
+### ⚠️ The handler runs in the script's GLOBAL scope — not where you registered it
+
+The handler string is compiled and executed against the **global object**
+(`JS_CompileScript` / `JS_ExecuteScript` in `js_EvalOnExit`). Name resolution
+therefore sees only **top-level** (global) `var`s / `function`s and
+global-object properties — **not** locals or functions nested inside the
+function that *called* `js.on_exit`. A nested handler silently throws at exit
+(`TypeError: <name> is not a function`) and your cleanup never runs:
+
+```javascript
+// WRONG — flush() is nested in main(); at exit the handler can't see it:
+function main() {
+    var game = ...;
+    function flush() { /* save game */ }      // local to main()
+    js.on_exit("flush()");                     // at exit -> TypeError: flush is not a function (silent)
+}
+main();
+
+// RIGHT — handler AND the state it needs are global; main() wires the state:
+var g_game = null;                             // global state
+function flush() {                             // global function
+    if (!g_game) return;
+    /* save g_game */
+}
+function main() {
+    var game = ...;
+    g_game = game;                             // hand the state out to global scope
+    js.on_exit("flush()");
+}
+main();
+```
+
+This bites doors/modules that wrap everything in a `main()` (e.g. behind a
+`*_NO_MAIN` sentinel for headless syntax-checking, see "Syntax-checking … a
+module that acts at load time"). It's compatible with that pattern: top-level
+`var` / `function` **declarations** are side-effect-free, so they don't break
+the headless-load contract — only the `main()` *call* is gated. Keep the handler
+and its state at the top level and assign the state from inside `main()` before
+you register the handler.
+
+**Testing caveat:** an in-process test that calls your module's functions
+directly **never exercises `on_exit`** — the handler only fires at real script
+termination. Cover it **out-of-process**: run the module under `jsexec` so it
+actually exits, then assert the side effect (e.g. the file it was supposed to
+write) **externally** (a shell wrapper). An in-process unit test will happily
+pass while the exit handler is dead.
+
 ## load() and require()
 
 `load()` (and the closely-related `require()`, added v3.17) compiles and runs an
