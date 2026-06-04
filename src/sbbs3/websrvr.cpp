@@ -665,17 +665,34 @@ static bool session_check(http_session_t *session, bool *rd, bool *wr, unsigned 
 		if (wr)
 			*wr = 1;
 		if (rd || wr == NULL) {
-			if (session->tls_pending) {
+			// A decrypted byte is already buffered: readable, so connected.
+			if (session->peeked_valid) {
 				*rd_ptr = true;
 				return true;
 			}
 		}
+		// A bare FIN (peer closed with no close_notify) or a socket error
+		// makes socket_check() return false -> disconnected.
 		ret = socket_check(session->socket, rd_ptr, wr, timeout);
-		if (ret && *rd_ptr) {
-			session->tls_pending = true;
-			return true;
+		if (!ret)
+			return false;
+		if (*rd_ptr) {
+			// Raw socket has bytes: application data, or a TLS close_notify.
+			// cryptPopData() tells them apart (a raw MSG_PEEK can't); it's
+			// non-blocking here (NET_READTIMEOUT==0, set at session setup).
+			int len = 0;
+			int status = cryptPopData(session->tls_sess, &session->peeked, 1, &len);
+			if (cryptStatusOK(status) && len == 1) {
+				session->peeked_valid = true;   // cached; next sess_recv() returns it
+				session->tls_pending  = true;
+				return true;                    // application data -> connected
+			}
+			if (status == CRYPT_ERROR_TIMEOUT)
+				return true;                    // partial record, no app data yet
+			*rd_ptr = false;
+			return false;                       // CRYPT_ERROR_COMPLETE / error -> closed
 		}
-		return ret;
+		return true;                            // idle within timeout -> connected
 	}
 	return socket_check(session->socket, rd, wr, timeout);
 }
@@ -2411,7 +2428,12 @@ static int recvbufsocket(http_session_t *session, char *buf, long count)
 		return 0;
 	}
 
-	while (rd < count && session_check(session, NULL, NULL, startup->max_inactivity * 1000))  {
+	while (rd < count)  {
+		if (!session_check(session, NULL, NULL, startup->max_inactivity * 1000)) {
+			close_session_socket(session);
+			*buf = 0;
+			return 0;
+		}
 		i = sess_recv(session, buf + rd, count - rd, 0);
 		switch (i) {
 			case -1:
