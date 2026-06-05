@@ -10,7 +10,6 @@ endif
 
 all :	\
 	ftp.bin \
-	major.bin \
 	matrix.bin \
 	obv-2.bin \
 	sdos.bin \
