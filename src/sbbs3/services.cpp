@@ -1385,6 +1385,7 @@ static void js_static_service_thread(void* arg)
 	protected_uint32_adjust(&threads_pending_start, -1);
 
 	memset(&service_client, 0, sizeof(service_client));
+	service_client.socket = INVALID_SOCKET; /* static service: no per-client connection */
 	service_client.set = service->set;
 	service_client.service = service;
 	service_client.callback.limit = service->js.time_limit;
