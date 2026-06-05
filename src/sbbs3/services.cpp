@@ -1024,7 +1024,11 @@ js_OperationCallback(JSContext *cx)
 		return JS_FALSE;
 	}
 
-	if (client->callback.auto_terminate && !socket_check(client->socket, nullptr, nullptr, 0)
+	/* Static services have no per-client connection (client->socket is unset/0), so the
+	   disconnection check below does not apply to them - it would false-positive and abort
+	   long-lived static services (e.g. the IRC daemon, MRC connector). */
+	if (client->callback.auto_terminate && !(client->service->options & SERVICE_OPT_STATIC)
+	    && !socket_check(client->socket, nullptr, nullptr, 0)
 	    && ++client->callback.offline_counter >= 10) {
 		JS_ReportWarning(cx, "Disconnected");
 		client->callback.counter = 0;
