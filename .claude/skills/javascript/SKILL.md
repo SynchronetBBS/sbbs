@@ -50,6 +50,31 @@ file is missing, regenerate with `jsexec jsdocs.js`. Falling back: grep the
 authoritative C++ bindings directly — `grep '"name"' src/sbbs3/js_global.cpp`
 for globals, or `src/sbbs3/js_<obj>.c*` for a class.
 
+### Filesystem: globbing and listing subdirectories
+
+`directory(pattern [,flags])` globs the filesystem and returns full paths. Its
+**default flags are `GLOB_MARK`** (`js_global.cpp`), which appends a trailing `/`
+to every directory entry — so directories are self-identifying. To list a dir's
+subdirs, glob `dir + "*"` and keep the entries ending in `/`:
+
+```javascript
+var subs = [], all = directory(js.exec_dir + "*"), i;
+for (i = 0; i < all.length; i++)
+    if (all[i].charAt(all[i].length - 1) == "/") subs.push(all[i]);   // dir, per GLOB_MARK
+```
+
+(`file_isdir(path)` also works but stats each entry; the GLOB_MARK slash is free.
+Pass other `GLOB_*` bits as the 2nd arg to override the default.) Companions:
+`file_exists`, `file_getname` (basename), `fullpath`.
+
+**Always build absolute paths from `js.exec_dir` / `system.*_dir` — never rely on
+the CWD.** A bare relative path resolves against the **process** working
+directory, which under the BBS is always Synchronet's `ctrl/` dir. `sbbs` is
+multi-threaded, so the CWD is **process-global — it cannot be per-node** — which
+is precisely why **no `chdir` is exposed to JS in the BBS** (only the
+single-process `jsexec` tool has one). `js.exec_dir` is the running script's own
+directory (trailing slash); resolve sibling/relative paths against it.
+
 ## The dialect: SpiderMonkey 1.8.5 (ES3-ish + a few ES5 bits)
 
 Synchronet embeds **SpiderMonkey 1.8.5** (JavaScript-C 1.8.5, 2011). Write to
@@ -234,6 +259,40 @@ Library files meant to be `load({}, …)`-ed end with a bare `this;` statement s
 their definitions land in the passed object — this isolates them from the parent
 scope (no name collisions). `load()`'s search path is jsexec's `-i` (default
 `load`).
+
+### ⚠️ `load('file')` runs in the **caller's** scope — capture what other scopes need
+
+The default form `load('file.js')` (no object/thread arg) runs the file **in the
+calling function's scope**, so the file's top-level `var`s and `function`s become
+**locals of whatever function called `load()`** — not globals. A name loaded
+inside one function is invisible to *sibling* functions and to top-level handlers.
+
+This bites the `js.on_exit` pattern especially (see the lifecycle section): a
+top-level handler — or any top-level function — cannot see a value `load()`ed
+inside `main()`.
+
+```javascript
+// WRONG — quetzal is load()ed inside main(), so it's a LOCAL of main().
+function flush() { quetzal.write(...); }   // top-level handler -> ReferenceError: quetzal is not defined
+function main() {
+    load('quetzal.js');                    // `quetzal` becomes a local of main()
+    js.on_exit('flush()');
+}
+
+// RIGHT — capture the reference into a scope the consumer can reach.
+var quetzal_ref = null;                     // top level (js_scope), so flush() can see it
+function flush() { if (quetzal_ref) quetzal_ref.write(...); }
+function main() {
+    load('quetzal.js');
+    quetzal_ref = quetzal;                  // hand main()'s local up to the top level
+}
+```
+
+The same applies to any `load()`ed library used from a sibling scope (e.g.
+`load('http.js')` → capture `HTTPRequest`). The failure is **silent** inside a
+`try{}catch{}` (a swallowed ReferenceError), so a feature can look "done" yet
+never run — verify on the real target (a live door), not just `jsexec`, where
+everything is global. (Same root cause as the on_exit scope trap above.)
 
 ### Constants: C vs JS namespaces (USER_UTF8 ≠ UTF8)
 
@@ -585,6 +644,41 @@ past the limit. These are live on the `console` object:
 | `console.max_getkey_inactivity` | read/write | idle limit in **seconds** (default 300) |
 | `console.getkey_inactivity_warning` | read-only | warn threshold in seconds (derived from `inactivity_warn` %) |
 | `console.last_getkey_activity` | read/**write** | Unix time of last `getkey` activity — writable, so a timed loop can keep it in sync with real keypresses |
+
+### Numbered menus (`console.uselect`) and the auto-pager
+
+`console.uselect` builds a numbered selection menu: one call per item, then a
+final call to display it and read the choice.
+
+```javascript
+for (var i = 0; i < items.length; i++)
+    console.uselect(i, "a Game", items[i].label);   // (index, title, item-text) per item
+var sel = console.uselect(defaultIndex);             // display; returns chosen index, <0 on quit/abort
+```
+
+Two non-obvious behaviors (from `con_hi.cpp` / `js_console.cpp`):
+
+- **The title is auto-prefixed with "Select "** (`text.dat` `SelectItemHdr` =
+  `"Select %s"`). Pass `"a Game"` → renders `Select a Game:`; passing
+  `"Select a Game"` renders the doubled `Select Select a Game:`.
+- **The display call's number argument is the DEFAULT item** — the `[N]` shown and
+  the value returned on ENTER. Pass the index to pre-select (e.g. the last-used
+  item): `console.uselect(lastIndex)`. No-arg defaults to item 0.
+
+**Auto-pager (`[Hit a key]` / `[MORE]`):** the console pauses when
+`console.line_counter` reaches the screen height (if the user has pause enabled).
+After printing a few lines and then clearing — e.g. a one-time notice before a
+menu — the pending count can trip a stray pause. Reset it before the clear:
+
+```javascript
+console.line_counter = 0;   // discard pending more-prompt before console.clear()/menu
+```
+
+`console.printfile(path)` displays a message/ANSI file (intro splashes, help
+screens) — it renders Synchronet Ctrl-A codes **and** ANSI/CP437 as-is, so no mode
+flag is needed for the usual `.msg`/`.ans`. Add `P_PCBOARD` **only** if the file
+uses PCBoard `@X` color codes (otherwise it would misread a literal `@`). Follow
+with `console.pause()` if the next thing clears the screen.
 
 ## The stock exec/*.js ecosystem (API by example)
 
