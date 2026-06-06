@@ -519,6 +519,7 @@ public:
 	RingBuf	inbuf{};
 	RingBuf	outbuf{};
 	bool	WaitForOutbufEmpty(int timeout) { return WaitForEvent(outbuf.empty_event, timeout) == WAIT_OBJECT_0; }
+	bool	WaitForOutbufDrained(int timeout);	// outbuf empty *and* output_thread's linear buffer transmitted
 	bool	flush_output(int timeout) { return online && WaitForOutbufEmpty(timeout); }
 	HANDLE	input_thread=nullptr;
 	pthread_mutex_t	input_thread_mutex;
@@ -565,6 +566,7 @@ public:
 	bool	is_event_thread = false;
 	std::atomic<bool> event_thread_running{false};
 	std::atomic<bool> output_thread_running{false};
+	std::atomic<bool> output_thread_busy{false};	// output_thread has data in its linear buffer not yet sent
 	std::atomic<bool> input_thread_running{false};
 	std::atomic<bool> terminate_output_thread{false};
 	char*	event_running_filename(char* str, size_t sz, int event) {

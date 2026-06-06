@@ -2553,6 +2553,24 @@ void passthru_thread(void* arg)
 	thread_down();
 }
 
+// Wait for the output ring buffer to empty *and* for the output_thread to
+// transmit its linear buffer.  WaitForOutbufEmpty() alone only confirms the
+// ring buffer was drained into output_thread's linear buffer (that's when
+// empty_event fires), not that those bytes have actually been sent; closing
+// the socket in that window loses the unsent output (GitLab #1157).
+bool sbbs_t::WaitForOutbufDrained(int timeout)
+{
+	if (!WaitForOutbufEmpty(timeout))
+		return false;
+	msclock_t start = msclock();
+	while (output_thread_busy && output_thread_running) {
+		if ((int)(msclock() - start) >= timeout)
+			return false;
+		SLEEP(1);
+	}
+	return true;
+}
+
 void output_thread(void* arg)
 {
 	char node[128];
@@ -2656,6 +2674,11 @@ void output_thread(void* arg)
 				continue;
 			}
 
+			/* Mark busy *before* draining the ring buffer (which fires
+			 * empty_event), so WaitForOutbufDrained() can't mistake the
+			 * ring->linear hand-off for "everything sent" (GitLab #1157). */
+			sbbs->output_thread_busy = true;
+
 			/*
 			 * At this point, there's something to send and,
 			 * if the highwater mark is set, the timeout has
@@ -2672,8 +2695,10 @@ void output_thread(void* arg)
 				avail = mss;
 			buftop = RingBufRead(&sbbs->outbuf, buf, avail);
 			bufbot = 0;
-			if (buftop == 0)
+			if (buftop == 0) {
+				sbbs->output_thread_busy = false;
 				continue;
+			}
 		}
 
 		/* Check socket for writability */
@@ -2801,6 +2826,8 @@ void output_thread(void* arg)
 		bufbot += i;
 		total_sent += i;
 		total_pkts++;
+		if (bufbot == buftop)	// linear buffer fully transmitted
+			sbbs->output_thread_busy = false;
 	}
 
 	sbbs->spymsg("Disconnected");
@@ -6024,7 +6051,9 @@ NO_SSH:
 					sbbs->cp437_out("\r\nSorry, all terminal nodes are in use or otherwise unavailable.\r\n");
 					sbbs->cp437_out("Please try again later.\r\n");
 				}
-				sbbs->flush_output(3000);
+				// Wait for nonodes.txt to be fully transmitted (not just moved
+				// out of the ring buffer) before closing the socket (#1157)
+				sbbs->WaitForOutbufDrained(3000);
 				// Drop any unsent goodbye output so output_thread doesn't try to send it on the closed FD
 				sbbs->rioctl(IOFB);
 				client_off(client_socket);
@@ -6100,7 +6129,9 @@ NO_SSH:
 					sbbs->printfile(str, P_NOABORT | P_MODS);
 				else
 					sbbs->cp437_out("\r\nSorry, initialization failed. Try again later.\r\n");
-				sbbs->flush_output(3000);
+				// Wait for the message to be fully transmitted (not just moved
+				// out of the ring buffer) before closing the socket (#1157)
+				sbbs->WaitForOutbufDrained(3000);
 				// Drop any unsent goodbye output so output_thread doesn't try to send it on the closed FD
 				sbbs->rioctl(IOFB);
 				if (sbbs->getnodedat(new_node->cfg.node_num, &node, true)) {
