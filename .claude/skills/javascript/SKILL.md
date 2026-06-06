@@ -549,6 +549,43 @@ column 0 — use `console.creturn()` or the Ctrl-A `[` sequence. On PETSCII
 terminals an ASCII 13 performs a full newline (`\r\n`), so a raw `\r` breaks
 cursor positioning.
 
+### Timed / non-blocking key input, and the inactivity model
+
+There are two ways to read a key, and they differ in a way that bites: **only
+the blocking pair enforces idle-disconnect.**
+
+- **`console.getstr()` / `console.getkey()`** block, and run through C
+  `getkey()` (`src/sbbs3/getkey.cpp`), which **owns inactivity enforcement**:
+  it tracks the last-activity time, emits the `AreYouThere` text at the warn
+  threshold, and **hangs up** after `max_getkey_inactivity` seconds (default
+  **300**, `scfglib1.c`). So any normal prompt gets idle protection *for free*.
+- **`console.inkey([mode=K_NONE][, timeout_ms=0])`** is the **only** timed /
+  non-blocking key read (`timeout` in **milliseconds**; `0` = poll once and
+  return immediately). It does **NOT** track activity, warn, or hang up. Its
+  JS return on timeout is **mode-dependent** (verified in `inkey.cpp` +
+  `js_console.cpp`, with `NOINP == 0x0100`):
+  - default `K_NONE` → returns **`""`** (empty string) on timeout (C `inkey`
+    returns `0`; js builds a zero-length string). A real NUL key (code 0) also
+    reads as `""` — rare, but ambiguous.
+  - **`K_NUL`** (`1<<25`, "return NOINP on timeout instead of `'\0'`") → returns
+    **`null`** on timeout and `"\0"` for an actual NUL key. Use this when you
+    need to tell timeout from a keypress unambiguously.
+  - any real key → a **1-char string**.
+
+**Trap:** a loop that polls `inkey()` for timed/real-time input (animations,
+countdowns, a game's timed prompt) **bypasses the idle-disconnect** `getkey`
+provides — an AFK user can hold a node open indefinitely. If you build a timed
+reader on `inkey`, **enforce inactivity yourself**: track elapsed time since the
+last real key, compare to `console.max_getkey_inactivity`, optionally print the
+`AreYouThere` text at `console.getkey_inactivity_warning`, then `bbs.hangup()`
+past the limit. These are live on the `console` object:
+
+| Property | Access | Meaning |
+|----------|--------|---------|
+| `console.max_getkey_inactivity` | read/write | idle limit in **seconds** (default 300) |
+| `console.getkey_inactivity_warning` | read-only | warn threshold in seconds (derived from `inactivity_warn` %) |
+| `console.last_getkey_activity` | read/**write** | Unix time of last `getkey` activity — writable, so a timed loop can keep it in sync with real keypresses |
+
 ## The stock exec/*.js ecosystem (API by example)
 
 ~100 stock `.js` modules ship in `exec/`; reading them is usually the fastest
