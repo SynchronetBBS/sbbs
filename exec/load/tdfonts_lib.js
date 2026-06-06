@@ -325,6 +325,19 @@ function reset_color() {
 	return "\x1b[0m";
 }
 
+// End-of-row sequence: when a row fills the right-most column, the terminal
+// will (typically) auto-wrap on its own, so a hard CRLF would produce a blank
+// line. Use Synchronet's conditional new-line (Ctrl-A '/') which only emits a
+// new-line when the cursor isn't already at column 0. ANSI terminals auto-wrap
+// at the right margin, so nothing extra is emitted in -a (ANSI) mode.
+function endofrow(atrightcol) {
+	if (!atrightcol)
+		return "\r\n";
+	if (this.opt == undefined || !opt.ansi)
+		return "\x01/";
+	return "";
+}
+
 function getdir() {
 	return backslash(opt.fontdir || FONT_DIR);
 }
@@ -451,8 +464,7 @@ function output_line(str, font) {
 		}
 		// End the line and reset color
 		out += reset_color();
-		if (!(justify === RIGHT_JUSTIFY && padding == 0))
-			out += "\r\n";
+		out += endofrow(linewidth >= width);
 	}
 	return out;
 }
