@@ -11,7 +11,6 @@ endif
 all :	\
 	ftp.bin \
 	matrix.bin \
-	obv-2.bin \
 	sdos.bin \
 	simple.bin \
 	wildcat.bin \
