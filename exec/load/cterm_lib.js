@@ -228,6 +228,22 @@ function query_graphicsdim()
 	return {width: parseInt(m[1], 10), height: parseInt(m[2], 10)};
 }
 
+// Resolve the terminal's character + pixel geometry for pixel-addressed protocols (e.g. Z-machine v6).
+// Returns { cols, rows, cellW, cellH, pxW, pxH }. Cell size comes from query_fontdims() (ESC[=3n),
+// falling back to { width: 8, height: charheight() } (the 8-px graphics cell; never the 9-px VGA text
+// cell). Pixel canvas comes from query_graphicsdim() (ESC[?2;1S), falling back to cols*cellW x rows*cellH.
+function cterm_screen_geometry()
+{
+	var cols = console.screen_columns || 80, rows = console.screen_rows || 24;
+	var fd = query_fontdims();                        // { height, width } or null/false
+	var cellW = (fd && fd.width)  ? fd.width  : 8;
+	var cellH = (fd && fd.height) ? fd.height : charheight(rows);
+	var gd = query_graphicsdim();                     // { width, height } or null
+	var pxW = (gd && gd.width)  ? gd.width  : cols * cellW;
+	var pxH = (gd && gd.height) ? gd.height : rows * cellH;
+	return { cols: cols, rows: rows, cellW: cellW, cellH: cellH, pxW: pxW, pxH: pxH };
+}
+
 function query_ctda(which)
 {
 	var response = query("\x1b[<c");
