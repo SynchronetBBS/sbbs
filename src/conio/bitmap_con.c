@@ -2304,6 +2304,7 @@ int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_
 		bool in_text_area = y < crows;
 		if (in_text_area && !yupdated) {
 			charx = charsx;
+			cpx = sx % vstat.charwidth;
 			off = vmem_cell_offset(vstat.vmem, charx, chary);
 		}
 		if (mask == NULL) {
