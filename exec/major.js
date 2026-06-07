@@ -19,7 +19,7 @@ shell.main_menu = {
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_MAIN,
 	prompt: "\x01h\x01c(TOP)\r\n"
-		+ "Make your selection (T,I,F,E,L,A,P,R,S,? for help, or 'X' to exit): ",
+		+ "Make your selection (T,I,F,E,L,A,P,R,S,? for help, or 'X' to exit): \x01n",
 	command: {
 	 'D': { eval: 'bbs.xtrn_sec()' },
 	 'I': { eval: 'bbs.text_sec()' },
@@ -44,7 +44,7 @@ shell.file_menu = {
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_XFER,
 	prompt: "\x01h\x01cCurrent LIB: @LIB@ @DIR@\r\n"
-		+ "Select a letter from this list (or 'X' to exit): ",
+		+ "Select a letter from this list (or 'X' to exit): \x01n",
 	command: {
 	'D': { eval: 'download_files()'
 		   ,msg: '\r\n\x01c\x01hDownload File(s)\r\n'
@@ -65,7 +65,7 @@ shell.userdefs_menu = {
 	cls: true,
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_MAIN,
-	prompt: "\x01h\x01cYour choice (or 'X' to exit): ",
+	prompt: "\x01h\x01cYour choice (or 'X' to exit): \x01n",
 	command: {
 	 'A': { eval: 'bbs.user_config(); exit()' },
 	 'S': { eval: 'bbs.user_info()' },
@@ -81,7 +81,7 @@ shell.message_menu = {
 	file: "major/msg",
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_RMSG,
-	prompt: "\x01h\x01cSelect a letter from this list, or 'X' to exit: ",
+	prompt: "\x01h\x01cSelect a letter from this list, or 'X' to exit: \x01n",
 	command: {
 	 'R': { eval: 'bbs.scan_msgs()' },
 	 'S': { eval: 'console.clear(); select_msg_area()' },
@@ -101,13 +101,13 @@ shell.email_menu = {
 	file: "major/email",
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_RMAL,
-	prompt: "\x01h\x01cSelect a letter from this list, or 'X' to exit: ",
+	prompt: "\x01h\x01cSelect a letter from this list, or 'X' to exit: \x01n",
 	command: {
 	 'E': { eval: 'bbs.read_mail(MAIL_SENT, user.number)'},
 	 'R': { eval: 'bbs.read_mail(MAIL_YOUR, user.number)' },
 	 'W': { eval: 'send_email()' },
 	 'S': { eval: 'send_netmail()' },
-	 'U': { eval: 'send_email()' }, 
+	 'U': { eval: 'send_email()' },
 	},
 	nav: {
 	'\r': {},
@@ -120,12 +120,12 @@ shell.quickscn_menu = {
 	file: "major/quickscn",
 	eval: 'bbs.main_cmds++',
 	node_action: NODE_MAIN,
-	prompt: "\x01h\x01cSelect a letter from this list, or 'X' to exit: ",
+	prompt: "\x01h\x01cSelect a letter from this list, or 'X' to exit: \x01n",
 	command: {
 	 'C': { exec: 'msgscancfg.js' },
 	 'K': { eval: 'bbs.scan_subs(SCAN_FIND)' },
 	 'L': { eval: 'bbs.scan_subs(SCAN_TOYOU)' },
-	 'S': { eval: 'bbs.scan_subs(SCAN_NEW)' }, 
+	 'S': { eval: 'bbs.scan_subs(SCAN_NEW)' },
 	 },
 	nav: {
 	'\r': {},
