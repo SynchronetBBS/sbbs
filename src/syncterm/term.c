@@ -3763,6 +3763,33 @@ read_pbm_text_raster(struct ciolib_mask *ret, size_t sz, FILE *f)
 }
 
 static bool
+read_pbm_raw_raster(struct ciolib_mask *ret, FILE *f)
+{
+	size_t  row_bytes = (ret->width + 7) / 8;
+	uint8_t src;
+
+	memset(ret->bits, 0, ((size_t)ret->width * ret->height + 7) / 8);
+	for (uint32_t y = 0; y < ret->height; y++) {
+		for (uint32_t xb = 0; xb < row_bytes; xb++) {
+			if (fread(&src, 1, 1, f) != 1)
+				return false;
+			for (uint32_t bit = 0; bit < 8; bit++) {
+				uint32_t x = xb * 8 + bit;
+				size_t   dst;
+
+				if (x >= ret->width)
+					break;
+				if (src & (0x80 >> bit)) {
+					dst = (size_t)y * ret->width + x;
+					ret->bits[dst / 8] |= 0x80 >> (dst % 8);
+				}
+			}
+		}
+	}
+	return true;
+}
+
+static bool
 read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f, uintmax_t(*readnum)(FILE *))
 {
 	uintmax_t num;
@@ -3961,7 +3988,7 @@ read_pbm(const char *fn, bool bitmap)
 			if (magic[1] == '1')
 				b = read_pbm_text_raster(mret, raster_size, f);
 			else
-				b = fread(mret->bits, raster_bit_size, 1, f) == 1;
+				b = read_pbm_raw_raster(mret, f);
 			if (!b)
 				goto fail;
 			fclose(f);
