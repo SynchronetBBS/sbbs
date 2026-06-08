@@ -2549,9 +2549,11 @@ Draws a PPM from the cache directory on the screen. +
 	white (ie: 0) will be left untouched.
 
 |`MASK=<maskbits>`
-|Specifies a base64-encoded bitmap, each set bit will be drawn from the
-	source image, cleared bits will not be drawn.  Requires MW= and
-	MH= to be specified.
+|Specifies a base64-encoded tightly-packed row-major bitmap.  The first
+	bit is the leftmost pixel of the top row; bits continue across row
+	boundaries with no per-row byte padding.  Each set bit will be drawn
+	from the source image, cleared bits will not be drawn.  Requires MW=
+	and MH= to be specified.
 
 |`MBUF`
 |Uses the loaded mask buffer.
@@ -2616,9 +2618,11 @@ Draws a JPEG XL from the cache directory on the screen. +
 	white (ie: 0) will be left untouched.
 
 |`MASK=<maskbits>`
-|Specifies a base64-encoded bitmap, each set bit will be drawn from the
-	source image, cleared bits will not be drawn.  Requires MW= and
-	MH= to be specified.
+|Specifies a base64-encoded tightly-packed row-major bitmap.  The first
+	bit is the leftmost pixel of the top row; bits continue across row
+	boundaries with no per-row byte padding.  Each set bit will be drawn
+	from the source image, cleared bits will not be drawn.  Requires MW=
+	and MH= to be specified.
 
 |`MBUF`
 |Uses the loaded mask buffer.
@@ -2726,9 +2730,11 @@ All coordinates and dimensions are in pixels.
 	white (ie: 0) will be left untouched.
 
 |`MASK=<maskbits>`
-|Specifies a base64-encoded bitmap, each set bit will be drawn from the
-	source image, cleared bits will not be drawn.  Requires MW= and
-	MH= to be specified.
+|Specifies a base64-encoded tightly-packed row-major bitmap.  The first
+	bit is the leftmost pixel of the top row; bits continue across row
+	boundaries with no per-row byte padding.  Each set bit will be drawn
+	from the source image, cleared bits will not be drawn.  Requires MW=
+	and MH= to be specified.
 
 |`MBUF`
 |Uses the loaded mask buffer.
