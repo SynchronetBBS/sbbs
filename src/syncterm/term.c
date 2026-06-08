@@ -3195,8 +3195,10 @@ read_pbm_text_raster(struct ciolib_mask *ret, size_t sz, FILE *f)
 		if (num > 1)
 			return false;
 		ret->bits[byte] |= num << bit;
-		if (bit == 0)
+		if (bit == 0) {
 			bit = 7;
+			byte++;
+		}
 		else
 			bit--;
 	}
@@ -3544,7 +3546,7 @@ draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 						freemask(ctmask);
 					mbuf = false;
 					ctmask = alloc_ciolib_mask(0, 0);
-					ctmask->bits = b64_decode_alloc(p + 6, p2 - p + 5, &mlen);
+					ctmask->bits = b64_decode_alloc(p + 6, p2 - (p + 6), &mlen);
 					if (ctmask->bits == NULL)
 						goto done;
 					continue; // Avoid val check
@@ -3894,7 +3896,7 @@ draw_jxl_str_handler(char *str, size_t slen, char *fn, void *apcd)
 						freemask(ctmask);
 					mbuf = false;
 					ctmask = alloc_ciolib_mask(0, 0);
-					ctmask->bits = b64_decode_alloc(p + 6, p2 - p + 5, &mlen);
+					ctmask->bits = b64_decode_alloc(p + 6, p2 - (p + 6), &mlen);
 					if (ctmask->bits == NULL)
 						goto done;
 					continue; // Avoid val check
@@ -4161,7 +4163,7 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 					ctmask = alloc_ciolib_mask(0, 0);
 					if (ctmask == NULL)
 						goto done;
-					ctmask->bits = b64_decode_alloc(p + 6, p2 - p + 5, &mlen);
+					ctmask->bits = b64_decode_alloc(p + 6, p2 - (p + 6), &mlen);
 					if (ctmask->bits == NULL)
 						goto done;
 					continue; // Avoid val check
