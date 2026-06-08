@@ -124,6 +124,14 @@
 - Helpful error message when passed a directory instead of a
   config or `.ini` file on the command line
 
+## BinkIT
+
+- `data/binkstats.ini` no longer logs successful binkp/1.1 callouts
+  (and inbound sessions) as failures — a closing-handshake quirk
+  caused most sessions with binkp/1.1 peers (Synchronet, binkd) to
+  be recorded as "callout failure" even though mail was delivered.
+  Sessions with binkp/1.0 peers (e.g. Mystic) were unaffected
+
 ## SCFG
 
 - New **Ctrl-F option search**: type a substring at the main

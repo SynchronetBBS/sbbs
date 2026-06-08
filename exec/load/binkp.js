@@ -1,4 +1,4 @@
-var binkp_revision = 5;
+var binkp_revision = 6;
 
 require('sockdefs.js', 'SOCK_STREAM');
 require('fido.js', 'FIDO');
@@ -894,18 +894,31 @@ BinkP.prototype.session = function()
 			if (this.sending === undefined) {
 				if (this.receiving === undefined) {
 					if (this.ver1_1) {
-						if (this.senteob == 0 || (this.goteob))
+						if (this.senteob == 0 || (this.goteob)) {
 							if (!this.sendCmd(this.command.M_EOB)) {
-								success = false;
+								// Failure to send a closing M_EOB after all
+								// of our sent files have been acknowledged is
+								// benign - the peer has simply closed the
+								// connection first (common in binkp/1.1's
+								// two-M_EOB handshake, where completion can be
+								// reached by *sending* the final EOB, which the
+								// M_EOB receive-handler doesn't catch).  Only
+								// fail the session if files are still pending
+								// acknowledgement.
+								if (this.pending_ack.length > 0)
+									success = false;
 								break;
 							}
+						}
 					}
 					else {
-						if (!this.senteob)
+						if (!this.senteob) {
 							if (!this.sendCmd(this.command.M_EOB)) {
-								success = false;
+								if (this.pending_ack.length > 0)
+									success = false;
 								break;
 							}
+						}
 					}
 				}
 			}
