@@ -14,7 +14,6 @@ all :	\
 	sdos.bin \
 	simple.bin \
 	wildcat.bin \
-	wwiv.bin
 
 %.bin : %.src $(BAJAPATH)
 	@$(BAJAPATH) /q $<
