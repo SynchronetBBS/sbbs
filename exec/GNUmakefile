@@ -13,7 +13,6 @@ all :	\
 	matrix.bin \
 	sdos.bin \
 	simple.bin \
-	wildcat.bin \
 
 %.bin : %.src $(BAJAPATH)
 	@$(BAJAPATH) /q $<

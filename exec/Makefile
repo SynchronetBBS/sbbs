@@ -11,8 +11,6 @@ all : 	\
 	matrix.bin \
 	sdos.bin \
 	simple.bin \
-	wildcat.bin \
-
 
 .src.bin:
 	@baja.exe /q $<
