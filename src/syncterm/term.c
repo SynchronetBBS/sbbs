@@ -3418,8 +3418,34 @@ read_pbm(const char *fn, bool bitmap)
 			goto fail;
 	}
 
-	if (!skip_pbm_whitespace(f))
-		goto fail;
+	// Separator between the header and the raster.
+	//
+	// For the RAW formats (P4/P6) the spec mandates exactly ONE whitespace
+	// byte after the final header value, after which the binary raster begins
+	// immediately.  Those bytes must NOT be scanned for more whitespace or for
+	// '#' comments: a raster byte of 0x20/0x09/0x0a/0x0d would be swallowed as
+	// "whitespace" and a leading 0x23 ('#') mistaken for a comment, shifting
+	// the raster offset so a perfectly valid image reads short and fails.  So
+	// consume exactly one whitespace byte here rather than the greedy
+	// header-style skip.
+	//
+	// The PLAIN formats (P1/P3) have a whitespace-delimited *text* raster, so
+	// the greedy skip (which also honours comments) remains correct for them.
+	switch (magic[1]) {
+		case '4':
+		case '6': {
+			char sep;
+			if (fread(&sep, 1, 1, f) != 1)
+				goto fail;
+			if (!is_pbm_whitespace(sep))
+				goto fail;
+			break;
+		}
+		default:
+			if (!skip_pbm_whitespace(f))
+				goto fail;
+			break;
+	}
 
 	switch (magic[1]) {
 		case '1':
