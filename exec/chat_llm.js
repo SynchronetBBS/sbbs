@@ -446,7 +446,38 @@ function build_messages(cfg, user_input, ctx, sys_override)
              + '" or otherwise talk as if they are logged into it.  Standard'
              + ' IRC client commands apply (/quit, /part, /msg, etc.), NOT'
              + ' Synchronet terminal commands.  END YOUR REPLY WITH A PERIOD,'
-             + ' NOT A QUESTION (see STYLE).';
+             + ' NOT A QUESTION (see STYLE).'
+             + '  Do NOT simply agree with or repeat back what a user states'
+             + ' as fact -- people here are often wrong.  Confirm a claim only'
+             + ' if the <board_archive> chunks support it; if they do not, say'
+             + ' you are not sure rather than restating it as fact.';
+    }
+
+    /* UNPROMPTED INTERVENTION: the bot is volunteering into a
+     * conversation no one addressed it in.  The bar to speak must be
+     * much higher than when directly asked -- a confidently-wrong
+     * unsolicited answer (the exact failure the sysop flagged: the bot
+     * restating others' mistakes as fact) is far worse than staying
+     * quiet.  Give the model an explicit, cheap escape hatch: emit the
+     * single token SKIP and the adapter stays silent (and doesn't
+     * persist the turn).  Costs no extra round-trip -- it rides the
+     * same generation. */
+    if (ctx.volunteering) {
+        sys += '\n\nUNPROMPTED: No one addressed you -- you are deciding'
+             + ' whether to volunteer an answer to something others are'
+             + ' discussing.  Answer ONLY if the <board_archive> chunks below'
+             + ' EXPLICITLY state the specific fact being asked about.  A'
+             + ' related, similar, or adjacent chunk is NOT confirmation --'
+             + ' do not generalize from it.  Many questions smuggle in a false'
+             + ' assumption ("does X also do Y?", "is it true that Z?",'
+             + ' "should it check W?"): do NOT confirm that assumption unless'
+             + ' a chunk spells it out word-for-word; if the exact thing asked'
+             + ' is not literally in the chunks, you do NOT know it.  Never'
+             + ' restate the asker\'s or anyone else\'s claim as fact.  A wrong'
+             + ' confident answer is far worse than silence.  If the chunks do'
+             + ' not explicitly and completely support a correct answer, or you'
+             + ' are not fully certain, reply with ONLY this single word and'
+             + ' nothing else: SKIP';
     }
 
     var messages = [{ role: 'system', content: sys }];
@@ -1681,6 +1712,96 @@ function is_addressed(line, names)
     return false;
 }
 
+/* True when a volunteering (unprompted-intervention) generation should
+ * be suppressed: the model emitted the SKIP escape hatch, or produced
+ * nothing usable.  Matched on the RAW model reply (before postprocess).
+ * Treats an exact "SKIP" (modulo surrounding punctuation/whitespace) or
+ * a short reply that LEADS with SKIP as abstention -- staying silent on
+ * a borderline match is the safe direction for an unsolicited line. */
+function is_volunteer_abstain(reply)
+{
+    if (reply === null || reply === undefined) return true;
+    var s = String(reply).replace(/^[\s\W]+|[\s\W]+$/g, '');
+    if (!s) return true;                       /* empty/whitespace-only */
+    var up = s.toUpperCase();
+    if (up === 'SKIP') return true;            /* clean abstain */
+    /* "SKIP -- not sure", "SKIP." etc.: leading SKIP token on a short
+     * line.  Bounded length avoids nuking a real answer that merely
+     * happens to start with the word "skip". */
+    return s.length <= 40 && /^SKIP\b/.test(up);
+}
+
+var VOLUNTEER_VERIFY_SYS_DEFAULT =
+    'You are a strict fact-checker guarding a Synchronet BBS help bot from'
+  + ' posting WRONG answers UNPROMPTED into a public chat.  You get the'
+  + ' QUESTION that was asked, the DOCS that were retrieved, and the'
+  + ' PROPOSED ANSWER the bot wants to post.  Reply REJECT unless EVERY'
+  + ' factual claim in the proposed answer is explicitly and directly'
+  + ' stated in the DOCS.  Watch for false premises: if the question'
+  + ' assumes something ("does X also do Y?", "should it check Z?") and the'
+  + ' answer confirms it, but the DOCS do not literally state that premise'
+  + ' is true, reply REJECT.  A confident wrong answer is the worst'
+  + ' outcome; silence is fine.  When in any doubt, REJECT.  Reply with'
+  + ' EXACTLY one word: VERIFIED or REJECT.';
+
+/* Second-opinion gate for unprompted interventions.  The 7B chat model,
+ * even told it may abstain, will confidently confirm a plausible-but-false
+ * premise when retrieval surfaced a merely-RELATED doc (observed live: it
+ * "confirmed" a bogus mods/exec load path off a chunk about mods shadowing
+ * exec).  Route a strict fact-check at a stronger model (the same one used
+ * for relay rewrite, e.g. qwen2.5:14b) which is far better at refusing
+ * unsupported claims.  Returns true only on an explicit VERIFIED; ANY
+ * failure (HTTP error, ambiguous reply, exception) returns false, because
+ * the safe default for an unsolicited line is to stay quiet.  Costs one
+ * extra round-trip, but interventions are rare (per-channel cooldown) and
+ * the verify model is kept transient (keep_alive 0) so the warm chat model
+ * isn't evicted -- mirrors relay_perspective_rewrite. */
+function verify_volunteer_answer(cfg, question, context, answer)
+{
+    if (cfg.intervention_verify === false) return true;   /* sysop opt-out */
+    answer = String(answer || '');
+    if (!answer) return false;
+    var vmodel = cfg.intervention_verify_model
+              || cfg.relay_rewrite_model || cfg.model;
+    var sys = cfg.intervention_verify_prompt || VOLUNTEER_VERIFY_SYS_DEFAULT;
+    var user = 'QUESTION:\n' + String(question || '')
+             + '\n\nDOCS:\n' + (String(context || '') || '(none retrieved)')
+             + '\n\nPROPOSED ANSWER:\n' + answer;
+    var req = {
+        model:    vmodel,
+        messages: [ { role: 'system', content: sys },
+                    { role: 'user',   content: user } ],
+        stream:  false,
+        think:   false,
+        options: { temperature: 0, num_predict: 8, num_ctx: cfg.num_ctx || undefined }
+    };
+    /* Keep the verify model transient when it differs from the chat model
+     * (don't leave the bigger model pinned, evicting the warm 7B). */
+    if (vmodel !== cfg.model) {
+        req.keep_alive = (cfg.relay_rewrite_keep_alive !== undefined
+                          && cfg.relay_rewrite_keep_alive !== '')
+            ? cfg.relay_rewrite_keep_alive : 0;
+    } else if (cfg.keep_alive) {
+        req.keep_alive = cfg.keep_alive;
+    }
+    try {
+        var headers = { 'Authorization': 'Bearer ' + cfg.api_key };
+        var http = new HTTPRequest(undefined, undefined, headers, cfg.timeout);
+        var raw  = http.Post(cfg.endpoint, JSON.stringify(req), undefined,
+                             undefined, 'application/json');
+        if (http.response_code != 200) return false;
+        var resp = JSON.parse(raw);
+        var out  = resp && resp.message && resp.message.content;
+        if (out === undefined || out === null) return false;
+        out = String(out).toUpperCase();
+        /* Explicit VERIFIED and no REJECT token (a hedged "REJECT,
+         * though arguably VERIFIED" should fail closed). */
+        return /\bVERIFIED\b/.test(out) && !/\bREJECT\b/.test(out);
+    } catch (e) {
+        return false;
+    }
+}
+
 /* --- Helper for callers: build a 'private' ctx from a User --- */
 
 function ctx_from_user(useron, persona_code, persona_name, supports_utf8)
@@ -2092,6 +2213,16 @@ function chat_session(input, ctx)
     var t_llm0 = system.timer;
     var reply = llm_chat(input, ctx, opts);
     var t_llm = system.timer - t_llm0;
+    /* Volunteering (unprompted intervention) abstention: when the
+     * prompt offered the SKIP escape hatch and the model took it (or
+     * produced nothing usable), treat it as "stay silent" -- null out
+     * the reply BEFORE post-processing so it's neither spoken nor
+     * persisted to memory.  Detect on the RAW reply so post-processing
+     * can't reshape the sentinel. */
+    if (ctx.volunteering && is_volunteer_abstain(reply)) {
+        ctx._abstained = true;
+        reply = null;
+    }
     /* Post-process the assembled reply.  Strips extra questions and
      * collapses paragraph breaks.  Affects the STORED string (memory,
      * log, returned to C++ caller).  Streaming output to the terminal
@@ -2105,6 +2236,17 @@ function chat_session(input, ctx)
          * via append_wiki_url_if_missing's "already cited" guard. */
         reply = strip_fake_urls(reply, ctx);
         reply = append_wiki_url_if_missing(reply, ctx);
+    }
+
+    /* Unprompted-intervention fact-check: even a non-SKIP answer must
+     * survive a strict second opinion (stronger model) confirming every
+     * claim is grounded and no false premise was accepted.  Fail -> stay
+     * silent.  Only for volunteering lines; directly-asked questions are
+     * answered best-effort as before. */
+    if (ctx.volunteering && reply !== null
+        && !verify_volunteer_answer(cfg, input, ctx.retrieved_context, reply)) {
+        ctx._abstained = true;
+        reply = null;
     }
 
     /* Flag for C++ dispatch to skip its post-call simulate_type. */

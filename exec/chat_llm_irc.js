@@ -12,9 +12,15 @@
  *      ending in '?'), nobody responded for `irc_intervention_wait`
  *      seconds, and the bot's BM25 retrieval score for the question
  *      passes a "confident enough to chime in unprompted" threshold.
- *      Then the bot volunteers an answer, prefixed with the asker's
- *      nick, and resets state.  Cooldown between interventions per
- *      channel prevents the bot from dominating.
+ *      A question explicitly aimed at another participant ("nick: ...?")
+ *      is NOT a room question -- the bot stays out of it (see
+ *      directed_at_other).  Even past the BM25 gate the engine gets a
+ *      final say: the dispatch runs with ctx.volunteering, so chat_llm.js
+ *      abstains (returns null, nothing spoken or stored) unless the
+ *      retrieved docs fully support a correct answer -- a guessy/wrong
+ *      unsolicited answer is worse than silence.  When it does answer,
+ *      the reply is prefixed with the asker's nick.  Cooldown between
+ *      interventions per channel prevents the bot from dominating.
  *
  * Otherwise the bot lurks silently.
  *
@@ -704,15 +710,22 @@ function build_irc_ctx(speaker_nick, channel) {
     };
 }
 
-function dispatch_chat(speaker_nick, text, channel) {
+function dispatch_chat(speaker_nick, text, channel, opts) {
     var ctx = build_irc_ctx(speaker_nick, channel);
+    /* Unprompted interventions ask the engine to abstain (reply SKIP ->
+     * null) unless it's confident -- see chat_llm.js build_messages. */
+    if (opts && opts.volunteering) ctx.volunteering = true;
     try {
         var reply = chat_session(text, ctx);
         /* Best-effort persist: failures to write the log shouldn't
          * break chat.  ctx._profile is set by chat_session(); read it
-         * AFTER the call. */
+         * AFTER the call.  Log an abstained intervention explicitly so
+         * the decision is visible in the chat log (the engine returns
+         * null and didn't persist it to memory). */
         try {
-            log_chat_turn(speaker_nick, channel, text, reply, ctx._profile);
+            var logged = (reply === null && ctx._abstained)
+                ? "[abstained -- not confident enough to volunteer]" : reply;
+            log_chat_turn(speaker_nick, channel, text, logged, ctx._profile);
         } catch (le) { /* ignore -- chat itself succeeded */ }
         return reply;
     } catch (e) {
@@ -961,6 +974,28 @@ function is_nick_ping(channel, text) {
     return !!chan_members(channel)[lc] || !!chan_seen(channel)[lc];
 }
 
+/* True when `text` is a message directed at a specific OTHER channel
+ * participant by a leading "Nick:" or "Nick," address that carries
+ * actual content after it ("nelgin: why are you changing ip?",
+ * "Dan_C: you around?").  This is the conversational counterpart to
+ * is_nick_ping (which only catches a BARE "Nick?"): a person-to-person
+ * exchange the bot must NOT hijack.  In particular it must not arm an
+ * unprompted intervention on a question one user explicitly aimed at
+ * another -- volunteering an answer there (or worse, answering as if it
+ * were the addressee) is exactly the "too eager / unsolicited" failure.
+ * The named participant must be someone the bot has actually seen on
+ * this channel and must NOT be one of the bot's own address-names (a
+ * line aimed at the bot is handled by the bot-addressed path instead). */
+function directed_at_other(channel, text) {
+    var m = /^\s*([^\s:,]+)[:,]\s+\S/.exec(String(text || ""));
+    if (!m) return false;
+    var lc = m[1].toLowerCase();
+    var names = current_address_names();
+    for (var i = 0; i < names.length; i++)
+        if (names[i].toLowerCase() === lc) return false;
+    return !!chan_members(channel)[lc] || !!chan_seen(channel)[lc];
+}
+
 /* ---- Message handling ---- */
 
 /* Per-nick redirect state -- one auto-reply per DM-er per session
@@ -1121,6 +1156,10 @@ function handle_privmsg(from_nick, target, text) {
          * question for the room -- don't arm an intervention on it.
          * Leave any existing open_question untouched. */
         if (is_nick_ping(target, text)) return;
+        /* A question explicitly addressed to another participant
+         * ("nelgin: why ... ?") is theirs to answer, not a room
+         * question -- never barge into a person-to-person exchange. */
+        if (directed_at_other(target, text)) return;
         st.open_question = {
             text: text,
             nick: from_nick,
@@ -1163,10 +1202,13 @@ function check_intervention() {
             continue;
         }
 
-        /* Chime in. */
+        /* Chime in -- but only if the engine is confident.  The
+         * volunteering flag makes chat_llm.js abstain (return null)
+         * rather than emit a guessy, possibly-wrong unsolicited answer. */
         var reply = dispatch_chat(st.open_question.nick,
                                   st.open_question.text,
-                                  chan);
+                                  chan,
+                                  { volunteering: true });
         if (reply) {
             irc_say(chan, st.open_question.nick + ": " + reply);
             /* An intervention is a substantive line too -- let the asker's
