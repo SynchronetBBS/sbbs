@@ -608,6 +608,36 @@ column 0 — use `console.creturn()` or the Ctrl-A `[` sequence. On PETSCII
 terminals an ASCII 13 performs a full newline (`\r\n`), so a raw `\r` breaks
 cursor positioning.
 
+### Terminal control sequences are abstracted in `ansiterm_lib.js` — check before hardcoding ANSI
+
+Before hand-writing a raw ANSI/cterm escape (`\x1b[?25l` to hide the cursor,
+cursor moves, scroll regions, ext-modes), look at **`exec/load/ansiterm_lib.js`**
+— it builds them by name. `load({}, 'ansiterm_lib.js')` returns an object whose
+`send(group, op, arg)` constructs **and** `console.write`s the sequence:
+
+```javascript
+var ansiterm = load({}, 'ansiterm_lib.js');
+ansiterm.send("ext_mode", "clear", "cursor");   // hide cursor -> CSI ?25l (DECTCEM)
+ansiterm.send("ext_mode", "set",   "cursor");   // show cursor -> CSI ?25h
+ansiterm.send("cursor_position", "move", "up", 3);
+```
+
+`ext_mode` covers the `CSI ?<n>h/l` private modes — `cursor` (25), `autowrap`
+(7), origin, etc. — with `set`/`clear`/`save`/`restore`; there are also
+`cursor_position` and colour/attribute groups. **`cterm_lib.js` is the canonical
+consumer** (`ansiterm.send("ext_mode", "clear", "cursor")`). The bare-`25`-style
+codes live in its `defs` table, so you never memorize the numbers.
+
+Two caveats: `send()` writes a **`LOG_DEBUG` line every call** (noisy in a hot
+loop like a per-frame cursor toggle), and it **always `console.write`s** — there
+is no "return the string" form, so if you need the bytes without emitting (to
+batch into one write), call the builder directly: `ansiterm.ext_mode.clear('cursor')`
+returns the string. Consistency exception: a module that already hardcodes a
+whole family of related raw escapes for its own reasons — e.g. the v6 zmachine
+door's `\x1b[?69h…s` DECSLRM + `\x1b[t;b r` DECSTBM scroll-region writes in
+`setRegion`/`resetRegion` — may keep adjacent controls raw to match; but for a
+new or one-off control, reach for `ansiterm_lib` rather than reinventing the code.
+
 ### Timed / non-blocking key input, and the inactivity model
 
 There are two ways to read a key, and they differ in a way that bites: **only
@@ -645,6 +675,48 @@ past the limit. These are live on the `console` object:
 | `console.getkey_inactivity_warning` | read-only | warn threshold in seconds (derived from `inactivity_warn` %) |
 | `console.last_getkey_activity` | read/**write** | Unix time of last `getkey` activity — writable, so a timed loop can keep it in sync with real keypresses |
 
+### Function / cursor keys: `K_CTRLKEYS` (parse yourself) vs `K_EXTKEYS` (translated, and lossy)
+
+By default `inkey`/`getkey` **pre-translate** the terminal's **arrow / Home / End**
+escape sequences into **control codes** (`sbbsdefs.h` `TERM_KEY_*`): Right → `CTRL_F`,
+Home → `CTRL_B`, End → `CTRL_E`, Up → `CTRL_^`, Down → `CTRL_J`, Left → `CTRL_]`. So an
+arrow becomes **indistinguishable** from the matching Ctrl-key — a real conflict if you
+also bind Ctrl-letters (a door mapping `Ctrl-F` → an F-key, a WordStar-ish editor, etc.).
+
+Two mode flags govern this (`inkey.cpp`):
+
+- **`K_EXTKEYS`** (`1<<30`) — passes control keys through *and* runs
+  `term->parse_input_sequence()` on an ESC. **But** that still returns the **conflated
+  control codes** for arrows, and `parse_input_sequence(char& ch, …)` returns a single
+  `char` — there are **no `TERM_KEY_F1..F12`**, so function keys aren't represented. So
+  K_EXTKEYS does **not** disambiguate arrows from Ctrl-letters *and* **loses the F-keys**.
+- **`K_CTRLKEYS`** (`1<<24`, "no control-key handling/eating") — control keys pass
+  through **and the ESC-translation branch does *not* run** (it's gated on K_EXTKEYS).
+  So the arrow/function **escape sequences arrive RAW** (`ESC[C`, `ESC[15~`, …) for you
+  to parse — keeping real arrows/F-keys **distinct** from the actual Ctrl-letters.
+
+To fully support function + cursor keys, read with **`K_CTRLKEYS`** and parse the cterm
+sequences yourself. SyncTERM/cterm send (`conio/cterm.txt`): arrows `ESC[A`/`B`/`D`/`C`
+(up/down/left/right); F-keys `ESC[11~`..`15~` (F1–F5), `ESC[17~`..`21~` (F6–F10),
+`ESC[23~`/`24~` (F11/F12); plus SS3 `ESC O P/Q/R/S` (F1–F4) on some terminals.
+
+```javascript
+require("sbbsdefs.js", "K_CTRLKEYS");
+function keyByte(ms) {                               // ms omitted -> blocking
+    var k = (ms === undefined) ? console.getkey(K_CTRLKEYS)    // keeps getkey's idle-disconnect
+                               : console.inkey(K_CTRLKEYS, ms); // timed: read the ESC-seq tail
+    return (k && k.length) ? k.charCodeAt(0) : -1;
+}
+// On ESC, pull the introducer + final byte (a short timeout tells a lone Escape from a
+// sequence) and map ESC[A/B/C/D and ESC[<n>~ to your codes. Real Ctrl-F (byte 6) and the
+// Right-arrow (ESC[C) are now distinct.
+```
+
+**Raw-byte alternative:** `console.getbyte([ms])` reads straight from `incom()`, bypassing
+*all* translation — but it also bypasses `getkey`'s **idle-disconnect** (`inkey`/`incom`
+don't enforce it — see above) and `inkey`'s UTF-8/charset decoding, which you'd re-add.
+Prefer `K_CTRLKEYS` (you stay on `getkey`/`inkey`) unless you genuinely need byte-level control.
+
 ### Numbered menus (`console.uselect`) and the auto-pager
 
 `console.uselect` builds a numbered selection menu: one call per item, then a
@@ -665,14 +737,37 @@ Two non-obvious behaviors (from `con_hi.cpp` / `js_console.cpp`):
   the value returned on ENTER. Pass the index to pre-select (e.g. the last-used
   item): `console.uselect(lastIndex)`. No-arg defaults to item 0.
 
-**Auto-pager (`[Hit a key]` / `[MORE]`):** the console pauses when
-`console.line_counter` reaches the screen height (if the user has pause enabled).
-After printing a few lines and then clearing — e.g. a one-time notice before a
-menu — the pending count can trip a stray pause. Reset it before the clear:
+**Auto-pager (`[Hit a key]` / `[MORE]`):** Synchronet auto-pauses when
+`console.line_counter` reaches the screen height — the check (`check_pause()`,
+`con_out.cpp`) runs after **every character**, gated by `pause_enabled()` (the
+user's `UPAUSE`/`SS_PAUSEON`, unless `SS_PAUSEOFF`). This is **independent of any
+pagination your own code does** (it fires even if you never call `console.pause`),
+and it bites two ways:
+
+1. **`console.clear()` pauses *before* it clears.** The signature is
+   `console.clear([attr] [, autopause=true])` (`js_console.cpp`) — `autopause`
+   defaults to **true**, so when the line counter is high (a screenful of unread
+   output) `console.clear()` shows `[Hit a key]` *before* wiping the screen. A loop
+   that prints then clears each turn — e.g. a full-screen door redrawing per move —
+   therefore pauses on **every clear**. The cleanest fix is to clear with autopause
+   **off**: `console.clear(attr, false)`. Prefer this over resetting the counter
+   first (below): any output *between* your reset and the clear — e.g. repainting a
+   pinned status bar — re-inflates `line_counter`, so a pre-clear reset is fragile.
+2. **Stray mid-output pause.** After printing a few lines and then clearing — e.g.
+   a one-time notice before a menu — the pending count can trip a pause. Reset it
+   before the output/clear:
 
 ```javascript
-console.line_counter = 0;   // discard pending more-prompt before console.clear()/menu
+console.line_counter = 0;          // discard the pending more-prompt count, OR…
+console.clear(attr, false);        // …clear with autopause off (more robust; no re-inflation race)
 ```
+
+(Per-call: pass the `P_NOPAUSE` mode flag to `console.print`/`putmsg` to suppress
+the pause for that write. If your code paginates its own way, turn the built-in
+pause off at the output sites rather than fighting `line_counter`.) Hard-won:
+chasing a door's "extra `[Hit a key]` before every screen clear" through
+`morePause`/`line_counter` resets is a dead end — it's `console.clear()`'s own
+default autopause.
 
 `console.printfile(path)` displays a message/ANSI file (intro splashes, help
 screens) — it renders Synchronet Ctrl-A codes **and** ANSI/CP437 as-is, so no mode
