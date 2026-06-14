@@ -379,6 +379,8 @@ struct js_listener_entry {
 	struct js_listener_entry *next;
 };
 
+#define JS_DISCONNECT_TERMINATE_COUNT 10  // operation-callbacks with client gone before a terminate_on_disconnect script is aborted
+
 typedef struct js_callback {
 	struct js_event_list	*events;
 	struct js_runq_entry    *rq_head;
@@ -395,6 +397,7 @@ typedef struct js_callback {
 	int32			next_eid;
 	JSBool			auto_terminate;
 	bool			auto_terminated;
+	JSBool			terminate_on_disconnect;  // abort the script when its client disconnects (peer of auto_terminate)
 	JSBool			keepGoing;
 	bool			bg;
 	bool			events_supported;

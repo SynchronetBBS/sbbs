@@ -6127,8 +6127,8 @@ js_OperationCallback(JSContext *cx)
 		return JS_FALSE;
 	}
 
-	if (session->js_callback.auto_terminate && !session_check(session, nullptr, nullptr, 0)
-	    && ++session->js_callback.offline_counter >= 10) {
+	if (session->js_callback.terminate_on_disconnect && !session_check(session, nullptr, nullptr, 0)
+	    && ++session->js_callback.offline_counter >= JS_DISCONNECT_TERMINATE_COUNT) {
 		JS_ReportWarning(cx, "Disconnected");
 		session->js_callback.counter = 0;
 		JS_SetOperationCallback(cx, js_OperationCallback);
@@ -7959,6 +7959,7 @@ void web_server(void* arg)
 			session->addr_len = client_addr_len;
 			session->socket = client_socket;
 			session->js_callback.auto_terminate = true;
+			session->js_callback.terminate_on_disconnect = true;  // HTTP: abort script when client disconnects (ead5ccf16)
 			session->js_callback.terminated = &terminate_js;
 			session->js_callback.limit = startup->js.time_limit;
 			session->js_callback.gc_interval = startup->js.gc_interval;

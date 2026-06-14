@@ -1440,6 +1440,7 @@ JSContext* sbbs_t::js_init(JSRuntime** runtime, JSObject** glob, const char* des
 	js_callback.yield_interval = startup->js.yield_interval;
 	js_callback.terminated = &terminated;
 	js_callback.auto_terminate = true;
+	js_callback.terminate_on_disconnect = true;  // abort terminal scripts when the user disconnects (peer of auto_terminate)
 	js_callback.events_supported = true;
 
 	bool success = false;

@@ -1184,6 +1184,13 @@ try {
 	sock = client.socket;
 }
 catch(e) {}
+
+/* When run as an inbound service, this script intentionally keeps running after the binkp client
+   disconnects - to finish processing the batch, update binkstats.ini, and (last) touch the
+   FIDOIN/BINKOUT event semaphores.  Opt out of the Services server's client-disconnect abort
+   (added in ead5ccf16) so that post-disconnect work isn't cut short. */
+js.terminate_on_disconnect = false;
+
 var ran = {};
 var i;
 var addr;

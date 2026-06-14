@@ -1024,12 +1024,18 @@ js_OperationCallback(JSContext *cx)
 		return JS_FALSE;
 	}
 
-	/* Static services have no per-client connection (client->socket is unset/0), so the
-	   disconnection check below does not apply to them - it would false-positive and abort
-	   long-lived static services (e.g. the IRC daemon, MRC connector). */
-	if (client->callback.auto_terminate && !(client->service->options & SERVICE_OPT_STATIC)
+	/* Disconnection check (added in ead5ccf16): abort the script after its client socket has been
+	   gone for JS_DISCONNECT_TERMINATE_COUNT operation-callbacks.  Enabled by default for
+	   per-connection services via the js.terminate_on_disconnect property; a script that
+	   intentionally keeps working after its peer disconnects (e.g. binkit, which finishes the batch,
+	   updates binkstats.ini and touches the FTN event semaphores) opts out by setting
+	   js.terminate_on_disconnect=false.  This is a peer of, but distinct from, auto_terminate (server
+	   shutdown/recycle), so it can be toggled without affecting terminate-on-server-shutdown.  Static
+	   services have no per-client connection (client->socket is unset/0), so the check never applies
+	   to them anyway - it would false-positive and abort long-lived static services (IRC, MRC). */
+	if (client->callback.terminate_on_disconnect && !(client->service->options & SERVICE_OPT_STATIC)
 	    && !socket_check(client->socket, nullptr, nullptr, 0)
-	    && ++client->callback.offline_counter >= 10) {
+	    && ++client->callback.offline_counter >= JS_DISCONNECT_TERMINATE_COUNT) {
 		JS_ReportWarning(cx, "Disconnected");
 		client->callback.counter = 0;
 		JS_SetOperationCallback(cx, js_OperationCallback);
@@ -1393,6 +1399,7 @@ static void js_static_service_thread(void* arg)
 	service_client.callback.yield_interval = service->js.yield_interval;
 	service_client.callback.terminated = &service->terminated;
 	service_client.callback.auto_terminate = true;
+	service_client.callback.terminate_on_disconnect = true;  // static services are exempt via the guard in js_OperationCallback
 
 	if ((js_runtime = jsrt_GetNew(service->js.max_bytes, 5000, __FILE__, __LINE__)) == NULL) {
 		if (service->log_level >= LOG_ERR)
@@ -2601,6 +2608,7 @@ void services_thread(void* arg)
 					client->callback.yield_interval = service[i].js.yield_interval;
 					client->callback.terminated     = &client->service->terminated;
 					client->callback.auto_terminate = true;
+					client->callback.terminate_on_disconnect = true;  // ead5ccf16: abort on client disconnect; scripts opt out via js.terminate_on_disconnect=false (e.g. binkit)
 
 					udp_buf = NULL;
 

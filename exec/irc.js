@@ -5,8 +5,11 @@
 
 // disable auto-termination.
 var old_auto_terminate=js.auto_terminate;
+var old_terminate_on_disconnect=js.terminate_on_disconnect;
 js.on_exit("js.auto_terminate=old_auto_terminate");
+js.on_exit("js.terminate_on_disconnect=old_terminate_on_disconnect");
 js.auto_terminate=false;
+js.terminate_on_disconnect=false;
 
 var REVISION = "1.62";
 var SPACEx80 = "                                                                                ";

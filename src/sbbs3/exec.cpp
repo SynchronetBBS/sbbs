@@ -513,8 +513,12 @@ js_OperationCallback(JSContext *cx)
 		return JS_FALSE;
 	}
 
-	if (sbbs->js_callback.auto_terminate && !sbbs->online
-	    && ++sbbs->js_callback.offline_counter >= 10) {
+	/* Disconnection check: abort the script after the user has been offline for
+	   JS_DISCONNECT_TERMINATE_COUNT operation-callbacks.  Gated on terminate_on_disconnect (like the
+	   Services and Web servers); auto_terminate's shutdown/recycle role is handled in
+	   js_CommonOperationCallback. */
+	if (sbbs->js_callback.terminate_on_disconnect && !sbbs->online
+	    && ++sbbs->js_callback.offline_counter >= JS_DISCONNECT_TERMINATE_COUNT) {
 		JS_ReportWarning(cx, "Disconnected");
 		sbbs->js_callback.counter = 0;
 		JS_SetOperationCallback(cx, js_OperationCallback);

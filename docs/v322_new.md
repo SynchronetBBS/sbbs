@@ -273,6 +273,16 @@
   the encode
 - TraceMonkey JIT is disabled by default — addresses
   intermittent crashes (issue #1143)
+- New `js.terminate_on_disconnect` property (default `true`)
+  controls auto-termination of a script when its client
+  disconnects — in the Terminal, Web, and Services servers —
+  decoupled from `js.auto_terminate` (which now governs only
+  server shutdown/recycle). The Web and Services servers gained
+  this disconnect check; a script that intentionally keeps working
+  past disconnect (e.g. binkit) opts out with
+  `js.terminate_on_disconnect=false`. Scripts/doors that
+  previously set `js.auto_terminate=false` to survive a disconnect
+  should now also clear this flag
 - `jsexec` and `jsdoor` now ship with auto-generated object/API
   documentation; `jsexec`-only globals no longer leak into
   `jsobjs.html`

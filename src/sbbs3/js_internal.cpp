@@ -33,6 +33,7 @@ enum {
 	PROP_VERSION
 	, PROP_TERMINATED
 	, PROP_AUTO_TERMINATE
+	, PROP_TERMINATE_ON_DISCONNECT
 	, PROP_COUNTER
 	, PROP_TIME_LIMIT
 	, PROP_YIELD_INTERVAL
@@ -94,6 +95,9 @@ static JSBool js_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 			break;
 		case PROP_AUTO_TERMINATE:
 			*vp = BOOLEAN_TO_JSVAL(cb->auto_terminate);
+			break;
+		case PROP_TERMINATE_ON_DISCONNECT:
+			*vp = BOOLEAN_TO_JSVAL(cb->terminate_on_disconnect);
 			break;
 		case PROP_COUNTER:
 			*vp = DOUBLE_TO_JSVAL((double)cb->counter);
@@ -161,6 +165,9 @@ static JSBool js_set(JSContext *cx, JSObject *obj, jsid id, JSBool strict, jsval
 		case PROP_AUTO_TERMINATE:
 			JS_ValueToBoolean(cx, *vp, &cb->auto_terminate);
 			break;
+		case PROP_TERMINATE_ON_DISCONNECT:
+			JS_ValueToBoolean(cx, *vp, &cb->terminate_on_disconnect);
+			break;
 		case PROP_COUNTER:
 			if (!JS_ValueToInt32(cx, *vp, (int32*)&cb->counter))
 				return JS_FALSE;
@@ -201,6 +208,9 @@ static jsSyncPropertySpec js_properties[] = {
 		, JSDOCSTR("JavaScript engine version information (AKA system.js_version) - <small>READ ONLY</small>")},
 	{   "auto_terminate",   PROP_AUTO_TERMINATE, JSPROP_ENUMERATE,   311
 		, JSDOCSTR("Set to <i>false</i> to disable the automatic termination of the script upon external request or user disconnection")},
+	{   "terminate_on_disconnect", PROP_TERMINATE_ON_DISCONNECT, JSPROP_ENUMERATE, 32200
+		, JSDOCSTR("Set to <i>false</i> to disable the automatic termination of the script when its client disconnects "
+		"(default: <i>true</i> in the Terminal, Web, and Services servers; not applicable elsewhere)")},
 	{   "terminated",       PROP_TERMINATED,    JSPROP_ENUMERATE,   311
 		, JSDOCSTR("Termination has been requested (stop execution as soon as possible)")},
 	{   "branch_counter",   PROP_COUNTER,       0,                  311
@@ -1568,6 +1578,7 @@ void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	jsval                    rval;
 	JSObject*                script;
 	BOOL                     auto_terminate = cb->auto_terminate;
+	BOOL                     terminate_on_disconnect = cb->terminate_on_disconnect;
 	JSObject *               glob = JS_GetGlobalObject(cx);
 	global_private_t *       pt;
 	str_list_t               list = NULL;
@@ -1611,6 +1622,7 @@ void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 	}
 
 	cb->auto_terminate = FALSE;
+	cb->terminate_on_disconnect = FALSE;
 
 	while ((p = strListPop(&list)) != NULL) {
 		if ((script = JS_CompileScript(cx, obj, p, strlen(p), NULL, 0)) != NULL) {
@@ -1625,6 +1637,8 @@ void js_EvalOnExit(JSContext *cx, JSObject *obj, js_callback_t* cb)
 
 	if (auto_terminate)
 		cb->auto_terminate = TRUE;
+	if (terminate_on_disconnect)
+		cb->terminate_on_disconnect = TRUE;
 }
 
 JSObject* js_CreateInternalJsObject(JSContext* cx, JSObject* parent, js_callback_t* cb, js_startup_t* startup)

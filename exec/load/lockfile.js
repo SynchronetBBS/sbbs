@@ -114,9 +114,12 @@ function Unlock(filename)
 function UnlockAll()
 {
 	var old_at=js.auto_terminate;
+	var old_tod=js.terminate_on_disconnect;
 	js.auto_terminate=false;
+	js.terminate_on_disconnect=false;
 	for(var filename in LockedFiles) {
 		Unlock(filename);
 	}
 	js.auto_terminate=old_at;
+	js.terminate_on_disconnect=old_tod;
 }
