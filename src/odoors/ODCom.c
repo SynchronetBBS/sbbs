@@ -1668,7 +1668,7 @@ no_fossil:
       DCB dcb;
 
       /* Generate device name. */
-      sprintf(szDevName, "COM%u", (unsigned)pPortInfo->btPort + 1);
+      snprintf(szDevName, sizeof(szDevName), "COM%u", (unsigned)pPortInfo->btPort + 1);
 
       /* Attempt to create handle for device. */
       pPortInfo->hCommDev = CreateFile(szDevName, GENERIC_READ | GENERIC_WRITE,
