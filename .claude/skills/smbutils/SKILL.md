@@ -157,8 +157,11 @@ Group by what you actually want to do:
 - `#n` — actual **message number** (the persistent ID stored in the header)
 - `-n` — **age in days** (e.g. `v-7` = messages from the last week)
 
-Use `-#<N>` to limit how many messages a `l`/`v`/`V`/`r` prints (e.g.
-`-#10 l` → list first 10).
+Use a bare **`-<N>`** option to limit how many messages a `l`/`v`/`V`/`r`
+prints (e.g. `-1 r#42` → read just message #42 and stop; `-10 l` → list
+ten). This is a plain negative-number option, **not** `-#<N>` — `-#` is
+rejected as `Unknown opt '#'`. (The `--help` line `-#  = set number of
+messages` uses `#` only as a stand-in for the number.)
 
 ### Import
 
@@ -238,15 +241,25 @@ For very busy mail bases (~6k+ messages) prefer the windowed forms — full
 filtered reads of one user's mail is still a `MsgBase` JS script via
 `jsexec`; this awk recipe is the one-liner equivalent.
 
-## `[n]` pitfalls
+## `[n]` and count-limit pitfalls
 
-- `-#N` (limit count) is **not** supported by `smbutil` (`-#` is rejected:
-  `Unknown opt '#'`). The `[n]` argument-suffix is a *starting position*,
-  with three forms documented earlier (`n` index, `#n` msg number, `-n`
-  age in days). To bound how much you read, use `V-7`/`V-30` to bound by
-  age, or `V<startIndex>` to start partway through.
+- **To limit the message count, use a bare `-<N>` option, not `-#<N>`.**
+  `-#N` is rejected (`Unknown opt '#'`) — the `-#` in `--help` is just a
+  placeholder for the number. So `smbutil -1 r#60063 <base>` reads exactly
+  one message (#60063) and stops; `smbutil -10 l <base>` lists ten. The
+  count option is independent of the `[n]` starting-position suffix and
+  combines with it.
+- You can also bound by age (`V-7`/`V-30`) or start partway through
+  (`V<startIndex>`) instead of, or in addition to, a count limit.
 - The starting index `[n]` form is a **1-based** offset into the base, not
   a message number. Use `#n` if you have the persistent message ID.
+- **`r` with no count limit reads from the start position to the *end* of
+  the base and paginates**, so when piped / run non-interactively it can
+  stall or appear to hang (or get auto-backgrounded) waiting for a keypress.
+  To read one specific message cleanly in a script:
+  `smbutil -o -1 r#<num> <base> </dev/null` — `-1` caps it at one message,
+  `</dev/null` satisfies the pager, `-o` puts any error on stdout so it's
+  captured in the same stream.
 
 ## Frequently useful options
 
@@ -259,6 +272,7 @@ filtered reads of one user's mail is still a `MsgBase` JS script via
 | `-r` | Show raw body bytes (skip MIME decoding) — debugging only |
 | `-v` | Increase console verbosity (repeatable) |
 | `-o` | Send errors to stdout instead of stderr (easier to pipe/log) |
+| `-<N>` | Limit number of messages printed by `l`/`v`/`V`/`r` (e.g. `-1` = one). **Not** `-#<N>`, which is rejected |
 | `-C` | Continue past normally-fatal errors |
 | `-z<tz>` | Set timezone offset for the imported message timestamp |
 | `-t / -n / -u / -f / -e / -s` | to-name / to-addr / to-user# / from-name / from-user# / subject |
@@ -277,8 +291,9 @@ smbutil V-7 data/mail
 
 **Find a specific message by number and dump its body:**
 ```bash
-smbutil r#12345 data/mail
+smbutil -1 r#12345 data/mail </dev/null   # -1 caps output at this one msg
 ```
+(Without `-1`, `r` keeps reading to the end of the base and paginates.)
 
 **Repair a corrupt sub-board** (after backing it up):
 ```bash
