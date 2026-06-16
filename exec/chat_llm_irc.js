@@ -74,6 +74,23 @@
  *                                             content word can't carry a
  *                                             "high confidence" score
  *                                             (default 2)
+ *   irc_eager_nicks                        -- comma-separated IRC nicks the
+ *                                             bot is EAGER to chat with: the
+ *                                             "don't speak until addressed"
+ *                                             and "only volunteer when highly
+ *                                             confident" safeguards are relaxed
+ *                                             for them. Their unaddressed room
+ *                                             questions are answered after
+ *                                             irc_eager_wait (not the full
+ *                                             irc_intervention_wait), bypassing
+ *                                             the cooldown, the BM25 high-
+ *                                             confidence gate, and the
+ *                                             volunteering abstain pass.
+ *                                             Matched case-insensitively.
+ *   irc_eager_wait                         -- seconds to wait before chiming
+ *                                             in on an eager nick's unanswered
+ *                                             question (default 20; 0 = next
+ *                                             poll tick)
  *   irc_ack_enabled                        -- acknowledge a clear, brief
  *                                             reply to the bot's OWN last
  *                                             line: a social closer ("ah
@@ -198,6 +215,34 @@ function build_aliases(extra) {
     return names;
 }
 var STATIC_ALIASES = build_aliases(cfg.irc_aliases);
+
+/* Nicks the bot is EAGER to chat with.  For these users the usual
+ * "don't speak until addressed" and "only volunteer an answer when
+ * highly confident" safeguards are relaxed: their unaddressed room
+ * questions are answered after the (short) eager wait, skipping the
+ * per-channel cooldown, the BM25 high-confidence gate, and the
+ * volunteering SKIP/verify abstain pass.  Returns a set keyed by
+ * lowercased nick for case-insensitive lookup (see is_eager). */
+function build_nick_set(list) {
+    var set = {};
+    if (list) {
+        var parts = String(list).split(",");
+        for (var i = 0; i < parts.length; i++) {
+            var n = parts[i].replace(/^\s+|\s+$/g, "").toLowerCase();
+            if (n) set[n] = true;
+        }
+    }
+    return set;
+}
+var EAGER_NICKS = build_nick_set(cfg.irc_eager_nicks);
+/* Short wait before chiming in on an eager nick's question.  0 is a
+ * valid value (respond on the next intervention poll), so don't fold it
+ * into the default via `||`. */
+var EAGER_WAIT = parseInt(cfg.irc_eager_wait, 10);
+if (isNaN(EAGER_WAIT)) EAGER_WAIT = 20;
+function is_eager(nick) {
+    return !!EAGER_NICKS[String(nick || "").toLowerCase()];
+}
 
 function current_address_names() {
     /* Combine the dynamic current nick (which may have a "_" suffix
@@ -535,6 +580,9 @@ function reload_config_if_changed() {
                              && cfg.irc_ack_closer_chance !== '')
                             ? parseFloat(cfg.irc_ack_closer_chance) : 0.9;
     STATIC_ALIASES         = build_aliases(cfg.irc_aliases);
+    EAGER_NICKS            = build_nick_set(cfg.irc_eager_nicks);
+    EAGER_WAIT             = parseInt(cfg.irc_eager_wait, 10);
+    if (isNaN(EAGER_WAIT)) EAGER_WAIT = 20;
     /* irc_nick / irc_network / irc_channels changes require a
      * reconnect to take effect -- we DON'T auto-reconnect on them
      * because that would disrupt the active session.  Sysop should
@@ -1186,29 +1234,37 @@ function check_intervention() {
         if (!st.open_question) continue;
         /* Don't volunteer answers to a muted user's questions. */
         if (is_muted(st.open_question.nick)) { st.open_question = null; continue; }
+        /* Eager nicks get a faster, ungated intervention: the bot is
+         * meant to chat with them readily, so skip the long intervention
+         * wait, the per-channel cooldown, the BM25 high-confidence gate,
+         * and the volunteering abstain pass below. */
+        var eager = is_eager(st.open_question.nick);
+
         var age = system.timer - st.open_question.when;
-        if (age < INTERVENTION_WAIT) continue;
+        if (age < (eager ? EAGER_WAIT : INTERVENTION_WAIT)) continue;
 
         var since_last = system.timer - st.last_intervention;
-        if (st.last_intervention && since_last < INTERVENTION_COOLDOWN) {
+        if (!eager && st.last_intervention && since_last < INTERVENTION_COOLDOWN) {
             /* In cooldown -- drop the question, don't keep checking. */
             st.open_question = null;
             continue;
         }
 
-        if (!is_high_confidence(st.open_question.text)) {
+        if (!eager && !is_high_confidence(st.open_question.text)) {
             /* Not confident.  Let it expire. */
             st.open_question = null;
             continue;
         }
 
-        /* Chime in -- but only if the engine is confident.  The
-         * volunteering flag makes chat_llm.js abstain (return null)
-         * rather than emit a guessy, possibly-wrong unsolicited answer. */
+        /* Chime in.  For non-eager nicks the volunteering flag makes
+         * chat_llm.js abstain (return null) rather than emit a guessy,
+         * possibly-wrong unsolicited answer; eager nicks get a direct,
+         * unguarded answer (their "usual rules don't apply"). */
         var reply = dispatch_chat(st.open_question.nick,
                                   st.open_question.text,
                                   chan,
-                                  { volunteering: true });
+                                  eager ? { eager: true }
+                                        : { volunteering: true });
         if (reply) {
             irc_say(chan, st.open_question.nick + ": " + reply);
             /* An intervention is a substantive line too -- let the asker's
