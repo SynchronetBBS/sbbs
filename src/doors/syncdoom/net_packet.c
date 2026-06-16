@@ -275,6 +275,9 @@ void NET_WriteString(net_packet_t *packet, char *string)
     byte *p;
     size_t string_size;
 
+    if (string == NULL)         // never strlen(NULL) -- write an empty string
+        string = "";
+
     string_size = strlen(string) + 1;
 
     // Increase the packet size until large enough to hold the string

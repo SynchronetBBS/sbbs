@@ -57,7 +57,7 @@ void NET_WaitForLaunch(void)
                 last_reported = net_client_wait_data.num_players;
             }
 
-            // The controlling player starts the game once every expected
+            // The controlling player launches the game once every expected
             // slot is filled.
 
             if (!launched

@@ -307,7 +307,7 @@ void D_StartGameLoop(void)
     lasttime = GetAdjustedTime() / ticdup;
 }
 
-#if ORIGCODE
+#if ORIGCODE || defined(FEATURE_MULTIPLAYER)
 //
 // Block until the game start message is received from the server.
 //
@@ -443,6 +443,28 @@ void D_StartNetGame(net_gamesettings_t *settings,
 	settings->new_sync = 0;
 	settings->extratics = 1;
 	settings->ticdup = 1;
+
+#ifdef FEATURE_MULTIPLAYER
+	// syncdoom: doomgeneric stubbed out the netgame start handshake (the
+	// ORIGCODE block above). For a network game we must actually run it:
+	// send our settings and block until the server starts the game, then
+	// adopt the settings the server broadcasts.
+	if (net_client_connected)
+	{
+		int i;
+
+		offsetms = 0;
+		recvtic = 0;
+
+		NET_CL_StartGame(settings);
+		BlockUntilStart(settings, callback);
+		NET_CL_GetSettings(settings);
+
+		localplayer = settings->consoleplayer;
+		for (i = 0; i < NET_MAXPLAYERS; ++i)
+			local_playeringame[i] = i < settings->num_players;
+	}
+#endif
 
 	ticdup = settings->ticdup;
 	new_sync = settings->new_sync;

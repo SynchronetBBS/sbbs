@@ -158,7 +158,27 @@ static void SaveGameSettings(net_gamesettings_t *settings)
 
 static void InitConnectData(net_connect_data_t *connect_data)
 {
+    int p;
+
     connect_data->max_players = MAXPLAYERS;
+
+    //!
+    // @arg <n>
+    // @category net
+    //
+    // syncdoom: the match size -- how many players the controlling player waits
+    // for before the game starts. 1 starts immediately. (Set by the lobby.)
+    //
+    p = M_CheckParmWithArgs("-players", 1);
+    if (p > 0)
+    {
+        connect_data->max_players = atoi(myargv[p + 1]);
+        if (connect_data->max_players < 1)
+            connect_data->max_players = 1;
+        if (connect_data->max_players > MAXPLAYERS)
+            connect_data->max_players = MAXPLAYERS;
+    }
+
     connect_data->drone = false;
 
     //!

@@ -1565,9 +1565,13 @@ int main(int argc, char **argv)
 			if (*v) { strncpy(g_player_name, v, sizeof(g_player_name) - 1); g_player_name[sizeof(g_player_name) - 1] = '\0'; }
 		}
 	}
-	// Hand the BBS handle to the net layer before it self-defaults the name.
-	if (g_player_name[0] != '\0')
-		net_player_name = g_player_name;
+	// Hand the BBS handle to the net layer. It must be non-NULL: the net layer
+	// sends it at connect time (NET_CL_SendSYN) and would strlen(NULL)-crash
+	// otherwise, and its own default doesn't run before then. The lobby always
+	// passes -name; default for direct/manual launches.
+	if (g_player_name[0] == '\0')
+		strcpy(g_player_name, "Player");
+	net_player_name = g_player_name;
 	if (s_lines < 1)
 		s_lines = 25;
 	compute_geometry();              // s_pxW/s_pxH from viewport + scale config
