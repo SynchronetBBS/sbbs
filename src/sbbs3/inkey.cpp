@@ -221,8 +221,21 @@ char sbbs_t::handle_ctrlkey(char ch, int mode)
 					js_create_user_objects(js_hotkey_cx, js_hotkey_glob);
 				}
 				js_execfile(cmdstr(cfg.hotkey[i]->cmd + 1, nulstr, nulstr, tmp), /* startup_dir: */ NULL, /* scope: */ js_hotkey_glob, js_hotkey_cx, js_hotkey_glob);
-			} else
-				external(cmdstr(cfg.hotkey[i]->cmd, nulstr, nulstr, tmp), 0);
+			} else {
+				long hk_mode = 0;
+				if (cfg.hotkey[i]->misc & XTRN_STDIO) {
+					hk_mode |= EX_STDIO;
+					if (cfg.hotkey[i]->misc & WWIVCOLOR)
+						hk_mode |= EX_WWIV;
+				}
+				if (cfg.hotkey[i]->misc & XTRN_NATIVE)
+					hk_mode |= EX_NATIVE;
+				if (cfg.hotkey[i]->misc & XTRN_SH)
+					hk_mode |= EX_SH;
+				if (cfg.hotkey[i]->misc & XTRN_BIN)
+					hk_mode |= EX_BIN;
+				external(cmdstr(cfg.hotkey[i]->cmd, nulstr, nulstr, tmp), hk_mode);
+			}
 			if (!(sys_status & SS_SPLITP)) {
 				term->newline();
 				term->restoreline();

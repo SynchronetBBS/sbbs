@@ -403,7 +403,7 @@ typedef enum {                       // Values for xtrn_t.event
 #define SWAP            (1 << 8)      // Swap for this door
 #define FREETIME        (1 << 9)      // Free time while in this door
 #define QUICKBBS        (1 << 10)     // QuickBBS style editor
-#define EXPANDLF        (1 << 11)     // Expand LF to CRLF editor (deprecated)
+#define XTRN_BIN        (1 << 11)     // Binary I/O: no charset/LF translation (== EX_BIN); was EXPANDLF
 #define QUOTEALL        (1 << 12)     // Automatically quote all of msg
 #define QUOTENONE       (1 << 13)     // Automatically quote none of msg
 #define XTRN_NATIVE     (1 << 14)     // Native application (EX_NATIVE)
@@ -769,7 +769,7 @@ enum {                            // readmail and delmailidx which types
 #define EX_POPEN    (1 << 7)      // Leave COM port open	(*legacy*)
 #define EX_OFFLINE  (1 << 8)      // Run this program offline
 #define EX_BG       (1 << 10)     // Back-ground/detached process
-#define EX_BIN      (1 << 11)     // Binary mode (no Unix LF to CRLF)
+#define EX_BIN      XTRN_BIN       // Binary mode: no charset/LF translation (shares the misc bit)
 #define EX_NATIVE   XTRN_NATIVE     // Native (not MS-DOS) application
 #define EX_CHKTIME  XTRN_CHKTIME    // Check time left
 #define EX_NOECHO   XTRN_NOECHO     // Don't echo stdin to stdout

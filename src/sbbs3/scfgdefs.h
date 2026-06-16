@@ -371,6 +371,7 @@ typedef struct {							/* Command Shells */
 typedef struct {
 	uchar		key;
 	char		cmd[LEN_CMD+1];
+	uint32_t	misc;						/* Intercept I/O */
 } hotkey_t;
 
 enum mqtt_tls_mode {

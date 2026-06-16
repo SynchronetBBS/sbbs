@@ -2499,6 +2499,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"FOSSIL Only",
+		"I/O Method",
+		"External Programs > Global Hot Key Events > I/O Method > FOSSIL Only"
+	},
+	{
+		"FOSSIL Only",
 		"Record Terminal Width",
 		"External Programs > Message Editors > Record Terminal Width > FOSSIL Only"
 	},
@@ -2511,6 +2516,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"FOSSIL or UART",
 		"I/O Method",
 		"External Programs > Online Programs (Doors) > Online Programs... > I/O Method > FOSSIL or UART"
+	},
+	{
+		"FOSSIL or UART",
+		"I/O Method",
+		"External Programs > Global Hot Key Events > I/O Method > FOSSIL or UART"
 	},
 	{
 		"FOSSIL or UART",
@@ -2709,6 +2719,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"I/O Method",
+		"Ctrl- Hot Key Event",
+		"External Programs > Global Hot Key Events > Ctrl- Hot Key Event > I/O Method"
+	},
+	{
+		"I/O Method",
 		"Editor",
 		"External Programs > Message Editors > Editor > I/O Method"
 	},
@@ -2716,6 +2731,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"I/O Method",
 		"External Sysop Chat Pagers",
 		"Chat Features > External Sysop Chat Pagers > I/O Method"
+	},
+	{
+		"I/O Method",
+		"Global Hot Key Events",
+		"External Programs > Global Hot Key Events > I/O Method"
 	},
 	{
 		"I/O Method",
@@ -9679,6 +9699,11 @@ static const scfg_option_t scfg_option_index[] = {
 	},
 	{
 		"Socket",
+		"I/O Method",
+		"External Programs > Global Hot Key Events > I/O Method > Socket"
+	},
+	{
+		"Socket",
 		"Record Terminal Width",
 		"External Programs > Message Editors > Record Terminal Width > Socket"
 	},
@@ -9736,6 +9761,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"Standard",
 		"I/O Method",
 		"External Programs > Online Programs (Doors) > Online Programs... > I/O Method > Standard"
+	},
+	{
+		"Standard",
+		"I/O Method",
+		"External Programs > Global Hot Key Events > I/O Method > Standard"
 	},
 	{
 		"Standard",
@@ -10156,6 +10186,11 @@ static const scfg_option_t scfg_option_index[] = {
 		"UART Only",
 		"I/O Method",
 		"External Programs > Online Programs (Doors) > Online Programs... > I/O Method > UART Only"
+	},
+	{
+		"UART Only",
+		"I/O Method",
+		"External Programs > Global Hot Key Events > I/O Method > UART Only"
 	},
 	{
 		"UART Only",

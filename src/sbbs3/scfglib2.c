@@ -572,6 +572,7 @@ bool read_xtrn_cfg(scfg_t* cfg, char* error, size_t maxerrlen)
 
 		cfg->hotkey[i]->key = atoi(list[i] + 7);
 		SAFECOPY(cfg->hotkey[i]->cmd, iniGetString(ini, section, "cmd", "", value));
+		cfg->hotkey[i]->misc = iniGetInt32(ini, section, "settings", 0);
 	}
 	iniFreeStringList(list);
 

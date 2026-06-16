@@ -1122,6 +1122,7 @@ bool write_xtrn_cfg(scfg_t* cfg)
 	for (int i = 0; i < cfg->total_hotkeys; i++) {
 		SAFEPRINTF(name, "hotkey:%u", cfg->hotkey[i]->key);
 		iniSetString(&ini, name, "cmd", cfg->hotkey[i]->cmd, &ini_style);
+		iniSetHexInt(&ini, name, "settings", cfg->hotkey[i]->misc, &ini_style);
 	}
 
 	FILE* fp = fopen(inipath, "w");

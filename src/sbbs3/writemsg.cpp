@@ -625,6 +625,8 @@ bool sbbs_t::writemsg(const char *fname, const char *top, char *subj, int mode, 
 			ex_mode |= EX_NATIVE;
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_SH)
 			ex_mode |= EX_SH;
+		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_BIN)
+			ex_mode |= EX_BIN;
 
 		if (!draft_restored) {
 			if (!linesquoted)
@@ -1333,6 +1335,8 @@ bool sbbs_t::editfile(char *fname, uint maxlines, int wmode, const char* to, con
 			ex_mode |= EX_NATIVE;
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_SH)
 			ex_mode |= EX_SH;
+		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_BIN)
+			ex_mode |= EX_BIN;
 		if (cfg.xedit[useron_xedit - 1]->misc & XTRN_STDIO) {
 			ex_mode |= EX_STDIO;
 			if (cfg.xedit[useron_xedit - 1]->misc & WWIVCOLOR)
