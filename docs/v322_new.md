@@ -73,6 +73,11 @@
 - VT320 status-line control (`DECSSDT` / `DECSASD`) — the BBS can
   now write to the bottom status row of a terminal that supports
   it
+- New **"Untranslated" external I/O mode** lets a door, external
+  message editor, sysop page program, or global hot-key program
+  emit output already encoded for the remote terminal (its own
+  UTF-8 or raw graphics), with no CP437-to-UTF-8 translation or
+  bare-LF-to-CRLF expansion applied by the BBS
 
 ## Web Server
 
@@ -155,6 +160,11 @@
   menu (Heap Size, Time Limit, GC Interval, Yield Interval, Load
   Path) — corrects the wrong "ticks" wording (these are
   SpiderMonkey operation callbacks, not wall-clock time)
+- New **"Translate Character Set"** prompt in the external program
+  **I/O Method** dialog (`Yes` by default; `No` runs the program
+  *Untranslated*, shown in the option summary) — applies to doors,
+  external editors, and sysop page programs, and global hot keys
+  gained their own **I/O Method** option
 
 ## Customization
 
