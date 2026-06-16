@@ -297,104 +297,76 @@ advertise = 10.0.0.7
 (A per-host environment variable could serve the same role, but the hostname sub-section
 keeps all config in the one shared ini.)
 
-## Where the lobby lives — and what exists to build on
+## Lobby — a JavaScript frontend (decided)
 
-The lobby is **new code, part of the `syncdoom` door itself** — a pre-game text menu
-(create / browse-and-join) shown before the game launches, reading and writing the
-`data/syncdoom/games/` registry. It is not a separate program.
+The lobby is **not** built into the C door. It is a **Synchronet JavaScript module** living
+beside the binary in `xtrn/syncdoom/`, which spawns the `syncdoom` C binary to play. The
+split falls exactly on the **engine / orchestration** line:
 
-There is **no existing real-time game lobby in Synchronet to derive from**. The closest
-BBS-native idioms, for reference rather than reuse:
+- **C door = engine**: rendering tiers, input, the net layer + UDP transport, and the
+  headless `-dedicated` relay. Plus the small CLI contract below. Stays portable to any
+  DOOR32.SYS BBS.
+- **JS lobby = orchestration**: browse/create/join UI, the `data/syncdoom/games/` registry
+  and discovery, reading `[net]`/`[wads]`/`[wadset.*]`, identity, and spawning servers.
 
-- **Inter-BBS door games** (e.g. the bundled `ny2008`) coordinate across *systems* via
-  FidoNet-style **netmail file exchange** (`INTERBBS.CFG`) — store-and-forward, turn-based,
-  not real-time. Wrong model for lockstep, but it's the established "doors talking to each
-  other" pattern.
-- **`presence-service.js` / `sbbsimsg`** — tracks who's online locally and inter-BBS via
-  instant messaging; a model for *presence/announce*, not match coordination.
-- Synchronet's **node table** (`getnodedat`/`putnodedat`) — live per-node status another
-  node can read; conceptually similar to our heartbeat registry, but node-scoped, not
-  match-scoped.
+### Why JS (what Synchronet gives for free)
 
-So we build the lobby fresh against the file registry; these inform the *shape*
-(heartbeat liveness, single-writer, file-based discovery) but none drop in.
+- **Node model** — `system.node_list` / the node table / `bbs.node_action`: live cross-node
+  awareness, no hand-rolled heartbeat scanning.
+- **UI** — `frame.js` / `tree.js` / lightbar libraries + `console.*` make a slick
+  server-browser trivial vs. hand-coding ANSI lightbars in C. (This replaces the earlier
+  C-lobby "Option A/B/C" sketch entirely.)
+- **Registry** — `File` + `JSON` with lock modes instead of C file locking.
+- **Identity/time/auth native** — `user.alias`, `user.number`, time-left — no DOOR32 parse
+  for the lobby part. **`system.host_name`** makes the per-host `advertise` override natural.
+- **MQTT** (`MQTT` object) for real-time lobby push if ever wanted; **no** new dependency.
+- No terminal probing for the lobby (the BBS already knows the term); fast iteration, no
+  recompile; matches the Synchronet door-loader idiom.
 
-## Lobby UI — proposed options
+Constraint: the lobby JS must be **SpiderMonkey 1.8.5-compatible** (no modern ES) like all
+Synchronet server-side JS.
 
-The lobby is the text screen shown **before** the game launches, so it runs before any
-graphics tier and must work on the same broad terminal range (plain ANSI/CP437, not just
-SyncTERM). Two views are needed no matter what — **browse/join** and **create** — plus a
-**waiting room** between joining and match start. The design fork is the browse model.
+### The C CLI contract the lobby drives
 
-### Option A — Classic prompt-driven list (works on any terminal)
+The door exposes everything the lobby needs on the command line — **no dropfile required**
+(the door reads only commtype, socket, and time from DOOR32.SYS, and all three are already
+override-able):
 
-A plain list plus a command prompt; no cursor addressing, no redraw loop.
+| Arg | Purpose | Status |
+|-----|---------|--------|
+| `-connect <addr:port>` | Join a match as a client | done (passes through) |
+| `-dedicated -port <n>` | Run as a headless match server | done |
+| `-spawnserver -port <n>` | Daemonize a detached `-dedicated` server, then return (so JS can launch one synchronously) | to add (wraps `mp_spawn_server`) |
+| `-name <handle>` | Set the network player name from the BBS handle | to add |
+| `-s%H -t%T -l%R` + WAD args | Socket / time / rows / IWAD+PWADs | done |
 
-```
-                     S Y N C D O O M  --  N E T W O R K   G A M E S
- --------------------------------------------------------------------------
-  #  Host        Mode        WAD              Map    Players  Status
- --------------------------------------------------------------------------
-  1  RoboCop     Co-op       DOOM2            MAP01    2/4    Lobby
-  2  Carcosa     Deathmatch  DOOM2 +myhouse   MAP07    3/4    Playing
-  3  Sigil       Altdeath    SIGIL            E5M1     1/8    Lobby
- --------------------------------------------------------------------------
-  [#] Join   [C]reate   [S]olo   [R]efresh   [Q]uit
-  Command: _
-```
+### Spawning & locating
 
-- Pro: trivial to build, no terminal-capability assumptions, classic door feel.
-- Con: no live updates without a manual refresh; least slick.
+- **Locate the binary** via `js.exec_dir` — the lobby script and the `syncdoom` binary share
+  `xtrn/syncdoom/`, so `js.exec_dir + "syncdoom"` needs no hardcoded path. The whole door
+  (binary + WADs + config + lobby) is self-contained in one directory.
+- **Play** — the lobby `bbs.exec()`s the binary with `-connect <addr:port> -name <alias>
+  -s%H -t%T -l%R` + the match's WAD args (binary/untranslated I/O mode); the door runs the
+  game and returns to the lobby.
+- **Host** — the lobby allocates a free port (JS `Socket` bind-test, or the C
+  `mp_alloc_port`), calls `syncdoom -spawnserver -port <n>` (C does the OS-correct
+  `fork`+`setsid` detach and returns the pid), and writes the registry entry.
+- **Cleanup** — servers self-terminate on idle and remove their own registry entry; the
+  lobby prunes stale entries by heartbeat age. (See *Server lifecycle & host-drop*.)
 
-### Option B — Full-screen lightbar browser (server-browser model)
+### Portability note
 
-Highlighted row, arrow-key navigation, ENTER joins, auto-refreshes from the heartbeat
-registry every few seconds. Scales to a wide terminal (reuses the renderer's geometry
-probe).
+A JS lobby makes **MP coordination Synchronet-native**, but the C door's
+`-connect`/`-dedicated`/`-spawnserver` stay the portable interface, so the single-player
+door remains universal and another BBS could script its own loader against the same
+contract. **Portable engine, Synchronet-native lobby.**
 
-```
-+========================= SYNCDOOM -- NETWORK GAMES =========================+
-|  Host        Mode        WAD              Map    Players  Status            |
-| -------------------------------------------------------------------------- |
-| >RoboCop     Co-op       DOOM2            MAP01    2/4    Lobby           < |
-|  Carcosa     Deathmatch  DOOM2 +myhouse   MAP07    3/4    Playing           |
-|  Sigil       Altdeath    SIGIL            E5M1     1/8    Lobby             |
-|                                                                            |
-+============================================================================+
-|  up/dn select   ENTER join   C create   S solo   Q quit                    |
-+============================================================================+
-             refreshing every 3s . 4 players online . 58m left
-```
+### Reference (no existing real-time lobby to lift)
 
-- Pro: matches the Doomseeker/IDE mental model, live counts/status, modern feel.
-- Con: needs cursor addressing + a redraw loop; must degrade to Option A on a dumb
-  terminal.
-
-### Option C — Auto / no lobby (args decide, sysop-baked)
-
-No browse menu: the SCFG command line / dropfile carries the game params and the door
-**joins a matching live game if one exists, else creates it**, going straight to the
-waiting room. Good for a sysop exposing one fixed game as its own door entry (e.g. a
-"Co-op DOOM2" menu command).
-
-- Pro: zero UI, fastest to a game.
-- Con: no choice, no visibility, can't browse multiple games.
-
-### Shared pieces (under A or B alike)
-
-- **Create flow** — a short guided sequence: WAD set -> mode -> skill -> starting map ->
-  max players -> scope (lan/public). A few prompts, or a mini lightbar form.
-- **Waiting room** — after create/join, before start: lists joined players + their nodes,
-  a ready/start control (creator starts, or auto-start when full / on a countdown), and a
-  chat line.
-
-### Recommendation
-
-**B as the primary browse UI, with A as the automatic fallback** when the terminal can't
-do cursor addressing (detected via the same probe path the renderer uses), and **C exposed
-as a per-menu SCFG option** for curated single-game door entries. All three share the same
-list/registry code; the create flow and waiting room are identical regardless of browse
-model.
+There is **no real-time game lobby in Synchronet to derive from**; these inform the *shape*
+only: Inter-BBS door games (`ny2008`, FidoNet netmail — store-and-forward), `presence-
+service.js`/`sbbsimsg` (presence, not match coordination), and the node table
+(`getnodedat`/`putnodedat`, node-scoped not match-scoped).
 
 ## WADs
 
@@ -512,17 +484,27 @@ still gets "pick an IWAD and play."
 - **Solo writes nothing to the registry** — pure single-player, no server, no net layer; it
   shares only the WAD picker with Create.
 
-## Build work (the bulk = restoring the net layer)
+## Build work & status
 
-1. Restore the chocolate-doom net `.c` files at doomgeneric's base revision; transport via
-   xpdev UDP (`sockwrap`) instead of SDL_net.
-2. Dedicated-server lifecycle: spawn on create, reap on end/empty/timeout, cap concurrency.
-3. Lobby: create/join menu + the `data/syncdoom/games/` registry + arg plumbing.
-4. Rendering stays per-client (the tiers already built: JXL/sixel/text); the dedicated
-   server is headless.
+**C door (engine):**
+
+1. Restore the chocolate-doom net `.c` files; transport via xpdev UDP (`sockwrap`) instead
+   of SDL_net. — **done** (base `f1f8ecde`; `net_udp.c`).
+2. Headless `-dedicated` server + lifecycle helpers (`mp_dedicated_main`, `mp_spawn_server`,
+   `mp_alloc_port`, idle-timeout). — **done** (server validated: binds, runs).
+3. CLI contract for the lobby: add `-spawnserver` and `-name`; confirm dropfile-less. — *to
+   do* (small).
+4. Rendering stays per-client (JXL/sixel/text tiers already built); the dedicated server is
+   headless.
+
+**JS lobby (orchestration, `xtrn/syncdoom/`, SpiderMonkey 1.8.5):**
+
+5. Browse/create/join + waiting room (Synchronet UI libs); `data/syncdoom/games/` registry
+   + discovery; read `[net]`/`[wads]`/`[wadset.*]`; port alloc + spawn via `-spawnserver`;
+   locate binary via `js.exec_dir`; launch play via `bbs.exec` (no dropfile).
 
 Bonuses that come for free with the net layer: in-game **chat** (`T` key), and players
-dropping cleanly when their BBS time (`-t` / DOOR32.SYS line 9) runs out.
+dropping cleanly when their BBS time (`-t`) runs out.
 
 ## Open questions for review
 
