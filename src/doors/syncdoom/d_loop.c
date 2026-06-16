@@ -37,7 +37,7 @@
 #include "net_io.h"
 #include "net_query.h"
 #include "net_server.h"
-#include "net_sdl.h"
+#include "net_udp.h"
 #include "net_loop.h"
 
 // The complete set of data for a particular tic.
@@ -476,7 +476,7 @@ boolean D_InitNetGame(net_connect_data_t *connect_data)
     {
         NET_SV_Init();
         NET_SV_AddModule(&net_loop_server_module);
-        NET_SV_AddModule(&net_sdl_module);
+        NET_SV_AddModule(&net_udp_module);
         NET_SV_RegisterWithMaster();
 
         net_loop_client_module.InitClient();
@@ -515,8 +515,8 @@ boolean D_InitNetGame(net_connect_data_t *connect_data)
 
         if (i > 0)
         {
-            net_sdl_module.InitClient();
-            addr = net_sdl_module.ResolveAddress(myargv[i+1]);
+            net_udp_module.InitClient();
+            addr = net_udp_module.ResolveAddress(myargv[i+1]);
 
             if (addr == NULL)
             {

@@ -38,5 +38,9 @@ void NET_SV_AddModule(net_module_t *module);
 
 void NET_SV_RegisterWithMaster(void);
 
+// Number of clients currently connected (syncdoom: empty-match detection).
+
+int NET_SV_ConnectedClients(void);
+
 #endif /* #ifndef NET_SERVER_H */
 

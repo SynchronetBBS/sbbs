@@ -12,29 +12,21 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//     List of features which can be enabled/disabled to slim down the
-//     program.
+//     Pseudo-random number generator for secure demos.
 //
 
-#ifndef DOOM_FEATURES_H
-#define DOOM_FEATURES_H
+#ifndef __AES_PRNG_H__
+#define __AES_PRNG_H__
 
-// Enables wad merging (the '-merge' command line parameter)
+#include "doomtype.h"
 
-#undef FEATURE_WAD_MERGE
+// Nonce value used as random seed for secure demos.
 
-// Enables dehacked support ('-deh')
+typedef byte prng_seed_t[16];
 
-#undef FEATURE_DEHACKED
+void PRNG_Start(prng_seed_t seed);
+void PRNG_Stop(void);
+unsigned int PRNG_Random(void);
 
-// Enables multiplayer support (network games)
-
-#define FEATURE_MULTIPLAYER
-
-// Enables sound output
-
-//#undef FEATURE_SOUND
-
-#endif /* #ifndef DOOM_FEATURES_H */
-
+#endif /* #ifndef __AES_PRNG_H__ */
 

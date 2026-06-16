@@ -22,6 +22,8 @@
 #include "doomgeneric.h"
 #include "render_text.h"
 #include "render_sixel.h"
+#include "m_argv.h"             // myargc/myargv (set directly for the dedicated path)
+#include "mp_server.h"          // mp_dedicated_main() headless server
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -106,6 +108,8 @@ static uint32_t g_tx_frames = 0;       // telemetry: frames actually emitted (no
 
 static char     g_home[PATH_MAX] = ""; // -home: full path to the user's storage dir (empty = cwd)
 static char     g_term_path[PATH_MAX] = ""; // -term: terminal.ini file or its dir (override)
+static char     g_player_name[64] = ""; // -name: network player handle (multiplayer)
+extern char *   net_player_name;       // net_client.c: defaulted unless we set it from -name
 static char     g_door32_path[PATH_MAX] = ""; // drop-file path (for the terminal.ini node-dir fallback)
 static int      g_cols = 80;           // text-tier columns (from terminal.ini, else 80)
 
@@ -1417,6 +1421,37 @@ int main(int argc, char **argv)
 
 	signal(SIGPIPE, SIG_IGN);    // a dead client -> EPIPE return, not signal death
 
+	// Headless dedicated-server mode: a match's tic relay, with no terminal,
+	// no DOOR32 user, and no per-user sandbox. Branch out before any terminal
+	// or render setup. The lobby spawns these via mp_spawn_server(); they can
+	// also be launched by hand for testing (syncdoom -dedicated -port <n>).
+	for (i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-dedicated") == 0) {
+			myargc = argc;       // net_udp InitServer reads -port from these
+			myargv = argv;
+			return mp_dedicated_main(60);   // TODO: idle timeout from [net]
+		}
+		// -spawnserver: daemonize a detached -dedicated server and exit, printing
+		// "<pid> <port>" -- so the JS lobby can launch a match server with one
+		// synchronous call. With no -port we allocate a free one ourselves.
+		if (strcmp(argv[i], "-spawnserver") == 0) {
+			int  j, port = 0;
+			long pid;
+			for (j = 1; j < argc; j++)
+				if (strcmp(argv[j], "-port") == 0 && j + 1 < argc)
+					port = atoi(argv[j + 1]);
+			if (port <= 0)
+				port = mp_alloc_port(20000, 20063);  // TODO: range from [net]
+			if (port <= 0) {
+				fprintf(stderr, "syncdoom: no free server port\n");
+				return 1;
+			}
+			pid = mp_spawn_server(argv[0], port);
+			printf("%ld %d\n", pid, port);   // lobby reads pid (liveness) + port
+			return pid > 0 ? 0 : 1;
+		}
+	}
+
 	// Drop file first, so an explicit -s/-t below can still override it. Either
 	// an explicit -door32 <path> or a bare "...door32.sys" path (Synchronet's %f).
 	for (i = 1; i < argc; i++) {
@@ -1525,8 +1560,14 @@ int main(int argc, char **argv)
 		} else if (strcmp(argv[i], "-home") == 0) {
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if (*v) { strncpy(g_home, v, sizeof(g_home) - 1); g_home[sizeof(g_home) - 1] = '\0'; }
+		} else if (strcmp(argv[i], "-name") == 0) {       // multiplayer player handle
+			const char *v = (i + 1 < argc) ? argv[++i] : "";
+			if (*v) { strncpy(g_player_name, v, sizeof(g_player_name) - 1); g_player_name[sizeof(g_player_name) - 1] = '\0'; }
 		}
 	}
+	// Hand the BBS handle to the net layer before it self-defaults the name.
+	if (g_player_name[0] != '\0')
+		net_player_name = g_player_name;
 	if (s_lines < 1)
 		s_lines = 25;
 	compute_geometry();              // s_pxW/s_pxH from viewport + scale config
@@ -1557,6 +1598,7 @@ int main(int argc, char **argv)
 		    strcmp(argv[i], "-charset")  == 0 || strcmp(argv[i], "-mode")    == 0 ||
 		    strcmp(argv[i], "-colors")   == 0 || strcmp(argv[i], "-home")    == 0 ||
 		    strcmp(argv[i], "-kpturn")   == 0 || strcmp(argv[i], "-kpdelay") == 0 ||
+		    strcmp(argv[i], "-name")     == 0 ||
 		    strcmp(argv[i], "-kpsmooth") == 0) {
 			i++;                                           // exact flags: skip the flag + its value
 			continue;

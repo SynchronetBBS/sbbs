@@ -11,6 +11,7 @@
  *---------------------------------------------------------------------*/
 
 #include "doomtype.h"
+#include "doomfeatures.h"
 
 /*---------------------------------------------------------------------*
  *  local definitions                                                  *
@@ -24,9 +25,16 @@
  *  public data                                                        *
  *---------------------------------------------------------------------*/
 
+// When FEATURE_MULTIPLAYER is enabled these are defined by the real net layer
+// (net_client.c); the stubs are only needed for a net-stripped single-player
+// build.
+#ifndef FEATURE_MULTIPLAYER
+
 boolean net_client_connected = false;
 
 boolean drone = false;
+
+#endif
 
 /*---------------------------------------------------------------------*
  *  private data                                                       *

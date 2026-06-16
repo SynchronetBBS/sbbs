@@ -54,6 +54,8 @@ void I_Quit (void);
 
 void I_Error (char *error, ...);
 
+void *I_Realloc(void *ptr, size_t size);
+
 void I_Tactile (int on, int off, int total);
 
 boolean I_GetMemoryValue(unsigned int offset, void *value, int size);
