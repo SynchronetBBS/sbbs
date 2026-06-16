@@ -314,34 +314,103 @@ model.
 
 ### WAD selection & configuration (new — proposed)
 
-Where the **files** live vs. where the selectable **list** comes from:
+#### Where the files live
 
-- **Files** — a shared, sysop-curated WAD directory in the door's own data area (e.g.
-  `xtrn/syncdoom/`), visible to every node via the shared install. Users **never upload
-  their own** WADs — that's both a desync hazard and a security one; the menu is
-  **system-wide, sysop-curated**.
-- **The list = named, playable *sets*, not a raw file dump.** A valid Doom config is
-  *exactly one IWAD + zero-or-more PWADs* — a bare PWAD (SIGIL, MyHouse) is unplayable
-  without its IWAD. So the offered choices are **named sets**, each = display name + iwad +
-  optional pwad list (+ which modes it's valid for), configured once in the door's
-  `syncdoom.ini` (`[wadset.*]` sections) or a sibling `wadsets.ini`:
+doomgeneric strips Chocolate's WAD-search logic (its `DOOMWADDIR`/`DOOMWADPATH`/registry
+block is all under `#if ORIGCODE`, which is **undefined**); it collapses to a compile-time
+`FILES_DIR`, defined as `"."` (`config.h`). So today WAD resolution is just: an **absolute
+/ already-existing path** (`D_FindWADByName` checks `M_FileExists` first), else the
+**current working directory**. No env vars, no search list — it "works" only because the
+sysop sets the door's startup dir and drops WADs there.
 
-  ```ini
-  [wadset.doom2]      ; "Doom II"          -> -iwad doom2.wad
-  [wadset.sigil]      ; "SIGIL"            -> -iwad doom.wad -file sigil.wad
-  [wadset.myhouse]    ; "MyHouse (co-op)"  -> -iwad doom2.wad -file myhouse.wad
-  ```
+Proposed norm: **the door owns a WAD directory and passes absolute paths to doomgeneric**,
+so resolution never depends on cwd (fragile across BBS launch contexts). The dir is
+**sysop-curated and shared** across nodes via the install — users **never** supply their
+own WADs (a desync hazard *and* a security one). IWADs are commercial and can't ship; the
+sysop drops in their own. (Freedoom is the one freely-redistributable IWAD one could ship
+or default to.)
 
-  A selected set just expands into the `-iwad`/`-file` args the door already forwards.
-- **Fallback (no config)** — auto-scan the WAD dir and classify each file by its 4-byte
-  header magic (`IWAD` vs `PWAD`), offering every IWAD as a standalone set. PWADs can't be
-  reliably auto-paired with the right IWAD, so anything beyond bare IWADs wants the config;
-  zero-config still gets "pick an IWAD and play."
+#### `[wads]` — global WAD config
 
-Who prompts for a set:
+| Key | Meaning |
+|-----|---------|
+| `dir` | WAD directory. Default: the door's own program dir (same resolution `syncdoom.ini` uses). Relative (to the door dir) or absolute; may be a comma-list for multiple search dirs. |
+| `default` | `<id>` of the pre-selected `[wadset.*]` in the picker; the set **Solo** uses when not prompting. |
+| `autoscan` | Offer loose IWADs found by scanning `dir` even without a matching `[wadset.*]`. `true`/`false`. |
+| `default_iwad` | IWAD paired with **auto-scanned standalone PWADs** (which otherwise can't be made playable). Only relevant when `autoscan = true`. |
+| `sort` | Picker order: `config` (ini section order) or `name` (alphabetical). |
 
-- **Create** and **Solo** — prompt (the set picker above; Solo omits the MP params).
-- **Join** — **never prompts**; it reads `wad =` from the registry, auto-loads exactly that
+Deliberately **out of scope**: `allow_user_wads` (no — curated dir is the point; MP desync
++ security), and global player/mode caps (those belong in the net section, not `[wads]`).
+
+#### `[wadset.*]` — one playable set per section
+
+The picker lists **named, playable *sets*, not a raw file dump**: a valid Doom config is
+*exactly one IWAD + zero-or-more PWADs* (a bare PWAD like SIGIL/MyHouse is unplayable
+without its IWAD). All filenames resolve in `[wads] dir`.
+
+| Key | Req? | Meaning |
+|-----|------|---------|
+| `iwad` | **yes** | The one base IWAD, e.g. `doom2.wad` → `-iwad doom2.wad`. |
+| `name` | no | Display name in the picker (defaults to the section `<id>`). |
+| `pwad` | no | Comma-separated PWADs loaded with `-file` (order significant). |
+| `desc` | no | One-line description for the picker. |
+| `modes` | no | Where the set may be used: `solo, coop, deathmatch, altdeath` (default: all). A DM-only pack sets `modes = deathmatch, altdeath`; subsumes a separate "solo allowed" flag. |
+| `map` | no | Default starting map / `-warp` value (creator can override). |
+| `maxplayers` | no | Default/recommended cap, ≤ 8 (`NET_MAXPLAYERS`); creator can override. |
+| `merge` | no | Comma-separated WADs merged into the IWAD via `-merge` (deutex-style; rare). |
+| `enabled` | no | `false` hides a set without deleting the section (default `true`). |
+| `note` | no | Caveat shown before launch (e.g. "needs a source port; may not run on vanilla"). |
+
+`skill` is intentionally **not** a set key — it's a per-match choice at creation.
+
+A selected set expands into the `-iwad`/`-file`/`-merge`/`-warp` args the door already
+forwards (`syncdoom.c`), each as an **absolute path** (`[wads] dir` + filename), so this
+layer is purely lobby-side — no change to the game launch path.
+
+#### Example
+
+```ini
+[wads]
+dir          = wads          ; relative to the door dir, or an absolute path
+default      = doom2         ; pre-selected set; Solo uses it when not prompting
+autoscan     = true          ; offer loose IWADs found in dir w/o a [wadset.*]
+default_iwad = freedoom2.wad ; IWAD paired with auto-scanned standalone PWADs
+sort         = config        ; picker order: config | name
+
+[wadset.doom2]
+name         = Doom II: Hell on Earth
+iwad         = doom2.wad
+desc         = The classic 32-level campaign
+modes        = solo, coop, deathmatch, altdeath
+
+[wadset.sigil]
+name         = SIGIL (John Romero)
+iwad         = doom.wad
+pwad         = sigil.wad
+map          = E5M1
+desc         = Romero's unofficial fifth episode
+modes        = solo, coop
+
+[wadset.dm-arena]
+name         = Deathmatch Arena
+iwad         = doom2.wad
+pwad         = arena1.wad, arena2.wad
+modes        = deathmatch, altdeath
+maxplayers   = 8
+```
+
+#### Fallback (no `[wadset.*]` configured)
+
+With `autoscan = true`, scan `dir` and classify each file by its 4-byte header magic
+(`IWAD` vs `PWAD`), offering every IWAD as a standalone set (and loose PWADs atop
+`default_iwad`). Anything beyond bare IWADs wants explicit `[wadset.*]` entries; zero-config
+still gets "pick an IWAD and play."
+
+#### Who prompts for a set
+
+- **Create** and **Solo** — prompt (the set picker; Solo omits the MP params).
+- **Join** — **never prompts**; reads `wad =` from the registry, auto-loads exactly that
   set, and **verifies the files exist locally before connecting**, refusing with a clear
   message if a node is missing one. The browse list *displays* each game's set so you know
   what you're joining.
@@ -371,6 +440,6 @@ dropping cleanly when their BBS time (`-t` / DOOR32.SYS line 9) runs out.
 - LAN-address auto-detection: how reliably can the server pick its own routable address on
   a multi-NIC host, vs. always requiring `[net] advertise =` on multi-host installs.
 - Whether `scope = public` ships at all in v1, or stays a documented-but-unbuilt option.
-- WAD-set config home — a `[wadset.*]` section in `syncdoom.ini` vs. a separate
-  `wadsets.ini` — and whether the auto-scan fallback is worth building for v1.
+- Whether the WAD-set auto-scan fallback is worth building for v1, or `[wadset.*]`
+  sections in `syncdoom.ini` are required (config home decided: `syncdoom.ini`).
 - Whether to expose persistent "rooms" later, and MQTT push for live lobby updates.
