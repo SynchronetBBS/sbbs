@@ -122,7 +122,12 @@ The match creator picks these; the lobby passes them to the dedicated server.
 All nodes share `data_dir`, so games are discovered via the **filesystem**, with no
 inter-door networking and no central matchmaker.
 
-`<data_dir>/syncdoom/games/` — **one file per live match**, e.g. `20001.ini`:
+`<data_dir>/syncdoom/games/` — **one file per live match**, named
+`<hostid>-<port>.ini`, e.g. `bbs-telnet-20001.ini`. The filename is **host-qualified**
+because the registry dir is shared across hosts and two hosts can independently allocate
+the same port from `port_range` — `<port>.ini` alone would collide. `<hostid>` + `<port>`
+is unique BBS-wide (one server per port per host) and matches the `hostid`/`port` fields
+inside:
 
 ```
 host       = SysopHandle
@@ -146,8 +151,8 @@ Flow:
 1. **Create** → server writes/owns its file and heartbeats it.
 2. **Browse** (any node) → door scans `games/*.ini`, lists the live ones (status=lobby,
    not full, fresh heartbeat) in a menu.
-3. **Join** → door connects to `127.0.0.1:<port>`; the **server** updates `players`/
-   `status`.
+3. **Join** → door connects to `<addr>:<port>` (or `127.0.0.1:<port>` via the `hostid`
+   loopback shortcut when it's on the same host); the **server** updates `players`/`status`.
 4. **End/crash** → server deletes its file on clean exit; stale files pruned by heartbeat
    age (dead `pid` or heartbeat > ~15 s).
 
@@ -201,6 +206,96 @@ Caveats that keep this opt-in and later-stage: NAT/port-forwarding setup, no BBS
 authentication or time-accounting for outside clients, version/WAD-set matching enforced
 purely by the protocol (mismatch desyncs), and the usual public-server abuse/cheating
 exposure. Ship LAN-only first; public is a deliberate sysop choice, per match.
+
+## `[net]` — networking & server config
+
+Multiplayer config lives in a `[net]` section of the door's `syncdoom.ini` (alongside the
+existing `[video]`/`[input]` and the new `[wads]`/`[wadset.*]`). All keys are optional; an
+absent key keeps the built-in default. These govern the dedicated-server lifecycle, address
+advertising, port allocation, discovery, and limits referenced throughout this doc.
+
+#### Addressing
+
+| Key | Meaning |
+|-----|---------|
+| `bind` | Address the dedicated server binds. Default: **all interfaces** (so both loopback and LAN clients reach it). Pin to one interface on a multi-NIC host. |
+| `advertise` | LAN address joiners connect to, written into the registry `addr`. Default: **auto-detected** primary LAN address, falling back to loopback on a single-host install. **Required** when auto-detection guesses wrong (multi-NIC) or to pin an interface on a multi-host BBS. |
+| `public_advertise` | Public address advertised for `scope = public` matches; the sysop **port-forwards** the UDP port(s) to it. Only consulted when `allow_public = true`. |
+
+#### Ports & concurrency
+
+| Key | Meaning |
+|-----|---------|
+| `port_range` | UDP port range for per-match dedicated servers, e.g. `20000-20063` (free-port scan within it; one port per live match). |
+| `max_games` | Cap on concurrent matches (bounds server processes/ports; the lobby refuses Create past it). |
+| `max_players` | Global ceiling on players per match, ≤ 8 (`NET_MAXPLAYERS`). A set's/creator's `maxplayers` can't exceed this. |
+
+#### Public access
+
+| Key | Meaning |
+|-----|---------|
+| `allow_public` | Master gate for `scope = public`. Default `false` — the lobby hides the public option entirely. Set `true` only after `public_advertise` + port-forwarding are in place. |
+
+#### Discovery & liveness
+
+| Key | Meaning |
+|-----|---------|
+| `discovery` | Game-list source: `registry` (shared-file, default) \| `query` (`net_query` LAN broadcast — for installs where `data_dir` isn't shared) \| `both`. |
+| `heartbeat` | Seconds between a server bumping its registry entry's `heartbeat` (default ~5). |
+| `stale` | Heartbeat age (or dead `pid`) after which a game entry is pruned from the list (default ~15). |
+| `idle_timeout` | Seconds an **empty** (zero-player) match waits before the dedicated server self-terminates and deletes its registry entry. Implements the empty-match shutdown rule. |
+
+#### Example
+
+```ini
+[net]
+bind         =                ; blank = all interfaces (default)
+advertise    =                ; blank = auto-detect LAN addr; set on multi-NIC/host
+port_range   = 20000-20063    ; per-match dedicated-server UDP ports
+max_games    = 8              ; concurrent matches
+max_players  = 8              ; per-match ceiling (<= NET_MAXPLAYERS)
+discovery    = registry       ; registry | query | both
+heartbeat    = 5              ; server registry-entry refresh, seconds
+stale        = 15             ; prune a game entry after this heartbeat age
+idle_timeout = 60             ; empty match self-terminates after this many seconds
+
+allow_public     = false      ; gate scope=public; needs public_advertise + forwarding
+public_advertise =            ; public address for scope=public matches
+```
+
+#### Shared config & per-host overrides
+
+`syncdoom.ini` is a **single shared file** in the install (`xtrn/syncdoom/`), read by every
+node on every host — even when hosts differ in OS (a Linux build and a Windows `.exe` both
+read the same ini beside them). Most `[net]` keys are BBS-wide policy, so sharing is
+correct: `port_range`, `max_games`, `max_players`, `allow_public`, `discovery`,
+`heartbeat`, `stale`, `idle_timeout`, and `bind = all-interfaces`.
+
+The one inherently **per-host** value is `advertise` (and, rarely, a pinned `bind`): a
+server on host A must advertise A's address, one on host B must advertise B's. That's why
+`advertise` **defaults to auto-detect** — with the shared ini left blank, each host's server
+advertises its *own* LAN address at runtime, so the shared file works untouched. Note the
+registry `addr` is the **advertised** address, not the raw bind result: `bind =
+all-interfaces` is a wildcard a joiner can't connect to, so the server writes the explicit/
+auto-detected concrete address instead.
+
+The shared file only needs help when you must **override** `advertise` per host (multi-NIC,
+where auto-detect picks the wrong interface). A single value can't express that, so the
+door reads `[net]` then overlays a **hostname-keyed sub-section** `[net.<hostname>]` (it
+knows its own `gethostname()`) — keeping one shared file that still carries per-host values:
+
+```ini
+[net]
+advertise =                 ; blank = auto-detect (works for most hosts)
+
+[net.bbs-telnet]            ; this host has two NICs; pin the right one
+advertise = 10.0.0.6
+[net.bbs-web]
+advertise = 10.0.0.7
+```
+
+(A per-host environment variable could serve the same role, but the hostname sub-section
+keeps all config in the one shared ini.)
 
 ## Where the lobby lives — and what exists to build on
 
