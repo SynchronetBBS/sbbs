@@ -1,0 +1,9 @@
+# build output
+/build/
+/syncdoom
+/syncdoom.map
+/syncdoom.gdb
+*.o
+# editor swap
+*.swp
+*.swo

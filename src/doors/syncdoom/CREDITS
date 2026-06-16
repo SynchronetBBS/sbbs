@@ -1,0 +1,41 @@
+syncdoom — Doom for Synchronet / SyncTERM (and any DOOR32.SYS BBS)
+==================================================================
+
+syncdoom is GPL-2.0, built on and incorporating the following GPL-2.0 works.
+See each upstream project for full copyright and license text.
+
+Engine (vendored in this directory)
+------------------------------------
+- doomgeneric — Wojciech Kosior / ozkl and contributors.
+  https://github.com/ozkl/doomgeneric  (GPL-2.0)
+  The portable Doom backend framework; the engine sources here are a
+  vendored fork of doomgeneric (itself derived from Chocolate Doom).
+- Chocolate Doom — Simon Howard ("fraggle") and contributors. (GPL-2.0)
+  The faithful Doom source port doomgeneric derives from.
+- DOOM — id Software (John Carmack et al.). (GPL-2.0)
+
+syncdoom's own code (this directory)
+------------------------------------
+- syncdoom.c — the SyncTERM/door backend: JXL/PPM frame
+  encoding over SyncTERM's APC image-cache protocol, DSR ack-pacing,
+  DOOR32.SYS / command-line session setup, per-user sandbox, input.
+
+Planned / to be incorporated (tracked, not yet vendored)
+--------------------------------------------------------
+- doom-cli — Nicholas Fraser (ludocode). (GPL-2.0)
+  https://github.com/ludocode/doom-cli
+  Source for the text render tiers (half/quadrant/sextant block chars,
+  3/4/8-bit color quantizers) — the CP437/ANSI and UTF-8 fallback modes.
+- doom-ascii — Wojciech Graj. (GPL-2.0)
+  https://github.com/wojciech-graj/doom-ascii
+  Reference for the plain-ASCII tier and adaptive key-repeat handling.
+- Chocolate Doom net layer (net_*.c) — for co-op/deathmatch multiplayer.
+
+Libraries linked
+----------------
+- libjxl (JPEG XL) — BSD-3-Clause. JXL frame encoding.
+- Synchronet xpdev — cross-platform sockets (sockwrap) and INI parsing
+  (ini_file), used for the portable / Windows build.
+
+SyncTERM — Stephen Hurd ("Deuce") and contributors — implements the
+APC image-cache + JXL terminal graphics protocol syncdoom renders to.
