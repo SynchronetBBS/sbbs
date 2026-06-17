@@ -1435,18 +1435,28 @@ int main(int argc, char **argv)
 		// "<pid> <port>" -- so the JS lobby can launch a match server with one
 		// synchronous call. With no -port we allocate a free one ourselves.
 		if (strcmp(argv[i], "-spawnserver") == 0) {
-			int  j, port = 0;
-			long pid;
-			for (j = 1; j < argc; j++)
-				if (strcmp(argv[j], "-port") == 0 && j + 1 < argc)
+			int   j, port = 0, en = 0;
+			char *extra[64];
+			long  pid;
+			for (j = 1; j < argc; j++) {
+				if (strcmp(argv[j], "-port") == 0 && j + 1 < argc) {
 					port = atoi(argv[j + 1]);
+					j++;                         // consume the value
+					continue;
+				}
+				if (strcmp(argv[j], "-spawnserver") == 0)
+					continue;
+				if (en < 62)                     // forward metadata (-maxplayers, ...)
+					extra[en++] = argv[j];
+			}
+			extra[en] = NULL;
 			if (port <= 0)
 				port = mp_alloc_port(20000, 20063);  // TODO: range from [net]
 			if (port <= 0) {
 				fprintf(stderr, "syncdoom: no free server port\n");
 				return 1;
 			}
-			pid = mp_spawn_server(argv[0], port);
+			pid = mp_spawn_server(argv[0], port, extra);
 			printf("%ld %d\n", pid, port);   // lobby reads pid (liveness) + port
 			return pid > 0 ? 0 : 1;
 		}

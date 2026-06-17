@@ -299,9 +299,24 @@ static int NET_SV_NumReadyPlayers(void)
 
 // Returns the maximum number of players that can play.
 
+// syncdoom: the dedicated server can be told the match size at launch
+// (-maxplayers), so it doesn't depend on which client wins the connect race
+// to become the controller. 0 = fall back to the controller's value.
+static int sv_forced_max_players = 0;
+
+void NET_SV_SetMaxPlayers(int n)
+{
+    sv_forced_max_players = n;
+}
+
 static int NET_SV_MaxPlayers(void)
 {
     int i;
+
+    if (sv_forced_max_players > 0)
+    {
+        return sv_forced_max_players;
+    }
 
     for (i = 0; i < MAXNETNODES; ++i)
     {

@@ -26,6 +26,7 @@
 
 #include "i_timer.h"        // I_Sleep, I_GetTimeMS
 #include "z_zone.h"         // Z_Init (the net layer allocates via the zone)
+#include "m_argv.h"         // M_CheckParmWithArgs, myargv
 #include "net_defs.h"       // net_module_t (used by net_server.h)
 #include "net_server.h"
 #include "net_udp.h"
@@ -34,6 +35,7 @@ int mp_dedicated_main(int idle_timeout_secs)
 {
 	int idle_ms = idle_timeout_secs * 1000;
 	int last_nonempty = I_GetTimeMS();
+	int p;
 
 	// The headless path bypasses D_DoomMain, so initialize the zone allocator
 	// the net layer relies on (normally done early in D_DoomMain).
@@ -41,6 +43,12 @@ int mp_dedicated_main(int idle_timeout_secs)
 
 	NET_SV_Init();
 	NET_SV_AddModule(&net_udp_module);   // binds the -port UDP socket
+
+	// The lobby tells us the match size, so the wait threshold doesn't depend
+	// on which client wins the race to become the controller.
+	p = M_CheckParmWithArgs("-maxplayers", 1);
+	if (p > 0)
+		NET_SV_SetMaxPlayers(atoi(myargv[p + 1]));
 
 	printf("syncdoom: dedicated server running"
 	       " (idle timeout %ds)\n", idle_timeout_secs);
@@ -90,13 +98,27 @@ int mp_alloc_port(int lo, int hi)
 	return -1;
 }
 
-long mp_spawn_server(const char *exe_path, int port)
+long mp_spawn_server(const char *exe_path, int port, char *const extra_argv[])
 {
 #ifndef _WIN32
 	char  portstr[16];
+	char *argv[64];
+	int   n = 0, i;
 	pid_t pid;
 
+	// Build the child command: exe -dedicated -port <port> <extra...>. The
+	// extra args (e.g. -maxplayers, and later the registry metadata) are
+	// forwarded from the -spawnserver invocation.
 	snprintf(portstr, sizeof(portstr), "%d", port);
+	argv[n++] = (char *)exe_path;
+	argv[n++] = "-dedicated";
+	argv[n++] = "-port";
+	argv[n++] = portstr;
+	if (extra_argv != NULL) {
+		for (i = 0; extra_argv[i] != NULL && n < 62; i++)
+			argv[n++] = extra_argv[i];
+	}
+	argv[n] = NULL;
 
 	pid = fork();
 	if (pid < 0)
@@ -120,8 +142,7 @@ long mp_spawn_server(const char *exe_path, int port)
 				close(fd);
 		}
 
-		execl(exe_path, exe_path, "-dedicated", "-port", portstr,
-		      (char *)NULL);
+		execv(exe_path, argv);
 		_exit(127);     // exec failed
 	}
 
@@ -131,6 +152,7 @@ long mp_spawn_server(const char *exe_path, int port)
 #else
 	(void)exe_path;
 	(void)port;
+	(void)extra_argv;
 	return -1;          // TODO: Windows DETACHED_PROCESS spawn
 #endif
 }

@@ -24,8 +24,10 @@ int mp_dedicated_main(int idle_timeout_secs);
 // Find a UDP port in [lo, hi] that can currently be bound, or -1 if none.
 int mp_alloc_port(int lo, int hi);
 
-// Spawn a detached dedicated server (exe -dedicated -port <port>) that
-// survives this process exiting.  Returns the server's pid, or -1 on error.
-long mp_spawn_server(const char *exe_path, int port);
+// Spawn a detached dedicated server (exe -dedicated -port <port> <extra...>)
+// that survives this process exiting. extra_argv is a NULL-terminated list of
+// additional args forwarded to the child (e.g. -maxplayers), or NULL.
+// Returns the server's pid, or -1 on error.
+long mp_spawn_server(const char *exe_path, int port, char *const extra_argv[]);
 
 #endif /* #ifndef MP_SERVER_H_ */

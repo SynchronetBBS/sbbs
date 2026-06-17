@@ -42,5 +42,10 @@ void NET_SV_RegisterWithMaster(void);
 
 int NET_SV_ConnectedClients(void);
 
+// Force the match size on a dedicated server, independent of which client
+// becomes the controller (syncdoom). 0 = use the controller's value.
+
+void NET_SV_SetMaxPlayers(int n);
+
 #endif /* #ifndef NET_SERVER_H */
 
