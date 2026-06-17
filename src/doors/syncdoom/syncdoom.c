@@ -1391,12 +1391,18 @@ static void compute_geometry(void)
 	if (g_win_w > 0) {                  // real terminal pixels (probed) -- preferred
 		vw = g_win_w;
 		vh = g_win_h;
-	} else {                            // fallback: assume SyncTERM 8x<cellH> cells
+	} else {                            // fallback: no real pixels probed -- estimate
+		// SyncTERM canvas modes map a row count to a fixed glyph height; a
+		// generic terminal (xterm, etc.) that didn't answer the pixel probes
+		// gets a normal ~8x16 cell instead, so the estimate isn't tiny
+		// (cell_height() returns 8 for >30 rows, which badly under-sizes it).
+		int cellh = g_is_syncterm ? cell_height(s_lines) : 16;
+
 		vw = g_cols * 8;
-		vh = s_lines * cell_height(s_lines);
+		vh = s_lines * cellh;
 	}
 	cw = g_cell_w > 0 ? g_cell_w : 8;                  // cell pixels, for centering math
-	ch = g_cell_h > 0 ? g_cell_h : cell_height(s_lines);
+	ch = g_cell_h > 0 ? g_cell_h : (g_is_syncterm ? cell_height(s_lines) : 16);
 
 	if (g_mode == MODE_PPM) {           // PPM is uncompressed, so emit Doom's native
 		s_pxW = 320;                    // 320x200 -- the 640x400 framebuffer is a lossless
