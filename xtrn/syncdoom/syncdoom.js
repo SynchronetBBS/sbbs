@@ -19,12 +19,13 @@ var cfg = sd_load_config();
 
 // Build and run the door for a play session. 'connect' is "host:port" to join
 // (or null for single-player); extra and wsargs are arrays of extra flags and
-// the WAD args. bbs.cmdstr() expands %H/%T/%R (socket, time, rows) before exec.
+// the WAD args. bbs.cmdstr() expands the % specifiers before exec.
 function sd_play(connect, extra, wsargs)
 {
-	// %H/%T/%R = socket/time/rows; %A = the user's alias, auto-quoted by cmdstr
-	// (so spaces and special characters are handled correctly).
-	var cmd = SD_BINARY + " -s%H -t%T -l%R -name %A";
+	// %H/%T/%R = socket/time/rows; %a = the alias, *lowercase* so cmdstr quotes
+	// it when it contains a space -- which routes external() through the shell
+	// (it sees the quote) so a multi-word alias survives as one argument.
+	var cmd = SD_BINARY + " -s%H -t%T -l%R -name %a";
 	if (connect)
 		cmd += " -connect " + connect;
 	var i;
@@ -47,7 +48,7 @@ function sd_spawn_server(port, maxplayers, ws, mode)
 	var cmd = SD_BINARY + " -spawnserver -port " + port
 	    + " -maxplayers " + maxplayers
 	    + " -gamesdir " + SD_GAMES
-	    + " -host %A"
+	    + " -host %a"                     // lowercase: quoted if it has a space
 	    + " -wadset " + ws.id
 	    + " -gamemode " + mode;
 
@@ -67,6 +68,8 @@ function sd_pick_wadset(mode)
 		console.pause();
 		return null;
 	}
+	if (list.length == 1)
+		return list[0];               // only one choice -- don't prompt
 
 	console.print("\r\n\1h\1cWAD sets:\1n\r\n");
 	var i;
