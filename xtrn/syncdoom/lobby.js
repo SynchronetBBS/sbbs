@@ -87,22 +87,18 @@ function sd_pick_wadset(mode)
 	if (list.length == 1)
 		return list[0];               // only one choice -- don't prompt
 
-	console.print("\r\n\1h\1cWAD sets:\1n\r\n");
+	// uselect(): arrow/number-navigable picker. Items are 0-based; uselect() with
+	// no args displays the menu and returns the chosen index, or <0 if the user
+	// backs out. The list only holds sets whose files are installed
+	// (sd_list_wadsets filters on ws.present), so no per-pick presence check here.
 	var i;
-	for (i = 0; i < list.length; i++) {
-		console.print(format("  \1h\1y%2d\1n. \1h%s\1n%s\r\n",
-		    i + 1, list[i].name,
-		    list[i].desc ? "  \1n\1w-- " + list[i].desc : ""));
-	}
-	console.print("\r\nChoose [\1h1-" + list.length + "\1n], \1hQ\1n to cancel: ");
-
-	var k = console.getkeys("Q", list.length);
-	if (k == "Q" || !k)
+	for (i = 0; i < list.length; i++)
+		console.uselect(i, "WAD set", list[i].name
+		    + (list[i].desc ? "  -- " + list[i].desc : ""));
+	var sel = console.uselect();
+	if (sel < 0)
 		return null;
-
-	// The list only contains sets whose files are installed (sd_list_wadsets
-	// filters on ws.present), so no per-pick presence check is needed here.
-	return list[k - 1];
+	return list[sel];
 }
 
 // ---------------------------------------------------------------------------
@@ -248,17 +244,15 @@ function sd_main()
 
 	while (!js.terminated && bbs.online) {
 		console.clear();
-		console.print("\r\n   \1h\1rS Y N C D O O M\1n   \1n\1wnetwork lobby\1n\r\n\r\n");
-		console.print("   \1h\1yB\1n  Browse & join a network game\r\n");
-		console.print("   \1h\1yC\1n  Create a co-op network game\r\n");
-		console.print("   \1h\1yP\1n  Play single-player\r\n");
-		if (allow_ext)
-			console.print("   \1h\1yJ\1n  Join an external server by address\r\n");
-		console.print("   \1h\1yH\1n  Help / controls\r\n");
-		console.print("   \1h\1yQ\1n  Quit\r\n\r\n");
-		console.print("   Command: ");
+		// The lobby menu is lobby.msg -- DOOM ANSI art (by "cool t" / tdd, converted
+		// to Ctrl-A with PabloDraw), its B/C/P/H/Q options remapped to our actions.
+		// The optional external-join (J) has no art slot, so it rides in the prompt.
+		console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
+		console.print("\r\n   Command"
+		    + (allow_ext ? " (\1h\1yJ\1n=external)" : "") + ": ");
 
 		var k = console.getkeys("BCPH" + (allow_ext ? "J" : "") + "Q");
+		console.clear();                 // wipe the art before the chosen action draws
 		if (k == "Q")
 			break;
 		else if (k == "B")

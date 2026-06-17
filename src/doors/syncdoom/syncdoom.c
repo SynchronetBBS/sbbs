@@ -1083,7 +1083,7 @@ static void cycle_video(void)
 
 	// Clear (drop the prior tier's bitmap/glyphs) and dwell on a readable label.
 	emit_all("\x1b[2J\x1b[H", 7);
-	snprintf(line, sizeof(line), "  SYNCDOOM video: %s   (F4 to cycle)  ", v->label);
+	snprintf(line, sizeof(line), "  SyncDOOM video: %s   (F4 to cycle)  ", v->label);
 	pad = (g_cols - (int)strlen(line)) / 2;
 	if (pad < 0)
 		pad = 0;
@@ -1559,6 +1559,27 @@ static void read_syncdoom_ini(const char *argv0)
 	}
 	g_always_run = iniGetBool(ini, "input", "always_run", TRUE);
 
+	// [wads] dir -- point Doom's IWAD search at the configured WAD directory so a
+	// bare "-iwad freedoom1.wad" (e.g. the direct-exec install) resolves there,
+	// the same dir the lobby uses. Resolve to ABSOLUTE (we chdir into -home before
+	// the WAD is opened, so a relative dir would break) and export DOOMWADDIR.
+	// Blank = the door's own dir; a relative dir is under it; absolute used as-is.
+	iniGetString(ini, "wads", "dir", "", val);
+	{
+		char wads[PATH_MAX], abs[PATH_MAX];
+		if (val[0] == '/' || val[0] == '\\' || (val[0] && val[1] == ':'))
+			snprintf(wads, sizeof(wads), "%s", val);                 // absolute
+		else if (val[0])
+			snprintf(wads, sizeof(wads), "%s%s", dir, val);          // under the door dir
+		else
+			snprintf(wads, sizeof(wads), "%s", dir[0] ? dir : ".");  // the door dir itself
+#ifndef _WIN32
+		setenv("DOOMWADDIR", realpath(wads, abs) ? abs : wads, 1);
+#else
+		_putenv_s("DOOMWADDIR", _fullpath(abs, wads, sizeof(abs)) ? abs : wads);
+#endif
+	}
+
 	strListFree(&ini);
 }
 
@@ -1672,7 +1693,7 @@ static void sd_waitroom_draw(void)
 	net_waitdata_t *w = &net_client_wait_data;
 
 	len += snprintf(buf + len, sizeof(buf) - len,
-	                "\x1b[2J\x1b[H\r\n  \x1b[1;31mS Y N C D O O M\x1b[0m   waiting room\r\n\r\n"
+	                "\x1b[2J\x1b[H\r\n  \x1b[1;37mS y n c \x1b[1;31mD O O M\x1b[0m   waiting room\r\n\r\n"
 	                "  Players (%d/%d):\r\n", w->num_players, w->max_players);
 	for (i = 0; i < w->num_players && i < NET_MAXPLAYERS; i++)
 		len += snprintf(buf + len, sizeof(buf) - len, "    \x1b[1m%d.\x1b[0m %s%s\r\n",
