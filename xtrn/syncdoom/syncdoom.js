@@ -22,7 +22,9 @@ var cfg = sd_load_config();
 // the WAD args. bbs.cmdstr() expands %H/%T/%R (socket, time, rows) before exec.
 function sd_play(connect, extra, wsargs)
 {
-	var cmd = SD_BINARY + " -s%H -t%T -l%R -name \"" + user.alias + "\"";
+	// %H/%T/%R = socket/time/rows; %A = the user's alias, auto-quoted by cmdstr
+	// (so spaces and special characters are handled correctly).
+	var cmd = SD_BINARY + " -s%H -t%T -l%R -name %A";
 	if (connect)
 		cmd += " -connect " + connect;
 	var i;
@@ -34,12 +36,14 @@ function sd_play(connect, extra, wsargs)
 	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN, SD_DIR);
 }
 
-// Spawn a detached dedicated server on the given port (returns immediately;
-// the server runs headless until the match empties). Uses the C -spawnserver
-// mode so it survives this session.
-function sd_spawn_server(port)
+// Spawn a detached dedicated server for a match of 'maxplayers' on the given
+// port (returns immediately; the server runs headless until the match empties).
+// Uses the C -spawnserver mode so it survives this session. The server owns the
+// match size, so it doesn't matter which client connects first.
+function sd_spawn_server(port, maxplayers)
 {
-	bbs.exec(SD_BINARY + " -spawnserver -port " + port, EX_NATIVE, SD_DIR);
+	bbs.exec(SD_BINARY + " -spawnserver -port " + port
+	    + " -maxplayers " + maxplayers, EX_NATIVE, SD_DIR);
 }
 
 // ---------------------------------------------------------------------------
@@ -107,10 +111,19 @@ function sd_create()
 		return;
 	}
 
-	console.print("\r\nStarting a co-op server on port " + port + " for " + n
-	    + " player(s)...\r\n");
-	sd_spawn_server(port);
+	sd_spawn_server(port, n);
 	mswait(500);                          // let the server bind before we connect
+
+	// For a multi-player game, tell the creator the join address so they can
+	// relay it (until Browse lands). 1-player starts immediately, no pause.
+	if (n > 1) {
+		console.print("\r\n\1h\1gGame created \1n-- waiting for " + (n - 1)
+		    + " more player(s).\r\n");
+		console.print("They should choose \1hJ\1noin and enter:  \1h\1c127.0.0.1:"
+		    + port + "\1n   (same host)\r\n");
+		console.print("\r\nPress a key to enter the game and wait for them...");
+		console.getkey();
+	}
 
 	// The creator joins their own server as the controlling player; the server
 	// adopts this client's game settings (co-op) and starts when 'n' have joined.
