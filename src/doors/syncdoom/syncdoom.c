@@ -43,6 +43,12 @@
 #include "genwrap.h"            // xpdev: stricmp (+ cross-platform helpers)
 #include "ini_file.h"          // xpdev: iniReadFile/iniGetString/iniGetInteger (terminal.ini)
 
+#include "i_system.h"           // I_Error, I_Quit
+#include "i_timer.h"            // I_Sleep
+#include "net_defs.h"           // net_waitdata_t (the waiting room)
+#include "net_client.h"         // net_client_wait_data, NET_CL_*
+#include "net_server.h"         // NET_SV_Run
+
 #ifndef _WIN32                  // dev stdio/tty fallback (no socket handle) is *nix-only
 #include <fcntl.h>
 #include <termios.h>
@@ -1429,6 +1435,113 @@ static void compute_geometry(void)
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Multiplayer waiting room. Replaces the headless NET_WaitForLaunch (net_gui.c
+// calls sd_waitroom_run): draws the joined players by name over the client
+// socket while the match fills, and lets the host start it (or anyone cancel)
+// before the game begins.
+// ---------------------------------------------------------------------------
+
+// Network player names by player number (filled from the waiting data, which
+// the server indexes by player number). Empty slot -> hu_stuff falls back to
+// the color name. See sd_player_chat_name().
+static char sd_chat_player_names[NET_MAXPLAYERS][MAXPLAYERNAME];
+
+// Called by hu_stuff.c: the chat prefix ("Name: ") for player number 'player',
+// or NULL to use Doom's color name.
+const char *sd_player_chat_name(int player)
+{
+	static char buf[MAXPLAYERNAME + 4];
+
+	if (player >= 0 && player < NET_MAXPLAYERS
+	    && sd_chat_player_names[player][0] != '\0') {
+		snprintf(buf, sizeof(buf), "%s: ", sd_chat_player_names[player]);
+		return buf;
+	}
+	return NULL;
+}
+
+static void sd_waitroom_draw(void)
+{
+	char            buf[1024];
+	int             len = 0;
+	int             i;
+	net_waitdata_t *w = &net_client_wait_data;
+
+	len += snprintf(buf + len, sizeof(buf) - len,
+	                "\x1b[2J\x1b[H\r\n  \x1b[1;31mS Y N C D O O M\x1b[0m   waiting room\r\n\r\n"
+	                "  Players (%d/%d):\r\n", w->num_players, w->max_players);
+	for (i = 0; i < w->num_players && i < NET_MAXPLAYERS; i++)
+		len += snprintf(buf + len, sizeof(buf) - len, "    \x1b[1m%d.\x1b[0m %s%s\r\n",
+		                i + 1, w->player_names[i], (i == w->consoleplayer) ? "  (you)" : "");
+	len += snprintf(buf + len, sizeof(buf) - len, "\r\n");
+	if (w->is_controller)
+		len += snprintf(buf + len, sizeof(buf) - len,
+		                "  Press \x1b[1mS\x1b[0m or \x1b[1mEnter\x1b[0m to start now, \x1b[1mQ\x1b[0m to cancel.\r\n");
+	else
+		len += snprintf(buf + len, sizeof(buf) - len,
+		                "  Waiting for the host to start...   \x1b[1mQ\x1b[0m to cancel.\r\n");
+
+	if (len > 0)
+		emit_all(buf, (size_t)len);
+}
+
+void sd_waitroom_run(void)
+{
+	int     last_drawn = -2;
+	boolean launched = false;
+
+	while (net_waiting_for_launch) {
+		unsigned char kb[8];
+		ssize_t       n;
+
+		NET_CL_Run();
+		NET_SV_Run();
+
+		if (!net_client_connected)
+			I_Error("NET_WaitForLaunch: Lost connection to server");
+
+		if (net_client_received_wait_data) {
+			net_waitdata_t *w = &net_client_wait_data;
+
+			// Keep the network names (by player number) for in-game chat.
+			memcpy(sd_chat_player_names, w->player_names,
+			       sizeof(sd_chat_player_names));
+
+			if (w->num_players != last_drawn) {
+				sd_waitroom_draw();
+				last_drawn = w->num_players;
+			}
+			// Auto-start once every expected slot is filled.
+			if (!launched && w->is_controller
+			    && w->num_players >= w->max_players) {
+				NET_CL_LaunchGame();
+				launched = true;
+			}
+		}
+
+		// Poll one keystroke: Q cancels; the host can start with S/Enter.
+		n = conn_read(kb, sizeof(kb));
+		if (n == 0) {
+			I_Quit();                          // hangup
+		} else if (n > 0) {
+			unsigned char c = kb[0];
+			if (c == 'q' || c == 'Q') {
+				NET_CL_Disconnect();
+				emit_all("\x1b[2J\x1b[H", 7);
+				I_Quit();                      // back to the lobby/BBS
+			} else if (!launched && net_client_received_wait_data
+			           && net_client_wait_data.is_controller
+			           && (c == 's' || c == 'S' || c == '\r')) {
+				NET_CL_LaunchGame();
+				launched = true;
+			}
+		}
+
+		I_Sleep(50);
+	}
+}
+
 // main: read connection/session params (-door32 drop file and/or -s/-l/-t),
 // set up the per-user sandbox (-home), inject -scaling 2 so Doom's 320x200
 // fills 640x400, and pass everything else (e.g. -iwad) through to doomgeneric.

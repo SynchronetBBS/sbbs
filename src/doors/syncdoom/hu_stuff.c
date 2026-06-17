@@ -83,6 +83,10 @@ char*	player_names[] =
     HUSTR_PLRRED
 };
 
+// syncdoom: the real network player name ("Name: ") for chat, or NULL for the
+// color name above.
+extern const char *sd_player_chat_name(int player);
+
 char			chat_char; // remove later.
 static player_t*	plr;
 patch_t*		hu_font[HU_FONTSIZE];
@@ -450,10 +454,13 @@ void HU_Ticker(void)
 			    && (chat_dest[i] == consoleplayer+1
 				|| chat_dest[i] == HU_BROADCAST))
 			{
+			    const char *sd_nm = sd_player_chat_name(i);
+
 			    HUlib_addMessageToSText(&w_message,
-						    DEH_String(player_names[i]),
+						    sd_nm != NULL ? sd_nm
+								  : DEH_String(player_names[i]),
 						    w_inputbuffer[i].l.l);
-			    
+
 			    message_nottobefuckedwith = true;
 			    message_on = true;
 			    message_counter = HU_MSGTIMEOUT;
