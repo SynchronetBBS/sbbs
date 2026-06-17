@@ -1,11 +1,13 @@
-// syncdoom.js -- Synchronet lobby frontend for the syncdoom door.
+// lobby.js -- Synchronet lobby frontend for the syncdoom door (optional).
 //
 // The xtrn entry point: presents the pre-game lobby and spawns the syncdoom C
-// binary (located via js.exec_dir, in this same directory) to play. The model
-// layer is in syncdoom_lib.js. SpiderMonkey 1.8.5-compatible (no modern ES).
+// binary (located via js.exec_dir, in this same directory) to play. The door
+// runs standalone without this lobby; it's the optional menu that adds Browse/
+// Create/co-op. The model layer is in syncdoom_lib.js. SpiderMonkey
+// 1.8.5-compatible (no modern ES).
 //
 // Browse & join registry-discovered games, create a co-op game, single-player,
-// or join an external server by address. Deathmatch and a waiting-room UI are TODO.
+// or (sysop opt-in) join an external server by address.
 //
 // Copyright(C) 2026 Rob Swindell / syncdoom. GPL-2.0.
 
@@ -35,6 +37,13 @@ function sd_play(connect, extra, wsargs)
 		cmd += " " + wsargs[i];
 
 	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN, SD_DIR);
+
+	// The door writes frames straight to the socket, bypassing Synchronet's
+	// console line counter. That leaves the counter stale, so the next screen
+	// (the menu redraw) thinks the page is full and fires an errant [Hit a key]
+	// pause -- invisible under JXL (the full-screen image covers it) but plainly
+	// visible in sixel mode. Reset the counter so the menu paints cleanly.
+	console.line_counter = 0;
 }
 
 // Spawn a detached dedicated server for a match on the given port (returns
@@ -125,17 +134,17 @@ function sd_create()
 	sd_spawn_server(port, n, ws, "coop");
 	mswait(500);                          // let the server bind before we connect
 
-	// For a multi-player game, the others join via Browse -- it's now in the
-	// registry. 1-player starts immediately, no pause.
-	if (n > 1) {
-		console.print("\r\n\1h\1gGame created \1n-- waiting for " + (n - 1)
-		    + " more player(s) to \1hB\1nrowse and join.\r\n");
-		console.print("\r\nPress a key to enter the game and wait for them...");
-		console.getkey();
-	}
+	// Enter the door and connect right away -- the creator MUST reach the server
+	// before any Browse-joiner does: the first client to connect becomes the
+	// controller (the host who starts the match). The old "press a key to enter"
+	// pause held the creator outside the door, so a joiner could connect first,
+	// become host, and launch without the creator -- whose late connect then hit
+	// an in-progress server (no mid-game joins) and bounced back to the lobby.
+	// The door's own waiting room shows the "waiting for players" UI from here.
+	if (n > 1)
+		console.print("\r\n\1h\1gGame created \1n-- entering the waiting room; "
+		    + "others \1hB\1nrowse & join.\r\n");
 
-	// The creator joins their own server as the controlling player; the server
-	// adopts this client's game settings (co-op) and starts when 'n' have joined.
 	sd_play("127.0.0.1:" + port, ["-players", String(n)], sd_wadset_args(cfg, ws));
 }
 
@@ -212,17 +221,23 @@ function sd_join_external()
 
 function sd_main()
 {
+	// Join-by-address is for external/cross-system servers; off unless the sysop
+	// opts in with [net] allow_external = true in syncdoom.ini.
+	var allow_ext = (cfg.net.allow_external === true
+	                 || cfg.net.allow_external === "true");
+
 	while (!js.terminated && bbs.online) {
 		console.clear();
 		console.print("\r\n   \1h\1rS Y N C D O O M\1n   \1n\1wnetwork lobby\1n\r\n\r\n");
 		console.print("   \1h\1yB\1n  Browse & join a network game\r\n");
 		console.print("   \1h\1yC\1n  Create a co-op network game\r\n");
 		console.print("   \1h\1yP\1n  Play single-player\r\n");
-		console.print("   \1h\1yJ\1n  Join an external server by address\r\n");
+		if (allow_ext)
+			console.print("   \1h\1yJ\1n  Join an external server by address\r\n");
 		console.print("   \1h\1yQ\1n  Quit\r\n\r\n");
 		console.print("   Command: ");
 
-		var k = console.getkeys("BCPJQ");
+		var k = console.getkeys("BCP" + (allow_ext ? "J" : "") + "Q");
 		if (k == "Q")
 			break;
 		else if (k == "B")
@@ -231,7 +246,7 @@ function sd_main()
 			sd_create();
 		else if (k == "P")
 			sd_solo();
-		else if (k == "J")
+		else if (k == "J" && allow_ext)
 			sd_join_external();
 	}
 }

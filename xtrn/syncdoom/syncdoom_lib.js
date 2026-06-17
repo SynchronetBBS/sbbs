@@ -1,6 +1,6 @@
 // syncdoom_lib.js -- model layer for the syncdoom lobby (no UI, no bbs/user
 // dependencies, so it can be exercised headless with jsexec). Loaded by
-// syncdoom.js. SpiderMonkey 1.8.5-compatible (no modern ES).
+// lobby.js. SpiderMonkey 1.8.5-compatible (no modern ES).
 //
 // Copyright(C) 2026 Rob Swindell / syncdoom. GPL-2.0.
 
@@ -8,10 +8,13 @@ load("sbbsdefs.js");
 load("sockdefs.js");
 
 // The door's own directory (where the syncdoom binary + syncdoom.ini live).
-// js.exec_dir is the directory of the *running* script; when syncdoom.js loads
+// js.exec_dir is the directory of the *running* script; when lobby.js loads
 // this lib, that is xtrn/syncdoom/.
 var SD_DIR    = js.exec_dir;
-var SD_BINARY = SD_DIR + "syncdoom";
+// "%." is a Synchronet cmdstr specifier: ".exe" on Windows, blank on *nix
+// (expanded by bbs.cmdstr() at launch). So one config runs syncdoom.exe on
+// Windows yet won't collide with a non-Windows "syncdoom" in the same dir.
+var SD_BINARY = SD_DIR + "syncdoom%.";
 var SD_CFG    = SD_DIR + "syncdoom.ini";
 var SD_GAMES  = system.data_dir + "syncdoom/games/";
 
