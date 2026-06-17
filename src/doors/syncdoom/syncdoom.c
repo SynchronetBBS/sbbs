@@ -239,9 +239,9 @@ static uint32_t      g_label_until = 0;  // suppress frame output until then (la
 
 static void cycle_video(void);
 
-static uint8_t *       s_rgb = NULL;   static size_t s_rgb_cap = 0;// packed RGB888
-static uint8_t *       s_img = NULL;   static size_t s_img_cap = 0;// encoded bytes (PPM/JXL)
-static char *          s_b64 = NULL;   static size_t s_b64_cap = 0;// base64 of s_img
+static uint8_t *     s_rgb = NULL;   static size_t s_rgb_cap = 0;  // packed RGB888
+static uint8_t *     s_img = NULL;   static size_t s_img_cap = 0;  // encoded bytes (PPM/JXL)
+static char *        s_b64 = NULL;   static size_t s_b64_cap = 0;  // base64 of s_img
 
 // Send a small control string in full (cursor hide, JXL probe) at startup.
 static void emit_all(const char *buf, size_t len)
@@ -1062,8 +1062,8 @@ static void build_video_states(void)
 static void cycle_video(void)
 {
 	struct vstate *v;
-	char  line[80], buf[160];
-	int   pad, n;
+	char           line[80], buf[160];
+	int            pad, n;
 
 	if (g_vstate_n == 0)
 		build_video_states();
@@ -1589,6 +1589,10 @@ static void read_syncdoom_ini(const char *argv0)
 static void compute_geometry(void)
 {
 	int vw, vh, cw, ch;
+	// Did we actually MEASURE the window, or are we guessing from cols*rows?
+	// True only if the terminal answered the pixel probe, or the sysop pinned a
+	// cell size in syncdoom.ini. When false the viewport below is an estimate.
+	int geom_known = (g_win_w > 0) || (g_cfg_cell_w > 0 && g_cfg_cell_h > 0);
 
 	if (g_win_w > 0) {                  // real terminal pixels (probed) -- preferred
 		vw = g_win_w;
@@ -1619,7 +1623,17 @@ static void compute_geometry(void)
 		s_pxW = 640;                    // native: doomgeneric's 640x400 (vh-squished if shorter)
 		s_pxH = (vh < 400) ? vh : 400;
 	} else {
-		int wmax = (g_scale_max > 0 && vw > g_scale_max) ? g_scale_max : vw;
+		// Sixel safety: if we never measured real pixels (e.g. xterm with
+		// allowWindowOps off -> no ESC[14t/16t/XTSMGRAPHICS reply), don't UPSCALE
+		// the image past Doom's native 640x400. The viewport here is a cols*rows
+		// guess; in a large window it balloons to a sixel wider than the terminal
+		// will render (xterm caps sixel geometry), giving a blank/sliver. Native
+		// 640x400 always renders; a sysop who knows the cell size can opt into a
+		// bigger image via [video] cell_width/cell_height. JXL/PPM (SyncTERM, which
+		// reports real geometry) and an explicit cell override are unaffected.
+		int cap  = (g_mode == MODE_SIXEL && !geom_known && (g_scale_max == 0 || g_scale_max > 640))
+		           ? 640 : g_scale_max;
+		int wmax = (cap > 0 && vw > cap) ? cap : vw;
 		int w = wmax;
 		int h = w * 400 / 640;          // 8:5
 		if (h > vh) { h = vh; w = h * 640 / 400; }   // height-limited
