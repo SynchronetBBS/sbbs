@@ -101,6 +101,26 @@ function sd_pick_wadset(mode)
 	return list[sel];
 }
 
+// Present the game-mode picker. Returns the mode id ("coop"/"deathmatch"/
+// "altdeath") or null. Deathmatch & altdeath reach Doom as -deathmatch /
+// -altdeath on the *controller's* (creator's) command line; joiners inherit the
+// mode from the server, and the dedicated server records it for the browse list.
+function sd_pick_gamemode()
+{
+	var modes = [
+		{ id: "coop",       name: "Co-op  (team vs. monsters)" },
+		{ id: "deathmatch", name: "Deathmatch" },
+		{ id: "altdeath",   name: "Deathmatch 2.0  (weapons & items respawn)" }
+	];
+	var i;
+	for (i = 0; i < modes.length; i++)
+		console.uselect(i, "Game mode", modes[i].name);
+	var sel = console.uselect();
+	if (sel < 0)
+		return null;
+	return modes[sel].id;
+}
+
 // ---------------------------------------------------------------------------
 // Menu actions
 // ---------------------------------------------------------------------------
@@ -114,7 +134,10 @@ function sd_solo()
 
 function sd_create()
 {
-	var ws = sd_pick_wadset("coop");
+	var mode = sd_pick_gamemode();
+	if (!mode)
+		return;
+	var ws = sd_pick_wadset(mode);
 	if (!ws)
 		return;
 
@@ -122,10 +145,18 @@ function sd_create()
 	// start immediately (a solo run, useful for testing); higher waits for that
 	// many to join. (A proper waiting room is still TODO -- until then a game
 	// of >1 shows a blank screen while it waits for the others.)
-	console.print("\r\nNumber of players (\1h1\1n = start now, up to 4): ");
-	var n = parseInt(console.getkeys("", 4), 10);
-	if (!n || n < 1)
-		n = 1;
+	// Player cap: the wadset's maxplayers if set, else [net] max_players, never
+	// above Doom's NET_MAXPLAYERS (8).
+	var maxp = parseInt(ws.maxplayers || cfg.net.max_players, 10) || 8;
+	if (maxp > 8) maxp = 8;
+	if (maxp < 1) maxp = 1;
+	console.print("\r\nNumber of players (\1h1\1n=start now, up to " + maxp
+	    + ", \1hQ\1n=abort) [\1h2\1n]: ");
+	var n = console.getnum(maxp);
+	if (n < 0)                            // Q / Ctrl-C -> abort the create
+		return;
+	if (n < 1)                            // bare Enter -> default to 2 players
+		n = (maxp >= 2) ? 2 : maxp;
 
 	var port = sd_alloc_port(cfg);
 	if (port < 0) {
@@ -134,7 +165,7 @@ function sd_create()
 		return;
 	}
 
-	sd_spawn_server(port, n, ws, "coop");
+	sd_spawn_server(port, n, ws, mode);
 	mswait(500);                          // let the server bind before we connect
 
 	// Enter the door and connect right away -- the creator MUST reach the server
@@ -148,7 +179,14 @@ function sd_create()
 		console.print("\r\n\1h\1gGame created \1n-- entering the waiting room; "
 		    + "others \1hB\1nrowse & join.\r\n");
 
-	sd_play("127.0.0.1:" + port, ["-players", String(n)], sd_wadset_args(cfg, ws));
+	// The creator is the controller, so its -deathmatch / -altdeath sets the match
+	// type; co-op needs no flag (Doom's default). Joiners get the mode from the server.
+	var extra = ["-players", String(n)];
+	if (mode == "deathmatch")
+		extra.push("-deathmatch");
+	else if (mode == "altdeath")
+		extra.push("-altdeath");
+	sd_play("127.0.0.1:" + port, extra, sd_wadset_args(cfg, ws));
 }
 
 // Browse the registry and join a game on this system. The joiner inherits the
@@ -167,8 +205,9 @@ function sd_browse()
 	var i;
 	for (i = 0; i < games.length; i++) {
 		var g = games[i];
-		console.print(format(" \1h\1y%2d\1n %-17s %-11s %-13s %s/%-4s \1n\1w%s\1n\r\n",
-		    i + 1, g.host, g.mode, g.wadset, g.players, g.maxplayers, g.status));
+		// players/max as one fixed-width field so Status lines up under its header.
+		console.print(format(" \1h\1y%2d\1n %-17s %-11s %-13s %-7s  \1n\1w%s\1n\r\n",
+		    i + 1, g.host, g.mode, g.wadset, g.players + "/" + g.maxplayers, g.status));
 	}
 	console.print("\r\nJoin which [\1h1-" + games.length + "\1n], \1hQ\1n to cancel: ");
 
@@ -251,7 +290,7 @@ function sd_main()
 		console.print("\r\n   Command"
 		    + (allow_ext ? " (\1h\1yJ\1n=external)" : "") + ": ");
 
-		var k = console.getkeys("BCPH" + (allow_ext ? "J" : "") + "Q");
+		var k = console.getkeys("BCPH?" + (allow_ext ? "J" : "") + "Q");
 		console.clear();                 // wipe the art before the chosen action draws
 		if (k == "Q")
 			break;
@@ -261,7 +300,7 @@ function sd_main()
 			sd_create();
 		else if (k == "P")
 			sd_solo();
-		else if (k == "H")
+		else if (k == "H" || k == "?")
 			sd_controls();
 		else if (k == "J" && allow_ext)
 			sd_join_external();
