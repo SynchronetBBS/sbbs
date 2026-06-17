@@ -1073,10 +1073,18 @@ void DG_Init(void)
 	// build, which terminal.ini (if any) was read, the size taken from it, and
 	// the resulting emitted-image geometry + tier.
 	dlog("build " __DATE__ " " __TIME__ " | term=%s (%s) | cols=%d rows=%d desc=\"%s\" cterm=%d"
-	     " | win=%dx%d cell=%dx%d | image %dx%d @%d,%d scale=%s mode=%s",
+	     " | win=%dx%d cell=%dx%d | image %dx%d @%d,%d scale=%s mode=%s"
+#ifdef WITH_JXL
+	     " jxl_dist=%.1f"
+#endif
+	     ,
 	     g_diag_term, g_diag_term_ok ? "read" : "NOT FOUND",
 	     g_cols, s_lines, g_diag_desc, g_cterm_version, g_win_w, g_win_h, g_cell_w, g_cell_h,
-	     s_pxW, s_pxH, g_img_x, g_img_y, g_scale_fit ? "fit" : "off", mode_name(g_mode));
+	     s_pxW, s_pxH, g_img_x, g_img_y, g_scale_fit ? "fit" : "off", mode_name(g_mode)
+#ifdef WITH_JXL
+	     , g_jxl_distance
+#endif
+	     );
 }
 
 void DG_DrawFrame(void)
