@@ -136,6 +136,8 @@ static int g_scale_max = 1280;         // max emitted image width (px); 0 = unca
 // sixel text cursor, g_img_{x,y} (pixels) for the SyncTERM APC DX/DY.
 static int g_win_w = 0, g_win_h = 0;   // terminal text-area / graphics-canvas pixels
 static int g_cell_w = 0, g_cell_h = 0; // terminal cell pixels
+static int g_cfg_cell_w = 0, g_cfg_cell_h = 0; // syncdoom.ini [video] cell_width/height
+// override (for terminals that hide their pixels)
 static int g_img_col = 1, g_img_row = 1; // 1-based cell to place the centered image (sixel cursor)
 static int g_img_x = 0, g_img_y = 0;   // pixel offset of the centered image (APC DX/DY)
 
@@ -1367,6 +1369,13 @@ static void read_syncdoom_ini(const char *argv0)
 	g_jxl_distance = (float)iniGetFloat(ini, "video", "jxl_distance", g_jxl_distance);
 #endif
 
+	// cell_width / cell_height -- the terminal's character-cell size in pixels.
+	// Only needed for "scale = fit" on a terminal that doesn't answer the pixel
+	// probes (ESC[14t/16t/XTSMGRAPHICS) -- e.g. xterm without allowWindowOps. The
+	// fit viewport is then cols*cell_width x rows*cell_height. 0 = auto-estimate.
+	g_cfg_cell_w = iniGetInteger(ini, "video", "cell_width", g_cfg_cell_w);
+	g_cfg_cell_h = iniGetInteger(ini, "video", "cell_height", g_cfg_cell_h);
+
 	// [input] key-up-synthesis graces, in ms (see -kpsmooth / -kpdelay / -kpturn)
 	{
 		int v;
@@ -1392,17 +1401,23 @@ static void compute_geometry(void)
 		vw = g_win_w;
 		vh = g_win_h;
 	} else {                            // fallback: no real pixels probed -- estimate
-		// SyncTERM canvas modes map a row count to a fixed glyph height; a
-		// generic terminal (xterm, etc.) that didn't answer the pixel probes
-		// gets a normal ~8x16 cell instead, so the estimate isn't tiny
-		// (cell_height() returns 8 for >30 rows, which badly under-sizes it).
-		int cellh = g_is_syncterm ? cell_height(s_lines) : 16;
+		// Prefer an explicit syncdoom.ini cell size; else a SyncTERM canvas maps
+		// rows to a glyph height, and a generic terminal that didn't answer the
+		// probes gets a normal ~8x16 cell (cell_height() returns 8 for >30 rows,
+		// badly under-sizing it). Set [video] cell_width/cell_height to fit a
+		// terminal that hides its geometry (e.g. xterm without allowWindowOps).
+		int cellw = g_cfg_cell_w > 0 ? g_cfg_cell_w : 8;
+		int cellh = g_cfg_cell_h > 0 ? g_cfg_cell_h
+		            : (g_is_syncterm ? cell_height(s_lines) : 16);
 
-		vw = g_cols * 8;
+		vw = g_cols * cellw;
 		vh = s_lines * cellh;
 	}
-	cw = g_cell_w > 0 ? g_cell_w : 8;                  // cell pixels, for centering math
-	ch = g_cell_h > 0 ? g_cell_h : (g_is_syncterm ? cell_height(s_lines) : 16);
+	cw = g_cell_w > 0 ? g_cell_w
+	     : (g_cfg_cell_w > 0 ? g_cfg_cell_w : 8);       // cell pixels, for centering math
+	ch = g_cell_h > 0 ? g_cell_h
+	     : (g_cfg_cell_h > 0 ? g_cfg_cell_h
+	        : (g_is_syncterm ? cell_height(s_lines) : 16));
 
 	if (g_mode == MODE_PPM) {           // PPM is uncompressed, so emit Doom's native
 		s_pxW = 320;                    // 320x200 -- the 640x400 framebuffer is a lossless
