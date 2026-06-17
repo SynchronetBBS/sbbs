@@ -219,6 +219,26 @@ static rt_mode_t       g_rt_mode    = RT_HALF; // -mode override
 static int             g_rt_mode_set = 0;      // was -mode given?
 static rt_colors_t     g_colors     = RT_4BIT; // color depth (terminal.ini desc / -colors)
 
+// Always-run: a terminal can't reliably hold a run modifier, so the '\' key
+// toggles Doom's permanent always-run instead (handled in G_Responder). The
+// startup default comes from syncdoom.ini [input] always_run (default on) and is
+// applied in DG_Init; joybspeed is the Doom global (m_controls.c).
+extern int  joybspeed;
+static bool g_always_run = true;
+
+// Live render-tier cycle (the in-game F4 hotkey steps through graphics <-> the
+// three text glyph tiers, so a user can find which their terminal actually
+// renders -- e.g. SyncTERM is CP437-only and shows boxes for the UTF-8 quadrant
+// /sextant tiers). The state list is built lazily at first cycle from whatever
+// tier startup selected.
+struct vstate { enum frame_mode mode; rt_mode_t rt; rt_charset_t cs; const char *label; };
+static struct vstate g_vstates[6];
+static int           g_vstate_n = 0;
+static int           g_vstate_i = 0;
+static uint32_t      g_label_until = 0;  // suppress frame output until then (label dwell)
+
+static void cycle_video(void);
+
 static uint8_t *       s_rgb = NULL;   static size_t s_rgb_cap = 0;// packed RGB888
 static uint8_t *       s_img = NULL;   static size_t s_img_cap = 0;// encoded bytes (PPM/JXL)
 static char *          s_b64 = NULL;   static size_t s_b64_cap = 0;// base64 of s_img
@@ -457,6 +477,8 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 {
 	bool built = false;
 
+	if (g_label_until != 0 && (int32_t)(now_ms() - g_label_until) < 0)
+		return;                         // holding the video-cycle label on screen
 	if (out_pending())
 		return;                         // our buffer still draining -> drop this one
 	if (g_awaiting_ack && (int32_t)(g_ack_deadline - now_ms()) > 0)
@@ -549,6 +571,11 @@ static void key_seen(unsigned char key)
 	int      i;
 	uint32_t t = now_ms();
 
+	if (key == KEY_F4) {                      // door-level hotkey: cycle render tier
+		cycle_video();                        // (handled here -- never reaches Doom)
+		return;
+	}
+
 	if (menuactive) {                         // menu: one discrete tap per byte
 		keyq_push(1, key);
 		keyq_push(0, key);
@@ -599,6 +626,14 @@ static unsigned char map_ascii(unsigned char c)
 		return KEY_TAB;
 	if (c == 0x7f || c == 0x08)
 		return KEY_BACKSPACE;
+	// Ctrl-A..Ctrl-F stand in for F1..F6 on terminals whose function keys are
+	// broken or absent -- notably SyncTERM <=1.4, which truncates F1-F5 to an
+	// ambiguous bare "ESC[1". (Same fallback convention as zmachine.js.) These
+	// bytes are otherwise unused here -- FIRE is Space, not Ctrl. So Ctrl-D
+	// reaches the F4 tier-cycle and Ctrl-A the F1 help on any terminal. KEY_F1..
+	// KEY_F10 are consecutive in doomkeys.h, so F1+(n-1) indexes F1..F6.
+	if (c >= 0x01 && c <= 0x06)
+		return (unsigned char)(KEY_F1 + (c - 1));
 	// Terminal bindings matching the doom-ascii port (Doom's Ctrl/Alt/Shift
 	// defaults are modifiers a terminal can't send alone). The only action on a
 	// letter is USE ('e'); its UPPERCASE form falls through to a literal 'e'
@@ -620,9 +655,33 @@ static unsigned char map_ascii(unsigned char c)
 	return 0;
 }
 
+// Map a CSI "[<n>~" parameter to a Doom function key. Terminals emit the
+// function/nav keys this way: F1-F5 = 11-15, F6-F10 = 17-21, F11-F12 = 23-24
+// (the same table zmachine.js uses). 0 = no mapping.
+static unsigned char csi_tilde_key(int n)
+{
+	switch (n) {
+		case 11: return KEY_F1;
+		case 12: return KEY_F2;
+		case 13: return KEY_F3;
+		case 14: return KEY_F4;
+		case 15: return KEY_F5;
+		case 17: return KEY_F6;
+		case 18: return KEY_F7;
+		case 19: return KEY_F8;
+		case 20: return KEY_F9;
+		case 21: return KEY_F10;
+		case 23: return KEY_F11;
+		case 24: return KEY_F12;
+		default: return 0;
+	}
+}
+
 // Incremental escape-sequence parser state (bytes may split across reads).
 static enum { ST_NORMAL, ST_ESC, ST_CSI } s_pstate = ST_NORMAL;
 static char s_csi_intro = 0;            // '[' or 'O' for the current CSI/SS3
+static char s_csi_par[8];               // accumulated parameter bytes (for "[<n>~")
+static int  s_csi_parlen = 0;
 
 static void parse_byte(unsigned char c)
 {
@@ -633,27 +692,53 @@ static void parse_byte(unsigned char c)
 				  key_seen(k); }
 			return;
 		case ST_ESC:
-			if (c == '[' || c == 'O') { s_csi_intro = c; s_pstate = ST_CSI; return; }
+			if (c == '[' || c == 'O') {
+				s_csi_intro = c; s_csi_parlen = 0; s_pstate = ST_CSI; return;
+			}
 			// lone ESC then a byte: treat ESC as Escape, reprocess the byte
 			key_seen(KEY_ESCAPE);
 			s_pstate = ST_NORMAL;
 			parse_byte(c);
 			return;
 		case ST_CSI:
-			switch (c) {
-				case 'A': key_seen(KEY_UPARROW);    break;
-				case 'B': key_seen(KEY_DOWNARROW);  break;
-				case 'C': key_seen(KEY_RIGHTARROW); break;
-				case 'D': key_seen(KEY_LEFTARROW);  break;
-				case 'R':                           // CSI r;c R = DSR report = frame rendered
-					if (s_csi_intro == '[')
-						g_awaiting_ack = 0;
-					break;
-				default: break;   // ignore params / other finals for now
+			// Parameter/intermediate bytes (0x20-0x3f) precede the final byte;
+			// gather them so "[15~" (F5) etc. survive across the final dispatch.
+			if (c >= 0x20 && c <= 0x3f) {
+				if (s_csi_parlen < (int)sizeof(s_csi_par) - 1)
+					s_csi_par[s_csi_parlen++] = (char)c;
+				return;
 			}
-			// final byte is a letter (0x40-0x7e and not a param/intermediate)
-			if (c >= 0x40 && c <= 0x7e)
+			if (c >= 0x40 && c <= 0x7e) {           // final byte
+				unsigned char k = 0;
+				s_csi_par[s_csi_parlen] = '\0';
+				if (s_csi_intro == 'O') {
+					// SS3: F1-F4, and arrows on some terminals.
+					switch (c) {
+						case 'P': k = KEY_F1; break;
+						case 'Q': k = KEY_F2; break;
+						case 'R': k = KEY_F3; break;
+						case 'S': k = KEY_F4; break;
+						case 'A': k = KEY_UPARROW;    break;
+						case 'B': k = KEY_DOWNARROW;  break;
+						case 'C': k = KEY_RIGHTARROW; break;
+						case 'D': k = KEY_LEFTARROW;  break;
+						default:  break;
+					}
+				} else {                            // CSI '['
+					switch (c) {
+						case 'A': k = KEY_UPARROW;    break;
+						case 'B': k = KEY_DOWNARROW;  break;
+						case 'C': k = KEY_RIGHTARROW; break;
+						case 'D': k = KEY_LEFTARROW;  break;
+						case 'R': g_awaiting_ack = 0; break;  // CSI r;c R = DSR = frame rendered
+						case '~': k = csi_tilde_key(atoi(s_csi_par)); break;
+						default:  break;
+					}
+				}
+				if (k)
+					key_seen(k);
 				s_pstate = ST_NORMAL;
+			}
 			return;
 	}
 }
@@ -912,19 +997,87 @@ static void tune_socket(void)
 static void terminal_restore(void) { emit_all("\x1b[?7h\x1b[?25h", 11); }
 
 // Configure the block-char text tier: mode from -mode, else by terminal charset
-// (UTF-8 -> hi-res sextant, CP437 -> half-block). Used by -text and as the
+// (UTF-8 -> blocks+shades, CP437 -> half-block). Used by -text and as the
 // no-JXL fallback.
 static void setup_text_mode(void)
 {
-	// Default: pick the tier from the client charset (terminal.ini) -- UTF-8 gets
-	// the hi-res sextant, CP437 the half-block. This assumes the door is set
-	// "Translate Character Set: No" (EX_BIN) so our native UTF-8 reaches the
-	// terminal untranslated. A sysop whose terminal/font can't do sextants (or who
-	// leaves the door translated) forces CP437 with -charset cp437 (or -mode half).
+	// Default: pick the tier from the client charset (terminal.ini). UTF-8 gets
+	// blocks+shades -- 2x2 detail using only Unicode-1.0 block/shade glyphs that
+	// every font (incl. Windows conhost's Consolas) carries; the hi-res sextant
+	// tier needs U+1FB00 glyphs most fonts lack, so it's opt-in (F4 / -mode sextant)
+	// rather than the default. CP437 terminals get the half-block. Assumes the door
+	// is "Translate Character Set: No" (EX_BIN) so native UTF-8 reaches the terminal.
 	rt_mode_t mode = g_rt_mode_set ? g_rt_mode
-	               : (g_rt_charset == RT_UTF8 ? RT_SEXTANT : RT_HALF);
+	               : (g_rt_charset == RT_UTF8 ? RT_BLOCKS : RT_HALF);
 	rt_config(g_cols, s_lines, mode, g_colors, g_rt_charset);
 	g_mode = MODE_TEXT;
+}
+
+// Build the render-tier cycle list from the startup tier: if startup chose a
+// graphics tier, the cycle is [graphics, CP437 half, quadrant, sextant]; if it
+// fell back to text, just the three text tiers. Charset only matters for the
+// half-block glyph (quadrant/sextant carry their own UTF-8 tables).
+static void build_video_states(void)
+{
+	g_vstate_n = 0;
+	if (g_mode != MODE_TEXT) {
+		g_vstates[g_vstate_n].mode  = g_mode;
+		g_vstates[g_vstate_n].label = "graphics";
+		g_vstate_n++;
+	}
+	// Half-block renders in either charset (CP437 0xDF / UTF-8 U+2580), so use the
+	// terminal's own charset -- a raw 0xDF is invalid UTF-8 on a UTF-8 terminal.
+	g_vstates[g_vstate_n].mode = MODE_TEXT; g_vstates[g_vstate_n].rt = RT_HALF;
+	g_vstates[g_vstate_n].cs = g_rt_charset; g_vstates[g_vstate_n].label = "half-block"; g_vstate_n++;
+	// Blocks+shades: 2x2 detail using only CP437-safe glyphs -- works in either
+	// charset, and (unlike quadrant) renders on font-limited terminals like conhost.
+	g_vstates[g_vstate_n].mode = MODE_TEXT; g_vstates[g_vstate_n].rt = RT_BLOCKS;
+	g_vstates[g_vstate_n].cs = g_rt_charset; g_vstates[g_vstate_n].label = "blocks+shades"; g_vstate_n++;
+	// Quadrant/sextant glyphs are UTF-8 only -- no point cycling a CP437 terminal
+	// (e.g. SyncTERM) through them; they'd just render as missing-glyph boxes.
+	if (g_rt_charset == RT_UTF8) {
+		g_vstates[g_vstate_n].mode = MODE_TEXT; g_vstates[g_vstate_n].rt = RT_QUADRANT;
+		g_vstates[g_vstate_n].cs = RT_UTF8; g_vstates[g_vstate_n].label = "quadrant"; g_vstate_n++;
+		g_vstates[g_vstate_n].mode = MODE_TEXT; g_vstates[g_vstate_n].rt = RT_SEXTANT;
+		g_vstates[g_vstate_n].cs = RT_UTF8; g_vstates[g_vstate_n].label = "sextant";  g_vstate_n++;
+	}
+	g_vstate_i = 0;                       // index 0 == the startup tier
+}
+
+// Advance to the next render tier and show a brief centered label so the user
+// can see (and read) what they switched to. Driven by the F4 hotkey.
+static void cycle_video(void)
+{
+	struct vstate *v;
+	char  line[80], buf[160];
+	int   pad, n;
+
+	if (g_vstate_n == 0)
+		build_video_states();
+	g_vstate_i = (g_vstate_i + 1) % g_vstate_n;
+	v = &g_vstates[g_vstate_i];
+
+	if (v->mode == MODE_TEXT) {
+		g_rt_mode     = v->rt;
+		g_rt_mode_set = 1;
+		g_rt_charset  = v->cs;
+		setup_text_mode();               // (re)configures render_text + sets g_mode
+	} else {
+		g_mode = v->mode;
+	}
+	compute_geometry();
+	g_awaiting_ack = 0;                  // let the next frame emit immediately
+
+	// Clear (drop the prior tier's bitmap/glyphs) and dwell on a readable label.
+	emit_all("\x1b[2J\x1b[H", 7);
+	snprintf(line, sizeof(line), "  SYNCDOOM video: %s   (F4 to cycle)  ", v->label);
+	pad = (g_cols - (int)strlen(line)) / 2;
+	if (pad < 0)
+		pad = 0;
+	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
+	emit_all(buf, n);
+	g_label_until = now_ms() + 900;
+	dlog("video cycle -> %s", v->label);
 }
 
 static const char *mode_name(enum frame_mode m)
@@ -1076,6 +1229,10 @@ void DG_Init(void)
 	                                    // -jxl 0 above, for the localhost/LAN case only.
 
 	compute_geometry();              // emitted image size + centering (now that the tier is known)
+	build_video_states();            // seed the F4 cycle now so the startup tier (incl.
+	                                 // graphics) is always one of the cyclable states
+	joybspeed = g_always_run ? 31 : 2;   // apply always-run default ('\' toggles at runtime;
+	                                     // 31 >= MAX_JOY_BUTTONS, the always-run hack)
 
 	// Startup diagnostic -> BBS log (syslog/journalctl). Confirms the running
 	// build, which terminal.ini (if any) was read, the size taken from it, and
@@ -1273,7 +1430,7 @@ static void read_terminal_ini(void)
 		g_cols  = cols;
 	if (rows > 0)
 		s_lines = rows;
-	// Charset drives the default text tier (UTF-8 -> sextant, else half). Assumes
+	// Charset drives the default text tier (UTF-8 -> blocks+shades, else half). Assumes
 	// the door is set "Translate Character Set: No" so our native UTF-8 passes
 	// through untranslated; an explicit -charset (parsed later) overrides this.
 	if (cs[0]) g_rt_charset = (stricmp(cs, "utf-8") == 0 || stricmp(cs, "utf8") == 0)
@@ -1386,6 +1543,7 @@ static void read_syncdoom_ini(const char *argv0)
 		if ((v = iniGetInteger(ini, "input", "kpturn",   -1)) >= 0)
 			g_turn_grace    = (uint32_t)v;
 	}
+	g_always_run = iniGetBool(ini, "input", "always_run", TRUE);
 
 	strListFree(&ini);
 }

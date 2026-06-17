@@ -13,7 +13,13 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef enum { RT_HALF = 1, RT_SPACE, RT_QUADRANT, RT_SEXTANT } rt_mode_t;
+// RT_BLOCKS: 2x2 sub-cell detail like RT_QUADRANT, but rendered with only the
+// classic CP437 block + shade glyphs (halves/full/empty exact; single-quadrant
+// and diagonal patterns approximated by light/medium/dark shades). Unlike the
+// quadrant-combination glyphs (U+2596-259F), every glyph it uses exists in
+// legacy fonts (Windows conhost included) and as CP437 bytes -- so it renders
+// where RT_QUADRANT/RT_SEXTANT show missing-glyph boxes.
+typedef enum { RT_HALF = 1, RT_SPACE, RT_QUADRANT, RT_SEXTANT, RT_BLOCKS } rt_mode_t;
 typedef enum { RT_24BIT = 1, RT_8BIT, RT_4BIT, RT_3BIT } rt_colors_t;
 typedef enum { RT_UTF8 = 0, RT_CP437 } rt_charset_t;       // block glyph: U+2580 vs 0xDF
 

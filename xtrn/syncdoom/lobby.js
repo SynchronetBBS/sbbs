@@ -27,7 +27,14 @@ function sd_play(connect, extra, wsargs)
 	// %H/%T/%R = socket/time/rows; %a = the alias, *lowercase* so cmdstr quotes
 	// it when it contains a space -- which routes external() through the shell
 	// (it sees the quote) so a multi-word alias survives as one argument.
-	var cmd = SD_BINARY + " -s%H -t%T -l%R -name %a";
+	// -home gives the door a per-user writable sandbox for its config + saved
+	// games (the door mkpath()s and chdir()s into it, so saves land in
+	// <home>/.savegame/). Synchronet auto-cleans data/user/####/ when a user is
+	// removed, so per-user door data belongs there -- data/user/####/doom/.
+	// Without -home the door falls back to its launch cwd (the read-only install
+	// dir) and the first save aborts the door with an I_Error.
+	var home = system.data_dir + "user/" + format("%04u", user.number) + "/doom/";
+	var cmd = SD_BINARY + " -s%H -t%T -l%R -name %a -home " + home;
 	if (connect)
 		cmd += " -connect " + connect;
 	var i;
@@ -215,6 +222,19 @@ function sd_join_external()
 		sd_play(addr, [], sd_wadset_args(cfg, ws));
 }
 
+// Controls reference -- an external, sysop-editable display file (Ctrl-A codes)
+// beside the door: edit/translate/retheme controls.msg without touching JS.
+// Mirrors the in-game F1 help (m_menu.c M_DrawReadThis1), which has to stay
+// C-drawn since it renders into the Doom frame. Shown on demand from the menu --
+// NOT auto-printed before a launch, which would delay the co-op creator's
+// connect and lose the host/controller race.
+function sd_controls()
+{
+	console.clear();
+	console.printfile(SD_DIR + "controls.msg", P_NOPAUSE);
+	console.pause();
+}
+
 // ---------------------------------------------------------------------------
 // Main menu
 // ---------------------------------------------------------------------------
@@ -234,10 +254,11 @@ function sd_main()
 		console.print("   \1h\1yP\1n  Play single-player\r\n");
 		if (allow_ext)
 			console.print("   \1h\1yJ\1n  Join an external server by address\r\n");
+		console.print("   \1h\1yH\1n  Help / controls\r\n");
 		console.print("   \1h\1yQ\1n  Quit\r\n\r\n");
 		console.print("   Command: ");
 
-		var k = console.getkeys("BCP" + (allow_ext ? "J" : "") + "Q");
+		var k = console.getkeys("BCPH" + (allow_ext ? "J" : "") + "Q");
 		if (k == "Q")
 			break;
 		else if (k == "B")
@@ -246,6 +267,8 @@ function sd_main()
 			sd_create();
 		else if (k == "P")
 			sd_solo();
+		else if (k == "H")
+			sd_controls();
 		else if (k == "J" && allow_ext)
 			sd_join_external();
 	}

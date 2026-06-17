@@ -24,8 +24,15 @@ static int       dest_width;
 static int       dest_height;
 static uint32_t *dest_buffer;
 
-typedef enum { cli_mode_sextant = 1, cli_mode_quadrant, cli_mode_half, cli_mode_space } cli_mode_t;
+typedef enum { cli_mode_sextant = 1, cli_mode_quadrant, cli_mode_half, cli_mode_space,
+               cli_mode_blocks } cli_mode_t;
 static cli_mode_t cli_mode = cli_mode_half;
+
+// Active block charset (RT_BLOCKS / half-block pick their glyph table from this).
+static rt_charset_t g_charset = RT_UTF8;
+// CP437-safe 2x2 block+shade glyph table (set by charset in rt_config); 16 entries
+// indexed by the same TL/TR/BL/BR bit pattern draw_subcell() computes.
+static const char *const *g_blocks = NULL;
 
 typedef enum { cli_colors_24bit = 1, cli_colors_8bit, cli_colors_4bit, cli_colors_3bit,
                cli_colors_light, cli_colors_dark } cli_colors_t;
@@ -40,9 +47,32 @@ static size_t      g_block_upper_len = sizeof(UPPER_HALF) - 1;
 #define DOOMCLI_READ_INPUT() ((void)0)
 
 // quadrant/sextant draws + their glyph tables are appended at end of file.
+static void draw_subcell(const char *const *glyphs);
 static void draw_quadrant();
+static void draw_blocks();
 static void draw_sextant();
 static void draw_sextant_bw();
+
+// RT_BLOCKS 2x2 glyph tables, indexed by the TL|TR<<1|BL<<2|BR<<3 luma pattern
+// draw_subcell() computes. Axis-aligned halves / full / empty are exact; the
+// single-quadrant (1 cell) and diagonal (2 opposite cells) patterns -- which
+// CP437/legacy fonts can't draw -- are approximated by light/medium/dark shades.
+// UTF-8 variant: U+2580/2584/258C/2590 halves, U+2588 full, U+2591/2592/2593
+// shades -- all Unicode 1.0, present in Windows conhost's Consolas etc.
+static const char *const blocks_utf8[16] = {
+    " ",            "\xE2\x96\x91", "\xE2\x96\x91", "\xE2\x96\x80",  //  0..3
+    "\xE2\x96\x91", "\xE2\x96\x8C", "\xE2\x96\x92", "\xE2\x96\x93",  //  4..7
+    "\xE2\x96\x91", "\xE2\x96\x92", "\xE2\x96\x90", "\xE2\x96\x93",  //  8..11
+    "\xE2\x96\x84", "\xE2\x96\x93", "\xE2\x96\x93", "\xE2\x96\x88",  // 12..15
+};
+// CP437 variant: the same glyphs as raw code-page bytes (0xB0/B1/B2 shades,
+// 0xDB full, 0xDC/DD/DE/DF halves) for a true CP437 terminal.
+static const char *const blocks_cp437[16] = {
+    " ",     "\xB0", "\xB0", "\xDF",   //  0..3
+    "\xB0",  "\xDD", "\xB1", "\xB2",   //  4..7
+    "\xB0",  "\xB1", "\xDE", "\xB2",   //  8..11
+    "\xDC",  "\xB2", "\xB2", "\xDB",   // 12..15
+};
 
 // ======================================================================
 // Lifted verbatim from doom-cli doomgeneric_cli.c lines 274-773 (GPL-2.0)
@@ -565,6 +595,7 @@ void rt_config(int cols, int rows, rt_mode_t mode, rt_colors_t colors, rt_charse
         case RT_SPACE:    cli_mode = cli_mode_space;    dest_width = cols;     dest_height = rows;     break;
         case RT_QUADRANT: cli_mode = cli_mode_quadrant; dest_width = cols * 2; dest_height = rows * 2; break;
         case RT_SEXTANT:  cli_mode = cli_mode_sextant;  dest_width = cols * 2; dest_height = rows * 3; break;
+        case RT_BLOCKS:   cli_mode = cli_mode_blocks;   dest_width = cols * 2; dest_height = rows * 2; break;
         default:          cli_mode = cli_mode_half;     dest_width = cols;     dest_height = rows * 2; break;
     }
     switch (colors) {
@@ -574,8 +605,14 @@ void rt_config(int cols, int rows, rt_mode_t mode, rt_colors_t colors, rt_charse
         default:       cli_colors = cli_colors_4bit;  break;
     }
     // CP437 has only the half-block glyph (0xDF); quadrant/sextant are UTF-8-only.
-    if (charset == RT_CP437) { g_block_upper = "\xDF"; g_block_upper_len = 1; }
-    else { g_block_upper = UPPER_HALF; g_block_upper_len = sizeof(UPPER_HALF) - 1; }
+    g_charset = charset;
+    if (charset == RT_CP437) {
+        g_block_upper = "\xDF"; g_block_upper_len = 1;
+        g_blocks = blocks_cp437;
+    } else {
+        g_block_upper = UPPER_HALF; g_block_upper_len = sizeof(UPPER_HALF) - 1;
+        g_blocks = blocks_utf8;
+    }
 
     free(dest_buffer);
     dest_buffer = malloc(sizeof(uint32_t) * (size_t)dest_width * dest_height);
@@ -610,6 +647,7 @@ const char *rt_render_frame(size_t *len)
     switch (cli_mode) {
         case cli_mode_space:    draw_space();    break;
         case cli_mode_quadrant: draw_quadrant(); break;
+        case cli_mode_blocks:   draw_blocks();   break;
         case cli_mode_sextant:  draw_sextant();  break;
         default:                draw_half();     break;
     }
@@ -708,7 +746,9 @@ const char* sextants[] = {
     "\xF0\x9F\xAC\xBB",  // U+1FB3B: BLOCK SEXTANT-23456  🬻
     "\xE2\x96\x88",      // U+2588:  FULL BLOCK           █
 };
-static void draw_quadrant() {
+// 2x2 sub-cell renderer shared by the quadrant and blocks tiers: the only
+// difference is the 16-entry glyph table (UTF-8 quadrants vs CP437-safe blocks).
+static void draw_subcell(const char *const *glyphs) {
     uint32_t* top = dest_buffer;
     uint32_t* bot = dest_buffer + dest_width;
 
@@ -856,7 +896,7 @@ static void draw_quadrant() {
                 output_colors(x, y,
                         fg_red, fg_green, fg_blue,
                         bg_red, bg_green, bg_blue);
-                buffer_append_cstr(quadrants[index]);
+                buffer_append_cstr(glyphs[index]);
             }
 
             top += 2;
@@ -868,6 +908,11 @@ static void draw_quadrant() {
         bot += dest_width;
     }
 }
+
+// The quadrant (UTF-8 hi-res) and blocks (CP437-safe) tiers are the same 2x2
+// renderer with different glyph tables.
+static void draw_quadrant() { draw_subcell(quadrants); }
+static void draw_blocks()   { draw_subcell(g_blocks); }
 
 static void draw_sextant_bw() {
 //printf("%s %i  draw sextant\n",__func__, DG_GetTicksMs());

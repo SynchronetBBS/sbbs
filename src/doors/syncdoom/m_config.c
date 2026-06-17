@@ -2115,11 +2115,10 @@ char *M_GetSaveGameDir(char *iwadname)
 
         free(topdir);
 #else
-        savegamedir = M_StringJoin(configdir, DIR_SEPARATOR_S, ".savegame/", NULL);
-
-        M_MakeDirectory(savegamedir);
-
-        printf ("Using %s for savegames\n", savegamedir);
+        // configdir is already a dedicated per-user sandbox (the door's -home),
+        // so save straight into it -- no hidden ".savegame/" subdir to surprise
+        // the sysop. The dir was created by M_SetConfigDir / the -home mkpath.
+        savegamedir = M_StringJoin(configdir, DIR_SEPARATOR_S, NULL);
 #endif
     }
 

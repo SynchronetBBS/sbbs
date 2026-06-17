@@ -328,6 +328,9 @@ menu_t  NewDef =
 //
 // OPTIONS MENU
 //
+// Mouse Sensitivity and Sound Volume are dropped: a terminal client has no
+// mouse, and no audio reaches it -- those sub-menus would be dead UI. (option_-
+// empty1 is kept: it's the thermometer-bar row for the Screen Size slider.)
 enum
 {
     endgame,
@@ -335,9 +338,6 @@ enum
     detail,
     scrnsize,
     option_empty1,
-    mousesens,
-    option_empty2,
-    soundvol,
     opt_end
 } options_e;
 
@@ -347,10 +347,7 @@ menuitem_t OptionsMenu[]=
     {1,"M_MESSG",	M_ChangeMessages,'m'},
     {1,"M_DETAIL",	M_ChangeDetail,'g'},
     {2,"M_SCRNSZ",	M_SizeDisplay,'s'},
-    {-1,"",0,'\0'},
-    {2,"M_MSENS",	M_ChangeSensitivity,'m'},
-    {-1,"",0,'\0'},
-    {1,"M_SVOL",	M_Sound,'s'}
+    {-1,"",0,'\0'}
 };
 
 menu_t  OptionsDef =
@@ -374,7 +371,8 @@ enum
 
 menuitem_t ReadMenu1[] =
 {
-    {1,"",M_ReadThis2,0}
+    // One page of controls -- dismiss straight out (no second WAD help page).
+    {1,"",M_FinishReadThis,0}
 };
 
 menu_t  ReadDef1 =
@@ -740,76 +738,120 @@ void M_QuickLoad(void)
 // Read This Menus
 // Had a "quick hack to fix romero bug"
 //
+static void M_WriteCenter(int y, char *string)
+{
+    M_WriteText(160 - M_StringWidth(string) / 2, y, string);
+}
+
+// Vanilla Doom ships only the small hu_font alphabet (big title text is
+// pre-rendered word art), so to enlarge a heading we blit that font scaled NxN
+// straight into the paletted framebuffer. (The whole frame is re-encoded every
+// tick, so skipping V_MarkRect is fine.)
+static void M_DrawCharScaled(int x, int y, int ch, int scale)
+{
+    patch_t  *p;
+    column_t *col;
+    byte     *src;
+    int       w, c, i, sx, sy, cx;
+
+    c = toupper(ch) - HU_FONTSTART;
+    if (c < 0 || c >= HU_FONTSIZE)
+        return;
+    p = hu_font[c];
+    w = SHORT(p->width);
+    for (cx = 0; cx < w; cx++)
+    {
+        col = (column_t *)((byte *)p + LONG(p->columnofs[cx]));
+        while (col->topdelta != 0xff)
+        {
+            src = (byte *)col + 3;
+            for (i = 0; i < col->length; i++)
+            {
+                int px = x + cx * scale;
+                int py = y + (col->topdelta + i) * scale;
+                for (sy = 0; sy < scale; sy++)
+                {
+                    int dy = py + sy;
+                    if (dy < 0 || dy >= SCREENHEIGHT)
+                        continue;
+                    for (sx = 0; sx < scale; sx++)
+                    {
+                        int dx = px + sx;
+                        if (dx >= 0 && dx < SCREENWIDTH)
+                            I_VideoBuffer[dy * SCREENWIDTH + dx] = src[i];
+                    }
+                }
+            }
+            col = (column_t *)((byte *)col + col->length + 4);
+        }
+    }
+}
+
+static void M_WriteTextScaled(int x, int y, char *string, int scale)
+{
+    char *ch = string;
+    int   cx = x, c, ci, w;
+
+    while ((c = *ch++) != 0)
+    {
+        ci = toupper(c) - HU_FONTSTART;
+        if (c == ' ' || ci < 0 || ci >= HU_FONTSIZE)
+        {
+            cx += 4 * scale;
+            continue;
+        }
+        w = SHORT(hu_font[ci]->width);
+        if (cx + w * scale > SCREENWIDTH)
+            break;
+        M_DrawCharScaled(cx, y, c, scale);
+        cx += w * scale;
+    }
+}
+
+static void M_WriteCenterScaled(int y, char *string, int scale)
+{
+    M_WriteTextScaled(160 - (M_StringWidth(string) * scale) / 2, y, string, scale);
+}
+
+//
+// SYNCDOOM controls reference. This replaces the WAD's HELP/Read This graphic,
+// whose printed key chart (Ctrl=fire, Space=use, Alt+arrows=strafe) is the PC
+// keyboard layout and is plain wrong for a terminal door. These are the actual
+// keys syncdoom.c's map_ascii() binds for a remote client.
+//
 void M_DrawReadThis1(void)
 {
-    char *lumpname = "CREDIT";
-    int skullx = 330, skully = 175;
+    int y;
 
     inhelpscreens = true;
-    
-    // Different versions of Doom 1.9 work differently
 
-    switch (gameversion)
-    {
-        case exe_doom_1_666:
-        case exe_doom_1_7:
-        case exe_doom_1_8:
-        case exe_doom_1_9:
-        case exe_hacx:
+    // Solid backdrop -- unlike vanilla there's no fullscreen help lump to hide
+    // the live game view behind the text, so paint one (palette index 0 = black).
+    V_DrawFilledBox(0, 0, SCREENWIDTH, SCREENHEIGHT, 0);
 
-            if (gamemode == commercial)
-            {
-                // Doom 2
+    M_WriteCenterScaled(8, "SYNCDOOM CONTROLS", 2);
 
-                lumpname = "HELP";
+    y = 40;
+    M_WriteText(95, y, "ARROWS"); M_WriteText(165, y, "MOVE / TURN");    y += 12;
+    M_WriteText(95, y, "SPACE");  M_WriteText(165, y, "FIRE");           y += 12;
+    M_WriteText(95, y, "E");      M_WriteText(165, y, "USE / OPEN");     y += 12;
+    M_WriteText(95, y, ", .");    M_WriteText(165, y, "STRAFE L / R");   y += 12;
+    M_WriteText(95, y, "\\");     M_WriteText(165, y, "RUN (TOGGLE)");   y += 12;
+    M_WriteText(95, y, "1 - 7");  M_WriteText(165, y, "SELECT WEAPON");  y += 12;
+    M_WriteText(95, y, "TAB");    M_WriteText(165, y, "AUTOMAP");        y += 12;
+    M_WriteText(95, y, "ESC");    M_WriteText(165, y, "MENU");           y += 20;
 
-                skullx = 330;
-                skully = 165;
-            }
-            else
-            {
-                // Doom 1
-                // HELP2 is the first screen shown in Doom 1
-                
-                lumpname = "HELP2";
+    M_WriteCenter(y, "F2 SAVE   F3 LOAD   F10 QUIT");                    y += 12;
+    M_WriteCenter(y, "F6 QUICKSAVE   F9 QUICKLOAD");                     y += 12;
+    M_WriteCenter(y, "F4 CYCLE TEXT / GRAPHICS TIER");
 
-                skullx = 280;
-                skully = 185;
-            }
-            break;
+    M_WriteCenter(176, "PRESS ESC OR ENTER");
 
-        case exe_ultimate:
-        case exe_chex:
-
-            // Ultimate Doom always displays "HELP1".
-
-            // Chex Quest version also uses "HELP1", even though it is based
-            // on Final Doom.
-
-            lumpname = "HELP1";
-
-            break;
-
-        case exe_final:
-        case exe_final2:
-
-            // Final Doom always displays "HELP".
-
-            lumpname = "HELP";
-
-            break;
-
-        default:
-            I_Error("Unhandled game version");
-            break;
-    }
-
-    lumpname = DEH_String(lumpname);
-    
-    V_DrawPatchDirect (0, 0, W_CacheLumpName(lumpname, PU_CACHE));
-
-    ReadDef1.x = skullx;
-    ReadDef1.y = skully;
+    // Park the blinking skull just left of the dismiss prompt (it draws at
+    // x + SKULLXOFF, y - 5; see M_Drawer). y is dropped below the F4 line above
+    // so the tall skull patch doesn't clip into it.
+    ReadDef1.x = 102;
+    ReadDef1.y = 182;
 }
 
 
@@ -819,12 +861,8 @@ void M_DrawReadThis1(void)
 //
 void M_DrawReadThis2(void)
 {
-    inhelpscreens = true;
-
-    // We only ever draw the second page if this is 
-    // gameversion == exe_doom_1_9 and gamemode == registered
-
-    V_DrawPatchDirect(0, 0, W_CacheLumpName(DEH_String("HELP1"), PU_CACHE));
+    // Both help pages show the same single controls reference.
+    M_DrawReadThis1();
 }
 
 
@@ -996,9 +1034,6 @@ void M_DrawOptions(void)
     V_DrawPatchDirect(OptionsDef.x + 120, OptionsDef.y + LINEHEIGHT * messages,
                       W_CacheLumpName(DEH_String(msgNames[showMessages]),
                                       PU_CACHE));
-
-    M_DrawThermo(OptionsDef.x, OptionsDef.y + LINEHEIGHT * (mousesens + 1),
-		 10, mouseSensitivity);
 
     M_DrawThermo(OptionsDef.x,OptionsDef.y+LINEHEIGHT*(scrnsize+1),
 		 9,screenSize);
@@ -1673,10 +1708,9 @@ boolean M_Responder (event_t* ev)
         {
 	    M_StartControlPanel ();
 
-	    if ( gamemode == retail )
-	      currentMenu = &ReadDef2;
-	    else
-	      currentMenu = &ReadDef1;
+	    // Always our single controls page (M_DrawReadThis1), regardless of
+	    // gamemode -- the retail two-page WAD help no longer applies.
+	    currentMenu = &ReadDef1;
 
 	    itemOn = 0;
 	    S_StartSound(NULL,sfx_swtchn);
@@ -1696,12 +1730,8 @@ boolean M_Responder (event_t* ev)
 	    M_LoadGame(0);
 	    return true;
         }
-        else if (key == key_menu_volume)   // Sound Volume
-        {
-	    M_StartControlPanel ();
-	    currentMenu = &SoundDef;
-	    itemOn = sfx_vol;
-	    S_StartSound(NULL,sfx_swtchn);
+        else if (key == key_menu_volume)   // Sound Volume -- no audio over a
+        {                                  // terminal; swallow the key, no menu.
 	    return true;
 	}
         else if (key == key_menu_detail)   // Detail toggle
