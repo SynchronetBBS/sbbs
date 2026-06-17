@@ -49,13 +49,20 @@ static void PlayerQuitGame(player_t *player)
 
     player_num = player - players;
 
-    // Do this the same way as Vanilla Doom does, to allow dehacked
-    // replacements of this message
+    // syncdoom: use the network player name if we have one; otherwise fall back
+    // to vanilla's "Player N left the game" (also keeps dehacked replacements).
+    {
+        extern const char *sd_player_name(int player);
+        const char *sd_nm = sd_player_name((int)player_num);
 
-    M_StringCopy(exitmsg, DEH_String("Player 1 left the game"),
-                 sizeof(exitmsg));
-
-    exitmsg[7] += player_num;
+        if (sd_nm != NULL) {
+            M_snprintf(exitmsg, sizeof(exitmsg), "%s left the game", sd_nm);
+        } else {
+            M_StringCopy(exitmsg, DEH_String("Player 1 left the game"),
+                         sizeof(exitmsg));
+            exitmsg[7] += player_num;
+        }
+    }
 
     playeringame[player_num] = false;
     players[consoleplayer].message = exitmsg;

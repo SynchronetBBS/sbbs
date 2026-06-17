@@ -1447,15 +1447,25 @@ static void compute_geometry(void)
 // the color name. See sd_player_chat_name().
 static char sd_chat_player_names[NET_MAXPLAYERS][MAXPLAYERNAME];
 
+// Raw network name for player number 'player', or NULL if unknown (e.g. the
+// "<name> left the game" message). Used by d_net.c.
+const char *sd_player_name(int player)
+{
+	if (player >= 0 && player < NET_MAXPLAYERS
+	    && sd_chat_player_names[player][0] != '\0')
+		return sd_chat_player_names[player];
+	return NULL;
+}
+
 // Called by hu_stuff.c: the chat prefix ("Name: ") for player number 'player',
 // or NULL to use Doom's color name.
 const char *sd_player_chat_name(int player)
 {
 	static char buf[MAXPLAYERNAME + 4];
+	const char *nm = sd_player_name(player);
 
-	if (player >= 0 && player < NET_MAXPLAYERS
-	    && sd_chat_player_names[player][0] != '\0') {
-		snprintf(buf, sizeof(buf), "%s: ", sd_chat_player_names[player]);
+	if (nm != NULL) {
+		snprintf(buf, sizeof(buf), "%s: ", nm);
 		return buf;
 	}
 	return NULL;
@@ -1540,6 +1550,11 @@ void sd_waitroom_run(void)
 
 		I_Sleep(50);
 	}
+
+	// The game is starting: wipe the waiting-room text so it doesn't linger
+	// beside the first rendered frame (the bitmap tiers only overdraw their own
+	// centered region, not the whole screen).
+	emit_all("\x1b[2J\x1b[H", 7);
 }
 
 // main: read connection/session params (-door32 drop file and/or -s/-l/-t),
