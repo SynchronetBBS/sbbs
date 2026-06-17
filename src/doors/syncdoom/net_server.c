@@ -377,6 +377,15 @@ int NET_SV_ConnectedClients(void)
     return NET_SV_NumClients();
 }
 
+// Public accessor: true once the match has left the join-able waiting room
+// (syncdoom registry status: "playing" vs "lobby"). New connections are only
+// accepted while still in SERVER_WAITING_LAUNCH.
+
+boolean NET_SV_GameInProgress(void)
+{
+    return server_state != SERVER_WAITING_LAUNCH;
+}
+
 // returns a pointer to the client which controls the server
 
 static net_client_t *NET_SV_Controller(void)

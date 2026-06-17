@@ -42,6 +42,11 @@ void NET_SV_RegisterWithMaster(void);
 
 int NET_SV_ConnectedClients(void);
 
+// True once the match has started (no longer accepting joins) -- syncdoom
+// registry status lobby/playing.
+
+boolean NET_SV_GameInProgress(void);
+
 // Force the match size on a dedicated server, independent of which client
 // becomes the controller (syncdoom). 0 = use the controller's value.
 
