@@ -4,8 +4,8 @@
 // binary (located via js.exec_dir, in this same directory) to play. The model
 // layer is in syncdoom_lib.js. SpiderMonkey 1.8.5-compatible (no modern ES).
 //
-// MVP: single-player, create a co-op game, and join by address. Browse/registry
-// discovery and deathmatch are TODO.
+// Browse & join registry-discovered games, create a co-op game, single-player,
+// or join an external server by address. Deathmatch and a waiting-room UI are TODO.
 //
 // Copyright(C) 2026 Rob Swindell / syncdoom. GPL-2.0.
 
@@ -36,14 +36,22 @@ function sd_play(connect, extra, wsargs)
 	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN, SD_DIR);
 }
 
-// Spawn a detached dedicated server for a match of 'maxplayers' on the given
-// port (returns immediately; the server runs headless until the match empties).
-// Uses the C -spawnserver mode so it survives this session. The server owns the
-// match size, so it doesn't matter which client connects first.
-function sd_spawn_server(port, maxplayers)
+// Spawn a detached dedicated server for a match on the given port (returns
+// immediately; runs headless until the match empties). Uses -spawnserver so it
+// survives this session. The server owns the match size (connect order doesn't
+// matter) and writes the registry entry the lobby discovers -- so we hand it the
+// games dir (the C door isn't Synchronet-aware) plus the match metadata. %A is
+// the auto-quoted alias.
+function sd_spawn_server(port, maxplayers, ws, mode)
 {
-	bbs.exec(SD_BINARY + " -spawnserver -port " + port
-	    + " -maxplayers " + maxplayers, EX_NATIVE, SD_DIR);
+	var cmd = SD_BINARY + " -spawnserver -port " + port
+	    + " -maxplayers " + maxplayers
+	    + " -gamesdir " + SD_GAMES
+	    + " -host %A"
+	    + " -wadset " + ws.id
+	    + " -gamemode " + mode;
+
+	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE, SD_DIR);
 }
 
 // ---------------------------------------------------------------------------
@@ -111,16 +119,14 @@ function sd_create()
 		return;
 	}
 
-	sd_spawn_server(port, n);
+	sd_spawn_server(port, n, ws, "coop");
 	mswait(500);                          // let the server bind before we connect
 
-	// For a multi-player game, tell the creator the join address so they can
-	// relay it (until Browse lands). 1-player starts immediately, no pause.
+	// For a multi-player game, the others join via Browse -- it's now in the
+	// registry. 1-player starts immediately, no pause.
 	if (n > 1) {
 		console.print("\r\n\1h\1gGame created \1n-- waiting for " + (n - 1)
-		    + " more player(s).\r\n");
-		console.print("They should choose \1hJ\1noin and enter:  \1h\1c127.0.0.1:"
-		    + port + "\1n   (same host)\r\n");
+		    + " more player(s) to \1hB\1nrowse and join.\r\n");
 		console.print("\r\nPress a key to enter the game and wait for them...");
 		console.getkey();
 	}
@@ -130,7 +136,60 @@ function sd_create()
 	sd_play("127.0.0.1:" + port, ["-players", String(n)], sd_wadset_args(cfg, ws));
 }
 
-function sd_join()
+// Browse the registry and join a game on this system. The joiner inherits the
+// host's WAD set from the registry -- no address typing, no WAD-set guessing.
+function sd_browse()
+{
+	var games = sd_list_games(cfg);
+	if (!games.length) {
+		console.print("\r\n\1h\1wNo network games are running.\1n  Use \1hC\1nreate to start one.\r\n");
+		console.pause();
+		return;
+	}
+
+	console.print("\r\n\1h\1cNetwork games:\1n\r\n");
+	console.print("    \1n\1wHost              Mode        WAD set       Players  Status\1n\r\n");
+	var i;
+	for (i = 0; i < games.length; i++) {
+		var g = games[i];
+		console.print(format(" \1h\1y%2d\1n %-17s %-11s %-13s %s/%-4s \1n\1w%s\1n\r\n",
+		    i + 1, g.host, g.mode, g.wadset, g.players, g.maxplayers, g.status));
+	}
+	console.print("\r\nJoin which [\1h1-" + games.length + "\1n], \1hQ\1n to cancel: ");
+
+	var k = console.getkeys("Q", games.length);
+	if (k == "Q" || !k)
+		return;
+	var sel = games[k - 1];
+
+	// Vanilla Doom only accepts joins before the game starts.
+	if (sel.status != "lobby") {
+		console.print("\r\n\1h\1rThat game is already in progress -- you can't join it.\1n\r\n");
+		console.pause();
+		return;
+	}
+
+	// Inherit the host's WAD set (look it up by id, then verify it's installed).
+	var ws = sd_find_wadset(cfg, sel.wadset);
+	if (!ws) {
+		console.print("\r\n\1h\1rThis system has no WAD set '" + sel.wadset
+		    + "' -- can't join.\1n\r\n");
+		console.pause();
+		return;
+	}
+	if (!sd_wadset_files_present(cfg, ws)) {
+		console.print("\r\n\1h\1rThe WAD files for '" + ws.name
+		    + "' are not installed here.\1n\r\n");
+		console.pause();
+		return;
+	}
+
+	sd_play(sel.addr + ":" + sel.port, [], sd_wadset_args(cfg, ws));
+}
+
+// Join an arbitrary server by address (external / cross-system). Manual because
+// there's no registry entry to inherit the WAD set from.
+function sd_join_external()
 {
 	console.print("\r\nServer address (\1hhost:port\1n), blank to cancel: ");
 	var addr = console.getstr("", 60, K_LINE);
@@ -138,8 +197,8 @@ function sd_join()
 		return;
 	addr = sd_trim(addr);
 
-	console.print("Select the WAD set this game is using:\r\n");
-	var ws = sd_pick_wadset();            // must match the host's set
+	console.print("Select the WAD set this game is using (must match the host):\r\n");
+	var ws = sd_pick_wadset();
 	if (ws)
 		sd_play(addr, [], sd_wadset_args(cfg, ws));
 }
@@ -153,21 +212,24 @@ function sd_main()
 	while (!js.terminated && bbs.online) {
 		console.clear();
 		console.print("\r\n   \1h\1rS Y N C D O O M\1n   \1n\1wnetwork lobby\1n\r\n\r\n");
-		console.print("   \1h\1yP\1n  Play single-player\r\n");
+		console.print("   \1h\1yB\1n  Browse & join a network game\r\n");
 		console.print("   \1h\1yC\1n  Create a co-op network game\r\n");
-		console.print("   \1h\1yJ\1n  Join a game by address\r\n");
+		console.print("   \1h\1yP\1n  Play single-player\r\n");
+		console.print("   \1h\1yJ\1n  Join an external server by address\r\n");
 		console.print("   \1h\1yQ\1n  Quit\r\n\r\n");
 		console.print("   Command: ");
 
-		var k = console.getkeys("PCJQ");
+		var k = console.getkeys("BCPJQ");
 		if (k == "Q")
 			break;
-		else if (k == "P")
-			sd_solo();
+		else if (k == "B")
+			sd_browse();
 		else if (k == "C")
 			sd_create();
+		else if (k == "P")
+			sd_solo();
 		else if (k == "J")
-			sd_join();
+			sd_join_external();
 	}
 }
 
