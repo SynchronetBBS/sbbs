@@ -382,8 +382,14 @@ static void emit_frame_sixel(int w, int h)
 }
 
 #ifdef WITH_JXL
-static float g_jxl_distance = 2.0f;   // lossy Butteraugli distance (smaller=better/bigger)
-static int   g_jxl_effort   = 1;      // 1=lightning (fastest encode, lowest latency)
+// JXL frame compression. distance = lossy Butteraugli target (1.0 ~ visually
+// lossless; higher = smaller + softer; NO encode-time cost) -- the size lever,
+// tunable via [video] jxl_distance or -jxldistance (measured -21% at 3.0, -36%
+// at 4.0 on Doom frames). effort is fixed at 1 (lightning, lowest latency): on
+// this noisy game content raising it barely shrinks frames and effort >=5 makes
+// them bigger AND drops fps, so there's nothing to gain by exposing it.
+static float g_jxl_distance = 2.0f;
+static int   g_jxl_effort   = 1;
 
 // Encode s_rgb (w*h RGB888) as JXL into s_img; returns false on any failure
 // (caller falls back to PPM).
@@ -1341,6 +1347,12 @@ static void read_syncdoom_ini(const char *argv0)
 		/* "auto" -> leave the auto-probe defaults */
 	}
 
+#ifdef WITH_JXL
+	// jxl_distance -- JXL lossy distance, the frame-size lever (higher = smaller
+	// + softer, at no encode-time cost). Encode effort is fixed at 1 (see globals).
+	g_jxl_distance = (float)iniGetFloat(ini, "video", "jxl_distance", g_jxl_distance);
+#endif
+
 	// [input] key-up-synthesis graces, in ms (see -kpsmooth / -kpdelay / -kpturn)
 	{
 		int v;
@@ -1573,6 +1585,12 @@ int main(int argc, char **argv)
 		} else if (strcmp(argv[i], "-name") == 0) {       // multiplayer player handle
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if (*v) { strncpy(g_player_name, v, sizeof(g_player_name) - 1); g_player_name[sizeof(g_player_name) - 1] = '\0'; }
+#ifdef WITH_JXL
+		} else if (strcmp(argv[i], "-jxldistance") == 0) {   // JXL lossy distance (size lever)
+			const char *v = (i + 1 < argc) ? argv[++i] : "";
+			if (*v)
+				g_jxl_distance = (float)atof(v);
+#endif
 		}
 	}
 	// Hand the BBS handle to the net layer. It must be non-NULL: the net layer
@@ -1608,12 +1626,13 @@ int main(int argc, char **argv)
 			continue;                          // drop-file path, not for doomgeneric
 		if (strcmp(argv[i], "-text") == 0)
 			continue;                                      // boolean: no value to skip
-		if (strcmp(argv[i], "-jxl")      == 0 || strcmp(argv[i], "-sixel")   == 0 ||
-		    strcmp(argv[i], "-charset")  == 0 || strcmp(argv[i], "-mode")    == 0 ||
-		    strcmp(argv[i], "-colors")   == 0 || strcmp(argv[i], "-home")    == 0 ||
-		    strcmp(argv[i], "-kpturn")   == 0 || strcmp(argv[i], "-kpdelay") == 0 ||
-		    strcmp(argv[i], "-name")     == 0 ||
-		    strcmp(argv[i], "-kpsmooth") == 0) {
+		if (strcmp(argv[i], "-jxl")         == 0 || strcmp(argv[i], "-sixel")   == 0 ||
+		    strcmp(argv[i], "-charset")     == 0 || strcmp(argv[i], "-mode")    == 0 ||
+		    strcmp(argv[i], "-colors")      == 0 || strcmp(argv[i], "-home")    == 0 ||
+		    strcmp(argv[i], "-kpturn")      == 0 || strcmp(argv[i], "-kpdelay") == 0 ||
+		    strcmp(argv[i], "-name")        == 0 ||
+		    strcmp(argv[i], "-jxldistance") == 0 ||
+		    strcmp(argv[i], "-kpsmooth")    == 0) {
 			i++;                                           // exact flags: skip the flag + its value
 			continue;
 		}
