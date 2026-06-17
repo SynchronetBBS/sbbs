@@ -291,6 +291,16 @@ static size_t   g_out_cap = 0, g_out_len = 0, g_out_off = 0;
 static int      g_awaiting_ack = 0;
 static uint32_t g_ack_deadline = 0;
 
+// Dead-client detection for the frame path. A client that vanishes without a
+// clean FIN/RST never makes recv() return EOF, and its undrained frame just
+// backs up in the kernel send buffer under TCP retransmission (~15 min default)
+// -- so out_flush can neither push bytes nor see a send error, and the game loop
+// spins forever (the "orphan door" bug). We stamp the last time a send made
+// progress; if a frame can't drain at all for OUT_STALL_MS, the peer is gone. A
+// slow but live client still drains some bytes within the window (resets it).
+#define OUT_STALL_MS 30000u
+static uint32_t g_tx_progress_ms = 0;   // last send progress (seeded in DG_Init)
+
 static uint32_t now_ms(void);   // defined below
 
 static int out_pending(void) { return g_out_off < g_out_len; }
@@ -315,10 +325,11 @@ static void out_flush(void)
 			n = sendsocket(g_iosock, (char *)g_out + g_out_off, g_out_len - g_out_off);
 			if (n == SOCKET_ERROR || n == 0) { g_hangup = 1; break; }  // writable but failed -> dead
 			g_out_off += (size_t)n;
+			g_tx_progress_ms = now_ms();                   // bytes accepted -> client is alive
 		} else {
 #ifndef _WIN32
 			ssize_t n = write(g_wfd, g_out + g_out_off, g_out_len - g_out_off);
-			if (n > 0) { g_out_off += (size_t)n; continue; }
+			if (n > 0) { g_out_off += (size_t)n; g_tx_progress_ms = now_ms(); continue; }
 			if (n < 0 && errno == EINTR)
 				continue;
 			if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
@@ -330,6 +341,8 @@ static void out_flush(void)
 		}
 	}
 	if (!out_pending()) { g_out_len = 0; g_out_off = 0; }
+	else if ((int32_t)(now_ms() - g_tx_progress_ms) > (int32_t)OUT_STALL_MS)
+		g_hangup = 1;          // frame can't drain at all -> client silently vanished
 }
 
 static void ensure(uint8_t **buf, size_t *cap, size_t need)
@@ -1197,6 +1210,7 @@ void DG_Init(void)
 	if (g_sock)
 		tune_socket();
 	g_start_ms = now_ms();
+	g_tx_progress_ms = g_start_ms;   // seed the output-stall (dead-client) timer
 	// Clear (so leftover BBS text doesn't show through a letterboxed image) + hide
 	// cursor (DECTCEM) + disable auto-wrap (DECAWM): a full-width text row would
 	// otherwise wrap *and* take our newline -> a blank line every other row.
