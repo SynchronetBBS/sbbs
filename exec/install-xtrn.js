@@ -94,7 +94,7 @@
 // - The startup_dir will default to the location of the .ini file if this
 //   key is not defined within the .ini file.
 //
-// - The only required values are the <code> (internal code, 8 chars max) and
+// - The only required values are the <code> (internal code, 16 chars max) and
 //   cmd; all other keys will have functional default values if not defined in
 //   the .ini file.
 
