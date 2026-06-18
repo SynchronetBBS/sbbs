@@ -840,7 +840,7 @@ void M_DrawReadThis1(void)
         sp = strrchr(ver, ' ');   // GIT_DATE ends " HH:MM"; drop the time, keep the date
         if (sp != NULL)
             *sp = '\0';
-        M_WriteCenter(27, ver);   // build id (git hash + date) under the title
+        M_WriteText(SCREENWIDTH - M_StringWidth(ver) - 2, 190, ver);   // build id, lower-right corner
     }
 
     y = 40;
