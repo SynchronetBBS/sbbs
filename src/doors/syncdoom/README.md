@@ -131,8 +131,9 @@ grace period after its last byte. These tune that synthesis:
 | Option | Meaning |
 |--------|---------|
 | `-iwad <file>` | Base IWAD (e.g. `doom2.wad`, `freedoom1.wad`). |
-| `-file <wad…>` | One or more PWADs. |
-| `-merge <wad…>` | WADs merged into the IWAD namespace. |
+| `-file <wad…>` | One or more PWADs (appended). |
+| `-merge <wad…>` | One or more PWADs merged into the IWAD namespace (NWT-style). |
+| `-deh <patch…>` | One or more DeHackEd / BEX (`.deh`/`.bex`) patches (see below). |
 
 WAD paths are resolved to absolute *before* the door `chdir`s into `-home`, so
 relative WAD paths work regardless of the storage directory. If `-iwad` names a
@@ -150,6 +151,32 @@ environment variable).
 Clients join a server with the standard Chocolate Doom `-connect <host>` (passed
 through). `-deathmatch` / `-altdeath` on the *creating* client select the game
 type for the match.
+
+---
+
+## DeHackEd patches & WAD merging (mods)
+
+The binary includes Chocolate Doom's **DeHackEd** engine and **WAD merging**, so
+DeHackEd/BEX-patched mods and total conversions run — not just plain PWADs:
+
+- **`-deh <patch…>`** loads one or more `.deh`/`.bex` patches (the Thing, Frame,
+  Weapon, Ammo, Sound, Cheat, Pointer, and `Text` sections, plus BEX). Multiple
+  patches apply in order; a later patch overrides an earlier one.
+- **IWAD patches load automatically.** The Freedoom/FreeDM IWADs ship a `DEHACKED`
+  lump (their level names, etc.); the door loads it *before* any `-deh`, so a
+  command-line patch still overrides it. (HACX and Chex Quest IWADs are handled
+  too.)
+- **`-merge <wad…>`** merges a PWAD's lumps into the IWAD namespace (the NWT-style
+  merge some mods expect), as opposed to `-file`, which appends.
+
+**BEX `[STRINGS]` caveat.** Chocolate Doom only parses the BEX `[STRINGS]` section
+(mnemonic string replacement, e.g. `GOTARMOR = …`) when the patch contains the
+magic comment line `# *allow-extended-strings*`. The classic `Text` replacement
+and every other section need no such comment. Without it, `[STRINGS]` is silently
+ignored (vanilla strictness) — a common reason a string change "doesn't apply."
+
+Everything here is **vanilla / limit-removing** only: this is the Chocolate Doom
+engine, so Boom/MBF21/ZDoom-only patches and maps won't run.
 
 ---
 
@@ -235,16 +262,27 @@ second, total wire bytes, average bytes per frame, and average throughput.
 
 ## In-game controls
 
-Standard DOOM controls (arrows move/turn, Ctrl fires, Space opens, etc.). A
-controls reference is available in-game with **F1**. Door-specific keys:
+Because a terminal has no mouse and can't send Ctrl/Alt/Shift on their own, the
+modifier-based DOOM defaults are remapped to a WASD scheme. A controls reference
+is available in-game with **F1**. Keys:
 
 | Key | Action |
 |-----|--------|
+| Arrow keys | Move (up/down) and **turn** (left/right). |
+| `W` `S` | Move forward / back. |
+| `A` `D` | Strafe left / right. |
+| `Space` | Fire. |
+| `E` | Use / open door. |
+| `R` | Toggle always-run (on by default). |
+| `1`–`7` | Select weapon. |
+| `T` | Talk / chat (multiplayer); `g`/`i`/`b`/`r` whisper one player by color in 3+ player games. |
+| `Tab` | Automap. |
 | `F4` | Cycle the render tier / glyph mode. |
-| `\` | Toggle always-run. |
-| `F2` / `F3` | Save / load game (written under `-home`). |
+| `F2` / `F3` | Save / load game (written under `-home`); `F6` / `F9` quicksave / quickload. |
 
-Cheat codes work — type them in **UPPERCASE**.
+The movement/action letters shadow their lowercase keys, so **cheat codes and
+save-game names are typed in UPPERCASE** (the shifted form bypasses the binding
+and is folded back to lowercase for matching).
 
 ---
 
