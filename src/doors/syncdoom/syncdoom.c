@@ -1682,6 +1682,17 @@ static void compute_geometry(void)
 		g_img_y = 0;
 	g_img_col = 1 + g_img_x / cw;
 	g_img_row = 1 + g_img_y / ch;
+
+	// Sixel is positioned by TEXT CELL, but the image is sized in pixels. Without
+	// the terminal's real cell-pixel size (geom_known) the centered cell is a
+	// guess -- the assumed 16px cell height rarely matches (xterm's is shorter),
+	// so the centered row lands too low and the image looks bottom-anchored.
+	// Anchor it top-left instead: predictable, and what a user expects. JXL/PPM
+	// (real pixel geometry, centered via the APC DX/DY above) are unaffected.
+	if (g_mode == MODE_SIXEL && !geom_known) {
+		g_img_col = 1;
+		g_img_row = 1;
+	}
 }
 
 // ---------------------------------------------------------------------------
