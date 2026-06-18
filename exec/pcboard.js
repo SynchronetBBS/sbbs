@@ -68,7 +68,7 @@ while(bbs.online && !js.terminated) {
 			bbs.scan_dirs(FL_NO_HDR);
 			continue;
 		case 'N':
-			if (!console.yesno("\r\n\x01b\x01hUse \x01c@LASTNEW@\x01b for new file scan date")) {
+			if (!console.yesno("\r\n\x01b\x01hUse \x01c" + bbs.atcode("LASTNEW") + "\x01b for new file scan date")) {
 				var val = bbs.get_newscantime(bbs.new_file_time);
 				if(val !== null)
 					bbs.new_file_time = val;
@@ -199,6 +199,6 @@ while(bbs.online && !js.terminated) {
 		load({}, "str_cmds.js", cmd.slice(1));
 		continue;
 	}
-	
+
 	console.putmsg("\r\n\x01r\x01hInvalid Entry!  Please try again, @FIRST@ ...\r\n");
 }
