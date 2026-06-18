@@ -22,7 +22,7 @@ richest to most compatible:
 
 | Tier | Wire format | Terminals |
 |------|-------------|-----------|
-| **JXL** | JPEG-XL still, sent as a cached APC image | SyncTERM 1.2+ (smallest, fastest) |
+| **JXL** | JPEG-XL still, sent as a cached APC image | SyncTERM 1.4+ (smallest, fastest) |
 | **PPM** | uncompressed RGB APC image | SyncTERM without JXL (opt-in; LAN/localhost only) |
 | **Sixel** | DECSIXEL raster | xterm, mlterm, foot, WezTerm, recent Windows Terminal, … |
 | **Text** | half/quadrant/sextant block glyphs in ANSI color | any ANSI/UTF-8 or CP437 terminal |

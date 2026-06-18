@@ -268,7 +268,7 @@ function sd_join_external()
 function sd_controls()
 {
 	console.clear();
-	console.printfile(SD_DIR + "controls.msg", P_NOPAUSE);
+	console.printfile(SD_DIR + "controls.msg");   // auto-pause when a page fills
 	console.pause();
 }
 
@@ -287,10 +287,11 @@ function sd_main()
 		console.clear();
 		// The lobby menu is lobby.msg -- DOOM ANSI art (by "cool t" / tdd, converted
 		// to Ctrl-A with PabloDraw), its B/C/P/H/Q options remapped to our actions.
-		// The optional external-join (J) has no art slot, so it rides in the prompt.
+		// The art is the menu, so there's no command prompt. The optional external-
+		// join (J) has no art slot, so show a one-line hint only when it's enabled.
 		console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
-		console.print("\r\n   Command"
-		    + (allow_ext ? " (\1h\1yJ\1n=external)" : "") + ": ");
+		if (allow_ext)
+			console.print("\r\n   \1h\1yJ\1n = join an external server\r\n");
 
 		var k = console.getkeys("BCPH?" + (allow_ext ? "J" : "") + "Q");
 		console.clear();                 // wipe the art before the chosen action draws
