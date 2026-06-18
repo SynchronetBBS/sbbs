@@ -1748,6 +1748,7 @@ void sd_waitroom_run(void)
 {
 	int     last_drawn = -2;
 	boolean launched = false;
+	boolean self_started = false;   // true if THIS player pressed Start (so don't beep them)
 
 	while (net_waiting_for_launch) {
 		unsigned char kb[8];
@@ -1793,15 +1794,20 @@ void sd_waitroom_run(void)
 			           && (c == 's' || c == 'S' || c == '\r')) {
 				NET_CL_LaunchGame();
 				launched = true;
+				self_started = true;       // this player started it -- they're watching
 			}
 		}
 
 		I_Sleep(50);
 	}
 
-	// The game is starting: wipe the waiting-room text so it doesn't linger
-	// beside the first rendered frame (the bitmap tiers only overdraw their own
-	// centered region, not the whole screen).
+	// The game is starting. Cue a player who was waiting (and may have looked
+	// away) with a BEL -- but not the one who just pressed Start, who is plainly
+	// at the keyboard. Then wipe the waiting-room text so it doesn't linger beside
+	// the first rendered frame (the bitmap tiers only overdraw their own centered
+	// region, not the whole screen).
+	if (!self_started)
+		emit_all("\a", 1);
 	emit_all("\x1b[2J\x1b[H", 7);
 }
 
