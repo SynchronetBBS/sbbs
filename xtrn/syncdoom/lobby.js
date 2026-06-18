@@ -6,7 +6,7 @@
 // Create/co-op. The model layer is in syncdoom_lib.js. SpiderMonkey
 // 1.8.5-compatible (no modern ES).
 //
-// Browse & join registry-discovered games, create a co-op game, single-player,
+// Join registry-discovered games, create a multi-player game, single-player,
 // or (sysop opt-in) join an external server by address.
 //
 // Copyright(C) 2026 Rob Swindell / syncdoom. GPL-2.0.
@@ -94,9 +94,12 @@ function sd_pick_wadset(mode)
 	// backs out. The list only holds sets whose files are installed
 	// (sd_list_wadsets filters on ws.present), so no per-pick presence check here.
 	var i;
-	for (i = 0; i < list.length; i++)
-		console.uselect(i, "WAD set", list[i].name
-		    + (list[i].desc ? "  -- " + list[i].desc : ""));
+	for (i = 0; i < list.length; i++) {
+		var label = list[i].name + (list[i].desc ? "  -- " + list[i].desc : "");
+		if (label.length > 62)               // keep each item to one line (~80 cols)
+			label = sd_trim(label.substr(0, 59)) + "...";
+		console.uselect(i, "WAD set", label);
+	}
 	var sel = console.uselect();
 	if (sel < 0)
 		return null;
@@ -197,8 +200,9 @@ function sd_browse()
 {
 	var games = sd_list_games(cfg);
 	if (!games.length) {
-		console.print("\r\n\1h\1wNo network games are running.\1n  Use \1hC\1nreate to start one.\r\n");
-		console.pause();
+		console.print("\r\n\1h\1wNo network games are running.\1n\r\n");
+		if (console.yesno("Create a game now"))
+			sd_create();
 		return;
 	}
 
@@ -286,18 +290,18 @@ function sd_main()
 	while (!js.terminated && bbs.online) {
 		console.clear();
 		// The lobby menu is lobby.msg -- DOOM ANSI art (by "cool t" / tdd, converted
-		// to Ctrl-A with PabloDraw), its B/C/P/H/Q options remapped to our actions.
+		// to Ctrl-A with PabloDraw), its J/C/P/H/Q options remapped to our actions.
 		// The art is the menu, so there's no command prompt. The optional external-
-		// join (J) has no art slot, so show a one-line hint only when it's enabled.
+		// join (E) has no art slot, so show a one-line hint only when it's enabled.
 		console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
 		if (allow_ext)
-			console.print("\r\n   \1h\1yJ\1n = join an external server\r\n");
+			console.print("\r\n   \1h\1yE\1n = join an external server\r\n");
 
-		var k = console.getkeys("BCPH?" + (allow_ext ? "J" : "") + "Q");
+		var k = console.getkeys("JCPH?" + (allow_ext ? "E" : "") + "Q");
 		console.clear();                 // wipe the art before the chosen action draws
 		if (k == "Q")
 			break;
-		else if (k == "B")
+		else if (k == "J")
 			sd_browse();
 		else if (k == "C")
 			sd_create();
@@ -305,7 +309,7 @@ function sd_main()
 			sd_solo();
 		else if (k == "H" || k == "?")
 			sd_controls();
-		else if (k == "J" && allow_ext)
+		else if (k == "E" && allow_ext)
 			sd_join_external();
 	}
 }
