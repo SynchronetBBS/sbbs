@@ -48,8 +48,12 @@
 
 #ifdef __GNUC__
 #define PACKEDATTR __attribute__((packed))
+#define PRINTF_ATTR(fmt, first) __attribute__((format(printf, fmt, first)))
+#define PRINTF_ARG_ATTR(x) __attribute__((format_arg(x)))
 #else
 #define PACKEDATTR
+#define PRINTF_ATTR(fmt, first)
+#define PRINTF_ARG_ATTR(x)
 #endif
 
 // C99 integer types; with gcc we just use this.  Other compilers 

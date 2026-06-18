@@ -1085,7 +1085,7 @@ static void D_Endoom(void)
 	exit(0);
 }
 
-#if ORIGCODE
+#if ORIGCODE || defined(FEATURE_DEHACKED)
 // Load dehacked patches needed for certain IWADs.
 static void LoadIwadDeh(void)
 {
@@ -1388,7 +1388,7 @@ void D_DoomMain (void)
     D_IdentifyVersion();
     InitGameVersion();
 
-#if ORIGCODE
+#if ORIGCODE || defined(FEATURE_DEHACKED)
     //!
     // @category mod
     //

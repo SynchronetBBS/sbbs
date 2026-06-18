@@ -20,26 +20,24 @@
 
 #include <stdio.h>
 
-#include "doomfeatures.h"
+#include "doomtype.h"
 
 // Used to do dehacked text substitutions throughout the program
 
-#ifdef FEATURE_DEHACKED
-
-char *DEH_String(char *s);
-void DEH_printf(char *fmt, ...);
-void DEH_fprintf(FILE *fstream, char *fmt, ...);
-void DEH_snprintf(char *buffer, size_t len, char *fmt, ...);
-void DEH_AddStringReplacement(char *from_text, char *to_text);
+const char *DEH_String(const char *s) PRINTF_ARG_ATTR(1);
+void DEH_printf(const char *fmt, ...) PRINTF_ATTR(1, 2);
+void DEH_fprintf(FILE *fstream, const char *fmt, ...) PRINTF_ATTR(2, 3);
+void DEH_snprintf(char *buffer, size_t len, const char *fmt, ...) PRINTF_ATTR(3, 4);
+void DEH_AddStringReplacement(const char *from_text, const char *to_text);
 
 
-#else
+#if 0
+// Static macro versions of the functions above
 
 #define DEH_String(x) (x)
 #define DEH_printf printf
 #define DEH_fprintf fprintf
 #define DEH_snprintf snprintf
-#define DEH_AddStringReplacement(x, y)
 
 #endif
 

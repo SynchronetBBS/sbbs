@@ -21,11 +21,11 @@
 
 // Enables wad merging (the '-merge' command line parameter)
 
-#undef FEATURE_WAD_MERGE
+#define FEATURE_WAD_MERGE
 
 // Enables dehacked support ('-deh')
 
-#undef FEATURE_DEHACKED
+#define FEATURE_DEHACKED
 
 // Enables multiplayer support (network games)
 

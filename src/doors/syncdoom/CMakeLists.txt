@@ -26,6 +26,9 @@ set(SOURCES
     st_stuff.c s_sound.c tables.c v_video.c wi_stuff.c w_checksum.c w_file.c
     w_main.c w_wad.c z_zone.c w_file_stdc.c i_input.c i_video.c doomgeneric.c
     cli_data.c render_text.c render_sixel.c
+    deh_str.c deh_io.c deh_main.c deh_mapping.c deh_text.c deh_ammo.c
+    deh_bexstr.c deh_cheat.c deh_doom.c deh_frame.c deh_misc.c deh_ptr.c
+    deh_sound.c deh_thing.c deh_weapon.c w_merge.c
     net_client.c net_common.c net_dedicated.c net_io.c net_loop.c net_packet.c
     net_query.c net_server.c net_structrw.c aes_prng.c net_gui.c net_udp.c
     mp_server.c
