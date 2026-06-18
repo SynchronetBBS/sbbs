@@ -128,6 +128,8 @@ static int      g_cols = 80;           // text-tier columns (from terminal.ini, 
 // upscaled, not sharper. "off" emits the plain 640x400.
 static int g_scale_fit = 1;            // 1 = fit terminal viewport, 0 = native 640x400
 static int g_scale_max = 1280;         // max emitted image width (px); 0 = uncapped
+static int g_text_max_cols = 200;      // text tier: cap render columns (0 = uncapped) -- a
+static int g_text_max_rows = 80;       // maximized terminal otherwise floods the link
 
 // Real terminal PIXEL size, probed at startup. xterm/Windows Terminal answer
 // ESC[14t (window px) + ESC[16t (cell px); SyncTERM answers ESC[?2;1S (graphics
@@ -1024,7 +1026,16 @@ static void setup_text_mode(void)
 	// is "Translate Character Set: No" (EX_BIN) so native UTF-8 reaches the terminal.
 	rt_mode_t mode = g_rt_mode_set ? g_rt_mode
 	               : (g_rt_charset == RT_UTF8 ? RT_BLOCKS : RT_HALF);
-	rt_config(g_cols, s_lines, mode, g_colors, g_rt_charset);
+	// Cap the text grid: a maximized terminal (e.g. 561x105) otherwise makes each
+	// frame hundreds of KB (1.5+ MB/s), which floods the link and trips the dead-
+	// client watchdog. Beyond Doom's own detail, extra cells add only bytes -- so
+	// bound them (configurable via [video] text_max_cols/text_max_rows; 0 = off).
+	int tcols = g_cols, trows = s_lines;
+	if (g_text_max_cols > 0 && tcols > g_text_max_cols)
+		tcols = g_text_max_cols;
+	if (g_text_max_rows > 0 && trows > g_text_max_rows)
+		trows = g_text_max_rows;
+	rt_config(tcols, trows, mode, g_colors, g_rt_charset);
 	g_mode = MODE_TEXT;
 }
 
@@ -1509,6 +1520,8 @@ static void read_syncdoom_ini(const char *argv0)
 	if (val[0]) g_scale_fit = !(stricmp(val, "off")    == 0 || stricmp(val, "0") == 0 ||
 		                        stricmp(val, "native") == 0 || stricmp(val, "no") == 0);
 	g_scale_max = iniGetInteger(ini, "video", "scale_max", g_scale_max);
+	g_text_max_cols = iniGetInteger(ini, "video", "text_max_cols", g_text_max_cols);
+	g_text_max_rows = iniGetInteger(ini, "video", "text_max_rows", g_text_max_rows);
 
 	// charset = cp437|utf8 -- force the text-tier charset (else terminal.ini auto)
 	iniGetString(ini, "video", "charset", "", val);
