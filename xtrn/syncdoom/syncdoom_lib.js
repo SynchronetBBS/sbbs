@@ -159,6 +159,15 @@ function sd_wadset_args(cfg, ws)
 			}
 		}
 	}
+	if (ws.deh) {
+		var dl = String(ws.deh).split(",");
+		args.push("-deh");
+		for (i = 0; i < dl.length; i++) {
+			var dn = sd_trim(dl[i]);
+			if (dn.length)
+				args.push(dir + dn);
+		}
+	}
 	var warp = sd_warp_args(ws.map);
 	for (i = 0; i < warp.length; i++)
 		args.push(warp[i]);
@@ -179,6 +188,15 @@ function sd_wadset_files_present(cfg, ws)
 		for (i = 0; i < list.length; i++) {
 			var name = sd_trim(list[i]);
 			if (name.length && !file_exists(dir + name))
+				return false;
+		}
+	}
+	if (ws.deh) {
+		var dl = String(ws.deh).split(",");
+		var j;
+		for (j = 0; j < dl.length; j++) {
+			var dn = sd_trim(dl[j]);
+			if (dn.length && !file_exists(dir + dn))
 				return false;
 		}
 	}
