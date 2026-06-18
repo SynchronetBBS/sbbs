@@ -136,6 +136,7 @@ static int g_scale_max = 1280;         // max emitted image width (px); 0 = unca
 // sixel text cursor, g_img_{x,y} (pixels) for the SyncTERM APC DX/DY.
 static int g_win_w = 0, g_win_h = 0;   // terminal text-area / graphics-canvas pixels
 static int g_cell_w = 0, g_cell_h = 0; // terminal cell pixels
+static int g_meas_rows = 0, g_meas_cols = 0; // live size measured via cursor-extreme + DSR (0 = unmeasured)
 static int g_cfg_cell_w = 0, g_cfg_cell_h = 0; // syncdoom.ini [video] cell_width/height
 // override (for terminals that hide their pixels)
 static int g_img_col = 1, g_img_row = 1; // 1-based cell to place the centered image (sixel cursor)
@@ -1127,7 +1128,11 @@ static void emit_telemetry(void)
 // and we fall back to the cell model.
 static void probe_geometry(void)
 {
-	static const char q[] = "\x1b[14t\x1b[16t\x1b[?2;1S\x1b[6n";
+	// Also measure the REAL terminal size: park the cursor in the far corner
+	// (terminals clamp the move to the actual extent), then read it back with DSR
+	// -- so a stale -l (%R) or terminal.ini, which a mid-session client resize
+	// never updates, can't size us wrong. ESC 7 / ESC 8 save+restore the cursor.
+	static const char q[] = "\x1b[14t\x1b[16t\x1b[?2;1S\x1b" "7\x1b[999;999H\x1b[6n";
 	unsigned char     acc[256];
 	int               al = 0, done = 0;
 	uint32_t          deadline = now_ms() + 600;
@@ -1187,13 +1192,28 @@ static void probe_geometry(void)
 						g_win_w = p[2];      // SyncTERM graphics canvas (XTSMGRAPHICS), if ESC[14t didn't answer
 						g_win_h = p[3];
 					}
-					else if (marker == 0 && ch == 'R')
+					else if (marker == 0 && ch == 'R') {
+						if (np >= 2 && p[0] > 0 && p[1] > 0) {   // CPR from the far corner = real size
+							g_meas_rows = p[0];
+							g_meas_cols = p[1];
+						}
 						done = 1;                                            // DSR sentinel
+					}
 					break;
 				}
 			}
 		}
 	}
+	emit_all("\x1b" "8", 2);             // restore the cursor we parked in the far corner
+
+	// Prefer the freshly-measured size over the possibly-stale -l (%R) and
+	// terminal.ini cols/rows (a mid-session client resize updates neither). The
+	// bounds reject a non-clamping terminal's bogus 999;999-style reply.
+	if (g_meas_rows >= 2 && g_meas_rows <= 200)
+		s_lines = g_meas_rows;
+	if (g_meas_cols >= 10 && g_meas_cols <= 600)
+		g_cols = g_meas_cols;
+
 	// Only the cell size came back? Derive the window from cols/rows * cell.
 	if (g_win_w == 0 && g_cell_w > 0) {
 		g_win_w = g_cols * g_cell_w;

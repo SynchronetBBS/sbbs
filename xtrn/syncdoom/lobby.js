@@ -24,9 +24,11 @@ var cfg = sd_load_config();
 // the WAD args. bbs.cmdstr() expands the % specifiers before exec.
 function sd_play(connect, extra, wsargs)
 {
-	// %H/%T/%R = socket/time/rows; %a = the alias, *lowercase* so cmdstr quotes
+	// %H/%T = socket/time; %a = the alias, *lowercase* so cmdstr quotes
 	// it when it contains a space -- which routes external() through the shell
-	// (it sees the quote) so a multi-word alias survives as one argument.
+	// (it sees the quote) so a multi-word alias survives as one argument. No -l:
+	// the door auto-detects the screen size (live probe, then terminal.ini, which
+	// it locates via the $SBBSNODE env var Synchronet sets -- no drop file needed).
 	// -home gives the door a per-user writable sandbox for its config + saved
 	// games (the door mkpath()s and chdir()s into it, so saves land in
 	// <home>/.savegame/). Synchronet auto-cleans data/user/####/ when a user is
@@ -34,7 +36,7 @@ function sd_play(connect, extra, wsargs)
 	// Without -home the door falls back to its launch cwd (the read-only install
 	// dir) and the first save aborts the door with an I_Error.
 	var home = system.data_dir + "user/" + format("%04u", user.number) + "/doom/";
-	var cmd = SD_BINARY + " -s%H -t%T -l%R -name %a -home " + home;
+	var cmd = SD_BINARY + " -s%H -t%T -name %a -home " + home;
 	if (connect)
 		cmd += " -connect " + connect;
 	var i;

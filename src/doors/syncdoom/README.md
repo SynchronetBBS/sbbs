@@ -105,7 +105,7 @@ rows, and time left.
 | Option | Meaning |
 |--------|---------|
 | `-s<fd>` | Client comm **socket** descriptor (the connected telnet/SSH socket the BBS hands off). Glued form `-s7` or spaced `-s 7`. |
-| `-l<rows>` | Terminal **row** count (DOOM is sized from this). Glued or spaced. Default 25. |
+| `-l<rows>` | **Fallback** terminal row count. The door auto-detects the live screen size at startup; `-l` (and terminal.ini) are consulted only when the terminal doesn't answer the size probe. Glued or spaced. Default 25. |
 | `-t<seconds>` | **Time limit** for the session in seconds; the door exits when it elapses. Glued or spaced. |
 | `-door32 <path>` | Path to a **DOOR32.SYS** drop file (see below). A bare path whose name is `door32.sys` is also auto-detected without this flag. |
 | `-term <path>` | A `terminal.ini` file (or a directory containing one) describing `cols`/`rows`/`chars`/`desc`. Sets the baseline; explicit flags override. |
@@ -173,9 +173,10 @@ door reads three fields:
 | 2 | Comm/socket handle | The client socket descriptor (same as `-s`) |
 | 9 | Time left, **minutes** | Session time limit (same as `-t`, but in minutes) |
 
-DOOR32.SYS does **not** carry the screen row count, so always pass `-l<rows>`
-(otherwise the door defaults to 25 rows). An explicit `-s` / `-t` on the command
-line overrides the drop-file values.
+DOOR32.SYS does **not** carry the screen row count. The door auto-detects it (a
+live size probe, then terminal.ini if present); pass `-l<rows>` as a fallback for
+terminals that don't answer the probe on hosts without a terminal.ini. An
+explicit `-s` / `-t` on the command line overrides the drop-file values.
 
 A drop-file path is recognized automatically when its filename is `door32.sys`
 (case-insensitive), so a BBS that passes the drop-file path as a bare argument
@@ -189,6 +190,12 @@ For the graphics tiers the door needs the terminal's pixel dimensions. It probes
 at startup with `ESC[14t` / `ESC[16t` (text-area and cell pixels) and
 XTSMGRAPHICS (`ESC[?2;1S`), falling back to a `cols × rows` estimate when the
 terminal answers none of them (e.g. xterm with `allowWindowOps` off).
+
+The character grid itself (`rows × cols`) is measured live at startup — the door
+parks the cursor in the far corner and reads back a cursor-position report — and
+that overrides a stale `-l`/`%R` or terminal.ini (whose values a mid-session
+client resize never updates). This is a one-time startup measurement; a resize
+*during* play is not currently detected.
 
 When the real pixel size is unknown the **sixel** image is capped at DOOM's
 native 640×400 rather than upscaled from the estimate — an upscaled guess can
