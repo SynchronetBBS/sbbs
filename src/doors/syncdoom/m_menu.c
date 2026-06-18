@@ -58,6 +58,8 @@
 
 #include "m_menu.h"
 
+#include "git_hash.h"           // generated: GIT_HASH / GIT_DATE (build info)
+
 
 extern patch_t*		hu_font[HU_FONTSIZE];
 extern boolean		message_dontfuckwithme;
@@ -830,6 +832,16 @@ void M_DrawReadThis1(void)
     V_DrawFilledBox(0, 0, SCREENWIDTH, SCREENHEIGHT, 0);
 
     M_WriteCenterScaled(8, "SYNCDOOM CONTROLS", 2);
+
+    {
+        char ver[48];
+        char *sp;
+        M_snprintf(ver, sizeof(ver), "%s  %s", GIT_HASH, GIT_DATE);
+        sp = strrchr(ver, ' ');   // GIT_DATE ends " HH:MM"; drop the time, keep the date
+        if (sp != NULL)
+            *sp = '\0';
+        M_WriteCenter(27, ver);   // build id (git hash + date) under the title
+    }
 
     y = 40;
     M_WriteText(95, y, "ARROWS"); M_WriteText(165, y, "MOVE / TURN");    y += 12;

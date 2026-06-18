@@ -36,9 +36,15 @@ set(SOURCES
 add_executable(syncdoom ${SOURCES})
 target_include_directories(syncdoom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
+# Git build info (git_hash.h: GIT_HASH/GIT_DATE/GIT_TIME) for the startup banner
+# and the F1 controls screen, via the shared helper in src/build. Regenerated each
+# build into the binary dir; syncdoom.c and m_menu.c #include "git_hash.h".
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../build/SynchronetMacros.cmake)
+synchronet_gitinfo(syncdoom)
+
 # ---------------------------------------------------------------------------
 # xpdev: cross-platform sockets (sockwrap), recursive mkpath (dirwrap), ini_file.
-# Build the xpdev CMake target (replaces the GNUmakefile's prebuilt-lib glob) so
+# Build the xpdev CMake target (rather than linking a prebuilt static lib) so
 # this works the same on every toolchain. syncdoom only needs sockets/dirs/ini --
 # pin off xpdev's audio + crypto backends so the sub-build stays lean and doesn't
 # require OpenSSL/SDL/etc. (cf. the same pinning in syncterm/CMakeLists.txt).

@@ -24,6 +24,7 @@
 #include "render_sixel.h"
 #include "m_argv.h"             // myargc/myargv (set directly for the dedicated path)
 #include "mp_server.h"          // mp_dedicated_main() headless server
+#include "git_hash.h"           // generated: GIT_HASH / GIT_DATE / GIT_TIME (build info)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1271,12 +1272,13 @@ void DG_Init(void)
 	// Startup diagnostic -> BBS log (syslog/journalctl). Confirms the running
 	// build, which terminal.ini (if any) was read, the size taken from it, and
 	// the resulting emitted-image geometry + tier.
-	dlog("build " __DATE__ " " __TIME__ " | term=%s (%s) | cols=%d rows=%d desc=\"%s\" cterm=%d"
+	dlog("build %s (%s) | term=%s (%s) | cols=%d rows=%d desc=\"%s\" cterm=%d"
 	     " | win=%dx%d cell=%dx%d | image %dx%d @%d,%d scale=%s mode=%s"
 #ifdef WITH_JXL
 	     " jxl_dist=%.1f"
 #endif
 	     ,
+	     GIT_HASH, GIT_DATE,
 	     g_diag_term, g_diag_term_ok ? "read" : "NOT FOUND",
 	     g_cols, s_lines, g_diag_desc, g_cterm_version, g_win_w, g_win_h, g_cell_w, g_cell_h,
 	     s_pxW, s_pxH, g_img_x, g_img_y, g_scale_fit ? "fit" : "off", mode_name(g_mode)
