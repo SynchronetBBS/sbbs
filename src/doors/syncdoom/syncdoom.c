@@ -223,7 +223,7 @@ static rt_mode_t       g_rt_mode    = RT_HALF; // -mode override
 static int             g_rt_mode_set = 0;      // was -mode given?
 static rt_colors_t     g_colors     = RT_4BIT; // color depth (terminal.ini desc / -colors)
 
-// Always-run: a terminal can't reliably hold a run modifier, so the '\' key
+// Always-run: a terminal can't reliably hold a run modifier, so the 'R' key
 // toggles Doom's permanent always-run instead (handled in G_Responder). The
 // startup default comes from syncdoom.ini [input] always_run (default on) and is
 // applied in DG_Init; joybspeed is the Doom global (m_controls.c).
@@ -582,6 +582,7 @@ static int      s_active_n = 0;
 // is too short to bridge a hold. IN-GAME we keep the hold-synthesis below (movement
 // needs the key to stay "down" between the terminal's auto-repeat bytes).
 extern unsigned int menuactive;
+extern unsigned int chat_on;            // hu_stuff.c: nonzero while typing a netgame chat message
 
 static void key_seen(unsigned char key)
 {
@@ -593,9 +594,9 @@ static void key_seen(unsigned char key)
 		return;
 	}
 
-	if (menuactive) {                         // menu: one discrete tap per byte
-		keyq_push(1, key);
-		keyq_push(0, key);
+	if (menuactive || chat_on) {              // text entry: one discrete tap per byte
+		keyq_push(1, key);                    // (no hold-synthesis: a repeated char
+		keyq_push(0, key);                    // must register every time, e.g. "ll")
 		return;
 	}
 	for (i = 0; i < s_active_n; i++) {
@@ -651,24 +652,45 @@ static unsigned char map_ascii(unsigned char c)
 	// KEY_F10 are consecutive in doomkeys.h, so F1+(n-1) indexes F1..F6.
 	if (c >= 0x01 && c <= 0x06)
 		return (unsigned char)(KEY_F1 + (c - 1));
-	// Terminal bindings matching the doom-ascii port (Doom's Ctrl/Alt/Shift
-	// defaults are modifiers a terminal can't send alone). The only action on a
-	// letter is USE ('e'); its UPPERCASE form falls through to a literal 'e'
-	// below, so cheat codes / save-names still work when typed shifted (CAPS).
-	if (c == ' ')
-		return KEY_FIRE;                               // fire
-	if (c == 'e')
-		return KEY_USE;                                // use (lowercase only)
-	if (c == ',')
-		return KEY_STRAFE_L;                           // strafe left
-	if (c == '.')
-		return KEY_STRAFE_R;                           // strafe right
-	if (c == ']')
-		return KEY_RSHIFT;                             // run / speed
-	if (c >= 'A' && c <= 'Z')
-		return (unsigned char)(c - 'A' + 'a');                          // CAPS -> literal lowercase (cheats/text)
+	// Ctrl-P (0x10) aliases the multiplayer talk key. 'T' is the BBS- user's
+	// instinct for "page/talk", but many terminals send Ctrl-P for a Page hotkey;
+	// map it to 't' so it opens chat just like the letter. ('t' == HU_INPUTTOGGLE,
+	// the default key_multi_msg in hu_stuff.c; a literal 't' falls through below.)
+	if (c == 0x10)
+		return 't';
+	// While the user is TYPING text -- a netgame chat message (chat_on) or a menu
+	// string like a save-game name (menuactive) -- the gameplay action keys must
+	// arrive as the literal characters they type: a space has to be a space (not
+	// FIRE), w/a/s/d/e/r their own letters (not move/strafe/use/run), letters keep
+	// case. So skip the action remaps below in those modes; the printable
+	// passthrough at the bottom delivers the raw byte. (Edit keys -- Enter/Esc/
+	// Backspace, handled above -- still work for sending/cancelling/erasing.)
+	if (!chat_on && !menuactive) {
+		// WASD movement for a terminal (no mouse): W/S move forward/back (Doom's
+		// up/down-arrow movement keys), A/D strafe, and turning stays on the LEFT/
+		// RIGHT arrows. FIRE on Space, USE on E, always-run toggle on R (handled in
+		// G_Responder). These shadow the lowercase letters, so cheat codes and save
+		// names are typed in UPPERCASE -- folded back to lowercase just below, after
+		// these checks, so the shifted form bypasses the binding.
+		if (c == ' ')
+			return KEY_FIRE;                          // fire
+		if (c == 'w')
+			return KEY_UPARROW;                       // move forward
+		if (c == 's')
+			return KEY_DOWNARROW;                     // move back
+		if (c == 'a')
+			return KEY_STRAFE_L;                      // strafe left
+		if (c == 'd')
+			return KEY_STRAFE_R;                      // strafe right
+		if (c == 'e')
+			return KEY_USE;                           // use / open
+		if (c == 'r')
+			return KEY_RUNTOGGLE;                     // toggle always-run
+		if (c >= 'A' && c <= 'Z')
+			return (unsigned char)(c - 'A' + 'a');    // CAPS -> lowercase (cheats)
+	}
 	if (c >= ' ' && c < 0x7f)
-		return c;                               // lowercase letters / other printables pass through
+		return c;                               // printables pass through literally
 	return 0;
 }
 
@@ -1277,7 +1299,7 @@ void DG_Init(void)
 	compute_geometry();              // emitted image size + centering (now that the tier is known)
 	build_video_states();            // seed the F4 cycle now so the startup tier (incl.
 	                                 // graphics) is always one of the cyclable states
-	joybspeed = g_always_run ? 31 : 2;   // apply always-run default ('\' toggles at runtime;
+	joybspeed = g_always_run ? 31 : 2;   // apply always-run default ('R' toggles at runtime;
 	                                     // 31 >= MAX_JOY_BUTTONS, the always-run hack)
 
 	// Startup diagnostic -> BBS log (syslog/journalctl). Confirms the running

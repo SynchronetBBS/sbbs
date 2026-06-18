@@ -51,6 +51,11 @@
 #define KEY_BACKSPACE	0x7f
 #define KEY_PAUSE	0xff
 
+// syncdoom: synthetic key for the always-run toggle (bound to 'R' by the terminal
+// input layer). Picked outside the ASCII and arrow/function-key ranges so neither
+// a real keypress nor the literal '\' key can trigger it. Handled in G_Responder.
+#define KEY_RUNTOGGLE	0xfe
+
 #define KEY_EQUALS	0x3d
 #define KEY_MINUS	0x2d
 

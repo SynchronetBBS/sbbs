@@ -844,25 +844,30 @@ void M_DrawReadThis1(void)
     }
 
     y = 40;
-    M_WriteText(95, y, "ARROWS"); M_WriteText(165, y, "MOVE / TURN");    y += 12;
-    M_WriteText(95, y, "SPACE");  M_WriteText(165, y, "FIRE");           y += 12;
-    M_WriteText(95, y, "E");      M_WriteText(165, y, "USE / OPEN");     y += 12;
-    M_WriteText(95, y, ", .");    M_WriteText(165, y, "STRAFE L / R");   y += 12;
-    M_WriteText(95, y, "\\");     M_WriteText(165, y, "RUN (TOGGLE)");   y += 12;
-    M_WriteText(95, y, "1 - 7");  M_WriteText(165, y, "SELECT WEAPON");  y += 12;
-    M_WriteText(95, y, "TAB");    M_WriteText(165, y, "AUTOMAP");        y += 12;
-    M_WriteText(95, y, "ESC");    M_WriteText(165, y, "MENU");           y += 20;
+    M_WriteText(95, y, "ARROWS");  M_WriteText(165, y, "MOVE / TURN");   y += 11;
+    M_WriteText(95, y, "W A S D"); M_WriteText(165, y, "MOVE / STRAFE"); y += 11;
+    M_WriteText(95, y, "SPACE");   M_WriteText(165, y, "FIRE");          y += 11;
+    M_WriteText(95, y, "E");       M_WriteText(165, y, "USE / OPEN");    y += 11;
+    M_WriteText(95, y, "R");       M_WriteText(165, y, "TOGGLE RUN");    y += 11;
+    M_WriteText(95, y, "1 - 7");   M_WriteText(165, y, "SELECT WEAPON"); y += 11;
+    M_WriteText(95, y, "TAB");     M_WriteText(165, y, "AUTOMAP");       y += 11;
+    M_WriteText(95, y, "T");       M_WriteText(165, y, "TALK / CHAT");   y += 11;
+    M_WriteText(95, y, "ESC");     M_WriteText(165, y, "MENU");          y += 14;
 
-    M_WriteCenter(y, "F2 SAVE   F3 LOAD   F10 QUIT");                    y += 12;
-    M_WriteCenter(y, "F6 QUICKSAVE   F9 QUICKLOAD");                     y += 12;
+    M_WriteCenter(y, "F2 SAVE   F3 LOAD   F10 QUIT");                    y += 11;
+    M_WriteCenter(y, "F6 QUICKSAVE   F9 QUICKLOAD");                     y += 11;
     M_WriteCenter(y, "F4 CYCLE TEXT / GRAPHICS TIER");
 
-    M_WriteCenter(176, "PRESS ESC OR ENTER");
-
-    // Park the blinking skull just left of the dismiss prompt (it draws at
-    // x + SKULLXOFF, y - 5; see M_Drawer). y is dropped below the F4 line above
-    // so the tall skull patch doesn't clip into it.
-    ReadDef1.x = 102;
+    // Center the blinking skull (the dismiss cue) horizontally. M_Drawer draws it
+    // at ReadDef1.x + SKULLXOFF - leftoffset (itemOn 0); solve that so the patch's
+    // midpoint lands on screen center, using the live patch width so it's correct
+    // for any IWAD (Freedoom's skull is 20px wide, commercial Doom's is 30). y sits
+    // below the F4 line so the tall skull patch doesn't clip into the text.
+    {
+        patch_t *skull = W_CacheLumpName(DEH_String(skullName[0]), PU_CACHE);
+        ReadDef1.x = (SCREENWIDTH / 2) - SKULLXOFF + SHORT(skull->leftoffset)
+                   - (SHORT(skull->width) / 2);
+    }
     ReadDef1.y = 182;
 }
 

@@ -806,11 +806,12 @@ boolean G_Responder (event_t* ev)
         next_weapon = 1;
     }
 
-    // syncdoom: '\' toggles permanent always-run. A terminal can't reliably hold
-    // a run modifier (no key-up, and the OS auto-repeats only one key at a time),
-    // so flip Doom's always-run instead -- joybspeed >= MAX_JOY_BUTTONS is the
-    // classic joyb_speed=31 always-run hack (see the 'speed' calc in G_BuildTiccmd).
-    if (ev->type == ev_keydown && ev->data1 == '\\')
+    // syncdoom: 'R' (KEY_RUNTOGGLE, from the terminal input layer) toggles permanent
+    // always-run. A terminal can't reliably hold a run modifier (no key-up, and the
+    // OS auto-repeats only one key at a time), so flip Doom's always-run instead --
+    // joybspeed >= MAX_JOY_BUTTONS is the classic joyb_speed=31 always-run hack (see
+    // the 'speed' calc in G_BuildTiccmd).
+    if (ev->type == ev_keydown && ev->data1 == KEY_RUNTOGGLE)
     {
         joybspeed = (joybspeed >= MAX_JOY_BUTTONS) ? 2 : 31;
         players[consoleplayer].message = (joybspeed >= MAX_JOY_BUTTONS)
