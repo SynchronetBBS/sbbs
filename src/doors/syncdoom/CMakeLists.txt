@@ -4,16 +4,14 @@ project(syncdoom C)
 # syncdoom -- Doom for Synchronet / SyncTERM (DOOR32.SYS BBS door).
 #
 # Cross-platform build, modeled on src/syncterm/CMakeLists.txt (the canonical
-# Synchronet CMake build). Produces the same binary the GNUmakefile here does on
-# Linux/GCC; structured so a Windows/MSVC build can be added later (see the
-# WINDOWS notes below). The legacy GNUmakefile is kept alongside during the
-# transition.
+# Synchronet CMake build). Builds the door on Linux/GCC and is structured so a
+# Windows/MSVC build can be added later (see the WINDOWS notes below).
 
 option(WITHOUT_JPEG_XL "Build without the JPEG XL graphics tier (sixel/text only)" OFF)
 
 # ---------------------------------------------------------------------------
 # Vendored Doom engine (doomgeneric / Chocolate Doom) + syncdoom backend + the
-# Chocolate Doom net layer. Authoritative list mirrors SRC_DOOM in GNUmakefile.
+# Chocolate Doom net layer.
 # ---------------------------------------------------------------------------
 set(SOURCES
     dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c
@@ -61,7 +59,7 @@ target_include_directories(syncdoom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../xp
 target_link_libraries(syncdoom xpdev)
 
 # ---------------------------------------------------------------------------
-# Platform flags. The *nix set mirrors the GNUmakefile exactly.
+# Platform flags (the *nix set: the doomgeneric platform defines + -Wall -Os).
 # WINDOWS/MSVC: the doomgeneric platform layer needs its own config (NOT
 # NORMALUNIX/LINUX/__unix__) and Winsock; left as a follow-up -- this pass
 # targets the Linux/GCC build.

@@ -56,23 +56,9 @@ Tip: to have CMake write the binary straight into the installed door directory
 and skip the copy, add `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=<sbbs>/xtrn/syncdoom`
 at configure time.
 
-> Note: the GNUmakefile (below) also uses a `build/` subdirectory for its object
-> files. Don't share one checkout between both build systems without cleaning
-> first (`make clean`, or use a different CMake build directory name).
-
-### GNUmakefile (Linux/GCC — quick alternative)
-
-```
-make
-cp syncdoom <sbbs>/xtrn/syncdoom/
-```
-
-Unlike the CMake build, the makefile links Synchronet's **prebuilt** `xpdev`
-static library, so the main Synchronet tree must be built first.
-
 ### Platform support
 
-- **Linux / Unix-like** with GCC or Clang — supported (CMake or GNUmakefile).
+- **Linux / Unix-like** with GCC or Clang — supported.
 - **Windows / MSVC** — planned. The doomgeneric platform layer and Winsock
   wiring are not yet in place; build on a Unix-like host for now.
 

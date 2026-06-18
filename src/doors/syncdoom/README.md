@@ -63,18 +63,9 @@ Prerequisites: CMake 3.13+, a C compiler (GCC or Clang), and — for the JXL tie
 — the libjxl development package (`libjxl-dev` / `libjxl-devel`) plus
 `pkg-config`.
 
-### GNUmakefile (Linux/GCC)
-
-```
-make
-```
-
-The makefile links Synchronet's **prebuilt** `xpdev` static library
-(`../../xpdev/gcc.*.lib.release/libxpdev.a`), so build the main tree first.
-
 ### Platform support
 
-- **Linux / Unix-like** (GCC or Clang) — supported via either build system.
+- **Linux / Unix-like** (GCC or Clang) — supported.
 - **Windows / MSVC** — planned. The doomgeneric platform layer and Winsock
   wiring are not yet in place; build on a Unix-like host for now.
 
