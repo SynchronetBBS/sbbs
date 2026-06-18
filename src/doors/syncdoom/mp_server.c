@@ -23,6 +23,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
+#else
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <process.h>        // _getpid
 #endif
 
 #include "sockwrap.h"       // xpdev: SOCKET, closesocket
@@ -256,9 +260,62 @@ long mp_spawn_server(const char *exe_path, int port, char *const extra_argv[])
 	// to init when we exit).  Return it for registry liveness tracking.
 	return (long)pid;
 #else
-	(void)exe_path;
-	(void)port;
-	(void)extra_argv;
-	return -1;          // TODO: Windows DETACHED_PROCESS spawn
+	// Build a single quoted command line: "exe" -dedicated -port <port> <extra...>
+	// CreateProcess takes one string, not an argv vector.
+	char                cmd[4096];
+	size_t              len = 0;
+	int                 i;
+	STARTUPINFO         si;
+	PROCESS_INFORMATION pi;
+
+	#define MP_APPEND(s) do { \
+		int _need = snprintf(cmd + len, sizeof(cmd) - len, "%s", (s)); \
+		if (_need < 0 || (size_t)_need >= sizeof(cmd) - len) return -1; \
+		len += (size_t)_need; \
+	} while (0)
+
+	// A token is quoted if it contains a space (or is empty); paths with spaces
+	// are the common case (e.g. the exe path or -gamesdir).
+	#define MP_APPEND_ARG(s) do { \
+		const char *_a = (s); \
+		if (_a[0] == '\0' || strchr(_a, ' ') != NULL) { \
+			MP_APPEND("\""); MP_APPEND(_a); MP_APPEND("\""); \
+		} else { \
+			MP_APPEND(_a); \
+		} \
+	} while (0)
+
+	cmd[0] = '\0';
+	MP_APPEND_ARG(exe_path);
+	MP_APPEND(" -dedicated -port ");
+	{
+		char portstr[16];
+		snprintf(portstr, sizeof(portstr), "%d", port);
+		MP_APPEND(portstr);
+	}
+	if (extra_argv != NULL) {
+		for (i = 0; extra_argv[i] != NULL; i++) {
+			MP_APPEND(" ");
+			MP_APPEND_ARG(extra_argv[i]);
+		}
+	}
+
+	#undef MP_APPEND
+	#undef MP_APPEND_ARG
+
+	memset(&si, 0, sizeof(si));
+	si.cb = sizeof(si);
+	memset(&pi, 0, sizeof(pi));
+
+	// DETACHED_PROCESS: no console, survives the launching door exiting (the
+	// Windows analogue of the *nix setsid()/SIGHUP-ignore dance above).
+	if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE,
+	                   DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP,
+	                   NULL, NULL, &si, &pi))
+		return -1;
+
+	CloseHandle(pi.hThread);
+	CloseHandle(pi.hProcess);   // we track liveness by pid via the registry, not the handle
+	return (long)pi.dwProcessId;
 #endif
 }

@@ -40,34 +40,25 @@ sixel and text tiers.
 The door is plain C and links one library, **xpdev** (cross-platform sockets,
 recursive `mkdir`, and INI parsing), which is part of the Synchronet source
 tree. Building therefore requires a checkout of that source tree, not just a
-binary install.
+binary install. The build system is **CMake** (3.13+) on every platform.
 
-### CMake (recommended; cross-platform)
-
-```
-cmake -B build
-cmake --build build -j
+```sh
+# Linux / Unix-like (GCC or Clang)
+cmake -B build && cmake --build build -j          # -> build/syncdoom
 ```
 
-Produces `build/syncdoom`. The CMake build compiles its own minimal copy of
-xpdev (cryptography and audio back ends disabled), so the rest of the tree need
-not be built first.
+```bat
+:: Windows (Visual Studio 2022 / MSVC)
+cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
+cmake --build build --config Release              :: -> build\Release\syncdoom.exe
+```
 
-Options:
+Both are supported. The JPEG-XL graphics tier is optional (the door still serves
+the sixel and text tiers without it); enabling it needs a system `libjxl` on
+*nix or an MSVC-built `libjxl` via vcpkg on Windows.
 
-- `-DWITHOUT_JPEG_XL=ON` — build without the JPEG-XL tier (sixel/text only).
-- `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=<dir>` — write the binary straight to `<dir>`
-  (e.g. your door's install directory) instead of `build/`.
-
-Prerequisites: CMake 3.13+, a C compiler (GCC or Clang), and — for the JXL tier
-— the libjxl development package (`libjxl-dev` / `libjxl-devel`) plus
-`pkg-config`.
-
-### Platform support
-
-- **Linux / Unix-like** (GCC or Clang) — supported.
-- **Windows / MSVC** — planned. The doomgeneric platform layer and Winsock
-  wiring are not yet in place; build on a Unix-like host for now.
+**See [COMPILING.md](COMPILING.md) for full instructions** — prerequisites, the
+JPEG-XL tier on each platform, build options, and output locations.
 
 ---
 

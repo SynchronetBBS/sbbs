@@ -18,6 +18,20 @@
 #include "cli_data.h"        // noise_textures, noise_texture_count
 #include "render_text.h"
 
+// mempcpy/stpcpy are glibc extensions; MSVC's CRT lacks them. Provide the
+// trivial equivalents (each returns a pointer to the byte past what it wrote).
+#ifdef _WIN32
+static inline void *mempcpy(void *dst, const void *src, size_t n)
+{
+    return (char *)memcpy(dst, src, n) + n;
+}
+static inline char *stpcpy(char *dst, const char *src)
+{
+    size_t n = strlen(src);
+    return (char *)memcpy(dst, src, n + 1) + n;
+}
+#endif
+
 // --- globals the lifted doom-cli renderer expects (were in its backend) ------
 static int       columns = 80;
 static int       dest_width;

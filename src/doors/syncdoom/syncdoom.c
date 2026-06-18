@@ -31,7 +31,9 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 #include <time.h>
 #include <errno.h>
 #include <signal.h>
@@ -54,10 +56,19 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <poll.h>
+#else                           // sockwrap.h has already pulled in <winsock2.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <mmsystem.h>           // timeGetTime (monotonic ms clock)
+#include <direct.h>             // _chdir / _getcwd
 #endif
 
 #ifdef WITH_JXL
 #include <jxl/encode.h>
+#endif
+
+#ifndef PATH_MAX                // MSVC's <limits.h> doesn't define it
+#define PATH_MAX 1024
 #endif
 
 // ---------------------------------------------------------------------------
@@ -531,9 +542,13 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 
 static uint32_t now_ms(void)
 {
+#ifdef _WIN32
+	return (uint32_t)timeGetTime();          // monotonic ms; only deltas are used
+#else
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return (uint32_t)(ts.tv_sec * 1000u + ts.tv_nsec / 1000000u);
+#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -1335,10 +1350,14 @@ void DG_DrawFrame(void)
 
 void DG_SleepMs(uint32_t ms)
 {
+#ifdef _WIN32
+	Sleep(ms);
+#else
 	struct timespec ts;
 	ts.tv_sec  = ms / 1000;
 	ts.tv_nsec = (long)(ms % 1000) * 1000000L;
 	nanosleep(&ts, NULL);
+#endif
 }
 
 uint32_t DG_GetTicksMs(void) { return now_ms(); }
@@ -1426,6 +1445,16 @@ static void read_door32(const char *path)
 static char *abscopy(const char *p)
 {
 	char buf[PATH_MAX], cwd[PATH_MAX];
+#ifdef _WIN32
+	if (p[0] == '/' || p[0] == '\\' || (p[0] && p[1] == ':'))
+		return strdup(p);                                   // already absolute
+	if (_fullpath(buf, p, sizeof(buf)) != NULL)
+		return strdup(buf);
+	if (_getcwd(cwd, sizeof(cwd)) != NULL) {
+		snprintf(buf, sizeof(buf), "%s\\%s", cwd, p);
+		return strdup(buf);
+	}
+#else
 	if (p[0] == '/')
 		return strdup(p);
 	if (realpath(p, buf) != NULL)
@@ -1434,6 +1463,7 @@ static char *abscopy(const char *p)
 		snprintf(buf, sizeof(buf), "%s/%s", cwd, p);
 		return strdup(buf);
 	}
+#endif
 	return strdup(p);
 }
 
@@ -1869,7 +1899,12 @@ int main(int argc, char **argv)
 	char **child;
 	int    cn = 0, i;
 
+#ifdef _WIN32
+	WSADATA wsadata;
+	WSAStartup(MAKEWORD(2, 2), &wsadata);   // xpdev sockwrap doesn't self-init Winsock
+#else
 	signal(SIGPIPE, SIG_IGN);    // a dead client -> EPIPE return, not signal death
+#endif
 
 	// Headless dedicated-server mode: a match's tic relay, with no terminal,
 	// no DOOR32 user, and no per-user sandbox. Branch out before any terminal

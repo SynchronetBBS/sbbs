@@ -62,11 +62,21 @@ target_include_directories(syncdoom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../xp
 target_link_libraries(syncdoom xpdev)
 
 # ---------------------------------------------------------------------------
-# Platform flags (the *nix set: the doomgeneric platform defines + -Wall -Os).
-# WINDOWS/MSVC: the doomgeneric platform layer needs its own config (NOT
-# NORMALUNIX/LINUX/__unix__) and Winsock; left as a follow-up -- this pass
-# targets the Linux/GCC build.
+# Platform flags.
+#
+# *nix (GCC/Clang): the doomgeneric platform defines + -Wall -Os.  (NORMALUNIX /
+# SNDSERV are vestigial doomgeneric knobs -- nothing in the compiled sources
+# references them -- but kept for parity with the upstream build.)
+#
+# Windows/MSVC: no doomgeneric platform define is needed (the audio/video
+# back ends those knobs gate are not compiled here -- syncdoom.c is the back
+# end).  Winsock, winmm and friends come transitively from the xpdev target
+# (it PUBLIC-links ws2_32/winmm/... and PUBLIC-defines _WIN32), so the only
+# Windows-specific bits are silencing the CRT's POSIX-name/secure-API
+# deprecation warnings and pinning the C standard for C99/C11 constructs.
 # ---------------------------------------------------------------------------
+set_property(TARGET syncdoom PROPERTY C_STANDARD 11)
+
 if(NOT WIN32)
     target_compile_definitions(syncdoom PRIVATE NORMALUNIX SNDSERV _DEFAULT_SOURCE __unix__)
     if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -75,7 +85,13 @@ if(NOT WIN32)
     target_link_libraries(syncdoom m pthread ${CMAKE_DL_LIBS})
 endif()
 
-if(NOT MSVC)
+if(MSVC)
+    target_compile_definitions(syncdoom PRIVATE
+        _CRT_SECURE_NO_WARNINGS          # fopen/strcpy/snprintf "use the _s variant"
+        _CRT_NONSTDC_NO_DEPRECATE        # getpid/getcwd/chdir/strdup POSIX names
+        _WINSOCK_DEPRECATED_NO_WARNINGS) # inet_addr/gethostbyname et al.
+    target_link_libraries(syncdoom winmm)   # timeGetTime() (also pulled in via xpdev)
+else()
     target_compile_options(syncdoom PRIVATE -Wall -Os -ggdb3)
     include(CheckLinkerFlag OPTIONAL RESULT_VARIABLE _have_clf)
     if(_have_clf)
@@ -89,16 +105,79 @@ endif()
 # ---------------------------------------------------------------------------
 # JPEG XL -- the APC/SyncTERM graphics tier. Optional: without it the door still
 # serves the sixel and text/block tiers (the code is #ifdef WITH_JXL gated).
-# Linux: system libjxl via pkg-config (or find_library). For a future Windows
-# build, point at an MSVC-built libjxl (vcpkg, or an MSVC 3rdp/<plat>/libjxl --
-# the existing 3rdp/win*.release/libjxl are mingw-built and won't link with MSVC).
+#
+# *nix: system libjxl via pkg-config (or a bare find_library fallback).
+#
+# Windows/MSVC: an MSVC-built static libjxl + its deps -- e.g. from vcpkg:
+#     vcpkg install libjxl:x86-windows-static-md      (or :x64-windows-static-md)
+# then configure with the vcpkg toolchain, or point CMAKE_PREFIX_PATH at the
+# install tree:
+#     -DCMAKE_PREFIX_PATH=<vcpkg>/installed/x86-windows-static-md
+# libjxl ships no umbrella CMake config, so we find the pieces explicitly. A
+# static libjxl needs JXL_STATIC_DEFINE (so the headers don't mark the API
+# __declspec(dllimport)), and the whole transitive chain must be linked --
+# highway (SIMD), brotli enc/dec/common, and lcms2 -- because the *encoder*
+# pulls in color management and brotli (the bundled 3rdp/win* libjxl is no use
+# here: MinGW .a, libstdc++ ABI, no headers, and decoder-only brotli).
 # ---------------------------------------------------------------------------
 if(NOT WITHOUT_JPEG_XL)
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(JPEG_XL libjxl)
+    if(MSVC)
+        find_path(JXL_INCLUDE_DIR jxl/encode.h)
+        # The static *encoder* link: jxl + highway + brotli are required; the
+        # CMS libs (split out of libjxl) are added when present.
+        set(_jxl_required jxl hwy brotlienc brotlidec brotlicommon)
+        set(_jxl_optional jxl_cms lcms2)
+        set(JPEG_XL_LIBRARIES "")
+        set(_jxl_ok TRUE)
+        foreach(_jxl_n ${_jxl_required} ${_jxl_optional})
+            if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+                # Under the vcpkg toolchain both a release (<triplet>/lib) and a
+                # debug (<triplet>/debug/lib) variant are installed. find_library
+                # on a multi-config (VS) generator isn't config-aware and would
+                # grab the debug lib -- a debug-CRT mismatch against a Release
+                # door. Locate both explicitly and let CMake pick per-config via
+                # the optimized/debug link keywords.
+                set(_jxl_root ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
+                find_library(JXL_${_jxl_n}_REL NAMES ${_jxl_n} PATHS ${_jxl_root}/lib NO_DEFAULT_PATH)
+                find_library(JXL_${_jxl_n}_DBG NAMES ${_jxl_n} PATHS ${_jxl_root}/debug/lib NO_DEFAULT_PATH)
+                if(JXL_${_jxl_n}_REL)
+                    list(APPEND JPEG_XL_LIBRARIES optimized ${JXL_${_jxl_n}_REL})
+                    if(JXL_${_jxl_n}_DBG)
+                        list(APPEND JPEG_XL_LIBRARIES debug ${JXL_${_jxl_n}_DBG})
+                    else()
+                        list(APPEND JPEG_XL_LIBRARIES debug ${JXL_${_jxl_n}_REL})
+                    endif()
+                endif()
+                set(_jxl_hit ${JXL_${_jxl_n}_REL})
+            else()
+                # Classic mode (CMAKE_PREFIX_PATH at an install tree): the prefix
+                # exposes the release libs, so a single find_library is right.
+                find_library(JXL_${_jxl_n}_LIB NAMES ${_jxl_n})
+                if(JXL_${_jxl_n}_LIB)
+                    list(APPEND JPEG_XL_LIBRARIES ${JXL_${_jxl_n}_LIB})
+                endif()
+                set(_jxl_hit ${JXL_${_jxl_n}_LIB})
+            endif()
+            if(NOT _jxl_hit)
+                list(FIND _jxl_required ${_jxl_n} _jxl_req)
+                if(NOT _jxl_req EQUAL -1)
+                    set(_jxl_ok FALSE)
+                endif()
+            endif()
+        endforeach()
+        if(JXL_INCLUDE_DIR AND _jxl_ok)
+            set(JPEG_XL_FOUND TRUE)
+            set(JPEG_XL_INCLUDE_DIRS ${JXL_INCLUDE_DIR})
+            target_compile_definitions(syncdoom PRIVATE JXL_STATIC_DEFINE)
+        endif()
     endif()
     if(NOT JPEG_XL_FOUND)
+        find_package(PkgConfig QUIET)
+        if(PkgConfig_FOUND)
+            pkg_check_modules(JPEG_XL libjxl)
+        endif()
+    endif()
+    if(NOT JPEG_XL_FOUND AND NOT MSVC)
         find_library(JPEG_XL_LIBRARIES NAMES jxl)
         if(JPEG_XL_LIBRARIES)
             set(JPEG_XL_FOUND TRUE)
