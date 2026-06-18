@@ -137,6 +137,99 @@ function sd_solo()
 		sd_play(null, [], sd_wadset_args(cfg, ws));
 }
 
+// The access-requirement string for this door's own external-program entry, so
+// we only page users who may actually run it. Found by matching the lobby's own
+// directory + a JS-module command ("?lobby") in the external-programs config.
+// "" (the default when not found) makes compare_ars() treat everyone as allowed.
+function sd_door_ars()
+{
+	if (typeof xtrn_area == "undefined" || !xtrn_area.prog_list)
+		return "";
+	function strip(s) { return s ? String(s).replace(/[\/\\]+$/, "") : ""; }
+	var ours = strip(fullpath(SD_DIR));
+	var list = xtrn_area.prog_list, i, p, fallback = "";
+	for (i = 0; i < list.length; i++) {
+		p = list[i];
+		if (!p.startup_dir || strip(fullpath(p.startup_dir)) != ours)
+			continue;
+		if (p.cmd && p.cmd.charAt(0) == "?")   // the JS lobby -- the entry users launch
+			return p.execution_ars || "";
+		fallback = p.execution_ars || fallback; // else the native door's reqs
+	}
+	return fallback;
+}
+
+function sd_mode_label(mode)
+{
+	if (mode == "deathmatch") return "deathmatch";
+	if (mode == "altdeath")   return "deathmatch (altdeath)";
+	return "co-op";
+}
+
+// Find other active nodes whose users can run this door (the page candidates).
+// Nodes in quiet mode / WFC / logon are skipped, as is our own node.
+function sd_page_targets()
+{
+	var ars = sd_door_ars();
+	var me  = bbs.node_num;
+	var list = system.node_list, targets = [], i;
+	for (i = 0; i < list.length; i++) {
+		var node_num = i + 1;
+		if (node_num == me)
+			continue;
+		var nd = list[i];
+		if (nd.status != NODE_INUSE)          // skip WFC/quiet/logon/offline nodes
+			continue;
+		if (!nd.useron)
+			continue;
+		var u;
+		try { u = new User(nd.useron); } catch (e) { continue; }
+		if (!u || !u.number)
+			continue;
+		if (ars && !u.compare_ars(ars))       // honor the door's access requirements
+			continue;
+		targets.push(node_num);
+	}
+	return targets;
+}
+
+// Ask (up front, BEFORE the server is spawned) whether to page the available
+// players. Returns the node list to page, or [] if none/declined. The prompt is
+// deliberately kept out of the spawn->connect window: a blocking prompt there
+// would let a Browse-joiner connect first and steal the host (controller) slot.
+function sd_prompt_page_players()
+{
+	var targets = sd_page_targets();
+	if (!targets.length)
+		return [];
+	if (!console.yesno("\r\nPage " + targets.length + " active node"
+	    + (targets.length == 1 ? "" : "s") + " to join"))
+		return [];
+	return targets;
+}
+
+// Deliver the join invitation to the chosen nodes -- fast and non-interactive,
+// so it's safe to call in the spawn->connect window. Uses the sysop-configurable
+// NodeMsgFmt header (text.dat) so it looks like any other inter-node message.
+function sd_send_pages(targets, mode)
+{
+	if (!targets || !targets.length)
+		return;
+	var who = (typeof user != "undefined" && user.alias) ? user.alias : "Someone";
+	// NodeMsgFmt is the sysop-configurable "Node N: <who> sent you a message:"
+	// header + body template: %2d=node, %s=sender, %s=body (it supplies its own
+	// coloring and trailing CRLF, so the body is passed as plain text).
+	var body = "started a SyncDOOM " + sd_mode_label(mode)
+	    + " game; run SyncDOOM to join.";
+	var msg = format(bbs.text("NodeMsgFmt"), bbs.node_num, who, body);
+	var paged = 0, i;
+	for (i = 0; i < targets.length; i++)
+		if (system.put_node_message(targets[i], msg))
+			paged++;
+	console.print("\r\n\1n\1cPaged \1h" + paged + "\1n\1c node"
+	    + (paged == 1 ? "" : "s") + ".\1n\r\n");
+}
+
 function sd_create()
 {
 	var mode = sd_pick_gamemode();
@@ -151,9 +244,11 @@ function sd_create()
 	// many to join. (A proper waiting room is still TODO -- until then a game
 	// of >1 shows a blank screen while it waits for the others.)
 	// Player cap: the wadset's maxplayers if set, else [net] max_players, never
-	// above Doom's NET_MAXPLAYERS (8).
-	var maxp = parseInt(ws.maxplayers || cfg.net.max_players, 10) || 8;
-	if (maxp > 8) maxp = 8;
+	// above Doom's MAXPLAYERS (4) -- the game has only 4 player slots/colors/starts.
+	// (NET_MAXPLAYERS is 8, but that's the protocol envelope incl. observers, not
+	// the Doom player limit; a 5th player would overrun players[]/playeringame[].)
+	var maxp = parseInt(ws.maxplayers || cfg.net.max_players, 10) || 4;
+	if (maxp > 4) maxp = 4;
 	if (maxp < 1) maxp = 1;
 	console.print("\r\nNumber of players (\1h1\1n=start now, up to " + maxp
 	    + ", \1hQ\1n=abort) [\1h2\1n]: ");
@@ -162,6 +257,11 @@ function sd_create()
 		return;
 	if (n < 1)                            // bare Enter -> default to 2 players
 		n = (maxp >= 2) ? 2 : maxp;
+
+	// Decide on paging up front -- the (blocking) prompt must NOT sit between the
+	// server spawn and our connect below, or a Browse-joiner could connect first
+	// and become the controller. We only deliver the pages (fast) after spawning.
+	var page_targets = (n > 1) ? sd_prompt_page_players() : [];
 
 	var port = sd_alloc_port(cfg);
 	if (port < 0) {
@@ -180,9 +280,11 @@ function sd_create()
 	// become host, and launch without the creator -- whose late connect then hit
 	// an in-progress server (no mid-game joins) and bounced back to the lobby.
 	// The door's own waiting room shows the "waiting for players" UI from here.
-	if (n > 1)
+	if (n > 1) {
 		console.print("\r\n\1h\1gGame created \1n-- entering the waiting room; "
-		    + "others \1hB\1nrowse & join.\r\n");
+		    + "others \1hJ\1noin a multi-player game.\r\n");
+		sd_send_pages(page_targets, mode);
+	}
 
 	// The creator is the controller, so its -deathmatch / -altdeath sets the match
 	// type; co-op needs no flag (Doom's default). Joiners get the mode from the server.

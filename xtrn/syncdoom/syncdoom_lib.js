@@ -44,7 +44,7 @@ function sd_load_config()
 	if (cfg.net.port_low    === undefined) cfg.net.port_low    = 20000;
 	if (cfg.net.port_high   === undefined) cfg.net.port_high   = 20063;
 	if (cfg.net.max_games   === undefined) cfg.net.max_games   = 8;
-	if (cfg.net.max_players === undefined) cfg.net.max_players = 8;
+	if (cfg.net.max_players === undefined) cfg.net.max_players = 4;
 	if (cfg.net.idle_timeout === undefined) cfg.net.idle_timeout = 60;
 	if (cfg.net.stale       === undefined) cfg.net.stale       = 30;
 
@@ -249,6 +249,13 @@ function sd_list_games(cfg)
 		if (g.heartbeat !== undefined
 		    && (now - parseInt(g.heartbeat, 10)) > cfg.net.stale)
 			continue;        // stale; server presumed dead
+		// An empty match (everyone left, or it hasn't been joined yet) is not
+		// meaningfully joinable -- the dedicated server is already counting down
+		// its idle-timeout to self-quit. Hide it so it doesn't linger in the
+		// Join menu for that window. (players is written by the server each
+		// heartbeat as NET_SV_ConnectedClients().)
+		if (parseInt(g.players, 10) < 1)
+			continue;
 		out.push(g);
 	}
 	return out;
