@@ -36,6 +36,15 @@ function sd_load_config()
 	var f = new File(SD_CFG);
 	if (f.open("r")) {
 		cfg.net     = f.iniGetObject("net")  || {};
+		// Host-specific overrides: [net:<local_host_name>] overlays [net], so a
+		// single shared install (one syncdoom.ini seen by several physical hosts)
+		// can give each host its own advertise address / port range without
+		// separate config files. Keys present here win over the base [net].
+		var hostnet = f.iniGetObject("net:" + system.local_host_name);
+		if (hostnet) {
+			for (var hk in hostnet)
+				cfg.net[hk] = hostnet[hk];
+		}
 		cfg.wads    = f.iniGetObject("wads") || {};
 		cfg.wadsets = f.iniGetAllObjects("id", "wadset:");
 		f.close();

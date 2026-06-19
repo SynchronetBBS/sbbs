@@ -55,6 +55,17 @@ function sd_play(connect, extra, wsargs)
 	console.line_counter = 0;
 }
 
+// The configured advertise address (trimmed), or "" if unset/blank. Resolved
+// from cfg.net.advertise, which sd_load_config() has already overlaid with any
+// host-specific [net:<hostname>] value.
+function sd_advertise_addr()
+{
+	var a = cfg.net.advertise;
+	if (a === undefined || a === null)
+		return "";
+	return sd_trim(String(a));
+}
+
 // Spawn a detached dedicated server for a match on the given port (returns
 // immediately; runs headless until the match empties). Uses -spawnserver so it
 // survives this session. The server owns the match size (connect order doesn't
@@ -70,12 +81,73 @@ function sd_spawn_server(port, maxplayers, ws, mode)
 	    + " -wadset " + ws.id
 	    + " -gamemode " + mode;
 
+	// The address joiners on OTHER hosts dial. The server binds all interfaces
+	// regardless; this is just what it records in the shared browse registry.
+	// Blank ([net] advertise unset) -> the server's 127.0.0.1 default = same-host
+	// play only. For cross-host play set [net] advertise (or a per-host
+	// [net:<hostname>] advertise) to this host's LAN IP or public name.
+	var adv = sd_advertise_addr();
+	if (adv)
+		cmd += " -advertise " + adv;
+
 	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE, SD_DIR);
 }
 
 // ---------------------------------------------------------------------------
 // Pickers
 // ---------------------------------------------------------------------------
+
+// Show a WAD set's pre-launch caveat (the [wadset:*] `note`), if any, and wait
+// for a keypress so the player sees it before the door launches.
+function sd_show_note(ws)
+{
+	if (!ws || !ws.note)
+		return;
+	console.print("\r\n\1h\1y" + ws.name + ":\1n \1w" + ws.note + "\1n\r\n");
+	console.pause();
+}
+
+// Display any "<wadname>.msg" file sitting beside a WAD in the set (a long-form
+// companion to a `note` -- e.g. a map pack's readme/intro). Shown a page at a
+// time, with a pause, before the door launches. Checks the set's IWAD, PWADs,
+// and merge WADs (each "foo.wad" -> "foo.msg" in the WAD dir), each at most once.
+function sd_show_wad_msgs(cfg, ws)
+{
+	if (!ws)
+		return;
+	var dir = sd_wad_dir(cfg);
+	var wads = [];
+	if (ws.iwad)
+		wads.push(ws.iwad);
+	var fields = [ws.pwad, ws.merge];
+	var f, i;
+	for (f = 0; f < fields.length; f++) {
+		if (!fields[f])
+			continue;
+		var list = String(fields[f]).split(",");
+		for (i = 0; i < list.length; i++) {
+			var n = sd_trim(list[i]);
+			if (n.length)
+				wads.push(n);
+		}
+	}
+
+	var seen = {};
+	for (i = 0; i < wads.length; i++) {
+		var dot = wads[i].lastIndexOf(".");
+		var base = (dot > 0) ? wads[i].substr(0, dot) : wads[i];
+		var path = dir + base + ".msg";
+		var key = path.toLowerCase();
+		if (seen[key])
+			continue;
+		seen[key] = true;
+		if (file_exists(path)) {
+			console.clear();
+			console.printfile(path);      // auto-pause when a page fills
+			console.pause();
+		}
+	}
+}
 
 // Present the WAD-set picker for 'mode' (or all). Returns a wadset or null.
 function sd_pick_wadset(mode)
@@ -86,24 +158,33 @@ function sd_pick_wadset(mode)
 		console.pause();
 		return null;
 	}
-	if (list.length == 1)
-		return list[0];               // only one choice -- don't prompt
-
-	// uselect(): arrow/number-navigable picker. Items are 0-based; uselect() with
-	// no args displays the menu and returns the chosen index, or <0 if the user
-	// backs out. The list only holds sets whose files are installed
-	// (sd_list_wadsets filters on ws.present), so no per-pick presence check here.
-	var i;
-	for (i = 0; i < list.length; i++) {
-		var label = list[i].name + (list[i].desc ? "  -- " + list[i].desc : "");
-		if (label.length > 62)               // keep each item to one line (~80 cols)
-			label = sd_trim(label.substr(0, 59)) + "...";
-		console.uselect(i, "WAD set", label);
+	var ws;
+	if (list.length == 1) {
+		ws = list[0];                 // only one choice -- don't prompt
+	} else {
+		// uselect(): arrow/number-navigable picker. Items are 0-based; the final
+		// uselect(n) call displays the menu, pre-selecting item n -- the [wads]
+		// `default` set when configured -- and returns the chosen index, or <0 if
+		// the user backs out. The list only holds sets whose files are installed
+		// (sd_list_wadsets filters on ws.present), so no per-pick presence check.
+		var i;
+		var def = 0;
+		for (i = 0; i < list.length; i++) {
+			var label = list[i].name + (list[i].desc ? "  -- " + list[i].desc : "");
+			if (label.length > 62)       // keep each item to one line (~80 cols)
+				label = sd_trim(label.substr(0, 59)) + "...";
+			console.uselect(i, "WAD set", label);
+			if (cfg.wads.default && list[i].id == cfg.wads.default)
+				def = i;
+		}
+		var sel = console.uselect(def);
+		if (sel < 0)
+			return null;
+		ws = list[sel];
 	}
-	var sel = console.uselect();
-	if (sel < 0)
-		return null;
-	return list[sel];
+	sd_show_note(ws);
+	sd_show_wad_msgs(cfg, ws);
+	return ws;
 }
 
 // Present the game-mode picker. Returns the mode id ("coop"/"deathmatch"/
@@ -346,6 +427,8 @@ function sd_browse()
 		return;
 	}
 
+	sd_show_note(ws);
+	sd_show_wad_msgs(cfg, ws);
 	sd_play(sel.addr + ":" + sel.port, [], sd_wadset_args(cfg, ws));
 }
 
