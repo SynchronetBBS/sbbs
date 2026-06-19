@@ -1,7 +1,18 @@
-# syncdoom multiplayer — design (not built yet)
+# syncdoom multiplayer — design & as-built notes
 
-Status: **scoped, not implemented.** This is the plan to review before building. Co-op
-and deathmatch over a single Synchronet host, plus how nodes discover joinable games.
+Status: **built and working.** Co-op and deathmatch run over a Synchronet install (one or
+more hosts that share the install), with registry-based discovery of joinable games. This
+file began as the pre-build design and is kept as the rationale of record; the
+configuration sections have been reconciled with what actually shipped.
+
+> **Config source of truth:** the live, documented key list is
+> `xtrn/syncdoom/syncdoom.example.ini` (installed as `syncdoom.ini` beside the door).
+> Shipped `[net]` keys: `advertise`, `port_low`/`port_high`, `max_games`, `max_players`
+> (cap **4** = Doom's `MAXPLAYERS`), `idle_timeout`, `stale`, `allow_external`. Section
+> name separators are **colons** — `[wadset:doom2]`, `[net:<hostname>]` — not dots.
+> **Deferred / not built:** inter-BBS federation (trusted-peer public games —
+> `public_advertise`, `federate`, `federation_secret`), `net_query` LAN-broadcast
+> `discovery`, per-NIC `bind` pinning, and LAN-address auto-detection.
 
 ## Foundation — the netcode is half-present
 
@@ -125,26 +136,28 @@ inter-door networking and no central matchmaker.
 `<data_dir>/syncdoom/games/` — **one file per live match**, named
 `<hostid>-<port>.ini`, e.g. `bbs-telnet-20001.ini`. The filename is **host-qualified**
 because the registry dir is shared across hosts and two hosts can independently allocate
-the same port from `port_range` — `<port>.ini` alone would collide. `<hostid>` + `<port>`
+the same port from the `port_low`..`port_high` range — `<port>.ini` alone would collide. `<hostid>` + `<port>`
 is unique BBS-wide (one server per port per host) and matches the `hostid`/`port` fields
 inside:
 
 ```
-host       = SysopHandle
-wad        = freedoom2.wad +myhouse.wad
+host       = SysopHandle     ; creator's alias (display only)
+wadset     = freedoom2       ; the [wadset:*] id; the joiner looks up the files locally
 mode       = coop            ; coop | deathmatch | altdeath
-skill      = 3
-map        = MAP01
 addr       = 10.0.0.6        ; address joiners connect to (see Network topology)
 port       = 20001           ; the dedicated server's UDP port
-hostid     = node-name       ; which host the server runs on (loopback shortcut)
-scope      = lan             ; lan | public  (who may join)
+hostid     = node-name       ; which host the server runs on
 players    = 2
 maxplayers = 4
-status     = lobby           ; lobby | playing | done
+status     = lobby           ; lobby | playing
 pid        = 12345           ; dedicated-server pid (liveness/cleanup)
-heartbeat  = 2026-06-16T...  ; bumped every few seconds
+heartbeat  = 1718563200      ; Unix epoch seconds; bumped every ~3s
 ```
+
+The server is the **single writer** of its own entry; it writes exactly these fields (see
+`mp_write_registry`). The map and skill aren't stored — they're the creator's command-line
+choice at launch, not part of discovery; the joiner inherits the match by connecting, and
+resolves WADs from the `wadset` id.
 
 Flow:
 
@@ -173,94 +186,141 @@ node sees `games/*.ini`), but the **doom client and the dedicated server can be 
 different machines**, so `127.0.0.1` is wrong. The registry must therefore carry a
 **reachable address**, not just a port.
 
-Address handling:
+Address handling (as built):
 
-- **Server bind** — the dedicated server binds the UDP port on all interfaces (or a
-  sysop-configured bind address), so both same-host (loopback) and cross-host (LAN) clients
-  can reach it. The sysop must allow the UDP port range across the LAN firewall.
-- **Advertised `addr`** — what joiners connect to, written into the registry entry.
-  Resolution order: (1) explicit sysop config in `syncdoom.ini` `[net] advertise =` — wins,
-  and is required when auto-detection guesses wrong (multi-NIC) or to pin one interface;
-  (2) the host's primary LAN address, auto-detected; (3) `127.0.0.1` as the single-host
-  fallback. **Never silently hardcode loopback.**
-- **`hostid` / loopback shortcut** — the entry records which host the server runs on (e.g.
-  system hostname). A joining door on that same host may substitute `127.0.0.1` for a
-  faster local hop; a door elsewhere uses `addr`. Optimization, not required for
-  correctness.
+- **Server bind** — the dedicated server binds the UDP port on **all interfaces**
+  (`INADDR_ANY`), so both same-host (loopback) and cross-host (LAN) clients can reach it.
+  The sysop must allow the UDP port range across the LAN firewall. (A sysop-configurable
+  `bind` address is **deferred** — the server always binds all interfaces today.)
+- **Advertised `addr`** — what joiners connect to, written into the registry entry. The
+  value comes straight from `[net] advertise` (optionally overridden per host via
+  `[net:<hostname>]`, below). **Blank → `127.0.0.1`**, i.e. same-host play only; set it to
+  this host's LAN IP or DNS name for cross-host play. There is **no auto-detection** — a
+  shared install spanning hosts must set `advertise` per host (an unset value can't be
+  guessed). The match creator connects to its own server over `127.0.0.1`; Browse-joiners
+  dial the registry `addr`.
 
 This is purely a config/address concern — the lockstep design and the file registry are
 unchanged; only "where do I connect" gains a real address.
 
-## Opening a match to public (non-BBS) clients — optional
+## Inter-BBS federation — trusted-peer public games *(design — not built)*
 
-The restored net layer speaks **Chocolate Doom's wire protocol** (we keep its packet
-format and only swap the transport), so in principle an external Chocolate Doom client
-could join a match — not only BBS doors. That's the `scope = public` flag:
+> **Not implemented yet.** This supersedes the earlier "open `scope = public`" sketch (let
+> *any* Chocolate Doom client join): a narrower, safer model where a handful of **trusted,
+> allowlisted BBSes** federate their game lists and play together. The only public-join
+> feature that ships **today** is `[net] allow_external` — a lobby menu item to **manually**
+> dial a server by `host:port` (no discovery, no auth, no port-forward help).
 
-- `scope = lan` (default) — only this system's doors may join; bind/advertise stay on the
-  LAN.
-- `scope = public` — the sysop advertises a **public address** (`[net] public_advertise =`)
-  and **port-forwards** the UDP port(s); the lobby exposes the match to outside clients.
+The goal: a user on BBS A can discover and join a co-op match hosted on BBS B. Two problems
+to solve — **discovery** across systems and **access control** — plus one engine constraint
+that frames the whole feature.
 
-Caveats that keep this opt-in and later-stage: NAT/port-forwarding setup, no BBS
-authentication or time-accounting for outside clients, version/WAD-set matching enforced
-purely by the protocol (mismatch desyncs), and the usual public-server abuse/cheating
-exposure. Ship LAN-only first; public is a deliberate sysop choice, per match.
+### The lockstep constraint — co-op first
+
+Doom is **lockstep**: the sim advances only once every node's ticcmd for a tic has arrived
+(35/sec). Single-host play hides this because the server and every door are co-located
+(loopback/LAN), so the slow telnet link is *outside* the tic loop. Federation puts the Doom
+client on BBS A and the dedicated server on BBS B with the **internet between them**, so
+inter-BBS RTT enters the lockstep path and throttles the shared sim to the slowest peer.
+
+- **Co-op** tolerates this well (Doom co-op is forgiving) — the target use case.
+- **Deathmatch** is timing-sensitive and will feel laggy/rubber-bandy across the internet —
+  allowed, but flagged "works, not competitive."
+
+Pitch and ship federation as **inter-BBS co-op**.
+
+### Discovery — finger-based registry federation
+
+Every Synchronet system already runs a **finger** service, so expose the local game registry
+as a finger response (e.g. `finger doom@peerbbs` returns the live `data/syncdoom/games/`
+entries — host, mode, wadset, players, address, port). A lobby then **aggregates a configured
+peer list** into its browse view: its own registry plus each peer's finger output. This is
+**pull-based and decentralized** — no central server, no new transport, reusing infrastructure
+every system already has. (The same data could ride the who's-online / active-user channel;
+finger is the simplest first cut.)
+
+### Connection & access control
+
+A joining door on BBS A connects over the internet to BBS B's dedicated server, so the host
+sysop must **port-forward** the UDP port range and publish a reachable address
+(`[net] public_advertise`). Two layers keep out random/rogue clients — use either or both:
+
+1. **Peer allowlist (baseline).** The sysop lists the trusted peer BBSes; the dedicated
+   server drops UDP from any source not on the list. For peers with **static IPs** this alone
+   is most of the value — a rogue client simply isn't on the list, and spoofing a full
+   stateful Doom handshake from a forged source is impractical. No cryptography involved.
+2. **Shared secret — for dynamic-IP peers / hardening.** A secret configured **out-of-band**
+   in each side's `syncdoom.ini` (never in the repo) and **passed to `syncdoom` on the
+   command line** — the server requires it, the joining client presents it, the connect
+   handshake rejects a mismatch. This covers peers on **DDNS/dynamic addresses** (which an IP
+   allowlist can't pin) and adds defense-in-depth. Cost: a small extension to the Chocolate
+   connect handshake to carry and verify the token (the protocol is otherwise stock).
+
+With static-IP peers, layer 1 suffices and the secret is optional; with dynamic-IP peers,
+layer 2 is what gates access.
+
+### WAD parity & versioning
+
+Both ends need byte-identical WADs (IWAD + PWADs + DeHackEd). Commercial `doom2.wad` can't be
+shared, so federated games realistically standardize on **Freedoom** — the one free, common
+IWAD — and the registry's wadset id lets the joiner verify local files before connecting.
+Federation also implies both sides run a **protocol-compatible syncdoom** (the Chocolate base
+revision is pinned); a federation is, in effect, a version-coordinated group. There is **no
+anti-cheat** (vanilla has none) — the *trust* in "trusted peers" is the mitigation.
+
+### Config sketch (design)
+
+```ini
+[net]
+public_advertise  = doom.mybbs.example         ; public host/IP joiners dial; UDP range port-forwarded
+federate          = a.bbs.example, b.bbs.example:79   ; trusted peers (finger host[:port]); also the UDP allowlist
+federation_secret =                            ; optional out-of-band shared secret (blank = allowlist only)
+```
+
+### Phasing
+
+Federation is a **post-MVP** layer (NAT/forwarding, federation config, cross-internet lockstep
+testing — not a quick add):
+
+1. **Done / near-term:** single-host, then LAN multi-host (current).
+2. **Federation MVP:** finger discovery + peer IP allowlist + co-op + Freedoom.
+3. **Hardening:** the out-of-band command-line secret (for dynamic-IP peers) and any
+   deathmatch lag tuning.
 
 ## `[net]` — networking & server config
 
-Multiplayer config lives in a `[net]` section of the door's `syncdoom.ini` (alongside the
-existing `[video]`/`[input]` and the new `[wads]`/`[wadset.*]`). All keys are optional; an
-absent key keeps the built-in default. These govern the dedicated-server lifecycle, address
-advertising, port allocation, discovery, and limits referenced throughout this doc.
-
-#### Addressing
+Multiplayer config lives in a `[net]` section of the door's `syncdoom.ini` (alongside
+`[video]`/`[input]` and `[wads]`/`[wadset:*]`). All keys are optional; an absent key keeps
+the built-in default. These govern the dedicated-server lifecycle, address advertising,
+port allocation, discovery, and per-match limits.
 
 | Key | Meaning |
 |-----|---------|
-| `bind` | Address the dedicated server binds. Default: **all interfaces** (so both loopback and LAN clients reach it). Pin to one interface on a multi-NIC host. |
-| `advertise` | LAN address joiners connect to, written into the registry `addr`. Default: **auto-detected** primary LAN address, falling back to loopback on a single-host install. **Required** when auto-detection guesses wrong (multi-NIC) or to pin an interface on a multi-host BBS. |
-| `public_advertise` | Public address advertised for `scope = public` matches; the sysop **port-forwards** the UDP port(s) to it. Only consulted when `allow_public = true`. |
+| `advertise` | Address joiners on **other** hosts dial, written into the registry `addr`. **Blank → `127.0.0.1`** (same-host play only). Set to this host's LAN IP / DNS name for cross-host play; override per host with `[net:<hostname>]`. No auto-detection. |
+| `port_low` / `port_high` | UDP port range for per-match dedicated servers (free-port scan within it; one port per live match). Default `20000` / `20063`. |
+| `max_games` | Cap on concurrent matches on this system (the lobby refuses Create past it). Default `8`. |
+| `max_players` | Per-match player ceiling. **Hard cap 4** — Doom's `MAXPLAYERS` (4 player slots/colors/starts); the lobby clamps to 4 regardless. A set's/creator's `maxplayers` can't exceed it. Default `4`. |
+| `idle_timeout` | Seconds an **empty** (zero-player) match waits before the dedicated server self-terminates and deletes its registry entry. Default `60`. |
+| `stale` | Heartbeat age after which a game entry is pruned from the browse list (its server presumed dead). Default `30`. The server refreshes its `heartbeat` every ~3 s (fixed, not configurable). |
+| `allow_external` | Show the lobby's "join an external server by `host:port`" option (manual cross-system join). Default `false`. |
 
-#### Ports & concurrency
-
-| Key | Meaning |
-|-----|---------|
-| `port_range` | UDP port range for per-match dedicated servers, e.g. `20000-20063` (free-port scan within it; one port per live match). |
-| `max_games` | Cap on concurrent matches (bounds server processes/ports; the lobby refuses Create past it). |
-| `max_players` | Global ceiling on players per match, ≤ 8 (`NET_MAXPLAYERS`). A set's/creator's `maxplayers` can't exceed this. |
-
-#### Public access
-
-| Key | Meaning |
-|-----|---------|
-| `allow_public` | Master gate for `scope = public`. Default `false` — the lobby hides the public option entirely. Set `true` only after `public_advertise` + port-forwarding are in place. |
-
-#### Discovery & liveness
-
-| Key | Meaning |
-|-----|---------|
-| `discovery` | Game-list source: `registry` (shared-file, default) \| `query` (`net_query` LAN broadcast — for installs where `data_dir` isn't shared) \| `both`. |
-| `heartbeat` | Seconds between a server bumping its registry entry's `heartbeat` (default ~5). |
-| `stale` | Heartbeat age (or dead `pid`) after which a game entry is pruned from the list (default ~15). |
-| `idle_timeout` | Seconds an **empty** (zero-player) match waits before the dedicated server self-terminates and deletes its registry entry. Implements the empty-match shutdown rule. |
+**Deferred (not built):** `bind` (the server always binds all interfaces), `discovery` /
+`net_query` LAN-broadcast game discovery (discovery is registry-only), and the inter-BBS
+federation keys `public_advertise` / `federate` / `federation_secret` (see *Inter-BBS
+federation*).
 
 #### Example
 
 ```ini
 [net]
-bind         =                ; blank = all interfaces (default)
-advertise    =                ; blank = auto-detect LAN addr; set on multi-NIC/host
-port_range   = 20000-20063    ; per-match dedicated-server UDP ports
-max_games    = 8              ; concurrent matches
-max_players  = 8              ; per-match ceiling (<= NET_MAXPLAYERS)
-discovery    = registry       ; registry | query | both
-heartbeat    = 5              ; server registry-entry refresh, seconds
-stale        = 15             ; prune a game entry after this heartbeat age
+advertise    =                ; blank = 127.0.0.1 (same-host only); set LAN IP/DNS for cross-host
+port_low     = 20000          ; per-match dedicated-server UDP port range
+port_high    = 20063
+max_games    = 8              ; concurrent matches on this system
+max_players  = 4              ; per-match ceiling (Doom MAXPLAYERS = 4)
 idle_timeout = 60             ; empty match self-terminates after this many seconds
-
-allow_public     = false      ; gate scope=public; needs public_advertise + forwarding
-public_advertise =            ; public address for scope=public matches
+stale        = 30             ; prune a game entry after this heartbeat age
+allow_external = false        ; offer manual "join by host:port" of an outside server
 ```
 
 #### Shared config & per-host overrides
@@ -268,34 +328,30 @@ public_advertise =            ; public address for scope=public matches
 `syncdoom.ini` is a **single shared file** in the install (`xtrn/syncdoom/`), read by every
 node on every host — even when hosts differ in OS (a Linux build and a Windows `.exe` both
 read the same ini beside them). Most `[net]` keys are BBS-wide policy, so sharing is
-correct: `port_range`, `max_games`, `max_players`, `allow_public`, `discovery`,
-`heartbeat`, `stale`, `idle_timeout`, and `bind = all-interfaces`.
+correct: `port_low`/`port_high`, `max_games`, `max_players`, `stale`, `idle_timeout`, and
+`allow_external`.
 
-The one inherently **per-host** value is `advertise` (and, rarely, a pinned `bind`): a
-server on host A must advertise A's address, one on host B must advertise B's. That's why
-`advertise` **defaults to auto-detect** — with the shared ini left blank, each host's server
-advertises its *own* LAN address at runtime, so the shared file works untouched. Note the
-registry `addr` is the **advertised** address, not the raw bind result: `bind =
-all-interfaces` is a wildcard a joiner can't connect to, so the server writes the explicit/
-auto-detected concrete address instead.
-
-The shared file only needs help when you must **override** `advertise` per host (multi-NIC,
-where auto-detect picks the wrong interface). A single value can't express that, so the
-door reads `[net]` then overlays a **hostname-keyed sub-section** `[net.<hostname>]` (it
-knows its own `gethostname()`) — keeping one shared file that still carries per-host values:
+The one inherently **per-host** value is `advertise`: a server on host A must advertise A's
+address, one on host B must advertise B's. A single shared value can't express that, so the
+**JS lobby** reads `[net]` then overlays a **hostname-keyed sub-section** `[net:<hostname>]`,
+where `<hostname>` is Synchronet's `system.local_host_name` for the host the lobby runs on.
+Keys in the matching sub-section win over the base `[net]`, keeping one shared file that
+still carries per-host values:
 
 ```ini
 [net]
-advertise =                 ; blank = auto-detect (works for most hosts)
+advertise =                 ; blank = 127.0.0.1 (same-host only)
 
-[net.bbs-telnet]            ; this host has two NICs; pin the right one
+[net:bbs-telnet]            ; this host's LAN-facing address
 advertise = 10.0.0.6
-[net.bbs-web]
+[net:bbs-web]               ; a second host sharing the install
 advertise = 10.0.0.7
 ```
 
-(A per-host environment variable could serve the same role, but the hostname sub-section
-keeps all config in the one shared ini.)
+Because there is no auto-detection, **every host that hosts cross-host games needs an
+`advertise` value** — a shared one (single-host BBS) or a `[net:<hostname>]` entry (a shared
+install spanning hosts). A host left blank advertises `127.0.0.1` and is reachable only from
+its own machine.
 
 ## Lobby — a JavaScript frontend (decided)
 
@@ -307,7 +363,7 @@ split falls exactly on the **engine / orchestration** line:
   headless `-dedicated` relay. Plus the small CLI contract below. Stays portable to any
   DOOR32.SYS BBS.
 - **JS lobby = orchestration**: browse/create/join UI, the `data/syncdoom/games/` registry
-  and discovery, reading `[net]`/`[wads]`/`[wadset.*]`, identity, and spawning servers.
+  and discovery, reading `[net]`/`[wads]`/`[wadset:*]`, identity, and spawning servers.
 
 ### Why JS (what Synchronet gives for free)
 
@@ -401,16 +457,17 @@ or default to.)
 
 | Key | Meaning |
 |-----|---------|
-| `dir` | WAD directory. Default: the door's own program dir (same resolution `syncdoom.ini` uses). Relative (to the door dir) or absolute; may be a comma-list for multiple search dirs. |
-| `default` | `<id>` of the pre-selected `[wadset.*]` in the picker; the set **Solo** uses when not prompting. |
-| `autoscan` | Offer loose IWADs found by scanning `dir` even without a matching `[wadset.*]`. `true`/`false`. |
-| `default_iwad` | IWAD paired with **auto-scanned standalone PWADs** (which otherwise can't be made playable). Only relevant when `autoscan = true`. |
-| `sort` | Picker order: `config` (ini section order) or `name` (alphabetical). |
+| `dir` | WAD directory. Default: the door's own program dir (same resolution `syncdoom.ini` uses). Relative (to the door dir) or absolute. |
+| `default` | `<id>` of the `[wadset:*]` pre-selected (highlighted, ENTER-default) in the picker. |
+
+**Deferred (not built):** `autoscan` / `default_iwad` (offer loose IWADs/PWADs with no
+`[wadset:*]`) and `sort` (picker order). The picker lists the configured `[wadset:*]`
+sections in ini order.
 
 Deliberately **out of scope**: `allow_user_wads` (no — curated dir is the point; MP desync
 + security), and global player/mode caps (those belong in the net section, not `[wads]`).
 
-#### `[wadset.*]` — one playable set per section
+#### `[wadset:*]` — one playable set per section
 
 The picker lists **named, playable *sets*, not a raw file dump**: a valid Doom config is
 *exactly one IWAD + zero-or-more PWADs* (a bare PWAD like SIGIL/MyHouse is unplayable
@@ -424,12 +481,18 @@ without its IWAD). All filenames resolve in `[wads] dir`.
 | `desc` | no | One-line description for the picker. |
 | `modes` | no | Where the set may be used: `solo, coop, deathmatch, altdeath` (default: all). A DM-only pack sets `modes = deathmatch, altdeath`; subsumes a separate "solo allowed" flag. |
 | `map` | no | Default starting map / `-warp` value (creator can override). |
-| `maxplayers` | no | Default/recommended cap, ≤ 8 (`NET_MAXPLAYERS`); creator can override. |
+| `maxplayers` | no | Default cap for the set, ≤ 4 (Doom `MAXPLAYERS`); creator can lower it. |
 | `merge` | no | Comma-separated WADs merged into the IWAD via `-merge` (deutex-style; rare). |
 | `enabled` | no | `false` hides a set without deleting the section (default `true`). |
-| `note` | no | Caveat shown before launch (e.g. "needs a source port; may not run on vanilla"). |
+| `note` | no | Caveat shown (with a keypress pause) before the door launches, e.g. "needs a source port; may not run on vanilla". |
 
 `skill` is intentionally **not** a set key — it's a per-match choice at creation.
+
+**WAD readme files:** if a `<wadname>.msg` file sits beside a WAD in the set (the IWAD, a
+PWAD, or a merge WAD — e.g. `sigil.msg` next to `sigil.wad` in `[wads] dir`), the lobby
+displays it — paged, with a pause — before launching. It's a long-form companion to `note`:
+a map pack's readme/intro/credits. Sysop-curated like the WADs themselves; shown on Create,
+Solo, and Join (each file at most once).
 
 A selected set expands into the `-iwad`/`-file`/`-merge`/`-warp` args the door already
 forwards (`syncdoom.c`), each as an **absolute path** (`[wads] dir` + filename), so this
@@ -440,18 +503,14 @@ layer is purely lobby-side — no change to the game launch path.
 ```ini
 [wads]
 dir          = wads          ; relative to the door dir, or an absolute path
-default      = doom2         ; pre-selected set; Solo uses it when not prompting
-autoscan     = true          ; offer loose IWADs found in dir w/o a [wadset.*]
-default_iwad = freedoom2.wad ; IWAD paired with auto-scanned standalone PWADs
-sort         = config        ; picker order: config | name
 
-[wadset.doom2]
+[wadset:doom2]
 name         = Doom II: Hell on Earth
 iwad         = doom2.wad
 desc         = The classic 32-level campaign
 modes        = solo, coop, deathmatch, altdeath
 
-[wadset.sigil]
+[wadset:sigil]
 name         = SIGIL (John Romero)
 iwad         = doom.wad
 pwad         = sigil.wad
@@ -459,25 +518,24 @@ map          = E5M1
 desc         = Romero's unofficial fifth episode
 modes        = solo, coop
 
-[wadset.dm-arena]
+[wadset:dm-arena]
 name         = Deathmatch Arena
 iwad         = doom2.wad
 pwad         = arena1.wad, arena2.wad
 modes        = deathmatch, altdeath
-maxplayers   = 8
+maxplayers   = 4
 ```
 
-#### Fallback (no `[wadset.*]` configured)
+#### Fallback (no `[wadset:*]` configured) — *(deferred)*
 
-With `autoscan = true`, scan `dir` and classify each file by its 4-byte header magic
-(`IWAD` vs `PWAD`), offering every IWAD as a standalone set (and loose PWADs atop
-`default_iwad`). Anything beyond bare IWADs wants explicit `[wadset.*]` entries; zero-config
-still gets "pick an IWAD and play."
+The auto-scan fallback (classify each file in `dir` by its 4-byte `IWAD`/`PWAD` header magic
+and offer bare IWADs without explicit sections) is **not built**. Today a set must be
+defined as a `[wadset:*]` section to appear in the picker.
 
 #### Who prompts for a set
 
 - **Create** and **Solo** — prompt (the set picker; Solo omits the MP params).
-- **Join** — **never prompts**; reads `wad =` from the registry, auto-loads exactly that
+- **Join** — **never prompts**; reads `wadset =` from the registry, auto-loads exactly that
   set, and **verifies the files exist locally before connecting**, refusing with a clear
   message if a node is missing one. The browse list *displays* each game's set so you know
   what you're joining.
@@ -500,7 +558,7 @@ still gets "pick an IWAD and play."
 **JS lobby (orchestration, `xtrn/syncdoom/`, SpiderMonkey 1.8.5):**
 
 5. Browse/create/join + waiting room (Synchronet UI libs); `data/syncdoom/games/` registry
-   + discovery; read `[net]`/`[wads]`/`[wadset.*]`; port alloc + spawn via `-spawnserver`;
+   + discovery; read `[net]`/`[wads]`/`[wadset:*]`; port alloc + spawn via `-spawnserver`;
    locate binary via `js.exec_dir`; launch play via `bbs.exec` (no dropfile).
 
 Bonuses that come for free with the net layer: in-game **chat** (`T` key), and players
@@ -508,15 +566,17 @@ dropping cleanly when their BBS time (`-t`) runs out.
 
 ## Open questions for review
 
-- Player-slot caps per match (vanilla `NET_MAXPLAYERS` is 8; co-op/DM cap?).
+- Player-slot caps per match — **resolved:** 4 (Doom `MAXPLAYERS`); the lobby clamps to it.
 - Where the dedicated server binary comes from — a `-dedicated` mode of the same `syncdoom`
   executable (preferred: one binary), or a separate build target.
 - Port allocation/recycling for concurrent matches (range + free-port scan).
 - Stale-game GC cadence and who runs it (each door on browse, vs. a periodic sweep).
 - Empty-match shutdown policy — zero players only, or a configurable floor for DM.
-- LAN-address auto-detection: how reliably can the server pick its own routable address on
-  a multi-NIC host, vs. always requiring `[net] advertise =` on multi-host installs.
-- Whether `scope = public` ships at all in v1, or stays a documented-but-unbuilt option.
-- Whether the WAD-set auto-scan fallback is worth building for v1, or `[wadset.*]`
+- LAN-address auto-detection — **resolved:** not done; cross-host installs set `[net]
+  advertise` (or a per-host `[net:<hostname>]`) explicitly. Blank advertises `127.0.0.1`.
+- Public/cross-BBS play — **resolved:** deferred as *Inter-BBS federation* (trusted-peer,
+  finger discovery + IP allowlist; co-op first). The only shipped external-join path today is
+  the manual `allow_external` host:port option.
+- Whether the WAD-set auto-scan fallback is worth building for v1, or `[wadset:*]`
   sections in `syncdoom.ini` are required (config home decided: `syncdoom.ini`).
 - Whether to expose persistent "rooms" later, and MQTT push for live lobby updates.
