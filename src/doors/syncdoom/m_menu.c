@@ -66,6 +66,16 @@ extern boolean		message_dontfuckwithme;
 
 extern boolean		chat_on;		// in heads-up code
 
+// syncdoom: key-up-synthesis graces (ms), tuned live via Options > Input. A
+// terminal sends no key-up, so a held key is released on a timeout; these three
+// graces shape the "slidy vs twitchy" feel. Defined and persisted per-user in
+// syncdoom.c.
+#include <stdint.h>
+extern uint32_t		g_grace_fresh;		// TAP  -- a single press lingers this long
+extern uint32_t		g_keyup_idle_ms;	// HOLD -- release latency once auto-repeating
+extern uint32_t		g_turn_grace;		// TURN -- turn-key tap grace
+extern void		sd_save_input_prefs(void);
+
 //
 // defaulted values
 //
@@ -194,6 +204,11 @@ void M_ChangeDetail(int choice);
 void M_SizeDisplay(int choice);
 void M_StartGame(int choice);
 void M_Sound(int choice);
+
+void M_InputTap(int choice);     // syncdoom: key-feel sliders, inline on Options
+void M_InputHold(int choice);
+void M_InputTurn(int choice);
+void M_DrawInputSliders(void);
 
 void M_FinishReadThis(int choice);
 void M_LoadSelect(int choice);
@@ -333,13 +348,21 @@ menu_t  NewDef =
 // Mouse Sensitivity and Sound Volume are dropped: a terminal client has no
 // mouse, and no audio reaches it -- those sub-menus would be dead UI. (option_-
 // empty1 is kept: it's the thermometer-bar row for the Screen Size slider.)
+// The key-feel sliders (TAP/HOLD/TURN) live inline here, not in a sub-menu.
+// They are status-2 (slider) items with empty patch names; M_DrawOptions draws
+// their label + thermo + ms value. A terminal sends no key-up, so a held key is
+// released on a timeout; these graces tune the "slidy vs twitchy" feel, which
+// depends on the user's OS key-repeat and latency -- hence adjustable, per-user.
 enum
 {
     endgame,
     messages,
     detail,
     scrnsize,
-    option_empty1,
+    option_empty1,      // the screen-size thermo row
+    inputtap,           // syncdoom key-feel sliders, inline (LEFT/RIGHT adjust)
+    inputhold,
+    inputturn,
     opt_end
 } options_e;
 
@@ -349,6 +372,10 @@ menuitem_t OptionsMenu[]=
     {1,"M_MESSG",	M_ChangeMessages,'m'},
     {1,"M_DETAIL",	M_ChangeDetail,'g'},
     {2,"M_SCRNSZ",	M_SizeDisplay,'s'},
+    {-1,"",0,'\0'},                 // option_empty1: the screen-size thermo row
+    {2,"",M_InputTap, 't'},
+    {2,"",M_InputHold,'h'},
+    {2,"",M_InputTurn,'u'},
     {-1,"",0,'\0'}
 };
 
@@ -834,13 +861,19 @@ void M_DrawReadThis1(void)
     M_WriteCenterScaled(8, "SYNCDOOM CONTROLS", 2);
 
     {
-        char ver[48];
+        char date[32];
         char *sp;
-        M_snprintf(ver, sizeof(ver), "%s  %s", GIT_HASH, GIT_DATE);
-        sp = strrchr(ver, ' ');   // GIT_DATE ends " HH:MM"; drop the time, keep the date
+
+        // Build id along the bottom: GIT_HASH in the lower-left corner...
+        M_WriteText(2, 190, GIT_HASH);
+
+        // ...and GIT_DATE in the lower-right corner. GIT_DATE ends " HH:MM";
+        // drop the time, keep the date.
+        M_snprintf(date, sizeof(date), "%s", GIT_DATE);
+        sp = strrchr(date, ' ');
         if (sp != NULL)
             *sp = '\0';
-        M_WriteText(SCREENWIDTH - M_StringWidth(ver) - 2, 190, ver);   // build id, lower-right corner
+        M_WriteText(SCREENWIDTH - M_StringWidth(date) - 2, 190, date);
     }
 
     y = 40;
@@ -1039,11 +1072,24 @@ void M_Episode(int choice)
 static char *detailNames[2] = {"M_GDHIGH","M_GDLOW"};
 static char *msgNames[2] = {"M_MSGOFF","M_MSGON"};
 
+// Common x for the Options-menu sliders: just right of the widest label, so the
+// SCREEN SIZE bar and the larger-font KEY TAP/HOLD/TURN bars all line up.
+static int M_OptSliderX(void)
+{
+    patch_t *szp = W_CacheLumpName(DEH_String("M_SCRNSZ"), PU_CACHE);
+    int      w   = SHORT(szp->width);   // "SCREEN SIZE" label patch
+    // room for the widest KEY label plus its ms value, so the bar clears both
+    int      kw  = M_StringWidth("KEY HOLD") + M_StringWidth("000ms") + 12;
+
+    if (w < kw) w = kw;
+    return OptionsDef.x + w + 8;
+}
+
 void M_DrawOptions(void)
 {
     V_DrawPatchDirect(108, 15, W_CacheLumpName(DEH_String("M_OPTTTL"),
                                                PU_CACHE));
-	
+
     V_DrawPatchDirect(OptionsDef.x + 175, OptionsDef.y + LINEHEIGHT * detail,
 		      W_CacheLumpName(DEH_String(detailNames[detailLevel]),
 			              PU_CACHE));
@@ -1052,13 +1098,94 @@ void M_DrawOptions(void)
                       W_CacheLumpName(DEH_String(msgNames[showMessages]),
                                       PU_CACHE));
 
-    M_DrawThermo(OptionsDef.x,OptionsDef.y+LINEHEIGHT*(scrnsize+1),
-		 9,screenSize);
+    // Screen-size bar to the RIGHT of the "SCREEN SIZE" label, on its own row.
+    M_DrawThermo(M_OptSliderX(), OptionsDef.y + LINEHEIGHT * scrnsize,
+		 9, screenSize);
+
+    // syncdoom key-feel sliders, inline (larger-font label + aligned thermo).
+    M_DrawInputSliders();
 }
 
 void M_Options(int choice)
 {
     M_SetupNextMenu(&OptionsDef);
+}
+
+//
+// SYNCDOOM key-feel sliders, shown inline on the Options menu (TAP/HOLD/TURN).
+// Each maps a key-up grace (ms) to a thermo bar; LEFT/RIGHT step within its range
+// and save the per-user prefs immediately. Ranges are the lower, useful half of
+// the old span with a finer step (more granularity); all three bars share a width.
+//
+#define TAP_MIN   100
+#define TAP_STEP  50
+#define TAP_MAX   500     // 100..500, step 50 (9 stops)
+#define HT_MIN    50      // HOLD and TURN share a range/step
+#define HT_STEP   25
+#define HT_MAX    250     // 50..250, step 25 (9 stops)
+#define SLIDER_W  9       // matches SCREEN SIZE's 9 stops -> all 4 bars same width
+
+static int M_ThermoDot(int value, int vmin, int vstep, int width)
+{
+    int dot = (value - vmin + vstep / 2) / vstep;   // nearest cell (round, not floor)
+    if (dot < 0)        dot = 0;
+    if (dot > width-1)  dot = width-1;
+    return dot;
+}
+
+// One KEY TAP/HOLD/TURN row on the Options menu: label + ms value in the engine's
+// normal (small) text font, with a thermo aligned to the SCREEN SIZE bar. The
+// value sits just left of the bar it controls.
+static void M_DrawInputRow(int row, char *label, unsigned val,
+                           int vmin, int vstep)
+{
+    char buf[16];
+    int  y  = OptionsDef.y + LINEHEIGHT * row;
+    int  sx = M_OptSliderX();
+
+    M_WriteText(OptionsDef.x, y, label);
+    M_snprintf(buf, sizeof(buf), "%ums", val);
+    M_WriteText(sx - M_StringWidth(buf) - 6, y, buf);
+    M_DrawThermo(sx, y, SLIDER_W, M_ThermoDot((int)val, vmin, vstep, SLIDER_W));
+}
+
+void M_DrawInputSliders(void)
+{
+    M_DrawInputRow(inputtap,  "KEY TAP",  g_grace_fresh,   TAP_MIN, TAP_STEP);
+    M_DrawInputRow(inputhold, "KEY HOLD", g_keyup_idle_ms, HT_MIN,  HT_STEP);
+    M_DrawInputRow(inputturn, "KEY TURN", g_turn_grace,    HT_MIN,  HT_STEP);
+}
+
+// Step a grace one notch, snapping to the [mn,mx] grid (mn + k*step). Snapping
+// the CURRENT value first means a pref loaded off-grid (e.g. saved under an older
+// range) lands on a real slider stop instead of drifting between cells -- which
+// is what made adjacent values share a knob position.
+static uint32_t M_InputStep(uint32_t cur, int choice, int mn, int step, int mx)
+{
+    int k = ((int)cur - mn + step / 2) / step;          // nearest grid index
+    int v = mn + k * step + (choice ? step : -step);    // snapped, then one notch
+
+    if (v < mn) v = mn;
+    if (v > mx) v = mx;
+    return (uint32_t)v;
+}
+
+void M_InputTap(int choice)
+{
+    g_grace_fresh = M_InputStep(g_grace_fresh, choice, TAP_MIN, TAP_STEP, TAP_MAX);
+    sd_save_input_prefs();
+}
+
+void M_InputHold(int choice)
+{
+    g_keyup_idle_ms = M_InputStep(g_keyup_idle_ms, choice, HT_MIN, HT_STEP, HT_MAX);
+    sd_save_input_prefs();
+}
+
+void M_InputTurn(int choice)
+{
+    g_turn_grace = M_InputStep(g_turn_grace, choice, HT_MIN, HT_STEP, HT_MAX);
+    sd_save_input_prefs();
 }
 
 

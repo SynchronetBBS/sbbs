@@ -259,9 +259,14 @@ void I_Quit (void)
 
 #if ORIGCODE
     SDL_Quit();
-
-    exit(0);
 #endif
+    // doomgeneric stubbed the original exit() under ORIGCODE, leaving I_Quit()
+    // returning to its caller instead of terminating the program -- so a quit
+    // (the menu, the waiting-room cancel, or a hangup) fell through into the game
+    // loop. The door owns the process, so actually exit here, the way I_Error
+    // does. (libc atexit runs the door's terminal cleanup; doomgeneric's own
+    // exit_funcs already ran in the loop above.)
+    exit(0);
 }
 
 #if !defined(_WIN32) && !defined(__MACOSX__) && !defined(__DJGPP__)

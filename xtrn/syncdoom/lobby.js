@@ -66,6 +66,35 @@ function sd_advertise_addr()
 	return sd_trim(String(a));
 }
 
+// The configured server bind (listen) address, or "" if unset/blank -> the
+// server's own 127.0.0.1 default (same-host play only). Distinct from advertise:
+// bind is the local interface the socket accepts on; advertise is the address
+// peers dial. Resolved from cfg.net.bind, host-overlaid like advertise.
+function sd_bind_addr()
+{
+	var b = cfg.net.bind;
+	if (b === undefined || b === null)
+		return "";
+	return sd_trim(String(b));
+}
+
+// Address the match creator dials to reach the server it just spawned. The
+// creator always shares the server's host, but the server binds the address it
+// listens on (sd_bind_addr() || advertise; its own 127.0.0.1 default when both
+// are blank). A socket bound to a SPECIFIC interface IP does not receive
+// loopback datagrams, so the creator can't blindly use 127.0.0.1 -- it must dial
+// the very address the server bound (a host can always reach its own local IP).
+// A wildcard bind (0.0.0.0/any/*) or an unset bind both accept on loopback, so
+// dial 127.0.0.1 there (you can't send to a wildcard; loopback is guaranteed).
+function sd_creator_connect_host()
+{
+	var bind = sd_bind_addr() || sd_advertise_addr();
+	var lc = String(bind).toLowerCase();
+	if (!bind || lc == "0.0.0.0" || lc == "any" || lc == "*")
+		return "127.0.0.1";
+	return bind;
+}
+
 // Spawn a detached dedicated server for a match on the given port (returns
 // immediately; runs headless until the match empties). Uses -spawnserver so it
 // survives this session. The server owns the match size (connect order doesn't
@@ -81,14 +110,23 @@ function sd_spawn_server(port, maxplayers, ws, mode)
 	    + " -wadset " + ws.id
 	    + " -gamemode " + mode;
 
-	// The address joiners on OTHER hosts dial. The server binds all interfaces
-	// regardless; this is just what it records in the shared browse registry.
-	// Blank ([net] advertise unset) -> the server's 127.0.0.1 default = same-host
-	// play only. For cross-host play set [net] advertise (or a per-host
-	// [net:<hostname>] advertise) to this host's LAN IP or public name.
+	// advertise = the address joiners on OTHER hosts dial (recorded in the shared
+	// browse registry); bind = the local interface the server listens on. They're
+	// independent. Both blank -> server defaults to loopback (same-host only).
+	// For cross-host play set BOTH: bind (0.0.0.0, or this host's LAN IP) so the
+	// socket accepts off-box, and advertise (LAN IP / public name) so the registry
+	// tells joiners where to dial. Per-host [net:<hostname>] overlays apply to each.
 	var adv = sd_advertise_addr();
 	if (adv)
 		cmd += " -advertise " + adv;
+	// bind defaults to the advertise address: if the sysop said "peers reach me at
+	// X" (advertise) but didn't say where to listen (bind), listen on X. An explicit
+	// [net] bind always wins -- needed when advertise is a public/NAT name this host
+	// can't bind directly (set bind to 0.0.0.0 or the local LAN IP), or to widen to
+	// all interfaces. Both blank -> the server's own 127.0.0.1 (same-host) default.
+	var bind = sd_bind_addr() || adv;
+	if (bind)
+		cmd += " -bindaddr " + bind;
 
 	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE, SD_DIR);
 }
@@ -169,10 +207,21 @@ function sd_pick_wadset(mode)
 		// (sd_list_wadsets filters on ws.present), so no per-pick presence check.
 		var i;
 		var def = 0;
+		// Fit each item to the real terminal width. uselect frames a line as
+		// "->(N) <label> <-", so reserve ~10 cols for that decoration. Show
+		// "name -- desc" only when the whole thing fits; otherwise just the name
+		// (a half-truncated description reads worse than none). Hard-trim only if
+		// even the name alone overflows.
+		var avail = (console.screen_columns || 80) - 10;
 		for (i = 0; i < list.length; i++) {
-			var label = list[i].name + (list[i].desc ? "  -- " + list[i].desc : "");
-			if (label.length > 62)       // keep each item to one line (~80 cols)
-				label = sd_trim(label.substr(0, 59)) + "...";
+			var label = list[i].name;
+			if (list[i].desc) {
+				var full = label + " - " + list[i].desc;
+				if (full.length <= avail)
+					label = full;
+			}
+			if (label.length > avail)
+				label = sd_trim(label.substr(0, avail - 3)) + "...";
 			console.uselect(i, "WAD set", label);
 			if (cfg.wads.default && list[i].id == cfg.wads.default)
 				def = i;
@@ -205,6 +254,41 @@ function sd_pick_gamemode()
 	if (sel < 0)
 		return null;
 	return modes[sel].id;
+}
+
+// Resolve the default skill (1-5) the Create prompt should start on: the wadset's
+// own [wadset:*] skill if set, else the [net] skill house default, else 3 (Hurt
+// Me Plenty -- Doom's own default). Clamped to the valid 1-5 range.
+function sd_default_skill(ws)
+{
+	var s = (ws && ws.skill !== undefined && ws.skill !== "") ? parseInt(ws.skill, 10)
+	      : parseInt(cfg.net.skill, 10);
+	if (isNaN(s) || s < 1) s = 3;
+	if (s > 5)             s = 5;
+	return s;
+}
+
+// Prompt for the match skill level. Returns 1-5, or null to abort. Each item's
+// uselect value is the Doom skill number, and the execute call's argument is the
+// default-highlighted value (Enter selects it) -- so `def` (wadset/[net]) is the
+// initial choice. Doom takes the skill on the *controller's* (creator's) command
+// line as -skill N; joiners inherit it through the netgame, like the DM flags.
+function sd_pick_skill(def)
+{
+	var names = [
+		"I'm Too Young To Die",
+		"Hey, Not Too Rough",
+		"Hurt Me Plenty",
+		"Ultra-Violence",
+		"Nightmare!"
+	];
+	var i;
+	for (i = 0; i < names.length; i++)
+		console.uselect(i + 1, "Skill level", names[i]);
+	var sel = console.uselect(def);       // execute, default-highlighting `def`
+	if (sel < 0)                          // Q / Ctrl-C -> abort the create
+		return null;
+	return sel;
 }
 
 // ---------------------------------------------------------------------------
@@ -339,6 +423,15 @@ function sd_create()
 	if (n < 1)                            // bare Enter -> default to 2 players
 		n = (maxp >= 2) ? 2 : maxp;
 
+	// Skill level. Like the player count, this is a blocking prompt that MUST be
+	// resolved before we spawn the server and connect, or a Browse-joiner could
+	// win the controller race while we sit at the prompt. Default from the wadset
+	// (or [net]) ini. Lobby-driven matches autostart (-warp), bypassing Doom's
+	// own skill menu, so this is where difficulty gets chosen.
+	var skill = sd_pick_skill(sd_default_skill(ws));
+	if (skill === null)                   // Q / Ctrl-C -> abort the create
+		return;
+
 	// Decide on paging up front -- the (blocking) prompt must NOT sit between the
 	// server spawn and our connect below, or a Browse-joiner could connect first
 	// and become the controller. We only deliver the pages (fast) after spawning.
@@ -362,19 +455,20 @@ function sd_create()
 	// an in-progress server (no mid-game joins) and bounced back to the lobby.
 	// The door's own waiting room shows the "waiting for players" UI from here.
 	if (n > 1) {
-		console.print("\r\n\1h\1gGame created \1n-- entering the waiting room; "
+		console.print("\r\n\1h\1gGame created.\1n Entering the waiting room; "
 		    + "others \1hJ\1noin a multi-player game.\r\n");
 		sd_send_pages(page_targets, mode);
 	}
 
-	// The creator is the controller, so its -deathmatch / -altdeath sets the match
-	// type; co-op needs no flag (Doom's default). Joiners get the mode from the server.
-	var extra = ["-players", String(n)];
+	// The creator is the controller, so its -deathmatch / -altdeath AND -skill set
+	// the match type/difficulty; co-op needs no mode flag (Doom's default). Joiners
+	// get the mode and skill from the server (controller's connect data).
+	var extra = ["-players", String(n), "-skill", String(skill)];
 	if (mode == "deathmatch")
 		extra.push("-deathmatch");
 	else if (mode == "altdeath")
 		extra.push("-altdeath");
-	sd_play("127.0.0.1:" + port, extra, sd_wadset_args(cfg, ws));
+	sd_play(sd_creator_connect_host() + ":" + port, extra, sd_wadset_args(cfg, ws));
 }
 
 // Browse the registry and join a game on this system. The joiner inherits the
@@ -407,7 +501,7 @@ function sd_browse()
 
 	// Vanilla Doom only accepts joins before the game starts.
 	if (sel.status != "lobby") {
-		console.print("\r\n\1h\1rThat game is already in progress -- you can't join it.\1n\r\n");
+		console.print("\r\n\1h\1rThat game is already in progress; you can't join it.\1n\r\n");
 		console.pause();
 		return;
 	}
@@ -416,7 +510,7 @@ function sd_browse()
 	var ws = sd_find_wadset(cfg, sel.wadset);
 	if (!ws) {
 		console.print("\r\n\1h\1rThis system has no WAD set '" + sel.wadset
-		    + "' -- can't join.\1n\r\n");
+		    + "'; can't join.\1n\r\n");
 		console.pause();
 		return;
 	}

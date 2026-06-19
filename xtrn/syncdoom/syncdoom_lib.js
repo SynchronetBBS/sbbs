@@ -56,6 +56,9 @@ function sd_load_config()
 	if (cfg.net.max_players === undefined) cfg.net.max_players = 4;
 	if (cfg.net.idle_timeout === undefined) cfg.net.idle_timeout = 60;
 	if (cfg.net.stale       === undefined) cfg.net.stale       = 30;
+	// Default skill (1-5: ITYTD/HNTR/HMP/UV/NM) the Create flow's prompt starts on;
+	// a [wadset:*] skill overrides it per set. 3 = Hurt Me Plenty (Doom's default).
+	if (cfg.net.skill       === undefined) cfg.net.skill       = 3;
 
 	var i;
 	for (i = 0; i < cfg.wadsets.length; i++) {
@@ -70,7 +73,7 @@ function sd_load_config()
 		ws.present = sd_wadset_files_present(cfg, ws);
 		if (!ws.present && ws.enabled !== false && ws.enabled !== "false") {
 			log(LOG_WARNING, "syncdoom: WAD set '" + ws.id + "' (" + ws.name
-			    + ") hidden -- missing file(s) in " + sd_wad_dir(cfg));
+			    + ") hidden: missing file(s) in " + sd_wad_dir(cfg));
 		}
 	}
 	return cfg;

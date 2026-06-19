@@ -113,9 +113,15 @@ grace period after its last byte. These tune that synthesis:
 
 | Option | Meaning |
 |--------|---------|
-| `-kpsmooth <ms>` | Repeat grace (held key). |
-| `-kpdelay <ms>` | Initial-tap grace. |
-| `-kpturn <ms>` | Turn-key tap grace. |
+| `-kpsmooth <ms>` | HOLD grace (held/repeating key). |
+| `-kpdelay <ms>` | TAP grace (fresh press) — the main "slidy" lever. |
+| `-kpturn <ms>` | TURN grace (turn-key tap). |
+
+These three set the *startup* feel (also via `syncdoom.ini [input]`). A player
+can retune them **live in-game** under **Options → Input Feel** (TAP/HOLD/TURN
+sliders); the choice saves per-user (in `-home`) and overrides the ini default,
+while an explicit `-kp*` flag still wins. The feel is per-user because the ideal
+grace depends on the player's OS key-repeat and link latency.
 
 ### WAD selection (passed through to the engine)
 
@@ -138,6 +144,7 @@ environment variable).
 | `-dedicated` | Run as a headless dedicated server (the match's tic relay; no terminal). Reads `-port`. |
 | `-spawnserver [-port <n>] [meta…]` | Daemonize a detached `-dedicated` server and exit, printing `<pid> <port>` on stdout. With no `-port`, a free port is allocated. Extra args are forwarded to the server. |
 | `-port <n>` | UDP port for the dedicated/spawned server. |
+| `-bindaddr <addr>` | Local address the server's UDP socket listens on. Default **`127.0.0.1`** (loopback only — same-host clients). Use `0.0.0.0` for all interfaces, or a specific local IP/hostname, for cross-host play. (The lobby derives this from `[net] bind`, defaulting to `[net] advertise`.) |
 
 Clients join a server with the standard Chocolate Doom `-connect <host>` (passed
 through). `-deathmatch` / `-altdeath` on the *creating* client select the game
@@ -270,6 +277,7 @@ is available in-game with **F1**. Keys:
 | `Tab` | Automap. |
 | `F4` | Cycle the render tier / glyph mode. |
 | `F2` / `F3` | Save / load game (written under `-home`); `F6` / `F9` quicksave / quickload. |
+| `Esc` | Menu. **Options → Input Feel** tunes the movement graces (TAP/HOLD/TURN) live if it feels too slidy or twitchy; saved per-user. |
 
 The movement/action letters shadow their lowercase keys, so **cheat codes and
 save-game names are typed in UPPERCASE** (the shifted form bypasses the binding

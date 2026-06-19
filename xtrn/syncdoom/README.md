@@ -87,6 +87,10 @@ It offers two programs, each prompted, so you can take either or both:
 
 - **`syncdoom.ini`** — all settings, commented in-file: `[video]`/`[input]` are
   read by the C door, `[net]`/`[wads]`/`[wadset:*]` by the lobby.
+- **Multiplayer reach** — out of the box a match server binds loopback
+  (`127.0.0.1`), so play is **same-host only**. For cross-host (multi-machine
+  LAN) play set `[net] advertise` to this host's LAN IP/DNS name (`bind` follows
+  it); see the `[net]` comments and `src/doors/syncdoom/MULTIPLAYER.md`.
 - **`wads/`** — put your IWADs and PWADs here (the directory is set by
   `[wads] dir`). Freedoom (`freedoom1.wad`, `freedoom2.wad`) is free to
   redistribute; the commercial `doom.wad`/`doom2.wad` you must supply yourself.

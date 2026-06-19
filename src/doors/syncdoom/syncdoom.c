@@ -48,6 +48,7 @@
 
 #include "i_system.h"           // I_Error, I_Quit
 #include "i_timer.h"            // I_Sleep
+#include "m_config.h"           // M_SaveDefaults (persist Doom options on exit)
 #include "net_defs.h"           // net_waitdata_t (the waiting room)
 #include "net_client.h"         // net_client_wait_data, NET_CL_*
 #include "net_server.h"         // NET_SV_Run
@@ -584,11 +585,18 @@ static void keyq_push(int pressed, unsigned char key)
 // sustained spin, which is far less noticeable than tap overshoot. Sustained
 // forward/back/strafe movement keeps the long grace (smooth, no start stutter).
 #define ACTIVE_MAX 16
-static uint32_t g_keyup_idle_ms = 150;        // repeat grace (key seen >= 2 times)
-static uint32_t g_grace_fresh   = 500;        // fresh grace (key seen once)
-static uint32_t g_turn_grace    = 180;        // fresh grace for turn keys (tight taps)
+// Non-static: the in-game Options > Input sliders (m_menu.c) tune these live.
+// Source order, lowest-to-highest precedence: built-in -> syncdoom.ini [input]
+// (house default) -> per-user saved prefs (load_input_prefs) -> -kp* CLI flags.
+uint32_t    g_keyup_idle_ms = 150;            // HOLD grace (key seen >= 2 times)
+uint32_t    g_grace_fresh   = 500;            // TAP grace (key seen once)
+uint32_t    g_turn_grace    = 180;            // TURN grace for turn keys (tight taps)
+static int  g_kp_cli_tap    = 0;              // -kpdelay given on CLI (saved prefs won't override)
+static int  g_kp_cli_hold   = 0;              // -kpsmooth given on CLI
+static int  g_kp_cli_turn   = 0;              // -kpturn given on CLI
+static char g_input_pref_path[PATH_MAX] = "";       // per-user override file (in -home); "" = disabled
 static struct { unsigned char key; uint32_t last; int presses; } s_active[ACTIVE_MAX];
-static int      s_active_n = 0;
+static int  s_active_n = 0;
 
 // doom m_menu.c: nonzero while a menu is open (boolean == unsigned int). The input
 // model switches on it. IN A MENU each key byte is a discrete press (down+up) so
@@ -819,8 +827,10 @@ static void pump_input(void)
 // Exit the door (cleanly, via atexit) once the client has dropped.
 static void check_hangup(void)
 {
-	if (g_hangup)
-		exit(0);
+	if (g_hangup) {
+		M_SaveDefaults();        // persist Doom's options (screen size, messages,
+		exit(0);                 // detail...) -- I_AtExit's saver only runs via
+	}                            // I_Quit, which a hangup/time-limit exit skips
 }
 
 // Honor the user's BBS time limit (-t<seconds>, from %T): exit when it's spent.
@@ -830,6 +840,7 @@ static void check_timelimit(void)
 	    (int32_t)(now_ms() - (g_start_ms + g_time_limit_ms)) >= 0) {
 		static const char msg[] = "\x1b[?25h\r\nYour time on the BBS has expired.\r\n";
 		emit_all(msg, sizeof(msg) - 1);
+		M_SaveDefaults();        // persist Doom's options before the timed exit
 		exit(0);
 	}
 }
@@ -948,6 +959,14 @@ static int g_sixel_pref = -1;
 // One-time DA1 (Primary Device Attributes) probe: send ESC[c and look for the
 // sixel capability (parameter "4") in the reply "ESC [ ? <params> c". Bytes are
 // also fed to the input parser; the reply is inert there (ends on 'c', no key).
+//
+// NB: this only matches the xterm-family flag. SyncTERM does NOT set it -- it
+// advertises sixel only via its private CTerm Device Attributes (ESC[<c ->
+// "ESC[<0;...;4;...c", capability 4 = pixel ops; sixel since SyncTERM 1.1). That
+// detection was tried (query ESC[<c, accept cap 4), and SyncTERM 1.1/1.2/1.3 were
+// all confirmed to render sixel poorly at Doom's per-frame full-raster rate -- so
+// we deliberately do NOT probe CTDA here. SyncTERM gets the cached APC path
+// instead (JXL on 1.4+, PPM opt-in); don't re-add CTDA sixel without re-testing.
 static int probe_sixel(void)
 {
 	static const char q[] = "\x1b[c";
@@ -1670,6 +1689,69 @@ static void read_syncdoom_ini(const char *argv0)
 	strListFree(&ini);
 }
 
+// Per-user input-feel persistence. The in-game Options sliders write the three
+// key-up graces here (in -home, beside Doom's default.cfg) so a user's tuning
+// sticks across sessions. The file is named input.ini and holds only these keys,
+// so they live at the root (no [input] heading -- that's only needed in the multi-
+// section syncdoom.ini house-default file). Disabled (no-op) without -home.
+
+// Build g_input_pref_path from -home (once). Safe to call repeatedly.
+static void input_pref_path(void)
+{
+	size_t n;
+
+	if (g_input_pref_path[0] != '\0' || g_home[0] == '\0')
+		return;
+	n = strlen(g_home);
+	snprintf(g_input_pref_path, sizeof(g_input_pref_path), "%s%sinput.ini",
+	         g_home, (n > 0 && (g_home[n - 1] == '/' || g_home[n - 1] == '\\')) ? "" : "/");
+}
+
+// Save the current graces (called by the menu sliders after each change).
+void sd_save_input_prefs(void)
+{
+	str_list_t list;
+	FILE *     f;
+
+	input_pref_path();
+	if (g_input_pref_path[0] == '\0')
+		return;                          // no -home: nowhere to persist
+	list = strListInit();
+	iniSetInteger(&list, ROOT_SECTION, "kpdelay",  (int)g_grace_fresh,   NULL);
+	iniSetInteger(&list, ROOT_SECTION, "kpsmooth", (int)g_keyup_idle_ms, NULL);
+	iniSetInteger(&list, ROOT_SECTION, "kpturn",   (int)g_turn_grace,    NULL);
+	f = fopen(g_input_pref_path, "w");
+	if (f != NULL) {
+		iniWriteFile(f, list);
+		fclose(f);
+	}
+	strListFree(&list);
+}
+
+// Apply saved per-user graces over the ini/built-in defaults. A grace that was
+// pinned by a -kp* CLI flag is left alone (CLI wins). Call after the CLI scan.
+static void load_input_prefs(void)
+{
+	FILE *     f;
+	str_list_t ini;
+
+	input_pref_path();                   // also sets the path so a later save works
+	if (g_input_pref_path[0] == '\0')
+		return;
+	f = fopen(g_input_pref_path, "r");
+	if (f == NULL)
+		return;                          // none saved yet -> keep ini/built-in
+	ini = iniReadFile(f);
+	fclose(f);
+	if (!g_kp_cli_tap)
+		g_grace_fresh   = (uint32_t)iniGetInteger(ini, ROOT_SECTION, "kpdelay",  (int)g_grace_fresh);
+	if (!g_kp_cli_hold)
+		g_keyup_idle_ms = (uint32_t)iniGetInteger(ini, ROOT_SECTION, "kpsmooth", (int)g_keyup_idle_ms);
+	if (!g_kp_cli_turn)
+		g_turn_grace    = (uint32_t)iniGetInteger(ini, ROOT_SECTION, "kpturn",   (int)g_turn_grace);
+	strListFree(&ini);
+}
+
 // Compute the emitted bitmap dimensions (s_pxW x s_pxH) from the terminal's
 // cell-pixel viewport and the scale config. Doom's frame is 8:5 (640:400); we fit
 // the largest 8:5 rectangle into the viewport, capped at g_scale_max width.
@@ -1828,6 +1910,16 @@ void sd_waitroom_run(void)
 	boolean launched = false;
 	boolean self_started = false;   // true if THIS player pressed Start (so don't beep them)
 
+	// Drain keystrokes buffered before we got here -- type-ahead from the lobby
+	// menus that the BBS console didn't consume. Otherwise a stale Enter/'S' left
+	// in the socket auto-starts the match the instant the room opens, before the
+	// player can read it or press Q to cancel.
+	{
+		unsigned char drain[64];
+		while (conn_read(drain, sizeof(drain)) > 0)
+			;
+	}
+
 	while (net_waiting_for_launch) {
 		unsigned char kb[8];
 		ssize_t       n;
@@ -1862,14 +1954,22 @@ void sd_waitroom_run(void)
 		if (n == 0) {
 			I_Quit();                          // hangup
 		} else if (n > 0) {
-			unsigned char c = kb[0];
-			if (c == 'q' || c == 'Q') {
-				NET_CL_Disconnect();
-				emit_all("\x1b[2J\x1b[H", 7);
-				I_Quit();                      // back to the lobby/BBS
-			} else if (!launched && net_client_received_wait_data
-			           && net_client_wait_data.is_controller
-			           && (c == 's' || c == 'S' || c == '\r')) {
+			boolean want_start = false;
+			ssize_t j;
+			// Scan the whole read: Q (cancel) wins over a Start in the same burst,
+			// so a buffered Enter can't override the player's deliberate cancel.
+			for (j = 0; j < n; j++) {
+				unsigned char c = kb[j];
+				if (c == 'q' || c == 'Q') {
+					NET_CL_Disconnect();
+					emit_all("\x1b[2J\x1b[H", 7);
+					I_Quit();              // back to the lobby/BBS
+				}
+				if (c == 's' || c == 'S' || c == '\r')
+					want_start = true;
+			}
+			if (want_start && !launched && net_client_received_wait_data
+			    && net_client_wait_data.is_controller) {
 				NET_CL_LaunchGame();
 				launched = true;
 				self_started = true;       // this player started it -- they're watching
@@ -1896,8 +1996,8 @@ void sd_waitroom_run(void)
 
 int main(int argc, char **argv)
 {
-	char **child;
-	int    cn = 0, i;
+	char ** child;
+	int     cn = 0, i;
 
 #ifdef _WIN32
 	WSADATA wsadata;
@@ -1999,6 +2099,10 @@ int main(int argc, char **argv)
 			}
 			else
 				g_sixel_pref = -1;    // auto
+		} else if (strcmp(argv[i], "-skill") == 0) {        // before -s (prefix-matched): a
+			if (i + 1 < argc && argv[i + 1][0] != '-')      // doomgeneric flag the parent
+				i++;                                         // ignores -- consume its value so
+			                                                 // "-skill" isn't misread as "-s kill"
 		} else if (strncmp(argv[i], "-s", 2) == 0) {
 			const char *v = argv[i] + 2;
 			if (*v == '\0' && i + 1 < argc)
@@ -2042,16 +2146,22 @@ int main(int argc, char **argv)
 				g_time_limit_ms = (uint32_t)strtoul(v, NULL, 10) * 1000u;
 		} else if (strcmp(argv[i], "-kpturn") == 0) {       // turn-key fresh grace (tight taps)
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
-			if (*v)
+			if (*v) {
 				g_turn_grace = (uint32_t)strtoul(v, NULL, 10);
+				g_kp_cli_turn = 1;
+			}
 		} else if (strcmp(argv[i], "-kpdelay") == 0) {
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
-			if (*v)
+			if (*v) {
 				g_grace_fresh = (uint32_t)strtoul(v, NULL, 10);
+				g_kp_cli_tap = 1;
+			}
 		} else if (strcmp(argv[i], "-kpsmooth") == 0) {
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
-			if (*v)
+			if (*v) {
 				g_keyup_idle_ms = (uint32_t)strtoul(v, NULL, 10);
+				g_kp_cli_hold = 1;
+			}
 		} else if (strcmp(argv[i], "-home") == 0) {
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if (*v) { strncpy(g_home, v, sizeof(g_home) - 1); g_home[sizeof(g_home) - 1] = '\0'; }
@@ -2066,6 +2176,9 @@ int main(int argc, char **argv)
 #endif
 		}
 	}
+	// Per-user input-feel overrides (saved by the in-game Options > Input sliders)
+	// layer over the [input] ini defaults now that -home and any -kp* flags are known.
+	load_input_prefs();
 	// Hand the BBS handle to the net layer. It must be non-NULL: the net layer
 	// sends it at connect time (NET_CL_SendSYN) and would strlen(NULL)-crash
 	// otherwise, and its own default doesn't run before then. The lobby always
@@ -2112,6 +2225,12 @@ int main(int argc, char **argv)
 		if (strncmp(argv[i], "-term", 5) == 0) {           // prefix (matches pre-scan); may be glued
 			if (argv[i][5] == '\0')
 				i++;
+			continue;
+		}
+		if (strcmp(argv[i], "-skill") == 0) {              // a real doomgeneric flag: pass it
+			child[cn++] = argv[i];                         // (and its value) through -- must be
+			if (i + 1 < argc && argv[i + 1][0] != '-')     // before the "-s" prefix-skip below,
+				child[cn++] = argv[++i];                   // which would otherwise eat "-skill"
 			continue;
 		}
 		if (strncmp(argv[i], "-l", 2) == 0 || strncmp(argv[i], "-s", 2) == 0 ||

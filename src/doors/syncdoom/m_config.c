@@ -1608,7 +1608,9 @@ static const int scantokey[128] =
 
 static void SaveDefaultCollection(default_collection_t *collection)
 {
-#if ORIGCODE
+    // syncdoom: doomgeneric #if-ORIGCODE'd out config persistence; re-enabled so
+    // the door's per-user options (screen size, messages, detail...) save to
+    // -home. Deps (scantokey, struct fields) are all live & compiled.
     default_t *defaults;
     int i, v;
     FILE *f;
@@ -1626,6 +1628,15 @@ static void SaveDefaultCollection(default_collection_t *collection)
         // Ignore unbound variables
 
         if (!defaults[i].bound)
+        {
+            continue;
+        }
+
+        // syncdoom: never persist key bindings. Keys aren't user-rebindable here
+        // (map_ascii is a fixed terminal->Doom mapping), and the door's custom
+        // keycodes (>=128, e.g. KEY_STRAFE_L=0xa0) don't survive the config file's
+        // scancode round-trip -- loading them back corrupts strafe/fire/use to 0.
+        if (defaults[i].type == DEFAULT_KEY)
         {
             continue;
         }
@@ -1708,7 +1719,6 @@ static void SaveDefaultCollection(default_collection_t *collection)
     }
 
     fclose (f);
-#endif
 }
 
 // Parses integer values in the configuration file
@@ -1770,7 +1780,6 @@ static void SetVariable(default_t *def, char *value)
 
 static void LoadDefaultCollection(default_collection_t *collection)
 {
-#if ORIGCODE
     FILE *f;
     default_t *def;
     char defname[80];
@@ -1808,6 +1817,14 @@ static void LoadDefaultCollection(default_collection_t *collection)
             continue;
         }
 
+        // syncdoom: ignore any key bindings (see SaveDefaultCollection). We never
+        // write them now, but an existing config may still have key_* lines whose
+        // values would be mangled to 0 -- skip them so keys keep their defaults.
+        if (def->type == DEFAULT_KEY)
+        {
+            continue;
+        }
+
         // Strip off trailing non-printable characters (\r characters
         // from DOS text files)
 
@@ -1828,7 +1845,6 @@ static void LoadDefaultCollection(default_collection_t *collection)
     }
 
     fclose (f);
-#endif
 }
 
 // Set the default filenames to use for configuration files.

@@ -7,12 +7,13 @@ configuration sections have been reconciled with what actually shipped.
 
 > **Config source of truth:** the live, documented key list is
 > `xtrn/syncdoom/syncdoom.example.ini` (installed as `syncdoom.ini` beside the door).
-> Shipped `[net]` keys: `advertise`, `port_low`/`port_high`, `max_games`, `max_players`
-> (cap **4** = Doom's `MAXPLAYERS`), `idle_timeout`, `stale`, `allow_external`. Section
-> name separators are **colons** — `[wadset:doom2]`, `[net:<hostname>]` — not dots.
+> Shipped `[net]` keys: `advertise`, `bind`, `port_low`/`port_high`, `max_games`,
+> `max_players` (cap **4** = Doom's `MAXPLAYERS`), `idle_timeout`, `stale`,
+> `allow_external`. Section name separators are **colons** — `[wadset:doom2]`,
+> `[net:<hostname>]` — not dots.
 > **Deferred / not built:** inter-BBS federation (trusted-peer public games —
 > `public_advertise`, `federate`, `federation_secret`), `net_query` LAN-broadcast
-> `discovery`, per-NIC `bind` pinning, and LAN-address auto-detection.
+> `discovery`, and LAN-address auto-detection.
 
 ## Foundation — the netcode is half-present
 
@@ -188,17 +189,26 @@ different machines**, so `127.0.0.1` is wrong. The registry must therefore carry
 
 Address handling (as built):
 
-- **Server bind** — the dedicated server binds the UDP port on **all interfaces**
-  (`INADDR_ANY`), so both same-host (loopback) and cross-host (LAN) clients can reach it.
-  The sysop must allow the UDP port range across the LAN firewall. (A sysop-configurable
-  `bind` address is **deferred** — the server always binds all interfaces today.)
+- **Server bind** — the dedicated server binds the UDP port on the address from
+  `[net] bind`, which **defaults to `[net] advertise`** when unset (listen where you tell
+  peers to dial). With **both blank** it binds **`127.0.0.1`** — loopback only, so a fresh
+  server is reachable from same-host clients and nothing else (the safe default; exposure is
+  opt-in). Set `bind = 0.0.0.0` to listen on **all interfaces**, or a specific local IP to
+  pin one NIC — needed when `advertise` is a public/NAT name this host can't bind directly.
+  For cross-host play the sysop must also allow the UDP port range across the LAN firewall.
+  **The game protocol has no authentication:** once the server listens on a routable address,
+  any host that reaches the UDP port and speaks the right Doom version/WAD can join — gate it
+  at the firewall (and see *Inter-BBS federation* for the planned allowlist).
 - **Advertised `addr`** — what joiners connect to, written into the registry entry. The
   value comes straight from `[net] advertise` (optionally overridden per host via
   `[net:<hostname>]`, below). **Blank → `127.0.0.1`**, i.e. same-host play only; set it to
   this host's LAN IP or DNS name for cross-host play. There is **no auto-detection** — a
   shared install spanning hosts must set `advertise` per host (an unset value can't be
-  guessed). The match creator connects to its own server over `127.0.0.1`; Browse-joiners
-  dial the registry `addr`.
+  guessed). The match creator shares the server's host, so it dials the server's **bind**
+  address — its own local IP when `bind`/`advertise` is set, or `127.0.0.1` when the bind is
+  unset or a wildcard (`0.0.0.0`). It can't blindly use `127.0.0.1`: a socket bound to a
+  specific interface IP doesn't receive loopback datagrams. Browse-joiners dial the registry
+  `addr`.
 
 This is purely a config/address concern — the lockstep design and the file registry are
 unchanged; only "where do I connect" gains a real address.
@@ -297,6 +307,7 @@ port allocation, discovery, and per-match limits.
 | Key | Meaning |
 |-----|---------|
 | `advertise` | Address joiners on **other** hosts dial, written into the registry `addr`. **Blank → `127.0.0.1`** (same-host play only). Set to this host's LAN IP / DNS name for cross-host play; override per host with `[net:<hostname>]`. No auto-detection. |
+| `bind` | Local address the dedicated server's UDP socket **listens** on (vs. `advertise`, which is only what peers dial). **Blank inherits `advertise`** — usually the only net key you need. Both blank → `127.0.0.1` (loopback only; exposure is opt-in). Set `0.0.0.0` for all interfaces, or a specific local IP when `advertise` is a public/NAT name this host can't bind. No auth — firewall a routable bind. |
 | `port_low` / `port_high` | UDP port range for per-match dedicated servers (free-port scan within it; one port per live match). Default `20000` / `20063`. |
 | `max_games` | Cap on concurrent matches on this system (the lobby refuses Create past it). Default `8`. |
 | `max_players` | Per-match player ceiling. **Hard cap 4** — Doom's `MAXPLAYERS` (4 player slots/colors/starts); the lobby clamps to 4 regardless. A set's/creator's `maxplayers` can't exceed it. Default `4`. |
@@ -304,16 +315,16 @@ port allocation, discovery, and per-match limits.
 | `stale` | Heartbeat age after which a game entry is pruned from the browse list (its server presumed dead). Default `30`. The server refreshes its `heartbeat` every ~3 s (fixed, not configurable). |
 | `allow_external` | Show the lobby's "join an external server by `host:port`" option (manual cross-system join). Default `false`. |
 
-**Deferred (not built):** `bind` (the server always binds all interfaces), `discovery` /
-`net_query` LAN-broadcast game discovery (discovery is registry-only), and the inter-BBS
-federation keys `public_advertise` / `federate` / `federation_secret` (see *Inter-BBS
-federation*).
+**Deferred (not built):** `discovery` / `net_query` LAN-broadcast game discovery (discovery
+is registry-only), and the inter-BBS federation keys `public_advertise` / `federate` /
+`federation_secret` (see *Inter-BBS federation*).
 
 #### Example
 
 ```ini
 [net]
 advertise    =                ; blank = 127.0.0.1 (same-host only); set LAN IP/DNS for cross-host
+bind         =                ; blank inherits advertise; 0.0.0.0 = all interfaces; specific IP pins a NIC
 port_low     = 20000          ; per-match dedicated-server UDP port range
 port_high    = 20063
 max_games    = 8              ; concurrent matches on this system
@@ -331,18 +342,19 @@ read the same ini beside them). Most `[net]` keys are BBS-wide policy, so sharin
 correct: `port_low`/`port_high`, `max_games`, `max_players`, `stale`, `idle_timeout`, and
 `allow_external`.
 
-The one inherently **per-host** value is `advertise`: a server on host A must advertise A's
-address, one on host B must advertise B's. A single shared value can't express that, so the
-**JS lobby** reads `[net]` then overlays a **hostname-keyed sub-section** `[net:<hostname>]`,
-where `<hostname>` is Synchronet's `system.local_host_name` for the host the lobby runs on.
-Keys in the matching sub-section win over the base `[net]`, keeping one shared file that
-still carries per-host values:
+The inherently **per-host** value is `advertise` (and, if pinned, `bind`): a server on host A
+must advertise A's address, one on host B must advertise B's. A single shared value can't
+express that, so the **JS lobby** reads `[net]` then overlays a **hostname-keyed sub-section**
+`[net:<hostname>]`, where `<hostname>` is Synchronet's `system.local_host_name` for the host
+the lobby runs on. Keys in the matching sub-section win over the base `[net]`, keeping one
+shared file that still carries per-host values. Because `bind` inherits `advertise`, a
+LAN install usually only needs the per-host `advertise`:
 
 ```ini
 [net]
 advertise =                 ; blank = 127.0.0.1 (same-host only)
 
-[net:bbs-telnet]            ; this host's LAN-facing address
+[net:bbs-telnet]            ; this host's LAN-facing address (bind inherits it)
 advertise = 10.0.0.6
 [net:bbs-web]               ; a second host sharing the install
 advertise = 10.0.0.7
