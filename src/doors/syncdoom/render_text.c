@@ -209,16 +209,6 @@ static void buffer_append_cstr(const char* bytes) {
     buffer_append(bytes, strlen(bytes));
 }
 
-static size_t buffer_append_format(const char* format, ...) {
-    char local[256];
-    va_list args;
-    va_start(args, format);
-    size_t bytes = vsnprintf(local, sizeof(local), format, args);
-    va_end(args);
-    buffer_append(local, bytes);
-    return bytes;
-}
-
 static void buffer_append_pad(size_t actual, size_t desired) {
     while (actual++ < desired)
         buffer_append(" ", 1);
@@ -427,35 +417,72 @@ static int color_8bit(int red, int green, int blue) {
             232 + gray;                  // grayscale
 }
 
-// Outputs a background color.
+// --- SGR change-detection cache ---------------------------------------------
+// A terminal retains the last colors it was given, so re-sending an identical
+// SGR escape for every cell is pure wasted bandwidth -- expensive over a BBS
+// link. We remember the fg and bg actually emitted and skip any component that
+// hasn't changed (in a flat region, that means emitting *no* escape at all --
+// just the glyph). The keys are reset to -1 ("unknown") wherever we return the
+// terminal to its default colors: each \033[0m (output_newline) and the top of
+// every frame (the prior frame ends on a \033[0m, so colors are default there).
+static long rt_last_fg = -1;
+static long rt_last_bg = -1;
+
+static void rt_reset_color_cache(void) { rt_last_fg = -1; rt_last_bg = -1; }
+
+// Writes the SGR parameter list (no leading "\033[", no trailing 'm') that
+// selects red,green,blue as a foreground (is_bg=false) or background
+// (is_bg=true) color in the active color mode, and returns an integer key that
+// uniquely identifies it for change detection. 'out' needs room for ~18 bytes.
+static long rt_color_params(char *out, int red, int green, int blue, bool is_bg) {
+    switch (cli_colors) {
+        case cli_colors_8bit: {
+            int code = color_8bit(red, green, blue);
+            char *p = out;
+            *p++ = is_bg ? '4' : '3';
+            p = mempcpy(p, "8;5;", 4);
+            stpcpy(p, u8_to_str[code]);
+            return code;
+        }
+        case cli_colors_4bit:
+        case cli_colors_3bit: {
+            int code = (cli_colors == cli_colors_4bit)
+                     ? color_4bit(red, green, blue)
+                     : color_3bit(red, green, blue);
+            int sgr = is_bg ? code + 10 : code;
+            strcpy(out, u8_to_str[sgr]);
+            return sgr;
+        }
+        case cli_colors_24bit:
+        default: {
+            int r = red & 0xff, g = green & 0xff, b = blue & 0xff;
+            char *p = out;
+            p = mempcpy(p, is_bg ? "48;2;" : "38;2;", 5);
+            p = stpcpy(p, u8_to_str[r]); *p++ = ';';
+            p = stpcpy(p, u8_to_str[g]); *p++ = ';';
+            p = stpcpy(p, u8_to_str[b]); *p   = '\0';
+            return ((long)r << 16) | (g << 8) | b;
+        }
+    }
+}
+
+// Outputs a background color (skipped if unchanged since the last emit).
 static void output_bg_color(int x, int y, int red, int green, int blue) {
     if (noise_enabled) {
         uint32_t noise_color = NOISE_SAMPLE(x, y);
         red += (noise_color >> 16 & 0xff) - 128;
         green += ((noise_color >> 8) & 0xff) - 128;
         blue += ((noise_color) & 0xff) - 128;
-
-        /*
-        red = ((noise_color >> 16) & 0xff);
-        green = ((noise_color >> 8) & 0xff);
-        blue = ((noise_color) & 0xff);
-        */
     }
 
-    switch (cli_colors) {
-        case cli_colors_24bit:
-            buffer_append_format("\033[48;2;%u;%u;%um", red, green, blue);
-            return;
-        case cli_colors_8bit:
-            buffer_append_format("\033[48;5;%um", color_8bit(red, green, blue));
-            return;
-        case cli_colors_4bit:
-            buffer_append_format("\033[%um", 10 + color_4bit(red, green, blue));
-            return;
-        case cli_colors_3bit:
-            buffer_append_format("\033[%um", 10 + color_3bit(red, green, blue));
-            return;
-    }
+    char bp[24];
+    long key = rt_color_params(bp, red, green, blue, true);
+    if (key == rt_last_bg)
+        return;                       // unchanged -> emit nothing
+    rt_last_bg = key;
+    buffer_append_literal("\033[");
+    buffer_append_cstr(bp);
+    buffer_append_literal("m");
 }
 
 // Outputs both background and foreground colors.
@@ -487,51 +514,26 @@ static void output_colors(
         */
     }
 
-    #define INT_NAME(x) x  // TODO remove INT_NAME()
+    char fp[24], bp[24];
+    long fk = rt_color_params(fp, fg_red, fg_green, fg_blue, false);
+    long bk = rt_color_params(bp, bg_red, bg_green, bg_blue, true);
+    bool need_fg = (fk != rt_last_fg);
+    bool need_bg = (bk != rt_last_bg);
+    if (!need_fg && !need_bg)
+        return;                       // both unchanged -> emit nothing
+    rt_last_fg = fk;
+    rt_last_bg = bk;
 
-    char buf[256];
-
-    switch (cli_colors) {
-        case cli_colors_24bit: {
-            char* p = mempcpy(buf, "\033[38;2;", sizeof("\033[38;2;") - 1);
-            p = stpcpy(p, u8_to_str[fg_red]);
-            *p++ = ';';
-            p = stpcpy(p, u8_to_str[fg_green]);
-            *p++ = ';';
-            p = stpcpy(p, u8_to_str[fg_blue]);
-            p = mempcpy(p, "m\033[48;2;", sizeof("m\033[48;2;") - 1);
-            p = stpcpy(p, u8_to_str[bg_red]);
-            *p++ = ';';
-            p = stpcpy(p, u8_to_str[bg_green]);
-            *p++ = ';';
-            p = stpcpy(p, u8_to_str[bg_blue]);
-            *p++ = 'm';
-            buffer_append(buf, p - buf);
-
-            // TODO onramp printf() is too slow
-            /*
-            buffer_append_format("\033[38;2;%u;%u;%um\033[48;2;%u;%u;%um",
-                    INT_NAME(fg_red), INT_NAME(fg_green), INT_NAME(fg_blue),
-                    INT_NAME(bg_red), INT_NAME(bg_green), INT_NAME(bg_blue));
-                    */
-            return;
-        }
-        case cli_colors_8bit:
-            buffer_append_format("\033[38;5;%um\033[48;5;%um",
-                    color_8bit(INT_NAME(fg_red), INT_NAME(fg_green), INT_NAME(fg_blue)),
-                    color_8bit(INT_NAME(bg_red), INT_NAME(bg_green), INT_NAME(bg_blue)));
-            return;
-        case cli_colors_4bit:
-            buffer_append_format("\033[%u;%um",
-                    color_4bit(INT_NAME(fg_red), INT_NAME(fg_green), INT_NAME(fg_blue)),
-                    color_4bit(INT_NAME(bg_red), INT_NAME(bg_green), INT_NAME(bg_blue)) + 10);
-            return;
-        case cli_colors_3bit:
-            buffer_append_format("\033[%u;%um",
-                    color_3bit(INT_NAME(fg_red), INT_NAME(fg_green), INT_NAME(fg_blue)),
-                    color_3bit(INT_NAME(bg_red), INT_NAME(bg_green), INT_NAME(bg_blue)) + 10);
-            return;
-    }
+    // One CSI carrying only the component(s) that changed: "\033[<fg>;<bg>m",
+    // "\033[<fg>m", or "\033[<bg>m".
+    buffer_append_literal("\033[");
+    if (need_fg)
+        buffer_append_cstr(fp);
+    if (need_fg && need_bg)
+        buffer_append_literal(";");
+    if (need_bg)
+        buffer_append_cstr(bp);
+    buffer_append_literal("m");
 }
 
 static void output_newline(void) {
@@ -539,6 +541,7 @@ static void output_newline(void) {
     // so we must return to column 1 ourselves (with auto-wrap off, a bare LF would
     // leave the cursor at the right margin and all next-row cells clamp there).
     buffer_append_literal("\033[0m\r\n");
+    rt_reset_color_cache();           // \033[0m returned the terminal to default
 }
 
 
@@ -658,6 +661,7 @@ const char *rt_render_frame(size_t *len)
 
     buffer_count = 0;
     buffer_append_literal("\033[H");   // home; every cell is overwritten each frame
+    rt_reset_color_cache();            // prior frame ended on \033[0m -> default colors
     switch (cli_mode) {
         case cli_mode_space:    draw_space();    break;
         case cli_mode_quadrant: draw_quadrant(); break;
