@@ -37,6 +37,25 @@ is `ctrl/xtrn.ini`; legacy `ctrl/xtrn.cnf`. There is no `xtrn.dab`.)
 - `[copy:]` / `[ini:]` source paths are relative to the `.ini`'s directory;
   `[ini:]` `values` are `eval()`d, so quote string literals.
 
+### Shipping a default config: `<name>.example.ini` → `[copy:]`
+
+Version-control the **template**, never the live config a sysop edits. Track
+`<name>.example.ini` and have the installer seed the live file from it:
+
+```ini
+[copy:<name>.example.ini]
+dest = <name>.ini
+```
+
+`[copy:]` does not overwrite an existing `dest` without confirmation (it prompts,
+and aborts under `--auto`), so a sysop's edited `<name>.ini` survives a
+re-install. Leave the live `<name>.ini` **untracked** — don't `git add` it and
+don't `.gitignore` it (the other `*.example.ini` doors all follow this). Keep the
+config in **one place**: a second copy elsewhere in the tree (e.g. a sample
+beside the C source under `src/`) silently drifts out of sync — a single combined
+`xtrn/<dir>/<name>.example.ini` read by both the door binary and its JS lobby is
+better than two half-configs. Point any docs at the one template.
+
 Minimal door example:
 
 ```ini

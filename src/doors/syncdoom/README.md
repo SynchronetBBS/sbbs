@@ -280,10 +280,11 @@ and is folded back to lowercase for matching).
 ## Configuration file
 
 An optional `syncdoom.ini`, read from the directory of the executable, provides
-defaults for the video and input options above (and host-specific networking and
-WAD-set definitions used by the JavaScript lobby). All keys are optional; an
-absent key keeps the auto-detected value or built-in default. See the bundled
-`syncdoom.ini` for the documented key list.
+defaults for the video and input options above (and the networking and WAD-set
+definitions used by the JavaScript lobby). All keys are optional; an absent key
+keeps the auto-detected value or built-in default. The documented template ships
+with the lobby as `xtrn/syncdoom/syncdoom.example.ini` and is copied to
+`syncdoom.ini` on install; see it for the full key list.
 
 ---
 
