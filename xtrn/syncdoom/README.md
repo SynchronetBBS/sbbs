@@ -63,26 +63,33 @@ at configure time.
   `build.bat` helper, or CMake directly; the JPEG-XL graphics tier uses
   libjxl via vcpkg. See `src/doors/syncdoom/COMPILING.md` for the steps.
 
-## Installing into Synchronet (SCFG)
+## Installing into Synchronet
 
-Register the door with the bundled installer (`install-xtrn.ini`):
+SyncDOOM ships an `install-xtrn.ini`, so the bundled installer registers it for
+you — no manual SCFG entry needed. Launch the installer any of these ways; the
+menu-driven ones discover SyncDOOM automatically (you just pick it from the
+list), while the command line takes the path:
 
-```
-jsexec install-xtrn ../xtrn/syncdoom
-```
+- **From the BBS, as a sysop** — run **Auto-install New External Programs** (the
+  `xtrn-setup` module), included by default in the **Operator** external-programs
+  section. Find **SyncDOOM** in the list and install it.
+- **SBBSCTRL (Windows)** — **File → Run → Install External Programs**.
+- **Command line** — `jsexec install-xtrn ../xtrn/syncdoom`.
+- **Terminal sysop command** — `;exec ?install-xtrn ../xtrn/syncdoom`.
 
-or, from the terminal as a sysop:
-
-```
-;exec ?install-xtrn ../xtrn/syncdoom
-```
-
-It offers two programs, each prompted, so you can take either or both:
+However it's launched, the installer offers two programs, each prompted, so you
+can take either or both:
 
 - **SyncDOOM** — the lobby (browse/create co-op & deathmatch games, single
   player, and the controls help). Recommended.
 - **SyncDOOM (single-player)** — a direct single-player launch via DOOR32.SYS,
   with no lobby.
+
+It also offers (prompted) to **download the free Freedoom WAD set** (Phase 1 + 2
+and FreeDM, ~35 MB) into the `wads/` dir so the door is playable immediately —
+see `getwads.js`. It's skipped if those WADs are already present, and is
+optional (decline it if you'll supply your own WADs or have no outbound
+internet). You can also run it later by hand: `jsexec ../xtrn/syncdoom/getwads.js`.
 
 ## Configuration & data
 
