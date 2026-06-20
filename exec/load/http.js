@@ -19,6 +19,8 @@ function HTTPRequest(username,password,extra_headers,recv_timeout)
 	this.base = undefined;
 	this.url = undefined;
 	this.body = undefined;
+	this.output_file = undefined;	/* set to a File (opened "wb") to stream the response body to disk instead of buffering it in this.body */
+	this.body_length = 0;		/* bytes received for the last response body (to string or file) */
 
 	this.extra_headers = extra_headers;
 	this.username=username;
@@ -184,10 +186,27 @@ HTTPRequest.prototype.ReadHeaders=function() {
 
 HTTPRequest.prototype.ReadBody=function() {
 	var ch;
-	var lastlen=0;
 	var len=this.contentlength;
 	if(len==undefined)
 		len=1024;
+
+	/* Stream the body straight to a file when output_file is set, instead of
+	 * buffering the whole download in a string (costly/risky for large files
+	 * under SpiderMonkey 1.8.5). Only for a final success (2xx) response: a
+	 * redirect (3xx) body is discarded so Get() can re-request, and a 4xx/5xx
+	 * error body stays in this.body for the caller to inspect. Reads in bounded
+	 * chunks so a huge Content-Length doesn't size a single recv(). */
+	if(this.output_file != undefined
+		&& this.response_code >= 200 && this.response_code < 300) {
+		this.body = undefined;
+		this.body_length = 0;
+		while((ch=this.sock.recv(16384, this.recv_timeout))!=null && ch != '') {
+			if(!this.output_file.write(ch))
+				throw new Error("Error writing to file: " + this.output_file.name);
+			this.body_length += ch.length;
+		}
+		return;
+	}
 
 	this.body='';
 	while((ch=this.sock.recv(len, this.recv_timeout))!=null && ch != '') {
@@ -197,6 +216,7 @@ HTTPRequest.prototype.ReadBody=function() {
 			len=1024;
 		js.flatten_string(this.body);
 	}
+	this.body_length = this.body.length;
 };
 
 HTTPRequest.prototype.ReadResponse=function() {
@@ -230,6 +250,27 @@ HTTPRequest.prototype.Get=function(url, referer, base) {
 		return this.Get(this.response_headers_parsed.location[0], this.url.url, this.url.url);
 	}
 	return(this.body);
+};
+
+/* Download a URL straight to a file, streaming the body to disk rather than
+ * buffering it in memory -- suitable for large files. Opens `filename` in binary
+ * mode, follows redirects (set .follow_redirects first if needed), and closes the
+ * file before returning. Returns the number of body bytes written to the file.
+ * The HTTP status is in .response_code -- check it for 200: a non-2xx response
+ * writes no file data and leaves the (error/redirect) body in .body. Throws on a
+ * socket or file error. */
+HTTPRequest.prototype.Download=function(url, filename, referer, base) {
+	var f = new File(filename);
+	if(!f.open("wb"))
+		throw new Error("Unable to open file for writing: " + filename);
+	this.output_file = f;
+	try {
+		this.Get(url, referer, base);
+	} finally {
+		f.close();
+		this.output_file = undefined;
+	}
+	return (this.response_code >= 200 && this.response_code < 300) ? this.body_length : 0;
 };
 
 HTTPRequest.prototype.Post=function(url, data, referer, base, content_type) {
