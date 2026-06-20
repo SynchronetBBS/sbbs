@@ -206,6 +206,22 @@ void rt_set_dither(int pref)
     init_noise();
 }
 
+// Nonzero if the current color depth dithers at all (256/8-color) -- zero for
+// 16-color and truecolor. Lets the door ignore the Ctrl-N toggle where it'd
+// do nothing.
+int rt_dither_applicable(void)
+{
+    switch (cli_colors) {
+        case cli_colors_3bit:
+        case cli_colors_8bit:
+        case cli_colors_dark:
+        case cli_colors_light:
+            return 1;
+        default:                 // cli_colors_4bit, cli_colors_24bit
+            return 0;
+    }
+}
+
 
 
 /*

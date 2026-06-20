@@ -114,6 +114,7 @@ int mp_dedicated_main(int idle_timeout_secs)
 	int         idle_ms = idle_timeout_secs * 1000;
 	int         last_nonempty = I_GetTimeMS();
 	int         last_heartbeat = 0;
+	int         reg_live = 0;             // registry entry currently exists (joinable)
 	int         maxplayers, port;
 	const char *gamesdir, *host, *wadset, *mode, *addr;
 	char        hostid[64];
@@ -150,6 +151,7 @@ int mp_dedicated_main(int idle_timeout_secs)
 		snprintf(mp_reg_path, sizeof(mp_reg_path), "%s%s-%d.ini",
 		         dir, hostid, port);
 		mp_write_registry(host, wadset, mode, addr, port, hostid, maxplayers);
+		reg_live = 1;
 	}
 
 	printf("syncdoom: dedicated server running"
@@ -166,8 +168,16 @@ int mp_dedicated_main(int idle_timeout_secs)
 			break;
 		}
 
-		// Heartbeat: refresh the registry (players/status/timestamp) every ~3s.
-		if (I_GetTimeMS() - last_heartbeat > 3000) {
+		// Once the match starts it's no longer joinable (vanilla Doom has no
+		// mid-game join), so drop the registry entry right away -- Browse should
+		// only list joinable (lobby) games. While still gathering players,
+		// heartbeat the entry (players/status/timestamp) every ~3s.
+		if (NET_SV_GameInProgress()) {
+			if (reg_live) {
+				remove(mp_reg_path);
+				reg_live = 0;
+			}
+		} else if (I_GetTimeMS() - last_heartbeat > 3000) {
 			mp_write_registry(host, wadset, mode, addr, port, hostid, maxplayers);
 			last_heartbeat = I_GetTimeMS();
 		}
@@ -175,7 +185,7 @@ int mp_dedicated_main(int idle_timeout_secs)
 		I_Sleep(10);
 	}
 
-	if (mp_reg_path[0] != '\0')
+	if (reg_live)
 		remove(mp_reg_path);
 	NET_SV_Shutdown();
 	return 0;
@@ -269,21 +279,21 @@ long mp_spawn_server(const char *exe_path, int port, char *const extra_argv[])
 	PROCESS_INFORMATION pi;
 
 	#define MP_APPEND(s) do { \
-		int _need = snprintf(cmd + len, sizeof(cmd) - len, "%s", (s)); \
-		if (_need < 0 || (size_t)_need >= sizeof(cmd) - len) return -1; \
-		len += (size_t)_need; \
-	} while (0)
+				int _need = snprintf(cmd + len, sizeof(cmd) - len, "%s", (s)); \
+				if (_need < 0 || (size_t)_need >= sizeof(cmd) - len) return -1; \
+				len += (size_t)_need; \
+} while (0)
 
 	// A token is quoted if it contains a space (or is empty); paths with spaces
 	// are the common case (e.g. the exe path or -gamesdir).
 	#define MP_APPEND_ARG(s) do { \
-		const char *_a = (s); \
-		if (_a[0] == '\0' || strchr(_a, ' ') != NULL) { \
-			MP_APPEND("\""); MP_APPEND(_a); MP_APPEND("\""); \
-		} else { \
-			MP_APPEND(_a); \
-		} \
-	} while (0)
+				const char *_a = (s); \
+				if (_a[0] == '\0' || strchr(_a, ' ') != NULL) { \
+					MP_APPEND("\""); MP_APPEND(_a); MP_APPEND("\""); \
+				} else { \
+					MP_APPEND(_a); \
+				} \
+} while (0)
 
 	cmd[0] = '\0';
 	MP_APPEND_ARG(exe_path);

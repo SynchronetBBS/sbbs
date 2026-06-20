@@ -257,9 +257,9 @@ static void cycle_video(void);
 static void toggle_dither(void);   // Ctrl-N: flip text-tier dither + persist
 static int  parse_dither(const char *s);   // "auto"/"on"/"off" -> -1/1/0 (used by read_syncdoom_ini)
 
-static uint8_t *     s_rgb = NULL;   static size_t s_rgb_cap = 0;  // packed RGB888
-static uint8_t *     s_img = NULL;   static size_t s_img_cap = 0;  // encoded bytes (PPM/JXL)
-static char *        s_b64 = NULL;   static size_t s_b64_cap = 0;  // base64 of s_img
+static uint8_t * s_rgb = NULL;   static size_t s_rgb_cap = 0;      // packed RGB888
+static uint8_t * s_img = NULL;   static size_t s_img_cap = 0;      // encoded bytes (PPM/JXL)
+static char *    s_b64 = NULL;   static size_t s_b64_cap = 0;      // base64 of s_img
 
 // Send a small control string in full (cursor hide, JXL probe) at startup.
 static void emit_all(const char *buf, size_t len)
@@ -592,8 +592,8 @@ static void keyq_push(int pressed, unsigned char key)
 // Source order, lowest-to-highest precedence: built-in -> syncdoom.ini [input]
 // (house default) -> per-user saved prefs (load_input_prefs) -> -kp* CLI flags.
 uint32_t    g_keyup_idle_ms = 150;            // HOLD grace (key seen >= 2 times)
-uint32_t    g_grace_fresh   = 500;            // TAP grace (key seen once)
-uint32_t    g_turn_grace    = 180;            // TURN grace for turn keys (tight taps)
+uint32_t    g_grace_fresh   = 300;            // TAP grace (key seen once)
+uint32_t    g_turn_grace    = 150;            // TURN grace for turn keys (tight taps)
 static int  g_kp_cli_tap    = 0;              // -kpdelay given on CLI (saved prefs won't override)
 static int  g_kp_cli_hold   = 0;              // -kpsmooth given on CLI
 static int  g_kp_cli_turn   = 0;              // -kpturn given on CLI
@@ -1801,6 +1801,11 @@ static void toggle_dither(void)
 	char line[64], buf[160];
 	int  pad, n;
 
+	// Dither is text-tier only -- ignore Ctrl-N in the graphics tiers, and in text
+	// color depths that never dither (16-color, truecolor). No label, no save.
+	if (g_mode != MODE_TEXT || !rt_dither_applicable())
+		return;
+
 	g_dither_pref = (g_dither_pref == 0) ? 1 : 0;   // auto/on -> off, off -> on
 	rt_set_dither(g_dither_pref);
 	sd_save_user_prefs();
@@ -1956,12 +1961,22 @@ static void sd_waitroom_draw(void)
 		len += snprintf(buf + len, sizeof(buf) - len, "    \x1b[1m%d.\x1b[0m %s%s\r\n",
 		                i + 1, w->player_names[i], (i == w->consoleplayer) ? "  (you)" : "");
 	len += snprintf(buf + len, sizeof(buf) - len, "\r\n");
-	if (w->is_controller)
-		len += snprintf(buf + len, sizeof(buf) - len,
-		                "  Press \x1b[1mS\x1b[0m or \x1b[1mEnter\x1b[0m to start now, \x1b[1mQ\x1b[0m to cancel.\r\n");
-	else
+	if (!w->is_controller) {
 		len += snprintf(buf + len, sizeof(buf) - len,
 		                "  Waiting for the host to start...   \x1b[1mQ\x1b[0m to cancel.\r\n");
+	} else if (w->num_players < 2 && w->max_players > 1) {
+		// Alone in a multi-player match: starting now would just be a lonely solo
+		// game (no mid-game join), which is exactly the trap real players hit.
+		// Make it plain they should wait, and don't offer Start yet.
+		len += snprintf(buf + len, sizeof(buf) - len,
+		                "  \x1b[1;33mWaiting for another player to join...\x1b[0m\r\n"
+		                "  The game starts automatically when full. \x1b[1mQ\x1b[0m to cancel.\r\n"
+		                "  (To play by yourself, cancel and pick \x1b[1mPlay single-player\x1b[0m instead.)\r\n");
+	} else {
+		len += snprintf(buf + len, sizeof(buf) - len,
+		                "  Press \x1b[1mS\x1b[0m or \x1b[1mEnter\x1b[0m to start now (or wait for all %d), "
+		                "\x1b[1mQ\x1b[0m to cancel.\r\n", w->max_players);
+	}
 
 	if (len > 0)
 		emit_all(buf, (size_t)len);
@@ -2033,9 +2048,17 @@ void sd_waitroom_run(void)
 			}
 			if (want_start && !launched && net_client_received_wait_data
 			    && net_client_wait_data.is_controller) {
-				NET_CL_LaunchGame();
-				launched = true;
-				self_started = true;       // this player started it -- they're watching
+				net_waitdata_t *w = &net_client_wait_data;
+				// Don't let the controller start a multi-player match alone -- that
+				// strands them in a solo game thinking it's co-op (the trap from the
+				// live test). A match created for 1 (explicit solo/test) may start.
+				if (w->num_players >= 2 || w->max_players <= 1) {
+					NET_CL_LaunchGame();
+					launched = true;
+					self_started = true;   // this player started it -- they're watching
+				} else {
+					emit_all("\a", 1);     // nudge: the on-screen text says why
+				}
 			}
 		}
 

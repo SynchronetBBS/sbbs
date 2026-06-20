@@ -95,6 +95,18 @@ Match-based (vanilla assigns player slots at game start; no mid-game join): gath
 lobby → start → play to completion → server dies. Persistent "rooms" (a server that loops
 back to a lobby between games) are a possible later layer; start with on-demand.
 
+**No mid-game join — and what we do instead.** Doom's deterministic lockstep assigns player
+slots at GAMESTART and simulates from tic 0 with no game-state transfer, so a player *cannot*
+join a match already in progress (vanilla rejects it; there's no snapshot to sync a latecomer
+from). The first live-player test surfaced the trap this creates: a creator sits alone in the
+waiting room, presses Start not realizing they should wait, and lands in a one-player "co-op."
+Mitigations (as built): the dedicated server **drops its registry entry the moment the match
+goes in-progress** (so Browse only ever lists *joinable* games), the match **auto-starts when
+full**, and the waiting room **refuses a manual Start while the controller is alone** in a
+multi-player match (`num_players < 2 && max_players > 1`) — showing "waiting for another
+player… (to play by yourself, pick Play single-player)" instead. An explicit 1-player match
+(test/solo) still starts immediately.
+
 ## Server lifecycle & host-drop
 
 Because the server is a **separate process from any player's door**, the creator

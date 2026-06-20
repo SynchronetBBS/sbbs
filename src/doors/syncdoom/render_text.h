@@ -31,6 +31,10 @@ void rt_config(int cols, int rows, rt_mode_t mode, rt_colors_t colors, rt_charse
 // dither state immediately (cheap). Set from [video] dither / the Ctrl-N toggle.
 void rt_set_dither(int pref);
 
+// Nonzero if the current color depth dithers at all (256/8-color) -- zero for
+// 16-color and truecolor. The door ignores Ctrl-N when this is zero.
+int rt_dither_applicable(void);
+
 // Render the current doomgeneric frame (DG_ScreenBuffer) to terminal bytes.
 // Returns a pointer to the bytes and sets *len; valid until the next call.
 const char *rt_render_frame(size_t *len);
