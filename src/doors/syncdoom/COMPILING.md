@@ -47,6 +47,11 @@ Produces `build/syncdoom`. If libjxl is found you'll see
 `syncdoom: JPEG XL graphics tier ENABLED` in the configure output; otherwise the
 build falls back to sixel/text with a warning.
 
+Or run the **`build.sh`** helper, which does the configure + build above and then
+copies the binary next to the lobby in this tree's `xtrn/syncdoom/` (`./build.sh`,
+plus `debug` / `clean` options) — the same place `build.bat` installs the `.exe`.
+For an in-place install that is the live door directory.
+
 ---
 
 ## Windows (Visual Studio 2022 / MSVC)
@@ -57,6 +62,11 @@ CMake; a standalone CMake works too.
 
 Winsock and `winmm` come transitively from the xpdev sub-build, so the base door
 needs no extra setup.
+
+For a one-command build, the **`build.bat`** helper runs the configure + build
+below (classic-mode vcpkg for the JPEG-XL tier when present) and copies
+`syncdoom.exe` into `xtrn\syncdoom\`: `build.bat` (or `build.bat x64`, plus a
+`clean` option). The manual steps follow for full control.
 
 ### Without the JPEG-XL tier (no dependencies)
 

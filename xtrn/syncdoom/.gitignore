@@ -1,0 +1,3 @@
+# Locally built door binaries (not tracked; built via build.sh / build.bat)
+/syncdoom
+/syncdoom.exe

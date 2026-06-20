@@ -59,8 +59,9 @@ at configure time.
 ### Platform support
 
 - **Linux / Unix-like** with GCC or Clang — supported.
-- **Windows / MSVC** — planned. The doomgeneric platform layer and Winsock
-  wiring are not yet in place; build on a Unix-like host for now.
+- **Windows / MSVC** — supported (Visual Studio 2022). Build with the
+  `build.bat` helper, or CMake directly; the JPEG-XL graphics tier uses
+  libjxl via vcpkg. See `src/doors/syncdoom/COMPILING.md` for the steps.
 
 ## Installing into Synchronet (SCFG)
 

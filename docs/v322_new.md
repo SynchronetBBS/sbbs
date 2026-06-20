@@ -208,6 +208,13 @@
 - New: **SynChess** — graphical chess game with JXL piece
   artwork
 - New: **ZZT** — game port for Synchronet (`xtrn/zzt`)
+- New: **SyncDOOM** — multiplayer DOOM as a door
+  (`xtrn/syncdoom`), rendered over the terminal: JXL graphics
+  (SyncTERM 1.4+), sixel (xterm, foot, WezTerm, Windows
+  Terminal, …), or color-block ANSI/UTF-8 text, auto-selected
+  per client. Co-op and deathmatch across the BBS (same host or
+  a shared-install LAN) via a JavaScript lobby that browses,
+  creates, and joins games. Needs a DOOM or Freedoom IWAD
 - New: **Avatar Chat** — avatar-first conversations with
   optional ANSI-art send/view and MOTD support
 - New: `typemd.js` and `load/md2asc.js` — Markdown viewer that

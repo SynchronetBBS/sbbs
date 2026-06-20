@@ -325,6 +325,7 @@ port allocation, discovery, and per-match limits.
 | `max_players` | Per-match player ceiling. **Hard cap 4** — Doom's `MAXPLAYERS` (4 player slots/colors/starts); the lobby clamps to 4 regardless. A set's/creator's `maxplayers` can't exceed it. Default `4`. |
 | `idle_timeout` | Seconds an **empty** (zero-player) match waits before the dedicated server self-terminates and deletes its registry entry. Default `60`. |
 | `stale` | Heartbeat age after which a game entry is pruned from the browse list (its server presumed dead). Default `30`. The server refreshes its `heartbeat` every ~3 s (fixed, not configurable). |
+| `skill` | Default difficulty (1–5) the Create prompt starts on: 1 I'm Too Young To Die, 2 Hey Not Too Rough, 3 Hurt Me Plenty, 4 Ultra-Violence, 5 Nightmare!. Default `3`. A per-set `[wadset:*] skill` overrides it; the creator can still change it per match. |
 | `allow_external` | Show the lobby's "join an external server by `host:port`" option (manual cross-system join). Default `false`. |
 
 **Deferred (not built):** `discovery` / `net_query` LAN-broadcast game discovery (discovery
@@ -505,12 +506,14 @@ without its IWAD). All filenames resolve in `[wads] dir`.
 | `desc` | no | One-line description for the picker. |
 | `modes` | no | Where the set may be used: `solo, coop, deathmatch, altdeath` (default: all). A DM-only pack sets `modes = deathmatch, altdeath`; subsumes a separate "solo allowed" flag. |
 | `map` | no | Default starting map / `-warp` value (creator can override). |
+| `skill` | no | Default difficulty (1–5) the Create prompt starts on for this set; overrides `[net] skill`. The creator can still change it per match. |
 | `maxplayers` | no | Default cap for the set, ≤ 4 (Doom `MAXPLAYERS`); creator can lower it. |
 | `merge` | no | Comma-separated WADs merged into the IWAD via `-merge` (deutex-style; rare). |
 | `enabled` | no | `false` hides a set without deleting the section (default `true`). |
 | `note` | no | Caveat shown (with a keypress pause) before the door launches, e.g. "needs a source port; may not run on vanilla". |
 
-`skill` is intentionally **not** a set key — it's a per-match choice at creation.
+The skill default resolves `[wadset:*] skill` → `[net] skill` → 3 (Hurt Me Plenty); the
+creator confirms or changes it at Create time, and that choice applies to the whole match.
 
 **WAD readme files:** if a `<wadname>.msg` file sits beside a WAD in the set (the IWAD, a
 PWAD, or a merge WAD — e.g. `sigil.msg` next to `sigil.wad` in `[wads] dir`), the lobby
