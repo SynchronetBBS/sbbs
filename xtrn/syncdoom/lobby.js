@@ -551,8 +551,11 @@ function sd_join_external()
 function sd_controls()
 {
 	console.clear();
-	console.printfile(SD_DIR + "controls.msg");   // auto-pause when a page fills
-	console.pause();
+	// printfile auto-pauses when the page fills -- that IS the "press a key"
+	// before we return and the menu redraws over it, so no explicit pause here
+	// (which would double up). controls.msg is sized to ~one screen so the pause
+	// lands after the last line rather than mid-list.
+	console.printfile(SD_DIR + "controls.msg");
 }
 
 // ---------------------------------------------------------------------------

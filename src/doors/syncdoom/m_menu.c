@@ -74,7 +74,7 @@ extern boolean		chat_on;		// in heads-up code
 extern uint32_t		g_grace_fresh;		// TAP  -- a single press lingers this long
 extern uint32_t		g_keyup_idle_ms;	// HOLD -- release latency once auto-repeating
 extern uint32_t		g_turn_grace;		// TURN -- turn-key tap grace
-extern void		sd_save_input_prefs(void);
+extern void		sd_save_user_prefs(void);
 
 //
 // defaulted values
@@ -1173,19 +1173,19 @@ static uint32_t M_InputStep(uint32_t cur, int choice, int mn, int step, int mx)
 void M_InputTap(int choice)
 {
     g_grace_fresh = M_InputStep(g_grace_fresh, choice, TAP_MIN, TAP_STEP, TAP_MAX);
-    sd_save_input_prefs();
+    sd_save_user_prefs();
 }
 
 void M_InputHold(int choice)
 {
     g_keyup_idle_ms = M_InputStep(g_keyup_idle_ms, choice, HT_MIN, HT_STEP, HT_MAX);
-    sd_save_input_prefs();
+    sd_save_user_prefs();
 }
 
 void M_InputTurn(int choice)
 {
     g_turn_grace = M_InputStep(g_turn_grace, choice, HT_MIN, HT_STEP, HT_MAX);
-    sd_save_input_prefs();
+    sd_save_user_prefs();
 }
 
 

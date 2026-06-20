@@ -131,6 +131,14 @@ bool noise_enabled = true;
 static int noise_current = 0;
 static uint32_t noise_last_time = 0;
 static int noise_speed = 75; // milliseconds
+static bool noise_scaled = false;   // the scaling in init_noise() rewrites
+                                    // noise_textures in place, so it must run at
+                                    // most once -- re-running it (rt_config is
+                                    // called on every F4 tier cycle) re-scales
+                                    // already-scaled data and washes the dither
+                                    // out until it vanishes for good.
+static int  rt_dither_pref = -1;    // -1 auto (color-depth default), 0 off, 1 on;
+                                    // set by the door from [video] dither / Ctrl-N.
 
 #define NOISE_SAMPLE(x, y) \
         noise_textures[noise_current][((x) & 15) + (((y) & 15) * 16)]
@@ -155,9 +163,20 @@ static void init_noise(void) {
         default: break;
     }
     if (scale == 0) {
-        noise_enabled = false;
+        noise_enabled = false;       // this color depth doesn't dither at all
         return;
     }
+    // depth supports dither -- honor the override: off = forced off; auto/on = on.
+    noise_enabled = (rt_dither_pref != 0);
+
+    // cli_colors is fixed for the life of the process (set once from -colors /
+    // terminal.ini), so the textures only need scaling once. The scale below is
+    // destructive (noise_textures rewritten in place); re-applying it on a later
+    // rt_config (F4 tier cycle) flattens the noise until it disappears.
+    if (noise_scaled)
+        return;
+    noise_scaled = true;
+
     int base = 255 * (100 - scale) / 200;
 
     for (size_t tex = 0; tex < noise_texture_count; ++ tex) {
@@ -174,6 +193,17 @@ static void init_noise(void) {
             noise_textures[tex][i] = val;
         }
     }
+}
+
+// Set the dither preference (-1 auto, 0 off, 1 on) and re-derive noise_enabled
+// for the current color depth. Cheap: the textures are scaled at most once (the
+// noise_scaled guard), so this just flips whether the (already-prepared) dither
+// is applied. Called by the door from the [video] dither config and the Ctrl-N
+// toggle. (Has no visible effect at a depth that never dithers, e.g. 16-color.)
+void rt_set_dither(int pref)
+{
+    rt_dither_pref = pref;
+    init_noise();
 }
 
 

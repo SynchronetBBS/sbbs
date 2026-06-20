@@ -254,6 +254,8 @@ static int           g_vstate_i = 0;
 static uint32_t      g_label_until = 0;  // suppress frame output until then (label dwell)
 
 static void cycle_video(void);
+static void toggle_dither(void);   // Ctrl-N: flip text-tier dither + persist
+static int  parse_dither(const char *s);   // "auto"/"on"/"off" -> -1/1/0 (used by read_syncdoom_ini)
 
 static uint8_t *     s_rgb = NULL;   static size_t s_rgb_cap = 0;  // packed RGB888
 static uint8_t *     s_img = NULL;   static size_t s_img_cap = 0;  // encoded bytes (PPM/JXL)
@@ -585,6 +587,7 @@ static void keyq_push(int pressed, unsigned char key)
 // sustained spin, which is far less noticeable than tap overshoot. Sustained
 // forward/back/strafe movement keeps the long grace (smooth, no start stutter).
 #define ACTIVE_MAX 16
+#define KEY_DITHER 0xe0   // door-internal sentinel (Ctrl-N); intercepted in key_seen, never reaches Doom
 // Non-static: the in-game Options > Input sliders (m_menu.c) tune these live.
 // Source order, lowest-to-highest precedence: built-in -> syncdoom.ini [input]
 // (house default) -> per-user saved prefs (load_input_prefs) -> -kp* CLI flags.
@@ -594,7 +597,8 @@ uint32_t    g_turn_grace    = 180;            // TURN grace for turn keys (tight
 static int  g_kp_cli_tap    = 0;              // -kpdelay given on CLI (saved prefs won't override)
 static int  g_kp_cli_hold   = 0;              // -kpsmooth given on CLI
 static int  g_kp_cli_turn   = 0;              // -kpturn given on CLI
-static char g_input_pref_path[PATH_MAX] = "";       // per-user override file (in -home); "" = disabled
+static int  g_dither_pref   = -1;             // text-tier dither: -1 auto, 0 off, 1 on ([video] dither / Ctrl-N)
+static char g_user_ini_path[PATH_MAX] = "";   // per-user prefs file (<-home>/syncdoom.ini); "" = disabled
 static struct { unsigned char key; uint32_t last; int presses; } s_active[ACTIVE_MAX];
 static int  s_active_n = 0;
 
@@ -614,6 +618,10 @@ static void key_seen(unsigned char key)
 
 	if (key == KEY_F4) {                      // door-level hotkey: cycle render tier
 		cycle_video();                        // (handled here -- never reaches Doom)
+		return;
+	}
+	if (key == KEY_DITHER) {                  // Ctrl-N: toggle text-tier dither
+		toggle_dither();                      // (door-level; never reaches Doom)
 		return;
 	}
 
@@ -681,6 +689,10 @@ static unsigned char map_ascii(unsigned char c)
 	// the default key_multi_msg in hu_stuff.c; a literal 't' falls through below.)
 	if (c == 0x10)
 		return 't';
+	// Ctrl-N (0x0E) -- door-level "toggle text-tier dither" hotkey (key_seen
+	// intercepts it; Doom never sees it). A free control byte; no F-key was.
+	if (c == 0x0e)
+		return KEY_DITHER;
 	// While the user is TYPING text -- a netgame chat message (chat_on) or a menu
 	// string like a save-game name (menuactive) -- the gameplay action keys must
 	// arrive as the literal characters they type: a space has to be a space (not
@@ -1092,6 +1104,7 @@ static void setup_text_mode(void)
 	if (g_text_max_rows > 0 && trows > g_text_max_rows)
 		trows = g_text_max_rows;
 	rt_config(tcols, trows, mode, g_colors, g_rt_charset);
+	rt_set_dither(g_dither_pref);     // apply the [video] dither / Ctrl-N preference
 	g_mode = MODE_TEXT;
 }
 
@@ -1594,6 +1607,12 @@ static void read_syncdoom_ini(const char *argv0)
 	g_text_max_cols = iniGetInteger(ini, "video", "text_max_cols", g_text_max_cols);
 	g_text_max_rows = iniGetInteger(ini, "video", "text_max_rows", g_text_max_rows);
 
+	// dither = auto|on|off -- text-tier blue-noise dithering (the per-user
+	// syncdoom.ini / Ctrl-N override this house default). auto = by color depth.
+	iniGetString(ini, "video", "dither", "", val);
+	if (val[0])
+		g_dither_pref = parse_dither(val);
+
 	// charset = cp437|utf8 -- force the text-tier charset (else terminal.ini auto)
 	iniGetString(ini, "video", "charset", "", val);
 	if (val[0])
@@ -1689,38 +1708,57 @@ static void read_syncdoom_ini(const char *argv0)
 	strListFree(&ini);
 }
 
-// Per-user input-feel persistence. The in-game Options sliders write the three
-// key-up graces here (in -home, beside Doom's default.cfg) so a user's tuning
-// sticks across sessions. The file is named input.ini and holds only these keys,
-// so they live at the root (no [input] heading -- that's only needed in the multi-
-// section syncdoom.ini house-default file). Disabled (no-op) without -home.
+// Per-user preferences: a sectioned syncdoom.ini in the user's -home dir,
+// mirroring the house-default syncdoom.ini (beside the exe) but holding only this
+// user's overrides -- the in-game Options sliders ([input] kp* graces) and the
+// Ctrl-N dither toggle ([video] dither). Saved on change, loaded after the CLI
+// scan; precedence: built-in -> house ini -> per-user -> CLI. No-op without -home.
 
-// Build g_input_pref_path from -home (once). Safe to call repeatedly.
-static void input_pref_path(void)
+// dither string <-> pref (-1 auto, 0 off, 1 on).
+static int parse_dither(const char *s)
+{
+	if (stricmp(s, "off") == 0 || stricmp(s, "no")  == 0 || stricmp(s, "0") == 0)
+		return 0;
+	if (stricmp(s, "on")  == 0 || stricmp(s, "yes") == 0 || stricmp(s, "1") == 0)
+		return 1;
+	return -1;                           // "auto" / unrecognized
+}
+static const char *dither_str(int pref) { return pref < 0 ? "auto" : (pref ? "on" : "off"); }
+
+// Build g_user_ini_path = <-home>/syncdoom.ini (once). Safe to call repeatedly.
+static void user_ini_path(void)
 {
 	size_t n;
 
-	if (g_input_pref_path[0] != '\0' || g_home[0] == '\0')
+	if (g_user_ini_path[0] != '\0' || g_home[0] == '\0')
 		return;
 	n = strlen(g_home);
-	snprintf(g_input_pref_path, sizeof(g_input_pref_path), "%s%sinput.ini",
+	snprintf(g_user_ini_path, sizeof(g_user_ini_path), "%s%ssyncdoom.ini",
 	         g_home, (n > 0 && (g_home[n - 1] == '/' || g_home[n - 1] == '\\')) ? "" : "/");
 }
 
-// Save the current graces (called by the menu sliders after each change).
-void sd_save_input_prefs(void)
+// Write the user's prefs (read-modify-write, so any hand-added keys survive).
+// Called by the Options sliders and the Ctrl-N dither toggle after each change.
+void sd_save_user_prefs(void)
 {
 	str_list_t list;
 	FILE *     f;
 
-	input_pref_path();
-	if (g_input_pref_path[0] == '\0')
+	user_ini_path();
+	if (g_user_ini_path[0] == '\0')
 		return;                          // no -home: nowhere to persist
-	list = strListInit();
-	iniSetInteger(&list, ROOT_SECTION, "kpdelay",  (int)g_grace_fresh,   NULL);
-	iniSetInteger(&list, ROOT_SECTION, "kpsmooth", (int)g_keyup_idle_ms, NULL);
-	iniSetInteger(&list, ROOT_SECTION, "kpturn",   (int)g_turn_grace,    NULL);
-	f = fopen(g_input_pref_path, "w");
+	f = fopen(g_user_ini_path, "r");
+	if (f != NULL) {
+		list = iniReadFile(f);
+		fclose(f);
+	} else {
+		list = strListInit();
+	}
+	iniSetInteger(&list, "input", "kpdelay",  (int)g_grace_fresh,        NULL);
+	iniSetInteger(&list, "input", "kpsmooth", (int)g_keyup_idle_ms,      NULL);
+	iniSetInteger(&list, "input", "kpturn",   (int)g_turn_grace,         NULL);
+	iniSetString (&list, "video", "dither",   dither_str(g_dither_pref), NULL);
+	f = fopen(g_user_ini_path, "w");
 	if (f != NULL) {
 		iniWriteFile(f, list);
 		fclose(f);
@@ -1728,28 +1766,53 @@ void sd_save_input_prefs(void)
 	strListFree(&list);
 }
 
-// Apply saved per-user graces over the ini/built-in defaults. A grace that was
-// pinned by a -kp* CLI flag is left alone (CLI wins). Call after the CLI scan.
-static void load_input_prefs(void)
+// Apply per-user prefs over the house-ini/built-in defaults. A grace pinned by a
+// -kp* CLI flag is left alone (CLI wins). Call after the CLI scan.
+static void load_user_prefs(void)
 {
 	FILE *     f;
 	str_list_t ini;
+	char       val[INI_MAX_VALUE_LEN];
 
-	input_pref_path();                   // also sets the path so a later save works
-	if (g_input_pref_path[0] == '\0')
+	user_ini_path();                     // also sets the path so a later save works
+	if (g_user_ini_path[0] == '\0')
 		return;
-	f = fopen(g_input_pref_path, "r");
+	f = fopen(g_user_ini_path, "r");
 	if (f == NULL)
-		return;                          // none saved yet -> keep ini/built-in
+		return;                          // none saved yet -> keep house ini/built-in
 	ini = iniReadFile(f);
 	fclose(f);
 	if (!g_kp_cli_tap)
-		g_grace_fresh   = (uint32_t)iniGetInteger(ini, ROOT_SECTION, "kpdelay",  (int)g_grace_fresh);
+		g_grace_fresh   = (uint32_t)iniGetInteger(ini, "input", "kpdelay",  (int)g_grace_fresh);
 	if (!g_kp_cli_hold)
-		g_keyup_idle_ms = (uint32_t)iniGetInteger(ini, ROOT_SECTION, "kpsmooth", (int)g_keyup_idle_ms);
+		g_keyup_idle_ms = (uint32_t)iniGetInteger(ini, "input", "kpsmooth", (int)g_keyup_idle_ms);
 	if (!g_kp_cli_turn)
-		g_turn_grace    = (uint32_t)iniGetInteger(ini, ROOT_SECTION, "kpturn",   (int)g_turn_grace);
+		g_turn_grace    = (uint32_t)iniGetInteger(ini, "input", "kpturn",   (int)g_turn_grace);
+	iniGetString(ini, "video", "dither", "", val);
+	if (val[0])
+		g_dither_pref = parse_dither(val);
 	strListFree(&ini);
+}
+
+// Ctrl-N: flip the text-tier dither (auto/on <-> off), apply live, persist, and
+// flash a brief confirmation (the change is subtle at low dither percentages).
+static void toggle_dither(void)
+{
+	char line[64], buf[160];
+	int  pad, n;
+
+	g_dither_pref = (g_dither_pref == 0) ? 1 : 0;   // auto/on -> off, off -> on
+	rt_set_dither(g_dither_pref);
+	sd_save_user_prefs();
+
+	snprintf(line, sizeof(line), "  DITHER %s  ", g_dither_pref ? "ON" : "OFF");
+	pad = (g_cols - (int)strlen(line)) / 2;
+	if (pad < 0)
+		pad = 0;
+	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
+	emit_all(buf, n);
+	g_label_until = now_ms() + 900;
+	dlog("dither toggle -> %s", dither_str(g_dither_pref));
 }
 
 // Compute the emitted bitmap dimensions (s_pxW x s_pxH) from the terminal's
@@ -2178,7 +2241,7 @@ int main(int argc, char **argv)
 	}
 	// Per-user input-feel overrides (saved by the in-game Options > Input sliders)
 	// layer over the [input] ini defaults now that -home and any -kp* flags are known.
-	load_input_prefs();
+	load_user_prefs();
 	// Hand the BBS handle to the net layer. It must be non-NULL: the net layer
 	// sends it at connect time (NET_CL_SendSYN) and would strlen(NULL)-crash
 	// otherwise, and its own default doesn't run before then. The lobby always

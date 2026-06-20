@@ -27,6 +27,10 @@ typedef enum { RT_UTF8 = 0, RT_CP437 } rt_charset_t;       // block glyph: U+258
 // and block charset. Allocates the scaled pixel buffer and primes dithering.
 void rt_config(int cols, int rows, rt_mode_t mode, rt_colors_t colors, rt_charset_t charset);
 
+// Dither override: -1 auto (color-depth default), 0 off, 1 on. Re-derives the
+// dither state immediately (cheap). Set from [video] dither / the Ctrl-N toggle.
+void rt_set_dither(int pref);
+
 // Render the current doomgeneric frame (DG_ScreenBuffer) to terminal bytes.
 // Returns a pointer to the bytes and sets *len; valid until the next call.
 const char *rt_render_frame(size_t *len);

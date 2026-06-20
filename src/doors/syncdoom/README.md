@@ -276,6 +276,7 @@ is available in-game with **F1**. Keys:
 | `T` | Talk / chat (multiplayer); `g`/`i`/`b`/`r` whisper one player by color in 3+ player games. |
 | `Tab` | Automap. |
 | `F4` | Cycle the render tier / glyph mode. |
+| `Ctrl-N` | Toggle text-tier dithering. Only meaningful in 256-color text mode (16-color and truecolor don't dither, and the graphics tiers never do); turning it off also trims text bandwidth. Saved per-user. |
 | `F2` / `F3` | Save / load game (written under `-home`); `F6` / `F9` quicksave / quickload. |
 | `Esc` | Menu. **Options → Input Feel** tunes the movement graces (TAP/HOLD/TURN) live if it feels too slidy or twitchy; saved per-user. |
 
@@ -293,6 +294,11 @@ definitions used by the JavaScript lobby). All keys are optional; an absent key
 keeps the auto-detected value or built-in default. The documented template ships
 with the lobby as `xtrn/syncdoom/syncdoom.example.ini` and is copied to
 `syncdoom.ini` on install; see it for the full key list.
+
+A player's in-game tweaks — the **Options → Input Feel** sliders and the
+**Ctrl-N** dither toggle — are written to a **per-user `syncdoom.ini`** in their
+`-home` directory, which overlays the matching `[input]`/`[video]` keys from the
+house template. Precedence: built-in → house `syncdoom.ini` → per-user → CLI flag.
 
 ---
 
