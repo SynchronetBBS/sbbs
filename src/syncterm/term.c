@@ -3914,8 +3914,8 @@ read_pbm(const char *fn, bool bitmap)
 	struct ciolib_mask   *mret = NULL;
 	struct ciolib_pixels *pret = NULL;
 	size_t                raster_size;
-	size_t                raster_bit_size;
 	char                  magic[2];
+	char                  ws;
 	bool                  b;
 
 	if (f == NULL)
@@ -3975,13 +3975,18 @@ read_pbm(const char *fn, bool bitmap)
 			goto fail;
 	}
 
-	if (!skip_pbm_whitespace(f))
-		goto fail;
+	if (magic[1] == '4' || magic[1] == '6') {
+		if (!(read_pbm_char(f, NULL, &ws) && is_pbm_whitespace(ws)))
+			goto fail;
+	}
+	else {
+		if (!skip_pbm_whitespace(f))
+			goto fail;
+	}
 
 	switch (magic[1]) {
 		case '1':
 		case '4':
-			raster_bit_size = (raster_size + 7) / 8;
 			mret = alloc_ciolib_mask(width, height);
 			if (mret == NULL)
 				goto fail;
