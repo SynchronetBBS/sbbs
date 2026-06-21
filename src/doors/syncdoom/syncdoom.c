@@ -331,8 +331,23 @@ static uint32_t g_rtt_min = 0;          // baseline (unloaded) RTT: windowed min
 static uint32_t g_rtt_min_at = 0;       // when g_rtt_min was last set (for the window reset)
 #define RTT_MIN_WINDOW 8000u            // re-seed the baseline min if no lower sample in this long
 static uint32_t g_recent_fps = 0;       // frames/s over a recent window (the bandwidth signal for auto)
+static uint32_t g_recent_kbps = 0;      // transmit throughput (KB/s) over the same window (overlay)
 static uint32_t g_fps_win_at = 0;       // current fps-window start time
 static uint32_t g_fps_win_n = 0;        // frames emitted in the current fps window
+static uint64_t g_fps_win_bytes = 0;    // wire bytes emitted in the current fps window
+
+// Frame de-duplication: Doom re-renders the SAME game state several times between
+// its 35Hz sim tics (TryRunTics returns early to keep menus responsive), so back-
+// to-back frames are often byte-identical. We keep a copy of the framebuffer last
+// sent and skip emitting an identical one -- capping the WIRE frame rate at the
+// real ~35fps visual rate and saving the redundant bytes (most valuable on a thin
+// remote link). g_last_fb is invalidated (NULL) whenever a label or geometry
+// change disturbs the terminal so the next frame always repaints.
+#define FB_BYTES ((size_t)DOOMGENERIC_RESX * DOOMGENERIC_RESY * sizeof(uint32_t))
+static uint32_t *g_last_fb   = NULL;     // copy of the framebuffer last emitted (allocated lazily)
+static int       g_last_fb_ok = 0;       // is g_last_fb a valid match target? (cleared on label/resize)
+static uint32_t  g_dedup_skipped = 0;    // telemetry: identical frames skipped (not re-sent)
+static char      g_ov_last[80] = "";     // last stats-overlay text drawn (to skip redundant redraws)
 
 static int dsr_inflight(void) { return (g_dsr_head - g_dsr_tail + DSR_RING) % DSR_RING; }
 
@@ -356,23 +371,36 @@ static int max_inflight(void)
 	if (g_rtt_ms == 0 || g_rtt_min == 0)
 		return 1;                       // link unknown yet: stay conservative
 
+	int floor_d;
+
 	d = (int)((g_rtt_min + 49) / 50);   // (1) base: ~one in-flight frame per 50ms of UNLOADED RTT
 	if (d > 5)
 		d = 5;                          // absolute cap (depth 5 saturates Doom's 35fps sim ~140ms)
 
-	if (g_rtt_ms > g_rtt_min * 2)       // (2) heavy queuing (>2x baseline) -> drain hard
-		d -= 2;
-	else if (g_rtt_ms > g_rtt_min + (g_rtt_min >> 1))   // mild queuing (>1.5x) -> ease off
-		d -= 1;
+	// (2) Depth 1 is one frame per round-trip -- a slideshow once the link isn't
+	// local -- so never auto-park a remote player there. The exception is active
+	// queue draining (heavy inflation just below), where collapsing to 1 recovers.
+	floor_d = (g_rtt_min > 30) ? 2 : 1;
 
-	if (g_recent_fps > 0) {             // (3) bandwidth-delay-product cap (+1 frame to probe up)
-		int bdp = (int)((uint64_t)g_recent_fps * g_rtt_min / 1000) + 1;
+	if (g_rtt_ms > g_rtt_min * 2) {     // (3) heavy queuing (>2x baseline): flush the backlog
+		d = 1;
+		floor_d = 1;
+	} else if (g_rtt_ms > g_rtt_min + (g_rtt_min >> 1)) {  // mild queuing (>1.5x): ease off one
+		d -= 1;
+	}
+
+	// (4) Bandwidth-delay-product cap -- but only while actively streaming. An idle
+	// or de-duped lull drops the frame rate for lack of MOTION, not lack of
+	// bandwidth; capping on that would clamp the depth and leave the next movement
+	// starting from a slideshow (the bug the logs showed: depth=1 on a 211ms link).
+	if (g_recent_fps >= 10) {
+		int bdp = (int)((uint64_t)g_recent_fps * g_rtt_min / 1000) + 2;
 		if (d > bdp)
 			d = bdp;
 	}
 
-	if (d < 1)
-		d = 1;
+	if (d < floor_d)
+		d = floor_d;
 	return d;
 }
 
@@ -595,18 +623,87 @@ static bool emit_frame_jxl(int w, int h)
 }
 #endif // WITH_JXL
 
+// Roll the ~2s frame-rate / throughput window. Called once per emit_frame with
+// this iteration's wire bytes (0 when the frame was de-duped) so a static scene
+// decays toward 0 fps / 0 KB/s instead of freezing the readout at the last value.
+static void fps_window_tick(uint32_t frame_bytes)
+{
+	uint32_t nm = now_ms();
+
+	if (frame_bytes)
+		g_fps_win_n++;
+	g_fps_win_bytes += frame_bytes;
+	if (g_fps_win_at == 0)
+		g_fps_win_at = nm;
+	else if (nm - g_fps_win_at >= 2000) {
+		uint32_t span = nm - g_fps_win_at;
+		g_recent_fps  = g_fps_win_n * 1000 / span;
+		g_recent_kbps = (uint32_t)(g_fps_win_bytes * 1000 / 1024 / span);
+		g_fps_win_n     = 0;
+		g_fps_win_bytes = 0;
+		g_fps_win_at    = nm;
+	}
+}
+
+// Live stats overlay (Ctrl-S): a status strip in the top-RIGHT corner. Top-right
+// keeps it clear of Doom's notices (top-left message line) and the HUD/status bar
+// (bottom). Shows the render tier, recent frame rate, transmit throughput (KB/s to
+// the player), round-trip (current / baseline-min) and the effective pipeline depth
+// -- the signals that drive the auto pacing, so a far-away player can watch them.
+// force=1 always redraws (a fresh frame just painted over it); force=0 redraws only
+// when the text changed, so refreshing it over a de-duped (unchanging) frame is free.
+static void emit_overlay(int force)
+{
+	char txt[80], ov[160];
+	int  tn  = snprintf(txt, sizeof(txt), " %s %ufps %uKB/s RTT %u/%ums depth %d%s ",
+	                    mode_name(g_mode), g_recent_fps, g_recent_kbps, g_rtt_ms, g_rtt_min,
+	                    max_inflight(), g_inflight_auto ? "/auto" : "");
+	int  col, ovn;
+
+	if (!force && strcmp(txt, g_ov_last) == 0)
+		return;                         // unchanged and the frame didn't repaint it -> nothing to send
+	if (tn > 0 && tn < (int)sizeof(g_ov_last))
+		strcpy(g_ov_last, txt);
+	col = g_cols - tn + 1;              // right-justify on the top row
+	if (col < 1)
+		col = 1;
+	ovn = snprintf(ov, sizeof(ov), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", col, txt);
+	if (ovn > 0)
+		out_put(ov, (size_t)ovn);
+}
+
 static void emit_frame(const uint32_t *fb, int w, int h)
 {
 	bool built = false;
+	int  identical;
 
-	if (g_label_until != 0 && (int32_t)(now_ms() - g_label_until) < 0)
+	if (g_label_until != 0 && (int32_t)(now_ms() - g_label_until) < 0) {
+		g_last_fb_ok = 0;               // a label is overlaying the frame -> repaint once it clears
 		return;                         // holding the video-cycle label on screen
+	}
 	if (out_pending())
 		return;                         // our buffer still draining -> drop this one
 	if (dsr_inflight() > 0 && (int32_t)(g_ack_deadline - now_ms()) <= 0)
 		g_dsr_tail = g_dsr_head;         // reports went silent past the deadline -> reclaim the pipeline
 	if (dsr_inflight() >= max_inflight())
 		return;                          // pipeline full: drop this frame (never block the game loop)
+
+	// De-dupe: when this frame is byte-identical to the last one we sent (a redundant
+	// re-render between sim tics, or a still scene), skip the costly frame body. The
+	// stats overlay is independent -- it still refreshes (cheaply) so its readout
+	// stays live, and the fps/KB/s window keeps ticking so a still scene reads ~0.
+	identical = (g_last_fb_ok && memcmp(fb, g_last_fb, FB_BYTES) == 0);
+	if (identical) {
+		g_tx_progress_ms = now_ms();    // nothing to render -> the client isn't stalled
+		g_dedup_skipped++;
+		fps_window_tick(0);
+		if (g_stats_overlay) {
+			g_out_len = 0; g_out_off = 0;
+			emit_overlay(0);            // redraw only if the readout text changed
+			out_flush();
+		}
+		return;
+	}
 
 	g_out_len = 0; g_out_off = 0;       // begin a fresh frame buffer
 	if (g_mode == MODE_TEXT) {          // ANSI/CP437 block-char tier (render_text)
@@ -624,24 +721,8 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 			emit_frame_ppm(w, h);
 	}
 
-	// Live stats overlay (Ctrl-S): a status strip in the top-RIGHT corner, re-drawn
-	// over each frame. Top-right keeps it clear of Doom's notices (top-left message
-	// line) and the HUD/status bar (bottom). Shows the render tier, recent frame
-	// rate, round-trip (current / baseline-min), and the effective pipeline depth --
-	// the signals that drive the auto pacing, so a far-away player can watch them.
-	if (g_stats_overlay) {
-		char txt[80], ov[128];
-		int  tn = snprintf(txt, sizeof(txt), " SyncDOOM %s %ufps RTT %u/%ums depth %d%s ",
-		                   mode_name(g_mode), g_recent_fps, g_rtt_ms, g_rtt_min,
-		                   max_inflight(), g_inflight_auto ? " auto" : "");
-		int  col = g_cols - tn + 1;   // right-justify on the top row
-		int  ovn;
-		if (col < 1)
-			col = 1;
-		ovn = snprintf(ov, sizeof(ov), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", col, txt);
-		if (ovn > 0)
-			out_put(ov, (size_t)ovn);
-	}
+	if (g_stats_overlay)
+		emit_overlay(1);                // the fresh frame painted over row 1 -> always redraw
 
 	out_put("\x1b[6n", 4);              // DSR -> the terminal reports when it has consumed this frame
 	g_dsr_ts[g_dsr_head] = now_ms();    // timestamp it (in-flight count + RTT estimate)
@@ -649,20 +730,17 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 	g_ack_deadline = now_ms() + 250;    // safety: reclaim the pipeline if no report by then
 	g_tx_bytes += g_out_len;            // telemetry: this frame's wire bytes (incl. the DSR)
 	g_tx_frames++;
+	fps_window_tick(g_out_len);         // bandwidth signal auto's BDP cap uses (delivered frames)
 
-	// Recent frame rate over a ~2s window -- the bandwidth signal auto's BDP cap
-	// uses (frames the link actually delivers, accounting for drops/backpressure).
-	{
-		uint32_t nm = now_ms();
-		g_fps_win_n++;
-		if (g_fps_win_at == 0)
-			g_fps_win_at = nm;
-		else if (nm - g_fps_win_at >= 2000) {
-			g_recent_fps = g_fps_win_n * 1000 / (nm - g_fps_win_at);
-			g_fps_win_n  = 0;
-			g_fps_win_at = nm;
-		}
+	// Remember this frame so the next identical re-render can be de-duped (cache
+	// allocated lazily on first send).
+	if (g_last_fb == NULL)
+		g_last_fb = malloc(FB_BYTES);
+	if (g_last_fb != NULL) {
+		memcpy(g_last_fb, fb, FB_BYTES);
+		g_last_fb_ok = 1;
 	}
+
 	out_flush();
 }
 
@@ -1355,10 +1433,10 @@ static void emit_telemetry(void)
 	if (g_tx_frames == 0 || secs <= 0.0)
 		return;
 	dlog("telemetry: %s %dx%d | %u frames in %.1fs = %.1f fps | %llu bytes "
-	     "(%.0f/frame avg) | %.1f KB/s avg | RTT~%ums (min %ums) depth=%d%s",
+	     "(%.0f/frame avg) | %.1f KB/s avg | %u deduped | RTT~%ums (min %ums) depth=%d%s",
 	     mode_name(g_mode), s_pxW, s_pxH, g_tx_frames, secs, g_tx_frames / secs,
 	     (unsigned long long)g_tx_bytes, (double)g_tx_bytes / g_tx_frames,
-	     g_tx_bytes / secs / 1024.0, g_rtt_ms, g_rtt_min, max_inflight(),
+	     g_tx_bytes / secs / 1024.0, g_dedup_skipped, g_rtt_ms, g_rtt_min, max_inflight(),
 	     g_inflight_auto ? " (auto)" : "");
 }
 
@@ -2010,17 +2088,21 @@ static void toggle_pipeline(void)
 		g_max_inflight++;                                                      // 1->2 ... 4->5
 	sd_save_user_prefs();
 
-	if (g_inflight_auto)
-		snprintf(line, sizeof(line), "  DEPTH: auto  (%d, RTT ~%ums)  ",
-		         max_inflight(), g_rtt_ms);
-	else
-		snprintf(line, sizeof(line), "  DEPTH: %d  (RTT ~%ums)  ", g_max_inflight, g_rtt_ms);
-	pad = (g_cols - (int)strlen(line)) / 2;
-	if (pad < 0)
-		pad = 0;
-	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
-	emit_all(buf, n);
-	g_label_until = now_ms() + 1200;
+	// Skip the centered popup when the stats overlay is already up -- it shows the
+	// live depth/RTT, so the label would just be redundant (and obscure the game).
+	if (!g_stats_overlay) {
+		if (g_inflight_auto)
+			snprintf(line, sizeof(line), "  DEPTH: auto  (%d, RTT ~%ums)  ",
+			         max_inflight(), g_rtt_ms);
+		else
+			snprintf(line, sizeof(line), "  DEPTH: %d  (RTT ~%ums)  ", g_max_inflight, g_rtt_ms);
+		pad = (g_cols - (int)strlen(line)) / 2;
+		if (pad < 0)
+			pad = 0;
+		n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
+		emit_all(buf, n);
+		g_label_until = now_ms() + 1200;
+	}
 	dlog("pipeline toggle -> frames_in_flight=%s RTT~%ums", frames_in_flight_str(), g_rtt_ms);
 }
 
@@ -2049,6 +2131,8 @@ static void toggle_stats(void)
 static void compute_geometry(void)
 {
 	int vw, vh, cw, ch;
+
+	g_last_fb_ok = 0;                   // geometry changed: same framebuffer now renders differently
 	// Did we actually MEASURE the window, or are we guessing from cols*rows?
 	// True only if the terminal answered the pixel probe, or the sysop pinned a
 	// cell size in syncdoom.ini. When false the viewport below is an estimate.
