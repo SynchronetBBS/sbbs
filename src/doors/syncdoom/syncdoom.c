@@ -319,11 +319,14 @@ static size_t   g_out_cap = 0, g_out_len = 0, g_out_off = 0;
 // DSR sends are timestamped in a small ring (reports return in send order, so FIFO
 // match), which doubles as the in-flight count and the round-trip estimator. The
 // deadline reclaims the pipeline if reports ever go silent.
-#define DSR_RING 8
+#define DEPTH_MAX 8                     // max pipeline depth (fixed or auto ceiling)
+#define DSR_RING  16                    // > DEPTH_MAX so the in-flight ring can never fill (holds DSR_RING-1)
 static uint32_t g_dsr_ts[DSR_RING];     // send time of each unacked DSR
 static int      g_dsr_head = 0;         // next slot to write (newest)
 static int      g_dsr_tail = 0;         // oldest unacked (matches the next report)
 static uint32_t g_ack_deadline = 0;
+static int      g_dsr_stale = 0;        // reports owed by reclaimed frames -> skip them (don't measure RTT)
+static int      g_rt_high    = 0;        // latched once the frame round-trip is non-trivial (floor depth >= 2)
 static int      g_max_inflight = 1;     // fixed pipeline depth when not auto (1 = strict pacing)
 static int      g_inflight_auto = 1;    // [video] frames_in_flight = auto: adapt depth to the link (DEFAULT)
 static uint32_t g_rtt_ms = 0;           // EMA of the DSR round-trip (ms); 0 = not yet measured
@@ -351,57 +354,66 @@ static char      g_ov_last[80] = "";     // last stats-overlay text drawn (to sk
 
 static int dsr_inflight(void) { return (g_dsr_head - g_dsr_tail + DSR_RING) % DSR_RING; }
 
-// Effective pipeline depth in auto mode. Three signals:
-//  1. Base depth fills the pipe at the BASELINE (min) RTT -- NOT the current RTT,
-//     because when a queue forms the current RTT inflates, and scaling depth with
-//     it would ramp the pipeline UP and worsen the bloat (positive feedback: the
-//     "input is seconds behind" failure).
-//  2. RTT-inflation backoff: shrink depth when the current (EMA) RTT rises above
-//     the baseline -- that extra delay is a queue we're causing; drain it.
-//  3. Bandwidth-delay-product cap: never keep more frames in flight than the link
-//     actually delivers in one baseline RTT (recent_fps * min_RTT). On a thin pipe
-//     this holds depth to where it helps -- extra depth there only buffers (adds
-//     lag) without adding frames; on a fat pipe it lets depth grow. This is what
-//     keeps a high-latency *low-bandwidth* link (e.g. a far VPN) from over-pipeling.
+static uint32_t now_ms(void);           // defined later (monotonic ms; only deltas used)
+static int      g_auto_depth  = 2;      // current auto pipeline depth (AIMD-adjusted)
+static uint32_t g_auto_adj_at = 0;      // last gentle (probe/ease) adjustment time
+
+// Re-evaluate the auto pipeline depth from the latest RTT. Called once per DSR
+// round-trip (i.e. per DELIVERED frame; an idle/de-duped lull sends no DSR, so the
+// depth simply holds). It's a delay-based AIMD controller with a dead-band and a
+// rate limit so it SETTLES at the link's sustainable depth instead of oscillating
+// (the bang-bang 4/5<->1 a fixed base-minus-penalty produced on a jittery VPN):
+//   - heavy queuing (current EMA > 2x baseline): ease down at once to drain;
+//   - clean (< 1.25x baseline): probe up one, but at most ~2.5x/sec so each step's
+//     effect is observed before the next (no overshoot);
+//   - dead-band (1.25x..1.5x): hold.
+// Bounded to [floor, ceil]: floor 2 once the frame round-trip is non-trivial (the
+// g_rt_high latch -- network latency OR client decode time) so it never face-plants
+// to the depth-1 slideshow; ceil ~one frame per 40ms of baseline round-trip (abs 5)
+// so a fast-rendering local link isn't pointlessly over-pipelined (extra depth there
+// only buffers, adding display lag, without adding frames past the 35fps sim). The
+// abs cap is DEPTH_MAX (8 -> reaches the 35fps sim at ~230ms round-trip).
+static void auto_depth_update(void)
+{
+	int      ceil_d, floor_d;
+	uint32_t now;
+
+	if (!g_inflight_auto || g_rtt_min == 0)
+		return;
+	now = now_ms();
+	if (g_rtt_ms > g_rtt_min * 2) {                          // heavy queuing -> drain now
+		if (g_auto_depth > 1)
+			g_auto_depth--;
+		g_auto_adj_at = now;
+	} else if ((uint32_t)(now - g_auto_adj_at) >= 400) {    // else nudge, rate-limited
+		g_auto_adj_at = now;
+		if (g_rtt_ms > g_rtt_min + (g_rtt_min >> 1))         // mild queuing (>1.5x) -> ease down
+			g_auto_depth--;
+		else if (g_rtt_ms < g_rtt_min + (g_rtt_min >> 2))    // clean (<1.25x) -> probe up
+			g_auto_depth++;
+		// dead-band 1.25x..1.5x baseline -> hold
+	}
+
+	ceil_d = (int)((g_rtt_min + 39) / 40);
+	if (ceil_d > DEPTH_MAX)
+		ceil_d = DEPTH_MAX;
+	if (g_rt_high && ceil_d < 2)
+		ceil_d = 2;                     // a transiently-corrupted low baseline can't strand us at 1
+	floor_d = g_rt_high ? 2 : 1;         // sticky: once the round-trip is non-trivial, never depth 1
+	if (floor_d > ceil_d)
+		floor_d = ceil_d;
+	if (g_auto_depth > ceil_d)
+		g_auto_depth = ceil_d;
+	if (g_auto_depth < floor_d)
+		g_auto_depth = floor_d;
+}
+
+// Effective pipeline depth: the fixed [video] frames_in_flight, or the AIMD-tracked
+// auto depth (updated in the DSR handler; a pure getter here so it's side-effect-free
+// to read from the gate, the overlay and the telemetry).
 static int max_inflight(void)
 {
-	int d;
-	if (!g_inflight_auto)
-		return g_max_inflight;
-	if (g_rtt_ms == 0 || g_rtt_min == 0)
-		return 1;                       // link unknown yet: stay conservative
-
-	int floor_d;
-
-	d = (int)((g_rtt_min + 49) / 50);   // (1) base: ~one in-flight frame per 50ms of UNLOADED RTT
-	if (d > 5)
-		d = 5;                          // absolute cap (depth 5 saturates Doom's 35fps sim ~140ms)
-
-	// (2) Depth 1 is one frame per round-trip -- a slideshow once the link isn't
-	// local -- so never auto-park a remote player there. The exception is active
-	// queue draining (heavy inflation just below), where collapsing to 1 recovers.
-	floor_d = (g_rtt_min > 30) ? 2 : 1;
-
-	if (g_rtt_ms > g_rtt_min * 2) {     // (3) heavy queuing (>2x baseline): flush the backlog
-		d = 1;
-		floor_d = 1;
-	} else if (g_rtt_ms > g_rtt_min + (g_rtt_min >> 1)) {  // mild queuing (>1.5x): ease off one
-		d -= 1;
-	}
-
-	// (4) Bandwidth-delay-product cap -- but only while actively streaming. An idle
-	// or de-duped lull drops the frame rate for lack of MOTION, not lack of
-	// bandwidth; capping on that would clamp the depth and leave the next movement
-	// starting from a slideshow (the bug the logs showed: depth=1 on a 211ms link).
-	if (g_recent_fps >= 10) {
-		int bdp = (int)((uint64_t)g_recent_fps * g_rtt_min / 1000) + 2;
-		if (d > bdp)
-			d = bdp;
-	}
-
-	if (d < floor_d)
-		d = floor_d;
-	return d;
+	return g_inflight_auto ? g_auto_depth : g_max_inflight;
 }
 
 // Set the pipeline depth from a config/toggle string: "auto" or a number 1..N.
@@ -411,7 +423,7 @@ static void set_frames_in_flight(const char *val)
 		g_inflight_auto = 1;
 	} else {
 		int fif = atoi(val);
-		if (fif >= 1 && fif < DSR_RING) {
+		if (fif >= 1 && fif <= DEPTH_MAX) {
 			g_max_inflight  = fif;
 			g_inflight_auto = 0;
 		}
@@ -655,7 +667,7 @@ static void fps_window_tick(uint32_t frame_bytes)
 static void emit_overlay(int force)
 {
 	char txt[80], ov[160];
-	int  tn  = snprintf(txt, sizeof(txt), " %s %ufps %uKB/s RTT %u/%ums depth %d%s ",
+	int  tn  = snprintf(txt, sizeof(txt), " %s %ufps %uKB/s lag %u/%ums depth %d%s ",
 	                    mode_name(g_mode), g_recent_fps, g_recent_kbps, g_rtt_ms, g_rtt_min,
 	                    max_inflight(), g_inflight_auto ? "/auto" : "");
 	int  col, ovn;
@@ -683,8 +695,12 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 	}
 	if (out_pending())
 		return;                         // our buffer still draining -> drop this one
-	if (dsr_inflight() > 0 && (int32_t)(g_ack_deadline - now_ms()) <= 0)
-		g_dsr_tail = g_dsr_head;         // reports went silent past the deadline -> reclaim the pipeline
+	if (dsr_inflight() > 0 && (int32_t)(g_ack_deadline - now_ms()) <= 0) {
+		g_dsr_stale += dsr_inflight();   // these frames' reports may still arrive late -> ignore them
+		if (g_dsr_stale > DSR_RING)
+			g_dsr_stale = DSR_RING;
+		g_dsr_tail = g_dsr_head;          // reports went silent past the deadline -> reclaim the pipeline
+	}
 	if (dsr_inflight() >= max_inflight())
 		return;                          // pipeline full: drop this frame (never block the game loop)
 
@@ -1028,18 +1044,34 @@ static void parse_byte(unsigned char c)
 						case 'C': k = KEY_RIGHTARROW; break;
 						case 'D': k = KEY_LEFTARROW;  break;
 						case 'R':                            // CSI r;c R = DSR report = a frame was consumed
-							if (dsr_inflight() > 0) {
+							if (g_dsr_stale > 0) {
+								g_dsr_stale--;               // a late report for a reclaimed frame -> drop it
+							} else if (dsr_inflight() > 0) {
 								uint32_t nowm = now_ms();
 								uint32_t rtt = nowm - g_dsr_ts[g_dsr_tail];
 								g_dsr_tail = (g_dsr_tail + 1) % DSR_RING;
-								g_rtt_ms = g_rtt_ms ? (uint32_t)((g_rtt_ms * 3 + rtt) / 4) : rtt;
-								// Baseline = windowed min RTT (the unloaded latency); a new low
-								// always wins, and a stale min re-seeds so a genuinely risen
-								// baseline isn't mistaken for permanent queuing.
-								if (g_rtt_min == 0 || rtt <= g_rtt_min
-								    || (uint32_t)(nowm - g_rtt_min_at) > RTT_MIN_WINDOW) {
-									g_rtt_min = rtt;
-									g_rtt_min_at = nowm;
+								// Guard against a stale/mismatched report -- a late reply for a
+								// reclaimed frame matched to a freshly-sent one reads absurdly low
+								// and would poison the baseline (collapsing the ceiling to depth 1).
+								// Ignore a sample far below the smoothed RTT (genuine drops are gradual).
+								if (g_rtt_ms == 0 || rtt >= g_rtt_ms / 3) {
+									g_rtt_ms = g_rtt_ms ? (uint32_t)((g_rtt_ms * 3 + rtt) / 4) : rtt;
+									// Round-trip = network latency + the client's frame decode/render
+									// time. Once it's non-trivial (>40ms -- which on a LAN is the JXL
+									// decode, NOT network distance), a single in-flight frame (depth 1)
+									// would cap the frame rate below ~25fps with no latency upside, so
+									// floor depth at 2. Latched: a later corrupted-low sample can't undo it.
+									if (g_rtt_ms > 40)
+										g_rt_high = 1;
+									// Baseline = windowed min RTT (the unloaded latency); a new low
+									// always wins, and a stale min re-seeds so a genuinely risen
+									// baseline isn't mistaken for permanent queuing.
+									if (g_rtt_min == 0 || rtt <= g_rtt_min
+									    || (uint32_t)(nowm - g_rtt_min_at) > RTT_MIN_WINDOW) {
+										g_rtt_min = rtt;
+										g_rtt_min_at = nowm;
+									}
+									auto_depth_update();     // re-evaluate the auto pipeline depth
 								}
 							}
 							g_ack_deadline = now_ms() + 250; // progress -> refresh the safety deadline
@@ -1433,7 +1465,7 @@ static void emit_telemetry(void)
 	if (g_tx_frames == 0 || secs <= 0.0)
 		return;
 	dlog("telemetry: %s %dx%d | %u frames in %.1fs = %.1f fps | %llu bytes "
-	     "(%.0f/frame avg) | %.1f KB/s avg | %u deduped | RTT~%ums (min %ums) depth=%d%s",
+	     "(%.0f/frame avg) | %.1f KB/s avg | %u deduped | lag~%ums (min %ums) depth=%d%s",
 	     mode_name(g_mode), s_pxW, s_pxH, g_tx_frames, secs, g_tx_frames / secs,
 	     (unsigned long long)g_tx_bytes, (double)g_tx_bytes / g_tx_frames,
 	     g_tx_bytes / secs / 1024.0, g_dedup_skipped, g_rtt_ms, g_rtt_min, max_inflight(),
@@ -2072,8 +2104,8 @@ static void toggle_dither(void)
 	dlog("dither toggle -> %s", dither_str(g_dither_pref));
 }
 
-// Ctrl-T: cycle the frame-pipeline depth (1..5 -> auto -> 1) live, persist
-// it per-user, and flash a label showing the depth + measured RTT -- so a far-away
+// Ctrl-T: cycle the frame-pipeline depth (1..DEPTH_MAX -> auto -> 1) live, persist
+// it per-user, and flash a label showing the depth + measured lag -- so a far-away
 // player can A/B the remote-latency pacing and feel the difference immediately.
 static void toggle_pipeline(void)
 {
@@ -2082,20 +2114,20 @@ static void toggle_pipeline(void)
 
 	if (g_inflight_auto)
 		g_inflight_auto = 0, g_max_inflight = 1;                               // auto -> 1
-	else if (g_max_inflight >= 5)
-		g_inflight_auto = 1;                                                   // 5 -> auto
+	else if (g_max_inflight >= DEPTH_MAX)
+		g_inflight_auto = 1;                                                   // DEPTH_MAX -> auto
 	else
-		g_max_inflight++;                                                      // 1->2 ... 4->5
+		g_max_inflight++;                                                      // 1->2 ... ->DEPTH_MAX
 	sd_save_user_prefs();
 
 	// Skip the centered popup when the stats overlay is already up -- it shows the
-	// live depth/RTT, so the label would just be redundant (and obscure the game).
+	// live depth/lag, so the label would just be redundant (and obscure the game).
 	if (!g_stats_overlay) {
 		if (g_inflight_auto)
-			snprintf(line, sizeof(line), "  DEPTH: auto  (%d, RTT ~%ums)  ",
+			snprintf(line, sizeof(line), "  DEPTH: auto  (%d, lag ~%ums)  ",
 			         max_inflight(), g_rtt_ms);
 		else
-			snprintf(line, sizeof(line), "  DEPTH: %d  (RTT ~%ums)  ", g_max_inflight, g_rtt_ms);
+			snprintf(line, sizeof(line), "  DEPTH: %d  (lag ~%ums)  ", g_max_inflight, g_rtt_ms);
 		pad = (g_cols - (int)strlen(line)) / 2;
 		if (pad < 0)
 			pad = 0;
@@ -2103,7 +2135,7 @@ static void toggle_pipeline(void)
 		emit_all(buf, n);
 		g_label_until = now_ms() + 1200;
 	}
-	dlog("pipeline toggle -> frames_in_flight=%s RTT~%ums", frames_in_flight_str(), g_rtt_ms);
+	dlog("pipeline toggle -> frames_in_flight=%s lag~%ums", frames_in_flight_str(), g_rtt_ms);
 }
 
 // Ctrl-S: toggle the live stats overlay (a top-row strip drawn over each frame --
