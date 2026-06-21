@@ -252,6 +252,8 @@ static struct vstate g_vstates[6];
 static int           g_vstate_n = 0;
 static int           g_vstate_i = 0;
 static uint32_t      g_label_until = 0;  // suppress frame output until then (label dwell)
+static int           g_clear_row1  = 0;  // erase the top row next frame (a dismissed label/overlay
+                                         // strands there in a letterboxed window -- frame won't repaint it)
 
 static void cycle_video(void);
 static void toggle_dither(void);   // Ctrl-N: flip text-tier dither + persist
@@ -351,6 +353,7 @@ static uint32_t *g_last_fb   = NULL;     // copy of the framebuffer last emitted
 static int       g_last_fb_ok = 0;       // is g_last_fb a valid match target? (cleared on label/resize)
 static uint32_t  g_dedup_skipped = 0;    // telemetry: identical frames skipped (not re-sent)
 static char      g_ov_last[80] = "";     // last stats-overlay text drawn (to skip redundant redraws)
+static int       g_ov_prev_tn = 0;       // width of the last overlay -> blank the gap when it shrinks
 
 static int dsr_inflight(void) { return (g_dsr_head - g_dsr_tail + DSR_RING) % DSR_RING; }
 
@@ -666,11 +669,18 @@ static void fps_window_tick(uint32_t frame_bytes)
 // when the text changed, so refreshing it over a de-duped (unchanging) frame is free.
 static void emit_overlay(int force)
 {
-	char txt[80], ov[160];
-	int  tn  = snprintf(txt, sizeof(txt), " %s %ufps %uKB/s lag %u/%ums depth %d%s ",
-	                    mode_name(g_mode), g_recent_fps, g_recent_kbps, g_rtt_ms, g_rtt_min,
-	                    max_inflight(), g_inflight_auto ? "/auto" : "");
-	int  col, ovn;
+	char txt[80], ov[160], bw[16];
+	int  tn, col, ovn;
+
+	// Throughput: KB/s up to 999, then fractional MB/s (KiB/MiB of wire BYTES) so the
+	// field stays narrow on a fast link.
+	if (g_recent_kbps > 999)
+		snprintf(bw, sizeof(bw), "%u.%uMB/s", g_recent_kbps / 1024, (g_recent_kbps % 1024) * 10 / 1024);
+	else
+		snprintf(bw, sizeof(bw), "%uKB/s", g_recent_kbps);
+	tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s ",
+	              mode_name(g_mode), g_recent_fps, bw, g_rtt_ms, g_rtt_min,
+	              max_inflight(), g_inflight_auto ? "/auto" : "");
 
 	if (!force && strcmp(txt, g_ov_last) == 0)
 		return;                         // unchanged and the frame didn't repaint it -> nothing to send
@@ -679,7 +689,16 @@ static void emit_overlay(int force)
 	col = g_cols - tn + 1;              // right-justify on the top row
 	if (col < 1)
 		col = 1;
-	ovn = snprintf(ov, sizeof(ov), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", col, txt);
+	if (g_ov_prev_tn > tn) {            // narrower than last time: blank the now-uncovered cells
+		int prev_col = g_cols - g_ov_prev_tn + 1;
+		if (prev_col < 1)
+			prev_col = 1;
+		ovn = snprintf(ov, sizeof(ov), "\x1b[1;%dH\x1b[0m%*s\x1b[1;37;44m%s\x1b[0m",
+		               prev_col, col - prev_col, "", txt);
+	} else {
+		ovn = snprintf(ov, sizeof(ov), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", col, txt);
+	}
+	g_ov_prev_tn = tn;
 	if (ovn > 0)
 		out_put(ov, (size_t)ovn);
 }
@@ -689,9 +708,14 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 	bool built = false;
 	int  identical;
 
-	if (g_label_until != 0 && (int32_t)(now_ms() - g_label_until) < 0) {
-		g_last_fb_ok = 0;               // a label is overlaying the frame -> repaint once it clears
-		return;                         // holding the video-cycle label on screen
+	if (g_label_until != 0) {
+		if ((int32_t)(now_ms() - g_label_until) < 0) {
+			g_last_fb_ok = 0;           // a label is overlaying the frame -> repaint once it clears
+			return;                     // holding the video-cycle label on screen
+		}
+		g_label_until = 0;              // dwell ended -> erase the label's row + force a full repaint
+		g_clear_row1 = 1;
+		g_last_fb_ok = 0;
 	}
 	if (out_pending())
 		return;                         // our buffer still draining -> drop this one
@@ -722,6 +746,12 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 	}
 
 	g_out_len = 0; g_out_off = 0;       // begin a fresh frame buffer
+	if (g_clear_row1) {                 // wipe a just-dismissed label/overlay off the top row
+		out_put("\x1b[1;1H\x1b[2K", 10);
+		g_ov_last[0] = '\0';            // overlay text is gone -> force a redraw if it's still on
+		g_ov_prev_tn = 0;
+		g_clear_row1 = 0;
+	}
 	if (g_mode == MODE_TEXT) {          // ANSI/CP437 block-char tier (render_text)
 		size_t      tlen;
 		const char *tb = rt_render_frame(&tlen);
