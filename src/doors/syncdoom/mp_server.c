@@ -112,6 +112,10 @@ static void mp_write_registry(const char *host, const char *wadset,
 int mp_dedicated_main(int idle_timeout_secs)
 {
 	int         idle_ms = idle_timeout_secs * 1000;
+	int         empty_ms = 8000;          // once a player has joined, an empty match
+	                                      // quits fast (cancelled/finished -- it's
+	                                      // hidden from Browse the moment it empties)
+	int         had_client = 0;           // a client connected at least once
 	int         last_nonempty = I_GetTimeMS();
 	int         last_heartbeat = 0;
 	int         reg_live = 0;             // registry entry currently exists (joinable)
@@ -163,9 +167,17 @@ int mp_dedicated_main(int idle_timeout_secs)
 
 		if (NET_SV_ConnectedClients() > 0) {
 			last_nonempty = I_GetTimeMS();
-		} else if (idle_ms > 0 && I_GetTimeMS() - last_nonempty > idle_ms) {
-			printf("syncdoom: dedicated server idle, shutting down\n");
-			break;
+			had_client = 1;
+		} else {
+			// Before anyone has joined, allow the full idle grace (the creator's
+			// connect is in flight). Once a client has come and gone, the match is
+			// cancelled/over -- quit promptly so it stops lingering.
+			int grace = had_client ? empty_ms : idle_ms;
+			if (grace > 0 && I_GetTimeMS() - last_nonempty > grace) {
+				printf("syncdoom: dedicated server %s, shutting down\n",
+				       had_client ? "match empty" : "idle (nobody joined)");
+				break;
+			}
 		}
 
 		// Once the match starts it's no longer joinable (vanilla Doom has no

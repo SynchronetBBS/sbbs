@@ -273,6 +273,7 @@ function sd_list_games(cfg)
 
 	var files = directory(SD_GAMES + "*.ini");
 	var now = time();
+	var stale = parseInt(cfg.net.stale, 10) || 30;
 	var i;
 	for (i = 0; i < files.length; i++) {
 		var f = new File(files[i]);
@@ -283,9 +284,20 @@ function sd_list_games(cfg)
 		if (!g || g.port === undefined)
 			continue;
 		g.file = files[i];
-		if (g.heartbeat !== undefined
-		    && (now - parseInt(g.heartbeat, 10)) > cfg.net.stale)
-			continue;        // stale; server presumed dead
+		// A clean shutdown removes its own .ini; an unclean death (kill/crash)
+		// leaves it frozen at its last heartbeat. Reap (delete) it once it's well
+		// past stale -- x3 leaves margin for SMB attribute-cache lag on a shared
+		// cross-host games dir, and a still-live server re-creates its file on the
+		// next ~3s heartbeat anyway. In the merely-stale window just hide it (it
+		// may be that cache lag, and the heartbeat could recover).
+		var age = (g.heartbeat !== undefined)
+		    ? (now - parseInt(g.heartbeat, 10)) : (stale * 3 + 1);
+		if (age > stale * 3) {
+			file_remove(files[i]);
+			continue;        // dead server -- reap its orphaned registry entry
+		}
+		if (age > stale)
+			continue;        // stale (maybe SMB lag); server presumed dead -- hide
 		// An empty match (everyone left, or it hasn't been joined yet) is not
 		// meaningfully joinable -- the dedicated server is already counting down
 		// its idle-timeout to self-quit. Hide it so it doesn't linger in the
