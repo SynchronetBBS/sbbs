@@ -126,6 +126,7 @@ DLLEXPORT bool  set_node_status(scfg_t*, int node_num, enum node_status);
 DLLEXPORT bool  set_node_misc(scfg_t*, int node_num, uint);
 DLLEXPORT bool  set_node_errors(scfg_t*, int node_num, uint);
 DLLEXPORT bool  xtrn_is_running(scfg_t*, int xtrn_num);
+DLLEXPORT bool  user_can_access_xtrn(scfg_t*, int xtrn_num, user_t*, client_t* client);
 
 DLLEXPORT int  finduserstr(scfg_t*, int usernumber, enum user_field, const char *str
                             , bool del, bool next, void (*progress)(void*, int, int), void* cbdata);

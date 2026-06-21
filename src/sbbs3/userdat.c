@@ -3835,6 +3835,23 @@ size_t user_field_len(enum user_field fnum)
 }
 
 /****************************************************************************/
+/* Determine if specified user can or cannot access a specified xtrn prog   */
+/****************************************************************************/
+bool user_can_access_xtrn(scfg_t* cfg, int xtrn_num, user_t* user, client_t* client)
+{
+	if (!VALID_CFG(cfg))
+		return false;
+	if (!xtrnnum_is_valid(cfg, xtrn_num))
+		return false;
+	if (!chk_ar(cfg, cfg->xtrnsec[cfg->xtrn[xtrn_num]->sec]->ar, user, client))
+		return false;
+	if (!chk_ar(cfg, cfg->xtrn[xtrn_num]->ar, user, client))
+		return false;
+
+	return true;
+}
+
+/****************************************************************************/
 // Determine if the specified user can access one or more sub-boards of group
 /****************************************************************************/
 bool user_can_access_grp(scfg_t* cfg, int grpnum, user_t* user, client_t* client)
