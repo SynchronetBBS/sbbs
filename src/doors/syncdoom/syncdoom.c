@@ -355,6 +355,8 @@ static int       g_last_fb_ok = 0;       // is g_last_fb a valid match target? (
 static uint32_t  g_dedup_skipped = 0;    // telemetry: identical frames skipped (not re-sent)
 static char      g_ov_last[80] = "";     // last stats-overlay text drawn (to skip redundant redraws)
 static int       g_ov_prev_tn = 0;       // width of the last overlay -> blank the gap when it shrinks
+static int       g_ov_cell_col = 0;      // overlay's cell-grid column (0-based) -> text cell-diff exclusion
+static int       g_ov_cell_w   = 0;      // overlay's width in cells (0 = not drawn yet)
 
 static int dsr_inflight(void) { return (g_dsr_head - g_dsr_tail + DSR_RING) % DSR_RING; }
 
@@ -704,6 +706,8 @@ static void emit_overlay(int force)
 	col = aw - tn + 1;                  // right-justify on the top row
 	if (col < 1)
 		col = 1;
+	g_ov_cell_col = col - 1;            // overlay's cell region (0-based) -> excluded from the
+	g_ov_cell_w   = tn;                 // text cell-diff so the game never repaints under it
 	if (g_ov_prev_tn > tn) {            // narrower than last time: blank the now-uncovered cells
 		int prev_col = aw - g_ov_prev_tn + 1;
 		if (prev_col < 1)
@@ -765,11 +769,19 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 		out_put("\x1b[1;1H\x1b[2K", 10);
 		g_ov_last[0] = '\0';            // overlay text is gone -> force a redraw if it's still on
 		g_ov_prev_tn = 0;
+		rt_invalidate();               // we cleared the row behind the text renderer -> resync it
 		g_clear_row1 = 0;
 	}
 	if (g_mode == MODE_TEXT) {          // ANSI/CP437 block-char tier (render_text)
 		size_t      tlen;
-		const char *tb = rt_render_frame(&tlen);
+		const char *tb;
+		// Exclude the stats overlay's cells from the game cell-diff so the renderer
+		// never repaints under it (no flicker). Uses last frame's overlay region;
+		// emit_overlay (below) redraws + updates it. Cleared when the overlay is off.
+		rt_exclude_clear();
+		if (g_stats_overlay && g_ov_cell_w > 0)
+			rt_exclude_add(0, g_ov_cell_col, g_ov_cell_col + g_ov_cell_w);
+		tb = rt_render_frame(&tlen);
 		out_put(tb, tlen);
 	} else {
 		pack_rgb(fb, w, h);

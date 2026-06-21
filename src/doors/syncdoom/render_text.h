@@ -39,4 +39,15 @@ int rt_dither_applicable(void);
 // Returns a pointer to the bytes and sets *len; valid until the next call.
 const char *rt_render_frame(size_t *len);
 
+// Cell-diff HUD exclusion: cells the door draws on top (stats overlay, message
+// line, chat) which the game render must skip so it never repaints under them.
+// Register the active rectangles (cell coords, [c0,c1) on row 'row') before each
+// rt_render_frame; rt_exclude_clear() drops them all.
+void rt_exclude_clear(void);
+void rt_exclude_add(int row, int c0, int c1);
+
+// Force a full repaint next frame (after the terminal is written behind the
+// renderer's back, e.g. a manual row clear) so the shadow can't drift from screen.
+void rt_invalidate(void);
+
 #endif // SYNCDOOM_RENDER_TEXT_H_

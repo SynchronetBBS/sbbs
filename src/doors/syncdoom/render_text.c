@@ -582,6 +582,104 @@ static void output_colors(
     buffer_append_literal("m");
 }
 
+// --- cell-diff: re-emit only the cells whose content changed -----------------
+// We keep a SHADOW of every cell's (fg,bg,glyph) signature; put_cell() positions
+// the cursor and emits a cell only when it differs from last frame (or rt_force
+// requests a full repaint). Absolute positioning replaces per-row newlines. The
+// dither must be static (rt_render_frame no longer cycles the noise texture) so a
+// cell's signature is stable frame-to-frame -- otherwise every cell would "change".
+typedef struct { long fg, bg; uint32_t gh; } rt_sig_t;
+static rt_sig_t *rt_shadow = NULL;
+static int       rt_grid_cols = 0, rt_grid_rows = 0;
+static int       rt_xstride = 1, rt_ystride = 1;
+static int       rt_force = 1;                       // full repaint pending
+static int       rt_cur_row = -1, rt_cur_col = -1;   // tracked cursor (1-based; -1 = unknown)
+
+static uint32_t rt_glyph_hash(const char *g) {
+    uint32_t h = 2166136261u;
+    while (*g)
+        h = (h ^ (uint8_t)*g++) * 16777619u;
+    return h;
+}
+
+// HUD exclusion: cells a text-HUD layer (the door's stats overlay, and later the
+// message line / chat) owns. The game diff must NOT emit them, so the game never
+// repaints under the HUD -> no flicker. The door registers the active rectangles
+// (cell coords, [c0,c1)) before each rt_render_frame; cleared cells repaint on
+// their own because put_cell stamps an invalid (-1) shadow on every excluded cell.
+#define RT_EXCL_MAX 8
+static struct { int row, c0, c1; } rt_excl[RT_EXCL_MAX];
+static int rt_excl_n = 0;
+
+void rt_exclude_clear(void) { rt_excl_n = 0; }
+
+// Force a full repaint next frame -- call after anything writes the terminal behind
+// the renderer's back (e.g. the door clearing a label row), which would otherwise
+// leave the shadow out of sync with the screen.
+void rt_invalidate(void) { rt_force = 1; }
+
+void rt_exclude_add(int row, int c0, int c1) {
+    if (rt_excl_n < RT_EXCL_MAX && c1 > c0) {
+        rt_excl[rt_excl_n].row = row;
+        rt_excl[rt_excl_n].c0  = c0;
+        rt_excl[rt_excl_n].c1  = c1;
+        rt_excl_n++;
+    }
+}
+
+static int rt_excluded(int trow, int tcol) {
+    int i;
+    for (i = 0; i < rt_excl_n; i++)
+        if (rt_excl[i].row == trow && tcol >= rt_excl[i].c0 && tcol < rt_excl[i].c1)
+            return 1;
+    return 0;
+}
+
+static void put_cell(int x, int y,
+                     int fr, int fg, int fb, int br, int bg, int bb, const char *glyph) {
+    int tcol = x / rt_xstride;
+    int trow = y / rt_ystride;
+    if (rt_shadow == NULL || tcol < 0 || trow < 0 || tcol >= rt_grid_cols || trow >= rt_grid_rows)
+        return;
+
+    if (noise_enabled) {                            // color dither (was inside output_colors)
+        uint32_t n = NOISE_SAMPLE(x, y);
+        int dr = (int)((n >> 16) & 0xff) - 128;
+        int dg = (int)((n >> 8) & 0xff) - 128;
+        int db = (int)(n & 0xff) - 128;
+        fr += dr; br += dr; fg += dg; bg += dg; fb += db; bb += db;
+    }
+
+    char     fp[24], bp[24];
+    long     fk = rt_color_params(fp, fr, fg, fb, false);
+    long     bk = rt_color_params(bp, br, bg, bb, true);
+    uint32_t gh = rt_glyph_hash(glyph);
+    rt_sig_t *cell = &rt_shadow[trow * rt_grid_cols + tcol];
+
+    if (rt_excluded(trow, tcol)) { cell->fg = -1; return; }   // HUD owns this cell
+    if (!rt_force && cell->fg == fk && cell->bg == bk && cell->gh == gh)
+        return;                                     // unchanged -> emit nothing
+    cell->fg = fk; cell->bg = bk; cell->gh = gh;
+
+    if (rt_cur_row != trow + 1 || rt_cur_col != tcol + 1) {
+        char pos[16];
+        int  pl = snprintf(pos, sizeof(pos), "\033[%d;%dH", trow + 1, tcol + 1);
+        buffer_append(pos, (size_t)pl);
+    }
+    bool need_fg = (fk != rt_last_fg), need_bg = (bk != rt_last_bg);
+    if (need_fg || need_bg) {
+        rt_last_fg = fk; rt_last_bg = bk;
+        buffer_append_literal("\033[");
+        if (need_fg) buffer_append_cstr(fp);
+        if (need_fg && need_bg) buffer_append_literal(";");
+        if (need_bg) buffer_append_cstr(bp);
+        buffer_append_literal("m");
+    }
+    buffer_append_cstr(glyph);
+    rt_cur_row = trow + 1;
+    rt_cur_col = tcol + 2;                           // cursor advanced past the glyph
+}
+
 static void output_newline(void) {
     // CR+LF, not bare LF: over a BBS the door's output isn't LF->CRLF translated,
     // so we must return to column 1 ourselves (with auto-wrap off, a bare LF would
@@ -607,15 +705,11 @@ static void start_row() {
 static void draw_space() {
     uint32_t* dest_pixel = dest_buffer;
     for (int y = 0; y < dest_height; ++y) {
-        start_row();
         for (int x = 0; x < dest_width; ++x) {
             uint8_t* pixel = (uint8_t*)dest_pixel;
-            output_bg_color(x, y, pixel[2], pixel[1], pixel[0]);
-            //printf("\033[48;5;%um ", 16 + (pixel[0] / 43) + (pixel[1] / 43) * 6 + (pixel[2] / 43) * 36);
-            buffer_append_literal(" ");
+            put_cell(x, y, pixel[2], pixel[1], pixel[0], pixel[2], pixel[1], pixel[0], " ");
             ++dest_pixel;
         }
-        output_newline();
     }
 }
 
@@ -624,23 +718,13 @@ static void draw_half() {
     uint32_t* bot = dest_buffer + dest_width;
 
     for (int y = 0; y < dest_height; y += 2) {
-        start_row();
         for (int x = 0; x < dest_width; ++x) {
-            //printf("\033[48;2;%u;%u;%um ", pixel[2], pixel[1], pixel[0]);
-            //printf("\033[48;5;%um ", 16 + (pixel[0] / 43) + (pixel[1] / 43) * 6 + (pixel[2] / 43) * 36);
-
-            output_colors(x, y,
-                    ((uint8_t*)top)[2], ((uint8_t*)top)[1], ((uint8_t*)top)[0],
-                    ((uint8_t*)bot)[2], ((uint8_t*)bot)[1], ((uint8_t*)bot)[0]);
-            if (cli_mode == cli_mode_half) {
-                buffer_append(g_block_upper, g_block_upper_len);
-            }
-
+            put_cell(x, y,
+                     ((uint8_t*)top)[2], ((uint8_t*)top)[1], ((uint8_t*)top)[0],
+                     ((uint8_t*)bot)[2], ((uint8_t*)bot)[1], ((uint8_t*)bot)[0], g_block_upper);
             ++top;
             ++bot;
         }
-
-        output_newline();
         top += dest_width;
         bot += dest_width;
     }
@@ -682,6 +766,16 @@ void rt_config(int cols, int rows, rt_mode_t mode, rt_colors_t colors, rt_charse
 
     if (buffer == NULL) { buffer_capacity = 1u << 16; buffer = malloc(buffer_capacity); }
 
+    // cell-diff shadow: one signature per terminal cell. Source pixels per cell =
+    // dest dims / grid dims (1x2 half, 2x2 quadrant/blocks, 2x3 sextant, 1x1 space).
+    rt_grid_cols = cols;
+    rt_grid_rows = rows;
+    rt_xstride   = dest_width / cols;
+    rt_ystride   = dest_height / rows;
+    free(rt_shadow);
+    rt_shadow = calloc((size_t)cols * rows, sizeof(rt_sig_t));
+    rt_force  = 1;          // geometry/tier/charset changed -> repaint every cell next frame
+
     noise_enabled = true;   // init_noise may disable it (e.g. 24-bit)
     init_noise();
 }
@@ -691,13 +785,10 @@ const char *rt_render_frame(size_t *len)
     int x, y;
     uint32_t *dp = dest_buffer;
 
-    if (noise_enabled) {
-        uint32_t t = DG_GetTicksMs();
-        if (t - noise_last_time > (uint32_t)noise_speed) {
-            noise_last_time = t;
-            noise_current = (noise_current + 1) % noise_texture_count;
-        }
-    }
+    // NOTE: the dither noise texture is intentionally NOT cycled here. The cell-diff
+    // (put_cell) skips cells whose signature is unchanged; an animated dither would
+    // re-tint every cell every frame and force a full repaint, so the dither is held
+    // static (spatial only). Ctrl-N still toggles it (noise_enabled) on/off.
     for (y = 0; y < dest_height; ++y)
         for (x = 0; x < dest_width; ++x) {
             int sy = y * DOOMGENERIC_RESY / dest_height;
@@ -706,8 +797,13 @@ const char *rt_render_frame(size_t *len)
         }
 
     buffer_count = 0;
-    buffer_append_literal("\033[H");   // home; every cell is overwritten each frame
-    rt_reset_color_cache();            // prior frame ended on \033[0m -> default colors
+    if (rt_force)
+        buffer_append_literal("\033[2J");   // full repaint: clear, then redraw every cell
+    rt_cur_row = rt_cur_col = -1;            // tracked cursor unknown at frame start
+    rt_reset_color_cache();                  // prior frame left a \033[0m -> default colors
+    if (cli_colors == cli_colors_3bit)
+        buffer_append_literal("\033[1m");    // bright-via-bold, asserted once for the frame
+
     switch (cli_mode) {
         case cli_mode_space:    draw_space();    break;
         case cli_mode_quadrant: draw_quadrant(); break;
@@ -716,11 +812,9 @@ const char *rt_render_frame(size_t *len)
         default:                draw_half();     break;
     }
 
-    // Drop the trailing CR+LF: a newline after the LAST row pushes the cursor past
-    // the bottom margin and scrolls the screen, making the image jump every frame.
-    if (buffer_count >= 2 && buffer[buffer_count-1] == '\n' && buffer[buffer_count-2] == '\r')
-        buffer_count -= 2;
-
+    if (buffer_count > 0)
+        buffer_append_literal("\033[0m");    // clean SGR state for the overlay / next frame
+    rt_force = 0;
     *len = buffer_count;
     return buffer;
 }
@@ -953,21 +1047,15 @@ static void draw_subcell(const char *const *glyphs) {
                     ((uint8_t*)bot)[2], ((uint8_t*)bot)[1], ((uint8_t*)bot)[0]);
                     */
 
-            if (index == 0) {
-                output_bg_color(x, y, bg_red, bg_green, bg_blue);
-                buffer_append_literal(" ");
-            } else {
-                output_colors(x, y,
-                        fg_red, fg_green, fg_blue,
-                        bg_red, bg_green, bg_blue);
-                buffer_append_cstr(glyphs[index]);
-            }
+            if (index == 0)
+                put_cell(x, y, bg_red, bg_green, bg_blue, bg_red, bg_green, bg_blue, " ");
+            else
+                put_cell(x, y, fg_red, fg_green, fg_blue, bg_red, bg_green, bg_blue, glyphs[index]);
 
             top += 2;
             bot += 2;
         }
 
-        output_newline();
         top += dest_width;
         bot += dest_width;
     }
@@ -1226,25 +1314,16 @@ static void draw_sextant() {
                     ((uint8_t*)bot)[2], ((uint8_t*)bot)[1], ((uint8_t*)bot)[0]);
                     */
 
-//if (x < 10){
-            if (index == 0) {
-                output_bg_color(x, y, bg_red, bg_green, bg_blue);
-                buffer_append_literal(" ");
-            } else {
-                //buffer_append_format("\033[0m%u",index);
-                output_colors(x, y,
-                        fg_red, fg_green, fg_blue,
-                        bg_red, bg_green, bg_blue);
-                buffer_append_cstr(sextants[index]);
-            }
-//}
+            if (index == 0)
+                put_cell(x, y, bg_red, bg_green, bg_blue, bg_red, bg_green, bg_blue, " ");
+            else
+                put_cell(x, y, fg_red, fg_green, fg_blue, bg_red, bg_green, bg_blue, sextants[index]);
 
             top += 2;
             mid += 2;
             bot += 2;
         }
 
-        output_newline();
         top += dest_width << 1;
         mid += dest_width << 1;
         bot += dest_width << 1;
