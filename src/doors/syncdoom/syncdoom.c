@@ -2415,8 +2415,21 @@ static void sd_waitroom_draw(void)
 	char            buf[2048];
 	int             len = 0, i, r;
 	net_waitdata_t *w = &net_client_wait_data;
-	int             bottom = (s_lines < 25) ? s_lines : 25;
-	int             top = bottom - 3;    // 4-row status panel over the bottom of ENDOOM
+	int             disp = w->num_players;
+	int             twoline, panelrows, bottom, top, prow;
+
+	if (disp < 1)
+		disp = 1;
+	if (disp > NET_MAXPLAYERS)
+		disp = NET_MAXPLAYERS;
+	// A lone controller gets a two-line waiting/solo hint; everyone else a single
+	// prompt row. List one player PER ROW so a long alias (up to 25 chars, x4)
+	// can't overrun 80 cols; the panel grows upward over the splash as players
+	// join (4 rows at 1-2 players .. 6 at a full 4).
+	twoline   = (w->is_controller && w->num_players < 2 && w->max_players > 1);
+	panelrows = 1 /*title*/ + disp + (twoline ? 2 : 1);
+	bottom    = (s_lines < 25) ? s_lines : 25;
+	top       = bottom - (panelrows - 1);
 	if (top < 1)
 		top = 1;
 
@@ -2428,27 +2441,27 @@ static void sd_waitroom_draw(void)
 	len += snprintf(buf + len, sizeof(buf) - len,
 	                "\x1b[%d;3HS y n c \x1b[1;31mD O O M\x1b[1;37m   waiting room   Players %d/%d",
 	                top, w->num_players, w->max_players);
-	len += snprintf(buf + len, sizeof(buf) - len, "\x1b[%d;3H", top + 1);
-	for (i = 0; i < w->num_players && i < NET_MAXPLAYERS; i++)
-		len += snprintf(buf + len, sizeof(buf) - len, "%s\x1b[1;33m%d.\x1b[1;37m%s%s",
-		                i ? "   " : "", i + 1, w->player_names[i],
-		                (i == w->consoleplayer) ? " (you)" : "");
+	for (i = 0; i < disp; i++)           // one player per row -- no overflow
+		len += snprintf(buf + len, sizeof(buf) - len,
+		                "\x1b[%d;3H\x1b[1;33m%d.\x1b[1;37m %s%s",
+		                top + 1 + i, i + 1, w->player_names[i],
+		                (i == w->consoleplayer) ? " \x1b[1;33m(you)\x1b[1;37m" : "");
+	prow = top + 1 + disp;               // first prompt row, just below the list
 	if (!w->is_controller)
 		len += snprintf(buf + len, sizeof(buf) - len,
 		                "\x1b[%d;3HWaiting for the host to start...   \x1b[1;33mQ\x1b[1;37m to cancel.",
-		                top + 3);
-	else if (w->num_players < 2 && w->max_players > 1) {
-		// Two rows -- the one-line form overran 80 cols (truncated the solo hint).
+		                prow);
+	else if (twoline) {
 		len += snprintf(buf + len, sizeof(buf) - len,
 		                "\x1b[%d;3H\x1b[1;33mWaiting for another player...\x1b[1;37m  Auto-starts when full.",
-		                top + 2);
+		                prow);
 		len += snprintf(buf + len, sizeof(buf) - len,
 		                "\x1b[%d;3H\x1b[1;33mQ\x1b[1;37m to cancel.  To play solo, cancel and pick Play single-player.",
-		                top + 3);
+		                prow + 1);
 	} else
 		len += snprintf(buf + len, sizeof(buf) - len,
 		                "\x1b[%d;3HPress \x1b[1;33mS\x1b[1;37m or \x1b[1;33mEnter\x1b[1;37m to start now, "
-		                "\x1b[1;33mQ\x1b[1;37m to cancel.", top + 3);
+		                "\x1b[1;33mQ\x1b[1;37m to cancel.", prow);
 	len += snprintf(buf + len, sizeof(buf) - len, "\x1b[0m");
 
 	if (len > 0)
