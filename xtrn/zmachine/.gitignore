@@ -1,0 +1,9 @@
+/node_modules/
+*.z3
+*.z4
+*.z5
+*.z8
+# Bundled, MIT-licensed Zork I/II/III ship with the door (exceptions to the *.zN ignore above)
+!fantasy/zork1.z3
+!fantasy/zork2.z3
+!fantasy/zork3.z3
