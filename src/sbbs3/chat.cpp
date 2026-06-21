@@ -2079,7 +2079,7 @@ void sbbs_t::simulate_type(const char* str, bool with_typos, double speed_factor
 	 * print the whole string at terminal speed. Useful when the sysop
 	 * wants snappy bot output with no character delays. */
 	if (speed_factor <= 0) {
-		bputs(str);
+		bputs(str, P_AUTO_UTF8);
 		return;
 	}
 
@@ -2102,6 +2102,34 @@ void sbbs_t::simulate_type(const char* str, bool with_typos, double speed_factor
 			term->newline();
 			if (i + 1 < len)
 				TYPE_WAIT(80);   /* short pause at paragraph breaks */
+			continue;
+		}
+
+		/* UTF-8 multibyte sequence.  Only present when the terminal is
+		 * UTF-8 -- js_simulate_type()/chat_llm_session() down-convert to
+		 * CP437 for non-UTF-8 terminals before calling here, so a high bit
+		 * otherwise means a CP437 character that outchar() handles below.
+		 * Emit the whole codepoint atomically via bputs(P_UTF8): typo
+		 * simulation applies only to ASCII, and the byte-by-byte outchar()
+		 * below would treat each UTF-8 byte as a CP437 character and
+		 * re-encode it -- double-encoding the codepoint into mojibake. */
+		if ((ch & 0x80) && term->supports(UTF8)) {
+			int clen = 1;
+			if ((ch & 0xE0) == 0xC0)
+				clen = 2;
+			else if ((ch & 0xF0) == 0xE0)
+				clen = 3;
+			else if ((ch & 0xF8) == 0xF0)
+				clen = 4;
+			char seq[5];
+			int  n = 0;
+			for (; n < clen && (i + n) < len; n++)
+				seq[n] = str[i + n];
+			seq[n] = 0;
+			bputs(seq, P_UTF8);
+			i += n - 1;   /* the for-loop's i++ consumes the final byte */
+			if (i + 1 < len)
+				TYPE_WAIT(25 + sbbs_random(150));
 			continue;
 		}
 
@@ -2627,8 +2655,6 @@ bool sbbs_t::chat_llm_multinode_turn(int gurunum, const char* input)
 			}
 			if (JSVAL_IS_STRING(rval)
 			    && js_to_cstr(js_cx, rval, reply, sizeof reply)) {
-				if (!supports_utf8)
-					utf8_to_cp437_inplace(reply);
 				/* Multinode emits the reply as a single line via
 				 * text[ChatLineFmt] (e.g. "<guru-name> #N: <text>"),
 				 * NOT character-by-character via simulate_type.  This
@@ -2640,7 +2666,16 @@ bool sbbs_t::chat_llm_multinode_turn(int gurunum, const char* input)
 				size_t reply_len = strlen(reply);
 				mswait((int)(reply_len * 100));
 				attr(cfg.color[clr_chatlocal]);
-				bprintf(text[ChatLineFmt], cfg.guru[gurunum]->name,
+				/* The reply comes off the LLM as UTF-8 regardless of the
+				 * reader's terminal, so emit it with P_AUTO_UTF8 and let
+				 * bputs() adapt per-terminal: raw UTF-8 to a UTF-8 term,
+				 * print_utf8_as_cp437() down-conversion to a CP437 term.
+				 * Without a UTF-8 mode flag, bputs() would treat each UTF-8
+				 * byte as a CP437 character and re-encode it to the terminal
+				 * charset -- double-encoding the reply into mojibake on a
+				 * UTF-8 term (and on any spy mirroring its byte stream). */
+				bprintf(P_AUTO_UTF8, text[ChatLineFmt],
+				        cfg.guru[gurunum]->name,
 				        cfg.sys_nodes + 1, ':', reply);
 				term->newline();
 				char* prof = extract_profile(js_cx, ctx_val);
