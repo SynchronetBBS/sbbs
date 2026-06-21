@@ -562,12 +562,30 @@ function sd_controls()
 // Main menu
 // ---------------------------------------------------------------------------
 
+// Full-screen DOOM ANSI attract, shown once on lobby entry. The art is sysop-
+// provided (drop *.ans in the [lobby] art_dir); a random one is paged, then any
+// key drops into the menu. Silent (and skipped) when no art is installed, or when
+// [lobby] attract = false. Tall art (the classic 48-row portraits) pages normally.
+function sd_attract()
+{
+	if (cfg.lobby.attract === false || cfg.lobby.attract === "false")
+		return;
+	var files = sd_attract_files(cfg);
+	if (!files.length)
+		return;
+	console.clear();
+	console.printfile(files[random(files.length)]);   // pages + pauses at EOF
+	console.line_counter = 0;                          // clean slate for the menu draw
+}
+
 function sd_main()
 {
 	// Join-by-address is for external/cross-system servers; off unless the sysop
 	// opts in with [net] allow_external = true in syncdoom.ini.
 	var allow_ext = (cfg.net.allow_external === true
 	                 || cfg.net.allow_external === "true");
+
+	sd_attract();                    // optional one-shot DOOM ANSI splash on entry
 
 	while (!js.terminated && bbs.online) {
 		console.clear();

@@ -32,9 +32,10 @@ function sd_trim(s)
 // defaults filled in.
 function sd_load_config()
 {
-	var cfg = { net: {}, wads: {}, wadsets: [] };
+	var cfg = { net: {}, wads: {}, wadsets: [], lobby: {} };
 	var f = new File(SD_CFG);
 	if (f.open("r")) {
+		cfg.lobby   = f.iniGetObject("lobby") || {};
 		cfg.net     = f.iniGetObject("net")  || {};
 		// Host-specific overrides: [net:<local_host_name>] overlays [net], so a
 		// single shared install (one syncdoom.ini seen by several physical hosts)
@@ -89,6 +90,30 @@ function sd_wad_dir(cfg)
 	if (d.charAt(0) == "/" || d.charAt(0) == "\\" || d.charAt(1) == ":")
 		return backslash(d);
 	return backslash(SD_DIR + d);
+}
+
+// Absolute lobby attract-art directory, from [lobby] art_dir (blank = <door>/art).
+// A sysop drops full-screen DOOM ANSI (*.ans/*.asc) here; nothing ships in it, so
+// the attract is silent until they do. (Don't redistribute copyrighted art.)
+function sd_attract_dir(cfg)
+{
+	var d = (cfg.lobby && cfg.lobby.art_dir) ? String(cfg.lobby.art_dir) : "art";
+	if (d.charAt(0) == "/" || d.charAt(0) == "\\" || d.charAt(1) == ":")
+		return backslash(d);
+	return backslash(SD_DIR + d);
+}
+
+// The art files a sysop has dropped in the attract dir, or []. Filters by
+// extension case-insensitively (classic art is often upper-case *.ANS, and
+// directory() is case-sensitive on *nix).
+function sd_attract_files(cfg)
+{
+	var all = directory(sd_attract_dir(cfg) + "*");
+	var art = [];
+	for (var i = 0; i < all.length; i++)
+		if (/\.(ans|asc|ansi)$/i.test(all[i]))
+			art.push(all[i]);
+	return art;
 }
 
 // Does a wadset offer the given mode ("solo"/"coop"/"deathmatch"/"altdeath")?
