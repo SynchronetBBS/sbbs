@@ -255,6 +255,10 @@ static uint32_t      g_label_until = 0;  // suppress frame output until then (la
 
 static void cycle_video(void);
 static void toggle_dither(void);   // Ctrl-N: flip text-tier dither + persist
+static void toggle_pipeline(void); // Ctrl-T: cycle frame-pipeline depth + persist
+static void toggle_stats(void);    // Ctrl-S: toggle the live stats overlay (session-only)
+static int       g_stats_overlay = 0; // show fps/RTT/depth overlaid on each frame
+static const char *mode_name(enum frame_mode m);   // defined later; used by the overlay
 static int  parse_dither(const char *s);   // "auto"/"on"/"off" -> -1/1/0 (used by read_syncdoom_ini)
 
 static uint8_t * s_rgb = NULL;   static size_t s_rgb_cap = 0;      // packed RGB888
@@ -301,13 +305,100 @@ static void emit_all(const char *buf, size_t len)
 static uint8_t *g_out = NULL;
 static size_t   g_out_cap = 0, g_out_len = 0, g_out_off = 0;
 
-// End-to-end frame pacing: after a frame we emit a DSR (ESC[6n); SyncTERM's
-// report (ESC[r;cR) only comes back once it has rendered that frame, so we hold
-// the next frame until then. This paces us to the terminal's real render rate
-// and bounds the in-flight backlog to ~1 frame (the input-lag fix). The deadline
-// is a safety valve if a report is ever lost.
-static int      g_awaiting_ack = 0;
+// End-to-end frame pacing: after each frame we emit a DSR (ESC[6n); the terminal's
+// report (ESC[r;cR) comes back only once it has consumed that frame, so we cap the
+// number of frames "in flight" (sent but not yet reported). Depth 1 paces strictly
+// to the terminal's render rate -- ideal for a LOCAL SyncTERM whose JXL decode is
+// the bottleneck. But for a REMOTE user the DSR round-trip IS the link RTT, so
+// depth 1 caps the frame rate at ~1/RTT (a slideshow). A pipeline (depth 2-5)
+// lets several frames traverse the link at once, lifting the remote frame rate
+// toward Doom's 35fps sim rate; socket backpressure (out_pending) still guards
+// bandwidth. g_max_inflight is the depth ([video] frames_in_flight); "auto" adapts
+// it to the measured RTT.
+//
+// DSR sends are timestamped in a small ring (reports return in send order, so FIFO
+// match), which doubles as the in-flight count and the round-trip estimator. The
+// deadline reclaims the pipeline if reports ever go silent.
+#define DSR_RING 8
+static uint32_t g_dsr_ts[DSR_RING];     // send time of each unacked DSR
+static int      g_dsr_head = 0;         // next slot to write (newest)
+static int      g_dsr_tail = 0;         // oldest unacked (matches the next report)
 static uint32_t g_ack_deadline = 0;
+static int      g_max_inflight = 1;     // fixed pipeline depth when not auto (1 = strict pacing)
+static int      g_inflight_auto = 1;    // [video] frames_in_flight = auto: adapt depth to the link (DEFAULT)
+static uint32_t g_rtt_ms = 0;           // EMA of the DSR round-trip (ms); 0 = not yet measured
+static uint32_t g_rtt_min = 0;          // baseline (unloaded) RTT: windowed min of recent samples
+static uint32_t g_rtt_min_at = 0;       // when g_rtt_min was last set (for the window reset)
+#define RTT_MIN_WINDOW 8000u            // re-seed the baseline min if no lower sample in this long
+static uint32_t g_recent_fps = 0;       // frames/s over a recent window (the bandwidth signal for auto)
+static uint32_t g_fps_win_at = 0;       // current fps-window start time
+static uint32_t g_fps_win_n = 0;        // frames emitted in the current fps window
+
+static int dsr_inflight(void) { return (g_dsr_head - g_dsr_tail + DSR_RING) % DSR_RING; }
+
+// Effective pipeline depth in auto mode. Three signals:
+//  1. Base depth fills the pipe at the BASELINE (min) RTT -- NOT the current RTT,
+//     because when a queue forms the current RTT inflates, and scaling depth with
+//     it would ramp the pipeline UP and worsen the bloat (positive feedback: the
+//     "input is seconds behind" failure).
+//  2. RTT-inflation backoff: shrink depth when the current (EMA) RTT rises above
+//     the baseline -- that extra delay is a queue we're causing; drain it.
+//  3. Bandwidth-delay-product cap: never keep more frames in flight than the link
+//     actually delivers in one baseline RTT (recent_fps * min_RTT). On a thin pipe
+//     this holds depth to where it helps -- extra depth there only buffers (adds
+//     lag) without adding frames; on a fat pipe it lets depth grow. This is what
+//     keeps a high-latency *low-bandwidth* link (e.g. a far VPN) from over-pipeling.
+static int max_inflight(void)
+{
+	int d;
+	if (!g_inflight_auto)
+		return g_max_inflight;
+	if (g_rtt_ms == 0 || g_rtt_min == 0)
+		return 1;                       // link unknown yet: stay conservative
+
+	d = (int)((g_rtt_min + 49) / 50);   // (1) base: ~one in-flight frame per 50ms of UNLOADED RTT
+	if (d > 5)
+		d = 5;                          // absolute cap (depth 5 saturates Doom's 35fps sim ~140ms)
+
+	if (g_rtt_ms > g_rtt_min * 2)       // (2) heavy queuing (>2x baseline) -> drain hard
+		d -= 2;
+	else if (g_rtt_ms > g_rtt_min + (g_rtt_min >> 1))   // mild queuing (>1.5x) -> ease off
+		d -= 1;
+
+	if (g_recent_fps > 0) {             // (3) bandwidth-delay-product cap (+1 frame to probe up)
+		int bdp = (int)((uint64_t)g_recent_fps * g_rtt_min / 1000) + 1;
+		if (d > bdp)
+			d = bdp;
+	}
+
+	if (d < 1)
+		d = 1;
+	return d;
+}
+
+// Set the pipeline depth from a config/toggle string: "auto" or a number 1..N.
+static void set_frames_in_flight(const char *val)
+{
+	if (stricmp(val, "auto") == 0) {
+		g_inflight_auto = 1;
+	} else {
+		int fif = atoi(val);
+		if (fif >= 1 && fif < DSR_RING) {
+			g_max_inflight  = fif;
+			g_inflight_auto = 0;
+		}
+	}
+}
+
+// The current depth setting as a string ("auto" or "N"), for saving/logging.
+static const char *frames_in_flight_str(void)
+{
+	static char buf[8];
+	if (g_inflight_auto)
+		return "auto";
+	snprintf(buf, sizeof(buf), "%d", g_max_inflight);
+	return buf;
+}
 
 // Dead-client detection for the frame path. A client that vanishes without a
 // clean FIN/RST never makes recv() return EOF, and its undrained frame just
@@ -512,8 +603,10 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 		return;                         // holding the video-cycle label on screen
 	if (out_pending())
 		return;                         // our buffer still draining -> drop this one
-	if (g_awaiting_ack && (int32_t)(g_ack_deadline - now_ms()) > 0)
-		return;                         // terminal hasn't reported rendering the last frame yet
+	if (dsr_inflight() > 0 && (int32_t)(g_ack_deadline - now_ms()) <= 0)
+		g_dsr_tail = g_dsr_head;         // reports went silent past the deadline -> reclaim the pipeline
+	if (dsr_inflight() >= max_inflight())
+		return;                          // pipeline full: drop this frame (never block the game loop)
 
 	g_out_len = 0; g_out_off = 0;       // begin a fresh frame buffer
 	if (g_mode == MODE_TEXT) {          // ANSI/CP437 block-char tier (render_text)
@@ -531,11 +624,45 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 			emit_frame_ppm(w, h);
 	}
 
-	out_put("\x1b[6n", 4);              // DSR -> paces us to the terminal's render rate
-	g_awaiting_ack = 1;
-	g_ack_deadline = now_ms() + 250;    // safety: proceed if the report is lost
+	// Live stats overlay (Ctrl-S): a status strip in the top-RIGHT corner, re-drawn
+	// over each frame. Top-right keeps it clear of Doom's notices (top-left message
+	// line) and the HUD/status bar (bottom). Shows the render tier, recent frame
+	// rate, round-trip (current / baseline-min), and the effective pipeline depth --
+	// the signals that drive the auto pacing, so a far-away player can watch them.
+	if (g_stats_overlay) {
+		char txt[80], ov[128];
+		int  tn = snprintf(txt, sizeof(txt), " SyncDOOM %s %ufps RTT %u/%ums depth %d%s ",
+		                   mode_name(g_mode), g_recent_fps, g_rtt_ms, g_rtt_min,
+		                   max_inflight(), g_inflight_auto ? " auto" : "");
+		int  col = g_cols - tn + 1;   // right-justify on the top row
+		int  ovn;
+		if (col < 1)
+			col = 1;
+		ovn = snprintf(ov, sizeof(ov), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", col, txt);
+		if (ovn > 0)
+			out_put(ov, (size_t)ovn);
+	}
+
+	out_put("\x1b[6n", 4);              // DSR -> the terminal reports when it has consumed this frame
+	g_dsr_ts[g_dsr_head] = now_ms();    // timestamp it (in-flight count + RTT estimate)
+	g_dsr_head = (g_dsr_head + 1) % DSR_RING;
+	g_ack_deadline = now_ms() + 250;    // safety: reclaim the pipeline if no report by then
 	g_tx_bytes += g_out_len;            // telemetry: this frame's wire bytes (incl. the DSR)
 	g_tx_frames++;
+
+	// Recent frame rate over a ~2s window -- the bandwidth signal auto's BDP cap
+	// uses (frames the link actually delivers, accounting for drops/backpressure).
+	{
+		uint32_t nm = now_ms();
+		g_fps_win_n++;
+		if (g_fps_win_at == 0)
+			g_fps_win_at = nm;
+		else if (nm - g_fps_win_at >= 2000) {
+			g_recent_fps = g_fps_win_n * 1000 / (nm - g_fps_win_at);
+			g_fps_win_n  = 0;
+			g_fps_win_at = nm;
+		}
+	}
 	out_flush();
 }
 
@@ -587,7 +714,9 @@ static void keyq_push(int pressed, unsigned char key)
 // sustained spin, which is far less noticeable than tap overshoot. Sustained
 // forward/back/strafe movement keeps the long grace (smooth, no start stutter).
 #define ACTIVE_MAX 16
-#define KEY_DITHER 0xe0   // door-internal sentinel (Ctrl-N); intercepted in key_seen, never reaches Doom
+#define KEY_DITHER   0xe0 // door-internal sentinel (Ctrl-N); intercepted in key_seen, never reaches Doom
+#define KEY_PIPELINE 0xe1 // door-internal sentinel (Ctrl-T): cycle frame-pipeline depth
+#define KEY_STATS    0xe2 // door-internal sentinel (Ctrl-S): toggle the live stats overlay
 // Non-static: the in-game Options > Input sliders (m_menu.c) tune these live.
 // Source order, lowest-to-highest precedence: built-in -> syncdoom.ini [input]
 // (house default) -> per-user saved prefs (load_input_prefs) -> -kp* CLI flags.
@@ -622,6 +751,14 @@ static void key_seen(unsigned char key)
 	}
 	if (key == KEY_DITHER) {                  // Ctrl-N: toggle text-tier dither
 		toggle_dither();                      // (door-level; never reaches Doom)
+		return;
+	}
+	if (key == KEY_PIPELINE) {                // Ctrl-T: cycle frame-pipeline depth
+		toggle_pipeline();                    // (door-level; never reaches Doom)
+		return;
+	}
+	if (key == KEY_STATS) {                   // Ctrl-S: toggle the live stats overlay
+		toggle_stats();                       // (door-level; never reaches Doom)
 		return;
 	}
 
@@ -693,6 +830,14 @@ static unsigned char map_ascii(unsigned char c)
 	// intercepts it; Doom never sees it). A free control byte; no F-key was.
 	if (c == 0x0e)
 		return KEY_DITHER;
+	// Ctrl-T (0x14) -- door-level "cycle frame-pipeline depth" hotkey (for A/B-ing
+	// the remote-latency frame pacing live). Intercepted in key_seen; never Doom's.
+	if (c == 0x14)
+		return KEY_PIPELINE;
+	// Ctrl-S (0x13) -- door-level "toggle live stats overlay" hotkey. We read the
+	// socket raw (no terminal XON/XOFF flow control in the path), so 0x13 is free.
+	if (c == 0x13)
+		return KEY_STATS;
 	// While the user is TYPING text -- a netgame chat message (chat_on) or a menu
 	// string like a save-game name (menuactive) -- the gameplay action keys must
 	// arrive as the literal characters they type: a space has to be a space (not
@@ -804,7 +949,23 @@ static void parse_byte(unsigned char c)
 						case 'B': k = KEY_DOWNARROW;  break;
 						case 'C': k = KEY_RIGHTARROW; break;
 						case 'D': k = KEY_LEFTARROW;  break;
-						case 'R': g_awaiting_ack = 0; break;  // CSI r;c R = DSR = frame rendered
+						case 'R':                            // CSI r;c R = DSR report = a frame was consumed
+							if (dsr_inflight() > 0) {
+								uint32_t nowm = now_ms();
+								uint32_t rtt = nowm - g_dsr_ts[g_dsr_tail];
+								g_dsr_tail = (g_dsr_tail + 1) % DSR_RING;
+								g_rtt_ms = g_rtt_ms ? (uint32_t)((g_rtt_ms * 3 + rtt) / 4) : rtt;
+								// Baseline = windowed min RTT (the unloaded latency); a new low
+								// always wins, and a stale min re-seeds so a genuinely risen
+								// baseline isn't mistaken for permanent queuing.
+								if (g_rtt_min == 0 || rtt <= g_rtt_min
+								    || (uint32_t)(nowm - g_rtt_min_at) > RTT_MIN_WINDOW) {
+									g_rtt_min = rtt;
+									g_rtt_min_at = nowm;
+								}
+							}
+							g_ack_deadline = now_ms() + 250; // progress -> refresh the safety deadline
+							break;
 						case '~': k = csi_tilde_key(atoi(s_csi_par)); break;
 						default:  break;
 					}
@@ -1161,7 +1322,7 @@ static void cycle_video(void)
 		g_mode = v->mode;
 	}
 	compute_geometry();
-	g_awaiting_ack = 0;                  // let the next frame emit immediately
+	g_dsr_tail = g_dsr_head;             // clear the pipeline -> let the next frame emit immediately
 
 	// Clear (drop the prior tier's bitmap/glyphs) and dwell on a readable label.
 	emit_all("\x1b[2J\x1b[H", 7);
@@ -1194,10 +1355,11 @@ static void emit_telemetry(void)
 	if (g_tx_frames == 0 || secs <= 0.0)
 		return;
 	dlog("telemetry: %s %dx%d | %u frames in %.1fs = %.1f fps | %llu bytes "
-	     "(%.0f/frame avg) | %.1f KB/s avg",
+	     "(%.0f/frame avg) | %.1f KB/s avg | RTT~%ums (min %ums) depth=%d%s",
 	     mode_name(g_mode), s_pxW, s_pxH, g_tx_frames, secs, g_tx_frames / secs,
 	     (unsigned long long)g_tx_bytes, (double)g_tx_bytes / g_tx_frames,
-	     g_tx_bytes / secs / 1024.0);
+	     g_tx_bytes / secs / 1024.0, g_rtt_ms, g_rtt_min, max_inflight(),
+	     g_inflight_auto ? " (auto)" : "");
 }
 
 // Probe the terminal for its real PIXEL size so "fit" can fill a real window
@@ -1607,6 +1769,14 @@ static void read_syncdoom_ini(const char *argv0)
 	g_text_max_cols = iniGetInteger(ini, "video", "text_max_cols", g_text_max_cols);
 	g_text_max_rows = iniGetInteger(ini, "video", "text_max_rows", g_text_max_rows);
 
+	// frames_in_flight -- DSR frame-pacing pipeline depth. 1 (default) paces
+	// strictly to the terminal (best for a local SyncTERM); higher lifts the frame
+	// rate over a high-latency (remote) link. "auto" adapts the depth to the
+	// measured round-trip time. Also settable live in-game via Ctrl-T.
+	iniGetString(ini, "video", "frames_in_flight", "", val);
+	if (val[0])
+		set_frames_in_flight(val);
+
 	// dither = auto|on|off -- text-tier blue-noise dithering (the per-user
 	// syncdoom.ini / Ctrl-N override this house default). auto = by color depth.
 	iniGetString(ini, "video", "dither", "", val);
@@ -1758,6 +1928,7 @@ void sd_save_user_prefs(void)
 	iniSetInteger(&list, "input", "kpsmooth", (int)g_keyup_idle_ms,      NULL);
 	iniSetInteger(&list, "input", "kpturn",   (int)g_turn_grace,         NULL);
 	iniSetString (&list, "video", "dither",   dither_str(g_dither_pref), NULL);
+	iniSetString (&list, "video", "frames_in_flight", frames_in_flight_str(), NULL);
 	f = fopen(g_user_ini_path, "w");
 	if (f != NULL) {
 		iniWriteFile(f, list);
@@ -1791,6 +1962,9 @@ static void load_user_prefs(void)
 	iniGetString(ini, "video", "dither", "", val);
 	if (val[0])
 		g_dither_pref = parse_dither(val);
+	iniGetString(ini, "video", "frames_in_flight", "", val);
+	if (val[0])
+		set_frames_in_flight(val);
 	strListFree(&ini);
 }
 
@@ -1818,6 +1992,55 @@ static void toggle_dither(void)
 	emit_all(buf, n);
 	g_label_until = now_ms() + 900;
 	dlog("dither toggle -> %s", dither_str(g_dither_pref));
+}
+
+// Ctrl-T: cycle the frame-pipeline depth (1..5 -> auto -> 1) live, persist
+// it per-user, and flash a label showing the depth + measured RTT -- so a far-away
+// player can A/B the remote-latency pacing and feel the difference immediately.
+static void toggle_pipeline(void)
+{
+	char line[80], buf[160];
+	int  pad, n;
+
+	if (g_inflight_auto)
+		g_inflight_auto = 0, g_max_inflight = 1;                               // auto -> 1
+	else if (g_max_inflight >= 5)
+		g_inflight_auto = 1;                                                   // 5 -> auto
+	else
+		g_max_inflight++;                                                      // 1->2 ... 4->5
+	sd_save_user_prefs();
+
+	if (g_inflight_auto)
+		snprintf(line, sizeof(line), "  DEPTH: auto  (%d, RTT ~%ums)  ",
+		         max_inflight(), g_rtt_ms);
+	else
+		snprintf(line, sizeof(line), "  DEPTH: %d  (RTT ~%ums)  ", g_max_inflight, g_rtt_ms);
+	pad = (g_cols - (int)strlen(line)) / 2;
+	if (pad < 0)
+		pad = 0;
+	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
+	emit_all(buf, n);
+	g_label_until = now_ms() + 1200;
+	dlog("pipeline toggle -> frames_in_flight=%s RTT~%ums", frames_in_flight_str(), g_rtt_ms);
+}
+
+// Ctrl-S: toggle the live stats overlay (a top-row strip drawn over each frame --
+// fps/RTT/depth). Session-only (not persisted; it's a diagnostic, default off). A
+// brief centered label confirms the toggle.
+static void toggle_stats(void)
+{
+	char line[48], buf[160];
+	int  pad, n;
+
+	g_stats_overlay = !g_stats_overlay;
+	snprintf(line, sizeof(line), "  STATS %s  ", g_stats_overlay ? "ON" : "OFF");
+	pad = (g_cols - (int)strlen(line)) / 2;
+	if (pad < 0)
+		pad = 0;
+	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
+	emit_all(buf, n);
+	g_label_until = now_ms() + 700;
+	dlog("stats overlay -> %s", g_stats_overlay ? "on" : "off");
 }
 
 // Compute the emitted bitmap dimensions (s_pxW x s_pxH) from the terminal's
