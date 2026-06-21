@@ -52,6 +52,8 @@
 #include "net_defs.h"           // net_waitdata_t (the waiting room)
 #include "net_client.h"         // net_client_wait_data, NET_CL_*
 #include "net_server.h"         // NET_SV_Run
+#include "unicode.h"            // xpdev: cp437_unicode_tbl (CP437 -> Unicode for UTF-8 terminals)
+#include "sd_splash.h"          // sd_splash[] -- the bespoke waiting-room splash (80x25 char+attr)
 
 #ifndef _WIN32                  // dev stdio/tty fallback (no socket handle) is *nix-only
 #include <fcntl.h>
@@ -2359,36 +2361,91 @@ const char *sd_player_chat_name(int player)
 	return NULL;
 }
 
+// Render an 80x25 "ENDOOM-format" screen -- cells of {CP437 char, CGA attribute}
+// (the embedded sd_splash[]) -- to the terminal as ANSI, the waiting-room
+// backdrop. CGA attribute -> SGR (fg/bg via the CGA->ANSI color swap, bit3 =
+// bright fg, bit7 = blink); the char is emitted raw on a CP437 terminal, or as
+// UTF-8 (cp437_unicode_tbl) on a UTF-8 one. Capped to the terminal's line count
+// so a <25-row terminal doesn't scroll.
+static void sd_render_screen(const unsigned char *e)
+{
+	static const int cga2ansi[8] = { 0, 4, 2, 6, 1, 5, 3, 7 };  // CGA b/g/r -> ANSI r/g/b
+	int              rows, row, col;
+
+	rows = (s_lines < 25) ? s_lines : 25;
+	for (row = 0; row < rows; row++) {
+		char rb[2048];
+		int  rl = 0, last_attr = -1;
+		rl += snprintf(rb + rl, sizeof(rb) - rl, "\x1b[%d;1H", row + 1);
+		for (col = 0; col < 80; col++) {
+			uint8_t ch   = e[(row * 80 + col) * 2];
+			uint8_t attr = e[(row * 80 + col) * 2 + 1];
+			if (attr != last_attr) {
+				rl += snprintf(rb + rl, sizeof(rb) - rl, "\x1b[0%s%s;3%d;4%dm",
+				               (attr & 8) ? ";1" : "", (attr & 0x80) ? ";5" : "",
+				               cga2ansi[attr & 7], cga2ansi[(attr >> 4) & 7]);
+				last_attr = attr;
+			}
+			if (g_rt_charset == RT_UTF8) {
+				uint32_t cp = (uint32_t)cp437_unicode_tbl[ch];
+				if (cp == 0)
+					cp = ch;
+				if (cp < 0x80) {
+					rb[rl++] = (char)cp;
+				} else if (cp < 0x800) {
+					rb[rl++] = (char)(0xC0 | (cp >> 6));
+					rb[rl++] = (char)(0x80 | (cp & 0x3F));
+				} else {
+					rb[rl++] = (char)(0xE0 | (cp >> 12));
+					rb[rl++] = (char)(0x80 | ((cp >> 6) & 0x3F));
+					rb[rl++] = (char)(0x80 | (cp & 0x3F));
+				}
+			} else {                     // raw CP437; map true control codes to space
+				rb[rl++] = (ch == 0 || ch == 7 || ch == 8 || ch == 9 || ch == 10
+				            || ch == 12 || ch == 13 || ch == 27) ? ' ' : (char)ch;
+			}
+		}
+		rl += snprintf(rb + rl, sizeof(rb) - rl, "\x1b[0m");
+		emit_all(rb, (size_t)rl);
+	}
+}
+
 static void sd_waitroom_draw(void)
 {
-	char            buf[1024];
-	int             len = 0;
-	int             i;
+	char            buf[2048];
+	int             len = 0, i, r;
 	net_waitdata_t *w = &net_client_wait_data;
+	int             bottom = (s_lines < 25) ? s_lines : 25;
+	int             top = bottom - 3;    // 4-row status panel over the bottom of ENDOOM
+	if (top < 1)
+		top = 1;
 
+	emit_all("\x1b[2J", 4);
+	sd_render_screen(sd_splash);         // the bespoke DOOM-logo splash as backdrop
+
+	for (r = top; r <= bottom; r++)      // solid blue panel (BCE clears each line to bg)
+		len += snprintf(buf + len, sizeof(buf) - len, "\x1b[%d;1H\x1b[1;37;44m\x1b[K", r);
 	len += snprintf(buf + len, sizeof(buf) - len,
-	                "\x1b[2J\x1b[H\r\n  \x1b[1;37mS y n c \x1b[1;31mD O O M\x1b[0m   waiting room\r\n\r\n"
-	                "  Players (%d/%d):\r\n", w->num_players, w->max_players);
+	                "\x1b[%d;3HS y n c \x1b[1;31mD O O M\x1b[1;37m   waiting room   Players %d/%d",
+	                top, w->num_players, w->max_players);
+	len += snprintf(buf + len, sizeof(buf) - len, "\x1b[%d;3H", top + 1);
 	for (i = 0; i < w->num_players && i < NET_MAXPLAYERS; i++)
-		len += snprintf(buf + len, sizeof(buf) - len, "    \x1b[1m%d.\x1b[0m %s%s\r\n",
-		                i + 1, w->player_names[i], (i == w->consoleplayer) ? "  (you)" : "");
-	len += snprintf(buf + len, sizeof(buf) - len, "\r\n");
-	if (!w->is_controller) {
+		len += snprintf(buf + len, sizeof(buf) - len, "%s\x1b[1;33m%d.\x1b[1;37m%s%s",
+		                i ? "   " : "", i + 1, w->player_names[i],
+		                (i == w->consoleplayer) ? " (you)" : "");
+	len += snprintf(buf + len, sizeof(buf) - len, "\x1b[%d;3H", top + 3);
+	if (!w->is_controller)
 		len += snprintf(buf + len, sizeof(buf) - len,
-		                "  Waiting for the host to start...   \x1b[1mQ\x1b[0m to cancel.\r\n");
-	} else if (w->num_players < 2 && w->max_players > 1) {
-		// Alone in a multi-player match: starting now would just be a lonely solo
-		// game (no mid-game join), which is exactly the trap real players hit.
-		// Make it plain they should wait, and don't offer Start yet.
+		                "Waiting for the host to start...   \x1b[1;33mQ\x1b[1;37m to cancel.");
+	else if (w->num_players < 2 && w->max_players > 1)
 		len += snprintf(buf + len, sizeof(buf) - len,
-		                "  \x1b[1;33mWaiting for another player to join...\x1b[0m\r\n"
-		                "  The game starts automatically when full. \x1b[1mQ\x1b[0m to cancel.\r\n"
-		                "  (To play by yourself, cancel and pick \x1b[1mPlay single-player\x1b[0m instead.)\r\n");
-	} else {
+		                "\x1b[1;33mWaiting for another player...\x1b[1;37m  auto-starts when full.  "
+		                "\x1b[1;33mQ\x1b[1;37m cancel (then pick single-player to play solo).");
+	else
 		len += snprintf(buf + len, sizeof(buf) - len,
-		                "  Press \x1b[1mS\x1b[0m or \x1b[1mEnter\x1b[0m to start now (or wait for all %d), "
-		                "\x1b[1mQ\x1b[0m to cancel.\r\n", w->max_players);
-	}
+		                "Press \x1b[1;33mS\x1b[1;37m or \x1b[1;33mEnter\x1b[1;37m to start now, "
+		                "\x1b[1;33mQ\x1b[1;37m to cancel.");
+	len += snprintf(buf + len, sizeof(buf) - len, "\x1b[0m");
 
 	if (len > 0)
 		emit_all(buf, (size_t)len);
