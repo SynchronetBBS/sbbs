@@ -1438,6 +1438,17 @@ function shutdown() {
 js.on_exit("shutdown()");
 
 function main_loop() {
+    /* Disable SpiderMonkey's infinite-loop detection for this daemon.
+     * js.branch_limit (alias of js.time_limit) caps the cumulative
+     * operation-callback count over the runtime's whole life; a bot that
+     * polls in a while-loop for days inevitably reaches it, at which
+     * point jsexec sets js.terminated and we exit (the launcher then
+     * relaunches us -- the periodic "the guru dropped and rejoined"
+     * churn).  0 = disabled: this loop is not a runaway, it blocks on
+     * sock.poll() with a timeout and leaves promptly on js.terminated /
+     * the .stop semfile, so real shutdown still works. */
+    if (typeof js == "object" && js != null)
+        js.branch_limit = 0;
     var buffer = "";
     while (!js.terminated && !file_exists(STOP_SEMFILE)) {
         if (!sock || !connected || !sock.is_connected) {
