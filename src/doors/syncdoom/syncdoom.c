@@ -131,6 +131,7 @@ static char     g_player_name[64] = ""; // -name: network player handle (multipl
 extern char *   net_player_name;       // net_client.c: defaulted unless we set it from -name
 static char     g_door32_path[PATH_MAX] = ""; // drop-file path (for the terminal.ini node-dir fallback)
 static int      g_cols = 80;           // text-tier columns (from terminal.ini, else 80)
+static int      g_text_cols = 80;      // effective text-render width (g_cols capped by text_max_cols)
 
 // Graphics scaling (syncdoom.ini [video]). The bitmap tiers have no inherent
 // size -- we emit whatever pixel dimensions we choose. "fit" sizes the image to
@@ -660,6 +661,15 @@ static void fps_window_tick(uint32_t frame_bytes)
 	}
 }
 
+// Width the on-screen labels/overlay center or right-justify within: the RENDERED
+// width. In text mode the grid is capped (text_max_cols) narrower than a wide
+// terminal, so a label centered on the full g_cols would land off to the right of
+// the game; use the capped width. Graphics tiers fill to the full terminal width.
+static int overlay_cols(void)
+{
+	return (g_mode == MODE_TEXT) ? g_text_cols : g_cols;
+}
+
 // Live stats overlay (Ctrl-S): a status strip in the top-RIGHT corner. Top-right
 // keeps it clear of Doom's notices (top-left message line) and the HUD/status bar
 // (bottom). Shows the render tier, recent frame rate, transmit throughput (KB/s to
@@ -670,7 +680,7 @@ static void fps_window_tick(uint32_t frame_bytes)
 static void emit_overlay(int force)
 {
 	char txt[80], ov[160], bw[16];
-	int  tn, col, ovn;
+	int  tn, col, ovn, aw;
 
 	// Throughput: KB/s up to 999, then fractional MB/s (KiB/MiB of wire BYTES) so the
 	// field stays narrow on a fast link.
@@ -686,11 +696,16 @@ static void emit_overlay(int force)
 		return;                         // unchanged and the frame didn't repaint it -> nothing to send
 	if (tn > 0 && tn < (int)sizeof(g_ov_last))
 		strcpy(g_ov_last, txt);
-	col = g_cols - tn + 1;              // right-justify on the top row
+	// Anchor to the rendered width: in text mode the grid is capped (text_max_cols),
+	// so right-justifying to the full g_cols would fling the overlay off to the right
+	// of the actual game view on a wide terminal. Graphics tiers use g_cols (the
+	// overlay sits in the centered image's top margin).
+	aw  = overlay_cols();
+	col = aw - tn + 1;                  // right-justify on the top row
 	if (col < 1)
 		col = 1;
 	if (g_ov_prev_tn > tn) {            // narrower than last time: blank the now-uncovered cells
-		int prev_col = g_cols - g_ov_prev_tn + 1;
+		int prev_col = aw - g_ov_prev_tn + 1;
 		if (prev_col < 1)
 			prev_col = 1;
 		ovn = snprintf(ov, sizeof(ov), "\x1b[1;%dH\x1b[0m%*s\x1b[1;37;44m%s\x1b[0m",
@@ -1404,6 +1419,7 @@ static void setup_text_mode(void)
 		tcols = g_text_max_cols;
 	if (g_text_max_rows > 0 && trows > g_text_max_rows)
 		trows = g_text_max_rows;
+	g_text_cols = tcols;                 // the stats overlay anchors to this, not the full g_cols
 	rt_config(tcols, trows, mode, g_colors, g_rt_charset);
 	rt_set_dither(g_dither_pref);     // apply the [video] dither / Ctrl-N preference
 	g_mode = MODE_TEXT;
@@ -1467,7 +1483,7 @@ static void cycle_video(void)
 	// Clear (drop the prior tier's bitmap/glyphs) and dwell on a readable label.
 	emit_all("\x1b[2J\x1b[H", 7);
 	snprintf(line, sizeof(line), "  SyncDOOM video: %s   (F4 to cycle)  ", v->label);
-	pad = (g_cols - (int)strlen(line)) / 2;
+	pad = (overlay_cols() - (int)strlen(line)) / 2;
 	if (pad < 0)
 		pad = 0;
 	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
@@ -2125,7 +2141,7 @@ static void toggle_dither(void)
 	sd_save_user_prefs();
 
 	snprintf(line, sizeof(line), "  DITHER %s  ", g_dither_pref ? "ON" : "OFF");
-	pad = (g_cols - (int)strlen(line)) / 2;
+	pad = (overlay_cols() - (int)strlen(line)) / 2;
 	if (pad < 0)
 		pad = 0;
 	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
@@ -2158,7 +2174,7 @@ static void toggle_pipeline(void)
 			         max_inflight(), g_rtt_ms);
 		else
 			snprintf(line, sizeof(line), "  DEPTH: %d  (lag ~%ums)  ", g_max_inflight, g_rtt_ms);
-		pad = (g_cols - (int)strlen(line)) / 2;
+		pad = (overlay_cols() - (int)strlen(line)) / 2;
 		if (pad < 0)
 			pad = 0;
 		n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
@@ -2178,7 +2194,7 @@ static void toggle_stats(void)
 
 	g_stats_overlay = !g_stats_overlay;
 	snprintf(line, sizeof(line), "  STATS %s  ", g_stats_overlay ? "ON" : "OFF");
-	pad = (g_cols - (int)strlen(line)) / 2;
+	pad = (overlay_cols() - (int)strlen(line)) / 2;
 	if (pad < 0)
 		pad = 0;
 	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
