@@ -2433,18 +2433,22 @@ static void sd_waitroom_draw(void)
 		len += snprintf(buf + len, sizeof(buf) - len, "%s\x1b[1;33m%d.\x1b[1;37m%s%s",
 		                i ? "   " : "", i + 1, w->player_names[i],
 		                (i == w->consoleplayer) ? " (you)" : "");
-	len += snprintf(buf + len, sizeof(buf) - len, "\x1b[%d;3H", top + 3);
 	if (!w->is_controller)
 		len += snprintf(buf + len, sizeof(buf) - len,
-		                "Waiting for the host to start...   \x1b[1;33mQ\x1b[1;37m to cancel.");
-	else if (w->num_players < 2 && w->max_players > 1)
+		                "\x1b[%d;3HWaiting for the host to start...   \x1b[1;33mQ\x1b[1;37m to cancel.",
+		                top + 3);
+	else if (w->num_players < 2 && w->max_players > 1) {
+		// Two rows -- the one-line form overran 80 cols (truncated the solo hint).
 		len += snprintf(buf + len, sizeof(buf) - len,
-		                "\x1b[1;33mWaiting for another player...\x1b[1;37m  auto-starts when full.  "
-		                "\x1b[1;33mQ\x1b[1;37m cancel (then pick single-player to play solo).");
-	else
+		                "\x1b[%d;3H\x1b[1;33mWaiting for another player...\x1b[1;37m  Auto-starts when full.",
+		                top + 2);
 		len += snprintf(buf + len, sizeof(buf) - len,
-		                "Press \x1b[1;33mS\x1b[1;37m or \x1b[1;33mEnter\x1b[1;37m to start now, "
-		                "\x1b[1;33mQ\x1b[1;37m to cancel.");
+		                "\x1b[%d;3H\x1b[1;33mQ\x1b[1;37m to cancel.  To play solo, cancel and pick Play single-player.",
+		                top + 3);
+	} else
+		len += snprintf(buf + len, sizeof(buf) - len,
+		                "\x1b[%d;3HPress \x1b[1;33mS\x1b[1;37m or \x1b[1;33mEnter\x1b[1;37m to start now, "
+		                "\x1b[1;33mQ\x1b[1;37m to cancel.", top + 3);
 	len += snprintf(buf + len, sizeof(buf) - len, "\x1b[0m");
 
 	if (len > 0)
