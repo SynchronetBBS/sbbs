@@ -483,21 +483,31 @@ function sd_browse()
 		return;
 	}
 
-	console.print("\r\n\1h\1cNetwork games:\1n\r\n");
-	console.print("    \1n\1wHost              Mode        WAD set       Players  Status\1n\r\n");
-	var i;
-	for (i = 0; i < games.length; i++) {
-		var g = games[i];
-		// players/max as one fixed-width field so Status lines up under its header.
-		console.print(format(" \1h\1y%2d\1n %-17s %-11s %-13s %-7s  \1n\1w%s\1n\r\n",
-		    i + 1, g.host, g.mode, g.wadset, g.players + "/" + g.maxplayers, g.status));
-	}
-	console.print("\r\nJoin which [\1h1-" + games.length + "\1n], \1hQ\1n to cancel: ");
+	var sel;
+	if (games.length == 1) {
+		// Only one game running -- skip the list and the "join which?" prompt and
+		// just join it (still validated below).
+		sel = games[0];
+		console.print("\r\n\1h\1cJoining \1n\1w" + sel.host + "\1h\1c's game\1n ("
+		    + sel.wadset + ", " + sel.mode + ", " + sel.players + "/"
+		    + sel.maxplayers + ")...\1n\r\n");
+	} else {
+		console.print("\r\n\1h\1cNetwork games:\1n\r\n");
+		console.print("    \1n\1wHost              Mode        WAD set       Players  Status\1n\r\n");
+		var i;
+		for (i = 0; i < games.length; i++) {
+			var g = games[i];
+			// players/max as one fixed-width field so Status lines up under its header.
+			console.print(format(" \1h\1y%2d\1n %-17s %-11s %-13s %-7s  \1n\1w%s\1n\r\n",
+			    i + 1, g.host, g.mode, g.wadset, g.players + "/" + g.maxplayers, g.status));
+		}
+		console.print("\r\nJoin which [\1h1-" + games.length + "\1n], \1hQ\1n to cancel: ");
 
-	var k = console.getkeys("Q", games.length);
-	if (k == "Q" || !k)
-		return;
-	var sel = games[k - 1];
+		var k = console.getkeys("Q", games.length);
+		if (k == "Q" || !k)
+			return;
+		sel = games[k - 1];
+	}
 
 	// Vanilla Doom only accepts joins before the game starts.
 	if (sel.status != "lobby") {
