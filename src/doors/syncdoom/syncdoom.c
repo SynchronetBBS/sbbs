@@ -257,12 +257,10 @@ static int           g_clear_row1  = 0;  // erase the top row next frame (a dism
                                          // strands there in a letterboxed window -- frame won't repaint it)
 
 static void cycle_video(void);
-static void toggle_dither(void);   // Ctrl-N: flip text-tier dither + persist
 static void toggle_pipeline(void); // Ctrl-T: cycle frame-pipeline depth + persist
 static void toggle_stats(void);    // Ctrl-S: toggle the live stats overlay (session-only)
 static int       g_stats_overlay = 0; // show fps/RTT/depth overlaid on each frame
 static const char *mode_name(enum frame_mode m);   // defined later; used by the overlay
-static int  parse_dither(const char *s);   // "auto"/"on"/"off" -> -1/1/0 (used by read_syncdoom_ini)
 
 static uint8_t * s_rgb = NULL;   static size_t s_rgb_cap = 0;      // packed RGB888
 static uint8_t * s_img = NULL;   static size_t s_img_cap = 0;      // encoded bytes (PPM/JXL)
@@ -905,7 +903,6 @@ static void keyq_push(int pressed, unsigned char key)
 // sustained spin, which is far less noticeable than tap overshoot. Sustained
 // forward/back/strafe movement keeps the long grace (smooth, no start stutter).
 #define ACTIVE_MAX 16
-#define KEY_DITHER   0xe0 // door-internal sentinel (Ctrl-N); intercepted in key_seen, never reaches Doom
 #define KEY_PIPELINE 0xe1 // door-internal sentinel (Ctrl-T): cycle frame-pipeline depth
 #define KEY_STATS    0xe2 // door-internal sentinel (Ctrl-S): toggle the live stats overlay
 // Non-static: the in-game Options > Input sliders (m_menu.c) tune these live.
@@ -917,7 +914,6 @@ uint32_t    g_turn_grace    = 150;            // TURN grace for turn keys (tight
 static int  g_kp_cli_tap    = 0;              // -kpdelay given on CLI (saved prefs won't override)
 static int  g_kp_cli_hold   = 0;              // -kpsmooth given on CLI
 static int  g_kp_cli_turn   = 0;              // -kpturn given on CLI
-static int  g_dither_pref   = -1;             // text-tier dither: -1 auto, 0 off, 1 on ([video] dither / Ctrl-N)
 static char g_user_ini_path[PATH_MAX] = "";   // per-user prefs file (<-home>/syncdoom.ini); "" = disabled
 static struct { unsigned char key; uint32_t last; int presses; } s_active[ACTIVE_MAX];
 static int  s_active_n = 0;
@@ -938,10 +934,6 @@ static void key_seen(unsigned char key)
 
 	if (key == KEY_F4) {                      // door-level hotkey: cycle render tier
 		cycle_video();                        // (handled here -- never reaches Doom)
-		return;
-	}
-	if (key == KEY_DITHER) {                  // Ctrl-N: toggle text-tier dither
-		toggle_dither();                      // (door-level; never reaches Doom)
 		return;
 	}
 	if (key == KEY_PIPELINE) {                // Ctrl-T: cycle frame-pipeline depth
@@ -1017,10 +1009,6 @@ static unsigned char map_ascii(unsigned char c)
 	// the default key_multi_msg in hu_stuff.c; a literal 't' falls through below.)
 	if (c == 0x10)
 		return 't';
-	// Ctrl-N (0x0E) -- door-level "toggle text-tier dither" hotkey (key_seen
-	// intercepts it; Doom never sees it). A free control byte; no F-key was.
-	if (c == 0x0e)
-		return KEY_DITHER;
 	// Ctrl-T (0x14) -- door-level "cycle frame-pipeline depth" hotkey (for A/B-ing
 	// the remote-latency frame pacing live). Intercepted in key_seen; never Doom's.
 	if (c == 0x14)
@@ -1473,7 +1461,6 @@ static void setup_text_mode(void)
 		trows = g_text_max_rows;
 	g_text_cols = tcols;                 // the stats overlay anchors to this, not the full g_cols
 	rt_config(tcols, trows, mode, g_colors, g_rt_charset);
-	rt_set_dither(g_dither_pref);     // apply the [video] dither / Ctrl-N preference
 	g_mode = MODE_TEXT;
 }
 
@@ -1985,12 +1972,6 @@ static void read_syncdoom_ini(const char *argv0)
 	if (val[0])
 		set_frames_in_flight(val);
 
-	// dither = auto|on|off -- text-tier blue-noise dithering (the per-user
-	// syncdoom.ini / Ctrl-N override this house default). auto = by color depth.
-	iniGetString(ini, "video", "dither", "", val);
-	if (val[0])
-		g_dither_pref = parse_dither(val);
-
 	// charset = cp437|utf8 -- force the text-tier charset (else terminal.ini auto)
 	iniGetString(ini, "video", "charset", "", val);
 	if (val[0])
@@ -2089,19 +2070,9 @@ static void read_syncdoom_ini(const char *argv0)
 // Per-user preferences: a sectioned syncdoom.ini in the user's -home dir,
 // mirroring the house-default syncdoom.ini (beside the exe) but holding only this
 // user's overrides -- the in-game Options sliders ([input] kp* graces) and the
-// Ctrl-N dither toggle ([video] dither). Saved on change, loaded after the CLI
-// scan; precedence: built-in -> house ini -> per-user -> CLI. No-op without -home.
-
-// dither string <-> pref (-1 auto, 0 off, 1 on).
-static int parse_dither(const char *s)
-{
-	if (stricmp(s, "off") == 0 || stricmp(s, "no")  == 0 || stricmp(s, "0") == 0)
-		return 0;
-	if (stricmp(s, "on")  == 0 || stricmp(s, "yes") == 0 || stricmp(s, "1") == 0)
-		return 1;
-	return -1;                           // "auto" / unrecognized
-}
-static const char *dither_str(int pref) { return pref < 0 ? "auto" : (pref ? "on" : "off"); }
+// Ctrl-T frame-pacing depth ([video] frames_in_flight). Saved on change, loaded
+// after the CLI scan; precedence: built-in -> house ini -> per-user -> CLI. No-op
+// without -home.
 
 // Build g_user_ini_path = <-home>/syncdoom.ini (once). Safe to call repeatedly.
 static void user_ini_path(void)
@@ -2116,7 +2087,7 @@ static void user_ini_path(void)
 }
 
 // Write the user's prefs (read-modify-write, so any hand-added keys survive).
-// Called by the Options sliders and the Ctrl-N dither toggle after each change.
+// Called by the Options sliders and the Ctrl-T pacing toggle after each change.
 void sd_save_user_prefs(void)
 {
 	str_list_t list;
@@ -2135,7 +2106,6 @@ void sd_save_user_prefs(void)
 	iniSetInteger(&list, "input", "kpdelay",  (int)g_grace_fresh,        NULL);
 	iniSetInteger(&list, "input", "kpsmooth", (int)g_keyup_idle_ms,      NULL);
 	iniSetInteger(&list, "input", "kpturn",   (int)g_turn_grace,         NULL);
-	iniSetString (&list, "video", "dither",   dither_str(g_dither_pref), NULL);
 	iniSetString (&list, "video", "frames_in_flight", frames_in_flight_str(), NULL);
 	f = fopen(g_user_ini_path, "w");
 	if (f != NULL) {
@@ -2167,39 +2137,10 @@ static void load_user_prefs(void)
 		g_keyup_idle_ms = (uint32_t)iniGetInteger(ini, "input", "kpsmooth", (int)g_keyup_idle_ms);
 	if (!g_kp_cli_turn)
 		g_turn_grace    = (uint32_t)iniGetInteger(ini, "input", "kpturn",   (int)g_turn_grace);
-	iniGetString(ini, "video", "dither", "", val);
-	if (val[0])
-		g_dither_pref = parse_dither(val);
 	iniGetString(ini, "video", "frames_in_flight", "", val);
 	if (val[0])
 		set_frames_in_flight(val);
 	strListFree(&ini);
-}
-
-// Ctrl-N: flip the text-tier dither (auto/on <-> off), apply live, persist, and
-// flash a brief confirmation (the change is subtle at low dither percentages).
-static void toggle_dither(void)
-{
-	char line[64], buf[160];
-	int  pad, n;
-
-	// Dither is text-tier only -- ignore Ctrl-N in the graphics tiers, and in text
-	// color depths that never dither (16-color, truecolor). No label, no save.
-	if (g_mode != MODE_TEXT || !rt_dither_applicable())
-		return;
-
-	g_dither_pref = (g_dither_pref == 0) ? 1 : 0;   // auto/on -> off, off -> on
-	rt_set_dither(g_dither_pref);
-	sd_save_user_prefs();
-
-	snprintf(line, sizeof(line), "  DITHER %s  ", g_dither_pref ? "ON" : "OFF");
-	pad = (overlay_cols() - (int)strlen(line)) / 2;
-	if (pad < 0)
-		pad = 0;
-	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
-	emit_all(buf, n);
-	g_label_until = now_ms() + 900;
-	dlog("dither toggle -> %s", dither_str(g_dither_pref));
 }
 
 // Ctrl-T: cycle the frame-pipeline depth (1..DEPTH_MAX -> auto -> 1) live, persist

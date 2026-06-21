@@ -15,7 +15,6 @@
 #include <limits.h>
 
 #include "doomgeneric.h"     // DG_ScreenBuffer, DOOMGENERIC_RESX/RESY, DG_GetTicksMs
-#include "cli_data.h"        // noise_textures, noise_texture_count
 #include "render_text.h"
 
 // mempcpy/stpcpy are glibc extensions; MSVC's CRT lacks them. Provide the
@@ -112,115 +111,6 @@ static const char* u8_to_str[] = {
     "240", "241", "242", "243", "244", "245", "246", "247", "248", "249", "250", "251", "252", "253", "254", "255",
 };
 
-
-
-/*
- * Noise
- *
- * For the paletted modes, we dither by sampling blue noise. The noise is a set
- * of 64 16x16 blue noise images which we rotate through. The noise textures
- * are at the bottom of the file because they're huge.
- *
- * TODO the way the noise is applied right now is bad. It's applied per
- * character; it needs to be applied per pixel. Should just make an apply noise
- * function that takes rgb pointers, force inline it (or wrap it in a macro
- * that checks whether noise is enabled)
- */
-
-bool noise_enabled = true;
-static int noise_current = 0;
-static uint32_t noise_last_time = 0;
-static int noise_speed = 75; // milliseconds
-static bool noise_scaled = false;   // the scaling in init_noise() rewrites
-                                    // noise_textures in place, so it must run at
-                                    // most once -- re-running it (rt_config is
-                                    // called on every F4 tier cycle) re-scales
-                                    // already-scaled data and washes the dither
-                                    // out until it vanishes for good.
-static int  rt_dither_pref = -1;    // -1 auto (color-depth default), 0 off, 1 on;
-                                    // set by the door from [video] dither / Ctrl-N.
-
-#define NOISE_SAMPLE(x, y) \
-        noise_textures[noise_current][((x) & 15) + (((y) & 15) * 16)]
-/*
- * Initializes the noise.
- *
- * All values are scaled such that, when 128 is subtracted from them, they
- * become an offset to add to a color channel to dither it.
- */
-static void init_noise(void) {
-    noise_last_time = DG_GetTicksMs();
-
-    int scale = 0; // percent
-    switch (cli_colors) {
-        case cli_colors_dark:
-        case cli_colors_light:
-            scale = 95;
-            break;
-        case cli_colors_3bit: scale = 30; break;
-        case cli_colors_4bit: scale = 0; break;  // 16-color dithering reads as grainy/busy -> off
-        case cli_colors_8bit: scale = 2; break;
-        default: break;
-    }
-    if (scale == 0) {
-        noise_enabled = false;       // this color depth doesn't dither at all
-        return;
-    }
-    // depth supports dither -- honor the override: off = forced off; auto/on = on.
-    noise_enabled = (rt_dither_pref != 0);
-
-    // cli_colors is fixed for the life of the process (set once from -colors /
-    // terminal.ini), so the textures only need scaling once. The scale below is
-    // destructive (noise_textures rewritten in place); re-applying it on a later
-    // rt_config (F4 tier cycle) flattens the noise until it disappears.
-    if (noise_scaled)
-        return;
-    noise_scaled = true;
-
-    int base = 255 * (100 - scale) / 200;
-
-    for (size_t tex = 0; tex < noise_texture_count; ++ tex) {
-        for (size_t i = 0; i < 16*16; ++i) {
-            uint32_t val = noise_textures[tex][i];
-            uint32_t blue = (val >> 16) & 0xff;
-            uint32_t green = (val >> 8) & 0xff;
-            uint32_t red = val & 0xff;
-            blue = blue * scale / 100 + base;
-            green = green * scale / 100 + base;
-            red = red * scale / 100 + base;
-            //printf("red: orig %u base %u scale %u%% result %u\n", val&0xff,base,scale,red);
-            val = (blue << 16) | (green << 8) | red;
-            noise_textures[tex][i] = val;
-        }
-    }
-}
-
-// Set the dither preference (-1 auto, 0 off, 1 on) and re-derive noise_enabled
-// for the current color depth. Cheap: the textures are scaled at most once (the
-// noise_scaled guard), so this just flips whether the (already-prepared) dither
-// is applied. Called by the door from the [video] dither config and the Ctrl-N
-// toggle. (Has no visible effect at a depth that never dithers, e.g. 16-color.)
-void rt_set_dither(int pref)
-{
-    rt_dither_pref = pref;
-    init_noise();
-}
-
-// Nonzero if the current color depth dithers at all (256/8-color) -- zero for
-// 16-color and truecolor. Lets the door ignore the Ctrl-N toggle where it'd
-// do nothing.
-int rt_dither_applicable(void)
-{
-    switch (cli_colors) {
-        case cli_colors_3bit:
-        case cli_colors_8bit:
-        case cli_colors_dark:
-        case cli_colors_light:
-            return 1;
-        default:                 // cli_colors_4bit, cli_colors_24bit
-            return 0;
-    }
-}
 
 
 
@@ -514,13 +404,7 @@ static long rt_color_params(char *out, int red, int green, int blue, bool is_bg)
 
 // Outputs a background color (skipped if unchanged since the last emit).
 static void output_bg_color(int x, int y, int red, int green, int blue) {
-    if (noise_enabled) {
-        uint32_t noise_color = NOISE_SAMPLE(x, y);
-        red += (noise_color >> 16 & 0xff) - 128;
-        green += ((noise_color >> 8) & 0xff) - 128;
-        blue += ((noise_color) & 0xff) - 128;
-    }
-
+    (void)x; (void)y;
     char bp[24];
     long key = rt_color_params(bp, red, green, blue, true);
     if (key == rt_last_bg)
@@ -537,29 +421,7 @@ static void output_colors(
         int fg_red, int fg_green, int fg_blue,
         int bg_red, int bg_green, int bg_blue)
 {
-    // TODO this applies noise per character which is not what we should be
-    // doing. We would get much better noise quality if we applied it per
-    // pixel.
-    if (noise_enabled) {
-        uint32_t noise_color = NOISE_SAMPLE(x, y);
-
-        fg_red += ((noise_color >> 16) & 0xff) - 128;
-        bg_red += ((noise_color >> 16) & 0xff) - 128;
-        fg_green += ((noise_color >> 8) & 0xff) - 128;
-        bg_green += ((noise_color >> 8) & 0xff) - 128;
-        fg_blue += ((noise_color) & 0xff) - 128;
-        bg_blue += ((noise_color) & 0xff) - 128;
-
-        /*
-        fg_red = (noise_color & 0xff);
-        bg_red = (noise_color & 0xff);
-        fg_green = ((noise_color >> 8) & 0xff);
-        bg_green = ((noise_color >> 8) & 0xff);
-        fg_blue = ((noise_color >> 16) & 0xff);
-        bg_blue = ((noise_color >> 16) & 0xff);
-        */
-    }
-
+    (void)x; (void)y;
     char fp[24], bp[24];
     long fk = rt_color_params(fp, fg_red, fg_green, fg_blue, false);
     long bk = rt_color_params(bp, bg_red, bg_green, bg_blue, true);
@@ -585,9 +447,7 @@ static void output_colors(
 // --- cell-diff: re-emit only the cells whose content changed -----------------
 // We keep a SHADOW of every cell's (fg,bg,glyph) signature; put_cell() positions
 // the cursor and emits a cell only when it differs from last frame (or rt_force
-// requests a full repaint). Absolute positioning replaces per-row newlines. The
-// dither must be static (rt_render_frame no longer cycles the noise texture) so a
-// cell's signature is stable frame-to-frame -- otherwise every cell would "change".
+// requests a full repaint). Absolute positioning replaces per-row newlines.
 typedef struct { long fg, bg; uint32_t gh; } rt_sig_t;
 static rt_sig_t *rt_shadow = NULL;
 static int       rt_grid_cols = 0, rt_grid_rows = 0;
@@ -641,14 +501,6 @@ static void put_cell(int x, int y,
     int trow = y / rt_ystride;
     if (rt_shadow == NULL || tcol < 0 || trow < 0 || tcol >= rt_grid_cols || trow >= rt_grid_rows)
         return;
-
-    if (noise_enabled) {                            // color dither (was inside output_colors)
-        uint32_t n = NOISE_SAMPLE(x, y);
-        int dr = (int)((n >> 16) & 0xff) - 128;
-        int dg = (int)((n >> 8) & 0xff) - 128;
-        int db = (int)(n & 0xff) - 128;
-        fr += dr; br += dr; fg += dg; bg += dg; fb += db; bb += db;
-    }
 
     char     fp[24], bp[24];
     long     fk = rt_color_params(fp, fr, fg, fb, false);
@@ -775,9 +627,6 @@ void rt_config(int cols, int rows, rt_mode_t mode, rt_colors_t colors, rt_charse
     free(rt_shadow);
     rt_shadow = calloc((size_t)cols * rows, sizeof(rt_sig_t));
     rt_force  = 1;          // geometry/tier/charset changed -> repaint every cell next frame
-
-    noise_enabled = true;   // init_noise may disable it (e.g. 24-bit)
-    init_noise();
 }
 
 const char *rt_render_frame(size_t *len)
@@ -785,10 +634,6 @@ const char *rt_render_frame(size_t *len)
     int x, y;
     uint32_t *dp = dest_buffer;
 
-    // NOTE: the dither noise texture is intentionally NOT cycled here. The cell-diff
-    // (put_cell) skips cells whose signature is unchanged; an animated dither would
-    // re-tint every cell every frame and force a full repaint, so the dither is held
-    // static (spatial only). Ctrl-N still toggles it (noise_enabled) on/off.
     for (y = 0; y < dest_height; ++y)
         for (x = 0; x < dest_width; ++x) {
             int sy = y * DOOMGENERIC_RESY / dest_height;
@@ -1092,16 +937,6 @@ static void draw_sextant_bw() {
             uint32_t l_bl = LUMA_P(bl) >> 8;
             uint32_t l_br = LUMA_P(br) >> 8;
 
-            if (noise_enabled) {
-                // We use only the red channel of noise.
-                //printf("pixel x %i y %i luma %i noise raw %i noise actual %i\n", x,y,l_tl,NOISE_SAMPLE(x    , y    )&0xff,(NOISE_SAMPLE(x    , y    ) & 0xff) - 128);
-                l_tl = clamp(l_tl + (NOISE_SAMPLE(x    , y    ) & 0xff) - 128, 0, 255);
-                l_tr = clamp(l_tr + (NOISE_SAMPLE(x + 1, y    ) & 0xff) - 128, 0, 255);
-                l_ml = clamp(l_ml + (NOISE_SAMPLE(x    , y + 1) & 0xff) - 128, 0, 255);
-                l_mr = clamp(l_mr + (NOISE_SAMPLE(x + 1, y + 1) & 0xff) - 128, 0, 255);
-                l_bl = clamp(l_bl + (NOISE_SAMPLE(x    , y + 2) & 0xff) - 128, 0, 255);
-                l_br = clamp(l_br + (NOISE_SAMPLE(x + 1, y + 2) & 0xff) - 128, 0, 255);
-            }
 
             // calculate index
             //printf("%i %i %i %i %i %i\n", l_tl,l_tr,l_ml,l_mr,l_bl,l_br);

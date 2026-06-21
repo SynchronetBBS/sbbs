@@ -276,7 +276,6 @@ is available in-game with **F1**. Keys:
 | `T` | Talk / chat (multiplayer); `g`/`i`/`b`/`r` whisper one player by color in 3+ player games. |
 | `Tab` | Automap. |
 | `F4` | Cycle the render tier / glyph mode. |
-| `Ctrl-N` | Toggle text-tier dithering. Only meaningful in 256-color text mode (16-color and truecolor don't dither, and the graphics tiers never do); turning it off also trims text bandwidth. Saved per-user. |
 | `Ctrl-T` | Cycle the frame pipeline depth (`1 → 2 → … → 8 → auto`), flashing the depth + measured round-trip. Higher depths lift the frame rate on a high-latency (far-away) link toward Doom's 35 fps sim rate (frame rate ≈ depth ÷ round-trip), at the cost of some added input lag; `auto` (the default) adapts to the link. Mainly an A/B tuning aid for remote play. Saved per-user. (Also `[video] frames_in_flight` in `syncdoom.ini`.) |
 | `Ctrl-S` | Toggle a live stats overlay (top row): render tier, frame rate, round-trip (current / baseline), and pipeline depth — handy for watching `auto` adapt over a remote link. Session-only. |
 | `F2` / `F3` | Save / load game (written under `-home`); `F6` / `F9` quicksave / quickload. |
@@ -298,7 +297,7 @@ with the lobby as `xtrn/syncdoom/syncdoom.example.ini` and is copied to
 `syncdoom.ini` on install; see it for the full key list.
 
 A player's in-game tweaks — the **Options → Input Feel** sliders and the
-**Ctrl-N** dither toggle — are written to a **per-user `syncdoom.ini`** in their
+**Ctrl-T** frame-pacing depth — are written to a **per-user `syncdoom.ini`** in their
 `-home` directory, which overlays the matching `[input]`/`[video]` keys from the
 house template. Precedence: built-in → house `syncdoom.ini` → per-user → CLI flag.
 
