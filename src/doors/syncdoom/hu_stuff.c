@@ -384,11 +384,37 @@ void HU_Start(void)
 
 }
 
+// syncdoom: in the text tier the door renders the message line + chat as REAL
+// terminal characters (legible) instead of letting Doom rasterize them into the
+// framebuffer, where the small font downsamples to mush. When sd_text_hud is set
+// it suppresses that framebuffer draw, and the door reads the strings below.
+int sd_text_hud = 0;
+
+const char *HU_message_text(void)
+{
+    hu_textline_t *t;
+    if (!message_on)
+	return NULL;
+    t = &w_message.l[w_message.cl];
+    t->l[t->len] = '\0';
+    return t->len ? t->l : NULL;
+}
+
+const char *HU_chat_text(void)
+{
+    if (!chat_on)
+	return NULL;
+    w_chat.l.l[w_chat.l.len] = '\0';
+    return w_chat.l.l;
+}
+
 void HU_Drawer(void)
 {
 
-    HUlib_drawSText(&w_message);
-    HUlib_drawIText(&w_chat);
+    if (!sd_text_hud) {
+	HUlib_drawSText(&w_message);
+	HUlib_drawIText(&w_chat);
+    }
     if (automapactive)
 	HUlib_drawTextLine(&w_title, false);
 

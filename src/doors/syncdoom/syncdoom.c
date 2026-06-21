@@ -358,6 +358,14 @@ static int       g_ov_prev_tn = 0;       // width of the last overlay -> blank t
 static int       g_ov_cell_col = 0;      // overlay's cell-grid column (0-based) -> text cell-diff exclusion
 static int       g_ov_cell_w   = 0;      // overlay's width in cells (0 = not drawn yet)
 
+// Doom HU strings (hu_stuff.c) for the text-tier legible HUD. sd_text_hud suppresses
+// Doom's framebuffer draw of the message line + chat so only our terminal-character
+// version shows (real chars = legible; the rasterized font downsamples to blocks).
+extern int sd_text_hud;
+extern const char *HU_message_text(void);
+extern const char *HU_chat_text(void);
+#define SD_CHAT_ROW 1                    // cell row for the chat line (one below the message)
+
 static int dsr_inflight(void) { return (g_dsr_head - g_dsr_tail + DSR_RING) % DSR_RING; }
 
 static uint32_t now_ms(void);           // defined later (monotonic ms; only deltas used)
@@ -725,6 +733,8 @@ static void emit_overlay(int force)
 static void emit_frame(const uint32_t *fb, int w, int h)
 {
 	bool built = false;
+
+	sd_text_hud = (g_mode == MODE_TEXT);   // text tier -> Doom skips drawing msg/chat; we do (legibly)
 	int  identical;
 
 	if (g_label_until != 0) {
@@ -775,14 +785,44 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 	if (g_mode == MODE_TEXT) {          // ANSI/CP437 block-char tier (render_text)
 		size_t      tlen;
 		const char *tb;
-		// Exclude the stats overlay's cells from the game cell-diff so the renderer
-		// never repaints under it (no flicker). Uses last frame's overlay region;
-		// emit_overlay (below) redraws + updates it. Cleared when the overlay is off.
+		// Legible text-HUD: render Doom's message line + chat (and the stats overlay)
+		// as REAL terminal characters, each an excluded rectangle so the game cell-diff
+		// never repaints under them (no flicker). Strings fetched once -> used for both
+		// the exclusion (pre-render) and the draw (post-render).
+		const char *msg   = HU_message_text();
+		const char *chat  = HU_chat_text();
+		int         ovc0  = (g_stats_overlay && g_ov_cell_w > 0) ? g_ov_cell_col : g_text_cols;
+		int         msgw  = msg  ? (int)strlen(msg)  : 0;
+		int         chatw = chat ? (int)strlen(chat) : 0;
+		if (msgw > ovc0)
+			msgw = ovc0;                                  // keep the left message clear of the right overlay
+		if (chatw > g_text_cols)
+			chatw = g_text_cols;
+
 		rt_exclude_clear();
 		if (g_stats_overlay && g_ov_cell_w > 0)
 			rt_exclude_add(0, g_ov_cell_col, g_ov_cell_col + g_ov_cell_w);
+		if (msgw > 0)
+			rt_exclude_add(0, 0, msgw);                   // message: cell row 0, top-left
+		if (chatw > 0)
+			rt_exclude_add(SD_CHAT_ROW, 0, chatw);
+
 		tb = rt_render_frame(&tlen);
 		out_put(tb, tlen);
+
+		if (msgw > 0) {                                   // draw it as characters, on top
+			char hb[300];
+			int  n = snprintf(hb, sizeof(hb), "\x1b[1;1H\x1b[1;37;40m%.*s\x1b[0m", msgw, msg);
+			if (n > 0)
+				out_put(hb, (size_t)n);
+		}
+		if (chatw > 0) {
+			char hb[300];
+			int  n = snprintf(hb, sizeof(hb), "\x1b[%d;1H\x1b[1;33;44m%.*s\x1b[0m",
+			                  SD_CHAT_ROW + 1, chatw, chat);
+			if (n > 0)
+				out_put(hb, (size_t)n);
+		}
 	} else {
 		pack_rgb(fb, w, h);
 		if (g_mode == MODE_SIXEL) { emit_frame_sixel(w, h); built = true; }
