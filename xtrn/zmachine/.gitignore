@@ -3,7 +3,18 @@
 *.z4
 *.z5
 *.z8
+*.z6
 # Bundled, MIT-licensed Zork I/II/III ship with the door (exceptions to the *.zN ignore above)
 !fantasy/zork1.z3
 !fantasy/zork2.z3
 !fantasy/zork3.z3
+
+# Sysop/runtime game content (lives in the install dir, NOT part of the door package):
+# v6 graphics caches, Blorb source files, IFDB title caches, the optional splash, and logs.
+*.gfx/
+*.blb
+titles.ini
+intro.msg
+intro2.msg
+intro.ans
+*.log
