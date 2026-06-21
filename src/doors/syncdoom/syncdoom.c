@@ -1829,6 +1829,10 @@ static void read_door32(const char *path)
 
 // (mkpath() comes from xpdev/dirwrap.h -- recursive mkdir of every component.)
 
+// Absolute path of the configured [wads] dir (same value exported as DOOMWADDIR),
+// captured by read_syncdoom_ini() for wadcopy() below. Empty until then.
+static char g_wads_dir[PATH_MAX] = "";
+
 // Resolve a (possibly relative) path to absolute -- called BEFORE the chdir so
 // -iwad/-file still load afterwards.
 static char *abscopy(const char *p)
@@ -1854,6 +1858,29 @@ static char *abscopy(const char *p)
 	}
 #endif
 	return strdup(p);
+}
+
+// Resolve a -iwad/-file/-merge value to an absolute path BEFORE we chdir into the
+// per-user sandbox. The lobby passes absolute WAD paths (kept as-is). A bare or
+// relative WAD name -- e.g. the direct-exec install's "-iwad freedoom1.wad" -- is
+// resolved against the configured [wads] dir when the WAD is found there, so it
+// locates the file in the SAME place the lobby does (and matches DOOMWADDIR),
+// rather than against the door's CWD. Falls back to CWD-relative (abscopy).
+static char *wadcopy(const char *p)
+{
+	char buf[PATH_MAX];
+	int  absolute =
+#ifdef _WIN32
+		(p[0] == '/' || p[0] == '\\' || (p[0] && p[1] == ':'));
+#else
+		(p[0] == '/');
+#endif
+	if (!absolute && g_wads_dir[0]) {
+		snprintf(buf, sizeof(buf), "%s/%s", g_wads_dir, p);
+		if (fexist(buf))
+			return abscopy(buf);
+	}
+	return abscopy(p);
 }
 
 static void setup_sandbox(void)
@@ -2050,7 +2077,8 @@ static void read_syncdoom_ini(const char *argv0)
 	// Blank = the door's own dir; a relative dir is under it; absolute used as-is.
 	iniGetString(ini, "wads", "dir", "", val);
 	{
-		char wads[PATH_MAX], abs[PATH_MAX];
+		char        wads[PATH_MAX], abs[PATH_MAX];
+		const char *resolved;
 		if (val[0] == '/' || val[0] == '\\' || (val[0] && val[1] == ':'))
 			snprintf(wads, sizeof(wads), "%s", val);                 // absolute
 		else if (val[0])
@@ -2058,10 +2086,16 @@ static void read_syncdoom_ini(const char *argv0)
 		else
 			snprintf(wads, sizeof(wads), "%s", dir[0] ? dir : ".");  // the door dir itself
 #ifndef _WIN32
-		setenv("DOOMWADDIR", realpath(wads, abs) ? abs : wads, 1);
+		resolved = realpath(wads, abs) ? abs : wads;
+		setenv("DOOMWADDIR", resolved, 1);
 #else
-		_putenv_s("DOOMWADDIR", _fullpath(abs, wads, sizeof(abs)) ? abs : wads);
+		resolved = _fullpath(abs, wads, sizeof(abs)) ? abs : wads;
+		_putenv_s("DOOMWADDIR", resolved);
 #endif
+		// Keep the absolute wads dir for wadcopy(): a bare "-iwad <name>" resolves
+		// here (matching DOOMWADDIR + the lobby), not against the door's CWD.
+		strncpy(g_wads_dir, resolved, sizeof(g_wads_dir) - 1);
+		g_wads_dir[sizeof(g_wads_dir) - 1] = '\0';
 	}
 
 	strListFree(&ini);
@@ -2664,7 +2698,7 @@ int main(int argc, char **argv)
 		    strcmp(argv[i], "-merge") == 0) {
 			child[cn++] = argv[i];                       // resolve WAD paths to absolute
 			while (i + 1 < argc && argv[i + 1][0] != '-')  // before we chdir into the sandbox
-				child[cn++] = abscopy(argv[++i]);
+				child[cn++] = wadcopy(argv[++i]);          // (bare names resolve in [wads] dir)
 			continue;
 		}
 		if (strncmp(argv[i], "-door32", 7) == 0) {
