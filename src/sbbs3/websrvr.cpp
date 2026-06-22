@@ -1119,15 +1119,26 @@ static void drain_outbuf(http_session_t * session)
 		return;
 	/* Force the output thread to go NOW */
 	SetEvent(session->outbuf.highwater_event);
-	/* ToDo: This should probably timeout eventually... */
+	// Wait for the output thread to flush the buffer, but not forever: bail if the
+	// server is shutting down, or if a non-reading client stalls us past max_inactivity.
+	// Otherwise a dead client (e.g. an abandoned scraper connection) wedges this thread -
+	// and, at shutdown, blocks the entire web server from terminating.  Return (rather
+	// than break) on the give-up path: the output thread may be blocked in a send while
+	// holding outbuf_write, so falling through to lock it below would just re-hang here.
+	time_t drain_deadline = time(NULL) + startup->max_inactivity;
 	while (RingBufFull(&session->outbuf) && session->socket != INVALID_SOCKET) {
+		if (terminate_server || time(NULL) >= drain_deadline)
+			return;
 		SetEvent(session->outbuf.highwater_event);
 		SLEEP(1);
 	}
 	/* Lock the mutex to ensure data has been sent */
-	while (session->socket != INVALID_SOCKET && !session->outbuf_write_initialized)
+	while (session->socket != INVALID_SOCKET && !session->outbuf_write_initialized) {
+		if (terminate_server)
+			return;
 		SLEEP(1);
-	if (session->socket == INVALID_SOCKET)
+	}
+	if (session->socket == INVALID_SOCKET || terminate_server)
 		return;
 	pthread_mutex_lock(&session->outbuf_write);     /* Win32 Access violation here on Jan-11-2006 - shutting down webserver while in use */
 	pthread_mutex_unlock(&session->outbuf_write);
