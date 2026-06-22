@@ -74,6 +74,7 @@ extern boolean		chat_on;		// in heads-up code
 extern uint32_t		g_grace_fresh;		// TAP  -- a single press lingers this long
 extern uint32_t		g_keyup_idle_ms;	// HOLD -- release latency once auto-repeating
 extern uint32_t		g_turn_grace;		// TURN -- turn-key tap grace
+extern int		sd_instant_turn;	// FAST TURN -- defeat the turn-accel ramp
 extern void		sd_save_user_prefs(void);
 
 //
@@ -208,6 +209,7 @@ void M_Sound(int choice);
 void M_InputTap(int choice);     // syncdoom: key-feel sliders, inline on Options
 void M_InputHold(int choice);
 void M_InputTurn(int choice);
+void M_InstantTurn(int choice);  // syncdoom: FAST TURN on/off checkbox
 void M_DrawInputSliders(void);
 
 void M_FinishReadThis(int choice);
@@ -363,6 +365,7 @@ enum
     inputtap,           // syncdoom key-feel sliders, inline (LEFT/RIGHT adjust)
     inputhold,
     inputturn,
+    instantturn,        // syncdoom FAST TURN on/off (ENTER toggles)
     opt_end
 } options_e;
 
@@ -376,6 +379,7 @@ menuitem_t OptionsMenu[]=
     {2,"",M_InputTap, 't'},
     {2,"",M_InputHold,'h'},
     {2,"",M_InputTurn,'u'},
+    {1,"",M_InstantTurn,'i'},       // FAST TURN checkbox (ENTER toggles)
     {-1,"",0,'\0'}
 };
 
@@ -1124,6 +1128,7 @@ void M_Options(int choice)
 #define HT_STEP   25
 #define HT_MAX    250     // 50..250, step 25 (9 stops)
 #define SLIDER_W  9       // matches SCREEN SIZE's 9 stops -> all 4 bars same width
+#define INPUT_YOFF (-10)  // nudge the KEY TAP/HOLD/TURN + FAST TURN rows up a touch
 
 static int M_ThermoDot(int value, int vmin, int vstep, int width)
 {
@@ -1140,7 +1145,7 @@ static void M_DrawInputRow(int row, char *label, unsigned val,
                            int vmin, int vstep)
 {
     char buf[16];
-    int  y  = OptionsDef.y + LINEHEIGHT * row;
+    int  y  = OptionsDef.y + LINEHEIGHT * row + INPUT_YOFF;
     int  sx = M_OptSliderX();
 
     M_WriteText(OptionsDef.x, y, label);
@@ -1154,6 +1159,15 @@ void M_DrawInputSliders(void)
     M_DrawInputRow(inputtap,  "KEY TAP",  g_grace_fresh,   TAP_MIN, TAP_STEP);
     M_DrawInputRow(inputhold, "KEY HOLD", g_keyup_idle_ms, HT_MIN,  HT_STEP);
     M_DrawInputRow(inputturn, "KEY TURN", g_turn_grace,    HT_MIN,  HT_STEP);
+
+    // FAST TURN on/off: defeats Doom's slow-start turn-accel ramp, which fights
+    // terminal key-repeat (gaps reset the ramp -> turning stays stuck slow). On =
+    // full turn speed immediately. ENTER toggles. Per-user (sd_save_user_prefs).
+    {
+        int y = OptionsDef.y + LINEHEIGHT * instantturn + INPUT_YOFF;
+        M_WriteText(OptionsDef.x, y, "FAST TURN");
+        M_WriteText(M_OptSliderX(), y, sd_instant_turn ? "ON" : "OFF");
+    }
 }
 
 // Step a grace one notch, snapping to the [mn,mx] grid (mn + k*step). Snapping
@@ -1185,6 +1199,13 @@ void M_InputHold(int choice)
 void M_InputTurn(int choice)
 {
     g_turn_grace = M_InputStep(g_turn_grace, choice, HT_MIN, HT_STEP, HT_MAX);
+    sd_save_user_prefs();
+}
+
+void M_InstantTurn(int choice)
+{
+    (void)choice;                       // a toggle -- direction doesn't matter
+    sd_instant_turn = !sd_instant_turn;
     sd_save_user_prefs();
 }
 
@@ -2203,9 +2224,16 @@ void M_Drawer (void)
 
     
     // DRAW SKULL
-    V_DrawPatchDirect(x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT,
+    {
+        // syncdoom: the inline input rows (KEY TAP..FAST TURN) are nudged up
+        // INPUT_YOFF px, so shift the skull to match when it's on one of them.
+        int sy = currentMenu->y - 5 + itemOn*LINEHEIGHT;
+        if (currentMenu == &OptionsDef && itemOn >= inputtap)
+            sy += INPUT_YOFF;
+        V_DrawPatchDirect(x + SKULLXOFF, sy,
 		      W_CacheLumpName(DEH_String(skullName[whichSkull]),
 				      PU_CACHE));
+    }
 }
 
 

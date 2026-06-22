@@ -196,7 +196,8 @@ static const struct
 #define MAX_JOY_BUTTONS 20
 
 static boolean  gamekeydown[NUMKEYS]; 
-static int      turnheld;		// for accelerative turning 
+static int      turnheld;		// for accelerative turning
+int             sd_instant_turn = 1;	// syncdoom: defeat turn-accel ramp; default ON (Options > FAST TURN)
  
 static boolean  mousearray[MAX_MOUSE_BUTTONS + 1];
 static boolean *mousebuttons = &mousearray[1];  // allow [-1]
@@ -357,9 +358,11 @@ void G_BuildTiccmd (ticcmd_t* cmd, int maketic)
     else 
 	turnheld = 0; 
 
-    if (turnheld < SLOWTURNTICS) 
-	tspeed = 2;             // slow turn 
-    else 
+    if (sd_instant_turn)
+	tspeed = speed;        // syncdoom: ramp defeated -- full turn speed at once
+    else if (turnheld < SLOWTURNTICS)
+	tspeed = 2;             // slow turn
+    else
 	tspeed = speed;
     
     // let movement keys cancel each other out

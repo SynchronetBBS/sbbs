@@ -132,3 +132,16 @@ with open(OUT_H, "w") as f:
         f.write("\t" + ",".join(out[i:i + 8]) + ",\n")
     f.write("};\n")
 print("wrote", OUT_H)
+
+# Editable runtime copy: raw 80x25 "binary text" (.bin) -- char,attr per cell,
+# row-major -- in the door's xtrn dir. A sysop edits this in PabloDraw/Moebius to
+# re-skin the waiting room with no rebuild; the door loads it over the baked-in
+# default (sd_render_screen / [game] splash).
+OUT_BIN = os.path.abspath(os.path.join(HERE, os.pardir, os.pardir, os.pardir,
+                                       os.pardir, "xtrn", "syncdoom", "waiting.bin"))
+with open(OUT_BIN, "wb") as f:
+    for y in range(H):
+        for x in range(W):
+            b, a = grid[y][x]
+            f.write(bytes((b, a)))
+print("wrote", OUT_BIN)

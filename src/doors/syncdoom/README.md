@@ -117,11 +117,16 @@ grace period after its last byte. These tune that synthesis:
 | `-kpdelay <ms>` | TAP grace (fresh press) — the main "slidy" lever. |
 | `-kpturn <ms>` | TURN grace (turn-key tap). |
 
-These three set the *startup* feel (also via `syncdoom.ini [input]`). A player
-can retune them **live in-game** under **Options → Input Feel** (TAP/HOLD/TURN
-sliders); the choice saves per-user (in `-home`) and overrides the ini default,
-while an explicit `-kp*` flag still wins. The feel is per-user because the ideal
-grace depends on the player's OS key-repeat and link latency.
+These three set the *startup* feel (also via `syncdoom.ini [input]`; the TURN
+default is low — **75 ms** — to suit FAST TURN, below). A player retunes them
+**live in-game** under **Options** (TAP/HOLD/TURN sliders) alongside a **FAST
+TURN** on/off toggle (`[input] instant_turn`, default **on**) that defeats Doom's
+slow-start turn-acceleration ramp — the ramp keeps resetting on terminal
+key-repeat gaps and makes turning feel laggy, so full speed from the first tic
+turns better over a terminal. Changes save to a per-user `syncdoom.ini` in
+`-home` and override the house defaults — but **only settings the player actually
+changes are written**, so the sysop's house defaults keep reaching players who
+haven't touched a given setting. An explicit `-kp*` flag still wins.
 
 ### WAD selection (passed through to the engine)
 
@@ -292,16 +297,27 @@ and is folded back to lowercase for matching).
 ## Configuration file
 
 An optional `syncdoom.ini`, read from the directory of the executable, provides
-defaults for the video and input options above (and the networking and WAD-set
-definitions used by the JavaScript lobby). All keys are optional; an absent key
-keeps the auto-detected value or built-in default. The documented template ships
-with the lobby as `xtrn/syncdoom/syncdoom.example.ini` and is copied to
-`syncdoom.ini` on install; see it for the full key list.
+defaults for the video and input options above plus a `[game]` section, and the
+networking and WAD-set definitions used by the JavaScript lobby. All keys are
+optional; an absent key keeps the auto-detected value or built-in default. The
+documented template ships with the lobby as `xtrn/syncdoom/syncdoom.example.ini`
+and is copied to `syncdoom.ini` on install; see it for the full key list. Notable
+`[game]` keys:
 
-A player's in-game tweaks — the **Options → Input Feel** sliders and the
-**Ctrl-T** frame-pacing depth — are written to a **per-user `syncdoom.ini`** in their
-`-home` directory, which overlays the matching `[input]`/`[video]` keys from the
-house template. Precedence: built-in → house `syncdoom.ini` → per-user → CLI flag.
+- `quit_effect` = `keep` / `vanish` / `fog` (default **fog**) — what happens to a
+  player's marine when they leave a match in progress: stay (vanilla), vanish, or
+  a teleport-out puff. Changes lockstep game state, so it must match across players
+  in a match (a house setting, not per-user).
+- `splash` — the waiting-room backdrop as an editable external 80×25 "binary text"
+  file (default `waiting.bin`, beside the door; edit in PabloDraw/Moebius). Missing
+  or wrong-size → the baked-in default.
+
+A player's in-game tweaks — the **Options** sliders, the **FAST TURN** toggle, and
+the **Ctrl-T** frame-pacing depth — are written to a **per-user `syncdoom.ini`** in
+their `-home` directory, overlaying the matching `[input]`/`[video]` keys from the
+house template. **Only settings the player actually changes are written**, so the
+sysop's house defaults keep reaching untouched keys. Precedence: built-in → house
+`syncdoom.ini` → per-user → CLI flag.
 
 ---
 

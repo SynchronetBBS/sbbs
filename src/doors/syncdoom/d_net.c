@@ -37,8 +37,19 @@
 #include "deh_main.h"
 
 #include "d_loop.h"
+#include "p_local.h"        // P_SpawnMobj / P_RemoveMobj / MT_TFOG (quit effect)
+#include "s_sound.h"        // S_StartSound
+#include "sounds.h"         // sfx_telept
 
 ticcmd_t *netcmds;
+
+// syncdoom: what becomes of a departed player's marine -- 0 keep it standing
+// frozen (vanilla), 1 vanish instantly, 2 teleport-out (fog + sound) then remove.
+// Default 2; set from syncdoom.ini [game] quit_effect by syncdoom.c. This changes
+// the lockstep game state, so it MUST match across every player in a match -- a
+// mismatch would desync. It's the same default for all, so it's uniform unless
+// every player overrides it.
+int sd_quit_effect = 2;
 
 // Called when a player leaves the game
 
@@ -66,6 +77,23 @@ static void PlayerQuitGame(player_t *player)
 
     playeringame[player_num] = false;
     players[consoleplayer].message = exitmsg;
+
+    // Dispose of their marine so it doesn't stand frozen in the world. Runs in
+    // RunTic on every node at the same tic the quit is detected (ingame[] comes
+    // from the shared tic stream), so the fog spawn + removal stay deterministic
+    // across the netgame.
+    if (sd_quit_effect != 0 && player->mo != NULL)
+    {
+        if (sd_quit_effect == 2)        // teleport-out: a fog puff + sound, then gone
+        {
+            mobj_t *fog = P_SpawnMobj(player->mo->x, player->mo->y,
+                                      player->mo->z, MT_TFOG);
+            if (fog != NULL)
+                S_StartSound(fog, sfx_telept);
+        }
+        P_RemoveMobj(player->mo);
+        player->mo = NULL;
+    }
 
     // TODO: check if it is sensible to do this:
 

@@ -93,8 +93,23 @@ internet). You can also run it later by hand: `jsexec ../xtrn/syncdoom/getwads.j
 
 ## Configuration & data
 
-- **`syncdoom.ini`** — all settings, commented in-file: `[video]`/`[input]` are
-  read by the C door, `[net]`/`[wads]`/`[wadset:*]` by the lobby.
+- **`syncdoom.ini`** — all settings, fully commented in-file. `[video]`,
+  `[input]`, and `[game]` are read by the C door; `[lobby]`, `[net]`, `[wads]`,
+  and `[wadset:*]` by the lobby. A few notables added recently:
+  - **Input feel** — turning defaults to **FAST TURN** on (`[input] instant_turn`),
+    which suits terminal key-repeat; players toggle it (and the TAP/HOLD/TURN
+    grace sliders) live in-game under **Options**. Per-user tweaks save to
+    `data/user/<num>/doom/syncdoom.ini` and override the house defaults — but only
+    settings a player actually changes are stored, so your house defaults keep
+    reaching everyone else.
+  - **Waiting-room splash** — `[game] splash`: an editable `waiting.bin` (80×25
+    "binary text", e.g. PabloDraw — set 80×25, Save As Binary Text) ships beside
+    the door; edit it to re-skin the multiplayer waiting room, no rebuild.
+  - **Player-quit effect** — `[game] quit_effect` = `keep` / `vanish` / `fog`
+    (default: a teleport-out puff) decides the fate of a marine whose player
+    leaves a match.
+  - **Lobby attract** — `[lobby] art_dir`: drop full-screen DOOM ANSI (`*.ans`)
+    there to show a random one on lobby entry.
 - **Multiplayer reach** — out of the box a match server binds loopback
   (`127.0.0.1`), so play is **same-host only**. For cross-host (multi-machine
   LAN) play set `[net] advertise` to this host's LAN IP/DNS name (`bind` follows

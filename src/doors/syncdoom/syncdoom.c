@@ -362,6 +362,12 @@ static int       g_ov_cell_w   = 0;      // overlay's width in cells (0 = not dr
 // Doom's framebuffer draw of the message line + chat so only our terminal-character
 // version shows (real chars = legible; the rasterized font downsamples to blocks).
 extern int sd_text_hud;
+// d_net.c: remove a departed player's marine (vanilla leaves it standing). Set
+// from [game] remove_quit_bodies; default on.
+// d_net.c: fate of a departed player's marine -- 0 keep / 1 vanish / 2 teleport-fog.
+extern int sd_quit_effect;
+// g_game.c: defeat Doom's turn-accel ramp (Options > FAST TURN). Per-user.
+extern int sd_instant_turn;
 extern const char *HU_message_text(void);
 extern const char *HU_chat_text(void);
 #define SD_CHAT_ROW 1                    // cell row for the chat line (one below the message)
@@ -912,10 +918,19 @@ static void keyq_push(int pressed, unsigned char key)
 // (house default) -> per-user saved prefs (load_input_prefs) -> -kp* CLI flags.
 uint32_t    g_keyup_idle_ms = 150;            // HOLD grace (key seen >= 2 times)
 uint32_t    g_grace_fresh   = 300;            // TAP grace (key seen once)
-uint32_t    g_turn_grace    = 150;            // TURN grace for turn keys (tight taps)
+uint32_t    g_turn_grace    = 75;             // TURN grace for turn keys (tight taps; low to
+                                              // suit FAST TURN's full-speed turn, default on)
 static int  g_kp_cli_tap    = 0;              // -kpdelay given on CLI (saved prefs won't override)
 static int  g_kp_cli_hold   = 0;              // -kpsmooth given on CLI
 static int  g_kp_cli_turn   = 0;              // -kpturn given on CLI
+
+// Defaults captured right after read_syncdoom_ini() (built-in + house ini, before
+// per-user/CLI) so a per-user save records ONLY what the player changed in-game;
+// untouched keys stay out of the file and keep tracking the sysop's house default
+// -- even for players who have already played.
+static uint32_t g_base_grace_fresh, g_base_keyup_idle_ms, g_base_turn_grace;
+static int      g_base_instant_turn;
+static char     g_base_frames[32];
 static char g_user_ini_path[PATH_MAX] = "";   // per-user prefs file (<-home>/syncdoom.ini); "" = disabled
 static struct { unsigned char key; uint32_t last; int presses; } s_active[ACTIVE_MAX];
 static int  s_active_n = 0;
@@ -1969,6 +1984,27 @@ static void read_terminal_ini(void)
 		g_colors = RT_8BIT;
 }
 
+// External waiting-room splash, so a sysop can edit the art without a rebuild. An
+// 80x25 raw "binary text" file -- one {CP437 char, CGA attribute} pair per cell,
+// row-major (4000 bytes; the format PabloDraw/Moebius/TheDraw save as .bin, and
+// the same the door renders). Any trailing SAUCE record is ignored. Falls back to
+// the baked-in sd_splash[] when the file is absent or short.
+static unsigned char g_splash_cells[80 * 25 * 2];
+static int           g_have_splash = 0;
+static char          g_door_dir[PATH_MAX];            // the door's own dir (trailing sep)
+static char          g_splash_cfg[INI_MAX_VALUE_LEN]; // [game] splash override, if any
+
+static void load_splash(const char *path)
+{
+	FILE *f = fopen(path, "rb");
+
+	if (f == NULL)
+		return;
+	if (fread(g_splash_cells, 1, sizeof(g_splash_cells), f) == sizeof(g_splash_cells))
+		g_have_splash = 1;
+	fclose(f);
+}
+
 // ---------------------------------------------------------------------------
 // syncdoom.ini -- the door's own config, beside the executable (portable to any
 // BBS; not Synchronet's ctrl/). Located from argv[0]'s directory, cwd fallback.
@@ -1985,6 +2021,7 @@ static void read_syncdoom_ini(const char *argv0)
 	base = getfname(dir);                          // -> filename within dir
 	if (base != dir) { *base = '\0'; snprintf(path, sizeof(path), "%ssyncdoom.ini", dir); }
 	else             { snprintf(path, sizeof(path), "syncdoom.ini"); }   // bare argv0 -> cwd
+	snprintf(g_door_dir, sizeof(g_door_dir), "%s", (base != dir) ? dir : "");  // for main()'s splash load
 
 	f = fopen(path, "r");
 	if (f == NULL)
@@ -2080,6 +2117,27 @@ static void read_syncdoom_ini(const char *argv0)
 			g_turn_grace    = (uint32_t)v;
 	}
 	g_always_run = iniGetBool(ini, "input", "always_run", TRUE);
+	// instant_turn -- house default for FAST TURN (defeat the turn-accel ramp).
+	// Default ON: the ramp fights terminal key-repeat (laggy turning); off = the
+	// vanilla ramp. A per-user in-game toggle overrides this.
+	sd_instant_turn = iniGetBool(ini, "input", "instant_turn", TRUE);
+
+	// [game] quit_effect -- fate of a departed player's marine: keep (vanilla,
+	// stays frozen), vanish (remove at once), or fog (teleport-out puff + sound,
+	// default). Changes lockstep game state, so it must match across players in a
+	// match -- a house setting, not a per-user toggle.
+	iniGetString(ini, "game", "quit_effect", "", val);
+	if (stricmp(val, "keep") == 0)
+		sd_quit_effect = 0;
+	else if (stricmp(val, "vanish") == 0)
+		sd_quit_effect = 1;
+	else
+		sd_quit_effect = 2;          // "fog" or unset -> default
+
+	// [game] splash -- external waiting-room art (80x25 .bin; editable, no rebuild).
+	// Just captured here; resolved + loaded in main() so it works with NO ini too
+	// (this function returns early when syncdoom.ini is absent).
+	iniGetString(ini, "game", "splash", "", g_splash_cfg);
 
 	// [wads] dir -- point Doom's IWAD search at the configured WAD directory so a
 	// bare "-iwad freedoom1.wad" (e.g. the direct-exec install) resolves there,
@@ -2131,8 +2189,38 @@ static void user_ini_path(void)
 	         g_home, (n > 0 && (g_home[n - 1] == '/' || g_home[n - 1] == '\\')) ? "" : "/");
 }
 
+// Save a pref only if it differs from the captured default; otherwise REMOVE the
+// key, so an untouched setting stays out of the per-user file and keeps following
+// the sysop's house default (even for a player who has already played).
+static void save_pref_int(str_list_t *list, const char *sec, const char *key, int val, int def)
+{
+	if (val == def)
+		iniRemoveKey(list, sec, key);
+	else
+		iniSetInteger(list, sec, key, val, NULL);
+}
+
+static void save_pref_bool(str_list_t *list, const char *sec, const char *key, int val, int def)
+{
+	if (!val == !def)
+		iniRemoveKey(list, sec, key);
+	else
+		iniSetBool(list, sec, key, val, NULL);
+}
+
+static void save_pref_str(str_list_t *list, const char *sec, const char *key,
+                          const char *val, const char *def)
+{
+	if (strcmp(val, def) == 0)
+		iniRemoveKey(list, sec, key);
+	else
+		iniSetString(list, sec, key, val, NULL);
+}
+
 // Write the user's prefs (read-modify-write, so any hand-added keys survive).
 // Called by the Options sliders and the Ctrl-T pacing toggle after each change.
+// Only settings the player has CHANGED from the default are written; the rest are
+// removed (see save_pref_* above) so house-ini defaults still reach this user.
 void sd_save_user_prefs(void)
 {
 	str_list_t list;
@@ -2148,10 +2236,11 @@ void sd_save_user_prefs(void)
 	} else {
 		list = strListInit();
 	}
-	iniSetInteger(&list, "input", "kpdelay",  (int)g_grace_fresh,        NULL);
-	iniSetInteger(&list, "input", "kpsmooth", (int)g_keyup_idle_ms,      NULL);
-	iniSetInteger(&list, "input", "kpturn",   (int)g_turn_grace,         NULL);
-	iniSetString (&list, "video", "frames_in_flight", frames_in_flight_str(), NULL);
+	save_pref_int (&list, "input", "kpdelay",  (int)g_grace_fresh,   (int)g_base_grace_fresh);
+	save_pref_int (&list, "input", "kpsmooth", (int)g_keyup_idle_ms, (int)g_base_keyup_idle_ms);
+	save_pref_int (&list, "input", "kpturn",   (int)g_turn_grace,    (int)g_base_turn_grace);
+	save_pref_bool(&list, "input", "instant_turn", sd_instant_turn,  g_base_instant_turn);
+	save_pref_str (&list, "video", "frames_in_flight", frames_in_flight_str(), g_base_frames);
 	f = fopen(g_user_ini_path, "w");
 	if (f != NULL) {
 		iniWriteFile(f, list);
@@ -2182,6 +2271,7 @@ static void load_user_prefs(void)
 		g_keyup_idle_ms = (uint32_t)iniGetInteger(ini, "input", "kpsmooth", (int)g_keyup_idle_ms);
 	if (!g_kp_cli_turn)
 		g_turn_grace    = (uint32_t)iniGetInteger(ini, "input", "kpturn",   (int)g_turn_grace);
+	sd_instant_turn = iniGetBool(ini, "input", "instant_turn", sd_instant_turn);
 	iniGetString(ini, "video", "frames_in_flight", "", val);
 	if (val[0])
 		set_frames_in_flight(val);
@@ -2443,7 +2533,7 @@ static void sd_waitroom_draw(void)
 		top = 1;
 
 	emit_all("\x1b[2J", 4);
-	sd_render_screen(sd_splash);         // the bespoke DOOM-logo splash as backdrop
+	sd_render_screen(g_have_splash ? g_splash_cells : sd_splash);   // external waiting.bin or baked-in
 
 	for (r = top; r <= bottom; r++)      // solid blue panel (BCE clears each line to bg)
 		len += snprintf(buf + len, sizeof(buf) - len, "\x1b[%d;1H\x1b[1;37;44m\x1b[K", r);
@@ -2648,6 +2738,27 @@ int main(int argc, char **argv)
 	}
 	read_terminal_ini();             // baseline cols/rows/charset; explicit args below override
 	read_syncdoom_ini(argv[0]);      // beside-exe config (graphics scaling, ...)
+	// Snapshot the sysop/built-in defaults now (before CLI + per-user) so a save
+	// only records what the player changes in-game (sd_save_user_prefs).
+	g_base_grace_fresh   = g_grace_fresh;
+	g_base_keyup_idle_ms = g_keyup_idle_ms;
+	g_base_turn_grace    = g_turn_grace;
+	g_base_instant_turn  = sd_instant_turn;
+	snprintf(g_base_frames, sizeof(g_base_frames), "%s", frames_in_flight_str());
+
+	// External waiting-room splash: [game] splash if set, else <door dir>/waiting.bin.
+	// Here (not in read_syncdoom_ini) so it loads even when there's no syncdoom.ini.
+	{
+		char sp[PATH_MAX];
+		if (g_splash_cfg[0] == '/' || g_splash_cfg[0] == '\\'
+		    || (g_splash_cfg[0] && g_splash_cfg[1] == ':'))
+			snprintf(sp, sizeof(sp), "%s", g_splash_cfg);                 // absolute
+		else if (g_splash_cfg[0])
+			snprintf(sp, sizeof(sp), "%s%s", g_door_dir, g_splash_cfg);   // under door dir
+		else
+			snprintf(sp, sizeof(sp), "%swaiting.bin", g_door_dir);        // default
+		load_splash(sp);
+	}
 
 	// -l / -s / -t are prefix-matched: the BBS substitutes specifiers with NO space
 	// (-l%R -> "-l66", -s%H -> "-s7", -t%T -> "-t1800"), so the value can be glued to
