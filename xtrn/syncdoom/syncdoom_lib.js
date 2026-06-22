@@ -174,7 +174,7 @@ function sd_warp_args(map)
 function sd_wadset_args(cfg, ws)
 {
 	var dir = sd_wad_dir(cfg);
-	var args = ["-iwad", dir + ws.iwad];
+	var args = ["-iwad", sd_wad_path(dir, ws.iwad)];
 	var i;
 
 	if (ws.pwad) {
@@ -183,7 +183,7 @@ function sd_wadset_args(cfg, ws)
 		for (i = 0; i < list.length; i++) {
 			var name = sd_trim(list[i]);
 			if (name.length)
-				args.push(dir + name);
+				args.push(sd_wad_path(dir, name));
 		}
 	}
 	if (ws.merge) {
@@ -192,7 +192,7 @@ function sd_wadset_args(cfg, ws)
 			var mn = sd_trim(ml[i]);
 			if (mn.length) {
 				args.push("-merge");
-				args.push(dir + mn);
+				args.push(sd_wad_path(dir, mn));
 			}
 		}
 	}
@@ -202,7 +202,7 @@ function sd_wadset_args(cfg, ws)
 		for (i = 0; i < dl.length; i++) {
 			var dn = sd_trim(dl[i]);
 			if (dn.length)
-				args.push(dir + dn);
+				args.push(sd_wad_path(dir, dn));
 		}
 	}
 	var warp = sd_warp_args(ws.map);
@@ -212,19 +212,29 @@ function sd_wadset_args(cfg, ws)
 	return args;
 }
 
+// Case-insensitive real on-disk path of a WAD <name> in <dir>. Synchronet's
+// file_getcase() returns the actual path, correcting case on a case-sensitive
+// (Linux) filesystem -- DOS/Windows WADs are commonly UPPER-case (DOOM2.WAD), so a
+// configured "doom2.wad" still resolves. Falls back to the plain join when there's
+// no such file (the caller then treats it as absent).
+function sd_wad_path(dir, name)
+{
+	return file_getcase(dir + name) || (dir + name);
+}
+
 // Are all of a wadset's WAD files actually present in the WAD dir? (Join must
 // verify the local copy matches before connecting.)
 function sd_wadset_files_present(cfg, ws)
 {
 	var dir = sd_wad_dir(cfg);
-	if (!file_exists(dir + ws.iwad))
+	if (!file_exists(sd_wad_path(dir, ws.iwad)))
 		return false;
 	if (ws.pwad) {
 		var list = String(ws.pwad).split(",");
 		var i;
 		for (i = 0; i < list.length; i++) {
 			var name = sd_trim(list[i]);
-			if (name.length && !file_exists(dir + name))
+			if (name.length && !file_exists(sd_wad_path(dir, name)))
 				return false;
 		}
 	}
@@ -233,7 +243,7 @@ function sd_wadset_files_present(cfg, ws)
 		var j;
 		for (j = 0; j < dl.length; j++) {
 			var dn = sd_trim(dl[j]);
-			if (dn.length && !file_exists(dir + dn))
+			if (dn.length && !file_exists(sd_wad_path(dir, dn)))
 				return false;
 		}
 	}

@@ -1868,6 +1868,11 @@ static char *abscopy(const char *p)
 // resolved against the configured [wads] dir when the WAD is found there, so it
 // locates the file in the SAME place the lobby does (and matches DOOMWADDIR),
 // rather than against the door's CWD. Falls back to CWD-relative (abscopy).
+//
+// fexistcase() (xpdev dirwrap) resolves CASE-INSENSITIVELY and rewrites buf to the
+// real on-disk case: a DOS WAD named DOOM2.WAD still satisfies a configured
+// "doom2.wad" on a case-sensitive (Linux) filesystem. It's a no-op correction on
+// case-insensitive (Windows) filesystems.
 static char *wadcopy(const char *p)
 {
 	char buf[PATH_MAX];
@@ -1879,9 +1884,13 @@ static char *wadcopy(const char *p)
 #endif
 	if (!absolute && g_wads_dir[0]) {
 		snprintf(buf, sizeof(buf), "%s/%s", g_wads_dir, p);
-		if (fexist(buf))
+		if (fexistcase(buf))
 			return abscopy(buf);
 	}
+	// The path as given (absolute, or CWD-relative): case-correct it too.
+	snprintf(buf, sizeof(buf), "%s", p);
+	if (fexistcase(buf))
+		return abscopy(buf);
 	return abscopy(p);
 }
 

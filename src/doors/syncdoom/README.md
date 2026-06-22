@@ -133,9 +133,11 @@ grace depends on the player's OS key-repeat and link latency.
 | `-deh <patch…>` | One or more DeHackEd / BEX (`.deh`/`.bex`) patches (see below). |
 
 WAD paths are resolved to absolute *before* the door `chdir`s into `-home`, so
-relative WAD paths work regardless of the storage directory. If `-iwad` names a
-bare file, the engine's standard IWAD search applies (e.g. the `DOOMWADDIR`
-environment variable).
+relative WAD paths work regardless of the storage directory, and the lookup is
+**case-insensitive** — a configured `doom2.wad` finds a real `DOOM2.WAD` (and
+vice-versa) on case-sensitive filesystems, since DOS/Windows WADs are commonly
+upper-case. If `-iwad` names a bare file, the engine's standard IWAD search also
+applies (e.g. the `DOOMWADDIR` environment variable).
 
 ### Multiplayer server
 
