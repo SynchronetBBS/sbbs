@@ -81,7 +81,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 	int   file;
 	BOOL  rip = FALSE;
 	off_t l, length;
-	auto savcon = console;
+	auto  savcon = console;
 	FILE *stream;
 
 	if (*inpath == '\0')
@@ -92,7 +92,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		if (strncmp(fpath, cfg.text_dir, strlen(cfg.text_dir)) == 0) {
 			char modpath[MAX_PATH + 1];
 			snprintf(modpath, sizeof modpath, "%stext/%s", cfg.mods_dir, fpath + strlen(cfg.text_dir));
-			if(fexistcase(modpath))
+			if (fexistcase(modpath))
 				SAFECOPY(fpath, modpath);
 		}
 	}
@@ -145,8 +145,8 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		return true;
 	}
 
-	struct sauce_charinfo sauce{};
-	if (sauce_fread_charinfo(stream, /* type */nullptr, &sauce)) {
+	struct sauce_charinfo sauce {};
+	if (sauce_fread_charinfo(stream, /* type */ nullptr, &sauce)) {
 		mode |= P_CPM_EOF;
 		if (org_cols == 0 && sauce.width >= TERM_COLS_MIN && sauce.width <= TERM_COLS_MAX) {
 			org_cols = sauce.width;
@@ -184,14 +184,14 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 		uint             orgcon = console;
 
 		attr_sp = 0;    /* clear any saved attributes */
-		off_t* offset = nullptr;
-		size_t line=0;
-		size_t lines=0;
-		size_t last_match = SIZE_MAX;    // line of most recent search match (for 'n'/'N' continuation)
-		char key = 0;
-		char find_str[128] = {0};
-		bool_expr_t* find_expr = NULL;   // compiled boolean expression for '/' search
-		int kmode = 0;    // case-sensitive: 'n' (next match) and 'N' (previous match)
+		off_t*           offset = nullptr;
+		size_t           line = 0;
+		size_t           lines = 0;
+		size_t           last_match = SIZE_MAX; // line of most recent search match (for 'n'/'N' continuation)
+		char             key = 0;
+		char             find_str[128] = {0};
+		bool_expr_t*     find_expr = NULL; // compiled boolean expression for '/' search
+		int              kmode = 0; // case-sensitive: 'n' (next match) and 'N' (previous match)
 		if ((sys_status & SS_USERON) && !(useron.misc & (NOPAUSESPIN)) && cfg.spinning_pause_prompt)
 			kmode |= K_SPIN;
 
@@ -215,7 +215,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 
 		uint lncntr = 0; // term->lncntr doesn't increment for initial blank lines
 		ansiParser.reset();
-		int cols = (mode & P_SEEK) ? term->cols : 0;
+		int  cols = (mode & P_SEEK) ? term->cols : 0;
 		while (!feof(stream) && !msgabort()) {
 			off_t o = ftello(stream);
 			bool  at_eof = false;
@@ -345,8 +345,8 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 							                 : (last_match != SIZE_MAX) ? last_match + 1
 							                                            : line + 1;
 							bputs(text[SeekingFile]);
-							off_t saved_pos = ftello(stream);
-							bool  found = false;
+							off_t  saved_pos = ftello(stream);
+							bool   found = false;
 							if (scan_line < lines && fseeko(stream, offset[scan_line], SEEK_SET) != 0) {
 								errormsg(WHERE, ERR_SEEK, fpath, static_cast<int>(offset[scan_line]));
 								break;
@@ -427,8 +427,8 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 								break;
 							}
 							bputs(text[SeekingFile]);
-							off_t saved_pos = ftello(stream);
-							bool  found = false;
+							off_t  saved_pos = ftello(stream);
+							bool   found = false;
 							// Search backward starting from before the previous match (less-style),
 							// so 'N' steps through visible matches above the prompt.
 							// offset[0..line] is populated (we've scrolled through those lines).
@@ -468,7 +468,7 @@ bool sbbs_t::printfile(const char* inpath, int mode, int org_cols, JSObject* obj
 								reprompt = true;
 								break;
 							}
-							// Fall-through
+						// Fall-through
 						default:
 						case TERM_KEY_DOWN:
 							nextline = line + 1;
@@ -610,9 +610,7 @@ bool sbbs_t::printtail(const char* fname, int lines, int mode, int org_cols, JSO
 /****************************************************************************/
 bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 {
-	char        path[MAX_PATH + 1];
-	const char *next = "msg";
-	const char *last = "asc";
+	char path[MAX_PATH + 1];
 
 	if (*useron.lang != '\0' && strchr(code, '/') == NULL) {
 		snprintf(path, sizeof path, "%s/%s", useron.lang, code);
@@ -627,27 +625,40 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 	if (menu_file[0])
 		SAFECOPY(path, menu_file);
 	else {
-		do {
-			if ((term->supports(RIP)) && menu_exists(code, "rip", path))
+		/* Resolve the entire terminal-type extension priority within the menu
+		   subdirectory (if any) before falling back to the default menu dir, so a
+		   customized lower-priority menu file in the subdir isn't preempted by a
+		   stock higher-priority file in the default dir. */
+		bool found = false;
+		for (const char* subdir = menu_dir; !found; subdir = "") {
+			const char *next = "msg";
+			const char *last = "asc";
+			do {
+				if ((term->supports(RIP)) && menu_exists_in(code, "rip", subdir, path))
+				{ found = true; break; }
+				if ((term->supports(ANSI) && (!term->supports(COLOR))) && menu_exists_in(code, "mon", subdir, path))
+				{ found = true; break; }
+				if ((term->supports(ANSI)) && menu_exists_in(code, "ans", subdir, path))
+				{ found = true; break; }
+				if ((term->charset() == CHARSET_PETSCII) && menu_exists_in(code, "seq", subdir, path))
+				{ found = true; break; }
+				if (term->charset() == CHARSET_ASCII) {
+					next = "asc";
+					last = "msg";
+				}
+				if (menu_exists_in(code, next, subdir, path))
+				{ found = true; break; }
+				if (menu_exists_in(code, last, subdir, path))
+				{ found = true; break; }
+			} while (0);
+			if (found)
 				break;
-			if ((term->supports(ANSI) && (!term->supports(COLOR))) && menu_exists(code, "mon", path))
-				break;
-			if ((term->supports(ANSI)) && menu_exists(code, "ans", path))
-				break;
-			if ((term->charset() == CHARSET_PETSCII) && menu_exists(code, "seq", path))
-				break;
-			if (term->charset() == CHARSET_ASCII) {
-				next = "asc";
-				last = "msg";
-			}
-			if (menu_exists(code, next, path))
-				break;
-			if (!menu_exists(code, last, path)) {
+			if (isfullpath(code) || *subdir == '\0') {
 				if (!(mode & P_NOERROR))
 					errormsg(WHERE, ERR_CHK, path);
 				return false;
 			}
-		} while (0);
+		}
 	}
 
 	mode |= P_OPENCLOSE | P_CPM_EOF;
@@ -693,6 +704,67 @@ bool_expr_t* sbbs_t::get_search_string(char* str, size_t maxlen, int kmode)
 // Check (return true) if a menu file exists with specified type/extension
 // 'path' buffer must be at least (MAX_PATH + 1) bytes in size
 //****************************************************************************
+// Check (return true) if a menu file with the specified extension exists within
+// the specified menu sub-directory (subdir may be ""), with no default-dir
+// fallback.  Sets 'path' to the matching file on success.
+bool sbbs_t::menu_exists_in(const char *code, const char* ext, const char* subdir, char* path)
+{
+	char prefix[MAX_PATH];
+	if (isfullpath(code))
+		SAFECOPY(prefix, code);
+	else {
+		char sub[MAX_PATH + 1];
+		SAFECOPY(sub, subdir);
+		backslash(sub);
+		if (*code == '.')
+			*sub = '\0';
+		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, sub, code);
+		FULLPATH(path, prefix, MAX_PATH);
+		SAFECOPY(prefix, path);
+		if (cfg.mods_dir[0] != '\0') {
+			char modprefix[MAX_PATH + 1];
+			char modpath[MAX_PATH + 1];
+			snprintf(modprefix, sizeof modprefix, "%stext/menu/%s%s", cfg.mods_dir, sub, code);
+			snprintf(modpath, sizeof modpath, "%s.%s", modprefix, ext);
+			FULLPATH(path, modpath, MAX_PATH);
+			SAFECOPY(modpath, path);
+			if (fexist(modpath)) {
+				FULLPATH(path, modprefix, MAX_PATH);
+				SAFECOPY(prefix, path);
+			}
+		}
+	}
+	// Display specified EXACT width file
+	safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, term->cols, ext);
+	if (fexistcase(path))
+		return true;
+	// Display specified MINIMUM width file
+	glob_t g = {0};
+	safe_snprintf(path, MAX_PATH, "%s.c*.%s", prefix, ext);
+	if (globi(path, GLOB_NOESCAPE | GLOB_MARK, NULL, &g) == 0) {
+		char*    p;
+		char     term[MAX_PATH + 1];
+		safe_snprintf(term, sizeof(term), ".%s", ext);
+		size_t   skip = safe_snprintf(path, MAX_PATH, "%s.c", prefix);
+		unsigned max = 0;
+		for (size_t i = 0; i < g.gl_pathc; i++) {
+			unsigned long c = strtoul(g.gl_pathv[i] + skip, &p, 10);
+			if (stricmp(p, term) != 0) // Some other weird pattern ending in c*.<ext>
+				continue;
+			if (c <= this->term->cols && c > max) {
+				max = c;
+				safe_snprintf(path, MAX_PATH, "%s", g.gl_pathv[i]);
+			}
+		}
+		globfree(&g);
+		if (max > 0)
+			return true;
+	}
+
+	safe_snprintf(path, MAX_PATH, "%s.%s", prefix, ext);
+	return fexistcase(path) ? true : false;
+}
+
 bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 {
 	char pathbuf[MAX_PATH + 1];
@@ -704,74 +776,21 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 		return fexistcase(path) ? true : false;
 	}
 
-	/* Either <menu>.asc or <menu>.msg or <menu>.ans is required */
-	if (ext == NULL)
-		return menu_exists(code, "asc", path)
-		       || menu_exists(code, "msg", path)
-		       || menu_exists(code, "ans", path);
-
-	char subdir[MAX_PATH + 1];
-	SAFECOPY(subdir, menu_dir);
-	for (;;) {
-		char prefix[MAX_PATH];
-		if (isfullpath(code))
-			SAFECOPY(prefix, code);
-		else {
-			char sub[MAX_PATH + 1];
-			SAFECOPY(sub, subdir);
-			backslash(sub);
-			if (*code == '.')
-				*sub = '\0';
-			SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, sub, code);
-			FULLPATH(path, prefix, MAX_PATH);
-			SAFECOPY(prefix, path);
-			if (cfg.mods_dir[0] != '\0') {
-				char modprefix[MAX_PATH + 1];
-				char modpath[MAX_PATH + 1];
-				snprintf(modprefix, sizeof modprefix, "%stext/menu/%s%s", cfg.mods_dir, sub, code);
-				snprintf(modpath, sizeof modpath, "%s.%s", modprefix, ext);
-				FULLPATH(path, modpath, MAX_PATH);
-				SAFECOPY(modpath, path);
-				if (fexist(modpath)) {
-					FULLPATH(path, modprefix, MAX_PATH);
-					SAFECOPY(prefix, path);
-				}
-			}
-		}
-		// Display specified EXACT width file
-		safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, term->cols, ext);
-		if (fexistcase(path))
-			return true;
-		// Display specified MINIMUM width file
-		glob_t g = {0};
-		safe_snprintf(path, MAX_PATH, "%s.c*.%s", prefix, ext);
-		if (globi(path, GLOB_NOESCAPE | GLOB_MARK, NULL, &g) == 0) {
-			char*  p;
-			char   term[MAX_PATH + 1];
-			safe_snprintf(term, sizeof(term), ".%s", ext);
-			size_t skip = safe_snprintf(path, MAX_PATH, "%s.c", prefix);
-			unsigned max = 0;
-			for (size_t i = 0; i < g.gl_pathc; i++) {
-				unsigned long c = strtoul(g.gl_pathv[i] + skip, &p, 10);
-				if (stricmp(p, term) != 0) // Some other weird pattern ending in c*.<ext>
-					continue;
-				if (c <= this->term->cols && c > max) {
-					max = c;
-					safe_snprintf(path, MAX_PATH, "%s", g.gl_pathv[i]);
-				}
-			}
-			globfree(&g);
-			if (max > 0)
+	/* If a menu subdirectory is in effect, search it exhaustively (all required
+	   extensions) before falling back to the default menu dir, so a customized
+	   lower-priority extension in the subdir isn't preempted by a stock file of a
+	   higher-priority extension in the default dir. */
+	for (const char* subdir = menu_dir; ; subdir = "") {
+		if (ext == NULL) {
+			/* Either <menu>.asc or <menu>.msg or <menu>.ans is required */
+			if (menu_exists_in(code, "asc", subdir, path)
+			    || menu_exists_in(code, "msg", subdir, path)
+			    || menu_exists_in(code, "ans", subdir, path))
 				return true;
-		}
-
-		safe_snprintf(path, MAX_PATH, "%s.%s", prefix, ext);
-		if (fexistcase(path))
+		} else if (menu_exists_in(code, ext, subdir, path))
 			return true;
-		/* Not found — if a menu subdirectory was in effect, retry in the default menu dir */
-		if (isfullpath(code) || subdir[0] == '\0')
+		if (isfullpath(code) || *subdir == '\0')
 			return false;
-		subdir[0] = '\0';
 	}
 }
 
