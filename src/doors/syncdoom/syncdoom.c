@@ -1996,13 +1996,19 @@ static char          g_splash_cfg[INI_MAX_VALUE_LEN]; // [game] splash override,
 
 static void load_splash(const char *path)
 {
-	FILE *f = fopen(path, "rb");
+	FILE * f = fopen(path, "rb");
+	size_t rd;
 
 	if (f == NULL)
 		return;
-	if (fread(g_splash_cells, 1, sizeof(g_splash_cells), f) == sizeof(g_splash_cells))
-		g_have_splash = 1;
+	memset(g_splash_cells, 0, sizeof(g_splash_cells));   // unfilled cells -> black
+	rd = fread(g_splash_cells, 1, sizeof(g_splash_cells), f);
 	fclose(f);
+	// Accept any non-empty file: a full 80x25 fills the screen; a shorter one
+	// (e.g. PabloDraw's 80x23) fills the top rows and the rest stays black; a file
+	// with a trailing SAUCE record just has the extra bytes ignored.
+	if (rd >= 2)
+		g_have_splash = 1;
 }
 
 // ---------------------------------------------------------------------------
