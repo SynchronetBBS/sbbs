@@ -961,13 +961,13 @@ static void keyq_push(int pressed, unsigned char key)
 // Non-static: the in-game Options > Input sliders (m_menu.c) tune these live.
 // Source order, lowest-to-highest precedence: built-in -> syncdoom.ini [input]
 // (house default) -> per-user saved prefs (load_input_prefs) -> -kp* CLI flags.
-uint32_t    g_keyup_idle_ms = 150;            // HOLD grace (key seen >= 2 times)
-uint32_t    g_grace_fresh   = 300;            // TAP grace (key seen once)
-uint32_t    g_turn_grace    = 75;             // TURN grace for turn keys (tight taps; low to
+uint32_t   g_keyup_idle_ms = 150;             // HOLD grace (key seen >= 2 times)
+uint32_t   g_grace_fresh   = 300;             // TAP grace (key seen once)
+uint32_t   g_turn_grace    = 75;              // TURN grace for turn keys (tight taps; low to
                                               // suit FAST TURN's full-speed turn, default on)
-static int  g_kp_cli_tap    = 0;              // -kpdelay given on CLI (saved prefs won't override)
-static int  g_kp_cli_hold   = 0;              // -kpsmooth given on CLI
-static int  g_kp_cli_turn   = 0;              // -kpturn given on CLI
+static int g_kp_cli_tap    = 0;               // -kpdelay given on CLI (saved prefs won't override)
+static int g_kp_cli_hold   = 0;               // -kpsmooth given on CLI
+static int g_kp_cli_turn   = 0;               // -kpturn given on CLI
 
 // Defaults captured right after read_syncdoom_ini() (built-in + house ini, before
 // per-user/CLI) so a per-user save records ONLY what the player changed in-game;
@@ -976,9 +976,9 @@ static int  g_kp_cli_turn   = 0;              // -kpturn given on CLI
 static uint32_t g_base_grace_fresh, g_base_keyup_idle_ms, g_base_turn_grace;
 static int      g_base_instant_turn;
 static char     g_base_frames[32];
-static char g_user_ini_path[PATH_MAX] = "";   // per-user prefs file (<-home>/syncdoom.ini); "" = disabled
+static char     g_user_ini_path[PATH_MAX] = ""; // per-user prefs file (<-home>/syncdoom.ini); "" = disabled
 static struct { unsigned char key; uint32_t last; int presses; } s_active[ACTIVE_MAX];
-static int  s_active_n = 0;
+static int      s_active_n = 0;
 
 // doom m_menu.c: nonzero while a menu is open (boolean == unsigned int). The input
 // model switches on it. IN A MENU each key byte is a discrete press (down+up) so
@@ -991,6 +991,34 @@ extern unsigned int chat_on;            // hu_stuff.c: nonzero while typing a ne
 extern boolean      netgame;            // g_game.c: true in a multiplayer (lockstep) game
 static int          g_want_userlist = 0;  // Ctrl-U pressed in-game -> run between ticks
 static int          g_want_page     = 0;  // Ctrl-P pressed in-game -> run between ticks
+
+// --- Terminal mouse control (xterm SGR mouse: SyncTERM + the xterm family) ----
+// Terminals report ABSOLUTE, screen-clamped cell positions (no relative deltas,
+// and the host can't warp the pointer), so classic infinite mouse-look is out.
+// The model is STEERING: the pointer's offset from screen-center sets a turn RATE
+// (a virtual joystick). Edge-safe -- a pointer parked off-center keeps turning
+// until moved back toward center (terminals send no "still here" report, so we
+// hold the last offset; an idle timeout below stops a runaway spin when the
+// pointer leaves the window). Mouse turning bypasses Doom's turn-accel ramp and
+// the door's key-up-synthesis grace machinery, so it's smoother than the keys.
+// (A relative-delta "native feel" model was tried and dropped -- with no way to
+// recenter the pointer it stalls uselessly at the window edge.)
+#define MOUSE_OFF        0
+#define MOUSE_ON         1
+#define MOUSE_DEADZONE   2     // cells either side of center with no steering
+#define MOUSE_STEER_K    2     // turn-rate gain per cell of deflection
+#define MOUSE_STEER_MAX  110   // clamp on the steer turn rate
+#define MOUSE_IDLE_MS    600   // steer relaxes to neutral after this long with no report
+                               // (stops the runaway spin when the pointer leaves the
+                               // window/loses focus -- terminals send no focus-out event)
+static int      g_mouse_mode      = MOUSE_ON; // on/off ([input] mouse / -mouse)
+static int      g_base_mouse_mode = MOUSE_ON; // house/built-in default (for per-user save diff)
+static int      g_mouse_cli       = 0;       // -mouse given on CLI (saved prefs won't override)
+static int      g_mouse_enabled   = 0;       // tracking actually turned on (mode != off)
+static int      g_mouse_col = 0, g_mouse_row = 0; // last reported pointer cell (1-based)
+static int      g_mouse_have      = 0;       // a report has arrived (steer stays neutral until then)
+static int      g_mouse_buttons   = 0;       // button bitmask: bit0 left/fire, 1 right, 2 middle
+static uint32_t g_mouse_last_ms = 0;         // now_ms() of the last report (idle-timeout for steer)
 
 static void key_seen(unsigned char key)
 {
@@ -1057,6 +1085,78 @@ static void expire_keys(void)
 	}
 }
 
+// Record an xterm SGR mouse report. 'button' is the SGR button code: low 2 bits
+// = which button (0 left, 1 middle, 2 right; 3 = none/free-motion); +0x20 = a
+// motion event; +0x40 = wheel; 0x04/0x08/0x10 = shift/alt/ctrl. col/row are
+// 1-based cells; 'release' is set for the 'm'-terminated (button-up) form.
+static void mouse_seen(int button, int col, int row, int release)
+{
+	int b = button & 0x03;
+	int bit;
+
+	g_mouse_col = col;
+	g_mouse_row = row;
+	g_mouse_have = 1;
+	g_mouse_last_ms = now_ms();               // mark activity (steer idle-timeout)
+
+	// Button state comes ONLY from real press/release events, never from motion
+	// reports: a motion event (0x20) carries the held-button bits, but a stale or
+	// phantom button in the terminal's state can make a plain move look like a
+	// left-button hold -- and since a move never has a matching release, the fire
+	// bit would stick on (continuous fire while steering). Position is updated
+	// above regardless; here we only touch buttons on press/release.
+	if (button & 0x20)                        // motion -> position only
+		return;
+	if ((button & 0x40) || b == 3)            // wheel, or a "no button" report
+		return;
+	bit = (b == 0) ? 0 : (b == 2) ? 1 : 2;    // left->fire, right->strafe, middle->forward
+	if (release)
+		g_mouse_buttons &= ~(1 << bit);
+	else
+		g_mouse_buttons |= (1 << bit);
+}
+
+// Steer model: map the pointer's horizontal offset from screen-center to a Doom
+// turn-rate (mousex-style). Edge-safe -- a parked, off-center pointer keeps
+// turning (we hold the last offset) until it's moved back toward center.
+static int mouse_steer_rate(void)
+{
+	int off = g_mouse_col - g_cols / 2;
+	int mag = (off < 0) ? -off : off;
+
+	if (mag <= MOUSE_DEADZONE)
+		return 0;
+	mag = (mag - MOUSE_DEADZONE) * MOUSE_STEER_K;
+	if (mag > MOUSE_STEER_MAX)
+		mag = MOUSE_STEER_MAX;
+	return (off < 0) ? -mag : mag;
+}
+
+// Project the mouse state to a Doom mouse event (buttons + turn dx + fwd/back dy).
+// Returns 1 if I_GetEvent should post one this tic. Suppressed in menus/chat so a
+// resting pointer can't drive the menu or steer while typing. data3 (forward/back)
+// is left at 0 -- vertical mouse does nothing (movement stays on the keyboard).
+int DG_GetMouse(int *buttons, int *dx, int *dy)
+{
+	if (!g_mouse_enabled)
+		return 0;
+	if (menuactive || chat_on)
+		return 0;
+	// Idle: the pointer stopped reporting (still, or it left the window -- there's
+	// no focus-out event). Relax steering to neutral and drop any held button, so a
+	// pointer abandoned off-center doesn't spin (or fire) forever.
+	if (g_mouse_have && (uint32_t)(now_ms() - g_mouse_last_ms) > MOUSE_IDLE_MS) {
+		g_mouse_buttons = 0;
+		*buttons = 0;
+		*dx = *dy = 0;
+		return 1;
+	}
+	*buttons = g_mouse_buttons;
+	*dx = g_mouse_have ? mouse_steer_rate() : 0;
+	*dy = 0;
+	return 1;
+}
+
 // Map a single terminal byte (non-escape) to a Doom key, 0 = ignore.
 static unsigned char map_ascii(unsigned char c)
 {
@@ -1076,12 +1176,6 @@ static unsigned char map_ascii(unsigned char c)
 	// KEY_F10 are consecutive in doomkeys.h, so F1+(n-1) indexes F1..F6.
 	if (c >= 0x01 && c <= 0x06)
 		return (unsigned char)(KEY_F1 + (c - 1));
-	// Ctrl-P (0x10) aliases the multiplayer talk key. 'T' is the BBS- user's
-	// instinct for "page/talk", but many terminals send Ctrl-P for a Page hotkey;
-	// map it to 't' so it opens chat just like the letter. ('t' == HU_INPUTTOGGLE,
-	// the default key_multi_msg in hu_stuff.c; a literal 't' falls through below.)
-	if (c == 0x10)
-		return 't';
 	// Ctrl-T (0x14) -- door-level "cycle frame-pipeline depth" hotkey (for A/B-ing
 	// the remote-latency frame pacing live). Intercepted in key_seen; never Doom's.
 	if (c == 0x14)
@@ -1156,7 +1250,7 @@ static unsigned char csi_tilde_key(int n)
 // Incremental escape-sequence parser state (bytes may split across reads).
 static enum { ST_NORMAL, ST_ESC, ST_CSI } s_pstate = ST_NORMAL;
 static char s_csi_intro = 0;            // '[' or 'O' for the current CSI/SS3
-static char s_csi_par[8];               // accumulated parameter bytes (for "[<n>~")
+static char s_csi_par[24];              // accumulated parameter bytes ("[<n>~", SGR mouse "[<b;c;r")
 static int  s_csi_parlen = 0;
 
 static void parse_byte(unsigned char c)
@@ -1240,6 +1334,14 @@ static void parse_byte(unsigned char c)
 							g_ack_deadline = now_ms() + 250; // progress -> refresh the safety deadline
 							break;
 						case '~': k = csi_tilde_key(atoi(s_csi_par)); break;
+						case 'M':                            // xterm SGR mouse: "[<b;col;row" + M(press/motion)
+						case 'm':                            //                              + m(release)
+							if (s_csi_par[0] == '<') {
+								int b = 0, x = 0, y = 0;
+								sscanf(s_csi_par + 1, "%d;%d;%d", &b, &x, &y);
+								mouse_seen(b, x, y, c == 'm');
+							}
+							break;
 						default:  break;
 					}
 				}
@@ -1512,8 +1614,14 @@ static void tune_socket(void)
 #endif
 }
 
-// Restore auto-wrap + cursor on exit (so the BBS prompt behaves after Doom quits).
-static void terminal_restore(void) { emit_all("\x1b[?7h\x1b[?25h", 11); }
+// Restore auto-wrap + cursor on exit (so the BBS prompt behaves after Doom quits),
+// and turn off mouse reporting if we enabled it (else the BBS sees stray reports).
+static void terminal_restore(void)
+{
+	if (g_mouse_enabled)
+		emit_all("\x1b[?1003l\x1b[?1006l", 16);
+	emit_all("\x1b[?7h\x1b[?25h", 11);
+}
 
 // Configure the block-char text tier: mode from -mode, else by terminal charset
 // (UTF-8 -> blocks+shades, CP437 -> half-block). Used by -text and as the
@@ -1783,6 +1891,14 @@ void DG_Init(void)
 	                                 // graphics) is always one of the cyclable states
 	joybspeed = g_always_run ? 31 : 2;   // apply always-run default ('R' toggles at runtime;
 	                                     // 31 >= MAX_JOY_BUTTONS, the always-run hack)
+
+	// Enable xterm mouse reporting (any-event tracking + SGR coordinates) when a
+	// mouse model is selected. Harmless on terminals that don't support it -- they
+	// ignore the private-mode set and never send reports. SyncTERM implements it.
+	if (g_mouse_mode != MOUSE_OFF) {
+		g_mouse_enabled = 1;
+		emit_all("\x1b[?1003h\x1b[?1006h", 16);
+	}
 
 	// Startup diagnostic -> BBS log (syslog/journalctl). Confirms the running
 	// build, which terminal.ini (if any) was read, the size taken from it, and
@@ -2189,6 +2305,17 @@ static void read_syncdoom_ini(const char *argv0)
 	// vanilla ramp. A per-user in-game toggle overrides this.
 	sd_instant_turn = iniGetBool(ini, "input", "instant_turn", TRUE);
 
+	// [input] mouse -- terminal mouse steering on (default) or off. On a mouse-
+	// capable client (SyncTERM, xterm-family) the pointer's offset from center
+	// turns the player and the left button fires; inert on terminals without it.
+	iniGetString(ini, "input", "mouse", "", val);
+	if (stricmp(val, "off") == 0 || stricmp(val, "none") == 0 ||
+	    stricmp(val, "false") == 0 || strcmp(val, "0") == 0)
+		g_mouse_mode = MOUSE_OFF;
+	else if (val[0])                          // on/true/yes/anything non-empty -> on
+		g_mouse_mode = MOUSE_ON;
+	// empty -> keep the built-in default (on)
+
 	// [game] quit_effect -- fate of a departed player's marine: keep (vanilla,
 	// stays frozen), vanish (remove at once), or fog (teleport-out puff + sound,
 	// default). Changes lockstep game state, so it must match across players in a
@@ -2284,6 +2411,11 @@ static void save_pref_str(str_list_t *list, const char *sec, const char *key,
 		iniSetString(list, sec, key, val, NULL);
 }
 
+static const char *mouse_mode_str(int m)
+{
+	return m == MOUSE_OFF ? "off" : "on";
+}
+
 // Write the user's prefs (read-modify-write, so any hand-added keys survive).
 // Called by the Options sliders and the Ctrl-T pacing toggle after each change.
 // Only settings the player has CHANGED from the default are written; the rest are
@@ -2307,6 +2439,7 @@ void sd_save_user_prefs(void)
 	save_pref_int (&list, "input", "kpsmooth", (int)g_keyup_idle_ms, (int)g_base_keyup_idle_ms);
 	save_pref_int (&list, "input", "kpturn",   (int)g_turn_grace,    (int)g_base_turn_grace);
 	save_pref_bool(&list, "input", "instant_turn", sd_instant_turn,  g_base_instant_turn);
+	save_pref_str (&list, "input", "mouse", mouse_mode_str(g_mouse_mode), mouse_mode_str(g_base_mouse_mode));
 	save_pref_str (&list, "video", "frames_in_flight", frames_in_flight_str(), g_base_frames);
 	f = fopen(g_user_ini_path, "w");
 	if (f != NULL) {
@@ -2339,6 +2472,14 @@ static void load_user_prefs(void)
 	if (!g_kp_cli_turn)
 		g_turn_grace    = (uint32_t)iniGetInteger(ini, "input", "kpturn",   (int)g_turn_grace);
 	sd_instant_turn = iniGetBool(ini, "input", "instant_turn", sd_instant_turn);
+	if (!g_mouse_cli) {
+		iniGetString(ini, "input", "mouse", "", val);
+		if (stricmp(val, "off") == 0 || stricmp(val, "none") == 0 ||
+		    stricmp(val, "false") == 0 || strcmp(val, "0") == 0)
+			g_mouse_mode = MOUSE_OFF;
+		else if (val[0])
+			g_mouse_mode = MOUSE_ON;
+	}
 	iniGetString(ini, "video", "frames_in_flight", "", val);
 	if (val[0])
 		set_frames_in_flight(val);
@@ -2699,8 +2840,8 @@ static int bbs_pump_line(char *buf, int max)
 static int draw_nodelist(void)
 {
 	sbbs_node_info_t nodes[64];
-	char alias[26], act[80], line[200];
-	int  n, i, me = sbbs_my_node();
+	char             alias[26], act[80], line[200];
+	int              n, i, me = sbbs_my_node();
 
 	emit_all("\x1b[2J\x1b[H", 7);
 	emit_str("\x1b[1;36m  Who's online\x1b[0m\r\n\r\n");
@@ -2837,8 +2978,10 @@ static void sd_ingame_recv(void)
 	// can exceed Doom's 80-char HU line, so it goes to the door's own wrapped banner
 	// (sd_post_message/HU would chop it at the right margin).
 	for (s = raw, d = clean; *s && d < clean + sizeof(clean) - 1; s++) {
-		if (*s == '\x01') { if (s[1]) s++; continue; }   // drop Ctrl-A attribute code
-		if (*s == '\x07') continue;                      // drop bell (we beep below)
+		if (*s == '\x01') { if (s[1])
+								s++; continue; }         // drop Ctrl-A attribute code
+		if (*s == '\x07')
+			continue;                                    // drop bell (we beep below)
 		if (*s == '\r' || *s == '\n' || *s == ' ') {     // fold whitespace runs to one space
 			if (d > clean && d[-1] != ' ')
 				*d++ = ' ';
@@ -2851,8 +2994,10 @@ static void sd_ingame_recv(void)
 	*d = '\0';
 	// Word-wrap into the banner (up to 5 rows of <= w chars; break at spaces).
 	w = g_text_cols - 2;
-	if (w < 20) w = 20;
-	if (w > 80) w = 80;
+	if (w < 20)
+		w = 20;
+	if (w > 80)
+		w = 80;
 	len = (int)strlen(clean);
 	pos = 0;
 	g_page_ov_rows = 0;
@@ -3065,6 +3210,7 @@ int main(int argc, char **argv)
 	g_base_keyup_idle_ms = g_keyup_idle_ms;
 	g_base_turn_grace    = g_turn_grace;
 	g_base_instant_turn  = sd_instant_turn;
+	g_base_mouse_mode    = g_mouse_mode;
 	snprintf(g_base_frames, sizeof(g_base_frames), "%s", frames_in_flight_str());
 
 	// External waiting-room splash: [game] splash if set, else <door dir>/waiting.bin.
@@ -3157,6 +3303,13 @@ int main(int argc, char **argv)
 				v = argv[++i];                               // "-t 1800"
 			if (*v)
 				g_time_limit_ms = (uint32_t)strtoul(v, NULL, 10) * 1000u;
+		} else if (strcmp(argv[i], "-mouse") == 0) {        // terminal mouse: on | off
+			const char *v = (i + 1 < argc) ? argv[++i] : "";
+			if (stricmp(v, "off") == 0 || stricmp(v, "none") == 0 || stricmp(v, "false") == 0)
+				g_mouse_mode = MOUSE_OFF;
+			else
+				g_mouse_mode = MOUSE_ON;                    // "on" / "true" / empty
+			g_mouse_cli = 1;
 		} else if (strcmp(argv[i], "-kpturn") == 0) {       // turn-key fresh grace (tight taps)
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if (*v) {
@@ -3232,7 +3385,7 @@ int main(int argc, char **argv)
 		    strcmp(argv[i], "-charset")     == 0 || strcmp(argv[i], "-mode")    == 0 ||
 		    strcmp(argv[i], "-colors")      == 0 || strcmp(argv[i], "-home")    == 0 ||
 		    strcmp(argv[i], "-kpturn")      == 0 || strcmp(argv[i], "-kpdelay") == 0 ||
-		    strcmp(argv[i], "-name")        == 0 ||
+		    strcmp(argv[i], "-name")        == 0 || strcmp(argv[i], "-mouse")   == 0 ||
 		    strcmp(argv[i], "-jxldistance") == 0 ||
 		    strcmp(argv[i], "-kpsmooth")    == 0) {
 			i++;                                           // exact flags: skip the flag + its value

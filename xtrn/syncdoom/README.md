@@ -102,6 +102,10 @@ internet). You can also run it later by hand: `jsexec ../xtrn/syncdoom/getwads.j
     `data/user/<num>/doom/syncdoom.ini` and override the house defaults — but only
     settings a player actually changes are stored, so your house defaults keep
     reaching everyone else.
+  - **Mouse control** — `[input] mouse` (default **on**) lets SyncTERM and other
+    xterm-mouse clients turn with the mouse, bypassing key-repeat lag: the pointer
+    steers like a joystick (offset from center = turn rate, edge-safe), left button
+    fires. Set `off` for keyboard-only. Inert on terminals without mouse reporting.
   - **Waiting-room splash** — `[game] splash`: an editable `waiting.bin` (80×25
     "binary text", e.g. PabloDraw — set 80×25, Save As Binary Text) ships beside
     the door; edit it to re-skin the multiplayer waiting room, no rebuild.

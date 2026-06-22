@@ -324,15 +324,20 @@ void I_GetEvent(void)
     }
 
 
-                /*
-            case SDL_MOUSEMOTION:
-                event.type = ev_mouse;
-                event.data1 = mouse_button_state;
-                event.data2 = AccelerateMouse(sdlevent.motion.xrel);
-                event.data3 = -AccelerateMouse(sdlevent.motion.yrel);
-                D_PostEvent(&event);
-                break;
-                */
+    // Terminal mouse: the door parses xterm SGR mouse reports and projects them
+    // to a Doom mouse event (buttons + turn dx + forward/back dy). Posted once per
+    // tic so the steer model can sustain a turn from the pointer's last position.
+    {
+        int buttons, dx, dy;
+        if (DG_GetMouse(&buttons, &dx, &dy))
+        {
+            event.type = ev_mouse;
+            event.data1 = buttons;
+            event.data2 = dx;
+            event.data3 = dy;
+            D_PostEvent(&event);
+        }
+    }
 }
 
 void I_InitInput(void)

@@ -116,6 +116,7 @@ grace period after its last byte. These tune that synthesis:
 | `-kpsmooth <ms>` | HOLD grace (held/repeating key). |
 | `-kpdelay <ms>` | TAP grace (fresh press) — the main "slidy" lever. |
 | `-kpturn <ms>` | TURN grace (turn-key tap). |
+| `-mouse <on\|off>` | Terminal mouse steering (default on) — see *Mouse control*. |
 
 These three set the *startup* feel (also via `syncdoom.ini [input]`; the TURN
 default is low — **75 ms** — to suit FAST TURN, below). A player retunes them
@@ -267,13 +268,14 @@ second, total wire bytes, average bytes per frame, and average throughput.
 
 ## In-game controls
 
-Because a terminal has no mouse and can't send Ctrl/Alt/Shift on their own, the
-modifier-based DOOM defaults are remapped to a WASD scheme. A controls reference
-is available in-game with **F1**. Keys:
+Because a terminal can't send Ctrl/Alt/Shift on their own, the modifier-based
+DOOM defaults are remapped to a WASD scheme. A controls reference is available
+in-game with **F1**. Keys:
 
 | Key | Action |
 |-----|--------|
 | Arrow keys | Move (up/down) and **turn** (left/right). |
+| Mouse | **Turn** (SyncTERM / xterm-mouse clients). Left button fires. See *Mouse control* below. |
 | `W` `S` | Move forward / back. |
 | `A` `D` | Strafe left / right. |
 | `Space` | Fire. |
@@ -291,6 +293,25 @@ is available in-game with **F1**. Keys:
 The movement/action letters shadow their lowercase keys, so **cheat codes and
 save-game names are typed in UPPERCASE** (the shifted form bypasses the binding
 and is folded back to lowercase for matching).
+
+### Mouse control
+
+On SyncTERM (and other xterm-mouse-capable clients) the door can turn with the
+mouse, which sidesteps the key-repeat lag of the arrow keys entirely — turning is
+smoother and more precise. Terminals report the pointer's **absolute** screen
+position (no relative deltas, and the pointer can't be re-centered by the host),
+so steering works like a **joystick**: the pointer's horizontal offset from
+screen-center sets a turn **rate** — hold it left of center to keep turning left,
+return it to center to stop. (Leaving the pointer parked off-center relaxes to
+neutral after a short idle, so an abandoned pointer doesn't spin forever.)
+
+Buttons map to DOOM's defaults: **left = fire**, right = strafe-modifier (hold and
+the horizontal mouse strafes instead of turning), middle = forward. Vertical mouse
+and the wheel are unused; forward/back stays on the keyboard.
+
+Enable/disable with `[input] mouse = on|off` (default **on**) or `-mouse on|off`.
+Mouse turning is suppressed in menus and while typing chat, and the setting saves
+per-user. On a terminal without mouse reporting it's simply inert.
 
 ---
 
