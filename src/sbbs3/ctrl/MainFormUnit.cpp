@@ -1542,6 +1542,27 @@ void __fastcall TMainForm::FtpCloseButtonClick(TObject *Sender)
 	ViewFtpServerExecute(Sender);
 }
 //---------------------------------------------------------------------------
+/* total_users() walks the entire user database (one locked record read per user),
+ * which is blocking I/O - slow when the user base is large or data_dir lives on a
+ * network share, and ruinous while the servers are busy (e.g. a web scrape).  Run
+ * on the VCL main thread it froze the GUI for seconds at a time, so StatsTimerTick()
+ * runs it on a background thread instead.  The worker never touches the VCL: it just
+ * publishes the count, and StatsTimerTick() (main thread) picks it up on a later tick. */
+static volatile long	user_count_scanning;	// nonzero while a scan thread is running
+static volatile long	user_count_ready;		// nonzero when user_count_result is fresh
+static volatile int		user_count_result;		// the latest count, published by the worker
+static bool				user_count_valid;		// main-thread only: a result has been shown
+
+static void user_count_thread(void* arg)
+{
+	(void)arg;
+	int total = total_users(&MainForm->cfg);
+	user_count_result = total;	// publish the result before flagging it ready
+	user_count_ready = TRUE;
+	user_count_scanning = FALSE;
+	_endthread();
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 {
 	char 	str[128];
@@ -1565,10 +1586,22 @@ void __fastcall TMainForm::StatsTimerTick(TObject *Sender)
 	StatsForm->EMailToday->Caption=AnsiString(stats.etoday);
 	StatsForm->TotalFeedback->Caption=AnsiString(getmail(&cfg,1,0,0));
 	StatsForm->FeedbackToday->Caption=AnsiString(stats.ftoday);
-	/* Don't scan a large user database more often than necessary */
-	if(!counter || users<100 || (counter%(users/100))==0 || stats.nusers!=newusers)
-		users=total_users(&cfg);
-    StatsForm->TotalUsers->Caption=AnsiString(users);
+	/* Pick up the result of a completed background scan (see user_count_thread). */
+	if(user_count_ready) {
+		users=user_count_result;
+		user_count_ready=FALSE;
+		user_count_valid=true;
+	}
+	/* Re-scan no more often than necessary, and never while a scan is already
+	 * running, on a background thread so the GUI never blocks on the user-base I/O. */
+	if(!user_count_scanning
+		&& (!counter || users<100 || (counter%(users/100))==0 || stats.nusers!=newusers)) {
+		user_count_scanning=TRUE;
+		if(_beginthread(user_count_thread,0,NULL)==(unsigned long)-1)
+			user_count_scanning=FALSE;	// couldn't start a thread; try again next tick
+	}
+	if(user_count_valid)
+	    StatsForm->TotalUsers->Caption=AnsiString(users);
     StatsForm->NewUsersToday->Caption=AnsiString(newusers=stats.nusers);
     StatsForm->PostsToday->Caption=AnsiString(stats.ptoday);
     StatsForm->UploadedFiles->Caption=AnsiString(stats.uls);
