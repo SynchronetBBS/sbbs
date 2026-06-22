@@ -262,6 +262,7 @@ static int           g_clear_row1  = 0;  // erase the top row next frame (a dism
 static void cycle_video(void);
 static void toggle_pipeline(void); // Ctrl-T: cycle frame-pipeline depth + persist
 static void toggle_stats(void);    // Ctrl-S: toggle the live stats overlay (session-only)
+static void toggle_mouse(void);    // Ctrl-O: toggle mouse steering on/off + persist
 static int       g_stats_overlay = 0; // show fps/RTT/depth overlaid on each frame
 static const char *mode_name(enum frame_mode m);   // defined later; used by the overlay
 
@@ -956,6 +957,7 @@ static void keyq_push(int pressed, unsigned char key)
 #define ACTIVE_MAX 16
 #define KEY_PIPELINE 0xe1 // door-internal sentinel (Ctrl-T): cycle frame-pipeline depth
 #define KEY_STATS    0xe2 // door-internal sentinel (Ctrl-S): toggle the live stats overlay
+#define KEY_MOUSE    0xe5 // door-internal sentinel (Ctrl-O): toggle mouse steering
 #define KEY_USERLIST 0xe3 // door-internal sentinel (Ctrl-U): who's online
 #define KEY_PAGE     0xe4 // door-internal sentinel (Ctrl-P): page a node
 // Non-static: the in-game Options > Input sliders (m_menu.c) tune these live.
@@ -1035,6 +1037,10 @@ static void key_seen(unsigned char key)
 	}
 	if (key == KEY_STATS) {                   // Ctrl-S: toggle the live stats overlay
 		toggle_stats();                       // (door-level; never reaches Doom)
+		return;
+	}
+	if (key == KEY_MOUSE) {                   // Ctrl-O: toggle mouse steering on/off
+		toggle_mouse();                       // (door-level; never reaches Doom)
 		return;
 	}
 	if (key == KEY_USERLIST) {                // Ctrl-U: who's online. Defer to the main
@@ -1189,6 +1195,9 @@ static unsigned char map_ascii(unsigned char c)
 		return KEY_USERLIST;
 	if (c == 0x10)
 		return KEY_PAGE;
+	// Ctrl-O (0x0f) -- door-level "toggle mouse steering" hotkey. Never Doom's.
+	if (c == 0x0f)
+		return KEY_MOUSE;
 	// While the user is TYPING text -- a netgame chat message (chat_on) or a menu
 	// string like a save-game name (menuactive) -- the gameplay action keys must
 	// arrive as the literal characters they type: a space has to be a space (not
@@ -2537,6 +2546,37 @@ static void toggle_stats(void)
 	emit_all(buf, n);
 	g_label_until = now_ms() + 700;
 	dlog("stats overlay -> %s", g_stats_overlay ? "on" : "off");
+}
+
+// Ctrl-O: toggle terminal mouse steering on/off live, persisted per-user. Flips the
+// xterm tracking modes to match; when turning off it also drops any held button and
+// the last pointer offset so the player stops cleanly (no residual turn/fire). A
+// brief centered label confirms it. (Inert flag-flip on a non-mouse terminal.)
+static void toggle_mouse(void)
+{
+	char line[48], buf[160];
+	int  pad, n;
+
+	if (g_mouse_mode == MOUSE_OFF) {
+		g_mouse_mode    = MOUSE_ON;
+		g_mouse_enabled = 1;
+		emit_all("\x1b[?1003h\x1b[?1006h", 16);
+	} else {
+		g_mouse_mode    = MOUSE_OFF;
+		g_mouse_enabled = 0;
+		g_mouse_buttons = 0;
+		g_mouse_have    = 0;
+		emit_all("\x1b[?1003l\x1b[?1006l", 16);
+	}
+	sd_save_user_prefs();
+	snprintf(line, sizeof(line), "  MOUSE %s  ", g_mouse_mode == MOUSE_OFF ? "OFF" : "ON");
+	pad = (overlay_cols() - (int)strlen(line)) / 2;
+	if (pad < 0)
+		pad = 0;
+	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
+	emit_all(buf, n);
+	g_label_until = now_ms() + 700;
+	dlog("mouse steering -> %s", g_mouse_mode == MOUSE_OFF ? "off" : "on");
 }
 
 // Compute the emitted bitmap dimensions (s_pxW x s_pxH) from the terminal's

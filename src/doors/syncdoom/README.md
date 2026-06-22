@@ -287,6 +287,7 @@ in-game with **F1**. Keys:
 | `F4` | Cycle the render tier / glyph mode. |
 | `Ctrl-T` | Cycle the frame pipeline depth (`1 → 2 → … → 8 → auto`), flashing the depth + measured round-trip. Higher depths lift the frame rate on a high-latency (far-away) link toward Doom's 35 fps sim rate (frame rate ≈ depth ÷ round-trip), at the cost of some added input lag; `auto` (the default) adapts to the link. Mainly an A/B tuning aid for remote play. Saved per-user. (Also `[video] frames_in_flight` in `syncdoom.ini`.) |
 | `Ctrl-S` | Toggle a live stats overlay (top row): render tier, frame rate, round-trip (current / baseline), and pipeline depth — handy for watching `auto` adapt over a remote link. Session-only. |
+| `Ctrl-O` | Toggle mouse steering on/off, flashing the new state. Saved per-user. (Also `[input] mouse` in `syncdoom.ini`.) |
 | `F2` / `F3` | Save / load game (written under `-home`); `F6` / `F9` quicksave / quickload. |
 | `Esc` | Menu. **Options → Input Feel** tunes the movement graces (TAP/HOLD/TURN) live if it feels too slidy or twitchy; saved per-user. |
 
@@ -309,9 +310,10 @@ Buttons map to DOOM's defaults: **left = fire**, right = strafe-modifier (hold a
 the horizontal mouse strafes instead of turning), middle = forward. Vertical mouse
 and the wheel are unused; forward/back stays on the keyboard.
 
-Enable/disable with `[input] mouse = on|off` (default **on**) or `-mouse on|off`.
-Mouse turning is suppressed in menus and while typing chat, and the setting saves
-per-user. On a terminal without mouse reporting it's simply inert.
+Enable/disable with `[input] mouse = on|off` (default **on**) or `-mouse on|off`,
+or toggle it live in-game with **Ctrl-O**. Mouse turning is suppressed in menus and
+while typing chat, and the setting saves per-user. On a terminal without mouse
+reporting it's simply inert.
 
 ---
 
