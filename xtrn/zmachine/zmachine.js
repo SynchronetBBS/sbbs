@@ -228,7 +228,9 @@ function jszm_labelStories(list) {
 
 function jszm_door_main() {
   load("sbbsdefs.js");           // K_NONE
-  load("userdefs.js");           // USER_ANSI, USER_PETSCII
+  require("userdefs.js", "USER_ANSI"); // USER_ANSI, USER_PETSCII -- require() (idempotent), NOT load():
+                                       // sbbsdefs.js already require()s userdefs.js, so a 2nd load() re-executes
+                                       // it -> USER_DELETED redeclaration error on stricter engines (harmless on SM1.8.5)
   load("cga_defs.js");           // BG_BLUE, WHITE, LIGHTGRAY
   load("key_defs.js");           // CTRL_R (forced-redraw key) and friends
   load(js.exec_dir + "quetzal.js"); // Quetzal codec (must precede jszm.js)
@@ -704,6 +706,15 @@ function jszm_door_main() {
         bf.close();
         return true;
       }
+      var v6im = null;                             // ImageMagick command, detected once (output redirected so it
+      function v6imCmd() {                          // never reaches the player). Prefer IM7 "magick" -- also avoids
+        if (v6im === null) {                        // Windows's convert.exe disk-tool shadowing ImageMagick on PATH.
+          var pr = v6dir + "/.im_probe";
+          v6im = (system.exec('magick -version >"' + pr + '" 2>&1') === 0) ? "magick" : "convert";
+          file_remove(pr);
+        }
+        return v6im;
+      }
       function v6scaledFile(fn) {                  // native at 1x; nearest-neighbor S× cached in <game>.gfx/<S>x/
         var p;
         if (v6scale <= 1) p = v6dir + "/" + fn;
@@ -713,7 +724,7 @@ function jszm_door_main() {
           if (ex.exists && ex.length > 0) p = sf;
           else if (!file_isdir(sdir) && !mkdir(sdir)) p = v6dir + "/" + fn;
           else {
-            system.exec('convert "' + v6dir + '/' + fn + '" -sample ' + (v6scale * 100) + '% "' + sf + '"');  // -sample = nearest neighbor
+            system.exec(v6imCmd() + ' "' + v6dir + '/' + fn + '" -sample ' + (v6scale * 100) + '% "' + sf + '"');  // -sample = nearest neighbor
             var g = new File(sf); p = (g.exists && g.length > 0) ? sf : (v6dir + "/" + fn);
           }
         }

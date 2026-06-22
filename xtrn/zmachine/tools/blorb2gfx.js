@@ -99,6 +99,14 @@ function main(blorbPath, outDir) {
   if (!info) { print("blorb2gfx: not an IFRS Blorb: " + blorbPath); return 1; }
   if (!file_isdir(outDir) && !mkdir(outDir)) { print("blorb2gfx: cannot create " + outDir); return 1; }
 
+  // ImageMagick command. Prefer IM7's unified "magick" -- it exists on modern Linux/macOS AND avoids the
+  // Windows install gotcha where bare "convert" is the OS disk-format tool that shadows ImageMagick's
+  // convert on the PATH (silently breaks the bake). Fall back to IM6 "convert"/"identify".
+  var imProbe = outDir + "/.im_probe", haveMagick = system.exec('magick -version >"' + imProbe + '" 2>&1') === 0;
+  file_remove(imProbe);
+  var IM = haveMagick ? "magick" : "convert", IMID = haveMagick ? "magick identify" : "identify";
+  print("blorb2gfx: ImageMagick command = '" + IM + "'");
+
   var entries = [], i, ext = { png: ".png", jpeg: ".jpg" };
   for (i = 0; i < info.pics.length; i++) {
     var p = info.pics[i];
@@ -107,12 +115,15 @@ function main(blorbPath, outDir) {
     var ppm = outDir + "/" + p.num + ".ppm";
     if (!writePayload(tmp, bytes, p.dataOffset, p.dataLen)) { print("blorb2gfx: temp write failed for #" + p.num); continue; }
     file_remove(ppm);
-    // -depth 8 promotes 16-colour sources to maxval 255. -gamma 0.55 PRE-DARKENS to cancel SyncTERM's pixel
-    // gamma: SyncTERM renders cached PPMs through a BT.709->sRGB transfer (term.c pnm_gamma) that empirically
-    // brightens by ~display=PPM^(1/2.2) -- so without this the rich palette reads washed-out/pastel on screen.
-    // 0.55 makes the SyncTERM-displayed colour match reference renders (PPM #202060 -> displays #2F2F73; PPM
-    // #606090 -> displays #7373A0; fit from two live captures, verified vs example3.png).
-    system.exec('convert -depth 8 "' + tmp + '" -gamma 0.55 "' + ppm + '"');
+    // Two output settings, both load-bearing:
+    //  * -depth 8 must come AFTER the input (an OUTPUT-depth op) to force PPM maxval 255. On ImageMagick 7,
+    //    -depth BEFORE the input is only a read setting, so a 4-bit (16-colour) Blorb source writes maxval 15
+    //    -- which SyncTERM renders washed-out (and looks "fine" in GIMP, which normalises maxval). IM6 wrote
+    //    255 either way; placing it after the input is correct on both.
+    //  * -gamma 0.55 PRE-DARKENS to cancel SyncTERM's BT.709->sRGB pixel gamma (term.c pnm_gamma), which
+    //    brightens ~display=PPM^(1/2.2). 0.55 makes the on-screen colour match reference renders (PPM
+    //    #202060 -> displays #2F2F73; #606090 -> #7373A0; fit from two live captures vs example3.png).
+    system.exec(IM + ' "' + tmp + '" -gamma 0.55 -depth 8 "' + ppm + '"');
     var d = ppmDims(ppm);
     if (!d) { print("blorb2gfx: convert failed for #" + p.num); file_remove(tmp); continue; }
     // Transparency: if the PNG has an alpha channel, emit a 1bpp PBM mask where opaque pixels
@@ -120,7 +131,7 @@ function main(blorbPath, outDir) {
     var maskFile = null;
     var probe = outDir + "/.a" + p.num;
     file_remove(probe);
-    system.exec('identify -format "%A" "' + tmp + '" > "' + probe + '" 2>/dev/null');
+    system.exec(IMID + ' -format "%A" "' + tmp + '" > "' + probe + '" 2>/dev/null');
     var av = "", af = new File(probe);
     if (af.open("r")) { av = ("" + (af.read() || "")).replace(/\s+/g, ""); af.close(); }
     file_remove(probe);
@@ -132,7 +143,7 @@ function main(blorbPath, outDir) {
       // the mask bit-index by mask->width per row, but PBM rows are byte-padded, so a mask whose
       // width is not a multiple of 8 drifts (shears) each row. A multiple-of-8 width has no padding.
       var w8 = Math.ceil(d.w / 8) * 8;
-      system.exec('convert "' + tmp + '" -alpha extract -threshold 50% -negate -background white -gravity west -extent ' + w8 + 'x' + d.h + ' "' + pbm + '"');
+      system.exec(IM + ' "' + tmp + '" -alpha extract -threshold 50% -negate -background white -gravity west -extent ' + w8 + 'x' + d.h + ' "' + pbm + '"');
       var pf = new File(pbm);
       if (pf.exists && pf.length > 0) maskFile = p.num + ".pbm"; else file_remove(pbm);
     }
