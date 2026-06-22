@@ -54,6 +54,7 @@
 #include "net_server.h"         // NET_SV_Run
 #include "unicode.h"            // xpdev: cp437_unicode_tbl (CP437 -> Unicode for UTF-8 terminals)
 #include "sd_splash.h"          // sd_splash[] -- the bespoke waiting-room splash (80x25 char+attr)
+#include "sbbs_node.h"          // door-native who's-online + page (Ctrl-U / Ctrl-P)
 
 #ifndef _WIN32                  // dev stdio/tty fallback (no socket handle) is *nix-only
 #include <fcntl.h>
@@ -357,6 +358,9 @@ static char      g_ov_last[80] = "";     // last stats-overlay text drawn (to sk
 static int       g_ov_prev_tn = 0;       // width of the last overlay -> blank the gap when it shrinks
 static int       g_ov_cell_col = 0;      // overlay's cell-grid column (0-based) -> text cell-diff exclusion
 static int       g_ov_cell_w   = 0;      // overlay's width in cells (0 = not drawn yet)
+static char      g_page_ov[5][82];       // incoming-page banner: wrapped lines (full text)
+static int       g_page_ov_rows = 0;     // active banner line count (0 = not shown)
+static uint32_t  g_page_ov_until = 0;    // banner expiry (now_ms); auto-clears after
 
 // Doom HU strings (hu_stuff.c) for the text-tier legible HUD. sd_text_hud suppresses
 // Doom's framebuffer draw of the message line + chat so only our terminal-character
@@ -369,6 +373,7 @@ extern int sd_quit_effect;
 // g_game.c: defeat Doom's turn-accel ramp (Options > FAST TURN). Per-user.
 extern int sd_instant_turn;
 extern const char *HU_message_text(void);
+extern void sd_post_message(const char *msg);   // hu_stuff.c: post a one-line HUD message
 extern const char *HU_chat_text(void);
 #define SD_CHAT_ROW 1                    // cell row for the chat line (one below the message)
 
@@ -736,6 +741,38 @@ static void emit_overlay(int force)
 		out_put(ov, (size_t)ovn);
 }
 
+static int page_overlay_active(void)
+{
+	return g_page_ov_rows > 0 && now_ms() < g_page_ov_until;
+}
+
+// Draw the incoming-page banner over the top rows (a white-on-red strip per
+// wrapped line), or -- the frame after it expires -- wipe those rows and force a
+// repaint of the game underneath. Called each frame, after the frame is emitted.
+static void draw_page_overlay(void)
+{
+	char ob[700];
+	int  i, n = 0;
+
+	if (g_page_ov_rows <= 0)
+		return;
+	if (now_ms() >= g_page_ov_until) {                  // expired -> clear + repaint under
+		for (i = 0; i < g_page_ov_rows && n < (int)sizeof(ob) - 16; i++)
+			n += snprintf(ob + n, sizeof(ob) - n, "\x1b[%d;1H\x1b[0m\x1b[2K", i + 1);
+		if (n > 0)
+			out_put(ob, (size_t)n);
+		g_page_ov_rows = 0;
+		g_last_fb_ok   = 0;                             // dedup: repaint the frame
+		rt_invalidate();                                // text: resync the cleared rows
+		return;
+	}
+	for (i = 0; i < g_page_ov_rows && n < (int)sizeof(ob) - 100; i++)
+		n += snprintf(ob + n, sizeof(ob) - n, "\x1b[%d;1H\x1b[1;37;41m\x1b[K%s\x1b[0m",
+		              i + 1, g_page_ov[i]);
+	if (n > 0)
+		out_put(ob, (size_t)n);
+}
+
 static void emit_frame(const uint32_t *fb, int w, int h)
 {
 	bool built = false;
@@ -806,6 +843,11 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 			chatw = g_text_cols;
 
 		rt_exclude_clear();
+		if (page_overlay_active()) {                      // page banner owns the top rows
+			int pr;
+			for (pr = 0; pr < g_page_ov_rows; pr++)
+				rt_exclude_add(pr, 0, g_text_cols);
+		}
 		if (g_stats_overlay && g_ov_cell_w > 0)
 			rt_exclude_add(0, g_ov_cell_col, g_ov_cell_col + g_ov_cell_w);
 		if (msgw > 0)
@@ -842,6 +884,7 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 
 	if (g_stats_overlay)
 		emit_overlay(1);                // the fresh frame painted over row 1 -> always redraw
+	draw_page_overlay();                // incoming-page banner over the top rows (or clear it)
 
 	out_put("\x1b[6n", 4);              // DSR -> the terminal reports when it has consumed this frame
 	g_dsr_ts[g_dsr_head] = now_ms();    // timestamp it (in-flight count + RTT estimate)
@@ -913,6 +956,8 @@ static void keyq_push(int pressed, unsigned char key)
 #define ACTIVE_MAX 16
 #define KEY_PIPELINE 0xe1 // door-internal sentinel (Ctrl-T): cycle frame-pipeline depth
 #define KEY_STATS    0xe2 // door-internal sentinel (Ctrl-S): toggle the live stats overlay
+#define KEY_USERLIST 0xe3 // door-internal sentinel (Ctrl-U): who's online
+#define KEY_PAGE     0xe4 // door-internal sentinel (Ctrl-P): page a node
 // Non-static: the in-game Options > Input sliders (m_menu.c) tune these live.
 // Source order, lowest-to-highest precedence: built-in -> syncdoom.ini [input]
 // (house default) -> per-user saved prefs (load_input_prefs) -> -kp* CLI flags.
@@ -943,6 +988,9 @@ static int  s_active_n = 0;
 // needs the key to stay "down" between the terminal's auto-repeat bytes).
 extern unsigned int menuactive;
 extern unsigned int chat_on;            // hu_stuff.c: nonzero while typing a netgame chat message
+extern boolean      netgame;            // g_game.c: true in a multiplayer (lockstep) game
+static int          g_want_userlist = 0;  // Ctrl-U pressed in-game -> run between ticks
+static int          g_want_page     = 0;  // Ctrl-P pressed in-game -> run between ticks
 
 static void key_seen(unsigned char key)
 {
@@ -959,6 +1007,14 @@ static void key_seen(unsigned char key)
 	}
 	if (key == KEY_STATS) {                   // Ctrl-S: toggle the live stats overlay
 		toggle_stats();                       // (door-level; never reaches Doom)
+		return;
+	}
+	if (key == KEY_USERLIST) {                // Ctrl-U: who's online. Defer to the main
+		g_want_userlist = 1;                  // loop (between ticks) -- the screen is a
+		return;                               // blocking modal, not safe to run from here.
+	}
+	if (key == KEY_PAGE) {                    // Ctrl-P: page a node (deferred likewise)
+		g_want_page = 1;
 		return;
 	}
 
@@ -1034,6 +1090,11 @@ static unsigned char map_ascii(unsigned char c)
 	// socket raw (no terminal XON/XOFF flow control in the path), so 0x13 is free.
 	if (c == 0x13)
 		return KEY_STATS;
+	// Ctrl-U (0x15) who's online, Ctrl-P (0x10) page -- door-level; never Doom's.
+	if (c == 0x15)
+		return KEY_USERLIST;
+	if (c == 0x10)
+		return KEY_PAGE;
 	// While the user is TYPING text -- a netgame chat message (chat_on) or a menu
 	// string like a save-game name (menuactive) -- the gameplay action keys must
 	// arrive as the literal characters they type: a space has to be a space (not
@@ -2522,6 +2583,7 @@ static void sd_waitroom_draw(void)
 	net_waitdata_t *w = &net_client_wait_data;
 	int             disp = w->num_players;
 	int             twoline, panelrows, bottom, top, prow;
+	int             hint = sbbs_node_available();   // show the Ctrl-U/Ctrl-P hint row
 
 	if (disp < 1)
 		disp = 1;
@@ -2532,7 +2594,7 @@ static void sd_waitroom_draw(void)
 	// can't overrun 80 cols; the panel grows upward over the splash as players
 	// join (4 rows at 1-2 players .. 6 at a full 4).
 	twoline   = (w->is_controller && w->num_players < 2 && w->max_players > 1);
-	panelrows = 1 /*title*/ + disp + (twoline ? 2 : 1);
+	panelrows = 1 /*title*/ + disp + (twoline ? 2 : 1) + (hint ? 1 : 0);
 	bottom    = (s_lines < 25) ? s_lines : 25;
 	top       = bottom - (panelrows - 1);
 	if (top < 1)
@@ -2567,10 +2629,250 @@ static void sd_waitroom_draw(void)
 		len += snprintf(buf + len, sizeof(buf) - len,
 		                "\x1b[%d;3HPress \x1b[1;33mS\x1b[1;37m or \x1b[1;33mEnter\x1b[1;37m to start now, "
 		                "\x1b[1;33mQ\x1b[1;37m to cancel.", prow);
+	if (hint)
+		len += snprintf(buf + len, sizeof(buf) - len,
+		                "\x1b[%d;3H\x1b[1;33mCtrl-U\x1b[1;37m who's online   \x1b[1;33mCtrl-P\x1b[1;37m page a user",
+		                prow + (twoline ? 2 : 1));
 	len += snprintf(buf + len, sizeof(buf) - len, "\x1b[0m");
 
 	if (len > 0)
 		emit_all(buf, (size_t)len);
+}
+
+// ---------------------------------------------------------------------------
+// Who's-online (Ctrl-U) + paging (Ctrl-P), via sbbs_node.{c,h}. Full-screen text
+// drawn straight to the terminal; while reading input these keep pumping the net
+// so the waiting-room connection to the dedicated server stays alive.
+// ---------------------------------------------------------------------------
+
+static void emit_str(const char *s) { emit_all(s, strlen(s)); }
+
+// Block for one keystroke, pumping the net meanwhile. Returns the byte, -1 hangup.
+static int bbs_pump_key(void)
+{
+	for (;;) {
+		unsigned char c;
+		ssize_t       n;
+		NET_CL_Run();
+		NET_SV_Run();
+		n = conn_read(&c, 1);
+		if (n == 0)
+			return -1;
+		if (n > 0)
+			return (int)c;
+		I_Sleep(10);
+	}
+}
+
+// Read an echoed line into buf. Returns 1 on Enter, 0 on Esc/hangup. Backspace ok.
+static int bbs_pump_line(char *buf, int max)
+{
+	int  len = 0;
+	char ec;
+
+	buf[0] = '\0';
+	for (;;) {
+		int c = bbs_pump_key();
+		if (c < 0 || c == 27)
+			return 0;
+		if (c == '\r' || c == '\n') {
+			emit_all("\r\n", 2);
+			return 1;
+		}
+		if (c == 8 || c == 127) {
+			if (len > 0) {
+				buf[--len] = '\0';
+				emit_all("\b \b", 3);
+			}
+			continue;
+		}
+		if (c >= 32 && c < 127 && len < max - 1) {
+			buf[len++] = (char)c;
+			buf[len]   = '\0';
+			ec = (char)c;
+			emit_all(&ec, 1);
+		}
+	}
+}
+
+// Clear the screen and draw the online-node list. Returns the node count.
+static int draw_nodelist(void)
+{
+	sbbs_node_info_t nodes[64];
+	char alias[26], act[80], line[200];
+	int  n, i, me = sbbs_my_node();
+
+	emit_all("\x1b[2J\x1b[H", 7);
+	emit_str("\x1b[1;36m  Who's online\x1b[0m\r\n\r\n");
+	n = sbbs_list_nodes(nodes, (int)(sizeof(nodes) / sizeof(nodes[0])), 0);
+	if (n == 0)
+		emit_str("  \x1b[1;30m(nobody else is online)\x1b[0m\r\n");
+	for (i = 0; i < n; i++) {
+		const char *who = nodes[i].anon ? "UNKNOWN USER"
+		                  : sbbs_username(nodes[i].useron, alias, sizeof(alias));
+		snprintf(line, sizeof(line),
+		         "  \x1b[1;33mNode %-2d\x1b[0m %-25s \x1b[36m%s\x1b[0m%s\r\n",
+		         nodes[i].number, who, sbbs_action_str(&nodes[i], act, sizeof(act)),
+		         nodes[i].number == me ? "  \x1b[1;32m(you)\x1b[0m" : "");
+		emit_str(line);
+	}
+	return n;
+}
+
+// Ctrl-U: show the online list, hold until a key.
+static void sd_show_nodelist(void)
+{
+	if (!sbbs_node_available())
+		return;
+	draw_nodelist();
+	emit_str("\r\n  \x1b[1;30mPress any key to return...\x1b[0m");
+	bbs_pump_key();
+}
+
+// Ctrl-P: list -> pick a node -> type a message -> send (carrying the bell).
+static void sd_page_flow(void)
+{
+	char numbuf[8], msg[200], line[256];
+	int  target, ok;
+
+	if (!sbbs_node_available())
+		return;
+	draw_nodelist();
+	emit_str("\r\n  \x1b[1;37mPage which node #? \x1b[1;30m(Enter cancels)\x1b[0m ");
+	if (!bbs_pump_line(numbuf, sizeof(numbuf)) || numbuf[0] == '\0')
+		return;
+	if ((target = atoi(numbuf)) < 1)
+		return;
+	emit_str("  \x1b[1;37mMessage: \x1b[0m");
+	if (!bbs_pump_line(msg, sizeof(msg)) || msg[0] == '\0')
+		return;
+	ok = sbbs_page_node(target, sbbs_my_node(), g_player_name, msg);
+	snprintf(line, sizeof(line), ok
+	         ? "\r\n  \x1b[1;32mPaged node %d.\x1b[0m"
+	         : "\r\n  \x1b[1;31mCouldn't page node %d (offline, or paging off).\x1b[0m", target);
+	emit_str(line);
+	emit_str("\r\n  \x1b[1;30mPress any key to return...\x1b[0m");
+	bbs_pump_key();
+}
+
+// Poll for an incoming page (throttled ~1/sec) and, if one arrived, display +
+// acknowledge it. Returns 1 if it showed something (caller should redraw). Strips
+// Synchronet Ctrl-A attribute codes -- the door emits raw, with no BBS attribute
+// translation, so they'd otherwise show as garbage.
+static int sd_check_pages(void)
+{
+	static int last = 0;
+	char       buf[600], *s, *d;
+	int        now, me;
+
+	if (!sbbs_node_available())
+		return 0;
+	now = I_GetTimeMS();
+	if (now - last < 1000)
+		return 0;
+	last = now;
+	me = sbbs_my_node();
+	if (me < 1 || sbbs_recv_nmsg(me, buf, sizeof(buf)) <= 0)
+		return 0;
+	for (s = d = buf; *s; ) {
+		if (*s == '\x01') { s += s[1] ? 2 : 1; continue; }   // drop Ctrl-A code
+		*d++ = *s++;
+	}
+	*d = '\0';
+	emit_all("\x1b[2J\x1b[H", 7);
+	emit_str("\x1b[1;33m  >> You have a page <<\x1b[0m\r\n\r\n  ");
+	emit_str(buf);
+	emit_str("\r\n\r\n  \x1b[1;30mPress any key to return...\x1b[0m");
+	bbs_pump_key();
+	return 1;
+}
+
+// In-game who's-online: a one-line summary posted as a HUD message -- non-blocking
+// and MP-safe (no screen takeover, so the frame pacing is untouched, unlike the
+// waiting-room's full-screen sd_show_nodelist).
+static void sd_ingame_userlist(void)
+{
+	static char      msg[256];
+	sbbs_node_info_t nodes[16];
+	char             alias[26];
+	int              n, i, len = 0;
+
+	if (!sbbs_node_available())
+		return;
+	n = sbbs_list_nodes(nodes, (int)(sizeof(nodes) / sizeof(nodes[0])), sbbs_my_node());
+	if (n == 0) {
+		sd_post_message("No one else is online.");
+		return;
+	}
+	len += snprintf(msg + len, sizeof(msg) - len, "Online:");
+	for (i = 0; i < n && len < (int)sizeof(msg) - 40; i++) {
+		const char *who = nodes[i].anon ? "UNKNOWN"
+		                  : sbbs_username(nodes[i].useron, alias, sizeof(alias));
+		len += snprintf(msg + len, sizeof(msg) - len, "%s %s %s",
+		                i ? "," : "", who, sbbs_action_abbr(nodes[i].action));
+	}
+	sd_post_message(msg);
+}
+
+// In-game incoming page -> a one-line HUD message + a bell (non-blocking; polled
+// ~1/sec between frames). Collapses the page's CRLF/Ctrl-A formatting to one line.
+static void sd_ingame_recv(void)
+{
+	static uint32_t last = 0;
+	char            raw[600], clean[600];
+	const char *    s;
+	char *          d;
+	uint32_t        now = now_ms();          // same clock the banner expiry compares against
+	int             me, w, len, pos;
+
+	if (!sbbs_node_available())
+		return;
+	if (now - last < 1000)
+		return;
+	last = now;
+	me = sbbs_my_node();
+	if (me < 1 || sbbs_recv_nmsg(me, raw, sizeof(raw)) <= 0)
+		return;
+	// Strip Ctrl-A codes + BEL, fold CR/LF to spaces -> one flowing string. The page
+	// can exceed Doom's 80-char HU line, so it goes to the door's own wrapped banner
+	// (sd_post_message/HU would chop it at the right margin).
+	for (s = raw, d = clean; *s && d < clean + sizeof(clean) - 1; s++) {
+		if (*s == '\x01') { if (s[1]) s++; continue; }   // drop Ctrl-A attribute code
+		if (*s == '\x07') continue;                      // drop bell (we beep below)
+		if (*s == '\r' || *s == '\n' || *s == ' ') {     // fold whitespace runs to one space
+			if (d > clean && d[-1] != ' ')
+				*d++ = ' ';
+			continue;
+		}
+		*d++ = *s;
+	}
+	while (d > clean && d[-1] == ' ')                    // trim any trailing space
+		d--;
+	*d = '\0';
+	// Word-wrap into the banner (up to 5 rows of <= w chars; break at spaces).
+	w = g_text_cols - 2;
+	if (w < 20) w = 20;
+	if (w > 80) w = 80;
+	len = (int)strlen(clean);
+	pos = 0;
+	g_page_ov_rows = 0;
+	while (pos < len && g_page_ov_rows < 5) {
+		int take = len - pos;
+		if (take > w) {
+			int b = w;
+			while (b > 0 && clean[pos + b] != ' ')
+				b--;
+			take = (b > w / 2) ? b : w;
+		}
+		memcpy(g_page_ov[g_page_ov_rows], clean + pos, (size_t)take);
+		g_page_ov[g_page_ov_rows][take] = '\0';
+		g_page_ov_rows++;
+		pos += take;
+		while (pos < len && clean[pos] == ' ')
+			pos++;
+	}
+	g_page_ov_until = (uint32_t)now + 9000;              // ~9 s on screen
+	emit_all("\x07", 1);                                 // audible alert
 }
 
 void sd_waitroom_run(void)
@@ -2598,6 +2900,9 @@ void sd_waitroom_run(void)
 
 		if (!net_client_connected)
 			I_Error("NET_WaitForLaunch: Lost connection to server");
+
+		if (sd_check_pages())          // an incoming page was shown -> redraw
+			last_drawn = -2;
 
 		if (net_client_received_wait_data) {
 			net_waitdata_t *w = &net_client_wait_data;
@@ -2633,6 +2938,16 @@ void sd_waitroom_run(void)
 					NET_CL_Disconnect();
 					emit_all("\x1b[2J\x1b[H", 7);
 					I_Quit();              // back to the lobby/BBS
+				}
+				if (c == 0x15) {          // Ctrl-U: who's online
+					sd_show_nodelist();
+					last_drawn = -2;       // force a waiting-room redraw
+					break;
+				}
+				if (c == 0x10) {          // Ctrl-P: page a node
+					sd_page_flow();
+					last_drawn = -2;
+					break;
 				}
 				if (c == 's' || c == 'S' || c == '\r')
 					want_start = true;
@@ -2877,6 +3192,9 @@ int main(int argc, char **argv)
 	// Per-user input-feel overrides (saved by the in-game Options > Input sliders)
 	// layer over the [input] ini defaults now that -home and any -kp* flags are known.
 	load_user_prefs();
+	// Locate node.dab (ctrl) + user/name.dat (data) for Ctrl-U/Ctrl-P. A no-op
+	// (feature disabled) when not launched inside a BBS (no $SBBSCTRL).
+	sbbs_node_init(g_home);
 	// Hand the BBS handle to the net layer. It must be non-NULL: the net layer
 	// sends it at connect time (NET_CL_SendSYN) and would strlen(NULL)-crash
 	// otherwise, and its own default doesn't run before then. The lobby always
@@ -2942,6 +3260,23 @@ int main(int argc, char **argv)
 
 	setup_sandbox();                 // chdir into the per-user dir; WAD paths above are absolute
 	doomgeneric_Create(cn, child);
-	for (;;) doomgeneric_Tick();
+	for (;;) {
+		doomgeneric_Tick();
+
+		// Ctrl-U / Ctrl-P and incoming pages are shown as non-blocking one-line HUD
+		// messages (no screen takeover, so the frame pacing is undisturbed -- the
+		// blocking full-screen version stalled the loop and wedged the DSR pacing,
+		// fixed only by an F4 tier re-init). MP-safe too. Text-entry paging stays in
+		// the waiting room; in-game Ctrl-P just points there.
+		if (g_want_userlist) {
+			g_want_userlist = 0;
+			sd_ingame_userlist();
+		}
+		if (g_want_page) {
+			g_want_page = 0;
+			sd_post_message("To page a user, use Ctrl-P in the multiplayer waiting room.");
+		}
+		sd_ingame_recv();
+	}
 	return 0;
 }

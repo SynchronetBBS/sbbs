@@ -400,6 +400,15 @@ const char *HU_message_text(void)
     return t->len ? t->l : NULL;
 }
 
+// syncdoom: post a one-line HUD message (the door's Ctrl-U who's-online summary +
+// incoming pages, shown non-blocking on the message line like a chat/pickup
+// message -- no screen takeover, so the frame pacing isn't disturbed). msg must
+// stay valid until the next HU_Ticker copies it; the door passes a persistent buf.
+void sd_post_message(const char *msg)
+{
+    players[consoleplayer].message = (char *)msg;
+}
+
 const char *HU_chat_text(void)
 {
     if (!chat_on)

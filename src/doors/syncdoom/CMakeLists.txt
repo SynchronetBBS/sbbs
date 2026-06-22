@@ -31,11 +31,14 @@ set(SOURCES
     deh_sound.c deh_thing.c deh_weapon.c w_merge.c
     net_client.c net_common.c net_dedicated.c net_io.c net_loop.c net_packet.c
     net_query.c net_server.c net_structrw.c aes_prng.c net_gui.c net_udp.c
-    mp_server.c
+    mp_server.c sbbs_node.c
     syncdoom.c)
 
 add_executable(syncdoom ${SOURCES})
 target_include_directories(syncdoom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+# sbbs_node.c reads Synchronet's node.dab/name.dat -- it needs nodedefs.h (and a
+# couple of constants) from the BBS source dir. Headers only; no engine linkage.
+target_include_directories(syncdoom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../sbbs3)
 
 # Git build info (git_hash.h: GIT_HASH/GIT_DATE/GIT_TIME) for the startup banner
 # and the F1 controls screen, via the shared helper in src/build. Regenerated each
