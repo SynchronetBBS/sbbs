@@ -100,10 +100,24 @@ function gg_bake(dir, game) {
 	return js.exec(dir + "tools/blorb2gfx.js", dir, {}, blorb, gfxDir) == 0;
 }
 
+// True only if this install's exec/load/http.js provides HTTPRequest.Download() (added relatively
+// recently). On older Synchronet, downloads can't work -- detect it so we say so clearly instead of
+// throwing an opaque "Download is not a function" deep in gg_download().
+function gg_downloadSupported() {
+	try { return typeof (new HTTPRequest()).Download === "function"; }
+	catch (e) { return false; }
+}
+
 function gg_main() {
 	var dir = gg_dir();
 	var games = gg_loadManifest(dir + "games.ini");
 	if (!games) { print("getgames: cannot read " + dir + "games.ini"); return 1; }
+
+	var canDL = gg_downloadSupported();
+	if (!canDL)
+		print("getgames: NOTE -- this Synchronet's exec/load/http.js lacks HTTPRequest.Download(),\r\n"
+			+ "  so game downloads are unavailable. Bundled games still install; to fetch the rest,\r\n"
+			+ "  update Synchronet (or drop in a current exec/load/http.js) and re-run.\r\n");
 
 	var i, g, path, action, gfx;
 	for (i = 0; i < games.length; i++) {
@@ -119,6 +133,7 @@ function gg_main() {
 		} else if (action == "skip") {
 			print(g.name + ": already installed");
 		} else { // fetch
+			if (!canDL) { print(g.name + ": not installed (download unavailable -- see note above)"); continue; }
 			if (g.note) print("\r\n" + g.name + " -- " + g.note);
 			if (!confirm("Fetch " + g.name + " now")) { print(g.name + ": skipped"); continue; }
 			if (!file_isdir(dir + g.category)) mkdir(dir + g.category);
