@@ -7,9 +7,13 @@
 #include <string.h>
 
 #include "nodedefs.h"      // node_t, enum node_status/node_action, NODE_* bits
-#include "dirwrap.h"       // xpdev: PATH_MAX, fexist, MKDIR
+#include "dirwrap.h"       // xpdev: fexist, MKDIR (defines MAX_PATH, not PATH_MAX)
 #include "filewrap.h"      // xpdev: lock/unlock
 #include "sbbs_node.h"
+
+#ifndef PATH_MAX           // POSIX defines it via <sys/param.h>; MSVC does not
+#define PATH_MAX 1024      // (xpdev's portable macro is MAX_PATH) -- match syncdoom.c
+#endif
 
 #ifndef LEN_ALIAS
 #define LEN_ALIAS 25       // src/sbbs3/sbbsdefs.h -- alias length in user/name.dat
