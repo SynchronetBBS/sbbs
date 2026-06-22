@@ -2425,10 +2425,19 @@ static const char *mouse_mode_str(int m)
 	return m == MOUSE_OFF ? "off" : "on";
 }
 
-// Write the user's prefs (read-modify-write, so any hand-added keys survive).
-// Called by the Options sliders and the Ctrl-T pacing toggle after each change.
-// Only settings the player has CHANGED from the default are written; the rest are
-// removed (see save_pref_* above) so house-ini defaults still reach this user.
+// Write the user's prefs. Called by the Options sliders, the Ctrl-T pacing toggle,
+// and the Ctrl-O mouse toggle after each change. Only settings the player has
+// CHANGED from the default are written (the rest are skipped, see save_pref_*
+// above) so house-ini defaults still reach this user.
+//
+// We write the file FRESH each time rather than read-modify-write. RMW tripped an
+// xpdev empty-section bug: once "remove key == default" emptied the [input]
+// section (leaving its bare header above [video]), iniSetString misfiled every
+// later [input] key at end-of-file under [video], where it was unreadable -- so
+// per-user input prefs silently stopped saving/loading and accumulated duplicates.
+// A fresh list builds each section in order, so the bug can't trigger; it also
+// self-heals an already-corrupted file. (These are generated prefs in data/, not
+// hand-edited, so there's nothing to preserve by reading the old file.)
 void sd_save_user_prefs(void)
 {
 	str_list_t list;
@@ -2437,13 +2446,7 @@ void sd_save_user_prefs(void)
 	user_ini_path();
 	if (g_user_ini_path[0] == '\0')
 		return;                          // no -home: nowhere to persist
-	f = fopen(g_user_ini_path, "r");
-	if (f != NULL) {
-		list = iniReadFile(f);
-		fclose(f);
-	} else {
-		list = strListInit();
-	}
+	list = strListInit();
 	save_pref_int (&list, "input", "kpdelay",  (int)g_grace_fresh,   (int)g_base_grace_fresh);
 	save_pref_int (&list, "input", "kpsmooth", (int)g_keyup_idle_ms, (int)g_base_keyup_idle_ms);
 	save_pref_int (&list, "input", "kpturn",   (int)g_turn_grace,    (int)g_base_turn_grace);
