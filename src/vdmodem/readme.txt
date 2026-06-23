@@ -114,6 +114,33 @@ For incoming TCP connections, SVDM will report either "CONNECT 9600" or just
 "CONNECT" (assumed 300 bps) depending on the modem's extended response
 (ATX) setting.
 
+Some DOS BBS packages pace their output to the reported modem connection
+speed, so a "CONNECT 9600" makes the session feel like a 9600-bps modem even
+though the underlying TCP connection is unrestricted. To report a higher (or
+otherwise customized) connection speed, set the "ConnectMsg" key in the root
+section of svdm.ini to the text that should follow the word "CONNECT", e.g.:
+
+    ConnectMsg=115200
+
+SVDM will then report:
+
+    CONNECT 115200
+
+The value may also include an error-correction/protocol tag, mimicking a
+high-speed error-correcting modem, e.g.:
+
+    ConnectMsg=115200/ARQ
+
+reported as:
+
+    CONNECT 115200/ARQ
+
+ConnectMsg only applies when extended result codes are enabled (the default,
+ATX1 or higher) and verbose (non-numeric, ATV1) result codes are in use. When
+ConnectMsg is unset (the default), the legacy "CONNECT 9600"/"CONNECT"
+behavior is unchanged. The reported speed is cosmetic: it does not limit the
+actual TCP throughput (see the "Rate" key / -r option above for that).
+
 ==== Bits o' Parity ====
 
 The communication data (word) bit width, stop bits, and parity settings used

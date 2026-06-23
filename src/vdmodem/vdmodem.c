@@ -41,7 +41,7 @@
 #include "git_hash.h"
 
 #define TITLE "Synchronet Virtual DOS Modem for Windows"
-#define VERSION "0.5"
+#define VERSION "0.6"
 
 bool              external_socket;
 union xp_sockaddr addr;
@@ -88,6 +88,7 @@ struct {
 	char disconnect_sound[MAX_PATH + 1];
 	char busy_notice[INI_MAX_VALUE_LEN];
 	char answer_banner[INI_MAX_VALUE_LEN];
+	char connect_msg[INI_MAX_VALUE_LEN];
 	enum {
 		ADDRESS_FAMILY_UNSPEC
 		, ADDRESS_FAMILY_INET
@@ -268,6 +269,19 @@ char* text_response(struct modem* modem, const char* text)
 
 char* connect_result(struct modem* modem)
 {
+	if (modem->quiet)
+		return "";
+	// When extended result codes are enabled and the sysop has configured a
+	// custom connect message (e.g. "115200/ARQ"), report "CONNECT <message>"
+	// in verbal mode. This lets DOS software that paces its output to the
+	// reported modem speed (or keys on an error-correction tag) see a faster,
+	// error-corrected connection. Numeric mode has no result code for an
+	// arbitrary message, so it falls through to the standard CONNECT code.
+	if (modem->ext_results && cfg.connect_msg[0] && !modem->numeric_mode) {
+		char str[INI_MAX_VALUE_LEN + 16];
+		safe_snprintf(str, sizeof(str), "CONNECT %s", cfg.connect_msg);
+		return verbal_response(modem, str);
+	}
 	return response(modem, modem->ext_results ? CONNECT_9600 : CONNECT);
 }
 
@@ -1119,6 +1133,8 @@ bool read_ini(const char* ini_fname)
 		SAFECOPY(cfg.busy_notice, p);
 	if ((p = iniGetString(ini, ROOT_SECTION, "AnswerBanner", NULL, value)) != NULL)
 		SAFECOPY(cfg.answer_banner, p);
+	if ((p = iniGetString(ini, ROOT_SECTION, "ConnectMsg", NULL, value)) != NULL)
+		SAFECOPY(cfg.connect_msg, p);
 	if ((p = iniGetString(ini, ROOT_SECTION, "ClientFile", NULL, value)) != NULL)
 		SAFECOPY(cfg.client_file, p);
 	if ((p = iniGetString(ini, ROOT_SECTION, "IpFilterFile", NULL, value)) != NULL)
