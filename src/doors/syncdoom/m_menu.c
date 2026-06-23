@@ -894,7 +894,7 @@ void M_DrawReadThis1(void)
     M_WriteCenter(y, "F2 SAVE   F3 LOAD   F10 QUIT");                    y += 11;
     M_WriteCenter(y, "F6 QUICKSAVE   F9 QUICKLOAD");                     y += 11;
     M_WriteCenter(y, "F4 GRAPHICS   CTRL-T FRAMES");                     y += 11;
-    M_WriteCenter(y, "CTRL-O MOUSE   CTRL-S STATISTICS");
+    M_WriteCenter(y, "CTRL-O MOUSE   CTRL-S STATS");
 
     // Center the blinking skull (the dismiss cue) horizontally. M_Drawer draws it
     // at ReadDef1.x + SKULLXOFF - leftoffset (itemOn 0); solve that so the patch's
