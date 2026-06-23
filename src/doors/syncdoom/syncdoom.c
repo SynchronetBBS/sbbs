@@ -587,14 +587,58 @@ static void emit_frame_ppm(int w, int h)
 // Sixel tier: a complete DECSIXEL image drawn at the home position so each frame
 // overdraws the last in place. Unlike PPM/JXL this isn't a SyncTERM APC cache
 // entry -- it's standard sixel that any sixel-capable terminal renders directly.
+//
+// We encode from Doom's native 8-bit palette indices (scaled to the emit size)
+// against a stable 1:1 register<->index palette, and (re)define the 256 sixel
+// registers ONLY when Doom changes the palette -- so a steady scene sends band
+// data alone (no ~4KB palette block per frame), which both shrinks the per-frame
+// sixel string and keeps the palette identical frame to frame.
+extern int      sd_palette_seq;                  // i_video.c: bumps on palette change
+extern void sd_palette_rgb(unsigned char *out);  // i_video.c: live palette -> out[768]
+extern void sd_scale_indices(unsigned char *out, int w, int h);  // native indices -> w*h
+
+static uint8_t *s_sx_idx = NULL; static size_t s_sx_idx_cap = 0; // scaled index buffer
+static int      g_sx_pal_seq = -1;     // palette seq last written to the sixel stream (-1 = none)
+
 static void emit_frame_sixel(int w, int h)
 {
-	char   pos[24];
-	int    l = snprintf(pos, sizeof(pos), "\x1b" "7\x1b[%d;%dH", g_img_row, g_img_col);
-	size_t n = sixel_encode(&s_img, &s_img_cap, s_rgb, w, h);
+	char                 pos[24];
+	int                  l = snprintf(pos, sizeof(pos), "\x1b" "7\x1b[%d;%dH", g_img_row, g_img_col);
+	static unsigned char pal[768];
+	int                  emit_pal = (g_sx_pal_seq != sd_palette_seq);
+	size_t               n;
+
+	ensure(&s_sx_idx, &s_sx_idx_cap, (size_t)w * h);
+	sd_scale_indices(s_sx_idx, w, h);
+	if (emit_pal) {                          // palette changed (or first frame) -> (re)define
+		sd_palette_rgb(pal);
+		g_sx_pal_seq = sd_palette_seq;
+	}
+	n = sixel_encode(&s_img, &s_img_cap, s_sx_idx, w, h, pal, emit_pal);
 	out_put(pos, l);               // save cursor + position (centered) -> overdraw in place
 	out_put(s_img, n);
 	out_put("\x1b" "8", 2);        // restore cursor (terminals differ post-sixel)
+}
+
+// DECSDM (DEC private mode 80, "sixel scrolling") defaults to SET, which scrolls
+// the page up and appends a newline whenever a sixel reaches the bottom -- so a
+// full-screen sixel every frame visibly scrolls/stutters (the old SyncTERM sixel
+// problem). Reset it while the sixel tier is active: the sixel origin pins to the
+// page's top-left, frames overdraw in place, and nothing scrolls. Restore the
+// default when leaving sixel or on exit. A no-op on terminals without mode 80.
+// (Under reset-80 cterm ignores the cursor and draws at 0,0, so the sixel image
+// anchors top-left rather than at emit_frame_sixel's centered cell.)
+static int g_sixel_scroll_off = 0;
+static void apply_sixel_scroll(void)
+{
+	int want = (g_mode == MODE_SIXEL);
+	if (want == g_sixel_scroll_off)
+		return;
+	emit_all(want ? "\x1b[?80l" : "\x1b[?80h", 6);
+	g_sixel_scroll_off = want;
+	if (want)
+		g_sx_pal_seq = -1;   // (re)entering sixel: the cleared screen drops the color
+	                         // registers, so force a palette re-definition next frame
 }
 
 #ifdef WITH_JXL
@@ -1542,20 +1586,24 @@ static int probe_jxl(void)
 
 static int g_sixel_pref = -1;
 
-// One-time DA1 (Primary Device Attributes) probe: send ESC[c and look for the
-// sixel capability (parameter "4") in the reply "ESC [ ? <params> c". Bytes are
-// also fed to the input parser; the reply is inert there (ends on 'c', no key).
+// One-time graphics-capability probe. Two device-attribute queries detect sixel
+// support two ways:
+//   * DA1 "ESC[c" -> xterm/WT reply "ESC[?<params>c" with parameter 4, and
+//   * CTDA "ESC[<c" -> SyncTERM reply "ESC[<0;<caps>c" with capability 4 (pixel
+//     ops = sixel/PPM; advertised since SyncTERM 1.1).
+// The CTerm *version* reply "ESC[=67;84;...c" (params spell "CTerm") is captured
+// too, for g_cterm_version / g_is_syncterm. Probe bytes are also fed to the input
+// parser (the CSI replies are inert there, ending on 'c'). Returns nonzero if
+// sixel is supported.
 //
-// NB: this only matches the xterm-family flag. SyncTERM does NOT set it -- it
-// advertises sixel only via its private CTerm Device Attributes (ESC[<c ->
-// "ESC[<0;...;4;...c", capability 4 = pixel ops; sixel since SyncTERM 1.1). That
-// detection was tried (query ESC[<c, accept cap 4), and SyncTERM 1.1/1.2/1.3 were
-// all confirmed to render sixel poorly at Doom's per-frame full-raster rate -- so
-// we deliberately do NOT probe CTDA here. SyncTERM gets the cached APC path
-// instead (JXL on 1.4+, PPM opt-in); don't re-add CTDA sixel without re-testing.
+// SyncTERM renders sixel fine once DECSDM (private mode 80) scrolling is disabled
+// (see apply_sixel_scroll) -- before that fix the per-frame page-scroll made it
+// look broken, which is why this CTDA probe used to be left out. SyncTERM 1.4+
+// still prefers JXL: the tier ladder probes JXL first, so cap-4 here only
+// auto-selects sixel on the older, no-JXL SyncTERM versions (and on xterm/WT).
 static int probe_sixel(void)
 {
-	static const char q[] = "\x1b[c";
+	static const char q[] = "\x1b[c\x1b[<c";    // DA1 (xterm) + CTDA (SyncTERM caps)
 	unsigned char     acc[256];
 	int               al = 0, done = 0, found = 0;
 	uint32_t          deadline = now_ms() + 600;
@@ -1590,42 +1638,49 @@ static int probe_sixel(void)
 			if (al < (int)sizeof(acc))
 				acc[al++] = buf[i];
 		}
-		// DA1 reply: ESC[?<params>c (xterm/WT: param 4 = sixel) OR SyncTERM's CTerm
-		// version ESC[=67;84;101;114;109;<maj>;<min>c (the params spell "CTerm").
+		// Replies (any may appear; a SyncTERM sends both '=' and '<'):
+		//   ESC[?<params>c  xterm/WT DA1   -- parameter 4 = sixel
+		//   ESC[<0;<caps>c  SyncTERM CTDA  -- capability 4 = pixel ops (sixel/PPM)
+		//   ESC[=67;84;..c  SyncTERM CTerm version (params spell "CTerm")
+		// Scan the whole buffer and process every complete reply (idempotent): the
+		// '?'/'<' replies are definitive (set done); the '=' version reply is not,
+		// so we keep reading for the '<' CTDA reply that carries the sixel cap.
 		for (j = 0; j + 2 < al; j++) {
 			unsigned char marker = acc[j + 2];
-			int           p[8], np = 0, num = -1, k;
-			if (acc[j] != 0x1b || acc[j + 1] != '[' || (marker != '?' && marker != '='))
+			int           p[16], np = 0, num = -1, k;
+			if (acc[j] != 0x1b || acc[j + 1] != '['
+			    || (marker != '?' && marker != '=' && marker != '<'))
 				continue;
 			for (k = j + 3; k < al; k++) {
 				unsigned char ch = acc[k];
 				if (ch >= '0' && ch <= '9') {
 					num = (num < 0 ? 0 : num * 10) + (ch - '0');
 				} else if (ch == ';') {
-					if (np < 8)
+					if (np < 16)
 						p[np++] = (num < 0 ? 0 : num);
 					num = -1;
 				} else {                         // final byte
-					if (np < 8)
+					if (np < 16)
 						p[np++] = (num < 0 ? 0 : num);
 					if (ch == 'c') {
 						int m;
-						if (marker == '?') {
+						if (marker == '?' || marker == '<') {
 							for (m = 0; m < np; m++)
 								if (p[m] == 4)
-									found = 1;                       // sixel
+									found = 1;       // sixel: DA1 param 4 / CTDA cap 4
+							done = 1;                // definitive answer
 						} else if (np >= 7 && p[0] == 67 && p[1] == 84 &&
 						           p[2] == 101 && p[3] == 114 && p[4] == 109) {
 							g_cterm_version = p[5] * 1000 + p[6];    // "CTerm" maj.min
 							if (g_cterm_version >= 1002)             // SyncTERM >= 1.2 has APC PPM
 								g_is_syncterm = 1;
+							// version only -- keep reading for the '<' CTDA reply
 						}
-						done = 1;
 					}
 					break;
 				}
 			}
-			break;
+			// no break: a SyncTERM emits the '=' reply AND the '<' reply; reach both.
 		}
 	}
 	return found;
@@ -1658,6 +1713,8 @@ static void terminal_restore(void)
 {
 	if (g_mouse_enabled)
 		emit_all("\x1b[?1003l\x1b[?1006l", 16);
+	if (g_sixel_scroll_off)
+		emit_all("\x1b[?80h", 6);        // restore default sixel scrolling for the BBS
 	emit_all("\x1b[?7h\x1b[?25h", 11);
 }
 
@@ -1741,6 +1798,7 @@ static void cycle_video(void)
 		g_mode = v->mode;
 	}
 	compute_geometry();
+	apply_sixel_scroll();                // toggle DECSDM (mode 80) for the sixel tier
 	g_dsr_tail = g_dsr_head;             // clear the pipeline -> let the next frame emit immediately
 
 	// Clear (drop the prior tier's bitmap/glyphs) and dwell on a readable label.
@@ -1929,6 +1987,8 @@ void DG_Init(void)
 	                                 // graphics) is always one of the cyclable states
 	joybspeed = g_always_run ? 31 : 2;   // apply always-run default ('R' toggles at runtime;
 	                                     // 31 >= MAX_JOY_BUTTONS, the always-run hack)
+
+	apply_sixel_scroll();                // disable DECSDM scrolling if we start in the sixel tier
 
 	// Enable xterm mouse reporting (any-event tracking + SGR coordinates) when a
 	// mouse model is selected. Harmless on terminals that don't support it -- they

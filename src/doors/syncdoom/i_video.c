@@ -385,6 +385,10 @@ void I_ReadScreen (byte* scr)
 #define GFX_RGB565_G(color)			((0x07E0 & color) >> 5)
 #define GFX_RGB565_B(color)			(0x001F & color)
 
+// syncdoom: bumped on every palette change so the sixel tier (re)defines its
+// color registers only when the palette actually changes (damage/pickup/menu).
+int sd_palette_seq = 0;
+
 void I_SetPalette (byte* palette)
 {
 	int i;
@@ -412,11 +416,40 @@ void I_SetPalette (byte* palette)
         colors[i].b = gammatable[usegamma][*palette++];
     }
 
+    sd_palette_seq++;   // syncdoom: signal the sixel tier to re-define registers
+
 #ifdef CMAP256
 
     palette_changed = true;
 
 #endif  // CMAP256
+}
+
+// syncdoom sixel tier: copy the live 256-color palette as RGB triples (out[768]).
+void sd_palette_rgb(unsigned char *out)
+{
+    int i;
+    for (i = 0; i < 256; i++) {
+        *out++ = colors[i].r;
+        *out++ = colors[i].g;
+        *out++ = colors[i].b;
+    }
+}
+
+// syncdoom sixel tier: nearest-sample the native SCREENWIDTH x SCREENHEIGHT
+// indexed framebuffer into a w x h index buffer, so the sixel image keeps the
+// door's scale-to-fit sizing while encoding from Doom's true palette indices.
+void sd_scale_indices(unsigned char *out, int w, int h)
+{
+    int x, y;
+    for (y = 0; y < h; y++) {
+        int         sy  = (h == SCREENHEIGHT) ? y : (y * SCREENHEIGHT) / h;
+        const byte *row = I_VideoBuffer + sy * SCREENWIDTH;
+        for (x = 0; x < w; x++) {
+            int sx = (w == SCREENWIDTH) ? x : (x * SCREENWIDTH) / w;
+            *out++ = row[sx];
+        }
+    }
 }
 
 // Given an RGB value, find the closest matching palette index.
