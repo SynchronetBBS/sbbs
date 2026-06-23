@@ -1815,6 +1815,8 @@ bool http_checkuser(http_session_t * session)
 		}
 		JS_ENDREQUEST(session->js_cx);
 		session->last_js_user_num = session->user.number;
+		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: User Objects initialized"    // #1169 timing probe
+			, session->socket, session->client.protocol, session->host_ip);
 	}
 	return true;
 }
@@ -4093,6 +4095,8 @@ static bool check_request(http_session_t * session)
 		send_error(session, __LINE__, str);
 		return false;
 	}
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] Authorization check complete"    // #1169 timing probe
+		, session->socket, session->client.protocol, session->host_ip);
 
 	if (session->req.send_location >= MOVED_TEMP && session->redir_req[0])
 		return true;
@@ -6383,7 +6387,11 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 	/* FREE()d in close_request() */
 	session->req.cleanup_file[CLEANUP_SSJS_TMP_FILE] = strdup(path);
 
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] exec_ssjs: beginning JS request: %s"    // #1169 timing probe
+		, session->socket, session->client.protocol, session->host_ip, script);
 	JS_BEGINREQUEST(session->js_cx);
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] exec_ssjs: initializing request properties"    // #1169 timing probe
+		, session->socket, session->client.protocol, session->host_ip);
 	js_add_request_prop(session, "real_path", session->req.physical_path);
 	js_add_request_prop(session, "virtual_path", session->req.virtual_path);
 	js_add_request_prop(session, "ars", session->req.ars);
@@ -6452,6 +6460,8 @@ static bool exec_ssjs(http_session_t* session, char* script)  {
 
 static void respond(http_session_t * session)
 {
+	lprintf(LOG_DEBUG, "%04d %-5s [%s] Responding to request (dynamic=%d)"    // #1169 timing probe
+		, session->socket, session->client.protocol, session->host_ip, session->req.dynamic);
 	if (session->req.method == HTTP_OPTIONS)
 		send_headers(session, session->req.status, false);
 	else {
