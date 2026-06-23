@@ -1697,6 +1697,7 @@ all_done:
 
 		px.pixels = malloc(sizeof(px.pixels[0])*cterm->sx_width*cterm->sx_height*cterm->sx_iv*cterm->sx_ih);
 		if (px.pixels) {
+			px.pixelsb = NULL;
 			px.height = cterm->sx_height;
 			px.width = cterm->sx_width;
 			for (i = 0; i<cterm->sx_height*cterm->sx_iv; i++) {
