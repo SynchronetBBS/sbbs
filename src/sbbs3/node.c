@@ -292,12 +292,12 @@ void printnodedat(int number, node_t node)
 			break;
 		case NODE_QUIET:
 		case NODE_INUSE:
+			printf("User #%d", node.useron);
+			printf(" ");
 			if (node.misc & NODE_EXT) {
 				printf("%s", extended_status(number - 1, tmp));
 				break;
 			}
-			printf("User #%d", node.useron);
-			printf(" ");
 			switch (node.action) {
 				case NODE_MAIN:
 					printf("at main menu");
