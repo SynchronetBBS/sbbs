@@ -11,7 +11,6 @@ endif
 all :	\
 	ftp.bin \
 	matrix.bin \
-	sdos.bin \
 	simple.bin \
 
 %.bin : %.src $(BAJAPATH)
