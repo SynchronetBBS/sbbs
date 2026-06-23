@@ -252,7 +252,7 @@ static bool g_always_run = true;
 // /sextant tiers). The state list is built lazily at first cycle from whatever
 // tier startup selected.
 struct vstate { enum frame_mode mode; rt_mode_t rt; rt_charset_t cs; const char *label; };
-static struct vstate g_vstates[6];
+static struct vstate g_vstates[8];
 static int           g_vstate_n = 0;
 static int           g_vstate_i = 0;
 static uint32_t      g_label_until = 0;  // suppress frame output until then (label dwell)
@@ -1585,6 +1585,7 @@ static int probe_jxl(void)
 // ---------------------------------------------------------------------------
 
 static int g_sixel_pref = -1;
+static int g_have_sixel = 0;    // sixel available (probed) -- for the F4 graphics-tier cycle
 
 // One-time graphics-capability probe. Two device-attribute queries detect sixel
 // support two ways:
@@ -1754,8 +1755,17 @@ static void build_video_states(void)
 	g_vstate_n = 0;
 	if (g_mode != MODE_TEXT) {
 		g_vstates[g_vstate_n].mode  = g_mode;
-		g_vstates[g_vstate_n].label = "graphics";
+		g_vstates[g_vstate_n].label = mode_name(g_mode);   // "jxl" / "sixel" / "ppm"
 		g_vstate_n++;
+#ifdef WITH_JXL
+		// Offer sixel as a second graphics tier when JXL is the startup tier and the
+		// terminal also speaks sixel, so the player can A/B the two with F4.
+		if (g_mode == MODE_JXL && g_have_sixel) {
+			g_vstates[g_vstate_n].mode  = MODE_SIXEL;
+			g_vstates[g_vstate_n].label = "sixel";
+			g_vstate_n++;
+		}
+#endif
 	}
 	// Half-block renders in either charset (CP437 0xDF / UTF-8 U+2580), so use the
 	// terminal's own charset -- a raw 0xDF is invalid UTF-8 on a UTF-8 terminal.
@@ -1981,6 +1991,16 @@ void DG_Init(void)
 	                                    // unusable over a real link, even at 320x200; a SyncTERM
 	                                    // 1.2-1.3 lands here -> playable text. PPM is opt-in via
 	                                    // -jxl 0 above, for the localhost/LAN case only.
+
+	// F4 cycle: when JXL is the chosen tier, also learn whether the terminal speaks
+	// sixel so the player can A/B JXL vs sixel with F4. The JXL ladder short-circuits
+	// before probe_sixel, so probe it here -- a JXL-capable SyncTERM answers the sixel
+	// CTDA query quickly (skip when sixel is force-disabled via -sixel 0).
+	g_have_sixel = (g_mode == MODE_SIXEL);
+#ifdef WITH_JXL
+	if (g_mode == MODE_JXL && g_sixel_pref != 0)
+		g_have_sixel = probe_sixel();
+#endif
 
 	compute_geometry();              // emitted image size + centering (now that the tier is known)
 	build_video_states();            // seed the F4 cycle now so the startup tier (incl.
