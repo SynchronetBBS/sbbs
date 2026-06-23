@@ -599,14 +599,22 @@ extern void sd_scale_indices(unsigned char *out, int w, int h);  // native indic
 
 static uint8_t *s_sx_idx = NULL; static size_t s_sx_idx_cap = 0; // scaled index buffer
 static int      g_sx_pal_seq = -1;     // palette seq last written to the sixel stream (-1 = none)
+static int      g_is_syncterm = 0;     // SyncTERM detected (Q;JXL reply, or CTerm version >= 1.2);
+                                       // only SyncTERM persists sixel registers -> define-once there
 
 static void emit_frame_sixel(int w, int h)
 {
 	char                 pos[24];
 	int                  l = snprintf(pos, sizeof(pos), "\x1b" "7\x1b[%d;%dH", g_img_row, g_img_col);
 	static unsigned char pal[768];
-	int                  emit_pal = (g_sx_pal_seq != sd_palette_seq);
-	size_t               n;
+	// SyncTERM persists sixel color registers across images, so we define them only
+	// on a real palette change (redefining every frame is what garbled its decoder).
+	// Other terminals (Windows Terminal, xterm) do NOT reliably persist registers
+	// between images -- omitting the palette there leaves later frames referencing
+	// undefined registers (wrong/default colors). So only SyncTERM gets define-once;
+	// elsewhere re-send the palette every frame (it's now the same stable 1:1 set).
+	int    emit_pal = !g_is_syncterm || (g_sx_pal_seq != sd_palette_seq);
+	size_t n;
 
 	ensure(&s_sx_idx, &s_sx_idx_cap, (size_t)w * h);
 	sd_scale_indices(s_sx_idx, w, h);
@@ -1520,7 +1528,6 @@ static void raw_input_off(void)
 // ---------------------------------------------------------------------------
 
 static int g_jxl_pref = -1;
-static int g_is_syncterm = 0;   // SyncTERM detected (Q;JXL reply, or CTerm version >= 1.2)
 static int g_cterm_version = 0; // CTerm/SyncTERM version maj*1000+min (DA1 reply); 0 = unknown
 
 #ifdef WITH_JXL
