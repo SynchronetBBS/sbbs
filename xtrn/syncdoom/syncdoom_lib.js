@@ -177,6 +177,12 @@ function sd_wadset_args(cfg, ws)
 	var args = ["-iwad", sd_wad_path(dir, ws.iwad)];
 	var i;
 
+	// Friendly WAD-set name for the door's who's-online status ("playing SyncDOOM:
+	// <name> (E1M1)"). Quoted because it usually contains spaces; the door falls
+	// back to the -iwad basename when -wadname is absent.
+	if (ws.name)
+		args.push("-wadname", '"' + String(ws.name).replace(/"/g, "") + '"');
+
 	if (ws.pwad) {
 		var list = String(ws.pwad).split(",");
 		args.push("-file");

@@ -128,6 +128,7 @@ int sbbs_list_nodes(sbbs_node_info_t *out, int max, int selfnode)
 		out[count].anon       = (node.misc & NODE_ANON) != 0;
 		out[count].action     = node.action;
 		out[count].aux        = node.aux;
+		out[count].ext        = (node.misc & NODE_EXT) != 0;
 		out[count].connection = node.connection;
 		count++;
 	}
@@ -216,22 +217,22 @@ const char *sbbs_action_str(const sbbs_node_info_t *node, char *buf, size_t bufs
 const char *sbbs_action_abbr(int action)
 {
 	switch (action) {
-		case NODE_MAIN:                                 return "main";
-		case NODE_RMSG: case NODE_RMAL: case NODE_RSML: return "msgs";
-		case NODE_PMSG: case NODE_SMAL: case NODE_AMSG: return "wmsg";
-		case NODE_RTXT:                                 return "gfile";
+		case NODE_MAIN:                                 return "main menu";
+		case NODE_RMSG: case NODE_RMAL: case NODE_RSML: return "reading msgs";
+		case NODE_PMSG: case NODE_SMAL: case NODE_AMSG: return "writing msg";
+		case NODE_RTXT:                                 return "reading text";
 		case NODE_XTRN:                                 return "running xtrn";
-		case NODE_DFLT:                                 return "cfg";
-		case NODE_XFER: case NODE_LFIL:                 return "files";
-		case NODE_DLNG:                                 return "dl";
-		case NODE_ULNG:                                 return "ul";
-		case NODE_BXFR: case NODE_TQWK: case NODE_RFSD: return "xfer";
-		case NODE_LOGN:                                 return "logon";
+		case NODE_DFLT:                                 return "configuring";
+		case NODE_XFER: case NODE_LFIL:                 return "file menu";
+		case NODE_DLNG:                                 return "downloading";
+		case NODE_ULNG:                                 return "uploading";
+		case NODE_BXFR: case NODE_TQWK: case NODE_RFSD: return "transferring";
+		case NODE_LOGN:                                 return "logging on";
 		case NODE_LCHT: case NODE_MCHT: case NODE_GCHT:
-		case NODE_CHAT: case NODE_PCHT:                 return "chat";
-		case NODE_PAGE:                                 return "page";
-		case NODE_SYSP:                                 return "sysop";
-		default:                                        return "on";
+		case NODE_CHAT: case NODE_PCHT:                 return "chatting";
+		case NODE_PAGE:                                 return "paging";
+		case NODE_SYSP:                                 return "sysop activity";
+		default:                                        return "online";
 	}
 }
 
@@ -336,4 +337,83 @@ int sbbs_recv_nmsg(int mynode, char *buf, size_t bufsz)
 		fclose(f);
 	}
 	return (int)rd;
+}
+
+// Set this node's free-text who's-online status (node.exb + the NODE_EXT misc bit),
+// shown in place of the standard action wording ("running external program") in the
+// BBS who's-online list and in our own Ctrl-U list. Pass a short activity phrase;
+// "" or NULL clears it back to the normal action text. The BBS rewrites node.exb
+// from the action whenever it next updates this node (e.g. when the door exits), so
+// this holds only while the door is running -- exactly the window we want.
+void sbbs_node_set_ext(const char *text)
+{
+	char   path[SBBS_PATHLEN], rec[128];
+	FILE * f;
+	int    mynode = sbbs_my_node();
+	int    want   = (text != NULL && text[0] != '\0');
+	long   off;
+
+	if (!g_ok || mynode < 1)
+		return;
+
+	// Our 128-byte record in node.exb (null-padded). Only create the file if it's
+	// somehow absent -- never truncate an existing one (it holds every node's text).
+	memset(rec, 0, sizeof(rec));
+	if (text != NULL)
+		strncpy(rec, text, sizeof(rec) - 1);
+	snprintf(path, sizeof(path), "%snode.exb", g_ctrl);
+	if ((f = fopen(path, "r+b")) == NULL)
+		f = fopen(path, "w+b");
+	if (f != NULL) {
+		off = (long)(mynode - 1) * 128;
+		if (fseek(f, off, SEEK_SET) == 0)
+			fwrite(rec, sizeof(rec), 1, f);
+		fclose(f);
+	}
+
+	// Set/clear NODE_EXT on our own node.dab record (locked RMW, as in sbbs).
+	snprintf(path, sizeof(path), "%snode.dab", g_ctrl);
+	if ((f = fopen(path, "r+b")) != NULL) {
+		node_t nd;
+		off = (long)(mynode - 1) * (long)sizeof(node_t);
+		lock(fileno(f), off, (long)sizeof(node_t));
+		if (fseek(f, off, SEEK_SET) == 0 && fread(&nd, sizeof(nd), 1, f) == 1) {
+			uint16_t before = nd.misc;
+			if (want)
+				nd.misc |= NODE_EXT;
+			else
+				nd.misc &= ~NODE_EXT;
+			if (nd.misc != before) {
+				fseek(f, off, SEEK_SET);
+				fwrite(&nd, sizeof(nd), 1, f);
+				fflush(f);
+			}
+		}
+		unlock(fileno(f), off, (long)sizeof(node_t));
+		fclose(f);
+	}
+}
+
+// Read node `num`'s free-text status from node.exb into buf (>= 128 bytes). Returns
+// buf; empty string if the node has none. Used to show NODE_EXT nodes in Ctrl-U.
+const char *sbbs_node_ext(int num, char *buf, size_t bufsz)
+{
+	char  path[SBBS_PATHLEN], rec[128];
+	FILE *f;
+
+	if (buf == NULL || bufsz < 1)
+		return "";
+	buf[0] = '\0';
+	if (!g_ok || num < 1)
+		return buf;
+	snprintf(path, sizeof(path), "%snode.exb", g_ctrl);
+	if ((f = fopen(path, "rb")) == NULL)
+		return buf;
+	if (fseek(f, (long)(num - 1) * 128, SEEK_SET) == 0 && fread(rec, 1, sizeof(rec), f) == sizeof(rec)) {
+		rec[sizeof(rec) - 1] = '\0';
+		strncpy(buf, rec, bufsz - 1);
+		buf[bufsz - 1] = '\0';
+	}
+	fclose(f);
+	return buf;
 }

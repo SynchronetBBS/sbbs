@@ -131,6 +131,8 @@ static uint32_t g_tx_frames = 0;       // telemetry: frames actually emitted (no
 static char     g_home[PATH_MAX] = ""; // -home: full path to the user's storage dir (empty = cwd)
 static char     g_term_path[PATH_MAX] = ""; // -term: terminal.ini file or its dir (override)
 static char     g_player_name[64] = ""; // -name: network player handle (multiplayer)
+static char     g_wadname[64] = "";     // -wadname: friendly WAD-set name for the who's-online
+                                        // status (defaults to the -iwad basename, e.g. "freedoom1")
 extern char *   net_player_name;       // net_client.c: defaulted unless we set it from -name
 static char     g_door32_path[PATH_MAX] = ""; // drop-file path (for the terminal.ini node-dir fallback)
 static int      g_cols = 80;           // text-tier columns (from terminal.ini, else 80)
@@ -3012,9 +3014,12 @@ static int draw_nodelist(void)
 	for (i = 0; i < n; i++) {
 		const char *who = nodes[i].anon ? "UNKNOWN USER"
 		                  : sbbs_username(nodes[i].useron, alias, sizeof(alias));
+		const char *activity = nodes[i].ext                          // free-text status
+		                       ? sbbs_node_ext(nodes[i].number, act, sizeof(act))
+		                       : sbbs_action_str(&nodes[i], act, sizeof(act));
 		snprintf(line, sizeof(line),
 		         "  \x1b[1;33mNode %-2d\x1b[0m %-25s \x1b[36m%s\x1b[0m%s\r\n",
-		         nodes[i].number, who, sbbs_action_str(&nodes[i], act, sizeof(act)),
+		         nodes[i].number, who, activity,
 		         nodes[i].number == me ? "  \x1b[1;32m(you)\x1b[0m" : "");
 		emit_str(line);
 	}
@@ -3092,11 +3097,49 @@ static int sd_check_pages(void)
 // In-game who's-online: a one-line summary posted as a HUD message -- non-blocking
 // and MP-safe (no screen takeover, so the frame pacing is untouched, unlike the
 // waiting-room's full-screen sd_show_nodelist).
+// --- node.exb free-text who's-online status (waiting room / in game) -------
+// Reflect the SyncDOOM sub-state in the node's who's-online line (and Ctrl-U). The
+// JS lobby keeps the default "running SyncDOOM"; the door overrides it while the
+// player is in the waiting room or actually playing (with the current map name).
+extern boolean usergame;        // g_game.c: a real user game is in progress (set at game
+                                // start, false at the menu/title and during attract demos)
+extern int     gameepisode, gamemap;
+extern int     gamemode;        // GameMode_t: commercial(2) = Doom II / Final Doom (MAPxx)
+
+// Push the current in-game status. Cheap to call every tic -- it only writes
+// node.exb when the text actually changes (a map change or game start/end).
+static void sd_set_game_status(void)
+{
+	static char last[128] = "";
+	char        status[128], map[16];
+
+	if (!sbbs_node_available())
+		return;
+	// "playing SyncDOOM: <wadset>" plus the current map while in a level. <wadset>
+	// is the -wadname the lobby passed (else the -iwad basename); omit if neither.
+	const char *sep = g_wadname[0] ? ": " : "";
+	if (usergame) {
+		if (gamemode == 2)                       // commercial: Doom II / Final Doom
+			snprintf(map, sizeof(map), "MAP%02d", gamemap);
+		else
+			snprintf(map, sizeof(map), "E%dM%d", gameepisode, gamemap);
+		snprintf(status, sizeof(status), "playing SyncDOOM%s%s (%s)", sep, g_wadname, map);
+	} else {
+		snprintf(status, sizeof(status), "playing SyncDOOM%s%s", sep, g_wadname);
+	}
+	if (strcmp(status, last) != 0) {             // write only on change (no per-tic churn)
+		sbbs_node_set_ext(status);
+		snprintf(last, sizeof(last), "%s", status);
+	}
+}
+
+static void sd_node_status_atexit(void) { sbbs_node_set_ext(""); }
+
 static void sd_ingame_userlist(void)
 {
 	static char      msg[256];
 	sbbs_node_info_t nodes[16];
-	char             alias[26];
+	char             alias[26], act[128];
 	int              n, i, len = 0;
 
 	if (!sbbs_node_available())
@@ -3110,8 +3153,11 @@ static void sd_ingame_userlist(void)
 	for (i = 0; i < n && len < (int)sizeof(msg) - 40; i++) {
 		const char *who = nodes[i].anon ? "UNKNOWN"
 		                  : sbbs_username(nodes[i].useron, alias, sizeof(alias));
+		const char *activity = nodes[i].ext                          // free-text status
+		                       ? sbbs_node_ext(nodes[i].number, act, sizeof(act))
+		                       : sbbs_action_abbr(nodes[i].action);
 		len += snprintf(msg + len, sizeof(msg) - len, "%s %s %s",
-		                i ? "," : "", who, sbbs_action_abbr(nodes[i].action));
+		                i ? "," : "", who, activity);
 	}
 	sd_post_message(msg);
 }
@@ -3196,6 +3242,8 @@ void sd_waitroom_run(void)
 		while (conn_read(drain, sizeof(drain)) > 0)
 			;
 	}
+
+	sbbs_node_set_ext("in the SyncDOOM waiting room");   // who's-online status
 
 	while (net_waiting_for_launch) {
 		unsigned char kb[8];
@@ -3495,6 +3543,9 @@ int main(int argc, char **argv)
 		} else if (strcmp(argv[i], "-name") == 0) {       // multiplayer player handle
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if (*v) { strncpy(g_player_name, v, sizeof(g_player_name) - 1); g_player_name[sizeof(g_player_name) - 1] = '\0'; }
+		} else if (strcmp(argv[i], "-wadname") == 0) {    // friendly WAD-set name (who's-online status)
+			const char *v = (i + 1 < argc) ? argv[++i] : "";
+			if (*v) { strncpy(g_wadname, v, sizeof(g_wadname) - 1); g_wadname[sizeof(g_wadname) - 1] = '\0'; }
 #ifdef WITH_JXL
 		} else if (strcmp(argv[i], "-jxldistance") == 0) {   // JXL lossy distance (size lever)
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
@@ -3509,6 +3560,7 @@ int main(int argc, char **argv)
 	// Locate node.dab (ctrl) + user/name.dat (data) for Ctrl-U/Ctrl-P. A no-op
 	// (feature disabled) when not launched inside a BBS (no $SBBSCTRL).
 	sbbs_node_init(g_home);
+	atexit(sd_node_status_atexit);   // clear our who's-online free-text status on exit
 	// Hand the BBS handle to the net layer. It must be non-NULL: the net layer
 	// sends it at connect time (NET_CL_SendSYN) and would strlen(NULL)-crash
 	// otherwise, and its own default doesn't run before then. The lobby always
@@ -3528,9 +3580,19 @@ int main(int argc, char **argv)
 	for (i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "-iwad") == 0 || strcmp(argv[i], "-file") == 0 ||
 		    strcmp(argv[i], "-merge") == 0) {
+			int is_iwad = (strcmp(argv[i], "-iwad") == 0);
 			child[cn++] = argv[i];                       // resolve WAD paths to absolute
-			while (i + 1 < argc && argv[i + 1][0] != '-')  // before we chdir into the sandbox
-				child[cn++] = wadcopy(argv[++i]);          // (bare names resolve in [wads] dir)
+			while (i + 1 < argc && argv[i + 1][0] != '-') {  // before we chdir into the sandbox
+				const char *wadarg = argv[++i];            // (bare names resolve in [wads] dir)
+				if (is_iwad && g_wadname[0] == '\0') {     // default the WAD-set name to the IWAD base
+					char *dot;
+					strncpy(g_wadname, getfname(wadarg), sizeof(g_wadname) - 1);
+					g_wadname[sizeof(g_wadname) - 1] = '\0';
+					if ((dot = strrchr(g_wadname, '.')) != NULL)
+						*dot = '\0';                       // strip ".wad"
+				}
+				child[cn++] = wadcopy(wadarg);
+			}
 			continue;
 		}
 		if (strncmp(argv[i], "-door32", 7) == 0) {
@@ -3547,7 +3609,7 @@ int main(int argc, char **argv)
 		    strcmp(argv[i], "-colors")      == 0 || strcmp(argv[i], "-home")    == 0 ||
 		    strcmp(argv[i], "-kpturn")      == 0 || strcmp(argv[i], "-kpdelay") == 0 ||
 		    strcmp(argv[i], "-name")        == 0 || strcmp(argv[i], "-mouse")   == 0 ||
-		    strcmp(argv[i], "-jxldistance") == 0 ||
+		    strcmp(argv[i], "-wadname")     == 0 || strcmp(argv[i], "-jxldistance") == 0 ||
 		    strcmp(argv[i], "-kpsmooth")    == 0) {
 			i++;                                           // exact flags: skip the flag + its value
 			continue;
@@ -3591,6 +3653,7 @@ int main(int argc, char **argv)
 			sd_post_message("To page a user, use Ctrl-P in the multiplayer waiting room.");
 		}
 		sd_ingame_recv();
+		sd_set_game_status();      // keep the who's-online status current (map changes)
 	}
 	return 0;
 }

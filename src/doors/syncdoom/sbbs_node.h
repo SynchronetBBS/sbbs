@@ -17,6 +17,7 @@ typedef struct {
 	int      anon;          // non-zero: anonymous (hide the alias)
 	int      action;        // enum node_action (what they're doing)
 	int      aux;           // node aux word (channel/node#/etc. for some actions)
+	int      ext;           // non-zero: has free-text status (node.exb / NODE_EXT)
 	unsigned connection;    // connection type/rate
 } sbbs_node_info_t;
 
@@ -63,5 +64,13 @@ int sbbs_page_node(int target, int from_node, const char *from_alias, const char
 // the byte count (0 = nothing waiting). The text may carry Synchronet Ctrl-A
 // attribute codes -- the caller strips them, since the door emits raw.
 int sbbs_recv_nmsg(int mynode, char *buf, size_t bufsz);
+
+// Set this node's free-text who's-online status (node.exb + NODE_EXT) -- shown in
+// place of the action wording in who's-online and our Ctrl-U list. "" / NULL clears
+// it. Holds only while the door runs (the BBS rewrites it from the action on exit).
+void sbbs_node_set_ext(const char *text);
+
+// Read node `num`'s free-text status (node.exb) into buf (>= 128 bytes); "" if none.
+const char *sbbs_node_ext(int num, char *buf, size_t bufsz);
 
 #endif /* SBBS_NODE_H_ */
