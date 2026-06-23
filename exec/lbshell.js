@@ -1385,7 +1385,7 @@ function show_filemenu()
 							break;
 						case 'U':
 							menu_opt(function() {
-								bbs.list_file_info(bbs.curdir,spec,FI_USERXFER);
+								bbs.list_file_info(bbs.curdir,FI_USERXFER);
 							});
 							break;
 						case KEY_RIGHT:
