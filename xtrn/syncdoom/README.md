@@ -121,5 +121,12 @@ internet). You can also run it later by hand: `jsexec ../xtrn/syncdoom/getwads.j
 - **`wads/`** — put your IWADs and PWADs here (the directory is set by
   `[wads] dir`). Freedoom (`freedoom1.wad`, `freedoom2.wad`) is free to
   redistribute; the commercial `doom.wad`/`doom2.wad` you must supply yourself.
+- **WAD compatibility** — SyncDOOM is the **Chocolate Doom** engine, so only
+  **vanilla / limit-removing** content works: Boom / MBF21 / (G)ZDoom-only maps
+  and patches won't run (a GZDoom mod like *MyHouse* plays only its vanilla decoy
+  map). Known-good IWADs: Doom & Ultimate Doom, Doom II, Final Doom (TNT/Plutonia),
+  Freedoom 1/2, FreeDM; PWADs and DeHackEd/BEX must be vanilla-compatible. In
+  **multiplayer every player runs the same WAD set** — a match is lockstep and
+  desyncs on mismatched WADs (the lobby keeps players on the host's set).
 - Per-user save games and config are written under `data/user/<num>/doom/`,
   which Synchronet auto-cleans with the user account.
