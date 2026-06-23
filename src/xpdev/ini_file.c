@@ -193,17 +193,6 @@ static size_t find_section_index(str_list_t list, const char* section)
 	return i;
 }
 
-static size_t section_start(str_list_t list, size_t index)
-{
-	char* p = list[index];
-	if (p != NULL) {
-		SKIP_WHITESPACE(p);
-		if (*p == INI_OPEN_SECTION_CHAR) // A new section starts immediately?
-			return strListCount(list);
-	}
-	return index;
-}
-
 static size_t find_section(str_list_t list, const char* section)
 {
 	size_t i;
@@ -214,7 +203,10 @@ static size_t find_section(str_list_t list, const char* section)
 	i = find_section_index(list, section);
 	if (list[i] != NULL)
 		i++;
-	return section_start(list, i);
+	/* When the section is empty, i now points at the next section's header (or
+	   the list terminator). That's the correct stop-point for read loops and the
+	   correct insertion point for new keys, so no special-casing is needed. */
+	return i;
 }
 
 static char* key_name(char* p, char** vp, bool literals_supported)
@@ -374,7 +366,10 @@ str_list_t iniGetSection(str_list_t list, const char *section)
 		return NULL;
 
 	i = find_section(list, section);
-	if (list[i] != NULL) {
+	p = list[i];
+	if (p != NULL)
+		SKIP_WHITESPACE(p);
+	if (p != NULL && *p != INI_OPEN_SECTION_CHAR) { /* Not the next section's header (i.e. this section isn't empty) */
 		strListPush(&retval, list[i]);
 		for (i++; list[i] != NULL; i++) {
 			p = list[i];
@@ -3483,6 +3478,73 @@ iniFastParsedSectionListFree(ini_lv_string_t **list)
 }
 
 #ifdef INI_FILE_TEST
+
+static bool ini_check(const char* desc, bool ok, int* failures)
+{
+	printf("%s: %s\n", ok ? "PASS" : "FAIL", desc);
+	if (!ok)
+		(*failures)++;
+	return ok;
+}
+
+/* In-memory regression tests (no file I/O). Returns the number of failures. */
+static int ini_regression_test(void)
+{
+	int        failures = 0;
+	char       val[INI_MAX_VALUE_LEN];
+	str_list_t list;
+	str_list_t sec;
+
+	/* GitLab #1168: writing a key to a section whose header exists but is
+	   empty (followed by another section) must insert the key into that
+	   section, not misfile it under the last section of the file. */
+	list = strListInit();
+	iniSetString(&list, "input", "kpturn", "50", NULL);
+	iniSetString(&list, "video", "frames_in_flight", "4", NULL);
+	iniRemoveKey(&list, "input", "kpturn");             /* [input] now empty, header remains */
+	iniSetString(&list, "input", "mouse", "off", NULL); /* must land in [input], not [video] */
+
+	ini_check("#1168: key written to emptied section reads back"
+	          , strcmp(iniGetString(list, "input", "mouse", "", val), "off") == 0, &failures);
+	ini_check("#1168: unrelated section left intact"
+	          , strcmp(iniGetString(list, "video", "frames_in_flight", "", val), "4") == 0, &failures);
+
+	sec = iniGetSection(list, "input");
+	ini_check("#1168: iniGetSection returns only the section's own key"
+	          , strListCount(sec) == 1 && strstr(sec[0], "mouse") != NULL, &failures);
+	strListFree(&sec);
+	strListFree(&list);
+
+	/* Regression guard for the empty-section handling in find_section()/
+	   iniGetSection(): reading a section that remains empty must return no keys
+	   (must not bleed into the following section). */
+	list = strListInit();
+	iniSetString(&list, "input", "kpturn", "50", NULL);
+	iniSetString(&list, "video", "frames_in_flight", "4", NULL);
+	iniRemoveKey(&list, "input", "kpturn");             /* [input] stays empty */
+
+	sec = iniGetSection(list, "input");
+	ini_check("empty section: iniGetSection returns no keys", strListCount(sec) == 0, &failures);
+	strListFree(&sec);
+
+	sec = iniGetSection(list, "video");
+	ini_check("populated section: iniGetSection unaffected", strListCount(sec) == 1, &failures);
+	strListFree(&sec);
+	strListFree(&list);
+
+	/* iniGetSection(ROOT) on a file with no root-level keys (it begins with a
+	   named section) must return no keys, not the first section's contents. */
+	list = strListInit();
+	iniSetString(&list, "alpha", "k", "v", NULL);
+	sec = iniGetSection(list, ROOT_SECTION);
+	ini_check("empty root: iniGetSection(ROOT) returns no keys", strListCount(sec) == 0, &failures);
+	strListFree(&sec);
+	strListFree(&list);
+
+	printf("ini_regression_test: %d failure(s)\n", failures);
+	return failures;
+}
+
 void main(int argc, char** argv)
 {
 	int        i;
@@ -3490,6 +3552,9 @@ void main(int argc, char** argv)
 	char       str[128];
 	FILE*      fp;
 	str_list_t list;
+
+	if (argc < 2)
+		exit(ini_regression_test());
 
 	for (i = 1; i < argc; i++) {
 		if ((fp = iniOpenFile(argv[i], false)) == NULL) {
