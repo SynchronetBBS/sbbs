@@ -1007,9 +1007,7 @@ static int          g_want_page     = 0;  // Ctrl-P pressed in-game -> run betwe
 // recenter the pointer it stalls uselessly at the window edge.)
 #define MOUSE_OFF        0
 #define MOUSE_ON         1
-#define MOUSE_DEADZONE   2     // cells either side of center with no steering
-#define MOUSE_STEER_K    2     // turn-rate gain per cell of deflection
-#define MOUSE_STEER_MAX  110   // clamp on the steer turn rate
+#define MOUSE_STEER_MAX  110   // turn rate at the image edge (full deflection)
 #define MOUSE_IDLE_MS    600   // steer relaxes to neutral after this long with no report
                                // (stops the runaway spin when the pointer leaves the
                                // window/loses focus -- terminals send no focus-out event)
@@ -1122,19 +1120,50 @@ static void mouse_seen(int button, int col, int row, int release)
 		g_mouse_buttons |= (1 << bit);
 }
 
-// Steer model: map the pointer's horizontal offset from screen-center to a Doom
-// turn-rate (mousex-style). Edge-safe -- a parked, off-center pointer keeps
-// turning (we hold the last offset) until it's moved back toward center.
+// Horizontal center + half-width (in terminal cells) of the rendered game image,
+// so steering is relative to the PICTURE, not the whole (often much larger)
+// window. The text tier fills the text area; graphics tiers sit at g_img_col and
+// are s_pxW px wide -- the image may be letterboxed, or (xterm sixel with no
+// pixel geometry) anchored top-left, where the window center is well off it.
+static void mouse_view(int *center, int *halfw)
+{
+	int span;
+
+	if (g_mode == MODE_TEXT) {
+		span    = g_text_cols;
+		*center = g_text_cols / 2;
+	} else {
+		int cw = g_cell_w > 0 ? g_cell_w : (g_cfg_cell_w > 0 ? g_cfg_cell_w : 8);
+		span    = s_pxW / cw;                 // image width in cells
+		if (span < 4)
+			span = 4;
+		*center = g_img_col + span / 2;       // image's horizontal center cell
+	}
+	*halfw = span / 2;
+	if (*halfw < 2)
+		*halfw = 2;
+}
+
+// Steer model: pointer offset from the IMAGE center -> turn rate, scaled so the
+// image edge is full deflection (so a small, letterboxed picture is fully usable
+// without dragging the pointer across the surrounding void). Edge-safe -- a parked
+// off-center pointer keeps turning (we hold the last offset) until re-centered;
+// the idle timeout in DG_GetMouse stops a runaway spin when the pointer is gone.
 static int mouse_steer_rate(void)
 {
-	int off = g_mouse_col - g_cols / 2;
-	int mag = (off < 0) ? -off : off;
+	int center, halfw, off, mag, dz;
 
-	if (mag <= MOUSE_DEADZONE)
+	mouse_view(&center, &halfw);
+	off = g_mouse_col - center;
+	mag = (off < 0) ? -off : off;
+	dz  = halfw / 10;                         // small (~10%) center deadzone
+	if (dz < 1)
+		dz = 1;
+	if (mag <= dz)
 		return 0;
-	mag = (mag - MOUSE_DEADZONE) * MOUSE_STEER_K;
-	if (mag > MOUSE_STEER_MAX)
-		mag = MOUSE_STEER_MAX;
+	if (mag > halfw)
+		mag = halfw;                          // past the image edge -> full turn
+	mag = (mag - dz) * MOUSE_STEER_MAX / (halfw - dz);
 	return (off < 0) ? -mag : mag;
 }
 
@@ -2624,15 +2653,17 @@ static void compute_geometry(void)
 		s_pxW = 640;                    // native: doomgeneric's 640x400 (vh-squished if shorter)
 		s_pxH = (vh < 400) ? vh : 400;
 	} else {
-		// Sixel safety: if we never measured real pixels (e.g. xterm with
-		// allowWindowOps off -> no ESC[14t/16t/XTSMGRAPHICS reply), don't UPSCALE
-		// the image past Doom's native 640x400. The viewport here is a cols*rows
-		// guess; in a large window it balloons to a sixel wider than the terminal
-		// will render (xterm caps sixel geometry), giving a blank/sliver. Native
-		// 640x400 always renders; a sysop who knows the cell size can opt into a
-		// bigger image via [video] cell_width/cell_height. JXL/PPM (SyncTERM, which
-		// reports real geometry) and an explicit cell override are unaffected.
-		int cap  = (g_mode == MODE_SIXEL && !geom_known && (g_scale_max == 0 || g_scale_max > 640))
+		// Sixel safety: never UPSCALE the sixel past Doom's native 640x400. Sixel is
+		// near-raw RLE (no real compression), so a window-filling sixel is a huge
+		// per-frame payload -- in a large window it both exceeds what the terminal
+		// will render (xterm caps sixel geometry -> blank/sliver) and floods the
+		// frame pipeline, so the DSR pacing stalls waiting for an ack that never
+		// comes (the door appears frozen on a blank screen). This applies whether or
+		// not we measured real pixel geometry: with allowWindowOps the probe reports
+		// a big window, but a big sixel is still impractical. Native 640x400 always
+		// renders and stays centered/sized via the measured cell size. JXL/PPM
+		// (SyncTERM, real compression / drawn small) keep the full g_scale_max.
+		int cap  = (g_mode == MODE_SIXEL && (g_scale_max == 0 || g_scale_max > 640))
 		           ? 640 : g_scale_max;
 		int wmax = (cap > 0 && vw > cap) ? cap : vw;
 		int w = wmax;
