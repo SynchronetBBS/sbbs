@@ -361,7 +361,9 @@ static char      g_ov_last[80] = "";     // last stats-overlay text drawn (to sk
 static int       g_ov_prev_tn = 0;       // width of the last overlay -> blank the gap when it shrinks
 static int       g_ov_cell_col = 0;      // overlay's cell-grid column (0-based) -> text cell-diff exclusion
 static int       g_ov_cell_w   = 0;      // overlay's width in cells (0 = not drawn yet)
-static char      g_page_ov[5][82];       // incoming-page banner: wrapped lines (full text)
+static char      g_page_ov[10][82];      // shared top banner: wrapped lines (full text) --
+                                         // used by both the incoming-page notice (caps at 5
+                                         // rows) and the Ctrl-U who's-online list
 static int       g_page_ov_rows = 0;     // active banner line count (0 = not shown)
 static uint32_t  g_page_ov_until = 0;    // banner expiry (now_ms); auto-clears after
 
@@ -806,17 +808,19 @@ static int page_overlay_active(void)
 // repaint of the game underneath. Called each frame, after the frame is emitted.
 static void draw_page_overlay(void)
 {
-	char ob[700];
-	int  i, n = 0;
+	static int drawn = 0;           // banner rows currently painted on screen (high-water)
+	char       ob[1400];            // up to 10 rows * (escapes + ~80 chars)
+	int        i, n = 0;
 
 	if (g_page_ov_rows <= 0)
 		return;
 	if (now_ms() >= g_page_ov_until) {                  // expired -> clear + repaint under
-		for (i = 0; i < g_page_ov_rows && n < (int)sizeof(ob) - 16; i++)
+		for (i = 0; i < drawn && n < (int)sizeof(ob) - 16; i++)
 			n += snprintf(ob + n, sizeof(ob) - n, "\x1b[%d;1H\x1b[0m\x1b[2K", i + 1);
 		if (n > 0)
 			out_put(ob, (size_t)n);
 		g_page_ov_rows = 0;
+		drawn          = 0;
 		g_last_fb_ok   = 0;                             // dedup: repaint the frame
 		rt_invalidate();                                // text: resync the cleared rows
 		return;
@@ -824,8 +828,17 @@ static void draw_page_overlay(void)
 	for (i = 0; i < g_page_ov_rows && n < (int)sizeof(ob) - 100; i++)
 		n += snprintf(ob + n, sizeof(ob) - n, "\x1b[%d;1H\x1b[1;37;41m\x1b[K%s\x1b[0m",
 		              i + 1, g_page_ov[i]);
+	// A shorter banner replaced a taller one -> wipe the rows it vacated and force a
+	// repaint of the game underneath them.
+	for (i = g_page_ov_rows; i < drawn && n < (int)sizeof(ob) - 16; i++)
+		n += snprintf(ob + n, sizeof(ob) - n, "\x1b[%d;1H\x1b[0m\x1b[2K", i + 1);
+	if (g_page_ov_rows < drawn) {
+		g_last_fb_ok = 0;
+		rt_invalidate();
+	}
 	if (n > 0)
 		out_put(ob, (size_t)n);
+	drawn = g_page_ov_rows;
 }
 
 static void emit_frame(const uint32_t *fb, int w, int h)
@@ -3103,8 +3116,16 @@ static int sd_check_pages(void)
 // player is in the waiting room or actually playing (with the current map name).
 extern boolean usergame;        // g_game.c: a real user game is in progress (set at game
                                 // start, false at the menu/title and during attract demos)
+extern boolean demoplayback;    // g_game.c: true during the title-screen attract demos
 extern int     gameepisode, gamemap;
 extern int     gamemode;        // GameMode_t: commercial(2) = Doom II / Final Doom (MAPxx)
+extern int     gamestate;       // gamestate_t: GS_LEVEL(0) GS_INTERMISSION(1) GS_FINALE(2)
+extern int     deathmatch;      // 0=co-op, 1=deathmatch, 2=altdeath
+extern int     gameskill;       // skill_t 0..4 (-> displayed skill 1..5)
+extern int     leveltime;       // tics elapsed in the current level (/35 = seconds)
+extern int     sd_next_frag(int *victim);        // g_game.c: a new frag by us -> victim player #
+extern int     sd_check_death(int *cause, int *by); // g_game.c: we just died (cause/by player #)
+extern int     sd_total_frags(void);             // g_game.c: our frag total this game
 
 // Push the current in-game status. Cheap to call every tic -- it only writes
 // node.exb when the text actually changes (a map change or game start/end).
@@ -3133,33 +3154,223 @@ static void sd_set_game_status(void)
 	}
 }
 
+// --- game-event log (jsonl, for the lobby's activity feed + debugging) -----
+// The lobby passes -eventlog <data>/syncdoom/events.jsonl; each player's door
+// appends one compact JSON line per event (it logs only events the LOCAL player
+// is the actor of, so a frag is recorded once -- no central writer, no dedup).
+// Append-mode writes of one short line are atomic, and the lobby reads with the
+// json_lines "recover" flag, so no locking is needed here.
+static char g_eventlog[PATH_MAX] = "";   // -eventlog path; "" = logging disabled
+
+// Minimal JSON string escaper (for aliases / WAD names / TERM strings).
+static const char *sd_json_esc(const char *s, char *out, size_t sz)
+{
+	size_t o = 0;
+
+	if (s == NULL)
+		s = "";
+	for (; *s && o + 7 < sz; s++) {
+		unsigned char c = (unsigned char)*s;
+		if (c == '"' || c == '\\') {
+			out[o++] = '\\'; out[o++] = (char)c;
+		} else if (c < 0x20) {
+			o += (size_t)snprintf(out + o, sz - o, "\\u%04x", c);
+		} else {
+			out[o++] = (char)c;
+		}
+	}
+	out[o] = '\0';
+	return out;
+}
+
+static void sd_event_emit(const char *json)
+{
+	FILE *f;
+	char  line[640];
+	int   n;
+
+	if (g_eventlog[0] == '\0')
+		return;
+	n = snprintf(line, sizeof(line), "%s\n", json);
+	if (n < 1 || (f = fopen(g_eventlog, "ab")) == NULL)
+		return;
+	fwrite(line, 1, (size_t)n, f);   // single append-mode write -> atomic line
+	fclose(f);
+}
+
+static const char *sd_event_mode(void)
+{
+	if (deathmatch)
+		return deathmatch >= 2 ? "altdeath" : "deathmatch";
+	return netgame ? "co-op" : "single";
+}
+
+static void sd_event_map(char *buf, size_t sz)
+{
+	if (gamemode == 2)
+		snprintf(buf, sz, "MAP%02d", gamemap);
+	else
+		snprintf(buf, sz, "E%dM%d", gameepisode, gamemap);
+}
+
+// Once-per-session debug record: terminal, user, node, build, tier, wad, mode.
+static void sd_event_start(void)
+{
+	char        j[640], du[80], dw[80], dd[160];
+	const char *u   = strstr(g_home, "user/");
+	int         usernum = u ? atoi(u + 5) : 0;
+
+	snprintf(j, sizeof(j),
+	         "{\"time\":%ld,\"type\":\"start\",\"node\":%d,\"usernum\":%d,\"user\":\"%s\","
+	         "\"term\":{\"desc\":\"%s\",\"cols\":%d,\"rows\":%d,\"cterm\":%d},\"tier\":\"%s\","
+	         "\"build\":{\"hash\":\"%s\",\"date\":\"%s\"},\"wad\":\"%s\",\"mode\":\"%s\",\"skill\":%d}",
+	         (long)time(NULL), sbbs_my_node(), usernum, sd_json_esc(g_player_name, du, sizeof(du)),
+	         sd_json_esc(g_diag_desc, dd, sizeof(dd)), g_cols, s_lines, g_cterm_version,
+	         mode_name(g_mode), GIT_HASH, GIT_DATE,
+	         sd_json_esc(g_wadname, dw, sizeof(dw)), sd_event_mode(), gameskill + 1);
+	sd_event_emit(j);
+}
+
+static void sd_event_level(void)
+{
+	char j[400], du[80], dw[80], map[16];
+
+	sd_event_map(map, sizeof(map));
+	snprintf(j, sizeof(j),
+	         "{\"time\":%ld,\"type\":\"level\",\"node\":%d,\"user\":\"%s\",\"wad\":\"%s\","
+	         "\"map\":\"%s\",\"secs\":%d,\"skill\":%d}",
+	         (long)time(NULL), sbbs_my_node(), sd_json_esc(g_player_name, du, sizeof(du)),
+	         sd_json_esc(g_wadname, dw, sizeof(dw)), map, leveltime / 35, gameskill + 1);
+	sd_event_emit(j);
+}
+
+static void sd_event_frag(int victim)
+{
+	char        j[400], dk[80], dv[80], dw[80], map[16];
+	const char *vn = sd_player_name(victim);
+
+	sd_event_map(map, sizeof(map));
+	snprintf(j, sizeof(j),
+	         "{\"time\":%ld,\"type\":\"frag\",\"node\":%d,\"killer\":\"%s\",\"victim\":\"%s\","
+	         "\"wad\":\"%s\",\"map\":\"%s\"}",
+	         (long)time(NULL), sbbs_my_node(), sd_json_esc(g_player_name, dk, sizeof(dk)),
+	         sd_json_esc(vn ? vn : "?", dv, sizeof(dv)), sd_json_esc(g_wadname, dw, sizeof(dw)), map);
+	sd_event_emit(j);
+}
+
+static void sd_event_death(int cause, int by)
+{
+	static const char *cs[] = { "environment", "suicide", "monster", "player" };
+	char               j[400], du[80], db[80], dw[80], map[16];
+	const char *       bn = (cause == 3) ? sd_player_name(by) : NULL;
+
+	sd_event_map(map, sizeof(map));
+	if (bn != NULL)
+		snprintf(j, sizeof(j),
+		         "{\"time\":%ld,\"type\":\"death\",\"node\":%d,\"user\":\"%s\",\"cause\":\"%s\","
+		         "\"by\":\"%s\",\"wad\":\"%s\",\"map\":\"%s\"}",
+		         (long)time(NULL), sbbs_my_node(), sd_json_esc(g_player_name, du, sizeof(du)),
+		         cs[cause], sd_json_esc(bn, db, sizeof(db)), sd_json_esc(g_wadname, dw, sizeof(dw)), map);
+	else
+		snprintf(j, sizeof(j),
+		         "{\"time\":%ld,\"type\":\"death\",\"node\":%d,\"user\":\"%s\",\"cause\":\"%s\","
+		         "\"wad\":\"%s\",\"map\":\"%s\"}",
+		         (long)time(NULL), sbbs_my_node(), sd_json_esc(g_player_name, du, sizeof(du)),
+		         cs[cause], sd_json_esc(g_wadname, dw, sizeof(dw)), map);
+	sd_event_emit(j);
+}
+
+static void sd_event_end(void)
+{
+	char j[300], du[80], dw[80];
+
+	snprintf(j, sizeof(j),
+	         "{\"time\":%ld,\"type\":\"end\",\"node\":%d,\"user\":\"%s\",\"wad\":\"%s\","
+	         "\"mode\":\"%s\",\"frags\":%d,\"secs\":%d}",
+	         (long)time(NULL), sbbs_my_node(), sd_json_esc(g_player_name, du, sizeof(du)),
+	         sd_json_esc(g_wadname, dw, sizeof(dw)), sd_event_mode(), sd_total_frags(), leveltime / 35);
+	sd_event_emit(j);
+}
+
+// Detect game/level transitions + frags/deaths each tic and log events. Driven by
+// `usergame` (true only in a real game -- false at the menu/title and during the
+// attract demos), so demos never log. Called every tic from the main loop.
+static void sd_events_tick(void)
+{
+	static int last_gs = -1, in_game = 0;
+	int        victim, cause, by;
+
+	if (g_eventlog[0] == '\0')
+		return;
+
+	// Game start/end edge: the per-game debug `start` record and the final tally.
+	if (usergame && !in_game) {
+		in_game = 1;
+		sd_event_start();
+	} else if (!usergame && in_game) {
+		in_game = 0;
+		sd_event_end();
+	}
+
+	// Level cleared: GS_LEVEL(0) -> intermission(1)/finale(2) while in a game.
+	if (gamestate != last_gs) {
+		if (in_game && last_gs == 0 && (gamestate == 1 || gamestate == 2))
+			sd_event_level();
+		last_gs = gamestate;
+	}
+
+	// Our frags and our deaths, while actually playing.
+	if (in_game) {
+		while (sd_next_frag(&victim))
+			sd_event_frag(victim);
+		if (sd_check_death(&cause, &by))
+			sd_event_death(cause, by);
+	}
+}
+
 static void sd_node_status_atexit(void) { sbbs_node_set_ext(""); }
 
+// In-game who's-online (Ctrl-U): a multi-line, non-blocking banner over the top
+// rows -- the same shared top-of-screen overlay (white-on-red strip, ~9s, then
+// auto-clears) the incoming-page notice uses. One node per row (alias + activity),
+// so nothing is clipped at the right margin like the old single HU message line.
+// MP-safe: no screen takeover, frame pacing untouched.
 static void sd_ingame_userlist(void)
 {
-	static char      msg[256];
 	sbbs_node_info_t nodes[16];
-	char             alias[26], act[128];
-	int              n, i, len = 0;
+	char             alias[26], act[80];
+	int              n, i, rows, max;
 
 	if (!sbbs_node_available())
 		return;
 	n = sbbs_list_nodes(nodes, (int)(sizeof(nodes) / sizeof(nodes[0])), sbbs_my_node());
 	if (n == 0) {
-		sd_post_message("No one else is online.");
+		snprintf(g_page_ov[0], sizeof(g_page_ov[0]), " No one else is online.");
+		g_page_ov_rows  = 1;
+		g_page_ov_until = (uint32_t)now_ms() + 6000;
 		return;
 	}
-	len += snprintf(msg + len, sizeof(msg) - len, "Online:");
-	for (i = 0; i < n && len < (int)sizeof(msg) - 40; i++) {
-		const char *who = nodes[i].anon ? "UNKNOWN"
-		                  : sbbs_username(nodes[i].useron, alias, sizeof(alias));
-		const char *activity = nodes[i].ext                          // free-text status
-		                       ? sbbs_node_ext(nodes[i].number, act, sizeof(act))
-		                       : sbbs_action_abbr(nodes[i].action);
-		len += snprintf(msg + len, sizeof(msg) - len, "%s %s %s",
-		                i ? "," : "", who, activity);
+	max = (int)(sizeof(g_page_ov) / sizeof(g_page_ov[0]));
+	snprintf(g_page_ov[0], sizeof(g_page_ov[0]), " Who's online (%d):", n);
+	rows = 1;
+	for (i = 0; i < n && rows < max; i++) {
+		const char *who;
+		const char *activity;
+		if (rows == max - 1 && n - i > 1) {            // out of rows, >1 left -> summarize
+			snprintf(g_page_ov[rows], sizeof(g_page_ov[0]), "   ...and %d more", n - i);
+			rows++;
+			break;
+		}
+		who = nodes[i].anon ? "UNKNOWN"
+		      : sbbs_username(nodes[i].useron, alias, sizeof(alias));
+		activity = nodes[i].ext                        // free-text status (waiting/in-game)
+		           ? sbbs_node_ext(nodes[i].number, act, sizeof(act))
+		           : sbbs_action_str(&nodes[i], act, sizeof(act));   // full phrase (room now)
+		snprintf(g_page_ov[rows], sizeof(g_page_ov[0]), "   %-20.20s  %.50s", who, activity);
+		rows++;
 	}
-	sd_post_message(msg);
+	g_page_ov_rows  = rows;
+	g_page_ov_until = (uint32_t)now_ms() + 9000;
 }
 
 // In-game incoming page -> a one-line HUD message + a bell (non-blocking; polled
@@ -3546,6 +3757,15 @@ int main(int argc, char **argv)
 		} else if (strcmp(argv[i], "-wadname") == 0) {    // friendly WAD-set name (who's-online status)
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if (*v) { strncpy(g_wadname, v, sizeof(g_wadname) - 1); g_wadname[sizeof(g_wadname) - 1] = '\0'; }
+		} else if (strcmp(argv[i], "-eventlog") == 0) {   // jsonl game-event log (lobby activity feed)
+			const char *v = (i + 1 < argc) ? argv[++i] : "";
+			if (*v) {
+				char  dir[PATH_MAX];
+				char *fn;
+				strncpy(g_eventlog, v, sizeof(g_eventlog) - 1); g_eventlog[sizeof(g_eventlog) - 1] = '\0';
+				strncpy(dir, v, sizeof(dir) - 1); dir[sizeof(dir) - 1] = '\0';
+				if ((fn = getfname(dir)) != dir) { *fn = '\0'; mkpath(dir); }   // ensure its dir exists
+			}
 #ifdef WITH_JXL
 		} else if (strcmp(argv[i], "-jxldistance") == 0) {   // JXL lossy distance (size lever)
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
@@ -3610,6 +3830,7 @@ int main(int argc, char **argv)
 		    strcmp(argv[i], "-kpturn")      == 0 || strcmp(argv[i], "-kpdelay") == 0 ||
 		    strcmp(argv[i], "-name")        == 0 || strcmp(argv[i], "-mouse")   == 0 ||
 		    strcmp(argv[i], "-wadname")     == 0 || strcmp(argv[i], "-jxldistance") == 0 ||
+		    strcmp(argv[i], "-eventlog")    == 0 ||
 		    strcmp(argv[i], "-kpsmooth")    == 0) {
 			i++;                                           // exact flags: skip the flag + its value
 			continue;
@@ -3654,6 +3875,7 @@ int main(int argc, char **argv)
 		}
 		sd_ingame_recv();
 		sd_set_game_status();      // keep the who's-online status current (map changes)
+		sd_events_tick();          // log level/game events to the jsonl activity log
 	}
 	return 0;
 }

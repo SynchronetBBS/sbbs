@@ -2317,3 +2317,67 @@ boolean G_CheckDemoStatus (void)
  
  
  
+
+// --- syncdoom event detection (Doom structs are in scope here) --------------
+// One new frag by the console player since the last call -> returns 1 and the
+// victim's player number; else 0. Diffs the frag matrix, draining one per call;
+// resyncs downward so a new game (frags reset to 0) doesn't replay old frags.
+int sd_next_frag(int *victim)
+{
+    static int last[MAXPLAYERS];
+    static int inited = 0;
+    int        me = consoleplayer, v;
+
+    if (!inited) {
+        for (v = 0; v < MAXPLAYERS; v++)
+            last[v] = players[me].frags[v];
+        inited = 1;
+        return 0;
+    }
+    for (v = 0; v < MAXPLAYERS; v++) {
+        if (players[me].frags[v] > last[v]) {
+            last[v]++;
+            *victim = v;
+            return 1;
+        }
+        last[v] = players[me].frags[v];
+    }
+    return 0;
+}
+
+// Did the console player just die? -> 1 and *cause (0 environment, 1 suicide,
+// 2 monster, 3 player) plus the killer's player number in *by (cause 3 only).
+// Edge-triggered on entering PST_DEAD.
+int sd_check_death(int *cause, int *by)
+{
+    static int was_dead = 0;
+    player_t  *p = &players[consoleplayer];
+
+    if (p->playerstate != PST_DEAD) {
+        was_dead = 0;
+        return 0;
+    }
+    if (was_dead)
+        return 0;
+    was_dead = 1;
+    *by = -1;
+    if (p->attacker == NULL)
+        *cause = 0;                         // environment (crusher / slime / fall)
+    else if (p->attacker == p->mo)
+        *cause = 1;                         // suicide (own splash damage)
+    else if (p->attacker->player != NULL) {
+        *cause = 3;                         // fragged by another player
+        *by    = (int)(p->attacker->player - players);
+    } else
+        *cause = 2;                         // monster / other mobj
+    return 1;
+}
+
+// Total frags scored by the console player this game.
+int sd_total_frags(void)
+{
+    int v, t = 0;
+    for (v = 0; v < MAXPLAYERS; v++)
+        t += players[consoleplayer].frags[v];
+    return t;
+}
