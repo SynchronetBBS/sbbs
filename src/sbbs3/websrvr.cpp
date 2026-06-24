@@ -1793,25 +1793,14 @@ bool http_checkuser(http_session_t * session)
 		lprintf(LOG_DEBUG, "%04d %-5s [%s] JavaScript: Initializing User Objects"
 			, session->socket, session->client.protocol, session->host_ip);
 		JS_BEGINREQUEST(session->js_cx);
-		if (session->user.number > 0) {
-			if (!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, &session->user, &session->client
-			                          , startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
-				JS_ENDREQUEST(session->js_cx);
-				errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !JavaScript ERROR creating user objects"
-					, session->socket, session->client.protocol, session->host_ip);
-				send_error(session, __LINE__, "500 Error initializing JavaScript User Objects");
-				return false;
-			}
-		}
-		else {
-			if (!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, /* user: */ NULL, &session->client
-			                          , startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
-				JS_ENDREQUEST(session->js_cx);
-				errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !ERROR initializing JavaScript User Objects"
-					, session->socket, session->client.protocol, session->host_ip);
-				send_error(session, __LINE__, "500 Error initializing JavaScript User Objects");
-				return false;
-			}
+		if (!js_CreateUserObjects(session->js_cx, session->js_glob, &scfg, session->user.number > 0 ? (&session->user) : NULL
+			                        , &session->client
+			                        , startup->file_vpath_prefix, session->subscan /* subscan */, &mqtt)) {
+			JS_ENDREQUEST(session->js_cx);
+			errprintf(LOG_ERR, WHERE, "%04d %-5s [%s] !JavaScript ERROR creating user objects"
+				, session->socket, session->client.protocol, session->host_ip);
+			send_error(session, __LINE__, "500 Error initializing JavaScript User Objects");
+			return false;
 		}
 		JS_ENDREQUEST(session->js_cx);
 		session->last_js_user_num = session->user.number;
