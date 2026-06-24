@@ -10,7 +10,7 @@
 // '$' (graphics CR) overlaying the next color on the same band and '-' (graphics
 // NL) advancing to the next band. Runs are RLE-compressed (!count char).
 
-#include "render_sixel.h"
+#include "sixel.h"
 #include <stdlib.h>
 #include <string.h>
 

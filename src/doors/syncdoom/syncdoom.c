@@ -21,7 +21,7 @@
 #include "doomkeys.h"
 #include "doomgeneric.h"
 #include "render_text.h"
-#include "render_sixel.h"
+#include "sixel.h"
 #include "m_argv.h"             // myargc/myargv (set directly for the dedicated path)
 #include "mp_server.h"          // mp_dedicated_main() headless server
 #include "git_hash.h"           // generated: GIT_HASH / GIT_DATE / GIT_TIME (build info)

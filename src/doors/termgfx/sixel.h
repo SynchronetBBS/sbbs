@@ -1,5 +1,5 @@
-#ifndef RENDER_SIXEL_H_
-#define RENDER_SIXEL_H_
+#ifndef SIXEL_H_
+#define SIXEL_H_
 
 #include <stddef.h>
 #include <stdint.h>
@@ -22,4 +22,4 @@
 size_t sixel_encode(uint8_t **buf, size_t *cap, const uint8_t *idx, int w, int h,
                     const uint8_t *pal, int emit_palette);
 
-#endif // RENDER_SIXEL_H_
+#endif // SIXEL_H_

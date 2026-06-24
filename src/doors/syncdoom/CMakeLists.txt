@@ -25,20 +25,25 @@ set(SOURCES
     r_plane.c r_segs.c r_sky.c r_things.c sha1.c sounds.c statdump.c st_lib.c
     st_stuff.c s_sound.c tables.c v_video.c wi_stuff.c w_checksum.c w_file.c
     w_main.c w_wad.c z_zone.c w_file_stdc.c i_input.c i_video.c doomgeneric.c
-    render_text.c render_sixel.c
+    render_text.c
     deh_str.c deh_io.c deh_main.c deh_mapping.c deh_text.c deh_ammo.c
     deh_bexstr.c deh_cheat.c deh_doom.c deh_frame.c deh_misc.c deh_ptr.c
     deh_sound.c deh_thing.c deh_weapon.c w_merge.c
     net_client.c net_common.c net_dedicated.c net_io.c net_loop.c net_packet.c
     net_query.c net_server.c net_structrw.c aes_prng.c net_gui.c net_udp.c
-    mp_server.c sbbs_node.c
+    mp_server.c
     syncdoom.c)
 
 add_executable(syncdoom ${SOURCES})
 target_include_directories(syncdoom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-# sbbs_node.c reads Synchronet's node.dab/name.dat -- it needs nodedefs.h (and a
-# couple of constants) from the BBS source dir. Headers only; no engine linkage.
-target_include_directories(syncdoom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../sbbs3)
+
+# termgfx: shared terminal-graphics door library (sixel DECSIXEL encoder +
+# sbbs_node who's-online/paging). Its PUBLIC include dir gives syncdoom.c the
+# sixel.h / sbbs_node.h headers; the sbbs3/xpdev header paths sbbs_node needs
+# are now termgfx's concern. More of the renderer/pacing/input moves here over
+# time (see the extraction plan).
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../termgfx termgfx)
+target_link_libraries(syncdoom termgfx)
 
 # Git build info (git_hash.h: GIT_HASH/GIT_DATE/GIT_TIME) for the startup banner
 # and the F1 controls screen, via the shared helper in src/build. Regenerated each
