@@ -632,13 +632,22 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 			input_thread_mutex_locked = (pthread_mutex_lock(&input_thread_mutex) == 0);
 	}
 
+	// The child only needs to inherit handles when we're actually sharing one
+	// with it: the redirected stdio pipes (use_pipes), or the duplicated
+	// passthru/client socket that a native socket-door talks over.  Inheriting
+	// when we don't need to (e.g. a timed event running jsexec) leaks every
+	// server's listen socket into the child, which can outlive us and hold the
+	// ports open.  See GitLab #1151.
+	bool inherit_handles = use_pipes
+	    || (native && passthru_thread_running && client_socket_dup != INVALID_SOCKET);
+
 	DWORD creation_flags = (mode & EX_NODISPLAY) ? CREATE_NO_WINDOW : CREATE_NEW_CONSOLE;
 	success = CreateProcess(
 		NULL,           // pointer to name of executable module
 		fullcmdline,    // pointer to command line string
 		NULL,           // process security attributes
 		NULL,           // thread security attributes
-		native && !(mode & EX_OFFLINE),               // handle inheritance flag
+		inherit_handles,               // handle inheritance flag
 		creation_flags, // creation flags
 		env_block,      // pointer to new environment block
 		p_startup_dir,  // pointer to current directory name

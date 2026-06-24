@@ -129,6 +129,14 @@ bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
 			continue;
 		}
+#ifdef _WIN32
+		/* Prevent spawned child processes (timed events, native externals, CGI)
+		   from inheriting - and thereby leaking - this listen socket.  An
+		   inherited listen socket keeps the port bound in the kernel after we
+		   exit, so an orphaned child can hold every server's ports open.  See
+		   GitLab #1151. */
+		SetHandleInformation((HANDLE)xpms_set->socks[xpms_set->sock_count].sock, HANDLE_FLAG_INHERIT, 0);
+#endif
 		if (sock_init)
 			sock_init(xpms_set->socks[xpms_set->sock_count].sock, cbdata);
 
@@ -406,6 +414,11 @@ SOCKET xpms_accept(struct xpms_set *xpms_set, union xp_sockaddr * addr,
 					if (ret == INVALID_SOCKET) {
 						goto error_return;
 					}
+#ifdef _WIN32
+					/* Likewise, don't let spawned children inherit this
+					   accepted client socket (see GitLab #1151). */
+					SetHandleInformation((HANDLE)ret, HANDLE_FLAG_INHERIT, 0);
+#endif
 
 					// Set host_ip from haproxy protocol, if its used
 					// http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt
