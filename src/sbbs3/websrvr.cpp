@@ -2442,10 +2442,19 @@ static int recvbufsocket(http_session_t *session, char *buf, long count)
 	}
 
 	while (rd < count)  {
-		if (!session_check(session, NULL, NULL, startup->max_inactivity * 1000)) {
-			close_session_socket(session);
-			*buf = 0;
-			return 0;
+		// When TLS application data is already buffered/decrypted (e.g. the request
+		// body arrived in the same record as the headers), read it directly: the raw
+		// socket won't show readable, so waiting on session_check() would block for
+		// the full max_inactivity timeout (#1169).  Whether the body lands buffered
+		// in the TLS layer vs. still readable on the socket depends on TLS
+		// record/segment timing, so this can bite on any platform (reported on
+		// Windows and Linux v3.22a).  Mirrors the guard sockreadline() uses.
+		if ((!session->is_tls) || (!session->tls_pending)) {
+			if (!session_check(session, NULL, NULL, startup->max_inactivity * 1000)) {
+				close_session_socket(session);
+				*buf = 0;
+				return 0;
+			}
 		}
 		i = sess_recv(session, buf + rd, count - rd, 0);
 		switch (i) {
