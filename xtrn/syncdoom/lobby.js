@@ -36,7 +36,8 @@ function sd_play(connect, extra, wsargs)
 	// Without -home the door falls back to its launch cwd (the read-only install
 	// dir) and the first save aborts the door with an I_Error.
 	var home = system.data_dir + "user/" + format("%04u", user.number) + "/doom/";
-	var cmd = SD_BINARY + " -s%H -t%T -name %a -home " + home;
+	var cmd = SD_BINARY + " -s%H -t%T -name %a -home " + home
+	        + ' -eventlog "' + system.data_dir + 'syncdoom/events.jsonl"';
 	if (connect)
 		cmd += " -connect " + connect;
 	var i;
@@ -588,26 +589,143 @@ function sd_attract()
 	console.line_counter = 0;                          // clean slate for the menu draw
 }
 
+// Recent-activity view: frags, level clears and deaths from the door event log.
+function sd_show_activity()
+{
+	console.clear();
+	console.print("\1h\1wSyncDOOM \1y- \1wrecent activity\1n\r\n\r\n");
+	var feed = sd_event_feed(18);
+	if (!feed.length)
+		console.print("  \1k\1h(nothing yet -- go play a game!)\1n\r\n");
+	else {
+		var i;
+		for (i = 0; i < feed.length; i++)
+			console.print("  " + feed[i] + "\r\n");
+	}
+	console.print("\r\n");
+	console.pause();
+}
+
+// --- live lobby panel ------------------------------------------------------
+// Draw the full lobby art (its bottom rows are left blank for the panel).
+function sd_draw_art()
+{
+	console.clear();
+	console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
+}
+
+// Repaint the live who's-online/activity panel, bottom-anchored and growing
+// upward over the art as more nodes appear. Only the panel rows are rewritten
+// each tick (no art redraw -> no flicker); when the panel's height changes the
+// art is redrawn first so rows it vacated don't keep a stale panel.
+var sd_panel_rows_prev = -1;
+function sd_draw_panel()
+{
+	var cols = console.screen_columns, rows = console.screen_rows;
+	var p = sd_panel_cells(cols);
+	var cells = p.cells, nrows = cells.length;   // one full-width cell per row
+	if (sd_panel_rows_prev >= 0 && nrows != sd_panel_rows_prev)
+		sd_draw_art();                       // height changed -> restore art under it
+	sd_panel_rows_prev = nrows;
+	var top = rows - nrows + 1, r;
+	for (r = 0; r < nrows; r++) {
+		console.gotoxy(1, top + r);
+		console.print("\1n");
+		console.cleartoeol();
+		console.print(cells[r]);
+	}
+	console.gotoxy(1, rows);                  // park the cursor out of the panel body
+}
+
+// Live lobby: refresh the panel ~1/s and return the first valid menu key. The
+// blocking getkeys() used in the static menu calls nodesync() for us (telegrams,
+// sysop interrupt, forced chat); the poll loop must do it explicitly.
+function sd_lobby_wait(allow_ext)
+{
+	var allowed = "JCPLHQ" + (allow_ext ? "E" : "");   // '?'/Enter -> redraw (handled below)
+	var mynode = bbs.node_num;
+	// Pass control keys to us so the BBS's built-in Ctrl-T/Ctrl-U/etc. don't draw
+	// over the live panel (the poll loop ignores them) -- but keep Ctrl-P with the
+	// BBS so node paging still works from the lobby. Restored on exit.
+	var oldctrl = console.ctrlkey_passthru;
+	console.ctrlkey_passthru = -1;
+	console.ctrlkey_passthru = "-P";
+	sd_panel_rows_prev = -1;                  // first draw shouldn't trigger an art redraw
+	try {
+		while (!js.terminated && bbs.online) {
+			// A waiting telegram/short-message prints to the screen, so show it on a
+			// cleared screen and pause, then restore the lobby. nodesync() also handles
+			// sysop interrupt (-> hangup) and forced local chat.
+			var pending = (system.node_list[mynode - 1].misc & (NODE_NMSG | NODE_MSGW)) != 0;
+			if (pending) {
+				console.clear();
+				bbs.nodesync();              // displays the waiting message(s)
+				console.pause();
+				sd_draw_art();
+				sd_panel_rows_prev = -1;
+			} else
+				bbs.nodesync();              // sync node record / handle interrupt
+			if (js.terminated || !bbs.online)
+				break;                       // nodesync() may have hung us up
+			sd_draw_panel();
+			var c = console.inkey(K_UPPER | K_NOECHO, 1000);
+			if (!c)
+				continue;                    // timeout -> refresh
+			if (c == "\r" || c == "\n" || c == "?") {   // redraw the lobby menu art
+				sd_draw_art();
+				sd_panel_rows_prev = -1;
+				continue;
+			}
+			if (allowed.indexOf(c) >= 0)
+				return c;
+			// unmapped key (incl. passed-through Ctrl-keys) -> ignore, keep refreshing
+		}
+		return "Q";
+	} finally {
+		console.ctrlkey_passthru = oldctrl;
+	}
+}
+
 function sd_main()
 {
+	sd_prune_events(2000, 1000);      // bound the activity log on entry (rare rewrite)
+
 	// Join-by-address is for external/cross-system servers; off unless the sysop
 	// opts in with [net] allow_external = true in syncdoom.ini.
 	var allow_ext = (cfg.net.allow_external === true
 	                 || cfg.net.allow_external === "true");
+	// The live who's-online/activity panel is opt-in ([lobby] live = true): it
+	// repaints the bottom rows ~1/s, so it suits ANSI terminals only.
+	var live = (cfg.lobby
+	            && (cfg.lobby.live === true || cfg.lobby.live === "true"));
 
 	sd_attract();                    // optional one-shot DOOM ANSI splash on entry
 
 	while (!js.terminated && bbs.online) {
-		console.clear();
+		var k;
 		// The lobby menu is lobby.msg -- DOOM ANSI art (by "cool t" / tdd, converted
 		// to Ctrl-A with PabloDraw), its J/C/P/H/Q options remapped to our actions.
-		// The art is the menu, so there's no command prompt. The optional external-
-		// join (E) has no art slot, so show a one-line hint only when it's enabled.
-		console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
-		if (allow_ext)
-			console.print("\r\n   \1h\1yE\1n = join an external server\r\n");
-
-		var k = console.getkeys("JCPH?" + (allow_ext ? "E" : "") + "Q");
+		if (live) {
+			// The art's bottom blank lines (and rows above, as needed) host the live
+			// panel; the panel loop draws the art and polls for a key.
+			sd_draw_art();
+			k = sd_lobby_wait(allow_ext);
+		} else {
+			console.clear();
+			// The art IS the menu: its option keys are baked into the themeable
+			// lobby.msg (J/C/P/L/H/Q, plus E where the sysop enables external joins
+			// and adds it). No hardcoded hint strings here.
+			console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
+			// Pass control keys to us so Ctrl-T/Ctrl-U/etc. don't draw over the art,
+			// but keep Ctrl-P with the BBS for node paging. Restore after.
+			var oldctrl = console.ctrlkey_passthru;
+			console.ctrlkey_passthru = -1;
+			console.ctrlkey_passthru = "-P";
+			// CR is in the set so Enter returns (-> no action -> the loop redraws);
+			// '?' likewise falls through to a redraw.
+			k = console.getkeys("\rJCPLH?" + (allow_ext ? "E" : "") + "Q");
+			console.ctrlkey_passthru = oldctrl;
+		}
 		console.clear();                 // wipe the art before the chosen action draws
 		if (k == "Q")
 			break;
@@ -617,8 +735,11 @@ function sd_main()
 			sd_create();
 		else if (k == "P")
 			sd_solo();
-		else if (k == "H" || k == "?")
+		else if (k == "L")
+			sd_show_activity();
+		else if (k == "H")
 			sd_controls();
+		// '?' or Enter: no action -> the loop top redraws lobby.msg
 		else if (k == "E" && allow_ext)
 			sd_join_external();
 	}

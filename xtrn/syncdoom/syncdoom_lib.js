@@ -17,6 +17,9 @@ var SD_DIR    = js.exec_dir;
 var SD_BINARY = SD_DIR + "syncdoom%.";
 var SD_CFG    = SD_DIR + "syncdoom.ini";
 var SD_GAMES  = system.data_dir + "syncdoom/games/";
+var SD_EVENTS = system.data_dir + "syncdoom/events.jsonl";   // door-written activity log
+
+var json_lines = load({}, "json_lines.js");   // { add, get } for .jsonl files
 
 // Trim leading & trailing whitespace (SM1.8.5-safe).
 function sd_trim(s)
@@ -324,4 +327,199 @@ function sd_list_games(cfg)
 		out.push(g);
 	}
 	return out;
+}
+
+// --- activity feed (door-written events.jsonl) -----------------------------
+// Format a seconds count as M:SS.
+function sd_mmss(secs)
+{
+	var m = Math.floor(secs / 60), s = secs % 60;
+	return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+// Short relative age tag for an event time.
+function sd_ago(t)
+{
+	var d = time() - t;
+	if (d < 0)     d = 0;
+	if (d < 60)    return "[now]";
+	if (d < 3600)  return "[" + Math.floor(d / 60) + "m]";
+	if (d < 86400) return "[" + Math.floor(d / 3600) + "h]";
+	return "[" + Math.floor(d / 86400) + "d]";
+}
+
+// One-line description of an event for the lobby, or null to hide it (the debug
+// 'start'/'end' records and player 'death's -- the matching 'frag' already shows).
+function sd_event_text(e)
+{
+	switch (e.type) {
+		case "frag":
+			return e.killer + " fragged " + e.victim;
+		case "level":
+			return e.user + " cleared " + e.map + " in " + sd_mmss(e.secs);
+		case "death":
+			if (e.cause == "player")  return null;
+			if (e.cause == "suicide") return e.user + " blew themselves up";
+			if (e.cause == "monster") return e.user + " was killed";
+			return e.user + " died";          // environment
+	}
+	return null;
+}
+
+// Up to `max` recent activity lines (most recent first), Ctrl-A colored.
+// Up to `max` recent *displayable* event objects (most recent first) -- i.e. the
+// ones sd_event_text() renders (frags / level clears / non-player deaths).
+function sd_recent_events(max)
+{
+	if (!file_exists(SD_EVENTS))
+		return [];
+	var all = json_lines.get(SD_EVENTS, -(max * 6), 0, true);
+	if (typeof all != "object")          // get() returns a string on error
+		return [];
+	var out = [], i;
+	for (i = all.length - 1; i >= 0 && out.length < max; i--) {
+		if (sd_event_text(all[i]) !== null)
+			out.push(all[i]);
+	}
+	return out;
+}
+
+// Up to `max` recent activity lines (most recent first), Ctrl-A colored, for the
+// full-screen 'A' view.
+function sd_event_feed(max)
+{
+	var ev = sd_recent_events(max), out = [], i;
+	for (i = 0; i < ev.length; i++)
+		out.push("\1k\1h" + sd_ago(ev[i].time) + "\1n \1w" + sd_event_text(ev[i]) + "\1n");
+	return out;
+}
+
+// --- live lobby panel (who's online + recent activity) ---------------------
+// Fixed-width string helpers (operate on plain text -- no Ctrl-A codes).
+// sd_plain strips Ctrl-A attribute codes (\1x) so length == visible width.
+function sd_plain(s) { return String(s).replace(/\x01./g, ""); }
+function sd_clip(s, w) { s = String(s); return s.length > w ? s.substr(0, w) : s; }
+function sd_rpad(s, w) { s = String(s); while (s.length < w) s += " "; return s; }
+function sd_lpad(s, w) { s = String(s); while (s.length < w) s = " " + s; return s; }
+
+// presence_lib.js is Synchronet's canonical node-status formatter (used by the BBS's
+// own who's-online). Load once, cached in bbs.mods like the stock modules do.
+var sd_presence = null;
+function sd_get_presence()
+{
+	if (sd_presence)
+		return sd_presence;
+	if (typeof bbs == "object" && bbs && bbs.mods)
+		sd_presence = bbs.mods.presence_lib
+		              || (bbs.mods.presence_lib = load({}, "presence_lib.js"));
+	else
+		sd_presence = load({}, "presence_lib.js");
+	return sd_presence;
+}
+
+// In-use nodes for the panel, SyncDOOM players first. Each entry { num, name, rest,
+// doom }: `name` is the username portion and `rest` is the standard node-status tail
+// (age/gender, activity, " via <conn>") from presence_lib node_status -- the same
+// wording the BBS who's-online uses. We get both the full line and the line with the
+// username excluded; the length difference is exactly the name, so we can color the
+// name and activity separately without re-implementing node_status's anon/sysop rules.
+// Excludes our own node. Ctrl-A is stripped; the cell builder clips to the column
+// width so a long status truncates rather than wrapping.
+function sd_live_nodes(maxn)
+{
+	var presence = sd_get_presence();
+	var nl = system.node_list, out = [], n;
+	var mynode = (typeof bbs == "object" && bbs && bbs.node_num) ? bbs.node_num : 0;
+	var is_sysop = (typeof user == "object" && user && user.is_sysop) ? true : false;
+	for (n = 0; n < nl.length; n++) {
+		var nd = system.get_node(n + 1);
+		if (nd.status != NODE_INUSE && nd.status != NODE_QUIET)
+			continue;
+		if (mynode && (n + 1) == mynode)
+			continue;
+		var full = sd_plain(presence.node_status(nd, is_sysop, {}, n));
+		var rest = sd_plain(presence.node_status(nd, is_sysop, { exclude_username: true }, n));
+		if (!full.length)
+			continue;
+		var namelen = full.length - rest.length;
+		if (namelen < 0)
+			namelen = 0;
+		out.push({ num: n + 1, name: full.substr(0, namelen), rest: rest,
+		           doom: (full.indexOf("SyncDOOM") >= 0) });
+	}
+	out.sort(function(a, b) {
+		if (a.doom != b.doom) return a.doom ? -1 : 1;
+		return a.num - b.num;
+	});
+	if (maxn && out.length > maxn)
+		out = out.slice(0, maxn);
+	return out;
+}
+
+// One node cell, exactly `cw` visible chars: the name bright (green for a SyncDOOM
+// player, else white) and the activity/connection in normal grey. Clipped to cw
+// (never wraps). Color codes are zero-width so the visible width stays cw.
+function sd_node_cell(node, cw)
+{
+	var nc = node.doom ? "\1h\1g" : "\1h\1w";   // name: bright (green = SyncDOOM player)
+	if (node.name.length >= cw)
+		return nc + sd_clip(node.name, cw) + "\1n";
+	var rw = cw - node.name.length;
+	var rest = sd_rpad(sd_clip(node.rest, rw), rw);
+	return nc + node.name + "\1n" + rest + "\1n";   // activity: normal grey
+}
+
+// One recent-activity cell, exactly `cw` visible chars: "[age] description" (dim
+// grey age tag, plain grey body).
+function sd_activity_cell(e, cw)
+{
+	var tag = sd_ago(e.time);
+	var bw = cw - tag.length - 1;
+	var body = sd_rpad(sd_clip(sd_event_text(e) || "", bw), bw);
+	return "\1k\1h" + tag + "\1n " + body + "\1n";
+}
+
+function sd_blank_cell(cw) { return sd_rpad("", cw); }
+
+// Build the panel's cells (one full-width cell per row -- less truncation than two
+// narrow columns): live nodes first, then recent activity to fill, padded with
+// blanks to >= minRows. `cols` sizes the single column. Returns { cells, cw }.
+function sd_panel_cells(cols)
+{
+	var minRows = 3, maxRows = 6;
+	var cw = cols - 1;                        // one cell, full width (avoid last-col wrap)
+	var cells = [], i;
+	var nodes = sd_live_nodes(maxRows);
+	for (i = 0; i < nodes.length; i++)
+		cells.push(sd_node_cell(nodes[i], cw));
+	var events = sd_recent_events(maxRows);
+	for (i = 0; cells.length < maxRows && i < events.length; i++)
+		cells.push(sd_activity_cell(events[i], cw));
+	while (cells.length < minRows)
+		cells.push(sd_blank_cell(cw));
+	return { cells: cells, cw: cw };
+}
+
+// Keep the log bounded: if it exceeds `cap` lines, rewrite keeping the last
+// `keep`. Infrequent (lobby entry); a door append racing the rewrite is a rare,
+// tolerable loss for a best-effort feed.
+function sd_prune_events(cap, keep)
+{
+	if (!file_exists(SD_EVENTS))
+		return;
+	var f = new File(SD_EVENTS);
+	if (!f.open("r"))
+		return;
+	var lines = f.readAll();
+	f.close();
+	if (!lines || lines.length <= cap)
+		return;
+	lines = lines.slice(lines.length - keep);
+	f = new File(SD_EVENTS);
+	if (f.open("w")) {
+		var i;
+		for (i = 0; i < lines.length; i++)
+			f.writeln(lines[i]);
+		f.close();
+	}
 }
