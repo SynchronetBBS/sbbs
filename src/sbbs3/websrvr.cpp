@@ -1755,7 +1755,7 @@ void http_logon(http_session_t * session, user_t *usr)
 
 	session->last_user_num = session->user.number;
 
-	lprintf(LOG_DEBUG, "%04d %-5s [%s] <%s> logged-in"
+	lprintf(session->user.number > 0 ? LOG_INFO : LOG_DEBUG, "%04d %-5s [%s] <%s> logged-in"
 	        , session->socket, session->client.protocol, session->host_ip, session->username);
 }
 
@@ -1764,7 +1764,7 @@ void http_logoff(http_session_t* session, SOCKET socket, int line)
 	if (session->last_user_num <= 0)
 		return;
 
-	lprintf(LOG_DEBUG, "%04d %-5s [%s] <%s> logged-out from line %d"
+	lprintf(LOG_INFO, "%04d %-5s [%s] <%s> logged-out from line %d"
 	        , socket, session->client.protocol, session->host_ip, session->user.alias, line);
 
 	SAFECOPY(session->username, unknown);
