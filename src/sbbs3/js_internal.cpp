@@ -50,12 +50,26 @@ enum {
 	, PROP_KEEPGOING
 };
 
-JSBool js_IsTerminated(JSContext* cx, JSObject* obj)
+JSBool js_IsTerminated(JSContext* cx, JSObject* scope)
 {
 	js_callback_t* cb;
 	js_callback_t* top_cb;
+	JSObject*      js_obj;
+	jsval          val = JSVAL_VOID;
 
-	if ((cb = (js_callback_t*)JS_GetPrivate(cx, obj)) == NULL)
+	// The passed object is the execution scope, not necessarily the internal
+	// "js" object that carries the js_callback_t private data; walk the scope
+	// chain to find it (mirrors the lookup in js_execfile).
+	while (scope != NULL) {
+		if (JS_GetProperty(cx, scope, "js", &val) && val != JSVAL_VOID
+		    && JSVAL_IS_OBJECT(val) && JSVAL_TO_OBJECT(val) != NULL)
+			break;
+		scope = JS_GetParent(cx, scope);
+	}
+	if (scope == NULL)
+		return JS_FALSE;
+	js_obj = JSVAL_TO_OBJECT(val);
+	if ((cb = (js_callback_t*)JS_GetPrivate(cx, js_obj)) == NULL)
 		return JS_FALSE;
 	for (top_cb = cb; top_cb->bg && top_cb->parent_cb; top_cb = top_cb->parent_cb) {
 		if (top_cb->terminated && *top_cb->terminated)
