@@ -2005,12 +2005,12 @@ cterm_ctputs(struct cterminal *cterm, char *buf)
 					break;
 			case '\r':
 				if (*p == '\r') {
-					clear_lcf(cterm);
+					cterm_clear_lcf(cterm);
 					*p = 0;
 					cputs(outp);
 					outp = p + 1;
 				}
-				adjust_currpos(cterm, INT_MIN, 0, 0);
+				cterm_adjust_currpos(cterm, INT_MIN, 0, 0);
 				CURR_XY(&cx, &cy);
 				break;
 			case '\b':
