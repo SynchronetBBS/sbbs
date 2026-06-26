@@ -24,11 +24,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <time.h>
+
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #include <winsock2.h>        /* the door sink is a Winsock SOCKET (send/ioctlsocket) */
+  #include <ws2tcpip.h>        /* IPPROTO_TCP / TCP_NODELAY */
+  #include <windows.h>         /* QueryPerformanceCounter (monotonic clock) */
+#else
+  #include <errno.h>
+  #include <unistd.h>
+  #include <fcntl.h>
+  #include <signal.h>
+  #include <time.h>
+#endif
 
 #include "syncduke.h"
 #include "sixel.h"
@@ -49,7 +57,12 @@ static size_t      g_out_len, g_out_cap, g_out_off;
 static int         g_inited;
 static int         g_file_mode;        /* SYNCDUKE_SIXELOUT capture mode */
 static const char *g_file;
+#ifdef _WIN32
+static SOCKET      g_iosock = INVALID_SOCKET;   /* door client socket */
+static int         g_use_sock;                  /* 1 = writing to the socket */
+#else
 static int         g_fd = 1;           /* socket / stdout fd */
+#endif
 
 /* Best-effort terminal restore on a NORMAL exit (e.g. the QUIT menu): hand the
  * BBS back a terminal with sixel-scrolling, autowrap and the cursor re-enabled.
@@ -58,37 +71,65 @@ static int         g_fd = 1;           /* socket / stdout fd */
  * already dead. */
 static void syncduke_term_restore(void)
 {
-	if (g_file_mode || g_fd < 0)
+	if (g_file_mode)
 		return;
 	/* Turn off xterm mouse tracking so the terminal stops reporting mouse events to the
 	 * BBS once the door exits, then restore autowrap/sixel-scroll/cursor. */
+#ifdef _WIN32
+	if (!g_use_sock)
+		return;
+	(void)send(g_iosock, "\x1b[?1003l\x1b[?1006l", 16, 0);
+	(void)send(g_iosock, termgfx_term_leave, (int)strlen(termgfx_term_leave), 0);
+#else
+	if (g_fd < 0)
+		return;
 	(void)write(g_fd, "\x1b[?1003l\x1b[?1006l", 16);
 	(void)write(g_fd, termgfx_term_leave, strlen(termgfx_term_leave));
+#endif
 }
 
 static void syncduke_io_init(void)
 {
 	const char *s;
-	int         fl;
-
 	int         ds;
 
 	g_inited = 1;
+#ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);   /* a write to a closed socket returns EPIPE, not a fatal signal */
+#endif
 	atexit(syncduke_term_restore);
 	if ((s = getenv("SYNCDUKE_SIXELOUT")) != NULL) {   /* capture mode (offline test) */
 		g_file = s;
 		g_file_mode = 1;
 		return;
 	}
-	if ((ds = syncduke_door_socket()) >= 0)                  /* real BBS client socket */
-		g_fd = ds;
-	else if ((s = getenv("SYNCDUKE_SOCK")) != NULL)    /* explicit fd (test) */
-		g_fd = atoi(s);
-	/* else g_fd stays 1 (stdout, dev/tty) */
-	/* non-blocking, so a wedged client never stalls the game loop */
-	if ((fl = fcntl(g_fd, F_GETFL, 0)) != -1)
-		fcntl(g_fd, F_SETFL, fl | O_NONBLOCK);
+#ifdef _WIN32
+	/* On Windows the only live sink is the door's Winsock socket (Winsock was brought
+	 * up in syncduke_door.c's pre-main constructor). A dev run with no socket uses the
+	 * SYNCDUKE_SIXELOUT capture mode above; otherwise there's nothing to draw to. */
+	if ((ds = syncduke_door_socket()) >= 0) {
+		u_long nb  = 1;
+		int    one = 1;
+		int    sz  = 96 * 1024;
+		g_iosock   = (SOCKET)ds;
+		g_use_sock = 1;
+		ioctlsocket(g_iosock, FIONBIO, &nb);   /* non-blocking: a wedged client never stalls us */
+		setsockopt(g_iosock, IPPROTO_TCP, TCP_NODELAY, (char *)&one, sizeof one);
+		setsockopt(g_iosock, SOL_SOCKET, SO_SNDBUF, (char *)&sz, sizeof sz);
+	}
+#else
+	{
+		int fl;
+		if ((ds = syncduke_door_socket()) >= 0)            /* real BBS client socket */
+			g_fd = ds;
+		else if ((s = getenv("SYNCDUKE_SOCK")) != NULL)    /* explicit fd (test) */
+			g_fd = atoi(s);
+		/* else g_fd stays 1 (stdout, dev/tty) */
+		/* non-blocking, so a wedged client never stalls the game loop */
+		if ((fl = fcntl(g_fd, F_GETFL, 0)) != -1)
+			fcntl(g_fd, F_SETFL, fl | O_NONBLOCK);
+	}
+#endif
 }
 
 void syncduke_out_put(const void *buf, size_t len)
@@ -119,6 +160,21 @@ void syncduke_out_flush(void)
 		return;
 	}
 
+#ifdef _WIN32
+	if (!g_use_sock) {            /* dev run with no socket: discard (capture mode does output) */
+		g_out_len = g_out_off = 0;
+		return;
+	}
+	while (g_out_off < g_out_len) {
+		int n = send(g_iosock, (const char *)g_out + g_out_off,
+		             (int)(g_out_len - g_out_off), 0);
+		if (n > 0) { g_out_off += (size_t)n; continue; }
+		if (n == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
+			break;          /* slow client: keep the frame pending */
+		syncduke_hangup("client closed (write error)");   /* broken socket -> exit, free the node */
+		break;
+	}
+#else
 	while (g_out_off < g_out_len) {
 		ssize_t n = write(g_fd, g_out + g_out_off, g_out_len - g_out_off);
 		if (n > 0) { g_out_off += (size_t)n; continue; }
@@ -129,6 +185,7 @@ void syncduke_out_flush(void)
 		syncduke_hangup("client closed (write error)");   /* broken socket -> exit, free the node */
 		break;
 	}
+#endif
 	if (g_out_off >= g_out_len)
 		g_out_len = g_out_off = 0;
 }
@@ -320,12 +377,25 @@ static int syncduke_eff_depth(void)
 	return syncduke_inflight_auto ? syncduke_auto_depth : syncduke_pace_depth;
 }
 
-static uint32_t syncduke_now_ms(void)
+/* Monotonic microsecond clock (cross-platform): QueryPerformanceCounter on
+ * Windows, clock_gettime(CLOCK_MONOTONIC) elsewhere. */
+static uint64_t syncduke_now_us(void)
 {
+#ifdef _WIN32
+	static LARGE_INTEGER freq;
+	LARGE_INTEGER        c;
+	if (freq.QuadPart == 0)
+		QueryPerformanceFrequency(&freq);
+	QueryPerformanceCounter(&c);
+	return (uint64_t)c.QuadPart * 1000000ULL / (uint64_t)freq.QuadPart;
+#else
 	struct timespec t;
 	clock_gettime(CLOCK_MONOTONIC, &t);
-	return (uint32_t)(t.tv_sec * 1000u + t.tv_nsec / 1000000u);
+	return (uint64_t)t.tv_sec * 1000000ULL + (uint64_t)t.tv_nsec / 1000ULL;
+#endif
 }
+
+static uint32_t syncduke_now_ms(void) { return (uint32_t)(syncduke_now_us() / 1000ULL); }
 
 /* DSR send-time ring -> RTT of each frame's terminal round-trip (= link + the
  * terminal's sixel render time, the thing that caps remote frame rate). */
@@ -812,26 +882,22 @@ void syncduke_present(void)
 		rt_mode_t       m = (tier == SD_BLOCKS)   ? RT_BLOCKS
 		                  : (tier == SD_QUADRANT) ? RT_QUADRANT
 		                  : (tier == SD_SEXTANT)  ? RT_SEXTANT : RT_HALF;
-		struct timespec a, b;
-		clock_gettime(CLOCK_MONOTONIC, &a);
+		uint64_t        t0 = syncduke_now_us();
 		n = syncduke_emit_text(fb, pal, m);       /* may be 0 if no cells changed */
-		clock_gettime(CLOCK_MONOTONIC, &b);
-		syncduke_last_enc_us = (uint32_t)((b.tv_sec - a.tv_sec) * 1000000 + (b.tv_nsec - a.tv_nsec) / 1000);
+		syncduke_last_enc_us = (uint32_t)(syncduke_now_us() - t0);
 	} else {
 		syncduke_out_put("\x1b" "7\x1b[H", 5);    /* save cursor + home (image draws at the canvas origin) */
 #ifdef WITH_JXL
 		if (tier == SD_JXL) {
-			struct timespec a, b;
-			clock_gettime(CLOCK_MONOTONIC, &a);
+			uint64_t t0 = syncduke_now_us();
 			n = syncduke_emit_jxl(fb, pal, syncduke_out_w, syncduke_out_h);   /* 0 on encode failure */
-			clock_gettime(CLOCK_MONOTONIC, &b);
-			syncduke_last_enc_us = (uint32_t)((b.tv_sec - a.tv_sec) * 1000000 + (b.tv_nsec - a.tv_nsec) / 1000);
+			syncduke_last_enc_us = (uint32_t)(syncduke_now_us() - t0);
 		}
 #endif
 		if (n == 0) {                             /* sixel: the default tier, and the JXL-failure fallback */
 			int             sxw = syncduke_out_w / hsc;   /* sixel pixels; the terminal scales */
 			int             sxh = syncduke_out_h / vsc;   /* them back up hsc x vsc */
-			struct timespec a, b;
+			uint64_t        t0;
 			/* A sixel band is 6 pixel rows.  When the encoded height isn't a whole number of
 			 * bands (e.g. 640x400 -> 200 rows = 33 bands + a 2-row remainder) SyncTERM garbles
 			 * that partial band as it upscales it vertically (pan>1) -- the corrupted rows the
@@ -841,10 +907,9 @@ void syncduke_present(void)
 			tier = SD_SIXEL;
 			sxh -= sxh % 6;
 			syncduke_scale_fb(fb, sxw, sxh);
-			clock_gettime(CLOCK_MONOTONIC, &a);
+			t0 = syncduke_now_us();
 			n = sixel_encode_aspect(&sx, &sxcap, syncduke_scaled, sxw, sxh, vsc, hsc, pal, emit_pal);
-			clock_gettime(CLOCK_MONOTONIC, &b);
-			syncduke_last_enc_us = (uint32_t)((b.tv_sec - a.tv_sec) * 1000000 + (b.tv_nsec - a.tv_nsec) / 1000);
+			syncduke_last_enc_us = (uint32_t)(syncduke_now_us() - t0);
 			syncduke_out_put(sx, n);
 		}
 		syncduke_out_put("\x1b" "8", 2);          /* restore cursor */

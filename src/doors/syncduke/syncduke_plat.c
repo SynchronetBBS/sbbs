@@ -18,7 +18,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <time.h>
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #include <windows.h>   /* QueryPerformanceCounter, Sleep */
+#else
+  #include <time.h>
+#endif
 #include "build.h"
 #include "display.h"
 #include "engine.h"   /* setview, setbrightness */
@@ -68,9 +73,20 @@ static void    (*usertimercallback)(void);
 
 static int64_t plat_ticks(void)
 {
+#ifdef _WIN32
+	/* QueryPerformanceCounter -> nanoseconds, split to avoid int64 overflow. */
+	static LARGE_INTEGER freq;
+	LARGE_INTEGER        c;
+	if (freq.QuadPart == 0)
+		QueryPerformanceFrequency(&freq);
+	QueryPerformanceCounter(&c);
+	return (int64_t)(c.QuadPart / freq.QuadPart) * 1000000000LL
+	     + (int64_t)(c.QuadPart % freq.QuadPart) * 1000000000LL / freq.QuadPart;
+#else
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return (int64_t)ts.tv_sec * 1000000000LL + (int64_t)ts.tv_nsec;
+#endif
 }
 
 int inittimer(int tickspersecond)
@@ -205,6 +221,19 @@ static void syncduke_dump_ppm(void)
 
 static uint32_t plat_ms(void) { return (uint32_t)(plat_ticks() / 1000000LL); }
 
+/* Short blocking sleep (cross-platform): Sleep() on Windows, nanosleep elsewhere. */
+static void syncduke_sleep_ms(unsigned ms)
+{
+#ifdef _WIN32
+	Sleep(ms);
+#else
+	struct timespec ts;
+	ts.tv_sec  = ms / 1000;
+	ts.tv_nsec = (long)(ms % 1000) * 1000000L;
+	nanosleep(&ts, NULL);
+#endif
+}
+
 /*
  * Cap frame PRODUCTION to the terminal's CONSUMPTION rate.
  *
@@ -234,8 +263,7 @@ static void syncduke_pace_engine(void)
 	uint32_t        start  = plat_ms();
 
 	for (;;) {
-		struct timespec ts = { 0, 2 * 1000000L };   /* 2ms slice -> ~500Hz input poll */
-		uint32_t        now;
+		uint32_t now;
 
 		sampletimer();          /* keep totalclock on real time while we wait */
 		_handle_events();       /* pump input + read DSR acks (drops inflight) */
@@ -246,7 +274,7 @@ static void syncduke_pace_engine(void)
 			break;
 		if ((int32_t)(now - start) >= SYNCDUKE_CAP_WAITMS)
 			break;              /* no-ack terminal: don't wedge the loop */
-		nanosleep(&ts, NULL);
+		syncduke_sleep_ms(2);   /* 2ms slice -> ~500Hz input poll */
 	}
 	last_ms = plat_ms();
 }
@@ -356,11 +384,10 @@ void _handle_events(void)
  * timer and input (incl. DSR acks for the last frame) serviced. */
 void _idle(void)
 {
-	struct timespec ts = { 0, 2 * 1000000L };   /* 2ms */
 	sampletimer();
 	_handle_events();
 	syncduke_out_flush();
-	nanosleep(&ts, NULL);
+	syncduke_sleep_ms(2);   /* 2ms */
 }
 uint8_t _readlastkeyhit(void) { return (uint8_t)syncduke_input_pop_raw(); }
 int  setupmouse(void) { return 0; }

@@ -24,10 +24,32 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>     /* realpath */
+#include <stdlib.h>     /* realpath / _fullpath */
 #include <string.h>
-#include <unistd.h>
 #include <limits.h>     /* PATH_MAX */
+
+#ifdef _WIN32
+  #include <direct.h>   /* chdir / _fullpath */
+  #include <io.h>       /* dup2 */
+  #define strcasecmp _stricmp
+  #ifndef STDOUT_FILENO
+    #define STDOUT_FILENO 1
+  #endif
+  #ifndef STDERR_FILENO
+    #define STDERR_FILENO 2
+  #endif
+#else
+  #include <unistd.h>   /* chdir, dup2, realpath, STD*_FILENO */
+#endif
+
+#ifndef PATH_MAX
+  #define PATH_MAX 1024
+#endif
+
+#ifdef _WIN32
+  /* realpath(path, resolved) -> _fullpath(resolved, path, max) (note arg order). */
+  #define realpath(path, resolved) _fullpath((resolved), (path), PATH_MAX)
+#endif
 
 #include "ini_file.h"   /* xpdev: iniReadFile / iniGetString */
 #include "dirwrap.h"    /* xpdev: mkpath() (recursive mkdir) */
@@ -59,16 +81,14 @@ static int syncduke_is_door(int argc, char **argv)
 	return 0;
 }
 
-__attribute__((constructor))
-static void syncduke_config_init(int argc, char **argv, char **envp)
+/* The pre-main initializer body; registered as a constructor below (portably). */
+static void syncduke_config_init(int argc, char **argv)
 {
 	char  dir[INI_MAX_VALUE_LEN] = "";
 	char  home[PATH_MAX] = "";
 	char  abs[PATH_MAX];
 	int   i;
 	FILE *f;
-
-	(void)envp;
 
 	/* --- GRP dir (-grpdir <path> or syncduke.ini [grp] dir) and per-user -home <path> --- */
 	for (i = 1; i + 1 < argc; i++) {
@@ -109,3 +129,25 @@ static void syncduke_config_init(int argc, char **argv, char **envp)
 		setvbuf(stdout, NULL, _IOLBF, 0);     /* line-buffered so lines flush promptly */
 	}
 }
+
+/* Run syncduke_config_init() before the engine's main(). glibc passes
+ * (argc, argv, envp) to .init_array constructors; MSVC has no such attribute, so
+ * register a CRT initializer in the .CRT$XCU table (run during CRT startup, with
+ * __argc/__argv already populated). See syncduke_door.c for the same pattern. */
+#ifdef _MSC_VER
+static void syncduke_config_ctor(void) { syncduke_config_init(__argc, __argv); }
+#pragma section(".CRT$XCU", read)
+__declspec(allocate(".CRT$XCU")) void (*syncduke_config_ctor_p)(void) = syncduke_config_ctor;
+#if defined(_WIN64)
+#pragma comment(linker, "/include:syncduke_config_ctor_p")
+#else
+#pragma comment(linker, "/include:_syncduke_config_ctor_p")
+#endif
+#else
+__attribute__((constructor))
+static void syncduke_config_ctor(int argc, char **argv, char **envp)
+{
+	(void)envp;
+	syncduke_config_init(argc, argv);
+}
+#endif

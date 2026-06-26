@@ -1,0 +1,15 @@
+{
+  "$comment": "Optional dependencies for the JPEG XL graphics tier, resolved by vcpkg in manifest mode. This file is only consulted when CMake is configured with the vcpkg toolchain (-DCMAKE_TOOLCHAIN_FILE=.../vcpkg.cmake); a plain cmake build ignores it. See README.md. The *nix build normally uses a system libjxl via pkg-config instead and needs none of this. Mirrors src/doors/syncdoom/vcpkg.json.",
+  "name": "syncduke",
+  "version": "0.1",
+  "description": "Duke Nukem 3D for Synchronet / SyncTERM (DOOR32.SYS BBS door)",
+  "homepage": "https://gitlab.synchro.net/main/sbbs",
+  "license": "GPL-2.0-only",
+  "dependencies": [
+    "libjxl"
+  ],
+  "builtin-baseline": "46c9f8d8398360278222d335c28bceb776ebb61f",
+  "overrides": [
+    { "name": "libjxl", "version": "0.11.2" }
+  ]
+}

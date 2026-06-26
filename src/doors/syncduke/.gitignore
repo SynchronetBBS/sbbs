@@ -1,1 +1,9 @@
-build/
+# build output
+/build/
+/build-msvc/
+/syncduke
+/syncduke.map
+*.o
+# editor swap
+*.swp
+*.swo

@@ -13,17 +13,27 @@
  *
  * DOOR32.SYS (the portable door interface): line 1 = comm type (2=telnet),
  * line 2 = comm/socket handle, line 7 = user alias, line 9 = time left (minutes).
- * On *nix the socket is an inherited fd we read/write directly (plain
- * non-blocking I/O in syncduke_io.c / syncduke_input.c); xpdev sockwrap for Windows is a
- * later portability step.
+ * The handle is an inherited descriptor: on *nix a plain fd we read/write
+ * directly, on Windows a Winsock SOCKET used via send/recv (Winsock is brought
+ * up here, in the pre-main constructor, before any I/O). The non-blocking I/O
+ * lives in syncduke_io.c (writes) and syncduke_input.c (reads).
  */
 
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <signal.h>
+
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #include <winsock2.h>          /* the DOOR32.SYS handle is a Winsock SOCKET on Windows */
+  #include <windows.h>
+  #include <process.h>           /* _exit */
+  #define strcasecmp _stricmp
+#else
+  #include <unistd.h>
+  #include <signal.h>
+#endif
 
 #include "syncduke.h"
 
@@ -62,21 +72,54 @@ static void syncduke_door_splash(void)
 		"\x1b[12;30HLoading Duke Nukem 3D...";          /* ~centered on an 80-col screen */
 	int fd = syncduke_door_socket();                    /* resolves the door args too */
 
+#ifdef _WIN32
+	/* On Windows the door handle is a Winsock SOCKET. Bring Winsock up here, in the
+	 * first code that runs (before main), so every later send/recv in the door works.
+	 * No inherited socket (a dev run) -> nothing useful to paint to this early. */
+	if (fd >= 0) {
+		WSADATA wsa;
+		WSAStartup(MAKEWORD(2, 2), &wsa);
+		(void)send((SOCKET)fd, banner, (int)(sizeof(banner) - 1), 0);
+	}
+#else
 	if (fd < 0)
 		fd = 1;                                         /* dev/tty fallback */
 	signal(SIGPIPE, SIG_IGN);
 	(void)write(fd, banner, sizeof(banner) - 1);
+#endif
 }
 
+/* Capture argv and paint the splash BEFORE the engine's main() runs. */
+static void syncduke_door_init(int argc, char **argv)
+{
+	g_argc = argc;
+	g_argv = argv;
+	syncduke_door_splash();   /* instant feedback while the engine spends ~2s loading */
+}
+
+#ifdef _MSC_VER
+/* MSVC has no __attribute__((constructor)). Register a CRT initializer in the
+ * .CRT$XCU table (the CRT walks it during startup, before main); __argc/__argv
+ * are already populated by then. The /include keeps the linker from dead-
+ * stripping the otherwise-unreferenced table pointer (x86 prefixes C symbols
+ * with a leading underscore; x64 does not). */
+static void syncduke_door_ctor(void) { syncduke_door_init(__argc, __argv); }
+#pragma section(".CRT$XCU", read)
+__declspec(allocate(".CRT$XCU")) void (*syncduke_door_ctor_p)(void) = syncduke_door_ctor;
+#if defined(_WIN64)
+#pragma comment(linker, "/include:syncduke_door_ctor_p")
+#else
+#pragma comment(linker, "/include:_syncduke_door_ctor_p")
+#endif
+#else
 /* glibc passes (argc, argv, envp) to .init_array constructors. */
 __attribute__((constructor))
 static void syncduke_door_grab_args(int argc, char **argv, char **envp)
 {
 	(void)envp;
-	g_argc = argc;
-	g_argv = argv;
-	syncduke_door_splash();   /* instant feedback while the engine spends ~2s loading */
+	syncduke_door_init(argc, argv);
 }
+#endif
 
 /* basename(path) == "door32.sys", case-insensitive. */
 static int is_door32_path(const char *s)

@@ -27,11 +27,18 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <stdlib.h>
-#include <errno.h>
-#include <time.h>
+
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #include <winsock2.h>   /* the door input source is a Winsock SOCKET (recv/ioctlsocket) */
+  #include <windows.h>    /* QueryPerformanceCounter (monotonic clock) */
+#else
+  #include <unistd.h>
+  #include <fcntl.h>
+  #include <errno.h>
+  #include <time.h>
+#endif
 
 #include "syncduke.h"
 #include "keyboard.h"   /* sc_* scancode constants (pure #defines) */
@@ -237,9 +244,18 @@ static uint32_t g_esc_at_ms;
 
 static uint32_t syncduke_in_now_ms(void)
 {
+#ifdef _WIN32
+	static LARGE_INTEGER freq;
+	LARGE_INTEGER        c;
+	if (freq.QuadPart == 0)
+		QueryPerformanceFrequency(&freq);
+	QueryPerformanceCounter(&c);
+	return (uint32_t)((uint64_t)c.QuadPart * 1000ULL / (uint64_t)freq.QuadPart);
+#else
 	struct timespec t;
 	clock_gettime(CLOCK_MONOTONIC, &t);
 	return (uint32_t)(t.tv_sec * 1000u + t.tv_nsec / 1000000u);
+#endif
 }
 static char csi_intro;          /* '[' or 'O' */
 static char csi_par[40];        /* parameter bytes between intro and final */
@@ -529,12 +545,27 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 		pstate = P_NORMAL;
 	}
 
+	/* On a real door socket, EOF (peer closed) or a hard error means the user
+	 * disconnected -> exit and free the node. In dev/tty mode (stdin fallback,
+	 * no door socket) a finite piped script hitting EOF is normal, so just stop
+	 * reading -- don't exit. "no data yet" (EWOULDBLOCK) returns quietly. */
+#ifdef _WIN32
+	n = recv((SOCKET)fd, (char *)buf, (int)sizeof(buf), 0);
+	if (n == SOCKET_ERROR) {
+		if (WSAGetLastError() == WSAEWOULDBLOCK)
+			return;                                  /* no input yet */
+		if (syncduke_door_socket() >= 0)
+			syncduke_hangup("input read error");
+		return;
+	}
+	if (n == 0) {                                        /* peer closed */
+		if (syncduke_door_socket() >= 0)
+			syncduke_hangup("client closed (input EOF)");
+		return;
+	}
+#else
 	n = (int)read(fd, buf, sizeof(buf));
 	if (n <= 0) {
-		/* On a real door socket, EOF (peer closed) or a hard error means the user
-		 * disconnected -> exit and free the node. In dev/tty mode (stdin fallback,
-		 * no door socket) a finite piped script hitting EOF is normal, so just stop
-		 * reading -- don't exit. EAGAIN/EWOULDBLOCK is "no input yet" either way. */
 		if (syncduke_door_socket() >= 0) {
 			if (n == 0)
 				syncduke_hangup("client closed (input EOF)");
@@ -543,6 +574,7 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 		}
 		return;
 	}
+#endif
 
 	for (i = 0; i < n; i++) {
 		uint8_t c = buf[i];
@@ -585,18 +617,34 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 int syncduke_input_fd(void)
 {
 	static int  fd = -2;    /* -2 = not yet resolved */
-	int         fl, ds;
-	const char *s;
+	int         ds;
 
 	if (fd != -2)
 		return fd;
-	if ((ds = syncduke_door_socket()) >= 0)      /* real BBS client socket */
+#ifdef _WIN32
+	/* The only input source on Windows is the door's Winsock socket (already set
+	 * non-blocking in syncduke_io.c). No socket (a dev run) => no input (-1, which
+	 * syncduke_input_pump() treats as a no-op). */
+	if ((ds = syncduke_door_socket()) >= 0) {
+		u_long nb = 1;
 		fd = ds;
-	else if ((s = getenv("SYNCDUKE_SOCK")) != NULL)
-		fd = atoi(s);
-	else
-		fd = 0;                            /* default stdin (dev/tty) */
-	if ((fl = fcntl(fd, F_GETFL, 0)) != -1)
-		fcntl(fd, F_SETFL, fl | O_NONBLOCK);
+		ioctlsocket((SOCKET)fd, FIONBIO, &nb);
+	} else {
+		fd = -1;
+	}
+#else
+	{
+		int         fl;
+		const char *s;
+		if ((ds = syncduke_door_socket()) >= 0)      /* real BBS client socket */
+			fd = ds;
+		else if ((s = getenv("SYNCDUKE_SOCK")) != NULL)
+			fd = atoi(s);
+		else
+			fd = 0;                            /* default stdin (dev/tty) */
+		if ((fl = fcntl(fd, F_GETFL, 0)) != -1)
+			fcntl(fd, F_SETFL, fl | O_NONBLOCK);
+	}
+#endif
 	return fd;
 }

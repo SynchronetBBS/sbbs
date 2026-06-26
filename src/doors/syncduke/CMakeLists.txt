@@ -41,21 +41,60 @@ set(SOURCES
 add_executable(syncduke ${SOURCES})
 target_include_directories(syncduke PRIVATE ${ENGINE_DIR} ${GAME_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/compat)   # no-op SDL.h shim for the 2 ungated SDL refs
-target_compile_definitions(syncduke PRIVATE PLATFORM_UNIX)
+
+# Platform select for the vendored engine (Engine/src/platform.h): PLATFORM_WIN32
+# pulls in win32_compat.h (the _MSC_VER branch), PLATFORM_UNIX pulls in
+# unix_compat.h. Our headless shim sources (syncduke_*.c) are OUR code and gate
+# their POSIX-vs-Winsock paths on _WIN32 directly.
+if(WIN32)
+    target_compile_definitions(syncduke PRIVATE PLATFORM_WIN32)
+else()
+    target_compile_definitions(syncduke PRIVATE PLATFORM_UNIX)
+endif()
 set_property(TARGET syncduke PROPERTY C_STANDARD 11)
 
-# The 2013/2019 Build-engine sources predate modern GCC: int<->pointer conversions
-# are now hard errors -- downgrade them to (silenced) warnings; we don't edit the
-# vendored engine. -w quiets the rest of the vendored noise.
-target_compile_options(syncduke PRIVATE
-    -w
-    -fcommon   # the code defines tentative globals in headers (_argc, cvars, ...);
-               # GCC 10+ defaults to -fno-common -> multiple-definition. Restore merge.
-    -Wno-error=int-conversion -Wno-error=implicit-int
-    -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration)
-
-# premap.c MUST be -O0 (upstream note: a new game crashes if it's optimized).
-set_source_files_properties(${GAME_DIR}/premap.c PROPERTIES COMPILE_OPTIONS -O0)
+if(MSVC)
+    # The vendored 2013/2019 Build engine is full of legacy constructs MSVC warns
+    # on (deprecated POSIX/CRT names, int<->pointer casts); /w silences them since
+    # we don't edit the vendored engine. The CRT/Winsock deprecation defines keep
+    # our own shim sources quiet too.
+    # /FIinttypes.h force-includes MSVC's real <inttypes.h> (which pulls <stdint.h>)
+    # first; _MSC_STDINT_H_ / _MSC_INTTYPES_H_ are the include guards of the vendored
+    # msinttypes Engine/src/windows/{stdint,inttypes}.h, so defining them skips those
+    # headers' bodies. The vendored shims predate MSVC shipping these headers and
+    # (mis)define int_fast16_t / imaxdiv_t, which clash (C2371) with the native ones
+    # now that both land in the same TU. The engine gets its int types + PRI* macros
+    # from the native headers -- so we fix the clash without editing the vendored engine.
+    target_compile_options(syncduke PRIVATE /w /FIinttypes.h)
+    target_compile_definitions(syncduke PRIVATE
+        _MSC_STDINT_H_                   # neutralize the vendored msinttypes stdint.h
+        _MSC_INTTYPES_H_                 # neutralize the vendored msinttypes inttypes.h
+        _CRT_SECURE_NO_WARNINGS          # fopen/strcpy/snprintf "use the _s variant"
+        _CRT_NONSTDC_NO_DEPRECATE        # getpid/getcwd/chdir/strdup POSIX names
+        _WINSOCK_DEPRECATED_NO_WARNINGS) # inet_addr/gethostbyname et al.
+    # The engine declares tentative globals (cvars, _argc, ...) in headers included
+    # by many TUs; under MSVC each becomes its own definition -> LNK2005. It also
+    # ships *nix DOS/Watcom-compat dupes (strupr/itoa/filelength) that xpdev's
+    # genwrap/strwrap also define. GCC merges both via -fcommon /
+    # --allow-multiple-definition; the MSVC linker equivalent is /FORCE:MULTIPLE
+    # (it takes the first definition and warns LNK4006). We don't edit the engine.
+    target_link_options(syncduke PRIVATE /FORCE:MULTIPLE)
+    target_link_libraries(syncduke ws2_32 winmm)   # Winsock (door socket) + timeGetTime
+    # premap.c MUST be unoptimized (upstream note: a new game crashes if it's optimized).
+    set_source_files_properties(${GAME_DIR}/premap.c PROPERTIES COMPILE_OPTIONS /Od)
+else()
+    # The 2013/2019 Build-engine sources predate modern GCC: int<->pointer conversions
+    # are now hard errors -- downgrade them to (silenced) warnings; we don't edit the
+    # vendored engine. -w quiets the rest of the vendored noise.
+    target_compile_options(syncduke PRIVATE
+        -w
+        -fcommon   # the code defines tentative globals in headers (_argc, cvars, ...);
+                   # GCC 10+ defaults to -fno-common -> multiple-definition. Restore merge.
+        -Wno-error=int-conversion -Wno-error=implicit-int
+        -Wno-error=incompatible-pointer-types -Wno-error=implicit-function-declaration)
+    # premap.c MUST be -O0 (upstream note: a new game crashes if it's optimized).
+    set_source_files_properties(${GAME_DIR}/premap.c PROPERTIES COMPILE_OPTIONS -O0)
+endif()
 
 # libtermgfx -- the shared sixel/JXL encoders + APC transport + cap-probe. Its
 # PUBLIC include dir gives us "sixel.h"/"jxl.h"/"apc.h"/"caps.h".

@@ -100,6 +100,24 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ```
 
+On **Windows** (Visual Studio 2022 / MSVC), use `build.bat` — it configures and
+builds the Win32 (x86) Release tree in `build-msvc/` and copies `syncduke.exe`
+into `..\..\..\xtrn\syncduke\`:
+
+```bat
+build.bat            :: Win32 release (JPEG-XL via vcpkg if installed)
+build.bat x64        :: 64-bit release (best-effort; see the 32-bit note below)
+build.bat clean      :: wipe the build tree first
+```
+
+The JPEG-XL tier links a static **libjxl** built for MSVC; install it with
+`vcpkg install libjxl:x86-windows-static-md` (classic mode) and `build.bat`
+picks up `C:\vcpkg\installed\x86-windows-static-md` automatically (see
+[vcpkg.json](vcpkg.json)). Without it the door still builds with the sixel/text
+tiers. The door socket from DOOR32.SYS is a Winsock `SOCKET` on Windows; the
+shim's I/O selects `send`/`recv`/`ioctlsocket` vs the *nix `read`/`write`/`fcntl`
+at compile time (`_WIN32`).
+
 The vendored Build engine assumes 32-bit pointers in spots; the few that matter
 at 64-bit are patched in place and documented in [SEAM.md](SEAM.md). The engine
 sources keep their upstream style; only our shim files follow the project's
@@ -144,8 +162,9 @@ The door is launched as `syncduke%. %f -home %juser/%4/duke/`:
 - **Single-player only** — no multiplayer, lobby, or audio.
 - Save files are **64-bit-only** (the in-engine save/relocation code was widened
   to `intptr_t`); they are not interchangeable with a 32-bit Duke build.
-- **\*nix-first** — the socket I/O uses plain non-blocking fds; a Windows port
-  routes through xpdev sockwrap (already linked) and is not yet wired.
+- **Cross-platform build** — Linux/Unix (GCC/Clang, `build.sh`) and Windows
+  (MSVC, `build.bat`). The shim's terminal/door I/O picks `send`/`recv`/
+  `ioctlsocket` on Windows vs `read`/`write`/`fcntl` on *nix at compile time.
 
 See [DESIGN.md](DESIGN.md), [PLAN.md](PLAN.md), and [SEAM.md](SEAM.md) for the
 spec, task plan, and the engine/platform seam (including the 64-bit patch list).
