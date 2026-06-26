@@ -1,0 +1,32 @@
+--- cryptlib.h.orig	2026-06-25 21:42:45.987577446 -0700
++++ cryptlib.h	2026-06-25 21:43:10.115789462 -0700
+@@ -128,7 +128,11 @@
+   #define C_PTR	*
+   #define C_CHR char
+   #define C_STR C_CHR *
+-  #define C_RET	int
++  #if defined( __GNUC__ ) && defined( _CRYPT_DEFINED )
++	#define C_RET	__attribute__(( visibility( "default" ) )) int
++  #else
++	#define C_RET	int
++  #endif
+ #endif /* Windows vs.everything else function types */
+ 
+ /* Symbolic defines to make it clearer how the function parameters behave */
+--- tools/ccopts.sh.orig	2026-06-25 21:42:45.987577446 -0700
++++ tools/ccopts.sh	2026-06-25 21:43:10.115789462 -0700
+@@ -1724,6 +1724,14 @@
+ 	fi ;
+ fi
+ 
++# Synchronet: compile cryptlib with hidden symbol visibility so its vendored
++# OpenSSL-namespace symbols (BN_*, MD5_*, etc.) don't interpose a separately
++# linked libcrypto (e.g. for DKIM mail signing).  cryptlib's public API is
++# tagged C_RET = visibility("default") in cryptlib.h, so it stays exported.
++if [ $ISGCC -gt 0 ] || [ $ISCLANG -gt 0 ] ; then
++	CCARGS="$CCARGS -fvisibility=hidden" ;
++fi
++
+ # Finally, report what we've found
+ 
+ echo "$CCARGS"
