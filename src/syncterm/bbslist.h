@@ -170,6 +170,7 @@ struct bbslist {
 	uint32_t           palette[16];
 	unsigned           palette_size;
 	char               term_name[32];
+	bool               lf_expand;
 	int32_t            sort_order;
 };
 
