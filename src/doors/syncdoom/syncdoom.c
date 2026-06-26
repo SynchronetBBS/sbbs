@@ -20,8 +20,11 @@
 
 #include "doomkeys.h"
 #include "doomgeneric.h"
-#include "render_text.h"
+#include "text.h"                 // termgfx: text/block render tiers (rt_*)
 #include "sixel.h"
+#include "apc.h"                 // termgfx: SyncTERM APC cached-image transport (JXL/PPM)
+#include "jxl.h"                 // termgfx: JPEG XL frame encoder (RGB888 -> JXL)
+#include "caps.h"                // termgfx: cap-probe query + reply parsing (JXL)
 #include "m_argv.h"             // myargc/myargv (set directly for the dedicated path)
 #include "mp_server.h"          // mp_dedicated_main() headless server
 #include "git_hash.h"           // generated: GIT_HASH / GIT_DATE / GIT_TIME (build info)
@@ -67,9 +70,6 @@
 #include <direct.h>             // _chdir / _getcwd
 #endif
 
-#ifdef WITH_JXL
-#include <jxl/encode.h>
-#endif
 
 #ifndef PATH_MAX                // MSVC's <limits.h> doesn't define it
 #define PATH_MAX 1024
@@ -198,34 +198,9 @@ static int cell_height(int lines)
 }
 
 // ---------------------------------------------------------------------------
-// base64 (RFC 4648, no line breaks) -> SyncTERM's b64_decode_alloc()
+// base64 + the SyncTERM APC cached-image transport now live in termgfx/apc.c
+// (termgfx_apc_image); emit_cached_image() below is a thin wrapper around it.
 // ---------------------------------------------------------------------------
-
-static const char b64tab[] =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-// Encode len bytes of in into out; returns number of base64 chars written.
-static size_t b64_encode(char *out, const uint8_t *in, size_t len)
-{
-	size_t i, o = 0;
-	for (i = 0; i + 2 < len; i += 3) {
-		uint32_t v = (in[i] << 16) | (in[i + 1] << 8) | in[i + 2];
-		out[o++] = b64tab[(v >> 18) & 0x3f];
-		out[o++] = b64tab[(v >> 12) & 0x3f];
-		out[o++] = b64tab[(v >>  6) & 0x3f];
-		out[o++] = b64tab[ v        & 0x3f];
-	}
-	if (i < len) {
-		uint32_t v = in[i] << 16;
-		if (i + 1 < len)
-			v |= in[i + 1] << 8;
-		out[o++] = b64tab[(v >> 18) & 0x3f];
-		out[o++] = b64tab[(v >> 12) & 0x3f];
-		out[o++] = (i + 1 < len) ? b64tab[(v >> 6) & 0x3f] : '=';
-		out[o++] = '=';
-	}
-	return o;
-}
 
 // ---------------------------------------------------------------------------
 // Frame encoder: PPM always, JXL when SyncTERM supports it (auto-probed). Both
@@ -270,7 +245,7 @@ static const char *mode_name(enum frame_mode m);   // defined later; used by the
 
 static uint8_t * s_rgb = NULL;   static size_t s_rgb_cap = 0;      // packed RGB888
 static uint8_t * s_img = NULL;   static size_t s_img_cap = 0;      // encoded bytes (PPM/JXL)
-static char *    s_b64 = NULL;   static size_t s_b64_cap = 0;      // base64 of s_img
+static uint8_t * s_apc = NULL;   static size_t s_apc_cap = 0;      // built APC Store+Draw sequence
 
 // Send a small control string in full (cursor hide, JXL probe) at startup.
 static void emit_all(const char *buf, size_t len)
@@ -554,26 +529,13 @@ static void pack_rgb(const uint32_t *fb, int w, int h)
 	}
 }
 
-// base64 `bytes` and push: Store(<file>) then <drawverb>(<file>).
+// base64 `bytes` and push: Store(<file>) then <drawverb>(<file>) -- via termgfx/apc.c.
 static void emit_cached_image(const char *file, const char *drawverb,
                               const uint8_t *bytes, size_t n)
 {
-	char   apc[64];
-	int    l;
-	size_t b64max = 4 * ((n + 2) / 3) + 1;
-	size_t b64len;
-
-	if (b64max > s_b64_cap) { s_b64 = realloc(s_b64, b64max); s_b64_cap = b64max; }
-	b64len = b64_encode(s_b64, bytes, n);
-
-	l = snprintf(apc, sizeof(apc), "\x1b_SyncTERM:C;S;%s;", file);
-	out_put(apc, l);
-	out_put(s_b64, b64len);
-	out_put("\x1b\\", 2);
-
-	l = snprintf(apc, sizeof(apc), "\x1b_SyncTERM:C;%s;DX=%d;DY=%d;%s\x1b\\",
-	             drawverb, g_img_x, g_img_y, file);   // DX/DY center the image in the canvas
-	out_put(apc, l);
+	size_t len = termgfx_apc_image(&s_apc, &s_apc_cap, file, drawverb,
+	                               bytes, n, g_img_x, g_img_y);   // DX/DY center in the canvas
+	out_put(s_apc, len);
 }
 
 static void emit_frame_ppm(int w, int h)
@@ -663,56 +625,14 @@ static void apply_sixel_scroll(void)
 static float g_jxl_distance = 2.0f;
 static int   g_jxl_effort   = 1;
 
-// Encode s_rgb (w*h RGB888) as JXL into s_img; returns false on any failure
-// (caller falls back to PPM).
+// Encode s_rgb (w*h RGB888) as JXL via termgfx; emit as a DrawJXL. Returns false on any
+// failure (caller falls back to PPM).
 static bool emit_frame_jxl(int w, int h)
 {
-	JxlEncoder *             enc;
-	JxlEncoderFrameSettings *fs;
-	JxlBasicInfo             info;
-	JxlColorEncoding         color;
-	JxlPixelFormat           pf = { 3, JXL_TYPE_UINT8, JXL_NATIVE_ENDIAN, 0 };
-	JxlEncoderStatus         st;
-	size_t                   written = 0;
-
-	enc = JxlEncoderCreate(NULL);
-	if (enc == NULL)
+	size_t n = termgfx_jxl_encode(&s_img, &s_img_cap, s_rgb, w, h, g_jxl_distance, g_jxl_effort);
+	if (n == 0)
 		return false;
-	fs = JxlEncoderFrameSettingsCreate(enc, NULL);
-	JxlEncoderFrameSettingsSetOption(fs, JXL_ENC_FRAME_SETTING_EFFORT, g_jxl_effort);
-	JxlEncoderSetFrameLossless(fs, JXL_FALSE);
-	JxlEncoderSetFrameDistance(fs, g_jxl_distance);
-
-	JxlEncoderInitBasicInfo(&info);
-	info.xsize = w;  info.ysize = h;
-	info.bits_per_sample = 8;
-	info.num_color_channels = 3;
-	info.alpha_bits = 0;
-	info.uses_original_profile = JXL_FALSE;
-	if (JxlEncoderSetBasicInfo(enc, &info) != JXL_ENC_SUCCESS) { JxlEncoderDestroy(enc); return false; }
-
-	JxlColorEncodingSetToSRGB(&color, JXL_FALSE);
-	JxlEncoderSetColorEncoding(enc, &color);
-
-	if (JxlEncoderAddImageFrame(fs, &pf, s_rgb, (size_t)w * h * 3) != JXL_ENC_SUCCESS) {
-		JxlEncoderDestroy(enc); return false;
-	}
-	JxlEncoderCloseInput(enc);
-
-	ensure(&s_img, &s_img_cap, s_img_cap < 4096 ? 4096 : s_img_cap);
-	do {
-		uint8_t *next  = s_img + written;
-		size_t   avail = s_img_cap - written;
-		st = JxlEncoderProcessOutput(enc, &next, &avail);
-		written = (size_t)(next - s_img);
-		if (st == JXL_ENC_NEED_MORE_OUTPUT)
-			ensure(&s_img, &s_img_cap, s_img_cap * 2);
-	} while (st == JXL_ENC_NEED_MORE_OUTPUT);
-	JxlEncoderDestroy(enc);
-	if (st != JXL_ENC_SUCCESS)
-		return false;
-
-	emit_cached_image("d.jxl", "DrawJXL", s_img, written);
+	emit_cached_image("d.jxl", "DrawJXL", s_img, n);
 	return true;
 }
 #endif // WITH_JXL
@@ -923,7 +843,8 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 		if (chatw > 0)
 			rt_exclude_add(SD_CHAT_ROW, 0, chatw);
 
-		tb = rt_render_frame(&tlen);
+		pack_rgb(fb, DOOMGENERIC_RESX, DOOMGENERIC_RESY);   // native-res RGB888 for the text scaler
+		tb = rt_render_frame(s_rgb, DOOMGENERIC_RESX, DOOMGENERIC_RESY, &tlen);
 		out_put(tb, tlen);
 
 		if (msgw > 0) {                                   // draw it as characters, on top
@@ -1552,17 +1473,15 @@ static int g_cterm_version = 0; // CTerm/SyncTERM version maj*1000+min (DA1 repl
 // CSI reply is inert there: it ends on the 'n' final and yields no key).
 static int probe_jxl(void)
 {
-	static const char q[] = "\x1b_SyncTERM:Q;JXL\x1b\\";
-	unsigned char     acc[256];
-	int               al = 0, result = -1;
-	uint32_t          deadline = now_ms() + 600;
+	unsigned char acc[256];
+	int           al = 0, result = -1;
+	uint32_t      deadline = now_ms() + 600;
 
-	emit_all(q, sizeof(q) - 1);
+	emit_all(termgfx_query_jxl, strlen(termgfx_query_jxl));
 	while (result < 0) {
 		int32_t       rem = (int32_t)(deadline - now_ms());
 		unsigned char buf[256];
 		ssize_t       n, i;
-		int           j;
 
 		if (rem <= 0)
 			break;
@@ -1587,14 +1506,7 @@ static int probe_jxl(void)
 			if (al < (int)sizeof(acc))
 				acc[al++] = buf[i];
 		}
-		for (j = 0; j + 6 < al; j++) {
-			if (acc[j] == 0x1b && acc[j + 1] == '[' && acc[j + 2] == '=' &&
-			    acc[j + 3] == '1' && acc[j + 4] == ';' &&
-			    (acc[j + 5] == '0' || acc[j + 5] == '1') && acc[j + 6] == '-') {
-				result = acc[j + 5] - '0';
-				break;
-			}
-		}
+		result = termgfx_caps_parse_jxl(acc, al);
 	}
 	g_is_syncterm = (result >= 0);   // any reply (0 or 1) means it's SyncTERM
 	return result == 1;

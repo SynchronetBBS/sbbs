@@ -25,7 +25,6 @@ set(SOURCES
     r_plane.c r_segs.c r_sky.c r_things.c sha1.c sounds.c statdump.c st_lib.c
     st_stuff.c s_sound.c tables.c v_video.c wi_stuff.c w_checksum.c w_file.c
     w_main.c w_wad.c z_zone.c w_file_stdc.c i_input.c i_video.c doomgeneric.c
-    render_text.c
     deh_str.c deh_io.c deh_main.c deh_mapping.c deh_text.c deh_ammo.c
     deh_bexstr.c deh_cheat.c deh_doom.c deh_frame.c deh_misc.c deh_ptr.c
     deh_sound.c deh_thing.c deh_weapon.c w_merge.c
@@ -177,6 +176,7 @@ if(NOT WITHOUT_JPEG_XL)
             set(JPEG_XL_FOUND TRUE)
             set(JPEG_XL_INCLUDE_DIRS ${JXL_INCLUDE_DIR})
             target_compile_definitions(syncdoom PRIVATE JXL_STATIC_DEFINE)
+            target_compile_definitions(termgfx PRIVATE JXL_STATIC_DEFINE)
         endif()
     endif()
     if(NOT JPEG_XL_FOUND)
@@ -194,6 +194,10 @@ if(NOT WITHOUT_JPEG_XL)
     if(JPEG_XL_FOUND)
         target_compile_definitions(syncdoom PRIVATE WITH_JXL)
         target_include_directories(syncdoom PRIVATE ${JPEG_XL_INCLUDE_DIRS})
+        # termgfx/jxl.c needs the JXL headers + WITH_JXL to compile the encoder; the
+        # libjxl symbols resolve at syncdoom's final link (JPEG_XL_LIBRARIES below).
+        target_compile_definitions(termgfx PRIVATE WITH_JXL)
+        target_include_directories(termgfx PRIVATE ${JPEG_XL_INCLUDE_DIRS})
         target_link_directories(syncdoom PRIVATE ${JPEG_XL_LIBRARY_DIRS})
         target_link_libraries(syncdoom ${JPEG_XL_LIBRARIES})
         message(STATUS "syncdoom: JPEG XL graphics tier ENABLED")
