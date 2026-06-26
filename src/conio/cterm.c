@@ -1842,6 +1842,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	}
 	cterm->accumulator = NULL;
 	cterm->saved_accumulator = NULL;
+	cterm->lf_expand = false;
 	cterm_reset(cterm);
 	if(cterm->scrollback!=NULL) {
 		memset(cterm->scrollback, 0, cterm->backwidth * cterm->backlines * sizeof(*cterm->scrollback));
@@ -1993,20 +1994,23 @@ cterm_ctputs(struct cterminal *cterm, char *buf)
 	cterm_coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &rm, &bm);
 	for (p = buf; *p; p++) {
 		switch(*p) {
-			case '\r':
-				cterm_clear_lcf(cterm);
-				*p = 0;
-				cputs(outp);
-				outp = p + 1;
-				cterm_adjust_currpos(cterm, INT_MIN, 0, 0);
-				CURR_XY(&cx, &cy);
-				break;
 			case '\n':
 				cterm_clear_lcf(cterm);
 				*p = 0;
 				cputs(outp);
 				outp = p + 1;
 				cterm_adjust_currpos(cterm, 0, 1, 1);
+				CURR_XY(&cx, &cy);
+				if (!cterm->lf_expand)
+					break;
+			case '\r':
+				if (*p == '\r') {
+					clear_lcf(cterm);
+					*p = 0;
+					cputs(outp);
+					outp = p + 1;
+				}
+				adjust_currpos(cterm, INT_MIN, 0, 0);
 				CURR_XY(&cx, &cy);
 				break;
 			case '\b':
