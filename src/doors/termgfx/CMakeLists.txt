@@ -7,10 +7,17 @@
 # pacing and input move here over time (see the extraction plan).
 #
 #   sixel.{c,h} -- indexed DECSIXEL encoder (was render_sixel)
+#   term.{c,h}  -- canonical terminal control strings (enter/probe/leave;
+#                  notably the DECSDM ?80 sixel-scrolling reset)
 #   sbbs_node  -- door-native node list / paging / who's-online (node.dab/.exb)
 
 add_library(termgfx STATIC
     sixel.c
+    apc.c
+    jxl.c
+    caps.c
+    text.c
+    term.c
     sbbs_node.c)
 
 # Public: consumers that #include "sixel.h" / "sbbs_node.h" get this dir.

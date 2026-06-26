@@ -1,0 +1,55 @@
+// apc.c -- SyncTERM APC cached-image transport (C;S Store + C;Draw{JXL,PPM}), base64 payload.
+// Carved out of syncdoom.c's b64_encode()/emit_cached_image() so JXL/PPM (and any future
+// cached-image tier) share one transport. I/O-free: builds the bytes, the door sends them.
+
+#include "apc.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// base64 (RFC 4648, no line breaks) -> SyncTERM's b64_decode_alloc()
+static const char b64tab[] =
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+// Encode len bytes of in into out; returns number of base64 chars written.
+static size_t b64_encode(char *out, const uint8_t *in, size_t len)
+{
+	size_t i, o = 0;
+	for (i = 0; i + 2 < len; i += 3) {
+		uint32_t v = (in[i] << 16) | (in[i + 1] << 8) | in[i + 2];
+		out[o++] = b64tab[(v >> 18) & 0x3f];
+		out[o++] = b64tab[(v >> 12) & 0x3f];
+		out[o++] = b64tab[(v >>  6) & 0x3f];
+		out[o++] = b64tab[ v        & 0x3f];
+	}
+	if (i < len) {
+		uint32_t v = in[i] << 16;
+		if (i + 1 < len)
+			v |= in[i + 1] << 8;
+		out[o++] = b64tab[(v >> 18) & 0x3f];
+		out[o++] = b64tab[(v >> 12) & 0x3f];
+		out[o++] = (i + 1 < len) ? b64tab[(v >> 6) & 0x3f] : '=';
+		out[o++] = '=';
+	}
+	return o;
+}
+
+size_t termgfx_apc_image(uint8_t **buf, size_t *cap,
+                         const char *file, const char *drawverb,
+                         const uint8_t *payload, size_t n, int dx, int dy)
+{
+	size_t   b64len = 4 * ((n + 2) / 3);                        // base64 chars (no terminator)
+	size_t   need   = strlen(file) * 2 + strlen(drawverb) + 96 + b64len;
+	uint8_t *p;
+
+	if (need > *cap) {
+		*buf = realloc(*buf, need);
+		*cap = need;
+	}
+	p  = *buf;
+	p += sprintf((char *)p, "\x1b_SyncTERM:C;S;%s;", file);     // Store header
+	p += b64_encode((char *)p, payload, n);                    // base64 payload
+	memcpy(p, "\x1b\\", 2); p += 2;                            // ST
+	p += sprintf((char *)p, "\x1b_SyncTERM:C;%s;DX=%d;DY=%d;%s\x1b\\", drawverb, dx, dy, file);
+	return (size_t)(p - *buf);
+}

@@ -54,15 +54,22 @@ static void ob_run(obuf_t *o, int ch, int len)
 size_t sixel_encode(uint8_t **buf, size_t *cap, const uint8_t *idx, int w, int h,
                     const uint8_t *pal, int emit_palette)
 {
+	return sixel_encode_aspect(buf, cap, idx, w, h, 1, 1, pal, emit_palette);
+}
+
+size_t sixel_encode_aspect(uint8_t **buf, size_t *cap, const uint8_t *idx, int w, int h,
+                           int pan, int pad, const uint8_t *pal, int emit_palette)
+{
 	obuf_t  o;
 	int     x, y, band, bands, c;
 	uint8_t present[256];
 
 	o.b = *buf; o.cap = *cap; o.len = 0;
 
-	// --- header: intro, raster attributes (square pixels, W x H) ---
+	// --- header: intro, raster attributes (pixel aspect pan:pad, W x H) ---
 	ob_put(&o, "\x1bPq");
-	ob_putc(&o, '"'); ob_put(&o, "1;1;"); ob_putn(&o, w); ob_putc(&o, ';'); ob_putn(&o, h);
+	ob_putc(&o, '"'); ob_putn(&o, pan); ob_putc(&o, ';'); ob_putn(&o, pad);
+	ob_putc(&o, ';'); ob_putn(&o, w); ob_putc(&o, ';'); ob_putn(&o, h);
 
 	// --- palette: registers map 1:1 to indices; (re)define only when asked ---
 	if (emit_palette) {

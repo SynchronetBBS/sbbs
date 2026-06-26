@@ -1,9 +1,9 @@
-// render_text.c -- text/block render tiers for syncdoom.
+// text.c (termgfx) -- text/block render tiers for framebuffer game doors.
 // The core (lines marked below) is lifted from ludocode/doom-cli (GPL-2.0):
 // doomgeneric_cli.c color quantizers + dithering + draw_half/draw_space.
 // Adapted: backend/input/main stripped; output drained by the caller; the
-// framebuffer source is DG_ScreenBuffer; block glyph is charset-selectable.
-// See CREDITS.
+// framebuffer source is an RGB888 buffer passed to rt_render_frame (game-agnostic
+// -- was DG_ScreenBuffer); block glyph is charset-selectable. See CREDITS.
 
 #define _GNU_SOURCE     // mempcpy/stpcpy used by the 24-bit color path
 #include <stdio.h>
@@ -14,8 +14,7 @@
 #include <stdarg.h>
 #include <limits.h>
 
-#include "doomgeneric.h"     // DG_ScreenBuffer, DOOMGENERIC_RESX/RESY, DG_GetTicksMs
-#include "render_text.h"
+#include "text.h"
 
 // mempcpy/stpcpy are glibc extensions; MSVC's CRT lacks them. Provide the
 // trivial equivalents (each returns a pointer to the byte past what it wrote).
@@ -629,16 +628,19 @@ void rt_config(int cols, int rows, rt_mode_t mode, rt_colors_t colors, rt_charse
     rt_force  = 1;          // geometry/tier/charset changed -> repaint every cell next frame
 }
 
-const char *rt_render_frame(size_t *len)
+const char *rt_render_frame(const uint8_t *rgb, int src_w, int src_h, size_t *len)
 {
     int x, y;
     uint32_t *dp = dest_buffer;
 
+    // Scale the RGB888 source into the per-mode dest pixel buffer (0x00RRGGBB);
+    // the rest of the renderer works on dest_buffer, fully game-agnostic.
     for (y = 0; y < dest_height; ++y)
         for (x = 0; x < dest_width; ++x) {
-            int sy = y * DOOMGENERIC_RESY / dest_height;
-            int sx = x * DOOMGENERIC_RESX / dest_width;
-            *dp++ = DG_ScreenBuffer[sy * DOOMGENERIC_RESX + sx];
+            int sy = y * src_h / dest_height;
+            int sx = x * src_w / dest_width;
+            const uint8_t *p = rgb + ((size_t)sy * src_w + sx) * 3;
+            *dp++ = ((uint32_t)p[0] << 16) | ((uint32_t)p[1] << 8) | p[2];
         }
 
     buffer_count = 0;

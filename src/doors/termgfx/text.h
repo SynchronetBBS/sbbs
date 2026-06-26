@@ -1,14 +1,15 @@
-// Text / block-character render tiers for syncdoom, lifted and adapted from
-// ludocode/doom-cli (GPL-2.0). Converts the doomgeneric framebuffer to ANSI
-// block-character terminal output (the CP437/ANSI and ASCII fallback tiers for
-// terminals without SyncTERM's image-cache / sixel). See CREDITS.
+// text.h (termgfx) -- text / block-character render tiers for framebuffer game
+// doors (SyncDOOM, SyncDuke, ...), lifted and adapted from ludocode/doom-cli
+// (GPL-2.0). Converts an RGB888 framebuffer to ANSI block-character terminal
+// output (the CP437/ANSI and ASCII fallback tiers for terminals without
+// SyncTERM's image-cache / sixel). See CREDITS.
 //
-// This first cut implements the HALF-block and SPACE modes (quadrant/sextant
-// UTF-8 hi-res modes to follow). Output is built into an internal buffer the
-// caller drains via rt_render_frame(); no terminal/stdout I/O here.
+// The source framebuffer is passed to rt_render_frame() as RGB888 (game-agnostic;
+// each door packs its own framebuffer). Output is built into an internal buffer
+// the caller drains via rt_render_frame(); no terminal/stdout I/O here.
 
-#ifndef SYNCDOOM_RENDER_TEXT_H_
-#define SYNCDOOM_RENDER_TEXT_H_
+#ifndef TERMGFX_TEXT_H_
+#define TERMGFX_TEXT_H_
 
 #include <stdint.h>
 #include <stddef.h>
@@ -27,9 +28,10 @@ typedef enum { RT_UTF8 = 0, RT_CP437 } rt_charset_t;       // block glyph: U+258
 // and block charset. Allocates the scaled pixel buffer + cell-diff shadow.
 void rt_config(int cols, int rows, rt_mode_t mode, rt_colors_t colors, rt_charset_t charset);
 
-// Render the current doomgeneric frame (DG_ScreenBuffer) to terminal bytes.
-// Returns a pointer to the bytes and sets *len; valid until the next call.
-const char *rt_render_frame(size_t *len);
+// Render a w*h RGB888 framebuffer to terminal block-character bytes. The source
+// is scaled to the configured cell grid internally. Returns a pointer to the
+// bytes and sets *len; valid until the next call.
+const char *rt_render_frame(const uint8_t *rgb, int src_w, int src_h, size_t *len);
 
 // Cell-diff HUD exclusion: cells the door draws on top (stats overlay, message
 // line, chat) which the game render must skip so it never repaints under them.
@@ -42,4 +44,4 @@ void rt_exclude_add(int row, int c0, int c1);
 // renderer's back, e.g. a manual row clear) so the shadow can't drift from screen.
 void rt_invalidate(void);
 
-#endif // SYNCDOOM_RENDER_TEXT_H_
+#endif // TERMGFX_TEXT_H_
