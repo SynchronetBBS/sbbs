@@ -90,43 +90,47 @@ void hlineasm4(int32_t numPixels, int32_t shade, uint32_t i4, uint32_t i5, uint8
 static int32_t rmach_eax;
 static int32_t rmach_ebx;
 static int32_t rmach_ecx;
-static int32_t rmach_edx;
+static intptr_t rmach_edx;   /* SyncDuke 64-bit: the palookup (palette) base pointer; int32_t truncated it on LP64 -> rhlineasm4 read a garbage palette address -> SIGSEGV */
 static int32_t rmach_esi;
-void setuprhlineasm4(int32_t i1, int32_t i2, int32_t i3, int32_t i4, int32_t i5, int32_t i6)
+void setuprhlineasm4(int32_t i1, int32_t i2, int32_t i3, intptr_t i4, int32_t i5, int32_t i6)
 {
     rmach_eax = i1;
     rmach_ebx = i2;
     rmach_ecx = i3;
     rmach_edx = i4;
     rmach_esi = i5;
-} 
+}
 
 
-void rhlineasm4(int32_t i1, uint8_t* texture, int32_t i3, uint32_t i4, uint32_t i5, int32_t dest)
+void rhlineasm4(int32_t i1, uint8_t* texture, int32_t i3, uint32_t i4, uint32_t i5, intptr_t dest)
 {
-    uint32_t ebp = dest - i1;
-    uint32_t rmach6b = ebp-1;
+    /* SyncDuke 64-bit: rmach6b is the framebuffer write base; dest was int32_t and
+     * the old uint32_t ebp/rmach6b truncated it on LP64 -> the store wrote a garbage
+     * address. ebp is reused below purely as a 32-bit per-pixel carry, so keep it
+     * separate from the (pointer-width) write base. */
+    uintptr_t rmach6b = (uintptr_t)(dest - i1 - 1);
+    uint32_t ebp;
     int32_t numPixels;
-    
+
     if (i1 <= 0) return;
 
     numPixels = i1;
     do {
-		
-		
+
+
 
 	    i3 = ((i3&0xffffff00)|(*texture));
 	    i4 -= rmach_eax;
 	    ebp = (((i4+rmach_eax) < i4) ? -1 : 0);
 	    i5 -= rmach_ebx;
-        
+
 	    if ((i5 + rmach_ebx) < i5)
             texture -= (rmach_ecx+1);
 	    else
             texture -= rmach_ecx;
-        
+
 	    ebp &= rmach_esi;
-	    i1 = ((i1&0xffffff00)|(((uint8_t *)i3)[rmach_edx]));
+	    i1 = ((i1&0xffffff00)|(((uint8_t *)(intptr_t)i3)[rmach_edx]));   /* i3 = color index, rmach_edx = palette base ptr */
 
 		if (pixelsAllowed-- > 0)
 			 ((uint8_t *)rmach6b)[numPixels] = (i1&0xff);
@@ -139,59 +143,60 @@ void rhlineasm4(int32_t i1, uint8_t* texture, int32_t i3, uint32_t i4, uint32_t 
 static int32_t rmmach_eax;
 static int32_t rmmach_ebx;
 static int32_t rmmach_ecx;
-static int32_t rmmach_edx;
+static intptr_t rmmach_edx;   /* SyncDuke 64-bit: palookup (palette) base pointer; int32_t truncated it on LP64 */
 static int32_t setupTileHeight;
-void setuprmhlineasm4(int32_t i1, int32_t i2, int32_t i3, int32_t i4, int32_t tileHeight, int32_t i6)
+void setuprmhlineasm4(int32_t i1, int32_t i2, int32_t i3, intptr_t i4, int32_t tileHeight, int32_t i6)
 {
     rmmach_eax = i1;
     rmmach_ebx = i2;
     rmmach_ecx = i3;
     rmmach_edx = i4;
     setupTileHeight = tileHeight;
-} 
+}
 
 
 //FCS: ????
-void rmhlineasm4(int32_t i1, intptr_t shade, int32_t colorIndex, int32_t i4, int32_t i5, int32_t dest)
+void rmhlineasm4(int32_t i1, intptr_t shade, int32_t colorIndex, int32_t i4, int32_t i5, intptr_t dest)
 {
-    uint32_t ebp = dest - i1;
-    uint32_t rmach6b = ebp-1;
+    /* SyncDuke 64-bit: framebuffer write base; dest was int32_t -> truncated on LP64. */
+    uintptr_t rmach6b = (uintptr_t)(dest - i1 - 1);
+    uint32_t ebp;
     int32_t numPixels;
-    
+
     if (i1 <= 0)
         return;
 
     numPixels = i1;
     do {
 
-	
+
 
 	    colorIndex = ((colorIndex&0xffffff00)|(*((uint8_t *)shade)));
 	    i4 -= rmmach_eax;
 	    ebp = (((i4+rmmach_eax) < i4) ? -1 : 0);
 	    i5 -= rmmach_ebx;
-        
+
 	    if ((i5 + rmmach_ebx) < i5)
             shade -= (rmmach_ecx+1);
 	    else
             shade -= rmmach_ecx;
-        
+
 	    ebp &= setupTileHeight;
-        
+
         //Check if this colorIndex is the transparent color (255).
 	    if ((colorIndex&0xff) != 255) {
 			if (pixelsAllowed-- > 0)
 			{
-				i1 = ((i1&0xffffff00)|(((uint8_t  *)colorIndex)[rmmach_edx]));
+				i1 = ((i1&0xffffff00)|(((uint8_t  *)(intptr_t)colorIndex)[rmmach_edx]));   /* colorIndex = color, rmmach_edx = palette base ptr */
 				((uint8_t  *)rmach6b)[numPixels] = (i1&0xff);
 			}
 	    }
-        
+
 	    shade -= ebp;
 	    numPixels--;
-        
+
     } while (numPixels);
-} 
+}
 
 
 //Variable used to draw column.
@@ -295,9 +300,14 @@ int32_t tvlineasm1(int32_t i1, uint8_t  * texture, int32_t numPixels, int32_t i4
 
 
 static uint8_t  tran2shr;
-static uint32_t tran2pal_ebx;
-static uint32_t tran2pal_ecx;
-void setuptvlineasm2(int32_t i1, int32_t i2, int32_t i3)
+/* SyncDuke 64-bit: these hold palette-lookup pointers (palookupoffse[], a uint8_t*)
+ * later cast back to (uint8_t*) and dereferenced; uint32_t truncated them on LP64,
+ * so the translucent masked-sprite path (tvlineasm2) read through a garbage pointer
+ * and SIGSEGV'd whenever a see-through sprite was drawn (e.g. blood/jibs after a
+ * hard landing). Must be pointer-width, as must setuptvlineasm2's i2/i3 params. */
+static uintptr_t tran2pal_ebx;
+static uintptr_t tran2pal_ecx;
+void setuptvlineasm2(int32_t i1, intptr_t i2, intptr_t i3)
 {
 	tran2shr = (i1&0x1f);
 	tran2pal_ebx = i2;
@@ -848,10 +858,13 @@ extern int32_t fpuasm;
 #define high32(a) ((int)(((__int64)a&(__int64)0xffffffff00000000)>>32))
 
 //FCS: Render RENDER_SLOPPED_CEILING_AND_FLOOR
-void slopevlin(intptr_t i1, uint32_t i2, int32_t i3, int32_t i4, int32_t i5, int32_t i6)
+/* SyncDuke 64-bit: i3 is a texture-data pointer (deref'd as *(uint32_t*)i3),
+ * was int32_t -> truncated on LP64 -> SIGSEGV drawing sloped surfaces. */
+void slopevlin(intptr_t i1, uint32_t i2, intptr_t i3, int32_t i4, int32_t i5, int32_t i6)
 {
     bitwisef2i c;
-    uint32_t ecx,eax,ebx,edx,esi,edi;
+    uint32_t ecx,eax,edx,esi,edi;
+    uintptr_t ebx;   /* SyncDuke 64-bit: ebx holds a palookup base POINTER read from the i3 table (line below) */
 //This is so bad to cast asm3 to int then float :( !!!
     float a = (float)(int32_t) asm3 + asm2_f;
     i1 -= slopemach_ecx;
@@ -898,8 +911,8 @@ void slopevlin(intptr_t i1, uint32_t i2, int32_t i3, int32_t i4, int32_t i5, int
 		    edi += eax;
 		    i1 += slopemach_ecx;
 		    edx = ((edx&0xffffff00)|((((uint8_t  *)(ebx+edx))[slopemach_ebx])));
-		    ebx = *((uint32_t*)i3); // register trickery
-		    i3 -= 4;
+		    ebx = *((uintptr_t*)i3); // register trickery (SyncDuke 64-bit: full palookup pointer)
+		    i3 -= sizeof(intptr_t);
 		    eax = ((eax&0xffffff00)|(*((uint8_t  *)(ebx+edx))));
 		    ebx = esi;
 

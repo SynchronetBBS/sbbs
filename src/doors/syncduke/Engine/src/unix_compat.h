@@ -25,7 +25,14 @@
 
 // Horrible horrible macro: Watcom allowed memory pointer to be cast
 // to a 32bits integer. The code is unfortunately stuffed with this :( !
-#define FP_OFF(x) ((int32_t) (x))
+// SyncDuke 64-bit patch: widen to intptr_t so the pointer round-trip uses
+// ((void*)FP_OFF(ptr), e.g. initfastcolorlookup's colhere/colhead clear and
+// the palookup pointer builds) survive on LP64 instead of truncating to 32
+// bits and crashing. Sites that store the result into an int32_t global
+// (the 3D render inner loops: palookupoffs/asm3) still truncate -- those are
+// a deeper 32-bit assumption handled separately. No-op on a 32-bit build.
+#include <stdint.h>
+#define FP_OFF(x) ((intptr_t) (x))
 
 #ifndef max
 #define max(x, y)  (((x) > (y)) ? (x) : (y))

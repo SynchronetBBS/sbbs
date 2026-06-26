@@ -1516,7 +1516,8 @@ void movefallers(void)
 void movestandables(void)
 {
     short i, j, k, m, nexti, nextj, p, sect;
-    int32_t l=0, x, *t;
+    int32_t l=0, x;
+    intptr_t *t;   /* SyncDuke 64-bit: -> hittype[].temp_data[] (intptr_t); an int32_t* mis-strided every t[N] on LP64 */
     spritetype *s;
 
     i = headspritestat[6];
@@ -3138,7 +3139,8 @@ void movetransports(void)
 
 void moveactors(void)
 {
-    int32_t x, m, l, *t;
+    int32_t x, m, l;
+    intptr_t *t;   /* SyncDuke 64-bit: -> hittype[].temp_data[] (intptr_t); an int32_t* mis-strided every t[N] on LP64 */
     short a, i, j, nexti, nextj, sect, p;
     spritetype *s;
     uint16_t k;
@@ -4395,7 +4397,8 @@ void moveactors(void)
 void moveexplosions(void)  // STATNUM 5
 {
     short i, j, nexti, sect, p;
-    int32_t l, x, *t;
+    int32_t l, x;
+    intptr_t *t;   /* SyncDuke 64-bit: -> hittype[].temp_data[] (intptr_t); an int32_t* mis-strided every t[N] on LP64 */
     spritetype *s;
 
     i = headspritestat[5];
@@ -4927,7 +4930,9 @@ void moveexplosions(void)  // STATNUM 5
 
 void moveeffectors(void)   //STATNUM 3
 {
-    int32_t q=0, l, m, x, st, j, *t;
+    int32_t q=0, l, m, x, st, j;
+    intptr_t *t;       /* SyncDuke 64-bit: -> hittype[].temp_data[] (intptr_t); an int32_t* mis-strided every t[N] on LP64 -> swing doors/lifts never saw their operate state */
+    int32_t *casptr;   /* SyncDuke 64-bit: SE21 cascade held &floorz/&ceilingz in an int32 (truncated on LP64) */
     short i, k, nexti, nextk, p, sh, nextj;
     spritetype *s;
     sectortype *sc;
@@ -6486,23 +6491,23 @@ void moveeffectors(void)   //STATNUM 3
                 if( t[0] == 0 ) break;
 
                 if( s->ang == 1536 )
-                    l = (int32_t) &sc->ceilingz;
+                    casptr = &sc->ceilingz;
                 else
-                    l = (int32_t) &sc->floorz;
+                    casptr = &sc->floorz;
 
                 if( t[0] == 1 ) //Decide if the s->sectnum should go up or down
                 {
-                    s->zvel = ksgn(s->z-*(int32_t *)l) * (SP<<4);
+                    s->zvel = ksgn(s->z-*casptr) * (SP<<4);
                     t[0]++;
                 }
 
                 if( sc->extra == 0 )
                 {
-                    *(int32_t *)l += s->zvel;
+                    *casptr += s->zvel;
 
-                    if(klabs(*(int32_t *)l-s->z) < 1024)
+                    if(klabs(*casptr-s->z) < 1024)
                     {
-                        *(int32_t *)l = s->z;
+                        *casptr = s->z;
                         KILLIT(i); //All done
                     }
                 }

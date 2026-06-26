@@ -1,0 +1,5 @@
+# Locally built door binary (not tracked; built via build.sh / build.bat).
+# Note: the live syncduke.ini (seeded from syncduke.example.ini) is intentionally
+# NOT ignored here -- leave it untracked so a sysop's edited config is visible.
+/syncduke
+/syncduke.exe

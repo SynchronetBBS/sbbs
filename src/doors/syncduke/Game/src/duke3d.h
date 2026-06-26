@@ -547,10 +547,16 @@ extern SOUNDOWNER SoundOwner[NUM_SOUNDS][4];
 extern uint8_t  playerreadyflag[MAXPLAYERS],playerquitflag[MAXPLAYERS];
 extern char  sounds[NUM_SOUNDS][14];
 
-extern int32_t script[MAXSCRIPTSIZE],*scriptptr,*insptr,*labelcode,labelcnt;
+/* SyncDuke 64-bit: the CON VM stores absolute script pointers in these slots
+ * (script[] holds &script[...] addresses; see gamedef.c). int32_t truncated them
+ * on LP64 -> SIGSEGV in execute(). Widened to intptr_t (labelcnt is a real count,
+ * stays 32-bit). Byte-offset arithmetic on these pointers is scaled to
+ * sizeof(intptr_t) at the deref sites. */
+extern intptr_t script[MAXSCRIPTSIZE],*scriptptr,*insptr,*labelcode;
+extern int32_t labelcnt;
 extern char  *label,*textptr,error,warning;
 extern uint8_t killit_flag;
-extern int32_t *actorscrptr[MAXTILES],*parsing_actor;
+extern intptr_t *actorscrptr[MAXTILES],*parsing_actor;
 extern uint8_t  actortype[MAXTILES];
 extern uint8_t  *music_pointer;
 
@@ -572,7 +578,7 @@ struct weaponhit
     short tempang,actorstayput,dispicnum;
     short timetosleep;
     int32_t floorz,ceilingz,lastvx,lastvy,bposx,bposy,bposz;
-    int32_t temp_data[6];
+    intptr_t temp_data[6];   /* SyncDuke 64-bit: slots [1],[4],[5] hold CON script pointers (Action/move/Ai); see gamedef.c */
 };
 
 extern struct weaponhit hittype[MAXSPRITES];

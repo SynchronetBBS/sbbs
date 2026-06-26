@@ -361,32 +361,31 @@ int loadplayer(int8_t spot)
      kdfread(&cloudx[0],sizeof(short)<<7,1,fil);
      kdfread(&cloudy[0],sizeof(short)<<7,1,fil);
 
-     kdfread(&scriptptrs[0],1,MAXSCRIPTSIZE,fil);
-     kdfread(&script[0],4,MAXSCRIPTSIZE,fil);
-     for(i=0;i<MAXSCRIPTSIZE;i++)
-        if( scriptptrs[i] )
+     /* SyncDuke 64-bit: mirror saveplayer -- relocate the CON script pointers with
+      * full-width base arithmetic and read the intptr_t-sized arrays at real width. */
      {
-         j = (int32_t)script[i]+(int32_t)&script[0];
-         script[i] = j;
-     }
+       intptr_t sbase = (intptr_t)&script[0];
 
-     kdfread(&actorscrptr[0],4,MAXTILES,fil);
-     for(i=0;i<MAXTILES;i++)
-         if(actorscrptr[i])
-     {
-        j = (int32_t)actorscrptr[i]+(int32_t)&script[0];
-        actorscrptr[i] = (int32_t *)j;
-     }
+       kdfread(&scriptptrs[0],1,MAXSCRIPTSIZE,fil);
+       kdfread(&script[0],sizeof(intptr_t),MAXSCRIPTSIZE,fil);
+       for(i=0;i<MAXSCRIPTSIZE;i++)
+          if( scriptptrs[i] )
+              script[i] += sbase;
 
-     kdfread(&scriptptrs[0],1,MAXSPRITES,fil);
-     kdfread(&hittype[0],sizeof(struct weaponhit),MAXSPRITES,fil);
+       kdfread(&actorscrptr[0],sizeof(intptr_t),MAXTILES,fil);
+       for(i=0;i<MAXTILES;i++)
+           if(actorscrptr[i])
+               actorscrptr[i] = (intptr_t *)((intptr_t)actorscrptr[i] + sbase);
 
-     for(i=0;i<MAXSPRITES;i++)
-     {
-        j = (int32_t)(&script[0]);
-        if( scriptptrs[i]&1 ) T2 += j;
-        if( scriptptrs[i]&2 ) T5 += j;
-        if( scriptptrs[i]&4 ) T6 += j;
+       kdfread(&scriptptrs[0],1,MAXSPRITES,fil);
+       kdfread(&hittype[0],sizeof(struct weaponhit),MAXSPRITES,fil);
+
+       for(i=0;i<MAXSPRITES;i++)
+       {
+          if( scriptptrs[i]&1 ) T2 += sbase;
+          if( scriptptrs[i]&2 ) T5 += sbase;
+          if( scriptptrs[i]&4 ) T6 += sbase;
+       }
      }
 
          kdfread(&lockclock,sizeof(lockclock),1,fil);
@@ -395,8 +394,8 @@ int loadplayer(int8_t spot)
 
          kdfread(&animatecnt,sizeof(animatecnt),1,fil);
          kdfread(&animatesect[0],2,MAXANIMATES,fil);
-         kdfread(&animateptr[0],4,MAXANIMATES,fil);
-     for(i = animatecnt-1;i>=0;i--) animateptr[i] = (int32_t *)((int32_t)animateptr[i]+(int32_t)(&sector[0]));
+         kdfread(&animateptr[0],sizeof(intptr_t),MAXANIMATES,fil);
+     for(i = animatecnt-1;i>=0;i--) animateptr[i] = (int32_t *)((intptr_t)animateptr[i]+(intptr_t)(&sector[0]));   /* SyncDuke 64-bit: full-width base */
          kdfread(&animategoal[0],4,MAXANIMATES,fil);
          kdfread(&animatevel[0],4,MAXANIMATES,fil);
 
@@ -646,90 +645,69 @@ int saveplayer(int8_t spot)
      dfwrite(&cloudx[0],sizeof(short)<<7,1,fil);
      dfwrite(&cloudy[0],sizeof(short)<<7,1,fil);
 
-     for(i=0;i<MAXSCRIPTSIZE;i++)
+     /* SyncDuke 64-bit: script[], actorscrptr[] and the per-actor T2/T5/T6 hold CON
+      * script pointers (intptr_t). The original DOS code relocated them to file offsets
+      * and back using (int32_t) casts of the base address -- on LP64 that truncated the
+      * high 32 bits, so the in-place restore below CORRUPTED the live pointers and the
+      * next CON execute() ran off a garbage insptr and crashed. Use full-width arithmetic
+      * for the base, and write the (intptr_t-sized) arrays at their real width. */
      {
-          if( (int32_t)script[i] >= (int32_t)(&script[0]) && (int32_t)script[i] < (int32_t)(&script[MAXSCRIPTSIZE]) )
-          {
-                scriptptrs[i] = 1;
-                j = (int32_t)script[i] - (int32_t)&script[0];
-                script[i] = j;
-          }
-          else scriptptrs[i] = 0;
+       intptr_t sbase = (intptr_t)&script[0], send = (intptr_t)&script[MAXSCRIPTSIZE];
+
+       for(i=0;i<MAXSCRIPTSIZE;i++)
+       {
+            if( script[i] >= sbase && script[i] < send )
+            {
+                  scriptptrs[i] = 1;
+                  script[i] -= sbase;
+            }
+            else scriptptrs[i] = 0;
+       }
+
+       dfwrite(&scriptptrs[0],1,MAXSCRIPTSIZE,fil);
+       dfwrite(&script[0],sizeof(intptr_t),MAXSCRIPTSIZE,fil);
+
+       for(i=0;i<MAXSCRIPTSIZE;i++)
+          if( scriptptrs[i] )
+              script[i] += sbase;
+
+       for(i=0;i<MAXTILES;i++)
+           if(actorscrptr[i])
+               actorscrptr[i] = (intptr_t *)((intptr_t)actorscrptr[i] - sbase);
+       dfwrite(&actorscrptr[0],sizeof(intptr_t),MAXTILES,fil);
+       for(i=0;i<MAXTILES;i++)
+           if(actorscrptr[i])
+               actorscrptr[i] = (intptr_t *)((intptr_t)actorscrptr[i] + sbase);
+
+       for(i=0;i<MAXSPRITES;i++)
+       {
+          scriptptrs[i] = 0;
+          if(actorscrptr[PN] == 0) continue;
+          if(T2 >= sbase && T2 < send) { scriptptrs[i] |= 1; T2 -= sbase; }
+          if(T5 >= sbase && T5 < send) { scriptptrs[i] |= 2; T5 -= sbase; }
+          if(T6 >= sbase && T6 < send) { scriptptrs[i] |= 4; T6 -= sbase; }
+       }
+
+       dfwrite(&scriptptrs[0],1,MAXSPRITES,fil);
+       dfwrite(&hittype[0],sizeof(struct weaponhit),MAXSPRITES,fil);
+
+       for(i=0;i<MAXSPRITES;i++)
+       {
+          if(actorscrptr[PN] == 0) continue;
+          if(scriptptrs[i]&1) T2 += sbase;
+          if(scriptptrs[i]&2) T5 += sbase;
+          if(scriptptrs[i]&4) T6 += sbase;
+       }
      }
-
-     dfwrite(&scriptptrs[0],1,MAXSCRIPTSIZE,fil);
-     dfwrite(&script[0],4,MAXSCRIPTSIZE,fil);
-
-     for(i=0;i<MAXSCRIPTSIZE;i++)
-        if( scriptptrs[i] )
-     {
-        j = script[i]+(int32_t)&script[0];
-        script[i] = j;
-     }
-
-     for(i=0;i<MAXTILES;i++)
-         if(actorscrptr[i])
-     {
-        j = (int32_t)actorscrptr[i]-(int32_t)&script[0];
-        actorscrptr[i] = (int32_t *)j;
-     }
-     dfwrite(&actorscrptr[0],4,MAXTILES,fil);
-     for(i=0;i<MAXTILES;i++)
-         if(actorscrptr[i])
-     {
-         j = (int32_t)actorscrptr[i]+(int32_t)&script[0];
-         actorscrptr[i] = (int32_t *)j;
-     }
-
-     for(i=0;i<MAXSPRITES;i++)
-     {
-        scriptptrs[i] = 0;
-
-        if(actorscrptr[PN] == 0) continue;
-
-        j = (int32_t)&script[0];
-
-        if(T2 >= j && T2 < (int32_t)(&script[MAXSCRIPTSIZE]) )
-        {
-            scriptptrs[i] |= 1;
-            T2 -= j;
-        }
-        if(T5 >= j && T5 < (int32_t)(&script[MAXSCRIPTSIZE]) )
-        {
-            scriptptrs[i] |= 2;
-            T5 -= j;
-        }
-        if(T6 >= j && T6 < (int32_t)(&script[MAXSCRIPTSIZE]) )
-        {
-            scriptptrs[i] |= 4;
-            T6 -= j;
-        }
-    }
-
-    dfwrite(&scriptptrs[0],1,MAXSPRITES,fil);
-    dfwrite(&hittype[0],sizeof(struct weaponhit),MAXSPRITES,fil);
-
-    for(i=0;i<MAXSPRITES;i++)
-    {
-        if(actorscrptr[PN] == 0) continue;
-        j = (int32_t)&script[0];
-
-        if(scriptptrs[i]&1)
-            T2 += j;
-        if(scriptptrs[i]&2)
-            T5 += j;
-        if(scriptptrs[i]&4)
-            T6 += j;
-    }
 
          dfwrite(&lockclock,sizeof(lockclock),1,fil);
      dfwrite(&pskybits,sizeof(pskybits),1,fil);
      dfwrite(&pskyoff[0],sizeof(pskyoff[0]),MAXPSKYTILES,fil);
          dfwrite(&animatecnt,sizeof(animatecnt),1,fil);
          dfwrite(&animatesect[0],2,MAXANIMATES,fil);
-         for(i = animatecnt-1;i>=0;i--) animateptr[i] = (int32_t *)((int32_t)animateptr[i]-(int32_t)(&sector[0]));
-         dfwrite(&animateptr[0],4,MAXANIMATES,fil);
-         for(i = animatecnt-1;i>=0;i--) animateptr[i] = (int32_t *)((int32_t)animateptr[i]+(int32_t)(&sector[0]));
+         for(i = animatecnt-1;i>=0;i--) animateptr[i] = (int32_t *)((intptr_t)animateptr[i]-(intptr_t)(&sector[0]));   /* SyncDuke 64-bit: full-width base (was (int32_t) -> truncated -> corrupted live door pointers on save) */
+         dfwrite(&animateptr[0],sizeof(intptr_t),MAXANIMATES,fil);
+         for(i = animatecnt-1;i>=0;i--) animateptr[i] = (int32_t *)((intptr_t)animateptr[i]+(intptr_t)(&sector[0]));
          dfwrite(&animategoal[0],4,MAXANIMATES,fil);
          dfwrite(&animatevel[0],4,MAXANIMATES,fil);
 
@@ -1431,7 +1409,20 @@ void menus(void)
 	static int waiting4key = false;
 	static int current_resolution = 0;
     char text[512];
-    
+    extern volatile int syncduke_help_request;   // SyncDuke: F1 in-game opens GAME CONTROLS (case 707)
+    extern int  syncduke_mouse_enabled(void);    // SyncDuke: terminal mouse steering on/off (Ctrl-O)
+    extern void syncduke_mouse_toggle(void);
+    extern int  syncduke_mouse_sens(void);        // 0..63 steer sensitivity (Setup Controls slider)
+    extern void syncduke_mouse_sens_set(int);
+    extern int  syncduke_kb_tap(void);            // SyncDuke: keyboard-feel sliders (0..63) + FAST TURN
+    extern void syncduke_kb_tap_set(int);
+    extern int  syncduke_kb_hold(void);
+    extern void syncduke_kb_hold_set(int);
+    extern int  syncduke_kb_turn(void);
+    extern void syncduke_kb_turn_set(int);
+    extern int  syncduke_kb_fastturn(void);
+    extern void syncduke_kb_fastturn_set(int);
+
     getpackets();
 
     if(((ControllerType == controltype_keyboardandmouse)||
@@ -2077,7 +2068,7 @@ void menus(void)
                                 break;
                             cmenu(300);
                             break;
-                        case 3: KB_FlushKeyboardQueue();cmenu(400);break;  // help
+                        case 3: KB_FlushKeyboardQueue();cmenu(707);break;  // SyncDuke: CONTROLS HELP (replaces How-to-Order/Help)
                         case 4: cmenu(990);break;  // credit
                         case 5: cmenu(501);break;  // quit
 
@@ -2110,10 +2101,9 @@ void menus(void)
                 menutext(c,67+16+16,SHX(-4),1,"LOAD GAME");
             else menutext(c,67+16+16,SHX(-4),PHX(-4),"LOAD GAME");
 
-if(VOLUMEONE)
-            menutext(c,67+16+16+16,SHX(-5),PHX(-5),"HOW TO ORDER");
-else
-            menutext(c,67+16+16+16,SHX(-5),PHX(-5),"HELP");
+            /* SyncDuke: How-to-Order/Help (legacy, N/A in a BBS door) -> the door's
+             * terminal CONTROLS HELP chart (menu case 707). */
+            menutext(c,67+16+16+16,SHX(-5),PHX(-5),"CONTROLS HELP");
 
             menutext(c,67+16+16+16+16,SHX(-6),PHX(-6),"CREDITS");
 
@@ -2163,7 +2153,7 @@ else
                 case 4:
                     last_fifty = 4;
                     KB_FlushKeyboardQueue();
-                    cmenu(400);
+                    cmenu(707);   // SyncDuke: CONTROLS HELP (replaces How-to-Order/Help)
                     break;
                 case 5:
                     if(numplayers < 2)
@@ -2203,10 +2193,8 @@ else
             }
 
             menutext(c,67+16*3 ,SHX(-5),PHX(-5),"OPTIONS");
-if(VOLUMEONE)
-            menutext(c,67+16*4 ,SHX(-6),PHX(-6),"HOW TO ORDER");
-else
-            menutext(c,67+16*4 ,SHX(-6),PHX(-6)," HELP");
+            /* SyncDuke: How-to-Order/Help (legacy, N/A) -> CONTROLS HELP (case 707). */
+            menutext(c,67+16*4 ,SHX(-6),PHX(-6),"CONTROLS HELP");
 
             if(numplayers > 1)
                 menutext(c,67+16*5 ,SHX(-7),1,"QUIT TO TITLE");
@@ -2422,7 +2410,7 @@ else
 
             c = (320>>1)-120;
 
-            x = probe(c+6,43,16,6);
+            x = probe(c+6,43,16,5);   /* SyncDuke: was 6 -- GAME CONTROLS help moved to the main menu */
 
             if(x == -1)
                 { if(ps[myconnectindex].gm&MODE_GAME) cmenu(50);else cmenu(0); }
@@ -2434,19 +2422,14 @@ else
 					break;
 
                 case 1:
-                    cmenu(703); // keybaord setup
-					probey = 7;
+                    cmenu(701); // setup controls (keyboard tuning / mouse steering)
                     break;
 
-                case 2:
-                    cmenu(701); // mouse setup
-                    break;
-
-				case 3:
+				case 2:
                     cmenu(700);  // sound setup
                     break;
 
-				case 4:  
+				case 3:
 					cmenu(706); // Video setup
 					lastkeysetup = 0;
 					current_resolution = 0; // in case we don't find it
@@ -2457,7 +2440,7 @@ else
 					}
 					break;
 
-                case 5: // record on/off
+                case 4: // record on/off
                     if( (ps[myconnectindex].gm&MODE_GAME) )
                     {
                         closedemowrite();
@@ -2472,30 +2455,74 @@ else
 
 			}
 
+			/* SyncDuke: GAME CONTROLS (the read-only key-help chart) moved to the main
+			 * menu as "CONTROLS HELP"; the keyboard-tuning sliders live in SETUP CONTROLS. */
 			menutext(c,43,SHX(-6),PHX(-6),"GAME OPTIONS");
 
-			menutext(c,43+16,SHX(-6),PHX(-6),"SETUP KEYBOARD");
+			menutext(c,43+16,SHX(-6),PHX(-6),"SETUP CONTROLS");
 
-			menutext(c,43+16+16,SHX(-6),PHX(-6),"SETUP MOUSE");
+            menutext(c,43+16+16,SHX(-8),PHX(-8),"SETUP SOUND");
 
-            menutext(c,43+16+16+16,SHX(-8),PHX(-8),"SETUP SOUND");
-
-            menutext(c,43+16+16+16+16,SHX(-8),PHX(-8),"SETUP VIDEO");
+            menutext(c,43+16+16+16,SHX(-8),PHX(-8),"SETUP VIDEO");
 
             if( (ps[myconnectindex].gm&MODE_GAME) && ud.m_recstat != 1 )
             {
-                menutext(c,43+16+16+16+16+16,SHX(-10),1,"RECORD");
-                menutext(c+160+40,43+16+16+16+16+16,SHX(-10),1,"OFF");
+                menutext(c,43+16+16+16+16,SHX(-10),1,"RECORD");
+                menutext(c+160+40,43+16+16+16+16,SHX(-10),1,"OFF");
             }
             else
             {
-                menutext(c,43+16+16+16+16+16,SHX(-10),PHX(-10),"RECORD");
+                menutext(c,43+16+16+16+16,SHX(-10),PHX(-10),"RECORD");
 
                 if(ud.m_recstat == 1)
-                    menutext(c+160+40,43+16+16+16+16+16,SHX(-10),PHX(-10),"ON");
-                else menutext(c+160+40,43+16+16+16+16+16,SHX(-10),PHX(-10),"OFF");
+                    menutext(c+160+40,43+16+16+16+16,SHX(-10),PHX(-10),"ON");
+                else menutext(c+160+40,43+16+16+16+16,SHX(-10),PHX(-10),"OFF");
             }
 
+            break;
+
+        case 707:
+            // SyncDuke: GAME CONTROLS -- a read-only chart of the door's terminal key
+            // bindings (a BBS door has no key remap). Mirrors SyncDoom's custom controls
+            // reference: two columns, key then action. Whenever the screen is opened IN-GAME
+            // -- via F1 (help_request==2) or from the in-game ESC menu (CONTROLS HELP) -- the
+            // live game view + HUD would otherwise show through, so paint the standard full-
+            // screen MENUSCREEN behind it. Out of game (the main-menu CONTROLS HELP) the menu
+            // system's own backdrop is already present, so MENUSCREEN isn't needed there.
+            if( syncduke_help_request == 2 || (ps[myconnectindex].gm&MODE_GAME) )
+                rotatesprite(160<<16,200<<15,65536L,0,MENUSCREEN,16,0,10+64,0,0,xdim-1,ydim-1);
+            rotatesprite(320<<15,19<<16,65536L,0,MENUBAR,16,0,10,0,0,xdim-1,ydim-1);
+            menutext(320>>1,24,0,0,"GAME CONTROLS");
+            x = probe(326,190,0,0);
+            gametext( 60, 34,"ARROWS",0,2+8+16);    gametext(158, 34,"MOVE / TURN",0,2+8+16);
+            gametext( 60, 45,"W A S D",0,2+8+16);   gametext(158, 45,"MOVE / STRAFE",0,2+8+16);
+            gametext( 60, 56,"SPACE",0,2+8+16);     gametext(158, 56,"FIRE",0,2+8+16);
+            gametext( 60, 67,"E",0,2+8+16);         gametext(158, 67,"OPEN / USE",0,2+8+16);
+            gametext( 60, 78,"Q",0,2+8+16);         gametext(158, 78,"JUMP",0,2+8+16);
+            gametext( 60, 89,"Z",0,2+8+16);         gametext(158, 89,"CROUCH (TOGGLE)",0,2+8+16);
+            gametext( 60,100,"R",0,2+8+16);         gametext(158,100,"TOGGLE RUN",0,2+8+16);
+            gametext( 60,111,"PGUP/PGDN",0,2+8+16); gametext(158,111,"LOOK UP / DOWN",0,2+8+16);
+            gametext( 60,122,"HOME/END",0,2+8+16);  gametext(158,122,"CENTER VIEW",0,2+8+16);
+            gametext( 60,133,"1 - 0",0,2+8+16);     gametext(158,133,"SELECT WEAPON",0,2+8+16);
+            gametext( 60,144,"TAB",0,2+8+16);       gametext(158,144,"AUTOMAP",0,2+8+16);
+            gametext( 60,155,"ESC",0,2+8+16);       gametext(158,155,"MENU",0,2+8+16);
+            gametext(320>>1,170,"F4 GRAPHICS   CTRL-T FRAMES",0,2+8+16);
+            gametext(320>>1,181,"CTRL-O MOUSE   CTRL-S STATS",0,2+8+16);
+            if( x >= -1 )
+            {
+                // SyncDuke: when this screen was opened in-game via F1 (syncduke_help_request==2)
+                // a keypress returns to GAMEPLAY; opened from the Options menu it returns there.
+                if( syncduke_help_request == 2 )
+                {
+                    syncduke_help_request = 0;
+                    ps[myconnectindex].gm &= ~MODE_MENU;
+                    if(ud.multimode < 2 && ud.recstat != 2) ready2send = 1;
+                }
+                /* SyncDuke: CONTROLS HELP is opened from the main menu (case 0) out of game
+                 * and from the in-game ESC menu (case 50) in game -- return to whichever. */
+                else if(ps[myconnectindex].gm&MODE_GAME) cmenu(50);
+                else cmenu(0);
+            }
             break;
 
         case 700:
@@ -2630,117 +2657,65 @@ else
         case 701:
             c = (320>>1)-120;
             rotatesprite(320<<15,19<<16,65536L,0,MENUBAR,16,0,10,0,0,xdim-1,ydim-1);
-            menutext(320>>1,24,0,0,"SETUP MOUSE");
-            onbar = ( probey == 0 || probey == 1);
+            menutext(320>>1,24,0,0,"SETUP CONTROLS");
+            onbar = ( probey == 0 || probey == 2 || probey == 3 || probey == 4 );  // the sliders
 
-            x = probe(c+6,43,16,8);
+            x = probe(c+6,43,16,6);
             switch(x)
             {
-				case -7:
-					gametext(320>>1,43+16*7+3,"*** SHORTCUT: ALT-M ***",0,2+8+16); // center-i
-					break;
-
+                // SyncDuke: hint while hovering MOUSE STEERING (row 1), mirroring the ALT-M
+                // hint; probe() returns -(probey+2) for a hovered non-slider item.
+                case -3:
+                    gametext(320>>1,43+16*6+3,"*** SHORTCUT: CTRL-O ***",0,2+8+16);
+                    break;
                 case -1:
-					cmenu(200);
-					probey = 2;
+                    cmenu(200);
+                    probey = 2;
                     break;
-
-                case 0:
-				case 1:
-					break;
-				case 2:
-
- 					if ( ((ControllerType == controltype_keyboardandmouse)||
-						(ControllerType == controltype_joystickandmouse)) )
-					{
-						MouseAiming = !MouseAiming;
-						if(MouseAiming)
-							myaimmode = 0;
-
-					}
+                case 0:                 // STEER SENSITIVITY -- adjusted by bar() below
+                case 2:                 // KEY TAP   -- adjusted by bar() below
+                case 3:                 // KEY HOLD  -- adjusted by bar() below
+                case 4:                 // TURN HOLD -- adjusted by bar() below
                     break;
-
-				case 3:
-
- 					if ( ((ControllerType == controltype_keyboardandmouse)||
-						(ControllerType == controltype_joystickandmouse)) )
-					{
-						if(!MouseAiming) // means we are in toggle mode
-							myaimmode = !myaimmode;
-					}
+                case 1:                 // MOUSE STEERING on/off (same as Ctrl-O)
+                    syncduke_mouse_toggle();
                     break;
-
-                case 4:
-
- 					if ( ((ControllerType == controltype_keyboardandmouse)||
-						(ControllerType == controltype_joystickandmouse)) )
-					{
-						ud.mouseflip = 1-ud.mouseflip;
-					}
+                case 5:                 // FAST TURN on/off
+                    syncduke_kb_fastturn_set(!syncduke_kb_fastturn());
                     break;
-
-				case 5:
-
-					if (SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_ON) 
-					{
-						SDL_WM_GrabInput(SDL_GRAB_OFF);
-						SDL_ShowCursor(1);
-					}
-					else
-					{
-						SDL_WM_GrabInput(SDL_GRAB_ON);
-						SDL_ShowCursor(0);
-					}
-					break;
-
-				case 6:
-					cmenu(704); // Button setup
-                    break;
-
-				case 7:
-					cmenu(705); // Digital axes setup
-                    break;
-
                 default:
                     break;
             }
 
-			{            
-			short sense;
+            {
+            short v;
 
-			sense = CONTROL_GetMouseSensitivity_X();
-			menutext(c,43+16*0,SHX(-7),PHX(-7),"X SENSITIVITY");
-			bar(c+167+40,43+16*0,&sense,1,x==0,SHX(-7),PHX(-7));
-			CONTROL_SetMouseSensitivity_X( sense );
+            v = syncduke_mouse_sens();
+            menutext(c,43+16*0,SHX(-7),PHX(-7),"STEER SENSITIVITY");
+            bar(c+167+40,43+16*0,&v,1,x==0,SHX(-7),PHX(-7));
+            syncduke_mouse_sens_set(v);
 
-			sense = CONTROL_GetMouseSensitivity_Y();
-			menutext(c,43+16*1,SHX(-7),PHX(-7),"Y SENSITIVITY");
-			bar(c+167+40,43+16*1,&sense,1,x==1,SHX(-7),PHX(-7));
-			CONTROL_SetMouseSensitivity_Y( sense );
+            menutext(c,43+16*1,SHX(-7),PHX(-7),"MOUSE STEERING");
+            menutext(c+160+40,43+16*1,SHX(-7),PHX(-7),syncduke_mouse_enabled()?"ON":"OFF");
 
-			menutext(c,43+16*2,SHX(-7),PHX(-7),"MOUSE AIM TYPE");
-			if(MouseAiming) menutext(c+160+40,43+16*2,SHX(-7),PHX(-7),"HELD");
-			else menutext(c+160+40,43+16*2,SHX(-7),PHX(-7),"TOGGLE");
+            v = syncduke_kb_tap();
+            menutext(c,43+16*2,SHX(-7),PHX(-7),"KEY TAP");
+            bar(c+167+40,43+16*2,&v,1,x==2,SHX(-7),PHX(-7));
+            syncduke_kb_tap_set(v);
 
-			menutext(c,43+16*3,SHX(-7),MouseAiming,"MOUSE AIMING");
-			if(myaimmode) menutext(c+160+40,43+16*3,SHX(-7),MouseAiming,"ON");
-			else menutext(c+160+40,43+16*3,SHX(-7),MouseAiming,"OFF");
+            v = syncduke_kb_hold();
+            menutext(c,43+16*3,SHX(-7),PHX(-7),"KEY HOLD");
+            bar(c+167+40,43+16*3,&v,1,x==3,SHX(-7),PHX(-7));
+            syncduke_kb_hold_set(v);
 
-			menutext(c,43+16*4,SHX(-7),PHX(-7),"MOUSE AIMING FLIP");
-			if(ud.mouseflip) menutext(c+160+40,43+16*4,SHX(-7),PHX(-7),"ON");
-			else menutext(c+160+40,43+16*4,SHX(-7),PHX(-7),"OFF");
+            v = syncduke_kb_turn();
+            menutext(c,43+16*4,SHX(-7),PHX(-7),"TURN HOLD");
+            bar(c+167+40,43+16*4,&v,1,x==4,SHX(-7),PHX(-7));
+            syncduke_kb_turn_set(v);
 
-
-			menutext(c,43+16*5,SHX(-7),PHX(-7),"MOUSE CURSOR");
-			if(SDL_WM_GrabInput(SDL_GRAB_QUERY)==SDL_GRAB_ON)
-				menutext(c+160+40,43+16*5,SHX(-7),PHX(-7),"TAKEN");
-			else
-				menutext(c+160+40,43+16*5,SHX(-7),PHX(-7),"FREE'D");
-
-			menutext(c,43+16*6,SHX(-7),PHX(-7),"BUTTON SETUP...");
-		
-			menutext(c,43+16*7,SHX(-7),PHX(-7),"DIGITAL AXES SETUP...");	
-			}
+            menutext(c,43+16*5,SHX(-7),PHX(-7),"FAST TURN");
+            menutext(c+160+40,43+16*5,SHX(-7),PHX(-7),syncduke_kb_fastturn()?"ON":"OFF");
+            }
 
             break;
 

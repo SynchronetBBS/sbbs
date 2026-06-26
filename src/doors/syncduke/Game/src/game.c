@@ -2364,8 +2364,11 @@ void showtwoscreens(void)
 
 	    rotatesprite(0,0,65536L,0,3291,0,0,2+8+16+64, 0,0,xdim-1,ydim-1);
 
-	    nextpage(); 
-		for(i=63;i>0;i-=7) palto(0,0,0,i);
+	    nextpage();
+		for (i = 63; i > 0; i -= 7) {
+			palto(0, 0, 0, i);
+		}
+		nextpage();   // SyncDuke: present the faded-IN palette. The DOS build's palto() wrote the VGA DAC directly; our sixel path only shows a palette change on the next frame, so without this the screen stays on the faded-OUT (black) frame from the nextpage() above.
 
 	    while( !KB_KeyWaiting() ); // getpackets(); // Net already off. Trying to get packets here makes sporadic crash..
 	
@@ -2375,10 +2378,11 @@ void showtwoscreens(void)
 	    KB_FlushKeyboardQueue();
 
 	    rotatesprite(0,0,65536L,0,3290,0,0,2+8+16+64, 0,0,xdim-1,ydim-1);
-	    nextpage(); 
-		
-		for(i=63;i>0;i-=7) 
+	    nextpage();
+
+		for(i=63;i>0;i-=7)
 			palto(0,0,0,i);
+		nextpage();   // SyncDuke: present the faded-IN palette (see note above)
 
 	    while( !KB_KeyWaiting() ); // getpackets();
 	}
@@ -2397,8 +2401,9 @@ void showtwoscreens(void)
 	    rotatesprite(0,0,65536L,0,TENSCREEN,0,0,2+8+16+64, 0,0,xdim-1,ydim-1);
 	    nextpage();
 
-		for(i=63;i>0;i-=7) 
+		for(i=63;i>0;i-=7)
 			palto(0,0,0,i);
+		nextpage();   // SyncDuke: present the faded-IN palette (see note above)
 
 	    totalclock = 0;
 
@@ -2848,6 +2853,28 @@ void displayrest(int32_t smoothratio)
 
             if(ps[myconnectindex].gm&MODE_GAME) cmenu(50);
             else cmenu(0);
+            screenpeek = myconnectindex;
+        }
+    }
+
+    // SyncDuke: F1 (door-side; syncduke_input.c sets syncduke_help_request in gameplay) opens
+    // the read-only GAME CONTROLS screen (menu case 707) over the game and returns to play when
+    // dismissed -- a terminal-accurate replacement for Duke's built-in F1HELP (the DOS keyboard
+    // chart). Mirrors the Esc->menu open above; menues.c case 707 handles the return.
+    {
+        extern volatile int syncduke_help_request;
+        if( syncduke_help_request == 1 && ud.show_help == 0
+            && (ps[myconnectindex].gm&MODE_MENU) != MODE_MENU
+            && (ps[myconnectindex].gm&MODE_TYPE) != MODE_TYPE
+            && ps[myconnectindex].newowner == -1 )
+        {
+            syncduke_help_request = 2;          // 2 = showing, opened from gameplay
+            FX_StopAllSounds();
+            clearsoundlocks();
+            intomenusounds();
+            ps[myconnectindex].gm |= MODE_MENU;
+            if(ud.multimode < 2 && ud.recstat != 2) ready2send = 0;
+            cmenu(707);
             screenpeek = myconnectindex;
         }
     }
@@ -5403,7 +5430,8 @@ short spawn( short j, short pn )
 void animatesprites(int32_t x,int32_t y,short a,int32_t smoothratio)
 {
     short i, j, k, p, sect;
-    int32_t l, t1,t3,t4;
+    int32_t l, t3;
+    intptr_t t1, t4;   /* SyncDuke 64-bit: t1=T2 (move ptr), t4=T5 (action ptr) -- held CON script pointers */
     spritetype *s,*t;
 
     for(j=0;j < spritesortcnt; j++)
@@ -5902,7 +5930,7 @@ void animatesprites(int32_t x,int32_t y,short a,int32_t smoothratio)
 				// Lame fix. ok for w32. Doesn't work for other plateform.
 				// How to make a differene between a timer and an address??
             {
-                l = *(int32_t *)(t4+8);
+                l = *(intptr_t *)(t4+2*sizeof(intptr_t));   /* SyncDuke 64-bit: action field 2 (viewtype) */
 
                 switch( l )
                 {
@@ -5950,7 +5978,7 @@ void animatesprites(int32_t x,int32_t y,short a,int32_t smoothratio)
                         break;
                 }
 
-                t->picnum += k + ( *(int32_t *)t4 ) + l * t3;
+                t->picnum += k + ( *(intptr_t *)t4 ) + l * t3;   /* SyncDuke 64-bit: action field 0 */
 
                 if(l > 0)
                     while(tiles[t->picnum].dim.width == 0 && t->picnum > 0 )
@@ -7541,14 +7569,16 @@ void Logo(void)
 	    ps[myconnectindex].palette = drealms;
 	    palto(0,0,0,63);
 	    rotatesprite(0,0,65536L,0,DREALMS,0,0,2+8+16+64, 0,0,xdim-1,ydim-1);
-	    nextpage(); 
-		for(i=63;i>0;i-=7) 
-			palto(0,0,0,i);
-        
-        
-        
+	    nextpage();
+		for (i = 63; i > 0; i -= 7) {
+			palto(0, 0, 0, i);
+		}
+		nextpage();   // SyncDuke: present the faded-IN 3D Realms logo. The nextpage() above showed it with a fully-black palette; our sixel path only reflects a palto() change on the next frame, so without this the logo stayed black for the whole ~7s hold below.
+
+
+
 	    totalclock = 0;
-	    while( totalclock < (120*7) && !KB_KeyWaiting() )
+	    while( totalclock < (120*2) && !KB_KeyWaiting() )   // SyncDuke: 7s -> 2s. The original hold let the intro MUSIC play over the logo; the door has no sound (dummy audiolib), so it was a dead wait. Still keypress-skippable.
 	        getpackets();
 	
 
@@ -7570,7 +7600,8 @@ void Logo(void)
 	    totalclock = 0;
 	
 		//Animate screen (Duke picture wiht "DUKE" "NUKEM 3D" coming from far away and hitting the screen"
-	    while(totalclock < (860+120) && !KB_KeyWaiting())
+		// SyncDuke: end at tick 360 (~3s) instead of 980 (~8s). The "DUKE"/"NUKEM 3D"/"3D" pieces finish flying in by ~tick 250; the rest was a trailing hold for the (absent) intro music. Keypress still skips it.
+	    while(totalclock < 360 && !KB_KeyWaiting())
 	    {
 	        rotatesprite(0,0,65536L,0,BETASCREEN,0,0,2+8+16+64,0,0,xdim-1,ydim-1);
 	
@@ -8056,40 +8087,59 @@ int dukeGRP_Match(char* filename,int length)
 
 #include <dirent.h>
 void findGRPToUse(char * groupfilefullpath){
-    
+    /* SyncDuke: the read-only GRP lives in a shared dir (syncduke_grpdir, absolute),
+     * separate from the process CWD -- which is the user's per-user -home dir so config
+     * and saves land there.  Scan that dir and return an ABSOLUTE path so the GRP opens
+     * regardless of CWD.  Empty syncduke_grpdir => stock behavior (scan getGameDir()/CWD,
+     * return a bare filename). */
+    extern char syncduke_grpdir[];
+
     char directoryToScan[512];
     struct dirent* dirEntry ;
-    
+
     directoryToScan[0] = '\0';
-    
-    if (getGameDir()[0] != '\0')
+
+    if (syncduke_grpdir[0] != '\0')
+    {
+        strcat(directoryToScan,syncduke_grpdir);
+        if (directoryToScan[strlen(directoryToScan)-1] != '/')
+            strcat(directoryToScan,"/");
+    }
+    else if (getGameDir()[0] != '\0')
     {
         strcat(directoryToScan,getGameDir());
         if (directoryToScan[strlen(directoryToScan)-1] != '/')
             strcat(directoryToScan,"/");
     }
     else{
-        strcat(directoryToScan, "./");    
+        strcat(directoryToScan, "./");
     }
-    
+
     printf("Scanning directory '%s' for a GRP file like '%s'.\n",directoryToScan,baseDir);
-    
+
     DIR* dir =  opendir(directoryToScan);
-    
+    if (dir == NULL)
+        return;
+
     while ((dirEntry = readdir(dir)) != NULL)
     {
-        
+
 #ifdef __linux__
         if (dukeGRP_Match(dirEntry->d_name, _D_EXACT_NAMLEN(dirEntry)))
 #else
         if (dukeGRP_Match(dirEntry->d_name,dirEntry->d_namlen))
 #endif
         {
-            sprintf(groupfilefullpath,"%s",dirEntry->d_name);
+            if (syncduke_grpdir[0] != '\0')
+                sprintf(groupfilefullpath,"%s/%s",syncduke_grpdir,dirEntry->d_name);
+            else
+                sprintf(groupfilefullpath,"%s",dirEntry->d_name);
+            closedir(dir);
             return;
         }
-        
+
     }
+    closedir(dir);
 }
 
 #endif
@@ -9688,6 +9738,35 @@ uint8_t  domovethings(void)
         pan3dsound();
     }
 
+    /* SyncDuke headless save/load self-test (env SYNCDUKE_SAVETEST=1): a few seconds into
+     * gameplay, drive saveplayer(0) then loadplayer(0) directly from this (safe) sim loop --
+     * the deterministic headless test for the 64-bit save/load fix, with no fragile menu
+     * navigation. If saving corrupted the CON pointers (the bug) the next execute() SIGSEGVs;
+     * surviving + logging both lines proves the relocation round-trip is sound. */
+    {
+        static int st_on = -1, st_phase = 0, st_count = 0;
+        if (st_on < 0)
+            st_on = getenv("SYNCDUKE_SAVETEST") ? 1 : 0;
+        if (st_on && (ps[myconnectindex].gm & MODE_GAME)) {
+            st_count++;
+            if (st_phase == 0 && st_count > 100) {
+                st_phase = 1;
+                fprintf(stderr, "SYNCDUKE_SAVETEST: saveplayer(0) ...\n"); fflush(stderr);
+                tiles[MAXTILES-1].lock = 254;                    /* ensure the savegame-thumbnail tile exists (blank is fine for the test) */
+                if (tiles[MAXTILES-1].data == NULL)
+                    allocache(&tiles[MAXTILES-1].data, 100*160, &tiles[MAXTILES-1].lock);
+                saveplayer(0);
+                ready2send = 1; totalclock = ototalclock;       /* resume the sim, as the menu does after a save */
+                fprintf(stderr, "SYNCDUKE_SAVETEST: save returned, sim still running\n"); fflush(stderr);
+            } else if (st_phase == 1 && st_count > 200) {
+                st_phase = 2;
+                fprintf(stderr, "SYNCDUKE_SAVETEST: loadplayer(0) ...\n"); fflush(stderr);
+                loadplayer(0);
+                ready2send = 1; totalclock = ototalclock;
+                fprintf(stderr, "SYNCDUKE_SAVETEST: load returned, sim still running\n"); fflush(stderr);
+            }
+        }
+    }
 
     return 0;
 }
@@ -9704,29 +9783,53 @@ void doorders(void)
     totalclock = 0;
     KB_FlushKeyboardQueue();
     rotatesprite(0,0,65536L,0,ORDERING,0,0,2+8+16+64, 0,0,xdim-1,ydim-1);
-    nextpage(); for(i=63;i>0;i-=7) palto(0,0,0,i);
-    totalclock = 0;while( !KB_KeyWaiting() ) getpackets();
+    nextpage();
+    for (i = 63; i > 0; i -= 7) {
+        palto(0, 0, 0, i);
+    }
+    nextpage();   // SyncDuke: present the faded-IN order screen (the sixel path only reflects a palette change on the next frame)
+    totalclock = 0;
+    while (!KB_KeyWaiting())
+        getpackets();
 
     for(i=0;i<63;i+=7) palto(0,0,0,i);
     totalclock = 0;
     KB_FlushKeyboardQueue();
     rotatesprite(0,0,65536L,0,ORDERING+1,0,0,2+8+16+64, 0,0,xdim-1,ydim-1);
-    nextpage(); for(i=63;i>0;i-=7) palto(0,0,0,i);
-    totalclock = 0;while( !KB_KeyWaiting() ) getpackets();
+    nextpage();
+    for (i = 63; i > 0; i -= 7) {
+        palto(0, 0, 0, i);
+    }
+    nextpage();   // SyncDuke: present the faded-IN order screen (the sixel path only reflects a palette change on the next frame)
+    totalclock = 0;
+    while (!KB_KeyWaiting())
+        getpackets();
 
     for(i=0;i<63;i+=7) palto(0,0,0,i);
     totalclock = 0;
     KB_FlushKeyboardQueue();
     rotatesprite(0,0,65536L,0,ORDERING+2,0,0,2+8+16+64, 0,0,xdim-1,ydim-1);
-    nextpage(); for(i=63;i>0;i-=7) palto(0,0,0,i);
-    totalclock = 0;while( !KB_KeyWaiting() ) getpackets();
+    nextpage();
+    for (i = 63; i > 0; i -= 7) {
+        palto(0, 0, 0, i);
+    }
+    nextpage();   // SyncDuke: present the faded-IN order screen (the sixel path only reflects a palette change on the next frame)
+    totalclock = 0;
+    while (!KB_KeyWaiting())
+        getpackets();
 
     for(i=0;i<63;i+=7) palto(0,0,0,i);
     totalclock = 0;
     KB_FlushKeyboardQueue();
     rotatesprite(0,0,65536L,0,ORDERING+3,0,0,2+8+16+64, 0,0,xdim-1,ydim-1);
-    nextpage(); for(i=63;i>0;i-=7) palto(0,0,0,i);
-    totalclock = 0;while( !KB_KeyWaiting() ) getpackets();
+    nextpage();
+    for (i = 63; i > 0; i -= 7) {
+        palto(0, 0, 0, i);
+    }
+    nextpage();   // SyncDuke: present the faded-IN order screen (the sixel path only reflects a palette change on the next frame)
+    totalclock = 0;
+    while (!KB_KeyWaiting())
+        getpackets();
 }
 
 void dobonus(uint8_t  bonusonly)

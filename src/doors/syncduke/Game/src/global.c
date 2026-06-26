@@ -155,8 +155,9 @@ uint8_t  playerreadyflag[MAXPLAYERS],ready2send;
 uint8_t  playerquitflag[MAXPLAYERS];
 int32_t vel, svel, angvel, horiz, ototalclock, respawnactortime=768, respawnitemtime=768, groupfile;
 
-int32_t script[MAXSCRIPTSIZE],*scriptptr,*insptr,*labelcode,labelcnt;
-int32_t *actorscrptr[MAXTILES],*parsing_actor;
+intptr_t script[MAXSCRIPTSIZE],*scriptptr,*insptr,*labelcode;   /* SyncDuke 64-bit: see duke3d.h */
+int32_t labelcnt;
+intptr_t *actorscrptr[MAXTILES],*parsing_actor;
 char  *label,*textptr,error,warning ;
 uint8_t killit_flag;
 uint8_t  *music_pointer;

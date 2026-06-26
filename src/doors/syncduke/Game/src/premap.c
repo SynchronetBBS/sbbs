@@ -1391,7 +1391,10 @@ void dofrontscreens(void)
 
         nextpage();
 
-        for(j=63;j>0;j-=7) palto(0,0,0,j);
+        for (j = 63; j > 0; j -= 7) {
+            palto(0, 0, 0, j);
+        }
+        nextpage();   // SyncDuke: present the faded-IN palette. The nextpage() above showed the "ENTERING <level>" screen at the fade-OUT palette (~dim); our sixel path only reflects a palto() change on the next frame, so without this it stayed dim.
 
         KB_FlushKeyboardQueue();
         ud.screen_size = i;

@@ -1868,6 +1868,11 @@ void getinput(short snum)
     loc.bits =   ACTION(gamefunc_Jump);
     loc.bits |=   ACTION(gamefunc_Crouch)<<1;
     loc.bits |=   ACTION(gamefunc_Fire)<<2;
+    {   /* SyncDuke: terminal mouse left button -> Fire (a level set in syncduke_input.c) */
+        extern volatile int syncduke_mouse_fire;
+        if(syncduke_mouse_fire)
+            loc.bits |= 1<<2;
+    }
     loc.bits |=   ACTION(gamefunc_Aim_Up)<<3;
     loc.bits |=   ACTION(gamefunc_Aim_Down)<<4;
     loc.bits |=   ACTION(gamefunc_Run)<<5;
@@ -2038,10 +2043,14 @@ void getinput(short snum)
     }
 	else
     {
+        /* SyncDuke: FAST TURN (Setup Controls) skips the preamble ramp -- a terminal's
+         * gappy auto-repeat keeps resetting turnheldtime, so without this you stay stuck
+         * at PREAMBLETURN and turn painfully slowly. */
+        extern volatile int syncduke_fast_turn;
         if ( ACTION(gamefunc_Turn_Left))
            {
            turnheldtime += tics;
-           if (turnheldtime>=TURBOTURNTIME)
+           if (syncduke_fast_turn || turnheldtime>=TURBOTURNTIME)
               {
               angvel -= turnamount;
               }
@@ -2053,7 +2062,7 @@ void getinput(short snum)
         else if ( ACTION(gamefunc_Turn_Right))
            {
            turnheldtime += tics;
-           if (turnheldtime>=TURBOTURNTIME)
+           if (syncduke_fast_turn || turnheldtime>=TURBOTURNTIME)
               {
               angvel += turnamount;
               }
@@ -2090,6 +2099,12 @@ void getinput(short snum)
     if(vel > MAXVEL) vel = MAXVEL;
     if(svel < -MAXSVEL) svel = -MAXSVEL;
     if(svel > MAXSVEL) svel = MAXSVEL;
+    {   /* SyncDuke: terminal mouse steering -- add the door's steer rate (a continuous
+         * angvel level from the pointer's offset from screen centre, syncduke_input.c) to
+         * the turn before the clamp; bypasses Duke's mouse accel, like SyncDoom. */
+        extern volatile int syncduke_mouse_turn;
+        angvel += syncduke_mouse_turn;
+    }
     if(angvel < -MAXANGVEL) angvel = -MAXANGVEL;
     if(angvel > MAXANGVEL) angvel = MAXANGVEL;
     if(horiz < -MAXHORIZ) horiz = -MAXHORIZ;
@@ -3442,6 +3457,16 @@ void processinput(short snum)
         {
              if( p->horiz > 95 && p->horiz < 105) p->horiz = 100;
              if( p->horizoff > -5 && p->horizoff < 5) p->horizoff = 0;
+        }
+
+        {   /* SyncDuke: terminal "look" -- apply the fixed pitch notch posted by a PgUp/PgDn
+             * tap (syncduke_input.c) exactly ONCE here, so one tap == one deterministic step
+             * regardless of frame rate.  Holding Duke's per-tic Aim keys ramped the view all
+             * the way to "flying" on a slow link (one tap spanned many game-tics); this can't.
+             * Signed: + looks up, - looks down; |step| = pending taps.  Center_View re-levels. */
+            extern volatile int syncduke_pitch_step;
+            int st = syncduke_pitch_step;
+            if(st) { syncduke_pitch_step = 0; p->horiz += st * 30; }   /* 30 = one notch of -99..299 */
         }
 
         if(p->horiz > 299) p->horiz = 299;

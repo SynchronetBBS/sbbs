@@ -611,6 +611,24 @@ void CONFIG_ReadSetup( void )
    CONFIG_SetDefaults();
    scripthandle = SCRIPT_Load( setupfilename );
 
+   /* SyncDuke: restore the Setup Controls preferences from [SyncDuke].  Seed each from its
+    * current default so a missing key keeps the default (SCRIPT_GetNumber leaves *v alone). */
+   {
+      extern int  syncduke_mouse_sens(void);     extern void syncduke_mouse_sens_set(int);
+      extern int  syncduke_mouse_enabled(void);  extern void syncduke_mouse_toggle(void);
+      extern int  syncduke_kb_tap(void);         extern void syncduke_kb_tap_set(int);
+      extern int  syncduke_kb_hold(void);        extern void syncduke_kb_hold_set(int);
+      extern int  syncduke_kb_turn(void);        extern void syncduke_kb_turn_set(int);
+      extern int  syncduke_kb_fastturn(void);    extern void syncduke_kb_fastturn_set(int);
+      int32 v;
+      v = syncduke_mouse_sens();    SCRIPT_GetNumber(scripthandle,"SyncDuke","SteerSensitivity",&v); syncduke_mouse_sens_set(v);
+      v = syncduke_mouse_enabled(); SCRIPT_GetNumber(scripthandle,"SyncDuke","MouseSteering",&v);     if (v != syncduke_mouse_enabled()) syncduke_mouse_toggle();
+      v = syncduke_kb_tap();        SCRIPT_GetNumber(scripthandle,"SyncDuke","KeyTap",&v);   syncduke_kb_tap_set(v);
+      v = syncduke_kb_hold();       SCRIPT_GetNumber(scripthandle,"SyncDuke","KeyHold",&v);  syncduke_kb_hold_set(v);
+      v = syncduke_kb_turn();       SCRIPT_GetNumber(scripthandle,"SyncDuke","TurnHold",&v); syncduke_kb_turn_set(v);
+      v = syncduke_kb_fastturn();   SCRIPT_GetNumber(scripthandle,"SyncDuke","FastTurn",&v); syncduke_kb_fastturn_set(v);
+   }
+
    for(dummy = 0;dummy < 10;dummy++)
    {
        commmacro[13] = dummy+'0';
@@ -885,6 +903,23 @@ void CONFIG_WriteSetup( void )
    {
        commmacro[13] = dummy+'0';
        SCRIPT_PutString( scripthandle, "Comm Setup",commmacro,ud.ridecule[dummy]);
+   }
+
+   /* SyncDuke: persist the Setup Controls preferences per-user (door-layer values,
+    * not part of Duke's own config; read back in CONFIG_ReadSetup). */
+   {
+      extern int syncduke_mouse_sens(void);
+      extern int syncduke_mouse_enabled(void);
+      extern int syncduke_kb_tap(void);
+      extern int syncduke_kb_hold(void);
+      extern int syncduke_kb_turn(void);
+      extern int syncduke_kb_fastturn(void);
+      SCRIPT_PutNumber(scripthandle, "SyncDuke", "SteerSensitivity", syncduke_mouse_sens(),    false,false);
+      SCRIPT_PutNumber(scripthandle, "SyncDuke", "MouseSteering",    syncduke_mouse_enabled(), false,false);
+      SCRIPT_PutNumber(scripthandle, "SyncDuke", "KeyTap",   syncduke_kb_tap(),      false,false);
+      SCRIPT_PutNumber(scripthandle, "SyncDuke", "KeyHold",  syncduke_kb_hold(),     false,false);
+      SCRIPT_PutNumber(scripthandle, "SyncDuke", "TurnHold", syncduke_kb_turn(),     false,false);
+      SCRIPT_PutNumber(scripthandle, "SyncDuke", "FastTurn", syncduke_kb_fastturn(), false,false);
    }
 
    SCRIPT_Save (scripthandle, setupfilename);

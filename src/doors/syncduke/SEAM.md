@@ -63,9 +63,63 @@ layer (video / palette / input / timer / mouse). Our headless shim
   downgraded to warnings: `-Wno-error=int-conversion -Wno-error=implicit-int
   -Wno-error=incompatible-pointer-types` (plus likely `-Wno-error=implicit-function-declaration`).
 - Defines: `-DPLATFORM_UNIX` (selects `unix_compat.h`).
-- **64-bit runtime risk:** 20 `FP_OFF` casts (`(int32_t)pointer` → truncates a
-  64-bit pointer) + mixed `intptr_t`/`int32_t`. It compiles 64-bit; if it crashes
-  on a truncated pointer at boot, either fix the few hot `FP_OFF` spots or build
-  the door 32-bit (`-m32`, needs `gcc-multilib` + `libc6-dev-i386`).
+- **64-bit runtime risk — RESOLVED, tractable.** The engine boots and renders the
+  title screen at 64-bit. Upstream had *already* 64-bit-ported the renderer core
+  (`bufplce[]` is `intptr_t`, `palookupoffse[]`/`globalbufplc` are `uint8_t*`, the
+  asm-derived inner loops pass real `uint8_t*` dests), so only a few *stragglers*
+  truncate pointers. We fix those in place as we hit them rather than build 32-bit.
+
+### Vendored 64-bit straggler patches (keep this list — re-apply on re-vendor)
+1. **`Engine/src/unix_compat.h`** — `FP_OFF(x)` was `((int32_t)(x))`; widened to
+   `((intptr_t)(x))` so the pointer round-trip uses (`(void*)FP_OFF(colhere)` in
+   `initfastcolorlookup`, the `palookup` pointer builds) survive LP64 instead of
+   crashing `clearbufbyte`. No-op on a 32-bit build. Sites that still cast
+   `(int32_t)FP_OFF(...)` into an `int32_t` global (`palookupoffs`/`asm3`) are
+   legacy/dead paths — the live renderer uses the `*e[]` pointer variants.
+2. **`Engine/src/engine.c` `clearview()`** — local `int32_t p` held a framebuffer
+   pointer (`p = frameplace + ...`) → truncated on LP64 → `clearbufbyte` SIGSEGV in
+   `Logo()`. Changed to `intptr_t p`. (Siblings `clearallviews`/`plotpixel`/
+   `getpixel` keep the pointer typed as `uint8_t*`, already clean.)
+3. **CON-script VM (the big one — `gamedef.c`/`game.c`/`actors.c` + `duke3d.h`/
+   `global.c`).** The CON VM stores absolute `&script[...]` addresses inside int32
+   slots. Widened `script[MAXSCRIPTSIZE]`, `scriptptr`/`insptr`/`labelcode`,
+   `actorscrptr[]`/`parsing_actor`, and `hittype.temp_data[6]` to `intptr_t`
+   (`labelcnt` stays int32). Then: `g_t`/`tempscrptr`/`moveptr` → `intptr_t*`; the
+   `(int32_t)scriptptr` stores → `(intptr_t)`; the `(int32_t*)` script-pointer casts
+   → `(intptr_t*)`. **Byte-offset landmine:** sites that index an action/move struct
+   as `*(int32_t*)(g_t[x]+N)` use BYTE offsets that assumed 4-byte script words —
+   scaled to `N/4*sizeof(intptr_t)` (gamedef.c lines ~2190-2192, ~3156-3162;
+   game.c `animatesprites` `t4+8`→`+2*sizeof`). `game.c`'s `t1`/`t4` (=T2/T5, move/
+   action ptrs) and `actors.c` SE21 `l=(int32_t)&floorz` were bare-int pointer
+   holders → widened / given a dedicated `intptr_t`/`uint8_t*`.
+4. **Renderer palookup/texture pointers in int32 (`engine.c`/`draw.c`).** Only hit
+   in actual 3D gameplay (title/menu use 2D rotatesprite). `slopalookup[16384]` and
+   grouscan's `j`/`mptr*`/`nptr*` held palookup POINTERS as int32 → `intptr_t`;
+   `slopevlin()`'s `i3` param + its `uint32_t ebx` register read the palookup
+   pointer (`*(uintptr_t*)i3`, step `sizeof(intptr_t)`). The `asm3`/`palookupoffs`/
+   `palookupoffse[]` assignments dropped the `(int32_t)` truncating cast and use
+   pointer arithmetic (`palookup[globalpal] + shade`). These ARE the "legacy/dead"
+   sites note 1 dismissed — they're live in the wall/floor/sprite mappers.
+- **DONE: Duke E1L1 renders + plays headless at 64-bit** (boot→title→menu→new
+  game→3D world+HUD+weapon+movement, no crash). Expect a few more renderer/CON
+  stragglers for not-yet-exercised content (translucency, voxels, specific
+  enemies/effects, weapon fire); same shape, same fix. Each surfaces as a
+  `clearbufbyte`/`drawpixel`/mapper SIGSEGV at a `0x00000000xxxxxxxx`-ish address.
+- **KNOWN-DEFERRED: `menues.c` savegame** still does 32-bit pointer↔offset
+  relocation (`(int32_t)&script[0]`, `dfwrite(...,4,...)`) — compiles (warnings),
+  but quicksave/load is broken on LP64. Out of v1 first-light scope; fix when saves
+  are wanted (widen the relocation casts + element sizes to `sizeof(intptr_t)`).
+
+### Palette format (the headless capture point)
+`setbrightness()` (engine.c) builds a **256×4-byte BGRA, 6-bit (0..63)** buffer and
+hands it to `VBE_setPalette()`. The shim converts that to an 8-bit RGB table
+(`r*255/63`) that the framebuffer indices render through (PPM now, sixel later).
+Treating it as 3-byte stride gives a recognizable-but-psychedelic image — the tell
+that the stride is wrong.
+
+- Build flags unchanged: `-DPLATFORM_UNIX`, `-w -fcommon`, the int↔pointer
+  `-Wno-error=` set. The 32-bit fallback (`-m32`, needs `gcc-multilib` +
+  `libc6-dev-i386`) is no longer expected to be needed.
 - Our shim files (`syncduke.c`, `syncduke_plat.c`, …) follow house style + uncrustify;
-  the vendored engine sources do NOT (leave upstream style intact).
+  the vendored engine sources do NOT (leave upstream style intact) — except the two
+  documented straggler patches above.
