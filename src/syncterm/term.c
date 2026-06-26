@@ -5794,6 +5794,8 @@ doterm(struct bbslist *bbs)
 	        get_emulation(bbs));
 	if (!cterm)
 		return false;
+	if (bbs->lf_expand)
+		cterm->lf_expand = true;
 	if (bbs->palette_size > 0 && (cio_api.options & CONIO_OPT_EXTENDED_PALETTE)) {
 		uint32_t np[16];
 		int vm = find_vmode(screen_to_ciolib(bbs->screen_mode));
