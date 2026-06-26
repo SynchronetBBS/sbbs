@@ -5989,6 +5989,7 @@ struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int back
 	cterm->logfile=NULL;
 	cterm->emulation=emulation;
 	cterm->last_column_flag = 0;
+	cterm->lf_expand = false;
 	cterm_reset(cterm);
 	if(cterm->scrollback!=NULL) {
 		memset(cterm->scrollback, 0, cterm->backwidth * cterm->backlines * sizeof(*cterm->scrollback));
@@ -6332,20 +6333,23 @@ ctputs(struct cterminal *cterm, char *buf)
 	coord_conv_xy(cterm, CTERM_COORD_TERM, CTERM_COORD_CURR, &rm, &bm);
 	for (p = buf; *p; p++) {
 		switch(*p) {
-			case '\r':
-				clear_lcf(cterm);
-				*p = 0;
-				cputs(outp);
-				outp = p + 1;
-				adjust_currpos(cterm, INT_MIN, 0, 0);
-				CURR_XY(&cx, &cy);
-				break;
 			case '\n':
 				clear_lcf(cterm);
 				*p = 0;
 				cputs(outp);
 				outp = p + 1;
 				adjust_currpos(cterm, 0, 1, 1);
+				CURR_XY(&cx, &cy);
+				if (!cterm->lf_expand)
+					break;
+			case '\r':
+				if (*p == '\r') {
+					clear_lcf(cterm);
+					*p = 0;
+					cputs(outp);
+					outp = p + 1;
+				}
+				adjust_currpos(cterm, INT_MIN, 0, 0);
 				CURR_XY(&cx, &cy);
 				break;
 			case '\b':
