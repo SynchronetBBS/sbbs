@@ -112,6 +112,14 @@
 ## Mail Server
 
 - Adopt the shared rate-limit auto-filter (see Servers)
+- New **DKIM signing of outbound mail** (RFC 6376, relaxed/relaxed,
+  rsa-sha256): the SendMail thread can sign each outgoing message
+  with a `DKIM-Signature` header so receivers can authenticate it as
+  coming from your domain (issue #215). Enable with the `[Mail]`
+  `DKIMSign` / `DKIMDomain` / `DKIMSelector` keys (or in SCFG); the
+  RSA private key is read from `ctrl/dkim_<selector>.pem` and the
+  matching public key is published in DNS. Requires an OpenSSL-enabled
+  build (signing is a no-op stub otherwise)
 - POP3: `USER` / `PASS` issued on an already-authenticated
   session now get a plain `-ERR` response rather than
   `!UNSUPPORTED COMMAND`, matching Dovecot / Courier behavior
@@ -150,6 +158,8 @@
   menu path rendered as a CP437 box-drawing tree
 - New per-server **Rate Limiting...** submenus under Web Server,
   FTP Server, Mail Server, and Services
+- New **DKIM Signing / Domain / Selector** options under Mail Server
+  → SendMail Support, for outbound DKIM message signing
 - New **Terminal Server → Max Concurrent Connections...**
   submenu (threshold, duration, silent variant)
 - **Internal MQTT Broker** toggle under Networks → MQTT, which

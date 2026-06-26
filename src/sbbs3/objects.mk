@@ -129,6 +129,7 @@ FTP_OBJS	= $(MTOBJODIR)/ftpsrvr$(OFILE) \
 MAIL_OBJS	= $(MTOBJODIR)/mailsrvr$(OFILE) \
 			$(MTOBJODIR)/mxlookup$(OFILE) \
  		  	$(MTOBJODIR)/mime$(OFILE) \
+ 		  	$(MTOBJODIR)/mail_dkim$(OFILE) \
  		  	$(MTOBJODIR)/nopen$(OFILE) \
  		  	$(MTOBJODIR)/ars$(OFILE)
 

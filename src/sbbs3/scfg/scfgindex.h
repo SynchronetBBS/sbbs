@@ -1768,6 +1768,21 @@ static const scfg_option_t scfg_option_index[] = {
 		"System > Security Options... > Display/Log Passwords Locally"
 	},
 	{
+		"DKIM Domain",
+		"SendMail Support...",
+		"Servers > Mail Server > SendMail Support... > DKIM Domain"
+	},
+	{
+		"DKIM Selector",
+		"SendMail Support...",
+		"Servers > Mail Server > SendMail Support... > DKIM Selector"
+	},
+	{
+		"DKIM Signing",
+		"SendMail Support...",
+		"Servers > Mail Server > SendMail Support... > DKIM Signing"
+	},
+	{
 		"DNS-Blacklisted Servers",
 		"Mail Server",
 		"Servers > Mail Server > DNS-Blacklisted Servers"

@@ -1849,6 +1849,9 @@ static void sendmail_cfg(mail_startup_t* startup)
 		bool applicable = (startup->options & (MAIL_OPT_RELAY_TX | MAIL_OPT_NO_SENDMAIL)) == MAIL_OPT_RELAY_TX;
 		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Delivery Method"
 		         , startup->options & MAIL_OPT_NO_SENDMAIL ? "N/A" : applicable ? "Relay" : "Direct");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "DKIM Signing", startup->dkim_sign ? "Yes" : "No");
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "DKIM Domain", startup->dkim_domain);
+		snprintf(opt[i++], MAX_OPLN, "%-30s%s", "DKIM Selector", startup->dkim_selector);
 		if (applicable) {
 			snprintf(opt[i++], MAX_OPLN, "%-30s%s", "Relay Server Address", startup->relay_server);
 			snprintf(opt[i++], MAX_OPLN, "%-30s%u", "Relay Server TCP Port", startup->relay_port);
@@ -1917,6 +1920,21 @@ static void sendmail_cfg(mail_startup_t* startup)
 			"`Relay Server Username` / `Password`: credentials used when an\n"
 			"Authentication method is selected.\n"
 			"\n"
+			"`DKIM Signing`: when `Yes`, sign outgoing mail with a DKIM-Signature\n"
+			"header so receivers can cryptographically verify it came from your\n"
+			"domain.  Requires a private key and a matching public key in DNS.\n"
+			"Available only when the mail server was built with OpenSSL support.\n"
+			"\n"
+			"`DKIM Domain`: the signing domain (the `d=` tag), e.g. `synchro.net`.\n"
+			"For the signature to satisfy DMARC alignment, this should share the\n"
+			"organizational domain of your `From:` address.  Subdomains align\n"
+			"under relaxed DMARC, so `d=synchro.net` covers `bbs.synchro.net`.\n"
+			"\n"
+			"`DKIM Selector`: names the key (the `s=` tag).  The public key must\n"
+			"be published as a TXT record at `<selector>._domainkey.<domain>`,\n"
+			"and the private key stored in `ctrl/dkim_<selector>.pem`.  Change\n"
+			"the selector to rotate keys without disrupting in-flight mail.\n"
+			"\n"
 			"For full documentation, see `http://wiki.synchro.net/server:mail`\n"
 		;
 		switch (uifc.list(WIN_ACT | WIN_ESC | WIN_BOT | WIN_SAV, 0, 0, 0, &cur, &bar
@@ -1956,14 +1974,23 @@ static void sendmail_cfg(mail_startup_t* startup)
 				startup->options ^= MAIL_OPT_RELAY_TX;
 				break;
 			case 6:
-				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Relay Server Address", startup->relay_server, sizeof(startup->relay_server) - 1, K_EDIT);
+				startup->dkim_sign = !startup->dkim_sign;
 				break;
 			case 7:
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "DKIM Signing Domain (d=)", startup->dkim_domain, sizeof(startup->dkim_domain) - 1, K_EDIT);
+				break;
+			case 8:
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "DKIM Selector (s=)", startup->dkim_selector, sizeof(startup->dkim_selector) - 1, K_EDIT);
+				break;
+			case 9:
+				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Relay Server Address", startup->relay_server, sizeof(startup->relay_server) - 1, K_EDIT);
+				break;
+			case 10:
 				SAFEPRINTF(str, "%u", startup->relay_port);
 				if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "Relay Server TCP Port", str, 5, K_NUMBER | K_EDIT) > 0)
 					startup->relay_port = atoi(str);
 				break;
-			case 8:
+			case 11:
 				i = 0;
 				strcpy(opt[i++], "Plain");
 				strcpy(opt[i++], "Login");
@@ -1993,10 +2020,10 @@ static void sendmail_cfg(mail_startup_t* startup)
 						break;
 				}
 				break;
-			case 9:
+			case 12:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Relay Server Username", startup->relay_user, sizeof(startup->relay_user) - 1, K_EDIT);
 				break;
-			case 10:
+			case 13:
 				uifc.input(WIN_MID | WIN_SAV, 0, 0, "Relay Server Password", startup->relay_pass, sizeof(startup->relay_pass) - 1, K_EDIT);
 				break;
 			default:

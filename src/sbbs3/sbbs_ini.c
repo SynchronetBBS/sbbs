@@ -749,6 +749,12 @@ bool sbbs_read_ini(
 		SAFECOPY(mail->relay_pass
 		         , iniGetString(list, section, "RelayPassword", nulstr, value));
 
+		mail->dkim_sign = iniGetBool(list, section, "DKIMSign", false);
+		SAFECOPY(mail->dkim_domain
+		         , iniGetString(list, section, "DKIMDomain", nulstr, value));
+		SAFECOPY(mail->dkim_selector
+		         , iniGetString(list, section, "DKIMSelector", "mail", value));
+
 		SAFECOPY(mail->dns_server
 		         , iniGetString(list, section, "DNSServer", nulstr, value));
 
@@ -1356,6 +1362,13 @@ bool sbbs_write_ini(
 			if (!iniSetString(lp, section, "RelayUsername", mail->relay_user, &style))
 				break;
 			if (!iniSetString(lp, section, "RelayPassword", mail->relay_pass, &style))
+				break;
+
+			if (!iniSetBool(lp, section, "DKIMSign", mail->dkim_sign, &style))
+				break;
+			if (!iniSetString(lp, section, "DKIMDomain", mail->dkim_domain, &style))
+				break;
+			if (!iniSetString(lp, section, "DKIMSelector", mail->dkim_selector, &style))
 				break;
 
 			if (!iniSetString(lp, section, "DNSServer", mail->dns_server, &style))

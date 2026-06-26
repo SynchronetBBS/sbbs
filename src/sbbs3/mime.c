@@ -32,12 +32,15 @@
 
 #define SIZEOF_MIMEBOUNDARY     36
 
-char* mimegetboundary()
+char* mimegetboundary(unsigned seed)
 {
 	int   i, num;
 	char* boundaryString = (char*)malloc(SIZEOF_MIMEBOUNDARY + 1);
 
-	srand((unsigned int)time(NULL));
+	/* A nonzero seed yields a deterministic boundary, so a message rendered
+	 * more than once (e.g. the DKIM sign/send two-pass) gets an identical
+	 * boundary both times; seed==0 preserves the original time-seeded behavior. */
+	srand(seed != 0 ? seed : (unsigned int)time(NULL));
 	if (boundaryString == NULL)
 		return NULL;
 	for (i = 0; i < SIZEOF_MIMEBOUNDARY; i++) {

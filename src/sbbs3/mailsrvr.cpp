@@ -32,6 +32,7 @@
 #undef SBBS /* this shouldn't be defined unless building sbbs.dll/libsbbs.so */
 #include "sbbs.h"
 #include "mailsrvr.h"
+#include "mail_dkim.h"
 #include "utf8.h"
 #include "mime.h"
 #include "md5.h"
@@ -400,6 +401,11 @@ int mail_close_socket(SOCKET *sock, int *sess)
 	return result;
 }
 
+/* When set (only during the DKIM sign/send two-pass, per-thread), sockprintf
+ * routes each formatted line to this capture instead of/in addition to sending
+ * it.  NULL on every other path, so POP3 and non-signing sends are unaffected. */
+static thread_local dkim_capture_t* tls_dkim_cap = NULL;
+
 extern "C" int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, const char *fmt, ...)
 {
 	int     len;
@@ -412,8 +418,10 @@ extern "C" int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, con
 		return 0;
 	}
 
-	/* Check socket for writability */
-	if (!socket_writable(sock, 300000)) {
+	/* Check socket for writability (skipped during the DKIM capture pass, which
+	 * diverts every line and transmits nothing) */
+	if ((tls_dkim_cap == NULL || !dkim_capture_diverts(tls_dkim_cap))
+	    && !socket_writable(sock, 300000)) {
 		lprintf(LOG_NOTICE, "%04d %-5s !NOTICE socket did not become writable"
 		        , sock, prot);
 		return 0;
@@ -430,6 +438,18 @@ extern "C" int sockprintf(SOCKET sock, const char* prot, CRYPT_SESSION sess, con
 	}
 	if (startup->options & MAIL_OPT_DEBUG_TX)
 		lprintf(LOG_DEBUG, "%04d %-5s TX: %.*s", sock, prot, len, sbuf);
+	if (tls_dkim_cap != NULL) {     /* DKIM sign/send two-pass observer */
+		int act = dkim_capture_line(tls_dkim_cap, sbuf, (size_t)len);
+		if (act == DKIM_LINE_DIVERT) {  /* pass 1: capture only, do not transmit */
+			free(sbuf);
+			return len + 2;             /* mimic the content+CRLF success length */
+		}
+		if (act == DKIM_LINE_ABORT) {   /* pass 2 verify mismatch: suppress + fail */
+			free(sbuf);
+			return 0;
+		}
+		/* DKIM_LINE_SEND: fall through and transmit normally */
+	}
 	char* newp = static_cast<char *>(realloc(sbuf, len + 2)); // "\r\n"
 	if (newp == NULL) { /* format error or allocation error */
 		errprintf(LOG_CRIT, WHERE, "%04d %-5s %s re-allocation failure of %d bytes", sock, prot, __FUNCTION__, len + 2);
@@ -943,7 +963,8 @@ static ulong sockmimetext(SOCKET socket, const char* prot, CRYPT_SESSION sess, s
 			if (!mimeattach(socket, prot, sess, mime_boundary, file_list[i]))
 				errprintf(LOG_ERR, WHERE, "%04u %s !ERROR opening/encoding/sending %s", socket, prot, file_list[i]);
 			else {
-				if (msg->hdr.auxattr & MSG_KILLFILE)
+				/* don't delete during the DKIM capture pass - pass 2 still needs it */
+				if (tls_dkim_cap == NULL && (msg->hdr.auxattr & MSG_KILLFILE))
 					if (remove(file_list[i]) != 0)
 						lprintf(LOG_WARNING, "%04u %s !ERROR %d (%s) removing %s", socket, prot, errno, strerror(errno), file_list[i]);
 			}
@@ -968,7 +989,9 @@ static ulong sockmsgtxt(SOCKET socket, const char* prot, CRYPT_SESSION sess, smb
 		else
 			SAFEPRINTF2(dirname, "%sfile/%04u.out", scfg.data_dir, msg->idx.from);
 
-		boundary = mimegetboundary();
+		/* seed deterministically from the message so the boundary is identical
+		 * if this message is rendered more than once (DKIM sign/send two-pass) */
+		boundary = mimegetboundary(msg->hdr.number ^ msg->hdr.when_written.time);
 		file_list = strListInit();
 
 		/* filename(s) in subject */
@@ -5645,6 +5668,7 @@ static void sendmail_thread(void* arg)
 	bool          sending_locally = false;
 	link_list_t   failed_server_list;
 	CRYPT_SESSION session = -1;
+	dkim_signer_t* dkim_signer = NULL;
 
 	SetThreadName("sbbs/sendMail");
 	thread_up(true /* setuid */);
@@ -5657,6 +5681,20 @@ static void sendmail_thread(void* arg)
 	memset(&smb, 0, sizeof(smb));
 
 	listInit(&failed_server_list, /* flags: */ 0);
+
+	if (startup->dkim_sign) {
+		if (!dkim_available())
+			lprintf(LOG_WARNING, "!DKIM signing enabled in [Mail] but this build lacks OpenSSL support - sending unsigned");
+		else {
+			char keyfile[MAX_PATH + 1];
+			SAFEPRINTF2(keyfile, "%sdkim_%s.pem", scfg.ctrl_dir, startup->dkim_selector);
+			dkim_signer = dkim_signer_open(startup->dkim_domain, startup->dkim_selector, keyfile);
+			if (dkim_signer == NULL)
+				lprintf(LOG_ERR, "!DKIM signing enabled but failed to load key '%s' - sending unsigned", keyfile);
+			else
+				lprintf(LOG_INFO, "DKIM signing enabled (d=%s s=%s)", startup->dkim_domain, startup->dkim_selector);
+		}
+	}
 
 	while ((!terminated) && !terminate_sendmail) {
 		YIELD();
@@ -5993,7 +6031,40 @@ static void sendmail_thread(void* arg)
 			bytes = strlen(msgtxt);
 			lprintf(LOG_DEBUG, "%04d %-5s sending message text (%lu bytes) begin"
 			        , sock, prot, bytes);
+			dkim_capture_t* sign_cap = NULL;
+			dkim_capture_t* verify_cap = NULL;
+			char*           saved_subj = NULL;
+			if (dkim_signer != NULL && (sign_cap = dkim_capture_new(DKIM_CAP_SIGN)) != NULL) {
+				char dkimhdr[8192];
+				/* sockmsgtxt mutates msg.subj while parsing attachment filenames;
+				 * preserve it so pass 2 (and the Subject header) are unchanged */
+				if (msg.subj != NULL)
+					saved_subj = strdup(msg.subj);
+				/* pass 1: render to the capture only (nothing transmitted) */
+				tls_dkim_cap = sign_cap;
+				sockmsgtxt(sock, prot, session, &msg, msgtxt, /* max_lines: */ -1);
+				tls_dkim_cap = NULL;
+				if (saved_subj != NULL)
+					strcpy(msg.subj, saved_subj);
+				if (dkim_capture_sign(sign_cap, dkim_signer, time(NULL), dkimhdr, sizeof dkimhdr)) {
+					/* prepend the DKIM-Signature header (sockprintf adds the CRLF) */
+					sockprintf(sock, prot, session, "%s", dkimhdr);
+					/* pass 2 re-hashes the body and aborts on a mismatch */
+					if ((verify_cap = dkim_capture_new(DKIM_CAP_VERIFY)) != NULL) {
+						dkim_capture_expect(verify_cap, dkim_capture_bodyhash(sign_cap));
+						tls_dkim_cap = verify_cap;
+					}
+				} else
+					lprintf(LOG_WARNING, "%04d %-5s !DKIM signing failed - sending unsigned", sock, prot);
+			}
 			lines = sockmsgtxt(sock, prot, session, &msg, msgtxt, /* max_lines: */ -1);
+			tls_dkim_cap = NULL;
+			if (verify_cap != NULL && dkim_capture_mismatch(verify_cap))
+				lprintf(LOG_ERR, "%04d %-5s !DKIM body hash changed between sign and send - message delivery aborted"
+				        , sock, prot);
+			dkim_capture_free(verify_cap);
+			dkim_capture_free(sign_cap);
+			free(saved_subj);
 			lprintf(LOG_DEBUG, "%04d %-5s send of message text (%lu bytes, %lu lines) complete, waiting for acknowledgment (250)"
 			        , sock, prot, bytes, lines);
 			if (!sockgetrsp(sock, prot, session, "250", buf, sizeof(buf))) {
@@ -6036,6 +6107,8 @@ static void sendmail_thread(void* arg)
 	}
 	if (sock != INVALID_SOCKET)
 		mail_close_socket(&sock, &session);
+
+	dkim_signer_close(dkim_signer);
 
 	listFree(&failed_server_list);
 

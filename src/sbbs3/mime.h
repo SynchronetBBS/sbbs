@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 /* mime.c */
-char *  mimegetboundary(void);
+char *  mimegetboundary(unsigned seed);  /* seed!=0 => deterministic boundary */
 void    mimeheaders(SOCKET socket, const char* prot, int sess, char * boundary);
 void    mimeblurb(SOCKET socket, const char* prot, int sess, char * boundary);
 void    mimetextpartheader(SOCKET socket, const char* prot, int sess, char * boundary, const char* text_subtype, const char* charset);
