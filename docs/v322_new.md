@@ -116,6 +116,12 @@
   session now get a plain `-ERR` response rather than
   `!UNSUPPORTED COMMAND`, matching Dovecot / Courier behavior
   (issue #1123)
+- The bundled SpamAssassin mail processor (`spamc.js`) now tells
+  SpamAssassin which host actually delivered each message, so
+  sender IP-based checks (DNSBLs such as Spamhaus, SPF, etc.) are
+  evaluated instead of being skipped with `NO_RELAYS` — noticeably
+  improving inbound spam detection. The added relay info is used
+  only for scoring and is not duplicated into the delivered message
 
 ## Services
 

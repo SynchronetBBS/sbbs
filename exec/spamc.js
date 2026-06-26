@@ -91,8 +91,8 @@ function main()
 	log(LOG_INFO, "processing message with SPAMD at " + address + " port " + tcp_port);
 	msg.debug = debug;
 	msg.reverse_path = reverse_path;
-//	if(this.hello_name)
-//		msg.hello_name = this.hello_name;
+	if(hello_name)
+		msg.hello_name = hello_name;
 	var ret=msg.process();
 	if(ret.warning != undefined)
 		log(LOG_WARNING, "WARNING "+ret.warning);

@@ -41,10 +41,11 @@ function Message_DoCommand(command)
 
 	var content_length = file_size(this.messagefile);
 
+	var inserted_received = "";
 	if(this.reverse_path)
 		inserted_header_fields += "Return-Path: " + this.reverse_path + "\r\n";
 	if(this.hello_name) {
-		inserted_header_fields += format(
+		inserted_received = format(
 						"Received: from %s (%s [%s])\r\n" +
 						"          by %s [%s] (%s)\r\n" +
 						"          for %s; %s %s\r\n"
@@ -54,6 +55,7 @@ function Message_DoCommand(command)
 						,"unknown"
 						,strftime("%a, %d %b %Y %H:%M:%S"),system.zonestr()
 						);
+		inserted_header_fields += inserted_received;
 	}
 	log(LOG_DEBUG, "inserted headers = " + inserted_header_fields);
 	content_length += inserted_header_fields.length;
@@ -169,6 +171,13 @@ function Message_DoCommand(command)
 				}
 			}
 		}
+		/* Strip the synthetic Received header we inserted so the re-written
+		   message doesn't duplicate the Received the mail server adds itself
+		   upon delivery (SA only needed it to identify the originating relay).
+		   It's stripped on its own, as SA may relocate/consume the Return-Path
+		   we also inserted, breaking any combined match. */
+		if(inserted_received.length)
+			ret.message = ret.message.replace(inserted_received, "");
 	}
 
 	return(ret);
