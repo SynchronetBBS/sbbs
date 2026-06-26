@@ -366,3 +366,15 @@ str_list_t findstr_list(const char* fname)
 	return list;
 }
 
+/****************************************************************************/
+/* Free a string list previously returned by findstr_list().				*/
+/* findstr_list() allocates in *this* module's heap; callers in other		*/
+/* modules reach it via dllimport, so they must free the result here rather	*/
+/* than with their own locally-linked strListFree() - freeing a block in a	*/
+/* different C run-time's heap trips the Win32 debug heap (GitLab #1099).	*/
+/****************************************************************************/
+void findstr_list_free(str_list_t* list)
+{
+	strListFree(list);
+}
+

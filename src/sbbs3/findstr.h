@@ -19,8 +19,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _FINDSTR_H_
-#define _FINDSTR_H_
+#ifndef FINDSTR_H_
+#define FINDSTR_H_
 
 #include "str_list.h"
 #include "dllexport.h"
@@ -37,6 +37,10 @@ DLLEXPORT bool      findstr_in_string(const char* insearchof, const char* patter
 DLLEXPORT bool      findstr_in_list(const char* insearchof, str_list_t list, char* metadata);
 DLLEXPORT bool      find2strs_in_list(const char* str1, const char* str2, str_list_t list, char* metadata);
 DLLEXPORT str_list_t findstr_list(const char* fname);
+/* Free a list returned by findstr_list(), in the same module/heap that		*/
+/* allocated it (findstr_list is often dllimport'd, so callers must not free	*/
+/* its result with their own locally-linked strListFree - see GitLab #1099)	*/
+DLLEXPORT void      findstr_list_free(str_list_t* list);
 
 #ifdef __cplusplus
 }

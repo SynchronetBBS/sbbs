@@ -44,15 +44,17 @@ class filterFile {
 		filterFile(const filterFile&) = delete;
 		filterFile& operator=(const filterFile&) = delete;
 		~filterFile() {
-			strListFree(&list);
+			findstr_list_free(&list);
 			pthread_mutex_destroy(&mutex);
 		}
 		void reset() {
 			fread_count = 0;
 			total_found = 0;
+			pthread_mutex_lock(&mutex);
 			timestamp = 0;
 			lastftime_check = 0;
-			// strListFree(&list); // This triggers MSVC debug-heap assertion, see Issue #1099 for details
+			findstr_list_free(&list);
+			pthread_mutex_unlock(&mutex);
 		}
 		std::atomic<uint> fread_count{};
 		std::atomic<uint> total_found{};
@@ -67,7 +69,7 @@ class filterFile {
 					lastftime_check = now;
 					time_t latest = fdate(fname);
 					if (latest > timestamp) {
-						strListFree(&list);
+						findstr_list_free(&list);
 						list = findstr_list(fname);
 						timestamp = latest;
 						++fread_count;
