@@ -234,7 +234,13 @@ static struct sort_order_info sort_order[] = {
 		offsetof(struct bbslist, term_name),
 		sizeof(((struct bbslist *)NULL)->term_name)
 	},
-	{ // 29
+	{
+		"LF Expand",
+		0,
+		offsetof(struct bbslist, lf_expand),
+		sizeof(((struct bbslist *)NULL)->lf_expand)
+	},
+	{ // 30
 		"Explicit Sort Order",
 		0,
 		offsetof(struct bbslist, sort_order),
@@ -1311,6 +1317,7 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	entry->force_lcf = iniGetBool(section, NULL, "ForceLCF", false);
 	entry->yellow_is_yellow = iniGetBool(section, NULL, "YellowIsYellow", false);
 	iniGetSString(section, NULL, "TerminalType", "", entry->term_name, sizeof(entry->term_name));
+	entry->lf_expand = iniGetBool(section, NULL, "LFExpand", false);
 	if (iniKeyExists(section, NULL, "SSHFingerprint")) {
 		char fp[41];
 		int i;
@@ -1810,6 +1817,7 @@ enum {
 	BBSLIST_FIELD_TELNET_DEFERRED_NEGOTIATION,
 	BBSLIST_FIELD_PALETTE,
 	BBSLIST_FIELD_TERMINAL_TYPE,
+	BBSLIST_FIELD_LF_EXPAND,
 };
 
 static void
@@ -1916,6 +1924,8 @@ build_edit_list(struct bbslist *item, char opt[][69], int *optmap, char **opts, 
 		optmap[i] = BBSLIST_FIELD_TERMINAL_TYPE;
 		sprintf(opt[i++], "Terminal Type     %s", item->term_name[0] ? item->term_name : "<Automatic>");
 	}
+	optmap[i] = BBSLIST_FIELD_LF_EXPAND;
+	sprintf(opt[i++], "LF Expand         %s", item->lf_expand ? "Yes" : "No");
 	optmap[i] = BBSLIST_FIELD_FONT;
 	snprintf(opt[i++], sizeof(opt[0]), "Font              %s", item->font);
 	if (get_emulation(item) != CTERM_EMULATION_ANSI_BBS)
@@ -2073,6 +2083,8 @@ build_edit_help(struct bbslist *item, int isdefault, char *helpbuf, size_t hbsz)
 		hblen += strlcat(helpbuf + hblen, "~Terminal Type~\n"
 		                                 "        Type of terminal to advertise to remote\n\n", hbsz - hblen);
 	}
+	hblen += strlcat(helpbuf + hblen, "~LF Expand~\n"
+	                                  "        Treat all LFs as though a CR and LF were received\n\n", hbsz - hblen);
 
 	hblen += strlcat(helpbuf + hblen, "~ Font ~\n"
 	                                  "        Select font to use for the entry\n\n"
@@ -3063,6 +3075,11 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 				check_exit(false);
 				iniSetString(&inifile, itemname, "TerminalType", item->term_name, &ini_style);
 				break;
+			case BBSLIST_FIELD_LF_EXPAND:
+				item->lf_expand = !item->lf_expand;
+				changed = 1;
+				iniSetBool(&inifile, itemname, "LFExpand", item->lf_expand, &ini_style);
+				break;
 		}
 		if (uifc.changes)
 			changed = 1;
@@ -3124,6 +3141,7 @@ add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
 	if (bbs->term_name[0]) {
 		iniSetString(&inifile, bbs->name, "TerminalType", bbs->term_name, &ini_style);
 	}
+	iniSetBool(&inifile, bbs->name, "LFExpand", bbs->lf_expand, &ini_style);
 	iniSetBool(&inifile, bbs->name, "TelnetBrokenTextmode", bbs->telnet_no_binary, &ini_style);
 	iniSetBool(&inifile, bbs->name, "TelnetDeferNegotiate", bbs->defer_telnet_negotiation, &ini_style);
 	if (bbs->has_fingerprint) {

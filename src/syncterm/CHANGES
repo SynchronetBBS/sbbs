@@ -1,5 +1,6 @@
 Version 1.9
 -----------
+Add LF Expand option to dialing directory
 Fix error when scrolling with a non-black background colour
 Fix Prestel double-height bottom-half redraw on overwrite
 Fix key repeat on Wayland
