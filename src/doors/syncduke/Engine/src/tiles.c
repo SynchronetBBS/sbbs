@@ -47,7 +47,9 @@ void setviewtotile(short tilenume, int32_t tileWidth, int32_t tileHeight)
     j = 0;
     for(i=0; i<=tileWidth; i++) {
         ylookup[i] = j;
-        j += tileWidth;
+        j += tileHeight;   /* SyncDuke: row stride must equal bytesperline (tileHeight), not
+                            * tileWidth -- the mismatch sheared the savegame thumbnail and left
+                            * its bottom third as garbage (rows are tileHeight wide). */
     }
     setBytesPerLine(tileHeight);
     setviewcnt++;
