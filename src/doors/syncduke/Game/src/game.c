@@ -8298,6 +8298,16 @@ int main(int argc,char  **argv)
 	}
 
 
+	/* SyncDuke: strip the door's own args (DOOR32.SYS path, -home, -grpdir, -s<fd>)
+	 * before the DOS-era parser sees them -- on a Unix host those are absolute paths
+	 * starting with '/', which it misreads as /options and dumps command-line help
+	 * for (then exits), unless the install path's first letter is a handled option
+	 * (e.g. /sbbs -> 's').  The door already consumed these in its pre-main ctors. */
+	{
+		extern void syncduke_sanitize_cmdline(int *argc, char **argv);
+		syncduke_sanitize_cmdline(&argc, argv);
+	}
+
 	checkcommandline(argc,argv);
 
     _platform_init(argc, argv, "Duke Nukem 3D", "Duke3D");

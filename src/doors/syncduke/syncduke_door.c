@@ -193,3 +193,47 @@ const char *syncduke_door_alias(void)
 		syncduke_door_resolve();
 	return g_alias;
 }
+
+/*
+ * Strip the door's own arguments from argv before the engine's checkcommandline()
+ * (Game/src/game.c) parses it.  The vendored engine is a DOS-era port whose parser
+ * treats any argv element beginning with '/' as a "/option" and dumps command-line
+ * help (then exits) on an unrecognized one.  On a Unix host the DOOR32.SYS drop-file
+ * path (Synchronet's %f) and the -home/-grpdir values are ABSOLUTE paths beginning
+ * with '/', so the engine misreads them: e.g. "/home/.../door32.sys" parses as option
+ * '/h' -> unknown -> help+exit, and the door never starts.  (It only "worked" when the
+ * install path's first letter happened to be a handled option letter, e.g. /sbbs -> 's'.)
+ *
+ * Every door argument is already consumed by the pre-main constructors -- the socket,
+ * time limit and alias from -s<fd>/DOOR32.SYS (syncduke_door_resolve, above) and the
+ * GRP/-home dirs in syncduke_config.c -- so removing them here is safe and hands the
+ * engine a clean argv of engine-only options.  Compacts in place, keeps argv[0], lowers
+ * *argc, and leaves any genuine engine option (e.g. a future -map) untouched.
+ */
+void syncduke_sanitize_cmdline(int *argc, char **argv)
+{
+	int n = *argc;
+	int w = 1;                 /* always keep argv[0] (the program path) */
+	int i;
+
+	for (i = 1; i < n; i++) {
+		const char *a = argv[i];
+
+		/* -home <path> / -grpdir <path>: drop the flag and its value */
+		if (strcmp(a, "-home") == 0 || strcmp(a, "-grpdir") == 0) {
+			if (i + 1 < n)
+				i++;           /* also skip the value */
+			continue;
+		}
+		/* -s<fd> socket descriptor */
+		if (a[0] == '-' && a[1] == 's' && a[2] != '\0')
+			continue;
+		/* a DOOR32.SYS drop-file path (Synchronet's %f) */
+		if (is_door32_path(a))
+			continue;
+
+		argv[w++] = argv[i];   /* keep: a genuine engine option */
+	}
+	argv[w] = NULL;            /* keep argv NULL-terminated */
+	*argc = w;
+}
