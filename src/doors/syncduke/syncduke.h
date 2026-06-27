@@ -40,6 +40,7 @@ void syncduke_hangup(const char *why);                 /* client gone: log + exi
  * terminal (which has no key-up) can't send. */
 int  syncduke_map_key(const char *seq, int len, int gameplay);   /* terminal byte/seq -> scancode, or -1 */
 void syncduke_input_pump(int fd, int now, int gameplay);          /* read fd, enqueue key-down events */
+void syncduke_input_reset(void);                                  /* clear latches on game load (crouch, holds, turn) */
 void syncduke_input_expire(int now);                /* enqueue key-up for held-out keys */
 int  syncduke_input_has_raw(void);                  /* a queued raw scancode byte awaits? */
 int  syncduke_input_pop_raw(void);                  /* next raw scancode byte (0 if none) */

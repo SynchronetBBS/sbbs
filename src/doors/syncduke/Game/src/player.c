@@ -2103,7 +2103,9 @@ void getinput(short snum)
          * angvel level from the pointer's offset from screen centre, syncduke_input.c) to
          * the turn before the clamp; bypasses Duke's mouse accel, like SyncDoom. */
         extern volatile int syncduke_mouse_turn;
+        extern volatile int syncduke_key_turn;   /* continuous arrow-key turn (smooth per-tic) */
         angvel += syncduke_mouse_turn;
+        angvel += syncduke_key_turn;
     }
     if(angvel < -MAXANGVEL) angvel = -MAXANGVEL;
     if(angvel > MAXANGVEL) angvel = MAXANGVEL;

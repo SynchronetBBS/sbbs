@@ -54,7 +54,10 @@
 static int     g_tap_bar   = 9;   /* KEY TAP   slider (0..63) -> 2 frames (a fresh press) */
 static int     g_hold_bar  = 9;   /* KEY HOLD  slider (0..63) -> 2 frames (a repeat byte) */
 static int     g_turn_bar  = 27;  /* TURN HOLD slider (0..63) -> 4 frames (turn keys) */
-volatile int   syncduke_fast_turn; /* FAST TURN toggle -> player.c getinput */
+/* FAST TURN: a turbo boost to the continuous arrow-key turn rate (Setup Controls). The base
+ * TURN SPEED is already responsive; this adds ~50% for extra-fast turning. Default OFF;
+ * toggleable in Setup Controls and persisted to duke3d.cfg. */
+volatile int   syncduke_fast_turn;  /* -> syncduke_key_turn rate in this file */
 
 /* ---- raw scancode-byte queue (what _readlastkeyhit drains) ---- */
 #define RAWQ_SZ 256
@@ -296,6 +299,17 @@ static int csi_len;
 volatile int    syncduke_mouse_turn;   /* -> angvel  (player.c getinput) */
 volatile int    syncduke_mouse_fire;   /* -> Fire bit (player.c getinput) */
 
+/* Continuous arrow-key turn level (gameplay), the real fix for sluggish/jerky turning.
+ * Duke reads the turn keys per sim-tic from KB_KeyDown[], but on a terminal the door only
+ * refreshes that once per PRESENTED FRAME (gappy auto-repeat + a frame-counted synthetic
+ * release), so turning came in uneven, frame-rate-tied bursts -- no key-hold slider can fix
+ * that. Instead each Left/Right arrow byte sets a turn rate here that the engine's getinput()
+ * adds to angvel EVERY sim-tic (like the mouse steer), relaxed to neutral after a short idle
+ * once the auto-repeat stops -- giving smooth, responsive turning like SyncDOOM's. */
+volatile int    syncduke_key_turn;     /* signed angvel/tic: + = right, - = left */
+static uint32_t g_key_turn_ms;         /* time of the last arrow byte (idle relax) */
+#define SYNCDUKE_KEY_TURN_IDLE_MS 140  /* stop turning this long after the last arrow byte */
+
 static int      g_mouse_on = 1;        /* steering enabled (default on; Ctrl-O toggles) */
 static int      g_mouse_sens = 30;     /* steer sensitivity, a 0..63 slider (Setup Mouse);
                                         * max angvel at the image edge = sens*2 (30->60). */
@@ -377,6 +391,14 @@ static void syncduke_mouse_idle(void)
 	}
 }
 
+/* Stop the continuous arrow-key turn once the terminal's auto-repeat has stopped (no arrow
+ * byte for SYNCDUKE_KEY_TURN_IDLE_MS). Runs every pump, like the mouse idle relax. */
+static void syncduke_key_turn_idle(void)
+{
+	if (syncduke_key_turn && (int32_t)(syncduke_in_now_ms() - g_key_turn_ms) > SYNCDUKE_KEY_TURN_IDLE_MS)
+		syncduke_key_turn = 0;
+}
+
 void syncduke_mouse_toggle(void)
 {
 	g_mouse_on = !g_mouse_on;
@@ -408,8 +430,20 @@ static void csi_final(char fin, int gameplay, int now)
 	switch (fin) {
 		case 'A': press(sc_UpArrow, now);    return;   /* arrows: same in both modes */
 		case 'B': press(sc_DownArrow, now);  return;
-		case 'C': press(sc_RightArrow, now); return;
-		case 'D': press(sc_LeftArrow, now);  return;
+		case 'C':   /* right arrow */
+		case 'D':   /* left arrow */
+			/* In gameplay, drive the time-windowed continuous turn (smooth, applied per
+			 * sim-tic); in menus keep the raw scancode for navigation. Rate from the TURN
+			 * SPEED slider, with a FAST TURN turbo boost. */
+			if (gameplay) {
+				int rate = 2 + g_turn_bar * 3 / 4;         /* TURN SPEED: ~2 (min) .. ~49 angvel/tic */
+				if (syncduke_fast_turn)
+					rate += rate / 2;                      /* FAST TURN: +50% */
+				syncduke_key_turn = (fin == 'C') ? rate : -rate;
+				g_key_turn_ms     = syncduke_in_now_ms();
+			} else
+				press(fin == 'C' ? sc_RightArrow : sc_LeftArrow, now);
+			return;
 		/* Look up/down, terminal-friendly:
 		 *   PgUp / PgDn -> post one fixed pitch "notch" (syncduke_pitch_step), applied once in
 		 *     processinput().  The view tilts a deterministic step and STAYS there; tap again to
@@ -532,6 +566,7 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 	/* Relax mouse steering/fire if the pointer has gone quiet (runs every pump, even a
 	 * no-input one -- the report stream stops the instant the pointer stops moving). */
 	syncduke_mouse_idle();
+	syncduke_key_turn_idle();
 
 	/* Keep crouch asserted while the latch is on (must run even on a no-input pump,
 	 * so it sits above the read()-returns-0 early-out below). Only in gameplay -- a
@@ -653,4 +688,21 @@ int syncduke_input_fd(void)
 	}
 #endif
 	return fd;
+}
+
+/* Clear transient input latches/state when a game is loaded (called from loadplayer), so the
+ * door's sticky crouch, queued scancodes, synthetic key-holds, and turn/look momentum from the
+ * pre-load session don't carry into the restored game. */
+void syncduke_input_reset(void)
+{
+	int i;
+
+	g_crouch_toggle     = 0;
+	syncduke_key_turn   = 0;
+	syncduke_pitch_step = 0;
+	rawq_head = rawq_tail = 0;
+	for (i = 0; i < 128; i++) {
+		held[i]       = 0;
+		release_at[i] = 0;
+	}
 }
