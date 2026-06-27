@@ -33,6 +33,7 @@ Prepared for public release: 03/21/2003 - Charlie Wiederhold, 3D Realms
 #include "SDL.h"
 #include "premap.h"
 #include "display.h"
+#include "git_hash.h"   /* SyncDuke: generated GIT_HASH / GIT_DATE for the menu footers */
 
 extern SDL_Surface *surface;
 extern short inputloc;
@@ -1176,6 +1177,31 @@ void bar(int x,int y,short *p,short dainc,uint8_t  damodify,short s, short pa)
         rotatesprite( (x+(65-xloc) )<<16,(y+1)<<16,65536L,0,SLIDEBAR+1,s,pa,10,0,0,xdim-1,ydim-1);
 }
 
+// SyncDuke: width (px) of a numeric string in the big menu font (menutext maps digits
+// to BIGALPHANUM-10), so a slider's value can be right-justified just left of its bar.
+int sd_bignum_width(const char *s)
+{
+    int w = 0;
+    for( ; *s ; s++ )
+        w += (*s >= '0' && *s <= '9') ? tiles[*s - '0' + BIGALPHANUM-10].dim.width : 5;
+    return w;
+}
+
+// SyncDuke: pixel width of a string in the small game font (mirrors gametext's advance),
+// so text can be right-justified (e.g. the build date in the lower-right of the menu).
+int sd_gametext_width(const char *t)
+{
+    int x = 0, ac;
+    for( ; *t ; t++ )
+    {
+        if(*t == 32) { x += 5; continue; }
+        ac = *t - '!' + STARTALPHANUM;
+        if(ac < STARTALPHANUM || ac > ENDALPHANUM) break;
+        x += (*t >= '0' && *t <= '9') ? 8 : tiles[ac].dim.width;
+    }
+    return x;
+}
+
 #define SHX(X) 0
 // ((x==X)*(-sh))
 #define PHX(X) 0
@@ -1422,6 +1448,7 @@ void menus(void)
     extern void syncduke_kb_turn_set(int);
     extern int  syncduke_kb_fastturn(void);
     extern void syncduke_kb_fastturn_set(int);
+    extern int  syncduke_record_enabled(void);   /* SyncDuke: RECORD/demo offered? (off by default) */
 
     getpackets();
 
@@ -2109,6 +2136,21 @@ void menus(void)
 
             menutext(c,67+16+16+16+16+16,SHX(-7),PHX(-7),"QUIT");
 
+            /* SyncDuke build id: hash lower-left, build date (no time) lower-right. */
+            {
+                char gd[32];
+                int  k, sp;
+                for(k = 0, sp = 0; GIT_DATE[k] && k < (int)sizeof(gd)-1; k++)
+                {
+                    gd[k] = GIT_DATE[k];
+                    if(GIT_DATE[k] == ' ' && ++sp == 3)
+                        break;          /* drop the trailing " HH:MM" */
+                }
+                gd[k] = '\0';
+                gametext(3, 191, GIT_HASH, 0, 2+8+16);                       /* lower-left  */
+                gametext(317 - sd_gametext_width(gd), 191, gd, 0, 2+8+16);   /* lower-right */
+            }
+
             break;
 // CTW END - MODIFICATION
 
@@ -2410,7 +2452,10 @@ else
 
             c = (320>>1)-120;
 
-            x = probe(c+6,43,16,5);   /* SyncDuke: was 6 -- GAME CONTROLS help moved to the main menu */
+            /* SyncDuke: was 6 -- GAME CONTROLS help moved to the main menu. RECORD (item 4) is
+             * dropped from the selectable count unless enabled (off by default: a demo file is
+             * useless to a user who can't download it). */
+            x = probe(c+6,43,16,syncduke_record_enabled()?5:4);
 
             if(x == -1)
                 { if(ps[myconnectindex].gm&MODE_GAME) cmenu(50);else cmenu(0); }
@@ -2465,7 +2510,7 @@ else
 
             menutext(c,43+16+16+16,SHX(-8),PHX(-8),"SETUP VIDEO");
 
-            if( (ps[myconnectindex].gm&MODE_GAME) && ud.m_recstat != 1 )
+            if( !syncduke_record_enabled() || ((ps[myconnectindex].gm&MODE_GAME) && ud.m_recstat != 1) )
             {
                 menutext(c,43+16+16+16+16,SHX(-10),1,"RECORD");
                 menutext(c+160+40,43+16+16+16+16,SHX(-10),1,"OFF");
@@ -2689,29 +2734,43 @@ else
 
             {
             short v;
+            char  lbl[8];    // SyncDuke: the live 0..63 slider value, drawn just left of the bar
+            // Right-justified just left of the bar, with one character of blank space
+            // (a digit's width) between the value and the slider trough.
+            #define SD_VALX(STR) (c+167+40-16-sd_bignum_width("0")-sd_bignum_width(STR))
 
             v = syncduke_mouse_sens();
-            menutext(c,43+16*0,SHX(-7),PHX(-7),"STEER SENSITIVITY");
+            menutext(c,43+16*0,SHX(-7),PHX(-7),"MOUSE SENSITIVITY");
             bar(c+167+40,43+16*0,&v,1,x==0,SHX(-7),PHX(-7));
             syncduke_mouse_sens_set(v);
 
-            menutext(c,43+16*1,SHX(-7),PHX(-7),"MOUSE STEERING");
+            menutext(c,43+16*1,SHX(-7),PHX(-7),"MOUSE");
             menutext(c+160+40,43+16*1,SHX(-7),PHX(-7),syncduke_mouse_enabled()?"ON":"OFF");
 
+            // Show each keyboard-feel slider's current 0..63 value right-justified just
+            // left of its bar (drawn after the adjust, so it tracks live) -- the player
+            // sees the exact setting, not only the bar position.
             v = syncduke_kb_tap();
             menutext(c,43+16*2,SHX(-7),PHX(-7),"KEY TAP");
             bar(c+167+40,43+16*2,&v,1,x==2,SHX(-7),PHX(-7));
             syncduke_kb_tap_set(v);
+            sprintf(lbl,"%d",v);
+            menutext(SD_VALX(lbl),43+16*2,SHX(-7),PHX(-7),lbl);
 
             v = syncduke_kb_hold();
             menutext(c,43+16*3,SHX(-7),PHX(-7),"KEY HOLD");
             bar(c+167+40,43+16*3,&v,1,x==3,SHX(-7),PHX(-7));
             syncduke_kb_hold_set(v);
+            sprintf(lbl,"%d",v);
+            menutext(SD_VALX(lbl),43+16*3,SHX(-7),PHX(-7),lbl);
 
             v = syncduke_kb_turn();
             menutext(c,43+16*4,SHX(-7),PHX(-7),"TURN HOLD");
             bar(c+167+40,43+16*4,&v,1,x==4,SHX(-7),PHX(-7));
             syncduke_kb_turn_set(v);
+            sprintf(lbl,"%d",v);
+            menutext(SD_VALX(lbl),43+16*4,SHX(-7),PHX(-7),lbl);
+            #undef SD_VALX
 
             menutext(c,43+16*5,SHX(-7),PHX(-7),"FAST TURN");
             menutext(c+160+40,43+16*5,SHX(-7),PHX(-7),syncduke_kb_fastturn()?"ON":"OFF");
@@ -3104,47 +3163,18 @@ else
             rotatesprite(320<<15,19<<16,65536L,0,MENUBAR,16,0,10,0,0,xdim-1,ydim-1);
             menutext(320>>1,24,0,0,"VIDEO SETUP");
 
-			onbar = (probey == 3 || probey == 4);
-			x = probe(c+6,43,16,6);
+			onbar = (probey == 2 || probey == 3);   /* SCREEN SIZE / BRIGHTNESS bars */
+			x = probe(c+6,43,16,5);                  /* RESOLUTION removed (fixed resolution in a door) */
 			
 			switch(x)
 			{
-				case -7: // cursor idle on the FPS option (5)
+				case -6: // cursor idle on the FPS option (4)
 					gametext(320>>1,43+16*7,"*** SHORTCUT: TYPE DNRATE ***",0,2+8+16); // center-i
 					
 					break;
 
-				case -3: // cursor idle on the togglefullscreen option (1)
+				case -2: // cursor idle on the togglefullscreen option (0)
 					gametext(320>>1,43+16*7,"*** SHORTCUT: ALT-ENTER ***",0,2+8+16); // center-i
-
-					break;
-
-				case -2: // cursor idle on the resolution option (0)
-					if ( KB_KeyPressed( sc_kpad_4 ) || KB_KeyPressed( sc_LeftArrow ) )
-					{
-						current_resolution--;
-						if(current_resolution == -1) 
-							current_resolution = 0;
-						lastkeysetup = 1; // indicates we changed
-						KB_ClearKeyDown( sc_kpad_4 );
-						KB_ClearKeyDown( sc_LeftArrow );
-						sound(PISTOL_BODYHIT);
-					}
-					else if ( KB_KeyPressed( sc_kpad_6 ) || KB_KeyPressed( sc_RightArrow ) )
-					{
-						current_resolution++; // reversed;
-						if(current_resolution == validmodecnt) 
-							current_resolution = validmodecnt-1;
-						lastkeysetup = 1; // indicates we changed
-						KB_ClearKeyDown( sc_kpad_6 );
-						KB_ClearKeyDown( sc_RightArrow );
-						sound(PISTOL_BODYHIT);
-					}
-
-					if(lastkeysetup)
-						gametext(320>>1,43+16*7,"*** HIT ENTER TO VALIDATE ***",0,2+8+16); // center-i
-					else
-						gametext(320>>1,43+16*7,"*** LEFT/RIGHT ARROW TO SELECT ***",0,2+8+16); // center-i
 
 					break;
 
@@ -3154,46 +3184,33 @@ else
 					break;
 
 				case 0:
-					if(lastkeysetup)
-						setgamemode(ScreenMode,validmodexdim[current_resolution],validmodeydim[current_resolution]);
-					lastkeysetup = 0; // indicating changes are done
-					break;
-
-				case 1:
 					BFullScreen = !BFullScreen;
 					SDL_QuitSubSystem(SDL_INIT_VIDEO);
 					_platform_init(0, NULL, "Duke Nukem 3D", "Duke3D");
 					_setgamemode(ScreenMode,validmodexdim[current_resolution],validmodeydim[current_resolution]);
 					break;
 
-                case 2:
+                case 1:
                     ud.detail = 1-ud.detail;
                     break;
 
-				case 5:
+				case 4:
 					ud.tickrate ^= 1;
 					vscrn(); // FIX_00056: Refresh issue w/FPS, small Weapon and custom FTA, when screen resized down
 					break;
 			}
 				
-			menutext(c,43,0,0,"RESOLUTION");
-			sprintf(text, "%d x %d", validmodexdim[current_resolution],validmodeydim[current_resolution]);
-			if (lastkeysetup == 0 || (totalclock%64 < 32)) // blink color after change
-				menutext(c+150,43,0,0,text);
-			else
-				menutext(c+150,43,0,1,text);
-
-			menutext(c,43+16*1,SHX(-3),PHX(-3),"FULLSCREEN");
-			menutext(c+160+40,43+16*1,0,0,BFullScreen?"ON":"OFF");
+			menutext(c,43,SHX(-3),PHX(-3),"FULLSCREEN");
+			menutext(c+160+40,43,0,0,BFullScreen?"ON":"OFF");
 			
-			menutext(c,43+16*2,SHX(-2),PHX(-2),"DETAIL");
-			menutext(c+160+40,43+16*2,0,0,ud.detail?"HIGH":"LOW");
+			menutext(c,43+16*1,SHX(-2),PHX(-2),"DETAIL");
+			menutext(c+160+40,43+16*1,0,0,ud.detail?"HIGH":"LOW");
 			{
 				int32 screen_size = ud.screen_size;
 
 				// FIX_00027: Added an extra small statusbar (HUD)
-	            menutext(c,43+16*3,SHX(-5),PHX(-5),"SCREEN SIZE");
-	            bar(c+167+40,43+16*3,(short *)&screen_size,-4,x==3,SHX(-5),PHX(-5));
+	            menutext(c,43+16*2,SHX(-5),PHX(-5),"SCREEN SIZE");
+	            bar(c+167+40,43+16*2,(short *)&screen_size,-4,x==2,SHX(-5),PHX(-5));
 				if(ud.screen_size==4)
 				{
 					if(screen_size==0)
@@ -3219,12 +3236,12 @@ else
 					ud.screen_size = screen_size;
 			}
 
-            menutext(c,43+16*4,SHX(-6),PHX(-6),"BRIGHTNESS");
-            bar(c+167+40,43+16*4,(short *)&ud.brightness,8,x==4,SHX(-6),PHX(-6));
-            if(x==4) setbrightness(ud.brightness>>2,&ps[myconnectindex].palette[0]);
+            menutext(c,43+16*3,SHX(-6),PHX(-6),"BRIGHTNESS");
+            bar(c+167+40,43+16*3,(short *)&ud.brightness,8,x==3,SHX(-6),PHX(-6));
+            if(x==3) setbrightness(ud.brightness>>2,&ps[myconnectindex].palette[0]);
 
-			menutext(c,43+16*5,SHX(-2),PHX(-2),"SHOW FPS");
-			menutext(c+160+40,43+16*5,0,0,(ud.tickrate&1)?"ON":"OFF");
+			menutext(c,43+16*4,SHX(-2),PHX(-2),"SHOW FPS");
+			menutext(c+160+40,43+16*4,0,0,(ud.tickrate&1)?"ON":"OFF");
 
 			break;
 
