@@ -7570,10 +7570,14 @@ void Logo(void)
 	    palto(0,0,0,63);
 	    rotatesprite(0,0,65536L,0,DREALMS,0,0,2+8+16+64, 0,0,xdim-1,ydim-1);
 	    nextpage();
-		for (i = 63; i > 0; i -= 7) {
+		// SyncDuke: gradual fade-in of the 3D Realms logo -- present EACH palette step (each
+		// is a distinct frame, so the de-dupe keeps it). The DREALMS sprite is permanent
+		// (the +64 bit), so it persists across the page flips without a redraw. The ~2s hold
+		// below follows. Now that the GRP is cached and loads are fast, there's time to see it.
+		for (i = 63; i >= 0; i -= 7) {
 			palto(0, 0, 0, i);
+			nextpage();
 		}
-		nextpage();   // SyncDuke: present the faded-IN 3D Realms logo. The nextpage() above showed it with a fully-black palette; our sixel path only reflects a palto() change on the next frame, so without this the logo stayed black for the whole ~7s hold below.
 
 
 
@@ -7594,8 +7598,12 @@ void Logo(void)
 	    rotatesprite(0,0,65536L,0,BETASCREEN,0,0,2+8+16+64,0,0,xdim-1,ydim-1);
 	    KB_FlushKeyboardQueue();
 	    nextpage();
-	    for(i=63;i>0;i-=7) 
+	    // SyncDuke: gradual fade-in of the title screen -- present each palette step; the
+	    // "DUKE NUKEM 3D" fly-in animation below then plays over the faded-in title.
+	    for(i=63;i>=0;i-=7) {
 			palto(0,0,0,i);
+			nextpage();
+	    }
 
 	    totalclock = 0;
 	
@@ -8777,6 +8785,15 @@ void opendemowrite(void)
     uint8_t  ver;
     short i;
 	char  fullpathdemofilename[16];
+
+    /* SyncDuke: demo recording is off unless syncduke.ini [game] record=true -- a demo
+     * file is useless to a user who can't download it, and just wastes disk. Gate it here
+     * so even a stale recstat=1 (from a saved duke3d.cfg) can't start a recording. */
+    {
+        extern int syncduke_record_enabled(void);
+        if (!syncduke_record_enabled())
+            return;
+    }
 
     if(ud.recstat == 2) kclose(recfilep);
 

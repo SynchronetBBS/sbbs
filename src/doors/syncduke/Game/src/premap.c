@@ -1391,10 +1391,21 @@ void dofrontscreens(void)
 
         nextpage();
 
-        for (j = 63; j > 0; j -= 7) {
+        /* SyncDuke: a legible fade-in + brief hold for the ENTERING-<level> screen.
+         * The stock code stepped the palette in this loop but presented only the final
+         * frame (one nextpage after), so the gradual fade was effectively off -- fine
+         * when loading was slow enough to leave the screen up, but now that the GRP is
+         * cached and loads are near-instant the screen flashed by unreadably. Present
+         * EACH fade step (each is a distinct palette, so the frame de-dupe keeps it) for
+         * a visible ~1s fade, then hold the full-bright screen so the level name is
+         * readable. The hold frames are de-duped (no extra bandwidth) and paced ~33ms
+         * each, so they cost wall-clock time, not wire bytes. */
+        for (j = 63; j >= 0; j -= 7) {
             palto(0, 0, 0, j);
+            nextpage();
         }
-        nextpage();   // SyncDuke: present the faded-IN palette. The nextpage() above showed the "ENTERING <level>" screen at the fade-OUT palette (~dim); our sixel path only reflects a palto() change on the next frame, so without this it stayed dim.
+        for (j = 0; j < 45; j++)   /* ~1.5s minimum hold at full brightness */
+            nextpage();
 
         KB_FlushKeyboardQueue();
         ud.screen_size = i;
