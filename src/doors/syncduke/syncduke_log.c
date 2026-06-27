@@ -25,11 +25,14 @@
 #include <string.h>
 #include <time.h>
 
+#include <stdint.h>
+#include <signal.h>
+
 #ifdef _WIN32
   #define WIN32_LEAN_AND_MEAN
-  #include <windows.h>
+  #include <windows.h>   /* RtlCaptureStackBackTrace, GetModuleHandleEx -- no dbghelp
+                          * (the vendored Game/src/DbgHelp.h shadows the SDK header) */
 #else
-  #include <signal.h>
   #include <unistd.h>
 #endif
 
@@ -120,15 +123,102 @@ static void syncduke_log_atexit(void)
 }
 
 #ifdef _WIN32
+/* Log one address as module+RVA (offset from the module's load base), resolvable
+ * offline against syncduke.map. No dbghelp -- the vendored Game/src/DbgHelp.h would
+ * shadow the SDK header on this case-insensitive filesystem. */
+static void sd_log_addr(void *addr)
+{
+	HMODULE hmod = NULL;
+	char    mod[64] = "?";
+	DWORD64 base = 0;
+
+	if (GetModuleHandleExA(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
+	                       GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+	                       (LPCSTR)addr, &hmod) && hmod != NULL) {
+		char path[MAX_PATH];
+		base = (DWORD64)(uintptr_t)hmod;
+		if (GetModuleFileNameA(hmod, path, sizeof path)) {
+			char *b = strrchr(path, '\\');
+			strncpy(mod, b ? b + 1 : path, sizeof mod - 1);
+			mod[sizeof mod - 1] = '\0';
+		}
+	}
+	syncduke_log("    %s+0x%llx", mod, (unsigned long long)((DWORD64)(uintptr_t)addr - base));
+}
+
+/* RtlCaptureStackBackTrace lives in ntdll; resolve it at runtime to avoid the import-
+ * lib / calling-convention decoration mismatch (WIN32_LEAN_AND_MEAN omits its prototype). */
+typedef USHORT (WINAPI *sd_capture_fn)(ULONG, ULONG, PVOID *, PULONG);
+
+static void sd_log_backtrace(int skip)
+{
+	static sd_capture_fn capture;
+	void  *frames[24];
+	USHORT n = 0, i;
+
+	if (capture == NULL) {
+		HMODULE nt = GetModuleHandleA("ntdll.dll");
+		if (nt != NULL)
+			capture = (sd_capture_fn)GetProcAddress(nt, "RtlCaptureStackBackTrace");
+	}
+	if (capture != NULL)
+		n = capture((ULONG)(skip + 1), 24, frames, NULL);
+	syncduke_log("  backtrace (%u frames, module+RVA -> resolve via syncduke.map):", (unsigned)n);
+	for (i = 0; i < n; i++)
+		sd_log_addr(frames[i]);
+}
+
 static LONG WINAPI syncduke_crash_filter(EXCEPTION_POINTERS *ep)
 {
-	if (ep != NULL && ep->ExceptionRecord != NULL)
+	if (ep != NULL && ep->ExceptionRecord != NULL) {
 		syncduke_log("*** CRASH: exception 0x%08lx at %p ***",
 		             (unsigned long)ep->ExceptionRecord->ExceptionCode,
 		             ep->ExceptionRecord->ExceptionAddress);
-	else
+		sd_log_addr(ep->ExceptionRecord->ExceptionAddress);
+	} else
 		syncduke_log("*** CRASH: unhandled exception ***");
+	sd_log_backtrace(0);
 	return EXCEPTION_EXECUTE_HANDLER;   /* let the process terminate */
+}
+
+/* First-chance backstop: log a fatal exception even if something later replaced our
+ * unhandled-exception filter, then let it propagate (CONTINUE_SEARCH). */
+static LONG WINAPI syncduke_veh(EXCEPTION_POINTERS *ep)
+{
+	DWORD code = (ep && ep->ExceptionRecord) ? ep->ExceptionRecord->ExceptionCode : 0;
+	if (code == EXCEPTION_ACCESS_VIOLATION || code == EXCEPTION_ILLEGAL_INSTRUCTION ||
+	    code == EXCEPTION_PRIV_INSTRUCTION  || code == EXCEPTION_STACK_OVERFLOW ||
+	    code == EXCEPTION_IN_PAGE_ERROR) {
+		syncduke_log("*** VEH: fatal exception 0x%08lx at %p ***",
+		             (unsigned long)code, ep->ExceptionRecord->ExceptionAddress);
+		sd_log_addr(ep->ExceptionRecord->ExceptionAddress);
+		sd_log_backtrace(0);
+	}
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+
+/* CRT fast-fails (c0000409) bypass the unhandled-exception filter entirely: an invalid
+ * argument to a CRT function (e.g. setvbuf, a bad fd), a pure-virtual call, or abort().
+ * Log a backtrace; the invalid-parameter handler then RETURNS so the offending CRT call
+ * fails gracefully instead of killing the door. */
+static void sd_invalid_param(const wchar_t *e, const wchar_t *f, const wchar_t *file,
+                             unsigned int line, uintptr_t res)
+{
+	(void)e; (void)f; (void)file; (void)line; (void)res;
+	syncduke_log("*** CRT INVALID PARAMETER (fast-fail trapped) ***");
+	sd_log_backtrace(1);
+}
+
+static void sd_purecall(void)
+{
+	syncduke_log("*** CRT PURE-VIRTUAL CALL ***");
+	sd_log_backtrace(1);
+}
+
+static void sd_abort_signal(int sig)
+{
+	syncduke_log("*** abort/signal %d ***", sig);
+	sd_log_backtrace(1);
 }
 #else
 static void syncduke_crash_signal(int sig)
@@ -144,6 +234,12 @@ void syncduke_log_init(void)
 	atexit(syncduke_log_atexit);
 #ifdef _WIN32
 	SetUnhandledExceptionFilter(syncduke_crash_filter);
+	AddVectoredExceptionHandler(0, syncduke_veh);   /* runs after others; backstop only */
+	_set_invalid_parameter_handler(sd_invalid_param);
+	_set_purecall_handler(sd_purecall);
+	signal(SIGABRT, sd_abort_signal);
+	signal(SIGFPE,  sd_abort_signal);
+	signal(SIGILL,  sd_abort_signal);
 #else
 	signal(SIGSEGV, syncduke_crash_signal);
 	signal(SIGABRT, syncduke_crash_signal);

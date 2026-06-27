@@ -72,7 +72,10 @@ if(MSVC)
     # (mis)define int_fast16_t / imaxdiv_t, which clash (C2371) with the native ones
     # now that both land in the same TU. The engine gets its int types + PRI* macros
     # from the native headers -- so we fix the clash without editing the vendored engine.
-    target_compile_options(syncduke PRIVATE /w /FIinttypes.h)
+    # /Zi emits a .pdb for the optimized Release build so an external debugger (procdump
+    # + cdb) can symbolize a crash dump for faults that bypass the in-process handlers
+    # (__fastfail / stack overflow). Paired with /DEBUG below.
+    target_compile_options(syncduke PRIVATE /w /FIinttypes.h /Zi)
     target_compile_definitions(syncduke PRIVATE
         _MSC_STDINT_H_                   # neutralize the vendored msinttypes stdint.h
         _MSC_INTTYPES_H_                 # neutralize the vendored msinttypes inttypes.h
@@ -85,7 +88,10 @@ if(MSVC)
     # genwrap/strwrap also define. GCC merges both via -fcommon /
     # --allow-multiple-definition; the MSVC linker equivalent is /FORCE:MULTIPLE
     # (it takes the first definition and warns LNK4006). We don't edit the engine.
-    target_link_options(syncduke PRIVATE /FORCE:MULTIPLE)
+    # /MAP emits syncduke.map (offline resolution of the in-process "module+RVA" backtrace);
+    # /DEBUG writes the .pdb (external-debugger symbols); /OPT:REF,/OPT:ICF restore the
+    # optimizations /DEBUG would otherwise disable, so Release stays optimized + symbolizable.
+    target_link_options(syncduke PRIVATE /FORCE:MULTIPLE /MAP /DEBUG /OPT:REF /OPT:ICF)
     target_link_libraries(syncduke ws2_32 winmm)   # Winsock (door socket) + timeGetTime
     # premap.c MUST be unoptimized (upstream note: a new game crashes if it's optimized).
     set_source_files_properties(${GAME_DIR}/premap.c PROPERTIES COMPILE_OPTIONS /Od)
