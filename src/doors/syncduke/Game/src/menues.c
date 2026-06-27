@@ -545,6 +545,11 @@ int loadplayer(int8_t spot)
 
      resettimevars();
 
+     /* SyncDuke: clear the door's sticky-crouch latch + transient input state so the
+      * pre-load crouch/turn/look doesn't bleed from the pre-load session into the
+      * restored game (the saved game's own state drives the player from here). */
+     { extern void syncduke_input_reset(void); syncduke_input_reset(); }
+
      return(0);
 }
 
@@ -1434,6 +1439,7 @@ void menus(void)
 	static int lastkeysetup = 0;
 	static int waiting4key = false;
 	static int current_resolution = 0;
+	static int help_page = 0;   /* SyncDuke: GAME CONTROLS help (case 707) is 2 pages */
     char text[512];
     extern volatile int syncduke_help_request;   // SyncDuke: F1 in-game opens GAME CONTROLS (case 707)
     extern int  syncduke_mouse_enabled(void);    // SyncDuke: terminal mouse steering on/off (Ctrl-O)
@@ -2538,35 +2544,64 @@ else
                 rotatesprite(160<<16,200<<15,65536L,0,MENUSCREEN,16,0,10+64,0,0,xdim-1,ydim-1);
             rotatesprite(320<<15,19<<16,65536L,0,MENUBAR,16,0,10,0,0,xdim-1,ydim-1);
             menutext(320>>1,24,0,0,"GAME CONTROLS");
+            j = KB_KeyPressed(sc_Escape);   // ESC exits; any other key turns the page
             x = probe(326,190,0,0);
-            gametext( 60, 34,"ARROWS",0,2+8+16);    gametext(158, 34,"MOVE / TURN",0,2+8+16);
-            gametext( 60, 45,"W A S D",0,2+8+16);   gametext(158, 45,"MOVE / STRAFE",0,2+8+16);
-            gametext( 60, 56,"SPACE",0,2+8+16);     gametext(158, 56,"FIRE",0,2+8+16);
-            gametext( 60, 67,"E",0,2+8+16);         gametext(158, 67,"OPEN / USE",0,2+8+16);
-            gametext( 60, 78,"Q",0,2+8+16);         gametext(158, 78,"JUMP",0,2+8+16);
-            gametext( 60, 89,"Z",0,2+8+16);         gametext(158, 89,"CROUCH (TOGGLE)",0,2+8+16);
-            gametext( 60,100,"R",0,2+8+16);         gametext(158,100,"TOGGLE RUN",0,2+8+16);
-            gametext( 60,111,"PGUP/PGDN",0,2+8+16); gametext(158,111,"LOOK UP / DOWN",0,2+8+16);
-            gametext( 60,122,"HOME/END",0,2+8+16);  gametext(158,122,"CENTER VIEW",0,2+8+16);
-            gametext( 60,133,"1 - 0",0,2+8+16);     gametext(158,133,"SELECT WEAPON",0,2+8+16);
-            gametext( 60,144,"TAB",0,2+8+16);       gametext(158,144,"AUTOMAP",0,2+8+16);
-            gametext( 60,155,"ESC",0,2+8+16);       gametext(158,155,"MENU",0,2+8+16);
-            gametext(320>>1,170,"F4 GRAPHICS   CTRL-T FRAMES",0,2+8+16);
-            gametext(320>>1,181,"CTRL-O MOUSE   CTRL-S STATS",0,2+8+16);
+
+            if( help_page == 0 )
+            {
+                // Page 1: movement / action layer + door hotkeys.
+                gametext( 60, 34,"ARROWS",0,2+8+16);    gametext(158, 34,"MOVE / TURN",0,2+8+16);
+                gametext( 60, 45,"W A S D",0,2+8+16);   gametext(158, 45,"MOVE / STRAFE",0,2+8+16);
+                gametext( 60, 56,"SPACE",0,2+8+16);     gametext(158, 56,"FIRE",0,2+8+16);
+                gametext( 60, 67,"E",0,2+8+16);         gametext(158, 67,"OPEN / USE",0,2+8+16);
+                gametext( 60, 78,"Q",0,2+8+16);         gametext(158, 78,"JUMP",0,2+8+16);
+                gametext( 60, 89,"Z",0,2+8+16);         gametext(158, 89,"CROUCH (TOGGLE)",0,2+8+16);
+                gametext( 60,100,"R",0,2+8+16);         gametext(158,100,"TOGGLE RUN",0,2+8+16);
+                gametext( 60,111,"PGUP/PGDN",0,2+8+16); gametext(158,111,"LOOK UP / DOWN",0,2+8+16);
+                gametext( 60,122,"HOME/END",0,2+8+16);  gametext(158,122,"CENTER VIEW",0,2+8+16);
+                gametext( 60,133,"1 - 0",0,2+8+16);     gametext(158,133,"SELECT WEAPON",0,2+8+16);
+                gametext( 60,144,"TAB",0,2+8+16);       gametext(158,144,"AUTOMAP",0,2+8+16);
+                gametext( 60,155,"ESC",0,2+8+16);       gametext(158,155,"MENU",0,2+8+16);
+                gametext(320>>1,170,"F4 GRAPHICS   CTRL-T FRAMES",0,2+8+16);
+                gametext(320>>1,181,"CTRL-O MOUSE   CTRL-S STATS",0,2+8+16);
+                gametext(320>>1,192,"- MORE: PRESS A KEY -",0,2+8+16);
+            }
+            else
+            {
+                // Page 2: pass-through keys (Duke's default letter bindings the door
+                // doesn't remap) -- inventory items + a few extras.
+                gametext(320>>1, 34,"INVENTORY & EXTRAS",0,2+8+16);
+                gametext( 60, 49,"C",0,2+8+16);         gametext(158, 49,"QUICK KICK",0,2+8+16);
+                gametext( 60, 60,"H",0,2+8+16);         gametext(158, 60,"HOLODUKE",0,2+8+16);
+                gametext( 60, 71,"J",0,2+8+16);         gametext(158, 71,"JETPACK",0,2+8+16);
+                gametext( 60, 82,"N",0,2+8+16);         gametext(158, 82,"NIGHT VISION",0,2+8+16);
+                gametext( 60, 93,"M",0,2+8+16);         gametext(158, 93,"MEDKIT",0,2+8+16);
+                gametext( 60,104,"ENTER",0,2+8+16);     gametext(158,104,"USE INVENTORY ITEM",0,2+8+16);
+                gametext( 60,115,"BKSP",0,2+8+16);      gametext(158,115,"TURN AROUND",0,2+8+16);
+                gametext( 60,126,"F",0,2+8+16);         gametext(158,126,"MAP FOLLOW MODE",0,2+8+16);
+                gametext( 60,137,"I",0,2+8+16);         gametext(158,137,"TOGGLE CROSSHAIR",0,2+8+16);
+                gametext( 60,148,"V",0,2+8+16);         gametext(158,148,"AUTO-AIM (TOGGLE)",0,2+8+16);
+                gametext(320>>1,192,"- PRESS A KEY TO RETURN -",0,2+8+16);
+            }
+
             if( x >= -1 )
             {
-                // SyncDuke: when this screen was opened in-game via F1 (syncduke_help_request==2)
-                // a keypress returns to GAMEPLAY; opened from the Options menu it returns there.
-                if( syncduke_help_request == 2 )
+                if( help_page == 0 && !j )
+                    help_page = 1;          // turn to page 2 (ESC still exits)
+                else
                 {
-                    syncduke_help_request = 0;
-                    ps[myconnectindex].gm &= ~MODE_MENU;
-                    if(ud.multimode < 2 && ud.recstat != 2) ready2send = 1;
+                    help_page = 0;          // reset for the next time it's opened
+                    // SyncDuke: opened in-game via F1 (syncduke_help_request==2) -> back to
+                    // GAMEPLAY; from the Options menu -> back there; in-game ESC menu -> case 50.
+                    if( syncduke_help_request == 2 )
+                    {
+                        syncduke_help_request = 0;
+                        ps[myconnectindex].gm &= ~MODE_MENU;
+                        if(ud.multimode < 2 && ud.recstat != 2) ready2send = 1;
+                    }
+                    else if(ps[myconnectindex].gm&MODE_GAME) cmenu(50);
+                    else cmenu(0);
                 }
-                /* SyncDuke: CONTROLS HELP is opened from the main menu (case 0) out of game
-                 * and from the in-game ESC menu (case 50) in game -- return to whichever. */
-                else if(ps[myconnectindex].gm&MODE_GAME) cmenu(50);
-                else cmenu(0);
             }
             break;
 
@@ -2765,7 +2800,7 @@ else
             menutext(SD_VALX(lbl),43+16*3,SHX(-7),PHX(-7),lbl);
 
             v = syncduke_kb_turn();
-            menutext(c,43+16*4,SHX(-7),PHX(-7),"TURN HOLD");
+            menutext(c,43+16*4,SHX(-7),PHX(-7),"TURN SPEED");
             bar(c+167+40,43+16*4,&v,1,x==4,SHX(-7),PHX(-7));
             syncduke_kb_turn_set(v);
             sprintf(lbl,"%d",v);
