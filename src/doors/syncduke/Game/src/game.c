@@ -8024,10 +8024,16 @@ void findGRPToUse(uint8_t * groupfilefullpath)
     int i=0,kbdKey ;
 	char  groupfile[9][512];
 	int grpID ;
+	/* SyncDuke: the read-only GRP lives in a shared dir (syncduke_grpdir, absolute),
+	 * separate from the process CWD -- which is the user's per-user -home dir so config
+	 * and saves land there.  Prefer it so the GRP opens regardless of CWD (mirrors the
+	 * *nix branch below).  Empty syncduke_grpdir => stock getGameDir()/CWD behavior. */
+	extern char syncduke_grpdir[];
+	const char *scanDir = syncduke_grpdir[0] != '\0' ? syncduke_grpdir : getGameDir();
 
-	if(getGameDir()[0] != '\0')
+	if(scanDir[0] != '\0')
 	{
-		sprintf(groupfilefullpath, "%s\\%s", getGameDir(), baseDir);
+		sprintf(groupfilefullpath, "%s\\%s", scanDir, baseDir);
 		hFind = FindFirstFile(groupfilefullpath, &FindFileData);
 		if (hFind == INVALID_HANDLE_VALUE)
 		{
@@ -8038,20 +8044,20 @@ void findGRPToUse(uint8_t * groupfilefullpath)
 	}
 	else
 		sprintf(groupfilefullpath, "%s", baseDir);
-    
-	printf("Searching '%d':\n\n",groupfilefullpath);
+
+	printf("Searching '%s':\n\n",groupfilefullpath);
 	hFind = FindFirstFile(groupfilefullpath,&FindFileData);
-    
+
 	if ( hFind==INVALID_HANDLE_VALUE )
 		Error(EXIT_SUCCESS, "Can't find '%s'\n", groupfilefullpath);
-    
+
 	do
 	{
 		i++;
 		sprintf(groupfile[i-1], "%s", FindFileData.cFileName);
 		printf("Found GRP #%d:\t%d Bytes\t %s \n", i, FindFileData.nFileSizeLow, groupfile[i-1]);
 	} while ( FindNextFile(hFind, &FindFileData) && i < 9 );
-    
+
 	if(i==1)
 		grpID = 0;
 	else
@@ -8062,14 +8068,14 @@ void findGRPToUse(uint8_t * groupfilefullpath)
 		while(kbdKey < '1' || kbdKey > ('0' + i));
 		printf("%c\n", kbdKey);
 		grpID =  groupfile[kbdKey-'1'];
-		
+
 	}
-	
+
 	FindClose(hFind);
-	if (strlen(getGameDir()) == 0)
+	if (scanDir[0] == '\0')
 		 sprintf(groupfilefullpath, "./%s", groupfile[grpID]);
 	else
-	   sprintf(groupfilefullpath, "%s//%s", getGameDir(), groupfile[grpID]);
+	   sprintf(groupfilefullpath, "%s\\%s", scanDir, groupfile[grpID]);
 }
 
 #else

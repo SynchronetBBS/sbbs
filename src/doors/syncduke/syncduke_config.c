@@ -126,7 +126,14 @@ static void syncduke_config_init(int argc, char **argv)
 	if (syncduke_is_door(argc, argv)) {
 		fflush(stdout);
 		dup2(STDERR_FILENO, STDOUT_FILENO);   /* engine printf/Error() -> stderr -> BBS log */
+#ifdef _WIN32
+		/* MSVC's CRT rejects setvbuf(_IOLBF) with size 0 (it requires size >= 2 for
+		 * line/full buffering) -> invalid-parameter fast-fail (c0000409). Use unbuffered:
+		 * valid with size 0, and each write flushes immediately -- the same goal. */
+		setvbuf(stdout, NULL, _IONBF, 0);
+#else
 		setvbuf(stdout, NULL, _IOLBF, 0);     /* line-buffered so lines flush promptly */
+#endif
 	}
 }
 
