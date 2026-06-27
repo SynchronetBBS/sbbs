@@ -33,7 +33,9 @@ typedef struct grpArchive_s{
     int32_t  *filesizes           ;//Array containing the file offsets.
     int fileDescriptor            ;//The fd used for open,read operations.
     uint32_t crc32                ;//Hash to recognize GRP: Duke Shareware, Duke plutonimum etc...
-    
+    uint8_t  *data                ;//SyncDuke: whole GRP slurped into RAM (NULL => read via fd).
+    int32_t  dataSize             ;//SyncDuke: size of data[].
+
 } grpArchive_t;
 
 //All GRP opened are in this structure
@@ -129,16 +131,28 @@ int32_t initgroupfile(const char  *filename)
     //archive->fileOffsets[archive->numFiles-1] = j;
 	
     
-	// Compute CRC32 of the whole grp and implicitely caches the GRP in memory through windows caching service.
-    // Rewind the fileDescriptor
+	// SyncDuke: slurp the entire (read-only) GRP into RAM so each per-lump kread() is a
+	// memcpy() instead of an lseek()+read() syscall. The stock engine relied on the OS
+	// file cache (the "windows caching service" note) to make those tiny reads cheap --
+	// fine on local disk, but murderous over a network share (SMB), where every 2-byte
+	// kread16() round-trips to the file server (~4x slower door startup). We fold the
+	// CRC32 pass into this one linear read. Falls back to the fd path if malloc fails.
+	archive->dataSize = (int32_t)lseek(archive->fileDescriptor, 0, SEEK_END);
 	lseek(archive->fileDescriptor, 0, SEEK_SET);
-    
-	//i = 1000000;
-	//groupfil_memory[numgroupfiles] = malloc(i);
-    
-    //Load the full GRP in RAM.
-	while((j=read(archive->fileDescriptor, crcBuffer, sizeof(crcBuffer)))){
-		archive->crc32 = crc32_update(crcBuffer,j,archive->crc32);
+	archive->data = (archive->dataSize > 0) ? (uint8_t *)malloc((size_t)archive->dataSize) : NULL;
+	if (archive->data != NULL){
+		int32_t off = 0;
+		while (off < archive->dataSize &&
+		       (j = read(archive->fileDescriptor, archive->data + off, archive->dataSize - off)) > 0)
+			off += j;
+		archive->crc32 = crc32_update(archive->data, off, archive->crc32);
+	}
+	else{
+		//Fallback: stream through crcBuffer for the CRC; kread() will use the fd.
+		lseek(archive->fileDescriptor, 0, SEEK_SET);
+		while((j=read(archive->fileDescriptor, crcBuffer, sizeof(crcBuffer)))){
+			archive->crc32 = crc32_update(crcBuffer,j,archive->crc32);
+		}
 	}
     
     // The game layer seems to absolutely need to access an array int[4] groupefil_crc32
@@ -162,6 +176,7 @@ void uninitgroupfile(void)
         free(grpSet.archives[i].gfilelist);
         free(grpSet.archives[i].fileOffsets);
         free(grpSet.archives[i].filesizes);
+        free(grpSet.archives[i].data);   // SyncDuke: in-RAM GRP copy
         memset(&grpSet.archives[i], 0, sizeof(grpArchive_t));
     }
     
@@ -338,14 +353,20 @@ int32_t kread(int32_t handle, void *buffer, int32_t leng){
     //File is actually in the GRP
     archive = & grpSet.archives[openFile->grpID];
         
-    lseek(archive->fileDescriptor,
-          archive->fileOffsets[openFile->fd] + openFile->cursor,
-          SEEK_SET);
-    
     //Adjust leng so we cannot read more than filesystem-cursor location.
     leng = min(leng,archive->filesizes[openFile->fd]-openFile->cursor);
-    
-    leng = read(archive->fileDescriptor,buffer,leng);
+    if (leng < 0)
+        leng = 0;
+
+    if (archive->data != NULL){
+        // SyncDuke: serve the lump from the in-RAM GRP -- no syscalls (fast over SMB).
+        memcpy(buffer, archive->data + archive->fileOffsets[openFile->fd] + openFile->cursor, leng);
+    }
+    else{
+        lseek(archive->fileDescriptor,
+              archive->fileOffsets[openFile->fd] + openFile->cursor, SEEK_SET);
+        leng = read(archive->fileDescriptor,buffer,leng);
+    }
     
     openFile->cursor += leng;
 	
