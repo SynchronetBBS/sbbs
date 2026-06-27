@@ -39,8 +39,6 @@ function Message_DoCommand(command)
 		return(ret);
 	}
 
-	var content_length = file_size(this.messagefile);
-
 	var inserted_received = "";
 	if(this.reverse_path)
 		inserted_header_fields += "Return-Path: " + this.reverse_path + "\r\n";
@@ -58,7 +56,23 @@ function Message_DoCommand(command)
 		inserted_header_fields += inserted_received;
 	}
 	log(LOG_DEBUG, "inserted headers = " + inserted_header_fields);
-	content_length += inserted_header_fields.length;
+
+	/* Read the message file once (rather than file_size() + sendfile() as two
+	   separate operations) so the announced Content-length always matches the
+	   bytes actually sent.  The temp message file can live on a soft network
+	   mount where a stat and a later send disagree, which spamd rejects as a
+	   Content-Length mismatch (protocol error 76). */
+	var msg_file = new File(this.messagefile);
+	if(!msg_file.open("rb")) {
+		sock.close();
+		ret.error="Failed to open message file: " + this.messagefile;
+		return(ret);
+	}
+	var msg_bytes = msg_file.read(500000);	/* cap read at 500 KB (spamc.js also limits message size) */
+	msg_file.close();
+	if(typeof msg_bytes != "string")
+		msg_bytes = "";
+	var content_length = inserted_header_fields.length + msg_bytes.length;
 
 	sock.write(command.toUpperCase()+" SPAMC/1.2\r\n");
 	sock.write("Content-length: "+content_length+"\r\n");
@@ -66,7 +80,7 @@ function Message_DoCommand(command)
 		sock.write("User: " + this.user + "\r\n");
 	sock.write("\r\n");
 	sock.write(inserted_header_fields);
-	sock.sendfile(this.messagefile);
+	sock.write(msg_bytes);
 	sock.is_writeable=false;
 
 	while(1) {
