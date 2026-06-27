@@ -306,7 +306,9 @@ static uint32_t g_mouse_last_ms;       /* time of the last report (idle timeout)
 
 int  syncduke_mouse_enabled(void) { return g_mouse_on; }
 int  syncduke_mouse_sens(void)    { return g_mouse_sens; }
-void syncduke_mouse_sens_set(int v) { g_mouse_sens = v < 0 ? 0 : (v > 63 ? 63 : v); }
+/* Floor at 1: sensitivity 0 yields zero turn rate (steering effectively dead, like
+ * disabling the mouse), so the slider's left end is 1 -- a small but real effect. */
+void syncduke_mouse_sens_set(int v) { g_mouse_sens = v < 1 ? 1 : (v > 63 ? 63 : v); }
 
 /* keyboard-feel sliders/toggle for the Setup Controls menu (0..63 sliders) */
 int  syncduke_kb_tap(void)         { return g_tap_bar; }
@@ -552,10 +554,14 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 #ifdef _WIN32
 	n = recv((SOCKET)fd, (char *)buf, (int)sizeof(buf), 0);
 	if (n == SOCKET_ERROR) {
-		if (WSAGetLastError() == WSAEWOULDBLOCK)
-			return;                                  /* no input yet */
-		if (syncduke_door_socket() >= 0)
-			syncduke_hangup("input read error");
+		int e = WSAGetLastError();
+		if (e == WSAEWOULDBLOCK || e == WSAENOBUFS || e == WSAEINTR)
+			return;                                  /* no input yet / transient */
+		if (syncduke_door_socket() >= 0) {
+			char r[48];
+			snprintf(r, sizeof r, "input recv error wsa=%d", e);
+			syncduke_hangup(r);
+		}
 		return;
 	}
 	if (n == 0) {                                        /* peer closed */

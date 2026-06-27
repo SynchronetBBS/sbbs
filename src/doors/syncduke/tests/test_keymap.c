@@ -19,6 +19,8 @@ void syncduke_pace_ack(void) { }
 void syncduke_stats_toggle(void) { }
 void syncduke_depth_cycle(void) { }
 void syncduke_tier_cycle(void) { }
+/* syncduke_door.c's hangup() logs via syncduke_log() (in syncduke_log.c, not linked here). */
+void syncduke_log(const char *fmt, ...) { (void)fmt; }
 
 static int fails;
 #define GP 1   /* gameplay */

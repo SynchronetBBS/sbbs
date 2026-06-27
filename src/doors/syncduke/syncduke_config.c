@@ -61,6 +61,12 @@
  * keeps its stock CWD scan (standalone/dev runs). */
 char syncduke_grpdir[PATH_MAX] = "";
 
+/* Whether the in-game RECORD (demo) menu option is offered + actually records.
+ * Default OFF: a demo file (demo1.dmo) is useless to a BBS user who can't download
+ * it and just wastes disk. Enable with syncduke.ini [game] record = true. */
+static int syncduke_allow_record;
+int syncduke_record_enabled(void) { return syncduke_allow_record; }
+
 /* True if argv looks like a door launch: a DOOR32.SYS drop file (Synchronet %f)
  * or a -s<fd> socket arg. */
 static int syncduke_is_door(int argc, char **argv)
@@ -86,21 +92,28 @@ static void syncduke_config_init(int argc, char **argv)
 {
 	char  dir[INI_MAX_VALUE_LEN] = "";
 	char  home[PATH_MAX] = "";
+	char  logpath[INI_MAX_VALUE_LEN] = "";
 	char  abs[PATH_MAX];
 	int   i;
 	FILE *f;
 
-	/* --- GRP dir (-grpdir <path> or syncduke.ini [grp] dir) and per-user -home <path> --- */
+	/* --- GRP dir (-grpdir <path> / [grp] dir), per-user -home <path>, debug -log <path> --- */
 	for (i = 1; i + 1 < argc; i++) {
 		if (strcmp(argv[i], "-grpdir") == 0)
 			strncpy(dir, argv[i + 1], sizeof(dir) - 1);
 		else if (strcmp(argv[i], "-home") == 0)
 			strncpy(home, argv[i + 1], sizeof(home) - 1);
+		else if (strcmp(argv[i], "-log") == 0)
+			strncpy(logpath, argv[i + 1], sizeof(logpath) - 1);
 	}
-	if (!dir[0] && (f = fopen("syncduke.ini", "r")) != NULL) {
+	if ((f = fopen("syncduke.ini", "r")) != NULL) {
 		str_list_t ini = iniReadFile(f);
 		fclose(f);
-		iniGetString(ini, "grp", "dir", "", dir);
+		if (!dir[0])
+			iniGetString(ini, "grp", "dir", "", dir);
+		if (!logpath[0])
+			iniGetString(ini, "debug", "log", "", logpath);   /* blank => logging off */
+		syncduke_allow_record = iniGetBool(ini, "game", "record", FALSE);   /* demos off by default */
 		strListFree(&ini);
 	}
 
@@ -121,6 +134,15 @@ static void syncduke_config_init(int argc, char **argv)
 	}
 	else if (syncduke_grpdir[0] && chdir(syncduke_grpdir) != 0)
 		fprintf(stderr, "syncduke: cannot chdir to GRP dir '%s'\n", syncduke_grpdir);
+
+	/* --- optional file debug log (off unless env SYNCDUKE_LOG / -log / [debug] log is set).
+	 * Set the path + install the crash handler now, before the engine runs, so a fault or
+	 * hangup is recorded to a plain file (we get neither stderr capture nor WER dumps here).
+	 * A relative path lands in CWD -- i.e. the per-user -home dir just entered above. */
+	syncduke_log_set_path(logpath);
+	syncduke_log_init();
+	syncduke_log("start: argc=%d socket=%d grpdir='%s' home='%s'",
+	             argc, syncduke_door_socket(), syncduke_grpdir, home[0] ? home : ".");
 
 	/* --- route the engine's stdout diagnostics to stderr (Synchronet logs it) --- */
 	if (syncduke_is_door(argc, argv)) {

@@ -36,6 +36,7 @@ set(SOURCES
     syncduke_config.c
     syncduke_game.c
     syncduke_stubs.c
+    syncduke_log.c
 )
 
 add_executable(syncduke ${SOURCES})
@@ -52,6 +53,12 @@ else()
     target_compile_definitions(syncduke PRIVATE PLATFORM_UNIX)
 endif()
 set_property(TARGET syncduke PROPERTY C_STANDARD 11)
+
+# Git build info (git_hash.h: GIT_HASH/GIT_DATE/GIT_TIME) for the main-menu footer and
+# the Controls Help screen, via the shared helper in src/build. Regenerated each build
+# into the binary dir (added to the target's include path); Game/src/menues.c #includes it.
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../build/SynchronetMacros.cmake)
+synchronet_gitinfo(syncduke)
 
 if(MSVC)
     # The vendored 2013/2019 Build engine is full of legacy constructs MSVC warns

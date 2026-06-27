@@ -168,10 +168,25 @@ void syncduke_out_flush(void)
 	while (g_out_off < g_out_len) {
 		int n = send(g_iosock, (const char *)g_out + g_out_off,
 		             (int)(g_out_len - g_out_off), 0);
+		int e;
 		if (n > 0) { g_out_off += (size_t)n; continue; }
-		if (n == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
-			break;          /* slow client: keep the frame pending */
-		syncduke_hangup("client closed (write error)");   /* broken socket -> exit, free the node */
+		e = WSAGetLastError();
+		/* Transient -- keep the frame pending and retry next tick, do NOT treat as a
+		 * dead socket. WSAEWOULDBLOCK is normal backpressure (slow client). WSAENOBUFS
+		 * can surface under a burst of large frames (e.g. holding a key, which defeats
+		 * de-dupe and pushes frames out at max rate); WSAEINTR is a benign interruption.
+		 * Treating these as a hangup wrongly dropped the player back to the BBS. */
+		if (e == WSAEWOULDBLOCK || e == WSAENOBUFS || e == WSAEINTR) {
+			if (e != WSAEWOULDBLOCK)
+				syncduke_log("send transient wsa=%d (%u bytes pending)", e,
+				             (unsigned)(g_out_len - g_out_off));
+			break;
+		}
+		{
+			char r[64];
+			snprintf(r, sizeof r, "client closed (send error wsa=%d)", e);
+			syncduke_hangup(r);   /* genuinely broken socket -> exit, free the node */
+		}
 		break;
 	}
 #else

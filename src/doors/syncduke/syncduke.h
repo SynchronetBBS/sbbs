@@ -76,4 +76,10 @@ const char *syncduke_door_alias(void);        /* user's alias/handle, or "" */
 int syncduke_in_gameplay(void);   /* 1 when actually playing (not in a menu), so the WASD/Space action layer applies */
 int syncduke_player_dead(void);   /* 1 when the player is dead -- door drops the action layer so Space = Open (restart) */
 
+/* --- provided by syncduke_log.c (optional file debug log; disabled unless a path
+ * is set via env SYNCDUKE_LOG or syncduke.ini [debug] log) --- */
+void syncduke_log(const char *fmt, ...);        /* printf-style; no-op when disabled */
+void syncduke_log_set_path(const char *path);   /* configure the log file (from the ini) */
+void syncduke_log_init(void);                   /* install the crash handler + atexit marker */
+
 #endif /* SYNCDUKE_H_ */
