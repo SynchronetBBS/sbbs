@@ -4,6 +4,9 @@
 /syncduke
 /syncduke.map
 *.o
+# game data — sysop-supplied, never committed (proprietary, redistributable)
+*.grp
+*.GRP
 # editor swap
 *.swp
 *.swo
