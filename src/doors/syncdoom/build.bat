@@ -1,7 +1,6 @@
 @echo off
 rem ===========================================================================
-rem build.bat - Configure and build the Win32 / MSVC (Release) build of
-rem             SyncDOOM and install syncdoom.exe into the door's xtrn dir.
+rem build.bat - Configure and build the Win32 / MSVC (Release) build of SyncDOOM.
 rem
 rem   Usage:  build.bat            (Win32 release, JPEG-XL via vcpkg if present)
 rem           build.bat x64        (64-bit release)
@@ -12,6 +11,10 @@ rem Mirrors the configuration documented in COMPILING.md: Visual Studio 2022,
 rem classic-mode vcpkg for the static libjxl (JPEG-XL graphics tier).  When the
 rem vcpkg prefix is absent the configure step falls back to the sixel/text
 rem tiers with a warning - the door still builds.
+rem
+rem Building does NOT install the binary -- it is left at
+rem build-msvc\Release\syncdoom.exe.  Run deploy.bat afterwards when you actually
+rem want the running door updated, so you can rebuild and test first.
 rem ===========================================================================
 setlocal enabledelayedexpansion
 
@@ -37,7 +40,6 @@ goto parseargs
 :argsdone
 
 set "BUILDDIR=%SRCDIR%\build-msvc"
-set "DESTDIR=%SRCDIR%\..\..\..\xtrn\syncdoom"
 set "VCPKG_PREFIX=C:\vcpkg\installed\%TRIPLET%"
 
 rem --- Locate cmake (PATH, else the VS 2022 bundled copy) --------------------
@@ -75,20 +77,17 @@ echo [build] Building ...
 "%CMAKE%" --build "%BUILDDIR%" --config %CONFIG%
 if errorlevel 1 goto error
 
-rem --- Install into xtrn\syncdoom -------------------------------------------
+rem --- Confirm the build produced the binary --------------------------------
 set "EXE=%BUILDDIR%\%CONFIG%\syncdoom.exe"
 if not exist "%EXE%" (
     echo [build] ERROR: expected output not found: %EXE%
     goto error
 )
-if not exist "%DESTDIR%" mkdir "%DESTDIR%"
-copy /Y "%EXE%" "%DESTDIR%\syncdoom.exe" >nul
-if errorlevel 1 goto error
 
-rem Normalize the destination path for the success message
-for %%I in ("%DESTDIR%\syncdoom.exe") do set "INSTALLED=%%~fI"
+for %%I in ("%EXE%") do set "BUILT=%%~fI"
 echo.
-echo [build] Done. Installed: %INSTALLED%
+echo [build] Built: %BUILT%
+echo [build] Run deploy.bat to install it into the door's xtrn dir.
 endlocal
 exit /b 0
 
