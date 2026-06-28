@@ -679,6 +679,7 @@ function verify_services(address, timeout)
 		"pop3",
 		"imap",
 		"irc",
+		"finger",
     ];
     var udp_services=[
         "systat",
