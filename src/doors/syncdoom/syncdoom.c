@@ -1310,25 +1310,11 @@ static void parse_byte(unsigned char c)
 								// reclaimed frame matched to a freshly-sent one reads absurdly low
 								// and would poison the baseline (collapsing the ceiling to depth 1).
 								// Ignore a sample far below the smoothed RTT (genuine drops are gradual).
-								if (g_rtt_ms == 0 || rtt >= g_rtt_ms / 3) {
-									g_rtt_ms = g_rtt_ms ? (uint32_t)((g_rtt_ms * 3 + rtt) / 4) : rtt;
-									// Round-trip = network latency + the client's frame decode/render
-									// time. Once it's non-trivial (>40ms -- which on a LAN is the JXL
-									// decode, NOT network distance), a single in-flight frame (depth 1)
-									// would cap the frame rate below ~25fps with no latency upside, so
-									// floor depth at 2. Latched: a later corrupted-low sample can't undo it.
-									if (g_rtt_ms > 40)
-										g_rt_high = 1;
-									// Baseline = windowed min RTT (the unloaded latency); a new low
-									// always wins, and a stale min re-seeds so a genuinely risen
-									// baseline isn't mistaken for permanent queuing.
-									if (g_rtt_min == 0 || rtt <= g_rtt_min
-									    || (uint32_t)(nowm - g_rtt_min_at) > RTT_MIN_WINDOW) {
-										g_rtt_min = rtt;
-										g_rtt_min_at = nowm;
-									}
+								// fold the round-trip into the smoothed RTT + windowed baseline (shared,
+								// termgfx/pace.c): stale-reject on, 8s min re-seed window -- Doom's behavior.
+								if (termgfx_rtt_sample(&g_rtt_ms, &g_rtt_min, &g_rtt_min_at, &g_rt_high,
+								                       rtt, nowm, 1, RTT_MIN_WINDOW))
 									auto_depth_update();     // re-evaluate the auto pipeline depth
-								}
 							}
 							g_ack_deadline = now_ms() + 250; // progress -> refresh the safety deadline
 							break;

@@ -37,3 +37,20 @@ void termgfx_aimd_update(int enabled, int *depth, uint32_t *adj_at,
 		d = floor_d;
 	*depth = d;
 }
+
+int termgfx_rtt_sample(uint32_t *rtt_ms, uint32_t *rtt_min, uint32_t *rtt_min_at,
+                       int *rt_high, uint32_t rtt, uint32_t now_ms,
+                       int stale_reject, uint32_t rtt_min_window_ms)
+{
+	if (stale_reject && *rtt_ms != 0 && rtt < *rtt_ms / 3)
+		return 0;                       // stale: a late reply for a reclaimed frame
+	*rtt_ms = *rtt_ms ? (uint32_t)((*rtt_ms * 3 + rtt) / 4) : rtt;   // 3/4 EMA
+	if (*rtt_ms > 40)
+		*rt_high = 1;                   // latched: a non-trivial round-trip floors depth at 2
+	if (*rtt_min == 0 || rtt <= *rtt_min
+	    || (rtt_min_window_ms && (uint32_t)(now_ms - *rtt_min_at) > rtt_min_window_ms)) {
+		*rtt_min    = rtt;
+		*rtt_min_at = now_ms;
+	}
+	return 1;
+}

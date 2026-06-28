@@ -438,7 +438,7 @@ static uint32_t syncduke_now_ms(void) { return (uint32_t)(syncduke_now_us() / 10
 #define SYNCDUKE_DSR_RING 16
 static uint32_t syncduke_dsr_ts[SYNCDUKE_DSR_RING];
 static int      syncduke_dsr_h, syncduke_dsr_t;
-static uint32_t syncduke_rtt_ms, syncduke_rtt_min;
+static uint32_t syncduke_rtt_ms, syncduke_rtt_min, syncduke_rtt_min_at;
 
 static void syncduke_dsr_sent(uint32_t now)        /* record a DSR we just emitted */
 {
@@ -612,15 +612,11 @@ void syncduke_pace_ack(void)
 	if (syncduke_dsr_h != syncduke_dsr_t) {            /* match the oldest outstanding DSR */
 		uint32_t rtt = now - syncduke_dsr_ts[syncduke_dsr_t];
 		syncduke_dsr_t = (syncduke_dsr_t + 1) % SYNCDUKE_DSR_RING;
-		syncduke_rtt_ms = syncduke_rtt_ms ? (syncduke_rtt_ms * 3 + rtt) / 4 : rtt;   /* EMA */
-		/* round-trip = network + the client's frame decode/render time; once non-trivial
-		 * (>40ms -- on a LAN that's the sixel/JXL decode, not distance) a single in-flight
-		 * frame caps fps with no latency upside, so floor the auto depth at 2. Latched. */
-		if (syncduke_rtt_ms > 40)
-			syncduke_rt_high = 1;
-		if (syncduke_rtt_min == 0 || rtt < syncduke_rtt_min)
-			syncduke_rtt_min = rtt;
-		syncduke_auto_depth_update();                  /* re-evaluate the AIMD auto depth */
+		/* fold the round-trip into the smoothed RTT + baseline (shared, termgfx/pace.c);
+		 * no stale-reject / no min re-seed window -- Duke's original behavior. */
+		if (termgfx_rtt_sample(&syncduke_rtt_ms, &syncduke_rtt_min, &syncduke_rtt_min_at,
+		                       &syncduke_rt_high, rtt, now, 0, 0))
+			syncduke_auto_depth_update();              /* re-evaluate the AIMD auto depth */
 	}
 	syncduke_pace_progress_ms = now;
 }

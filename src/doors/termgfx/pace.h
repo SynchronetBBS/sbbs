@@ -26,4 +26,20 @@ void termgfx_aimd_update(int enabled, int *depth, uint32_t *adj_at,
                          uint32_t rtt_ms, uint32_t rtt_min, int rt_high,
                          int depth_max, uint32_t now_ms);
 
+// Fold one DSR round-trip sample (`rtt`, ms) into the smoothed RTT (*rtt_ms, a 3/4
+// EMA) and the windowed baseline (*rtt_min / *rtt_min_at, the unloaded latency).
+// Latches *rt_high once the smoothed RTT exceeds 40ms (a non-trivial round-trip ->
+// the caller floors the pipeline depth at 2).  Returns 1 if the sample was accepted
+// (the caller should then run termgfx_aimd_update), 0 if rejected.
+//   stale_reject != 0  -> drop a sample far below the EMA (rtt < rtt_ms/3): a late
+//                         reply for a reclaimed frame reads absurdly low and would
+//                         poison the baseline.
+//   rtt_min_window_ms   -> re-seed the baseline if no lower sample arrived for this
+//                         long, so a genuinely-risen baseline isn't mistaken for
+//                         permanent queuing.  0 = never re-seed (baseline only
+//                         ratchets down).
+int termgfx_rtt_sample(uint32_t *rtt_ms, uint32_t *rtt_min, uint32_t *rtt_min_at,
+                       int *rt_high, uint32_t rtt, uint32_t now_ms,
+                       int stale_reject, uint32_t rtt_min_window_ms);
+
 #endif // TERMGFX_PACE_H_
