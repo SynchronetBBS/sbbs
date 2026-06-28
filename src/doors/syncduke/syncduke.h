@@ -53,6 +53,9 @@ int  syncduke_term_px_w(void);                      /* terminal pixel-canvas wid
 int  syncduke_term_px_h(void);                      /* terminal pixel-canvas height from probe, 0 if unknown */
 int  syncduke_term_cell_w(void);                    /* terminal cell width in px from ESC[16t, 0 if unknown */
 int  syncduke_term_cell_h(void);                    /* terminal cell height in px from ESC[16t, 0 if unknown */
+int  syncduke_canvas_w(void);                       /* graphics-canvas width: XTSMGRAPHICS or text-area px */
+int  syncduke_canvas_h(void);                       /* graphics-canvas height: XTSMGRAPHICS or text-area px */
+int  syncduke_jxl_scale_max(void);                  /* JXL fill cap (px), [video] scale_max; 0 = uncapped */
 /* Image-tier placement: centered cell origin (*row,*col, 1-based) for the sixel/JXL
  * cursor, plus the image's center column and half-width in cells (for mouse steering).
  * Centers the out_w x out_h image in the probed pixel canvas using the real cell size;

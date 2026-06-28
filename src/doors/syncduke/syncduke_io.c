@@ -45,6 +45,7 @@
 #include "jxl.h"        /* termgfx: JPEG XL frame encoder (RGB888 -> JXL) */
 #include "caps.h"       /* termgfx: termgfx_query_jxl (the Q;JXL cap-probe string) */
 #include "text.h"       /* termgfx: text/block render tiers (rt_config / rt_render_frame) */
+#include "geometry.h"   /* termgfx: shared image fit/center (shared with SyncDOOM) */
 
 /* emit a NUL-terminated control string (no embedded NULs) without hand-counting */
 static void syncduke_out_puts(const char *s) { syncduke_out_put(s, strlen(s)); }
@@ -243,12 +244,8 @@ void syncduke_image_geometry(int *row, int *col, int *center_col, int *half_cols
 	int cw = syncduke_term_cell_w(), ch = syncduke_term_cell_h();
 	int r = 1, c = 1;
 
-	if (vw > 0 && vh > 0 && cw > 0 && ch > 0) {
-		int x = vw > syncduke_out_w ? (vw - syncduke_out_w) / 2 : 0;
-		int y = vh > syncduke_out_h ? (vh - syncduke_out_h) / 2 : 0;
-		c = 1 + x / cw;
-		r = 1 + y / ch;
-	}
+	if (vw > 0 && vh > 0 && cw > 0 && ch > 0)   /* else top-left (cell math is a guess) */
+		termgfx_geom_center(vw, vh, syncduke_out_w, syncduke_out_h, cw, ch, NULL, NULL, &c, &r);
 	if (row)
 		*row = r;
 	if (col)
@@ -325,16 +322,18 @@ static void syncduke_pack_rgb(const uint8_t *fb, const uint8_t *pal, int w, int 
  * SyncTERM that answers the Q;JXL probe gets JPEG XL frames instead of sixel: far
  * smaller on the wire, and the palette bakes into the RGB so there are no color
  * registers to (re)define. A DrawJXL is a 1:1 cache blit (no terminal scaling, unlike
- * the half-scale sixel + pan/pad trick), so the image is encoded at the FULL on-screen
- * pixel size -- the native 320x200 framebuffer nearest-scaled up through the 8-bit
- * palette into RGB888 at w x h. */
+ * the half-scale sixel + pan/pad trick), so the door scales the image itself: the
+ * native 320x200 framebuffer is nearest-scaled up through the 8-bit palette into
+ * RGB888 at a fit-to-canvas w x h, then positioned with the APC DX/DY to center it
+ * (sizing/centering shared with SyncDOOM via termgfx_geom_fit/center). */
 static uint8_t *syncduke_jxl;   static size_t syncduke_jxl_cap;   /* encoded JXL    */
 static uint8_t *syncduke_apc;   static size_t syncduke_apc_cap;   /* APC Store+Draw */
 
-/* Encode the frame as JXL and ship it as a DrawJXL (1:1 blit at the canvas origin).
+/* Encode the frame as JXL and ship it as a DrawJXL blit at canvas pixel (dx,dy).
  * distance 2.0 / effort 1 (lightning) match SyncDOOM's emit_frame_jxl. Returns the wire
  * byte count, or 0 on encode failure (the caller then falls back to sixel this frame). */
-static size_t syncduke_emit_jxl(const uint8_t *fb, const uint8_t *pal, int w, int h)
+static size_t syncduke_emit_jxl(const uint8_t *fb, const uint8_t *pal, int w, int h,
+                                int dx, int dy)
 {
 	size_t n;
 
@@ -343,7 +342,7 @@ static size_t syncduke_emit_jxl(const uint8_t *fb, const uint8_t *pal, int w, in
 	if (n == 0)
 		return 0;
 	n = termgfx_apc_image(&syncduke_apc, &syncduke_apc_cap, "d.jxl", "DrawJXL",
-	                      syncduke_jxl, n, 0, 0);
+	                      syncduke_jxl, n, dx, dy);
 	syncduke_out_put(syncduke_apc, n);
 	return n;
 }
@@ -553,8 +552,14 @@ void syncduke_tier_cycle(void)
 	syncduke_have_last = 0;
 	rt_invalidate();
 
+	/* Wipe the old tier's bitmap UNCONDITIONALLY.  The popup label (and the clear it
+	 * used to carry) is suppressed while the stats overlay is up, but a JXL->sixel
+	 * switch leaves the old, larger JXL image showing around the smaller sixel unless
+	 * the screen is actually cleared here -- so clear directly, like SyncDOOM. */
+	syncduke_out_put("\x1b[2J\x1b[H", 7);
+	syncduke_out_flush();
 	snprintf(line, sizeof(line), "  SyncDuke video: %s   (F4 to cycle)  ", sd_tier_name(syncduke_tier_force));
-	syncduke_show_label(line, 1);   /* tier switch: clear the old tier's image */
+	syncduke_show_label(line, 0);   /* cosmetic label only; the screen is already cleared */
 	fprintf(stderr, "syncduke: video tier -> %s\n", sd_tier_name(syncduke_tier_force));
 }
 
@@ -750,7 +755,14 @@ static void syncduke_emit_overlay(int force)
 		strcpy(syncduke_ov_last, txt);
 	syncduke_ov_draw_ms = nm;
 
-	cols = (syncduke_out_w > 0 ? syncduke_out_w : 640) / 8;   /* terminal width in cells */
+	{   /* right-justify to the real TERMINAL width, not the (capped) image width:
+	     * in a wide window the JXL image fills past out_w, so out_w/8 anchored the
+	     * strip mid-canvas instead of at the right edge. */
+		int cw = syncduke_term_cell_w();
+		if (cw < 1)
+			cw = 8;
+		cols = (syncduke_term_px_w() > 0 ? syncduke_term_px_w() : SYNCDUKE_OUT_W_DEF) / cw;
+	}
 	col  = cols - tn + 1;                                /* right-justify the strip on SYNCDUKE_OV_ROW */
 	if (col < 1)
 		col = 1;
@@ -925,10 +937,10 @@ void syncduke_present(void)
 	if (sd_is_text_tier(tier)) {
 		/* text/block tier: the renderer positions each cell absolutely and cell-diffs
 		 * internally, so NO save/home/restore wrap (unlike the image tiers). */
-		rt_mode_t       m = (tier == SD_BLOCKS)   ? RT_BLOCKS
+		rt_mode_t m = (tier == SD_BLOCKS)   ? RT_BLOCKS
 		                  : (tier == SD_QUADRANT) ? RT_QUADRANT
 		                  : (tier == SD_SEXTANT)  ? RT_SEXTANT : RT_HALF;
-		uint64_t        t0 = syncduke_now_us();
+		uint64_t  t0 = syncduke_now_us();
 		n = syncduke_emit_text(fb, pal, m);       /* may be 0 if no cells changed */
 		syncduke_last_enc_us = (uint32_t)(syncduke_now_us() - t0);
 	} else {
@@ -943,8 +955,20 @@ void syncduke_present(void)
 		}
 #ifdef WITH_JXL
 		if (tier == SD_JXL) {
+			/* Fill the real graphics canvas (XTSMGRAPHICS) with Duke's native 320x200,
+			 * capped at 1280 wide, and position it with the APC DX/DY -- a DrawJXL is a
+			 * 1:1 blit, so unlike sixel the terminal won't scale it to fit for us.  Shared
+			 * with SyncDOOM via termgfx_geom_fit/center.  Canvas unknown (pre-probe) ->
+			 * fall back to the on-screen out size, drawn top-left. */
+			int      vw = syncduke_canvas_w(), vh = syncduke_canvas_h();
+			int      ew, eh, dx = 0, dy = 0;
 			uint64_t t0 = syncduke_now_us();
-			n = syncduke_emit_jxl(fb, pal, syncduke_out_w, syncduke_out_h);   /* 0 on encode failure */
+			if (vw < 1 || vh < 1) { vw = syncduke_out_w; vh = syncduke_out_h; }
+			termgfx_geom_fit(vw, vh, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H,
+			                 syncduke_jxl_scale_max(), &ew, &eh);
+			termgfx_geom_center(vw, vh, ew, eh, syncduke_term_cell_w(), syncduke_term_cell_h(),
+			                    &dx, &dy, NULL, NULL);
+			n = syncduke_emit_jxl(fb, pal, ew, eh, dx, dy);   /* 0 on encode failure */
 			syncduke_last_enc_us = (uint32_t)(syncduke_now_us() - t0);
 		}
 #endif

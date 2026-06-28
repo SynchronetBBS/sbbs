@@ -18,6 +18,7 @@ add_library(termgfx STATIC
     caps.c
     text.c
     term.c
+    geometry.c
     sbbs_node.c)
 
 # Public: consumers that #include "sixel.h" / "sbbs_node.h" get this dir.

@@ -229,13 +229,18 @@ int syncduke_map_key(const char *seq, int len, int gameplay)
 }
 
 /* ---- terminal pixel-canvas size, learned from probe replies (0 = unknown) ---- */
-static int g_term_px_w, g_term_px_h;
-static int g_cell_w, g_cell_h;          /* cell pixel size from ESC[16t (0 = unknown) */
+static int g_term_px_w, g_term_px_h;    /* text-area px (ESC[14t / cursor estimate): sixel/out sizing */
+static int g_cell_w, g_cell_h;          /* cell pixel size from ESC[16t */
+static int g_gfx_w, g_gfx_h;            /* graphics-canvas px from XTSMGRAPHICS: JXL fill/center */
 
 int syncduke_term_px_w(void) { return g_term_px_w; }
 int syncduke_term_px_h(void) { return g_term_px_h; }
 int syncduke_term_cell_w(void) { return g_cell_w; }
 int syncduke_term_cell_h(void) { return g_cell_h; }
+/* Real graphics canvas for image-fill: XTSMGRAPHICS if SyncTERM answered it, else
+ * the text-area pixels (ESC[14t / estimate), so non-SyncTERM terminals still fill. */
+int syncduke_canvas_w(void) { return g_gfx_w > 0 ? g_gfx_w : g_term_px_w; }
+int syncduke_canvas_h(void) { return g_gfx_h > 0 ? g_gfx_h : g_term_px_h; }
 
 /* Incremental CSI parser state -- bytes of an escape sequence (and of a probe
  * reply) can split across reads, so it persists between syncduke_input_pump() calls. */
@@ -516,9 +521,19 @@ static void csi_final(char fin, int gameplay, int now)
 						g_have_sixel = 1;
 			}
 			return;
-		case 'S':                                       /* SS3 ESC O S = F4 -> cycle graphics tier */
-			if (csi_intro == 'O')
+		case 'S':
+			if (csi_intro == 'O') {                     /* SS3 ESC O S = F4 -> cycle graphics tier */
 				syncduke_tier_cycle();
+				return;
+			}
+			/* XTSMGRAPHICS reply ESC[?2;0;W;HS = the graphics-canvas pixels (what
+			 * SyncTERM answers instead of ESC[14t).  Used to scale/center the JXL
+			 * image to fill the real canvas. */
+			if (csi_len > 0 && csi_par[0] == '?' && csi_params(p, 4) >= 4
+			    && p[0] == 2 && p[1] == 0) {
+				g_gfx_w = p[2];
+				g_gfx_h = p[3];
+			}
 			return;
 		case 'n':                                       /* CTerm state report; we care about CTQJS */
 			/* JXL-support reply to our APC Q;JXL: ESC[=1;{0,1}-n. Reconstruct the raw

@@ -67,6 +67,12 @@ char syncduke_grpdir[PATH_MAX] = "";
 static int syncduke_allow_record;
 int syncduke_record_enabled(void) { return syncduke_allow_record; }
 
+/* Max emitted JXL image width in px (the tier scales Duke's frame up to fill the
+ * canvas, capped here so a huge window can't produce an enormous frame).  0 =
+ * uncapped.  syncduke.ini [video] scale_max; default matches SyncDOOM's 1280. */
+static int syncduke_scale_max = 1280;
+int syncduke_jxl_scale_max(void) { return syncduke_scale_max; }
+
 /* True if argv looks like a door launch: a DOOR32.SYS drop file (Synchronet %f)
  * or a -s<fd> socket arg. */
 static int syncduke_is_door(int argc, char **argv)
@@ -114,6 +120,7 @@ static void syncduke_config_init(int argc, char **argv)
 		if (!logpath[0])
 			iniGetString(ini, "debug", "log", "", logpath);   /* blank => logging off */
 		syncduke_allow_record = iniGetBool(ini, "game", "record", FALSE);   /* demos off by default */
+		syncduke_scale_max = iniGetInteger(ini, "video", "scale_max", syncduke_scale_max);
 		strListFree(&ini);
 	}
 
