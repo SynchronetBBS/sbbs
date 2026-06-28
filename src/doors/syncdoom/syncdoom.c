@@ -148,6 +148,10 @@ static int      g_text_cols = 80;      // effective text-render width (g_cols ca
 // upscaled, not sharper. "off" emits the plain 640x400.
 static int g_scale_fit = 1;            // 1 = fit terminal viewport, 0 = native 640x400
 static int g_scale_max = 1280;         // max emitted image width (px); 0 = uncapped
+// Sixel client-side scaling: encode at 1/SIXEL_SCALE of the display size and emit a
+// "pan;pad raster aspect so the terminal scales it back up (SyncTERM integer-doubles;
+// lossless since Doom is natively 320x200). ~1/4 the sixel bytes on SyncTERM.
+#define SIXEL_SCALE 2
 static int g_text_max_cols = 200;      // text tier: cap render columns (0 = uncapped) -- a
 static int g_text_max_rows = 80;       // maximized terminal otherwise floods the link
 
@@ -552,16 +556,28 @@ static void emit_frame_sixel(int w, int h)
 	// between images -- omitting the palette there leaves later frames referencing
 	// undefined registers (wrong/default colors). So only SyncTERM gets define-once;
 	// elsewhere re-send the palette every frame (it's now the same stable 1:1 set).
-	int    emit_pal = !g_is_syncterm || (g_sx_pal_seq != sd_palette_seq);
+	int emit_pal = !g_is_syncterm || (g_sx_pal_seq != sd_palette_seq);
+	// Client-side scaling (like SyncDuke): encode at 1/scale of the display size and
+	// let the terminal scale it back up via the "pan;pad raster aspect.  SyncTERM does
+	// the integer nearest-neighbor double (pad=2) -> ~1/4 the sixel bytes, and it's
+	// LOSSLESS here because Doom's indexed buffer is natively 320x200, so a SyncTERM
+	// frame encodes at native res (not a downscale); other sixel terminals get pad=1
+	// (full width, half the bands, the vertical via the 2:1 pixel aspect).  Clamp the
+	// encoded height to whole 6-row bands -- a partial final band garbles under pan>1.
+	int    vsc = SIXEL_SCALE;                      // vertical: always halve
+	int    hsc = g_is_syncterm ? SIXEL_SCALE : 1;  // horizontal: halve only on SyncTERM
+	int    sxw = w / hsc;
+	int    sxh = h / vsc;
 	size_t n;
 
-	ensure(&s_sx_idx, &s_sx_idx_cap, (size_t)w * h);
-	sd_scale_indices(s_sx_idx, w, h);
+	sxh -= sxh % 6;
+	ensure(&s_sx_idx, &s_sx_idx_cap, (size_t)sxw * sxh);
+	sd_scale_indices(s_sx_idx, sxw, sxh);
 	if (emit_pal) {                          // palette changed (or first frame) -> (re)define
 		sd_palette_rgb(pal);
 		g_sx_pal_seq = sd_palette_seq;
 	}
-	n = sixel_encode(&s_img, &s_img_cap, s_sx_idx, w, h, pal, emit_pal);
+	n = sixel_encode_aspect(&s_img, &s_img_cap, s_sx_idx, sxw, sxh, vsc, hsc, pal, emit_pal);
 	out_put(pos, l);               // save cursor + position (centered) -> overdraw in place
 	out_put(s_img, n);
 	out_put("\x1b" "8", 2);        // restore cursor (terminals differ post-sixel)
