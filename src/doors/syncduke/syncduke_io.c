@@ -944,26 +944,29 @@ void syncduke_present(void)
 		n = syncduke_emit_text(fb, pal, m);       /* may be 0 if no cells changed */
 		syncduke_last_enc_us = (uint32_t)(syncduke_now_us() - t0);
 	} else {
-		{
-			int  irow, icol;
-			char wrap[24];
-			/* save cursor + move to the centered cell so the image is centered on
-			 * terminals that honor the cursor (Windows Terminal); SyncTERM ignores it
-			 * (?80l) and draws at 0,0, exactly like SyncDOOM. */
-			syncduke_image_geometry(&irow, &icol, NULL, NULL);
-			syncduke_out_put(wrap, snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow, icol));
-		}
+		/* Image tiers (JXL/sixel): fit Duke's native 320x200 into the graphics canvas
+		 * preserving aspect (letter-boxed, NOT stretched to the 4:3 text canvas like
+		 * before) and center it -- shared with SyncDOOM via termgfx_geom_fit/center.
+		 * The sixel display is capped at 640 wide (it's RLE -- a wide one floods the
+		 * wire) and positioned by the text cursor (SyncTERM ignores it under ?80l and
+		 * draws at 0,0; Windows Terminal honors it).  Canvas unknown (pre-probe) ->
+		 * fall back to the on-screen out size. */
+		int  vw = syncduke_canvas_w(), vh = syncduke_canvas_h();
+		int  sdw, sdh, irow = 1, icol = 1;
+		char wrap[24];
+
+		if (vw < 1 || vh < 1) { vw = syncduke_out_w; vh = syncduke_out_h; }
+		termgfx_geom_fit(vw, vh, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, 640, &sdw, &sdh);
+		termgfx_geom_center(vw, vh, sdw, sdh, syncduke_term_cell_w(), syncduke_term_cell_h(),
+		                    NULL, NULL, &icol, &irow);
+		syncduke_out_put(wrap, snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow, icol));
 #ifdef WITH_JXL
 		if (tier == SD_JXL) {
-			/* Fill the real graphics canvas (XTSMGRAPHICS) with Duke's native 320x200,
-			 * capped at 1280 wide, and position it with the APC DX/DY -- a DrawJXL is a
-			 * 1:1 blit, so unlike sixel the terminal won't scale it to fit for us.  Shared
-			 * with SyncDOOM via termgfx_geom_fit/center.  Canvas unknown (pre-probe) ->
-			 * fall back to the on-screen out size, drawn top-left. */
-			int      vw = syncduke_canvas_w(), vh = syncduke_canvas_h();
+			/* A DrawJXL is a 1:1 blit (no terminal scaling), so the door scales the
+			 * bitmap to fill the canvas itself (capped at [video] scale_max) and
+			 * positions it with the APC DX/DY. */
 			int      ew, eh, dx = 0, dy = 0;
 			uint64_t t0 = syncduke_now_us();
-			if (vw < 1 || vh < 1) { vw = syncduke_out_w; vh = syncduke_out_h; }
 			termgfx_geom_fit(vw, vh, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H,
 			                 syncduke_jxl_scale_max(), &ew, &eh);
 			termgfx_geom_center(vw, vh, ew, eh, syncduke_term_cell_w(), syncduke_term_cell_h(),
@@ -973,15 +976,14 @@ void syncduke_present(void)
 		}
 #endif
 		if (n == 0) {                             /* sixel: the default tier, and the JXL-failure fallback */
-			int      sxw = syncduke_out_w / hsc;          /* sixel pixels; the terminal scales */
-			int      sxh = syncduke_out_h / vsc;          /* them back up hsc x vsc */
+			/* Encode at 1/scale of the fitted display size and let the terminal scale it
+			 * back up via the "vsc;hsc raster aspect.  Clamp the encoded height to whole
+			 * 6-row sixel bands: a partial final band garbles under pan>1 on SyncTERM (the
+			 * <=5 dropped rows land at the bottom edge, under the HUD). */
+			int      sxw = sdw / hsc;
+			int      sxh = sdh / vsc;
 			uint64_t t0;
-			/* A sixel band is 6 pixel rows.  When the encoded height isn't a whole number of
-			 * bands (e.g. 640x400 -> 200 rows = 33 bands + a 2-row remainder) SyncTERM garbles
-			 * that partial band as it upscales it vertically (pan>1) -- the corrupted rows the
-			 * user sees at the bottom.  640x384 -> 192 = 32 exact bands, so it was clean.  Clamp
-			 * the encoded height to whole bands; the <=5 dropped rows (<=10 output px) fall at the
-			 * very bottom edge (cleared black), invisible against the HUD frame. */
+
 			tier = SD_SIXEL;
 			sxh -= sxh % 6;
 			syncduke_scale_fb(fb, sxw, sxh);
