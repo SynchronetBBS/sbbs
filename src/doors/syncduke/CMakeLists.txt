@@ -36,6 +36,7 @@ set(SOURCES
     syncduke_config.c
     syncduke_game.c
     syncduke_stubs.c
+    syncduke_net.c
     syncduke_log.c
 )
 

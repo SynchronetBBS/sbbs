@@ -62,17 +62,8 @@ int  MUSIC_StopSong(void) { return 0; }
 void MUSIC_RegisterTimbreBank(unsigned char *timbres) { (void)timbres; }
 void PlayMusic(char *filename) { (void)filename; }
 
-/* --- multiplayer (single-player stubs) --- */
-void  initmultiplayers(uint8_t a, uint8_t b, uint8_t c) { (void)a; (void)b; (void)c; }
-void  uninitmultiplayers(void) { }
-short getpacket(short *other, uint8_t *bufptr) { (void)other; (void)bufptr; return 0; }
-void  sendpacket(int32_t other, uint8_t *bufptr, int32_t messleng)
-{ (void)other; (void)bufptr; (void)messleng; }
-void  flushpackets(void) { }
-int   getoutputcirclesize(void) { return 0; }
+/* --- multiplayer: the mmulti transport seam (initmultiplayers/getpacket/sendpacket/
+ *     sendlogon/...) now lives in syncduke_net.c (UDP, LAN co-op).  genericmultifunction
+ *     (a Build broadcast helper) is not part of that core, so it stays a no-op here. --- */
 void  genericmultifunction(int32_t other, char *bufptr, int32_t messleng, int32_t command)
 { (void)other; (void)bufptr; (void)messleng; (void)command; }
-void  sendlogon(void) { }
-void  sendlogoff(void) { }
-void  setpackettimeout(int32_t datimeoutcount, int32_t daresendagaincount)
-{ (void)datimeoutcount; (void)daresendagaincount; }
