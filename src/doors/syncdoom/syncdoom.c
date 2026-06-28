@@ -25,6 +25,7 @@
 #include "apc.h"                 // termgfx: SyncTERM APC cached-image transport (JXL/PPM)
 #include "jxl.h"                 // termgfx: JPEG XL frame encoder (RGB888 -> JXL)
 #include "caps.h"                // termgfx: cap-probe query + reply parsing (JXL)
+#include "geometry.h"            // termgfx: shared image fit/center (shared with SyncDuke)
 #include "m_argv.h"             // myargc/myargv (set directly for the dedicated path)
 #include "mp_server.h"          // mp_dedicated_main() headless server
 #include "git_hash.h"           // generated: GIT_HASH / GIT_DATE / GIT_TIME (build info)
@@ -2679,33 +2680,15 @@ static void compute_geometry(void)
 		// (SyncTERM, real compression / drawn small) keep the full g_scale_max.
 		int cap  = (g_mode == MODE_SIXEL && (g_scale_max == 0 || g_scale_max > 640))
 		           ? 640 : g_scale_max;
-		int wmax = (cap > 0 && vw > cap) ? cap : vw;
-		int w = wmax;
-		int h = w * 400 / 640;          // 8:5
-		if (h > vh) { h = vh; w = h * 640 / 400; }   // height-limited
-		s_pxW = w < 1 ? 1 : w;
-		s_pxH = h < 1 ? 1 : h;
-
-		// Drop a SMALL letterbox by stretching to fill: when a leftover bar is
-		// <=8% of the image, fill it (e.g. the 640x384 status-bar canvas -> full
-		// 640 wide with a ~4% squish, nicer than side bars). Bigger gaps keep the
-		// letterbox so a near-square window doesn't stretch Doom fat.
-		if (vw > s_pxW && (vw - s_pxW) * 100 <= s_pxW * 8)
-			s_pxW = vw;
-		if (vh > s_pxH && (vh - s_pxH) * 100 <= s_pxH * 8)
-			s_pxH = vh;
+		// Fit Doom's native 640x400 into the canvas, capped, aspect-preserving, with
+		// the <=8% letterbox stretch -- shared with SyncDuke (termgfx/geometry.c).
+		termgfx_geom_fit(vw, vh, 640, 400, cap, &s_pxW, &s_pxH);
 	}
 
 	// Center the image in the window: pixel offset for the APC DX/DY (SyncTERM
-	// JXL/PPM), cell offset for the sixel text cursor.
-	g_img_x = (vw - s_pxW) / 2;
-	g_img_y = (vh - s_pxH) / 2;
-	if (g_img_x < 0)
-		g_img_x = 0;
-	if (g_img_y < 0)
-		g_img_y = 0;
-	g_img_col = 1 + g_img_x / cw;
-	g_img_row = 1 + g_img_y / ch;
+	// JXL/PPM), cell offset for the sixel text cursor -- shared with SyncDuke.
+	termgfx_geom_center(vw, vh, s_pxW, s_pxH, cw, ch,
+	                    &g_img_x, &g_img_y, &g_img_col, &g_img_row);
 
 	// Sixel is positioned by TEXT CELL, but the image is sized in pixels. Without
 	// the terminal's real cell-pixel size (geom_known) the centered cell is a
