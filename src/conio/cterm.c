@@ -100,8 +100,11 @@ const int cterm_tabs[]={1,9,17,25,33,41,49,57,65,73,81,89,97,105,113,121,129,137
 void
 cterm_respond(struct cterminal *cterm, const char *data, size_t len)
 {
-	if (cterm->response_cb)
+	if (cterm->response_cb) {
 		cterm->response_cb(data, len, cterm->response_cbdata);
+		if(cterm->log==CTERM_LOG_RAW && cterm->logfile != NULL)
+			fwrite(data, len, 1, cterm->logfile);
+	}
 }
 
 /*
@@ -1826,7 +1829,7 @@ cterm_reset(struct cterminal *cterm)
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
 	static bool key_tables_verified = false;
-	char	*revision="$Revision: 1.327 $";
+	char	*revision="$Revision: 1.328 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;

@@ -712,7 +712,7 @@ cterm_handle_decrqm_dec(struct cterminal *cterm, int *speed)	/* CSI ? $ p */
 			pm = (cterm->extattr & CTERM_EXTATTR_DECLRMM) ? 1 : 2;
 			break;
 		case 80:
-			pm = (cterm->extattr & CTERM_EXTATTR_SXSCROLL) ? 1 : 2;
+			pm = (cterm->extattr & CTERM_EXTATTR_SXSCROLL) ? 2 : 1;
 			break;
 		case 2004:
 			pm = (cterm->extattr & CTERM_EXTATTR_BRACKETPASTE) ? 1 : 2;

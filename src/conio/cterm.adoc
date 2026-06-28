@@ -965,17 +965,18 @@ Defaults to set.
 Enables `CSI s` to set the left/right margins, and disables `CSI s`
 from saving the current cursor position.
 |80
-|Sixel Scrolling Enabled
+|Sixel Display Mode (Sixel Scrolling Disabled)
 
 When this is set, the sixel active position begins in the
-upper-left corner of the currently active text position.
-When the sixel active position reaches the bottom of the
-page, the page is scrolled up.  At the end of the sixel
-string, a sixel newline is appended, and the current cursor
-position is the one in which the bottom sixel is in.
-Defaults to set.
+upper-left corner of the page.  Any commands that attempt to
+advance the sixel position past the bottom of the page are
+ignored.  At the end of the sixel string, the current cursor
+position is unchanged from where it was when the sixel string
+started.  Defaults to reset.
 
-SOURCE: <<VT330340,[VT330/340]>>
+NOTE: The VT330/340 manual had this documented backward.
+
+SOURCE: <<VT384,[VT384]>>
 |1000
 |Normal tracking mode mouse reporting
 
@@ -1155,16 +1156,19 @@ Disables CSI s from setting the left/right margins, and changes
 it back to saving the current cursor position.  The current
 left/right margins are maintained.
 |80
-|Sixel Scrolling Disabled
+|Sixel Display Mode (Sixel Scrolling Enabled)
 
 When this is reset, the sixel active position begins in the
-upper-left corner of the page.  Any commands that attempt to
-advance the sixel position past the bottom of the page are
-ignored.  At the end of the sixel string, the current cursor
-position is unchanged from where it was when the sixel string
-started.  Defaults to set.
+upper-left corner of the currently active text position.
+When the sixel active position reaches the bottom of the
+page, the page is scrolled up.  At the end of the sixel
+string, a sixel newline is appended, and the current cursor
+position is the one in which the bottom sixel is in.
+Defaults to reset.
 
-SOURCE: <<VT330340,[VT330/340]>>
+NOTE: The VT330/340 manual had this documented backward.
+
+SOURCE: <<VT384,[VT384]>>
 |1000
 |Disable Normal tracking mode mouse reporting
 
@@ -4017,6 +4021,7 @@ foreground nibble with all 4 bits of the background nibble.
 * [[VT102]]https://vt100.net/docs/vt102-ug/[[VT102\]] Digital. VT102 Video Terminal User Guide. 1982.
 * [[VT330340]]https://vt100.net/docs/vt3xx-gp/[[VT330/340\]] Digital. VT330/VT340 Programmer Reference Manual, Volume 2: Graphics Programming. May 1988.
 * [[VT320]]https://vt100.net/docs/vt320-uu/[[VT320\]] Digital. Installing and Using the VT320 Video Terminal. June 1987.
+* [[VT384]]https://vt100.net/dec/ek-vt382-rm-001.pdf[[VT384\]] Digital. VT382 Kanji Display Terminal Programmer Reference Manual.
 * [[colors256]]https://jonasjacek.github.io/colors/[[256colors\]] Jonas Jarad Jacek. 256 colors cheat sheet. 2023-12-24.
 * [[VT420]]https://vt100.net/docs/vt420-uu/[[VT420\]] Digital. Installing and Using the VT420 Video Terminal. June 1990.
 * [[ANSISYS]]https://en.wikipedia.org/wiki/ANSI.SYS[[ANSISYS\]] Wikipedia. ANSI.SYS.

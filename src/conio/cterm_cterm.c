@@ -554,9 +554,9 @@ cterm_decset_reset_common(struct cterminal *cterm, bool set)
 				break;
 			case 80:
 				if (set)
-					cterm->extattr |= CTERM_EXTATTR_SXSCROLL;
-				else
 					cterm->extattr &= ~CTERM_EXTATTR_SXSCROLL;
+				else
+					cterm->extattr |= CTERM_EXTATTR_SXSCROLL;
 				break;
 			default:
 				continue;
