@@ -244,7 +244,7 @@ function main_info()
 		if(!(user.settings & USER_EXPERT))
 			bbs.menu("maininfo");
 		bbs.nodesync();
-		console.print("\r\n\x01y\x01h"+ gettext("Info") + ": \x01n");
+		console.print("\r\n\x01y\x01h"+ gettext("Main") + " " + gettext("Info") + ": \x01n");
 		var key = console.getkeys("?QISVY\r", 0);
 		bbs.log_key(key);
 		switch(key) {
@@ -293,7 +293,7 @@ function file_info()
 		if(!(user.settings & USER_EXPERT))
 			bbs.menu("xferinfo");
 		bbs.nodesync();
-		console.print("\r\n\x01y\x01h" + gettext("Info") + ": \x01n");
+		console.print("\r\n\x01y\x01h" + gettext("File") + " " + gettext("Info") + ": \x01n");
 		key=console.getkeys("?TYDVUQ\r", 0);
 		bbs.log_key(key);
 

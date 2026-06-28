@@ -11,8 +11,8 @@ while(bbs.online && !js.terminated) {
 	if(!(user.settings & USER_EXPERT))
 		bbs.menu(menufile);
 	bbs.nodesync();
-	console.print("\r\n\x01y\x01h" + gettext("Config") + ": \x01n");
-	var key = console.getkeys("?QNPISRW\r");
+	console.print("\r\n\x01y\x01h" + gettext("Message") + " " + gettext("Config") + ": \x01n");
+	var key = console.getkeys("?QNPISRW\r", 0);
 	bbs.log_key(key);
 
 	switch(key) {
