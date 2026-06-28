@@ -46,6 +46,7 @@
 #include "caps.h"       /* termgfx: termgfx_query_jxl (the Q;JXL cap-probe string) */
 #include "text.h"       /* termgfx: text/block render tiers (rt_config / rt_render_frame) */
 #include "geometry.h"   /* termgfx: shared image fit/center (shared with SyncDOOM) */
+#include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller */
 
 /* emit a NUL-terminated control string (no embedded NULs) without hand-counting */
 static void syncduke_out_puts(const char *s) { syncduke_out_put(s, strlen(s)); }
@@ -593,38 +594,11 @@ void syncduke_depth_cycle(void)
  *     settles before the next; dead-band (1.25x..1.5x): hold.
  * Bounded to [1, ceil], ceil ~one frame per 40ms of baseline round-trip (abs cap
  * SYNCDUKE_AUTO_DEPTH_MAX -- beyond it just buffers display lag without adding fps). */
-static void syncduke_auto_depth_update(void)
+static void syncduke_auto_depth_update(void)   /* AIMD shared with SyncDOOM (termgfx/pace.c) */
 {
-	uint32_t now;
-	int      ceil_d, floor_d;
-
-	if (!syncduke_inflight_auto || syncduke_rtt_min == 0)
-		return;
-	now = syncduke_now_ms();
-	if (syncduke_rtt_ms > syncduke_rtt_min * 2) {                      /* heavy queuing -> drain now */
-		if (syncduke_auto_depth > 1)
-			syncduke_auto_depth--;
-		syncduke_auto_adj_at = now;
-	} else if ((uint32_t)(now - syncduke_auto_adj_at) >= 400) {        /* else nudge, rate-limited */
-		syncduke_auto_adj_at = now;
-		if (syncduke_rtt_ms > syncduke_rtt_min + (syncduke_rtt_min >> 1))        /* >1.5x -> ease down */
-			syncduke_auto_depth--;
-		else if (syncduke_rtt_ms < syncduke_rtt_min + (syncduke_rtt_min >> 2))   /* <1.25x -> probe up */
-			syncduke_auto_depth++;
-		/* dead-band 1.25x..1.5x -> hold */
-	}
-	ceil_d  = (int)((syncduke_rtt_min + 39) / 40);
-	if (ceil_d > SYNCDUKE_AUTO_DEPTH_MAX)
-		ceil_d = SYNCDUKE_AUTO_DEPTH_MAX;
-	if (syncduke_rt_high && ceil_d < 2)
-		ceil_d = 2;                     /* a transiently-low baseline can't strand us at depth 1 */
-	floor_d = syncduke_rt_high ? 2 : 1; /* sticky: once the round-trip is non-trivial, never depth 1 */
-	if (floor_d > ceil_d)
-		floor_d = ceil_d;
-	if (syncduke_auto_depth > ceil_d)
-		syncduke_auto_depth = ceil_d;
-	if (syncduke_auto_depth < floor_d)
-		syncduke_auto_depth = floor_d;
+	termgfx_aimd_update(syncduke_inflight_auto, &syncduke_auto_depth, &syncduke_auto_adj_at,
+	                    syncduke_rtt_ms, syncduke_rtt_min, syncduke_rt_high,
+	                    SYNCDUKE_AUTO_DEPTH_MAX, syncduke_now_ms());
 }
 
 /* A DSR report came back -> the terminal consumed one in-flight frame (pacing),

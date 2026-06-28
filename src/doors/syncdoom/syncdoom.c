@@ -26,6 +26,7 @@
 #include "jxl.h"                 // termgfx: JPEG XL frame encoder (RGB888 -> JXL)
 #include "caps.h"                // termgfx: cap-probe query + reply parsing (JXL)
 #include "geometry.h"            // termgfx: shared image fit/center (shared with SyncDuke)
+#include "pace.h"                // termgfx: shared AIMD pipeline-depth controller
 #include "m_argv.h"             // myargc/myargv (set directly for the dedicated path)
 #include "mp_server.h"          // mp_dedicated_main() headless server
 #include "git_hash.h"           // generated: GIT_HASH / GIT_DATE / GIT_TIME (build info)
@@ -379,39 +380,10 @@ static uint32_t g_auto_adj_at = 0;      // last gentle (probe/ease) adjustment t
 // so a fast-rendering local link isn't pointlessly over-pipelined (extra depth there
 // only buffers, adding display lag, without adding frames past the 35fps sim). The
 // abs cap is DEPTH_MAX (8 -> reaches the 35fps sim at ~230ms round-trip).
-static void auto_depth_update(void)
+static void auto_depth_update(void)   // AIMD shared with SyncDuke (termgfx/pace.c)
 {
-	int      ceil_d, floor_d;
-	uint32_t now;
-
-	if (!g_inflight_auto || g_rtt_min == 0)
-		return;
-	now = now_ms();
-	if (g_rtt_ms > g_rtt_min * 2) {                          // heavy queuing -> drain now
-		if (g_auto_depth > 1)
-			g_auto_depth--;
-		g_auto_adj_at = now;
-	} else if ((uint32_t)(now - g_auto_adj_at) >= 400) {    // else nudge, rate-limited
-		g_auto_adj_at = now;
-		if (g_rtt_ms > g_rtt_min + (g_rtt_min >> 1))         // mild queuing (>1.5x) -> ease down
-			g_auto_depth--;
-		else if (g_rtt_ms < g_rtt_min + (g_rtt_min >> 2))    // clean (<1.25x) -> probe up
-			g_auto_depth++;
-		// dead-band 1.25x..1.5x baseline -> hold
-	}
-
-	ceil_d = (int)((g_rtt_min + 39) / 40);
-	if (ceil_d > DEPTH_MAX)
-		ceil_d = DEPTH_MAX;
-	if (g_rt_high && ceil_d < 2)
-		ceil_d = 2;                     // a transiently-corrupted low baseline can't strand us at 1
-	floor_d = g_rt_high ? 2 : 1;         // sticky: once the round-trip is non-trivial, never depth 1
-	if (floor_d > ceil_d)
-		floor_d = ceil_d;
-	if (g_auto_depth > ceil_d)
-		g_auto_depth = ceil_d;
-	if (g_auto_depth < floor_d)
-		g_auto_depth = floor_d;
+	termgfx_aimd_update(g_inflight_auto, &g_auto_depth, &g_auto_adj_at,
+	                    g_rtt_ms, g_rtt_min, g_rt_high, DEPTH_MAX, now_ms());
 }
 
 // Effective pipeline depth: the fixed [video] frames_in_flight, or the AIMD-tracked
