@@ -315,6 +315,15 @@ conn_connected(void)
 	return false;
 }
 
+int64_t
+conn_connected_seconds(void)
+{
+	if (conn_api.connected_at <= 0)
+		return 0;
+	int64_t elapsed = xp_fast_timer64() - conn_api.connected_at;
+	return elapsed > 0 ? elapsed : 0;
+}
+
 int
 conn_recv_upto(void *vbuffer, size_t buflen, unsigned timeout)
 {
@@ -483,6 +492,8 @@ conn_connect(struct bbslist *bbs)
 			while ((!conn_api.terminate)
 			    && (conn_api.input_thread_running == 0 || conn_api.output_thread_running == 0))
 				SLEEP(1);
+			if (!conn_api.terminate)
+				conn_api.connected_at = xp_fast_timer64();
 		}
 	}
 	return conn_api.terminate;

@@ -2763,6 +2763,12 @@ Connection-level send and receive.
 | `Conn.connected`
 | Bool — is the link up?
 
+| `Conn.elapsedSeconds`
+| Monotonic seconds since the connection provider reached the active
+  connected state, clamped to `0`.  This is live connection/session
+  state; `BBS.connected` is the persisted wall-clock `LastConnected`
+  timestamp from the BBS list.
+
 | `Conn.type`
 | `ConnType` value.
 
@@ -3129,9 +3135,7 @@ classes documented below.
 | `logFile`, `appendLogFile`
 
 | Statistics
-| `added`, `connected`, `fastConnected`, `elapsedSeconds`
-  (wall-clock seconds since the connect handshake completed,
-  clamped to >= 0), `calls`, `sortOrder`
+| `added`, `connected`, `calls`, `sortOrder`
 |===
 
 ==== ConnType [[conntype]]

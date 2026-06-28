@@ -124,7 +124,6 @@ struct bbslist {
 	short unsigned int port;
 	time_t             added;
 	time_t             connected;
-	int64_t            fast_connected;
 	unsigned int       calls;
 	char               user[MAX_USER_LEN + 1];
 	char               password[MAX_PASSWD_LEN + 1];

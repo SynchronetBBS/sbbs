@@ -22,6 +22,7 @@ void fn_Conn_endSession(WrenVM *vm);
 void fn_Conn_paste(WrenVM *vm);
 void fn_Conn_scrollback(WrenVM *vm);
 void fn_Conn_connected(WrenVM *vm);
+void fn_Conn_elapsedSeconds(WrenVM *vm);
 void fn_Conn_type(WrenVM *vm);
 void fn_Conn_pending(WrenVM *vm);
 void fn_Conn_queued(WrenVM *vm);
@@ -88,7 +89,6 @@ void fn_Input_setupMouseEvents(WrenVM *vm);
 void fn_CTerm_extAttr(WrenVM *vm);
 void fn_CTerm_lastColumnFlag(WrenVM *vm);
 
-void fn_BBS_elapsedSeconds(WrenVM *vm);
 void fn_BBS_connTypeName(WrenVM *vm);
 
 void fn_Host_safeMode(WrenVM *vm);

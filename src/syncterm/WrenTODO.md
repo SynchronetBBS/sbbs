@@ -4,6 +4,21 @@ Critical review of the Wren scripting API surface (Wren.adoc + scripts/syncterm.
 + wren_bind*.c). Captured during alpha so the structural decisions can still
 shift without backward-compat hacks.
 
+## Deferred: Wren main menu VM
+
+The eventual Wren main-menu implementation should keep the connected and
+unconnected contexts as separate VMs/capability sets.  The menu VM has no wire
+control by default; connected-only terminal/session APIs stay gated away from
+it.
+
+Menu code should deal in real `BBS` instances backed by `struct bbslist`, not a
+parallel dialing-entry type.  Existing connected `BBS.*` static getters can
+remain as a compatibility facade over the active/current BBS record while newer
+code moves toward the same instance model the menu will use.
+
+Script autoload can use `scripts/auto/menu/*.wren`; the embed/build list still
+needs to include that path when the menu VM is added.
+
 ## A. Documentation drift (fix before any structural changes) — DONE
 
 These are factual mismatches between `Wren.adoc` and what's actually exported.

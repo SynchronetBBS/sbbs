@@ -8,6 +8,7 @@
 #endif
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "bbslist.h"
 #include "sockwrap.h"
@@ -81,6 +82,7 @@ struct conn_api {
 	int               log_level;
 	int               type;
 	int               nostatus;
+	int64_t           connected_at;
 	cterm_emulation_t emulation;
 	atomic_int        input_thread_running;
 	atomic_int        output_thread_running;
@@ -111,6 +113,7 @@ int conn_send_raw(const void *buffer, size_t buflen, unsigned int timeout);
 bool conn_connect(struct bbslist *bbs);
 int conn_close(void);
 bool conn_connected(void);
+int64_t conn_connected_seconds(void);
 size_t conn_data_waiting(void);
 void conn_binary_mode_on(void);
 void conn_binary_mode_off(void);

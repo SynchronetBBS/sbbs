@@ -961,6 +961,7 @@ foreign class Conn {
   // disabled for the duration and restored on exit.
   foreign static scrollback()
   foreign static connected
+  foreign static elapsedSeconds
   foreign static type
   foreign static pending
   foreign static queued
@@ -1131,8 +1132,6 @@ foreign class BBS {
   foreign static forceLcf
   foreign static added
   foreign static connected
-  foreign static fastConnected
-  foreign static elapsedSeconds
   foreign static calls
   foreign static dlDir
   foreign static ulDir

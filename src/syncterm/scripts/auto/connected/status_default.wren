@@ -17,7 +17,7 @@
 // To override: drop a same-named file in your auto-load dir, or set
 // `Status.callable = ...` from any later script.
 
-import "syncterm" for Status, Surface, BBS, Capture, CTerm, Host, ConnType
+import "syncterm" for Status, Surface, BBS, Capture, CTerm, Host, Conn, ConnType
 
 class StatusDefault {
   // Cell colour palette (RGB; matches the C original's vmem_cell.fg
@@ -120,7 +120,7 @@ class StatusDefault {
 
   // "HH:MM:SS", or "Too Long" past the 100-hour C clamp.
   static elapsedString_() {
-    var s = BBS.elapsedSeconds
+    var s = Conn.elapsedSeconds
     if (s >= 360000) return "Too Long"
     if (s < 0) s = 0
     var hh = (s / 3600).floor

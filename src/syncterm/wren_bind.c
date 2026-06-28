@@ -118,7 +118,6 @@ static void fn_BBS_forceLcf(WrenVM *vm)     { BBS_FIELD_BOOL(force_lcf); }
 
 static void fn_BBS_added(WrenVM *vm)        { BBS_FIELD_NUM(added); }
 static void fn_BBS_connected(WrenVM *vm)    { BBS_FIELD_NUM(connected); }
-static void fn_BBS_fastConnected(WrenVM *vm){ BBS_FIELD_NUM(fast_connected); }
 static void fn_BBS_calls(WrenVM *vm)        { BBS_FIELD_NUM(calls); }
 
 static void fn_BBS_dlDir(WrenVM *vm)        { BBS_FIELD_STR(dldir); }
@@ -998,6 +997,7 @@ static const struct binding BINDINGS[] = {
 	{ "Conn",  true, "paste()",        fn_Conn_paste        },
 	{ "Conn",  true, "scrollback()",   fn_Conn_scrollback   },
 	{ "Conn",  true, "connected",      fn_Conn_connected    },
+	{ "Conn",  true, "elapsedSeconds", fn_Conn_elapsedSeconds },
 	{ "Conn",  true, "type",           fn_Conn_type         },
 	{ "Conn",  true, "pending",        fn_Conn_pending      },
 	{ "Conn",  true, "queued",         fn_Conn_queued       },
@@ -1110,8 +1110,6 @@ static const struct binding BINDINGS[] = {
 	{ "BBS",   true, "forceLcf",                fn_BBS_forceLcf              },
 	{ "BBS",   true, "added",                   fn_BBS_added                 },
 	{ "BBS",   true, "connected",               fn_BBS_connected             },
-	{ "BBS",   true, "fastConnected",           fn_BBS_fastConnected         },
-	{ "BBS",   true, "elapsedSeconds",          fn_BBS_elapsedSeconds        },
 	{ "BBS",   true, "connTypeName",            fn_BBS_connTypeName          },
 	{ "BBS",   true, "calls",                   fn_BBS_calls                 },
 	{ "BBS",   true, "dlDir",                   fn_BBS_dlDir                 },

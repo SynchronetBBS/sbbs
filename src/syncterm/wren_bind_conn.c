@@ -17,7 +17,6 @@
 #include "comio.h"     /* COM_FLOW_CONTROL_* — also used by FlowControl in wren_bind.c */
 #include "conn.h"
 #include "cterm.h"
-#include "genwrap.h"   /* xp_fast_timer64 */
 #include "syncterm.h"  /* safe_mode */
 #include "term.h"      /* force_status_update, term, struct mouse_state, setup_mouse_events */
 #include "uifcinit.h"  /* uifc (the singleton), UIFC_XF_QUIT */
@@ -261,6 +260,12 @@ void
 fn_Conn_connected(WrenVM *vm)
 {
 	wrenSetSlotBool(vm, 0, conn_connected());
+}
+
+void
+fn_Conn_elapsedSeconds(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, (double)conn_connected_seconds());
 }
 
 void
@@ -920,23 +925,6 @@ fn_Input_setupMouseEvents(WrenVM *vm)
 	showmouse();
 }
 
-/* BBS.elapsedSeconds — wall-clock seconds since the connect handshake
- * completed (clamped to >= 0).  Avoids exposing fast_connected and
- * forcing every script to subtract a "now" timestamp themselves. */
-void
-fn_BBS_elapsedSeconds(WrenVM *vm)
-{
-	struct wren_host_state *st = wren_host_state();
-	int64_t e = 0;
-	if (st != NULL && st->bbs != NULL) {
-		int64_t now = xp_fast_timer64();
-		e = now - st->bbs->fast_connected;
-		if (e < 0)
-			e = 0;
-	}
-	wrenSetSlotDouble(vm, 0, (double)e);
-}
-
 /* BBS.connTypeName — display string for the active connection type
  * ("Telnet", "SSH", "Serial", "RLogin Reversed", …).  Convenience
  * over the BBS.connType integer enum. */
@@ -1342,4 +1330,3 @@ fn_CTerm_lastColumnFlag(WrenVM *vm)
 	l->type  = SWF_LAST_COLUMN_FLAG;
 	l->value = (cterm != NULL) ? cterm->last_column_flag : 0;
 }
-
