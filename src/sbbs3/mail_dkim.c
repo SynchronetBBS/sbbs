@@ -25,6 +25,7 @@ bool dkim_available(void)
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
@@ -259,11 +260,42 @@ dkim_signer_t* dkim_signer_open(const char* domain, const char* selector, const 
 	    || keyfile == NULL || *keyfile == '\0')
 		return NULL;
 
-	FILE*     fp = fopen(keyfile, "r");
+	/* Read the PEM key with our own C runtime and parse it from an in-memory BIO
+	 * rather than passing a FILE* into libcrypto.  On Windows the OpenSSL DLL has
+	 * its own CRT, and handing it a FILE* from this module requires the OpenSSL
+	 * "applink" shim (else it fatally aborts with "no OPENSSL_Applink").  Going
+	 * through a memory BIO avoids the CRT boundary entirely and is portable. */
+	FILE* fp = fopen(keyfile, "rb");
 	if (fp == NULL)
 		return NULL;
-	EVP_PKEY* key = PEM_read_PrivateKey(fp, NULL, NULL, NULL);
+	if (fseek(fp, 0, SEEK_END) != 0) {
+		fclose(fp);
+		return NULL;
+	}
+	long  sz = ftell(fp);       /* long: stdio API return type */
+	if (sz <= 0 || fseek(fp, 0, SEEK_SET) != 0) {
+		fclose(fp);
+		return NULL;
+	}
+	char* pem = (char*)malloc((size_t)sz);
+	if (pem == NULL) {
+		fclose(fp);
+		return NULL;
+	}
+	size_t got = fread(pem, 1, (size_t)sz, fp);
 	fclose(fp);
+	if (got != (size_t)sz) {
+		free(pem);
+		return NULL;
+	}
+	BIO* bio = BIO_new_mem_buf(pem, (int)got);
+	if (bio == NULL) {
+		free(pem);
+		return NULL;
+	}
+	EVP_PKEY* key = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
+	BIO_free(bio);
+	free(pem);
 	if (key == NULL)
 		return NULL;
 	if (!EVP_PKEY_is_a(key, "RSA")) {

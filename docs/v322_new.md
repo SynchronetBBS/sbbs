@@ -118,8 +118,9 @@
   coming from your domain (issue #215). Enable with the `[Mail]`
   `DKIMSign` / `DKIMDomain` / `DKIMSelector` keys (or in SCFG); the
   RSA private key is read from `ctrl/dkim_<selector>.pem` and the
-  matching public key is published in DNS. Requires an OpenSSL-enabled
-  build (signing is a no-op stub otherwise)
+  matching public key is published in DNS. Supported on both *nix and
+  Windows builds (signing uses OpenSSL libcrypto; it is a no-op stub if
+  OpenSSL is unavailable at build time)
 - POP3: `USER` / `PASS` issued on an already-authenticated
   session now get a plain `-ERR` response rather than
   `!UNSUPPORTED COMMAND`, matching Dovecot / Courier behavior

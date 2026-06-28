@@ -40,6 +40,7 @@
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\..\3rdp\win32.release\cryptlib\cryptlib.props" />
+    <Import Project="..\build\openssl.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
     <Import Project="..\build\target_winver.props" />
@@ -56,6 +57,7 @@
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\..\3rdp\win32.release\cryptlib\cryptlib.props" />
+    <Import Project="..\build\openssl.props" />
     <Import Project="..\hash\hash.props" />
     <Import Project="..\encode\encode.props" />
     <Import Project="..\build\target_winver.props" />

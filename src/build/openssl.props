@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_PropertySheetDisplayName>OpenSSL libcrypto (DKIM, via vcpkg)</_PropertySheetDisplayName>
+    <!-- The mail server's DKIM signing (issue #215) needs OpenSSL's EVP for a
+         raw PKCS#1 signature, which cryptlib cannot emit.  libcrypto is consumed
+         from a vcpkg classic-mode install (install it with:
+             vcpkg install openssl:x86-windows
+         ) rather than vendored into 3rdp, and linked dynamically so the mail
+         server shares the single libcrypto-3.dll that the OpenSSL-enabled
+         mosquitto.dll also ships - no duplicated crypto, one DLL in the install.
+         Optional by design: if the vcpkg OpenSSL isn't present, nothing below is
+         applied and mail_dkim.c compiles to no-op stubs (mail goes out
+         unsigned), mirroring how the *nix build gates DKIM on libcrypto. -->
+    <OpenSSLRoot Condition="'$(OpenSSLRoot)' == '' And '$(VCPKG_ROOT)' != ''">$(VCPKG_ROOT)\installed\x86-windows</OpenSSLRoot>
+    <OpenSSLRoot Condition="'$(OpenSSLRoot)' == ''">C:\vcpkg\installed\x86-windows</OpenSSLRoot>
+    <OpenSSLAvailable Condition="Exists('$(OpenSSLRoot)\include\openssl\evp.h')">true</OpenSSLAvailable>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(OpenSSLAvailable)' == 'true'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(OpenSSLRoot)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DKIM_OPENSSL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(OpenSSLRoot)\lib\libcrypto.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>
