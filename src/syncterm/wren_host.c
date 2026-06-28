@@ -264,6 +264,20 @@ wren_host_mark_log_seen(void)
 	s_log_seen_error_total = main_log.error_total;
 }
 
+bool
+wren_host_alert(const char *title, const char *message)
+{
+	if (!active || !on_owner_thread() || state.vm == NULL ||
+	    state.host_popup_class == NULL || state.host_alert_handle == NULL)
+		return false;
+
+	wrenEnsureSlots(state.vm, 3);
+	wrenSetSlotHandle(state.vm, 0, state.host_popup_class);
+	wrenSetSlotString(state.vm, 1, title == NULL ? "Alert" : title);
+	wrenSetSlotString(state.vm, 2, message == NULL ? "" : message);
+	return wrenCall(state.vm, state.host_alert_handle) == WREN_RESULT_SUCCESS;
+}
+
 void
 wren_log_clear(void)
 {
@@ -1022,6 +1036,13 @@ wren_host_init(struct bbslist *bbs)
 	state.hook_class = wrenGetSlotHandle(state.vm, 0);
 	state.dispatch0_handle = wrenMakeCallHandle(state.vm, "dispatch_(_)");
 	state.dispatch1_handle = wrenMakeCallHandle(state.vm, "dispatch_(_,_)");
+
+	if (wrenHasVariable(state.vm, "host_popup", "HostPopup")) {
+		wrenGetVariable(state.vm, "host_popup", "HostPopup", 0);
+		state.host_popup_class = wrenGetSlotHandle(state.vm, 0);
+		state.host_alert_handle = wrenMakeCallHandle(state.vm,
+		    "alert(_,_)");
+	}
 }
 
 void
@@ -1092,8 +1113,12 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.dispatch0_handle);
 	if (state.dispatch1_handle != NULL)
 		wrenReleaseHandle(state.vm, state.dispatch1_handle);
+	if (state.host_alert_handle != NULL)
+		wrenReleaseHandle(state.vm, state.host_alert_handle);
 	if (state.hook_class != NULL)
 		wrenReleaseHandle(state.vm, state.hook_class);
+	if (state.host_popup_class != NULL)
+		wrenReleaseHandle(state.vm, state.host_popup_class);
 	if (state.cell_class != NULL)
 		wrenReleaseHandle(state.vm, state.cell_class);
 	if (state.surface_class != NULL)

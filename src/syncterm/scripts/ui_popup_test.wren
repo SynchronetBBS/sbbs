@@ -41,6 +41,7 @@ class UiPopupTest {
     System.print("=== ui_popup self-test starting ===")
 
     testAlertConstruction_()
+    testAlertTitledConstruction_()
     testAlertEscDismisses_()
     testConfirmYes_()
     testConfirmNo_()
@@ -72,6 +73,12 @@ class UiPopupTest {
     var a = Alert.new("hi")
     check_(a.message == "hi" && a.title == "Alert" && a.result == null,
            "Alert: message + title + null result on construct")
+  }
+
+  static testAlertTitledConstruction_() {
+    var a = Alert.new("Notice", "hi")
+    check_(a.message == "hi" && a.title == "Notice" && a.result == null,
+           "Alert: explicit title on construct")
   }
 
   static testAlertEscDismisses_() {

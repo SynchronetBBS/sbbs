@@ -5313,6 +5313,7 @@ pops itself, then control returns with the result.
 import "ui" for Alert, Confirm, Prompt
 
 Alert.show(app, "Disk full")
+Alert.show(app, "Warning", "Disk full")
 
 if (Confirm.show(app, "Delete file?")) {
   // ...
@@ -5389,6 +5390,7 @@ if (Confirm.runStandalone(app, "Disconnect... Are you sure?")) {
 ----
 
 Standalone helpers are available as `Alert.runStandalone(app, msg)`,
+`Alert.runStandalone(app, title, msg)`,
 `Confirm.runStandalone(app, msg)`, and
 `Prompt.runStandalone(app, msg, initial)`.
 

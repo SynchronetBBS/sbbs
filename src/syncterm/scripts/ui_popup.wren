@@ -341,6 +341,14 @@ class Alert is Popup {
     add(_ok)
   }
 
+  construct new(title, message) {
+    super(message)
+    this.title = title
+    _ok = Button.new("OK")
+    _ok.onPress = Fn.new { dismissWith_(null) }
+    add(_ok)
+  }
+
   static show(app, message) {
     var p = Alert.new(message)
     p.bounds = Popup.centeredBounds_(message, 1, 20)
@@ -348,8 +356,22 @@ class Alert is Popup {
     return null
   }
 
+  static show(app, title, message) {
+    var p = Alert.new(title, message)
+    p.bounds = Popup.centeredBounds_(message, 1, 20)
+    app.modal(p)
+    return null
+  }
+
   static runStandalone(app, message) {
     var p = Alert.new(message)
+    p.bounds = Popup.centeredBounds_(message, 1, 20)
+    Popup.runStandalone_(app, p)
+    return null
+  }
+
+  static runStandalone(app, title, message) {
+    var p = Alert.new(title, message)
     p.bounds = Popup.centeredBounds_(message, 1, 20)
     Popup.runStandalone_(app, p)
     return null

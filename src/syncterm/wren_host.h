@@ -98,6 +98,12 @@ bool wren_host_log_unread(void);
 bool wren_host_log_unread_error(void);
 void wren_host_mark_log_seen(void);
 
+/* Show a modal Wren Alert from C-owned terminal paths.  Returns false
+ * when no Wren VM is active, the call is off-thread, the bridge failed
+ * to load, or the Wren call aborts; callers should fall back to their
+ * historical UI in that case. */
+bool wren_host_alert(const char *title, const char *message);
+
 /* Fires any Hook.every() callbacks whose deadline has elapsed. Called
  * from doterm() just before the main-loop sleep. */
 void wren_host_dispatch_timer(void);
