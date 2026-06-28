@@ -178,7 +178,10 @@ static const struct key_mapping prestel_keys[] = {
 	{8,                        "\x7f",        1},
 	{9,                        "\x09",        1},
 	{10,                       "\x0d",        1},	/* LF sends CR */
+	{12,                       "\x0c",        1},   /* CTRL-L for "Clear Screen" -- nelgin */
 	{13,                       "_",           1},	/* CR sends _ */
+	{24,                       "\x18",        1},   /* CTRL-T for "Delete Line" -- nelgin */
+	{27,                       "\x1b",        1},   /* Pass ESC through */
 	{'#',                      "_",           1},
 	{'_',                      "`",           1},
 	{'`',                      "#",           1},
@@ -188,11 +191,61 @@ static const struct key_mapping prestel_keys[] = {
 	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
 	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
 	{CIO_KEY_F(7),             "\x1b",        1},
-	{CIO_KEY_HOME,             "\x1f",        1},
+	{CIO_KEY_HOME,             "\x1e",        1},
 	{CIO_KEY_UP,               "\x8f",        1},
 	{CIO_KEY_LEFT,             "\x8c",        1},
 	{CIO_KEY_RIGHT,            "\x8d",        1},
 	{CIO_KEY_DOWN,             "\x8e",        1},
+	{CIO_KEY_DC,               "\x7f",        1},
+	{CIO_KEY_SHIFT_F(1),       "\x91",        1},
+	{CIO_KEY_SHIFT_F(2),       "\x92",        1},
+	{CIO_KEY_SHIFT_F(3),       "\x93",        1},
+	{CIO_KEY_SHIFT_F(4),       "\x94",        1},
+	{CIO_KEY_SHIFT_F(5),       "\x95",        1},
+	{CIO_KEY_SHIFT_F(6),       "\x96",        1},
+	{CIO_KEY_SHIFT_F(7),       "\x97",        1},
+	{CIO_KEY_SHIFT_F(8),       "\x98",        1},
+	{CIO_KEY_SHIFT_F(9),       "\x99",        1},
+	{CIO_KEY_SHIFT_F(10),      "\x90",        1},	/* F0 */
+	{CIO_KEY_CTRL_F(1),        "\xa1",        1},
+	{CIO_KEY_CTRL_F(2),        "\xa2",        1},
+	{CIO_KEY_CTRL_F(3),        "\xa3",        1},
+	{CIO_KEY_CTRL_F(4),        "\xa4",        1},
+	{CIO_KEY_CTRL_F(5),        "\xa5",        1},
+	{CIO_KEY_CTRL_F(6),        "\xa6",        1},
+	{CIO_KEY_CTRL_F(7),        "\xa7",        1},
+	{CIO_KEY_CTRL_F(8),        "\xa8",        1},
+	{CIO_KEY_CTRL_F(9),        "\xa9",        1},
+	{CIO_KEY_CTRL_F(10),       "\xa0",        1},	/* F0 */
+	{CIO_KEY_CTRL_LEFT,        "\xac",        1},
+	{CIO_KEY_CTRL_RIGHT,       "\xad",        1},
+	{CIO_KEY_CTRL_END,         "\xab",        1},	/* Copy */
+	{CIO_KEY_CTRL_UP,          "\xaf",        1},
+	{CIO_KEY_CTRL_DOWN,        "\xae",        1},
+};
+
+static const struct key_mapping prestel_keys_cursor[] = {
+	{8,                        "\x7f",        1},
+	{9,                        "\x09",        1},
+	{10,                       "\x0d",        1},	/* LF sends CR */
+	{12,                       "\x0c",        1},   /* CTRL-L for "Clear Screen" -- nelgin */
+	{13,                       "_",           1},	/* CR sends _ */
+	{24,                       "\x18",        1},   /* CTRL-T for "Delete Line" -- nelgin */
+	{27,                       "\x1b",        1},   /* Pass ESC through */
+	{'#',                      "_",           1},
+	{'_',                      "`",           1},
+	{'`',                      "#",           1},
+	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
+	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
+	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
+	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
+	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
+	{CIO_KEY_F(7),             "\x1b",        1},
+	{CIO_KEY_HOME,             "\x1e",        1},
+	{CIO_KEY_UP,               "\x0b",        1},
+	{CIO_KEY_LEFT,             "\x08",        1},
+	{CIO_KEY_RIGHT,            "\x09",        1},
+	{CIO_KEY_DOWN,             "\x0a",        1},
 	{CIO_KEY_DC,               "\x7f",        1},
 	{CIO_KEY_SHIFT_F(1),       "\x91",        1},
 	{CIO_KEY_SHIFT_F(2),       "\x92",        1},
@@ -426,8 +479,14 @@ cterm_encode_key(struct cterminal *cterm, int key)
 			}
 			switch (cterm->emulation) {
 				case CTERM_EMULATION_PRESTEL:
-					table = prestel_keys;
-					table_count = KEY_MAP_SIZE(prestel_keys);
+					if (cterm->cursor == _NORMALCURSOR) {
+						table = prestel_keys_cursor;
+						table_count = KEY_MAP_SIZE(prestel_keys_cursor);
+					}
+					else {
+						table = prestel_keys;
+						table_count = KEY_MAP_SIZE(prestel_keys);
+					}
 					raw_lo = 32;
 					raw_hi = 128;
 					break;
