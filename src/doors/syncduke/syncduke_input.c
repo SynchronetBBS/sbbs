@@ -350,7 +350,7 @@ static int syncduke_mouse_steer(void)
 {
 	int center, halfw, off, mag, dz;
 
-	syncduke_image_geometry(NULL, NULL, &center, &halfw);
+	syncduke_hsteer(&center, &halfw);
 	if (halfw < 2)
 		halfw = 2;
 	off = g_mouse_col - center;

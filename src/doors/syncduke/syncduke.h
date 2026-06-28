@@ -56,11 +56,10 @@ int  syncduke_term_cell_h(void);                    /* terminal cell height in p
 int  syncduke_canvas_w(void);                       /* graphics-canvas width: XTSMGRAPHICS or text-area px */
 int  syncduke_canvas_h(void);                       /* graphics-canvas height: XTSMGRAPHICS or text-area px */
 int  syncduke_jxl_scale_max(void);                  /* JXL fill cap (px), [video] scale_max; 0 = uncapped */
-/* Image-tier placement: centered cell origin (*row,*col, 1-based) for the sixel/JXL
- * cursor, plus the image's center column and half-width in cells (for mouse steering).
- * Centers the out_w x out_h image in the probed pixel canvas using the real cell size;
- * falls back to the top-left when the cell size is unknown.  Any out-ptr may be NULL. */
-void syncduke_image_geometry(int *row, int *col, int *center_col, int *half_cols);
+/* The displayed image's horizontal center column and half-width in cells, recorded by
+ * present() each frame (the placement depends on tier + terminal).  Used by the mouse
+ * steer to map a pointer column to a turn rate around the actual image. */
+void syncduke_hsteer(int *center_col, int *half_cols);
 int  syncduke_mouse_enabled(void);                  /* 1 if terminal mouse steering is on (io.c keeps SGR tracking in sync) */
 void syncduke_mouse_toggle(void);                   /* Ctrl-O: toggle terminal mouse steering on/off */
 int  syncduke_mouse_sens(void);                     /* steer sensitivity, 0..63 (Setup Controls slider) */

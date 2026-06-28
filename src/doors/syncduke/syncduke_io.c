@@ -233,31 +233,21 @@ static void syncduke_update_outsize(void)
 	syncduke_out_h = h;
 }
 
-/* Image-tier placement (see syncduke.h).  Centers the out_w x out_h image in the
- * probed pixel canvas using the real cell size (ESC[16t).  Windows Terminal honors
- * the resulting cursor cell; SyncTERM ignores the cursor under ?80l and anchors 0,0,
- * so it stays top-left there -- exactly like SyncDOOM.  Without a real cell size the
- * cell math is a guess, so we anchor top-left (origin 1,1), matching SyncDOOM. */
-void syncduke_image_geometry(int *row, int *col, int *center_col, int *half_cols)
-{
-	int vw = syncduke_term_px_w(), vh = syncduke_term_px_h();
-	int cw = syncduke_term_cell_w(), ch = syncduke_term_cell_h();
-	int r = 1, c = 1;
+/* The displayed image's horizontal placement (center column + half-width in cells),
+ * recorded by present() each frame for the mouse-steer -- which maps a pointer column
+ * to a turn rate around the image center.  Where the image actually lands depends on
+ * the tier AND terminal (a SyncTERM sixel anchors top-left because the cursor is
+ * ignored under ?80l, while JXL and non-SyncTERM sixel are centered), so present()
+ * computes it where it places the image rather than re-deriving it here. */
+static int g_hsteer_center = 40;   /* image center column (1-based); sane 80-col default */
+static int g_hsteer_half   = 40;   /* image half-width in cells (deflection scale) */
 
-	if (vw > 0 && vh > 0 && cw > 0 && ch > 0)   /* else top-left (cell math is a guess) */
-		termgfx_geom_center(vw, vh, syncduke_out_w, syncduke_out_h, cw, ch, NULL, NULL, &c, &r);
-	if (row)
-		*row = r;
-	if (col)
-		*col = c;
-	{
-		int cellw = cw > 0 ? cw : 8;        /* mouse-steering math tolerates the 8px guess */
-		int icols = syncduke_out_w / cellw; /* image width in cells */
-		if (center_col)
-			*center_col = c + icols / 2;
-		if (half_cols)
-			*half_cols  = icols / 2;
-	}
+void syncduke_hsteer(int *center_col, int *half_cols)
+{
+	if (center_col)
+		*center_col = g_hsteer_center;
+	if (half_cols)
+		*half_cols  = g_hsteer_half;
 }
 
 /* We encode the sixel at 1/SCALE of the on-screen size and emit a "pan;pad pixel-
@@ -756,8 +746,8 @@ static void syncduke_emit_overlay(int force)
 	syncduke_ov_draw_ms = nm;
 
 	{   /* right-justify to the real TERMINAL width, not the (capped) image width:
-	     * in a wide window the JXL image fills past out_w, so out_w/8 anchored the
-	     * strip mid-canvas instead of at the right edge. */
+		 * in a wide window the JXL image fills past out_w, so out_w/8 anchored the
+		 * strip mid-canvas instead of at the right edge. */
 		int cw = syncduke_term_cell_w();
 		if (cw < 1)
 			cw = 8;
@@ -953,6 +943,7 @@ void syncduke_present(void)
 		 * fall back to the on-screen out size. */
 		int  vw = syncduke_canvas_w(), vh = syncduke_canvas_h();
 		int  sdw, sdh, irow = 1, icol = 1;
+		int  dispw, displeft;                 /* displayed image width + left cell (mouse steer) */
 		char wrap[24];
 
 		if (vw < 1 || vh < 1) { vw = syncduke_out_w; vh = syncduke_out_h; }
@@ -960,6 +951,9 @@ void syncduke_present(void)
 		termgfx_geom_center(vw, vh, sdw, sdh, syncduke_term_cell_w(), syncduke_term_cell_h(),
 		                    NULL, NULL, &icol, &irow);
 		syncduke_out_put(wrap, snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow, icol));
+		/* sixel default placement (for the mouse steer): centered at the cursor cell on
+		 * terminals that honor it; SyncTERM ignores the cursor under ?80l -> top-left. */
+		dispw = sdw; displeft = syncduke_is_syncterm() ? 1 : icol;
 #ifdef WITH_JXL
 		if (tier == SD_JXL) {
 			/* A DrawJXL is a 1:1 blit (no terminal scaling), so the door scales the
@@ -973,6 +967,10 @@ void syncduke_present(void)
 			                    &dx, &dy, NULL, NULL);
 			n = syncduke_emit_jxl(fb, pal, ew, eh, dx, dy);   /* 0 on encode failure */
 			syncduke_last_enc_us = (uint32_t)(syncduke_now_us() - t0);
+			if (n != 0) {                     /* JXL is centered via the APC DX/DY on both terminals */
+				int cw = syncduke_term_cell_w() > 0 ? syncduke_term_cell_w() : 8;
+				dispw = ew; displeft = 1 + dx / cw;
+			}
 		}
 #endif
 		if (n == 0) {                             /* sixel: the default tier, and the JXL-failure fallback */
@@ -993,6 +991,14 @@ void syncduke_present(void)
 			syncduke_out_put(sx, n);
 		}
 		syncduke_out_put("\x1b" "8", 2);          /* restore cursor */
+		{   /* record the displayed image's horizontal center + half-width (cells) so the
+			 * mouse-steer maps the pointer to a turn rate around the actual image, not the
+			 * canvas middle (they differ when a SyncTERM sixel anchors top-left). */
+			int cw = syncduke_term_cell_w() > 0 ? syncduke_term_cell_w() : 8;
+			int icols = dispw / cw;
+			g_hsteer_half   = icols / 2 > 0 ? icols / 2 : 1;
+			g_hsteer_center = displeft + g_hsteer_half;
+		}
 	}
 	syncduke_out_put("\x1b[6n", 4);           /* DSR: terminal reports once it has CONSUMED this frame (paces both tiers) */
 	syncduke_inflight++;
