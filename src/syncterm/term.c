@@ -146,7 +146,10 @@ static const struct key_mapping prestel_keys[] = {
 	{8,                        "\x7f",        1},
 	{9,                        "\x09",        1},
 	{10,                       "\x0d",        1},	/* LF sends CR */
+	{12,                       "\x0c",        1},   /* CTRL-L for "Clear Screen" -- nelgin */
 	{13,                       "_",           1},	/* CR sends _ */
+	{24,                       "\x18",        1},   /* CTRL-T for "Delete Line" -- nelgin */
+	{27,                       "\x1b",        1},   /* Pass ESC through */
 	{'#',                      "_",           1},
 	{'_',                      "`",           1},
 	{'`',                      "#",           1},
@@ -156,7 +159,7 @@ static const struct key_mapping prestel_keys[] = {
 	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
 	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
 	{CIO_KEY_F(7),             "\x1b",        1},
-	{CIO_KEY_HOME,             "\x1f",        1},
+	{CIO_KEY_HOME,             "\x1e",        1},
 	{CIO_KEY_UP,               "\x8f",        1},
 	{CIO_KEY_LEFT,             "\x8c",        1},
 	{CIO_KEY_RIGHT,            "\x8d",        1},
