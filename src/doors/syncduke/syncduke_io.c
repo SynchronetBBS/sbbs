@@ -232,6 +232,37 @@ static void syncduke_update_outsize(void)
 	syncduke_out_h = h;
 }
 
+/* Image-tier placement (see syncduke.h).  Centers the out_w x out_h image in the
+ * probed pixel canvas using the real cell size (ESC[16t).  Windows Terminal honors
+ * the resulting cursor cell; SyncTERM ignores the cursor under ?80l and anchors 0,0,
+ * so it stays top-left there -- exactly like SyncDOOM.  Without a real cell size the
+ * cell math is a guess, so we anchor top-left (origin 1,1), matching SyncDOOM. */
+void syncduke_image_geometry(int *row, int *col, int *center_col, int *half_cols)
+{
+	int vw = syncduke_term_px_w(), vh = syncduke_term_px_h();
+	int cw = syncduke_term_cell_w(), ch = syncduke_term_cell_h();
+	int r = 1, c = 1;
+
+	if (vw > 0 && vh > 0 && cw > 0 && ch > 0) {
+		int x = vw > syncduke_out_w ? (vw - syncduke_out_w) / 2 : 0;
+		int y = vh > syncduke_out_h ? (vh - syncduke_out_h) / 2 : 0;
+		c = 1 + x / cw;
+		r = 1 + y / ch;
+	}
+	if (row)
+		*row = r;
+	if (col)
+		*col = c;
+	{
+		int cellw = cw > 0 ? cw : 8;        /* mouse-steering math tolerates the 8px guess */
+		int icols = syncduke_out_w / cellw; /* image width in cells */
+		if (center_col)
+			*center_col = c + icols / 2;
+		if (half_cols)
+			*half_cols  = icols / 2;
+	}
+}
+
 /* We encode the sixel at 1/SCALE of the on-screen size and emit a "pan;pad pixel-
  * aspect of SCALE so SyncTERM/cterm renders each pixel as a SCALExSCALE block (it
  * does the nearest-neighbor doubling). Same picture as a pre-upscaled full-size
@@ -901,7 +932,15 @@ void syncduke_present(void)
 		n = syncduke_emit_text(fb, pal, m);       /* may be 0 if no cells changed */
 		syncduke_last_enc_us = (uint32_t)(syncduke_now_us() - t0);
 	} else {
-		syncduke_out_put("\x1b" "7\x1b[H", 5);    /* save cursor + home (image draws at the canvas origin) */
+		{
+			int  irow, icol;
+			char wrap[24];
+			/* save cursor + move to the centered cell so the image is centered on
+			 * terminals that honor the cursor (Windows Terminal); SyncTERM ignores it
+			 * (?80l) and draws at 0,0, exactly like SyncDOOM. */
+			syncduke_image_geometry(&irow, &icol, NULL, NULL);
+			syncduke_out_put(wrap, snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow, icol));
+		}
 #ifdef WITH_JXL
 		if (tier == SD_JXL) {
 			uint64_t t0 = syncduke_now_us();
@@ -910,9 +949,9 @@ void syncduke_present(void)
 		}
 #endif
 		if (n == 0) {                             /* sixel: the default tier, and the JXL-failure fallback */
-			int             sxw = syncduke_out_w / hsc;   /* sixel pixels; the terminal scales */
-			int             sxh = syncduke_out_h / vsc;   /* them back up hsc x vsc */
-			uint64_t        t0;
+			int      sxw = syncduke_out_w / hsc;          /* sixel pixels; the terminal scales */
+			int      sxh = syncduke_out_h / vsc;          /* them back up hsc x vsc */
+			uint64_t t0;
 			/* A sixel band is 6 pixel rows.  When the encoded height isn't a whole number of
 			 * bands (e.g. 640x400 -> 200 rows = 33 bands + a 2-row remainder) SyncTERM garbles
 			 * that partial band as it upscales it vertically (pan>1) -- the corrupted rows the

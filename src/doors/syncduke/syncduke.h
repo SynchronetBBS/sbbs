@@ -51,6 +51,13 @@ int  syncduke_have_sixel(void);                     /* 1 if the terminal adverti
 int  syncduke_probe_replied(void);                  /* 1 once the terminal answered the DA capability probe */
 int  syncduke_term_px_w(void);                      /* terminal pixel-canvas width from probe, 0 if unknown */
 int  syncduke_term_px_h(void);                      /* terminal pixel-canvas height from probe, 0 if unknown */
+int  syncduke_term_cell_w(void);                    /* terminal cell width in px from ESC[16t, 0 if unknown */
+int  syncduke_term_cell_h(void);                    /* terminal cell height in px from ESC[16t, 0 if unknown */
+/* Image-tier placement: centered cell origin (*row,*col, 1-based) for the sixel/JXL
+ * cursor, plus the image's center column and half-width in cells (for mouse steering).
+ * Centers the out_w x out_h image in the probed pixel canvas using the real cell size;
+ * falls back to the top-left when the cell size is unknown.  Any out-ptr may be NULL. */
+void syncduke_image_geometry(int *row, int *col, int *center_col, int *half_cols);
 int  syncduke_mouse_enabled(void);                  /* 1 if terminal mouse steering is on (io.c keeps SGR tracking in sync) */
 void syncduke_mouse_toggle(void);                   /* Ctrl-O: toggle terminal mouse steering on/off */
 int  syncduke_mouse_sens(void);                     /* steer sensitivity, 0..63 (Setup Controls slider) */

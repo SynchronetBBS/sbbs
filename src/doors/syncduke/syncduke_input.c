@@ -230,9 +230,12 @@ int syncduke_map_key(const char *seq, int len, int gameplay)
 
 /* ---- terminal pixel-canvas size, learned from probe replies (0 = unknown) ---- */
 static int g_term_px_w, g_term_px_h;
+static int g_cell_w, g_cell_h;          /* cell pixel size from ESC[16t (0 = unknown) */
 
 int syncduke_term_px_w(void) { return g_term_px_w; }
 int syncduke_term_px_h(void) { return g_term_px_h; }
+int syncduke_term_cell_w(void) { return g_cell_w; }
+int syncduke_term_cell_h(void) { return g_cell_h; }
 
 /* Incremental CSI parser state -- bytes of an escape sequence (and of a probe
  * reply) can split across reads, so it persists between syncduke_input_pump() calls. */
@@ -335,15 +338,14 @@ int  syncduke_kb_fastturn(void)    { return syncduke_fast_turn; }
 void syncduke_kb_fastturn_set(int v) { syncduke_fast_turn = v ? 1 : 0; }
 
 /* Pointer column offset from the image centre -> signed turn rate, scaled so the image
- * edge is full deflection (mirrors SyncDoom's mouse_steer_rate).  The sixel sits at the
- * top-left (drawn at home), 8 px per cell, so the centre cell is (width_px/8)/2. */
+ * edge is full deflection (mirrors SyncDoom's mouse_steer_rate).  The image's centre
+ * cell and half-width come from the shared geometry (which accounts for centering on
+ * terminals that report a cell size, and the top-left fallback elsewhere). */
 static int syncduke_mouse_steer(void)
 {
-	int cols   = g_term_px_w > 0 ? g_term_px_w / 8 : 80;
-	int center = cols / 2;
-	int halfw  = cols / 2;
-	int off, mag, dz;
+	int center, halfw, off, mag, dz;
 
+	syncduke_image_geometry(NULL, NULL, &center, &halfw);
 	if (halfw < 2)
 		halfw = 2;
 	off = g_mouse_col - center;
@@ -485,8 +487,11 @@ static void csi_final(char fin, int gameplay, int now)
 						return;
 				}
 			return;
-		case 't':                                       /* ESC[4;H;W t = text-area pixels */
-			if (csi_params(p, 4) >= 3 && p[0] == 4) { g_term_px_h = p[1]; g_term_px_w = p[2]; }
+		case 't':                                       /* window-op reply: 4=text-area px, 6=cell px */
+			if (csi_params(p, 4) >= 3) {
+				if (p[0] == 4)      { g_term_px_h = p[1]; g_term_px_w = p[2]; }   /* ESC[14t reply */
+				else if (p[0] == 6) { g_cell_h    = p[1]; g_cell_w    = p[2]; }   /* ESC[16t reply */
+			}
 			return;
 		case 'R':                                       /* ESC[rows;cols R (cursor-position report) */
 			/* First report (from the startup size probe at 999;999) gives the canvas
