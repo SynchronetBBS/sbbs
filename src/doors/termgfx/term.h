@@ -6,17 +6,21 @@
 // no embedded NULs; the caller emits it through its own output path (e.g.
 // out_put(s, strlen(s))) so there are no hand-counted byte lengths to get wrong.
 //
-// The important, easy-to-miss one is DECSDM (DEC private mode 80, "sixel
-// scrolling"), which defaults to SET: whenever a sixel image reaches the bottom
-// row the terminal scrolls the page up and appends a newline. For a door that
-// emits a full-screen sixel every frame that means the picture visibly
-// scrolls/jumps each frame. termgfx_term_enter RESETS it (?80l) so the sixel
-// origin pins to the page top-left and frames overdraw in place; termgfx_term_leave
-// restores the default (?80h) for the BBS.
+// term_enter sets DECSDM (DEC private mode 80, "sixel scrolling") via ?80l.
+// Despite the name, its load-bearing effect for us is POSITIONING: under ?80l a
+// non-SyncTERM sixel terminal (e.g. Windows Terminal) draws the image at the TEXT
+// CURSOR, so a door centers it by parking the cursor at the centered cell -- drop
+// ?80l and those terminals draw at the origin (top-left). (SyncTERM's cterm instead
+// ignores the cursor under ?80l and anchors top-left, which the door accounts for
+// separately.) Scroll-prevention -- a sixel reaching the bottom row scrolling the
+// page -- is now handled by keeping the image off the LAST text row (the bottom-cell
+// reserve in the image fit), not by ?80. NB cterm reversed mode 80's set/reset sense
+// in rev 1.328 (2026); moot here since SyncTERM uses JXL and the reserve covers
+// scrolling regardless. termgfx_term_leave restores ?80h for the BBS.
 
 // Enter graphics mode: clear screen + home cursor, hide the cursor (DECTCEM),
-// disable autowrap (DECAWM) so a full-width frame can't wrap/scroll, and reset
-// sixel scrolling (DECSDM ?80l). Emit once on entry.
+// disable autowrap (DECAWM) so a full-width frame can't wrap/scroll, and set
+// DECSDM ?80l (sixel-drawn-at-cursor, for centering -- see above). Emit once on entry.
 extern const char *const termgfx_term_enter;
 
 // Probe the terminal's pixel canvas: ESC[14t (text-area size in pixels) with a

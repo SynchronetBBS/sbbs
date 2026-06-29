@@ -3,8 +3,8 @@
 
 #include "term.h"
 
-//             clear+home  hide cursor  no autowrap  no sixel scroll (DECSDM)
-//             ----------  -----------  -----------  -----------------------
+//             clear+home  hide cursor  no autowrap  sixel-at-cursor (DECSDM ?80l)
+//             ----------  -----------  -----------  ----------------------------
 const char *const termgfx_term_enter = "\x1b[2J\x1b[H" "\x1b[?25l" "\x1b[?7l" "\x1b[?80l";
 
 //             ESC[14t (text px)  ESC[16t (cell px)  ESC[?2;1S (gfx canvas)  save  corner  DSR  restore
