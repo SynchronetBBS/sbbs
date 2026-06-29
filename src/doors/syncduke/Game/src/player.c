@@ -2142,6 +2142,18 @@ void getinput(short snum)
 //	if(loc.avel)
 //		printf("getinput loc.avel=%d\n", loc.avel);
     loc.horz = horiz;
+    {   /* SyncDuke terminal look: fold one pending PgUp/PgDn pitch notch per tic into the
+         * SYNCED horz field (the terminal mouse-steer feeds angvel/fire, not horz -- there is
+         * no mouse pitch -- so loc.horz is otherwise 0). It then rides the lockstep FIFO and
+         * processinput applies it to THIS player on BOTH sims --
+         * the old per-node syncduke_pitch_step var, applied in processinput, only moved the
+         * looking node's copy of horiz and so desynced co-op. +60 here = +30 after the >>1;
+         * one notch/tic spreads a multi-tap burst (and stays synced even if movesperpacket>1). */
+        extern volatile int syncduke_pitch_step;
+        int st = syncduke_pitch_step;
+        if (st > 0)      { loc.horz = 60;  syncduke_pitch_step = st - 1; }
+        else if (st < 0) { loc.horz = -60; syncduke_pitch_step = st + 1; }
+    }
 }
 
 
@@ -3453,23 +3465,20 @@ void processinput(short snum)
             p->horiz -= (p->hard_landing<<4);
         }
 
-        if(p->aim_mode)
-            p->horiz += sync[snum].horz>>1;
-        else
+        if(!p->aim_mode)
         {
              if( p->horiz > 95 && p->horiz < 105) p->horiz = 100;
              if( p->horizoff > -5 && p->horizoff < 5) p->horizoff = 0;
         }
 
-        {   /* SyncDuke: terminal "look" -- apply the fixed pitch notch posted by a PgUp/PgDn
-             * tap (syncduke_input.c) exactly ONCE here, so one tap == one deterministic step
-             * regardless of frame rate.  Holding Duke's per-tic Aim keys ramped the view all
-             * the way to "flying" on a slow link (one tap spanned many game-tics); this can't.
-             * Signed: + looks up, - looks down; |step| = pending taps.  Center_View re-levels. */
-            extern volatile int syncduke_pitch_step;
-            int st = syncduke_pitch_step;
-            if(st) { syncduke_pitch_step = 0; p->horiz += st * 30; }   /* 30 = one notch of -99..299 */
-        }
+        /* SyncDuke terminal "look": the PgUp/PgDn pitch notch now rides the SYNCED input
+         * (getinput folds it into horz) instead of the per-node syncduke_pitch_step var that
+         * used to be applied right here -- that ran on EVERY player's processinput but only on
+         * the LOOKING node, so co-op desynced (horiz diverged, the lone OOS field). sync[snum].horz
+         * is THIS player's own synced notch; apply it in either aim mode and AFTER the auto-center
+         * so a tap holds (Center_View re-levels). The terminal mouse-steer is turn-only (no mouse
+         * pitch), so horz carries only this keyboard notch -- subsuming the stock mouse-pitch line. */
+        p->horiz += sync[snum].horz>>1;
 
         if(p->horiz > 299) p->horiz = 299;
         else if(p->horiz < -99) p->horiz = -99;
