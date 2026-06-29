@@ -14,7 +14,12 @@
 int syncduke_in_gameplay(void)
 {
 	uint8_t gm = ps[myconnectindex].gm;
-	return (gm & MODE_GAME) && !(gm & MODE_MENU);
+	/* MODE_TYPE = the player is typing a chat message ('T'alk). Like a menu, the
+	 * action layer must be OFF so letters/digits/Space reach the message buffer
+	 * literally -- otherwise a typed 'a' becomes a strafe scancode and shows as
+	 * punctuation (the on-screen "OUT OF SYNC" from chat was a separate vendored
+	 * bug -- typemode sent the wrong buffer -- fixed in game.c). */
+	return (gm & MODE_GAME) && !(gm & (MODE_MENU | MODE_TYPE));
 }
 
 /* True while the player is dead (health <= 0).  The door treats this like "not in

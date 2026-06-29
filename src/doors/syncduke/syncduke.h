@@ -56,6 +56,7 @@ int  syncduke_term_cell_h(void);                    /* terminal cell height in p
 int  syncduke_canvas_w(void);                       /* graphics-canvas width: XTSMGRAPHICS or text-area px */
 int  syncduke_canvas_h(void);                       /* graphics-canvas height: XTSMGRAPHICS or text-area px */
 int  syncduke_jxl_scale_max(void);                  /* JXL fill cap (px), [video] scale_max; 0 = uncapped */
+int  syncduke_sixel_max_w(void);                    /* sixel width cap (px), [video] sixel_max_width */
 /* The displayed image's horizontal center column and half-width in cells, recorded by
  * present() each frame (the placement depends on tier + terminal).  Used by the mouse
  * steer to map a pointer column to a turn rate around the actual image. */

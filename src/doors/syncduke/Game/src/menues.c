@@ -34,6 +34,7 @@ Prepared for public release: 03/21/2003 - Charlie Wiederhold, 3D Realms
 #include "premap.h"
 #include "display.h"
 #include "git_hash.h"   /* SyncDuke: generated GIT_HASH / GIT_DATE for the menu footers */
+#define SYNCDUKE_VERSION "v0.1"   /* shown above the git hash on the main menu */
 
 extern SDL_Surface *surface;
 extern short inputloc;
@@ -2153,8 +2154,10 @@ void menus(void)
                         break;          /* drop the trailing " HH:MM" */
                 }
                 gd[k] = '\0';
-                gametext(3, 191, GIT_HASH, 0, 2+8+16);                       /* lower-left  */
-                gametext(317 - sd_gametext_width(gd), 191, gd, 0, 2+8+16);   /* lower-right */
+                gametext(3, 182, SYNCDUKE_VERSION, 0, 2+8+16);                                 /* version (top left)  */
+                gametext(317 - sd_gametext_width(gd), 182, gd, 0, 2+8+16);                      /* git date (top right) */
+                gametext(3, 191, GIT_HASH, 0, 2+8+16);                                          /* git hash (btm left) */
+                gametext(317 - sd_gametext_width("synchro.net"), 191, "synchro.net", 0, 2+8+16);  /* site (btm right) */
             }
 
             break;

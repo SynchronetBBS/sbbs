@@ -71,7 +71,7 @@ static void syncduke_door_splash(void)
 	static const char banner[] =
 		"\x1b[2J\x1b[H\x1b[?25l"                       /* clear, home, hide cursor */
 		"\x1b[12;30HLoading Duke Nukem 3D...";          /* ~centered on an 80-col screen */
-	int fd = syncduke_door_socket();                    /* resolves the door args too */
+	int               fd = syncduke_door_socket();      /* resolves the door args too */
 
 #ifdef _WIN32
 	/* On Windows the door handle is a Winsock SOCKET. Bring Winsock up here, in the
@@ -168,7 +168,11 @@ static void syncduke_door_resolve(void)
 	for (i = 1; i < g_argc; i++) {
 		const char *a = g_argv[i];
 		if (a[0] == '-' && a[1] == 's' && a[2] != '\0')
-			g_socket = atoi(a + 2);               /* -s<fd> */
+			g_socket = atoi(a + 2);                            /* -s<fd>        */
+		else if (a[0] == '-' && a[1] == 't' && a[2] != '\0')
+			g_time_limit_ms = (uint32_t)atoi(a + 2) * 1000u;   /* -t<seconds>   */
+		else if (strcmp(a, "-name") == 0 && i + 1 < g_argc)
+			strncpy(g_alias, g_argv[++i], sizeof(g_alias) - 1); /* -name <alias> */
 		else if (is_door32_path(a))
 			read_door32(a);
 	}
@@ -220,15 +224,23 @@ void syncduke_sanitize_cmdline(int *argc, char **argv)
 	for (i = 1; i < n; i++) {
 		const char *a = argv[i];
 
-		/* -home <path> / -grpdir <path>: drop the flag and its value */
-		if (strcmp(a, "-home") == 0 || strcmp(a, "-grpdir") == 0) {
+		/* -home/-grpdir <path>, -netrole/-netport/-netpeer <v>: drop flag + value */
+		if (strcmp(a, "-home") == 0 || strcmp(a, "-grpdir") == 0
+		    || strcmp(a, "-netrole") == 0 || strcmp(a, "-netport") == 0
+		    || strcmp(a, "-netpeer") == 0) {
 			if (i + 1 < n)
 				i++;           /* also skip the value */
 			continue;
 		}
-		/* -s<fd> socket descriptor */
-		if (a[0] == '-' && a[1] == 's' && a[2] != '\0')
+		/* -s<fd> socket descriptor / -t<seconds> time limit (attached door args) */
+		if (a[0] == '-' && (a[1] == 's' || a[1] == 't') && a[2] != '\0')
 			continue;
+		/* -name <alias>: drop flag + value (a "/"-leading alias would misparse) */
+		if (strcmp(a, "-name") == 0) {
+			if (i + 1 < n)
+				i++;
+			continue;
+		}
 		/* a DOOR32.SYS drop-file path (Synchronet's %f) */
 		if (is_door32_path(a))
 			continue;

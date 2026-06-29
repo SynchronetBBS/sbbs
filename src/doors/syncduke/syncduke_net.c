@@ -64,6 +64,21 @@ static struct sockaddr_in g_peer[MAXPLAYERS];   /* addr of each player index */
 static int                g_net_active;
 static unsigned           g_rx, g_tx;           /* game-packet counters (bring-up diagnostics) */
 
+/* Net config from the command line (the lobby's path), filled by syncduke_config.c's
+ * pre-main arg pass.  Each falls back to the matching env var (the standalone test
+ * harness path) when its buffer is empty. */
+char syncduke_net_role[16];     /* -netrole master|join   (env SYNCDUKE_NET)      */
+char syncduke_net_port[16];     /* -netport <udp port>    (env SYNCDUKE_NET_PORT) */
+char syncduke_net_peer[128];    /* -netpeer <host:port>   (env SYNCDUKE_NET_PEER) */
+
+/* Prefer the command-line value (the lobby sets these); else the env var. */
+static const char *sd_net_cfg(const char *cli, const char *envname)
+{
+	if (cli && cli[0])
+		return cli;
+	return getenv(envname);
+}
+
 static uint32_t sd_net_now_ms(void)
 {
 #ifdef _WIN32
@@ -102,8 +117,8 @@ static void sd_net_become(int me)   /* me = 0 (master) or 1 (join) */
  * engine reads it).  Returns 1 on success (2 players), 0 to stay single-player. */
 static int sd_net_handshake(const char *role)
 {
-	const char *       peer = getenv("SYNCDUKE_NET_PEER");
-	const char *       port = getenv("SYNCDUKE_NET_PORT");
+	const char *       peer = sd_net_cfg(syncduke_net_peer, "SYNCDUKE_NET_PEER");
+	const char *       port = sd_net_cfg(syncduke_net_port, "SYNCDUKE_NET_PORT");
 	struct sockaddr_in me;
 	uint32_t           deadline = sd_net_now_ms() + SD_HS_TIMEOUT_MS;
 
@@ -182,7 +197,7 @@ static int sd_net_handshake(const char *role)
 
 void initmultiplayers(uint8_t damultioption, uint8_t dacomrateoption, uint8_t dapriority)
 {
-	const char *role = getenv("SYNCDUKE_NET");
+	const char *role = sd_net_cfg(syncduke_net_role, "SYNCDUKE_NET");
 	(void)damultioption; (void)dacomrateoption; (void)dapriority;
 
 	/* default single-player unless a net role is configured */

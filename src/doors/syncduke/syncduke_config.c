@@ -33,10 +33,10 @@
   #include <io.h>       /* dup2 */
   #define strcasecmp _stricmp
   #ifndef STDOUT_FILENO
-    #define STDOUT_FILENO 1
+	#define STDOUT_FILENO 1
   #endif
   #ifndef STDERR_FILENO
-    #define STDERR_FILENO 2
+	#define STDERR_FILENO 2
   #endif
 #else
   #include <unistd.h>   /* chdir, dup2, realpath, STD*_FILENO */
@@ -47,7 +47,7 @@
 #endif
 
 #ifdef _WIN32
-  /* realpath(path, resolved) -> _fullpath(resolved, path, max) (note arg order). */
+/* realpath(path, resolved) -> _fullpath(resolved, path, max) (note arg order). */
   #define realpath(path, resolved) _fullpath((resolved), (path), PATH_MAX)
 #endif
 
@@ -61,6 +61,13 @@
  * keeps its stock CWD scan (standalone/dev runs). */
 char syncduke_grpdir[PATH_MAX] = "";
 
+/* Net role/port/peer from the command line (the lobby's path), consumed by
+ * syncduke_net.c (which falls back to the SYNCDUKE_NET* env vars when unset).
+ * Defined in syncduke_net.c; we fill them here in the pre-main arg pass. */
+extern char syncduke_net_role[16];
+extern char syncduke_net_port[16];
+extern char syncduke_net_peer[128];
+
 /* Whether the in-game RECORD (demo) menu option is offered + actually records.
  * Default OFF: a demo file (demo1.dmo) is useless to a BBS user who can't download
  * it and just wastes disk. Enable with syncduke.ini [game] record = true. */
@@ -72,6 +79,18 @@ int syncduke_record_enabled(void) { return syncduke_allow_record; }
  * uncapped.  syncduke.ini [video] scale_max; default matches SyncDOOM's 1280. */
 static int syncduke_scale_max = 1280;
 int syncduke_jxl_scale_max(void) { return syncduke_scale_max; }
+
+/* Max width (px) of the SIXEL image.  The door fits Duke's frame into the terminal's
+ * probed window up to this; a larger window fills more but costs more wire bytes (sixel
+ * is RLE).  syncduke.ini [video] sixel_max_width; default 1024 (fills a large-font 80-col
+ * window).  Clamped to [320, 1024] (the encoded buffer's hard ceiling). */
+static int syncduke_sixel_w = 1024;
+int syncduke_sixel_max_w(void) { return syncduke_sixel_w; }
+
+/* [video] use_cell_size (default true): when the terminal didn't report exact pixels
+ * (ESC[14t), estimate its window from the reported cell size (ESC[16t) instead of an
+ * 8x16 font.  Defined in syncduke_input.c; we set it here from the ini. */
+extern int syncduke_use_cell_size;
 
 /* True if argv looks like a door launch: a DOOR32.SYS drop file (Synchronet %f)
  * or a -s<fd> socket arg. */
@@ -111,6 +130,12 @@ static void syncduke_config_init(int argc, char **argv)
 			strncpy(home, argv[i + 1], sizeof(home) - 1);
 		else if (strcmp(argv[i], "-log") == 0)
 			strncpy(logpath, argv[i + 1], sizeof(logpath) - 1);
+		else if (strcmp(argv[i], "-netrole") == 0)
+			strncpy(syncduke_net_role, argv[i + 1], sizeof(syncduke_net_role) - 1);
+		else if (strcmp(argv[i], "-netport") == 0)
+			strncpy(syncduke_net_port, argv[i + 1], sizeof(syncduke_net_port) - 1);
+		else if (strcmp(argv[i], "-netpeer") == 0)
+			strncpy(syncduke_net_peer, argv[i + 1], sizeof(syncduke_net_peer) - 1);
 	}
 	if ((f = fopen("syncduke.ini", "r")) != NULL) {
 		str_list_t ini = iniReadFile(f);
@@ -121,6 +146,12 @@ static void syncduke_config_init(int argc, char **argv)
 			iniGetString(ini, "debug", "log", "", logpath);   /* blank => logging off */
 		syncduke_allow_record = iniGetBool(ini, "game", "record", FALSE);   /* demos off by default */
 		syncduke_scale_max = iniGetInteger(ini, "video", "scale_max", syncduke_scale_max);
+		syncduke_sixel_w = iniGetInteger(ini, "video", "sixel_max_width", syncduke_sixel_w);
+		if (syncduke_sixel_w < 320)
+			syncduke_sixel_w = 320;                             /* never below native-ish width */
+		if (syncduke_sixel_w > 1024)
+			syncduke_sixel_w = 1024;                            /* the encoded buffer's hard ceiling */
+		syncduke_use_cell_size = iniGetBool(ini, "video", "use_cell_size", TRUE);
 		strListFree(&ini);
 	}
 

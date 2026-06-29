@@ -2591,14 +2591,14 @@ void typemode(void)
                 {
                      for(ch=connecthead;ch >= 0;ch=connectpoint2[ch])
                           if (ch != myconnectindex)
-                                sendpacket(ch,(uint8_t*)tempbuf,j+1);
+                                sendpacket(ch,(uint8_t*)text,j+1);   // SyncDuke: send `text` (the type-4 message just built), NOT the stale global `tempbuf` -- the xDuke refactor to a local text[] left these sends pointing at tempbuf, so chat transmitted garbage with a wrong type byte -> peer mis-dispatched it -> move-FIFO/syncval corruption -> "Out Of Sync"
 
                      adduserquote(recbuf);
                      quotebot += 8;
                      quotebotgoal = quotebot;
                 }
                 else if(sendmessagecommand >= 0)
-                     sendpacket(sendmessagecommand,(uint8_t*)tempbuf,j+1);
+                     sendpacket(sendmessagecommand,(uint8_t*)text,j+1);   // SyncDuke: `text`, not stale `tempbuf` (see above)
 
                 sendmessagecommand = -1;
                 ps[myconnectindex].gm &= ~(MODE_TYPE|MODE_SENDTOWHOM);
@@ -7854,6 +7854,15 @@ void sendscore(char  *s)
 void getnames(void)
 {
     short i,j,l;
+
+    /* SyncDuke: seed the netgame name from the BBS user's alias (the door's -name
+     * arg) instead of the stock "XDUKE" default, so frags/leaves read e.g.
+     * "ROB IS HISTORY". Only the first 10 chars are used (fragbar limit, below). */
+    {
+        extern const char *syncduke_door_alias(void);
+        const char *a = syncduke_door_alias();
+        if(a && a[0]) { strncpy(myname, a, sizeof(myname)-1); myname[sizeof(myname)-1] = 0; }
+    }
 
 	// FIX_00031: Names now limited to 10 chars max that is the fragbar field limit.
     for(l=0; l<=9 && myname[l];l++)

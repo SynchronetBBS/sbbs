@@ -1,0 +1,403 @@
+// game_lobby.js -- shared model layer for Synchronet "network game door" lobbies.
+//
+// A reusable, game-agnostic library for the JS frontends that browse/create/join
+// multi-player sessions of a native door (SyncDuke, SyncDOOM, ...). It owns the
+// parts every such lobby needs and no game cares about differently:
+//
+//   * [net] config with per-host [net:<hostname>] overlay + defaults
+//   * UDP port allocation within a configured range
+//   * bind / advertise / creator-connect address resolution (same-host vs LAN)
+//   * a file-based game registry under data/<game>/games/ (read, write, reap)
+//   * paging the door's other active nodes (honoring its access requirements)
+//   * the live who's-online panel + attract-art helpers
+//   * small string/format utilities
+//
+// It is UI-free (no console/bbs prompting) so it can be exercised headless with
+// jsexec; the per-game lobby.js layers the menu and the door command line on top.
+//
+// Load it into its own scope:  var gl = load({}, "game_lobby.js");
+// then call gl.alloc_port(net), gl.list_games(dir, stale), etc. The session-bound
+// helpers (page_targets, send_pages, live_nodes) need a Terminal Server context;
+// everything else (config, ports, registry, addresses) runs under jsexec too.
+//
+// Two networking shapes are supported, because the doors differ:
+//   * SyncDOOM-style: a detached dedicated server (C) writes & heartbeats its own
+//     registry entry; the lobby only reads it (list_games).
+//   * SyncDuke-style: a peer "master" player owns the match and the LOBBY writes
+//     the registry entry (write_game) before launch and removes it (remove_game)
+//     when the door exits; the joiner claims (removes) it on join. Such entries
+//     carry no heartbeat, so freshness falls back to the file's mtime.
+//
+// SpiderMonkey 1.8.5-compatible (no modern ES). Copyright(C) 2026 Rob Swindell.
+// GPL-2.0.
+
+load("sbbsdefs.js");    // NODE_INUSE, NODE_QUIET, NODE_NMSG, ...
+load("sockdefs.js");    // SOCK_DGRAM
+
+// ---------------------------------------------------------------------------
+// String / format helpers (operate on plain text unless noted)
+// ---------------------------------------------------------------------------
+
+// Trim leading & trailing whitespace (SM1.8.5-safe; no String.trim reliance).
+function trim(s) { return String(s).replace(/^\s+/, "").replace(/\s+$/, ""); }
+
+// Strip Ctrl-A attribute codes (\1x) so a string's .length == its visible width.
+function plain(s) { return String(s).replace(/\x01./g, ""); }
+
+function clip(s, w) { s = String(s); return s.length > w ? s.substr(0, w) : s; }
+function rpad(s, w) { s = String(s); while (s.length < w) s += " "; return s; }
+function lpad(s, w) { s = String(s); while (s.length < w) s = " " + s; return s; }
+
+// Seconds -> "M:SS".
+function mmss(secs) {
+	var m = Math.floor(secs / 60), s = secs % 60;
+	return m + ":" + (s < 10 ? "0" : "") + s;
+}
+
+// Short relative-age tag for a unix time ("[now]" / "[5m]" / "[2h]" / "[3d]").
+function ago(t) {
+	var d = time() - t;
+	if (d < 0)     d = 0;
+	if (d < 60)    return "[now]";
+	if (d < 3600)  return "[" + Math.floor(d / 60) + "m]";
+	if (d < 86400) return "[" + Math.floor(d / 3600) + "h]";
+	return "[" + Math.floor(d / 86400) + "d]";
+}
+
+// ---------------------------------------------------------------------------
+// Configuration: per-host [section:<hostname>] overlay
+// ---------------------------------------------------------------------------
+
+// Read an ini section overlaid with its per-host variant: [section] is the base,
+// [section:<local_host_name>] overrides it key-by-key. Lets one shared install
+// (a single ini seen by several physical hosts over a mount) give each host its
+// own advertise address / port range with no separate file. `f` is an OPEN File.
+// Returns a plain object (possibly empty).
+function read_overlaid(f, section) {
+	var base = f.iniGetObject(section) || {};
+	var host = f.iniGetObject(section + ":" + system.local_host_name);
+	if (host) {
+		for (var k in host)
+			base[k] = host[k];
+	}
+	return base;
+}
+
+// Apply default key-values to a config object (only where the key is absent), so
+// the per-game loader can declare its [net] defaults in one place. Mutates and
+// returns `obj`.
+function apply_defaults(obj, defaults) {
+	for (var k in defaults)
+		if (obj[k] === undefined)
+			obj[k] = defaults[k];
+	return obj;
+}
+
+// ---------------------------------------------------------------------------
+// Network address resolution
+//
+// Two independent [net] addresses:
+//   bind      = the local interface the server/master socket accepts on.
+//   advertise = the address peers on OTHER hosts dial (recorded in the registry).
+// Both blank -> the door's own loopback default (same-host play only). For
+// cross-host play set advertise (LAN IP / public name) and, when advertise is a
+// name this host can't bind directly, also set bind (0.0.0.0 or the LAN IP).
+// ---------------------------------------------------------------------------
+
+function advertise_addr(net) {
+	var a = (net && net.advertise !== undefined && net.advertise !== null) ? net.advertise : "";
+	return trim(String(a));
+}
+
+function bind_addr(net) {
+	var b = (net && net.bind !== undefined && net.bind !== null) ? net.bind : "";
+	return trim(String(b));
+}
+
+// Address the match creator dials to reach the server/master it just spawned on
+// THIS host. A socket bound to a specific interface IP does not receive loopback
+// datagrams, so the creator can't blindly use 127.0.0.1 -- it must dial the very
+// address the socket bound (a host can always reach its own local IP). A wildcard
+// bind (0.0.0.0/any/*) or an unset bind both accept on loopback, so dial 127.0.0.1
+// there (you can't send to a wildcard; loopback is guaranteed).
+function creator_connect_host(net) {
+	var b = bind_addr(net) || advertise_addr(net);
+	var lc = String(b).toLowerCase();
+	if (!b || lc == "0.0.0.0" || lc == "any" || lc == "*")
+		return "127.0.0.1";
+	return b;
+}
+
+// ---------------------------------------------------------------------------
+// UDP port allocation
+// ---------------------------------------------------------------------------
+
+// Find a bindable UDP port in [net].port_low..port_high, or -1 if none are free.
+// (A small TOCTOU window exists between this test-bind and the server's bind;
+// acceptable at lobby contention levels.)
+function alloc_port(net) {
+	var lo = parseInt(net.port_low, 10);
+	var hi = parseInt(net.port_high, 10);
+	if (isNaN(lo) || isNaN(hi))
+		return -1;
+	var p;
+	for (p = lo; p <= hi; p++) {
+		var s = new Socket(SOCK_DGRAM);
+		var ok = s.bind(p);
+		s.close();
+		if (ok)
+			return p;
+	}
+	return -1;
+}
+
+// ---------------------------------------------------------------------------
+// Game registry (discovery)  --  data/<game>/games/*.ini
+//
+// Each running match is one .ini whose ROOT (unnamed) section holds its metadata
+// (host, addr, port, status, plus whatever the game adds). Freshness is judged by
+// a `heartbeat` field when present (a C dedicated server writes one every few
+// seconds); otherwise by the file's mtime (a lobby-written peer entry is static
+// for its lifetime). Stale entries are hidden; long-dead ones are reaped.
+// ---------------------------------------------------------------------------
+
+// Ensure the registry directory exists; returns it (with a trailing slash).
+function games_dir_ensure(dir) {
+	if (!file_isdir(dir))
+		mkpath(dir);
+	return dir;
+}
+
+// Freshness age (seconds) of a registry entry: from its `heartbeat` field if the
+// writer maintains one, else from the file's mtime.
+function entry_age(g, path) {
+	var now = time();
+	if (g.heartbeat !== undefined)
+		return now - parseInt(g.heartbeat, 10);
+	var mt = file_date(path);
+	return (mt > 0) ? (now - mt) : 0;
+}
+
+// Live games: parse data/<game>/games/*.ini, dropping entries staler than
+// `stale_secs`. An entry past stale*3 is REAPED (its orphaned file removed -- a
+// crashed/killed writer never cleans up after itself); x3 leaves margin for SMB
+// attribute-cache lag on a shared cross-host games dir. Each returned object is
+// the entry's root section plus `.file` (its path) and `.age` (seconds). The
+// caller applies game-specific joinability rules (status, player count). Returns
+// [] when the dir is absent.
+function list_games(dir, stale_secs) {
+	var out = [];
+	if (!file_isdir(dir))
+		return out;
+	var stale = parseInt(stale_secs, 10) || 30;
+	var files = directory(dir + "*.ini");
+	var i;
+	for (i = 0; i < files.length; i++) {
+		var f = new File(files[i]);
+		if (!f.open("r"))
+			continue;
+		var g = f.iniGetObject();      // root (unnamed) section
+		f.close();
+		if (!g)
+			continue;
+		var age = entry_age(g, files[i]);
+		if (age > stale * 3) {
+			file_remove(files[i]);     // dead writer -- reap its orphaned entry
+			continue;
+		}
+		if (age > stale)
+			continue;                  // stale (maybe SMB lag); writer presumed gone -- hide
+		g.file = files[i];
+		g.age = age;
+		out.push(g);
+	}
+	return out;
+}
+
+// Write/replace a registry entry (the lobby-written, peer-master path). `obj`'s
+// keys become the file's root section. Returns the entry's path, or null on
+// failure. Use a unique, stable `name` (e.g. the port, or host+port) so a host
+// can run several matches without collision.
+function write_game(dir, name, obj) {
+	games_dir_ensure(dir);
+	var path = dir + name + ".ini";
+	var f = new File(path);
+	// "w+" (truncate + read/write): iniSetObject re-reads the file to merge, so the
+	// fp must be readable -- a plain "w" makes iniSetObject's iniReadFile fail.
+	if (!f.open("w+"))
+		return null;
+	var ok = f.iniSetObject(null, obj);   // null section == root
+	f.close();
+	return ok ? path : null;
+}
+
+// Remove a registry entry by path (idempotent: a missing file is fine). Used when
+// the match ends (master door exits) or is claimed (joiner takes the last slot).
+function remove_game(path) {
+	if (path && file_exists(path))
+		return file_remove(path);
+	return true;
+}
+
+// ---------------------------------------------------------------------------
+// Paging the door's other active nodes  (Terminal Server context)
+// ---------------------------------------------------------------------------
+
+// The access-requirement string for this door's own external-program entry, so we
+// only page users who may actually run it. Found by matching the lobby's own
+// directory + a JS-module command ("?<mod>") in the external-programs config. ""
+// (the default when not found) makes compare_ars() treat everyone as allowed.
+// `door_dir` is the lobby's directory (js.exec_dir of the launching script).
+function door_ars(door_dir) {
+	if (typeof xtrn_area == "undefined" || !xtrn_area.prog_list)
+		return "";
+	function strip(s) { return s ? String(s).replace(/[\/\\]+$/, "") : ""; }
+	var ours = strip(fullpath(door_dir));
+	var list = xtrn_area.prog_list, i, p, fallback = "";
+	for (i = 0; i < list.length; i++) {
+		p = list[i];
+		if (!p.startup_dir || strip(fullpath(p.startup_dir)) != ours)
+			continue;
+		if (p.cmd && p.cmd.charAt(0) == "?")   // the JS lobby -- the entry users launch
+			return p.execution_ars || "";
+		fallback = p.execution_ars || fallback; // else the native door's reqs
+	}
+	return fallback;
+}
+
+// Active nodes (node numbers) whose user may run this door -- the page candidates.
+// Skips our own node and any in WFC / quiet / logon. `ars` is door_ars()'s result.
+function page_targets(ars) {
+	var me = bbs.node_num;
+	var list = system.node_list, targets = [], i;
+	for (i = 0; i < list.length; i++) {
+		var node_num = i + 1;
+		if (node_num == me)
+			continue;
+		var nd = list[i];
+		if (nd.status != NODE_INUSE)          // skip WFC/quiet/logon/offline nodes
+			continue;
+		if (!nd.useron)
+			continue;
+		var u;
+		try { u = new User(nd.useron); } catch (e) { continue; }
+		if (!u || !u.number)
+			continue;
+		if (ars && !u.compare_ars(ars))       // honor the door's access requirements
+			continue;
+		targets.push(node_num);
+	}
+	return targets;
+}
+
+// Deliver a join invitation to the chosen nodes -- fast and non-interactive. Uses
+// the sysop-configurable NodeMsgFmt header (text.dat) so it looks like any other
+// inter-node message. `who` is the inviter's alias, `body` the plain-text line
+// (NodeMsgFmt supplies its own color + trailing CRLF). Returns the count delivered.
+function send_pages(targets, who, body) {
+	if (!targets || !targets.length)
+		return 0;
+	var msg = format(bbs.text("NodeMsgFmt"), bbs.node_num, who || "Someone", body);
+	var paged = 0, i;
+	for (i = 0; i < targets.length; i++)
+		if (system.put_node_message(targets[i], msg))
+			paged++;
+	return paged;
+}
+
+// ---------------------------------------------------------------------------
+// Attract art (sysop-dropped full-screen ANSI shown on lobby entry)
+// ---------------------------------------------------------------------------
+
+// Resolve a configured directory relative to the door dir, or use it as-is when
+// absolute (unix /... or Windows X:\...). Trailing-slashed.
+function resolve_dir(door_dir, cfg_dir, dflt) {
+	var d = (cfg_dir !== undefined && cfg_dir !== null && cfg_dir !== "")
+	        ? String(cfg_dir) : dflt;
+	if (d.charAt(0) == "/" || d.charAt(0) == "\\" || d.charAt(1) == ":")
+		return backslash(d);
+	return backslash(door_dir + d);
+}
+
+// The art files a sysop dropped in the attract dir, or []. Case-insensitive on
+// the extension (classic art is often UPPER-case *.ANS, directory() is
+// case-sensitive on *nix).
+function attract_files(door_dir, cfg_dir) {
+	var all = directory(resolve_dir(door_dir, cfg_dir, "art") + "*");
+	var art = [], i;
+	for (i = 0; i < all.length; i++)
+		if (/\.(ans|asc|ansi)$/i.test(all[i]))
+			art.push(all[i]);
+	return art;
+}
+
+// ---------------------------------------------------------------------------
+// Live who's-online panel  (Terminal Server context)
+//
+// presence_lib.js is Synchronet's canonical node-status formatter (the BBS's own
+// who's-online). We use it so the panel matches the BBS wording, and split each
+// line into the username portion and the activity tail by asking for the status
+// with and without the username (the length delta is exactly the name) -- so we
+// can color name and activity separately without re-implementing its anon/sysop
+// rules. `marker` is the door's name as it appears in a playing node's status
+// (e.g. "SyncDuke"); those nodes sort first and color differently.
+// ---------------------------------------------------------------------------
+
+var _presence = null;
+function get_presence() {
+	if (_presence)
+		return _presence;
+	if (typeof bbs == "object" && bbs && bbs.mods)
+		_presence = bbs.mods.presence_lib
+		            || (bbs.mods.presence_lib = load({}, "presence_lib.js"));
+	else
+		_presence = load({}, "presence_lib.js");
+	return _presence;
+}
+
+// In-use nodes for the panel, players of `marker` first, excluding our own node.
+// Each entry { num, name, rest, playing }.
+function live_nodes(maxn, marker) {
+	var presence = get_presence();
+	var nl = system.node_list, out = [], n;
+	var mynode = (typeof bbs == "object" && bbs && bbs.node_num) ? bbs.node_num : 0;
+	var is_sysop = (typeof user == "object" && user && user.is_sysop) ? true : false;
+	for (n = 0; n < nl.length; n++) {
+		var nd = system.get_node(n + 1);
+		if (nd.status != NODE_INUSE && nd.status != NODE_QUIET)
+			continue;
+		if (mynode && (n + 1) == mynode)
+			continue;
+		var full = plain(presence.node_status(nd, is_sysop, {}, n));
+		var rest = plain(presence.node_status(nd, is_sysop, { exclude_username: true }, n));
+		if (!full.length)
+			continue;
+		var namelen = full.length - rest.length;
+		if (namelen < 0)
+			namelen = 0;
+		out.push({ num: n + 1, name: full.substr(0, namelen), rest: rest,
+		           playing: (marker && full.indexOf(marker) >= 0) });
+	}
+	out.sort(function (a, b) {
+		if (a.playing != b.playing) return a.playing ? -1 : 1;
+		return a.num - b.num;
+	});
+	if (maxn && out.length > maxn)
+		out = out.slice(0, maxn);
+	return out;
+}
+
+// One node cell, exactly `cw` visible chars: the name bright (green for a player
+// of this game, else white) and the activity/connection normal grey. Clipped (no
+// wrap). Color codes are zero-width so the visible width stays cw.
+function node_cell(node, cw) {
+	var nc = node.playing ? "\1h\1g" : "\1h\1w";
+	if (node.name.length >= cw)
+		return nc + clip(node.name, cw) + "\1n";
+	var rw = cw - node.name.length;
+	return nc + node.name + "\1n" + rpad(clip(node.rest, rw), rw) + "\1n";
+}
+
+function blank_cell(cw) { return rpad("", cw); }
+
+this;

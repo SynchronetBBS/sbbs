@@ -229,9 +229,31 @@ int syncduke_map_key(const char *seq, int len, int gameplay)
 }
 
 /* ---- terminal pixel-canvas size, learned from probe replies (0 = unknown) ---- */
-static int g_term_px_w, g_term_px_h;    /* text-area px (ESC[14t / cursor estimate): sixel/out sizing */
+static int g_term_px_w, g_term_px_h;    /* text-area px (ESC[14t / cell*grid estimate): sixel/out sizing */
 static int g_cell_w, g_cell_h;          /* cell pixel size from ESC[16t */
 static int g_gfx_w, g_gfx_h;            /* graphics-canvas px from XTSMGRAPHICS: JXL fill/center */
+static int g_grid_rows, g_grid_cols;    /* text grid, from the startup size probe's cursor report */
+static int g_px_exact;                  /* term_px came from ESC[14t (authoritative): don't re-estimate */
+
+/* syncduke.ini [video] use_cell_size: when the terminal didn't report exact pixels
+ * (ESC[14t), estimate the window from its reported CELL size (ESC[16t) x the text grid
+ * rather than assuming an 8x16 font -- so a non-SyncTERM sixel terminal with a larger
+ * font still fills its window. Set by syncduke_config.c; default on. */
+int syncduke_use_cell_size = 1;
+
+/* (Re)derive the text-area pixel size from the best available probe data, unless
+ * ESC[14t already gave it exactly. Called whenever a cell-size or grid report lands,
+ * so the two replies can arrive in either order. */
+static void syncduke_estimate_px(void)
+{
+	int cw, ch;
+	if (g_px_exact || g_grid_rows <= 0 || g_grid_cols <= 0)
+		return;
+	cw = (syncduke_use_cell_size && g_cell_w > 0) ? g_cell_w : 8;
+	ch = (syncduke_use_cell_size && g_cell_h > 0) ? g_cell_h : 16;
+	g_term_px_w = g_grid_cols * cw;
+	g_term_px_h = g_grid_rows * ch;
+}
 
 int syncduke_term_px_w(void) { return g_term_px_w; }
 int syncduke_term_px_h(void) { return g_term_px_h; }
@@ -304,8 +326,8 @@ static int csi_len;
  * toggles steering; syncduke_io.c keeps the terminal's SGR tracking in sync. */
 #define SYNCDUKE_MOUSE_IDLE_MS   600   /* relax steer/fire after this long with no report */
 
-volatile int    syncduke_mouse_turn;   /* -> angvel  (player.c getinput) */
-volatile int    syncduke_mouse_fire;   /* -> Fire bit (player.c getinput) */
+volatile int syncduke_mouse_turn;      /* -> angvel  (player.c getinput) */
+volatile int syncduke_mouse_fire;      /* -> Fire bit (player.c getinput) */
 
 /* Continuous arrow-key turn level (gameplay), the real fix for sluggish/jerky turning.
  * Duke reads the turn keys per sim-tic from KB_KeyDown[], but on a terminal the door only
@@ -494,14 +516,19 @@ static void csi_final(char fin, int gameplay, int now)
 			return;
 		case 't':                                       /* window-op reply: 4=text-area px, 6=cell px */
 			if (csi_params(p, 4) >= 3) {
-				if (p[0] == 4)      { g_term_px_h = p[1]; g_term_px_w = p[2]; }   /* ESC[14t reply */
-				else if (p[0] == 6) { g_cell_h    = p[1]; g_cell_w    = p[2]; }   /* ESC[16t reply */
+				if (p[0] == 4) { g_term_px_h = p[1]; g_term_px_w = p[2]; g_px_exact = 1; }  /* ESC[14t: exact text-area px (authoritative) */
+				else if (p[0] == 6) { g_cell_h = p[1]; g_cell_w = p[2]; syncduke_estimate_px(); }  /* ESC[16t: cell px -> refine estimate */
 			}
 			return;
 		case 'R':                                       /* ESC[rows;cols R (cursor-position report) */
-			/* First report (from the startup size probe at 999;999) gives the canvas
-			 * size; every report ALSO acks one in-flight frame's DSR (pacing). */
-			if (csi_params(p, 2) >= 2 && g_term_px_w == 0) { g_term_px_h = p[0] * 16; g_term_px_w = p[1] * 8; }
+			/* The FIRST report (from the startup size probe at 999;999) gives the text
+			 * grid, from which we estimate the pixel canvas (cell size x grid, see
+			 * syncduke_estimate_px); every report ALSO acks one in-flight frame's DSR
+			 * (pacing). Capture the grid once -- later reports sit at the cursor we set. */
+			if (csi_params(p, 2) >= 2 && g_grid_rows == 0) {
+				g_grid_rows = p[0]; g_grid_cols = p[1];
+				syncduke_estimate_px();
+			}
 			syncduke_pace_ack();
 			return;
 		case 'c':                                       /* device-attributes reply (DA1 ESC[c / CTDA ESC[<c) */
@@ -677,8 +704,8 @@ void syncduke_input_pump(int fd, int now, int gameplay)
  * non-blocking so the game loop never stalls waiting for a key. */
 int syncduke_input_fd(void)
 {
-	static int  fd = -2;    /* -2 = not yet resolved */
-	int         ds;
+	static int fd = -2;     /* -2 = not yet resolved */
+	int        ds;
 
 	if (fd != -2)
 		return fd;

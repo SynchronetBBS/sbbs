@@ -3,3 +3,18 @@
 # NOT ignored here -- leave it untracked so a sysop's edited config is visible.
 /syncduke
 /syncduke.exe
+
+# Game data: the Duke Nukem 3D GRP is supplied by the sysop (the shareware GRP is
+# freely redistributable but not version-controlled here -- it's ~11 MB).
+*.grp
+*.GRP
+
+# Door runtime artifacts written into this dir on a dev/test run without -home
+# (the live door uses a per-user -home dir instead): Duke's config, saved games,
+# recorded demos, and the optional debug log.
+duke3d.cfg
+*.sav
+*.SAV
+*.dmo
+*.DMO
+syncduke.log
