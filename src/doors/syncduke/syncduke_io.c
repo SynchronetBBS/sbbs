@@ -30,6 +30,7 @@
   #include <winsock2.h>        /* the door sink is a Winsock SOCKET (send/ioctlsocket) */
   #include <ws2tcpip.h>        /* IPPROTO_TCP / TCP_NODELAY */
   #include <windows.h>         /* QueryPerformanceCounter (monotonic clock) */
+  #include <io.h>              /* _access/_unlink (per-user full-res sixel flag file) */
 #else
   #include <errno.h>
   #include <unistd.h>
@@ -66,6 +67,27 @@ static int         g_use_sock;                  /* 1 = writing to the socket */
 static int         g_fd = 1;           /* socket / stdout fd */
 #endif
 
+/* Per-user "full-res sixel" preference (vsc=1 instead of the default half-res 2:1-aspect),
+ * made sticky via a presence flag-file in the per-user CWD -- syncduke_config.c chdir's into
+ * the -home dir before main(), so a bare relative name lands in the player's own dir. */
+static int syncduke_sixel_fullres;
+#ifdef _WIN32
+#  define SD_FULLRES_PRESENT() (_access("syncduke.fullres", 0) == 0)
+#  define SD_FULLRES_REMOVE()  _unlink("syncduke.fullres")
+#else
+#  define SD_FULLRES_PRESENT() (access("syncduke.fullres", F_OK) == 0)
+#  define SD_FULLRES_REMOVE()  unlink("syncduke.fullres")
+#endif
+static void syncduke_save_fullres(void)
+{
+	if (syncduke_sixel_fullres) {
+		FILE *f = fopen("syncduke.fullres", "w");
+		if (f)
+			fclose(f);
+	} else
+		SD_FULLRES_REMOVE();
+}
+
 /* Best-effort terminal restore on a NORMAL exit (e.g. the QUIT menu): hand the
  * BBS back a terminal with sixel-scrolling, autowrap and the cursor re-enabled.
  * A direct blocking write (not the non-blocking frame path) so it isn't dropped
@@ -100,6 +122,7 @@ static void syncduke_io_init(void)
 	signal(SIGPIPE, SIG_IGN);   /* a write to a closed socket returns EPIPE, not a fatal signal */
 #endif
 	atexit(syncduke_term_restore);
+	syncduke_sixel_fullres = SD_FULLRES_PRESENT();   /* sticky per-user full-res sixel preference */
 	if ((s = getenv("SYNCDUKE_SIXELOUT")) != NULL) {   /* capture mode (offline test) */
 		g_file = s;
 		g_file_mode = 1;
@@ -277,7 +300,10 @@ static void syncduke_scale_fb(const uint8_t *fb, int sxw, int sxh)
 /* Graphics tiers SyncDuke can present (F4 cycles through the available ones).
  * SIXEL and JXL are pixel tiers; HALF/BLOCKS/QUADRANT/SEXTANT are termgfx
  * text/block-character tiers -- a SyncTERM-independent low-bandwidth fallback. */
-enum sd_tier { SD_SIXEL = 0, SD_JXL, SD_HALF, SD_BLOCKS, SD_QUADRANT, SD_SEXTANT };
+/* SD_SIXEL_FULL sits BELOW the text tiers so sd_is_text_tier() (>= SD_HALF) stays correct.
+ * It's the sixel tier encoded at full vertical resolution (vsc=1) instead of the default
+ * half-res-with-2:1-aspect, for non-SyncTERM terminals that ignore the sixel raster aspect. */
+enum sd_tier { SD_SIXEL = 0, SD_JXL, SD_SIXEL_FULL, SD_HALF, SD_BLOCKS, SD_QUADRANT, SD_SEXTANT };
 
 static int sd_is_text_tier(int t) { return t >= SD_HALF; }
 
@@ -452,6 +478,7 @@ static const char *sd_tier_name(int t)
 	switch (t) {
 		case SD_JXL:      return "jxl";
 		case SD_SIXEL:    return "sixel";
+		case SD_SIXEL_FULL: return "sixel-full";
 		case SD_HALF:     return "half-block";
 		case SD_BLOCKS:   return "blocks+shades";
 		case SD_QUADRANT: return "quadrant";
@@ -467,6 +494,14 @@ static const char *sd_tier_name(int t)
 /* The tier auto-selected when there's no F4 override: jxl on a JXL-capable SyncTERM,
  * sixel on a sixel-capable terminal, else the text/block fallback (half-block) so a
  * terminal with neither (e.g. Windows conhost) still renders the game. */
+/* The sixel tier to use by default: the full-res variant only when the user opted in -- and
+ * only on a non-SyncTERM client, since SyncTERM scales sixels itself so full-res is moot there
+ * (and vsc stays 2 there regardless; see present()). */
+static int sd_sixel_default(void)
+{
+	return (syncduke_sixel_fullres && !syncduke_is_syncterm()) ? SD_SIXEL_FULL : SD_SIXEL;
+}
+
 static int sd_auto_tier(void)
 {
 #ifdef WITH_JXL
@@ -474,7 +509,7 @@ static int sd_auto_tier(void)
 		return SD_JXL;
 #endif
 	if (syncduke_have_sixel())
-		return SD_SIXEL;
+		return sd_sixel_default();
 	if (syncduke_probe_replied())
 		return SD_HALF;        /* terminal answered the probe but advertises no sixel/JXL */
 	return SD_SIXEL;           /* no reply yet: optimistic (most BBS clients are SyncTERM) */
@@ -488,12 +523,16 @@ static int sd_auto_tier(void)
  * cell-diff shadow is now stale). */
 static void syncduke_show_label(const char *text, int clear)
 {
-	int  n, cols, pad;
+	int  n, cols, pad, cw;
 	char buf[220];
 
 	if (syncduke_stats_on)
 		return;
-	cols = (syncduke_out_w > 0 ? syncduke_out_w : 640) / 8;
+	cw   = syncduke_term_cell_w() > 0 ? syncduke_term_cell_w() : 8;
+	cols = (syncduke_out_w > 0 ? syncduke_out_w : 640) / cw;   /* real cell width: a wide font has
+	                                                            * fewer columns than out_w/8, which
+	                                                            * over-counted and pushed the centered
+	                                                            * label off the right of the screen */
 	pad  = (cols - (int)strlen(text)) / 2;
 	if (pad < 0)
 		pad = 0;
@@ -518,7 +557,7 @@ static void syncduke_show_label(const char *text, int clear)
  * so they aren't offered on a CP437 SyncTERM. Intercepted in syncduke_input (not Duke). */
 void syncduke_tier_cycle(void)
 {
-	int  avail[6], n = 0, i, eff, cur = 0;
+	int  avail[8], n = 0, i, eff, cur = 0;
 	char line[80];
 
 #ifdef WITH_JXL
@@ -527,6 +566,10 @@ void syncduke_tier_cycle(void)
 #endif
 	if (syncduke_have_sixel() || !syncduke_probe_replied())   /* skip sixel where it can't render */
 		avail[n++] = SD_SIXEL;
+	/* Non-SyncTERM: a second sixel stop encoded full-res (vsc=1) for terminals that ignore the
+	 * 2:1 raster aspect (e.g. WezTerm); SyncTERM scales sixels itself, so it's skipped there. */
+	if ((syncduke_have_sixel() || !syncduke_probe_replied()) && !syncduke_is_syncterm())
+		avail[n++] = SD_SIXEL_FULL;
 	avail[n++] = SD_HALF;
 	avail[n++] = SD_BLOCKS;
 
@@ -535,6 +578,10 @@ void syncduke_tier_cycle(void)
 		if (avail[i] == eff)
 			cur = i;
 	syncduke_tier_force = avail[(cur + 1) % n];
+	if (syncduke_tier_force == SD_SIXEL || syncduke_tier_force == SD_SIXEL_FULL) {
+		syncduke_sixel_fullres = (syncduke_tier_force == SD_SIXEL_FULL);
+		syncduke_save_fullres();   /* persist the vertical-scaling choice per-user */
+	}
 
 	/* tier switch: clear the pipeline + force a repaint so the new tier paints at once,
 	 * even when the popup is suppressed (stats overlay on). */
@@ -549,7 +596,7 @@ void syncduke_tier_cycle(void)
 	 * the screen is actually cleared here -- so clear directly, like SyncDOOM. */
 	syncduke_out_put("\x1b[2J\x1b[H", 7);
 	syncduke_out_flush();
-	snprintf(line, sizeof(line), "  SyncDuke video: %s   (F4 to cycle)  ", sd_tier_name(syncduke_tier_force));
+	snprintf(line, sizeof(line), "  Video: %s  ", sd_tier_name(syncduke_tier_force));
 	syncduke_show_label(line, 0);   /* cosmetic label only; the screen is already cleared */
 	fprintf(stderr, "syncduke: video tier -> %s\n", sd_tier_name(syncduke_tier_force));
 }
@@ -852,7 +899,7 @@ void syncduke_present(void)
 	 * SyncTERM, whose cterm treats pad as an integer horizontal scale; a strict-DEC
 	 * terminal would draw a half-width image, so others keep full width (pad=1). The
 	 * sixel is encoded at out/hsc x out/vsc and the terminal scales it back to full. */
-	vsc = SYNCDUKE_SIXEL_SCALE;
+	vsc = (syncduke_sixel_fullres && !syncduke_is_syncterm()) ? 1 : SYNCDUKE_SIXEL_SCALE;   /* full-res opt-in */
 	hsc = syncduke_is_syncterm() ? SYNCDUKE_SIXEL_SCALE : 1;
 
 	/* De-dupe (SyncDOOM-style: memcmp the native framebuffer): if the game image,
@@ -892,7 +939,8 @@ void syncduke_present(void)
 	 * (re)definition when (re)entering the sixel tier from another tier: jxl/text never
 	 * define the registers, and a session that started in jxl has none -- so the first sixel
 	 * frame would reference undefined registers and render BLACK on SyncTERM. */
-	emit_pal = pal_dirty || !syncduke_is_syncterm() || syncduke_last_tier != SD_SIXEL;
+	emit_pal = pal_dirty || !syncduke_is_syncterm()
+	           || (syncduke_last_tier != SD_SIXEL && syncduke_last_tier != SD_SIXEL_FULL);
 
 	if (sd_is_text_tier(tier)) {
 		/* text/block tier: the renderer positions each cell absolutely and cell-diffs
@@ -965,7 +1013,9 @@ void syncduke_present(void)
 			int      sxh = sdh / vsc;
 			uint64_t t0;
 
-			tier = SD_SIXEL;
+			if (tier != SD_SIXEL_FULL)
+				tier = SD_SIXEL;   /* normalize a JXL-failure fallback to sixel, but keep
+			                        * SD_SIXEL_FULL so last_tier/stats show "sixel-full" */
 			sxh -= sxh % 6;
 			syncduke_scale_fb(fb, sxw, sxh);
 			t0 = syncduke_now_us();

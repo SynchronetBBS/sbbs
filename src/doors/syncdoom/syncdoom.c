@@ -216,6 +216,8 @@ static int cell_height(int lines)
 
 enum frame_mode { MODE_PPM = 0, MODE_JXL = 1, MODE_TEXT = 2, MODE_SIXEL = 3 };
 static enum frame_mode g_mode = MODE_PPM;
+static int             g_sixel_fullres = 0; // full-res sixel (vsc=1, no terminal scaling) for pan-
+                                            // ignoring terminals (WezTerm); per-user persisted
 static int             g_force_text = 0; // -text: force the block-char tier
 static rt_charset_t    g_rt_charset = RT_CP437; // -charset (terminal.ini will set this)
 static rt_mode_t       g_rt_mode    = RT_HALF; // -mode override
@@ -234,7 +236,7 @@ static bool g_always_run = true;
 // renders -- e.g. SyncTERM is CP437-only and shows boxes for the UTF-8 quadrant
 // /sextant tiers). The state list is built lazily at first cycle from whatever
 // tier startup selected.
-struct vstate { enum frame_mode mode; rt_mode_t rt; rt_charset_t cs; const char *label; };
+struct vstate { enum frame_mode mode; rt_mode_t rt; rt_charset_t cs; const char *label; int fullres; };
 static struct vstate g_vstates[8];
 static int           g_vstate_n = 0;
 static int           g_vstate_i = 0;
@@ -243,6 +245,7 @@ static int           g_clear_row1  = 0;  // erase the top row next frame (a dism
                                          // strands there in a letterboxed window -- frame won't repaint it)
 
 static void cycle_video(void);
+void        sd_save_user_prefs(void); // persist per-user prefs (cycle_video uses it before its defn)
 static void toggle_pipeline(void); // Ctrl-T: cycle frame-pipeline depth + persist
 static void toggle_stats(void);    // Ctrl-S: toggle the live stats overlay (session-only)
 static void toggle_mouse(void);    // Ctrl-O: toggle mouse steering on/off + persist
@@ -564,7 +567,7 @@ static void emit_frame_sixel(int w, int h)
 	// frame encodes at native res (not a downscale); other sixel terminals get pad=1
 	// (full width, half the bands, the vertical via the 2:1 pixel aspect).  Clamp the
 	// encoded height to whole 6-row bands -- a partial final band garbles under pan>1.
-	int    vsc = SIXEL_SCALE;                      // vertical: always halve
+	int    vsc = (g_is_syncterm || !g_sixel_fullres) ? SIXEL_SCALE : 1; // full-res (1:1) only when opted in
 	int    hsc = g_is_syncterm ? SIXEL_SCALE : 1;  // horizontal: halve only on SyncTERM
 	int    sxw = w / hsc;
 	int    sxh = h / vsc;
@@ -676,7 +679,8 @@ static void emit_overlay(int force)
 	else
 		snprintf(bw, sizeof(bw), "%uKB/s", g_recent_kbps);
 	tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s ",
-	              mode_name(g_mode), g_recent_fps, bw, g_rtt_ms, g_rtt_min,
+	              (g_mode == MODE_SIXEL && g_sixel_fullres) ? "sixel-full" : mode_name(g_mode),
+	              g_recent_fps, bw, g_rtt_ms, g_rtt_min,
 	              max_inflight(), g_inflight_auto ? "/auto" : "");
 
 	if (!force && strcmp(txt, g_ov_last) == 0)
@@ -1663,15 +1667,27 @@ static void build_video_states(void)
 {
 	g_vstate_n = 0;
 	if (g_mode != MODE_TEXT) {
-		g_vstates[g_vstate_n].mode  = g_mode;
-		g_vstates[g_vstate_n].label = mode_name(g_mode);   // "jxl" / "sixel" / "ppm"
+		g_vstates[g_vstate_n].mode    = g_mode;
+		g_vstates[g_vstate_n].fullres = (g_mode == MODE_SIXEL) ? g_sixel_fullres : 0;
+		g_vstates[g_vstate_n].label   = (g_mode == MODE_SIXEL && g_sixel_fullres) ? "sixel-full"
+		                                : mode_name(g_mode);   // "jxl" / "sixel" / "ppm"
 		g_vstate_n++;
+		// Non-SyncTERM sixel: offer the OTHER vertical-scaling variant as an F4 stop. The
+		// default (pan=2 half-res) renders right on terminals that honor the sixel raster
+		// aspect ratio; "sixel-full" (1:1, no scaling) is for those that ignore it (WezTerm).
+		if (g_mode == MODE_SIXEL && !g_is_syncterm) {
+			g_vstates[g_vstate_n].mode    = MODE_SIXEL;
+			g_vstates[g_vstate_n].fullres = !g_sixel_fullres;
+			g_vstates[g_vstate_n].label   = g_sixel_fullres ? "sixel" : "sixel-full";
+			g_vstate_n++;
+		}
 #ifdef WITH_JXL
 		// Offer sixel as a second graphics tier when JXL is the startup tier and the
 		// terminal also speaks sixel, so the player can A/B the two with F4.
 		if (g_mode == MODE_JXL && g_have_sixel) {
-			g_vstates[g_vstate_n].mode  = MODE_SIXEL;
-			g_vstates[g_vstate_n].label = "sixel";
+			g_vstates[g_vstate_n].mode    = MODE_SIXEL;
+			g_vstates[g_vstate_n].fullres = 0;
+			g_vstates[g_vstate_n].label   = "sixel";
 			g_vstate_n++;
 		}
 #endif
@@ -1715,6 +1731,10 @@ static void cycle_video(void)
 		setup_text_mode();               // (re)configures render_text + sets g_mode
 	} else {
 		g_mode = v->mode;
+		if (g_mode == MODE_SIXEL && g_sixel_fullres != v->fullres) {
+			g_sixel_fullres = v->fullres;   // persist the vertical-scaling choice per-user
+			sd_save_user_prefs();
+		}
 	}
 	compute_geometry();
 	apply_sixel_scroll();                // toggle DECSDM (mode 80) for the sixel tier
@@ -1722,7 +1742,7 @@ static void cycle_video(void)
 
 	// Clear (drop the prior tier's bitmap/glyphs) and dwell on a readable label.
 	emit_all("\x1b[2J\x1b[H", 7);
-	snprintf(line, sizeof(line), "  SyncDOOM video: %s   (F4 to cycle)  ", v->label);
+	snprintf(line, sizeof(line), "  Video: %s  ", v->label);
 	pad = (overlay_cols() - (int)strlen(line)) / 2;
 	if (pad < 0)
 		pad = 0;
@@ -2471,6 +2491,7 @@ void sd_save_user_prefs(void)
 	save_pref_bool(&list, "input", "instant_turn", sd_instant_turn,  g_base_instant_turn);
 	save_pref_str (&list, "input", "mouse", mouse_mode_str(g_mouse_mode), mouse_mode_str(g_base_mouse_mode));
 	save_pref_str (&list, "video", "frames_in_flight", frames_in_flight_str(), g_base_frames);
+	save_pref_bool(&list, "video", "sixel_fullres", g_sixel_fullres, 0);
 	f = fopen(g_user_ini_path, "w");
 	if (f != NULL) {
 		iniWriteFile(f, list);
@@ -2513,6 +2534,7 @@ static void load_user_prefs(void)
 	iniGetString(ini, "video", "frames_in_flight", "", val);
 	if (val[0])
 		set_frames_in_flight(val);
+	g_sixel_fullres = iniGetBool(ini, "video", "sixel_fullres", g_sixel_fullres);
 	strListFree(&ini);
 }
 
