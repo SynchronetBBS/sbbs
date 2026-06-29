@@ -213,8 +213,8 @@ void syncduke_out_flush(void)
  * probe (syncduke_term_px_*): 640x384 on an 80x24 terminal, 640x400 on 80x25, etc. We
  * default to 640x384 (fits a 24-line terminal without overflow) until/unless the
  * probe answers, and cap to the buffer. Width is capped at 640 (80 cols x 8). */
-#define SYNCDUKE_OUT_W_MAX 640
-#define SYNCDUKE_OUT_H_MAX 480
+#define SYNCDUKE_OUT_W_MAX 1024
+#define SYNCDUKE_OUT_H_MAX 640
 #define SYNCDUKE_OUT_W_DEF 640
 #define SYNCDUKE_OUT_H_DEF 384
 static uint8_t syncduke_scaled[SYNCDUKE_OUT_W_MAX * SYNCDUKE_OUT_H_MAX];
@@ -917,9 +917,22 @@ void syncduke_present(void)
 		char wrap[24];
 
 		if (vw < 1 || vh < 1) { vw = syncduke_out_w; vh = syncduke_out_h; }
-		termgfx_geom_fit(vw, vh, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, 640, &sdw, &sdh);
-		termgfx_geom_center(vw, vh, sdw, sdh, syncduke_term_cell_w(), syncduke_term_cell_h(),
-		                    NULL, NULL, &icol, &irow);
+		/* Reserve ONE cell row at the bottom so the sixel never reaches the LAST screen row:
+		 * Windows Terminal (and others that ignore ?80l) scroll a sixel that touches the bottom
+		 * edge, scrolling white lines in below it -- the "white bar" seen only when the image
+		 * fills the window (this window is ~1.6:1, so filling the width forces full height and
+		 * hits the bottom). Centering the fit within vh-cellh lands that one reserved row at the
+		 * very bottom and fills everything above it -- the maximum fill that still clears the
+		 * last row. (cellh unknown pre-probe -> 16; clamp so a tiny window still fits.) */
+		{
+			int cellh = syncduke_term_cell_h() > 0 ? syncduke_term_cell_h() : 16;
+			int fitvh = vh - cellh;
+			if (fitvh < SYNCDUKE_SCREEN_H)
+				fitvh = vh;                              /* don't over-shrink a very short window */
+			termgfx_geom_fit(vw, fitvh, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, 1024, &sdw, &sdh);
+			termgfx_geom_center(vw, fitvh, sdw, sdh, syncduke_term_cell_w(), syncduke_term_cell_h(),
+			                    NULL, NULL, &icol, &irow);
+		}
 		syncduke_out_put(wrap, snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow, icol));
 		/* sixel default placement (for the mouse steer): centered at the cursor cell on
 		 * terminals that honor it; SyncTERM ignores the cursor under ?80l -> top-left. */

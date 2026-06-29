@@ -2605,7 +2605,7 @@ static void toggle_mouse(void)
 // the largest 8:5 rectangle into the viewport, capped at g_scale_max width.
 static void compute_geometry(void)
 {
-	int vw, vh, cw, ch;
+	int vw, vh, cw, ch, fitvh;
 
 	g_last_fb_ok = 0;                   // geometry changed: same framebuffer now renders differently
 	// Did we actually MEASURE the window, or are we guessing from cols*rows?
@@ -2635,6 +2635,8 @@ static void compute_geometry(void)
 	     : (g_cfg_cell_h > 0 ? g_cfg_cell_h
 	        : (g_is_syncterm ? cell_height(s_lines) : 16));
 
+	fitvh = vh;                         // height the image is fit+centered into; the sixel-fill
+	                                    // branch reserves a bottom row below (see there)
 	if (g_mode == MODE_PPM) {           // PPM is uncompressed, so emit Doom's native
 		s_pxW = 320;                    // 320x200 -- the 640x400 framebuffer is a lossless
 		s_pxH = 200;                    // 2x of it, so this is ~1/4 the bytes (and centered,
@@ -2642,26 +2644,28 @@ static void compute_geometry(void)
 		s_pxW = 640;                    // native: doomgeneric's 640x400 (vh-squished if shorter)
 		s_pxH = (vh < 400) ? vh : 400;
 	} else {
-		// Sixel safety: never UPSCALE the sixel past Doom's native 640x400. Sixel is
-		// near-raw RLE (no real compression), so a window-filling sixel is a huge
-		// per-frame payload -- in a large window it both exceeds what the terminal
-		// will render (xterm caps sixel geometry -> blank/sliver) and floods the
-		// frame pipeline, so the DSR pacing stalls waiting for an ack that never
-		// comes (the door appears frozen on a blank screen). This applies whether or
-		// not we measured real pixel geometry: with allowWindowOps the probe reports
-		// a big window, but a big sixel is still impractical. Native 640x400 always
-		// renders and stays centered/sized via the measured cell size. JXL/PPM
-		// (SyncTERM, real compression / drawn small) keep the full g_scale_max.
-		int cap  = (g_mode == MODE_SIXEL && (g_scale_max == 0 || g_scale_max > 640))
-		           ? 640 : g_scale_max;
-		// Fit Doom's native 640x400 into the canvas, capped, aspect-preserving, with
-		// the <=8% letterbox stretch -- shared with SyncDuke (termgfx/geometry.c).
-		termgfx_geom_fit(vw, vh, 640, 400, cap, &s_pxW, &s_pxH);
+		// Sixel fill: scale up to fill the window, capped at 1024 wide (matching SyncDuke)
+		// instead of the old hard 640. Sixel is near-raw RLE so a window-filling frame is a
+		// big payload, but the de-dupe + DSR pacing handle the rate, and the bottom-row
+		// reserve below keeps the terminal from mis-rendering a sixel that reaches its LAST
+		// text row -- Windows Terminal (and others that ignore ?80l) scroll white lines in
+		// below such a sixel. The old hard 640 cap sidestepped that only by never filling.
+		// JXL/PPM keep the full g_scale_max (real compression / drawn small via APC -- they
+		// position by pixel offset, not a text cell, so they have no last-row quirk).
+		int cap  = (g_mode == MODE_SIXEL && (g_scale_max == 0 || g_scale_max > 1024))
+		           ? 1024 : g_scale_max;
+		// Reserve ONE cell row at the bottom for the sixel tier so the image never reaches the
+		// last text row; centering within fitvh (below) then lands that row at the very bottom.
+		if (g_mode == MODE_SIXEL && vh > ch * 4)
+			fitvh = vh - ch;
+		// Fit Doom's native 640x400 into the canvas, capped, aspect-preserving, with the
+		// <=8% letterbox stretch -- shared with SyncDuke (termgfx/geometry.c).
+		termgfx_geom_fit(vw, fitvh, 640, 400, cap, &s_pxW, &s_pxH);
 	}
 
 	// Center the image in the window: pixel offset for the APC DX/DY (SyncTERM
 	// JXL/PPM), cell offset for the sixel text cursor -- shared with SyncDuke.
-	termgfx_geom_center(vw, vh, s_pxW, s_pxH, cw, ch,
+	termgfx_geom_center(vw, fitvh, s_pxW, s_pxH, cw, ch,
 	                    &g_img_x, &g_img_y, &g_img_col, &g_img_row);
 
 	// Sixel is positioned by TEXT CELL, but the image is sized in pixels. Without
