@@ -48,9 +48,22 @@
 #include "text.h"       /* termgfx: text/block render tiers (rt_config / rt_render_frame) */
 #include "geometry.h"   /* termgfx: shared image fit/center (shared with SyncDOOM) */
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller */
+#include "audio_mgr.h"  /* termgfx: SyncTERM audio-APC manager (digital SFX) */
 
 /* emit a NUL-terminated control string (no embedded NULs) without hand-counting */
 static void syncduke_out_puts(const char *s) { syncduke_out_put(s, strlen(s)); }
+
+/* SyncTERM audio: the per-session manager. syncduke_stubs.c's FX_Play* feed SFX
+ * into it; syncduke_input.c feeds it inbound replies (the cap probe). Its emit
+ * callback stages bytes through syncduke_out_put (flushed with the frame).
+ * NULL until syncduke_io_init creates it; tier < 1 => silent. */
+termgfx_audio_t *sd_audio = NULL;
+
+static void sd_audio_emit(void *ctx, const void *buf, size_t len)
+{
+	(void)ctx;
+	syncduke_out_put(buf, len);
+}
 
 /* --- staged output buffer --- */
 static uint8_t *   g_out;
@@ -122,6 +135,8 @@ static void syncduke_io_init(void)
 	int         ds;
 
 	g_inited = 1;
+	if (sd_audio == NULL)
+		sd_audio = termgfx_audio_create(sd_audio_emit, NULL);
 #ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);   /* a write to a closed socket returns EPIPE, not a fatal signal */
 #endif
@@ -852,6 +867,7 @@ void syncduke_present(void)
 		syncduke_out_puts("\x1b[c\x1b[<c");      /* DA1 + CTDA: detect sixel (DA1 param 4 / CTDA cap 4) + SyncTERM; a no-sixel reply (conhost) -> text tier */
 		syncduke_out_puts(termgfx_query_jxl);    /* Q;JXL: SyncTERM replies ESC[=1;{0,1}-n -> JXL/APC tier when supported */
 		syncduke_out_puts("\x1b[?u");            /* kitty keyboard-protocol query: a CSI?<flags>u reply -> true key-up (hold-to-move) */
+		termgfx_audio_probe(sd_audio);           /* Q;libsndfile: SyncTERM replies ESC[=7;100;{0,1}n -> digital-SFX tier */
 		syncduke_dsr_sent(syncduke_now_ms());    /* the probe's ESC[6n is a DSR too (keeps the RTT ring aligned) */
 		cleared    = 1;
 		cleared_ms = syncduke_now_ms();

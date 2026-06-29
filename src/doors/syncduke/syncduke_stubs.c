@@ -9,9 +9,38 @@
  */
 
 #include <stdint.h>
+#include <stddef.h>
 #include "build.h"
 #include "audiolib/fx_man.h"
 #include "audiolib/music.h"
+#include "audio_mgr.h"          /* termgfx: SyncTERM audio-APC manager */
+
+/* SyncTERM audio: the per-session manager lives in syncduke_io.c; soundsiz[] is
+ * the engine's loaded-sample byte length (global.c), indexed by sound number.
+ * A NULL manager / tier < 1 makes the calls below harmless no-ops (silent). */
+extern termgfx_audio_t *sd_audio;
+extern int32_t          soundsiz[];
+
+/* Ship a one-shot Duke SFX to the terminal. ptr/soundsiz[num] is a complete
+ * VOC/WAV file (libsndfile decodes it); distance is Apogee 0..255 with 0 =
+ * closest/loudest. Returns FX_Ok so the engine does NOT track a voice handle
+ * (fire-and-forget): no Sound[].num concurrency leak, no completion callback
+ * needed -- SyncTERM plays the burst out on its own. (Pan/3D is a follow-up.) */
+static int sd_fx_play(uint8_t *ptr, int distance, uint32_t callbackval)
+{
+	int num = (int)callbackval;
+	int vol;
+
+	if (sd_audio == NULL || ptr == NULL || num < 0 || soundsiz[num] <= 0)
+		return FX_Ok;
+	if (distance < 0)
+		distance = 0;
+	if (distance > 255)
+		distance = 255;
+	vol = (255 - distance) * 100 / 255;
+	termgfx_audio_sfx_file(sd_audio, num, ptr, (size_t)soundsiz[num], vol, 0);
+	return FX_Ok;
+}
 
 /* --- FX: digital sound effects --- */
 char *FX_ErrorString(int e) { (void)e; return ""; }
@@ -33,10 +62,10 @@ int32_t FX_StopSound(int handle) { (void)handle; return FX_Ok; }
 int32_t FX_StopAllSounds(void) { return FX_Ok; }
 int  FX_PlayVOC3D(uint8_t *ptr, int32_t pitchoffset, int32_t angle, int32_t distance,
                   int32_t priority, uint32_t callbackval)
-{ (void)ptr; (void)pitchoffset; (void)angle; (void)distance; (void)priority; (void)callbackval; return 0; }
+{ (void)pitchoffset; (void)angle; (void)priority; return sd_fx_play(ptr, (int)distance, callbackval); }
 int  FX_PlayWAV3D(uint8_t *ptr, int pitchoffset, int angle, int distance,
                   int priority, uint32_t callbackval)
-{ (void)ptr; (void)pitchoffset; (void)angle; (void)distance; (void)priority; (void)callbackval; return 0; }
+{ (void)pitchoffset; (void)angle; (void)priority; return sd_fx_play(ptr, distance, callbackval); }
 int  FX_PlayLoopedVOC(uint8_t *ptr, int32_t loopstart, int32_t loopend,
                       int32_t pitchoffset, int32_t vol, int32_t left, int32_t right,
                       int32_t priority, uint32_t callbackval)

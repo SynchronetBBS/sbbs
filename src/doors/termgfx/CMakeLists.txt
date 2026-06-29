@@ -16,6 +16,8 @@ add_library(termgfx STATIC
     apc.c
     jxl.c
     caps.c
+    audio.c
+    audio_mgr.c
     text.c
     term.c
     geometry.c

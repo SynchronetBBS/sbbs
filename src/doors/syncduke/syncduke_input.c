@@ -43,6 +43,9 @@
 #include "syncduke.h"
 #include "keyboard.h"   /* sc_* scancode constants (pure #defines) */
 #include "caps.h"       /* termgfx: termgfx_caps_parse_jxl (cap-probe reply scan) */
+#include "audio_mgr.h"  /* termgfx: SyncTERM audio-APC manager (cap-probe feed) */
+
+extern termgfx_audio_t *sd_audio;   /* the audio manager (owned by syncduke_io.c) */
 
 /* How many presented frames a key stays "down" after its last byte -- this bridges
  * the gaps in terminal auto-repeat so a held key reads as continuously down. Three
@@ -891,6 +894,19 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 		return;
 	}
 #endif
+
+	termgfx_audio_feed(sd_audio, buf, n);   /* resolve the audio cap probe (ESC[=7;100;Xn) */
+	{
+		static int sd_prev_tier = -2;       /* log the negotiated audio tier once it resolves */
+		int        t = termgfx_audio_tier(sd_audio);
+		if (t != sd_prev_tier) {
+			sd_prev_tier = t;
+			syncduke_log("audio: tier=%d (%s)", t,
+			             t == 1 ? "digital -- SFX should play" :
+			             t == 0 ? "audio APC but no libsndfile -- silent" :
+			             "no audio APC reply -- old SyncTERM or no audio");
+		}
+	}
 
 	for (i = 0; i < n; i++) {
 		uint8_t c = buf[i];
