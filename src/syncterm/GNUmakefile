@@ -515,9 +515,10 @@ else
   EXTRA_LIBS += -lmp3lame
   EXTRA_LIBS += -lmpg123
   EXTRA_LIBS += -lopus
-  EXTRA_LIBS += -logg
   EXTRA_LIBS += -lvorbis
   EXTRA_LIBS += -lvorbisenc
+  EXTRA_LIBS += -logg
+  EXTRA_LIBS += -lshlwapi
  else ifeq ($(os),darwin)
   CFLAGS += -I${3RDP_ROOT}/darwin.release/libsndfile/include -DSTATIC_SNDFILE
   LDFLAGS += -L${3RDP_ROOT}/darwin.release/libsndfile/lib -L${3RDP_ROOT}/${os}.release/flac/lib -L${3RDP_ROOT}/${os}.release/lame/lib -L${3RDP_ROOT}/${os}.release/ogg/lib -L${3RDP_ROOT}/${os}.release/opus/lib -L${3RDP_ROOT}/${os}.release/mpg123/lib -L${3RDP_ROOT}/${os}.release/vorbis/lib
@@ -526,9 +527,9 @@ else
   EXTRA_LIBS += -lmp3lame
   EXTRA_LIBS += -lmpg123
   EXTRA_LIBS += -lopus
-  EXTRA_LIBS += -logg
   EXTRA_LIBS += -lvorbis
   EXTRA_LIBS += -lvorbisenc
+  EXTRA_LIBS += -logg
  else
   ifdef STATIC_SNDFILE
    # Static link — headers + .a/.lib supplied by the environment.  Use
