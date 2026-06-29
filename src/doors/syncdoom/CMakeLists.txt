@@ -17,7 +17,7 @@ set(SOURCES
     dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c
     d_iwad.c d_loop.c d_main.c d_mode.c d_net.c f_finale.c f_wipe.c g_game.c
     hu_lib.c hu_stuff.c info.c i_cdmus.c i_endoom.c i_joystick.c i_scale.c
-    i_sound.c i_system.c i_timer.c memio.c m_argv.c m_bbox.c m_cheat.c
+    i_sound.c i_termsound.c i_system.c i_timer.c memio.c m_argv.c m_bbox.c m_cheat.c
     m_config.c m_controls.c m_fixed.c m_menu.c m_misc.c m_random.c p_ceilng.c
     p_doors.c p_enemy.c p_floor.c p_inter.c p_lights.c p_map.c p_maputl.c
     p_mobj.c p_plats.c p_pspr.c p_saveg.c p_setup.c p_sight.c p_spec.c

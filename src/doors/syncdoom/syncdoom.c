@@ -27,6 +27,7 @@
 #include "caps.h"                // termgfx: cap-probe query + reply parsing (JXL)
 #include "geometry.h"            // termgfx: shared image fit/center (shared with SyncDuke)
 #include "pace.h"                // termgfx: shared AIMD pipeline-depth controller
+#include "audio_mgr.h"           // termgfx: SyncTERM audio-APC manager (digital SFX)
 #include "m_argv.h"             // myargc/myargv (set directly for the dedicated path)
 #include "mp_server.h"          // mp_dedicated_main() headless server
 #include "git_hash.h"           // generated: GIT_HASH / GIT_DATE / GIT_TIME (build info)
@@ -483,6 +484,18 @@ static void out_flush(void)
 	if (!out_pending()) { g_out_len = 0; g_out_off = 0; }
 	else if ((int32_t)(now_ms() - g_tx_progress_ms) > (int32_t)OUT_STALL_MS)
 		g_hangup = 1;          // frame can't drain at all -> client silently vanished
+}
+
+// Terminal audio: the SyncTERM audio-APC manager (termgfx). i_termsound.c's
+// sound_module externs sd_audio and feeds SFX into it; we stage its bytes
+// through out_put (flushed with the frame) and feed it inbound replies from
+// pump_input so the capability probe resolves. NULL/tier<1 => silently no sound.
+termgfx_audio_t *sd_audio = NULL;
+
+static void sd_audio_emit(void *ctx, const void *buf, size_t len)
+{
+	(void)ctx;
+	out_put(buf, len);
 }
 
 static void ensure(uint8_t **buf, size_t *cap, size_t need)
@@ -1458,6 +1471,18 @@ static void pump_input(void)
 		ssize_t n = conn_read(buf, sizeof(buf));
 		if (n > 0) {
 			ssize_t i;
+			termgfx_audio_feed(sd_audio, buf, (int)n);   // resolve the audio cap probe
+			{
+				static int sd_prev_tier = -2;            // log the negotiated tier once
+				int        t = termgfx_audio_tier(sd_audio);
+				if (t != sd_prev_tier) {
+					sd_prev_tier = t;
+					dlog("audio: tier=%d (%s)", t,
+					     t == 1 ? "digital -- SFX should play" :
+					     t == 0 ? "audio APC but no libsndfile -- silent" :
+					     "no audio APC reply");
+				}
+			}
 			for (i = 0; i < n; i++) parse_byte(buf[i]);
 			continue;
 		}
@@ -2029,6 +2054,14 @@ void DG_Init(void)
 #endif
 
 	compute_geometry();              // emitted image size + centering (now that the tier is known)
+
+	// Terminal audio: create the SyncTERM audio-APC manager and fire the
+	// libsndfile capability probe. pump_input parses the reply over the first
+	// frames; until then -- and on terminals without the audio APC -- the
+	// manager stays at tier -1 and every SFX is a silent no-op.
+	sd_audio = termgfx_audio_create(sd_audio_emit, NULL);
+	termgfx_audio_probe(sd_audio);
+	out_flush();                     // push the probe query now
 
 	build_video_states();            // seed the F4 cycle now so the startup tier (incl.
 	                                 // graphics) is always one of the cyclable states

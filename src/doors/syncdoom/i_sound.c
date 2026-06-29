@@ -71,8 +71,13 @@ static int snd_mport = 0;
 
 // Compiled-in sound modules:
 
-static sound_module_t *sound_modules[] = 
+// SyncDOOM: terminal SFX module (i_termsound.c) -- ships sound effects to the
+// user's terminal via SyncTERM's audio APC instead of a sound card.
+extern sound_module_t sd_term_sound_module;
+
+static sound_module_t *sound_modules[] =
 {
+    &sd_term_sound_module,
     #ifdef FEATURE_SOUND
     &DG_sound_module,
     #endif
