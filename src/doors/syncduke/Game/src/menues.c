@@ -856,6 +856,21 @@ int probeXduke(int x,int y,int i,int n, int32_t spriteSize)
 			delay_down = 50;
 		}
 
+    // SyncDuke: Home/End jump to the first/last menu item (terminal Home/End in a menu, via
+    // syncduke_input.c).  No repeat-delay needed -- one shot per press, debounced by the clear.
+    if( KB_KeyPressed( sc_Home ) )
+    {
+        KB_ClearKeyDown( sc_Home );
+        mi = 0; sound(KICK_HIT);
+        probey = 0;
+    }
+    if( KB_KeyPressed( sc_End ) )
+    {
+        KB_ClearKeyDown( sc_End );
+        mi = 0; sound(KICK_HIT);
+        probey = n-1;
+    }
+
     if(probey >= n)
         probey = 0;
 
@@ -1455,6 +1470,7 @@ void menus(void)
     extern void syncduke_kb_turn_set(int);
     extern int  syncduke_kb_fastturn(void);
     extern void syncduke_kb_fastturn_set(int);
+    extern int  syncduke_kitty_active(void);      // kitty terminal: native key timing -> hide the feel knobs
     extern int  syncduke_record_enabled(void);   /* SyncDuke: RECORD/demo offered? (off by default) */
 
     getpackets();
@@ -2741,7 +2757,10 @@ else
             c = (320>>1)-120;
             rotatesprite(320<<15,19<<16,65536L,0,MENUBAR,16,0,10,0,0,xdim-1,ydim-1);
             menutext(320>>1,24,0,0,"SETUP CONTROLS");
-            onbar = ( probey == 0 || probey == 2 || probey == 3 || probey == 4 );  // the sliders
+            // Kitty terminals time keys natively (real key-up + Duke's own turn ramp), so the
+            // byte-path feel knobs (KEY TAP/HOLD, TURN SPEED, FAST TURN) do nothing.  Keep them
+            // visible but greyed + non-adjustable, and explain why when one is highlighted.
+            onbar = ( probey == 0 || (!syncduke_kitty_active() && (probey == 2 || probey == 3 || probey == 4)) );
 
             x = probe(c+6,43,16,6);
             switch(x)
@@ -2751,20 +2770,31 @@ else
                 case -3:
                     gametext(320>>1,43+16*6+3,"*** SHORTCUT: CTRL-O ***",0,2+8+16);
                     break;
+                case -4:                // KEY TAP / KEY HOLD / TURN SPEED / FAST TURN hovered:
+                case -5:                // under kitty they're greyed, so say why.  Only one hint
+                case -6:                // shows at a time (each tied to the highlighted row).
+                case -7:
+                    if(syncduke_kitty_active())
+                    {
+                        gametext(320>>1,43+16*6+3,"KEY TIMING & TURN ARE NATIVE",0,2+8+16);
+                        gametext(320>>1,43+16*6+3+9,"IN THIS TERMINAL (KITTY)",0,2+8+16);
+                    }
+                    break;
                 case -1:
                     cmenu(200);
                     probey = 2;
                     break;
                 case 0:                 // STEER SENSITIVITY -- adjusted by bar() below
-                case 2:                 // KEY TAP   -- adjusted by bar() below
-                case 3:                 // KEY HOLD  -- adjusted by bar() below
-                case 4:                 // TURN HOLD -- adjusted by bar() below
+                case 2:                 // KEY TAP   -- adjusted by bar() below (legacy only)
+                case 3:                 // KEY HOLD  -- adjusted by bar() below (legacy only)
+                case 4:                 // TURN SPEED -- adjusted by bar() below (legacy only)
                     break;
                 case 1:                 // MOUSE STEERING on/off (same as Ctrl-O)
                     syncduke_mouse_toggle();
                     break;
-                case 5:                 // FAST TURN on/off
-                    syncduke_kb_fastturn_set(!syncduke_kb_fastturn());
+                case 5:                 // FAST TURN on/off (native under kitty -> no-op there)
+                    if(!syncduke_kitty_active())
+                        syncduke_kb_fastturn_set(!syncduke_kb_fastturn());
                     break;
                 default:
                     break;
@@ -2773,6 +2803,7 @@ else
             {
             short v;
             char  lbl[8];    // SyncDuke: the live 0..63 slider value, drawn just left of the bar
+            int   kpal = syncduke_kitty_active() ? 1 : PHX(-7);   // greyed palette for the disabled knobs
             // Right-justified just left of the bar, with one character of blank space
             // (a digit's width) between the value and the slider trough.
             #define SD_VALX(STR) (c+167+40-16-sd_bignum_width("0")-sd_bignum_width(STR))
@@ -2785,33 +2816,33 @@ else
             menutext(c,43+16*1,SHX(-7),PHX(-7),"MOUSE");
             menutext(c+160+40,43+16*1,SHX(-7),PHX(-7),syncduke_mouse_enabled()?"ON":"OFF");
 
-            // Show each keyboard-feel slider's current 0..63 value right-justified just
-            // left of its bar (drawn after the adjust, so it tracks live) -- the player
-            // sees the exact setting, not only the bar position.
+            // Keyboard-feel knobs: only meaningful on terminals that can't send key-up.  Under
+            // kitty they're greyed (kpal) and non-adjustable (onbar excludes them, so x is never
+            // 2..4), but still shown with their stored values; the "why" hint appears on hover.
             v = syncduke_kb_tap();
-            menutext(c,43+16*2,SHX(-7),PHX(-7),"KEY TAP");
-            bar(c+167+40,43+16*2,&v,1,x==2,SHX(-7),PHX(-7));
+            menutext(c,43+16*2,SHX(-7),kpal,"KEY TAP");
+            bar(c+167+40,43+16*2,&v,1,x==2,SHX(-7),kpal);
             syncduke_kb_tap_set(v);
             sprintf(lbl,"%d",v);
-            menutext(SD_VALX(lbl),43+16*2,SHX(-7),PHX(-7),lbl);
+            menutext(SD_VALX(lbl),43+16*2,SHX(-7),kpal,lbl);
 
             v = syncduke_kb_hold();
-            menutext(c,43+16*3,SHX(-7),PHX(-7),"KEY HOLD");
-            bar(c+167+40,43+16*3,&v,1,x==3,SHX(-7),PHX(-7));
+            menutext(c,43+16*3,SHX(-7),kpal,"KEY HOLD");
+            bar(c+167+40,43+16*3,&v,1,x==3,SHX(-7),kpal);
             syncduke_kb_hold_set(v);
             sprintf(lbl,"%d",v);
-            menutext(SD_VALX(lbl),43+16*3,SHX(-7),PHX(-7),lbl);
+            menutext(SD_VALX(lbl),43+16*3,SHX(-7),kpal,lbl);
 
             v = syncduke_kb_turn();
-            menutext(c,43+16*4,SHX(-7),PHX(-7),"TURN SPEED");
-            bar(c+167+40,43+16*4,&v,1,x==4,SHX(-7),PHX(-7));
+            menutext(c,43+16*4,SHX(-7),kpal,"TURN SPEED");
+            bar(c+167+40,43+16*4,&v,1,x==4,SHX(-7),kpal);
             syncduke_kb_turn_set(v);
             sprintf(lbl,"%d",v);
-            menutext(SD_VALX(lbl),43+16*4,SHX(-7),PHX(-7),lbl);
-            #undef SD_VALX
+            menutext(SD_VALX(lbl),43+16*4,SHX(-7),kpal,lbl);
 
-            menutext(c,43+16*5,SHX(-7),PHX(-7),"FAST TURN");
-            menutext(c+160+40,43+16*5,SHX(-7),PHX(-7),syncduke_kb_fastturn()?"ON":"OFF");
+            menutext(c,43+16*5,SHX(-7),kpal,"FAST TURN");
+            menutext(c+160+40,43+16*5,SHX(-7),kpal,syncduke_kb_fastturn()?"ON":"OFF");
+            #undef SD_VALX
             }
 
             break;

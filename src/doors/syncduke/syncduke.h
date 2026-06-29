@@ -46,6 +46,7 @@ int  syncduke_input_has_raw(void);                  /* a queued raw scancode byt
 int  syncduke_input_pop_raw(void);                  /* next raw scancode byte (0 if none) */
 int  syncduke_input_fd(void);                       /* the input fd (resolved client socket / stdin) */
 int  syncduke_is_syncterm(void);                    /* 1 if the client is SyncTERM (DA reply); cterm 2x sixel scaling */
+int  syncduke_kitty_active(void);                   /* 1 if the kitty keyboard protocol negotiated (true key-up) */
 int  syncduke_jxl_supported(void);                  /* 1 if SyncTERM can decode JXL (CTQJS reply); -> JXL/APC tier */
 int  syncduke_have_sixel(void);                     /* 1 if the terminal advertised sixel (DA1/CTDA cap 4 or SyncTERM) */
 int  syncduke_probe_replied(void);                  /* 1 once the terminal answered the DA capability probe */

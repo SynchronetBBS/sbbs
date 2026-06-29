@@ -103,11 +103,15 @@ static void syncduke_term_restore(void)
 	if (!g_use_sock)
 		return;
 	(void)send(g_iosock, "\x1b[?1003l\x1b[?1006l", 16, 0);
+	if (syncduke_kitty_active())
+		(void)send(g_iosock, "\x1b[<u", 4, 0);   /* pop the kitty keyboard flags we pushed */
 	(void)send(g_iosock, termgfx_term_leave, (int)strlen(termgfx_term_leave), 0);
 #else
 	if (g_fd < 0)
 		return;
 	(void)write(g_fd, "\x1b[?1003l\x1b[?1006l", 16);
+	if (syncduke_kitty_active())
+		(void)write(g_fd, "\x1b[<u", 4);         /* pop the kitty keyboard flags we pushed */
 	(void)write(g_fd, termgfx_term_leave, strlen(termgfx_term_leave));
 #endif
 }
@@ -755,9 +759,10 @@ static void syncduke_emit_overlay(int force)
 			snprintf(bw, sizeof(bw), "%u.%uMB/s", kbps / 1024, (kbps % 1024) * 10 / 1024);
 		else
 			snprintf(bw, sizeof(bw), "%uKB/s", kbps);
-		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums ",
+		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s ",
 		              sd_tier_name(syncduke_last_tier),
-		              fps, bw, rtt, rmin, syncduke_eff_depth(), syncduke_inflight_auto ? "/auto" : "", kb, enc);
+		              fps, bw, rtt, rmin, syncduke_eff_depth(), syncduke_inflight_auto ? "/auto" : "", kb, enc,
+		              syncduke_kitty_active() ? " kbd:kitty" : "");
 	}
 	if (tn < 0)
 		return;
@@ -846,6 +851,7 @@ void syncduke_present(void)
 		syncduke_out_puts(termgfx_term_probe);   /* learn the terminal's pixel canvas */
 		syncduke_out_puts("\x1b[c\x1b[<c");      /* DA1 + CTDA: detect sixel (DA1 param 4 / CTDA cap 4) + SyncTERM; a no-sixel reply (conhost) -> text tier */
 		syncduke_out_puts(termgfx_query_jxl);    /* Q;JXL: SyncTERM replies ESC[=1;{0,1}-n -> JXL/APC tier when supported */
+		syncduke_out_puts("\x1b[?u");            /* kitty keyboard-protocol query: a CSI?<flags>u reply -> true key-up (hold-to-move) */
 		syncduke_dsr_sent(syncduke_now_ms());    /* the probe's ESC[6n is a DSR too (keeps the RTT ring aligned) */
 		cleared    = 1;
 		cleared_ms = syncduke_now_ms();

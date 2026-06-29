@@ -89,6 +89,18 @@ int syncduke_input_pop_raw(void)
 static uint8_t held[128];        /* scancode currently down (awaiting auto-release) */
 static int32_t release_at[128];  /* frame counter value at which to release it */
 
+/* kitty keyboard protocol active: the terminal answered our CSI?u progressive-enhancement
+ * query, so keys arrive as CSI-u events with explicit press/repeat/release.  That gives the
+ * door true key-up (crisp hold-to-move) instead of the auto-release timeout below.  Set when
+ * the report lands (csi_final 'u' case), which also pushes our flags (CSI>11u). */
+static int g_kitty_active;
+
+/* Sticky-crouch toggle: a terminal can't hold a key (no key-up; auto-repeat is laggy), so
+ * momentary crouch (hold Z) is unusable.  Instead 'z' toggles this latch and we re-assert the
+ * Crouch scancode every pump while it's on -- press once to crouch, again to stand.  (Under the
+ * kitty protocol real key-up exists, but crouch stays a toggle for consistency.) */
+static int g_crouch_toggle;
+
 /* Pitch "look" notch posted by PgUp/PgDn taps, consumed once per tic in processinput()
  * (Game/src/player.c).  Signed: + = look up, - = look down; magnitude = pending taps.  This
  * is deliberately NOT a synthetic key-hold: holding Duke's Aim key on a terminal (no key-up,
@@ -124,6 +136,9 @@ static void press(int sc, int now)
 void syncduke_input_expire(int now)
 {
 	int sc;
+	/* Auto-release timed-out presses.  kitty-HELD movement keys carry a far-future release_at
+	 * (see kitty_press) so they stay down until the explicit key-up; momentary press() keys
+	 * (F-keys, Center) still time out here -- needed so they don't stick under kitty. */
 	for (sc = 1; sc < 128; sc++) {
 		if (held[sc] && (int32_t)(now - release_at[sc]) >= 0) {
 			rawq_push((uint8_t)(sc | 0x80));    /* key-up */
@@ -131,6 +146,30 @@ void syncduke_input_expire(int now)
 		}
 	}
 }
+
+/* kitty key-down/up: driven by the terminal's explicit press/release events instead of the
+ * auto-release timeout.  A repeat re-asserts an existing down (idempotent); release clears it. */
+static void kitty_press(int sc)
+{
+	if (sc <= 0 || sc >= 128)
+		return;
+	if (!held[sc])
+		rawq_push((uint8_t)sc);          /* key-down (once; repeats don't re-push) */
+	held[sc]       = 1;
+	release_at[sc] = INT32_MAX;          /* held until the explicit kitty key-up; expire() won't fire */
+}
+
+static void kitty_release(int sc)
+{
+	if (sc <= 0 || sc >= 128)
+		return;
+	if (held[sc]) {
+		rawq_push((uint8_t)(sc | 0x80)); /* key-up */
+		held[sc] = 0;
+	}
+}
+
+int syncduke_kitty_active(void) { return g_kitty_active; }
 
 /*
  * Map one terminal byte or escape sequence to a Build scancode (or -1).
@@ -451,27 +490,154 @@ static int csi_params(int *out, int max)
 	return n;
 }
 
+/* Parse a kitty keyboard-protocol event from csi_par: "CSI <key> ; <mods> : <event> ..."
+ * (mods/event optional).  Returns the key codepoint; *mod gets the modifier value (1 = none;
+ * +1 shift, +2 alt, +4 ctrl, +8 super -- so ctrl alone = 5) and *ev the event type (1 = press,
+ * 2 = repeat, 3 = release).  Works for both the CSI-u key events and the legacy CSI-letter /
+ * CSI-~ functional keys, which carry the same ;mods:event tail under the protocol. */
+static int kitty_key(int *mod, int *ev)
+{
+	int key = 0, v = 0, sub = 0, field = 0, in_sub = 0, i;
+	*mod = 1;
+	*ev  = 1;
+	for (i = 0; i <= csi_len; i++) {
+		char c = (i < csi_len) ? csi_par[i] : ';';   /* sentinel flushes the last field */
+		if (c >= '0' && c <= '9') {
+			if (in_sub)
+				sub = sub * 10 + (c - '0');
+			else
+				v = v * 10 + (c - '0');
+		} else if (c == ':') {
+			in_sub = 1;                              /* a field's first sub-param is the event type */
+			sub = 0;
+		} else if (c == ';') {
+			if (field == 0) {
+				key = v;
+			} else if (field == 1) {
+				if (v)
+					*mod = v;
+				if (in_sub && sub)
+					*ev = sub;
+			}
+			field++;
+			v = 0;
+			sub = 0;
+			in_sub = 0;
+		}
+	}
+	return key;
+}
+
+/* True when csi_par is a kitty RELEASE event (and the protocol is active).  Lets the press-only
+ * key cases (PgUp/PgDn look, Center, F-keys) ignore the matching key-up so they don't fire twice
+ * per tap once every key reports press AND release. */
+static int kitty_release_event(void)
+{
+	int m, e;
+	if (!g_kitty_active)
+		return 0;
+	kitty_key(&m, &e);
+	return e == 3;
+}
+
+/* Dispatch one decoded key byte to its action.  `kev` selects the input model:
+ *   0 = legacy byte path  -> press() with an auto-release timeout (terminal gives no key-up)
+ *   1 = kitty press, 2 = kitty repeat, 3 = kitty release
+ * Door shortcuts/toggles (Ctrl-S/T/O, Ctrl-A..F, sticky crouch) act on a fresh press only; the
+ * game keys hold (kitty, until key-up) or auto-release (byte). */
+static void handle_key(int c, int gameplay, int now, int kev)
+{
+	char cb = (char)c;
+	int  sc;
+
+	if (kev == 3) {                                  /* key-up: release the held game scancode */
+		if (gameplay && (c == 'z' || c == 'Z'))
+			return;                                  /* crouch is a latch, not a hold */
+		sc = syncduke_map_key(&cb, 1, gameplay);
+		if (sc > 0)
+			kitty_release(sc);
+		return;
+	}
+
+	if (kev != 2) {                                  /* a fresh press (byte path or kitty press) */
+		if (c == 0x13) { syncduke_stats_toggle(); return; }   /* Ctrl-S: stats overlay */
+		if (c == 0x14) { syncduke_depth_cycle(); return; }    /* Ctrl-T: pipeline depth */
+		if (c == 0x0f) { syncduke_mouse_toggle(); return; }   /* Ctrl-O: mouse steering */
+		if (c >= 0x01 && c <= 0x06) {                         /* Ctrl-A..F mirror the door's F1..F6 */
+			if (c == 0x01) {                                  /* Ctrl-A = F1 = GAME CONTROLS help */
+				if (gameplay)
+					syncduke_help_request = 1;
+			} else if (c == 0x04) {                           /* Ctrl-D = F4 = cycle graphics tier (like the real F4) */
+				syncduke_tier_cycle();
+			} else {
+				press(sc_F1 + (c - 1), now);                  /* Ctrl-B/C/E/F = Duke F2/F3/F5/F6 (save/load/quicksave) */
+			}
+			return;
+		}
+		if (gameplay && (c == 'z' || c == 'Z')) { g_crouch_toggle = !g_crouch_toggle; return; }   /* sticky crouch */
+	} else if (c == 0x13 || c == 0x14 || c == 0x0f || (c >= 0x01 && c <= 0x06)
+	           || (gameplay && (c == 'z' || c == 'Z'))) {
+		return;                                      /* swallow kitty auto-repeat of a shortcut/toggle */
+	}
+
+	sc = syncduke_map_key(&cb, 1, gameplay);
+	if (sc > 0) {
+		if (kev == 0)
+			press(sc, now);                          /* byte path: timeout release */
+		else
+			kitty_press(sc);                         /* kitty: hold until the release event */
+	}
+}
+
 /* A CSI/SS3 sequence has terminated with final byte `fin`. */
 static void csi_final(char fin, int gameplay, int now)
 {
 	int p[4];
 
 	switch (fin) {
-		case 'A': press(sc_UpArrow, now);    return;   /* arrows: same in both modes */
-		case 'B': press(sc_DownArrow, now);  return;
+		case 'A':                                          /* up arrow   -> forward */
+		case 'B':                                          /* down arrow -> back    */
+		{       /* same in both modes; under kitty, hold until the explicit key-up */
+			int sc = (fin == 'A') ? sc_UpArrow : sc_DownArrow;
+			if (g_kitty_active) {
+				int mod, ev;
+				kitty_key(&mod, &ev);
+				if (ev == 3)
+					kitty_release(sc);
+				else
+					kitty_press(sc);
+			} else
+				press(sc, now);
+		}
+			return;
 		case 'C':   /* right arrow */
 		case 'D':   /* left arrow */
-			/* In gameplay, drive the time-windowed continuous turn (smooth, applied per
-			 * sim-tic); in menus keep the raw scancode for navigation. Rate from the TURN
-			 * SPEED slider, with a FAST TURN turbo boost. */
+		{
+			int sc = (fin == 'C') ? sc_RightArrow : sc_LeftArrow;
+			if (gameplay && g_kitty_active) {
+				/* True key-up available: drive Duke's REAL turn keys so the engine's own
+					 * turn-accel ramp runs -- responsive like the original game.  (The synthetic
+					 * rate below exists only because byte-path auto-repeat flickers KB_KeyDown and
+					 * keeps resetting that ramp; with held key state we don't need it.) */
+				int mod, ev;
+				kitty_key(&mod, &ev);
+				if (ev == 3)
+					kitty_release(sc);
+				else
+					kitty_press(sc);
+				return;
+			}
 			if (gameplay) {
+				/* Byte path: gappy auto-repeat -> a smooth synthetic turn rate applied per
+					 * sim-tic, from the TURN SPEED slider with a FAST TURN turbo boost. */
 				int rate = 2 + g_turn_bar * 3 / 4;         /* TURN SPEED: ~2 (min) .. ~49 angvel/tic */
 				if (syncduke_fast_turn)
 					rate += rate / 2;                      /* FAST TURN: +50% */
 				syncduke_key_turn = (fin == 'C') ? rate : -rate;
 				g_key_turn_ms     = syncduke_in_now_ms();
 			} else
-				press(fin == 'C' ? sc_RightArrow : sc_LeftArrow, now);
+				press(sc, now);                            /* menu navigation */
+		}
 			return;
 		/* Look up/down, terminal-friendly:
 		 *   PgUp / PgDn -> post one fixed pitch "notch" (syncduke_pitch_step), applied once in
@@ -479,20 +645,36 @@ static void csi_final(char fin, int gameplay, int now)
 		 *     look further, hold (auto-repeat) to ramp.  Unlike holding Duke's Aim keys, the
 		 *     notch is frame-rate independent -- a single tap can't saturate to "flying" on a
 		 *     slow link, and there's no held bit to fight Center_View.  Gated on `gameplay`.
-		 *   Home / End -> Center_View (sc_kpad_5): snap the pitch straight back to level (the
-		 *     reliable "un-look", since the notch does not auto-center).
+		 *   Home / End -> in gameplay, Center_View (sc_kpad_5): snap the pitch back to level (the
+		 *     reliable "un-look", since the notch does not auto-center).  In a MENU (no pitch to
+		 *     level) they jump to the first / last item instead (sc_Home/sc_End -> probeXduke).
 		 * SyncTERM/cterm sends PgUp=ESC[V, PgDn=ESC[U, Home=ESC[H, End=ESC[K (src/conio/cterm.c);
 		 * we also accept the xterm forms (ESC[5~/6~/1~/4~, ESC[F). */
 		case 'V':                                          /* PgUp -> look up one notch   */
+			if (kitty_release_event())
+				return;                                    /* press-only: no double notch */
 			if (gameplay)
 				syncduke_pitch_step++;
 			return;
 		case 'U':                                          /* PgDn -> look down one notch */
+			if (kitty_release_event())
+				return;
 			if (gameplay)
 				syncduke_pitch_step--;
 			return;
-		case 'H': case 'K': case 'F': press(sc_kpad_5, now); return; /* Home/End -> Center_View (re-level) */
+		case 'H':                                          /* Home */
+			if (kitty_release_event())
+				return;
+			press(gameplay ? sc_kpad_5 : sc_Home, now);    /* gameplay: Center_View; menu: first item */
+			return;
+		case 'K': case 'F':                                /* End (cterm ESC[K / xterm ESC[F) */
+			if (kitty_release_event())
+				return;
+			press(gameplay ? sc_kpad_5 : sc_End, now);     /* gameplay: Center_View; menu: last item */
+			return;
 		case '~':                                    /* xterm ESC[n~ nav keys */
+			if (kitty_release_event())
+				return;                                    /* press-only under kitty */
 			if (csi_params(p, 1) >= 1)
 				switch (p[0]) {
 					case 5:                                       /* PgUp -> look up   */
@@ -503,16 +685,53 @@ static void csi_final(char fin, int gameplay, int now)
 						if (gameplay)
 							syncduke_pitch_step--;
 						return;
-					case 1: case 7: press(sc_kpad_5, now); return;               /* Home -> Center_View */
-					case 4: case 8: press(sc_kpad_5, now); return;               /* End  -> Center_View */
+					case 1: case 7:                                              /* Home */
+						press(gameplay ? sc_kpad_5 : sc_Home, now); return;     /* gameplay: Center_View; menu: first item */
+					case 4: case 8:                                              /* End */
+						press(gameplay ? sc_kpad_5 : sc_End, now); return;      /* gameplay: Center_View; menu: last item */
 					case 11:                                      /* F1 -> GAME CONTROLS help */
 						if (gameplay)
 							syncduke_help_request = 1;
 						return;
+					case 12: press(sc_F2, now); return;           /* F2 -> Duke save     (xterm 12~) */
+					case 13: press(sc_F3, now); return;           /* F3 -> Duke load     (kitty/xterm 13~) */
 					case 14:                                      /* F4 -> cycle graphics tier */
 						syncduke_tier_cycle();
 						return;
+					case 15: press(sc_F5, now); return;           /* F5                  (15~) */
+					case 17: press(sc_F6, now); return;           /* F6 -> Duke quicksave (17~) */
 				}
+			return;
+		case 'u':                                       /* kitty keyboard protocol */
+			/* The CSI?u progressive-enhancement REPLY (marker '?') announces support: enable the
+			 * protocol and push our flags (1 disambiguate | 2 event-types | 8 all-keys), so every
+			 * key now arrives here with a press/repeat/release event.  Otherwise this is a key
+			 * event: CSI <codepoint> ; <mods> : <event> u. */
+			if (csi_len > 0 && csi_par[0] == '?') {
+				if (!g_kitty_active) {
+					g_kitty_active = 1;
+					syncduke_out_put("\x1b[>11u", 6);
+				}
+				return;
+			}
+			{
+				int mod, ev, cp = kitty_key(&mod, &ev), c;
+				if (cp <= 0)
+					return;
+				if (cp >= 57399 && cp <= 57414) {
+					/* kitty reports the keypad in the Private Use Area (KP_0..9 = 57399.., KP_ENTER
+					 * = 57414); fold to ASCII so numpad Enter/digits work like the main keys. */
+					static const char kp[] = "0123456789./*-+\r";
+					cp = (unsigned char)kp[cp - 57399];
+				}
+				if ((mod == 5 || mod == 7) && ((cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z')))
+					c = cp & 0x1f;          /* ctrl(+shift)+letter -> its control byte (Ctrl-S = 0x13) */
+				else if (cp < 128)
+					c = cp;                 /* plain ASCII codepoint (incl. folded keypad) */
+				else
+					return;                 /* other non-ASCII special key: not in the action map */
+				handle_key(c, gameplay, now, ev);
+			}
 			return;
 		case 't':                                       /* window-op reply: 4=text-area px, 6=cell px */
 			if (csi_params(p, 4) >= 3) {
@@ -548,16 +767,31 @@ static void csi_final(char fin, int gameplay, int now)
 						g_have_sixel = 1;
 			}
 			return;
+		case 'P':                                       /* F1 (CSI P / SS3 O P) -> GAME CONTROLS help */
+			if (kitty_release_event())
+				return;
+			if (gameplay)
+				syncduke_help_request = 1;
+			return;
+		case 'Q':                                       /* F2 (CSI Q / SS3 O Q) -> Duke save menu */
+			if (kitty_release_event())
+				return;
+			press(sc_F2, now);
+			return;
 		case 'S':
 			if (csi_intro == 'O') {                     /* SS3 ESC O S = F4 -> cycle graphics tier */
 				syncduke_tier_cycle();
 				return;
 			}
+			if (csi_len == 0 || csi_par[0] != '?') {    /* CSI S = F4 (kitty) -> cycle graphics tier */
+				if (!kitty_release_event())
+					syncduke_tier_cycle();
+				return;
+			}
 			/* XTSMGRAPHICS reply ESC[?2;0;W;HS = the graphics-canvas pixels (what
 			 * SyncTERM answers instead of ESC[14t).  Used to scale/center the JXL
 			 * image to fill the real canvas. */
-			if (csi_len > 0 && csi_par[0] == '?' && csi_params(p, 4) >= 4
-			    && p[0] == 2 && p[1] == 0) {
+			if (csi_params(p, 4) >= 4 && p[0] == 2 && p[1] == 0) {
 				g_gfx_w = p[2];
 				g_gfx_h = p[3];
 			}
@@ -596,12 +830,6 @@ static void csi_final(char fin, int gameplay, int now)
  * replies (ESC[4;H;Wt, ESC[r;cR) to learn the pixel canvas -- without delivering
  * those report bytes to the game as keys.
  */
-/* Sticky-crouch toggle: a terminal can't hold a key (no key-up; auto-repeat is
- * laggy), so momentary crouch (hold Z) is unusable. Instead 'z' toggles this latch
- * and we re-assert the Crouch scancode every pump while it's on -- press once to
- * crouch, press again to stand. Mirrors how AutoRun is a toggle. */
-static int g_crouch_toggle;
-
 void syncduke_input_pump(int fd, int now, int gameplay)
 {
 	uint8_t buf[256];
@@ -668,25 +896,14 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 		uint8_t c = buf[i];
 		switch (pstate) {
 			case P_NORMAL:
+				/* ESC begins a sequence (P_ESC); every other byte is a key on the legacy byte
+				 * path -- handle_key() does the door shortcuts (Ctrl-S/T/O, Ctrl-A..F = F1..F6,
+				 * the SyncTERM <=1.4 fallback), sticky crouch, and the scancode map.  Under the
+				 * kitty protocol these same keys instead arrive as CSI-u events (csi_final 'u'),
+				 * which route through the same handle_key() with real press/release. */
 				if (c == 0x1b) { pstate = P_ESC; g_esc_at_ms = syncduke_in_now_ms(); }
-				else if (c == 0x13) { syncduke_stats_toggle(); }   /* Ctrl-S: door-level stats overlay, never reaches Duke */
-				else if (c == 0x14) { syncduke_depth_cycle(); }    /* Ctrl-T: cycle pipeline depth, never reaches Duke */
-				else if (c == 0x0f) { syncduke_mouse_toggle(); }   /* Ctrl-O: toggle mouse steering, never reaches Duke */
-				else if (c >= 0x01 && c <= 0x06) {
-					/* Ctrl-A..Ctrl-F stand in for F1..F6 on terminals that can't send the
-					 * F-key escape sequences -- notably SyncTERM <=1.4, whose function keys
-					 * are mis-encoded. (Modern SyncTERM sends ESC[11~.. and F1 works directly
-					 * via csi_final(); this is the fallback.) Ctrl-A = F1 = GAME CONTROLS (via
-					 * the help flag, NOT sc_F1, so Duke's built-in F1HELP stays bypassed);
-					 * Ctrl-B..Ctrl-F = sc_F2..sc_F6 for Duke's own save/load/quicksave. */
-					if (c != 0x01)
-						press(sc_F1 + (c - 1), now);    /* Ctrl-B..Ctrl-F = F2..F6 */
-					else if (gameplay)
-						syncduke_help_request = 1;      /* Ctrl-A = F1 = GAME CONTROLS */
-				}
-				else if (gameplay && (c == 'z' || c == 'Z')) { g_crouch_toggle = !g_crouch_toggle; }   /* toggle sticky crouch */
-				else { int sc = syncduke_map_key((const char *)&c, 1, gameplay); if (sc > 0)
-						   press(sc, now); }
+				else
+					handle_key(c, gameplay, now, 0);
 				break;
 			case P_ESC:
 				if (c == '[' || c == 'O') { pstate = P_CSI; csi_intro = (char)c; csi_len = 0; }
