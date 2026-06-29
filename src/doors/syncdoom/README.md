@@ -129,6 +129,15 @@ turns better over a terminal. Changes save to a per-user `syncdoom.ini` in
 changes are written**, so the sysop's house defaults keep reaching players who
 haven't touched a given setting. An explicit `-kp*` flag still wins.
 
+**Kitty keyboard terminals** (e.g. **Contour**) are the exception. SyncDOOM
+negotiates the [kitty keyboard
+protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) automatically at
+connect and gets **real key-up** events — movement becomes **hold-to-move /
+release-to-stop** and turning uses Doom's native acceleration ramp, with none of
+the grace synthesis above involved. On such a terminal the TAP/HOLD/TURN/FAST-TURN
+controls show as **NATIVE** (and do nothing), and the Ctrl-S stats strip reports
+**`kbd:kitty`**. Other terminals keep the key-repeat scheme described here.
+
 ### WAD selection (passed through to the engine)
 
 | Option | Meaning |

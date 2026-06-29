@@ -59,6 +59,7 @@
 #include "m_menu.h"
 
 #include "git_hash.h"           // generated: GIT_HASH / GIT_DATE (build info)
+#define SYNCDOOM_VERSION "v0.1" // shown above the git hash on the controls screen
 
 
 extern patch_t*		hu_font[HU_FONTSIZE];
@@ -75,6 +76,7 @@ extern uint32_t		g_grace_fresh;		// TAP  -- a single press lingers this long
 extern uint32_t		g_keyup_idle_ms;	// HOLD -- release latency once auto-repeating
 extern uint32_t		g_turn_grace;		// TURN -- turn-key tap grace
 extern int		sd_instant_turn;	// FAST TURN -- defeat the turn-accel ramp
+extern int		g_kitty_active;		// syncdoom: kitty protocol negotiated -> native key timing/turn (sliders moot)
 extern void		sd_save_user_prefs(void);
 
 //
@@ -868,16 +870,19 @@ void M_DrawReadThis1(void)
         char date[32];
         char *sp;
 
-        // Build id along the bottom: GIT_HASH in the lower-left corner...
-        M_WriteText(2, 190, GIT_HASH);
-
-        // ...and GIT_DATE in the lower-right corner. GIT_DATE ends " HH:MM";
-        // drop the time, keep the date.
+        // Build the date string: GIT_DATE ends " HH:MM"; drop the time, keep the date.
         M_snprintf(date, sizeof(date), "%s", GIT_DATE);
         sp = strrchr(date, ' ');
         if (sp != NULL)
             *sp = '\0';
-        M_WriteText(SCREENWIDTH - M_StringWidth(date) - 2, 190, date);
+
+        // Top line: version (lower-left) and build date (lower-right)...
+        M_WriteText(2, 181, SYNCDOOM_VERSION);
+        M_WriteText(SCREENWIDTH - M_StringWidth(date) - 2, 181, date);
+
+        // ...bottom line: git hash (left) and the site (right).
+        M_WriteText(2, 190, GIT_HASH);
+        M_WriteText(SCREENWIDTH - M_StringWidth("synchro.net") - 2, 190, "synchro.net");
     }
 
     y = 32;
@@ -1157,6 +1162,23 @@ static void M_DrawInputRow(int row, char *label, unsigned val,
 
 void M_DrawInputSliders(void)
 {
+    int sx = M_OptSliderX();
+    int yft = OptionsDef.y + LINEHEIGHT * instantturn + INPUT_YOFF;
+
+    // Kitty terminal: real key-up + Doom's native turn ramp, so these byte-path key-feel knobs
+    // do nothing. Show them disabled ("NATIVE") rather than live bars.
+    if (g_kitty_active) {
+        M_WriteText(OptionsDef.x, OptionsDef.y + LINEHEIGHT * inputtap  + INPUT_YOFF, "KEY TAP");
+        M_WriteText(sx,           OptionsDef.y + LINEHEIGHT * inputtap  + INPUT_YOFF, "NATIVE");
+        M_WriteText(OptionsDef.x, OptionsDef.y + LINEHEIGHT * inputhold + INPUT_YOFF, "KEY HOLD");
+        M_WriteText(sx,           OptionsDef.y + LINEHEIGHT * inputhold + INPUT_YOFF, "NATIVE");
+        M_WriteText(OptionsDef.x, OptionsDef.y + LINEHEIGHT * inputturn + INPUT_YOFF, "KEY TURN");
+        M_WriteText(sx,           OptionsDef.y + LINEHEIGHT * inputturn + INPUT_YOFF, "NATIVE");
+        M_WriteText(OptionsDef.x, yft, "FAST TURN");
+        M_WriteText(sx,           yft, "NATIVE");
+        return;
+    }
+
     M_DrawInputRow(inputtap,  "KEY TAP",  g_grace_fresh,   TAP_MIN, TAP_STEP);
     M_DrawInputRow(inputhold, "KEY HOLD", g_keyup_idle_ms, HT_MIN,  HT_STEP);
     M_DrawInputRow(inputturn, "KEY TURN", g_turn_grace,    HT_MIN,  HT_STEP);
@@ -1164,11 +1186,8 @@ void M_DrawInputSliders(void)
     // FAST TURN on/off: defeats Doom's slow-start turn-accel ramp, which fights
     // terminal key-repeat (gaps reset the ramp -> turning stays stuck slow). On =
     // full turn speed immediately. ENTER toggles. Per-user (sd_save_user_prefs).
-    {
-        int y = OptionsDef.y + LINEHEIGHT * instantturn + INPUT_YOFF;
-        M_WriteText(OptionsDef.x, y, "FAST TURN");
-        M_WriteText(M_OptSliderX(), y, sd_instant_turn ? "ON" : "OFF");
-    }
+    M_WriteText(OptionsDef.x, yft, "FAST TURN");
+    M_WriteText(sx,           yft, sd_instant_turn ? "ON" : "OFF");
 }
 
 // Step a grace one notch, snapping to the [mn,mx] grid (mn + k*step). Snapping
@@ -1187,18 +1206,21 @@ static uint32_t M_InputStep(uint32_t cur, int choice, int mn, int step, int mx)
 
 void M_InputTap(int choice)
 {
+    if (g_kitty_active) return;         // native key timing under kitty -> slider disabled
     g_grace_fresh = M_InputStep(g_grace_fresh, choice, TAP_MIN, TAP_STEP, TAP_MAX);
     sd_save_user_prefs();
 }
 
 void M_InputHold(int choice)
 {
+    if (g_kitty_active) return;
     g_keyup_idle_ms = M_InputStep(g_keyup_idle_ms, choice, HT_MIN, HT_STEP, HT_MAX);
     sd_save_user_prefs();
 }
 
 void M_InputTurn(int choice)
 {
+    if (g_kitty_active) return;
     g_turn_grace = M_InputStep(g_turn_grace, choice, HT_MIN, HT_STEP, HT_MAX);
     sd_save_user_prefs();
 }
@@ -1206,6 +1228,7 @@ void M_InputTurn(int choice)
 void M_InstantTurn(int choice)
 {
     (void)choice;                       // a toggle -- direction doesn't matter
+    if (g_kitty_active) return;         // FAST TURN is moot under kitty (native turn ramp)
     sd_instant_turn = !sd_instant_turn;
     sd_save_user_prefs();
 }
@@ -1988,6 +2011,25 @@ boolean M_Responder (event_t* ev)
 	} while(currentMenu->menuitems[itemOn].status==-1);
 
 	return true;
+    }
+    else if (key == KEY_HOME)
+    {
+        // syncdoom: jump to the first selectable item
+        itemOn = 0;
+        while (currentMenu->menuitems[itemOn].status == -1
+               && itemOn < currentMenu->numitems - 1)
+            itemOn++;
+        S_StartSound(NULL, sfx_pstop);
+        return true;
+    }
+    else if (key == KEY_END)
+    {
+        // syncdoom: jump to the last selectable item
+        itemOn = currentMenu->numitems - 1;
+        while (currentMenu->menuitems[itemOn].status == -1 && itemOn > 0)
+            itemOn--;
+        S_StartSound(NULL, sfx_pstop);
+        return true;
     }
     else if (key == key_menu_left)
     {

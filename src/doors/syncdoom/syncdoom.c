@@ -250,6 +250,12 @@ static void toggle_pipeline(void); // Ctrl-T: cycle frame-pipeline depth + persi
 static void toggle_stats(void);    // Ctrl-S: toggle the live stats overlay (session-only)
 static void toggle_mouse(void);    // Ctrl-O: toggle mouse steering on/off + persist
 static int       g_stats_overlay = 0; // show fps/RTT/depth overlaid on each frame
+// Kitty keyboard protocol negotiated (terminal answered our CSI?u query): keys arrive as CSI-u
+// events with real press/repeat/release, so the door gets true key-up -- crisp hold-to-move and
+// Doom's native turn ramp, no key-up-synthesis grace needed. Non-static: m_menu.c greys the (now
+// moot) TAP/HOLD/TURN/FAST-TURN sliders when this is set. (Declared up here: emit_overlay reads it.)
+int              g_kitty_active = 0;
+static unsigned char g_kitty_down[256]; // kitty: Doom keys we've sent key-down for (dedupe + release)
 static const char *mode_name(enum frame_mode m);   // defined later; used by the overlay
 
 static uint8_t * s_rgb = NULL;   static size_t s_rgb_cap = 0;      // packed RGB888
@@ -678,10 +684,11 @@ static void emit_overlay(int force)
 		snprintf(bw, sizeof(bw), "%u.%uMB/s", g_recent_kbps / 1024, (g_recent_kbps % 1024) * 10 / 1024);
 	else
 		snprintf(bw, sizeof(bw), "%uKB/s", g_recent_kbps);
-	tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s ",
+	tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s%s ",
 	              (g_mode == MODE_SIXEL && g_sixel_fullres) ? "sixel-full" : mode_name(g_mode),
 	              g_recent_fps, bw, g_rtt_ms, g_rtt_min,
-	              max_inflight(), g_inflight_auto ? "/auto" : "");
+	              max_inflight(), g_inflight_auto ? "/auto" : "",
+	              g_kitty_active ? " kbd:kitty" : "");
 
 	if (!force && strcmp(txt, g_ov_last) == 0)
 		return;                         // unchanged and the frame didn't repaint it -> nothing to send
@@ -1272,6 +1279,58 @@ static char s_csi_intro = 0;            // '[' or 'O' for the current CSI/SS3
 static char s_csi_par[24];              // accumulated parameter bytes ("[<n>~", SGR mouse "[<b;c;r")
 static int  s_csi_parlen = 0;
 
+// Kitty keyboard-protocol event fields, parsed from s_csi_par ("CSI key;mods:event ...").
+// kitty_event: 1=press (default), 2=repeat, 3=release. kitty_mod: 1=none, 5=ctrl, 7=ctrl+shift.
+static int kitty_event(void)
+{
+	const char *p = s_csi_par;
+	int         field = 0;
+	for (; *p; p++) {
+		if (*p == ';') { field++; continue; }
+		if (field == 1 && *p == ':')
+			return atoi(p + 1) ? atoi(p + 1) : 1;
+	}
+	return 1;
+}
+
+static int kitty_mod(void)
+{
+	const char *p = strchr(s_csi_par, ';');
+	return p ? (atoi(p + 1) ? atoi(p + 1) : 1) : 1;
+}
+
+// Dispatch a kitty key event (real key-up available): door hotkeys fire on a fresh press
+// (key_seen handles them); game keys get explicit key-down/up so movement holds and Doom's
+// own turn ramp runs -- bypassing the byte-path key-up-synthesis grace machinery. Menus/text
+// get a discrete tap per press/repeat (so a hold scrolls / a char repeats).
+static void kitty_dispatch(unsigned char key, int ev)
+{
+	if (!key)
+		return;
+	if (key == KEY_F4 || key == KEY_PIPELINE || key == KEY_STATS ||
+	    key == KEY_MOUSE || key == KEY_USERLIST || key == KEY_PAGE) {
+		if (ev == 1)                          // door hotkey: act on a fresh press only
+			key_seen(key);
+		return;
+	}
+	if (ev == 3) {                            // key-up: release a held key-down
+		if (g_kitty_down[key]) {
+			keyq_push(0, key);
+			g_kitty_down[key] = 0;
+		}
+		return;
+	}
+	if (menuactive || chat_on) {              // menu nav / text entry: discrete tap
+		keyq_push(1, key);
+		keyq_push(0, key);
+		return;
+	}
+	if (!g_kitty_down[key]) {                 // in-game: hold until the explicit key-up
+		keyq_push(1, key);
+		g_kitty_down[key] = 1;
+	}
+}
+
 static void parse_byte(unsigned char c)
 {
 	switch (s_pstate) {
@@ -1339,6 +1398,36 @@ static void parse_byte(unsigned char c)
 							g_ack_deadline = now_ms() + 250; // progress -> refresh the safety deadline
 							break;
 						case '~': k = csi_tilde_key(atoi(s_csi_par)); break;
+						// Kitty keyboard protocol: F1/F2/F4 arrive as CSI P/Q/S, Home/End as CSI H/F
+						// (only once negotiated). F4 = the tier-cycle sentinel, like SS3 S.
+						case 'P': if (g_kitty_active) k = KEY_F1;   break;
+						case 'Q': if (g_kitty_active) k = KEY_F2;   break;
+						case 'S': if (g_kitty_active && s_csi_par[0] != '?') k = KEY_F4; break; // '?' = XTSMGRAPHICS reply
+						case 'H': if (g_kitty_active) k = KEY_HOME; break;
+						case 'F': if (g_kitty_active) k = KEY_END;  break;
+						case 'u':                            // kitty key event, or the CSI?u support reply
+							if (s_csi_par[0] == '?') {       // progressive-flags reply -> enable + push our flags
+								if (!g_kitty_active) {
+									g_kitty_active = 1;
+									emit_all("\x1b[>11u", 6); // disambiguate | report-events | report-all-keys
+								}
+							} else {
+								int cp  = atoi(s_csi_par);
+								int mod = kitty_mod();
+								int ev  = kitty_event();
+								if (cp > 0) {
+									if (cp >= 57399 && cp <= 57414) {    // numpad PUA -> ASCII
+										static const char kp[] = "0123456789./*-+\r";
+										cp = (unsigned char)kp[cp - 57399];
+									}
+									if ((mod == 5 || mod == 7) &&
+									    ((cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z')))
+										kitty_dispatch(map_ascii((unsigned char)(cp & 0x1f)), ev); // ctrl+letter
+									else if (cp < 128)
+										kitty_dispatch(map_ascii((unsigned char)cp), ev);
+								}
+							}
+							break;
 						case 'M':                            // xterm SGR mouse: "[<b;col;row" + M(press/motion)
 						case 'm':                            //                              + m(release)
 							if (s_csi_par[0] == '<') {
@@ -1350,8 +1439,12 @@ static void parse_byte(unsigned char c)
 						default:  break;
 					}
 				}
-				if (k)
-					key_seen(k);
+				if (k) {
+					if (g_kitty_active)
+						kitty_dispatch(k, kitty_event());   // real key-up: hold-to-move + native turn
+					else
+						key_seen(k);
+				}
 				s_pstate = ST_NORMAL;
 			}
 			return;
@@ -1629,6 +1722,8 @@ static void terminal_restore(void)
 		emit_all("\x1b[?1003l\x1b[?1006l", 16);
 	if (g_sixel_scroll_off)
 		emit_all("\x1b[?80h", 6);        // restore default sixel scrolling for the BBS
+	if (g_kitty_active)
+		emit_all("\x1b[<u", 4);          // pop the kitty keyboard flags we pushed
 	emit_all("\x1b[?7h\x1b[?25h", 11);
 }
 
@@ -1791,7 +1886,9 @@ static void probe_geometry(void)
 	// (terminals clamp the move to the actual extent), then read it back with DSR
 	// -- so a stale -l (%R) or terminal.ini, which a mid-session client resize
 	// never updates, can't size us wrong. ESC 7 / ESC 8 save+restore the cursor.
-	static const char q[] = "\x1b[14t\x1b[16t\x1b[?2;1S\x1b" "7\x1b[999;999H\x1b[6n";
+	static const char q[] = "\x1b[14t\x1b[16t\x1b[?2;1S\x1b[?u\x1b" "7\x1b[999;999H\x1b[6n";
+	// (\x1b[?u above queries kitty keyboard-protocol support; a CSI?<flags>u reply -> parse_byte
+	//  enables it and pushes our flags. The reply arrives before the \x1b[6n DSR that ends this loop.)
 	unsigned char     acc[256];
 	int               al = 0, done = 0;
 	uint32_t          deadline = now_ms() + 600;
@@ -1932,6 +2029,7 @@ void DG_Init(void)
 #endif
 
 	compute_geometry();              // emitted image size + centering (now that the tier is known)
+
 	build_video_states();            // seed the F4 cycle now so the startup tier (incl.
 	                                 // graphics) is always one of the cyclable states
 	joybspeed = g_always_run ? 31 : 2;   // apply always-run default ('R' toggles at runtime;

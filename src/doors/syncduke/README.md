@@ -46,9 +46,10 @@ round-trip time.
 
 ## Controls
 
-A terminal has no mouse-by-default and no key-up events, so the scheme mirrors
+Most terminals send key-*down* only (no mouse, no key-up), so the scheme mirrors
 [SyncDOOM](../syncdoom/) (see the in-game **Controls Help** screen — on the main
-menu, or **F1** during play):
+menu, or **F1** during play). Terminals that speak the **kitty keyboard protocol**
+are the exception — see [Kitty keyboard terminals](#kitty-keyboard-terminals) below:
 
 | Key | Action | | Key | Action |
 |-----|--------|-|-----|--------|
@@ -57,7 +58,7 @@ menu, or **F1** during play):
 | **← / →** | turn left / right | | **Q** | jump |
 | **↑ / ↓** | move forward / back | | **Z** | crouch (toggle) |
 | **PgUp / PgDn** | look up / down | | **R** | toggle always-run |
-| **Home / End** | center view | | **1–0** | select weapon |
+| **Home / End** | center view *(menus: first / last item)* | | **1–0** | select weapon |
 | **Tab** | automap | | **Enter / Esc** | menu select / back |
 
 In menus and while typing (e.g. a save-game name) the action layer is off, so
@@ -65,7 +66,9 @@ letters and Space arrive literally and the arrows/Enter/Esc navigate.
 
 **Optional mouse steering** — toggle with **Ctrl-O** (or in *Options → Setup
 Controls*); when on, the terminal's mouse turns/aims and a click fires. Setup
-Controls also tunes key tap/hold/turn timing and fast-turn.
+Controls also tunes key tap/hold/turn timing and fast-turn — *byte-path knobs that
+compensate for the missing key-up; they grey out on a kitty terminal, which doesn't
+need them.*
 
 **Door hotkeys** (intercepted by the door; never reach Duke):
 
@@ -76,6 +79,18 @@ Controls also tunes key tap/hold/turn timing and fast-turn.
 | **Ctrl-T** | cycle frame-pipeline depth (auto → 1…16 → auto) |
 | **Ctrl-S** | toggle the live stats overlay (fps / KB-s / lag / depth) |
 | **Ctrl-O** | toggle mouse steering |
+
+### Kitty keyboard terminals
+
+On a terminal that implements the [kitty keyboard
+protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) — e.g. **Contour** —
+SyncDuke negotiates it automatically at connect (no setting) and gets **real
+key-up** events. That means **hold-to-move / release-to-stop** instead of the
+key-repeat heuristic, and turning uses Duke's **native** acceleration ramp, so it
+feels like the original. The Ctrl-S stats strip shows **`kbd:kitty`** when it's
+active, and the tap/hold/turn/fast-turn knobs grey out (they only matter without
+key-up). SyncTERM and other terminals are unaffected — they keep the key-repeat
+scheme.
 
 ---
 
