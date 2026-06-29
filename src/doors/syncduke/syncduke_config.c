@@ -53,6 +53,7 @@
 
 #include "ini_file.h"   /* xpdev: iniReadFile / iniGetString */
 #include "dirwrap.h"    /* xpdev: mkpath() (recursive mkdir) */
+#include "sbbs_node.h"  /* termgfx: sbbs_my_node() -- current node # from SBBSNNUM */
 
 /* Shared, read-only GRP directory (absolute), consulted by the engine's findGRPToUse()
  * (Game/src/game.c).  Deliberately separate from the process CWD: when launched as a door
@@ -176,7 +177,31 @@ static void syncduke_config_init(int argc, char **argv)
 	/* --- optional file debug log (off unless env SYNCDUKE_LOG / -log / [debug] log is set).
 	 * Set the path + install the crash handler now, before the engine runs, so a fault or
 	 * hangup is recorded to a plain file (we get neither stderr capture nor WER dumps here).
-	 * A relative path lands in CWD -- i.e. the per-user -home dir just entered above. */
+	 * A relative path lands in CWD -- i.e. the per-user -home dir just entered above.
+	 * Tag the filename with the node number so two co-op doors the same user runs on
+	 * different nodes -- which share one per-user dir -- don't clobber each other's log.
+	 * sbbs_my_node() reads SBBSNNUM (SBBS sets it for every external program), falling
+	 * back to SBBSNODE's trailing digits; <=0 (dev/standalone) -> leave it as configured. */
+	if (logpath[0]) {
+		int node = sbbs_my_node();
+		if (node > 0) {
+			char  tagged[INI_MAX_VALUE_LEN];
+			char *dot = strrchr(logpath, '.');
+			char *sep = strrchr(logpath, '/');
+#ifdef _WIN32
+			char *bs = strrchr(logpath, '\\');
+			if (bs > sep)
+				sep = bs;
+#endif
+			if (dot != NULL && dot > sep)   /* insert ".<node>" before the extension */
+				snprintf(tagged, sizeof tagged, "%.*s.%d%s",
+				         (int)(dot - logpath), logpath, node, dot);
+			else                            /* no extension -> append ".<node>" */
+				snprintf(tagged, sizeof tagged, "%s.%d", logpath, node);
+			strncpy(logpath, tagged, sizeof(logpath) - 1);
+			logpath[sizeof(logpath) - 1] = '\0';
+		}
+	}
 	syncduke_log_set_path(logpath);
 	syncduke_log_init();
 	syncduke_log("start: argc=%d socket=%d grpdir='%s' home='%s'",
