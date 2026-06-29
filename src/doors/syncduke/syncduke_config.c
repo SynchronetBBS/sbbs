@@ -177,28 +177,46 @@ static void syncduke_config_init(int argc, char **argv)
 	/* --- optional file debug log (off unless env SYNCDUKE_LOG / -log / [debug] log is set).
 	 * Set the path + install the crash handler now, before the engine runs, so a fault or
 	 * hangup is recorded to a plain file (we get neither stderr capture nor WER dumps here).
-	 * A relative path lands in CWD -- i.e. the per-user -home dir just entered above.
-	 * Tag the filename with the node number so two co-op doors the same user runs on
-	 * different nodes -- which share one per-user dir -- don't clobber each other's log.
-	 * sbbs_my_node() reads SBBSNNUM (SBBS sets it for every external program), falling
-	 * back to SBBSNODE's trailing digits; <=0 (dev/standalone) -> leave it as configured. */
+	 * Location: a BARE filename is placed in <SBBSDATA>/syncduke/ (the door's shared data
+	 * dir, alongside the games registry) -- NOT the per-user dir -- so co-op logs sit
+	 * together and don't clutter user storage. SBBSDATA is set by SBBS; absent (dev run), or
+	 * an explicit path containing a separator, is used as-is (relative -> CWD). Then tag with
+	 * the node number (sbbs_my_node, from SBBSNNUM) so concurrent co-op nodes don't share a
+	 * file: syncduke.log -> <data>/syncduke/syncduke.<node>.log. */
 	if (logpath[0]) {
-		int node = sbbs_my_node();
-		if (node > 0) {
-			char  tagged[INI_MAX_VALUE_LEN];
-			char *dot = strrchr(logpath, '.');
-			char *sep = strrchr(logpath, '/');
+		const char *data = getenv("SBBSDATA");
+		char        resolved[PATH_MAX];
+		int         node = sbbs_my_node();
+		int         bare = (strchr(logpath, '/') == NULL);
 #ifdef _WIN32
-			char *bs = strrchr(logpath, '\\');
+		if (strchr(logpath, '\\') != NULL)
+			bare = 0;
+#endif
+		if (bare && data != NULL && data[0]) {
+			size_t dl = strlen(data);
+			char   dir[PATH_MAX];
+			snprintf(dir, sizeof dir, "%s%ssyncduke", data,
+			         (dl && (data[dl - 1] == '/' || data[dl - 1] == '\\')) ? "" : "/");
+			mkpath(dir);
+			snprintf(resolved, sizeof resolved, "%s/%s", dir, logpath);
+		} else {
+			snprintf(resolved, sizeof resolved, "%s", logpath);
+		}
+		if (node > 0) {                         /* node-tag: ".<node>" before the extension */
+			char *dot = strrchr(resolved, '.');
+			char *sep = strrchr(resolved, '/');
+#ifdef _WIN32
+			char *bs = strrchr(resolved, '\\');
 			if (bs > sep)
 				sep = bs;
 #endif
-			if (dot != NULL && dot > sep)   /* insert ".<node>" before the extension */
-				snprintf(tagged, sizeof tagged, "%.*s.%d%s",
-				         (int)(dot - logpath), logpath, node, dot);
-			else                            /* no extension -> append ".<node>" */
-				snprintf(tagged, sizeof tagged, "%s.%d", logpath, node);
-			strncpy(logpath, tagged, sizeof(logpath) - 1);
+			if (dot != NULL && dot > sep)
+				snprintf(logpath, sizeof logpath, "%.*s.%d%s",
+				         (int)(dot - resolved), resolved, node, dot);
+			else
+				snprintf(logpath, sizeof logpath, "%s.%d", resolved, node);
+		} else {
+			strncpy(logpath, resolved, sizeof(logpath) - 1);
 			logpath[sizeof(logpath) - 1] = '\0';
 		}
 	}

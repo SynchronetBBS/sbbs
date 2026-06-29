@@ -70,3 +70,28 @@ cmd  = ?zmachine
 settings = XTRN_MULTIUSER
 required = true
 ```
+
+## Environment variables SBBS sets for external programs
+
+When the Terminal Server spawns an external program it exports these (see
+`src/sbbs3/xtrn.cpp` — `setenv` on \*nix, the env list on Windows, and the DOS env
+file for DOS doors). A **native door** uses them to locate Synchronet's directories
+and identify its node **without hardcoding paths or adding command-line arguments** —
+the C-door equivalent of the JS `system.*_dir` rule (repo-root `CLAUDE.md`, "put
+files where they belong").
+
+| Env var    | Value                                   | Use |
+|------------|-----------------------------------------|-----|
+| `SBBSCTRL` | ctrl directory                          | configuration (`text.dat`, `*.ini`) |
+| `SBBSDATA` | data directory                          | generated/shared runtime state (in a per-program subdir, e.g. `data/syncduke/`) |
+| `SBBSEXEC` | exec directory                          | bundled scripts/binaries |
+| `SBBSNODE` | this node's **directory** (e.g. `.../node11/`) | per-node files; the node's `terminal.ini` lives here |
+| `SBBSNNUM` | this node's **number**                  | per-node uniqueness (e.g. a `<name>.<node>.log` so two co-op nodes don't clobber one file) |
+
+- `SBBSNODE` is a **path**; `SBBSNNUM` is a **number**. `termgfx/sbbs_node.c`'s
+  `sbbs_my_node()` returns the number (reads `SBBSNNUM`, falls back to the trailing
+  digits of `SBBSNODE`) — prefer it over a raw `getenv`.
+- They're **absent for a dev/standalone run** (no BBS) — always provide a fallback
+  (e.g. CWD) rather than assuming they're set.
+- **Don't derive one dir from another** (e.g. `SBBSNODE/../data`): the dirs are
+  SCFG-configurable and need not be siblings — use the specific variable.
