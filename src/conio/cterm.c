@@ -1572,6 +1572,61 @@ sixel_numeric_command_terminated(const char *p, const char *end, bool finish, bo
 	return finish;
 }
 
+static void
+sixel_set_mask_range(struct ciolib_mask *mask, int start, int count)
+{
+	int end;
+	int byte;
+	int edge_bits;
+
+	if (count <= 0)
+		return;
+
+	end = start + count;
+	byte = start / 8;
+	if (end / 8 > byte)
+		memset(&mask->bits[byte], 0xff, end / 8 - byte);
+	edge_bits = end % 8;
+	if (edge_bits)
+		mask->bits[end / 8] |= 0xff << (8 - edge_bits);
+}
+
+static void
+sixel_init_current_line(struct cterminal *cterm)
+{
+	int fill_height;
+	int fill_width;
+	int i;
+	int j;
+	int row_pos;
+
+	if (cterm->sx_pixels == NULL || cterm->sx_mask == NULL || cterm->sx_mask->bits == NULL)
+		return;
+
+	memset(cterm->sx_mask->bits, 0, (cterm->sx_mask->width * cterm->sx_mask->height + 7) / 8);
+
+	if (cterm->sx_trans || cterm->sx_width <= 0 || cterm->sx_height <= 0)
+		return;
+
+	fill_height = cterm->sx_height > 6 ? 6 : cterm->sx_height;
+	fill_width = cterm->sx_width * cterm->sx_ih;
+	if (fill_width > (int)cterm->sx_pixels->width - cterm->sx_left)
+		fill_width = (int)cterm->sx_pixels->width - cterm->sx_left;
+	if (fill_width <= 0)
+		return;
+
+	for (i = 0; i < fill_height * cterm->sx_iv; i++) {
+		row_pos = i * cterm->sx_pixels->width + cterm->sx_left;
+		for (j = 0; j < fill_width; j++) {
+			cterm->sx_pixels->pixels[row_pos + j] = cterm->sx_bg;
+		}
+		sixel_set_mask_range(cterm->sx_mask, row_pos, fill_width);
+	}
+
+	if (cterm->sx_left + fill_width - 1 > cterm->sx_row_max_x)
+		cterm->sx_row_max_x = cterm->sx_left + fill_width - 1;
+}
+
 enum sequence_state {
 	SEQ_BROKEN,
 	SEQ_INCOMPLETE,
@@ -1850,8 +1905,8 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						}
 					}
 				}
-				if (cterm->sx_x > cterm->sx_row_max_x)
-					cterm->sx_row_max_x = cterm->sx_x;
+				if (cterm->sx_x + cterm->sx_ih - 1 > cterm->sx_row_max_x)
+					cterm->sx_row_max_x = cterm->sx_x + cterm->sx_ih - 1;
 			}
 
 			cterm->sx_x+=cterm->sx_ih;
@@ -1895,6 +1950,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 							if (cterm->sx_ih > max_w)
 								cterm->sx_ih = max_w;
 						}
+						sixel_init_current_line(cterm);
 					}
 					else
 						p++;
@@ -1970,6 +2026,7 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 							cterm->sx_y -= vparams[vmode].charheight;
 						}
 						cterm->sx_first_pass = 1;
+						sixel_init_current_line(cterm);
 						p++;
 					}
 					break;
