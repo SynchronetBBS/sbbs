@@ -1,4 +1,4 @@
-prefix=/Users/admin/src/darwin.release/mpg123-1.33.6
+prefix=/Users/admin/src/darwin.release/mpg123
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 includedir=${prefix}/include
