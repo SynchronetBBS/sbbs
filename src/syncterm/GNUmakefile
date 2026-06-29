@@ -509,7 +509,7 @@ ifdef WITHOUT_SNDFILE
 else
  ifdef win
   CFLAGS += -I${3RDP_ROOT}/${os}.release/libsndfile/include -DSTATIC_SNDFILE
-  LDFLAGS += -L${3RDP_ROOT}/${os}.release/libsndfile/bin -L${3RDP_ROOT}/${os}.release/flac/bin -L${3RDP_ROOT}/${os}.release/lame/bin -L${3RDP_ROOT}/${os}.release/ogg/bin -L${3RDP_ROOT}/${os}.release/opus/bin -L${3RDP_ROOT}/${os}.release/mpg123/bin
+  LDFLAGS += -L${3RDP_ROOT}/${os}.release/libsndfile/bin -L${3RDP_ROOT}/${os}.release/flac/bin -L${3RDP_ROOT}/${os}.release/lame/bin -L${3RDP_ROOT}/${os}.release/ogg/bin -L${3RDP_ROOT}/${os}.release/opus/bin -L${3RDP_ROOT}/${os}.release/mpg123/bin -L${3RDP_ROOT}/${os}.release/vorbis/bin
   EXTRA_LIBS += -lsndfile
   EXTRA_LIBS += -lFLAC
   EXTRA_LIBS += -lmp3lame
