@@ -1559,6 +1559,19 @@ range_span_exclude(char exclude, const char *s, char min, char max)
 	return ret;
 }
 
+static bool
+sixel_numeric_command_terminated(const char *p, const char *end, bool finish, bool semicolons)
+{
+	for (p++; p <= end; p++) {
+		if (*p >= '0' && *p <= '9')
+			continue;
+		if (semicolons && *p == ';')
+			continue;
+		return true;
+	}
+	return finish;
+}
+
 enum sequence_state {
 	SEQ_BROKEN,
 	SEQ_INCOMPLETE,
@@ -1744,9 +1757,6 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 
 	end = p+cterm->strbuflen-1;
 
-	if ((*end < '?' || *end > '~') && !finish)
-		return;
-
 	/*
 	 * TODO: Sixel interaction with scrolling margins...
 	 * This one is interesting because there is no real terminal
@@ -1853,6 +1863,8 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 		else {
 			switch(*p) {
 				case '"':	// Raster Attributes
+					if (!sixel_numeric_command_terminated(p, end, finish, true))
+						goto keep_tail;
 					if (!cterm->sx_pixels_sent) {
 						p++;
 						cterm->sx_iv = strtoul(p, &p, 10);
@@ -1888,17 +1900,21 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 						p++;
 					break;
 				case '!':	// Repeat
+					if (!sixel_numeric_command_terminated(p, end, finish, false))
+						goto keep_tail;
 					p++;
 					if (!*p)
-						continue;
+						break;
 					cterm->sx_repeat = strtoul(p, &p, 10);
 					if (cterm->sx_repeat > 0x7fff)
 						cterm->sx_repeat = 0x7fff;
 					break;
 				case '#':	// Colour Introducer
+					if (!sixel_numeric_command_terminated(p, end, finish, true))
+						goto keep_tail;
 					p++;
 					if (!*p)
-						continue;
+						break;
 					cterm->sx_fg = strtoul(p, &p, 10) + TOTAL_DAC_SIZE + palette_offset;
 					/* Do we want to redefine it while we're here? */
 					if (*p == ';') {
@@ -1965,6 +1981,14 @@ static void parse_sixel_string(struct cterminal *cterm, bool finish)
 	cterm->strbuflen = 0;
 	if (finish)
 		goto all_done;
+	return;
+
+keep_tail:
+	if (p > cterm->strbuf) {
+		cterm->strbuflen = (size_t)(end - p + 1);
+		memmove(cterm->strbuf, p, cterm->strbuflen);
+		cterm->strbuf[cterm->strbuflen] = 0;
+	}
 	return;
 
 all_done:
