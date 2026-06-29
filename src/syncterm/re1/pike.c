@@ -53,7 +53,7 @@ addthread(ThreadList *l, Thread t, char *sp)
 		addthread(l, thread(t.pc->y, t.sub), sp);
 		break;
 	case Save:
-		addthread(l, thread(t.pc+1, update(t.sub, t.pc->n, sp)), sp);
+		addthread(l, thread(t.pc+1, re1_update(t.sub, t.pc->n, sp)), sp);
 		break;
 	}
 }

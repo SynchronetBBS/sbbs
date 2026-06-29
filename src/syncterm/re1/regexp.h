@@ -101,7 +101,7 @@ struct Sub
 Sub *newsub(int n);
 Sub *incref(Sub*);
 Sub *copy(Sub*);
-Sub *update(Sub*, int, char*);
+Sub *re1_update(Sub*, int, char*);
 void decref(Sub*);
 
 int backtrack(Prog*, char*, char**, int);

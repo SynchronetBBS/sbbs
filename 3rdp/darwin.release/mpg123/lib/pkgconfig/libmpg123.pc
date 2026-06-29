@@ -1,0 +1,12 @@
+prefix=/Users/admin/src/darwin.release/mpg123-1.33.6
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libmpg123
+Description: An optimised MPEG Audio decoder
+Requires: 
+Version: 1.33.6
+Libs: -L${libdir} -lmpg123 
+Libs.private:  
+Cflags: -I${includedir} 

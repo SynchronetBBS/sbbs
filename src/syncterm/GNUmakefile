@@ -508,7 +508,7 @@ ifdef WITHOUT_SNDFILE
  CFLAGS += -DWITHOUT_SNDFILE
 else
  ifdef win
-  CFLAGS += -I${3RDP_ROOT}/${os}.release/libsndfile/include
+  CFLAGS += -I${3RDP_ROOT}/${os}.release/libsndfile/include -DSTATIC_SNDFILE
   LDFLAGS += -L${3RDP_ROOT}/${os}.release/libsndfile/bin -L${3RDP_ROOT}/${os}.release/flac/bin -L${3RDP_ROOT}/${os}.release/lame/bin -L${3RDP_ROOT}/${os}.release/ogg/bin -L${3RDP_ROOT}/${os}.release/opus/bin -L${3RDP_ROOT}/${os}.release/mpg123/bin
   EXTRA_LIBS += -lsndfile
   EXTRA_LIBS += -lFLAC
@@ -516,6 +516,17 @@ else
   EXTRA_LIBS += -lmpg123
   EXTRA_LIBS += -lopus
   EXTRA_LIBS += -logg
+ else ifeq ($(os),darwin)
+  CFLAGS += -I${3RDP_ROOT}/darwin.release/libsndfile/include -DSTATIC_SNDFILE
+  LDFLAGS += -L${3RDP_ROOT}/darwin.release/libsndfile/lib -L${3RDP_ROOT}/${os}.release/flac/lib -L${3RDP_ROOT}/${os}.release/lame/lib -L${3RDP_ROOT}/${os}.release/ogg/lib -L${3RDP_ROOT}/${os}.release/opus/lib -L${3RDP_ROOT}/${os}.release/mpg123/lib -L${3RDP_ROOT}/${os}.release/vorbis/lib
+  EXTRA_LIBS += -lsndfile
+  EXTRA_LIBS += -lFLAC
+  EXTRA_LIBS += -lmp3lame
+  EXTRA_LIBS += -lmpg123
+  EXTRA_LIBS += -lopus
+  EXTRA_LIBS += -logg
+  EXTRA_LIBS += -lvorbis
+  EXTRA_LIBS += -lvorbisenc
  else
   ifdef STATIC_SNDFILE
    # Static link — headers + .a/.lib supplied by the environment.  Use

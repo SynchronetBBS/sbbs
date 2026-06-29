@@ -1,0 +1,12 @@
+prefix=/Users/admin/src/darwin.release/flac
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: FLAC
+Description: Free Lossless Audio Codec Library
+Version: 1.5.0
+Requires.private: ogg
+Libs: -L${libdir} -lFLAC
+Libs.private: -lm 
+Cflags: -I${includedir}

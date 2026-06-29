@@ -29,7 +29,7 @@ incref(Sub *s)
 }
 
 Sub*
-update(Sub *s, int i, char *p)
+re1_update(Sub *s, int i, char *p)
 {
 	Sub *s1;
 	int j;
