@@ -237,7 +237,12 @@ void syncduke_out_flush(void)
  * default to 640x384 (fits a 24-line terminal without overflow) until/unless the
  * probe answers, and cap to the buffer. Width is capped at 640 (80 cols x 8). */
 #define SYNCDUKE_OUT_W_MAX 1024
-#define SYNCDUKE_OUT_H_MAX 640
+/* Tall enough for a FULL-RES (vsc=1) encode at the width cap: sdw=1024 with the aspect/
+ * <=8%-stretch fit yields sdh up to ~691, and full-res encodes sxh=sdh (no /2 like half-
+ * res). 640 was the half-res-era ceiling; at full-res sxh could exceed it and overrun
+ * syncduke_scaled into the adjacent globals (g_out) -> SIGSEGV. 768 covers the worst case;
+ * the area clamp in the sixel path is the hard backstop. */
+#define SYNCDUKE_OUT_H_MAX 768
 #define SYNCDUKE_OUT_W_DEF 640
 #define SYNCDUKE_OUT_H_DEF 384
 static uint8_t syncduke_scaled[SYNCDUKE_OUT_W_MAX * SYNCDUKE_OUT_H_MAX];
@@ -1016,6 +1021,14 @@ void syncduke_present(void)
 			if (tier != SD_SIXEL_FULL)
 				tier = SD_SIXEL;   /* normalize a JXL-failure fallback to sixel, but keep
 			                        * SD_SIXEL_FULL so last_tier/stats show "sixel-full" */
+			/* Hard-bound the encode to the syncduke_scaled buffer. At full-res (vsc=1) sxh==sdh,
+			 * which can exceed OUT_H_MAX once sdw hits the width cap + stretch -- sxw*sxh would
+			 * overrun the fixed buffer and corrupt the adjacent globals (g_out -> SIGSEGV in
+			 * out_put). Clamp the area so it always fits, whatever the canvas/tier. */
+			if (sxw > SYNCDUKE_OUT_W_MAX)
+				sxw = SYNCDUKE_OUT_W_MAX;
+			if ((long)sxw * sxh > (long)SYNCDUKE_OUT_W_MAX * SYNCDUKE_OUT_H_MAX)
+				sxh = (int)((long)SYNCDUKE_OUT_W_MAX * SYNCDUKE_OUT_H_MAX / sxw);
 			sxh -= sxh % 6;
 			syncduke_scale_fb(fb, sxw, sxh);
 			t0 = syncduke_now_us();
