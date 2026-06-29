@@ -633,7 +633,7 @@ void getpackets(void)
                 break;
 
             case 6: // get names
-                for (i=2;packbuf[i] && i<=11;i++) // limit size of name
+                for (i=2;packbuf[i] && i<=12;i++) // limit size of name (11 chars: i-2 <= 10)
                     ud.user_name[other][i-2] = packbuf[i];
                 ud.user_name[other][i-2] = 0;
 
@@ -7857,15 +7857,26 @@ void getnames(void)
 
     /* SyncDuke: seed the netgame name from the BBS user's alias (the door's -name
      * arg) instead of the stock "XDUKE" default, so frags/leaves read e.g.
-     * "ROB IS HISTORY". Only the first 10 chars are used (fragbar limit, below). */
+     * "ROB IS HISTORY". Up to 11 chars are used (raised from the stock 10 below). */
     {
         extern const char *syncduke_door_alias(void);
         const char *a = syncduke_door_alias();
-        if(a && a[0]) { strncpy(myname, a, sizeof(myname)-1); myname[sizeof(myname)-1] = 0; }
+        if(a && a[0]) {
+            strncpy(myname, a, sizeof(myname)-1); myname[sizeof(myname)-1] = 0;
+            /* Over the 11-char cap: drop whitespace so the cap keeps more alphanumerics
+             * (e.g. "Digital Man Jr" -> "DIGITALMANJ", not "DIGITAL MAN"). */
+            if(strlen(myname) > 11) {
+                int s=0, d=0;
+                while(myname[s]) { if((unsigned char)myname[s] > ' ') myname[d++]=myname[s]; s++; }
+                myname[d]=0;
+            }
+        }
     }
 
-	// FIX_00031: Names now limited to 10 chars max that is the fragbar field limit.
-    for(l=0; l<=9 && myname[l];l++)
+	// FIX_00031: stock 10-char fragbar limit, raised to 11 (= MAXPLAYERNAMELENGTH); the
+	// arrays (user_name[32]) + the variable-length name packet have room, so the only caps
+	// were this loop and getpacket()'s case 6 (raised to match).
+    for(l=0; l<=10 && myname[l];l++)
     {
         ud.user_name[myconnectindex][l] = toupper(myname[l]);
         buf[l+2] = toupper(myname[l]);
