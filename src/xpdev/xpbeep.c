@@ -394,6 +394,12 @@ static HANDLE                waveOut_done;
 #ifdef USE_ALSA_SOUND
 static snd_pcm_t *           playback_handle;
 static snd_pcm_hw_params_t * hw_params = NULL;
+/* Respect ALSA/.asoundrc defaults unless they are extremely conservative.
+ * CoreAudio queues 3 x 1024-frame buffers (~70 ms); use the same shape only
+ * when the initial ALSA configuration reports more than this cap. */
+#define ALSA_LATENCY_CAP_MS       300
+#define ALSA_TARGET_PERIOD_FRAMES 1024
+#define ALSA_TARGET_BUFFER_FRAMES (ALSA_TARGET_PERIOD_FRAMES * 3)
 #endif
 
 #ifdef WITH_COREAUDIO
@@ -460,6 +466,10 @@ struct alsa_api_struct {
 	(snd_pcm_t * pcm, snd_pcm_hw_params_t *params, unsigned int *val, int *dir);
 	int     (*snd_pcm_hw_params_set_channels)
 	(snd_pcm_t * pcm, snd_pcm_hw_params_t *params, unsigned int val);
+	int     (*snd_pcm_hw_params_set_period_size_near) /* optional */
+	(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_uframes_t *val, int *dir);
+	int     (*snd_pcm_hw_params_set_buffer_size_near) /* optional */
+	(snd_pcm_t *pcm, snd_pcm_hw_params_t *params, snd_pcm_uframes_t *val);
 	int     (*snd_pcm_hw_params)
 	(snd_pcm_t * pcm, snd_pcm_hw_params_t *params);
 	int     (*snd_pcm_prepare)
@@ -474,9 +484,83 @@ struct alsa_api_struct {
 	(snd_pcm_t * pcm);
 	int     (*snd_pcm_delay)                 /* optional */
 	(snd_pcm_t *pcm, snd_pcm_sframes_t *delayp);
+	int     (*snd_pcm_get_params)            /* optional */
+	(snd_pcm_t *pcm, snd_pcm_uframes_t *buffer_size, snd_pcm_uframes_t *period_size);
 };
 
 struct alsa_api_struct *alsa_api = NULL;
+
+static bool
+alsa_configure_pcm(bool cap_latency)
+{
+	unsigned int rate = S_RATE;
+
+	if ((alsa_api->snd_pcm_hw_params_any(playback_handle, hw_params) < 0)
+	    || (alsa_api->snd_pcm_hw_params_set_access(playback_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
+	    || (alsa_api->snd_pcm_hw_params_set_format(playback_handle, hw_params, SND_PCM_FORMAT_S16) < 0)
+	    || (alsa_api->snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, &rate, 0) < 0)
+	    || (alsa_api->snd_pcm_hw_params_set_channels(playback_handle, hw_params, S_CHANNELS) < 0))
+		return false;
+
+	if (cap_latency) {
+		snd_pcm_uframes_t period_frames = ALSA_TARGET_PERIOD_FRAMES;
+		snd_pcm_uframes_t buffer_frames = ALSA_TARGET_BUFFER_FRAMES;
+		int               dir = 0;
+
+		if (!alsa_api->snd_pcm_hw_params_set_period_size_near
+		    || !alsa_api->snd_pcm_hw_params_set_buffer_size_near)
+			return false;
+		if (alsa_api->snd_pcm_hw_params_set_period_size_near(playback_handle,
+		        hw_params, &period_frames, &dir) < 0)
+			return false;
+		if (alsa_api->snd_pcm_hw_params_set_buffer_size_near(playback_handle,
+		        hw_params, &buffer_frames) < 0)
+			return false;
+	}
+
+	return (alsa_api->snd_pcm_hw_params(playback_handle, hw_params) >= 0
+	    && alsa_api->snd_pcm_prepare(playback_handle) >= 0);
+}
+
+static bool
+alsa_configured_latency_exceeds_cap(void)
+{
+	snd_pcm_uframes_t buffer_size = 0;
+	snd_pcm_uframes_t period_size = 0;
+	snd_pcm_uframes_t cap_frames;
+
+	if (!alsa_api->snd_pcm_get_params)
+		return false;
+	if (alsa_api->snd_pcm_get_params(playback_handle, &buffer_size, &period_size) < 0)
+		return false;
+	cap_frames = (snd_pcm_uframes_t)((uint64_t)S_RATE * ALSA_LATENCY_CAP_MS / 1000);
+	return buffer_size > cap_frames;
+}
+
+static void
+alsa_close_pcm(void)
+{
+	if (hw_params != NULL) {
+		alsa_api->snd_pcm_hw_params_free(hw_params);
+		hw_params = NULL;
+	}
+	if (playback_handle != NULL) {
+		alsa_api->snd_pcm_close(playback_handle);
+		playback_handle = NULL;
+	}
+}
+
+static bool
+alsa_open_pcm(bool cap_latency)
+{
+	if ((alsa_api->snd_pcm_open(&playback_handle, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0)
+	    || (alsa_api->snd_pcm_hw_params_malloc(&hw_params) < 0)
+	    || !alsa_configure_pcm(cap_latency)) {
+		alsa_close_pcm();
+		return false;
+	}
+	return true;
+}
 #endif
 
 #ifdef XPDEV_THREAD_SAFE
@@ -1577,34 +1661,35 @@ xptone_open_locked(void)
 					/* Optional — available since ALSA ~1.0, but treat as
 					 * optional so old libraries still load. */
 					alsa_api->snd_pcm_delay = xp_dlsym(alsa_api->dl, snd_pcm_delay);
+					alsa_api->snd_pcm_get_params = xp_dlsym(alsa_api->dl, snd_pcm_get_params);
+					alsa_api->snd_pcm_hw_params_set_period_size_near =
+					    xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_period_size_near);
+					alsa_api->snd_pcm_hw_params_set_buffer_size_near =
+					    xp_dlsym(alsa_api->dl, snd_pcm_hw_params_set_buffer_size_near);
 				}
 				if (alsa_api == NULL)
 					alsa_device_open_failed = true;
 			}
 			if (alsa_api != NULL) {
-				unsigned int rate = S_RATE;
-				if ((alsa_api->snd_pcm_open(&playback_handle, "default", SND_PCM_STREAM_PLAYBACK, 0) < 0)
-				    || (alsa_api->snd_pcm_hw_params_malloc(&hw_params) < 0)
-				    || (alsa_api->snd_pcm_hw_params_any(playback_handle, hw_params) < 0)
-				    || (alsa_api->snd_pcm_hw_params_set_access(playback_handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED) < 0)
-				    || (alsa_api->snd_pcm_hw_params_set_format(playback_handle, hw_params, SND_PCM_FORMAT_S16) < 0)
-				    || (alsa_api->snd_pcm_hw_params_set_rate_near(playback_handle, hw_params, &rate, 0) < 0)
-				    || (alsa_api->snd_pcm_hw_params_set_channels(playback_handle, hw_params, S_CHANNELS) < 0)
-				    || (alsa_api->snd_pcm_hw_params(playback_handle, hw_params) < 0)
-				    || (alsa_api->snd_pcm_prepare(playback_handle) < 0)) {
+				if (!alsa_open_pcm(false)) {
 					alsa_device_open_failed = true;
-					if (hw_params != NULL)
-						alsa_api->snd_pcm_hw_params_free(hw_params);
-					if (playback_handle != NULL) {
-						alsa_api->snd_pcm_close(playback_handle);
-						playback_handle = NULL;
-					}
 				}
 				else {
-					alsa_api->snd_pcm_hw_params_free(hw_params);
-					handle_type = SOUND_DEVICE_ALSA;
-					handle_rc++;
-					return true;
+					bool alsa_ok = true;
+					if (alsa_configured_latency_exceeds_cap()) {
+						alsa_close_pcm();
+						if (!alsa_open_pcm(true) && !alsa_open_pcm(false)) {
+							alsa_device_open_failed = true;
+							alsa_ok = false;
+						}
+					}
+					if (alsa_ok) {
+						alsa_api->snd_pcm_hw_params_free(hw_params);
+						hw_params = NULL;
+						handle_type = SOUND_DEVICE_ALSA;
+						handle_rc++;
+						return true;
+					}
 				}
 			}
 		}
