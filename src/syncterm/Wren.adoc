@@ -1042,7 +1042,8 @@ you need byte-level replacement.
 
 | `Hook.onPhysicalKey { \|ev\| ... }`
 | `ev`: <<physicalkeyevent,`PhysicalKeyEvent`>> instance.  Registering this
-  hook enables ciolib physical-key event delivery for the session.
+  hook enables ciolib physical-key event delivery for the session on
+  builds/backends that support it.
 | C1
 
 | `Hook.onPhysicalKey(evdev, fn)`
@@ -1950,7 +1951,8 @@ two-phase split.
 | `Input.synthesizePhysicalKey(evdev, pressed)`
 | Synthesize a physical key edge.  `evdev` is an evdev key code number;
   `pressed` is `true` for press and `false` for release.  Duplicate
-  edges are suppressed by ciolib's held-key tracking.
+  edges are suppressed by ciolib's held-key tracking.  Has no effect on
+  builds without physical-key event support.
 
 | `Input.mousedrag()`, `Input.mousedrag(forceRect)`
 | Hand off to SyncTERM's drag-select gesture.  `forceRect=true`

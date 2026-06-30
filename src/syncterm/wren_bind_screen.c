@@ -577,6 +577,7 @@ push_next_event(WrenVM *vm, bool retry_empty_key_event)
 		push_mouse_event(vm, &mev, 0);
 		return true;
 	}
+#ifdef CIOLIB_KEY_EVENTS
 	if (code == CIO_KEY_KEY_EVENT) {
 		struct ciolib_key_event kev;
 		if (ciokey_getevent(&kev)) {
@@ -588,6 +589,7 @@ push_next_event(WrenVM *vm, bool retry_empty_key_event)
 		wrenSetSlotNull(vm, 0);
 		return false;
 	}
+#endif
 	push_key_event(vm, (uint16_t)code, 0);
 	return true;
 }
@@ -990,8 +992,12 @@ fn_Input_ungetKey_(WrenVM *vm)
 void
 fn_Input_ungetPhysicalKey_(WrenVM *vm)
 {
+#ifdef CIOLIB_KEY_EVENTS
 	struct wren_physical_key_event *pke = wrenGetSlotForeign(vm, 1);
 	ciokey_synthesize(pke->evdev, pke->pressed);
+#else
+	(void)vm;
+#endif
 }
 
 void
@@ -1011,7 +1017,11 @@ fn_Input_synthesizePhysicalKey(WrenVM *vm)
 		wren_throw(vm, "Input.synthesizePhysicalKey: evdev out of range");
 		return;
 	}
+#ifdef CIOLIB_KEY_EVENTS
 	ciokey_synthesize((uint16_t)evdev, pressed);
+#else
+	(void)pressed;
+#endif
 }
 
 void

@@ -1229,14 +1229,22 @@ on_owner_thread(void)
 bool
 wren_host_wants_physical_keys(void)
 {
+#ifdef CIOLIB_KEY_EVENTS
 	return active && physical_key_events_requested;
+#else
+	return false;
+#endif
 }
 
 void
 wren_host_enable_physical_key_events(void)
 {
+#ifdef CIOLIB_KEY_EVENTS
 	physical_key_events_requested = true;
 	ciokey_setenabled(true);
+#else
+	physical_key_events_requested = false;
+#endif
 }
 
 /* C2 (observe-only) hooks ignore returns by design.  Some scripts try
