@@ -248,7 +248,7 @@ void PlayMusic(char *filename)
 	void *    mid;
 	int16_t * pcm;
 	size_t    nframes;
-	char      id[16];           /* content-addressed cache name "d_<hash>" */
+	char      id[24];           /* content-addressed cache name "<trackname>_<hash>" */
 	uint32_t  h;
 	int32_t   i;
 
@@ -286,14 +286,32 @@ void PlayMusic(char *filename)
 	}
 	kclose(fd);
 
-	/* Content-address by hashing the MIDI bytes (FNV-1a) -> "d_<hash>": stable across
-	 * sessions and collision-free across different GRPs, so the shared door-side cache
-	 * (and the client cache, once C;L is wired) never serves the wrong track. Try the
-	 * cache first -- a hit ships it without the expensive OPL render. */
+	/* Content-address the track: the FNV-1a hash of the MIDI bytes, prefixed with the
+	 * track's (extension-stripped) filename for legibility -> "<name>_<hash>". The hash
+	 * keeps it stable across sessions and collision-free across GRPs (a reused name with
+	 * different bytes still differs); the name just makes the cache files readable. Try
+	 * the cache first -- a hit ships it without the expensive OPL render. */
 	h = 2166136261u;
 	for (i = 0; i < len; i++)
 		h = (h ^ ((const uint8_t *)mid)[i]) * 16777619u;
-	snprintf(id, sizeof(id), "d_%08x", (unsigned)h);
+	{
+		const char *b = filename, *p, *dot;
+		char        stem[14];
+		size_t      sn, k;
+
+		if ((p = strrchr(b, '/')) != NULL)
+			b = p + 1;                                     /* drop any directory */
+		if ((p = strrchr(b, '\\')) != NULL)
+			b = p + 1;
+		dot = strrchr(b, '.');                             /* and the extension */
+		sn  = (dot != NULL && dot != b) ? (size_t)(dot - b) : strlen(b);
+		if (sn >= sizeof(stem))
+			sn = sizeof(stem) - 1;
+		for (k = 0; k < sn; k++)                            /* no '.' -> termgfx keeps the hash */
+			stem[k] = (b[k] == '.') ? '_' : b[k];
+		stem[sn] = '\0';
+		snprintf(id, sizeof(id), "%s_%08x", stem, (unsigned)h);
+	}
 
 	{
 		int hit = termgfx_audio_music_play(sd_audio, id, sd_music_v());
