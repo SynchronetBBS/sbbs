@@ -92,6 +92,8 @@ SyncTERMCache.prototype.upload = function (fname, cache_fname)
 	// Check for the file in the cache...
 	console.write('\x1b_SyncTERM:C;L;'+cache_fname+'\x1b\\');
 	var lst = this.read_apc();
+	if (lst === undefined)
+		return false;
 	var idx = lst.indexOf('\n' + cache_fname + '\t');
 	if (idx !== -1) {
 		idx += 2;
