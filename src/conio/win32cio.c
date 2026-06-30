@@ -122,11 +122,11 @@ CIOLIBEXPORT const struct keyvals keyval[WIN32_KEYVALS] =
 	{0xbd, '-', '_', 0x1f, 0x8200},             // VK_OEM_MINUS
 	{0xbe, '.', '>', 0, 0x3400},                // VK_OEM_PERIOD
 	{0xbf, '/', '?', 0, 0x3500},                // VK_OEM_2
+	{0xc0, '`', '~', 0x29E0, 0x2900},           // VK_OEM_3 - Ctrl+` = CIO_KEY_WREN_CONSOLE
 	{0xdb, '[', '{', 0x1b, 0x1a00},             // VK_OEM_4
 	{0xdc, '\\', '|', 0x1c, 0x2b00},            // VK_OEM_5
 	{0xdd, ']', '}', 0x1d, 0x1b00},             // VK_OEM_6
 	{0xde, '\'', '"', 0, 0x2800},               // VK_OEM_7
-	{0xc0, '`', '~', 0x29E0, 0x2900},           // VK_OEM_3 — Ctrl+` = CIO_KEY_WREN_CONSOLE
 };
 
 static uint8_t *win32cio_buffer = NULL;
@@ -219,11 +219,85 @@ win32_keyval_cmp(const void *key, const void *memb)
 	return i - m->VirtualKeyCode;
 }
 
+static uint16_t
+win32_evdev_from_set1_scancode(WORD scan, bool enhanced)
+{
+	scan &= 0xff;
+
+	if (scan == 0)
+		return 0;
+
+	if (enhanced) {
+		switch (scan) {
+			case 0x1c:
+				return EVDEV_KEY_KPENTER;
+			case 0x1d:
+				return EVDEV_KEY_RIGHTCTRL;
+			case 0x35:
+				return EVDEV_KEY_KPSLASH;
+			case 0x37:
+				return EVDEV_KEY_SYSRQ;
+			case 0x38:
+				return EVDEV_KEY_RIGHTALT;
+			case 0x46:
+				return EVDEV_KEY_PAUSE;
+			case 0x47:
+				return EVDEV_KEY_HOME;
+			case 0x48:
+				return EVDEV_KEY_UP;
+			case 0x49:
+				return EVDEV_KEY_PAGEUP;
+			case 0x4b:
+				return EVDEV_KEY_LEFT;
+			case 0x4d:
+				return EVDEV_KEY_RIGHT;
+			case 0x4f:
+				return EVDEV_KEY_END;
+			case 0x50:
+				return EVDEV_KEY_DOWN;
+			case 0x51:
+				return EVDEV_KEY_PAGEDOWN;
+			case 0x52:
+				return EVDEV_KEY_INSERT;
+			case 0x53:
+				return EVDEV_KEY_DELETE;
+			case 0x5b:
+				return EVDEV_KEY_LEFTMETA;
+			case 0x5c:
+				return EVDEV_KEY_RIGHTMETA;
+			case 0x5d:
+				return EVDEV_KEY_MENU;
+		}
+		return 0;
+	}
+
+	/* Windows/RDP set-1 scancodes match evdev for the base PC keyboard
+	 * range.  Keep exceptions here instead of deriving identity from the
+	 * translated virtual-key code. */
+	if ((scan >= 0x01 && scan <= 0x53) || (scan >= 0x56 && scan <= 0x58))
+		return scan;
+	if (scan == 0x54)
+		return EVDEV_KEY_SYSRQ;
+	if (scan >= 0x64 && scan <= 0x6f)
+		return EVDEV_KEY_F13 + (scan - 0x64);
+
+	return 0;
+}
+
 uint16_t
 win32_evdev_key(WORD vk, WORD scan, DWORD state)
 {
 	bool enhanced = (state & ENHANCED_KEY) != 0;
-	struct keyvals *k;
+	uint16_t evdev;
+
+	/* Pause commonly shares the 0x45 scancode with Num Lock, so let the
+	 * virtual key disambiguate it before the set-1 scancode path. */
+	if (vk == VK_PAUSE)
+		return EVDEV_KEY_PAUSE;
+
+	evdev = win32_evdev_from_set1_scancode(scan, enhanced);
+	if (evdev != 0)
+		return evdev;
 
 	switch (vk) {
 		case VK_SHIFT:
@@ -250,51 +324,19 @@ win32_evdev_key(WORD vk, WORD scan, DWORD state)
 			return EVDEV_KEY_RIGHTMETA;
 		case VK_APPS:
 			return EVDEV_KEY_MENU;
-		case VK_PAUSE:
-			return EVDEV_KEY_PAUSE;
-	}
-
-	if (enhanced) {
-		switch (scan) {
-			case 0x1c:
-				return EVDEV_KEY_KPENTER;
-			case 0x1d:
-				return EVDEV_KEY_RIGHTCTRL;
-			case 0x35:
-				return EVDEV_KEY_KPSLASH;
-			case 0x38:
-				return EVDEV_KEY_RIGHTALT;
-			case 0x47:
-				return EVDEV_KEY_HOME;
-			case 0x48:
-				return EVDEV_KEY_UP;
-			case 0x49:
-				return EVDEV_KEY_PAGEUP;
-			case 0x4b:
-				return EVDEV_KEY_LEFT;
-			case 0x4d:
-				return EVDEV_KEY_RIGHT;
-			case 0x4f:
-				return EVDEV_KEY_END;
-			case 0x50:
-				return EVDEV_KEY_DOWN;
-			case 0x51:
-				return EVDEV_KEY_PAGEDOWN;
-			case 0x52:
-				return EVDEV_KEY_INSERT;
-			case 0x53:
-				return EVDEV_KEY_DELETE;
-		}
+		case VK_SNAPSHOT:
+			return EVDEV_KEY_SYSRQ;
+		case VK_CAPITAL:
+			return EVDEV_KEY_CAPSLOCK;
+		case VK_NUMLOCK:
+			return EVDEV_KEY_NUMLOCK;
+		case VK_SCROLL:
+			return EVDEV_KEY_SCROLLLOCK;
 	}
 
 	if (vk >= VK_F13 && vk <= VK_F24)
 		return EVDEV_KEY_F13 + (vk - VK_F13);
 
-	k = bsearch(&vk, keyval, WIN32_KEYVALS, sizeof(keyval[0]), win32_keyval_cmp);
-	if (k != NULL && k->evdev != 0)
-		return k->evdev;
-	if (scan > 0 && scan <= EVDEV_KEY_F12)
-		return scan;
 	return 0;
 }
 
