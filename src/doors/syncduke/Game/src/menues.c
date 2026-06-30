@@ -1455,7 +1455,7 @@ void menus(void)
 	static int lastkeysetup = 0;
 	static int waiting4key = false;
 	static int current_resolution = 0;
-	static int help_page = 0;   /* SyncDuke: GAME CONTROLS help (case 707) is 2 pages */
+	static int help_page = 0;   /* SyncDuke: GAME CONTROLS chart (case 707) is 2 pages */
     char text[512];
     extern volatile int syncduke_help_request;   // SyncDuke: F1 in-game opens GAME CONTROLS (case 707)
     extern int  syncduke_mouse_enabled(void);    // SyncDuke: terminal mouse steering on/off (Ctrl-O)
@@ -2566,60 +2566,65 @@ else
             j = KB_KeyPressed(sc_Escape);   // ESC exits; any other key turns the page
             x = probe(326,190,0,0);
 
+            // Two-page control chart, Duke-help style on the menu backdrop, showing
+            // the door's TERMINAL bindings.  One key/action column pair per page so the
+            // text can breathe.  Colour: gametextpal pal 7 = yellow (section headings),
+            // pal 2 = orange (keys); plain gametext = the font's light-blue (actions).
+            // ^X means Ctrl-X.  Page 1 = movement/weapons/terminal, page 2 = inventory/view.
             if( help_page == 0 )
             {
-                // Page 1: movement / action layer + door hotkeys.
-                gametext( 60, 34,"ARROWS",0,2+8+16);    gametext(158, 34,"MOVE / TURN",0,2+8+16);
-                gametext( 60, 45,"W A S D",0,2+8+16);   gametext(158, 45,"MOVE / STRAFE",0,2+8+16);
-                gametext( 60, 56,"SPACE",0,2+8+16);     gametext(158, 56,"FIRE",0,2+8+16);
-                gametext( 60, 67,"E",0,2+8+16);         gametext(158, 67,"OPEN / USE",0,2+8+16);
-                gametext( 60, 78,"Q",0,2+8+16);         gametext(158, 78,"JUMP",0,2+8+16);
-                gametext( 60, 89,"Z",0,2+8+16);         gametext(158, 89,"CROUCH (TOGGLE)",0,2+8+16);
-                gametext( 60,100,"R",0,2+8+16);         gametext(158,100,"TOGGLE RUN",0,2+8+16);
-                gametext( 60,111,"PGUP/PGDN",0,2+8+16); gametext(158,111,"LOOK UP / DOWN",0,2+8+16);
-                gametext( 60,122,"HOME/END",0,2+8+16);  gametext(158,122,"CENTER VIEW",0,2+8+16);
-                gametext( 60,133,"1 - 0",0,2+8+16);     gametext(158,133,"SELECT WEAPON",0,2+8+16);
-                gametext( 60,144,"TAB",0,2+8+16);       gametext(158,144,"AUTOMAP",0,2+8+16);
-                gametext( 60,155,"ESC",0,2+8+16);       gametext(158,155,"MENU",0,2+8+16);
-                gametext(320>>1,170,"F4 GRAPHICS   CTRL-T FRAMES",0,2+8+16);
-                gametext(320>>1,181,"CTRL-O MOUSE   CTRL-S STATS",0,2+8+16);
-                gametext(320>>1,192,"- MORE: PRESS A KEY -",0,2+8+16);
+                gametextpal( 40, 38,"MOVEMENT",0,7);
+                gametextpal( 46, 51,"ARROWS",0,2);   gametext(120, 51,"Move / turn",0,2+8+16);
+                gametextpal( 46, 61,"W A S D",0,2);  gametext(120, 61,"Move / strafe",0,2+8+16);
+                gametextpal( 46, 71,"SPACE",0,2);    gametext(120, 71,"Fire",0,2+8+16);
+                gametextpal( 46, 81,"E",0,2);        gametext(120, 81,"Open / use",0,2+8+16);
+                gametextpal( 46, 91,"Q",0,2);        gametext(120, 91,"Jump",0,2+8+16);
+                gametextpal( 46,101,"Z",0,2);        gametext(120,101,"Crouch",0,2+8+16);
+                gametextpal( 46,111,"BKSP",0,2);     gametext(120,111,"180 turn",0,2+8+16);
+                gametextpal( 46,121,"^R",0,2);       gametext(120,121,"Run (toggle)",0,2+8+16);
+                gametextpal( 40,134,"WEAPONS",0,7);
+                gametextpal( 46,147,"1 - 0",0,2);    gametext(120,147,"Select weapon",0,2+8+16);
+                gametextpal( 46,157,"C",0,2);        gametext(120,157,"Quick kick",0,2+8+16);
+                gametextpal(320>>1,170,"TERMINAL",0,7);
+                gametext(320>>1,180,"F4 GFX   ^T FPS   ^O MOUSE   ^S STATS",0,2+8+16);
+                gametext(320>>1,190,"- PAGE 1 OF 2 :  PRESS A KEY FOR MORE -",0,2+8+16);
             }
             else
             {
-                // Page 2: pass-through keys (Duke's default letter bindings the door
-                // doesn't remap) -- inventory items + a few extras.
-                gametext(320>>1, 34,"INVENTORY & EXTRAS",0,2+8+16);
-                gametext( 60, 49,"C",0,2+8+16);         gametext(158, 49,"QUICK KICK",0,2+8+16);
-                gametext( 60, 60,"H",0,2+8+16);         gametext(158, 60,"HOLODUKE",0,2+8+16);
-                gametext( 60, 71,"J",0,2+8+16);         gametext(158, 71,"JETPACK",0,2+8+16);
-                gametext( 60, 82,"N",0,2+8+16);         gametext(158, 82,"NIGHT VISION",0,2+8+16);
-                gametext( 60, 93,"M",0,2+8+16);         gametext(158, 93,"MEDKIT",0,2+8+16);
-                gametext( 60,104,"ENTER",0,2+8+16);     gametext(158,104,"USE INVENTORY ITEM",0,2+8+16);
-                gametext( 60,115,"BKSP",0,2+8+16);      gametext(158,115,"TURN AROUND",0,2+8+16);
-                gametext( 60,126,"F",0,2+8+16);         gametext(158,126,"MAP FOLLOW MODE",0,2+8+16);
-                gametext( 60,137,"I",0,2+8+16);         gametext(158,137,"TOGGLE CROSSHAIR",0,2+8+16);
-                gametext( 60,148,"V",0,2+8+16);         gametext(158,148,"AUTO-AIM (TOGGLE)",0,2+8+16);
-                gametext(320>>1,192,"- PRESS A KEY TO RETURN -",0,2+8+16);
+                gametextpal( 40, 38,"INVENTORY",0,7);
+                gametextpal( 46, 51,"H",0,2);        gametext(120, 51,"HoloDuke",0,2+8+16);
+                gametextpal( 46, 61,"J",0,2);        gametext(120, 61,"Jetpack",0,2+8+16);
+                gametextpal( 46, 71,"N",0,2);        gametext(120, 71,"Night vision",0,2+8+16);
+                gametextpal( 46, 81,"M",0,2);        gametext(120, 81,"Medkit",0,2+8+16);
+                gametextpal( 46, 91,"R",0,2);        gametext(120, 91,"Steroids",0,2+8+16);
+                gametextpal( 46,101,"[  ]",0,2);     gametext(120,101,"Select item",0,2+8+16);
+                gametextpal( 46,111,"ENTER",0,2);    gametext(120,111,"Use item",0,2+8+16);
+                gametextpal( 40,125,"VIEW & MAP",0,7);
+                gametextpal( 46,138,"PGUP/DN",0,2);  gametext(120,138,"Look up / down",0,2+8+16);
+                gametextpal( 46,148,"HOME",0,2);     gametext(120,148,"Center view",0,2+8+16);
+                gametextpal( 46,158,"F7",0,2);       gametext(120,158,"Chase view",0,2+8+16);
+                gametextpal( 46,168,"TAB / F",0,2);  gametext(120,168,"Automap / follow",0,2+8+16);
+                gametextpal( 46,178,"I / V",0,2);    gametext(120,178,"Crosshair / auto-aim",0,2+8+16);
+                gametext(320>>1,190,"- PAGE 2 OF 2 :  PRESS A KEY TO RETURN -",0,2+8+16);
             }
 
             if( x >= -1 )
             {
-                if( help_page == 0 && !j )
-                    help_page = 1;          // turn to page 2 (ESC still exits)
-                else
+                if( help_page == 0 && !j )      // page 1, any key but ESC -> page 2
+                    help_page = 1;
+                else                            // page 2, or ESC on either -> close
                 {
-                    help_page = 0;          // reset for the next time it's opened
-                    // SyncDuke: opened in-game via F1 (syncduke_help_request==2) -> back to
-                    // GAMEPLAY; from the Options menu -> back there; in-game ESC menu -> case 50.
-                    if( syncduke_help_request == 2 )
-                    {
-                        syncduke_help_request = 0;
-                        ps[myconnectindex].gm &= ~MODE_MENU;
-                        if(ud.multimode < 2 && ud.recstat != 2) ready2send = 1;
-                    }
-                    else if(ps[myconnectindex].gm&MODE_GAME) cmenu(50);
-                    else cmenu(0);
+                    help_page = 0;
+                // SyncDuke: opened in-game via F1 (syncduke_help_request==2) -> back to
+                // GAMEPLAY; from the Options menu -> back there; in-game ESC menu -> case 50.
+                if( syncduke_help_request == 2 )
+                {
+                    syncduke_help_request = 0;
+                    ps[myconnectindex].gm &= ~MODE_MENU;
+                    if(ud.multimode < 2 && ud.recstat != 2) ready2send = 1;
+                }
+                else if(ps[myconnectindex].gm&MODE_GAME) cmenu(50);
+                else cmenu(0);
                 }
             }
             break;

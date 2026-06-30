@@ -259,9 +259,11 @@ int syncduke_map_key(const char *seq, int len, int gameplay)
 			case 'd': case 'D': return sc_Period;       /* strafe right */
 			case 'e': case 'E': return sc_Space;        /* Open/Use     */
 			case 'q': case 'Q': return sc_A;            /* Jump         */
-			case 'r': case 'R': return sc_CapsLock;     /* AutoRun toggle */
+			case '[':           return sc_OpenBracket;  /* Inventory <- (select prev) */
+			case ']':           return sc_CloseBracket; /* Inventory -> (select next) */
 		}
-		/* fall through: z=crouch, inventory letters (H/J/N/M ...), weapon digits */
+		/* fall through: r=Steroids, z=crouch, inventory letters (H/J/N/M ...), weapon digits.
+		 * AutoRun moved to Ctrl-R (handle_key) so plain R reaches Duke's Steroids hotkey. */
 	} else {
 		if (c == ' ')
 			return sc_Space;        /* menus/text: space is its own key */
@@ -370,6 +372,7 @@ static int csi_len;
 
 volatile int syncduke_mouse_turn;      /* -> angvel  (player.c getinput) */
 volatile int syncduke_mouse_fire;      /* -> Fire bit (player.c getinput) */
+volatile int syncduke_mouse_msg;       /* set on Ctrl-O toggle; player.c getinput flashes MOUSE ON/OFF */
 
 /* Continuous arrow-key turn level (gameplay), the real fix for sluggish/jerky turning.
  * Duke reads the turn keys per sim-tic from KB_KeyDown[], but on a terminal the door only
@@ -475,6 +478,7 @@ void syncduke_mouse_toggle(void)
 	g_mouse_on = !g_mouse_on;
 	syncduke_mouse_turn = 0;
 	syncduke_mouse_fire = 0;
+	syncduke_mouse_msg = 1;        /* engine flashes "MOUSE STEERING ON/OFF" next gameplay frame */
 	g_mouse_have = 0;
 	g_mouse_buttons = 0;
 	/* syncduke_io.c reconciles the terminal's SGR-tracking enable with g_mouse_on. */
@@ -566,19 +570,20 @@ static void handle_key(int c, int gameplay, int now, int kev)
 		if (c == 0x13) { syncduke_stats_toggle(); return; }   /* Ctrl-S: stats overlay */
 		if (c == 0x14) { syncduke_depth_cycle(); return; }    /* Ctrl-T: pipeline depth */
 		if (c == 0x0f) { syncduke_mouse_toggle(); return; }   /* Ctrl-O: mouse steering */
-		if (c >= 0x01 && c <= 0x06) {                         /* Ctrl-A..F mirror the door's F1..F6 */
+		if (c == 0x12) { press(sc_CapsLock, now); return; }   /* Ctrl-R: AutoRun toggle (frees R for Steroids) */
+		if (c >= 0x01 && c <= 0x07) {                         /* Ctrl-A..G mirror the door's F1..F7 */
 			if (c == 0x01) {                                  /* Ctrl-A = F1 = GAME CONTROLS help */
 				if (gameplay)
 					syncduke_help_request = 1;
 			} else if (c == 0x04) {                           /* Ctrl-D = F4 = cycle graphics tier (like the real F4) */
 				syncduke_tier_cycle();
 			} else {
-				press(sc_F1 + (c - 1), now);                  /* Ctrl-B/C/E/F = Duke F2/F3/F5/F6 (save/load/quicksave) */
+				press(sc_F1 + (c - 1), now);                  /* Ctrl-B/C/E/F/G = Duke F2/F3/F5/F6/F7 (save/load/quicksave/chase view) */
 			}
 			return;
 		}
 		if (gameplay && (c == 'z' || c == 'Z')) { g_crouch_toggle = !g_crouch_toggle; return; }   /* sticky crouch */
-	} else if (c == 0x13 || c == 0x14 || c == 0x0f || (c >= 0x01 && c <= 0x06)
+	} else if (c == 0x13 || c == 0x14 || c == 0x0f || c == 0x12 || (c >= 0x01 && c <= 0x07)
 	           || (gameplay && (c == 'z' || c == 'Z'))) {
 		return;                                      /* swallow kitty auto-repeat of a shortcut/toggle */
 	}
@@ -703,6 +708,7 @@ static void csi_final(char fin, int gameplay, int now)
 						return;
 					case 15: press(sc_F5, now); return;           /* F5                  (15~) */
 					case 17: press(sc_F6, now); return;           /* F6 -> Duke quicksave (17~) */
+					case 18: press(sc_F7, now); return;               /* F7 -> chase view    (18~) */
 				}
 			return;
 		case 'u':                                       /* kitty keyboard protocol */

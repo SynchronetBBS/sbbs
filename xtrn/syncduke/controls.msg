@@ -2,20 +2,23 @@
    hwSyncDuke y- wControlsn
 
    hcMovementn
-     hyW Sn     Move forward / back
-     hyA Dn     Strafe left / right
-     hyArrowsn  Turn (left/right), move (up/down)
+     hyW Sn  Forward/back    hyA Dn  Strafe    hyArrowsn Turn/move
+     hySpacen Fire   hyEn Use   hyQn Jump   hyZn Crouch   hyBkspn 180
+     hyCtrl-Rn Run (toggle)
 
-   hcActionn
-     hySpacen   Fire
-     hyEn       Open / Use        hyQn   Jump
-     hyZn       Crouch            hyRn   Auto-run toggle
-     hy1-0n     Select weapon     hyTabn Map
-     hyH J N Mn Inventory
+   hcWeaponsn
+     hy1-0n Select weapon    hyCn Quick kick
 
-   hcTerminal / video (door keys, never reach Duke)n
-     hyF4n      Cycle graphics tier   hyCtrl-Sn  Stats overlay
-     hyCtrl-Tn  Pipeline depth        hyCtrl-On  Mouse steering toggle
+   hcInventoryn
+     hyH J N M Rn HoloDuke / Jetpack / NightVis / Medkit / Steroids
+     hy[ ]n Select item    hyEntern Use item
+
+   hcViewn
+     hyPgUp/Dnn Look   hyHomen Center   hyF7n Chase   hyTabn Map
+     hyIn Crosshair   hyVn Auto-aim   hyFn Map-follow
+
+   hcDoor keysn (video/terminal, never reach Duke)
+     hyF4n Graphics   hyCtrl-Tn Frames   hyCtrl-On Mouse   hyCtrl-Sn Stats
 
    hcMenusn   Enter = select, Esc = back
 

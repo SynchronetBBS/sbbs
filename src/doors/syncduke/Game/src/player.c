@@ -1852,8 +1852,23 @@ void getinput(short snum)
 		vscrn();	// FIX_00056: Refresh issue w/FPS, small Weapon and custom FTA, when screen resized down
 					// This is because we use the same FTA for BULLET and NORMAL text: duke doesn't see we 
 					// changed the text and doesnt issue a refresh 
-		FTA(103,&ps[screenpeek],1); // Originally reserved for "screen saved". Now used dynamically. 
+		FTA(103,&ps[screenpeek],1); // Originally reserved for "screen saved". Now used dynamically.
 		CONTROL_ClearAction(gamefunc_Auto_Aim);
+	}
+
+	{   /* SyncDuke: terminal mouse-steering toggle (Ctrl-O) -> on-screen message, like
+	     * the engine's own toggles.  The door (syncduke_input.c) flips the state and
+	     * raises syncduke_mouse_msg; flash it here (slot 122 = the engine's ad-hoc
+	     * runtime-message slot, unused in single-player). */
+		extern volatile int syncduke_mouse_msg;
+		extern int          syncduke_mouse_enabled(void);
+		if(syncduke_mouse_msg)
+		{
+			syncduke_mouse_msg = 0;
+			sprintf(fta_quotes[122],"MOUSE STEERING %s", syncduke_mouse_enabled()?"ON":"OFF");
+			vscrn();
+			FTA(122,&ps[screenpeek],1);
+		}
 	}
 
     if(multiflag == 1)
