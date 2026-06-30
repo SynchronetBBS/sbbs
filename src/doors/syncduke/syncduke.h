@@ -32,6 +32,9 @@ void syncduke_depth_cycle(void);                       /* Ctrl-T: cycle the pipe
 void syncduke_tier_cycle(void);                        /* F4: cycle the graphics tier (jxl/sixel) */
 void syncduke_hangup(const char *why);                 /* client gone: log + exit (free the node) */
 
+/* --- provided by syncduke_stubs.c --- */
+void sd_music_pending_retry(void);                     /* replay title music dropped before the audio tier was known */
+
 /* --- provided by syncduke_input.c (terminal -> Build/Duke key state) ---
  * Self-contained (no engine linkage): syncduke_map_key is a pure function; the queue
  * holds raw Build scancode bytes (low 7 bits = scancode, 0x80 = key release) the

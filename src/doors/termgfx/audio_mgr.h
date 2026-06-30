@@ -22,7 +22,15 @@
 //   termgfx_audio_sfx_file(m, id, voc, voclen, vol, pan);       // Duke VOC/WAV
 //   termgfx_audio_sfx(m, id, pcm, n, 8,1,11025, vol, pan);      // raw PCM (Doom)
 
-typedef void (*termgfx_audio_emit_fn)(void *ctx, const void *buf, size_t len);
+// The door's socket writer. `stream` lets it prioritize: TERMGFX_AUDIO_PRIO (0) =
+// small, latency-critical APCs (SFX Load/Queue/Flush + the small SFX upload) that
+// should reach the terminal AHEAD of video frames so a gunshot doesn't trail what's
+// on screen; TERMGFX_AUDIO_BULK (1) = a music track's bulk PCM/OGG upload, which the
+// door can drain at lower priority so it never delays SFX or stalls video. A door
+// that doesn't separate streams can simply ignore `stream`.
+#define TERMGFX_AUDIO_PRIO 0
+#define TERMGFX_AUDIO_BULK 1
+typedef void (*termgfx_audio_emit_fn)(void *ctx, const void *buf, size_t len, int stream);
 
 typedef struct termgfx_audio termgfx_audio_t;
 
@@ -55,14 +63,38 @@ void termgfx_audio_sfx(termgfx_audio_t *m, int id,
 void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
                             const void *filedata, size_t filelen, int vol, int pan);
 
-// Start looping music `id` on the reserved music channel, replacing any track
-// already playing (typically a single rendered loop iteration as raw PCM).
-// No-op if `id` is already the current track.
-void termgfx_audio_music(termgfx_audio_t *m, int id,
+// Start a LOOPING SFX (Duke ambience: wind, machinery, rushing water, ...).
+// Uploads the file once (VOC transcoded to WAV) like termgfx_audio_sfx_file, then
+// loops it on a dedicated channel. Returns a positive voice handle to pass to
+// termgfx_audio_loop_stop, or 0 if tier < 1 / no looping channel (then nothing
+// plays). `vol` 0..100. (3D pan/distance updates are a future add-on.)
+int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
+                             const void *filedata, size_t filelen, int vol);
+
+// Stop the looping voice `handle` from termgfx_audio_loop_start (no-op if it's
+// already stopped/unknown -- safe against a stale handle).
+void termgfx_audio_loop_stop(termgfx_audio_t *m, int handle);
+
+// Start looping music track `name` on the reserved music channel, replacing any
+// track already playing (a single rendered loop iteration as interleaved PCM).
+// `name` is the track's stable identity (e.g. the MIDI/MUS lump name) -- it
+// becomes the cache filename (content-addressed: the same track always maps to
+// the same SyncTERM cache entry across sessions, vs an unstable per-run counter),
+// so a future C;L probe could skip re-upload. The PCM is encoded to OGG/Vorbis
+// when termgfx has libsndfile (else raw WAV). No-op if `name` is already playing.
+void termgfx_audio_music(termgfx_audio_t *m, const char *name,
                          const void *pcm, size_t bytes, int bits, int channels,
                          int rate, int vol);
 
 // Stop the music channel (fade out).
 void termgfx_audio_music_stop(termgfx_audio_t *m);
+
+// Set the music channel's live volume (0..100), adjusting the currently-looping
+// track without restarting it -- for a music-volume control.
+void termgfx_audio_music_volume(termgfx_audio_t *m, int vol);
+
+// Stop every SFX channel at once (e.g. a "sound off" toggle, or a level change):
+// flushes the pooled SFX channels. Music is on its own channel and is unaffected.
+void termgfx_audio_sfx_stop_all(termgfx_audio_t *m);
 
 #endif // TERMGFX_AUDIO_MGR_H_

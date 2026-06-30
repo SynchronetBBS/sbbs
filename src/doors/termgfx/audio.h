@@ -54,6 +54,29 @@ size_t termgfx_audio_cache_pcm(uint8_t **buf, size_t *cap, const char *file,
                                const void *data, size_t bytes,
                                int bits, int channels, int rate);
 
+// C;S Store: encode `pcm` (interleaved S16, `frames` per-channel frames,
+// `channels`, `rate` Hz) to OGG/Vorbis and cache it under `file`. ~10-15x smaller
+// than cache_pcm's raw WAV, shrinking both the upload and the player's on-disk
+// SyncTERM cache; SyncTERM decodes it with the same libsndfile. `quality` is the
+// Vorbis VBR quality (0.0 smallest .. 1.0 best). Only does real work when termgfx
+// was built WITH libsndfile -- check termgfx_audio_have_ogg() and fall back to
+// cache_pcm when it returns 0. Returns bytes written, or 0 on failure/unavailable.
+size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
+                               const int16_t *pcm, size_t frames,
+                               int channels, int rate, double quality);
+
+// 1 if termgfx was built with libsndfile (termgfx_audio_cache_ogg works), else 0.
+int termgfx_audio_have_ogg(void);
+
+// Decode a Creative VOC (the Sound Blaster format Duke ships its SFX in) to
+// interleaved 8-bit *unsigned* PCM. libsndfile rejects some of Duke's multi-block
+// VOCs ("incompatible VOC sections" -- e.g. a second type-1 block instead of a
+// type-2 continuation), so the door transcodes those to a clean WAV rather than
+// shipping the VOC verbatim. Returns the PCM byte count and sets *pcm (malloc'd,
+// caller frees) + *rate; returns 0 if the data isn't a VOC or can't be parsed
+// (caller then ships it verbatim -- it's already WAV/OGG/etc).
+size_t termgfx_audio_voc_to_pcm(const void *voc, size_t len, uint8_t **pcm, int *rate);
+
 // A;Load -- decode the cached `file` into patch slot `slot` (0..255).
 size_t termgfx_audio_load(uint8_t **buf, size_t *cap, int slot, const char *file);
 
@@ -62,6 +85,12 @@ size_t termgfx_audio_load(uint8_t **buf, size_t *cap, int slot, const char *file
 // the VL/VR keys; `loop` != 0 sets the L flag.
 size_t termgfx_audio_queue(uint8_t **buf, size_t *cap, int ch, int slot,
                            int vol, int pan, int loop);
+
+// A;Volume -- set channel `ch`'s live mix volume (0..100, 100 = unity). Unlike the
+// per-Queue VL/VR (which scale one buffer as it's queued), this sets the channel's
+// base level, so it adjusts a sound that's already playing/looping -- e.g. a live
+// music-volume slider on the reserved music channel.
+size_t termgfx_audio_volume(uint8_t **buf, size_t *cap, int ch, int vol);
 
 // A;Synth -- generate a `ms`-millisecond `freq`-Hz tone of waveform `shape`
 // ("SINE","SQUARE","SAWTOOTH",...) into slot `slot`. The fallback cue source

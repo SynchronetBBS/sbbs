@@ -55,15 +55,10 @@ static void syncduke_out_puts(const char *s) { syncduke_out_put(s, strlen(s)); }
 
 /* SyncTERM audio: the per-session manager. syncduke_stubs.c's FX_Play* feed SFX
  * into it; syncduke_input.c feeds it inbound replies (the cap probe). Its emit
- * callback stages bytes through syncduke_out_put (flushed with the frame).
- * NULL until syncduke_io_init creates it; tier < 1 => silent. */
+ * callback stages bytes through syncduke_out_put -- audio rides the same staged
+ * buffer as the frames (FIFO), flushed with them. NULL until syncduke_io_init
+ * creates it; tier < 1 => silent. */
 termgfx_audio_t *sd_audio = NULL;
-
-static void sd_audio_emit(void *ctx, const void *buf, size_t len)
-{
-	(void)ctx;
-	syncduke_out_put(buf, len);
-}
 
 /* --- staged output buffer --- */
 static uint8_t *   g_out;
@@ -79,6 +74,16 @@ static int         g_use_sock;                  /* 1 = writing to the socket */
 #else
 static int         g_fd = 1;           /* socket / stdout fd */
 #endif
+
+/* Audio manager emit callback: stage audio (SFX + music) into the frame buffer so it
+ * flushes FIFO with the frames. `stream` (SFX vs music-upload priority) is ignored --
+ * one buffer, no reordering. */
+static void sd_audio_emit(void *ctx, const void *buf, size_t len, int stream)
+{
+	(void)ctx;
+	(void)stream;
+	syncduke_out_put(buf, len);
+}
 
 /* Per-user "full-res sixel" preference (vsc=1 instead of the default half-res 2:1-aspect),
  * made sticky via a presence flag-file in the per-user CWD -- syncduke_config.c chdir's into
@@ -115,6 +120,9 @@ static void syncduke_term_restore(void)
 #ifdef _WIN32
 	if (!g_use_sock)
 		return;
+	termgfx_audio_music_stop(sd_audio);   /* stop the looping music ... */
+	termgfx_audio_sfx_stop_all(sd_audio); /* ...and any looping ambient SFX (wind/machinery/etc.) */
+	syncduke_out_flush();                 /* drain the staged Flush APC now -- the buffered path is dropped at exit */
 	(void)send(g_iosock, "\x1b[?1003l\x1b[?1006l", 16, 0);
 	if (syncduke_kitty_active())
 		(void)send(g_iosock, "\x1b[<u", 4, 0);   /* pop the kitty keyboard flags we pushed */
@@ -122,6 +130,9 @@ static void syncduke_term_restore(void)
 #else
 	if (g_fd < 0)
 		return;
+	termgfx_audio_music_stop(sd_audio);   /* stop the looping music ... */
+	termgfx_audio_sfx_stop_all(sd_audio); /* ...and any looping ambient SFX (wind/machinery/etc.) */
+	syncduke_out_flush();                 /* drain the staged Flush APC now -- the buffered path is dropped at exit */
 	(void)write(g_fd, "\x1b[?1003l\x1b[?1006l", 16);
 	if (syncduke_kitty_active())
 		(void)write(g_fd, "\x1b[<u", 4);         /* pop the kitty keyboard flags we pushed */

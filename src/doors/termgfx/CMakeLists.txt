@@ -18,6 +18,7 @@ add_library(termgfx STATIC
     caps.c
     audio.c
     audio_mgr.c
+    audio_midi.c
     text.c
     term.c
     geometry.c
@@ -33,6 +34,53 @@ target_include_directories(termgfx PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(termgfx PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../sbbs3
     ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+
+# libADLMIDI -- vendored OPL3 (Nuked) MIDI synth, for authentic FM game music
+# (audio_midi.c renders Duke .MID / Doom MUS to PCM via its C API). Force a lean
+# static build: Nuked emulator only, embedded banks (no external SoundFont),
+# MUS+XMI in (Doom uses MUS), and all the demo/util/test sub-projects off so the
+# trimmed vendor tree (no utils/test/examples) configures cleanly.
+set(libADLMIDI_STATIC ON  CACHE BOOL "" FORCE)
+set(libADLMIDI_SHARED OFF CACHE BOOL "" FORCE)
+set(USE_NUKED_EMULATOR  ON  CACHE BOOL "" FORCE)
+set(USE_DOSBOX_EMULATOR OFF CACHE BOOL "" FORCE)
+set(USE_OPAL_EMULATOR   OFF CACHE BOOL "" FORCE)
+set(USE_JAVA_EMULATOR   OFF CACHE BOOL "" FORCE)
+set(WITH_MIDI_SEQUENCER ON  CACHE BOOL "" FORCE)
+set(WITH_EMBEDDED_BANKS ON  CACHE BOOL "" FORCE)
+set(WITH_MUS_SUPPORT    ON  CACHE BOOL "" FORCE)
+set(WITH_XMI_SUPPORT    ON  CACHE BOOL "" FORCE)
+set(WITH_MIDIPLAY OFF CACHE BOOL "" FORCE)
+set(WITH_OLD_UTILS OFF CACHE BOOL "" FORCE)
+set(WITH_GENADLDATA OFF CACHE BOOL "" FORCE)
+set(EXAMPLE_SDL2_AUDIO OFF CACHE BOOL "" FORCE)
+set(WITH_VLC_PLUGIN OFF CACHE BOOL "" FORCE)
+add_subdirectory(libADLMIDI EXCLUDE_FROM_ALL)
+# PUBLIC so the door's final link pulls in ADLMIDI_static (+ its include dir);
+# a C executable linking this C++ lib also needs the C++ runtime -- the door
+# CMake adds stdc++ on non-MSVC.
+target_link_libraries(termgfx PUBLIC ADLMIDI_static)
+
+# libsndfile (OPTIONAL) -- encode rendered music PCM to OGG/Vorbis before the
+# SyncTERM:C;S upload. Raw 44.1k/stereo/16-bit PCM is huge (a 60-240s track =
+# 11-40MB) -- uploaded over the wire each session AND parked on the player's
+# SyncTERM disk cache; OGG/Vorbis shrinks that ~10-15x. SyncTERM decodes OGG via
+# the very same libsndfile (Deuce bundles it on Windows too as of 2026-06-29).
+# Compile-time gated: found -> TERMGFX_WITH_SNDFILE + OGG encode in audio.c;
+# absent -> raw-PCM WAV fallback (termgfx_audio_have_ogg() == 0).
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(SNDFILE QUIET sndfile)
+endif()
+if(SNDFILE_FOUND)
+    target_compile_definitions(termgfx PRIVATE TERMGFX_WITH_SNDFILE)
+    target_include_directories(termgfx PRIVATE ${SNDFILE_INCLUDE_DIRS})
+    target_link_libraries(termgfx PUBLIC ${SNDFILE_LIBRARIES})
+    target_link_directories(termgfx PUBLIC ${SNDFILE_LIBRARY_DIRS})
+    message(STATUS "termgfx: libsndfile ${SNDFILE_VERSION} found -> OGG music compression")
+else()
+    message(STATUS "termgfx: libsndfile NOT found -> music ships as raw PCM WAV")
+endif()
 
 set_property(TARGET termgfx PROPERTY C_STANDARD 11)
 

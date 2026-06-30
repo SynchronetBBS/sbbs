@@ -10,3 +10,5 @@
 # editor swap
 *.swp
 *.swo
+# libADLMIDI easyloggingpp run artifact (written to CWD)
+myeasylog.log

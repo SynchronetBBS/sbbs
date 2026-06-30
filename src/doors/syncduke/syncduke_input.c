@@ -905,6 +905,8 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 			             t == 1 ? "digital -- SFX should play" :
 			             t == 0 ? "audio APC but no libsndfile -- silent" :
 			             "no audio APC reply -- old SyncTERM or no audio");
+			if (t >= 1)
+				sd_music_pending_retry();   /* tier just resolved: play title music dropped at startup */
 		}
 	}
 

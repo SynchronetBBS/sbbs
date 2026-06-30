@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef TERMGFX_WITH_SNDFILE
+#include <sndfile.h>
+#endif
 
 // base64 (RFC 4648, no line breaks) -> SyncTERM's b64_decode_alloc(). Mirrors
 // apc.c's encoder; kept local so the module stays self-contained.
@@ -129,6 +132,209 @@ size_t termgfx_audio_cache_pcm(uint8_t **buf, size_t *cap, const char *file,
 	return n;
 }
 
+// ---- OGG/Vorbis encode (optional, libsndfile) ----------------------------
+
+#ifdef TERMGFX_WITH_SNDFILE
+
+// libsndfile virtual-I/O sink: it writes the encoded OGG into a growing malloc
+// buffer instead of a file, so we can base64 it straight into a C;S Store.
+struct memsink {
+	uint8_t   *data;
+	sf_count_t len, cap, pos;
+};
+
+static sf_count_t ms_filelen(void *u) { return ((struct memsink *)u)->len; }
+static sf_count_t ms_tell(void *u)    { return ((struct memsink *)u)->pos; }
+
+static sf_count_t ms_seek(sf_count_t off, int whence, void *u)
+{
+	struct memsink *s = u;
+	sf_count_t      np = (whence == SEEK_SET) ? off
+	                   : (whence == SEEK_CUR) ? s->pos + off
+	                   : s->len + off;
+
+	if (np < 0)
+		np = 0;
+	s->pos = np;
+	return s->pos;
+}
+
+static sf_count_t ms_read(void *ptr, sf_count_t n, void *u)
+{
+	struct memsink *s     = u;
+	sf_count_t      avail = s->len - s->pos;
+
+	if (n > avail)
+		n = avail;
+	if (n > 0) {
+		memcpy(ptr, s->data + s->pos, (size_t)n);
+		s->pos += n;
+	}
+	return n;
+}
+
+static sf_count_t ms_write(const void *ptr, sf_count_t n, void *u)
+{
+	struct memsink *s = u;
+
+	if (s->pos + n > s->cap) {
+		sf_count_t ncap = s->cap ? s->cap * 2 : 65536;
+		uint8_t   *nd;
+
+		while (ncap < s->pos + n)
+			ncap *= 2;
+		nd = realloc(s->data, (size_t)ncap);
+		if (nd == NULL)
+			return 0;
+		s->data = nd;
+		s->cap  = ncap;
+	}
+	memcpy(s->data + s->pos, ptr, (size_t)n);
+	s->pos += n;
+	if (s->pos > s->len)
+		s->len = s->pos;
+	return n;
+}
+
+int termgfx_audio_have_ogg(void) { return 1; }
+
+size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
+                               const int16_t *pcm, size_t frames,
+                               int channels, int rate, double quality)
+{
+	struct memsink sink = { NULL, 0, 0, 0 };
+	SF_VIRTUAL_IO  vio  = { ms_filelen, ms_seek, ms_read, ms_write, ms_tell };
+	SF_INFO        info;
+	SNDFILE       *sf;
+	size_t         n = 0;
+
+	memset(&info, 0, sizeof(info));
+	info.samplerate = rate;
+	info.channels   = channels;
+	info.format     = SF_FORMAT_OGG | SF_FORMAT_VORBIS;
+	if (!sf_format_check(&info))
+		return 0;
+	sf = sf_open_virtual(&vio, SFM_WRITE, &info, &sink);
+	if (sf == NULL)
+		return 0;
+	// Must precede the first write.  Clamp to libsndfile's 0.0..1.0 range.
+	if (quality < 0.0)
+		quality = 0.0;
+	if (quality > 1.0)
+		quality = 1.0;
+	sf_command(sf, SFC_SET_VBR_ENCODING_QUALITY, &quality, sizeof(quality));
+	// Write in chunks: a single multi-million-frame sf_writef_short crashes deep
+	// in libvorbis (vorbis_analysis buffer), so feed it a bounded window at a time.
+	{
+		size_t off;
+		for (off = 0; off < frames; ) {
+			size_t     want = frames - off;
+			sf_count_t got;
+
+			if (want > 8192)
+				want = 8192;
+			got = sf_writef_short(sf, pcm + off * (size_t)channels, (sf_count_t)want);
+			if (got <= 0)
+				break;
+			off += (size_t)got;
+		}
+	}
+	sf_close(sf);                                  // flushes the OGG stream into sink
+	if (sink.data != NULL && sink.len > 0)
+		n = termgfx_audio_cache_file(buf, cap, file, sink.data, (size_t)sink.len);
+	free(sink.data);
+	return n;
+}
+
+#else  // !TERMGFX_WITH_SNDFILE
+
+int termgfx_audio_have_ogg(void) { return 0; }
+
+size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
+                               const int16_t *pcm, size_t frames,
+                               int channels, int rate, double quality)
+{
+	(void)buf; (void)cap; (void)file; (void)pcm; (void)frames;
+	(void)channels; (void)rate; (void)quality;
+	return 0;
+}
+
+#endif // TERMGFX_WITH_SNDFILE
+
+// Append `n` bytes to a growing malloc buffer (used by the VOC decoder).
+static int pcm_append(uint8_t **buf, size_t *len, size_t *cap,
+                      const uint8_t *src, size_t n)
+{
+	if (*len + n > *cap) {
+		size_t   ncap = *cap ? *cap * 2 : 8192;
+		uint8_t *nb;
+
+		while (ncap < *len + n)
+			ncap *= 2;
+		nb = realloc(*buf, ncap);
+		if (nb == NULL)
+			return 0;
+		*buf = nb;
+		*cap = ncap;
+	}
+	memcpy(*buf + *len, src, n);
+	*len += n;
+	return 1;
+}
+
+size_t termgfx_audio_voc_to_pcm(const void *vocv, size_t len, uint8_t **out, int *rate)
+{
+	const uint8_t *voc = vocv;
+	size_t         hdr, p;
+	uint8_t       *pcm = NULL;
+	size_t         pcmlen = 0, pcmcap = 0;
+	int            rt = 11025;
+
+	*out = NULL;
+	if (len < 26 || memcmp(voc, "Creative Voice File\x1a", 20) != 0)
+		return 0;
+	hdr = (size_t)voc[0x14] | ((size_t)voc[0x15] << 8);
+	if (hdr < 26 || hdr > len)
+		hdr = 26;
+	for (p = hdr; p + 4 <= len; ) {
+		uint8_t        type = voc[p];
+		size_t         blen;
+		const uint8_t *bd;
+
+		if (type == 0)                         // terminator
+			break;
+		blen = (size_t)voc[p + 1] | ((size_t)voc[p + 2] << 8) | ((size_t)voc[p + 3] << 16);
+		bd   = voc + p + 4;
+		if (p + 4 + blen > len)
+			break;
+		if (type == 1 && blen >= 2) {          // sound data: divisor, codec, then PCM
+			int div = bd[0];                   // bd[1] = codec (0 = 8-bit unsigned)
+			if (div < 256)
+				rt = 1000000 / (256 - div);
+			if (!pcm_append(&pcm, &pcmlen, &pcmcap, bd + 2, blen - 2)) {
+				free(pcm);
+				return 0;
+			}
+		}
+		else if (type == 2) {                  // continuation block: PCM only
+			if (!pcm_append(&pcm, &pcmlen, &pcmcap, bd, blen)) {
+				free(pcm);
+				return 0;
+			}
+		}
+		// types 3 (silence) / 6,7 (repeat) / 8 (extended) / 9 (new-format) are
+		// rare in Duke SFX -- skipped; the play-once concatenation above suffices.
+		p += 4 + blen;
+	}
+	if (pcm == NULL || pcmlen == 0) {
+		free(pcm);
+		return 0;
+	}
+	*out  = pcm;
+	*rate = rt;
+	return pcmlen;
+}
+
 size_t termgfx_audio_load(uint8_t **buf, size_t *cap, int slot, const char *file)
 {
 	size_t need = strlen(file) + 48;
@@ -164,6 +370,20 @@ size_t termgfx_audio_queue(uint8_t **buf, size_t *cap, int ch, int slot,
 	return (size_t)sprintf((char *)*buf,
 	                       "\x1b_SyncTERM:A;Queue;C=%d;S=%d;VL=%d;VR=%d%s\x1b\\",
 	                       ch, slot, vl, vr, loop ? ";L" : "");
+}
+
+size_t termgfx_audio_volume(uint8_t **buf, size_t *cap, int ch, int vol)
+{
+	if (vol < 0)
+		vol = 0;
+	if (vol > 100)
+		vol = 100;
+	if (*cap < 64) {
+		*buf = realloc(*buf, 64);
+		*cap = 64;
+	}
+	return (size_t)sprintf((char *)*buf,
+	                       "\x1b_SyncTERM:A;Volume;C=%d;V=%d\x1b\\", ch, vol);
 }
 
 size_t termgfx_audio_synth(uint8_t **buf, size_t *cap, int slot,

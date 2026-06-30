@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(syncduke C)
+project(syncduke C CXX)   # CXX: link the C++ libADLMIDI synth (via termgfx)
 
 # syncduke -- Duke Nukem 3D for Synchronet / SyncTERM (DOOR32.SYS BBS door).
 #
@@ -217,6 +217,12 @@ target_link_libraries(syncduke xpdev)
 if(NOT MSVC)
     target_link_options(syncduke PRIVATE -Wl,--allow-multiple-definition)
 endif()
+
+# termgfx pulls in the C++ libADLMIDI synth (transitively, so it lands last on the
+# link line). Drive the final link with the C++ compiler so libstdc++ is appended
+# after it -- listing stdc++ explicitly doesn't help, ld orders the transitive
+# static lib after it and __throw_length_error goes unresolved.
+set_target_properties(syncduke PROPERTIES LINKER_LANGUAGE CXX)
 
 if(NOT WIN32)
     target_link_libraries(syncduke m pthread ${CMAKE_DL_LIBS})
