@@ -2587,7 +2587,7 @@ else
                 gametextpal( 46,157,"C",0,2);        gametext(120,157,"Quick kick",0,2+8+16);
                 gametextpal(320>>1,170,"TERMINAL",0,7);
                 gametext(320>>1,180,"F4 GFX   ^T FPS   ^O MOUSE   ^S STATS",0,2+8+16);
-                gametext(320>>1,190,"- PAGE 1 OF 2 :  PRESS A KEY FOR MORE -",0,2+8+16);
+                gametext(320>>1,190,"PAGE 1 / 2",0,2+8+16);
             }
             else
             {
@@ -2605,7 +2605,7 @@ else
                 gametextpal( 46,158,"F7",0,2);       gametext(120,158,"Chase view",0,2+8+16);
                 gametextpal( 46,168,"TAB / F",0,2);  gametext(120,168,"Automap / follow",0,2+8+16);
                 gametextpal( 46,178,"I / V",0,2);    gametext(120,178,"Crosshair / auto-aim",0,2+8+16);
-                gametext(320>>1,190,"- PAGE 2 OF 2 :  PRESS A KEY TO RETURN -",0,2+8+16);
+                gametext(320>>1,190,"PAGE 2 / 2",0,2+8+16);
             }
 
             if( x >= -1 )
