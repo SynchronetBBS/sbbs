@@ -1,9 +1,12 @@
 // How often to check for unread mail, new telegrams (milliseconds)
 var updateInterval = 60000;
 const _sbbs_events = {};
+let _v4_abort_controller = null;
 
 async function v4_fetch(url, method, body) {
-	const init = { method, headers: {} };
+	if (_v4_abort_controller) _v4_abort_controller.abort();
+	_v4_abort_controller = new AbortController();
+	const init = { method, headers: {}, signal: _v4_abort_controller.signal };
 	if (method == 'POST' && body) {
 		init.body = body;
 		if (body instanceof URLSearchParams) {
@@ -15,6 +18,7 @@ async function v4_fetch(url, method, body) {
 		const data = await response.json();
 		return data;
 	} catch (err) {
+		if (err.name === 'AbortError') return;
 		console.error('Error on fetch', url, init);
 	}
 }
@@ -187,5 +191,6 @@ window.onload =	function () {
 	const qs = Object.entries(_sbbs_events).reduce((a, c, i) => `${a}${(i === 0 ? '?' : '&')}${c[1].qs}`, '');
     const es = new EventSource(`./api/events.ssjs${qs}`);
     Object.keys(_sbbs_events).forEach(e => es.addEventListener(e, _sbbs_events[e].callback));
+    window.addEventListener('beforeunload', () => es.close());
 
 }
