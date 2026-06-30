@@ -71,11 +71,12 @@ void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
 int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
                              const void *filedata, size_t filelen, int vol);
 
-// Update the live volume (0..100) of a running looping voice -- for 3D
-// distance/attenuation tracking as the player moves relative to an ambient
-// source. No-op (no APC sent) if `vol` is unchanged from the last update or the
-// handle is unknown, so it's safe to call every frame. (Pan is not yet wired.)
-void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol);
+// Update the live volume (0..100) and stereo pan (-100 left .. +100 right) of a
+// running looping voice -- for 3D distance + direction tracking as the player
+// moves relative to an ambient source. No-op (no APC sent) if the resulting L/R
+// is unchanged from the last update or the handle is unknown, so it's safe to
+// call every frame.
+void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan);
 
 // Stop the looping voice `handle` from termgfx_audio_loop_start (no-op if it's
 // already stopped/unknown -- safe against a stale handle).

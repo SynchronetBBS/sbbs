@@ -56,6 +56,27 @@ static int sd_music_v(void) { return sd_music_vol * SD_MUSIC_MAXV / 255; }
 #define SD_SFX_REPEAT_GAP 8              /* 2 game tics (~67ms): > 1-tic hum, < 3-tic chaingun */
 #define SD_MAXSOUND       450            /* = NUM_SOUNDS (duke3d.h) */
 
+/* Map an engine pan angle (the build relative-bearing `sndang>>6`, 0..31) to a
+ * stereo pan -100 (left) .. +100 (right). Faithful to the original audiolib's
+ * MV_CalcPanTable: a triangle with center (front) at 0, hard right at 8, center
+ * (behind) at 16, hard left at 24 -- the side toward the source plays at full,
+ * the opposite side ramps down. */
+static int sd_angle_to_pan(int angle)
+{
+	int a = angle & 31;
+	int bal;                                 /* -8..+8, +8 = hard right */
+
+	if (a <= 8)
+		bal = a;                         /* 0..8  : center -> right */
+	else if (a <= 16)
+		bal = 16 - a;                    /* 8..16 : right -> center */
+	else if (a <= 24)
+		bal = -(a - 16);                 /* 16..24: center -> left  */
+	else
+		bal = -(32 - a);                 /* 24..32: left -> center  */
+	return bal * 100 / 8;
+}
+
 /* Ship a one-shot Duke SFX to the terminal. ptr/soundsiz[num] is a complete VOC/WAV
  * file (libsndfile decodes it); distance is Apogee 0..255 with 0 = closest/loudest.
  * Returns FX_Ok so the engine does NOT track a voice handle (fire-and-forget).
@@ -71,14 +92,14 @@ static int sd_music_v(void) { return sd_music_vol * SD_MUSIC_MAXV / 255; }
  * path immediately, the busy-waits fall through, and SyncTERM plays the burst out on its
  * own. The repeat-flood that the dead `soundonce` gate would otherwise cause is bounded by
  * the rate limit below. (Pan/3D is a follow-up.) */
-static int sd_fx_play(uint8_t *ptr, int distance, uint32_t callbackval)
+static int sd_fx_play(uint8_t *ptr, int angle, int distance, uint32_t callbackval)
 {
 	extern void    syncduke_log(const char *fmt, ...);
 	static int32_t sd_last[SD_MAXSOUND];     /* totalclock of last dispatch ATTEMPT, per sound */
 	static uint8_t sd_seen[SD_MAXSOUND];     /* sd_last[num] is valid (vs cold zero-init) */
 	static int     sd_fx_logn;               /* TEMP diag: log the first several SFX */
 	int            num = (int)callbackval;
-	int            vol;
+	int            vol, pan;
 
 	if (sd_audio == NULL || ptr == NULL || num < 0 || soundsiz[num] <= 0)
 		return FX_Ok;
@@ -102,12 +123,13 @@ static int sd_fx_play(uint8_t *ptr, int distance, uint32_t callbackval)
 		distance = 255;
 	vol = (255 - distance) * 100 / 255;
 	vol = vol * sd_fx_vol / 255;             /* apply the Setup Sound FX master volume */
+	pan = sd_angle_to_pan(angle);            /* place the burst on the correct side */
 	if (sd_fx_logn < 60) {
 		sd_fx_logn++;
-		syncduke_log("sfx: #%d tier=%d vol=%d siz=%d", num,
-		             termgfx_audio_tier(sd_audio), vol, (int)soundsiz[num]);
+		syncduke_log("sfx: #%d tier=%d vol=%d pan=%d siz=%d", num,
+		             termgfx_audio_tier(sd_audio), vol, pan, (int)soundsiz[num]);
 	}
-	termgfx_audio_sfx_file(sd_audio, num, ptr, (size_t)soundsiz[num], vol, 0);
+	termgfx_audio_sfx_file(sd_audio, num, ptr, (size_t)soundsiz[num], vol, pan);
 	return FX_Ok;
 }
 
@@ -152,32 +174,33 @@ int  FX_SetupSoundBlaster(fx_blaster_config blaster, int *mv, int *ms, int *mc)
 int  FX_VoiceAvailable(int priority) { (void)priority; return 1; }
 /* The engine re-pans every active positional voice each frame (sounds.c). For our
  * looping ambiences (the cinema projector, machinery, water...) `handle` is the
- * termgfx loop handle; map the updated distance to a volume exactly as sd_loop_play
- * did at start so the source attenuates as the player moves. termgfx suppresses
- * unchanged volumes, so calling this every frame is cheap. (One-shots never reach
- * here -- fire-and-forget leaves Sound[].num==0, so the engine's pan loop skips them.) */
+ * termgfx loop handle; map the updated distance to a volume and the bearing to a
+ * stereo pan, exactly as the original audiolib did, so the source attenuates AND
+ * shifts side as the player moves. termgfx suppresses unchanged L/R, so calling
+ * this every frame is cheap. (One-shots never reach here -- fire-and-forget leaves
+ * Sound[].num==0, so the engine's pan loop skips them; they're panned at queue.) */
 int32_t FX_Pan3D(int handle, int angle, int distance)
 {
-	int vol;
+	int vol, pan;
 
-	(void)angle;
 	if (distance < 0)
 		distance = 0;
 	if (distance > 255)
 		distance = 255;
 	vol = (255 - distance) * 100 / 255;
 	vol = vol * sd_fx_vol / 255;
-	termgfx_audio_loop_volume(sd_audio, handle, vol);
+	pan = sd_angle_to_pan(angle);
+	termgfx_audio_loop_volume(sd_audio, handle, vol, pan);
 	return FX_Ok;
 }
 int32_t FX_StopSound(int handle) { termgfx_audio_loop_stop(sd_audio, handle); return FX_Ok; }
 int32_t FX_StopAllSounds(void) { termgfx_audio_sfx_stop_all(sd_audio); return FX_Ok; }
 int  FX_PlayVOC3D(uint8_t *ptr, int32_t pitchoffset, int32_t angle, int32_t distance,
                   int32_t priority, uint32_t callbackval)
-{ (void)pitchoffset; (void)angle; (void)priority; return sd_fx_play(ptr, (int)distance, callbackval); }
+{ (void)pitchoffset; (void)priority; return sd_fx_play(ptr, (int)angle, (int)distance, callbackval); }
 int  FX_PlayWAV3D(uint8_t *ptr, int pitchoffset, int angle, int distance,
                   int priority, uint32_t callbackval)
-{ (void)pitchoffset; (void)angle; (void)priority; return sd_fx_play(ptr, distance, callbackval); }
+{ (void)pitchoffset; (void)priority; return sd_fx_play(ptr, angle, distance, callbackval); }
 int  FX_PlayLoopedVOC(uint8_t *ptr, int32_t loopstart, int32_t loopend,
                       int32_t pitchoffset, int32_t vol, int32_t left, int32_t right,
                       int32_t priority, uint32_t callbackval)

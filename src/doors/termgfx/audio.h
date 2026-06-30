@@ -92,6 +92,11 @@ size_t termgfx_audio_queue(uint8_t **buf, size_t *cap, int ch, int slot,
 // music-volume slider on the reserved music channel.
 size_t termgfx_audio_volume(uint8_t **buf, size_t *cap, int ch, int vol);
 
+// A;Volume with separate left/right -- set channel `ch`'s live per-side mix
+// volume (each 0..100). Like termgfx_audio_volume but carries stereo balance, so
+// a looping voice can be panned in real time (3D distance + direction tracking).
+size_t termgfx_audio_volume_lr(uint8_t **buf, size_t *cap, int ch, int vl, int vr);
+
 // A;Synth -- generate a `ms`-millisecond `freq`-Hz tone of waveform `shape`
 // ("SINE","SQUARE","SAWTOOTH",...) into slot `slot`. The fallback cue source
 // when libsndfile is absent.

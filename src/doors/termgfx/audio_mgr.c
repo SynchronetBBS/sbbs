@@ -36,9 +36,9 @@ struct termgfx_audio {
 	int next_ch;                           // round-robin SFX channel cursor
 	char music_name[MUSNAME_MAX];          // track in the music slot ("" = none)
 
-	struct { int handle; int vol; } loop[NLOOP_CH]; // looping voices: loop[i] on LOOP_CH_LO+i;
+	struct { int handle; int vl, vr; } loop[NLOOP_CH]; // looping voices: loop[i] on LOOP_CH_LO+i;
 	int loop_seq;                          // .handle 0 = free; loop_seq mints unique handles
-	                                       // .vol = last volume sent (skip redundant updates)
+	                                       // .vl/.vr = last L/R volume sent (skip redundant updates)
 
 	uint8_t acc[32];                       // rolling window for the probe reply
 	int acclen;
@@ -230,13 +230,14 @@ int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
 	if (++m->loop_seq <= 0)
 		m->loop_seq = 1;
 	m->loop[i].handle = m->loop_seq;
-	m->loop[i].vol    = vol;
+	m->loop[i].vl     = vol;        // started centered; FX_Pan3D pans it next frame
+	m->loop[i].vr     = vol;
 	return m->loop_seq;
 }
 
-void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol)
+void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan)
 {
-	int i;
+	int i, vl, vr;
 
 	if (m == NULL || m->tier < 1 || handle <= 0)
 		return;
@@ -244,12 +245,21 @@ void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol)
 		vol = 0;
 	else if (vol > 100)
 		vol = 100;
+	if (pan < -100)
+		pan = -100;
+	else if (pan > 100)
+		pan = 100;
+	// Side toward the source stays at full `vol`; the opposite side attenuates --
+	// matching the original audiolib pan law (and termgfx_audio_queue's VL/VR).
+	vl = (pan > 0) ? vol * (100 - pan) / 100 : vol;
+	vr = (pan < 0) ? vol * (100 + pan) / 100 : vol;
 	for (i = 0; i < NLOOP_CH; i++) {
 		if (m->loop[i].handle == handle) {
-			if (vol == m->loop[i].vol)        // unchanged -- don't flood the APC channel
+			if (vl == m->loop[i].vl && vr == m->loop[i].vr)   // unchanged -- don't flood APC
 				return;
-			m->loop[i].vol = vol;
-			send_buf(m, termgfx_audio_volume(&m->buf, &m->cap, LOOP_CH_LO + i, vol),
+			m->loop[i].vl = vl;
+			m->loop[i].vr = vr;
+			send_buf(m, termgfx_audio_volume_lr(&m->buf, &m->cap, LOOP_CH_LO + i, vl, vr),
 			         TERMGFX_AUDIO_PRIO);
 			return;
 		}

@@ -139,7 +139,7 @@ size_t termgfx_audio_cache_pcm(uint8_t **buf, size_t *cap, const char *file,
 // libsndfile virtual-I/O sink: it writes the encoded OGG into a growing malloc
 // buffer instead of a file, so we can base64 it straight into a C;S Store.
 struct memsink {
-	uint8_t   *data;
+	uint8_t *data;
 	sf_count_t len, cap, pos;
 };
 
@@ -179,7 +179,7 @@ static sf_count_t ms_write(const void *ptr, sf_count_t n, void *u)
 
 	if (s->pos + n > s->cap) {
 		sf_count_t ncap = s->cap ? s->cap * 2 : 65536;
-		uint8_t   *nd;
+		uint8_t *  nd;
 
 		while (ncap < s->pos + n)
 			ncap *= 2;
@@ -205,7 +205,7 @@ size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
 	struct memsink sink = { NULL, 0, 0, 0 };
 	SF_VIRTUAL_IO  vio  = { ms_filelen, ms_seek, ms_read, ms_write, ms_tell };
 	SF_INFO        info;
-	SNDFILE       *sf;
+	SNDFILE *      sf;
 	size_t         n = 0;
 
 	memset(&info, 0, sizeof(info));
@@ -286,7 +286,7 @@ size_t termgfx_audio_voc_to_pcm(const void *vocv, size_t len, uint8_t **out, int
 {
 	const uint8_t *voc = vocv;
 	size_t         hdr, p;
-	uint8_t       *pcm = NULL;
+	uint8_t *      pcm = NULL;
 	size_t         pcmlen = 0, pcmcap = 0;
 	int            rt = 11025;
 
@@ -384,6 +384,24 @@ size_t termgfx_audio_volume(uint8_t **buf, size_t *cap, int ch, int vol)
 	}
 	return (size_t)sprintf((char *)*buf,
 	                       "\x1b_SyncTERM:A;Volume;C=%d;V=%d\x1b\\", ch, vol);
+}
+
+size_t termgfx_audio_volume_lr(uint8_t **buf, size_t *cap, int ch, int vl, int vr)
+{
+	if (vl < 0)
+		vl = 0;
+	if (vl > 100)
+		vl = 100;
+	if (vr < 0)
+		vr = 0;
+	if (vr > 100)
+		vr = 100;
+	if (*cap < 64) {
+		*buf = realloc(*buf, 64);
+		*cap = 64;
+	}
+	return (size_t)sprintf((char *)*buf,
+	                       "\x1b_SyncTERM:A;Volume;C=%d;VL=%d;VR=%d\x1b\\", ch, vl, vr);
 }
 
 size_t termgfx_audio_synth(uint8_t **buf, size_t *cap, int slot,
