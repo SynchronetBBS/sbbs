@@ -198,16 +198,19 @@ static sf_count_t ms_write(const void *ptr, sf_count_t n, void *u)
 
 int termgfx_audio_have_ogg(void) { return 1; }
 
-size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
-                               const int16_t *pcm, size_t frames,
-                               int channels, int rate, double quality)
+// Encode 16-bit PCM (`channels`, `rate`) to an OGG/Vorbis stream in memory.
+// Returns a malloc'd buffer in *out (caller frees) + its length, or 0 on failure.
+// Split out of cache_ogg so the door-side disk cache and the C;S upload share one
+// encode (the OGG bytes get written to disk AND base64'd to the client).
+size_t termgfx_audio_encode_ogg(const int16_t *pcm, size_t frames, int channels,
+                                int rate, double quality, uint8_t **out)
 {
 	struct memsink sink = { NULL, 0, 0, 0 };
 	SF_VIRTUAL_IO  vio  = { ms_filelen, ms_seek, ms_read, ms_write, ms_tell };
 	SF_INFO        info;
 	SNDFILE *      sf;
-	size_t         n = 0;
 
+	*out = NULL;
 	memset(&info, 0, sizeof(info));
 	info.samplerate = rate;
 	info.channels   = channels;
@@ -240,9 +243,25 @@ size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
 		}
 	}
 	sf_close(sf);                                  // flushes the OGG stream into sink
-	if (sink.data != NULL && sink.len > 0)
-		n = termgfx_audio_cache_file(buf, cap, file, sink.data, (size_t)sink.len);
-	free(sink.data);
+	if (sink.data == NULL || sink.len <= 0) {
+		free(sink.data);
+		return 0;
+	}
+	*out = sink.data;                              // ownership transferred to caller
+	return (size_t)sink.len;
+}
+
+size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
+                               const int16_t *pcm, size_t frames,
+                               int channels, int rate, double quality)
+{
+	uint8_t *ogg    = NULL;
+	size_t   ogglen = termgfx_audio_encode_ogg(pcm, frames, channels, rate, quality, &ogg);
+	size_t   n      = 0;
+
+	if (ogglen > 0)
+		n = termgfx_audio_cache_file(buf, cap, file, ogg, ogglen);
+	free(ogg);
 	return n;
 }
 
@@ -256,6 +275,14 @@ size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
 {
 	(void)buf; (void)cap; (void)file; (void)pcm; (void)frames;
 	(void)channels; (void)rate; (void)quality;
+	return 0;
+}
+
+size_t termgfx_audio_encode_ogg(const int16_t *pcm, size_t frames, int channels,
+                                int rate, double quality, uint8_t **out)
+{
+	(void)pcm; (void)frames; (void)channels; (void)rate; (void)quality;
+	*out = NULL;
 	return 0;
 }
 

@@ -182,7 +182,7 @@ static char g_diag_desc[64] = "";      // desc= (TERM string) read from it
 // even in EX_BIN mode (where stderr is logged but not echoed to the user), so
 // these land in the BBS log (syslog/journalctl/console) without touching the
 // display. One newline-terminated line per call = one log entry.
-static void dlog(const char *fmt, ...)
+void dlog(const char *fmt, ...)   // non-static: i_termmusic.c logs the cache path too
 {
 	va_list ap;
 
@@ -250,18 +250,18 @@ void        sd_save_user_prefs(void); // persist per-user prefs (cycle_video use
 static void toggle_pipeline(void); // Ctrl-T: cycle frame-pipeline depth + persist
 static void toggle_stats(void);    // Ctrl-S: toggle the live stats overlay (session-only)
 static void toggle_mouse(void);    // Ctrl-O: toggle mouse steering on/off + persist
-static int       g_stats_overlay = 0; // show fps/RTT/depth overlaid on each frame
+static int g_stats_overlay = 0;       // show fps/RTT/depth overlaid on each frame
 // Kitty keyboard protocol negotiated (terminal answered our CSI?u query): keys arrive as CSI-u
 // events with real press/repeat/release, so the door gets true key-up -- crisp hold-to-move and
 // Doom's native turn ramp, no key-up-synthesis grace needed. Non-static: m_menu.c greys the (now
 // moot) TAP/HOLD/TURN/FAST-TURN sliders when this is set. (Declared up here: emit_overlay reads it.)
-int              g_kitty_active = 0;
+int                  g_kitty_active = 0;
 static unsigned char g_kitty_down[256]; // kitty: Doom keys we've sent key-down for (dedupe + release)
 static const char *mode_name(enum frame_mode m);   // defined later; used by the overlay
 
-static uint8_t * s_rgb = NULL;   static size_t s_rgb_cap = 0;      // packed RGB888
-static uint8_t * s_img = NULL;   static size_t s_img_cap = 0;      // encoded bytes (PPM/JXL)
-static uint8_t * s_apc = NULL;   static size_t s_apc_cap = 0;      // built APC Store+Draw sequence
+static uint8_t *     s_rgb = NULL;   static size_t s_rgb_cap = 0;  // packed RGB888
+static uint8_t *     s_img = NULL;   static size_t s_img_cap = 0;  // encoded bytes (PPM/JXL)
+static uint8_t *     s_apc = NULL;   static size_t s_apc_cap = 0;  // built APC Store+Draw sequence
 
 // Send a small control string in full (cursor hide, JXL probe) at startup.
 static void emit_all(const char *buf, size_t len)
@@ -492,9 +492,10 @@ static void out_flush(void)
 // pump_input so the capability probe resolves. NULL/tier<1 => silently no sound.
 termgfx_audio_t *sd_audio = NULL;
 
-static void sd_audio_emit(void *ctx, const void *buf, size_t len)
+static void sd_audio_emit(void *ctx, const void *buf, size_t len, int stream)
 {
 	(void)ctx;
+	(void)stream;   /* SyncDOOM has SFX only (no music upload yet) -> single stream */
 	out_put(buf, len);
 }
 
@@ -1287,7 +1288,7 @@ static unsigned char csi_tilde_key(int n)
 }
 
 // Incremental escape-sequence parser state (bytes may split across reads).
-static enum { ST_NORMAL, ST_ESC, ST_CSI } s_pstate = ST_NORMAL;
+static enum { ST_NORMAL, ST_ESC, ST_CSI, ST_APC, ST_APC_ESC } s_pstate = ST_NORMAL;
 static char s_csi_intro = 0;            // '[' or 'O' for the current CSI/SS3
 static char s_csi_par[24];              // accumulated parameter bytes ("[<n>~", SGR mouse "[<b;c;r")
 static int  s_csi_parlen = 0;
@@ -1356,10 +1357,24 @@ static void parse_byte(unsigned char c)
 			if (c == '[' || c == 'O') {
 				s_csi_intro = c; s_csi_parlen = 0; s_pstate = ST_CSI; return;
 			}
+			// String sequences -- APC (_), DCS (P), OSC (]), PM (^) -- are terminated
+			// by ST (ESC \) and carry no keystrokes; swallow them whole. (SyncTERM's
+			// C;L cache-list reply is an APC and literally contains "C;L", so leaking
+			// it as keys typed an 'l' -> Load Game. Must consume, not pass through.)
+			if (c == '_' || c == 'P' || c == ']' || c == '^') {
+				s_pstate = ST_APC; return;
+			}
 			// lone ESC then a byte: treat ESC as Escape, reprocess the byte
 			key_seen(KEY_ESCAPE);
 			s_pstate = ST_NORMAL;
 			parse_byte(c);
+			return;
+		case ST_APC:
+			if (c == 0x1b) { s_pstate = ST_APC_ESC; return; }   // maybe the ST terminator
+			if (c == 0x07) { s_pstate = ST_NORMAL; return; }    // BEL also ends OSC/strings
+			return;                                             // swallow body byte
+		case ST_APC_ESC:
+			s_pstate = (c == '\\') ? ST_NORMAL : ST_APC;        // ESC '\' = ST -> done
 			return;
 		case ST_CSI:
 			// Parameter/intermediate bytes (0x20-0x3f) precede the final byte;
@@ -1413,11 +1428,16 @@ static void parse_byte(unsigned char c)
 						case '~': k = csi_tilde_key(atoi(s_csi_par)); break;
 						// Kitty keyboard protocol: F1/F2/F4 arrive as CSI P/Q/S, Home/End as CSI H/F
 						// (only once negotiated). F4 = the tier-cycle sentinel, like SS3 S.
-						case 'P': if (g_kitty_active) k = KEY_F1;   break;
-						case 'Q': if (g_kitty_active) k = KEY_F2;   break;
-						case 'S': if (g_kitty_active && s_csi_par[0] != '?') k = KEY_F4; break; // '?' = XTSMGRAPHICS reply
-						case 'H': if (g_kitty_active) k = KEY_HOME; break;
-						case 'F': if (g_kitty_active) k = KEY_END;  break;
+						case 'P': if (g_kitty_active)
+								k = KEY_F1; break;
+						case 'Q': if (g_kitty_active)
+								k = KEY_F2; break;
+						case 'S': if (g_kitty_active && s_csi_par[0] != '?')
+								k = KEY_F4; break;                                              // '?' = XTSMGRAPHICS reply
+						case 'H': if (g_kitty_active)
+								k = KEY_HOME; break;
+						case 'F': if (g_kitty_active)
+								k = KEY_END; break;
 						case 'u':                            // kitty key event, or the CSI?u support reply
 							if (s_csi_par[0] == '?') {       // progressive-flags reply -> enable + push our flags
 								if (!g_kitty_active) {
@@ -1476,9 +1496,13 @@ static void pump_input(void)
 				static int sd_prev_tier = -2;            // log the negotiated tier once
 				int        t = termgfx_audio_tier(sd_audio);
 				if (t != sd_prev_tier) {
+					if (t >= 1 && sd_prev_tier < 1) {
+						extern void sd_music_tier_ready(void);   // i_termmusic.c
+						sd_music_tier_ready();                   // play deferred title song
+					}
 					sd_prev_tier = t;
 					dlog("audio: tier=%d (%s)", t,
-					     t == 1 ? "digital -- SFX should play" :
+					     t == 1 ? "digital -- SFX + music should play" :
 					     t == 0 ? "audio APC but no libsndfile -- silent" :
 					     "no audio APC reply");
 				}
@@ -1741,8 +1765,27 @@ static void tune_socket(void)
 
 // Restore auto-wrap + cursor on exit (so the BBS prompt behaves after Doom quits),
 // and turn off mouse reporting if we enabled it (else the BBS sees stray reports).
+// Blocking-push whatever is staged in g_out (used only at exit, where the normal
+// drop-on-behind out_flush would discard it). emit_all waits on the socket.
+static void out_drain_blocking(void)
+{
+	if (out_pending())
+		emit_all((const char *)g_out + g_out_off, g_out_len - g_out_off);
+	g_out_len = 0;
+	g_out_off = 0;
+}
+
 static void terminal_restore(void)
 {
+	// Stop the looping music BEFORE we leave, or SyncTERM keeps playing the track
+	// after the door exits. termgfx_audio_music_stop is a hard-clear (fade 0) Flush;
+	// it's staged in g_out like everything else, and the staged buffer is dropped at
+	// exit -- so blocking-drain it now (the Flush is tiny; any pending frame ahead of
+	// it goes too). Mirrors SyncDuke's syncduke_term_restore.
+	if (sd_audio != NULL) {
+		termgfx_audio_music_stop(sd_audio);
+		out_drain_blocking();
+	}
 	if (g_mouse_enabled)
 		emit_all("\x1b[?1003l\x1b[?1006l", 16);
 	if (g_sixel_scroll_off)
@@ -2002,6 +2045,7 @@ static void probe_geometry(void)
 	}
 }
 
+static int resolve_music_cache_dir(char *buf, size_t sz);   // defined below (needs g_wads_dir)
 void DG_Init(void)
 {
 	raw_input_on();
@@ -2060,7 +2104,21 @@ void DG_Init(void)
 	// frames; until then -- and on terminals without the audio APC -- the
 	// manager stays at tier -1 and every SFX is a silent no-op.
 	sd_audio = termgfx_audio_create(sd_audio_emit, NULL);
+	termgfx_audio_set_cache_prefix(sd_audio, "syncdoom");   // SyncTERM cache: syncdoom/music|sfx/..
 	termgfx_audio_probe(sd_audio);
+	// Door-side music cache: shared OGG transcodes -> the MIDI->OPL render happens once
+	// globally; every later play (any session / door relaunch) ships the cached OGG with
+	// no re-render. resolve_music_cache_dir() prefers the BBS data dir (Synchronet's
+	// SBBSDATA) and falls back to the WADs dir on a non-Synchronet host; absent/unwritable
+	// -> render-only (graceful). Content-addressed names keep WAD sets from colliding.
+	{
+		char mcdir[PATH_MAX];
+
+		if (resolve_music_cache_dir(mcdir, sizeof(mcdir))) {
+			mkpath(mcdir);
+			termgfx_audio_set_music_cache_dir(sd_audio, mcdir);
+		}
+	}
 	out_flush();                     // push the probe query now
 
 	build_video_states();            // seed the F4 cycle now so the startup tier (incl.
@@ -2204,6 +2262,29 @@ static void read_door32(const char *path)
 // Absolute path of the configured [wads] dir (same value exported as DOOMWADDIR),
 // captured by read_syncdoom_ini() for wadcopy() below. Empty until then.
 static char g_wads_dir[PATH_MAX] = "";
+
+// Where to keep the door-side transcoded-audio cache (rendered MUS/MIDI -> OGG).
+// Prefer the BBS data dir -- Synchronet exports SBBSDATA = the SCFG-configured
+// data_dir to every door, so we honour a relocated data_dir without hardcoding.
+// Fall back to the WADs dir on a non-Synchronet host (writable + persistent, and
+// where the content already lives). Returns 0 if neither is known -> render-only.
+static int resolve_music_cache_dir(char *buf, size_t sz)
+{
+	const char *data = getenv("SBBSDATA");
+
+	if (data != NULL && *data) {
+		size_t      n   = strlen(data);
+		const char *sep = (n && (data[n - 1] == '/' || data[n - 1] == '\\')) ? "" : "/";
+
+		snprintf(buf, sz, "%s%ssyncdoom/audio", data, sep);
+		return 1;
+	}
+	if (g_wads_dir[0]) {                      // non-Synchronet: alongside the WADs
+		snprintf(buf, sz, "%s/audio", g_wads_dir);
+		return 1;
+	}
+	return 0;
+}
 
 // Resolve a (possibly relative) path to absolute -- called BEFORE the chdir so
 // -iwad/-file still load afterwards.

@@ -65,6 +65,12 @@ size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
                                const int16_t *pcm, size_t frames,
                                int channels, int rate, double quality);
 
+// Encode 16-bit PCM to a raw OGG/Vorbis stream in memory: malloc'd buffer in *out
+// (caller frees), returns its length or 0. Lets the manager write the OGG to its
+// door-side disk cache AND base64 it to the client from a single encode.
+size_t termgfx_audio_encode_ogg(const int16_t *pcm, size_t frames, int channels,
+                                int rate, double quality, uint8_t **out);
+
 // 1 if termgfx was built with libsndfile (termgfx_audio_cache_ogg works), else 0.
 int termgfx_audio_have_ogg(void);
 

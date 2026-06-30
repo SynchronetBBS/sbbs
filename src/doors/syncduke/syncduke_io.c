@@ -49,6 +49,7 @@
 #include "geometry.h"   /* termgfx: shared image fit/center (shared with SyncDOOM) */
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller */
 #include "audio_mgr.h"  /* termgfx: SyncTERM audio-APC manager (digital SFX) */
+#include <dirwrap.h>    /* xpdev: mkpath (recursive mkdir) for the audio cache dir */
 
 /* emit a NUL-terminated control string (no embedded NULs) without hand-counting */
 static void syncduke_out_puts(const char *s) { syncduke_out_put(s, strlen(s)); }
@@ -58,7 +59,7 @@ static void syncduke_out_puts(const char *s) { syncduke_out_put(s, strlen(s)); }
  * callback stages bytes through syncduke_out_put -- audio rides the same staged
  * buffer as the frames (FIFO), flushed with them. NULL until syncduke_io_init
  * creates it; tier < 1 => silent. */
-termgfx_audio_t *sd_audio = NULL;
+termgfx_audio_t *  sd_audio = NULL;
 
 /* --- staged output buffer --- */
 static uint8_t *   g_out;
@@ -148,6 +149,27 @@ static void syncduke_io_init(void)
 	g_inited = 1;
 	if (sd_audio == NULL)
 		sd_audio = termgfx_audio_create(sd_audio_emit, NULL);
+	termgfx_audio_set_cache_prefix(sd_audio, "syncduke");   /* SyncTERM cache: syncduke/music|sfx/.. */
+	{   /* Door-side transcoded-audio cache: prefer the BBS data dir (Synchronet exports
+		 * SBBSDATA = the configured data_dir), else fall back beside the GRP on a non-
+		 * Synchronet host. Shared OGG cache -> the MIDI render runs once globally. */
+		extern char syncduke_grpdir[];
+		const char *data = getenv("SBBSDATA");
+		char        mcdir[512];
+
+		mcdir[0] = '\0';
+		if (data != NULL && *data) {
+			size_t      n   = strlen(data);
+			const char *sep = (n && (data[n - 1] == '/' || data[n - 1] == '\\')) ? "" : "/";
+			snprintf(mcdir, sizeof(mcdir), "%s%ssyncduke/audio", data, sep);
+		} else if (syncduke_grpdir[0]) {
+			snprintf(mcdir, sizeof(mcdir), "%s/audio", syncduke_grpdir);
+		}
+		if (mcdir[0] != '\0') {
+			mkpath(mcdir);
+			termgfx_audio_set_music_cache_dir(sd_audio, mcdir);
+		}
+	}
 #ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);   /* a write to a closed socket returns EPIPE, not a fatal signal */
 #endif

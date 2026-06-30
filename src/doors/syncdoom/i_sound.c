@@ -135,9 +135,10 @@ static void InitSfxModule(boolean use_sfx_prefix)
 
 static void InitMusicModule(void)
 {
-#ifdef FEATURE_SOUND
-    music_module = &DG_music_module;
-#endif /* FEATURE_SOUND */
+    // SyncDOOM: render MUS/MIDI -> OPL3 PCM and loop it over the terminal's
+    // audio APC (i_termmusic.c), the same way sd_term_sound_module does SFX.
+    extern music_module_t sd_term_music_module;
+    music_module = &sd_term_music_module;
 }
 
 //

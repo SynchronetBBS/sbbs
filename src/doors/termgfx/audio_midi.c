@@ -6,7 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define DEFAULT_MAX_MS 120000u          // 2-minute safety cap on a rendered loop
+// Safety ceiling on a rendered loop -- bounds a runaway/looping MIDI, but must NOT
+// truncate real game music or the loop point lands mid-song. Doom tracks run to
+// ~270s (DOOM.WAD) / ~374s (freedoom); Duke's are shorter. 10 min clears them all
+// with margin while still capping a pathological never-ending sequence.
+#define DEFAULT_MAX_MS 600000u
 
 // libADLMIDI's OPL3 output is low-amplitude -- a single chip peaks well below
 // full scale (~18% on Duke's GRABBAG), so the raw PCM is barely audible once

@@ -361,7 +361,7 @@ enum
 {
     endgame,
     messages,
-    detail,
+    soundvol,           // syncdoom: Sound Volume (was Graphic Detail)
     scrnsize,
     option_empty1,      // the screen-size thermo row
     inputtap,           // syncdoom key-feel sliders, inline (LEFT/RIGHT adjust)
@@ -375,7 +375,7 @@ menuitem_t OptionsMenu[]=
 {
     {1,"M_ENDGAM",	M_EndGame,'e'},
     {1,"M_MESSG",	M_ChangeMessages,'m'},
-    {1,"M_DETAIL",	M_ChangeDetail,'g'},
+    {1,"M_SVOL",	M_Sound,'v'},       // syncdoom: Sound Volume (was Graphic Detail, moot in a terminal door)
     {2,"M_SCRNSZ",	M_SizeDisplay,'s'},
     {-1,"",0,'\0'},                 // option_empty1: the screen-size thermo row
     {2,"",M_InputTap, 't'},
@@ -1079,7 +1079,6 @@ void M_Episode(int choice)
 //
 // M_Options
 //
-static char *detailNames[2] = {"M_GDHIGH","M_GDLOW"};
 static char *msgNames[2] = {"M_MSGOFF","M_MSGON"};
 
 // Common x for the Options-menu sliders: just right of the widest label, so the
@@ -1100,9 +1099,8 @@ void M_DrawOptions(void)
     V_DrawPatchDirect(108, 15, W_CacheLumpName(DEH_String("M_OPTTTL"),
                                                PU_CACHE));
 
-    V_DrawPatchDirect(OptionsDef.x + 175, OptionsDef.y + LINEHEIGHT * detail,
-		      W_CacheLumpName(DEH_String(detailNames[detailLevel]),
-			              PU_CACHE));
+    // syncdoom: Sound Volume occupies the old Graphic Detail row -- a plain label
+    // (the High/Low patch is gone with it), so nothing to draw here.
 
     V_DrawPatchDirect(OptionsDef.x + 120, OptionsDef.y + LINEHEIGHT * messages,
                       W_CacheLumpName(DEH_String(msgNames[showMessages]),

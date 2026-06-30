@@ -310,7 +310,7 @@ int syncduke_canvas_h(void) { return g_gfx_h > 0 ? g_gfx_h : g_term_px_h; }
 
 /* Incremental CSI parser state -- bytes of an escape sequence (and of a probe
  * reply) can split across reads, so it persists between syncduke_input_pump() calls. */
-static enum { P_NORMAL, P_ESC, P_CSI } pstate;
+static enum { P_NORMAL, P_ESC, P_CSI, P_APC, P_APC_ESC } pstate;
 
 /* Lone-ESC disambiguation: a bare ESC (Escape key) shares its first byte with the
  * start of an escape sequence (arrows = ESC[A, etc.). A real sequence arrives as one
@@ -931,7 +931,20 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 				break;
 			case P_ESC:
 				if (c == '[' || c == 'O') { pstate = P_CSI; csi_intro = (char)c; csi_len = 0; }
+				/* String sequences -- APC (_), DCS (P), OSC (]), PM (^) -- end at ST (ESC \)
+				 * and carry no keys; swallow them. SyncTERM's C;L cache-list reply is an APC
+				 * literally containing "C;L", so passing it through typed stray letters. */
+				else if (c == '_' || c == 'P' || c == ']' || c == '^') { pstate = P_APC; }
 				else { press(sc_Escape, now); pstate = P_NORMAL; i--; }   /* lone ESC, reprocess c */
+				break;
+			case P_APC:
+				if (c == 0x1b)
+					pstate = P_APC_ESC;                     /* maybe the ST terminator */
+				else if (c == 0x07)
+					pstate = P_NORMAL;                      /* BEL also ends OSC/strings */
+				break;                                      /* else: swallow body byte */
+			case P_APC_ESC:
+				pstate = (c == '\\') ? P_NORMAL : P_APC;    /* ESC '\' = ST -> done */
 				break;
 			case P_CSI:
 				if (c >= 0x40 && c <= 0x7e) { csi_final((char)c, gameplay, now); pstate = P_NORMAL; }

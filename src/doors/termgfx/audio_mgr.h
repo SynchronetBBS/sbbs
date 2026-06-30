@@ -82,13 +82,36 @@ void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan)
 // already stopped/unknown -- safe against a stale handle).
 void termgfx_audio_loop_stop(termgfx_audio_t *m, int handle);
 
-// Start looping music track `name` on the reserved music channel, replacing any
-// track already playing (a single rendered loop iteration as interleaved PCM).
-// `name` is the track's stable identity (e.g. the MIDI/MUS lump name) -- it
-// becomes the cache filename (content-addressed: the same track always maps to
-// the same SyncTERM cache entry across sessions, vs an unstable per-run counter),
-// so a future C;L probe could skip re-upload. The PCM is encoded to OGG/Vorbis
-// when termgfx has libsndfile (else raw WAV). No-op if `name` is already playing.
+// Set the consumer's name (e.g. "syncdoom" / "syncduke"). SyncTERM client-cache files
+// are then named "<name>/music/.." and "<name>/sfx/..", so two doors sharing one BBS's
+// cache dir stay distinct + attributable (and a future SFX cache-skip is collision-safe).
+// Unset -> bare "music/.." / "sfx/.." (fine for a single consumer). Call once at init.
+void termgfx_audio_set_cache_prefix(termgfx_audio_t *m, const char *name);
+
+// Set the door-side OGG disk-cache directory (e.g. data/<door>/audio). When set,
+// termgfx_audio_music() writes each encoded track there, and termgfx_audio_music_play()
+// can ship it on a later session WITHOUT re-rendering. "" / NULL disables (render-only).
+void termgfx_audio_set_music_cache_dir(termgfx_audio_t *m, const char *dir);
+
+// termgfx_audio_music_play() return values (0 = the door must render; nonzero = played):
+#define TERMGFX_MUSIC_RENDER 0   // not cached anywhere -> door renders + supplies
+#define TERMGFX_MUSIC_CACHED 1   // shipped from the door-side disk cache (no render; uploaded)
+#define TERMGFX_MUSIC_CLIENT 2   // client already had it (C;L hit): no render AND no upload
+
+// Play looping music track `name` from a CACHE without rendering -- the client's own
+// persistent cache (C;L, queried at tier-ready) or the door-side OGG disk cache. `name`
+// is the track's content-addressed identity (e.g. a source-hash like d_<hash>); termgfx
+// adds a render-version tag to form the cache key. Returns one of the TERMGFX_MUSIC_*
+// codes above: a nonzero value means it shipped the track (door skips rendering);
+// TERMGFX_MUSIC_RENDER (0) means the door must render the MIDI to PCM and hand it to
+// termgfx_audio_music() below. (The distinct codes let the door log which path it took.)
+int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol);
+
+// Supply a freshly-rendered track: loop `pcm` on the music channel, replacing any
+// playing track, and (when libsndfile is present) encode it to OGG/Vorbis -- uploaded
+// to the client AND written to the door-side disk cache so the next play skips the
+// render. `name` is the same content-addressed identity passed to _music_play. Call
+// this only after _music_play() returned 0. No-op if `name` is already playing.
 void termgfx_audio_music(termgfx_audio_t *m, const char *name,
                          const void *pcm, size_t bytes, int bits, int channels,
                          int rate, int vol);

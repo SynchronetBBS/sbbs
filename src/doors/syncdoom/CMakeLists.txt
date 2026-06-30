@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(syncdoom C)
+project(syncdoom C CXX)   # CXX: link the C++ libADLMIDI synth (via termgfx, for music)
 
 # syncdoom -- Doom for Synchronet / SyncTERM (DOOR32.SYS BBS door).
 #
@@ -17,7 +17,7 @@ set(SOURCES
     dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c
     d_iwad.c d_loop.c d_main.c d_mode.c d_net.c f_finale.c f_wipe.c g_game.c
     hu_lib.c hu_stuff.c info.c i_cdmus.c i_endoom.c i_joystick.c i_scale.c
-    i_sound.c i_termsound.c i_system.c i_timer.c memio.c m_argv.c m_bbox.c m_cheat.c
+    i_sound.c i_termsound.c i_termmusic.c i_system.c i_timer.c memio.c m_argv.c m_bbox.c m_cheat.c
     m_config.c m_controls.c m_fixed.c m_menu.c m_misc.c m_random.c p_ceilng.c
     p_doors.c p_enemy.c p_floor.c p_inter.c p_lights.c p_map.c p_maputl.c
     p_mobj.c p_plats.c p_pspr.c p_saveg.c p_setup.c p_sight.c p_spec.c
@@ -35,6 +35,11 @@ set(SOURCES
 
 add_executable(syncdoom ${SOURCES})
 target_include_directories(syncdoom PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# termgfx pulls in the C++ libADLMIDI synth (transitively for terminal music), so
+# drive the final link with the C++ compiler -- that appends libstdc++ after the
+# transitive .a; listing stdc++ explicitly doesn't help (ld orders it wrong).
+set_target_properties(syncdoom PROPERTIES LINKER_LANGUAGE CXX)
 
 # termgfx: shared terminal-graphics door library (sixel DECSIXEL encoder +
 # sbbs_node who's-online/paging). Its PUBLIC include dir gives syncdoom.c the

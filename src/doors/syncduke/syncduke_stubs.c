@@ -248,6 +248,9 @@ void PlayMusic(char *filename)
 	void *    mid;
 	int16_t * pcm;
 	size_t    nframes;
+	char      id[16];           /* content-addressed cache name "d_<hash>" */
+	uint32_t  h;
+	int32_t   i;
 
 	if (sd_audio == NULL || filename == NULL || filename[0] == '\0') {
 		syncduke_log("music: PlayMusic('%s') ignored (null/empty filename)",
@@ -283,10 +286,29 @@ void PlayMusic(char *filename)
 	}
 	kclose(fd);
 
+	/* Content-address by hashing the MIDI bytes (FNV-1a) -> "d_<hash>": stable across
+	 * sessions and collision-free across different GRPs, so the shared door-side cache
+	 * (and the client cache, once C;L is wired) never serves the wrong track. Try the
+	 * cache first -- a hit ships it without the expensive OPL render. */
+	h = 2166136261u;
+	for (i = 0; i < len; i++)
+		h = (h ^ ((const uint8_t *)mid)[i]) * 16777619u;
+	snprintf(id, sizeof(id), "d_%08x", (unsigned)h);
+
+	{
+		int hit = termgfx_audio_music_play(sd_audio, id, sd_music_v());
+		if (hit != TERMGFX_MUSIC_RENDER) {
+			syncduke_log("music: '%s' (%s) -- %s", filename, id,
+			             hit == TERMGFX_MUSIC_CLIENT ? "client-cached (no render, no upload)"
+			                                         : "disk-cached (no render)");
+			free(mid);
+			return;
+		}
+	}
 	if (termgfx_midi_render(mid, (size_t)len, 44100, 0, &pcm, &nframes)) {
-		syncduke_log("music: '%s' rendered %zu frames -> play (vol=%d)",
-		             filename, nframes, sd_music_v());
-		termgfx_audio_music(sd_audio, filename, pcm, nframes * 4, 16, 2, 44100,
+		syncduke_log("music: '%s' (%s) rendered %zu frames -> play (vol=%d)",
+		             filename, id, nframes, sd_music_v());
+		termgfx_audio_music(sd_audio, id, pcm, nframes * 4, 16, 2, 44100,
 		                    sd_music_v());        /* Setup Sound music volume (balanced) */
 		free(pcm);
 	}

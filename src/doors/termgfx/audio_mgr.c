@@ -20,9 +20,13 @@
 #define LOOP_CH_LO   12              // looping SFX (ambience): dedicated channels 12..15
 #define LOOP_CH_HI   15
 #define NLOOP_CH     (LOOP_CH_HI - LOOP_CH_LO + 1)
-#define MUSNAME_MAX  24              // cache name "m/<track>" component length
+#define MUSNAME_MAX  32              // cache name "m/<track>_v<n>" component length
 #define MUS_TRACKS   64             // distinct music tracks tracked per session
 #define MUS_OGG_Q    0.3            // Vorbis VBR quality for OPL FM music (small, clean)
+#define MUS_RENDER_VER 1            // bump when the synth/bank/normalisation changes:
+                                    // the cache key carries it (<name>_v<n>), so every
+                                    // stale door-side + client cache entry is bypassed
+#define MUS_CACHE_DIR_MAX 240       // door-side OGG cache directory path
 
 struct termgfx_audio {
 	termgfx_audio_emit_fn emit;
@@ -34,7 +38,9 @@ struct termgfx_audio {
 	int mus_count;
 	int next_slot;                         // round-robin SFX slot cursor
 	int next_ch;                           // round-robin SFX channel cursor
-	char music_name[MUSNAME_MAX];          // track in the music slot ("" = none)
+	char music_name[MUSNAME_MAX];          // cache key (with _v<n>) in the music slot ("" = none)
+	char music_cache_dir[MUS_CACHE_DIR_MAX]; // door-side OGG disk cache ("" = none, render-only)
+	char cache_prefix[24];                 // consumer/door name -> SyncTERM cache "<prefix>/music|sfx/.."
 
 	struct { int handle; int vl, vr; } loop[NLOOP_CH]; // looping voices: loop[i] on LOOP_CH_LO+i;
 	int loop_seq;                          // .handle 0 = free; loop_seq mints unique handles
@@ -42,6 +48,16 @@ struct termgfx_audio {
 
 	uint8_t acc[32];                       // rolling window for the probe reply
 	int acclen;
+
+	// C;L client-cache query (cross-session upload skip): at tier-ready we ask the
+	// client which music files it already holds on its persistent disk cache, then
+	// skip the (re-)upload for any whose content-addressed name is in the reply.
+	int cl_state;                          // 0 idle/done, 1 matching reply marker, 2 capturing
+	int cl_match;                          // start-marker bytes matched so far (state 1)
+	int cl_esc;                            // saw ESC mid-payload, awaiting ST '\' (state 2)
+	int cl_done;                           // reply fully captured -> cl_data is valid
+	char *cl_data;                         // captured "<path>\t<md5>" lines
+	size_t cl_len, cl_cap;
 
 	uint8_t *buf;                          // scratch for builders
 	size_t cap;
@@ -65,6 +81,7 @@ void termgfx_audio_destroy(termgfx_audio_t *m)
 {
 	if (m == NULL)
 		return;
+	free(m->cl_data);
 	free(m->buf);
 	free(m);
 }
@@ -77,6 +94,29 @@ static void send_buf(termgfx_audio_t *m, size_t n, int stream)
 		m->emit(m->ctx, m->buf, n, stream);
 }
 
+// Build a SyncTERM client-cache name "<prefix>/<sub>/<leaf>" (prefix omitted if the
+// consumer didn't set one). `sub` is "music" or "sfx". Namespacing by consumer (the
+// door name) keeps two doors' files distinct + attributable in SyncTERM's single
+// per-BBS cache dir, and the descriptive subdir beats a terse "m"/"a".
+static void cache_name(termgfx_audio_t *m, const char *sub, const char *leaf,
+                       char *out, size_t sz)
+{
+	if (m->cache_prefix[0] != '\0')
+		snprintf(out, sz, "%s/%s/%s", m->cache_prefix, sub, leaf);
+	else
+		snprintf(out, sz, "%s/%s", sub, leaf);
+}
+
+void termgfx_audio_set_cache_prefix(termgfx_audio_t *m, const char *name)
+{
+	if (m == NULL)
+		return;
+	if (name == NULL)
+		name = "";
+	strncpy(m->cache_prefix, name, sizeof(m->cache_prefix) - 1);
+	m->cache_prefix[sizeof(m->cache_prefix) - 1] = '\0';
+}
+
 // ---- capability probe ----------------------------------------------------
 
 void termgfx_audio_probe(termgfx_audio_t *m)
@@ -86,30 +126,139 @@ void termgfx_audio_probe(termgfx_audio_t *m)
 	m->emit(m->ctx, termgfx_audio_query, strlen(termgfx_audio_query), TERMGFX_AUDIO_PRIO);
 }
 
+// ---- C;L client-cache query (cross-session upload skip) -------------------
+// SyncTERM persists C;S'd files on disk per-BBS; "SyncTERM:C;L;<glob>" lists them
+// (reply: ESC _ SyncTERM:C;L \n  <path>\t<md5> ...  ESC \). At tier-ready we ask
+// which music files the client already holds, then skip the (re-)upload of any
+// whose content-addressed name is present -- the client Loads it from its own
+// cache, no Store. Mirrors the zmachine's v6cacheList (name-presence, not MD5,
+// since our names are content-addressed). Best-effort: a client that ignores C;L
+// just never matches, so we upload as before.
+static const char CL_MARK[] = "\x1b_SyncTERM:C;L\n";
+#define CL_MARK_LEN (sizeof(CL_MARK) - 1)
+
+static void cl_query(termgfx_audio_t *m)
+{
+	char q[64];
+	int  n;
+
+	if (m->cache_prefix[0] != '\0')
+		n = snprintf(q, sizeof(q), "\x1b_SyncTERM:C;L;%s/music/*\x1b\\", m->cache_prefix);
+	else
+		n = snprintf(q, sizeof(q), "\x1b_SyncTERM:C;L;music/*\x1b\\");
+	if (n > 0)
+		m->emit(m->ctx, q, (size_t)n, TERMGFX_AUDIO_PRIO);
+	m->cl_state = 1;                       // start scanning inbound bytes for the reply
+	m->cl_match = 0;
+}
+
+static void cl_append(termgfx_audio_t *m, uint8_t b)
+{
+	if (m->cl_len + 1 > m->cl_cap) {
+		size_t nc = m->cl_cap ? m->cl_cap * 2 : 256;
+		char * nb = realloc(m->cl_data, nc);
+
+		if (nb == NULL)
+			return;                        // OOM: drop -> just fewer skips, never wrong
+		m->cl_data = nb;
+		m->cl_cap  = nc;
+	}
+	m->cl_data[m->cl_len++] = (char)b;
+}
+
+// Incrementally scan the inbound stream for the C;L reply frame and capture its
+// payload. Tolerant of other bytes (key input, DSR acks) interleaved and of the
+// frame splitting across feeds; one-shot (stops once the ST terminator arrives).
+static void cl_feed(termgfx_audio_t *m, const uint8_t *buf, int len)
+{
+	int i;
+
+	for (i = 0; i < len; i++) {
+		uint8_t b = buf[i];
+
+		if (m->cl_state == 1) {                              // matching the start marker
+			if (b == (uint8_t)CL_MARK[m->cl_match]) {
+				if (++m->cl_match == (int)CL_MARK_LEN) {
+					m->cl_state = 2;                         // marker done -> capture payload
+					m->cl_esc   = 0;
+				}
+			}
+			else {
+				m->cl_match = (b == (uint8_t)CL_MARK[0]) ? 1 : 0;
+			}
+		}
+		else if (m->cl_state == 2) {                         // capturing until ST (ESC '\')
+			if (m->cl_esc) {
+				if (b == '\\') {
+					m->cl_done  = 1;
+					m->cl_state = 0;
+					return;                                  // frame complete
+				}
+				cl_append(m, 0x1b);                          // lone ESC in the list: keep both
+				cl_append(m, b);
+				m->cl_esc = 0;
+			}
+			else if (b == 0x1b) {
+				m->cl_esc = 1;
+			}
+			else {
+				cl_append(m, b);
+			}
+		}
+	}
+}
+
+// 1 if the captured C;L list contains `base` as a whole filename (a path component
+// at the end of an entry -- preceded by '/' or line start, followed by TAB/EOL).
+static int cl_has(termgfx_audio_t *m, const char *base)
+{
+	size_t bl = strlen(base), i;
+
+	if (!m->cl_done || m->cl_data == NULL || bl == 0)
+		return 0;
+	for (i = 0; i + bl <= m->cl_len; i++) {
+		if (memcmp(m->cl_data + i, base, bl) != 0)
+			continue;
+		if (i != 0 && m->cl_data[i - 1] != '/' && m->cl_data[i - 1] != '\n')
+			continue;
+		if (i + bl == m->cl_len || m->cl_data[i + bl] == '\t' || m->cl_data[i + bl] == '\n')
+			return 1;
+	}
+	return 0;
+}
+
 void termgfx_audio_feed(termgfx_audio_t *m, const uint8_t *buf, int len)
 {
 	int r;
 
-	if (m == NULL || m->tier >= 0 || len <= 0)
+	if (m == NULL || len <= 0)
 		return;
-	// Keep the last (sizeof acc) bytes of the stream so a reply split across
-	// feeds still parses. The DSR is ~12 contiguous bytes; 32 is ample.
-	if (len >= (int)sizeof(m->acc)) {
-		memcpy(m->acc, buf + (len - (int)sizeof(m->acc)), sizeof(m->acc));
-		m->acclen = (int)sizeof(m->acc);
-	}
-	else {
-		int keep = (int)sizeof(m->acc) - len;
-		if (m->acclen > keep) {
-			memmove(m->acc, m->acc + (m->acclen - keep), keep);
-			m->acclen = keep;
+	if (m->tier < 0) {
+		// Keep the last (sizeof acc) bytes of the stream so a reply split across
+		// feeds still parses. The DSR is ~12 contiguous bytes; 32 is ample.
+		if (len >= (int)sizeof(m->acc)) {
+			memcpy(m->acc, buf + (len - (int)sizeof(m->acc)), sizeof(m->acc));
+			m->acclen = (int)sizeof(m->acc);
 		}
-		memcpy(m->acc + m->acclen, buf, len);
-		m->acclen += len;
+		else {
+			int keep = (int)sizeof(m->acc) - len;
+			if (m->acclen > keep) {
+				memmove(m->acc, m->acc + (m->acclen - keep), keep);
+				m->acclen = keep;
+			}
+			memcpy(m->acc + m->acclen, buf, len);
+			m->acclen += len;
+		}
+		r = termgfx_audio_parse_caps(m->acc, m->acclen);
+		if (r >= 0) {
+			m->tier = r;
+			if (r >= 1)
+				cl_query(m);             // digital tier -> ask what the client already caches
+		}
+		return;
 	}
-	r = termgfx_audio_parse_caps(m->acc, m->acclen);
-	if (r >= 0)
-		m->tier = r;
+	if (m->cl_state != 0)                    // tier known, C;L reply still expected -> capture
+		cl_feed(m, buf, len);
 }
 
 int termgfx_audio_tier(const termgfx_audio_t *m)
@@ -145,11 +294,15 @@ void termgfx_audio_sfx(termgfx_audio_t *m, int id,
                        const void *pcm, size_t bytes, int bits, int channels,
                        int rate, int vol, int pan)
 {
-	char fn[24];
+	char fn[48];
 
 	if (m == NULL || m->tier < 1 || id < 0 || id >= KEYMAX || bytes == 0)
 		return;
-	snprintf(fn, sizeof(fn), "a/%d", id);
+	{
+		char leaf[16];
+		snprintf(leaf, sizeof(leaf), "%d", id);
+		cache_name(m, "sfx", leaf, fn, sizeof(fn));   // "<prefix>/sfx/<id>"
+	}
 
 	if (!m->sfx_up[id]) {                  // wrap raw PCM in a WAV + Store, once
 		send_buf(m, termgfx_audio_cache_pcm(&m->buf, &m->cap, fn,
@@ -189,11 +342,15 @@ static void sfx_cache_file_once(termgfx_audio_t *m, int id,
 void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
                             const void *filedata, size_t filelen, int vol, int pan)
 {
-	char fn[24];
+	char fn[48];
 
 	if (m == NULL || m->tier < 1 || id < 0 || id >= KEYMAX || filelen == 0)
 		return;
-	snprintf(fn, sizeof(fn), "a/%d", id);
+	{
+		char leaf[16];
+		snprintf(leaf, sizeof(leaf), "%d", id);
+		cache_name(m, "sfx", leaf, fn, sizeof(fn));   // "<prefix>/sfx/<id>"
+	}
 	sfx_cache_file_once(m, id, filedata, filelen, fn);
 	sfx_dispatch(m, fn, vol, pan);
 }
@@ -203,7 +360,7 @@ void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
 int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
                              const void *filedata, size_t filelen, int vol)
 {
-	char fn[24];
+	char fn[48];
 	int  i, slot;
 
 	if (m == NULL || m->tier < 1 || id < 0 || id >= KEYMAX || filelen == 0)
@@ -217,7 +374,11 @@ int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
 		i = 0;
 	}
 
-	snprintf(fn, sizeof(fn), "a/%d", id);
+	{
+		char leaf[16];
+		snprintf(leaf, sizeof(leaf), "%d", id);
+		cache_name(m, "sfx", leaf, fn, sizeof(fn));   // "<prefix>/sfx/<id>"
+	}
 	sfx_cache_file_once(m, id, filedata, filelen, fn);
 
 	// Load a transient slot, then Queue it LOOPED on this channel's dedicated slot.
@@ -320,62 +481,193 @@ static void mus_remember(termgfx_audio_t *m, const char *safe)
 	}
 }
 
+// Build the music cache KEY from a track name: sanitise, drop the source ext, append
+// the render-version tag. The key identifies the track's CONTENT + how we render it
+// (the door passes a source-hash name like d_<hash>), so it's stable cross-session
+// yet changes if the synth changes -- name-presence in the door-side disk cache (or,
+// once wired, the client's C;L list) means "the right bytes", no MD5 needed.
+static void mus_key(const char *name, char *key, size_t keysz)
+{
+	char  safe[MUSNAME_MAX];
+	char *dot;
+
+	mus_sanitize(safe, sizeof(safe), name);
+	dot = strrchr(safe, '.');
+	if (dot != NULL && dot != safe)
+		*dot = '\0';
+	snprintf(key, keysz, "%s_v%d", safe, MUS_RENDER_VER);
+}
+
+// Door-side OGG cache path "<dir>/<key>.ogg"; 0 if no cache dir configured.
+static int mus_disk_path(termgfx_audio_t *m, const char *key, char *path, size_t sz)
+{
+	if (m->music_cache_dir[0] == '\0')
+		return 0;
+	snprintf(path, sz, "%s/%s.ogg", m->music_cache_dir, key);
+	return 1;
+}
+
+// Read a whole file into a malloc'd buffer (*out, caller frees); 0 on any failure.
+static size_t mus_read_file(const char *path, uint8_t **out)
+{
+	FILE *   f;
+	long     sz;
+	uint8_t *b;
+
+	*out = NULL;
+	f = fopen(path, "rb");
+	if (f == NULL)
+		return 0;
+	if (fseek(f, 0, SEEK_END) != 0 || (sz = ftell(f)) <= 0) {
+		fclose(f);
+		return 0;
+	}
+	rewind(f);
+	b = malloc((size_t)sz);
+	if (b == NULL) {
+		fclose(f);
+		return 0;
+	}
+	if (fread(b, 1, (size_t)sz, f) != (size_t)sz) {
+		free(b);
+		fclose(f);
+		return 0;
+	}
+	fclose(f);
+	*out = b;
+	return (size_t)sz;
+}
+
+// Best-effort write of the encoded OGG to the door-side cache (a miss is harmless).
+static void mus_write_file(const char *path, const uint8_t *data, size_t len)
+{
+	FILE *f = fopen(path, "wb");
+
+	if (f == NULL)
+		return;
+	fwrite(data, 1, len, f);
+	fclose(f);
+}
+
+// Flush the music channel, Load the (already-Stored) cache file, loop it, set volume.
+// HARD clear (fade 0), not a fade: SyncTERM's Flush with a fade-out only overlays a
+// transient decay on the LOOPING head buffer (the loop survives + resumes); a no-fade
+// Flush calls xp_audio_clear() and truly stops it. Queue *appends*, so the old loop
+// must be cleared before the new track or the two stack. All on the BULK stream, in
+// order, so the small Load/Queue stay behind the track's C;S upload (Store-before-Load)
+// and never race ahead of it. Queue at unity (100) + set the channel base volume
+// separately, so a live music-volume change doesn't multiply with a per-buf level.
+static void mus_ship(termgfx_audio_t *m, const char *cachefn, int vol)
+{
+	send_buf(m, termgfx_audio_flush(&m->buf, &m->cap, MUSIC_CH, 0), TERMGFX_AUDIO_BULK);
+	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, MUSIC_SLOT, cachefn), TERMGFX_AUDIO_BULK);
+	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, MUSIC_SLOT, 100, 0, 1), TERMGFX_AUDIO_BULK);
+	send_buf(m, termgfx_audio_volume(&m->buf, &m->cap, MUSIC_CH, vol), TERMGFX_AUDIO_BULK);
+}
+
+void termgfx_audio_set_music_cache_dir(termgfx_audio_t *m, const char *dir)
+{
+	if (m == NULL)
+		return;
+	if (dir == NULL)
+		dir = "";
+	strncpy(m->music_cache_dir, dir, sizeof(m->music_cache_dir) - 1);
+	m->music_cache_dir[sizeof(m->music_cache_dir) - 1] = '\0';
+}
+
+// Play a track that's available WITHOUT rendering -- from the door-side OGG disk
+// cache (and, once C;L is wired, the client's own persistent cache). Returns 1 if it
+// shipped the track (or it's already playing); 0 if the door must render + supply via
+// termgfx_audio_music(). Lets the door skip the expensive MIDI render on a cache hit.
+int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol)
+{
+	char     key[MUSNAME_MAX];
+	char     leaf[MUSNAME_MAX + 8];
+	char     cachefn[96];
+	char     path[MUS_CACHE_DIR_MAX + MUSNAME_MAX + 8];
+	uint8_t *ogg;
+	size_t   ogglen;
+
+	if (m == NULL || m->tier < 1 || name == NULL || name[0] == '\0')
+		return 0;
+	mus_key(name, key, sizeof(key));
+	if (strcmp(m->music_name, key) == 0)        // already playing this track
+		return TERMGFX_MUSIC_CACHED;
+	snprintf(leaf, sizeof(leaf), "%s.ogg", key);
+	cache_name(m, "music", leaf, cachefn, sizeof(cachefn));   // "<prefix>/music/<key>.ogg"
+
+	// STATE 1 -- the client's persistent cache already holds this OGG (C;L name hit):
+	// Load it straight from there, NO Store/upload, NO disk read, NO render.
+	if (cl_has(m, leaf)) {                       // match the "<key>.ogg" basename
+		mus_remember(m, key);                   // session bookkeeping (no Store needed)
+		mus_ship(m, cachefn, vol);
+		strncpy(m->music_name, key, sizeof(m->music_name) - 1);
+		m->music_name[sizeof(m->music_name) - 1] = '\0';
+		return TERMGFX_MUSIC_CLIENT;            // played with zero upload
+	}
+
+	// STATE 2 -- the door-side disk cache has the OGG: upload it (Store) + ship, no render.
+	if (!mus_disk_path(m, key, path, sizeof(path)))
+		return TERMGFX_MUSIC_RENDER;            // no disk cache -> door must render
+	ogglen = mus_read_file(path, &ogg);
+	if (ogglen == 0)
+		return TERMGFX_MUSIC_RENDER;            // not on disk -> door must render
+	if (!mus_stored(m, key)) {                  // upload the cached OGG once this session
+		send_buf(m, termgfx_audio_cache_file(&m->buf, &m->cap, cachefn, ogg, ogglen),
+		         TERMGFX_AUDIO_BULK);
+		mus_remember(m, key);
+	}
+	free(ogg);
+	mus_ship(m, cachefn, vol);
+	strncpy(m->music_name, key, sizeof(m->music_name) - 1);
+	m->music_name[sizeof(m->music_name) - 1] = '\0';
+	return TERMGFX_MUSIC_CACHED;                // played from the door-side disk cache
+}
+
 void termgfx_audio_music(termgfx_audio_t *m, const char *name,
                          const void *pcm, size_t bytes, int bits, int channels,
                          int rate, int vol)
 {
-	char  safe[MUSNAME_MAX];
-	char  fn[MUSNAME_MAX + 8];
-	char *dot;
-	int   use_ogg;
+	char key[MUSNAME_MAX];
+	char leaf[MUSNAME_MAX + 8];
+	char cachefn[96];
+	char path[MUS_CACHE_DIR_MAX + MUSNAME_MAX + 8];
+	int  use_ogg;
 
 	if (m == NULL || m->tier < 1 || name == NULL || name[0] == '\0' || bytes == 0)
 		return;
-	mus_sanitize(safe, sizeof(safe), name);
-	// Drop the SOURCE extension (".MID"/".MUS"/...) -- the cache name carries the
-	// ENCODER's format instead (below). That makes each entry self-describing AND
-	// changes the name whenever the encoder changes, so a format switch writes a
-	// fresh cache entry rather than silently reusing a stale one of the old format
-	// (and a future C;L re-upload skip stays format-correct). SyncTERM decodes by
-	// content, not extension, so the name is for our bookkeeping only.
-	dot = strrchr(safe, '.');
-	if (dot != NULL && dot != safe)
-		*dot = '\0';
-	if (strcmp(m->music_name, safe) == 0)  // already playing this track
+	mus_key(name, key, sizeof(key));
+	if (strcmp(m->music_name, key) == 0)        // already playing this track
 		return;
-	// OGG/Vorbis when available (10-15x smaller upload + on-disk cache); raw-PCM
-	// WAV otherwise. SyncTERM decodes both via libsndfile.
+	// OGG/Vorbis when available (10-15x smaller upload + a door-side disk cache so the
+	// next play -- any session -- skips the render); raw-PCM WAV otherwise (no caching).
 	use_ogg = (bits == 16 && channels > 0 && termgfx_audio_have_ogg());
-	snprintf(fn, sizeof(fn), "m/%s.%s", safe, use_ogg ? "ogg" : "wav");
+	snprintf(leaf, sizeof(leaf), "%s.%s", key, use_ogg ? "ogg" : "wav");
+	cache_name(m, "music", leaf, cachefn, sizeof(cachefn));   // "<prefix>/music/<key>.<ext>"
 
-	if (!mus_stored(m, safe)) {            // Store the track once (content-addressed)
+	if (!mus_stored(m, key)) {                  // Store the track once this session
 		size_t n = 0;
 
-		if (use_ogg)
-			n = termgfx_audio_cache_ogg(&m->buf, &m->cap, fn, (const int16_t *)pcm,
-			                            bytes / ((size_t)channels * 2), channels,
-			                            rate, MUS_OGG_Q);
-		if (n == 0)
-			n = termgfx_audio_cache_pcm(&m->buf, &m->cap, fn,
+		if (use_ogg) {
+			uint8_t *ogg    = NULL;
+			size_t   ogglen = termgfx_audio_encode_ogg((const int16_t *)pcm,
+			                                           bytes / ((size_t)channels * 2), channels, rate,
+			                                           MUS_OGG_Q, &ogg);
+			if (ogglen > 0) {
+				if (mus_disk_path(m, key, path, sizeof(path)))
+					mus_write_file(path, ogg, ogglen);   // populate the door-side cache
+				n = termgfx_audio_cache_file(&m->buf, &m->cap, cachefn, ogg, ogglen);
+			}
+			free(ogg);
+		}
+		if (n == 0)                              // no libsndfile / encode failed -> raw WAV
+			n = termgfx_audio_cache_pcm(&m->buf, &m->cap, cachefn,
 			                            pcm, bytes, bits, channels, rate);
 		send_buf(m, n, TERMGFX_AUDIO_BULK);
-		mus_remember(m, safe);
+		mus_remember(m, key);
 	}
-	// HARD clear (fade 0), not a fade: SyncTERM's Flush with a fade-out only
-	// overlays a transient decay on the LOOPING head buffer -- the loop survives
-	// and resumes -- whereas a no-fade Flush calls xp_audio_clear() and truly stops
-	// it. Queue *appends*, so the old loop must be cleared before the new track or
-	// the two stack.
-	// All on the BULK stream, in order, so the small Load/Queue stay behind the
-	// track's own C;S upload (the file must be Stored before it's Loaded) and never
-	// race ahead of it on the priority stream. Queue at unity (100) and set the
-	// channel's base volume separately, so a live music-volume change (Volume verb,
-	// channel base) doesn't multiply with a per-buf Queue level.
-	send_buf(m, termgfx_audio_flush(&m->buf, &m->cap, MUSIC_CH, 0), TERMGFX_AUDIO_BULK);
-	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, MUSIC_SLOT, fn), TERMGFX_AUDIO_BULK);
-	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, MUSIC_SLOT, 100, 0, 1), TERMGFX_AUDIO_BULK);
-	send_buf(m, termgfx_audio_volume(&m->buf, &m->cap, MUSIC_CH, vol), TERMGFX_AUDIO_BULK);
-	strncpy(m->music_name, safe, sizeof(m->music_name) - 1);
+	mus_ship(m, cachefn, vol);
+	strncpy(m->music_name, key, sizeof(m->music_name) - 1);
 	m->music_name[sizeof(m->music_name) - 1] = '\0';
 }
 
