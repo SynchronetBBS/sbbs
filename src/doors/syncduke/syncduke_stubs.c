@@ -150,8 +150,26 @@ void FX_SetReverbDelay(int delay) { (void)delay; }
 int  FX_SetupSoundBlaster(fx_blaster_config blaster, int *mv, int *ms, int *mc)
 { (void)blaster; (void)mv; (void)ms; (void)mc; return FX_Ok; }
 int  FX_VoiceAvailable(int priority) { (void)priority; return 1; }
+/* The engine re-pans every active positional voice each frame (sounds.c). For our
+ * looping ambiences (the cinema projector, machinery, water...) `handle` is the
+ * termgfx loop handle; map the updated distance to a volume exactly as sd_loop_play
+ * did at start so the source attenuates as the player moves. termgfx suppresses
+ * unchanged volumes, so calling this every frame is cheap. (One-shots never reach
+ * here -- fire-and-forget leaves Sound[].num==0, so the engine's pan loop skips them.) */
 int32_t FX_Pan3D(int handle, int angle, int distance)
-{ (void)handle; (void)angle; (void)distance; return FX_Ok; }
+{
+	int vol;
+
+	(void)angle;
+	if (distance < 0)
+		distance = 0;
+	if (distance > 255)
+		distance = 255;
+	vol = (255 - distance) * 100 / 255;
+	vol = vol * sd_fx_vol / 255;
+	termgfx_audio_loop_volume(sd_audio, handle, vol);
+	return FX_Ok;
+}
 int32_t FX_StopSound(int handle) { termgfx_audio_loop_stop(sd_audio, handle); return FX_Ok; }
 int32_t FX_StopAllSounds(void) { termgfx_audio_sfx_stop_all(sd_audio); return FX_Ok; }
 int  FX_PlayVOC3D(uint8_t *ptr, int32_t pitchoffset, int32_t angle, int32_t distance,

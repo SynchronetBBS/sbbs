@@ -67,9 +67,15 @@ void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
 // Uploads the file once (VOC transcoded to WAV) like termgfx_audio_sfx_file, then
 // loops it on a dedicated channel. Returns a positive voice handle to pass to
 // termgfx_audio_loop_stop, or 0 if tier < 1 / no looping channel (then nothing
-// plays). `vol` 0..100. (3D pan/distance updates are a future add-on.)
+// plays). `vol` 0..100.
 int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
                              const void *filedata, size_t filelen, int vol);
+
+// Update the live volume (0..100) of a running looping voice -- for 3D
+// distance/attenuation tracking as the player moves relative to an ambient
+// source. No-op (no APC sent) if `vol` is unchanged from the last update or the
+// handle is unknown, so it's safe to call every frame. (Pan is not yet wired.)
+void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol);
 
 // Stop the looping voice `handle` from termgfx_audio_loop_start (no-op if it's
 // already stopped/unknown -- safe against a stale handle).

@@ -36,8 +36,9 @@ struct termgfx_audio {
 	int next_ch;                           // round-robin SFX channel cursor
 	char music_name[MUSNAME_MAX];          // track in the music slot ("" = none)
 
-	struct { int handle; } loop[NLOOP_CH]; // looping voices: loop[i] is on LOOP_CH_LO+i,
+	struct { int handle; int vol; } loop[NLOOP_CH]; // looping voices: loop[i] on LOOP_CH_LO+i;
 	int loop_seq;                          // .handle 0 = free; loop_seq mints unique handles
+	                                       // .vol = last volume sent (skip redundant updates)
 
 	uint8_t acc[32];                       // rolling window for the probe reply
 	int acclen;
@@ -229,7 +230,30 @@ int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
 	if (++m->loop_seq <= 0)
 		m->loop_seq = 1;
 	m->loop[i].handle = m->loop_seq;
+	m->loop[i].vol    = vol;
 	return m->loop_seq;
+}
+
+void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol)
+{
+	int i;
+
+	if (m == NULL || m->tier < 1 || handle <= 0)
+		return;
+	if (vol < 0)
+		vol = 0;
+	else if (vol > 100)
+		vol = 100;
+	for (i = 0; i < NLOOP_CH; i++) {
+		if (m->loop[i].handle == handle) {
+			if (vol == m->loop[i].vol)        // unchanged -- don't flood the APC channel
+				return;
+			m->loop[i].vol = vol;
+			send_buf(m, termgfx_audio_volume(&m->buf, &m->cap, LOOP_CH_LO + i, vol),
+			         TERMGFX_AUDIO_PRIO);
+			return;
+		}
+	}
 }
 
 void termgfx_audio_loop_stop(termgfx_audio_t *m, int handle)
