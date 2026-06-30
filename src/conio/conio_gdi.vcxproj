@@ -154,6 +154,7 @@
     <ClCompile Include="cterm_atascii.c" />
     <ClCompile Include="cterm_petscii.c" />
     <ClCompile Include="cterm_prestel.c" />
+    <ClCompile Include="key.c" />
     <ClCompile Include="mouse.c">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(PreprocessorDefinitions)</PreprocessorDefinitions>

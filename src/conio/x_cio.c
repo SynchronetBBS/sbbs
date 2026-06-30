@@ -195,6 +195,17 @@ void x11_mouse_thread(void *data)
 	}
 }
 
+void x11_key_thread(void *data)
+{
+	uint16_t key = CIO_KEY_KEY_EVENT;
+
+	SetThreadName("X11 Key");
+	while (1) {
+		if (ciokey_wait())
+			write(key_pipe[1], &key, 2);
+	}
+}
+
 static dll_handle dl;
 #ifdef WITH_XRENDER
 static dll_handle dl2;
@@ -270,6 +281,8 @@ int x_initciolib(int mode)
 		return(-1);
 	}
 	x11.XkbBell=xp_dlsym(dl,XkbBell);
+	x11.XkbGetKeyboard=xp_dlsym(dl,XkbGetKeyboard);
+	x11.XkbFreeKeyboard=xp_dlsym(dl,XkbFreeKeyboard);
 	if((x11.XLookupString=xp_dlsym(dl,XLookupString))==NULL) {
 		xp_dlclose(dl);
 		return(-1);
@@ -538,6 +551,10 @@ int x_initciolib(int mode)
 		xp_dlclose(dl);
 		return(-1);
 	}
+	if((x11.XKeysymToKeycode=xp_dlsym(dl,XKeysymToKeycode))==NULL) {
+		xp_dlclose(dl);
+		return(-1);
+	}
 #ifdef WITH_XRENDER
 	xrender_found = true;
 	if (dl2 == NULL && (dl2 = xp_dlopen(libnames2,RTLD_LAZY,1)) == NULL)
@@ -750,7 +767,8 @@ int x_initciolib(int mode)
 		return(-1);
 	}
 	_beginthread(x11_mouse_thread,1<<16,NULL);
-	cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING;
+	_beginthread(x11_key_thread,1<<16,NULL);
+	cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING | CONIO_OPT_KEY_EVENTS;
 	return(0);
 }
 

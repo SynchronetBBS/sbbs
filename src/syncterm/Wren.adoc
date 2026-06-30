@@ -1012,10 +1012,11 @@ return value does.
   miss.  Return `null` (or just don't `return`) to silence it.
 |===
 
-`onKey` and `onMouse` use C1 but have no meaningful interpretation
-for `String` returns (a 16-bit key code or a `MouseEvent` isn't a
-byte stream), so a `String` return from those is silently treated as
-passthrough.  Use `onInput` if you need byte-level replacement.
+`onKey`, `onPhysicalKey`, and `onMouse` use C1 but have no meaningful
+interpretation for `String` returns (a 16-bit key code, a
+`PhysicalKeyEvent`, or a `MouseEvent` isn't a byte stream), so a `String`
+return from those is silently treated as passthrough.  Use `onInput` if
+you need byte-level replacement.
 
 [options="header",cols="2,3,1"]
 |===
@@ -1037,6 +1038,15 @@ passthrough.  Use `onInput` if you need byte-level replacement.
 
 | `Hook.onInput(byte, fn)`
 | Filtered: `fn(b)` only fires when `b == byte`.  C-side filter.
+| C1
+
+| `Hook.onPhysicalKey { \|ev\| ... }`
+| `ev`: <<physicalkeyevent,`PhysicalKeyEvent`>> instance.  Registering this
+  hook enables ciolib physical-key event delivery for the session.
+| C1
+
+| `Hook.onPhysicalKey(evdev, fn)`
+| Filtered: `fn(ev)` only fires when `ev.evdev == evdev`.  C-side filter.
 | C1
 
 | `Hook.onMatch(pattern, fn)`
@@ -1921,7 +1931,8 @@ two-phase split.
 | Member | Description
 
 | `Input.next()`
-| Block until the next event; return `KeyEvent` or `MouseEvent`.
+| Block until the next event; return `KeyEvent`, `PhysicalKeyEvent`, or
+  `MouseEvent`.
 
 | `Input.next(ms)`
 | Wait up to `ms` milliseconds; return the event or `null` on
@@ -1933,7 +1944,13 @@ two-phase split.
 
 | `Input.unget(ev)`
 | Push an event back to the front of the input queue.  Routes by
-  event type — `KeyEvent` -> `ungetch`, `MouseEvent` -> `ungetmouse`.
+  event type — `KeyEvent` -> `ungetch`, `PhysicalKeyEvent` ->
+  physical-key synthesis, `MouseEvent` -> `ungetmouse`.
+
+| `Input.synthesizePhysicalKey(evdev, pressed)`
+| Synthesize a physical key edge.  `evdev` is an evdev key code number;
+  `pressed` is `true` for press and `false` for release.  Duplicate
+  edges are suppressed by ciolib's held-key tracking.
 
 | `Input.mousedrag()`, `Input.mousedrag(forceRect)`
 | Hand off to SyncTERM's drag-select gesture.  `forceRect=true`
@@ -1966,9 +1983,10 @@ two-phase split.
 | `Input.pushClaim(fn)`
 | Push `fn` onto the input claim stack as the *current* claim for
   the calling fiber.  `fn(ev)` is invoked by the C-side dispatcher
-  with the next key or mouse event and must return Bool — `true`
+  with the next key, physical-key, or mouse event and must return Bool — `true`
   consumes, `false` passes through to the next claim down (and
-  ultimately to registered `Hook.onKey` / `Hook.onMouse`).
+  ultimately to registered `Hook.onKey` / `Hook.onPhysicalKey` /
+  `Hook.onMouse`).
   Per-fiber slot: a same-fiber re-push replaces the existing claim
   in place; a different-fiber push adds a new entry on top.  Returns
   a `<<claimhandle,ClaimHandle>>`.  See <<modal-input,Modal Input>>.
@@ -2027,6 +2045,28 @@ aborts the calling fiber with a clear error.
 The `CIO_KEY_ABORTED` scancode (0x01E0, "Esc by scancode") is
 normalized to plain Esc (0x001B) inside the constructor, so scripts
 only ever see one Esc value.
+
+=== PhysicalKeyEvent [[physicalkeyevent]]
+
+Represents one physical key press or release edge using the same evdev key
+code namespace as CTerm's physical-key reporting protocol.  Returned by
+`Input.next()` / `Input.poll()`, passed to `Input.pushClaim` handlers, and
+passed to `Hook.onPhysicalKey` callbacks.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `PhysicalKeyEvent.new(evdev, pressed)`
+| Construct a synthetic physical-key edge.  `evdev` must be in the evdev
+  key-code range; `pressed` is `true` for press and `false` for release.
+
+| `evdev`
+| evdev key code number.
+
+| `pressed`
+| `true` for press, `false` for release.
+|===
 
 === MouseEvent [[mouseevent]]
 
@@ -3943,10 +3983,11 @@ The dispatcher registry.  See <<hook-events,Hook Events>> for the
 contract on each method, and <<hookhandle,HookHandle>> for the
 return type.
 
-`Hook.onKey(fn)`, `Hook.onInput(fn)`,
+`Hook.onKey(fn)`, `Hook.onPhysicalKey(fn)`, `Hook.onInput(fn)`,
 `Hook.onMouse(fn)`, `Hook.every(ms, fn)`,
 plus the filtered variants `Hook.onKey(key, fn)`, `Hook.onInput(byte,
-fn)`, `Hook.onMouse(event, fn)`, and `Hook.onMatch(pattern, fn)`.
+fn)`, `Hook.onPhysicalKey(evdev, fn)`, `Hook.onMouse(event, fn)`, and
+`Hook.onMatch(pattern, fn)`.
 Each call returns a `HookHandle`.
 
 === Status [[status]]

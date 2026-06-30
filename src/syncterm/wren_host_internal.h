@@ -75,6 +75,7 @@ struct wren_pending_timer {
 enum wren_hook_event {
 	WREN_HOOK_KEY,
 	WREN_HOOK_INPUT,
+	WREN_HOOK_PHYSICAL_KEY,
 	WREN_HOOK_MOUSE,
 	WREN_HOOK_SHELL_CLOSE,      /* shell channel died, session still up */
 	WREN_HOOK_DISCONNECT,       /* main loop exited, session tearing down */
@@ -163,6 +164,7 @@ struct wren_host_state {
 	WrenHandle  *cell_class;
 	WrenHandle  *surface_class;
 	WrenHandle  *key_event_class;
+	WrenHandle  *physical_key_event_class;
 	WrenHandle  *mouse_event_class;
 	WrenHandle  *hook_handle_class;
 	WrenHandle  *claim_handle_class;

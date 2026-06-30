@@ -285,6 +285,17 @@ void wl_mouse_thread(void *data)
 	}
 }
 
+void wl_key_thread(void *data)
+{
+	uint16_t key = CIO_KEY_KEY_EVENT;
+
+	SetThreadName("WL Key");
+	while (1) {
+		if (ciokey_wait())
+			write(wl_key_pipe[1], &key, 2);
+	}
+}
+
 int wl_initciolib(int mode)
 {
 	if (wl_initialized)
@@ -338,6 +349,7 @@ int wl_initciolib(int mode)
 		return -1;
 	}
 	_beginthread(wl_mouse_thread, 1 << 16, NULL);
-	cio_api.options |= wl_available_opts();
+	_beginthread(wl_key_thread, 1 << 16, NULL);
+	cio_api.options |= wl_available_opts() | CONIO_OPT_KEY_EVENTS;
 	return 0;
 }

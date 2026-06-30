@@ -482,11 +482,12 @@ viewofflinescroll(void)
 		gotoxy(scrollback_cols - 9, 1);
 		cputs("Scrollback");
 		gotoxy(1, 1);
-		key = getch();
+		do {
+			key = getch();
+			if (key == 0xe0 || key == 0)
+				key |= getch() << 8;
+		} while (key == CIO_KEY_KEY_EVENT);
 		switch (key) {
-			case 0xe0:
-			case 0:
-				switch (key | getch() << 8) {
 					case CIO_KEY_QUIT:
 						check_exit(true);
 						if (quitting)
@@ -595,8 +596,6 @@ viewofflinescroll(void)
 						uifcbail();
 						drawwin();
 						break;
-				}
-				break;
 			case 'j':
 			case 'J':
 				top--;

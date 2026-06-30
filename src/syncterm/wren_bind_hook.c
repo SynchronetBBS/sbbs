@@ -114,6 +114,15 @@ fn_Hook_onInput(WrenVM *vm)
 	    wren_host_register_hook(vm, WREN_HOOK_INPUT, 1));
 }
 void
+fn_Hook_onPhysicalKey(WrenVM *vm)
+{
+	struct wren_hook_entry *h =
+	    wren_host_register_hook(vm, WREN_HOOK_PHYSICAL_KEY, 1);
+	if (h != NULL)
+		wren_host_enable_physical_key_events();
+	push_hook_handle(vm, h);
+}
+void
 fn_Hook_onMouse(WrenVM *vm)
 {
 	push_hook_handle(vm,
@@ -149,6 +158,16 @@ fn_Hook_onInput_filtered(WrenVM *vm)
 	int filter = (int)wrenGetSlotDouble(vm, 1) & 0xff;
 	push_hook_handle(vm,
 	    wren_host_register_hook_filtered(vm, WREN_HOOK_INPUT, 2, filter));
+}
+void
+fn_Hook_onPhysicalKey_filtered(WrenVM *vm)
+{
+	int filter = (int)wrenGetSlotDouble(vm, 1);
+	struct wren_hook_entry *h =
+	    wren_host_register_hook_filtered(vm, WREN_HOOK_PHYSICAL_KEY, 2, filter);
+	if (h != NULL)
+		wren_host_enable_physical_key_events();
+	push_hook_handle(vm, h);
 }
 void
 fn_Hook_onMouse_filtered(WrenVM *vm)

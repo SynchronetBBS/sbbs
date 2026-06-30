@@ -189,6 +189,16 @@ gdi_mouse_thread(void *data)
 	}
 }
 
+static void
+gdi_key_thread(void *data)
+{
+	SetThreadName("GDI Key");
+	while(wch != NULL) {
+		if(ciokey_wait())
+			gdi_add_key(CIO_KEY_KEY_EVENT);
+	}
+}
+
 static uint32_t
 sp_to_codepoint(uint16_t high, uint16_t low)
 {
@@ -761,6 +771,7 @@ gdi_WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			// so they come directly here, bypassing
 			// magic_message (ticket 226).
 			mods = 0;
+			ciokey_focus_lost();
 			return 0;
 		case WM_SETFOCUS:
 			mods = 0;
@@ -848,6 +859,11 @@ magic_message(MSG msg)
 		case WM_KEYUP:
 		case WM_SYSKEYDOWN:
 		case WM_SYSKEYUP:
+		{
+			uint16_t evdev = win32_evdev_key(msg.wParam, (msg.lParam >> 16) & 0xff,
+			    (msg.lParam & (1 << 24)) ? ENHANCED_KEY : 0);
+			if (evdev != 0)
+				ciokey_gotevent(evdev, msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN);
 			switch (msg.wParam) {
 				case VK_CONTROL:
 					set = WMOD_CTRL;
@@ -972,6 +988,7 @@ magic_message(MSG msg)
 				}
 			}
 			break;
+		}
 	}
 
 	return false;
@@ -1368,11 +1385,12 @@ gdi_init(int mode)
 	CloseHandle(init_sem);
 	if (init_success) {
 		_beginthread(gdi_mouse_thread, 0, NULL);
+		_beginthread(gdi_key_thread, 0, NULL);
 		gdi_textmode(ciolib_initial_mode);
 
 		cio_api.mode=CIOLIB_MODE_GDI;
 		FreeConsole();
-		cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING;
+		cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING | CONIO_OPT_KEY_EVENTS;
 		return(0);
 	}
 	CloseHandle(rch);

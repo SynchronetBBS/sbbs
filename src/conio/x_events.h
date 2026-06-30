@@ -55,6 +55,8 @@ struct x11 {
 	int		(*XSync)		(Display*, Bool);
 	int		(*XBell)		(Display*, int);
 	Bool		(*XkbBell)		(Display*, Window, int, Atom);
+	void*		(*XkbGetKeyboard)	(Display *, unsigned int, unsigned int);
+	void		(*XkbFreeKeyboard)	(void *, unsigned int, Bool);
 	int		(*XLookupString)(XKeyEvent*, char*, int, KeySym*, XComposeStatus*);
 	int		(*XNextEvent)	(Display*, XEvent *);
 	XSizeHints*	(*XAllocSizeHints)(void);
@@ -123,6 +125,7 @@ struct x11 {
 	Status (*XGetWMNormalHints)(Display*, Window, XSizeHints*, long*);
 	int (*XMoveResizeWindow)(Display*, Window, int, int, unsigned int, unsigned int);
 	KeySym (*XLookupKeysym)(XKeyEvent *, int);
+	KeyCode (*XKeysymToKeycode)(Display *, KeySym);
 #ifndef DefaultDepth
 	int (*DefaultDepth)(Display *, int);
 #endif

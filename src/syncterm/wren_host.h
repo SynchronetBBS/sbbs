@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 struct bbslist;
+struct ciolib_key_event;
 struct mouse_event;
 
 /* Per-connection lifecycle. wren_host_init() loads every *.wren file
@@ -62,7 +63,10 @@ bool wren_status_render(int width, struct vmem_cell **out_buf);
  * false to pass through. The first hook returning true short-circuits;
  * subsequent hooks are not called for that event. */
 bool wren_host_dispatch_key(int key);
+bool wren_host_dispatch_physical_key(const struct ciolib_key_event *ev);
 bool wren_host_dispatch_mouse(struct mouse_event *ev);
+bool wren_host_wants_physical_keys(void);
+void wren_host_enable_physical_key_events(void);
 
 /* Atomically read-and-clear a pending session-end request (set by a
  * Conn.endSession() Wren call).  Returns true when a request was

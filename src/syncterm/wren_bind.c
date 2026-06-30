@@ -788,7 +788,9 @@ static const struct binding BINDINGS[] = {
 	{ "Wake",   true,  "post(_,_)",           fn_Wake_post                },
 	{ "ClaimHandle", false, "pop()",          fn_ClaimHandle_pop          },
 	{ "Input",  true,  "ungetKey_(_)",        fn_Input_ungetKey_          },
+	{ "Input",  true,  "ungetPhysicalKey_(_)",fn_Input_ungetPhysicalKey_  },
 	{ "Input",  true,  "ungetMouse_(_)",      fn_Input_ungetMouse_        },
+	{ "Input",  true,  "synthesizePhysicalKey(_,_)", fn_Input_synthesizePhysicalKey },
 	{ "Input",  true,  "mousedrag()",         fn_Input_mousedrag          },
 	{ "Input",  true,  "mousedrag(_)",        fn_Input_mousedrag          },
 	{ "Input",  true,  "mouseVisible=(_)",    fn_Input_mouseVisible_set   },
@@ -803,6 +805,11 @@ static const struct binding BINDINGS[] = {
 	{ "KeyEvent",   false, "codepoint",  fn_KeyEvent_codepoint },
 	{ "KeyEvent",   false, "text",       fn_KeyEvent_text      },
 	{ "KeyEvent",   false, "toString",   fn_KeyEvent_toString  },
+
+	/* PhysicalKeyEvent (instance) */
+	{ "PhysicalKeyEvent", false, "evdev",    fn_PhysicalKeyEvent_evdev    },
+	{ "PhysicalKeyEvent", false, "pressed",  fn_PhysicalKeyEvent_pressed  },
+	{ "PhysicalKeyEvent", false, "toString", fn_PhysicalKeyEvent_toString },
 
 	/* MouseEvent (instance) */
 	{ "MouseEvent", false, "event",      fn_MouseEvent_event      },
@@ -1173,6 +1180,8 @@ static const struct binding BINDINGS[] = {
 	{ "Hook",  true, "onKey(_,_)",     fn_Hook_onKey_filtered   },
 	{ "Hook",  true, "onInput(_)",     fn_Hook_onInput          },
 	{ "Hook",  true, "onInput(_,_)",   fn_Hook_onInput_filtered },
+	{ "Hook",  true, "onPhysicalKey(_)",   fn_Hook_onPhysicalKey          },
+	{ "Hook",  true, "onPhysicalKey(_,_)", fn_Hook_onPhysicalKey_filtered },
 	{ "Hook",  true, "onMatch(_,_)",      fn_Hook_onMatch       },
 	{ "Hook",  true, "onMatchClean(_,_)", fn_Hook_onMatchClean  },
 	{ "Hook",  true, "onMouse(_)",     fn_Hook_onMouse          },
@@ -1281,6 +1290,13 @@ wren_bind_lookup_class(const char *module, const char *className)
 	if (strcmp(className, "KeyEvent") == 0) {
 		WrenForeignClassMethods m = {
 			wren_key_event_allocate, wren_key_event_finalize
+		};
+		return m;
+	}
+	if (strcmp(className, "PhysicalKeyEvent") == 0) {
+		WrenForeignClassMethods m = {
+			wren_physical_key_event_allocate,
+			wren_physical_key_event_finalize
 		};
 		return m;
 	}

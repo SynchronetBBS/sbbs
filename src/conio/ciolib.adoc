@@ -14,6 +14,47 @@ scaling and more have been added to ciolib to extend SyncTERM.
 In addition, the ANSI parsing and displaying code CTerm is part of
 ciolib, and not SyncTERM.
 
+== Physical Key Events
+
+Backends that can observe key press and release edges may advertise
+`CONIO_OPT_KEY_EVENTS` and post physical-key events through the
+`ciokey_*` API.  This is separate from normal translated keyboard input
+returned by `getch()`.
+
+The backend calls `ciokey_gotevent(evdev, pressed)` with an evdev key
+code and a boolean press/release state.  ciolib tracks the current held
+set and suppresses duplicate edges.
+
+Code that needs to inject a synthetic physical-key edge can call
+`ciokey_synthesize(evdev, pressed)`.  It uses the same held-key tracking
+and duplicate suppression, but queues the edge even when backend delivery
+was not already enabled.
+
+Applications that consume physical-key events should enable delivery with
+`ciokey_setenabled(true)`.  When delivery is enabled, a pending physical
+key event wakes the normal key path with `CIO_KEY_KEY_EVENT`; the consumer
+then drains events with `ciokey_getevent(&event)`.
+
+`struct ciolib_key_event` contains:
+
+[%autowidth,cols="1,3"]
+|===
+|`evdev`
+|The evdev key code for the physical key.
+
+|`pressed`
+|`true` for press, `false` for release.
+|===
+
+`ciokey_pressed(keys, max)` returns the current held key set.  If `keys` is
+non-NULL, up to `max` evdev codes are copied into it; the return value is
+the total number of held keys.
+
+`ciokey_clear_events()` clears queued edges without changing the held set.
+`ciokey_focus_lost()` clears queued edges and the held set, then wakes
+enabled consumers so they can resynchronize.  `ciokey_setenabled(false)`
+disables delivery and clears queued edges.
+
 == Output Modes
 
 An output mode specifies the manner in which ciolib displays the content

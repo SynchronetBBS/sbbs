@@ -76,6 +76,12 @@ typedef enum {
 #define CTERM_LOG_PAUSED	0x80
 
 #define CTERM_NO_SETFONT_REQUESTED	99
+#define CTERM_PK_MAX_EVDEV	1024
+
+enum cterm_key_result {
+	CTERM_KEY_UNHANDLED = 0,
+	CTERM_KEY_HANDLED = 1
+};
 
 enum prestel_prog_states {
 	PRESTEL_PROG_NONE = 0,
@@ -200,6 +206,9 @@ struct cterminal {
 	int					font_size;		// Bytes
 	int					doorway_mode;
 	int					doorway_char;	// Indicates next char is a "doorway" mode char
+	bool				pk_mode;
+	bool				suppress_translated_keys;
+	uint8_t				pk_reported[CTERM_PK_MAX_EVDEV / 8];
 	int					cursor;			// Current cursor mode (Normal or None)
 	char				*fg_tc_str;
 	char				*bg_tc_str;
@@ -247,6 +256,8 @@ struct cterminal {
 	/* Mouse state change callback */
 	void (*mouse_state_change)(int parameter, int enable, void *cbdata);
 	void *mouse_state_change_cbdata;
+	void (*key_event_mode_change)(int enable, void *cbdata);
+	void *key_event_mode_change_cbdata;
 	int (*mouse_state_query)(int parameter, void *cbdata);
 	void *mouse_state_query_cbdata;
 
@@ -417,6 +428,11 @@ CIOLIBEXPORT void cterm_clearscreen(struct cterminal *cterm, char attr);
 CIOLIBEXPORT void cterm_start(struct cterminal *cterm);
 CIOLIBEXPORT int cterm_crpos(struct cterminal *cterm);
 CIOLIBEXPORT int cterm_encode_key(struct cterminal *cterm, int key);
+CIOLIBEXPORT enum cterm_key_result cterm_handle_key(struct cterminal *cterm, int key);
+CIOLIBEXPORT bool cterm_pk_events(struct cterminal *cterm, const struct ciolib_key_event *events, size_t count);
+CIOLIBEXPORT bool cterm_pk_synthesize(struct cterminal *cterm, uint16_t evdev, bool pressed);
+CIOLIBEXPORT bool cterm_pk_resync(struct cterminal *cterm, const uint16_t *held_keys, size_t count);
+CIOLIBEXPORT bool cterm_pk_enabled(const struct cterminal *cterm);
 CIOLIBEXPORT bool cterm_atascii_inverse(const struct cterminal *cterm);
 /* Emit a response back to the connected host via cterm's registered
  * response callback (set by the terminal app).  Silently drops if no

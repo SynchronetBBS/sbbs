@@ -2,7 +2,7 @@
 #define WREN_BIND_SCREEN_H
 
 /* Screen / Input / Cell / Cells / Font / Hyperlinks / Color / Palette
- * / CustomCursor / VideoFlags / KeyEvent / MouseEvent - the visual
+ * / CustomCursor / VideoFlags / KeyEvent / PhysicalKeyEvent / MouseEvent - the visual
  * + input foreign surface.  Declarations pulled in by wren_bind.c
  * so the BINDINGS table and wren_bind_lookup_class can reach the
  * implementations defined in wren_bind_screen.c. */
@@ -99,17 +99,23 @@ void fn_Input_next(WrenVM *vm);
 void fn_Input_next_ms(WrenVM *vm);
 void fn_Input_poll(WrenVM *vm);
 void fn_Input_pushClaim_(WrenVM *vm);
+void fn_Input_synthesizePhysicalKey(WrenVM *vm);
 void fn_Input_ungetKey_(WrenVM *vm);
+void fn_Input_ungetPhysicalKey_(WrenVM *vm);
 void fn_Input_ungetMouse_(WrenVM *vm);
 void fn_Wake_post(WrenVM *vm);
 void fn_ClaimHandle_pop(WrenVM *vm);
 void wren_claim_handle_allocate(WrenVM *vm);
 void wren_claim_handle_finalize(void *data);
 void wren_bind_claim_stack_clear(void);
+bool wren_bind_dispatch_claim_physical_key(const struct ciolib_key_event *ev);
 void fn_KeyEvent_code(WrenVM *vm);
 void fn_KeyEvent_codepoint(WrenVM *vm);
 void fn_KeyEvent_text(WrenVM *vm);
 void fn_KeyEvent_toString(WrenVM *vm);
+void fn_PhysicalKeyEvent_evdev(WrenVM *vm);
+void fn_PhysicalKeyEvent_pressed(WrenVM *vm);
+void fn_PhysicalKeyEvent_toString(WrenVM *vm);
 void fn_MouseEvent_bstate(WrenVM *vm);
 void fn_MouseEvent_endX(WrenVM *vm);
 void fn_MouseEvent_endY(WrenVM *vm);
@@ -119,12 +125,13 @@ void fn_MouseEvent_startX(WrenVM *vm);
 void fn_MouseEvent_startY(WrenVM *vm);
 void fn_MouseEvent_toString(WrenVM *vm);
 
-/* Build a Wren-side KeyEvent / MouseEvent foreign in slot `dst`.  Uses
+/* Build a Wren-side KeyEvent / PhysicalKeyEvent / MouseEvent foreign in slot `dst`.  Uses
  * slot `dst + 1` as scratch for the class lookup, so the caller must
  * have ensured at least `dst + 2` slots and treat slot `dst + 1` as
  * clobberable.  Used from the input dispatch paths in this file and
  * from wren_host_dispatch_mouse in wren_host.c. */
 void push_key_event(WrenVM *vm, uint16_t code, int dst);
+void push_physical_key_event(WrenVM *vm, const struct ciolib_key_event *kev, int dst);
 void push_mouse_event(WrenVM *vm, const struct mouse_event *mev, int dst);
 void fn_Screen_attr_set(WrenVM *vm);
 void fn_Screen_hyperlinkId(WrenVM *vm);
@@ -176,6 +183,8 @@ void wren_custom_cursor_allocate(WrenVM *vm);
 void wren_custom_cursor_finalize(void *data);
 void wren_key_event_allocate(WrenVM *vm);
 void wren_key_event_finalize(void *data);
+void wren_physical_key_event_allocate(WrenVM *vm);
+void wren_physical_key_event_finalize(void *data);
 void wren_mouse_event_allocate(WrenVM *vm);
 void wren_mouse_event_finalize(void *data);
 void wren_video_flags_allocate(WrenVM *vm);

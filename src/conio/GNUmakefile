@@ -6,6 +6,7 @@ CFLAGS += $(XPDEV-MT_CFLAGS) $(HASH_CFLAGS) $(ENCODE_CFLAGS) $(CIOLIB-MT_CFLAGS)
 VPATH = $(SRCODIR)
 
 ifdef win
+ NEED_KEY_EVENTS := 1
  ifndef WITHOUT_GDI
   OBJS	+=	$(MTOBJODIR)$(DIRSEP)win32gdi$(OFILE)
   NEED_BITMAP := 1
@@ -20,10 +21,12 @@ ifndef NO_X
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)x_events$(OFILE)
  OBJS	+=      $(MTOBJODIR)$(DIRSEP)x_cio$(OFILE)
  NEED_BITMAP := 1
+ NEED_KEY_EVENTS := 1
 endif
 
 ifdef WITH_WAYLAND
  NEED_BITMAP := 1
+ NEED_KEY_EVENTS := 1
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)wl_dynload$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)wl_cio$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)wl_events$(OFILE)
@@ -32,12 +35,14 @@ endif
 
 ifdef WITH_QUARTZ
  NEED_BITMAP := 1
+ NEED_KEY_EVENTS := 1
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)cg_cio$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)cg_events$(OFILE)
 endif
 
 ifdef WITH_SDL
  NEED_BITMAP := 1
+ NEED_KEY_EVENTS := 1
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)sdl_con$(OFILE)
  OBJS	+=      $(MTOBJODIR)$(DIRSEP)sdlfuncs$(OFILE)
 endif
@@ -61,6 +66,10 @@ ifdef NEED_BITMAP
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)bitmap_con$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)scale$(OFILE)
  OBJS	+=	$(MTOBJODIR)$(DIRSEP)xbr$(OFILE)
+endif
+
+ifdef NEED_KEY_EVENTS
+ OBJS	+=	$(MTOBJODIR)$(DIRSEP)key$(OFILE)
 endif
 
 

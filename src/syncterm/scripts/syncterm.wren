@@ -274,11 +274,12 @@ foreign class Input {
   foreign static setupMouseEvents()
 
   // Async event delivery - push a claim onto the input claim stack.
-  // Each claim is a `Fn` taking a single event arg (KeyEvent or
-  // MouseEvent foreign) and returning a Bool (consumed).  The C
+  // Each claim is a `Fn` taking a single event arg (KeyEvent,
+  // PhysicalKeyEvent, or MouseEvent foreign) and returning a Bool (consumed).  The C
   // dispatcher walks claims top-down (newest fiber first); the
   // first claim to return `true` consumes the event.  Below all
-  // claims, registered `Hook.onKey` / `Hook.onMouse` handlers fire.
+  // claims, registered `Hook.onKey` / `Hook.onPhysicalKey` /
+  // `Hook.onMouse` handlers fire.
   //
   // Per-fiber slot: each fiber has at most one claim on the stack.
   // A same-fiber re-push replaces the existing entry in place; a
@@ -304,12 +305,16 @@ foreign class Input {
   static unget(ev) {
     if (ev is KeyEvent) {
       Input.ungetKey_(ev)
+    } else if (ev is PhysicalKeyEvent) {
+      Input.ungetPhysicalKey_(ev)
     } else if (ev is MouseEvent) {
       Input.ungetMouse_(ev)
     }
   }
   foreign static ungetKey_(ev)
+  foreign static ungetPhysicalKey_(ev)
   foreign static ungetMouse_(ev)
+  foreign static synthesizePhysicalKey(evdev, pressed)
 }
 // Returned from Input.pushClaim.  Drop the claim by calling `.pop()`;
 // idempotent (stale handles after a same-fiber re-push are no-ops).
@@ -352,6 +357,12 @@ foreign class KeyEvent {
   foreign code
   foreign codepoint
   foreign text
+  foreign toString
+}
+foreign class PhysicalKeyEvent {
+  construct new(evdev, pressed) {}
+  foreign evdev
+  foreign pressed
   foreign toString
 }
 // Five constructor overloads for synthesising mouse events.  All
@@ -1322,6 +1333,8 @@ class FileErr {
 class Hook {
   foreign static onKey(fn)
   foreign static onKey(key, fn)
+  foreign static onPhysicalKey(fn)
+  foreign static onPhysicalKey(evdev, fn)
   foreign static onInput(fn)
   foreign static onInput(byte, fn)
   foreign static onMatch(pattern, fn)

@@ -70,6 +70,7 @@ set(SOURCE
 set(HEADER
 	ciolib.h
 	cterm.h
+	evdev_codes.h
 	keys.h
 	mouse.h
 	utf8_codepages.h
@@ -77,6 +78,7 @@ set(HEADER
 )
 
 if(WIN32)
+	set(NEED_KEY_EVENTS TRUE)
 	if(NOT WITHOUT_GDI)
 		list(APPEND SOURCE win32gdi.c)
 		if(WITHOUT_SDL)
@@ -116,6 +118,7 @@ if(NOT WITHOUT_WAYLAND)
 		)
 		set(NEED_BITMAP TRUE)
 		set(NEED_SCALE TRUE)
+		set(NEED_KEY_EVENTS TRUE)
 		set(WL_FOUND TRUE)
 	endif()
 endif()
@@ -125,6 +128,7 @@ if(NOT WITHOUT_QUARTZ)
 		list(APPEND SOURCE cg_cio.m cg_events.m)
 		set(NEED_BITMAP TRUE)
 		set(NEED_SCALE TRUE)
+		set(NEED_KEY_EVENTS TRUE)
 		set(CG_FOUND TRUE)
 	endif()
 endif()
@@ -134,6 +138,7 @@ if(NOT WITHOUT_X11)
 		list(APPEND SOURCE x_events.c x_cio.c)
 		set(NEED_BITMAP TRUE)
 		set(NEED_SCALE TRUE)
+		set(NEED_KEY_EVENTS TRUE)
 	endif()
 endif()
 
@@ -146,6 +151,7 @@ if(NOT WITHOUT_SDL)
 		endif()
 		set(NEED_BITMAP TRUE)
 		set(NEED_SCALE TRUE)
+		set(NEED_KEY_EVENTS TRUE)
 	endif()
 endif()
 
@@ -159,6 +165,10 @@ if(NEED_BITMAP)
 	list(APPEND SOURCE bitmap_con.c)
 endif()
 
+if(NEED_KEY_EVENTS)
+	list(APPEND SOURCE key.c)
+endif()
+
 if(NEED_SCALE)
 	list(APPEND SOURCE scale.c xbr.c)
 endif()
@@ -167,6 +177,10 @@ check_symbol_exists(vasprintf stdio.h HAVE_VASPRINTF)
 
 add_library(ciolib OBJECT ${SOURCE})
 target_include_directories(ciolib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(NEED_KEY_EVENTS)
+	target_compile_definitions(ciolib PUBLIC CIOLIB_KEY_EVENTS)
+endif()
 
 if(WITHOUT_X11)
 	target_compile_definitions(ciolib PRIVATE NO_X)

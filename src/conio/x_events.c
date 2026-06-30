@@ -12,8 +12,10 @@
 #include <limits.h>
 #include <locale.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <X11/Xlib.h>
+#include <X11/XKBlib.h>
 #include <X11/Xutil.h>
 #include <X11/keysym.h>
 #include <X11/Xatom.h>
@@ -26,6 +28,7 @@
 #include "vidmodes.h"
 
 #include "ciolib.h"
+#include "evdev_codes.h"
 #define BITMAP_CIOLIB_DRIVER
 #include "bitmap_con.h"
 #include "link_list.h"
@@ -35,6 +38,372 @@
 #include "utf8_codepages.h"
 
 static void resize_window();
+static bool x11_evdev_keycodes;
+static uint16_t x11_keycode_evdev[256];
+
+static int
+x11_keyname_number(const char *key, const char *prefix)
+{
+	size_t len = strlen(prefix);
+
+	if (strncmp(key, prefix, len) != 0)
+		return 0;
+	if (key[len] < '0' || key[len] > '9' || key[len + 1] < '0' || key[len + 1] > '9')
+		return 0;
+	if (key[len + 2] != 0)
+		return 0;
+	return (key[len] - '0') * 10 + (key[len + 1] - '0');
+}
+
+static uint16_t
+x11_function_evdev(int n)
+{
+	if (n >= 1 && n <= 10)
+		return EVDEV_KEY_F1 + (n - 1);
+	if (n >= 11 && n <= 12)
+		return EVDEV_KEY_F11 + (n - 11);
+	if (n >= 13 && n <= 24)
+		return EVDEV_KEY_F13 + (n - 13);
+	return 0;
+}
+
+static uint16_t
+x11_evdev_from_keyname(const char name[4])
+{
+	static const uint16_t ae[] = {
+		0, EVDEV_KEY_1, EVDEV_KEY_2, EVDEV_KEY_3,
+		EVDEV_KEY_4, EVDEV_KEY_5, EVDEV_KEY_6,
+		EVDEV_KEY_7, EVDEV_KEY_8, EVDEV_KEY_9,
+		EVDEV_KEY_0, EVDEV_KEY_MINUS, EVDEV_KEY_EQUAL
+	};
+	static const uint16_t ad[] = {
+		0, EVDEV_KEY_Q, EVDEV_KEY_W, EVDEV_KEY_E,
+		EVDEV_KEY_R, EVDEV_KEY_T, EVDEV_KEY_Y,
+		EVDEV_KEY_U, EVDEV_KEY_I, EVDEV_KEY_O,
+		EVDEV_KEY_P, EVDEV_KEY_LEFTBRACE, EVDEV_KEY_RIGHTBRACE
+	};
+	static const uint16_t ac[] = {
+		0, EVDEV_KEY_A, EVDEV_KEY_S, EVDEV_KEY_D,
+		EVDEV_KEY_F, EVDEV_KEY_G, EVDEV_KEY_H,
+		EVDEV_KEY_J, EVDEV_KEY_K, EVDEV_KEY_L,
+		EVDEV_KEY_SEMICOLON, EVDEV_KEY_APOSTROPHE
+	};
+	static const uint16_t ab[] = {
+		0, EVDEV_KEY_Z, EVDEV_KEY_X, EVDEV_KEY_C,
+		EVDEV_KEY_V, EVDEV_KEY_B, EVDEV_KEY_N,
+		EVDEV_KEY_M, EVDEV_KEY_COMMA, EVDEV_KEY_DOT,
+		EVDEV_KEY_SLASH
+	};
+	char key[5];
+	int n;
+
+	memcpy(key, name, 4);
+	key[4] = 0;
+	for (int i = 3; i >= 0 && (key[i] == 0 || key[i] == ' '); i--)
+		key[i] = 0;
+
+	n = x11_keyname_number(key, "AE");
+	if (n > 0 && n < (int)(sizeof(ae) / sizeof(ae[0])))
+		return ae[n];
+	n = x11_keyname_number(key, "AD");
+	if (n > 0 && n < (int)(sizeof(ad) / sizeof(ad[0])))
+		return ad[n];
+	n = x11_keyname_number(key, "AC");
+	if (n > 0 && n < (int)(sizeof(ac) / sizeof(ac[0])))
+		return ac[n];
+	n = x11_keyname_number(key, "AB");
+	if (n > 0 && n < (int)(sizeof(ab) / sizeof(ab[0])))
+		return ab[n];
+	n = x11_keyname_number(key, "FK");
+	if (n > 0)
+		return x11_function_evdev(n);
+
+	if (strcmp(key, "ESC") == 0)
+		return EVDEV_KEY_ESC;
+	if (strcmp(key, "BKSP") == 0)
+		return EVDEV_KEY_BACKSPACE;
+	if (strcmp(key, "TAB") == 0)
+		return EVDEV_KEY_TAB;
+	if (strcmp(key, "RTRN") == 0)
+		return EVDEV_KEY_ENTER;
+	if (strcmp(key, "LCTL") == 0)
+		return EVDEV_KEY_LEFTCTRL;
+	if (strcmp(key, "RCTL") == 0)
+		return EVDEV_KEY_RIGHTCTRL;
+	if (strcmp(key, "TLDE") == 0)
+		return EVDEV_KEY_GRAVE;
+	if (strcmp(key, "LFSH") == 0)
+		return EVDEV_KEY_LEFTSHIFT;
+	if (strcmp(key, "RTSH") == 0)
+		return EVDEV_KEY_RIGHTSHIFT;
+	if (strcmp(key, "BKSL") == 0)
+		return EVDEV_KEY_BACKSLASH;
+	if (strcmp(key, "KPMU") == 0)
+		return EVDEV_KEY_KPASTERISK;
+	if (strcmp(key, "LALT") == 0)
+		return EVDEV_KEY_LEFTALT;
+	if (strcmp(key, "RALT") == 0)
+		return EVDEV_KEY_RIGHTALT;
+	if (strcmp(key, "SPCE") == 0)
+		return EVDEV_KEY_SPACE;
+	if (strcmp(key, "CAPS") == 0)
+		return EVDEV_KEY_CAPSLOCK;
+	if (strcmp(key, "NMLK") == 0)
+		return EVDEV_KEY_NUMLOCK;
+	if (strcmp(key, "SCLK") == 0)
+		return EVDEV_KEY_SCROLLLOCK;
+	if (strcmp(key, "KP7") == 0)
+		return EVDEV_KEY_KP7;
+	if (strcmp(key, "KP8") == 0)
+		return EVDEV_KEY_KP8;
+	if (strcmp(key, "KP9") == 0)
+		return EVDEV_KEY_KP9;
+	if (strcmp(key, "KPSU") == 0)
+		return EVDEV_KEY_KPMINUS;
+	if (strcmp(key, "KP4") == 0)
+		return EVDEV_KEY_KP4;
+	if (strcmp(key, "KP5") == 0)
+		return EVDEV_KEY_KP5;
+	if (strcmp(key, "KP6") == 0)
+		return EVDEV_KEY_KP6;
+	if (strcmp(key, "KPAD") == 0)
+		return EVDEV_KEY_KPPLUS;
+	if (strcmp(key, "KP1") == 0)
+		return EVDEV_KEY_KP1;
+	if (strcmp(key, "KP2") == 0)
+		return EVDEV_KEY_KP2;
+	if (strcmp(key, "KP3") == 0)
+		return EVDEV_KEY_KP3;
+	if (strcmp(key, "KP0") == 0)
+		return EVDEV_KEY_KP0;
+	if (strcmp(key, "KPDL") == 0)
+		return EVDEV_KEY_KPDOT;
+	if (strcmp(key, "LSGT") == 0)
+		return EVDEV_KEY_102ND;
+	if (strcmp(key, "KPEN") == 0)
+		return EVDEV_KEY_KPENTER;
+	if (strcmp(key, "KPDV") == 0)
+		return EVDEV_KEY_KPSLASH;
+	if (strcmp(key, "PRSC") == 0)
+		return EVDEV_KEY_SYSRQ;
+	if (strcmp(key, "HOME") == 0)
+		return EVDEV_KEY_HOME;
+	if (strcmp(key, "UP") == 0)
+		return EVDEV_KEY_UP;
+	if (strcmp(key, "PGUP") == 0)
+		return EVDEV_KEY_PAGEUP;
+	if (strcmp(key, "LEFT") == 0)
+		return EVDEV_KEY_LEFT;
+	if (strcmp(key, "RGHT") == 0)
+		return EVDEV_KEY_RIGHT;
+	if (strcmp(key, "END") == 0)
+		return EVDEV_KEY_END;
+	if (strcmp(key, "DOWN") == 0)
+		return EVDEV_KEY_DOWN;
+	if (strcmp(key, "PGDN") == 0)
+		return EVDEV_KEY_PAGEDOWN;
+	if (strcmp(key, "INS") == 0)
+		return EVDEV_KEY_INSERT;
+	if (strcmp(key, "DELE") == 0)
+		return EVDEV_KEY_DELETE;
+	if (strcmp(key, "PAUS") == 0)
+		return EVDEV_KEY_PAUSE;
+	if (strcmp(key, "LWIN") == 0)
+		return EVDEV_KEY_LEFTMETA;
+	if (strcmp(key, "RWIN") == 0)
+		return EVDEV_KEY_RIGHTMETA;
+	if (strcmp(key, "MENU") == 0)
+		return EVDEV_KEY_MENU;
+	return 0;
+}
+
+static uint16_t
+x11_evdev_from_keysym(KeySym ks)
+{
+	static const uint16_t alpha[] = {
+		EVDEV_KEY_A, EVDEV_KEY_B, EVDEV_KEY_C, EVDEV_KEY_D,
+		EVDEV_KEY_E, EVDEV_KEY_F, EVDEV_KEY_G, EVDEV_KEY_H,
+		EVDEV_KEY_I, EVDEV_KEY_J, EVDEV_KEY_K, EVDEV_KEY_L,
+		EVDEV_KEY_M, EVDEV_KEY_N, EVDEV_KEY_O, EVDEV_KEY_P,
+		EVDEV_KEY_Q, EVDEV_KEY_R, EVDEV_KEY_S, EVDEV_KEY_T,
+		EVDEV_KEY_U, EVDEV_KEY_V, EVDEV_KEY_W, EVDEV_KEY_X,
+		EVDEV_KEY_Y, EVDEV_KEY_Z
+	};
+	static const uint16_t kpnum[] = {
+		EVDEV_KEY_KP0, EVDEV_KEY_KP1, EVDEV_KEY_KP2,
+		EVDEV_KEY_KP3, EVDEV_KEY_KP4, EVDEV_KEY_KP5,
+		EVDEV_KEY_KP6, EVDEV_KEY_KP7, EVDEV_KEY_KP8,
+		EVDEV_KEY_KP9
+	};
+
+	if (ks >= XK_a && ks <= XK_z)
+		return alpha[ks - XK_a];
+	if (ks >= XK_A && ks <= XK_Z)
+		return alpha[ks - XK_A];
+	if (ks >= XK_F1 && ks <= XK_F10)
+		return EVDEV_KEY_F1 + (ks - XK_F1);
+	if (ks >= XK_F11 && ks <= XK_F12)
+		return EVDEV_KEY_F11 + (ks - XK_F11);
+	if (ks >= XK_F13 && ks <= XK_F24)
+		return EVDEV_KEY_F13 + (ks - XK_F13);
+	if (ks >= XK_KP_0 && ks <= XK_KP_9)
+		return kpnum[ks - XK_KP_0];
+	if (ks >= XK_1 && ks <= XK_9)
+		return EVDEV_KEY_1 + (ks - XK_1);
+
+	switch (ks) {
+		case XK_Escape:
+			return EVDEV_KEY_ESC;
+		case XK_0:
+			return EVDEV_KEY_0;
+		case XK_minus:
+			return EVDEV_KEY_MINUS;
+		case XK_equal:
+			return EVDEV_KEY_EQUAL;
+		case XK_BackSpace:
+			return EVDEV_KEY_BACKSPACE;
+		case XK_Tab:
+		case XK_ISO_Left_Tab:
+			return EVDEV_KEY_TAB;
+		case XK_bracketleft:
+			return EVDEV_KEY_LEFTBRACE;
+		case XK_bracketright:
+			return EVDEV_KEY_RIGHTBRACE;
+		case XK_Return:
+			return EVDEV_KEY_ENTER;
+		case XK_Control_L:
+			return EVDEV_KEY_LEFTCTRL;
+		case XK_Control_R:
+			return EVDEV_KEY_RIGHTCTRL;
+		case XK_semicolon:
+			return EVDEV_KEY_SEMICOLON;
+		case XK_apostrophe:
+			return EVDEV_KEY_APOSTROPHE;
+		case XK_grave:
+			return EVDEV_KEY_GRAVE;
+		case XK_Shift_L:
+			return EVDEV_KEY_LEFTSHIFT;
+		case XK_Shift_R:
+			return EVDEV_KEY_RIGHTSHIFT;
+		case XK_backslash:
+			return EVDEV_KEY_BACKSLASH;
+		case XK_comma:
+			return EVDEV_KEY_COMMA;
+		case XK_period:
+			return EVDEV_KEY_DOT;
+		case XK_slash:
+			return EVDEV_KEY_SLASH;
+		case XK_KP_Multiply:
+			return EVDEV_KEY_KPASTERISK;
+		case XK_Alt_L:
+			return EVDEV_KEY_LEFTALT;
+		case XK_Alt_R:
+			return EVDEV_KEY_RIGHTALT;
+		case XK_Meta_L:
+			return EVDEV_KEY_LEFTMETA;
+		case XK_Meta_R:
+			return EVDEV_KEY_RIGHTMETA;
+		case XK_space:
+			return EVDEV_KEY_SPACE;
+		case XK_Caps_Lock:
+			return EVDEV_KEY_CAPSLOCK;
+		case XK_Num_Lock:
+			return EVDEV_KEY_NUMLOCK;
+		case XK_Scroll_Lock:
+			return EVDEV_KEY_SCROLLLOCK;
+		case XK_KP_Insert:
+			return EVDEV_KEY_KP0;
+		case XK_KP_End:
+			return EVDEV_KEY_KP1;
+		case XK_KP_Down:
+			return EVDEV_KEY_KP2;
+		case XK_KP_Next:
+			return EVDEV_KEY_KP3;
+		case XK_KP_Left:
+			return EVDEV_KEY_KP4;
+		case XK_KP_Begin:
+			return EVDEV_KEY_KP5;
+		case XK_KP_Right:
+			return EVDEV_KEY_KP6;
+		case XK_KP_Home:
+			return EVDEV_KEY_KP7;
+		case XK_KP_Up:
+			return EVDEV_KEY_KP8;
+		case XK_KP_Prior:
+			return EVDEV_KEY_KP9;
+		case XK_KP_Decimal:
+		case XK_KP_Delete:
+			return EVDEV_KEY_KPDOT;
+		case XK_KP_Subtract:
+			return EVDEV_KEY_KPMINUS;
+		case XK_KP_Add:
+			return EVDEV_KEY_KPPLUS;
+		case XK_KP_Enter:
+			return EVDEV_KEY_KPENTER;
+		case XK_KP_Divide:
+			return EVDEV_KEY_KPSLASH;
+		case XK_Print:
+		case XK_Sys_Req:
+			return EVDEV_KEY_SYSRQ;
+		case XK_Home:
+			return EVDEV_KEY_HOME;
+		case XK_Up:
+			return EVDEV_KEY_UP;
+		case XK_Prior:
+			return EVDEV_KEY_PAGEUP;
+		case XK_Left:
+			return EVDEV_KEY_LEFT;
+		case XK_Right:
+			return EVDEV_KEY_RIGHT;
+		case XK_End:
+			return EVDEV_KEY_END;
+		case XK_Down:
+			return EVDEV_KEY_DOWN;
+		case XK_Next:
+			return EVDEV_KEY_PAGEDOWN;
+		case XK_Insert:
+			return EVDEV_KEY_INSERT;
+		case XK_Delete:
+			return EVDEV_KEY_DELETE;
+		case XK_Pause:
+		case XK_Break:
+			return EVDEV_KEY_PAUSE;
+		case XK_Super_L:
+		case XK_Hyper_L:
+			return EVDEV_KEY_LEFTMETA;
+		case XK_Super_R:
+		case XK_Hyper_R:
+			return EVDEV_KEY_RIGHTMETA;
+		case XK_Menu:
+			return EVDEV_KEY_MENU;
+		default:
+			return 0;
+	}
+}
+
+static uint16_t
+x11_evdev_from_keyevent(const XKeyEvent *kev, KeySym ks)
+{
+	uint16_t evdev;
+
+	if (x11_evdev_keycodes && kev->keycode >= 8) {
+		evdev = kev->keycode - 8;
+		if (evdev <= EVDEV_KEY_MAX)
+			return evdev;
+	}
+	if (kev->keycode < sizeof(x11_keycode_evdev) / sizeof(x11_keycode_evdev[0])
+	    && x11_keycode_evdev[kev->keycode] != 0)
+		return x11_keycode_evdev[kev->keycode];
+	evdev = x11_evdev_from_keysym(ks);
+	if (evdev != 0)
+		return evdev;
+	if (kev->keycode >= 8) {
+		evdev = kev->keycode - 8;
+		if (evdev <= EVDEV_KEY_MAX)
+			return evdev;
+	}
+	return 0;
+}
 
 /*
  * Exported variables
@@ -156,6 +525,56 @@ static bool VisualIsRGB8 = false;
 static XImage *xim;
 static XIM im;
 static XIC ic;
+
+static bool
+x11_keycode_matches_evdev(KeySym ks, uint16_t evdev)
+{
+	KeyCode kc;
+
+	if (x11.XKeysymToKeycode == NULL || dpy == NULL)
+		return false;
+	kc = x11.XKeysymToKeycode(dpy, ks);
+	return kc != 0 && kc == evdev + 8;
+}
+
+static void
+x11_detect_keycode_map(void)
+{
+	int matches = 0;
+
+	if (x11_keycode_matches_evdev(XK_Escape, EVDEV_KEY_ESC))
+		matches++;
+	if (x11_keycode_matches_evdev(XK_Up, EVDEV_KEY_UP))
+		matches++;
+	if (x11_keycode_matches_evdev(XK_Insert, EVDEV_KEY_INSERT))
+		matches++;
+	if (x11_keycode_matches_evdev(XK_Pause, EVDEV_KEY_PAUSE))
+		matches++;
+	if (x11_keycode_matches_evdev(XK_Super_L, EVDEV_KEY_LEFTMETA))
+		matches++;
+	x11_evdev_keycodes = matches >= 3;
+}
+
+static void
+x11_build_keycode_evdev_map(void)
+{
+	XkbDescPtr xkb;
+
+	memset(x11_keycode_evdev, 0, sizeof(x11_keycode_evdev));
+	if (x11.XkbGetKeyboard == NULL || x11.XkbFreeKeyboard == NULL || dpy == NULL)
+		return;
+	xkb = x11.XkbGetKeyboard(dpy, XkbGBN_KeyNamesMask, XkbUseCoreKbd);
+	if (xkb == NULL)
+		return;
+	if (xkb->names != NULL && xkb->names->keys != NULL) {
+		for (int code = xkb->min_key_code; code <= xkb->max_key_code; code++) {
+			if (code >= 0 && code < (int)(sizeof(x11_keycode_evdev) / sizeof(x11_keycode_evdev[0])))
+				x11_keycode_evdev[code] = x11_evdev_from_keyname(xkb->names->keys[code].name);
+		}
+	}
+	x11.XkbFreeKeyboard(xkb, XkbAllComponentsMask, True);
+}
+
 static unsigned int depth=0;
 static int xfd;
 static unsigned long black;
@@ -1015,6 +1434,8 @@ static int init_window()
 	if (dpy == NULL) {
 		return(-1);
 	}
+	x11_detect_keycode_map();
+	x11_build_keycode_evdev_map();
 	root = DefaultRootWindow(dpy);
 	x11.XSynchronize(dpy, False);
 
@@ -1857,6 +2278,7 @@ x11_event(XEvent *ev)
 				else {
 					if (ic)
 						x11.XUnsetICFocus(ic);
+					ciokey_focus_lost();
 				}
 				break;
 			}
@@ -2041,14 +2463,19 @@ x11_event(XEvent *ev)
 
 		/* Keyboard Events */
 		case KeyRelease:
+		{
+			KeySym ks = x11.XLookupKeysym((XKeyEvent *)ev, 0);
+			uint16_t evdev = x11_evdev_from_keyevent((XKeyEvent *)ev, ks);
+			if (evdev != 0)
+				ciokey_gotevent(evdev, false);
 			if (bios_key_parsing) {
-				KeySym ks = x11.XLookupKeysym((XKeyEvent *)ev, 0);
 				// If Mod1 (ie: ALT) is released, *and* the only bytes were KP numbers, do the BIOS thing.
 				if (ks == XK_Alt_L || ks == XK_Alt_R) {
 					handle_bios_key(&bios_key, &bios_key_parsing, &zero_first);
 				}
 			}
 			break;
+		}
 
 		case KeyPress:
 			{
@@ -2069,6 +2496,9 @@ x11_event(XEvent *ev)
 					cnt = x11.XLookupString((XKeyEvent *)ev, buf, sizeof(buf), &ks, NULL);
 					lus = XLookupKeySym;
 				}
+				uint16_t evdev = x11_evdev_from_keyevent((XKeyEvent *)ev, ks);
+				if (evdev != 0)
+					ciokey_gotevent(evdev, true);
 
 				if (bios_key_parsing) {
 					if (ks >= XK_KP_0 && ks <= XK_KP_9) {

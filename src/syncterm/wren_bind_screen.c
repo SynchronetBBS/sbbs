@@ -1,5 +1,5 @@
 /* Screen / Input / Cell / Cells / Font / Hyperlinks / Color / Palette
- * / CustomCursor / VideoFlags / KeyEvent / MouseEvent foreign surface
+ * / CustomCursor / VideoFlags / KeyEvent / PhysicalKeyEvent / MouseEvent foreign surface
  * for the Wren scripting host.  Public API in wren_bind_screen.h;
  * BINDINGS table + lookup_class dispatch live in wren_bind.c. */
 
@@ -13,6 +13,7 @@
 
 #include "ciolib.h"
 #include "cterm.h"
+#include "evdev_codes.h"
 #include "syncterm.h"
 #include "term.h"
 #include "utf8_codepages.h"
@@ -188,7 +189,7 @@ fn_Screen_size(WrenVM *vm)
 /* Forward decl - defined later beside the Cell helpers. */
 static int encode_utf8(uint32_t cp, char out[4]);
 
-/* Foreign class state for KeyEvent and MouseEvent - both are simple
+/* Foreign class state for input events - these are simple
  * value types (no parent, no resources) so finalize is a no-op. */
 struct wren_key_event {
 	enum syncterm_wren_foreign type;
@@ -196,6 +197,12 @@ struct wren_key_event {
 	int32_t  codepoint;   /* -1 = none (extended key) */
 	uint8_t  text[5];     /* UTF-8 of codepoint, NUL-terminated; "" if extended */
 	uint8_t  text_len;    /* not counting NUL */
+};
+
+struct wren_physical_key_event {
+	enum syncterm_wren_foreign type;
+	uint16_t evdev;
+	bool pressed;
 };
 
 struct wren_mouse_event {
@@ -209,7 +216,9 @@ struct wren_mouse_event {
 static int
 read_assembled_keycode(void)
 {
-	int ch = getch();
+	int ch;
+
+	ch = getch();
 	if (ch == 0 || ch == 0xe0) {
 		int ch2 = getch();
 		ch |= ch2 << 8;
@@ -287,6 +296,31 @@ wren_key_event_allocate(WrenVM *vm)
 
 void
 wren_key_event_finalize(void *data)
+{
+	(void)data;
+}
+
+void
+wren_physical_key_event_allocate(WrenVM *vm)
+{
+	int evdev = (int)wrenGetSlotDouble(vm, 1);
+	bool pressed = wrenGetSlotBool(vm, 2);
+
+	struct wren_physical_key_event *pke =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*pke));
+	pke->type = SWF_PHYSICAL_KEY_EVENT;
+	pke->evdev = 0;
+	pke->pressed = false;
+	if (evdev < 0 || evdev > EVDEV_KEY_MAX) {
+		wren_throw(vm, "PhysicalKeyEvent.new: evdev out of range");
+		return;
+	}
+	pke->evdev = (uint16_t)evdev;
+	pke->pressed = pressed;
+}
+
+void
+wren_physical_key_event_finalize(void *data)
 {
 	(void)data;
 }
@@ -410,6 +444,20 @@ fn_KeyEvent_text(WrenVM *vm)
 	wrenSetSlotBytes(vm, 0, (const char *)ke->text, ke->text_len);
 }
 
+void
+fn_PhysicalKeyEvent_evdev(WrenVM *vm)
+{
+	struct wren_physical_key_event *pke = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotDouble(vm, 0, (double)pke->evdev);
+}
+
+void
+fn_PhysicalKeyEvent_pressed(WrenVM *vm)
+{
+	struct wren_physical_key_event *pke = wrenGetSlotForeign(vm, 0);
+	wrenSetSlotBool(vm, 0, pke->pressed);
+}
+
 /* MouseEvent field accessors. */
 #define MOUSE_FIELD(NAME, FIELD)                                        \
 	void fn_MouseEvent_##NAME(WrenVM *vm)                    \
@@ -439,6 +487,16 @@ fn_KeyEvent_toString(WrenVM *vm)
 	else
 		snprintf(buf, sizeof(buf), "KeyEvent(0x%04X)",
 		    (unsigned)ke->code);
+	wrenSetSlotString(vm, 0, buf);
+}
+
+void
+fn_PhysicalKeyEvent_toString(WrenVM *vm)
+{
+	struct wren_physical_key_event *pke = wrenGetSlotForeign(vm, 0);
+	char buf[80];
+	snprintf(buf, sizeof(buf), "PhysicalKeyEvent(%s %u)",
+	    pke->pressed ? "down" : "up", (unsigned)pke->evdev);
 	wrenSetSlotString(vm, 0, buf);
 }
 
@@ -473,6 +531,19 @@ push_key_event(WrenVM *vm, uint16_t code, int dst)
 	key_event_init(ke, code);
 }
 
+void
+push_physical_key_event(WrenVM *vm, const struct ciolib_key_event *kev, int dst)
+{
+	struct wren_host_state *st = wren_host_state();
+	load_class_into_slot(vm, &st->physical_key_event_class,
+	    "PhysicalKeyEvent", dst + 1);
+	struct wren_physical_key_event *pke =
+	    wrenSetSlotNewForeign(vm, dst, dst + 1, sizeof(*pke));
+	pke->type = SWF_PHYSICAL_KEY_EVENT;
+	pke->evdev = kev->evdev;
+	pke->pressed = kev->pressed;
+}
+
 /* Build a Wren-side MouseEvent in `dst` from a struct mouse_event.
  * Same slot conventions as push_key_event - caller must have ensured
  * at least `dst + 2` slots. */
@@ -487,12 +558,10 @@ push_mouse_event(WrenVM *vm, const struct mouse_event *mev, int dst)
 	me->ev   = *mev;
 }
 
-/* Drain one event from ciolib into slot 0.  When getch returns
- * CIO_KEY_MOUSE the actual mouse details come from a paired getmouse
- * call, so we wrap it as MouseEvent rather than KeyEvent.  Anything
- * else becomes a KeyEvent. */
-static void
-push_next_event(WrenVM *vm)
+/* Drain one event from ciolib into slot 0.  When getch returns a marker
+ * token, the actual details come from the paired ciolib event queue. */
+static bool
+push_next_event(WrenVM *vm, bool retry_empty_key_event)
 {
 	int code = read_assembled_keycode();
 	wrenEnsureSlots(vm, 2);
@@ -503,12 +572,24 @@ push_next_event(WrenVM *vm)
 			/* No mouse pending despite the marker - surface as a
 			 * raw KeyEvent so the script at least sees the byte. */
 			push_key_event(vm, (uint16_t)code, 0);
-			return;
+			return true;
 		}
 		push_mouse_event(vm, &mev, 0);
-		return;
+		return true;
+	}
+	if (code == CIO_KEY_KEY_EVENT) {
+		struct ciolib_key_event kev;
+		if (ciokey_getevent(&kev)) {
+			push_physical_key_event(vm, &kev, 0);
+			return true;
+		}
+		if (retry_empty_key_event)
+			return push_next_event(vm, true);
+		wrenSetSlotNull(vm, 0);
+		return false;
 	}
 	push_key_event(vm, (uint16_t)code, 0);
+	return true;
 }
 
 /* Wake.post(fiber, value) - queue `value` to be delivered to `fiber`
@@ -814,6 +895,22 @@ wren_bind_dispatch_claim_key(int code)
 }
 
 bool
+wren_bind_dispatch_claim_physical_key(const struct ciolib_key_event *ev)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->claim_top == NULL || ev == NULL)
+		return false;
+	wrenEnsureSlots(st->vm, 2);
+	push_physical_key_event(st->vm, ev, 0);
+	WrenHandle *eh = wrenGetSlotHandle(st->vm, 0);
+	if (eh == NULL)
+		return false;
+	bool consumed = dispatch_claim_event(eh);
+	wrenReleaseHandle(st->vm, eh);
+	return consumed;
+}
+
+bool
 wren_bind_dispatch_claim_mouse(struct mouse_event *ev)
 {
 	struct wren_host_state *st = wren_host_state();
@@ -849,7 +946,7 @@ wren_bind_claim_stack_clear(void)
 void
 fn_Input_next(WrenVM *vm)
 {
-	push_next_event(vm);
+	push_next_event(vm, true);
 }
 
 /* Input.next(ms) - wait up to ms milliseconds; null on timeout. */
@@ -861,7 +958,7 @@ fn_Input_next_ms(WrenVM *vm)
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	push_next_event(vm);
+	push_next_event(vm, false);
 }
 
 /* Input.poll() - non-blocking; null when nothing is ready. */
@@ -872,16 +969,17 @@ fn_Input_poll(WrenVM *vm)
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	push_next_event(vm);
+	push_next_event(vm, false);
 }
 
-/* Input.ungetKey_(ev) / Input.ungetMouse_(ev) - typed unget primitives.
+/* Input.ungetKey_(ev) / Input.ungetPhysicalKey_(ev) / Input.ungetMouse_(ev)
+ * - typed unget primitives.
  * The public Input.unget(ev) is a Wren-side wrapper that picks one of
- * these via `ev is KeyEvent` / `ev is MouseEvent`, since Wren doesn't
- * expose a "class of this foreign value" API to C and we need to know
- * which queue to push back to.  ungetch handles the LITERAL_E0
- * reversal internally; ungetmouse appends to the mouse output queue
- * and the next getch will surface CIO_KEY_MOUSE on its own. */
+ * these via event type, since Wren doesn't expose a "class of this
+ * foreign value" API to C and we need to know which queue to push back
+ * to.  ungetch handles the LITERAL_E0 reversal internally; ungetmouse
+ * appends to the mouse output queue and the next getch will surface
+ * CIO_KEY_MOUSE on its own. */
 void
 fn_Input_ungetKey_(WrenVM *vm)
 {
@@ -890,10 +988,30 @@ fn_Input_ungetKey_(WrenVM *vm)
 }
 
 void
+fn_Input_ungetPhysicalKey_(WrenVM *vm)
+{
+	struct wren_physical_key_event *pke = wrenGetSlotForeign(vm, 1);
+	ciokey_synthesize(pke->evdev, pke->pressed);
+}
+
+void
 fn_Input_ungetMouse_(WrenVM *vm)
 {
 	struct wren_mouse_event *me = wrenGetSlotForeign(vm, 1);
 	ungetmouse(&me->ev);
+}
+
+void
+fn_Input_synthesizePhysicalKey(WrenVM *vm)
+{
+	int evdev = (int)wrenGetSlotDouble(vm, 1);
+	bool pressed = wrenGetSlotBool(vm, 2);
+
+	if (evdev < 0 || evdev > EVDEV_KEY_MAX) {
+		wren_throw(vm, "Input.synthesizePhysicalKey: evdev out of range");
+		return;
+	}
+	ciokey_synthesize((uint16_t)evdev, pressed);
 }
 
 void
@@ -2796,4 +2914,3 @@ fn_Scrollback_popScreen(WrenVM *vm)
 	cterm->backfilled = st->scrollback_save_filled;
 	st->scrollback_save_valid = false;
 }
-

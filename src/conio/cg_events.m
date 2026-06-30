@@ -21,6 +21,7 @@
 #import <Carbon/Carbon.h> /* for kVK_ virtual keycodes */
 
 #include <stdbool.h>
+#include <string.h>
 #include <pthread.h>
 
 #include <threadwrap.h>
@@ -36,6 +37,7 @@
 
 #define BITMAP_CIOLIB_DRIVER
 #include "ciolib.h"
+#include "evdev_codes.h"
 #include "cg_cio.h"
 #include "bitmap_con.h"
 #include "scale.h"
@@ -86,6 +88,7 @@ static struct graphics_buffer *cg_scaled_next;
 static pthread_mutex_t cg_nextlock;
 static int cg_init_mode;
 static CGFloat cg_backing_scale = 1.0;
+static bool cg_modifier_down[EVDEV_KEY_MAX + 1];
 
 static bool cg_app_shutting_down;
 
@@ -185,6 +188,77 @@ static const int vk_to_at[128] = {
 	[kVK_ANSI_Keypad8]       = 72,
 	[kVK_ANSI_Keypad9]       = 73,
 };
+
+static uint16_t
+cg_evdev_from_vk(unsigned short vk)
+{
+	switch (vk) {
+		case kVK_ANSI_KeypadEnter:
+			return EVDEV_KEY_KPENTER;
+		case kVK_Home:
+			return EVDEV_KEY_HOME;
+		case kVK_PageUp:
+			return EVDEV_KEY_PAGEUP;
+		case kVK_ForwardDelete:
+			return EVDEV_KEY_DELETE;
+		case kVK_End:
+			return EVDEV_KEY_END;
+		case kVK_PageDown:
+			return EVDEV_KEY_PAGEDOWN;
+		case kVK_LeftArrow:
+			return EVDEV_KEY_LEFT;
+		case kVK_RightArrow:
+			return EVDEV_KEY_RIGHT;
+		case kVK_DownArrow:
+			return EVDEV_KEY_DOWN;
+		case kVK_UpArrow:
+			return EVDEV_KEY_UP;
+		case kVK_Shift:
+			return EVDEV_KEY_LEFTSHIFT;
+		case kVK_RightShift:
+			return EVDEV_KEY_RIGHTSHIFT;
+		case kVK_Control:
+			return EVDEV_KEY_LEFTCTRL;
+		case kVK_RightControl:
+			return EVDEV_KEY_RIGHTCTRL;
+		case kVK_Option:
+			return EVDEV_KEY_LEFTALT;
+		case kVK_RightOption:
+			return EVDEV_KEY_RIGHTALT;
+		case kVK_Command:
+			return EVDEV_KEY_LEFTMETA;
+		case kVK_RightCommand:
+			return EVDEV_KEY_RIGHTMETA;
+		case kVK_CapsLock:
+			return EVDEV_KEY_CAPSLOCK;
+		case kVK_F13:
+			return EVDEV_KEY_F13;
+		case kVK_F14:
+			return EVDEV_KEY_F14;
+		case kVK_F15:
+			return EVDEV_KEY_F15;
+		case kVK_F16:
+			return EVDEV_KEY_F16;
+		case kVK_F17:
+			return EVDEV_KEY_F17;
+		case kVK_F18:
+			return EVDEV_KEY_F18;
+		case kVK_F19:
+			return EVDEV_KEY_F19;
+		case kVK_F20:
+			return EVDEV_KEY_F20;
+	}
+	if (vk < 128 && vk_to_at[vk] > 0)
+		return vk_to_at[vk];
+	return 0;
+}
+
+static void
+cg_key_focus_lost(void)
+{
+	memset(cg_modifier_down, 0, sizeof(cg_modifier_down));
+	ciokey_focus_lost();
+}
 
 /*
  * AT Set 1 scan code table — same as Wayland/X11 backends.
@@ -443,10 +517,14 @@ snap_resize(bool grow)
 {
 	NSEventModifierFlags mods = event.modifierFlags;
 	unsigned short vk = event.keyCode;
+	uint16_t evdev = cg_evdev_from_vk(vk);
 	BOOL hasCmd = (mods & NSEventModifierFlagCommand) != 0;
 	BOOL hasCtrl = (mods & NSEventModifierFlagControl) != 0;
 	BOOL hasShift = (mods & NSEventModifierFlagShift) != 0;
 	BOOL hasOpt = (mods & NSEventModifierFlagOption) != 0;
+
+	if (evdev != 0)
+		ciokey_gotevent(evdev, true);
 
 	/*
 	 * On macOS we map Command (NOT Option) to BBS/terminal Alt.
@@ -560,10 +638,24 @@ snap_resize(bool grow)
 	}
 }
 
+- (void)keyUp:(NSEvent *)event
+{
+	uint16_t evdev = cg_evdev_from_vk(event.keyCode);
+
+	if (evdev != 0)
+		ciokey_gotevent(evdev, false);
+}
+
 - (void)flagsChanged:(NSEvent *)event
 {
-	/* We don't need to track modifier state separately — NSEvent
-	 * provides modifierFlags on every event. */
+	uint16_t evdev = cg_evdev_from_vk(event.keyCode);
+	bool pressed;
+
+	if (evdev == 0 || evdev > EVDEV_KEY_MAX)
+		return;
+	pressed = !cg_modifier_down[evdev];
+	cg_modifier_down[evdev] = pressed;
+	ciokey_gotevent(evdev, pressed);
 }
 
 static void
@@ -777,6 +869,11 @@ cg_handle_mouse(NSEvent *event, int evtype)
 		assert_rwlock_unlock(&vstatlock);
 	}
 	bitmap_drv_request_pixels();
+}
+
+- (void)windowDidResignKey:(NSNotification *)notification
+{
+	cg_key_focus_lost();
 }
 
 - (BOOL)windowShouldClose:(NSWindow *)sender

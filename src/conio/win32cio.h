@@ -25,7 +25,8 @@ struct keyvals {
 		,Key
 		,Shift
 		,CTRL
-		,ALT;
+		,ALT
+		,evdev;
 };
 
 #ifdef __cplusplus
@@ -56,6 +57,7 @@ void win32_setcustomcursor(int s, int e, int r, int b, int v);
 int win32_getvideoflags(void);
 int win32_setpalette(uint32_t entry, uint16_t r, uint16_t g, uint16_t b);
 int win32_keyval_cmp(const void *key, const void *memb);
+uint16_t win32_evdev_key(WORD vk, WORD scan, DWORD state);
 bool win32_bios_keyup_handler(WORD wParam, void (*accept_key)(uint16_t key));
 bool win32_bios_keydown_handler(WORD wParam, void (*accept_key)(uint16_t key));
 

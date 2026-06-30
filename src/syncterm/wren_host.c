@@ -40,6 +40,7 @@
 static struct wren_host_state state;
 static bool      active;
 static pthread_t owner_thread;
+static bool      physical_key_events_requested;
 
 /* -W <path>: extra script loaded at the end of every wren_host_init.
  * NULL when not set (the common case).  Exposed to scripts via
@@ -1127,6 +1128,8 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.scrollback_class);
 	if (state.key_event_class != NULL)
 		wrenReleaseHandle(state.vm, state.key_event_class);
+	if (state.physical_key_event_class != NULL)
+		wrenReleaseHandle(state.vm, state.physical_key_event_class);
 	if (state.mouse_event_class != NULL)
 		wrenReleaseHandle(state.vm, state.mouse_event_class);
 	if (state.hook_handle_class != NULL)
@@ -1196,6 +1199,7 @@ wren_host_shutdown(void)
 	wrenFreeVM(state.vm);
 	state.vm = NULL;
 	active = false;
+	physical_key_events_requested = false;
 	pthread_mutex_destroy(&state.result_mutex);
 
 	/* The transfer-arrow flags now live in Wren static fields
@@ -1222,6 +1226,19 @@ on_owner_thread(void)
 	return pthread_self() == owner_thread;
 }
 
+bool
+wren_host_wants_physical_keys(void)
+{
+	return active && physical_key_events_requested;
+}
+
+void
+wren_host_enable_physical_key_events(void)
+{
+	physical_key_events_requested = true;
+	ciokey_setenabled(true);
+}
+
 /* C2 (observe-only) hooks ignore returns by design.  Some scripts try
  * to "consume" by returning Bool / String — silently ignored at the
  * dispatch level, but easy to misdiagnose as "my hook isn't firing."
@@ -1237,8 +1254,8 @@ warn_if_c2_misused(const char *who)
 	char msg[160];
 	snprintf(msg, sizeof(msg),
 	    "Hook.%s callback returned %s; the value is ignored. "
-	    "%s is observe-only (C2 contract); use Hook.onInput for "
-	    "byte-level drops or Hook.onKey/onMouse for consumption.",
+	    "%s is observe-only; use Hook.onInput/onKey/"
+	    "onPhysicalKey/onMouse to consume.",
 	    who,
 	    t == WREN_TYPE_BOOL ? "Bool" : "String",
 	    who);
@@ -1276,6 +1293,35 @@ wren_host_dispatch_key(int key)
 		wrenSetSlotHandle(state.vm, 0, state.hook_class);
 		wrenSetSlotHandle(state.vm, 1, h->fn);
 		wrenSetSlotDouble(state.vm, 2, (double)key);
+		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
+		    WREN_RESULT_SUCCESS)
+			continue;
+		if (read_consume_result())
+			return true;
+	}
+	return false;
+}
+
+bool
+wren_host_dispatch_physical_key(const struct ciolib_key_event *ev)
+{
+	if (!active || !on_owner_thread() || ev == NULL)
+		return false;
+	if (wren_bind_dispatch_claim_physical_key(ev))
+		return true;
+	int n = state.hook_count[WREN_HOOK_PHYSICAL_KEY];
+	if (n == 0)
+		return false;
+	for (int i = 0; i < n; i++) {
+		struct wren_hook_entry *h = state.hooks[WREN_HOOK_PHYSICAL_KEY][i];
+		if (h == NULL || h->fn == NULL)
+			continue;
+		if (h->filtered && h->filter != ev->evdev)
+			continue;
+		wrenEnsureSlots(state.vm, 4);
+		wrenSetSlotHandle(state.vm, 0, state.hook_class);
+		wrenSetSlotHandle(state.vm, 1, h->fn);
+		push_physical_key_event(state.vm, ev, 2);
 		if (metrics_invoke(&h->metrics, state.dispatch1_handle) !=
 		    WREN_RESULT_SUCCESS)
 			continue;

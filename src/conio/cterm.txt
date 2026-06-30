@@ -803,6 +803,7 @@ CSI < Ps c (CTDA)
 	5 - The current font may be selected via CSI Ps1 ; Ps2 sp D
 	6 - Extended palette is available
 	7 - Mouse is available
+	8 - Physical key press/release reports are available
 
 CSI PN d (VPA)
 	Line Position Absolute
@@ -847,6 +848,32 @@ CSI = 255 h (BCSET)
 	Enable DoorWay Mode
 
 	SOURCE: BANSI.TXT
+
+CSI = 1 h
+	NON-STANDARD EXTENSION
+	Enable physical key reports.
+
+	When enabled, key presses are reported as
+	CSI = Pk[;Pk...]K, and key releases are reported as
+	CSI = Pk[;Pk...]k.
+
+	Pk is an evdev key code number from the EVDEV_KEY_* namespace.
+	Multiple parameters may be included when several key edges are
+	reported together.  Physical key reports describe key identity before
+	normal character translation; they do not replace normal translated
+	key input unless translated key suppression is also enabled.
+
+	SOURCE: CTerm only.
+
+CSI = 2 h
+	NON-STANDARD EXTENSION
+	Suppress normal translated key input while leaving physical key
+	reports enabled if CSI = 1 h has also been set.  This mode is
+	intended for programs that want physical key press/release reports
+	without also receiving the terminal's normal key translation for
+	the same input.
+
+	SOURCE: CTerm only.
 
 CSI = 4 h (CTELCF)
 	NON-STANDARD EXTENSION
@@ -981,17 +1008,57 @@ CSI Pn k (VPB)
 
 	SOURCE: http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-048.pdf
 
+CSI = Pk[;Pk...]K
+	NON-STANDARD EXTENSION
+	Physical key press report.
+
+	Sent by CTerm when physical key reports are enabled and one or more
+	keys are pressed.
+
+	Each Pk parameter is an evdev key code number from the EVDEV_KEY_*
+	namespace.  Multiple parameters indicate that several press edges are
+	being reported in one sequence.
+
+	SOURCE: CTerm only.
+
 CSI = 255 l (BCRST)
 	NON-STANDARD EXTENSION
 	Disable DoorWay Mode
 
 	SOURCE: BANSI.TXT
 
+CSI = 1 l
+	NON-STANDARD EXTENSION
+	Disable physical key reports and clear CTerm's remembered physical-key
+	state.  Disabling this mode does not emit release reports for keys that
+	were held when the mode was disabled.
+
+	SOURCE: CTerm only.
+
+CSI = 2 l
+	NON-STANDARD EXTENSION
+	Restore normal translated key input after CSI = 2 h.
+
+	SOURCE: CTerm only.
+
 CSI = 4 l (CTDLCF)
 	NON-STANDARD EXTENSION
 	Disable Last Column Flag mode
 
 	SOURCE: CTerm
+
+CSI = Pk[;Pk...]k
+	NON-STANDARD EXTENSION
+	Physical key release report.
+
+	Sent by CTerm when physical key reports are enabled and one or more
+	keys are released.
+
+	Each Pk parameter is an evdev key code number from the EVDEV_KEY_*
+	namespace.  Multiple parameters indicate that several release edges are
+	being reported in one sequence.
+
+	SOURCE: CTerm only.
 
 CSI ? Ps... l (DECRST)
 	NON-STANDARD EXTENSION
@@ -1229,6 +1296,11 @@ CSI = Ps n (CTSMRR)
 	When Ps is 5, CTerm will respond with a Mode Report of the form
 	CSI = 5 ; pF n
 	Where pF is 1 if LCF mode is forced, and 0 if it is not.
+
+	When Ps is 6, CTerm will respond with a Mode Report of the form
+	CSI = 6 ; pA n
+	Where pA is 1 if OSC 8 hyperlink support is available, and 0 if
+	it is not.
 
 	SOURCE: CTerm only.
 

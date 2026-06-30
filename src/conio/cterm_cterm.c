@@ -144,6 +144,15 @@ cterm_handle_syncterm_sm_ext(struct cterminal *cterm, int *speed)	/* CSI = h */
 	for (i = 0; i < cterm->seq_param_count; i++) {
 		cterm_seq_default(cterm, i, 0);
 		switch (cterm->seq_param_int[i]) {
+			case 1:
+				cterm->pk_mode = true;
+				if (cterm->key_event_mode_change != NULL)
+					cterm->key_event_mode_change(1,
+					    cterm->key_event_mode_change_cbdata);
+				break;
+			case 2:
+				cterm->suppress_translated_keys = true;
+				break;
 			case 4:
 				cterm->last_column_flag |= CTERM_LCF_ENABLED;
 				cterm->last_column_flag &= ~CTERM_LCF_SET;
@@ -167,6 +176,16 @@ cterm_handle_syncterm_rm_ext(struct cterminal *cterm, int *speed)	/* CSI = l */
 	for (i = 0; i < cterm->seq_param_count; i++) {
 		cterm_seq_default(cterm, i, 0);
 		switch (cterm->seq_param_int[i]) {
+			case 1:
+				cterm->pk_mode = false;
+				memset(cterm->pk_reported, 0, sizeof(cterm->pk_reported));
+				if (cterm->key_event_mode_change != NULL)
+					cterm->key_event_mode_change(0,
+					    cterm->key_event_mode_change_cbdata);
+				break;
+			case 2:
+				cterm->suppress_translated_keys = false;
+				break;
 			case 4:
 				if ((cterm->last_column_flag & CTERM_LCF_FORCED) == 0)
 					cterm->last_column_flag = 0;
@@ -369,6 +388,12 @@ cterm_handle_decrqm_syncterm(struct cterminal *cterm, int *speed)	/* CSI = $ p *
 		return;
 	cterm_seq_default(cterm, 0, 0);
 	switch (cterm->seq_param_int[0]) {
+		case 1:
+			pm = cterm->pk_mode ? 1 : 2;
+			break;
+		case 2:
+			pm = cterm->suppress_translated_keys ? 1 : 2;
+			break;
 		case 4:
 			pm = (cterm->last_column_flag & CTERM_LCF_ENABLED) ? 1 : 2;
 			break;
@@ -407,6 +432,8 @@ cterm_handle_syncterm_ext_da(struct cterminal *cterm, int *speed)	/* CSI < c */
 		strcat(tmp, ";6");
 	if (cio_api.mouse)
 		strcat(tmp, ";7");
+	if (cio_api.options & CONIO_OPT_KEY_EVENTS)
+		strcat(tmp, ";8");
 	strcat(tmp, "c");
 	cterm_respond(cterm, tmp, strlen(tmp));
 }
@@ -1559,4 +1586,3 @@ cterm_cterm_apply_sgr(struct cterminal *cterm, int *pi)
 	}
 	cterm_dec_apply_sgr(cterm, pi);
 }
-

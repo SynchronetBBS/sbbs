@@ -20,6 +20,7 @@
 #endif
 
 #include "ciolib.h"
+#include "evdev_codes.h"
 #include "utf8_codepages.h"
 #include "vidmodes.h"
 #define BITMAP_CIOLIB_DRIVER
@@ -76,7 +77,8 @@ struct sdl_keyvals {
 		,key
 		,shift
 		,ctrl
-		,alt;
+		,alt
+		,evdev;
 };
 
 static pthread_mutex_t sdl_headlock;
@@ -108,98 +110,165 @@ enum {
 
 const struct sdl_keyvals sdl_keyval[] =
 {
-	{SDLK_BACKSPACE, 0x08, 0x08, 0x7f, 0x0e00},
-	{SDLK_TAB, 0x09, 0x0f00, 0x9400, 0xa500},
-	{SDLK_RETURN, 0x0d, 0x0d, 0x0a, 0xa600},
-	{SDLK_ESCAPE, 0x1b, 0x1b, 0x1b, 0x0100},
-	{SDLK_SPACE, 0x20, 0x20, 0x0300, 0x20},
-	{SDLK_0, '0', ')', 0, 0x8100},
-	{SDLK_1, '1', '!', 0, 0x7800},
-	{SDLK_2, '2', '@', 0x0300, 0x7900},
-	{SDLK_3, '3', '#', 0, 0x7a00},
-	{SDLK_4, '4', '$', 0, 0x7b00},
-	{SDLK_5, '5', '%', 0, 0x7c00},
-	{SDLK_6, '6', '^', 0x1e, 0x7d00},
-	{SDLK_7, '7', '&', 0, 0x7e00},
-	{SDLK_8, '8', '*', 0, 0x7f00},
-	{SDLK_9, '9', '(', 0, 0x8000},
-	{SDLK_a, 'a', 'A', 0x01, 0x1e00},
-	{SDLK_b, 'b', 'B', 0x02, 0x3000},
-	{SDLK_c, 'c', 'C', 0x03, 0x2e00},
-	{SDLK_d, 'd', 'D', 0x04, 0x2000},
-	{SDLK_e, 'e', 'E', 0x05, 0x1200},
-	{SDLK_f, 'f', 'F', 0x06, 0x2100},
-	{SDLK_g, 'g', 'G', 0x07, 0x2200},
-	{SDLK_h, 'h', 'H', 0x08, 0x2300},
-	{SDLK_i, 'i', 'I', 0x09, 0x1700},
-	{SDLK_j, 'j', 'J', 0x0a, 0x2400},
-	{SDLK_k, 'k', 'K', 0x0b, 0x2500},
-	{SDLK_l, 'l', 'L', 0x0c, 0x2600},
-	{SDLK_m, 'm', 'M', 0x0d, 0x3200},
-	{SDLK_n, 'n', 'N', 0x0e, 0x3100},
-	{SDLK_o, 'o', 'O', 0x0f, 0x1800},
-	{SDLK_p, 'p', 'P', 0x10, 0x1900},
-	{SDLK_q, 'q', 'Q', 0x11, 0x1000},
-	{SDLK_r, 'r', 'R', 0x12, 0x1300},
-	{SDLK_s, 's', 'S', 0x13, 0x1f00},
-	{SDLK_t, 't', 'T', 0x14, 0x1400},
-	{SDLK_u, 'u', 'U', 0x15, 0x1600},
-	{SDLK_v, 'v', 'V', 0x16, 0x2f00},
-	{SDLK_w, 'w', 'W', 0x17, 0x1100},
-	{SDLK_x, 'x', 'X', 0x18, 0x2d00},
-	{SDLK_y, 'y', 'Y', 0x19, 0x1500},
-	{SDLK_z, 'z', 'Z', 0x1a, 0x2c00},
-	{SDLK_PAGEUP, 0x4900, 0x4900, 0x8400, 0x9900},
-	{SDLK_PAGEDOWN, 0x5100, 0x5100, 0x7600, 0xa100},
-	{SDLK_END, 0x4f00, 0x4f00, 0x7500, 0x9f00},
-	{SDLK_HOME, 0x4700, 0x4700, 0x7700, 0x9700},
-	{SDLK_LEFT, 0x4b00, 0x4b00, 0x7300, 0x9b00},
-	{SDLK_UP, 0x4800, 0x4800, 0x8d00, 0x9800},
-	{SDLK_RIGHT, 0x4d00, 0x4d00, 0x7400, 0x9d00},
-	{SDLK_DOWN, 0x5000, 0x5000, 0x9100, 0xa000},
-	{SDLK_INSERT, CIO_KEY_IC, CIO_KEY_SHIFT_IC, CIO_KEY_CTRL_IC, CIO_KEY_ALT_IC},
-	{SDLK_DELETE, CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_ALT_DC},
-	{SDLK_KP_0, 0x5200, 0x5200, 0x9200, 0},
-	{SDLK_KP_1, 0x4f00, 0x4f00, 0x7500, 0},
-	{SDLK_KP_2, 0x5000, 0x5000, 0x9100, 0},
-	{SDLK_KP_3, 0x5100, 0x5100, 0x7600, 0},
-	{SDLK_KP_4, 0x4b00, 0x4b00, 0x7300, 0},
-	{SDLK_KP_5, 0x4c00, 0x4c00, 0x8f00, 0},
-	{SDLK_KP_6, 0x4d00, 0x4d00, 0x7400, 0},
-	{SDLK_KP_7, 0x4700, 0x4700, 0x7700, 0},
-	{SDLK_KP_8, 0x4800, 0x4800, 0x8d00, 0},
-	{SDLK_KP_9, 0x4900, 0x4900, 0x8400, 0},
-	{SDLK_KP_MULTIPLY, '*', '*', 0x9600, 0x3700},
-	{SDLK_KP_PLUS, '+', '+', 0x9000, 0x4e00},
-	{SDLK_KP_MINUS, '-', '-', 0x8e00, 0x4a00},
-	{SDLK_KP_PERIOD, 0x7f, 0x7f, 0x5300, 0x9300},
-	{SDLK_KP_DIVIDE, '/', '/', 0x9500, 0xa400},
-	{SDLK_KP_ENTER, 0x0d, 0x0d, 0x0a, 0xa600},
-	{SDLK_F1, 0x3b00, 0x5400, 0x5e00, 0x6800},
-	{SDLK_F2, 0x3c00, 0x5500, 0x5f00, 0x6900},
-	{SDLK_F3, 0x3d00, 0x5600, 0x6000, 0x6a00},
-	{SDLK_F4, 0x3e00, 0x5700, 0x6100, 0x6b00},
-	{SDLK_F5, 0x3f00, 0x5800, 0x6200, 0x6c00},
-	{SDLK_F6, 0x4000, 0x5900, 0x6300, 0x6d00},
-	{SDLK_F7, 0x4100, 0x5a00, 0x6400, 0x6e00},
-	{SDLK_F8, 0x4200, 0x5b00, 0x6500, 0x6f00},
-	{SDLK_F9, 0x4300, 0x5c00, 0x6600, 0x7000},
-	{SDLK_F10, 0x4400, 0x5d00, 0x6700, 0x7100},
-	{SDLK_F11, 0x8500, 0x8700, 0x8900, 0x8b00},
-	{SDLK_F12, 0x8600, 0x8800, 0x8a00, 0x8c00},
-	{SDLK_BACKSLASH, '\\', '|', 0x1c, 0x2b00},
-	{SDLK_SLASH, '/', '?', 0, 0x3500},
-	{SDLK_MINUS, '-', '_', 0x1f, 0x8200},
-	{SDLK_EQUALS, '=', '+', 0, 0x8300},
-	{SDLK_LEFTBRACKET, '[', '{', 0x1b, 0x1a00},
-	{SDLK_RIGHTBRACKET, ']', '}', 0x1d, 0x1b00},
-	{SDLK_SEMICOLON, ';', ':', 0, 0x2700},
-	{SDLK_QUOTE, '\'', '"', 0, 0x2800},
-	{SDLK_COMMA, ',', '<', 0, 0x3300},
-	{SDLK_PERIOD, '.', '>', 0, 0x3400},
-	{SDLK_BACKQUOTE, '`', '~', 0x29E0, 0x2900},  /* Ctrl+` = CIO_KEY_WREN_CONSOLE */
+	{SDLK_BACKSPACE, 0x08, 0x08, 0x7f, 0x0e00, EVDEV_KEY_BACKSPACE},
+	{SDLK_TAB, 0x09, 0x0f00, 0x9400, 0xa500, EVDEV_KEY_TAB},
+	{SDLK_RETURN, 0x0d, 0x0d, 0x0a, 0xa600, EVDEV_KEY_ENTER},
+	{SDLK_ESCAPE, 0x1b, 0x1b, 0x1b, 0x0100, EVDEV_KEY_ESC},
+	{SDLK_SPACE, 0x20, 0x20, 0x0300, 0x20, EVDEV_KEY_SPACE},
+	{SDLK_0, '0', ')', 0, 0x8100, EVDEV_KEY_0},
+	{SDLK_1, '1', '!', 0, 0x7800, EVDEV_KEY_1},
+	{SDLK_2, '2', '@', 0x0300, 0x7900, EVDEV_KEY_2},
+	{SDLK_3, '3', '#', 0, 0x7a00, EVDEV_KEY_3},
+	{SDLK_4, '4', '$', 0, 0x7b00, EVDEV_KEY_4},
+	{SDLK_5, '5', '%', 0, 0x7c00, EVDEV_KEY_5},
+	{SDLK_6, '6', '^', 0x1e, 0x7d00, EVDEV_KEY_6},
+	{SDLK_7, '7', '&', 0, 0x7e00, EVDEV_KEY_7},
+	{SDLK_8, '8', '*', 0, 0x7f00, EVDEV_KEY_8},
+	{SDLK_9, '9', '(', 0, 0x8000, EVDEV_KEY_9},
+	{SDLK_a, 'a', 'A', 0x01, 0x1e00, EVDEV_KEY_A},
+	{SDLK_b, 'b', 'B', 0x02, 0x3000, EVDEV_KEY_B},
+	{SDLK_c, 'c', 'C', 0x03, 0x2e00, EVDEV_KEY_C},
+	{SDLK_d, 'd', 'D', 0x04, 0x2000, EVDEV_KEY_D},
+	{SDLK_e, 'e', 'E', 0x05, 0x1200, EVDEV_KEY_E},
+	{SDLK_f, 'f', 'F', 0x06, 0x2100, EVDEV_KEY_F},
+	{SDLK_g, 'g', 'G', 0x07, 0x2200, EVDEV_KEY_G},
+	{SDLK_h, 'h', 'H', 0x08, 0x2300, EVDEV_KEY_H},
+	{SDLK_i, 'i', 'I', 0x09, 0x1700, EVDEV_KEY_I},
+	{SDLK_j, 'j', 'J', 0x0a, 0x2400, EVDEV_KEY_J},
+	{SDLK_k, 'k', 'K', 0x0b, 0x2500, EVDEV_KEY_K},
+	{SDLK_l, 'l', 'L', 0x0c, 0x2600, EVDEV_KEY_L},
+	{SDLK_m, 'm', 'M', 0x0d, 0x3200, EVDEV_KEY_M},
+	{SDLK_n, 'n', 'N', 0x0e, 0x3100, EVDEV_KEY_N},
+	{SDLK_o, 'o', 'O', 0x0f, 0x1800, EVDEV_KEY_O},
+	{SDLK_p, 'p', 'P', 0x10, 0x1900, EVDEV_KEY_P},
+	{SDLK_q, 'q', 'Q', 0x11, 0x1000, EVDEV_KEY_Q},
+	{SDLK_r, 'r', 'R', 0x12, 0x1300, EVDEV_KEY_R},
+	{SDLK_s, 's', 'S', 0x13, 0x1f00, EVDEV_KEY_S},
+	{SDLK_t, 't', 'T', 0x14, 0x1400, EVDEV_KEY_T},
+	{SDLK_u, 'u', 'U', 0x15, 0x1600, EVDEV_KEY_U},
+	{SDLK_v, 'v', 'V', 0x16, 0x2f00, EVDEV_KEY_V},
+	{SDLK_w, 'w', 'W', 0x17, 0x1100, EVDEV_KEY_W},
+	{SDLK_x, 'x', 'X', 0x18, 0x2d00, EVDEV_KEY_X},
+	{SDLK_y, 'y', 'Y', 0x19, 0x1500, EVDEV_KEY_Y},
+	{SDLK_z, 'z', 'Z', 0x1a, 0x2c00, EVDEV_KEY_Z},
+	{SDLK_PAGEUP, 0x4900, 0x4900, 0x8400, 0x9900, EVDEV_KEY_PAGEUP},
+	{SDLK_PAGEDOWN, 0x5100, 0x5100, 0x7600, 0xa100, EVDEV_KEY_PAGEDOWN},
+	{SDLK_END, 0x4f00, 0x4f00, 0x7500, 0x9f00, EVDEV_KEY_END},
+	{SDLK_HOME, 0x4700, 0x4700, 0x7700, 0x9700, EVDEV_KEY_HOME},
+	{SDLK_LEFT, 0x4b00, 0x4b00, 0x7300, 0x9b00, EVDEV_KEY_LEFT},
+	{SDLK_UP, 0x4800, 0x4800, 0x8d00, 0x9800, EVDEV_KEY_UP},
+	{SDLK_RIGHT, 0x4d00, 0x4d00, 0x7400, 0x9d00, EVDEV_KEY_RIGHT},
+	{SDLK_DOWN, 0x5000, 0x5000, 0x9100, 0xa000, EVDEV_KEY_DOWN},
+	{SDLK_INSERT, CIO_KEY_IC, CIO_KEY_SHIFT_IC, CIO_KEY_CTRL_IC, CIO_KEY_ALT_IC, EVDEV_KEY_INSERT},
+	{SDLK_DELETE, CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_ALT_DC, EVDEV_KEY_DELETE},
+	{SDLK_KP_0, 0x5200, 0x5200, 0x9200, 0, EVDEV_KEY_KP0},
+	{SDLK_KP_1, 0x4f00, 0x4f00, 0x7500, 0, EVDEV_KEY_KP1},
+	{SDLK_KP_2, 0x5000, 0x5000, 0x9100, 0, EVDEV_KEY_KP2},
+	{SDLK_KP_3, 0x5100, 0x5100, 0x7600, 0, EVDEV_KEY_KP3},
+	{SDLK_KP_4, 0x4b00, 0x4b00, 0x7300, 0, EVDEV_KEY_KP4},
+	{SDLK_KP_5, 0x4c00, 0x4c00, 0x8f00, 0, EVDEV_KEY_KP5},
+	{SDLK_KP_6, 0x4d00, 0x4d00, 0x7400, 0, EVDEV_KEY_KP6},
+	{SDLK_KP_7, 0x4700, 0x4700, 0x7700, 0, EVDEV_KEY_KP7},
+	{SDLK_KP_8, 0x4800, 0x4800, 0x8d00, 0, EVDEV_KEY_KP8},
+	{SDLK_KP_9, 0x4900, 0x4900, 0x8400, 0, EVDEV_KEY_KP9},
+	{SDLK_KP_MULTIPLY, '*', '*', 0x9600, 0x3700, EVDEV_KEY_KPASTERISK},
+	{SDLK_KP_PLUS, '+', '+', 0x9000, 0x4e00, EVDEV_KEY_KPPLUS},
+	{SDLK_KP_MINUS, '-', '-', 0x8e00, 0x4a00, EVDEV_KEY_KPMINUS},
+	{SDLK_KP_PERIOD, 0x7f, 0x7f, 0x5300, 0x9300, EVDEV_KEY_KPDOT},
+	{SDLK_KP_DIVIDE, '/', '/', 0x9500, 0xa400, EVDEV_KEY_KPSLASH},
+	{SDLK_KP_ENTER, 0x0d, 0x0d, 0x0a, 0xa600, EVDEV_KEY_KPENTER},
+	{SDLK_F1, 0x3b00, 0x5400, 0x5e00, 0x6800, EVDEV_KEY_F1},
+	{SDLK_F2, 0x3c00, 0x5500, 0x5f00, 0x6900, EVDEV_KEY_F2},
+	{SDLK_F3, 0x3d00, 0x5600, 0x6000, 0x6a00, EVDEV_KEY_F3},
+	{SDLK_F4, 0x3e00, 0x5700, 0x6100, 0x6b00, EVDEV_KEY_F4},
+	{SDLK_F5, 0x3f00, 0x5800, 0x6200, 0x6c00, EVDEV_KEY_F5},
+	{SDLK_F6, 0x4000, 0x5900, 0x6300, 0x6d00, EVDEV_KEY_F6},
+	{SDLK_F7, 0x4100, 0x5a00, 0x6400, 0x6e00, EVDEV_KEY_F7},
+	{SDLK_F8, 0x4200, 0x5b00, 0x6500, 0x6f00, EVDEV_KEY_F8},
+	{SDLK_F9, 0x4300, 0x5c00, 0x6600, 0x7000, EVDEV_KEY_F9},
+	{SDLK_F10, 0x4400, 0x5d00, 0x6700, 0x7100, EVDEV_KEY_F10},
+	{SDLK_F11, 0x8500, 0x8700, 0x8900, 0x8b00, EVDEV_KEY_F11},
+	{SDLK_F12, 0x8600, 0x8800, 0x8a00, 0x8c00, EVDEV_KEY_F12},
+	{SDLK_BACKSLASH, '\\', '|', 0x1c, 0x2b00, EVDEV_KEY_BACKSLASH},
+	{SDLK_SLASH, '/', '?', 0, 0x3500, EVDEV_KEY_SLASH},
+	{SDLK_MINUS, '-', '_', 0x1f, 0x8200, EVDEV_KEY_MINUS},
+	{SDLK_EQUALS, '=', '+', 0, 0x8300, EVDEV_KEY_EQUAL},
+	{SDLK_LEFTBRACKET, '[', '{', 0x1b, 0x1a00, EVDEV_KEY_LEFTBRACE},
+	{SDLK_RIGHTBRACKET, ']', '}', 0x1d, 0x1b00, EVDEV_KEY_RIGHTBRACE},
+	{SDLK_SEMICOLON, ';', ':', 0, 0x2700, EVDEV_KEY_SEMICOLON},
+	{SDLK_QUOTE, '\'', '"', 0, 0x2800, EVDEV_KEY_APOSTROPHE},
+	{SDLK_COMMA, ',', '<', 0, 0x3300, EVDEV_KEY_COMMA},
+	{SDLK_PERIOD, '.', '>', 0, 0x3400, EVDEV_KEY_DOT},
+	{SDLK_BACKQUOTE, '`', '~', 0x29E0, 0x2900, EVDEV_KEY_GRAVE},  /* Ctrl+` = CIO_KEY_WREN_CONSOLE */
 	{0, 0, 0, 0, 0}	/** END **/
 };
+
+static uint16_t
+sdl_evdev_key(const SDL_Keysym *keysym)
+{
+	for (int i = 0; sdl_keyval[i].keysym; i++) {
+		if (sdl_keyval[i].keysym == keysym->sym)
+			return sdl_keyval[i].evdev;
+	}
+	switch (keysym->scancode) {
+		case SDL_SCANCODE_LCTRL:
+			return EVDEV_KEY_LEFTCTRL;
+		case SDL_SCANCODE_LSHIFT:
+			return EVDEV_KEY_LEFTSHIFT;
+		case SDL_SCANCODE_LALT:
+			return EVDEV_KEY_LEFTALT;
+		case SDL_SCANCODE_LGUI:
+			return EVDEV_KEY_LEFTMETA;
+		case SDL_SCANCODE_RCTRL:
+			return EVDEV_KEY_RIGHTCTRL;
+		case SDL_SCANCODE_RSHIFT:
+			return EVDEV_KEY_RIGHTSHIFT;
+		case SDL_SCANCODE_RALT:
+			return EVDEV_KEY_RIGHTALT;
+		case SDL_SCANCODE_RGUI:
+			return EVDEV_KEY_RIGHTMETA;
+		case SDL_SCANCODE_CAPSLOCK:
+			return EVDEV_KEY_CAPSLOCK;
+		case SDL_SCANCODE_NUMLOCKCLEAR:
+			return EVDEV_KEY_NUMLOCK;
+		case SDL_SCANCODE_SCROLLLOCK:
+			return EVDEV_KEY_SCROLLLOCK;
+		case SDL_SCANCODE_PRINTSCREEN:
+			return EVDEV_KEY_SYSRQ;
+		case SDL_SCANCODE_PAUSE:
+			return EVDEV_KEY_PAUSE;
+		case SDL_SCANCODE_NONUSBACKSLASH:
+			return EVDEV_KEY_102ND;
+		case SDL_SCANCODE_APPLICATION:
+			return EVDEV_KEY_MENU;
+		case SDL_SCANCODE_F13:
+			return EVDEV_KEY_F13;
+		case SDL_SCANCODE_F14:
+			return EVDEV_KEY_F14;
+		case SDL_SCANCODE_F15:
+			return EVDEV_KEY_F15;
+		case SDL_SCANCODE_F16:
+			return EVDEV_KEY_F16;
+		case SDL_SCANCODE_F17:
+			return EVDEV_KEY_F17;
+		case SDL_SCANCODE_F18:
+			return EVDEV_KEY_F18;
+		case SDL_SCANCODE_F19:
+			return EVDEV_KEY_F19;
+		case SDL_SCANCODE_F20:
+			return EVDEV_KEY_F20;
+		case SDL_SCANCODE_F21:
+			return EVDEV_KEY_F21;
+		case SDL_SCANCODE_F22:
+			return EVDEV_KEY_F22;
+		case SDL_SCANCODE_F23:
+			return EVDEV_KEY_F23;
+		case SDL_SCANCODE_F24:
+			return EVDEV_KEY_F24;
+		default:
+			return 0;
+	}
+}
 
 void sdl_video_event_thread(void *data);
 static void setup_surfaces(struct video_stats *vs);
@@ -433,7 +502,7 @@ int sdl_init(int mode)
 #ifdef _WIN32
 		FreeConsole();
 #endif
-		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING;
+		cio_api.options |= CONIO_OPT_PALETTE_SETTING | CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING | CONIO_OPT_KEY_EVENTS;
 		return(0);
 	}
 
@@ -895,6 +964,15 @@ static void sdl_mouse_thread(void *data)
 	}
 }
 
+static void sdl_key_thread(void *data)
+{
+	SetThreadName("SDL Key");
+	while (1) {
+		if (ciokey_wait())
+			sdl_add_key(CIO_KEY_KEY_EVENT, NULL);
+	}
+}
+
 static int win_to_res_xpos(int winpos, struct video_stats *vs)
 {
 	int ret;
@@ -987,6 +1065,7 @@ void sdl_video_event_thread(void *data)
 	bool bios_key_parsing = false;
 	bool zero_first = false;
 	int mods;
+	uint16_t evdev;
 	SDL_Keymod km;
 
 	while(1) {
@@ -994,6 +1073,9 @@ void sdl_video_event_thread(void *data)
 			continue;
 		switch (ev.type) {
 			case SDL_KEYDOWN:			/* Keypress */
+				evdev = sdl_evdev_key(&ev.key.keysym);
+				if (evdev != 0)
+					ciokey_gotevent(evdev, true);
 				if (bios_key_parsing) {
 					if (ev.key.keysym.sym >= SDLK_KP_1 && ev.key.keysym.sym <= SDLK_KP_0) {
 						if (bios_key == 0 && ev.key.keysym.sym == SDLK_KP_0)
@@ -1092,6 +1174,9 @@ void sdl_video_event_thread(void *data)
 				}
 				break;
 			case SDL_KEYUP:
+				evdev = sdl_evdev_key(&ev.key.keysym);
+				if (evdev != 0)
+					ciokey_gotevent(evdev, false);
 				if (bios_key_parsing) {
 					// If Mod1 (ie: ALT) is released, *and* the only bytes were KP numbers, do the BIOS thing.
 					if (ev.key.keysym.sym == SDLK_LALT || ev.key.keysym.sym == SDLK_RALT) {
@@ -1196,6 +1281,9 @@ void sdl_video_event_thread(void *data)
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
 						bitmap_drv_request_pixels();
+						break;
+					case SDL_WINDOWEVENT_FOCUS_LOST:
+						ciokey_focus_lost();
 						break;
 				}
 				break;
@@ -1369,6 +1457,7 @@ void sdl_video_event_thread(void *data)
 						if(!sdl_init_good) {
 							if(sdl.WasInit(SDL_INIT_VIDEO)==SDL_INIT_VIDEO) {
 								_beginthread(sdl_mouse_thread, 0, NULL);
+								_beginthread(sdl_key_thread, 0, NULL);
 								sdl_init_good=1;
 							}
 						}

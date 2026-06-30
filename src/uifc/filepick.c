@@ -1611,12 +1611,14 @@ static int fp_handle_buttons(struct fp_state *s, struct file_pick *fp)
 	/* conio extended keys arrive as a 0/0xE0 prefix byte followed by
 	 * the scancode in a second getch().  Combine them so our switch
 	 * sees the proper CIO_KEY_* value (Backtab, arrows, etc.). */
-	ch = getch();
-	if (ch == 0 || ch == 0xe0) {
-		ch |= (getch() << 8);
-		if (ch == CIO_KEY_LITERAL_E0)
-			ch = 0xe0;
-	}
+	do {
+		ch = getch();
+		if (ch == 0 || ch == 0xe0) {
+			ch |= (getch() << 8);
+			if (ch == CIO_KEY_LITERAL_E0)
+				ch = 0xe0;
+		}
+	} while (ch == CIO_KEY_KEY_EVENT);
 
 	switch (ch) {
 		case ESC:

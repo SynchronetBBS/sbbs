@@ -4531,6 +4531,61 @@ mouse_state_change(int type, int action, void *pms)
 	}
 }
 
+#ifdef CIOLIB_KEY_EVENTS
+static void
+cterm_pk_resync_ciokey(struct cterminal *c)
+{
+	uint16_t keys[CTERM_PK_MAX_EVDEV];
+	size_t count;
+
+	if (c == NULL || !cterm_pk_enabled(c))
+		return;
+	ciokey_clear_events();
+	count = ciokey_pressed(keys, sizeof(keys) / sizeof(keys[0]));
+	if (count > sizeof(keys) / sizeof(keys[0]))
+		count = sizeof(keys) / sizeof(keys[0]);
+	cterm_pk_resync(c, keys, count);
+}
+
+static void
+drain_physical_key_events(struct cterminal *c)
+{
+	struct ciolib_key_event events[64];
+	size_t count = 0;
+	bool drained = false;
+	struct ciolib_key_event event;
+	bool cterm_enabled = c != NULL && cterm_pk_enabled(c);
+
+	while (ciokey_getevent(&event)) {
+		drained = true;
+		if (wren_host_dispatch_physical_key(&event))
+			continue;
+		if (!cterm_enabled)
+			continue;
+		events[count++] = event;
+		if (count == sizeof(events) / sizeof(events[0])) {
+			cterm_pk_events(c, events, count);
+			count = 0;
+		}
+	}
+	if (count > 0)
+		cterm_pk_events(c, events, count);
+	else if (!drained && cterm_enabled)
+		cterm_pk_resync_ciokey(c);
+}
+
+static void
+key_event_mode_change(int enable, void *cbdata)
+{
+	struct cterminal *c = cbdata;
+
+	ciokey_setenabled(enable != 0 || wren_host_wants_physical_keys());
+	ciokey_clear_events();
+	if (enable)
+		cterm_pk_resync_ciokey(c);
+}
+#endif
+
 int
 mouse_state_query(int type, void *pms)
 {
@@ -5339,6 +5394,10 @@ doterm(struct bbslist *bbs)
 	cterm->mouse_state_change_cbdata = &ms;
 	cterm->mouse_state_query = mouse_state_query;
 	cterm->mouse_state_query_cbdata = &ms;
+#ifdef CIOLIB_KEY_EVENTS
+	cterm->key_event_mode_change = key_event_mode_change;
+	cterm->key_event_mode_change_cbdata = cterm;
+#endif
 	cterm->status_display_type = bbs->nostatus ? 0 : 1;
 	cterm->status_display_cb = on_status_display_change;
 	cterm->status_display_cbdata = bbs;
@@ -5628,6 +5687,12 @@ doterm(struct bbslist *bbs)
 				if (key == -1)
 					continue;
 			}
+#ifdef CIOLIB_KEY_EVENTS
+			if (key == CIO_KEY_KEY_EVENT) {
+				drain_physical_key_events(cterm);
+				continue;
+			}
+#endif
 
 			if (wren_host_dispatch_key(key)) {
 				/* A Wren handler may have called Conn.endSession()
@@ -5671,7 +5736,7 @@ doterm(struct bbslist *bbs)
 			/*
 			 * If CTerm sends something for this, we're done.
 			 */
-			if (cterm_encode_key(cterm, key) > 0)
+			if (cterm_handle_key(cterm, key) == CTERM_KEY_HANDLED)
 				continue;
 
                         /*
@@ -5712,6 +5777,9 @@ doterm(struct bbslist *bbs)
 					}
 					showmouse();
 					_setcursortype(_NORMALCURSOR);
+#ifdef CIOLIB_KEY_EVENTS
+					cterm_pk_resync_ciokey(cterm);
+#endif
 				}
 				break;
 				/* ALT-L is handled by connected.wren, an embedded

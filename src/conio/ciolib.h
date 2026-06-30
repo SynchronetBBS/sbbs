@@ -267,6 +267,11 @@ struct mouse_event {
 	int endy_res;
 };
 
+struct ciolib_key_event {
+	uint16_t evdev;
+	bool pressed;
+};
+
 struct conio_font_data_struct {
         char 	*eight_by_sixteen;
         char 	*eight_by_fourteen;
@@ -358,6 +363,7 @@ typedef struct {
 #define CONIO_OPT_EXTERNAL_SCALING  (1 << 14)
 #define CONIO_OPT_DISABLE_CLOSE     (1 << 15) // Disable OS/WM app close control/menu-option
 #define CONIO_OPT_PRESTEL_REVEAL    (1 << 16)
+#define CONIO_OPT_KEY_EVENTS        (1 << 17)
 	void	(*clreol)		(void);
 	int		(*puttext)		(int,int,int,int,void *);
 	int		(*vmem_puttext)		(int,int,int,int,struct vmem_cell *);
@@ -783,6 +789,17 @@ CIOLIBEXPORT uint64_t ciomouse_delevent(uint64_t event);
 CIOLIBEXPORT uint32_t ciolib_mousepointer(enum ciolib_mouse_ptr type);
 CIOLIBEXPORT void mousestate(int *x, int *y, uint8_t *buttons);
 CIOLIBEXPORT void mousestate_res(int *x_res, int *y_res, uint8_t *buttons);
+CIOLIBEXPORT void ciokey_gotevent(uint16_t evdev, bool pressed);
+CIOLIBEXPORT void ciokey_synthesize(uint16_t evdev, bool pressed);
+CIOLIBEXPORT bool ciokey_getevent(struct ciolib_key_event *event);
+CIOLIBEXPORT bool ciokey_pending(void);
+CIOLIBEXPORT size_t ciokey_pressed(uint16_t *keys, size_t max);
+CIOLIBEXPORT void ciokey_clear_events(void);
+CIOLIBEXPORT void ciokey_focus_lost(void);
+CIOLIBEXPORT bool ciokey_setenabled(bool enabled);
+CIOLIBEXPORT bool ciokey_enabled(void);
+CIOLIBEXPORT int ciokey_trywait(void);
+CIOLIBEXPORT int ciokey_wait(void);
 #ifdef __cplusplus
 }
 #endif
@@ -820,6 +837,7 @@ CIOLIBEXPORT void mousestate_res(int *x_res, int *y_res, uint8_t *buttons);
 #define CIO_KEY_CTRL_END    (0x75 << 8)
 
 #define CIO_KEY_MOUSE     0x7dE0	// This is the right mouse on Schneider/Amstrad PC1512 PC keyboards "F-14"
+#define CIO_KEY_KEY_EVENT 0x7cE0	// Physical key event notification token
 #define CIO_KEY_QUIT	  0x7eE0	// "F-15"
 #define CIO_KEY_ABORTED   0x01E0	// ESC key by scancode
 #define CIO_KEY_LITERAL_E0	0xE0E0 // Literal 0xe0 character

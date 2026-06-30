@@ -193,12 +193,14 @@ int inkey(void)
 {
 	int c;
 
-	c = getch();
-	if (!c || c == 0xe0) {
-		c |= (getch() << 8);
-		if (c == CIO_KEY_LITERAL_E0)
-			c = 0xe0;
-	}
+	do {
+		c = getch();
+		if (!c || c == 0xe0) {
+			c |= (getch() << 8);
+			if (c == CIO_KEY_LITERAL_E0)
+				c = 0xe0;
+		}
+	} while (c == CIO_KEY_KEY_EVENT);
 	return c;
 }
 
@@ -419,6 +421,8 @@ void docopy(void)
 			if (key == CIO_KEY_LITERAL_E0)
 				key = 0xe0;
 		}
+		if (key == CIO_KEY_KEY_EVENT)
+			continue;
 		switch (key) {
 			case CIO_KEY_MOUSE:
 				getmouse(&mevent);

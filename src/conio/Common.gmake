@@ -62,6 +62,7 @@ else
  CIOLIB-MT_LIBS += -lkernel32
  NO_X			 :=  1
  CIOLIB-MT_CFLAGS        +=  -DDISABLE_X11=1 -DNO_X
+ NEED_KEY_EVENTS := 1
  ifndef WITHOUT_GDI
   CIOLIB-MT_LIBS += -lgdi32 -mwindows
   CIOLIB-MT_CFLAGS += -DWITH_GDI
@@ -102,6 +103,7 @@ ifndef WITHOUT_QUARTZ
   CIOLIB-MT_CFLAGS += -DWITH_QUARTZ
   CIOLIB-MT_LIBS += -framework Cocoa -framework Carbon
   NEED_BITMAP := 1
+  NEED_KEY_EVENTS := 1
  endif
 endif
 
@@ -111,6 +113,7 @@ ifndef WITHOUT_WAYLAND
    WITH_WAYLAND := 1
    CIOLIB-MT_CFLAGS += -DWITH_WAYLAND
    CIOLIB-MT_CFLAGS += $(shell pkg-config wayland-client --cflags-only-I)
+   NEED_KEY_EVENTS := 1
   endif
  endif
 endif
@@ -157,6 +160,7 @@ endif
 
 ifdef WITH_SDL
  NEED_BITMAP := 1
+ NEED_KEY_EVENTS := 1
  # Prefer local include over system includes.
  #CFLAGS += -I$(SRC_ROOT)/../include/sdl
  ifdef SDL_CONFIG
@@ -213,6 +217,7 @@ endif
 
 ifndef NO_X
  NEED_BITMAP := 1
+ NEED_KEY_EVENTS := 1
  CIOLIB_CFLAGS += -DHAS_VSTAT
  CIOLIB-MT_CFLAGS += -DHAS_VSTAT
 else
@@ -240,4 +245,9 @@ endif
 ifdef NEED_BITMAP
  CIOLIB_CFLAGS += -DHAS_BITMAP
  CIOLIB-MT_CFLAGS += -DHAS_BITMAP
+endif
+
+ifdef NEED_KEY_EVENTS
+ CIOLIB_CFLAGS += -DCIOLIB_KEY_EVENTS
+ CIOLIB-MT_CFLAGS += -DCIOLIB_KEY_EVENTS
 endif

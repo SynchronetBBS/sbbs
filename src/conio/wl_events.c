@@ -41,6 +41,7 @@
 #define BITMAP_CIOLIB_DRIVER
 #include "ciolib.h"
 #include "bitmap_con.h"
+#include "evdev_codes.h"
 #include "xpbeep.h"
 #include "wl_events.h"
 
@@ -424,21 +425,6 @@ static struct {
 	{	0x8500, 0x8700, 0x8900, 0x8b00 }, /* key 87 - F11 */
 	{	0x8600, 0x8800, 0x8a00, 0x8c00 }, /* key 88 - F12 */
 };
-
-/*
- * Extended evdev keycodes for keys outside the AT Set 1 range.
- * Evdev codes 96+ for non-numpad navigation keys.
- */
-#define EVDEV_KEY_HOME		102
-#define EVDEV_KEY_UP		103
-#define EVDEV_KEY_PAGEUP	104
-#define EVDEV_KEY_LEFT		105
-#define EVDEV_KEY_RIGHT		106
-#define EVDEV_KEY_END		107
-#define EVDEV_KEY_DOWN		108
-#define EVDEV_KEY_PAGEDOWN	109
-#define EVDEV_KEY_INSERT	110
-#define EVDEV_KEY_DELETE		111
 
 static void update_surface_size(int w, int h);
 
@@ -884,6 +870,7 @@ kb_leave(void *data, struct wl_keyboard *keyboard,
 	ctrl_held = false;
 	alt_held = false;
 	repeat_key = -1;
+	ciokey_focus_lost();
 }
 
 static void
@@ -891,6 +878,7 @@ kb_key(void *data, struct wl_keyboard *keyboard,
     uint32_t serial, uint32_t time, uint32_t key, uint32_t state)
 {
 	bool pressed = (state == WL_KEYBOARD_KEY_STATE_PRESSED);
+	ciokey_gotevent((uint16_t)key, pressed);
 
 	/*
 	 * Wayland sends evdev keycodes.  The evdev keycode is the

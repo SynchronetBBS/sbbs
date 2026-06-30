@@ -440,8 +440,8 @@ toggle_prestel_reveal(void)
 	freescreen(savscrn);
 }
 
-int
-cterm_encode_key(struct cterminal *cterm, int key)
+static int
+cterm_encode_key_ex(struct cterminal *cterm, int key, bool emit)
 {
 	unsigned char             ch[2];
 	int                       slen;
@@ -456,7 +456,8 @@ cterm_encode_key(struct cterminal *cterm, int key)
 	if (cterm->doorway_mode && (key > 0xff) && ((key & 0xff) == 0)) {
 		ch[0] = 0;
 		ch[1] = key >> 8;
-		cterm_send_keystroke(cterm, (const char *)ch, 2);
+		if (emit)
+			cterm_send_keystroke(cterm, (const char *)ch, 2);
 		return 2;
 	}
 
@@ -504,15 +505,18 @@ cterm_encode_key(struct cterminal *cterm, int key)
 			/* VT52 and ANSI-BBS: DEL and BS respect DECBKM. */
 			if (key == CIO_KEY_DC) {
 				if (cterm->extattr & CTERM_EXTATTR_DECBKM) {
-					cterm_send_keystroke(cterm, "\x7f", 1);
+					if (emit)
+						cterm_send_keystroke(cterm, "\x7f", 1);
 					return 1;
 				}
-				cterm_send_keystroke(cterm, "\x1b[3~", 4);
+				if (emit)
+					cterm_send_keystroke(cterm, "\x1b[3~", 4);
 				return 4;
 			}
 			if (key == '\b') {
 				ch[0] = (cterm->extattr & CTERM_EXTATTR_DECBKM) ? '\b' : '\x7f';
-				cterm_send_keystroke(cterm, (const char *)ch, 1);
+				if (emit)
+					cterm_send_keystroke(cterm, (const char *)ch, 1);
 				return 1;
 			}
 			switch (cterm->emulation) {
@@ -530,15 +534,164 @@ cterm_encode_key(struct cterminal *cterm, int key)
 
 	seq = lookup_key(table, table_count, key, &slen);
 	if (seq) {
-		cterm_send_keystroke(cterm, seq, slen);
+		if (emit)
+			cterm_send_keystroke(cterm, seq, slen);
 		return slen;
 	}
 	if (key >= raw_lo && key < raw_hi) {
 		ch[0] = key;
-		cterm_send_keystroke(cterm, (const char *)ch, 1);
+		if (emit)
+			cterm_send_keystroke(cterm, (const char *)ch, 1);
 		return 1;
 	}
 	return 0;
+}
+
+int
+cterm_encode_key(struct cterminal *cterm, int key)
+{
+	return cterm_encode_key_ex(cterm, key, true);
+}
+
+enum cterm_key_result
+cterm_handle_key(struct cterminal *cterm, int key)
+{
+	int n = cterm_encode_key_ex(cterm, key,
+	    !cterm->suppress_translated_keys);
+
+	return n > 0 ? CTERM_KEY_HANDLED : CTERM_KEY_UNHANDLED;
+}
+
+static bool
+cterm_pk_get(const struct cterminal *cterm, uint16_t evdev)
+{
+	if (evdev >= CTERM_PK_MAX_EVDEV)
+		return false;
+	return (cterm->pk_reported[evdev / 8] & (1 << (evdev % 8))) != 0;
+}
+
+static void
+cterm_pk_set(struct cterminal *cterm, uint16_t evdev, bool pressed)
+{
+	if (evdev >= CTERM_PK_MAX_EVDEV)
+		return;
+	if (pressed)
+		cterm->pk_reported[evdev / 8] |= (1 << (evdev % 8));
+	else
+		cterm->pk_reported[evdev / 8] &= ~(1 << (evdev % 8));
+}
+
+static bool
+cterm_pk_emit(struct cterminal *cterm, const uint16_t *keys, size_t count,
+    bool pressed)
+{
+	char buf[2048];
+	size_t pos = 0;
+
+	if (count == 0 || !cterm->pk_mode)
+		return false;
+	pos += snprintf(buf + pos, sizeof(buf) - pos, "\x1b[=");
+	for (size_t i = 0; i < count; i++) {
+		int n = snprintf(buf + pos, sizeof(buf) - pos, "%s%u",
+		    i == 0 ? "" : ";", keys[i]);
+		if (n < 0 || (size_t)n >= sizeof(buf) - pos)
+			return false;
+		pos += (size_t)n;
+	}
+	if (pos + 1 >= sizeof(buf))
+		return false;
+	buf[pos++] = pressed ? 'K' : 'k';
+	cterm_send_keystroke(cterm, buf, pos);
+	return true;
+}
+
+bool
+cterm_pk_events(struct cterminal *cterm, const struct ciolib_key_event *events,
+    size_t count)
+{
+	uint16_t batch[64];
+	size_t batch_count = 0;
+	bool batch_pressed = false;
+	bool emitted = false;
+
+	if (cterm == NULL || events == NULL || count == 0 || !cterm->pk_mode)
+		return false;
+	for (size_t i = 0; i < count; i++) {
+		uint16_t evdev = events[i].evdev;
+		bool pressed = events[i].pressed;
+		if (evdev >= CTERM_PK_MAX_EVDEV)
+			continue;
+		if (cterm_pk_get(cterm, evdev) == pressed)
+			continue;
+		cterm_pk_set(cterm, evdev, pressed);
+		if (batch_count > 0 &&
+		    (batch_pressed != pressed || batch_count == sizeof(batch) / sizeof(batch[0]))) {
+			emitted |= cterm_pk_emit(cterm, batch, batch_count, batch_pressed);
+			batch_count = 0;
+		}
+		batch_pressed = pressed;
+		batch[batch_count++] = evdev;
+	}
+	if (batch_count > 0)
+		emitted |= cterm_pk_emit(cterm, batch, batch_count, batch_pressed);
+	return emitted;
+}
+
+bool
+cterm_pk_synthesize(struct cterminal *cterm, uint16_t evdev, bool pressed)
+{
+	struct ciolib_key_event event = {evdev, pressed};
+
+	return cterm_pk_events(cterm, &event, 1);
+}
+
+bool
+cterm_pk_resync(struct cterminal *cterm, const uint16_t *held_keys, size_t count)
+{
+	bool held[CTERM_PK_MAX_EVDEV] = {0};
+	uint16_t batch[64];
+	size_t batch_count = 0;
+	bool emitted = false;
+
+	if (cterm == NULL || !cterm->pk_mode)
+		return false;
+	for (size_t i = 0; i < count; i++) {
+		if (held_keys[i] < CTERM_PK_MAX_EVDEV)
+			held[held_keys[i]] = true;
+	}
+	for (uint16_t evdev = 0; evdev < CTERM_PK_MAX_EVDEV; evdev++) {
+		if (cterm_pk_get(cterm, evdev) && !held[evdev]) {
+			cterm_pk_set(cterm, evdev, false);
+			batch[batch_count++] = evdev;
+			if (batch_count == sizeof(batch) / sizeof(batch[0])) {
+				emitted |= cterm_pk_emit(cterm, batch, batch_count, false);
+				batch_count = 0;
+			}
+		}
+	}
+	if (batch_count > 0) {
+		emitted |= cterm_pk_emit(cterm, batch, batch_count, false);
+		batch_count = 0;
+	}
+	for (uint16_t evdev = 0; evdev < CTERM_PK_MAX_EVDEV; evdev++) {
+		if (!cterm_pk_get(cterm, evdev) && held[evdev]) {
+			cterm_pk_set(cterm, evdev, true);
+			batch[batch_count++] = evdev;
+			if (batch_count == sizeof(batch) / sizeof(batch[0])) {
+				emitted |= cterm_pk_emit(cterm, batch, batch_count, true);
+				batch_count = 0;
+			}
+		}
+	}
+	if (batch_count > 0)
+		emitted |= cterm_pk_emit(cterm, batch, batch_count, true);
+	return emitted;
+}
+
+bool
+cterm_pk_enabled(const struct cterminal *cterm)
+{
+	return cterm != NULL && cterm->pk_mode;
 }
 
 bool
@@ -2380,4 +2533,3 @@ void cterm_end(struct cterminal *cterm, int free_fonts)
 		free(cterm);
 	}
 }
-

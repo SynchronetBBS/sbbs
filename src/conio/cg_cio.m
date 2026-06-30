@@ -170,6 +170,18 @@ cg_mouse_thread(void *data)
 	}
 }
 
+static void
+cg_key_thread(void *data)
+{
+	uint16_t key = CIO_KEY_KEY_EVENT;
+
+	SetThreadName("CG Key");
+	while (1) {
+		if (ciokey_wait())
+			write(cg_key_pipe[1], &key, 2);
+	}
+}
+
 /* These are implemented in cg_events.m */
 extern void cg_events_textmode(int mode);
 extern void cg_events_settitle(const char *title);
@@ -339,7 +351,9 @@ int cg_initciolib(int mode)
 	}
 
 	_beginthread(cg_mouse_thread, 1 << 16, NULL);
+	_beginthread(cg_key_thread, 1 << 16, NULL);
 	cio_api.options |= CONIO_OPT_SET_TITLE | CONIO_OPT_SET_NAME
-	    | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING;
+	    | CONIO_OPT_SET_ICON | CONIO_OPT_EXTERNAL_SCALING
+	    | CONIO_OPT_KEY_EVENTS;
 	return 0;
 }

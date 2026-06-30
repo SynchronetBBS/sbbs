@@ -24,6 +24,7 @@
 #include <stdlib.h>		/* atexit */
 
 #include "ciolib.h"
+#include "evdev_codes.h"
 #include "vidmodes.h"
 #include "win32cio.h"
 
@@ -218,6 +219,85 @@ win32_keyval_cmp(const void *key, const void *memb)
 	return i - m->VirtualKeyCode;
 }
 
+uint16_t
+win32_evdev_key(WORD vk, WORD scan, DWORD state)
+{
+	bool enhanced = (state & ENHANCED_KEY) != 0;
+	struct keyvals *k;
+
+	switch (vk) {
+		case VK_SHIFT:
+			return scan == 0x36 ? EVDEV_KEY_RIGHTSHIFT : EVDEV_KEY_LEFTSHIFT;
+		case VK_CONTROL:
+			return enhanced ? EVDEV_KEY_RIGHTCTRL : EVDEV_KEY_LEFTCTRL;
+		case VK_MENU:
+			return enhanced ? EVDEV_KEY_RIGHTALT : EVDEV_KEY_LEFTALT;
+		case VK_LSHIFT:
+			return EVDEV_KEY_LEFTSHIFT;
+		case VK_RSHIFT:
+			return EVDEV_KEY_RIGHTSHIFT;
+		case VK_LCONTROL:
+			return EVDEV_KEY_LEFTCTRL;
+		case VK_RCONTROL:
+			return EVDEV_KEY_RIGHTCTRL;
+		case VK_LMENU:
+			return EVDEV_KEY_LEFTALT;
+		case VK_RMENU:
+			return EVDEV_KEY_RIGHTALT;
+		case VK_LWIN:
+			return EVDEV_KEY_LEFTMETA;
+		case VK_RWIN:
+			return EVDEV_KEY_RIGHTMETA;
+		case VK_APPS:
+			return EVDEV_KEY_MENU;
+		case VK_PAUSE:
+			return EVDEV_KEY_PAUSE;
+	}
+
+	if (enhanced) {
+		switch (scan) {
+			case 0x1c:
+				return EVDEV_KEY_KPENTER;
+			case 0x1d:
+				return EVDEV_KEY_RIGHTCTRL;
+			case 0x35:
+				return EVDEV_KEY_KPSLASH;
+			case 0x38:
+				return EVDEV_KEY_RIGHTALT;
+			case 0x47:
+				return EVDEV_KEY_HOME;
+			case 0x48:
+				return EVDEV_KEY_UP;
+			case 0x49:
+				return EVDEV_KEY_PAGEUP;
+			case 0x4b:
+				return EVDEV_KEY_LEFT;
+			case 0x4d:
+				return EVDEV_KEY_RIGHT;
+			case 0x4f:
+				return EVDEV_KEY_END;
+			case 0x50:
+				return EVDEV_KEY_DOWN;
+			case 0x51:
+				return EVDEV_KEY_PAGEDOWN;
+			case 0x52:
+				return EVDEV_KEY_INSERT;
+			case 0x53:
+				return EVDEV_KEY_DELETE;
+		}
+	}
+
+	if (vk >= VK_F13 && vk <= VK_F24)
+		return EVDEV_KEY_F13 + (vk - VK_F13);
+
+	k = bsearch(&vk, keyval, WIN32_KEYVALS, sizeof(keyval[0]), win32_keyval_cmp);
+	if (k != NULL && k->evdev != 0)
+		return k->evdev;
+	if (scan > 0 && scan <= EVDEV_KEY_F12)
+		return scan;
+	return 0;
+}
+
 static int win32_getchcode(WORD code, DWORD state)
 {
 	struct keyvals *k = bsearch(&code, keyval, WIN32_KEYVALS, sizeof(keyval[0]), win32_keyval_cmp);
@@ -375,6 +455,10 @@ static int win32_keyboardio(int isgetch)
 				lastch=CIO_KEY_MOUSE;
 				break;
 			}
+			if(ciokey_trywait()) {
+				lastch=CIO_KEY_KEY_EVENT;
+				break;
+			}
 			if(isgetch)
 				WaitForSingleObject(h, 1000);
 			else
@@ -412,6 +496,10 @@ static int win32_keyboardio(int isgetch)
 				dprintf("           ControlKeyState=0x%08lX"
 					,input.Event.KeyEvent.dwControlKeyState); 
 #endif
+				uint16_t evdev = win32_evdev_key(input.Event.KeyEvent.wVirtualKeyCode,
+				    input.Event.KeyEvent.wVirtualScanCode, input.Event.KeyEvent.dwControlKeyState);
+				if (evdev != 0)
+					ciokey_gotevent(evdev, input.Event.KeyEvent.bKeyDown != 0);
 
 				if(input.Event.KeyEvent.bKeyDown) {
 					if (win32_bios_keydown_handler(input.Event.KeyEvent.wVirtualKeyCode, set_last_key))
@@ -713,7 +801,7 @@ int win32_initciolib(int inmode)
 	}
 	atexit(RestoreDisplayMode);
 	cio_api.mouse=1;
-	cio_api.options = CONIO_OPT_BRIGHT_BACKGROUND | CONIO_OPT_CUSTOM_CURSOR | CONIO_OPT_SET_TITLE;
+	cio_api.options = CONIO_OPT_BRIGHT_BACKGROUND | CONIO_OPT_CUSTOM_CURSOR | CONIO_OPT_SET_TITLE | CONIO_OPT_KEY_EVENTS;
 	return(1);
 }
 
