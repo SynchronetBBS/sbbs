@@ -199,6 +199,11 @@ int32_t FX_Pan3D(int handle, int angle, int distance)
 }
 int32_t FX_StopSound(int handle) { termgfx_audio_loop_stop(sd_audio, handle); return FX_Ok; }
 int32_t FX_StopAllSounds(void) { termgfx_audio_sfx_stop_all(sd_audio); return FX_Ok; }
+
+/* Digital audio (SFX + music) is up: the terminal answered the capability probe with tier >= 1.
+ * The intro (game.c Logo) runs the original full-length holds only when there's sound to fill
+ * them -- on a silent terminal those holds would be dead waits, so it keeps the short intro. */
+int syncduke_audio_active(void) { return sd_audio != NULL && termgfx_audio_tier(sd_audio) >= 1; }
 int  FX_PlayVOC3D(uint8_t *ptr, int32_t pitchoffset, int32_t angle, int32_t distance,
                   int32_t priority, uint32_t callbackval)
 { (void)pitchoffset; (void)priority; return sd_fx_play(ptr, (int)angle, (int)distance, callbackval); }

@@ -7526,7 +7526,8 @@ void printstr(short x, short y, uint8_t  string[81], uint8_t  attribute)
 void Logo(void)
 {
     short i,soundanm;
-	
+    extern int syncduke_audio_active(void);   // door: digital-audio tier is up -> full intro holds
+
     soundanm = 0;
 
     ready2send = 0;
@@ -7582,7 +7583,10 @@ void Logo(void)
 
 
 	    totalclock = 0;
-	    while( totalclock < (120*2) && !KB_KeyWaiting() )   // SyncDuke: 7s -> 2s. The original hold let the intro MUSIC play over the logo; the door has no sound (dummy audiolib), so it was a dead wait. Still keypress-skippable.
+	    // The ~7s hold lets the intro MIDI play over the 3D Realms logo, as in the original -- but
+	    // ONLY when digital audio is up; on a silent terminal it's a dead wait, so fall back to 2s.
+	    // Re-checked per iteration, so it extends the moment the cap probe resolves.  Keypress-skips.
+	    while( totalclock < (syncduke_audio_active() ? (120*7) : (120*2)) && !KB_KeyWaiting() )
 	        getpackets();
 	
 
@@ -7608,8 +7612,10 @@ void Logo(void)
 	    totalclock = 0;
 	
 		//Animate screen (Duke picture wiht "DUKE" "NUKEM 3D" coming from far away and hitting the screen"
-		// SyncDuke: end at tick 360 (~3s) instead of 980 (~8s). The "DUKE"/"NUKEM 3D"/"3D" pieces finish flying in by ~tick 250; the rest was a trailing hold for the (absent) intro music. Keypress still skips it.
-	    while(totalclock < 360 && !KB_KeyWaiting())
+		// Full original ~8s so the pipebomb-explosion reverb (and FLY_BY) fade out before the menu,
+		// as in the original -- but ONLY when digital audio is up; a silent terminal keeps the short
+		// 3s (no dead wait).  Keypress still skips it.
+	    while(totalclock < (syncduke_audio_active() ? (860+120) : 360) && !KB_KeyWaiting())
 	    {
 	        rotatesprite(0,0,65536L,0,BETASCREEN,0,0,2+8+16+64,0,0,xdim-1,ydim-1);
 	
