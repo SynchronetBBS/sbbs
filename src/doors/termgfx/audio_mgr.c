@@ -8,6 +8,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+  #include <process.h>   /* _getpid: unique temp-file suffix for the atomic cache write */
+  #define TG_GETPID _getpid
+#else
+  #include <unistd.h>    /* getpid */
+  #define TG_GETPID getpid
+#endif
+
+#define CL_DATA_MAX 262144u             /* cap the captured C;L reply (a runaway/unterminated
+	                                     * one won't grow the buffer without bound) */
 
 #define KEYMAX       1024            // id space (Duke ~450, Doom ~110)
 #define NSLOT        256             // SyncTERM patch slots
@@ -154,6 +164,8 @@ static void cl_query(termgfx_audio_t *m)
 
 static void cl_append(termgfx_audio_t *m, uint8_t b)
 {
+	if (m->cl_len >= CL_DATA_MAX)
+		return;                        // reply larger than any real cache list -> stop growing
 	if (m->cl_len + 1 > m->cl_cap) {
 		size_t nc = m->cl_cap ? m->cl_cap * 2 : 256;
 		char * nb = realloc(m->cl_data, nc);
@@ -538,15 +550,30 @@ static size_t mus_read_file(const char *path, uint8_t **out)
 	return (size_t)sz;
 }
 
-// Best-effort write of the encoded OGG to the door-side cache (a miss is harmless).
+// Best-effort write of the encoded OGG to the door-side cache. Write to a per-pid
+// temp then atomically move it into place: two nodes rendering the same track at
+// once (the cache is content-addressed, so same file), or a write interrupted by a
+// full disk / killed door, must never leave a truncated or interleaved OGG that a
+// later read would ship to a client as corrupt (= a silently-silent track). A miss
+// is harmless -- the track just re-renders next time.
 static void mus_write_file(const char *path, const uint8_t *data, size_t len)
 {
-	FILE *f = fopen(path, "wb");
+	char  tmp[MUS_CACHE_DIR_MAX + MUSNAME_MAX + 32];
+	FILE *f;
 
+	snprintf(tmp, sizeof(tmp), "%s.tmp.%ld", path, (long)TG_GETPID());
+	f = fopen(tmp, "wb");
 	if (f == NULL)
 		return;
-	fwrite(data, 1, len, f);
-	fclose(f);
+	if (fwrite(data, 1, len, f) != len || fclose(f) != 0) {   // partial write -> discard
+		remove(tmp);
+		return;
+	}
+#ifdef _WIN32
+	remove(path);                      // Windows rename() won't replace an existing target
+#endif
+	if (rename(tmp, path) != 0)        // atomic on POSIX; a complete file either way
+		remove(tmp);
 }
 
 // Flush the music channel, Load the (already-Stored) cache file, loop it, set volume.
