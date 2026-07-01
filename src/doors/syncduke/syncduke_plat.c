@@ -81,7 +81,7 @@ static int64_t plat_ticks(void)
 		QueryPerformanceFrequency(&freq);
 	QueryPerformanceCounter(&c);
 	return (int64_t)(c.QuadPart / freq.QuadPart) * 1000000000LL
-	     + (int64_t)(c.QuadPart % freq.QuadPart) * 1000000000LL / freq.QuadPart;
+	       + (int64_t)(c.QuadPart % freq.QuadPart) * 1000000000LL / freq.QuadPart;
 #else
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -256,6 +256,8 @@ static void syncduke_sleep_ms(unsigned ms)
  */
 #define SYNCDUKE_CAP_FPS    30
 #define SYNCDUKE_CAP_WAITMS 250          /* never block the loop longer than this */
+#define SYNCDUKE_FRAME_STALL_MS 500      /* present+pace over this => log a frame-stall note (well
+	                                      * above a normally-paced frame's ~cap+encode) */
 static void syncduke_pace_engine(void)
 {
 	static uint32_t last_ms;
@@ -299,8 +301,22 @@ void _nextpage(void)
 	}
 
 	syncduke_dump_ppm();      /* debug: env-gated PPM (SYNCDUKE_PPMDIR) */
-	syncduke_present();       /* encode the frame to sixel and emit to the terminal sink */
-	syncduke_pace_engine();   /* throttle production to the terminal's draw rate (no busy-spin) */
+
+	/* Frame-stall watchdog: time the present + pacing block.  A frame that overruns badly
+	 * (terminal not draining, a blocked socket write, ...) gets a note so a stall's cause can be
+	 * pinned down after the fact.  (An audio transcode/upload blocks the game thread OUTSIDE this
+	 * window and logs its own render=/xfer= line, so the two don't double-count.) */
+	{
+		uint32_t fs = getticks();
+		syncduke_present();       /* encode the frame to sixel and emit to the terminal sink */
+		syncduke_pace_engine();   /* throttle production to the terminal's draw rate (no busy-spin) */
+		fs = getticks() - fs;
+		if (fs >= SYNCDUKE_FRAME_STALL_MS) {
+			extern void syncduke_log(const char *fmt, ...);
+			syncduke_log("pace: frame stall %ums (inflight=%d depth=%d)",
+			             (unsigned)fs, syncduke_pace_inflight(), syncduke_pace_curdepth());
+		}
+	}
 }
 
 void _updateScreenRect(int32_t x, int32_t y, int32_t w, int32_t h)

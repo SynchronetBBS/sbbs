@@ -500,6 +500,12 @@ static int syncduke_eff_depth(void)
 	return syncduke_inflight_auto ? syncduke_auto_depth : syncduke_pace_depth;
 }
 
+/* Pace snapshot for the frame-stall log (syncduke_plat.c): unacked frames in flight, and the
+ * current effective pipeline depth.  High inflight during a stall => the terminal/link isn't
+ * draining (transfer/pacing bound), not a local hitch. */
+int syncduke_pace_inflight(void) { return syncduke_inflight; }
+int syncduke_pace_curdepth(void) { return syncduke_eff_depth(); }
+
 /* Monotonic microsecond clock (cross-platform): QueryPerformanceCounter on
  * Windows, clock_gettime(CLOCK_MONOTONIC) elsewhere. */
 static uint64_t syncduke_now_us(void)

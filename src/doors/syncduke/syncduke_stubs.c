@@ -341,15 +341,22 @@ void PlayMusic(char *filename)
 			return;
 		}
 	}
-	if (termgfx_midi_render(mid, (size_t)len, 44100, 0, &pcm, &nframes)) {
-		syncduke_log("music: '%s' (%s) rendered %zu frames -> play (vol=%d)",
-		             filename, id, nframes, sd_music_v());
-		termgfx_audio_music(sd_audio, id, pcm, nframes * 4, 16, 2, 44100,
-		                    sd_music_v());        /* Setup Sound music volume (balanced) */
-		free(pcm);
-	}
-	else {
-		syncduke_log("music: '%s' render FAILED (len=%d)", filename, (int)len);
+	{
+		extern uint32_t getticks(void);           /* engine ms clock: split the two costly steps */
+		uint32_t t0 = getticks(), t1;
+		if (termgfx_midi_render(mid, (size_t)len, 44100, 0, &pcm, &nframes)) {
+			t1 = getticks();                      /* render (OPL transcode) done */
+			termgfx_audio_music(sd_audio, id, pcm, nframes * 4, 16, 2, 44100,
+			                    sd_music_v());     /* encode + disk-cache + upload (transfer) */
+			/* render=<transcode ms> xfer=<encode+cache+upload ms>: tells a stall's cause apart. */
+			syncduke_log("music: '%s' (%s) rendered %zu frames render=%ums xfer=%ums (vol=%d)",
+			             filename, id, nframes, (unsigned)(t1 - t0),
+			             (unsigned)(getticks() - t1), sd_music_v());
+			free(pcm);
+		}
+		else {
+			syncduke_log("music: '%s' render FAILED (len=%d)", filename, (int)len);
+		}
 	}
 	free(mid);
 }

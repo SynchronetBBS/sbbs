@@ -27,6 +27,8 @@ void syncduke_out_flush(void);                        /* push staged bytes to th
 void syncduke_present(void);                           /* encode + emit one frame      */
 void syncduke_pace_ack(void);                          /* a per-frame DSR report came back (pacing) */
 int  syncduke_pace_ready(void);                        /* pipeline has room for another frame (render gate) */
+int  syncduke_pace_inflight(void);                     /* unacked frames in flight (frame-stall log) */
+int  syncduke_pace_curdepth(void);                     /* current effective pipeline depth (frame-stall log) */
 void syncduke_stats_toggle(void);                      /* Ctrl-S: toggle the live stats overlay */
 void syncduke_depth_cycle(void);                       /* Ctrl-T: cycle the pipeline depth */
 void syncduke_tier_cycle(void);                        /* F4: cycle the graphics tier (jxl/sixel) */
