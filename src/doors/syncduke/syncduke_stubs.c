@@ -34,8 +34,12 @@ extern int32_t          soundsiz[];
  * FX_SetVolume/MUSIC_SetVolume keep these in sync; sd_fx_play scales each SFX by the
  * FX master, and the music volume rides the music channel's base level. Defaults
  * match the engine (config.c). */
-static int sd_fx_vol    = 220;
-static int sd_music_vol = 200;
+static int  sd_fx_vol    = 220;
+static int  sd_music_vol = 200;
+/* Most-recent track requested (PlayMusic).  At 0% volume we treat music as OFF and skip the
+ * render/upload entirely; this lets MUSIC_SetVolume replay the current track when the slider is
+ * raised back off 0.  (SyncDuke's Setup Sound has no separate MUSIC:OFF, so 0% is the off switch.) */
+static char sd_current_music[16];
 
 /* Music sits a touch under SFX at equal slider settings (as in DOS Duke): the OPL3
  * render is peak-normalized -- a loud, SUSTAINED signal -- while SFX are un-normalized
@@ -221,8 +225,16 @@ int  MUSIC_Init(int SoundCard, int Address) { (void)SoundCard; (void)Address; re
 int  MUSIC_Shutdown(void) { return 0; }
 void MUSIC_SetVolume(int volume)
 {
+	int was = sd_music_vol;
+
 	sd_music_vol = volume < 0 ? 0 : volume > 255 ? 255 : volume;
-	termgfx_audio_music_volume(sd_audio, sd_music_v());   /* live slider (balanced vs SFX) */
+	if (sd_music_vol == 0)
+		termgfx_audio_music_stop(sd_audio);          /* 0% = OFF: stop the loop (no silent transfer) */
+	else {
+		termgfx_audio_music_volume(sd_audio, sd_music_v());   /* live slider (balanced vs SFX) */
+		if (was == 0 && sd_current_music[0] != '\0')
+			PlayMusic(sd_current_music);             /* raised off 0: resume the current track */
+	}
 }
 void MUSIC_Continue(void) { }
 void MUSIC_Pause(void) { }
@@ -255,6 +267,12 @@ void PlayMusic(char *filename)
 	if (sd_audio == NULL || filename == NULL || filename[0] == '\0') {
 		syncduke_log("music: PlayMusic('%s') ignored (null/empty filename)",
 		             filename ? filename : "(null)");
+		return;
+	}
+	strncpy(sd_current_music, filename, sizeof(sd_current_music) - 1);   /* remember for vol-raise replay */
+	sd_current_music[sizeof(sd_current_music) - 1] = '\0';
+	if (sd_music_vol == 0) {          /* 0% = OFF: don't render/encode/upload a silent track */
+		syncduke_log("music: '%s' skipped (volume 0 = off)", filename);
 		return;
 	}
 	if (termgfx_audio_tier(sd_audio) < 1) {
