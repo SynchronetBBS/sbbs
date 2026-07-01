@@ -77,6 +77,7 @@ extern uint32_t		g_keyup_idle_ms;	// HOLD -- release latency once auto-repeating
 extern uint32_t		g_turn_grace;		// TURN -- turn-key tap grace
 extern int		sd_instant_turn;	// FAST TURN -- defeat the turn-accel ramp
 extern int		g_kitty_active;		// syncdoom: kitty protocol negotiated -> native key timing/turn (sliders moot)
+extern int		g_evdev_active;		// syncdoom: SyncTERM evdev -> same (true key-up), so the sliders are moot too
 extern void		sd_save_user_prefs(void);
 
 //
@@ -1163,9 +1164,9 @@ void M_DrawInputSliders(void)
     int sx = M_OptSliderX();
     int yft = OptionsDef.y + LINEHEIGHT * instantturn + INPUT_YOFF;
 
-    // Kitty terminal: real key-up + Doom's native turn ramp, so these byte-path key-feel knobs
-    // do nothing. Show them disabled ("NATIVE") rather than live bars.
-    if (g_kitty_active) {
+    // Real key-up (kitty protocol or SyncTERM evdev) + Doom's native turn ramp, so these byte-path
+    // key-feel knobs do nothing. Show them disabled ("NATIVE") rather than live bars.
+    if (g_kitty_active || g_evdev_active) {
         M_WriteText(OptionsDef.x, OptionsDef.y + LINEHEIGHT * inputtap  + INPUT_YOFF, "KEY TAP");
         M_WriteText(sx,           OptionsDef.y + LINEHEIGHT * inputtap  + INPUT_YOFF, "NATIVE");
         M_WriteText(OptionsDef.x, OptionsDef.y + LINEHEIGHT * inputhold + INPUT_YOFF, "KEY HOLD");
@@ -1204,21 +1205,21 @@ static uint32_t M_InputStep(uint32_t cur, int choice, int mn, int step, int mx)
 
 void M_InputTap(int choice)
 {
-    if (g_kitty_active) return;         // native key timing under kitty -> slider disabled
+    if (g_kitty_active || g_evdev_active) return;         // native key timing under kitty -> slider disabled
     g_grace_fresh = M_InputStep(g_grace_fresh, choice, TAP_MIN, TAP_STEP, TAP_MAX);
     sd_save_user_prefs();
 }
 
 void M_InputHold(int choice)
 {
-    if (g_kitty_active) return;
+    if (g_kitty_active || g_evdev_active) return;
     g_keyup_idle_ms = M_InputStep(g_keyup_idle_ms, choice, HT_MIN, HT_STEP, HT_MAX);
     sd_save_user_prefs();
 }
 
 void M_InputTurn(int choice)
 {
-    if (g_kitty_active) return;
+    if (g_kitty_active || g_evdev_active) return;
     g_turn_grace = M_InputStep(g_turn_grace, choice, HT_MIN, HT_STEP, HT_MAX);
     sd_save_user_prefs();
 }
@@ -1226,7 +1227,7 @@ void M_InputTurn(int choice)
 void M_InstantTurn(int choice)
 {
     (void)choice;                       // a toggle -- direction doesn't matter
-    if (g_kitty_active) return;         // FAST TURN is moot under kitty (native turn ramp)
+    if (g_kitty_active || g_evdev_active) return;         // FAST TURN is moot under kitty (native turn ramp)
     sd_instant_turn = !sd_instant_turn;
     sd_save_user_prefs();
 }

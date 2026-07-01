@@ -198,7 +198,9 @@ static const struct
 static boolean  gamekeydown[NUMKEYS]; 
 static int      turnheld;		// for accelerative turning
 int             sd_instant_turn = 1;	// syncdoom: defeat turn-accel ramp; default ON (Options > FAST TURN)
- 
+extern int      sd_synth_turn;		// syncdoom: door RTT-adaptive synthetic turn (+1 right/-1 left/0)
+extern unsigned int menuactive;		// m_menu: nonzero while a menu is up (don't leak a held synth turn)
+
 static boolean  mousearray[MAX_MOUSE_BUTTONS + 1];
 static boolean *mousebuttons = &mousearray[1];  // allow [-1]
 
@@ -384,17 +386,26 @@ void G_BuildTiccmd (ticcmd_t* cmd, int maketic)
 	    side -= sidemove[speed]; 
  
     } 
-    else 
-    { 
-	if (gamekeydown[key_right]) 
-	    cmd->angleturn -= angleturn[tspeed]; 
-	if (gamekeydown[key_left]) 
-	    cmd->angleturn += angleturn[tspeed]; 
-	if (joyxmove > 0) 
-	    cmd->angleturn -= angleturn[tspeed]; 
-	if (joyxmove < 0) 
-	    cmd->angleturn += angleturn[tspeed]; 
-    } 
+    else
+    {
+	if (gamekeydown[key_right])
+	    cmd->angleturn -= angleturn[tspeed];
+	if (gamekeydown[key_left])
+	    cmd->angleturn += angleturn[tspeed];
+	// syncdoom: the door's RTT-adaptive synthetic turn (high-latency fallback) -- a CONSTANT,
+	// deterministic rate (angleturn[2] = Doom's slow turn) injected instead of a held turn key.
+	// Cleared when a menu is up so a still-held synthetic turn can't leak under it.
+	if (menuactive)
+	    sd_synth_turn = 0;
+	else if (sd_synth_turn > 0)
+	    cmd->angleturn -= angleturn[2];
+	else if (sd_synth_turn < 0)
+	    cmd->angleturn += angleturn[2];
+	if (joyxmove > 0)
+	    cmd->angleturn -= angleturn[tspeed];
+	if (joyxmove < 0)
+	    cmd->angleturn += angleturn[tspeed];
+    }
  
     if (gamekeydown[key_up]) 
     {

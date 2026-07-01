@@ -256,12 +256,30 @@ static int g_stats_overlay = 0;       // show fps/RTT/depth overlaid on each fra
 // Doom's native turn ramp, no key-up-synthesis grace needed. Non-static: m_menu.c greys the (now
 // moot) TAP/HOLD/TURN/FAST-TURN sliders when this is set. (Declared up here: emit_overlay reads it.)
 int                  g_kitty_active = 0;
-static unsigned char g_kitty_down[256]; // kitty: Doom keys we've sent key-down for (dedupe + release)
+static unsigned char g_key_down[256]; // Doom keys we've sent key-down for (dedupe + release); used by
+                                      // any path with a real key-up (kitty protocol, SyncTERM evdev)
+
+// SyncTERM (CTerm) "physical key event reporting": the CTDA probe advertised cap 8, so we enabled
+// it (CSI=1h reports + CSI=2h suppress-translation) and keys arrive as CSI = <evdev-code>[;...] K
+// (press) / k (release) -- LAYOUT-INDEPENDENT physical scancodes with a true key-up, like kitty
+// but for SyncTERM (which doesn't speak kitty; kitty terminals don't advertise CTDA cap 8, so the
+// two paths are mutually exclusive). Decoded edges reuse map_ascii()+key_dispatch() verbatim.
+int             g_evdev_active = 0;     // non-static: m_menu.c greys the key-feel sliders when set
+static unsigned g_evdev_mods = 0;        // held modifiers: bit0 Shift, bit1 Ctrl, bit2 Alt
+#define EVDEV_MOD_SHIFT 1
+#define EVDEV_MOD_CTRL  2
+#define EVDEV_MOD_ALT   4
+// Enable-time settle: SyncTERM resyncs the keys held at enable (the key still down from selecting
+// the door) as PRESS reports; drop non-modifier presses for this long so they can't skip the
+// opening. The resync lands within ~1 RTT and evdev sends no auto-repeat, so one drop suffices.
+#define SD_EVDEV_SETTLE_MS 500
+static uint32_t  g_evdev_enabled_ms = 0;
+static int       g_evdev_settling = 0;
 static const char *mode_name(enum frame_mode m);   // defined later; used by the overlay
 
-static uint8_t *     s_rgb = NULL;   static size_t s_rgb_cap = 0;  // packed RGB888
-static uint8_t *     s_img = NULL;   static size_t s_img_cap = 0;  // encoded bytes (PPM/JXL)
-static uint8_t *     s_apc = NULL;   static size_t s_apc_cap = 0;  // built APC Store+Draw sequence
+static uint8_t * s_rgb = NULL;   static size_t s_rgb_cap = 0;      // packed RGB888
+static uint8_t * s_img = NULL;   static size_t s_img_cap = 0;      // encoded bytes (PPM/JXL)
+static uint8_t * s_apc = NULL;   static size_t s_apc_cap = 0;      // built APC Store+Draw sequence
 
 // Send a small control string in full (cursor hide, JXL probe) at startup.
 static void emit_all(const char *buf, size_t len)
@@ -330,6 +348,38 @@ static int      g_inflight_auto = 1;    // [video] frames_in_flight = auto: adap
 static uint32_t g_rtt_ms = 0;           // EMA of the DSR round-trip (ms); 0 = not yet measured
 static uint32_t g_rtt_min = 0;          // baseline (unloaded) RTT: windowed min of recent samples
 static uint32_t g_rtt_min_at = 0;       // when g_rtt_min was last set (for the window reset)
+
+// RTT-adaptive turn (mirrors SyncDuke): the native hold-to-turn (true key-up + Doom's turn) is
+// non-deterministic/overshoots on a laggy link -- the release edge is RTT-delayed and applied in
+// tic bursts.  Past the threshold we inject a CONSTANT synthetic turn (sd_synth_turn ->
+// cmd->angleturn in G_BuildTiccmd) instead, which is deterministic.  +1 = right, -1 = left, 0 =
+// none.  Non-static: g_game.c reads it.
+static uint32_t now_ms(void);           // defined later (monotonic ms; only deltas used)
+int sd_synth_turn = 0;
+// Hysteresis + dwell so the model doesn't flap as the RTT EMA jitters: switch to synthetic only
+// when RTT clearly exceeds *_SYNTH, back to native only below *_NATIVE, and never more than once
+// per *_DWELL_MS.  rtt==0 (unmeasured) holds the current latch.
+#define SD_TURN_SYNTH_RTT   150u
+#define SD_TURN_NATIVE_RTT  100u
+#define SD_TURN_DWELL_MS    1200u
+static int sd_turn_native(void)
+{
+	static int      native = 1;     // latch: 1 = native hold, 0 = synthetic
+	static uint32_t last_switch = 0;
+	uint32_t        now = now_ms();
+	uint32_t        rtt = g_rtt_ms;
+
+	if (rtt != 0 && (uint32_t)(now - last_switch) >= SD_TURN_DWELL_MS) {
+		if (native && rtt > SD_TURN_SYNTH_RTT) {
+			native = 0;
+			last_switch = now;
+		} else if (!native && rtt < SD_TURN_NATIVE_RTT) {
+			native = 1;
+			last_switch = now;
+		}
+	}
+	return (g_kitty_active || g_evdev_active) && native;
+}
 #define RTT_MIN_WINDOW 8000u            // re-seed the baseline min if no lower sample in this long
 static uint32_t g_recent_fps = 0;       // frames/s over a recent window (the bandwidth signal for auto)
 static uint32_t g_recent_kbps = 0;      // transmit throughput (KB/s) over the same window (overlay)
@@ -698,11 +748,20 @@ static void emit_overlay(int force)
 		snprintf(bw, sizeof(bw), "%u.%uMB/s", g_recent_kbps / 1024, (g_recent_kbps % 1024) * 10 / 1024);
 	else
 		snprintf(bw, sizeof(bw), "%uKB/s", g_recent_kbps);
-	tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s%s ",
-	              (g_mode == MODE_SIXEL && g_sixel_fullres) ? "sixel-full" : mode_name(g_mode),
-	              g_recent_fps, bw, g_rtt_ms, g_rtt_min,
-	              max_inflight(), g_inflight_auto ? "/auto" : "",
-	              g_kitty_active ? " kbd:kitty" : "");
+	{
+		// Keyboard + turn-key model in ONE compact token: "evdev/nat" or "kitty/syn" -- the suffix
+		// is native hold (low-latency true key-up) vs the synthetic constant rate (high-latency).
+		char kbd[16] = "";
+		if (g_evdev_active || g_kitty_active)
+			snprintf(kbd, sizeof(kbd), " %s/%s",
+			         g_evdev_active ? "evdev" : "kitty",
+			         sd_turn_native() ? "nat" : "syn");
+		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s%s ",
+		              (g_mode == MODE_SIXEL && g_sixel_fullres) ? "sixel-full" : mode_name(g_mode),
+		              g_recent_fps, bw, g_rtt_ms, g_rtt_min,
+		              max_inflight(), g_inflight_auto ? "/auto" : "",
+		              kbd);
+	}
 
 	if (!force && strcmp(txt, g_ov_last) == 0)
 		return;                         // unchanged and the frame didn't repaint it -> nothing to send
@@ -1289,9 +1348,10 @@ static unsigned char csi_tilde_key(int n)
 
 // Incremental escape-sequence parser state (bytes may split across reads).
 static enum { ST_NORMAL, ST_ESC, ST_CSI, ST_APC, ST_APC_ESC } s_pstate = ST_NORMAL;
-static char s_csi_intro = 0;            // '[' or 'O' for the current CSI/SS3
-static char s_csi_par[24];              // accumulated parameter bytes ("[<n>~", SGR mouse "[<b;c;r")
-static int  s_csi_parlen = 0;
+static unsigned s_apc_len;   // bytes swallowed in the current APC/string seq (bail if unterminated)
+static char     s_csi_intro = 0;        // '[' or 'O' for the current CSI/SS3
+static char     s_csi_par[24];          // accumulated parameter bytes ("[<n>~", SGR mouse "[<b;c;r")
+static int      s_csi_parlen = 0;
 
 // Kitty keyboard-protocol event fields, parsed from s_csi_par ("CSI key;mods:event ...").
 // kitty_event: 1=press (default), 2=repeat, 3=release. kitty_mod: 1=none, 5=ctrl, 7=ctrl+shift.
@@ -1313,11 +1373,11 @@ static int kitty_mod(void)
 	return p ? (atoi(p + 1) ? atoi(p + 1) : 1) : 1;
 }
 
-// Dispatch a kitty key event (real key-up available): door hotkeys fire on a fresh press
-// (key_seen handles them); game keys get explicit key-down/up so movement holds and Doom's
-// own turn ramp runs -- bypassing the byte-path key-up-synthesis grace machinery. Menus/text
-// get a discrete tap per press/repeat (so a hold scrolls / a char repeats).
-static void kitty_dispatch(unsigned char key, int ev)
+// Dispatch a key event from any path with a real key-up (kitty protocol, SyncTERM evdev). ev:
+// 1=press, 2=repeat, 3=release. Door hotkeys fire on a fresh press (key_seen handles them); game
+// keys get explicit key-down/up so movement holds and Doom's own turn ramp runs -- bypassing the
+// byte-path key-up-synthesis grace machinery. Menus/text get a discrete tap per press/repeat.
+static void key_dispatch(unsigned char key, int ev)
 {
 	if (!key)
 		return;
@@ -1327,10 +1387,28 @@ static void kitty_dispatch(unsigned char key, int ev)
 			key_seen(key);
 		return;
 	}
+	// Turn keys in gameplay: RTT-adaptive.  On a fast link (or while strafing -- the engine needs
+	// the scancode to side-step) drive the native turn key (falls through below); on a laggy link
+	// inject the constant synthetic turn (sd_synth_turn) instead -- deterministic, no overshoot.
+	if ((key == KEY_LEFTARROW || key == KEY_RIGHTARROW) && !menuactive && !chat_on) {
+		int dir = (key == KEY_RIGHTARROW) ? 1 : -1;
+		if (ev == 3) {                        // release: clear both models for this direction
+			if (sd_synth_turn == dir)
+				sd_synth_turn = 0;
+			if (g_key_down[key]) { keyq_push(0, key); g_key_down[key] = 0; }
+			return;
+		}
+		if (!g_key_down[KEY_RALT] && !sd_turn_native()) {   // laggy + not strafing -> synthetic
+			sd_synth_turn = dir;
+			if (g_key_down[key]) { keyq_push(0, key); g_key_down[key] = 0; }   // drop any native hold
+			return;
+		}
+		// else fall through to the native hold below (low latency, or strafing)
+	}
 	if (ev == 3) {                            // key-up: release a held key-down
-		if (g_kitty_down[key]) {
+		if (g_key_down[key]) {
 			keyq_push(0, key);
-			g_kitty_down[key] = 0;
+			g_key_down[key] = 0;
 		}
 		return;
 	}
@@ -1339,9 +1417,159 @@ static void kitty_dispatch(unsigned char key, int ev)
 		keyq_push(0, key);
 		return;
 	}
-	if (!g_kitty_down[key]) {                 // in-game: hold until the explicit key-up
+	if (!g_key_down[key]) {                 // in-game: hold until the explicit key-up
 		keyq_push(1, key);
-		g_kitty_down[key] = 1;
+		g_key_down[key] = 1;
+	}
+}
+
+// US-QWERTY: evdev key code -> { unshifted, shifted } ASCII byte (0 = not a simple ASCII key).
+// Covers the main alnum/punct block (codes 1..57); arrows/nav/F-keys/keypad are handled in
+// evdev_edge(). Lets us translate a physical key edge into the byte map_ascii() expects, so the
+// WASD remap, cheat/save text entry, weapon digits and Ctrl hotkeys all behave as on the byte path.
+static const char evdev_ascii[88][2] = {
+	{ 0, 0 },                                                                            // 0  reserved
+	{ 27, 27 },                                                                          // 1  ESC
+	{ '1', '!' }, { '2', '@' }, { '3', '#' }, { '4', '$' }, { '5', '%' },                // 2-6
+	{ '6', '^' }, { '7', '&' }, { '8', '*' }, { '9', '(' }, { '0', ')' },                // 7-11
+	{ '-', '_' }, { '=', '+' },                                                          // 12-13
+	{ 8, 8 }, { 9, 9 },                                                                  // 14 BkSp, 15 Tab
+	{ 'q', 'Q' }, { 'w', 'W' }, { 'e', 'E' }, { 'r', 'R' }, { 't', 'T' }, { 'y', 'Y' },  // 16-21
+	{ 'u', 'U' }, { 'i', 'I' }, { 'o', 'O' }, { 'p', 'P' },                              // 22-25
+	{ '[', '{' }, { ']', '}' },                                                          // 26-27
+	{ '\r', '\r' },                                                                      // 28 Enter
+	{ 0, 0 },                                                                            // 29 LeftCtrl
+	{ 'a', 'A' }, { 's', 'S' }, { 'd', 'D' }, { 'f', 'F' }, { 'g', 'G' },                // 30-34
+	{ 'h', 'H' }, { 'j', 'J' }, { 'k', 'K' }, { 'l', 'L' },                              // 35-38
+	{ ';', ':' }, { '\'', '"' }, { '`', '~' },                                           // 39-41
+	{ 0, 0 },                                                                            // 42 LeftShift
+	{ '\\', '|' },                                                                       // 43
+	{ 'z', 'Z' }, { 'x', 'X' }, { 'c', 'C' }, { 'v', 'V' }, { 'b', 'B' },                // 44-48
+	{ 'n', 'N' }, { 'm', 'M' },                                                          // 49-50
+	{ ',', '<' }, { '.', '>' }, { '/', '?' },                                            // 51-53
+	{ 0, 0 },                                                                            // 54 RightShift
+	{ '*', '*' },                                                                        // 55 KP*
+	{ 0, 0 },                                                                            // 56 LeftAlt
+	{ ' ', ' ' },                                                                        // 57 Space
+};
+
+// Apply one physical key edge (down=1 press / 0 release). Modifiers update g_evdev_mods; arrows/
+// nav/F-keys map straight to Doom keys; everything else folds to an ASCII byte (honouring Shift/
+// Ctrl) and runs through map_ascii(). All of it dispatches via key_dispatch() (event 1=press,
+// 3=release) so the hold/hotkey/menu logic is shared with the kitty path.
+static void evdev_edge(int code, int down)
+{
+	int           ev = down ? 1 : 3;
+	unsigned char k  = 0, c;
+
+	// Modifiers. Shift = Run + Strafe (held): assert BOTH the engine's Run (KEY_RSHIFT/key_speed)
+	// and Strafe (KEY_RALT/key_strafe) scancodes. Run speeds forward/back; Strafe turns the Left/
+	// Right arrows into strafe (no-op on its own). Both are INTERNAL scancodes fed to the engine --
+	// never a real Alt back to SyncTERM -- so this sidesteps SyncTERM's modifier reservation.
+	// (Physical Alt is only tracked, never forwarded: SyncTERM reserves Alt+arrow [resize] and
+	// Alt+letter [hangup/...] locally, and a held physical Alt would trigger those and lose its
+	// key-up to the resize mode -> a latched-down "freeze".) The Shift bit also gates the fold.
+	switch (code) {
+		case 29: case 97:  if (down)
+				g_evdev_mods |= EVDEV_MOD_CTRL; else
+				g_evdev_mods &= ~EVDEV_MOD_CTRL; return;
+		case 42: case 54:                                // L/R Shift = Run (KEY_RSHIFT) + Strafe (KEY_RALT)
+			if (down)
+				g_evdev_mods |= EVDEV_MOD_SHIFT;
+			else
+				g_evdev_mods &= ~EVDEV_MOD_SHIFT;
+			key_dispatch(KEY_RSHIFT, down ? 1 : 3);
+			key_dispatch(KEY_RALT,   down ? 1 : 3);
+			return;
+		case 56: case 100: if (down)                     // L/R physical Alt: track only (NOT forwarded -- see above)
+				g_evdev_mods |= EVDEV_MOD_ALT; else
+				g_evdev_mods &= ~EVDEV_MOD_ALT; return;
+	}
+
+	// Drop the enable-time held-key resync (see SD_EVDEV_SETTLE_MS): only press edges; releases pass.
+	if (down && g_evdev_settling) {
+		if ((uint32_t)(now_ms() - g_evdev_enabled_ms) < SD_EVDEV_SETTLE_MS)
+			return;
+		g_evdev_settling = 0;
+	}
+
+	switch (code) {                                  // arrows / navigation / function keys
+		case 103: k = KEY_UPARROW;    break;
+		case 108: k = KEY_DOWNARROW;  break;
+		case 105: k = KEY_LEFTARROW;  break;
+		case 106: k = KEY_RIGHTARROW; break;
+		case 102: k = KEY_HOME;       break;
+		case 107: k = KEY_END;        break;
+		case 104: k = KEY_PGUP;       break;
+		case 109: k = KEY_PGDN;       break;
+		case 110: k = KEY_INS;        break;
+		case 111: k = KEY_DEL;        break;
+		case 59:  k = KEY_F1;  break;  case 60: k = KEY_F2;  break;  case 61: k = KEY_F3;  break;
+		case 62:  k = KEY_F4;  break;  case 63: k = KEY_F5;  break;  case 64: k = KEY_F6;  break;
+		case 65:  k = KEY_F7;  break;  case 66: k = KEY_F8;  break;  case 67: k = KEY_F9;  break;
+		case 68:  k = KEY_F10; break;  case 87: k = KEY_F11; break;  case 88: k = KEY_F12; break;
+	}
+	if (k) {
+		key_dispatch(k, ev);
+		return;
+	}
+
+	// The numpad ARROWS (8/2/4/6) alias the main arrows: move/turn in gameplay AND navigate menus
+	// (key_dispatch self-routes menu=tap vs gameplay=hold). Trade-off: can't type 8/2/4/6 from the
+	// numpad in a save name -- rare; the top row + KP5/7/9/1/3/0 still do.
+	{
+		unsigned char nav = 0;
+		switch (code) {
+			case 72: nav = KEY_UPARROW;    break;  // KP8 -> forward / menu-up
+			case 80: nav = KEY_DOWNARROW;  break;  // KP2 -> back / menu-down
+			case 75: nav = KEY_LEFTARROW;  break;  // KP4 -> turn left / menu-left
+			case 77: nav = KEY_RIGHTARROW; break;  // KP6 -> turn right / menu-right
+		}
+		if (nav) {
+			key_dispatch(nav, ev);
+			return;
+		}
+	}
+
+	c = 0;
+	switch (code) {                                  // keypad -> ASCII (assume NumLock; matches kitty PUA folding)
+		case 71: c = '7'; break; case 72: c = '8'; break; case 73: c = '9'; break; case 74: c = '-'; break;
+		case 75: c = '4'; break; case 76: c = '5'; break; case 77: c = '6'; break; case 78: c = '+'; break;
+		case 79: c = '1'; break; case 80: c = '2'; break; case 81: c = '3'; break; case 82: c = '0'; break;
+		case 83: c = '.'; break; case 96: c = '\r'; break; case 98: c = '/'; break;
+	}
+	if (c == 0) {                                    // simple ASCII key via the US-QWERTY table
+		// Shift folds to upper for menu/text entry ONLY -- in gameplay letters stay lowercase so
+		// map_ascii's WASD/action remap still fires while Shift is held for Run (Shift+W = run fwd).
+		int shifted = (g_evdev_mods & EVDEV_MOD_SHIFT) && (menuactive || chat_on);
+		if (code < 0 || code >= (int)(sizeof evdev_ascii / sizeof evdev_ascii[0]))
+			return;
+		c = evdev_ascii[code][shifted ? 1 : 0];
+		if (c == 0)
+			return;
+	}
+	// Ctrl + letter -> its control byte (Ctrl-T pipeline, Ctrl-S stats, Ctrl-O mouse, Ctrl-A..F =
+	// F1..F6, ...) -- the same fold the kitty path applies, so map_ascii's hotkey layer fires.
+	if ((g_evdev_mods & EVDEV_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z')
+		c &= 0x1f;
+	k = map_ascii(c);
+	if (k)
+		key_dispatch(k, ev);
+}
+
+// A physical key report (CSI = Pk[;Pk...]K press / k release): apply every coalesced edge.
+static void evdev_report(int down)
+{
+	const char *p = s_csi_par;
+
+	while (*p && (*p < '0' || *p > '9'))             // skip the leading '=' marker
+		p++;
+	while (*p) {
+		int code = 0;
+		while (*p >= '0' && *p <= '9') { code = code * 10 + (*p - '0'); p++; }
+		evdev_edge(code, down);
+		while (*p && (*p < '0' || *p > '9'))         // skip the ';' separators
+			p++;
 	}
 }
 
@@ -1362,7 +1590,7 @@ static void parse_byte(unsigned char c)
 			// C;L cache-list reply is an APC and literally contains "C;L", so leaking
 			// it as keys typed an 'l' -> Load Game. Must consume, not pass through.)
 			if (c == '_' || c == 'P' || c == ']' || c == '^') {
-				s_pstate = ST_APC; return;
+				s_pstate = ST_APC; s_apc_len = 0; return;
 			}
 			// lone ESC then a byte: treat ESC as Escape, reprocess the byte
 			key_seen(KEY_ESCAPE);
@@ -1372,6 +1600,8 @@ static void parse_byte(unsigned char c)
 		case ST_APC:
 			if (c == 0x1b) { s_pstate = ST_APC_ESC; return; }   // maybe the ST terminator
 			if (c == 0x07) { s_pstate = ST_NORMAL; return; }    // BEL also ends OSC/strings
+			if (++s_apc_len > 1u << 20)
+				s_pstate = ST_NORMAL;                           // unterminated -> bail (no input lockup)
 			return;                                             // swallow body byte
 		case ST_APC_ESC:
 			s_pstate = (c == '\\') ? ST_NORMAL : ST_APC;        // ESC '\' = ST -> done
@@ -1438,9 +1668,17 @@ static void parse_byte(unsigned char c)
 								k = KEY_HOME; break;
 						case 'F': if (g_kitty_active)
 								k = KEY_END; break;
+						case 'K':                            // SyncTERM physical key PRESS report (CSI = <code> K)
+							if (g_evdev_active && s_csi_par[0] == '=')
+								evdev_report(1);
+							break;
+						case 'k':                            // SyncTERM physical key RELEASE report
+							if (g_evdev_active && s_csi_par[0] == '=')
+								evdev_report(0);
+							break;
 						case 'u':                            // kitty key event, or the CSI?u support reply
 							if (s_csi_par[0] == '?') {       // progressive-flags reply -> enable + push our flags
-								if (!g_kitty_active) {
+								if (!g_kitty_active && !g_evdev_active) {   // evdev (if negotiated) takes precedence
 									g_kitty_active = 1;
 									emit_all("\x1b[>11u", 6); // disambiguate | report-events | report-all-keys
 								}
@@ -1449,15 +1687,33 @@ static void parse_byte(unsigned char c)
 								int mod = kitty_mod();
 								int ev  = kitty_event();
 								if (cp > 0) {
+									if (cp == 57441 || cp == 57447) {    // kitty L/R Shift (PUA) = Run + Strafe
+										key_dispatch(KEY_RSHIFT, ev);    // (KEY_RSHIFT + KEY_RALT, both internal;
+										key_dispatch(KEY_RALT, ev);      // see evdev note)
+										break;
+									}
+									// Lone Alt is NOT forwarded -- SyncTERM reserves Alt+key (see evdev note).
+									// Numpad ARROWS alias the main arrows: move/turn in gameplay AND navigate
+									// menus (KP8=57407, KP2=57401, KP4=57403, KP6=57405).
+									{
+										unsigned char nav = (cp == 57407) ? KEY_UPARROW :
+										                    (cp == 57401) ? KEY_DOWNARROW :
+										                    (cp == 57403) ? KEY_LEFTARROW :
+										                    (cp == 57405) ? KEY_RIGHTARROW : 0;
+										if (nav) {
+											key_dispatch(nav, ev);
+											break;
+										}
+									}
 									if (cp >= 57399 && cp <= 57414) {    // numpad PUA -> ASCII
 										static const char kp[] = "0123456789./*-+\r";
 										cp = (unsigned char)kp[cp - 57399];
 									}
 									if ((mod == 5 || mod == 7) &&
 									    ((cp >= 'a' && cp <= 'z') || (cp >= 'A' && cp <= 'Z')))
-										kitty_dispatch(map_ascii((unsigned char)(cp & 0x1f)), ev); // ctrl+letter
+										key_dispatch(map_ascii((unsigned char)(cp & 0x1f)), ev); // ctrl+letter
 									else if (cp < 128)
-										kitty_dispatch(map_ascii((unsigned char)cp), ev);
+										key_dispatch(map_ascii((unsigned char)cp), ev);
 								}
 							}
 							break;
@@ -1474,7 +1730,7 @@ static void parse_byte(unsigned char c)
 				}
 				if (k) {
 					if (g_kitty_active)
-						kitty_dispatch(k, kitty_event());   // real key-up: hold-to-move + native turn
+						key_dispatch(k, kitty_event());   // real key-up: hold-to-move + native turn
 					else
 						key_seen(k);
 				}
@@ -1721,9 +1977,20 @@ static int probe_sixel(void)
 					if (ch == 'c') {
 						int m;
 						if (marker == '?' || marker == '<') {
-							for (m = 0; m < np; m++)
+							for (m = 0; m < np; m++) {
 								if (p[m] == 4)
 									found = 1;       // sixel: DA1 param 4 / CTDA cap 4
+								// CTDA cap 8 = physical key (evdev) reports. Prefer over kitty (a
+								// SyncTERM advertising it doesn't speak kitty): enable reports (=1h)
+								// + suppress translated bytes (=2h) so keys arrive only as the
+								// CSI = <code> K/k edges decoded in evdev_report().
+								if (p[m] == 8 && marker == '<' && !g_evdev_active && !g_kitty_active) {
+									g_evdev_active     = 1;
+									g_evdev_enabled_ms = now_ms();
+									g_evdev_settling   = 1;
+									emit_all("\x1b[=1h\x1b[=2h", 10);
+								}
+							}
 							done = 1;                // definitive answer
 						} else if (np >= 7 && p[0] == 67 && p[1] == 84 &&
 						           p[2] == 101 && p[3] == 114 && p[4] == 109) {
@@ -1792,6 +2059,8 @@ static void terminal_restore(void)
 		emit_all("\x1b[?80h", 6);        // restore default sixel scrolling for the BBS
 	if (g_kitty_active)
 		emit_all("\x1b[<u", 4);          // pop the kitty keyboard flags we pushed
+	if (g_evdev_active)
+		emit_all("\x1b[=2l\x1b[=1l", 10);   // restore translation, disable physical key reports
 	emit_all("\x1b[?7h\x1b[?25h", 11);
 }
 
