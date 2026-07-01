@@ -420,7 +420,7 @@ static size_t syncduke_emit_jxl(const uint8_t *fb, const uint8_t *pal, int w, in
 	n = termgfx_jxl_encode(&syncduke_jxl, &syncduke_jxl_cap, syncduke_rgb, w, h, 2.0f, 1);
 	if (n == 0)
 		return 0;
-	n = termgfx_apc_image(&syncduke_apc, &syncduke_apc_cap, "d.jxl", "DrawJXL",
+	n = termgfx_apc_image(&syncduke_apc, &syncduke_apc_cap, "syncduke_frame.jxl", "DrawJXL",
 	                      syncduke_jxl, n, dx, dy);
 	syncduke_out_put(syncduke_apc, n);
 	return n;

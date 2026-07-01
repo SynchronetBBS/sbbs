@@ -611,7 +611,7 @@ static void emit_frame_ppm(int w, int h)
 	ensure(&s_img, &s_img_cap, need);
 	memcpy(s_img, hdr, hlen);
 	memcpy(s_img + hlen, s_rgb, (size_t)w * h * 3);
-	emit_cached_image("d.ppm", "DrawPPM", s_img, need);
+	emit_cached_image("syncdoom_frame.ppm", "DrawPPM", s_img, need);
 }
 
 // Sixel tier: a complete DECSIXEL image drawn at the home position so each frame
@@ -708,7 +708,7 @@ static bool emit_frame_jxl(int w, int h)
 	size_t n = termgfx_jxl_encode(&s_img, &s_img_cap, s_rgb, w, h, g_jxl_distance, g_jxl_effort);
 	if (n == 0)
 		return false;
-	emit_cached_image("d.jxl", "DrawJXL", s_img, n);
+	emit_cached_image("syncdoom_frame.jxl", "DrawJXL", s_img, n);
 	return true;
 }
 #endif // WITH_JXL
