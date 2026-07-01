@@ -68,18 +68,33 @@ target_link_libraries(termgfx PUBLIC ADLMIDI_static)
 # the very same libsndfile (Deuce bundles it on Windows too as of 2026-06-29).
 # Compile-time gated: found -> TERMGFX_WITH_SNDFILE + OGG encode in audio.c;
 # absent -> raw-PCM WAV fallback (termgfx_audio_have_ogg() == 0).
-find_package(PkgConfig QUIET)
-if(PkgConfig_FOUND)
-    pkg_check_modules(SNDFILE QUIET sndfile)
-endif()
-if(SNDFILE_FOUND)
+#
+# Detection order:
+#   1. find_package(SndFile CONFIG) -- the vcpkg / modern-CMake path. This is the
+#      ONLY way it resolves under MSVC (no pkg-config there), and it chains in
+#      libsndfile's transitive static deps (Vorbis/Ogg/FLAC/Opus) via its own
+#      config package, so we don't enumerate them by hand. Works in both classic
+#      vcpkg mode (CMAKE_PREFIX_PATH -> the installed prefix) and manifest mode.
+#   2. pkg-config -- the usual *nix system-libsndfile path.
+find_package(SndFile CONFIG QUIET)
+if(SndFile_FOUND)
     target_compile_definitions(termgfx PRIVATE TERMGFX_WITH_SNDFILE)
-    target_include_directories(termgfx PRIVATE ${SNDFILE_INCLUDE_DIRS})
-    target_link_libraries(termgfx PUBLIC ${SNDFILE_LIBRARIES})
-    target_link_directories(termgfx PUBLIC ${SNDFILE_LIBRARY_DIRS})
-    message(STATUS "termgfx: libsndfile ${SNDFILE_VERSION} found -> OGG music compression")
+    target_link_libraries(termgfx PUBLIC SndFile::sndfile)
+    message(STATUS "termgfx: libsndfile ${SndFile_VERSION} (CONFIG) found -> OGG music compression")
 else()
-    message(STATUS "termgfx: libsndfile NOT found -> music ships as raw PCM WAV")
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(SNDFILE QUIET sndfile)
+    endif()
+    if(SNDFILE_FOUND)
+        target_compile_definitions(termgfx PRIVATE TERMGFX_WITH_SNDFILE)
+        target_include_directories(termgfx PRIVATE ${SNDFILE_INCLUDE_DIRS})
+        target_link_libraries(termgfx PUBLIC ${SNDFILE_LIBRARIES})
+        target_link_directories(termgfx PUBLIC ${SNDFILE_LIBRARY_DIRS})
+        message(STATUS "termgfx: libsndfile ${SNDFILE_VERSION} (pkg-config) found -> OGG music compression")
+    else()
+        message(STATUS "termgfx: libsndfile NOT found -> music ships as raw PCM WAV")
+    endif()
 endif()
 
 set_property(TARGET termgfx PROPERTY C_STANDARD 11)

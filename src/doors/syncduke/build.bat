@@ -56,13 +56,14 @@ if errorlevel 1 (
     )
 )
 
-rem --- Optional JPEG-XL prefix (classic vcpkg mode) --------------------------
+rem --- Optional vcpkg prefix (classic mode): libjxl + libsndfile -------------
+rem   vcpkg install libjxl:%TRIPLET% libsndfile:%TRIPLET%
 set "PREFIXARG="
 if exist "%VCPKG_PREFIX%" (
     set "PREFIXARG=-DCMAKE_PREFIX_PATH=%VCPKG_PREFIX%"
-    echo [build] JPEG-XL: using vcpkg prefix %VCPKG_PREFIX%
+    echo [build] vcpkg prefix %VCPKG_PREFIX% ^(libjxl / libsndfile if installed^)
 ) else (
-    echo [build] JPEG-XL: vcpkg prefix not found ^(%VCPKG_PREFIX%^); building sixel/text tiers only
+    echo [build] vcpkg prefix not found ^(%VCPKG_PREFIX%^); sixel/text tiers, raw-PCM music
 )
 
 rem --- Clean if requested ----------------------------------------------------

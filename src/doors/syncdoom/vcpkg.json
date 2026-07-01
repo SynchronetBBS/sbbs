@@ -1,12 +1,13 @@
 {
-  "$comment": "Optional dependencies for the JPEG XL graphics tier, resolved by vcpkg in manifest mode. This file is only consulted when CMake is configured with the vcpkg toolchain (-DCMAKE_TOOLCHAIN_FILE=.../vcpkg.cmake); a plain cmake build ignores it. See COMPILING.md. The *nix build normally uses a system libjxl via pkg-config instead and needs none of this.",
+  "$comment": "Optional dependencies for the JPEG XL graphics tier and the libsndfile OGG-music tier, resolved by vcpkg in manifest mode. This file is only consulted when CMake is configured with the vcpkg toolchain (-DCMAKE_TOOLCHAIN_FILE=.../vcpkg.cmake); a plain cmake build ignores it. See COMPILING.md. The *nix build normally uses system libjxl + libsndfile via pkg-config instead and needs none of this. NOTE: the MinGW-GCC libsndfile vendored in 3rdp/ (for SyncTERM) cannot link into this MSVC door -- an MSVC-native build (vcpkg, here) is required.",
   "name": "syncdoom",
   "version": "0.1",
   "description": "Doom for Synchronet / SyncTERM (DOOR32.SYS BBS door)",
   "homepage": "https://gitlab.synchro.net/main/sbbs",
   "license": "GPL-2.0-only",
   "dependencies": [
-    "libjxl"
+    "libjxl",
+    "libsndfile"
   ],
   "builtin-baseline": "46c9f8d8398360278222d335c28bceb776ebb61f",
   "overrides": [
