@@ -1386,6 +1386,32 @@ static int kitty_mod(void)
 	return p ? (atoi(p + 1) ? atoi(p + 1) : 1) : 1;
 }
 
+// kitty reports the numpad with two DIFFERENT codepoint sets depending on NumLock:
+//   NumLock ON  -> the DIGIT keys      KP_0..KP_9 / KP_. / KP_ENTER  (57399..57414)
+//   NumLock OFF -> the FUNCTION keys   KP_LEFT/RIGHT/UP/DOWN/HOME/END/PGUP/PGDN/INSERT/DELETE
+//                                      (57417..57426; KP_BEGIN=57427 arrives as CSI E, handled there)
+// Terminals differ on NumLock state (foot with NumLock off sends the function set; Contour was
+// tested NumLock on), so fold the function codepoint back to its physical digit-key codepoint and
+// let the one keypad map serve both -- numpad keys behave identically regardless of NumLock.
+// (Ground truth: foot 1.62.2.)
+static int kitty_kp_normalize(int cp)
+{
+	switch (cp) {
+		case 57417: return 57403;   // KP_LEFT    -> KP_4
+		case 57418: return 57405;   // KP_RIGHT   -> KP_6
+		case 57419: return 57407;   // KP_UP      -> KP_8
+		case 57420: return 57401;   // KP_DOWN    -> KP_2
+		case 57421: return 57408;   // KP_PAGE_UP -> KP_9
+		case 57422: return 57402;   // KP_PAGE_DN -> KP_3
+		case 57423: return 57406;   // KP_HOME    -> KP_7
+		case 57424: return 57400;   // KP_END     -> KP_1
+		case 57425: return 57399;   // KP_INSERT  -> KP_0
+		case 57426: return 57409;   // KP_DELETE  -> KP_.
+		case 57427: return 57404;   // KP_BEGIN   -> KP_5 (defensive; foot sends CSI E for this)
+	}
+	return cp;
+}
+
 // Dispatch a key event from any path with a real key-up (kitty protocol, SyncTERM evdev). ev:
 // 1=press, 2=repeat, 3=release. Door hotkeys fire on a fresh press (key_seen handles them); game
 // keys get explicit key-down/up so movement holds and Doom's own turn ramp runs -- bypassing the
@@ -1544,6 +1570,21 @@ static void evdev_edge(int code, int down)
 		}
 	}
 
+	// In a MENU/text context the numpad's gray NAV labels apply: KP7/KP1/KP9/KP3 drive
+	// Home/End/PgUp/PgDn like the main nav keys -- numpad Home/End jump to first/last item --
+	// instead of folding to a digit.  In gameplay they stay digits (below).  (SyncTERM sends the
+	// physical keypad scancode NumLock-agnostic, so this is the evdev twin of the kitty menu path.)
+	if (menuactive || chat_on) {
+		unsigned char msc = (code == 71) ? KEY_HOME :   // KP7
+		                    (code == 79) ? KEY_END  :   // KP1
+		                    (code == 73) ? KEY_PGUP :   // KP9
+		                    (code == 81) ? KEY_PGDN : 0; // KP3
+		if (msc) {
+			key_dispatch(msc, ev);
+			return;
+		}
+	}
+
 	c = 0;
 	switch (code) {                                  // keypad -> ASCII (assume NumLock; matches kitty PUA folding)
 		case 71: c = '7'; break; case 72: c = '8'; break; case 73: c = '9'; break; case 74: c = '-'; break;
@@ -1681,6 +1722,10 @@ static void parse_byte(unsigned char c)
 								k = KEY_HOME; break;
 						case 'F': if (g_kitty_active)
 								k = KEY_END; break;
+						case 'E':                            // numpad-5, NumLock off = KP_Begin -> '5' (matches NumLock-on KP5)
+							if (g_kitty_active)
+								k = map_ascii('5');
+							break;
 						case 'K':                            // SyncTERM physical key PRESS report (CSI = <code> K)
 							if (g_evdev_active && s_csi_par[0] == '=')
 								evdev_report(1);
@@ -1706,6 +1751,21 @@ static void parse_byte(unsigned char c)
 										break;
 									}
 									// Lone Alt is NOT forwarded -- SyncTERM reserves Alt+key (see evdev note).
+									// In a MENU/text context the NumLock-off nav cluster does its NAV function
+									// (KEY_HOME/END/PGUP/PGDN) like the main nav keys -- numpad Home/End jump to the
+									// first/last item -- instead of folding to a digit.  In gameplay it falls through
+									// to the digit fold below (matches the evdev numpad, always its digit).
+									if (menuactive || chat_on) {
+										unsigned char msc = (cp == 57423) ? KEY_HOME :   // numpad-7
+										                    (cp == 57424) ? KEY_END  :   // numpad-1
+										                    (cp == 57421) ? KEY_PGUP :   // numpad-9
+										                    (cp == 57422) ? KEY_PGDN : 0; // numpad-3
+										if (msc) {
+											key_dispatch(msc, ev);
+											break;
+										}
+									}
+									cp = kitty_kp_normalize(cp);   // NumLock-OFF numpad function -> physical digit-key codepoint
 									// Numpad ARROWS alias the main arrows: move/turn in gameplay AND navigate
 									// menus (KP8=57407, KP2=57401, KP4=57403, KP6=57405).
 									{

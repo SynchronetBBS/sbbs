@@ -156,6 +156,44 @@ int main(void)
 	{ char b5 = '5'; feed("\x1b[57404u"); syncduke_input_pump(pp[0], 32, 0);
 	  chk("KP5 (menu) -> '5'", syncduke_input_pop_raw(), syncduke_map_key(&b5, 1, 0)); }
 
+	/* --- NumLock OFF: foot (and other kitty terminals) report the numpad by its FUNCTION
+	 *     codepoint (KP_UP/DOWN/LEFT/RIGHT=57419/20/17/18, KP_HOME/PGUP/END/PGDN=57423/21/24/22,
+	 *     KP_INSERT/DELETE=57425/26, KP_BEGIN via CSI E) instead of the NumLock-ON digit PUA.
+	 *     Must behave IDENTICALLY to NumLock ON. (Ground truth: ~/kitty_capture.log, foot 1.62.2.) */
+	syncduke_input_reset();
+	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
+	feed("\x1b[57419;1:1u"); syncduke_input_pump(pp[0], 40, 1);   /* numpad-8 = KP_UP    -> forward */
+	chk("KP_UP -> UpArrow",     syncduke_input_pop_raw(), sc_UpArrow);
+	feed("\x1b[57420;1:1u"); syncduke_input_pump(pp[0], 41, 1);   /* numpad-2 = KP_DOWN  -> back */
+	chk("KP_DOWN -> DownArrow", syncduke_input_pop_raw(), sc_DownArrow);
+	syncduke_input_reset();
+	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
+	feed("\x1b[57417;1:1u"); syncduke_input_pump(pp[0], 42, 1);   /* numpad-4 = KP_LEFT  -> turn left */
+	chk("KP_LEFT -> LeftArrow", syncduke_input_pop_raw(), sc_LeftArrow);
+	syncduke_input_reset();
+	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
+	feed("\x1b[57418;1:1u"); syncduke_input_pump(pp[0], 43, 1);   /* numpad-6 = KP_RIGHT -> turn right */
+	chk("KP_RIGHT -> RightArrow", syncduke_input_pop_raw(), sc_RightArrow);
+	syncduke_input_reset();
+	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
+	feed("\x1b[57425;1:1u"); syncduke_input_pump(pp[0], 44, 1);   /* numpad-0 = KP_INSERT -> Look_Left */
+	chk("KP_INSERT -> kpad_0",  syncduke_input_pop_raw(), sc_kpad_0);
+	feed("\x1b[57426;1:1u"); syncduke_input_pump(pp[0], 45, 1);   /* numpad-. = KP_DELETE -> Look_Right */
+	chk("KP_DELETE -> kpad_Period", syncduke_input_pop_raw(), sc_kpad_Period);
+	feed("\x1b[E");          syncduke_input_pump(pp[0], 46, 1);   /* numpad-5 = KP_BEGIN (CSI E) -> Center */
+	chk("KP_BEGIN(CSI E) -> kpad_5", syncduke_input_pop_raw(), sc_kpad_5);
+	/* In a MENU the NumLock-OFF nav cluster does its NAV function like the main keys:
+	 * numpad Home/End (KP_HOME/KP_END) jump to the first/last item (sc_Home/sc_End). */
+	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
+	feed("\x1b[57423;1:1u"); syncduke_input_pump(pp[0], 47, 0);   /* numpad-7 = KP_HOME -> first item */
+	chk("KP_HOME (menu) -> first", syncduke_input_pop_raw(), sc_Home);
+	feed("\x1b[57424;1:1u"); syncduke_input_pump(pp[0], 48, 0);   /* numpad-1 = KP_END  -> last item */
+	chk("KP_END (menu) -> last",  syncduke_input_pop_raw(), sc_End);
+	/* In GAMEPLAY the same physical key is still the digit-folded view control (KP_HOME -> '7'),
+	 * unchanged and matching the evdev path. */
+	{ char b7 = '7'; feed("\x1b[57423;1:1u"); syncduke_input_pump(pp[0], 49, 1);
+	  chk("KP_HOME (gameplay) -> '7'", syncduke_input_pop_raw(), syncduke_map_key(&b7, 1, 1)); }
+
 	printf(fails ? "\n%d FAILURE(S)\n" : "\nALL PASS\n", fails);
 	return fails != 0;
 }

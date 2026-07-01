@@ -179,6 +179,28 @@ int main(void)
 	  chk("KP5 (menu) -> '5'", syncduke_input_pop_raw(), syncduke_map_key(&b5, 1, 0)); }
 	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
 
+	/* Numpad Home/End (KP7=71, KP1=79) navigate MENUS like the dedicated Home/End keys -- first/last
+	 * item -- instead of folding to a digit (SyncTERM sends the keypad scancode NumLock-agnostic).
+	 * KP9/KP3 (PgUp/PgDn) do nothing in a menu, like the main PgUp/PgDn. */
+	syncduke_input_reset();
+	feed("\x1b[=71K");        syncduke_input_pump(pp[0], 16, 0);   /* KP7 in a MENU -> first item */
+	chk("KP7 (menu) -> first", syncduke_input_pop_raw(), sc_Home);
+	feed("\x1b[=79K");        syncduke_input_pump(pp[0], 16, 0);   /* KP1 in a MENU -> last item */
+	chk("KP1 (menu) -> last", syncduke_input_pop_raw(), sc_End);
+	feed("\x1b[=73K");        syncduke_input_pump(pp[0], 16, 0);   /* KP9 in a MENU -> nothing */
+	chk("KP9 (menu): no rawq", syncduke_input_has_raw(), 0);
+	feed("\x1b[=81K");        syncduke_input_pump(pp[0], 16, 0);   /* KP3 in a MENU -> nothing */
+	chk("KP3 (menu): no rawq", syncduke_input_has_raw(), 0);
+	/* GAMEPLAY unchanged: KP7 -> Aim_Up (sc_kpad_7), KP1 -> Aim_Down (sc_kpad_1). */
+	syncduke_input_reset();
+	feed("\x1b[=71K");        syncduke_input_pump(pp[0], 16, 1);
+	chk("KP7 (game) -> Aim_Up", syncduke_input_pop_raw(), sc_kpad_7);
+	syncduke_input_reset();
+	feed("\x1b[=79K");        syncduke_input_pump(pp[0], 16, 1);
+	chk("KP1 (game) -> Aim_Down", syncduke_input_pop_raw(), sc_kpad_1);
+	syncduke_input_reset();
+	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
+
 	/* Function keys (evdev F1=59 .. F7=65): F1 help, F2/F3 save/load, F4 tier, F7 chase. */
 	syncduke_help_request = 0;
 	feed("\x1b[=59K");        syncduke_input_pump(pp[0], 17, 1);   /* F1 -> help */

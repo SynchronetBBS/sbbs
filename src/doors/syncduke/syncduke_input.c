@@ -649,6 +649,32 @@ static int kitty_release_event(void)
 	return e == 3;
 }
 
+/* kitty reports the numpad with two DIFFERENT codepoint sets depending on NumLock:
+ *   NumLock ON  -> the DIGIT keys      KP_0..KP_9 / KP_. / KP_ENTER   (57399..57414)
+ *   NumLock OFF -> the FUNCTION keys   KP_LEFT/RIGHT/UP/DOWN/HOME/END/PGUP/PGDN/INSERT/DELETE
+ *                                      (57417..57426; KP_BEGIN=57427 arrives as CSI E, handled there)
+ * Terminals differ on NumLock state (foot with NumLock off sends the function set; Contour was
+ * tested NumLock on), so fold the function codepoint back to its physical digit-key codepoint and
+ * let the one keypad map below serve both -- numpad keys then behave identically regardless of
+ * NumLock.  (Ground truth: foot 1.62.2, ~/kitty_capture.log.) */
+static int kitty_kp_normalize(int cp)
+{
+	switch (cp) {
+		case 57417: return 57403;   /* KP_LEFT   -> KP_4 */
+		case 57418: return 57405;   /* KP_RIGHT  -> KP_6 */
+		case 57419: return 57407;   /* KP_UP     -> KP_8 */
+		case 57420: return 57401;   /* KP_DOWN   -> KP_2 */
+		case 57421: return 57408;   /* KP_PAGE_UP-> KP_9 */
+		case 57422: return 57402;   /* KP_PAGE_DN-> KP_3 */
+		case 57423: return 57406;   /* KP_HOME   -> KP_7 */
+		case 57424: return 57400;   /* KP_END    -> KP_1 */
+		case 57425: return 57399;   /* KP_INSERT -> KP_0 */
+		case 57426: return 57409;   /* KP_DELETE -> KP_. */
+		case 57427: return 57404;   /* KP_BEGIN  -> KP_5 (defensive; foot sends CSI E for this) */
+	}
+	return cp;
+}
+
 /* Dispatch one decoded key byte to its action.  `kev` selects the input model:
  *   0 = legacy byte path  -> press() with an auto-release timeout (terminal gives no key-up)
  *   1 = kitty press, 2 = kitty repeat, 3 = kitty release
@@ -838,8 +864,8 @@ static void evdev_edge(int code, int down, int gameplay, int now)
 		 * evdev has real key-up.  In menus the numpad folds to a digit; Home/End -> first/last item. */
 		case 104: if (gameplay) { look_hold(sc_kpad_9, down ? 1 : 3); return; } return;   /* PgUp -> Look up */
 		case 109: if (gameplay) { look_hold(sc_kpad_3, down ? 1 : 3); return; } return;   /* PgDn -> Look down */
-		case 73:  if (gameplay) { look_hold(sc_kpad_9, down ? 1 : 3); return; } break;    /* KP9 -> Look up / digit '9' */
-		case 81:  if (gameplay) { look_hold(sc_kpad_3, down ? 1 : 3); return; } break;    /* KP3 -> Look down / digit '3' */
+		case 73:  if (gameplay) { look_hold(sc_kpad_9, down ? 1 : 3); return; } return;   /* KP9 -> Look up / (menu: nothing, like PgUp) */
+		case 81:  if (gameplay) { look_hold(sc_kpad_3, down ? 1 : 3); return; } return;   /* KP3 -> Look down / (menu: nothing, like PgDn) */
 		case 102: if (gameplay) { look_hold(sc_kpad_7, down ? 1 : 3); return; }           /* Home -> Aim up / first item */
 			if (down)
 				press(sc_Home, now);
@@ -848,8 +874,14 @@ static void evdev_edge(int code, int down, int gameplay, int now)
 			if (down)
 				press(sc_End, now);
 			return;
-		case 71:  if (gameplay) { look_hold(sc_kpad_7, down ? 1 : 3); return; } break;    /* KP7 -> Aim up / digit '7' */
-		case 79:  if (gameplay) { look_hold(sc_kpad_1, down ? 1 : 3); return; } break;    /* KP1 -> Aim down / digit '1' */
+		case 71:  if (gameplay) { look_hold(sc_kpad_7, down ? 1 : 3); return; }           /* KP7 -> Aim up / Home (first item) */
+			if (down)
+				press(sc_Home, now);
+			return;
+		case 79:  if (gameplay) { look_hold(sc_kpad_1, down ? 1 : 3); return; }           /* KP1 -> Aim down / End (last item) */
+			if (down)
+				press(sc_End, now);
+			return;
 		case 59:  if (down && gameplay)
 				syncduke_help_request = 1; return;                               /* F1 -> GAME CONTROLS help */
 		case 60:  if (down)
@@ -957,6 +989,20 @@ static void csi_final(char fin, int gameplay, int now)
 					syncduke_pitch_step--;
 			}
 			return;
+		case 'E':                                          /* numpad-5 with NumLock off = KP_Begin (CSI E) -> Center_View */
+			if (gameplay) {                                /* held, like the NumLock-on KP5 (57404) path */
+				if (!g_kitty_active)
+					press(sc_kpad_5, now);
+				else {
+					int m, e;
+					kitty_key(&m, &e);
+					if (e == 3)
+						hold_release(sc_kpad_5);
+					else
+						hold_press(sc_kpad_5);
+				}
+			}
+			return;                                        /* in a menu numpad-5 has no digit meaning here -- ignore */
 		case 'H':                                          /* Home -> Aim up (native) / Center (byte) / first item (menu) */
 			if (gameplay) {
 				if (g_kitty_active) { int m, e; kitty_key(&m, &e); look_hold(sc_kpad_7, e); return; }
@@ -1069,6 +1115,22 @@ static void csi_final(char fin, int gameplay, int now)
 					return;
 				}
 				/* Lone Alt is NOT forwarded as Strafe -- SyncTERM reserves Alt+key (see evdev note). */
+				/* In a MENU, the NumLock-off nav cluster does its NAV function (like the main
+				 * Home/End/PgUp/PgDn), not a digit: numpad Home/End jump to first/last item.  In
+				 * GAMEPLAY it falls through to the digit fold below, so the numpad view controls are
+				 * unchanged (and match the evdev path, where the numpad is always its digit). */
+				if (!gameplay) {
+					int msc = (cp == 57423) ? sc_Home :        /* KP_HOME -> first item */
+					          (cp == 57424) ? sc_End  : 0;     /* KP_END  -> last item  */
+					if (msc) {
+						if (ev != 3)                           /* press/repeat only; ignore key-up */
+							press(msc, now);
+						return;
+					}
+					if (cp == 57421 || cp == 57422)            /* KP_PgUp/PgDn: nothing in menus, like the main keys */
+						return;
+				}
+				cp = kitty_kp_normalize(cp);            /* NumLock-OFF numpad function -> physical digit-key codepoint */
 				/* Numpad ARROWS alias the main arrows: move/turn in gameplay AND navigate menus.
 				 * (kitty keypad PUA: KP0=57399, so KP2=57401 KP4=57403 KP6=57405 KP8=57407.) */
 				{
