@@ -30,17 +30,19 @@ status), and the text-tier legibility fallback. Findings are evidence-backed wit
 | Text tier (block glyphs) | half-block + blocks&shades + quadrant + sextant | half-block + blocks&shades **only** (quadrant/sextant defined but unreachable) |
 | Client charset detection (UTF-8 vs CP437) | Yes — `terminal.ini` / `-charset`; offers Unicode tiers on UTF-8 | **No** — hardcoded CP437; never uses a UTF-8/Unicode tier even on a UTF-8 terminal |
 | half-block vs blocks&shades appearance | Nearly identical | Visibly different (blocks tier is coarser/shade-dithered) |
-| Legible message overlays | **Strong** — Doom HUD/chat/pages redrawn as *real* ANSI chars over any tier | **Partial** — door's own overlays (splash, tier label, stats) are ANSI text; game HUD/menus stay block-rendered |
+| Legible message overlays | **Strong** — Doom HUD/chat/pages redrawn as *real* ANSI chars over any tier | **Yes** — game quotes/chat redrawn as ANSI in text tiers (`6aeadc2978`); door overlays already ANSI; game *menus* still block-rendered |
 
 **One-line takeaway:** Both doors are BBS-native: each ships a Synchronet JS
 **lobby** (Create/Join co-op, registry-based cross-node discovery, a waiting room,
 and node paging) built on the shared `exec/load/game_lobby.js`. SyncDOOM is the
 more *mature* one — its matches scale to `MAXPLAYERS` with a dedicated server and
 deathmatch modes, it has a wadset picker, a door-written **events log** driving a
-lobby activity feed, and in-game who's-online/paging + a legible-text HUD overlay.
-SyncDuke's lobby is real but its co-op is strictly **2-player LAN**, it has no
-events feed, and the C door doesn't wire up the in-game node-social features (which
-the shared `termgfx` library already provides).
+lobby activity feed, and in-game who's-online/paging. SyncDuke's lobby is real but
+its co-op is strictly **2-player LAN**, it has no events feed, and the C door
+doesn't wire up the in-game who's-online/paging (which the shared `termgfx` library
+already provides). The two are now at parity on the **legible text-tier message
+overlay** (SyncDuke gained it in `6aeadc2978`) — game quotes/chat render as real
+ANSI on block terminals in both.
 
 ---
 
@@ -173,7 +175,13 @@ sixel nor JXL (e.g. conhost), so nobody gets a blank screen.
 **SyncDuke.**
 - Tiers `SD_SIXEL/JXL/SIXEL_FULL/HALF/BLOCKS/QUADRANT/SEXTANT` (`syncduke_io.c:367`), `sd_is_text_tier(t)=t>=SD_HALF` (`:369`). Auto-select falls to `SD_HALF` when the probe shows no sixel/JXL (`:574-585`); 500 ms grace so conhost never sees a sixel frame (`:559-561`). Block render via `rt_render_frame` (`:429-434, 1027-1035`). Documented `README.md:34-38`.
 - **Door overlays are legible ANSI text:** loading splash (`syncduke_door.c:71-73`), centered tier/depth label `syncduke_show_label()` (`syncduke_io.c:593-618`), live stats strip `syncduke_emit_overlay()` (`:795`).
-- **Gap A — game text not made legible:** SyncDuke does **not** extract the game's own HUD/menus/messages into legible characters — Duke's in-game text stays block-rendered on the text tier. Only the door's own overlays are true ANSI text. SyncDOOM's HUD/chat/page-message legibility overlay has no SyncDuke equivalent.
+- **Gap A — RESOLVED (`6aeadc2978`):** SyncDuke now redraws the game's own on-screen
+  **quotes and multiplayer chat** as real ANSI characters in a text tier — `operatefta()`
+  captures the strings (instead of rasterising the block font) and the door overlays them,
+  cell-diff-excluded, over the block frame (matching SyncDOOM's HUD/chat approach). The
+  same commit skips the two illegible exit "order" splashes in text tiers. Remaining vs
+  SyncDOOM: Duke's **menus** (New Game, options, etc.) still block-render, and the door's
+  own overlays (splash/tier label/stats) were already ANSI.
 
 ### 4a. Text-tier divergence — SyncDuke has no Unicode tier, and its two block tiers look different
 
@@ -229,9 +237,10 @@ confirmed in code.)*
    already implements who's-online, paging, page-receipt, and `NODE_EXT`
    presence; SyncDOOM shows the wiring. SyncDuke just needs to call them
    (Ctrl-U / Ctrl-P handlers, an exit-time status clear, a presence string).
-2. **Legible in-game message overlay.** Port SyncDOOM's text-tier HUD/chat
-   redraw (cell-diff exclusion + real-char draw) so Duke's messages are readable
-   on conhost/text terminals, not just the door's own overlays.
+2. **Legible in-game message overlay — DONE (`6aeadc2978`).** Duke's quotes and
+   multiplayer chat now redraw as real ANSI characters on text terminals (cell-diff
+   exclusion + real-char draw), plus the illegible exit splashes are skipped. Only
+   Duke's *menus* remain block-rendered — a further step if wanted.
 2a. **Client charset detection + Unicode tiers (Gap B).** SyncDuke hardcodes
    `RT_CP437` and never reads the client charset, so its quadrant/sextant tiers
    are unreachable even on UTF-8 terminals. Port SyncDOOM's `terminal.ini`
@@ -261,10 +270,12 @@ confirmed in code.)*
 
 ## Caveats / provenance
 
-- No `syncduke.ini`/`syncdoom.ini` (nor `syncduke.example.ini`) is committed in
-  either door tree (glob confirms none); config keys cited come from the parsing
-  code (`syncduke_config.c`) and the docs' template descriptions. Templates ship
-  via the JS installer.
+- The config **templates** `xtrn/<door>/{syncduke,syncdoom}.example.ini` ARE
+  committed (tracked in git); the live per-BBS `syncduke.ini`/`syncdoom.ini` are
+  per-install (untracked, seeded from the example by `install-xtrn`). Config keys
+  cited come from those templates and the parsing code (`syncduke_config.c`). (An
+  earlier draft wrongly said no example.ini was committed — it globbed only
+  `src/doors/**`, but the templates live under `xtrn/`.)
 - **Both doors ship a JavaScript lobby** (`xtrn/<door>/lobby.js` + `*_lib.js` on
   the shared `exec/load/game_lobby.js`); much node coordination lives there, not in
   the C door. SyncDOOM's wadset picker, events feed, and federation are variously
