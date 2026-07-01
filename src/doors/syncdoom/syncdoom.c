@@ -3102,8 +3102,7 @@ static void toggle_stats(void)
 // brief centered label confirms it. (Inert flag-flip on a non-mouse terminal.)
 static void toggle_mouse(void)
 {
-	char line[48], buf[160];
-	int  pad, n;
+	extern void sd_hud_message(const char *msg);   // g_game.c: Doom's in-game message widget
 
 	if (g_mouse_mode == MOUSE_OFF) {
 		g_mouse_mode    = MOUSE_ON;
@@ -3117,13 +3116,9 @@ static void toggle_mouse(void)
 		emit_all("\x1b[?1003l\x1b[?1006l", 16);
 	}
 	sd_save_user_prefs();
-	snprintf(line, sizeof(line), "  MOUSE %s  ", g_mouse_mode == MOUSE_OFF ? "OFF" : "ON");
-	pad = (overlay_cols() - (int)strlen(line)) / 2;
-	if (pad < 0)
-		pad = 0;
-	n = snprintf(buf, sizeof(buf), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", pad + 1, line);
-	emit_all(buf, n);
-	g_label_until = now_ms() + 700;
+	// Confirm via Doom's own HUD message (game font, no frame pause) rather than a terminal overlay,
+	// so it matches "you got the shotgun" and doesn't stall the graphics like the old label popup.
+	sd_hud_message(g_mouse_mode == MOUSE_OFF ? "MOUSE OFF" : "MOUSE ON");
 	dlog("mouse steering -> %s", g_mouse_mode == MOUSE_OFF ? "off" : "on");
 }
 

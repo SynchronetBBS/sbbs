@@ -2384,6 +2384,14 @@ int sd_check_death(int *cause, int *by)
     return 1;
 }
 
+// SyncDOOM: flash an in-game HUD message (Doom's pickup-message widget) from door-level code.  The
+// Ctrl-O mouse toggle uses this so its confirmation renders in the game font -- block graphics in
+// graphics tiers, text in text tiers, like "you got the shotgun" -- with NO frame pause.
+void sd_hud_message(const char *msg)
+{
+    players[consoleplayer].message = (char *)msg;   // HU_Ticker reads it next tic; never writes it
+}
+
 // Total frags scored by the console player this game.
 int sd_total_frags(void)
 {

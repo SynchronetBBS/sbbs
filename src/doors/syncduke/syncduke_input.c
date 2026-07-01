@@ -580,7 +580,7 @@ void syncduke_mouse_toggle(void)
 	g_mouse_on = !g_mouse_on;
 	syncduke_mouse_turn = 0;
 	syncduke_mouse_fire = 0;
-	syncduke_mouse_msg = 1;        /* engine flashes "MOUSE STEERING ON/OFF" next gameplay frame */
+	syncduke_mouse_msg = 1;        /* engine flashes "MOUSE ON/OFF" next gameplay frame */
 	g_mouse_have = 0;
 	g_mouse_buttons = 0;
 	/* syncduke_io.c reconciles the terminal's SGR-tracking enable with g_mouse_on. */

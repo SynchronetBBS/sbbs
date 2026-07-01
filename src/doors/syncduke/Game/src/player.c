@@ -1865,7 +1865,7 @@ void getinput(short snum)
 		if(syncduke_mouse_msg)
 		{
 			syncduke_mouse_msg = 0;
-			sprintf(fta_quotes[122],"MOUSE STEERING %s", syncduke_mouse_enabled()?"ON":"OFF");
+			sprintf(fta_quotes[122],"MOUSE %s", syncduke_mouse_enabled()?"ON":"OFF");
 			vscrn();
 			FTA(122,&ps[screenpeek],1);
 		}
