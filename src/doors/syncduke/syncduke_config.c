@@ -54,6 +54,7 @@
 #include "ini_file.h"   /* xpdev: iniReadFile / iniGetString */
 #include "dirwrap.h"    /* xpdev: mkpath() (recursive mkdir) */
 #include "sbbs_node.h"  /* termgfx: sbbs_my_node() -- current node # from SBBSNNUM */
+#include "audio_mgr.h"  /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
 
 /* Shared, read-only GRP directory (absolute), consulted by the engine's findGRPToUse()
  * (Game/src/game.c).  Deliberately separate from the process CWD: when launched as a door
@@ -87,6 +88,12 @@ int syncduke_jxl_scale_max(void) { return syncduke_scale_max; }
  * window).  Clamped to [320, 1024] (the encoded buffer's hard ceiling). */
 static int syncduke_sixel_w = 1024;
 int syncduke_sixel_max_w(void) { return syncduke_sixel_w; }
+
+/* Ogg/Opus VBR quality (0..1) for encoded music -- higher = fuller/cleaner + larger
+ * upload. syncduke.ini [audio] music_quality; default TERMGFX_MUSIC_QUALITY_DEFAULT.
+ * Applied to the termgfx audio manager at init (syncduke_io.c). */
+static double syncduke_music_q = TERMGFX_MUSIC_QUALITY_DEFAULT;
+double syncduke_music_quality(void) { return syncduke_music_q; }
 
 /* [video] use_cell_size (default true): when the terminal didn't report exact pixels
  * (ESC[14t), estimate its window from the reported cell size (ESC[16t) instead of an
@@ -192,6 +199,7 @@ static void syncduke_config_init(int argc, char **argv)
 		if (syncduke_sixel_w > 1024)
 			syncduke_sixel_w = 1024;                            /* the encoded buffer's hard ceiling */
 		syncduke_use_cell_size = iniGetBool(ini, "video", "use_cell_size", TRUE);
+		syncduke_music_q = iniGetFloat(ini, "audio", "music_quality", TERMGFX_MUSIC_QUALITY_DEFAULT);
 		if (charset_force < 0) {                            /* -charset on the command line takes precedence */
 			char cs[INI_MAX_VALUE_LEN];
 			iniGetString(ini, "video", "charset", "auto", cs);   /* auto | utf8 | cp437 */

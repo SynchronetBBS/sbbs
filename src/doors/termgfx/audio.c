@@ -132,11 +132,11 @@ size_t termgfx_audio_cache_pcm(uint8_t **buf, size_t *cap, const char *file,
 	return n;
 }
 
-// ---- OGG/Vorbis encode (optional, libsndfile) ----------------------------
+// ---- Ogg/Opus encode (optional, libsndfile) ------------------------------
 
 #ifdef TERMGFX_WITH_SNDFILE
 
-// libsndfile virtual-I/O sink: it writes the encoded OGG into a growing malloc
+// libsndfile virtual-I/O sink: it writes the encoded Ogg into a growing malloc
 // buffer instead of a file, so we can base64 it straight into a C;S Store.
 struct memsink {
 	uint8_t *data;
@@ -198,10 +198,13 @@ static sf_count_t ms_write(const void *ptr, sf_count_t n, void *u)
 
 int termgfx_audio_have_ogg(void) { return 1; }
 
-// Encode 16-bit PCM (`channels`, `rate`) to an OGG/Vorbis stream in memory.
+// Encode 16-bit PCM (`channels`, `rate`) to an Ogg/Opus stream in memory.
 // Returns a malloc'd buffer in *out (caller frees) + its length, or 0 on failure.
+// libsndfile's Opus encoder accepts only 8k/12k/16k/24k/48k `rate` (48000 is the
+// natural choice: Opus is internally 48 kHz); an unsupported rate makes sf_open
+// fail and this returns 0 (the caller then falls back to raw-PCM WAV).
 // Split out of cache_ogg so the door-side disk cache and the C;S upload share one
-// encode (the OGG bytes get written to disk AND base64'd to the client).
+// encode (the Ogg bytes get written to disk AND base64'd to the client).
 size_t termgfx_audio_encode_ogg(const int16_t *pcm, size_t frames, int channels,
                                 int rate, double quality, uint8_t **out)
 {
@@ -214,7 +217,7 @@ size_t termgfx_audio_encode_ogg(const int16_t *pcm, size_t frames, int channels,
 	memset(&info, 0, sizeof(info));
 	info.samplerate = rate;
 	info.channels   = channels;
-	info.format     = SF_FORMAT_OGG | SF_FORMAT_VORBIS;
+	info.format     = SF_FORMAT_OGG | SF_FORMAT_OPUS;
 	if (!sf_format_check(&info))
 		return 0;
 	sf = sf_open_virtual(&vio, SFM_WRITE, &info, &sink);
@@ -226,8 +229,8 @@ size_t termgfx_audio_encode_ogg(const int16_t *pcm, size_t frames, int channels,
 	if (quality > 1.0)
 		quality = 1.0;
 	sf_command(sf, SFC_SET_VBR_ENCODING_QUALITY, &quality, sizeof(quality));
-	// Write in chunks: a single multi-million-frame sf_writef_short crashes deep
-	// in libvorbis (vorbis_analysis buffer), so feed it a bounded window at a time.
+	// Write in chunks: a single multi-million-frame sf_writef_short can crash deep
+	// in the codec's analysis buffer, so feed it a bounded window at a time.
 	{
 		size_t off;
 		for (off = 0; off < frames; ) {

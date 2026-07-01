@@ -149,6 +149,7 @@ static int      g_text_cols = 80;      // effective text-render width (g_cols ca
 // upscaled, not sharper. "off" emits the plain 640x400.
 static int g_scale_fit = 1;            // 1 = fit terminal viewport, 0 = native 640x400
 static int g_scale_max = 1280;         // max emitted image width (px); 0 = uncapped
+static double g_music_quality = TERMGFX_MUSIC_QUALITY_DEFAULT;  // Ogg/Opus VBR quality (0..1), [audio] music_quality
 // Sixel client-side scaling: encode at 1/SIXEL_SCALE of the display size and emit a
 // "pan;pad raster aspect so the terminal scales it back up (SyncTERM integer-doubles;
 // lossless since Doom is natively 320x200). ~1/4 the sixel bytes on SyncTERM.
@@ -2447,6 +2448,7 @@ void DG_Init(void)
 	// manager stays at tier -1 and every SFX is a silent no-op.
 	sd_audio = termgfx_audio_create(sd_audio_emit, NULL);
 	termgfx_audio_set_cache_prefix(sd_audio, "syncdoom");   // SyncTERM cache: syncdoom/music|sfx/..
+	termgfx_audio_set_music_quality(sd_audio, g_music_quality);   // syncdoom.ini [audio] music_quality
 	termgfx_audio_probe(sd_audio);
 	// Door-side music cache: shared OGG transcodes -> the MIDI->OPL render happens once
 	// globally; every later play (any session / door relaunch) ships the cached OGG with
@@ -2831,6 +2833,7 @@ static void read_syncdoom_ini(const char *argv0)
 	if (val[0]) g_scale_fit = !(stricmp(val, "off")    == 0 || stricmp(val, "0") == 0 ||
 		                        stricmp(val, "native") == 0 || stricmp(val, "no") == 0);
 	g_scale_max = iniGetInteger(ini, "video", "scale_max", g_scale_max);
+	g_music_quality = iniGetFloat(ini, "audio", "music_quality", TERMGFX_MUSIC_QUALITY_DEFAULT);
 	g_text_max_cols = iniGetInteger(ini, "video", "text_max_cols", g_text_max_cols);
 	g_text_max_rows = iniGetInteger(ini, "video", "text_max_rows", g_text_max_rows);
 

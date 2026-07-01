@@ -91,7 +91,7 @@ static void term_emit(term_song_t *s)
 	}
 	// Cold miss: hand the MUS/MIDI to termgfx's worker thread; the game keeps running while it
 	// renders + encodes, and the poll in DG_DrawFrame ships it when ready -- no level-load freeze.
-	termgfx_audio_music_async_submit(sd_audio, s->name, s->data, (size_t)s->len, 44100, term_music_v());
+	termgfx_audio_music_async_submit(sd_audio, s->name, s->data, (size_t)s->len, 48000, term_music_v());
 	dlog("music: %s submitted -> async render", s->name);
 }
 

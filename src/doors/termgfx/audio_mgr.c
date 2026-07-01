@@ -36,10 +36,17 @@
 #define NLOOP_CH     (LOOP_CH_HI - LOOP_CH_LO + 1)
 #define MUSNAME_MAX  32              // cache name "m/<track>_v<n>" component length
 #define MUS_TRACKS   64             // distinct music tracks tracked per session
-#define MUS_OGG_Q    0.3            // Vorbis VBR quality for OPL FM music (small, clean)
-#define MUS_RENDER_VER 1            // bump when the synth/bank/normalisation changes:
-                                    // the cache key carries it (<name>_v<n>), so every
-                                    // stale door-side + client cache entry is bypassed
+                                    // Opus VBR quality is per-manager (m->music_quality,
+                                    // default TERMGFX_MUSIC_QUALITY_DEFAULT), sysop-tunable
+                                    // via syncXXX.ini [audio] music_quality -- see audio_mgr.h.
+#define MUS_RENDER_VER 1            // Content-version ONLY: bump when the rendered PCM
+                                    // changes (synth/bank/normalisation or a render fix) so
+                                    // a client's cached file would sound WRONG. Do NOT bump
+                                    // for a codec/quality change -- Ogg/Vorbis and Ogg/Opus
+                                    // of the same track are interchangeable content, so
+                                    // forcing every client to re-transfer is pure waste.
+                                    // The key carries it (<name>_v<n>); a bump bypasses all
+                                    // stale caches, so reserve it for genuine content edits.
 #define MUS_CACHE_DIR_MAX 240       // door-side OGG cache directory path
 
 struct termgfx_audio {
@@ -54,6 +61,7 @@ struct termgfx_audio {
 	int next_ch;                           // round-robin SFX channel cursor
 	char music_name[MUSNAME_MAX];          // cache key (with _v<n>) in the music slot ("" = none)
 	char music_cache_dir[MUS_CACHE_DIR_MAX]; // door-side OGG disk cache ("" = none, render-only)
+	double music_quality;                  // Ogg/Opus VBR quality (0..1) for fresh music encodes
 	char cache_prefix[24];                 // consumer/door name -> SyncTERM cache "<prefix>/music|sfx/.."
 
 	struct { int handle; int vl, vr; } loop[NLOOP_CH]; // looping voices: loop[i] on LOOP_CH_LO+i;
@@ -115,6 +123,7 @@ termgfx_audio_t *termgfx_audio_create(termgfx_audio_emit_fn emit, void *ctx)
 	m->tier      = -1;
 	m->next_slot = SFX_SLOT_LO;
 	m->next_ch   = SFX_CH_LO;
+	m->music_quality = TERMGFX_MUSIC_QUALITY_DEFAULT;
 #ifdef TERMGFX_ASYNC_MUSIC
 	pthread_mutex_init(&m->mus_lock, NULL);
 	sem_init(&m->mus_wake, 0, 0);                 // worker is created lazily on the first submit
@@ -658,6 +667,17 @@ void termgfx_audio_set_music_cache_dir(termgfx_audio_t *m, const char *dir)
 	m->music_cache_dir[sizeof(m->music_cache_dir) - 1] = '\0';
 }
 
+void termgfx_audio_set_music_quality(termgfx_audio_t *m, double quality)
+{
+	if (m == NULL)
+		return;
+	if (quality < 0.0)
+		quality = 0.0;
+	if (quality > 1.0)
+		quality = 1.0;
+	m->music_quality = quality;
+}
+
 // Play a track that's available WITHOUT rendering -- from the door-side OGG disk
 // cache (and, once C;L is wired, the client's own persistent cache). Returns 1 if it
 // shipped the track (or it's already playing); 0 if the door must render + supply via
@@ -722,7 +742,7 @@ void termgfx_audio_music(termgfx_audio_t *m, const char *name,
 	mus_key(name, key, sizeof(key));
 	if (strcmp(m->music_name, key) == 0)        // already playing this track
 		return;
-	// OGG/Vorbis when available (10-15x smaller upload + a door-side disk cache so the
+	// Ogg/Opus when available (much smaller upload + a door-side disk cache so the
 	// next play -- any session -- skips the render); raw-PCM WAV otherwise (no caching).
 	use_ogg = (bits == 16 && channels > 0 && termgfx_audio_have_ogg());
 	snprintf(leaf, sizeof(leaf), "%s.%s", key, use_ogg ? "ogg" : "wav");
@@ -735,7 +755,7 @@ void termgfx_audio_music(termgfx_audio_t *m, const char *name,
 			uint8_t *ogg    = NULL;
 			size_t   ogglen = termgfx_audio_encode_ogg((const int16_t *)pcm,
 			                                           bytes / ((size_t)channels * 2), channels, rate,
-			                                           MUS_OGG_Q, &ogg);
+			                                           m->music_quality, &ogg);
 			if (ogglen > 0) {
 				if (mus_disk_path(m, key, path, sizeof(path)))
 					mus_write_file(path, ogg, ogglen);   // populate the door-side cache
@@ -810,7 +830,7 @@ static size_t mus_transcode(termgfx_audio_t *m, const char *key, const void *mid
 		return 0;
 	if (!termgfx_midi_render(midi, len, rate, 0, &pcm, &nframes) || nframes == 0)
 		return 0;
-	ogglen = termgfx_audio_encode_ogg(pcm, nframes, 2, rate, MUS_OGG_Q, &ogg);
+	ogglen = termgfx_audio_encode_ogg(pcm, nframes, 2, rate, m->music_quality, &ogg);
 	free(pcm);
 	if (ogglen == 0) {
 		free(ogg);

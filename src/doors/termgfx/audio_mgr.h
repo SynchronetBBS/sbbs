@@ -93,6 +93,14 @@ void termgfx_audio_set_cache_prefix(termgfx_audio_t *m, const char *name);
 // can ship it on a later session WITHOUT re-rendering. "" / NULL disables (render-only).
 void termgfx_audio_set_music_cache_dir(termgfx_audio_t *m, const char *dir);
 
+// Ogg/Opus VBR quality (0.0..1.0) for encoded music. libsndfile maps this ~linearly
+// to bitrate (q0.06~=40, q0.15~=88, q0.3~=165 kbps) -- NOT content-adaptively like
+// Vorbis. Higher = fuller/cleaner + bigger. Affects only the bytes of a FRESH encode;
+// it is deliberately not part of the cache key, so a client's existing file is never
+// re-fetched to change quality. Doors expose this as syncXXX.ini [audio] music_quality.
+#define TERMGFX_MUSIC_QUALITY_DEFAULT 0.15
+void termgfx_audio_set_music_quality(termgfx_audio_t *m, double quality);
+
 // termgfx_audio_music_play() return values (0 = the door must render; nonzero = played):
 #define TERMGFX_MUSIC_RENDER 0   // not cached anywhere -> door renders + supplies
 #define TERMGFX_MUSIC_CACHED 1   // shipped from the door-side disk cache (no render; uploaded)

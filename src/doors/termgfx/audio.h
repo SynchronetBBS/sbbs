@@ -55,18 +55,20 @@ size_t termgfx_audio_cache_pcm(uint8_t **buf, size_t *cap, const char *file,
                                int bits, int channels, int rate);
 
 // C;S Store: encode `pcm` (interleaved S16, `frames` per-channel frames,
-// `channels`, `rate` Hz) to OGG/Vorbis and cache it under `file`. ~10-15x smaller
-// than cache_pcm's raw WAV, shrinking both the upload and the player's on-disk
-// SyncTERM cache; SyncTERM decodes it with the same libsndfile. `quality` is the
-// Vorbis VBR quality (0.0 smallest .. 1.0 best). Only does real work when termgfx
+// `channels`, `rate` Hz) to Ogg/Opus and cache it under `file`. Much smaller than
+// cache_pcm's raw WAV, shrinking both the upload and the player's on-disk SyncTERM
+// cache; SyncTERM decodes it with the same libsndfile. `rate` must be an Opus rate
+// (8k/12k/16k/24k/48k -- use 48000). `quality` is the VBR quality (0.0..1.0); note
+// libsndfile maps Opus quality ~linearly to bitrate (q0.06~=40 kbps, q0.3~=165
+// kbps), unlike Vorbis's content-adaptive VBR. Only does real work when termgfx
 // was built WITH libsndfile -- check termgfx_audio_have_ogg() and fall back to
 // cache_pcm when it returns 0. Returns bytes written, or 0 on failure/unavailable.
 size_t termgfx_audio_cache_ogg(uint8_t **buf, size_t *cap, const char *file,
                                const int16_t *pcm, size_t frames,
                                int channels, int rate, double quality);
 
-// Encode 16-bit PCM to a raw OGG/Vorbis stream in memory: malloc'd buffer in *out
-// (caller frees), returns its length or 0. Lets the manager write the OGG to its
+// Encode 16-bit PCM to a raw Ogg/Opus stream in memory: malloc'd buffer in *out
+// (caller frees), returns its length or 0. Lets the manager write the Ogg to its
 // door-side disk cache AND base64 it to the client from a single encode.
 size_t termgfx_audio_encode_ogg(const int16_t *pcm, size_t frames, int channels,
                                 int rate, double quality, uint8_t **out);

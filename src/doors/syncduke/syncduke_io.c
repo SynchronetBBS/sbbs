@@ -154,6 +154,7 @@ static void syncduke_io_init(void)
 	if (sd_audio == NULL)
 		sd_audio = termgfx_audio_create(sd_audio_emit, NULL);
 	termgfx_audio_set_cache_prefix(sd_audio, "syncduke");   /* SyncTERM cache: syncduke/music|sfx/.. */
+	termgfx_audio_set_music_quality(sd_audio, syncduke_music_quality());   /* [audio] music_quality */
 	{   /* Door-side transcoded-audio cache: prefer the BBS data dir (Synchronet exports
 		 * SBBSDATA = the configured data_dir), else fall back beside the GRP on a non-
 		 * Synchronet host. Shared OGG cache -> the MIDI render runs once globally. */

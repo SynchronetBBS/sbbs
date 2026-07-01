@@ -348,7 +348,7 @@ void PlayMusic(char *filename)
 	/* Cold miss: hand the MIDI to termgfx's worker thread and return -- the game keeps running while
 	 * it renders + encodes; sd_music_poll() (in the frame loop) ships the track when it's ready, so
 	 * the level load no longer freezes for the render.  termgfx copies the bytes. */
-	termgfx_audio_music_async_submit(sd_audio, id, mid, (size_t)len, 44100, sd_music_v());
+	termgfx_audio_music_async_submit(sd_audio, id, mid, (size_t)len, 48000, sd_music_v());
 	syncduke_log("music: '%s' (%s) submitted -> async render", filename, id);
 	free(mid);
 }
