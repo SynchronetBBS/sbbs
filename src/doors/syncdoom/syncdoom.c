@@ -177,6 +177,8 @@ static char g_diag_term[PATH_MAX] = "(no node dir / -term)"; // path we tried
 static int  g_diag_term_ok = 0;        // did we actually open+read it?
 static char g_diag_desc[64] = "";      // desc= (TERM string) read from it
 
+static uint32_t now_ms(void);          // defined later (monotonic ms; only deltas used)
+
 // Emit one diagnostic line on stderr. Synchronet's external() reads a door's
 // stderr line-by-line and logs each at LOG_NOTICE ("<fname>: <line>", xtrn.cpp),
 // even in EX_BIN mode (where stderr is logged but not echoed to the user), so
@@ -184,14 +186,23 @@ static char g_diag_desc[64] = "";      // desc= (TERM string) read from it
 // display. One newline-terminated line per call = one log entry.
 void dlog(const char *fmt, ...)   // non-static: i_termmusic.c logs the cache path too
 {
-	va_list ap;
+	static uint32_t start;             // baseline: first dlog call
+	uint32_t        now = now_ms();
+	va_list         ap;
 
+	if (!start)
+		start = now ? now : 1;
+	// [+ms] since the first line: the BBS log stamps each line only to the second, so this
+	// gives sub-second timing (e.g. to bracket a music render=/xfer= or a frame stall).
+	fprintf(stderr, "[+%6ums] ", (unsigned)(now - start));
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 	fputc('\n', stderr);
 	fflush(stderr);
 }
+
+uint32_t sd_now_ms(void) { return now_ms(); }   // public monotonic-ms for i_termmusic.c timing
 
 // Mirror of cterm_lib.js charheight(rows): graphics cell height for a row count.
 static int cell_height(int lines)
@@ -336,6 +347,8 @@ static size_t   g_out_cap = 0, g_out_len = 0, g_out_off = 0;
 // match), which doubles as the in-flight count and the round-trip estimator. The
 // deadline reclaims the pipeline if reports ever go silent.
 #define DEPTH_MAX 8                     // max pipeline depth (fixed or auto ceiling)
+#define FRAME_STALL_MS 500              // emit_frame over this -> log a frame-stall note (slow encode;
+                                        // out_flush is non-blocking, so this is build/encode time)
 #define DSR_RING  16                    // > DEPTH_MAX so the in-flight ring can never fill (holds DSR_RING-1)
 static uint32_t g_dsr_ts[DSR_RING];     // send time of each unacked DSR
 static int      g_dsr_head = 0;         // next slot to write (newest)
@@ -1643,14 +1656,14 @@ static void parse_byte(unsigned char c)
 								uint32_t nowm = now_ms();
 								uint32_t rtt = nowm - g_dsr_ts[g_dsr_tail];
 								g_dsr_tail = (g_dsr_tail + 1) % DSR_RING;
-								// Guard against a stale/mismatched report -- a late reply for a
-								// reclaimed frame matched to a freshly-sent one reads absurdly low
-								// and would poison the baseline (collapsing the ceiling to depth 1).
-								// Ignore a sample far below the smoothed RTT (genuine drops are gradual).
-								// fold the round-trip into the smoothed RTT + windowed baseline (shared,
-								// termgfx/pace.c): stale-reject on, 8s min re-seed window -- Doom's behavior.
+								// Fold the round-trip into the smoothed RTT + windowed baseline (shared,
+								// termgfx/pace.c).  stale-reject is OFF: rejecting samples below EMA/3
+								// ratchets the EMA -- once a slow JXL frame spikes it, every subsequent
+								// good (low) sample is discarded and it can never recover (seen latched
+								// ~725ms on a LAN whose true floor is ~20ms).  Reclaimed-frame replies are
+								// already dropped above via g_dsr_stale, so the filter guarded nothing.
 								if (termgfx_rtt_sample(&g_rtt_ms, &g_rtt_min, &g_rtt_min_at, &g_rt_high,
-								                       rtt, nowm, 1, RTT_MIN_WINDOW))
+								                       rtt, nowm, 0, RTT_MIN_WINDOW))
 									auto_depth_update();     // re-evaluate the auto pipeline depth
 							}
 							g_ack_deadline = now_ms() + 250; // progress -> refresh the safety deadline
@@ -2430,7 +2443,16 @@ void DG_DrawFrame(void)
 	int w = s_pxW;
 	pump_input();                 // service input first, every tick
 	out_flush();                  // keep draining any in-flight frame
-	emit_frame(DG_ScreenBuffer, w, h);   // builds+sends only if drained, else drops
+	{
+		// Frame-stall watchdog: emit_frame drops fast when the pipe isn't drained, so a long one
+		// is a slow encode.  (An audio transcode/upload blocks elsewhere and logs render=/xfer=.)
+		uint32_t fs = now_ms();
+		emit_frame(DG_ScreenBuffer, w, h);   // builds+sends only if drained, else drops
+		fs = now_ms() - fs;
+		if (fs >= FRAME_STALL_MS)
+			dlog("pace: frame stall %ums (inflight=%d depth=%d)", (unsigned)fs,
+			     dsr_inflight(), g_inflight_auto ? g_auto_depth : g_max_inflight);
+	}
 	pump_input();
 	check_hangup();
 	check_timelimit();

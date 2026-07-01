@@ -70,7 +70,9 @@ static void term_emit(term_song_t *s)
 	int16_t *pcm;
 	size_t   nframes;
 
-	extern void dlog(const char *fmt, ...);     // syncdoom.c: BBS-log line (stderr)
+	extern void     dlog(const char *fmt, ...);     // syncdoom.c: BBS-log line (stderr)
+	extern uint32_t sd_now_ms(void);                // syncdoom.c: monotonic ms clock
+	uint32_t t0, t1;
 	int      hit;
 
 	if (sd_audio == NULL || s == NULL)
@@ -84,10 +86,14 @@ static void term_emit(term_song_t *s)
 		                                 : "disk-cached (no render)");
 		return;
 	}
+	t0 = sd_now_ms();
 	if (termgfx_midi_render(s->data, (size_t)s->len, 44100, 0, &pcm, &nframes)) {
-		dlog("music: %s rendered %zu frames -> encode+upload+cache", s->name, nframes);
+		t1 = sd_now_ms();                        // render (OPL transcode) done
 		termgfx_audio_music(sd_audio, s->name, pcm, nframes * 4, 16, 2, 44100,
-		                    term_music_v());     // encodes, uploads, AND caches the OGG
+		                    term_music_v());     // encode + disk-cache + upload (transfer)
+		// render=<transcode ms> xfer=<encode+cache+upload ms>: tells a stall's cause apart.
+		dlog("music: %s rendered %zu frames render=%ums xfer=%ums", s->name, nframes,
+		     (unsigned)(t1 - t0), (unsigned)(sd_now_ms() - t1));
 		free(pcm);
 	} else {
 		dlog("music: %s render FAILED (len=%d)", s->name, s->len);
