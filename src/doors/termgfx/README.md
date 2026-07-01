@@ -76,6 +76,61 @@ still owns its own present/pacing loop and tier *dispatch* — unifying those
 behind a single `termgfx_present()` is a planned next step, gated on reconciling
 the doors' (deliberately) diverged pacing/scaling so neither regresses.
 
+## Terminal compatibility
+
+termgfx leans on a handful of terminal capabilities, and support varies widely.
+The renderer degrades cleanly — a terminal that lacks an image tier falls back to
+the universal ANSI **text/block tiers**, and a terminal that lacks native-key
+input falls back to legacy CSI keys — but the *experience* depends on what the
+client actually implements. Capabilities termgfx exercises:
+
+- **Sixel** (DECSIXEL) — the baseline image tier.
+- **Sixel vertical scaling** — honoring the pixel-aspect pan/pad
+  (`sixel_encode_aspect`) so a half-height sixel is upscaled *by the terminal*.
+  Terminals that render sixels at their literal pixel size only ("full-size")
+  show a half-height picture instead of a scaled one; the door must then emit a
+  full-size sixel (more bytes, slower) for correct geometry.
+- **JXL image APC** — SyncTERM's cached-image APC (`C;S` store + `C;Draw`) with a
+  JPEG XL payload. SyncTERM-proprietary.
+- **Audio APC** — SyncTERM's audio APC (digital SFX + OPL3 music). SyncTERM-proprietary.
+- **Kitty keyboard** — the kitty keyboard protocol, for precise physical-key /
+  modifier input (WASD + arrows + numpad). Distinct from SyncTERM's own **evdev**
+  physical-key protocol; SyncTERM does **not** implement kitty.
+
+### Known-terminal matrix (seed)
+
+Legend: ✔ supported · ✘ not supported · ? untested. This is a starting point, not
+a survey — expand it as terminals are actually tested.
+
+| Terminal | Sixel | Sixel vert. scaling | JXL image APC | Audio APC | Kitty keys |
+|----------|:-----:|:-------------------:|:-------------:|:---------:|:----------:|
+| **SyncTERM** (baseline target) | ✔ | ✔ | ✔ | ✔ | ✘ (uses evdev) |
+| **xterm** (v390) | ✔ | ✘ (full-size only) | ✘ | ✘ | ✘ |
+| **foot** (1.62.2) | ✔ | ✔ | ✘ | ✘ | ✔ |
+
+Notes:
+- **xterm 390** renders sixels only at full size — it has no client-side vertical
+  scaling — so the aspect-scaled half-height path (`sixel_encode_aspect`) doesn't
+  size correctly there; a full-size sixel is required for proper geometry.
+- **foot 1.62.2** does both kitty-keyboard input and sixel *with* vertical scaling.
+- **JXL image APC** and **Audio APC** are SyncTERM-specific transports; no
+  third-party terminal implements them, so those columns are ✘ for everything but
+  SyncTERM.
+- Other kitty-keyboard terminals (Contour, Windows Terminal 1.25) have known
+  numpad / shift-modified key quirks that still need investigation — left out of
+  the matrix until their behavior is characterized.
+
+### Toward a fuller matrix
+
+The intent is to grow this into a proper compatibility/capability matrix in the
+spirit of <https://wiki.synchro.net/resource:term>, but scoped to the specific
+capabilities termgfx uses (the columns above) rather than general terminal
+features — so a sysop can tell at a glance which client gives the best experience
+for these doors. That includes calling out the **SyncTERM-specific** capabilities
+as their own dimensions — key events (its evdev physical-key protocol), the JXL
+image APC, and audio playback (the audio APC) — since those are what set the
+baseline target apart from the third-party terminals.
+
 ## License
 
 `text.c`/`text.h` are adapted from ludocode/doom-cli (GPLv2). The remaining
