@@ -50,6 +50,9 @@ int  syncduke_input_pop_raw(void);                  /* next raw scancode byte (0
 int  syncduke_input_fd(void);                       /* the input fd (resolved client socket / stdin) */
 int  syncduke_is_syncterm(void);                    /* 1 if the client is SyncTERM (DA reply); cterm 2x sixel scaling */
 int  syncduke_kitty_active(void);                   /* 1 if the kitty keyboard protocol negotiated (true key-up) */
+int  syncduke_evdev_active(void);                   /* 1 if SyncTERM physical key (evdev) reports negotiated */
+uint32_t syncduke_rtt(void);                        /* smoothed RTT (ms); drives native-vs-synthetic turn */
+int  syncduke_turn_native(void);                    /* 1 if turn keys use the native hold (low-latency true-key-up) */
 int  syncduke_jxl_supported(void);                  /* 1 if SyncTERM can decode JXL (CTQJS reply); -> JXL/APC tier */
 int  syncduke_have_sixel(void);                     /* 1 if the terminal advertised sixel (DA1/CTDA cap 4 or SyncTERM) */
 int  syncduke_probe_replied(void);                  /* 1 once the terminal answered the DA capability probe */

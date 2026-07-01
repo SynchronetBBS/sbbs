@@ -1471,6 +1471,7 @@ void menus(void)
     extern int  syncduke_kb_fastturn(void);
     extern void syncduke_kb_fastturn_set(int);
     extern int  syncduke_kitty_active(void);      // kitty terminal: native key timing -> hide the feel knobs
+    extern int  syncduke_evdev_active(void);      // SyncTERM evdev: same -- true key-up, so the knobs are moot too
     extern int  syncduke_record_enabled(void);   /* SyncDuke: RECORD/demo offered? (off by default) */
 
     getpackets();
@@ -2762,10 +2763,13 @@ else
             c = (320>>1)-120;
             rotatesprite(320<<15,19<<16,65536L,0,MENUBAR,16,0,10,0,0,xdim-1,ydim-1);
             menutext(320>>1,24,0,0,"SETUP CONTROLS");
-            // Kitty terminals time keys natively (real key-up + Duke's own turn ramp), so the
-            // byte-path feel knobs (KEY TAP/HOLD, TURN SPEED, FAST TURN) do nothing.  Keep them
-            // visible but greyed + non-adjustable, and explain why when one is highlighted.
-            onbar = ( probey == 0 || (!syncduke_kitty_active() && (probey == 2 || probey == 3 || probey == 4)) );
+            // Terminals with a real key-up (kitty protocol or SyncTERM evdev) time keys natively
+            // (+ Duke's own turn ramp), so the byte-path feel knobs (KEY TAP/HOLD, TURN SPEED, FAST
+            // TURN) do nothing.  Keep them visible but greyed + non-adjustable, and explain why.
+            // TURN SPEED (row 4) + FAST TURN stay adjustable even with native key-up: they tune the
+            // synthetic turn used as the high-latency fallback (turn_edge).  Only KEY TAP/HOLD (rows
+            // 2,3) are truly moot under true key-up, so only those are greyed/locked.
+            onbar = ( probey == 0 || probey == 4 || (!syncduke_kitty_active() && !syncduke_evdev_active() && (probey == 2 || probey == 3)) );
 
             x = probe(c+6,43,16,6);
             switch(x)
@@ -2775,15 +2779,18 @@ else
                 case -3:
                     gametext(320>>1,43+16*6+3,"*** SHORTCUT: CTRL-O ***",0,2+8+16);
                     break;
-                case -4:                // KEY TAP / KEY HOLD / TURN SPEED / FAST TURN hovered:
-                case -5:                // under kitty they're greyed, so say why.  Only one hint
-                case -6:                // shows at a time (each tied to the highlighted row).
-                case -7:
-                    if(syncduke_kitty_active())
+                case -4:                // KEY TAP / KEY HOLD hovered: moot under native key-up (greyed)
+                case -5:
+                    if(syncduke_kitty_active() || syncduke_evdev_active())
                     {
-                        gametext(320>>1,43+16*6+3,"KEY TIMING & TURN ARE NATIVE",0,2+8+16);
-                        gametext(320>>1,43+16*6+3+9,"IN THIS TERMINAL (KITTY)",0,2+8+16);
+                        gametext(320>>1,43+16*6+3,"KEY TAP/HOLD ARE NATIVE",0,2+8+16);
+                        gametext(320>>1,43+16*6+3+9,"IN THIS TERMINAL",0,2+8+16);
                     }
+                    break;
+                case -6:                // TURN SPEED / FAST TURN hovered: still live -- they tune the
+                case -7:                // synthetic turn the door falls back to on a high-latency link.
+                    if(syncduke_kitty_active() || syncduke_evdev_active())
+                        gametext(320>>1,43+16*6+3,"TUNES TURN ON A HIGH-LATENCY LINK",0,2+8+16);
                     break;
                 case -1:
                     cmenu(200);
@@ -2797,9 +2804,8 @@ else
                 case 1:                 // MOUSE STEERING on/off (same as Ctrl-O)
                     syncduke_mouse_toggle();
                     break;
-                case 5:                 // FAST TURN on/off (native under kitty -> no-op there)
-                    if(!syncduke_kitty_active())
-                        syncduke_kb_fastturn_set(!syncduke_kb_fastturn());
+                case 5:                 // FAST TURN on/off (tunes the synthetic high-latency turn)
+                    syncduke_kb_fastturn_set(!syncduke_kb_fastturn());
                     break;
                 default:
                     break;
@@ -2808,7 +2814,8 @@ else
             {
             short v;
             char  lbl[8];    // SyncDuke: the live 0..63 slider value, drawn just left of the bar
-            int   kpal = syncduke_kitty_active() ? 1 : PHX(-7);   // greyed palette for the disabled knobs
+            int   kpal = (syncduke_kitty_active() || syncduke_evdev_active()) ? 1 : PHX(-7);   // greyed palette for KEY TAP/HOLD (moot under native key-up)
+            int   tpal = PHX(-7);   // TURN SPEED / FAST TURN stay live -- they tune the synthetic high-latency turn
             // Right-justified just left of the bar, with one character of blank space
             // (a digit's width) between the value and the slider trough.
             #define SD_VALX(STR) (c+167+40-16-sd_bignum_width("0")-sd_bignum_width(STR))
@@ -2839,14 +2846,14 @@ else
             menutext(SD_VALX(lbl),43+16*3,SHX(-7),kpal,lbl);
 
             v = syncduke_kb_turn();
-            menutext(c,43+16*4,SHX(-7),kpal,"TURN SPEED");
-            bar(c+167+40,43+16*4,&v,1,x==4,SHX(-7),kpal);
+            menutext(c,43+16*4,SHX(-7),tpal,"TURN SPEED");
+            bar(c+167+40,43+16*4,&v,1,x==4,SHX(-7),tpal);
             syncduke_kb_turn_set(v);
             sprintf(lbl,"%d",v);
-            menutext(SD_VALX(lbl),43+16*4,SHX(-7),kpal,lbl);
+            menutext(SD_VALX(lbl),43+16*4,SHX(-7),tpal,lbl);
 
-            menutext(c,43+16*5,SHX(-7),kpal,"FAST TURN");
-            menutext(c+160+40,43+16*5,SHX(-7),kpal,syncduke_kb_fastturn()?"ON":"OFF");
+            menutext(c,43+16*5,SHX(-7),tpal,"FAST TURN");
+            menutext(c+160+40,43+16*5,SHX(-7),tpal,syncduke_kb_fastturn()?"ON":"OFF");
             #undef SD_VALX
             }
 

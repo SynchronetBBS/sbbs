@@ -14,22 +14,34 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include "../syncduke.h"
+#include "audio_mgr.h"
 #include "keyboard.h"
 
 /* syncduke_io.c functions the pump references, not linked here -- stub them. */
+uint32_t syncduke_rtt(void) { return 0; }   /* low latency -> native turn */
 void syncduke_pace_ack(void) { }
 void syncduke_stats_toggle(void) { }
 void syncduke_depth_cycle(void) { }
 static int g_tier_cycles;                                              /* count F4/tier-cycle hits */
 void syncduke_tier_cycle(void) { g_tier_cycles++; }
 void syncduke_out_put(const void *b, size_t l) { (void)b; (void)l; }   /* kitty-flag push: not exercised */
-void syncduke_hsteer(int *c, int *h) { if (c) *c = 40; if (h) *h = 40; }
+void syncduke_hsteer(int *c, int *h) {
+	if (c)
+		*c = 40; if (h)
+		*h = 40;
+}
 void syncduke_log(const char *f, ...) { (void)f; }
+
+/* termgfx audio the pump now touches (music-key path) -- stub out, no audio in the test. */
+termgfx_audio_t *sd_audio;
+void termgfx_audio_feed(termgfx_audio_t *m, const uint8_t *b, int n) { (void)m; (void)b; (void)n; }
+int  termgfx_audio_tier(const termgfx_audio_t *m) { (void)m; return -1; }
+void sd_music_pending_retry(void) { }
 
 extern volatile int syncduke_pitch_step;
 extern volatile int syncduke_help_request;
 
-static int fails, wfd;
+static int          fails, wfd;
 static void feed(const char *s) { if (write(wfd, s, strlen(s)) < 0) { } }
 static void chk(const char *n, int got, int want)
 {
@@ -71,11 +83,11 @@ int main(void)
 	feed("\x1b[1;1:3C");      syncduke_input_pump(pp[0], 8, 1);
 	chk("right up (native)", syncduke_input_pop_raw(), sc_RightArrow | 0x80);
 
-	syncduke_pitch_step = 0;
-	feed("\x1b[5~");          syncduke_input_pump(pp[0], 9, 1);   /* PgUp -> one look notch */
-	chk("PgUp notch=1", syncduke_pitch_step, 1);
-	feed("\x1b[5;1:3~");      syncduke_input_pump(pp[0], 10, 1);  /* PgUp release -> IGNORED (no 2nd) */
-	chk("PgUp release no notch", syncduke_pitch_step, 1);
+	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
+	feed("\x1b[5~");          syncduke_input_pump(pp[0], 9, 1);   /* PgUp -> Look_Up (sc_kpad_9), held */
+	chk("PgUp -> Look_Up down", syncduke_input_pop_raw(), sc_kpad_9);
+	feed("\x1b[5;1:3~");      syncduke_input_pump(pp[0], 10, 1);  /* PgUp release -> key-up (auto-centers) */
+	chk("PgUp -> Look_Up up", syncduke_input_pop_raw(), sc_kpad_9 | 0x80);
 
 	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
 	feed("\x1b[115;5u");      syncduke_input_pump(pp[0], 11, 1);  /* Ctrl-S (stats) -> no game scancode */
@@ -116,14 +128,33 @@ int main(void)
 		chk("Ctrl-D tier cycle", g_tier_cycles, before + 1);
 	}
 
-	/* Home/End: in a MENU jump to first/last item (sc_Home/sc_End); in gameplay, Center_View. */
+	/* Home/End: in a MENU jump to first/last item (sc_Home/sc_End); in gameplay under native key-up
+	 * they're a HELD Aim (the original's Aim_Up/Aim_Down), not Center_View. */
 	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
 	feed("\x1b[H");           syncduke_input_pump(pp[0], 23, 0);  /* Home in menu -> first item */
 	chk("Home (menu) first", syncduke_input_pop_raw(), sc_Home);
 	feed("\x1b[F");           syncduke_input_pump(pp[0], 24, 0);  /* End in menu -> last item */
 	chk("End (menu) last", syncduke_input_pop_raw(), sc_End);
-	feed("\x1b[H");           syncduke_input_pump(pp[0], 25, 1);  /* Home in gameplay -> Center_View */
-	chk("Home (gameplay) center", syncduke_input_pop_raw(), sc_kpad_5);
+	feed("\x1b[H");           syncduke_input_pump(pp[0], 25, 1);  /* Home in gameplay -> Aim_Up (sc_kpad_7), held */
+	chk("Home (gameplay) Aim_Up down", syncduke_input_pop_raw(), sc_kpad_7);
+
+	/* Gameplay view controls: keypad PUA KP5=57404 -> Center_View, KP0=57399 / KP.=57409 ->
+	 * Look_Left/Right; Insert(2~) / Delete(3~) -> Look_Left/Right (held, key-up honored). */
+	syncduke_input_reset();                                      /* clear held[] (Home above left kpad_7 "down") */
+	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
+	feed("\x1b[57404u");      syncduke_input_pump(pp[0], 26, 1);  /* KP5 -> Center_View */
+	chk("KP5 -> Center", syncduke_input_pop_raw(), sc_kpad_5);
+	feed("\x1b[57399u");      syncduke_input_pump(pp[0], 27, 1);  /* KP0 -> Look_Left */
+	chk("KP0 -> Look_L", syncduke_input_pop_raw(), sc_kpad_0);
+	feed("\x1b[57409u");      syncduke_input_pump(pp[0], 28, 1);  /* KP. -> Look_Right */
+	chk("KP. -> Look_R", syncduke_input_pop_raw(), sc_kpad_Period);
+	feed("\x1b[2~");          syncduke_input_pump(pp[0], 29, 1);  /* Insert -> NOT mapped (Shift-Insert paste) */
+	chk("Insert: no rawq", syncduke_input_has_raw(), 0);
+	feed("\x1b[3~");          syncduke_input_pump(pp[0], 31, 1);  /* Delete -> Look_Right */
+	chk("Delete -> Look_R", syncduke_input_pop_raw(), sc_Delete);
+	/* In a MENU the keypad still types digits (KP5 -> '5'). */
+	{ char b5 = '5'; feed("\x1b[57404u"); syncduke_input_pump(pp[0], 32, 0);
+	  chk("KP5 (menu) -> '5'", syncduke_input_pop_raw(), syncduke_map_key(&b5, 1, 0)); }
 
 	printf(fails ? "\n%d FAILURE(S)\n" : "\nALL PASS\n", fails);
 	return fails != 0;

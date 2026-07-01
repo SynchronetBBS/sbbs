@@ -1779,7 +1779,7 @@ void displayweapon(short snum)
 
 }
 
-#define TURBOTURNTIME (TICRATE/8) // 7
+#define TURBOTURNTIME (TICRATE/8) // stock Duke3D ramp timing -- matches the original's time-to-full-turn
 #define NORMALTURN   15
 #define PREAMBLETURN 5
 #define NORMALKEYMOVE 40
@@ -2045,6 +2045,15 @@ void getinput(short snum)
         keymove = NORMALKEYMOVE;
     }
 
+    /* SyncDuke: under native key-up (kitty/evdev) the turn holds cleanly to full turnamount with
+     * no gappy-repeat drop-outs, so the top turn speed feels faster/twitchier than on a real
+     * keyboard.  Trim it a notch there for finer aim (by-ear tunable). */
+    {
+        extern int syncduke_turn_native(void);
+        if (syncduke_turn_native())
+            turnamount = turnamount * 3 / 4;
+    }
+
     if (ACTION(gamefunc_Strafe))
     {
         if ( ACTION(gamefunc_Turn_Left))
@@ -2058,14 +2067,18 @@ void getinput(short snum)
     }
 	else
     {
-        /* SyncDuke: FAST TURN (Setup Controls) skips the preamble ramp -- a terminal's
-         * gappy auto-repeat keeps resetting turnheldtime, so without this you stay stuck
-         * at PREAMBLETURN and turn painfully slowly. */
+        /* SyncDuke: FAST TURN (Setup Controls) skips the preamble ramp on the BYTE path --
+         * a terminal's gappy auto-repeat keeps resetting turnheldtime, so without this you
+         * stay stuck at PREAMBLETURN and turn painfully slowly.  Under native key-up
+         * (kitty/evdev) there's no gappy repeat, so the engine's own preamble->turbo ramp
+         * stands on its own and FAST TURN is gated out here -- it then only tunes the
+         * synthetic high-latency turn in turn_edge(), matching the Setup Controls hint. */
         extern volatile int syncduke_fast_turn;
+        extern int          syncduke_turn_native(void);
         if ( ACTION(gamefunc_Turn_Left))
            {
            turnheldtime += tics;
-           if (syncduke_fast_turn || turnheldtime>=TURBOTURNTIME)
+           if ((syncduke_fast_turn && !syncduke_turn_native()) || turnheldtime>=TURBOTURNTIME)
               {
               angvel -= turnamount;
               }
@@ -2077,7 +2090,7 @@ void getinput(short snum)
         else if ( ACTION(gamefunc_Turn_Right))
            {
            turnheldtime += tics;
-           if (syncduke_fast_turn || turnheldtime>=TURBOTURNTIME)
+           if ((syncduke_fast_turn && !syncduke_turn_native()) || turnheldtime>=TURBOTURNTIME)
               {
               angvel += turnamount;
               }

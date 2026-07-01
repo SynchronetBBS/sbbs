@@ -127,6 +127,8 @@ static void syncduke_term_restore(void)
 	(void)send(g_iosock, "\x1b[?1003l\x1b[?1006l", 16, 0);
 	if (syncduke_kitty_active())
 		(void)send(g_iosock, "\x1b[<u", 4, 0);   /* pop the kitty keyboard flags we pushed */
+	if (syncduke_evdev_active())
+		(void)send(g_iosock, "\x1b[=2l\x1b[=1l", 10, 0);   /* restore translation, disable physical key reports */
 	(void)send(g_iosock, termgfx_term_leave, (int)strlen(termgfx_term_leave), 0);
 #else
 	if (g_fd < 0)
@@ -137,6 +139,8 @@ static void syncduke_term_restore(void)
 	(void)write(g_fd, "\x1b[?1003l\x1b[?1006l", 16);
 	if (syncduke_kitty_active())
 		(void)write(g_fd, "\x1b[<u", 4);         /* pop the kitty keyboard flags we pushed */
+	if (syncduke_evdev_active())
+		(void)write(g_fd, "\x1b[=2l\x1b[=1l", 10);   /* restore translation, disable physical key reports */
 	(void)write(g_fd, termgfx_term_leave, strlen(termgfx_term_leave));
 #endif
 }
@@ -523,6 +527,8 @@ static uint32_t syncduke_dsr_ts[SYNCDUKE_DSR_RING];
 static int      syncduke_dsr_h, syncduke_dsr_t;
 static uint32_t syncduke_rtt_ms, syncduke_rtt_min, syncduke_rtt_min_at;
 
+uint32_t syncduke_rtt(void) { return syncduke_rtt_ms; }   /* smoothed RTT (ms) -- drives the input-feel adaptation */
+
 static void syncduke_dsr_sent(uint32_t now)        /* record a DSR we just emitted */
 {
 	syncduke_dsr_ts[syncduke_dsr_h] = now;
@@ -807,10 +813,20 @@ static void syncduke_emit_overlay(int force)
 			snprintf(bw, sizeof(bw), "%u.%uMB/s", kbps / 1024, (kbps % 1024) * 10 / 1024);
 		else
 			snprintf(bw, sizeof(bw), "%uKB/s", kbps);
-		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s ",
-		              sd_tier_name(syncduke_last_tier),
-		              fps, bw, rtt, rmin, syncduke_eff_depth(), syncduke_inflight_auto ? "/auto" : "", kb, enc,
-		              syncduke_kitty_active() ? " kbd:kitty" : "");
+		{
+			/* Keyboard + turn-key model in ONE compact token (width = the old "kbd:evdev"):
+			 * "evdev/nat" or "kitty/syn" -- the suffix is native hold (low-latency true key-up)
+			 * vs the synthetic constant rate (high-latency fallback).  Empty on the byte path. */
+			char kbd[16] = "";
+			if (syncduke_evdev_active() || syncduke_kitty_active())
+				snprintf(kbd, sizeof(kbd), " %s/%s",
+				         syncduke_evdev_active() ? "evdev" : "kitty",
+				         syncduke_turn_native() ? "nat" : "syn");
+			tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s ",
+			              sd_tier_name(syncduke_last_tier),
+			              fps, bw, rtt, rmin, syncduke_eff_depth(), syncduke_inflight_auto ? "/auto" : "", kb, enc,
+			              kbd);
+		}
 	}
 	if (tn < 0)
 		return;
