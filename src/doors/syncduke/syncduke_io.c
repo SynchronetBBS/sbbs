@@ -430,8 +430,10 @@ static size_t syncduke_emit_jxl(const uint8_t *fb, const uint8_t *pal, int w, in
  * Render the native framebuffer as ANSI block characters -- a SyncTERM-independent,
  * low-bandwidth fallback. cols/rows come from the terminal's pixel canvas (8x16 cells);
  * rt_render_frame cell-diffs internally, so after the first full repaint only changed
- * cells go on the wire. 24-bit color on SyncTERM (cterm truecolor), 256-color elsewhere;
- * CP437 block glyphs (half/blocks are CP437-safe; quadrant/sextant need UTF-8). */
+ * cells go on the wire. 24-bit color on SyncTERM (cterm truecolor), 256-color elsewhere.
+ * Charset follows the client (syncduke_term_is_utf8): native UTF-8 block/sub-cell glyphs on a
+ * UTF-8 terminal, CP437 bytes on a CP437 terminal -- the door runs Translate-Character-Set-No
+ * (EX_BIN), so whatever we emit reaches the terminal untranslated. */
 static int sd_rt_mode, sd_rt_cols, sd_rt_rows;   /* last rt_config -- reconfigure on change */
 
 static size_t syncduke_emit_text(const uint8_t *fb, const uint8_t *pal, rt_mode_t mode)
@@ -446,7 +448,8 @@ static size_t syncduke_emit_text(const uint8_t *fb, const uint8_t *pal, rt_mode_
 	if (rows < 1)
 		rows = 1;
 	if ((int)mode != sd_rt_mode || cols != sd_rt_cols || rows != sd_rt_rows) {
-		rt_config(cols, rows, mode, syncduke_is_syncterm() ? RT_24BIT : RT_8BIT, RT_CP437);
+		rt_config(cols, rows, mode, syncduke_is_syncterm() ? RT_24BIT : RT_8BIT,
+		          syncduke_term_is_utf8() ? RT_UTF8 : RT_CP437);
 		sd_rt_mode = mode; sd_rt_cols = cols; sd_rt_rows = rows;
 	}
 	syncduke_pack_rgb(fb, pal, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H);   /* native res; rt scales to cells */
@@ -709,6 +712,13 @@ void syncduke_tier_cycle(void)
 		avail[n++] = SD_SIXEL_FULL;
 	avail[n++] = SD_HALF;
 	avail[n++] = SD_BLOCKS;
+	/* Quadrant/sextant use Unicode block/sextant glyphs (U+2596-259F / U+1FB00), so they're
+	 * only offered when the client charset is UTF-8 -- on a CP437 terminal they'd be
+	 * missing-glyph boxes.  The block tiers above emit native UTF-8 there too (see rt_config). */
+	if (syncduke_term_is_utf8()) {
+		avail[n++] = SD_QUADRANT;
+		avail[n++] = SD_SEXTANT;
+	}
 
 	eff = (syncduke_tier_force >= 0) ? syncduke_tier_force : sd_auto_tier();
 	for (i = 0; i < n; i++)

@@ -179,6 +179,23 @@ The door is launched as `syncduke%. %f -home %juser/%4/duke/`:
   run. Without it, config/saves would be shared in the GRP directory and collide
   across nodes. (The base GRP stays read-only and shared.)
 
+### Command-line arguments
+
+The DOOR32.SYS path (`%f`) or `-s<fd>` supplies the client socket; everything else
+is optional:
+
+| Argument | Purpose |
+|----------|---------|
+| `<path>/door32.sys` | DOOR32.SYS drop file (Synchronet's `%f`): client socket + session time limit. |
+| `-s<fd>` | Client socket file descriptor directly (the lobby's path — no drop file). |
+| `-home <dir>` | Per-user writable dir for `duke3d.cfg` + savegames (see above). |
+| `-grpdir <dir>` | Where to find `DUKE3D.GRP` (else beside the binary; also `syncduke.ini [grp] dir`). |
+| `-charset utf8\|cp437\|auto` | Client character set for the block/text tiers. `auto` (default) detects it from Synchronet's `<node>/terminal.ini`; pass `utf8` or `cp437` explicitly on **non-Synchronet BBSes** (DOOR32.SYS installs with no `terminal.ini`), where auto-detection can't work. `utf8` makes the block tiers emit native Unicode and adds the higher-res **quadrant/sextant** tiers to the F4 cycle. Overrides `syncduke.ini [video] charset`. |
+| `-log <path>` | Write a door debug log to `<path>` (else `syncduke.ini [debug] log`, else off). |
+
+Co-op networking adds `-netrole` / `-netport` / `-netpeer`; the lobby sets those
+itself, so you don't pass them by hand.
+
 ---
 
 ## Status & limits (v1)

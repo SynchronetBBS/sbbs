@@ -93,6 +93,38 @@ int syncduke_sixel_max_w(void) { return syncduke_sixel_w; }
  * 8x16 font.  Defined in syncduke_input.c; we set it here from the ini. */
 extern int syncduke_use_cell_size;
 
+/* Client charset (UTF-8 vs CP437).  The door is run "Translate Character Set: No" (EX_BIN),
+ * so whatever bytes the tiers emit reach the terminal untranslated -- the door owns the charset.
+ * On a UTF-8 terminal the block tiers emit native Unicode glyphs (U+2580 etc.) and the Unicode-
+ * only quadrant/sextant tiers become available; on CP437 they stay CP437 bytes.  Sourced from
+ * Synchronet's <node>/terminal.ini 'chars' field (mirrors SyncDOOM's read_terminal_ini), which
+ * is reachable via $SBBSNODE even under the lobby launch (no DOOR32.SYS).  Overridable, highest
+ * first: a -charset utf8|cp437|auto command-line arg (for non-Synchronet/other-BBS DOOR32.SYS
+ * installs with no terminal.ini), then syncduke.ini [video] charset.  Default CP437 (safe). */
+static int syncduke_utf8;                                /* 1 = client terminal charset is UTF-8 */
+int syncduke_term_is_utf8(void) { return syncduke_utf8; }
+
+static void syncduke_read_terminal_charset(void)
+{
+	const char *node = getenv("SBBSNODE");
+	char        path[PATH_MAX], chars[INI_MAX_VALUE_LEN] = "";
+	FILE *      f;
+
+	if (node == NULL || *node == '\0')
+		return;
+	snprintf(path, sizeof path, "%s/terminal.ini", node);
+	if ((f = fopen(path, "r")) == NULL)
+		return;
+	{
+		str_list_t ini = iniReadFile(f);
+		fclose(f);
+		iniGetString(ini, ROOT_SECTION, "chars", "", chars);
+		strListFree(&ini);
+	}
+	if (strcasecmp(chars, "utf-8") == 0 || strcasecmp(chars, "utf8") == 0)
+		syncduke_utf8 = 1;
+}
+
 /* True if argv looks like a door launch: a DOOR32.SYS drop file (Synchronet %f)
  * or a -s<fd> socket arg. */
 static int syncduke_is_door(int argc, char **argv)
@@ -121,6 +153,7 @@ static void syncduke_config_init(int argc, char **argv)
 	char  logpath[INI_MAX_VALUE_LEN] = "";
 	char  abs[PATH_MAX];
 	int   i;
+	int   charset_force = -1;                                /* -1 = auto (terminal.ini); 0 = cp437; 1 = utf8 */
 	FILE *f;
 
 	/* --- GRP dir (-grpdir <path> / [grp] dir), per-user -home <path>, debug -log <path> --- */
@@ -137,6 +170,12 @@ static void syncduke_config_init(int argc, char **argv)
 			strncpy(syncduke_net_port, argv[i + 1], sizeof(syncduke_net_port) - 1);
 		else if (strcmp(argv[i], "-netpeer") == 0)
 			strncpy(syncduke_net_peer, argv[i + 1], sizeof(syncduke_net_peer) - 1);
+		else if (strcmp(argv[i], "-charset") == 0) {   /* -charset utf8|cp437|auto (non-Synchronet installs) */
+			if (strcasecmp(argv[i + 1], "utf8") == 0 || strcasecmp(argv[i + 1], "utf-8") == 0)
+				charset_force = 1;
+			else if (strcasecmp(argv[i + 1], "cp437") == 0)
+				charset_force = 0;                      /* "auto" leaves -1 (config / terminal.ini decide) */
+		}
 	}
 	if ((f = fopen("syncduke.ini", "r")) != NULL) {
 		str_list_t ini = iniReadFile(f);
@@ -153,8 +192,23 @@ static void syncduke_config_init(int argc, char **argv)
 		if (syncduke_sixel_w > 1024)
 			syncduke_sixel_w = 1024;                            /* the encoded buffer's hard ceiling */
 		syncduke_use_cell_size = iniGetBool(ini, "video", "use_cell_size", TRUE);
+		if (charset_force < 0) {                            /* -charset on the command line takes precedence */
+			char cs[INI_MAX_VALUE_LEN];
+			iniGetString(ini, "video", "charset", "auto", cs);   /* auto | utf8 | cp437 */
+			if (strcasecmp(cs, "utf8") == 0 || strcasecmp(cs, "utf-8") == 0)
+				charset_force = 1;
+			else if (strcasecmp(cs, "cp437") == 0)
+				charset_force = 0;
+		}
 		strListFree(&ini);
 	}
+
+	/* Client charset precedence: -charset arg, then [video] charset, else auto-detect from
+	 * <node>/terminal.ini (Synchronet).  All three feed charset_force; -1 here means "still auto". */
+	if (charset_force >= 0)
+		syncduke_utf8 = charset_force;
+	else
+		syncduke_read_terminal_charset();
 
 	/* Resolve the GRP dir to an ABSOLUTE path NOW, while CWD is still the launch dir, so it
 	 * keeps resolving after we chdir into the per-user home below.  Blank => the launch dir. */
