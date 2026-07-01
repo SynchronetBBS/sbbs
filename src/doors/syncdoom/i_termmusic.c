@@ -73,6 +73,13 @@ static void term_emit(term_song_t *s)
 
 	if (sd_audio == NULL || s == NULL)
 		return;
+	// 0% music volume = OFF (Doom's Sound menu has only a volume slider, no on/off toggle):
+	// don't render/encode/upload a silent track. term_current is kept, so raising the slider
+	// back off 0 replays it (see I_Term_SetMusicVolume).
+	if (term_music_vol == 0) {
+		dlog("music: %s skipped (volume 0 = off)", s->name);
+		return;
+	}
 	// Cache hit (the client's own persistent cache, or the door-side OGG on disk):
 	// ship it without rendering. Only render the MIDI/MUS on a full miss.
 	hit = termgfx_audio_music_play(sd_audio, s->name, term_music_v());
@@ -103,9 +110,18 @@ static void I_Term_ShutdownMusic(void)
 
 static void I_Term_SetMusicVolume(int volume)
 {
+	int was = term_music_vol;
+
 	term_music_vol = volume < 0 ? 0 : volume > 127 ? 127 : volume;
-	if (sd_audio != NULL)
+	if (sd_audio == NULL)
+		return;
+	if (term_music_vol == 0)
+		termgfx_audio_music_stop(sd_audio);             // 0% = OFF: stop the loop (no silent transfer)
+	else {
 		termgfx_audio_music_volume(sd_audio, term_music_v());   // live, no restart
+		if (was == 0 && term_current != NULL && termgfx_audio_tier(sd_audio) >= 1)
+			term_emit(term_current);                // raised off 0: resume the current track
+	}
 }
 
 // Doom pauses music on the pause menu. For a looping terminal track a stop/replay
