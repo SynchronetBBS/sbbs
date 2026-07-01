@@ -9,16 +9,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef _WIN32
-  #include <process.h>   /* _getpid: unique temp-file suffix for the atomic cache write */
-  #define TG_GETPID _getpid
-#else
-  #include <unistd.h>    /* getpid */
-  #define TG_GETPID getpid
-  #include <pthread.h>   /* transcode music on a worker thread so a first-play render doesn't
-                          * freeze the game (POSIX; Windows falls back to the synchronous path). */
-  #define TERMGFX_ASYNC_MUSIC 1
-#endif
+/* Music transcode runs on a worker thread so a first-play render doesn't freeze the game.  The
+ * portable threading is all xpdev: threadwrap gives the mutex (pthread_mutex_* -- native pthreads
+ * on *nix, Win32 critical sections on Windows) and _beginthread; the bundled semwrap gives the
+ * wake semaphore.  _beginthread makes a *detached* thread on every platform, so there is no handle
+ * to join -- shutdown instead posts the semaphore and waits on an exit flag (threadwrap has neither
+ * pthread_join nor a condvar). */
+#include "threadwrap.h"   /* pthread_mutex_*, _beginthread; pulls in semwrap.h (sem_*) */
+#include "genwrap.h"      /* SLEEP (shutdown join-wait), getpid (atomic-write temp suffix) */
+#define TERMGFX_ASYNC_MUSIC 1
+#define MUS_JOIN_POLL_MS 10   /* shutdown: poll the worker's exit flag this often */
 
 #define CL_DATA_MAX 262144u             /* cap the captured C;L reply (a runaway/unterminated
 	                                     * one won't grow the buffer without bound) */
@@ -82,11 +82,11 @@ struct termgfx_audio {
 	// upload APC -- all the CPU -- off the game thread.  The main thread only memcpy-stages the
 	// ready-to-send bytes (out_flush drains them over frames) and ships the loop.  Latest-wins: a
 	// new submit supersedes an in-flight render via the generation token.
-	pthread_t mus_thr;                     // worker thread
-	int mus_thr_up;                        // 1 once created (join on destroy)
+	int mus_thr_up;                        // 1 once the worker thread exists
 	pthread_mutex_t mus_lock;              // guards the job + result slots
-	pthread_cond_t mus_wake;               // main -> worker: a job is pending, or stop
-	int mus_stop;                          // destroy: worker should exit
+	sem_t mus_wake;                        // main -> worker: a job is pending (or stop)
+	int mus_stop;                          // shutdown: worker should exit its loop
+	int mus_exited;                        // worker set: it has left its loop (shutdown "join")
 	unsigned mus_gen;                      // bumped per submit (latest-wins supersede token)
 	// job (main -> worker): the newest submitted track
 	uint8_t * mus_job;                     // copied MIDI/MUS bytes (worker frees after render)
@@ -117,7 +117,7 @@ termgfx_audio_t *termgfx_audio_create(termgfx_audio_emit_fn emit, void *ctx)
 	m->next_ch   = SFX_CH_LO;
 #ifdef TERMGFX_ASYNC_MUSIC
 	pthread_mutex_init(&m->mus_lock, NULL);
-	pthread_cond_init(&m->mus_wake, NULL);        // worker is created lazily on the first submit
+	sem_init(&m->mus_wake, 0, 0);                 // worker is created lazily on the first submit
 #endif
 	return m;
 }
@@ -130,12 +130,20 @@ void termgfx_audio_destroy(termgfx_audio_t *m)
 	if (m->mus_thr_up) {
 		pthread_mutex_lock(&m->mus_lock);
 		m->mus_stop = 1;
-		pthread_cond_signal(&m->mus_wake);
 		pthread_mutex_unlock(&m->mus_lock);
-		pthread_join(m->mus_thr, NULL);
+		sem_post(&m->mus_wake);                    // wake the worker so it sees the stop flag
+		for (;;) {                                 // "join" the detached worker via its exit flag
+			int done;
+			pthread_mutex_lock(&m->mus_lock);
+			done = m->mus_exited;
+			pthread_mutex_unlock(&m->mus_lock);
+			if (done)
+				break;
+			SLEEP(MUS_JOIN_POLL_MS);
+		}
 	}
+	sem_destroy(&m->mus_wake);
 	pthread_mutex_destroy(&m->mus_lock);
-	pthread_cond_destroy(&m->mus_wake);
 	free(m->mus_job);
 	free(m->mus_res);
 #endif
@@ -609,7 +617,7 @@ static void mus_write_file(const char *path, const uint8_t *data, size_t len)
 	char  tmp[MUS_CACHE_DIR_MAX + MUSNAME_MAX + 32];
 	FILE *f;
 
-	snprintf(tmp, sizeof(tmp), "%s.tmp.%ld", path, (long)TG_GETPID());
+	snprintf(tmp, sizeof(tmp), "%s.tmp.%ld", path, (long)getpid());
 	f = fopen(tmp, "wb");
 	if (f == NULL)
 		return;
@@ -835,13 +843,12 @@ static void mus_emit(termgfx_audio_t *m, const char *key, const uint8_t *apc, si
 	m->music_name[sizeof(m->music_name) - 1] = '\0';
 }
 
-static void *mus_worker(void *arg)
+static void mus_worker(void *arg)
 {
 	termgfx_audio_t *m      = arg;
 	uint8_t *        apc    = NULL;      // reused across jobs
 	size_t           apccap = 0;
 
-	pthread_mutex_lock(&m->mus_lock);
 	for (;;) {
 		uint8_t *job;
 		size_t   joblen, apclen;
@@ -849,10 +856,16 @@ static void *mus_worker(void *arg)
 		char     key[MUSNAME_MAX];
 		unsigned gen;
 
-		while (!m->mus_job_pending && !m->mus_stop)
-			pthread_cond_wait(&m->mus_wake, &m->mus_lock);
-		if (m->mus_stop)
+		sem_wait(&m->mus_wake);                            // block off-CPU until a submit (or stop) posts
+		pthread_mutex_lock(&m->mus_lock);
+		if (m->mus_stop) {
+			pthread_mutex_unlock(&m->mus_lock);
 			break;
+		}
+		if (!m->mus_job_pending) {                         // coalesced/spurious wake -> wait again
+			pthread_mutex_unlock(&m->mus_lock);
+			continue;
+		}
 		job    = m->mus_job; m->mus_job = NULL;            // take the newest job
 		joblen = m->mus_job_len; rate = m->mus_job_rate; vol = m->mus_job_vol;
 		memcpy(key, m->mus_job_key, sizeof(key));
@@ -873,10 +886,12 @@ static void *mus_worker(void *arg)
 			apc = NULL; apccap = 0;                       // ownership passed to the result slot
 		}
 		// else: superseded (or failed) -> keep `apc` as scratch, drop this result
+		pthread_mutex_unlock(&m->mus_lock);
 	}
+	pthread_mutex_lock(&m->mus_lock);
+	m->mus_exited = 1;                                     // shutdown handshake (see termgfx_audio_destroy)
 	pthread_mutex_unlock(&m->mus_lock);
 	free(apc);
-	return NULL;
 }
 
 void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
@@ -897,7 +912,7 @@ void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
 
 	pthread_mutex_lock(&m->mus_lock);
 	if (!m->mus_thr_up) {
-		if (pthread_create(&m->mus_thr, NULL, mus_worker, m) == 0)
+		if (_beginthread(mus_worker, 0, m) != -1UL)   // detached; 0 = default (>=256K) stack
 			m->mus_thr_up = 1;
 		else {
 			pthread_mutex_unlock(&m->mus_lock);
@@ -911,8 +926,8 @@ void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
 	memcpy(m->mus_job_key, key, sizeof(m->mus_job_key));
 	m->mus_job_pending = 1;
 	m->mus_gen++;
-	pthread_cond_signal(&m->mus_wake);
 	pthread_mutex_unlock(&m->mus_lock);
+	sem_post(&m->mus_wake);                          // wake the worker (after releasing the lock)
 }
 
 int termgfx_audio_music_async_poll(termgfx_audio_t *m)
@@ -945,7 +960,7 @@ int termgfx_audio_music_async_poll(termgfx_audio_t *m)
 	return TERMGFX_MUSIC_ASYNC_IDLE;
 }
 
-#else  /* no worker thread (e.g. Windows): render synchronously in submit -- the old blocking path */
+#else  /* TERMGFX_ASYNC_MUSIC off: render synchronously in submit -- the old blocking path */
 
 void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
                                       const void *music, size_t len, int rate, int vol)
