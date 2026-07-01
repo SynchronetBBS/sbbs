@@ -102,8 +102,8 @@ if (console.screen_columns < 80)
 }
 
 // Version information
-var EDITOR_VERSION = "2.02";
-var EDITOR_VER_DATE = "2026-04-27";
+var EDITOR_VERSION = "2.03";
+var EDITOR_VER_DATE = "2026-06-30";
 
 
 // Program variables
@@ -3262,6 +3262,8 @@ function doQuoteSelection(pCurpos, pCurrentWordLength, pQuoteKey)
 
 	var quoteLineMenu = createQuoteLineMenu(quoteTopScreenRow, pQuoteKey);
 	var insertedQuoteLines = false;
+	var quoteLinesHaveAttrs = false;
+	var lastEditLineIndexWithNewQuoteLine = -1;
 	// Customize the menu's OnItemSelect function to add the selected quote
 	// line to the message.  Note that the menu's exitOnItemSelect is set
 	// to false in createQuoteLineMenu() so that its input loop won't
@@ -3279,8 +3281,11 @@ function doQuoteSelection(pCurpos, pCurrentWordLength, pQuoteKey)
 
 		// Insert the quote line into gEditLines after the current gEditLines index.
 		var quoteLine = getQuoteTextLine(pQuoteLineIdx, quoteLineMenu.size.width);
-		var insertedBelow = insertLineIntoMsg(gEditLinesIndex, quoteLine, true, true);
-		if (insertedBelow)
+		var insertRetObj = insertLineIntoMsg(gEditLinesIndex, quoteLine, true, true);
+		lastEditLineIndexWithNewQuoteLine = gEditLinesIndex;
+		if (insertRetObj.hasAttrs)
+			quoteLinesHaveAttrs = true;
+		if (insertRetObj.insertedBelow)
 		{
 			// The cursor will need to be moved down 1 more line.
 			// So, increment numTimesToMoveDown, and set curpos.x
@@ -3333,6 +3338,17 @@ function doQuoteSelection(pCurpos, pCurrentWordLength, pQuoteKey)
 	quoteLineMenu.GetVal();
 	doQuoteSelection.selectedQuoteLineIdx = quoteLineMenu.selectedItemIdx;
 	doQuoteSelection.topQuoteLineIdx = quoteLineMenu.topItemIdx;
+
+	// If the quote lines have attribute codes, then append a
+	// normal attribute to the last inserted quote line so that
+	// the attribute code doesn't apply to additiona lines that
+	// the user writes.
+	if (quoteLinesHaveAttrs && lastEditLineIndexWithNewQuoteLine > -1)
+	{
+		gEditLines[lastEditLineIndexWithNewQuoteLine].text += "\x01n";
+		var quoteLineLen = console.strlen(gEditLines[lastEditLineIndexWithNewQuoteLine].text);
+		gEditLines[lastEditLineIndexWithNewQuoteLine].attrs[quoteLineLen] = "\x01n";
+	}
 
 	// We've exited quote mode.  Refresh the message text on the screen.  Note:
 	// This will refresh only the quote window portion of the screen if the
@@ -4095,13 +4111,19 @@ function getWordLength(pEditLinesIndex, pTextLineIndex)
 //  pHardNewline: Whether or not to enable the hard newline flag for the line
 //  pIsQuoteLine: Whether or not the line is a quote line
 //
-// Return value: Whether or not the line was inserted below the given index
-//               (as opposed to above).
+// Return value: An object with the following properties:
+//               insertedBelow: Whether or not the line was inserted below the given index
+//                              (as opposed to above).
+//               hasAttrs: Whether or not the line has attribute codes
 function insertLineIntoMsg(pInsertLineIndex, pString, pHardNewline, pIsQuoteLine)
 {
-	var insertedBelow = false;
+	var retObj = {
+		insertedBelow: false,
+		hasAttrs: false
+	};
 	// Create the new text line
 	var line = new TextLine(pString, pHardNewline, pIsQuoteLine);
+	retObj.hasAttrs = line.hasAttrs();
 	// If the current message line is empty, insert the quote line above
 	// the current line.  Otherwise, insert the quote line below the
 	// current line.
@@ -4119,9 +4141,9 @@ function insertLineIntoMsg(pInsertLineIndex, pString, pHardNewline, pIsQuoteLine
 		// The current message line should have its hardNewlineEnd set
 		// true so that the quote line won't get wrapped up.
 		gEditLines[pInsertLineIndex].hardNewlineEnd = true;
-		insertedBelow = true;
+		retObj.insertedBelow = true;
 	}
-	return insertedBelow;
+	return retObj;
 }
 
 // Prompts the user for a filename on the BBS computer and loads its contents
