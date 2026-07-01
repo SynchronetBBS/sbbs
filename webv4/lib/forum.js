@@ -23,9 +23,7 @@ function listGroups() {
 // Returns an array of objects of "useful" information about subs
 function listSubs(group) {
     return msg_area.grp_list[group].sub_list.map(function (e) {
-        const mb = new MsgBase(e.code);
-        if (!mb.open()) throw new Error(mb.error);
-        const ret = {
+        return {
             index: e.index,
             code: e.code,
             grp_index: e.grp_index,
@@ -40,8 +38,6 @@ function listSubs(group) {
             // unread: is_user() ? getSubUnreadCount(mb) : null,
             // newest: getNewestMessageInSub(mb),
         };
-        mb.close();
-        return ret;
     });
 }
 
