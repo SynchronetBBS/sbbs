@@ -8055,7 +8055,7 @@ void findGRPToUse(uint8_t * groupfilefullpath)
 {
     WIN32_FIND_DATA FindFileData;
 	HANDLE hFind =  INVALID_HANDLE_VALUE;
-    int i=0,kbdKey ;
+    int i=0;
 	char  groupfile[9][512];
 	int grpID ;
 	/* SyncDuke: the read-only GRP lives in a shared dir (syncduke_grpdir, absolute),
@@ -8092,18 +8092,14 @@ void findGRPToUse(uint8_t * groupfilefullpath)
 		printf("Found GRP #%d:\t%d Bytes\t %s \n", i, FindFileData.nFileSizeLow, groupfile[i-1]);
 	} while ( FindNextFile(hFind, &FindFileData) && i < 9 );
 
-	if(i==1)
-		grpID = 0;
-	else
-	{
-		printf("\n-> Choose a base GRP file from 1 to %c: ",'0' + i);
-		do
-			kbdKey = getch();
-		while(kbdKey < '1' || kbdKey > ('0' + i));
-		printf("%c\n", kbdKey);
-		grpID =  groupfile[kbdKey-'1'];
-
-	}
+	/* SyncDuke: a BBS door has no interactive host console the remote user could
+	 * answer, so the stock multi-GRP getch() prompt here would hang the node (and
+	 * it also fed a char* into the int grpID, then used it as an out-of-bounds
+	 * array index).  Deterministically use the first match, mirroring the *nix
+	 * branch below; a specific GRP can be isolated via the [grp] dir setting. */
+	if(i > 1)
+		printf("Multiple GRP files found; using the first ('%s').\n", groupfile[0]);
+	grpID = 0;
 
 	FindClose(hFind);
 	if (scanDir[0] == '\0')
