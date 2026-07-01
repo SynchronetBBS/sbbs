@@ -32,6 +32,7 @@ int  syncduke_pace_curdepth(void);                     /* current effective pipe
 void syncduke_stats_toggle(void);                      /* Ctrl-S: toggle the live stats overlay */
 void syncduke_depth_cycle(void);                       /* Ctrl-T: cycle the pipeline depth */
 void syncduke_tier_cycle(void);                        /* F4: cycle the graphics tier (jxl/sixel) */
+int  syncduke_text_tier(void);                         /* 1 if the active tier is a text/block tier (engine skips image-only screens) */
 void syncduke_hangup(const char *why);                 /* client gone: log + exit (free the node) */
 
 /* --- provided by syncduke_stubs.c --- */
@@ -95,6 +96,24 @@ const char *syncduke_door_alias(void);        /* user's alias/handle, or "" */
 /* --- provided by syncduke_game.c (engine-state queries; pulls in duke3d.h) --- */
 int syncduke_in_gameplay(void);   /* 1 when actually playing (not in a menu), so the WASD/Space action layer applies */
 int syncduke_player_dead(void);   /* 1 when the player is dead -- door drops the action layer so Space = Open (restart) */
+
+/* --- text-tier legible HUD overlay (game pop-up/status quotes as real chars) ---
+ * In a text/block tier the game's own quote font rasterises to unreadable blocks. When
+ * syncduke_text_hud is set (door: the active tier is a text tier), the engine's
+ * operatefta() (Game/src/game.c) CAPTURES the on-screen quote/chat strings here instead
+ * of drawing them, and the door's text-tier present redraws them as real terminal
+ * characters over the block frame.  In an image tier (sixel/JXL) the flag is 0, so the
+ * game renders its font normally.  Storage lives in syncduke_game.c. */
+#define SYNCDUKE_HUD_MAX 5      /* fta quote + up to MAXUSERQUOTES(4) chat lines */
+#define SYNCDUKE_HUD_LEN 160    /* >= user_quote[128] and fta_quotes[64]         */
+typedef struct {
+	char text[SYNCDUKE_HUD_LEN];  /* NUL-terminated message text                 */
+	int  y;                       /* Duke 320x200 y of the row -> proportional terminal row */
+} syncduke_hud_line_t;
+extern int syncduke_text_hud;                             /* door sets 1 in a text tier */
+void syncduke_hud_begin(void);                            /* engine: reset the per-frame capture */
+void syncduke_hud_add(const char *text, int y);           /* engine: record a captured line */
+int  syncduke_hud_lines(const syncduke_hud_line_t **out); /* door: current lines; returns count */
 
 /* --- provided by syncduke_log.c (optional file debug log; disabled unless a path
  * is set via env SYNCDUKE_LOG or syncduke.ini [debug] log) --- */

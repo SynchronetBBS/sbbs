@@ -8,6 +8,7 @@
  * save-game name, letters and Space must arrive literally.
  */
 
+#include <string.h>   /* strncpy (HUD capture) */
 #include "duke3d.h"
 #include "syncduke.h"
 
@@ -30,4 +31,38 @@ int syncduke_player_dead(void)
 {
 	uint8_t gm = ps[myconnectindex].gm;
 	return (gm & MODE_GAME) && sprite[ps[myconnectindex].i].extra <= 0;
+}
+
+/* --- text-tier legible HUD overlay (see syncduke.h) ---------------------------
+ * operatefta() (game.c) captures the active quote/chat strings here -- instead of
+ * rasterising the (unreadable in a block tier) game font -- whenever syncduke_text_hud
+ * is set; syncduke_io.c's text-tier present() redraws them as real terminal characters.
+ * Kept here (not the engine-independent input layer) since the flag/buffer are the
+ * engine<->door seam.  Reset each frame by the door (syncduke_hud_begin at present's
+ * end) so a frame that draws no quote -- or a menu, where operatefta doesn't run --
+ * leaves the overlay empty. */
+int syncduke_text_hud;
+
+static syncduke_hud_line_t sd_hud[SYNCDUKE_HUD_MAX];
+static int                 sd_hud_n;
+
+void syncduke_hud_begin(void) { sd_hud_n = 0; }
+
+void syncduke_hud_add(const char *text, int y)
+{
+	syncduke_hud_line_t *L;
+
+	if (text == NULL || text[0] == '\0' || sd_hud_n >= SYNCDUKE_HUD_MAX)
+		return;
+	L = &sd_hud[sd_hud_n++];
+	strncpy(L->text, text, SYNCDUKE_HUD_LEN - 1);
+	L->text[SYNCDUKE_HUD_LEN - 1] = '\0';
+	L->y = y;
+}
+
+int syncduke_hud_lines(const syncduke_hud_line_t **out)
+{
+	if (out != NULL)
+		*out = sd_hud;
+	return sd_hud_n;
 }

@@ -450,10 +450,69 @@ static size_t syncduke_emit_text(const uint8_t *fb, const uint8_t *pal, rt_mode_
 		sd_rt_mode = mode; sd_rt_cols = cols; sd_rt_rows = rows;
 	}
 	syncduke_pack_rgb(fb, pal, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H);   /* native res; rt scales to cells */
-	tb = rt_render_frame(syncduke_rgb, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, &tlen);
-	syncduke_out_put(tb, tlen);
+
+	/* Legible HUD overlay: the game's quote/chat strings, captured by operatefta() in
+	 * place of the (unreadable) block font.  EXCLUDE the cells we'll overwrite with real
+	 * characters so the block renderer skips them, render, then draw the lines on top --
+	 * centered like Duke's gametext(160,..), on the terminal row matching the Duke y.
+	 * (rt_exclude_clear() also drops last frame's rectangles when no lines are active.) */
+	{
+		const syncduke_hud_line_t *hud;
+		int hn = syncduke_hud_lines(&hud), i;
+
+		rt_exclude_clear();
+		for (i = 0; i < hn; i++) {
+			int len = (int)strlen(hud[i].text);
+			int row = hud[i].y * rows / SYNCDUKE_SCREEN_H;
+			int c0;
+			if (len > cols) len = cols;
+			if (row < 0) row = 0; else if (row >= rows) row = rows - 1;
+			c0 = (cols - len) / 2; if (c0 < 0) c0 = 0;
+			rt_exclude_add(row, c0, c0 + len);
+		}
+
+		tb = rt_render_frame(syncduke_rgb, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, &tlen);
+		syncduke_out_put(tb, tlen);
+
+		for (i = 0; i < hn; i++) {
+			char ob[SYNCDUKE_HUD_LEN + 32];
+			int  len = (int)strlen(hud[i].text);
+			int  row = hud[i].y * rows / SYNCDUKE_SCREEN_H;
+			int  c0, n;
+			if (len > cols) len = cols;
+			if (row < 0) row = 0; else if (row >= rows) row = rows - 1;
+			c0 = (cols - len) / 2; if (c0 < 0) c0 = 0;
+			n = snprintf(ob, sizeof ob, "\x1b[%d;%dH\x1b[1;37;40m%.*s\x1b[0m",
+			             row + 1, c0 + 1, len, hud[i].text);
+			if (n > 0) {
+				syncduke_out_put(ob, (size_t)n);
+				tlen += (size_t)n;
+			}
+		}
+	}
 	return tlen;
 }
+
+/* FNV-1a over the captured HUD lines (count + each y + text).  present() compares this
+ * to the last emitted signature so, in a text tier, an appearing/expiring quote is NOT
+ * de-duped away (the quote isn't in the framebuffer, so the fb memcmp alone can't see
+ * it), and a change forces a repaint of the rows it vacated. */
+static uint32_t sd_hud_signature(void)
+{
+	const syncduke_hud_line_t *hud;
+	int         hn = syncduke_hud_lines(&hud), i;
+	uint32_t    h  = 2166136261u;
+	const char *p;
+
+	h = (h ^ (uint32_t)hn) * 16777619u;
+	for (i = 0; i < hn; i++) {
+		h = (h ^ (uint32_t)hud[i].y) * 16777619u;
+		for (p = hud[i].text; *p != '\0'; p++)
+			h = (h ^ (uint8_t)(unsigned char)*p) * 16777619u;
+	}
+	return h;
+}
+static uint32_t sd_hud_sig, sd_hud_last_sig;
 
 /* Copy of the NATIVE framebuffer last emitted (+ the geometry it was emitted at),
  * for de-dupe -- mirrors SyncDOOM's g_last_fb memcmp. Comparing the 320x200 source
@@ -582,6 +641,15 @@ static int sd_auto_tier(void)
 	if (syncduke_probe_replied())
 		return SD_HALF;        /* terminal answered the probe but advertises no sixel/JXL */
 	return SD_SIXEL;           /* no reply yet: optimistic (most BBS clients are SyncTERM) */
+}
+
+/* 1 if the ACTIVE graphics tier (F4 override, else auto) is a text/block tier.  The
+ * engine calls this to skip image-only screens (e.g. the exit "order" splashes) that are
+ * unreadable as block characters and would otherwise trap the user on a blocking wait. */
+int syncduke_text_tier(void)
+{
+	int t = (syncduke_tier_force >= 0) ? syncduke_tier_force : sd_auto_tier();
+	return sd_is_text_tier(t);
 }
 
 /* Brief centered popup confirming an F4/Ctrl-T change (ala SyncDOOM's labels). Held by
@@ -1004,10 +1072,17 @@ void syncduke_present(void)
 		tier = SD_SIXEL;
 #endif
 
+	/* Legible text-tier HUD: tell the engine (next frame's operatefta) to capture the
+	 * on-screen quotes for our ANSI overlay when the active tier is a text tier, and take
+	 * this frame's captured-line signature (operatefta already ran for this frame). */
+	syncduke_text_hud = sd_is_text_tier(tier);
+	sd_hud_sig        = sd_hud_signature();
+
 	fb = syncduke_fb();
 	if (!pal_dirty && syncduke_have_last
 	    && syncduke_last_w == syncduke_out_w && syncduke_last_h == syncduke_out_h
 	    && syncduke_last_hsc == hsc && syncduke_last_tier == tier
+	    && (!sd_is_text_tier(tier) || sd_hud_sig == sd_hud_last_sig)
 	    && memcmp(syncduke_last_fb, fb, SYNCDUKE_SCREEN_W * SYNCDUKE_SCREEN_H) == 0)
 		goto done;
 
@@ -1031,8 +1106,11 @@ void syncduke_present(void)
 		                  : (tier == SD_QUADRANT) ? RT_QUADRANT
 		                  : (tier == SD_SEXTANT)  ? RT_SEXTANT : RT_HALF;
 		uint64_t  t0 = syncduke_now_us();
+		if (sd_hud_sig != sd_hud_last_sig)
+			rt_invalidate();          /* HUD lines changed -> full repaint so vacated rows refresh */
 		n = syncduke_emit_text(fb, pal, m);       /* may be 0 if no cells changed */
 		syncduke_last_enc_us = (uint32_t)(syncduke_now_us() - t0);
+		sd_hud_last_sig = sd_hud_sig;
 	} else {
 		/* Image tiers (JXL/sixel): fit Duke's native 320x200 into the graphics canvas
 		 * preserving aspect (letter-boxed, NOT stretched to the 4:3 text canvas like
@@ -1140,6 +1218,8 @@ void syncduke_present(void)
 	syncduke_have_last = 1;
 
 done:
+	syncduke_hud_begin();                     /* per-frame HUD reset: next frame's operatefta refills it (or leaves
+	                                             it empty in a menu, where operatefta doesn't run) -- no stale overlay */
 	syncduke_stats_window();                  /* always track + log the 2s window (so Ctrl-S is live immediately) */
 	if (syncduke_stats_on)
 		syncduke_emit_overlay(sent);          /* force a redraw when a fresh frame just painted over it */

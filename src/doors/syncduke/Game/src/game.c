@@ -2280,6 +2280,15 @@ void coords(short snum)
 void operatefta(void)
 {
      int32_t i, j, k;
+     /* SyncDuke: in a text/block render tier, CAPTURE the on-screen quote/chat strings for
+      * the door's legible ANSI overlay instead of rasterising the (unreadable) block font.
+      * In an image tier syncduke_text_hud is 0 and the game font draws normally. */
+     extern int  syncduke_text_hud;
+     extern void syncduke_hud_begin(void);
+     extern void syncduke_hud_add(const char *text, int y);
+
+     if (syncduke_text_hud)
+         syncduke_hud_begin();
 
      if(ud.screen_size > 0) j = 200-45; else j = 200-8;
      quotebot = min(quotebot,j);
@@ -2290,7 +2299,9 @@ void operatefta(void)
      {
          k = user_quote_time[i]; if (k <= 0) break;
 
-         if (k > 4)
+         if (syncduke_text_hud)
+              syncduke_hud_add(user_quote[i],j);
+         else if (k > 4)
               gametext(320>>1,j,user_quote[i],0,2+8+16);
          else if (k > 2) gametext(320>>1,j,user_quote[i],0,2+8+16+1);
              else gametext(320>>1,j,user_quote[i],0,2+8+16+1+32);
@@ -2320,6 +2331,12 @@ void operatefta(void)
              k -= 8;
          }
          k -= 4;
+     }
+
+     if (syncduke_text_hud)
+     {
+         syncduke_hud_add(fta_quotes[ps[screenpeek].ftq],k);
+         return;
      }
 
      j = ps[screenpeek].fta;
@@ -2353,6 +2370,15 @@ void FTA(short q,struct player_struct *p, int mode)
 void showtwoscreens(void)
 {
     short i;
+
+    /* SyncDuke: these two exit splashes are full-screen images (tiles 3291/3290) that
+     * are unreadable as block characters AND block on a keypress -- skip them entirely
+     * in a text tier so the player isn't trapped on an illegible screen. */
+    {
+        extern int syncduke_text_tier(void);
+        if (syncduke_text_tier())
+            return;
+    }
 
 	if(VOLUMEONE)
 	{
