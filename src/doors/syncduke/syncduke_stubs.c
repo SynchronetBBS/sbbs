@@ -255,19 +255,18 @@ void MUSIC_RegisterTimbreBank(unsigned char *timbres) { (void)timbres; }
  * the terminal answers (sd_music_pending_retry, from the input pump's tier-ready edge). */
 static char sd_pending_music[16];
 
-/* Duke music is MIDI in the GRP. Read it, render to PCM via libADLMIDI (OPL3 FM
- * -- the authentic Sound Blaster sound), and loop it on SyncTERM's reserved
- * music channel. No-op unless the terminal negotiated digital audio (tier 1). */
+/* Duke music is MIDI in the GRP. Read it and play it on SyncTERM's reserved music channel: a cache
+ * hit ships instantly, a cold miss is handed to termgfx's worker thread (render to OPL3 FM PCM via
+ * libADLMIDI -- the authentic Sound Blaster sound -- + encode, off the game thread) and shipped by
+ * sd_music_poll() when ready. No-op unless the terminal negotiated digital audio (tier 1). */
 void PlayMusic(char *filename)
 {
 	extern void syncduke_log(const char *fmt, ...);
-	int32_t   fd, len;
-	void *    mid;
-	int16_t * pcm;
-	size_t    nframes;
-	char      id[24];           /* content-addressed cache name "<trackname>_<hash>" */
-	uint32_t  h;
-	int32_t   i;
+	int32_t  fd, len;
+	void *   mid;
+	char     id[24];            /* content-addressed cache name "<trackname>_<hash>" */
+	uint32_t h;
+	int32_t  i;
 
 	if (sd_audio == NULL || filename == NULL || filename[0] == '\0') {
 		syncduke_log("music: PlayMusic('%s') ignored (null/empty filename)",
@@ -346,24 +345,22 @@ void PlayMusic(char *filename)
 			return;
 		}
 	}
-	{
-		extern uint32_t getticks(void);           /* engine ms clock: split the two costly steps */
-		uint32_t t0 = getticks(), t1;
-		if (termgfx_midi_render(mid, (size_t)len, 44100, 0, &pcm, &nframes)) {
-			t1 = getticks();                      /* render (OPL transcode) done */
-			termgfx_audio_music(sd_audio, id, pcm, nframes * 4, 16, 2, 44100,
-			                    sd_music_v());     /* encode + disk-cache + upload (transfer) */
-			/* render=<transcode ms> xfer=<encode+cache+upload ms>: tells a stall's cause apart. */
-			syncduke_log("music: '%s' (%s) rendered %zu frames render=%ums xfer=%ums (vol=%d)",
-			             filename, id, nframes, (unsigned)(t1 - t0),
-			             (unsigned)(getticks() - t1), sd_music_v());
-			free(pcm);
-		}
-		else {
-			syncduke_log("music: '%s' render FAILED (len=%d)", filename, (int)len);
-		}
-	}
+	/* Cold miss: hand the MIDI to termgfx's worker thread and return -- the game keeps running while
+	 * it renders + encodes; sd_music_poll() (in the frame loop) ships the track when it's ready, so
+	 * the level load no longer freezes for the render.  termgfx copies the bytes. */
+	termgfx_audio_music_async_submit(sd_audio, id, mid, (size_t)len, 44100, sd_music_v());
+	syncduke_log("music: '%s' (%s) submitted -> async render", filename, id);
 	free(mid);
+}
+
+/* Ship an async-rendered track the moment its worker finishes.  Called every frame from the platform
+ * loop; a no-op until a submitted render completes, then it stages the upload + starts the loop. */
+void sd_music_poll(void)
+{
+	extern void syncduke_log(const char *fmt, ...);
+
+	if (sd_audio != NULL && termgfx_audio_music_async_poll(sd_audio) == TERMGFX_MUSIC_ASYNC_SHIPPED)
+		syncduke_log("music: async render ready -> shipped");
 }
 
 /* Replay the title/menu track that Logo() requested before the audio tier was

@@ -5,6 +5,7 @@
 
 #include "audio_mgr.h"
 #include "audio.h"
+#include "audio_midi.h"   /* termgfx_midi_render: the worker renders MIDI/MUS -> PCM */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +15,9 @@
 #else
   #include <unistd.h>    /* getpid */
   #define TG_GETPID getpid
+  #include <pthread.h>   /* transcode music on a worker thread so a first-play render doesn't
+                          * freeze the game (POSIX; Windows falls back to the synchronous path). */
+  #define TERMGFX_ASYNC_MUSIC 1
 #endif
 
 #define CL_DATA_MAX 262144u             /* cap the captured C;L reply (a runaway/unterminated
@@ -71,6 +75,33 @@ struct termgfx_audio {
 
 	uint8_t *buf;                          // scratch for builders
 	size_t cap;
+
+#ifdef TERMGFX_ASYNC_MUSIC
+	// ---- async music transcode (off the game thread) -------------------------------------------
+	// A worker thread renders MIDI->PCM, encodes OGG, writes the disk cache, AND pre-builds the C;S
+	// upload APC -- all the CPU -- off the game thread.  The main thread only memcpy-stages the
+	// ready-to-send bytes (out_flush drains them over frames) and ships the loop.  Latest-wins: a
+	// new submit supersedes an in-flight render via the generation token.
+	pthread_t mus_thr;                     // worker thread
+	int mus_thr_up;                        // 1 once created (join on destroy)
+	pthread_mutex_t mus_lock;              // guards the job + result slots
+	pthread_cond_t mus_wake;               // main -> worker: a job is pending, or stop
+	int mus_stop;                          // destroy: worker should exit
+	unsigned mus_gen;                      // bumped per submit (latest-wins supersede token)
+	// job (main -> worker): the newest submitted track
+	uint8_t * mus_job;                     // copied MIDI/MUS bytes (worker frees after render)
+	size_t mus_job_len;
+	int mus_job_rate, mus_job_vol;
+	char mus_job_key[MUSNAME_MAX];
+	int mus_job_pending;
+	// result (worker -> main): the pre-built C;S upload APC for the finished track
+	uint8_t * mus_res;                     // ready-to-send APC bytes (main frees after emit)
+	size_t mus_res_len;
+	int mus_res_vol;
+	char mus_res_key[MUSNAME_MAX];
+	unsigned mus_res_gen;                  // the gen this result was produced for
+	int mus_res_ready;
+#endif
 };
 
 termgfx_audio_t *termgfx_audio_create(termgfx_audio_emit_fn emit, void *ctx)
@@ -84,6 +115,10 @@ termgfx_audio_t *termgfx_audio_create(termgfx_audio_emit_fn emit, void *ctx)
 	m->tier      = -1;
 	m->next_slot = SFX_SLOT_LO;
 	m->next_ch   = SFX_CH_LO;
+#ifdef TERMGFX_ASYNC_MUSIC
+	pthread_mutex_init(&m->mus_lock, NULL);
+	pthread_cond_init(&m->mus_wake, NULL);        // worker is created lazily on the first submit
+#endif
 	return m;
 }
 
@@ -91,6 +126,19 @@ void termgfx_audio_destroy(termgfx_audio_t *m)
 {
 	if (m == NULL)
 		return;
+#ifdef TERMGFX_ASYNC_MUSIC
+	if (m->mus_thr_up) {
+		pthread_mutex_lock(&m->mus_lock);
+		m->mus_stop = 1;
+		pthread_cond_signal(&m->mus_wake);
+		pthread_mutex_unlock(&m->mus_lock);
+		pthread_join(m->mus_thr, NULL);
+	}
+	pthread_mutex_destroy(&m->mus_lock);
+	pthread_cond_destroy(&m->mus_wake);
+	free(m->mus_job);
+	free(m->mus_res);
+#endif
 	free(m->cl_data);
 	free(m->buf);
 	free(m);
@@ -727,3 +775,192 @@ void termgfx_audio_sfx_stop_all(termgfx_audio_t *m)
 	for (i = 0; i < NLOOP_CH; i++)                  // free the looping voices
 		m->loop[i].handle = 0;
 }
+
+// ---- async music transcode -----------------------------------------------------------------------
+// A first-play track has to render MIDI->OPL PCM (~seconds) then encode OGG -- expensive, and if done
+// inline it freezes the game.  These two calls move that work to a worker thread: the door SUBMITs
+// the raw music bytes and POLLs each frame; the game keeps running and the track fades in when ready.
+// Cache hits (termgfx_audio_music_play) still play instantly on the main thread -- this is only for a
+// cold miss.
+#ifdef TERMGFX_ASYNC_MUSIC
+
+// Worker half (off the game thread): render -> encode -> write the disk cache -> pre-build the C;S
+// upload APC into `apc`.  Touches only immutable manager fields (cache dir/prefix) + local buffers,
+// never m->emit / m->buf / the socket / the session lists, so it needs no lock.  Returns APC length
+// (0 = no encoder or a failure -> nothing shipped).
+static size_t mus_transcode(termgfx_audio_t *m, const char *key, const void *midi, size_t len,
+                            int rate, uint8_t **apc, size_t *apccap)
+{
+	int16_t *pcm     = NULL;
+	size_t   nframes = 0, ogglen, n;
+	uint8_t *ogg     = NULL;
+	char     leaf[MUSNAME_MAX + 8];
+	char     cachefn[96];
+	char     path[MUS_CACHE_DIR_MAX + MUSNAME_MAX + 8];
+
+	if (!termgfx_audio_have_ogg())
+		return 0;
+	if (!termgfx_midi_render(midi, len, rate, 0, &pcm, &nframes) || nframes == 0)
+		return 0;
+	ogglen = termgfx_audio_encode_ogg(pcm, nframes, 2, rate, MUS_OGG_Q, &ogg);
+	free(pcm);
+	if (ogglen == 0) {
+		free(ogg);
+		return 0;
+	}
+	if (mus_disk_path(m, key, path, sizeof(path)))
+		mus_write_file(path, ogg, ogglen);          // populate the disk cache (atomic)
+	snprintf(leaf, sizeof(leaf), "%s.ogg", key);
+	cache_name(m, "music", leaf, cachefn, sizeof(cachefn));
+	n = termgfx_audio_cache_file(apc, apccap, cachefn, ogg, ogglen);   // build the Store APC
+	free(ogg);
+	return n;
+}
+
+// Main half: stage the finished upload (once per session), ship the loop, mark it playing.
+static void mus_emit(termgfx_audio_t *m, const char *key, const uint8_t *apc, size_t apclen, int vol)
+{
+	char leaf[MUSNAME_MAX + 8];
+	char cachefn[96];
+
+	snprintf(leaf, sizeof(leaf), "%s.ogg", key);
+	cache_name(m, "music", leaf, cachefn, sizeof(cachefn));
+	if (!mus_stored(m, key)) {
+		if (apclen > 0)
+			m->emit(m->ctx, apc, apclen, TERMGFX_AUDIO_BULK);   // staged; out_flush drains over frames
+		mus_remember(m, key);
+	}
+	mus_ship(m, cachefn, vol);
+	strncpy(m->music_name, key, sizeof(m->music_name) - 1);
+	m->music_name[sizeof(m->music_name) - 1] = '\0';
+}
+
+static void *mus_worker(void *arg)
+{
+	termgfx_audio_t *m      = arg;
+	uint8_t *        apc    = NULL;      // reused across jobs
+	size_t           apccap = 0;
+
+	pthread_mutex_lock(&m->mus_lock);
+	for (;;) {
+		uint8_t *job;
+		size_t   joblen, apclen;
+		int      rate, vol;
+		char     key[MUSNAME_MAX];
+		unsigned gen;
+
+		while (!m->mus_job_pending && !m->mus_stop)
+			pthread_cond_wait(&m->mus_wake, &m->mus_lock);
+		if (m->mus_stop)
+			break;
+		job    = m->mus_job; m->mus_job = NULL;            // take the newest job
+		joblen = m->mus_job_len; rate = m->mus_job_rate; vol = m->mus_job_vol;
+		memcpy(key, m->mus_job_key, sizeof(key));
+		gen = m->mus_gen;
+		m->mus_job_pending = 0;
+		pthread_mutex_unlock(&m->mus_lock);
+
+		apclen = mus_transcode(m, key, job, joblen, rate, &apc, &apccap);   // the long work
+		free(job);
+
+		pthread_mutex_lock(&m->mus_lock);
+		if (gen == m->mus_gen && apclen > 0) {            // still the current track -> hand it over
+			free(m->mus_res);
+			m->mus_res     = apc;   m->mus_res_len = apclen;   // main frees the buffer after emit
+			m->mus_res_vol = vol;   m->mus_res_gen = gen;
+			memcpy(m->mus_res_key, key, sizeof(m->mus_res_key));
+			m->mus_res_ready = 1;
+			apc = NULL; apccap = 0;                       // ownership passed to the result slot
+		}
+		// else: superseded (or failed) -> keep `apc` as scratch, drop this result
+	}
+	pthread_mutex_unlock(&m->mus_lock);
+	free(apc);
+	return NULL;
+}
+
+void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
+                                      const void *music, size_t len, int rate, int vol)
+{
+	char     key[MUSNAME_MAX];
+	uint8_t *copy;
+
+	if (m == NULL || m->tier < 1 || name == NULL || name[0] == '\0' || music == NULL || len == 0)
+		return;
+	mus_key(name, key, sizeof(key));
+	if (strcmp(m->music_name, key) == 0)             // already playing this track
+		return;
+	copy = malloc(len);
+	if (copy == NULL)
+		return;
+	memcpy(copy, music, len);
+
+	pthread_mutex_lock(&m->mus_lock);
+	if (!m->mus_thr_up) {
+		if (pthread_create(&m->mus_thr, NULL, mus_worker, m) == 0)
+			m->mus_thr_up = 1;
+		else {
+			pthread_mutex_unlock(&m->mus_lock);
+			free(copy);
+			return;
+		}
+	}
+	free(m->mus_job);                                // supersede a not-yet-taken job
+	m->mus_job      = copy; m->mus_job_len = len;
+	m->mus_job_rate = rate; m->mus_job_vol = vol;
+	memcpy(m->mus_job_key, key, sizeof(m->mus_job_key));
+	m->mus_job_pending = 1;
+	m->mus_gen++;
+	pthread_cond_signal(&m->mus_wake);
+	pthread_mutex_unlock(&m->mus_lock);
+}
+
+int termgfx_audio_music_async_poll(termgfx_audio_t *m)
+{
+	uint8_t *apc    = NULL;
+	size_t   apclen = 0;
+	int      vol    = 0, ship = 0;
+	char     key[MUSNAME_MAX];
+
+	if (m == NULL || !m->mus_thr_up)
+		return TERMGFX_MUSIC_ASYNC_IDLE;
+	pthread_mutex_lock(&m->mus_lock);
+	if (m->mus_res_ready) {
+		m->mus_res_ready = 0;
+		if (m->mus_res_gen == m->mus_gen) {          // still the current track
+			apc = m->mus_res; apclen = m->mus_res_len; vol = m->mus_res_vol;
+			memcpy(key, m->mus_res_key, sizeof(key));
+			m->mus_res = NULL;
+			ship = 1;
+		} else {                                      // superseded while rendering -> drop it
+			free(m->mus_res); m->mus_res = NULL;
+		}
+	}
+	pthread_mutex_unlock(&m->mus_lock);
+	if (ship) {
+		mus_emit(m, key, apc, apclen, vol);          // main thread: stage + ship
+		free(apc);
+		return TERMGFX_MUSIC_ASYNC_SHIPPED;
+	}
+	return TERMGFX_MUSIC_ASYNC_IDLE;
+}
+
+#else  /* no worker thread (e.g. Windows): render synchronously in submit -- the old blocking path */
+
+void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
+                                      const void *music, size_t len, int rate, int vol)
+{
+	int16_t *pcm     = NULL;
+	size_t   nframes = 0;
+
+	if (m == NULL || m->tier < 1 || name == NULL || music == NULL || len == 0)
+		return;
+	if (termgfx_midi_render(music, len, rate, 0, &pcm, &nframes) && nframes > 0) {
+		termgfx_audio_music(m, name, pcm, nframes * 4, 16, 2, rate, vol);
+		free(pcm);
+	}
+}
+
+int termgfx_audio_music_async_poll(termgfx_audio_t *m) { (void)m; return TERMGFX_MUSIC_ASYNC_IDLE; }
+
+#endif

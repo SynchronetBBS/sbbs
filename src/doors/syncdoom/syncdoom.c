@@ -2443,6 +2443,8 @@ void DG_DrawFrame(void)
 	int w = s_pxW;
 	pump_input();                 // service input first, every tick
 	out_flush();                  // keep draining any in-flight frame
+	if (sd_audio != NULL && termgfx_audio_music_async_poll(sd_audio) == TERMGFX_MUSIC_ASYNC_SHIPPED)
+		dlog("music: async render ready -> shipped");   // a cold-miss track finished on the worker
 	{
 		// Frame-stall watchdog: emit_frame drops fast when the pipe isn't drained, so a long one
 		// is a slow encode.  (An audio transcode/upload blocks elsewhere and logs render=/xfer=.)

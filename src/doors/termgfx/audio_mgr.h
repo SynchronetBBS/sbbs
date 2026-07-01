@@ -116,6 +116,18 @@ void termgfx_audio_music(termgfx_audio_t *m, const char *name,
                          const void *pcm, size_t bytes, int bits, int channels,
                          int rate, int vol);
 
+// Async alternative to (render + termgfx_audio_music) for a cold cache miss: hand the raw MIDI/MUS
+// bytes to _submit() and call _poll() once per frame.  A worker thread renders + encodes + caches +
+// pre-builds the upload off the game thread; the game keeps running and the track fades in when
+// _poll() ships it.  On a build without threads (e.g. Windows) _submit() renders synchronously (the
+// old blocking path) and _poll() is a no-op, so callers need no #ifdef.  Call after _music_play()
+// returned TERMGFX_MUSIC_RENDER; no-op if `name` is already playing.  _poll() returns:
+#define TERMGFX_MUSIC_ASYNC_IDLE    0   // nothing ready this call
+#define TERMGFX_MUSIC_ASYNC_SHIPPED 1   // a finished track was uploaded + started this call
+void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
+                                      const void *music, size_t len, int rate, int vol);
+int  termgfx_audio_music_async_poll(termgfx_audio_t *m);
+
 // Stop the music channel (fade out).
 void termgfx_audio_music_stop(termgfx_audio_t *m);
 

@@ -377,6 +377,7 @@ void setcolor16(uint8_t color) { (void)color; }
  * and drive keyhandler() once per queued byte. _idle() services input too so the
  * engine's `while(!keyIsWaiting) _idle();` key-wait loops make progress. */
 extern void keyhandler(void);
+extern void sd_music_poll(void);   /* syncduke_stubs.c: ship an async-rendered track when ready */
 
 void _handle_events(void)
 {
@@ -392,6 +393,7 @@ void _handle_events(void)
 	syncduke_input_expire(syncduke_frame);            /* synth key-ups for held-out keys */
 	while (syncduke_input_has_raw())
 		keyhandler();                           /* consumes one raw byte each */
+	sd_music_poll();                                  /* ship an async-rendered track once ready */
 }
 
 /* Build calls _idle() from its key-wait spins (`while(!KB_KeyWaiting()) _idle();`).

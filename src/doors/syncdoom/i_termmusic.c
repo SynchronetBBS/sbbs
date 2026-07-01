@@ -64,16 +64,12 @@ static unsigned term_hash(const unsigned char *p, int n)
 	return h;
 }
 
-// Render the song to PCM and loop it on the music channel (tier known >= 1).
+// Play the song (tier known >= 1): a cache hit ships instantly; a cold miss is handed to termgfx's
+// worker thread (render + encode off the game thread) and shipped later by the DG_DrawFrame poll.
 static void term_emit(term_song_t *s)
 {
-	int16_t *pcm;
-	size_t   nframes;
-
-	extern void     dlog(const char *fmt, ...);     // syncdoom.c: BBS-log line (stderr)
-	extern uint32_t sd_now_ms(void);                // syncdoom.c: monotonic ms clock
-	uint32_t t0, t1;
-	int      hit;
+	extern void dlog(const char *fmt, ...);         // syncdoom.c: BBS-log line (stderr)
+	int hit;
 
 	if (sd_audio == NULL || s == NULL)
 		return;
@@ -86,18 +82,10 @@ static void term_emit(term_song_t *s)
 		                                 : "disk-cached (no render)");
 		return;
 	}
-	t0 = sd_now_ms();
-	if (termgfx_midi_render(s->data, (size_t)s->len, 44100, 0, &pcm, &nframes)) {
-		t1 = sd_now_ms();                        // render (OPL transcode) done
-		termgfx_audio_music(sd_audio, s->name, pcm, nframes * 4, 16, 2, 44100,
-		                    term_music_v());     // encode + disk-cache + upload (transfer)
-		// render=<transcode ms> xfer=<encode+cache+upload ms>: tells a stall's cause apart.
-		dlog("music: %s rendered %zu frames render=%ums xfer=%ums", s->name, nframes,
-		     (unsigned)(t1 - t0), (unsigned)(sd_now_ms() - t1));
-		free(pcm);
-	} else {
-		dlog("music: %s render FAILED (len=%d)", s->name, s->len);
-	}
+	// Cold miss: hand the MUS/MIDI to termgfx's worker thread; the game keeps running while it
+	// renders + encodes, and the poll in DG_DrawFrame ships it when ready -- no level-load freeze.
+	termgfx_audio_music_async_submit(sd_audio, s->name, s->data, (size_t)s->len, 44100, term_music_v());
+	dlog("music: %s submitted -> async render", s->name);
 }
 
 static boolean I_Term_InitMusic(void)
