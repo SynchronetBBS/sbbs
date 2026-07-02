@@ -1523,7 +1523,7 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 	if ((sys = (js_system_private_t*)js_GetClassPrivate(cx, obj, &js_system_class)) == NULL)
 		return JS_FALSE;
 
-	for (i = 0; i < argc && fname == NULL; i++) {
+	for (i = 0; i < argc; i++) {
 		if (JSVAL_IS_NUMBER(argv[i])) {
 			JS_ValueToInt32(cx, argv[i], &duration);
 			continue;
@@ -1540,6 +1540,8 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 			free(p);
 			return JS_FALSE;
 		}
+		/* Assign each string to the next unset parameter; ignore any extra
+		   strings so a trailing numeric duration argument is still parsed. */
 		if (prot == NULL)
 			prot = p;
 		else if (reason == NULL)
@@ -1550,8 +1552,10 @@ js_filter_ip(JSContext *cx, uintN argc, jsval *arglist)
 			ip_addr = p;
 		else if (from == NULL)
 			from = p;
-		else
+		else if (fname == NULL)
 			fname = p;
+		else
+			free(p);
 	}
 	rc = JS_SUSPENDREQUEST(cx);
 	ret = filter_ip(sys->cfg, prot, reason, host, ip_addr, from, fname, duration);
