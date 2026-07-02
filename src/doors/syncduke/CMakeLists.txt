@@ -33,6 +33,7 @@ set(SOURCES
     syncduke_io.c
     syncduke_input.c
     syncduke_node.c
+    syncduke_events.c
     syncduke_door.c
     syncduke_config.c
     syncduke_game.c

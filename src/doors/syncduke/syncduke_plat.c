@@ -290,6 +290,7 @@ void _nextpage(void)
 	sampletimer();
 	_handle_events();   /* service terminal input each frame (the SDL _nextpage did too) */
 	syncduke_node_tick();   /* status broadcast; who's-online build; message poll */
+	syncduke_events_tick();   /* events.jsonl activity log (no-op without -eventlog) */
 
 	/* Door session time limit: leave cleanly when it's up (the BBS reclaims the
 	 * node). Crude hard-exit, but a door's lifetime is the BBS's to bound. */

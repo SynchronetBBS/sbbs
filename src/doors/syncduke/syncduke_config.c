@@ -111,6 +111,14 @@ extern int syncduke_use_cell_size;
 static int syncduke_utf8;                                /* 1 = client terminal charset is UTF-8 */
 int syncduke_term_is_utf8(void) { return syncduke_utf8; }
 
+/* The -home value (per-user storage dir, e.g. data/user/####/duke/) and the -eventlog
+ * path (events.jsonl activity log, "" = off), stashed here so other modules (usernum
+ * derivation, syncduke_events.c) can read them without re-parsing argv. */
+static char g_home_path[PATH_MAX];
+static char g_eventlog_path[PATH_MAX];
+const char *syncduke_home(void)          { return g_home_path; }
+const char *syncduke_eventlog_path(void) { return g_eventlog_path; }
+
 static void syncduke_read_terminal_charset(void)
 {
 	const char *node = getenv("SBBSNODE");
@@ -157,6 +165,7 @@ static void syncduke_config_init(int argc, char **argv)
 {
 	char  dir[INI_MAX_VALUE_LEN] = "";
 	char  home[PATH_MAX] = "";
+	char  eventlog[PATH_MAX] = "";
 	char  logpath[INI_MAX_VALUE_LEN] = "";
 	char  abs[PATH_MAX];
 	int   i;
@@ -169,6 +178,8 @@ static void syncduke_config_init(int argc, char **argv)
 			strncpy(dir, argv[i + 1], sizeof(dir) - 1);
 		else if (strcmp(argv[i], "-home") == 0)
 			strncpy(home, argv[i + 1], sizeof(home) - 1);
+		else if (strcmp(argv[i], "-eventlog") == 0)
+			strncpy(eventlog, argv[i + 1], sizeof(eventlog) - 1);
 		else if (strcmp(argv[i], "-log") == 0)
 			strncpy(logpath, argv[i + 1], sizeof(logpath) - 1);
 		else if (strcmp(argv[i], "-netrole") == 0)
@@ -184,6 +195,8 @@ static void syncduke_config_init(int argc, char **argv)
 				charset_force = 0;                      /* "auto" leaves -1 (config / terminal.ini decide) */
 		}
 	}
+	snprintf(g_home_path, sizeof(g_home_path), "%s", home);
+	snprintf(g_eventlog_path, sizeof(g_eventlog_path), "%s", eventlog);
 	if ((f = fopen("syncduke.ini", "r")) != NULL) {
 		str_list_t ini = iniReadFile(f);
 		fclose(f);

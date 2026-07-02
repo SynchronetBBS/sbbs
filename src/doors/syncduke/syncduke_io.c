@@ -625,6 +625,9 @@ static const char *sd_tier_name(int t)
 	}
 }
 
+/* Name of the currently active render tier (events.jsonl "tier" field). */
+const char *syncduke_active_tier_name(void) { return sd_tier_name(syncduke_last_tier); }
+
 /* How long present() holds the first auto-tier frame waiting for the capability probe
  * reply (so a no-sixel terminal like conhost never sees a sixel frame). */
 #define SYNCDUKE_PROBE_GRACE_MS 500

@@ -34,6 +34,7 @@ void syncduke_depth_cycle(void);                       /* Ctrl-T: cycle the pipe
 void syncduke_tier_cycle(void);                        /* F4: cycle the graphics tier (jxl/sixel) */
 int  syncduke_text_tier(void);                         /* 1 if the active tier is a text/block tier (engine skips image-only screens) */
 void syncduke_hangup(const char *why);                 /* client gone: log + exit (free the node) */
+const char *syncduke_active_tier_name(void);           /* name of the current render tier (e.g. "sixel", "jxl") */
 
 /* --- provided by syncduke_stubs.c --- */
 void sd_music_pending_retry(void);                     /* replay title music dropped before the audio tier was known */
@@ -44,6 +45,9 @@ void syncduke_node_tick(void);   /* per-frame: status broadcast (+ Ctrl-U build,
 uint32_t syncduke_node_overlay_sig(void);   /* banner change signature (0 = no banner) */
 void     syncduke_node_draw(int cols, int rows);  /* paint the who's-online/message banner */
 void     syncduke_node_userlist_request(void);    /* Ctrl-U: flag the next tick to build the who's-online banner */
+
+/* --- provided by syncduke_events.c (events.jsonl activity log) --- */
+void syncduke_events_tick(void);   /* per-frame: emit start/level/death to -eventlog */
 
 /* --- provided by syncduke_input.c (terminal -> Build/Duke key state) ---
  * Self-contained (no engine linkage): syncduke_map_key is a pure function; the queue
@@ -102,6 +106,10 @@ void syncduke_kb_fastturn_set(int v);
 int      syncduke_door_socket(void);          /* client comm socket fd, or -1 if none (local/dev) */
 uint32_t syncduke_door_time_limit_ms(void);   /* session time limit in ms, or 0 if none */
 const char *syncduke_door_alias(void);        /* user's alias/handle, or "" */
+
+/* --- provided by syncduke_config.c (command-line / syncduke.ini derived state) --- */
+const char *syncduke_eventlog_path(void);   /* -eventlog path ("" = off) */
+const char *syncduke_home(void);            /* -home value ("" = none) */
 
 /* --- provided by syncduke_game.c (engine-state queries; pulls in duke3d.h) --- */
 int syncduke_in_gameplay(void);   /* 1 when actually playing (not in a menu), so the WASD/Space action layer applies */
