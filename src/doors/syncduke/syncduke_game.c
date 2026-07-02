@@ -8,6 +8,7 @@
  * save-game name, letters and Space must arrive literally.
  */
 
+#include <stdio.h>    /* snprintf (node status) */
 #include <string.h>   /* strncpy (HUD capture) */
 #include "duke3d.h"
 #include "syncduke.h"
@@ -33,6 +34,22 @@ int syncduke_player_dead(void)
 	return (gm & MODE_GAME) && sprite[ps[myconnectindex].i].extra <= 0;
 }
 
+/* Who's-online free-text status for the node (syncduke_node.c).  "playing SyncDuke",
+ * plus the current episode/level as (E#L#) while a REAL game is in progress -- excluded
+ * during the menu/title and attract-mode demos (MODE_DEMO / ud.recstat==2), which would
+ * otherwise advertise the demo's level as the player's.  Duke stores volume/level 0-based;
+ * the game itself displays them +1 as "e%dl%d" (game.c), so we match that. */
+void syncduke_game_status(char *buf, size_t bufsz)
+{
+	uint8_t gm = ps[myconnectindex].gm;
+
+	if ((gm & MODE_GAME) && !(gm & MODE_DEMO) && ud.recstat != 2)
+		snprintf(buf, bufsz, "playing SyncDuke (E%dL%d)",
+		         ud.volume_number + 1, ud.level_number + 1);
+	else
+		snprintf(buf, bufsz, "playing SyncDuke");
+}
+
 /* --- text-tier legible HUD overlay (see syncduke.h) ---------------------------
  * operatefta() (game.c) captures the active quote/chat strings here -- instead of
  * rasterising the (unreadable in a block tier) game font -- whenever syncduke_text_hud
@@ -41,7 +58,7 @@ int syncduke_player_dead(void)
  * engine<->door seam.  Reset each frame by the door (syncduke_hud_begin at present's
  * end) so a frame that draws no quote -- or a menu, where operatefta doesn't run --
  * leaves the overlay empty. */
-int syncduke_text_hud;
+int                        syncduke_text_hud;
 
 static syncduke_hud_line_t sd_hud[SYNCDUKE_HUD_MAX];
 static int                 sd_hud_n;

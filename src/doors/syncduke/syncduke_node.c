@@ -90,11 +90,15 @@ void syncduke_node_init(void)
 		atexit(syncduke_node_atexit);
 }
 
-/* Publish "playing SyncDuke" as our who's-online free-text, only when it changes. */
+/* Publish our who's-online free-text -- "playing SyncDuke", plus the current E#L#
+ * while in a real game (syncduke_game_status, which reads the engine state) -- only
+ * when it changes, so a map change updates it without churning node.exb every frame. */
 static void syncduke_node_status(void)
 {
 	static char last[64];
-	const char *status = "playing SyncDuke";
+	char        status[64];
+
+	syncduke_game_status(status, sizeof status);
 	if (strcmp(status, last) != 0) {
 		sbbs_node_set_ext(status);
 		snprintf(last, sizeof(last), "%s", status);
