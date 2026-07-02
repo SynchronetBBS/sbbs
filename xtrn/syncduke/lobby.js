@@ -68,7 +68,7 @@ function sd_send_pages(targets, lev) {
 	if (!targets || !targets.length)
 		return;
 	var who = (typeof user != "undefined" && user.alias) ? user.alias : "Someone";
-	var body = "started a SyncDuke co-op game (" + lev.name
+	var body = "started a SyncDuke (Nukem 3D) co-op game (" + lev.name
 	    + "); run SyncDuke to join.";
 	var paged = gl.send_pages(targets, who, body);
 	console.print("\r\n\1n\1cPaged \1h" + paged + "\1n\1c node"

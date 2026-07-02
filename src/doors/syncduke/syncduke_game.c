@@ -44,10 +44,10 @@ void syncduke_game_status(char *buf, size_t bufsz)
 	uint8_t gm = ps[myconnectindex].gm;
 
 	if ((gm & MODE_GAME) && !(gm & MODE_DEMO) && ud.recstat != 2)
-		snprintf(buf, bufsz, "playing SyncDuke (E%dL%d)",
+		snprintf(buf, bufsz, "playing SyncDuke (Nukem 3D) E%dL%d",
 		         ud.volume_number + 1, ud.level_number + 1);
 	else
-		snprintf(buf, bufsz, "playing SyncDuke");
+		snprintf(buf, bufsz, "playing SyncDuke (Nukem 3D)");
 }
 
 /* --- text-tier legible HUD overlay (see syncduke.h) ---------------------------
