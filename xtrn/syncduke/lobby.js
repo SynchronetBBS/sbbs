@@ -174,7 +174,7 @@ function sd_controls() {
 function sd_show_activity() {
 	console.clear();
 	console.print("\1h\1wSyncDuke (Nukem 3D) \1y- \1wrecent activity\1n\r\n\r\n");
-	var feed = gl.event_feed(SD_EVENTS, 18, sd_event_text), i;
+	var feed = gl.event_feed(SD_EVENTS, gl.activity_max(cfg), sd_event_text, gl.activity_max_age(cfg)), i;
 	if (!feed.length)
 		console.print("  \1k\1h(nothing yet -- go play a game!)\1n\r\n");
 	else
@@ -182,6 +182,81 @@ function sd_show_activity() {
 			console.print("  " + feed[i] + "\r\n");
 	console.print("\r\n");
 	console.pause();
+}
+
+// ---------------------------------------------------------------------------
+// Live lobby panel (who's-online + recent activity, bottom-anchored) -- opt-in
+// via [lobby] live = true. Mirrors SyncDOOM's: the cell composition is shared
+// (gl.panel_cells, via sd_panel_cells), the drawing is here (gl is UI-free).
+// ---------------------------------------------------------------------------
+
+// Draw the full lobby art (its bottom rows host the panel).
+function sd_draw_art() {
+	console.clear();
+	console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
+}
+
+// Repaint the live panel, bottom-anchored and growing upward over the art. Only the
+// panel rows are rewritten each tick (no art redraw -> no flicker); when the panel's
+// height changes the art is redrawn first so vacated rows don't keep a stale panel.
+var sd_panel_rows_prev = -1;
+function sd_draw_panel() {
+	var cols = console.screen_columns, rows = console.screen_rows;
+	var p = sd_panel_cells(cols, gl.activity_max_age(cfg), gl.panel_rows(cfg));
+	var cells = p.cells, nrows = cells.length;
+	if (sd_panel_rows_prev >= 0 && nrows != sd_panel_rows_prev)
+		sd_draw_art();                       // height changed -> restore art under it
+	sd_panel_rows_prev = nrows;
+	var top = rows - nrows + 1, r;
+	for (r = 0; r < nrows; r++) {
+		console.gotoxy(1, top + r);
+		console.print("\1n");
+		console.cleartoeol();
+		console.print(cells[r]);
+	}
+	console.gotoxy(1, rows);                  // park the cursor out of the panel body
+}
+
+// Live lobby: refresh the panel ~1/s and return the first valid menu key. The static
+// menu's blocking getkeys() calls nodesync() for us (telegrams, sysop interrupt,
+// forced chat); the poll loop must do it explicitly.
+function sd_lobby_wait() {
+	var allowed = "CJPLHQ";                   // '?'/Enter -> redraw (handled below)
+	var mynode = bbs.node_num;
+	var oldctrl = console.ctrlkey_passthru;
+	console.ctrlkey_passthru = -1;
+	console.ctrlkey_passthru = "-P";          // keep Ctrl-P (paging) with the BBS
+	sd_panel_rows_prev = -1;                  // first draw shouldn't trigger an art redraw
+	try {
+		while (!js.terminated && bbs.online) {
+			var pending = (system.node_list[mynode - 1].misc & (NODE_NMSG | NODE_MSGW)) != 0;
+			if (pending) {                    // a waiting telegram prints to the screen
+				console.clear();
+				bbs.nodesync();
+				console.pause();
+				sd_draw_art();
+				sd_panel_rows_prev = -1;
+			} else
+				bbs.nodesync();               // sync node record / handle interrupt
+			if (js.terminated || !bbs.online)
+				break;
+			sd_draw_panel();
+			var c = console.inkey(K_UPPER | K_NOECHO, 1000);
+			if (!c)
+				continue;                    // timeout -> refresh
+			if (c == "\r" || c == "\n" || c == "?") {   // redraw the menu art
+				sd_draw_art();
+				sd_panel_rows_prev = -1;
+				continue;
+			}
+			if (allowed.indexOf(c) >= 0)
+				return c;
+			// unmapped key (incl. passed-through Ctrl-keys) -> ignore, keep refreshing
+		}
+		return "Q";
+	} finally {
+		console.ctrlkey_passthru = oldctrl;
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -193,18 +268,28 @@ function sd_main() {
 	// ensure its dir exists (the door's append won't create it) and keep it bounded.
 	mkpath(system.data_dir + "syncduke/");
 	gl.prune_events(SD_EVENTS, 2000, 1000);
+	// The live who's-online/activity panel is opt-in ([lobby] live = true): it
+	// repaints the bottom rows ~1/s, so it suits ANSI terminals only.
+	var live = (cfg.lobby && (cfg.lobby.live === true || cfg.lobby.live === "true"));
 	while (!js.terminated && bbs.online) {
-		console.clear();
-		// The menu art is lobby.msg (Ctrl-A); its option keys (C/J/P/H/Q) are baked
-		// into the themeable file. Pass control keys to us so Ctrl-T/Ctrl-U/etc. don't
-		// draw over it, but keep Ctrl-P with the BBS for node paging. Restore after.
-		console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
-		var oldctrl = console.ctrlkey_passthru;
-		console.ctrlkey_passthru = -1;
-		console.ctrlkey_passthru = "-P";
-		// CR/'?' return -> no action -> the loop redraws the menu.
-		var k = console.getkeys("\rCJPLH?Q");
-		console.ctrlkey_passthru = oldctrl;
+		var k;
+		if (live) {
+			// The art's bottom rows host the live panel; the loop draws art + polls.
+			sd_draw_art();
+			k = sd_lobby_wait();
+		} else {
+			console.clear();
+			// The menu art is lobby.msg (Ctrl-A); its option keys (C/J/P/L/H/Q) are
+			// baked into the themeable file. Pass control keys to us so Ctrl-T/etc.
+			// don't draw over it, but keep Ctrl-P with the BBS for node paging.
+			console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
+			var oldctrl = console.ctrlkey_passthru;
+			console.ctrlkey_passthru = -1;
+			console.ctrlkey_passthru = "-P";
+			// CR/'?' return -> no action -> the loop redraws the menu.
+			k = console.getkeys("\rCJPLH?Q");
+			console.ctrlkey_passthru = oldctrl;
+		}
 		console.clear();
 		if (k == "Q")
 			break;

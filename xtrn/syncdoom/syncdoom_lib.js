@@ -287,55 +287,20 @@ function sd_event_text(e)
 // ones sd_event_text() renders (frags / level clears / non-player deaths). Reads an
 // oversampled window from the shared gl.read_events() so the non-displayable events
 // interleaved in the tail don't shrink the result below `max`.
-function sd_recent_events(max)
+function sd_recent_events(max, max_age)
 {
-	var all = gl.read_events(SD_EVENTS, max * 6), out = [], i;
-	for (i = all.length - 1; i >= 0 && out.length < max; i--)
-		if (sd_event_text(all[i]) !== null)
-			out.push(all[i]);
-	return out;
-}
-
-// Up to `max` recent activity lines (most recent first), Ctrl-A colored, for the
-// full-screen 'A' view.
-function sd_event_feed(max)
-{
-	var ev = sd_recent_events(max), out = [], i;
-	for (i = 0; i < ev.length; i++)
-		out.push("\1k\1h" + gl.ago(ev[i].time) + "\1n \1w" + sd_event_text(ev[i]) + "\1n");
-	return out;
+	return gl.recent_events(SD_EVENTS, max, sd_event_text, max_age);
 }
 
 // ---------------------------------------------------------------------------
 // Live lobby panel (who's online + recent activity)
 // ---------------------------------------------------------------------------
 
-// One recent-activity cell, exactly `cw` visible chars: "[age] description" (dim
-// grey age tag, plain grey body).
-function sd_activity_cell(e, cw)
+// Build the bottom-of-lobby panel's cells via the shared composer: live nodes
+// (SyncDOOM players first) then recent activity, padded to a minimum height.
+// The lobby.js draw loop bottom-anchors these. Returns { cells, cw }.
+function sd_panel_cells(cols, max_age, max_rows)
 {
-	var tag = gl.ago(e.time);
-	var bw = cw - tag.length - 1;
-	var body = gl.rpad(gl.clip(sd_event_text(e) || "", bw), bw);
-	return "\1k\1h" + tag + "\1n " + body + "\1n";
-}
-
-// Build the panel's cells (one full-width cell per row -- less truncation than two
-// narrow columns): live nodes first (SyncDOOM players first, via gl.live_nodes'
-// marker), then recent activity to fill, padded with blanks to >= minRows. `cols`
-// sizes the single column. Returns { cells, cw }.
-function sd_panel_cells(cols)
-{
-	var minRows = 3, maxRows = 6;
-	var cw = cols - 1;                        // one cell, full width (avoid last-col wrap)
-	var cells = [], i;
-	var nodes = gl.live_nodes(maxRows, "SyncDOOM");
-	for (i = 0; i < nodes.length; i++)
-		cells.push(gl.node_cell(nodes[i], cw));
-	var events = sd_recent_events(maxRows);
-	for (i = 0; cells.length < maxRows && i < events.length; i++)
-		cells.push(sd_activity_cell(events[i], cw));
-	while (cells.length < minRows)
-		cells.push(gl.blank_cell(cw));
-	return { cells: cells, cw: cw };
+	max_rows = (max_rows > 0) ? max_rows : 6;
+	return gl.panel_cells(cols, "SyncDOOM", sd_recent_events(max_rows, max_age), sd_event_text, max_rows);
 }

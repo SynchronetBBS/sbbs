@@ -504,7 +504,7 @@ function sd_show_activity()
 {
 	console.clear();
 	console.print("\1h\1wSyncDOOM \1y- \1wrecent activity\1n\r\n\r\n");
-	var feed = sd_event_feed(18);
+	var feed = gl.event_feed(SD_EVENTS, gl.activity_max(cfg), sd_event_text, gl.activity_max_age(cfg));
 	if (!feed.length)
 		console.print("  \1k\1h(nothing yet -- go play a game!)\1n\r\n");
 	else {
@@ -532,7 +532,7 @@ var sd_panel_rows_prev = -1;
 function sd_draw_panel()
 {
 	var cols = console.screen_columns, rows = console.screen_rows;
-	var p = sd_panel_cells(cols);
+	var p = sd_panel_cells(cols, gl.activity_max_age(cfg), gl.panel_rows(cfg));
 	var cells = p.cells, nrows = cells.length;   // one full-width cell per row
 	if (sd_panel_rows_prev >= 0 && nrows != sd_panel_rows_prev)
 		sd_draw_art();                       // height changed -> restore art under it

@@ -55,10 +55,11 @@ var SD_LEVELS = [
 // defaults. Returns { net: {...} }. The [grp]/[video]/[game] sections are the C
 // door's concern (it reads the ini itself); the lobby only needs [net].
 function sd_load_config() {
-	var cfg = { net: {} };
+	var cfg = { net: {}, lobby: {} };
 	var f = new File(SD_CFG);
 	if (f.open("r")) {
 		cfg.net = gl.read_overlaid(f, "net");
+		cfg.lobby = f.iniGetObject("lobby") || {};   // [lobby] live = true -> live panel
 		f.close();
 	}
 	gl.apply_defaults(cfg.net, {
@@ -175,19 +176,37 @@ function sd_list_open_games(cfg) {
 // Activity feed formatting (door-written events.jsonl -> one display line)
 // ---------------------------------------------------------------------------
 
-// Format one event as a Ctrl-A colored feed line, prefixed with its relative age
-// (bracket form via the shared gl.ago -- matches SyncDOOM's activity look). Returns
-// null for event types the feed doesn't surface, so gl.event_feed skips them.
+// One event's plain-body description for the activity feed / panel; the display path
+// (gl.event_feed and gl.activity_cell) adds the "[age]" prefix + coloring, matching
+// SyncDOOM. Returns null for event types the feed doesn't surface, so they're skipped.
 // SyncDuke's "level" event carries the level just ENTERED (its secs is the prior
 // level's elapsed time), so it reads as "reached", not "cleared in Ns".
 function sd_event_text(e) {
-	var age = "\1k\1h" + gl.ago(e.time) + "\1n ";
 	switch (e.type) {
-		case "start": return age + "\1w" + e.user + " joined (" + (e.mode || "single") + ")\1n";
-		case "level": return age + "\1w" + e.user + " reached " + e.map + "\1n";
-		case "death": return age + "\1w" + e.user + " died on " + e.map + "\1n";
+		case "start": return e.user + " joined (" + (e.mode || "single") + ")";
+		case "level": return e.user + " reached " + e.map;
+		case "death": return e.user + " died on " + e.map;
 	}
 	return null;
+}
+
+// ---------------------------------------------------------------------------
+// Live who's-online + recent-activity panel (bottom of the lobby)
+// ---------------------------------------------------------------------------
+
+// Up to `max` recent displayable events (most recent first) for the panel. SyncDuke's
+// sd_event_text renders every event type, so nothing is filtered today -- but this
+// routes through the shared filter so a future hidden type just works.
+function sd_recent_events(max, max_age) {
+	return gl.recent_events(SD_EVENTS, max, sd_event_text, max_age);
+}
+
+// Bottom-of-lobby panel cells via the shared composer: live nodes (SyncDuke players
+// first) then recent activity (age-limited by `max_age` seconds, 0 = no limit). The
+// lobby.js draw loop bottom-anchors these.
+function sd_panel_cells(cols, max_age, max_rows) {
+	max_rows = (max_rows > 0) ? max_rows : 6;
+	return gl.panel_cells(cols, "SyncDuke", sd_recent_events(max_rows, max_age), sd_event_text, max_rows);
 }
 
 this;

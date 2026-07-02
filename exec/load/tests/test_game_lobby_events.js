@@ -21,7 +21,7 @@ var feed = gl.event_feed(path, 10, function (e) {
 	return e.type === "level" ? ("level " + e.map) : null;   // skip death
 });
 chk("feed skips non-level", feed.length, 2);
-chk("feed newest first", feed[0], "level E1L2");
+chk("feed newest first", feed[0].indexOf("level E1L2") >= 0, true);   // event_feed adds an [age] prefix
 
 var kept = gl.prune_events(path, 2, 2);                // 3 lines > cap 2 -> keep 2
 chk("prune kept", kept, 2);

@@ -430,18 +430,107 @@ function prune_events(path, cap, keep) {
 	return tail.length;
 }
 
-// Last `max` events formatted via fmt(ev) -> string (falsy = skipped), most
-// recent first.
-function event_feed(path, max, fmt) {
-	var ev = read_events(path, max), out = [], i, s;
-	for (i = ev.length - 1; i >= 0; i--) {                   // most recent first
-		s = fmt(ev[i]);
-		if (s) out.push(s);
-	}
+// Last `max` displayable events as Ctrl-A colored lines "[age] <fmt(ev)>", most
+// recent first. fmt(ev) returns the plain body; this adds the dim relative-age
+// prefix + coloring (the same look as the bottom-panel activity cells). `max_age`
+// (seconds, optional) hides events older than that.
+function event_feed(path, max, fmt, max_age) {
+	var ev = recent_events(path, max, fmt, max_age), out = [], i;
+	for (i = 0; i < ev.length; i++)                          // recent_events is newest-first
+		out.push("\1k\1h" + ago(ev[i].time) + "\1n \1w" + fmt(ev[i]) + "\1n");
 	return out;
+}
+
+// Parse a duration string to SECONDS. A bare number is DAYS (fractions allowed, e.g.
+// "0.5"); an optional letter suffix overrides the unit: s, m(inutes), h(ours),
+// d(ays), w(eeks), y(ears) -- e.g. "48h", "2w", "0.5d". Blank/invalid/<=0 -> 0 (which
+// callers treat as "no limit"). Same suffix letters as xpdev's parse_duration; its
+// bare unit is seconds, ours is days (a lobby-config convenience -- JS iniGetValue
+// has no native duration parsing yet).
+function parse_duration(str) {
+	var n = parseFloat(str);
+	if (isNaN(n) || n <= 0)
+		return 0;
+	var m = String(str).match(/[a-zA-Z]/);
+	switch (m ? m[0].toLowerCase() : "d") {
+		case "s": return Math.round(n);
+		case "m": return Math.round(n * 60);
+		case "h": return Math.round(n * 3600);
+		case "w": return Math.round(n * 604800);
+		case "y": return Math.round(n * 31536000);
+		default:  return Math.round(n * 86400);   // "d" or no suffix -> days
+	}
+}
+
+// [lobby] activity-feed config accessors (shared by both doors' lobbies).
+// activity_max: max events in the full-screen feed (default 18). activity_max_age:
+// hide activity older than this, via parse_duration (days by default); 0 = no limit.
+function activity_max(cfg) {
+	var n = (cfg && cfg.lobby) ? parseInt(cfg.lobby.activity_max, 10) : NaN;
+	return (n > 0) ? n : 18;
+}
+function activity_max_age(cfg) {
+	return (cfg && cfg.lobby) ? parse_duration(cfg.lobby.activity_max_age) : 0;
+}
+// [lobby] panel_rows: max rows in the bottom live panel (nodes + activity). Default 6.
+function panel_rows(cfg) {
+	var n = (cfg && cfg.lobby) ? parseInt(cfg.lobby.panel_rows, 10) : NaN;
+	return (n > 0) ? n : 6;
 }
 
 // ago(t) and mmss(secs) already exist above (shared with the who's-online view,
 // bracket format matching SyncDOOM's sd_ago); the events feed reuses them.
+
+// ---------------------------------------------------------------------------
+// Live who's-online + recent-activity panel  (Terminal Server context)
+//
+// UI-free: these build the cell STRINGS; the door's lobby.js draws them (bottom-
+// anchored, refreshed on a timer). `text_fn(e)` is the door's own per-event
+// formatter (it returns falsy to hide an event type from the feed/panel).
+// ---------------------------------------------------------------------------
+
+// Up to `max` recent *displayable* event objects (most recent first) -- the ones
+// text_fn(e) renders. Oversamples the raw read so hidden events interleaved in the
+// tail don't shrink the result below `max`. `max_age` (seconds, optional) hides
+// events older than that.
+function recent_events(path, max, text_fn, max_age) {
+	var all = read_events(path, max * 6), out = [], i, now = time();
+	for (i = all.length - 1; i >= 0 && out.length < max; i--) {
+		if (max_age && (now - all[i].time) > max_age)
+			continue;                            // older than the configured window
+		if (text_fn(all[i]))
+			out.push(all[i]);
+	}
+	return out;
+}
+
+// One recent-activity cell, exactly `cw` visible chars: "[age] description" (dim
+// grey age tag, plain grey body). `text_fn(e)` supplies the description.
+function activity_cell(e, cw, text_fn) {
+	var tag = ago(e.time);
+	var bw = cw - tag.length - 1;
+	var body = rpad(clip(text_fn(e) || "", bw), bw);
+	return "\1k\1h" + tag + "\1n " + body + "\1n";
+}
+
+// Build a bottom-of-lobby panel's cells (one full-width cell per row -- less
+// truncation than two narrow columns): live nodes first (players of `marker` first,
+// via live_nodes), then recent-activity cells from `events` (newest first), padded
+// with blanks to >= 3 rows and capped at `max_rows` (default 6). `cols` sizes the
+// single column; `text_fn` renders each event body. Returns { cells, cw }.
+function panel_cells(cols, marker, events, text_fn, max_rows) {
+	var maxRows = (max_rows > 0) ? max_rows : 6;
+	var minRows = (maxRows < 3) ? maxRows : 3;   // blank-pad floor, never above maxRows
+	var cw = cols - 1;                        // one cell, full width (avoid last-col wrap)
+	var cells = [], i;
+	var nodes = live_nodes(maxRows, marker);
+	for (i = 0; i < nodes.length; i++)
+		cells.push(node_cell(nodes[i], cw));
+	for (i = 0; cells.length < maxRows && i < events.length; i++)
+		cells.push(activity_cell(events[i], cw, text_fn));
+	while (cells.length < minRows)
+		cells.push(blank_cell(cw));
+	return { cells: cells, cw: cw };
+}
 
 this;
