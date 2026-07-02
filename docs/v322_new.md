@@ -131,6 +131,13 @@
   evaluated instead of being skipped with `NO_RELAYS` — noticeably
   improving inbound spam detection. The added relay info is used
   only for scoring and is not duplicated into the delivered message
+- New **`spamlearn.js`** mail processor trains SpamAssassin's Bayes
+  classifier from e-mail: redirect (resend) spam to a `spamlearn`
+  address and misclassified good mail to a `hamlearn` address and it
+  feeds each message to `spamd` (which must be started with
+  `--allow-tell`). Configure the addresses in `mailproc.ini`, gated to
+  the sysop (`AccessRequirements = user equal 1`) so the learn
+  addresses can't be used to poison Bayes
 
 ## Services
 

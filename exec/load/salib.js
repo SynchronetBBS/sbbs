@@ -23,6 +23,8 @@ function SPAMC_Message(messagefile, addr, port, user)
 	this.report =function() { return(this.DoCommand('REPORT')); };
 	this.report_ifspam =function() { return(this.DoCommand('REPORT_IFSPAM')); };
 	this.process =function() { return(this.DoCommand('PROCESS')); };
+	this.DoLearn =Message_DoLearn;
+	this.learn =function(msgclass) { return(this.DoLearn(msgclass)); };
 }
 
 function Message_DoCommand(command)
@@ -194,5 +196,88 @@ function Message_DoCommand(command)
 			ret.message = ret.message.replace(inserted_received, "");
 	}
 
+	return(ret);
+}
+
+/* Train spamd's Bayes classifier with this message via the TELL command.
+   msgclass is "spam" or "ham" (defaults to "spam").  Requires spamd to have
+   been started with --allow-tell.  Unlike DoCommand(), no synthetic Received
+   or Return-Path is injected: the message is learned exactly as stored, so the
+   originating sender's own headers train Bayes.  No User header is sent, so the
+   message trains spamd's own (run-as) Bayes database - the same one used to
+   score inbound mail. */
+function Message_DoLearn(msgclass)
+{
+	var tmp;
+	var sock=new Socket(SOCK_STREAM, "spamc");
+	var ret={ learned:false };
+
+	if(msgclass==undefined)
+		msgclass="spam";
+	msgclass=msgclass.toLowerCase();
+	if(msgclass!="spam" && msgclass!="ham") {
+		ret.error="invalid message class: " + msgclass;
+		return(ret);
+	}
+
+	if(!sock.connect(this.addr, this.port)) {
+		sock.close();
+		ret.error='Failed to connect to spamd';
+		return(ret);
+	}
+
+	var msg_file=new File(this.messagefile);
+	if(!msg_file.open("rb")) {
+		sock.close();
+		ret.error="Failed to open message file: " + this.messagefile;
+		return(ret);
+	}
+	var msg_bytes=msg_file.read(500000);	/* cap read at 500 KB (mailproc also limits message size) */
+	msg_file.close();
+	if(typeof msg_bytes != "string")
+		msg_bytes="";
+
+	sock.write("TELL SPAMC/1.2\r\n");
+	sock.write("Content-length: "+msg_bytes.length+"\r\n");
+	sock.write("Message-class: "+msgclass+"\r\n");
+	sock.write("Set: local\r\n");
+	if(this.user)	// Optional
+		sock.write("User: " + this.user + "\r\n");
+	sock.write("\r\n");
+	sock.write(msg_bytes);
+	sock.is_writeable=false;
+
+	var rcvd=new Array();
+	while(1) {
+		tmp=sock.recvline();
+		if(tmp==undefined || tmp=='')
+			break;
+		if(this.debug)
+			log(LOG_DEBUG,"RX SPAMD header: " + tmp);
+		rcvd.push(tmp);
+	}
+	sock.close();
+
+	if(rcvd.length < 1) {
+		ret.error='No response from spamd (is spamd started with --allow-tell?)';
+		return(ret);
+	}
+	tmp=rcvd[0].split(/\s+/);
+	if(tmp.length < 3) {
+		ret.error="Unable to parse response line '"+rcvd[0]+"'";
+		return(ret);
+	}
+	if(tmp[1] != '0') {
+		tmp.shift();
+		ret.error="spamd returned error: " + tmp.join(" ");
+		return(ret);
+	}
+	/* A "DidSet:" response header means spamd actually learned the message;
+	   its absence means the message was already known to the database. */
+	for(var line=1; line<rcvd.length; line++) {
+		var nv=rcvd[line].split(/:\s*/);
+		if(nv[0].toUpperCase()=="DIDSET")
+			ret.learned=true;
+	}
 	return(ret);
 }
