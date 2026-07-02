@@ -41,6 +41,8 @@ void sd_music_pending_retry(void);                     /* replay title music dro
 /* --- provided by syncduke_node.c (Synchronet who's-online / status / messages) --- */
 void syncduke_node_init(void);   /* resolve BBS context; install exit status-clear */
 void syncduke_node_tick(void);   /* per-frame: status broadcast (+ Ctrl-U build, nmsg poll) */
+uint32_t syncduke_node_overlay_sig(void);   /* banner change signature (0 = no banner) */
+void     syncduke_node_draw(int cols, int rows);  /* paint the who's-online/message banner */
 
 /* --- provided by syncduke_input.c (terminal -> Build/Duke key state) ---
  * Self-contained (no engine linkage): syncduke_map_key is a pure function; the queue
@@ -73,6 +75,7 @@ int  syncduke_jxl_scale_max(void);                  /* JXL fill cap (px), [video
 int  syncduke_sixel_max_w(void);                    /* sixel width cap (px), [video] sixel_max_width */
 double syncduke_music_quality(void);                /* Ogg/Opus VBR quality (0..1), [audio] music_quality */
 int  syncduke_term_is_utf8(void);                   /* 1 = client charset is UTF-8 (terminal.ini/[video] charset) */
+uint32_t syncduke_clock_ms(void);                   /* the monotonic ms clock present()/pacing use (shared clock domain) */
 /* The displayed image's horizontal center column and half-width in cells, recorded by
  * present() each frame (the placement depends on tier + terminal).  Used by the mouse
  * steer to map a pointer column to a turn rate around the actual image. */

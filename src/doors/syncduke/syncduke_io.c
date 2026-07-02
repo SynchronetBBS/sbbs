@@ -517,6 +517,7 @@ static uint32_t sd_hud_signature(void)
 	return h;
 }
 static uint32_t sd_hud_sig, sd_hud_last_sig;
+static uint32_t syncduke_node_last_sig;   /* last-drawn syncduke_node_overlay_sig() (banner de-dupe) */
 
 /* Copy of the NATIVE framebuffer last emitted (+ the geometry it was emitted at),
  * for de-dupe -- mirrors SyncDOOM's g_last_fb memcmp. Comparing the 320x200 source
@@ -588,6 +589,11 @@ static uint64_t syncduke_now_us(void)
 }
 
 static uint32_t syncduke_now_ms(void) { return (uint32_t)(syncduke_now_us() / 1000ULL); }
+
+/* Public accessor for the same clock domain present()/pacing use above, so a banner's
+ * expiry (set/checked from syncduke_node.c) compares against the identical monotonic
+ * clock instead of a second, merely-similar one (e.g. syncduke_input.c's own copy). */
+uint32_t syncduke_clock_ms(void) { return syncduke_now_ms(); }
 
 /* DSR send-time ring -> RTT of each frame's terminal round-trip (= link + the
  * terminal's sixel render time, the thing that caps remote frame rate). */
@@ -1089,13 +1095,24 @@ void syncduke_present(void)
 	syncduke_text_hud = sd_is_text_tier(tier);
 	sd_hud_sig        = sd_hud_signature();
 
+	/* Cross-tier banner (who's-online / message strip, syncduke_node.c): its own change
+	 * signature, folded into the de-dupe below so a banner-only change (no game-frame
+	 * change at all) still isn't skipped. */
+	uint32_t node_sig = syncduke_node_overlay_sig();
+
 	fb = syncduke_fb();
 	if (!pal_dirty && syncduke_have_last
 	    && syncduke_last_w == syncduke_out_w && syncduke_last_h == syncduke_out_h
 	    && syncduke_last_hsc == hsc && syncduke_last_tier == tier
 	    && (!sd_is_text_tier(tier) || sd_hud_sig == sd_hud_last_sig)
+	    && node_sig == syncduke_node_last_sig
 	    && memcmp(syncduke_last_fb, fb, SYNCDUKE_SCREEN_W * SYNCDUKE_SCREEN_H) == 0)
 		goto done;
+
+	if (node_sig != syncduke_node_last_sig) {
+		syncduke_have_last = 0;   /* image tier: force a full re-emit so the strip draws/erases */
+		rt_invalidate();          /* text tier: same */
+	}
 
 	/* Palette emission, per SyncDOOM's tested multi-terminal rule (syncdoom.c): SyncTERM
 	 * persists sixel color registers across images, so (re)define them only on a real
@@ -1227,6 +1244,9 @@ void syncduke_present(void)
 	syncduke_last_hsc  = hsc;
 	syncduke_last_tier = tier;
 	syncduke_have_last = 1;
+
+	syncduke_node_draw(syncduke_out_w / 8, syncduke_out_h / 16);  /* who's-online / message strip */
+	syncduke_node_last_sig = node_sig;
 
 done:
 	syncduke_hud_begin();                     /* per-frame HUD reset: next frame's operatefta refills it (or leaves
