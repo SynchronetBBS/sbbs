@@ -107,18 +107,27 @@ a survey — expand it as terminals are actually tested.
 | **SyncTERM** (baseline target) | ✔ | ✔ | ✔ | ✔ | ✘ (uses evdev) |
 | **xterm** (v390) | ✔ | ✘ (full-size only) | ✘ | ✘ | ✘ |
 | **foot** (1.62.2) | ✔ | ✔ | ✘ | ✘ | ✔ |
+| **Contour** (0.6.3.8249) | ✔ | ✔ | ✘ | ✘ | ✔ |
+| **WezTerm** (Windows, 20260627-110829) | ✔ | ✘ (full-size only) | ✘ | ✘ | ✘ |
 
 Notes:
 - **xterm 390** renders sixels only at full size — it has no client-side vertical
   scaling — so the aspect-scaled half-height path (`sixel_encode_aspect`) doesn't
   size correctly there; a full-size sixel is required for proper geometry.
-- **foot 1.62.2** does both kitty-keyboard input and sixel *with* vertical scaling.
+- **WezTerm** (verified on Windows, build 20260627-110829-e46fe38c) does Sixel but likewise ignores the pixel-aspect
+  scaling — it renders full-size only, so it needs the full-size sixel path (the
+  door's `SD_SIXEL_FULL` tier) for correct geometry — and does **not** implement the
+  kitty keyboard protocol (falls back to legacy CSI keys).
+- **foot 1.62.2** and **Contour** both do kitty-keyboard input and sixel *with*
+  vertical scaling.
 - **JXL image APC** and **Audio APC** are SyncTERM-specific transports; no
   third-party terminal implements them, so those columns are ✘ for everything but
   SyncTERM.
-- Other kitty-keyboard terminals (Contour, Windows Terminal 1.25) have known
-  numpad / shift-modified key quirks that still need investigation — left out of
-  the matrix until their behavior is characterized.
+- Contour's numpad / shift-modified **kitty key encodings** still have quirks under
+  investigation (they differ from foot's); the graphics + base kitty-keys work, so
+  it's in the matrix — the encoding quirks are a separate input-parser issue.
+- **Windows Terminal 1.25** is also a kitty-keyboard terminal but has its own
+  numpad / shift-modified key quirks; left out of the matrix until characterized.
 
 ### Toward a fuller matrix
 
