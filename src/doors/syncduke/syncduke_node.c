@@ -61,9 +61,12 @@ void syncduke_node_draw(int cols, int rows)
 		int  n;
 		if (len > cols)
 			len = cols;
-		/* white-on-red top strip, one node per row, left-aligned */
-		n = snprintf(ob, sizeof ob, "\x1b[%d;1H\x1b[1;37;41m%-*.*s\x1b[0m",
-		             i + 1, cols, len, g_ov[i]);
+		/* White-on-red top strip, one node per row: position, set attr, ERASE-TO-EOL
+		 * (fills the row red to the true terminal edge -- SyncDOOM's draw_page_overlay
+		 * pattern), then the text.  \x1b[K bounds the byte count (no `cols`-wide pad), so
+		 * `ob` can't be overrun on a wide terminal, and the strip fills regardless of `cols`. */
+		n = snprintf(ob, sizeof ob, "\x1b[%d;1H\x1b[1;37;41m\x1b[K%.*s\x1b[0m",
+		             i + 1, len, g_ov[i]);
 		if (n > 0)
 			syncduke_out_put(ob, (size_t)n);
 	}
