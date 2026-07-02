@@ -1,11 +1,22 @@
 // syncdoom_lib.js -- model layer for the syncdoom lobby (no UI, no bbs/user
-// dependencies, so it can be exercised headless with jsexec). Loaded by
-// lobby.js. SpiderMonkey 1.8.5-compatible (no modern ES).
+// dependencies, so it can be exercised headless with jsexec). Loaded by lobby.js.
+//
+// Layers the DOOM-specific bits (wad sets, map-warp args, event text, the
+// who's-online + recent-activity panel) over the shared exec/load/game_lobby.js,
+// so the logic every network-game lobby needs -- [net] config with per-host
+// overlay + defaults, UDP port allocation, the game registry, node paging, the
+// live-node panel primitives, and events.jsonl read/prune -- is shared with
+// SyncDuke rather than duplicated here. SpiderMonkey 1.8.5-compatible (no modern
+// ES).
 //
 // Copyright(C) 2026 Rob Swindell / syncdoom. GPL-2.0.
 
+// Loaded default-form by lobby.js, so its constants land in the lobby's scope:
+// EX_NATIVE/EX_BIN (bbs.exec), K_*/P_*/NODE_* (menu + node helpers). (LOG_WARNING,
+// used in sd_load_config below, is a built-in -- present here either way.)
 load("sbbsdefs.js");
-load("sockdefs.js");
+
+var gl = load({}, "game_lobby.js");   // shared lobby model layer (gl.* helpers)
 
 // The door's own directory (where the syncdoom binary + syncdoom.ini live).
 // js.exec_dir is the directory of the *running* script; when lobby.js loads
@@ -16,53 +27,40 @@ var SD_DIR    = js.exec_dir;
 // Windows yet won't collide with a non-Windows "syncdoom" in the same dir.
 var SD_BINARY = SD_DIR + "syncdoom%.";
 var SD_CFG    = SD_DIR + "syncdoom.ini";
-var SD_GAMES  = system.data_dir + "syncdoom/games/";
+var SD_GAMES  = backslash(system.data_dir + "syncdoom/games/");
 var SD_EVENTS = system.data_dir + "syncdoom/events.jsonl";   // door-written activity log
-
-var json_lines = load({}, "json_lines.js");   // { add, get } for .jsonl files
-
-// Trim leading & trailing whitespace (SM1.8.5-safe).
-function sd_trim(s)
-{
-	return String(s).replace(/^\s+/, "").replace(/\s+$/, "");
-}
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
-// Read syncdoom.ini -> { net:{}, wads:{}, wadsets:[{id,name,iwad,...}] } with
-// defaults filled in.
+// Read syncdoom.ini -> { net:{}, wads:{}, wadsets:[{id,name,iwad,...}], lobby:{} }
+// with defaults filled in. The [net] section (with its per-host [net:<hostname>]
+// overlay) and net defaults come from the shared gl helpers; the wadset catalog is
+// DOOM-specific.
 function sd_load_config()
 {
 	var cfg = { net: {}, wads: {}, wadsets: [], lobby: {} };
 	var f = new File(SD_CFG);
 	if (f.open("r")) {
 		cfg.lobby   = f.iniGetObject("lobby") || {};
-		cfg.net     = f.iniGetObject("net")  || {};
-		// Host-specific overrides: [net:<local_host_name>] overlays [net], so a
-		// single shared install (one syncdoom.ini seen by several physical hosts)
-		// can give each host its own advertise address / port range without
-		// separate config files. Keys present here win over the base [net].
-		var hostnet = f.iniGetObject("net:" + system.local_host_name);
-		if (hostnet) {
-			for (var hk in hostnet)
-				cfg.net[hk] = hostnet[hk];
-		}
+		cfg.net     = gl.read_overlaid(f, "net");   // [net] + per-host [net:<hostname>]
 		cfg.wads    = f.iniGetObject("wads") || {};
 		cfg.wadsets = f.iniGetAllObjects("id", "wadset:");
 		f.close();
 	}
 
-	if (cfg.net.port_low    === undefined) cfg.net.port_low    = 20000;
-	if (cfg.net.port_high   === undefined) cfg.net.port_high   = 20063;
-	if (cfg.net.max_games   === undefined) cfg.net.max_games   = 8;
-	if (cfg.net.max_players === undefined) cfg.net.max_players = 4;
-	if (cfg.net.idle_timeout === undefined) cfg.net.idle_timeout = 60;
-	if (cfg.net.stale       === undefined) cfg.net.stale       = 30;
-	// Default skill (1-5: ITYTD/HNTR/HMP/UV/NM) the Create flow's prompt starts on;
-	// a [wadset:*] skill overrides it per set. 3 = Hurt Me Plenty (Doom's default).
-	if (cfg.net.skill       === undefined) cfg.net.skill       = 3;
+	gl.apply_defaults(cfg.net, {
+		port_low: 20000,
+		port_high: 20063,
+		max_games: 8,
+		max_players: 4,
+		idle_timeout: 60,
+		stale: 30,
+		// Default skill (1-5: ITYTD/HNTR/HMP/UV/NM) the Create flow's prompt starts on;
+		// a [wadset:*] skill overrides it per set. 3 = Hurt Me Plenty (Doom's default).
+		skill: 3
+	});
 
 	var i;
 	for (i = 0; i < cfg.wadsets.length; i++) {
@@ -86,37 +84,15 @@ function sd_load_config()
 // Absolute WAD directory, from [wads] dir (blank = the door dir).
 function sd_wad_dir(cfg)
 {
-	var d = cfg.wads.dir;
-	if (!d)
-		return SD_DIR;
-	// Absolute (unix /... or Windows X:\...) used as-is; else under the door dir.
-	if (d.charAt(0) == "/" || d.charAt(0) == "\\" || d.charAt(1) == ":")
-		return backslash(d);
-	return backslash(SD_DIR + d);
+	return gl.resolve_dir(SD_DIR, cfg.wads.dir, "");
 }
 
-// Absolute lobby attract-art directory, from [lobby] art_dir (blank = <door>/art).
-// A sysop drops full-screen DOOM ANSI (*.ans/*.asc) here; nothing ships in it, so
-// the attract is silent until they do. (Don't redistribute copyrighted art.)
-function sd_attract_dir(cfg)
-{
-	var d = (cfg.lobby && cfg.lobby.art_dir) ? String(cfg.lobby.art_dir) : "art";
-	if (d.charAt(0) == "/" || d.charAt(0) == "\\" || d.charAt(1) == ":")
-		return backslash(d);
-	return backslash(SD_DIR + d);
-}
-
-// The art files a sysop has dropped in the attract dir, or []. Filters by
-// extension case-insensitively (classic art is often upper-case *.ANS, and
-// directory() is case-sensitive on *nix).
+// The lobby attract-art files a sysop dropped in [lobby] art_dir (blank = <door>/art),
+// or []. A sysop drops full-screen DOOM ANSI (*.ans/*.asc) there; nothing ships in it,
+// so the attract is silent until they do. (Don't redistribute copyrighted art.)
 function sd_attract_files(cfg)
 {
-	var all = directory(sd_attract_dir(cfg) + "*");
-	var art = [];
-	for (var i = 0; i < all.length; i++)
-		if (/\.(ans|asc|ansi)$/i.test(all[i]))
-			art.push(all[i]);
-	return art;
+	return gl.attract_files(SD_DIR, cfg.lobby && cfg.lobby.art_dir);
 }
 
 // Does a wadset offer the given mode ("solo"/"coop"/"deathmatch"/"altdeath")?
@@ -125,7 +101,7 @@ function sd_wadset_has_mode(ws, mode)
 	var list = String(ws.modes).toLowerCase().split(",");
 	var i;
 	for (i = 0; i < list.length; i++)
-		if (sd_trim(list[i]) == mode)
+		if (gl.trim(list[i]) == mode)
 			return true;
 	return false;
 }
@@ -190,7 +166,7 @@ function sd_wadset_args(cfg, ws)
 		var list = String(ws.pwad).split(",");
 		args.push("-file");
 		for (i = 0; i < list.length; i++) {
-			var name = sd_trim(list[i]);
+			var name = gl.trim(list[i]);
 			if (name.length)
 				args.push(sd_wad_path(dir, name));
 		}
@@ -198,7 +174,7 @@ function sd_wadset_args(cfg, ws)
 	if (ws.merge) {
 		var ml = String(ws.merge).split(",");
 		for (i = 0; i < ml.length; i++) {
-			var mn = sd_trim(ml[i]);
+			var mn = gl.trim(ml[i]);
 			if (mn.length) {
 				args.push("-merge");
 				args.push(sd_wad_path(dir, mn));
@@ -209,7 +185,7 @@ function sd_wadset_args(cfg, ws)
 		var dl = String(ws.deh).split(",");
 		args.push("-deh");
 		for (i = 0; i < dl.length; i++) {
-			var dn = sd_trim(dl[i]);
+			var dn = gl.trim(dl[i]);
 			if (dn.length)
 				args.push(sd_wad_path(dir, dn));
 		}
@@ -242,7 +218,7 @@ function sd_wadset_files_present(cfg, ws)
 		var list = String(ws.pwad).split(",");
 		var i;
 		for (i = 0; i < list.length; i++) {
-			var name = sd_trim(list[i]);
+			var name = gl.trim(list[i]);
 			if (name.length && !file_exists(sd_wad_path(dir, name)))
 				return false;
 		}
@@ -251,7 +227,7 @@ function sd_wadset_files_present(cfg, ws)
 		var dl = String(ws.deh).split(",");
 		var j;
 		for (j = 0; j < dl.length; j++) {
-			var dn = sd_trim(dl[j]);
+			var dn = gl.trim(dl[j]);
 			if (dn.length && !file_exists(sd_wad_path(dir, dn)))
 				return false;
 		}
@@ -259,69 +235,25 @@ function sd_wadset_files_present(cfg, ws)
 	return true;
 }
 
-// Find a bindable UDP port in the [net] range, or -1. (A small TOCTOU window
-// exists between this test-bind and the server's bind; acceptable at lobby
-// contention levels.)
-function sd_alloc_port(cfg)
-{
-	var lo = parseInt(cfg.net.port_low, 10);
-	var hi = parseInt(cfg.net.port_high, 10);
-	var p;
-	for (p = lo; p <= hi; p++) {
-		var s = new Socket(SOCK_DGRAM);
-		var ok = s.bind(p);
-		s.close();
-		if (ok)
-			return p;
-	}
-	return -1;
-}
-
 // ---------------------------------------------------------------------------
 // Game registry (discovery) -- read-only here; the dedicated server is the
 // single writer of its own entry.
 // ---------------------------------------------------------------------------
 
-// Live games: parse data/syncdoom/games/*.ini, dropping entries whose
-// heartbeat is older than [net] stale seconds.
+// Live, joinable games. The shared gl.list_games() reads data/syncdoom/games/*.ini
+// and applies staleness/reaping (a missing heartbeat falls back to the file mtime).
+// On top of that we apply DOOM's joinability rules: an entry must carry a port, and
+// an empty match (players < 1 -- everyone left, or it hasn't been joined yet; the
+// dedicated server is already counting down its idle-timeout to self-quit) is hidden
+// so it doesn't linger in the Join menu. (players is written by the server each
+// heartbeat as NET_SV_ConnectedClients().)
 function sd_list_games(cfg)
 {
-	var out = [];
-	if (!file_isdir(SD_GAMES))
-		return out;
-
-	var files = directory(SD_GAMES + "*.ini");
-	var now = time();
-	var stale = parseInt(cfg.net.stale, 10) || 30;
-	var i;
-	for (i = 0; i < files.length; i++) {
-		var f = new File(files[i]);
-		if (!f.open("r"))
+	var all = gl.list_games(SD_GAMES, cfg.net.stale), out = [], i;
+	for (i = 0; i < all.length; i++) {
+		var g = all[i];
+		if (g.port === undefined)
 			continue;
-		var g = f.iniGetObject();
-		f.close();
-		if (!g || g.port === undefined)
-			continue;
-		g.file = files[i];
-		// A clean shutdown removes its own .ini; an unclean death (kill/crash)
-		// leaves it frozen at its last heartbeat. Reap (delete) it once it's well
-		// past stale -- x3 leaves margin for SMB attribute-cache lag on a shared
-		// cross-host games dir, and a still-live server re-creates its file on the
-		// next ~3s heartbeat anyway. In the merely-stale window just hide it (it
-		// may be that cache lag, and the heartbeat could recover).
-		var age = (g.heartbeat !== undefined)
-		    ? (now - parseInt(g.heartbeat, 10)) : (stale * 3 + 1);
-		if (age > stale * 3) {
-			file_remove(files[i]);
-			continue;        // dead server -- reap its orphaned registry entry
-		}
-		if (age > stale)
-			continue;        // stale (maybe SMB lag); server presumed dead -- hide
-		// An empty match (everyone left, or it hasn't been joined yet) is not
-		// meaningfully joinable -- the dedicated server is already counting down
-		// its idle-timeout to self-quit. Hide it so it doesn't linger in the
-		// Join menu for that window. (players is written by the server each
-		// heartbeat as NET_SV_ConnectedClients().)
 		if (parseInt(g.players, 10) < 1)
 			continue;
 		out.push(g);
@@ -329,24 +261,9 @@ function sd_list_games(cfg)
 	return out;
 }
 
-// --- activity feed (door-written events.jsonl) -----------------------------
-// Format a seconds count as M:SS.
-function sd_mmss(secs)
-{
-	var m = Math.floor(secs / 60), s = secs % 60;
-	return m + ":" + (s < 10 ? "0" : "") + s;
-}
-
-// Short relative age tag for an event time.
-function sd_ago(t)
-{
-	var d = time() - t;
-	if (d < 0)     d = 0;
-	if (d < 60)    return "[now]";
-	if (d < 3600)  return "[" + Math.floor(d / 60) + "m]";
-	if (d < 86400) return "[" + Math.floor(d / 3600) + "h]";
-	return "[" + Math.floor(d / 86400) + "d]";
-}
+// ---------------------------------------------------------------------------
+// Activity feed (door-written events.jsonl)
+// ---------------------------------------------------------------------------
 
 // One-line description of an event for the lobby, or null to hide it (the debug
 // 'start'/'end' records and player 'death's -- the matching 'frag' already shows).
@@ -356,7 +273,7 @@ function sd_event_text(e)
 		case "frag":
 			return e.killer + " fragged " + e.victim;
 		case "level":
-			return e.user + " cleared " + e.map + " in " + sd_mmss(e.secs);
+			return e.user + " cleared " + e.map + " in " + gl.mmss(e.secs);
 		case "death":
 			if (e.cause == "player")  return null;
 			if (e.cause == "suicide") return e.user + " blew themselves up";
@@ -366,21 +283,16 @@ function sd_event_text(e)
 	return null;
 }
 
-// Up to `max` recent activity lines (most recent first), Ctrl-A colored.
 // Up to `max` recent *displayable* event objects (most recent first) -- i.e. the
-// ones sd_event_text() renders (frags / level clears / non-player deaths).
+// ones sd_event_text() renders (frags / level clears / non-player deaths). Reads an
+// oversampled window from the shared gl.read_events() so the non-displayable events
+// interleaved in the tail don't shrink the result below `max`.
 function sd_recent_events(max)
 {
-	if (!file_exists(SD_EVENTS))
-		return [];
-	var all = json_lines.get(SD_EVENTS, -(max * 6), 0, true);
-	if (typeof all != "object")          // get() returns a string on error
-		return [];
-	var out = [], i;
-	for (i = all.length - 1; i >= 0 && out.length < max; i--) {
+	var all = gl.read_events(SD_EVENTS, max * 6), out = [], i;
+	for (i = all.length - 1; i >= 0 && out.length < max; i--)
 		if (sd_event_text(all[i]) !== null)
 			out.push(all[i]);
-	}
 	return out;
 }
 
@@ -390,136 +302,40 @@ function sd_event_feed(max)
 {
 	var ev = sd_recent_events(max), out = [], i;
 	for (i = 0; i < ev.length; i++)
-		out.push("\1k\1h" + sd_ago(ev[i].time) + "\1n \1w" + sd_event_text(ev[i]) + "\1n");
+		out.push("\1k\1h" + gl.ago(ev[i].time) + "\1n \1w" + sd_event_text(ev[i]) + "\1n");
 	return out;
 }
 
-// --- live lobby panel (who's online + recent activity) ---------------------
-// Fixed-width string helpers (operate on plain text -- no Ctrl-A codes).
-// sd_plain strips Ctrl-A attribute codes (\1x) so length == visible width.
-function sd_plain(s) { return String(s).replace(/\x01./g, ""); }
-function sd_clip(s, w) { s = String(s); return s.length > w ? s.substr(0, w) : s; }
-function sd_rpad(s, w) { s = String(s); while (s.length < w) s += " "; return s; }
-function sd_lpad(s, w) { s = String(s); while (s.length < w) s = " " + s; return s; }
-
-// presence_lib.js is Synchronet's canonical node-status formatter (used by the BBS's
-// own who's-online). Load once, cached in bbs.mods like the stock modules do.
-var sd_presence = null;
-function sd_get_presence()
-{
-	if (sd_presence)
-		return sd_presence;
-	if (typeof bbs == "object" && bbs && bbs.mods)
-		sd_presence = bbs.mods.presence_lib
-		              || (bbs.mods.presence_lib = load({}, "presence_lib.js"));
-	else
-		sd_presence = load({}, "presence_lib.js");
-	return sd_presence;
-}
-
-// In-use nodes for the panel, SyncDOOM players first. Each entry { num, name, rest,
-// doom }: `name` is the username portion and `rest` is the standard node-status tail
-// (age/gender, activity, " via <conn>") from presence_lib node_status -- the same
-// wording the BBS who's-online uses. We get both the full line and the line with the
-// username excluded; the length difference is exactly the name, so we can color the
-// name and activity separately without re-implementing node_status's anon/sysop rules.
-// Excludes our own node. Ctrl-A is stripped; the cell builder clips to the column
-// width so a long status truncates rather than wrapping.
-function sd_live_nodes(maxn)
-{
-	var presence = sd_get_presence();
-	var nl = system.node_list, out = [], n;
-	var mynode = (typeof bbs == "object" && bbs && bbs.node_num) ? bbs.node_num : 0;
-	var is_sysop = (typeof user == "object" && user && user.is_sysop) ? true : false;
-	for (n = 0; n < nl.length; n++) {
-		var nd = system.get_node(n + 1);
-		if (nd.status != NODE_INUSE && nd.status != NODE_QUIET)
-			continue;
-		if (mynode && (n + 1) == mynode)
-			continue;
-		var full = sd_plain(presence.node_status(nd, is_sysop, {}, n));
-		var rest = sd_plain(presence.node_status(nd, is_sysop, { exclude_username: true }, n));
-		if (!full.length)
-			continue;
-		var namelen = full.length - rest.length;
-		if (namelen < 0)
-			namelen = 0;
-		out.push({ num: n + 1, name: full.substr(0, namelen), rest: rest,
-		           doom: (full.indexOf("SyncDOOM") >= 0) });
-	}
-	out.sort(function(a, b) {
-		if (a.doom != b.doom) return a.doom ? -1 : 1;
-		return a.num - b.num;
-	});
-	if (maxn && out.length > maxn)
-		out = out.slice(0, maxn);
-	return out;
-}
-
-// One node cell, exactly `cw` visible chars: the name bright (green for a SyncDOOM
-// player, else white) and the activity/connection in normal grey. Clipped to cw
-// (never wraps). Color codes are zero-width so the visible width stays cw.
-function sd_node_cell(node, cw)
-{
-	var nc = node.doom ? "\1h\1g" : "\1h\1w";   // name: bright (green = SyncDOOM player)
-	if (node.name.length >= cw)
-		return nc + sd_clip(node.name, cw) + "\1n";
-	var rw = cw - node.name.length;
-	var rest = sd_rpad(sd_clip(node.rest, rw), rw);
-	return nc + node.name + "\1n" + rest + "\1n";   // activity: normal grey
-}
+// ---------------------------------------------------------------------------
+// Live lobby panel (who's online + recent activity)
+// ---------------------------------------------------------------------------
 
 // One recent-activity cell, exactly `cw` visible chars: "[age] description" (dim
 // grey age tag, plain grey body).
 function sd_activity_cell(e, cw)
 {
-	var tag = sd_ago(e.time);
+	var tag = gl.ago(e.time);
 	var bw = cw - tag.length - 1;
-	var body = sd_rpad(sd_clip(sd_event_text(e) || "", bw), bw);
+	var body = gl.rpad(gl.clip(sd_event_text(e) || "", bw), bw);
 	return "\1k\1h" + tag + "\1n " + body + "\1n";
 }
 
-function sd_blank_cell(cw) { return sd_rpad("", cw); }
-
 // Build the panel's cells (one full-width cell per row -- less truncation than two
-// narrow columns): live nodes first, then recent activity to fill, padded with
-// blanks to >= minRows. `cols` sizes the single column. Returns { cells, cw }.
+// narrow columns): live nodes first (SyncDOOM players first, via gl.live_nodes'
+// marker), then recent activity to fill, padded with blanks to >= minRows. `cols`
+// sizes the single column. Returns { cells, cw }.
 function sd_panel_cells(cols)
 {
 	var minRows = 3, maxRows = 6;
 	var cw = cols - 1;                        // one cell, full width (avoid last-col wrap)
 	var cells = [], i;
-	var nodes = sd_live_nodes(maxRows);
+	var nodes = gl.live_nodes(maxRows, "SyncDOOM");
 	for (i = 0; i < nodes.length; i++)
-		cells.push(sd_node_cell(nodes[i], cw));
+		cells.push(gl.node_cell(nodes[i], cw));
 	var events = sd_recent_events(maxRows);
 	for (i = 0; cells.length < maxRows && i < events.length; i++)
 		cells.push(sd_activity_cell(events[i], cw));
 	while (cells.length < minRows)
-		cells.push(sd_blank_cell(cw));
+		cells.push(gl.blank_cell(cw));
 	return { cells: cells, cw: cw };
-}
-
-// Keep the log bounded: if it exceeds `cap` lines, rewrite keeping the last
-// `keep`. Infrequent (lobby entry); a door append racing the rewrite is a rare,
-// tolerable loss for a best-effort feed.
-function sd_prune_events(cap, keep)
-{
-	if (!file_exists(SD_EVENTS))
-		return;
-	var f = new File(SD_EVENTS);
-	if (!f.open("r"))
-		return;
-	var lines = f.readAll();
-	f.close();
-	if (!lines || lines.length <= cap)
-		return;
-	lines = lines.slice(lines.length - keep);
-	f = new File(SD_EVENTS);
-	if (f.open("w")) {
-		var i;
-		for (i = 0; i < lines.length; i++)
-			f.writeln(lines[i]);
-		f.close();
-	}
 }

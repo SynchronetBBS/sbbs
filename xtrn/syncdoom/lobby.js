@@ -56,45 +56,11 @@ function sd_play(connect, extra, wsargs)
 	console.line_counter = 0;
 }
 
-// The configured advertise address (trimmed), or "" if unset/blank. Resolved
-// from cfg.net.advertise, which sd_load_config() has already overlaid with any
-// host-specific [net:<hostname>] value.
-function sd_advertise_addr()
-{
-	var a = cfg.net.advertise;
-	if (a === undefined || a === null)
-		return "";
-	return sd_trim(String(a));
-}
-
-// The configured server bind (listen) address, or "" if unset/blank -> the
-// server's own 127.0.0.1 default (same-host play only). Distinct from advertise:
-// bind is the local interface the socket accepts on; advertise is the address
-// peers dial. Resolved from cfg.net.bind, host-overlaid like advertise.
-function sd_bind_addr()
-{
-	var b = cfg.net.bind;
-	if (b === undefined || b === null)
-		return "";
-	return sd_trim(String(b));
-}
-
-// Address the match creator dials to reach the server it just spawned. The
-// creator always shares the server's host, but the server binds the address it
-// listens on (sd_bind_addr() || advertise; its own 127.0.0.1 default when both
-// are blank). A socket bound to a SPECIFIC interface IP does not receive
-// loopback datagrams, so the creator can't blindly use 127.0.0.1 -- it must dial
-// the very address the server bound (a host can always reach its own local IP).
-// A wildcard bind (0.0.0.0/any/*) or an unset bind both accept on loopback, so
-// dial 127.0.0.1 there (you can't send to a wildcard; loopback is guaranteed).
-function sd_creator_connect_host()
-{
-	var bind = sd_bind_addr() || sd_advertise_addr();
-	var lc = String(bind).toLowerCase();
-	if (!bind || lc == "0.0.0.0" || lc == "any" || lc == "*")
-		return "127.0.0.1";
-	return bind;
-}
+// Address resolution is shared with SyncDuke via game_lobby.js -- all take cfg.net:
+//   gl.advertise_addr(net)        -- the address peers on other hosts dial ("" = none)
+//   gl.bind_addr(net)             -- the local interface the server listens on
+//   gl.creator_connect_host(net)  -- the address the creator dials its own server at
+//                                    (127.0.0.1 for a wildcard/unset bind)
 
 // Spawn a detached dedicated server for a match on the given port (returns
 // immediately; runs headless until the match empties). Uses -spawnserver so it
@@ -117,7 +83,7 @@ function sd_spawn_server(port, maxplayers, ws, mode)
 	// For cross-host play set BOTH: bind (0.0.0.0, or this host's LAN IP) so the
 	// socket accepts off-box, and advertise (LAN IP / public name) so the registry
 	// tells joiners where to dial. Per-host [net:<hostname>] overlays apply to each.
-	var adv = sd_advertise_addr();
+	var adv = gl.advertise_addr(cfg.net);
 	if (adv)
 		cmd += " -advertise " + adv;
 	// bind defaults to the advertise address: if the sysop said "peers reach me at
@@ -125,7 +91,7 @@ function sd_spawn_server(port, maxplayers, ws, mode)
 	// [net] bind always wins -- needed when advertise is a public/NAT name this host
 	// can't bind directly (set bind to 0.0.0.0 or the local LAN IP), or to widen to
 	// all interfaces. Both blank -> the server's own 127.0.0.1 (same-host) default.
-	var bind = sd_bind_addr() || adv;
+	var bind = gl.bind_addr(cfg.net) || adv;
 	if (bind)
 		cmd += " -bindaddr " + bind;
 
@@ -165,7 +131,7 @@ function sd_show_wad_msgs(cfg, ws)
 			continue;
 		var list = String(fields[f]).split(",");
 		for (i = 0; i < list.length; i++) {
-			var n = sd_trim(list[i]);
+			var n = gl.trim(list[i]);
 			if (n.length)
 				wads.push(n);
 		}
@@ -222,7 +188,7 @@ function sd_pick_wadset(mode)
 					label = full;
 			}
 			if (label.length > avail)
-				label = sd_trim(label.substr(0, avail - 3)) + "...";
+				label = gl.trim(label.substr(0, avail - 3)) + "...";
 			console.uselect(i, "WAD set", label);
 			if (cfg.wads.default && list[i].id == cfg.wads.default)
 				def = i;
@@ -303,60 +269,11 @@ function sd_solo()
 		sd_play(null, [], sd_wadset_args(cfg, ws));
 }
 
-// The access-requirement string for this door's own external-program entry, so
-// we only page users who may actually run it. Found by matching the lobby's own
-// directory + a JS-module command ("?lobby") in the external-programs config.
-// "" (the default when not found) makes compare_ars() treat everyone as allowed.
-function sd_door_ars()
-{
-	if (typeof xtrn_area == "undefined" || !xtrn_area.prog_list)
-		return "";
-	function strip(s) { return s ? String(s).replace(/[\/\\]+$/, "") : ""; }
-	var ours = strip(fullpath(SD_DIR));
-	var list = xtrn_area.prog_list, i, p, fallback = "";
-	for (i = 0; i < list.length; i++) {
-		p = list[i];
-		if (!p.startup_dir || strip(fullpath(p.startup_dir)) != ours)
-			continue;
-		if (p.cmd && p.cmd.charAt(0) == "?")   // the JS lobby -- the entry users launch
-			return p.execution_ars || "";
-		fallback = p.execution_ars || fallback; // else the native door's reqs
-	}
-	return fallback;
-}
-
 function sd_mode_label(mode)
 {
 	if (mode == "deathmatch") return "deathmatch";
 	if (mode == "altdeath")   return "deathmatch (altdeath)";
 	return "co-op";
-}
-
-// Find other active nodes whose users can run this door (the page candidates).
-// Nodes in quiet mode / WFC / logon are skipped, as is our own node.
-function sd_page_targets()
-{
-	var ars = sd_door_ars();
-	var me  = bbs.node_num;
-	var list = system.node_list, targets = [], i;
-	for (i = 0; i < list.length; i++) {
-		var node_num = i + 1;
-		if (node_num == me)
-			continue;
-		var nd = list[i];
-		if (nd.status != NODE_INUSE)          // skip WFC/quiet/logon/offline nodes
-			continue;
-		if (!nd.useron)
-			continue;
-		var u;
-		try { u = new User(nd.useron); } catch (e) { continue; }
-		if (!u || !u.number)
-			continue;
-		if (ars && !u.compare_ars(ars))       // honor the door's access requirements
-			continue;
-		targets.push(node_num);
-	}
-	return targets;
 }
 
 // Ask (up front, BEFORE the server is spawned) whether to page the available
@@ -365,7 +282,7 @@ function sd_page_targets()
 // would let a Browse-joiner connect first and steal the host (controller) slot.
 function sd_prompt_page_players()
 {
-	var targets = sd_page_targets();
+	var targets = gl.page_targets(gl.door_ars(SD_DIR));
 	if (!targets.length)
 		return [];
 	if (!console.yesno("\r\nPage " + targets.length + " active node"
@@ -382,16 +299,9 @@ function sd_send_pages(targets, mode)
 	if (!targets || !targets.length)
 		return;
 	var who = (typeof user != "undefined" && user.alias) ? user.alias : "Someone";
-	// NodeMsgFmt is the sysop-configurable "Node N: <who> sent you a message:"
-	// header + body template: %2d=node, %s=sender, %s=body (it supplies its own
-	// coloring and trailing CRLF, so the body is passed as plain text).
 	var body = "started a SyncDOOM " + sd_mode_label(mode)
 	    + " game; run SyncDOOM to join.";
-	var msg = format(bbs.text("NodeMsgFmt"), bbs.node_num, who, body);
-	var paged = 0, i;
-	for (i = 0; i < targets.length; i++)
-		if (system.put_node_message(targets[i], msg))
-			paged++;
+	var paged = gl.send_pages(targets, who, body);   // shared NodeMsgFmt delivery
 	console.print("\r\n\1n\1cPaged \1h" + paged + "\1n\1c node"
 	    + (paged == 1 ? "" : "s") + ".\1n\r\n");
 }
@@ -438,7 +348,7 @@ function sd_create()
 	// and become the controller. We only deliver the pages (fast) after spawning.
 	var page_targets = (n > 1) ? sd_prompt_page_players() : [];
 
-	var port = sd_alloc_port(cfg);
+	var port = gl.alloc_port(cfg.net);
 	if (port < 0) {
 		console.print("\r\n\1h\1rNo free server port available.\1n\r\n");
 		console.pause();
@@ -469,7 +379,7 @@ function sd_create()
 		extra.push("-deathmatch");
 	else if (mode == "altdeath")
 		extra.push("-altdeath");
-	sd_play(sd_creator_connect_host() + ":" + port, extra, sd_wadset_args(cfg, ws));
+	sd_play(gl.creator_connect_host(cfg.net) + ":" + port, extra, sd_wadset_args(cfg, ws));
 }
 
 // Browse the registry and join a game on this system. The joiner inherits the
@@ -543,9 +453,9 @@ function sd_join_external()
 {
 	console.print("\r\nServer address (\1hhost:port\1n), blank to cancel: ");
 	var addr = console.getstr("", 60, K_LINE);
-	if (!addr || !sd_trim(addr).length)
+	if (!addr || !gl.trim(addr).length)
 		return;
-	addr = sd_trim(addr);
+	addr = gl.trim(addr);
 
 	console.print("Select the WAD set this game is using (must match the host):\r\n");
 	var ws = sd_pick_wadset();
@@ -689,7 +599,7 @@ function sd_lobby_wait(allow_ext)
 function sd_main()
 {
 	mkpath(system.data_dir + "syncdoom/");   // door's -eventlog append won't create it
-	sd_prune_events(2000, 1000);      // bound the activity log on entry (rare rewrite)
+	gl.prune_events(SD_EVENTS, 2000, 1000);   // bound the activity log on entry (rare rewrite)
 
 	// Join-by-address is for external/cross-system servers; off unless the sysop
 	// opts in with [net] allow_external = true in syncdoom.ini.
