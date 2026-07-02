@@ -134,11 +134,52 @@ static void syncduke_node_userlist(void)
 	banner_set(r, 9000);
 }
 
+/* Poll ~1 Hz for incoming inter-node messages; display verbatim + bell. */
+static void syncduke_node_recv(void)
+{
+	static uint32_t last;
+	char            raw[600], clean[600];
+	const char *    s; char *d;
+	uint32_t        now = syncduke_clock_ms();
+	int             me, w, len, pos, r;
+	if (now - last < 1000)
+		return;
+	last = now;
+	me = sbbs_my_node();
+	if (me < 1 || sbbs_recv_nmsg(me, raw, sizeof(raw)) <= 0)
+		return;
+	/* strip Ctrl-A codes + BEL, fold whitespace runs to one space -> one flowing string */
+	for (s = raw, d = clean; *s && d < clean + sizeof(clean) - 1; s++) {
+		if (*s == '\x01') { if (s[1])
+								s++; continue; }
+		if (*s == '\x07')
+			continue;
+		if (*s == '\r' || *s == '\n' || *s == ' ') { if (d > clean && d[-1] != ' ')
+														 *d++ = ' '; continue; }
+		*d++ = *s;
+	}
+	while (d > clean && d[-1] == ' ') d--;
+	*d = '\0';
+	/* word-wrap into the banner (verbatim -- NO "paging" label) */
+	w = SD_NODE_OVCOLS - 2; if (w > 80)
+		w = 80; if (w < 20)
+		w = 20;
+	len = (int)strlen(clean); pos = 0; r = 0;
+	while (pos < len && r < SD_NODE_OVROWS) {
+		int take = len - pos;
+		if (take > w) { int b = w; while (b > 0 && clean[pos + b] != ' ') b--; take = (b > w / 2) ? b : w; }
+		memcpy(g_ov[r], clean + pos, (size_t)take); g_ov[r][take] = '\0';
+		r++; pos += take; while (pos < len && clean[pos] == ' ') pos++;
+	}
+	banner_set(r, 9000);
+	syncduke_out_put("\x07", 1);   /* audible alert */
+}
+
 void syncduke_node_tick(void)
 {
 	if (!g_node_ok)
 		return;
 	syncduke_node_status();
 	if (g_want_userlist) { g_want_userlist = 0; syncduke_node_userlist(); }
-	/* Task 4 adds: poll sbbs_recv_nmsg ~1 Hz -> banner + bell. */
+	syncduke_node_recv();
 }
