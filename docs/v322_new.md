@@ -138,6 +138,14 @@
   `--allow-tell`). Configure the addresses in `mailproc.ini`, gated to
   the sysop (`AccessRequirements = user equal 1`) so the learn
   addresses can't be used to poison Bayes
+- `spamlearn.js` also has a `block` option for **honeypot / spam-trap**
+  addresses: mail to such an address is learned as spam *and* the
+  sender's IP is filtered (blocked), then the message is dropped. Use it
+  in place of a `spambait.cfg` entry (which blocks but can't train Bayes)
+  to get both blocking and Bayes training from trap hits
+- Fixed `system.filter_ip()` ignoring a duration argument that followed
+  the filename (its documented position), which had produced permanent
+  (never-expiring) filter entries instead of timed ones
 
 ## Services
 
