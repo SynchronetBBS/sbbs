@@ -688,6 +688,7 @@ function sd_lobby_wait(allow_ext)
 
 function sd_main()
 {
+	mkpath(system.data_dir + "syncdoom/");   // door's -eventlog append won't create it
 	sd_prune_events(2000, 1000);      // bound the activity log on entry (rare rewrite)
 
 	// Join-by-address is for external/cross-system servers; off unless the sysop
