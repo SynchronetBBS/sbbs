@@ -38,6 +38,10 @@ void syncduke_hangup(const char *why);                 /* client gone: log + exi
 /* --- provided by syncduke_stubs.c --- */
 void sd_music_pending_retry(void);                     /* replay title music dropped before the audio tier was known */
 
+/* --- provided by syncduke_node.c (Synchronet who's-online / status / messages) --- */
+void syncduke_node_init(void);   /* resolve BBS context; install exit status-clear */
+void syncduke_node_tick(void);   /* per-frame: status broadcast (+ Ctrl-U build, nmsg poll) */
+
 /* --- provided by syncduke_input.c (terminal -> Build/Duke key state) ---
  * Self-contained (no engine linkage): syncduke_map_key is a pure function; the queue
  * holds raw Build scancode bytes (low 7 bits = scancode, 0x80 = key release) the

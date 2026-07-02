@@ -124,6 +124,7 @@ int gettimerfreq(void) { return timerticspersec; }
 void _platform_init(int argc, char **argv, const char *title, const char *iconName)
 {
 	(void)argc; (void)argv; (void)title; (void)iconName;
+	syncduke_node_init();   /* Synchronet who's-online / status (no-op off a BBS) */
 }
 
 /*
@@ -288,6 +289,7 @@ void _nextpage(void)
 	syncduke_frame++;   /* one presented frame: advances the input key-hold time base */
 	sampletimer();
 	_handle_events();   /* service terminal input each frame (the SDL _nextpage did too) */
+	syncduke_node_tick();   /* status broadcast; who's-online build; message poll */
 
 	/* Door session time limit: leave cleanly when it's up (the BBS reclaims the
 	 * node). Crude hard-exit, but a door's lifetime is the BBS's to bound. */
