@@ -29,6 +29,10 @@ var SD_CFG    = SD_DIR + "syncduke.ini";
 // Shared game registry (this lobby writes/reads it; same-LAN hosts may share it
 // over the mount, like SyncDOOM's). Created on demand.
 var SD_GAMES  = backslash(system.data_dir + "syncduke/games/");
+// Door-written activity log (start/level/death); read by the recent-activity view.
+// The C door appends here when launched with -eventlog (see sd_cmd); the lobby
+// ensures the parent dir exists and prunes it. Same dir convention as SyncDOOM's.
+var SD_EVENTS = system.data_dir + "syncduke/events.jsonl";
 
 // Episode 1 ("L.A. Meltdown") co-op levels of the shareware DUKE3D.GRP. `num` is
 // the 1-based level the engine warps to via /l<num> (/v1 selects the episode).
@@ -108,7 +112,8 @@ function sd_home() {
 // the engine's parser only honors '/' options, not '-'). Single-player launches
 // bare so Duke's own menu drives episode/skill selection.
 function sd_cmd(role, port, peer, level) {
-	var cmd = SD_BINARY + " -s%H -t%T -name %a -home " + sd_home();
+	var cmd = SD_BINARY + " -s%H -t%T -name %a -home " + sd_home()
+	    + ' -eventlog "' + SD_EVENTS + '"';   // door appends start/level/death here
 	if (role == "master")
 		cmd += " -netrole master -netport " + port;
 	else if (role == "join")
@@ -164,6 +169,25 @@ function sd_list_open_games(cfg) {
 		if (String(all[i].status) == "waiting")
 			out.push(all[i]);
 	return out;
+}
+
+// ---------------------------------------------------------------------------
+// Activity feed formatting (door-written events.jsonl -> one display line)
+// ---------------------------------------------------------------------------
+
+// Format one event as a Ctrl-A colored feed line, prefixed with its relative age
+// (bracket form via the shared gl.ago -- matches SyncDOOM's activity look). Returns
+// null for event types the feed doesn't surface, so gl.event_feed skips them.
+// SyncDuke's "level" event carries the level just ENTERED (its secs is the prior
+// level's elapsed time), so it reads as "reached", not "cleared in Ns".
+function sd_event_text(e) {
+	var age = "\1k\1h" + gl.ago(e.time) + "\1n ";
+	switch (e.type) {
+		case "start": return age + "\1w" + e.user + " joined (" + (e.mode || "single") + ")\1n";
+		case "level": return age + "\1w" + e.user + " reached " + e.map + "\1n";
+		case "death": return age + "\1w" + e.user + " died on " + e.map + "\1n";
+	}
+	return null;
 }
 
 this;

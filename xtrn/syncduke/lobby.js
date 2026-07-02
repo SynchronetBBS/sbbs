@@ -169,11 +169,30 @@ function sd_controls() {
 	console.printfile(SD_DIR + "controls.msg");
 }
 
+// Recent-activity view: start/level/death lines from the door-written event log
+// (SD_EVENTS), most recent first. Mirrors SyncDOOM's activity screen.
+function sd_show_activity() {
+	console.clear();
+	console.print("\1h\1wSyncDuke (Nukem 3D) \1y- \1wrecent activity\1n\r\n\r\n");
+	var feed = gl.event_feed(SD_EVENTS, 18, sd_event_text), i;
+	if (!feed.length)
+		console.print("  \1k\1h(nothing yet -- go play a game!)\1n\r\n");
+	else
+		for (i = 0; i < feed.length; i++)
+			console.print("  " + feed[i] + "\r\n");
+	console.print("\r\n");
+	console.pause();
+}
+
 // ---------------------------------------------------------------------------
 // Main menu
 // ---------------------------------------------------------------------------
 
 function sd_main() {
+	// The door logs start/level/death to SD_EVENTS when launched with -eventlog;
+	// ensure its dir exists (the door's append won't create it) and keep it bounded.
+	mkpath(system.data_dir + "syncduke/");
+	gl.prune_events(SD_EVENTS, 2000, 1000);
 	while (!js.terminated && bbs.online) {
 		console.clear();
 		// The menu art is lobby.msg (Ctrl-A); its option keys (C/J/P/H/Q) are baked
@@ -184,7 +203,7 @@ function sd_main() {
 		console.ctrlkey_passthru = -1;
 		console.ctrlkey_passthru = "-P";
 		// CR/'?' return -> no action -> the loop redraws the menu.
-		var k = console.getkeys("\rCJPH?Q");
+		var k = console.getkeys("\rCJPLH?Q");
 		console.ctrlkey_passthru = oldctrl;
 		console.clear();
 		if (k == "Q")
@@ -195,6 +214,8 @@ function sd_main() {
 			sd_join();
 		else if (k == "P")
 			sd_solo();
+		else if (k == "L")
+			sd_show_activity();
 		else if (k == "H")
 			sd_controls();
 		// '?' / Enter: redraw
