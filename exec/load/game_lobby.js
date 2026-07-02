@@ -33,6 +33,7 @@
 
 load("sbbsdefs.js");    // NODE_INUSE, NODE_QUIET, NODE_NMSG, ...
 load("sockdefs.js");    // SOCK_DGRAM
+var _json_lines = load({}, "json_lines.js");
 
 // ---------------------------------------------------------------------------
 // String / format helpers (operate on plain text unless noted)
@@ -399,5 +400,48 @@ function node_cell(node, cw) {
 }
 
 function blank_cell(cw) { return rpad("", cw); }
+
+// ---------------------------------------------------------------------------
+// Events log (events.jsonl) -- generic read/prune + a formatted activity feed.
+// Game-agnostic: each event is whatever object the caller wrote via
+// json_lines.add() (e.g. { time, type, map, ... }); this layer only knows how
+// to read the tail, prune the file, and hand back caller-formatted strings.
+// ---------------------------------------------------------------------------
+
+// Last `max` parsed events from `path`, oldest first, [] if absent/unreadable.
+function read_events(path, max) {
+	if (!file_exists(path)) return [];
+	var all = _json_lines.get(path, -(max * 6), 0, true);   // last-ish N, recover bad lines
+	if (typeof all != "object") return [];                   // get() returns a string on error
+	return (all.length > max) ? all.slice(all.length - max) : all;
+}
+
+// Rewrite `path` keeping only the last `keep` events if it holds more than `cap`
+// *parsed* events (malformed lines are dropped by recover before the count).
+// Returns the resulting kept count (or current count if under cap).
+function prune_events(path, cap, keep) {
+	var all = _json_lines.get(path, 0, 0, true);
+	if (typeof all != "object") return 0;
+	if (all.length <= cap) return all.length;
+	var tail = all.slice(all.length - keep), f = new File(path), i;
+	if (!f.open("w+")) return all.length;
+	for (i = 0; i < tail.length; i++) f.writeln(JSON.stringify(tail[i]));
+	f.close();
+	return tail.length;
+}
+
+// Last `max` events formatted via fmt(ev) -> string (falsy = skipped), most
+// recent first.
+function event_feed(path, max, fmt) {
+	var ev = read_events(path, max), out = [], i, s;
+	for (i = ev.length - 1; i >= 0; i--) {                   // most recent first
+		s = fmt(ev[i]);
+		if (s) out.push(s);
+	}
+	return out;
+}
+
+// ago(t) and mmss(secs) already exist above (shared with the who's-online view,
+// bracket format matching SyncDOOM's sd_ago); the events feed reuses them.
 
 this;
