@@ -14,6 +14,7 @@
 #include "syncduke.h"
 
 static int g_node_ok;                  /* sbbs_node_available() cached at init */
+static int g_want_userlist;            /* Ctrl-U: build the who's-online banner on the next tick */
 
 /* --- cross-tier banner overlay: who's-online (Ctrl-U, Task 3) / incoming
  * message (Task 4) strip, painted by present() over sixel/JXL/text alike. */
@@ -97,11 +98,47 @@ static void syncduke_node_status(void)
 	}
 }
 
+/* Ctrl-U: flag the next tick to (re)build the who's-online banner. The BBS file I/O
+ * itself (sbbs_list_nodes) only ever runs from syncduke_node_tick(), never here. */
+void syncduke_node_userlist_request(void)
+{
+	g_want_userlist = 1;
+}
+
+/* Build the who's-online banner from the live node list. */
+static void syncduke_node_userlist(void)
+{
+	sbbs_node_info_t nodes[16];
+	char             alias[26], act[80];
+	int              n, i, r, max = SD_NODE_OVROWS;
+	n = sbbs_list_nodes(nodes, (int)(sizeof(nodes) / sizeof(nodes[0])), sbbs_my_node());
+	if (n == 0) {
+		snprintf(g_ov[0], SD_NODE_OVCOLS, " No one else is online.");
+		banner_set(1, 6000);
+		return;
+	}
+	snprintf(g_ov[0], SD_NODE_OVCOLS, " Who's online (%d):", n);
+	r = 1;
+	for (i = 0; i < n && r < max; i++) {
+		const char *who, *activity;
+		if (r == max - 1 && n - i > 1) {
+			snprintf(g_ov[r], SD_NODE_OVCOLS, "   ...and %d more", n - i);
+			r++; break;
+		}
+		who = nodes[i].anon ? "UNKNOWN" : sbbs_username(nodes[i].useron, alias, sizeof(alias));
+		activity = nodes[i].ext ? sbbs_node_ext(nodes[i].number, act, sizeof(act))
+		           : sbbs_action_str(&nodes[i], act, sizeof(act));
+		snprintf(g_ov[r], SD_NODE_OVCOLS, "   %-20.20s  %.50s", who, activity);
+		r++;
+	}
+	banner_set(r, 9000);
+}
+
 void syncduke_node_tick(void)
 {
 	if (!g_node_ok)
 		return;
 	syncduke_node_status();
-	/* Task 2 adds: build who's-online banner if Ctrl-U was requested.
-	 * Task 4 adds: poll sbbs_recv_nmsg ~1 Hz -> banner + bell. */
+	if (g_want_userlist) { g_want_userlist = 0; syncduke_node_userlist(); }
+	/* Task 4 adds: poll sbbs_recv_nmsg ~1 Hz -> banner + bell. */
 }

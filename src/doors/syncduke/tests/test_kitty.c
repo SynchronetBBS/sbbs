@@ -22,6 +22,8 @@ uint32_t syncduke_rtt(void) { return 0; }   /* low latency -> native turn */
 void syncduke_pace_ack(void) { }
 void syncduke_stats_toggle(void) { }
 void syncduke_depth_cycle(void) { }
+static int  g_userlist_reqs;                                           /* count Ctrl-U routing hits */
+void syncduke_node_userlist_request(void) { g_userlist_reqs++; }
 static int g_tier_cycles;                                              /* count F4/tier-cycle hits */
 void syncduke_tier_cycle(void) { g_tier_cycles++; }
 void syncduke_out_put(const void *b, size_t l) { (void)b; (void)l; }   /* kitty-flag push: not exercised */
@@ -92,6 +94,12 @@ int main(void)
 	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
 	feed("\x1b[115;5u");      syncduke_input_pump(pp[0], 11, 1);  /* Ctrl-S (stats) -> no game scancode */
 	chk("Ctrl-S no rawq", syncduke_input_has_raw(), 0);
+
+	/* Ctrl-U (0x15) = who's-online: door-level, never a Duke scancode, routes to the request fn. */
+	while (syncduke_input_has_raw()) syncduke_input_pop_raw();
+	feed("\x1b[117;5u");      syncduke_input_pump(pp[0], 33, 1);   /* kitty Ctrl-U */
+	chk("Ctrl-U no rawq", syncduke_input_has_raw(), 0);
+	chk("Ctrl-U userlist req", g_userlist_reqs, 1);
 
 	b = '\r'; ent = syncduke_map_key(&b, 1, 0);                   /* numpad Enter in a menu (gameplay=0) */
 	feed("\x1b[57414u");      syncduke_input_pump(pp[0], 12, 0);  /* KP_ENTER (PUA 57414) -> Enter */

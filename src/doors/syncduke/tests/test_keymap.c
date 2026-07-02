@@ -19,6 +19,7 @@ void syncduke_pace_ack(void) { }
 void syncduke_stats_toggle(void) { }
 void syncduke_depth_cycle(void) { }
 void syncduke_tier_cycle(void) { }
+void syncduke_node_userlist_request(void) { }
 void syncduke_out_put(const void *buf, size_t len) { (void)buf; (void)len; }   /* kitty-flag push: not exercised here */
 void syncduke_hsteer(int *center_col, int *half_cols) { if (center_col) *center_col = 40; if (half_cols) *half_cols = 40; }
 /* syncduke_door.c's hangup() logs via syncduke_log() (in syncduke_log.c, not linked here). */

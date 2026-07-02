@@ -31,6 +31,7 @@ uint32_t syncduke_rtt(void) { return g_test_rtt; }
 void syncduke_pace_ack(void) { }
 void syncduke_stats_toggle(void) { }
 void syncduke_depth_cycle(void) { }
+void syncduke_node_userlist_request(void) { }
 static int g_tier_cycles;
 void syncduke_tier_cycle(void) { g_tier_cycles++; }
 void syncduke_out_put(const void *b, size_t l) { (void)b; (void)l; }   /* enable-mode push: not exercised */

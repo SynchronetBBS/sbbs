@@ -699,6 +699,7 @@ static void handle_key(int c, int gameplay, int now, int kev)
 		if (c == 0x14) { syncduke_depth_cycle(); return; }    /* Ctrl-T: pipeline depth */
 		if (c == 0x0f) { syncduke_mouse_toggle(); return; }   /* Ctrl-O: mouse steering */
 		if (c == 0x12) { press(sc_CapsLock, now); return; }   /* Ctrl-R: AutoRun toggle (frees R for Steroids) */
+		if (c == 0x15) { syncduke_node_userlist_request(); return; }   /* Ctrl-U: who's online */
 		if (c >= 0x01 && c <= 0x07) {                         /* Ctrl-A..G mirror the door's F1..F7 */
 			if (c == 0x01) {                                  /* Ctrl-A = F1 = GAME CONTROLS help */
 				if (gameplay)
@@ -711,7 +712,7 @@ static void handle_key(int c, int gameplay, int now, int kev)
 			return;
 		}
 		if (gameplay && (c == 'z' || c == 'Z')) { g_crouch_toggle = !g_crouch_toggle; return; }   /* sticky crouch */
-	} else if (c == 0x13 || c == 0x14 || c == 0x0f || c == 0x12 || (c >= 0x01 && c <= 0x07)
+	} else if (c == 0x13 || c == 0x14 || c == 0x0f || c == 0x12 || c == 0x15 || (c >= 0x01 && c <= 0x07)
 	           || (gameplay && (c == 'z' || c == 'Z'))) {
 		return;                                      /* swallow kitty auto-repeat of a shortcut/toggle */
 	}

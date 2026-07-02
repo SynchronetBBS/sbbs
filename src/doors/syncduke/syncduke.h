@@ -43,6 +43,7 @@ void syncduke_node_init(void);   /* resolve BBS context; install exit status-cle
 void syncduke_node_tick(void);   /* per-frame: status broadcast (+ Ctrl-U build, nmsg poll) */
 uint32_t syncduke_node_overlay_sig(void);   /* banner change signature (0 = no banner) */
 void     syncduke_node_draw(int cols, int rows);  /* paint the who's-online/message banner */
+void     syncduke_node_userlist_request(void);    /* Ctrl-U: flag the next tick to build the who's-online banner */
 
 /* --- provided by syncduke_input.c (terminal -> Build/Duke key state) ---
  * Self-contained (no engine linkage): syncduke_map_key is a pure function; the queue
