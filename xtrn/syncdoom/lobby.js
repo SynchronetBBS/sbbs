@@ -599,7 +599,7 @@ function sd_browse()
 {
 	var games = sd_list_games(cfg);
 	if (!games.length) {
-		console.print("\1h\1wNo network games are running.\1n\r\n");
+		console.print("\1h\1wNo multiplayer games are waiting.\1n\r\n");
 		if (console.yesno("Create a game now"))
 			sd_create();
 		return;

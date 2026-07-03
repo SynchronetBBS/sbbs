@@ -250,13 +250,11 @@ function sd_list_open_games(cfg) {
 // One event's plain-body description for the activity feed / panel; the display path
 // (gl.event_feed and gl.activity_cell) adds the "[age]" prefix + coloring, matching
 // SyncDOOM. Returns null for event types the feed doesn't surface, so they're skipped.
-// SyncDuke's "level" event carries the level just ENTERED (its secs is the prior
-// level's elapsed time), so it reads as "reached", not "cleared in Ns".
 function sd_event_text(e) {
 	switch (e.type) {
 		case "frag":  return e.killer + " fragged " + e.victim;
 		case "start": return e.user + " joined (" + (e.mode || "single") + ")";
-		case "level": return e.user + " reached " + e.map;
+		case "level": return e.user + " cleared " + e.map + " in " + gl.mmss(e.secs);
 		case "death": return e.user + " died on " + e.map;
 	}
 	return null;

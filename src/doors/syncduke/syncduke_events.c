@@ -101,10 +101,13 @@ static int ev_secs(void)
 	return (int)((uint32_t)totalclock - ev_level_start) / TICRATE;
 }
 
-static void ev_level(int secs)     /* secs = the PREVIOUS level's elapsed */
+/* A completed level and the time it took -- logged on the level-change edge, so
+ * `vol`/`lev` name the level just CLEARED (not the one entered) and `secs` is its
+ * own elapsed. Matches SyncDOOM's sd_event_level ("cleared <map> in M:SS"). */
+static void ev_level(int vol, int lev, int secs)
 {
 	char j[300], ua[80], map[16];
-	ev_map(map, sizeof(map));
+	snprintf(map, sizeof(map), "E%dL%d", vol + 1, lev + 1);
 	snprintf(j, sizeof(j),
 	         "{\"time\":%ld,\"type\":\"level\",\"node\":%d,\"user\":\"%s\","
 	         "\"map\":\"%s\",\"secs\":%d,\"skill\":%d}",
@@ -157,17 +160,16 @@ void syncduke_events_tick(void)
 		ev_start();
 		ev_level_start = (uint32_t)totalclock;      /* first level of the session */
 		last_vol = vol; last_lev = lev;
-		ev_level(0);                                /* entered first level */
 	} else if (!ev_real_game() && in_game) {
 		in_game = 0;
 		last_vol = last_lev = -1;
 	}
 
-	if (in_game && (vol != last_vol || lev != last_lev)) {   /* level change */
-		int prev = ev_secs();                       /* elapsed on the level we just left */
+	if (in_game && (vol != last_vol || lev != last_lev)) {   /* finished a level */
+		int prev = ev_secs();                       /* elapsed on the level we just cleared */
+		ev_level(last_vol, last_lev, prev);         /* log the COMPLETED level + its time */
 		last_vol = vol; last_lev = lev;
 		ev_level_start = (uint32_t)totalclock;
-		ev_level(prev);
 	}
 
 	if (in_game) {                                  /* frags by us, then our death edge */
