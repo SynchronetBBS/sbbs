@@ -16,8 +16,9 @@ The terminal-graphics engine (encoders, transport, capability probing, pacing,
 who's-online/paging) lives in a shared library, **[termgfx](../termgfx/)**, that
 SyncDuke and its sibling [SyncDOOM](../syncdoom/) both build on.
 
-v1 is **single-player, shareware Episode 1**, 64-bit. No multiplayer / no JS
-lobby / no audio yet.
+The core is **shareware Episode 1**, 64-bit. Beyond single-player it now has
+**co-op and dukematch multiplayer** through a **JS lobby** waiting room, and
+**audio** — digital sound effects plus OPL/MIDI music.
 
 ---
 
