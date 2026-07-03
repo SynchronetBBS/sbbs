@@ -28,6 +28,7 @@
   #include <winsock2.h>
   #include <ws2tcpip.h>
   #include <windows.h>        /* GetTickCount */
+  #include <process.h>        /* _exit */
   #define SD_BADSOCK INVALID_SOCKET
   #define sd_closesock closesocket
 #else
@@ -203,8 +204,21 @@ void initmultiplayers(uint8_t damultioption, uint8_t dacomrateoption, uint8_t da
 	/* default single-player unless a net role is configured */
 	numplayers = 1; myconnectindex = 0;
 	connecthead = 0; connectpoint2[0] = -1;
-	if (role && (strcmp(role, "master") == 0 || strcmp(role, "join") == 0))
-		sd_net_handshake(role);
+	if (role && (strcmp(role, "master") == 0 || strcmp(role, "join") == 0)) {
+		if (!sd_net_handshake(role)) {
+			/* The lobby launched us for a MULTIPLAYER game (master/join) but the peer
+			 * never connected.  Exit cleanly (freeing the BBS node) instead of silently
+			 * dropping the host into a single-player match -- a lone game is never what
+			 * a Create/Join asked for.  A true single-player launch has no net role and
+			 * never reaches here, so it still plays solo.  _exit(0) matches the door's
+			 * hangup path (syncduke_door.c): skip the engine's atexit cleanup, which
+			 * could block on the socket. */
+			syncduke_log("net: multiplayer requested (role=%s) but no peer connected -- exiting (no solo fallback)", role);
+			fprintf(stderr, "syncduke: multiplayer peer did not connect -- exiting\n");
+			fflush(stderr);
+			_exit(0);
+		}
+	}
 }
 
 void uninitmultiplayers(void)
