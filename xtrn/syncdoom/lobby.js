@@ -67,15 +67,18 @@ function sd_play(connect, extra, wsargs)
 // survives this session. The server owns the match size (connect order doesn't
 // matter) and writes the registry entry the lobby discovers -- so we hand it the
 // games dir (the C door isn't Synchronet-aware) plus the match metadata. %A is
-// the auto-quoted alias.
-function sd_spawn_server(port, maxplayers, ws, mode)
+// the auto-quoted alias. When `register === false` (the muster path) the server is
+// spawned WITHOUT -gamesdir, so it writes no registry entry -- the lobby owns
+// discovery via its own mustering entry instead.
+function sd_spawn_server(port, maxplayers, ws, mode, register)
 {
 	var cmd = SD_BINARY + " -spawnserver -port " + port
 	    + " -maxplayers " + maxplayers
-	    + " -gamesdir " + SD_GAMES
 	    + " -host %a"                     // lowercase: quoted if it has a space
 	    + " -wadset " + ws.id
 	    + " -gamemode " + mode;
+	if (register !== false)               // omit -gamesdir on the muster path
+		cmd += " -gamesdir " + SD_GAMES;
 
 	// advertise = the address joiners on OTHER hosts dial (recorded in the shared
 	// browse registry); bind = the local interface the server listens on. They're
@@ -306,6 +309,130 @@ function sd_send_pages(targets, mode)
 	    + (paged == 1 ? "" : "s") + ".\1n\r\n");
 }
 
+// Fire the match: spawn the (unregistered) server sized to the assembled count K,
+// signal go, and launch the creator's own client FIRST so it's the netgame controller
+// (its -skill/-deathmatch define the match). `entry` is the mustering-entry path.
+function sd_muster_go(entry, port, ws, mode, skill, K) {
+	sd_spawn_server(port, K, ws, mode, false);   // no -gamesdir: lobby owns discovery
+	mswait(500);                                 // let it bind before we connect
+	// The address JOINERS dial: the advertised (cross-host) address, else loopback.
+	// NOT creator_connect_host -- that's the creator's OWN loopback (used for our own
+	// client below); a joiner on another host must dial the advertised address.
+	var pubaddr = (gl.advertise_addr(cfg.net) ? gl.advertise_addr(cfg.net) : "127.0.0.1") + ":" + port;
+	gl.write_go(entry, pubaddr);
+	gl.remove_game(entry);                       // no longer joinable via Browse
+	console.beep();
+	var extra = ["-players", String(K), "-skill", String(skill), "-mustered"];
+	if (mode == "deathmatch")
+		extra.push("-deathmatch");
+	else if (mode == "altdeath")
+		extra.push("-altdeath");
+	try {
+		sd_play(gl.creator_connect_host(cfg.net) + ":" + port, extra, sd_wadset_args(cfg, ws));
+	} finally {
+		gl.clear_muster(entry);                  // sweep .go + any leftover .wait.*
+	}
+}
+
+// The host's JS waiting room: heartbeat the mustering entry, show who's assembled,
+// and wait for the target (auto) or a manual Start (S, >=2). Returns "started" (a
+// match was launched via sd_muster_go) or "cancel" (Q / hangup). Mirrors SyncDuke's
+// sd_wait_room machinery (nodesync / Ctrl-P / panel / beep).
+function sd_muster_host(entry, port, ws, mode, skill, target) {
+	var mynode = bbs.node_num;
+	var lastbeat = time();
+	var lastcount = 1;                           // host alone
+	var oldctrl = console.ctrlkey_passthru;
+	console.ctrlkey_passthru = -1;
+	console.ctrlkey_passthru = "-P";
+	sd_panel_rows_prev = -1;
+	console.line_counter = 0;                    // the create prompts ran up the pager;
+	                                             // reset so the room's first draw doesn't
+	                                             // fire a gratuitous [Hit a key] pause
+	var bg = function () {
+		var K = sd_muster_players(entry);
+		console.clear();
+		console.print("\1n\1h\1cSyncDOOM \1y-\1n\1h\1c Waiting Room\1n\r\n\r\n");
+		console.print(" Hosting \1h\1w" + ws.name + "\1n \1c(" + sd_mode_label(mode)
+		    + ")\1n -- assembled \1h\1w" + K + " / " + target + "\1n\r\n");
+		var wl = gl.list_waiters(entry), i;
+		console.print("   \1n\1h\1w" + user.alias + " \1k\1h(host)\1n\r\n");
+		for (i = 0; i < wl.length; i++)
+			console.print("   \1n\1w" + (wl[i].alias || ("node " + wl[i].node)) + "\1n\r\n");
+		console.print("\r\n \1hS\1n start (needs 2+)   \1hQ\1n cancel   \1hP\1n page nodes\r\n");
+	};
+	// Reflect the wait in the whole-BBS node list ("waiting for N more players").
+	var update_status = function (n) {
+		var rem = target - n;
+		if (rem < 1) rem = 1;
+		presence.set_node_ext_status("waiting for " + rem + " more player" + (rem == 1 ? "" : "s") + " (SyncDOOM)");
+	};
+	bg();
+	update_status(1);
+	try {
+		while (!js.terminated && bbs.online) {
+			var pending = (system.node_list[mynode - 1].misc & (NODE_NMSG | NODE_MSGW)) != 0;
+			if (pending) {
+				console.clear();
+				bbs.nodesync();
+				sd_write_muster(cfg, port, ws, mode, target, sd_muster_players(entry));
+				lastbeat = time();
+				console.pause();
+				bg();
+				sd_panel_rows_prev = -1;
+			} else
+				bbs.nodesync();
+			if (js.terminated || !bbs.online)
+				return "cancel";
+
+			var K = sd_muster_players(entry);
+			if (K != lastcount) {                // someone joined/left -> beep on arrival, redraw
+				if (K > lastcount)
+					console.beep();
+				lastcount = K;
+				update_status(K);
+				bg();
+				sd_panel_rows_prev = -1;
+			}
+			if (K >= target) {                   // target met -> auto start
+				sd_muster_go(entry, port, ws, mode, skill, K);
+				return "started";
+			}
+			if (time() - lastbeat >= SD_MUSTER_HEARTBEAT) {
+				sd_write_muster(cfg, port, ws, mode, target, K);
+				lastbeat = time();
+			}
+			sd_draw_panel(bg);
+			var c = console.inkey(K_UPPER | K_NOECHO, 1000);
+			if (!c)
+				continue;
+			if (c == "Q")
+				return "cancel";
+			if (c == "S") {
+				var sk = sd_muster_players(entry);
+				if (sk >= 2) {
+					sd_muster_go(entry, port, ws, mode, skill, sk);
+					return "started";
+				}
+				// else ignore -- need at least 2
+			}
+			if (c == "P") {
+				sd_write_muster(cfg, port, ws, mode, target, sd_muster_players(entry));
+				lastbeat = time();
+				var targets = sd_prompt_page_players();
+				sd_send_pages(targets, mode);
+				console.pause();
+				bg();
+				sd_panel_rows_prev = -1;
+			}
+		}
+		return "cancel";
+	} finally {
+		presence.set_node_ext_status("");
+		console.ctrlkey_passthru = oldctrl;
+	}
+}
+
 function sd_create()
 {
 	var mode = sd_pick_gamemode();
@@ -343,11 +470,6 @@ function sd_create()
 	if (skill === null)                   // Q / Ctrl-C -> abort the create
 		return;
 
-	// Decide on paging up front -- the (blocking) prompt must NOT sit between the
-	// server spawn and our connect below, or a Browse-joiner could connect first
-	// and become the controller. We only deliver the pages (fast) after spawning.
-	var page_targets = (n > 1) ? sd_prompt_page_players() : [];
-
 	var port = gl.alloc_port(cfg.net);
 	if (port < 0) {
 		console.print("\r\n\1h\1rNo free server port available.\1n\r\n");
@@ -355,31 +477,120 @@ function sd_create()
 		return;
 	}
 
-	sd_spawn_server(port, n, ws, mode);
-	mswait(500);                          // let the server bind before we connect
-
-	// Enter the door and connect right away -- the creator MUST reach the server
-	// before any Browse-joiner does: the first client to connect becomes the
-	// controller (the host who starts the match). The old "press a key to enter"
-	// pause held the creator outside the door, so a joiner could connect first,
-	// become host, and launch without the creator -- whose late connect then hit
-	// an in-progress server (no mid-game joins) and bounced back to the lobby.
-	// The door's own waiting room shows the "waiting for players" UI from here.
-	if (n > 1) {
-		console.print("\r\n\1h\1gGame created.\1n Entering the waiting room; "
-		    + "others \1hJ\1noin a multi-player game.\r\n");
-		sd_send_pages(page_targets, mode);
+	// n == 1: a solo run (testing) -- spawn + connect immediately, no muster. Keep the
+	// mode flag the pre-muster code sent for all n, so a solo deathmatch stays a
+	// deathmatch (don't silently downgrade to co-op).
+	if (n <= 1) {
+		sd_spawn_server(port, 1, ws, mode);
+		mswait(500);
+		var soloextra = ["-players", "1", "-skill", String(skill), "-mustered"];
+		if (mode == "deathmatch")
+			soloextra.push("-deathmatch");
+		else if (mode == "altdeath")
+			soloextra.push("-altdeath");
+		sd_play(gl.creator_connect_host(cfg.net) + ":" + port, soloextra, sd_wadset_args(cfg, ws));
+		return;
 	}
 
-	// The creator is the controller, so its -deathmatch / -altdeath AND -skill set
-	// the match type/difficulty; co-op needs no mode flag (Doom's default). Joiners
-	// get the mode and skill from the server (controller's connect data).
-	var extra = ["-players", String(n), "-skill", String(skill)];
-	if (mode == "deathmatch")
-		extra.push("-deathmatch");
-	else if (mode == "altdeath")
-		extra.push("-altdeath");
-	sd_play(gl.creator_connect_host(cfg.net) + ":" + port, extra, sd_wadset_args(cfg, ws));
+	// n > 1: muster. Write the lobby-owned "mustering" entry, page up front, then host
+	// the JS waiting room. The server + our client are launched only at "go"
+	// (sd_muster_go), so nobody waits at Doom's blank sync screen.
+	var page_targets = sd_prompt_page_players();
+	var entry = sd_write_muster(cfg, port, ws, mode, n, 1);
+	if (!entry) {
+		console.print("\r\n\1h\1rCould not create the game (registry write failed).\1n\r\n");
+		console.pause();
+		return;
+	}
+	console.print("\r\n\1h\1gGame created.\1n Entering the waiting room; others \1hJ\1noin.\r\n");
+	sd_send_pages(page_targets, mode);
+
+	// clear_muster is idempotent: on "started" sd_muster_go already cleared it; on
+	// cancel/hangup or any unexpected throw out of the room, the finally clears it here.
+	try {
+		sd_muster_host(entry, port, ws, mode, skill, n);
+	} finally {
+		gl.clear_muster(entry);
+	}
+}
+
+// Join a muster: drop our waiter marker, then wait in a JS room for the host's "go"
+// (we launch our client only then -- deferred connect). `sel` is the chosen mustering
+// entry (from sd_list_games). `ws` is the already-resolved/validated wad set. Returns
+// after the client exits, or when we leave (Q) / the host cancels.
+function sd_muster_join(sel, ws) {
+	// Host-qualify our waiter-marker id: node numbers collide across hosts sharing the
+	// games dir, so key the marker on <ourhost>-<node>, not the bare node number.
+	var joinid = String(system.local_host_name || "host").replace(/[^A-Za-z0-9]+/g, "") + "-" + bbs.node_num;
+	if (!gl.write_waiter(sel.file, joinid, (typeof user != "undefined" && user.alias) ? user.alias : "")) {
+		console.print("\r\n\1h\1wCouldn't register for that game (already joining?).\1n\r\n");
+		console.pause();
+		return;
+	}
+	var mynode = bbs.node_num;
+	var oldctrl = console.ctrlkey_passthru;
+	console.ctrlkey_passthru = -1;
+	console.ctrlkey_passthru = "-P";
+	sd_panel_rows_prev = -1;
+	console.line_counter = 0;                // the browse prompts ran up the pager;
+	                                         // reset so the room's first draw doesn't
+	                                         // fire a gratuitous [Hit a key] pause
+	var bg = function () {
+		console.clear();
+		console.print("\1n\1h\1cSyncDOOM \1y-\1n\1h\1c Waiting Room\1n\r\n\r\n");
+		console.print(" Joined \1h\1w" + sel.host + "\1n\1c's " + sel.wadset + " ("
+		    + sd_mode_label(sel.mode) + ")\1n game.\r\n");
+		console.print(" \1h\1yWaiting for the host to start...\1n\r\n");
+		console.print("\r\n \1hQ\1n leave\r\n");
+	};
+	bg();
+	presence.set_node_ext_status("waiting for the SyncDOOM host to start");
+	try {
+		while (!js.terminated && bbs.online) {
+			var pending = (system.node_list[mynode - 1].misc & (NODE_NMSG | NODE_MSGW)) != 0;
+			if (pending) {
+				console.clear();
+				bbs.nodesync();
+				console.pause();
+				bg();
+				sd_panel_rows_prev = -1;
+			} else
+				bbs.nodesync();
+			if (js.terminated || !bbs.online) {
+				gl.remove_waiter(sel.file, joinid);
+				return;
+			}
+			var addr = gl.read_go(sel.file);
+			if (addr !== null) {              // host fired -> launch our client
+				console.beep();
+				gl.remove_waiter(sel.file, joinid);
+				console.ctrlkey_passthru = oldctrl;
+				var dial = (addr && addr.length) ? addr : (sel.addr + ":" + sel.port);
+				sd_play(dial, ["-mustered"], sd_wadset_args(cfg, ws));
+				return;
+			}
+			if (!file_exists(sel.file) && gl.read_go(sel.file) === null) {
+				// Entry gone AND still no go -> the host really cancelled. (The re-read
+				// of read_go guards a cross-host cache window where the .ini removal is
+				// seen before the .go creation; if go appeared, we fall through and the
+				// next tick launches.)
+				console.print("\r\n\1h\1wThe host cancelled the game.\1n\r\n");
+				gl.remove_waiter(sel.file, joinid);
+				console.pause();
+				return;
+			}
+			sd_draw_panel(bg);
+			var c = console.inkey(K_UPPER | K_NOECHO, 1000);
+			if (c == "Q") {
+				gl.remove_waiter(sel.file, joinid);
+				return;
+			}
+		}
+		gl.remove_waiter(sel.file, joinid);
+	} finally {
+		presence.set_node_ext_status("");
+		console.ctrlkey_passthru = oldctrl;
+	}
 }
 
 // Browse the registry and join a game on this system. The joiner inherits the
@@ -388,7 +599,7 @@ function sd_browse()
 {
 	var games = sd_list_games(cfg);
 	if (!games.length) {
-		console.print("\r\n\1h\1wNo network games are running.\1n\r\n");
+		console.print("\1h\1wNo network games are running.\1n\r\n");
 		if (console.yesno("Create a game now"))
 			sd_create();
 		return;
@@ -420,8 +631,8 @@ function sd_browse()
 		sel = games[k - 1];
 	}
 
-	// Vanilla Doom only accepts joins before the game starts.
-	if (sel.status != "lobby") {
+	// A lobby muster is joinable while assembling.
+	if (sel.status != "mustering") {
 		console.print("\r\n\1h\1rThat game is already in progress; you can't join it.\1n\r\n");
 		console.pause();
 		return;
@@ -444,7 +655,7 @@ function sd_browse()
 
 	sd_show_note(ws);
 	sd_show_wad_msgs(cfg, ws);
-	sd_play(sel.addr + ":" + sel.port, [], sd_wadset_args(cfg, ws));
+	sd_muster_join(sel, ws);
 }
 
 // Join an arbitrary server by address (external / cross-system). Manual because
@@ -529,13 +740,13 @@ function sd_draw_art()
 // each tick (no art redraw -> no flicker); when the panel's height changes the
 // art is redrawn first so rows it vacated don't keep a stale panel.
 var sd_panel_rows_prev = -1;
-function sd_draw_panel()
+function sd_draw_panel(bgfn)
 {
 	var cols = console.screen_columns, rows = console.screen_rows;
 	var p = sd_panel_cells(cols, gl.activity_max_age(cfg), gl.panel_rows(cfg));
 	var cells = p.cells, nrows = cells.length;   // one full-width cell per row
 	if (sd_panel_rows_prev >= 0 && nrows != sd_panel_rows_prev)
-		sd_draw_art();                       // height changed -> restore art under it
+		(bgfn || sd_draw_art)();             // height changed -> restore art (or caller's bg) under it
 	sd_panel_rows_prev = nrows;
 	var top = rows - nrows + 1, r;
 	for (r = 0; r < nrows; r++) {

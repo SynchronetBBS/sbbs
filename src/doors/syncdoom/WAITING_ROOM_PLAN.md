@@ -395,7 +395,11 @@ Add both functions just above `sd_create`:
 function sd_muster_go(entry, port, ws, mode, skill, K) {
 	sd_spawn_server(port, K, ws, mode, false);   // no -gamesdir: lobby owns discovery
 	mswait(500);                                 // let it bind before we connect
-	gl.write_go(entry, gl.creator_connect_host(cfg.net) + ":" + port);
+	// The address JOINERS dial: the advertised (cross-host) address, else loopback.
+	// NOT creator_connect_host -- that's the creator's OWN loopback (used for our own
+	// client below); a joiner on another host must dial the advertised address.
+	var pubaddr = (gl.advertise_addr(cfg.net) ? gl.advertise_addr(cfg.net) : "127.0.0.1") + ":" + port;
+	gl.write_go(entry, pubaddr);
 	gl.remove_game(entry);                       // no longer joinable via Browse
 	console.beep();
 	var extra = ["-players", String(K), "-skill", String(skill)];
@@ -533,12 +537,18 @@ with (a solo `n==1` still launches immediately; `n>1` musters):
 		return;
 	}
 
-	// n == 1: a solo run (testing) -- spawn + connect immediately, no muster.
+	// n == 1: a solo run (testing) -- spawn + connect immediately, no muster. Keep the
+	// mode flag the pre-muster code sent for all n, so a solo deathmatch stays a
+	// deathmatch (don't silently downgrade to co-op).
 	if (n <= 1) {
 		sd_spawn_server(port, 1, ws, mode);
 		mswait(500);
-		sd_play(gl.creator_connect_host(cfg.net) + ":" + port,
-		    ["-players", "1", "-skill", String(skill)], sd_wadset_args(cfg, ws));
+		var soloextra = ["-players", "1", "-skill", String(skill)];
+		if (mode == "deathmatch")
+			soloextra.push("-deathmatch");
+		else if (mode == "altdeath")
+			soloextra.push("-altdeath");
+		sd_play(gl.creator_connect_host(cfg.net) + ":" + port, soloextra, sd_wadset_args(cfg, ws));
 		return;
 	}
 

@@ -17,6 +17,7 @@
 load("sbbsdefs.js");
 
 var gl = load({}, "game_lobby.js");   // shared lobby model layer (gl.* helpers)
+var presence = load({}, "presence_lib.js");   // stock node-presence lib (set_node_ext_status)
 
 // The door's own directory (where the syncdoom binary + syncdoom.ini live).
 // js.exec_dir is the directory of the *running* script; when lobby.js loads
