@@ -175,7 +175,7 @@ function sd_mode_label(mode) {
 function sd_join() {
 	var games = sd_list_open_games(cfg);
 	if (!games.length) {
-		console.print("\r\n\1h\1wNo co-op games are waiting.\1n\r\n");
+		console.print("\1h\1wNo multiplayer games are waiting.\1n\r\n");
 		if (console.yesno("Create one now"))
 			sd_create();
 		return;
@@ -337,6 +337,7 @@ function sd_wait_room(entry, port, lev, mode) {
 	sd_panel_rows_prev = -1;
 	var bg = function () { sd_wait_bg(lev, modelabel); };
 	bg();
+	presence.set_node_ext_status("waiting for 1 more player (SyncDuke)");
 	try {
 		while (!js.terminated && bbs.online) {
 			var pending = (system.node_list[mynode - 1].misc & (NODE_NMSG | NODE_MSGW)) != 0;
@@ -379,6 +380,7 @@ function sd_wait_room(entry, port, lev, mode) {
 		}
 		return "cancel";
 	} finally {
+		presence.set_node_ext_status("");
 		console.ctrlkey_passthru = oldctrl;
 	}
 }

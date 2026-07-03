@@ -18,6 +18,7 @@
 load("sbbsdefs.js");
 
 var gl = load({}, "game_lobby.js");
+var presence = load({}, "presence_lib.js");   // stock node-presence lib (set_node_ext_status)
 
 // The door's own directory (where the syncduke binary + syncduke.ini live):
 // js.exec_dir is the directory of the running script -- xtrn/syncduke/ here.
