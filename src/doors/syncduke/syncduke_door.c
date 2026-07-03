@@ -90,9 +90,79 @@ static void syncduke_door_splash(void)
 #endif
 }
 
+/* Command-line usage. Lists the door's own options; DOS-style /engine options
+ * pass through to the Duke3D engine. Printed on -help/--help/-?//? or a bare
+ * launch (no args -> nothing to do but explain how to run it). */
+static void syncduke_usage(const char *argv0)
+{
+	const char *prog = (argv0 != NULL && argv0[0] != '\0') ? argv0 : "syncduke";
+
+	printf(
+		"SyncDuke -- Duke Nukem 3D over a terminal, as a Synchronet or DOOR32.SYS door.\n"
+		"\n"
+		"usage: %s [session opts] [config opts] [multiplayer opts] [engine opts]\n"
+		"\n"
+		"The door consumes its own options below; DOS-style /engine options pass\n"
+		"through to the Duke3D engine (e.g. /v1 /l1 = volume 1, level 1).\n"
+		"\n"
+		"Session / terminal:\n"
+		"  <path>/door32.sys  DOOR32.SYS drop file (Synchronet %%f): socket+time+alias\n"
+		"  -s<fd>             client socket descriptor directly (no drop file)\n"
+		"  -t<seconds>        session time limit; the door exits when it elapses\n"
+		"  -name <handle>     player name (who's-online, multiplayer)\n"
+		"  -home <dir>        per-user dir for duke3d.cfg + savegames\n"
+		"\n"
+		"Config:\n"
+		"  -grpdir <dir>      where DUKE3D.GRP lives (else beside the binary, or\n"
+		"                     syncduke.ini [grp] dir)\n"
+		"  -charset <c>       client charset: utf8|cp437|auto (auto reads terminal.ini;\n"
+		"                     set it explicitly on non-Synchronet BBSes)\n"
+		"  -log <path>        door debug log (else syncduke.ini [debug] log, else off)\n"
+		"  -eventlog <path>   append game events (JSONL) for the lobby activity feed\n"
+		"\n"
+		"Multiplayer (co-op / dukematch -- the lobby sets these):\n"
+		"  -netrole <role>       master | join\n"
+		"  -netport <n>          the master's listen port (role master)\n"
+		"  -netpeer <host:port>  the address the joiner dials (role join)\n"
+		"\n"
+		"Engine (DOS-style slash options pass through):\n"
+		"  /v<n>              volume / episode\n"
+		"  /l<n>              level\n"
+		"  /c1 | /c2 | /c3    dukematch (spawn) | co-op | dukematch (no item respawn)\n"
+		"  /m                 monsters off\n"
+		"  /t                 respawn items\n"
+		"\n"
+		"  -help, --help, -?, /?  show this help\n",
+		prog);
+	fflush(stdout);   /* the callers _exit() -- which does NOT flush stdio buffers */
+}
+
+/* True if `a` is one of the help-request forms. */
+static int syncduke_is_help_arg(const char *a)
+{
+	return strcmp(a, "-help") == 0 || strcmp(a, "--help") == 0
+	       || strcmp(a, "-?") == 0 || strcmp(a, "/?") == 0;
+}
+
 /* Capture argv and paint the splash BEFORE the engine's main() runs. */
 static void syncduke_door_init(int argc, char **argv)
 {
+	int i;
+
+	/* -help/--help/-?//? anywhere, or a bare launch, prints usage and exits
+	 * (a real door launch always carries a socket or DOOR32.SYS path). Done here,
+	 * in the pre-main constructor, so it wins before the engine parses argv. */
+	for (i = 1; i < argc; i++) {
+		if (syncduke_is_help_arg(argv[i])) {
+			syncduke_usage(argv[0]);
+			_exit(0);
+		}
+	}
+	if (argc < 2) {
+		syncduke_usage(argv[0]);
+		_exit(1);
+	}
+
 	g_argc = argc;
 	g_argv = argv;
 	syncduke_door_splash();   /* instant feedback while the engine spends ~2s loading */

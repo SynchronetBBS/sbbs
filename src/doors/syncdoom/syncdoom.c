@@ -4022,10 +4022,103 @@ void sd_waitroom_run(void)
 // fills 640x400, and pass everything else (e.g. -iwad) through to doomgeneric.
 // ---------------------------------------------------------------------------
 
+// Command-line usage. Lists the door's own options; any switch it doesn't
+// recognize passes through to the DOOM engine. Printed on -help/--help/-?//? or
+// a bare launch (no args -> nothing to do but explain how to run it).
+static void sd_usage(const char *argv0)
+{
+	const char *prog = (argv0 != NULL && argv0[0] != '\0') ? argv0 : "syncdoom";
+
+	printf(
+		"SyncDOOM -- DOOM over a terminal, as a Synchronet or DOOR32.SYS door.\n"
+		"\n"
+		"usage: %s [session opts] [video opts] [multiplayer opts] [WAD opts]\n"
+		"                [DOOM engine opts]\n"
+		"\n"
+		"Unrecognized switches pass through to the DOOM engine (standard Chocolate\n"
+		"Doom: -nomonsters, -respawn, -fast, -turbo, ...).\n"
+		"\n"
+		"Session / terminal:\n"
+		"  -s<fd>            client comm socket descriptor (glued -s7 or spaced -s 7)\n"
+		"  -door32 <path>    DOOR32.SYS drop file (supplies the socket + time limit)\n"
+		"  -term <path>      terminal.ini file/dir (baseline cols/rows/charset/desc)\n"
+		"  -l<rows>          fallback screen rows (default 25; live-probed first)\n"
+		"  -t<seconds>       session time limit; the door exits when it elapses\n"
+		"  -home <dir>       per-user dir for config, savegames, screenshots\n"
+		"  -name <handle>    multiplayer player name (default Player)\n"
+		"  -eventlog <path>  append game events (JSONL) for the lobby activity feed\n"
+		"\n"
+		"Video (else auto-probed):\n"
+		"  -jxl [0|1|auto]   JPEG-XL tier: force off/on, or auto (JXL builds)\n"
+		"  -sixel [0|1|auto] sixel tier: force off/on, or auto\n"
+		"  -text             force the text / block-glyph tier\n"
+		"  -mode <m>         text glyph mode: half|quadrant|sextant|space\n"
+		"  -charset <c>      text charset: utf-8|cp437\n"
+		"  -colors <c>       color depth: 16|8|256|true\n"
+		"  -scaling <n>      engine framebuffer scale (default 2 = 640x400)\n"
+		"  -jxldistance <d>  JXL lossy distance (~1.0 near-lossless; higher=smaller)\n"
+		"\n"
+		"Input feel (milliseconds; also [input] in syncdoom.ini, retunable in-game):\n"
+		"  -kpdelay <ms>     TAP grace (fresh key press)\n"
+		"  -kpsmooth <ms>    HOLD grace (held / repeating key)\n"
+		"  -kpturn <ms>      TURN grace (turn-key tap)\n"
+		"  -mouse <on|off>   terminal mouse steering (default on)\n"
+		"\n"
+		"WADs (bare names resolve in the [wads] dir):\n"
+		"  -iwad <file>      the IWAD (doom.wad, doom2.wad, freedoom, ...)\n"
+		"  -file <wad>...    load PWAD(s)\n"
+		"  -merge <wad>...   merge PWAD(s)\n"
+		"  -wadname <name>   friendly WAD-set name (who's-online status)\n"
+		"\n"
+		"Multiplayer -- client (the lobby sets these; -connect to join by hand):\n"
+		"  -connect <host:port>  join a netgame at that address\n"
+		"  -players <n>          expected player count\n"
+		"  -skill <n>            skill 1-5\n"
+		"  -deathmatch           deathmatch (else co-op)\n"
+		"  -altdeath             deathmatch 2.0 (weapons + items respawn)\n"
+		"  -warp <n> | <e> <m>   start on this map/level directly\n"
+		"  -mustered             skip the C waiting room (lobby already mustered)\n"
+		"\n"
+		"Multiplayer -- dedicated server (spawned by the lobby; run by hand to test):\n"
+		"  -dedicated            run headless as a match's tic relay (needs -port)\n"
+		"  -spawnserver          daemonize a detached -dedicated server, then exit\n"
+		"  -port <n>             server listen port\n"
+		"  -maxplayers <n>       max players the server waits for (2-4)\n"
+		"  -host <alias>         host name recorded in the registry entry\n"
+		"  -wadset <id>          WAD-set id (registry metadata)\n"
+		"  -gamemode <mode>      game mode (registry metadata)\n"
+		"  -advertise <addr>     address cross-host joiners dial (registry)\n"
+		"  -bindaddr <addr>      local interface the server binds\n"
+		"  -gamesdir <dir>       registry dir where the server writes its entry\n"
+		"\n"
+		"  -help, --help, -?, /?  show this help\n",
+		prog);
+}
+
+// True if `a` is one of the help-request forms.
+static int sd_is_help_arg(const char *a)
+{
+	return strcmp(a, "-help") == 0 || strcmp(a, "--help") == 0
+	       || strcmp(a, "-?") == 0 || strcmp(a, "/?") == 0;
+}
+
 int main(int argc, char **argv)
 {
 	char ** child;
 	int     cn = 0, i;
+
+	// -help/--help/-?//? anywhere, or a bare launch, prints usage and exits
+	// (a real door/server launch always carries a socket or -dedicated).
+	for (i = 1; i < argc; i++) {
+		if (sd_is_help_arg(argv[i])) {
+			sd_usage(argv[0]);
+			return 0;
+		}
+	}
+	if (argc < 2) {
+		sd_usage(argv[0]);
+		return 1;
+	}
 
 #ifdef _WIN32
 	WSADATA wsadata;

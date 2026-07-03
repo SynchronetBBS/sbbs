@@ -82,6 +82,9 @@ syncdoom %f -l%R -t%T -home <per-user-dir> -iwad <wad> -name "<user>"
 where `%f`, `%R`, `%T` are the BBS's substitutions for the drop-file path, screen
 rows, and time left.
 
+Run `syncdoom -help` (also `--help`, `-?`, `/?`, or with no arguments) to print
+the full option list below.
+
 ### Session / terminal
 
 | Option | Meaning |
@@ -93,6 +96,7 @@ rows, and time left.
 | `-term <path>` | A `terminal.ini` file (or a directory containing one) describing `cols`/`rows`/`chars`/`desc`. Sets the baseline; explicit flags override. |
 | `-home <dir>` | **Per-user storage** directory. The door `chdir`s here so DOOM's config, savegames and screenshots are written per user. Created if absent. |
 | `-name <handle>` | Player name shown in multiplayer (chat, scoreboard). Default `Player`. |
+| `-eventlog <path>` | Append game events (level start, deaths/frags) as JSONL to `<path>`; the lobby's activity feed reads it. The directory is created if absent. |
 
 ### Video
 
@@ -104,6 +108,7 @@ rows, and time left.
 | `-mode <m>` | Text-tier glyph mode: `half` (default), `quadrant`, `sextant`, or `space`. |
 | `-charset <c>` | `utf-8` or `cp437` (text tier). |
 | `-colors <c>` | Color depth: `16` (default), `8`, `256`, or `true`/`24`. |
+| `-scaling <n>` | Engine framebuffer scale factor (default **2**: DOOM's 320×200 → 640×400). |
 | `-jxldistance <d>` | JXL lossy quality/size lever (Butteraugli distance; ~1.0 lossless, higher = smaller). JXL builds only. |
 
 ### Input (key-repeat tuning, milliseconds)
@@ -146,6 +151,7 @@ controls show as **NATIVE** (and do nothing), and the Ctrl-S stats strip reports
 | `-file <wad…>` | One or more PWADs (appended). |
 | `-merge <wad…>` | One or more PWADs merged into the IWAD namespace (NWT-style). |
 | `-deh <patch…>` | One or more DeHackEd / BEX (`.deh`/`.bex`) patches (see below). |
+| `-wadname <name>` | Friendly WAD-set name for the who's-online status (defaults to the IWAD's base name). |
 
 WAD paths are resolved to absolute *before* the door `chdir`s into `-home`, so
 relative WAD paths work regardless of the storage directory, and the lookup is
@@ -154,18 +160,40 @@ vice-versa) on case-sensitive filesystems, since DOS/Windows WADs are commonly
 upper-case. If `-iwad` names a bare file, the engine's standard IWAD search also
 applies (e.g. the `DOOMWADDIR` environment variable).
 
-### Multiplayer server
+### Multiplayer — client
+
+The lobby's waiting room sets these when it releases players into a match; give
+them by hand only for a direct connect or an engine test:
+
+| Option | Meaning |
+|--------|---------|
+| `-connect <host:port>` | Join a netgame at that address (standard Chocolate Doom, passed through). |
+| `-players <n>` | Expected player count for the match. |
+| `-skill <n>` | Skill level 1–5. |
+| `-warp <n>` \| `<e> <m>` | Start directly on the given map (Doom II) or episode+map (Doom). |
+| `-deathmatch` | Deathmatch (else co-op). Set on the *creating* client; joiners inherit it over the net. |
+| `-altdeath` | Deathmatch 2.0 (weapons **and** items respawn). |
+| `-mustered` | Skip the C waiting room: the JS lobby already gathered every player (deferred connect), so the client drops straight into the game with no splash/beep. |
+
+### Multiplayer — dedicated server
+
+Spawned automatically by the lobby; run by hand only to test.
 
 | Option | Meaning |
 |--------|---------|
 | `-dedicated` | Run as a headless dedicated server (the match's tic relay; no terminal). Reads `-port`. |
 | `-spawnserver [-port <n>] [meta…]` | Daemonize a detached `-dedicated` server and exit, printing `<pid> <port>` on stdout. With no `-port`, a free port is allocated. Extra args are forwarded to the server. |
 | `-port <n>` | UDP port for the dedicated/spawned server. |
+| `-maxplayers <n>` | Match size the server waits for before starting (2–4). |
 | `-bindaddr <addr>` | Local address the server's UDP socket listens on. Default **`127.0.0.1`** (loopback only — same-host clients). Use `0.0.0.0` for all interfaces, or a specific local IP/hostname, for cross-host play. (The lobby derives this from `[net] bind`, defaulting to `[net] advertise`.) |
+| `-advertise <addr>` | Address cross-host joiners dial, recorded in the browse registry (the lobby's `[net] advertise`). |
+| `-gamesdir <dir>` | Directory where the server writes its registry entry so the lobby's Browse can discover it. (Omitted on the muster path, where the JS lobby owns discovery instead.) |
+| `-host <alias>` | Host name recorded in the registry entry (shown in the lobby game list). |
+| `-wadset <id>` | WAD-set id recorded in the registry entry. |
+| `-gamemode <mode>` | Game mode recorded in the registry entry. |
 
-Clients join a server with the standard Chocolate Doom `-connect <host>` (passed
-through). `-deathmatch` / `-altdeath` on the *creating* client select the game
-type for the match.
+Clients join with `-connect <host:port>`; the creating client's `-skill` /
+`-deathmatch` / `-altdeath` define the match.
 
 ---
 

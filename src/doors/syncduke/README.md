@@ -182,19 +182,42 @@ The door is launched as `syncduke%. %f -home %juser/%4/duke/`:
 ### Command-line arguments
 
 The DOOR32.SYS path (`%f`) or `-s<fd>` supplies the client socket; everything else
-is optional:
+is optional. Run `syncduke -help` (also `--help`, `-?`, `/?`, or with no
+arguments) to print this list.
+
+**Session / config:**
 
 | Argument | Purpose |
 |----------|---------|
-| `<path>/door32.sys` | DOOR32.SYS drop file (Synchronet's `%f`): client socket + session time limit. |
+| `<path>/door32.sys` | DOOR32.SYS drop file (Synchronet's `%f`): client socket + session time limit + alias. |
 | `-s<fd>` | Client socket file descriptor directly (the lobby's path — no drop file). |
+| `-t<seconds>` | Session time limit; the door exits when it elapses (also carried by the drop file). |
+| `-name <handle>` | Player name (who's-online status and multiplayer). Given as a flag+value so a `/`-leading alias isn't misread as an engine option. |
 | `-home <dir>` | Per-user writable dir for `duke3d.cfg` + savegames (see above). |
 | `-grpdir <dir>` | Where to find `DUKE3D.GRP` (else beside the binary; also `syncduke.ini [grp] dir`). |
 | `-charset utf8\|cp437\|auto` | Client character set for the block/text tiers. `auto` (default) detects it from Synchronet's `<node>/terminal.ini`; pass `utf8` or `cp437` explicitly on **non-Synchronet BBSes** (DOOR32.SYS installs with no `terminal.ini`), where auto-detection can't work. `utf8` makes the block tiers emit native Unicode and adds the higher-res **quadrant/sextant** tiers to the F4 cycle. Overrides `syncduke.ini [video] charset`. |
 | `-log <path>` | Write a door debug log to `<path>` (else `syncduke.ini [debug] log`, else off). |
+| `-eventlog <path>` | Append game events (level start, deaths/frags) as JSONL to `<path>` for the lobby's activity feed. |
 
-Co-op networking adds `-netrole` / `-netport` / `-netpeer`; the lobby sets those
-itself, so you don't pass them by hand.
+**Multiplayer** (co-op and dukematch) — the lobby sets these itself, so you
+don't normally pass them by hand:
+
+| Argument | Purpose |
+|----------|---------|
+| `-netrole master\|join` | This peer's role: `master` (hosts/listens) or `join` (dials the master). |
+| `-netport <n>` | The master's listen port (role `master`). |
+| `-netpeer <host:port>` | The address the joiner dials (role `join`). |
+
+**Engine** — the door strips its own options above and hands the rest to the
+Duke3D engine, which takes DOS-style slash options:
+
+| Argument | Purpose |
+|----------|---------|
+| `/v<n>` | Volume / episode number. |
+| `/l<n>` | Level number. |
+| `/c1` \| `/c2` \| `/c3` | Multiplayer mode: dukematch (spawn) \| co-op \| dukematch (no item respawn). |
+| `/m` | Monsters off. |
+| `/t` | Respawn items. |
 
 ---
 
@@ -203,7 +226,10 @@ itself, so you don't pass them by hand.
 - **Plays** end-to-end: boot → menu → new game → Episode 1, with rendering,
   movement / turn / strafe / fire / weapon-switch / jump / crouch / use / look,
   and **save / load**, all over the terminal.
-- **Single-player only** — no multiplayer, lobby, or audio.
+- **Multiplayer** — co-op and dukematch through the JS lobby's waiting room
+  (`-netrole`/`-netport`/`-netpeer`), alongside single-player.
+- **Audio** — digital SFX and OPL/MIDI music (with 3-D positional panning) over
+  SyncTERM's audio channel.
 - Save files are **64-bit-only** (the in-engine save/relocation code was widened
   to `intptr_t`); they are not interchangeable with a 32-bit Duke build.
 - **Cross-platform build** — Linux/Unix (GCC/Clang, `build.sh`) and Windows
