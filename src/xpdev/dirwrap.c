@@ -657,7 +657,7 @@ static bool getfilecase(char *path, bool dir)
 	if (path[0] == 0)      /* work around glibc bug 574274 */
 		return false;
 
-	if (!filename_has_wildcard(path) && filename_exists(path))
+	if (!filename_has_wildcard(path) && filename_exists(path) && isdir(path) == dir)
 		return true;
 
 	SAFECOPY(globme, path);
