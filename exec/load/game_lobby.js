@@ -614,4 +614,115 @@ function panel_cells(cols, marker, events, text_fn, max_rows) {
 	return { cells: cells, cw: cw };
 }
 
+// ---- create-lock: a short-lived mutex serializing the "create a game" setup
+// window so a second user who picks Multiplayer while someone is mid-create waits
+// and then joins, instead of spawning a duplicate game. Lives in the games dir
+// (cross-host). file_mutex() reaps a lock older than the max-age, so an abandoned
+// setup self-clears with no heartbeat; release is a plain remove.
+var CREATE_LOCK_MAX_AGE = 120;   // seconds; comfortably longer than the create picks
+
+function create_lock_path(dir) {
+	return backslash(dir) + "creating.lock";
+}
+
+function acquire_create_lock(dir) {
+	var who = (typeof system != "undefined" ? system.local_host_name : "host")
+	    + "-" + (typeof bbs != "undefined" ? bbs.node_num : 0);
+	return file_mutex(create_lock_path(dir), who, CREATE_LOCK_MAX_AGE);
+}
+
+function release_create_lock(dir) {
+	var p = create_lock_path(dir);
+	if (file_exists(p))
+		file_remove(p);
+}
+
+// ---- shared [M]ultiplayer lobby flow (both doors). Interactive; parameterized by
+// the door via `opts` (games_dir, list(), label(g), create(), join(g), external?).
+// Sequential Y/N: join an existing game, else create; a second game while one
+// exists is the rarest path, reached only as a follow-up Y/N.
+function multiplayer_flow(opts) {
+	var games = opts.list();
+
+	if (games.length == 0) {
+		if (console.yesno("\r\nNo multiplayer games are waiting. Create one"))
+			mp_create(opts);
+		else if (opts.external)
+			opts.external();
+		return;
+	}
+
+	if (games.length == 1) {
+		if (console.yesno("\r\nJoin " + opts.label(games[0]))) {
+			opts.join(games[0]);
+			return;
+		}
+		if (console.yesno("Create one")) {
+			mp_create(opts);
+			return;
+		}
+		if (opts.external)
+			opts.external();
+		return;
+	}
+
+	var sel = mp_pick(games, opts);       // >= 2 games
+	if (sel) {
+		opts.join(sel);
+		return;
+	}
+	if (console.yesno("Create one")) {
+		mp_create(opts);
+		return;
+	}
+	if (opts.external)
+		opts.external();
+}
+
+// Numbered picker for >= 2 games. Returns the chosen game, or null to skip.
+function mp_pick(games, opts) {
+	var i;
+	console.print("\r\n\1h\1cMultiplayer games:\1n\r\n");
+	for (i = 0; i < games.length; i++)
+		console.print("  \1h\1w" + (i + 1) + "\1n) " + opts.label(games[i]) + "\r\n");
+	console.print("\r\nJoin which? [\1h1\1n-\1h" + games.length
+	    + "\1n], or \1hN\1n to skip: ");
+	var n = console.getnum(games.length);
+	if (n < 1 || n > games.length)
+		return null;
+	return games[n - 1];
+}
+
+// Create under the setup-window lock; if another node holds it, poll instead.
+function mp_create(opts) {
+	if (acquire_create_lock(opts.games_dir)) {
+		try { opts.create(); }
+		finally { release_create_lock(opts.games_dir); }
+		return;
+	}
+	mp_wait_for_game(opts);
+}
+
+// A game is being set up by another node: wait screen + ~1.5s poll. A game
+// appearing -> back into the flow's join prompt. Lock freed and still no game
+// (creator bailed pre-register) -> we create. Q aborts.
+function mp_wait_for_game(opts) {
+	console.clear();
+	console.print("\r\n\1h\1wA multiplayer game is being set up -- please wait...\1n"
+	    + "   (\1hQ\1n=cancel)\r\n");
+	while (!js.terminated && bbs.online) {
+		if (opts.list().length > 0) {
+			multiplayer_flow(opts);
+			return;
+		}
+		if (acquire_create_lock(opts.games_dir)) {
+			try { opts.create(); }
+			finally { release_create_lock(opts.games_dir); }
+			return;
+		}
+		if (console.inkey(K_UPPER | K_NOECHO, 1500) == "Q")
+			return;
+	}
+}
+
 this;
