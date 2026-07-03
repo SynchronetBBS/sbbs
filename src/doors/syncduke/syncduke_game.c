@@ -83,3 +83,41 @@ int syncduke_hud_lines(const syncduke_hud_line_t **out)
 		*out = sd_hud;
 	return sd_hud_n;
 }
+
+/* --- dukematch frag detection (see syncduke_events.c) --------------------------
+ * The deterministic lockstep sim runs every player on both door instances, so the
+ * global frags[killer][victim] matrix is identical on each.  We report ONLY our own
+ * row (frags[myconnectindex][*]); the peer reports its own -- so each frag is logged
+ * exactly once, no central writer, no dedup (mirrors SyncDOOM's sd_next_frag).  A
+ * static shadow lets a multi-frag tic drain one victim per call.  Self-frags stay the
+ * existing 'death' event (they don't increment the cross-player matrix -- player.c's
+ * fraggedself path), so they're intentionally not reported here. */
+int syncduke_next_frag(int *victim)
+{
+	static short seen[MAXPLAYERS];
+	static int   seen_valid;
+	int          me = myconnectindex, j;
+
+	/* Only in a real dukematch (multiplayer, not co-op). */
+	if (!(ud.multimode > 1 && ud.coop != 1)) {
+		seen_valid = 0;
+		return 0;
+	}
+	if (!seen_valid) {                 /* first call this match: adopt current counts */
+		for (j = 0; j < MAXPLAYERS; j++)
+			seen[j] = frags[me][j];
+		seen_valid = 1;
+		return 0;
+	}
+	for (j = 0; j < MAXPLAYERS; j++) {
+		if (j == me)
+			continue;
+		if (frags[me][j] > seen[j]) {
+			seen[j]++;
+			if (victim != NULL)
+				*victim = j;
+			return 1;
+		}
+	}
+	return 0;
+}

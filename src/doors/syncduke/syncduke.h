@@ -115,6 +115,7 @@ const char *syncduke_home(void);            /* -home value ("" = none) */
 int syncduke_in_gameplay(void);   /* 1 when actually playing (not in a menu), so the WASD/Space action layer applies */
 int syncduke_player_dead(void);   /* 1 when the player is dead -- door drops the action layer so Space = Open (restart) */
 void syncduke_game_status(char *buf, size_t bufsz);   /* who's-online text: "playing SyncDuke" [+ " (E#L#)"] */
+int syncduke_next_frag(int *victim);   /* dukematch: next not-yet-reported frag BY US -> *victim player #, else 0 */
 
 /* --- text-tier legible HUD overlay (game pop-up/status quotes as real chars) ---
  * In a text/block tier the game's own quote font rasterises to unreadable blocks. When
@@ -127,7 +128,7 @@ void syncduke_game_status(char *buf, size_t bufsz);   /* who's-online text: "pla
 #define SYNCDUKE_HUD_LEN 160    /* >= user_quote[128] and fta_quotes[64]         */
 typedef struct {
 	char text[SYNCDUKE_HUD_LEN];  /* NUL-terminated message text                 */
-	int  y;                       /* Duke 320x200 y of the row -> proportional terminal row */
+	int y;                        /* Duke 320x200 y of the row -> proportional terminal row */
 } syncduke_hud_line_t;
 extern int syncduke_text_hud;                             /* door sets 1 in a text tier */
 void syncduke_hud_begin(void);                            /* engine: reset the per-frame capture */

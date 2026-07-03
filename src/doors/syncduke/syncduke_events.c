@@ -55,8 +55,14 @@ static int ev_real_game(void)
 static const char *ev_mode(void)
 {
 	extern char syncduke_net_role[16];
-	return (strcmp(syncduke_net_role, "master") == 0 || strcmp(syncduke_net_role, "join") == 0)
-	       ? "co-op" : "single";
+	if (strcmp(syncduke_net_role, "master") != 0 && strcmp(syncduke_net_role, "join") != 0)
+		return "single";
+	/* In a net game ud.coop reflects the master's chosen mode (set from the /c flag on
+	 * the master, from the start packet on the joiner): 1 = co-op, 0 = DM spawn,
+	 * 2 = DM no-spawn. */
+	if (ud.coop == 1)
+		return "co-op";
+	return (ud.coop == 2) ? "dukematch-nospawn" : "dukematch";
 }
 
 static void ev_map(char *buf, size_t sz)
@@ -119,6 +125,24 @@ static void ev_death(void)
 	ev_emit(j);
 }
 
+static void ev_frag(int victim)
+{
+	char        j[400], ka[80], va[80], vn[24], map[16];
+	const char *vname = ud.user_name[victim];
+	if (vname == NULL || vname[0] == '\0') {
+		snprintf(vn, sizeof(vn), "player %d", victim + 1);
+		vname = vn;
+	}
+	ev_map(map, sizeof(map));
+	snprintf(j, sizeof(j),
+	         "{\"time\":%ld,\"type\":\"frag\",\"node\":%d,\"killer\":\"%s\",\"victim\":\"%s\","
+	         "\"map\":\"%s\"}",
+	         (long)time(NULL), sbbs_my_node(),
+	         ev_esc(syncduke_door_alias(), ka, sizeof(ka)),
+	         ev_esc(vname, va, sizeof(va)), map);
+	ev_emit(j);
+}
+
 void syncduke_events_tick(void)
 {
 	static int in_game, dead_last;
@@ -146,8 +170,11 @@ void syncduke_events_tick(void)
 		ev_level(prev);
 	}
 
-	if (in_game) {                                  /* death rising edge */
+	if (in_game) {                                  /* frags by us, then our death edge */
+		int victim;
 		int dead = syncduke_player_dead();
+		while (syncduke_next_frag(&victim))
+			ev_frag(victim);
 		if (dead && !dead_last)
 			ev_death();
 		dead_last = dead;
