@@ -12,8 +12,10 @@
 //   * the live who's-online panel + attract-art helpers
 //   * small string/format utilities
 //
-// It is UI-free (no console/bbs prompting) so it can be exercised headless with
-// jsexec; the per-game lobby.js layers the menu and the door command line on top.
+// It is UI-free (no console/bbs prompting) EXCEPT the multiplayer_flow/mp_* helpers
+// (the shared [M]ultiplayer lobby flow), which prompt via console/bbs and are
+// exercised only by the doors' live tests; everything else runs headless under
+// jsexec. The per-game lobby.js layers the menu and the door command line on top.
 //
 // Load it into its own scope:  var gl = load({}, "game_lobby.js");
 // then call gl.alloc_port(net), gl.list_games(dir, stale), etc. The session-bound
@@ -625,15 +627,30 @@ function create_lock_path(dir) {
 	return backslash(dir) + "creating.lock";
 }
 
-function acquire_create_lock(dir) {
-	var who = (typeof system != "undefined" ? system.local_host_name : "host")
+// Identity written into the lock file, so release only removes OUR lock (not a
+// later creator's that reused the fixed path after we self-released at register).
+function create_lock_owner() {
+	return (typeof system != "undefined" ? system.local_host_name : "host")
 	    + "-" + (typeof bbs != "undefined" ? bbs.node_num : 0);
-	return file_mutex(create_lock_path(dir), who, CREATE_LOCK_MAX_AGE);
 }
 
+function acquire_create_lock(dir) {
+	games_dir_ensure(dir);   // file_mutex() can't create the lock if games/ is absent (fresh install)
+	return file_mutex(create_lock_path(dir), create_lock_owner(), CREATE_LOCK_MAX_AGE);
+}
+
+// Remove OUR create-lock (idempotent; ownership-scoped so the safety-net release
+// after a long-running create() can't yank a different node's later lock).
 function release_create_lock(dir) {
 	var p = create_lock_path(dir);
-	if (file_exists(p))
+	if (!file_exists(p))
+		return;
+	var f = new File(p), owner = "";
+	if (f.open("r")) {
+		owner = trim(f.read());
+		f.close();
+	}
+	if (owner == create_lock_owner())
 		file_remove(p);
 }
 
