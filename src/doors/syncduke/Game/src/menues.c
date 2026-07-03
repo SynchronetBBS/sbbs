@@ -2568,26 +2568,34 @@ else
             x = probe(326,190,0,0);
 
             // Two-page control chart, Duke-help style on the menu backdrop, showing
-            // the door's TERMINAL bindings.  One key/action column pair per page so the
-            // text can breathe.  Colour: gametextpal pal 7 = yellow (section headings),
-            // pal 2 = orange (keys); plain gametext = the font's light-blue (actions).
-            // ^X means Ctrl-X.  Page 1 = movement/weapons/terminal, page 2 = inventory/view.
+            // the door's TERMINAL bindings.  Page 1 is two side-by-side topic columns
+            // (left: movement + weapons, right: the door's terminal keys); page 2 is one
+            // key/action column pair.  Colour: gametextpal pal 7 = yellow (section
+            // headings), pal 2 = orange (keys); plain gametext = the font's light-blue
+            // (actions).  ^X means Ctrl-X.  gametext/gametextpal left-justify at any x
+            // except exactly 160 (320>>1), where they centre -- so the columns use
+            // off-centre x's and only PAGE n/2 is centred.
             if( help_page == 0 )
             {
-                gametextpal( 40, 38,"MOVEMENT",0,7);
-                gametextpal( 46, 51,"ARROWS",0,2);   gametext(120, 51,"Move / turn",0,2+8+16);
-                gametextpal( 46, 61,"W A S D",0,2);  gametext(120, 61,"Move / strafe",0,2+8+16);
-                gametextpal( 46, 71,"SPACE",0,2);    gametext(120, 71,"Fire",0,2+8+16);
-                gametextpal( 46, 81,"E",0,2);        gametext(120, 81,"Open / use",0,2+8+16);
-                gametextpal( 46, 91,"Q",0,2);        gametext(120, 91,"Jump",0,2+8+16);
-                gametextpal( 46,101,"Z",0,2);        gametext(120,101,"Crouch",0,2+8+16);
-                gametextpal( 46,111,"BKSP",0,2);     gametext(120,111,"180 turn",0,2+8+16);
-                gametextpal( 46,121,"^R",0,2);       gametext(120,121,"Run (toggle)",0,2+8+16);
-                gametextpal( 40,134,"WEAPONS",0,7);
-                gametextpal( 46,147,"1 - 0",0,2);    gametext(120,147,"Select weapon",0,2+8+16);
-                gametextpal( 46,157,"C",0,2);        gametext(120,157,"Quick kick",0,2+8+16);
-                gametextpal(320>>1,170,"TERMINAL",0,7);
-                gametext(320>>1,180,"F4 GFX   ^T FPS   ^O MOUSE   ^S STATS",0,2+8+16);
+                gametextpal( 14, 38,"MOVEMENT",0,7);
+                gametextpal( 18, 51,"ARROWS",0,2);   gametext( 74, 51,"Move / turn",0,2+8+16);
+                gametextpal( 18, 61,"W A S D",0,2);  gametext( 74, 61,"Move / strafe",0,2+8+16);
+                gametextpal( 18, 71,"SPACE",0,2);    gametext( 74, 71,"Fire",0,2+8+16);
+                gametextpal( 18, 81,"E",0,2);        gametext( 74, 81,"Open / use",0,2+8+16);
+                gametextpal( 18, 91,"Q",0,2);        gametext( 74, 91,"Jump",0,2+8+16);
+                gametextpal( 18,101,"Z",0,2);        gametext( 74,101,"Crouch",0,2+8+16);
+                gametextpal( 18,111,"BKSP",0,2);     gametext( 74,111,"180 turn",0,2+8+16);
+                gametextpal( 18,121,"^R",0,2);       gametext( 74,121,"Run Toggle",0,2+8+16);
+                gametextpal( 14,134,"WEAPONS",0,7);
+                gametextpal( 18,147,"1 - 0",0,2);    gametext( 74,147,"Select weapon",0,2+8+16);
+                gametextpal( 18,157,"C",0,2);        gametext( 74,157,"Quick kick",0,2+8+16);
+                gametextpal(182, 38,"TERMINAL",0,7);
+                gametextpal(188, 51,"F4",0,2);       gametext(220, 51,"Graphics",0,2+8+16);
+                gametextpal(188, 61,"^S",0,2);       gametext(220, 61,"STATS",0,2+8+16);
+                gametextpal(188, 71,"^T",0,2);       gametext(220, 71,"FRAMES",0,2+8+16);
+                gametextpal(188, 81,"^O",0,2);       gametext(220, 81,"MOUSE",0,2+8+16);
+                gametextpal(188, 91,"^U",0,2);       gametext(220, 91,"User List",0,2+8+16);
+                gametextpal(188,101,"F1",0,2);       gametext(220,101,"THIS HELP",0,2+8+16);
                 gametext(320>>1,190,"PAGE 1 / 2",0,2+8+16);
             }
             else
