@@ -25,14 +25,14 @@ the shared `exec/load/game_lobby.js`, not just the C door.
 
 | Capability | SyncDOOM | SyncDuke |
 |---|---|---|
-| Multiplayer transport | Full Doom netgame (co-op + deathmatch/altdeath), up to `MAXPLAYERS` | 2-player LAN UDP only (mmulti seam), co-op cadence |
-| Deathmatch mode | Yes (`deathmatch`/`altdeath` reported & selectable) | Engine has Dukematch, **but the door never selects it** |
+| Multiplayer transport | Full Doom netgame (co-op + deathmatch/altdeath), up to `MAXPLAYERS` | 2-player LAN UDP only (mmulti seam), co-op **or** dukematch |
+| Deathmatch mode | Yes (`deathmatch`/`altdeath` reported & selectable) | **Yes** — 2-player Dukematch (spawn / no-spawn), lobby-selectable |
 | Dedicated / detached server | Yes — `mp_server.c`, headless, self-terminating | No |
 | JS lobby (Create/Join co-op, registry discovery, waiting room) | Yes — up to `MAXPLAYERS`, wadset picker | Yes — 2-player co-op, single GRP |
 | Shared lobby model (`exec/load/game_lobby.js`) | Yes — thin door layer over `gl` | Yes — thin door layer over `gl` (both converged) |
 | Lobby node paging (invite active nodes to a match) | Yes — `gl.page_targets`/`gl.send_pages` | Yes — `gl.page_targets`/`gl.send_pages` |
 | Live who's-online + recent-activity **lobby panel** | Yes — shared `gl.panel_cells`, opt-in `[lobby] live` | **Yes** — shared `gl.panel_cells`, opt-in `[lobby] live` |
-| Door activity/events log → lobby feed | Yes — `events.jsonl` (frags/level-clears/deaths) | **Yes** — `events.jsonl` (starts/level-reaches/deaths) |
+| Door activity/events log → lobby feed | Yes — `events.jsonl` (frags/level-clears/deaths) | **Yes** — `events.jsonl` (starts/level-reaches/deaths/**frags**) |
 | Configurable feed (`[lobby] activity_max`/`activity_max_age`/`panel_rows`) | Yes — shared `gl` accessors | Yes — shared `gl` accessors |
 | Inter-BBS federation | Designed, **not built** | No |
 | Multi-map selection | Engine passthrough (`-iwad/-file/-merge/-deh`); wadset picker is lobby-side | GRP dir configurable; single-GRP install is the clean config; no episode/map/usermap config |
@@ -56,7 +56,7 @@ in-game node-social features (Ctrl-U who's-online, NODE_EXT presence, inter-node
 message receipt), the events feed, and the UTF-8 text tiers + charset detection —
 all of which the first draft flagged as gaps. What still sets **SyncDOOM** apart is
 multiplayer *depth*: matches scale to `MAXPLAYERS` with a dedicated headless server
-and selectable deathmatch/altdeath, versus SyncDuke's strictly **2-player LAN co-op**.
+and altdeath variants, versus SyncDuke's **2-player LAN co-op or dukematch**.
 Smaller remaining SyncDuke gaps: no in-game *outbound* Ctrl-P paging, no multi-GRP /
 map / episode selection config, and a block-tier color-depth divergence (Gap C).
 
@@ -73,7 +73,7 @@ map / episode selection config, and a block-tier color-depth divergence (Gap C).
 - Door CLI: `-dedicated`, `-spawnserver` (port alloc 20000-20063), `-connect`, `-name`. In-game chat (`T`, whisper-by-color).
 - **Scoping caveat:** the browse/create/join **lobby is a Synchronet JS module**, not in the C door; the C side provides the engine + CLI contract. Inter-BBS **federation** (trusted-peer public games) is designed but **not built** (`MULTIPLAYER.md`).
 
-**SyncDuke — 2-player LAN co-op with a real JS lobby; no dedicated server, no deathmatch, no >2 players.**
+**SyncDuke — 2-player LAN co-op or dukematch with a real JS lobby; no dedicated server, no >2 players.**
 - **JS lobby** (`xtrn/syncduke/lobby.js` + `syncduke_lib.js`, over `gl`): **Create** hosts a
   match as master — allocates a port (`gl.alloc_port`), writes a registry entry
   (`sd_write_entry` → `gl.write_game`), optionally **pages the door's other active nodes**
@@ -90,11 +90,15 @@ map / episode selection config, and a block-tier color-depth divergence (Gap C).
 - **Lobby-driven config:** the door takes `-netrole master|join` / `-netport` / `-netpeer`
   (`syncduke_net.c:70`, `syncduke_config.c`); env `SYNCDUKE_NET*` is the manual fallback.
   The lobby owns the net config (`gl.read_overlaid`, `syncduke_lib.js`).
-- **Deathmatch present in the engine but never selected** (`menues.c` `"DUKEMATCH …"`);
-  the lobby + `syncduke_net.c` only set up a 2-player co-op connect list.
-- **Genuinely absent (vs SyncDOOM):** dedicated/detached server, deathmatch mode
-  selection, >2 players, and inter-BBS federation. (The events log and in-game
-  node-social features the first draft listed here are now present — see §3/§3a.)
+- **Dukematch now selected and reported.** The lobby's Create menu offers Dukematch
+  (spawn / no-spawn, `[dukematch] submode`) alongside co-op, and passes it to the
+  engine as its own DOS-style `/c` flag (`/c1` spawn, `/c3` no-spawn) in `sd_cmd`
+  (`syncduke_lib.js`); the door reads frags off the engine's own `frags[][]` matrix
+  and emits them into the events feed (`syncduke_next_frag`/`ev_frag`,
+  `syncduke_events.c`).
+- **Genuinely absent (vs SyncDOOM):** dedicated/detached server, >2 players, and
+  inter-BBS federation. (The events log and in-game node-social features the first
+  draft listed here are now present — see §3/§3a.)
 
 ---
 
@@ -286,9 +290,9 @@ does.)*
    wins). Remaining: an `[grp]`/`[game]` ini key to *name* a specific GRP when several are
    present, plus episode/skill config keys; user-map (`.map`) support is a further step.
 4. **Multiplayer maturity.** SyncDuke has the lobby/registry, cross-node discovery, waiting
-   room, node paging, live panel, and events feed. To match SyncDOOM's *depth* it would
-   need a dedicated/detached server, deathmatch (Dukematch) selection, and >2-player
-   support — its co-op is 2-player LAN today.
+   room, node paging, live panel, events feed, and now Dukematch. To match SyncDOOM's
+   *depth* it would need a dedicated/detached server and >2-player support — its co-op
+   and dukematch are both 2-player LAN today.
 5. **Doc hygiene.** Re-check SyncDuke's `README.md`/`DESIGN.md`/`PLAN.md` for lingering
    "single-player, no multiplayer" language that predates the net + lobby layers.
 
