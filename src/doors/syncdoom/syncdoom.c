@@ -3901,6 +3901,11 @@ void sd_waitroom_run(void)
 	int     last_drawn = -2;
 	boolean launched = false;
 	boolean self_started = false;   // true if THIS player pressed Start (so don't beep them)
+	// -mustered: the JS lobby muster already assembled everyone (and beeped) before
+	// any client connected, so this is just the near-instant connect->launch
+	// handshake -- draw no splash and skip the launch beep, else the room flashes
+	// redundantly on top of the lobby's "Joining..." for a fraction of a second.
+	boolean mustered = M_CheckParm("-mustered") > 0;
 
 	// Drain keystrokes buffered before we got here -- type-ahead from the lobby
 	// menus that the BBS console didn't consume. Otherwise a stale Enter/'S' left
@@ -3908,8 +3913,12 @@ void sd_waitroom_run(void)
 	// player can read it or press Q to cancel.
 	{
 		unsigned char drain[64];
-		while (conn_read(drain, sizeof(drain)) > 0)
-			;
+		ssize_t       dn;
+		// Feed the audio manager as we drain: SyncTERM's cap-probe reply is buffered
+		// here too (a netgame connect stalls pump_input until launch), and discarding
+		// it un-fed would strand the tier at -1 -> no SFX/music for the whole match.
+		while ((dn = conn_read(drain, sizeof(drain))) > 0)
+			termgfx_audio_feed(sd_audio, drain, (int)dn);
 	}
 
 	sbbs_node_set_ext("in the SyncDOOM waiting room");   // who's-online status
@@ -3935,7 +3944,8 @@ void sd_waitroom_run(void)
 			       sizeof(sd_chat_player_names));
 
 			if (w->num_players != last_drawn) {
-				sd_waitroom_draw();
+				if (!mustered)
+					sd_waitroom_draw();
 				last_drawn = w->num_players;
 			}
 			// Auto-start once every expected slot is filled.
@@ -3952,6 +3962,8 @@ void sd_waitroom_run(void)
 			I_Quit();                          // hangup
 		} else if (n > 0) {
 			boolean want_start = false;
+			termgfx_audio_feed(sd_audio, kb, (int)n);   // keep resolving the cap probe
+
 			ssize_t j;
 			// Scan the whole read: Q (cancel) wins over a Start in the same burst,
 			// so a buffered Enter can't override the player's deliberate cancel.
@@ -3998,8 +4010,9 @@ void sd_waitroom_run(void)
 	// away) with a BEL -- but not the one who just pressed Start, who is plainly
 	// at the keyboard. Then wipe the waiting-room text so it doesn't linger beside
 	// the first rendered frame (the bitmap tiers only overdraw their own centered
-	// region, not the whole screen).
-	if (!self_started)
+	// region, not the whole screen).  In muster mode the lobby already beeped on
+	// "go", so a second BEL here is just noise -- suppress it.
+	if (!self_started && !mustered)
 		emit_all("\a", 1);
 	emit_all("\x1b[2J\x1b[H", 7);
 }

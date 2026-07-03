@@ -311,22 +311,30 @@ void termgfx_audio_feed(termgfx_audio_t *m, const uint8_t *buf, int len)
 	if (m == NULL || len <= 0)
 		return;
 	if (m->tier < 0) {
-		// Keep the last (sizeof acc) bytes of the stream so a reply split across
-		// feeds still parses. The DSR is ~12 contiguous bytes; 32 is ample.
-		if (len >= (int)sizeof(m->acc)) {
-			memcpy(m->acc, buf + (len - (int)sizeof(m->acc)), sizeof(m->acc));
-			m->acclen = (int)sizeof(m->acc);
-		}
-		else {
-			int keep = (int)sizeof(m->acc) - len;
-			if (m->acclen > keep) {
-				memmove(m->acc, m->acc + (m->acclen - keep), keep);
-				m->acclen = keep;
+		// The reply may sit ANYWHERE in this read, not just at its tail. A netgame
+		// connect stalls the input pump for seconds (D_CheckNetGame/BlockUntilStart),
+		// so SyncTERM's probe replies arrive coalesced in one large read with the
+		// audio DSR buried mid-buffer. Scan the whole incoming buffer first.
+		r = termgfx_audio_parse_caps(buf, len);
+		if (r < 0) {
+			// Not wholly within this read -> it may straddle the feed boundary.
+			// Keep a rolling tail window (bridging consecutive feeds) and parse
+			// that too. The DSR is ~12 contiguous bytes; 32 is ample.
+			if (len >= (int)sizeof(m->acc)) {
+				memcpy(m->acc, buf + (len - (int)sizeof(m->acc)), sizeof(m->acc));
+				m->acclen = (int)sizeof(m->acc);
 			}
-			memcpy(m->acc + m->acclen, buf, len);
-			m->acclen += len;
+			else {
+				int keep = (int)sizeof(m->acc) - len;
+				if (m->acclen > keep) {
+					memmove(m->acc, m->acc + (m->acclen - keep), keep);
+					m->acclen = keep;
+				}
+				memcpy(m->acc + m->acclen, buf, len);
+				m->acclen += len;
+			}
+			r = termgfx_audio_parse_caps(m->acc, m->acclen);
 		}
-		r = termgfx_audio_parse_caps(m->acc, m->acclen);
 		if (r >= 0) {
 			m->tier = r;
 			if (r >= 1)
