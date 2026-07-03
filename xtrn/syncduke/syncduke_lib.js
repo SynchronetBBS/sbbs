@@ -33,6 +33,9 @@ var SD_GAMES  = backslash(system.data_dir + "syncduke/games/");
 // The C door appends here when launched with -eventlog (see sd_cmd); the lobby
 // ensures the parent dir exists and prunes it. Same dir convention as SyncDOOM's.
 var SD_EVENTS = system.data_dir + "syncduke/events.jsonl";
+// Seconds between the waiting room's registry re-writes (heartbeat). Must be well
+// under [net] stale (default 90) so a joiner keeps seeing the game during a long wait.
+var SD_WAIT_HEARTBEAT = 20;
 
 // Episode 1 ("L.A. Meltdown") co-op levels of the shareware DUKE3D.GRP. `num` is
 // the 1-based level the engine warps to via /l<num> (/v1 selects the episode).
@@ -177,8 +180,47 @@ function sd_write_entry(cfg, port, level, mode) {
 		status:    "waiting",
 		players:   1,
 		maxplayers: 2,
-		created:   time()
+		created:   time(),
+		heartbeat: time()                          // refreshed each re-write; keeps the
+		                                           // entry visible past [net] stale during
+		                                           // the master's indefinite wait
 	});
+}
+
+// The claim-marker path for a registry entry: same stem, ".claim" instead of ".ini".
+// A separate file (not the ".ini") so the master's heartbeat re-writes and the
+// joiner's claim never write the same file (no two-writer clobber).
+function sd_claim_path(entryPath) {
+	return String(entryPath).replace(/\.ini$/i, ".claim");
+}
+
+// Joiner: drop the claim marker beside the master's entry (identified by entry.file,
+// as returned by gl.list_games). Opened "wx" -- EXCLUSIVE create (O_EXCL, js_file.cpp):
+// the open fails if the file already exists, so the FIRST joiner to claim wins
+// atomically and any later joiner gets false (game already taken) and can bail without
+// launching a doomed door. (Note: 'x' is the working exclusive flag; the legacy 'e'
+// char is deprecated/no-op in Synchronet.) The master polls for the marker then
+// launches. Returns true if WE claimed it, false if already claimed or on error.
+function sd_claim_game(entry) {
+	var f = new File(sd_claim_path(entry.file));
+	if (!f.open("wx"))                     // exclusive create -> false if already claimed
+		return false;
+	f.write("claimed " + time() + "\n");
+	f.close();
+	return true;
+}
+
+// Master: has a joiner claimed our game (dropped the marker) yet?
+function sd_game_claimed(entryPath) {
+	return file_exists(sd_claim_path(entryPath));
+}
+
+// Master: end the match/cancel -- remove our entry AND any claim marker (idempotent).
+function sd_clear_game(entryPath) {
+	var c = sd_claim_path(entryPath);
+	if (file_exists(c))
+		file_remove(c);
+	gl.remove_game(entryPath);
 }
 
 // The host:port a joiner dials for a registry entry. The master binds 0.0.0.0, so
