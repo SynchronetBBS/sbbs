@@ -64,11 +64,11 @@ function sd_prompt_page() {
 }
 
 // Deliver the join invitation (fast, non-interactive).
-function sd_send_pages(targets, lev) {
+function sd_send_pages(targets, lev, modelabel) {
 	if (!targets || !targets.length)
 		return;
 	var who = (typeof user != "undefined" && user.alias) ? user.alias : "Someone";
-	var body = "started a SyncDuke (Nukem 3D) co-op game (" + lev.name
+	var body = "started a SyncDuke (Nukem 3D) " + (modelabel || "co-op") + " game (" + lev.name
 	    + "); run SyncDuke to join.";
 	var paged = gl.send_pages(targets, who, body);
 	console.print("\r\n\1n\1cPaged \1h" + paged + "\1n\1c node"
@@ -85,6 +85,22 @@ function sd_solo() {
 	sd_play(sd_cmd(null, null, null, null));
 }
 
+// Present the game-type picker (co-op vs dukematch). Returns "coop", "dm", or
+// "dmnospawn" (the [dukematch] submode decides spawn vs no-spawn), or null to abort.
+// One prompt only -- the DM sub-mode + arena options come from [dukematch] config,
+// consistent with how skill/port are config-driven rather than prompted.
+function sd_pick_mode() {
+	console.uselect(0, "a game type", "Co-op (play the level together)");
+	console.uselect(1, "a game type", "Dukematch (deathmatch)");
+	var sel = console.uselect(0);           // default-highlight Co-op
+	if (sel < 0)
+		return null;
+	if (sel == 0)
+		return "coop";
+	var sub = (cfg.dukematch && String(cfg.dukematch.submode).toLowerCase() == "nospawn");
+	return sub ? "dmnospawn" : "dm";
+}
+
 // Create a co-op match: pick a level, host it as master, advertise it in the
 // registry, and enter the waiting room. The entry is removed when the door exits.
 function sd_create() {
@@ -92,6 +108,11 @@ function sd_create() {
 	if (levnum === null)
 		return;
 	var lev = sd_find_level(levnum);
+
+	var mode = sd_pick_mode();
+	if (mode === null)
+		return;
+	var modelabel = (mode == "coop") ? "co-op" : "dukematch";
 
 	var port = gl.alloc_port(cfg.net);
 	if (port < 0) {
@@ -104,25 +125,32 @@ function sd_create() {
 	// deliver the pages before launching -- so a paged player sees the match listed.
 	var page_targets = sd_prompt_page();
 
-	var entry = sd_write_entry(cfg, port, lev.num);
+	var entry = sd_write_entry(cfg, port, lev.num, mode);
 	if (!entry) {
 		console.print("\r\n\1h\1rCould not create the game (registry write failed).\1n\r\n");
 		console.pause();
 		return;
 	}
 
-	sd_send_pages(page_targets, lev);
+	sd_send_pages(page_targets, lev, modelabel);
 	console.print("\r\n\1h\1gGame created:\1n \1wE1L" + lev.num + " " + lev.name
-	    + "\1n. Entering the waiting room; another player can \1hJ\1noin.\r\n");
+	    + "\1n \1n\1c(" + modelabel + ")\1n. Entering the waiting room; another player can \1hJ\1noin.\r\n");
 
 	// The creator's door IS the master (player 0). It binds and waits for a joiner,
 	// then both play. We hold the registry entry for the match's lifetime and clear
 	// it on exit (clean unwind -> finally; covers disconnect, timeout, normal quit).
 	try {
-		sd_play(sd_cmd("master", port, null, lev.num));
+		sd_play(sd_cmd("master", port, null, lev.num, mode, cfg.dukematch));
 	} finally {
 		gl.remove_game(entry);
 	}
+}
+
+// Human label for a registry entry's mode token (legacy entries lack it -> co-op).
+function sd_mode_label(mode) {
+	if (mode == "dm")        return "Dukematch";
+	if (mode == "dmnospawn") return "Dukematch*";   // * = no weapon/item respawn
+	return "Co-op";
 }
 
 // Join a co-op match listed in the registry (this system or a same-LAN peer).
@@ -138,16 +166,16 @@ function sd_join() {
 	var sel;
 	if (games.length == 1) {
 		sel = games[0];
-		console.print("\r\n\1h\1cJoining \1n\1w" + sel.host + "\1h\1c's game\1n ("
-		    + "E1L" + sel.level + " " + sel.levelname + ")...\1n\r\n");
+		console.print("\r\n\1h\1cJoining \1n\1w" + sel.host + "\1h\1c's " + sd_mode_label(sel.mode)
+		    + " game\1n (E1L" + sel.level + " " + sel.levelname + ")...\1n\r\n");
 	} else {
-		console.print("\r\n\1h\1cCo-op games waiting:\1n\r\n");
-		console.print("    \1n\1wHost              Level\1n\r\n");
+		console.print("\r\n\1h\1cGames waiting:\1n\r\n");
+		console.print("    \1n\1wHost              Mode       Level\1n\r\n");
 		var i;
 		for (i = 0; i < games.length; i++) {
 			var g = games[i];
-			console.print(format(" \1h\1y%2d\1n %-17s E1L%s %s\r\n",
-			    i + 1, g.host, g.level, g.levelname));
+			console.print(format(" \1h\1y%2d\1n %-17s %-10s E1L%s %s\r\n",
+			    i + 1, g.host, sd_mode_label(g.mode), g.level, g.levelname));
 		}
 		console.print("\r\nJoin which [\1h1-" + games.length + "\1n], \1hQ\1n to cancel: ");
 		var k = console.getkeys("Q", games.length);
@@ -159,7 +187,7 @@ function sd_join() {
 	// Claim the only other slot: remove the entry so a third node doesn't also try to
 	// join this strictly-2-player match (the master accepts just one join anyway).
 	gl.remove_game(sel.file);
-	sd_play(sd_cmd("join", null, sd_join_peer(sel), sel.level));
+	sd_play(sd_cmd("join", null, sd_join_peer(sel), sel.level, sel.mode || "coop", cfg.dukematch));
 }
 
 // Controls reference -- an external, sysop-editable display file (Ctrl-A codes)
