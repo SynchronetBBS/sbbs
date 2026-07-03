@@ -55,11 +55,12 @@ var SD_LEVELS = [
 // defaults. Returns { net: {...} }. The [grp]/[video]/[game] sections are the C
 // door's concern (it reads the ini itself); the lobby only needs [net].
 function sd_load_config() {
-	var cfg = { net: {}, lobby: {} };
+	var cfg = { net: {}, lobby: {}, dukematch: {} };
 	var f = new File(SD_CFG);
 	if (f.open("r")) {
 		cfg.net = gl.read_overlaid(f, "net");
 		cfg.lobby = f.iniGetObject("lobby") || {};   // [lobby] live = true -> live panel
+		cfg.dukematch = f.iniGetObject("dukematch") || {};   // deathmatch sub-mode + options
 		f.close();
 	}
 	gl.apply_defaults(cfg.net, {
@@ -76,6 +77,13 @@ function sd_load_config() {
 		// Default skill (1=Piece of Cake .. 4=Damn I'm Good) co-op starts on. The door's
 		// warp path uses Duke's own default unless we add a /s flag later.
 		skill: 2
+	});
+	// Dukematch sub-mode + arena options (lobby-side; the door reads none of these --
+	// they become engine /c//m//t flags in sd_cmd). Classic DM defaults: spawn, no monsters.
+	gl.apply_defaults(cfg.dukematch, {
+		submode: "spawn",         // "spawn" (/c1, weapons respawn) or "nospawn" (/c3)
+		monsters: false,          // classic dukematch is player-vs-player only
+		respawn_items: false      // respawn items/inventory over time
 	});
 	return cfg;
 }
@@ -112,15 +120,34 @@ function sd_home() {
 // with the engine's DOS-style slash warp args /v1 /l<level> /c2 (/c2 = cooperative;
 // the engine's parser only honors '/' options, not '-'). Single-player launches
 // bare so Duke's own menu drives episode/skill selection.
-function sd_cmd(role, port, peer, level) {
+// role  = "master" | "join" | null (single-player)
+// mode  = "coop" | "dm" | "dmnospawn" (net games; default "coop"); the /c flag.
+// dmopts = { monsters, respawn_items } (e.g. cfg.dukematch); consulted for DM only.
+// The engine parses only '/' options. On the warp-args launch there is no in-game
+// start-packet exchange (that only fires from Duke's own new-game menu), so BOTH
+// peers must pass matching flags on the command line: the /c mode comes from the
+// registry entry (identical for both), and /m//t come from [dukematch] in
+// syncduke.ini -- a file shared by every host of a multi-host BBS (like [net]), so
+// the arena options are identical across hosts without any in-game reconciliation.
+function sd_cmd(role, port, peer, level, mode, dmopts) {
 	var cmd = SD_BINARY + " -s%H -t%T -name %a -home " + sd_home()
-	    + ' -eventlog "' + SD_EVENTS + '"';   // door appends start/level/death here
+	    + ' -eventlog "' + SD_EVENTS + '"';   // door appends start/level/death/frag here
 	if (role == "master")
 		cmd += " -netrole master -netport " + port;
 	else if (role == "join")
 		cmd += " -netrole join -netpeer " + peer;
-	if (role)                                   // co-op: warp both peers to the level
-		cmd += " /v1 /l" + parseInt(level, 10) + " /c2";
+	if (role) {                                 // net game: warp both peers to the level
+		var cflag = (mode == "dm") ? "/c1" : (mode == "dmnospawn") ? "/c3" : "/c2";
+		cmd += " /v1 /l" + parseInt(level, 10) + " " + cflag;
+		if (mode == "dm" || mode == "dmnospawn") {
+			// Monsters off unless explicitly enabled (classic DM default).
+			var monstersOn = dmopts && (dmopts.monsters === true || dmopts.monsters === "true");
+			if (!monstersOn)
+				cmd += " /m";
+			if (dmopts && (dmopts.respawn_items === true || dmopts.respawn_items === "true"))
+				cmd += " /t";
+		}
+	}
 	return cmd;
 }
 
@@ -138,7 +165,7 @@ function sd_entry_name(port) {
 // Write the "waiting for a player" registry entry for a match the creator is about
 // to host as master. `addr` is the advertised cross-host address (blank for
 // same-host). Returns the entry's file path (remove it when the match ends).
-function sd_write_entry(cfg, port, level) {
+function sd_write_entry(cfg, port, level, mode) {
 	var lev = sd_find_level(level);
 	return gl.write_game(SD_GAMES, sd_entry_name(port), {
 		host:      (typeof user != "undefined" && user.alias) ? user.alias : "Someone",
@@ -146,6 +173,7 @@ function sd_write_entry(cfg, port, level) {
 		port:      port,
 		level:     lev.num,
 		levelname: lev.name,
+		mode:      mode || "coop",                 // "coop" | "dm" | "dmnospawn"
 		status:    "waiting",
 		players:   1,
 		maxplayers: 2,
@@ -183,6 +211,7 @@ function sd_list_open_games(cfg) {
 // level's elapsed time), so it reads as "reached", not "cleared in Ns".
 function sd_event_text(e) {
 	switch (e.type) {
+		case "frag":  return e.killer + " fragged " + e.victim;
 		case "start": return e.user + " joined (" + (e.mode || "single") + ")";
 		case "level": return e.user + " reached " + e.map;
 		case "death": return e.user + " died on " + e.map;
