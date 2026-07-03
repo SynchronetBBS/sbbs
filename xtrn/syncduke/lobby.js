@@ -125,6 +125,14 @@ function sd_create() {
 	// deliver the pages before launching -- so a paged player sees the match listed.
 	var page_targets = sd_prompt_page();
 
+	// Clear any stale claim marker left by a prior game that reused this port/stem,
+	// BEFORE writing the entry -- so a real joiner (who can only claim once the entry
+	// below is listed) can never race this cleanup, and the room can't mistake an old
+	// marker for a joiner.
+	var stale_claim = SD_GAMES + sd_entry_name(port) + ".claim";
+	if (file_exists(stale_claim))
+		file_remove(stale_claim);
+
 	var entry = sd_write_entry(cfg, port, lev.num, mode);
 	if (!entry) {
 		console.print("\r\n\1h\1rCould not create the game (registry write failed).\1n\r\n");
@@ -133,16 +141,26 @@ function sd_create() {
 	}
 
 	sd_send_pages(page_targets, lev, modelabel);
-	console.print("\r\n\1h\1gGame created:\1n \1wE1L" + lev.num + " " + lev.name
-	    + "\1n \1n\1c(" + modelabel + ")\1n. Entering the waiting room; another player can \1hJ\1noin.\r\n");
 
-	// The creator's door IS the master (player 0). It binds and waits for a joiner,
-	// then both play. We hold the registry entry for the match's lifetime and clear
-	// it on exit (clean unwind -> finally; covers disconnect, timeout, normal quit).
+	// Enter the JS waiting room (indefinite): it heartbeats the entry so joiners keep
+	// seeing it, shows who's online, and lets the host Q-cancel or P-page. It returns
+	// "joined" only once a joiner drops the claim marker -- and ONLY THEN do we launch
+	// the master door (so its handshake connects in ~1-2s instead of hanging). On
+	// cancel/hangup we tear the game down without ever launching (no silent solo game).
 	try {
+		if (sd_wait_room(entry, port, lev, mode) != "joined")
+			return;                          // Q / hangup -> the finally clears the game
+		// A joiner committed -> the match is starting. Drop the entry (and the joiner's
+		// claim marker) from the registry NOW, so a third node never sees an in-progress
+		// game listed as joinable. The running doors don't read the registry, and the
+		// joiner already has the peer address, so removing it before launch is safe (this
+		// restores the old remove-on-join behavior the claim-marker model changed).
+		sd_clear_game(entry);
 		sd_play(sd_cmd("master", port, null, lev.num, mode, cfg.dukematch));
 	} finally {
-		gl.remove_game(entry);
+		// Idempotent: covers the cancel/hangup return above and any unexpected throw out
+		// of the waiting room; a no-op on the joined path (already cleared before launch).
+		sd_clear_game(entry);
 	}
 }
 
@@ -184,9 +202,16 @@ function sd_join() {
 		sel = games[k - 1];
 	}
 
-	// Claim the only other slot: remove the entry so a third node doesn't also try to
-	// join this strictly-2-player match (the master accepts just one join anyway).
-	gl.remove_game(sel.file);
+	// Claim the game by dropping a marker file beside the master's entry (a separate
+	// file, so the master's heartbeat re-writes never clobber it). The claim is an
+	// EXCLUSIVE create: if it returns false, another node claimed this game a moment
+	// ago -- bail cleanly instead of launching a door that can't connect. We do NOT
+	// remove the entry (the master owns its lifecycle + clears it on exit).
+	if (!sd_claim_game(sel)) {
+		console.print("\r\n\1h\1wThat game was just claimed by someone else.\1n\r\n");
+		console.pause();
+		return;
+	}
 	sd_play(sd_cmd("join", null, sd_join_peer(sel), sel.level, sel.mode || "coop", cfg.dukematch));
 }
 
@@ -228,12 +253,12 @@ function sd_draw_art() {
 // panel rows are rewritten each tick (no art redraw -> no flicker); when the panel's
 // height changes the art is redrawn first so vacated rows don't keep a stale panel.
 var sd_panel_rows_prev = -1;
-function sd_draw_panel() {
+function sd_draw_panel(bgfn) {
 	var cols = console.screen_columns, rows = console.screen_rows;
 	var p = sd_panel_cells(cols, gl.activity_max_age(cfg), gl.panel_rows(cfg));
 	var cells = p.cells, nrows = cells.length;
 	if (sd_panel_rows_prev >= 0 && nrows != sd_panel_rows_prev)
-		sd_draw_art();                       // height changed -> restore art under it
+		(bgfn || sd_draw_art)();             // height changed -> restore background
 	sd_panel_rows_prev = nrows;
 	var top = rows - nrows + 1, r;
 	for (r = 0; r < nrows; r++) {
@@ -282,6 +307,77 @@ function sd_lobby_wait() {
 			// unmapped key (incl. passed-through Ctrl-keys) -> ignore, keep refreshing
 		}
 		return "Q";
+	} finally {
+		console.ctrlkey_passthru = oldctrl;
+	}
+}
+
+// The waiting room's static background: title + what's being hosted + the key hints.
+// The live who's-online + activity panel (sd_draw_panel) paints below it and refreshes
+// each tick; this bg is redrawn only on entry and when the panel height changes.
+function sd_wait_bg(lev, modelabel) {
+	console.clear();
+	console.print("\1n\1h\1cSyncDuke \1y-\1n\1h\1c Waiting Room\1n\r\n\r\n");
+	console.print(" Hosting \1h\1wE1L" + lev.num + " " + lev.name + "\1n \1c(" + modelabel + ")\1n.\r\n");
+	console.print(" \1h\1yWaiting for a player to join...\1n\r\n");
+	console.print("\r\n \1hQ\1n cancel    \1hP\1n page nodes\r\n");
+}
+
+// The master's waiting room: heartbeat the registry entry so joiners keep seeing it,
+// show the live who's-online panel, and wait -- indefinitely -- for a joiner to drop
+// the claim marker. Returns "joined" (launch the door) or "cancel" (host Q, hangup, or
+// telegram/interrupt exit). Mirrors sd_lobby_wait's nodesync/Ctrl-P/panel machinery.
+function sd_wait_room(entry, port, lev, mode) {
+	var modelabel = (mode == "coop") ? "co-op" : "dukematch";
+	var mynode = bbs.node_num;
+	var lastbeat = time();
+	var oldctrl = console.ctrlkey_passthru;
+	console.ctrlkey_passthru = -1;
+	console.ctrlkey_passthru = "-P";          // keep Ctrl-P (paging) with the BBS
+	sd_panel_rows_prev = -1;
+	var bg = function () { sd_wait_bg(lev, modelabel); };
+	bg();
+	try {
+		while (!js.terminated && bbs.online) {
+			var pending = (system.node_list[mynode - 1].misc & (NODE_NMSG | NODE_MSGW)) != 0;
+			if (pending) {                    // a waiting telegram prints to the screen
+				console.clear();
+				bbs.nodesync();
+				sd_write_entry(cfg, port, lev.num, mode);   // heartbeat before the blocking
+				lastbeat = time();                          // pause, so the entry doesn't age
+				console.pause();                            // out while the host reads it
+				bg();
+				sd_panel_rows_prev = -1;
+			} else
+				bbs.nodesync();               // sync node record / handle interrupt
+			if (js.terminated || !bbs.online)
+				return "cancel";
+			if (sd_game_claimed(entry)) {     // a joiner dropped the claim -> go
+				console.beep();               // alert the host the game is starting
+				return "joined";
+			}
+			if (time() - lastbeat >= SD_WAIT_HEARTBEAT) {   // keep the entry fresh/visible
+				sd_write_entry(cfg, port, lev.num, mode);
+				lastbeat = time();
+			}
+			sd_draw_panel(bg);
+			var c = console.inkey(K_UPPER | K_NOECHO, 1000);
+			if (!c)
+				continue;                    // timeout -> refresh
+			if (c == "Q")
+				return "cancel";
+			if (c == "P") {                  // page more nodes, then keep waiting
+				sd_write_entry(cfg, port, lev.num, mode);   // heartbeat before the blocking
+				lastbeat = time();                          // page prompt + pause
+				var targets = sd_prompt_page();
+				sd_send_pages(targets, lev, modelabel);
+				console.pause();
+				bg();
+				sd_panel_rows_prev = -1;
+			}
+			// any other key -> ignore, keep waiting
+		}
+		return "cancel";
 	} finally {
 		console.ctrlkey_passthru = oldctrl;
 	}
