@@ -30,6 +30,10 @@ var SD_CFG    = SD_DIR + "syncdoom.ini";
 var SD_GAMES  = backslash(system.data_dir + "syncdoom/games/");
 var SD_EVENTS = system.data_dir + "syncdoom/events.jsonl";   // door-written activity log
 
+// Seconds between the host's mustering-entry re-writes (heartbeat). Under [net] stale
+// (default 90) so joiners keep seeing the game while players assemble.
+var SD_MUSTER_HEARTBEAT = 20;
+
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
@@ -233,6 +237,38 @@ function sd_wadset_files_present(cfg, ws)
 		}
 	}
 	return true;
+}
+
+// A registry stem unique across same-LAN hosts sharing the games dir: <hostid>-<port>,
+// hostid = the sanitized local host name (matches the C server's mp_host_id scheme).
+function sd_muster_stem(port) {
+	var host = String(system.local_host_name || "host").replace(/[^A-Za-z0-9]+/g, "");
+	return host + "-" + port;
+}
+
+// Write/refresh the lobby-owned "mustering" entry (single writer: the host). `players`
+// is the assembled count INCLUDING the host (>=1) so sd_list_games' players<1 filter
+// keeps it visible. Re-calling refreshes the heartbeat + player count. Returns the path.
+function sd_write_muster(cfg, port, ws, mode, target, players) {
+	var maxp = parseInt(ws.maxplayers || cfg.net.max_players, 10) || 4;
+	if (maxp > 4) maxp = 4;
+	return gl.write_game(SD_GAMES, sd_muster_stem(port), {
+		host:       (typeof user != "undefined" && user.alias) ? user.alias : "Someone",
+		wadset:     ws.id,
+		mode:       mode,
+		addr:       gl.advertise_addr(cfg.net) || "127.0.0.1",   // joiners dial this:port
+		port:       port,
+		target:     target,
+		maxplayers: maxp,
+		players:    (players > 0) ? players : 1,
+		status:     "mustering",
+		heartbeat:  time()
+	});
+}
+
+// Assembled count for a mustering entry = registered waiters + 1 (the host).
+function sd_muster_players(entryPath) {
+	return gl.list_waiters(entryPath).length + 1;
 }
 
 // ---------------------------------------------------------------------------
