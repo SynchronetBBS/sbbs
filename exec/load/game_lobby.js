@@ -240,6 +240,87 @@ function remove_game(path) {
 	return true;
 }
 
+// --- N-player muster coordination (used by a lobby-driven waiting room) ---------
+// A muster is a lobby-owned game entry (<stem>.ini) plus two marker kinds beside it:
+//   <stem>.wait.<node>  -- one per joining node (joiner-owned); the host counts/lists them
+//   <stem>.go           -- the host's launch signal, carrying the server address
+// Markers use non-.ini names so list_games() never parses them. One writer per file.
+
+// Path of a joining node's waiter marker for a game entry.
+function waiter_path(entryPath, node) {
+	return String(entryPath).replace(/\.ini$/i, ".wait." + node);
+}
+
+// Joiner: register in the muster (exclusive create -- one marker per node; false if
+// this node already registered or on error). `alias` is stored for the host's list.
+function write_waiter(entryPath, node, alias) {
+	var f = new File(waiter_path(entryPath, node));
+	if (!f.open("wx"))
+		return false;
+	f.write((alias || "") + "\n");
+	f.close();
+	return true;
+}
+
+// Host: the registered waiters as [{node, alias}] (one per <stem>.wait.* marker).
+function list_waiters(entryPath) {
+	var base = String(entryPath).replace(/\.ini$/i, ".wait.");
+	var files = directory(base + "*"), out = [], i;
+	for (i = 0; i < files.length; i++) {
+		var node = files[i].substr(base.length);
+		var alias = "";
+		var f = new File(files[i]);
+		if (f.open("r")) { alias = f.readln() || ""; f.close(); }
+		out.push({ node: node, alias: alias });
+	}
+	return out;
+}
+
+// Joiner: drop our marker (leaving the muster). Idempotent.
+function remove_waiter(entryPath, node) {
+	var p = waiter_path(entryPath, node);
+	if (file_exists(p))
+		return file_remove(p);
+	return true;
+}
+
+// Path of a game's go marker.
+function go_path(entryPath) {
+	return String(entryPath).replace(/\.ini$/i, ".go");
+}
+
+// Host: signal launch, carrying the server address joiners dial.
+function write_go(entryPath, addr) {
+	var f = new File(go_path(entryPath));
+	if (!f.open("w+"))
+		return false;
+	f.write((addr || "") + "\n");
+	f.close();
+	return true;
+}
+
+// Joiner: the go address if the host has fired, else null.
+function read_go(entryPath) {
+	var p = go_path(entryPath);
+	if (!file_exists(p))
+		return null;
+	var f = new File(p), addr = "";
+	if (f.open("r")) { addr = f.readln() || ""; f.close(); }
+	return addr;
+}
+
+// Host: tear down the whole muster -- the go marker, every waiter marker, the entry.
+function clear_muster(entryPath) {
+	var g = go_path(entryPath);
+	if (file_exists(g))
+		file_remove(g);
+	var base = String(entryPath).replace(/\.ini$/i, ".wait.");
+	var w = directory(base + "*"), i;
+	for (i = 0; i < w.length; i++)
+		file_remove(w[i]);
+	remove_game(entryPath);
+}
+
 // ---------------------------------------------------------------------------
 // Paging the door's other active nodes  (Terminal Server context)
 // ---------------------------------------------------------------------------
