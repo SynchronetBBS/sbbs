@@ -361,4 +361,57 @@ function nodelist(print, active, listself, is_sysop, options)
 	return output;
 }
 
+// Write (or clear) a node's extended free-text status -- the "activity" string the
+// who's-online / node listings show for what the user is doing (e.g. a JS door's
+// own waiting-room state). Synchronet renders a node's node.exb free text only
+// while the node's NODE_EXT flag is set. The flag is (re)derived by the C
+// putnodedat() from the node-action text string (text[NodeActionXtrnMenu] for a
+// running door) -- normally empty, so a door shows none. Two things are needed for
+// a status that STICKS:
+//   1. Override that action text (replace_text) so the BBS's periodic nodesync(),
+//      which re-runs putnodedat() and re-derives the flag from that string, KEEPS
+//      the flag (and rewrites node.exb to match) instead of clearing it. Without
+//      this the status shows only until the next nodesync -- then reverts.
+//   2. Apply it immediately: write the node's own 128-byte node.exb record and set
+//      NODE_EXT via system.node_list[].misc (whose setter calls putnodedat()), so
+//      it appears at once rather than waiting for the next re-derivation.
+// An empty/omitted `text` clears the status (revert_text + drop the flag); `node`
+// defaults to the current node. The action-text override applies only to our own
+// node (it's this session's text[]) and assumes a door action (NODE_XTRN); a
+// remote `node` gets the best-effort direct write only. The text stands alone in
+// the display, so make it self-identifying. Returns true if the node was addressable.
+function set_node_ext_status(text, node)
+{
+	if(typeof system == "undefined" || !system.node_list)
+		return false;
+	var self = js.global.bbs ? bbs.node_num : 0;
+	if(node === undefined)
+		node = self;
+	if(node < 1 || node > system.nodes)
+		return false;
+	var want = (text !== undefined && text !== null && String(text).length > 0);
+	if(node == self && self > 0) {           // our own node: keep the flag across nodesync
+		if(want)
+			bbs.replace_text("NodeActionXtrnMenu", String(text));
+		else
+			bbs.revert_text("NodeActionXtrnMenu");
+	}
+	if(want) {
+		var path = system.ctrl_dir + "node.exb";
+		var f = new File(path);
+		if(f.open(file_exists(path) ? "r+b" : "w+b")) {
+			var off = (node - 1) * 128;
+			var locked = f.lock(off, 128);   // best-effort: advisory locking may be
+			f.position = off;                // unavailable (e.g. over a network mount),
+			f.write(String(text).substr(0, 127), 128);   // but a 128-byte record write is
+			if(locked)                       // atomic enough and only this node writes its
+				f.unlock(off, 128);          // own slot -- so write regardless of the lock
+			f.close();
+		}
+	}
+	var nl = system.node_list[node - 1];                     // .misc setter -> C putnodedat() (locked)
+	nl.misc = want ? (nl.misc | NODE_EXT) : (nl.misc & ~NODE_EXT);
+	return true;
+}
+
 this;
