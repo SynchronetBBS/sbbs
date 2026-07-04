@@ -635,12 +635,12 @@ const char *syncduke_active_tier_name(void) { return sd_tier_name(syncduke_last_
 /* The tier auto-selected when there's no F4 override: jxl on a JXL-capable SyncTERM,
  * sixel on a sixel-capable terminal, else the text/block fallback (half-block) so a
  * terminal with neither (e.g. Windows conhost) still renders the game. */
-/* The sixel tier to use by default: the full-res variant only when the user opted in -- and
- * only on a non-SyncTERM client, since SyncTERM scales sixels itself so full-res is moot there
- * (and vsc stays 2 there regardless; see present()). */
+/* The sixel tier to use by default: the full-res variant when the user opted in.  On
+ * SyncTERM full-res now means 1:1 encoding (no half-res + 2x upscale), so it's a real
+ * quality win there too -- see the hsc/vsc opt-in in present(). */
 static int sd_sixel_default(void)
 {
-	return (syncduke_sixel_fullres && !syncduke_is_syncterm()) ? SD_SIXEL_FULL : SD_SIXEL;
+	return syncduke_sixel_fullres ? SD_SIXEL_FULL : SD_SIXEL;
 }
 
 static int sd_auto_tier(void)
@@ -716,9 +716,11 @@ void syncduke_tier_cycle(void)
 #endif
 	if (syncduke_have_sixel() || !syncduke_probe_replied())   /* skip sixel where it can't render */
 		avail[n++] = SD_SIXEL;
-	/* Non-SyncTERM: a second sixel stop encoded full-res (vsc=1) for terminals that ignore the
-	 * 2:1 raster aspect (e.g. WezTerm); SyncTERM scales sixels itself, so it's skipped there. */
-	if ((syncduke_have_sixel() || !syncduke_probe_replied()) && !syncduke_is_syncterm())
+	/* A second sixel stop encoded full-res (hsc=vsc=1): sharper -- no half-res downscale +
+	 * 2x nearest-neighbor upscale -- at ~4x the bytes.  Offered on any sixel-capable client:
+	 * on SyncTERM it drops the raster-aspect scaling; elsewhere (e.g. WezTerm that ignore the
+	 * 2:1 aspect) it also fixes the vertical squish. */
+	if (syncduke_have_sixel() || !syncduke_probe_replied())
 		avail[n++] = SD_SIXEL_FULL;
 	avail[n++] = SD_HALF;
 	avail[n++] = SD_BLOCKS;
@@ -1069,8 +1071,12 @@ void syncduke_present(void)
 	 * SyncTERM, whose cterm treats pad as an integer horizontal scale; a strict-DEC
 	 * terminal would draw a half-width image, so others keep full width (pad=1). The
 	 * sixel is encoded at out/hsc x out/vsc and the terminal scales it back to full. */
-	vsc = (syncduke_sixel_fullres && !syncduke_is_syncterm()) ? 1 : SYNCDUKE_SIXEL_SCALE;   /* full-res opt-in */
-	hsc = syncduke_is_syncterm() ? SYNCDUKE_SIXEL_SCALE : 1;
+	/* Full-res opt-in: encode 1:1 at the display size (hsc=vsc=1) instead of half-res +
+	 * the terminal's 2x nearest-neighbor upscale.  Sharper (no sub-native downscale) at
+	 * ~4x the sixel bytes.  Applies on SyncTERM too now (drops the raster-aspect scaling);
+	 * the default (half-res) still applies otherwise for the leaner payload. */
+	vsc = syncduke_sixel_fullres ? 1 : SYNCDUKE_SIXEL_SCALE;
+	hsc = (syncduke_sixel_fullres || !syncduke_is_syncterm()) ? 1 : SYNCDUKE_SIXEL_SCALE;
 
 	/* De-dupe (SyncDOOM-style: memcmp the native framebuffer): if the game image,
 	 * the palette and the output geometry are all unchanged since the last frame we
@@ -1164,18 +1170,26 @@ void syncduke_present(void)
 		 * very bottom and fills everything above it -- the maximum fill that still clears the
 		 * last row. (cellh unknown pre-probe -> 16; clamp so a tiny window still fits.) */
 		{
+			/* Fall back to a sane 8x16 cell when the terminal didn't report its cell
+			 * pixel size (ESC[16t): geom_center needs the cell width to turn the centered
+			 * pixel offset into a text column, and with cell_w==0 it pins the image to
+			 * column 1 (left edge) instead of centering.  SyncTERM answers the graphics
+			 * canvas (?2;1S) but NOT 16t, so cell==0 is the common path there -- which is
+			 * why a SyncTERM sixel used to hug the left while SyncDOOM (same 8px fallback)
+			 * centered.  cell_w tracks the canvas: an 8px-wide font gives cols == vw/8. */
+			int cellw = syncduke_term_cell_w() > 0 ? syncduke_term_cell_w() : 8;
 			int cellh = syncduke_term_cell_h() > 0 ? syncduke_term_cell_h() : 16;
 			int fitvh = vh - cellh;
 			if (fitvh < SYNCDUKE_SCREEN_H)
 				fitvh = vh;                              /* don't over-shrink a very short window */
 			termgfx_geom_fit(vw, fitvh, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, 1024, &sdw, &sdh);
-			termgfx_geom_center(vw, fitvh, sdw, sdh, syncduke_term_cell_w(), syncduke_term_cell_h(),
-			                    NULL, NULL, &icol, &irow);
+			termgfx_geom_center(vw, fitvh, sdw, sdh, cellw, cellh, NULL, NULL, &icol, &irow);
 		}
 		syncduke_out_put(wrap, snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow, icol));
-		/* sixel default placement (for the mouse steer): centered at the cursor cell on
-		 * terminals that honor it; SyncTERM ignores the cursor under ?80l -> top-left. */
-		dispw = sdw; displeft = syncduke_is_syncterm() ? 1 : icol;
+		/* Mouse-steer center: the sixel is drawn at the centered cursor cell (icol) and
+		 * SyncTERM honors the cursor for a sixel (same as other terminals), so the steer
+		 * maps the pointer around icol on all of them. */
+		dispw = sdw; displeft = icol;
 #ifdef WITH_JXL
 		if (tier == SD_JXL) {
 			/* A DrawJXL is a 1:1 blit (no terminal scaling), so the door scales the

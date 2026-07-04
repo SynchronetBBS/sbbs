@@ -652,8 +652,10 @@ static void emit_frame_sixel(int w, int h)
 	// frame encodes at native res (not a downscale); other sixel terminals get pad=1
 	// (full width, half the bands, the vertical via the 2:1 pixel aspect).  Clamp the
 	// encoded height to whole 6-row bands -- a partial final band garbles under pan>1.
-	int    vsc = (g_is_syncterm || !g_sixel_fullres) ? SIXEL_SCALE : 1; // full-res (1:1) only when opted in
-	int    hsc = g_is_syncterm ? SIXEL_SCALE : 1;  // horizontal: halve only on SyncTERM
+	// Full-res opt-in (1:1, no half-res encode + 2x nearest-neighbor upscale): sharper at
+	// ~4x the sixel bytes.  Applies on SyncTERM too now; the half-res default holds otherwise.
+	int    vsc = g_sixel_fullres ? 1 : SIXEL_SCALE;
+	int    hsc = (g_sixel_fullres || !g_is_syncterm) ? 1 : SIXEL_SCALE;
 	int    sxw = w / hsc;
 	int    sxh = h / vsc;
 	size_t n;
@@ -2235,10 +2237,11 @@ static void build_video_states(void)
 		g_vstates[g_vstate_n].label   = (g_mode == MODE_SIXEL && g_sixel_fullres) ? "sixel-full"
 		                                : mode_name(g_mode);   // "jxl" / "sixel" / "ppm"
 		g_vstate_n++;
-		// Non-SyncTERM sixel: offer the OTHER vertical-scaling variant as an F4 stop. The
-		// default (pan=2 half-res) renders right on terminals that honor the sixel raster
-		// aspect ratio; "sixel-full" (1:1, no scaling) is for those that ignore it (WezTerm).
-		if (g_mode == MODE_SIXEL && !g_is_syncterm) {
+		// Sixel: offer the OTHER vertical-scaling variant as an F4 stop. The default (pan=2
+		// half-res) is the leaner payload; "sixel-full" (1:1, no half-res downscale + 2x
+		// nearest-neighbor upscale) is sharper -- on SyncTERM it drops the raster-aspect
+		// scaling, and on terminals that ignore the 2:1 aspect (WezTerm) it fixes the squish.
+		if (g_mode == MODE_SIXEL) {
 			g_vstates[g_vstate_n].mode    = MODE_SIXEL;
 			g_vstates[g_vstate_n].fullres = !g_sixel_fullres;
 			g_vstates[g_vstate_n].label   = g_sixel_fullres ? "sixel" : "sixel-full";
@@ -2246,11 +2249,17 @@ static void build_video_states(void)
 		}
 #ifdef WITH_JXL
 		// Offer sixel as a second graphics tier when JXL is the startup tier and the
-		// terminal also speaks sixel, so the player can A/B the two with F4.
+		// terminal also speaks sixel, so the player can A/B the two with F4 -- both the
+		// default half-res and the sharper full-res (1:1) variant (build_video_states runs
+		// once at the JXL start, so the g_mode==MODE_SIXEL block above never adds it here).
 		if (g_mode == MODE_JXL && g_have_sixel) {
 			g_vstates[g_vstate_n].mode    = MODE_SIXEL;
 			g_vstates[g_vstate_n].fullres = 0;
 			g_vstates[g_vstate_n].label   = "sixel";
+			g_vstate_n++;
+			g_vstates[g_vstate_n].mode    = MODE_SIXEL;
+			g_vstates[g_vstate_n].fullres = 1;
+			g_vstates[g_vstate_n].label   = "sixel-full";
 			g_vstate_n++;
 		}
 #endif
