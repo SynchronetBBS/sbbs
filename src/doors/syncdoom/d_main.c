@@ -219,6 +219,12 @@ void D_Display (void)
 			redrawsbar = true;
 		if (inhelpscreensstate && !inhelpscreens)
 			redrawsbar = true;              // just put away the help screen
+		if (menuactivestate && !menuactive)
+			redrawsbar = true;              // syncdoom: our Options input/sensitivity sliders
+			                                // draw low enough to overlap the status bar, so force
+			                                // a full sbar redraw when the menu closes -- else the
+			                                // slider pixels linger over the HUD (vanilla menus
+			                                // never touch the sbar, so it doesn't do this)
 		ST_Drawer (viewheight == 200, redrawsbar );
 		fullscreen = viewheight == 200;
 		break;

@@ -405,7 +405,7 @@ menu_t  OptionsDef =
     &MainDef,
     OptionsMenu,
     M_DrawOptions,
-    60,37,
+    60,21,           // y shifted up one row (was 37) -- no title, bottom rows clear the HUD
     0
 };
 
@@ -1110,8 +1110,9 @@ static int M_OptSliderX(void)
 
 void M_DrawOptions(void)
 {
-    V_DrawPatchDirect(108, 15, W_CacheLumpName(DEH_String("M_OPTTTL"),
-                                               PU_CACHE));
+    // syncdoom: no "OPTIONS" title patch -- the whole menu is shifted up one row
+    // (OptionsDef.y) so the bottom slider rows (MOUSE mode / sensitivity) clear the HUD
+    // without hiding it. Dropping the title frees the top row the shift needs.
 
     // syncdoom: Sound Volume occupies the old Graphic Detail row -- a plain label
     // (the High/Low patch is gone with it), so nothing to draw here. The MOUSE mode +
