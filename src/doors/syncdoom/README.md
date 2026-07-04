@@ -325,6 +325,8 @@ in-game with **F1**. Keys:
 | `Ctrl-T` | Cycle the frame pipeline depth (`1 → 2 → … → 8 → auto`), flashing the depth + measured round-trip. Higher depths lift the frame rate on a high-latency (far-away) link toward Doom's 35 fps sim rate (frame rate ≈ depth ÷ round-trip), at the cost of some added input lag; `auto` (the default) adapts to the link. Mainly an A/B tuning aid for remote play. Saved per-user. (Also `[video] frames_in_flight` in `syncdoom.ini`.) |
 | `Ctrl-S` | Toggle a live stats overlay (top row): render tier, frame rate, round-trip (current / baseline), and pipeline depth — handy for watching `auto` adapt over a remote link. Session-only. |
 | `Ctrl-O` | Toggle mouse steering on/off, flashing the new state. Saved per-user. (Also `[input] mouse` in `syncdoom.ini`.) |
+| `Ctrl-U` | Who's online — a brief top-strip overlay of the other BBS nodes and what they're doing. |
+| `Ctrl-P` | Page / message another node: shows who's online, then you type a message over the running game (non-blocking — your player just stands still, like `T` chat, so a co-op game never stalls). Prefix a node number (`5 hi` / `5: hi`) to target one node, or leave it blank to message everyone online. `Esc` or a blank message cancels. |
 | `F2` / `F3` | Save / load game (written under `-home`); `F6` / `F9` quicksave / quickload. |
 | `Esc` | Menu. **Options → Input Feel** tunes the movement graces (TAP/HOLD/TURN) live if it feels too slidy or twitchy; saved per-user. |
 

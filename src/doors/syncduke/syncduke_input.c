@@ -118,9 +118,25 @@ volatile int syncduke_pitch_step;
 volatile int syncduke_help_request;
 
 /* `now` is the presented-frame counter (see file header), NOT totalclock. */
+/* While the Ctrl-P page compose is open, keys reach the scancode layer on the kitty/
+ * evdev paths (and Esc on every path, via the byte-path lone-ESC).  Route Enter/Esc/
+ * Backspace to the compose and swallow everything else, so nothing reaches the game
+ * while you type.  Printable text is captured earlier, in handle_key(). */
+static int compose_eat_sc(int sc)
+{
+	if (!syncduke_node_composing())
+		return 0;
+	if (sc == sc_Escape)         syncduke_node_compose_key(0x1b);
+	else if (sc == sc_Return)    syncduke_node_compose_key('\r');
+	else if (sc == sc_BackSpace) syncduke_node_compose_key(0x08);
+	return 1;
+}
+
 static void press(int sc, int now)
 {
 	if (sc <= 0 || sc >= 128)
+		return;
+	if (compose_eat_sc(sc))
 		return;
 	rawq_push((uint8_t)sc);          /* key-down */
 	{   /* Pick the hold: turn keys (Left/Right) use TURN HOLD; otherwise a fresh press
@@ -157,6 +173,8 @@ void syncduke_input_expire(int now)
 static void hold_press(int sc)
 {
 	if (sc <= 0 || sc >= 128)
+		return;
+	if (compose_eat_sc(sc))
 		return;
 	if (!held[sc])
 		rawq_push((uint8_t)sc);          /* key-down (once; repeats don't re-push) */
@@ -783,6 +801,13 @@ static void handle_key(int c, int gameplay, int now, int kev)
 	char cb = (char)c;
 	int  sc;
 
+	if (syncduke_node_composing()) {                 /* Ctrl-P page compose: capture text, eat keys */
+		if (kev != 2 && kev != 3)                    /* a fresh press only (byte / kitty), not repeat/release */
+			syncduke_node_compose_key(c);            /* Enter/Esc/Backspace on kitty/evdev arrive as
+			                                          * scancodes -> handled in press()/hold_press() */
+		return;
+	}
+
 	if (kev == 3) {                                  /* key-up: release the held game scancode */
 		if (gameplay && (c == 'z' || c == 'Z'))
 			return;                                  /* crouch is a latch, not a hold */
@@ -798,6 +823,7 @@ static void handle_key(int c, int gameplay, int now, int kev)
 		if (c == 0x0f) { syncduke_mouse_toggle(); return; }   /* Ctrl-O: mouse steering */
 		if (c == 0x12) { press(sc_CapsLock, now); return; }   /* Ctrl-R: AutoRun toggle (frees R for Steroids) */
 		if (c == 0x15) { syncduke_node_userlist_request(); return; }   /* Ctrl-U: who's online */
+		if (c == 0x10) { syncduke_node_page_request();     return; }   /* Ctrl-P: page/message a node */
 		if (c >= 0x01 && c <= 0x07) {                         /* Ctrl-A..G mirror the door's F1..F7 */
 			if (c == 0x01) {                                  /* Ctrl-A = F1 = GAME CONTROLS help */
 				if (gameplay)
@@ -810,7 +836,7 @@ static void handle_key(int c, int gameplay, int now, int kev)
 			return;
 		}
 		if (gameplay && (c == 'z' || c == 'Z')) { g_crouch_toggle = !g_crouch_toggle; return; }   /* sticky crouch */
-	} else if (c == 0x13 || c == 0x14 || c == 0x0f || c == 0x12 || c == 0x15 || (c >= 0x01 && c <= 0x07)
+	} else if (c == 0x13 || c == 0x14 || c == 0x0f || c == 0x12 || c == 0x15 || c == 0x10 || (c >= 0x01 && c <= 0x07)
 	           || (gameplay && (c == 'z' || c == 'Z'))) {
 		return;                                      /* swallow kitty auto-repeat of a shortcut/toggle */
 	}

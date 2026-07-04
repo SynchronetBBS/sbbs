@@ -45,6 +45,9 @@ void syncduke_node_tick(void);   /* per-frame: status broadcast (+ Ctrl-U build,
 uint32_t syncduke_node_overlay_sig(void);   /* banner change signature (0 = no banner) */
 void     syncduke_node_draw(int cols, int rows);  /* paint the who's-online/message banner */
 void     syncduke_node_userlist_request(void);    /* Ctrl-U: flag the next tick to build the who's-online banner */
+void     syncduke_node_page_request(void);        /* Ctrl-P: flag the next tick to open the page-compose overlay */
+int      syncduke_node_composing(void);           /* is the in-game page-compose overlay active? (input path gate) */
+void     syncduke_node_compose_key(int c);        /* feed one typed key to the compose overlay */
 
 /* --- provided by syncduke_events.c (events.jsonl activity log) --- */
 void syncduke_events_tick(void);   /* per-frame: emit start/level/death to -eventlog */

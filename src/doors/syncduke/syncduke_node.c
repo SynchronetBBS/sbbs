@@ -182,11 +182,126 @@ static void syncduke_node_recv(void)
 	syncduke_out_put("\x07", 1);   /* audible alert */
 }
 
+/* --- In-game Ctrl-P: non-blocking page compose (SP + MP), mirrors SyncDOOM -------
+ * Ctrl-P opens a compose line over the running game -- the game keeps ticking, so in
+ * a netgame nobody stalls (your Duke just stands still, like the 'T' chat). The
+ * who's-online list is shown above; type a message, Enter sends. A leading node
+ * number ("5 hi" / "5: hi") targets that node, else it broadcasts to all others.
+ * Esc, or a blank message, cancels. The input path (syncduke_input.c) routes keys
+ * here via syncduke_node_compose_key() while syncduke_node_composing() is true. */
+static int  g_want_page;               /* Ctrl-P: open the compose on the next tick */
+static int  g_compose;                 /* compose overlay active */
+static char g_msgbuf[128];             /* message being typed */
+static int  g_list_rows;               /* rows above the compose line (prompt + node list) */
+
+int  syncduke_node_composing(void) { return g_compose; }
+void syncduke_node_page_request(void) { g_want_page = 1; }
+
+static void compose_show(void)         /* refresh the compose line; re-arm + mark dirty */
+{
+	snprintf(g_ov[g_list_rows], SD_NODE_OVCOLS, "  > %s_", g_msgbuf);
+	banner_set(g_list_rows + 1, 3600000);   /* hold while composing (bumps the dirty sig) */
+}
+
+static void compose_end(void)          /* leave compose, clear the banner */
+{
+	g_compose  = 0;
+	g_ov_rows  = 0;
+	g_ov_sig++;
+}
+
+static void compose_send(void)
+{
+	char *msg = g_msgbuf;
+	int   me  = sbbs_my_node(), target = 0;
+
+	while (*msg == ' ')
+		msg++;
+	if (*msg >= '0' && *msg <= '9') {            /* optional leading node number */
+		target = atoi(msg);
+		while (*msg >= '0' && *msg <= '9')
+			msg++;
+		if (*msg == ':')
+			msg++;
+		while (*msg == ' ')
+			msg++;
+	}
+	if (*msg == '\0') {                           /* blank message -> cancel */
+		compose_end();
+		return;
+	}
+	if (target > 0) {
+		int ok = sbbs_page_node(target, me, syncduke_door_alias(), msg);
+		snprintf(g_ov[0], SD_NODE_OVCOLS, ok
+		         ? " Paged node %d." : " Couldn't page node %d (offline / paging off).", target);
+	} else {
+		sbbs_node_info_t nodes[16];
+		int n = sbbs_list_nodes(nodes, (int)(sizeof(nodes) / sizeof(nodes[0])), me), i, sent = 0;
+		for (i = 0; i < n; i++)
+			if (sbbs_page_node(nodes[i].number, me, syncduke_door_alias(), msg))
+				sent++;
+		snprintf(g_ov[0], SD_NODE_OVCOLS, sent
+		         ? " Paged %d node%s." : " No one could be paged.", sent, sent == 1 ? "" : "s");
+	}
+	g_compose = 0;
+	banner_set(1, 5000);
+}
+
+/* Called from the input path for each typed key while composing. */
+void syncduke_node_compose_key(int c)
+{
+	size_t len = strlen(g_msgbuf);
+	if (c == 0x1b)              { compose_end();  return; }   /* Esc */
+	if (c == '\r' || c == '\n'){ compose_send(); return; }   /* Enter */
+	if (c == 0x08 || c == 0x7f){ if (len > 0) g_msgbuf[len - 1] = '\0'; }   /* Backspace */
+	else if (c >= 0x20 && c < 0x7f) {
+		if (len + 1 < sizeof(g_msgbuf)) {
+			g_msgbuf[len]     = (char)c;
+			g_msgbuf[len + 1] = '\0';
+		}
+	} else
+		return;                                              /* ignore other keys */
+	compose_show();
+}
+
+/* Open the compose from the tick: no one else online -> a notice (like Ctrl-U);
+ * otherwise draw the node list and open the compose line. */
+static void syncduke_node_page(void)
+{
+	sbbs_node_info_t nodes[8];
+	char alias[26], act[80];
+	int  n, i, r, me = sbbs_my_node();
+
+	n = sbbs_list_nodes(nodes, (int)(sizeof(nodes) / sizeof(nodes[0])), me);
+	if (n == 0) {
+		snprintf(g_ov[0], SD_NODE_OVCOLS, " No one else is online.");
+		banner_set(1, 6000);
+		return;
+	}
+	snprintf(g_ov[0], SD_NODE_OVCOLS,
+	         " Page (Esc/blank cancels) -- prefix a node #, or leave blank to page all:");
+	r = 1;
+	for (i = 0; i < n && r < SD_NODE_OVROWS - 1; i++) {       /* leave a row for the compose line */
+		const char *who = nodes[i].anon ? "UNKNOWN"
+		                  : sbbs_username(nodes[i].useron, alias, sizeof(alias));
+		const char *activity = nodes[i].ext
+		                       ? sbbs_node_ext(nodes[i].number, act, sizeof(act))
+		                       : sbbs_action_str(&nodes[i], act, sizeof(act));
+		snprintf(g_ov[r], SD_NODE_OVCOLS, "   %d) %-16.16s %.40s", nodes[i].number, who, activity);
+		r++;
+	}
+	g_list_rows = r;
+	g_msgbuf[0] = '\0';
+	g_compose   = 1;
+	compose_show();
+}
+
 void syncduke_node_tick(void)
 {
 	if (!g_node_ok)
 		return;
 	syncduke_node_status();
 	if (g_want_userlist) { g_want_userlist = 0; syncduke_node_userlist(); }
+	if (g_want_page)     { g_want_page = 0;     syncduke_node_page(); }
 	syncduke_node_recv();
 }

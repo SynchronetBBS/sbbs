@@ -267,7 +267,7 @@ int sbbs_page_node(int target, int from_node, const char *from_alias, const char
 		return 0;
 	// Ctrl-A attribute codes use octal \001 -- "\x01c" would be the single hex
 	// escape 0x1C, since 'c' is a hex digit (the cyan code was being eaten).
-	fprintf(f, "\007\r\n\001n\001h\001cNode %d \001n\001c(%s)\001h\001y pages you:\001n\r\n%s\r\n",
+	fprintf(f, "\007\r\n\001n\001h\001cNode %d\001n: \001c%s\001n sent you a message:\r\n%s\r\n",
 	        from_node, from_alias ? from_alias : "?", text ? text : "");
 	fclose(f);
 

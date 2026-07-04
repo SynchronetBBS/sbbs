@@ -423,6 +423,14 @@ static char      g_page_ov[10][82];      // shared top banner: wrapped lines (fu
 static int       g_page_ov_rows = 0;     // active banner line count (0 = not shown)
 static uint32_t  g_page_ov_until = 0;    // banner expiry (now_ms); auto-clears after
 
+// In-game Ctrl-P page compose (non-blocking overlay, MP-safe): while active the door
+// captures typed keys into g_page_msgbuf instead of feeding Doom, drawing them over the
+// running game (which keeps ticking -- your player just stands still, like 'T' chat).
+static int       g_page_compose = 0;     // compose overlay active
+static char      g_page_msgbuf[128];     // message being typed
+static int       g_page_list_rows = 0;   // rows above the compose line (prompt + node list)
+static void      sd_page_compose_key(unsigned char key);   // fwd (called from key_dispatch)
+
 // Doom HU strings (hu_stuff.c) for the text-tier legible HUD. sd_text_hud suppresses
 // Doom's framebuffer draw of the message line + chat so only our terminal-character
 // version shows (real chars = legible; the rasterized font downsamples to blocks).
@@ -1368,7 +1376,7 @@ static unsigned char map_ascii(unsigned char c)
 	// case. So skip the action remaps below in those modes; the printable
 	// passthrough at the bottom delivers the raw byte. (Edit keys -- Enter/Esc/
 	// Backspace, handled above -- still work for sending/cancelling/erasing.)
-	if (!chat_on && !menuactive) {
+	if (!chat_on && !menuactive && !g_page_compose) {
 		// WASD movement for a terminal (no mouse): W/S move forward/back (Doom's
 		// up/down-arrow movement keys), A/D strafe, and turning stays on the LEFT/
 		// RIGHT arrows. FIRE on Space, USE on E, always-run toggle on R (handled in
@@ -1482,6 +1490,11 @@ static void key_dispatch(unsigned char key, int ev)
 {
 	if (!key)
 		return;
+	if (g_page_compose) {                     // in-game Ctrl-P compose: eat all keys, capture text
+		if (ev == 1)                          // (fresh press only; releases are swallowed too)
+			sd_page_compose_key(key);
+		return;
+	}
 	if (key == KEY_F4 || key == KEY_PIPELINE || key == KEY_STATS ||
 	    key == KEY_MOUSE || key == KEY_USERLIST || key == KEY_PAGE) {
 		if (ev == 1)                          // door hotkey: act on a fresh press only
@@ -3959,6 +3972,130 @@ static void sd_ingame_userlist(void)
 	g_page_ov_until = (uint32_t)now_ms() + 9000;
 }
 
+// ---------------------------------------------------------------------------
+// In-game Ctrl-P: non-blocking page-compose overlay (works in SP and MP)
+// ---------------------------------------------------------------------------
+// Opens a compose line over the running game -- the game keeps ticking, so in a
+// netgame nobody stalls (your player just stands still while you type, like 'T'
+// chat). The who's-online list is shown above; type a message and Enter sends.
+// A leading node number ("5 hi" or "5: hi") targets that node; no number
+// broadcasts to every other online node. Esc, or a blank message, cancels.
+
+static void sd_page_compose_show(void)   // refresh the compose line; hold the overlay
+{
+	snprintf(g_page_ov[g_page_list_rows], sizeof(g_page_ov[0]), "  > %s_", g_page_msgbuf);
+	g_page_ov_rows  = g_page_list_rows + 1;
+	g_page_ov_until = (uint32_t)now_ms() + 3600000u;   // effectively never while composing
+	// The overlay isn't part of Doom's framebuffer, so while you stand still typing the
+	// frame is "identical" and emit_frame's de-dupe would skip re-drawing it -> laggy
+	// echo. Force the next frame non-identical so the overlay repaints promptly, the way
+	// 'T' chat's framebuffer change implicitly does.
+	g_last_fb_ok = 0;
+}
+
+static void sd_page_end(void)            // leave compose mode, clear the overlay
+{
+	g_page_compose = 0;
+	g_page_ov_rows = 0;
+}
+
+static void sd_page_send(void)
+{
+	char *msg = g_page_msgbuf;
+	int   me  = sbbs_my_node(), target = 0;
+
+	while (*msg == ' ')
+		msg++;
+	if (*msg >= '0' && *msg <= '9') {                  // optional leading node number
+		target = atoi(msg);
+		while (*msg >= '0' && *msg <= '9')
+			msg++;
+		if (*msg == ':')
+			msg++;
+		while (*msg == ' ')
+			msg++;
+	}
+	if (*msg == '\0') {                                // blank message -> treat as cancel
+		sd_page_end();
+		return;
+	}
+
+	if (target > 0) {                                  // targeted page
+		int ok = sbbs_page_node(target, me, g_player_name, msg);
+		snprintf(g_page_ov[0], sizeof(g_page_ov[0]), ok
+		         ? " Paged node %d." : " Couldn't page node %d (offline / paging off).", target);
+	} else {                                           // broadcast to all other online nodes
+		sbbs_node_info_t nodes[16];
+		int n = sbbs_list_nodes(nodes, (int)(sizeof(nodes) / sizeof(nodes[0])), me), i, sent = 0;
+		for (i = 0; i < n; i++)
+			if (sbbs_page_node(nodes[i].number, me, g_player_name, msg))
+				sent++;
+		snprintf(g_page_ov[0], sizeof(g_page_ov[0]), sent
+		         ? " Paged %d node%s." : " No one could be paged.", sent, sent == 1 ? "" : "s");
+	}
+	g_page_compose  = 0;                               // notice (not compose) now shows
+	g_page_ov_rows  = 1;
+	g_page_ov_until = (uint32_t)now_ms() + 5000;
+}
+
+static void sd_page_compose_key(unsigned char key)
+{
+	size_t len = strlen(g_page_msgbuf);
+	if (key == KEY_ESCAPE)    { sd_page_end(); return; }
+	if (key == KEY_ENTER)     { sd_page_send(); return; }
+	if (key == KEY_BACKSPACE) { if (len > 0) g_page_msgbuf[len - 1] = '\0'; }
+	else if (key >= 0x20 && key < 0x7f) {
+		if (len + 1 < sizeof(g_page_msgbuf)) {
+			g_page_msgbuf[len]     = (char)key;
+			g_page_msgbuf[len + 1] = '\0';
+		}
+	} else
+		return;                                        // ignore sentinels / non-text keys
+	sd_page_compose_show();
+}
+
+// Ctrl-P entry, deferred from the key handler to the main loop. Nobody else
+// online -> just the "No one else is online" notice (like Ctrl-U); otherwise
+// draw the node list and open the compose line.
+static void sd_page_begin(void)
+{
+	sbbs_node_info_t nodes[8];
+	char alias[26], act[80];
+	int  n, i, rows, max, me = sbbs_my_node();
+
+	if (!sbbs_node_available())
+		return;
+	n = sbbs_list_nodes(nodes, (int)(sizeof(nodes) / sizeof(nodes[0])), me);
+	if (n == 0) {                                      // no one to page
+		snprintf(g_page_ov[0], sizeof(g_page_ov[0]), " No one else is online.");
+		g_page_ov_rows  = 1;
+		g_page_ov_until = (uint32_t)now_ms() + 6000;
+		return;
+	}
+	for (i = 0; i < s_active_n; i++)                   // release held keys so we don't keep
+		keyq_push(0, s_active[i].key);                //   moving while typing
+	s_active_n = 0;
+
+	max = (int)(sizeof(g_page_ov) / sizeof(g_page_ov[0]));
+	snprintf(g_page_ov[0], sizeof(g_page_ov[0]),
+	         " Page (Esc/blank cancels) -- prefix a node #, or leave blank to page all:");
+	rows = 1;
+	for (i = 0; i < n && rows < max - 1; i++) {        // leave a row for the compose line
+		const char *who = nodes[i].anon ? "UNKNOWN"
+		                  : sbbs_username(nodes[i].useron, alias, sizeof(alias));
+		const char *activity = nodes[i].ext
+		                       ? sbbs_node_ext(nodes[i].number, act, sizeof(act))
+		                       : sbbs_action_str(&nodes[i], act, sizeof(act));
+		snprintf(g_page_ov[rows], sizeof(g_page_ov[0]), "   %d) %-16.16s %.40s",
+		         nodes[i].number, who, activity);
+		rows++;
+	}
+	g_page_list_rows = rows;
+	g_page_msgbuf[0] = '\0';
+	g_page_compose   = 1;
+	sd_page_compose_show();
+}
+
 // In-game incoming page -> a one-line HUD message + a bell (non-blocking; polled
 // ~1/sec between frames). Collapses the page's CRLF/Ctrl-A formatting to one line.
 static void sd_ingame_recv(void)
@@ -4561,7 +4698,7 @@ int main(int argc, char **argv)
 		}
 		if (g_want_page) {
 			g_want_page = 0;
-			sd_post_message("To page a user, use Ctrl-P in the multiplayer waiting room.");
+			sd_page_begin();       // in-game compose overlay (non-blocking, MP-safe)
 		}
 		sd_ingame_recv();
 		sd_set_game_status();      // keep the who's-online status current (map changes)

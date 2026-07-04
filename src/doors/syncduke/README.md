@@ -80,6 +80,8 @@ need them.*
 | **Ctrl-T** | cycle frame-pipeline depth (auto → 1…16 → auto) |
 | **Ctrl-S** | toggle the live stats overlay (fps / KB-s / lag / depth) |
 | **Ctrl-O** | toggle mouse steering |
+| **Ctrl-U** | who's online — brief overlay of the other BBS nodes |
+| **Ctrl-P** | page / message another node: shows who's online, then type a message over the running game (non-blocking, MP-safe — your Duke stands still, like `T` chat). Prefix a node # (`5 hi` / `5: hi`) to target one, or leave blank to message all. `Esc`/blank cancels. |
 
 ### Kitty keyboard terminals
 
