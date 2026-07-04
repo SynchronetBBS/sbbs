@@ -15,6 +15,17 @@ configuration sections have been reconciled with what actually shipped.
 > `public_advertise`, `federate`, `federation_secret`), `net_query` LAN-broadcast
 > `discovery`, and LAN-address auto-detection.
 
+> **Latency — LAN/loopback vs. inter-BBS.** On a single install (all doors and the
+> dedicated server co-located on one host, or on LAN hosts sharing the install), the Doom
+> lockstep tic loop runs entirely over **loopback/LAN**, whose RTT is far under one 35 Hz
+> tic (~28.5 ms). So on a shared install **both co-op *and* deathmatch play well** — each
+> user's slow telnet/SSH link is *outside* the tic loop. The "deathmatch feels laggy over
+> the internet" caveat applies **only** to the (not-built) inter-BBS federation below,
+> where the Doom client and the dedicated server sit on different BBSes with internet RTT
+> **inside** the lockstep path, throttling the shared sim to the slowest peer. Co-op
+> absorbs that; competitive deathmatch does not. See *The lockstep constraint* under
+> **Inter-BBS federation**.
+
 ## Foundation — the netcode is half-present
 
 doomgeneric is derived from chocolate-doom but **stripped the net transport** to stay
