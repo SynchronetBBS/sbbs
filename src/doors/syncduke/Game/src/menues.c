@@ -2848,15 +2848,19 @@ else
             char  lbl[8];    // SyncDuke: the live 0..63 slider value, drawn just left of the bar
             int   kpal = (syncduke_kitty_active() || syncduke_evdev_active()) ? 1 : PHX(-7);   // greyed palette for KEY TAP/HOLD (moot under native key-up)
             int   tpal = PHX(-7);   // TURN SPEED / FAST TURN stay live -- they tune the synthetic high-latency turn
-            int   mpal = syncduke_mouse_enabled() ? PHX(-7) : 1;   // greyed when the mouse is OFF (nothing to tune)
             // Right-justified just left of the bar, with one character of blank space
             // (a digit's width) between the value and the slider trough.
             #define SD_VALX(STR) (c+167+40-16-sd_bignum_width("0")-sd_bignum_width(STR))
 
-            v = syncduke_mouse_sens();
-            menutext(c,43+16*0,SHX(-7),mpal,"MOUSE SENSITIVITY");
-            bar(c+167+40,43+16*0,&v,1,x==0,SHX(-7),mpal);
-            syncduke_mouse_sens_set(v);
+            // SyncDuke: hide MOUSE SENSITIVITY entirely when the mouse is off (nothing to
+            // tune) -- enable the mouse via the MOUSE row below to reveal it.
+            if(syncduke_mouse_enabled())
+            {
+                v = syncduke_mouse_sens();
+                menutext(c,43+16*0,SHX(-7),PHX(-7),"MOUSE SENSITIVITY");
+                bar(c+167+40,43+16*0,&v,1,x==0,SHX(-7),PHX(-7));
+                syncduke_mouse_sens_set(v);
+            }
 
             menutext(c,43+16*1,SHX(-7),PHX(-7),"MOUSE");
             {   int mm = syncduke_mouse_mode();
