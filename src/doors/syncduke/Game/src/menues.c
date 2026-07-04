@@ -1459,6 +1459,7 @@ void menus(void)
     char text[512];
     extern volatile int syncduke_help_request;   // SyncDuke: F1 in-game opens GAME CONTROLS (case 707)
     extern int  syncduke_mouse_enabled(void);    // SyncDuke: terminal mouse steering on/off (Ctrl-O)
+    extern int  syncduke_mouse_mode(void);       // 0 off, 1 steer, 2 follow (Ctrl-O cycles)
     extern void syncduke_mouse_toggle(void);
     extern int  syncduke_mouse_sens(void);        // 0..63 steer sensitivity (Setup Controls slider)
     extern void syncduke_mouse_sens_set(int);
@@ -2478,40 +2479,33 @@ else
 
             c = (320>>1)-120;
 
-            /* SyncDuke: was 6 -- GAME CONTROLS help moved to the main menu. RECORD (item 4) is
-             * dropped from the selectable count unless enabled (off by default: a demo file is
-             * useless to a user who can't download it). */
-            x = probe(c+6,43,16,syncduke_record_enabled()?5:4);
+            /* SyncDuke: matches the original OPTIONS menu -- DETAIL (0), SCREEN SIZE (1) and
+             * BRIGHTNESS (2) live here rather than on a separate VIDEO screen (the old FULLSCREEN
+             * and SHOW FPS items are gone -- meaningless in a terminal door).  SCREEN SIZE and
+             * BRIGHTNESS are sliders.  RECORD (last item) is only selectable when enabled (off by
+             * default: a demo file is useless to a user who can't download it). */
+            onbar = (probey == 1 || probey == 2);
+            x = probe(c+6,43,16,syncduke_record_enabled()?7:6);
 
             if(x == -1)
                 { if(ps[myconnectindex].gm&MODE_GAME) cmenu(50);else cmenu(0); }
 
             switch(x)
             {
-				case 0:
-					cmenu(702); // game options
-					break;
-
-                case 1:
-                    cmenu(701); // setup controls (keyboard tuning / mouse steering)
+                case 0:                 // DETAIL high/low
+                    ud.detail = 1-ud.detail;
                     break;
-
-				case 2:
-                    cmenu(700);  // sound setup
+                                        // 1 SCREEN SIZE, 2 BRIGHTNESS -- adjusted by the bars below
+                case 3:
+                    cmenu(702);         // game options
                     break;
-
-				case 3:
-					cmenu(706); // Video setup
-					lastkeysetup = 0;
-					current_resolution = 0; // in case we don't find it
-					for(i=0; i<validmodecnt; i++)
-					{
-						if(validmodexdim[i] == xdim && validmodeydim[i] == ydim)
-							current_resolution = i;
-					}
-					break;
-
-                case 4: // record on/off
+                case 4:
+                    cmenu(701);         // controls (keyboard tuning / mouse steering)
+                    break;
+                case 5:
+                    cmenu(700);         // sounds
+                    break;
+                case 6:                 // record on/off
                     if( (ps[myconnectindex].gm&MODE_GAME) )
                     {
                         closedemowrite();
@@ -2519,35 +2513,60 @@ else
                     }
                     ud.m_recstat = !ud.m_recstat;
                     break;
+            }
 
-				//case -7:
-				//	gametext(320>>1,43+16*6,"*** DISABLED. WILL BE FIXED SOON***",0,2+8+16); // center-i
-				//	break;
+            menutext(c,43,SHX(-2),PHX(-2),"DETAIL");
+            menutext(c+160+40,43,0,0,ud.detail?"HIGH":"LOW");
 
-			}
+            {   // SCREEN SIZE slider (with the extended small-HUD wrap, as in the original video menu)
+                int32 screen_size = ud.screen_size;
+                menutext(c,43+16*1,SHX(-5),PHX(-5),"SCREEN SIZE");
+                bar(c+167+40,43+16*1,(short *)&screen_size,-4,x==1,SHX(-5),PHX(-5));
+                if(ud.screen_size==4)
+                {
+                    if(screen_size==0)
+                    {
+                        ud.extended_screen_size++;
+                        if(ud.extended_screen_size==2)
+                        {
+                            ud.extended_screen_size = 1;
+                            ud.screen_size -= 4;
+                        }
+                    }
+                    else if(screen_size==8)
+                    {
+                        ud.extended_screen_size--;
+                        if(ud.extended_screen_size<0)
+                        {
+                            ud.extended_screen_size=0;
+                            ud.screen_size += 4;
+                        }
+                    }
+                }
+                else
+                    ud.screen_size = screen_size;
+            }
 
-			/* SyncDuke: GAME CONTROLS (the read-only key-help chart) moved to the main
-			 * menu as "CONTROLS HELP"; the keyboard-tuning sliders live in SETUP CONTROLS. */
-			menutext(c,43,SHX(-6),PHX(-6),"GAME OPTIONS");
+            menutext(c,43+16*2,SHX(-6),PHX(-6),"BRIGHTNESS");
+            bar(c+167+40,43+16*2,(short *)&ud.brightness,8,x==2,SHX(-6),PHX(-6));
+            if(x==2) setbrightness(ud.brightness>>2,&ps[myconnectindex].palette[0]);
 
-			menutext(c,43+16,SHX(-6),PHX(-6),"SETUP CONTROLS");
-
-            menutext(c,43+16+16,SHX(-8),PHX(-8),"SETUP SOUND");
-
-            menutext(c,43+16+16+16,SHX(-8),PHX(-8),"SETUP VIDEO");
+            menutext(c,43+16*3,SHX(-6),PHX(-6),"GAME OPTIONS");
+            menutext(c,43+16*4,SHX(-6),PHX(-6),"CONTROLS");
+            menutext(c,43+16*5,SHX(-8),PHX(-8),"SOUNDS");
 
             if( !syncduke_record_enabled() || ((ps[myconnectindex].gm&MODE_GAME) && ud.m_recstat != 1) )
             {
-                menutext(c,43+16+16+16+16,SHX(-10),1,"RECORD");
-                menutext(c+160+40,43+16+16+16+16,SHX(-10),1,"OFF");
+                menutext(c,43+16*6,SHX(-10),1,"RECORD");
+                menutext(c+160+40,43+16*6,SHX(-10),1,"OFF");
             }
             else
             {
-                menutext(c,43+16+16+16+16,SHX(-10),PHX(-10),"RECORD");
+                menutext(c,43+16*6,SHX(-10),PHX(-10),"RECORD");
 
                 if(ud.m_recstat == 1)
-                    menutext(c+160+40,43+16+16+16+16,SHX(-10),PHX(-10),"ON");
-                else menutext(c+160+40,43+16+16+16+16,SHX(-10),PHX(-10),"OFF");
+                    menutext(c+160+40,43+16*6,SHX(-10),PHX(-10),"ON");
+                else menutext(c+160+40,43+16*6,SHX(-10),PHX(-10),"OFF");
             }
 
             break;
@@ -2642,7 +2661,7 @@ else
 
             c = (320>>1)-120;
             rotatesprite(320<<15,19<<16,65536L,0,MENUBAR,16,0,10,0,0,xdim-1,ydim-1);
-            menutext(320>>1,24,0,0,"SETUP SOUNDS");
+            menutext(320>>1,24,0,0,"SOUNDS");
             onbar = ((probey == 2)&&SoundToggle) || ((probey == 3)&&MusicToggle) ;
 
             x = probe(c+6,43,16,8);
@@ -2651,7 +2670,7 @@ else
             {
                 case -1:
 					cmenu(200);
-					probey = 3;
+					probey = 5;   /* SOUNDS is OPTIONS item 5 */
                     break;
 
                 case 0:
@@ -2770,20 +2789,25 @@ else
         case 701:
             c = (320>>1)-120;
             rotatesprite(320<<15,19<<16,65536L,0,MENUBAR,16,0,10,0,0,xdim-1,ydim-1);
-            menutext(320>>1,24,0,0,"SETUP CONTROLS");
+            menutext(320>>1,24,0,0,"CONTROLS");
             // Terminals with a real key-up (kitty protocol or SyncTERM evdev) time keys natively
             // (+ Duke's own turn ramp), so the byte-path feel knobs (KEY TAP/HOLD, TURN SPEED, FAST
             // TURN) do nothing.  Keep them visible but greyed + non-adjustable, and explain why.
             // TURN SPEED (row 4) + FAST TURN stay adjustable even with native key-up: they tune the
             // synthetic turn used as the high-latency fallback (turn_edge).  Only KEY TAP/HOLD (rows
-            // 2,3) are truly moot under true key-up, so only those are greyed/locked.
-            onbar = ( probey == 0 || probey == 4 || (!syncduke_kitty_active() && !syncduke_evdev_active() && (probey == 2 || probey == 3)) );
+            // 2,3) are truly moot under true key-up, so only those are greyed/locked.  MOUSE
+            // SENSITIVITY (row 0) is greyed/locked when the mouse is OFF -- nothing to tune.
+            onbar = ( (syncduke_mouse_enabled() && probey == 0) || probey == 4 || (!syncduke_kitty_active() && !syncduke_evdev_active() && (probey == 2 || probey == 3)) );
 
             x = probe(c+6,43,16,6);
             switch(x)
             {
                 // SyncDuke: hint while hovering MOUSE STEERING (row 1), mirroring the ALT-M
                 // hint; probe() returns -(probey+2) for a hovered non-slider item.
+                case -2:                // MOUSE SENSITIVITY hovered: only hint when it's greyed/locked
+                    if(!syncduke_mouse_enabled())   // (row 0 returns -2 on every non-arrow frame, mouse on or off)
+                        gametext(320>>1,43+16*6+3,"ENABLE THE MOUSE FIRST (CTRL-O)",0,2+8+16);
+                    break;
                 case -3:
                     gametext(320>>1,43+16*6+3,"*** SHORTCUT: CTRL-O ***",0,2+8+16);
                     break;
@@ -2802,7 +2826,7 @@ else
                     break;
                 case -1:
                     cmenu(200);
-                    probey = 2;
+                    probey = 4;   /* CONTROLS is OPTIONS item 4 */
                     break;
                 case 0:                 // STEER SENSITIVITY -- adjusted by bar() below
                 case 2:                 // KEY TAP   -- adjusted by bar() below (legacy only)
@@ -2824,17 +2848,21 @@ else
             char  lbl[8];    // SyncDuke: the live 0..63 slider value, drawn just left of the bar
             int   kpal = (syncduke_kitty_active() || syncduke_evdev_active()) ? 1 : PHX(-7);   // greyed palette for KEY TAP/HOLD (moot under native key-up)
             int   tpal = PHX(-7);   // TURN SPEED / FAST TURN stay live -- they tune the synthetic high-latency turn
+            int   mpal = syncduke_mouse_enabled() ? PHX(-7) : 1;   // greyed when the mouse is OFF (nothing to tune)
             // Right-justified just left of the bar, with one character of blank space
             // (a digit's width) between the value and the slider trough.
             #define SD_VALX(STR) (c+167+40-16-sd_bignum_width("0")-sd_bignum_width(STR))
 
             v = syncduke_mouse_sens();
-            menutext(c,43+16*0,SHX(-7),PHX(-7),"MOUSE SENSITIVITY");
-            bar(c+167+40,43+16*0,&v,1,x==0,SHX(-7),PHX(-7));
+            menutext(c,43+16*0,SHX(-7),mpal,"MOUSE SENSITIVITY");
+            bar(c+167+40,43+16*0,&v,1,x==0,SHX(-7),mpal);
             syncduke_mouse_sens_set(v);
 
             menutext(c,43+16*1,SHX(-7),PHX(-7),"MOUSE");
-            menutext(c+160+40,43+16*1,SHX(-7),PHX(-7),syncduke_mouse_enabled()?"ON":"OFF");
+            {   int mm = syncduke_mouse_mode();
+                menutext(c+160+40,43+16*1,SHX(-7),PHX(-7),
+                         mm==0 ? "OFF" : mm==2 ? "FOLLOW" : "STEER");
+            }
 
             // Keyboard-feel knobs: only meaningful on terminals that can't send key-up.  Under
             // kitty they're greyed (kpal) and non-adjustable (onbar excludes them, so x is never
@@ -2880,7 +2908,8 @@ else
             {
 
                 case -1:
-					cmenu(200); 
+					cmenu(200);
+					probey = 3;   /* GAME OPTIONS is OPTIONS item 3 */
                     break;
 
                 case 0:
@@ -3243,94 +3272,6 @@ else
 			}
 
 			gametext(320>>1,47+(4+1)*8,"*** USE ARROWS OR DEL KEY ***",0,2+8+16);
-
-			break;
-
-        case 706: // Video setup
-			// FIX_00042: Build in Video setup.
-			c = (320>>1)-120;
-            rotatesprite(320<<15,19<<16,65536L,0,MENUBAR,16,0,10,0,0,xdim-1,ydim-1);
-            menutext(320>>1,24,0,0,"VIDEO SETUP");
-
-			onbar = (probey == 2 || probey == 3);   /* SCREEN SIZE / BRIGHTNESS bars */
-			x = probe(c+6,43,16,5);                  /* RESOLUTION removed (fixed resolution in a door) */
-			
-			switch(x)
-			{
-				case -6: // cursor idle on the FPS option (4)
-					gametext(320>>1,43+16*7,"*** SHORTCUT: TYPE DNRATE ***",0,2+8+16); // center-i
-					
-					break;
-
-				case -2: // cursor idle on the togglefullscreen option (0)
-					gametext(320>>1,43+16*7,"*** SHORTCUT: ALT-ENTER ***",0,2+8+16); // center-i
-
-					break;
-
-				case -1:
-					cmenu(200);
-					probey = 4; // back to the general option menu
-					break;
-
-				case 0:
-					BFullScreen = !BFullScreen;
-					SDL_QuitSubSystem(SDL_INIT_VIDEO);
-					_platform_init(0, NULL, "Duke Nukem 3D", "Duke3D");
-					_setgamemode(ScreenMode,validmodexdim[current_resolution],validmodeydim[current_resolution]);
-					break;
-
-                case 1:
-                    ud.detail = 1-ud.detail;
-                    break;
-
-				case 4:
-					ud.tickrate ^= 1;
-					vscrn(); // FIX_00056: Refresh issue w/FPS, small Weapon and custom FTA, when screen resized down
-					break;
-			}
-				
-			menutext(c,43,SHX(-3),PHX(-3),"FULLSCREEN");
-			menutext(c+160+40,43,0,0,BFullScreen?"ON":"OFF");
-			
-			menutext(c,43+16*1,SHX(-2),PHX(-2),"DETAIL");
-			menutext(c+160+40,43+16*1,0,0,ud.detail?"HIGH":"LOW");
-			{
-				int32 screen_size = ud.screen_size;
-
-				// FIX_00027: Added an extra small statusbar (HUD)
-	            menutext(c,43+16*2,SHX(-5),PHX(-5),"SCREEN SIZE");
-	            bar(c+167+40,43+16*2,(short *)&screen_size,-4,x==2,SHX(-5),PHX(-5));
-				if(ud.screen_size==4)
-				{
-					if(screen_size==0)
-					{
-						ud.extended_screen_size++;
-						if(ud.extended_screen_size==2)
-						{
-							ud.extended_screen_size = 1;
-							ud.screen_size -= 4;
-						}
-					}
-					else if(screen_size==8)
-					{
-						ud.extended_screen_size--;
-						if(ud.extended_screen_size<0)
-						{
-							ud.extended_screen_size=0;
-							ud.screen_size += 4;
-						}
-					}
-				}
-				else
-					ud.screen_size = screen_size;
-			}
-
-            menutext(c,43+16*3,SHX(-6),PHX(-6),"BRIGHTNESS");
-            bar(c+167+40,43+16*3,(short *)&ud.brightness,8,x==3,SHX(-6),PHX(-6));
-            if(x==3) setbrightness(ud.brightness>>2,&ps[myconnectindex].palette[0]);
-
-			menutext(c,43+16*4,SHX(-2),PHX(-2),"SHOW FPS");
-			menutext(c+160+40,43+16*4,0,0,(ud.tickrate&1)?"ON":"OFF");
 
 			break;
 
