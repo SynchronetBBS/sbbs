@@ -392,6 +392,10 @@ void allowtimetocorrecterrorswhenquitting(void)
 #define MAXUSERQUOTES 4
 int32_t quotebot, quotebotgoal;
 short user_quote_time[MAXUSERQUOTES];
+
+// SyncDuke: countdown for the level-start "PRESS F1 or ^A for HELP" text hint,
+// set only at the first level of a new game (see newgame() in premap.c).
+int32_t syncduke_help_hint = 0;
 char  user_quote[MAXUSERQUOTES][128];
 // uint8_t  typebuflen,typebuf[41];
 
@@ -8694,6 +8698,11 @@ int main(int argc,char  **argv)
         	if(ud.show_help == 0 && show_shareware > 0 && (ps[myconnectindex].gm&MODE_MENU) == 0 )
             	rotatesprite((320-50)<<16,9<<16,65536L,0,BETAVERSION,0,0,2+8+16+128,0,0,xdim-1,ydim-1);
 
+        // SyncDuke: level-start help hint (first level of a new game). Text, so it can
+        // name the terminal's ^A alongside F1; self-suppresses over the menu/help screen.
+        if( syncduke_help_hint > 0 && ud.show_help == 0 && (ps[myconnectindex].gm&MODE_MENU) == 0 )
+            gametext(320>>1, 9, "PRESS F1 or ^A for HELP", 0, 2+8+16);   // top, like the original
+
         nextpage();
     }
 
@@ -9715,6 +9724,9 @@ uint8_t  domovethings(void)
             pub = NUMPAGES;
         }
     }
+
+    if( syncduke_help_hint > 0 )   // SyncDuke: age out the level-start help hint
+        syncduke_help_hint--;
 
     everyothertime++;
 

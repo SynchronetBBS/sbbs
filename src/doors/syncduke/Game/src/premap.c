@@ -1027,6 +1027,14 @@ void newgame(uint8_t  vn,uint8_t  ln,uint8_t  sk)
 
     show_shareware = 26*34;
 
+    /* SyncDuke: the "PRESS F1 or ^A for HELP" hint shows only at the first level of a
+     * new game (E1L1) -- you never transition back to it, so this fires only on a fresh
+     * start. ~5s at the display frame rate; drawn/aged in game.c's display loop. */
+    {
+        extern int32_t syncduke_help_hint;
+        syncduke_help_hint = (vn == 0 && ln == 0) ? 26*5 : 0;
+    }
+
     ud.level_number =   ln;
     ud.volume_number =  vn;
     ud.player_skill =   sk;
