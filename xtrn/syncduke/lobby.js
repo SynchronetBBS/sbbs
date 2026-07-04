@@ -139,6 +139,8 @@ function sd_create() {
 		console.pause();
 		return;
 	}
+	gl.release_create_lock(SD_GAMES);   // game registered/joinable -> free the setup lock
+	                                     // (mp_create's finally is the safety net for aborts)
 
 	sd_send_pages(page_targets, lev, modelabel);
 
@@ -171,42 +173,28 @@ function sd_mode_label(mode) {
 	return "Co-op";
 }
 
-// Join a co-op match listed in the registry (this system or a same-LAN peer).
-function sd_join() {
-	var games = sd_list_open_games(cfg);
-	if (!games.length) {
-		console.print("\1h\1wNo multiplayer games are waiting.\1n\r\n");
-		if (console.yesno("Create one now"))
-			sd_create();
-		return;
-	}
+// [M]ultiplayer: run the shared lobby flow (gl.multiplayer_flow) with SyncDuke's
+// callbacks. Replaces the old separate [J]oin/[C]reate menu keys. No external join.
+function sd_multiplayer() {
+	gl.multiplayer_flow({
+		games_dir: SD_GAMES,
+		list: function () { return sd_list_open_games(cfg); },
+		label: function (g) {
+			return g.host + "'s " + sd_mode_label(g.mode) + " game (E1L"
+			    + g.level + " " + g.levelname + ")";
+		},
+		create: sd_create,
+		join: sd_join_selected
+	});
+}
 
-	var sel;
-	if (games.length == 1) {
-		sel = games[0];
-		console.print("\r\n\1h\1cJoining \1n\1w" + sel.host + "\1h\1c's " + sd_mode_label(sel.mode)
-		    + " game\1n (E1L" + sel.level + " " + sel.levelname + ")...\1n\r\n");
-	} else {
-		console.print("\r\n\1h\1cGames waiting:\1n\r\n");
-		console.print("    \1n\1wHost              Mode       Level\1n\r\n");
-		var i;
-		for (i = 0; i < games.length; i++) {
-			var g = games[i];
-			console.print(format(" \1h\1y%2d\1n %-17s %-10s E1L%s %s\r\n",
-			    i + 1, g.host, sd_mode_label(g.mode), g.level, g.levelname));
-		}
-		console.print("\r\nJoin which [\1h1-" + games.length + "\1n], \1hQ\1n to cancel: ");
-		var k = console.getkeys("Q", games.length);
-		if (k == "Q" || !k)
-			return;
-		sel = games[k - 1];
-	}
-
-	// Claim the game by dropping a marker file beside the master's entry (a separate
-	// file, so the master's heartbeat re-writes never clobber it). The claim is an
-	// EXCLUSIVE create: if it returns false, another node claimed this game a moment
-	// ago -- bail cleanly instead of launching a door that can't connect. We do NOT
-	// remove the entry (the master owns its lifecycle + clears it on exit).
+// Join an already-selected entry (the shared flow's join callback): claim it
+// exclusively by dropping a marker file beside the master's entry (a separate
+// file, so the master's heartbeat re-writes never clobber it). The claim is an
+// EXCLUSIVE create: if it returns false, another node claimed this game a moment
+// ago -- bail cleanly instead of launching a door that can't connect. We do NOT
+// remove the entry (the master owns its lifecycle + clears it on exit).
+function sd_join_selected(sel) {
 	if (!sd_claim_game(sel)) {
 		console.print("\r\n\1h\1wThat game was just claimed by someone else.\1n\r\n");
 		console.pause();
@@ -267,14 +255,14 @@ function sd_draw_panel(bgfn) {
 		console.cleartoeol();
 		console.print(cells[r]);
 	}
-	console.gotoxy(1, rows);                  // park the cursor out of the panel body
+	console.gotoxy(cols, rows);               // park the cursor in the lower-right corner
 }
 
 // Live lobby: refresh the panel ~1/s and return the first valid menu key. The static
 // menu's blocking getkeys() calls nodesync() for us (telegrams, sysop interrupt,
 // forced chat); the poll loop must do it explicitly.
 function sd_lobby_wait() {
-	var allowed = "CJPLHQ";                   // '?'/Enter -> redraw (handled below)
+	var allowed = "MPLHQ";                    // '?'/Enter -> redraw (handled below)
 	var mynode = bbs.node_num;
 	var oldctrl = console.ctrlkey_passthru;
 	console.ctrlkey_passthru = -1;
@@ -320,7 +308,8 @@ function sd_wait_bg(lev, modelabel) {
 	console.print("\1n\1h\1cSyncDuke \1y-\1n\1h\1c Waiting Room\1n\r\n\r\n");
 	console.print(" Hosting \1h\1wE1L" + lev.num + " " + lev.name + "\1n \1c(" + modelabel + ")\1n.\r\n");
 	console.print(" \1h\1yWaiting for a player to join...\1n\r\n");
-	console.print("\r\n \1hQ\1n cancel    \1hP\1n page nodes\r\n");
+	var canpage = gl.page_targets(gl.door_ars(SD_DIR)).length > 0;
+	console.print("\r\n \1hQ\1n cancel" + (canpage ? "    \1hP\1n page nodes" : "") + "\r\n");
 }
 
 // The master's waiting room: heartbeat the registry entry so joiners keep seeing it,
@@ -371,8 +360,10 @@ function sd_wait_room(entry, port, lev, mode) {
 				sd_write_entry(cfg, port, lev.num, mode);   // heartbeat before the blocking
 				lastbeat = time();                          // page prompt + pause
 				var targets = sd_prompt_page();
-				sd_send_pages(targets, lev, modelabel);
-				console.pause();
+				if (targets.length) {           // no pageable nodes / declined -> no empty [Hit a key]
+					sd_send_pages(targets, lev, modelabel);
+					console.pause();
+				}
 				bg();
 				sd_panel_rows_prev = -1;
 			}
@@ -405,7 +396,7 @@ function sd_main() {
 			k = sd_lobby_wait();
 		} else {
 			console.clear();
-			// The menu art is lobby.msg (Ctrl-A); its option keys (C/J/P/L/H/Q) are
+			// The menu art is lobby.msg (Ctrl-A); its option keys (M/P/L/H/Q) are
 			// baked into the themeable file. Pass control keys to us so Ctrl-T/etc.
 			// don't draw over it, but keep Ctrl-P with the BBS for node paging.
 			console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
@@ -413,16 +404,14 @@ function sd_main() {
 			console.ctrlkey_passthru = -1;
 			console.ctrlkey_passthru = "-P";
 			// CR/'?' return -> no action -> the loop redraws the menu.
-			k = console.getkeys("\rCJPLH?Q");
+			k = console.getkeys("\rMPLH?Q");
 			console.ctrlkey_passthru = oldctrl;
 		}
 		console.clear();
 		if (k == "Q")
 			break;
-		else if (k == "C")
-			sd_create();
-		else if (k == "J")
-			sd_join();
+		else if (k == "M")
+			sd_multiplayer();
 		else if (k == "P")
 			sd_solo();
 		else if (k == "L")

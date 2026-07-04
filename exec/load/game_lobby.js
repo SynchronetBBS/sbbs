@@ -482,8 +482,6 @@ function node_cell(node, cw) {
 	return nc + node.name + "\1n" + rpad(clip(node.rest, rw), rw) + "\1n";
 }
 
-function blank_cell(cw) { return rpad("", cw); }
-
 // ---------------------------------------------------------------------------
 // Events log (events.jsonl) -- generic read/prune + a formatted activity feed.
 // Game-agnostic: each event is whatever object the caller wrote via
@@ -598,12 +596,13 @@ function activity_cell(e, cw, text_fn) {
 
 // Build a bottom-of-lobby panel's cells (one full-width cell per row -- less
 // truncation than two narrow columns): live nodes first (players of `marker` first,
-// via live_nodes), then recent-activity cells from `events` (newest first), padded
-// with blanks to >= 3 rows and capped at `max_rows` (default 6). `cols` sizes the
-// single column; `text_fn` renders each event body. Returns { cells, cw }.
+// via live_nodes), then recent-activity cells from `events` (newest first), capped
+// at `max_rows` (default 6). No blank padding: the panel is exactly its content, so
+// with nothing to show it occupies NO rows and the lobby art is fully preserved; it
+// grows upward over the art only as nodes/events appear. `cols` sizes the single
+// column; `text_fn` renders each event body. Returns { cells, cw }.
 function panel_cells(cols, marker, events, text_fn, max_rows) {
 	var maxRows = (max_rows > 0) ? max_rows : 6;
-	var minRows = (maxRows < 3) ? maxRows : 3;   // blank-pad floor, never above maxRows
 	var cw = cols - 1;                        // one cell, full width (avoid last-col wrap)
 	var cells = [], i;
 	var nodes = live_nodes(maxRows, marker);
@@ -611,8 +610,6 @@ function panel_cells(cols, marker, events, text_fn, max_rows) {
 		cells.push(node_cell(nodes[i], cw));
 	for (i = 0; cells.length < maxRows && i < events.length; i++)
 		cells.push(activity_cell(events[i], cw, text_fn));
-	while (cells.length < minRows)
-		cells.push(blank_cell(cw));
 	return { cells: cells, cw: cw };
 }
 
@@ -662,7 +659,7 @@ function multiplayer_flow(opts) {
 	var games = opts.list();
 
 	if (games.length == 0) {
-		if (console.yesno("\r\nNo multiplayer games are waiting. Create one"))
+		if (console.yesno("No multiplayer games are waiting. Create one"))
 			mp_create(opts);
 		else if (opts.external)
 			opts.external();
@@ -670,7 +667,7 @@ function multiplayer_flow(opts) {
 	}
 
 	if (games.length == 1) {
-		if (console.yesno("\r\nJoin " + opts.label(games[0]))) {
+		if (console.yesno("Join " + opts.label(games[0]))) {
 			opts.join(games[0]);
 			return;
 		}
@@ -699,7 +696,7 @@ function multiplayer_flow(opts) {
 // Numbered picker for >= 2 games. Returns the chosen game, or null to skip.
 function mp_pick(games, opts) {
 	var i;
-	console.print("\r\n\1h\1cMultiplayer games:\1n\r\n");
+	console.print("\1h\1cMultiplayer games:\1n\r\n");
 	for (i = 0; i < games.length; i++)
 		console.print("  \1h\1w" + (i + 1) + "\1n) " + opts.label(games[i]) + "\r\n");
 	console.print("\r\nJoin which? [\1h1\1n-\1h" + games.length
@@ -725,6 +722,8 @@ function mp_create(opts) {
 // (creator bailed pre-register) -> we create. Q aborts.
 function mp_wait_for_game(opts) {
 	console.clear();
+	console.line_counter = 0;   // discard the create-prompt pager count so the wait
+	                            // screen (and the Q-cancel exit) don't fire a [Hit a key]
 	console.print("\r\n\1h\1wA multiplayer game is being set up -- please wait...\1n"
 	    + "   (\1hQ\1n=cancel)\r\n");
 	while (!js.terminated && bbs.online) {

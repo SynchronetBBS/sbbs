@@ -359,7 +359,10 @@ function sd_muster_host(entry, port, ws, mode, skill, target) {
 		console.print("   \1n\1h\1w" + user.alias + " \1k\1h(host)\1n\r\n");
 		for (i = 0; i < wl.length; i++)
 			console.print("   \1n\1w" + (wl[i].alias || ("node " + wl[i].node)) + "\1n\r\n");
-		console.print("\r\n \1hS\1n start (needs 2+)   \1hQ\1n cancel   \1hP\1n page nodes\r\n");
+		var canstart = K >= 2;   // manual Start is only viable with 2+ assembled
+		var canpage = gl.page_targets(gl.door_ars(SD_DIR)).length > 0;
+		console.print("\r\n " + (canstart ? "\1hS\1n start   " : "")
+		    + "\1hQ\1n cancel" + (canpage ? "   \1hP\1n page nodes" : "") + "\r\n");
 	};
 	// Reflect the wait in the whole-BBS node list ("waiting for N more players").
 	var update_status = function (n) {
@@ -420,8 +423,10 @@ function sd_muster_host(entry, port, ws, mode, skill, target) {
 				sd_write_muster(cfg, port, ws, mode, target, sd_muster_players(entry));
 				lastbeat = time();
 				var targets = sd_prompt_page_players();
-				sd_send_pages(targets, mode);
-				console.pause();
+				if (targets.length) {           // no pageable nodes / declined -> no empty [Hit a key]
+					sd_send_pages(targets, mode);
+					console.pause();
+				}
 				bg();
 				sd_panel_rows_prev = -1;
 			}
@@ -502,7 +507,9 @@ function sd_create()
 		console.pause();
 		return;
 	}
-	console.print("\r\n\1h\1gGame created.\1n Entering the waiting room; others \1hJ\1noin.\r\n");
+	gl.release_create_lock(SD_GAMES);   // game registered/joinable -> free the setup lock
+	                                     // (mp_create's finally is the safety net for aborts)
+	console.print("\r\n\1h\1gGame created.\1n Entering the waiting room; others use \1hM\1nultiplayer to join.\r\n");
 	sd_send_pages(page_targets, mode);
 
 	// clear_muster is idempotent: on "started" sd_muster_go already cleared it; on
@@ -593,49 +600,59 @@ function sd_muster_join(sel, ws) {
 	}
 }
 
-// Browse the registry and join a game on this system. The joiner inherits the
-// host's WAD set from the registry -- no address typing, no WAD-set guessing.
-function sd_browse()
+// [M]ultiplayer: run the shared lobby flow (gl.multiplayer_flow) with SyncDOOM's
+// callbacks -- list/label the registry, create, join a picked entry, or (sysop
+// opt-in) offer an external-by-address join. Replaces the old separate
+// [J]oin/[C]reate/[E]xternal menu keys.
+function sd_multiplayer()
 {
-	var games = sd_list_games(cfg);
-	if (!games.length) {
-		console.print("\1h\1wNo multiplayer games are waiting.\1n\r\n");
-		if (console.yesno("Create a game now"))
-			sd_create();
+	gl.multiplayer_flow({
+		games_dir: SD_GAMES,
+		list: function () { return sd_list_games(cfg); },
+		label: function (g) {
+			return g.host + "'s game (" + g.wadset + ", " + g.mode + ", "
+			    + g.players + "/" + g.maxplayers + ")";
+		},
+		create: sd_create,
+		join: sd_join_selected,
+		external: sd_mp_external_offer
+	});
+}
+
+// Join an already-selected mustering entry (the shared flow's join callback):
+// validate its WAD set, show the pre-join note/.msg, then hand off to the
+// muster joiner.
+function sd_join_selected(sel)
+{
+	var ws = sd_resolve_wadset(sel);
+	if (!ws)
 		return;
-	}
+	sd_show_note(ws);
+	sd_show_wad_msgs(cfg, ws);
+	sd_muster_join(sel, ws);
+}
 
-	var sel;
-	if (games.length == 1) {
-		// Only one game running -- skip the list and the "join which?" prompt and
-		// just join it (still validated below).
-		sel = games[0];
-		console.print("\r\n\1h\1cJoining \1n\1w" + sel.host + "\1h\1c's game\1n ("
-		    + sel.wadset + ", " + sel.mode + ", " + sel.players + "/"
-		    + sel.maxplayers + ")...\1n\r\n");
-	} else {
-		console.print("\r\n\1h\1cNetwork games:\1n\r\n");
-		console.print("    \1n\1wHost              Mode        WAD set       Players  Status\1n\r\n");
-		var i;
-		for (i = 0; i < games.length; i++) {
-			var g = games[i];
-			// players/max as one fixed-width field so Status lines up under its header.
-			console.print(format(" \1h\1y%2d\1n %-17s %-11s %-13s %-7s  \1n\1w%s\1n\r\n",
-			    i + 1, g.host, g.mode, g.wadset, g.players + "/" + g.maxplayers, g.status));
-		}
-		console.print("\r\nJoin which [\1h1-" + games.length + "\1n], \1hQ\1n to cancel: ");
+// Offer external-by-address join, self-gated on the sysop opt-in ([net]
+// allow_external). Called by the shared flow when no/declined join+create.
+function sd_mp_external_offer()
+{
+	var allow = (cfg.net.allow_external === true || cfg.net.allow_external === "true");
+	if (allow && console.yesno("\r\nJoin an external server by address"))
+		sd_join_external();
+}
 
-		var k = console.getkeys("Q", games.length);
-		if (k == "Q" || !k)
-			return;
-		sel = games[k - 1];
-	}
-
+// Validate a selected mustering entry before joining: the game must still be
+// mustering (not already in progress/gone), and the host's WAD set must
+// resolve to an installed set here. Returns the wadset object, or null (having
+// already messaged the user) if the selection isn't joinable. Used by
+// sd_join_selected (the [M]ultiplayer flow's join callback).
+function sd_resolve_wadset(sel)
+{
 	// A lobby muster is joinable while assembling.
 	if (sel.status != "mustering") {
 		console.print("\r\n\1h\1rThat game is already in progress; you can't join it.\1n\r\n");
 		console.pause();
-		return;
+		return null;
 	}
 
 	// Inherit the host's WAD set (look it up by id, then verify it's installed).
@@ -644,18 +661,15 @@ function sd_browse()
 		console.print("\r\n\1h\1rThis system has no WAD set '" + sel.wadset
 		    + "'; can't join.\1n\r\n");
 		console.pause();
-		return;
+		return null;
 	}
 	if (!sd_wadset_files_present(cfg, ws)) {
 		console.print("\r\n\1h\1rThe WAD files for '" + ws.name
 		    + "' are not installed here.\1n\r\n");
 		console.pause();
-		return;
+		return null;
 	}
-
-	sd_show_note(ws);
-	sd_show_wad_msgs(cfg, ws);
-	sd_muster_join(sel, ws);
+	return ws;
 }
 
 // Join an arbitrary server by address (external / cross-system). Manual because
@@ -755,15 +769,15 @@ function sd_draw_panel(bgfn)
 		console.cleartoeol();
 		console.print(cells[r]);
 	}
-	console.gotoxy(1, rows);                  // park the cursor out of the panel body
+	console.gotoxy(cols, rows);               // park the cursor in the lower-right corner
 }
 
 // Live lobby: refresh the panel ~1/s and return the first valid menu key. The
 // blocking getkeys() used in the static menu calls nodesync() for us (telegrams,
 // sysop interrupt, forced chat); the poll loop must do it explicitly.
-function sd_lobby_wait(allow_ext)
+function sd_lobby_wait()
 {
-	var allowed = "JCPLHQ" + (allow_ext ? "E" : "");   // '?'/Enter -> redraw (handled below)
+	var allowed = "MPLHQ";                    // '?'/Enter -> redraw (handled below)
 	var mynode = bbs.node_num;
 	// Pass control keys to us so the BBS's built-in Ctrl-T/Ctrl-U/etc. don't draw
 	// over the live panel (the poll loop ignores them) -- but keep Ctrl-P with the
@@ -812,10 +826,6 @@ function sd_main()
 	mkpath(system.data_dir + "syncdoom/");   // door's -eventlog append won't create it
 	gl.prune_events(SD_EVENTS, 2000, 1000);   // bound the activity log on entry (rare rewrite)
 
-	// Join-by-address is for external/cross-system servers; off unless the sysop
-	// opts in with [net] allow_external = true in syncdoom.ini.
-	var allow_ext = (cfg.net.allow_external === true
-	                 || cfg.net.allow_external === "true");
 	// The live who's-online/activity panel is opt-in ([lobby] live = true): it
 	// repaints the bottom rows ~1/s, so it suits ANSI terminals only.
 	var live = (cfg.lobby
@@ -826,17 +836,16 @@ function sd_main()
 	while (!js.terminated && bbs.online) {
 		var k;
 		// The lobby menu is lobby.msg -- DOOM ANSI art (by "cool t" / tdd, converted
-		// to Ctrl-A with PabloDraw), its J/C/P/H/Q options remapped to our actions.
+		// to Ctrl-A with PabloDraw), its M/P/L/H/Q options remapped to our actions.
 		if (live) {
 			// The art's bottom blank lines (and rows above, as needed) host the live
 			// panel; the panel loop draws the art and polls for a key.
 			sd_draw_art();
-			k = sd_lobby_wait(allow_ext);
+			k = sd_lobby_wait();
 		} else {
 			console.clear();
 			// The art IS the menu: its option keys are baked into the themeable
-			// lobby.msg (J/C/P/L/H/Q, plus E where the sysop enables external joins
-			// and adds it). No hardcoded hint strings here.
+			// lobby.msg (M/P/L/H/Q). No hardcoded hint strings here.
 			console.printfile(SD_DIR + "lobby.msg", P_NOPAUSE);
 			// Pass control keys to us so Ctrl-T/Ctrl-U/etc. don't draw over the art,
 			// but keep Ctrl-P with the BBS for node paging. Restore after.
@@ -845,16 +854,14 @@ function sd_main()
 			console.ctrlkey_passthru = "-P";
 			// CR is in the set so Enter returns (-> no action -> the loop redraws);
 			// '?' likewise falls through to a redraw.
-			k = console.getkeys("\rJCPLH?" + (allow_ext ? "E" : "") + "Q");
+			k = console.getkeys("\rMPLH?Q");
 			console.ctrlkey_passthru = oldctrl;
 		}
 		console.clear();                 // wipe the art before the chosen action draws
 		if (k == "Q")
 			break;
-		else if (k == "J")
-			sd_browse();
-		else if (k == "C")
-			sd_create();
+		else if (k == "M")
+			sd_multiplayer();
 		else if (k == "P")
 			sd_solo();
 		else if (k == "L")
@@ -862,8 +869,6 @@ function sd_main()
 		else if (k == "H")
 			sd_controls();
 		// '?' or Enter: no action -> the loop top redraws lobby.msg
-		else if (k == "E" && allow_ext)
-			sd_join_external();
 	}
 }
 
