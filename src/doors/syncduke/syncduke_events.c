@@ -148,12 +148,22 @@ static void ev_frag(int victim)
 
 void syncduke_events_tick(void)
 {
-	static int in_game, dead_last;
+	static int in_game, dead_last, was_eol;
 	static int last_vol = -1, last_lev = -1;
 	int        vol = ud.volume_number, lev = ud.level_number;
+	int        eol = (ps[myconnectindex].gm & MODE_EOL) != 0;   /* level cleared -> bonus screen */
 
 	if (syncduke_eventlog_path()[0] == '\0')
 		return;
+
+	/* Level cleared: the reliable signal is the MODE_EOL edge (end-of-level). During
+	 * MODE_EOL ev_real_game() goes false, dropping in_game BEFORE the next level loads --
+	 * so the old level-number-change edge never fired for the normal clear->bonus->next
+	 * flow (and the few that slipped through logged secs=0, timed at level entry). Log the
+	 * level just finished, with its real elapsed time, here instead. */
+	if (eol && !was_eol && in_game)
+		ev_level(vol, lev, ev_secs());
+	was_eol = eol;
 
 	if (ev_real_game() && !in_game) {
 		in_game = 1;
