@@ -82,7 +82,7 @@ bool get_new_fview(fview_t* fview)
 {
 	memset(fview, 0, sizeof *fview);
 	fview->ex_mode = EX_NATIVE;
-	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. txt, zip or *)", fview->ext, MAX_FILEEXT_LEN, K_UPPER | K_TRIM) <= 0)
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. txt, zip or *)", fview->ext, MAX_FILEEXT_LEN, K_TRIM) <= 0)
 		return false;
 	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", fview->cmd, LEN_CMD, K_TRIM) > 0;
@@ -92,7 +92,7 @@ bool get_new_ftest(ftest_t* ftest)
 {
 	memset(ftest, 0, sizeof *ftest);
 	ftest->ex_mode = EX_NATIVE;
-	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", ftest->ext, MAX_FILEEXT_LEN, K_UPPER | K_TRIM) < 1)
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", ftest->ext, MAX_FILEEXT_LEN, K_TRIM) < 1)
 		return false;
 	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", ftest->cmd, LEN_CMD, K_TRIM) > 0;
@@ -102,7 +102,7 @@ bool get_new_fcomp(fcomp_t* fcomp)
 {
 	memset(fcomp, 0, sizeof *fcomp);
 	fcomp->ex_mode = EX_NATIVE;
-	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", fcomp->ext, MAX_FILEEXT_LEN, K_UPPER | K_TRIM) < 1)
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", fcomp->ext, MAX_FILEEXT_LEN, K_TRIM) < 1)
 		return false;
 	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", fcomp->cmd, LEN_CMD, K_TRIM) > 0;
@@ -112,7 +112,7 @@ bool get_new_dlevent(dlevent_t* dlevent)
 {
 	memset(dlevent, 0, sizeof *dlevent);
 	dlevent->ex_mode = EX_NATIVE;
-	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", dlevent->ext, MAX_FILEEXT_LEN, K_UPPER | K_TRIM) < 1)
+	if (uifc.input(WIN_MID | WIN_SAV, 0, 0, "File Extension (e.g. zip or *)", dlevent->ext, MAX_FILEEXT_LEN, K_TRIM) < 1)
 		return false;
 	uifc.helpbuf = SCFG_CMDLINE_PREFIX_HELP SCFG_CMDLINE_SPEC_HELP;
 	return uifc.input(WIN_MID | WIN_SAV, 0, 0, "Command Line", dlevent->cmd, LEN_CMD, K_TRIM) > 0;
