@@ -262,7 +262,7 @@ function sd_draw_panel(bgfn) {
 // menu's blocking getkeys() calls nodesync() for us (telegrams, sysop interrupt,
 // forced chat); the poll loop must do it explicitly.
 function sd_lobby_wait() {
-	var allowed = "MPLHQ";                    // '?'/Enter -> redraw (handled below)
+	var allowed = "MSLHQ";                    // '?'/Enter -> redraw (handled below)
 	var mynode = bbs.node_num;
 	var oldctrl = console.ctrlkey_passthru;
 	console.ctrlkey_passthru = -1;
@@ -404,7 +404,7 @@ function sd_main() {
 			console.ctrlkey_passthru = -1;
 			console.ctrlkey_passthru = "-P";
 			// CR/'?' return -> no action -> the loop redraws the menu.
-			k = console.getkeys("\rMPLH?Q");
+			k = console.getkeys("\rMSLH?Q");
 			console.ctrlkey_passthru = oldctrl;
 		}
 		console.clear();
@@ -412,7 +412,7 @@ function sd_main() {
 			break;
 		else if (k == "M")
 			sd_multiplayer();
-		else if (k == "P")
+		else if (k == "S")
 			sd_solo();
 		else if (k == "L")
 			sd_show_activity();

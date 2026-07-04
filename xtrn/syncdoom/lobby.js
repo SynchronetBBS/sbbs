@@ -777,7 +777,7 @@ function sd_draw_panel(bgfn)
 // sysop interrupt, forced chat); the poll loop must do it explicitly.
 function sd_lobby_wait()
 {
-	var allowed = "MPLHQ";                    // '?'/Enter -> redraw (handled below)
+	var allowed = "MSLHQ";                    // '?'/Enter -> redraw (handled below)
 	var mynode = bbs.node_num;
 	// Pass control keys to us so the BBS's built-in Ctrl-T/Ctrl-U/etc. don't draw
 	// over the live panel (the poll loop ignores them) -- but keep Ctrl-P with the
@@ -854,7 +854,7 @@ function sd_main()
 			console.ctrlkey_passthru = "-P";
 			// CR is in the set so Enter returns (-> no action -> the loop redraws);
 			// '?' likewise falls through to a redraw.
-			k = console.getkeys("\rMPLH?Q");
+			k = console.getkeys("\rMSLH?Q");
 			console.ctrlkey_passthru = oldctrl;
 		}
 		console.clear();                 // wipe the art before the chosen action draws
@@ -862,7 +862,7 @@ function sd_main()
 			break;
 		else if (k == "M")
 			sd_multiplayer();
-		else if (k == "P")
+		else if (k == "S")
 			sd_solo();
 		else if (k == "L")
 			sd_show_activity();
