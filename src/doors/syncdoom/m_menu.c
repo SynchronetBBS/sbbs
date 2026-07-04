@@ -80,6 +80,14 @@ extern int		g_kitty_active;		// syncdoom: kitty protocol negotiated -> native ke
 extern int		g_evdev_active;		// syncdoom: SyncTERM evdev -> same (true key-up), so the sliders are moot too
 extern void		sd_save_user_prefs(void);
 
+// syncdoom: terminal-mouse controls for the Options > MOUSE sub-menu (defined in
+// syncdoom.c). Mode is off/steer/follow; sensitivity is a 1..max turn-rate scale.
+extern int		sd_mouse_mode(void);		// 0 off / 1 steer / 2 follow
+extern int		sd_mouse_sens(void);		// 1..sd_mouse_sens_max()
+extern int		sd_mouse_sens_max(void);
+extern void		sd_mouse_cycle(void);		// cycle off/steer/follow (= Ctrl-O)
+extern void		sd_mouse_sens_step(int up);	// step the sensitivity one stop
+
 //
 // defaulted values
 //
@@ -214,6 +222,9 @@ void M_InputHold(int choice);
 void M_InputTurn(int choice);
 void M_InstantTurn(int choice);  // syncdoom: FAST TURN on/off checkbox
 void M_DrawInputSliders(void);
+
+void M_MouseMode(int choice);    // syncdoom: cycle off/steer/follow (inline Options row)
+void M_MouseSens(int choice);    // syncdoom: sensitivity slider (inline Options row)
 
 void M_FinishReadThis(int choice);
 void M_LoadSelect(int choice);
@@ -361,7 +372,6 @@ menu_t  NewDef =
 enum
 {
     endgame,
-    messages,
     soundvol,           // syncdoom: Sound Volume (was Graphic Detail)
     scrnsize,
     option_empty1,      // the screen-size thermo row
@@ -369,13 +379,14 @@ enum
     inputhold,
     inputturn,
     instantturn,        // syncdoom FAST TURN on/off (ENTER toggles)
+    mousemode,          // syncdoom terminal-mouse: OFF/STEER/FOLLOW (ENTER cycles)
+    mousesens,          // syncdoom terminal-mouse sensitivity slider (LEFT/RIGHT)
     opt_end
 } options_e;
 
 menuitem_t OptionsMenu[]=
 {
     {1,"M_ENDGAM",	M_EndGame,'e'},
-    {1,"M_MESSG",	M_ChangeMessages,'m'},
     {1,"M_SVOL",	M_Sound,'v'},       // syncdoom: Sound Volume (was Graphic Detail, moot in a terminal door)
     {2,"M_SCRNSZ",	M_SizeDisplay,'s'},
     {-1,"",0,'\0'},                 // option_empty1: the screen-size thermo row
@@ -383,6 +394,8 @@ menuitem_t OptionsMenu[]=
     {2,"",M_InputHold,'h'},
     {2,"",M_InputTurn,'u'},
     {1,"",M_InstantTurn,'i'},       // FAST TURN checkbox (ENTER toggles)
+    {1,"",M_MouseMode,'m'},         // syncdoom: MOUSE mode cycle (inline, below the key rows)
+    {2,"",M_MouseSens,'n'},         // syncdoom: MOUSE sensitivity slider
     {-1,"",0,'\0'}
 };
 
@@ -1101,11 +1114,8 @@ void M_DrawOptions(void)
                                                PU_CACHE));
 
     // syncdoom: Sound Volume occupies the old Graphic Detail row -- a plain label
-    // (the High/Low patch is gone with it), so nothing to draw here.
-
-    V_DrawPatchDirect(OptionsDef.x + 120, OptionsDef.y + LINEHEIGHT * messages,
-                      W_CacheLumpName(DEH_String(msgNames[showMessages]),
-                                      PU_CACHE));
+    // (the High/Low patch is gone with it), so nothing to draw here. The MOUSE mode +
+    // sensitivity rows draw inline (below the key-feel rows) in M_DrawInputSliders.
 
     // Screen-size bar to the RIGHT of the "SCREEN SIZE" label, on its own row.
     M_DrawThermo(M_OptSliderX(), OptionsDef.y + LINEHEIGHT * scrnsize,
@@ -1163,6 +1173,22 @@ void M_DrawInputSliders(void)
 {
     int sx = M_OptSliderX();
     int yft = OptionsDef.y + LINEHEIGHT * instantturn + INPUT_YOFF;
+
+    // syncdoom: MOUSE mode + sensitivity, inline below the key-feel rows. Drawn here
+    // (before the kitty early-return) so they're ALWAYS live -- kitty/evdev is a
+    // keyboard protocol, so terminal mouse steering is unaffected by it.
+    {
+        int mode = sd_mouse_mode();
+        int ymo  = OptionsDef.y + LINEHEIGHT * mousemode + INPUT_YOFF;
+        int yse  = OptionsDef.y + LINEHEIGHT * mousesens + INPUT_YOFF;
+        M_WriteText(OptionsDef.x, ymo, "MOUSE");
+        M_WriteText(sx, ymo, mode == 0 ? "OFF" : mode == 2 ? "FOLLOW" : "STEER");
+        M_WriteText(OptionsDef.x, yse, "MOUSE SENS");
+        if (mode == 0)                       // greyed: nothing to tune while the mouse is off
+            M_WriteText(sx, yse, "OFF");
+        else
+            M_DrawThermo(sx, yse, sd_mouse_sens_max(), sd_mouse_sens() - 1);
+    }
 
     // Real key-up (kitty protocol or SyncTERM evdev) + Doom's native turn ramp, so these byte-path
     // key-feel knobs do nothing. Show them disabled ("NATIVE") rather than live bars.
@@ -1230,6 +1256,22 @@ void M_InstantTurn(int choice)
     if (g_kitty_active || g_evdev_active) return;         // FAST TURN is moot under kitty (native turn ramp)
     sd_instant_turn = !sd_instant_turn;
     sd_save_user_prefs();
+}
+
+//
+// SYNCDOOM terminal-mouse rows (inline on the Options menu, below the key-feel
+// sliders). The door owns the state (syncdoom.c); we just drive it -- the labels/
+// value/thermo are drawn by M_DrawInputSliders.
+//
+void M_MouseMode(int choice)
+{
+    (void)choice;                       // a cycle -- direction doesn't matter
+    sd_mouse_cycle();                   // OFF -> STEER -> FOLLOW (syncs SGR tracking + saves)
+}
+
+void M_MouseSens(int choice)
+{
+    sd_mouse_sens_step(choice);         // LEFT(0)=down, RIGHT(1)=up; inert while mouse is off
 }
 
 

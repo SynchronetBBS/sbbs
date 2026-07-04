@@ -1099,11 +1099,19 @@ static int          g_want_page     = 0;  // Ctrl-P pressed in-game -> run betwe
 #define MOUSE_STEER_MAX  110   // STEER: turn rate at the image edge (full deflection)
 #define MOUSE_FOLLOW_GAIN 24   // FOLLOW: turn units per cell of pointer travel per tic
 #define MOUSE_FOLLOW_EDGE 22   // FOLLOW: slow edge-creep turn rate when pinned at the edge
+// Mouse SENSITIVITY: a 1..9 slider (Mouse sub-menu) that scales both styles' turn
+// rate. The gains above are the feel at the middle stop (MOUSE_SENS_DEF); a rate is
+// multiplied by g_mouse_sens/MOUSE_SENS_DEF, so 5 == today's feel, 1 = 0.2x, 9 = 1.8x.
+#define MOUSE_SENS_MIN   1
+#define MOUSE_SENS_MAX   9
+#define MOUSE_SENS_DEF   5     // middle stop == the base gains above (multiplier 1.0)
 #define MOUSE_IDLE_MS    600   // steer relaxes to neutral after this long with no report
                                // (stops the runaway spin when the pointer leaves the
                                // window/loses focus -- terminals send no focus-out event)
 static int      g_mouse_mode      = MOUSE_STEER; // off/steer/follow ([input] mouse / -mouse)
 static int      g_base_mouse_mode = MOUSE_STEER; // house/built-in default (for per-user save diff)
+static int      g_mouse_sens      = MOUSE_SENS_DEF; // 1..9 turn-rate scale (Mouse sub-menu slider)
+static int      g_base_mouse_sens = MOUSE_SENS_DEF; // house/built-in default (per-user save diff)
 static int      g_mouse_cli       = 0;       // -mouse given on CLI (saved prefs won't override)
 static int      g_mouse_enabled   = 0;       // tracking actually turned on (mode != off)
 static int      g_mouse_col = 0, g_mouse_row = 0; // last reported pointer cell (1-based)
@@ -1261,7 +1269,7 @@ static int mouse_steer_rate(void)
 		return 0;
 	if (mag > halfw)
 		mag = halfw;                          // past the image edge -> full turn
-	mag = (mag - dz) * MOUSE_STEER_MAX / (halfw - dz);
+	mag = (mag - dz) * (MOUSE_STEER_MAX * g_mouse_sens / MOUSE_SENS_DEF) / (halfw - dz);
 	return (off < 0) ? -mag : mag;
 }
 
@@ -1277,15 +1285,15 @@ static int mouse_follow_rate(void)
 	delta = g_mouse_col - g_mouse_anchor_col;   // cells moved since last tic
 	g_mouse_anchor_col = g_mouse_col;           // consume it
 	if (delta != 0)
-		return delta * MOUSE_FOLLOW_GAIN;
+		return delta * MOUSE_FOLLOW_GAIN * g_mouse_sens / MOUSE_SENS_DEF;
 
 	// No motion this tic. If the pointer is jammed against the image edge, keep
 	// creeping so the player isn't stuck mid-turn; otherwise hold still.
 	mouse_view(&center, &halfw);
 	if (g_mouse_col <= center - halfw + 1)
-		return -MOUSE_FOLLOW_EDGE;
+		return -(MOUSE_FOLLOW_EDGE * g_mouse_sens / MOUSE_SENS_DEF);
 	if (g_mouse_col >= center + halfw - 1)
-		return  MOUSE_FOLLOW_EDGE;
+		return  (MOUSE_FOLLOW_EDGE * g_mouse_sens / MOUSE_SENS_DEF);
 	return 0;
 }
 
@@ -2975,6 +2983,10 @@ static void read_syncdoom_ini(const char *argv0)
 	// terminals without it. Legacy "on"/"true"/"yes" -> steer. Empty -> keep default.
 	iniGetString(ini, "input", "mouse", "", val);
 	g_mouse_mode = mouse_mode_parse(val, g_mouse_mode);
+	// [input] mouse_sens -- 1..9 turn-rate scale for both mouse styles (5 = default feel).
+	g_mouse_sens = iniGetInteger(ini, "input", "mouse_sens", g_mouse_sens);
+	if (g_mouse_sens < MOUSE_SENS_MIN) g_mouse_sens = MOUSE_SENS_MIN;
+	if (g_mouse_sens > MOUSE_SENS_MAX) g_mouse_sens = MOUSE_SENS_MAX;
 
 	// [game] quit_effect -- fate of a departed player's marine: keep (vanilla,
 	// stays frozen), vanish (remove at once), or fog (teleport-out puff + sound,
@@ -3121,6 +3133,7 @@ void sd_save_user_prefs(void)
 	save_pref_int (&list, "input", "kpturn",   (int)g_turn_grace,    (int)g_base_turn_grace);
 	save_pref_bool(&list, "input", "instant_turn", sd_instant_turn,  g_base_instant_turn);
 	save_pref_str (&list, "input", "mouse", mouse_mode_str(g_mouse_mode), mouse_mode_str(g_base_mouse_mode));
+	save_pref_int (&list, "input", "mouse_sens", g_mouse_sens, g_base_mouse_sens);
 	save_pref_str (&list, "video", "frames_in_flight", frames_in_flight_str(), g_base_frames);
 	save_pref_bool(&list, "video", "sixel_fullres", g_sixel_fullres, 0);
 	f = fopen(g_user_ini_path, "w");
@@ -3158,6 +3171,9 @@ static void load_user_prefs(void)
 		iniGetString(ini, "input", "mouse", "", val);
 		g_mouse_mode = mouse_mode_parse(val, g_mouse_mode);
 	}
+	g_mouse_sens = iniGetInteger(ini, "input", "mouse_sens", g_mouse_sens);
+	if (g_mouse_sens < MOUSE_SENS_MIN) g_mouse_sens = MOUSE_SENS_MIN;
+	if (g_mouse_sens > MOUSE_SENS_MAX) g_mouse_sens = MOUSE_SENS_MAX;
 	iniGetString(ini, "video", "frames_in_flight", "", val);
 	if (val[0])
 		set_frames_in_flight(val);
@@ -3255,6 +3271,30 @@ static void toggle_mouse(void)
 	sd_hud_message(msg);
 	dlog("mouse steering -> %s", g_mouse_mode == MOUSE_OFF ? "off" :
 	     g_mouse_mode == MOUSE_FOLLOW ? "follow" : "steer");
+}
+
+// --- Mouse sub-menu accessors (m_menu.c: the in-game Options > MOUSE screen) -----
+// The menu can't see the door's statics, so expose the mouse mode + sensitivity here.
+int  sd_mouse_mode(void)  { return g_mouse_mode; }   // 0 off / 1 steer / 2 follow
+int  sd_mouse_sens(void)  { return g_mouse_sens; }   // 1..MOUSE_SENS_MAX (thermo dot = sens-1)
+int  sd_mouse_sens_max(void) { return MOUSE_SENS_MAX; }
+
+// MOUSE row: cycle OFF -> STEER -> FOLLOW (reuses toggle_mouse so the terminal's SGR
+// tracking + the HUD flash + the per-user save all stay in lockstep with Ctrl-O).
+void sd_mouse_cycle(void) { toggle_mouse(); }
+
+// SENSITIVITY slider: step one stop (up != 0 -> increase). Inert while the mouse is
+// off (the menu greys the bar then). Persisted per-user immediately.
+void sd_mouse_sens_step(int up)
+{
+	if (g_mouse_mode == MOUSE_OFF)
+		return;
+	g_mouse_sens += up ? 1 : -1;
+	if (g_mouse_sens < MOUSE_SENS_MIN)
+		g_mouse_sens = MOUSE_SENS_MIN;
+	if (g_mouse_sens > MOUSE_SENS_MAX)
+		g_mouse_sens = MOUSE_SENS_MAX;
+	sd_save_user_prefs();
 }
 
 // Compute the emitted bitmap dimensions (s_pxW x s_pxH) from the terminal's
@@ -4267,6 +4307,7 @@ int main(int argc, char **argv)
 	g_base_turn_grace    = g_turn_grace;
 	g_base_instant_turn  = sd_instant_turn;
 	g_base_mouse_mode    = g_mouse_mode;
+	g_base_mouse_sens    = g_mouse_sens;
 	snprintf(g_base_frames, sizeof(g_base_frames), "%s", frames_in_flight_str());
 
 	// External waiting-room splash: [game] splash if set, else <door dir>/waiting.bin.
