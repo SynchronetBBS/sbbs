@@ -953,6 +953,14 @@ void movefta(void)
 
        //             j = 1;
 
+                    /* SyncDuke: flames must animate whether or not the player has line-of-
+                     * sight -- an occluded flame (e.g. inside a trash bin) fails cansee() and
+                     * would otherwise stay dormant on statnum 2, frozen. Wake them on
+                     * proximity alone (they're already inside the x<30000 + timetosleep gate). */
+                    if( s->picnum == BURNING || s->picnum == BURNING2
+                        || s->picnum == FIRE || s->picnum == FIRE2 )
+                        j = 1;
+
                     if(j) switch(s->picnum)
                     {
                         case RUBBERCAN:
