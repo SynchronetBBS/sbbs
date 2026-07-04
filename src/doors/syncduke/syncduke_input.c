@@ -402,13 +402,28 @@ int syncduke_probe_replied(void) { return g_probe_replied; }
 static int csi_len;
 
 /* --- terminal mouse (xterm SGR) steering, ala SyncDoom -----------------------------
- * A terminal can't warp the pointer or report relative motion, so we steer by the
- * pointer's ABSOLUTE column offset from the image centre (a virtual joystick): the
- * further off-centre, the faster the turn.  Left button = Fire.  Vertical does nothing
- * (movement stays on the keyboard).  The turn and fire are continuous LEVELS that the
- * engine's getinput() (Game/src/player.c) reads each tic; a brief idle relaxes them to
- * neutral so an abandoned / off-window pointer can't spin or fire forever.  Ctrl-O
- * toggles steering; syncduke_io.c keeps the terminal's SGR tracking in sync. */
+ * A terminal can't warp the pointer or report relative motion (only ABSOLUTE, screen-
+ * clamped cell coords).  Two styles, cycled per-user with Ctrl-O (OFF/STEER/FOLLOW):
+ *
+ *   STEER (default) -- the pointer's column offset from the image centre sets a turn
+ *     RATE (a virtual joystick): further off-centre = faster turn.  Never runs out of
+ *     travel, but keeps turning while the pointer sits off-centre.
+ *
+ *   FOLLOW -- relative "mouse-look": turn by how far the pointer MOVED since the last
+ *     sim-tic, so the view stops the instant the pointer stops (like the DOS game).
+ *     Because the coords are absolute+clamped it would stall once the pointer hits the
+ *     window edge, so while pinned there we creep gently in that direction (bounded by
+ *     the idle timeout) to let a big turn finish.
+ *
+ * Either way Left button = Fire, vertical does nothing (movement stays on the keyboard),
+ * and the sensitivity slider (Setup Controls / g_mouse_sens) scales the turn.  STEER
+ * publishes a continuous LEVEL (syncduke_mouse_turn) the engine reads each tic; FOLLOW
+ * accumulates per-tic deltas drained by syncduke_mouse_turn_tic().  A brief idle relaxes
+ * turn/fire so an abandoned / off-window pointer can't spin or fire forever.  Ctrl-O
+ * cycles the mode; syncduke_io.c keeps the terminal's SGR tracking in sync. */
+#define SYNCDUKE_MOUSE_OFF       0     /* g_mouse_mode: steering disabled */
+#define SYNCDUKE_MOUSE_STEER     1     /* g_mouse_mode: offset->rate joystick (default) */
+#define SYNCDUKE_MOUSE_FOLLOW    2     /* g_mouse_mode: relative mouse-look */
 #define SYNCDUKE_MOUSE_IDLE_MS   600   /* relax steer/fire after this long with no report */
 
 volatile int syncduke_mouse_turn;      /* -> angvel  (player.c getinput) */
@@ -426,15 +441,18 @@ volatile int    syncduke_key_turn;     /* signed angvel/tic: + = right, - = left
 static uint32_t g_key_turn_ms;         /* time of the last arrow byte (idle relax) */
 #define SYNCDUKE_KEY_TURN_IDLE_MS 140  /* stop turning this long after the last arrow byte */
 
-static int      g_mouse_on = 1;        /* steering enabled (default on; Ctrl-O toggles) */
-static int      g_mouse_sens = 30;     /* steer sensitivity, a 0..63 slider (Setup Mouse);
-                                        * max angvel at the image edge = sens*2 (30->60). */
+static int      g_mouse_mode = SYNCDUKE_MOUSE_STEER; /* off/steer/follow (default steer; Ctrl-O cycles) */
+static int      g_mouse_sens = 30;     /* sensitivity, a 0..63 slider (Setup Mouse); STEER max
+                                        * angvel at the edge = sens*2, FOLLOW angvel = sens/cell. */
 static int      g_mouse_col;           /* last reported pointer cell (1-based) */
 static int      g_mouse_have;          /* a report has arrived (neutral until then) */
+static int      g_mouse_anchor_col;    /* FOLLOW: pointer col at the last consumed delta */
+static int      g_follow_accum;        /* FOLLOW: angvel accrued from motion, not yet drained by a tic */
 static int      g_mouse_buttons;       /* bit0 left/fire, 1 middle, 2 right */
 static uint32_t g_mouse_last_ms;       /* time of the last report (idle timeout) */
 
-int  syncduke_mouse_enabled(void) { return g_mouse_on; }
+int  syncduke_mouse_enabled(void) { return g_mouse_mode != SYNCDUKE_MOUSE_OFF; }
+int  syncduke_mouse_mode(void)    { return g_mouse_mode; }
 int  syncduke_mouse_sens(void)    { return g_mouse_sens; }
 /* Floor at 1: sensitivity 0 yields zero turn rate (steering effectively dead, like
  * disabling the mouse), so the slider's left end is 1 -- a small but real effect. */
@@ -474,14 +492,48 @@ static int syncduke_mouse_steer(void)
 	return off < 0 ? -mag : mag;
 }
 
+/* FOLLOW: slow edge-creep when the pointer is jammed against the image edge (the
+ * terminal clamps the coord there, so no more motion is reported and a big turn
+ * would stall).  Half the sensitivity, so it's a gentle "keep going" rather than a
+ * spin.  Returns 0 when the pointer isn't at an edge. */
+static int syncduke_follow_edge(void)
+{
+	int center, halfw, creep;
+
+	syncduke_hsteer(&center, &halfw);
+	if (halfw < 2)
+		halfw = 2;
+	creep = g_mouse_sens / 2;
+	if (creep < 1)
+		creep = 1;
+	if (g_mouse_col <= center - halfw + 1)
+		return -creep;
+	if (g_mouse_col >= center + halfw - 1)
+		return  creep;
+	return 0;
+}
+
 /* One xterm SGR mouse report: ESC[<button;col;row M(press/motion) | m(release).
  * button low 2 bits = which button; bit 5 (32) marks a motion (not click) report. */
 static void syncduke_mouse_event(int button, int col, int row, int release)
 {
+	uint32_t now = syncduke_in_now_ms();
 	(void)row;
+
+	/* FOLLOW: accrue the pointer's travel since the last report as pending turn.
+	 * Re-anchor (no turn) on the first report or after an idle gap, so a resumed
+	 * pointer doesn't lurch by the whole distance it jumped while we weren't
+	 * hearing from it. */
+	if (g_mouse_mode == SYNCDUKE_MOUSE_FOLLOW) {
+		if (!g_mouse_have || (int32_t)(now - g_mouse_last_ms) > SYNCDUKE_MOUSE_IDLE_MS)
+			g_mouse_anchor_col = col;
+		g_follow_accum += (col - g_mouse_anchor_col) * g_mouse_sens;
+		g_mouse_anchor_col = col;
+	}
+
 	g_mouse_col = col;
 	g_mouse_have = 1;
-	g_mouse_last_ms = syncduke_in_now_ms();
+	g_mouse_last_ms = now;
 	if (!(button & 32)) {              /* a real button press/release, not motion */
 		int bit = button & 3;
 		if (release)
@@ -489,10 +541,26 @@ static void syncduke_mouse_event(int button, int col, int row, int release)
 		else
 			g_mouse_buttons |= (1 << bit);
 	}
-	if (g_mouse_on) {
+	if (g_mouse_mode == SYNCDUKE_MOUSE_STEER)
 		syncduke_mouse_turn = syncduke_mouse_steer();
+	if (g_mouse_mode != SYNCDUKE_MOUSE_OFF)
 		syncduke_mouse_fire = (g_mouse_buttons & 1) ? 1 : 0;
+}
+
+/* Per sim-tic turn contribution the engine's getinput() adds to angvel. STEER reads
+ * the continuous level; FOLLOW drains the motion accrued since the last tic (and, if
+ * still, edge-creeps while the pointer is pinned at the window edge and not idle). */
+int syncduke_mouse_turn_tic(void)
+{
+	if (g_mouse_mode == SYNCDUKE_MOUSE_FOLLOW) {
+		int t = g_follow_accum;
+		g_follow_accum = 0;
+		if (t == 0 && g_mouse_have &&
+		    (int32_t)(syncduke_in_now_ms() - g_mouse_last_ms) <= SYNCDUKE_MOUSE_IDLE_MS)
+			t = syncduke_follow_edge();
+		return t;
 	}
+	return syncduke_mouse_turn;        /* STEER level, or 0 when OFF/idle */
 }
 
 /* Each pump: if the pointer has gone quiet, relax to neutral -- an abandoned off-centre
@@ -502,6 +570,7 @@ static void syncduke_mouse_idle(void)
 	if (g_mouse_have && (int32_t)(syncduke_in_now_ms() - g_mouse_last_ms) > SYNCDUKE_MOUSE_IDLE_MS) {
 		syncduke_mouse_turn = 0;
 		syncduke_mouse_fire = 0;
+		g_follow_accum = 0;
 		g_mouse_buttons = 0;
 	}
 }
@@ -575,15 +644,44 @@ static void turn_edge(int dir, int down)
 	}
 }
 
-void syncduke_mouse_toggle(void)
+/* Clear the transient steering state (held button, pending turn/fire, FOLLOW delta
+ * reference) so a mode change starts from a clean pointer. */
+static void syncduke_mouse_reset(void)
 {
-	g_mouse_on = !g_mouse_on;
 	syncduke_mouse_turn = 0;
 	syncduke_mouse_fire = 0;
-	syncduke_mouse_msg = 1;        /* engine flashes "MOUSE ON/OFF" next gameplay frame */
-	g_mouse_have = 0;
+	g_follow_accum = 0;
+	g_mouse_anchor_col = g_mouse_col;
 	g_mouse_buttons = 0;
-	/* syncduke_io.c reconciles the terminal's SGR-tracking enable with g_mouse_on. */
+	if (g_mouse_mode == SYNCDUKE_MOUSE_OFF)
+		g_mouse_have = 0;
+}
+
+void syncduke_mouse_toggle(void)
+{
+	g_mouse_mode = (g_mouse_mode == SYNCDUKE_MOUSE_OFF)   ? SYNCDUKE_MOUSE_STEER
+	             : (g_mouse_mode == SYNCDUKE_MOUSE_STEER)  ? SYNCDUKE_MOUSE_FOLLOW
+	                                                       : SYNCDUKE_MOUSE_OFF;
+	syncduke_mouse_reset();
+	syncduke_mouse_msg = 1;        /* engine flashes the new mode next gameplay frame */
+	/* syncduke_io.c reconciles the terminal's SGR-tracking enable with the mode. */
+}
+
+/* Apply a mouse-steering MODE (off/steer/follow) WITHOUT the on-screen flash -- used to
+ * restore the saved default at startup (config.c), where announcing it is spurious
+ * clutter. Ctrl-O (syncduke_mouse_toggle) still flashes for live in-game changes. */
+void syncduke_mouse_mode_set(int m)
+{
+	g_mouse_mode = m < SYNCDUKE_MOUSE_OFF ? SYNCDUKE_MOUSE_OFF
+	             : m > SYNCDUKE_MOUSE_FOLLOW ? SYNCDUKE_MOUSE_FOLLOW : m;
+	syncduke_mouse_reset();
+}
+
+/* Legacy on/off entry (maps to OFF/STEER) kept for the older [SyncDuke] MouseSteering
+ * key and any on/off caller; MouseMode (0/1/2) is the current persisted setting. */
+void syncduke_mouse_set(int on)
+{
+	syncduke_mouse_mode_set(on ? SYNCDUKE_MOUSE_STEER : SYNCDUKE_MOUSE_OFF);
 }
 
 /* Parse up to `max` ';'-separated decimal params from csi_par; return the count. */

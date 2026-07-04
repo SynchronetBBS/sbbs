@@ -261,7 +261,8 @@ static void cycle_video(void);
 void        sd_save_user_prefs(void); // persist per-user prefs (cycle_video uses it before its defn)
 static void toggle_pipeline(void); // Ctrl-T: cycle frame-pipeline depth + persist
 static void toggle_stats(void);    // Ctrl-S: toggle the live stats overlay (session-only)
-static void toggle_mouse(void);    // Ctrl-O: toggle mouse steering on/off + persist
+static void toggle_mouse(void);    // Ctrl-O: cycle mouse steering off/steer/follow + persist
+static int  mouse_mode_parse(const char *v, int dflt); // parse [input] mouse value (defn below)
 static int g_stats_overlay = 0;       // show fps/RTT/depth overlaid on each frame
 // Kitty keyboard protocol negotiated (terminal answered our CSI?u query): keys arrive as CSI-u
 // events with real press/repeat/release, so the door gets true key-up -- crisp hold-to-move and
@@ -1071,27 +1072,43 @@ static int          g_want_page     = 0;  // Ctrl-P pressed in-game -> run betwe
 
 // --- Terminal mouse control (xterm SGR mouse: SyncTERM + the xterm family) ----
 // Terminals report ABSOLUTE, screen-clamped cell positions (no relative deltas,
-// and the host can't warp the pointer), so classic infinite mouse-look is out.
-// The model is STEERING: the pointer's offset from screen-center sets a turn RATE
-// (a virtual joystick). Edge-safe -- a pointer parked off-center keeps turning
-// until moved back toward center (terminals send no "still here" report, so we
-// hold the last offset; an idle timeout below stops a runaway spin when the
-// pointer leaves the window). Mouse turning bypasses Doom's turn-accel ramp and
-// the door's key-up-synthesis grace machinery, so it's smoother than the keys.
-// (A relative-delta "native feel" model was tried and dropped -- with no way to
-// recenter the pointer it stalls uselessly at the window edge.)
+// and the host can't warp the pointer). Two steering styles are offered, chosen
+// per-user (Ctrl-O cycles OFF -> STEER -> FOLLOW):
+//
+//   STEER  (default) -- a virtual joystick: the pointer's offset from screen-
+//     center sets a turn RATE. A pointer parked off-center keeps turning until
+//     moved back toward center. Edge-safe (never runs out of travel) but it
+//     keeps spinning while the pointer sits off-center -- not everyone likes it.
+//
+//   FOLLOW -- relative "mouse-look" feel: turn by the CHANGE in pointer position
+//     since the last tic, so the view stops the instant the pointer stops (like
+//     DOS Doom). Its weakness is inherent to terminals: absolute clamped coords
+//     mean that once the pointer hits the window edge no further motion is
+//     reported and turning would stall. We soften that with a slow EDGE-CREEP:
+//     while the pointer is pinned at the image edge we keep turning gently in
+//     that direction, so a big turn can still complete (then reposition, like
+//     lifting a real mouse). (An earlier pure-delta version with no edge-creep
+//     was dropped for exactly this stall; the creep is what makes it usable.)
+//
+// Either style bypasses Doom's turn-accel ramp and the door's key-up-synthesis
+// grace, so mouse turning is smoother than the arrow keys.
 #define MOUSE_OFF        0
-#define MOUSE_ON         1
-#define MOUSE_STEER_MAX  110   // turn rate at the image edge (full deflection)
+#define MOUSE_ON         1     // enable sentinel == STEER (config "on"/"true" back-compat)
+#define MOUSE_STEER      1     // velocity/joystick style
+#define MOUSE_FOLLOW     2     // relative "mouse-look" style
+#define MOUSE_STEER_MAX  110   // STEER: turn rate at the image edge (full deflection)
+#define MOUSE_FOLLOW_GAIN 24   // FOLLOW: turn units per cell of pointer travel per tic
+#define MOUSE_FOLLOW_EDGE 22   // FOLLOW: slow edge-creep turn rate when pinned at the edge
 #define MOUSE_IDLE_MS    600   // steer relaxes to neutral after this long with no report
                                // (stops the runaway spin when the pointer leaves the
                                // window/loses focus -- terminals send no focus-out event)
-static int      g_mouse_mode      = MOUSE_ON; // on/off ([input] mouse / -mouse)
-static int      g_base_mouse_mode = MOUSE_ON; // house/built-in default (for per-user save diff)
+static int      g_mouse_mode      = MOUSE_STEER; // off/steer/follow ([input] mouse / -mouse)
+static int      g_base_mouse_mode = MOUSE_STEER; // house/built-in default (for per-user save diff)
 static int      g_mouse_cli       = 0;       // -mouse given on CLI (saved prefs won't override)
 static int      g_mouse_enabled   = 0;       // tracking actually turned on (mode != off)
 static int      g_mouse_col = 0, g_mouse_row = 0; // last reported pointer cell (1-based)
 static int      g_mouse_have      = 0;       // a report has arrived (steer stays neutral until then)
+static int      g_mouse_anchor_col = 0;      // FOLLOW: pointer col at the previous tic (delta ref)
 static int      g_mouse_buttons   = 0;       // button bitmask: bit0 left/fire, 1 right, 2 middle
 static uint32_t g_mouse_last_ms = 0;         // now_ms() of the last report (idle-timeout for steer)
 
@@ -1170,13 +1187,19 @@ static void expire_keys(void)
 // 1-based cells; 'release' is set for the 'm'-terminated (button-up) form.
 static void mouse_seen(int button, int col, int row, int release)
 {
-	int b = button & 0x03;
-	int bit;
+	int      b = button & 0x03;
+	int      bit;
+	uint32_t t = now_ms();
 
+	// FOLLOW: re-anchor the delta reference on the first report or after an idle
+	// gap, so a resumed pointer doesn't turn by the whole distance it jumped while
+	// we weren't hearing from it.
+	if (!g_mouse_have || (uint32_t)(t - g_mouse_last_ms) > MOUSE_IDLE_MS)
+		g_mouse_anchor_col = col;
 	g_mouse_col = col;
 	g_mouse_row = row;
 	g_mouse_have = 1;
-	g_mouse_last_ms = now_ms();               // mark activity (steer idle-timeout)
+	g_mouse_last_ms = t;                      // mark activity (steer idle-timeout)
 
 	// Button state comes ONLY from real press/release events, never from motion
 	// reports: a motion event (0x20) carries the held-button bits, but a stale or
@@ -1242,6 +1265,30 @@ static int mouse_steer_rate(void)
 	return (off < 0) ? -mag : mag;
 }
 
+// FOLLOW model: turn by the pointer's horizontal travel since the previous tic,
+// so the view stops the instant the pointer stops (relative "mouse-look" feel).
+// When the pointer is pinned at the image edge (no travel possible there -- the
+// terminal clamps the coordinate) we fall back to a slow edge-creep in that
+// direction so a big turn can still be completed instead of stalling.
+static int mouse_follow_rate(void)
+{
+	int center, halfw, delta;
+
+	delta = g_mouse_col - g_mouse_anchor_col;   // cells moved since last tic
+	g_mouse_anchor_col = g_mouse_col;           // consume it
+	if (delta != 0)
+		return delta * MOUSE_FOLLOW_GAIN;
+
+	// No motion this tic. If the pointer is jammed against the image edge, keep
+	// creeping so the player isn't stuck mid-turn; otherwise hold still.
+	mouse_view(&center, &halfw);
+	if (g_mouse_col <= center - halfw + 1)
+		return -MOUSE_FOLLOW_EDGE;
+	if (g_mouse_col >= center + halfw - 1)
+		return  MOUSE_FOLLOW_EDGE;
+	return 0;
+}
+
 // Project the mouse state to a Doom mouse event (buttons + turn dx + fwd/back dy).
 // Returns 1 if I_GetEvent should post one this tic. Suppressed in menus/chat so a
 // resting pointer can't drive the menu or steer while typing. data3 (forward/back)
@@ -1262,7 +1309,9 @@ int DG_GetMouse(int *buttons, int *dx, int *dy)
 		return 1;
 	}
 	*buttons = g_mouse_buttons;
-	*dx = g_mouse_have ? mouse_steer_rate() : 0;
+	*dx = !g_mouse_have ? 0
+	    : (g_mouse_mode == MOUSE_FOLLOW) ? mouse_follow_rate()
+	    : mouse_steer_rate();
 	*dy = 0;
 	return 1;
 }
@@ -2920,16 +2969,12 @@ static void read_syncdoom_ini(const char *argv0)
 	// vanilla ramp. A per-user in-game toggle overrides this.
 	sd_instant_turn = iniGetBool(ini, "input", "instant_turn", TRUE);
 
-	// [input] mouse -- terminal mouse steering on (default) or off. On a mouse-
-	// capable client (SyncTERM, xterm-family) the pointer's offset from center
-	// turns the player and the left button fires; inert on terminals without it.
+	// [input] mouse -- terminal mouse steering style: "off", "steer" (default,
+	// offset-from-center joystick) or "follow" (relative mouse-look). On a mouse-
+	// capable client (SyncTERM, xterm-family) the left button fires; inert on
+	// terminals without it. Legacy "on"/"true"/"yes" -> steer. Empty -> keep default.
 	iniGetString(ini, "input", "mouse", "", val);
-	if (stricmp(val, "off") == 0 || stricmp(val, "none") == 0 ||
-	    stricmp(val, "false") == 0 || strcmp(val, "0") == 0)
-		g_mouse_mode = MOUSE_OFF;
-	else if (val[0])                          // on/true/yes/anything non-empty -> on
-		g_mouse_mode = MOUSE_ON;
-	// empty -> keep the built-in default (on)
+	g_mouse_mode = mouse_mode_parse(val, g_mouse_mode);
 
 	// [game] quit_effect -- fate of a departed player's marine: keep (vanilla,
 	// stays frozen), vanish (remove at once), or fog (teleport-out puff + sound,
@@ -3028,7 +3073,25 @@ static void save_pref_str(str_list_t *list, const char *sec, const char *key,
 
 static const char *mouse_mode_str(int m)
 {
-	return m == MOUSE_OFF ? "off" : "on";
+	return m == MOUSE_OFF    ? "off"
+	     : m == MOUSE_FOLLOW ? "follow"
+	                         : "steer";
+}
+
+// Parse an [input] mouse value to a mode. Empty -> keep the current default.
+// "off"/"none"/"false"/"0" -> off; "follow"/"look"/"native"/"relative" -> follow;
+// anything else non-empty (incl. legacy "on"/"true"/"yes"/"steer") -> steer.
+static int mouse_mode_parse(const char *v, int dflt)
+{
+	if (v[0] == '\0')
+		return dflt;
+	if (stricmp(v, "off") == 0 || stricmp(v, "none") == 0 ||
+	    stricmp(v, "false") == 0 || strcmp(v, "0") == 0)
+		return MOUSE_OFF;
+	if (stricmp(v, "follow") == 0 || stricmp(v, "look") == 0 ||
+	    stricmp(v, "native") == 0 || stricmp(v, "relative") == 0)
+		return MOUSE_FOLLOW;
+	return MOUSE_STEER;
 }
 
 // Write the user's prefs. Called by the Options sliders, the Ctrl-T pacing toggle,
@@ -3093,11 +3156,7 @@ static void load_user_prefs(void)
 	sd_instant_turn = iniGetBool(ini, "input", "instant_turn", sd_instant_turn);
 	if (!g_mouse_cli) {
 		iniGetString(ini, "input", "mouse", "", val);
-		if (stricmp(val, "off") == 0 || stricmp(val, "none") == 0 ||
-		    stricmp(val, "false") == 0 || strcmp(val, "0") == 0)
-			g_mouse_mode = MOUSE_OFF;
-		else if (val[0])
-			g_mouse_mode = MOUSE_ON;
+		g_mouse_mode = mouse_mode_parse(val, g_mouse_mode);
 	}
 	iniGetString(ini, "video", "frames_in_flight", "", val);
 	if (val[0])
@@ -3159,30 +3218,43 @@ static void toggle_stats(void)
 	dlog("stats overlay -> %s", g_stats_overlay ? "on" : "off");
 }
 
-// Ctrl-O: toggle terminal mouse steering on/off live, persisted per-user. Flips the
-// xterm tracking modes to match; when turning off it also drops any held button and
-// the last pointer offset so the player stops cleanly (no residual turn/fire). A
-// brief centered label confirms it. (Inert flag-flip on a non-mouse terminal.)
+// Ctrl-O: cycle terminal mouse steering OFF -> STEER -> FOLLOW -> OFF, live and
+// persisted per-user. Flips the xterm tracking modes on the OFF<->on transitions;
+// when turning off it drops any held button and the last pointer offset so the
+// player stops cleanly (no residual turn/fire). A brief in-game message confirms
+// it. (Inert flag-flip on a non-mouse terminal -- still cycles the setting.)
 static void toggle_mouse(void)
 {
 	extern void sd_hud_message(const char *msg);   // g_game.c: Doom's in-game message widget
+	const char *msg;
 
-	if (g_mouse_mode == MOUSE_OFF) {
-		g_mouse_mode    = MOUSE_ON;
-		g_mouse_enabled = 1;
-		emit_all("\x1b[?1003h\x1b[?1006h", 16);
-	} else {
-		g_mouse_mode    = MOUSE_OFF;
-		g_mouse_enabled = 0;
-		g_mouse_buttons = 0;
-		g_mouse_have    = 0;
-		emit_all("\x1b[?1003l\x1b[?1006l", 16);
-	}
+	int was_on = (g_mouse_mode != MOUSE_OFF);
+	g_mouse_mode = (g_mouse_mode == MOUSE_OFF)   ? MOUSE_STEER
+	             : (g_mouse_mode == MOUSE_STEER)  ? MOUSE_FOLLOW
+	                                              : MOUSE_OFF;
+	g_mouse_enabled = (g_mouse_mode != MOUSE_OFF);
+
+	if (g_mouse_enabled && !was_on)
+		emit_all("\x1b[?1003h\x1b[?1006h", 16);  // OFF -> on: enable tracking
+	else if (!g_mouse_enabled)
+		emit_all("\x1b[?1003l\x1b[?1006l", 16);  // -> OFF: disable tracking
+
+	// Reset transient steer state on every change: drop held buttons and re-anchor
+	// the FOLLOW delta reference so the new style starts from a clean pointer.
+	g_mouse_buttons    = 0;
+	g_mouse_anchor_col = g_mouse_col;
+	if (!g_mouse_enabled)
+		g_mouse_have = 0;
+
 	sd_save_user_prefs();
 	// Confirm via Doom's own HUD message (game font, no frame pause) rather than a terminal overlay,
 	// so it matches "you got the shotgun" and doesn't stall the graphics like the old label popup.
-	sd_hud_message(g_mouse_mode == MOUSE_OFF ? "MOUSE OFF" : "MOUSE ON");
-	dlog("mouse steering -> %s", g_mouse_mode == MOUSE_OFF ? "off" : "on");
+	msg = (g_mouse_mode == MOUSE_OFF)    ? "MOUSE OFF"
+	    : (g_mouse_mode == MOUSE_FOLLOW) ? "MOUSE: FOLLOW"
+	                                     : "MOUSE: STEER";
+	sd_hud_message(msg);
+	dlog("mouse steering -> %s", g_mouse_mode == MOUSE_OFF ? "off" :
+	     g_mouse_mode == MOUSE_FOLLOW ? "follow" : "steer");
 }
 
 // Compute the emitted bitmap dimensions (s_pxW x s_pxH) from the terminal's
@@ -4287,12 +4359,9 @@ int main(int argc, char **argv)
 				v = argv[++i];                               // "-t 1800"
 			if (*v)
 				g_time_limit_ms = (uint32_t)strtoul(v, NULL, 10) * 1000u;
-		} else if (strcmp(argv[i], "-mouse") == 0) {        // terminal mouse: on | off
+		} else if (strcmp(argv[i], "-mouse") == 0) {        // terminal mouse: off | steer | follow
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
-			if (stricmp(v, "off") == 0 || stricmp(v, "none") == 0 || stricmp(v, "false") == 0)
-				g_mouse_mode = MOUSE_OFF;
-			else
-				g_mouse_mode = MOUSE_ON;                    // "on" / "true" / empty
+			g_mouse_mode = mouse_mode_parse(v, MOUSE_STEER); // empty -> steer (bare "-mouse" = on)
 			g_mouse_cli = 1;
 		} else if (strcmp(argv[i], "-kpturn") == 0) {       // turn-key fresh grace (tight taps)
 			const char *v = (i + 1 < argc) ? argv[++i] : "";

@@ -1861,11 +1861,12 @@ void getinput(short snum)
 	     * raises syncduke_mouse_msg; flash it here (slot 122 = the engine's ad-hoc
 	     * runtime-message slot, unused in single-player). */
 		extern volatile int syncduke_mouse_msg;
-		extern int          syncduke_mouse_enabled(void);
+		extern int          syncduke_mouse_mode(void);   /* 0 off, 1 steer, 2 follow */
 		if(syncduke_mouse_msg)
 		{
+			int m = syncduke_mouse_mode();
 			syncduke_mouse_msg = 0;
-			sprintf(fta_quotes[122],"MOUSE %s", syncduke_mouse_enabled()?"ON":"OFF");
+			sprintf(fta_quotes[122], m==0 ? "MOUSE OFF" : m==2 ? "MOUSE: FOLLOW" : "MOUSE: STEER");
 			vscrn();
 			FTA(122,&ps[screenpeek],1);
 		}
@@ -2127,12 +2128,13 @@ void getinput(short snum)
     if(vel > MAXVEL) vel = MAXVEL;
     if(svel < -MAXSVEL) svel = -MAXSVEL;
     if(svel > MAXSVEL) svel = MAXSVEL;
-    {   /* SyncDuke: terminal mouse steering -- add the door's steer rate (a continuous
-         * angvel level from the pointer's offset from screen centre, syncduke_input.c) to
-         * the turn before the clamp; bypasses Duke's mouse accel, like SyncDoom. */
-        extern volatile int syncduke_mouse_turn;
+    {   /* SyncDuke: terminal mouse steering -- add the door's per-tic turn (STEER: a
+         * continuous rate from the pointer's offset from screen centre; FOLLOW: the
+         * pointer's motion since the last tic -- syncduke_input.c) before the clamp;
+         * bypasses Duke's mouse accel, like SyncDoom. */
+        extern int          syncduke_mouse_turn_tic(void);
         extern volatile int syncduke_key_turn;   /* continuous arrow-key turn (smooth per-tic) */
-        angvel += syncduke_mouse_turn;
+        angvel += syncduke_mouse_turn_tic();
         angvel += syncduke_key_turn;
     }
     if(angvel < -MAXANGVEL) angvel = -MAXANGVEL;

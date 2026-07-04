@@ -615,14 +615,17 @@ void CONFIG_ReadSetup( void )
     * current default so a missing key keeps the default (SCRIPT_GetNumber leaves *v alone). */
    {
       extern int  syncduke_mouse_sens(void);     extern void syncduke_mouse_sens_set(int);
-      extern int  syncduke_mouse_enabled(void);  extern void syncduke_mouse_toggle(void);
+      extern int  syncduke_mouse_enabled(void);  extern void syncduke_mouse_set(int);
+      extern int  syncduke_mouse_mode(void);     extern void syncduke_mouse_mode_set(int);
       extern int  syncduke_kb_tap(void);         extern void syncduke_kb_tap_set(int);
       extern int  syncduke_kb_hold(void);        extern void syncduke_kb_hold_set(int);
       extern int  syncduke_kb_turn(void);        extern void syncduke_kb_turn_set(int);
       extern int  syncduke_kb_fastturn(void);    extern void syncduke_kb_fastturn_set(int);
       int32 v;
       v = syncduke_mouse_sens();    SCRIPT_GetNumber(scripthandle,"SyncDuke","SteerSensitivity",&v); syncduke_mouse_sens_set(v);
-      v = syncduke_mouse_enabled(); SCRIPT_GetNumber(scripthandle,"SyncDuke","MouseSteering",&v);     if (v != syncduke_mouse_enabled()) syncduke_mouse_toggle();
+      /* MouseSteering (legacy on/off) first, then MouseMode (off/steer/follow) overrides if present. */
+      v = syncduke_mouse_enabled(); SCRIPT_GetNumber(scripthandle,"SyncDuke","MouseSteering",&v);     syncduke_mouse_set(v);
+      v = syncduke_mouse_mode();    SCRIPT_GetNumber(scripthandle,"SyncDuke","MouseMode",&v);         syncduke_mouse_mode_set(v);
       v = syncduke_kb_tap();        SCRIPT_GetNumber(scripthandle,"SyncDuke","KeyTap",&v);   syncduke_kb_tap_set(v);
       v = syncduke_kb_hold();       SCRIPT_GetNumber(scripthandle,"SyncDuke","KeyHold",&v);  syncduke_kb_hold_set(v);
       v = syncduke_kb_turn();       SCRIPT_GetNumber(scripthandle,"SyncDuke","TurnHold",&v); syncduke_kb_turn_set(v);
@@ -910,11 +913,13 @@ void CONFIG_WriteSetup( void )
    {
       extern int syncduke_mouse_sens(void);
       extern int syncduke_mouse_enabled(void);
+      extern int syncduke_mouse_mode(void);
       extern int syncduke_kb_tap(void);
       extern int syncduke_kb_hold(void);
       extern int syncduke_kb_turn(void);
       extern int syncduke_kb_fastturn(void);
       SCRIPT_PutNumber(scripthandle, "SyncDuke", "SteerSensitivity", syncduke_mouse_sens(),    false,false);
+      SCRIPT_PutNumber(scripthandle, "SyncDuke", "MouseMode",        syncduke_mouse_mode(),    false,false);
       SCRIPT_PutNumber(scripthandle, "SyncDuke", "MouseSteering",    syncduke_mouse_enabled(), false,false);
       SCRIPT_PutNumber(scripthandle, "SyncDuke", "KeyTap",   syncduke_kb_tap(),      false,false);
       SCRIPT_PutNumber(scripthandle, "SyncDuke", "KeyHold",  syncduke_kb_hold(),     false,false);
