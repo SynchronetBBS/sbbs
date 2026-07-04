@@ -1403,6 +1403,8 @@ static unsigned char map_ascii(unsigned char c)
 static unsigned char csi_tilde_key(int n)
 {
 	switch (n) {
+		case 1: case 7: return KEY_HOME;   // Home (ESC[1~ vt220 / ESC[7~ rxvt)
+		case 4: case 8: return KEY_END;    // End  (ESC[4~ vt220 / ESC[8~ rxvt)
 		case 11: return KEY_F1;
 		case 12: return KEY_F2;
 		case 13: return KEY_F3;
@@ -1742,6 +1744,8 @@ static void parse_byte(unsigned char c)
 						case 'B': k = KEY_DOWNARROW;  break;
 						case 'C': k = KEY_RIGHTARROW; break;
 						case 'D': k = KEY_LEFTARROW;  break;
+						case 'F': k = KEY_END;        break;   // End  (SS3, application cursor mode)
+						case 'H': k = KEY_HOME;       break;   // Home (SS3)
 						default:  break;
 					}
 				} else {                            // CSI '['
@@ -1770,18 +1774,19 @@ static void parse_byte(unsigned char c)
 							g_ack_deadline = now_ms() + 250; // progress -> refresh the safety deadline
 							break;
 						case '~': k = csi_tilde_key(atoi(s_csi_par)); break;
-						// Kitty keyboard protocol: F1/F2/F4 arrive as CSI P/Q/S, Home/End as CSI H/F
-						// (only once negotiated). F4 = the tier-cycle sentinel, like SS3 S.
+						// Kitty keyboard protocol: F1/F2/F4 arrive as CSI P/Q/S (only once
+						// negotiated). F4 = the tier-cycle sentinel, like SS3 S.
 						case 'P': if (g_kitty_active)
 								k = KEY_F1; break;
 						case 'Q': if (g_kitty_active)
 								k = KEY_F2; break;
 						case 'S': if (g_kitty_active && s_csi_par[0] != '?')
 								k = KEY_F4; break;                                              // '?' = XTSMGRAPHICS reply
-						case 'H': if (g_kitty_active)
-								k = KEY_HOME; break;
-						case 'F': if (g_kitty_active)
-								k = KEY_END; break;
+						// Home/End come as CSI H/F on any xterm-family terminal (Windows
+						// Terminal, SyncTERM, ...), not just under kitty -- map them
+						// unconditionally so End jumps to the last menu item everywhere.
+						case 'H': k = KEY_HOME; break;
+						case 'F': k = KEY_END;  break;
 						case 'E':                            // numpad-5, NumLock off = KP_Begin -> '5' (matches NumLock-on KP5)
 							if (g_kitty_active)
 								k = map_ascii('5');
@@ -1789,6 +1794,8 @@ static void parse_byte(unsigned char c)
 						case 'K':                            // SyncTERM physical key PRESS report (CSI = <code> K)
 							if (g_evdev_active && s_csi_par[0] == '=')
 								evdev_report(1);
+							else                             // bare ESC[K = SyncTERM's End key (cterm)
+								k = KEY_END;
 							break;
 						case 'k':                            // SyncTERM physical key RELEASE report
 							if (g_evdev_active && s_csi_par[0] == '=')
