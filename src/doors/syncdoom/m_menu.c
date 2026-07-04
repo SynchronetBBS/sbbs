@@ -399,13 +399,18 @@ menuitem_t OptionsMenu[]=
     {-1,"",0,'\0'}
 };
 
+// syncdoom: Options base row. No "OPTIONS" title, so the whole menu sits one row higher
+// than stock (was 37) -- the bottom slider rows then clear the HUD without hiding it.
+// M_DrawOptions shifts this up one more LINEHEIGHT while END GAME is hidden (title screen).
+#define OPT_BASE_Y 21
+
 menu_t  OptionsDef =
 {
     opt_end,
     &MainDef,
     OptionsMenu,
     M_DrawOptions,
-    60,21,           // y shifted up one row (was 37) -- no title, bottom rows clear the HUD
+    60,OPT_BASE_Y,
     0
 };
 
@@ -1118,6 +1123,30 @@ void M_DrawOptions(void)
     // (the High/Low patch is gone with it), so nothing to draw here. The MOUSE mode +
     // sensitivity rows draw inline (below the key-feel rows) in M_DrawInputSliders.
 
+    // syncdoom: END GAME (the first Options row) only ends an ACTIVE game -- at the title
+    // screen it just grunts. Hide it there: blank its patch (drawn only when name[0]),
+    // mark it status -1 so up/down/Home/End skip it, and reflow the rest up into its row
+    // by shifting OptionsDef.y one LINEHEIGHT (every row is drawn OptionsDef.y-relative).
+    {
+        int hide_end = !usergame;
+        OptionsMenu[endgame].status = hide_end ? -1 : 1;
+        if (hide_end)
+            OptionsMenu[endgame].name[0] = '\0';
+        else
+            M_StringCopy(OptionsMenu[endgame].name, "M_ENDGAM",
+                         sizeof(OptionsMenu[endgame].name));
+        OptionsDef.y = hide_end ? (OPT_BASE_Y - LINEHEIGHT) : OPT_BASE_Y;
+        if (hide_end && itemOn < soundvol)
+            itemOn = soundvol;
+    }
+
+    // syncdoom: MOUSE SENS (the last Options row) is hidden when the mouse is off --
+    // nothing to tune -- so drop it from the item count too; the skull cursor then can't
+    // land on the now-blank row. Toggling the mouse on via the MOUSE row reveals it.
+    OptionsDef.numitems = (sd_mouse_mode() == 0) ? mousesens : opt_end;
+    if (itemOn >= OptionsDef.numitems)
+        itemOn = OptionsDef.numitems - 1;
+
     // Screen-size bar to the RIGHT of the "SCREEN SIZE" label, on its own row.
     M_DrawThermo(M_OptSliderX(), OptionsDef.y + LINEHEIGHT * scrnsize,
 		 9, screenSize);
@@ -1184,11 +1213,10 @@ void M_DrawInputSliders(void)
         int yse  = OptionsDef.y + LINEHEIGHT * mousesens + INPUT_YOFF;
         M_WriteText(OptionsDef.x, ymo, "MOUSE");
         M_WriteText(sx, ymo, mode == 0 ? "OFF" : mode == 2 ? "FOLLOW" : "STEER");
-        M_WriteText(OptionsDef.x, yse, "MOUSE SENS");
-        if (mode == 0)                       // greyed: nothing to tune while the mouse is off
-            M_WriteText(sx, yse, "OFF");
-        else
+        if (mode != 0) {                     // hidden entirely when the mouse is off (see M_DrawOptions)
+            M_WriteText(OptionsDef.x, yse, "MOUSE SENS");
             M_DrawThermo(sx, yse, sd_mouse_sens_max(), sd_mouse_sens() - 1);
+        }
     }
 
     // Real key-up (kitty protocol or SyncTERM evdev) + Doom's native turn ramp, so these byte-path
