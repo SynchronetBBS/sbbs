@@ -2800,14 +2800,13 @@ else
             onbar = ( (syncduke_mouse_enabled() && probey == 0) || probey == 4 || (!syncduke_kitty_active() && !syncduke_evdev_active() && (probey == 2 || probey == 3)) );
 
             x = probe(c+6,43,16,6);
+            if(!syncduke_mouse_enabled() && probey == 0)   // MOUSE SENSITIVITY (row 0) is hidden when
+                probey = 1;                                // the mouse is off -> keep the cursor off the blank row
             switch(x)
             {
                 // SyncDuke: hint while hovering MOUSE STEERING (row 1), mirroring the ALT-M
-                // hint; probe() returns -(probey+2) for a hovered non-slider item.
-                case -2:                // MOUSE SENSITIVITY hovered: only hint when it's greyed/locked
-                    if(!syncduke_mouse_enabled())   // (row 0 returns -2 on every non-arrow frame, mouse on or off)
-                        gametext(320>>1,43+16*6+3,"ENABLE THE MOUSE FIRST (CTRL-O)",0,2+8+16);
-                    break;
+                // hint; probe() returns -(probey+2) for a hovered non-slider item. (MOUSE
+                // SENSITIVITY / row 0 is hidden when the mouse is off, so no hint there.)
                 case -3:
                     gametext(320>>1,43+16*6+3,"*** SHORTCUT: CTRL-O ***",0,2+8+16);
                     break;
