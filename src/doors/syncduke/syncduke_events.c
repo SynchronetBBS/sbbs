@@ -101,6 +101,18 @@ static int ev_secs(void)
 	return (int)((uint32_t)totalclock - ev_level_start) / TICRATE;
 }
 
+/* The engine's OWN per-level play time, in seconds -- the value the bonus screen shows
+ * as "Your Time". It counts game tics (player_par++ once per 26 Hz game tic; the bonus
+ * screen divides by 26, see game.c dobonus) and lives in the player struct, so it is
+ * written into savegames and RESUMES on load -- unlike ev_secs()'s door wall clock,
+ * which restarts the timer at the door's level entry and so over-reports after a
+ * save/load. Read it at the MODE_EOL edge, before the next level's resetplayerstats()
+ * zeroes it. */
+static int ev_level_secs(void)
+{
+	return ps[myconnectindex].player_par / 26;
+}
+
 /* A completed level and the time it took -- logged on the level-change edge, so
  * `vol`/`lev` name the level just CLEARED (not the one entered) and `secs` is its
  * own elapsed. Matches SyncDOOM's sd_event_level ("cleared <map> in M:SS"). */
@@ -162,7 +174,7 @@ void syncduke_events_tick(void)
 	 * flow (and the few that slipped through logged secs=0, timed at level entry). Log the
 	 * level just finished, with its real elapsed time, here instead. */
 	if (eol && !was_eol && in_game)
-		ev_level(vol, lev, ev_secs());
+		ev_level(vol, lev, ev_level_secs());   /* engine's Your-Time, survives save/load */
 	was_eol = eol;
 
 	if (ev_real_game() && !in_game) {
