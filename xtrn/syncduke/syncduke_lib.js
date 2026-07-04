@@ -253,10 +253,13 @@ function sd_list_open_games(cfg) {
 function sd_event_text(e) {
 	switch (e.type) {
 		case "frag":  return e.killer + " fragged " + e.victim;
-		case "start": return e.user + " joined (" + (e.mode || "single") + ")";
 		case "level": return e.user + " cleared " + e.map + " in " + gl.mmss(e.secs);
 		case "death": return e.user + " died on " + e.map;
 	}
+	// "start" is intentionally NOT rendered: a solo (or MP) join would post a lobby
+	// feed line every time someone launches the door, which clutters it. Matches
+	// SyncDOOM, whose feed shows only clears / frags / deaths. The C door still writes
+	// the "start" record to events.jsonl (debug/telemetry) -- it's just not surfaced.
 	return null;
 }
 
@@ -264,9 +267,9 @@ function sd_event_text(e) {
 // Live who's-online + recent-activity panel (bottom of the lobby)
 // ---------------------------------------------------------------------------
 
-// Up to `max` recent displayable events (most recent first) for the panel. SyncDuke's
-// sd_event_text renders every event type, so nothing is filtered today -- but this
-// routes through the shared filter so a future hidden type just works.
+// Up to `max` recent displayable events (most recent first) for the panel. Routes
+// through the shared filter, which drops events sd_event_text() returns null for
+// (e.g. "start" joins) so they don't shrink the visible feed.
 function sd_recent_events(max, max_age) {
 	return gl.recent_events(SD_EVENTS, max, sd_event_text, max_age);
 }
