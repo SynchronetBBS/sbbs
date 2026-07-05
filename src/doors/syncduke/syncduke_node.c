@@ -157,19 +157,27 @@ static void syncduke_node_recv(void)
 		return;
 	/* strip Ctrl-A codes + BEL, fold whitespace runs to one space -> one flowing string */
 	for (s = raw, d = clean; *s && d < clean + sizeof(clean) - 1; s++) {
-		if (*s == '\x01') { if (s[1])
-								s++; continue; }
+		if (*s == '\x01') {                              /* drop Ctrl-A attribute code (+ the char it colors) */
+			if (s[1])
+				s++;
+			continue;
+		}
 		if (*s == '\x07')
 			continue;
-		if (*s == '\r' || *s == '\n' || *s == ' ') { if (d > clean && d[-1] != ' ')
-														 *d++ = ' '; continue; }
+		if (*s == '\r' || *s == '\n' || *s == ' ') {     /* fold whitespace runs to one space */
+			if (d > clean && d[-1] != ' ')
+				*d++ = ' ';
+			continue;
+		}
 		*d++ = *s;
 	}
 	while (d > clean && d[-1] == ' ') d--;
 	*d = '\0';
 	/* word-wrap into the banner (verbatim -- NO "paging" label) */
-	w = SD_NODE_OVCOLS - 2; if (w > 80)
-		w = 80; if (w < 20)
+	w = SD_NODE_OVCOLS - 2;
+	if (w > 80)
+		w = 80;
+	if (w < 20)
 		w = 20;
 	len = (int)strlen(clean); pos = 0; r = 0;
 	while (pos < len && r < SD_NODE_OVROWS) {

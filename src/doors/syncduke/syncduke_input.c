@@ -711,8 +711,12 @@ static int csi_params(int *out, int max)
 	for (i = 0; i <= csi_len && n < max; i++) {
 		char c = (i < csi_len) ? csi_par[i] : ';';   /* sentinel terminator */
 		if (c >= '0' && c <= '9') { v = v * 10 + (c - '0'); have = 1; }
-		else if (c == ';') { if (have)
-								 out[n++] = v; v = 0; have = 0; }
+		else if (c == ';') {
+			if (have)
+				out[n++] = v;
+			v = 0;
+			have = 0;
+		}
 	}
 	return n;
 }
@@ -899,9 +903,12 @@ static void evdev_edge(int code, int down, int gameplay, int now)
 	 * latched-down "freeze", so we never forward physical Alt.)  The Shift bit also gates the
 	 * menu/text uppercase fold below. */
 	switch (code) {
-		case 29: case 97:  if (down)
-				g_evdev_mods |= EVDEV_MOD_CTRL; else
-				g_evdev_mods &= ~EVDEV_MOD_CTRL; return;                                                              /* L/R Ctrl  */
+		case 29: case 97:                                /* L/R Ctrl: track only */
+			if (down)
+				g_evdev_mods |= EVDEV_MOD_CTRL;
+			else
+				g_evdev_mods &= ~EVDEV_MOD_CTRL;
+			return;
 		case 42: case 54:                                /* L/R Shift = Run (sc_LeftShift) + Strafe (sc_LeftAlt) */
 			if (down) {
 				g_evdev_mods |= EVDEV_MOD_SHIFT;
@@ -913,9 +920,12 @@ static void evdev_edge(int code, int down, int gameplay, int now)
 				hold_release(sc_LeftAlt);
 			}
 			return;
-		case 56: case 100: if (down)                     /* L/R physical Alt: track only (NOT forwarded -- see above) */
-				g_evdev_mods |= EVDEV_MOD_ALT; else
-				g_evdev_mods &= ~EVDEV_MOD_ALT; return;
+		case 56: case 100:                               /* L/R physical Alt: track only (NOT forwarded -- see above) */
+			if (down)
+				g_evdev_mods |= EVDEV_MOD_ALT;
+			else
+				g_evdev_mods &= ~EVDEV_MOD_ALT;
+			return;
 	}
 
 	/* Drop the enable-time held-key resync (see SYNCDUKE_EVDEV_SETTLE_MS) so a key still held from
@@ -966,12 +976,18 @@ static void evdev_edge(int code, int down, int gameplay, int now)
 	}
 
 	switch (code) {                                  /* arrows / navigation / function keys */
-		case 103: if (down)
-				hold_press(sc_UpArrow); else
-				hold_release(sc_UpArrow); return;                                                /* Up   -> forward */
-		case 108: if (down)
-				hold_press(sc_DownArrow); else
-				hold_release(sc_DownArrow); return;                                              /* Down -> back    */
+		case 103:                                        /* Up   -> forward */
+			if (down)
+				hold_press(sc_UpArrow);
+			else
+				hold_release(sc_UpArrow);
+			return;
+		case 108:                                        /* Down -> back    */
+			if (down)
+				hold_press(sc_DownArrow);
+			else
+				hold_release(sc_DownArrow);
+			return;
 		case 105: /* Left  -> turn (adaptive native/synthetic in gameplay; single-step in menus) */
 			if (gameplay)
 				turn_edge(-1, down);
@@ -1007,20 +1023,34 @@ static void evdev_edge(int code, int down, int gameplay, int now)
 			if (down)
 				press(sc_End, now);
 			return;
-		case 59:  if (down && gameplay)
-				syncduke_help_request = 1; return;                               /* F1 -> GAME CONTROLS help */
-		case 60:  if (down)
-				press(sc_F2, now); return;                                       /* F2 -> Duke save */
-		case 61:  if (down)
-				press(sc_F3, now); return;                                       /* F3 -> Duke load */
-		case 62:  if (down)
-				syncduke_tier_cycle(); return;                                   /* F4 -> cycle graphics tier */
-		case 63:  if (down)
-				press(sc_F5, now); return;                                       /* F5 -> quicksave */
-		case 64:  if (down)
-				press(sc_F6, now); return;                                       /* F6 -> quickload */
-		case 65:  if (down)
-				press(sc_F7, now); return;                                       /* F7 -> chase view */
+		case 59:                                         /* F1 -> GAME CONTROLS help */
+			if (down && gameplay)
+				syncduke_help_request = 1;
+			return;
+		case 60:                                         /* F2 -> Duke save */
+			if (down)
+				press(sc_F2, now);
+			return;
+		case 61:                                         /* F3 -> Duke load */
+			if (down)
+				press(sc_F3, now);
+			return;
+		case 62:                                         /* F4 -> cycle graphics tier */
+			if (down)
+				syncduke_tier_cycle();
+			return;
+		case 63:                                         /* F5 -> quicksave */
+			if (down)
+				press(sc_F5, now);
+			return;
+		case 64:                                         /* F6 -> quickload */
+			if (down)
+				press(sc_F6, now);
+			return;
+		case 65:                                         /* F7 -> chase view */
+			if (down)
+				press(sc_F7, now);
+			return;
 	}
 
 	c = 0;
