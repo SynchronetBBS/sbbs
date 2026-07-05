@@ -266,7 +266,7 @@ static void syncduke_config_init(int argc, char **argv)
 	 * together and don't clutter user storage. SBBSDATA is set by SBBS; absent (dev run), or
 	 * an explicit path containing a separator, is used as-is (relative -> CWD). Then tag with
 	 * the node number (sbbs_my_node, from SBBSNNUM) so concurrent co-op nodes don't share a
-	 * file: syncduke.log -> <data>/syncduke/syncduke.<node>.log. */
+	 * file: syncduke.log -> <data>/syncduke/syncduke_n<node>.log. */
 	if (logpath[0]) {
 		const char *data = getenv("SBBSDATA");
 		char        resolved[PATH_MAX];
@@ -286,7 +286,9 @@ static void syncduke_config_init(int argc, char **argv)
 		} else {
 			snprintf(resolved, sizeof resolved, "%s", logpath);
 		}
-		if (node > 0) {                         /* node-tag: ".<node>" before the extension */
+		if (node > 0) {                         /* node-tag: "_n<node>" before the extension --
+		                                         * NOT ".<node>", which collides with Synchronet's
+		                                         * "<name>.<digit>.log" rolled-over-log convention */
 			char *dot = strrchr(resolved, '.');
 			char *sep = strrchr(resolved, '/');
 #ifdef _WIN32
@@ -295,10 +297,10 @@ static void syncduke_config_init(int argc, char **argv)
 				sep = bs;
 #endif
 			if (dot != NULL && dot > sep)
-				snprintf(logpath, sizeof logpath, "%.*s.%d%s",
+				snprintf(logpath, sizeof logpath, "%.*s_n%d%s",
 				         (int)(dot - resolved), resolved, node, dot);
 			else
-				snprintf(logpath, sizeof logpath, "%s.%d", resolved, node);
+				snprintf(logpath, sizeof logpath, "%s_n%d", resolved, node);
 		} else {
 			strncpy(logpath, resolved, sizeof(logpath) - 1);
 			logpath[sizeof(logpath) - 1] = '\0';
