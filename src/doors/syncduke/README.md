@@ -165,7 +165,9 @@ uncrustify config.
 
 SyncDuke ships **no game data.** You supply a base `DUKE3D.GRP` — the shareware
 GRP (11,035,779 bytes, "SHAREWARE 1.3D") is freely redistributable; the Full
-1.3D / Plutonium 1.4 / Atomic 1.5 GRPs you own also work.
+1.3D / Plutonium 1.4 / Atomic 1.5 GRPs you own also work — and one of those
+full GRPs is **required** for third-party user maps and add-on GRPs (see
+[Third-party user maps & add-on GRPs](#third-party-user-maps--add-on-grps)).
 
 1. `./build.sh` then `./deploy.sh` — builds `syncduke` and installs it into
    `xtrn/syncduke/`.
@@ -208,16 +210,7 @@ arguments) to print this list.
 | `-charset utf8\|cp437\|auto` | Client character set for the block/text tiers. `auto` (default) detects it from Synchronet's `<node>/terminal.ini`; pass `utf8` or `cp437` explicitly on **non-Synchronet BBSes** (DOOR32.SYS installs with no `terminal.ini`), where auto-detection can't work. `utf8` makes the block tiers emit native Unicode and adds the higher-res **quadrant/sextant** tiers to the F4 cycle. Overrides `syncduke.ini [video] charset`. |
 | `-log <path>` | Write a door debug log to `<path>` (else `syncduke.ini [debug] log`, else off). |
 | `-eventlog <path>` | Append game events (level start, deaths/frags) as JSONL to `<path>` for the lobby's activity feed. |
-| `-map <file>` | Play a third-party **user map** (`.map`) instead of the stock levels (single-player and net games). Most user maps need the full/Atomic GRP. The engine's `/g<grp>` / `/x<con>` options load **add-on GRPs** (official expansions) on top of the base GRP. |
-
-### User maps & add-on GRPs (lobby picker)
-
-Sysops can offer third-party content from the lobby: add one `[map:<Name>]`
-section per choice to `syncduke.ini` (`file =` a user `.map`, and/or `grp =` an
-add-on GRP with optional `con =`; see `syncduke.example.ini`). When any are
-configured, **S**olo and **C**reate first ask *what to play* — stock Duke is
-always choice #1 — and multiplayer entries carry the choice so the joiner
-launches with matching content. With none configured, no prompt appears.
+| `-map <file>` | Play a third-party **user map** (`.map`) instead of the stock levels (single-player and net games); **requires a non-shareware base GRP**. The engine's `/g<grp>` / `/x<con>` options load **add-on GRPs** (official expansions) on top of the base GRP. See [Third-party user maps & add-on GRPs](#third-party-user-maps--add-on-grps). |
 
 **Multiplayer** (co-op and dukematch) — the lobby sets these itself, so you
 don't normally pass them by hand:
@@ -238,6 +231,50 @@ Duke3D engine, which takes DOS-style slash options:
 | `/c1` \| `/c2` \| `/c3` | Multiplayer mode: dukematch (spawn) \| co-op \| dukematch (no item respawn). |
 | `/m` | Monsters off. |
 | `/t` | Respawn items. |
+
+### Third-party user maps & add-on GRPs
+
+Sysops can offer third-party content — user maps (`.map` files) and **add-on
+GRPs** (official expansions like *Duke It Out In D.C.*) — as choices in the
+lobby's picker.
+
+> **⚠ Base-GRP requirement:** third-party content needs a **full (registered)
+> base `DUKE3D.GRP`** — Full 1.3D, Plutonium 1.4, or Atomic 1.5 — **not the
+> shareware GRP**. The engine detects its edition from the base GRP's CRC at
+> startup, and the shareware edition has no user-map path at all: a `-map`
+> launch dies with *"Internal Map … not found in Shareware grp pack!"* and the
+> user is dropped back to the BBS. (Independent of that, most user maps place
+> registered-episode art/enemies/music, and the official add-on GRPs are Atomic
+> expansions.) The lobby does **not** check the GRP edition, so don't configure
+> `[map:*]` entries on a shareware-GRP install — they'd be offered and then
+> fail to launch.
+
+Setup:
+
+1. Put the files somewhere the door can read — conventionally under the door's
+   own directory, e.g. `xtrn/syncduke/maps/Roch.map` and
+   `xtrn/syncduke/addons/dukedc.grp`. Relative paths in `syncduke.ini` resolve
+   against the door's directory; absolute paths work too.
+2. Add one `[map:<Name>]` section per choice to `syncduke.ini` — `<Name>` is
+   the label players see in the picker:
+
+   ```ini
+   [map:Roch]
+   file = maps/Roch.map        ; a user map, played via the engine's usermap slot
+
+   [map:Duke It Out In D.C.]
+   grp = addons/dukedc.grp     ; add-on GRP, overlaid on the base GRP (/g)
+   con = addons/dukedc.con     ; the add-on's CON script, if it ships one (/x)
+   ```
+
+   `file`, `grp`, and `con` combine freely in one entry (e.g. an add-on that
+   also ships a map). No recycle is needed — the lobby re-reads `syncduke.ini`
+   each time it runs.
+3. When any entries are configured, **S**olo and **C**reate first ask *what to
+   play* — stock Duke is always choice #1. With none configured, no prompt
+   appears. Multiplayer games carry the choice in their registry entry, so a
+   joiner launches with matching content automatically (both peers read the
+   same sysop-installed files; nothing is installed per user).
 
 ---
 
