@@ -76,6 +76,14 @@ extern char syncduke_net_peer[128];
 static int syncduke_allow_record;
 int syncduke_record_enabled(void) { return syncduke_allow_record; }
 
+/* Whether Duke's title-screen attract demos (the DEMO*.DMO lumps) play when idle.
+ * Default OFF: the Atomic/Full GRPs ship demo lumps (the shareware GRP does not), so
+ * without this a remote user picking single-player watches a demo stream instead of
+ * landing on the menu. Enable with syncduke.ini [game] attract_demos = true.
+ * Consumed by playback() in Game/src/game.c. */
+static int syncduke_play_attract;
+int syncduke_attract_demos(void) { return syncduke_play_attract; }
+
 /* Max emitted JXL image width in px (the tier scales Duke's frame up to fill the
  * canvas, capped here so a huge window can't produce an enormous frame).  0 =
  * uncapped.  syncduke.ini [video] scale_max; default matches SyncDOOM's 1280. */
@@ -205,6 +213,7 @@ static void syncduke_config_init(int argc, char **argv)
 		if (!logpath[0])
 			iniGetString(ini, "debug", "log", "", logpath);   /* blank => logging off */
 		syncduke_allow_record = iniGetBool(ini, "game", "record", FALSE);   /* demos off by default */
+		syncduke_play_attract = iniGetBool(ini, "game", "attract_demos", FALSE);   /* title attract demos off by default */
 		syncduke_scale_max = iniGetInteger(ini, "video", "scale_max", syncduke_scale_max);
 		syncduke_sixel_w = iniGetInteger(ini, "video", "sixel_max_width", syncduke_sixel_w);
 		if (syncduke_sixel_w < 320)

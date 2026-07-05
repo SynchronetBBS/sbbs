@@ -8971,7 +8971,11 @@ int32_t playback(void)
 
     flushperms();
 
-	if(numplayers < 2 && ud.multimode_bot<2) foundemo = opendemoread(which_demo);
+	{	/* SyncDuke: skip Duke's title attract demos unless [game] attract_demos = true */
+		extern int syncduke_attract_demos(void);
+		if(numplayers < 2 && ud.multimode_bot<2 && syncduke_attract_demos())
+			foundemo = opendemoread(which_demo);
+	}
 
     if(foundemo == 0)
     {
