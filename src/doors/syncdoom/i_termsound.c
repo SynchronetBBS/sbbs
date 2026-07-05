@@ -4,8 +4,8 @@
 // digital sound effect to the user's terminal through SyncTERM's audio APC
 // (the termgfx audio manager). It's registered in i_sound.c's sound_modules[]
 // table, so the engine's ordinary S_StartSound -> I_StartSound path drives it
-// with no changes to game code. Music is a separate module_t and stays absent
-// for now (see the door's audio notes -- music needs the OPL render captured).
+// with no changes to game code. Music is a separate module_t (i_termmusic.c --
+// the MUS/MIDI lumps OPL-rendered through the same audio manager).
 //
 // Selection: snd_sfxdevice defaults to SNDDEVICE_SB, which is in our device
 // list, so InitSfxModule() picks this module when no SDL module is compiled in.

@@ -18,7 +18,9 @@ SyncDuke and its sibling [SyncDOOM](../syncdoom/) both build on.
 
 The core is **shareware Episode 1**, 64-bit. Beyond single-player it now has
 **co-op and dukematch multiplayer** through a **JS lobby** waiting room, and
-**audio** — digital sound effects plus OPL/MIDI music.
+**full audio** — digital sound effects plus OPL/MIDI music — which requires
+**SyncTERM v1.10 or later** (its audio channel); on any other terminal the game
+simply plays silent.
 
 ---
 
@@ -49,9 +51,10 @@ round-trip time.
 
 Most terminals send key-*down* only (no mouse, no key-up), so the scheme mirrors
 [SyncDOOM](../syncdoom/) (see the in-game **Controls Help** screen — on the main
-menu, or **F1** during play). Terminals that provide **real key-up** — **SyncTERM**
-(via its evdev key reports) and terminals speaking the **kitty keyboard protocol** —
-are the exception; see [Native key-up terminals](#native-key-up-terminals) below:
+menu, or **F1** during play). Terminals that provide **real key-up** — **SyncTERM
+v1.10+** (via its evdev key reports) and terminals speaking the **kitty keyboard
+protocol** — are the exception; see
+[Native key-up terminals](#native-key-up-terminals) below:
 
 | Key | Action | | Key | Action |
 |-----|--------|-|-----|--------|
@@ -89,7 +92,7 @@ need them.*
 Two kinds of terminal give SyncDuke **real key-up** events, negotiated automatically
 at connect (no setting, and mutually exclusive):
 
-- **SyncTERM** — via its **evdev** key reports.
+- **SyncTERM v1.10 or later** — via its **evdev** key reports.
 - Terminals implementing the [kitty keyboard
   protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) — e.g. **Contour**.
 
@@ -285,8 +288,9 @@ Setup:
   and **save / load**, all over the terminal.
 - **Multiplayer** — co-op and dukematch through the JS lobby's waiting room
   (`-netrole`/`-netport`/`-netpeer`), alongside single-player.
-- **Audio** — digital SFX and OPL/MIDI music (with 3-D positional panning) over
-  SyncTERM's audio channel.
+- **Audio** — full sound: digital SFX and OPL/MIDI music (with 3-D positional
+  panning) over SyncTERM's audio channel. **Requires SyncTERM v1.10+**; on a
+  terminal without the audio channel the game is fully playable, just silent.
 - Save files are **64-bit-only** (the in-engine save/relocation code was widened
   to `intptr_t`); they are not interchangeable with a 32-bit Duke build.
 - **Cross-platform build** — Linux/Unix (GCC/Clang, `build.sh`) and Windows

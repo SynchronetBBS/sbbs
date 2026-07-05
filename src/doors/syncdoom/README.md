@@ -5,8 +5,10 @@ the game to the user's terminal over the telnet/SSH session — no native client
 no X11. It is a [doomgeneric](https://github.com/ozkl/doomgeneric) /
 [Chocolate Doom](https://www.chocolate-doom.org/) port whose video, input and
 networking back end (`syncdoom.c`) talks directly to the terminal and the
-BBS-supplied TCP socket. It runs on any **DOOR32.SYS**-compatible BBS, and looks best
-on **SyncTERM** (real graphics via its APC/JXL image-cache protocol).
+BBS-supplied TCP socket. It runs on any **DOOR32.SYS**-compatible BBS, and looks
+(and sounds) best on **SyncTERM**: real graphics via its APC/JXL image-cache
+protocol, and **full audio** — digital sound effects plus OPL-rendered music —
+via its audio channel (**SyncTERM v1.10 or later**; see [Audio](#audio)).
 
 Co-op and deathmatch are supported, played between BBS nodes (or against a
 detached dedicated server). The companion JavaScript lobby that browses and
@@ -32,6 +34,19 @@ be forced from the command line (`-jxl`, `-sixel`, `-text`) or the config file.
 
 JXL support is a compile-time option; a build without libjxl still serves the
 sixel and text tiers.
+
+---
+
+## Audio
+
+Full game audio is supported — **digital sound effects** and **music** (Doom's
+MUS/MIDI lumps, rendered to OPL3 FM and Opus-encoded; each track ships once and
+is then cached client-side) — delivered over **SyncTERM's audio channel**, the
+same transport SyncDuke uses.
+
+This **requires SyncTERM v1.10 or later**; the door probes the terminal's audio
+capability at connect. On an older SyncTERM or any other terminal the game is
+fully playable, just silent — every audio call is a harmless no-op.
 
 ---
 
@@ -134,14 +149,15 @@ turns better over a terminal. Changes save to a per-user `syncdoom.ini` in
 changes are written**, so the sysop's house defaults keep reaching players who
 haven't touched a given setting. An explicit `-kp*` flag still wins.
 
-**Kitty keyboard terminals** (e.g. **Contour**) are the exception. SyncDOOM
-negotiates the [kitty keyboard
-protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) automatically at
-connect and gets **real key-up** events — movement becomes **hold-to-move /
-release-to-stop** and turning uses Doom's native acceleration ramp, with none of
-the grace synthesis above involved. On such a terminal the TAP/HOLD/TURN/FAST-TURN
-controls show as **NATIVE** (and do nothing), and the Ctrl-S stats strip reports
-**`kbd:kitty`**. Other terminals keep the key-repeat scheme described here.
+**Native key-up terminals** are the exception: **SyncTERM v1.10 or later** (via
+its **evdev** key reports) and terminals speaking the [kitty keyboard
+protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) (e.g. **Contour**).
+SyncDOOM negotiates either automatically at connect and gets **real key-up**
+events — movement becomes **hold-to-move / release-to-stop** and turning uses
+Doom's native acceleration ramp, with none of the grace synthesis above
+involved. On such a terminal the TAP/HOLD/TURN/FAST-TURN controls show as
+**NATIVE** (and do nothing), and the Ctrl-S stats strip shows **`evdev/`** or
+**`kitty/`**. Other terminals keep the key-repeat scheme described here.
 
 ### WAD selection (passed through to the engine)
 
