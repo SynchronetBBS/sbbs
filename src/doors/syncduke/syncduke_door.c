@@ -294,8 +294,11 @@ void syncduke_sanitize_cmdline(int *argc, char **argv)
 	for (i = 1; i < n; i++) {
 		const char *a = argv[i];
 
-		/* -home/-grpdir <path>, -netrole/-netport/-netpeer <v>: drop flag + value */
+		/* -home/-grpdir/-log/-eventlog <path>, -netrole/-netport/-netpeer <v>: drop
+		 * flag + value.  (-log/-eventlog values are absolute paths too -- unstripped
+		 * they parse as /options; "/sbbs/..." only survived as option 's' = skill.) */
 		if (strcmp(a, "-home") == 0 || strcmp(a, "-grpdir") == 0
+		    || strcmp(a, "-log") == 0 || strcmp(a, "-eventlog") == 0
 		    || strcmp(a, "-netrole") == 0 || strcmp(a, "-netport") == 0
 		    || strcmp(a, "-netpeer") == 0) {
 			if (i + 1 < n)

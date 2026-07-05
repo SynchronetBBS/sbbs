@@ -2446,8 +2446,15 @@ void showtwoscreens(void)
 void gameexit(char  *msg)
 {
     char  t[256];
-    
+
     strncpy(t,msg,256); t[255] = 0;
+
+    if(*t != 0)
+    {   /* SyncDuke: record WHY the game is exiting -- an engine error ("User Map x not
+         * found!", CON errors, ...) otherwise only flashes on the closing screen */
+        extern void syncduke_log(const char*,...);
+        syncduke_log("gameexit: %s", t);
+    }
 
     if(*t != 0) ps[myconnectindex].palette = (uint8_t  *) &palette[0];
 
@@ -7217,6 +7224,9 @@ void checkcommandline(int argc,char  **argv)
 				if( strchr(boardfilename,'.') == 0)
 					strcat(boardfilename,".map");
 				printf("Using level: '%s'.\n",boardfilename);
+				i++;   /* SyncDuke: advance past the value (as -net/-game_dir do) -- without
+				        * this the map PATH is re-parsed next iteration, and a Unix absolute
+				        * path ("/home/...") reads as a /option -> command-line help + exit */
 				continue;
 
 			}

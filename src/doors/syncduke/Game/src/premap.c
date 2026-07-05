@@ -1507,7 +1507,15 @@ if (!VOLUMEONE)
     
     if( boardfilename[0] != 0 && ud.m_level_number == 7 && ud.m_volume_number == 0 )
     {
-		sprintf(fulllevelfilename, "%s\\%s",  getGameDir(), boardfilename);
+		/* SyncDuke: only prepend the game dir when there IS one.  With an empty
+		 * getGameDir() the old "%s\\%s" made "\<path>"; SafeFileExists NORMALIZES
+		 * the backslash (so it reported the file present) but loadboard's open
+		 * does not -- the sane fallback below never ran and every -map user map
+		 * "wasn't found". */
+		if( getGameDir()[0] != '\0' )
+			sprintf(fulllevelfilename, "%s\\%s",  getGameDir(), boardfilename);
+		else
+			sprintf(fulllevelfilename, "%s", boardfilename);
 		if(!SafeFileExists(fulllevelfilename))
 		{
 			sprintf(fulllevelfilename, "%s", boardfilename);
