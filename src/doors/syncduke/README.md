@@ -49,8 +49,9 @@ round-trip time.
 
 Most terminals send key-*down* only (no mouse, no key-up), so the scheme mirrors
 [SyncDOOM](../syncdoom/) (see the in-game **Controls Help** screen — on the main
-menu, or **F1** during play). Terminals that speak the **kitty keyboard protocol**
-are the exception — see [Kitty keyboard terminals](#kitty-keyboard-terminals) below:
+menu, or **F1** during play). Terminals that provide **real key-up** — **SyncTERM**
+(via its evdev key reports) and terminals speaking the **kitty keyboard protocol** —
+are the exception; see [Native key-up terminals](#native-key-up-terminals) below:
 
 | Key | Action | | Key | Action |
 |-----|--------|-|-----|--------|
@@ -83,17 +84,23 @@ need them.*
 | **Ctrl-U** | who's online — brief overlay of the other BBS nodes |
 | **Ctrl-P** | page / message another node: shows who's online, then type a message over the running game (non-blocking, MP-safe — your Duke stands still, like `T` chat). Prefix a node # (`5 hi` / `5: hi`) to target one, or leave blank to message all. `Esc`/blank cancels. |
 
-### Kitty keyboard terminals
+### Native key-up terminals
 
-On a terminal that implements the [kitty keyboard
-protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) — e.g. **Contour** —
-SyncDuke negotiates it automatically at connect (no setting) and gets **real
-key-up** events. That means **hold-to-move / release-to-stop** instead of the
-key-repeat heuristic, and turning uses Duke's **native** acceleration ramp, so it
-feels like the original. The Ctrl-S stats strip shows **`kbd:kitty`** when it's
-active, and the tap/hold/turn/fast-turn knobs grey out (they only matter without
-key-up). SyncTERM and other terminals are unaffected — they keep the key-repeat
-scheme.
+Two kinds of terminal give SyncDuke **real key-up** events, negotiated automatically
+at connect (no setting, and mutually exclusive):
+
+- **SyncTERM** — via its **evdev** key reports.
+- Terminals implementing the [kitty keyboard
+  protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) — e.g. **Contour**.
+
+With real key-up, SyncDuke drops the key-repeat heuristic for authentic input:
+**hold-to-move / release-to-stop**, **momentary crouch** (hold **Z** to duck, release
+to stand — not the sticky toggle basic terminals use), and turning uses Duke's
+**native** acceleration ramp — so it feels like the original. The Ctrl-S stats strip
+shows **`evdev/`** or **`kitty/`** (with a `nat`/`syn` turn-model suffix) when a native
+path is active, and the tap/hold/turn/fast-turn knobs grey out (they only matter
+without key-up). Plain key-down-only terminals keep the key-repeat scheme — and the
+sticky-toggle crouch.
 
 ---
 

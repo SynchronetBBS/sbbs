@@ -98,10 +98,12 @@ static int32_t release_at[128];  /* frame counter value at which to release it *
  * the report lands (csi_final 'u' case), which also pushes our flags (CSI>11u). */
 static int g_kitty_active;
 
-/* Sticky-crouch toggle: a terminal can't hold a key (no key-up; auto-repeat is laggy), so
- * momentary crouch (hold Z) is unusable.  Instead 'z' toggles this latch and we re-assert the
- * Crouch scancode every pump while it's on -- press once to crouch, again to stand.  (Under the
- * kitty protocol real key-up exists, but crouch stays a toggle for consistency.) */
+/* Sticky-crouch toggle -- BYTE PATH ONLY.  A plain terminal has no key-up (auto-repeat is
+ * laggy), so momentary crouch (hold Z) is unusable there: instead 'z' toggles this latch and
+ * we re-assert the Crouch scancode (sc_Z) every pump while it's on -- press once to crouch,
+ * again to stand.  Under a NATIVE key-up path (kitty keyboard / SyncTERM evdev) crouch is
+ * instead MOMENTARY like the original -- 'z' flows through hold_press/hold_release (hold to
+ * duck, release to stand) -- so this latch stays 0 there. */
 static int g_crouch_toggle;
 
 /* PgUp/PgDn look "notch" (syncduke_pitch_step), consumed each tic in processinput() (player.c): one
@@ -808,10 +810,8 @@ static void handle_key(int c, int gameplay, int now, int kev)
 		return;
 	}
 
-	if (kev == 3) {                                  /* key-up: release the held game scancode */
-		if (gameplay && (c == 'z' || c == 'Z'))
-			return;                                  /* crouch is a latch, not a hold */
-		sc = syncduke_map_key(&cb, 1, gameplay);
+	if (kev == 3) {                                  /* key-up (native only): release the held game scancode */
+		sc = syncduke_map_key(&cb, 1, gameplay);     /* incl. z=Crouch: native crouch is momentary -- release stands up */
 		if (sc > 0)
 			hold_release(sc);
 		return;
@@ -835,7 +835,7 @@ static void handle_key(int c, int gameplay, int now, int kev)
 			}
 			return;
 		}
-		if (gameplay && (c == 'z' || c == 'Z')) { g_crouch_toggle = !g_crouch_toggle; return; }   /* sticky crouch */
+		if (gameplay && (c == 'z' || c == 'Z') && kev == 0) { g_crouch_toggle = !g_crouch_toggle; return; }   /* byte path: sticky crouch (no key-up to hold a duck); native 'z' falls through to hold_press */
 	} else if (c == 0x13 || c == 0x14 || c == 0x0f || c == 0x12 || c == 0x15 || c == 0x10 || (c >= 0x01 && c <= 0x07)
 	           || (gameplay && (c == 'z' || c == 'Z'))) {
 		return;                                      /* swallow kitty auto-repeat of a shortcut/toggle */
