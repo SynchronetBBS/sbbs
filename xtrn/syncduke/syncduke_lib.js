@@ -59,12 +59,26 @@ var SD_LEVELS = [
 // defaults. Returns { net: {...} }. The [grp]/[video]/[game] sections are the C
 // door's concern (it reads the ini itself); the lobby only needs [net].
 function sd_load_config() {
-	var cfg = { net: {}, lobby: {}, dukematch: {} };
+	var cfg = { net: {}, lobby: {}, dukematch: {}, maps: [] };
 	var f = new File(SD_CFG);
 	if (f.open("r")) {
 		cfg.net = gl.read_overlaid(f, "net");
 		cfg.lobby = f.iniGetObject("lobby") || {};   // [lobby] live = true -> live panel
 		cfg.dukematch = f.iniGetObject("dukematch") || {};   // deathmatch sub-mode + options
+		// Sysop-curated playable extras -- one [map:<Display Name>] section each:
+		//   file = <usermap .map>   and/or   grp = <add-on .grp> [+ con = <.con>]
+		// Paths absolute or relative to the door dir. When any exist the lobby offers
+		// a picker (stock Duke is always choice #1); none configured -> no prompt.
+		var sects = f.iniGetSections("map:") || [];
+		for (var mi = 0; mi < sects.length; mi++) {
+			var mo = f.iniGetObject(sects[mi]) || {};
+			cfg.maps.push({
+				key:  sects[mi].substr(4),
+				file: mo.file ? String(mo.file) : null,
+				grp:  mo.grp  ? String(mo.grp)  : null,
+				con:  mo.con  ? String(mo.con)  : null
+			});
+		}
 		f.close();
 	}
 	gl.apply_defaults(cfg.net, {
@@ -110,6 +124,48 @@ function sd_home() {
 }
 
 // ---------------------------------------------------------------------------
+// Playable extras ([map:*] entries)
+// ---------------------------------------------------------------------------
+
+// Resolve a [map:*] path: absolute stays as-is, relative is under the door dir.
+// (The door chdir's into the GRP dir at startup, so relative paths on the command
+// line would resolve against the wrong place -- always hand it absolutes.)
+function sd_map_path(p) {
+	p = String(p);
+	if (p.length && p.charAt(0) != '/' && p.charAt(0) != '\\' && p.charAt(1) != ':')
+		p = SD_DIR + p;
+	return p;
+}
+
+// The engine arguments for a picked [map:*] entry (null/undefined = stock Duke).
+// Quoted for cmd parsing; /g (add-on group file) must stay LAST on the command
+// line per the engine's own usage text, so callers append this at the very end.
+function sd_map_args(map) {
+	var args = "";
+	if (!map)
+		return args;
+	if (map.file)
+		args += ' -map "' + sd_map_path(map.file) + '"';
+	if (map.con)
+		args += ' "/x' + sd_map_path(map.con) + '"';
+	if (map.grp)
+		args += ' "/g' + sd_map_path(map.grp) + '"';
+	return args;
+}
+
+// Look a [map:*] entry up by display name (a registry entry's `mapname`); null
+// when blank/absent (stock) or not configured on this host (misconfiguration --
+// every host of a multi-host BBS shares syncduke.ini, so normally can't happen).
+function sd_map_by_name(cfg, name) {
+	if (!name || !cfg.maps)
+		return null;
+	for (var i = 0; i < cfg.maps.length; i++)
+		if (cfg.maps[i].key == name)
+			return cfg.maps[i];
+	return null;
+}
+
+// ---------------------------------------------------------------------------
 // Door command line
 // ---------------------------------------------------------------------------
 
@@ -133,7 +189,8 @@ function sd_home() {
 // registry entry (identical for both), and /m//t come from [dukematch] in
 // syncduke.ini -- a file shared by every host of a multi-host BBS (like [net]), so
 // the arena options are identical across hosts without any in-game reconciliation.
-function sd_cmd(role, port, peer, level, mode, dmopts) {
+// map = a [map:*] entry (see sd_load_config) or null for stock content.
+function sd_cmd(role, port, peer, level, mode, dmopts, map) {
 	var cmd = SD_BINARY + " -s%H -t%T -name %a -home " + sd_home()
 	    + ' -eventlog "' + SD_EVENTS + '"';   // door appends start/level/death/frag here
 	if (role == "master")
@@ -142,7 +199,10 @@ function sd_cmd(role, port, peer, level, mode, dmopts) {
 		cmd += " -netrole join -netpeer " + peer;
 	if (role) {                                 // net game: warp both peers to the level
 		var cflag = (mode == "dm") ? "/c1" : (mode == "dmnospawn") ? "/c3" : "/c2";
-		cmd += " /v1 /l" + parseInt(level, 10) + " " + cflag;
+		if (map && map.file)
+			cmd += " " + cflag;                 // usermap: -map itself selects the level (7)
+		else
+			cmd += " /v1 /l" + parseInt(level, 10) + " " + cflag;
 		if (mode == "dm" || mode == "dmnospawn") {
 			// Monsters off unless explicitly enabled (classic DM default).
 			var monstersOn = dmopts && (dmopts.monsters === true || dmopts.monsters === "true");
@@ -152,6 +212,7 @@ function sd_cmd(role, port, peer, level, mode, dmopts) {
 				cmd += " /t";
 		}
 	}
+	cmd += sd_map_args(map);                    // LAST: the engine wants /g at the end
 	return cmd;
 }
 
@@ -169,14 +230,20 @@ function sd_entry_name(port) {
 // Write the "waiting for a player" registry entry for a match the creator is about
 // to host as master. `addr` is the advertised cross-host address (blank for
 // same-host). Returns the entry's file path (remove it when the match ends).
-function sd_write_entry(cfg, port, level, mode) {
-	var lev = sd_find_level(level);
+function sd_write_entry(cfg, port, level, mode, map) {
+	// A usermap game has no stock level: the entry carries the [map:*] display name
+	// instead (the joiner resolves it back through its own shared syncduke.ini), and
+	// level 7 = the engine's usermap slot. An add-on GRP entry still uses stock
+	// level numbers (the add-on replaces the episode content, not the numbering).
+	var usermap = (map && map.file) ? true : false;
+	var lev = usermap ? { num: 7, name: map.key } : sd_find_level(level);
 	return gl.write_game(SD_GAMES, sd_entry_name(port), {
 		host:      (typeof user != "undefined" && user.alias) ? user.alias : "Someone",
 		addr:      gl.advertise_addr(cfg.net),     // "" => same-host (joiner uses 127.0.0.1)
 		port:      port,
 		level:     lev.num,
 		levelname: lev.name,
+		mapname:   map ? map.key : "",             // "" = stock content
 		mode:      mode || "coop",                 // "coop" | "dm" | "dmnospawn"
 		status:    "waiting",
 		players:   1,

@@ -208,6 +208,16 @@ arguments) to print this list.
 | `-charset utf8\|cp437\|auto` | Client character set for the block/text tiers. `auto` (default) detects it from Synchronet's `<node>/terminal.ini`; pass `utf8` or `cp437` explicitly on **non-Synchronet BBSes** (DOOR32.SYS installs with no `terminal.ini`), where auto-detection can't work. `utf8` makes the block tiers emit native Unicode and adds the higher-res **quadrant/sextant** tiers to the F4 cycle. Overrides `syncduke.ini [video] charset`. |
 | `-log <path>` | Write a door debug log to `<path>` (else `syncduke.ini [debug] log`, else off). |
 | `-eventlog <path>` | Append game events (level start, deaths/frags) as JSONL to `<path>` for the lobby's activity feed. |
+| `-map <file>` | Play a third-party **user map** (`.map`) instead of the stock levels (single-player and net games). Most user maps need the full/Atomic GRP. The engine's `/g<grp>` / `/x<con>` options load **add-on GRPs** (official expansions) on top of the base GRP. |
+
+### User maps & add-on GRPs (lobby picker)
+
+Sysops can offer third-party content from the lobby: add one `[map:<Name>]`
+section per choice to `syncduke.ini` (`file =` a user `.map`, and/or `grp =` an
+add-on GRP with optional `con =`; see `syncduke.example.ini`). When any are
+configured, **S**olo and **C**reate first ask *what to play* — stock Duke is
+always choice #1 — and multiplayer entries carry the choice so the joiner
+launches with matching content. With none configured, no prompt appears.
 
 **Multiplayer** (co-op and dukematch) — the lobby sets these itself, so you
 don't normally pass them by hand:

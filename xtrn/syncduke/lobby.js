@@ -82,7 +82,26 @@ function sd_send_pages(targets, lev, modelabel) {
 // Single-player: launch the door with no net/warp so Duke's own menus drive
 // episode/skill/level selection.
 function sd_solo() {
-	sd_play(sd_cmd(null, null, null, null));
+	var pick = sd_pick_map();
+	if (pick.cancel)
+		return;
+	sd_play(sd_cmd(null, null, null, null, null, null, pick.map));
+}
+
+// Pick what to play: stock Duke, or one of the sysop's [map:*] extras (user maps /
+// add-on GRPs from syncduke.ini). Returns { cancel: true } on abort, else
+// { map: null | entry } (null = stock). With nothing configured there's no prompt
+// at all -- stock Duke launches directly, exactly as before.
+function sd_pick_map() {
+	if (!cfg.maps || !cfg.maps.length)
+		return { map: null };
+	console.uselect(0, "what to play", "Duke Nukem 3D");
+	for (var i = 0; i < cfg.maps.length; i++)
+		console.uselect(i + 1, "what to play", cfg.maps[i].key);
+	var sel = console.uselect(0);           // default-highlight the stock game
+	if (sel < 0)
+		return { cancel: true };
+	return { map: (sel == 0) ? null : cfg.maps[sel - 1] };
 }
 
 // Present the game-type picker (co-op vs dukematch). Returns "coop", "dm", or
@@ -104,10 +123,22 @@ function sd_pick_mode() {
 // Create a co-op match: pick a level, host it as master, advertise it in the
 // registry, and enter the waiting room. The entry is removed when the door exits.
 function sd_create() {
-	var levnum = sd_pick_level();
-	if (levnum === null)
+	var pick = sd_pick_map();
+	if (pick.cancel)
 		return;
-	var lev = sd_find_level(levnum);
+	var map = pick.map;
+
+	var lev;
+	if (map && map.file) {
+		// A usermap IS the level -- no level picker; 7 = the engine's usermap slot,
+		// and everything downstream (pages, waiting room, entry) shows the map name.
+		lev = { num: 7, name: map.key };
+	} else {
+		var levnum = sd_pick_level();
+		if (levnum === null)
+			return;
+		lev = sd_find_level(levnum);
+	}
 
 	var mode = sd_pick_mode();
 	if (mode === null)
@@ -133,7 +164,7 @@ function sd_create() {
 	if (file_exists(stale_claim))
 		file_remove(stale_claim);
 
-	var entry = sd_write_entry(cfg, port, lev.num, mode);
+	var entry = sd_write_entry(cfg, port, lev.num, mode, map);
 	if (!entry) {
 		console.print("\r\n\1h\1rCould not create the game (registry write failed).\1n\r\n");
 		console.pause();
@@ -150,7 +181,7 @@ function sd_create() {
 	// the master door (so its handshake connects in ~1-2s instead of hanging). On
 	// cancel/hangup we tear the game down without ever launching (no silent solo game).
 	try {
-		if (sd_wait_room(entry, port, lev, mode) != "joined")
+		if (sd_wait_room(entry, port, lev, mode, map) != "joined")
 			return;                          // Q / hangup -> the finally clears the game
 		// A joiner committed -> the match is starting. Drop the entry (and the joiner's
 		// claim marker) from the registry NOW, so a third node never sees an in-progress
@@ -158,7 +189,7 @@ function sd_create() {
 		// joiner already has the peer address, so removing it before launch is safe (this
 		// restores the old remove-on-join behavior the claim-marker model changed).
 		sd_clear_game(entry);
-		sd_play(sd_cmd("master", port, null, lev.num, mode, cfg.dukematch));
+		sd_play(sd_cmd("master", port, null, lev.num, mode, cfg.dukematch, map));
 	} finally {
 		// Idempotent: covers the cancel/hangup return above and any unexpected throw out
 		// of the waiting room; a no-op on the joined path (already cleared before launch).
@@ -180,6 +211,8 @@ function sd_multiplayer() {
 		games_dir: SD_GAMES,
 		list: function () { return sd_list_open_games(cfg); },
 		label: function (g) {
+			if (g.mapname)                    // configured extra: the name says it all
+				return g.host + "'s " + sd_mode_label(g.mode) + " game (" + g.mapname + ")";
 			return g.host + "'s " + sd_mode_label(g.mode) + " game (E1L"
 			    + g.level + " " + g.levelname + ")";
 		},
@@ -195,12 +228,22 @@ function sd_multiplayer() {
 // ago -- bail cleanly instead of launching a door that can't connect. We do NOT
 // remove the entry (the master owns its lifecycle + clears it on exit).
 function sd_join_selected(sel) {
+	// Resolve the host's content choice BEFORE claiming: if this host's syncduke.ini
+	// lacks the entry's [map:<name>] (a multi-host config skew -- the ini is normally
+	// shared), bail without burning the game's one claim.
+	var map = sd_map_by_name(cfg, sel.mapname);
+	if (sel.mapname && !map) {
+		console.print("\r\n\1h\1rThis game plays \"" + sel.mapname
+		    + "\", which isn't configured in syncduke.ini on this host.\1n\r\n");
+		console.pause();
+		return;
+	}
 	if (!sd_claim_game(sel)) {
 		console.print("\r\n\1h\1wThat game was just claimed by someone else.\1n\r\n");
 		console.pause();
 		return;
 	}
-	sd_play(sd_cmd("join", null, sd_join_peer(sel), sel.level, sel.mode || "coop", cfg.dukematch));
+	sd_play(sd_cmd("join", null, sd_join_peer(sel), sel.level, sel.mode || "coop", cfg.dukematch, map));
 }
 
 // Controls reference -- an external, sysop-editable display file (Ctrl-A codes)
@@ -316,7 +359,7 @@ function sd_wait_bg(lev, modelabel) {
 // show the live who's-online panel, and wait -- indefinitely -- for a joiner to drop
 // the claim marker. Returns "joined" (launch the door) or "cancel" (host Q, hangup, or
 // telegram/interrupt exit). Mirrors sd_lobby_wait's nodesync/Ctrl-P/panel machinery.
-function sd_wait_room(entry, port, lev, mode) {
+function sd_wait_room(entry, port, lev, mode, map) {
 	var modelabel = (mode == "coop") ? "co-op" : "dukematch";
 	var mynode = bbs.node_num;
 	var lastbeat = time();
@@ -333,7 +376,7 @@ function sd_wait_room(entry, port, lev, mode) {
 			if (pending) {                    // a waiting telegram prints to the screen
 				console.clear();
 				bbs.nodesync();
-				sd_write_entry(cfg, port, lev.num, mode);   // heartbeat before the blocking
+				sd_write_entry(cfg, port, lev.num, mode, map);   // heartbeat before the blocking
 				lastbeat = time();                          // pause, so the entry doesn't age
 				console.pause();                            // out while the host reads it
 				bg();
@@ -347,7 +390,7 @@ function sd_wait_room(entry, port, lev, mode) {
 				return "joined";
 			}
 			if (time() - lastbeat >= SD_WAIT_HEARTBEAT) {   // keep the entry fresh/visible
-				sd_write_entry(cfg, port, lev.num, mode);
+				sd_write_entry(cfg, port, lev.num, mode, map);
 				lastbeat = time();
 			}
 			sd_draw_panel(bg);
@@ -357,7 +400,7 @@ function sd_wait_room(entry, port, lev, mode) {
 			if (c == "Q")
 				return "cancel";
 			if (c == "P") {                  // page more nodes, then keep waiting
-				sd_write_entry(cfg, port, lev.num, mode);   // heartbeat before the blocking
+				sd_write_entry(cfg, port, lev.num, mode, map);   // heartbeat before the blocking
 				lastbeat = time();                          // page prompt + pause
 				var targets = sd_prompt_page();
 				if (targets.length) {           // no pageable nodes / declined -> no empty [Hit a key]
