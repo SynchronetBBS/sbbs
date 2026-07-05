@@ -91,11 +91,12 @@ to the underlying DOOM engine (so standard Chocolate Doom switches such as
 A typical door invocation:
 
 ```
-syncdoom %f -l%R -t%T -home <per-user-dir> -iwad <wad> -name "<user>"
+syncdoom %f -t%T -home <per-user-dir> -iwad <wad> -name "<user>"
 ```
 
-where `%f`, `%R`, `%T` are the BBS's substitutions for the drop-file path, screen
-rows, and time left.
+where `%f` and `%T` are the BBS's substitutions for the drop-file path and time
+left. (The door live-probes the terminal size, so no screen-rows argument is
+needed.)
 
 Run `syncdoom -help` (also `--help`, `-?`, `/?`, or with no arguments) to print
 the full option list below.
@@ -105,13 +106,13 @@ the full option list below.
 | Option | Meaning |
 |--------|---------|
 | `-s<fd>` | Client comm **socket** descriptor (the connected telnet/SSH socket the BBS hands off). Glued form `-s7` or spaced `-s 7`. |
-| `-l<rows>` | **Fallback** terminal row count. The door auto-detects the live screen size at startup; `-l` (and terminal.ini) are consulted only when the terminal doesn't answer the size probe. Glued or spaced. Default 25. |
 | `-t<seconds>` | **Time limit** for the session in seconds; the door exits when it elapses. Glued or spaced. |
 | `-door32 <path>` | Path to a **DOOR32.SYS** drop file (see below). A bare path whose name is `door32.sys` is also auto-detected without this flag. |
 | `-term <path>` | A `terminal.ini` file (or a directory containing one) describing `cols`/`rows`/`chars`/`desc`. Sets the baseline; explicit flags override. |
 | `-home <dir>` | **Per-user storage** directory. The door `chdir`s here so DOOM's config, savegames and screenshots are written per user. Created if absent. |
 | `-name <handle>` | Player name shown in multiplayer (chat, scoreboard). Default `Player`. |
 | `-eventlog <path>` | Append game events (level start, deaths/frags) as JSONL to `<path>`; the lobby's activity feed reads it. The directory is created if absent. |
+| `-log <path>` | Write the door's diagnostics **and any fatal error** to a durable file (also `syncdoom.ini [debug] log`, or the `SYNCDOOM_LOG` env). A bare filename goes in `<data>/syncdoom/` (node-tagged, e.g. `syncdoom_n3.log`); a path with a separator is used as-is. Off by default. See [Fatal errors & diagnostics](#fatal-errors--diagnostics). |
 
 ### Video
 
@@ -251,8 +252,7 @@ door reads three fields:
 | 9 | Time left, **minutes** | Session time limit (same as `-t`, but in minutes) |
 
 DOOR32.SYS does **not** carry the screen row count. The door auto-detects it (a
-live size probe, then terminal.ini if present); pass `-l<rows>` as a fallback for
-terminals that don't answer the probe on hosts without a terminal.ini. An
+live size probe, then terminal.ini if present, else a 25-row default). An
 explicit `-s` / `-t` on the command line overrides the drop-file values.
 
 A drop-file path is recognized automatically when its filename is `door32.sys`
@@ -270,9 +270,9 @@ terminal answers none of them (e.g. xterm with `allowWindowOps` off).
 
 The character grid itself (`rows × cols`) is measured live at startup — the door
 parks the cursor in the far corner and reads back a cursor-position report — and
-that overrides a stale `-l`/`%R` or terminal.ini (whose values a mid-session
-client resize never updates). This is a one-time startup measurement; a resize
-*during* play is not currently detected.
+that overrides a stale terminal.ini (whose values a mid-session client resize
+never updates). This is a one-time startup measurement; a resize *during* play is
+not currently detected.
 
 When the real pixel size is unknown the **sixel** image is capped at DOOM's
 native 640×400 rather than upscaled from the estimate — an upscaled guess can
@@ -294,10 +294,22 @@ appended). Without `-home`, the current working directory is used as-is.
 
 ---
 
-## Statistics & diagnostics
+## Fatal errors & diagnostics
 
-The door writes two diagnostic lines to **stderr** (which a BBS typically
-captures into its node/system log):
+**Fatal errors don't pop a dialog.** A fatal engine error (a bad WAD, out of
+memory, …) is recorded and the door exits cleanly — it never shows a modal error
+box. A door has no reachable desktop: upstream Chocolate Doom's popup would block
+the process (and under a Windows service land on a window station nobody can
+dismiss), hanging the node while the remote user sees a frozen screen. The error
+goes to **stderr**, to the **`-log` file** if configured, and (on Windows) to
+`OutputDebugString` (visible in DebugView).
+
+On **\*nix** the BBS captures a door's stderr into its node/system log, so the
+error is already there. On **Windows** a native socket door's stderr is *not*
+captured by the BBS, so set `syncdoom.ini [debug] log` (or pass `-log`) to get a
+durable record there — recommended for any Windows install.
+
+The door also writes two diagnostic lines to **stderr** (and the `-log` file):
 
 **Startup banner** — the running build, detected terminal, and resolved
 geometry:

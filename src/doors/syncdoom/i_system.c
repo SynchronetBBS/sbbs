@@ -51,9 +51,9 @@
 #include "w_wad.h"
 #include "z_zone.h"
 
-#ifdef __MACOSX__
-#include <CoreFoundation/CFUserNotification.h>
-#endif
+// SyncDOOM: durable diagnostic sink (syncdoom.c) -- stderr (BBS log on *nix) plus
+// the -log file (all platforms). I_Error routes the fatal message here.
+extern void dlog(const char *fmt, ...);
 
 #define DEFAULT_RAM 6 /* MiB */
 #define MIN_RAM     6  /* MiB */
@@ -269,90 +269,10 @@ void I_Quit (void)
     exit(0);
 }
 
-#if !defined(_WIN32) && !defined(__MACOSX__) && !defined(__DJGPP__)
-#define ZENITY_BINARY "/usr/bin/zenity"
-
-// returns non-zero if zenity is available
-
-static int ZenityAvailable(void)
-{
-    return system(ZENITY_BINARY " --help >/dev/null 2>&1") == 0;
-}
-
-// Escape special characters in the given string so that they can be
-// safely enclosed in shell quotes.
-
-static char *EscapeShellString(char *string)
-{
-    char *result;
-    char *r, *s;
-
-    // In the worst case, every character might be escaped.
-    result = malloc(strlen(string) * 2 + 3);
-    r = result;
-
-    // Enclosing quotes.
-    *r = '"';
-    ++r;
-
-    for (s = string; *s != '\0'; ++s)
-    {
-        // From the bash manual:
-        //
-        //  "Enclosing characters in double quotes preserves the literal
-        //   value of all characters within the quotes, with the exception
-        //   of $, `, \, and, when history expansion is enabled, !."
-        //
-        // Therefore, escape these characters by prefixing with a backslash.
-
-        if (strchr("$`\\!", *s) != NULL)
-        {
-            *r = '\\';
-            ++r;
-        }
-
-        *r = *s;
-        ++r;
-    }
-
-    // Enclosing quotes.
-    *r = '"';
-    ++r;
-    *r = '\0';
-
-    return result;
-}
-
-// Open a native error box with a message using zenity
-
-static int ZenityErrorBox(char *message)
-{
-    int result;
-    char *escaped_message;
-    char *errorboxpath;
-    static size_t errorboxpath_size;
-
-    if (!ZenityAvailable())
-    {
-        return 0;
-    }
-
-    escaped_message = EscapeShellString(message);
-
-    errorboxpath_size = strlen(ZENITY_BINARY) + strlen(escaped_message) + 19;
-    errorboxpath = malloc(errorboxpath_size);
-    M_snprintf(errorboxpath, errorboxpath_size, "%s --error --text=%s",
-               ZENITY_BINARY, escaped_message);
-
-    result = system(errorboxpath);
-
-    free(errorboxpath);
-    free(escaped_message);
-
-    return result;
-}
-
-#endif /* !defined(_WIN32) && !defined(__MACOSX__) && !defined(__DJGPP__) */
+// SyncDOOM: the native error-box helpers (zenity on *nix, MessageBoxW on Win32,
+// CFUserNotification on macOS) were removed with the modal error dialog -- a door
+// must never block on a GUI popup (see I_Error). Fatal errors are recorded to the
+// log/stderr instead.
 
 
 //
@@ -380,7 +300,6 @@ void I_Error (char *error, ...)
     char msgbuf[512];
     va_list argptr;
     atexit_listentry_t *entry;
-    boolean exit_gui_popup;
 
     if (already_quitting)
     {
@@ -394,19 +313,21 @@ void I_Error (char *error, ...)
         already_quitting = true;
     }
 
-    // Message first.
-    va_start(argptr, error);
-    //fprintf(stderr, "\nError: ");
-    vfprintf(stderr, error, argptr);
-    fprintf(stderr, "\n\n");
-    va_end(argptr);
-    fflush(stderr);
-
     // Write a copy of the message into buffer.
     va_start(argptr, error);
     memset(msgbuf, 0, sizeof(msgbuf));
     M_vsnprintf(msgbuf, sizeof(msgbuf), error, argptr);
     va_end(argptr);
+
+    // SyncDOOM: record the fatal error durably and non-interactively. dlog() writes
+    // it to stderr (captured into the BBS log on *nix) and to the door's -log file
+    // (the only sink on Win32, where a native socket door's stderr is NOT captured);
+    // OutputDebugString gives a zero-config Win32 fallback (DebugView). The GUI popup
+    // below is suppressed -- see the note there.
+    dlog("FATAL: %s", msgbuf);
+#ifdef _WIN32
+    OutputDebugStringA(msgbuf);
+#endif
 
     // Shutdown. Here might be other errors.
 
@@ -422,62 +343,14 @@ void I_Error (char *error, ...)
         entry = entry->next;
     }
 
-    exit_gui_popup = !M_ParmExists("-nogui");
-
-    // Pop up a GUI dialog box to show the error message, if the
-    // game was not run from the console (and the user will
-    // therefore be unable to otherwise see the message).
-    if (exit_gui_popup && !I_ConsoleStdout())
-#ifdef _WIN32
-    {
-        wchar_t wmsgbuf[512];
-
-        MultiByteToWideChar(CP_ACP, 0,
-                            msgbuf, strlen(msgbuf) + 1,
-                            wmsgbuf, sizeof(wmsgbuf));
-
-        MessageBoxW(NULL, wmsgbuf, L"", MB_OK);
-    }
-#elif defined(__MACOSX__)
-    {
-        CFStringRef message;
-	int i;
-
-	// The CoreFoundation message box wraps text lines, so replace
-	// newline characters with spaces so that multiline messages
-	// are continuous.
-
-	for (i = 0; msgbuf[i] != '\0'; ++i)
-        {
-            if (msgbuf[i] == '\n')
-            {
-                msgbuf[i] = ' ';
-            }
-        }
-
-        message = CFStringCreateWithCString(NULL, msgbuf,
-                                            kCFStringEncodingUTF8);
-
-        CFUserNotificationDisplayNotice(0,
-                                        kCFUserNotificationCautionAlertLevel,
-                                        NULL,
-                                        NULL,
-                                        NULL,
-                                        CFSTR(PACKAGE_STRING),
-                                        message,
-                                        NULL);
-    }
-#elif defined(__DJGPP__)
-    {
-        printf("%s\n", msgbuf);
-        exit(-1);
-    }
-
-#else
-    {
-        ZenityErrorBox(msgbuf);
-    }
-#endif
+    // SyncDOOM: no modal/GUI error dialog. Upstream Chocolate Doom pops one here
+    // (MessageBoxW on Win32, CFUserNotification on macOS, zenity on *nix) when
+    // stdout isn't a console -- but a door must never block on a GUI popup: it
+    // hangs the door process, and under a Windows service the box lands on a
+    // non-interactive window station nobody can dismiss, wedging the node until
+    // the session times out while the remote user sees a frozen screen. The error
+    // was already recorded above (log file + stderr + OutputDebugString), so just
+    // exit. (This also retired the -nogui parm, which only suppressed that popup.)
 
     // abort();
 #if ORIGCODE

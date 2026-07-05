@@ -132,6 +132,9 @@ static uint64_t g_tx_bytes  = 0;       // telemetry: total frame bytes put on th
 static uint32_t g_tx_frames = 0;       // telemetry: frames actually emitted (not dropped)
 
 static char     g_home[PATH_MAX] = ""; // -home: full path to the user's storage dir (empty = cwd)
+static FILE    *g_logf;                // durable file log (see sd_log_open): -log / [debug] log / SYNCDOOM_LOG
+static char     g_logpath[PATH_MAX] = ""; // configured log dest (-log arg or [debug] log ini), opened lazily
+static int      g_log_tried;           // attempted to open g_logf (success or not)
 static char     g_term_path[PATH_MAX] = ""; // -term: terminal.ini file or its dir (override)
 static char     g_player_name[64] = ""; // -name: network player handle (multiplayer)
 static char     g_wadname[64] = "";     // -wadname: friendly WAD-set name for the who's-online
@@ -180,27 +183,120 @@ static char g_diag_desc[64] = "";      // desc= (TERM string) read from it
 
 static uint32_t now_ms(void);          // defined later (monotonic ms; only deltas used)
 
-// Emit one diagnostic line on stderr. Synchronet's external() reads a door's
-// stderr line-by-line and logs each at LOG_NOTICE ("<fname>: <line>", xtrn.cpp),
-// even in EX_BIN mode (where stderr is logged but not echoed to the user), so
-// these land in the BBS log (syslog/journalctl/console) without touching the
-// display. One newline-terminated line per call = one log entry.
+// Open the durable file log if a destination is configured -- SYNCDOOM_LOG env
+// (highest precedence; handy for tests), else the -log arg / [debug] log ini
+// captured in g_logpath. A directory (trailing / or \) becomes "<dir>/syncdoom.log";
+// A bare filename (no path separator) is generated run-time state, so it goes in
+// the BBS data dir -- <SBBSDATA>/syncdoom/<name> (Synchronet exports SBBSDATA to
+// every door; mkpath creates it) -- alongside the audio cache, NOT in per-user
+// storage. A path WITH a separator is used verbatim (relative -> the -home CWD,
+// absolute -> as-is). No destination -> logging stays off (costs nothing by
+// default). Called lazily on the first dlog() so env/ini/arg are known.
+static void sd_log_open(void)
+{
+	const char *p;
+	char        base[PATH_MAX + 16];   // resolved, pre node-tag
+	char        path[PATH_MAX + 48];   // final (node-tagged)
+	int         node;
+	size_t      n;
+
+	g_log_tried = 1;
+	p = getenv("SYNCDOOM_LOG");
+	if ((p == NULL || *p == '\0') && g_logpath[0] != '\0')
+		p = g_logpath;
+	if (p == NULL || *p == '\0')
+		return;                          // logging disabled
+
+	n = strlen(p);
+	if (n > 0 && (p[n - 1] == '/' || p[n - 1] == '\\')) {   // a directory
+		snprintf(base, sizeof base, "%ssyncdoom.log", p);
+	} else {
+		int bare = (strchr(p, '/') == NULL);
+#ifdef _WIN32
+		if (strchr(p, '\\') != NULL)
+			bare = 0;
+#endif
+		const char *data = bare ? getenv("SBBSDATA") : NULL;   // Synchronet: data_dir
+		if (data != NULL && *data) {
+			size_t      dl  = strlen(data);
+			const char *sep = (dl && (data[dl - 1] == '/' || data[dl - 1] == '\\')) ? "" : "/";
+			char        dir[PATH_MAX];
+			snprintf(dir, sizeof dir, "%s%ssyncdoom", data, sep);
+			mkpath(dir);
+			snprintf(base, sizeof base, "%s/%s", dir, p);
+		} else {
+			snprintf(base, sizeof base, "%s", p);              // verbatim (has a separator, or dev run)
+		}
+	}
+
+	// Tag the filename with the node number (from $SBBSNNUM) when known, so two
+	// sessions don't share/clobber one log: syncdoom.log -> syncdoom_n<node>.log
+	// ("_n<node>" before the extension). NOT ".<node>" -- Synchronet uses
+	// "<name>.<digit>.log" for rolled-over logs, so that would look like a rollover.
+	// Mirrors SyncDuke.
+	if ((node = sbbs_my_node()) > 0) {
+		const char *dot   = strrchr(base, '.');
+		const char *slash = strrchr(base, '/');
+#ifdef _WIN32
+		const char *bs = strrchr(base, '\\');
+		if (bs > slash)
+			slash = bs;
+#endif
+		if (dot != NULL && dot > slash)
+			snprintf(path, sizeof path, "%.*s_n%d%s", (int)(dot - base), base, node, dot);
+		else
+			snprintf(path, sizeof path, "%s_n%d", base, node);
+	} else {
+		snprintf(path, sizeof path, "%s", base);
+	}
+
+	g_logf = fopen(path, "a");
+	if (g_logf != NULL) {
+		time_t     t  = time(NULL);
+		struct tm *lt = localtime(&t);
+		char       ts[32];
+		strftime(ts, sizeof ts, "%Y-%m-%d %H:%M:%S", lt);
+		fprintf(g_logf, "\n===== SyncDOOM log opened %s =====\n", ts);
+		fflush(g_logf);
+	}
+}
+
+// Emit one diagnostic line to stderr, and to the durable -log file if enabled.
+// On *nix, Synchronet's external() reads a door's stderr line-by-line and logs
+// each at LOG_NOTICE ("<fname>: <line>", xtrn.cpp), even in EX_BIN mode (logged,
+// not echoed to the user), so these land in the BBS log without touching the
+// display. On Win32 a native socket door's stderr is NOT captured by the BBS
+// (no EX_STDOUT pipe -- it gets a throwaway console), so the -log file is the
+// only durable sink there; configure [debug] log to capture it. One
+// newline-terminated line per call = one log entry.
 void dlog(const char *fmt, ...)   // non-static: i_termmusic.c logs the cache path too
 {
 	static uint32_t start;             // baseline: first dlog call
 	uint32_t        now = now_ms();
 	va_list         ap;
+	char            line[1024];
+	int             pre;
 
 	if (!start)
 		start = now ? now : 1;
 	// [+ms] since the first line: the BBS log stamps each line only to the second, so this
 	// gives sub-second timing (e.g. to bracket a music render=/xfer= or a frame stall).
-	fprintf(stderr, "[+%6ums] ", (unsigned)(now - start));
+	pre = snprintf(line, sizeof line, "[+%6ums] ", (unsigned)(now - start));
+	if (pre < 0 || pre >= (int)sizeof line)
+		pre = 0;
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vsnprintf(line + pre, sizeof line - pre, fmt, ap);
 	va_end(ap);
-	fputc('\n', stderr);
+
+	fprintf(stderr, "%s\n", line);
 	fflush(stderr);
+
+	if (!g_log_tried)
+		sd_log_open();
+	if (g_logf != NULL) {
+		fprintf(g_logf, "%s\n", line);
+		fflush(g_logf);   // per line: a crash/hangup still leaves the tail on disk
+	}
 }
 
 uint32_t sd_now_ms(void) { return now_ms(); }   // public monotonic-ms for i_termmusic.c timing
@@ -2641,7 +2737,8 @@ void DG_SetWindowTitle(const char *title) { (void)title; }
 // DOOR32.SYS drop file (the portable door interface; standard on Windows BBSes
 // and written by Synchronet too). We read line 1 = comm type (2 = telnet
 // socket), line 2 = comm/socket handle, line 9 = time left in MINUTES. Screen
-// rows are NOT in DOOR32.SYS, so keep -l%R for that (else the 25-line default).
+// rows are NOT in DOOR32.SYS, but the door live-probes the terminal size at
+// startup (falling back to terminal.ini, else 25), so it doesn't need them.
 // ---------------------------------------------------------------------------
 // True if `s` is a path whose basename is "door32.sys" (case-insensitive), so a
 // bare drop-file path (Synchronet's %f) self-triggers the read -- no -door32
@@ -3033,6 +3130,11 @@ static void read_syncdoom_ini(const char *argv0)
 	// Just captured here; resolved + loaded in main() so it works with NO ini too
 	// (this function returns early when syncdoom.ini is absent).
 	iniGetString(ini, "game", "splash", "", g_splash_cfg);
+
+	// [debug] log -- durable file log dest (see sd_log_open). Captured here; the
+	// -log arg (parsed later) and SYNCDOOM_LOG env override it. Blank = off.
+	if (g_logpath[0] == '\0')
+		iniGetString(ini, "debug", "log", "", g_logpath);
 
 	// [wads] dir -- point Doom's IWAD search at the configured WAD directory so a
 	// bare "-iwad freedoom1.wad" (e.g. the direct-exec install) resolves there,
@@ -4307,7 +4409,6 @@ static void sd_usage(const char *argv0)
 		"  -s<fd>            client comm socket descriptor (glued -s7 or spaced -s 7)\n"
 		"  -door32 <path>    DOOR32.SYS drop file (supplies the socket + time limit)\n"
 		"  -term <path>      terminal.ini file/dir (baseline cols/rows/charset/desc)\n"
-		"  -l<rows>          fallback screen rows (default 25; live-probed first)\n"
 		"  -t<seconds>       session time limit; the door exits when it elapses\n"
 		"  -home <dir>       per-user dir for config, savegames, screenshots\n"
 		"  -name <handle>    multiplayer player name (default Player)\n"
@@ -4477,19 +4578,16 @@ int main(int argc, char **argv)
 		load_splash(sp);
 	}
 
-	// -l / -s / -t are prefix-matched: the BBS substitutes specifiers with NO space
-	// (-l%R -> "-l66", -s%H -> "-s7", -t%T -> "-t1800"), so the value can be glued to
-	// the flag. -term/-door32 (paths, read in the pre-scan) are prefix-matched too.
-	// Every other flag is exact-matched, taking its value (if any) as the next argv
-	// -- no glued form, so no prefix-collision traps for them.
+	// -s / -t are prefix-matched: the BBS substitutes specifiers with NO space
+	// (-s%H -> "-s7", -t%T -> "-t1800"), so the value can be glued to the flag.
+	// -term/-door32 (paths, read in the pre-scan) are prefix-matched too. Every
+	// other flag is exact-matched, taking its value (if any) as the next argv --
+	// no glued form, so no prefix-collision traps for them. (The old -l<rows>
+	// fallback was removed: the door always live-probes the terminal size, so a
+	// row count is never needed. A legacy -l%R from an existing install command
+	// line is harmlessly swallowed by the engine-arg strip loop below.)
 	for (i = 1; i < argc; i++) {
-		if (strncmp(argv[i], "-l", 2) == 0) {
-			const char *v = argv[i] + 2;
-			if (*v == '\0' && i + 1 < argc)
-				v = argv[++i];                               // "-l 24"
-			if (*v)
-				s_lines = atoi(v);
-		} else if (strcmp(argv[i], "-jxl") == 0) {
+		if (strcmp(argv[i], "-jxl") == 0) {
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if      (!strcmp(v, "0") || !strcmp(v, "off") || !strcmp(v, "ppm"))
 				g_jxl_pref = 0;
@@ -4578,6 +4676,9 @@ int main(int argc, char **argv)
 		} else if (strcmp(argv[i], "-home") == 0) {
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if (*v) { strncpy(g_home, v, sizeof(g_home) - 1); g_home[sizeof(g_home) - 1] = '\0'; }
+		} else if (strcmp(argv[i], "-log") == 0) {        // durable debug/error log file
+			const char *v = (i + 1 < argc) ? argv[++i] : "";
+			if (*v) { strncpy(g_logpath, v, sizeof(g_logpath) - 1); g_logpath[sizeof(g_logpath) - 1] = '\0'; }
 		} else if (strcmp(argv[i], "-name") == 0) {       // multiplayer player handle
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if (*v) { strncpy(g_player_name, v, sizeof(g_player_name) - 1); g_player_name[sizeof(g_player_name) - 1] = '\0'; }
@@ -4619,7 +4720,7 @@ int main(int argc, char **argv)
 		s_lines = 25;
 	compute_geometry();              // s_pxW/s_pxH from viewport + scale config
 
-	// child argv: prog -scaling 2 [pass-through args except our -l]
+	// child argv: prog -scaling 2 [pass-through args except our door-only flags]
 	child = calloc((size_t)argc + 3, sizeof(char *));
 	child[cn++] = argv[0];
 	child[cn++] = "-scaling";
@@ -4657,7 +4758,7 @@ int main(int argc, char **argv)
 		    strcmp(argv[i], "-kpturn")      == 0 || strcmp(argv[i], "-kpdelay") == 0 ||
 		    strcmp(argv[i], "-name")        == 0 || strcmp(argv[i], "-mouse")   == 0 ||
 		    strcmp(argv[i], "-wadname")     == 0 || strcmp(argv[i], "-jxldistance") == 0 ||
-		    strcmp(argv[i], "-eventlog")    == 0 ||
+		    strcmp(argv[i], "-eventlog")    == 0 || strcmp(argv[i], "-log")      == 0 ||
 		    strcmp(argv[i], "-kpsmooth")    == 0) {
 			i++;                                           // exact flags: skip the flag + its value
 			continue;
@@ -4674,7 +4775,7 @@ int main(int argc, char **argv)
 			continue;
 		}
 		if (strncmp(argv[i], "-l", 2) == 0 || strncmp(argv[i], "-s", 2) == 0 ||
-		    strncmp(argv[i], "-t", 2) == 0) {
+		    strncmp(argv[i], "-t", 2) == 0) {              // -s/-t (+ legacy -l) door flags: not for the engine
 			if (argv[i][2] == '\0')
 				i++;
 			continue;
