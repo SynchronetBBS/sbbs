@@ -400,11 +400,23 @@ int xyzsound(short num,short i,int32_t x,int32_t y,int32_t z)
     if(sndist < ((255-LOUDESTVOLUME)<<6) )
         sndist = ((255-LOUDESTVOLUME)<<6);
 
-    if( soundm[num]&1 )
+    if( (soundm[num]&1) || (i >= 0 && PN == MUSICANDSFX && (soundm[num]&2)) )
     {
+        /* SyncDuke: also LOOP a continuous MUSICANDSFX ambience (soundm&2 without the loop
+         * bit -- FIRE_CRACKLE, WIND_AMBIENCE, ...). DOS keeps these going by chaining one-shots
+         * off the sound-DONE callback (TestCallBack resets the sprite's T1 so the handler
+         * re-fires it), but our fire-and-forget FX path never fires that callback, so they play
+         * once and go silent -- and being one-shots they don't attenuate either (only loops ride
+         * the per-frame FX_Pan3D volume loop). Looping the sample gives the same continuous,
+         * distance-attenuated result the callback chain produced. */
         uint16_t start;
 
-        if(Sound[num].num > 0) return -1;
+        /* SyncDuke: single-instance only for TRUE (&1) loops, as in DOS. A forced-loop
+         * &2 ambience keeps DOS's multi-instance behavior (several sprites can share one
+         * lotag -- E1L1's wind -- each with its own voice, capped at 4 by the num>3 guard
+         * above); otherwise a far-off inaudible sprite holds the one instance and blocks
+         * the nearby one (the silent billboard). */
+        if( (soundm[num]&1) && Sound[num].num > 0) return -1;
 
         start = *(uint16_t *)(Sound[num].ptr + 0x14);
 
@@ -517,6 +529,16 @@ void stopenvsound(short num,short i)
            if(SoundOwner[num][j].i == i)
         {
             FX_StopSound(SoundOwner[num][j].voice);
+            /* SyncDuke: DOS got the bookkeeping free -- stopping the voice fired the audiolib
+             * DONE callback. Our FX path is callback-less, so do it here, and PRECISELY: remove
+             * THIS owner entry (TestCallBack guesses the first MUSICANDSFX owner, which desyncs
+             * the owner list once several sprites share a lotag -- live voice dropped, dead one
+             * kept -> pan updates land on the dead handle). Caller resets the sprite's T1. */
+            Sound[num].num--;
+            if(j < Sound[num].num)
+                SoundOwner[num][j] = SoundOwner[num][Sound[num].num];
+            SoundOwner[num][Sound[num].num].i = -1;
+            Sound[num].lock--;
             break;
         }
     }

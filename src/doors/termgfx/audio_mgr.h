@@ -76,7 +76,7 @@ int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
 // moves relative to an ambient source. No-op (no APC sent) if the resulting L/R
 // is unchanged from the last update or the handle is unknown, so it's safe to
 // call every frame.
-void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan);
+int  termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan);   /* 1 = handle matched a live channel, 0 = no such loop */
 
 // Stop the looping voice `handle` from termgfx_audio_loop_start (no-op if it's
 // already stopped/unknown -- safe against a stale handle).

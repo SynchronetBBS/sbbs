@@ -52,6 +52,9 @@ int32 MusicDevice;
 int32 FXVolume;
 int32 MusicVolume;
 int32 SoundToggle;
+int32 AmbienceStopGen;   /* SyncDuke: bumped by FX_StopAllSounds (menu/save-load/death); the MUSICANDSFX
+                          * ambient handler re-arms (T1=0, Sound[].num=0) when it changes, so a looping
+                          * ambience that was ON when sounds were globally stopped restarts on resume. */
 int32 MusicToggle;
 int32 VoiceToggle;
 int32 AmbienceToggle;

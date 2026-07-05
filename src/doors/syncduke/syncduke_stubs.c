@@ -105,7 +105,17 @@ static int sd_fx_play(uint8_t *ptr, int angle, int distance, uint32_t callbackva
 	int            num = (int)callbackval;
 	int            vol, pan;
 
-	if (sd_audio == NULL || ptr == NULL || num < 0 || soundsiz[num] <= 0)
+	if (sd_audio == NULL)
+		return FX_Ok;
+	if (num >= 0 && num < SD_MAXSOUND && (ptr == NULL || soundsiz[num] <= 0)) {
+		static uint8_t missing_logged[SD_MAXSOUND];   /* once per missing sample: content, not code */
+		if (!missing_logged[num]) {
+			missing_logged[num] = 1;
+			syncduke_log("sfx: sound #%d NOT played -- ptr=%p siz=%d (missing from this GRP?)",
+			             num, (void *)ptr, (int)soundsiz[num]);
+		}
+	}
+	if (ptr == NULL || num < 0 || soundsiz[num] <= 0)
 		return FX_Ok;
 
 	/* Drop a same-sound re-dispatch inside the burst window (see SD_SFX_REPEAT_GAP). Track
@@ -148,7 +158,17 @@ static int sd_loop_play(uint8_t *ptr, int distance, uint32_t callbackval)
 	int num = (int)callbackval;
 	int vol, h;
 
-	if (sd_audio == NULL || ptr == NULL || num < 0 || soundsiz[num] <= 0)
+	if (sd_audio == NULL)
+		return FX_Ok;
+	if (num >= 0 && num < SD_MAXSOUND && (ptr == NULL || soundsiz[num] <= 0)) {
+		static uint8_t missing_logged[SD_MAXSOUND];   /* once per missing sample: content, not code */
+		if (!missing_logged[num]) {
+			missing_logged[num] = 1;
+			syncduke_log("loop: sound #%d NOT started -- ptr=%p siz=%d (missing from this GRP?)",
+			             num, (void *)ptr, (int)soundsiz[num]);
+		}
+	}
+	if (ptr == NULL || num < 0 || soundsiz[num] <= 0)
 		return FX_Ok;
 	if (distance < 0)
 		distance = 0;
@@ -198,7 +218,7 @@ int32_t FX_Pan3D(int handle, int angle, int distance)
 	return FX_Ok;
 }
 int32_t FX_StopSound(int handle) { termgfx_audio_loop_stop(sd_audio, handle); return FX_Ok; }
-int32_t FX_StopAllSounds(void) { termgfx_audio_sfx_stop_all(sd_audio); return FX_Ok; }
+int32_t FX_StopAllSounds(void) { extern int32 AmbienceStopGen; AmbienceStopGen++; termgfx_audio_sfx_stop_all(sd_audio); return FX_Ok; }   /* bump: ambient loops re-arm on resume (menu/load/death) */
 
 /* Digital audio (SFX + music) is up: the terminal answered the capability probe with tier >= 1.
  * The intro (game.c Logo) runs the original full-length holds only when there's sound to fill

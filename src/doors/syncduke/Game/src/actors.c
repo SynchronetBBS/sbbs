@@ -1357,6 +1357,34 @@ void movefx(void)
                     T1 = 0;
                 }
 
+                /* SyncDuke: FX_StopAllSounds (menu / save-load / death) stops our loop channels but
+                 * leaves this sprite thinking it's still ON (T1==1) with Sound[].num>0, so a looping
+                 * ambience (e.g. the projector) never restarts on resume -- silent until you leave and
+                 * re-enter its radius. Re-arm when the stop-generation changes: clear T1 and the sound
+                 * count so the block below re-triggers the loop if we're still in range. */
+                {
+                    /* All voices were just stopped, so zero the stale ambient play-counts ONCE
+                     * per generation -- NOT per sprite: several sprites can share one lotag
+                     * (E1L1's rooftop wind = 4x lotag 91), and a later sprite's first-time
+                     * re-arm would wipe the count of a loop an earlier sprite just restarted,
+                     * leaving it playing but untracked (never panned/attenuated, single-
+                     * instance guard dead). */
+                    static int32_t rearm_gen = -1;
+                    if(rearm_gen != AmbienceStopGen)
+                    {
+                        short jj;
+                        rearm_gen = AmbienceStopGen;
+                        for(jj=0;jj<NUM_SOUNDS;jj++)
+                            if(soundm[jj]&2)
+                                Sound[jj].num = 0;
+                    }
+                }
+                if(T3 != AmbienceStopGen)
+                {
+                    T3 = AmbienceStopGen;
+                    T1 = 0;
+                }
+
                 if(s->lotag >= 1000 && s->lotag < 2000)
                 {
                     x = ldist(&sprite[ps[screenpeek].i],s);
@@ -1393,10 +1421,13 @@ void movefx(void)
                                 }
                                 if(j == -1) goto BOLT;
                             }
-                            spritesound(s->lotag,i);
-                            T1 = 1;
+                            if( spritesound(s->lotag,i) > 0 )   /* SyncDuke: only mark ON if it actually got a
+                                                                 * voice -- a pool-full loop_start returns 0, so
+                                                                 * leave T1=0 and retry next frame (when a channel
+                                                                 * frees) instead of sticking ON-but-silent */
+                                T1 = 1;
                         }
-                        if( x >= ht && T1 == 1 )
+                        if( x >= ht + 1024 && T1 == 1 )   /* SyncDuke: +1024 hysteresis -- ON at x<ht, OFF only past ht+1024, so a tight-radius ambience (projector ht=2000) doesn't flicker on/off as you shift around at its edge */
                         {
                             T1 = 0;
                             stopenvsound(s->lotag,i);

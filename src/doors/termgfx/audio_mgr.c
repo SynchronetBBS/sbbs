@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>         /* clock_gettime: SFX channel busy tracking (sfx_now_ms) */
 /* Music transcode runs on a worker thread so a first-play render doesn't freeze the game.  The
  * portable threading is all xpdev: threadwrap gives the mutex (pthread_mutex_* -- native pthreads
  * on *nix, Win32 critical sections on Windows) and _beginthread; the bundled semwrap gives the
@@ -28,11 +29,11 @@
 #define MUSIC_SLOT   0               // slot 0 reserved for the music loop
 #define SFX_SLOT_LO  1               // SFX slots 1..255 (transient load->queue buffers)
 #define MUSIC_CH     2               // channel 2 reserved for music
-#define SFX_CH_LO    3               // one-shot SFX: round-robin channels 3..11
-#define SFX_CH_HI    11
+#define SFX_CH_LO    3               // one-shot SFX: round-robin channels 3..10 (voice-steal pool)
+#define SFX_CH_HI    10
 #define NSFX_CH      (SFX_CH_HI - SFX_CH_LO + 1)
-#define LOOP_CH_LO   12              // looping SFX (ambience): dedicated channels 12..15
-#define LOOP_CH_HI   15
+#define LOOP_CH_LO   11              // looping SFX (ambience): channels 11..15 (5) -- one more than the
+#define LOOP_CH_HI   15              // original 4 without starving one-shots (which truncate when stolen)
 #define NLOOP_CH     (LOOP_CH_HI - LOOP_CH_LO + 1)
 #define MUSNAME_MAX  32              // cache name "m/<track>_v<n>" component length
 #define MUS_TRACKS   64             // distinct music tracks tracked per session
@@ -55,10 +56,15 @@ struct termgfx_audio {
 	int tier;                              // -1 unknown/none, 0 tone, 1 digital
 
 	uint8_t sfx_up[KEYMAX];                // id has been C;S-Stored (sfx file)
+	int sfx_dur[KEYMAX];                   // exact play time (ms) captured at Store/transcode
+	                                       // (0 = unknown -> sniffed estimate at dispatch)
 	char mus_names[MUS_TRACKS][MUSNAME_MAX];     // music tracks Stored this session
 	int mus_count;
 	int next_slot;                         // round-robin SFX slot cursor
 	int next_ch;                           // round-robin SFX channel cursor
+	uint64_t sfx_busy_until[16];           // per-channel: when its queued one-shot ends (ms clock);
+	                                       // steal prefers ended channels so long samples (rocket,
+	                                       // chopper flyby) aren't truncated by later short ones
 	char music_name[MUSNAME_MAX];          // cache key (with _v<n>) in the music slot ("" = none)
 	char music_cache_dir[MUS_CACHE_DIR_MAX]; // door-side OGG disk cache ("" = none, render-only)
 	double music_quality;                  // Ogg/Opus VBR quality (0..1) for fresh music encodes
@@ -359,20 +365,74 @@ void termgfx_audio_set_tier(termgfx_audio_t *m, int tier)
 
 // ---- SFX -----------------------------------------------------------------
 
-// Load the cached `fn` into the next rotating slot and Queue it on the next
-// pooled channel. A Queue EMPTIES its slot (the buffer moves into the channel
-// FIFO), so every play must re-Load first -- the slot is a transient handoff
-// buffer, not a persistent cache. The sample FILE stays in SyncTERM's cache
-// (uploaded once), so the Load just re-decodes it -- no re-transfer.
-static void sfx_dispatch(termgfx_audio_t *m, const char *fn, int vol, int pan)
-{
-	int slot = m->next_slot;
-	int ch   = m->next_ch;
+// Load the cached `fn` into the next rotating slot and Queue it on the next pooled
+// channel. A Queue EMPTIES its slot (the buffer moves into the channel FIFO), so every
+// play must re-Load first -- the slot is a transient handoff buffer, not a persistent
+// cache. The sample FILE stays in SyncTERM's cache (uploaded once), so the Load just
+// re-decodes it -- no re-transfer.
+//
+// FLUSH the target channel BEFORE queuing so the NSFX_CH channels act as a voice-stealing
+// pool, not a bank of unbounded FIFOs. Without it a firefight (30-45 SFX/sec, but only
+// NSFX_CH channels) piles each channel's FIFO deeper than it drains, and the sounds play
+// out a second or two LATE -- the "gunshots after the fight" backlog. Flushing first bounds
+// every channel to one live sound: each new SFX plays immediately (~link latency).
+//
+// Channel choice is BUSY-AWARE, not blind round-robin: each queue records when its sample
+// will end, and a new sound takes a channel whose sample has finished; only when all are
+// genuinely busy is the one closest to finishing stolen. Blind rotation truncated any long
+// sample (rocket launch, chopper flyby) as soon as NSFX_CH later sounds arrived within its
+// play time -- DOS mixed 32 voices, so it never audibly hit this.
 
+static uint64_t sfx_now_ms(void)
+{
+#ifdef _WIN32
+	return (uint64_t)GetTickCount64();
+#else
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (uint64_t)ts.tv_sec * 1000u + (uint64_t)(ts.tv_nsec / 1000000L);
+#endif
+}
+
+static void sfx_dispatch(termgfx_audio_t *m, const char *fn, int vol, int pan, int dur_ms)
+{
+	int      slot = m->next_slot;
+	uint64_t now  = sfx_now_ms();
+	int      ch = -1, i, c;
+
+	for (i = 0; i < NSFX_CH; i++) {              // first free (finished) channel, round-robin start
+		c = SFX_CH_LO + ((m->next_ch - SFX_CH_LO + i) % NSFX_CH);
+		if (m->sfx_busy_until[c] <= now) { ch = c; break; }
+	}
+	if (ch < 0) {                                // all busy: steal the one closest to finishing
+		ch = SFX_CH_LO;
+		for (c = SFX_CH_LO + 1; c <= SFX_CH_HI; c++)
+			if (m->sfx_busy_until[c] < m->sfx_busy_until[ch])
+				ch = c;
+	}
+	m->next_ch   = SFX_CH_LO + ((ch - SFX_CH_LO + 1) % NSFX_CH);
 	m->next_slot = SFX_SLOT_LO + ((m->next_slot - SFX_SLOT_LO + 1) % (NSLOT - SFX_SLOT_LO));
-	m->next_ch   = SFX_CH_LO + ((m->next_ch - SFX_CH_LO + 1) % NSFX_CH);
+	if (dur_ms < 50)
+		dur_ms = 50;                             // floor: unknown/degenerate durations
+	m->sfx_busy_until[ch] = now + (uint64_t)dur_ms;
+
+	send_buf(m, termgfx_audio_flush(&m->buf, &m->cap, ch, 0), TERMGFX_AUDIO_PRIO);
 	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, slot, fn), TERMGFX_AUDIO_PRIO);
 	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, ch, slot, vol, pan, 0), TERMGFX_AUDIO_PRIO);
+}
+
+// Rough play time of a complete VOC/WAV file, for the busy tracking above. WAV: total
+// bytes over the fmt chunk's byte-rate (header slop only over-estimates, which is safe --
+// it just protects the tail). VOC: samples are typically 8-bit mono ~11 kHz.
+static int sfx_file_dur_ms(const uint8_t *d, size_t len)
+{
+	if (len >= 32 && memcmp(d, "RIFF", 4) == 0) {
+		uint32_t byterate = (uint32_t)d[28] | ((uint32_t)d[29] << 8)
+		                  | ((uint32_t)d[30] << 16) | ((uint32_t)d[31] << 24);
+		if (byterate >= 1000)
+			return (int)((uint64_t)len * 1000u / byterate);
+	}
+	return (int)((uint64_t)len * 1000u / 11025u);   // VOC-ish assumption
 }
 
 void termgfx_audio_sfx(termgfx_audio_t *m, int id,
@@ -395,7 +455,12 @@ void termgfx_audio_sfx(termgfx_audio_t *m, int id,
 		         TERMGFX_AUDIO_PRIO);
 		m->sfx_up[id] = 1;
 	}
-	sfx_dispatch(m, fn, vol, pan);
+	{	// exact play time from the raw-PCM geometry (busy tracking)
+		uint64_t bps = (uint64_t)(rate > 0 ? rate : 11025)
+		             * (uint64_t)(channels > 0 ? channels : 1)
+		             * (uint64_t)(bits >= 16 ? 2 : 1);
+		sfx_dispatch(m, fn, vol, pan, (int)((uint64_t)bytes * 1000u / bps));
+	}
 }
 
 // C;S-Store the sound file `filedata` under `fn` once per id. libsndfile rejects
@@ -415,11 +480,14 @@ static void sfx_cache_file_once(termgfx_audio_t *m, int id,
 	if (n > 0) {
 		send_buf(m, termgfx_audio_cache_pcm(&m->buf, &m->cap, fn, pcm, n, 8, 1, rate),
 		         TERMGFX_AUDIO_PRIO);
+		if (rate > 0)   // exact play time (8-bit mono PCM) for the busy tracking
+			m->sfx_dur[id] = (int)((uint64_t)n * 1000u / (uint64_t)rate);
 		free(pcm);
 	}
 	else {
 		send_buf(m, termgfx_audio_cache_file(&m->buf, &m->cap, fn, filedata, filelen),
 		         TERMGFX_AUDIO_PRIO);
+		m->sfx_dur[id] = sfx_file_dur_ms(filedata, filelen);
 	}
 	m->sfx_up[id] = 1;
 }
@@ -437,7 +505,9 @@ void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
 		cache_name(m, "sfx", leaf, fn, sizeof(fn));   // "<prefix>/sfx/<id>"
 	}
 	sfx_cache_file_once(m, id, filedata, filelen, fn);
-	sfx_dispatch(m, fn, vol, pan);
+	sfx_dispatch(m, fn, vol, pan,
+	             m->sfx_dur[id] > 0 ? m->sfx_dur[id]              // exact (captured at transcode)
+	                                : sfx_file_dur_ms(filedata, filelen));
 }
 
 // ---- looping SFX (ambience) ----------------------------------------------
@@ -451,13 +521,18 @@ int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
 	if (m == NULL || m->tier < 1 || id < 0 || id >= KEYMAX || filelen == 0)
 		return 0;
 
-	// Pick a free looping channel; if all NLOOP_CH are busy, steal slot 0.
+	// Pick a FREE looping channel. If all NLOOP_CH are busy, DON'T steal -- return 0 ("no
+	// voice"), which is what the original audiolib did and what xyzsound expects: it leaves
+	// Sound[num].num at 0 and re-requests next frame, so the loop plays as soon as a channel
+	// frees (an ambient going out of range calls FX_StopSound). Stealing here desynced from
+	// the engine -- loop_start always returned a live handle, so xyzsound recorded the loop as
+	// playing (num++); once we stopped that voice to reuse its channel, the engine never
+	// re-requested it and the ambience went PERMANENTLY silent (the projector cutting out ~10s
+	// in once the enemy-growl loops filled the pool).
 	for (i = 0; i < NLOOP_CH && m->loop[i].handle != 0; i++)
 		;
-	if (i == NLOOP_CH) {
-		send_buf(m, termgfx_audio_flush(&m->buf, &m->cap, LOOP_CH_LO, 0), TERMGFX_AUDIO_PRIO);
-		i = 0;
-	}
+	if (i == NLOOP_CH)
+		return 0;                        // pool full -> caller retries when a channel frees
 
 	{
 		char leaf[16];
@@ -470,7 +545,15 @@ int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
 	slot         = m->next_slot;
 	m->next_slot = SFX_SLOT_LO + ((m->next_slot - SFX_SLOT_LO + 1) % (NSLOT - SFX_SLOT_LO));
 	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, slot, fn), TERMGFX_AUDIO_PRIO);
-	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, LOOP_CH_LO + i, slot, vol, 0, 1),
+	// Queue the loop ACTIVE (full volume) then set the real level via A;Volume, rather than
+	// queuing at `vol` directly. A positional ambience triggered at its radius edge starts at
+	// vol=0, and SyncTERM will not un-mute a voice that was queued at 0 -- the per-frame
+	// FX_Pan3D A;Volume updates then fall on a dead voice and it stays silent forever (the fire
+	// bin), while a loop that happens to start non-zero (the projector) works. Queue-active +
+	// set-level keeps the voice alive so its volume can rise as the player approaches.
+	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, LOOP_CH_LO + i, slot, 100, 0, 1),
+	         TERMGFX_AUDIO_PRIO);
+	send_buf(m, termgfx_audio_volume_lr(&m->buf, &m->cap, LOOP_CH_LO + i, vol, vol),
 	         TERMGFX_AUDIO_PRIO);
 
 	if (++m->loop_seq <= 0)
@@ -481,12 +564,12 @@ int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
 	return m->loop_seq;
 }
 
-void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan)
+int termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan)
 {
 	int i, vl, vr;
 
 	if (m == NULL || m->tier < 1 || handle <= 0)
-		return;
+		return 0;
 	if (vol < 0)
 		vol = 0;
 	else if (vol > 100)
@@ -502,14 +585,15 @@ void termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan)
 	for (i = 0; i < NLOOP_CH; i++) {
 		if (m->loop[i].handle == handle) {
 			if (vl == m->loop[i].vl && vr == m->loop[i].vr)   // unchanged -- don't flood APC
-				return;
+				return 1;
 			m->loop[i].vl = vl;
 			m->loop[i].vr = vr;
 			send_buf(m, termgfx_audio_volume_lr(&m->buf, &m->cap, LOOP_CH_LO + i, vl, vr),
 			         TERMGFX_AUDIO_PRIO);
-			return;
+			return 1;
 		}
 	}
+	return 0;   // no channel holds this handle (stale/orphaned voice)
 }
 
 void termgfx_audio_loop_stop(termgfx_audio_t *m, int handle)

@@ -628,6 +628,7 @@ extern char  skill_names[5][33];
 extern char  level_file_names[44][128];
 
 extern int32 SoundToggle,MusicToggle;
+extern int32 AmbienceStopGen;   /* SyncDuke: FX_StopAllSounds generation; ambient re-arm on resume */
 extern short last_threehundred,lastsavedpos;
 extern uint8_t  restorepalette;
 
