@@ -1680,9 +1680,12 @@ static void evdev_edge(int code, int down)
 	// Alt+letter [hangup/...] locally, and a held physical Alt would trigger those and lose its
 	// key-up to the resize mode -> a latched-down "freeze".) The Shift bit also gates the fold.
 	switch (code) {
-		case 29: case 97:  if (down)
-				g_evdev_mods |= EVDEV_MOD_CTRL; else
-				g_evdev_mods &= ~EVDEV_MOD_CTRL; return;
+		case 29: case 97:                                // L/R Ctrl: track only
+			if (down)
+				g_evdev_mods |= EVDEV_MOD_CTRL;
+			else
+				g_evdev_mods &= ~EVDEV_MOD_CTRL;
+			return;
 		case 42: case 54:                                // L/R Shift = Run (KEY_RSHIFT) + Strafe (KEY_RALT)
 			if (down)
 				g_evdev_mods |= EVDEV_MOD_SHIFT;
@@ -1691,9 +1694,12 @@ static void evdev_edge(int code, int down)
 			key_dispatch(KEY_RSHIFT, down ? 1 : 3);
 			key_dispatch(KEY_RALT,   down ? 1 : 3);
 			return;
-		case 56: case 100: if (down)                     // L/R physical Alt: track only (NOT forwarded -- see above)
-				g_evdev_mods |= EVDEV_MOD_ALT; else
-				g_evdev_mods &= ~EVDEV_MOD_ALT; return;
+		case 56: case 100:                               // L/R physical Alt: track only (NOT forwarded -- see above)
+			if (down)
+				g_evdev_mods |= EVDEV_MOD_ALT;
+			else
+				g_evdev_mods &= ~EVDEV_MOD_ALT;
+			return;
 	}
 
 	// Drop the enable-time held-key resync (see SD_EVDEV_SETTLE_MS): only press edges; releases pass.
@@ -1885,12 +1891,18 @@ static void parse_byte(unsigned char c)
 						case '~': k = csi_tilde_key(atoi(s_csi_par)); break;
 						// Kitty keyboard protocol: F1/F2/F4 arrive as CSI P/Q/S (only once
 						// negotiated). F4 = the tier-cycle sentinel, like SS3 S.
-						case 'P': if (g_kitty_active)
-								k = KEY_F1; break;
-						case 'Q': if (g_kitty_active)
-								k = KEY_F2; break;
-						case 'S': if (g_kitty_active && s_csi_par[0] != '?')
-								k = KEY_F4; break;                                              // '?' = XTSMGRAPHICS reply
+						case 'P':
+							if (g_kitty_active)
+								k = KEY_F1;
+							break;
+						case 'Q':
+							if (g_kitty_active)
+								k = KEY_F2;
+							break;
+						case 'S':
+							if (g_kitty_active && s_csi_par[0] != '?')   // '?' = XTSMGRAPHICS reply
+								k = KEY_F4;
+							break;
 						// Home/End come as CSI H/F on any xterm-family terminal (Windows
 						// Terminal, SyncTERM, ...), not just under kitty -- map them
 						// unconditionally so End jumps to the last menu item everywhere.
@@ -4221,8 +4233,11 @@ static void sd_ingame_recv(void)
 	// can exceed Doom's 80-char HU line, so it goes to the door's own wrapped banner
 	// (sd_post_message/HU would chop it at the right margin).
 	for (s = raw, d = clean; *s && d < clean + sizeof(clean) - 1; s++) {
-		if (*s == '\x01') { if (s[1])
-								s++; continue; }         // drop Ctrl-A attribute code
+		if (*s == '\x01') {                              // drop Ctrl-A attribute code (+ the char it colors)
+			if (s[1])
+				s++;
+			continue;
+		}
 		if (*s == '\x07')
 			continue;                                    // drop bell (we beep below)
 		if (*s == '\r' || *s == '\n' || *s == ' ') {     // fold whitespace runs to one space
