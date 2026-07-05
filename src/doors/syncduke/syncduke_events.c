@@ -14,6 +14,7 @@
 #include "syncduke.h"
 #include "sbbs_node.h"  /* termgfx: sbbs_my_node() -- current node # from SBBSNNUM */
 #include "git_hash.h"   /* GIT_HASH, GIT_DATE */
+#include "dirwrap.h"    /* xpdev: getfname()/getfext() -- user-map display name */
 
 /* Minimal JSON string escaper (aliases / tier / build). */
 static const char *ev_esc(const char *s, char *out, size_t sz)
@@ -65,9 +66,29 @@ static const char *ev_mode(void)
 	return (ud.coop == 2) ? "dukematch-nospawn" : "dukematch";
 }
 
+/* Display name for a level: stock levels as "E<vol>L<lev>"; a -map user map by its
+ * file's basename, ".map" extension stripped ("Roch") -- its level slot is always 7,
+ * so "E1L8" would be meaningless in the feed. */
+static void ev_map_name(int vol, int lev, char *buf, size_t sz)
+{
+	if (boardfilename[0] != '\0' && lev == 7 && vol == 0) {
+		const char *b = getfname(boardfilename);
+		const char *e = getfext(b);
+		size_t      n = strlen(b);
+		if (e != NULL
+		    && (e[1] == 'm' || e[1] == 'M')
+		    && (e[2] == 'a' || e[2] == 'A')
+		    && (e[3] == 'p' || e[3] == 'P') && e[4] == '\0')
+			n = (size_t)(e - b);
+		snprintf(buf, sz, "%.*s", (int)n, b);
+	}
+	else
+		snprintf(buf, sz, "E%dL%d", vol + 1, lev + 1);
+}
+
 static void ev_map(char *buf, size_t sz)
 {
-	snprintf(buf, sz, "E%dL%d", ud.volume_number + 1, ud.level_number + 1);
+	ev_map_name(ud.volume_number, ud.level_number, buf, sz);
 }
 
 /* usernum from the -home path (".../user/<num>/duke/"), like syncdoom. */
@@ -95,6 +116,18 @@ static void ev_start(void)
 }
 
 static uint32_t ev_level_start;    /* totalclock at the current level's entry */
+static char     ev_cur_map[64];    /* display name of the level in play, captured at entry */
+
+/* Capture the identity of the level now being played. The MODE_EOL edge must log THIS
+ * name, not ud.volume/level_number at edge time: every EOL setter (exit switch, nuke
+ * button -- sector.c, player.c) advances or wraps ud.level_number in the same tic it
+ * sets MODE_EOL, so reading it at the edge names the NEXT level (and a cleared user
+ * map, slot 7, wrapped to "E1L1"). */
+static void ev_capture_level(void)
+{
+	ev_map_name(ud.volume_number, ud.level_number, ev_cur_map, sizeof(ev_cur_map));
+	ev_level_start = (uint32_t)totalclock;
+}
 
 static int ev_secs(void)
 {
@@ -113,36 +146,37 @@ static int ev_level_secs(void)
 	return ps[myconnectindex].player_par / 26;
 }
 
-/* A completed level and the time it took -- logged on the level-change edge, so
- * `vol`/`lev` name the level just CLEARED (not the one entered) and `secs` is its
- * own elapsed. Matches SyncDOOM's sd_event_level ("cleared <map> in M:SS"). */
-static void ev_level(int vol, int lev, int secs)
+/* A completed level and the time it took -- logged on the MODE_EOL edge with the
+ * name captured at level entry (see ev_capture_level). Matches SyncDOOM's
+ * sd_event_level ("cleared <map> in M:SS"). */
+static void ev_level(const char *map, int secs)
 {
-	char j[300], ua[80], map[16];
-	snprintf(map, sizeof(map), "E%dL%d", vol + 1, lev + 1);
+	char j[300], ua[80], me[80];
 	snprintf(j, sizeof(j),
 	         "{\"time\":%ld,\"type\":\"level\",\"node\":%d,\"user\":\"%s\","
 	         "\"map\":\"%s\",\"secs\":%d,\"skill\":%d}",
 	         (long)time(NULL), sbbs_my_node(),
-	         ev_esc(syncduke_door_alias(), ua, sizeof(ua)), map, secs, ud.player_skill + 1);
+	         ev_esc(syncduke_door_alias(), ua, sizeof(ua)),
+	         ev_esc(map, me, sizeof(me)), secs, ud.player_skill + 1);
 	ev_emit(j);
 }
 
 static void ev_death(void)
 {
-	char j[300], ua[80], map[16];
+	char j[300], ua[80], map[64], me[80];
 	ev_map(map, sizeof(map));
 	snprintf(j, sizeof(j),
 	         "{\"time\":%ld,\"type\":\"death\",\"node\":%d,\"user\":\"%s\","
 	         "\"map\":\"%s\",\"secs\":%d}",
 	         (long)time(NULL), sbbs_my_node(),
-	         ev_esc(syncduke_door_alias(), ua, sizeof(ua)), map, ev_secs());
+	         ev_esc(syncduke_door_alias(), ua, sizeof(ua)),
+	         ev_esc(map, me, sizeof(me)), ev_secs());
 	ev_emit(j);
 }
 
 static void ev_frag(int victim)
 {
-	char        j[400], ka[80], va[80], vn[24], map[16];
+	char        j[400], ka[80], va[80], vn[24], map[64], me[80];
 	const char *vname = ud.user_name[victim];
 	if (vname == NULL || vname[0] == '\0') {
 		snprintf(vn, sizeof(vn), "player %d", victim + 1);
@@ -154,13 +188,14 @@ static void ev_frag(int victim)
 	         "\"map\":\"%s\"}",
 	         (long)time(NULL), sbbs_my_node(),
 	         ev_esc(syncduke_door_alias(), ka, sizeof(ka)),
-	         ev_esc(vname, va, sizeof(va)), map);
+	         ev_esc(vname, va, sizeof(va)),
+	         ev_esc(map, me, sizeof(me)));
 	ev_emit(j);
 }
 
 void syncduke_events_tick(void)
 {
-	static int in_game, dead_last, was_eol;
+	static int in_game, dead_last, was_eol, started;
 	static int last_vol = -1, last_lev = -1;
 	int        vol = ud.volume_number, lev = ud.level_number;
 	int        eol = (ps[myconnectindex].gm & MODE_EOL) != 0;   /* level cleared -> bonus screen */
@@ -169,29 +204,37 @@ void syncduke_events_tick(void)
 		return;
 
 	/* Level cleared: the reliable signal is the MODE_EOL edge (end-of-level). During
-	 * MODE_EOL ev_real_game() goes false, dropping in_game BEFORE the next level loads --
-	 * so the old level-number-change edge never fired for the normal clear->bonus->next
-	 * flow (and the few that slipped through logged secs=0, timed at level entry). Log the
-	 * level just finished, with its real elapsed time, here instead. */
-	if (eol && !was_eol && in_game)
-		ev_level(vol, lev, ev_level_secs());   /* engine's Your-Time, survives save/load */
+	 * MODE_EOL ev_real_game() goes false, dropping in_game BEFORE the next level loads.
+	 * Log the name captured at level entry (ev_cur_map) -- the EOL setters have already
+	 * advanced ud.level_number by now -- with the engine's own Your-Time elapsed. */
+	if (eol && !was_eol && in_game && ev_cur_map[0] != '\0')
+		ev_level(ev_cur_map, ev_level_secs());   /* engine's Your-Time, survives save/load */
 	was_eol = eol;
 
 	if (ev_real_game() && !in_game) {
 		in_game = 1;
-		ev_start();
-		ev_level_start = (uint32_t)totalclock;      /* first level of the session */
+		if (!started) {
+			/* Once per door session: deaths and level changes bounce in_game (gm loses
+			 * MODE_GAME until the next enterlevel), and each bounce used to re-log
+			 * "start", flooding the event log. */
+			started = 1;
+			ev_start();
+		}
+		ev_capture_level();                         /* entering a level (or respawning) */
 		last_vol = vol; last_lev = lev;
 	} else if (!ev_real_game() && in_game) {
 		in_game = 0;
 		last_vol = last_lev = -1;
 	}
 
-	if (in_game && (vol != last_vol || lev != last_lev)) {   /* finished a level */
-		int prev = ev_secs();                       /* elapsed on the level we just cleared */
-		ev_level(last_vol, last_lev, prev);         /* log the COMPLETED level + its time */
+	/* Level changed while still in-game: NOT a clear -- real clears pass through the
+	 * MODE_EOL edge above. This fires when the player ABANDONS the level from the
+	 * in-game menu (new game / load / warp), so just re-capture the level identity.
+	 * (This used to log ev_level: menu-quitting a user map posted "cleared E1L8 in
+	 * 0:00" to the lobby feed.) */
+	if (in_game && (vol != last_vol || lev != last_lev)) {
+		ev_capture_level();
 		last_vol = vol; last_lev = lev;
-		ev_level_start = (uint32_t)totalclock;
 	}
 
 	if (in_game) {                                  /* frags by us, then our death edge */
