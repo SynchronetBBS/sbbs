@@ -273,7 +273,17 @@ typedef struct openFile_s{
     int cursor    ;  //lseek cursor
     int grpID     ;  //GRP id
     int used      ;  //Marker 1=used
+    uint8_t *data ;  //SyncDuke: whole SYSTEM_FILE slurped into RAM (NULL => read via fd).
+    int32_t dataSize;//SyncDuke: size of data[].
 } openFile_t;
+
+/* SyncDuke: kopen4load() files are read-only game data (user maps, demos), so slurp
+ * them into RAM at open time -- same cure initgroupfile() applies to GRPs.  kread()
+ * callers like loadboard() read one 1-4 byte field at a time (~211k reads for a big
+ * user map); unbuffered read() syscalls make that minutes over a no-oplock SMB share,
+ * where every read is a network round trip.  Cap the slurp so a huge file can't
+ * exhaust RAM; over-cap or failed slurps just fall back to the fd path. */
+#define KSYSFILE_SLURP_MAX (16<<20)
 
 
 #define MAXOPENFILES 64
@@ -300,12 +310,37 @@ int32_t kopen4load(const char  *filename, int openOnlyFromGRP){
     if(!openOnlyFromGRP){
         
         openFiles[newhandle].fd = open(filename,O_BINARY|O_RDONLY);
-        
+
         if (openFiles[newhandle].fd != -1){
-            openFiles[newhandle].type = SYSTEM_FILE;
-            openFiles[newhandle].cursor = 0;
-            openFiles[newhandle].used = 1;
-            return(newhandle); 
+            openFile_t *openFile = &openFiles[newhandle];
+            int32_t len;
+
+            openFile->type = SYSTEM_FILE;
+            openFile->cursor = 0;
+            openFile->used = 1;
+            openFile->data = NULL;
+            openFile->dataSize = 0;
+
+            //SyncDuke: slurp the file into RAM so kread() is a memcpy (see KSYSFILE_SLURP_MAX).
+            len = (int32_t)lseek(openFile->fd, 0, SEEK_END);
+            lseek(openFile->fd, 0, SEEK_SET);
+            if (len > 0 && len <= KSYSFILE_SLURP_MAX &&
+                (openFile->data = (uint8_t *)malloc((size_t)len)) != NULL){
+                int32_t off = 0, n;
+                while (off < len && (n = (int32_t)read(openFile->fd, openFile->data + off, len - off)) > 0)
+                    off += n;
+                if (off == len){
+                    openFile->dataSize = len;
+                    close(openFile->fd);
+                    openFile->fd = -1;
+                }
+                else{   //Short read: fall back to the fd path.
+                    free(openFile->data);
+                    openFile->data = NULL;
+                    lseek(openFile->fd, 0, SEEK_SET);
+                }
+            }
+            return(newhandle);
         }
     }
 
@@ -347,6 +382,15 @@ int32_t kread(int32_t handle, void *buffer, int32_t leng){
     
     //FILESYSTEM ? OS takes care of it !
     if (openFile->type == SYSTEM_FILE){
+        if (openFile->data != NULL){
+            // SyncDuke: serve from the in-RAM copy -- no syscalls (fast over SMB).
+            leng = min(leng, openFile->dataSize - openFile->cursor);
+            if (leng < 0)
+                leng = 0;
+            memcpy(buffer, openFile->data + openFile->cursor, leng);
+            openFile->cursor += leng;
+            return leng;
+        }
         return(read(openFile->fd,buffer,leng));
     }
     
@@ -409,6 +453,15 @@ int32_t klseek(int32_t handle, int32_t offset, int whence){
     
     // FILESYSTEM ? OS will take care of it.
     if (openFiles[handle].type == SYSTEM_FILE){
+        if (openFiles[handle].data != NULL){
+            // SyncDuke: seek within the in-RAM copy.
+            switch(whence){
+                case SEEK_SET: openFiles[handle].cursor = offset; break;
+                case SEEK_END: openFiles[handle].cursor = openFiles[handle].dataSize + offset; break;
+                case SEEK_CUR: openFiles[handle].cursor += offset; break;
+            }
+            return(openFiles[handle].cursor);
+        }
         return lseek(openFiles[handle].fd,offset,whence);
     }
     
@@ -445,6 +498,8 @@ int32_t kfilelength(int32_t handle)
     }
     
     if (openFile->type == SYSTEM_FILE){
+        if (openFile->data != NULL)   // SyncDuke: in-RAM copy (fd is already closed)
+            return(openFile->dataSize);
         return(filelength(openFile->fd));
     }
     
@@ -470,9 +525,11 @@ void kclose(int32_t handle)
     }
     
     if (openFile->type == SYSTEM_FILE){
-        close(openFile->fd);
+        free(openFile->data);         // SyncDuke: in-RAM copy (NULL when on the fd path)
+        if (openFile->fd != -1)
+            close(openFile->fd);
     }
-	
+
     memset(openFile, 0, sizeof(openFile_t));
     
 }
