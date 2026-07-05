@@ -1051,7 +1051,7 @@ public:
 	bool	menu(const char *code, int mode = 0, JSObject* obj = NULL);
 	bool	random_menu(const char *code, int mode = 0, JSObject* obj = NULL);
 	bool	menu_exists(const char *code, const char* ext=NULL, char* realpath=NULL);
-	bool	menu_exists_in(const char *code, const char* ext, const char* subdir, char* realpath);
+	bool	menu_exists_in(const char *code, const char* ext, const char* subdir, bool mods, char* realpath);
 	struct bool_expr* get_search_string(char* str, size_t maxlen, int kmode);
 
 	int		uselect(bool add, uint n, const char *title, const char *item, const uchar *ar);

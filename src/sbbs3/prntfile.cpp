@@ -626,31 +626,35 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 		SAFECOPY(path, menu_file);
 	else {
 		/* Resolve the entire terminal-type extension priority within the menu
-		   subdirectory (if any) before falling back to the default menu dir, so a
-		   customized lower-priority menu file in the subdir isn't preempted by a
-		   stock higher-priority file in the default dir. */
+		   subdirectory (if any) before falling back to the default menu dir, and
+		   within the mods dir before the stock text dir, so a customized
+		   lower-priority menu file isn't preempted by a stock higher-priority
+		   file (issue #1182). */
 		bool found = false;
 		for (const char* subdir = menu_dir; !found; subdir = "") {
-			const char *next = "msg";
-			const char *last = "asc";
-			do {
-				if ((term->supports(RIP)) && menu_exists_in(code, "rip", subdir, path))
-				{ found = true; break; }
-				if ((term->supports(ANSI) && (!term->supports(COLOR))) && menu_exists_in(code, "mon", subdir, path))
-				{ found = true; break; }
-				if ((term->supports(ANSI)) && menu_exists_in(code, "ans", subdir, path))
-				{ found = true; break; }
-				if ((term->charset() == CHARSET_PETSCII) && menu_exists_in(code, "seq", subdir, path))
-				{ found = true; break; }
-				if (term->charset() == CHARSET_ASCII) {
-					next = "asc";
-					last = "msg";
-				}
-				if (menu_exists_in(code, next, subdir, path))
-				{ found = true; break; }
-				if (menu_exists_in(code, last, subdir, path))
-				{ found = true; break; }
-			} while (0);
+			for (int tier = 0; !found && tier < 2; tier++) {
+				bool        mods = (tier == 0);
+				const char *next = "msg";
+				const char *last = "asc";
+				do {
+					if ((term->supports(RIP)) && menu_exists_in(code, "rip", subdir, mods, path))
+					{ found = true; break; }
+					if ((term->supports(ANSI) && (!term->supports(COLOR))) && menu_exists_in(code, "mon", subdir, mods, path))
+					{ found = true; break; }
+					if ((term->supports(ANSI)) && menu_exists_in(code, "ans", subdir, mods, path))
+					{ found = true; break; }
+					if ((term->charset() == CHARSET_PETSCII) && menu_exists_in(code, "seq", subdir, mods, path))
+					{ found = true; break; }
+					if (term->charset() == CHARSET_ASCII) {
+						next = "asc";
+						last = "msg";
+					}
+					if (menu_exists_in(code, next, subdir, mods, path))
+					{ found = true; break; }
+					if (menu_exists_in(code, last, subdir, mods, path))
+					{ found = true; break; }
+				} while (0);
+			}
 			if (found)
 				break;
 			if (isfullpath(code) || *subdir == '\0') {
@@ -706,33 +710,30 @@ bool_expr_t* sbbs_t::get_search_string(char* str, size_t maxlen, int kmode)
 //****************************************************************************
 // Check (return true) if a menu file with the specified extension exists within
 // the specified menu sub-directory (subdir may be ""), with no default-dir
-// fallback.  Sets 'path' to the matching file on success.
-bool sbbs_t::menu_exists_in(const char *code, const char* ext, const char* subdir, char* path)
+// fallback.  When 'mods' is true, look under the mods dir instead of the stock
+// text dir (again, with no fallback).  Sets 'path' to the matching file on
+// success.
+bool sbbs_t::menu_exists_in(const char *code, const char* ext, const char* subdir, bool mods, char* path)
 {
 	char prefix[MAX_PATH];
-	if (isfullpath(code))
+	if (isfullpath(code)) {
+		if (mods)
+			return false;
 		SAFECOPY(prefix, code);
-	else {
+	} else {
+		if (mods && cfg.mods_dir[0] == '\0')
+			return false;
 		char sub[MAX_PATH + 1];
 		SAFECOPY(sub, subdir);
 		backslash(sub);
 		if (*code == '.')
 			*sub = '\0';
-		SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, sub, code);
+		if (mods)
+			SAFEPRINTF3(prefix, "%stext/menu/%s%s", cfg.mods_dir, sub, code);
+		else
+			SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, sub, code);
 		FULLPATH(path, prefix, MAX_PATH);
 		SAFECOPY(prefix, path);
-		if (cfg.mods_dir[0] != '\0') {
-			char modprefix[MAX_PATH + 1];
-			char modpath[MAX_PATH + 1];
-			snprintf(modprefix, sizeof modprefix, "%stext/menu/%s%s", cfg.mods_dir, sub, code);
-			snprintf(modpath, sizeof modpath, "%s.%s", modprefix, ext);
-			FULLPATH(path, modpath, MAX_PATH);
-			SAFECOPY(modpath, path);
-			if (fexist(modpath)) {
-				FULLPATH(path, modprefix, MAX_PATH);
-				SAFECOPY(prefix, path);
-			}
-		}
 	}
 	// Display specified EXACT width file
 	safe_snprintf(path, MAX_PATH, "%s.%ucol.%s", prefix, term->cols, ext);
@@ -777,18 +778,22 @@ bool sbbs_t::menu_exists(const char *code, const char* ext, char* path)
 	}
 
 	/* If a menu subdirectory is in effect, search it exhaustively (all required
-	   extensions) before falling back to the default menu dir, so a customized
-	   lower-priority extension in the subdir isn't preempted by a stock file of a
-	   higher-priority extension in the default dir. */
+	   extensions) before falling back to the default menu dir, and search the
+	   mods dir exhaustively before the stock text dir, so a customized
+	   lower-priority extension isn't preempted by a stock file of a
+	   higher-priority extension (issue #1182). */
 	for (const char* subdir = menu_dir; ; subdir = "") {
-		if (ext == NULL) {
-			/* Either <menu>.asc or <menu>.msg or <menu>.ans is required */
-			if (menu_exists_in(code, "asc", subdir, path)
-			    || menu_exists_in(code, "msg", subdir, path)
-			    || menu_exists_in(code, "ans", subdir, path))
+		for (int tier = 0; tier < 2; tier++) {
+			bool mods = (tier == 0);
+			if (ext == NULL) {
+				/* Either <menu>.asc or <menu>.msg or <menu>.ans is required */
+				if (menu_exists_in(code, "asc", subdir, mods, path)
+				    || menu_exists_in(code, "msg", subdir, mods, path)
+				    || menu_exists_in(code, "ans", subdir, mods, path))
+					return true;
+			} else if (menu_exists_in(code, ext, subdir, mods, path))
 				return true;
-		} else if (menu_exists_in(code, ext, subdir, path))
-			return true;
+		}
 		if (isfullpath(code) || *subdir == '\0')
 			return false;
 	}
