@@ -27,6 +27,7 @@ Prepared for public release: 03/21/2003 - Charlie Wiederhold, 3D Realms
 #include "duke3d.h"
 #include "filesystem.h"
 #include "game.h"
+#include "dirwrap.h"    /* xpdev: getfname() -- user-map display name */
 
 
 extern uint8_t  everyothertime;
@@ -1388,8 +1389,11 @@ void dofrontscreens(void)
 
         if( boardfilename[0] != 0 && ud.level_number == 7 && ud.volume_number == 0 )
         {
+            /* SyncDuke: show just the map's filename -- boardfilename carries the
+             * full -map path, which is noise (and a host-filesystem-layout leak)
+             * to the remote user. */
             menutext(160,90,0,0,"ENTERING USER MAP");
-            gametextpal(160,90+10,boardfilename,14,2);
+            gametextpal(160,90+10,getfname(boardfilename),14,2);
         }
         else
         {
