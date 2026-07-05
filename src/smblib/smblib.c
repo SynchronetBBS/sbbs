@@ -1703,6 +1703,14 @@ int smb_new_msghdr(smb_t* smb, smbmsg_t* msg, int storage, bool new_msg)
 			return i;  /* error updating hash table */
 		}
 	}
+	/* A hyper-allocated msgbase can only be hyper-allocated: its allocation
+	 * files are not maintained, so the fast/self-pack allocators would return
+	 * an offset within (overwriting) existing headers. Protects smb_addvote,
+	 * smb_addpoll, smb_addpollclosure and any other caller passing a storage
+	 * mode (e.g. derived from the sub's configuration) that contradicts the
+	 * base's persisted allocation scheme (issue #1181). */
+	if (smb->status.attr & SMB_HYPERALLOC)
+		storage = SMB_HYPERALLOC;
 	if (storage != SMB_HYPERALLOC && (i = smb_open_ha(smb)) != SMB_SUCCESS) {
 		smb_unlocksmbhdr(smb);
 		return i;
