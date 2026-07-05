@@ -2,7 +2,7 @@
 // @format.tab-size 4
 
 "use strict";
-var REVISION = '1.21';
+var REVISION = '1.22';
 require("http.js", 'HTTPRequest');
 require("sbbsdefs.js", 'USER_DELETED');
 require("smbdefs.js", 'SMB_HYPERALLOC');
@@ -344,14 +344,14 @@ var tests = {
 			if(msgbase.max_age != msgbase.cfg.max_age)
 				output.push(format("MsgBase: %-16s max_age status (%d) does not match sub-board configuration: %d",
 					sub, msgbase.max_age, msgbase.cfg.max_age));
-			// A mismatch here arms the header corruption of issue #1181:
+			// This mismatch arms the header corruption of issue #1181:
 			// votes/polls stored with the configured (fast/self-pack) storage
-			// mode overwrite existing headers of a hyper-allocated base
+			// mode overwrite existing headers of a hyper-allocated base.
+			// The reverse (hyper-configured, not-yet-hyper base) is a supported
+			// transition (the base becomes hyper-allocated upon next post), so
+			// it is not reported here.
 			if((msgbase.attributes & SMB_HYPERALLOC) && !(msgbase.cfg.settings & SUB_HYPER))
 				output.push(format("MsgBase: %-16s is hyper-allocated, but sub-board is not configured for hyper-allocation",
-					sub));
-			else if(!(msgbase.attributes & SMB_HYPERALLOC) && (msgbase.cfg.settings & SUB_HYPER))
-				output.push(format("MsgBase: %-16s is not hyper-allocated, but sub-board is configured for hyper-allocation",
 					sub));
 			msgbase.close();
 		}
