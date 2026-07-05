@@ -149,6 +149,16 @@ void V_DrawPatch(int x, int y, patch_t *patch)
     y -= SHORT(patch->topoffset);
     x -= SHORT(patch->leftoffset);
 
+    // SyncDOOM: tolerate WIDESCREEN art (e.g. the 560x200 TITLEPIC/INTERPIC
+    // Freedoom >= 0.13 and the Unity-port WADs ship) instead of I_Error'ing
+    // out of the door at the title screen. Such pics carry the classic image
+    // centered, so a fullscreen draw (x == 0) is re-centered and the columns
+    // hanging off either edge are clipped; callers that already center a wide
+    // patch themselves (negative x, e.g. wi_stuff) just get the clipping.
+    // Vanilla-size patches take the exact old path, vanilla RANGECHECK intact.
+    if (SHORT(patch->width) > SCREENWIDTH && x == 0)
+        x -= (SHORT(patch->width) - SCREENWIDTH) / 2;
+
     // haleyjd 08/28/10: Strife needs silent error checking here.
     if(patchclip_callback)
     {
@@ -157,8 +167,8 @@ void V_DrawPatch(int x, int y, patch_t *patch)
     }
 
 #ifdef RANGECHECK
-    if (x < 0
-     || x + SHORT(patch->width) > SCREENWIDTH
+    if ((SHORT(patch->width) <= SCREENWIDTH
+      && (x < 0 || x + SHORT(patch->width) > SCREENWIDTH))
      || y < 0
      || y + SHORT(patch->height) > SCREENHEIGHT)
     {
@@ -166,7 +176,9 @@ void V_DrawPatch(int x, int y, patch_t *patch)
     }
 #endif
 
-    V_MarkRect(x, y, SHORT(patch->width), SHORT(patch->height));
+    V_MarkRect(x < 0 ? 0 : x, y,
+               SHORT(patch->width) > SCREENWIDTH ? SCREENWIDTH : SHORT(patch->width),
+               SHORT(patch->height));
 
     col = 0;
     desttop = dest_screen + y * SCREENWIDTH + x;
@@ -175,6 +187,11 @@ void V_DrawPatch(int x, int y, patch_t *patch)
 
     for ( ; col<w ; x++, col++, desttop++)
     {
+        if (x < 0)              // SyncDOOM: widescreen overhang (see above)
+            continue;
+        if (x >= SCREENWIDTH)
+            break;
+
         column = (column_t *)((byte *)patch + LONG(patch->columnofs[col]));
 
         // step through the posts in a column
@@ -210,8 +227,12 @@ void V_DrawPatchFlipped(int x, int y, patch_t *patch)
     byte *source; 
     int w; 
  
-    y -= SHORT(patch->topoffset); 
-    x -= SHORT(patch->leftoffset); 
+    y -= SHORT(patch->topoffset);
+    x -= SHORT(patch->leftoffset);
+
+    // SyncDOOM: widescreen-art tolerance, same as V_DrawPatch above.
+    if (SHORT(patch->width) > SCREENWIDTH && x == 0)
+        x -= (SHORT(patch->width) - SCREENWIDTH) / 2;
 
     // haleyjd 08/28/10: Strife needs silent error checking here.
     if(patchclip_callback)
@@ -220,9 +241,9 @@ void V_DrawPatchFlipped(int x, int y, patch_t *patch)
             return;
     }
 
-#ifdef RANGECHECK 
-    if (x < 0
-     || x + SHORT(patch->width) > SCREENWIDTH
+#ifdef RANGECHECK
+    if ((SHORT(patch->width) <= SCREENWIDTH
+      && (x < 0 || x + SHORT(patch->width) > SCREENWIDTH))
      || y < 0
      || y + SHORT(patch->height) > SCREENHEIGHT)
     {
@@ -230,7 +251,9 @@ void V_DrawPatchFlipped(int x, int y, patch_t *patch)
     }
 #endif
 
-    V_MarkRect (x, y, SHORT(patch->width), SHORT(patch->height));
+    V_MarkRect (x < 0 ? 0 : x, y,
+                SHORT(patch->width) > SCREENWIDTH ? SCREENWIDTH : SHORT(patch->width),
+                SHORT(patch->height));
 
     col = 0;
     desttop = dest_screen + y * SCREENWIDTH + x;
@@ -239,6 +262,11 @@ void V_DrawPatchFlipped(int x, int y, patch_t *patch)
 
     for ( ; col<w ; x++, col++, desttop++)
     {
+        if (x < 0)              // SyncDOOM: widescreen overhang (see above)
+            continue;
+        if (x >= SCREENWIDTH)
+            break;
+
         column = (column_t *)((byte *)patch + LONG(patch->columnofs[w-1-col]));
 
         // step through the posts in a column
