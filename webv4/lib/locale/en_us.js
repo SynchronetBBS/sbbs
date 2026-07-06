@@ -1,8 +1,9 @@
 function EN_US(name) {
 
     const ini_path = backslash(settings.web_lib + 'locale/') + 'en_us.ini';
+    var mod_path;
     if (typeof name == 'string') {
-        const mod_path = backslash(settings.web_lib + 'locale/') + name + '.ini';
+        mod_path = backslash(settings.web_lib + 'locale/') + name + '.ini';
     }
 
     var f = new File(ini_path);
