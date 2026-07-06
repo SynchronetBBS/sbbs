@@ -3465,9 +3465,11 @@ void event_thread(void* arg)
 									sbbs->lprintf(LOG_ERR, "!ERROR interrupting node %d (%s)", j, node_status);
 							}
 							if (now - start > (60 * 60) && node_socket[j - 1] != INVALID_SOCKET) {
-								sbbs->lprintf(LOG_WARNING, "!TIRED of waiting for node %d to become inactive (%s), closing socket %d"
+								sbbs->lprintf(LOG_WARNING, "!TIRED of waiting for node %d to become inactive (%s), shutting down socket %d"
 								              , j, node_status, node_socket[j - 1]);
-								close_socket(node_socket[j - 1]);
+								// Shutdown (don't close) to wake the node's blocked reads: the
+								// node thread owns and closes this descriptor in its own teardown
+								shutdown(node_socket[j - 1], SHUT_RDWR);
 								node_socket[j - 1] = INVALID_SOCKET;
 							}
 							if (now - start > (90 * 60)) {
@@ -4708,7 +4710,15 @@ void node_thread(void* arg)
 			sbbs->errormsg(WHERE, "truncating", "logfile", 0);
 	}
 
-	if (sbbs->getnodedat(sbbs->cfg.node_num, &node, true)) {
+	// Retry the node status reset: giving up here strands the node record
+	// in-use (e.g. when node.dab is briefly locked or inaccessible during
+	// an exclusive event), later "corrected" on connect - see issue #1178
+	bool node_status_reset = false;
+	for (int attempt = 1; attempt <= 3 && !node_status_reset; attempt++) {
+		if (attempt > 1)
+			SLEEP(500);
+		if (!sbbs->getnodedat(sbbs->cfg.node_num, &node, true))
+			continue;
 		node_socket[sbbs->cfg.node_num - 1] = INVALID_SOCKET;
 		if (node.misc & NODE_DOWN)
 			node.status = NODE_OFFLINE;
@@ -4718,8 +4728,13 @@ void node_thread(void* arg)
 		               | NODE_UDAT | NODE_POFF | NODE_AOFF | NODE_EXT);
 		/*	node.useron=0; needed for hang-ups while in multinode chat */
 		sbbs->putnodedat(sbbs->cfg.node_num, &node);
-	} else
+		node_status_reset = true;
+	}
+	if (!node_status_reset) {
 		node_socket[sbbs->cfg.node_num - 1] = INVALID_SOCKET;
+		lprintf(LOG_ERR, "Node %d thread terminated without resetting node status"
+		        , sbbs->cfg.node_num);
+	}
 
 	{
 		uint32_t remain = protected_uint32_adjust_fetch(&node_threads_running, -1);
@@ -6041,8 +6056,8 @@ NO_SSH:
 					node_socket[node_num - 1] = client_socket;
 					sbbs->putnodedat(node_num, &node);
 					if (corrected) // lprintf/lputs only after unlocking the node.dab
-						lprintf(LOG_CRIT, "%04d !Node %d status with invalid socket corrected (was %d)"
-								, client_socket, node_num, corrected);
+						lprintf(LOG_ERR, "%04d !Node %d status with invalid socket corrected (was %d)"
+						        , client_socket, node_num, corrected);
 					break;
 				}
 				else
