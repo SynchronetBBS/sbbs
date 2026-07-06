@@ -95,15 +95,15 @@ to the underlying DOOM engine (so standard Chocolate Doom switches such as
 `-warp`, `-skill`, `-nomonsters`, `-deathmatch`, `-altdeath`, `-connect`,
 `-server` work as usual).
 
-A typical door invocation:
+A typical door invocation (the BBS fills in the DOOR32.SYS drop-file path):
 
 ```
-syncdoom %f -t%T -home <per-user-dir> -iwad <wad> -name "<user>"
+syncdoom <path>/door32.sys -home <per-user-dir> -iwad <wad> -name "<user>"
 ```
 
-where `%f` and `%T` are the BBS's substitutions for the drop-file path and time
-left. (The door live-probes the terminal size, so no screen-rows argument is
-needed.)
+The DOOR32.SYS drop file carries the client socket and session time limit; on a
+BBS that doesn't write one, pass those directly with `-s<fd>` and `-t<seconds>`.
+(The door live-probes the terminal size, so no screen-rows argument is needed.)
 
 Run `syncdoom -help` (also `--help`, `-?`, `/?`, or with no arguments) to print
 the full option list below.

@@ -158,9 +158,8 @@ shim's I/O selects `send`/`recv`/`ioctlsocket` vs the *nix `read`/`write`/`fcntl
 at compile time (`_WIN32`).
 
 The vendored Build engine assumes 32-bit pointers in spots; the few that matter
-at 64-bit are patched in place and documented in [SEAM.md](SEAM.md). The engine
-sources keep their upstream style; only our shim files follow the project's
-uncrustify config.
+at 64-bit are patched in place. The engine sources keep their upstream style;
+only our shim files follow the project's uncrustify config.
 
 ---
 
@@ -185,18 +184,22 @@ full GRPs is **required** for third-party user maps and add-on GRPs (see
    existing `syncduke.ini`).
 4. Connect with the BBS and run the door.
 
-The door is launched as `syncduke%. %f -home %juser/%4/duke/`:
+The door is launched with a DOOR32.SYS drop file and a per-user home directory:
 
-- `%f` is the **DOOR32.SYS** drop file, from which SyncDuke reads the client
-  socket and the session time limit.
+```
+syncduke <path>/door32.sys -home <per-user-dir>/duke/
+```
+
+- The **DOOR32.SYS** drop file supplies the client socket and the session time
+  limit. (On a BBS that doesn't write one, pass `-s<fd>` and `-t<seconds>` instead.)
 - `-home …` gives **each user their own** writable directory for Duke's config
-  (`duke3d.cfg`) and savegames — `data/user/<usernum>/duke/`, created on first
+  (`duke3d.cfg`) and savegames — e.g. `data/user/<usernum>/duke/`, created on first
   run. Without it, config/saves would be shared in the GRP directory and collide
   across nodes. (The base GRP stays read-only and shared.)
 
 ### Command-line arguments
 
-The DOOR32.SYS path (`%f`) or `-s<fd>` supplies the client socket; everything else
+The DOOR32.SYS path or `-s<fd>` supplies the client socket; everything else
 is optional. Run `syncduke -help` (also `--help`, `-?`, `/?`, or with no
 arguments) to print this list.
 
@@ -204,7 +207,7 @@ arguments) to print this list.
 
 | Argument | Purpose |
 |----------|---------|
-| `<path>/door32.sys` | DOOR32.SYS drop file (Synchronet's `%f`): client socket + session time limit + alias. |
+| `<path>/door32.sys` | DOOR32.SYS drop file: client socket + session time limit + alias. |
 | `-s<fd>` | Client socket file descriptor directly (the lobby's path — no drop file). |
 | `-t<seconds>` | Session time limit; the door exits when it elapses (also carried by the drop file). |
 | `-name <handle>` | Player name (who's-online status and multiplayer). Given as a flag+value so a `/`-leading alias isn't misread as an engine option. |
@@ -300,9 +303,6 @@ Setup:
 - **Cross-platform build** — Linux/Unix (GCC/Clang, `build.sh`) and Windows
   (MSVC, `build.bat`). The shim's terminal/door I/O picks `send`/`recv`/
   `ioctlsocket` on Windows vs `read`/`write`/`fcntl` on *nix at compile time.
-
-See [DESIGN.md](DESIGN.md), [PLAN.md](PLAN.md), and [SEAM.md](SEAM.md) for the
-spec, task plan, and the engine/platform seam (including the 64-bit patch list).
 
 ---
 
