@@ -228,6 +228,13 @@
 - New display file: `text/menu/textsrch.msg` — boolean-search
   quick reference, displayed when `?` is entered at a search
   prompt
+- Fixed: a `mods/text` override file was shadowed by a same-named
+  stock `text/` file using a higher-priority filename extension
+  for the caller's terminal type (e.g. `mods/text/answer.asc`
+  ignored in favor of stock `text/answer.msg`); the mods dir is
+  now searched across all extensions before the stock dir, and
+  mods width-variant files (e.g. `.40col.ans`) no longer require
+  a plain same-extension mods file to exist (issue #1182)
 
 ## Stock Modules
 
