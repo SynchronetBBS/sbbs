@@ -738,5 +738,195 @@ function bright_background(enable)
 	ansiterm.send("ext_mode", op, "no_blink");
 }
 
+// ---------------------------------------------------------------------------
+// SyncTERM audio APCs ("SyncTERM:A" -- see cterm.adoc "Audio APCs").
+//
+// Model: SyncTERM holds 256 patch slots (decoded PCM) and mixes channels 2..15
+// (0/1 are its own). Flow: cache a sound FILE once (audio_store), decode it into
+// a slot (audio_load), then play the slot on a channel (audio_queue). Music loops;
+// audio_volume adjusts a playing channel live; audio_synth makes a tone with no
+// file at all.  Check supports_audio()/supports_audio_files() first.
+//
+// File formats are whatever the CLIENT's runtime libsndfile decodes: WAV, VOC,
+// OGG/Opus and FLAC are safe everywhere; MP3 only on libsndfile >= 1.1.0. There
+// is no per-format probe -- prefer OGG/WAV for portability. `data` is the file's
+// raw bytes as a binary string (File.open("rb").read()).
+// ---------------------------------------------------------------------------
+
+var audio_chan_first = 2;      // channels 2..15 are APC-mixable (0/1 are cterm's)
+var audio_chan_last  = 15;
+var audio_slot_last  = 255;    // 256 patch slots (0..255)
+
+var _audio_caps = undefined;
+
+// -1 = no audio APC; 0 = audio APC but Synth tones only (no libsndfile);
+//  1 = audio APC + libsndfile (can decode sound files). Cached after first query.
+function query_audio()
+{
+	if(_audio_caps !== undefined)
+		return _audio_caps;
+	var r = query_fb('\x1b_SyncTERM:Q;libsndfile\x1b\\', 'n');
+	var m = r.match(/\x1b\[=7;100;([01])n/);
+	_audio_caps = m ? parseInt(m[1], 10) : -1;
+	return _audio_caps;
+}
+
+// Synth/Queue usable (audio APC present, possibly Synth-tones only).
+function supports_audio()
+{
+	return query_audio() >= 0;
+}
+
+// audio_load can decode sound files (client libsndfile present).
+function supports_audio_files()
+{
+	return query_audio() === 1;
+}
+
+// --- low-level APC emitters (one per wire verb) ---
+
+function _audio_apc(body)
+{
+	return '\x1b_SyncTERM:' + body + '\x1b\\';
+}
+function _audio_clamp(v, lo, hi)
+{
+	v = parseInt(v, 10);
+	if(isNaN(v)) v = 0;
+	return v < lo ? lo : (v > hi ? hi : v);
+}
+
+// Cache a complete sound FILE (`data` = its raw bytes as a binary string) under
+// `name` for a later audio_load. libsndfile sniffs the format from the content.
+function audio_store(name, data)
+{
+	console.write(_audio_apc('C;S;' + name + ';' + base64_encode(data)));
+}
+
+// Decode the cached `name` into patch slot `slot` (0..255).
+function audio_load(slot, name)
+{
+	console.write(_audio_apc('A;Load;S=' + _audio_clamp(slot, 0, audio_slot_last) + ';' + name));
+}
+
+// Play patch `slot` on channel `ch` (2..15). opts: vol 0..100 (default 100),
+// pan -100(left)..0..+100(right) (default 0), loop (default false).
+function audio_queue(ch, slot, opts)
+{
+	if(opts === undefined) opts = {};
+	var vol = (opts.vol === undefined) ? 100 : _audio_clamp(opts.vol, 0, 100);
+	var pan = (opts.pan === undefined) ? 0 : _audio_clamp(opts.pan, -100, 100);
+	var vl = pan > 0 ? Math.floor(vol * (100 - pan) / 100) : vol;
+	var vr = pan < 0 ? Math.floor(vol * (100 + pan) / 100) : vol;
+	console.write(_audio_apc('A;Queue;C=' + _audio_clamp(ch, audio_chan_first, audio_chan_last)
+	    + ';S=' + _audio_clamp(slot, 0, audio_slot_last)
+	    + ';VL=' + vl + ';VR=' + vr + (opts.loop ? ';L' : '')));
+}
+
+// Set channel `ch`'s live mix volume (0..100) -- adjusts a playing/looping sound.
+function audio_volume(ch, vol)
+{
+	console.write(_audio_apc('A;Volume;C=' + _audio_clamp(ch, audio_chan_first, audio_chan_last)
+	    + ';V=' + _audio_clamp(vol, 0, 100)));
+}
+
+// Set channel `ch`'s live per-side volume (each 0..100) -- live stereo balance.
+function audio_volume_lr(ch, vl, vr)
+{
+	console.write(_audio_apc('A;Volume;C=' + _audio_clamp(ch, audio_chan_first, audio_chan_last)
+	    + ';VL=' + _audio_clamp(vl, 0, 100) + ';VR=' + _audio_clamp(vr, 0, 100)));
+}
+
+// Synthesize a `ms`-ms, `freq`-Hz tone of waveform `shape` ("SINE", "SQUARE",
+// "SAWTOOTH", ...) into slot `slot`. Works without libsndfile (supports_audio()).
+function audio_synth(slot, shape, freq, ms)
+{
+	console.write(_audio_apc('A;Synth;S=' + _audio_clamp(slot, 0, audio_slot_last)
+	    + ';W=' + shape + ';F=' + _audio_clamp(freq, 0, 0x7fffffff)
+	    + ';T=' + _audio_clamp(ms, 0, 0x7fffffff)));
+}
+
+// Stop channel `ch`, with an optional `fade_ms` fade-out (0/omitted = abrupt).
+function audio_flush(ch, fade_ms)
+{
+	var s = 'A;Flush;C=' + _audio_clamp(ch, audio_chan_first, audio_chan_last);
+	if(fade_ms)
+		s += ';O=' + _audio_clamp(fade_ms, 0, 0x7fffffff);
+	console.write(_audio_apc(s));
+}
+
+// --- convenience layer: slot/channel allocator + upload-once cache ---
+
+var _audio_slots = {};                         // name -> slot (upload once per session)
+var _audio_next_slot = 0;
+var audio_music_chan = audio_chan_first;       // channel reserved for play_music
+var _audio_next_chan = audio_chan_first + 1;   // rotating SFX channel
+
+function _audio_alloc_slot()
+{
+	var s = _audio_next_slot;
+	_audio_next_slot = (_audio_next_slot + 1) % (audio_slot_last + 1);
+	return s;
+}
+
+function _audio_alloc_chan()
+{
+	var c = _audio_next_chan;
+	if(++_audio_next_chan > audio_chan_last)
+		_audio_next_chan = audio_chan_first + 1;   // skip the reserved music channel
+	return c;
+}
+
+// Store+load `name`/`data` exactly once per session; returns its slot.
+function _audio_ensure(name, data)
+{
+	if(_audio_slots[name] === undefined) {
+		audio_store(name, data);
+		var slot = _audio_alloc_slot();
+		audio_load(slot, name);
+		_audio_slots[name] = slot;
+	}
+	return _audio_slots[name];
+}
+
+// Play a sound-effect file (see audio_store for formats): stores/loads once per
+// `name`, then queues it on a rotating SFX channel. opts: vol/pan/loop, ch (force
+// a channel). Returns { slot, ch }. Needs supports_audio_files().
+function play_sound(name, data, opts)
+{
+	if(opts === undefined) opts = {};
+	var slot = _audio_ensure(name, data);
+	var ch = (opts.ch === undefined) ? _audio_alloc_chan() : opts.ch;
+	audio_queue(ch, slot, opts);
+	return { slot: slot, ch: ch };
+}
+
+// Play a synthesized tone (no file / libsndfile needed -- supports_audio()).
+// opts: shape (default "SINE"), vol, pan, ch. Returns { slot, ch }.
+function play_tone(freq, ms, opts)
+{
+	if(opts === undefined) opts = {};
+	var slot = _audio_alloc_slot();
+	audio_synth(slot, (opts.shape === undefined) ? 'SINE' : opts.shape, freq, ms);
+	var ch = (opts.ch === undefined) ? _audio_alloc_chan() : opts.ch;
+	audio_queue(ch, slot, opts);
+	return { slot: slot, ch: ch };
+}
+
+// Play a music file looped on the reserved music channel. opts: vol, ch (override).
+// Returns a handle { volume: function(0..100), stop: function([fade_ms]) } for a
+// live volume slider / stop. Needs supports_audio_files().
+function play_music(name, data, opts)
+{
+	if(opts === undefined) opts = {};
+	var slot = _audio_ensure(name, data);
+	var ch = (opts.ch === undefined) ? audio_music_chan : opts.ch;
+	audio_queue(ch, slot, { vol: opts.vol, loop: true });
+	return {
+		volume: function(v) { audio_volume(ch, v); },
+		stop:   function(fade) { audio_flush(ch, fade); }
+	};
+}
+
 // Leave as last line:
 this;
