@@ -267,9 +267,13 @@ Setup:
 
    [map:Duke It Out In D.C.]
    grp = addons/dukedc.grp     ; add-on GRP, overlaid on the base GRP (/g)
-   con = addons/dukedc.con     ; the add-on's CON script, if it ships one (/x)
    ```
 
+   A `con = <file>` key passes a **separate** CON script to the engine (`/x`) —
+   only for an add-on that ships its CONs as loose files. The usual add-on GRP
+   packaging (e.g. Megaton's `dukedc.grp`) carries its CON scripts *inside* the
+   GRP, where they override the base GRP's automatically — no `con=` needed,
+   and pointing `con=` at a file that doesn't exist aborts the launch.
    `file`, `grp`, and `con` combine freely in one entry (e.g. an add-on that
    also ships a map). No recycle is needed — the lobby re-reads `syncduke.ini`
    each time it runs.

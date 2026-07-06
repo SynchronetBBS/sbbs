@@ -7324,8 +7324,10 @@ void checkcommandline(int argc,char  **argv)
                     case 'G':
                         c++;
                         if(*c){
-							char  fullpathgrpfile[16]; // 16 not enough
-							memset(fullpathgrpfile, 0, 16);
+							char  fullpathgrpfile[512]; /* SyncDuke: was 16 ("not enough" indeed) --
+							                               overflowed on any /g path over 15 chars,
+							                               e.g. the lobby picker's absolute add-on paths */
+							memset(fullpathgrpfile, 0, sizeof(fullpathgrpfile));
 
                             if( strchr(c,'.') == 0){
 								strcat(c,".grp"); // crap!
