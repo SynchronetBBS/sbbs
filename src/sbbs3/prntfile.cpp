@@ -637,22 +637,34 @@ bool sbbs_t::menu(const char *code, int mode, JSObject* obj)
 				const char *next = "msg";
 				const char *last = "asc";
 				do {
-					if ((term->supports(RIP)) && menu_exists_in(code, "rip", subdir, mods, path))
-					{ found = true; break; }
-					if ((term->supports(ANSI) && (!term->supports(COLOR))) && menu_exists_in(code, "mon", subdir, mods, path))
-					{ found = true; break; }
-					if ((term->supports(ANSI)) && menu_exists_in(code, "ans", subdir, mods, path))
-					{ found = true; break; }
-					if ((term->charset() == CHARSET_PETSCII) && menu_exists_in(code, "seq", subdir, mods, path))
-					{ found = true; break; }
+					if (term->supports(RIP) && menu_exists_in(code, "rip", subdir, mods, path)) {
+						found = true;
+						break;
+					}
+					if (term->supports(ANSI) && !term->supports(COLOR) && menu_exists_in(code, "mon", subdir, mods, path)) {
+						found = true;
+						break;
+					}
+					if (term->supports(ANSI) && menu_exists_in(code, "ans", subdir, mods, path)) {
+						found = true;
+						break;
+					}
+					if (term->charset() == CHARSET_PETSCII && menu_exists_in(code, "seq", subdir, mods, path)) {
+						found = true;
+						break;
+					}
 					if (term->charset() == CHARSET_ASCII) {
 						next = "asc";
 						last = "msg";
 					}
-					if (menu_exists_in(code, next, subdir, mods, path))
-					{ found = true; break; }
-					if (menu_exists_in(code, last, subdir, mods, path))
-					{ found = true; break; }
+					if (menu_exists_in(code, next, subdir, mods, path)) {
+						found = true;
+						break;
+					}
+					if (menu_exists_in(code, last, subdir, mods, path)) {
+						found = true;
+						break;
+					}
 				} while (0);
 			}
 			if (found)
