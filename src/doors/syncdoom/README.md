@@ -405,6 +405,11 @@ and is copied to `syncdoom.ini` on install; see it for the full key list. Notabl
   player's marine when they leave a match in progress: stay (vanilla), vanish, or
   a teleport-out puff. Changes lockstep game state, so it must match across players
   in a match (a house setting, not per-user).
+- `attract_demos` = `true` / `false` (default **false**) — play the title-screen
+  attract demos (the IWAD's `demo1`–`demo4`) when the title sits idle. Off, the
+  title page holds instead, so an idle single-player door doesn't stream a demo's
+  worth of frames the remote user didn't ask for. Set `true` to restore the
+  classic attract loop.
 - `splash` — the waiting-room backdrop as an editable external 80×25 "binary text"
   file (default `waiting.bin`, beside the door; edit in PabloDraw/Moebius). Missing
   or wrong-size → the baked-in default.

@@ -473,6 +473,11 @@ int             demosequence;
 int             pagetic;
 char                    *pagename;
 
+// syncdoom: play the title-screen attract demos (demo1..demo4)? Set from
+// syncdoom.ini [game] attract_demos; default off -- the title page holds
+// instead (see D_DoAdvanceDemo).
+int             sd_attract_demos = 0;
+
 
 //
 // D_PageTicker
@@ -530,7 +535,14 @@ void D_DoAdvanceDemo (void)
       demosequence = (demosequence+1)%7;
     else
       demosequence = (demosequence+1)%6;
-    
+
+    // syncdoom: without [game] attract_demos, never advance into the demo
+    // playbacks (1/3/5/6) -- show the title page and hold it (the menu still
+    // opens on any key; pagetic is stretched below so case 0 runs only once
+    // and the title music isn't restarted every page cycle)
+    if (!sd_attract_demos)
+        demosequence = 0;
+
     switch (demosequence)
     {
       case 0:
@@ -582,6 +594,10 @@ void D_DoAdvanceDemo (void)
 	G_DeferedPlayDemo(DEH_String("demo4"));
 	break;
     }
+
+    // syncdoom: hold the title page indefinitely when the attract demos are off
+    if (!sd_attract_demos)
+        pagetic = TICRATE * 60 * 60 * 24;
 
     // The Doom 3: BFG Edition version of doom2.wad does not have a
     // TITLETPIC lump. Use INTERPIC instead as a workaround.

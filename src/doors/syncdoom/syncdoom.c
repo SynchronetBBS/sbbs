@@ -535,6 +535,9 @@ extern int sd_text_hud;
 // from [game] remove_quit_bodies; default on.
 // d_net.c: fate of a departed player's marine -- 0 keep / 1 vanish / 2 teleport-fog.
 extern int sd_quit_effect;
+// d_main.c: play the title-screen attract demos (demo1..demo4). Set from
+// [game] attract_demos; default off (the title page holds instead).
+extern int sd_attract_demos;
 // g_game.c: defeat Doom's turn-accel ramp (Options > FAST TURN). Per-user.
 extern int sd_instant_turn;
 extern const char *HU_message_text(void);
@@ -3137,6 +3140,11 @@ static void read_syncdoom_ini(const char *argv0)
 		sd_quit_effect = 1;
 	else
 		sd_quit_effect = 2;          // "fog" or unset -> default
+
+	// [game] attract_demos -- play the title-screen attract demos when idle.
+	// Off by default (as in SyncDuke): single-player holds on the title page
+	// instead of streaming demo-playback frames the remote user didn't ask for.
+	sd_attract_demos = iniGetBool(ini, "game", "attract_demos", FALSE);
 
 	// [game] splash -- external waiting-room art (80x25 .bin; editable, no rebuild).
 	// Just captured here; resolved + loaded in main() so it works with NO ini too
