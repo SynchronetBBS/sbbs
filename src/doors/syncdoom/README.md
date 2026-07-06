@@ -50,9 +50,10 @@ fully playable, just silent — every audio call is a harmless no-op.
 
 The JavaScript **lobby** can also play a one-shot sound when a player enters it:
 set `[lobby] enter_sound` to a WAV/OGG/FLAC/VOC file you supply (e.g. a shotgun or
-growl extracted from your own WAD). It plays only on a SyncTERM that can decode
-audio files (silent otherwise), through the shared `cterm_lib.js` audio helpers.
-Nothing ships — don't redistribute copyrighted sound.
+growl extracted from your own WAD), or a wildcard like `sfx/*.wav` to pick one at
+random each entry. It plays only on a SyncTERM that can decode audio files (silent
+otherwise), through the shared `cterm_lib.js` audio helpers. Nothing ships — don't
+redistribute copyrighted sound.
 
 ---
 

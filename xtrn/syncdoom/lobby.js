@@ -724,23 +724,25 @@ function sd_attract()
 	console.line_counter = 0;                          // clean slate for the menu draw
 }
 
-// Optional one-shot sound on lobby entry: [lobby] enter_sound points at a WAV/OGG
-// the sysop drops (e.g. a shotgun/growl extracted from their own WAD -- nothing
-// ships). Played once via the shared cterm_lib.js audio helpers, and only on a
-// terminal that can decode sound files (SyncTERM + libsndfile); silent otherwise.
+// Optional one-shot sound on lobby entry: [lobby] enter_sound is a WAV/OGG the sysop
+// drops (e.g. a shotgun/growl extracted from their own WAD -- nothing ships), or a
+// wildcard (e.g. sfx/*.wav) from which one match is chosen at random each entry.
+// Played once via the shared cterm_lib.js audio helpers, only on a terminal that can
+// decode sound files (SyncTERM + libsndfile); silent otherwise.
 function sd_enter_sound()
 {
 	var file = cfg.lobby && cfg.lobby.enter_sound;
 	if (!file)
 		return;
-	var path = (file.charAt(0) == "/" || file.charAt(0) == "\\" || file.charAt(1) == ":")
+	var spec = (file.charAt(0) == "/" || file.charAt(0) == "\\" || file.charAt(1) == ":")
 	    ? String(file) : SD_DIR + file;
-	if (!file_exists(path))
+	var matches = directory(spec);   // a plain path (one match) or a wildcard (pick random)
+	if (!matches.length)
 		return;
 	var ct = load({}, "cterm_lib.js");
 	if (!ct.supports_audio_files())
 		return;
-	var f = new File(path);
+	var f = new File(matches[random(matches.length)]);
 	if (!f.open("rb"))
 		return;
 	var data = f.read();
