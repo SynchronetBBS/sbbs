@@ -724,6 +724,30 @@ function sd_attract()
 	console.line_counter = 0;                          // clean slate for the menu draw
 }
 
+// Optional one-shot sound on lobby entry: [lobby] enter_sound points at a WAV/OGG
+// the sysop drops (e.g. a shotgun/growl extracted from their own WAD -- nothing
+// ships). Played once via the shared cterm_lib.js audio helpers, and only on a
+// terminal that can decode sound files (SyncTERM + libsndfile); silent otherwise.
+function sd_enter_sound()
+{
+	var file = cfg.lobby && cfg.lobby.enter_sound;
+	if (!file)
+		return;
+	var path = (file.charAt(0) == "/" || file.charAt(0) == "\\" || file.charAt(1) == ":")
+	    ? String(file) : SD_DIR + file;
+	if (!file_exists(path))
+		return;
+	var ct = load({}, "cterm_lib.js");
+	if (!ct.supports_audio_files())
+		return;
+	var f = new File(path);
+	if (!f.open("rb"))
+		return;
+	var data = f.read();
+	f.close();
+	ct.play_sound("lobby_enter", data);
+}
+
 // Recent-activity view: frags, level clears and deaths from the door event log.
 function sd_show_activity()
 {
@@ -831,6 +855,7 @@ function sd_main()
 	var live = (cfg.lobby
 	            && (cfg.lobby.live === true || cfg.lobby.live === "true"));
 
+	sd_enter_sound();                // optional one-shot sound on entry (SyncTERM audio)
 	sd_attract();                    // optional one-shot DOOM ANSI splash on entry
 
 	while (!js.terminated && bbs.online) {
