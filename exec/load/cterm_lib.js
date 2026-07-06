@@ -12,6 +12,7 @@ var cterm_version_supports_fontstate_query = 1161;
 var cterm_version_supports_palettes = 1167;
 var cterm_version_supports_sixel = 1189;
 var cterm_version_supports_fontdim_query = 1198;
+var cterm_version_supports_ctda = 1207;
 var cterm_version_supports_xtsrga = 1208;
 var cterm_version_supports_b64_fonts = 1213;
 var cterm_version_supports_copy_buffers = 1316;
@@ -244,15 +245,29 @@ function cterm_screen_geometry()
 	return { cols: cols, rows: rows, cellW: cellW, cellH: cellH, pxW: pxW, pxH: pxH };
 }
 
+// Query the CTerm Device Attributes (CSI < c), which reflect the capabilities of the
+// terminal's *current* video output mode (e.g. no pixelops/loadable-fonts in a text mode).
+// The response is cached in console.cterm_da (persistent among multiple contexts,
+// like cterm_version) so at most one round-trip is spent per session; a failure is cached
+// too, so an unanswered query can't stall (3 seconds) more than once.
 function query_ctda(which)
 {
-	var response = query("\x1b[<c");
-	if(response.substr(0, 3) != "\x1b[<" || response.substr(-1) != "c")
+	if(console.cterm_da === undefined) {
+		if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_ctda)
+			console.cterm_da = false;
+		else {
+			var response = query("\x1b[<c");
+			if(response.substr(0, 3) == "\x1b[<" && response.substr(-1) == "c")
+				console.cterm_da = response.slice(3, -1).split(/;/);
+			else
+				console.cterm_da = false;
+		}
+	}
+	if(console.cterm_da === false)
 		return false;
-	var attributes = response.slice(3, -1).split(/;/);
 	if(which !== undefined)
-		return attributes.indexOf(which) >= 0;
-	return attributes;
+		return console.cterm_da.indexOf(which) >= 0;
+	return console.cterm_da;
 }
 
 function fontsize(n)
@@ -297,29 +312,47 @@ function charheight(rows)
 
 // This may return true, false, or undefined
 // Returns true when we know for sure fonts are supported in the terminal (to the best of our knowledge).
-// Returns false when we are pretty confident that fonts are *not* supported in the terminal (not CTerm).
+// Returns false when we are pretty confident that fonts are *not* supported: either not CTerm,
+// or the terminal's current video output mode doesn't support loadable/selectable fonts
+// (e.g. Win32 Console, curses) per the CTerm Device Attributes.
 // Returns undefined when we aren't really sure because it's a version of CTerm (e.g. SyncTERM 1.0)
-// which didn't support queries
-// ... and it may be running in a video output mode that doesn't support fonts (e.g. Win32 Console).
+// which didn't support the necessary queries.
 function supports_fonts()
 {
 	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_fonts)
 		return false;
 	if(console.cterm_font_state === undefined)
 		query_fontstate();
-	if(console.cterm_font_state === undefined || console.cterm_font_state[font_state_field_result] == undefined)
-		return undefined;
-	var setfont_result = parseInt(console.cterm_font_state[font_state_field_result], 10);
-	return setfont_result == 0 || setfont_result == 99;
+	var setfont_result;
+	if(console.cterm_font_state !== undefined && console.cterm_font_state[font_state_field_result] != undefined)
+		setfont_result = parseInt(console.cterm_font_state[font_state_field_result], 10);
+	if(setfont_result === 0)	// a font operation already succeeded in this mode
+		return true;
+	if(setfont_result > 0 && setfont_result != 99)	// a font operation already failed
+		return false;
+	// No font operation attempted yet (99 = CTERM_NO_SETFONT_REQUESTED) or state unknown:
+	// the version alone can't tell us whether the current video output mode supports fonts,
+	// so ask via the CTerm Device Attributes when the terminal is new enough to answer
+	var attributes = query_ctda();
+	if(attributes)
+		return attributes.indexOf(cterm_device_attributes.loadable_fonts) >= 0
+			&& attributes.indexOf(cterm_device_attributes.font_selectable) >= 0;
+	return undefined;
 }
 
-// Right this function may return true when in fact the terminal is running in a video mode where
-// palette redefinitions are not supported
+// This may return true, false, or undefined
+// Returns true/false per the CTerm Device Attributes, which reflect whether the current
+// video output mode actually supports palette redefinition.
+// Returns undefined for CTerm versions that support palettes but predate the CTDA query
+// (can't verify the video output mode).
 function supports_palettes()
 {
 	if(console.cterm_version == undefined || console.cterm_version < cterm_version_supports_palettes)
 		return false;
-	return true;
+	var attributes = query_ctda();
+	if(attributes)
+		return attributes.indexOf(cterm_device_attributes.palette_settable) >= 0;
+	return undefined;
 }
 
 function supports_sixel()
@@ -733,9 +766,16 @@ function xbin_cleanup(image)
 
 function bright_background(enable)
 {
+	// Skip only when the terminal positively reports (via CTDA) that the current video
+	// output mode can't display bright backgrounds; non-CTerm terminals (which can't be
+	// queried) may honor the (i)CE color sequences, so send by default
+	var attributes = query_ctda();
+	if(attributes && attributes.indexOf(cterm_device_attributes.bright_background) < 0)
+		return false;
 	var op = enable === false ? "clear" : "set";
 	ansiterm.send("ext_mode", op, "bg_bright_intensity");
 	ansiterm.send("ext_mode", op, "no_blink");
+	return true;
 }
 
 // ---------------------------------------------------------------------------
