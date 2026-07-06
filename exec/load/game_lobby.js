@@ -613,6 +613,31 @@ function panel_cells(cols, marker, events, text_fn, max_rows) {
 	return { cells: cells, cw: cw };
 }
 
+// Play a one-shot [lobby] enter_sound when a player enters the lobby: a sound FILE the
+// sysop supplies (WAV/OGG/FLAC/VOC), or a wildcard from which one match is picked at
+// random each entry. `door_dir` resolves a relative path. No-op unless the terminal can
+// decode audio files. Session-bound: loads cterm_lib.js lazily and writes the audio to
+// the terminal, so it only does anything in a live lobby (not headless).
+function enter_sound(door_dir, cfg) {
+	var file = cfg && cfg.lobby && cfg.lobby.enter_sound;
+	if (!file)
+		return;
+	var spec = (file.charAt(0) == "/" || file.charAt(0) == "\\" || file.charAt(1) == ":")
+	    ? String(file) : door_dir + file;
+	var matches = directory(spec);   // a plain path (one match) or a wildcard (pick random)
+	if (!matches.length)
+		return;
+	var ct = load({}, "cterm_lib.js");
+	if (!ct.supports_audio_files())
+		return;
+	var f = new File(matches[random(matches.length)]);
+	if (!f.open("rb"))
+		return;
+	var data = f.read();
+	f.close();
+	ct.play_sound("lobby_enter", data);
+}
+
 // ---- create-lock: a short-lived mutex serializing the "create a game" setup
 // window so a second user who picks Multiplayer while someone is mid-create waits
 // and then joins, instead of spawning a duplicate game. Lives in the games dir

@@ -428,6 +428,7 @@ function sd_main() {
 	// ensure its dir exists (the door's append won't create it) and keep it bounded.
 	mkpath(system.data_dir + "syncduke/");
 	gl.prune_events(SD_EVENTS, 2000, 1000);
+	gl.enter_sound(SD_DIR, cfg);     // optional one-shot sound on entry (SyncTERM audio)
 	// The live who's-online/activity panel is opt-in ([lobby] live = true): it
 	// repaints the bottom rows ~1/s, so it suits ANSI terminals only.
 	var live = (cfg.lobby && (cfg.lobby.live === true || cfg.lobby.live === "true"));
