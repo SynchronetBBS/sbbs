@@ -6295,11 +6295,15 @@ NO_PASSTHRU:
 
 		set_state(terminate_server ? SERVER_STOPPING : SERVER_RELOADING);
 
-		// Close all open sockets
+		// Shutdown (don't close) all open client sockets to wake and disconnect
+		// the node threads: each node's own teardown (sbbs_t::hangup) owns and
+		// closes its client socket descriptor.  Closing it here too would
+		// double-close (EBADF log noise on *nix) and, worse, allow the fd
+		// number to be reused and then closed out from under its new owner.
 		for (int i = 0; i < MAX_NODES; i++)  {
 			if (node_socket[i] != INVALID_SOCKET) {
-				lprintf(LOG_INFO, "Closing node %d socket %d", i + 1, node_socket[i]);
-				close_socket(node_socket[i]);
+				lprintf(LOG_INFO, "Shutting down node %d socket %d", i + 1, node_socket[i]);
+				shutdown(node_socket[i], SHUT_RDWR);
 				node_socket[i] = INVALID_SOCKET;
 			}
 #ifdef __unix__
