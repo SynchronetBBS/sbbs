@@ -2238,6 +2238,11 @@ void input_thread(void *arg)
  *         ------------
  */
 
+		// Remember which socket was selected here: don't re-compare 'sock'
+		// against the atomic client_socket later, as another thread (e.g.
+		// sbbs_t::hangup) may have stored INVALID_SOCKET by then, misrouting
+		// an ordinary client disconnect into spy-socket handling (issue #1184).
+		bool spy_sock = false;
 #ifdef _WIN32   // No spy sockets
 		sock = sbbs->client_socket;
 #else
@@ -2252,6 +2257,7 @@ void input_thread(void *arg)
 				continue;
 			}
 			sock = uspy_socket[sbbs->cfg.node_num - 1];
+			spy_sock = true;
 		}
 		else {
 			continue;
@@ -2281,7 +2287,7 @@ void input_thread(void *arg)
 
 		int rd; // number of bytes read
 #ifdef USE_CRYPTLIB
-		if (sbbs->ssh_mode && sock == sbbs->client_socket) {
+		if (sbbs->ssh_mode && !spy_sock) {
 			int err;
 			if (WaitForEvent(sbbs->ssh_active, 1000) == WAIT_TIMEOUT) {
 				pthread_mutex_unlock(&sbbs->input_thread_mutex);
@@ -2327,7 +2333,7 @@ void input_thread(void *arg)
 		if (rd == SOCKET_ERROR)
 		{
 #ifdef __unix__
-			if (sock == sbbs->client_socket)  {
+			if (!spy_sock)  {
 #endif
 			if (!sbbs->online)      // sbbs_t::hangup() called?
 				break;
@@ -2358,7 +2364,7 @@ void input_thread(void *arg)
 #endif
 		}
 
-		if (rd == 0 && sock == sbbs->client_socket)
+		if (rd == 0 && !spy_sock)
 		{
 			lprintf(LOG_NOTICE, "Node %d disconnected", sbbs->cfg.node_num);
 			break;
@@ -2370,7 +2376,7 @@ void input_thread(void *arg)
 		// telbuf and wr are modified to reflect telnet escaped data
 		wr = rd;
 #ifdef __unix__
-		if (sock != sbbs->client_socket)
+		if (spy_sock)
 			wrbuf = inbuf;
 		else
 #endif
