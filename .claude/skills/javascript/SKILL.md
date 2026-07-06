@@ -502,6 +502,11 @@ for (var n in hdrs) {
 }
 ```
 
+⚠️ **Pass the number, not the header object.** `remove_msg(h)` (handing it a
+header from `get_all_msg_headers`/`get_msg_header`) does **not** delete — it
+silently returns `false` with an empty `last_error`, because the arg must be a
+number/offset/ID. Use `remove_msg(h.number)` (or `remove_msg(false, Number(n))`).
+
 Note `remove_msg` works off the header/index — you do **not** need to load
 message bodies to delete. Read bodies (`get_msg_body`) only when your delete
 criterion depends on body content (e.g. distinguishing two errors that share a
@@ -586,6 +591,56 @@ var u = new User(1); for (var k in u) print(k);
 load("sbbsdefs.js"); print(USER_DELETED.toString(16));
 ```
 
+## Sysop-configurable text strings (`bbs.text`) — and the multi-`%s` format trap
+
+When your module emits a string that a stock prompt/message also emits, don't
+hand-roll the wording and colors — pull the **sysop-configurable** `text.dat`
+string and `format()` it, so your output honors the sysop's theme and
+localization. `bbs.text(id)` returns a `text[]` entry; **`id` may be the numeric
+index OR the string identifier** (resolved via `text_id_map`), so
+`bbs.text("NodeMsgFmt")` works with **no `load("text.js")`** needed:
+
+```javascript
+// inter-node "page": deliver via the same header a normal node message uses
+var header = bbs.text("NodeMsgFmt");          // sysop-themed "Node N: X sent you a message:"
+var msg = format(header, bbs.node_num, user.alias, body);
+system.put_node_message(target_node, msg);    // raw text -> the node, shown between prompts
+```
+
+⚠️ **A `text.dat` format string can carry MORE `%`-specifiers than the one or two
+you expect** — many are multi-line (a trailing `\` continues the string in
+`text.dat`) and include a **body `%s`**. `NodeMsgFmt` is
+`"\7\1_\1w\1hNode %2d: \1U%s\1u sent you a message:\r\n\1w\1h\x014%s\1n\r\n"` —
+**three** specifiers: node number, sender, **and the message body** (already
+wrapped in its own color + CRLF). You must supply *all* of them in the `format()`
+call. Passing only the first two and **appending** your body is a real,
+shipped-bug pattern: the body `%s` renders **literally** as `%s` and your text
+lands on a stray extra line. Read the actual string (it's in `ctrl/text.dat`,
+keyed by the id) and count the specifiers before formatting — don't assume from
+the name. (`format()` only interprets specifiers in the *format string*; `%` in a
+substituted arg is safe/literal.)
+
+## ARS access checks: `bbs.compare_ars` (current user) vs `User.compare_ars` (anyone)
+
+To test an access-requirement string, there are two entry points and picking the
+wrong one is easy:
+
+- **`bbs.compare_ars(ars)`** — evaluates against the **current** session user.
+  Returns true for `null`/`""`/`undefined` (no requirement = everyone passes).
+- **`User.compare_ars(ars)`** — the **`User` object** method, so you can test
+  *any* user, not just the one online. Construct the user and ask:
+
+```javascript
+var u = new User(node.useron);                 // some other node's user
+if (!ars || u.compare_ars(ars)) { /* may run it */ }
+```
+
+A program section's requirement string is `xtrn_area.prog[code].execution_ars`
+(run requirement) / `.ars` (visibility). Enumerate live nodes via
+`system.node_list[]` (0-based array; node number is `index + 1`); a node is a
+real, in-use session when `nd.status == NODE_INUSE` (skip WFC/quiet/logon) and
+`nd.useron` is set. (`NODE_*` come from `sbbsdefs.js`.)
+
 ## Output & input: choosing the right function
 
 Two families, and the difference matters:
@@ -606,7 +661,10 @@ module that displays menu/text files, use `console.putmsg()`.
 **Carriage returns / PETSCII:** don't emit a raw `\r` to move the cursor to
 column 0 — use `console.creturn()` or the Ctrl-A `[` sequence. On PETSCII
 terminals an ASCII 13 performs a full newline (`\r\n`), so a raw `\r` breaks
-cursor positioning.
+cursor positioning. Likewise, emit a line break with **`console.newline()`**, not
+`console.print("\r\n")` — the purpose-built call does the terminal-correct thing
+(and reads clearer). Same principle as `creturn()`: reach for the named console
+method over a hand-written control string.
 
 ### Terminal control sequences are abstracted in `ansiterm_lib.js` — check before hardcoding ANSI
 
@@ -774,6 +832,16 @@ screens) — it renders Synchronet Ctrl-A codes **and** ANSI/CP437 as-is, so no 
 flag is needed for the usual `.msg`/`.ans`. Add `P_PCBOARD` **only** if the file
 uses PCBoard `@X` color codes (otherwise it would misread a literal `@`). Follow
 with `console.pause()` if the next thing clears the screen.
+
+**Don't pass `P_NOPAUSE` reflexively.** With default flags `printfile` paginates a
+longer-than-a-screen file via `line_counter` (the right behavior for help/info
+screens). `P_NOPAUSE` suppresses that — correct **only** when something else
+provides the pause (e.g. a splash immediately followed by a menu or a screen
+clear). For a *standalone* splash, omit it and add your own `console.pause()` for
+the deliberate "read this" beat. Copying `P_NOPAUSE` from a nearby `printfile`
+call whose surrounding context justified it — without re-checking that the reason
+still holds — is a common mistake (it silently disables paging for everyone whose
+file later grows past one screen).
 
 ## The stock exec/*.js ecosystem (API by example)
 
