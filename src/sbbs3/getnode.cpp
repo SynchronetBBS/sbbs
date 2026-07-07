@@ -29,8 +29,8 @@
 /****************************************************************************/
 bool sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 {
-	int  rd = sizeof(node_t);
-	int  count;
+	int rd = sizeof(node_t);
+	int count;
 
 	if (node == NULL || number < 1)
 		return false;
@@ -57,17 +57,15 @@ bool sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	for (count = 0; count < LOOP_NODEDAB; count++) {
 		if (count > 0)
 			FILE_RETRY_DELAY(count + 1, LOCK_RETRY_DELAY);
-		if (lockit && lock(nodefile, nodedatoffset(number), sizeof(node_t)) != 0) {
-			unlock(nodefile, nodedatoffset(number), sizeof(node_t));
+		if (!seeknodedat(nodefile, number))
 			continue;
-		}
-		if (seeknodedat(nodefile, number)) {
-			rd = read(nodefile, node, sizeof(node_t));
-			if (rd != sizeof(node_t))
-				unlock(nodefile, nodedatoffset(number), sizeof(node_t));
-			if (rd == sizeof(node_t))
-				break;
-		}
+		if (lockit && lock(nodefile, nodedatoffset(number), sizeof(node_t)) != 0)
+			continue;
+		rd = read(nodefile, node, sizeof(node_t));
+		if (rd == sizeof(node_t))
+			break;
+		if (lockit)
+			unlock(nodefile, nodedatoffset(number), sizeof(node_t));
 	}
 	if (!lockit && (cfg.node_misc & NM_CLOSENODEDAB)) {
 		CLOSE_OPEN_FILE(nodefile);
@@ -82,7 +80,7 @@ bool sbbs_t::getnodedat(uint number, node_t *node, bool lockit)
 	pthread_mutex_unlock(&nodefile_mutex);
 	if (count > (LOOP_NODEDAB / 2)) {
 		llprintf(LOG_WARNING, "!!", "NODE.DAB (node %d) COLLISION - Count: %d"
-		            , number, count);
+		         , number, count);
 	}
 
 	return true;
@@ -108,7 +106,7 @@ static int getpagingnode(scfg_t* cfg)
 /****************************************************************************/
 void sbbs_t::nodesync(bool clearline)
 {
-	int  atr = curatr;
+	int atr = curatr;
 
 	if (nodesync_inside || !online)
 		return;
@@ -268,7 +266,7 @@ bool sbbs_t::getnmsg(bool clearline)
 /****************************************************************************/
 bool sbbs_t::getnodeext(uint number, char *ext)
 {
-	int  rd, count;
+	int rd, count;
 
 	if (number < 1 || number > cfg.sys_nodes) {
 		errormsg(WHERE, ERR_CHK, "node number", number);
@@ -303,7 +301,7 @@ bool sbbs_t::getnodeext(uint number, char *ext)
 	}
 	if (count > (LOOP_NODEDAB / 2)) {
 		llprintf("!!", "NODE.EXB (node %d) COLLISION - Count: %d"
-		            , number + 1, count);
+		         , number + 1, count);
 	}
 
 	return true;
@@ -353,7 +351,7 @@ void sbbs_t::whos_online(bool listself)
 	int    i, j;
 	node_t node;
 
-	if(exec_mod("who's online", cfg.whosonline_mod) == 0)
+	if (exec_mod("who's online", cfg.whosonline_mod) == 0)
 		return;
 
 	term->newline();
@@ -515,8 +513,8 @@ void sbbs_t::printnodedat(uint number, node_t* node)
 		outchar(')');
 	}
 	if (useron_is_sysop() && ((node->misc
-	               & (NODE_ANON | NODE_UDAT | NODE_INTR | NODE_RRUN | NODE_EVENT | NODE_DOWN | NODE_LCHAT | NODE_FCHAT))
-	              || node->status == NODE_QUIET)) {
+	                           & (NODE_ANON | NODE_UDAT | NODE_INTR | NODE_RRUN | NODE_EVENT | NODE_DOWN | NODE_LCHAT | NODE_FCHAT))
+	                          || node->status == NODE_QUIET)) {
 		bputs(" [");
 		if (node->misc & NODE_ANON)
 			outchar('A');
