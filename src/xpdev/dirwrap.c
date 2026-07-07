@@ -71,7 +71,7 @@
 #include "filewrap.h"   /* stat */
 
 #if !defined(S_ISDIR)
-	#define S_ISDIR(x)  ((x)&S_IFDIR)
+	#define S_ISDIR(x)  ((x) & S_IFDIR)
 #endif
 
 /****************************************************************************/
@@ -683,7 +683,8 @@ static bool getfilecase(char *path, bool dir)
 
 	int flags = GLOB_MARK;
 #if defined GLOB_ONLYDIR
-	if (dir) flags |= GLOB_ONLYDIR;
+	if (dir)
+		flags |= GLOB_ONLYDIR;
 #endif
 	if (glob(globme, flags, NULL, &glb) != 0)
 		return false;
@@ -960,9 +961,9 @@ typedef BOOL (WINAPI * GetDiskFreeSpaceEx_t)
 static uint64_t getdiskspace(const char* path, uint64_t unit, bool freespace)
 {
 #if defined(_WIN32)
-	uint64_t             total;
-	ULARGE_INTEGER       avail;
-	ULARGE_INTEGER       size;
+	uint64_t       total;
+	ULARGE_INTEGER avail;
+	ULARGE_INTEGER size;
 
 	if (!GetDiskFreeSpaceExA(
 			path,   /* pointer to the directory name */
@@ -1063,6 +1064,7 @@ char * _fullpath(char *target, const char *path, size_t size)  {
 		else {
 			p = getcwd(NULL, size);
 			if (p == NULL || strlen(p) + strlen(path) >= size) {
+				free(p);
 				if (target_alloced)
 					free(target);
 				return NULL;

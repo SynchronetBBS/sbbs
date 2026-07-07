@@ -744,7 +744,8 @@ bool sbbs_t::menu_exists_in(const char *code, const char* ext, const char* subdi
 			SAFEPRINTF3(prefix, "%stext/menu/%s%s", cfg.mods_dir, sub, code);
 		else
 			SAFEPRINTF3(prefix, "%smenu/%s%s", cfg.text_dir, sub, code);
-		FULLPATH(path, prefix, MAX_PATH);
+		if (FULLPATH(path, prefix, MAX_PATH) == NULL) // CID 648908
+			return false;
 		SAFECOPY(prefix, path);
 	}
 	// Display specified EXACT width file
