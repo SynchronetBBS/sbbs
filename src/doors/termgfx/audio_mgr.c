@@ -428,7 +428,7 @@ static int sfx_file_dur_ms(const uint8_t *d, size_t len)
 {
 	if (len >= 32 && memcmp(d, "RIFF", 4) == 0) {
 		uint32_t byterate = (uint32_t)d[28] | ((uint32_t)d[29] << 8)
-		                  | ((uint32_t)d[30] << 16) | ((uint32_t)d[31] << 24);
+		                    | ((uint32_t)d[30] << 16) | ((uint32_t)d[31] << 24);
 		if (byterate >= 1000)
 			return (int)((uint64_t)len * 1000u / byterate);
 	}
@@ -455,10 +455,10 @@ void termgfx_audio_sfx(termgfx_audio_t *m, int id,
 		         TERMGFX_AUDIO_PRIO);
 		m->sfx_up[id] = 1;
 	}
-	{	// exact play time from the raw-PCM geometry (busy tracking)
+	{   // exact play time from the raw-PCM geometry (busy tracking)
 		uint64_t bps = (uint64_t)(rate > 0 ? rate : 11025)
-		             * (uint64_t)(channels > 0 ? channels : 1)
-		             * (uint64_t)(bits >= 16 ? 2 : 1);
+		               * (uint64_t)(channels > 0 ? channels : 1)
+		               * (uint64_t)(bits >= 16 ? 2 : 1);
 		sfx_dispatch(m, fn, vol, pan, (int)((uint64_t)bytes * 1000u / bps));
 	}
 }
@@ -545,13 +545,16 @@ int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
 	slot         = m->next_slot;
 	m->next_slot = SFX_SLOT_LO + ((m->next_slot - SFX_SLOT_LO + 1) % (NSLOT - SFX_SLOT_LO));
 	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, slot, fn), TERMGFX_AUDIO_PRIO);
-	// Queue the loop ACTIVE (full volume) then set the real level via A;Volume, rather than
-	// queuing at `vol` directly. A positional ambience triggered at its radius edge starts at
-	// vol=0, and SyncTERM will not un-mute a voice that was queued at 0 -- the per-frame
-	// FX_Pan3D A;Volume updates then fall on a dead voice and it stays silent forever (the fire
-	// bin), while a loop that happens to start non-zero (the projector) works. Queue-active +
-	// set-level keeps the voice alive so its volume can rise as the player approaches.
-	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, LOOP_CH_LO + i, slot, 100, 0, 1),
+	// SyncTERM's APC volume is two independent gain stages (ticket #262, as-designed):
+	// the A;Queue volume is baked into the entry (0% floors to -60dB) and A;Volume only
+	// moves the live channel gain, which maxes at 0dB -- so a loop must NOT be queued at
+	// `vol` directly: a positional ambience triggered at its radius edge starts at vol=0
+	// and could then never be raised (the fire bin stayed silent forever while the
+	// projector, starting non-zero, worked). Queue at 25% (~ -12dB, the same lazy-open
+	// channel base one-shots ride, since sfx_dispatch never sends A;Volume) and drive the
+	// live level via A;Volume: the voice stays adjustable AND loops mix at the same level
+	// as one-shots of equal nominal volume (queueing at 100% ran loops up to 12dB hot).
+	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, LOOP_CH_LO + i, slot, 25, 0, 1),
 	         TERMGFX_AUDIO_PRIO);
 	send_buf(m, termgfx_audio_volume_lr(&m->buf, &m->cap, LOOP_CH_LO + i, vol, vol),
 	         TERMGFX_AUDIO_PRIO);
