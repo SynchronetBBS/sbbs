@@ -35,7 +35,7 @@
 /* #undef HAVE_RLNAME */
 
 /* Enable libsamplerate */
-#define HAVE_SAMPLERATE /**/
+/* #undef HAVE_SAMPLERATE */
 
 /* Enable SDL1 OpenGL */
 /* #undef HAVE_SDL1GL */

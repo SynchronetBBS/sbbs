@@ -39,6 +39,17 @@ Notes on the configure invocation:
 - Verified POSIX variant: `grep -E 'IS_MSDOS|IS_WINDOWS' 1oom/src/config.h`
   finds only commented-out `/* #undef IS_MSDOS */` / `/* #undef
   IS_WINDOWS */` — neither is `#define`d.
+- `HAVE_SAMPLERATE` was set to `/* #undef HAVE_SAMPLERATE */` in the
+  frozen `config.h` (the generation host happened to have libsamplerate
+  dev headers, so `configure` auto-detected it). This is exactly the
+  `config.h` a `--without-samplerate` configure would emit — that flag
+  gates only this one `AC_DEFINE` — so the edit keeps the header minimal
+  and host-independent. It matters because two files in the door's
+  compiled set, `src/fmt_sfx.c` and `src/options.c`, gate on
+  `HAVE_SAMPLERATE`; leaving it defined would force the door to link
+  `-lsamplerate` despite M1 having no audio. (This is the only
+  deliberate edit to a frozen generated header; the upstream *source*
+  tree remains untouched.)
 
 After generating the two headers, every other autotools artifact was
 removed (`Makefile`/`Makefile.in` throughout the tree, `configure`,
