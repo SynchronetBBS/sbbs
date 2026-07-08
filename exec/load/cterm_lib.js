@@ -877,8 +877,10 @@ function audio_volume_lr(ch, vl, vr)
 	    + ';VL=' + _audio_clamp(vl, 0, 100) + ';VR=' + _audio_clamp(vr, 0, 100)));
 }
 
-// Synthesize a `ms`-ms, `freq`-Hz tone of waveform `shape` ("SINE", "SQUARE",
-// "SAWTOOTH", ...) into slot `slot`. Works without libsndfile (supports_audio()).
+// Synthesize a `ms`-ms, `freq`-Hz tone of waveform `shape` into slot `slot`.
+// Shapes (cterm.adoc): "SIN", "SAW", "SQ", "SINE_HARM", "SINE_SAW",
+// "SINE_SAW_CHORD", "SINE_SAW_HARM", "SILENCE". Works without libsndfile
+// (supports_audio()).
 function audio_synth(slot, shape, freq, ms)
 {
 	console.write(_audio_apc('A;Synth;S=' + _audio_clamp(slot, 0, audio_slot_last)
@@ -897,7 +899,7 @@ function audio_flush(ch, fade_ms)
 
 // --- convenience layer: slot/channel allocator + upload-once cache ---
 
-var _audio_slots = {};                         // name -> slot (upload once per session)
+var _audio_stored = {};                        // name -> true (uploaded once per session)
 var _audio_next_slot = 0;
 var audio_music_chan = audio_chan_first;       // channel reserved for play_music
 var _audio_next_chan = audio_chan_first + 1;   // rotating SFX channel
@@ -917,21 +919,33 @@ function _audio_alloc_chan()
 	return c;
 }
 
-// Store+load `name`/`data` exactly once per session; returns its slot.
-function _audio_ensure(name, data)
+// Upload `name`/`data` to the client's cache once per session WITHOUT playing
+// it -- e.g. prefetch a sound during an idle moment so its first play starts
+// instantly instead of behind the upload.
+function audio_prefetch(name, data)
 {
-	if(_audio_slots[name] === undefined) {
+	if(!_audio_stored[name]) {
 		audio_store(name, data);
-		var slot = _audio_alloc_slot();
-		audio_load(slot, name);
-		_audio_slots[name] = slot;
+		_audio_stored[name] = true;
 	}
-	return _audio_slots[name];
 }
 
-// Play a sound-effect file (see audio_store for formats): stores/loads once per
-// `name`, then queues it on a rotating SFX channel. opts: vol/pan/loop, ch (force
-// a channel). Returns { slot, ch }. Needs supports_audio_files().
+// Store `name`/`data` once per session, then Load it into a fresh slot for one
+// Queue; returns that slot. A;Queue MOVES the slot's buffer onto the channel
+// FIFO -- the slot becomes empty (cterm.adoc) -- so every play needs its own
+// Load. The Load re-decodes from the client's file cache: no re-upload.
+function _audio_ensure(name, data)
+{
+	audio_prefetch(name, data);
+	var slot = _audio_alloc_slot();
+	audio_load(slot, name);
+	return slot;
+}
+
+// Play a sound-effect file (see audio_store for formats): stores once per
+// `name` (loads per play), then queues it on a rotating SFX channel. opts:
+// vol/pan/loop, ch (force a channel). Returns { slot, ch }. Needs
+// supports_audio_files().
 function play_sound(name, data, opts)
 {
 	if(opts === undefined) opts = {};
@@ -942,12 +956,12 @@ function play_sound(name, data, opts)
 }
 
 // Play a synthesized tone (no file / libsndfile needed -- supports_audio()).
-// opts: shape (default "SINE"), vol, pan, ch. Returns { slot, ch }.
+// opts: shape (default "SIN"), vol, pan, ch. Returns { slot, ch }.
 function play_tone(freq, ms, opts)
 {
 	if(opts === undefined) opts = {};
 	var slot = _audio_alloc_slot();
-	audio_synth(slot, (opts.shape === undefined) ? 'SINE' : opts.shape, freq, ms);
+	audio_synth(slot, (opts.shape === undefined) ? 'SIN' : opts.shape, freq, ms);
 	var ch = (opts.ch === undefined) ? _audio_alloc_chan() : opts.ch;
 	audio_queue(ch, slot, opts);
 	return { slot: slot, ch: ch };
