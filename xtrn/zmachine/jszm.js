@@ -302,6 +302,8 @@ JSZM.prototype = {
   afterInterrupt: null,// (typedSoFar) -> door refresh after a timed interrupt printed: repaint status (live
                        //   clock), or re-show the in-progress input if the interrupt scrolled the lower window
   graphicsAvailable: null,  // () -> bool: door can display pictures (v6 Flags2 bit 3)
+  sound: null,          // (number, effect, volume, repeats) -> door plays/stops a sound
+                        //   (@sound_effect); null = silent. Presence sets Flags2 bit 7 (v5+).
   windowChanged: null,  // (win) -> door re-reads window geometry after move/size/style/margins
   scrollWindow: null,   // (win, pixels) -> door scrolls the window contents (v6; pixels signed, +up)
   setFont: null,        // (win, font) -> door reports/sets font; null -> engine reports 0 (no change)
@@ -420,6 +422,11 @@ JSZM.prototype = {
       if (self.screen && self.split) mem[1] |= 32;
       if (self.version >= 4 && self.readTimedKey) mem[1] |= 0x80;   // Flags1 bit7: timed keyboard input available
       self.put(16, self.savedFlags);
+      if (self.version >= 5) {                     // Flags2 bit7: sound effects available
+        var f2s = self.get(16);
+        if (self.sound) f2s |= 0x80; else f2s &= ~0x80;
+        self.put(16, f2s); self.savedFlags = f2s;
+      }
       if (!self.vocabulary) self.parseVocab(self.getu(8));
       defprop = self.defprop = self.getu(10) - 2;
       globals = self.globals = self.getu(12) - 32;
@@ -1034,7 +1041,22 @@ JSZM.prototype = {
           if (self.setTextStyle) self.setTextStyle(op0);
           break;
         case 244: // input_stream (v3+): no-op
-        case 245: // sound_effect (v3+): no-op (sound deferred)
+          break;
+        case 245: // sound_effect (v3+): number [,effect [,volume/repeats [,routine]]].
+                   // number 1/2 = interpreter bleeps; 3+ = sampled sounds (The Lurking
+                   // Horror, Sherlock). effect: 1 prepare, 2 start, 3 stop, 4 finish.
+                   // op2 word: low byte = volume (1..8, 255 = loudest), high byte =
+                   // repeats (v5+ only; 255 = forever). No operands at all (Beyond
+                   // Zork does this) = a high bleep, per the Z-Standard's remarks.
+                   // The completion-routine operand (op3) is NOT forwarded: the door
+                   // can't know when the terminal finishes playback, so chained
+                   // follow-on sounds (Sherlock) don't fire -- documented limitation.
+          if (self.sound) {
+            var seN = (op0 === undefined) ? 1 : (op0 & 0xffff);
+            var seFx = (op1 === undefined) ? 2 : (op1 & 0xffff);
+            var seVR = (op2 === undefined) ? 0 : (op2 & 0xffff);
+            self.sound(seN, seFx, seVR & 0xff, self.version >= 5 ? (seVR >> 8) & 0xff : 0);
+          }
           break;
         case 246: // read_char (v4+): read one keypress, store its ZSCII code.
                    // op0 is the device (always 1); v4+ timed variant: op1=time (tenths),

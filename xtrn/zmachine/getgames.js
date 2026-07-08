@@ -144,6 +144,19 @@ function gg_main() {
 			print("  installed " + path);
 		}
 
+		// Resource Blorb (<story>.blb): fetched for ANY game that names one, not
+		// just bake=true -- sampled sounds (The Lurking Horror, Sherlock) are read
+		// from the .blb at play time, no pre-bake step. Runs on re-runs too, so a
+		// sysop who installed a game before its Blorb was listed just re-runs this.
+		if (file_exists(path) && g.blorb && g.blorb_url && canDL
+		    && !file_exists(dir + g.category + "/" + g.blorb)) {
+			print("  fetching resources: " + g.blorb_url + " ...");
+			if (gg_download(g.blorb_url, dir + g.category + "/" + g.blorb))
+				print("  installed " + g.blorb);
+			else
+				print("  ! Blorb download failed -- " + g.name + " plays without its media");
+		}
+
 		gfx = path.replace(/\.[zZ]\d$/, "") + ".gfx";
 		if (file_exists(path) && gg_needsBake(g, file_isdir(gfx))) {
 			if (gg_bake(dir, g)) print("  graphics baked");

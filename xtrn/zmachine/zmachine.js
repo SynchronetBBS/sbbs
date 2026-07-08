@@ -238,6 +238,7 @@ function jszm_door_main() {
   load(js.exec_dir + "jszm.js");    // JSZM
   load(js.exec_dir + "v6pics.js"); // v6 picture runtime (manifest loader + SyncTERM blit bridge)
   load(js.exec_dir + "viewport.js"); // v6 viewport helper (integer-scale + centering)
+  load(js.exec_dir + "zsound.js"); // @sound_effect player (Blorb Snd + SyncTERM audio APCs / BEL)
 
   console.clear();
   if (file_exists(js.exec_dir + "intro.msg"))     // optional sysop splash (cf. utopia.js)
@@ -353,7 +354,7 @@ function jszm_door_main() {
         for (s2 = 0; s2 < sb2.length; s2++) serial += String.fromCharCode(sb2[s2] & 255);
         var title = cache.hasOwnProperty(name) ? cache[name] : undefined;
         if (title === undefined && !ifdbDown) {          // not cached -> resolve via IFDB (once)
-          if (!announced) { console.line_counter = 0; console.print("\x01n\r\nLooking up game titles from IFDB (first time only)...\r\n"); announced = true; }
+          if (!announced) { console.line_counter = 0; console.print("\x01n\r\nLooking up titles for newly-added games from IFDB (cached once found)...\r\n"); announced = true; }
           try { title = jszm_lookupTitle(f); } catch (e) { ifdbDown = true; }
           if (title !== undefined) { cache[name] = title; jszm_appendTitle(dir, name, title); }
         }
@@ -591,6 +592,18 @@ function jszm_door_main() {
     }
     var rows = console.screen_rows || 24;
     var cols = console.screen_columns || 80;
+    // ---- sound (@sound_effect) ----
+    // Bleeps (sounds 1/2 -- Arthur, Zork Zero, Journey, Beyond Zork) work on ANY
+    // terminal (SyncTERM Synth tone, else ASCII BEL); sampled sounds (The Lurking
+    // Horror, Sherlock) additionally need SyncTERM with libsndfile and the game's
+    // .blb beside the story (provisioned by getgames.js). The probe inside
+    // JSZM_makeZSound only queries cterm/SyncTERM clients -- no stall elsewhere.
+    var zsnd = JSZM_makeZSound({
+      storyPath: storyPath,
+      tag: "zmachine/" + storyId,
+      cterm: (typeof v6cterm != "undefined" && v6cterm) ? v6cterm : null
+    });
+    game.sound = zsnd.sound;
     // ansiCapable computed earlier (before the v6 cell-aspect probe)
     jszm_last_input_activity = time();   // seed the idle clock for the timed-input path
     jszm_idle_warned = false;            // fresh idle span per game (loop reuses top-level state)
@@ -1304,6 +1317,7 @@ function jszm_door_main() {
       // region OR stuck left/right margins would confine the BBS menu after the door (gaps/corruption). Safe even
       // if the rectangle was never set (?69h/?69l no-ops; the "CSI 1;cols s" degrades to a harmless save-cursor).
       console.write("\x1b[?69h\x1b[1;" + cols + "s\x1b[?69l\x1b[?7h\x1b[r");
+      zsnd.stop();                              // silence any playing/looping sound (exception-safe no-op off-tier)
       if (v6moff) bbs.sys_status &= ~SS_MOFF;   // restore automatic node-message display
       // Natural game-end while still connected (QUIT/death/victory) -> discard the
       // slot so the next visit starts fresh. Interruption (disconnect/idle/terminate)

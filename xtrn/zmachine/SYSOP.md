@@ -181,6 +181,23 @@ Real-time games (e.g. *Border Zone*) are supported via **timed input** (the on-s
 clock advances while you think). v5+ **color/text styles** and **Unicode** output are
 honored on capable terminals. PETSCII / non-ANSI terminals always get line-scrolling.
 
+### Sound
+
+The `@sound_effect` opcode plays in one of three tiers, picked automatically per
+session:
+
+- **SyncTERM (with audio support):** the standard high/low **bleeps** (used by
+  Arthur, Zork Zero, Journey, Beyond Zork) play as synthesized tones, and the
+  **sampled sounds** of *The Lurking Horror* and *Sherlock* play digitally. The
+  door reads each sound from the game's Blorb (`<story>.blb` beside the story
+  file — `getgames.js` downloads these automatically for the two sampled-sound
+  games) and uploads it to SyncTERM's per-BBS cache on first play.
+- **Older SyncTERM (no sound-file decoding):** bleeps play as tones; sampled
+  sounds are silent.
+- **All other terminals:** bleeps map to an ASCII BEL; sampled sounds are silent.
+
+No configuration is needed; a missing `.blb` just means that game plays silently.
+
 ### In-game commands (typed at the game prompt, intercepted by the door)
 
 | Command | Effect |
@@ -235,9 +252,12 @@ startup and picks defaults accordingly, wrapping to the negotiated screen width.
 
 ## 9. Limitations
 
-- **No v6 graphics.** Graphical version-6 games are not supported (v3/4/5/8 text games
-  are). Non-supported files are skipped in the chooser.
-- **No sound.** The few games using the `sound_effect` opcode play silently.
+- **v6 graphics need a pre-baked picture cache.** `getgames.js` bakes `<story>.gfx`
+  from the game's Blorb at install time (requires ImageMagick); without it, a v6
+  game still plays, in text mode.
+- **Sound completion routines** (used by *Sherlock* to chain one sound after
+  another) are not implemented: each sound plays, but a chained follow-on doesn't
+  auto-fire when the first finishes.
 - **Transcript/scripting to file** (the in-game `SCRIPT` verb) is not implemented.
 
 ---
@@ -248,7 +268,7 @@ startup and picks defaults accordingly, wrapping to the negotiated screen width.
 |---------|-------------|
 | Door exits immediately, nothing displayed | Run without the `?` prefix, or a bare name not found in the start-up dir. Use `?zmachine.js` with the start-up dir set to `xtrn/zmachine/`, or a full path. |
 | "No Z-machine story files found" | No subdirectory holds a `.z3`/`.z5`/`.z8` file (or the wrong dir args were passed). Add story files to a subdirectory. |
-| A game you added doesn't appear | It isn't v3/4/5/8 (e.g. a graphical v6 file), or it's not in a scanned subdirectory. |
+| A game you added doesn't appear | It isn't a supported story version, or it's not in a scanned subdirectory. |
 | Titles show as filenames instead of real names | IFDB lookup failed (no outbound HTTPS, or the game isn't in IFDB). Edit the category's `titles.ini` to set titles by hand. |
 | A first-time category open is slow | First visit resolves titles from IFDB and caches them; later visits are instant. |
 | Garbled / mis-wrapped text | Confirm the user's terminal width/type is detected correctly; the door wraps to `console.screen_columns`. |
