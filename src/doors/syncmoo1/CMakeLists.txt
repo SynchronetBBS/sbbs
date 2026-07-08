@@ -1,0 +1,147 @@
+cmake_minimum_required(VERSION 3.13)
+project(syncmoo1 C CXX)   # CXX: termgfx links C++ libADLMIDI
+
+# syncmoo1 -- Master of Orion 1 (via the vendored 1oom engine) for Synchronet /
+# SyncTERM (DOOR32.SYS BBS door). Parallels src/doors/syncduke and
+# src/doors/syncdoom: the vendored engine's platform layer is a new 1oom `hw`
+# backend (hw_sbbs.c, a peer of hw/nop, hw/sdl, hw/alleg) rather than a source
+# patch, so the vendored 1oom tree in 1oom/ stays frozen and unedited.
+#
+# Task 2 (this file): prove the source enumeration + config.h + termgfx link
+# by building headlessly against a stub hw backend. No real terminal I/O yet
+# (that's syncmoo1_io.c etc., added in later tasks).
+
+set(OOM ${CMAKE_CURRENT_SOURCE_DIR}/1oom/src)
+
+# Top-level source lists -- copied verbatim from 1oom/src/Makefile.am.
+set(UTIL_SRC cfg.c gfxaux.c lbx.c lbxfont.c lbxgfx.c lbxpal.c lib.c log.c
+    main.c menu.c options.c pbx.c rnd.c util.c util_cstr.c util_math.c)
+set(AUDIO_SRC fmt_mus.c fmt_sfx.c)
+set(UI_SRC font8x8.c font8x8_draw.c kbd.c mouse.c palette.c)
+list(TRANSFORM UTIL_SRC  PREPEND ${OOM}/)
+list(TRANSFORM AUDIO_SRC PREPEND ${OOM}/)
+list(TRANSFORM UI_SRC    PREPEND ${OOM}/)
+
+file(GLOB GAME_SRC    ${OOM}/game/*.c)          # libgame + libgamemain
+file(GLOB CLASSIC_SRC ${OOM}/ui/classic/*.c)
+set(OS_SRC ${OOM}/os/unix/os.c)
+# Drop tool-only / saveconv TUs that define competing main()/entry:
+list(FILTER GAME_SRC EXCLUDE REGEX "saveconv")
+
+add_executable(syncmoo1
+    ${UTIL_SRC} ${AUDIO_SRC} ${UI_SRC} ${GAME_SRC} ${CLASSIC_SRC} ${OS_SRC}
+    hw_sbbs.c)          # + syncmoo1_*.c added in later tasks
+
+target_include_directories(syncmoo1 PRIVATE ${OOM} ${OOM}/game ${OOM}/os/unix)
+target_compile_definitions(syncmoo1 PRIVATE HAVE_CONFIG_H)
+# Absorb legacy-engine warnings; never patch upstream:
+target_compile_options(syncmoo1 PRIVATE -w -fcommon)
+set_target_properties(syncmoo1 PROPERTIES LINKER_LANGUAGE CXX C_STANDARD 11)
+
+# libtermgfx -- the shared sixel/JXL encoders + APC transport + cap-probe +
+# sbbs_node. Its PUBLIC include dir gives us "sixel.h"/"jxl.h"/"apc.h"/
+# "caps.h"/"term.h"/"pace.h"/"sbbs_node.h" for the later I/O tasks.
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../termgfx termgfx)
+target_link_libraries(syncmoo1 termgfx)
+
+# Git build info (git_hash.h: GIT_HASH/GIT_DATE/GIT_TIME), via the shared
+# helper in src/build. Regenerated each build into the binary dir.
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../build/SynchronetMacros.cmake)
+synchronet_gitinfo(syncmoo1)
+
+# ---------------------------------------------------------------------------
+# JPEG XL -- the APC/SyncTERM graphics tier (shared with SyncDOOM/SyncDuke via
+# termgfx). Optional: without it the door still serves the sixel tier (the
+# JXL present path is #ifdef WITH_JXL gated, and termgfx/jxl.c compiles a
+# return-0 stub). See src/doors/syncduke/CMakeLists.txt for the full
+# rationale; this mirrors that block for the syncmoo1 target.
+# ---------------------------------------------------------------------------
+option(WITHOUT_JPEG_XL "Build without the JPEG XL graphics tier (sixel only)" OFF)
+if(NOT WITHOUT_JPEG_XL)
+    if(MSVC)
+        find_path(JXL_INCLUDE_DIR jxl/encode.h)
+        set(_jxl_required jxl hwy brotlienc brotlidec brotlicommon)
+        set(_jxl_optional jxl_cms lcms2)
+        set(JPEG_XL_LIBRARIES "")
+        set(_jxl_ok TRUE)
+        foreach(_jxl_n ${_jxl_required} ${_jxl_optional})
+            if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+                set(_jxl_root ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
+                find_library(JXL_${_jxl_n}_REL NAMES ${_jxl_n} PATHS ${_jxl_root}/lib NO_DEFAULT_PATH)
+                find_library(JXL_${_jxl_n}_DBG NAMES ${_jxl_n} PATHS ${_jxl_root}/debug/lib NO_DEFAULT_PATH)
+                if(JXL_${_jxl_n}_REL)
+                    list(APPEND JPEG_XL_LIBRARIES optimized ${JXL_${_jxl_n}_REL})
+                    if(JXL_${_jxl_n}_DBG)
+                        list(APPEND JPEG_XL_LIBRARIES debug ${JXL_${_jxl_n}_DBG})
+                    else()
+                        list(APPEND JPEG_XL_LIBRARIES debug ${JXL_${_jxl_n}_REL})
+                    endif()
+                endif()
+                set(_jxl_hit ${JXL_${_jxl_n}_REL})
+            else()
+                find_library(JXL_${_jxl_n}_LIB NAMES ${_jxl_n})
+                if(JXL_${_jxl_n}_LIB)
+                    list(APPEND JPEG_XL_LIBRARIES ${JXL_${_jxl_n}_LIB})
+                endif()
+                set(_jxl_hit ${JXL_${_jxl_n}_LIB})
+            endif()
+            if(NOT _jxl_hit)
+                list(FIND _jxl_required ${_jxl_n} _jxl_req)
+                if(NOT _jxl_req EQUAL -1)
+                    set(_jxl_ok FALSE)
+                endif()
+            endif()
+        endforeach()
+        if(JXL_INCLUDE_DIR AND _jxl_ok)
+            set(JPEG_XL_FOUND TRUE)
+            set(JPEG_XL_INCLUDE_DIRS ${JXL_INCLUDE_DIR})
+            target_compile_definitions(syncmoo1 PRIVATE JXL_STATIC_DEFINE)
+            target_compile_definitions(termgfx PRIVATE JXL_STATIC_DEFINE)
+        endif()
+    endif()
+    if(NOT JPEG_XL_FOUND)
+        find_package(PkgConfig QUIET)
+        if(PkgConfig_FOUND)
+            pkg_check_modules(JPEG_XL libjxl)
+        endif()
+    endif()
+    if(NOT JPEG_XL_FOUND AND NOT MSVC)
+        find_library(JPEG_XL_LIBRARIES NAMES jxl)
+        if(JPEG_XL_LIBRARIES)
+            set(JPEG_XL_FOUND TRUE)
+        endif()
+    endif()
+    if(JPEG_XL_FOUND)
+        target_compile_definitions(syncmoo1 PRIVATE WITH_JXL)
+        target_include_directories(syncmoo1 PRIVATE ${JPEG_XL_INCLUDE_DIRS})
+        # termgfx/jxl.c needs the JXL headers + WITH_JXL to compile the
+        # encoder; the libjxl symbols resolve at syncmoo1's final link.
+        target_compile_definitions(termgfx PRIVATE WITH_JXL)
+        target_include_directories(termgfx PRIVATE ${JPEG_XL_INCLUDE_DIRS})
+        target_link_directories(syncmoo1 PRIVATE ${JPEG_XL_LIBRARY_DIRS})
+        target_link_libraries(syncmoo1 ${JPEG_XL_LIBRARIES})
+        message(STATUS "syncmoo1: JPEG XL graphics tier ENABLED")
+    else()
+        message(WARNING "syncmoo1: libjxl not found -- building WITHOUT the JXL tier (sixel only)")
+    endif()
+endif()
+
+# xpdev: ini_file (syncmoo1.ini parsing, later task) and sockets (sockwrap) for
+# the door I/O port. Build the xpdev CMake target so this works on every
+# toolchain; pin off its audio + crypto backends so the sub-build stays lean
+# (cf. syncduke/syncdoom CMakeLists.txt). The guard avoids re-adding xpdev when
+# syncmoo1 is built inside a larger tree that already has it.
+if("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
+    set(WITHOUT_CRYPTO ON CACHE BOOL "" FORCE)
+    set(XP_CRYPTO_BACKEND "none" CACHE STRING "" FORCE)
+    foreach(_aud OSS SDL_AUDIO ALSA PORTAUDIO PULSEAUDIO PIPEWIRE COREAUDIO)
+        set(WITHOUT_${_aud} ON CACHE BOOL "" FORCE)
+    endforeach()
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev xpdev EXCLUDE_FROM_ALL)
+endif()
+target_include_directories(syncmoo1 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+target_link_libraries(syncmoo1 xpdev)
+
+if(NOT WIN32)
+    target_link_libraries(syncmoo1 m pthread ${CMAKE_DL_LIBS})
+endif()
