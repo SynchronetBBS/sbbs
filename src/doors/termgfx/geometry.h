@@ -17,8 +17,16 @@
 // and scaling to fill, with the emitted width capped at scale_max (0 = uncapped).
 // A small (<=8%) leftover letterbox bar is stretched away to the canvas edge so a
 // near-fit doesn't leave a thin border.  Results (>=1) go to *ew/*eh (NULL ok).
+// A thin wrapper over termgfx_geom_fit_ex() with that 8% allowance baked in --
+// existing callers (SyncDOOM, SyncDuke) are unaffected by anything below.
 void termgfx_geom_fit(int vw, int vh, int src_w, int src_h, int scale_max,
                       int *ew, int *eh);
+
+// Same fit as termgfx_geom_fit(), but with the leftover-bar stretch allowance
+// given explicitly as max_stretch_pct (0 = true aspect, no stretch at all --
+// letterbox bars stay full size; termgfx_geom_fit() calls this with 8).
+void termgfx_geom_fit_ex(int vw, int vh, int src_w, int src_h, int scale_max,
+                         int max_stretch_pct, int *ew, int *eh);
 
 // Center an ew x eh image in a vw x vh canvas.  *dx/*dy = the pixel offset (e.g.
 // for a SyncTERM APC DrawJXL DX/DY); *col/*row = the 1-based text-cell origin

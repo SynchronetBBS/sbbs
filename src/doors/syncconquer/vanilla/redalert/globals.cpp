@@ -195,6 +195,9 @@ bool GameInFocus = true;
 bool GameInFocus = false;
 #endif
 
+// Disable movies (used unconditionally by init.cpp and conquer.cpp)
+bool bNoMovies = false;
+
 /***************************************************************************
 **	Encryption keys.
 */

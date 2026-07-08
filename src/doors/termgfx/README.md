@@ -37,6 +37,9 @@ Doom, …) links termgfx and supplies only its engine glue.
 | `text.{c,h}` | `rt_config`, `rt_render_frame` | **Text / block-character render tiers** (half-block, blocks+shades, quadrant, sextant) — an ANSI fallback for terminals without sixel/JXL. RGB888 in, cell-diffed terminal bytes out. Adapted from [ludocode/doom-cli](https://github.com/ludocode/doom-cli) (GPLv2). |
 | `term.{c,h}` | `termgfx_term_enter/probe/leave` | Canonical terminal control strings (clear/home, hide cursor, disable autowrap, **reset DECSDM sixel-scrolling**, the pixel-canvas probe). |
 | `sbbs_node.{c,h}` | node list / paging helpers | Door-native access to Synchronet's online-node list and inter-node paging (who's-online / page-a-node), without an SCFG load. The only BBS-aware module. |
+| `audio.{c,h}` | APC builders + Ogg/Opus encode + resample | Low-level **SyncTERM audio APC** string builders (`C;S` Store, `A;Load/Queue/Flush/Volume`), the libsndfile **Ogg/Opus** encoder (with linear up-resample of non-Opus-legal rates), and the VOC→PCM helper. I/O-free. |
+| `audio_mgr.{c,h}` | stateful audio policy | The manager a door owns: capability tier, upload-once sample cache, SFX voice-steal pool, looping-SFX voices, the **music** channel (upload + loop + live volume), the door-side Ogg disk cache, and the C;L client-cache-skip. Emits through a door callback. |
+| `audio_midi.{c,h}` | MIDI/MUS → PCM | ADLMIDI (OPL3) render of MIDI/MUS lumps to PCM for the music path (used by SyncDuke/SyncDOOM; SyncConquer feeds already-decoded ADPCM PCM instead). |
 
 A door typically: emits `termgfx_term_enter` + the cap probes at start, then per
 frame packs its framebuffer and calls `sixel_encode` / `termgfx_jxl_encode` /
@@ -75,6 +78,73 @@ Shared today: the **encoders** (sixel, JXL, text), the **APC transport**, the
 still owns its own present/pacing loop and tier *dispatch* — unifying those
 behind a single `termgfx_present()` is a planned next step, gated on reconciling
 the doors' (deliberately) diverged pacing/scaling so neither regresses.
+
+## Audio (SyncTERM APC) — gain model & hard-won lessons
+
+The audio path (`audio_mgr` over `audio`) drives SyncTERM's `SyncTERM:A`
+audio APC. A few facts about that pipeline are non-obvious and cost real
+debugging time — capture them before touching door audio:
+
+**Gain staging (know this before setting any volume).** SyncTERM opens every
+APC channel at a **−12 dB stream base** (`audio_apc.c`, `AUDIO_APC_BASE_DB`).
+`A;Volume` is an **absolute** channel level that **replaces** that base — it is
+*not* multiplied into it — and it maxes at 0 dB (`V=100`). One-shot SFX never
+send `A;Volume`, so they mix at `−12 dB + their per-Queue level`; the music
+path instead queues its buffer at `VL=VR=100` (0 dB) and drives the level with
+`A;Volume`. Net effect: **music at a given `A;Volume` percent sits ~12 dB above
+an SFX queued at the same percent.** Then the mixer sums all streams and runs
+the sum through a **tanh soft-clip** (`xpbeep.c`, `soft_clip_narrow`) that is
+only transparent well below full scale. Consequences:
+- Keep per-stream levels with headroom; a single stream driven near 0 dBFS
+  (especially hot, already-clipping source material) hits the saturator's knee
+  and adds audible harmonics *by itself*, before anything else is mixed in.
+- The ~12 dB music-over-SFX imbalance is shared by **all** termgfx doors. It is
+  a mix-balance question, **not** a distortion bug — don't "fix" it by slamming
+  `A;Volume` down (that only makes music too quiet and can't undo distortion
+  baked into the encoded track). If you want music and SFX balanced, do it
+  deliberately and consistently across doors.
+
+**Feeding decoded audio: prefer whole-file over chunked streaming.** When a
+door hands `audio_mgr` PCM decoded by a vendored engine, watch for a
+**persistent-state codec streamed through a chunked/ring buffer** (Westwood
+AUD is IMA-ADPCM; the predictor + step index carry sample-to-sample). Any
+desync at a ring-block boundary is not a one-time glitch — the predictor
+**drifts and accumulates**, typically into a growing **DC offset** that
+progressively swallows the real signal. It reads as loud RMS but any codec
+high-passes the DC away, so the encoded track fades toward silence and the
+shrinking music rides the DC into clipping. This is exactly what bit
+SyncConquer (see [`../syncconquer/PROVENANCE.md`](../syncconquer/PROVENANCE.md)
+patch 8): scores lost ~12 dB of music over a 5-minute track through the ring
+path, while the *identical* codec decoding the same file from **one contiguous
+buffer** was bit-exact against the reference decoder. Since these doors
+accumulate the whole track before shipping one looping Ogg anyway, **decode
+whole-file from a single buffer** — it's simpler, avoids the boundary desync,
+and matches how one-shot SFX already decode correctly.
+
+**Debugging audio artifacts — isolate the layer.** "Distortion" can enter at
+the source, the decode, or the lossy encode; don't guess. Concrete probes that
+paid off:
+- **DC vs AC** — split the signal (a 1-pole high-pass gives the AC/music; the
+  per-window mean gives the DC). A collapsing **zero-crossing rate** (a full
+  window never crossing zero) with high RMS is a DC/predictor-divergence tell,
+  not musical content.
+- **Progressive vs constant** — envelope the track in thirds. A monotonic decay
+  over the whole track points at accumulating decoder state, not a fixed gain.
+- **Ground truth** — decode the source with an independent reference
+  (`ffmpeg -c:a adpcm_ima_ws` for Westwood AUD) and compare. If the reference
+  is clean and yours drifts, the bug is in *your* decode/streaming, not the
+  source. If both clip identically, the source is genuinely hot.
+- **Whole-file vs streaming A/B** — run the same bytes through your codec once
+  from a single buffer and once through the live stream; divergence localizes
+  the bug to the streaming layer.
+
+**Delivery timing matters to the manager.** A whole-file decode delivers the
+entire track *before* the engine's "start" call, whereas a stream dribbles it
+in after. If the door's commit/duration logic assumes streaming (data arriving
+after start), whole-file delivery can look like a one-shot and get reaped
+immediately — SyncConquer splits on accumulated **duration** (a ≥30 s pre-start
+buffer is a whole-file score → looping music with a duration model; shorter is
+a one-shot SFX/voice). Mind this if you change how a door feeds `audio_mgr`.
 
 ## Terminal compatibility
 

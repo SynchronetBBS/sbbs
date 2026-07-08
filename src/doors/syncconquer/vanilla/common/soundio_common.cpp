@@ -429,14 +429,24 @@ static bool File_Callback(short id, short* odd, void** buffer, int* size)
             }
         }
 
-        if (st->QueueBuffer == nullptr && st->FilePending) {
-            st->QueueBuffer = static_cast<char*>(st->FileBuffer)
-                              + LockedData.StreamBufferSize * (st->Odd % LockedData.StreamBufferCount);
-            --st->FilePending;
-            ++st->Odd;
-            st->QueueSize = st->FilePending > 0 ? LockedData.StreamBufferSize : st->FilePendingSize;
-        }
-
+        // Single ownership of the "stage next ring block into QueueBuffer"
+        // pop: this used to be duplicated here (byte-for-byte the same
+        // st->QueueBuffer/FilePending/Odd/QueueSize mutation, under the
+        // same `QueueBuffer == nullptr && FilePending` guard) as
+        // Maintenance_Callback()'s own tail block below. The refill loop
+        // above calls Maintenance_Callback() once per successful disk read,
+        // so by the time execution reaches here that tail block has
+        // already run -- often several times -- for this same tracker
+        // within this single File_Callback() invocation, and already
+        // performed this exact pop whenever it was needed. Keeping a
+        // second copy here served only as a landmine: a disk-refill loop
+        // computing "how many empty ring slots are left to fill" while a
+        // reentrant pop from inside that same loop was independently
+        // advancing FilePending/Odd out from under it was the source of
+        // the SOS chunk-framing desync (garbage fsize/dsize) documented in
+        // PROVENANCE.md and task-4-report.md. The trailing
+        // Maintenance_Callback() call immediately below still guarantees
+        // the pop happens before this function returns.
         Maintenance_Callback();
     }
 
@@ -533,20 +543,53 @@ int File_Stream_Sample_Vol(char const* filename, int volume, bool real_time_star
         return INVALID_AUDIO_HANDLE;
     }
 
+    // Whole-file decode instead of ring streaming (syncalert live-test
+    // finding 4). The incremental ring-buffer path (File_Stream_Preload /
+    // File_Callback / the Sample_Copy source<->QueueBuffer hand-off) desyncs
+    // the SOS/IMA-ADPCM decoder across ring-block boundaries: the persistent
+    // predictor drifts into a growing DC offset and progressively loses the
+    // music (measured ~12 dB of AC lost over a 5-minute score, DC climbing to
+    // -9 dBFS), while the byte-identical codec decoding the SAME file from one
+    // contiguous buffer is exact (matches ffmpeg's adpcm_ima_ws bit for bit).
+    // The door doesn't need real-time streaming -- soundio_termgfx.cpp
+    // accumulates the whole track and ships one looping OGG -- so read the
+    // score in full and run it through Play_Sample_Handle(), the same
+    // single-contiguous-buffer path SFX already use correctly (Source spans
+    // the whole file, QueueBuffer stays null, no cross-block hand-off).
+    // Play_Sample_Handle() eagerly decodes to completion here (our
+    // SoundImp_Get_Sample_Free_Buffer_Count() never blocks), leaving
+    // Remainder == 0, so the compressed buffer is dead the moment it returns
+    // and is freed immediately; Original is cleared so the freed pointer can't
+    // collide with a later Play_Sample() "already playing?" identity check.
+    unsigned filesize = File_Size(fh);
+    void*    whole    = filesize ? malloc(filesize) : nullptr;
+
+    if (whole == nullptr || Read_File(fh, whole, filesize) != (int)filesize) {
+        Close_File(fh);
+        free(whole);
+        return INVALID_AUDIO_HANDLE;
+    }
+    Close_File(fh);
+
     int handle = Get_Free_Sample_Handle(PRIORITY_MAX);
 
     if (handle < MAX_SAMPLE_TRACKERS) {
-        SampleTrackerType* st = &LockedData.SampleTracker[handle];
-        st->IsScore = true;
-        st->FilePending = 0;
-        st->FilePendingSize = 0;
-        st->Loading = real_time_start;
-        st->Volume = volume;
-        st->FileHandle = fh;
-        File_Stream_Preload(handle);
-        return handle;
+        LockedData.SampleTracker[handle].IsScore = true;
+
+        // Scores mix at ScoreVolume, not SoundVolume; Play_Sample_Handle()
+        // seeds the initial level from SoundVolume, so swap it for the
+        // duration of the call (the same trick File_Stream_Preload() used).
+        int old_vol = LockedData.SoundVolume;
+        LockedData.SoundVolume = LockedData.ScoreVolume;
+        int playid = Play_Sample_Handle(whole, PRIORITY_MAX, volume, 0, handle);
+        LockedData.SoundVolume = old_vol;
+
+        LockedData.SampleTracker[handle].Original = nullptr;   // buffer about to be freed
+        free(whole);
+        return playid;
     }
 
+    free(whole);
     return INVALID_AUDIO_HANDLE;
 }
 
@@ -641,6 +684,33 @@ static void Maintenance_Callback()
                             --processed_buffers;
                         }
                     }
+                } else if (st->IsScore && (st->QueueBuffer != nullptr || st->FilePending != 0)) {
+                    // MoreSource latches false whenever a Sample_Copy() call
+                    // falls short of a full BUFFER_CHUNK_SIZE -- including
+                    // the file-streaming kickoff (Play_Sample_Handle, called
+                    // via Stream_Sample_Vol from File_Stream_Preload), which
+                    // hands it only the first ring block and clears
+                    // QueueBuffer/QueueSize up front. File_Stream_Preload
+                    // re-chains QueueBuffer to the next already-read ring
+                    // block right after that call returns, so a short chunk
+                    // here doesn't necessarily mean the stream is over: if
+                    // queued or pending ring data is waiting, resume
+                    // draining it next tick instead of tearing the tracker
+                    // down.
+                    //
+                    // Gated on IsScore (streaming trackers only): Stop_Sample()
+                    // clears Active/QueueBuffer/FileHandle but NOT FilePending/
+                    // FilePendingSize, and Get_Free_Sample_Handle() (the only
+                    // place that resets IsScore) clears just IsScore -- so a
+                    // freshly recycled tracker can carry a stale nonzero
+                    // FilePending left over from a PRIOR streamed Theme into
+                    // its next life as a plain one-shot SFX. Without this
+                    // guard this branch would re-arm MoreSource for that SFX
+                    // and Sample_Copy() would decode the old Theme's leftover
+                    // ring bytes as garbage into it. A plain Play_Sample() SFX
+                    // never sets IsScore (only File_Stream_Sample_Vol() does),
+                    // so this is a true no-op for every non-streaming tracker.
+                    st->MoreSource = true;
                 } else {
                     if (!SoundImp_Sample_Status(st->Imp)) {
                         st->Service = 0;

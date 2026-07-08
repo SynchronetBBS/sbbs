@@ -76,9 +76,7 @@
 
 RemapControlType SidebarScheme;
 
-#ifdef CHEAT_KEYS
 extern bool bNoMovies;
-#endif
 
 /****************************************
 **	Function prototypes for this module **
@@ -1496,11 +1494,9 @@ bool Parse_Command_Line(int argc, char* argv[])
         }
 #endif
 
-#ifdef CHEAT_KEYS
         if (strstr(string, "-NOMOVIES")) {
             bNoMovies = true;
         }
-#endif
 
         /*
         **	Special command line control parsing.
@@ -2230,6 +2226,37 @@ static void Init_CDROM_Access(void)
 }
 
 /***********************************************************************************************
+ * Cache_Bootstrap_Mixfile -- Cache a Bootstrap-critical mixfile or fail loudly.               *
+ *                                                                                             *
+ *    LOCAL.MIX/HIRES.MIX/LORES.MIX must be cached before anything else can be drawn (see      *
+ *    Init_Bootstrap_Mixfiles()'s own comment), so a failure here can't be reported via a      *
+ *    dialog box -- the dialog code itself depends on these files. Historically this was       *
+ *    checked with assert(ok), a no-op in Release builds, so a transient short read (memory/   *
+ *    IO pressure) left the mixfile uncached and Data == NULL, and the very next               *
+ *    MFCD::Retrieve() caller (e.g. Bootstrap()'s own TEMPERAT.PAL memmove()) dereferenced     *
+ *    that NULL and crashed. Fail loudly here instead, at the cache attempt itself, which is   *
+ *    the closest point to the actual cause.                                                   *
+ *                                                                                             *
+ * INPUT:   filename -- Name of the already-registered MFCD to cache.                          *
+ *                                                                                             *
+ * OUTPUT:  none. Does not return if the cache attempt failed.                                 *
+ *                                                                                             *
+ * WARNINGS:   Calls Emergency_Exit() (process exit) on failure.                               *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   local patch : SyncAlert M2 Task 5b                                                        *
+ *=============================================================================================*/
+static void Cache_Bootstrap_Mixfile(char const* filename)
+{
+    if (!MFCD::Cache(filename)) {
+        fprintf(stderr,
+                "Bootstrap: failed to cache required mixfile '%s' -- aborting.\n",
+                filename);
+        Emergency_Exit(1);
+    }
+}
+
+/***********************************************************************************************
  * Init_Bootstrap_Mixfiles -- Registers and caches any mixfiles needed for bootstrapping.      *
  *                                                                                             *
  *    This routine will register the initial mixfiles that are required to display error       *
@@ -2305,19 +2332,16 @@ static void Init_Bootstrap_Mixfiles(void)
     **	be displayed.
     */
     new MFCD("LOCAL.MIX", &FastKey); // Cached.
-    bool ok = MFCD::Cache("LOCAL.MIX");
-    assert(ok);
+    Cache_Bootstrap_Mixfile("LOCAL.MIX");
 
     if (RESFACTOR != 1 && !is_remaster) {
         new MFCD("HIRES.MIX", &FastKey);
-        ok = MFCD::Cache("HIRES.MIX");
-        assert(ok);
+        Cache_Bootstrap_Mixfile("HIRES.MIX");
 
         new MFCD("NCHIRES.MIX", &FastKey); //Non-cached hires stuff incl VQ palettes
     } else {
         new MFCD("LORES.MIX", &FastKey);
-        ok = MFCD::Cache("LORES.MIX");
-        assert(ok);
+        Cache_Bootstrap_Mixfile("LORES.MIX");
     }
 
     RequiredCD = temp;

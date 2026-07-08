@@ -226,20 +226,23 @@ class VideoSurfaceDummy : public VideoSurface
 {
 public:
     VideoSurfaceDummy(int w, int h, GBC_Enum flags)
+        : Buf(new unsigned char[w * h]())
+        , Width(w)
     {
     }
 
     virtual ~VideoSurfaceDummy()
     {
+        delete[] Buf;
     }
 
     virtual void* GetData() const
     {
-        return nullptr;
+        return Buf;
     }
     virtual int GetPitch() const
     {
-        return 0;
+        return Width;
     }
     virtual bool IsAllocated() const
     {
@@ -252,17 +255,17 @@ public:
 
     virtual bool IsReadyToBlit()
     {
-        return false;
+        return true;
     }
 
     virtual bool LockWait()
     {
-        return false;
+        return true;
     }
 
     virtual bool Unlock()
     {
-        return false;
+        return true;
     }
 
     virtual void Blt(const Rect& destRect, VideoSurface* src, const Rect& srcRect, bool mask)
@@ -272,6 +275,10 @@ public:
     virtual void FillRect(const Rect& rect, unsigned char color)
     {
     }
+
+private:
+    unsigned char* Buf;
+    int Width;
 };
 
 /*

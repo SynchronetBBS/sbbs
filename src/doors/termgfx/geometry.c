@@ -5,6 +5,14 @@
 void termgfx_geom_fit(int vw, int vh, int src_w, int src_h, int scale_max,
                       int *ew, int *eh)
 {
+	// 8% is the historical built-in allowance -- keep every existing caller
+	// (SyncDOOM, SyncDuke) behaving exactly as before.
+	termgfx_geom_fit_ex(vw, vh, src_w, src_h, scale_max, 8, ew, eh);
+}
+
+void termgfx_geom_fit_ex(int vw, int vh, int src_w, int src_h, int scale_max,
+                         int max_stretch_pct, int *ew, int *eh)
+{
 	int wmax, w, h;
 
 	if (src_w < 1)
@@ -15,6 +23,8 @@ void termgfx_geom_fit(int vw, int vh, int src_w, int src_h, int scale_max,
 		vw = 1;
 	if (vh < 1)
 		vh = 1;
+	if (max_stretch_pct < 0)
+		max_stretch_pct = 0;
 
 	// Widest we'll emit: the canvas width, capped at scale_max.
 	wmax = (scale_max > 0 && vw > scale_max) ? scale_max : vw;
@@ -29,11 +39,15 @@ void termgfx_geom_fit(int vw, int vh, int src_w, int src_h, int scale_max,
 	if (h < 1)
 		h = 1;
 
-	// Stretch away a thin (<=8%) leftover bar so a near-fit fills cleanly.
-	if (vw > w && (long)(vw - w) * 100 <= (long)w * 8)
-		w = vw;
-	if (vh > h && (long)(vh - h) * 100 <= (long)h * 8)
-		h = vh;
+	// Stretch away a thin (<=max_stretch_pct%) leftover bar so a near-fit
+	// fills cleanly.  max_stretch_pct == 0 means true aspect: no stretch,
+	// letterbox bars stay full size.
+	if (max_stretch_pct > 0) {
+		if (vw > w && (long)(vw - w) * 100 <= (long)w * max_stretch_pct)
+			w = vw;
+		if (vh > h && (long)(vh - h) * 100 <= (long)h * max_stretch_pct)
+			h = vh;
+	}
 
 	if (ew)
 		*ew = w;

@@ -198,31 +198,149 @@ static sf_count_t ms_write(const void *ptr, sf_count_t n, void *u)
 
 int termgfx_audio_have_ogg(void) { return 1; }
 
+// libsndfile's Opus encoder accepts only these sample rates. Kept sorted
+// ascending -- termgfx_audio_pick_opus_rate() relies on that.
+static const int opus_rates[] = { 8000, 12000, 16000, 24000, 48000 };
+#define OPUS_RATE_COUNT (int)(sizeof(opus_rates) / sizeof(opus_rates[0]))
+
+static int termgfx_audio_is_opus_rate(int rate)
+{
+	int i;
+
+	for (i = 0; i < OPUS_RATE_COUNT; i++) {
+		if (opus_rates[i] == rate)
+			return 1;
+	}
+	return 0;
+}
+
+// Smallest Opus-legal rate that is >= `rate`; anything above 48000 (Opus's
+// largest legal rate -- not reachable by any current caller) falls back to
+// 48000, i.e. DOWN-samples. For every rate this function actually sees
+// today the result is >= the input, so the plain linear interpolation in
+// termgfx_audio_resample_linear() below only ever up-samples and can't
+// introduce aliasing (a true down-sample would need a low-pass filter
+// first) -- e.g. Red Alert's native 22050 Hz AUD tracks
+// (src/doors/syncconquer) land on 24000 Hz, the closest legal rate above
+// it.
+static int termgfx_audio_pick_opus_rate(int rate)
+{
+	int i;
+
+	for (i = 0; i < OPUS_RATE_COUNT; i++) {
+		if (opus_rates[i] >= rate)
+			return opus_rates[i];
+	}
+	return 48000;
+}
+
+// Linear-interpolation resample of interleaved 16-bit PCM from `in_rate` to
+// `out_rate` (up-sampling only -- see termgfx_audio_pick_opus_rate()).
+// Returns a malloc'd buffer of `*out_frames` frames in *out (caller frees),
+// or 0 on failure. This is a "good enough for game music" quality choice,
+// not archival-grade resampling: a proper windowed-sinc filter would sound
+// better but is unnecessary work for what amounts to a ~1.1x-1.2x rate
+// bump on already-lossy-compressed source material, and linear
+// interpolation is still a real step up from (and never worse than) the
+// nearest-neighbor/zero-order-hold shortcut that would otherwise be
+// tempting here.
+static int16_t *termgfx_audio_resample_linear(const int16_t *in, size_t in_frames,
+                                              int channels, int in_rate, int out_rate,
+                                              size_t *out_frames)
+{
+	double   ratio = (double)in_rate / (double)out_rate;
+	size_t   frames;
+	int16_t *dst;
+	size_t   i;
+
+	*out_frames = 0;
+	if (in == NULL || in_frames == 0 || channels <= 0 || in_rate <= 0 || out_rate <= 0)
+		return NULL;
+	frames = (size_t)((double)in_frames * (double)out_rate / (double)in_rate + 0.5);
+	if (frames == 0)
+		return NULL;
+	dst = malloc(frames * (size_t)channels * sizeof(int16_t));
+	if (dst == NULL)
+		return NULL;
+	for (i = 0; i < frames; i++) {
+		double srcpos = (double)i * ratio;
+		size_t i0     = (size_t)srcpos;
+		double frac   = srcpos - (double)i0;
+		size_t i1     = (i0 + 1 < in_frames) ? i0 + 1 : in_frames - 1;
+		int    c;
+
+		if (i0 >= in_frames)
+			i0 = in_frames - 1;
+		for (c = 0; c < channels; c++) {
+			double s0 = in[i0 * (size_t)channels + c];
+			double s1 = in[i1 * (size_t)channels + c];
+			double v  = s0 + (s1 - s0) * frac;
+
+			if (v > 32767.0)
+				v = 32767.0;
+			else if (v < -32768.0)
+				v = -32768.0;
+			dst[i * (size_t)channels + c] = (int16_t)v;
+		}
+	}
+	*out_frames = frames;
+	return dst;
+}
+
 // Encode 16-bit PCM (`channels`, `rate`) to an Ogg/Opus stream in memory.
 // Returns a malloc'd buffer in *out (caller frees) + its length, or 0 on failure.
 // libsndfile's Opus encoder accepts only 8k/12k/16k/24k/48k `rate` (48000 is the
-// natural choice: Opus is internally 48 kHz); an unsupported rate makes sf_open
-// fail and this returns 0 (the caller then falls back to raw-PCM WAV).
+// natural choice: Opus is internally 48 kHz); an unsupported rate -- e.g. Red
+// Alert's native 22050 Hz AUD score tracks (src/doors/syncconquer) -- is up-
+// sampled to the nearest legal rate first (termgfx_audio_pick_opus_rate() /
+// termgfx_audio_resample_linear() above) rather than falling straight back to
+// the raw-PCM WAV upload, so a music track still lands in the door-side OGG
+// disk cache (and gets the size win) instead of skipping it every session.
+// The resample changes the ENCODED rate only: output frame count scales with
+// the rate change, so wall-clock duration is unchanged, and any rate that IS
+// already legal (every other caller of this function passes 48000, see
+// audio_mgr.c's MIDI-render path and syncduke/syncdoom) skips the resample
+// entirely and behaves exactly as before -- confirmed by inspection, this
+// path never triggers for 11025 Hz Doom SFX (SFX never reaches this
+// function at all, see termgfx_audio_sfx()'s use of termgfx_audio_cache_pcm()
+// instead) or 48000 Hz MIDI-rendered music.
 // Split out of cache_ogg so the door-side disk cache and the C;S upload share one
 // encode (the Ogg bytes get written to disk AND base64'd to the client).
 size_t termgfx_audio_encode_ogg(const int16_t *pcm, size_t frames, int channels,
                                 int rate, double quality, uint8_t **out)
 {
-	struct memsink sink = { NULL, 0, 0, 0 };
-	SF_VIRTUAL_IO  vio  = { ms_filelen, ms_seek, ms_read, ms_write, ms_tell };
+	struct memsink sink       = { NULL, 0, 0, 0 };
+	SF_VIRTUAL_IO  vio        = { ms_filelen, ms_seek, ms_read, ms_write, ms_tell };
 	SF_INFO        info;
 	SNDFILE *      sf;
+	int16_t *      resampled  = NULL;
+	int            enc_rate   = rate;
 
 	*out = NULL;
+	if (!termgfx_audio_is_opus_rate(rate)) {
+		size_t out_frames;
+
+		enc_rate  = termgfx_audio_pick_opus_rate(rate);
+		resampled = termgfx_audio_resample_linear(pcm, frames, channels, rate,
+		                                          enc_rate, &out_frames);
+		if (resampled == NULL)
+			return 0;
+		pcm    = resampled;
+		frames = out_frames;
+	}
 	memset(&info, 0, sizeof(info));
-	info.samplerate = rate;
+	info.samplerate = enc_rate;
 	info.channels   = channels;
 	info.format     = SF_FORMAT_OGG | SF_FORMAT_OPUS;
-	if (!sf_format_check(&info))
+	if (!sf_format_check(&info)) {
+		free(resampled);
 		return 0;
+	}
 	sf = sf_open_virtual(&vio, SFM_WRITE, &info, &sink);
-	if (sf == NULL)
+	if (sf == NULL) {
+		free(resampled);
 		return 0;
+	}
 	// Must precede the first write.  Clamp to libsndfile's 0.0..1.0 range.
 	if (quality < 0.0)
 		quality = 0.0;
@@ -246,6 +364,7 @@ size_t termgfx_audio_encode_ogg(const int16_t *pcm, size_t frames, int channels,
 		}
 	}
 	sf_close(sf);                                  // flushes the OGG stream into sink
+	free(resampled);
 	if (sink.data == NULL || sink.len <= 0) {
 		free(sink.data);
 		return 0;

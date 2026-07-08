@@ -1,0 +1,130 @@
+--- /home/rswindell/sbbs/src/doors/syncconquer/vanilla/common/video_null.cpp	2026-07-06 23:06:23.185286660 -0700
++++ common/video_null.cpp	2026-07-06 23:53:35.237467780 -0700
+@@ -226,20 +226,23 @@
+ {
+ public:
+     VideoSurfaceDummy(int w, int h, GBC_Enum flags)
++        : Buf(new unsigned char[w * h]())
++        , Width(w)
+     {
+     }
+ 
+     virtual ~VideoSurfaceDummy()
+     {
++        delete[] Buf;
+     }
+ 
+     virtual void* GetData() const
+     {
+-        return nullptr;
++        return Buf;
+     }
+     virtual int GetPitch() const
+     {
+-        return 0;
++        return Width;
+     }
+     virtual bool IsAllocated() const
+     {
+@@ -252,17 +255,17 @@
+ 
+     virtual bool IsReadyToBlit()
+     {
+-        return false;
++        return true;
+     }
+ 
+     virtual bool LockWait()
+     {
+-        return false;
++        return true;
+     }
+ 
+     virtual bool Unlock()
+     {
+-        return false;
++        return true;
+     }
+ 
+     virtual void Blt(const Rect& destRect, VideoSurface* src, const Rect& srcRect, bool mask)
+@@ -272,6 +275,10 @@
+     virtual void FillRect(const Rect& rect, unsigned char color)
+     {
+     }
++
++private:
++    unsigned char* Buf;
++    int Width;
+ };
+ 
+ /*
+--- /home/rswindell/sbbs/src/doors/syncconquer/vanilla/redalert/conquer.cpp	2026-07-06 23:06:23.189286715 -0700
++++ redalert/conquer.cpp	2026-07-06 23:59:26.649121042 -0700
+@@ -66,6 +66,8 @@
+  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+ 
+ #include "function.h"
++
++extern bool bNoMovies;
+ #include "msgbox.h"
+ #include "keyframe.h"
+ #include "language.h"
+@@ -2377,6 +2379,13 @@
+     if (Debug_Map) {
+         return;
+     }
++
++    /*
++    ** Don't play movies when disabled via -NOMOVIES
++    */
++    if (bNoMovies) {
++        return;
++    }
+ #ifdef CHEAT_KEYS
+ //	Mono_Printf("A\n");
+ #endif // CHEAT_KEYS
+--- /home/rswindell/sbbs/src/doors/syncconquer/vanilla/redalert/globals.cpp	2026-07-06 23:06:23.193286771 -0700
++++ redalert/globals.cpp	2026-07-06 23:59:26.649121042 -0700
+@@ -191,6 +191,7 @@
+ */
+ #ifdef NEW_VIDEO_BUILD
+ bool GameInFocus = true;
++bool bNoMovies = false;
+ #else
+ bool GameInFocus = false;
+ #endif
+--- /home/rswindell/sbbs/src/doors/syncconquer/vanilla/redalert/init.cpp	2026-07-06 23:06:23.197286826 -0700
++++ redalert/init.cpp	2026-07-07 00:00:29.385790986 -0700
+@@ -76,9 +76,7 @@
+ 
+ RemapControlType SidebarScheme;
+ 
+-#ifdef CHEAT_KEYS
+ extern bool bNoMovies;
+-#endif
+ 
+ /****************************************
+ **	Function prototypes for this module **
+@@ -1496,11 +1494,9 @@
+         }
+ #endif
+ 
+-#ifdef CHEAT_KEYS
+         if (strstr(string, "-NOMOVIES")) {
+             bNoMovies = true;
+         }
+-#endif
+ 
+         /*
+         **	Special command line control parsing.
+--- /home/rswindell/sbbs/src/doors/syncconquer/vanilla/common/CMakeLists.txt	2026-07-06 23:06:37.629487082 -0700
++++ common/CMakeLists.txt	2026-07-06 23:53:57.529693092 -0700
+@@ -148,7 +148,7 @@
+ elseif(SDL1)
+     list(APPEND COMMONV_SRC video_sdl1.cpp wwkeyboard_sdl1.cpp)
+ else()
+-    list(APPEND COMMONV_SRC video_null.cpp wwkeyboard_null.cpp)
++    list(APPEND COMMONV_SRC video_null.cpp wwkeyboard_null.cpp video_capture_extra.cpp)
+ endif()
+ 
+ if(DSOUND OR DDRAW)

@@ -66,6 +66,8 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 #include "function.h"
+
+extern bool bNoMovies;
 #include "msgbox.h"
 #include "keyframe.h"
 #include "language.h"
@@ -2375,6 +2377,13 @@ void Play_Movie(char const* name, ThemeType theme, bool clrscrn, bool immediate)
     ** Don't play movies in editor mode
     */
     if (Debug_Map) {
+        return;
+    }
+
+    /*
+    ** Don't play movies when disabled via -NOMOVIES
+    */
+    if (bNoMovies) {
         return;
     }
 #ifdef CHEAT_KEYS
