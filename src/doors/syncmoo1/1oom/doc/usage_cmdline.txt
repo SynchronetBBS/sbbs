@@ -1,0 +1,91 @@
+################
+# 1oom_cmdline #
+################
+
+1oom_cmdline is a proof of concept textual UI.
+
+See doc/usage_common.txt for the data/user file locations and command-line
+arguments.
+
+Type '?' for help.
+
+Example game beginning:
+
+Lizard King | 2300 | L.A. > # This is a comment.
+> # Let's take a peek at our home planet.
+> l
+[38] (213,187) L.A.: TERRAN, POP 100 MAX, pop 50, bases 0, factories 30, prod 43 (56), waste 0
+  - Build 0 SCOUT
+  - Slider  SHIP   0  NONE
+  - Slider   DEF   0  NONE
+  - Slider   IND  65  2.7/Y
+  - Slider   ECO  35  CLEAN
+  - Slider  TECH   0  0 RP
+  - Sakkra fleet at orbit:     2     0     0     0     1     0
+> # Let's view the surrounding 6 parsecs.
+> v 6
+[...]
+Dist  4: [46] (186,213) #R46: UNEXPLORED. Range 4 Parsecs.
+Dist  3: [47] (236,178) #B47: UNEXPLORED. Range 3 Parsecs.
+Dist  3: [45] (189,178) #R45: UNEXPLORED. Range 3 Parsecs.
+Dist  2: [39] (213,166) #R39: UNEXPLORED. Range 2 Parsecs.
+> # Send scouts to the range 3 planets.
+> fs 45 1
+> fs #B47 1
+> # Send the remaining fleet to the range 2 planet.
+> fs 39
+> # Check that we actually did something.
+> fleet
+- SCOUT, FIGHTER, DESTROYER, BOMBER, COLONY SHIP
+#F0 (213,187) MOVING TO [45] #R45            1     0     0     0     0     0  ETA 3 TURNS
+#F1 (213,187) MOVING TO [47] #B47            1     0     0     0     0     0  ETA 3 TURNS
+#F2 (213,187) MOVING TO [39] #R39            0     0     0     0     1     0  ETA 2 TURNS
+> # Next turn (twice)
+> n
+> n
+[39] (213,166) Paranar: JUNGLE, POP 85 MAX. No colony. Range 2 Parsecs
+  - Sakkra fleet at orbit:     0     0     0     0     1     0
+
+Build a new colony?
+  Y) Yes
+  N) No
+> y
+In the year 2301 the Sakkras form a new colony: (Paranar) > 
+Lizard King | 2302 | L.A. > # Transfer some pop to the new planet.
+> trans Paranar 10
+ETA 2 TURNS
+> # Let's visit the planet.
+> g Paranar
+Lizard King | 2302 | Paranar > l
+[39] (213,166) Paranar: JUNGLE, POP 85 MAX, pop 2, bases 0, factories 0, prod 1 (1), waste 0
+  - Build 0 SCOUT
+  - Slider  SHIP   0  NONE
+  - Slider   DEF   0  NONE
+  - Slider   IND 100  0.1/Y
+  - Slider   ECO   0  NONE
+  - Slider  TECH   0  0 RP
+> # Let's view our planets.
+> v py
+Dist  2: [38] (213,187) L.A.: TERRAN, POP 100 MAX, pop 59, bases 0, factories 36, prod 67 (67), waste 0
+Dist  0: [39] (213,166) Paranar: JUNGLE, POP 85 MAX, pop 2, bases 0, factories 0, prod 1 (1), waste 0
+> # Go back to the home planet and start researching.
+> g 38
+Lizard King | 2302 | L.A. > sl e
+> s t +10
+> l
+[38] (213,187) L.A.: TERRAN, POP 100 MAX, pop 59, bases 0, factories 36, prod 67 (67), waste 0
+  - Build 0 SCOUT
+  - Slider  SHIP   0  NONE
+  - Slider   DEF   0  NONE
+  - Slider   IND  55  3.6/Y
+  - Slider * ECO  35  +0.6 POP
+  - Slider  TECH  10  6 RP
+> n
+Scout ships explore a new star system
+[45] (189,178) Paladia: JUNGLE, POP 80 MAX. No colony. Range 3 Parsecs
+  - Sakkra fleet at orbit:     1     0     0     0     0     0
+Scout ships explore a new star system
+[47] (236,178) Phantos: DEAD, POP 60 MAX, ULTRA POOR, HOSTILE. No colony. Range 3 Parsecs
+  - Sakkra fleet at orbit:     1     0     0     0     0     0
+> # Let's quit and never touch this silly UI again.
+> quit

@@ -1,0 +1,51 @@
+This is an incomplete list of game differences in comparision to v1.3.
+See doc/list_pbxnum.txt for optional game differences.
+See doc/usage_classic.txt for UI differences.
+
+Much of this file is based on the readme from the unofficial v1.40m patch.
+
+- the game makes an undo save (slot 8) on every next turn click, run with -noundo if you do not want this
+- the game makes yearly saves on (1oom_save_YYYY.bin) every next turn click, if allowed to with -yearsave
+- fleets can not be sent to the planet they are orbiting (redirecting departing fleets back to orbit is still possible)
+- multiple fleets sent to same destination on the same turn are combined if they have the same speed
+- fixed "bug" where on a given year only one scouted artifact planets gave new tech
+- the number of build finished messages per turn is no longer limited to 10 per category
+- fixed weird behaviour when space monsters attack colonized Orion
+- fixed AI-AI tech trades where the tech was not owned by either party
+- all Advanced Technology are available for research
+- espionage messages can show the framed or unknown race instead of always leaking the actual spy
+
+- ETA calculations take nebulas into account correctly
+- the discovery percentages on tech screen are no more only 1/2 of the true probability of a tech hit
+- Psilon leader "Zygot  " name correction (extra whitespace trimmed from all names)
+- the AI now uses the right race and the right objective when it takes decision about where to allocate the research points
+- the spies you educate on the same turn against different races are no more overpriced
+- 8th stargate bug corrected (no ship maintenance overflow)
+
+- changes in Classic+ AI:
+    - breaking a NAP / alliance no more positively contributes to your relations with the AIs
+    - entering the general "threaten / break treaty" dialogue no more equals to a large temporary diplomatic penalty
+    - cash tributes work as described in OSG instead of not at all
+    - AI checks the correct mood variable when asked for a peace treaty
+    - AI-AI stop war check uses the same relation value as the make treaty/trade checks instead of the last diplo message subtype
+    - AI huge, armored ships now cannot cause a negative overflow
+    - ignore journey length for closest in-range colony ship
+    - do not try to send one colony ship to multiple destinations
+    - AIs now actually take their treaties in consideration when asked to declare war on their allies
+    - AI clears his spies' missions when succesfully threatened
+    - AI does not blame both parties for breaking a treaty
+    - a war sparked by capturing or destroying a colony is considered to be started by the attacker
+    - Bulrathi orbital bombardment decisions corrected to reflect their race bonus
+    - Alkari and Mrrshan bonus for AI-AI combat corrected to reflect their race bonus
+    - battle AI miss chance accumulation fixed; AI is less/more optimistic about missile/beam weapon damage
+    - battle AI checks shield halving properly, does not check for target's Oracle or any Oracle for missiles
+    - battle AI will not retreat due to doom stack damage estimate overflow
+    - AI does not go into panic ship building mode on planets with incoming allied fleets
+    - AI-AI battles destroy missile bases
+    - AI always uses one of their best engines
+    - AI does not transfer populations from rebel systems
+
+- the game has multiplayer (only local/hotseat for now); multiplayer differences to single player:
+    - player diplomat is always up for audience except during the final war
+    - when asked by other player to join a treaty, a player can ask for tech to sweeten the deal from those the spies have reported to exist
+    - each player can accept/refuse the council ruling; the final war alliances are based on refusals

@@ -1,0 +1,88 @@
+# This is an example PBXIN file.
+# Lines starting with # are comments. Empty lines are ignored.
+
+# PBXIN files are used by 1oom_pbxmake to make PBX files.
+# PBX files are patch files that replace LBX data or not-really-constants.
+# Think of a MOO1 version of Doom WAD files (no scripts, though).
+
+# The format of the non-comment lines is:
+# 0,"pbx name"
+# 1,pbx_description.txt
+# 2,filename.lbx,itemnumber,replacementfile.bin
+# 5,filename.lbx,itemnumber,offset,partialdata.bin
+# 3,string_id,itemnumber,"new text"
+# 4,number_id,itemnumber,value[,value]*
+
+# Type 0 item is the PBX name. One per PBX, one line only. Keep it 7-bit ASCII.
+0,"Example PBX file"
+
+# Type 1 item is the PBX description. One per PBX. Can be long. Keep it 7-bit ASCII.
+1,long_description.txt
+
+# Tip: any included file could also be entered as a C-like string, f.ex
+#1,"This is just a PBX example.\nGet the latest version from www.example.org/pbx\nHave fun!"
+
+
+# Type 2 is a LBX patch.
+# The item "itemnumber" in the LBX file is replaced with the given file whenever the
+# game (or UI) asks for it. The LBX file itself is untouched.
+
+# Replace the main menu logo with newlogo.bin.
+2,v11.lbx,0,newlogo.bin
+# Replace ship #4 graphics with newshipgfx.bin.
+2,ships.lbx,4,newshipgfx.bin
+# Only the native MOO1 LBX GFX format is supported.
+# Use 1oom_gfxconv to convert pictures to the native format.
+
+# Replace the battle music with something fitting.
+2,music.lbx,8,D_RUNNIN.mid
+# Replace the "click" sound.
+2,soundfx.lbx,0x24,ping.wav
+# Tip: hex numbers are supported. Unfortunately, so are octal; 012 == 10 == 0xa.
+# Currently supported music formats: MIDI, XMID (used in MOO1 and MOM), FLAC, Ogg Vorbis
+# Currently supported sound formats: WAV, VOC
+
+
+# Type 5 is LBX partial overwrite.
+# Whenever the game (or UI) asks for the item "itemnumber" in the LBX file,
+# the data from the LBX file (or LBX patch) will have the bytes at "offset"
+# overwritten with the given data. The LBX file itself is untouched.
+
+# Replace "Lasitus" with "Lazarus"
+5,names.lbx,0,0x56,"zar"
+# Replace "Prrsha" with "Mrrsha"
+5,names.lbx,0,0x7c,"M"
+# Note that the offsets are from the beginning of the item, not the file.
+
+
+# Type 3 is a string replacement.
+# Run "1oom_classic_sdl1 -dumpstr" to get all the strings in copy/paste-friendly format.
+# The "itemnumber" is 0 for non-table items. Indices start at 0.
+# Let's change the main menu quit item:
+3,mm_quit,0,"GTFO"
+# Let's honor an another early 90's classic:
+3,tbl_race,0,"Hunam"
+# Example of changing an other item in the same table:
+3,tbl_race,9,"Google"
+# Let's not forget the other table:
+3,tbl_races,0,"Hunams"
+3,tbl_races,9,"Googles"
+# New strings may be longer than the original, but excessive length may break the UI.
+
+
+# Type 4 is a number replacement.
+# Run "1oom_classic_sdl1 -dumpnum" to get all the numbers in copy/paste-friendly format.
+# The "itemnumber" is 0 for non-table items. Indices start at 0.
+# Multiple items of a table can be changed in one line.
+# Change the star gate cost:
+4,stargate_cost,0,6000
+# Tweak the large (2) and huge (3) hull space:
+4,st_hull_space,2,1275,4850
+# Tip: hex numbers are supported. Unfortunately, so are octal; 012 == 10 == 0xa.
+# See doc/list_pbxnum.txt for more information.
+
+
+# Use "1oom_pbxmake pbxin_example.txt example.pbx" to make the PBX file.
+# (...although first you need to provide the missing files or comment the lines out.)
+# Then "1oom_classic_sdl1 -file example.pbx" to try it out.
+# "1oom_lbxview_sdl1 -file example.pbx" also works for viewing the LBX replacements.

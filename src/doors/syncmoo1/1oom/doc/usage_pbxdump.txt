@@ -1,0 +1,25 @@
+################
+# 1oom_pbxdump #
+################
+
+1oom_pbxdump is a tool for dumping PBX files.
+See doc/usage_pbxmake.txt for information on PBX files.
+
+Usage:
+    1oom_pbxdump [OPTIONS] IN.PBX [OUTPREFIX]
+Options:
+    -w       Write files
+
+If the -w option is not given then no files are written.
+The input filename without the .PBX extension (if any) is used for the output
+prefix if none is given.
+
+Examples:
+    1oom_pbxdump file.pbx
+        - show file.pbx contents in PBXIN format
+
+    1oom_pbxdump -w file.pbx
+        - write file.pbx contents to file.pbxin and file_*.bin
+
+    1oom_pbxdump -w file.pbx d/foo
+        - write file.pbx contents to d/foo.pbxin and d/foo_*.bin

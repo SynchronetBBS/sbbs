@@ -1,0 +1,103 @@
+2018-11-14: v1.0 released, project finished
+    - quit brings back to main menu
+    - clicking on the Tech screen lights sets the slider to bonus limit
+    - a handful of bugs fixed
+
+2018-10-03: v0.9 released
+    - map scroll speed is adjustable
+    - Planets and Fleet screen lists sortable by name/count/bases/etc
+    - keys!
+        * UHJK scroll the map
+        * / to search for a planet by name
+        * space bar for Continue/dismiss/OK/etc
+        * 1-5 as portrait click on Races
+    - almost 20 bugs fixed, notably:
+        * a cause for the infamous 32000 doom stacks indentified and fixed
+        * AI scrapped wrong ship designs resulting in obsolete fleets
+        * AI II armor bias fixed, resulting in overall better ship designs
+        * all but a few of the 1.40m fixes are now implemented
+    - doc/pbxin_fixbugs.txt expanded, including fix for waste calculation
+
+2018-09-06: MOO turns 25, v0.8 released
+    - click again to accept for transport redirection
+    - all Advanced Technology are available for research
+    - multiplayer player switching reduced
+    - fix several music bugs
+    - fix ship visibility during movement
+    - fix ship scanner range
+    - a handful of small fixes
+
+2018-08-17: v0.7 released
+    - game is deterministic by default
+    - new -yearsave option for yearly saves (1oom_save_YYYY.bin)
+    - new -uiextra UI features:
+        * 1.40m-like research bonus lights
+    - about 30 bugs fixed, notably:
+        * many memory corruption crashes fixed (C is fun)
+        * ETA is now correct
+        * spy cost in Races screen matches actual costs
+    - doc/pbxin_fixbugs.txt expanded, including fix for Oracle Interface
+
+2018-07-29: v0.6 released
+    - fix mouse handling on large resolutions, replace -mousediv with -mousespd
+    - extend mouse wheel support for counts, add options for inverting
+    - clicking cycles selection of overlapping fleets/transports
+    - new -uiextra UI features, notably:
+        * space combat autoresolve for skipping uninteresting battles
+        * partial fleet send does not deselect fleet
+        * click destination again to Accept
+    - less than 100 bugs fixed, notably:
+        * AI expansion was hindered by several bugs
+        * space combat had issues
+        * fixed a few crashes
+    - doc/pbxin_fixbugs.txt expanded, including fixed starting ship costs
+    - cmdline UI is now complete
+    - 1oom_lbxedit (which you should ignore and use 1oom_pbxmake instead)
+
+2018-07-01: v0.5 released
+    - support mouse wheel for lists, sliders and zooming
+    - add -uiextra for enabling extra UI features, notably:
+        * new New Game screen with opponent selection (including AI/player)
+    - SDL: support 15/16/24 bpp
+    - added documentation on differences to v1.3
+    - some improvements from the unofficial patch v1.40m have been implemented
+    - add Classic+ AI with small fixes, some from v1.40m
+    - about 100 bugs fixed, notably:
+        * the AI should now provide a worthy challenge
+        * space combat works as it should
+        * fixed many crashes
+    - added doc/pbxin_fixbugs.txt for optional bug fixes
+    - last and least: the "No Events" text overlay is implemented
+
+2018-06-05: v0.4 released
+    - add -uiscale N for viewing more of the galaxy at once
+    - local multiplayer is ready for testing (use -new to start)
+    - 1oom_pbxdump as the counterpart to 1oom_pbxmake
+    - bug genocide marches on, notably:
+    - AI fleets disappearing when sent fixed
+    - AI ship design phase can no longer hang
+    - MSDOS port should not crash at the slightest provocation
+
+2018-05-19: v0.3 released
+    - new HW libraries: SDL2 and Allegro 4
+    - new OS: MSDOS
+    - win32 version now actually compiles
+    - numerous bugs fixed
+    - a log file is written by default
+    - cmdline UI has emerged but is not fully playable yet
+    - pkg-config support added for easier compiling
+    - saveconv supports text input for debugging
+
+2018-04-30: v0.2 released
+    - help dialogs and news transition implemented; all done!?
+    - configuration files implemented
+    - add -user <path>
+    - documentation added
+    - full screen toggling with Alt-Enter
+    - 1oom_gfxconv for converting graphics to LBX format
+    - various bugs fixed
+
+2018-04-10: v0.1 released
+    - first public alpha release
+
+2017-11-16: project start

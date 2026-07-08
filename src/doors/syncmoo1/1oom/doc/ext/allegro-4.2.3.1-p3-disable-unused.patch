@@ -1,0 +1,1090 @@
+From b29c14c864bcf7b01b5035aef6163bea56bca915 Mon Sep 17 00:00:00 2001
+From: Kilgore Trout Mask Replicant <kilgore.replicant@tutanota.com>
+Date: Mon, 28 May 2018 12:43:17 +0300
+Subject: [PATCH] Disable/remove some code not used by 1oom
+
+---
+ include/allegro/internal/alconfig.h |   3 -
+ makefile.all                        |   4 +-
+ makefile.lst                        | 126 +-----------
+ src/blit.c                          | 396 +-----------------------------------
+ src/dos/dgfxdrv.c                   |   2 -
+ src/dos/djoydrv.c                   |  13 --
+ src/gfx.c                           |  15 +-
+ src/graphics.c                      |   8 +-
+ src/misc/modex.c                    |  84 ++++----
+ src/vtable8.c                       |  82 ++++----
+ 10 files changed, 106 insertions(+), 627 deletions(-)
+
+diff --git a/include/allegro/internal/alconfig.h b/include/allegro/internal/alconfig.h
+index 7131175..214f038 100644
+--- a/include/allegro/internal/alconfig.h
++++ b/include/allegro/internal/alconfig.h
+@@ -18,9 +18,6 @@
+ 
+ /* which color depths to include? */
+ #define ALLEGRO_COLOR8
+-#define ALLEGRO_COLOR16
+-#define ALLEGRO_COLOR24
+-#define ALLEGRO_COLOR32
+ 
+ 
+ /* for backward compatibility */
+diff --git a/makefile.all b/makefile.all
+index cc6f172..65b085b 100644
+--- a/makefile.all
++++ b/makefile.all
+@@ -119,7 +119,7 @@ endif
+ 
+ # -------- list what objects and programs we need to build --------
+ 
+-VPATH += src demo docs examples setup tests tools tools/plugins docs/src/makedoc
++VPATH += src
+ 
+ OBJECTS = $(addprefix $(OBJ_DIR)/, $(addsuffix $(OBJ), $(OBJECT_LIST)))
+ 
+@@ -136,7 +136,7 @@ ifeq (,$(wildcard $(PLATFORM_DIR)/cpp-tested))
+ endif
+ endif
+ 
+-PROGRAMS += $(CPP_PROGRAMS) demo examples makedoc
++PROGRAMS += $(CPP_PROGRAMS)
+ 
+ EXAMPLES = $(basename $(notdir $(ALLEGRO_EXAMPLE_FILES)))
+ 
+diff --git a/makefile.lst b/makefile.lst
+index 7663309..40d7a6e 100644
+--- a/makefile.lst
++++ b/makefile.lst
+@@ -3,126 +3,48 @@
+ ALLEGRO_SRC_FILES = \
+ 	src/allegro.c \
+ 	src/blit.c \
+-	src/bmp.c \
+-	src/clip3d.c \
+-	src/clip3df.c \
+-	src/colblend.c \
+-	src/color.c \
+ 	src/config.c \
+-	src/datafile.c \
+ 	src/dataregi.c \
+ 	src/digmid.c \
+-	src/dither.c \
+ 	src/dispsw.c \
+ 	src/drvlist.c \
+ 	src/file.c \
+-	src/fli.c \
+-	src/flood.c \
+-	src/font.c \
+-	src/fontbios.c \
+-	src/fontbmp.c \
+-	src/fontdat.c \
+-	src/fontgrx.c \
+-	src/fonttxt.c \
+-	src/fsel.c \
+ 	src/gfx.c \
+ 	src/glyph.c \
+ 	src/graphics.c \
+-	src/gsprite.c \
+-	src/gui.c \
+-	src/guiproc.c \
+ 	src/inline.c \
+-	src/joystick.c \
+ 	src/keyboard.c \
+-	src/lbm.c \
+ 	src/libc.c \
+ 	src/lzss.c \
+ 	src/math.c \
+-	src/math3d.c \
+ 	src/midi.c \
+ 	src/mixer.c \
+ 	src/modesel.c \
+ 	src/mouse.c \
+-	src/pcx.c \
+-	src/poly3d.c \
+-	src/polygon.c \
+-	src/quantize.c \
+-	src/quat.c \
+-	src/readbmp.c \
+-	src/readfont.c \
+-	src/readsmp.c \
+-	src/rle.c \
+-	src/rotate.c \
+-	src/scene3d.c \
+ 	src/sound.c \
+-	src/spline.c \
+ 	src/stream.c \
+-	src/text.c \
+-	src/tga.c \
+ 	src/timer.c \
+ 	src/unicode.c \
+ 	src/vtable.c \
+-	src/vtable15.c \
+-	src/vtable16.c \
+-	src/vtable24.c \
+-	src/vtable32.c \
+ 	src/vtable8.c
+ 
+ ALLEGRO_SRC_C_FILES = \
+-	src/c/cblit16.c \
+-	src/c/cblit24.c \
+-	src/c/cblit32.c \
+ 	src/c/cblit8.c \
+ 	src/c/ccpu.c \
+ 	src/c/ccsprite.c \
+-	src/c/cgfx15.c \
+-	src/c/cgfx16.c \
+-	src/c/cgfx24.c \
+-	src/c/cgfx32.c \
+ 	src/c/cgfx8.c \
+ 	src/c/cmisc.c \
+-	src/c/cscan15.c \
+-	src/c/cscan16.c \
+-	src/c/cscan24.c \
+-	src/c/cscan32.c \
+ 	src/c/cscan8.c \
+-	src/c/cspr15.c \
+-	src/c/cspr16.c \
+-	src/c/cspr24.c \
+-	src/c/cspr32.c \
+ 	src/c/cspr8.c \
+ 	src/c/cstretch.c \
+-	src/c/czscan15.c \
+-	src/c/czscan16.c \
+-	src/c/czscan24.c \
+-	src/c/czscan32.c \
+ 	src/c/czscan8.c \
+ 	src/misc/ccolconv.c
+ 
+ ALLEGRO_SRC_I386_FILES = \
+-	src/i386/iblit16.s \
+-	src/i386/iblit24.s \
+-	src/i386/iblit32.s \
+ 	src/i386/iblit8.s \
+ 	src/i386/icpu.c \
+ 	src/i386/icpus.s \
+-	src/i386/icsprite.c \
+-	src/i386/igfx15.s \
+-	src/i386/igfx16.s \
+-	src/i386/igfx24.s \
+-	src/i386/igfx32.s \
+-	src/i386/igfx8.s \
+-	src/i386/imisc.s \
+-	src/i386/iscan.s \
+-	src/i386/iscanmmx.s \
+-	src/i386/ispr15.s \
+-	src/i386/ispr16.s \
+-	src/i386/ispr24.s \
+-	src/i386/ispr32.s \
+-	src/i386/ispr8.s \
+-	src/i386/istretch.c \
+-	src/i386/izbuf.s \
+-	src/misc/icolconv.s
++	src/i386/imisc.s
+ 
+ ALLEGRO_SRC_AMD64_FILES = \
+ 	src/c/cblit16.c \
+@@ -172,36 +94,17 @@ ALLEGRO_SRC_DOS_FILES = \
+ 	src/dos/emu8k.c \
+ 	src/dos/emu8kmid.c \
+ 	src/dos/essaudio.c \
+-	src/dos/gpro.c \
+-	src/dos/grip.c \
+-	src/dos/gripjoy.c \
+-	src/dos/gripfnc.s \
+-	src/dos/ifsega.c \
+-	src/dos/ifsega2f.c \
+-	src/dos/ifsega2p.c \
+-	src/dos/joystd.c \
+ 	src/dos/mpu.c \
+-	src/dos/multijoy.c \
+-	src/dos/n64pad.c \
+ 	src/dos/pic.c \
+-	src/dos/psxpad.c \
+ 	src/dos/sb.c \
+ 	src/dos/sndscape.c \
+-	src/dos/snespad.c \
+-	src/dos/sw.c \
+-	src/dos/swpp.c \
+-	src/dos/swpps.s \
+ 	src/dos/vesa.c \
+ 	src/dos/vesas.s \
+ 	src/dos/wss.c \
+-	src/dos/ww.c \
+ 	src/misc/modex.c \
+ 	src/misc/modexgfx.s \
+ 	src/misc/modexsms.c \
+ 	src/misc/pckeys.c \
+-	src/misc/vbeaf.c \
+-	src/misc/vbeafs.s \
+-	src/misc/vbeafex.c \
+ 	src/misc/vga.c \
+ 	src/misc/vgaregs.c
+ 
+@@ -481,29 +384,8 @@ ALLEGRO_LIB_X_EXE_SOURCES = \
+ 	tools/x11/xf2pcx.c
+ 
+ ALLEGRO_LIB_EXES =
+-# \
+-#	setup/setup \
+-#	tests/afinfo \
+-#	tests/akaitest \
+-#	tests/digitest \
+-#	tests/filetest \
+-#	tests/gfxinfo \
+-#	tests/mathtest \
+-#	tests/miditest \
+-#	tests/play \
+-#	tests/test
+-#	tests/playfli \
+-#	tests/vesainfo \
+-#	tools/colormap \
+-#	tools/dat2c \
+-#	tools/exedat \
+-#	tools/pack \
+-#	tools/rgbmap \
+-#	tools/textconv
+ 
+ ALLEGRO_LIB_CPP_EXES =
+-# \
+-#	tests/cpptest
+ 
+ ALLEGRO_LIB_X_EXES = \
+ 	tools/x11/xkeymap \
+@@ -515,11 +397,7 @@ ALLEGRO_DATAFILE_EXE_SOURCES = \
+ 	tools/grabber.c \
+ 	tools/pat2dat.c
+ 
+-ALLEGRO_DATAFILE_EXES = \
+-	tools/dat \
+-	tools/dat2s \
+-	tools/grabber \
+-	tools/pat2dat
++ALLEGRO_DATAFILE_EXES =
+ 
+ ALLEGRO_EXAMPLE_FILES = \
+ 	examples/ex12bit.c \
+diff --git a/src/blit.c b/src/blit.c
+index dd4d29f..1bc4e75 100644
+--- a/src/blit.c
++++ b/src/blit.c
+@@ -41,6 +41,7 @@ static int get_replacement_mask_color(BITMAP *bmp)
+       else
+          return bestfit_color(_current_palette, 63, 1, 63);
+    }
++#if 0
+    else {
+       do
+          c = makecol_depth(depth, 255, ++g, 255);
+@@ -48,6 +49,7 @@ static int get_replacement_mask_color(BITMAP *bmp)
+ 
+       return c;
+    }
++#endif
+ }
+ 
+ 
+@@ -224,377 +226,6 @@ static void blit_from_256(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x,
+                    makecol##dbits##_dither(r, g, b, x, y))
+ 
+ 
+-
+-#if (defined ALLEGRO_COLOR8) || (defined ALLEGRO_GFX_HAS_VGA)
+-
+-/* dither_blit:
+- *  Blits with Floyd-Steinberg error diffusion.
+- */
+-static void dither_blit(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w, int h)
+-{
+-   int prev_drawmode = _drawing_mode;
+-   int *errline[3];
+-   int *errnextline[3];
+-   int errpixel[3];
+-   int v[3], e[3], n[3];
+-   int x, y, i;
+-   int c, nc, rc;
+-
+-   /* allocate memory for the error buffers */
+-   for (i=0; i<3; i++) {
+-      errline[i] = _AL_MALLOC_ATOMIC(sizeof(int) * w);
+-      errnextline[i] = _AL_MALLOC_ATOMIC(sizeof(int) * w);
+-   }
+-
+-   /* free the buffers if there was an error allocating one */
+-   for (i=0; i<3; i++) {
+-      if ((!errline[i]) || (!errnextline[i]))
+-      goto getout;
+-   }
+-
+-   /* initialize the error buffers */
+-   for (i=0; i<3; i++) {
+-      memset(errline[i], 0, sizeof(int) * w);
+-      memset(errnextline[i], 0, sizeof(int) * w);
+-      errpixel[i] = 0;
+-   }
+-
+-   /* get the replacement color */
+-   rc = get_replacement_mask_color(dest);
+-
+-   _drawing_mode = DRAW_MODE_SOLID;
+-
+-   /* dither!!! */
+-   for (y =0; y<h; y++) {
+-      for (x =0; x<w; x++) {
+-         /* get the colour from the source bitmap */
+-         c = getpixel(src, s_x+x, s_y+y);
+-         v[0] = getr_depth(bitmap_color_depth(src), c);
+-         v[1] = getg_depth(bitmap_color_depth(src), c);
+-         v[2] = getb_depth(bitmap_color_depth(src), c);
+-
+-         /* add the error from previous pixels */
+-         for (i=0; i<3; i++) {
+-            n[i] = v[i] + errline[i][x] + errpixel[i];
+-
+-            if (n[i] > 255)
+-               n[i] = 255;
+-
+-            if (n[i] < 0)
+-               n[i] = 0;
+-         }
+-
+-         /* find the nearest matching colour */
+-         nc = makecol8(n[0], n[1], n[2]);
+-         if (_color_conv & COLORCONV_KEEP_TRANS) {
+-            if (c == bitmap_mask_color(src))
+-               putpixel(dest, d_x+x, d_y+y, bitmap_mask_color(dest));
+-            else if (nc == bitmap_mask_color(dest))
+-               putpixel(dest, d_x+x, d_y+y, rc);
+-            else
+-               putpixel(dest, d_x+x, d_y+y, nc);
+-         }
+-         else {
+-            putpixel(dest, d_x+x, d_y+y, nc);
+-         }
+-         v[0] = getr8(nc);
+-         v[1] = getg8(nc);
+-         v[2] = getb8(nc);
+-
+-         /* calculate the error and store it */
+-         for (i=0; i<3; i++) {
+-            e[i] = n[i] - v[i];
+-            errpixel[i] = (int)((e[i] * 3)/8);
+-            errnextline[i][x] += errpixel[i];
+-
+-            if (x != w-1)
+-               errnextline[i][x+1] = (int)(e[i]/4);
+-         }
+-      }
+-
+-      /* update error buffers */
+-      for (i=0; i<3; i++) {
+-         memcpy(errline[i], errnextline[i], sizeof(int) * w);
+-         memset(errnextline[i], 0, sizeof(int) * w);
+-      }
+-   }
+-
+-   _drawing_mode = prev_drawmode;
+-
+- getout:
+-
+-   for (i=0; i<3; i++) {
+-      if (errline[i])
+-         _AL_FREE(errline[i]);
+-
+-      if (errnextline[i])
+-         _AL_FREE(errnextline[i]);
+-   }
+-}
+-
+-#endif
+-
+-
+-
+-/* blit_from_15:
+- *  Converts 15 bpp images onto some other destination format.
+- */
+-static void blit_from_15(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w, int h)
+-{
+-   #ifdef ALLEGRO_COLOR16
+-
+-   int x, y, c, r, g, b;
+-   uintptr_t s, d;
+-
+-   switch (bitmap_color_depth(dest)) {
+-
+-      #ifdef ALLEGRO_COLOR8
+-      case 8:
+-         if (_color_conv & COLORCONV_DITHER_PAL)
+-            dither_blit(src, dest, s_x, s_y, d_x, d_y, w, h);
+-         else 
+-            CONVERT_BLIT(15, sizeof(int16_t), 8, 1)
+-         break;
+-      #endif
+-
+-      case 16:
+-         CONVERT_BLIT(15, sizeof(int16_t), 16, sizeof(int16_t))
+-         break;
+-
+-      #ifdef ALLEGRO_COLOR24
+-      case 24:
+-         CONVERT_BLIT(15, sizeof(int16_t), 24, 3)
+-         break;
+-      #endif
+-
+-      #ifdef ALLEGRO_COLOR32
+-      case 32:
+-         CONVERT_BLIT(15, sizeof(int16_t), 32, sizeof(int32_t))
+-         break;
+-      #endif
+-   }
+-
+-   #endif
+-}
+-
+-
+-
+-/* blit_from_16:
+- *  Converts 16 bpp images onto some other destination format.
+- */
+-static void blit_from_16(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w, int h)
+-{
+-   #ifdef ALLEGRO_COLOR16
+-
+-   int x, y, c, r, g, b;
+-   uintptr_t s, d;
+-
+-   switch (bitmap_color_depth(dest)) {
+-
+-      #ifdef ALLEGRO_COLOR8
+-      case 8:
+-         if (_color_conv & COLORCONV_DITHER_PAL)
+-            dither_blit(src, dest, s_x, s_y, d_x, d_y, w, h);
+-         else 
+-            CONVERT_BLIT(16, sizeof(int16_t), 8, 1)
+-         break;
+-      #endif
+-
+-      case 15:
+-         CONVERT_BLIT(16, sizeof(int16_t), 15, sizeof(int16_t))
+-         break;
+-
+-      #ifdef ALLEGRO_COLOR24
+-      case 24:
+-         CONVERT_BLIT(16, sizeof(int16_t), 24, 3)
+-         break;
+-      #endif
+-
+-      #ifdef ALLEGRO_COLOR32
+-      case 32:
+-         CONVERT_BLIT(16, sizeof(int16_t), 32, sizeof(int32_t))
+-         break;
+-      #endif
+-   }
+-
+-   #endif 
+-}
+-
+-
+-
+-/* blit_from_24:
+- *  Converts 24 bpp images onto some other destination format.
+- */
+-static void blit_from_24(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w, int h)
+-{
+-   #ifdef ALLEGRO_COLOR24
+-
+-   int x, y, c, r, g, b;
+-   uintptr_t s, d;
+-
+-   switch (bitmap_color_depth(dest)) {
+-
+-      #ifdef ALLEGRO_COLOR8
+-      case 8:
+-         if (_color_conv & COLORCONV_DITHER_PAL)
+-            dither_blit(src, dest, s_x, s_y, d_x, d_y, w, h);
+-         else 
+-            CONVERT_BLIT(24, 3, 8, 1);
+-         break;
+-      #endif
+-
+-      #ifdef ALLEGRO_COLOR16
+-      case 15:
+-         if (_color_conv & COLORCONV_DITHER_HI)
+-            CONVERT_DITHER_BLIT(24, 3, 15, sizeof(int16_t))
+-         else
+-            CONVERT_BLIT(24, 3, 15, sizeof(int16_t))
+-         break;
+-
+-      case 16:
+-         if (_color_conv & COLORCONV_DITHER_HI)
+-            CONVERT_DITHER_BLIT(24, 3, 16, sizeof(int16_t))
+-         else
+-            CONVERT_BLIT(24, 3, 16, sizeof(int16_t))
+-         break;
+-      #endif
+-
+-      #ifdef ALLEGRO_COLOR32
+-      case 32:
+-         CONVERT_BLIT(24, 3, 32, sizeof(int32_t))
+-         break;
+-      #endif
+-   }
+-
+-   #endif 
+-}
+-
+-
+-
+-/* blit_from_32:
+- *  Converts 32 bpp images onto some other destination format.
+- */
+-static void blit_from_32(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w, int h)
+-{
+-   #ifdef ALLEGRO_COLOR32
+-
+-   int x, y, c, r, g, b;
+-   uintptr_t s, d;
+-
+-   switch (bitmap_color_depth(dest)) {
+-
+-      #ifdef ALLEGRO_COLOR8
+-      case 8:
+-         if (_color_conv & COLORCONV_DITHER_PAL)
+-            dither_blit(src, dest, s_x, s_y, d_x, d_y, w, h);
+-         else 
+-            CONVERT_BLIT(32, sizeof(int32_t), 8, 1)
+-         break;
+-      #endif
+-
+-      #ifdef ALLEGRO_COLOR16
+-      case 15:
+-         if (_color_conv & COLORCONV_DITHER_HI)
+-            CONVERT_DITHER_BLIT(32, sizeof(int32_t), 15, sizeof(int16_t))
+-         else
+-            CONVERT_BLIT(32, sizeof(int32_t), 15, sizeof(int16_t))
+-         break;
+-
+-      case 16:
+-         if (_color_conv & COLORCONV_DITHER_HI)
+-            CONVERT_DITHER_BLIT(32, sizeof(int32_t), 16, sizeof(int16_t))
+-         else
+-            CONVERT_BLIT(32, sizeof(int32_t), 16, sizeof(int16_t))
+-         break;
+-      #endif
+-
+-      #ifdef ALLEGRO_COLOR24
+-      case 24:
+-         CONVERT_BLIT(32, sizeof(int32_t), 24, 3)
+-         break;
+-      #endif
+-   }
+-
+-   #endif 
+-}
+-
+-
+-
+-/* blit_to_or_from_modex:
+- *  Converts between truecolor and planar mode-X bitmaps. This function is 
+- *  painfully slow, but I don't think it is something that people will need
+- *  to do very often...
+- */
+-static void blit_to_or_from_modex(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w, int h)
+-{
+-   #ifdef ALLEGRO_GFX_HAS_VGA
+-
+-   int x, y, c, r, g, b;
+-   int src_depth = bitmap_color_depth(src);
+-   int dest_depth = bitmap_color_depth(dest);
+-
+-   int prev_drawmode = _drawing_mode;
+-   _drawing_mode = DRAW_MODE_SOLID;
+-
+-   if ((src_depth != 8) && (_color_conv & COLORCONV_DITHER_PAL))
+-      dither_blit(src, dest, s_x, s_y, d_x, d_y, w, h);
+-   else {
+-      for (y=0; y<h; y++) {
+-         for (x=0; x<w; x++) {
+-            c = getpixel(src, s_x+x, s_y+y);
+-            r = getr_depth(src_depth, c);
+-            g = getg_depth(src_depth, c);
+-            b = getb_depth(src_depth, c);
+-            c = makecol_depth(dest_depth, r, g, b);
+-            putpixel(dest, d_x+x, d_y+y, c);
+-         }
+-      }
+-   }
+-
+-   _drawing_mode = prev_drawmode;
+-
+-   #endif
+-}
+-
+-
+-
+-/* blit_between_formats:
+- *  Blits an (already clipped) region between two bitmaps of different
+- *  color depths, doing the appopriate format conversions.
+- */
+-void _blit_between_formats(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w, int h)
+-{
+-   if ((is_planar_bitmap(src)) || (is_planar_bitmap(dest))) {
+-      blit_to_or_from_modex(src, dest, s_x, s_y, d_x, d_y, w, h);
+-   }
+-   else {
+-      switch (bitmap_color_depth(src)) {
+-
+-	 case 8:
+-	    blit_from_256(src, dest, s_x, s_y, d_x, d_y, w, h);
+-	    break;
+-
+-	 case 15:
+-	    blit_from_15(src, dest, s_x, s_y, d_x, d_y, w, h);
+-	    break;
+-
+-	 case 16:
+-	    blit_from_16(src, dest, s_x, s_y, d_x, d_y, w, h);
+-	    break;
+-
+-	 case 24:
+-	    blit_from_24(src, dest, s_x, s_y, d_x, d_y, w, h);
+-	    break;
+-
+-	 case 32:
+-	    blit_from_32(src, dest, s_x, s_y, d_x, d_y, w, h);
+-	    break;
+-      }
+-   }
+-}
+-
+-
+-
+ /* blit_to_self:
+  *  Blits an (already clipped) region between two areas of the same bitmap,
+  *  checking which way around to do the blit.
+@@ -705,11 +336,7 @@ void blit(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w,
+    ASSERT(dest);
+    BLIT_CLIP();
+ 
+-   if (src->vtable->color_depth != dest->vtable->color_depth) {
+-      /* need to do a color conversion */
+-      dest->vtable->blit_between_formats(src, dest, s_x, s_y, d_x, d_y, w, h);
+-   }
+-   else if (is_same_bitmap(src, dest)) {
++   if (is_same_bitmap(src, dest)) {
+       /* special handling for overlapping regions */
+       blit_to_self(src, dest, s_x, s_y, d_x, d_y, w, h);
+    }
+@@ -741,20 +368,3 @@ void blit(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w,
+ }
+ 
+ END_OF_FUNCTION(blit);
+-
+-
+-
+-/* masked_blit:
+- *  Version of blit() that skips zero pixels. The source must be a memory
+- *  bitmap, and the source and dest regions must not overlap.
+- */
+-void masked_blit(BITMAP *src, BITMAP *dest, int s_x, int s_y, int d_x, int d_y, int w, int h)
+-{
+-   ASSERT(src);
+-   ASSERT(dest);
+-   ASSERT(src->vtable->color_depth == dest->vtable->color_depth);
+-
+-   BLIT_CLIP();
+-
+-   dest->vtable->masked_blit(src, dest, s_x, s_y, d_x, d_y, w, h);
+-}
+diff --git a/src/dos/dgfxdrv.c b/src/dos/dgfxdrv.c
+index f7890de..e602236 100644
+--- a/src/dos/dgfxdrv.c
++++ b/src/dos/dgfxdrv.c
+@@ -24,9 +24,7 @@
+ #endif
+ 
+ 
+-
+ BEGIN_GFX_DRIVER_LIST
+-   GFX_DRIVER_VBEAF
+    GFX_DRIVER_VGA
+    GFX_DRIVER_MODEX
+    GFX_DRIVER_VESA3
+diff --git a/src/dos/djoydrv.c b/src/dos/djoydrv.c
+index 676d0ad..726fc14 100644
+--- a/src/dos/djoydrv.c
++++ b/src/dos/djoydrv.c
+@@ -26,17 +26,4 @@
+ 
+ 
+ BEGIN_JOYSTICK_DRIVER_LIST
+-   JOYSTICK_DRIVER_WINGWARRIOR
+-   JOYSTICK_DRIVER_SIDEWINDER
+-   JOYSTICK_DRIVER_GAMEPAD_PRO
+-   JOYSTICK_DRIVER_GRIP
+-   JOYSTICK_DRIVER_STANDARD
+-   JOYSTICK_DRIVER_SNESPAD
+-   JOYSTICK_DRIVER_PSXPAD
+-   JOYSTICK_DRIVER_N64PAD
+-   JOYSTICK_DRIVER_DB9
+-   JOYSTICK_DRIVER_TURBOGRAFX
+-   JOYSTICK_DRIVER_IFSEGA_ISA
+-   JOYSTICK_DRIVER_IFSEGA_PCI
+-   JOYSTICK_DRIVER_IFSEGA_PCI_FAST
+ END_JOYSTICK_DRIVER_LIST
+diff --git a/src/gfx.c b/src/gfx.c
+index a6abfc6..6036170 100644
+--- a/src/gfx.c
++++ b/src/gfx.c
+@@ -71,7 +71,7 @@ void drawing_mode(int mode, BITMAP *pattern, int x_anchor, int y_anchor)
+ }
+ 
+ 
+-
++#if 0
+ /* set_blender_mode:
+  *  Specifies a custom set of blender functions for interpolating between
+  *  truecolor pixels. The 24 bit blender is shared between the 24 and 32 bit
+@@ -130,7 +130,7 @@ void set_blender_mode_ex(BLENDER_FUNC b15, BLENDER_FUNC b16, BLENDER_FUNC b24, B
+ 
+    _blender_alpha = a;
+ }
+-
++#endif
+ 
+ 
+ /* xor_mode:
+@@ -233,8 +233,10 @@ void set_palette_range(AL_CONST PALETTE p, int from, int to, int vsync)
+    for (c=from; c<=to; c++) {
+       _current_palette[c] = p[c];
+ 
++#if 0
+       if (_color_depth != 8)
+ 	 palette_color[c] = makecol(_rgb_scale_6[p[c].r], _rgb_scale_6[p[c].g], _rgb_scale_6[p[c].b]);
++#endif
+    }
+ 
+    _current_palette_changed = 0xFFFFFFFF & ~(1<<(_color_depth-1));
+@@ -271,12 +273,14 @@ void select_palette(AL_CONST PALETTE p)
+       _current_palette[c] = p[c];
+    }
+ 
++#if 0
+    if (_color_depth != 8) {
+       for (c=0; c<PAL_SIZE; c++) {
+ 	 prev_palette_color[c] = palette_color[c];
+ 	 palette_color[c] = makecol(_rgb_scale_6[p[c].r], _rgb_scale_6[p[c].g], _rgb_scale_6[p[c].b]);
+       }
+    }
++#endif
+ 
+    _got_prev_current_palette = TRUE;
+ 
+@@ -307,7 +311,7 @@ void unselect_palette(void)
+ }
+ 
+ 
+-
++#if 0
+ /* _palette_expansion_table:
+  *  Creates a lookup table for expanding 256->truecolor.
+  */
+@@ -342,7 +346,7 @@ static int *palette_expansion_table(int bpp)
+ 
+ /* this has to be called through a function pointer, so MSVC asm can use it */
+ int *(*_palette_expansion_table)(int) = palette_expansion_table;
+-
++#endif
+ 
+ 
+ /* generate_332_palette:
+@@ -408,7 +412,7 @@ void get_palette_range(PALETTE p, int from, int to)
+ }
+ 
+ 
+-
++#if 0
+ /* fade_interpolate: 
+  *  Calculates a palette part way between source and dest, returning it
+  *  in output. The pos indicates how far between the two extremes it should
+@@ -1570,3 +1574,4 @@ void _soft_arc(BITMAP *bmp, int x, int y, fixed ang1, fixed ang2, int r, int col
+    release_bitmap(bmp);
+ }
+ 
++#endif
+diff --git a/src/graphics.c b/src/graphics.c
+index 7608fb7..3fd85c5 100644
+--- a/src/graphics.c
++++ b/src/graphics.c
+@@ -57,10 +57,12 @@ int _color_conv = COLORCONV_TOTAL;     /* which formats to auto convert? */
+ static int color_conv_set = FALSE;     /* has the user set conversion mode? */
+ 
+ int _palette_color8[256];               /* palette -> pixel mapping */
++#if 0
+ int _palette_color15[256];
+ int _palette_color16[256];
+ int _palette_color24[256];
+ int _palette_color32[256];
++#endif
+ 
+ int *palette_color = _palette_color8; 
+ 
+@@ -305,10 +307,12 @@ void set_color_depth(int depth)
+ 
+    switch (depth) {
+       case 8:  palette_color = _palette_color8;  break;
++#if 0
+       case 15: palette_color = _palette_color15; break;
+       case 16: palette_color = _palette_color16; break;
+       case 24: palette_color = _palette_color24; break;
+       case 32: palette_color = _palette_color32; break;
++#endif
+       default: ASSERT(FALSE);
+    }
+ }
+@@ -430,7 +434,6 @@ GFX_VTABLE *_get_vtable(int color_depth)
+ 
+       if (vt) {
+ 	 LOCK_DATA(vt, sizeof(GFX_VTABLE));
+-	 LOCK_CODE(vt->draw_sprite, (long)vt->draw_sprite_end - (long)vt->draw_sprite);
+ 	 LOCK_CODE(vt->blit_from_memory, (long)vt->blit_end - (long)vt->blit_from_memory);
+ 	 return vt;
+       }
+@@ -439,7 +442,6 @@ GFX_VTABLE *_get_vtable(int color_depth)
+    for (i=0; _vtable_list[i].vtable; i++) {
+       if (_vtable_list[i].color_depth == color_depth) {
+ 	 LOCK_DATA(_vtable_list[i].vtable, sizeof(GFX_VTABLE));
+-	 LOCK_CODE(_vtable_list[i].vtable->draw_sprite, (long)_vtable_list[i].vtable->draw_sprite_end - (long)_vtable_list[i].vtable->draw_sprite);
+ 	 LOCK_CODE(_vtable_list[i].vtable->blit_from_memory, (long)_vtable_list[i].vtable->blit_end - (long)_vtable_list[i].vtable->blit_from_memory);
+ 	 return _vtable_list[i].vtable;
+       }
+@@ -840,11 +842,13 @@ static int _set_gfx_mode(int card, int w, int h, int v_w, int v_h, int allow_con
+       gui_mg_color = 8;
+       gui_bg_color = 0;
+    }
++#if 0
+    else {
+       gui_fg_color = makecol(0, 0, 0);
+       gui_mg_color = makecol(128, 128, 128);
+       gui_bg_color = makecol(255, 255, 255);
+    }
++#endif
+ 
+    if (_al_linker_mouse)
+       _al_linker_mouse->set_mouse_etc();
+diff --git a/src/misc/modex.c b/src/misc/modex.c
+index db01fea..c900076 100644
+--- a/src/misc/modex.c
++++ b/src/misc/modex.c
+@@ -58,29 +58,29 @@ static GFX_VTABLE __modex_vtable =
+    NULL,
+    NULL,
+    NULL,
+-   _x_getpixel,
+-   _x_putpixel,
+-   _x_vline,
+-   _x_hline,
+-   _x_hline,
+-   _normal_line,
+-   _fast_line,
+-   _normal_rectfill,
+-   _soft_triangle,
+-   _x_draw_sprite,
+-   _x_draw_sprite,
+-   _x_draw_sprite_v_flip,
+-   _x_draw_sprite_h_flip,
+-   _x_draw_sprite_vh_flip,
+-   _x_draw_trans_sprite,
++   NULL, //_x_getpixel,
++   NULL, //_x_putpixel,
++   NULL, //_x_vline,
++   NULL, //_x_hline,
++   NULL, //_x_hline,
++   NULL, //_normal_line,
++   NULL, //_fast_line,
++   NULL, //_normal_rectfill,
++   NULL, //_soft_triangle,
++   NULL, //_x_draw_sprite,
++   NULL, //_x_draw_sprite,
++   NULL, //_x_draw_sprite_v_flip,
++   NULL, //_x_draw_sprite_h_flip,
++   NULL, //_x_draw_sprite_vh_flip,
++   NULL, //_x_draw_trans_sprite,
+    NULL,
+-   _x_draw_lit_sprite,
+-   _x_draw_rle_sprite,
+-   _x_draw_trans_rle_sprite,
++   NULL, //_x_draw_lit_sprite,
++   NULL, //_x_draw_rle_sprite,
++   NULL, //_x_draw_trans_rle_sprite,
+    NULL,
+-   _x_draw_lit_rle_sprite,
+-   _x_draw_character,
+-   _x_draw_glyph,
++   NULL, //_x_draw_lit_rle_sprite,
++   NULL, //_x_draw_character,
++   NULL, //_x_draw_glyph,
+    _x_blit_from_memory,
+    _x_blit_to_memory,
+    _x_blit_from_memory,
+@@ -88,30 +88,30 @@ static GFX_VTABLE __modex_vtable =
+    _x_blit,
+    _x_blit_forward,
+    _x_blit_backward,
+-   _blit_between_formats,
+-   _x_masked_blit,
++   NULL, //_blit_between_formats,
++   NULL, //_x_masked_blit,
+    _x_clear_to_color,
+-   _pivot_scaled_sprite_flip,
++   NULL, //_pivot_scaled_sprite_flip,
+    NULL,    /* AL_METHOD(void, do_stretch_blit, (struct BITMAP *source, struct BITMAP *dest, int source_x, int source_y, int source_width, int source_height, int dest_x, int dest_y, int dest_width, int dest_height, int masked)); */
+-   _soft_draw_gouraud_sprite,
+-   _x_draw_sprite_end,
++   NULL, //_soft_draw_gouraud_sprite,
++   NULL, //_x_draw_sprite_end,
+    _x_blit_from_memory_end,
+-   _soft_polygon,
+-   _soft_rect,
+-   _soft_circle,
+-   _soft_circlefill,
+-   _soft_ellipse,
+-   _soft_ellipsefill,
+-   _soft_arc,
+-   _soft_spline,
+-   _soft_floodfill,
+-
+-   _soft_polygon3d,
+-   _soft_polygon3d_f,
+-   _soft_triangle3d,
+-   _soft_triangle3d_f,
+-   _soft_quad3d,
+-   _soft_quad3d_f
++   NULL, //_soft_polygon,
++   NULL, //_soft_rect,
++   NULL, //_soft_circle,
++   NULL, //_soft_circlefill,
++   NULL, //_soft_ellipse,
++   NULL, //_soft_ellipsefill,
++   NULL, //_soft_arc,
++   NULL, //_soft_spline,
++   NULL, //_soft_floodfill,
++
++   NULL, //_soft_polygon3d,
++   NULL, //_soft_polygon3d_f,
++   NULL, //_soft_triangle3d,
++   NULL, //_soft_triangle3d_f,
++   NULL, //_soft_quad3d,
++   NULL //_soft_quad3d_f
+ };
+ 
+ 
+diff --git a/src/vtable8.c b/src/vtable8.c
+index ff57e5d..4d7320a 100644
+--- a/src/vtable8.c
++++ b/src/vtable8.c
+@@ -38,29 +38,29 @@ GFX_VTABLE __linear_vtable8 =
+    NULL,
+    NULL,
+    NULL,
+-   _linear_getpixel8,
+-   _linear_putpixel8,
+-   _linear_vline8,
+-   _linear_hline8,
+-   _linear_hline8,
+-   _normal_line,
+-   _fast_line,
+-   _normal_rectfill,
+-   _soft_triangle,
+-   _linear_draw_sprite8,
+-   _linear_draw_sprite8,
+-   _linear_draw_sprite_v_flip8,
+-   _linear_draw_sprite_h_flip8,
+-   _linear_draw_sprite_vh_flip8,
+-   _linear_draw_trans_sprite8,
++   NULL, //_linear_getpixel8,
++   NULL, //_linear_putpixel8,
++   NULL, //_linear_vline8,
++   NULL, //_linear_hline8,
++   NULL, //_linear_hline8,
++   NULL, //_normal_line,
++   NULL, //_fast_line,
++   NULL, //_normal_rectfill,
++   NULL, //_soft_triangle,
++   NULL, //_linear_draw_sprite8,
++   NULL, //_linear_draw_sprite8,
++   NULL, //_linear_draw_sprite_v_flip8,
++   NULL, //_linear_draw_sprite_h_flip8,
++   NULL, //_linear_draw_sprite_vh_flip8,
++   NULL, //_linear_draw_trans_sprite8,
+    NULL,
+-   _linear_draw_lit_sprite8,
+-   _linear_draw_rle_sprite8,
+-   _linear_draw_trans_rle_sprite8,
++   NULL, //_linear_draw_lit_sprite8,
++   NULL, //_linear_draw_rle_sprite8,
++   NULL, //_linear_draw_trans_rle_sprite8,
+    NULL,
+-   _linear_draw_lit_rle_sprite8,
+-   _linear_draw_character8,
+-   _linear_draw_glyph8,
++   NULL, //_linear_draw_lit_rle_sprite8,
++   NULL, //_linear_draw_character8,
++   NULL, //_linear_draw_glyph8,
+    _linear_blit8,
+    _linear_blit8,
+    _linear_blit8,
+@@ -68,30 +68,30 @@ GFX_VTABLE __linear_vtable8 =
+    _linear_blit8,
+    _linear_blit8,
+    _linear_blit_backward8,
+-   _blit_between_formats,
+-   _linear_masked_blit8,
++   NULL, //_blit_between_formats,
++   NULL, //_linear_masked_blit8,
+    _linear_clear_to_color8,
+-   _pivot_scaled_sprite_flip,
++   NULL, //_pivot_scaled_sprite_flip,
+    NULL,    // AL_METHOD(void, do_stretch_blit, (struct BITMAP *source, struct BITMAP *dest, int source_x, int source_y, int source_width, int source_height, int dest_x, int dest_y, int dest_width, int dest_height, int masked))
+-   _soft_draw_gouraud_sprite,
+-   _linear_draw_sprite8_end,
++   NULL, //_soft_draw_gouraud_sprite,
++   NULL, //_linear_draw_sprite8_end,
+    _linear_blit8_end,
+-   _soft_polygon,
+-   _soft_rect,
+-   _soft_circle,
+-   _soft_circlefill,
+-   _soft_ellipse,
+-   _soft_ellipsefill,
+-   _soft_arc,
+-   _soft_spline,
+-   _soft_floodfill,
++   NULL, //_soft_polygon,
++   NULL, //_soft_rect,
++   NULL, //_soft_circle,
++   NULL, //_soft_circlefill,
++   NULL, //_soft_ellipse,
++   NULL, //_soft_ellipsefill,
++   NULL, //_soft_arc,
++   NULL, //_soft_spline,
++   NULL, //_soft_floodfill,
+ 
+-   _soft_polygon3d,
+-   _soft_polygon3d_f,
+-   _soft_triangle3d,
+-   _soft_triangle3d_f,
+-   _soft_quad3d,
+-   _soft_quad3d_f
++   NULL, //_soft_polygon3d,
++   NULL, //_soft_polygon3d_f,
++   NULL, //_soft_triangle3d,
++   NULL, //_soft_triangle3d_f,
++   NULL, //_soft_quad3d,
++   NULL, //_soft_quad3d_f
+ };
+ 
+ 
+-- 
+2.11.0
+

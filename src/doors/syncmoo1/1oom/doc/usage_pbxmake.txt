@@ -1,0 +1,14 @@
+################
+# 1oom_pbxmake #
+################
+
+1oom_pbxmake is a tool for creating PBX files.
+
+PBX files are patch files that replace LBX data or not-really-constants.
+Think of a MOO1 version of Doom WAD files (no scripts, though).
+
+Usage: 1oom_pbxmake PBXIN.TXT OUT.PBX
+
+See doc/pbxin_example.txt for the PBXIN.TXT format and example use.
+See doc/list_pbxnum.txt for description of some of the number replacements.
+See doc/format_pbx.txt for the OUT.PBX format. (For devs. Users can ignore.)

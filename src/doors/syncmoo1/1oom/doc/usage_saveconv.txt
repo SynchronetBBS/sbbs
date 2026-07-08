@@ -1,0 +1,69 @@
+#################
+# 1oom_saveconv #
+#################
+
+1oom_saveconv is a tool for converting save game files.
+
+Usage:
+    1oom_saveconv [OPTIONS] INPUT [OUTPUT]
+Options:
+    -?             Show command line options
+    -i INTYPE      Input type:
+                     s   - smart: autodetect (default)
+                     m   - MOO1 v1.3
+                     1   - 1oom save version 0
+                     t   - text
+    -o OUTTYPE     Output type:
+                     s   - smart: in old/new -> out new/old (default)
+                     m   - MOO1 v1.3
+                     1   - 1oom save version 0
+                     t   - text
+                     d   - dummy (no output)
+    -cmoo          Enable CONFIG.MOO use
+    -n NAME        Set save name
+
+If a filename is a number from 1 to 8, it is interpreted as 1oom save number N.
+If it is number from 2300 to 9999, it is interpreted as 1oom yearly save YYYY.
+
+1oom save format 0 is described in doc/format_save.txt.
+MOO1 v1.3 save format is described in doc/format_gam.txt.
+Text save format is intentionally left undefined. It is for debugging.
+
+Examples:
+    1oom_saveconv SAVE2.GAM oldsave2.bin
+        - convert SAVE2.GAM to oldsave2.bin
+
+    1oom_saveconv -n "foo bar" SAVE2.GAM 2
+        - convert SAVE2.GAM to 1oom save 2
+        - set save name to "foo bar"
+
+    1oom_saveconv -cmoo SAVE2.GAM 2
+        - convert SAVE2.GAM to 1oom save 2
+        - take save name from CONFIG.MOO (if found)
+
+    1oom_saveconv 1oom_save5.bin SAVE6.GAM
+        - convert 1oom_save5.bin to SAVE6.GAM
+
+    1oom_saveconv -cmoo 5 SAVE6.GAM
+        - convert 1oom save 5 to SAVE6.GAM
+        - update save name and availability in CONFIG.MOO (if found)
+
+    1oom_saveconv -o 1 7 6
+        - copy 1oom save 7 to 6
+
+    1oom_saveconv -o 1 2325 2
+        - copy 1oom yearly save 2325 to slot 2
+
+    1oom_saveconv -cmoo -n "foo bar" -o m SAVE1.GAM SAVE2.GAM
+        - copy SAVE1.GAM SAVE2.GAM
+        - set save name to "foo bar"
+        - update save name and availability in CONFIG.MOO (if found)
+
+    1oom_saveconv -o t 7 foo.txt
+        - save 1oom save 7 as text (for debugging)
+
+    1oom_saveconv foo.txt 7
+        - convert foo.txt to 1oom save 7
+
+    1oom_saveconv -o d 7
+        - load 1oom save 7 and do nothing (for debugging)

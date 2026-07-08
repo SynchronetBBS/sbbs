@@ -1,0 +1,157 @@
+# Coding style guidelines
+
+## Structure
+
+The code is divided into the following directories:
+ * src/         - utility functions, tools
+ *   game/      - game logic
+ *   ui/        - UI implementations
+ *     classic/ - the 1993 UI
+ *     cmdline/ - experimental command line UI
+ *     nop/     - dummy UI for tools
+ *   hw/        - hardware abstraction
+ *     sdl/     - libSDL
+ *       1/     - libSDL 1.2.x
+ *       2/     - libSDL 2.x
+ *     alleg/   - Allegro
+ *       4/     - Allegro 4.x
+ *     nop/     - dummy HW for tools
+ *   os/        - Operating System; file paths
+ *     unix/    - yay
+ *     win32/   - boo
+ *     msdos/   - wtf
+
+Some facts:
+ * main is in hw/ (due to SDL)
+ * os/ knows nothing about game/, ui/ or hw/
+ * hw/ knows nothing about game/ or ui/
+ * game/ knows nothing about hw/
+ * ui/ is known via src/ui.h
+ * hw/ is known via src/hw.h
+ * os/ is known via src/os.h
+ * src/ knows game via the very narrow src/gameapi.h
+   (the exception is saveconv.c)
+ * ui/ knows all about game/
+
+Different hw/ and ui/ implementations can be built with a single configure.
+The resulting binaries follow a "1oom_$UI_$HW" naming convention.
+
+## Style
+
+- no tabs, 4 spaces for indentation
+
+- always add the { } braces to if, do, while, for statements
+
+- one space after a ',', if, do, while, for and return statements,
+  no space after function name:
+    if (func(4, 5) < 0) {
+        return (foo * 4) + 2;
+    }
+
+- add spaces around +, -, *, /, =, == etc:
+    a = (22 + b * 4) / 7;
+
+- have the opening brace on the same line as the statement,
+  unless the condition spills to multiple lines:
+    if (foo) {
+        ...
+    }
+    if (1
+      && really_long_name
+      && (function_call(with_parameters) < and_a_comparison)
+    ) {
+        ...
+    }
+
+- have the opening brace of a function in the next line:
+    int func(void)
+    {
+        ...
+    }
+
+- use C-style comments /* like here */
+
+- function and variable names are lowercase with '_' for space
+
+- defines and enums are UPPERCASE with '_' for space
+
+- avoid global variables
+
+- declare functions / data which are not used outside the module as static
+
+- group static functions / data above others, separate with a /* --.. */ line
+
+- avoid memory allocations after game startup
+
+Do not use unsafe string functions like strcpy, strcat and sprintf. 1oom pbx
+files may redefine most in-game strings, and besides, it's good practice.
+There are replacement functions in src/lib.c which take an additional buffer
+size argument and crash instead of overflowing the buffer.
+
+Avoid declaring variables after the start of scope:
+    if (foo) {
+        int this_is_ok;
+        v = 123;
+        int this_is_frowned_upon;
+        ...
+    }
+
+Note that declaring the loop variable inside for is ok:
+    for (int i = 0; i < FOO; ++i) {
+        ...
+    }
+
+Otherwise, try to keep close to C89.
+
+Avoid #ifdefs! No OS-specific #ifdefs are allowed in game/, ui/ or src/.
+Acceptable ones include HAVE_SAMPLERATE etc and FEATURE_MODEBUG.
+
+## On brevity
+
+Comment only the unobvious or the big picture. Do not add inane comments like:
+    /* do stuff */
+    do_stuff();
+
+Keep the commit message as one line of 70 characters or less. Do not end it
+with a '.'. Save any explanatory paragraphs for the merge request.
+
+Don't try to remove code that you don't think makes sense. It always has value
+if it strictly matches the original.
+
+## Portability
+
+1oom is designed to be cross-platform and work on different Operating
+Systems, processors and libraries. Bear this in mind when writing code.
+
+Each hardware abstraction library will have its own directory in hw/.
+Any and all of these must be buildable with one configure and produce
+differently named binaries.
+
+Do not use the `long` type (its size differs across platforms; use
+`int` or `int64_t` depending on which you want).
+
+Be careful with platform dependencies: do not use Windows API
+functions outside os/win32/, for example. Do not use SDL outside of
+hw/sdl/.
+
+Tests for OS in configure.ac and use for example `IS_WINDOWS` instead of
+the preprocessor `_WIN32`. The #defines can be used to identify the OS
+if necessary. Try to avoid this if possible. Only consider them in hw/ or os/.
+
+Hey, you there, OS X porter! Do not turn os/unix/ into an #ifdef shithole,
+just copy it to os/osx/ and hack away.
+
+Be careful of endianness!  The the macros in bits.h to do endianness
+conversion.  Never assume that integer types have a particular byte
+ordering.  Similarly, never assume that fields inside a structure
+are aligned in a particular way.  This is most relevant when reading
+or writing data to a file or a network pipe.
+
+For signed integers, you shouldn’t assume that `(i >> n)` is the same as
+`(i / (1 << n))`.  However, most processors handle bitshifts of signed
+integers properly, so it’s not a huge problem.
+
+## GNU GPL and licensing
+
+All code submitted to the project must be licensed under the GNU GPLv2 or a
+compatible license.

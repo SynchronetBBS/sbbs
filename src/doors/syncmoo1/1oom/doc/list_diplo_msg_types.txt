@@ -1,0 +1,111 @@
+Because of the large number of message types in diplomat.lbx, they are
+documented here instead of in format_lbx.txt.
+
+The different message types and numbers of variations are, in order:
+
+ 0) EMPTY:            0 variations (all-0 block)
+ 1) Accept tribute:  10 variations
+
+ 2) Praise - ongoing trade:       9 variations
+ 3) Praise - enemy-of-my-enemy:   5 variations
+
+# Warnings before declaring war
+ 4) Warning - spying:             6 variations
+ 5) EMPTY:                        0 variations
+ 6) Warning - sabotage:           8 variations
+ 7) EMPTY:                        0 variations
+ 8) Warning - military buildup:   9 variations
+ 9) Warning - destroyed ships:   12 variations
+10) Warning - attacked colony:   12 variations
+11) Warning - bioweapons:         7 variations
+12) Warning - stop expanding:     6 variations
+
+13) War - warning ignored:   14 variations
+
+# First contact messages for different leader personalities.
+# Not sure if the order is completely right.
+14) First contact - Xenophobic:   4 variations
+15) First contact - Ruthless:     4 variations
+16) First contact - Aggressive:   4 variations
+17) First contact - Erratic:      4 variations
+18) First contact - Pacifist:     4 variations
+19) First contact - Honrable:     5 variations
+
+20) Ambassador unavailable (war):     4 variations
+21) Ambassador unavailable (peace):   5 variations
+
+22) Friendly greeting:     4 variations
+23) Unfriendly greeting:   5 variations
+
+24) Propose NAP:                            4 variations
+25) Propose alliance:                       5 variations
+26) Propose trade:                          3 variations
+27) Break alliance with other:              4 variations
+28) Offer bounty:                           5 variations
+29) Offer tech trade:                       4 variations
+30) Offer peace:                            6 variations
+31) Reject deal:                            9 variations
+32) Break treaty (war of expansion):        5 variations
+
+# The diplomat rejects a deal due to bad behavior by the player
+33) Reject deal - past treaties broken:     5 variations
+34) Reject deal - spying:                   5 variations
+35) EMPTY:                                  0 variations
+36) Reject deal - sabotage:                 5 variations
+37) EMPTY:                                  0 variations
+38) Reject deal - military buildup:         5 variations
+39) Reject deal - destroyed ships:          5 variations
+40) Reject deal - attacked colony:          5 variations
+41) Reject deal - bioweapons:               5 variations
+
+# Threatening to break treaties because of ...
+42) Threat - sppying:            6 variations
+43) EMPTY:                       0 variations
+44) Threat - sabotaging:         5 variations
+45) EMPTY:                       0 variations
+46) Threat - military buildup:   5 variations
+47) Threat - destroyed ships:    5 variations
+48) Threat - attacked colony:    5 variations
+49) Threat - bioweapons:         4 variations
+
+# Actually breaking treaties because of ...
+50) Break - sppying:            4 variations
+51) EMPTY:                      0 variations
+52) Break - sabotaging:         5 variations
+53) EMPTY:                      0 variations
+54) Break - military buildup:   5 variations
+55) Break - destroyed ships:    5 variations
+56) Break - attacked colony:    5 variations
+57) Break - bioweapons:         6 variations
+
+58) Give bounty:   5 variations
+
+# More war declarations
+59) War - final war:   9 variations
+60) War - other:       6 variations
+61) War - erratic:     7 variations
+
+# Accepting deals
+62) Accept - NAP:                         5 variations
+63) Accept - alliance:                    5 variations
+64) Accept - trade:                       5 variations
+65) Accept - peace:                       5 variations
+66) Accept - because of tribute:          4 variations
+67) Accept - declare war on other:        6 variations
+68) Accept - break alliance with other:   5 variations
+
+69) Ignore threat:                               7 variations
+70) Cave to threat - stop frontier war/spying:   5 variations
+71) Cave to threat - give tribute:               5 variations
+72) Cave to threat - give tech tribute:          5 variations
+
+73) Player broke treaty:   6 variations
+74) Ambassador recalled:   9 variations
+75) No tech wanted:        6 variations
+
+76) Request to honor alliance:                   2 variations
+77) Player refused request to honor alliance:    4 variations
+78) Player accepted request to honor alliance:   6 variations
+
+79) Warning - council vote:  11 variations
+80) Praise - council vote:    8 variations

@@ -1,0 +1,378 @@
+MOO1 .gam file format
+
+All offsets are hex.
+All values are little endian unless otherwise noted.
+
+Some values are recalculated before they are used.
+
+
+save game file (0xe69c)
+offset  sz          description
+0       0xb8*0x6c   planet data
+4da0    0x1c*0x104  fleets enroute to planets
+6a10    0x12*0x64   transports enroute to planets
+7118    0xdd4*6     empire/tech/orbitfleet data
+(
++0      0x332       empire data
++332    0x60        tech data
++392    0x10        empire data (cont)
++3a2    0x18*0x6c   fleet at orbit data
++dc2    0x12        empire data (cont)
+)
+c410    0x468*6     ship design and research
+de80    0x336       game events
+e1b6    2           num fleets enroute
+e1b8    2           num transports enroute
+e1ba    15*6        emperor names
+e232    2           year (0 -> 2299)
+e234    2           ? always 1, never used
+e236    2           selected planet
+e238    2           nebula_num : galaxy_size -> 0..1, 1..3, 2..3, 2..4
+e23a    2*4         nebula_type : rnd_1_n(10)-1
+e242    2*4         nebula x : rnd_1_n(galaxy maxx - 0x46)+4
+e24a    2*4         nebula y : rnd_1_n(galaxy maxy - 0x46)+4
+e252    2*4*4       nebula x0 tbl
+e272    2*4*4       nebula x1 tbl
+e292    2*4*4       nebula y0 tbl
+e2b2    2*4*4       nebula y1 tbl
+e2d2    2           players
+e2d4    2           difficulty (0..4)
+e2d6    2           galaxy stars
+e2d8    2           galaxy size (0..3)
+e2da    2           galaxy w (6 8 a c)
+e2dc    2           galaxy h (4 6 7 9)
+e2de    2           galaxy maxx : (w-1) * 0x1c + 0x14
+e2e0    2           galaxy_maxy : (h-1) * 0x20 + 0x10
+e2e2    2*0x6c      seen owner
+e3ba    2*0x6c      seen pop
+e492    2*0x6c      seen bases
+e56a    2*0x6c      seen factories
+e642    0x44        current ship design
+e686    2           end : 0=none, 1=exile, 2=won, 3=final war
+e688    2           winner (0..5)
+e68a    2           guardian killer (player id or 1000)
+e68c    2           election held : 0/1
+e68e    0xe         have new ships: bool vector with 1 bit per planet
+
+
+planet data (0xb8)
+offset  sz  description
+0       12  name
+c       2   xpos
+e       2   ypos
+10      2   star type (0..5)
+12      2   look (0, 6)
+14      2   frame (0..49)
+16      2   ? unused (0..4?)
+18      2   rocks: 0=0, 1=1..4, 2=5..7
+1a      2   max pop1 (base size)
+1c      2   max pop2 (base size modified by soil enrichment tech)
+1e      2   max pop3 (actual population maximum)
+20      2   type: 0=not habitable, 2=toxic, 3=inferno, 4=dead, 7=minimal, 8=desert, 9=steppe, 0xa=arid, 0xb=ocean, 0xd=terran
+22      2   battle background (0..4): index to space.lbx (+0x1a), 0 implies planet is in nebula
+24      2   infogfx: index to planets.lbx
+26      2   growth: 0=hostile, 1=nothing, 2=fertile
+28      2   special: 0=normal, 1=ultra poor, 2=poor, 3=artifacts, 4=rich, 5=ultra rich, 6=4xtech
+2a      2   BC towards eco project
+2c      2   BC towards next ship(s)
+2e      2   BC towards next factory
+30      4   reserve
+34      2   waste
+36      2   owner (0..5, 0xffff)
+38      2   previous owner (0..5, 0xffff)
+3a      2   population
+3c      2   population on previous turn
+3e      2   factories
+40      2   production after maint
+42      2   total production (n)
+44      2*6 inbound troopers (0..300)
+50      2*5 slider % (ship, def, ind, eco, tech)
+5a      2   build ship (0..5, 6=star gate)
+5c      2   relocation: planet index number, normally index of planet itself
+5e      2   missile bases
+60      2   BC towards next missile base or shield
+62      2   BC to upgrade base
+64      2   have stargate: 0/1
+66      2   ? always 0, never used
+68      2   shield (5, 10, 15, 20)
+6a      2   BC towards shield
+6c      2   transport number
+6e      2   transport destination (planet index)
+70      1   population tenths
+72      2*5 slider lock
+7c      2*6 explored: 0/1
+88      2*6 within scanner range: 0/1
+94      2*6 within fuel range: 0/1, 2=with reserve
+a0      2   claimed by player (0..5, 0xffff)
+a2      2*6 total inbound troopers
+ae      2   a colonist operates N factories
+b0      2   BC towards industy refit
+b2      2   rebels (0..actual pop)
+b4      2   unrest: 0=no, 1=unrest, 3=rebellion
+b6      2   unrest reported: 0/1
+
+
+transports enroute entry (0x12)
+offset  sz  description
+0       2   owner (0 - 5, -1)
+2       2   x
+4       2   y
+6       2   destination as planetary index number
+8       2   population
+a       1*6 visible flag ; player N can see the transport
+10      1   speed
+11      1   ? always 0, never used
+
+
+fleet enroute entry (0x1c)
+offset  sz  description
+0       2   owner (0 - 5, -1)
+2       2   x
+4       2   y
+6       2   destination as planetary index number
+8       1   speed
+9       1   ? always 0, never used
+a       2*6 ship counts for 6 ship types
+16      1*6 visible flag ; player N can see the fleet
+
+
+fleet at orbit entry (0x18)
+offset  sz  description
+0       2*6 visible flag ; player N can see the fleet
+c       2*6 ship counts for 6 ship types
+
+
+empire data (0xdd4)
+offset  sz  description
+0       2   race (0=human, 1=mrrshan, 2=silicoid, 3=sakkra, 4=psilon, 5=alkari, 6=klackon, 7=bulrathi, 8=meklar, 9=darlok)
+2       2   banner (0=blue, 1=green, 2=purple, 3=red, 4=white, 5=yellow)
+4       2   trait1 (0..5)
+6       2   trait2 (0..5)
+8       2   AI turn p3 countdown (0..6)
+a       2   AI turn p2 countdown (0..20)
+c       2*6 empire within contact range: 0/1
+18      2*6 relation1 (init from relation2)
+24      2*6 relation2 (init from exe table * c)
+30      2*6 diplo type: ...
+3c      2*6 diplo value
+48      2*6 diplo param 1 (depends on type ; planet index or 0)
+54      2*6 diplo param 2 (depends on type)
+6c      2*6 trust
+78      2*6 broken treaty
+84      2*6 diplomatic blunder (0 = none, diplomat.lbx message type)
+90      2*6 tribute tech field
+9c      2*6 tribute tech
+a8      2*6 mood for treaty (non-aggression or alliance)
+b4      2*6 mood for trade
+c0      2*6 mood for tech trade
+cc      2*6 mood for peace treaty
+d8      2*6 treaty: 0=no, 1=non-aggression, 2=alliance, 3=war, 4=final war
+e4      2*6 trade (bc/year)
+f0      2*6 trade percent ( ..100)
+fc      2*6 AI next spy mode: 0=hide, 1=espionage, 2=sabotage
+108     2*6 ?
+114     2*6 ?
+120     2*6 ?
+138     2*6 audience; tech trade num
+144     2*6*6 audience; tech trade field
+18c     2*6*6 audience; tech trade tech
+1d4     2*6 incentive offer tech field
+1e0     2*6 incentive offer tech
+1ec     2*6 incentive offer BC
+1f8     2*6 audience; attacker of ally
+204     2*6 audience; ask break treaty with
+210     2*6 ?
+21c     2*6 attack bounty on player
+228     2*6 bounty collect for player (0/1)
+234     2*6 attack gift tech field
+240     2*6 attack gift tech
+24c     2*6 attack gift BC
+258     2*6 ?
+264     2*6 ?
+270     2*6 hatred
+27c     2*6 have met (0=no, 1=just, 2=introduced)
+288     2*6 established trade BC
+294     2*6 ?
+2a0     2   have planetary shield tech (0, 5, 10, 15, 20)
+2a4     2*6 spying percent in tenths
+2b0     2*6 spy fund left over after creating new spies
+2bc     2*6 ?
+2c8     2*6 spy mode: 0=hide, 1=espionage, 2=sabotage
+2d4     2   Security percentage in tenths
+2d6     2*6 spies
+2e2     2   Trade BC
+2e4     2   Ship maint BC
+2e6     2   Bases maint BC
+2ec     2   Spying maint BC
+2ee     2   Percentage to convert total production to actual
+2f0     4   Total maint BC (can be negative)
+2f8     4   Total empire production BC
+2f4     4   total reseach BC
+2fc     4   Reserve BC
+300     2   tax in tenths (0..200)
+302     2   best base shield
+304     2   best base computer
+306     2   best base weapon
+308     2   have sub space interdictor
+30a     2   antidote (0, 1, 2)
+30c     2   have colony tech for planet type N
+310     2   have eco restoration N (2, 3, 5, 10, 20)
+310     2   have terraform +N
+312     2   terraform cost per increase of 1
+314     2   have adv soil enrich
+316     2   have atmos terraforming
+318     2   have soil enrich
+31a     2   cost to increase pop by 1
+31e     2   have improved or advanced scanner
+320     2   have advanced scanner
+322     2   have hyperspace comm
+324     2   have stargates
+326     2   a colonist operates N factories
+32c     2   industrial waste scale (0, 2, 4, .. 10)
+32e     2   fuel range (3..10, 30)
+330     2   have combat transporter
+(332    0x6c tech data)
+39e     2   have engine
+3a0     2   number of ship designs
+(3a2    0x1c*0x6c   fleet at orbit data)
+dc2     2*6 spy report for each field
+dce     2   spy report year
+dd0     2   AI: colony ship index (or -1)
+dd2     2   AI: bomber ship index (or -1)
+
+
+tech data (0x6c)
+offset  sz  description
+0       2*6 Tech level %; Comp/Const/FF/Plan/Prop/Weap
+c       2*6 Tech slider percentage for 6 fields
+18      4*6 Current research investment in project in 6 fields
+30      2*6 Tech level of current research project in 6 fields
+3c      4*6 Full tech cost of current project in 6 fields
+54      2*6 Number of completed projects (including level 1) in 6 fields
+60      2*6 Tech slider lock for 6 fields
+
+
+ships and research data (0x468)
+offset  sz      description
+0       0x44*6  ship design 0..5
+198     12*12   ship name list
+228     3*10*6  Limited Research List; 3 bytes per tier, 10 tiers per field, 6 fields
+2dc     60*6    completed research; 60 bytes per field (see tech data offs 54 above for number active)
+444     2*6     have reserve fuel
+450     2*6     year of the design (AI only)
+45c     2*6     total ship count
+
+
+ship design (0x44)
+offset  sz  description
+0       12  name
+c       8   ? unused
+14      2   ship cost
+16      2   space
+18      2   hull size (0..3)
+1a      2   look (0..152?)
+1c      2*4 weapon type (0..63)
+24      2*4 weapon num
+2c      2   engine (0..8)
+2e      4   number of engines
+32      2*3 special type (0..31)
+38      2   shield (0..11)
+3a      2   jammer (0..10)
+3c      2   computer (0..11)
+3e      2   armor (0..13)
+40      2   speed (0..8?)
+42      2   hit points
+
+
+ship name list (0x90)
+offset  sz  description
+0       12*12   names
+
+
+game events (0x336 at 0xde80)
+offset  sz  description
+0       2   year of last event
+2       2   ? always 30, never used
+4       2*20    event has happened (0/1)
+2c      2   have plague (0..3)
+2e      2   plague player
+30      2   plague planet
+32      2   plague value
+34      2   have quake event (0/1)
+36      2   quake player
+38      2   quake planet
+3a      2   have nova (0..3)
+3c      2   nova player
+3e      2   nova planet
+40      2   nova years
+42      2   nova value
+44      2   have accident (0..2)
+46      2   accident player
+48      2   accident planet
+4a      2   have assassination attempt (0/1)
+4c      2   assassination player2
+4e      2   assassination player
+50      2   have virus (0/1)
+52      2   virus player
+54      2   virus tech field
+56      2   have comet (0..3)
+58      2   comet player
+5a      2   comet planet
+5c      2   comet years
+5e      2   comet HP
+60      2   comet damage
+62      2   have pirates (0..3)
+64      2   ?
+66      2   pirates planet
+68      2   pirates HP
+6a      2   have derelict event (0/1)
+6c      2   derelict player
+6e      2   crystal exists (0..3)
+70      2   crystal x
+72      2   crystal y
+74      2   crystal counter
+76      2   crystal killer (0 or killer_player_id+1)
+78      2   crystal dest
+7a      2   crystal number of destroyed planets
+7c      2   amoeba exists (0..3)
+7e      2   amoeba x
+80      2   amoeba y
+82      2   amoeba counter
+84      2   amoeba killer (0 or killer_player_id+1)
+86      2   amoeba dest
+88      2   amoeba number of destroyed planets
+8a      2   have environment event (0/1)
+8c      2   environment planet
+8e      2   have rich event (0/1)
+90      2   rich planet
+92      2   have support BC event (0/1)
+94      2   support player
+96      2   have poor event (0/1)
+98      2   poor planet
+9a      2   have orion conqueror (0 or player_id+1)
+9c      2   orion planet index
+9e      2   have guardian
+a0      2*6 home planet index (-1, 0..107 ; -1 means player is dead)
+ac      2   report star colonization status (0..4)
+ae      ?   ?
+ec      2   coup player (-1, 0..5)
+ee      2   new tech num
+f0      2*15    new tech field
+10e     2*15    new tech tech index
+12c     2*15    new tech source (0=research, 1=spy, 2=found, 3=choose/AI spy, 4=trade)
+14a     2*15    new tech val1 : giver race or source planet ruins (>0) or artifact planet (<0) or -1000 for Orion
+168     2*15    new tech val2 : race stolen from
+186     2*15    new tech can frame (0/1)
+1a4     2*6 new ships
+1f2     2*6 spies caught (my)
+1fe     2*6 spies caught (their)
+28e     2*6 ceasefire (years)
+2e2     20  help show (0/1 * 20)
+2f6     2   build finished number (0..20)
+2f8     20  build finished planet index
+30c     20  build finished type: 0=?, 1=eco1, 2=eco2, 3=?
+320     2*6 voted for (-1, 0..5)
+32c     2   best eco restore
+32e     2   best waste reduce
+332     2   best robotic control
+334     2   best terraform

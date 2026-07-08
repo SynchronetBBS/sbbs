@@ -1,0 +1,54 @@
+################
+# 1oom_gfxconv #
+################
+
+1oom_gfxconv is a tool for converting GFX for use in PBX files.
+
+Usage:
+    1oom_gfxconv [OPTIONS] OUT.BIN IN.PCX|=WxHcC [INn.PCX]*
+    1oom_gfxconv -d IN.BIN
+Options:
+    -f       Make format 1 binary (only council.lbx item 1)
+    -i       All independent frames (winlose.lbx items 1-...)
+    -e N     Extra independent frame (embassy.lbx items 2-...)
+    -n N     Set number of frames (default N = number of input files)
+    -l N     Set loop frame
+    -p F N   Include palette ; First, Number of colors
+    -d       Dump converted file for debugging
+
+The filenames "=WxHcC" are interpreted to be images of size W x H consisting of
+the color C.
+
+If the number of frames set with -n N is greater than the amount of input files,
+the missing files are assumed to be the same as the last given file.
+
+Examples:
+    1oom_gfxconv title.bin title_screen.pcx
+        - convert title_screen.pcx to title.bin
+
+    1oom_gfxconv shipfoo.bin z_ships2_49_00*.pcx
+        - convert the animation in z_ships2_49_00*.pcx to shipfoo.bin
+          (hopefully your CLI will sort the files properly)
+
+    1oom_gfxconv -p 0 256 foo.bin foo.pcx
+        - convert foo.pcx to foo.bin
+        - include the full palette
+
+    1oom_gfxconv -e 2 out.bin z_embassy_04_*.pcx
+        - convert the animation in z_embassy_04_*.pcx to out.bin
+          (hopefully your CLI will sort the files properly)
+        - declare frame 2 as independent (as in embassy.lbx items 2-...)
+
+    1oom_gfxconv -n 48 emptyvortex.bin =320x200c13
+        - create 48 frames of 320x200 color 13 to emptyvortex.bin
+
+    1oom_gfxconv -d out.bin
+        - dump out.bin for debugging
+
+You may be interested in using 1oom_lbxview to save the original items as
+template PCX files.
+
+FAQ:
+Q: ...wait. PCX?
+A: Yes. Suitably 1993. If your graphics program does not support it,
+   go get GraphicsMagick or something.

@@ -1,0 +1,271 @@
+1oom-v1.11.8
+------------
+
+This release simplifies the ruleset and disables some rules
+that change balance without compelling justification:
+- Extended Reloc Range and Population Tenths Fix removed
+
+Some rules from patch 1.3a are now always active:
+- Oracle Fix
+- Ship Scanner Fix
+- 4th Colony Curse Fix
+- Guardian Repair Fix
+- No '?' cursor
+- All types of weapons can be used to bombard planets
+- Fixed damage type from missiles/torpedoes during bombing
+- Minor game/UI fixes
+
+Disclaimer:
+This version uses the 1.11.7 engine, which is currently
+far behind the vanilla version in terms of authenticity.
+
+1oom-v1.11.7
+------------
+
+Game:
+- Fixed minor bug related to audience
+- Disabled game_num_slider_respects_locks (deprecated)
+Allegro4:
+- Fixed version check
+Main menu:
+- Added option to disable UI delay (experimental)
+- Added option to reset to default settings
+
+1oom-v1.11.6
+------------
+
+Galaxy generator:
+- Fixed planets in nebulae in new games
+
+1oom-v1.11.5
+------------
+
+SDL2:
+- Implemented -nograbmouse mode for absolute mouse
+UI:
+- Fixed a small graphical bug
+
+1oom-v1.11.4
+------------
+
+This release inherits the simplified aspect ratio correction implementation
+from Chocolate Doom (SDL2):
+
+- Now only 2 modes are available, with and without correction
+- In absolute mouse mode, adjusted mouse resolution to match aspect ratio
+- Added correction of integer arithmetic of mouse jumps
+- Aspect ratio correction is now enabled by default
+
+1oom-v1.11.3
+------------
+
+- SDL1 is no longer supported and disabled by default
+- Minor SDL2 fixes
+- Fixed several significant bugs in the game engine to match the original
+
+1oom-v1.11.2
+------------
+
+This release corrects several fundamental differences from the original:
+
+- The behavior of ships with bio-weapons has been restored
+- The code responsible for landing troops on a planet with zero population
+  has been restored
+- Restored original bugs in the pathfinding code on the battlefield
+- Fixed the location of rocks near the planet
+- Restored the sound effect of the Ships button on the star map
+- Several AI diplomacy fixes moved to Classic+
+
+1oom-v1.11.1
+------------
+
+This release contains a significant number of experimental features:
+
+- Added several global research cost modifiers
+- Main menu slightly sorted
+- First tech cost fix (Classic+ AI) is now a separate rule
+- Added the ability to lock the slider for all colonies of the same type
+- Added some fixes for slider_respect_locks rule (still experimental)
+- The distance hint has been replaced with a new Alt+o mode
+- Added the ability to rename planets and ship designs
+- Smoother scrolling of the star map is now optional
+- Added experimental ability to load saves from MOO 1.3
+- Added some minor corrections
+
+1oom-v1.11
+----------
+
+This release is almost completely identical to v1.10.6:
+
+- lbxview: Fixed window update
+- All 4 pages of the video buffer are now allocated as a solid piece of memory
+  similar to the original, but this version has no padding, which may lead to
+  rare, subtle graphic artifacts (will be fixed in future releases)
+- Reverted one cumbersome fix related to video buffer overflow
+- Some hidden AI fixes moved to Classic+ AI
+- The Git tree has been cleaned and refined to make future changes easier
+
+1oom-v1.10.6
+------------
+
+- Fixed a critical issue in Classic+ AI
+
+1oom-v1.10.5
+------------
+
+- Planets UI: Added max population column as in 1.7.6
+- AI: 4th colony curse fix is now a separate rule
+- AI: Doom stack fix is now a separate rule and disabled by default
+
+1oom-v1.10.4
+------------
+
+This release adds the ability to change sliders for all colonies
+at once in one click:
+
+- Added dialog box code
+- Holding the Ctrl key while locking a colony slider allows you to lock sliders
+  for all colonies at once
+- Holding the Alt or Ctrl key while clicking on the frame with the slider value
+  text allows you to adjust sliders for all colonies at once
+- Most smart slider manipulations now depend on the slider_respects_locks rule,
+  with the exception of the new technologies UI
+
+1oom-v1.10.3
+------------
+
+This release is a general cleanup and improvement to the
+game_update_eco_on_waste code:
+
+- The old implementation of waste_adjust_fix has been replaced
+with a simpler and clearer one, based on the original code
+- Added slider_respects_locks rule, which prevents the functions
+above from changing locked sliders
+
+The changes above are in preparation for the introduction of
+more extensive game controls. Bug reports are welcome.
+
+1oom-v1.10.2
+------------
+
+- Added challenge mode (special difficulty map)
+- Improved distance indicator
+
+1oom-v1.10.1
+------------
+
+- Pressing g on the battlefield screen shows the grid
+
+1oom-v1.10.0
+------------
+
+This release is the second interim release since v1.8.1, the goal
+of which is to clean the code as much as possible from additions
+that cause a large number of errors or are outdated.
+
+List of positive changes:
+- the RNG is non-deterministic by default
+- implemented Improved Robotic Controls behavior close to OSG
+- F4/F5 now cycles through enemy fleets, like in v1.7.6
+- Eco slider can show "MAX", like in v1.7.6
+- the map on the Map screen is now clickable
+- added several vanilla rules that were "fixed" in v1.0
+- more hidden rules from v1.0 have been added to the menu
+- some smart features have been added/moved to cheats
+- simplified implementation of the message filter
+
+List of removed features after f1.8.1:
+- governor
+- extra menu (bottom-left corner)
+- (Ctrl-)1-9 to tag/recall planet
+- screenshot
+- Game screen options overhaul
+- X11 HW (unfinished)
+
+Many simple changes of the same type or rollbacks of erroneous
+changes have been grouped to simplify work with the history.
+Some fixes have been confirmed by reverse engineering and are now
+explicitly marked as 1oom typo fixes.
+
+Bug reports and suggestions are welcome.
+
+
+1oom-v1.9
+---------
+
+This release by default uses the original rules of the game as much
+as 1oom v1.0 allowed and even better.
+
+Summary:
+- Fixed several cosmetic differences
+- Fixed broken rebellions
+- Rules settings menu options have been improved
+- The bug that causes AI to build an obscenely large fleet is now
+  a separate rule
+- Added a few minor interface features
+- Removed several minor 1oom interface features that were outdated,
+  conflicted, or interfered with the development of the project
+- A significant amount of useless 1oom code has been removed
+
+Bug reports are welcome.
+
+
+1oom-f1.8.1
+-----------
+
+This release is special. For the first time since the release of v1.0,
+a large number of corrections have been verified with the original.
+In addition, some fundamental new improvements have been made.
+
+Summary:
+- Classic AI is now competitive and selected by default
+- Restored vanilla Tutor map
+- Random number generator changed to vanilla
+- Fixed the chances of rich/poor planets when creating a galaxy
+- Fixed autoretreat behavior
+- The vanilla copy protection dialog has been restored
+- Added optional fix for scanners on ships
+- Fixed numerous visual differences from vanilla
+- Fixed several minor bugs
+
+The main goal of the project is now explicitly stated on the main page.
+Bug reports are welcome.
+
+
+1oom-fork-v1.8.0
+----------------
+
+Disclaimer:
+This release is an interim release.
+I'm posting this to give people the opportunity to enjoy a relatively
+high quality build that still contains many bugs inherited from v1.0.
+Previous 1oom-fork versions are now considered defective.
+It is recommended to close the old version of 1oom-fork and delete
+config file if you want to run this version.
+Saved games from an older version of 1oom-fork may not work or refuse to load
+if you try them from this version.
+
+This (v1.8.0) version of fork does not change save game format compared to the
+point when it's forked from Tapani-fork (9b9cf63...)
+This version of fork is based on reworked version of Tapani-fork mixed with
+reworked and filtered version of 1oom-fork-v1.7.6 (1oom-v1.0-rev-5)
+The commit history is now can be used as detailed changelog
+
+Summary:
+- most of the 1oom-fork commits were rewritten from scratch with improvements
+- removed or rewrote most of the later commits from the Tapani branch,
+  with special attention to those that added bugs or problems for developers
+- it is now possible to use absolute mouse in DOSBox on Andriod by enabling
+  absolute mouse in both the game and DOSBox configurations
+- most rule bug fixes is enabled and can only be disabled via PBX
+- added UI Presets
+This is not a complete list of changes
+
+Bug reports are welcome
+
+1oom-fork-v1.7.6
+----------------
+
+The list of changes for this version of the fork is irrelevant, since
+subsequent versions reject or modify most of the changes in order to
+improve the quality of the project and its compliance with the original.

@@ -1,0 +1,43 @@
+1oom PBX file format
+
+All offsets and sizes are hex.
+All values are little endian unless otherwise noted.
+
+
+PBX header
+
+offset  sz          description
+0       8           magic header "1oomPBX "
+8       4           version (== 1)
+c       4           number of items
+10+I*4  4           PBX item I offset
+
+
+PBX item
+
+offset  sz          description
+0       4           length of item
+4       2           type of item
+                    - 0: PBX name
+                    - 1: PBX description
+                    - 2: LBX patch
+                    - 3: string patch
+                    - 4: number patch
+                    - 5: LBX partial overwrite
+6       2           item index
+                    - 2, 5: LBX item number to patch
+                    - 3: string table index
+                    - 4: number table index
+8       14          item ID
+                    - 0: "PBX NAME"
+                    - 1: "PBX DESC"
+                    - 2, 5: LBX file to patch, lowercase (f.ex "ships.lbx")
+                    - 3: string ID
+                    - 4: number ID
+20      length      data
+                    - 0: ASCII
+                    - 1: ASCII
+                    - 2: data
+                    - 3: ASCII / MOO1
+                    - 4: 32 bit number, little endian
+                    - 5: 32 bit offset + data (length - 4 bytes)

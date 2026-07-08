@@ -1,0 +1,314 @@
+1oom save file format version 0
+
+All offsets and sizes are hex.
+All values are little endian unless otherwise noted.
+
+
+Save header (0x40 bytes)
+
+offset  sz      description
+0       8       magic header "1oomSAVE"
+8       4       version (== 0)
+c       4       (0, unused)
+10      14      save name
+24      1c      (0, unused)
+
+
+Save payload (? bytes)
+
+offset  sz      description
+40      1       number of players: @PLAYERS (2..6)
+41      1       player is AI (bitmask)
+42      1       player refused council ruling (bitmask)
+43      1       AI type ID
+44      3       (0, unused)
+47      1       active player when save was made
+48      1       difficulty (0..4)
+49      1       galaxy size (0..3)
+4a      1       galaxy width
+4b      1       galaxy height
+4c      1       galaxy stars; @STARS (width * height; 24, 48, 70, 108)
+4d      2       galaxy max x
+4f      2       galaxy max y
+51      4       galaxy seed
+55      4       current RNG seed
+59      2       year (add 2299 for shown year)
+5b      2       number of fleets enroute: @FLEETS
+5d      2       number of transports enroute: @TRANSPORTS
+5f      1       end state: 0=none, 3=final war
+60      1       election winner (0..5, 6)
+61      1       election held (0/1)
+62      1       nebula num: @NEBULAS (0..4)
+
+
+(The rest of payload uses variable length tables and thus have no constant
+ offsets. The description is thus a bit different from the other format_*.)
+
+
+Nebula data (N = @NEBULAS)
+
+sz      description
+N*2     nebula x
+N*2     nebula y
+N*4*2   nebula x0
+N*4*2   nebula x1
+N*4*2   nebula y0
+N*4*2   nebula y1
+
+
+@PLAYERS * Emperor name
+
+sz      description
+15      emperor name (ASCIIz)
+
+
+@PLAYERS * Planet focused on
+
+sz      description
+1       selected planet index
+
+
+@STARS * Star data
+
+sz      description
+c       name (ASCIIz)
+2       x
+2       y
+1       star type (0..5)
+1       look (0, 6)
+1       frame (0..49)
+1       rocks: 0=0. 1=1..4, 2=5..7
+2       max pop1 (base size)
+2       max pop2 (base size modified by soil enrichment tech)
+2       max pop3 (actual population maximum)
+1       planet type: 0=not habitable, 1=radiated, 2=toxic, 3=inferno, 4=dead, 5=tundra, 6=barren, 7=minimal, 8=desert, 9=steppe, a=arid, b=ocean, c=jungle, d=terran, e=gaia
+1       battle background (0..4): index to space.lbx (+0x1a), 0 implies planet is in nebula
+1       infogfx: index to planets.lbx
+1       growth: 0=hostile, 1=nothing, 2=fertile
+1       special: 0=normal, 1=ultra poor, 2=poor, 3=artifacts, 4=rich, 5=ultra rich, 6=4xtech
+2       BC towards eco project
+2       BC towards next ship(s)
+2       BC towards next factory
+4       reserve
+2       waste
+1       owner (0..5, 6)
+1       previous owner (0..5, 6)
+1       claimed by player (0..5, 6)
+2       population
+2       population on previous turn
+2       factories
+5*2     slider % (ship, def, ind, eco, tech)
+5*1     slider lock (0/1)
+1       build ship (0..5, 6=star gate)
+1       relocation: planet index number, normally index of planet itself
+2       missile bases
+2       BC towards next missile base or shield
+2       BC to upgrade base
+1       have stargate (0/1)
+1       shield (5, 10, 15, 20)
+2       BC towards shield
+2       transport number ; population to transport
+1       transport destination (planet index)
+1       population tenths
+1       explored by player (bitmask)
+1       player fleet unrefueled (bitmask)
+4       (0, unused)
+1       a colonist operates N factories
+2       BC towards industy refit
+2       rebels (0..actual pop)
+1       unrest: 1=unrest, 3=rebellion
+1       unrest reported (0/1)
+1       build finished (bitmask; bits: 0=factories, 1=eco1, 2=eco2, 3=stargate, 4=shield, 5=ship)
+5       (0, unused)
+
+
+@PLAYERS * @STARS * Seen data
+
+sz      description
+1       owner (0..5, 6)
+2       population
+2       missile bases
+2       factories
+
+
+@FLEETS * Fleet enroute data
+
+sz      description
+1       owner (0..5, 6)
+2       x
+2       y
+1       destination as planetary index number
+1       bits 6..0: speed, bit 7: retreat
+6*2     number of ships
+
+
+@TRANSPORTS * Transport data
+
+sz      description
+1       owner (0..5, 6)
+2       x
+2       y
+1       destination as planetary index number
+1       speed
+2       population
+
+
+@PLAYERS * Empire/tech/orbit data (N = @PLAYERS)
+
+sz      description
+1       race (0=human, 1=mrrshan, 2=silicoid, 3=sakkra, 4=psilon, 5=alkari, 6=klackon, 7=bulrathi, 8=meklar, 9=darlok)
+1       banner (0=blue, 1=green, 2=purple, 3=red, 4=white, 5=yellow)
+1       trait1 (0..5)
+1       trait2 (0..5)
+1       AI turn p3 countdown (0..6)
+1       AI turn p2 countdown (0..20)
+1       in contact with empire (bitmask)
+1       contact broken with empire (bitmask)
+4       (0, unused)
+N*2     relation1
+N*2     relation2
+N*1     diplo type: ...
+N*2     diplo value
+N*2     diplo param 1 (depends on type)
+N*2     diplo param 2 (depends on type)
+N*2     trust
+N*1     broken treaty
+N*2     diplomatic blunder
+N*1     tribute tech field
+N*1     tribute tech
+N*2     mood for treaty (non-aggression or alliance)
+N*2     mood for trade
+N*2     mood for tech trade
+N*2     mood for peace treaty
+N*1     treaty; 0=no, 1=non-aggression, 2=alliance, 3=war, 4=final war
+N*2     trade BC
+N*2     trade percent (..100)
+N*1     AI next spy mode: 0=hide, 1=espionage, 2=sabotage
+N*1     incentive offer tech field
+N*1     incentive offer tech
+N*2     incentive offer BC
+N*2     if bit 0 is 0: attack gift BC ; if bit 0 is 1: bits: 15..8=tech, 4..1=field
+N*2     bits 11..8: attack bounty on player (0..5, 6) ; bits 3..0: bounty collect (0..5, 6)
+N*2     hatred
+N*2     have met (0=no, 1=just, 2=introduced)
+N*2     established trade BC
+N*2     spying percent in tenths
+N*2     spy fund left over after creating new spies
+N*1     spy mode: 0=hide, 1=espionage, 2=sabotage
+2       security percentage in tenths
+N*2     spies
+4       reserve BC
+2       tax in tenths (0..200)
+1       best base shield
+1       best base computer
+1       best base weapon
+1       a colonist operates N factories
+6*1     tech field percent ; tech level %
+6*2     tech field slider %
+6*1     tech field slider lock (0/1)
+6*4     tech field investment
+6*1     tech field project
+6*4     tech field project cost
+6*2     tech field number of completed projects: @TECHCOMPL
+1       number of ship designs: @SHIPDNUM
+?       Fleet orbit list: (S = @SHIPDNUM)
+        sz  description
+        1   planet index I or ff=list end
+        S*2 number of ships at planet I orbit  (omitted for list end)
+N*6*1   spy report for each field
+N*2     spy report year
+1       AI: colony ship index (or -1)
+1       AI: bomber ship index (or -1)
+
+
+@PLAYERS * Ship/research data (S = @SHIPDNUM)
+
+sz      description
+S*29    number of ship designs * Ship design: $SHIPDESIGN
+        sz  description
+        c   name
+        2   cost
+        2   space
+        1   hull (0..3)
+        1   look (0..146)
+        4*1 weapon type (0..63)
+        4*1 weapon num
+        1   engine (0..8)
+        4   number of engines
+        3*1 special type (0..31)
+        1   shield (0..11)
+        1   jammer (0..10)
+        1   computer (0..11)
+        1   armor (0..13)
+        1   speed (0..8?)
+        2   hit points
+6*a*3   limited research list (data is tech ID)
+6*3c    completed research (data is tech ID; table length is @TECHCOMPL)
+6*1     (0, unused)
+6*2     year of ship design
+6*4     (0, unused)
+
+
+@PLAYERS * Current ship design
+
+sz      description
+29      Ship design (see $SHIPDESIGN above)
+
+
+Event data (N = @PLAYERS)
+
+sz      description
+2       year of last event
+3       event has happened (bitmask of 20 bits)
+1       diplo message subtype (-1..13)
+16      (0, unused)
+1       have plague (0..3)
+1       plague player
+1       plague planet
+4       plague value
+1       have nova (0..3)
+1       nova player
+1       nova planet
+1       nova years
+4       nova value
+1       have accident
+1       accident planet
+1       have comet (0..3)
+1       comet player
+1       comet planet
+1       comet years
+2       comet HP
+2       comet damage
+1       have pirates (0..3)
+1       pirates planet
+2       pirates HP
+9       Crytal: $MONSTER
+        sz  description
+        1   exists (0..3)
+        2   x
+        2   y
+        1   killer (0..5, 6)
+        1   destination
+        1   counter
+        1   number of destroyed planets
+9       Amoeba (see $MONSTER above)
+1       Orion planet index
+1       have guardian (0/1)
+N*1     home planet (0..107, 255 means player is dead)
+1       reported stars
+N*6*4   number of new ships
+N*N*2   number of caught spies
+N*N*2   ceasefire (years)
+N*10    help shown (bitmask of 16 bits) + 14 unused bytes
+N*2     build finished num
+N*1     voted for (0..5, 6)
+N*1     best eco restore
+N*1     best waste reduce
+N*1     best robotic control
+N*1     best terraform
+
+
+Save footer
+
+sz      description
+4       magic footer "\nEnd"

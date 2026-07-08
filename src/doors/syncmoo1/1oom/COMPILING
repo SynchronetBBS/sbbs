@@ -1,0 +1,249 @@
+########
+# 1oom #
+########
+
+1. Options
+===========
+
+The configuration options:
+    --enable-static         enable static builds (experimental)
+    --enable-modebug        add debugging options
+    --without-readline      do not try to use the readline library
+                            (used by 1oom_cmdline)
+    --without-samplerate    do not try to use libsamplerate
+    --disable-tools         disables extra tools
+                            (do not build 1oom_pbxmake, 1oom_gfxconv, ...)
+    --disable-uiclassic     disables classic UI
+                            (do not build 1oom_classic_*)
+    --disable-uicmdline     disables cmdline UI
+                            (do not build 1oom_cmdline)
+    --enable-hwsdl1         enables SDL1 HW
+                            (build 1oom_*_sdl1)
+    --disable-hwsdl1audio   disables SDL1 HW audio support
+                            (no audio for 1oom_*_sdl1)
+    --disable-hwsdl1gl      disables SDL1 HW OpenGL support
+                            (no graphics resizing for 1oom_*_sdl1)
+    --disable-hwsdl2        disables SDL2 HW
+                            (do not build 1oom_*_sdl2)
+    --disable-hwsdl2audio   disables SDL2 HW audio support
+                            (no audio for 1oom_*_sdl2)
+    --disable-hwalleg4      disables Allegro 4 HW
+                            (do not build 1oom_*_alleg4)
+
+Parameters for configure:
+    CFLAGS
+    SDL1_CFLAGS
+    SDL1_LIBS
+    SDL1MIXER_LIBS
+    SDL2_CFLAGS
+    SDL2_LIBS
+    SDL2MIXER_LIBS
+
+
+2. Preparing build tools
+=========================
+
+You'll need autotools, make and a C99 compiler.
+You will most likely also want to have SDL development libraries.
+Both SDL 1.2.x and SDL2.x are supported.
+OpenGL libraries are highly recommended.
+
+2.1. Compiling on Linux
+===============================
+
+If you want to use SDL1:
+    aptitude install libsdl1.2-dev libsdl-mixer1.2-dev
+
+If you prefer SDL2:
+    aptitude install libsdl2-dev libsdl2-mixer-dev
+
+For better audio quality, also get libsamplerate.
+    aptitude install libsamplerate-dev
+    
+For custom sound fonts support:
+    aptitude install libfluidsynth-dev
+	
+You are now ready to configure and build 1oom as described in Section 3.
+
+2.2. Compiling on Windows
+==========================
+
+To compile 1oom, you need a GNU build environment.
+
+2.2.1. Compiling with MinGW
+----------------------------
+
+Note: This method is deprecated. Follow 2.2.2 if you want FluidSynth support.
+
+Download and install mingw-get-setup.exe from: https://osdn.net/projects/mingw/releases/
+
+This will install a graphical package manager. Ensure that you have the latest autoconf,
+automake and make versions available and also MSYS.
+
+Download the SDL2 development libarary for MinGW from:
+    https://github.com/libsdl-org/SDL/releases
+
+Download the SDL2 mixer development library for MinGW from:
+    https://github.com/libsdl-org/SDL_mixer/releases
+
+Then unzip the two archives you downloaded.
+
+Then, run:
+    C:\MinGW\msys\1.0\msys.bat
+
+which gives you a UNIX-style command prompt with the correct PATHs already configured.
+
+Then, go to the directory where you extracted SDL2 and enter:
+    make native
+
+Do the same for SDL2 Mixer.
+
+You are now ready to configure and build 1oom as described in Section 3. When
+running configure, pass the following options:
+    ../configure --disable-hwalleg4
+
+To run 1oom, place the *32-bit* versions of SDL2.dll and SDL2_mixer.dll in the
+same directory as the binary.
+
+2.2.2. Compiling with MSYS2
+----------------------------
+
+https://kilgoretroutmaskreplicant.gitlab.io/plain-html/howto_build_windows.html
+
+For Windows 7, you can download the old version of MSYS2 here:
+    https://github.com/msys2/msys2-installer/releases/tag/2022-10-28
+
+Note: Add the --enable-static flag for static build when you run ./configure.
+
+To run 1oom with FluidSynth support, before building you need to install
+the appropriate fluidsynth package in MSYS2 and copy the fluidsynth DLLs to
+same directory as 1oom binary (even for static build).
+
+3. Compiling 1oom
+==================
+
+The following needs to be run from the 1oom folder.
+
+If you checked this out with git, do this first:
+    autoreconf -fi
+
+Make a build directory:
+    mkdir build-native
+    cd build-native
+
+Then the usual:
+    ../configure
+    make -j 3
+
+!!! You need the data files from the original Master of Orion to run 1oom. !!!
+
+Actual install step is not needed:
+    src/1oom_classic_sdl1 -data /path/to/moo
+    src/1oom_classic_sdl2 -data /path/to/moo
+
+
+4. Cross-compiling
+===================
+
+Something like this may work:
+    mkdir build-win32d
+    cd build-win32d
+    ../configure --host=i686-w64-mingw32.shared
+
+If the libraries are not found, try something like:
+    ../configure --host=i686-w64-mingw32.shared
+        SDL1_CFLAGS="`i686-w64-mingw32.shared-sdl-config --cflags`" \
+        SDL1_LIBS="`i686-w64-mingw32.shared-sdl-config --libs`" \
+        SDL1MIXER_LIBS="`i686-w64-mingw32.shared-pkg-config --libs SDL_mixer`" \
+        SDL2_CFLAGS="`i686-w64-mingw32.shared-sdl2-config --cflags`" \
+        SDL2_LIBS="`i686-w64-mingw32.shared-sdl2-config --libs`" \
+        SDL2MIXER_LIBS="`i686-w64-mingw32.shared-pkg-config --libs SDL2_mixer`"
+
+Good luck!
+
+4.1. Unix to win32
+===================
+
+This is a quick guide to make a cross compiler based on MXE: http://mxe.cc/
+
+First we build MXE:
+    git clone https://github.com/mxe/mxe.git
+    cd mxe
+    make MXE_TARGETS='i686-w64-mingw32.shared' gcc sdl sdl_mixer sdl2 sdl2_mixer libsamplerate readline
+(or i686-w64-mingw32.static if you want static binaries, or maybe both)
+
+Edit your .bashrc, .profile or equivalent and add/edit:
+    export PATH="/MXE_path/usr/bin:$PATH"
+(If you are unsure of the MXE_path, run pwd.)
+Run the export line on the current terminal to set the PATH for this session.
+
+Now to cross compile 1oom:
+    cd ~/path/to/1oom
+    mkdir build-win32d
+    cd build-win32d
+    ../configure --host=i686-w64-mingw32.shared && make -j 3
+
+If you want to make distributable packages of .shared compiles:
+    mkdir extrabindist_win32
+    cp /MXE_path/usr/i686-w64-mingw32.shared/bin/{SDL*,libgcc_s_sjlj-1.dll,libsamplerate.dll} extrabindist_win32
+(the list may be incomplete; run the EXEs in wine and see the error messages)
+
+
+4.2. Unix to msdos
+===================
+
+This is a quick guide to cross compile a MSDOS binary.
+
+First get a cross compiler:
+    git clone https://github.com/andrewwutw/build-djgpp.git
+    ...
+(or just grab a prebuilt one from the GitHub page)
+
+Edit your .bashrc, .profile or equivalent and add/edit:
+    export PATH="/djgpp_path/bin:$PATH"
+Run the export line on the current terminal to set the PATH for this session.
+
+Get allegro-4.2.3.1.tar.gz from http://liballeg.org/
+    tar xaf allegro-4.2.3.1.tar.gz
+    cd allegro-4.2.3.1
+
+"Fix" it for djgpp:
+    ./fix.sh djgpp
+
+Apply patches:
+    patch -p1 < /path/to/1oom/doc/ext/allegro-4.2.3.1-p1-modern-xmake.patch
+    patch -p1 < /path/to/1oom/doc/ext/allegro-4.2.3.1-p2-remove-mouse-cursor.patch
+    patch -p1 < /path/to/1oom/doc/ext/allegro-4.2.3.1-p3-disable-unused.patch
+
+Edit xmake.sh and check that the paths and compiler name are correct.
+    ./xmake.sh
+
+Copy the header files to the cross compiler:
+    cp -r include/* /opt/djgpp/i586-pc-msdosdjgpp/include
+
+Copy the library file to the cross compiler:
+    cp lib/djgpp/lib*a /opt/djgpp/i586-pc-msdosdjgpp/lib
+
+Now to cross compile 1oom:
+    cd ~/path/to/1oom
+    mkdir build-msdos
+    cd build-msdos
+    ../configure --host=i586-pc-msdosdjgpp && make -j 3
+
+
+5. Building distributable packages
+===================================
+
+Build a tarball requiring no Autotools:
+    make dist
+
+Some OS targets support building binary distributions. The bindist scripts
+use git for version information if .git/ exists, otherwise the version is
+"vUnknown". Files from extrabindist_common/ and extrabindist_$OS/ are copied
+to the distribution.
+
+Build a binary distribution:
+    make -j 3 && make bindist
+
+Build a binary distribution zip:
+    make -j 3 && make bindistzip

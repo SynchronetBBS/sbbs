@@ -1,0 +1,53 @@
+################
+# 1oom_lbxview #
+################
+
+1oom_lbxview_* is a tool for viewing LBX files.
+
+See doc/usage_common.txt for the data/user file locations and most of the
+command-line arguments.
+
+Rest of the command-line arguments:
+    -font FONT.BIN       Set 8x8 font filename
+    <N>                  Start in LBX file number <N> at item 0
+    <N> <M>              Start in LBX file number <N> at item number <M>
+
+1oom_lbxview needs an external font file. From the error output:
+!! You need a 8x8 1bpp font (2048 bytes) file to use this program.
+!! If you have one ready elsewhere, use -font <file> to use it.
+!! If you have DOSBox and base64;
+!! 1) Generate a font dumper:  (source in doc/ext/fontdump.asm)
+!!  echo uDARtwPNEAa6MwExybQ8zSFyGonDuQAIieoftEDNIXIMOch1CLQ+zSGwAHMCsAG0TM0hci5iaW4A | base64 -d > fontdump.com
+!! 2) Run fontdump.com in DOSBox to generate the font file r.bin.
+!! 3) Run lbxview again with -font r.bin
+
+Hoykeys:
+- Middle click or Ctrl-F10 to grab/ungrab input (no reason, mouse is unused)
+- Ctrl-Esc to quit
+- Ctrl-Plus/Minus to adjust sfx volume
+- Ctrl-Shift-Plus/Minus to adjust music volume
+- Alt-Enter to toggle full screen mode
+
+General keys:
+- Up/Down/Pageup/Pagedn: move the cursor
+- Esc: back out
+- 0..9: set palette N
+- w/a/s/d: change x/y offset, rotation angle, ...
+- f: fade out music
+
+Keys while outside of LBX:
+- Enter: select LBX file
+
+Keys while in LBX:
+- e: extract item as z_$LBXNAME_$ITEMNUM.bin
+
+Keys while in audio LBX:
+- Enter: play sfx/music
+- Shift-Enter: save item as z1.wav/z1.mid
+
+Keys while in gfx LBX:
+- Shift-Enter: save current image as z0.pcx
+- Ctrl-Enter: save all frames as z_$LBXNAME_$ITEMNUM_$FRAME.pcx
+- c: toggle clear before draw
+- q: cycle rotation test modes
+- z: cycle UI scaling test modes

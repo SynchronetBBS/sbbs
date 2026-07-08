@@ -1,0 +1,78 @@
+# This is a PBXIN file.
+# It enables most of the optional MOO1 bug fixes.
+# Use "1oom_pbxmake pbxin_fixbugs.txt fixbugs.pbx" to make the PBX file.
+# Then "1oom_classic_sdl1 -file fixbugs.pbx" to use it.
+
+0,"Fix MOO1 bugs"
+1,"Enables most of the optional MOO1 bug fixes.\nAlso tweaks some clearly bug-like things such as Guardian ADC and starting ship costs."
+
+# Give Guardian Advance Damage Control on impossible.
+# MOO1 has Automated Repair (but shows ADC) on hard and nothing on impossible.
+# The MOO1 code is along the lines of:
+#   if (difficulty == hard) { special2 = ADC; } else if (difficulty == hard) { special2 = AR; }
+#   if (difficulty == hard) { repair = 15; } else if (difficulty == hard) { repair = 30; }
+# This is clearly a bug.
+4,guardian_special2,3,16,26
+4,guardian_repair,4,30
+
+# The amount of engines and thus costs of the starting ship designs are wrong.
+4,startship_engines,0,2,27,110,85,100
+4,startship_cost,0,8,14,74,65,570
+
+# The 2500 factories limit is too low for Meklars.
+4,max_factories,0,2700
+
+# Silicoids have most of the tech useless to them not appear in their research tree.
+# However, Advanced Eco Restoration and Advanced Soil Enrichment can still appear.
+# This must be an oversight.
+4,ngt_pl_silicoid,24,1
+4,ngt_pl_silicoid,30,1
+
+# Apply the industrial accident event only to colonies that have some industry.
+4,accident_chk_factories,0,1
+
+# See doc/list_pbxnum.txt for description of the rest of the fixes.
+4,ai_trans_range_fix,0,0
+4,ai_4_colony_curse_fix,0,1
+4,ai_first_tech_cost_fix,0,1
+4,doom_stack_fix,0,1
+4,bt_wait_no_reload,0,1
+4,bt_precap_tohit,0,1
+4,bt_no_tohit_acc,0,1
+4,bt_oracle_fix,0,1
+4,news_orion,0,1
+4,weapon_list_max,0,64
+4,aud_bounty_give,0,1
+4,aud_update_tech,0,1
+4,update_on_load,0,0
+4,newtech_adjust_fix,0,1
+4,orbital_bio_fix,0,1
+4,orbital_weap_any,0,1
+4,orbital_weap_4,0,1
+4,orbital_torpedo,0,1
+4,orbital_comp_fix,0,1
+4,combat_trans_fix,0,1
+4,stargate_redir_fix,0,1
+4,trans_redir_fix,0,1
+4,first_tech_rp_fix,0,1
+4,waste_calc_fix,0,1
+4,waste_adjust_fix,0,1
+4,slider_respects_locks,0,1
+4,pop_tenths_fix,0,0
+4,factory_cost_fix,0,0
+4,eco_slider_slack,0,0
+4,reset_tform_to_max,0,0
+4,soil_rounding_fix,0,1
+4,leaving_trans_fix,0,1
+4,hidden_child_labor_fix,0,1
+4,extended_reloc_range,0,1
+4,colonized_factories_fix,0,1
+4,cond_switch_to_ind_fix,0,1
+4,slider_eco_done_fix,0,1
+4,ship_scanner_fix,0,1
+4,ai_fleet_cheating_fix,0,1
+
+# Disabled fixes. Remove the # in front of 4 to enable.
+#4,aud_ask_break_nap,0,1
+#4,retreat_redir_fix,0,1
+#4,monster_rest_att,0,1

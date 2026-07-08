@@ -1,0 +1,98 @@
+(Much of this text is stolen/edited from Chocolate Doom.)
+
+1oom has been designed around a careful and deliberate philosophy that
+attempts to recreate the original (“Vanilla”) DOS executables for
+Master of Orion. This document describes some of that philosophy and
+the reasoning behind it.
+
+This document is descriptive, not proscriptive.
+
+# Vanilla behavior
+
+Ideally 1oom aims to recreate the behavior of the Vanilla binaries,
+but different aspects of Vanilla behavior are held to varying degrees
+of importance. It can be imagined as different “tiers”
+of compatibility:
+
+ * The game and gameplay itself is of central importance. Here, the
+   Vanilla behavior ought to be maintained as accurately as possible.
+   This includes the look, feel and sound.
+ * The surrounding aspects of the game that aren’t part of the central
+   gameplay experience can be extended as long as there’s a good
+   reason and Vanilla behavior is respected.
+
+“Vanilla” is defined as:
+
+ * Master of Orion v1.3.
+
+Compatibility with older versions of the DOS binaries is out of scope.
+
+# Compatibility
+
+1oom aims to be compatible with Vanilla MOO1 in several different ways.
+Examples are:
+
+ * Data file compatibility: the original data files (LBX) are used.
+   No additional data files are required or provided.
+ * Bug compatibility: the aim is to emulate compatibility of the
+   original game down to bugs that were present in the DOS
+   executables. Most bugs are fixed, but the AI behaviour is
+   maintained as closely as possible.
+ * Savegame file compatibility: 1oom provides a tool to convert savegames
+   to/from Vanilla format.
+
+# Exceptions
+
+1oom differs from Vanilla MOO1 in a number of ways. Here are some
+examples of situations where changes are considered acceptable:
+
+ 1. Vanilla behavior can be broken that is harmful, eg. can damage the
+    player’s computer, or is just outright misleading. For example:
+
+    - Vanilla has crashes that force the user to reboot the machine.
+
+ 2. Supporting obsolete technology is not a goal: it’s considered
+    acceptable that 1oom does not support every type of hardware
+    from 1993. However, 1oom should aim to recreate the functionality
+    in a modern way. Examples of technologies that aren’t supported are:
+
+    - No 286 version.
+
+ 3. Fixes from the unofficial patch 1.40m which do not alter the Vanilla
+    behaviour much may be included unconditionally. Examples:
+
+    - Psilon leader "Zygot  " name correction.
+
+A good litmus test of when it’s acceptable to break from Vanilla
+behavior is to ask the question: “Although this is Vanilla behavior,
+is there anyone who would want this?”
+
+# New features
+
+While 1oom recreates the Vanilla behaviour, it also extends it:
+
+ * The "classic" UI (1oom_classic_*) will always remain reasonably close to
+   the one in the DOS binaries, but alternative UIs are within the scope.
+   The UI can be scaled to allow the player to see more of the galaxy at once.
+   New/improved UI features are documented and enabled using appropriate
+   flags in the configuration file.
+ * The "Classic" AI will always remain reasonably close to the one in the
+   DOS binaries, but alternative AIs are within the scope.
+ * The "Classic+" AI will always remain somewhat close to the one in the
+   DOS binaries, but includes small fixes (some from the unofficial patch).
+ * Doom-like file patching is supported via PBX files.
+   PBX files can be used for enabling fixes for Vanilla bugs.
+ * Multiplayer! (only local for now)
+
+# Other philosophical aspects
+
+1oom aims for maximal portability. That includes running on many
+different CPUs, different operating systems and different devices
+(ie. not just a desktop machine with a keyboard and mouse).
+
+1oom does not need to be installed. The only required data files are the
+LBX files from the original game. The other data files are the savegame,
+configuration and log files.
+
+1oom is and will always remain Free Software. It will never
+include code that is not compatible with the GNU GPL.

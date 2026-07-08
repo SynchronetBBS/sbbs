@@ -1,0 +1,149 @@
+################
+# 1oom_classic #
+################
+
+1oom_classic_* replicate the 1993 UI.
+
+See doc/usage_common.txt for the data/user file locations and command-line
+arguments.
+
+The UI controls like the original. Consult the game manual and the readme.txt
+from v1.3. This document describes only the differences.
+
+New hotkeys:
+- Middle click or Ctrl-F10 to grab/ungrab input
+- Ctrl-Esc to quit (without saving)
+- Ctrl-[] to adjust sfx volume
+- Ctrl-Shift-[] to adjust music volume
+- Alt-[] to adjust window size
+- Alt-Enter to toggle full screen mode
+
+Unlike the original, 1oom does not autosave the "continue game" (save slot 7)
+when starting a new game or every N turns. It only saves it when quitting the
+game via Game -> Quit or when F10 is pressed while in the "control screen" /
+"galaxy movement screen". 1oom does autosave the "new game" (save slot 9)
+when starting a new game.
+An incorrect answer in the copy protection dialog does not delete save slot 7.
+
+The config file item "ui.uiscale" (set via the -uiscale command-line option)
+is an int scaling factor for the whole UI except galaxy movement screen map.
+The default value is 1 for that classic 320x200 feeling. Larger values allow
+more of the galaxy to be viewed without scrolling. Mouse wheel can be used
+to adjust the scaling of the galaxy movement screen map.
+
+The following new UI features are always enabled/available:
+- The main menu now allows you to change game settings
+- Random race / banner
+- Custom Game screen allows setting opponent race/banner/names and AI/human flag
+- Custom Game screen allows local multiplayer
+- Lowercase allowed in save names
+- Load Game screen uses numbers as hotkeys for slots
+- Objects with hotkeys can be navigated to using cursor keys
+- Mouse wheel can be used to scroll lists and adjust many things
+- Mouse wheel on planet name in the galaxy movement screen changes planet
+- Space bar works as a generic dismiss message key (Continue, ...)
+- Ctrl and Alt works as a step modifier for the counters and sliders:
+  - in the main menu
+  - on the Design screen
+  - on the fleet sending screen
+  - on the galaxy movement screen
+  - on the transport sending screen
+  - on the Tech screen
+  - on the Races screen
+- Sending ships does not deselect the orbit fleet when holding Shift
+- F4/F5 can iterate over fleets of the same owner
+- In Tech screen +/- adjusts the current field slider
+- In Tech screen the L key locks the current slider
+- In Races screen the keys 1-5 correspond to clicking the portraits
+- In Specs screen the keys 1-6 correspond to clicking the scrap button
+- In Tech screen the keys 1-6 correspond to clicking the tech fields
+- Ind slider no longer shows 0.N/y when at max factories
+- Eco slider shows Clean/+N Pop past T-Form on a full planet
+- Bases can be scrapped by clicking on the Bases text
+- Clicking cycles selection of overlapping fleets
+- The following hotkeys are available for the star map whenever it makes
+  sense: Alt+m, Alt+c, Alt+r
+- Ctrl+r sets or unsets all reloc points similar to Alt+r
+- Planets can be searched for by pressing the / key
+- Planets and ship designs can be renamed by clicking on their name
+- The = key can be substituted by the # key
+- The + key can be substituted by the = key (if not conflicting)
+
+The config file item "ui.uiextra" (set via the -uiextra command-line option)
+or selecting the 1oom UI preset enables the following extra UI features:
+- Clicking the portraits in Races screen brings Report page
+- Report screen shows name of AI leaders, Map screen shows current year
+- Pressing + or - will show the slider when sending transport
+- Fleet deployment shows the amount of available ships
+- Alt+f shows friendly fleet routes
+- Alt+o (experimental) toggles text under stars
+- Buttons and slider are always visible when sending transport
+- Clicking a selected destination star again works as Accept for fleet send etc
+- The position of the build finished message is slightly improved.
+- Clicking on the picture of the planet in the upper right corner works for all
+  explored planets
+- The + sign is placed in the population text if it is possible to do
+  atmospheric terraforming or soil enrichment
+- Eco slider shows fractional population growth if growth is less than 10
+- Eco slider can show "MAX"
+- Nebula planets show "NEB" in their shields field and have a purple instead
+  of a red frame around their picture
+- After running through the Next turn phase and messages the game recenters on
+  your last planet of choice
+- Clicking on #, Name, etc on Planets screen sorts the list
+- Clicking on Station or ship names on Fleet screen sorts the list
+- The color of ship names on Planets screen is black
+- Added max population column on Planets screen
+- Pressing = in the galaxy movement screen also transfers reserve back and
+  the behavior is more predictable
+- Weapons can be filtered by type when modeling a ship
+  Click on Weapons to change the filter
+- Pressing the I key on the planet overview screen shows additional info
+  for inhabited planets
+- The entire map on the Map screen is now clickable (focus on the mouse cursor)
+- Pressing g on the battlefield screen shows the grid
+- Holding the Alt or Ctrl key while locking a colony slider allows you to lock
+  sliders for all colonies at once (or for all colonies of the same type)
+- Holding the Alt or Ctrl key while clicking on the frame with the slider value
+  text allows you to adjust sliders for all colonies at once
+
+The following features can be enabled in the configuration file or by
+selecting the 1oom UI preset:
+- The config file item "ui.fixbugs" fixes the following:
+  - Pressing = on the Tech screen adjusts only the unlocked sliders
+  - When using cursor keys, the mouse position is calculated taking into account
+    the mouse icon offset
+  - Fixed graphics bug with brighter stars drawn further away than dimmer ones
+- Continue, Undo and Initial saves can be chosen in the Load Game screen
+  ("ui.load_opts_extra")
+- Summary of forces shown before ship combat. New Auto and Retreat buttons
+  for space combat autoresolve ("ui.space_combat_autoresolve")
+- Galaxy movement screen scrolling range is expanded ("ui.sm_expanded_scroll")
+- The cursor key behavior is more intuitive (ui.kbd_cursor_keys_fix)
+- Improved behavior of the left mouse button ("ui.mouse_lmb_fix")
+- Pressing a hotkey does not trigger mouse warp ("ui.mouse_warp_disabled")
+- "ui.illogical_hotkey_fix" changes some illogical hotkeys:
+  - Starmap -> Fleet -> Specs ('v' -> 's')
+  - Starmap -> Fleet -> Scrap ('s' -> 'c')
+  - Starmap -> Reloc ('l' -> 'r')
+  - Starmap -> Races ('r' -> 'a')
+- "game.skipintro" skips intro video
+- The question mark cursor is disabled on the galaxy movement screen
+  ("ui.sm_no_question_mark_cursor")
+- Pressing the "Ships" button in the galaxy movement screen opens the ship
+  design selection screen ("ui.ui_sm_ships_enabled"):
+  - Holding down the Ctrl or Alt keys on the ship design selection screen
+    allows you to make selections for all colonies at once
+- Holding Alt toggles the cursor icon and the ability to select a fleet
+  ("ui.sm_explicit_cursor_context")
+
+Also:
+- "ui.sm_mouseover_focus" changes the target when hovering over a star
+- The keys UHJK scroll the galaxy movement screen map ("ui.sm_uhjk_scroll")
+- Mouse scrolls the galaxy movement screen map if touches edge
+  ("ui.sm_mouse_scroll")
+- "ui.sm_smoother_scrolling":
+  - Smoother galaxy movement screen scrolling
+  - Galaxy movement screen scrolling speed is adjustable ("ui.sm_scroll_speed")
+
+See doc/list_gamediff.txt for a list of differences in the game itself.

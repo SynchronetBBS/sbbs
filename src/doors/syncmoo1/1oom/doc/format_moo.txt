@@ -1,0 +1,22 @@
+MOO1 config.moo file format
+
+All offsets are hex.
+All values are little endian unless otherwise noted.
+
+
+config.moo file (0x9a)
+
+offset  sz          description
+0       2           music card
+2       2           music port
+4       2           music IRQ
+6       2           music ?
+8       2           SFX card
+a       2           SFX port
+c       2           SFX IRQ
+e       2           SFX DMA
+10      2           0=silent, 1=fx only, 2=music+fx
+12      2           0=keyboard only, 1=mouse
+14      2           game options : galaxy_size*10 + difficulty + opponents*100
+16      2*6         have save : 0/1
+22      0x14*6      save name

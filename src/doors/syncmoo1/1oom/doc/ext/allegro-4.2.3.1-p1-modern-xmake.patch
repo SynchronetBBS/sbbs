@@ -1,0 +1,239 @@
+From cb45ae601811d05dec9787d08be8dc8c1cc34616 Mon Sep 17 00:00:00 2001
+From: Kilgore Trout Mask Replicant <kilgore.replicant@tutanota.com>
+Date: Mon, 21 May 2018 17:49:35 +0300
+Subject: [PATCH] Fix djgpp target for modern(ish) gcc cross compile
+
+This patch assumes the cross compiler is named
+    i586-pc-msdosdjgpp-gcc
+and resides in
+    /opt/djgpp
+Edit the affected files afterwards if this is not true for you.
+
+The inline changes in alconfig.h needed to avoid hundreds of
+"multiple definitions of FOO" errors on linking even the most
+simple test C file. I suppose the semantics for __inline__ have
+changed somewhat since gcc 2.95.
+
+saved_ds in src/misc/vbeafex.c seems to be optimized away if not
+declared volatile. Another way to fix it would be editing the
+load_ds() asm block constraints.
+
+aldjgpp.h did not declare ALLEGRO_HAVE_INTTYPES_H which broke
+code including inttypes.h after allegro.h.
+
+makefile.dj setting CC = gcc is just bizarre.
+
+makefile.lst tests etc are dropped.
+
+makefile.tst uses "as". Use the one from the cross compiler instead.
+
+xmake.sh is edited for the assumed cross compiler.
+Edit as appropriate.
+---
+ include/allegro/internal/alconfig.h |  5 ++--
+ include/allegro/platform/aldjgpp.h  |  3 +--
+ makefile.dj                         |  6 ++---
+ makefile.lst                        | 46 +++++++++++++++++++------------------
+ makefile.tst                        |  4 ++--
+ src/misc/vbeafex.c                  |  2 +-
+ xmake.sh                            | 11 +++++----
+ 7 files changed, 39 insertions(+), 38 deletions(-)
+
+diff --git a/include/allegro/internal/alconfig.h b/include/allegro/internal/alconfig.h
+index 15f751f..7131175 100644
+--- a/include/allegro/internal/alconfig.h
++++ b/include/allegro/internal/alconfig.h
+@@ -79,15 +79,14 @@
+             static inline type name args code
+       #else
+          #define AL_INLINE(type, name, args, code)    \
+-            extern __inline__ type name args;         \
+-            extern __inline__ type name args code
++            static inline type name args code
+       #endif
+    #endif
+ 
+    #define AL_PRINTFUNC(type, name, args, a, b)    AL_FUNC(type, name, args) __attribute__ ((format (printf, a, b)))
+ 
+    #ifndef INLINE
+-      #define INLINE          __inline__
++      #define INLINE          inline
+    #endif
+ 
+    #if __GNUC__ >= 3
+diff --git a/include/allegro/platform/aldjgpp.h b/include/allegro/platform/aldjgpp.h
+index 9f1b0cf..02b74cd 100644
+--- a/include/allegro/platform/aldjgpp.h
++++ b/include/allegro/platform/aldjgpp.h
+@@ -32,8 +32,7 @@
+ #define ALLEGRO_DOS
+ #define ALLEGRO_I386
+ #define ALLEGRO_LITTLE_ENDIAN
+-#define ALLEGRO_GUESS_INTTYPES_OK
+-   /* inttypes.h and stdint.h not available in djgpp 2.02 */
++#define ALLEGRO_HAVE_INTTYPES_H
+ #define ALLEGRO_CONSOLE_OK
+ #define ALLEGRO_VRAM_SINGLE_SURFACE
+ #define ALLEGRO_USE_CONSTRUCTOR
+diff --git a/makefile.dj b/makefile.dj
+index 034f3ef..d5ec6a5 100644
+--- a/makefile.dj
++++ b/makefile.dj
+@@ -11,7 +11,7 @@
+ # -------- define some variables that the primary makefile will use --------
+ 
+ PLATFORM = djgpp
+-CC = gcc
++CC = i586-pc-msdosdjgpp-gcc
+ EXE = .exe
+ OBJ = .o
+ 
+@@ -330,7 +330,7 @@ include makefile.tst
+ # -------- finally, we get to the fun part... --------
+ 
+ define MAKE_LIB
+-   ar rs $(LIB_NAME) $(OBJECTS)
++   i586-pc-msdosdjgpp-ar rs $(LIB_NAME) $(OBJECTS)
+ endef
+ 
+ COMPILE_FLAGS = $(subst src/,-DALLEGRO_SRC ,$(findstring src/, $<))$(CFLAGS)
+@@ -409,7 +409,7 @@ endef
+ endif
+ 
+ define MAKE_PLUGIN_LIB
+-   ar rs $(PLUGIN_LIB) $(PLUGIN_OBJS)
++   i586-pc-msdosdjgpp-ar rs $(PLUGIN_LIB) $(PLUGIN_OBJS)
+ endef
+ 
+ define LINK_WITH_PLUGINS
+diff --git a/makefile.lst b/makefile.lst
+index 718a047..7663309 100644
+--- a/makefile.lst
++++ b/makefile.lst
+@@ -480,28 +480,30 @@ ALLEGRO_LIB_X_EXE_SOURCES = \
+ 	tools/x11/xkeymap.c \
+ 	tools/x11/xf2pcx.c
+ 
+-ALLEGRO_LIB_EXES = \
+-	setup/setup \
+-	tests/afinfo \
+-	tests/akaitest \
+-	tests/digitest \
+-	tests/filetest \
+-	tests/gfxinfo \
+-	tests/mathtest \
+-	tests/miditest \
+-	tests/play \
+-	tests/playfli \
+-	tests/test \
+-	tests/vesainfo \
+-	tools/colormap \
+-	tools/dat2c \
+-	tools/exedat \
+-	tools/pack \
+-	tools/rgbmap \
+-	tools/textconv
+-
+-ALLEGRO_LIB_CPP_EXES = \
+-	tests/cpptest
++ALLEGRO_LIB_EXES =
++# \
++#	setup/setup \
++#	tests/afinfo \
++#	tests/akaitest \
++#	tests/digitest \
++#	tests/filetest \
++#	tests/gfxinfo \
++#	tests/mathtest \
++#	tests/miditest \
++#	tests/play \
++#	tests/test
++#	tests/playfli \
++#	tests/vesainfo \
++#	tools/colormap \
++#	tools/dat2c \
++#	tools/exedat \
++#	tools/pack \
++#	tools/rgbmap \
++#	tools/textconv
++
++ALLEGRO_LIB_CPP_EXES =
++# \
++#	tests/cpptest
+ 
+ ALLEGRO_LIB_X_EXES = \
+ 	tools/x11/xkeymap \
+diff --git a/makefile.tst b/makefile.tst
+index 03f6656..a3d56f2 100644
+--- a/makefile.tst
++++ b/makefile.tst
+@@ -15,7 +15,7 @@ else
+ endif
+ 
+ test-mmx:
+-	as --defsym ASMCAPA_MMX_TEST=1 -o $(PLATFORM_DIR_U)/asmcapa$(OBJ) src/misc/asmcapa.s
++	i586-pc-msdosdjgpp-as --defsym ASMCAPA_MMX_TEST=1 -o $(PLATFORM_DIR_U)/asmcapa$(OBJ) src/misc/asmcapa.s
+ ifdef UNIX_TOOLS
+ 	echo "#define ALLEGRO_MMX" >> $(PLATFORM_DIR_U)/asmcapa.h
+ else
+@@ -23,7 +23,7 @@ else
+ endif
+ 
+ test-sse:
+-	as --defsym ASMCAPA_SSE_TEST=1 -o $(PLATFORM_DIR_U)/asmcapa$(OBJ) src/misc/asmcapa.s
++	i586-pc-msdosdjgpp-as --defsym ASMCAPA_SSE_TEST=1 -o $(PLATFORM_DIR_U)/asmcapa$(OBJ) src/misc/asmcapa.s
+ ifdef UNIX_TOOLS
+ 	echo "#define ALLEGRO_SSE" >> $(PLATFORM_DIR_U)/asmcapa.h
+ else
+diff --git a/src/misc/vbeafex.c b/src/misc/vbeafex.c
+index 2c09f6c..8748bf7 100644
+--- a/src/misc/vbeafex.c
++++ b/src/misc/vbeafex.c
+@@ -343,7 +343,7 @@ static void *map_to_process(void *linear, unsigned long limit)
+ 
+ 
+ /* for the save_ds() / load_ds() functions */
+-static unsigned short saved_ds = 0;
++static volatile unsigned short saved_ds = 0;
+ 
+ 
+ 
+diff --git a/xmake.sh b/xmake.sh
+index 00a893f..355c727 100755
+--- a/xmake.sh
++++ b/xmake.sh
+@@ -8,14 +8,14 @@
+ # 1. Put here the path on which the cross compiler and other tools
+ # for the target will be found with standard names.
+ 
+-XC_PATH=/usr/local/cross-tools/i386-mingw32msvc/bin:/usr/local/cross-tools/bin
+-XPREFIX=i386-mingw32msvc-
++XC_PATH=/opt/djgpp/bin
++XPREFIX=i586-pc-msdosdjgpp-
+ 
+ # 2. Put here the path for where things are to be installed.
+ # You should have created the lib, info and include directories
+ # in this directory.
+ 
+-INSTALL_BASE=/usr/local/cross-tools/i386-mingw32msvc
++INSTALL_BASE=/opt/djgpp/i586-pc-msdosdjgpp
+ 
+ # Set up some environment variables and export them to GNU make.
+ 
+@@ -23,10 +23,11 @@ CROSSCOMPILE=1
+ MINGDIR=$INSTALL_BASE
+ DJDIR=$INSTALL_BASE
+ NATIVEPATH=$PATH
+-PATH=$XC_PATH:$NATIVEPATH
++# PATH=$XC_PATH:$NATIVEPATH
+ 
+-export CROSSCOMPILE MINGDIR DJDIR NATIVEPATH PATH XPREFIX
++export CROSSCOMPILE MINGDIR DJDIR NATIVEPATH XPREFIX
+ 
+ # Then run make and pass through all command line parameters to it.
+ 
++#./configure --host=i586-pc-msdosdjgpp --enable-static
+ make $*
+-- 
+2.11.0
+

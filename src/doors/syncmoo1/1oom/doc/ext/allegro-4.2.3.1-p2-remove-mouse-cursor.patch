@@ -1,0 +1,712 @@
+From 0b270ad91907fd6ad6bdf533c65379b219af0155 Mon Sep 17 00:00:00 2001
+From: Kilgore Trout Mask Replicant <kilgore.replicant@tutanota.com>
+Date: Mon, 28 May 2018 01:58:19 +0300
+Subject: [PATCH] Remove mouse cursor
+
+---
+ src/mouse.c | 532 +-----------------------------------------------------------
+ 1 file changed, 3 insertions(+), 529 deletions(-)
+
+diff --git a/src/mouse.c b/src/mouse.c
+index ce4a5e6..1073547 100644
+--- a/src/mouse.c
++++ b/src/mouse.c
+@@ -72,63 +72,8 @@ int mouse_y_focus = 1;
+ 
+ #define MOUSE_OFFSCREEN    -4096       /* somewhere to put unwanted cursors */
+ 
+-
+-/* default mouse cursor sizes */
+-#define DEFAULT_SPRITE_W   16
+-#define DEFAULT_SPRITE_H   16
+-
+-/* Default cursor shapes */
+-/* TODO: add other shapes! */
+-static char mouse_arrow_data[DEFAULT_SPRITE_H * DEFAULT_SPRITE_W] =
+-{
+-   2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 1, 1, 1, 1, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 1, 2, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   2, 1, 2, 0, 2, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   0, 2, 0, 0, 2, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 
+-   0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 
+-   0, 0, 0, 0, 0, 2, 1, 1, 2, 0, 0, 0, 0, 0, 0, 0, 
+-   0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0
+-};
+-
+-static char mouse_busy_data[DEFAULT_SPRITE_H * DEFAULT_SPRITE_W] =
+-{
+-   0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0,
+-   0, 0, 0, 0, 0, 2, 2, 1, 1, 2, 2, 0, 0, 0, 0, 0,
+-   0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0,
+-   0, 0, 0, 2, 1, 1, 1, 0, 0, 1, 1, 1, 2, 0, 0, 0,
+-   0, 0, 2, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 2, 0, 0,
+-   0, 2, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 2, 0,
+-   0, 2, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 2, 0,
+-   2, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 2,
+-   2, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1, 2,
+-   0, 2, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 2, 0,
+-   0, 2, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 2, 0,
+-   0, 0, 2, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 2, 0, 0,
+-   0, 0, 0, 2, 1, 1, 1, 0, 0, 1, 1, 1, 2, 0, 0, 0,
+-   0, 0, 0, 0, 2, 1, 1, 1, 1, 1, 1, 2, 0, 0, 0, 0,
+-   0, 0, 0, 0, 0, 2, 2, 1, 1, 2, 2, 0, 0, 0, 0, 0,
+-   0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0
+-};
+-
+-
+-BITMAP *_mouse_pointer = NULL;         /* default mouse pointer */
+-
+-BITMAP *mouse_sprite = NULL;	       /* current mouse pointer */
+-
+ BITMAP *_mouse_screen = NULL;          /* where to draw the pointer */
+ 
+-static BITMAP *default_cursors[AL_NUM_MOUSE_CURSORS];
+-static BITMAP *cursors[AL_NUM_MOUSE_CURSORS];
+-
+ static int allow_system_cursor;        /* Allow native OS cursor? */
+ static int use_system_cursor = FALSE;  /* Use native OS cursor? */
+ static int got_hw_cursor = FALSE;      /* hardware pointer available? */
+@@ -136,125 +81,12 @@ static int hw_cursor_dirty = FALSE;    /* need to set a new pointer? */
+ static int current_cursor = MOUSE_CURSOR_ALLEGRO;
+ 
+ static int mx, my;                     /* previous mouse pointer position */
+-static BITMAP *ms = NULL;              /* previous screen data */
+-static BITMAP *mtemp = NULL;           /* double-buffer drawing area */
+-
+-#define SCARED_SIZE   16               /* for unscare_mouse() */
+-
+-static BITMAP *scared_screen[SCARED_SIZE]; 
+-static int scared_freeze[SCARED_SIZE]; 
+-static int scared_size = 0;
+ 
+ static int mouse_polled = FALSE;       /* are we in polling mode? */
+ 
+ static int mouse_semaphore = FALSE;    /* reentrant interrupt? */
+ 
+ 
+-
+-/* draw_mouse_doublebuffer:
+- *  Eliminates mouse-cursor flicker by using an off-screen buffer for
+- *  updating the cursor, and blitting only the final screen image.
+- *  newx and newy contain the new cursor position, and mx and my are 
+- *  assumed to contain previous cursor pos. This routine is called if 
+- *  mouse cursor is to be erased and redrawn, and the two position overlap.
+- */
+-static void draw_mouse_doublebuffer(int newx, int newy) 
+-{
+-   int x1, y1, w, h;
+-
+-   /* grab bit of screen containing where we are and where we'll be */
+-   x1 = MIN(mx, newx) - mouse_x_focus;
+-   y1 = MIN(my, newy) - mouse_y_focus;
+-
+-   /* get width of area */
+-   w = MAX(mx, newx) - MIN(mx, newx) + mouse_sprite->w+1;
+-   h = MAX(my, newy) - MIN(my, newy) + mouse_sprite->h+1;
+-
+-   /* make new co-ords relative to 'mtemp' bitmap co-ords */
+-   newx -= mouse_x_focus+x1;
+-   newy -= mouse_y_focus+y1;
+-
+-   /* save screen image in 'mtemp' */
+-   blit(_mouse_screen, mtemp, x1, y1, 0, 0, w, h);
+-
+-   /* blit saved image in 'ms' to corect place in this buffer */
+-   blit(ms, mtemp, 0, 0, mx-mouse_x_focus-x1, my-mouse_y_focus-y1,
+-			 mouse_sprite->w, mouse_sprite->h);
+-
+-   /* draw mouse at correct place in 'mtemp' */
+-   blit(mtemp, ms, newx, newy, 0, 0, mouse_sprite->w, mouse_sprite->h);
+-   draw_sprite(mtemp, mouse_sprite, newx, newy);
+-
+-   /* blit 'mtemp' to screen */
+-   blit(mtemp, _mouse_screen, 0, 0, x1, y1, w, h);
+-}
+-
+-END_OF_STATIC_FUNCTION(draw_mouse_doublebuffer);
+-
+-
+-
+-/* draw_mouse:
+- *  Mouse pointer drawing routine. If remove is set, deletes the old mouse
+- *  pointer. If add is set, draws a new one.
+- */
+-static void draw_mouse(int remove, int add)
+-{
+-   int normal_draw = (remove ^ add); 
+-
+-   int newmx = _mouse_x;
+-   int newmy = _mouse_y;
+-
+-   int cf = _mouse_screen->clip;
+-   int cl = _mouse_screen->cl;
+-   int cr = _mouse_screen->cr;
+-   int ct = _mouse_screen->ct;
+-   int cb = _mouse_screen->cb;
+-
+-   _mouse_screen->clip = TRUE;
+-   _mouse_screen->cl = _mouse_screen->ct = 0;
+-   _mouse_screen->cr = _mouse_screen->w;
+-   _mouse_screen->cb = _mouse_screen->h;
+-
+-   if (!_mouse_on) {
+-      newmx = MOUSE_OFFSCREEN;
+-      newmy = MOUSE_OFFSCREEN;
+-      mon = FALSE;
+-   }
+-   else
+-      mon = TRUE;
+-
+-   if (!normal_draw) {
+-      if ((newmx <= mx-mouse_sprite->w) || (newmx >= mx+mouse_sprite->w) ||
+-	  (newmy <= my-mouse_sprite->h) || (newmy >= my+mouse_sprite->h))
+-	 normal_draw = 1;
+-   }
+-
+-   if (normal_draw) {
+-      if (remove)
+-	 blit(ms, _mouse_screen, 0, 0, mx-mouse_x_focus, my-mouse_y_focus, mouse_sprite->w, mouse_sprite->h);
+-
+-      if (add) {
+-	 blit(_mouse_screen, ms, newmx-mouse_x_focus, newmy-mouse_y_focus, 0, 0, mouse_sprite->w, mouse_sprite->h);
+-	 draw_sprite(_mouse_screen, cursors[current_cursor], newmx-mouse_x_focus, newmy-mouse_y_focus);
+-      }
+-   }
+-   else
+-      draw_mouse_doublebuffer(newmx, newmy);
+-
+-   mx = newmx;
+-   my = newmy;
+-
+-   _mouse_screen->clip = cf;
+-   _mouse_screen->cl = cl;
+-   _mouse_screen->cr = cr;
+-   _mouse_screen->ct = ct;
+-   _mouse_screen->cb = cb;
+-}
+-
+-END_OF_STATIC_FUNCTION(draw_mouse);
+-
+-
+-
+ /* update_mouse:
+  *  Worker function to update the mouse position variables with new values.
+  */
+@@ -352,35 +184,6 @@ static void mouse_move(void)
+ 	 update_mouse();
+    }
+ 
+-   /* redraw pointer */
+-   if ((!freeze_mouse_flag) && (_mouse_screen) && ((mx != _mouse_x) || (my != _mouse_y) || (mon != _mouse_on))) {
+-      acquire_bitmap(_mouse_screen);
+-
+-      if (gfx_capabilities & GFX_HW_CURSOR) {
+-	 if (_mouse_on) {
+-	    gfx_driver->move_mouse(mx=_mouse_x, my=_mouse_y);
+-	    mon = TRUE;
+-	 }
+-	 else {
+-	    gfx_driver->move_mouse(mx=MOUSE_OFFSCREEN, my=MOUSE_OFFSCREEN);
+-	    mon = FALSE;
+-	 }
+-      }
+-      else {
+-#ifdef ALLEGRO_DOS
+-	 /* bodge to avoid using non legacy 386 asm code inside a timer handler */
+-	 int old_capabilities = cpu_capabilities;
+-	 cpu_capabilities = 0;
+-#endif
+-	 draw_mouse(TRUE, TRUE);
+-#ifdef ALLEGRO_DOS
+-	 cpu_capabilities = old_capabilities;
+-#endif
+-      }
+-
+-      release_bitmap(_mouse_screen);
+-   }
+-
+    mouse_semaphore = FALSE;
+ }
+ 
+@@ -408,24 +211,7 @@ END_OF_FUNCTION(_handle_mouse_input);
+  */
+ static BITMAP *create_mouse_pointer(char *data)
+ {
+-   BITMAP *bmp;
+-   int x, y;
+-   int col;
+-   
+-   bmp = create_bitmap(DEFAULT_SPRITE_W, DEFAULT_SPRITE_H);
+-
+-   for (y=0; y<DEFAULT_SPRITE_H; y++) {
+-      for (x=0; x<DEFAULT_SPRITE_W; x++) {
+-	 switch (data[x+y*DEFAULT_SPRITE_W]) {
+-	    case 1:  col = makecol(255, 255, 255);  break;
+-	    case 2:  col = makecol(0, 0, 0);        break;
+-	    default: col = bmp->vtable->mask_color; break;
+-	 }
+-	 putpixel(bmp, x, y, col);
+-      }
+-   }
+-
+-   return bmp;
++   return NULL;
+ }
+ 
+ 
+@@ -436,51 +222,6 @@ static BITMAP *create_mouse_pointer(char *data)
+  */
+ void set_mouse_sprite(struct BITMAP *sprite)
+ {
+-   BITMAP *old_mouse_screen = _mouse_screen;
+-   int am_using_sys_cursor = use_system_cursor;
+-
+-   if (!mouse_driver)
+-      return;
+-
+-   if (_mouse_screen && !am_using_sys_cursor)
+-      show_mouse(NULL);
+-
+-   if (sprite)
+-      mouse_sprite = sprite;
+-   else {
+-      if (_mouse_pointer)
+-	 destroy_bitmap(_mouse_pointer);
+-      _mouse_pointer = create_mouse_pointer(mouse_arrow_data);
+-      mouse_sprite = _mouse_pointer;
+-   }
+-
+-   cursors[MOUSE_CURSOR_ALLEGRO] = mouse_sprite;
+-   
+-   lock_bitmap((struct BITMAP*)mouse_sprite);
+-
+-   /* make sure the ms bitmap is big enough */
+-   if ((!ms) || (ms->w < mouse_sprite->w) || (ms->h < mouse_sprite->h) ||
+-       (bitmap_color_depth(mouse_sprite) != bitmap_color_depth(ms))) {
+-      if (ms) {
+-	 destroy_bitmap(ms);
+-	 destroy_bitmap(mtemp);
+-      }
+-
+-      ms = create_bitmap(mouse_sprite->w, mouse_sprite->h);
+-      lock_bitmap(ms);
+-
+-      mtemp = create_bitmap(mouse_sprite->w*2, mouse_sprite->h*2);
+-      lock_bitmap(mtemp);
+-   }
+-
+-   mouse_x_focus = 1;
+-   mouse_y_focus = 1;
+-
+-   if (!am_using_sys_cursor)
+-      hw_cursor_dirty = TRUE;
+-
+-   if (old_mouse_screen && !am_using_sys_cursor)
+-      show_mouse(old_mouse_screen);
+ }
+ 
+ 
+@@ -503,11 +244,6 @@ void select_mouse_cursor(int cursor)
+  */
+ void set_mouse_cursor_bitmap(int cursor, struct BITMAP *bmp)
+ {
+-   ASSERT(cursor >= 0);
+-   ASSERT(cursor != MOUSE_CURSOR_NONE);
+-   ASSERT(cursor < AL_NUM_MOUSE_CURSORS);
+-
+-   cursors[cursor] = bmp?bmp:default_cursors[cursor];
+ }
+ 
+ 
+@@ -544,45 +280,8 @@ int show_os_cursor(int cursor)
+ 
+    remove_int(mouse_move);
+ 
+-   gfx_capabilities &= ~(GFX_HW_CURSOR|GFX_SYSTEM_CURSOR);
+-   if (cursor != MOUSE_CURSOR_NONE) {
+-
+-      if (mouse_driver->enable_hardware_cursor) {
+-         mouse_driver->enable_hardware_cursor(TRUE);
+-      }
+-
+-      /* default system cursor? */
+-      if (cursor != MOUSE_CURSOR_ALLEGRO) {
+-         if (mouse_driver->select_system_cursor) {
+-            if (mouse_driver->select_system_cursor(cursor) != 0) {
+-               gfx_capabilities |= (GFX_HW_CURSOR|GFX_SYSTEM_CURSOR);
+-               r = 0;
+-               goto done;
+-            }
+-         }
+-         goto done;
+-      }
+-      else {
+-         /* set custom hardware cursor */
+-         if (gfx_driver) {
+-            if (gfx_driver->set_mouse_sprite) {
+-               if (gfx_driver->set_mouse_sprite(mouse_sprite, mouse_x_focus, mouse_y_focus))
+-                  goto done;
+-            }
+-            if (gfx_driver->show_mouse) {
+-               if (gfx_driver->show_mouse(screen, mouse_x, mouse_y))
+-                  goto done;
+-            }
+-            gfx_capabilities |= GFX_HW_CURSOR;
+-            r = 0;
+-            goto done;
+-         }
+-      }
+-   }
+-   else {
+-      if (gfx_driver && gfx_driver->hide_mouse)
+-         gfx_driver->hide_mouse();
+-   }
++   if (gfx_driver && gfx_driver->hide_mouse)
++     gfx_driver->hide_mouse();
+ 
+ done:
+    if (mouse_driver->timer_poll) 
+@@ -603,76 +302,6 @@ done:
+  */
+ void show_mouse(BITMAP *bmp)
+ {
+-   if (!mouse_driver)
+-      return;
+-
+-   remove_int(mouse_move);
+-
+-   /* Remove the mouse cursor */
+-   if (_mouse_screen) {
+-      acquire_bitmap(_mouse_screen);
+-
+-      if (gfx_capabilities & GFX_HW_CURSOR) {
+-	 gfx_driver->hide_mouse();
+-	 gfx_capabilities &= ~(GFX_HW_CURSOR|GFX_SYSTEM_CURSOR);
+- 	 hw_cursor_dirty = TRUE;
+-      }
+-      else
+-	 draw_mouse(TRUE, FALSE);
+-
+-      release_bitmap(_mouse_screen);
+-   }
+-
+-   _mouse_screen = bmp;
+-
+-   if (bmp && (current_cursor != MOUSE_CURSOR_NONE)) {
+-      acquire_bitmap(_mouse_screen);
+-
+-      /* Default system cursor? */
+-      if ((current_cursor != MOUSE_CURSOR_ALLEGRO) && allow_system_cursor) {
+-         if (mouse_driver && mouse_driver->select_system_cursor) {
+-            use_system_cursor = mouse_driver->select_system_cursor(current_cursor);
+-            if (use_system_cursor) {
+-               gfx_capabilities |= GFX_HW_CURSOR|GFX_SYSTEM_CURSOR;
+-               hw_cursor_dirty = FALSE;
+-               got_hw_cursor = TRUE;
+-            }
+-         }
+-      }
+-      else {
+-         use_system_cursor = FALSE;
+-      }
+-
+-      /* Custom hardware cursor? */
+-      if (hw_cursor_dirty) {
+-	 got_hw_cursor = FALSE;
+-
+-	 if ((gfx_driver) && (gfx_driver->set_mouse_sprite) && (!_dispsw_status))
+-	    if (gfx_driver->set_mouse_sprite(mouse_sprite, mouse_x_focus, mouse_y_focus) == 0)
+-	       got_hw_cursor = TRUE;
+-
+-	 hw_cursor_dirty = FALSE;
+-      }
+-      
+-      /* Try to display hardware (custom or system) cursor */
+-      if ((got_hw_cursor) && (is_same_bitmap(bmp, screen)))
+-	 if (gfx_driver->show_mouse(bmp, mx=mouse_x, my=mouse_y) == 0)
+-	    gfx_capabilities |= GFX_HW_CURSOR;
+-
+-      /* Draw cursor manually if we can't do that */
+-      if (!(gfx_capabilities & GFX_HW_CURSOR)) {
+-	 draw_mouse(FALSE, TRUE);
+-         use_system_cursor = FALSE;
+-      }
+-
+-      release_bitmap(_mouse_screen);
+-
+-      install_int(mouse_move, 10);
+-   }
+-   else {
+-      if (mouse_driver->timer_poll) 
+-	 install_int(mouse_move, 10);
+-   }
+ }
+ 
+ 
+@@ -685,24 +314,6 @@ void show_mouse(BITMAP *bmp)
+  */
+ void scare_mouse(void)
+ {
+-   if (!mouse_driver)
+-      return;
+-
+-   if ((is_same_bitmap(screen, _mouse_screen)) && (!(gfx_capabilities & GFX_HW_CURSOR))) {
+-      if (scared_size < SCARED_SIZE) {
+-	 scared_screen[scared_size] = _mouse_screen;
+-	 scared_freeze[scared_size] = FALSE;
+-      }
+-      show_mouse(NULL);
+-   }
+-   else {
+-      if (scared_size < SCARED_SIZE) {
+-	 scared_screen[scared_size] = NULL;
+-	 scared_freeze[scared_size] = FALSE;
+-      }
+-   }
+-
+-   scared_size++;
+ }
+ 
+ 
+@@ -716,49 +327,6 @@ void scare_mouse(void)
+  */
+ void scare_mouse_area(int x, int y, int w, int h)
+ {
+-   int was_frozen;
+-
+-   if (!mouse_driver)
+-      return;
+-
+-   if ((is_same_bitmap(screen, _mouse_screen)) && (!(gfx_capabilities & GFX_HW_CURSOR))) {
+-      was_frozen = freeze_mouse_flag;
+-      freeze_mouse_flag = TRUE;
+-
+-      if ((mx - mouse_x_focus < x + w) &&
+-	   (my - mouse_y_focus < y + h) &&
+-	   (mx - mouse_x_focus + mouse_sprite->w >= x) &&
+-	   (my - mouse_y_focus + mouse_sprite->h >= y)) {
+-
+-	 if (scared_size < SCARED_SIZE) {
+-	    scared_screen[scared_size] = _mouse_screen;
+-	    scared_freeze[scared_size] = FALSE;
+-	 }
+-
+-	 freeze_mouse_flag = was_frozen;
+-	 show_mouse(NULL);
+-      }
+-      else {
+-	 if (scared_size < SCARED_SIZE) {
+-	    scared_screen[scared_size] = NULL;
+-
+-	    if (was_frozen) {
+-	       scared_freeze[scared_size] = FALSE;
+-	       freeze_mouse_flag = was_frozen;
+-	    }
+-	    else
+-	       scared_freeze[scared_size] = TRUE;
+-	 }
+-      }
+-   }
+-   else {
+-      if (scared_size < SCARED_SIZE) {
+-	 scared_screen[scared_size] = NULL;
+-	 scared_freeze[scared_size] = FALSE;
+-      }
+-   }
+-
+-   scared_size++;
+ }
+ 
+ 
+@@ -769,22 +337,6 @@ void scare_mouse_area(int x, int y, int w, int h)
+  */
+ void unscare_mouse(void)
+ {
+-   if (!mouse_driver)
+-      return;
+-
+-   if (scared_size > 0)
+-      scared_size--;
+-
+-   if (scared_size < SCARED_SIZE) {
+-      if (scared_screen[scared_size])
+-	 show_mouse(scared_screen[scared_size]);
+-
+-      if (scared_freeze[scared_size])
+-	 freeze_mouse_flag = FALSE;
+-
+-      scared_screen[scared_size] = NULL;
+-      scared_freeze[scared_size] = FALSE;
+-   }
+ }
+ 
+ 
+@@ -795,14 +347,9 @@ void unscare_mouse(void)
+  */
+ void position_mouse(int x, int y)
+ {
+-   BITMAP *old_mouse_screen = _mouse_screen;
+-
+    if (!mouse_driver)
+       return;
+ 
+-   if (_mouse_screen)
+-      show_mouse(NULL);
+-
+    if (mouse_driver->position) {
+       mouse_driver->position(x, y);
+    }
+@@ -812,9 +359,6 @@ void position_mouse(int x, int y)
+    }
+ 
+    update_mouse();
+-
+-   if (old_mouse_screen)
+-      show_mouse(old_mouse_screen);
+ }
+ 
+ 
+@@ -854,7 +398,6 @@ void position_mouse_w(int w)
+  */
+ void set_mouse_range(int x1, int y1, int x2, int y2)
+ {
+-   BITMAP *old_mouse_screen = _mouse_screen;
+    ASSERT(x1 >= 0);
+    ASSERT(y1 >= 0);
+    ASSERT(x2 >= x1);
+@@ -863,16 +406,10 @@ void set_mouse_range(int x1, int y1, int x2, int y2)
+    if (!mouse_driver)
+       return;
+ 
+-   if (_mouse_screen)
+-      show_mouse(NULL);
+-
+    if (mouse_driver->set_range)
+       mouse_driver->set_range(x1, y1, x2, y2);
+ 
+    update_mouse();
+-
+-   if (old_mouse_screen)
+-      show_mouse(old_mouse_screen);
+ }
+ 
+ 
+@@ -915,11 +452,6 @@ void enable_hardware_cursor(void)
+    if ((mouse_driver) && (mouse_driver->enable_hardware_cursor)) {
+       mouse_driver->enable_hardware_cursor(TRUE);
+       allow_system_cursor = TRUE;
+-      if (is_same_bitmap(_mouse_screen, screen)) {
+-         BITMAP *bmp = _mouse_screen;
+-         show_mouse(NULL);
+-         show_mouse(bmp);
+-      }
+    }
+ }
+ 
+@@ -934,11 +466,6 @@ void disable_hardware_cursor(void)
+    if ((mouse_driver) && (mouse_driver->enable_hardware_cursor)) {
+       mouse_driver->enable_hardware_cursor(FALSE);
+       allow_system_cursor = FALSE;
+-      if (is_same_bitmap(_mouse_screen, screen)) {
+-         BITMAP *bmp = _mouse_screen;
+-         show_mouse(NULL);
+-         show_mouse(bmp);
+-      }
+    }
+ }
+ 
+@@ -994,13 +521,6 @@ static void set_mouse_etc(void)
+    if ((!mouse_driver) || (!gfx_driver))
+       return;
+ 
+-   if ((!_mouse_pointer) || 
+-       ((screen) && (_mouse_pointer) &&
+-	(bitmap_color_depth(_mouse_pointer) != bitmap_color_depth(screen))))
+-      set_mouse_sprite(NULL);
+-   else
+-      hw_cursor_dirty = TRUE;
+-
+    set_mouse_range(0, 0, SCREEN_W-1, SCREEN_H-1);
+    set_mouse_speed(2, 2);
+    position_mouse(SCREEN_W/2, SCREEN_H/2);
+@@ -1045,38 +565,15 @@ int install_mouse(void)
+    LOCK_VARIABLE(mouse_callback);
+    LOCK_VARIABLE(mouse_x_focus);
+    LOCK_VARIABLE(mouse_y_focus);
+-   LOCK_VARIABLE(mouse_sprite);
+-   LOCK_VARIABLE(_mouse_pointer);
+-   LOCK_VARIABLE(_mouse_screen);
+    LOCK_VARIABLE(mx);
+    LOCK_VARIABLE(my);
+-   LOCK_VARIABLE(ms);
+-   LOCK_VARIABLE(mtemp);
+    LOCK_VARIABLE(mouse_polled);
+    LOCK_VARIABLE(mouse_semaphore);
+-   LOCK_VARIABLE(cursors);
+-   LOCK_FUNCTION(draw_mouse_doublebuffer);
+-   LOCK_FUNCTION(draw_mouse);
+    LOCK_FUNCTION(update_mouse);
+    LOCK_FUNCTION(mouse_move);
+    LOCK_FUNCTION(poll_mouse);
+    LOCK_FUNCTION(mouse_needs_poll);
+    LOCK_FUNCTION(_handle_mouse_input);
+-   
+-   /* Construct mouse pointers */
+-   if (!default_cursors[MOUSE_CURSOR_ARROW])
+-      default_cursors[MOUSE_CURSOR_ARROW] = create_mouse_pointer(mouse_arrow_data);
+-   if (!default_cursors[MOUSE_CURSOR_BUSY])
+-      default_cursors[MOUSE_CURSOR_BUSY] = create_mouse_pointer(mouse_busy_data);
+-   if (!default_cursors[MOUSE_CURSOR_QUESTION])
+-      default_cursors[MOUSE_CURSOR_QUESTION] = create_mouse_pointer(mouse_arrow_data);
+-   if (!default_cursors[MOUSE_CURSOR_EDIT])
+-      default_cursors[MOUSE_CURSOR_EDIT] = create_mouse_pointer(mouse_arrow_data);
+-
+-   cursors[MOUSE_CURSOR_ARROW] = default_cursors[MOUSE_CURSOR_ARROW];
+-   cursors[MOUSE_CURSOR_BUSY] = default_cursors[MOUSE_CURSOR_BUSY];
+-   cursors[MOUSE_CURSOR_QUESTION] = default_cursors[MOUSE_CURSOR_QUESTION];
+-   cursors[MOUSE_CURSOR_EDIT] = default_cursors[MOUSE_CURSOR_EDIT];
+ 
+    if (system_driver->mouse_drivers)
+       driver_list = system_driver->mouse_drivers();
+@@ -1174,29 +671,6 @@ void remove_mouse(void)
+ 
+    mouse_polled = FALSE;
+ 
+-   destroy_bitmap(default_cursors[MOUSE_CURSOR_ARROW]);
+-   destroy_bitmap(default_cursors[MOUSE_CURSOR_BUSY]);
+-   destroy_bitmap(default_cursors[MOUSE_CURSOR_QUESTION]);
+-   destroy_bitmap(default_cursors[MOUSE_CURSOR_EDIT]);
+-
+-   cursors[MOUSE_CURSOR_ARROW] = default_cursors[MOUSE_CURSOR_ARROW] = NULL;
+-   cursors[MOUSE_CURSOR_BUSY] = default_cursors[MOUSE_CURSOR_BUSY] = NULL;
+-   cursors[MOUSE_CURSOR_QUESTION] = default_cursors[MOUSE_CURSOR_QUESTION] = NULL;
+-   cursors[MOUSE_CURSOR_EDIT] = default_cursors[MOUSE_CURSOR_EDIT] = NULL;
+-
+-   if (_mouse_pointer) {
+-      destroy_bitmap(_mouse_pointer);
+-      _mouse_pointer = NULL;
+-   }
+-
+-   if (ms) {
+-      destroy_bitmap(ms);
+-      ms = NULL;
+-
+-      destroy_bitmap(mtemp);
+-      mtemp = NULL;
+-   }
+-
+    _remove_exit_func(remove_mouse);
+ }
+ 
+-- 
+2.11.0
+

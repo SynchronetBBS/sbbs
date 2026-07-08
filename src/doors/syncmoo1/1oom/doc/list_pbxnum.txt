@@ -1,0 +1,268 @@
+This is an incomplete list of PBX number replacements.
+Run with -dumpnum for the full list without explanations.
+
+(name : range, default)
+
+deterministic : 0..1, 1
+  - Game is deterministic. Given the same input, the outcome
+    remains the same. Reloading a save and clicking Next turn will not get rid
+    of a nasty event. Setting this number to 0 makes sitting idle churn the
+    random number generator for producing different results.
+
+ai_trans_range_fix : 0..1, 0
+  - In MOO1 AI never checks range when sending transport.
+
+ai_4_colony_curse_fix :
+  - In MOO1 4th colony ship disables sending colony ships.
+
+ai_first_tech_cost_fix : 0..1, 0
+  - First tech costs are calculated using the same formula as the rest.
+    This fix significantly reduces the cost compared to MOO1.
+
+bt_turn_max : 1..65535, 50
+  - The number of battle turns before a forced retreat.
+
+bt_wait_no_reload : 0..1, 0
+  - Do not reload ship specials on Wait.
+    MOO1 reloads ship specials when Wait is pressed and the ship's turn resumes.
+    This means it is possible to fire the Pulsars, Black Hole Generator etc an
+    unlimited number of times. Automated repair also kicks in on every resume
+    from wait.
+
+bt_precap_tohit : 0..1, 0
+  - Add To Hit bonus before capping defense to 95%.
+    MOO1 adds To Hit bonuses after capping defense. This results in high defense
+    being less effective against high tech missiles.
+
+bt_no_tohit_acc : 0..1, 0
+  - Do not accumulate To Hit bonuses.
+    MOO1 accumulates weapon To Hit bonuses while firing the four weapons slots.
+    This results in Hyper-X or better missiles or Megabolt Cannon in slots 1..3
+    affecting the accuracy of a beam weapon in slot 4.
+
+bt_oracle_fix : 0..1, 0
+  - Fix the Oracle Interface.
+    In MOO1 the Oracle Interface does nothing to the target's shields. The AI
+    does take the target's (!) Oracle shield into account in damage esimates,
+    including those related to missiles.
+
+weapon_list_max : 0..64, 30
+  - Max. number of weapons shown in the ship design weapon list.
+
+news_orion : 0..1, 0
+  - Show news when Orion is first colonized.
+    MOO1 has a news item for conquering Orion but never shows it.
+
+aud_ask_break_nap : 0..1, 0
+  - Include Non-Aggression Pact in Break Alliance With Another Race.
+    The OSG claims that the audience dialog option is enabled if a NAP exists
+    between any of the opponents. This is a filthy lie.
+
+aud_bounty_give : 0..1, 0
+  - Give promised bounty.
+    The AI sometimes promises to give rewards for attacking an another player.
+    In MOO1 the AI says something along the lines of "thnx, take this FOO tech"
+    but never actually gives anything.
+
+aud_update_tech : 0..1, 0
+  - Update tech, range and visibility after audience.
+    MOO1 does this on save/load.
+
+update_on_load : 0..1, 1
+  - Readjust eco and update visibility on load.
+    In MOO1 saving and reloading affect game state.
+
+newtech_adjust_fix : 0..1, 1
+  - Do not reset the eco slider in the 25/50/75% dialog.
+
+monster_rest_att : 0..1, 0
+  - Allow attacking resting space monsters.
+    In MOO1 it is impossible to attack a space crystal or amoeba after the
+    turn it has reached a planet.
+
+orbital_bio_fix : 0..1, 0
+  - Remove passive bio damage
+    In MOO1, bio weapons reduce maximum population without orders
+
+orbital_weap_any : 0..1, 0
+  - Allow orbital bombardment with any weapon type.
+    In MOO1 neither Death Ray, Crystal Ray nor Amoeba Stream can be used for
+    orbital bombardment. The last two are only available via save game editing,
+    but the omission of Death Ray is puzzling.
+
+orbital_weap_4 : 0..1, 0
+  - Allow orbital bombardment with weapon in slot 4.
+    In MOO1 the weapon in slot 4 is not used in orbital bombardment.
+
+orbital_torpedo : 0..1, 0
+  - Fix orbital bombardment missile/torpedo damage halving.
+    In MOO1 the missile damage is halved but torpedo damage is untouched.
+
+orbital_comp_fix : 0..1, 0
+  - Fix orbital bombardment undeserved battle computer bonus.
+    In MOO1 the bonus is given for the best battle computer in any ship design
+    regardless of if any such ships are present in the fleet in orbit.
+
+combat_trans_fix : 0..1, 0
+  - Make Combat Transporters work as intended.
+    In MOO1 Combat Transporters only work if the planet owner has Sub-Space
+    Interdictor, and using 25% roll followed by 50% roll if the first one
+    failed. Enabling the fix makes it behave as OSG describes; chance is 50%/25%
+    depending on Interdictor.
+
+stargate_redir_fix : 0..1, 0
+  - Fix Star Gate fleet redirection bug/cheat.
+    In MOO1 a fleet sent via Star Gate can be redirected to any other planet
+    and the flight will take only 1 turn regardless of destination. The other
+    way was also bugged; redirecting a fleet to a valid Star Gate use situation
+    did not end up in the fleet using the Star Gates.
+
+trans_redir_fix : 0..1, 0
+  - Fix transport redirection bug/cheat.
+    In MOO1 transports can be redirected (given Hyperspace Communications) to
+    unexplored. reserve-fuel-needing and no-colony-for destinations.
+
+retreat_redir_fix : 0..1, 0
+  - Fix retreating fleet redirection back to battle bug/cheat.
+    In MOO1 fleets retreating from battle can be redirected to fight again the
+    next turn. This fix disables redirecting back to the planet the fleet just
+    retreated from unless Hyperspace Communications is available.
+
+first_tech_rp_fix : 0..1, 0
+  - Fix RP stagnation before starting first tech project.
+    Investing 1 RP to start the first project in a field is not enough due to
+    the 10% stagnation rounding it down to 0.
+
+waste_calc_fix : 0..1, 0
+  - Fix waste calculation.
+    MOO1 adds waste twice: first using a perfectly sensible formula and then
+    a baffling one. The waste elimination cost is calculated in between.
+    The second amount added is often negative due to the waste amount not
+    being limited. This is why Silicoid planets end up with 0 waste. Other
+    races only see the effect when setting the Eco slider below Clean.
+
+waste_adjust_fix : 0..1, 0
+  - Partially fix waste elimination slider autoadjustment.
+    In MOO1 the sum of sliders can exceed 100 due to weird math in the waste
+    elimination slider adjustment code. This fix does not address the effects
+    of integer division.
+
+slider_respects_locks : 0..1, 0
+  - Waste elimination slider autoadjustment does not change locked sliders.
+
+pop_tenths_fix: 0..1, 0
+  - Do not add population tenths twice.
+    MOO1 adds population tenths twice when calculating population growth.
+    This results in higher and nonlinear changes of growth value.
+
+factory_cost_fix: 0..1, 0
+  - Fix factory cost and refit cost after researching the Computers->IRC tech.
+    This also removes refit cost for Meklars
+
+eco_slider_slack : 0..255, 7
+  - Eco slider automatic adjustment slack.
+    Reducing the value to 0 eliminates extraneous eco spending after population
+    maximum has been reached.
+
+reset_tform_to_max : 0..1, 1
+  - Reset terraforming to the player's maximum when finishing soil enrichment.
+    If this value is 1 (the default), when the soil enrichment project is
+    completed on a planet that has been terraformed to a higher level than
+    the player has available, the terraforming is reset to the players
+    maximum. If the value is 0, the alien terraforming is kept.
+
+soil_rounding_fix : 0..1, 0
+  - Fix incorrect rounding up with soil enrichment
+    In older versions of 1oom and probably in MOO1 instead of rounding up to
+    the next multiple of 5, the game adds an additional +5 unless the base size
+    is in the range 50-59 or 100-109.
+
+leaving_trans_fix : 0..1, 0
+  - Population scheduled for transport no longer contributes to production.
+
+hidden_child_labor_fix : 0..1, 0
+  - Do not update production for SHIP, DEF and IND spending after ECO spending
+    and pop growth. TECH spending is not affected and uses pre-growth values.
+    A value of 1 means the same production for all sliders.
+
+extended_reloc_range : 0..1, 0
+  - Allow new fleets to relocate to any planet within range.
+    MOO1 allows you to assign only controlled planets as reloc points.
+
+colonized_factories_fix : 0..1, 0
+  - Fix robotic controls factor for colonized factories
+    There are scenarios that after destroying colony, the planet factories
+    survive and new colony created by another player didn't reset robotic
+    control factor of this colony. This fix resets the factor to 2 if no
+    factories or to 1 if there are factories on the planet. This also sets
+    bc_to_refit to 0.
+
+cond_switch_to_ind_fix: 0..1, 0
+  - Always switch production from eco to building factories rather than
+    technology, regardless of current population.
+
+slider_eco_done_fix: 0..1, 0
+  - Do not stop terraforming when finishing eco project.
+
+ship_scanner_fix : 0..1, 0
+  - Fix broken ship scanners
+    In MOO1, ship scanners are broken (obviously)
+
+doom_stack_fix : 0..1, 0
+  - Fix negative/32000 ship doom stack bug.
+    In MOO1 overflows in AI-AI battles can result in 32000 ship doom stacks.
+
+ai_fleet_cheating_fix : 0..1, 0
+  - Fix unlimited exponential growth of ship slider value when too many
+    MBases on a planet.
+    In MOO1, ship slider can reach 1000% (maybe more)
+
+tech_costmuld : 0..255, ?
+  - Research discovery base cost difficulty multiplier for human players.
+
+tech_costmula : 0..255, ?
+  - Research discovery base cost difficulty multiplier for AI players.
+
+tcostm_* : 0..255, ?
+  - Research discovery base cost racial modifier.
+
+event_roll : 0..2147483647, 512
+  - Special event probability. Bigger number means events are less likely.
+    Zero means events are disabled.
+
+accident_chk_factories : 0..1, 0
+  - Only apply the industrial accident events to colonies with some industry.
+    If this is set to 1, the industrial accident event happens only to colonies
+    with at least 30 factories, as described in the OSG. If it is set to 0, it
+    can happen to any colony, as is actually the case in MOO 1.3.
+
+council_years : 0..32767, 25
+  - Number of years between Galactic Council meetings.
+    Zero means the Council never gathers.
+
+trait1_* : 0..5, ?
+  - Starting personality type table for each race.
+    The type is chosen randomly from the table when stating a new game.
+    The values are: 0 = Xenophobix, 1 = Ruthless, 2 = Aggressive,
+    3 = Erratic, 4 = Honorable, 5 = Pacifistic.
+
+trait2_* : 0..5, ?
+  - Starting racial objective table for each race.
+    The objective is chosen randomly from the table when stating a new game.
+    The values are: 0 = Diplomat, 1 = Militarist, 2 = Expansionist,
+    3 = Technologist, 4 = Industrialist, 5 = Ecologist.
+
+crystal_* : ?, ?
+amoeba_* : ?, ?
+guardian_* : ?, ?
+  - The index of these space monster tables is the difficulty level.
+
+ngt_*_* : 0..255, ?
+  - New game research list limitations for each field and race.
+    Table index corresponds to tech level, for example ngt_we_meklar item 32
+    controls Gauss Autocannon research availability for Meklars.
+    The value 1 means the tech is never added, f.ex Silicoids & colony tech.
+    The value 2 means the tech is always added. (Unused by default.)
+    The bits 2..7 (values 4, 8, ...) are used for groups of essential techs;
+    the research list must contain at least one of the techs with a given
+    bit set. (Bit 2 / value 4 is the only one used by default.)

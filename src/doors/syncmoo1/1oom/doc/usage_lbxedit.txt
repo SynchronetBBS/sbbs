@@ -1,0 +1,51 @@
+################
+# 1oom_lbxedit #
+################
+
+1oom_lbxedit is a tool for editing LBX files.
+
+There is very little reason to use this as PBX files are a nondestructive way
+to replace LBX contents.
+
+Usage:
+    1oom_lbxedit [OPTIONS] d IN.LBX [OUTPREFIX]
+    1oom_lbxedit [OPTIONS] m LBXIN.TXT OUT.LBX
+    1oom_lbxedit [OPTIONS] e IN.LBX OUT.BIN ITEMNUM
+    1oom_lbxedit [OPTIONS] r FILE.LBX IN.BIN|0 ITEMNUM
+Commands:
+    d   Dump LBX file to LBXIN + bin files
+    m   Make LBX file from LBXIN + bin files
+    e   Extract item from LBX file
+    r   Replace item in LBX file
+Options:
+    -w          (d, r) Write files
+    -o OUT.LBX  (r) Set output LBX filename
+
+In d and r modes: If the -w option is not given then no files are written.
+
+In d mode: The input filename without the .LBX extension (if any) is used
+for the output prefix if none is given.
+
+The input bin filename "0" is interpreted as a zero length file.
+
+Examples:
+    1oom_lbxedit d ships.lbx
+        - show ships.pbx contents in LBXIN format
+
+    1oom_lbxedit -w d ships.lbx
+        - write ships.lbx contents to ships.lbxin and ships_*.bin
+
+    1oom_lbxedit -w d ships.lbx d/foo
+        - write ships.lbx contents to d/foo.lbxin and d/foo_*.bin
+
+    1oom_lbxedit m foo.lbxin bar.lbx
+        - build bar.lbx from foo.lbxin the files it refers to
+
+    1oom_lbxedit e ships.lbx ship4.bin 4
+        - extract item 4 in ships.lbx to ship4.bin
+
+    1oom_lbxedit -o new.lbx -w r ships.lbx ship4.bin 4
+        - create new.lbx from ships.lbx with ship4.bin as item 4
+
+    1oom_lbxedit -w r ships.lbx ship4.bin 4
+        - replace item 4 in ships.lbx with ship4.bin

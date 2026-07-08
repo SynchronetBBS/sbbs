@@ -1,0 +1,267 @@
+MOO1 .lbx file format
+
+All offsets are hex.
+All values are little endian unless otherwise noted.
+
+offset  sz  description
+0       2   number of entries
+2       2   ID: 0xad 0xfe
+4       2   0x00 0x00
+6       2   type
+            - 0: gfx
+            - 1: sound (introsnd.lbx, music.lbx, snddrv.lbx)
+            - 2: fonts, palette (fonts.lbx)
+            - 3: data table (help.lbx)
+            - 5: data table (firing.lbx, research.lbx, ...)
+8+4*I   4   offset to item I data start (data ends at next I start)
+200+20*I 32 name/description of item I
+
+
+
+gfx format
+
+offset  sz  description
+0       2   width
+2       2   height
+4       2   frame (current: 0 in file)
+6       2   frames
+8       2   set current frame to this when frame == frames (0, frames-1...)
+a       1   0x00 (runtime: emm handle)
+b       1   0x00 (runtime: emm page)
+c       2   0x0000 (runtime: ?)
+e       2   offset to palette (or 0 if none)
+10      1   independent frames : 0x00/0x01  (if 0 then need to draw frames 0..n-1 before n)
+11      1   gfx format ; 0x00 except council.lbx i1 == 0x01
+12+4*I  4   offset to frame I data start (data ends at next I start)
+
+
+frame data
+
+offset  sz  description
+0       1   (unused) if 0: overlay on previous frame ; 1: clear buffer
+1..     ?   columnwise pixel data
+            - 0xff: skip this column
+            - 0x00: uncompressed:
+                - total_len
+                    - part_len, skip_pixels, pixel*part_len
+                        - v=geti(); puto(v, 1);
+            - 0x80: compressed:
+                - total_len
+                    - part_len, skip_pixels, compressed_data*part_len
+                        - v=geti(); if (v>223) { len=v-223; v=geti(); } else { len=1; } ; puto(v, len);
+            - puto(v, len)
+                - format 0
+                    - while (len--) { put_pixel(x, y, v); ++y }
+                - format 1
+                    - if (v>=0xe8) {
+                        tbl = lut[v-0xe8];
+                        while (len--) { v = tbl[get_pixel(x, y)]; put_pixel(x, y, v); ++y; }
+                      } else {
+                        while (len--) { put_pixel(x, y, v); ++y }
+                      }
+
+
+palette metadata
+
+offset  sz  description
+0       2   offset to palette data (from gfx data start)
+2       2   first changed color
+4       2   number of changed colors
+6       2   ? 0x00 0x00 (offset points to 8...)
+
+palette data
+
+offset  sz  description
+3*N     3   RGB palette values (6bpp per item)
+
+
+
+fonts.lbx entry 0 : the fonts (max 8, only 6 exist)
+
+offset  sz  description
+0       16  palette indices (copied runtime from active palette)
+10      2   font height (copied runtime from selected font from offset 0x16a + active_font * 2)
+12      1   ? 0 (set runtime from selected font)
+13      1   active font colors
+14      16  font colors 0 (palette indices, copied runtime from active palette), same as offset 0
+24      16  font colors 1 (copied runtime from active palette)
+34      16  font colors 2 (copied runtime from active palette)
+44      2   line height (copied runtime from selected font, offset 0x10 + offset 0x46)
+46      2   gap height (copied runtime from selected font from offset 0x18a + active_font * 2)
+48      2   gap width (copied runtime from selected font from offset 0x17a + active_font * 2)
+4a      0x60    character c-0x20 width (copied runtime from selected font from offset 0x19a + active_font * 0x60)
+aa      0xc0    character c-0x20 data offset (copied runtime from selected font from offset 0x49a + active_font * 0xc0)
+a9d..   ?   columnwise pixel data
+            - 0b0hhhiiii: h pixels with color from offset i
+            - 0b1sssssss: skip s lines
+            - 0b10000000: next column
+
+
+fonts.lbx entries 2..12: the palettes (size 0x1560)
+
+offset  sz  description
+0       256*3   RGB palette values (6bpp per item)
+300     16*16   palette indices for fonts
+400     256     ? (unused)
+500     0x1000  cursor data: 16*16 pix * 16 cursors, columnwise
+1500    4*0x18  color table generation parameters : r g b percent
+
+
+data table: (research.lbx, firing.lbx, ...)
+
+offset  sz  description
+0       2   item num N
+2       2   item size S
+4       N*S data
+
+
+research.lbx entry 0: (0x70c)
+
+offset  sz  description
+0       2   item num 0x12c == 6*50
+2       2   item size 6
+4       6*50*6 tech data
+
+tech data: (size 6)
+
+offset  sz  description
+0       1   tech group (0xff for tech does not exist)
+1       1   index to tech table (tbl_shiptech_weap etc)
+2       2   index to techno.lbx
+4       2   name: offset to research.lbx entry 1 data
+
+
+research.lbx entry 1:
+
+offset  sz  description
+0       2   item num 1
+2       2   item size 0xf3c
+4       ..  "Tech 1 name\0Tech 2 name\0" ...
+
+
+firing.lbx: (0x1018)
+
+offset  sz  description
+0       2   item num N = 0x93 = ship looks
+2       2   item size S = 0x1c
+4       N*S u16 tbl[ship_look][0xe]
+
+
+firing.lbx table entry: (0x1c)
+
+offset  sz  description
+0       2   x0 forward
+2       2   y0 forward
+4       2   x1 forward
+6       2   y1 forward
+8       2   x2 forward
+a       2   y2 forward
+c       2   x0 behind
+e       2   y0 behind
+10      2   x1 behind
+12      2   y1 behind
+14      2   x2 behind
+16      2   y2 behind
+18      2   target x
+1a      2   target y
+
+
+diplomat.lbx entry 0: amount of audience messages per type
+
+offset  sz  description
+0       2   item num N = 81
+2       2   item size S = 2
+4       N*S number of message variations in lbx entry 1 (0..15)
+
+
+diplomat.lbx entry 1: audience messages
+
+offset  sz  description
+0       2   item num N = 1215
+2       2   item size S = 0xc8
+4       N*S char str[S - 2 * 2], u16 gfx_index, u16 mus_index
+            15 variations per message type
+            characters with MSb set are tokens for race name, BC amount etc
+
+
+eventmsg.lbx entry 0: news messages
+
+offset  sz  description
+0       2   item num N = 154
+2       2   item size S = 0xc8
+4       N*S char str[S]
+            7 variations per message type
+            characters with MSb set are tokens for race name, BC amount etc
+
+
+names.lbx entry 0: ()
+
+offset  sz  description
+0       2   num entries (60)
+2       2   entry size (20)
+4       6*10*20 the names
+
+
+help.lbx entry 0: help
+
+offset  sz  description
+0       2   item num N = 0x28
+2       2   item size S = 0x5f8
+4       N*S help item
+
+help.lbx entry 0: help item (size 0x5f8)
+
+offset  sz  description
+0       16  filename ("MAINMOVE.FLI") ; unused
+10      2   ? if < 3 uses string table
+12      26  description ; unused
+2c      12*2    x
+44      12*2    y
+5c      12*2    width
+74      12*2    line x
+8c      12*2    line y
+a4      12*2    line type : 0=none,1=?,2=?
+bc      40  text string 0
+e4      314 text string 1
+21e     40  text string 2 ; used if offs 0x10 >= 3
+246     314 text string 3 ; used if offs 0x10 >= 3
+380     9*70    text string table  ; used if offs 0x10 < 3
+5f6     2   next help item to display (or 0 for none)
+
+
+sound data
+
+offset  sz  description
+0       16  0xaf 0xde 0x02 0x00 .. ("deaf 2"?)
+0x10    ?   VOC
+
+
+music data (XMI) http://www.shikadi.net/wiki/modding/index.php?title=XMI_Format&oldid=6874
+
+offset  sz  description
+0       16  0xaf 0xde 0x01 0x00 .. ("deaf 1"?)
+10      4   "FORM"
+14      4BE length 0xe
+18      4   "XDIR"
+1c      4   "INFO"
+20      4BE length 0x2
+24      2   number of songs (1)
+26      4   "CAT "
+2a      4BE length rest_of_data
+2e      4   "XMID"
+32      4   "FORM"
+36      4BE length rest_of_data
+3a      4   "XMID"
+3e      4   "TIMB"
+42      4BE length of timbre data = T
+46      T   timbre data:
+            - u16 entry count
+                - patch number, bank number
+46+T    4   "EVNT"
+4a+T    4BE length of event data = E
+4e+T    E   event data: MIDI-ish, but
+            - delta times are mostly missing
+            - delta times are series of 0x7f bytes, with the time as sum of them
+            - note off events are missing!
+            - note on events have 3rd parameter byte that indicates duration
+                - can be multibyte; duration is concatenation of "byte & 0x7f"s
