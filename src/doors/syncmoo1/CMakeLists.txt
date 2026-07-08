@@ -145,3 +145,11 @@ target_link_libraries(syncmoo1 xpdev)
 if(NOT WIN32)
     target_link_libraries(syncmoo1 m pthread ${CMAKE_DL_LIBS})
 endif()
+
+# Pure unit tests (syncmoo1_map.c only -- see tests/CMakeLists.txt). Only
+# add it when this door is the top-level project, so building syncmoo1 as
+# part of a larger tree never drags in the test target unasked.
+if("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
+    enable_testing()
+    add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tests tests)
+endif()
