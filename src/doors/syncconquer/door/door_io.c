@@ -1582,6 +1582,16 @@ static void door_calc_rect(int vw, int vh, int reserve_bottom, int *ew, int *eh,
 	int cellw, cellh, fitvh;
 
 	door_cell_size(&cellw, &cellh);
+	/* TODO (640x384 fractional-downscale / lost 1px detail): the engine is
+	 * 640x400 (80x25), but SyncTERM DEFAULTS to an 80x24 / 640x384 canvas --
+	 * its status line eats the 25th row -- so EVERY image tier downscales
+	 * 0.96x to fit and RA's single-pixel vertical bars drop (text/gauges look
+	 * degraded). Crisp only at a true 640x400. Fix: drop the status line with
+	 * DECSSDT (CSI 0 $ ~ = "no status display"; cterm then grows to 25 rows via
+	 * cterm_resize_rows -> 640x400), FIRST saving the client's current setting
+	 * with DECRQSS (DCS $ q $ ~ ST) so door_term_restore() can put it back on
+	 * exit. The sixel bottom-row reserve below is a SEPARATE, smaller loss (one
+	 * row, sixel only -- JXL/PPM pass reserve_bottom=false and fill the canvas). */
 	fitvh = reserve_bottom ? vh - cellh : vh;
 	if (fitvh < cellh)   /* degenerate (sub-one-cell) canvas: don't reserve */
 		fitvh = vh;
