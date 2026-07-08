@@ -1,6 +1,9 @@
 #ifndef TERMGFX_TERM_H_
 #define TERMGFX_TERM_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 // term.h -- canonical terminal control strings for a full-screen sixel game
 // door (SyncDOOM, SyncDuke, ...). Each is a NUL-terminated ASCII/C0 string with
 // no embedded NULs; the caller emits it through its own output path (e.g.
@@ -32,5 +35,19 @@ extern const char *const termgfx_term_probe;
 // Leave graphics mode: restore sixel scrolling (?80h), autowrap (?7h), and the
 // cursor (?25h) so the BBS prompt behaves normally after the door exits.
 extern const char *const termgfx_term_leave;
+
+// Status line (DECSSDT). A terminal that shows a status line reserves its
+// bottom text row for it (SyncTERM's default: an 80x25 terminal draws to an
+// 80x24 / 640x384 canvas), so a 640x400 game fractionally downscales and loses
+// single-pixel detail. termgfx_term_status_off hides it (DECSSDT Ps=0) so the
+// door draws the full canvas 1:1 -- emit it BEFORE the canvas probe so the
+// probe reports the reclaimed size. It is prefixed with a DECRQSS query of the
+// current setting; feed inbound bytes to termgfx_term_parse_status() to capture
+// the reply (the pre-door status type, or -1 if unsupported), then restore it
+// on exit with a termgfx_term_status_set() string. Ignored by terminals with no
+// status line / no DECSSDT -- harmless.
+extern const char *const termgfx_term_status_off;
+size_t termgfx_term_status_set(char *out, size_t sz, int type);
+int    termgfx_term_parse_status(const uint8_t *acc, int len);
 
 #endif // TERMGFX_TERM_H_

@@ -684,6 +684,11 @@ static int g_evdev_active;
 
 int door_io_evdev_active(void) { return g_evdev_active; }
 
+static int g_status_type = -1;         /* pre-door DECSSDT status-line type captured from the
+                                        * DECRQSS reply (-1 = not captured / unsupported); the
+                                        * door hides the status line for a full 640x400 canvas
+                                        * and restores this (or the default) on exit */
+
 /* The per-session SyncTERM audio-APC manager (Task 4) -- created in
  * door_io_init(), read by door/soundio_termgfx.cpp via door_io_audio()
  * below, and torn down in door_term_restore() (forward-declares
@@ -775,6 +780,12 @@ static void door_term_restore(void)
 		door_out_put("\x1b[<u", 4);            /* pop the kitty flags we pushed */
 	if (g_evdev_active)
 		door_out_put("\x1b[=2l\x1b[=1l", 10);  /* restore translation, disable reports */
+	{   /* restore the status line we hid at entry: the captured pre-door type,
+		 * or the usual default (indicator) if DECRQSS never answered */
+		char   sb[8];
+		size_t sn = termgfx_term_status_set(sb, sizeof sb, g_status_type >= 0 ? g_status_type : 1);
+		door_out_put(sb, sn);
+	}
 	door_out_put(termgfx_term_leave, strlen(termgfx_term_leave));
 	door_out_drain_blocking(2000);   /* bounded: never hang the exit path indefinitely on a dead peer */
 }
@@ -1690,6 +1701,13 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 	 * resolves the replies. */
 	if (!cleared) {
 		door_out_puts(termgfx_term_enter);
+		/* Hide the client's status line (DECSSDT) BEFORE probing the canvas, so
+		 * SyncTERM's default 80x24/640x384 grows back to a true 80x25/640x400
+		 * and the probe reports the reclaimed size -- the game then renders 1:1
+		 * with no fractional downscale (see door_calc_rect's TODO). The DECRQSS
+		 * query it carries lets door_io_pump() capture the pre-door setting for
+		 * restore in door_term_restore(). */
+		door_out_puts(termgfx_term_status_off);
 		door_out_puts(termgfx_term_probe);
 		door_out_puts("\x1b[c\x1b[<c");
 		door_out_puts(termgfx_query_jxl);
@@ -2048,6 +2066,34 @@ void door_io_pump(void)
 	                                         * reply -- a raw-byte scan, tolerant of everything
 	                                         * else (keys, DSR acks) interleaved; independent of
 	                                         * the P_APC swallow below (audio_mgr.h). */
+
+	/* Capture the DECRQSS reply to our DECSSDT status-line query (the pre-door
+	 * status type, for restore on exit). A raw-byte scan like the audio one --
+	 * the DCS reply is otherwise swallowed by the P_APC state below -- with a
+	 * small rolling window to bridge a reply split across reads. */
+	if (g_status_type < 0) {
+		static uint8_t sacc[32];
+		static int     sacclen;
+		int            r = termgfx_term_parse_status(buf, n);
+
+		if (r < 0) {
+			if (n >= (int)sizeof sacc) {
+				memcpy(sacc, buf + (n - (int)sizeof sacc), sizeof sacc);
+				sacclen = (int)sizeof sacc;
+			} else {
+				int keep = (int)sizeof sacc - n;
+				if (sacclen > keep) {
+					memmove(sacc, sacc + (sacclen - keep), keep);
+					sacclen = keep;
+				}
+				memcpy(sacc + sacclen, buf, n);
+				sacclen += n;
+			}
+			r = termgfx_term_parse_status(sacc, sacclen);
+		}
+		if (r >= 0)
+			g_status_type = r;
+	}
 	{
 		static int sa_prev_tier = -2;   /* log the negotiated audio tier once it resolves */
 		int        t = termgfx_audio_tier(g_audio);
