@@ -89,6 +89,14 @@
 #include "pace.h"
 #include "audio_mgr.h"   /* termgfx: SyncTERM audio-APC manager (Task 4, digital SFX/music) */
 
+/* xpdev cross-platform wrappers (see CLAUDE.md: prefer xpdev over hand-rolled
+ * #ifdef _WIN32). genwrap.h gives portable stricmp/strnicmp. The socket layer
+ * still hand-rolls its Windows/POSIX split -- converting it to sockwrap.h is a
+ * larger pass (the I/O also branches socket-vs-tty on POSIX, so it isn't a
+ * clean swap) and is left as a focused follow-up, ideally with the M3
+ * multiplayer work that builds its netgame on sockwrap. */
+#include "genwrap.h"
+
 #define DOOR_FB_BYTES ((size_t)DOOR_FB_WIDTH * DOOR_FB_HEIGHT)
 
 /* --- door args: -s<fd> / -home <dir> / DOOR32.SYS / -assets <dir> ---------
@@ -163,11 +171,7 @@ static int door_is_door32_path(const char *s)
 	const char *b = s + strlen(s);
 	while (b > s && b[-1] != '/' && b[-1] != '\\')
 		b--;
-#ifdef _WIN32
-	return _stricmp(b, "door32.sys") == 0;
-#else
-	return strcasecmp(b, "door32.sys") == 0;
-#endif
+	return stricmp(b, "door32.sys") == 0;   /* xpdev genwrap.h: portable */
 }
 
 /* DOOR32.SYS (the portable door interface): line 1 = comm type (2=telnet,
@@ -1439,9 +1443,7 @@ static int door_term_is_utf8(void)
 			p++;
 		if (*p == '[')                   /* past the root section -- "chars" lives there */
 			break;
-		if ((p[0] != 'c' && p[0] != 'C') || (p[1] != 'h' && p[1] != 'H')
-		    || (p[2] != 'a' && p[2] != 'A') || (p[3] != 'r' && p[3] != 'R')
-		    || (p[4] != 's' && p[4] != 'S'))
+		if (strnicmp(p, "chars", 5) != 0)   /* xpdev genwrap.h: portable case-insensitive */
 			continue;
 		v = p + 5;
 		while (*v == ' ' || *v == '\t')
@@ -1451,8 +1453,7 @@ static int door_term_is_utf8(void)
 		v++;
 		while (*v == ' ' || *v == '\t')
 			v++;
-		if ((v[0] == 'u' || v[0] == 'U') && (v[1] == 't' || v[1] == 'T')
-		    && (v[2] == 'f' || v[2] == 'F'))   /* utf8 / utf-8 / UTF-8 */
+		if (strnicmp(v, "utf", 3) == 0)     /* utf8 / utf-8 / UTF-8 */
 			cached = 1;
 		break;
 	}
