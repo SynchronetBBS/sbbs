@@ -11,6 +11,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "keymode.h"   /* termgfx: termgfx_keymode_t */
 
 /* SyncDuke v1 renders Build "classic" mode only. */
 #define SYNCDUKE_SCREEN_W 320
@@ -67,6 +68,10 @@ int  syncduke_input_pop_raw(void);                  /* next raw scancode byte (0
 int  syncduke_input_fd(void);                       /* the input fd (resolved client socket / stdin) */
 int  syncduke_is_syncterm(void);                    /* 1 if the client is SyncTERM (DA reply); cterm 2x sixel scaling */
 int  syncduke_kitty_active(void);                   /* 1 if the kitty keyboard protocol negotiated (true key-up) */
+/* The negotiated terminal key mode (../termgfx/keymode.h).  Owned by
+ * syncduke_input.c (it parses the CTDA / CSI?u replies); syncduke_io.c's
+ * terminal-restore path uses it to undo whatever was enabled. */
+termgfx_keymode_t *syncduke_keymode(void);
 int  syncduke_evdev_active(void);                   /* 1 if SyncTERM physical key (evdev) reports negotiated */
 uint32_t syncduke_rtt(void);                        /* smoothed RTT (ms); drives native-vs-synthetic turn */
 int  syncduke_turn_native(void);                    /* 1 if turn keys use the native hold (low-latency true-key-up) */

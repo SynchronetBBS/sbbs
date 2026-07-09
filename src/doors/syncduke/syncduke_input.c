@@ -42,6 +42,7 @@
 
 #include "syncduke.h"
 #include "keyboard.h"   /* sc_* scancode constants (pure #defines) */
+#include "keymode.h"  /* termgfx: key-mode negotiation + kitty/evdev decode */
 #include "caps.h"       /* termgfx: termgfx_caps_parse_jxl (cap-probe reply scan) */
 #include "audio_mgr.h"  /* termgfx: SyncTERM audio-APC manager (cap-probe feed) */
 
@@ -96,7 +97,10 @@ static int32_t release_at[128];  /* frame counter value at which to release it *
  * query, so keys arrive as CSI-u events with explicit press/repeat/release.  That gives the
  * door true key-up (crisp hold-to-move) instead of the auto-release timeout below.  Set when
  * the report lands (csi_final 'u' case), which also pushes our flags (CSI>11u). */
-static int g_kitty_active;
+/* The negotiated key mode (enable/restore sequences, evdev-wins precedence and
+ * the settle window all live in ../termgfx/keymode.h, shared with the sibling
+ * doors).  What stays here is Duke's own key -> Build-scancode map. */
+static termgfx_keymode_t g_km;
 
 /* Sticky-crouch toggle -- BYTE PATH ONLY.  A plain terminal has no key-up (auto-repeat is
  * laggy), so momentary crouch (hold Z) is unusable there: instead 'z' toggles this latch and
@@ -206,7 +210,12 @@ static void look_hold(int sc, int ev)
 		hold_press(sc);
 }
 
-int syncduke_kitty_active(void) { return g_kitty_active; }
+int syncduke_kitty_active(void) { return termgfx_keymode_kitty_active(&g_km); }
+
+/* The negotiated key mode, for syncduke_io.c's terminal-restore path (which
+ * undoes whatever was enabled here).  Owned by this module because this is where
+ * the CTDA / CSI?u replies are parsed. */
+termgfx_keymode_t *syncduke_keymode(void) { return &g_km; }
 
 /* SyncTERM (CTerm) "physical key event reporting" active: the CTDA probe reply advertised
  * cap 8, so we enabled it (CSI=1h reports + CSI=2h suppress-translation) and keys now arrive
@@ -215,11 +224,7 @@ int syncduke_kitty_active(void) { return g_kitty_active; }
  * INDEPENDENT physical scancode (WASD works on AZERTY/Dvorak) and modifiers are their own keys.
  * SyncTERM doesn't speak kitty and kitty terminals don't advertise CTDA cap 8, so the two paths
  * are mutually exclusive in practice; the negotiation guards enforce it regardless. */
-static int      g_evdev_active;
-static unsigned g_evdev_mods;             /* held modifiers: bit0 Shift, bit1 Ctrl, bit2 Alt */
-#define EVDEV_MOD_SHIFT 1
-#define EVDEV_MOD_CTRL  2
-#define EVDEV_MOD_ALT   4
+static unsigned g_evdev_mods;             /* held modifiers, TERMGFX_MOD_* */
 
 /* Enable-time settle window.  When SyncTERM enters physical-key mode it immediately RESYNCS the
  * keys held at that instant -- emitting a PRESS report for each (e.g. the key still held from
@@ -228,11 +233,7 @@ static unsigned g_evdev_mods;             /* held modifiers: bit0 Shift, bit1 Ct
  * (releases and modifier tracking are always honoured, so nothing sticks).  The resync arrives
  * within ~1 round-trip, well inside this window; evdev sends no auto-repeat, so one drop suffices
  * even if the key stays physically down. */
-#define SYNCDUKE_EVDEV_SETTLE_MS 500
-static uint32_t g_evdev_enabled_ms;
-static int      g_evdev_settling;
-
-int syncduke_evdev_active(void) { return g_evdev_active; }
+int syncduke_evdev_active(void) { return termgfx_keymode_evdev_active(&g_km); }
 
 /*
  * Map one terminal byte or escape sequence to a Build scancode (or -1).
@@ -632,7 +633,7 @@ int syncduke_turn_native(void)
 			last_switch = now;
 		}
 	}
-	return (g_kitty_active || g_evdev_active) && native;
+	return (syncduke_kitty_active() || syncduke_evdev_active()) && native;
 }
 
 /* Apply one gameplay turn-key edge under a true-key-up path (dir +1 = right, -1 = left).
@@ -728,35 +729,7 @@ static int csi_params(int *out, int max)
  * CSI-~ functional keys, which carry the same ;mods:event tail under the protocol. */
 static int kitty_key(int *mod, int *ev)
 {
-	int key = 0, v = 0, sub = 0, field = 0, in_sub = 0, i;
-	*mod = 1;
-	*ev  = 1;
-	for (i = 0; i <= csi_len; i++) {
-		char c = (i < csi_len) ? csi_par[i] : ';';   /* sentinel flushes the last field */
-		if (c >= '0' && c <= '9') {
-			if (in_sub)
-				sub = sub * 10 + (c - '0');
-			else
-				v = v * 10 + (c - '0');
-		} else if (c == ':') {
-			in_sub = 1;                              /* a field's first sub-param is the event type */
-			sub = 0;
-		} else if (c == ';') {
-			if (field == 0) {
-				key = v;
-			} else if (field == 1) {
-				if (v)
-					*mod = v;
-				if (in_sub && sub)
-					*ev = sub;
-			}
-			field++;
-			v = 0;
-			sub = 0;
-			in_sub = 0;
-		}
-	}
-	return key;
+	return termgfx_kitty_parse(csi_par, csi_len, mod, ev);
 }
 
 /* True when csi_par is a kitty RELEASE event (and the protocol is active).  Lets the press-only
@@ -765,7 +738,7 @@ static int kitty_key(int *mod, int *ev)
 static int kitty_release_event(void)
 {
 	int m, e;
-	if (!g_kitty_active)
+	if (!syncduke_kitty_active())
 		return 0;
 	kitty_key(&m, &e);
 	return e == 3;
@@ -854,36 +827,7 @@ static void handle_key(int c, int gameplay, int now, int kev)
 	}
 }
 
-/* US-QWERTY: evdev key code -> { unshifted, shifted } ASCII byte (0 = not a simple ASCII key).
- * Covers the main alnum/punct block (codes 1..57); arrows/nav/F-keys/keypad are handled
- * separately in evdev_edge().  Used to translate a physical key edge back into the byte the
- * existing handle_key() layer expects, so menus, text entry, weapon digits and Ctrl shortcuts
- * all behave exactly as on the byte/kitty paths. */
-static const char evdev_ascii[88][2] = {
-	{ 0, 0 },                                                                                /* 0  reserved */
-	{ 27, 27 },                                                                              /* 1  ESC */
-	{ '1', '!' }, { '2', '@' }, { '3', '#' }, { '4', '$' }, { '5', '%' },                    /* 2-6 */
-	{ '6', '^' }, { '7', '&' }, { '8', '*' }, { '9', '(' }, { '0', ')' },                    /* 7-11 */
-	{ '-', '_' }, { '=', '+' },                                                              /* 12-13 */
-	{ 8, 8 }, { 9, 9 },                                                                      /* 14 BkSp, 15 Tab */
-	{ 'q', 'Q' }, { 'w', 'W' }, { 'e', 'E' }, { 'r', 'R' }, { 't', 'T' }, { 'y', 'Y' },      /* 16-21 */
-	{ 'u', 'U' }, { 'i', 'I' }, { 'o', 'O' }, { 'p', 'P' },                                  /* 22-25 */
-	{ '[', '{' }, { ']', '}' },                                                              /* 26-27 */
-	{ '\r', '\r' },                                                                          /* 28 Enter */
-	{ 0, 0 },                                                                                /* 29 LeftCtrl */
-	{ 'a', 'A' }, { 's', 'S' }, { 'd', 'D' }, { 'f', 'F' }, { 'g', 'G' },                    /* 30-34 */
-	{ 'h', 'H' }, { 'j', 'J' }, { 'k', 'K' }, { 'l', 'L' },                                  /* 35-38 */
-	{ ';', ':' }, { '\'', '"' }, { '`', '~' },                                               /* 39-41 */
-	{ 0, 0 },                                                                                /* 42 LeftShift */
-	{ '\\', '|' },                                                                           /* 43 */
-	{ 'z', 'Z' }, { 'x', 'X' }, { 'c', 'C' }, { 'v', 'V' }, { 'b', 'B' },                    /* 44-48 */
-	{ 'n', 'N' }, { 'm', 'M' },                                                              /* 49-50 */
-	{ ',', '<' }, { '.', '>' }, { '/', '?' },                                                /* 51-53 */
-	{ 0, 0 },                                                                                /* 54 RightShift */
-	{ '*', '*' },                                                                            /* 55 KP* */
-	{ 0, 0 },                                                                                /* 56 LeftAlt */
-	{ ' ', ' ' },                                                                            /* 57 Space */
-};
+
 
 /* Apply one physical key edge (down=1 press / 0 release).  Modifier keys update g_evdev_mods;
  * arrows/nav/F-keys drive scancodes & door actions directly (mirroring csi_final); everything
@@ -905,36 +849,33 @@ static void evdev_edge(int code, int down, int gameplay, int now)
 	switch (code) {
 		case 29: case 97:                                /* L/R Ctrl: track only */
 			if (down)
-				g_evdev_mods |= EVDEV_MOD_CTRL;
+				g_evdev_mods |= TERMGFX_MOD_CTRL;
 			else
-				g_evdev_mods &= ~EVDEV_MOD_CTRL;
+				g_evdev_mods &= ~TERMGFX_MOD_CTRL;
 			return;
 		case 42: case 54:                                /* L/R Shift = Run (sc_LeftShift) + Strafe (sc_LeftAlt) */
 			if (down) {
-				g_evdev_mods |= EVDEV_MOD_SHIFT;
+				g_evdev_mods |= TERMGFX_MOD_SHIFT;
 				hold_press(sc_LeftShift);
 				hold_press(sc_LeftAlt);
 			} else {
-				g_evdev_mods &= ~EVDEV_MOD_SHIFT;
+				g_evdev_mods &= ~TERMGFX_MOD_SHIFT;
 				hold_release(sc_LeftShift);
 				hold_release(sc_LeftAlt);
 			}
 			return;
 		case 56: case 100:                               /* L/R physical Alt: track only (NOT forwarded -- see above) */
 			if (down)
-				g_evdev_mods |= EVDEV_MOD_ALT;
+				g_evdev_mods |= TERMGFX_MOD_ALT;
 			else
-				g_evdev_mods &= ~EVDEV_MOD_ALT;
+				g_evdev_mods &= ~TERMGFX_MOD_ALT;
 			return;
 	}
 
-	/* Drop the enable-time held-key resync (see SYNCDUKE_EVDEV_SETTLE_MS) so a key still held from
+	/* Drop the enable-time held-key resync (termgfx/keymode.h) so a key still held from
 	 * launching the door can't skip the opening.  Only press edges; releases fall through. */
-	if (down && g_evdev_settling) {
-		if ((uint32_t)(syncduke_in_now_ms() - g_evdev_enabled_ms) < SYNCDUKE_EVDEV_SETTLE_MS)
-			return;
-		g_evdev_settling = 0;
-	}
+	if (down && termgfx_keymode_evdev_settling(&g_km, syncduke_in_now_ms()))
+		return;
 
 	/* The numpad ARROWS (8/2/4/6) alias the main arrows: move/turn in gameplay AND navigate menus
 	 * (so they work everywhere the main arrows do).  The trade-off vs the digit fold is you can't
@@ -1063,16 +1004,14 @@ static void evdev_edge(int code, int down, int gameplay, int now)
 	if (c == 0) {                                    /* simple ASCII key via the US-QWERTY table */
 		/* Shift folds to upper for menu/text entry ONLY -- in gameplay letters stay lowercase so
 		 * the WASD/action remap still fires while Shift is held for Run (Shift+W = run forward). */
-		int shifted = (g_evdev_mods & EVDEV_MOD_SHIFT) && !gameplay;
-		if (code < 0 || code >= (int)(sizeof evdev_ascii / sizeof evdev_ascii[0]))
-			return;
-		c = evdev_ascii[code][shifted ? 1 : 0];
+		int shifted = (g_evdev_mods & TERMGFX_MOD_SHIFT) && !gameplay;
+		c = termgfx_evdev_ascii(code, shifted);
 		if (c == 0)
 			return;
 	}
 	/* Ctrl + letter -> its control byte (Ctrl-S stats, Ctrl-O mouse, Ctrl-A..G = F1..F7, ...) --
 	 * the same fold the kitty path applies, so handle_key's shortcut layer fires identically. */
-	if ((g_evdev_mods & EVDEV_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z')
+	if ((g_evdev_mods & TERMGFX_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z')
 		c &= 0x1f;
 	handle_key(c, gameplay, now, down ? 1 : 3);
 }
@@ -1098,7 +1037,7 @@ static void csi_final(char fin, int gameplay, int now)
 		case 'B':                                          /* down arrow -> back    */
 		{       /* same in both modes; under kitty, hold until the explicit key-up */
 			int sc = (fin == 'A') ? sc_UpArrow : sc_DownArrow;
-			if (g_kitty_active) {
+			if (syncduke_kitty_active()) {
 				int mod, ev;
 				kitty_key(&mod, &ev);
 				if (ev == 3)
@@ -1132,21 +1071,21 @@ static void csi_final(char fin, int gameplay, int now)
 		 * we also accept the xterm forms (ESC[5~/6~/1~/4~, ESC[F). */
 		case 'V':                                          /* PgUp -> Look up (native) / notch (byte) */
 			if (gameplay) {
-				if (g_kitty_active) { int m, e; kitty_key(&m, &e); look_hold(sc_kpad_9, e); return; }
+				if (syncduke_kitty_active()) { int m, e; kitty_key(&m, &e); look_hold(sc_kpad_9, e); return; }
 				if (!kitty_release_event())
 					syncduke_pitch_step++;                           /* byte path: momentary notch */
 			}
 			return;
 		case 'U':                                          /* PgDn -> Look down (native) / notch (byte) */
 			if (gameplay) {
-				if (g_kitty_active) { int m, e; kitty_key(&m, &e); look_hold(sc_kpad_3, e); return; }
+				if (syncduke_kitty_active()) { int m, e; kitty_key(&m, &e); look_hold(sc_kpad_3, e); return; }
 				if (!kitty_release_event())
 					syncduke_pitch_step--;
 			}
 			return;
 		case 'E':                                          /* numpad-5 with NumLock off = KP_Begin (CSI E) -> Center_View */
 			if (gameplay) {                                /* held, like the NumLock-on KP5 (57404) path */
-				if (!g_kitty_active)
+				if (!syncduke_kitty_active())
 					press(sc_kpad_5, now);
 				else {
 					int m, e;
@@ -1160,28 +1099,28 @@ static void csi_final(char fin, int gameplay, int now)
 			return;                                        /* in a menu numpad-5 has no digit meaning here -- ignore */
 		case 'H':                                          /* Home -> Aim up (native) / Center (byte) / first item (menu) */
 			if (gameplay) {
-				if (g_kitty_active) { int m, e; kitty_key(&m, &e); look_hold(sc_kpad_7, e); return; }
+				if (syncduke_kitty_active()) { int m, e; kitty_key(&m, &e); look_hold(sc_kpad_7, e); return; }
 				press(sc_kpad_5, now); return;             /* byte path: Center_View (no key-up to hold) */
 			}
 			if (!kitty_release_event())
 				press(sc_Home, now);                       /* menu: first item */
 			return;
 		case 'K':                                          /* SyncTERM physical key PRESS report, else End */
-			if (g_evdev_active && csi_len > 0 && csi_par[0] == '=') {
+			if (syncduke_evdev_active() && csi_len > 0 && csi_par[0] == '=') {
 				evdev_report(1, gameplay, now);
 				return;
 			}
 		/* FALLTHROUGH: End (cterm ESC[K) */
 		case 'F':                                          /* End -> Aim down (native) / Center (byte) / last item (menu) */
 			if (gameplay) {
-				if (g_kitty_active) { int m, e; kitty_key(&m, &e); look_hold(sc_kpad_1, e); return; }
+				if (syncduke_kitty_active()) { int m, e; kitty_key(&m, &e); look_hold(sc_kpad_1, e); return; }
 				press(sc_kpad_5, now); return;             /* byte path: Center_View */
 			}
 			if (!kitty_release_event())
 				press(sc_End, now);                        /* menu: last item */
 			return;
 		case 'k':                                          /* SyncTERM physical key RELEASE report */
-			if (g_evdev_active && csi_len > 0 && csi_par[0] == '=')
+			if (syncduke_evdev_active() && csi_len > 0 && csi_par[0] == '=')
 				evdev_report(0, gameplay, now);
 			return;
 		case '~':                                    /* xterm ESC[n~ nav keys */
@@ -1191,7 +1130,7 @@ static void csi_final(char fin, int gameplay, int now)
 			 * it would collide with SyncTERM's Shift-Insert (paste); Look_Left stays on Kpad0. */
 			if (gameplay && csi_params(p, 1) >= 1 && p[0] == 3) {
 				int sc = sc_Delete;
-				if (g_kitty_active) {
+				if (syncduke_kitty_active()) {
 					int mod, ev;
 					kitty_key(&mod, &ev);
 					if (ev == 3)
@@ -1213,7 +1152,7 @@ static void csi_final(char fin, int gameplay, int now)
 				int look = (p[0] == 5 || p[0] == 6);       /* PgUp/PgDn = Look; else Home/End = Aim */
 				if (gameplay) {
 					int sc = look ? (up ? sc_kpad_9 : sc_kpad_3) : (up ? sc_kpad_7 : sc_kpad_1);
-					if (g_kitty_active) { int m, e; kitty_key(&m, &e); look_hold(sc, e); return; }
+					if (syncduke_kitty_active()) { int m, e; kitty_key(&m, &e); look_hold(sc, e); return; }
 					if (look) { if (!kitty_release_event())
 									syncduke_pitch_step += up ? 1 : -1; }                         /* byte: notch */
 					else
@@ -1248,10 +1187,11 @@ static void csi_final(char fin, int gameplay, int now)
 			 * key now arrives here with a press/repeat/release event.  Otherwise this is a key
 			 * event: CSI <codepoint> ; <mods> : <event> u. */
 			if (csi_len > 0 && csi_par[0] == '?') {
-				if (!g_kitty_active && !g_evdev_active) {   /* evdev (if negotiated) takes precedence */
-					g_kitty_active = 1;
-					syncduke_out_put("\x1b[>11u", 6);
-				}
+				char   ks[TERMGFX_KEYMODE_SEQ_MAX];   /* evdev, if negotiated, takes precedence */
+				size_t kn = termgfx_keymode_enable_kitty(&g_km, ks, sizeof ks);
+
+				if (kn > 0)
+					syncduke_out_put(ks, kn);
 				return;
 			}
 			{
@@ -1368,11 +1308,13 @@ static void csi_final(char fin, int gameplay, int now)
 					 * that advertises it doesn't speak kitty anyway): enable reports (=1h) and
 					 * suppress the translated byte stream (=2h), so keys arrive only as the
 					 * CSI = <code> K/k edges decoded in evdev_report(). */
-					if (p[k] == 8 && csi_par[0] == '<' && !g_evdev_active && !g_kitty_active) {
-						g_evdev_active     = 1;
-						g_evdev_enabled_ms = syncduke_in_now_ms();
-						g_evdev_settling   = 1;
-						syncduke_out_put("\x1b[=1h\x1b[=2h", 10);
+					if (p[k] == 8 && csi_par[0] == '<') {
+						char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+						size_t kn = termgfx_keymode_enable_evdev(&g_km, ks, sizeof ks,
+						                                         syncduke_in_now_ms());
+
+						if (kn > 0)
+							syncduke_out_put(ks, kn);   /* arms the held-key settle window */
 					}
 				}
 			}

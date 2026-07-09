@@ -125,10 +125,13 @@ static void syncduke_term_restore(void)
 	termgfx_audio_sfx_stop_all(sd_audio); /* ...and any looping ambient SFX (wind/machinery/etc.) */
 	syncduke_out_flush();                 /* drain the staged Flush APC now -- the buffered path is dropped at exit */
 	(void)send(g_iosock, "\x1b[?1003l\x1b[?1006l", 16, 0);
-	if (syncduke_kitty_active())
-		(void)send(g_iosock, "\x1b[<u", 4, 0);   /* pop the kitty keyboard flags we pushed */
-	if (syncduke_evdev_active())
-		(void)send(g_iosock, "\x1b[=2l\x1b[=1l", 10, 0);   /* restore translation, disable physical key reports */
+	{   /* undo whichever key mode was negotiated (termgfx); nothing if none was */
+		char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+		size_t kn = termgfx_keymode_restore(syncduke_keymode(), ks, sizeof ks);
+
+		if (kn > 0)
+			(void)send(g_iosock, ks, (int)kn, 0);
+	}
 	(void)send(g_iosock, termgfx_term_leave, (int)strlen(termgfx_term_leave), 0);
 #else
 	if (g_fd < 0)
@@ -137,10 +140,13 @@ static void syncduke_term_restore(void)
 	termgfx_audio_sfx_stop_all(sd_audio); /* ...and any looping ambient SFX (wind/machinery/etc.) */
 	syncduke_out_flush();                 /* drain the staged Flush APC now -- the buffered path is dropped at exit */
 	(void)write(g_fd, "\x1b[?1003l\x1b[?1006l", 16);
-	if (syncduke_kitty_active())
-		(void)write(g_fd, "\x1b[<u", 4);         /* pop the kitty keyboard flags we pushed */
-	if (syncduke_evdev_active())
-		(void)write(g_fd, "\x1b[=2l\x1b[=1l", 10);   /* restore translation, disable physical key reports */
+	{   /* undo whichever key mode was negotiated (termgfx); nothing if none was */
+		char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+		size_t kn = termgfx_keymode_restore(syncduke_keymode(), ks, sizeof ks);
+
+		if (kn > 0)
+			(void)write(g_fd, ks, kn);
+	}
 	(void)write(g_fd, termgfx_term_leave, strlen(termgfx_term_leave));
 #endif
 }
@@ -1011,7 +1017,7 @@ void syncduke_present(void)
 		syncduke_out_puts(termgfx_term_probe);   /* learn the terminal's pixel canvas */
 		syncduke_out_puts("\x1b[c\x1b[<c");      /* DA1 + CTDA: detect sixel (DA1 param 4 / CTDA cap 4) + SyncTERM; a no-sixel reply (conhost) -> text tier */
 		syncduke_out_puts(termgfx_query_jxl);    /* Q;JXL: SyncTERM replies ESC[=1;{0,1}-n -> JXL/APC tier when supported */
-		syncduke_out_puts("\x1b[?u");            /* kitty keyboard-protocol query: a CSI?<flags>u reply -> true key-up (hold-to-move) */
+		syncduke_out_puts(termgfx_keymode_query_kitty);   /* kitty keyboard-protocol query: a CSI?<flags>u reply -> true key-up (hold-to-move) */
 		termgfx_audio_probe(sd_audio);           /* Q;libsndfile: SyncTERM replies ESC[=7;100;{0,1}n -> digital-SFX tier */
 		syncduke_dsr_sent(syncduke_now_ms());    /* the probe's ESC[6n is a DSR too (keeps the RTT ring aligned) */
 		cleared    = 1;
