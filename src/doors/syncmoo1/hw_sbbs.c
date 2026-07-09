@@ -203,13 +203,30 @@ void hw_video_set_palette(const uint8_t *palette, int first, int num)
     }
 }
 
+/* Engine-side only, exactly as hw/sdl/hwsdl_video.c does it: this updates
+ * ui_palette and nothing else. The push to the display is hw_video_refresh_palette()
+ * below, which uipal.c's ui_palette_update() calls once after a batch of these. */
 void hw_video_set_palette_color(int i, uint8_t r, uint8_t g, uint8_t b)
 {
     ui_palette_set_color(i, r, g, b);
 }
 
+/* THE palette push (hw/sdl's "video.setpal(ui_palette, 0, 256)"). Rebuild our
+ * 8-bit sixel copy from the engine's authoritative 6-bit ui_palette.
+ *
+ * This must not be a no-op: ui_palette_set_n()/ui_palette_fade_n()
+ * (1oom/src/ui/classic/uipal.c) drive every fade and palette animation through
+ * hw_video_set_palette_color() -- which only writes ui_palette -- and then call
+ * ui_palette_update() -> here to make it visible. 1oom's very first present
+ * happens while the palette is still all-black (it fades the picture up), so a
+ * backend that ignores this hook shows the game drawing correctly into an
+ * all-black palette: a blank screen, forever. */
 void hw_video_refresh_palette(void)
 {
+    int i;
+
+    for (i = 0; i < 256 * 3; ++i)
+        g_palette[i] = palette_6bit_to_8bit(ui_palette[i]);
 }
 
 uint8_t *hw_video_get_buf(void)
