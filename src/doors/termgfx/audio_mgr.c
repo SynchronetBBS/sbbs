@@ -556,6 +556,8 @@ void termgfx_audio_sfx_store(termgfx_audio_t *m, const char *leaf,
 
 	if (m == NULL || m->tier < 1 || leaf == NULL || leaf[0] == '\0' || filelen == 0)
 		return;
+	if (strlen(leaf) >= NAMEDLEN)          // leaf too long: reject to prevent truncation
+		return;
 	if (named_find(m, leaf) >= 0)          // already Stored this session
 		return;
 	if (m->named_count >= NAMEDMAX)
@@ -563,8 +565,7 @@ void termgfx_audio_sfx_store(termgfx_audio_t *m, const char *leaf,
 
 	cache_name(m, "sfx", leaf, fn, sizeof(fn));
 	i = m->named_count;
-	strncpy(m->named[i], leaf, NAMEDLEN - 1);
-	m->named[i][NAMEDLEN - 1] = '\0';
+	snprintf(m->named[i], NAMEDLEN, "%s", leaf);
 	m->named_dur[i] = sfx_store_bytes(m, fn, filedata, filelen);
 	m->named_count = i + 1;
 }
@@ -576,6 +577,8 @@ void termgfx_audio_sfx_play_named(termgfx_audio_t *m, const char *leaf,
 	int  i;
 
 	if (m == NULL || m->tier < 1 || leaf == NULL || leaf[0] == '\0')
+		return;
+	if (strlen(leaf) >= NAMEDLEN)          // leaf too long: reject to prevent lookup failure
 		return;
 	i = named_find(m, leaf);
 	if (i < 0)                             // never Stored -> nothing to Load

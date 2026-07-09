@@ -64,10 +64,14 @@ void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
                             const void *filedata, size_t filelen, int vol, int pan);
 
 // Name-addressed SFX. `leaf` is a caller-supplied cache-name component -- use a
-// content hash (see hash.h) so identical bytes reuse one cache entry. Unlike the
-// id-addressed pair above, Store and dispatch are separate: _store uploads once
-// (no sound), _play_named dispatches an already-Stored leaf. Both no-op below
-// tier 1, so a terminal without the audio APC costs nothing and stays silent.
+// content hash (see hash.h) so identical bytes reuse one cache entry. CONSTRAINT:
+// `leaf` must be shorter than 16 bytes (not counting NUL). Longer leaves are
+// ignored: _store stores nothing, _play_named dispatches nothing (silent). This
+// is a fixed-width table (NAMEDLEN=16) keyed on leaf; the bound prevents silent
+// truncation/lookup failures. Unlike the id-addressed pair above, Store and
+// dispatch are separate: _store uploads once (no sound), _play_named dispatches
+// an already-Stored leaf. Both no-op below tier 1, so a terminal without the
+// audio APC costs nothing and stays silent.
 void termgfx_audio_sfx_store(termgfx_audio_t *m, const char *leaf,
                              const void *filedata, size_t filelen);
 void termgfx_audio_sfx_play_named(termgfx_audio_t *m, const char *leaf,
