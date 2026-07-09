@@ -25,6 +25,8 @@
 	                                     * one won't grow the buffer without bound) */
 
 #define KEYMAX       1024            // id space (Duke ~450, Doom ~110)
+#define NAMEDMAX     64               // distinct name-addressed SFX per session
+#define NAMEDLEN     16               // leaf: "s_" + 8 hex + NUL, rounded up
 #define NSLOT        256             // SyncTERM patch slots
 #define MUSIC_SLOT   0               // slot 0 reserved for the music loop
 #define SFX_SLOT_LO  1               // SFX slots 1..255 (transient load->queue buffers)
@@ -58,6 +60,9 @@ struct termgfx_audio {
 	uint8_t sfx_up[KEYMAX];                // id has been C;S-Stored (sfx file)
 	int sfx_dur[KEYMAX];                   // exact play time (ms) captured at Store/transcode
 	                                       // (0 = unknown -> sniffed estimate at dispatch)
+	char named[NAMEDMAX][NAMEDLEN];        // name-addressed SFX Stored this session
+	int named_dur[NAMEDMAX];               // their exact play time (ms), 0 = unknown
+	int named_count;
 	char mus_names[MUS_TRACKS][MUSNAME_MAX];     // music tracks Stored this session
 	int mus_count;
 	int next_slot;                         // round-robin SFX slot cursor
@@ -467,29 +472,52 @@ void termgfx_audio_sfx(termgfx_audio_t *m, int id,
 // some of Duke's multi-block VOCs ("incompatible VOC sections") -> silent SFX, so a
 // VOC is transcoded to a clean 8-bit WAV; anything else (WAV/OGG/...) ships verbatim
 // (content-sniffed). Shared by one-shot SFX and looping SFX.
-static void sfx_cache_file_once(termgfx_audio_t *m, int id,
-                                const void *filedata, size_t filelen, const char *fn)
+// Transcode + Store one sample under cache name `fn`. Returns its exact play
+// time in ms (0 = unknown). No "already stored" bookkeeping -- the id path and
+// the name path each own theirs.
+static int sfx_store_bytes(termgfx_audio_t *m, const char *fn,
+                           const void *filedata, size_t filelen)
 {
 	uint8_t *pcm = NULL;
 	int      rate = 0;
 	size_t   n;
+	int      dur = 0;
 
-	if (m->sfx_up[id])
-		return;
 	n = termgfx_audio_voc_to_pcm(filedata, filelen, &pcm, &rate);
 	if (n > 0) {
 		send_buf(m, termgfx_audio_cache_pcm(&m->buf, &m->cap, fn, pcm, n, 8, 1, rate),
 		         TERMGFX_AUDIO_PRIO);
 		if (rate > 0)   // exact play time (8-bit mono PCM) for the busy tracking
-			m->sfx_dur[id] = (int)((uint64_t)n * 1000u / (uint64_t)rate);
+			dur = (int)((uint64_t)n * 1000u / (uint64_t)rate);
 		free(pcm);
 	}
 	else {
 		send_buf(m, termgfx_audio_cache_file(&m->buf, &m->cap, fn, filedata, filelen),
 		         TERMGFX_AUDIO_PRIO);
-		m->sfx_dur[id] = sfx_file_dur_ms(filedata, filelen);
+		dur = sfx_file_dur_ms(filedata, filelen);
 	}
+	return dur;
+}
+
+static void sfx_cache_file_once(termgfx_audio_t *m, int id,
+                                const void *filedata, size_t filelen, const char *fn)
+{
+	if (m->sfx_up[id])
+		return;
+	m->sfx_dur[id] = sfx_store_bytes(m, fn, filedata, filelen);
 	m->sfx_up[id] = 1;
+}
+
+// Index of `leaf` among the name-addressed samples Stored this session, or -1.
+static int named_find(const termgfx_audio_t *m, const char *leaf)
+{
+	int i;
+
+	for (i = 0; i < m->named_count; ++i) {
+		if (strcmp(m->named[i], leaf) == 0)
+			return i;
+	}
+	return -1;
 }
 
 void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
@@ -508,6 +536,52 @@ void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
 	sfx_dispatch(m, fn, vol, pan,
 	             m->sfx_dur[id] > 0 ? m->sfx_dur[id]              // exact (captured at transcode)
 	                                : sfx_file_dur_ms(filedata, filelen));
+}
+
+// ---- name-addressed SFX ---------------------------------------------------
+// The id-addressed pair above keys the client-cache name on the caller's id
+// ("<prefix>/sfx/<id>") and Stores lazily, on first play. These two key it on a
+// caller-supplied leaf -- a content hash, e.g. "s_<fnv1a8>" -- and split Store
+// from dispatch, so a door can upload eagerly while the engine is still loading.
+//
+// A content-addressed name is also what makes a cross-session upload skip sound:
+// name-presence then means "the right bytes". (The C;L cache-list skip is still
+// music-only; widening it to sfx/* is a separate change.)
+
+void termgfx_audio_sfx_store(termgfx_audio_t *m, const char *leaf,
+                             const void *filedata, size_t filelen)
+{
+	char fn[48];
+	int  i;
+
+	if (m == NULL || m->tier < 1 || leaf == NULL || leaf[0] == '\0' || filelen == 0)
+		return;
+	if (named_find(m, leaf) >= 0)          // already Stored this session
+		return;
+	if (m->named_count >= NAMEDMAX)
+		return;                            // table full: this sample stays silent
+
+	cache_name(m, "sfx", leaf, fn, sizeof(fn));
+	i = m->named_count;
+	strncpy(m->named[i], leaf, NAMEDLEN - 1);
+	m->named[i][NAMEDLEN - 1] = '\0';
+	m->named_dur[i] = sfx_store_bytes(m, fn, filedata, filelen);
+	m->named_count = i + 1;
+}
+
+void termgfx_audio_sfx_play_named(termgfx_audio_t *m, const char *leaf,
+                                  int vol, int pan)
+{
+	char fn[48];
+	int  i;
+
+	if (m == NULL || m->tier < 1 || leaf == NULL || leaf[0] == '\0')
+		return;
+	i = named_find(m, leaf);
+	if (i < 0)                             // never Stored -> nothing to Load
+		return;
+	cache_name(m, "sfx", leaf, fn, sizeof(fn));
+	sfx_dispatch(m, fn, vol, pan, m->named_dur[i]);
 }
 
 // ---- looping SFX (ambience) ----------------------------------------------
