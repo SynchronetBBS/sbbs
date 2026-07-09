@@ -347,7 +347,11 @@ def parse_args(argv):
                     metavar=("COL", "ROW"))
     p.add_argument("--click-game", nargs=2, type=int, action="append", default=[],
                     metavar=("GX", "GY"), dest="click_game")
-    p.add_argument("--new", action="store_true")
+    # 1oom's -new takes a GAMESEED argument (OPT[:RACES[:BANNERS[:GSEED[:HUMANS]]]],
+    # game.c:422, arity 1).  A bare "-new" makes options_parse() fail and the engine
+    # abort before it ever writes a config -- which looks exactly like "the door hung".
+    p.add_argument("--new", nargs="?", const="200:0:0:0:1", default=None,
+                   metavar="GAMESEED")
     p.add_argument("--skipintro", action="store_true")
     p.add_argument("--savequit", action="store_true")
     ns = p.parse_args(argv)
@@ -379,7 +383,7 @@ def main():
 
     argv = ["syncmoo1", "-home", home]
     if ns.new:
-        argv.append("-new")
+        argv += ["-new", ns.new]
     if ns.skipintro:
         argv.append("-skipintro")
     if ns.savequit:

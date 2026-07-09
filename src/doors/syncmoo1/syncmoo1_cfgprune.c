@@ -76,7 +76,22 @@ static int sm_base_value(const char *base, const char *key,
     return 0;
 }
 
-int sm_cfg_prune(const char *base, const char *user, char **out, size_t *outlen)
+/* Is `key` in the NULL-terminated `keys` array? */
+static int sm_key_listed(const char *const *keys, const char *key)
+{
+    size_t i;
+
+    if (keys == NULL)
+        return 0;
+    for (i = 0; keys[i] != NULL; ++i) {
+        if (strcmp(keys[i], key) == 0)
+            return 1;
+    }
+    return 0;
+}
+
+int sm_cfg_prune(const char *base, const char *user,
+                 const char *const *drop_keys, char **out, size_t *outlen)
 {
     size_t cap = strlen(user) + 1;
     char  *buf = (char *)malloc(cap);
@@ -93,10 +108,13 @@ int sm_cfg_prune(const char *base, const char *user, char **out, size_t *outlen)
         size_t      len = (nl != NULL) ? (size_t)(nl - p) : strlen(p);
         char        k[128], v[256], bv[256];
         int         drop = 0;
+        int         is_kv = sm_split(p, len, k, sizeof k, v, sizeof v);
 
-        if (sm_split(p, len, k, sizeof k, v, sizeof v)
-            && sm_base_value(base, k, bv, sizeof bv)
-            && strcmp(v, bv) == 0)
+        if (is_kv && sm_key_listed(drop_keys, k))
+            drop = 1;   /* door-owned, re-derived every run: never persist it */
+        else if (is_kv
+                 && sm_base_value(base, k, bv, sizeof bv)
+                 && strcmp(v, bv) == 0)
             drop = 1;   /* the user never diverged from the sysop's value */
 
         if (!drop) {

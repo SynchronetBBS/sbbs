@@ -22,7 +22,16 @@ int sm_cfg_key(const char *line, char *out, size_t outlen);
  * appears in `base` WITH THE SAME VALUE. Comments, blank lines, malformed
  * lines, and keys absent from `base` are all preserved verbatim. Values are
  * compared with surrounding whitespace stripped, so "k=1" and "k = 1" match.
+ *
+ * `drop_keys` is an optional NULL-terminated array of keys to drop
+ * UNCONDITIONALLY, whatever their value. It exists for settings the door owns
+ * and re-derives every run, which have no business being persisted per user --
+ * above all `opt.data_path`, which 1oom would otherwise save as an ABSOLUTE
+ * path, breaking every player's config the day the sysop moves the BBS tree.
+ * Pass NULL for none.
+ *
  * Returns 0 on success, -1 on allocation failure (then *out is NULL). */
-int sm_cfg_prune(const char *base, const char *user, char **out, size_t *outlen);
+int sm_cfg_prune(const char *base, const char *user,
+                 const char *const *drop_keys, char **out, size_t *outlen);
 
 #endif /* SYNCMOO1_CFGPRUNE_H_ */

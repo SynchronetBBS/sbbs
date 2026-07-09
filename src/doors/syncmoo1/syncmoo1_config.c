@@ -250,6 +250,18 @@ void sm_config_seed_1oom(void)
     }
 }
 
+/* Keys the DOOR owns and re-resolves on every run, so persisting them per user
+ * is at best noise and at worst a trap. opt.data_path is the trap: 1oom's
+ * cfg_save() writes it as the ABSOLUTE directory we handed it from hw_init(),
+ * so a sysop who moves the BBS tree leaves every player's config pointing at a
+ * path that no longer exists. We resolve the data dir from SYNCMOO1_LBX (or the
+ * launch dir) on every run and apply it AFTER cfg_load() precisely so a saved
+ * value can never win -- there is nothing for it to do but rot. Drop it. */
+static const char *const sm_prune_always[] = {
+    "opt.data_path",
+    NULL
+};
+
 void sm_config_prune_user_cfg(void)
 {
     char  *base, *user, *pruned = NULL;
@@ -269,7 +281,7 @@ void sm_config_prune_user_cfg(void)
     user = sm_slurp(sm_user_cfg);
 
     if (base != NULL && user != NULL
-        && sm_cfg_prune(base, user, &pruned, &n) == 0) {
+        && sm_cfg_prune(base, user, sm_prune_always, &pruned, &n) == 0) {
         f = fopen(sm_user_cfg, "wb");
         if (f != NULL) {
             fwrite(pruned, 1, n, f);   /* short write -> file as-is next run */
