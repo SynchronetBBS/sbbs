@@ -79,6 +79,7 @@
 #include "door_input.h"
 #include "door_node.h"   /* Task 5: sbbs_node status/Ctrl-U/Ctrl-P */
 #include "sbbs_node.h"   /* Task 5: sbbs_my_node() for the per-node log filename */
+#include "keymode.h"   /* termgfx: key-mode negotiation (shared with door_input.c) */
 #include "sixel.h"
 #include "jxl.h"
 #include "apc.h"
@@ -705,9 +706,15 @@ static void door_save_fit(void)
 /* CTDA cap-8 "physical key event" (SyncTERM evdev) reports -- enabled from
  * door_csi_final()'s 'c' case below; door_input.c's evdev decoder queries
  * this (door_io_evdev_active()) to gate its own 'K'/'k' handling. */
-static int g_evdev_active;
+/* The negotiated key mode (termgfx/keymode.h). Lives here because door_io.c
+ * sees the CTDA reply that enables evdev and owns the leave path that undoes
+ * it; door_input.c reaches it through door_io_keymode() to drive the kitty
+ * side and to check the enable-time settle window. */
+static termgfx_keymode_t g_km;
 
-int door_io_evdev_active(void) { return g_evdev_active; }
+termgfx_keymode_t *door_io_keymode(void) { return &g_km; }
+
+int door_io_evdev_active(void) { return termgfx_keymode_evdev_active(&g_km); }
 
 static int g_status_type = -1;         /* pre-door DECSSDT status-line type captured from the
                                         * DECRQSS reply (-1 = not captured / unsupported); the
@@ -801,10 +808,13 @@ static void door_term_restore(void)
 	termgfx_audio_music_stop(g_audio);    /* stop the looping Theme music ... */
 	termgfx_audio_sfx_stop_all(g_audio);  /* ...and any pooled SFX channels */
 	door_out_put("\x1b[?1003l\x1b[?1006l\x1b[?1016l", 24);
-	if (door_input_kitty_active())
-		door_out_put("\x1b[<u", 4);            /* pop the kitty flags we pushed */
-	if (g_evdev_active)
-		door_out_put("\x1b[=2l\x1b[=1l", 10);  /* restore translation, disable reports */
+	{   /* undo whichever key mode was negotiated (termgfx); a no-op if none was */
+		char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+		size_t kn = termgfx_keymode_restore(&g_km, ks, sizeof ks);
+
+		if (kn > 0)
+			door_out_put(ks, kn);
+	}
 	{   /* restore the status line we hid at entry: the captured pre-door type,
 		 * or the usual default (indicator) if DECRQSS never answered */
 		char   sb[8];
@@ -947,7 +957,7 @@ static void door_out_put(const void *buf, size_t len)
 static void door_out_puts(const char *s) { door_out_put(s, strlen(s)); }
 
 /* --- audio (Task 4) ---------------------------------------------------------
- * g_audio (declared above, near g_evdev_active) is owned here, same as
+ * g_audio (declared above, near g_km) is owned here, same as
  * syncduke_io.c's sd_audio: door/soundio_termgfx.cpp (the engine's
  * SoundImp_* backend) reaches it via door_io_audio() to turn engine-decoded
  * PCM into SFX/music APCs; this file feeds it inbound bytes (the cap-probe
@@ -1135,6 +1145,11 @@ static void door_cursor_save_to(int row, int col)
 static void door_cursor_restore(void) { door_out_put("\x1b" "8", 2); }
 
 /* --- monotonic clock (shared by pacing) ------------------------------------ */
+static uint32_t door_now_ms(void);
+
+/* door_input.c's evdev settle check needs this same clock domain. */
+uint32_t door_io_now_ms(void) { return door_now_ms(); }
+
 static uint32_t door_now_ms(void)
 {
 #ifdef _WIN32
@@ -1733,7 +1748,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 		door_out_puts(termgfx_term_probe);
 		door_out_puts("\x1b[c\x1b[<c");
 		door_out_puts(termgfx_query_jxl);
-		door_out_puts("\x1b[?u");           /* kitty keyboard-protocol query (Task 3, door_input.c) */
+		door_out_puts(termgfx_keymode_query_kitty);   /* kitty keyboard-protocol query (Task 3, door_input.c) */
 		door_out_puts("\x1b[?1003h\x1b[?1006h"); /* SGR mouse tracking, always on -- no steering
 		                                           * toggle here (unlike SyncDuke's Ctrl-O), the
 		                                           * RTS mouse cursor/clicks are always wanted */
@@ -1984,10 +1999,13 @@ static void door_csi_final(char fin)
 					 * anyway): enable reports (=1h) and suppress the translated
 					 * byte stream (=2h), so keys arrive only as the CSI=<code>K/k
 					 * edges door_input.c's evdev decoder handles. */
-					if (p[k] == 8 && g_csi_par[0] == '<' && !g_evdev_active
-					    && !door_input_kitty_active()) {
-						g_evdev_active = 1;
-						door_out_puts("\x1b[=1h\x1b[=2h");
+					if (p[k] == 8 && g_csi_par[0] == '<') {
+						char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+						size_t kn = termgfx_keymode_enable_evdev(&g_km, ks, sizeof ks,
+						                                         door_now_ms());
+
+						if (kn > 0)
+							door_out_put(ks, kn);   /* arms the held-key settle window */
 					}
 				}
 			}

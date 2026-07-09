@@ -9,6 +9,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "keymode.h"   // termgfx: termgfx_keymode_t (the negotiated key mode)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -39,6 +41,16 @@ void door_io_send(const void *buf, size_t len);
 // True once the CTDA capability reply advertised cap 8 (SyncTERM physical
 // key/evdev reports) and door_io.c enabled them.
 int door_io_evdev_active(void);
+
+// The negotiated terminal key mode (../../termgfx/keymode.h). Owned by door_io.c
+// -- it sees the CTDA reply that enables evdev and owns the leave path that
+// undoes it -- and shared with door_input.c, which drives the kitty side and
+// checks the enable-time settle window.
+termgfx_keymode_t *door_io_keymode(void);
+
+// door_io.c's monotonic millisecond clock, exposed so door_input.c's evdev
+// settle-window check runs in the same clock domain as the pacing.
+uint32_t door_io_now_ms(void);
 
 // Advance to the next available graphics tier (the F4 action). door_io.c's own
 // probe-reply parser handles the SS3/CSI/kitty "S" and legacy Ctrl-D forms of

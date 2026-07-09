@@ -32,6 +32,7 @@
 #include "door.h"
 #include "door_io.h"
 #include "door_input.h"
+#include "keymode.h"   /* termgfx: key-mode negotiation + kitty/evdev decode */
 
 /* --- plain Win32-style VK_* values (wwkeyboard.h's non-SDL branch) --------- */
 #define VK_LBUTTON   0x01
@@ -391,43 +392,19 @@ static void mouse_event(int button, int col, int row, int release)
  * keys themselves, as their own events) so every key from here on arrives as
  * a CSI-u/CSI-letter/CSI-~ event with a real ";mods:event" tail (event 1
  * press, 2 repeat, 3 release) -- true key-up, unlike a plain terminal. */
-static int g_kitty_active;
+int door_input_kitty_active(void)
+{
+	return termgfx_keymode_kitty_active(door_io_keymode());
+}
 
-int door_input_kitty_active(void) { return g_kitty_active; }
-
-/* mirrors syncduke_input.c's kitty_key(): "key;mods:event" from g_csi_par. */
 static int  g_csi_len;
 static char g_csi_par[64];
 
+/* The kitty CSI-u parameter decode lives in termgfx (keymode.h), shared with the
+ * sibling doors; this wrapper just feeds it this module's CSI accumulator. */
 static int kitty_parse(int *mod, int *ev)
 {
-	int key = 0, v = 0, sub = 0, field = 0, in_sub = 0, i;
-	*mod = 1;
-	*ev  = 1;
-	for (i = 0; i <= g_csi_len; i++) {
-		char c = (i < g_csi_len) ? g_csi_par[i] : ';';
-		if (c >= '0' && c <= '9') {
-			if (in_sub)
-				sub = sub * 10 + (c - '0');
-			else
-				v   = v   * 10 + (c - '0');
-		} else if (c == ':') {
-			in_sub = 1;
-			sub = 0;
-		} else if (c == ';') {
-			if (field == 0)
-				key = v;
-			else if (field == 1) {
-				if (v)
-					*mod = v;
-				if (in_sub && sub)
-					*ev = sub;
-			}
-			field++;
-			v = 0; sub = 0; in_sub = 0;
-		}
-	}
-	return key;
+	return termgfx_kitty_parse(g_csi_par, g_csi_len, mod, ev);
 }
 
 /* Parse up to `max` ';'-separated decimal params from g_csi_par (a leading
@@ -489,40 +466,9 @@ static int kitty_mod_vk(int cp)
  * door_io_evdev_active() mirrors door_io.c's flag so a coincidental bare
  * 'K'/'k' from some other source still falls back to its CSI meaning
  * (End / ignored) instead of being misread as an evdev report. */
-#define EVDEV_MOD_SHIFT 1
-#define EVDEV_MOD_CTRL  2
-#define EVDEV_MOD_ALT   4
 static unsigned g_evdev_mods;
 
-/* US-QWERTY evdev keycode -> { unshifted, shifted } ASCII (0 = not a simple
- * ASCII key -- arrows/nav/F-keys are handled by keycode directly, below).
- * Generic to the Linux evdev main-block layout, not engine-specific (adapted
- * from syncduke_input.c's evdev_ascii[], same data). */
-static const char door_evdev_ascii[58][2] = {
-	{ 0, 0 },                                                                           /* 0  reserved */
-	{ 27, 27 },                                                                         /* 1  ESC */
-	{ '1', '!' }, { '2', '@' }, { '3', '#' }, { '4', '$' }, { '5', '%' },               /* 2-6 */
-	{ '6', '^' }, { '7', '&' }, { '8', '*' }, { '9', '(' }, { '0', ')' },               /* 7-11 */
-	{ '-', '_' }, { '=', '+' },                                                         /* 12-13 */
-	{ 8, 8 }, { 9, 9 },                                                                 /* 14 BkSp, 15 Tab */
-	{ 'q', 'Q' }, { 'w', 'W' }, { 'e', 'E' }, { 'r', 'R' }, { 't', 'T' }, { 'y', 'Y' }, /* 16-21 */
-	{ 'u', 'U' }, { 'i', 'I' }, { 'o', 'O' }, { 'p', 'P' },                             /* 22-25 */
-	{ '[', '{' }, { ']', '}' },                                                         /* 26-27 */
-	{ '\r', '\r' },                                                                     /* 28 Enter */
-	{ 0, 0 },                                                                           /* 29 LeftCtrl */
-	{ 'a', 'A' }, { 's', 'S' }, { 'd', 'D' }, { 'f', 'F' }, { 'g', 'G' },               /* 30-34 */
-	{ 'h', 'H' }, { 'j', 'J' }, { 'k', 'K' }, { 'l', 'L' },                             /* 35-38 */
-	{ ';', ':' }, { '\'', '"' }, { '`', '~' },                                          /* 39-41 */
-	{ 0, 0 },                                                                           /* 42 LeftShift */
-	{ '\\', '|' },                                                                      /* 43 */
-	{ 'z', 'Z' }, { 'x', 'X' }, { 'c', 'C' }, { 'v', 'V' }, { 'b', 'B' },               /* 44-48 */
-	{ 'n', 'N' }, { 'm', 'M' },                                                         /* 49-50 */
-	{ ',', '<' }, { '.', '>' }, { '/', '?' },                                           /* 51-53 */
-	{ 0, 0 },                                                                           /* 54 RightShift */
-	{ '*', '*' },                                                                       /* 55 KP* */
-	{ 0, 0 },                                                                           /* 56 LeftAlt */
-	{ ' ', ' ' },                                                                       /* 57 Space */
-};
+
 
 /* Apply one physical key edge. Modifier codes update g_evdev_mods AND inject
  * a real VK_SHIFT/CONTROL/MENU press/release (true Down()-state hold, unlike
@@ -532,29 +478,29 @@ static void evdev_edge(int code, int down)
 	int            shift;
 	unsigned short vk = 0;
 	int            c;
+	int            mod = termgfx_evdev_modifier(code);   /* L/R Ctrl, Shift, Alt */
+
+	/* Modifier codes update g_evdev_mods AND inject a real VK_SHIFT/CONTROL/MENU
+	 * press/release (true Down()-state hold, unlike the legacy bracket) since
+	 * evdev reports genuine press/release per key. */
+	if (mod != 0) {
+		if (down)
+			g_evdev_mods |= (unsigned)mod;
+		else
+			g_evdev_mods &= ~(unsigned)mod;
+		emit_key(mod == TERMGFX_MOD_CTRL ? VK_CONTROL
+		         : mod == TERMGFX_MOD_SHIFT ? VK_SHIFT : VK_MENU, !down);
+		return;
+	}
+
+	/* SyncTERM re-reports the keys already held when physical reports are
+	 * enabled -- the Enter still down from the BBS menu. Drop those press edges
+	 * (termgfx/keymode.h); releases and the modifier tracking above always run,
+	 * so nothing can stick. */
+	if (down && termgfx_keymode_evdev_settling(door_io_keymode(), door_io_now_ms()))
+		return;
 
 	switch (code) {
-		case 29: case 97:                          /* L/R Ctrl */
-			if (down)
-				g_evdev_mods |= EVDEV_MOD_CTRL;
-			else
-				g_evdev_mods &= ~EVDEV_MOD_CTRL;
-			emit_key(VK_CONTROL, !down);
-			return;
-		case 42: case 54:                          /* L/R Shift */
-			if (down)
-				g_evdev_mods |= EVDEV_MOD_SHIFT;
-			else
-				g_evdev_mods &= ~EVDEV_MOD_SHIFT;
-			emit_key(VK_SHIFT, !down);
-			return;
-		case 56: case 100:                         /* L/R Alt */
-			if (down)
-				g_evdev_mods |= EVDEV_MOD_ALT;
-			else
-				g_evdev_mods &= ~EVDEV_MOD_ALT;
-			emit_key(VK_MENU, !down);
-			return;
 		case 103: case 72: vk = VK_UP;    break;   /* Up (+ numpad alias, NumLock off) */
 		case 108: case 80: vk = VK_DOWN;  break;
 		case 105: case 75: vk = VK_LEFT;  break;
@@ -584,12 +530,10 @@ static void evdev_edge(int code, int down)
 		return;
 	}
 
-	if (code < 0 || code >= (int)(sizeof door_evdev_ascii / sizeof door_evdev_ascii[0]))
-		return;
-	c = door_evdev_ascii[code][(g_evdev_mods & EVDEV_MOD_SHIFT) ? 1 : 0];
+	c = termgfx_evdev_ascii(code, (g_evdev_mods & TERMGFX_MOD_SHIFT) != 0);
 	if (c == 0)
 		return;
-	if ((g_evdev_mods & EVDEV_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z') {
+	if ((g_evdev_mods & TERMGFX_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z') {
 		/* Ctrl+letter: the real Ctrl press already went out above (true
 		 * hold), so just inject the plain letter -- Put_Key_Message's
 		 * own Down(KN_LCTRL) OR's WWKEY_CTRL_BIT in. */
@@ -601,7 +545,7 @@ static void evdev_edge(int code, int down)
 	vk = door_input_vk_from_ascii(c, &shift);
 	if (vk == 0)
 		return;
-	if (shift && !(g_evdev_mods & EVDEV_MOD_SHIFT)) {
+	if (shift && !(g_evdev_mods & TERMGFX_MOD_SHIFT)) {
 		/* evdev already gives the correctly-shifted ASCII (the table above
 		 * has both halves); a shift-needing VK with the modifier NOT
 		 * currently down would be table/edge data disagreeing -- fall back
@@ -638,7 +582,7 @@ static void csi_final(char fin)
 		case 'A': case 'B': case 'C': case 'D': {
 			unsigned short vk = (fin == 'A') ? VK_UP : (fin == 'B') ? VK_DOWN
 			                   : (fin == 'C') ? VK_RIGHT : VK_LEFT;
-			if (g_kitty_active) {
+			if (door_input_kitty_active()) {
 				int mod, ev;
 				kitty_parse(&mod, &ev);
 				(void)mod;   /* arrows carry no ctrl/alt action -- only the event type matters */
@@ -665,7 +609,7 @@ static void csi_final(char fin)
 		case 'P':                               /* F1 (CSI P / SS3 O P) */
 		case 'Q': {                              /* F2 (CSI Q / SS3 O Q) */
 			unsigned short vk = (fin == 'P') ? VK_F1 : VK_F2;
-			if (g_kitty_active) {
+			if (door_input_kitty_active()) {
 				int mod, ev;
 				kitty_parse(&mod, &ev);
 				(void)mod;   /* F1/F2 carry no ctrl/alt action -- only the event type matters */
@@ -678,7 +622,7 @@ static void csi_final(char fin)
 			int            np = door_in_csi_params(p, 1);
 			int            mod = 1, ev = 1;
 			unsigned short vk = 0;
-			if (g_kitty_active)
+			if (door_input_kitty_active())
 				kitty_parse(&mod, &ev);
 			(void)mod;   /* nav/F-keys carry no ctrl/alt action -- only the event type matters */
 			if (np < 1)
@@ -704,7 +648,7 @@ static void csi_final(char fin)
 				case 24:         vk = VK_F12;    break;
 				default:         return;
 			}
-			if (g_kitty_active)
+			if (door_input_kitty_active())
 				emit_key(vk, ev == 3);
 			else
 				emit_tap(vk);
@@ -716,12 +660,15 @@ static void csi_final(char fin)
 			 * modifiers). door_io.c has no way to see this reply itself
 			 * ('u' isn't one of its own probe finals), so it's on us to
 			 * both detect it and answer it (door_io_send(): we have no
-			 * socket of our own). */
+			 * socket of our own). The push itself, and the evdev-wins
+			 * guard, live in termgfx (keymode.h). */
 			if (g_csi_len > 0 && g_csi_par[0] == '?') {
-				if (!g_kitty_active && !door_io_evdev_active()) {
-					g_kitty_active = 1;
-					door_io_send("\x1b[>11u", 6);
-				}
+				char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+				size_t kn = termgfx_keymode_enable_kitty(door_io_keymode(),
+				                                         ks, sizeof ks);
+
+				if (kn > 0)
+					door_io_send(ks, kn);   /* a no-op if evdev already won */
 				return;
 			}
 			{
