@@ -55,10 +55,11 @@ main.c              frontend entry: door setup -> config -> load core -> run loo
 retro_core.c/.h     dlopen the core .so, resolve retro_* symbols, own its lifecycle
 retro_env.c         the retro_environment_t callback (the RETRO_ENVIRONMENT_* switch)
 retro_bridge.c      the hot callbacks: video / audio / input_poll / input_state
-syncretro_io.c/.h   terminal I/O: enter/probe/leave + the present path (termgfx compose+emit+pace)
-syncretro_input.c/.h  BBS socket decode (ESC/CSI/APC/kitty) -> a cached RetroPad state
-syncretro_door.c/.h   DOOR32.SYS / -s<fd> / -name / -home / -t session setup
-syncretro_config.c/.h per-user sandbox + core/system/save/ROM dir resolution
+syncretro_io.c      terminal I/O: enter/probe/leave + the present path (termgfx compose+emit+pace)
+syncretro_input.c   BBS socket decode (ESC/CSI/APC/kitty/evdev) -> a cached RetroPad state
+syncretro_door.c    DOOR32.SYS / -s<fd> / -name / -home / -t session setup
+syncretro_config.c  per-user sandbox + core/system/save/ROM path resolution
+syncretro_quant.c/.h  truecolor frame -> 256 colors + palette, for the sixel tier
 syncretro.h         cross-module contract shared by every syncretro_*.c (peer of retro_core.h)
 libretro.h          VENDORED MIT-licensed libretro API header (see PROVENANCE.md)
 ```
@@ -173,22 +174,64 @@ Mirrors `../syncmoo1/syncmoo1_io.c`. Owns:
   capability probe through `termgfx_caps_*` + the `SGR-pixels`/DA responses fed
   back from `syncretro_input`).
 - **`sr_io_present(rgb, w, h)`** -- the door's own present function (termgfx has
-  no single `present()`): fit/center the frame to the probed terminal geometry
-  (`termgfx_geom_fit` / `termgfx_geom_center`), encode via the active tier
-  (`termgfx_jxl_encode` / sixel / `text.c`), and emit to the socket under AIMD
-  pacing. A `SYNCRETRO_SIXELOUT=<path>` capture mode (as in syncmoo1) writes one
-  self-contained frame per call for offline verification with no live terminal.
+  no single `present()`): quantize (below), fit/center the frame to the probed
+  terminal geometry (`termgfx_geom_fit` / `termgfx_geom_center`), encode via the
+  active tier (`termgfx_jxl_encode` / sixel / `text.c`), and emit to the socket
+  under DSR-ACK pacing. A `SYNCRETRO_SIXELOUT=<path>` capture mode (as in
+  syncmoo1) writes one self-contained frame per call for offline verification
+  with no live terminal.
 - **teardown** that restores the BBS terminal on any exit path (`try/finally`
   equivalent in C: a single cleanup path from `main`).
+
+Two things differ from every sibling door, both because a libretro core is not a
+fixed-format engine:
+
+1. **The frame is truecolor**, where DOOM/Duke/1oom all render into an 8-bit
+   palette. Sixel is a 256-color format, so `syncretro_quant.c` reduces each
+   frame first. With <= 256 distinct colors -- every legacy console -- the
+   palette *is* the frame's colors and the reduction is exact; the palette is
+   built sorted, so it depends only on the color *set* and stays byte-identical
+   across frames, which is what lets the sixel color registers be sent once.
+   Busier frames fall back to a fixed 6x6x6 cube plus a 40-step gray ramp.
+2. **The frame size is not a compile-time constant** and a core may change it
+   mid-session (`SET_GEOMETRY`), so every buffer grows on demand and the image
+   rect is recomputed whenever the source dimensions change -- not only when a
+   probe reply narrows the canvas.
+
+The de-dupe (memcmp the source frame) is load-bearing here in a way it isn't for
+an event-driven engine: a core hands us *every* frame at its native 60 fps, even
+when nothing on screen moved.
 
 ---
 
 ## 7. Input mapping (`syncretro_input.c`)
 
 RetroPad is a fixed abstract joypad (d-pad, A/B/X/Y, L/R, Start/Select, analog).
-`syncretro_input` reuses the termgfx input decode (socket read, ESC/CSI/APC,
-kitty-keyboard) and maps keys onto a RetroPad bitfield + axes cached for
-`retro_input_state`.
+`syncretro_input` decodes the socket (ESC/CSI/APC) and maps keys onto a RetroPad
+bitfield cached for `retro_input_state`.
+
+**The key-up problem is the crux.** A RetroPad is a *held-state* device -- the
+core asks "is UP down right now?" every frame -- but a terminal sends bytes on
+press and *nothing* on release. Three paths, in descending fidelity (the same
+ladder `../syncduke` climbs for Build's scancode queue):
+
+| Path | Negotiation | Release edges |
+|------|-------------|---------------|
+| **evdev** (SyncTERM) | CTDA cap 8 -> `CSI = 1 h` + `CSI = 2 h` | yes, and the key identity is a layout-independent physical code |
+| **kitty** | `CSI ? u` query -> push flags `CSI > 11 u` | yes, keyed by (layout-dependent) codepoint |
+| **byte path** | none | no: a press arms a short auto-release timer that auto-repeat refreshes |
+
+The two native paths are mutually exclusive in practice (SyncTERM doesn't speak
+kitty; kitty terminals don't advertise CTDA cap 8) and the guards enforce it.
+SyncTERM re-reports the keys *already held* the instant physical reports are
+enabled, so press edges are dropped for a short settle window -- otherwise the
+Enter still held from the BBS menu would press Start.
+
+Whichever mode is negotiated is undone on exit (`CSI = 2 l` / `CSI = 1 l`,
+`CSI < u`), as in every sibling door. One difference: they restore only on a
+normal exit (their hangup `_exit()`s, assuming the socket is already dead),
+whereas `sr_door_hangup()` runs the restore first, so a read-side hangup with the
+write direction still open also hands the terminal back.
 
 The interesting part is **per-console controller quirks**. Intellivision's
 controller is a 12-key keypad + a 16-direction disc + three side buttons -- it
@@ -249,10 +292,22 @@ part of this src skeleton.
 Mirrors `../syncmoo1/syncmoo1_config.c`. `-home <dir>` gives a per-user sandbox
 (`data/user/<num>/retro/`); the frontend `mkpath`s it and reports it to the core
 as `GET_SAVE_DIRECTORY` (SRAM + save states isolate per user/node). The BIOS dir
-(`GET_SYSTEM_DIRECTORY`) is shared, read-only, per-install. The core `.so` path
-is resolved before `dlopen`. No environment variable is required at runtime
-(Synchronet has no per-door env in `xtrn.ini`); paths come from the command line
-/ door config, with env vars only as dev-run overrides.
+(`GET_SYSTEM_DIRECTORY`) is shared, read-only, per-install -- by default the
+door's own launch directory (`xtrn/syncivision`), which is where a sysop drops
+`exec.bin`/`grom.bin` beside the core. Cartridges live in a `roms/`
+sub-directory, so a bare ROM name on the command line resolves.
+
+Everything is absolutized **before** `sr_config_apply()`'s `chdir` into the
+sandbox -- the dirs, the core `.so`, *and* the ROM. This is easy to get wrong:
+the chdir happens before `main()` ever calls `rc_core_open()` /
+`rc_core_load_game()`, so a relative `roms/4-tris.rom` passed straight through
+would be looked up inside the per-user sandbox. Cores also *keep* the directory
+pointers they are handed and re-join paths onto them for the whole session.
+
+No environment variable is required at runtime (Synchronet has no per-door env in
+`xtrn.ini`); paths come from the command line / door config, with env vars
+(`SYNCRETRO_SYSTEM`, `SYNCRETRO_CORE`, `SYNCRETRO_ROM`, `SYNCRETRO_SIXELOUT`)
+only as dev-run overrides.
 
 ---
 
@@ -303,9 +358,15 @@ output).
 
 ## 15. Milestones
 
-- **M1 -- video-only vertical slice.** dlopen FreeIntv, load a ROM, render frames
-  as sixel, keyboard->RetroPad, correct enter/probe/leave + teardown. Audio
-  discarded. Proves the frontend end to end on one console.
+- **M1 -- video-only vertical slice. DONE.** dlopen FreeIntv, load a ROM, render
+  frames as sixel, keyboard->RetroPad, correct enter/probe/leave + teardown.
+  Audio discarded. Proves the frontend end to end on one console.
+
+  Verified with FreeIntv end-to-end (its own halt screen decodes cleanly out of a
+  `SYNCRETRO_SIXELOUT` capture), a synthetic core exercising all three pixel
+  formats and both native key paths, and a fake terminal on a socketpair for the
+  pacing/teardown/carrier-drop paths. The Intellivision BIOS is still needed to
+  play an actual game, but it is *not* needed to exercise the frontend.
 - **M2 -- input polish.** Per-core controller overlays (Intellivision keypad),
   `SET_INPUT_DESCRIPTORS`-driven help, save-state hotkeys.
 - **M3 -- multi-core.** Config-selected cores; dynamic core discovery; the

@@ -16,7 +16,8 @@ add_executable(syncretro
     syncretro_io.c      # terminal enter/probe/leave + present path
     syncretro_input.c   # socket decode -> cached RetroPad
     syncretro_door.c    # DOOR32.SYS / -s<fd> / -name / -home / -t / -core
-    syncretro_config.c) # per-user sandbox + system/save dirs
+    syncretro_config.c  # per-user sandbox + system/save dirs
+    syncretro_quant.c)  # truecolor frame -> 256-color indexed, for the sixel tier
 
 # libretro.h lives in this dir (vendored). Our own code is house-style tabs.
 target_include_directories(syncretro PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

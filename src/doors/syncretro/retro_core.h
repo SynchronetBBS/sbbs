@@ -42,6 +42,13 @@ typedef struct rc_core {
 
 	struct retro_system_av_info av;         /* captured after load_game() */
 	bool game_loaded;
+
+	/* ROM image, for a core with need_fullpath = false. Held for the core's
+	 * whole lifetime, not just across load_game(): libretro lets a core keep
+	 * pointing into this buffer rather than copying it, and freeing it early
+	 * would leave the core reading a dangling pointer for the whole session. */
+	void  *rom_data;
+	size_t rom_size;
 } rc_core_t;
 
 /* dlopen `path` and resolve every required entry point. Verifies

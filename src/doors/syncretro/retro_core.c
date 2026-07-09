@@ -8,6 +8,7 @@
 
 #include <dlfcn.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* Resolve `sym` into c->field; on failure log and jump to fail. The
@@ -60,9 +61,43 @@ fail:
 	return -1;
 }
 
+/* Slurp `path` into a malloc'd buffer. Returns NULL (and logs) on any failure. */
+static void *rc_read_file(const char *path, size_t *size_out)
+{
+	FILE * f = fopen(path, "rb");
+	void * buf;
+	long   len;
+	size_t got;
+
+	if (f == NULL) {
+		fprintf(stderr, "syncretro: cannot open ROM '%s'\n", path);
+		return NULL;
+	}
+	if (fseek(f, 0, SEEK_END) != 0 || (len = ftell(f)) < 0 || fseek(f, 0, SEEK_SET) != 0) {
+		fprintf(stderr, "syncretro: cannot size ROM '%s'\n", path);
+		fclose(f);
+		return NULL;
+	}
+	buf = malloc((size_t)len ? (size_t)len : 1);
+	if (buf == NULL) {
+		fclose(f);
+		return NULL;
+	}
+	got = fread(buf, 1, (size_t)len, f);
+	fclose(f);
+	if (got != (size_t)len) {
+		fprintf(stderr, "syncretro: short read on ROM '%s'\n", path);
+		free(buf);
+		return NULL;
+	}
+	*size_out = got;
+	return buf;
+}
+
 int rc_core_load_game(rc_core_t *c, const char *rom_path)
 {
-	struct retro_game_info info;
+	struct retro_game_info   info;
+	struct retro_system_info si;
 
 	/* Install callbacks first: the environment cb in particular is queried by
 	 * many cores DURING retro_init/retro_load_game (pixel format, dirs, ...). */
@@ -70,11 +105,24 @@ int rc_core_load_game(rc_core_t *c, const char *rom_path)
 
 	c->init();
 
+	memset(&si, 0, sizeof(si));
+	c->get_system_info(&si);
+
 	memset(&info, 0, sizeof(info));
 	info.path = rom_path;   /* NULL is valid for no-content cores */
-	/* TODO(M1): for cores WITHOUT RETRO_ENVIRONMENT need_fullpath, load the ROM
-	 * bytes into info.data/info.size instead of relying on info.path. Query the
-	 * flag via retro_get_system_info().need_fullpath. */
+
+	/* need_fullpath = true (FreeIntv): the core opens the file itself and
+	 * info.data must stay NULL. Otherwise the frontend owns the load, and the
+	 * core reads the bytes we hand it -- see rc_core_t.rom_data on why the
+	 * buffer outlives this call. */
+	if (rom_path != NULL && !si.need_fullpath) {
+		c->rom_data = rc_read_file(rom_path, &c->rom_size);
+		if (c->rom_data == NULL)
+			return -1;
+		info.data = c->rom_data;
+		info.size = c->rom_size;
+	}
+
 	if (!c->load_game(&info)) {
 		fprintf(stderr, "syncretro: core rejected ROM '%s'\n",
 		        rom_path ? rom_path : "(none)");
@@ -98,4 +146,7 @@ void rc_core_close(rc_core_t *c)
 	dlclose(c->dl);
 	c->dl = NULL;
 	c->game_loaded = false;
+	free(c->rom_data);            /* only now: the core may have read it all session */
+	c->rom_data = NULL;
+	c->rom_size = 0;
 }
