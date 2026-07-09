@@ -1,0 +1,62 @@
+syncmoo1 -- Master of Orion 1 for Synchronet / SyncTERM (and any DOOR32.SYS BBS)
+=================================================================================
+
+syncmoo1 is GPL-2.0, built on and incorporating the following GPL-2.0 works.
+See each upstream project for full copyright and license text.
+
+Engine (vendored in this directory, 1oom/)
+-------------------------------------------
+- 1oom -- the fork1oom/1oom line (https://sourcecraft.dev/fork1oom/1oom;
+  GitHub is a mirror). (GPL-2.0)
+  A portable, faithful reimplementation of Master of Orion 1's engine. Vendored
+  here as a frozen, unmodified snapshot -- exact upstream commit, clone date,
+  and license verification recorded in PROVENANCE.md. Never edited; all door
+  logic lives in our own files (hw_sbbs.c + syncmoo1_*.c), which implement a
+  new 1oom `hw` backend rather than patching the engine.
+
+Master of Orion (the original game)
+------------------------------------
+- Master of Orion -- Simtex (developer) / MicroProse (publisher), 1993.
+  All game design, artwork, text, music, and sound are their copyrighted
+  work. syncmoo1 and the vendored 1oom engine do not include, distribute, or
+  otherwise ship any of MoO1's original data files (the .LBX assets) -- the
+  door requires a legally-owned copy of Master of Orion v1.3's data files to
+  be supplied separately per install (see README.md). Sourcing that data is
+  entirely the sysop's/player's responsibility, out of scope for this code.
+
+syncmoo1's own code (this directory, outside 1oom/)
+-----------------------------------------------------
+- hw_sbbs.c -- the 1oom `hw` backend: delegates 1oom's video/event/mouse/
+  audio/timing hooks to the modules below instead of a native SDL/Allegro
+  backend.
+- syncmoo1_io.c/.h -- terminal present path (sixel encode via termgfx,
+  de-dupe, DSR-ACK pacing), out-buffer, term enter/probe/leave.
+- syncmoo1_input.c/.h -- socket read loop, ESC/CSI/APC state machine, key +
+  mouse decode, capability-probe reply parsing.
+- syncmoo1_door.c/.h -- DOOR32.SYS / -s<fd> dropfile, splash, argv sanitize,
+  hangup.
+- syncmoo1_config.c/.h -- per-user -home sandbox, shared MoO1 LBX data-path
+  resolution.
+- syncmoo1_map.c/.h -- pure keymap and mouse cell/pixel -> game-coordinate
+  mapping functions (unit-tested in tests/).
+- syncmoo1.h -- the single cross-module contract shared by all of the above.
+
+Shared rendering/transport library (../termgfx)
+-------------------------------------------------
+syncmoo1 links the same `termgfx` library as ../syncdoom, ../syncduke, and
+../syncconquer: sixel/JXL encoding, the SyncTERM APC image-cache + audio
+transport, capability probing, DSR-ACK pacing, and `sbbs_node`. Its own
+license/attribution lineage is documented in ../termgfx (no separate CREDITS
+there); notably for the text render tier:
+- doom-cli -- Nicholas Fraser (ludocode). (GPL-2.0)
+  https://github.com/ludocode/doom-cli
+  termgfx's text/block glyph render tiers (half/quadrant/sextant, color
+  quantization and dithering) are lifted and adapted from doom-cli's
+  doomgeneric_cli.c, per ../termgfx/text.c's own file-header attribution.
+  syncmoo1's M1 milestone targets the sixel tier; this text-tier code ships
+  in the shared library and is available to syncmoo1 for free, though it is
+  not a tuned/verified M1 deliverable on its own (see README.md).
+
+SyncTERM -- Stephen Hurd ("Deuce") and contributors -- implements the
+APC image-cache + sixel + audio terminal graphics protocol syncmoo1 renders
+to.
