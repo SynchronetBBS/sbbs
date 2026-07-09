@@ -14,6 +14,11 @@
  * real terminal via syncmoo1_io.c (sm_io_present()) before flipping pages,
  * and hw_video_set_palette() feeds it a running RGB888 copy of the palette.
  *
+ * Task 7: main() now does real DOOR32.SYS/-s<fd> door setup (syncmoo1_door.c)
+ * before handing off to main_1oom() -- see main() below for the call order
+ * and rationale. hw_video_draw_buf() also calls sm_door_check_time() on
+ * every present tick to enforce the DOOR32 session time limit.
+ *
  * Never edit the vendored 1oom tree; this file is ours.
  */
 #include "config.h"
@@ -32,6 +37,7 @@
 #include "types.h"
 
 #include "syncmoo1.h"
+#include "syncmoo1_door.h"
 #include "syncmoo1_input.h"
 
 /* -------------------------------------------------------------------------- */
@@ -56,8 +62,33 @@ const struct cfg_items_s hw_cfg_items_extra[] = {
 
 const char *idstr_hw = "sbbs";
 
+/* We own main() directly (this hw backend defines it, unlike syncduke's
+ * engine which owns its own main() and needs a pre-main constructor to grab
+ * argv -- DESIGN.md §14 open question #3, resolved: no constructor dance
+ * needed here). Door setup happens inline, in order, before the engine ever
+ * sees argv or runs its own (slow, LBX-scanning) init:
+ *   1. sm_door_setup()        -- resolve DOOR32.SYS/-s<fd> socket + time
+ *                                 limit + alias, configure the socket
+ *                                 (non-blocking/TCP_NODELAY/SIGPIPE-ignore),
+ *                                 paint the instant splash. A nonzero return
+ *                                 (-help/--help/-?) means main() is done.
+ *   2. sm_door_sanitize_argv() -- strip the door's own arguments so 1oom's
+ *                                 options_parse() (main.c) never sees an
+ *                                 unrecognized "-" flag or an absolute
+ *                                 dropfile path and aborts main_1oom() (see
+ *                                 syncmoo1_door.c's sanitize doc comment).
+ *   3. sm_io_init()            -- adopt the REAL socket fd (sm_door_socket())
+ *                                 BEFORE the first present -- fixes the
+ *                                 Task 5/6 carry-over where sm_io_get_fd()
+ *                                 still returned the stdout fallback because
+ *                                 nothing had resolved the door socket yet.
+ *   4. main_1oom()             -- engine drives from here. */
 int main(int argc, char **argv)
 {
+    if (sm_door_setup(argc, argv))
+        return 1;
+    sm_door_sanitize_argv(&argc, argv);
+    sm_io_init(sm_door_socket());
     return main_1oom(argc, argv);
 }
 
@@ -168,6 +199,13 @@ uint8_t *hw_video_get_buf_front(void)
 
 uint8_t *hw_video_draw_buf(void)
 {
+    /* DOOR32 session time limit (Task 7, DESIGN.md §8): checked once per
+     * present tick rather than per input poll -- exits (cleanly; see
+     * sm_door_check_time()'s doc comment) the moment the clock the dropfile
+     * gave us runs out. A no-op when no -t<seconds>/DOOR32.SYS time limit
+     * was given. */
+    sm_door_check_time();
+
     /* Present the buffer the engine just finished drawing into (the CURRENT
      * back buffer, before the flip below) -- mirrors hw/sdl/hwsdl_video.c's
      * hw_video_refresh(0), which renders video.buf[video.bufi ^ 0] the same
@@ -221,13 +259,14 @@ void hw_opt_menu_make_page_video(void)
 int hw_event_handle(void)
 {
     /* sm_io_get_fd() is whatever sm_io_init() adopted -- the door socket
-     * once Task 7/8 wires dropfile/-s<fd> resolution, or fd 1 (stdout) in
-     * today's dev/tty fallback. A negative return means the peer hung up
-     * or a real socket error occurred; _exit() skips atexit (sm_io_leave)
-     * since there is no live client left to restore, matching syncmoo1_io.c's
-     * own sm_io_hangup() policy for a dead write-side socket. */
+     * (dropfile/-s<fd> resolution, Task 7), or fd 1 (stdout) in dev/tty
+     * fallback. A negative return means the peer hung up or a real socket
+     * error occurred: go through the single canonical hangup path
+     * (syncmoo1_door.c), which restores the BBS terminal (bounded drain +
+     * mode-restore) before _exit() -- the read side may still have a live
+     * write direction to restore to. */
     if (sm_input_pump(sm_io_get_fd()) < 0)
-        _exit(0);
+        sm_door_hangup("input pump: peer hung up or socket error");
     return 0;
 }
 

@@ -106,4 +106,70 @@ void sm_io_set_pixel_mode(int on);
  * occurred (the caller should treat the door session as over). */
 int sm_input_pump(int sockfd);
 
+/* --- syncmoo1_door.c: DOOR32.SYS / -s<fd> dropfile, socket resolution,
+ * splash, argv sanitize, hangup (DESIGN.md §8) --
+ *
+ * Consumed by hw_sbbs.c's main(): sm_door_setup() resolves the client comm
+ * descriptor and paints an instant splash BEFORE 1oom's own (slow, LBX-
+ * scanning) init runs, so sm_io_init() gets the REAL socket fd before the
+ * first present -- fixing the Task 5/6 "stdout fallback" carry-over (sm_io_
+ * init() previously only ever saw -1, since nothing resolved the door
+ * socket yet). hw_video_draw_buf() calls sm_door_check_time() every present
+ * tick to enforce the DOOR32 minutes-left session limit.
+ */
+
+/* One-time setup, called FIRST in main() (before sm_io_init()/main_1oom()):
+ * parses argv for -s<fd> / -t<seconds> / -name <alias> / a bare *door32.sys
+ * path (DOOR32.SYS: line 1 comm type, line 2 socket handle, line 7 alias,
+ * line 9 minutes-left), falling back to the SYNCMOO1_SOCK env var for a dev
+ * run with no DOOR32.SYS, then configures the resolved socket (non-blocking,
+ * TCP_NODELAY, SIGPIPE ignored) and paints an instant splash to it (or fd 1
+ * in dev/tty use, when no socket resolves) -- before 1oom's slow LBX-
+ * scanning init runs, so the user sees something immediately. Returns 0
+ * normally; nonzero (-help/--help/-?) means main() should return without
+ * starting the engine. */
+int sm_door_setup(int argc, char **argv);
+
+/* The resolved client comm descriptor (the DOOR32.SYS/-s<fd> socket), or -1
+ * if none resolved (dev/tty use) -- sm_io_init()'s argument in main(). */
+int sm_door_socket(void);
+
+/* The user alias from DOOR32.SYS line 7 / -name, or "" if none given. */
+const char *sm_door_alias(void);
+
+/* The DOOR32.SYS/-t<seconds> session time limit in milliseconds, or 0 if
+ * none was given (no limit enforced). */
+uint32_t sm_door_time_limit_ms(void);
+
+/* Checked once per present tick (hw_sbbs.c's hw_video_draw_buf()): if the
+ * DOOR32 session time limit has elapsed since sm_door_setup(), logs and
+ * exits cleanly (exit(), not sm_door_hangup() -- the socket is presumably
+ * still live, so the atexit-registered sm_io_leave() restores the BBS
+ * terminal same as any other clean quit). A no-op when no time limit was
+ * given. */
+void sm_door_check_time(void);
+
+/* Strip the door's own arguments (-s<digits>, -t<digits>, -name <alias>,
+ * -home <dir>, a bare *door32.sys path) from argv before 1oom's own
+ * options_parse() (main.c) sees it -- an unrecognized "-" argument makes
+ * options_parse() log an error and main_1oom() return early (options.c's
+ * options_parse_do()), so leaving these in would abort the door before the
+ * engine even starts. The -s/-t match is DIGIT-SUFFIX-ONLY, so 1oom's own
+ * -sfx/-skipintro/-savequit/etc. reach the engine untouched. -home is
+ * stripped here even though THIS module doesn't act on it (that's
+ * syncmoo1_config.c, a later task) -- it can still show up on the door
+ * command line ahead of that task landing. Compacts in place, keeps
+ * argv[0], lowers *argc, and leaves any genuine 1oom option untouched.
+ * Call after sm_door_setup(), before main_1oom(). */
+void sm_door_sanitize_argv(int *argc, char **argv);
+
+/* The single canonical hangup path: client socket dead (read/write error or
+ * EOF). Wired to both the read side (hw_sbbs.c's hw_event_handle) and the
+ * write side (syncmoo1_io.c's flush), replacing the two earlier ad-hoc
+ * bare-_exit paths. Runs sm_io_leave() (bounded drain + BBS terminal-mode
+ * restore) first, then _exit(0) to skip the engine's other atexit handlers
+ * (which could block on the dead socket). `why` is logged to stderr (-> BBS
+ * log); may be NULL. */
+void sm_door_hangup(const char *why);
+
 #endif /* SYNCMOO1_H */

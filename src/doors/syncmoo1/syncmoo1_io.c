@@ -91,13 +91,6 @@ static int         g_file_mode;    /* SYNCMOO1_SIXELOUT capture mode */
 static const char *g_file;
 static int         g_fd = -1;      /* socket / stdout fd */
 
-static void sm_io_hangup(const char *why)
-{
-    fprintf(stderr, "syncmoo1: client hangup (%s) -- exiting\n", why ? why : "");
-    fflush(stderr);
-    _exit(0);   /* skip atexit (sm_io_leave): the socket is already dead */
-}
-
 void sm_out_put(const void *buf, size_t len)
 {
     if (!g_inited)
@@ -147,7 +140,7 @@ int sm_io_out_flush(void)
             continue;
         if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
             break;      /* slow client: keep the remainder pending, not an error */
-        sm_io_hangup("write error");
+        sm_door_hangup("write error");   /* the single canonical hangup path */
         break;
     }
     if (g_out_off >= g_out_len)

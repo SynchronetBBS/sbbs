@@ -33,6 +33,7 @@ add_executable(syncmoo1
     hw_sbbs.c
     syncmoo1_io.c
     syncmoo1_input.c
+    syncmoo1_door.c
     syncmoo1_map.c)     # + more syncmoo1_*.c added in later tasks
 
 target_include_directories(syncmoo1 PRIVATE ${OOM} ${OOM}/game ${OOM}/os/unix)
