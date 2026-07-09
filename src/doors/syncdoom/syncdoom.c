@@ -25,6 +25,7 @@
 #include "apc.h"                 // termgfx: SyncTERM APC cached-image transport (JXL/PPM)
 #include "jxl.h"                 // termgfx: JPEG XL frame encoder (RGB888 -> JXL)
 #include "caps.h"                // termgfx: cap-probe query + reply parsing (JXL)
+#include "keymode.h"     // termgfx: key-mode negotiation + evdev decode (shared)
 #include "geometry.h"            // termgfx: shared image fit/center (shared with SyncDuke)
 #include "pace.h"                // termgfx: shared AIMD pipeline-depth controller
 #include "audio_mgr.h"           // termgfx: SyncTERM audio-APC manager (digital SFX)
@@ -365,6 +366,11 @@ static int g_stats_overlay = 0;       // show fps/RTT/depth overlaid on each fra
 // Doom's native turn ramp, no key-up-synthesis grace needed. Non-static: m_menu.c greys the (now
 // moot) TAP/HOLD/TURN/FAST-TURN sliders when this is set. (Declared up here: emit_overlay reads it.)
 int                  g_kitty_active = 0;
+// The negotiated key mode itself (../termgfx/keymode.h): the enable/restore byte
+// sequences, the evdev-wins precedence and the enable-time settle window, shared
+// with SyncDuke/SyncConquer/SyncRetro. g_kitty_active/g_evdev_active stay as
+// plain int MIRRORS of it, because m_menu.c (vendored) reads them directly.
+static termgfx_keymode_t g_km;
 static unsigned char g_key_down[256]; // Doom keys we've sent key-down for (dedupe + release); used by
                                       // any path with a real key-up (kitty protocol, SyncTERM evdev)
 
@@ -374,16 +380,7 @@ static unsigned char g_key_down[256]; // Doom keys we've sent key-down for (dedu
 // but for SyncTERM (which doesn't speak kitty; kitty terminals don't advertise CTDA cap 8, so the
 // two paths are mutually exclusive). Decoded edges reuse map_ascii()+key_dispatch() verbatim.
 int             g_evdev_active = 0;     // non-static: m_menu.c greys the key-feel sliders when set
-static unsigned g_evdev_mods = 0;        // held modifiers: bit0 Shift, bit1 Ctrl, bit2 Alt
-#define EVDEV_MOD_SHIFT 1
-#define EVDEV_MOD_CTRL  2
-#define EVDEV_MOD_ALT   4
-// Enable-time settle: SyncTERM resyncs the keys held at enable (the key still down from selecting
-// the door) as PRESS reports; drop non-modifier presses for this long so they can't skip the
-// opening. The resync lands within ~1 RTT and evdev sends no auto-repeat, so one drop suffices.
-#define SD_EVDEV_SETTLE_MS 500
-static uint32_t  g_evdev_enabled_ms = 0;
-static int       g_evdev_settling = 0;
+static unsigned g_evdev_mods = 0;        // held modifiers, TERMGFX_MOD_*
 static const char *mode_name(enum frame_mode m);   // defined later; used by the overlay
 
 static uint8_t * s_rgb = NULL;   static size_t s_rgb_cap = 0;      // packed RGB888
@@ -1639,32 +1636,7 @@ static void key_dispatch(unsigned char key, int ev)
 // US-QWERTY: evdev key code -> { unshifted, shifted } ASCII byte (0 = not a simple ASCII key).
 // Covers the main alnum/punct block (codes 1..57); arrows/nav/F-keys/keypad are handled in
 // evdev_edge(). Lets us translate a physical key edge into the byte map_ascii() expects, so the
-// WASD remap, cheat/save text entry, weapon digits and Ctrl hotkeys all behave as on the byte path.
-static const char evdev_ascii[88][2] = {
-	{ 0, 0 },                                                                            // 0  reserved
-	{ 27, 27 },                                                                          // 1  ESC
-	{ '1', '!' }, { '2', '@' }, { '3', '#' }, { '4', '$' }, { '5', '%' },                // 2-6
-	{ '6', '^' }, { '7', '&' }, { '8', '*' }, { '9', '(' }, { '0', ')' },                // 7-11
-	{ '-', '_' }, { '=', '+' },                                                          // 12-13
-	{ 8, 8 }, { 9, 9 },                                                                  // 14 BkSp, 15 Tab
-	{ 'q', 'Q' }, { 'w', 'W' }, { 'e', 'E' }, { 'r', 'R' }, { 't', 'T' }, { 'y', 'Y' },  // 16-21
-	{ 'u', 'U' }, { 'i', 'I' }, { 'o', 'O' }, { 'p', 'P' },                              // 22-25
-	{ '[', '{' }, { ']', '}' },                                                          // 26-27
-	{ '\r', '\r' },                                                                      // 28 Enter
-	{ 0, 0 },                                                                            // 29 LeftCtrl
-	{ 'a', 'A' }, { 's', 'S' }, { 'd', 'D' }, { 'f', 'F' }, { 'g', 'G' },                // 30-34
-	{ 'h', 'H' }, { 'j', 'J' }, { 'k', 'K' }, { 'l', 'L' },                              // 35-38
-	{ ';', ':' }, { '\'', '"' }, { '`', '~' },                                           // 39-41
-	{ 0, 0 },                                                                            // 42 LeftShift
-	{ '\\', '|' },                                                                       // 43
-	{ 'z', 'Z' }, { 'x', 'X' }, { 'c', 'C' }, { 'v', 'V' }, { 'b', 'B' },                // 44-48
-	{ 'n', 'N' }, { 'm', 'M' },                                                          // 49-50
-	{ ',', '<' }, { '.', '>' }, { '/', '?' },                                            // 51-53
-	{ 0, 0 },                                                                            // 54 RightShift
-	{ '*', '*' },                                                                        // 55 KP*
-	{ 0, 0 },                                                                            // 56 LeftAlt
-	{ ' ', ' ' },                                                                        // 57 Space
-};
+
 
 // Apply one physical key edge (down=1 press / 0 release). Modifiers update g_evdev_mods; arrows/
 // nav/F-keys map straight to Doom keys; everything else folds to an ASCII byte (honouring Shift/
@@ -1682,35 +1654,25 @@ static void evdev_edge(int code, int down)
 	// (Physical Alt is only tracked, never forwarded: SyncTERM reserves Alt+arrow [resize] and
 	// Alt+letter [hangup/...] locally, and a held physical Alt would trigger those and lose its
 	// key-up to the resize mode -> a latched-down "freeze".) The Shift bit also gates the fold.
-	switch (code) {
-		case 29: case 97:                                // L/R Ctrl: track only
+	{
+		int mod = termgfx_evdev_modifier(code);   // L/R Ctrl, Shift, Alt (termgfx)
+
+		if (mod != 0) {
 			if (down)
-				g_evdev_mods |= EVDEV_MOD_CTRL;
+				g_evdev_mods |= (unsigned)mod;
 			else
-				g_evdev_mods &= ~EVDEV_MOD_CTRL;
-			return;
-		case 42: case 54:                                // L/R Shift = Run (KEY_RSHIFT) + Strafe (KEY_RALT)
-			if (down)
-				g_evdev_mods |= EVDEV_MOD_SHIFT;
-			else
-				g_evdev_mods &= ~EVDEV_MOD_SHIFT;
-			key_dispatch(KEY_RSHIFT, down ? 1 : 3);
-			key_dispatch(KEY_RALT,   down ? 1 : 3);
-			return;
-		case 56: case 100:                               // L/R physical Alt: track only (NOT forwarded -- see above)
-			if (down)
-				g_evdev_mods |= EVDEV_MOD_ALT;
-			else
-				g_evdev_mods &= ~EVDEV_MOD_ALT;
-			return;
+				g_evdev_mods &= ~(unsigned)mod;
+			if (mod == TERMGFX_MOD_SHIFT) {
+				key_dispatch(KEY_RSHIFT, down ? 1 : 3);
+				key_dispatch(KEY_RALT,   down ? 1 : 3);
+			}
+			return;   // Ctrl and physical Alt are tracked only -- never forwarded
+		}
 	}
 
-	// Drop the enable-time held-key resync (see SD_EVDEV_SETTLE_MS): only press edges; releases pass.
-	if (down && g_evdev_settling) {
-		if ((uint32_t)(now_ms() - g_evdev_enabled_ms) < SD_EVDEV_SETTLE_MS)
-			return;
-		g_evdev_settling = 0;
-	}
+	// Drop the enable-time held-key resync (termgfx/keymode.h): only press edges; releases pass.
+	if (down && termgfx_keymode_evdev_settling(&g_km, now_ms()))
+		return;
 
 	switch (code) {                                  // arrows / navigation / function keys
 		case 103: k = KEY_UPARROW;    break;
@@ -1775,16 +1737,14 @@ static void evdev_edge(int code, int down)
 	if (c == 0) {                                    // simple ASCII key via the US-QWERTY table
 		// Shift folds to upper for menu/text entry ONLY -- in gameplay letters stay lowercase so
 		// map_ascii's WASD/action remap still fires while Shift is held for Run (Shift+W = run fwd).
-		int shifted = (g_evdev_mods & EVDEV_MOD_SHIFT) && (menuactive || chat_on);
-		if (code < 0 || code >= (int)(sizeof evdev_ascii / sizeof evdev_ascii[0]))
-			return;
-		c = evdev_ascii[code][shifted ? 1 : 0];
+		int shifted = (g_evdev_mods & TERMGFX_MOD_SHIFT) && (menuactive || chat_on);
+		c = (unsigned char)termgfx_evdev_ascii(code, shifted);
 		if (c == 0)
 			return;
 	}
 	// Ctrl + letter -> its control byte (Ctrl-T pipeline, Ctrl-S stats, Ctrl-O mouse, Ctrl-A..F =
 	// F1..F6, ...) -- the same fold the kitty path applies, so map_ascii's hotkey layer fires.
-	if ((g_evdev_mods & EVDEV_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z')
+	if ((g_evdev_mods & TERMGFX_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z')
 		c &= 0x1f;
 	k = map_ascii(c);
 	if (k)
@@ -1927,9 +1887,12 @@ static void parse_byte(unsigned char c)
 							break;
 						case 'u':                            // kitty key event, or the CSI?u support reply
 							if (s_csi_par[0] == '?') {       // progressive-flags reply -> enable + push our flags
-								if (!g_kitty_active && !g_evdev_active) {   // evdev (if negotiated) takes precedence
-									g_kitty_active = 1;
-									emit_all("\x1b[>11u", 6); // disambiguate | report-events | report-all-keys
+								char   ks[TERMGFX_KEYMODE_SEQ_MAX];   // evdev, if negotiated, wins
+								size_t kn = termgfx_keymode_enable_kitty(&g_km, ks, sizeof ks);
+
+								if (kn > 0) {
+									emit_all(ks, (int)kn);
+									g_kitty_active = 1;   // mirror, for m_menu.c
 								}
 							} else {
 								int cp  = atoi(s_csi_par);
@@ -2248,11 +2211,15 @@ static int probe_sixel(void)
 								// SyncTERM advertising it doesn't speak kitty): enable reports (=1h)
 								// + suppress translated bytes (=2h) so keys arrive only as the
 								// CSI = <code> K/k edges decoded in evdev_report().
-								if (p[m] == 8 && marker == '<' && !g_evdev_active && !g_kitty_active) {
-									g_evdev_active     = 1;
-									g_evdev_enabled_ms = now_ms();
-									g_evdev_settling   = 1;
-									emit_all("\x1b[=1h\x1b[=2h", 10);
+								if (p[m] == 8 && marker == '<') {
+									char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+									size_t kn = termgfx_keymode_enable_evdev(&g_km, ks, sizeof ks,
+									                                         now_ms());
+
+									if (kn > 0) {
+										emit_all(ks, (int)kn);   // arms the settle window
+										g_evdev_active = 1;      // mirror, for m_menu.c
+									}
 								}
 							}
 							done = 1;                // definitive answer
@@ -2321,10 +2288,14 @@ static void terminal_restore(void)
 		emit_all("\x1b[?1003l\x1b[?1006l", 16);
 	if (g_sixel_scroll_off)
 		emit_all("\x1b[?80h", 6);        // restore default sixel scrolling for the BBS
-	if (g_kitty_active)
-		emit_all("\x1b[<u", 4);          // pop the kitty keyboard flags we pushed
-	if (g_evdev_active)
-		emit_all("\x1b[=2l\x1b[=1l", 10);   // restore translation, disable physical key reports
+	{   // undo whichever key mode was negotiated (termgfx); nothing if none was
+		char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+		size_t kn = termgfx_keymode_restore(&g_km, ks, sizeof ks);
+
+		if (kn > 0)
+			emit_all(ks, (int)kn);
+		g_kitty_active = g_evdev_active = 0;   // keep the m_menu.c mirrors in step
+	}
 	emit_all("\x1b[?7h\x1b[?25h", 11);
 }
 
