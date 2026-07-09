@@ -19,7 +19,12 @@
 #ifdef _WIN32
 #include <direct.h>
 #else
+#include <limits.h>
 #include <unistd.h>
+#endif
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
 #endif
 
 PathsClass Paths;
@@ -85,7 +90,11 @@ void PathsClass::Init(const char* suffix, const char* ini_name, const char* data
     ini.Load(file);
 
     const char section[] = "Paths";
-    char buffer[128]; // TODO max ini line size.
+    // Was char[128]: INIClass::Get_String() discards any value that does not
+    // fit, so a DataPath/UserPath of 128+ chars was silently dropped and the
+    // engine fell back to a path with no mixfiles -- Bootstrap() then aborted
+    // on LOCAL.MIX. These hold filesystem paths, so size them like one.
+    char buffer[PATH_MAX];
 
     // Even if the config was found with the binary, we still check to see if it gives use alternative paths.
     // If not, assume we are in portable mode and point the DataPath to ProgramPath.

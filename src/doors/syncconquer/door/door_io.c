@@ -228,6 +228,13 @@ static void door_resolve_args(void)
 		else if (door_is_door32_path(a))
 			door_read_door32(a);                                        /* Synchronet's %f drop file */
 	}
+	/* No -home: fall back to the launch directory, the way SyncDuke and
+	 * SyncDOOM do. Anything else leaves door_setup_engine_paths() with no
+	 * REDALERT.INI to write, so the engine never learns DataPath and dies in
+	 * Bootstrap() with "failed to cache required mixfile 'LOCAL.MIX'" -- even
+	 * with a perfectly good assets dir sitting right next to the binary. */
+	if (g_home[0] == '\0')
+		snprintf(g_home, sizeof g_home, "%s", ".");
 }
 
 /* Recursive mkdir (POSIX) / CreateDirectory (Win32) -- the ONLY thing this
@@ -263,18 +270,32 @@ static void door_mkpath(const char *dir)
 
 /* Portable realpath(): POSIX realpath() / Win32 _fullpath(). `in` must exist
  * (both reject a nonexistent path); returns 1 on success, `out` untouched
- * (caller should leave its own default) on failure. */
+ * (caller should leave its own default) on failure.
+ *
+ * The POSIX side MUST pass a NULL buffer (POSIX.1-2008: realpath() malloc()s
+ * the result) rather than a local array. glibc requires a caller-supplied
+ * buffer to hold at least PATH_MAX bytes, and _FORTIFY_SOURCE enforces that
+ * with __realpath_chk(), which abort()s -- "*** buffer overflow detected ***"
+ * -- whenever the destination's known object size is under PATH_MAX, no matter
+ * how short the resolved path actually is. A `char buf[1024]` here therefore
+ * killed the door at startup on every distro whose gcc defaults to
+ * -D_FORTIFY_SOURCE (Ubuntu), while running fine where it does not (Debian). */
 static int door_realpath(const char *in, char *out, size_t outsz)
 {
-	char buf[1024];
 #ifdef _WIN32
+	char buf[_MAX_PATH];
+
 	if (_fullpath(buf, in, sizeof buf) == NULL)
 		return 0;
-#else
-	if (realpath(in, buf) == NULL)
-		return 0;
-#endif
 	snprintf(out, outsz, "%s", buf);
+#else
+	char *buf = realpath(in, NULL);
+
+	if (buf == NULL)
+		return 0;
+	snprintf(out, outsz, "%s", buf);
+	free(buf);
+#endif
 	return 1;
 }
 
@@ -480,7 +501,7 @@ static void door_setup_engine_paths(void)
 	FILE *f;
 
 	if (g_home[0] == '\0')
-		return;   /* no -home: leave the engine's stock ~/.config default (dev/test run) */
+		return;   /* unreachable: door_resolve_args() defaults g_home to "." */
 
 	door_mkpath(g_home);
 #ifndef _WIN32

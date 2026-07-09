@@ -201,7 +201,10 @@ protected:
 public:
     enum
     {
-        MAX_LINE_LENGTH = 128
+        // Was 128, which truncated any INI line at 128 chars -- including the
+        // [Paths] DataPath=/UserPath= lines the door writes, whose values are
+        // filesystem paths. Sized to hold a PATH_MAX value plus its key.
+        MAX_LINE_LENGTH = 4224
     };
     const VanillaList<INISection>& Section_List() const
     {

@@ -200,6 +200,21 @@ subdirectory here; `resources` at this directory's top is a symlink to
 `CMAKE_SOURCE_DIR` to the true top of the source tree per directory scope,
 so it can't be overridden -- each use gets its own narrow fix, documented
 inline in `CMakeLists.txt`).
+9. `common/ini.h` + `common/paths.cpp`: stop truncating long INI values.
+   `INIClass::MAX_LINE_LENGTH` was 128, so `Read_Line()` cut every INI
+   line at 128 characters, and `PathsClass::Init()` then read `[Paths]`
+   into a matching `char[128]` (upstream's own `// TODO max ini line
+   size.`) and dropped any value that didn't fit. The door writes
+   `DataPath=`/`UserPath=` lines whose values are filesystem paths, so a
+   deep-enough install silently lost its assets directory and
+   `Bootstrap()` aborted on `LOCAL.MIX` -- reachable from a stock
+   Synchronet tree whose `data/user/<n>/` sits under a long prefix. The
+   patch raises `MAX_LINE_LENGTH` to 4224 (a `PATH_MAX` value plus its
+   key) and sizes the `paths.cpp` buffer as `char[PATH_MAX]`, adding a
+   `<limits.h>` include and a `PATH_MAX` fallback for toolchains that
+   don't define it. Incidentally hardens `INIClass::Put_String()`, whose
+   only guard against overrunning its own `char[MAX_LINE_LENGTH]` is an
+   `assert()` that compiles out in Release.
 
 ## Updating
 
