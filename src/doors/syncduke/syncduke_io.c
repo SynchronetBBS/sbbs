@@ -107,13 +107,23 @@ static void syncduke_save_fullres(void)
 		SD_FULLRES_REMOVE();
 }
 
-/* Best-effort terminal restore on a NORMAL exit (e.g. the QUIT menu): hand the
- * BBS back a terminal with sixel-scrolling, autowrap and the cursor re-enabled.
+/* Best-effort terminal restore: hand the BBS back a terminal with sixel-scrolling,
+ * autowrap and the cursor re-enabled, the key mode undone and mouse tracking off.
  * A direct blocking write (not the non-blocking frame path) so it isn't dropped
- * at exit. A hangup uses _exit(), which skips atexit -- correct, the socket is
- * already dead. */
-static void syncduke_term_restore(void)
+ * at exit.
+ *
+ * Reached from atexit() on a normal exit AND, since the hangup-path harmonization,
+ * directly from syncduke_hangup() before its _exit() -- a read-side hangup leaves
+ * the WRITE direction open, so the BBS still gets its terminal back rather than a
+ * session stuck in physical-key mode. Idempotent (the guard below), because
+ * _exit() skips atexit but a signal path may not. */
+void syncduke_term_restore(void)
 {
+	static int restored;
+
+	if (restored)
+		return;
+	restored = 1;
 	if (g_file_mode)
 		return;
 	/* Turn off xterm mouse tracking so the terminal stops reporting mouse events to the

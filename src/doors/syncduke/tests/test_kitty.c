@@ -39,6 +39,7 @@ void syncduke_log(const char *f, ...) { (void)f; }
 int  syncduke_node_composing(void) { return 0; }
 void syncduke_node_compose_key(int c) { (void)c; }
 void syncduke_node_page_request(void) { }
+void syncduke_term_restore(void) { }   /* hangup path's terminal restore: no terminal here */
 
 
 /* termgfx audio the pump now touches (music-key path) -- stub out, no audio in the test. */

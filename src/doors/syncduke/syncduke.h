@@ -72,6 +72,9 @@ int  syncduke_kitty_active(void);                   /* 1 if the kitty keyboard p
  * syncduke_input.c (it parses the CTDA / CSI?u replies); syncduke_io.c's
  * terminal-restore path uses it to undo whatever was enabled. */
 termgfx_keymode_t *syncduke_keymode(void);
+/* Restore the BBS's terminal (key mode, mouse, cursor, autowrap, sixel scroll).
+ * Idempotent.  Registered with atexit() and also called from syncduke_hangup(). */
+void syncduke_term_restore(void);
 int  syncduke_evdev_active(void);                   /* 1 if SyncTERM physical key (evdev) reports negotiated */
 uint32_t syncduke_rtt(void);                        /* smoothed RTT (ms); drives native-vs-synthetic turn */
 int  syncduke_turn_native(void);                    /* 1 if turn keys use the native hold (low-latency true-key-up) */

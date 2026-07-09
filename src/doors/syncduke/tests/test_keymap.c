@@ -28,6 +28,7 @@ void syncduke_out_put(const void *buf, size_t len) { (void)buf; (void)len; }   /
 int  syncduke_node_composing(void) { return 0; }
 void syncduke_node_compose_key(int c) { (void)c; }
 void syncduke_node_page_request(void) { }
+void syncduke_term_restore(void) { }   /* hangup path's terminal restore: no terminal here */
 
 /* termgfx audio + pacing the pump touches (music-key / native-turn paths) -- stub out. */
 uint32_t syncduke_rtt(void) { return 0; }

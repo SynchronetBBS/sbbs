@@ -662,11 +662,35 @@ static int         g_use_sock;
 static int         g_fd = 1;          /* socket / stdout fd */
 #endif
 
+static void door_term_restore(void);   /* below; the hangup path runs it first */
+
+/*
+ * The client socket has closed or broken. Restore the terminal BEFORE _exit(),
+ * then skip the engine's atexit cleanup (which could block on the dead socket).
+ *
+ * "The socket is already dead" holds for a WRITE-side hangup, but not for a
+ * read-side one -- an EOF on read leaves the write direction open, and there we
+ * owe the BBS its terminal back (physical key reports off, translated keys
+ * restored, mouse tracking off, cursor and autowrap back). door_term_restore()
+ * is idempotent and its drain is bounded, so a genuinely dead socket just costs
+ * a failed write. Same policy as syncretro's sr_door_hangup() and syncdoom,
+ * which reaches its restore through exit()/atexit.
+ *
+ * The `entered` guard makes it re-entrant-safe: door_term_restore()'s drain
+ * calls door_out_flush(), which on a truly dead socket calls back in here.
+ */
 static void door_hangup(const char *why)
 {
+	static int entered;
+
+	if (entered)
+		_exit(0);   /* re-entered via the restore's drain on a dead socket */
+	entered = 1;
+
 	fprintf(stderr, "syncalert: client hangup (%s) -- exiting\n", why ? why : "");
 	fflush(stderr);
-	_exit(0);   /* skip the engine's atexit cleanup -- the socket is already dead */
+	door_term_restore();
+	_exit(0);   /* skip the engine's atexit cleanup */
 }
 
 /* --- per-user "display fit" sticky preference ------------------------------

@@ -42,13 +42,32 @@
  * disconnected. Leave the door so the BBS reclaims the node instead of leaving a
  * ghost. Logged to stderr (-> BBS log). Defined here (linked by the keymap test)
  * so the engine-independent input layer can call it.
+ *
+ * The terminal restore runs FIRST. "The socket is already dead" holds for a
+ * write-side hangup, but a read-side one (EOF on read) leaves the WRITE direction
+ * open, and there we owe the BBS its terminal back -- physical key reports off,
+ * translated keys restored, mouse tracking off, cursor and autowrap back. Without
+ * this, a user who simply closed their client left the next thing the BBS ran in
+ * SyncTERM physical-key mode. syncduke_term_restore() is idempotent, so a truly
+ * dead socket just costs a failed write. Matches syncretro's sr_door_hangup() and
+ * syncdoom (which reaches its restore via exit()/atexit).
+ *
+ * The `entered` guard makes it re-entrant-safe: the restore flushes the staged
+ * output, and on a dead socket that flush calls back in here.
  */
 void syncduke_hangup(const char *why)
 {
+	static int entered;
+
+	if (entered)
+		_exit(0);   /* re-entered via the restore's flush on a dead socket */
+	entered = 1;
+
 	syncduke_log("HANGUP: %s -- exiting", why ? why : "");
 	fprintf(stderr, "syncduke: client hangup (%s) -- exiting\n", why ? why : "");
 	fflush(stderr);
-	_exit(0);   /* immediate: skip the engine's atexit cleanup, which could block on the dead socket */
+	syncduke_term_restore();
+	_exit(0);   /* skip the engine's atexit cleanup, which could block on the dead socket */
 }
 
 static int      g_argc;
