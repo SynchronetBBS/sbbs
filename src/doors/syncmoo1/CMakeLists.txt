@@ -30,7 +30,9 @@ list(FILTER GAME_SRC EXCLUDE REGEX "saveconv")
 
 add_executable(syncmoo1
     ${UTIL_SRC} ${AUDIO_SRC} ${UI_SRC} ${GAME_SRC} ${CLASSIC_SRC} ${OS_SRC}
-    hw_sbbs.c)          # + syncmoo1_*.c added in later tasks
+    hw_sbbs.c
+    syncmoo1_io.c)      # + more syncmoo1_*.c added in later tasks (syncmoo1_map.c
+                        # joins once Task 6's input module actually calls it)
 
 target_include_directories(syncmoo1 PRIVATE ${OOM} ${OOM}/game ${OOM}/os/unix)
 target_compile_definitions(syncmoo1 PRIVATE HAVE_CONFIG_H)

@@ -10,8 +10,9 @@
  * *before* the real game loop starts, and that renders into whatever
  * hw_video_get_buf() returns -- so it must be a real buffer, not NULL.
  *
- * hw_video_draw_buf() below flips pages and returns the new back buffer
- * but presents nothing to a terminal yet -- that's syncmoo1_io.c, Task 5.
+ * Task 5: hw_video_draw_buf() now presents the just-drawn back buffer to a
+ * real terminal via syncmoo1_io.c (sm_io_present()) before flipping pages,
+ * and hw_video_set_palette() feeds it a running RGB888 copy of the palette.
  *
  * Never edit the vendored 1oom tree; this file is ours.
  */
@@ -28,6 +29,8 @@
 #include "options.h"
 #include "palette.h"
 #include "types.h"
+
+#include "syncmoo1.h"
 
 /* -------------------------------------------------------------------------- */
 
@@ -100,6 +103,17 @@ static int video_bufi = 0;
 static int video_bufw = 0;
 static int video_bufh = 0;
 
+/* Running RGB888 copy of the game's palette, fed to sm_io_present() on every
+ * flip. ui_palette (palette.h) holds the engine's own 6-bit-per-channel VGA
+ * values (its comment says so explicitly, and every real hw backend --
+ * hw/sdl/2's video_setpal, hw/sdl/1's video_setpal_8bpp/gl_24bpp/gl_32bpp,
+ * hw/alleg4's video_setpal_8bpp -- widens each component through
+ * palette_6bit_to_8bit() before handing it to its actual display; termgfx's
+ * sixel encoder likewise expects a full 0-255 RGB triple per sixel.h, so the
+ * same widening happens here rather than passing the raw 6-bit values
+ * through (which would render a washed-out, ~1/4-range palette). */
+static uint8_t g_palette[768];
+
 int hw_video_init(int w, int h)
 {
     int i;
@@ -120,7 +134,15 @@ int hw_video_init(int w, int h)
 
 void hw_video_set_palette(const uint8_t *palette, int first, int num)
 {
-    ui_palette_set(palette, first, num);
+    int i;
+
+    ui_palette_set(palette, first, num);   /* engine-side copy: stays 6-bit, as the engine expects */
+    for (i = 0; i < num; ++i) {
+        int j = (first + i) * 3;
+        g_palette[j + 0] = palette_6bit_to_8bit(palette[i * 3 + 0]);
+        g_palette[j + 1] = palette_6bit_to_8bit(palette[i * 3 + 1]);
+        g_palette[j + 2] = palette_6bit_to_8bit(palette[i * 3 + 2]);
+    }
 }
 
 void hw_video_set_palette_color(int i, uint8_t r, uint8_t g, uint8_t b)
@@ -144,7 +166,11 @@ uint8_t *hw_video_get_buf_front(void)
 
 uint8_t *hw_video_draw_buf(void)
 {
-    /* Present-nothing flip: Task 5 inserts syncmoo1_present() here. */
+    /* Present the buffer the engine just finished drawing into (the CURRENT
+     * back buffer, before the flip below) -- mirrors hw/sdl/hwsdl_video.c's
+     * hw_video_refresh(0), which renders video.buf[video.bufi ^ 0] the same
+     * way, before it swaps bufi. */
+    sm_io_present(video_buf[video_bufi], g_palette);
     video_bufi ^= 1;
     return video_buf[video_bufi];
 }
