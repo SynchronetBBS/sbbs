@@ -73,4 +73,37 @@ int sm_io_out_flush(void);
  * Never NULL; ew/eh are always > 0. */
 const sm_geom_t *sm_io_geom(void);
 
+/* The I/O descriptor sm_io_init() adopted (the door socket, or fd 1 in
+ * dev/tty use). Task 6's hw_event_handle() wiring reads this to know what to
+ * hand sm_input_pump(). */
+int sm_io_get_fd(void);
+
+/* Probe-reply setters (Task 6, DESIGN.md Sec9): syncmoo1_input.c's CSI
+ * handler calls these as the startup probe replies land (ESC[14t canvas px,
+ * the ESC[6n->ESC[r;cR grid, DECRPM ?1016 SGR-Pixels confirmation), so
+ * sm_io_geom()'s image rect + real cell size -- and therefore sm_map_mouse()
+ * -- become probe-driven instead of the 640x400/80x25/8x16 default. Each
+ * recomputes the image rect immediately; a malformed/zero w/h/rows/cols is
+ * ignored (keeps the prior value) rather than corrupting the geometry. */
+void sm_io_set_canvas(int w, int h);
+void sm_io_set_grid(int rows, int cols);
+void sm_io_set_pixel_mode(int on);
+
+/* --- syncmoo1_input.c: socket read loop, ESC/CSI/APC state machine, key +
+ * mouse decode, capability-probe reply parsing --
+ *
+ * Consumed by hw_sbbs.c: hw_event_handle() calls sm_input_pump(sm_io_get_fd())
+ * on every 1oom engine poll. Drains `sockfd` non-blocking, runs the bytes
+ * through the ESC/CSI/APC(DCS/OSC/PM) state machine, and injects the result
+ * into 1oom's global input state: keys via kbd_add_keypress() (kbd.h), mouse
+ * position/buttons/wheel via mouse_set_xy_from_hw()/mouse_set_buttons_from_hw()/
+ * mouse_set_scroll_from_hw() (mouse.h). Capability-probe CSI replies (ESC[14t,
+ * the grid ESC[r;cR, DECRPM ?1016 y, DA1/CTDA c, the JXL-cap n) are parsed
+ * here and fed into sm_io via the setters above rather than delivered as
+ * keys; APC/DCS/OSC/PM string replies (e.g. SyncTERM's C;L cache-list) are
+ * swallowed to their ST terminator so they never leak stray keystrokes.
+ * Returns 0 normally, <0 if the peer hung up or a real socket read error
+ * occurred (the caller should treat the door session as over). */
+int sm_input_pump(int sockfd);
+
 #endif /* SYNCMOO1_H */

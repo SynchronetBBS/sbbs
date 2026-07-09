@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "hw.h"
 #include "cfg.h"
@@ -31,6 +32,7 @@
 #include "types.h"
 
 #include "syncmoo1.h"
+#include "syncmoo1_input.h"
 
 /* -------------------------------------------------------------------------- */
 
@@ -218,6 +220,14 @@ void hw_opt_menu_make_page_video(void)
 
 int hw_event_handle(void)
 {
+    /* sm_io_get_fd() is whatever sm_io_init() adopted -- the door socket
+     * once Task 7/8 wires dropfile/-s<fd> resolution, or fd 1 (stdout) in
+     * today's dev/tty fallback. A negative return means the peer hung up
+     * or a real socket error occurred; _exit() skips atexit (sm_io_leave)
+     * since there is no live client left to restore, matching syncmoo1_io.c's
+     * own sm_io_hangup() policy for a dead write-side socket. */
+    if (sm_input_pump(sm_io_get_fd()) < 0)
+        _exit(0);
     return 0;
 }
 

@@ -195,39 +195,101 @@ static sm_geom_t g_geom;
 static int       g_geom_ready;
 static int       g_icol = 1, g_irow = 1;   /* 1-based text-cell origin, cursor-positioned present */
 
-static void sm_io_ensure_geom(void)
+/* Probe-driven canvas/grid (Task 6): start at the sane 640x400/80x25 default
+ * (SM_CANVAS_W_DEF/H_DEF above) so sm_io_geom() always has something to divide
+ * by from frame 1, and narrow to the terminal's REAL values once the input
+ * module's probe-reply parser calls the setters below (ESC[14t canvas px,
+ * the ESC[6n->ESC[r;cR grid). g_grid_rows/cols stay 0 (unknown) until then,
+ * in which case the recompute below falls back to the assumed 8x16 cell. */
+static int g_canvas_w = SM_CANVAS_W_DEF;
+static int g_canvas_h = SM_CANVAS_H_DEF;
+static int g_grid_rows, g_grid_cols;
+
+/* Recompute g_geom (image rect + real cell size) from the current
+ * g_canvas_w/h + g_grid_rows/cols -- called once lazily (sm_io_ensure_geom)
+ * and again every time a probe-reply setter narrows one of those inputs, so
+ * sm_io_geom() (and the SGR-mouse mapper that reads it) is always current. */
+static void sm_io_recompute_geom(void)
 {
-    int ew, eh, dx, dy, icol, irow;
+    int ew, eh, dx, dy, icol, irow, cw, ch;
 
-    if (g_geom_ready)
-        return;
-    g_geom_ready = 1;
+    /* Real probed cell size (canvas/grid) when the grid is known; the 8x16
+     * default otherwise (matches syncconquer's door_cell_size() fallback). */
+    cw = (g_grid_cols > 0) ? g_canvas_w / g_grid_cols : SM_CELL_W_DEF;
+    ch = (g_grid_rows > 0) ? g_canvas_h / g_grid_rows : SM_CELL_H_DEF;
+    if (cw <= 0)
+        cw = SM_CELL_W_DEF;
+    if (ch <= 0)
+        ch = SM_CELL_H_DEF;
 
-    /* Fit the native 320x200 frame into the default canvas, true aspect (no
-     * stretch allowance -- max_stretch_pct=0 -- since the default canvas is
-     * an exact 2x multiple already), then center it. Once a later task wires
-     * a real probe reply in, this becomes "narrow vw/vh from the probe and
-     * recompute" instead of a one-time default. */
-    termgfx_geom_fit_ex(SM_CANVAS_W_DEF, SM_CANVAS_H_DEF, SM_FB_W, SM_FB_H,
+    /* Fit the native 320x200 frame into the canvas, true aspect (no stretch
+     * allowance -- max_stretch_pct=0 -- since the default/probed canvas is an
+     * exact (or near-exact) 2x multiple), then center it. */
+    termgfx_geom_fit_ex(g_canvas_w, g_canvas_h, SM_FB_W, SM_FB_H,
                         SM_GEOM_SCALE_MAX, 0, &ew, &eh);
-    termgfx_geom_center(SM_CANVAS_W_DEF, SM_CANVAS_H_DEF, ew, eh,
-                        SM_CELL_W_DEF, SM_CELL_H_DEF, &dx, &dy, &icol, &irow);
+    termgfx_geom_center(g_canvas_w, g_canvas_h, ew, eh, cw, ch, &dx, &dy, &icol, &irow);
 
     g_geom.ew = ew;
     g_geom.eh = eh;
     g_geom.dx = dx;
     g_geom.dy = dy;
-    g_geom.cw = SM_CELL_W_DEF;
-    g_geom.ch = SM_CELL_H_DEF;
-    g_geom.pixel_mode = 0;
+    g_geom.cw = cw;
+    g_geom.ch = ch;
     g_icol = icol;
     g_irow = irow;
+}
+
+static void sm_io_ensure_geom(void)
+{
+    if (g_geom_ready)
+        return;
+    g_geom_ready = 1;
+    g_geom.pixel_mode = 0;
+    sm_io_recompute_geom();
 }
 
 const sm_geom_t *sm_io_geom(void)
 {
     sm_io_ensure_geom();
     return &g_geom;
+}
+
+/* --- probe-reply setters (Task 6: fed by syncmoo1_input.c's CSI handler) --- */
+
+void sm_io_set_canvas(int w, int h)
+{
+    if (w <= 0 || h <= 0)
+        return;   /* malformed/partial reply: keep the current canvas */
+    sm_io_ensure_geom();
+    g_canvas_w = w;
+    g_canvas_h = h;
+    sm_io_recompute_geom();
+}
+
+void sm_io_set_grid(int rows, int cols)
+{
+    if (rows <= 0 || cols <= 0)
+        return;
+    sm_io_ensure_geom();
+    g_grid_rows = rows;
+    g_grid_cols = cols;
+    sm_io_recompute_geom();
+}
+
+void sm_io_set_pixel_mode(int on)
+{
+    sm_io_ensure_geom();
+    g_geom.pixel_mode = on ? 1 : 0;
+}
+
+/* The I/O descriptor sm_io adopted (socket, or fd 1 in dev/tty use) --
+ * syncmoo1_input.c's sm_input_pump() reads from this, so the input module
+ * never needs its own copy of "which fd is the door on". */
+int sm_io_get_fd(void)
+{
+    if (!g_inited)
+        sm_io_init(-1);
+    return g_fd;
 }
 
 /* --- terminal setup / teardown (Step 3) ------------------------------------ */
