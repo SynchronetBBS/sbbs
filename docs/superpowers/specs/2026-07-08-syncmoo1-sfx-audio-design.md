@@ -94,8 +94,19 @@ the `sfx_up[id]` array on that path; `termgfx_audio_sfx*(id, ...)` keep
 their `sfx_up[]` behaviour byte-for-byte, so SyncDuke and SyncDOOM do not
 move.
 
-Leaf format: `s_<hash8>` (e.g. `s_1a2b3c4d`), mirroring music's `d_<hash8>`
-with a distinct prefix so the two namespaces cannot alias.
+Leaf format: `s_<hash8>` (e.g. `s_1a2b3c4d`). The `s_` is a legibility tag
+("sfx"), matching the convention the other doors use -- SyncDOOM's `d_<hash8>`
+(`i_termmusic.c:149`) and SyncDuke's `<trackname>_<hash>`, whose comment states
+the purpose plainly: "the hash keeps it stable across sessions and
+collision-free across GRPs; the name just makes the cache files readable."
+
+The prefix is NOT what keeps the sfx and music namespaces apart: `cache_name()`
+(`audio_mgr.c:187`) already separates them by sub-directory, `<prefix>/sfx/<leaf>`
+versus `<prefix>/music/<key>`. Nothing can alias across them.
+
+The leaf must be under 16 bytes including its NUL (termgfx rejects longer ones
+outright rather than truncating them into its fixed-width table). `s_%08x` is
+10 characters, leaving room for the version tag described below.
 
 ### Door module
 
@@ -200,7 +211,24 @@ the first content Stored under that id — verify before fixing. One commit
 per door, checked with a wire capture.
 
 **Step 3 — widen termgfx's `C;L` cache-list skip from `music/*` to
-`sfx/*`.** Only safe once step 2 lands: the skip is name-presence, so it is
+`sfx/*`, and version-tag the SFX leaf first.**
+
+Two things must land together here, and the second is easy to miss. termgfx
+does not ship our VOC verbatim: `sfx_store_bytes()` runs
+`termgfx_audio_voc_to_pcm()` and Stores a transcoded 8-bit WAV. So `s_<hash>`
+names the hash of the *source* bytes, not of the bytes actually cached. If the
+transcode ever changes, the name does not, and the client keeps serving audio
+rendered by the old code.
+
+That is exactly the hazard music already solved: `mus_key()` appends a render
+version, `<name>_v<MUS_RENDER_VER>` (`audio_mgr.c:747`), so the cache name
+changes when the renderer does. Today the SFX exposure is harmless, because
+every session re-Stores and the Store overwrites. It becomes real the instant
+name-presence starts meaning "skip the upload". So step 3 must give the SFX
+leaf its own transcode-version tag -- `s_<hash8>_v<n>`, 13 characters, within
+the 16-byte leaf bound -- before, or in the same change as, widening the glob.
+
+ Only safe once step 2 lands: the skip is name-presence, so it is
 correct exactly when the name is content-addressed — the argument
 `audio_mgr.c:658-660` already makes for music. Today SFX are re-Stored
 every session: `freedoom1.wad` alone is 69 sounds / 1.37 MB, Duke is larger
