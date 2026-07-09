@@ -1,0 +1,15 @@
+# build output
+/build/
+/build-msvc/
+/syncretro
+/syncretro.map
+*.o
+# libretro cores, console BIOS, and game ROMs are runtime content, never
+# committed (sysop-supplied -- see PROVENANCE.md). NOT libretro.h, which IS
+# vendored and tracked.
+*_libretro.so
+*.bin
+*.rom
+# editor swap
+*.swp
+*.swo
