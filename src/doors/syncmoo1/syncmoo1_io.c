@@ -78,6 +78,11 @@
 #define SM_SIXEL_PAN 2
 #define SM_SIXEL_PAD 2
 
+/* Leftover-letterbox stretch allowance handed to termgfx_geom_fit_ex(). See
+ * sm_io_recompute_geom() for why syncmoo1 wants the stretch rather than a
+ * true-aspect fit. (termgfx_geom_fit()'s own wrapper bakes in this same 8.) */
+#define SM_GEOM_STRETCH_PCT 8
+
 /* Bounded blocking drain on exit (sm_io_leave): never hang the door's exit
  * path indefinitely on a dead/wedged peer. */
 #define SM_LEAVE_DRAIN_MS 2000
@@ -312,7 +317,7 @@ static int g_grid_rows, g_grid_cols;
  * sm_io_geom() (and the SGR-mouse mapper that reads it) is always current. */
 static void sm_io_recompute_geom(void)
 {
-    int ew, eh, dx, dy, icol, irow, cw, ch;
+    int ew, eh, dx, dy, icol, irow, cw, ch, fith, pagew, pageh;
 
     /* Real probed cell size (canvas/grid) when the grid is known; the 8x16
      * default otherwise (matches syncconquer's door_cell_size() fallback). */
@@ -323,12 +328,48 @@ static void sm_io_recompute_geom(void)
     if (ch <= 0)
         ch = SM_CELL_H_DEF;
 
-    /* Fit the native 320x200 frame into the canvas, true aspect (no stretch
-     * allowance -- max_stretch_pct=0 -- since the default/probed canvas is an
-     * exact (or near-exact) 2x multiple), then center it. */
-    termgfx_geom_fit_ex(g_canvas_w, g_canvas_h, SM_FB_W, SM_FB_H,
-                        SM_GEOM_SCALE_MAX, 0, &ew, &eh);
-    termgfx_geom_center(g_canvas_w, g_canvas_h, ew, eh, cw, ch, &dx, &dy, &icol, &irow);
+    /* Reserve ONE cell row at the bottom before fitting, so the image can never
+     * reach the terminal's LAST text row. A sixel whose final band lands on the
+     * bottom row scrolls the page, and since the game re-presents continuously
+     * the picture then jitters up and down. This bites syncmoo1 exactly: 320x200
+     * doubles to 640x400, which is precisely an 80x25 canvas, so without the
+     * reserve the fit fills every row. Centering within fith (below) puts the
+     * spare row at the very bottom. Same reserve, same reason, as SyncDOOM's
+     * sixel tier (syncdoom.c). Guarded on a plausibly-sized canvas so a tiny or
+     * bogus probe result can't reserve away most of the screen.
+     *
+     * Reserve from the USABLE PAGE (grid_rows * ch), not from g_canvas_w/h.
+     * The two differ, and assuming they don't is what let the image keep
+     * landing on the last row whenever SyncTERM shows its status line:
+     * SyncTERM never answers the ESC[14t canvas probe at all (its CSI 't' is
+     * the CTerm-private palette setter, cterm_cterm.c's cterm_handle_csi_t,
+     * which ignores anything with < 4 params), so g_canvas_h stays at the
+     * 640x400 DEFAULT while the grid probe correctly reports 24 rows. The
+     * page is then 24*16 = 384px, and reserving a row from the assumed 400
+     * yields exactly 384 -- the whole usable page, last row included. Deriving
+     * the page from the grid makes the reserve real on both: 25 rows -> 400px
+     * -> fit 384 (unchanged), 24 rows -> 384px -> fit 368. */
+    pagew = (g_grid_cols > 0) ? g_grid_cols * cw : g_canvas_w;
+    pageh = (g_grid_rows > 0) ? g_grid_rows * ch : g_canvas_h;
+    if (pagew <= 0 || pagew > g_canvas_w)
+        pagew = g_canvas_w;
+    if (pageh <= 0 || pageh > g_canvas_h)
+        pageh = g_canvas_h;
+
+    fith = (pageh > ch * 4) ? pageh - ch : pageh;
+
+    /* Fit the native 320x200 frame into the reserved canvas, then center it.
+     * The 8% stretch allowance matters here: on the common 640x400 canvas the
+     * reserve leaves 640x384, whose true-aspect fit is 614x384. Letting the
+     * <=8% leftover bar stretch away instead yields 640x384 -- an exact 2x
+     * horizontally, so with SM_SIXEL_PAD=2 the encoded width stays the native
+     * 320 and every horizontal pixel survives untouched; only the vertical
+     * 200->192 is resampled. A true-aspect 614 would instead resample the
+     * horizontal too, softening the game's pixel-art text for a 4% aspect gain
+     * MoO1's non-square 320x200 pixels never had on a CRT anyway. */
+    termgfx_geom_fit_ex(pagew, fith, SM_FB_W, SM_FB_H,
+                        SM_GEOM_SCALE_MAX, SM_GEOM_STRETCH_PCT, &ew, &eh);
+    termgfx_geom_center(pagew, fith, ew, eh, cw, ch, &dx, &dy, &icol, &irow);
 
     g_geom.ew = ew;
     g_geom.eh = eh;
@@ -405,7 +446,12 @@ void sm_io_enter(void)
 
     sm_io_ensure_geom();
 
-    sm_out_puts(termgfx_term_enter);    /* clear+home, hide cursor, no autowrap, DECSDM ?80l */
+    /* clear+home, hide cursor, no autowrap, DECSDM ?80l. That ?80l is termgfx's
+     * (shared with SyncDOOM/SyncDuke, so not ours to change here): on a current
+     * SyncTERM it ENABLES sixel scrolling rather than disabling it -- see the
+     * rev-1.328 polarity note in sm_io_present(). Harmless for us only because
+     * the bottom-row reserve keeps the image off the last row either way. */
+    sm_out_puts(termgfx_term_enter);
     sm_out_puts(termgfx_term_probe);    /* learn the terminal's pixel canvas; its ESC[999;999H+ESC[6n is the grid query */
     g_grid_probe_pending = 1;           /* arm the first-R-is-grid flag at probe-SEND time (Task 9 fix; see sm_io_take_grid_probe) */
     sm_out_puts("\x1b[c");              /* DA1: sixel support (param 4) */
@@ -460,6 +506,67 @@ int sm_io_init(int sockfd)
     return 0;
 }
 
+/* Scratch buffer for the scaled (encoded) frame; grown on demand. */
+static uint8_t *g_scaled;
+static size_t   g_scaled_cap;
+
+static int sm_io_ensure_scaled(int w, int h)
+{
+    size_t need = (size_t)w * (size_t)h;
+
+    if (need > g_scaled_cap) {
+        uint8_t *p = realloc(g_scaled, need);
+
+        if (p == NULL)
+            return -1;
+        g_scaled     = p;
+        g_scaled_cap = need;
+    }
+    return 0;
+}
+
+/* Encoded sixel dimensions for the current geometry: the DISPLAYED size
+ * (g_geom.ew x g_geom.eh) divided by the pixel-aspect upscale the terminal
+ * applies (SM_SIXEL_PAD across, SM_SIXEL_PAN down).
+ *
+ * The height is clamped DOWN to a whole number of 6-row sixel bands: a partial
+ * final band renders wrong under pan>1 (the same clamp SyncDOOM applies, and
+ * the bug SyncTERM's cterm_dec.c band-buffer carries -- see the SourceForge
+ * #258 notes). Both are floored at one pixel / one band so a degenerate probe
+ * can't produce a zero-sized encode. */
+static void sm_io_encode_dims(int *sxw, int *sxh)
+{
+    int w = g_geom.ew / SM_SIXEL_PAD;
+    int h = g_geom.eh / SM_SIXEL_PAN;
+
+    h -= h % 6;
+    *sxw = (w > 0) ? w : 1;
+    *sxh = (h >= 6) ? h : 6;
+}
+
+/* Nearest-neighbour scale of the native 320x200 indexed frame into dst
+ * (dw x dh). Purely index-domain: no palette involvement, so it can never
+ * introduce a colour that isn't already in the frame. When dw == SM_FB_W (the
+ * usual case, see sm_io_recompute_geom()) the horizontal term is the identity
+ * and this degenerates into a vertical row-select. */
+static void sm_io_scale_indices(uint8_t *dst, int dw, int dh,
+                                const uint8_t *src)
+{
+    int x, y;
+
+    for (y = 0; y < dh; ++y) {
+        const uint8_t *srow = src + (size_t)(y * SM_FB_H / dh) * SM_FB_W;
+        uint8_t       *drow = dst + (size_t)y * dw;
+
+        if (dw == SM_FB_W) {
+            memcpy(drow, srow, SM_FB_W);
+        } else {
+            for (x = 0; x < dw; ++x)
+                drow[x] = srow[x * SM_FB_W / dw];
+        }
+    }
+}
+
 /* --- present (Step 2; de-dupe + DSR-ACK backpressure added Task 9) --------- */
 void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
 {
@@ -467,16 +574,15 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
     static size_t   sxcap;
     static uint8_t  last_pal[768];
     static int      have_pal;
-    /* De-dupe cache (Task 9): the native framebuffer + the draw-position
-     * geometry (g_icol/g_irow) last SENT. sm_io_present() always encodes the
-     * full native 320x200 buffer (no scaling to the canvas -- SM_SIXEL_PAN/
-     * PAD tell the terminal to upscale on display), so the only things that
-     * can change what's on the wire are the pixels/palette themselves and
-     * WHERE the sixel is drawn -- a resize that moves the centered cell with
-     * no pixel change still needs a repaint. */
+    /* De-dupe cache (Task 9): the native framebuffer + everything that decides
+     * what the encode produces from it -- the draw position (g_icol/g_irow) and
+     * the emitted size (g_geom.ew/eh, which sets the scaled encode dims). A
+     * resize can change the emitted size while leaving the centered cell at the
+     * same 1;1, so ew/eh must be in the key too, not just icol/irow. */
     static uint8_t  last_fb[SM_FB_W * SM_FB_H];
     static int      have_fb;
     static int      last_icol = -1, last_irow = -1;
+    static int      last_ew = -1, last_eh = -1;
     int             pal_changed, emit_pal;
     size_t          n;
 
@@ -533,6 +639,7 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
      * goes out at once instead of queuing behind identical resends. */
     if (have_fb && !pal_changed
         && last_icol == g_icol && last_irow == g_irow
+        && last_ew == g_geom.ew && last_eh == g_geom.eh
         && memcmp(last_fb, idx320x200, sizeof last_fb) == 0)
         return;
 
@@ -542,16 +649,35 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
      * SyncDuke/SyncConquer all apply this same rule). */
     emit_pal = pal_changed;
 
-    {   /* Save cursor, position at the centered cell, restore after -- so the
-         * sixel (drawn at the text cursor per DECSDM ?80l) lands centered
-         * without disturbing whatever the real cursor position was. */
+    {   /* Save cursor, position at the centered cell, restore after -- the sixel
+         * is drawn at the text cursor, so this is what centers it without
+         * disturbing whatever the real cursor position was.
+         *
+         * Do NOT reach for DECSDM (?80) to suppress the bottom-row scroll.
+         * cterm does implement mode 80 (cterm_cterm.c's CTerm private-mode
+         * handler, which chains to the DEC/XTerm one), but it REVERSED THE
+         * MODE'S POLARITY in cterm rev 1.328 -- commit 117de27530, 2026-06-28,
+         * "Reverse DECSDM meaning" -- which is master-only, in no release tag.
+         * So one ?80l means "scrolling disabled, sixel anchored top-left" on a
+         * released SyncTERM and "scrolling ENABLED, sixel drawn at the cursor"
+         * on a current one, with no way to tell them apart short of sniffing
+         * cterm's revision. The bottom-row reserve in sm_io_recompute_geom()
+         * holds either way (and on non-SyncTERM sixel terminals besides). */
         char wrap[24];
         int  wn = snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", g_irow, g_icol);
         if (wn > 0)
             sm_out_put(wrap, (size_t)wn);
     }
-    n = sixel_encode_aspect(&sx, &sxcap, idx320x200, SM_FB_W, SM_FB_H,
-                            SM_SIXEL_PAN, SM_SIXEL_PAD, pal768, emit_pal);
+    {
+        int sxw, sxh;
+
+        sm_io_encode_dims(&sxw, &sxh);
+        if (sm_io_ensure_scaled(sxw, sxh) != 0)
+            return;                       /* OOM: skip this frame, keep running */
+        sm_io_scale_indices(g_scaled, sxw, sxh, idx320x200);
+        n = sixel_encode_aspect(&sx, &sxcap, g_scaled, sxw, sxh,
+                                SM_SIXEL_PAN, SM_SIXEL_PAD, pal768, emit_pal);
+    }
     sm_out_put(sx, n);
     sm_out_put("\x1b" "8", 2);   /* restore cursor */
 
@@ -563,6 +689,8 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
     have_fb   = 1;
     last_icol = g_icol;
     last_irow = g_irow;
+    last_ew   = g_geom.ew;
+    last_eh   = g_geom.eh;
 
     sm_out_put("\x1b[6n", 4);    /* DSR: terminal reports once it has CONSUMED this frame (paces) */
     g_pace_inflight++;
