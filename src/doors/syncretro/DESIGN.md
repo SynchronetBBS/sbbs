@@ -75,7 +75,7 @@ libretro is **pull-model**: the frontend calls `retro_run()` once per frame, and
 callbacks. The main loop (`main.c`) is therefore tiny:
 
 ```c
-double fps = core.av.timing.fps;         /* e.g. Intellivision ~59.92 */
+double fps = core.av.timing.fps;         /* FreeIntv reports 60.0 */
 for (;;) {
     if (sr_door_should_exit()) break;    /* carrier drop / time limit / quit key */
     core.run();                          /* -> video_refresh + audio_batch + input_state fire */
@@ -146,13 +146,22 @@ matter for a terminal frontend:
 | Command                          | Handling                                             |
 |----------------------------------|------------------------------------------------------|
 | `SET_PIXEL_FORMAT`               | accept `XRGB8888` / `RGB565`; stash for the converter |
-| `GET_SYSTEM_DIRECTORY`           | the BIOS dir (per-install, sysop-supplied -- see §10) |
-| `GET_SAVE_DIRECTORY`             | the per-user sandbox (SRAM + save states, §11)        |
+| `GET_SYSTEM_DIRECTORY`           | the BIOS dir (per-install, sysop-supplied -- see §10). **Never NULL** -- see below |
+| `GET_SAVE_DIRECTORY`             | the per-user sandbox (SRAM + save states, §11). **Never NULL** |
 | `GET_VARIABLE` / `SET_CORE_OPTIONS(_V2)` | expose core options (region, controller) via door config |
 | `SET_INPUT_DESCRIPTORS`          | capture the core's button labels -> input help overlay |
 | `GET_LOG_INTERFACE`              | route core logs to the door log                       |
 | `SET_HW_RENDER`                  | **refuse** (return false) -- software cores only (§13) |
 | unknown                          | return false (core adapts / continues)                |
+
+**The directory queries must always answer with a valid path.** libretro allows
+a frontend to decline them (NULL meaning "not set"), but cores do not reliably
+null-check the result: FreeIntv's `retro_init()` hands the `GET_SYSTEM_DIRECTORY`
+answer to `fill_pathname_join()`, which `strlcpy()`s it -- so declining, *or*
+accepting with a NULL pointer, segfaults the core before `retro_load_game()` is
+ever reached. `retro_env.c` substitutes `"."` rather than pass NULL. Treat this
+as frontend policy for every core, not a FreeIntv special case (CLAUDE.md: a
+misbehaving core is fixed on our side, never patched).
 
 ---
 
