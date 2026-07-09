@@ -20,6 +20,7 @@
 #include <stdint.h>
 
 #include "syncmoo1_map.h"   /* sm_geom_t */
+#include "audio_mgr.h"      /* termgfx: termgfx_audio_t */
 
 /* --- syncmoo1_io.c: terminal out-buffer, enter/probe/leave, sixel present --
  *
@@ -144,6 +145,10 @@ const sm_geom_t *sm_io_geom(void);
  * dev/tty use). Task 6's hw_event_handle() wiring reads this to know what to
  * hand sm_input_pump(). */
 int sm_io_get_fd(void);
+
+/* The session's termgfx audio manager (NULL before sm_io_enter()). syncmoo1_
+ * input.c feeds it inbound bytes so it can resolve the capability probe. */
+termgfx_audio_t *sm_io_audio(void);
 
 /* Probe-reply setters (Task 6, DESIGN.md Sec9): syncmoo1_input.c's CSI
  * handler calls these as the startup probe replies land (ESC[14t canvas px,

@@ -42,6 +42,7 @@
 #include "types.h"
 
 #include "syncmoo1.h"
+#include "syncmoo1_audio.h"
 #include "syncmoo1_config.h"
 #include "syncmoo1_door.h"
 #include "syncmoo1_input.h"
@@ -337,6 +338,7 @@ int hw_event_handle(void)
      * (syncmoo1_door.c), which restores the BBS terminal (bounded drain +
      * mode-restore) before _exit() -- the read side may still have a live
      * write direction to restore to. */
+    sm_audio_pump();   /* Stores the queued samples once the tier reply lands */
     if (sm_input_pump(sm_io_get_fd()) < 0)
         sm_door_hangup("input pump: peer hung up or socket error");
     return 0;
@@ -392,7 +394,7 @@ bool hw_audio_music_volume(int volume)
 
 int hw_audio_sfx_batch_start(int sfx_index_max)
 {
-    return 0;
+    return sm_audio_batch_start(sfx_index_max);
 }
 
 int hw_audio_sfx_batch_end(void)
@@ -402,22 +404,26 @@ int hw_audio_sfx_batch_end(void)
 
 int hw_audio_sfx_init(int sfx_index, const uint8_t *data, uint32_t len)
 {
-    return 0;
+    return sm_audio_init(sfx_index, data, len);
 }
 
 void hw_audio_sfx_release(int sfx_index)
 {
+    sm_audio_release(sfx_index);
 }
 
 void hw_audio_sfx_play(int sfx_index)
 {
+    sm_audio_play(sfx_index);
 }
 
 void hw_audio_sfx_stop(void)
 {
+    sm_audio_stop();
 }
 
 bool hw_audio_sfx_volume(int volume)
 {
+    sm_audio_set_volume(volume);
     return true;
 }

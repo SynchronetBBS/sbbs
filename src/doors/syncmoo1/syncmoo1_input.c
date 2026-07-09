@@ -48,6 +48,7 @@
 
 #include "caps.h"      /* termgfx: termgfx_caps_parse_jxl */
 #include "sgrmouse.h" /* termgfx: termgfx_sgr_classify (SGR button-field decode) */
+#include "audio_mgr.h" /* termgfx: termgfx_audio_feed */
 
 /* --- byte state machine ---------------------------------------------------- */
 
@@ -286,8 +287,15 @@ int sm_input_pump(int sockfd)
     }
 
     n = read(sockfd, buf, sizeof buf);
-    if (n > 0)
+    if (n > 0) {
         sm_io_wiredump_in(buf, (size_t)n);   /* debug capture; no-op unless SYNCMOO1_WIREDUMP is set */
+        {   /* Resolve the audio capability probe (SyncTERM replies with an
+             * APC the manager parses); harmless for every other byte. */
+            termgfx_audio_t *am = sm_io_audio();
+            if (am != NULL)
+                termgfx_audio_feed(am, buf, (int)n);
+        }
+    }
     if (n < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
             return 0;      /* no input yet / transient: not a hangup */

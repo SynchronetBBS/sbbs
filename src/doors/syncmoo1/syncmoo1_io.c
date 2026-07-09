@@ -53,6 +53,8 @@
 #include "geometry.h"   /* termgfx: termgfx_geom_fit_ex / termgfx_geom_center */
 #include "sbbs_node.h" /* termgfx: sbbs_my_node() -- node-tag the capture */
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller (termgfx_rtt_sample/termgfx_aimd_update) */
+#include "audio_mgr.h"       /* termgfx: termgfx_audio_create/_probe/_set_cache_prefix */
+#include "syncmoo1_audio.h"  /* sm_audio_attach */
 
 /* 1oom's native canvas (DESIGN.md: "Canvas: native 320x200, 8-bit
  * palettized"). */
@@ -94,6 +96,23 @@
 #ifndef PATH_MAX
 #define PATH_MAX 4096
 #endif
+
+/* One audio manager per session. Its emit callback stages bytes through the
+ * same out-buffer as the sixel stream, so audio and video share one ordered
+ * write path (mirrors syncduke_io.c's sd_audio_emit). */
+static termgfx_audio_t *g_audio;
+
+static void sm_audio_emit(void *ctx, const void *buf, size_t len, int stream)
+{
+    (void)ctx;
+    (void)stream;
+    sm_out_put(buf, len);
+}
+
+termgfx_audio_t *sm_io_audio(void)
+{
+    return g_audio;
+}
 
 /* --- staged output buffer + sink (Step 4) ---------------------------------- */
 static uint8_t *   g_out;
@@ -585,6 +604,15 @@ void sm_io_enter(void)
      * rev-1.328 polarity note in sm_io_present(). Harmless for us only because
      * the bottom-row reserve keeps the image off the last row either way. */
     sm_out_puts(termgfx_term_enter);
+
+    /* Audio: create the manager and probe before any sample is registered.
+     * The reply lands ~50 ms later; sm_audio_pump() drains the pending Stores
+     * when it does. Cache prefix "moo1" -> client-cache names moo1/sfx/s_... */
+    g_audio = termgfx_audio_create(sm_audio_emit, NULL);
+    termgfx_audio_set_cache_prefix(g_audio, "moo1");
+    sm_audio_attach(g_audio);
+    termgfx_audio_probe(g_audio);
+
     sm_out_puts(termgfx_term_probe);    /* learn the terminal's pixel canvas; its ESC[999;999H+ESC[6n is the grid query */
     g_grid_probe_pending = 1;           /* arm the first-R-is-grid flag at probe-SEND time (Task 9 fix; see sm_io_take_grid_probe) */
     sm_out_puts("\x1b[c");              /* DA1: sixel support (param 4) */
