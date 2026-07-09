@@ -172,8 +172,25 @@ void sm_config_seed_1oom(void)
     char        tmp[PATH_MAX];
     const char *user = os_get_path_user();
 
+    /* sm_config_apply() (syncmoo1.h step 2) always calls os_set_path_user()
+     * before this runs -- to -home when given, otherwise to cwd -- so `user`
+     * is never NULL/"" in practice (os_set_path_user()'s lib_stralloc() would
+     * itself abort the process on a NULL/OOM string, see 1oom/src/lib.c).
+     * This guard is just defense against that invariant somehow not holding
+     * (e.g. a future caller of this function that skips sm_config_apply()):
+     * without a real user path there is nowhere to put the temps and nothing
+     * to prune, so bail rather than seed/snapshot against a path we didn't
+     * choose.
+     *
+     * Residual limitation: without -home, every session on this door shares
+     * one cwd, hence one user path -- so they also share
+     * 1oom_config_*.txt and these very temp-file names (syncmoo1_seed.tmp,
+     * syncmoo1_base.tmp), and concurrent sessions can race each other. That
+     * is inherent to not having per-user storage; it is exactly why -home
+     * exists and why the live xtrn.ini passes it, not something to work
+     * around here. */
     if (user == NULL || user[0] == '\0')
-        return;   /* no -home: nowhere to put the temps, nothing to prune */
+        return;
 
     /* 1. [1oom] -> a temp cfg file -> 1oom's own cfg_load(). Reusing the
      *    engine's parser means its per-item range checks validate the sysop's
@@ -196,21 +213,31 @@ void sm_config_seed_1oom(void)
      *    than an enumeration, so the base needs no knowledge of the item
      *    table -- and stays correct as 1oom gains options. */
     snprintf(sm_base_cfg, sizeof sm_base_cfg, "%s/syncmoo1_base.tmp", user);
-    if (cfg_save(sm_base_cfg) != 0)
+    if (cfg_save(sm_base_cfg) != 0) {
+        /* cfg_save() (1oom/src/cfg.c) opens with "w+" (creating/truncating
+         * the file) and can still fail mid-write via its own goto-fail paths
+         * without removing what it created. Clean up that partial file
+         * ourselves before blanking the name -- once sm_base_cfg[0] is '\0',
+         * sm_config_prune_user_cfg()'s remove(sm_base_cfg) is gated off and
+         * would never run, leaving syncmoo1_base.tmp behind forever. */
+        remove(sm_base_cfg);
         sm_base_cfg[0] = '\0';   /* no base -> prune is skipped, never guesses */
+    }
 
     /* 3. Cache the user's own cfg path NOW, while os_get_path_user() still
-     *    resolves to our sandbox. sm_config_prune_user_cfg() runs at actual
-     *    process exit, atexit-registered AFTER main_1oom()'s own
-     *    atexit(main_shutdown) (hw_sbbs.c's main()), so it fires BEFORE
-     *    main_shutdown() at exit... no: atexit is LIFO, main_shutdown() (the
-     *    later registration) fires FIRST, and by the time it returns,
-     *    main_shutdown()'s own os_shutdown() call has already lib_free()'d
-     *    and NULLed 1oom's cached user_path (os/unix/os.c). A second
-     *    cfg_cfgname() call at that point re-derives a path from
-     *    $HOME/$XDG_CONFIG_HOME instead of the sandbox -- silently pruning
-     *    (and even creating) the wrong file. Grab it here instead, while it
-     *    is still valid, and never call cfg_cfgname() again after shutdown. */
+     *    resolves to our sandbox. atexit() is LIFO: hw_sbbs.c's main()
+     *    registers sm_config_prune_user_cfg() BEFORE calling main_1oom(),
+     *    which itself registers atexit(main_shutdown) (main.c). So at actual
+     *    process exit, main_shutdown() (the LATER registration) fires FIRST
+     *    -- running options_shutdown()'s cfg_save() while the sandbox is
+     *    still in effect -- and only THEN sm_config_prune_user_cfg(). By that
+     *    point main_shutdown()'s own os_shutdown() call has already
+     *    lib_free()'d and NULLed 1oom's cached user_path (os/unix/os.c), so a
+     *    fresh cfg_cfgname() call from inside the prune function would
+     *    re-derive a path from $HOME/$XDG_CONFIG_HOME instead of the sandbox
+     *    -- silently pruning (and even creating) the wrong file. Grab the
+     *    path here instead, while it is still valid, and never call
+     *    cfg_cfgname() again after shutdown. */
     {
         char *cfgname = cfg_cfgname();
 
@@ -331,28 +358,33 @@ int sm_config_apply(void)
     if (sm_lbx_dir[0] == '\0' && getcwd(cwd, sizeof cwd) != NULL)
         snprintf(sm_lbx_dir, sizeof sm_lbx_dir, "%s", cwd);
 
-    /* --- 2. per-user sandbox ------------------------------------------------
+    /* --- 2. per-user sandbox, and the $HOME guarantee ----------------------
      * 1oom builds its config + save file paths by prefixing os_get_path_user()
-     * (1oom/src/os/unix/os.c) -- an ABSOLUTE $XDG_CONFIG_HOME/1oom or
-     * $HOME/.config/1oom, NOT a cwd-relative path: cfg_cfgname() (cfg.c) and
-     * game_save_get_slot_fname()/year_fname() (game/game_save.c) all prefix
-     * it. Nothing in this door sets HOME/XDG_CONFIG_HOME, so a bare chdir does
-     * NOT isolate anything -- every node would still share the one default
-     * dir. The actual isolation is os_set_path_user(): it stores into the same
-     * user_path var os_get_path_user() lazily caches (os.c), and this runs
-     * before main_1oom()'s os_early_init/os_init ever call os_get_path_user(),
-     * so setting it here pre-populates that cache and wins.
+     * (1oom/src/os/unix/os.c) -- an ABSOLUTE path, NOT a cwd-relative one:
+     * cfg_cfgname() (cfg.c) and game_save_get_slot_fname()/year_fname()
+     * (game/game_save.c) all prefix it. Nothing in this door sets
+     * HOME/XDG_CONFIG_HOME, so a bare chdir does NOT isolate anything -- every
+     * node would still share the one default dir. The actual isolation is
+     * os_set_path_user(): it stores into the same user_path var
+     * os_get_path_user() lazily caches (os.c).
+     *
+     * GUARANTEE: this door never writes anything under $HOME. Left alone,
+     * os_get_path_user() resolves to $XDG_CONFIG_HOME/1oom, else
+     * $HOME/.config/1oom, else "." -- and caches whichever into that static
+     * on its FIRST call. So os_set_path_user() is called HERE,
+     * UNCONDITIONALLY, in every branch below, before anything else in this
+     * process (including main_1oom()'s own os_early_init/os_init) can call
+     * os_get_path_user() and let that fallback run: to the absolute -home
+     * directory when one was given, otherwise to the door's absolute current
+     * working directory. 1oom's own $HOME/XDG fallback never gets a chance to
+     * fire.
      *
      * mkpath() FIRST (creates any missing components, e.g. a brand-new user's
      * nested data/user/0042/moo1/), so realpath() below can resolve it to an
      * absolute path -- the same absolutize-before-anything-moves discipline
      * step 1 uses, and so the value stays valid past the chdir. The chdir is
      * kept too (harmless, and keeps any stray cwd-relative engine I/O inside
-     * the sandbox), but os_set_path_user() is what does the real isolation.
-     *
-     * No -home => user_path is left unset, so 1oom keeps its own default
-     * XDG/HOME resolution (the pre-Task-8 shared-location behavior) -- a clean
-     * no-op, matching sm_door_home()'s NULL-on-absence contract. */
+     * the sandbox), but os_set_path_user() is what does the real isolation. */
     if (home != NULL) {
         char abs[PATH_MAX];
 
@@ -365,6 +397,21 @@ int sm_config_apply(void)
         os_set_path_user(realpath(home, abs) != NULL ? abs : home);
         if (chdir(home) != 0) {
             fprintf(stderr, "syncmoo1: cannot enter per-user home '%s'\n", home);
+            rc = -1;   /* logged, not fatal -- see the doc comment in syncmoo1.h */
+        }
+    } else {
+        /* No -home: storage goes in cwd instead (never $HOME/XDG). No chdir
+         * needed here -- cwd is already where we are, and nothing above this
+         * point moves it (the step-1 LBX resolve only reads cwd). */
+        if (getcwd(cwd, sizeof cwd) != NULL) {
+            os_set_path_user(cwd);
+        } else {
+            /* Can't even name cwd. Fall back to the literal string "." --
+             * still not $HOME/XDG, and safe here specifically because this
+             * branch never chdirs, so cwd cannot move out from under it. */
+            fprintf(stderr, "syncmoo1: cannot resolve cwd for per-user config "
+                             "path -- falling back to '.'\n");
+            os_set_path_user(".");
             rc = -1;   /* logged, not fatal -- see the doc comment in syncmoo1.h */
         }
     }

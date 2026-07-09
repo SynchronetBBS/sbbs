@@ -279,25 +279,31 @@ void sm_door_hangup(const char *why);
  *      unusable dir simply becomes the first candidate that fails, and
  *      lbxfile_find_dir() (lbx.c) falls through to the rest of
  *      os_get_paths_data() (XDG dirs, /usr/share/1oom, ...).
- *   2. If sm_door_home() (above) is non-NULL: mkpath() it (dirwrap.h;
- *      creates any missing path components), realpath()-absolutize it, and
- *      hand it to 1oom via os_set_path_user() (os.h) -- which is what 1oom
- *      prefixes onto its config + save file paths (cfg.c's cfg_cfgname(),
- *      game/game_save.c's slot/year fname builders), an ABSOLUTE
- *      $XDG_CONFIG_HOME/$HOME path, NOT a cwd-relative one. So this, not a
- *      chdir, is what actually isolates each player's saves/config; a chdir()
- *      into the dir is also done (harmless, contains any stray relative I/O)
- *      but is not the isolation mechanism. os_set_path_user() stores into the
- *      same var os_get_path_user() lazily caches, and this runs before
- *      main_1oom() ever calls os_get_path_user(), so it wins. No -home =>
- *      user_path is left unset, so 1oom keeps its own default XDG/HOME
- *      resolution (the pre-Task-8 single-shared-location behavior).
+ *   2. GUARANTEE: this door never writes anything under $HOME. If
+ *      sm_door_home() (above) is non-NULL: mkpath() it (dirwrap.h; creates
+ *      any missing path components), realpath()-absolutize it, and hand it
+ *      to 1oom via os_set_path_user() (os.h) -- which is what 1oom prefixes
+ *      onto its config + save file paths (cfg.c's cfg_cfgname(),
+ *      game/game_save.c's slot/year fname builders), an ABSOLUTE path, NOT a
+ *      cwd-relative one. So this, not a chdir, is what actually isolates
+ *      each player's saves/config; a chdir() into the dir is also done
+ *      (harmless, contains any stray relative I/O) but is not the isolation
+ *      mechanism. If sm_door_home() is NULL (no -home given), the door's
+ *      own absolute current working directory is used instead -- NEVER
+ *      1oom's own $XDG_CONFIG_HOME/$HOME fallback (os/unix/os.c's
+ *      os_get_path_user()). Either way, os_set_path_user() is called
+ *      unconditionally, before anything in this process can call
+ *      os_get_path_user() and lazily cache that $HOME/XDG fallback into its
+ *      static -- so it never runs. Storage lands under -home when given,
+ *      otherwise cwd; read-only game data still comes from the -data dir
+ *      (step 1 above), which is unaffected by any of this.
  * Step 1 runs before step 2 (see the absolutize note) so the data-path
  * resolution can never be affected by the sandbox chdir, regardless of
  * whether SYNCMOO1_LBX was given as a relative path.
  *
- * Returns 0 on success (including the no-op case: no -home given). A failed
- * mkpath()/chdir() into -home is logged to stderr and returns -1, but is not
+ * Returns 0 on success (including no -home given -- the user path still gets
+ * set, just to cwd instead). A failed mkpath()/chdir() into -home is logged
+ * to stderr and returns -1, but is not
  * itself treated as fatal by main() -- matching this door's general
  * "degrades, doesn't abort" posture elsewhere (e.g.
  * sm_door_configure_socket()'s best-effort setsockopt/fcntl calls). */
