@@ -38,11 +38,16 @@
 #include "dirwrap.h"   /* xpdev: mkpath() -- recursive mkdir */
 #include "os.h"        /* 1oom: os_set_path_data() (shared LBX dir; same call
                         * lbxfile_find_dir()/lbx.c + options.c's
-                        * options_set_datadir() make) and os_set_path_user()
-                        * (per-user config/save dir; 1oom's own -user PATH
-                        * option, options.c, is nothing but this call) */
+                        * options_set_datadir() make), os_set_path_user() (per-
+                        * user config/save dir; 1oom's own -user PATH option,
+                        * options.c, is nothing but this call), and
+                        * os_get_path_user() (sm_config_seed_1oom() below) */
+#include "cfg.h"       /* 1oom: cfg_load / cfg_save / cfg_cfgname */
+#include "lib.h"       /* 1oom: lib_free -- cfg_cfgname()'s buffer is
+                        * lib_malloc'd (util_concat()); free it accordingly */
 #include "ini_file.h"    /* xpdev: iniReadFile / iniGetBool / iniGetFloat */
 #include "audio_mgr.h"   /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
+#include "syncmoo1_cfgprune.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -68,6 +73,45 @@ double sm_config_music_quality(void)
     return sm_music_quality;
 }
 
+/* The [1oom] section, flattened to "module.item = value\n" lines, captured
+ * BEFORE the chdir (syncmoo1.ini lives in the launch dir, and by the time
+ * sm_config_seed_1oom() runs, cwd is the per-user home). NULL = no section. */
+static char *sm_seed_text;
+
+/* Flatten ini's [1oom] section into sm_seed_text, one "key = value" line per
+ * entry, verbatim (the keys are literal 1oom cfg names, module.item). Must
+ * run while `ini` is still open, i.e. from inside sm_config_read_ini(). */
+static void sm_config_capture_1oom(str_list_t ini)
+{
+    str_list_t keys = iniGetKeyList(ini, "1oom");
+    size_t     cap = 0, used = 0, i;
+
+    if (keys == NULL)
+        return;
+    for (i = 0; keys[i] != NULL; ++i)
+        cap += strlen(keys[i]) + INI_MAX_VALUE_LEN + 8;
+    if (cap == 0) {
+        iniFreeStringList(keys);
+        return;
+    }
+    sm_seed_text = (char *)malloc(cap);
+    if (sm_seed_text == NULL) {
+        iniFreeStringList(keys);
+        return;
+    }
+    sm_seed_text[0] = '\0';
+    for (i = 0; keys[i] != NULL; ++i) {
+        char v[INI_MAX_VALUE_LEN];
+
+        iniGetString(ini, "1oom", keys[i], "", v);
+        used += (size_t)snprintf(sm_seed_text + used, cap - used,
+                                 "%s = %s\n", keys[i], v);
+        if (used >= cap)          /* truncated: refuse a half-written seed */
+            break;
+    }
+    iniFreeStringList(keys);
+}
+
 /* Read syncmoo1.ini from the LAUNCH directory -- cwd is still the door's
  * startup_dir here, and sm_config_apply()'s chdir into -home has not happened
  * yet. Same relative-fopen approach as syncduke_config.c. A missing ini is not
@@ -86,7 +130,131 @@ static void sm_config_read_ini(void)
     sm_wire_enabled  = iniGetBool(ini, "debug", "wire", FALSE) ? 1 : 0;
     sm_music_quality = iniGetFloat(ini, "audio", "music_quality",
                                    TERMGFX_MUSIC_QUALITY_DEFAULT);
+    sm_config_capture_1oom(ini);
     strListFree(&ini);
+}
+
+static char sm_base_cfg[PATH_MAX];   /* base snapshot; "" = none taken */
+static char sm_user_cfg[PATH_MAX];   /* user's own cfg path; "" = none taken */
+
+/* Slurp `path` into a malloc'd NUL-terminated buffer, or NULL. */
+static char *sm_slurp(const char *path)
+{
+    FILE  *f = fopen(path, "rb");
+    char  *buf;
+    long   n;
+
+    if (f == NULL)
+        return NULL;
+    if (fseek(f, 0, SEEK_END) != 0 || (n = ftell(f)) < 0
+        || fseek(f, 0, SEEK_SET) != 0) {
+        fclose(f);
+        return NULL;
+    }
+    buf = (char *)malloc((size_t)n + 1);
+    if (buf == NULL) {
+        fclose(f);
+        return NULL;
+    }
+    if (fread(buf, 1, (size_t)n, f) != (size_t)n) {
+        free(buf);
+        fclose(f);
+        return NULL;
+    }
+    buf[n] = '\0';
+    fclose(f);
+    return buf;
+}
+
+void sm_config_seed_1oom(void)
+{
+    FILE       *f;
+    char        tmp[PATH_MAX];
+    const char *user = os_get_path_user();
+
+    if (user == NULL || user[0] == '\0')
+        return;   /* no -home: nowhere to put the temps, nothing to prune */
+
+    /* 1. [1oom] -> a temp cfg file -> 1oom's own cfg_load(). Reusing the
+     *    engine's parser means its per-item range checks validate the sysop's
+     *    values, and every option it has (now or later) is settable with no
+     *    code here. */
+    if (sm_seed_text != NULL) {
+        snprintf(tmp, sizeof tmp, "%s/syncmoo1_seed.tmp", user);
+        f = fopen(tmp, "w");
+        if (f != NULL) {
+            fputs(sm_seed_text, f);
+            fclose(f);
+            cfg_load(tmp);       /* 1oom validates + assigns */
+            remove(tmp);
+        }
+        free(sm_seed_text);
+        sm_seed_text = NULL;
+    }
+
+    /* 2. Snapshot every option at its sysop-resolved value. cfg_save() rather
+     *    than an enumeration, so the base needs no knowledge of the item
+     *    table -- and stays correct as 1oom gains options. */
+    snprintf(sm_base_cfg, sizeof sm_base_cfg, "%s/syncmoo1_base.tmp", user);
+    if (cfg_save(sm_base_cfg) != 0)
+        sm_base_cfg[0] = '\0';   /* no base -> prune is skipped, never guesses */
+
+    /* 3. Cache the user's own cfg path NOW, while os_get_path_user() still
+     *    resolves to our sandbox. sm_config_prune_user_cfg() runs at actual
+     *    process exit, atexit-registered AFTER main_1oom()'s own
+     *    atexit(main_shutdown) (hw_sbbs.c's main()), so it fires BEFORE
+     *    main_shutdown() at exit... no: atexit is LIFO, main_shutdown() (the
+     *    later registration) fires FIRST, and by the time it returns,
+     *    main_shutdown()'s own os_shutdown() call has already lib_free()'d
+     *    and NULLed 1oom's cached user_path (os/unix/os.c). A second
+     *    cfg_cfgname() call at that point re-derives a path from
+     *    $HOME/$XDG_CONFIG_HOME instead of the sandbox -- silently pruning
+     *    (and even creating) the wrong file. Grab it here instead, while it
+     *    is still valid, and never call cfg_cfgname() again after shutdown. */
+    {
+        char *cfgname = cfg_cfgname();
+
+        if (cfgname != NULL) {
+            snprintf(sm_user_cfg, sizeof sm_user_cfg, "%s", cfgname);
+            lib_free(cfgname);
+        } else {
+            sm_user_cfg[0] = '\0';
+        }
+    }
+}
+
+void sm_config_prune_user_cfg(void)
+{
+    char  *base, *user, *pruned = NULL;
+    size_t n = 0;
+    FILE  *f;
+
+    if (sm_base_cfg[0] == '\0' || sm_user_cfg[0] == '\0')
+        return;
+
+    /* Use the path cached by sm_config_seed_1oom(), NOT a fresh cfg_cfgname()
+     * call -- by the time this runs (atexit-registered, firing after
+     * main_shutdown()'s cfg_save()), 1oom's os_shutdown() has already cleared
+     * its cached user_path, and a second cfg_cfgname() would silently re-
+     * derive a $HOME/XDG path instead of the sandbox (see the comment in
+     * sm_config_seed_1oom()). */
+    base = sm_slurp(sm_base_cfg);
+    user = sm_slurp(sm_user_cfg);
+
+    if (base != NULL && user != NULL
+        && sm_cfg_prune(base, user, &pruned, &n) == 0) {
+        f = fopen(sm_user_cfg, "wb");
+        if (f != NULL) {
+            fwrite(pruned, 1, n, f);   /* short write -> file as-is next run */
+            fclose(f);
+        }
+    }
+    free(pruned);
+    free(user);
+    free(base);
+    remove(sm_base_cfg);
+    sm_base_cfg[0] = '\0';
+    sm_user_cfg[0] = '\0';
 }
 
 void sm_config_apply_data_path(void)
@@ -201,5 +369,6 @@ int sm_config_apply(void)
         }
     }
 
+    sm_config_seed_1oom();   /* needs os_set_path_user(); must precede main_1oom() */
     return rc;
 }

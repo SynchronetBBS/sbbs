@@ -63,3 +63,14 @@ target_include_directories(test_geom PRIVATE
 set_target_properties(test_geom PROPERTIES C_STANDARD 11)
 target_compile_options(test_geom PRIVATE -UNDEBUG)
 add_test(NAME test_geom COMMAND test_geom)
+
+# Pure unit tests for the 1oom config pruner. No engine, no termgfx: the module
+# is deliberately I/O-free so this target stays dependency-free (see test_map).
+add_executable(test_cfgprune
+    ${CMAKE_CURRENT_SOURCE_DIR}/../syncmoo1_cfgprune.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_cfgprune.c)
+
+target_include_directories(test_cfgprune PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set_target_properties(test_cfgprune PROPERTIES C_STANDARD 11)
+target_compile_options(test_cfgprune PRIVATE -UNDEBUG)
+add_test(NAME test_cfgprune COMMAND test_cfgprune)

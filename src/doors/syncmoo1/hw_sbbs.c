@@ -24,6 +24,11 @@
  * shared MoO1 LBX data path and chdirs into the per-user -home sandbox, both
  * BEFORE main_1oom() ever reaches its LBX check (main.c's lbxfile_find_dir()).
  *
+ * [1oom]-passthrough config prune: main() now atexit()-registers
+ * sm_config_prune_user_cfg() (syncmoo1_config.c) BEFORE calling main_1oom(),
+ * rather than calling it as a plain statement after main_1oom() returns --
+ * see main()'s doc comment for why the plain-call form doesn't work.
+ *
  * Never edit the vendored 1oom tree; this file is ours.
  */
 #include "config.h"
@@ -100,7 +105,13 @@ const char *idstr_hw = "sbbs";
  *                                 Task 5/6 carry-over where sm_io_get_fd()
  *                                 still returned the stdout fallback because
  *                                 nothing had resolved the door socket yet.
- *   5. main_1oom()             -- engine drives from here. */
+ *   5. atexit(sm_config_prune_user_cfg) -- registered before main_1oom(), so
+ *                                 it lands earlier on the atexit stack than
+ *                                 main_1oom()'s own atexit(main_shutdown) and
+ *                                 therefore fires LATER (atexit is LIFO):
+ *                                 after cfg_save(), not as a plain call right
+ *                                 after main_1oom() returns (see below).
+ *   6. main_1oom()             -- engine drives from here. */
 int main(int argc, char **argv)
 {
     if (sm_door_setup(argc, argv))
@@ -108,6 +119,20 @@ int main(int argc, char **argv)
     sm_door_sanitize_argv(&argc, argv);
     sm_config_apply();
     sm_io_init(sm_door_socket());
+    /* Registered via atexit(), BEFORE main_1oom() -- not a plain call after it
+     * returns. 1oom's own game loop (game_do()) returns to here with a plain
+     * C `return` on a normal quit; nothing calls exit() at that point, so
+     * options_shutdown()'s cfg_save() -- itself atexit(main_shutdown)'d from
+     * inside main_1oom(), main.c -- has NOT run yet when main_1oom() hands
+     * control back here. It only runs when this process actually terminates
+     * (this main() returning counts). atexit handlers fire LIFO, so
+     * registering ours BEFORE calling main_1oom() (which registers
+     * main_shutdown() after this point) guarantees main_shutdown() -- and
+     * its cfg_save() -- runs FIRST at exit, and sm_config_prune_user_cfg()
+     * runs SECOND, seeing the freshly written file. A dead-socket exit
+     * (sm_door_hangup()'s _exit()) skips atexit entirely, which is fine: it
+     * also skips cfg_save(), so there is nothing fresh to prune. */
+    atexit(sm_config_prune_user_cfg);
     return main_1oom(argc, argv);
 }
 
