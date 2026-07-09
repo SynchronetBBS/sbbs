@@ -84,14 +84,16 @@ const char *idstr_hw = "sbbs";
  *                                 dropfile path and aborts main_1oom() (see
  *                                 syncmoo1_door.c's sanitize doc comment).
  *   3. sm_config_apply()       -- (Task 8, syncmoo1_config.c) resolve the
- *                                 shared LBX data path (SYNCMOO1_LBX) and
- *                                 chdir into the per-user -home sandbox --
- *                                 BEFORE main_1oom() ever reaches its LBX
- *                                 check (main.c's lbxfile_find_dir()). Must
- *                                 run after sanitize_argv (which is what
- *                                 strips -home from argv; sm_door_home()
- *                                 below reads the value sm_door_resolve()
- *                                 captured earlier, not argv).
+ *                                 shared LBX data path (SYNCMOO1_LBX, else
+ *                                 this launch dir) and chdir into the per-user
+ *                                 -home sandbox. Must run after sanitize_argv
+ *                                 (which is what strips -home from argv;
+ *                                 sm_door_home() below reads the value
+ *                                 sm_door_resolve() captured earlier, not
+ *                                 argv), and before the chdir can move cwd.
+ *                                 The resolved data path is APPLIED later, by
+ *                                 hw_init() -> sm_config_apply_data_path();
+ *                                 see there and in syncmoo1_config.c for why.
  *   4. sm_io_init()            -- adopt the REAL socket fd (sm_door_socket())
  *                                 BEFORE the first present -- fixes the
  *                                 Task 5/6 carry-over where sm_io_get_fd()
@@ -113,8 +115,15 @@ int hw_early_init(void)
     return 0;
 }
 
+/* main_1oom() -> main_init() -> here. This is deliberately where the shared
+ * LBX data dir resolved by sm_config_apply() gets handed to 1oom: it is the
+ * only hook that runs AFTER options_parse_early()'s cfg_load() (which would
+ * otherwise overwrite the data path with the one remembered in the player's
+ * 1oom config file) and BEFORE options_parse() applies 1oom's own -data
+ * option, which is meant to win. See syncmoo1_config.c. */
 int hw_init(void)
 {
+    sm_config_apply_data_path();
     return 0;
 }
 

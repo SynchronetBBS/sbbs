@@ -55,25 +55,39 @@ sixel/text, same as the other doors in this tree.
 
 1oom is an **engine**, not game content: it requires the original **Master of
 Orion 1 v1.3** `.LBX` data files to run, and this door does not (and cannot)
-ship them. Master of Orion is © Simtex / MicroProse (see [CREDITS](CREDITS));
-sourcing a legally-owned copy of the data is the sysop's / player's
+ship them. Master of Orion is © Simtex / MicroProse (see [CREDITS](CREDITS)),
+and it is still sold commercially (e.g. as *Master of Orion 1+2* on GOG), so
+sourcing a **legally-owned** copy of the data is the sysop's / player's
 responsibility, out of scope for this code (DESIGN.md §15).
 
-Point the door at wherever those LBX files live on the install with the
-`SYNCMOO1_LBX` environment variable:
+**Recommended: put your copy in the door directory.** The door searches its own
+launch directory -- the `xtrn/syncmoo1/` install dir -- for the LBX files, so
+the simplest install is to drop them there. The bundled installer automates
+both registering the door and installing the data:
 
 ```sh
-SYNCMOO1_LBX=/path/to/moo1/data ./syncmoo1 ...
+jsexec install-xtrn ../xtrn/syncmoo1      # register the door in SCFG + install data
 ```
 
-`syncmoo1_config.c`'s `sm_config_apply()` resolves this once at startup
-(absolutized via `realpath()` before any per-user `chdir`, so a relative path
-resolves against the door's actual launch directory). If `SYNCMOO1_LBX` is
-unset, empty, or doesn't resolve, the door falls straight through to 1oom's
-own built-in data-directory search (cwd, XDG dirs, `/usr/share/1oom`, etc.) --
-this is intentionally a thin pointer, not a reimplementation of that search.
-1oom's own `-data <dir>` command-line option works too, if you'd rather pass
-it directly.
+Its data step, `getdata.js`, looks in the door directory for a copy **you** have
+placed there -- the loose `*.lbx` files, a `.zip`/archive containing them, or an
+extracted GOG/DOS game folder -- and extracts/copies the LBX files into place
+(lower-casing the names). It downloads nothing. Run it standalone any time after
+dropping a copy in:
+
+```sh
+jsexec ../xtrn/syncmoo1/getdata.js
+```
+
+**Alternatives.** 1oom's own `-data <dir>` option points the engine at any
+directory -- add it to the door's command line. For a dev/manual run where you
+control the shell, the `SYNCMOO1_LBX` environment variable does the same
+(`sm_config_apply()` resolves it once at startup, absolutized via `realpath()`
+before the per-user `chdir`). If none of these is set and the door dir has no
+LBX, 1oom falls through to its own built-in search (cwd, XDG dirs,
+`/usr/share/1oom`, ...). Note `SYNCMOO1_LBX` is only convenient when you own the
+environment: Synchronet has no per-door environment setting in `xtrn.ini`, so on
+a live BBS prefer the door-directory drop-in (above) or `-data`.
 
 ---
 

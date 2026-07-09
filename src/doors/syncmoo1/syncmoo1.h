@@ -246,17 +246,19 @@ void sm_door_hangup(const char *why);
  */
 
 /* One-time setup:
- *   1. If the SYNCMOO1_LBX env var names a shared, read-only MoO1 LBX data
- *      dir, realpath() it to an ABSOLUTE path and hand it to 1oom via
- *      os_set_path_data() (os.h) -- exactly what 1oom's own "-data <dir>"
- *      option (options.c's options_set_datadir()) and lbxfile_find_dir()
- *      itself (lbx.c, once it finds fonts.lbx) do, so lbxfile_find_dir()
- *      locates the data as its first candidate regardless of the chdir in
- *      step 2. Absolutized (not left relative) specifically so that later
- *      chdir can't break it. Unset/empty SYNCMOO1_LBX -- or a path realpath()
- *      can't resolve -- leaves 1oom's own os_get_paths_data() search (cwd,
- *      XDG dirs, /usr/share/1oom, etc.) completely untouched; this is
- *      intentionally minimal, not a reimplementation of that search.
+ *   1. RESOLVE the shared, read-only MoO1 LBX data dir to an ABSOLUTE path
+ *      (realpath()): the SYNCMOO1_LBX env var if it names one, else the
+ *      door's own launch directory (cwd, which for a native door is the
+ *      program's SCFG start-up path when one is configured -- conventionally
+ *      xtrn/syncmoo1, where a sysop drops the data -- and otherwise just the
+ *      sbbs process's own cwd, ctrl_dir, which harmlessly holds no LBX
+ *      files). Absolutized, and resolved BEFORE step 2, so the
+ *      sandbox chdir can't break a relative path. The resolved dir is only
+ *      stashed here; sm_config_apply_data_path() (below) is what hands it to
+ *      1oom, later. Nothing is reimplemented of 1oom's own data search: an
+ *      unusable dir simply becomes the first candidate that fails, and
+ *      lbxfile_find_dir() (lbx.c) falls through to the rest of
+ *      os_get_paths_data() (XDG dirs, /usr/share/1oom, ...).
  *   2. If sm_door_home() (above) is non-NULL: mkpath() it (dirwrap.h;
  *      creates any missing path components), realpath()-absolutize it, and
  *      hand it to 1oom via os_set_path_user() (os.h) -- which is what 1oom
@@ -274,11 +276,20 @@ void sm_door_hangup(const char *why);
  * resolution can never be affected by the sandbox chdir, regardless of
  * whether SYNCMOO1_LBX was given as a relative path.
  *
- * Returns 0 on success (including the no-op case: neither -home nor
- * SYNCMOO1_LBX given). A failed mkpath()/chdir() into -home is logged to
- * stderr and returns -1, but is not itself treated as fatal by main() --
- * matching this door's general "degrades, doesn't abort" posture elsewhere
- * (e.g. sm_door_configure_socket()'s best-effort setsockopt/fcntl calls). */
+ * Returns 0 on success (including the no-op case: no -home given). A failed
+ * mkpath()/chdir() into -home is logged to stderr and returns -1, but is not
+ * itself treated as fatal by main() -- matching this door's general
+ * "degrades, doesn't abort" posture elsewhere (e.g.
+ * sm_door_configure_socket()'s best-effort setsockopt/fcntl calls). */
 int sm_config_apply(void);
+
+/* Hand the data dir resolved by sm_config_apply() to 1oom (os_set_path_data()).
+ * Called from hw_init() -- NOT from main() -- because that is the one point in
+ * main_1oom()'s startup that lies after options_parse_early()'s cfg_load()
+ * (whose remembered "data_path" would otherwise overwrite ours) and before
+ * options_parse() applies 1oom's own "-data" (which should, and does, win).
+ * See syncmoo1_config.c for the full ordering rationale. No-op if
+ * sm_config_apply() resolved no dir. */
+void sm_config_apply_data_path(void);
 
 #endif /* SYNCMOO1_H */
