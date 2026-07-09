@@ -22,6 +22,7 @@ add_library(termgfx STATIC
     text.c
     term.c
     geometry.c
+    sgrmouse.c
     pace.c
     sbbs_node.c)
 
