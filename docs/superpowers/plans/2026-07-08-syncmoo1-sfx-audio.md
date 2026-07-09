@@ -390,7 +390,7 @@ The door module's testable core: leaf naming, the volume map, the slot table, an
 - Modify: `src/doors/syncmoo1/CMakeLists.txt`
 
 **Interfaces:**
-- Consumes: `termgfx_fnv1a()` (Task 1); `termgfx_audio_sfx_store/_play_named/_stop_all/_tier` (Task 2).
+- Consumes: `termgfx_fnv1a()` (Task 1); `termgfx_audio_sfx_store/_play_named/_stop_all/_tier` (Task 2). The unit test fakes those four — it must not link `audio_mgr.c`.
 - Produces (used by Task 4):
   - `void sm_audio_leaf(const void *data, size_t len, char out[16]);`
   - `int  sm_audio_vol(int moo_vol);`
@@ -461,22 +461,135 @@ The door module's testable core: leaf naming, the volume map, the slot table, an
         sm_audio_release(7);
         assert(sm_audio_slot(7) == NULL);
 
-        /* play()/stop() with no manager are no-ops (must not crash). */
+        /* play()/stop() with no manager are no-ops (must not crash, and must
+           not reach termgfx: a terminal with no audio APC stays silent). */
         sm_audio_play(0);
-        sm_audio_play(7);
         sm_audio_stop();
+        assert(fake_played_n == 0);
+        assert(fake_stop_calls == 0);
+    }
+
+    /* --- pump: drains only once the tier is known, Stores each leaf once --- */
+    {
+        static const char c[] = "sample-C";
+        termgfx_audio_t  *fake_mgr = (termgfx_audio_t *)0x1;   /* opaque; never dereferenced */
+        char leaf_c[16];
+
+        sm_audio_leaf(c, sizeof c - 1, leaf_c);
+
+        /* Below tier 1 the queue must NOT drain: termgfx would drop the Store. */
+        fake_tier_value = -1;
+        sm_audio_attach(fake_mgr);
+        assert(sm_audio_init(11, (const uint8_t *)c, sizeof c - 1) == 0);
+        sm_audio_pump();
+        assert(fake_stored_n == 0);
+        assert(sm_audio_pending() > 0);
+
+        /* Tier known -> drains. Each distinct leaf Stored exactly once, and the
+           duplicate registered earlier at two indices contributes one Store. */
+        fake_tier_value = 1;
+        sm_audio_pump();
+        assert(sm_audio_pending() == 0);
+        {
+            int i, j, dup = 0;
+            for (i = 0; i < fake_stored_n; ++i)
+                for (j = i + 1; j < fake_stored_n; ++j)
+                    if (strcmp(fake_stored[i], fake_stored[j]) == 0)
+                        ++dup;
+            assert(dup == 0);   /* no leaf Stored twice */
+        }
+
+        /* A second pump is a cheap no-op, not a re-upload. */
+        {
+            int before = fake_stored_n;
+            sm_audio_pump();
+            assert(fake_stored_n == before);
+        }
+
+        /* play() dispatches the leaf registered at that index. */
+        sm_audio_play(11);
+        assert(fake_played_n == 1);
+        assert(strcmp(fake_played[0], leaf_c) == 0);
+
+        /* released index no longer plays. */
+        sm_audio_release(11);
+        sm_audio_play(11);
+        assert(fake_played_n == 1);
+
+        sm_audio_stop();
+        assert(fake_stop_calls == 1);
+
+        sm_audio_attach(NULL);   /* leave globals inert for any later test */
     }
 ```
 
 Add `#include "syncmoo1_audio.h"` to the test's includes.
 
-- [ ] **Step 2: Add the module's sources to the test target.** In `src/doors/syncmoo1/tests/CMakeLists.txt`, add to `add_executable(test_audio ...)`:
+- [ ] **Step 2: Add the module's sources to the test target, and fake termgfx's audio manager.**
+
+`syncmoo1_audio.c` calls four `termgfx_audio_*` functions. Even though every
+call is guarded by `g_mgr == NULL`, **the linker still needs those symbols** — a
+guarded call is still a call site. Linking the real `audio_mgr.c` would drag in
+`audio.c` and the C++ libADLMIDI synth, destroying this target's dependency-free
+property. So the test supplies its own fakes. This also makes the test stronger:
+it can assert *which* leaves were Stored, and how many times.
+
+In `src/doors/syncmoo1/tests/CMakeLists.txt`, add to `add_executable(test_audio ...)`:
 
 ```cmake
     ${CMAKE_CURRENT_SOURCE_DIR}/../syncmoo1_audio.c
 ```
 
-and add `${CMAKE_CURRENT_SOURCE_DIR}/../../termgfx` to its `target_include_directories` (already present from Task 1).
+`${CMAKE_CURRENT_SOURCE_DIR}/../../termgfx` is already on its
+`target_include_directories` from Task 1.
+
+Then add these fakes to `src/doors/syncmoo1/tests/test_audio.c`, above `main()`:
+
+```c
+/* --- fake termgfx audio manager -------------------------------------------
+ * syncmoo1_audio.c references these four symbols, so the test must define them
+ * (a NULL-guarded call is still a call site the linker resolves). Linking the
+ * real audio_mgr.c would pull in audio.c + C++ libADLMIDI and cost this target
+ * its dependency-free property. Recording the calls also lets us assert the
+ * Store-once behaviour directly. */
+#define FAKE_MAX 64
+static char fake_stored[FAKE_MAX][16];
+static int  fake_stored_n;
+static char fake_played[FAKE_MAX][16];
+static int  fake_played_n;
+static int  fake_stop_calls;
+static int  fake_tier_value = 1;   /* pretend the terminal has digital audio */
+
+int termgfx_audio_tier(const termgfx_audio_t *m)
+{
+    (void)m;
+    return fake_tier_value;
+}
+
+void termgfx_audio_sfx_store(termgfx_audio_t *m, const char *leaf,
+                             const void *filedata, size_t filelen)
+{
+    (void)m; (void)filedata; (void)filelen;
+    if (fake_stored_n < FAKE_MAX)
+        snprintf(fake_stored[fake_stored_n++], 16, "%s", leaf);
+}
+
+void termgfx_audio_sfx_play_named(termgfx_audio_t *m, const char *leaf,
+                                  int vol, int pan)
+{
+    (void)m; (void)vol; (void)pan;
+    if (fake_played_n < FAKE_MAX)
+        snprintf(fake_played[fake_played_n++], 16, "%s", leaf);
+}
+
+void termgfx_audio_sfx_stop_all(termgfx_audio_t *m)
+{
+    (void)m;
+    ++fake_stop_calls;
+}
+```
+
+Add `#include <stdio.h>` to the test's includes (for `snprintf`).
 
 - [ ] **Step 3: Run it to verify it fails.**
 
