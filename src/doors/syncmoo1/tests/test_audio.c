@@ -69,6 +69,33 @@ int main(void)
         assert(strcmp(leaf, "s_bf9cf968") == 0);   /* "s_" + %08x of FNV-1a */
     }
 
+    /* --- sm_audio_payload_offset(): strip the 16-byte LBXVOC sub-header --- */
+    {
+        uint8_t buf[64];
+        size_t  i;
+
+        /* LBX-wrapped: magic af de 02 00 followed by a VOC body, buffer
+           longer than 16 bytes -> offset is 16. */
+        memset(buf, 0, sizeof buf);
+        buf[0] = 0xaf; buf[1] = 0xde; buf[2] = 0x02; buf[3] = 0x00;
+        memcpy(buf + 16, "Creative Voice File", 20);
+        assert(sm_audio_payload_offset(buf, 16 + 20) == 16);
+
+        /* Bare VOC, no wrapper -> offset is 0. */
+        memcpy(buf, "Creative Voice File", 20);
+        assert(sm_audio_payload_offset(buf, 20) == 0);
+
+        /* Wrapper magic present but buffer too short (<= 16 bytes): must
+           never underflow len - 16, must return 0. */
+        buf[0] = 0xaf; buf[1] = 0xde; buf[2] = 0x02; buf[3] = 0x00;
+        for (i = 0; i <= 16; ++i)
+            assert(sm_audio_payload_offset(buf, i) == 0);
+
+        /* Arbitrary non-matching bytes -> 0. */
+        memset(buf, 0x42, sizeof buf);
+        assert(sm_audio_payload_offset(buf, sizeof buf) == 0);
+    }
+
     /* --- volume map: 1oom's 0..128 -> termgfx's 0..100 ------------------- */
     assert(sm_audio_vol(0)   == 0);
     assert(sm_audio_vol(128) == 100);
@@ -182,6 +209,32 @@ int main(void)
         assert(fake_stop_calls == 1);
 
         sm_audio_attach(NULL);   /* leave globals inert for any later test */
+    }
+
+    /* --- LBX-wrapped vs. bare VOC payload: same content -> same leaf ----- */
+    {
+        static const char voc[] = "Creative Voice FileXYZ";
+        uint8_t lbx[16 + sizeof voc - 1];
+        char    leaf_voc[16], leaf_lbx_index[16];
+
+        memset(lbx, 0, sizeof lbx);
+        lbx[0] = 0xaf; lbx[1] = 0xde; lbx[2] = 0x02; lbx[3] = 0x00;
+        memcpy(lbx + 16, voc, sizeof voc - 1);
+
+        sm_audio_leaf(voc, sizeof voc - 1, leaf_voc);
+
+        assert(sm_audio_init(20, lbx, (uint32_t)sizeof lbx) == 0);
+        assert(sm_audio_slot(20) != NULL);
+        snprintf(leaf_lbx_index, sizeof leaf_lbx_index, "%s", sm_audio_slot(20));
+        assert(strcmp(leaf_lbx_index, leaf_voc) == 0);
+
+        assert(sm_audio_init(21, (const uint8_t *)voc, sizeof voc - 1) == 0);
+        assert(sm_audio_slot(21) != NULL);
+        assert(strcmp(sm_audio_slot(21), leaf_voc) == 0);
+
+        /* Both indices resolved to the same content-addressed leaf, so they
+           dedupe into exactly one pending queue entry. */
+        assert(sm_audio_pending() == 1);
     }
 
     return 0;

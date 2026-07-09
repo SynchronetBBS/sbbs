@@ -17,6 +17,14 @@
  * and the name never depends on 1oom's index numbering. */
 void sm_audio_leaf(const void *data, size_t len, char out[16]);
 
+/* 1oom hands hw_audio_sfx_init() a raw LBX item, not a bare Creative VOC: an
+ * LBXVOC item carries a 16-byte LBX sub-header before the VOC bytes start
+ * (1oom/src/fmt_id.h HDRID_LBXVOC/HDR_LBXVOC_LEN, 1oom/src/fmt_sfx.c:406-428
+ * fmt_sfx_detect()/fmt_sfx_convert()). Returns the byte offset of the actual
+ * VOC payload within `data`: 16 if the wrapper is present, else 0. Never
+ * underflows `len`. */
+size_t sm_audio_payload_offset(const void *data, size_t len);
+
 /* 1oom reports SFX volume as 0..128; termgfx wants 0..100. Clamped. */
 int sm_audio_vol(int moo_vol);
 

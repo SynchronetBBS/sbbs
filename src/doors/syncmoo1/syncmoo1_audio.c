@@ -17,7 +17,14 @@
  *     lands -- inside the engine's own "Preparing sounds" pause.
  *
  * We never call fmt_sfx_convert(): termgfx's Store path already transcodes VOC.
- * The raw LBX bytes go straight through.
+ * But 1oom's SFX items are LBXVOC, not bare VOC -- fmt_sfx.c's own detector
+ * (fmt_sfx_detect(), fmt_sfx.c:406) checks for a 16-byte LBX sub-header
+ * (HDRID_LBXVOC / HDR_LBXVOC_LEN, fmt_id.h) before the "Creative Voice File"
+ * magic ever appears. termgfx_audio_voc_to_pcm() only recognises the bare
+ * VOC magic at offset 0, so sm_audio_payload_offset() strips that 16-byte
+ * wrapper (when present) before the bytes are hashed or queued, mirroring
+ * fmt_sfx_convert()'s SFX_TYPE_LBXVOC case (fmt_sfx.c:427) without pulling in
+ * any of fmt_sfx.c itself.
  */
 #include "syncmoo1_audio.h"
 
@@ -49,6 +56,23 @@ static int                g_vol = 128;   /* 1oom's default full scale */
 void sm_audio_leaf(const void *data, size_t len, char out[16])
 {
     snprintf(out, SM_LEAF_LEN, "s_%08x", termgfx_fnv1a(data, len));
+}
+
+/* Big-endian 0xafde0200 at offset 0 (1oom/src/fmt_id.h HDRID_LBXVOC) plus the
+ * 16-byte sub-header length it introduces (HDR_LBXVOC_LEN); source of truth
+ * is fmt_sfx_detect()/fmt_sfx_convert() in 1oom/src/fmt_sfx.c:406-428. Kept as
+ * a local byte pattern (not the engine's header) so this target links neither
+ * fmt_sfx.c nor fmt_id.h. */
+static const uint8_t SM_LBXVOC_MAGIC[4] = { 0xaf, 0xde, 0x02, 0x00 };
+#define SM_LBXVOC_HDR_LEN  16
+
+size_t sm_audio_payload_offset(const void *data, size_t len)
+{
+    if (data == NULL || len <= SM_LBXVOC_HDR_LEN)
+        return 0;
+    if (memcmp(data, SM_LBXVOC_MAGIC, sizeof SM_LBXVOC_MAGIC) != 0)
+        return 0;
+    return SM_LBXVOC_HDR_LEN;
 }
 
 int sm_audio_vol(int moo_vol)
@@ -102,10 +126,18 @@ static int sm_audio_queue(const char *leaf, const uint8_t *data, size_t len)
 
 int sm_audio_init(int index, const uint8_t *data, uint32_t len)
 {
-    char leaf[SM_LEAF_LEN];
+    char   leaf[SM_LEAF_LEN];
+    size_t off;
 
     if (!sm_audio_valid(index) || data == NULL || len == 0)
         return 0;   /* the engine already logs a bad index (uisound.c) */
+
+    /* Strip the LBX sub-header (if present) BEFORE hashing/queueing: the hash
+     * must be over the bytes we actually ship, and termgfx's VOC detector
+     * only fires when "Creative Voice File" starts at offset 0. */
+    off = sm_audio_payload_offset(data, len);
+    data += off;
+    len -= (uint32_t)off;
 
     sm_audio_leaf(data, len, leaf);
     snprintf(g_slot[index], SM_LEAF_LEN, "%s", leaf);
