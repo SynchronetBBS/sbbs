@@ -3,13 +3,20 @@
 #include <string.h>
 #include "hash.h"   /* termgfx: termgfx_fnv1a */
 #include "syncmoo1_audio.h"
+#include "syncmoo1_music.h"   /* sm_music_pump prototype, for the fake below */
 
 /* --- fake termgfx audio manager -------------------------------------------
  * syncmoo1_audio.c references these four symbols, so the test must define them
  * (a NULL-guarded call is still a call site the linker resolves). Linking the
  * real audio_mgr.c would pull in audio.c + C++ libADLMIDI and cost this target
  * its dependency-free property. Recording the calls also lets us assert the
- * Store-once behaviour directly. */
+ * Store-once behaviour directly.
+ *
+ * sm_audio_pump() also now calls sm_music_pump() (Task 5): this target links
+ * neither syncmoo1_music.c nor termgfx's music/render machinery (same
+ * dependency-free reasoning), so a no-op fake stands in and just counts
+ * calls -- test_audio doesn't exercise music, only the audio module's call
+ * site. */
 #define FAKE_MAX 64
 static char fake_stored[FAKE_MAX][16];
 static int  fake_stored_n;
@@ -46,6 +53,13 @@ void termgfx_audio_sfx_stop_all(termgfx_audio_t *m)
     ++fake_stop_calls;
 }
 
+static int fake_music_pump_calls;
+
+void sm_music_pump(void)
+{
+    ++fake_music_pump_calls;
+}
+
 int main(void)
 {
     /* Canonical FNV-1a 32-bit vectors (offset basis 0x811c9dc5, prime 0x01000193). */
@@ -63,10 +77,27 @@ int main(void)
     }
 
     /* --- syncmoo1_audio: leaf naming ------------------------------------ */
+    /* Cache leaf: a bare 8-hex content hash. The door prefix ("moo1") and the
+     * kind ("sfx"/"music") are already path components in termgfx's cache key,
+     * so a prefix letter here would only duplicate them. */
     {
         char leaf[16];
-        sm_audio_leaf("foobar", 6, leaf);
-        assert(strcmp(leaf, "s_bf9cf968") == 0);   /* "s_" + %08x of FNV-1a */
+        const char bytes[] = "hello";
+
+        sm_audio_leaf(bytes, sizeof bytes - 1, leaf);
+        assert(strlen(leaf) == 8);
+        assert(strchr(leaf, '_') == NULL);          /* no "s_" prefix */
+        assert(strspn(leaf, "0123456789abcdef") == 8);
+
+        /* Content-addressed: same bytes -> same leaf, different -> different. */
+        {
+            char a[16], b[16];
+            sm_audio_leaf("one", 3, a);
+            sm_audio_leaf("one", 3, b);
+            assert(strcmp(a, b) == 0);
+            sm_audio_leaf("two", 3, b);
+            assert(strcmp(a, b) != 0);
+        }
     }
 
     /* --- sm_audio_payload_offset(): strip the 16-byte LBXVOC sub-header --- */
@@ -173,6 +204,8 @@ int main(void)
         sm_audio_pump();
         assert(fake_stored_n == 0);
         assert(sm_audio_pending() > 0);
+        /* sm_audio_pump()'s early return must not skip the music poll. */
+        assert(fake_music_pump_calls == 1);
 
         /* Tier known -> drains. Each distinct leaf Stored exactly once, and the
            duplicate registered earlier at two indices contributes one Store. */

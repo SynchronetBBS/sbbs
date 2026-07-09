@@ -51,6 +51,7 @@
 #include "syncmoo1_config.h"
 #include "syncmoo1_door.h"
 #include "syncmoo1_input.h"
+#include "syncmoo1_music.h"
 
 /* -------------------------------------------------------------------------- */
 
@@ -393,27 +394,32 @@ int hw_icon_set(const uint8_t *data, const uint8_t *pal, int w, int h)
 
 int hw_audio_music_init(int mus_index, const uint8_t *data, uint32_t len)
 {
-    return 0;
+    return sm_music_init(mus_index, data, len);
 }
 
 void hw_audio_music_release(int mus_index)
 {
+    sm_music_release(mus_index);
 }
 
 void hw_audio_music_play(int mus_index)
 {
+    sm_music_play(mus_index);
 }
 
 void hw_audio_music_fadeout(void)
 {
+    sm_music_stop();   /* termgfx's music stop already fades */
 }
 
 void hw_audio_music_stop(void)
 {
+    sm_music_stop();
 }
 
 bool hw_audio_music_volume(int volume)
 {
+    sm_music_set_volume(volume);
     return true;
 }
 

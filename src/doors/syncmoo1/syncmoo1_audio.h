@@ -12,9 +12,11 @@
 
 #include "audio_mgr.h"   /* termgfx: termgfx_audio_t */
 
-/* Cache leaf for `len` bytes: "s_" + 8 lower-case hex of FNV-1a. `out` must be
- * >= 16 bytes. Content-addressed, so identical samples share one cache entry
- * and the name never depends on 1oom's index numbering. */
+/* Cache leaf for `len` bytes: 8 lower-case hex of FNV-1a, no prefix. termgfx's
+ * cache key is already "<door>/<kind>/<leaf>" (moo1/sfx/..., moo1/music/...),
+ * so a letter here would only duplicate the path. Content-addressed, so
+ * identical samples share one cache entry and the name never depends on 1oom's
+ * index numbering. `out` must be >= 16 bytes. Shared by SFX and music. */
 void sm_audio_leaf(const void *data, size_t len, char out[16]);
 
 /* 1oom hands hw_audio_sfx_init() a raw LBX item, not a bare Creative VOC: an

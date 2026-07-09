@@ -38,7 +38,8 @@ add_executable(syncmoo1
     syncmoo1_geom.c
     syncmoo1_cfgprune.c
     syncmoo1_config.c
-    syncmoo1_audio.c)  # + more syncmoo1_*.c added in later tasks
+    syncmoo1_audio.c
+    syncmoo1_music.c)  # + more syncmoo1_*.c added in later tasks
 
 target_include_directories(syncmoo1 PRIVATE ${OOM} ${OOM}/game ${OOM}/os/unix)
 target_compile_definitions(syncmoo1 PRIVATE HAVE_CONFIG_H)

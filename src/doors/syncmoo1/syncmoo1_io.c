@@ -56,7 +56,8 @@
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller (termgfx_rtt_sample/termgfx_aimd_update) */
 #include "audio_mgr.h"       /* termgfx: termgfx_audio_create/_probe/_set_cache_prefix */
 #include "syncmoo1_audio.h"  /* sm_audio_attach */
-#include "syncmoo1_config.h" /* sm_config_wire_enabled() -- syncmoo1.ini [debug] wire gate */
+#include "syncmoo1_music.h"  /* sm_music_attach */
+#include "syncmoo1_config.h" /* sm_config_wire_enabled() -- syncmoo1.ini [debug] wire gate; sm_config_music_quality() */
 
 /* The native framebuffer size, the sixel pan/pad, and the fit math itself all
  * live in syncmoo1_geom.h/.c -- pure, and unit-tested by tests/test_geom.c. */
@@ -583,6 +584,23 @@ void sm_io_enter(void)
     g_audio = termgfx_audio_create(sm_audio_emit, NULL);
     termgfx_audio_set_cache_prefix(g_audio, "moo1");
     sm_audio_attach(g_audio);
+    sm_music_attach(g_audio);
+    termgfx_audio_set_music_quality(g_audio, sm_config_music_quality());
+    {
+        /* Door-side OGG cache: a track rendered once is shipped from disk on
+         * every later session, by any user. Generated runtime data -> data/,
+         * never exec/ (see the repo's directory-hierarchy rules). */
+        const char *data = getenv("SBBSDATA");
+        char        dir[PATH_MAX];
+
+        if (data != NULL && data[0] != '\0') {
+            size_t dl = strlen(data);
+            snprintf(dir, sizeof dir, "%s%ssyncmoo1/audio", data,
+                     (dl && (data[dl - 1] == '/' || data[dl - 1] == '\\')) ? "" : "/");
+            mkpath(dir);
+            termgfx_audio_set_music_cache_dir(g_audio, dir);
+        }
+    }
     termgfx_audio_probe(g_audio);
 
     sm_out_puts(termgfx_term_probe);    /* learn the terminal's pixel canvas; its ESC[999;999H+ESC[6n is the grid query */
