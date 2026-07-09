@@ -47,3 +47,19 @@ target_include_directories(test_audio PRIVATE
 set_target_properties(test_audio PROPERTIES C_STANDARD 11)
 target_compile_options(test_audio PRIVATE -UNDEBUG)
 add_test(NAME test_audio COMMAND test_audio)
+
+# Pure unit tests for the sixel fit/encode geometry. termgfx's geometry.c is
+# compiled in as a SOURCE (like sgrmouse.c above): pure, dependency-free C,
+# so this target keeps its "no termgfx link" property.
+add_executable(test_geom
+    ${CMAKE_CURRENT_SOURCE_DIR}/../syncmoo1_geom.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../termgfx/geometry.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_geom.c)
+
+target_include_directories(test_geom PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../termgfx)
+
+set_target_properties(test_geom PROPERTIES C_STANDARD 11)
+target_compile_options(test_geom PRIVATE -UNDEBUG)
+add_test(NAME test_geom COMMAND test_geom)

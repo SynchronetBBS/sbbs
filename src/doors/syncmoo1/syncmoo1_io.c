@@ -50,16 +50,15 @@
 #include "sixel.h"      /* termgfx: sixel_encode_aspect */
 #include "term.h"       /* termgfx: termgfx_term_enter/probe/leave */
 #include "caps.h"       /* termgfx: termgfx_query_jxl */
-#include "geometry.h"   /* termgfx: termgfx_geom_fit_ex / termgfx_geom_center */
+#include "geometry.h"   /* termgfx: termgfx_geom_center */
+#include "syncmoo1_geom.h"   /* sm_geom_fit_page / sm_geom_encode_dims (+ SM_FB_*, SM_SIXEL_*) */
 #include "sbbs_node.h" /* termgfx: sbbs_my_node() -- node-tag the capture */
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller (termgfx_rtt_sample/termgfx_aimd_update) */
 #include "audio_mgr.h"       /* termgfx: termgfx_audio_create/_probe/_set_cache_prefix */
 #include "syncmoo1_audio.h"  /* sm_audio_attach */
 
-/* 1oom's native canvas (DESIGN.md: "Canvas: native 320x200, 8-bit
- * palettized"). */
-#define SM_FB_W 320
-#define SM_FB_H 200
+/* The native framebuffer size, the sixel pan/pad, and the fit math itself all
+ * live in syncmoo1_geom.h/.c -- pure, and unit-tested by tests/test_geom.c. */
 
 /* Default terminal canvas assumed until a later task's probe-reply parser
  * narrows it: an 80x25 SyncTERM session at the usual 8x16 font is 640x400
@@ -69,25 +68,6 @@
 #define SM_CANVAS_H_DEF 400
 #define SM_CELL_W_DEF   8
 #define SM_CELL_H_DEF   16
-
-/* Generous upper bound on the fitted sixel width -- termgfx_geom_fit_ex()
- * just needs SOME cap (0 would mean uncapped); way above any real terminal
- * canvas this door will ever be centered in. */
-#define SM_GEOM_SCALE_MAX 2048
-
-/* pan=pad=2: SyncTERM/cterm renders each encoded sixel pixel as a 2x2 block,
- * so a 320x200 encode DISPLAYS at 640x400 (the default canvas above) while
- * sending ~1/4 the raster bytes of a pre-upscaled 640x400 sixel -- the
- * terminal does the nearest-neighbor doubling (sixel.h, termgfx_geom
- * doc). Brief-mandated for M1; a later task may add a full-res opt-in like
- * SyncDuke's. */
-#define SM_SIXEL_PAN 2
-#define SM_SIXEL_PAD 2
-
-/* Leftover-letterbox stretch allowance handed to termgfx_geom_fit_ex(). See
- * sm_io_recompute_geom() for why syncmoo1 wants the stretch rather than a
- * true-aspect fit. (termgfx_geom_fit()'s own wrapper bakes in this same 8.) */
-#define SM_GEOM_STRETCH_PCT 8
 
 /* Bounded blocking drain on exit (sm_io_leave): never hang the door's exit
  * path indefinitely on a dead/wedged peer. */
@@ -480,17 +460,7 @@ static void sm_io_recompute_geom(void)
     if (ch <= 0)
         ch = SM_CELL_H_DEF;
 
-    /* Reserve ONE cell row at the bottom before fitting, so the image can never
-     * reach the terminal's LAST text row. A sixel whose final band lands on the
-     * bottom row scrolls the page, and since the game re-presents continuously
-     * the picture then jitters up and down. This bites syncmoo1 exactly: 320x200
-     * doubles to 640x400, which is precisely an 80x25 canvas, so without the
-     * reserve the fit fills every row. Centering within fith (below) puts the
-     * spare row at the very bottom. Same reserve, same reason, as SyncDOOM's
-     * sixel tier (syncdoom.c). Guarded on a plausibly-sized canvas so a tiny or
-     * bogus probe result can't reserve away most of the screen.
-     *
-     * Reserve from the USABLE PAGE (grid_rows * ch), not from g_canvas_w/h.
+    /* Derive the page from the GRID (grid_rows * ch), not from g_canvas_w/h.
      * The two differ, and assuming they don't is what let the image keep
      * landing on the last row whenever SyncTERM shows its status line:
      * SyncTERM never answers the ESC[14t canvas probe at all (its CSI 't' is
@@ -508,19 +478,10 @@ static void sm_io_recompute_geom(void)
     if (pageh <= 0 || pageh > g_canvas_h)
         pageh = g_canvas_h;
 
-    fith = (pageh > ch * 4) ? pageh - ch : pageh;
-
-    /* Fit the native 320x200 frame into the reserved canvas, then center it.
-     * The 8% stretch allowance matters here: on the common 640x400 canvas the
-     * reserve leaves 640x384, whose true-aspect fit is 614x384. Letting the
-     * <=8% leftover bar stretch away instead yields 640x384 -- an exact 2x
-     * horizontally, so with SM_SIXEL_PAD=2 the encoded width stays the native
-     * 320 and every horizontal pixel survives untouched; only the vertical
-     * 200->192 is resampled. A true-aspect 614 would instead resample the
-     * horizontal too, softening the game's pixel-art text for a 4% aspect gain
-     * MoO1's non-square 320x200 pixels never had on a CRT anyway. */
-    termgfx_geom_fit_ex(pagew, fith, SM_FB_W, SM_FB_H,
-                        SM_GEOM_SCALE_MAX, SM_GEOM_STRETCH_PCT, &ew, &eh);
+    /* Reserve the bottom row and fit the native frame into what's left; the
+     * fit keeps the encode at the lossless native width whenever the page is
+     * wide enough for it. See sm_geom_fit_page(). */
+    sm_geom_fit_page(pagew, pageh, ch, &ew, &eh, &fith);
     termgfx_geom_center(pagew, fith, ew, eh, cw, ch, &dx, &dy, &icol, &irow);
 
     g_geom.ew = ew;
@@ -690,30 +651,26 @@ static int sm_io_ensure_scaled(int w, int h)
     return 0;
 }
 
-/* Encoded sixel dimensions for the current geometry: the DISPLAYED size
- * (g_geom.ew x g_geom.eh) divided by the pixel-aspect upscale the terminal
- * applies (SM_SIXEL_PAD across, SM_SIXEL_PAN down).
- *
- * The height is clamped DOWN to a whole number of 6-row sixel bands: a partial
- * final band renders wrong under pan>1 (the same clamp SyncDOOM applies, and
- * the bug SyncTERM's cterm_dec.c band-buffer carries -- see the SourceForge
- * #258 notes). Both are floored at one pixel / one band so a degenerate probe
- * can't produce a zero-sized encode. */
-static void sm_io_encode_dims(int *sxw, int *sxh)
+/* Encoded sixel dimensions, and the pixel-aspect the terminal applies to them,
+ * for the current geometry. The per-axis aspect choice, the band clamp and the
+ * degenerate floors all live in sm_geom_encode_dims(); this just feeds it the
+ * geometry the last probe reply produced. */
+static void sm_io_encode_dims(int *sxw, int *sxh, int *pad, int *pan)
 {
-    int w = g_geom.ew / SM_SIXEL_PAD;
-    int h = g_geom.eh / SM_SIXEL_PAN;
-
-    h -= h % 6;
-    *sxw = (w > 0) ? w : 1;
-    *sxh = (h >= 6) ? h : 6;
+    sm_geom_encode_dims(g_geom.ew, g_geom.eh, sxw, sxh, pad, pan);
 }
 
 /* Nearest-neighbour scale of the native 320x200 indexed frame into dst
  * (dw x dh). Purely index-domain: no palette involvement, so it can never
- * introduce a colour that isn't already in the frame. When dw == SM_FB_W (the
- * usual case, see sm_io_recompute_geom()) the horizontal term is the identity
- * and this degenerates into a vertical row-select. */
+ * introduce a colour that isn't already in the frame.
+ *
+ * Nearest-neighbour only ever DUPLICATES a source pixel when it upsamples, but
+ * it DROPS one outright when it downsamples -- and a dropped row or column
+ * takes MoO1's 1-pixel font strokes with it. So dw >= SM_FB_W and dh >= SM_FB_H
+ * hold by construction here, courtesy of sm_geom_fit_page()'s native-width
+ * guarantee and sm_geom_encode_dims()'s per-axis pan/pad choice. Don't weaken
+ * either without re-reading tests/test_geom.c. dw == SM_FB_W (the common case)
+ * makes the horizontal term the identity, degenerating this into a row-select. */
 static void sm_io_scale_indices(uint8_t *dst, int dw, int dh,
                                 const uint8_t *src)
 {
@@ -764,7 +721,7 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
          * live terminal to backpressure against, and each captured frame is
          * meant to stand alone, not be skipped as a duplicate of the last. */
         n = sixel_encode_aspect(&sx, &sxcap, idx320x200, SM_FB_W, SM_FB_H,
-                                SM_SIXEL_PAN, SM_SIXEL_PAD, pal768, 1);
+                                SM_SIXEL_PAN_MAX, SM_SIXEL_PAD_MAX, pal768, 1);
         sm_out_put(sx, n);
         sm_io_out_flush();
         memcpy(last_pal, pal768, sizeof last_pal);
@@ -847,14 +804,14 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
             sm_out_put(wrap, (size_t)wn);
     }
     {
-        int sxw, sxh;
+        int sxw, sxh, pad, pan;
 
-        sm_io_encode_dims(&sxw, &sxh);
+        sm_io_encode_dims(&sxw, &sxh, &pad, &pan);
         if (sm_io_ensure_scaled(sxw, sxh) != 0)
             return;                       /* OOM: skip this frame, keep running */
         sm_io_scale_indices(g_scaled, sxw, sxh, idx320x200);
         n = sixel_encode_aspect(&sx, &sxcap, g_scaled, sxw, sxh,
-                                SM_SIXEL_PAN, SM_SIXEL_PAD, pal768, emit_pal);
+                                pan, pad, pal768, emit_pal);
     }
     sm_out_put(sx, n);
     sm_out_put("\x1b" "8", 2);   /* restore cursor */

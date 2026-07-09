@@ -35,6 +35,7 @@ add_executable(syncmoo1
     syncmoo1_input.c
     syncmoo1_door.c
     syncmoo1_map.c
+    syncmoo1_geom.c
     syncmoo1_config.c
     syncmoo1_audio.c)  # + more syncmoo1_*.c added in later tasks
 
