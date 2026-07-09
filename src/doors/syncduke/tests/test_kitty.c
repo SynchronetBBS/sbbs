@@ -6,7 +6,8 @@
  * Companion to test_keymap.c (which covers the legacy byte path).  Build + run:
  *
  *   cc -I../Game/src -I../../termgfx -o /tmp/test_kitty test_kitty.c \
- *      ../syncduke_input.c ../syncduke_door.c ../../termgfx/caps.c && /tmp/test_kitty
+ *      ../syncduke_input.c ../syncduke_door.c \
+ *      ../../termgfx/caps.c ../../termgfx/keymode.c && /tmp/test_kitty -s1
  */
 
 #include <stdio.h>
@@ -33,6 +34,12 @@ void syncduke_hsteer(int *c, int *h) {
 		*h = 40;
 }
 void syncduke_log(const char *f, ...) { (void)f; }
+
+/* syncduke_node.c's page-compose hooks the pump routes keys through -- stub them. */
+int  syncduke_node_composing(void) { return 0; }
+void syncduke_node_compose_key(int c) { (void)c; }
+void syncduke_node_page_request(void) { }
+
 
 /* termgfx audio the pump now touches (music-key path) -- stub out, no audio in the test. */
 termgfx_audio_t *sd_audio;

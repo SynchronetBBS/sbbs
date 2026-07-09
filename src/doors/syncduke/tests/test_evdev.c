@@ -8,7 +8,8 @@
  * Build + run:
  *
  *   cc -I../Game/src -I../../termgfx -o /tmp/test_evdev test_evdev.c \
- *      ../syncduke_input.c ../syncduke_door.c ../../termgfx/caps.c && /tmp/test_evdev
+ *      ../syncduke_input.c ../syncduke_door.c \
+ *      ../../termgfx/caps.c ../../termgfx/keymode.c && /tmp/test_evdev -s1
  */
 
 #include <stdio.h>
@@ -41,6 +42,12 @@ void syncduke_hsteer(int *c, int *h) {
 		*h = 40;
 }
 void syncduke_log(const char *f, ...) { (void)f; }
+
+/* syncduke_node.c's page-compose hooks the pump routes keys through -- stub them. */
+int  syncduke_node_composing(void) { return 0; }
+void syncduke_node_compose_key(int c) { (void)c; }
+void syncduke_node_page_request(void) { }
+
 
 extern volatile int syncduke_pitch_step;
 extern volatile int syncduke_help_request;

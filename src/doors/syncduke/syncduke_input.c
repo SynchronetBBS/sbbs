@@ -249,7 +249,8 @@ int syncduke_evdev_active(void) { return termgfx_keymode_evdev_active(&g_km); }
  *   Space-> Fire           = Left Ctrl               (Fire)   <- the plain fire key
  *   E    -> Open/Use       = Space                   (Open)
  *   Q    -> Jump           = A                       (Jump)
- *   R    -> AutoRun toggle = CapsLock                (AutoRun)
+ *   ^R   -> AutoRun toggle = CapsLock                (AutoRun; plain R stays
+ *                                                     Duke's Steroids hotkey)
  *   Tab  -> Map;  Enter/Esc/Backspace -> menu/turn-around;  1..0 -> weapon select
  *   other letters keep their own scancode, so Duke's letter-bound inventory
  *   (H/J/N/M ...) and Z=Crouch still work.

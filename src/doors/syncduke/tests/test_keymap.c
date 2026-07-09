@@ -5,12 +5,14 @@
  * with no Duke/SDL (plus termgfx/caps.c, which syncduke_input.c uses to parse the JXL
  * cap-probe reply). Build+run:
  *   cc -I../Game/src -I../../termgfx -o /tmp/test_keymap test_keymap.c \
- *      ../syncduke_input.c ../syncduke_door.c ../../termgfx/caps.c && /tmp/test_keymap
+ *      ../syncduke_input.c ../syncduke_door.c \
+ *      ../../termgfx/caps.c ../../termgfx/keymode.c && /tmp/test_keymap -s1
  */
 
 #include <stdio.h>
 #include <string.h>
 #include "../syncduke.h"
+#include "audio_mgr.h"
 #include "keyboard.h"
 
 /* syncduke_input.c calls these (DSR pacing ack, Ctrl-S stats toggle) -- defined in
@@ -21,6 +23,20 @@ void syncduke_depth_cycle(void) { }
 void syncduke_tier_cycle(void) { }
 void syncduke_node_userlist_request(void) { }
 void syncduke_out_put(const void *buf, size_t len) { (void)buf; (void)len; }   /* kitty-flag push: not exercised here */
+
+/* syncduke_node.c's page-compose hooks the pump routes keys through -- stub them. */
+int  syncduke_node_composing(void) { return 0; }
+void syncduke_node_compose_key(int c) { (void)c; }
+void syncduke_node_page_request(void) { }
+
+/* termgfx audio + pacing the pump touches (music-key / native-turn paths) -- stub out. */
+uint32_t syncduke_rtt(void) { return 0; }
+termgfx_audio_t *sd_audio;
+void termgfx_audio_feed(termgfx_audio_t *m, const uint8_t *b, int n) { (void)m; (void)b; (void)n; }
+int  termgfx_audio_tier(const termgfx_audio_t *m) { (void)m; return -1; }
+void sd_music_pending_retry(void) { }
+
+
 void syncduke_hsteer(int *center_col, int *half_cols) { if (center_col) *center_col = 40; if (half_cols) *half_cols = 40; }
 /* syncduke_door.c's hangup() logs via syncduke_log() (in syncduke_log.c, not linked here). */
 void syncduke_log(const char *fmt, ...) { (void)fmt; }
@@ -62,7 +78,9 @@ int main(void)
 	expect("StrafeR(D)",  "d",    1, GP, sc_Period);
 	expect("Use(E)",      "e",    1, GP, sc_Space);
 	expect("Jump(Q)",     "q",    1, GP, sc_A);
-	expect("AutoRun(R)",  "r",    1, GP, sc_CapsLock);
+	/* AutoRun moved to Ctrl-R, so plain R now reaches Duke's Steroids hotkey.
+	 * Ctrl-R itself is handled a layer up, in handle_key(), not map_ascii(). */
+	expect("Steroids(R)", "r",    1, GP, sc_R);
 	expect("Crouch(Z)",   "z",    1, GP, sc_Z);     /* falls through to literal */
 	expect("Weapon3",     "3",    1, GP, sc_3);
 	expect("Holo(H)",     "h",    1, GP, sc_H);     /* inventory letter, literal */
