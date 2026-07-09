@@ -31,3 +31,18 @@ set_target_properties(test_map PROPERTIES C_STANDARD 11)
 target_compile_options(test_map PRIVATE -UNDEBUG)
 
 add_test(NAME test_map COMMAND test_map)
+
+# Pure unit tests for the audio module's content hash + helpers. Same rules as
+# test_map: dependency-free SOURCES (never the termgfx library, which drags in
+# C++/libADLMIDI), and -UNDEBUG so the assert()s actually run.
+add_executable(test_audio
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../termgfx/hash.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_audio.c)
+
+target_include_directories(test_audio PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../termgfx)
+
+set_target_properties(test_audio PROPERTIES C_STANDARD 11)
+target_compile_options(test_audio PRIVATE -UNDEBUG)
+add_test(NAME test_audio COMMAND test_audio)
