@@ -22,9 +22,16 @@
  * Probe-reply parsing (DESIGN.md Sec9) feeds sm_io's geometry setters
  * (syncmoo1_io.c / syncmoo1.h: sm_io_set_canvas/set_grid/set_pixel_mode) so
  * sm_io_geom() -- and therefore sm_map_mouse() -- becomes probe-driven
- * instead of sitting on the 640x400/80x25/8x16 default forever. NO DSR-ACK
- * pacing here (a later task, Sec5/Sec9's "DSR-ACK backpressure" bullet) --
- * the grid/canvas values are just recorded.
+ * instead of sitting on the 640x400/80x25/8x16 default forever.
+ *
+ * DSR-ACK pacing (Task 9, DESIGN.md Sec9's "DSR-ACK backpressure" bullet):
+ * the 'R' case below distinguishes the startup grid-probe reply (latches the
+ * grid, not a pace-ack) from a pace-ack for a present()-sent frame (via
+ * sm_io_pace_ack() -- syncmoo1_io.c owns the in-flight/AIMD state). It does
+ * so via sm_io_take_grid_probe(), a one-shot flag sm_io ARMS when it actually
+ * sends the probe -- NOT by assuming "the first R we see is the grid" -- so a
+ * malformed or lost grid reply can't misroute a later genuine pace-ack into
+ * sm_io_set_grid() (which would corrupt the grid and leak an in-flight slot).
  *
  * POSIX only for now, matching syncmoo1_io.c's stated scope (no _WIN32
  * branch yet either): plain read()/non-blocking fd, no Winsock recv().
@@ -137,10 +144,11 @@ static void sm_mouse_event(int button, int col, int row, int release)
 
 /* --- probe-reply parsing (Step 4) ------------------------------------------ */
 
-/* Latches once the FIRST grid reply lands (the ESC[999;999H + ESC[6n startup
- * probe in termgfx_term_probe) -- there's no repeated per-frame DSR-ack cycle
- * yet (Task 9), so this only ever needs to fire once. */
-static int g_grid_captured;
+/* NOTE: the "is this R the startup grid reply or a pace-ack?" state is NOT
+ * kept here as a local "first R ever" latch anymore (Task 9 fix). It lives in
+ * sm_io (armed at probe-SEND time in sm_io_enter, consumed via
+ * sm_io_take_grid_probe) so a malformed/lost grid reply can't cause a later
+ * genuine pace-ack to be mis-latched as the grid -- see the 'R' case below. */
 
 /* Capability flags recorded from the 'c'/'n' probe replies. Not yet consumed
  * anywhere (M1 is sixel-only per DESIGN.md Sec10 -- tier selection is a later
@@ -161,12 +169,30 @@ static void sm_csi_final(char fin)
         if (np >= 3 && p[0] == 4)
             sm_io_set_canvas(p[2], p[1]);   /* p[1]=height px, p[2]=width px */
         return;
-    case 'R':   /* ESC[rows;colsR: the 999;999 grid probe's cursor-position reply */
+    case 'R':   /* ESC[rows;colsR: cursor-position report */
         np = sm_csi_params(p, 2);
-        if (np >= 2 && !g_grid_captured) {
-            g_grid_captured = 1;
-            sm_io_set_grid(p[0], p[1]);     /* rows, cols */
+        if (sm_io_take_grid_probe()) {
+            /* This is the reply to the startup 999;999 grid probe
+             * (termgfx_term_probe's own trailing ESC[6n, sent once from
+             * sm_io_enter() -- before any present() frame exists to be
+             * acked). Latch the grid; this is NOT a pace-ack (Task 9,
+             * DESIGN.md §9): syncmoo1_io.c's DSR ring only ever records DSRs
+             * a real present() send appended, so this reply has no matching
+             * in-flight entry to retire. sm_io_take_grid_probe() has ALREADY
+             * consumed the one-shot flag, so a malformed reply here (np < 2)
+             * just keeps the default grid -- the NEXT R will correctly route
+             * to sm_io_pace_ack() below rather than being mistaken for a
+             * still-outstanding grid reply. */
+            if (np >= 2)
+                sm_io_set_grid(p[0], p[1]);     /* rows, cols */
+            return;
         }
+        /* Every report after the grid probe has been consumed acks one
+         * in-flight present()-sent frame's DSR (Task 9): decrements the
+         * pipeline count and feeds the round-trip into the shared AIMD depth
+         * controller (termgfx/pace.c) that sm_io_present()'s backpressure
+         * gate checks. */
+        sm_io_pace_ack();
         return;
     case 'y':   /* DECRPM: ESC[?1016;Ps$y -- reply to our SGR-Pixels DECRQM.
                  * Ps 1/3 = mode set (pixel-granular mouse reports active);

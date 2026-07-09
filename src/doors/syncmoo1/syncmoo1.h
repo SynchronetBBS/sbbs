@@ -38,15 +38,67 @@ int sm_io_init(int sockfd);
 
 /* Encode `idx320x200` (320x200 8-bit palette indices, row-major) through
  * `pal768` (256 RGB888 triples) as a DECSIXEL frame centered in the terminal
- * canvas (a sane 640x400/80x25 default until a later task's probe-reply
- * parser narrows it), stage it, and flush it to the I/O descriptor. Lazily
- * runs sm_io_enter() on the first call, so a caller need not sequence that by
+ * canvas (a sane 640x400/80x25 default until the probe-reply parser narrows
+ * it), stage it, and flush it to the I/O descriptor. Lazily runs
+ * sm_io_enter() on the first call, so a caller need not sequence that by
  * hand. The 768-byte palette is (re)defined in the sixel registers only when
  * it actually changed since the last frame (memcmp) -- SyncTERM garbles its
- * decoder if the registers are redefined every frame. M1 (sixel-tier only,
- * DESIGN.md §10): no whole-frame de-dupe and no DSR-ACK pacing -- those are a
- * later task (§5, §9); this is a straight encode+emit every call. */
+ * decoder if the registers are redefined every frame.
+ *
+ * Task 9 (DESIGN.md §3, §9): TWO gates run before any encode is attempted,
+ * so a static screen or a stalled client cost ~zero bytes/CPU instead of a
+ * straight encode+emit every call:
+ *   - De-dupe: if idx320x200 + pal768 + the current draw-position geometry
+ *     are all byte-identical to the last frame actually SENT, skip the
+ *     encode+emit entirely (memcmp port of syncduke_io.c:1081-1119). Bypassed
+ *     in SYNCMOO1_SIXELOUT capture mode -- each captured frame is meant to be
+ *     a standalone, self-contained decode target, not a member of a paced
+ *     live stream.
+ *   - DSR-ACK backpressure: a frame that IS sent appends ESC[6n and counts as
+ *     one in-flight frame (sm_io_pace_ack(), called from
+ *     syncmoo1_input.c's 'R' case, decrements it back down and feeds the
+ *     round-trip into termgfx's shared AIMD depth controller, pace.h). While
+ *     the in-flight count is already at the effective depth, sm_io_present()
+ *     DROPS this frame (no encode, no emit, no queuing) rather than growing
+ *     g_out further -- unless no DSR has come back for
+ *     SM_PACE_DEADLINE_MS, in which case the pipeline is reclaimed so a
+ *     terminal that never answers DSR can't wedge the door into a permanent
+ *     freeze. No CAP_FPS-style ceiling: 1oom is event-driven (DESIGN.md §3),
+ *     so the ONLY throttle is this ack-driven one. */
 void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768);
+
+/* A DSR round-trip (ESC[r;cR) that is a pace-ack for a present()-emitted
+ * frame, NOT the one-time startup grid-probe reply (see
+ * sm_io_take_grid_probe() for how the 'R' handler tells them apart).
+ * Decrements the in-flight counter and folds the round-trip into termgfx's
+ * shared RTT/AIMD state (pace.h), which re-settles the effective pipeline
+ * depth sm_io_present()'s backpressure gate checks. Called from
+ * syncmoo1_input.c's 'R' CSI case; a no-op-safe over-call (more acks than
+ * frames sent) just floors the in-flight counter at 0. */
+void sm_io_pace_ack(void);
+
+/* First-R-vs-pace-ack disambiguation for syncmoo1_input.c's 'R' CSI case
+ * (Task 9). sm_io_enter() ARMS an "grid probe outstanding" flag at the exact
+ * moment it emits the startup canvas/grid probe (termgfx_term_probe's
+ * ESC[999;999H + trailing ESC[6n). This accessor is a one-shot CHECK-AND-
+ * CLEAR: it returns 1 for the FIRST ESC[r;cR that arrives after the probe was
+ * sent (that reply is the grid answer -- the input handler routes it to
+ * sm_io_set_grid()), and 0 for every ESC[r;cR after that (each is a pace-ack
+ * -> sm_io_pace_ack()). Crucially the flag is consumed REGARDLESS of whether
+ * that first reply's params parse: a malformed/lost grid reply just means we
+ * keep the default grid, and -- because the flag was armed at probe-SEND time,
+ * not inferred from "first R ever" -- a later well-formed R (a genuine
+ * pace-ack) can never be mis-latched as the grid. Returns 1 at most once per
+ * armed probe; 0 if the probe was never sent or the flag was already taken. */
+int sm_io_take_grid_probe(void);
+
+/* Telemetry-only accessors (Task 9): the current in-flight DSR count and the
+ * AIMD-settled effective pipeline depth sm_io_present()'s backpressure gate
+ * compares it against. Not consumed anywhere in M1's normal flow -- for a
+ * future stats overlay and for out-of-process verification (the scratchpad
+ * harness). */
+int sm_io_pace_inflight(void);
+int sm_io_pace_depth(void);
 
 /* Terminal setup / teardown (DESIGN.md §9). Both idempotent (each runs its
  * work exactly once, however many times it's called): sm_io_present() calls

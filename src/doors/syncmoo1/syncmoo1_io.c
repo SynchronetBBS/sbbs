@@ -8,14 +8,13 @@
  * SYNCALERT_SIXELOUT -- an offline verification path that needs no live
  * socket), and the term enter/probe/leave control strings from termgfx.
  *
- * Task 5 (M1, sixel tier only, DESIGN.md §5/§9/§10): NO whole-frame de-dupe
- * and NO DSR-ACK pacing here -- both are a later task (§5's "de-dupe" and
- * "DSR-ACK backpressure" bullets, §9's probe-reply parsing). sm_io_present()
- * is a straight encode-and-emit every call; only the palette-register
- * decision is conditional. The image rect is computed against a fixed
- * 640x400/80x25 default canvas -- narrowing it from the real probe reply is
- * the input module's job (a later task); sm_io_geom() already returns a sane
- * default so Task 6's mouse mapper has something to divide by from frame 1.
+ * Task 9 (M1, sixel tier only, DESIGN.md §3/§9): whole-frame de-dupe (memcmp
+ * the native framebuffer + palette + draw-position geometry) and DSR-ACK
+ * backpressure (via termgfx/pace.c's shared AIMD depth controller) now gate
+ * sm_io_present() -- see its doc comment in syncmoo1.h. The image rect is
+ * still computed against a fixed 640x400/80x25 default canvas until the real
+ * probe reply narrows it (Task 6's job); sm_io_geom() already returns a sane
+ * default so the mouse mapper has something to divide by from frame 1.
  *
  * Sink selection (env, checked once in sm_io_init()):
  *   SYNCMOO1_SIXELOUT=<path>  capture mode -- each sm_io_present() OVERWRITES
@@ -49,6 +48,7 @@
 #include "term.h"       /* termgfx: termgfx_term_enter/probe/leave */
 #include "caps.h"       /* termgfx: termgfx_query_jxl */
 #include "geometry.h"   /* termgfx: termgfx_geom_fit_ex / termgfx_geom_center */
+#include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller (termgfx_rtt_sample/termgfx_aimd_update) */
 
 /* 1oom's native canvas (DESIGN.md: "Canvas: native 320x200, 8-bit
  * palettized"). */
@@ -148,7 +148,9 @@ int sm_io_out_flush(void)
     return 0;
 }
 
-/* Monotonic millisecond clock, for the bounded blocking exit-drain only. */
+/* Monotonic millisecond clock: the bounded blocking exit-drain (below) and
+ * Task 9's DSR-ACK pace timing (deadline reclaim, RTT sampling) both use
+ * this single clock domain. */
 static uint32_t sm_io_now_ms(void)
 {
     struct timespec t;
@@ -181,6 +183,112 @@ static void sm_io_drain_blocking(int timeout_ms)
             return;
         sm_io_sleep_ms(15);
     }
+}
+
+/* --- DSR-ACK frame pacing (Task 9; termgfx/pace.c shared AIMD) ------------
+ *
+ * After each frame sm_io_present() ACTUALLY sends (a de-duped frame sends
+ * nothing, so it needs no ack), it appends ESC[6n; the terminal's ESC[r;cR
+ * reply -- parsed by syncmoo1_input.c's 'R' CSI case -- reports once the
+ * terminal has CONSUMED that frame. g_pace_inflight counts unacked DSRs, so
+ * it's how many sent frames the terminal hasn't drawn yet; sm_io_present()
+ * DROPS a new frame (skip encode+emit) rather than queuing while
+ * g_pace_inflight >= the effective depth. This paces to the terminal's
+ * RENDER rate, not just link bandwidth -- a plain socket-buffer backpressure
+ * still floods SyncTERM's sixel decoder, the real bottleneck; an overrun
+ * decoder lags, garbles, drops the connection. A stale-progress deadline
+ * (SM_PACE_DEADLINE_MS) reclaims the pipeline so a terminal that never
+ * replies to DSR can't wedge the door into a permanent freeze (degrades to a
+ * slideshow instead).
+ *
+ * GRID-PROBE-vs-PACE-ACK (DESIGN.md §9 / Task 9 brief): the startup grid probe
+ * (termgfx_term_probe's own trailing ESC[6n, sent once from sm_io_enter())
+ * gets its OWN ESC[r;cR reply, which syncmoo1_input.c's 'R' case routes to
+ * sm_io_set_grid() -- that reply is NOT pushed through sm_io_pace_ack(): it
+ * isn't a reply to any present()-emitted DSR (g_dsr_ts below only ever records
+ * DSRs THIS module appended after a real frame), so there's nothing in the
+ * ring for it to match, and no in-flight count to decrement. The split is
+ * driven by the sm_io_take_grid_probe() one-shot flag (armed in sm_io_enter at
+ * probe-SEND time, see there): the FIRST R after the probe is the grid, every
+ * R after that is a pace-ack. Anchoring on probe-send-time -- rather than "the
+ * first R we ever see" -- is what makes a malformed/lost grid reply safe: the
+ * flag is consumed by that first R regardless of whether it parses, so a later
+ * genuine pace-ack can never be mis-latched into sm_io_set_grid() (which would
+ * corrupt the grid AND permanently leak one in-flight slot). This deliberately
+ * diverges from syncduke_input.c (which pre-loads the probe's own DSR into its
+ * ring so its first R also acks one "frame") -- simpler here because that
+ * first reply genuinely has no present()-side counterpart yet at term-enter
+ * time.
+ *
+ * Always-auto (no fixed/manual Ctrl-key depth override like SyncDuke's
+ * Ctrl-T): M1 has no stats-overlay/tuning UI, and 1oom's keyboard is fully
+ * claimed by the game, so the AIMD controller alone settles the depth from
+ * the measured round-trip; g_pace_depth's initial value (3) is just the
+ * starting point before the first RTT sample lands (termgfx_aimd_update()
+ * is a no-op until then, pace.h). No CAP_FPS-style frame-rate ceiling is
+ * added anywhere -- 1oom is event-driven (DESIGN.md §3), so this ack-driven
+ * gate is the only throttle. */
+#define SM_PACE_DEADLINE_MS 750    /* reclaim the pipeline if no DSR progress for this long */
+#define SM_PACE_DEPTH_MAX   8      /* beyond this just buffers display lag, no more responsiveness */
+#define SM_DSR_RING         16
+
+static int      g_pace_inflight;
+static int      g_pace_depth = 3;
+static uint32_t g_pace_adj_at;
+static uint32_t g_pace_progress_ms;
+static uint32_t g_rtt_ms, g_rtt_min, g_rtt_min_at;
+static int      g_rtt_high;
+
+static uint32_t g_dsr_ts[SM_DSR_RING];
+static int      g_dsr_h, g_dsr_t;
+
+/* Record a DSR we just emitted (a real, present()-sent frame's ESC[6n) --
+ * NOT called for the startup grid probe's own ESC[6n; see the block comment
+ * above. */
+static void sm_pace_dsr_sent(uint32_t now)
+{
+    g_dsr_ts[g_dsr_h] = now;
+    g_dsr_h = (g_dsr_h + 1) % SM_DSR_RING;
+}
+
+int sm_io_pace_inflight(void) { return g_pace_inflight; }
+int sm_io_pace_depth(void)    { return g_pace_depth; }
+
+/* "Startup grid probe outstanding" flag: armed by sm_io_enter() at the moment
+ * it emits termgfx_term_probe (whose ESC[999;999H + trailing ESC[6n is the
+ * grid query), consumed once by sm_io_take_grid_probe() below. This is the
+ * anchor for the first-R-vs-pace-ack split (see that accessor's header doc):
+ * armed at probe-SEND time, NOT inferred from "the first R we ever see", so a
+ * malformed/lost grid reply can't cause a later genuine pace-ack to be
+ * mis-latched as the grid. */
+static int g_grid_probe_pending;
+
+int sm_io_take_grid_probe(void)
+{
+    if (!g_grid_probe_pending)
+        return 0;
+    g_grid_probe_pending = 0;   /* one-shot: the first R after the probe consumes it */
+    return 1;
+}
+
+void sm_io_pace_ack(void)
+{
+    uint32_t now = sm_io_now_ms();
+
+    if (g_pace_inflight > 0)
+        g_pace_inflight--;
+    if (g_dsr_h != g_dsr_t) {                     /* match the oldest outstanding DSR */
+        uint32_t rtt = now - g_dsr_ts[g_dsr_t];
+        g_dsr_t = (g_dsr_t + 1) % SM_DSR_RING;
+        /* Fold the round-trip into the smoothed RTT + baseline (shared,
+         * termgfx/pace.c) -- no stale-reject / no min re-seed window, same
+         * as syncduke_pace_ack()'s call -- then re-settle the AIMD depth. */
+        if (termgfx_rtt_sample(&g_rtt_ms, &g_rtt_min, &g_rtt_min_at, &g_rtt_high,
+                               rtt, now, 0, 0))
+            termgfx_aimd_update(1, &g_pace_depth, &g_pace_adj_at,
+                                g_rtt_ms, g_rtt_min, g_rtt_high, SM_PACE_DEPTH_MAX, now);
+    }
+    g_pace_progress_ms = now;
 }
 
 /* --- image geometry (Step 2's "compute the image rect once") -------------- */
@@ -298,7 +406,8 @@ void sm_io_enter(void)
     sm_io_ensure_geom();
 
     sm_out_puts(termgfx_term_enter);    /* clear+home, hide cursor, no autowrap, DECSDM ?80l */
-    sm_out_puts(termgfx_term_probe);    /* learn the terminal's pixel canvas (parsed by a later task) */
+    sm_out_puts(termgfx_term_probe);    /* learn the terminal's pixel canvas; its ESC[999;999H+ESC[6n is the grid query */
+    g_grid_probe_pending = 1;           /* arm the first-R-is-grid flag at probe-SEND time (Task 9 fix; see sm_io_take_grid_probe) */
     sm_out_puts("\x1b[c");              /* DA1: sixel support (param 4) */
     sm_out_puts("\x1b[<c");             /* CTDA: SyncTERM detect */
     sm_out_puts(termgfx_query_jxl);     /* Q;JXL: JXL-tier detect (a later task consumes the reply) */
@@ -351,14 +460,24 @@ int sm_io_init(int sockfd)
     return 0;
 }
 
-/* --- present (Step 2) ------------------------------------------------------- */
+/* --- present (Step 2; de-dupe + DSR-ACK backpressure added Task 9) --------- */
 void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
 {
     static uint8_t *sx;
     static size_t   sxcap;
     static uint8_t  last_pal[768];
     static int      have_pal;
-    int             emit_pal;
+    /* De-dupe cache (Task 9): the native framebuffer + the draw-position
+     * geometry (g_icol/g_irow) last SENT. sm_io_present() always encodes the
+     * full native 320x200 buffer (no scaling to the canvas -- SM_SIXEL_PAN/
+     * PAD tell the terminal to upscale on display), so the only things that
+     * can change what's on the wire are the pixels/palette themselves and
+     * WHERE the sixel is drawn -- a resize that moves the centered cell with
+     * no pixel change still needs a repaint. */
+    static uint8_t  last_fb[SM_FB_W * SM_FB_H];
+    static int      have_fb;
+    static int      last_icol = -1, last_irow = -1;
+    int             pal_changed, emit_pal;
     size_t          n;
 
     if (!g_inited)
@@ -369,7 +488,10 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
     if (g_file_mode) {
         /* Capture mode: always a self-contained frame (palette included),
          * no cursor wrap (nothing to preserve -- there's no live terminal
-         * session), so the file decodes standalone with ImageMagick. */
+         * session), so the file decodes standalone with ImageMagick. Bypasses
+         * BOTH the de-dupe cache and the DSR-ACK pacing below -- there's no
+         * live terminal to backpressure against, and each captured frame is
+         * meant to stand alone, not be skipped as a duplicate of the last. */
         n = sixel_encode_aspect(&sx, &sxcap, idx320x200, SM_FB_W, SM_FB_H,
                                 SM_SIXEL_PAN, SM_SIXEL_PAD, pal768, 1);
         sm_out_put(sx, n);
@@ -379,11 +501,46 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
         return;
     }
 
+    /* Drain whatever's still pending from the last frame before deciding
+     * whether to send a new one. */
+    sm_io_out_flush();
+
+    /* DSR-ACK backpressure (Task 9, see the block comment above
+     * sm_io_pace_ack()): don't outrun what the terminal has actually drawn.
+     * While `depth` frames are already in flight, DROP this present (no
+     * encode, no emit, no queuing) -- unless the terminal's gone quiet past
+     * the deadline, in which case reclaim the pipeline so a silent/dead
+     * client can't wedge the door into a permanent freeze. */
+    if (g_pace_inflight >= g_pace_depth) {
+        if ((int32_t)(sm_io_now_ms() - g_pace_progress_ms) > SM_PACE_DEADLINE_MS) {
+            g_pace_inflight = 0;
+            g_dsr_t = g_dsr_h;              /* drop the stale unacked DSR timestamps */
+        } else
+            return;                          /* still behind: drop, don't queue */
+    }
+    if (g_out_off < g_out_len)
+        return;                              /* prior frame's bytes not all out yet: don't pile up */
+
+    /* Palette-changed test computed once, reused by both the de-dupe check
+     * and the emit_pal decision below. */
+    pal_changed = !have_pal || memcmp(last_pal, pal768, sizeof last_pal) != 0;
+
+    /* De-dupe (memcmp the native framebuffer + palette + draw-position
+     * geometry, SyncDOOM/SyncDuke's model, syncduke_io.c:1081-1119): if none
+     * of those changed since the last frame actually SENT, there's nothing
+     * new to draw -- skip the encode+emit entirely. Static menus then cost
+     * ~zero bandwidth; a real change (keypress, mouse-cursor repaint) still
+     * goes out at once instead of queuing behind identical resends. */
+    if (have_fb && !pal_changed
+        && last_icol == g_icol && last_irow == g_irow
+        && memcmp(last_fb, idx320x200, sizeof last_fb) == 0)
+        return;
+
     /* Palette (re)definition only on a real change: SyncTERM persists sixel
      * color registers across images, so re-defining all 256 every frame is
      * what garbles its decoder (sixel.h's emit_palette doc; SyncDOOM/
      * SyncDuke/SyncConquer all apply this same rule). */
-    emit_pal = !have_pal || memcmp(last_pal, pal768, sizeof last_pal) != 0;
+    emit_pal = pal_changed;
 
     {   /* Save cursor, position at the centered cell, restore after -- so the
          * sixel (drawn at the text cursor per DECSDM ?80l) lands centered
@@ -402,6 +559,20 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
         memcpy(last_pal, pal768, sizeof last_pal);
         have_pal = 1;
     }
+    memcpy(last_fb, idx320x200, sizeof last_fb);
+    have_fb   = 1;
+    last_icol = g_icol;
+    last_irow = g_irow;
+
+    sm_out_put("\x1b[6n", 4);    /* DSR: terminal reports once it has CONSUMED this frame (paces) */
+    g_pace_inflight++;
+    /* g_pace_progress_ms (the deadline-reclaim clock) is refreshed on BOTH a
+     * send (here) and an ack (sm_io_pace_ack). Harmless: once backpressure
+     * engages, sends STOP until an ack frees a slot, so the deadline then
+     * effectively measures time-since-last-ACK -- exactly what the reclaim
+     * wants (a terminal that stopped answering DSR). */
+    g_pace_progress_ms = sm_io_now_ms();
+    sm_pace_dsr_sent(g_pace_progress_ms);
 
     sm_io_out_flush();
 }
