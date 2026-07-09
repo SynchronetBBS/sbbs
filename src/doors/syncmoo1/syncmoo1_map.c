@@ -125,3 +125,40 @@ bool sm_map_csi(const int *params, int nparams, char final, mookey_t *key,
         return false;
     }
 }
+
+void sm_map_mouse(const sm_geom_t *g, int col, int row, int *gx, int *gy)
+{
+    int px, py;
+
+    if (g->pixel_mode) {
+        px = col - 1;
+        py = row - 1;
+    } else {
+        px = (col - 1) * g->cw + g->cw / 2;
+        py = (row - 1) * g->ch + g->ch / 2;
+    }
+
+    if (px < g->dx)
+        px = g->dx;
+    if (px > g->dx + g->ew - 1)
+        px = g->dx + g->ew - 1;
+    if (py < g->dy)
+        py = g->dy;
+    if (py > g->dy + g->eh - 1)
+        py = g->dy + g->eh - 1;
+
+    int x = (px - g->dx) * 320 / g->ew;
+    int y = (py - g->dy) * 200 / g->eh;
+
+    if (x < 0)
+        x = 0;
+    if (x > 319)
+        x = 319;
+    if (y < 0)
+        y = 0;
+    if (y > 199)
+        y = 199;
+
+    *gx = x;
+    *gy = y;
+}

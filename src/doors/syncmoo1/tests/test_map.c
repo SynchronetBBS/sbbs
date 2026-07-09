@@ -22,5 +22,34 @@ int main(void) {
     /* CSI ~ function keys: ESC [ 1 5 ~ == F5 */
     int p1[1] = {15};
     assert(sm_map_csi(p1, 1, '~', &k, &m) && k==MOO_KEY_F5);
+
+    /* Mouse cell->game coord mapping: 640x400 image at (0,0), 8x16 cells. */
+    sm_geom_t g = { .ew=640, .eh=400, .dx=0, .dy=0, .cw=8, .ch=16,
+                    .pixel_mode=0 };
+    int gx, gy;
+    /* col=1,row=1 -> cell center (4,8) -> scaled (2,4) */
+    sm_map_mouse(&g, 1, 1, &gx, &gy);
+    assert(gx==2 && gy==4);
+    /* near-bottom-right cell maps proportionally close to the max coord */
+    sm_map_mouse(&g, 80, 25, &gx, &gy);
+    assert(gx>=317 && gy>=195);
+    /* pixel-mode: col-1,row-1 used directly as canvas px */
+    g.pixel_mode = 1;
+    sm_map_mouse(&g, 321, 201, &gx, &gy);
+    assert(gx==160 && gy==100);
+
+    /* Rect clamp: a 320x200 image centered in a 640x400 canvas (offset
+       dx=160,dy=100). Cells whose centers fall outside the image rect must
+       clamp to the rect edges, mapping to the game-coord extremes. This
+       exercises all four rect-clamp branches (the subsequent [0,319]/[0,199]
+       clamp is unreachable once px/py are held inside the rect). */
+    sm_geom_t gc = { .ew=320, .eh=200, .dx=160, .dy=100, .cw=8, .ch=16,
+                     .pixel_mode=0 };
+    /* top-left cell center (4,8) is left of/above the rect -> clamps to (0,0) */
+    sm_map_mouse(&gc, 1, 1, &gx, &gy);
+    assert(gx==0 && gy==0);
+    /* far cell center (636,392) is right of/below the rect -> (319,199) */
+    sm_map_mouse(&gc, 80, 25, &gx, &gy);
+    assert(gx==319 && gy==199);
     return 0;
 }
