@@ -444,7 +444,7 @@ static void door_validate_assets_or_die(void)
 		         "\r\n\x1b[1;31mSyncAlert: Red Alert game data is missing or "
 		         "unusable.\x1b[0m\r\n"
 		         "Expected readable REDALERT.MIX and MAIN.MIX in:\r\n  %s\r\n"
-		         "Ask the sysop to run xtrn/syncalert/fetch-assets.sh to install "
+		         "Ask the sysop to run xtrn/syncalert/fetch-assets.js to install "
 		         "the freeware RA95 assets\r\n"
 		         "(and to make sure they are readable by the BBS user).\r\n"
 		         "(REDALERT.MIX %s, MAIN.MIX %s)\r\n",
@@ -942,7 +942,7 @@ static void door_audio_emit(void *ctx, const void *buf, size_t len, int stream)
 
 /* Strip a trailing separator, then the last path component, leaving a
  * trailing separator -- mirrors termgfx/sbbs_node.c's path_pop() (same
- * convention: <data>/user/####/alert/ -> pop x3 -> <data>/). Used only to
+ * convention: <data>/user/####/redalert/ -> pop x3 -> <data>/). Used only to
  * derive the audio-cache dir from -home when neither SBBSDATA nor an
  * explicit override is available. */
 static void door_path_pop(char *p)

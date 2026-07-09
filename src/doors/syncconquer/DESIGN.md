@@ -201,10 +201,12 @@ never published a redistribution grant; community redistribution is
 tolerated, not licensed. Posture: **nothing EA-copyrighted enters the
 repo.**
 
-- `fetch-assets` install-time helper: download the RA95 freeware CD image
+- `fetch-assets.js` install-time helper: download the RA95 freeware CD image
   from established community mirrors, verify checksum, extract only the
-  required MIX files (movies excluded — v1 skips FMV anyway) via a small
-  bundled MIX/ISO extractor.
+  required MIX files (movies excluded — v1 skips FMV anyway) via
+  Synchronet's `Archive` object, which reads ISO9660 through libarchive.
+  It is JavaScript, not a shell script, so `install-xtrn.js` can run it
+  (`[exec:]` only executes `.js`) and so it works on Windows too.
 - Door startup validates assets and refuses with a clear sysop-facing
   message if missing/invalid.
 

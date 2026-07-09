@@ -26,7 +26,7 @@
 #
 # Deployed BESIDE the binary is xtrn/syncalert/, one level ABOVE
 # xtrn/syncalert/assets/ (the REDALERT.MIX/MAIN.MIX directory,
-# fetch-assets.sh's output) -- door_io.c's default asset-dir resolution
+# fetch-assets.js's output) -- door_io.c's default asset-dir resolution
 # (door_resolve_assets_dir(), no -assets override needed) is
 # "<the real binary's own directory>/assets", so this layout is what makes a
 # stock install-xtrn.ini launch (no -assets arg) find the assets with zero
@@ -34,10 +34,11 @@
 # target (realpath(/proc/self/exe)), so a SYMLINK=1 install works the same
 # way as a COPY install here.
 #
-# For a first-time install, run xtrn/syncalert/fetch-assets.sh (or drop
-# REDALERT.MIX/MAIN.MIX into xtrn/syncalert/assets/ by hand) and register the
-# door with:
+# For a first-time install, just register the door -- the installer offers to
+# fetch the freeware RA95 game data for you:
 #     jsexec install-xtrn ../xtrn/syncalert
+# (or run jsexec ../xtrn/syncalert/fetch-assets.js by hand, or drop
+# REDALERT.MIX/MAIN.MIX into xtrn/syncalert/assets/ yourself).
 #
 # Safe against the SMB-symlink trap: on a SYMLINK=1 install the live
 # xtrn/syncalert/syncalert can be a server-side symlink back to $EXE, exposed
