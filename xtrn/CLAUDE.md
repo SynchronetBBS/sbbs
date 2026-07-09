@@ -37,6 +37,35 @@ is `ctrl/xtrn.ini`; legacy `ctrl/xtrn.cnf`. There is no `xtrn.dab`.)
 - `[copy:]` / `[ini:]` source paths are relative to the `.ini`'s directory;
   `[ini:]` `values` are `eval()`d, so quote string literals.
 
+### ⚠️ `[exec:]` runs **JavaScript only** — and a bad name silently kills the install
+
+`[exec:<file>]` / `[pre-exec:<file>]` are handed to `js.exec()`, so the file
+**must be `.js`**. Naming anything else (a `.sh` asset-fetcher, say) makes
+`install_exec_cmd()` return the error string `Only '.js' files may be executed:
+<file>` — and that check runs **before** the `prompt`/`required` handling, so
+`required = false` does **not** make it skippable. It is an unconditional abort.
+
+The damage is worse than it looks, because of *when* `[exec:]` runs. `install()`
+builds the program list in memory (printing `<Desc> (<name>) installed
+successfully` per program — a lie of timing), then runs the `[exec:]` sections,
+and **only then** writes `ctrl/xtrn.ini`. The error string short-circuits the
+return before that write, so **every program is discarded**. The console shows a
+cheerful "installed successfully" followed by `Installed 0 external programs.`
+and the door is simply absent from `ctrl/xtrn.ini`. If you see that pair, look at
+your `[exec:]` sections, not at `[prog:]`.
+
+So an install-time helper (fetch game data, download a binary) is a **`.js`
+module**, never a shell script — which is also what makes it work on Windows.
+See `xtrn/syncdoom/getwads.js`, `xtrn/syncduke/download.js`, and
+`xtrn/syncalert/fetch-assets.js` for the house pattern: idempotent (skip what's
+already present), streams the download to disk via `HTTPRequest.Download`,
+unpacks with `Archive` (libarchive — reads ZIP, ISO9660, …), and is non-fatal so
+a sysop with no internet can still install the door and supply the data by hand.
+Pair it with `required = false`. The `javascript` skill covers `HTTPRequest` /
+`Archive` / hashing, including cryptlib's rejection of legacy TLS certificate
+chains (which is why some download hosts are unreachable from `HTTPRequest`
+though `curl` fetches them fine).
+
 ### Shipping a default config: `<name>.example.ini` → `[copy:]`
 
 Version-control the **template**, never the live config a sysop edits. Track

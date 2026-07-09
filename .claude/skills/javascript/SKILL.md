@@ -75,6 +75,68 @@ is precisely why **no `chdir` is exposed to JS in the BBS** (only the
 single-process `jsexec` tool has one). `js.exec_dir` is the running script's own
 directory (trailing slash); resolve sibling/relative paths against it.
 
+### Downloading and unpacking: `HTTPRequest` + `Archive`
+
+Don't shell out to `curl`/`wget`/`unzip`/`bsdtar` — and don't ship a `.sh` helper
+that does. The engine covers both halves portably (and a shell script won't run
+on Windows, nor from `install-xtrn.js`, which only executes `.js`):
+
+```javascript
+load("http.js");
+var req = new HTTPRequest();
+req.follow_redirects = 5;              // off by default
+var n = req.Download(url, dest_file);  // streams to disk, never buffered in memory
+if (req.response_code != 200) { /* ... */ }
+
+var ar = new Archive(dest_file);
+ar.list();                             // [{name, size, ...}] -- name is the in-archive path
+ar.extract(dest_dir, "SUB/DIR/FILE.EXT");   // flattens to the basename in dest_dir
+```
+
+`Archive` is libarchive, so it reads far more than ZIP — **ISO9660 images
+included**, which means a CD image can be listed and selectively extracted with
+no mount and no external tool. `extract()` does **not** preserve the archived
+file's mode; it writes per the process umask (use `file_chmod()` if the mode
+matters).
+
+**Hashing:** `File.md5_hex` / `File.sha1_hex` (and the `_base64` variants) are
+computed **streaming** over the open file, so they're safe on multi-hundred-MB
+inputs — but the file must be `open()`ed first, and **there is no SHA-256** in the
+JS API. Pin large downloads with SHA-1 (`file_chksum`, `crc32_calc`, `md5_calc`
+also exist; see `js_global.cpp` / `js_file.cpp`).
+
+#### ⚠️ TLS trap: cryptlib rejects legacy certificate chains
+
+Synchronet's HTTPS client is **cryptlib**, which validates every certificate the
+server presents and **refuses chains containing a legacy (e.g. 1024-bit) root**,
+even when the chain is otherwise valid and every browser and `curl` accepts it.
+The handshake is torn down before any response, so the failure surfaces from
+`http.js` as a misleading:
+
+```
+Error: Unable to read status
+```
+
+preceded on the console by `TLS WARNING 'Server provided invalid certificate
+chain: Invalid TLS certificate chain entry #N ...'`. **This is not an HTTP
+problem** — the request never went out. Real case: `https://archive.org` serves a
+chain ending in the cross-signed 1024-bit *Go Daddy Class 2* root, so `HTTPRequest`
+cannot reach it at all, while GitHub and most modern hosts are fine.
+
+Diagnose by confirming the same URL works outside Synchronet and inspecting what
+the server actually presents:
+
+```bash
+curl -sI -o /dev/null -w '%{http_code}\n' https://host/path   # works => not HTTP
+echo | openssl s_client -connect host:443 -servername host 2>/dev/null \
+    | grep '^ *[0-9] s:'                                      # look for a legacy root
+```
+
+Workarounds, in order of preference: pick a host with a modern chain; or, if the
+host redirects to an acceptable one, request it over **`http://`** and let
+`follow_redirects` land on the good `https://` host — then verify the payload by
+checksum so integrity never depends on the transport.
+
 ## The dialect: SpiderMonkey 1.8.5 (ES3-ish + a few ES5 bits)
 
 Synchronet embeds **SpiderMonkey 1.8.5** (JavaScript-C 1.8.5, 2011). Write to
