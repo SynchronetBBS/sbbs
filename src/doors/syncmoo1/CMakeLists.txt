@@ -133,7 +133,7 @@ if(NOT WITHOUT_JPEG_XL)
     endif()
 endif()
 
-# xpdev: ini_file (syncmoo1.ini parsing, later task) and sockets (sockwrap) for
+# xpdev: ini_file (syncmoo1.ini parsing) and sockets (sockwrap) for
 # the door I/O port. Build the xpdev CMake target so this works on every
 # toolchain; pin off its audio + crypto backends so the sub-build stays lean
 # (cf. syncduke/syncdoom CMakeLists.txt). The guard avoids re-adding xpdev when

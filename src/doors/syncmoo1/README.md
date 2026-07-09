@@ -154,6 +154,26 @@ real terminal size and cell dimensions at connect (DESIGN.md §9).
 
 ---
 
+## `syncmoo1.ini`
+
+Optional door configuration file, read from the **launch directory** (the
+door's `xtrn/syncmoo1/` install dir) at startup -- copy
+[`syncmoo1.example.ini`](syncmoo1.example.ini) to `syncmoo1.ini` beside the
+door binary and uncomment what you need. Every key is optional; a missing
+file or key falls back to its default.
+
+| Section | Key | Meaning |
+|---------|-----|---------|
+| `[audio]` | `music_quality` | Ogg/Vorbis VBR quality (`0.0`..`1.0`) for encoded music tracks. Lower = smaller upload, softer sound. Default: the termgfx-wide default. |
+| `[debug]` | `wire` | Record both directions of the terminal conversation to `data/syncmoo1/syncmoo1_n<node>.wire` -- multi-MB per session, per node. Decode with `tools/wiredump.py`. Default `false`; only turn this on while actively debugging the door. |
+
+`SYNCMOO1_WIREDUMP=<path>` forces the wire dump on (writing to `<path>`
+instead of the usual `data/syncmoo1/...` location) for a one-off debug run
+without editing the ini; `SYNCMOO1_WIREDUMP=-` forces it off even if the ini
+enables it.
+
+---
+
 ## Development environment variables
 
 Useful when developing/testing off a live BBS session:

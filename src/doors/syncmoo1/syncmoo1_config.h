@@ -12,4 +12,13 @@
 
 #include "syncmoo1.h"
 
+/* syncmoo1.ini [debug] wire -- nonzero when the sysop enabled the wire dump.
+ * Valid only after sm_config_apply(). The SYNCMOO1_WIREDUMP env var overrides
+ * this (see sm_io_wiredump_open()); the ini is the sysop-facing switch. */
+int sm_config_wire_enabled(void);
+
+/* syncmoo1.ini [audio] music_quality -- Ogg/Vorbis VBR quality (0.0..1.0) for
+ * encoded music tracks. Defaults to TERMGFX_MUSIC_QUALITY_DEFAULT. */
+double sm_config_music_quality(void);
+
 #endif /* SYNCMOO1_CONFIG_H */

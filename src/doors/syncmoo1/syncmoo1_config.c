@@ -41,6 +41,8 @@
                         * options_set_datadir() make) and os_set_path_user()
                         * (per-user config/save dir; 1oom's own -user PATH
                         * option, options.c, is nothing but this call) */
+#include "ini_file.h"    /* xpdev: iniReadFile / iniGetBool / iniGetFloat */
+#include "audio_mgr.h"   /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -51,6 +53,41 @@
  * data-path handling entirely alone. See both functions for why the resolve
  * and the apply have to happen at different points in the startup sequence. */
 static char sm_lbx_dir[PATH_MAX];
+
+/* syncmoo1.ini-backed config, resolved by sm_config_read_ini() below. */
+static int    sm_wire_enabled;
+static double sm_music_quality = TERMGFX_MUSIC_QUALITY_DEFAULT;
+
+int sm_config_wire_enabled(void)
+{
+    return sm_wire_enabled;
+}
+
+double sm_config_music_quality(void)
+{
+    return sm_music_quality;
+}
+
+/* Read syncmoo1.ini from the LAUNCH directory -- cwd is still the door's
+ * startup_dir here, and sm_config_apply()'s chdir into -home has not happened
+ * yet. Same relative-fopen approach as syncduke_config.c. A missing ini is not
+ * an error: every key has a default. */
+static void sm_config_read_ini(void)
+{
+    FILE *f = fopen("syncmoo1.ini", "r");
+    str_list_t ini;
+
+    if (f == NULL)
+        return;
+    ini = iniReadFile(f);
+    fclose(f);
+    if (ini == NULL)
+        return;
+    sm_wire_enabled  = iniGetBool(ini, "debug", "wire", FALSE) ? 1 : 0;
+    sm_music_quality = iniGetFloat(ini, "audio", "music_quality",
+                                   TERMGFX_MUSIC_QUALITY_DEFAULT);
+    strListFree(&ini);
+}
 
 void sm_config_apply_data_path(void)
 {
@@ -64,6 +101,8 @@ int sm_config_apply(void)
     const char *home = sm_door_home();
     int         rc   = 0;
     char        cwd[PATH_MAX];
+
+    sm_config_read_ini();   /* before the chdir: cwd is still the launch dir */
 
     /* --- 1. shared, read-only LBX data dir --------------------------------
      * RESOLVED here (before the step-2 chdir), APPLIED later, from hw_init()

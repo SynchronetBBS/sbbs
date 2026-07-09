@@ -56,6 +56,7 @@
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller (termgfx_rtt_sample/termgfx_aimd_update) */
 #include "audio_mgr.h"       /* termgfx: termgfx_audio_create/_probe/_set_cache_prefix */
 #include "syncmoo1_audio.h"  /* sm_audio_attach */
+#include "syncmoo1_config.h" /* sm_config_wire_enabled() -- syncmoo1.ini [debug] wire gate */
 
 /* The native framebuffer size, the sixel pan/pad, and the fit math itself all
  * live in syncmoo1_geom.h/.c -- pure, and unit-tested by tests/test_geom.c. */
@@ -105,7 +106,7 @@ static int         g_fd = -1;      /* socket / stdout fd */
 
 static uint32_t sm_io_now_ms(void);   /* defined below; used by the wire dump */
 
-/* --- wire dump (debug aid, always on) --------------------------------------
+/* --- wire dump (debug aid, off by default) --------------------------------
  * Records BOTH directions of the terminal conversation, in the order the door
  * produced/consumed them, so a rendering bug on a terminal we can't run
  * locally can be diagnosed from a capture instead of guessed at. The
@@ -113,10 +114,14 @@ static uint32_t sm_io_now_ms(void);   /* defined below; used by the wire dump */
  * reply land before or after the first present" is exactly what a raw
  * one-direction log loses.
  *
- * The path is RESOLVED, not configured: Synchronet has no per-door
- * environment setting in xtrn.ini, so a capture that depended on an env var
- * would silently never happen for a door launched from the BBS menu -- which
- * is exactly what it is for. Default:
+ * Controlled by either SYNCMOO1_WIREDUMP (env var, dev runs) or
+ * syncmoo1.ini [debug] wire = true (sysop configuration). The ini is the
+ * primary switch because Synchronet has no per-door environment setting in
+ * xtrn.ini: a capture that depended only on an env var would silently never
+ * happen for a door launched from the BBS menu. The ini provides a persistent
+ * sysop-facing switch that survives across restarts.
+ *
+ * When enabled, the default path is RESOLVED, not configured:
  *
  *     $SBBSDATA/syncmoo1/syncmoo1_n<node>.wire
  *
@@ -132,14 +137,14 @@ static uint32_t sm_io_now_ms(void);   /* defined below; used by the wire dump */
  * takes this branch.
  *
  * SYNCMOO1_WIREDUMP=<path> overrides the whole resolution for a dev run that
- * wants the capture somewhere specific; SYNCMOO1_WIREDUMP=- disables it.
+ * wants the capture somewhere specific; SYNCMOO1_WIREDUMP=- forces it off.
  *
  * Record format, repeated: an ASCII header line
  *     <ms-since-first-record> <I|O> <len>\n
  * followed by exactly <len> raw payload bytes (which may contain anything,
  * newlines included -- always use the length, never scan for a delimiter).
  *
- * Off (and free) unless the env var is set. Appends, flushes per record so a
+ * Off and free when disabled. When enabled, appends, flushes per record so a
  * hangup/crash keeps everything written so far, and never touches the door's
  * behavior: sm_io_wiredump() only observes (verified: a captured session emits
  * byte-for-byte the same stream as an uncaptured one).
@@ -203,6 +208,12 @@ static void sm_io_wiredump_open(void)
 
     if (env != NULL && strcmp(env, "-") == 0)
         return;                                  /* explicitly disabled */
+
+    /* Off unless the sysop asked for it. The dump costs multi-MB per session
+     * per node; it used to be unconditional. SYNCMOO1_WIREDUMP still forces it
+     * on for a one-off debug run without touching the ini. */
+    if ((env == NULL || env[0] == '\0') && !sm_config_wire_enabled())
+        return;
 
     if (env != NULL && env[0] != '\0') {
         snprintf(path, sizeof path, "%s", env);
