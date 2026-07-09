@@ -37,6 +37,11 @@
  * speak kitty; kitty terminals don't advertise CTDA cap 8) and the negotiation
  * guards enforce it regardless.
  *
+ * The negotiation itself -- the enable/restore sequences, the evdev-wins
+ * precedence, the settle window, the kitty CSI-u decode and the evdev keycode
+ * tables -- lives in ../termgfx/keymode.h, shared with the sibling doors. What
+ * stays here is the only per-game part: the map from a key to a RetroPad button.
+ *
  * Whichever mode is negotiated is UNDONE on the way out (`CSI = 2 l` / `CSI = 1 l`
  * for evdev, `CSI < u` to pop the kitty flags), so the BBS gets its terminal back
  * as it lent it. Same as the sibling doors -- with one difference: they restore
@@ -57,18 +62,12 @@
 #include <unistd.h>
 
 #include "caps.h"        /* termgfx: termgfx_caps_parse_jxl */
+#include "keymode.h"     /* termgfx: key-mode negotiation + kitty/evdev decode */
 
 /* Byte-path auto-release window. Long enough that a tap registers for a frame or
  * three at 60 fps, short enough that a released key doesn't drift. Auto-repeat
  * refreshes it, so a held key stays down. */
 #define SR_HOLD_MS 250
-
-/* SyncTERM resyncs the keys held at the instant physical-key reports are
- * enabled, emitting a PRESS for each -- e.g. the Enter still held from picking
- * the door off the BBS menu. Drop non-modifier presses for a short window so a
- * stray held key doesn't press a button before the game has drawn a frame.
- * Releases are always honored, so nothing can stick. */
-#define SR_EVDEV_SETTLE_MS 500
 
 /* Cached RetroPad: one port for M1. Index by RETRO_DEVICE_ID_JOYPAD_*. */
 #define SR_PAD_IDS (RETRO_DEVICE_ID_JOYPAD_R3 + 1)
@@ -185,25 +184,18 @@ static int sr_arrow_button(char fin)
 
 static enum { SR_P_NORMAL, SR_P_ESC, SR_P_CSI, SR_P_APC, SR_P_APC_ESC } pstate;
 
-static char     csi_intro;         /* '[' or 'O' */
-static char     csi_par[40];       /* parameter bytes between intro and final */
-static int      csi_len;
-static unsigned apc_len;           /* bytes swallowed in the current string seq */
+static char              csi_intro; /* '[' or 'O' */
+static char              csi_par[40]; /* parameter bytes between intro and final */
+static int               csi_len;
+static unsigned          apc_len;  /* bytes swallowed in the current string seq */
 
-static int      g_probe_replied;
-static int      g_is_syncterm;
-static int      g_have_sixel;
-static int      g_jxl_supported;
+static int               g_probe_replied;
+static int               g_is_syncterm;
+static int               g_have_sixel;
+static int               g_jxl_supported;
 
-static int      g_kitty_active;
-static int      g_evdev_active;
-static unsigned g_evdev_mods;      /* bit0 Shift, bit1 Ctrl, bit2 Alt */
-static uint32_t g_evdev_enabled_ms;
-static int      g_evdev_settling;
-
-#define SR_EVDEV_MOD_SHIFT 1
-#define SR_EVDEV_MOD_CTRL  2
-#define SR_EVDEV_MOD_ALT   4
+static termgfx_keymode_t g_km;     /* which key mode is in force (termgfx) */
+static unsigned          g_evdev_mods; /* held modifiers, TERMGFX_MOD_* */
 
 int sr_input_is_syncterm(void) { return g_is_syncterm; }
 
@@ -229,46 +221,6 @@ static int sr_csi_params(int *out, int max)
 	return n;
 }
 
-/* Decode a kitty CSI-u style parameter list: `key[:alt];[mod[:event]]`. Returns
- * the key codepoint; *mod is the 1-based modifier field, *ev the event type
- * (1 press, 2 repeat, 3 release). Also used for the arrow finals, which kitty
- * reports as `CSI 1;mod:event A`. */
-static int sr_kitty_key(int *mod, int *ev)
-{
-	int key = 0, v = 0, sub = 0, field = 0, in_sub = 0, i;
-
-	*mod = 1;
-	*ev  = 1;
-	for (i = 0; i <= csi_len; i++) {
-		char c = (i < csi_len) ? csi_par[i] : ';';   /* sentinel flushes the last field */
-
-		if (c >= '0' && c <= '9') {
-			if (in_sub)
-				sub = sub * 10 + (c - '0');
-			else
-				v = v * 10 + (c - '0');
-		} else if (c == ':') {
-			in_sub = 1;                              /* a field's first sub-param is the event type */
-			sub = 0;
-		} else if (c == ';') {
-			if (field == 0) {
-				key = v;
-			} else if (field == 1) {
-				if (v)
-					*mod = v;
-				if (in_sub && sub)
-					*ev = sub;
-			}
-			field++;
-			v = sub = in_sub = 0;
-		}
-	}
-	return key;
-}
-
-/* kitty's modifier field is 1-based: bit 0 = Shift, bit 1 = Alt, bit 2 = Ctrl. */
-static int sr_kitty_ctrl(int mod) { return ((mod - 1) & 4) != 0; }
-
 /* Apply a press/repeat/release edge for a mapped button (kitty event types). */
 static void sr_kitty_edge(int button, int ev)
 {
@@ -282,80 +234,32 @@ static void sr_kitty_edge(int button, int ev)
 
 /* --- evdev (SyncTERM physical key reports) ---------------------------------- */
 
-/* evdev code -> the unshifted ASCII character it names, for the codes the pad
- * map cares about. Layout-independent by construction: EVDEV_KEY_W is the
- * physical W position on every keyboard layout. Codes outside the table (and
- * the modifiers, handled separately) yield 0. */
-static char sr_evdev_ascii(int code)
-{
-	static const char tbl[58] = {
-		0,   27,  '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',
-		8,   '\t',
-		'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']',
-		'\r',
-		0,   /* 29 LeftCtrl */
-		'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`',
-		0,   /* 42 LeftShift */
-		'\\',
-		'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/',
-		0,   /* 54 RightShift */
-		'*',
-		0,   /* 56 LeftAlt */
-		' '
-	};
-
-	if (code < 0 || code >= (int)sizeof(tbl))
-		return 0;
-	return tbl[code];
-}
-
-/* Linux evdev codes for the keys with no ASCII form that we still map. */
-#define SR_EVDEV_ESC       1
-#define SR_EVDEV_LEFTCTRL 29
-#define SR_EVDEV_LEFTSHIFT 42
-#define SR_EVDEV_RIGHTSHIFT 54
-#define SR_EVDEV_LEFTALT  56
-#define SR_EVDEV_UP      103
-#define SR_EVDEV_LEFT    105
-#define SR_EVDEV_RIGHT   106
-#define SR_EVDEV_DOWN    108
+/* Linux evdev codes for the keys with no ASCII form that we still map (the
+ * modifiers are classified by termgfx_evdev_modifier(), not named here). */
+#define SR_EVDEV_UP    103
+#define SR_EVDEV_LEFT  105
+#define SR_EVDEV_RIGHT 106
+#define SR_EVDEV_DOWN  108
 
 static void sr_evdev_edge(int code, int down)
 {
 	int  button = -1;
+	int  mod    = termgfx_evdev_modifier(code);
 	char c;
 
-	/* Modifiers are their own keys on this path: track them, never map them. */
-	switch (code) {
-		case SR_EVDEV_LEFTCTRL:
-			if (down)
-				g_evdev_mods |= SR_EVDEV_MOD_CTRL;
-			else
-				g_evdev_mods &= ~SR_EVDEV_MOD_CTRL;
-			return;
-		case SR_EVDEV_LEFTSHIFT:
-		case SR_EVDEV_RIGHTSHIFT:
-			if (down)
-				g_evdev_mods |= SR_EVDEV_MOD_SHIFT;
-			else
-				g_evdev_mods &= ~SR_EVDEV_MOD_SHIFT;
-			return;
-		case SR_EVDEV_LEFTALT:
-			if (down)
-				g_evdev_mods |= SR_EVDEV_MOD_ALT;
-			else
-				g_evdev_mods &= ~SR_EVDEV_MOD_ALT;
-			return;
-		default:
-			break;
+	/* Modifiers are their own keys on this path: track them, never map them.
+	 * Both the left and right keycode of each pair count (termgfx). */
+	if (mod != 0) {
+		if (down)
+			g_evdev_mods |= (unsigned)mod;
+		else
+			g_evdev_mods &= ~(unsigned)mod;
+		return;
 	}
 
-	/* Drop the enable-time resync's press edges (see SR_EVDEV_SETTLE_MS). */
-	if (down && g_evdev_settling) {
-		if ((uint32_t)(sr_in_now_ms() - g_evdev_enabled_ms) < SR_EVDEV_SETTLE_MS)
-			return;
-		g_evdev_settling = 0;
-	}
+	/* Drop the enable-time resync's press edges (termgfx_keymode.h). */
+	if (down && termgfx_keymode_evdev_settling(&g_km, sr_in_now_ms()))
+		return;
 
 	switch (code) {
 		case SR_EVDEV_UP:    button = RETRO_DEVICE_ID_JOYPAD_UP;    break;
@@ -363,10 +267,10 @@ static void sr_evdev_edge(int code, int down)
 		case SR_EVDEV_LEFT:  button = RETRO_DEVICE_ID_JOYPAD_LEFT;  break;
 		case SR_EVDEV_RIGHT: button = RETRO_DEVICE_ID_JOYPAD_RIGHT; break;
 		default:
-			c = sr_evdev_ascii(code);
+			c = termgfx_evdev_ascii(code, 0);
 			if (c == 0)
 				return;
-			if (down && (g_evdev_mods & SR_EVDEV_MOD_CTRL) && c == 'q') {
+			if (down && (g_evdev_mods & TERMGFX_MOD_CTRL) && c == 'q') {
 				g_quit = 1;   /* Ctrl-Q */
 				return;
 			}
@@ -434,12 +338,15 @@ static void sr_csi_final(char fin)
 					 * kitty (a SyncTERM that advertises this doesn't speak kitty):
 					 * enable the reports and suppress the translated byte stream,
 					 * so each key arrives exactly once, as an edge. */
-					if (p[k] == 8 && csi_par[0] == '<' && !g_evdev_active && !g_kitty_active) {
-						g_evdev_active     = 1;
-						g_evdev_enabled_ms = sr_in_now_ms();
-						g_evdev_settling   = 1;
-						sr_out_put("\x1b[=1h\x1b[=2h", 10);
-						sr_io_out_flush();
+					if (p[k] == 8 && csi_par[0] == '<') {
+						char   seq[TERMGFX_KEYMODE_SEQ_MAX];
+						size_t sn = termgfx_keymode_enable_evdev(&g_km, seq, sizeof seq,
+						                                         sr_in_now_ms());
+
+						if (sn > 0) {
+							sr_out_put(seq, sn);
+							sr_io_out_flush();
+						}
 					}
 				}
 			}
@@ -464,12 +371,12 @@ static void sr_csi_final(char fin)
 			return;
 
 		case 'K':   /* SyncTERM physical key PRESS report: CSI = Pk[;Pk...] K */
-			if (g_evdev_active && csi_len > 0 && csi_par[0] == '=')
+			if (termgfx_keymode_evdev_active(&g_km) && csi_len > 0 && csi_par[0] == '=')
 				sr_evdev_report(1);
 			return;
 
 		case 'k':   /* SyncTERM physical key RELEASE report */
-			if (g_evdev_active && csi_len > 0 && csi_par[0] == '=')
+			if (termgfx_keymode_evdev_active(&g_km) && csi_len > 0 && csi_par[0] == '=')
 				sr_evdev_report(0);
 			return;
 
@@ -479,19 +386,23 @@ static void sr_csi_final(char fin)
 				 * Push our flags (1 = disambiguate, 2 = report event types --
 				 * the release edges this pad needs, 8 = report all keys as
 				 * escape codes). evdev, if already negotiated, wins. */
-				if (!g_kitty_active && !g_evdev_active) {
-					g_kitty_active = 1;
-					sr_out_put("\x1b[>11u", 6);
-					sr_io_out_flush();
+				{
+					char   seq[TERMGFX_KEYMODE_SEQ_MAX];
+					size_t sn = termgfx_keymode_enable_kitty(&g_km, seq, sizeof seq);
+
+					if (sn > 0) {
+						sr_out_put(seq, sn);
+						sr_io_out_flush();
+					}
 				}
 				return;
 			}
 			{
-				int mod, ev, cp = sr_kitty_key(&mod, &ev);
+				int mod, ev, cp = termgfx_kitty_parse(csi_par, csi_len, &mod, &ev);
 
 				if (cp <= 0)
 					return;
-				if (ev != 3 && sr_kitty_ctrl(mod) && (cp | 0x20) == 'q') {
+				if (ev != 3 && termgfx_kitty_ctrl(mod) && (cp | 0x20) == 'q') {
 					g_quit = 1;   /* Ctrl-Q */
 					return;
 				}
@@ -504,10 +415,10 @@ static void sr_csi_final(char fin)
 		case 'B':   /* path they are bare, and a press is all we get. */
 		case 'C':
 		case 'D':
-			if (g_kitty_active) {
+			if (termgfx_keymode_kitty_active(&g_km)) {
 				int mod, ev;
 
-				(void)sr_kitty_key(&mod, &ev);
+				(void)termgfx_kitty_parse(csi_par, csi_len, &mod, &ev);
 				sr_kitty_edge(sr_arrow_button(fin), ev);
 			} else {
 				sr_pad_tap(sr_arrow_button(fin));
@@ -556,7 +467,8 @@ void sr_input_pump(void)
 					pstate = SR_P_ESC;
 				} else if (c == 0x11) {
 					g_quit = 1;             /* Ctrl-Q */
-				} else if (!g_evdev_active && !g_kitty_active) {
+				} else if (!termgfx_keymode_evdev_active(&g_km)
+				           && !termgfx_keymode_kitty_active(&g_km)) {
 					/* Byte path only: on a native path the same keystroke also
 					 * arrives as an edge, and acting on both would double-press
 					 * (and, worse, arm a timer that fights the real key-up).
@@ -616,12 +528,9 @@ void sr_input_pump(void)
  * these through the same out-buffer as everything else. */
 void sr_input_restore_keys(void)
 {
-	if (g_evdev_active) {
-		sr_out_put("\x1b[=2l\x1b[=1l", 10);   /* restore translated keys, disable reports */
-		g_evdev_active = 0;
-	}
-	if (g_kitty_active) {
-		sr_out_put("\x1b[<u", 4);             /* pop the kitty flags we pushed */
-		g_kitty_active = 0;
-	}
+	char   seq[TERMGFX_KEYMODE_SEQ_MAX];
+	size_t n = termgfx_keymode_restore(&g_km, seq, sizeof seq);
+
+	if (n > 0)
+		sr_out_put(seq, n);
 }
