@@ -29,8 +29,8 @@
 //
 // Copyright (C) 2026 Rob Swindell / syncmoo1.  GPL-2.0.
 
-// The complete MoO1 v1.3 LBX data set 1oom can use (lower-case).  fonts.lbx is
-// the one 1oom must find to start; the rest are gameplay/audio/cinematics.
+// The complete MoO1 v1.3 LBX data set 1oom can use (lower-case).  The rest are
+// gameplay/audio/cinematics; the two in REQUIRED below are hard prerequisites.
 var LBX_SET = [
 	"backgrnd.lbx", "colonies.lbx", "council.lbx", "design.lbx", "diplomat.lbx",
 	"embassy.lbx", "eventmsg.lbx", "firing.lbx", "fonts.lbx", "help.lbx",
@@ -40,6 +40,28 @@ var LBX_SET = [
 	"space.lbx", "spies.lbx", "starmap.lbx", "starview.lbx", "techno.lbx",
 	"v11.lbx", "vortex.lbx", "winlose.lbx"
 ];
+
+// The files 1oom hard-requires; without either, the door cannot start at all:
+//   fonts.lbx  what lbxfile_find_dir() looks for to locate the data directory
+//              (1oom/src/lbx.c) -- absent, the door reports "could not find
+//              the LBX files".
+//   v11.lbx    the marker for MoO1 *v1.3*, checked by ui_late_init()
+//              (1oom/src/ui/classic/uiclassic.c); without it the door aborts
+//              with "V11.LBX not found!".
+// So having fonts.lbx alone is NOT enough to declare the install playable.
+//
+// v11.lbx is a trap worth knowing about: in the shipped v1.3 releases (Steam,
+// GOG) it is the ONE data file whose name is lower-case -- every other LBX is
+// upper-case.  So a hand copy done with a "*.LBX" glob onto a case-sensitive
+// filesystem silently leaves it behind, producing a door directory that looks
+// complete but cannot start.  (This script is immune: it matches .lbx
+// case-insensitively and lower-cases what it installs.)
+var REQUIRED = ["fonts.lbx", "v11.lbx"];
+
+function missing_required(have)
+{
+	return REQUIRED.filter(function (n) { return !have[n]; });
+}
 
 // Archive file extensions we'll try to pull *.lbx members out of.  The Archive
 // object is libarchive-backed and reads all of these; any other (non-.lbx) file
@@ -219,27 +241,51 @@ function main()
 		return 0;
 	}
 
-	if (!have["fonts.lbx"]) {
+	var need = missing_required(have);
+	if (need.length) {
 		print("");
-		print("No usable Master of Orion 1 data found (need at least fonts.lbx).");
-		print("");
-		print("Master of Orion is commercial content (c) Simtex / MicroProse and is");
-		print("NOT shipped with this door.  Supply your own legally-owned MoO1 v1.3");
-		print("copy (sold as \"Master of Orion 1+2\" on GOG, among others), then put");
-		print("ONE of these into the door directory:");
-		print("    " + dir);
-		print("  - the loose *.lbx files, or");
-		print("  - a .zip / archive that contains them, or");
-		print("  - an extracted GOG/DOS game folder (a subdirectory holding *.lbx),");
-		print("and re-run:  jsexec ../xtrn/syncmoo1/getdata.js");
+		if (have["fonts.lbx"] && !have["v11.lbx"]) {
+			// Everything but v11.lbx.  Overwhelmingly this is the lower-case
+			// trap, not a pre-v1.3 copy: v11.lbx is the only lower-case-named
+			// LBX in the shipped v1.3 releases, so a hand "cp *.LBX" on a
+			// case-sensitive filesystem drops exactly this one file.  Lead
+			// with that; the door would otherwise just abort at launch with
+			// 1oom's bare "V11.LBX not found!".
+			print("Missing v11.lbx -- everything else is here.  The door cannot start");
+			print("without it (1oom checks it as the Master of Orion v1.3 marker).");
+			print("");
+			print("v11.lbx is the ONE data file that ships with a lower-case name; all");
+			print("the others are upper-case.  A copy made with a \"*.LBX\" pattern will");
+			print("silently skip it.  Check the copy you took the data from -- it is");
+			print("very likely still sitting there.  Then either copy it in by hand or");
+			print("re-run:  jsexec ../xtrn/syncmoo1/getdata.js");
+			print("");
+			print("If v11.lbx really is absent at the source, that copy predates v1.3,");
+			print("which is the only version 1oom can run: apply the official v1.3");
+			print("update, or use a v1.3 release (Steam, or GOG's \"Master of Orion");
+			print("1+2\").");
+		} else {
+			print("No usable Master of Orion 1 data found (missing: " + need.join(" ") + ").");
+			print("");
+			print("Master of Orion is commercial content (c) Simtex / MicroProse and is");
+			print("NOT shipped with this door.  Supply your own legally-owned MoO1 v1.3");
+			print("copy (sold as \"Master of Orion 1+2\" on GOG, among others), then put");
+			print("ONE of these into the door directory:");
+			print("    " + dir);
+			print("  - the loose *.lbx files, or");
+			print("  - a .zip / archive that contains them, or");
+			print("  - an extracted GOG/DOS game folder (a subdirectory holding *.lbx),");
+			print("and re-run:  jsexec ../xtrn/syncmoo1/getdata.js");
+		}
 		return 1;
 	}
 
-	// Enough to launch, but not the complete set.
+	// Both prerequisites present: the door starts, but the set is incomplete.
 	print("Installed " + got + "/" + LBX_SET.length + " LBX files.  Still missing:");
 	print("    " + missing.join(" "));
-	print("The door can start (fonts.lbx is present) but some content may be absent.");
-	print("Add the missing files to the door dir and re-run to complete the set.");
+	print("The door can start (fonts.lbx and v11.lbx are present) but some content");
+	print("may be absent.  Add the missing files to the door dir and re-run to");
+	print("complete the set.");
 	return 0;
 }
 
