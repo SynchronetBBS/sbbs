@@ -151,6 +151,19 @@ int hw_early_init(void)
 int hw_init(void)
 {
     sm_config_apply_data_path();
+
+    /* Push the configured volumes into the audio modules. 1oom never does this
+     * for us: hw_audio_*_volume() is called ONLY from the in-game Sound-options
+     * sliders' callbacks (uimainmenu.c), never from the loaded config. The SDL
+     * backend compensates inside its own hw_audio_init() (hwsdl_audio.c, which
+     * its hw_init() calls) -- hw_audio_init() is not part of hw.h's contract,
+     * it is that backend's private helper, so we do the same job here.
+     *
+     * Without this, a player's saved opta.music_volume / opta.sfx_volume -- and
+     * the sysop's [1oom] defaults for them -- are ignored until the player
+     * happens to drag a slider, and playback uses the compiled defaults. */
+    sm_audio_set_volume(opt_sfx_volume);
+    sm_music_set_volume(opt_music_volume);
     return 0;
 }
 
