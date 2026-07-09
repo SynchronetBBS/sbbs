@@ -37,6 +37,7 @@ add_test(NAME test_map COMMAND test_map)
 # C++/libADLMIDI), and -UNDEBUG so the assert()s actually run.
 add_executable(test_audio
     ${CMAKE_CURRENT_SOURCE_DIR}/../../termgfx/hash.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../syncmoo1_audio.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_audio.c)
 
 target_include_directories(test_audio PRIVATE

@@ -1,6 +1,50 @@
 #include <assert.h>
+#include <stdio.h>
 #include <string.h>
 #include "hash.h"   /* termgfx: termgfx_fnv1a */
+#include "syncmoo1_audio.h"
+
+/* --- fake termgfx audio manager -------------------------------------------
+ * syncmoo1_audio.c references these four symbols, so the test must define them
+ * (a NULL-guarded call is still a call site the linker resolves). Linking the
+ * real audio_mgr.c would pull in audio.c + C++ libADLMIDI and cost this target
+ * its dependency-free property. Recording the calls also lets us assert the
+ * Store-once behaviour directly. */
+#define FAKE_MAX 64
+static char fake_stored[FAKE_MAX][16];
+static int  fake_stored_n;
+static char fake_played[FAKE_MAX][16];
+static int  fake_played_n;
+static int  fake_stop_calls;
+static int  fake_tier_value = 1;   /* pretend the terminal has digital audio */
+
+int termgfx_audio_tier(const termgfx_audio_t *m)
+{
+    (void)m;
+    return fake_tier_value;
+}
+
+void termgfx_audio_sfx_store(termgfx_audio_t *m, const char *leaf,
+                             const void *filedata, size_t filelen)
+{
+    (void)m; (void)filedata; (void)filelen;
+    if (fake_stored_n < FAKE_MAX)
+        snprintf(fake_stored[fake_stored_n++], 16, "%s", leaf);
+}
+
+void termgfx_audio_sfx_play_named(termgfx_audio_t *m, const char *leaf,
+                                  int vol, int pan)
+{
+    (void)m; (void)vol; (void)pan;
+    if (fake_played_n < FAKE_MAX)
+        snprintf(fake_played[fake_played_n++], 16, "%s", leaf);
+}
+
+void termgfx_audio_sfx_stop_all(termgfx_audio_t *m)
+{
+    (void)m;
+    ++fake_stop_calls;
+}
 
 int main(void)
 {
@@ -17,5 +61,128 @@ int main(void)
         const char v[] = "Creative Voice File\x1a";
         assert(termgfx_fnv1a(v, sizeof v - 1) == termgfx_fnv1a(v, sizeof v - 1));
     }
+
+    /* --- syncmoo1_audio: leaf naming ------------------------------------ */
+    {
+        char leaf[16];
+        sm_audio_leaf("foobar", 6, leaf);
+        assert(strcmp(leaf, "s_bf9cf968") == 0);   /* "s_" + %08x of FNV-1a */
+    }
+
+    /* --- volume map: 1oom's 0..128 -> termgfx's 0..100 ------------------- */
+    assert(sm_audio_vol(0)   == 0);
+    assert(sm_audio_vol(128) == 100);
+    assert(sm_audio_vol(64)  == 50);
+    assert(sm_audio_vol(-5)  == 0);     /* clamped */
+    assert(sm_audio_vol(999) == 100);   /* clamped */
+
+    /* --- slot table + dedupe (no terminal attached: all Stores no-op) ---- */
+    {
+        static const char a[] = "sample-A";
+        static const char b[] = "sample-B";
+        char leaf_a[16], leaf_b[16];
+
+        sm_audio_attach(NULL);                 /* no manager -> silent, still tracks */
+        sm_audio_leaf(a, sizeof a - 1, leaf_a);
+        sm_audio_leaf(b, sizeof b - 1, leaf_b);
+
+        assert(sm_audio_batch_start(41) == 0);
+        assert(sm_audio_init(0, (const uint8_t *)a, sizeof a - 1) == 0);
+        assert(sm_audio_init(7, (const uint8_t *)b, sizeof b - 1) == 0);
+        assert(sm_audio_slot(0) != NULL);
+        assert(strcmp(sm_audio_slot(0), leaf_a) == 0);
+        assert(sm_audio_slot(7) != NULL);
+        assert(strcmp(sm_audio_slot(7), leaf_b) == 0);
+        assert(sm_audio_pending() == 2);
+
+        /* Identical bytes at another index: same leaf, queued ONCE. */
+        assert(sm_audio_init(9, (const uint8_t *)a, sizeof a - 1) == 0);
+        assert(sm_audio_slot(9) != NULL);
+        assert(strcmp(sm_audio_slot(9), leaf_a) == 0);
+        assert(sm_audio_pending() == 2);
+
+        /* batch_start is a CAPACITY HINT, not a reset: the intro calls it
+           again after ui_late_init() registered the gameplay set. Clearing
+           here would silence every gameplay sound.
+           NULL check MUST come first: a cleared slot returns NULL, and
+           sm_audio_slot(0) must be verified non-NULL before strcmp(), else
+           dereferencing NULL is undefined behavior (segfault, not a failed
+           assertion). */
+        assert(sm_audio_batch_start(44) == 0);
+        assert(sm_audio_slot(0) != NULL);
+        assert(strcmp(sm_audio_slot(0), leaf_a) == 0);
+        assert(sm_audio_pending() == 2);
+
+        /* Out-of-range indices are no-ops, never writes. */
+        assert(sm_audio_init(-1, (const uint8_t *)a, sizeof a - 1) == 0);
+        assert(sm_audio_init(100000, (const uint8_t *)a, sizeof a - 1) == 0);
+        assert(sm_audio_slot(-1) == NULL);
+        assert(sm_audio_slot(100000) == NULL);
+
+        /* release() clears the slot, not the client's cached sample. */
+        sm_audio_release(7);
+        assert(sm_audio_slot(7) == NULL);
+
+        /* play()/stop() with no manager are no-ops (must not crash, and must
+           not reach termgfx: a terminal with no audio APC stays silent). */
+        sm_audio_play(0);
+        sm_audio_stop();
+        assert(fake_played_n == 0);
+        assert(fake_stop_calls == 0);
+    }
+
+    /* --- pump: drains only once the tier is known, Stores each leaf once --- */
+    {
+        static const char c[] = "sample-C";
+        termgfx_audio_t  *fake_mgr = (termgfx_audio_t *)0x1;   /* opaque; never dereferenced */
+        char leaf_c[16];
+
+        sm_audio_leaf(c, sizeof c - 1, leaf_c);
+
+        /* Below tier 1 the queue must NOT drain: termgfx would drop the Store. */
+        fake_tier_value = -1;
+        sm_audio_attach(fake_mgr);
+        assert(sm_audio_init(11, (const uint8_t *)c, sizeof c - 1) == 0);
+        sm_audio_pump();
+        assert(fake_stored_n == 0);
+        assert(sm_audio_pending() > 0);
+
+        /* Tier known -> drains. Each distinct leaf Stored exactly once, and the
+           duplicate registered earlier at two indices contributes one Store. */
+        fake_tier_value = 1;
+        sm_audio_pump();
+        assert(sm_audio_pending() == 0);
+        {
+            int i, j, dup = 0;
+            for (i = 0; i < fake_stored_n; ++i)
+                for (j = i + 1; j < fake_stored_n; ++j)
+                    if (strcmp(fake_stored[i], fake_stored[j]) == 0)
+                        ++dup;
+            assert(dup == 0);   /* no leaf Stored twice */
+        }
+
+        /* A second pump is a cheap no-op, not a re-upload. */
+        {
+            int before = fake_stored_n;
+            sm_audio_pump();
+            assert(fake_stored_n == before);
+        }
+
+        /* play() dispatches the leaf registered at that index. */
+        sm_audio_play(11);
+        assert(fake_played_n == 1);
+        assert(strcmp(fake_played[0], leaf_c) == 0);
+
+        /* released index no longer plays. */
+        sm_audio_release(11);
+        sm_audio_play(11);
+        assert(fake_played_n == 1);
+
+        sm_audio_stop();
+        assert(fake_stop_calls == 1);
+
+        sm_audio_attach(NULL);   /* leave globals inert for any later test */
+    }
+
     return 0;
 }
