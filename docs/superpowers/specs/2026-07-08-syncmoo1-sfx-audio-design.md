@@ -226,16 +226,20 @@ changes when the renderer does. Today the SFX exposure is harmless, because
 every session re-Stores and the Store overwrites. It becomes real the instant
 name-presence starts meaning "skip the upload". So step 3 must give the SFX
 leaf its own transcode-version tag -- `s_<hash8>_v<n>`, 13 characters, within
-the 16-byte leaf bound -- before, or in the same change as, widening the glob.
+the 16-byte leaf bound termgfx enforces -- before, or in the same change as,
+widening the glob. Without it the skip serves audio rendered by a transcode
+that no longer exists, forever, and no one notices.
 
- Only safe once step 2 lands: the skip is name-presence, so it is
-correct exactly when the name is content-addressed — the argument
-`audio_mgr.c:658-660` already makes for music. Today SFX are re-Stored
-every session: `freedoom1.wad` alone is 69 sounds / 1.37 MB, Duke is larger
-(~450 ids), syncmoo1 ~440 KB. With id-keyed names a skip would serve the
-wrong sounds after a WAD swap (`DOOM2.WAD`, `myhouse.wad` and
-`freedoom1.wad` all sit in `xtrn/syncdoom/wads/`). Step 3 must not precede
-step 2.
+The glob widening itself is only safe once **step 2** lands. The skip is
+name-presence, so it is correct exactly when the name is content-addressed --
+the argument `audio_mgr.c:658-660` already makes for music. Today SFX are
+re-Stored every session: `freedoom1.wad` alone is 69 sounds / 1.37 MB, Duke is
+larger (~450 ids), syncmoo1 ~440 KB. With id-keyed names a skip would serve the
+wrong sounds after a WAD swap (`DOOM2.WAD`, `myhouse.wad` and `freedoom1.wad`
+all sit in `xtrn/syncdoom/wads/`). Step 3 must not precede step 2.
+
+So step 3 has two preconditions, not one: content-addressed names in the other
+two doors (step 2), and a transcode-version tag on the SFX leaf (above).
 
 Until step 3 lands, syncmoo1 re-uploads its ~440 KB once per session. That
 is accepted: it is correct, it is an order of magnitude below the sixel
