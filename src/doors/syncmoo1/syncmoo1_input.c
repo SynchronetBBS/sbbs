@@ -46,7 +46,8 @@
 #include "kbd.h"    /* 1oom: mookey_t, kbd_add_keypress */
 #include "mouse.h"  /* 1oom: mouse_set_xy_from_hw/set_buttons_from_hw/set_scroll_from_hw, MOUSE_BUTTON_MASK_* */
 
-#include "caps.h"   /* termgfx: termgfx_caps_parse_jxl */
+#include "caps.h"      /* termgfx: termgfx_caps_parse_jxl */
+#include "sgrmouse.h" /* termgfx: termgfx_sgr_classify (SGR button-field decode) */
 
 /* --- byte state machine ---------------------------------------------------- */
 
@@ -110,35 +111,36 @@ static int g_mouse_mask;
  * here -- M1 has no native modifier tracking to prefer over it either). */
 static void sm_mouse_event(int button, int col, int row, int release)
 {
-    int gx, gy;
-    int base = button & ~28;   /* strip SGR modifier bits: 4 Shift, 8 Alt/Meta, 16 Ctrl */
+    int gx, gy, b = 0, wheel = 0, bit;
 
     sm_map_mouse(sm_io_geom(), col, row, &gx, &gy);
     mouse_set_xy_from_hw(gx, gy);
 
-    if (base & 64) {
-        /* Wheel: xterm SGR reports this as button 64 (up) / 65 (down), never
-         * combined with the motion bit -- test this before &32 below. Match
-         * 1oom's own backends' scroll polarity: wheel-up -> -1, down -> +1
-         * (hw/sdl/1/hwsdl1.c:279, hw/sdl/2/hwsdl2.c:375, hw/alleg/4). */
-        mouse_set_scroll_from_hw((base & 1) ? 1 : -1);
+    /* The button field is classified in termgfx (sgrmouse.h), not here: the
+     * motion bit has to be tested before the wheel bit, because SyncTERM
+     * encodes a no-button hover as 96 (motion|64) where xterm sends 35. The
+     * other way round reads every hover as a wheel notch -- which scrolled the
+     * MoO1 menu selection out from under the pointer. */
+    switch (termgfx_sgr_classify(button, &b, &wheel)) {
+    case TERMGFX_SGR_MOVE:
+        return;   /* hover or drag: the position set above is the whole event */
+
+    case TERMGFX_SGR_WHEEL:
+        /* Match 1oom's own backends' scroll polarity: wheel-up -> -1, down ->
+         * +1 (hw/sdl/1/hwsdl1.c:279, hw/sdl/2/hwsdl2.c:375, hw/alleg/4). */
+        mouse_set_scroll_from_hw(wheel);
         return;
-    }
-    if (base & 32)
-        return;   /* plain motion report (drag or hover): position already updated above */
 
-    {
-        int b   = base & 3;   /* 0 left, 1 middle, 2 right (xterm SGR) */
-        int bit = (b == 0) ? MOUSE_BUTTON_MASK_LEFT : (b == 2) ? MOUSE_BUTTON_MASK_RIGHT : 0;
-
+    case TERMGFX_SGR_BUTTON:
+        bit = (b == 0) ? MOUSE_BUTTON_MASK_LEFT : (b == 2) ? MOUSE_BUTTON_MASK_RIGHT : 0;
         if (bit == 0)
             return;   /* middle button: no mask bit in 1oom's mouse.h, nothing to inject */
-
         if (release)
             g_mouse_mask &= ~bit;
         else
             g_mouse_mask |= bit;
         mouse_set_buttons_from_hw(g_mouse_mask);
+        return;
     }
 }
 

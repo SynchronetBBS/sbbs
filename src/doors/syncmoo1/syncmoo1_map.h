@@ -43,4 +43,11 @@ typedef struct {
  * socket, or termgfx dependency. */
 void sm_map_mouse(const sm_geom_t *g, int col, int row, int *gx, int *gy);
 
+/* NB: classifying an SGR report's BUTTON field (motion vs button vs wheel) is
+ * terminal-protocol knowledge, not door logic, and lives in termgfx --
+ * termgfx_sgr_classify() in ../termgfx/sgrmouse.h. syncmoo1_input.c calls it
+ * directly. Read its comment before touching mouse decode: the motion bit
+ * must be tested before the wheel bit, because SyncTERM encodes a no-button
+ * hover as 96 (motion|64) rather than xterm's 35. */
+
 #endif

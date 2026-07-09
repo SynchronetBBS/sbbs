@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "kbd.h"
 #include "syncmoo1_map.h"
+#include "sgrmouse.h"   /* termgfx: termgfx_sgr_classify */
 int main(void) {
     mookey_t k; uint32_t m; char c;
     /* lowercase letter */
@@ -51,5 +52,40 @@ int main(void) {
     /* far cell center (636,392) is right of/below the rect -> (319,199) */
     sm_map_mouse(&gc, 80, 25, &gx, &gy);
     assert(gx==319 && gy==199);
+
+    /* --- SGR button-field classification (sm_map_mouse_button) ------------
+       The regression this guards: SyncTERM encodes a no-button hover as 96
+       (motion|64), because syncterm/term.c runs "no button" through the
+       wheel remap. Classifying 64 before 32 turns every hover into a wheel
+       notch, which scrolls the MoO1 menu selection under the pointer. */
+    int btn, wh;
+
+    /* plain button presses/releases (no motion, no wheel bit) */
+    assert(termgfx_sgr_classify(0, &btn, &wh) == TERMGFX_SGR_BUTTON && btn == 0);
+    assert(termgfx_sgr_classify(2, &btn, &wh) == TERMGFX_SGR_BUTTON && btn == 2);
+    /* modifier bits (4 shift, 8 alt, 16 ctrl) are stripped */
+    assert(termgfx_sgr_classify(0 | 4 | 16, &btn, &wh) == TERMGFX_SGR_BUTTON && btn == 0);
+
+    /* real wheel notches: 64 up, 65 down -- never carry the motion bit */
+    assert(termgfx_sgr_classify(64, &btn, &wh) == TERMGFX_SGR_WHEEL && wh == -1);
+    assert(termgfx_sgr_classify(65, &btn, &wh) == TERMGFX_SGR_WHEEL && wh == 1);
+
+    /* motion: every no-button hover encoding in the wild, plus drags, must be
+       MOVE and never WHEEL.
+         32  what cterm.adoc SPECIFIES for 1003 ("acts as though button 0 is"
+             pressed) -- indistinguishable from a left-button drag
+         35  what xterm really sends (motion | button-3 sentinel)
+         96  what SyncTERM really sends, matching neither (see sgrmouse.h) */
+    assert(termgfx_sgr_classify(32, &btn, &wh) == TERMGFX_SGR_MOVE);
+    assert(termgfx_sgr_classify(35, &btn, &wh) == TERMGFX_SGR_MOVE);
+    assert(termgfx_sgr_classify(96, &btn, &wh) == TERMGFX_SGR_MOVE);
+    /* drags with middle / right held */
+    assert(termgfx_sgr_classify(33, &btn, &wh) == TERMGFX_SGR_MOVE);
+    assert(termgfx_sgr_classify(34, &btn, &wh) == TERMGFX_SGR_MOVE);
+    /* ...including with modifiers held */
+    assert(termgfx_sgr_classify(96 | 16, &btn, &wh) == TERMGFX_SGR_MOVE);
+
+    /* NULL out-params are allowed */
+    assert(termgfx_sgr_classify(96, NULL, NULL) == TERMGFX_SGR_MOVE);
     return 0;
 }
