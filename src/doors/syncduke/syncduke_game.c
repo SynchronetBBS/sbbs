@@ -12,6 +12,7 @@
 #include <string.h>   /* strncpy (HUD capture) */
 #include "duke3d.h"
 #include "syncduke.h"
+#include "dirwrap.h"  /* xpdev: getfname()/getfext() -- user-map display name */
 
 int syncduke_in_gameplay(void)
 {
@@ -34,18 +35,58 @@ int syncduke_player_dead(void)
 	return (gm & MODE_GAME) && sprite[ps[myconnectindex].i].extra <= 0;
 }
 
+/* Display name for a level, shared by the node status and the events feed.
+ *
+ * A stock (or add-on) level is named by the engine's own level_names[] table, which
+ * gamedef.c fills from the CON's definelevelname directives ("RAW MEAT") -- uppercased
+ * by the parser, and on the PLATFORM_UNIX path keeping everything up to the newline, so
+ * a CRLF CON leaves a trailing '\r' to trim.  An entry is empty for any slot the CON
+ * never defined; fall back to "E<vol>L<lev>" there.
+ *
+ * A -map user map is named by its file's basename with ".map" stripped ("Roch") -- its
+ * level slot is always 7, and its level_names[] entry is whatever the CON defined for
+ * that slot (or nothing), so neither the table nor "E1L8" would mean anything. */
+void syncduke_map_name(int vol, int lev, char *buf, size_t sz)
+{
+	const char *name;
+	size_t      n;
+
+	if (boardfilename[0] != '\0' && lev == 7 && vol == 0) {
+		const char *b = getfname(boardfilename);
+		const char *e = getfext(b);
+		n = strlen(b);
+		if (e != NULL
+		    && (e[1] == 'm' || e[1] == 'M')
+		    && (e[2] == 'a' || e[2] == 'A')
+		    && (e[3] == 'p' || e[3] == 'P') && e[4] == '\0')
+			n = (size_t)(e - b);
+		snprintf(buf, sz, "%.*s", (int)n, b);
+		return;
+	}
+
+	name = (vol >= 0 && lev >= 0 && (vol * 11) + lev < 44)
+	       ? level_names[(vol * 11) + lev] : "";
+	for (n = strlen(name); n > 0 && (unsigned char)name[n - 1] <= ' '; n--)
+		;
+	if (n > 0)
+		snprintf(buf, sz, "%.*s", (int)n, name);
+	else
+		snprintf(buf, sz, "E%dL%d", vol + 1, lev + 1);
+}
+
 /* Who's-online free-text status for the node (syncduke_node.c).  "playing SyncDuke",
- * plus the current episode/level as (E#L#) while a REAL game is in progress -- excluded
- * during the menu/title and attract-mode demos (MODE_DEMO / ud.recstat==2), which would
- * otherwise advertise the demo's level as the player's.  Duke stores volume/level 0-based;
- * the game itself displays them +1 as "e%dl%d" (game.c), so we match that. */
+ * plus the current level's name while a REAL game is in progress -- excluded during the
+ * menu/title and attract-mode demos (MODE_DEMO / ud.recstat==2), which would otherwise
+ * advertise the demo's level as the player's. */
 void syncduke_game_status(char *buf, size_t bufsz)
 {
 	uint8_t gm = ps[myconnectindex].gm;
+	char    map[64];
 
-	if ((gm & MODE_GAME) && !(gm & MODE_DEMO) && ud.recstat != 2)
-		snprintf(buf, bufsz, "playing SyncDuke (Nukem 3D) E%dL%d",
-		         ud.volume_number + 1, ud.level_number + 1);
+	if ((gm & MODE_GAME) && !(gm & MODE_DEMO) && ud.recstat != 2) {
+		syncduke_map_name(ud.volume_number, ud.level_number, map, sizeof(map));
+		snprintf(buf, bufsz, "playing SyncDuke (Nukem 3D): %s", map);
+	}
 	else
 		snprintf(buf, bufsz, "playing SyncDuke (Nukem 3D)");
 }

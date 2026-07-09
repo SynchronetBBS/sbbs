@@ -14,7 +14,6 @@
 #include "syncduke.h"
 #include "sbbs_node.h"  /* termgfx: sbbs_my_node() -- current node # from SBBSNNUM */
 #include "git_hash.h"   /* GIT_HASH, GIT_DATE */
-#include "dirwrap.h"    /* xpdev: getfname()/getfext() -- user-map display name */
 
 /* Minimal JSON string escaper (aliases / tier / build). */
 static const char *ev_esc(const char *s, char *out, size_t sz)
@@ -66,29 +65,9 @@ static const char *ev_mode(void)
 	return (ud.coop == 2) ? "dukematch-nospawn" : "dukematch";
 }
 
-/* Display name for a level: stock levels as "E<vol>L<lev>"; a -map user map by its
- * file's basename, ".map" extension stripped ("Roch") -- its level slot is always 7,
- * so "E1L8" would be meaningless in the feed. */
-static void ev_map_name(int vol, int lev, char *buf, size_t sz)
-{
-	if (boardfilename[0] != '\0' && lev == 7 && vol == 0) {
-		const char *b = getfname(boardfilename);
-		const char *e = getfext(b);
-		size_t      n = strlen(b);
-		if (e != NULL
-		    && (e[1] == 'm' || e[1] == 'M')
-		    && (e[2] == 'a' || e[2] == 'A')
-		    && (e[3] == 'p' || e[3] == 'P') && e[4] == '\0')
-			n = (size_t)(e - b);
-		snprintf(buf, sz, "%.*s", (int)n, b);
-	}
-	else
-		snprintf(buf, sz, "E%dL%d", vol + 1, lev + 1);
-}
-
 static void ev_map(char *buf, size_t sz)
 {
-	ev_map_name(ud.volume_number, ud.level_number, buf, sz);
+	syncduke_map_name(ud.volume_number, ud.level_number, buf, sz);
 }
 
 /* usernum from the -home path (".../user/<num>/duke/"), like syncdoom. */
@@ -125,7 +104,7 @@ static char     ev_cur_map[64];    /* display name of the level in play, capture
  * map, slot 7, wrapped to "E1L1"). */
 static void ev_capture_level(void)
 {
-	ev_map_name(ud.volume_number, ud.level_number, ev_cur_map, sizeof(ev_cur_map));
+	syncduke_map_name(ud.volume_number, ud.level_number, ev_cur_map, sizeof(ev_cur_map));
 	ev_level_start = (uint32_t)totalclock;
 }
 

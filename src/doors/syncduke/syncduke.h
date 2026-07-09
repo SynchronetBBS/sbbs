@@ -122,7 +122,8 @@ const char *syncduke_home(void);            /* -home value ("" = none) */
 /* --- provided by syncduke_game.c (engine-state queries; pulls in duke3d.h) --- */
 int syncduke_in_gameplay(void);   /* 1 when actually playing (not in a menu), so the WASD/Space action layer applies */
 int syncduke_player_dead(void);   /* 1 when the player is dead -- door drops the action layer so Space = Open (restart) */
-void syncduke_game_status(char *buf, size_t bufsz);   /* who's-online text: "playing SyncDuke" [+ " (E#L#)"] */
+void syncduke_game_status(char *buf, size_t bufsz);   /* who's-online text: "playing SyncDuke" [+ ": <level>"] */
+void syncduke_map_name(int vol, int lev, char *buf, size_t sz);   /* level display name: CON's "RAW MEAT", a user map's basename, else "E#L#" */
 int syncduke_next_frag(int *victim);   /* dukematch: next not-yet-reported frag BY US -> *victim player #, else 0 */
 
 /* --- text-tier legible HUD overlay (game pop-up/status quotes as real chars) ---
