@@ -5,6 +5,15 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97n    2026-07-08   Bug fix to prevent this error, reported by Amessyroom:
+                      TypeError: msg_area.grp_list[msgbase.cfg.grp_number] is
+                      undefined*
+                      Bug fix: Invalid messages showing up in a user's list of
+                      emails should be fixed. Used Cursor AI to help with that.
+                      Made some changes with the help of Cursor AI to try to
+                      fix scan & read pointer issues when doing newscans. Issues
+                      such as sub-boards showing new messages even though a
+                      user has already read all messages in that sub-board,
 1.97m    2026-04-14   Supports the per-subboard attribute toggle options as of
                       April 6, 2025 (for Synchronet 3.21) in SCFG > Message
                       Areas > AREA > Message Sub-boards... > SUB-BOARD > Toggle
