@@ -275,6 +275,8 @@ int sm_input_pump(int sockfd)
     }
 
     n = read(sockfd, buf, sizeof buf);
+    if (n > 0)
+        sm_io_wiredump_in(buf, (size_t)n);   /* debug capture; no-op unless SYNCMOO1_WIREDUMP is set */
     if (n < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
             return 0;      /* no input yet / transient: not a hangup */

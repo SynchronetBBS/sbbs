@@ -43,11 +43,15 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <limits.h>
+
+#include "dirwrap.h"   /* xpdev: mkpath() -- recursive mkdir for the capture dir */
 
 #include "sixel.h"      /* termgfx: sixel_encode_aspect */
 #include "term.h"       /* termgfx: termgfx_term_enter/probe/leave */
 #include "caps.h"       /* termgfx: termgfx_query_jxl */
 #include "geometry.h"   /* termgfx: termgfx_geom_fit_ex / termgfx_geom_center */
+#include "sbbs_node.h" /* termgfx: sbbs_my_node() -- node-tag the capture */
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller (termgfx_rtt_sample/termgfx_aimd_update) */
 
 /* 1oom's native canvas (DESIGN.md: "Canvas: native 320x200, 8-bit
@@ -87,6 +91,10 @@
  * path indefinitely on a dead/wedged peer. */
 #define SM_LEAVE_DRAIN_MS 2000
 
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+
 /* --- staged output buffer + sink (Step 4) ---------------------------------- */
 static uint8_t *   g_out;
 static size_t      g_out_len, g_out_cap, g_out_off;
@@ -96,12 +104,137 @@ static int         g_file_mode;    /* SYNCMOO1_SIXELOUT capture mode */
 static const char *g_file;
 static int         g_fd = -1;      /* socket / stdout fd */
 
+static uint32_t sm_io_now_ms(void);   /* defined below; used by the wire dump */
+
+/* --- wire dump (debug aid, always on) --------------------------------------
+ * Records BOTH directions of the terminal conversation, in the order the door
+ * produced/consumed them, so a rendering bug on a terminal we can't run
+ * locally can be diagnosed from a capture instead of guessed at. The
+ * interleaving is the point: "which frame did this DSR ack" or "did a probe
+ * reply land before or after the first present" is exactly what a raw
+ * one-direction log loses.
+ *
+ * The path is RESOLVED, not configured: Synchronet has no per-door
+ * environment setting in xtrn.ini, so a capture that depended on an env var
+ * would silently never happen for a door launched from the BBS menu -- which
+ * is exactly what it is for. Default:
+ *
+ *     $SBBSDATA/syncmoo1/syncmoo1_n<node>.wire
+ *
+ * SBBSDATA and SBBSNNUM are both setenv()'d for a native door by xtrn.cpp's
+ * external() (xtrn.cpp:1206/1209), so a BBS launch always resolves this with
+ * no configuration at all; sbbs_my_node() (termgfx) reads the latter, so
+ * concurrent nodes never share a file.
+ *
+ * With no SBBSDATA (a dev run outside the BBS) it falls back to the RELATIVE
+ * "syncmoo1.wire", i.e. the cwd as of sm_io_init() -- which is the per-user
+ * -home sandbox when -home was given (sm_config_apply() has already chdir'd
+ * by then), not the launch dir. Fine for a dev run; the BBS path above never
+ * takes this branch.
+ *
+ * SYNCMOO1_WIREDUMP=<path> overrides the whole resolution for a dev run that
+ * wants the capture somewhere specific; SYNCMOO1_WIREDUMP=- disables it.
+ *
+ * Record format, repeated: an ASCII header line
+ *     <ms-since-first-record> <I|O> <len>\n
+ * followed by exactly <len> raw payload bytes (which may contain anything,
+ * newlines included -- always use the length, never scan for a delimiter).
+ *
+ * Off (and free) unless the env var is set. Appends, flushes per record so a
+ * hangup/crash keeps everything written so far, and never touches the door's
+ * behavior: sm_io_wiredump() only observes (verified: a captured session emits
+ * byte-for-byte the same stream as an uncaptured one).
+ *
+ * ONE GAP, on purpose: the pre-connect splash is a direct write() in
+ * sm_door_setup() (syncmoo1_door.c), which runs before sm_io_init() opens this
+ * file, so those ~39 bytes are not in the capture. Everything from
+ * termgfx_term_enter onward is.
+ *
+ * Decode a capture with tools/wiredump.py. */
+/* Cap the capture: a sixel frame is ~44KB, so an unbounded always-on dump
+ * would put hundreds of MB in data/ over a long session. Past the cap we stop
+ * writing (once, loudly) rather than truncate or wrap -- the interesting part
+ * of a rendering bug is the beginning, and a partial capture beats a filled
+ * disk. Opened "wb" (truncate), not "ab": each session replaces the previous
+ * one for that node, so the file is always the session you just ran. */
+#define SM_WIRE_MAX_BYTES (64u * 1024u * 1024u)
+
+static FILE    *g_wire;
+static uint32_t g_wire_t0;
+static size_t   g_wire_bytes;
+
+static void sm_io_wiredump(char dir, const void *buf, size_t len)
+{
+    uint32_t now;
+
+    if (g_wire == NULL || len == 0)
+        return;
+    if (g_wire_bytes >= SM_WIRE_MAX_BYTES) {
+        if (g_wire_bytes != (size_t)-1) {
+            fprintf(stderr, "syncmoo1: wire dump hit its %u MB cap -- capture stops here\n",
+                    SM_WIRE_MAX_BYTES / (1024u * 1024u));
+            g_wire_bytes = (size_t)-1;   /* latch: warn once, keep the file closed to writes */
+        }
+        return;
+    }
+    now = sm_io_now_ms();
+    if (g_wire_t0 == 0)
+        g_wire_t0 = now;
+    fprintf(g_wire, "%u %c %zu\n", (unsigned)(now - g_wire_t0), dir, len);
+    fwrite(buf, 1, len, g_wire);
+    fflush(g_wire);
+    g_wire_bytes += len;
+}
+
+/* Called by syncmoo1_input.c for every byte it reads off the socket. */
+void sm_io_wiredump_in(const void *buf, size_t len)
+{
+    sm_io_wiredump('I', buf, len);
+}
+
+/* Resolve the capture path (see above) and open it. Best-effort throughout: a
+ * capture we cannot create is never a reason to fail a player's session, so
+ * every failure just leaves g_wire NULL and the dump silently off. */
+static void sm_io_wiredump_open(void)
+{
+    const char *env  = getenv("SYNCMOO1_WIREDUMP");
+    const char *data = getenv("SBBSDATA");
+    char        path[PATH_MAX];
+    int         node = sbbs_my_node();
+
+    if (env != NULL && strcmp(env, "-") == 0)
+        return;                                  /* explicitly disabled */
+
+    if (env != NULL && env[0] != '\0') {
+        snprintf(path, sizeof path, "%s", env);
+    } else if (data != NULL && data[0] != '\0') {
+        size_t dl = strlen(data);
+        char   dir[PATH_MAX];
+
+        snprintf(dir, sizeof dir, "%s%ssyncmoo1", data,
+                 (dl && (data[dl - 1] == '/' || data[dl - 1] == '\\')) ? "" : "/");
+        mkpath(dir);                             /* xpdev: recursive mkdir */
+        if (node > 0)
+            snprintf(path, sizeof path, "%s/syncmoo1_n%d.wire", dir, node);
+        else
+            snprintf(path, sizeof path, "%s/syncmoo1.wire", dir);
+    } else {
+        /* Dev run outside the BBS: beside the binary. */
+        snprintf(path, sizeof path, "syncmoo1.wire");
+    }
+
+    g_wire = fopen(path, "wb");
+    if (g_wire == NULL)
+        fprintf(stderr, "syncmoo1: cannot open wire dump '%s' -- continuing without it\n", path);
+}
+
 void sm_out_put(const void *buf, size_t len)
 {
     if (!g_inited)
         sm_io_init(-1);
     if (len == 0)
         return;
+    sm_io_wiredump('O', buf, len);
     if (g_out_len + len > g_out_cap) {
         uint8_t *nb;
         size_t   ncap = g_out_len + len;
@@ -491,6 +624,10 @@ int sm_io_init(int sockfd)
     g_fd = (sockfd >= 0) ? sockfd : 1;   /* fall back to stdout (dev/tty use) */
 
     signal(SIGPIPE, SIG_IGN);   /* a write to a closed socket returns EPIPE, not a fatal signal */
+
+    /* Opened before anything is emitted, so the very first bytes (term_enter,
+     * the capability probes) land in the capture too. */
+    sm_io_wiredump_open();
 
     if ((s = getenv("SYNCMOO1_SIXELOUT")) != NULL && *s != '\0') {
         g_file = s;

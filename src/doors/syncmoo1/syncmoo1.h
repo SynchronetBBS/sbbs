@@ -119,6 +119,13 @@ void sm_out_put(const void *buf, size_t len);
  * session. Returns 0. */
 int sm_io_out_flush(void);
 
+/* Record inbound bytes into the SYNCMOO1_WIREDUMP capture, if one is open.
+ * Called by syncmoo1_input.c's read loop; a no-op (and free) otherwise. The
+ * outbound side is captured inside sm_out_put(), so the two interleave in the
+ * single dump file in the order the door produced/consumed them. See the
+ * record format in syncmoo1_io.c. */
+void sm_io_wiredump_in(const void *buf, size_t len);
+
 /* The image rect the last sm_io_present() drew (or the sane 640x400/80x25
  * default before any frame has been drawn) -- Task 6's sm_map_mouse() reads
  * this so a click maps against the SAME geometry the frame was drawn in.
