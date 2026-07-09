@@ -186,6 +186,90 @@ Useful when developing/testing off a live BBS session:
 
 ---
 
+## Testing against a fake terminal (`tools/fakterm.py`)
+
+A door's output only means anything to a terminal: sixel bytes and audio
+APCs are just bytes on a wire until something on the other end decodes and
+plays them. The bugs that matter most -- a column the scale+encode path
+drops, a music track that loops when it shouldn't -- are invisible to the
+unit tests in `tests/`, because those never run the terminal-facing code in
+`hw_sbbs.c`/`syncmoo1_io.c` at all.
+
+`tools/fakterm.py` closes that gap: it runs the **real, built** `syncmoo1`
+binary under a raw pty, answers its capability probes and per-frame DSR
+pacing acks the way a real SyncTERM session would, and decodes the sixel
+frames and `SyncTERM:*` audio APCs it sends back off the wire
+(`tools/sixdecode.py` holds the shared decoder, also used by
+`tools/wiredump.py`). It is the only tool in this tree that can assert
+whether a music track shipped with the loop flag (`;L`) set.
+
+```
+cd src/doors/syncmoo1
+./build.sh                                          # build/syncmoo1 must exist
+python3 tools/fakterm.py 80 25 --lbx /path/to/MoO1/LBX/files
+python3 tools/fakterm.py 80 25 --lbx /path/to/LBX --seconds 120 --audio
+```
+
+The first form drives the door for a few seconds and reports the last
+decoded sixel frame's size and palette. `--audio` reports one line per
+audio APC instead (Store/Load/Queue/Volume/Flush), naming the cache file,
+channel, slot, volume, and whether `;L` (loop) was set -- MoO1's intro
+fanfare Queues without it, its looping menu theme Queues with it, and both
+show up in one long-enough run. Reaching the menu theme needs a run of
+roughly two minutes (`--seconds 120`+): the intro cinematic runs at its own
+real-time pace regardless of terminal I/O speed, and `--seconds` is
+wall-clock, not a frame count. `--click`/`--click-game` inject SGR mouse
+clicks (1oom's menus are mouse-driven; letter hotkeys are unreliable), and
+`--launch-dir` points the engine's cwd (where `syncmoo1.ini` is read from)
+somewhere other than `--lbx`, so a `[1oom]` setting can be exercised without
+touching the real LBX install dir. Run `python3 tools/fakterm.py --help`
+for the full option list and see the traps documented in the module's own
+docstring (raw pty mode, the one-event present() lag, and the
+`-new`-skips-the-intro side effect).
+
+**A gotcha found while building this tool, worth recording:** seeding
+`[1oom] opta.music_volume = 0` via `syncmoo1.ini` does NOT mute the music
+that ships on the wire, even though the door's own base-config snapshot
+confirms the seed was applied to 1oom's `opt_music_volume`. The applied
+volume our door tracks (`syncmoo1_music.c`'s `g_vol`) is only ever updated
+by the `hw_audio_music_volume` hook, which 1oom's engine calls **exclusively
+from the in-game Sound options page's volume-slider callback**
+(`main_menu_update_music_volume()`, `ui/classic/uimainmenu.c`) -- never
+proactively at startup from the loaded config. So a config-seeded volume of
+0 is real (it's what a later slider read would show), but it never reaches
+playback until the player -- or a harness driving a real slider click --
+actually touches the slider. Proving "volume 0 -> stop, no Store" therefore
+needs an interactive `--click-game` sequence into the Sound page, or the
+live SyncTERM gate itself; a static ini value alone will not do it.
+
+### Why `SYNCMOO1_SIXELOUT` capture mode cannot substitute for this
+
+`SYNCMOO1_SIXELOUT` (see the environment-variable table above) looks like a
+shortcut to the same thing -- it dumps a sixel frame to a file with no
+terminal involved -- but it structurally cannot exercise the same code, for
+two reasons:
+
+1. **It bypasses scale+encode entirely.** Capture mode
+   (`syncmoo1_io.c`'s `g_file_mode`) encodes the **native 320x200**
+   framebuffer directly at its native size, skipping the fit/scale/encode
+   path (`sm_io_scale_indices()` + the real page-geometry math) that a live
+   terminal session always goes through. A bug in scale+encode -- the kind
+   `fakterm.py` actually found -- literally cannot show up in a capture-mode
+   frame, because that code path never runs.
+2. **It never sets `O_NONBLOCK`.** `sm_io_init()` only makes the socket
+   non-blocking in the `else` branch, i.e. when `SYNCMOO1_SIXELOUT` is
+   *not* set; capture mode leaves the fd blocking. Its input pump then
+   blocks on `read()` the moment there's nothing buffered, which is fine
+   for a single non-interactive snapshot but means capture mode cannot
+   drive any real back-and-forth (probe replies, mouse clicks, pacing
+   acks) the way `fakterm.py` does.
+
+Capture mode is still useful for a quick "does *something* render"
+sanity check with zero moving parts; it is not a substitute for a real
+wire-level test.
+
+---
+
 ## License & credits
 
 Master of Orion is © Simtex / MicroProse. The 1oom engine is vendored under

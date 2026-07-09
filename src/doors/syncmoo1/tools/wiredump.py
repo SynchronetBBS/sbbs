@@ -12,8 +12,12 @@ Record format (see syncmoo1_io.c): an ASCII header line
 followed by exactly <len> raw payload bytes. Payload may contain anything,
 newlines included -- always trust the length, never scan for a delimiter.
 """
+import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sixdecode
 
 ESC = 0x1B
 
@@ -35,13 +39,21 @@ def records(path):
         i = nl + 1 + n
 
 
-def describe_out(buf):
-    """Name the interesting outbound sequences in one record."""
+def describe_out(buf, slot_cache=None):
+    """Name the interesting outbound sequences in one record. `slot_cache`
+    is the running {slot: cache_name} map threaded across the WHOLE capture
+    (see sixdecode.audio_events/format_audio_event) so a Queue seen in a
+    later record still names the cache file a Load put in that slot in an
+    earlier one; pass the same dict across every call in a capture."""
     out = []
     for m in re.finditer(rb"\x1bP([0-9;]*)q\"(\d+);(\d+);(\d+);(\d+)", buf):
         pan, pad, w, h = (int(x) for x in m.groups()[1:])
         out.append("SIXEL enc=%dx%d pan=%d pad=%d -> shown %dx%d"
                    % (w, h, pan, pad, w * pad, h * pan))
+    for payload in sixdecode.iter_apcs(buf):
+        ev = sixdecode.parse_audio_apc(payload)
+        if ev is not None:
+            out.append("AUDIO " + sixdecode.format_audio_event(ev, slot_cache))
     for pat, name in [
         (rb"\x1b\[2J", "ED2 (clear screen)"),
         (rb"\x1b\[\?25l", "cursor hide"),
@@ -115,8 +127,9 @@ def main():
           % (path, n_out, b_out, frames, n_in, b_in))
     print()
 
+    slot_cache = {}   # audio Load->Queue cache-name map, threaded across records
     for ms, d, buf in records(path):
-        lines = describe_out(buf) if d == "O" else describe_in(buf)
+        lines = describe_out(buf, slot_cache) if d == "O" else describe_in(buf)
         if not show_frames:
             lines = [l for l in lines if not (d == "O" and l.startswith("SIXEL") and frames > 8)]
         for l in lines:

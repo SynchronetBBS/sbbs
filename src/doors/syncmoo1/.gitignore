@@ -1,3 +1,4 @@
 /build/
 /syncmoo1
 *.o
+__pycache__/
