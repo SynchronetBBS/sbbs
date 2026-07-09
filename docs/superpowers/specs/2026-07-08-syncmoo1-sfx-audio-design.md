@@ -155,8 +155,11 @@ scheme needs no knowledge of 1oom's batch structure or id numbering.
 Everything degrades to silence, never to an error path:
 
 - Tier stays -1 (Foot, xterm, anything without the audio APC): `slot[]`
-  fills, the queue never drains, `play` no-ops, and **no audio bytes reach
-  the wire**.
+  fills, the queue never drains, `play` no-ops, and **nothing is Stored,
+  Loaded or Queued**. One inert APC goes out either way:
+  `termgfx_audio_probe()` emits `ESC _ SyncTERM:Q;libsndfile ST`
+  (`audio.c:79`) unconditionally, and a terminal that ignores APCs ignores
+  it.
 - A failed allocation in the queue drops that sample only; its `play`
   becomes a no-op.
 - Unknown/out-of-range index: no-op (the engine already logs it —
@@ -184,7 +187,8 @@ Wire (drive the door against the fake terminal, assert on the
 - exactly one Store per distinct sample hash, none duplicated;
 - each play APC names the leaf its index was registered with, and ids
   registered before an intervening `batch_start` still play;
-- a terminal answering DA1 only (no audio APC) receives zero audio bytes.
+- a terminal answering DA1 only receives no Store/Load/Queue APC, and
+  exactly one `Q;libsndfile` probe.
 
 ## Follow-on milestones (not this spec)
 
