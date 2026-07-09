@@ -47,12 +47,16 @@
 #include <sys/socket.h>   /* setsockopt */
 
 #define SM_DOOR_ALIAS_MAX 64
+#define SM_DOOR_HOME_MAX  4096  /* generous fixed buffer for a path; longer
+                                 * values are silently truncated (mirrors
+                                 * g_alias/SM_DOOR_ALIAS_MAX above) */
 
 static int      g_socket = -1;         /* resolved comm descriptor, or -1 (none) */
 static uint32_t g_time_limit_ms;       /* 0 = no session time limit */
 static uint32_t g_deadline_ms;         /* only meaningful if g_deadline_armed */
 static int      g_deadline_armed;
 static char     g_alias[SM_DOOR_ALIAS_MAX];
+static char     g_home[SM_DOOR_HOME_MAX];  /* "" = no -home given */
 
 /* Monotonic millisecond clock -- mirrors syncmoo1_io.c's sm_io_now_ms(), used
  * here only for the session deadline so a wall-clock step (NTP, DST) can't
@@ -192,6 +196,15 @@ static void sm_door_resolve(int argc, char **argv)
         } else if (strcmp(a, "-name") == 0 && i + 1 < argc) {
             strncpy(g_alias, argv[++i], sizeof(g_alias) - 1);   /* -name <alias> */
             g_alias[sizeof(g_alias) - 1] = '\0';   /* strncpy may not NUL-terminate */
+        } else if (strcmp(a, "-home") == 0 && i + 1 < argc) {
+            /* -home <dir>: captured HERE (not just stripped) because
+             * sm_door_sanitize_argv() below removes it from argv without
+             * saving its value -- by the time syncmoo1_config.c's
+             * sm_config_apply() runs (after sanitize, DESIGN.md §8) the value
+             * would otherwise be gone. NUL-safe strncpy into a fixed buffer,
+             * same pattern as g_alias just above. */
+            strncpy(g_home, argv[++i], sizeof(g_home) - 1);
+            g_home[sizeof(g_home) - 1] = '\0';
         } else if (is_door32_path(a)) {
             read_door32(a);
         }
@@ -307,6 +320,14 @@ const char *sm_door_alias(void)
     return g_alias;
 }
 
+/* NULL (not "") when unset -- unlike sm_door_alias() above -- so
+ * syncmoo1_config.c's sm_config_apply() can test it directly with
+ * "if (sm_door_home())" rather than also checking for an empty string. */
+const char *sm_door_home(void)
+{
+    return g_home[0] ? g_home : NULL;
+}
+
 uint32_t sm_door_time_limit_ms(void)
 {
     return g_time_limit_ms;
@@ -347,13 +368,14 @@ void sm_door_check_time(void)
  * counts as a door arg. -home is matched by exact strcmp, so it can't
  * collide either.
  *
- * -home <dir> is stripped here even though THIS task doesn't act on it
- * (syncmoo1_config.c's per-user chdir is a later task, DESIGN.md §8/§4) --
- * the BBS door command line (SCFG) can carry -home ahead of that task
- * landing, an absolute path as its value, and 1oom's options_parse() would
- * choke on the unrecognized "-home" flag the same way it would on -s<fd>
- * (this is the exact syncduke lesson referenced above). Cheaper to strip it
- * now, unconditionally, than to gate this task on Task 8's landing order.
+ * -home <dir>'s VALUE is captured separately, by sm_door_resolve() above
+ * (into g_home, read back via sm_door_home()) -- this function only strips
+ * the flag+value pair from argv so 1oom's options_parse() never sees the
+ * unrecognized "-home" flag (this is the exact syncduke lesson referenced
+ * above). syncmoo1_config.c's sm_config_apply() (DESIGN.md §8) reads
+ * sm_door_home() to mkpath+chdir into the per-user sandbox; it must run
+ * AFTER this strip (per hw_sbbs.c's main() call order) since the value has
+ * already been saved off by sm_door_resolve() before this function ever ran.
  *
  * Compacts in place, keeps argv[0], lowers *argc, and leaves any genuine
  * 1oom option untouched. Call after sm_door_setup(), before main_1oom().

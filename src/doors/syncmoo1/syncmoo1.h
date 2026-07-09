@@ -137,6 +137,15 @@ int sm_door_socket(void);
 /* The user alias from DOOR32.SYS line 7 / -name, or "" if none given. */
 const char *sm_door_alias(void);
 
+/* The -home <dir> value (per-user config/save sandbox), or NULL if none was
+ * given -- unlike sm_door_alias() above, NULL (not "") on absence, so
+ * syncmoo1_config.c's sm_config_apply() can test it directly. Captured by
+ * sm_door_resolve() in the SAME pass that resolves -s<fd>/-name (DESIGN.md
+ * §8): sm_door_sanitize_argv() below only strips -home from argv, it does
+ * not save the value, so this getter is the only way the value survives
+ * past that strip. */
+const char *sm_door_home(void);
+
 /* The DOOR32.SYS/-t<seconds> session time limit in milliseconds, or 0 if
  * none was given (no limit enforced). */
 uint32_t sm_door_time_limit_ms(void);
@@ -155,12 +164,14 @@ void sm_door_check_time(void);
  * options_parse() log an error and main_1oom() return early (options.c's
  * options_parse_do()), so leaving these in would abort the door before the
  * engine even starts. The -s/-t match is DIGIT-SUFFIX-ONLY, so 1oom's own
- * -sfx/-skipintro/-savequit/etc. reach the engine untouched. -home is
- * stripped here even though THIS module doesn't act on it (that's
- * syncmoo1_config.c, a later task) -- it can still show up on the door
- * command line ahead of that task landing. Compacts in place, keeps
- * argv[0], lowers *argc, and leaves any genuine 1oom option untouched.
- * Call after sm_door_setup(), before main_1oom(). */
+ * -sfx/-skipintro/-savequit/etc. reach the engine untouched. -home's VALUE is
+ * captured separately by sm_door_resolve() (read back via sm_door_home()
+ * above) before this function strips the flag+value pair from argv --
+ * syncmoo1_config.c's sm_config_apply() (DESIGN.md §8) reads it from there,
+ * not from argv, since by the time sm_config_apply() runs (after this strip,
+ * per hw_sbbs.c's main() call order) argv no longer carries it. Compacts in
+ * place, keeps argv[0], lowers *argc, and leaves any genuine 1oom option
+ * untouched. Call after sm_door_setup(), before main_1oom(). */
 void sm_door_sanitize_argv(int *argc, char **argv);
 
 /* The single canonical hangup path: client socket dead (read/write error or
@@ -171,5 +182,51 @@ void sm_door_sanitize_argv(int *argc, char **argv);
  * (which could block on the dead socket). `why` is logged to stderr (-> BBS
  * log); may be NULL. */
 void sm_door_hangup(const char *why);
+
+/* --- syncmoo1_config.c: per-user -home sandbox + shared LBX data-path
+ * resolution (DESIGN.md §8 per-user sandbox, §15 assets) --
+ *
+ * Consumed by hw_sbbs.c's main(), called AFTER sm_door_sanitize_argv() (so
+ * -home has already been captured by sm_door_resolve()/sm_door_home() above,
+ * since sanitize strips it from argv) and BEFORE sm_io_init()/main_1oom() (so
+ * the chdir below happens before main_1oom() ever reaches lbxfile_find_dir(),
+ * 1oom/src/main.c).
+ */
+
+/* One-time setup:
+ *   1. If the SYNCMOO1_LBX env var names a shared, read-only MoO1 LBX data
+ *      dir, realpath() it to an ABSOLUTE path and hand it to 1oom via
+ *      os_set_path_data() (os.h) -- exactly what 1oom's own "-data <dir>"
+ *      option (options.c's options_set_datadir()) and lbxfile_find_dir()
+ *      itself (lbx.c, once it finds fonts.lbx) do, so lbxfile_find_dir()
+ *      locates the data as its first candidate regardless of the chdir in
+ *      step 2. Absolutized (not left relative) specifically so that later
+ *      chdir can't break it. Unset/empty SYNCMOO1_LBX -- or a path realpath()
+ *      can't resolve -- leaves 1oom's own os_get_paths_data() search (cwd,
+ *      XDG dirs, /usr/share/1oom, etc.) completely untouched; this is
+ *      intentionally minimal, not a reimplementation of that search.
+ *   2. If sm_door_home() (above) is non-NULL: mkpath() it (dirwrap.h;
+ *      creates any missing path components), realpath()-absolutize it, and
+ *      hand it to 1oom via os_set_path_user() (os.h) -- which is what 1oom
+ *      prefixes onto its config + save file paths (cfg.c's cfg_cfgname(),
+ *      game/game_save.c's slot/year fname builders), an ABSOLUTE
+ *      $XDG_CONFIG_HOME/$HOME path, NOT a cwd-relative one. So this, not a
+ *      chdir, is what actually isolates each player's saves/config; a chdir()
+ *      into the dir is also done (harmless, contains any stray relative I/O)
+ *      but is not the isolation mechanism. os_set_path_user() stores into the
+ *      same var os_get_path_user() lazily caches, and this runs before
+ *      main_1oom() ever calls os_get_path_user(), so it wins. No -home =>
+ *      user_path is left unset, so 1oom keeps its own default XDG/HOME
+ *      resolution (the pre-Task-8 single-shared-location behavior).
+ * Step 1 runs before step 2 (see the absolutize note) so the data-path
+ * resolution can never be affected by the sandbox chdir, regardless of
+ * whether SYNCMOO1_LBX was given as a relative path.
+ *
+ * Returns 0 on success (including the no-op case: neither -home nor
+ * SYNCMOO1_LBX given). A failed mkpath()/chdir() into -home is logged to
+ * stderr and returns -1, but is not itself treated as fatal by main() --
+ * matching this door's general "degrades, doesn't abort" posture elsewhere
+ * (e.g. sm_door_configure_socket()'s best-effort setsockopt/fcntl calls). */
+int sm_config_apply(void);
 
 #endif /* SYNCMOO1_H */

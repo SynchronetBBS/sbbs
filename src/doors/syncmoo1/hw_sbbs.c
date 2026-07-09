@@ -19,6 +19,11 @@
  * and rationale. hw_video_draw_buf() also calls sm_door_check_time() on
  * every present tick to enforce the DOOR32 session time limit.
  *
+ * Task 8: main() now also calls sm_config_apply() (syncmoo1_config.c) after
+ * the door setup/sanitize and before sm_io_init()/main_1oom() -- resolves the
+ * shared MoO1 LBX data path and chdirs into the per-user -home sandbox, both
+ * BEFORE main_1oom() ever reaches its LBX check (main.c's lbxfile_find_dir()).
+ *
  * Never edit the vendored 1oom tree; this file is ours.
  */
 #include "config.h"
@@ -37,6 +42,7 @@
 #include "types.h"
 
 #include "syncmoo1.h"
+#include "syncmoo1_config.h"
 #include "syncmoo1_door.h"
 #include "syncmoo1_input.h"
 
@@ -77,17 +83,27 @@ const char *idstr_hw = "sbbs";
  *                                 unrecognized "-" flag or an absolute
  *                                 dropfile path and aborts main_1oom() (see
  *                                 syncmoo1_door.c's sanitize doc comment).
- *   3. sm_io_init()            -- adopt the REAL socket fd (sm_door_socket())
+ *   3. sm_config_apply()       -- (Task 8, syncmoo1_config.c) resolve the
+ *                                 shared LBX data path (SYNCMOO1_LBX) and
+ *                                 chdir into the per-user -home sandbox --
+ *                                 BEFORE main_1oom() ever reaches its LBX
+ *                                 check (main.c's lbxfile_find_dir()). Must
+ *                                 run after sanitize_argv (which is what
+ *                                 strips -home from argv; sm_door_home()
+ *                                 below reads the value sm_door_resolve()
+ *                                 captured earlier, not argv).
+ *   4. sm_io_init()            -- adopt the REAL socket fd (sm_door_socket())
  *                                 BEFORE the first present -- fixes the
  *                                 Task 5/6 carry-over where sm_io_get_fd()
  *                                 still returned the stdout fallback because
  *                                 nothing had resolved the door socket yet.
- *   4. main_1oom()             -- engine drives from here. */
+ *   5. main_1oom()             -- engine drives from here. */
 int main(int argc, char **argv)
 {
     if (sm_door_setup(argc, argv))
         return 1;
     sm_door_sanitize_argv(&argc, argv);
+    sm_config_apply();
     sm_io_init(sm_door_socket());
     return main_1oom(argc, argv);
 }
