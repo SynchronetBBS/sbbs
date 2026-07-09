@@ -120,34 +120,48 @@ void termgfx_audio_set_music_quality(termgfx_audio_t *m, double quality);
 #define TERMGFX_MUSIC_CACHED 1   // shipped from the door-side disk cache (no render; uploaded)
 #define TERMGFX_MUSIC_CLIENT 2   // client already had it (C;L hit): no render AND no upload
 
-// Play looping music track `name` from a CACHE without rendering -- the client's own
+// Play music track `name` from a CACHE without rendering -- the client's own
 // persistent cache (C;L, queried at tier-ready) or the door-side OGG disk cache. `name`
 // is the track's content-addressed identity (e.g. a source-hash like d_<hash>); termgfx
 // adds a render-version tag to form the cache key. Returns one of the TERMGFX_MUSIC_*
 // codes above: a nonzero value means it shipped the track (door skips rendering);
 // TERMGFX_MUSIC_RENDER (0) means the door must render the MIDI to PCM and hand it to
 // termgfx_audio_music() below. (The distinct codes let the door log which path it took.)
-int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol);
+// `loop` != 0 loops the track forever (the usual case); 0 plays it once and
+// stops -- 1oom's intro/ending stingers, whose XMI carries no loop-start
+// controller. Required at _music_play() too, not only at submit, because the
+// _CACHED and _CLIENT paths play without ever rendering.
+int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol, int loop);
 
 // Supply a freshly-rendered track: loop `pcm` on the music channel, replacing any
 // playing track, and (when libsndfile is present) encode it to OGG/Vorbis -- uploaded
 // to the client AND written to the door-side disk cache so the next play skips the
 // render. `name` is the same content-addressed identity passed to _music_play. Call
 // this only after _music_play() returned 0. No-op if `name` is already playing.
+// `loop` != 0 loops the track forever (the usual case); 0 plays it once and
+// stops -- 1oom's intro/ending stingers, whose XMI carries no loop-start
+// controller. Required at _music_play() too, not only at submit, because the
+// _CACHED and _CLIENT paths play without ever rendering.
 void termgfx_audio_music(termgfx_audio_t *m, const char *name,
                          const void *pcm, size_t bytes, int bits, int channels,
-                         int rate, int vol);
+                         int rate, int vol, int loop);
 
 // Async alternative to (render + termgfx_audio_music) for a cold cache miss: hand the raw MIDI/MUS
 // bytes to _submit() and call _poll() once per frame.  A worker thread renders + encodes + caches +
 // pre-builds the upload off the game thread; the game keeps running and the track fades in when
-// _poll() ships it.  On a build without threads (e.g. Windows) _submit() renders synchronously (the
-// old blocking path) and _poll() is a no-op, so callers need no #ifdef.  Call after _music_play()
+// _poll() ships it.  Threading is xpdev's threadwrap (native pthreads on *nix, Win32 critical
+// sections on Windows), so this is threaded on every supported platform -- Windows included, and
+// unconditionally: there is no synchronous fallback to fall back to.  Call after _music_play()
 // returned TERMGFX_MUSIC_RENDER; no-op if `name` is already playing.  _poll() returns:
 #define TERMGFX_MUSIC_ASYNC_IDLE    0   // nothing ready this call
 #define TERMGFX_MUSIC_ASYNC_SHIPPED 1   // a finished track was uploaded + started this call
+// `loop` != 0 loops the track forever (the usual case); 0 plays it once and
+// stops -- 1oom's intro/ending stingers, whose XMI carries no loop-start
+// controller. Required at _music_play() too, not only at submit, because the
+// _CACHED and _CLIENT paths play without ever rendering.
 void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
-                                      const void *music, size_t len, int rate, int vol);
+                                      const void *music, size_t len, int rate,
+                                      int vol, int loop);
 int  termgfx_audio_music_async_poll(termgfx_audio_t *m);
 
 // Stop the music channel (fade out).

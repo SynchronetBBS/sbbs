@@ -18,7 +18,6 @@
  * pthread_join nor a condvar). */
 #include "threadwrap.h"   /* pthread_mutex_*, _beginthread; pulls in semwrap.h (sem_*) */
 #include "genwrap.h"      /* SLEEP (shutdown join-wait), getpid (atomic-write temp suffix) */
-#define TERMGFX_ASYNC_MUSIC 1
 #define MUS_JOIN_POLL_MS 10   /* shutdown: poll the worker's exit flag this often */
 
 #define CL_DATA_MAX 262144u             /* cap the captured C;L reply (a runaway/unterminated
@@ -26,7 +25,11 @@
 
 #define KEYMAX       1024            // id space (Duke ~450, Doom ~110)
 #define NAMEDMAX     64               // distinct name-addressed SFX per session
-#define NAMEDLEN     16               // leaf: "s_" + 8 hex + NUL, rounded up
+#define NAMEDLEN     16               // longest cache leaf a door may hand us, incl. NUL.  The
+                                      // kind ("sfx"/"music") and the door prefix are separate path
+                                      // components, so a leaf is normally just a content hash
+                                      // (e.g. 8 hex digits); over-long names are rejected, not
+                                      // truncated (see the strlen guard in the Store path).
 #define NSLOT        256             // SyncTERM patch slots
 #define MUSIC_SLOT   0               // slot 0 reserved for the music loop
 #define SFX_SLOT_LO  1               // SFX slots 1..255 (transient load->queue buffers)
@@ -71,6 +74,10 @@ struct termgfx_audio {
 	                                       // steal prefers ended channels so long samples (rocket,
 	                                       // chopper flyby) aren't truncated by later short ones
 	char music_name[MUSNAME_MAX];          // cache key (with _v<n>) in the music slot ("" = none)
+	int music_loop;                        // loop flag for the track named above (0 = one-shot);
+	                                       // set by all three music entry points before any fast
+	                                       // path can return, since mus_ship() (called from the
+	                                       // cached/client/render/async paths alike) reads it
 	char music_cache_dir[MUS_CACHE_DIR_MAX]; // door-side OGG disk cache ("" = none, render-only)
 	double music_quality;                  // Ogg/Opus VBR quality (0..1) for fresh music encodes
 	char cache_prefix[24];                 // consumer/door name -> SyncTERM cache "<prefix>/music|sfx/.."
@@ -95,7 +102,6 @@ struct termgfx_audio {
 	uint8_t *buf;                          // scratch for builders
 	size_t cap;
 
-#ifdef TERMGFX_ASYNC_MUSIC
 	// ---- async music transcode (off the game thread) -------------------------------------------
 	// A worker thread renders MIDI->PCM, encodes OGG, writes the disk cache, AND pre-builds the C;S
 	// upload APC -- all the CPU -- off the game thread.  The main thread only memcpy-stages the
@@ -120,7 +126,6 @@ struct termgfx_audio {
 	char mus_res_key[MUSNAME_MAX];
 	unsigned mus_res_gen;                  // the gen this result was produced for
 	int mus_res_ready;
-#endif
 };
 
 termgfx_audio_t *termgfx_audio_create(termgfx_audio_emit_fn emit, void *ctx)
@@ -135,10 +140,8 @@ termgfx_audio_t *termgfx_audio_create(termgfx_audio_emit_fn emit, void *ctx)
 	m->next_slot = SFX_SLOT_LO;
 	m->next_ch   = SFX_CH_LO;
 	m->music_quality = TERMGFX_MUSIC_QUALITY_DEFAULT;
-#ifdef TERMGFX_ASYNC_MUSIC
 	pthread_mutex_init(&m->mus_lock, NULL);
 	sem_init(&m->mus_wake, 0, 0);                 // worker is created lazily on the first submit
-#endif
 	return m;
 }
 
@@ -146,7 +149,6 @@ void termgfx_audio_destroy(termgfx_audio_t *m)
 {
 	if (m == NULL)
 		return;
-#ifdef TERMGFX_ASYNC_MUSIC
 	if (m->mus_thr_up) {
 		pthread_mutex_lock(&m->mus_lock);
 		m->mus_stop = 1;
@@ -166,7 +168,6 @@ void termgfx_audio_destroy(termgfx_audio_t *m)
 	pthread_mutex_destroy(&m->mus_lock);
 	free(m->mus_job);
 	free(m->mus_res);
-#endif
 	free(m->cl_data);
 	free(m->buf);
 	free(m);
@@ -825,7 +826,8 @@ static void mus_ship(termgfx_audio_t *m, const char *cachefn, int vol)
 {
 	send_buf(m, termgfx_audio_flush(&m->buf, &m->cap, MUSIC_CH, 0), TERMGFX_AUDIO_BULK);
 	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, MUSIC_SLOT, cachefn), TERMGFX_AUDIO_BULK);
-	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, MUSIC_SLOT, 100, 0, 1), TERMGFX_AUDIO_BULK);
+	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, MUSIC_SLOT, 100, 0,
+	                                m->music_loop), TERMGFX_AUDIO_BULK);
 	send_buf(m, termgfx_audio_volume(&m->buf, &m->cap, MUSIC_CH, vol), TERMGFX_AUDIO_BULK);
 }
 
@@ -854,7 +856,7 @@ void termgfx_audio_set_music_quality(termgfx_audio_t *m, double quality)
 // cache (and, once C;L is wired, the client's own persistent cache). Returns 1 if it
 // shipped the track (or it's already playing); 0 if the door must render + supply via
 // termgfx_audio_music(). Lets the door skip the expensive MIDI render on a cache hit.
-int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol)
+int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol, int loop)
 {
 	char     key[MUSNAME_MAX];
 	char     leaf[MUSNAME_MAX + 8];
@@ -865,6 +867,8 @@ int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol)
 
 	if (m == NULL || m->tier < 1 || name == NULL || name[0] == '\0')
 		return 0;
+	m->music_loop = loop;                       // set before the CACHED/CLIENT fast paths, which
+	                                            // ship via mus_ship() without ever rendering
 	mus_key(name, key, sizeof(key));
 	if (strcmp(m->music_name, key) == 0)        // already playing this track
 		return TERMGFX_MUSIC_CACHED;
@@ -901,7 +905,7 @@ int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol)
 
 void termgfx_audio_music(termgfx_audio_t *m, const char *name,
                          const void *pcm, size_t bytes, int bits, int channels,
-                         int rate, int vol)
+                         int rate, int vol, int loop)
 {
 	char key[MUSNAME_MAX];
 	char leaf[MUSNAME_MAX + 8];
@@ -911,6 +915,7 @@ void termgfx_audio_music(termgfx_audio_t *m, const char *name,
 
 	if (m == NULL || m->tier < 1 || name == NULL || name[0] == '\0' || bytes == 0)
 		return;
+	m->music_loop = loop;
 	mus_key(name, key, sizeof(key));
 	if (strcmp(m->music_name, key) == 0)        // already playing this track
 		return;
@@ -982,7 +987,6 @@ void termgfx_audio_sfx_stop_all(termgfx_audio_t *m)
 // the raw music bytes and POLLs each frame; the game keeps running and the track fades in when ready.
 // Cache hits (termgfx_audio_music_play) still play instantly on the main thread -- this is only for a
 // cold miss.
-#ifdef TERMGFX_ASYNC_MUSIC
 
 // Worker half (off the game thread): render -> encode -> write the disk cache -> pre-build the C;S
 // upload APC into `apc`.  Touches only immutable manager fields (cache dir/prefix) + local buffers,
@@ -1087,13 +1091,16 @@ static void mus_worker(void *arg)
 }
 
 void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
-                                      const void *music, size_t len, int rate, int vol)
+                                      const void *music, size_t len, int rate,
+                                      int vol, int loop)
 {
 	char     key[MUSNAME_MAX];
 	uint8_t *copy;
 
 	if (m == NULL || m->tier < 1 || name == NULL || name[0] == '\0' || music == NULL || len == 0)
 		return;
+	m->music_loop = loop;                       // reused by mus_ship() when _poll() ships the
+	                                            // finished track, after this call has returned
 	mus_key(name, key, sizeof(key));
 	if (strcmp(m->music_name, key) == 0)             // already playing this track
 		return;
@@ -1152,22 +1159,3 @@ int termgfx_audio_music_async_poll(termgfx_audio_t *m)
 	return TERMGFX_MUSIC_ASYNC_IDLE;
 }
 
-#else  /* TERMGFX_ASYNC_MUSIC off: render synchronously in submit -- the old blocking path */
-
-void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
-                                      const void *music, size_t len, int rate, int vol)
-{
-	int16_t *pcm     = NULL;
-	size_t   nframes = 0;
-
-	if (m == NULL || m->tier < 1 || name == NULL || music == NULL || len == 0)
-		return;
-	if (termgfx_midi_render(music, len, rate, 0, &pcm, &nframes) && nframes > 0) {
-		termgfx_audio_music(m, name, pcm, nframes * 4, 16, 2, rate, vol);
-		free(pcm);
-	}
-}
-
-int termgfx_audio_music_async_poll(termgfx_audio_t *m) { (void)m; return TERMGFX_MUSIC_ASYNC_IDLE; }
-
-#endif

@@ -356,7 +356,7 @@ void PlayMusic(char *filename)
 	}
 
 	{
-		int hit = termgfx_audio_music_play(sd_audio, id, sd_music_v());
+		int hit = termgfx_audio_music_play(sd_audio, id, sd_music_v(), 1);
 		if (hit != TERMGFX_MUSIC_RENDER) {
 			syncduke_log("music: '%s' (%s) -- %s", filename, id,
 			             hit == TERMGFX_MUSIC_CLIENT ? "client-cached (no render, no upload)"
@@ -368,7 +368,7 @@ void PlayMusic(char *filename)
 	/* Cold miss: hand the MIDI to termgfx's worker thread and return -- the game keeps running while
 	 * it renders + encodes; sd_music_poll() (in the frame loop) ships the track when it's ready, so
 	 * the level load no longer freezes for the render.  termgfx copies the bytes. */
-	termgfx_audio_music_async_submit(sd_audio, id, mid, (size_t)len, 48000, sd_music_v());
+	termgfx_audio_music_async_submit(sd_audio, id, mid, (size_t)len, 48000, sd_music_v(), 1);
 	syncduke_log("music: '%s' (%s) submitted -> async render", filename, id);
 	free(mid);
 }
