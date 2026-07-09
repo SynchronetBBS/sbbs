@@ -158,6 +158,12 @@ int64_t hw_get_time_us(void)
 
 static uint8_t *video_buf[4] = { NULL, NULL, NULL, NULL };
 static int video_bufi = 0;
+
+/* The buffer whose pixels are currently ON SCREEN (the one the last
+ * hw_video_draw_buf() presented, before it flipped). hw_video_refresh_palette()
+ * re-presents it when the engine changes the palette without redrawing --
+ * see there. NULL until the first present. */
+static uint8_t *video_shown = NULL;
 static int video_bufw = 0;
 static int video_bufh = 0;
 
@@ -227,6 +233,29 @@ void hw_video_refresh_palette(void)
 
     for (i = 0; i < 256 * 3; ++i)
         g_palette[i] = palette_6bit_to_8bit(ui_palette[i]);
+
+    /* ...and PUSH it, which is the whole point of this hook. hw/sdl's
+     * video.setpal() hands the palette to the display right here, so a palette
+     * change is visible without redrawing anything.
+     *
+     * 1oom leans on that hard: every fade is a palette-only animation.
+     * fadein_do()/fadeout_do() (ui/classic/uipal.c) loop ui_palette_fade_n() +
+     * a delay and never call hw_video_draw_buf(). The intro
+     * (ui/classic/uiintro.c) draws its "Loading" screen ONCE, then fades it in
+     * and out purely this way. A backend that only records the palette here and
+     * waits for the next draw_buf() shows a BLACK SCREEN for the whole intro --
+     * the pixels are there, painted through an all-black palette, and nothing
+     * reaches the wire for several seconds.
+     *
+     * So re-present the buffer that is currently on screen with the new
+     * palette. sm_io_present()'s de-dupe sees the palette changed and emits;
+     * its DSR-ACK pacing drops frames if a fade outruns the link, so a 60-step
+     * fade degrades to fewer, coarser steps rather than flooding. Nothing to do
+     * before the first present (video_shown == NULL) -- lbxpal_init() and the
+     * first fadeout land there, and the following draw_buf() carries the
+     * palette anyway. */
+    if (video_shown != NULL)
+        sm_io_present(video_shown, g_palette);
 }
 
 uint8_t *hw_video_get_buf(void)
@@ -252,7 +281,8 @@ uint8_t *hw_video_draw_buf(void)
      * back buffer, before the flip below) -- mirrors hw/sdl/hwsdl_video.c's
      * hw_video_refresh(0), which renders video.buf[video.bufi ^ 0] the same
      * way, before it swaps bufi. */
-    sm_io_present(video_buf[video_bufi], g_palette);
+    video_shown = video_buf[video_bufi];
+    sm_io_present(video_shown, g_palette);
     video_bufi ^= 1;
     return video_buf[video_bufi];
 }

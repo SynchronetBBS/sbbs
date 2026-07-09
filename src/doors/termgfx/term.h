@@ -21,9 +21,32 @@
 // in rev 1.328 (2026); moot here since SyncTERM uses JXL and the reserve covers
 // scrolling regardless. termgfx_term_leave restores ?80h for the BBS.
 
+// term_enter also sends DECSET 1070 RESET (?1070l) to select SHARED sixel colour
+// registers. This is load-bearing for every door here, because they all re-send the
+// 256-colour palette only when it CHANGES (see sixel.h's emit_palette: SyncTERM
+// garbles its decoder if the registers are redefined every frame). That optimization
+// silently assumes the registers persist across images -- true of SyncTERM's cterm,
+// which has no per-image palette reset, and FALSE by default elsewhere.
+//
+// foot defaults to PRIVATE colour registers (use_private_palette = true) and, in
+// sixel_init(), allocates a fresh palette per image seeded from only its 16 default
+// sixel colours; palette_size is 256, so indices 16-255 come from xcalloc -- zero,
+// i.e. fully TRANSPARENT. A palette-less frame therefore renders almost entirely
+// see-through and the text grid shows through it. Alternating those with the
+// occasional palette-carrying frame reads as the picture flickering against the
+// terminal's previous text screen (observed in syncmoo1 on foot; 126 of the 140
+// colour indices in a real frame are >= 16). With ?1070l foot takes its shared-palette
+// branch, whose own comment reads "Shared palette - do *not* reset palette for new
+// sixels" -- exactly the persistence the doors rely on. xterm implements 1070 too;
+// cterm has no case 1070 and ignores it, so SyncTERM is unaffected either way.
+// term_leave restores the ?1070h default.
+
 // Enter graphics mode: clear screen + home cursor, hide the cursor (DECTCEM),
-// disable autowrap (DECAWM) so a full-width frame can't wrap/scroll, and set
-// DECSDM ?80l (sixel-drawn-at-cursor, for centering -- see above). Emit once on entry.
+// disable autowrap (DECAWM) so a full-width frame can't wrap/scroll, set
+// DECSDM ?80l (sixel-drawn-at-cursor, for centering -- see above), and select
+// shared sixel colour registers (?1070l -- see above). Emit once on entry, before
+// the first sixel: a private-register terminal resets the palette per IMAGE, so
+// this has to precede the frame that defines it.
 extern const char *const termgfx_term_enter;
 
 // Probe the terminal's pixel canvas: ESC[14t (text-area size in pixels) with a
@@ -32,8 +55,9 @@ extern const char *const termgfx_term_enter;
 // ESC7/ESC8 so the real cursor position is preserved.
 extern const char *const termgfx_term_probe;
 
-// Leave graphics mode: restore sixel scrolling (?80h), autowrap (?7h), and the
-// cursor (?25h) so the BBS prompt behaves normally after the door exits.
+// Leave graphics mode: restore private sixel colour registers (?1070h, the
+// default), sixel scrolling (?80h), autowrap (?7h), and the cursor (?25h) so the
+// BBS prompt behaves normally after the door exits.
 extern const char *const termgfx_term_leave;
 
 // Status line (DECSSDT). A terminal that shows a status line reserves its

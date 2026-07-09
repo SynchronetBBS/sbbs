@@ -1,12 +1,14 @@
 // term.c -- canonical terminal control strings for sixel game doors. See term.h
-// for the rationale (notably DECSDM ?80 sixel-scrolling).
+// for the rationale (notably DECSDM ?80 sixel-scrolling and DECSET 1070
+// colour-register sharing).
 
 #include "term.h"
 #include <stddef.h>
 
-//             clear+home  hide cursor  no autowrap  sixel-at-cursor (DECSDM ?80l)
-//             ----------  -----------  -----------  ----------------------------
-const char *const termgfx_term_enter = "\x1b[2J\x1b[H" "\x1b[?25l" "\x1b[?7l" "\x1b[?80l";
+//             clear+home  hide cursor  no autowrap  sixel-at-cursor  shared colour regs
+//             ----------  -----------  -----------  ---------------  ------------------
+//                                                   (DECSDM ?80l)    (DECSET 1070 reset)
+const char *const termgfx_term_enter = "\x1b[2J\x1b[H" "\x1b[?25l" "\x1b[?7l" "\x1b[?80l" "\x1b[?1070l";
 
 //             ESC[14t (text px)  ESC[16t (cell px)  ESC[?2;1S (gfx canvas)  save  corner  DSR  restore
 //             -----------------  -----------------  ---------------------   ----  ------  ---  -------
@@ -17,9 +19,9 @@ const char *const termgfx_term_enter = "\x1b[2J\x1b[H" "\x1b[?25l" "\x1b[?7l" "\
 // into.  Terminals that don't support a query simply don't reply -- harmless.
 const char *const termgfx_term_probe = "\x1b[14t" "\x1b[16t" "\x1b[?2;1S" "\x1b" "7" "\x1b[999;999H" "\x1b[6n" "\x1b" "8";
 
-//             sixel scroll  autowrap  cursor
-//             ------------  --------  ------
-const char *const termgfx_term_leave = "\x1b[?80h" "\x1b[?7h" "\x1b[?25h";
+//             private colour regs  sixel scroll  autowrap  cursor
+//             ------------------   ------------  --------  ------
+const char *const termgfx_term_leave = "\x1b[?1070h" "\x1b[?80h" "\x1b[?7h" "\x1b[?25h";
 
 // --- status line (DECSSDT) --------------------------------------------------
 // A terminal with a status line (SyncTERM's default) reserves its bottom text

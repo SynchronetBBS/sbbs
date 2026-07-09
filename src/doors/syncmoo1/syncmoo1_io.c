@@ -780,11 +780,24 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
         && memcmp(last_fb, idx320x200, sizeof last_fb) == 0)
         return;
 
-    /* Palette (re)definition only on a real change: SyncTERM persists sixel
-     * color registers across images, so re-defining all 256 every frame is
-     * what garbles its decoder (sixel.h's emit_palette doc; SyncDOOM/
-     * SyncDuke/SyncConquer all apply this same rule). */
-    emit_pal = pal_changed;
+    /* Palette (re)definition. SyncTERM persists sixel colour registers across
+     * images, and re-defining all 256 every frame is what garbles its decoder
+     * (sixel.h's emit_palette doc) -- so there, define-on-change only.
+     *
+     * EVERYWHERE ELSE, re-send the palette every frame. Register persistence is
+     * not a given: foot defaults to PRIVATE colour registers, allocating a
+     * fresh palette per image seeded from just 16 default colours, so a
+     * palette-less frame's indices 16-255 land on transparent entries and the
+     * text grid shows through -- the picture appears to flicker against it.
+     * term_enter now asks for shared registers (?1070l, termgfx/term.h), which
+     * fixes foot and xterm, but a terminal that ignores mode 1070 (Windows
+     * Terminal) would still be wrong, so don't rely on that alone. This is the
+     * same rule SyncDOOM (syncdoom.c:754) and SyncDuke (syncduke_io.c:1136)
+     * already apply; its absence here was the actual defect.
+     *
+     * Unknown terminal (no probe reply yet) counts as not-SyncTERM: a few early
+     * frames then carry a redundant palette, which is never WRONG. */
+    emit_pal = pal_changed || !sm_input_is_syncterm();
 
     {   /* Save cursor, position at the centered cell, restore after -- the sixel
          * is drawn at the text cursor, so this is what centers it without

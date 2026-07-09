@@ -161,6 +161,17 @@ static int g_is_syncterm;
 static int g_have_sixel;
 static int g_jxl_supported;
 
+/* Did the terminal identify itself as SyncTERM (CTDA '<'/'=' marker, or a CTerm
+ * state report)? Read by syncmoo1_io.c's present path to decide whether the
+ * sixel colour registers can be trusted to persist across images. Until a probe
+ * reply lands this is 0 -- i.e. we assume the SAFE case (re-send the palette),
+ * which costs a few early frames some bytes and can never render wrong. */
+int sm_input_is_syncterm(void)
+{
+    return g_is_syncterm;
+}
+
+
 static void sm_csi_final(char fin)
 {
     int p[16], np;

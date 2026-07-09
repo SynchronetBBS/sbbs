@@ -126,6 +126,14 @@ int sm_io_out_flush(void);
  * record format in syncmoo1_io.c. */
 void sm_io_wiredump_in(const void *buf, size_t len);
 
+/* --- syncmoo1_input.c ------------------------------------------------------
+ * Nonzero once a probe reply has identified the far end as SyncTERM (the CTDA
+ * '<'/'=' marker, or a CTerm state report). Zero before any reply, so a caller
+ * must read "unknown" as "not SyncTERM" and take the conservative branch --
+ * which is what sm_io_present() does when deciding whether the terminal's sixel
+ * colour registers can be trusted to persist across images. */
+int sm_input_is_syncterm(void);
+
 /* The image rect the last sm_io_present() drew (or the sane 640x400/80x25
  * default before any frame has been drawn) -- Task 6's sm_map_mouse() reads
  * this so a click maps against the SAME geometry the frame was drawn in.
