@@ -216,6 +216,14 @@ if (file_exists(bios_src)) {
 	writeln("  skip   BIOS hash guard (no exec.bin on this host)");
 }
 
+// A re-dumped BIOS: right size, right default name, WRONG content (so the
+// hash check alone would miss it). The name check must catch it.
+put("grom.bin", 2048, "x");
+var by_name = sv_discover(dir, ["int", "bin", "rom"], []);
+check(by_name.map(function (r) { return r.name; }).indexOf("grom.bin") < 0,
+      "a re-dumped grom.bin is excluded by name, not just by hash");
+file_remove(dir + "grom.bin");
+
 directory(dir + "*").forEach(function (p) { file_remove(p); });
 
 writeln("6. activity store");

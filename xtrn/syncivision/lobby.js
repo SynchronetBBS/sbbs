@@ -93,6 +93,8 @@ function draw(roms, page, pages, board, cols, per_col)
 	console.crlf();
 }
 
+/* Returns true when the caller needs to rescan (the picked cartridge is no
+ * longer on disk), false otherwise. */
 function play(rom)
 {
 	var home = system.data_dir + "user/" + format("%04d", user.number) + "/intv";
@@ -103,21 +105,26 @@ function play(rom)
 		    + "backslash, backtick or dollar sign, which the door's command line "
 		    + "cannot carry. Ask the sysop to rename it.\1n\r\n");
 		console.pause();
-		return;
+		return false;
 	}
 	if (!file_exists(rom.path)) {
 		console.putmsg("\r\n\1h\1rThat cartridge is gone. Rescanning.\1n\r\n");
 		console.pause();
-		return;
+		return true;
 	}
 	mkpath(home);
 
 	/* The quotes are load-bearing: xtrn.cpp splits the command line on bare
 	 * spaces, and every real cartridge name has them. A quote diverts the line
 	 * through $SHELL -c, which reassembles the argument -- the same path
-	 * `-name %a` already takes on every SyncDOOM and SyncDuke launch. */
-	cmd = SR_BINARY + " -s%H -t%T -name %a -core " + SR_CORE
-	    + " -home " + home + ' "' + rom.path + '"';
+	 * `-name %a` already takes on every SyncDOOM and SyncDuke launch. SR_BINARY
+	 * and the -home path get the same treatment: harmless on a stock /sbbs
+	 * install, but either can contain a space on the planned Windows port
+	 * ("C:\Program Files\..."). -name %a is NOT quoted here: cmdstr() already
+	 * quotes the alias itself, and doubling it would hand the door literal
+	 * quote characters. */
+	cmd = '"' + SR_BINARY + '"' + " -s%H -t%T -name %a -core " + SR_CORE
+	    + ' -home "' + home + '" "' + rom.path + '"';
 
 	started = time();
 	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN, SR_DIR);
@@ -131,6 +138,7 @@ function play(rom)
 		rom:   rom.name,
 		secs:  secs
 	});
+	return false;
 }
 
 function main()
@@ -158,7 +166,7 @@ function main()
 
 	filter = roms;
 	page   = 0;
-	for (;;) {
+	while (!js.terminated && bbs.online) {
 		plays    = sv_read_plays(sv_plays_path(system.data_dir));
 		board    = sv_top_played(plays, 5);
 		cols     = sv_columns(console.screen_columns, CELL_W);
@@ -193,8 +201,21 @@ function main()
 		if (key >= "0" && key <= "9") {
 			console.ungetstr(key);
 			var n = console.getnum(roms.length);
-			if (n >= 1 && n <= roms.length)
-				play(roms[n - 1]);          /* numbers index the FULL list */
+			if (n >= 1 && n <= roms.length) {
+				if (play(roms[n - 1])) {    /* numbers index the FULL list */
+					roms = sv_discover(SR_DIR + backslash(c.dir), c.ext, c.exclude);
+					if (!roms.length) {
+						console.putmsg("\r\n\1h\1rNo cartridges found in "
+						    + c.dir + "/.\1n\r\n");
+						console.pause();
+						return;
+					}
+					for (i = 0; i < roms.length; i++)
+						roms[i].num = i + 1;   /* alphabetical, and it never moves */
+					filter = roms;
+					page = 0;
+				}
+			}
 			continue;
 		}
 	}

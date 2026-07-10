@@ -43,6 +43,7 @@ var fake_console = {
 };
 
 var fake_bbs = {
+	online: true,       // the picker loop's `while (... && bbs.online)` guard
 	cmdstr: function (s) { return s; },     // no %-expansion needed for this check
 	exec:   function (cmd, mode, dir) { launched.push(cmd); return 0; }
 };
@@ -103,6 +104,17 @@ if (launched.length) {
 	check(cmd.indexOf("-s%H") >= 0 && cmd.indexOf("-t%T") >= 0, "passes socket and time");
 	check(cmd.indexOf("-name %a") >= 0, "passes the alias (which cmdstr quotes)");
 	check(cmd.indexOf("-home ") >= 0, "passes a per-user home");
+
+	// The binary path and the -home path must also be quoted: a space in
+	// js.exec_dir or system.data_dir (e.g. a future Windows "Program Files"
+	// install) would otherwise split the command line into extra shell words.
+	// fake_bbs.cmdstr() does no %-expansion, so the "%." specifier is still
+	// literal here -- the quotes must wrap it whole regardless.
+	var binary = js.exec_dir + "syncretro%.";
+	check(cmd.indexOf('"' + binary + '"') >= 0,
+	      "the binary path is quoted whole, including the %. specifier");
+	check(/-home "[^"]*"/.test(cmd), "the -home path is quoted");
+	check(cmd.indexOf('-name "%a"') < 0, "-name's %a is NOT double-quoted");
 }
 
 writeln("3. the play was logged");

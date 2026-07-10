@@ -70,6 +70,10 @@ var SV_BIOS_MD5 = [
 	"0cd5946c6473e42e8e4c2137785e427f"    // grom.bin, 2048 bytes
 ];
 
+// The BIOS by name as well as by content: a re-dumped exec.bin has a different
+// hash but is still not a cartridge.
+var SV_BIOS_NAMES = ["exec.bin", "grom.bin"];
+
 // The entire Intellivision cartridge range. Anything outside it is not a game.
 var SV_MIN_SIZE = 2 * 1024;
 var SV_MAX_SIZE = 64 * 1024;
@@ -212,6 +216,8 @@ function sv_discover(roms_dir, exts, excludes)
 				return;                       /* not a cartridge */
 			if (sv_excluded(name, excludes))
 				return;
+			if (SV_BIOS_NAMES.indexOf(name.toLowerCase()) >= 0)
+				return;                       /* a BIOS image, by its default name */
 
 			full = sv_file_md5(path, 0);
 			if (full === "")
