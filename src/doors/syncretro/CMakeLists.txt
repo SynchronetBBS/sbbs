@@ -109,4 +109,8 @@ if(SYNCRETRO_TESTS)
     add_executable(test_chunk test_chunk.c syncretro_chunk.c)
     target_include_directories(test_chunk PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME chunk COMMAND test_chunk)
+
+    add_executable(test_quant test_quant.c syncretro_quant.c)
+    target_include_directories(test_quant PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME quant COMMAND test_quant)
 endif()

@@ -60,29 +60,107 @@ static int sr_cmp_u32(const void *a, const void *b)
 	return (x > y) - (x < y);
 }
 
-/* EXACT: `colors` (sorted, `n` entries) becomes the palette 1:1, and every pixel
- * maps back through a color->index table built from it. */
+/* --- the persistent color -> register map (EXACT mode) ----------------------
+ *
+ * Registers are shared with whatever is already on the terminal's screen, so a
+ * register's meaning must not change while pixels are drawn with it. See
+ * syncretro_quant.h. The map only grows; it is rebuilt only when a frame's new
+ * colors cannot fit in what is left. */
+static uint32_t g_reg_color[SR_MAX_COLORS];   /* register -> color */
+static uint8_t  g_reg_taken[SR_MAX_COLORS];
+static int      g_reg_count;                  /* registers handed out so far */
+
+void sr_quant_reset(void)
+{
+	memset(g_reg_taken, 0, sizeof(g_reg_taken));
+	g_reg_count = 0;
+}
+
+/* The register holding `c`, or -1. Linear over the registers handed out: at most
+ * 256 comparisons per DISTINCT color of a frame, never per pixel. */
+static int sr_reg_find(uint32_t c)
+{
+	int k;
+
+	for (k = 0; k < SR_MAX_COLORS; k++)
+		if (g_reg_taken[k] && g_reg_color[k] == c)
+			return k;
+	return -1;
+}
+
+static int sr_reg_alloc(uint32_t c)
+{
+	int k;
+
+	for (k = 0; k < SR_MAX_COLORS; k++)
+		if (!g_reg_taken[k]) {
+			g_reg_taken[k] = 1;
+			g_reg_color[k] = c;
+			g_reg_count++;
+			return k;
+		}
+	return -1;                       /* caller rebuilds */
+}
+
+/* Give every color of this frame a register, preserving the ones it already had.
+ * Returns 0 if the map had to be rebuilt from this frame alone (registers
+ * exhausted) -- the caller does not care, but the distinction is real: a rebuild
+ * is the one case where a live register changes meaning. */
+static int sr_reg_assign_frame(const uint32_t *colors, int n)
+{
+	int i, rebuilt = 1;
+
+	for (i = 0; i < n; i++)
+		if (sr_reg_find(colors[i]) < 0 && sr_reg_alloc(colors[i]) < 0) {
+			/* No room. Start over from this frame's colors: sorted, so the
+			 * rebuild is at least deterministic. */
+			uint32_t sorted[SR_MAX_COLORS];
+			int      j;
+
+			memcpy(sorted, colors, (size_t)n * sizeof(*sorted));
+			qsort(sorted, (size_t)n, sizeof(sorted[0]), sr_cmp_u32);
+			sr_quant_reset();
+			for (j = 0; j < n; j++)
+				(void)sr_reg_alloc(sorted[j]);
+			rebuilt = 0;
+			break;
+		}
+	return rebuilt;
+}
+
+/* EXACT: the palette is the register map, and every pixel maps through it. */
 static void sr_map_exact(const uint8_t *rgb, long npx, uint8_t *idx, uint8_t *pal,
                          const uint32_t *colors, int n)
 {
 	uint32_t key[SR_HASH_SIZE];
 	uint8_t  val[SR_HASH_SIZE];
-	int      i;
+	int      i, k;
 	long     p;
+
+	(void)sr_reg_assign_frame(colors, n);
 
 	memset(key, 0xff, sizeof(key));
 	memset(pal, 0, SR_MAX_COLORS * 3);
+
+	/* The palette is the WHOLE map, not just this frame's colors: a register
+	 * retired by this frame keeps its definition, so a color that comes back
+	 * (a blinking sprite, a cycling title) lands on the register it always had
+	 * and the terminal never has to redefine it. */
+	for (k = 0; k < SR_MAX_COLORS; k++)
+		if (g_reg_taken[k]) {
+			pal[k * 3]     = (uint8_t)(g_reg_color[k] >> 16);
+			pal[k * 3 + 1] = (uint8_t)(g_reg_color[k] >> 8);
+			pal[k * 3 + 2] = (uint8_t)g_reg_color[k];
+		}
+
 	for (i = 0; i < n; i++) {
 		unsigned h = sr_hash(colors[i]);
+		int      r = sr_reg_find(colors[i]);
 
 		while (key[h] != SR_HASH_EMPTY)
 			h = (h + 1) & SR_HASH_MASK;
 		key[h] = colors[i];
-		val[h] = (uint8_t)i;
-
-		pal[i * 3]     = (uint8_t)(colors[i] >> 16);
-		pal[i * 3 + 1] = (uint8_t)(colors[i] >> 8);
-		pal[i * 3 + 2] = (uint8_t)colors[i];
+		val[h] = (uint8_t)r;         /* always >= 0: assign_frame placed them all */
 	}
 
 	for (p = 0; p < npx; p++) {
@@ -170,14 +248,15 @@ int sr_quant_rgb_to_indexed(const uint8_t *rgb, int w, int h,
 
 	n = sr_collect_colors(rgb, npx, colors);
 	if (n < 0) {
+		/* CUBE overwrites all 256 registers with the fixed palette, so every
+		 * EXACT-mode assignment is void. Forget them: were the frame after this
+		 * one to return to EXACT and reuse a stale register number, it would
+		 * paint with whatever cube color the terminal now holds there. */
+		sr_quant_reset();
 		sr_map_cube(rgb, npx, idx, pal);
 		return 0;
 	}
 
-	/* Sorted, so the palette is a function of the color SET alone -- a frame
-	 * redrawn from the same colors yields a byte-identical palette, which is
-	 * what lets the present path skip re-sending the sixel color registers. */
-	qsort(colors, (size_t)n, sizeof(colors[0]), sr_cmp_u32);
 	sr_map_exact(rgb, npx, idx, pal, colors, n);
 	return 1;
 }

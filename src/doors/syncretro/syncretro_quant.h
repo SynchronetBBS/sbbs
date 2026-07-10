@@ -5,8 +5,9 @@
  * palette. A libretro core does not: it renders truecolor (XRGB8888 / RGB565 /
  * 0RGB1555, all widened to RGB24 by retro_bridge.c). termgfx's sixel encoder
  * (../termgfx/sixel.h) takes indices + a 256-entry palette, so SyncRetro has to
- * quantize. This module is that step, and nothing else -- pure, no I/O, no
- * state, so tests can drive it directly.
+ * quantize. This module is that step, and nothing else -- no I/O, and no state
+ * beyond the color->register assignment described below, so tests drive it
+ * directly.
  *
  * Two modes, chosen per frame by the actual color count:
  *
@@ -21,10 +22,28 @@
  *     changes (see sixel.h's emit_palette), so a stable palette keeps the wire
  *     cost of a busy frame down.
  *
- * In EXACT mode the palette is sorted, so it depends only on the SET of colors
- * in the frame, not on the order they were scanned. Two frames drawn from the
- * same colors therefore produce byte-identical palettes and the encoder skips
- * the ~4KB register re-definition. Unused palette entries are zero-filled.
+ * EXACT mode assigns each color a sixel color REGISTER and never moves it: a
+ * color seen in frame N holds the same register in frame N+1, whatever else
+ * joins or leaves the frame. New colors take the lowest free register. Unused
+ * entries are zero-filled.
+ *
+ * That stability is not a nicety, it is correctness. syncretro_io.c asks the
+ * terminal for SHARED color registers (`CSI ? 1070 l`, without which foot and
+ * xterm reset the palette on every image), so redefining register k recolors
+ * every pixel ALREADY ON SCREEN that was drawn with k -- and the palette is sent
+ * before the new pixel data. A register that changes meaning therefore paints
+ * the previous frame in the wrong colors, briefly, every time it happens.
+ *
+ * This module used to sort the palette by color value, which made it a function
+ * of the color SET alone. That is stable only while the set is: a frame that
+ * gains one color shifts every register above the newcomer's sort position. It
+ * looked fine on games with a fixed color set, and flickered at ~12 Hz on
+ * 4-TRIS's title screen, whose animation cycles between 8 and 11 colors.
+ *
+ * The register map is per session and only ever grows. When a frame's new colors
+ * cannot fit in what remains of the 256 registers, the map is rebuilt from that
+ * frame alone -- one unavoidable recolor, in exchange for continuing. A console
+ * with a small fixed palette (Intellivision: 16) never reaches that.
  */
 #ifndef SYNCRETRO_QUANT_H_
 #define SYNCRETRO_QUANT_H_
@@ -35,8 +54,16 @@
  * indices) and `pal` (256 RGB triples = 768 bytes). Caller owns both outputs.
  *
  * Returns 1 if the frame was reproduced EXACTLY (<= 256 distinct colors), 0 if
- * it was approximated onto the fixed cube. Both outputs are always valid. */
+ * it was approximated onto the fixed cube. Both outputs are always valid.
+ *
+ * EXACT mode carries PER-SESSION STATE: a color keeps the register it was first
+ * assigned, for as long as the session lives. See the header comment above for
+ * why that, and not a sorted palette, is what a shared-register terminal needs. */
 int sr_quant_rgb_to_indexed(const uint8_t *rgb, int w, int h,
                             uint8_t *idx, uint8_t *pal);
+
+/* Forget every color->register assignment. Call once per session, before the
+ * first frame; the tests also use it to isolate cases. */
+void sr_quant_reset(void);
 
 #endif /* SYNCRETRO_QUANT_H_ */
