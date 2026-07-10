@@ -62,6 +62,10 @@
 /* Bounded blocking drain on exit: never hang the door's exit path on a wedged
  * peer, but do give the terminal-restore bytes a real chance to land. */
 #define SR_LEAVE_DRAIN_MS 2000
+/* How long to keep swallowing input after the restore. Long enough to catch the
+ * key-release reports of whatever was held when the player quit, short enough
+ * that nobody notices it on the way back to the BBS. */
+#define SR_LEAVE_INPUT_MS 120
 
 /* DSR-ACK pacing (see the block comment above sr_io_pace_ack). */
 #define SR_PACE_DEADLINE_MS 750   /* reclaim the pipeline if no DSR progress for this long */
@@ -177,6 +181,44 @@ static void sr_io_drain_blocking(int timeout_ms)
 		if ((int32_t)(sr_io_now_ms() - start) >= timeout_ms)
 			return;
 		sr_io_sleep_ms(15);
+	}
+}
+
+/* Swallow whatever the player typed while the door had the terminal.
+ *
+ * The BBS shares this socket with us: every byte left unread in the receive
+ * queue is read -- and echoed -- at its prompt the moment we exit. A player who
+ * was building forts in Utopia otherwise returns to the BBS and watches it type
+ * "3141" at them. Runs AFTER the key-mode restore, so the terminal has already
+ * stopped sending physical-key reports and nothing new arrives mid-drain.
+ *
+ * Bounded twice: a wall-clock deadline, and a byte cap, so a terminal that
+ * streams forever cannot wedge the exit path. */
+static void sr_io_drain_input(int timeout_ms)
+{
+	uint32_t start = sr_io_now_ms();
+	size_t   total = 0;
+	uint8_t  buf[512];
+
+	if (g_file_mode || g_fd < 0)
+		return;                      /* capture mode: no client, and g_fd is stdout */
+
+	for (;;) {
+		ssize_t n = read(g_fd, buf, sizeof buf);
+
+		if (n > 0) {
+			total += (size_t)n;
+			if (total >= (64u * 1024u))
+				return;              /* absurd: stop reading, let the BBS have it */
+			continue;                /* more may be pending right now */
+		}
+		if (n == 0)
+			return;                  /* peer closed: nothing left to swallow */
+		if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
+			return;                  /* a dead socket needs no draining */
+		if ((int32_t)(sr_io_now_ms() - start) >= timeout_ms)
+			return;
+		sr_io_sleep_ms(5);           /* nothing pending: give late bytes a moment */
 	}
 }
 
@@ -377,6 +419,7 @@ void sr_io_leave(void)
 	sr_input_restore_keys();                  /* undo kitty flags / physical key reports */
 	sr_out_puts(termgfx_term_leave);          /* restore ?1070h/?80h/?7h/?25h for the BBS */
 	sr_io_drain_blocking(SR_LEAVE_DRAIN_MS);  /* bounded: never hang the exit path */
+	sr_io_drain_input(SR_LEAVE_INPUT_MS);     /* keystrokes must not echo at the BBS prompt */
 }
 
 int sr_io_init(int sockfd)

@@ -169,8 +169,12 @@ void sr_audio_pause(int on)
 	if (g_state == SR_AS_OFF)
 		return;
 	g_paused = on;
-	if (on)
+	if (on) {
+		/* Anything held mid-PRIME belongs to the moment before the screen went
+		 * up. Queueing it on resume would replay stale audio. */
+		sr_audio_drop_held();
 		return;
+	}
 	sr_chunk_reset(&g_chunk);      /* drop the half-chunk straddling the pause */
 	if (g_state == SR_AS_RUN)
 		g_state = SR_AS_PRIME;     /* rebuild the cushion the drain destroyed */
@@ -255,12 +259,40 @@ size_t sr_audio_feed(const int16_t *pcm, size_t frames)
 	return frames;
 }
 
+/* Stop the channel dead and drop everything queued behind it.
+ *
+ * NO FADE, deliberately. SyncTERM's do_flush() clears the channel only when no
+ * O= is given; with a fade it queues a silent crossfade against the HEAD buffer
+ * and leaves the rest of the FIFO in place (syncterm/audio_apc.c). Since we run
+ * three chunks deep, `O=50` would let ~300 ms of game audio play on after the
+ * door has already handed the terminal back to the BBS. An abrupt stop at the
+ * moment the player quits is what they expect anyway. */
+static void sr_audio_stop_channel(void)
+{
+	if (g_state != SR_AS_PRIME && g_state != SR_AS_RUN)
+		return;                    /* the terminal never confirmed it can play */
+	sr_apc(termgfx_audio_flush(&g_apc, &g_apc_cap, SR_AUDIO_CH, 0));
+	sr_io_out_flush();
+}
+
+/* Ctrl-R: the console restarts, so the ~300 ms already queued is from a game
+ * that no longer exists. Drop it, and rebuild the cushion from the new one. */
+void sr_audio_reset(void)
+{
+	if (g_state == SR_AS_OFF)
+		return;
+	sr_audio_stop_channel();
+	sr_audio_drop_held();
+	sr_chunk_reset(&g_chunk);
+	if (g_state == SR_AS_RUN)
+		g_state = SR_AS_PRIME;
+}
+
 void sr_audio_shutdown(void)
 {
 	if (g_state == SR_AS_OFF)
 		return;
-	sr_apc(termgfx_audio_flush(&g_apc, &g_apc_cap, SR_AUDIO_CH, 50));
-	sr_io_out_flush();
+	sr_audio_stop_channel();
 	if (g_chunks || g_underruns || g_dropped)
 		fprintf(stderr, "syncretro: audio %u chunks, %u underrun(s), %u drop(s)\n",
 		        g_chunks, g_underruns, g_dropped);

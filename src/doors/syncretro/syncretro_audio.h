@@ -35,6 +35,9 @@ void   sr_audio_underrun(int ch);
  * produced and the FIFO drains on purpose. Suppresses the spurious underrun and
  * re-primes on resume. */
 void   sr_audio_pause(int on);
+/* Ctrl-R restarted the console: stop the channel, drop what is queued, re-prime.
+ * The audio still in the terminal's FIFO belongs to a game that no longer runs. */
+void   sr_audio_reset(void);
 /* A;Flush the channel and report telemetry. Idempotent; safe after carrier loss. */
 void   sr_audio_shutdown(void);
 

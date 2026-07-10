@@ -195,6 +195,7 @@ int main(int argc, char **argv)
 					sr_screen_help();
 				} else if (action == SR_DOOR_RESET) {
 					core.reset();
+					sr_audio_reset();       /* queued audio outlived its game */
 					paused = 0;
 					sr_input_set_suspended(0);
 					sr_audio_pause(0);
@@ -223,6 +224,7 @@ int main(int argc, char **argv)
 			if (action == SR_DOOR_RESET) {
 				sr_input_release_all();
 				core.reset();
+				sr_audio_reset();           /* queued audio outlived its game */
 				sr_io_invalidate();
 			}
 			sr_pace_to_rate(core.av.timing.fps);
