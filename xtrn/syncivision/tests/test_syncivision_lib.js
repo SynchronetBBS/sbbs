@@ -253,5 +253,68 @@ directory("/tmp/sv_slash/syncretro/*").forEach(function (p) { file_remove(p); })
 
 directory(pdir + "syncretro/*").forEach(function (p) { file_remove(p); });
 
+writeln("7. dump-quality variant collapsing");
+
+eq(sv_dump_rank("x [!].int"), 0, "verified marker ranks 0");
+eq(sv_dump_rank("x.int"), 1, "no marker ranks 1");
+eq(sv_dump_rank("x [a1].int"), 2, "alternate marker ranks 2");
+eq(sv_dump_rank("x [a1][!].int"), 0, "stacked markers: best one wins");
+eq(sv_dump_rank("x [o1].int"), 3, "overdump marker ranks 3");
+eq(sv_dump_rank("x [b1].int"), 4, "bad-dump marker ranks 4");
+eq(sv_dump_rank("x [z9].int"), 2, "unrecognized marker ranks 2");
+
+function rom(name)
+{
+	var p = sv_parse_title(name);
+
+	return { path: "/roms/" + name, name: name, title: p.title, year: p.year,
+	         publisher: p.publisher, size: 8192 };
+}
+
+// The real set's three-way "League of Light (Prototype)" split: the [!] dump
+// must survive over the alternate-plus-verified and the plain alternate.
+var league = [
+	rom("League of Light (Prototype) (1983) (Activision) [!].int"),
+	rom("League of Light (Prototype) (1983) (Activision) [a1][!].int"),
+	rom("League of Light (Prototype) (1983) (Activision) [a2].bin")
+];
+var lc = sv_collapse_variants(league);
+eq(lc.length, 1, "three League of Light dumps collapse to one");
+check(lc[0].name.indexOf("[!]") >= 0, "survivor is a verified dump");
+check(lc[0].name.indexOf("[a2]") < 0, "survivor is not the [a2] alternate");
+
+// A plain (rank 1) dump beats an overdump (rank 3), regardless of which one
+// sv_discover() happened to see first.
+var happy = [
+	rom("Happy Trails (1983) (Activision).int"),
+	rom("Happy Trails (1983) (Activision) [o1].int")
+];
+var hc = sv_collapse_variants(happy);
+eq(hc.length, 1, "Happy Trails collapses to one");
+eq(hc[0].name, "Happy Trails (1983) (Activision).int",
+   "the plain dump beats the overdump");
+
+// Publisher is part of the key: two different Pac-Man ports must NOT collapse
+// into one, or a real game disappears from the picker.
+var pacman = [
+	{ path: "/roms/a", name: "Pac-Man (1983) (Intv Corp).int",
+	  title: "Pac-Man", year: 1983, publisher: "Intv Corp", size: 8192 },
+	{ path: "/roms/b", name: "Pac-Man (1983) (Atarisoft).int",
+	  title: "Pac-Man", year: 1983, publisher: "Atarisoft", size: 8192 }
+];
+var pc = sv_collapse_variants(pacman);
+eq(pc.length, 2, "two different Pac-Man ports both survive");
+
+// A tie within a rank resolves to the lexicographically smaller name, not to
+// whichever entry happened to come first.
+var tied_variants = [
+	rom("Tie Game (1983) (Acme) [a2].int"),
+	rom("Tie Game (1983) (Acme) [a1].int")
+];
+var vc = sv_collapse_variants(tied_variants);
+eq(vc.length, 1, "tied-rank variants collapse to one");
+eq(vc[0].name, "Tie Game (1983) (Acme) [a1].int",
+   "a same-rank tie keeps the lexicographically smaller name");
+
 writeln(failures ? "FAIL: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);
