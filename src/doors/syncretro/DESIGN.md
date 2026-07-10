@@ -387,6 +387,31 @@ output).
   exposes its sound registers through the public libretro ABI.
 - **M5 -- core options + save states** surfaced through the door config and a
   per-user save UI, including the save-state hotkeys.
+- **M6 -- Windows.** The door is POSIX-only today, by decision, not oversight.
+  The seams, and what already exists to fill them:
+    * `retro_core.c` -- `dlopen`/`dlsym`/`dlclose` -> xpdev's `xp_dlopen()` /
+      `xp_dlsym()` / `xp_dlclose()` (already wrap `LoadLibrary`/`GetProcAddress`).
+      `xp_dlsym` stringifies a bare symbol name, so `RC_RESOLVE` needs adapting,
+      not just substituting. Cores are `.dll`, not `.so`.
+    * `syncretro_io.c`, `syncretro_input.c` -- the bulk of the work. A Winsock
+      `SOCKET` is not a file descriptor: `read()`/`write()` do not work on it.
+      Use xpdev `sockwrap.h`'s `recvsocket()`/`sendsocket()` and
+      `socket_recv_buffer_t`; `fcntl(O_NONBLOCK)` becomes `ioctlsocket(FIONBIO)`.
+      Roughly a dozen call sites, all in those two files.
+    * `main.c` -- `clock_nanosleep(TIMER_ABSTIME)` has no real equivalent. The
+      pacer's absolute-deadline design (which is what keeps it from drifting) needs
+      `timeBeginPeriod()` plus a `Sleep()`/spin hybrid.
+    * `syncretro_config.c` -- `chdir`/`mkdir`/`realpath` -> dirwrap's `MKDIR()` /
+      `FULLPATH()`.
+    * Build: `CMakeLists.txt` already has an MSVC/vcpkg branch for JPEG XL. M4
+      added libsndfile, which the door needs to *encode* -- so a Windows build
+      gains a vcpkg libsndfile requirement, or builds with
+      `termgfx_audio_have_ogg() == 0` and is simply silent, a state the audio
+      module already handles as first-class.
+  Nothing in M2 or M4 made this harder: neither added a new syscall class. The
+  sibling doors are in the same position, so converting `syncretro_io.c`,
+  `syncduke_io.c` and friends to sockwrap in one pass would beat three separate
+  ports.
 
 ---
 

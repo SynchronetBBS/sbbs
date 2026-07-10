@@ -264,9 +264,11 @@ learn otherwise.
 ## 8. Error handling
 
 - **No audio APC / no libsndfile** (`termgfx_audio_tier() < 1`): the module is
-  disabled at probe time and emits **zero** audio bytes. Not a degraded stream --
-  silence. A Load that the terminal ignores would leave a Queue playing an empty
-  slot.
+  disabled at probe time and emits **zero** audio bytes thereafter -- including
+  the `A;Flush` on exit, which is skipped for a terminal that never confirmed it
+  can play. Not a degraded stream -- silence. A Load that the terminal ignores
+  would leave a Queue playing an empty slot. (The `Q;libsndfile` query itself is
+  still sent: it is how the tier is discovered.)
 - **`termgfx_audio_have_ogg()` == 0** (door built without libsndfile): same --
   disabled. We do not fall back to raw WAV; at ~940 kbit/s after base64 it would
   fight the frame path for no benefit.
@@ -276,10 +278,15 @@ learn otherwise.
 - **Pause / help / reset**: pause stops calling `retro_run()`, so no PCM is
   produced and the FIFO drains -- which fires the underrun report. The module
   must treat "no audio produced" as an expected quiescent state and re-prime on
-  resume rather than logging a spurious underrun. `Ctrl-R` flushes the channel.
-- **Teardown**: `A;Flush;C=2;O=50` (50 ms fade) before the terminal restore, on
-  every exit path including `sr_door_hangup()`. A dropped carrier needs no flush
-  -- the terminal is gone -- but the call must be harmless in that case.
+  resume rather than logging a spurious underrun. `Ctrl-R` flushes the channel
+  and re-primes: the queued audio belongs to a game that no longer exists.
+- **Teardown**: `A;Flush;C=2` -- **no fade** -- before the terminal restore, on
+  every exit path. SyncTERM's `do_flush()` clears the channel only when no `O=`
+  is given; with a fade it queues a silent crossfade against the head buffer and
+  leaves the rest of the FIFO in place (`syncterm/audio_apc.c`), so a faded flush
+  would let ~300 ms of audio play on after the BBS has the terminal back. A
+  dropped carrier needs no flush -- the terminal is gone -- but the call must be
+  harmless in that case.
 - **Volume 0**: SyncTERM clamps a volume of 0 to -60 dB, and a channel's entry
   volume bakes that level in -- an as-designed behavior that cost SyncDuke a
   debugging session. `[audio] enabled = false` disables the module; "silent"
@@ -289,7 +296,7 @@ learn otherwise.
 
 ## 9. Testing
 
-- **`test_audio.c`** (new unit test): the chunk accumulator. A 735-frame batch
+- **`test_chunk.c`** (new unit test): the chunk accumulator. A 735-frame batch
   does not close a 4410-frame chunk; six of them close one with 0 remainder;
   batches that straddle a boundary carry the remainder correctly; an all-zero
   chunk is detected as silent and one non-zero sample anywhere defeats that.

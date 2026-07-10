@@ -108,8 +108,12 @@ Press `?` in-game to see this same list, drawn as the door's own help screen.
 ## Audio
 
 Requires a SyncTERM build with **libsndfile**; without it the door is silent by
-design and sends no audio APCs at all, not even the capability query --
-`[audio] enabled = false` behaves the same way. On a capable terminal the
+design and sends no audio APCs at all. It does still *ask* -- the capability
+query is how the door learns whether the terminal can decode -- so a non-SyncTERM
+client sees one harmless APC at connect and nothing further. The query itself is
+suppressed only when the door was built without libsndfile, or by
+`[audio] enabled = false`, which turns the whole module off. On a capable
+terminal the
 core's audio streams as 100 ms mono Opus chunks (roughly 1.2-2.0 KB each, about
 20 KB/s sustained) over one of SyncTERM's audio-mixer channels, with a short
 prebuffer cushion against link jitter and silence replayed from a single
