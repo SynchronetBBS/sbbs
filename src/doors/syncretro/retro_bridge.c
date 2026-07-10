@@ -9,6 +9,7 @@
  */
 #include "retro_core.h"
 #include "syncretro.h"
+#include "syncretro_audio.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -137,12 +138,4 @@ void sr_bridge_install(rc_core_t *c)
 	c->set_audio_sample_batch(audio_sample_batch);
 	c->set_input_poll(input_poll);
 	c->set_input_state(input_state);
-}
-
-/* M1: accept and discard the core's PCM stream (keeps the core's timing model
- * happy). Streaming console audio to a terminal is DESIGN.md sec 8 / M4. */
-size_t sr_audio_feed(const int16_t *pcm, size_t frames)
-{
-	(void)pcm;
-	return frames;
 }

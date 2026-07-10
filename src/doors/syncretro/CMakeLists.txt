@@ -17,6 +17,8 @@ add_executable(syncretro
     syncretro_input.c   # socket decode -> cached RetroPad
     syncretro_binds.c   # the one binding table: keys -> pad / keypad / door
     syncretro_keypad.c  # Intellivision keypad digits -> RetroPad analog vector
+    syncretro_chunk.c   # cut the core's PCM stream into fixed-size mono chunks
+    syncretro_audio.c   # the core's PCM stream -> SyncTERM's audio APC (M4)
     syncretro_door.c    # DOOR32.SYS / -s<fd> / -name / -home / -t / -core
     syncretro_config.c  # per-user sandbox + system/save dirs
     syncretro_quant.c)  # truecolor frame -> 256-color indexed, for the sixel tier
@@ -103,4 +105,8 @@ if(SYNCRETRO_TESTS)
     add_executable(test_binds test_binds.c syncretro_binds.c)
     target_include_directories(test_binds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME binds COMMAND test_binds)
+
+    add_executable(test_chunk test_chunk.c syncretro_chunk.c)
+    target_include_directories(test_chunk PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME chunk COMMAND test_chunk)
 endif()

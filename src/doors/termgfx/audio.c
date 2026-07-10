@@ -579,3 +579,17 @@ size_t termgfx_audio_flush(uint8_t **buf, size_t *cap, int ch, int fade_ms)
 	return (size_t)sprintf((char *)*buf,
 	                       "\x1b_SyncTERM:A;Flush;C=%d\x1b\\", ch);
 }
+
+size_t termgfx_audio_update(uint8_t **buf, size_t *cap, int ch)
+{
+	size_t   need = 48;
+	uint8_t *p;
+
+	if (need > *cap) {
+		*buf = realloc(*buf, need);
+		*cap = need;
+	}
+	p  = *buf;
+	p += sprintf((char *)p, "\x1b_SyncTERM:A;Update;C=%d\x1b\\", ch);
+	return (size_t)(p - *buf);
+}

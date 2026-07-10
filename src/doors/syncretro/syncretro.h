@@ -52,6 +52,18 @@ const char *sr_config_save_dir(void);               /* per-user SRAM/save-state 
 const char *sr_config_core_path(void);
 const char *sr_config_rom_path(void);
 
+/* syncretro.ini, [audio] -- read from the launch directory by sr_config_apply().
+ * The file is optional and every key has a default, so a door directory without
+ * one behaves exactly as a door with audio at its defaults. Values are CLAMPED
+ * on read: a sysop must not be able to configure a state the measurements in
+ * M4_AUDIO.md sec 4 call broken (e.g. chunk_ms = 17, where the Ogg headers cost
+ * three times the audio). */
+int    sr_config_audio_enabled(void);     /* [audio] enabled,   default true */
+double sr_config_audio_quality(void);     /* quality,   0.01..1.0, default 0.15 */
+int    sr_config_audio_volume(void);      /* volume,    0..100,    default 100 */
+int    sr_config_audio_chunk_ms(void);    /* chunk_ms,  50..250,   default 100 */
+int    sr_config_audio_prebuffer(void);   /* prebuffer, 2..8,      default 3 */
+
 /* --- syncretro_io.c: terminal enter/probe/leave + the present path ---------
  * sr_io_init() adopts the door socket (or the stdout dev fallback) and arms the
  * enter+probe handshake; sr_io_present() composes one frame through termgfx
@@ -66,6 +78,11 @@ void sr_io_leave(void);
 /* Staged, non-blocking output shared by every emitter in the door. */
 void sr_out_put(const void *buf, size_t len);
 int  sr_io_out_flush(void);
+/* Bytes staged for the client but not yet written. The audio module's ONLY
+ * congestion signal, and it samples it at chunk boundaries -- never as an
+ * instantaneous "is the socket busy" test, which is the check SyncDOOM tried
+ * for SFX and reverted (syncdoom/i_termsound.c). */
+size_t sr_io_out_backlog(void);
 int  sr_io_get_fd(void);                            /* the adopted fd (socket, or 1) */
 
 /* Probe-reply setters, fed by syncretro_input.c's CSI handler: the ESC[14t
@@ -122,8 +139,7 @@ struct rc_core;                                     /* fwd (retro_core.h) */
 void sr_bridge_install(struct rc_core *c);
 /* Set the libretro pixel format (from retro_env.c's SET_PIXEL_FORMAT). */
 void sr_bridge_set_pixfmt(int retro_pixel_format);
-/* M1 audio sink: accepts + discards the core's PCM stream (DESIGN.md sec 8). */
-size_t sr_audio_feed(const int16_t *pcm, size_t frames);
+/* The core's PCM stream: syncretro_audio.c owns it (M4). Declared there. */
 
 /* --- retro_env.c -----------------------------------------------------------
  * The retro_environment_t callback. Passed to the core via sr_bridge_install(). */

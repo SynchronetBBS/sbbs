@@ -137,6 +137,11 @@ int sr_io_out_flush(void)
 	return 0;
 }
 
+size_t sr_io_out_backlog(void)
+{
+	return g_out_len - g_out_off;
+}
+
 /* Monotonic millisecond clock: the exit drain and the DSR-ACK pace timing share
  * this one clock domain (and syncretro_door.c's deadline uses the same source). */
 static uint32_t sr_io_now_ms(void)

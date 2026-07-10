@@ -115,4 +115,10 @@ size_t termgfx_audio_synth(uint8_t **buf, size_t *cap, int slot,
 // (0 = abrupt). Used to free a channel for voice-stealing.
 size_t termgfx_audio_flush(uint8_t **buf, size_t *cap, int ch, int fade_ms);
 
+// A;Update -- arm a one-shot idle notification on channel `ch`. The terminal
+// emits `CSI = 7 ; <ch> ; 0 n` the next time that channel transitions from
+// running to stopped, i.e. its FIFO ran dry. Lets a streaming door detect an
+// underrun without polling. Re-arm after each Queue.
+size_t termgfx_audio_update(uint8_t **buf, size_t *cap, int ch);
+
 #endif // TERMGFX_AUDIO_H_

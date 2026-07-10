@@ -45,6 +45,8 @@
 #include <unistd.h>
 
 #include "dirwrap.h"   /* xpdev: mkpath() -- recursive mkdir */
+#include "ini_file.h"        /* xpdev: iniReadFile / iniGet* / strListFree */
+#include "audio_mgr.h"       /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -57,6 +59,56 @@ static char g_rom_path[PATH_MAX];     /* the cartridge, absolute */
 
 /* Where the sysop keeps cartridges, relative to the door's launch directory. */
 #define SR_ROM_SUBDIR "roms"
+
+/* syncretro.ini, [audio]. Defaults chosen in M4_AUDIO.md sec 4; the quality
+ * default is termgfx's music constant, which the M4 measurements independently
+ * landed on. Mirrors ../syncduke/syncduke_config.c's pattern exactly. */
+static int    g_audio_enabled   = 1;
+static double g_audio_quality   = TERMGFX_MUSIC_QUALITY_DEFAULT;
+static int    g_audio_volume    = 100;
+static int    g_audio_chunk_ms  = 100;
+static int    g_audio_prebuffer = 3;
+
+static int sr_clamp_int(int v, int lo, int hi)
+{
+	if (v < lo)
+		return lo;
+	if (v > hi)
+		return hi;
+	return v;
+}
+
+static void sr_config_read_ini(void)
+{
+	FILE *f = fopen("syncretro.ini", "r");
+
+	if (f != NULL) {
+		str_list_t ini = iniReadFile(f);
+
+		fclose(f);
+		g_audio_enabled   = iniGetBool(ini, "audio", "enabled", TRUE);
+		g_audio_quality   = iniGetFloat(ini, "audio", "quality",
+		                                TERMGFX_MUSIC_QUALITY_DEFAULT);
+		g_audio_volume    = iniGetInteger(ini, "audio", "volume", 100);
+		g_audio_chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", 100);
+		g_audio_prebuffer = iniGetInteger(ini, "audio", "prebuffer", 3);
+		strListFree(&ini);
+	}
+	/* Positive test, not two one-sided comparisons: NaN compares false under
+	 * both < and >, and iniGetFloat() is atof()-backed, so `quality = nan`
+	 * would otherwise sail through unclamped and into the encoder. */
+	if (!(g_audio_quality >= 0.01 && g_audio_quality <= 1.0))
+		g_audio_quality = TERMGFX_MUSIC_QUALITY_DEFAULT;
+	g_audio_volume    = sr_clamp_int(g_audio_volume, 0, 100);
+	g_audio_chunk_ms  = sr_clamp_int(g_audio_chunk_ms, 50, 250);
+	g_audio_prebuffer = sr_clamp_int(g_audio_prebuffer, 2, 8);
+}
+
+int    sr_config_audio_enabled(void)   { return g_audio_enabled; }
+double sr_config_audio_quality(void)   { return g_audio_quality; }
+int    sr_config_audio_volume(void)    { return g_audio_volume; }
+int    sr_config_audio_chunk_ms(void)  { return g_audio_chunk_ms; }
+int    sr_config_audio_prebuffer(void) { return g_audio_prebuffer; }
 
 /* realpath() into `dst`, falling back to a verbatim copy when it can't resolve
  * (a path that doesn't exist yet, say). Returns 1 if `dst` is absolute. */
@@ -117,6 +169,10 @@ int sr_config_apply(void)
 	/* The launch directory, captured before anything can move cwd. */
 	if (getcwd(cwd, sizeof cwd) == NULL)
 		snprintf(cwd, sizeof cwd, ".");
+
+	/* syncretro.ini lives in the launch directory, not the per-user sandbox --
+	 * must run before the chdir() in step 3 below moves cwd there. */
+	sr_config_read_ini();
 
 	/* --- 1. system (BIOS) dir: shared, read-only, per-install ---------------
 	 * Answered to the core as GET_SYSTEM_DIRECTORY. A core that can't find its
