@@ -367,13 +367,18 @@ output).
   formats and both native key paths, and a fake terminal on a socketpair for the
   pacing/teardown/carrier-drop paths. The Intellivision BIOS is still needed to
   play an actual game, but it is *not* needed to exercise the frontend.
-- **M2 -- input polish.** Per-core controller overlays (Intellivision keypad),
-  `SET_INPUT_DESCRIPTORS`-driven help, save-state hotkeys.
+- **M2 -- input polish. Input DONE.** All twelve Intellivision keypad keys from a
+  bare terminal keyboard (digits ride the RetroPad right-analog angle; 5, 0,
+  Clear and Enter are button bits), one binding table driving both the key
+  handler and the help screen, and door-owned pause and help screens replacing
+  the core's framebuffer-drawn ones. See M2_INPUT.md. Per-core controller
+  overlay ART is deferred (sysop-supplied, needs a pointer device);
+  `SET_INPUT_DESCRIPTORS`-driven help moves to M3, where cores are unknown.
 - **M3 -- multi-core.** Config-selected cores; dynamic core discovery; the
   `getdata.js`/`install-xtrn` content flow; JXL + text tiers verified.
 - **M4 -- audio research.** The streaming-PCM-to-terminal problem (§8).
 - **M5 -- core options + save states** surfaced through the door config and a
-  per-user save UI.
+  per-user save UI, including the save-state hotkeys.
 
 ---
 

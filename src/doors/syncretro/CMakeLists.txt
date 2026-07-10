@@ -15,6 +15,8 @@ add_executable(syncretro
     retro_bridge.c      # video / audio / input callbacks -> termgfx + door I/O
     syncretro_io.c      # terminal enter/probe/leave + present path
     syncretro_input.c   # socket decode -> cached RetroPad
+    syncretro_binds.c   # the one binding table: keys -> pad / keypad / door
+    syncretro_keypad.c  # Intellivision keypad digits -> RetroPad analog vector
     syncretro_door.c    # DOOR32.SYS / -s<fd> / -name / -home / -t / -core
     syncretro_config.c  # per-user sandbox + system/save dirs
     syncretro_quant.c)  # truecolor frame -> 256-color indexed, for the sixel tier
@@ -81,4 +83,24 @@ target_link_libraries(syncretro xpdev)
 # dlopen for the core; m/pthread for termgfx.
 if(NOT WIN32)
     target_link_libraries(syncretro m pthread ${CMAKE_DL_LIBS})
+endif()
+
+# ---------------------------------------------------------------------------
+# Unit tests. Opt-in: cmake -DSYNCRETRO_TESTS=ON. These link no termgfx and no
+# core -- they are pure, and test_keypad.c in particular is the only gate we
+# have on the keypad digit map, because exercising a real cartridge needs the
+# BIOS (see M2_INPUT.md sec 7).
+# ---------------------------------------------------------------------------
+option(SYNCRETRO_TESTS "Build the SyncRetro unit tests" OFF)
+if(SYNCRETRO_TESTS)
+    enable_testing()
+
+    add_executable(test_keypad test_keypad.c syncretro_keypad.c)
+    target_include_directories(test_keypad PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(test_keypad m)
+    add_test(NAME keypad COMMAND test_keypad)
+
+    add_executable(test_binds test_binds.c syncretro_binds.c)
+    target_include_directories(test_binds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME binds COMMAND test_binds)
 endif()

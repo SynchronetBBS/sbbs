@@ -30,6 +30,8 @@
 #include <netinet/tcp.h>  /* TCP_NODELAY */
 #include <sys/socket.h>   /* setsockopt */
 
+#include "syncretro_binds.h"   /* sr_bind_help_line(): drives the usage key list */
+
 #define SR_ALIAS_MAX 64
 #define SR_PATH_MAX  4096
 
@@ -273,6 +275,9 @@ static void sr_door_usage(const char *argv0)
 {
 	const char *prog = (argv0 != NULL && argv0[0] != '\0') ? argv0 : "syncretro";
 
+	const char *key, *desc;
+	int         i;
+
 	printf(
 		"syncretro -- legacy game consoles over a terminal, as a Synchronet DOOR32.SYS\n"
 		"door, by hosting a libretro core and rendering it as sixel graphics.\n"
@@ -291,15 +296,24 @@ static void sr_door_usage(const char *argv0)
 		"  -home <dir>        per-user sandbox: save states + SRAM land here\n"
 		"\n"
 		"  -help, --help, -?  show this help\n"
-		"\n"
-		"In-game: arrows/WASD = d-pad, Space/Z = A, X = B, C = X, V = Y, Q/E = L/R,\n"
-		"Enter = Start, Tab = Select, Ctrl-Q = quit.\n"
+		"\n",
+		prog);
+
+	/* Drive the in-game key list from syncretro_binds.c's single source of truth
+	 * (the same table the in-game '?' screen renders), so the two can't drift.
+	 * sr_bind_help_line() reads a static const table, safe before any core load
+	 * or terminal setup. */
+	printf("In-game keys:\n");
+	for (i = 0; sr_bind_help_line(i, &key, &desc); i++)
+		printf("  %-16s %s\n", key, desc);
+	printf("  ('?' shows this same list in-game)\n");
+
+	printf(
 		"\n"
 		"Environment (dev overrides):\n"
 		"  SYNCRETRO_SOCK=<fd>       client socket, when no drop file/-s is given\n"
 		"  SYNCRETRO_SYSTEM=<dir>    BIOS/system dir handed to the core\n"
-		"  SYNCRETRO_SIXELOUT=<path> capture mode: write each frame to <path>, no socket\n",
-		prog);
+		"  SYNCRETRO_SIXELOUT=<path> capture mode: write each frame to <path>, no socket\n");
 	fflush(stdout);
 }
 

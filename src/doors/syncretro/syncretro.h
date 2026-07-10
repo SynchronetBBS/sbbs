@@ -80,12 +80,31 @@ void sr_io_set_grid(int rows, int cols);
 int  sr_io_take_grid_probe(void);
 void sr_io_pace_ack(void);
 
+/* Force the next sr_io_present() to repaint in full: it bypasses the identical-
+ * frame de-dupe and re-emits the sixel palette. Used after anything that wrote
+ * over the game area (the pause and help screens) and after a core reset. */
+void sr_io_invalidate(void);
+
 /* --- syncretro_input.c: BBS socket decode -> cached RetroPad state ----------
  * sr_input_pump() is the retro_input_poll callback body: a NON-BLOCKING drain
  * of the socket, updating the cached pad + routing probe replies to the io
  * setters above. sr_pad_get() is the retro_input_state body. */
 void    sr_input_pump(void);
-int16_t sr_pad_get(unsigned port, unsigned device, unsigned id);
+/* The retro_input_state body. `index` selects the analog stick: the RIGHT stick
+ * carries the Intellivision keypad digits (syncretro_keypad.c). */
+int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id);
+/* One-shot: the pending SR_DOOR_* action (pause / help / reset), or SR_DOOR_NONE.
+ * Polled by main.c's run loop, which owns the pause and help screens. */
+int     sr_input_take_action(void);
+/* Drop every held button and the held keypad digit. Called on pause entry and
+ * on reset, so a held disc direction cannot survive them. */
+void    sr_input_release_all(void);
+/* While SUSPENDED (a door screen is up), game keys are swallowed: they must not
+ * reach the pad, or a key pressed behind the pause screen would still be held
+ * on resume. Door actions still fire, and any bound key is remembered by
+ * sr_input_take_anykey() so "press any key to return" can mean it. */
+void    sr_input_set_suspended(int on);
+int     sr_input_take_anykey(void);   /* one-shot: a bound key arrived */
 /* Did the terminal identify itself as SyncTERM? Until a probe reply lands this
  * is 0, i.e. the SAFE assumption (re-send the sixel palette every frame). */
 int     sr_input_is_syncterm(void);

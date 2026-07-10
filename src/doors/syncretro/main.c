@@ -12,9 +12,11 @@
  */
 #include "retro_core.h"
 #include "syncretro.h"
+#include "syncretro_binds.h"
 
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 #include <time.h>
 
 /* Pace the CORE to its native rate. Video presentation is frame-dropped
@@ -67,6 +69,58 @@ static void sr_pace_to_rate(double fps)
 		;                               /* a signal must not shorten the frame */
 }
 
+/* The door owns pause and help. FreeIntv has its own -- reachable from RetroPad
+ * START, painted into the framebuffer -- but its help screen describes the
+ * core's RetroPad convention, which our bindings replace, and we could not
+ * intercept a word of it. See M2_INPUT.md sec 2.
+ *
+ * Both screens are plain ANSI text over a cleared screen, NOT pixels. That
+ * works on every graphics tier and on a client with no graphics at all. Leaving
+ * either screen invalidates the frame cache, so the game repaints in full
+ * rather than diffing against a frame the player never saw. */
+
+static void sr_puts(const char *s)
+{
+	sr_out_put(s, strlen(s));
+}
+
+static void sr_screen_help(void)
+{
+	const char *key, *desc;
+	char        line[80];
+	int         i;
+
+	sr_puts("\x1b[2J\x1b[H");   /* clear + home */
+	sr_puts("SyncRetro -- keys\r\n\r\n");
+	for (i = 0; sr_bind_help_line(i, &key, &desc); i++) {
+		snprintf(line, sizeof line, "  %-18s %s\r\n", key, desc);
+		sr_puts(line);
+	}
+	sr_puts("\r\n  Press any key to return to the game.\r\n");
+	sr_io_out_flush();
+}
+
+static void sr_screen_paused(void)
+{
+	sr_puts("\x1b[2J\x1b[H");
+	sr_puts("SyncRetro -- PAUSED\r\n\r\n");
+	sr_puts("  Space   resume\r\n");
+	sr_puts("  ?       keys\r\n");
+	sr_puts("  Ctrl-Q  quit\r\n");
+	sr_io_out_flush();
+}
+
+/* Sleep out the frame budget while the core is not running. */
+static void sr_idle_ms(long ms)
+{
+	struct timespec ts;
+
+	ts.tv_sec  = ms / 1000;
+	ts.tv_nsec = (ms % 1000) * 1000000L;
+	while (nanosleep(&ts, &ts) == -1 && errno == EINTR)
+		;
+}
+
 int main(int argc, char **argv)
 {
 	rc_core_t core;
@@ -93,11 +147,80 @@ int main(int argc, char **argv)
 	if (rc_core_load_game(&core, sr_config_rom_path()) != 0)
 		goto done;
 
-	for (;;) {
-		if (sr_door_should_exit())
-			break;
-		core.run();                     /* -> video/audio/input callbacks fire */
-		sr_pace_to_rate(core.av.timing.fps);
+	{
+		int paused  = 0;   /* Space: the core is not being run */
+		int helping = 0;   /* the key legend is up (may sit on top of paused) */
+
+		for (;;) {
+			int action;
+
+			if (sr_door_should_exit())
+				break;
+
+			/* A door screen is up: the core is not running, so nothing polls the
+			 * socket for us, and game keys must be swallowed rather than held. */
+			if (paused || helping) {
+				sr_input_pump();
+				action = sr_input_take_action();
+
+				if (helping) {
+					/* Any bound key returns -- including Space and '?', which is
+					 * why sr_input_set_suspended() clears the anykey latch when
+					 * the screen opens. */
+					if (action != SR_DOOR_NONE || sr_input_take_anykey()) {
+						helping = 0;
+						if (paused) {
+							sr_screen_paused();
+						} else {
+							sr_input_set_suspended(0);
+							sr_io_invalidate();
+						}
+					}
+				} else if (action == SR_DOOR_PAUSE) {
+					paused = 0;
+					sr_input_set_suspended(0);
+					sr_io_invalidate();
+				} else if (action == SR_DOOR_HELP) {
+					/* Drop any game key struck while paused: it set the anykey
+					 * latch (swallowed, not held) and would otherwise dismiss
+					 * help on the very next iteration. The running->help path
+					 * clears the latch via sr_input_set_suspended(1); we are
+					 * already suspended, so drain it directly. */
+					(void)sr_input_take_anykey();
+					helping = 1;
+					sr_screen_help();
+				} else if (action == SR_DOOR_RESET) {
+					core.reset();
+					paused = 0;
+					sr_input_set_suspended(0);
+					sr_io_invalidate();
+				}
+				sr_idle_ms(16);
+				continue;
+			}
+
+			core.run();             /* -> video/audio/input callbacks fire */
+
+			action = sr_input_take_action();
+			if (action == SR_DOOR_PAUSE || action == SR_DOOR_HELP) {
+				sr_input_release_all();     /* no key survives the screen */
+				sr_input_set_suspended(1);
+				if (action == SR_DOOR_PAUSE) {
+					paused = 1;
+					sr_screen_paused();
+				} else {
+					helping = 1;
+					sr_screen_help();
+				}
+				continue;
+			}
+			if (action == SR_DOOR_RESET) {
+				sr_input_release_all();
+				core.reset();
+				sr_io_invalidate();
+			}
+			sr_pace_to_rate(core.av.timing.fps);
+		}
 	}
 	rc = 0;
 

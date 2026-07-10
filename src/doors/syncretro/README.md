@@ -73,8 +73,7 @@ connect. `-home` is the per-user sandbox that SRAM and save states land in. Run
 
 ### Controls
 
-Arrows or WASD are the d-pad; `Space`/`Z` = A, `X` = B, `C` = X, `V` = Y, `Q`/`E`
-= L/R, `Enter` = Start, `Tab` = Select, `Ctrl-Q` quits.
+See [Keys](#keys) below for the full key list.
 
 How well *holding* a direction works depends on your terminal, because a plain
 terminal never reports a key being released:
@@ -87,6 +86,23 @@ terminal never reports a key being released:
 
 The door negotiates the best available path at connect and restores the
 terminal's key mode on exit.
+
+## Keys
+
+| Key | Action |
+|---|---|
+| `W A S D` / arrows | disc (16-way) |
+| `Z X C` | action buttons |
+| `1 - 9, 0` | keypad digits |
+| `Backspace` | keypad Clear |
+| `Enter` | keypad Enter |
+| `Tab` | swap left/right controller |
+| `Space` | pause / resume |
+| `?` | this help |
+| `Ctrl-R` | reset the console |
+| `Ctrl-Q` | quit |
+
+Press `?` in-game to see this same list, drawn as the door's own help screen.
 
 ## Constraints
 

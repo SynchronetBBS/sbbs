@@ -406,6 +406,12 @@ static uint8_t *g_last_rgb; /* de-dupe cache of the last SENT frame */
 static size_t   g_last_rgb_cap;
 static uint8_t *g_sx;       /* encoded sixel bytes */
 static size_t   g_sx_cap;
+static int      g_force_repaint;   /* one-shot: skip the de-dupe, re-emit the palette */
+
+void sr_io_invalidate(void)
+{
+	g_force_repaint = 1;
+}
 
 static int sr_io_ensure(uint8_t **buf, size_t *cap, size_t need)
 {
@@ -458,13 +464,22 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	static int     last_ew = -1, last_eh = -1;
 	uint8_t        pal[SR_PAL_BYTES];
 	size_t         npx, nrgb, n;
-	int            pal_changed, emit_pal;
+	int            pal_changed, emit_pal, force;
 
 	if (w <= 0 || h <= 0)
 		return;
 	if (!g_inited)
 		sr_io_init(-1);
 	sr_io_enter();
+
+	/* one-shot: a door screen overwrote the game area. NOT cleared here --
+	 * several paths below DROP this frame without sending anything (pace
+	 * backpressure, pending output, OOM), and if we cleared on read the
+	 * repaint would be lost with the dropped frame, leaving the door screen
+	 * on-terminal until a future frame happens to differ from the de-dupe
+	 * cache. It is cleared exactly once, at each point below where a frame
+	 * is ACTUALLY emitted. */
+	force = g_force_repaint;
 
 	if (w != g_src_w || h != g_src_h) {
 		g_src_w = w;                 /* a core may resize mid-session (SET_GEOMETRY) */
@@ -502,7 +517,8 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		 * a paused game hands us the same pixels over and over. Compared against
 		 * the last frame actually SENT, plus the draw position and emitted size
 		 * (a resize can change the encode while leaving the cell origin at 1;1). */
-		if (have_fb && last_icol == g_icol && last_irow == g_irow
+		if (!force
+		    && have_fb && last_icol == g_icol && last_irow == g_irow
 		    && last_ew == g_ew && last_eh == g_eh
 		    && memcmp(g_last_rgb, rgb, nrgb) == 0)
 			return;
@@ -523,11 +539,12 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		 * captured frame is meant to stand alone, not be skipped as a duplicate. */
 		n = sixel_encode(&g_sx, &g_sx_cap, g_scaled, g_ew, g_eh, pal, 1);
 		sr_out_put(g_sx, n);
+		g_force_repaint = 0;   /* frame actually emitted (to the capture file) */
 		sr_io_out_flush();
 		return;
 	}
 
-	pal_changed = !have_pal || memcmp(last_pal, pal, sizeof last_pal) != 0;
+	pal_changed = force || !have_pal || memcmp(last_pal, pal, sizeof last_pal) != 0;
 
 	/* Palette (re)definition. SyncTERM persists sixel color registers across
 	 * images, and re-defining all 256 every frame is what garbles its decoder
@@ -557,6 +574,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	n = sixel_encode(&g_sx, &g_sx_cap, g_scaled, g_ew, g_eh, pal, emit_pal);
 	sr_out_put(g_sx, n);
 	sr_out_put("\x1b" "8", 2);   /* restore cursor */
+	g_force_repaint = 0;   /* frame actually emitted: the one-shot is spent */
 
 	if (emit_pal) {
 		memcpy(last_pal, pal, sizeof last_pal);

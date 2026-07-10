@@ -126,8 +126,7 @@ static void input_poll(void) { sr_input_pump(); }
 
 static int16_t input_state(unsigned port, unsigned device, unsigned index, unsigned id)
 {
-	(void)index;
-	return sr_pad_get(port, device, id);
+	return sr_pad_get(port, device, index, id);
 }
 
 void sr_bridge_install(rc_core_t *c)

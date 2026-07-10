@@ -63,6 +63,8 @@
 
 #include "caps.h"        /* termgfx: termgfx_caps_parse_jxl */
 #include "keymode.h"     /* termgfx: key-mode negotiation + kitty/evdev decode */
+#include "syncretro_binds.h"
+#include "syncretro_keypad.h"
 
 /* Byte-path auto-release window. Long enough that a tap registers for a frame or
  * three at 60 fps, short enough that a released key doesn't drift. Auto-repeat
@@ -126,46 +128,130 @@ static void sr_pad_expire(void)
 			g_joypad[id]    = 0;
 			g_expire_ms[id] = 0;
 		}
+	sr_keypad_expire(now);
 }
 
-int16_t sr_pad_get(unsigned port, unsigned device, unsigned id)
+int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 {
-	if (port != 0 || device != RETRO_DEVICE_JOYPAD)
+	if (port != 0)
+		return 0;
+	if (device == RETRO_DEVICE_ANALOG)
+		return sr_keypad_analog(index, id);   /* right stick = keypad digits */
+	if (device != RETRO_DEVICE_JOYPAD)
 		return 0;
 	if (id >= SR_PAD_IDS)
 		return 0;
 	return g_joypad[id];
 }
 
-/* --- the key map: one place, shared by all three paths ---------------------- */
+/* --- the key map: one table, shared by all three paths ---------------------- */
 
-/* An ASCII character (lowercased) -> RetroPad button, or -1. The d-pad also
- * lives on the arrow keys, which every path delivers as a separate case.
+/* The bindings themselves live in syncretro_binds.c; this is only the glue that
+ * turns a resolved action into pad / keypad / door state.
  *
- * RetroPad is an abstract SNES-shaped joypad; the core decides what its buttons
- * mean. FreeIntv maps A/B/X to the Intellivision's three side buttons and drives
- * the 16-way disc from the d-pad, so the layout below is playable on it without
- * any per-core knowledge. The Intellivision KEYPAD (12 keys) has no RetroPad
- * home and needs the overlay work tracked as M2. */
-static int sr_key_button(int c)
+ * RetroPad is an abstract SNES-shaped joypad and the core decides what its
+ * buttons mean. FreeIntv puts the three action buttons on A/B/Y, drives the
+ * 16-way disc from the d-pad, and reaches all twelve keypad keys through the
+ * right analog stick plus R3/L3/L2/R2 -- so a bare keyboard plays the whole
+ * console. See M2_INPUT.md. */
+
+static int g_action;      /* pending SR_DOOR_*, consumed by sr_input_take_action() */
+static int g_suspended;   /* a door screen is up: game keys are swallowed */
+static int g_anykey;      /* a bound key arrived while suspended */
+
+int sr_input_take_action(void)
 {
-	switch (c) {
-		case 'w': return RETRO_DEVICE_ID_JOYPAD_UP;
-		case 's': return RETRO_DEVICE_ID_JOYPAD_DOWN;
-		case 'a': return RETRO_DEVICE_ID_JOYPAD_LEFT;
-		case 'd': return RETRO_DEVICE_ID_JOYPAD_RIGHT;
-		case ' ':
-		case 'z': return RETRO_DEVICE_ID_JOYPAD_A;
-		case 'x': return RETRO_DEVICE_ID_JOYPAD_B;
-		case 'c': return RETRO_DEVICE_ID_JOYPAD_X;
-		case 'v': return RETRO_DEVICE_ID_JOYPAD_Y;
-		case 'q': return RETRO_DEVICE_ID_JOYPAD_L;
-		case 'e': return RETRO_DEVICE_ID_JOYPAD_R;
-		case '\r':
-		case '\n': return RETRO_DEVICE_ID_JOYPAD_START;
-		case '\t': return RETRO_DEVICE_ID_JOYPAD_SELECT;
-		default:   return -1;
+	int a = g_action;
+
+	g_action = SR_DOOR_NONE;
+	return a;
+}
+
+void sr_input_set_suspended(int on)
+{
+	g_suspended = on;
+	g_anykey    = 0;   /* the keystroke that OPENED the screen must not close it */
+}
+
+int sr_input_take_anykey(void)
+{
+	int a = g_anykey;
+
+	g_anykey = 0;
+	return a;
+}
+
+static void sr_door_action(int id)
+{
+	if (id == SR_DOOR_QUIT)
+		g_quit = 1;        /* the existing, separately-polled latch */
+	else
+		g_action = id;
+}
+
+/* Resolve one key press/release into pad, keypad or door state. `down` is 1 for
+ * a press or repeat, 0 for a release; `tap` selects the byte path's
+ * auto-release dwell over a held press. Door actions fire on the press edge.
+ *
+ * While a door screen is up, a game key is swallowed rather than pressed --
+ * otherwise a key struck behind the pause screen is still held on resume -- but
+ * it is remembered, so "press any key to return" is true. */
+static void sr_key_apply(int c, int down, int tap)
+{
+	int      id;
+	sr_act_t act = sr_bind_lookup(sr_bind_fold(c), &id);
+
+	if (act == SR_ACT_NONE)
+		return;            /* unbound: it must never reach the core */
+
+	if (act == SR_ACT_DOOR) {
+		if (down)
+			sr_door_action(id);
+		return;
 	}
+	if (g_suspended) {
+		if (down)
+			g_anykey = 1;
+		return;
+	}
+	switch (act) {
+		case SR_ACT_PAD:
+			if (!down)
+				sr_pad_release(id);
+			else if (tap)
+				sr_pad_tap(id);
+			else
+				sr_pad_press(id);
+			return;
+		case SR_ACT_DIGIT:
+			if (!down)
+				sr_keypad_release(id);
+			else if (tap)
+				sr_keypad_tap(id, sr_in_now_ms());
+			else
+				sr_keypad_press(id);
+			return;
+		default:
+			return;
+	}
+}
+
+/* A key edge from a native path (evdev / kitty): a real key-up is coming. */
+static void sr_key_edge(int c, int down) { sr_key_apply(c, down, 0); }
+
+/* A key byte from the byte path: no key-up is coming, so arm the dwell
+ * (auto-repeat refreshes it while the key is physically held). */
+static void sr_key_byte(int c) { sr_key_apply(c, 1, 1); }
+
+void sr_input_release_all(void)
+{
+	int id;
+
+	for (id = 0; id < SR_PAD_IDS; id++) {
+		g_joypad[id]    = 0;
+		g_expire_ms[id] = 0;
+	}
+	sr_keypad_release_all();
 }
 
 /* CSI final byte for an arrow key -> RetroPad d-pad direction, or -1. */
@@ -221,17 +307,6 @@ static int sr_csi_params(int *out, int max)
 	return n;
 }
 
-/* Apply a press/repeat/release edge for a mapped button (kitty event types). */
-static void sr_kitty_edge(int button, int ev)
-{
-	if (button < 0)
-		return;
-	if (ev == 3)
-		sr_pad_release(button);
-	else
-		sr_pad_press(button);   /* press or repeat: re-assert the hold */
-}
-
 /* --- evdev (SyncTERM physical key reports) ---------------------------------- */
 
 /* Linux evdev codes for the keys with no ASCII form that we still map (the
@@ -267,18 +342,42 @@ static void sr_evdev_edge(int code, int down)
 		case SR_EVDEV_LEFT:  button = RETRO_DEVICE_ID_JOYPAD_LEFT;  break;
 		case SR_EVDEV_RIGHT: button = RETRO_DEVICE_ID_JOYPAD_RIGHT; break;
 		default:
-			c = termgfx_evdev_ascii(code, 0);
+			/* Ask for the SHIFTED column when shift is held: the help key is '?',
+			 * i.e. shift-'/', and evdev reports the physical key. Without this the
+			 * door sees '/' -- unbound -- and help is unreachable on SyncTERM, the
+			 * one terminal that negotiates this path. Shifted letters fold back to
+			 * lowercase in sr_bind_lookup(); shifted digits become punctuation and
+			 * are simply unbound, which is what a real keypad does too. */
+			c = termgfx_evdev_ascii(code, (g_evdev_mods & TERMGFX_MOD_SHIFT) != 0);
 			if (c == 0)
 				return;
-			if (down && (g_evdev_mods & TERMGFX_MOD_CTRL) && c == 'q') {
-				g_quit = 1;   /* Ctrl-Q */
+			if (g_evdev_mods & TERMGFX_MOD_CTRL) {
+				/* Ctrl-<letter> becomes its C0 control code, and several of those
+				 * codes are PAD bindings, not door actions: Backspace (Ctrl-H =
+				 * 0x08) is keypad Clear, Tab (Ctrl-I = 0x09) is Select, Enter
+				 * (Ctrl-J/M = 0x0a/0x0d) is keypad Enter. So both edges must be
+				 * delivered -- send only the press and the pad bit sticks down
+				 * forever. Door actions (Ctrl-Q/R) act on the press edge alone, so
+				 * their release edge is harmless. Fold first: Ctrl-Shift-Q must
+				 * still quit. */
+				c = sr_bind_fold(c);
+				if (c >= 'a' && c <= 'z')
+					sr_key_edge(c - 'a' + 1, down);
 				return;
 			}
-			button = sr_key_button(c);
-			break;
+			sr_key_edge(c, down);
+			return;
 	}
 	if (button < 0)
 		return;
+	/* While a door screen is up, swallow the arrow rather than hold it -- same
+	 * rule sr_key_apply() enforces for every other game key. A press is
+	 * remembered so "press any key to return" is true; a release does nothing. */
+	if (g_suspended) {
+		if (down)
+			g_anykey = 1;
+		return;
+	}
 	if (down)
 		sr_pad_press(button);
 	else
@@ -402,12 +501,10 @@ static void sr_csi_final(char fin)
 
 				if (cp <= 0)
 					return;
-				if (ev != 3 && termgfx_kitty_ctrl(mod) && (cp | 0x20) == 'q') {
-					g_quit = 1;   /* Ctrl-Q */
-					return;
-				}
+				if (termgfx_kitty_ctrl(mod) && cp >= 'a' && cp <= 'z')
+					cp = cp - 'a' + 1;   /* Ctrl-<letter> -> its C0 code */
 				if (cp < 128)
-					sr_kitty_edge(sr_key_button(cp | 0x20), ev);
+					sr_key_edge(cp, ev != 3);   /* kitty event 3 = release */
 			}
 			return;
 
@@ -416,10 +513,21 @@ static void sr_csi_final(char fin)
 		case 'C':
 		case 'D':
 			if (termgfx_keymode_kitty_active(&g_km)) {
-				int mod, ev;
+				int mod, ev, b = sr_arrow_button(fin);
 
 				(void)termgfx_kitty_parse(csi_par, csi_len, &mod, &ev);
-				sr_kitty_edge(sr_arrow_button(fin), ev);
+				/* kitty event 3 = release; press or repeat re-asserts the hold.
+				 * sr_pad_press/release guard a negative button internally. While
+				 * suspended, swallow it (press -> anykey) instead of holding. */
+				if (g_suspended) {
+					if (ev != 3)
+						g_anykey = 1;
+				} else if (ev == 3)
+					sr_pad_release(b);
+				else
+					sr_pad_press(b);
+			} else if (g_suspended) {
+				g_anykey = 1;   /* byte-path arrow behind a door screen: swallow */
 			} else {
 				sr_pad_tap(sr_arrow_button(fin));
 			}
@@ -466,16 +574,20 @@ void sr_input_pump(void)
 				if (c == 0x1b) {
 					pstate = SR_P_ESC;
 				} else if (c == 0x11) {
-					g_quit = 1;             /* Ctrl-Q */
+					/* Ctrl-Q is the emergency exit and is exempt from the native-path
+					 * guard below on purpose. A native path (evdev/kitty) normally
+					 * reports Ctrl-Q as an escape sequence, and that path still quits
+					 * fine via the table (sr_key_edge()/sr_evdev_edge()). But if a
+					 * bare 0x11 shows up anyway, the terminal isn't honoring the key
+					 * mode it negotiated -- and that is exactly when a BBS user needs
+					 * a guaranteed way out, so this byte always quits. */
+					g_quit = 1;
 				} else if (!termgfx_keymode_evdev_active(&g_km)
 				           && !termgfx_keymode_kitty_active(&g_km)) {
 					/* Byte path only: on a native path the same keystroke also
 					 * arrives as an edge, and acting on both would double-press
-					 * (and, worse, arm a timer that fights the real key-up).
-					 * SyncTERM's `CSI = 2 h` suppresses these bytes entirely;
-					 * kitty's flag 8 does the same. The guard makes it explicit
-					 * rather than relying on the terminal to honor them. */
-					sr_pad_tap(sr_key_button(c | 0x20));
+					 * (and, worse, arm a timer that fights the real key-up). */
+					sr_key_byte(c);
 				}
 				break;
 
