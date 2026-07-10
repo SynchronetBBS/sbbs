@@ -220,6 +220,37 @@ check(last !== null, "user 1 has a last play");
 eq(last.t, 300, "last play is the most recent, not the first");
 eq(sv_last_play(plays, 99), null, "unknown user has none");
 
+// The board's tie-break is by ROM name, so two runs over the same data give the
+// same array. Without it the order would follow object-key enumeration.
+var tied = [
+	{t: 1, user: 1, alias: "a", rom: "Zaxxon (1982) (Coleco).int",     secs: 1},
+	{t: 2, user: 1, alias: "a", rom: "Astrosmash (1981) (Mattel).int", secs: 1},
+	{t: 3, user: 1, alias: "a", rom: "Utopia (1981) (Mattel).int",     secs: 1}
+];
+var t1 = sv_top_played(tied, 5);
+var t2 = sv_top_played(tied, 5);
+eq(t1.length, 3, "three games, each played once");
+eq(t1[0].rom, "Astrosmash (1981) (Mattel).int", "all-tied board sorts by ROM name");
+eq(t1[2].rom, "Zaxxon (1982) (Coleco).int", "...ascending");
+eq(t1.map(function (x) { return x.rom; }).join("|"),
+   t2.map(function (x) { return x.rom; }).join("|"),
+   "two calls over the same data agree");
+
+// Ties on `t` resolve to the FIRST record in array order, deterministically.
+var same_t = [
+	{t: 500, user: 1, alias: "a", rom: "First.int",  secs: 1},
+	{t: 500, user: 1, alias: "a", rom: "Second.int", secs: 1}
+];
+eq(sv_last_play(same_t, 1).rom, "First.int", "equal timestamps: first record wins");
+
+// system.data_dir carries a trailing slash, but a caller may not.
+var noslash = "/tmp/sv_slash";
+var withslash = "/tmp/sv_slash/";
+eq(sv_plays_path(noslash), sv_plays_path(withslash),
+   "data_dir with and without a trailing slash agree");
+check(file_isdir("/tmp/sv_slash/syncretro/"), "sv_plays_path created the directory");
+directory("/tmp/sv_slash/syncretro/*").forEach(function (p) { file_remove(p); });
+
 directory(pdir + "syncretro/*").forEach(function (p) { file_remove(p); });
 
 writeln(failures ? "FAIL: " + failures + " failure(s)" : "ok: 0 failures");
