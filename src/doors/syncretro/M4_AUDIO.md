@@ -1,6 +1,8 @@
 # SyncRetro M4 -- streaming the core's audio to the terminal
 
-Status: design approved 2026-07-09, not yet implemented.
+Status: implemented 2026-07-09, and heard. Verified against FreeIntv playing
+4-TRIS: 100 ms Opus chunks cycling the `s/0`..`s/3` cache ring, silent chunks
+replaying a once-uploaded `s/z`, zero underruns and zero drops.
 Scope: milestone M4 (see [DESIGN.md](DESIGN.md) §8 and §15).
 
 M1 shipped video and discarded the core's PCM. This document specifies how that
@@ -174,7 +176,11 @@ added, takes precedence over the INI, as `-charset` does in SyncDuke.
 ```ini
 [audio]
 enabled  = true   ; false = emit no audio APCs at all (not volume 0)
-quality  = 0.15   ; Opus VBR quality, clamped to 0.01 .. 1.0
+quality  = 0.15   ; Opus VBR quality; outside 0.01 .. 1.0 falls back to the
+                  ; default rather than clamping to the nearest bound -- an
+                  ; out-of-range quality is a typo, and this also rejects the
+                  ; NaN that atof("nan") would otherwise sail past a pair of
+                  ; one-sided comparisons
                   ; default = TERMGFX_MUSIC_QUALITY_DEFAULT
 volume   = 100    ; channel base volume 0..100; see the volume-0 note in sec 8
 chunk_ms = 100    ; clamped 50..250; below 50 the Ogg headers dominate (sec 4)
@@ -222,12 +228,13 @@ instead of one per chunk forever.
 
 ## 7. Backpressure -- drop at the input, never at the output
 
-A bounded pending queue of **4 chunks**. On overflow, drop the **oldest unsent**
-chunk and bump `g_dropped`. Never drop a chunk already queued to the terminal,
-and **never** gate on how full the socket or the out-buffer looks.
+A chunk is dropped only under **sustained** congestion: when the door's staged
+output backlog exceeds `SR_AUDIO_BACKLOG_BYTES` (48 KB) at **two consecutive
+chunk boundaries** (~200 ms). The drop happens **at the input, before encoding**;
+a chunk already queued to the terminal is never dropped.
 
-That last clause is not a preference. `syncdoom/i_termsound.c:80` records the
-experiment:
+The distinction matters. `syncdoom/i_termsound.c:80` records an *instantaneous*
+socket-busy check being tried for SFX and reverted:
 
 > "This burst dedup is the ONLY drop: an output-backpressure drop was tried here
 > and removed -- it randomly ate one-time sounds during combat, since frames keep
@@ -238,6 +245,10 @@ The socket is busy with sixel essentially always, so socket depth is not a signa
 about audio. SyncDOOM's *other* mechanism -- collapsing an identical SFX
 re-triggered within 40 ms -- has no analogue here: a PCM stream has no discrete
 triggers to coalesce.
+
+The prebuffer hold list is bounded by `prebuffer` (clamped 2..8). It is the only
+place chunks queue door-side, and it drains in a single burst when playback
+starts.
 
 The core produces 44100 samples/sec against the wall clock whether or not we can
 ship them. If we fall behind, the only two options are to let latency grow

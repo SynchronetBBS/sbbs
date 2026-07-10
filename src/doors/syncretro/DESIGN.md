@@ -256,13 +256,16 @@ console core instead hands us a **continuous PCM stream** at ~44.1 kHz via
 termgfx has **no sink shaped like a live audio ring** -- the APC cache is built
 for discrete, cache-once-and-replay assets, not a real-time stream. Streaming
 emulator audio to a terminal over a BBS pipe (latency + bandwidth + no flow
-control on the audio channel) is an open problem, not a wiring task.
+control on the audio channel) looked like an open problem, not a wiring task.
 
-**M1 is video-only:** `sr_audio_feed()` accepts and discards the stream (keeps
-the core happy). Audio is tracked as research (§16, M4): candidate directions
-include down-sampled/opus-chunked streaming, or a "sonify only discrete events"
-heuristic. Video is fully feasible today; audio is the asterisk -- do not treat
-it as a launch blocker.
+**M4 solved it, and not by building a ring in termgfx.** SyncTERM's own audio
+APC already provides one: `Queue` moves a slot onto a mixer channel's FIFO, and
+consecutive queues play back to back -- that FIFO *is* the live audio ring this
+section says termgfx lacks. `sr_audio_feed()` downmixes the core's
+stereo-duplicated PCM to mono, chunks it into 100 ms pieces, and streams them as
+Opus over that FIFO with a three-chunk prebuffer against jitter. See
+[M4_AUDIO.md](M4_AUDIO.md) for the full design, the PSG-synthesis alternative
+rejected in its §3, and the measurements the tuning knobs come from.
 
 ---
 
@@ -376,7 +379,12 @@ output).
   `SET_INPUT_DESCRIPTORS`-driven help moves to M3, where cores are unknown.
 - **M3 -- multi-core.** Config-selected cores; dynamic core discovery; the
   `getdata.js`/`install-xtrn` content flow; JXL + text tiers verified.
-- **M4 -- audio research.** The streaming-PCM-to-terminal problem (§8).
+- **M4 -- audio. DONE.** The core's PCM streamed to SyncTERM's audio APC as
+  100 ms Opus chunks on one mixer channel's FIFO, with a three-chunk (~300 ms)
+  cushion, silent chunks replayed from a single cached sample, and `A;Update`
+  as the underrun signal. PSG register synthesis was considered and rejected
+  (M4_AUDIO.md §3): it is deaf to the Intellivoice, and no other era-mate core
+  exposes its sound registers through the public libretro ABI.
 - **M5 -- core options + save states** surfaced through the door config and a
   per-user save UI, including the save-state hotkeys.
 

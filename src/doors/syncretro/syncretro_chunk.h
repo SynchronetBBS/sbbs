@@ -15,8 +15,8 @@
  * Audio(c, c), so L == R and the downmix is lossless. */
 typedef struct {
 	int16_t *buf;   /* cap mono samples */
-	size_t   cap;   /* frames per chunk */
-	size_t   len;   /* frames accumulated so far */
+	size_t cap;     /* frames per chunk */
+	size_t len;     /* frames accumulated so far */
 } sr_chunk_t;
 
 int    sr_chunk_init(sr_chunk_t *c, size_t frames);   /* 1 = ok, 0 = OOM */

@@ -11,10 +11,11 @@ vendors no emulator -- you point it at a libretro core `.so` and it drives the
 core's run loop, converting each video frame to sixel/JXL and mapping BBS input
 to a RetroPad. Swap the core, get a different console.
 
-> **Status: M1 (video-only vertical slice) complete.** The frontend loads a core,
-> loads a ROM, renders frames as sixel, and maps terminal keys onto a RetroPad,
-> with correct enter/probe/leave and teardown. Audio is accepted and discarded.
-> See DESIGN.md sec 15 for the remaining milestones.
+> **Status: M1 (video), M2 (input) and M4 (audio) complete.** The frontend loads
+> a core, loads a ROM, renders frames as sixel, maps terminal keys onto a
+> RetroPad -- including all twelve Intellivision keypad keys -- and streams the
+> core's audio to SyncTERM as Opus chunks. Enter/probe/leave and teardown are
+> correct on every exit path. See DESIGN.md sec 15 for the remaining milestones.
 >
 > To actually *play* Intellivision you still need the BIOS (below). Without it
 > FreeIntv loads the cartridge, halts its CPU, and draws its own "PUT GROM/EXEC IN
@@ -104,12 +105,39 @@ terminal's key mode on exit.
 
 Press `?` in-game to see this same list, drawn as the door's own help screen.
 
+## Audio
+
+Requires a SyncTERM build with **libsndfile**; without it the door is silent by
+design and sends no audio APCs at all, not even the capability query --
+`[audio] enabled = false` behaves the same way. On a capable terminal the
+core's audio streams as 100 ms mono Opus chunks (roughly 1.2-2.0 KB each, about
+20 KB/s sustained) over one of SyncTERM's audio-mixer channels, with a short
+prebuffer cushion against link jitter and silence replayed from a single
+cached sample at essentially no bandwidth cost. A game that is briefly silent
+on its own -- Astrosmash and BurgerTime both do this on their title screens --
+sends no audio traffic until it actually makes a sound; that is expected, not
+a stuck stream. On exit the door logs a summary line:
+
+```
+syncretro: audio N chunks, N underrun(s), N drop(s)
+```
+
+Tune it in `syncretro.ini`'s `[audio]` section (see
+[M4_AUDIO.md](M4_AUDIO.md) sec 5.1 for the reasoning behind each default):
+
+| Key | Default | Clamp | Meaning |
+|---|---|---|---|
+| `enabled` | `true` | -- | `false` emits no audio APCs at all (not the same as `volume = 0`) |
+| `quality` | `0.15` | 0.01 .. 1.0, else default | Opus VBR quality; out-of-range (including NaN) falls back to the default rather than clamping |
+| `volume` | `100` | 0 .. 100 | channel base volume |
+| `chunk_ms` | `100` | 50 .. 250 | chunk size; below 50 the Ogg headers dominate the stream |
+| `prebuffer` | `3` | 2 .. 8 | chunks held before playback starts, i.e. 200..800 ms of cushion |
+
 ## Constraints
 
-Software-rendered cores only (no GL/Vulkan -- correct for a terminal). Audio is
-deferred past M1 (streaming console PCM to a terminal is an open problem, see
-DESIGN.md sec 8). Legacy 2D consoles are the sweet spot -- their tiny, low-frame
--rate output suits terminal rendering well.
+Software-rendered cores only (no GL/Vulkan -- correct for a terminal). Legacy
+2D consoles are the sweet spot -- their tiny, low-frame-rate output suits
+terminal rendering well.
 
 Frames are truecolor, and sixel is a 256-color format, so each frame is quantized
 ([`syncretro_quant.c`](syncretro_quant.c)). Legacy consoles use far fewer than

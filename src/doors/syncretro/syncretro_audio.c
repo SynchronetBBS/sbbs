@@ -27,11 +27,11 @@ static double     g_quality;
 static int        g_volume;
 static int        g_prebuffer;
 
-static uint8_t   *g_apc;          /* reusable builder scratch */
+static uint8_t *  g_apc;          /* reusable builder scratch */
 static size_t     g_apc_cap;
 
 /* Encoded chunks held during PRIME, emitted together once we have `prebuffer`. */
-static uint8_t   *g_held[8];
+static uint8_t *  g_held[8];
 static size_t     g_held_len[8];
 static int        g_held_n;
 
