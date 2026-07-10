@@ -35,6 +35,7 @@
  */
 #include "syncretro.h"
 #include "syncretro_quant.h"
+#include "syncretro_audio.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -360,6 +361,7 @@ static void sr_io_enter(void)
 	sr_out_puts("\x1b[<c");            /* CTDA: SyncTERM detect, and cap 8 -> physical key reports */
 	sr_out_puts(termgfx_query_jxl);    /* Q;JXL: JXL-tier detect (M3 consumes the reply) */
 	sr_out_puts("\x1b[?u");            /* kitty keyboard query: a CSI?<flags>u reply -> true key-up */
+	sr_audio_probe();                  /* SyncTERM:Q;libsndfile -> sr_audio_caps() */
 	sr_io_out_flush();
 }
 

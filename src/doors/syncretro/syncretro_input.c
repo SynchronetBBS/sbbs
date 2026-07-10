@@ -62,9 +62,11 @@
 #include <unistd.h>
 
 #include "caps.h"        /* termgfx: termgfx_caps_parse_jxl */
+#include "audio.h"       /* termgfx: termgfx_audio_parse_caps */
 #include "keymode.h"     /* termgfx: key-mode negotiation + kitty/evdev decode */
 #include "syncretro_binds.h"
 #include "syncretro_keypad.h"
+#include "syncretro_audio.h"
 
 /* Byte-path auto-release window. Long enough that a tap registers for a frame or
  * three at 60 fps, short enough that a released key doesn't drift. Auto-repeat
@@ -451,21 +453,35 @@ static void sr_csi_final(char fin)
 			}
 			return;
 
-		case 'n':   /* CTerm state report: our Q;JXL query's reply is ESC[=1;{0,1}n */
+		case 'n':   /* CTerm state report: JXL cap, audio cap, audio channel state */
 			if (csi_len > 0 && csi_par[0] == '=') {
 				uint8_t seq[48];
-				int     sl = 0, k, r;
+				int     sl = 0, k, r, p[8], np;
 
 				seq[sl++] = 0x1b;
 				seq[sl++] = (uint8_t)csi_intro;
 				for (k = 0; k < csi_len && sl < (int)sizeof(seq) - 1; k++)
 					seq[sl++] = (uint8_t)csi_par[k];
 				seq[sl++] = (uint8_t)fin;
+
 				r = termgfx_caps_parse_jxl(seq, sl);
 				if (r >= 0) {
 					g_is_syncterm   = 1;
 					g_jxl_supported = (r == 1);
 				}
+
+				/* `CSI = 7 ; 100 ; {0,1} n` -- libsndfile present? Matches only
+				 * feature id 100, so it never eats the channel report below. */
+				r = termgfx_audio_parse_caps(seq, sl);
+				if (r >= 0) {
+					g_is_syncterm = 1;
+					sr_audio_caps(r);
+				}
+
+				/* `CSI = 7 ; <ch> ; 0 n` -- that channel's FIFO drained. */
+				np = sr_csi_params(p, 8);
+				if (np >= 3 && p[0] == 7 && p[1] != 100 && p[2] == 0)
+					sr_audio_underrun(p[1]);
 			}
 			return;
 

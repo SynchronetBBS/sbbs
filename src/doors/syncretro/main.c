@@ -13,6 +13,7 @@
 #include "retro_core.h"
 #include "syncretro.h"
 #include "syncretro_binds.h"
+#include "syncretro_audio.h"
 
 #include <errno.h>
 #include <stdio.h>
@@ -130,6 +131,7 @@ int main(int argc, char **argv)
 		return 1;
 	sr_door_sanitize_argv(&argc, argv);
 	sr_config_apply();
+	sr_audio_init();                    /* reads syncretro.ini; no I/O yet */
 
 	/* sr_config_apply() has already chdir'd into the per-user sandbox, so the
 	 * core and ROM must come from IT (absolutized against the launch dir), not
@@ -173,12 +175,14 @@ int main(int argc, char **argv)
 							sr_screen_paused();
 						} else {
 							sr_input_set_suspended(0);
+							sr_audio_pause(0);
 							sr_io_invalidate();
 						}
 					}
 				} else if (action == SR_DOOR_PAUSE) {
 					paused = 0;
 					sr_input_set_suspended(0);
+					sr_audio_pause(0);
 					sr_io_invalidate();
 				} else if (action == SR_DOOR_HELP) {
 					/* Drop any game key struck while paused: it set the anykey
@@ -193,6 +197,7 @@ int main(int argc, char **argv)
 					core.reset();
 					paused = 0;
 					sr_input_set_suspended(0);
+					sr_audio_pause(0);
 					sr_io_invalidate();
 				}
 				sr_idle_ms(16);
@@ -205,6 +210,7 @@ int main(int argc, char **argv)
 			if (action == SR_DOOR_PAUSE || action == SR_DOOR_HELP) {
 				sr_input_release_all();     /* no key survives the screen */
 				sr_input_set_suspended(1);
+				sr_audio_pause(1);          /* core stops -> FIFO drains on purpose */
 				if (action == SR_DOOR_PAUSE) {
 					paused = 1;
 					sr_screen_paused();
@@ -225,6 +231,7 @@ int main(int argc, char **argv)
 	rc = 0;
 
 done:
+	sr_audio_shutdown();                /* A;Flush + telemetry, before the restore */
 	sr_io_leave();                      /* restore the BBS terminal, always */
 	rc_core_close(&core);
 	return rc;
