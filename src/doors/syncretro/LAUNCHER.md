@@ -44,8 +44,7 @@ The bottom half, which is game-agnostic and UI-free:
 
 `read_overlaid()` (INI with per-host `[net:<hostname>]`-style overlay),
 `resolve_dir()`, `door_ars()` (so the picker honors the door's access
-requirements), `attract_files()`, `live_nodes()` (the who's-online line), and the
-`rpad`/`clip`/`ago`/`mmss` helpers.
+requirements), `attract_files()`, and the `rpad`/`clip`/`ago`/`mmss` helpers.
 
 Not the multiplayer half. See §2.
 
@@ -98,15 +97,45 @@ Rules, in order:
    now lives in the door directory (FreeIntv's system dir) and a `bios/`
    sub-directory, not in `roms/`.
 4. Apply the sysop's `[roms] exclude=` globs from `syncretro.ini`.
-5. **Dedupe by size + hash of the first 4 KB.** Over the SMB view a symlink is
-   indistinguishable from a regular file, so `readlink` is useless: short aliases
-   like `astrosmash.int` must collapse into `Astrosmash (1981) (Mattel).int` by
-   content. Keep the more descriptive name.
+5. **Dedupe identical bytes: size + md5 of the WHOLE file.** Over the SMB view a
+   symlink is indistinguishable from a regular file, so `readlink` is useless.
+   Two names for the same bytes are one game; keep the more descriptive name.
+
+   Not a 4 KB prefix. `Pac-Man (1983) (Atarisoft).int` and
+   `Pac-Man (1983) (Intv Corp).int` are two different ports with the same size and
+   byte-identical first 4 KB, so a prefix key deletes one of them. The full hash
+   is free: the BIOS guard below already computes it for every size-gated
+   candidate, and a cartridge is at most 64 KB.
+6. **Collapse dump-quality variants, preferring the verified dump.** Different
+   bytes, same game: a ROM set ships `Dreadnaught Factor, The (1983) (Activision)
+   [!].int` beside `... [a1].bin`. The marker is not part of the title, so both
+   render identically in the picker and one of them is the worse rip. Key on
+   **title + year + publisher** and keep the best-ranked marker:
+
+   | rank | marker | meaning |
+   |---|---|---|
+   | 0 | `[!]` | verified good dump |
+   | 1 | *(none)* | plain dump |
+   | 2 | `[a*]` | alternate dump (also: any unrecognized marker) |
+   | 3 | `[o*]` | overdump |
+   | 4 | `[b*]` | bad dump |
+
+   Publisher is in the key on purpose: `Pac-Man (1983) (Intv Corp)` and
+   `Pac-Man (1983) (Atarisoft)` are two different ports, not two dumps of one
+   game. Ties within a rank resolve to the lexicographically first name, so the
+   list does not depend on directory order.
+
+   This *hides* files that exist on disk -- 12 of 221 on the reference set. That
+   is the point: `[o1]` is padded garbage and `[b1]` is a known-bad rip, and this
+   is a player's menu, not a curator's. The sysop's escape hatches are
+   `[roms] exclude=` and deleting the file.
 
 Titles parse out of the No-Intro filename -- `Title (Year) (Publisher)` --
-stripping `[!]`/`[a1]` dump markers, tolerating nested parens
+stripping dump markers (including stacked ones like `[a1][!]`), accepting a year
+range (`(1982-83)` yields 1982), tolerating nested parens
 (`Adventure (AD&D - Cloudy Mountain)`), and falling back to the bare filename when
-the pattern does not match.
+the pattern does not match. Measured against the reference set: 235 of 235 names
+parse.
 
 A sysop who wants a game gone can also just move or delete it.
 
@@ -119,7 +148,7 @@ side by side, and clips each cell. Derive the column count from
 three.
 
 ```
-SyncRetro -- Intellivision                      3 nodes online, 1 playing
+SyncRetro -- Intellivision
 Most played:  1. Astrosmash (42)   2. Utopia (31)   3. Night Stalker (19)
               4. BurgerTime (12)   5. Tron Deadly Discs (9)
 
@@ -169,8 +198,13 @@ the shell path on **every** SyncDOOM and SyncDuke launch today.
 
 ## 10. Testing
 
-`syncivision_lib.js` is UI-free, so it tests under `jsexec` the way
-`syncduke/tests/test_waiting_room_lib.js` does:
+`syncivision_lib.js` is UI-free, so it tests under `jsexec`. There is no
+door-lib test precedent in this tree (`exec/tests/` is a directory-walking
+runner for the stock JS API), so the convention is the one the door's C tests
+already use: a single self-contained script that prints `ok`/`FAIL` lines,
+counts failures, and exits non-zero.
+
+Run: `jsexec xtrn/syncivision/tests/test_syncivision_lib.js`. It covers:
 
 - title parsing across the real filename shapes (nested parens, `[!]`, missing
   year, bare names);
@@ -179,10 +213,22 @@ the shell path on **every** SyncDOOM and SyncDuke launch today.
 - activity aggregation: top-N, per-user last game, a play whose door crashed;
 - the quote-safety refusal.
 
-Nothing here needs a terminal, which is the point of the lib/lobby split.
+`lobby.js` itself -- the screen -- is now also driven headless, by
+`xtrn/syncivision/test_lobby_headless.js`, which stubs `console`, `bbs` and
+`user` as globals well enough to run the script outside a real connection. So
+"the screen cannot be tested" overstates it. What that test does and does not
+cover, precisely: it exercises the launch command line built for a picked ROM,
+the play-log append/read path, and search filtering. It does not render, or
+verify, a single character of the actual screen output -- the stubs make
+`console`/`bbs` calls no-ops or record calls, they do not reproduce SyncTERM's
+column layout, paging, or attribute codes. Eyeballing the rendered screen over
+a real connection is still the only way to check any of that.
 
 ## 11. Deferred
 
+- **The who's-online line.** `game_lobby.js`'s `live_nodes()` needs a Terminal
+  Server context, so no test can reach it, and it is decoration on a screen whose
+  job is picking a game.
 - **Keypad overlays.** The Intellivision's keypad had a printed plastic overlay
   per game, and there is no on-screen acknowledgement when a key is pressed --
   confirmed live in Utopia, where a digit either builds something or silently
