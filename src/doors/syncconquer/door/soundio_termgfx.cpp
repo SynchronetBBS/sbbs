@@ -630,9 +630,11 @@ static void sa_commit_music_named(SampleTrackerTypeImp *st, char *name_out, size
 		return;
 	hash = sa_fnv1a(st->pcm, st->len);
 	snprintf(name, sizeof name, "d_%08x", hash);
-	if (termgfx_audio_music_play(m, name, st->vol_pct) == TERMGFX_MUSIC_RENDER)
+	// loop=1: the terminal loops the score forever, while RA's theme manager is
+	// told when the song "ended" by SoundImp_Sample_Status()'s own duration model.
+	if (termgfx_audio_music_play(m, name, st->vol_pct, 1) == TERMGFX_MUSIC_RENDER)
 		termgfx_audio_music(m, name, st->pcm, st->len, st->bits, st->channels,
-		                    st->rate, st->vol_pct);
+		                    st->rate, st->vol_pct, 1);
 	if (name_out != NULL && name_out_sz > 0)
 		snprintf(name_out, name_out_sz, "%s", name);
 }
@@ -1083,7 +1085,7 @@ bool SoundImp_Sample_Status(SampleTrackerTypeImp *st)
 		if (st->fp_done && sa_map_read(st->fp, cached_name, sizeof cached_name, NULL)) {
 			termgfx_audio_t *m = door_io_audio();
 			if (m != NULL
-			    && termgfx_audio_music_play(m, cached_name, st->vol_pct)
+			    && termgfx_audio_music_play(m, cached_name, st->vol_pct, 1)
 			    != TERMGFX_MUSIC_RENDER) {
 				st->as_music = true;
 				st->len = 0;
