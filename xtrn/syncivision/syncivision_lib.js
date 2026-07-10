@@ -31,11 +31,12 @@ function sv_parse_title(filename)
 	var out  = { title: name, year: 0, publisher: "" };
 	var m;
 
-	// Drop dump markers: "[!]", "[a1]", "[b2]" ... only at the end.
-	name = name.replace(/\s*\[[^\]]*\]\s*$/, "");
+	// One or more stacked dump markers: "[!]", "[a1][!]".
+	name = name.replace(/(\s*\[[^\]]*\])+\s*$/, "");
 
 	// "<title> (<4-digit year>) (<publisher>)" anchored at the END of the name.
-	m = name.match(/^(.*)\s+\((\d{4})\)\s+\(([^()]*)\)$/);
+	// A year range, e.g. "(1982-83)", takes its first year.
+	m = name.match(/^(.*)\s+\((\d{4})(?:-\d{2,4})?\)\s+\(([^()]*)\)$/);
 	if (m) {
 		out.title     = m[1];
 		out.year      = parseInt(m[2], 10);
@@ -44,7 +45,7 @@ function sv_parse_title(filename)
 	}
 
 	// "<title> (<4-digit year>)" with no publisher.
-	m = name.match(/^(.*)\s+\((\d{4})\)$/);
+	m = name.match(/^(.*)\s+\((\d{4})(?:-\d{2,4})?\)$/);
 	if (m) {
 		out.title = m[1];
 		out.year  = parseInt(m[2], 10);
