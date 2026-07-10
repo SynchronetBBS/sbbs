@@ -100,6 +100,7 @@ void sr_out_put(const void *buf, size_t len)
 	}
 	memcpy(g_out + g_out_len, buf, len);
 	g_out_len += len;
+	sr_trace_wire(buf, len);   /* diagnostic: capture exactly what we will send */
 }
 
 /* Emit a NUL-terminated control string without hand-counting its length. */

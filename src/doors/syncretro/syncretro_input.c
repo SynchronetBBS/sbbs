@@ -137,15 +137,89 @@ static void sr_pad_expire(void)
 	sr_keypad_expire(now);
 }
 
+/* --- disc sweep (paddle carts) ----------------------------------------------
+ *
+ * The Intellivision disc is a 16-position ring, and a paddle game like Brickout!
+ * moves its paddle ONE STEP per CHANGE of the disc's value, in the direction of
+ * that value's horizontal component. A held cardinal direction is a constant
+ * value, so the paddle takes one step and stops dead -- which is what a keyboard
+ * player sees, because four keys cannot rotate a disc.
+ *
+ * So for carts listed in [disc] rotate, a held Left/Right does not pin the disc:
+ * it ALTERNATES between two adjacent detents on that side (0 deg / 22.5 deg for
+ * right, 180 deg / 202.5 deg for left). Every toggle is a fresh disc value whose
+ * horizontal component points the same way, so the paddle steps again and again
+ * and the travel is smooth.
+ *
+ * Measured against FreeIntv with Brickout! (a headless probe driving the core
+ * directly): over 120 frames from the same start, holding the d-pad travels 2 px,
+ * pulsing the d-pad bit travels 57 px, and alternating two adjacent detents
+ * travels 115 px. One toggle per 4 frames beats both 2 and 6 -- toggle faster and
+ * the core samples past the change, slower and you simply get fewer steps.
+ *
+ * The disc rides the LEFT analog stick, which FreeIntv reads as the disc and
+ * which this door otherwise leaves at rest (the RIGHT stick carries the keypad).
+ * While sweeping, the d-pad's own Left/Right bits are withheld: the core would
+ * fold them back into the disc and fight the sweep. */
+#define SR_DISC_TOGGLE_FRAMES 4
+
+/* cos/sin * 32000 (just inside INT16_MAX) at 0, 22.5, 180 and 202.5 degrees.
+ * Integer literals so the door pulls in no libm for four constants. */
+static const int16_t g_disc_vec[2][2][2] = {   /* [left?][phase][x,y] */
+	{ {  32000,      0 }, {  29565,  12246 } },   /* right: 0 deg, 22.5 deg */
+	{ { -32000,      0 }, { -29565, -12246 } }    /* left: 180 deg, 202.5 deg */
+};
+
+static int           g_disc_phase; /* which of the two adjacent detents is asserted */
+static int           g_disc_dir; /* -1 left, +1 right, 0 not sweeping */
+
+/* Once per frame, from sr_input_pump() (the core's input_poll). */
+static void sr_disc_tick(void)
+{
+	static unsigned frames;
+	int             left, right;
+
+	if (!sr_config_disc_rotate()) {
+		g_disc_dir = 0;
+		return;
+	}
+	left  = g_joypad[RETRO_DEVICE_ID_JOYPAD_LEFT];
+	right = g_joypad[RETRO_DEVICE_ID_JOYPAD_RIGHT];
+
+	if (left == right) {          /* neither, or both: no direction to sweep */
+		g_disc_dir = 0;
+		return;
+	}
+	if (g_disc_dir == 0)
+		frames = 0;               /* a fresh press steps on its very first frame */
+	g_disc_dir = right ? 1 : -1;
+	if ((frames++ % SR_DISC_TOGGLE_FRAMES) == 0)
+		g_disc_phase ^= 1;
+}
+
 int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 {
 	if (port != 0)
 		return 0;
-	if (device == RETRO_DEVICE_ANALOG)
+	if (device == RETRO_DEVICE_ANALOG) {
+		if (index == RETRO_DEVICE_INDEX_ANALOG_LEFT) {
+			if (g_disc_dir == 0)
+				return 0;         /* not sweeping: leave the disc alone */
+			if (id == RETRO_DEVICE_ID_ANALOG_X)
+				return g_disc_vec[g_disc_dir < 0][g_disc_phase][0];
+			if (id == RETRO_DEVICE_ID_ANALOG_Y)
+				return g_disc_vec[g_disc_dir < 0][g_disc_phase][1];
+			return 0;
+		}
 		return sr_keypad_analog(index, id);   /* right stick = keypad digits */
+	}
 	if (device != RETRO_DEVICE_JOYPAD)
 		return 0;
 	if (id >= SR_PAD_IDS)
+		return 0;
+	/* While the disc is being swept, the d-pad must not also claim it. */
+	if (g_disc_dir != 0
+	    && (id == RETRO_DEVICE_ID_JOYPAD_LEFT || id == RETRO_DEVICE_ID_JOYPAD_RIGHT))
 		return 0;
 	return g_joypad[id];
 }
@@ -609,6 +683,42 @@ static FILE *sr_trace_fp(void)
 	return fp;
 }
 
+/* Raw OUTBOUND capture, so the exact byte stream the door sends can be replayed
+ * against a terminal WITHOUT the door. Framed as "T <ms> <len>\n" followed by
+ * len raw bytes, in keytrace.out beside keytrace.log. Capped: a door streaming
+ * audio writes megabytes a minute, and a diagnostic must not fill a disk. */
+#define SR_WIRE_CAP (32u * 1024u * 1024u)
+
+void sr_trace_wire(const void *buf, size_t len)
+{
+	static FILE *   fp;
+	static int      tried;
+	static unsigned written;
+	char            hdr[64];
+	int             n;
+
+	if (sr_trace_fp() == NULL || len == 0)
+		return;                 /* one switch governs both files */
+	if (!tried) {
+		const char *dir = sr_config_launch_dir();
+		char        path[PATH_MAX];
+
+		tried = 1;
+		if (dir != NULL) {
+			snprintf(path, sizeof path, "%s/keytrace.out", dir);
+			fp = fopen(path, "wb");
+		}
+	}
+	if (fp == NULL || written >= SR_WIRE_CAP)
+		return;
+
+	n = snprintf(hdr, sizeof hdr, "T %u %zu\n", (unsigned)sr_in_now_ms(), len);
+	fwrite(hdr, 1, (size_t)n, fp);
+	fwrite(buf, 1, len, fp);
+	fflush(fp);
+	written += (unsigned)len;
+}
+
 /* Free-form trace line, shared with syncretro_io.c's pacing probes. */
 void sr_trace(const char *fmt, ...)
 {
@@ -655,6 +765,10 @@ void sr_input_pump(void)
 	 * during a quiet moment must still come up. Harmless on the native paths,
 	 * where no timer is ever armed. */
 	sr_pad_expire();
+
+	/* input_poll runs once per emulated frame, which is the sweep's clock. It
+	 * must follow sr_pad_expire(): a tap that just timed out is not held. */
+	sr_disc_tick();
 
 	if (fd < 0)
 		return;

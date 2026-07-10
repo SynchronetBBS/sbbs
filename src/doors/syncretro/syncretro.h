@@ -52,6 +52,15 @@ int         sr_config_apply(void);
  * has the input and draws nothing. */
 void        sr_trace(const char *fmt, ...);
 
+/* Raw capture of the outbound stream into keytrace.out, same switch, so the
+ * door's exact bytes can be replayed against a terminal without the door. */
+void        sr_trace_wire(const void *buf, size_t len);
+
+/* Non-zero when the loaded cartridge is listed in [disc] rotate: its paddle
+ * steps once per CHANGE of disc value, so a held direction must sweep the disc
+ * rather than pin it. See syncretro_input.c's disc sweep. */
+int         sr_config_disc_rotate(void);
+
 const char *sr_config_launch_dir(void);             /* the door's own dir (pre-chdir cwd) */
 const char *sr_config_system_dir(void);             /* BIOS dir (shared, read-only) */
 const char *sr_config_save_dir(void);               /* per-user SRAM/save-state dir */

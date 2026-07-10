@@ -41,6 +41,7 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -51,6 +52,13 @@
 #ifndef PATH_MAX
 #define PATH_MAX 4096
 #endif
+
+/* [disc] rotate: comma-separated, case-insensitive substrings of a cartridge's
+ * FILENAME. A match means this cart reads the disc as a rotation (Brickout!'s
+ * paddle steps once per change of disc value, so a held direction never moves
+ * it) and the door must sweep the disc while a direction key is held. */
+static char g_disc_rotate[512];
+static int  g_disc_is_rotate;         /* does the loaded ROM match? */
 
 static char g_launch_dir[PATH_MAX];   /* where the door was started: cwd BEFORE the chdir */
 static char g_system_dir[PATH_MAX];   /* BIOS: shared, read-only, per-install */
@@ -79,14 +87,75 @@ static int sr_clamp_int(int v, int lo, int hi)
 	return v;
 }
 
+/* Case-insensitive strstr. Not strcasestr(): that is a GNU extension, absent
+ * under MSVC and strict C, and this file must build on the Windows port. */
+static const char *sr_stristr(const char *hay, const char *needle)
+{
+	size_t n = strlen(needle);
+
+	if (n == 0)
+		return hay;
+	for (; *hay != '\0'; hay++) {
+		size_t i;
+
+		for (i = 0; i < n; i++)
+			if (tolower((unsigned char)hay[i]) != tolower((unsigned char)needle[i]))
+				break;
+		if (i == n)
+			return hay;
+	}
+	return NULL;
+}
+
+/* Does `path`'s filename contain any of `list`'s comma-separated substrings?
+ * Case-insensitive, whitespace around an item ignored, empty list never matches.
+ * Deliberately a substring test on the FILENAME: cartridge dumps carry version
+ * and dump markers ("Brickout! (1981) (Mattel).int"), so a sysop writes the
+ * title and not the whole name. */
+static int sr_disc_matches(const char *path, const char *list)
+{
+	const char *name;
+	const char *p = list;
+
+	if (path == NULL || list == NULL || *list == '\0')
+		return 0;
+	name = strrchr(path, '/');
+	name = (name != NULL) ? name + 1 : path;
+
+	while (*p != '\0') {
+		char        item[128];
+		size_t      n = 0;
+		const char *q;
+
+		while (*p == ' ' || *p == '\t' || *p == ',')
+			p++;
+		while (p[n] != '\0' && p[n] != ',')
+			n++;
+		q = p + n;                       /* one past the item */
+		while (n > 0 && (p[n - 1] == ' ' || p[n - 1] == '\t'))
+			n--;                         /* trailing space */
+		if (n > 0 && n < sizeof item) {
+			memcpy(item, p, n);
+			item[n] = '\0';
+			if (sr_stristr(name, item) != NULL)
+				return 1;
+		}
+		p = q;
+	}
+	return 0;
+}
+
 static void sr_config_read_ini(void)
 {
 	FILE *f = fopen("syncretro.ini", "r");
 
 	if (f != NULL) {
 		str_list_t ini = iniReadFile(f);
+		char       rotate[INI_MAX_VALUE_LEN];   /* iniGetString()'s contract, not ours */
 
 		fclose(f);
+		iniGetString(ini, "disc", "rotate", "", rotate);
+		snprintf(g_disc_rotate, sizeof g_disc_rotate, "%s", rotate);
 		g_audio_enabled   = iniGetBool(ini, "audio", "enabled", TRUE);
 		g_audio_quality   = iniGetFloat(ini, "audio", "quality",
 		                                TERMGFX_MUSIC_QUALITY_DEFAULT);
@@ -203,6 +272,7 @@ int sr_config_apply(void)
 
 		snprintf(romdir, sizeof romdir, "%s/%s", cwd, SR_ROM_SUBDIR);
 		sr_resolve_file(g_rom_path, sizeof g_rom_path, rom, dirs);
+		g_disc_is_rotate = sr_disc_matches(g_rom_path, g_disc_rotate);
 	}
 
 	/* --- 3. per-user sandbox: save states + SRAM ---------------------------
@@ -231,6 +301,11 @@ int sr_config_apply(void)
 	}
 
 	return rc;
+}
+
+int sr_config_disc_rotate(void)
+{
+	return g_disc_is_rotate;
 }
 
 const char *sr_config_launch_dir(void)
