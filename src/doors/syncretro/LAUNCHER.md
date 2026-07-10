@@ -1,6 +1,8 @@
 # SyncRetro launcher -- design
 
-Status: designed 2026-07-09, approved, **not implemented**.
+Status: implemented 2026-07-09. Discovery, the picker, the launch path and the
+activity board are built and tested; `lobby.js` is driven headless by
+`xtrn/syncivision/test_lobby_headless.js`. Not yet exercised by a live player.
 Scope: a JS lobby that discovers ROMs, lets the player pick one, launches the
 door, and keeps a play-activity board. Replaces the one-`xtrn.ini`-entry-per-game
 arrangement.
@@ -55,7 +57,8 @@ Not the multiplayer half. See §2.
 | `xtrn/syncivision/lobby.js` | the launcher; symlinked into the install like SyncDOOM's |
 | `xtrn/syncivision/syncivision_lib.js` | discovery, activity store, formatting -- **UI-free**, so it runs headless under `jsexec` and is testable |
 | `<data_dir>/syncretro/plays.jsonl` | one JSON object per completed play |
-| `xtrn/syncivision/tests/test_syncivision_lib.js` | `jsexec` tests, following `syncduke/tests/` |
+| `xtrn/syncivision/tests/test_syncivision_lib.js` | `jsexec` tests for every pure function |
+| `xtrn/syncivision/test_lobby_headless.js` | drives `lobby.js` with stubbed `console`/`bbs`/`user` |
 
 The lib/lobby split mirrors `syncduke_lib.js` / `lobby.js` exactly. Per the
 repo's directory rules, generated runtime state lives in `data_dir`, never in the
@@ -125,7 +128,8 @@ Rules, in order:
    game. Ties within a rank resolve to the lexicographically first name, so the
    list does not depend on directory order.
 
-   This *hides* files that exist on disk -- 12 of 221 on the reference set. That
+   This *hides* files that exist on disk -- 12 of 222 on the reference set,
+   leaving 210. That
    is the point: `[o1]` is padded garbage and `[b1]` is a known-bad rip, and this
    is a player's menu, not a curator's. The sysop's escape hatches are
    `[roms] exclude=` and deleting the file.
@@ -155,7 +159,7 @@ Most played:  1. Astrosmash (42)   2. Utopia (31)   3. Night Stalker (19)
   1 | Advanced D&D (1982)            18 | Las Vegas Poker (1979)
   2 | Armor Battle (1978)            19 | Lock 'N' Chase (1982)
  ...
-[1-207] play   [/] search   [N]ext  [P]rev   [Q]uit          page 1/6
+[1-210] play   [/] search   [N]ext  [P]rev   [Q]uit          page 1/7
 ```
 
 **Numbering is alphabetical and never moves.** Typing `47` always launches the
