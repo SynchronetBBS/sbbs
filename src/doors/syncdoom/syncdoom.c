@@ -191,8 +191,9 @@ static uint32_t now_ms(void);          // defined later (monotonic ms; only delt
 // the BBS data dir -- <SBBSDATA>/syncdoom/<name> (Synchronet exports SBBSDATA to
 // every door; mkpath creates it) -- alongside the audio cache, NOT in per-user
 // storage. A path WITH a separator is used verbatim (relative -> the -home CWD,
-// absolute -> as-is). No destination -> logging stays off (costs nothing by
-// default). Called lazily on the first dlog() so env/ini/arg are known.
+// absolute -> as-is). [debug] log defaults to "syncdoom.log", so logging is ON
+// unless the sysop blanks it. Called lazily on the first dlog() so env/ini/arg
+// are known.
 static void sd_log_open(void)
 {
 	const char *p;
@@ -2990,8 +2991,16 @@ static void read_syncdoom_ini(const char *argv0)
 	snprintf(g_door_dir, sizeof(g_door_dir), "%s", (base != dir) ? dir : "");  // for main()'s splash load
 
 	f = fopen(path, "r");
-	if (f == NULL)
-		return;                                     // no ini -> keep defaults
+	if (f == NULL) {
+		// No ini -> keep defaults, but the [debug] log default below never runs,
+		// and a stock install (no syncdoom.ini) is exactly the case that most
+		// needs a log: with the console hidden (XTRN_NODISPLAY) it would have no
+		// diagnostics sink at all. Apply it here too. The -log arg still wins (it
+		// is parsed before this, and leaves g_logpath non-empty).
+		if (g_logpath[0] == '\0')
+			snprintf(g_logpath, sizeof(g_logpath), "syncdoom.log");
+		return;
+	}
 	ini = iniReadFile(f);
 	fclose(f);
 
@@ -3124,8 +3133,21 @@ static void read_syncdoom_ini(const char *argv0)
 
 	// [debug] log -- durable file log dest (see sd_log_open). Captured here; the
 	// -log arg (parsed later) and SYNCDOOM_LOG env override it. Blank = off.
-	if (g_logpath[0] == '\0')
-		iniGetString(ini, "debug", "log", "", g_logpath);
+	//
+	// Defaults ON ("syncdoom.log" -> <SBBSDATA>/syncdoom/syncdoom_n<node>.log).
+	// The door's diagnostics otherwise exist ONLY on its local console, and on
+	// Windows a native socket door's stderr is not captured by the BBS at all
+	// (see syncdoom.example.ini) -- so with the console hidden (the door's
+	// XTRN_NODISPLAY setting, xtrn/syncdoom/install-xtrn.ini) a stock install
+	// had nowhere to record a hangup or a fatal. A blank `log =` opts out.
+	//
+	// iniGetString() returns its default for a blank value AND for a missing key
+	// alike (xpdev ini_file.c), so a non-empty default there would make `log =`
+	// impossible to honor. iniGetExistingString() returns NULL (leaving the buffer
+	// untouched) only when the key is truly absent, which is the one case that
+	// should get the default.
+	if (g_logpath[0] == '\0' && iniGetExistingString(ini, "debug", "log", "", g_logpath) == NULL)
+		snprintf(g_logpath, sizeof(g_logpath), "syncdoom.log");
 
 	// [wads] dir -- point Doom's IWAD search at the configured WAD directory so a
 	// bare "-iwad freedoom1.wad" (e.g. the direct-exec install) resolves there,

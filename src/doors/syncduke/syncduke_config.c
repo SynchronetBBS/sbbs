@@ -205,13 +205,35 @@ static void syncduke_config_init(int argc, char **argv)
 	}
 	snprintf(g_home_path, sizeof(g_home_path), "%s", home);
 	snprintf(g_eventlog_path, sizeof(g_eventlog_path), "%s", eventlog);
-	if ((f = fopen("syncduke.ini", "r")) != NULL) {
+	f = fopen("syncduke.ini", "r");
+	if (f == NULL) {
+		/* No syncduke.ini -> the [debug] log default below never runs, and a stock
+		 * install is exactly the case that most needs a log: with the console hidden
+		 * (XTRN_NODISPLAY) it would have no diagnostics sink at all. Seed the default
+		 * here; an ini present overrides it (including a blank `log =`, which
+		 * disables), and the -log arg -- parsed above -- wins over both. */
+		if (!logpath[0])
+			strncpy(logpath, "syncduke.log", sizeof(logpath) - 1);
+	}
+	if (f != NULL) {
 		str_list_t ini = iniReadFile(f);
 		fclose(f);
 		if (!dir[0])
 			iniGetString(ini, "grp", "dir", "", dir);
-		if (!logpath[0])
-			iniGetString(ini, "debug", "log", "", logpath);   /* blank => logging off */
+		/* Defaults ON ("syncduke.log" -> <SBBSDATA>/syncduke/syncduke_n<node>.log).
+		 * The door's diagnostics otherwise exist ONLY on its local console, and on
+		 * Windows a native socket door's stderr is not captured by the BBS at all --
+		 * so with the console hidden (the door's XTRN_NODISPLAY setting,
+		 * xtrn/syncduke/install-xtrn.ini) a stock install had nowhere to record a
+		 * hangup, clean exit, or crash. A blank `log =` opts out.
+		 *
+		 * iniGetString() returns its default for a blank value AND for a missing key
+		 * alike (xpdev ini_file.c), so a non-empty default there would make `log =`
+		 * impossible to honor. iniGetExistingString() returns NULL (leaving the
+		 * buffer untouched) only when the key is truly absent, which is the one case
+		 * that should get the default. */
+		if (!logpath[0] && iniGetExistingString(ini, "debug", "log", "", logpath) == NULL)
+			strncpy(logpath, "syncduke.log", sizeof(logpath) - 1);
 		syncduke_allow_record = iniGetBool(ini, "game", "record", FALSE);   /* demos off by default */
 		syncduke_play_attract = iniGetBool(ini, "game", "attract_demos", FALSE);   /* title attract demos off by default */
 		syncduke_scale_max = iniGetInteger(ini, "video", "scale_max", syncduke_scale_max);
@@ -258,7 +280,8 @@ static void syncduke_config_init(int argc, char **argv)
 	else if (syncduke_grpdir[0] && chdir(syncduke_grpdir) != 0)
 		fprintf(stderr, "syncduke: cannot chdir to GRP dir '%s'\n", syncduke_grpdir);
 
-	/* --- optional file debug log (off unless env SYNCDUKE_LOG / -log / [debug] log is set).
+	/* --- file debug log (ON by default: [debug] log = syncduke.log; blank disables it.
+	 * Env SYNCDUKE_LOG / the -log arg override).
 	 * Set the path + install the crash handler now, before the engine runs, so a fault or
 	 * hangup is recorded to a plain file (we get neither stderr capture nor WER dumps here).
 	 * Location: a BARE filename is placed in <SBBSDATA>/syncduke/ (the door's shared data
