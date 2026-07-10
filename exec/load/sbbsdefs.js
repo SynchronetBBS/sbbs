@@ -380,6 +380,10 @@ var XTRN_QUOTEWRAP	=(1<<21);	/* Word-wrap quoted message text			*/
 var XTRN_SAVECOLUMNS=(1<<22);	/* Save/share current terminal width to msg	*/
 var XTRN_UTF8		=(1<<23);	/* External program supports UTF-8			*/
 var XTRN_TEMP_DIR	=(1<<24);	/* Place drop files in temp dir				*/
+var XTRN_UART		=(1<<25);	/* Enable the virtual UART driver			*/
+var XTRN_FOSSIL		=(1<<26);	/* Enable the int14h/FOSSIL driver			*/
+var XTRN_NODISPLAY	=(1<<27);	/* Disable local screen/display				*/
+var XTRN_CONIO		=(1<<31);	/* Intercept Windows Console I/O (Drwy)		*/
 					    		/********************************************/
 
 								/********************************************/
