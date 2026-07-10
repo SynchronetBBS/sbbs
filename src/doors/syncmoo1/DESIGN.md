@@ -81,9 +81,18 @@ src/doors/syncmoo1/
   syncmoo1_config.c/.h  .ini parse, -home chdir, charset, MoO1 LBX data-file
                         path resolution
   syncmoo1_node.c/.h    sbbs_node who's-online / paging overlay (deferred > M1)
+  syncmoo1_plat.c/.h    THE platform seam: monotonic clock, sleep, non-blocking
+                        descriptor I/O, Winsock bring-up, console-less stderr
+                        capture -- all over xpdev. The only TU that includes
+                        <winsock2.h>/<windows.h>
+  syncmoo1_os_win32.c   1oom `os` backend for Windows (ours, not 1oom's --
+                        see PROVENANCE.md "Deliberate non-patches")
+  compat/               MSVC-only shims (strings.h, unistd.h, msvc_compat.h)
+                        that let the vendored 1oom tree compile unedited
   syncmoo1.h            single cross-module contract; each function carries a
                         provenance comment (which .c provides it, why)
-  CMakeLists.txt  build.sh  deploy.sh  .gitignore  CLAUDE.md  README.md  CREDITS
+  CMakeLists.txt  build.sh  deploy.sh  build.bat  deploy.bat
+  .gitignore  CLAUDE.md  README.md  CREDITS
   tests/                pure-function unit tests (keymap, mouse mapping)
 ```
 
@@ -162,9 +171,13 @@ motion should repaint; idle still de-dupes to zero).
   before 1oom's own parser sees them (hard-won lesson from syncduke). Whether
   the constructor dance is needed depends on how reachable/patchable 1oom's
   `main()` is — resolve in planning; the arg-sanitize lesson applies regardless.
-- **Socket:** non-blocking, `TCP_NODELAY`, small send buffer, `SIGPIPE`
-  ignored; plain fd on *nix, Winsock `SOCKET` on Windows. Same fd for output
-  and input. Falls back to stdio off a BBS for dev.
+- **Socket:** non-blocking, `TCP_NODELAY`, `SIGPIPE` ignored; plain fd on *nix,
+  Winsock `SOCKET` on Windows — the split is confined to `syncmoo1_plat.c`,
+  which builds on xpdev's `sockwrap.h` (it normalizes `WSAGetLastError()` onto
+  the POSIX `errno` values, so one test classifies a failed transfer on both).
+  Same descriptor for output and input. Off a BBS it falls back to stdout on
+  *nix; on Windows there is no such fallback (fd 1 is not a `SOCKET`), so a dev
+  run there uses `SYNCMOO1_SIXELOUT` capture mode.
 - **sbbs_node** (deferred past M1): who's-online (Ctrl-U), NODE_EXT status,
   inter-node paging (Ctrl-P), rendered as a cross-tier overlay from the
   main-loop tick — never from the input path.
@@ -204,7 +217,7 @@ menu / first screen as **sixel**; **navigable with keyboard + cell-mouse**;
 correct term enter/probe/leave and BBS-restoring teardown.
 
 **Deferred (M2+):** audio; JXL + text-tier polish; `sbbs_node` overlay
-(Ctrl-U/Ctrl-P); MSVC/Windows build + vcpkg; per-user save sandbox hardening;
+(Ctrl-U/Ctrl-P); per-user save sandbox hardening;
 full-game playtest and balance of mouse vs. keyboard across all MoO1 screens
 (esp. the dense galaxy map, where cell-resolution clicking is tightest until
 mode 1016).

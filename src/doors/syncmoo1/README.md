@@ -36,7 +36,7 @@ probes for it and links `libjxl`, but never encodes -- measured on real frames,
 lossless JXL is ~5x *larger* than sixel for MoO1's indexed pixel art, and only
 lossy JXL wins, at the cost of ringing the UI text); a text/block tier for
 terminals without sixel; the `sbbs_node` who's-online/paging overlay
-(Ctrl-U/Ctrl-P); an MSVC/Windows build + vcpkg; and a full-game playtest pass
+(Ctrl-U/Ctrl-P); and a full-game playtest pass
 across every MoO1 screen (especially the dense galaxy map, where
 cell-resolution clicking is tightest until SGR-Pixels mode 1016 lands on more
 terminals).
@@ -71,10 +71,22 @@ font strokes with them. Where the fitted image cannot afford the terminal's
 
 1oom is an **engine**, not game content: it requires the original **Master of
 Orion 1 v1.3** `.LBX` data files to run, and this door does not (and cannot)
-ship them. Master of Orion is © Simtex / MicroProse (see [CREDITS](CREDITS)),
-and it is still sold commercially (e.g. as *Master of Orion 1+2* on GOG), so
-sourcing a **legally-owned** copy of the data is the sysop's / player's
-responsibility, out of scope for this code (DESIGN.md §15).
+ship them. Master of Orion is © Simtex / MicroProse (see [CREDITS](CREDITS)), so
+**you must purchase a legal copy** and supply its data -- doing so is the
+sysop's / player's responsibility, out of scope for this code (DESIGN.md §15).
+The game is still sold, cheaply:
+
+- **[Master of Orion 1+2 on GOG](https://www.gog.com/en/game/master_of_orion_1_2)**
+  -- **recommended** (usually around US$6). It's **DRM-free**, so the installer
+  it downloads unpacks straight to the original DOS files -- point `getdata.js`
+  (below) at the installed/extracted folder and it lifts the `.lbx` files out.
+- **Steam** -- the classic games are not in the base *Master of Orion* (2016);
+  they ship only with its pricier
+  **[Collector's Edition](https://store.steampowered.com/app/298050/Master_of_Orion/)**,
+  and are DRM-wrapped, so GOG is the simpler source for the raw LBX data.
+
+Any legally-owned copy of the DOS **v1.3** data works -- a boxed original, an
+old CD, etc.; the storefronts above are just the easiest way to get it today.
 
 **Recommended: put your copy in the door directory.** The door searches its own
 launch directory -- the `xtrn/syncmoo1/` install dir -- for the LBX files, so
@@ -98,8 +110,9 @@ jsexec ../xtrn/syncmoo1/getdata.js
 **Alternatives.** 1oom's own `-data <dir>` option points the engine at any
 directory -- add it to the door's command line. For a dev/manual run where you
 control the shell, the `SYNCMOO1_LBX` environment variable does the same
-(`sm_config_apply()` resolves it once at startup, absolutized via `realpath()`
-before the per-user `chdir`). If none of these is set and the door dir has no
+(`sm_config_apply()` resolves it once at startup, absolutized via xpdev's
+`FULLPATH()` before the per-user `chdir`). If none of these is set and the door
+dir has no
 LBX, 1oom falls through to its own built-in search (cwd, XDG dirs,
 `/usr/share/1oom`, ...). Note `SYNCMOO1_LBX` is only convenient when you own the
 environment: Synchronet has no per-door environment setting in `xtrn.ini`, so on
@@ -130,13 +143,42 @@ door's live `xtrn` directory (see that script's own header for exactly where
 and how; it's a separate, explicit step on purpose, so a sysop can rebuild and
 test before pushing a new binary live).
 
+### Windows (MSVC)
+
+```
+build.bat            :: Win32 release -> build-msvc\Release\syncmoo1.exe
+build.bat clean      :: wipe the build tree first, then build
+deploy.bat           :: install the built exe into xtrn\syncmoo1\
+```
+
+Needs Visual Studio 2022 (`build.bat` finds the bundled CMake if none is on
+`PATH`). The JPEG-XL tier is picked up from a classic-mode vcpkg prefix at
+`C:\vcpkg\installed\x86-windows-static-md` when present -- install it with
+`vcpkg install libjxl:x86-windows-static-md`. Absent, the door still builds and
+serves the sixel tier. As on *nix, building does not deploy.
+
+**Win32 (x86) is the one supported Windows target.** A Win32 door runs on both
+a Win32 and a future Win64 Synchronet host -- the DOOR32.SYS comm handle is
+32-bit-significant and crosses the process-bitness boundary fine -- so one Win32
+binary covers every Windows BBS, present and future, and MoO1 through 1oom gains
+nothing from x64 anyway. The code is 64-bit-clean (1oom is; our glue is), so
+`cmake -A x64` still compiles, but no x64 binary is shipped or tested.
+
+### Notes
+
 The `CMakeLists.txt` enumerates 1oom's `game/`+`os/`+`ui/` sources (derived
 from the vendored `Makefile.am`) plus `hw_sbbs.c` and the `syncmoo1_*.c`
-glue, links the shared `../termgfx` library, and absorbs the vendored
-engine's legacy-code compiler warnings (`-w -fcommon`) rather than patching
-upstream -- see [CLAUDE.md](CLAUDE.md) for that policy. `libjxl` is an
-optional dependency (pkg-config / `find_library`, vcpkg on MSVC); its absence
-degrades to the sixel/text tiers, it does not fail the build.
+glue, links the shared `../termgfx` library and `xpdev`, and absorbs the
+vendored engine's legacy-code compiler warnings (`-w -fcommon`, `/w` on MSVC)
+rather than patching upstream -- see [CLAUDE.md](CLAUDE.md) for that policy,
+and [PROVENANCE.md](PROVENANCE.md) for the three Windows-only workarounds that
+keep `1oom/` unedited. `libjxl` is an optional dependency (pkg-config /
+`find_library`, vcpkg on MSVC); its absence degrades to the sixel/text tiers,
+it does not fail the build.
+
+All of the door's Windows-vs-POSIX difference lives in `syncmoo1_plat.c`
+(clock, sleep, non-blocking socket I/O, Winsock bring-up), implemented over
+xpdev, plus `syncmoo1_os_win32.c` (1oom's `os` backend for Windows).
 
 ---
 
@@ -230,6 +272,24 @@ file or key falls back to its default.
 instead of the usual `data/syncmoo1/...` location) for a one-off debug run
 without editing the ini; `SYNCMOO1_WIREDUMP=-` forces it off even if the ini
 enables it.
+
+---
+
+## Logging & diagnostics
+
+The door records diagnostics to two files, so nothing is lost even with the
+local console hidden (`XTRN_NODISPLAY`, which `install-xtrn.ini` sets -- see
+its comments):
+
+- **`<-home>/1oom_log.txt`** -- the **1oom engine's** own log (LBX search,
+  config load, the version banner, engine errors). Opened unconditionally by
+  the engine, in the per-user `-home` directory.
+- **`data/syncmoo1/syncmoo1_n<node>.log`** -- the **door's** own diagnostics
+  (client hangup reason, `-home`/session-setup failures, the time-limit exit).
+  Written only on Windows under a live BBS session, where a console-less
+  process would otherwise have nowhere to print them; on *nix these go to the
+  inherited stderr (the Synchronet terminal-server log) as usual. Truncated
+  per session, node-tagged so concurrent nodes don't collide.
 
 ---
 

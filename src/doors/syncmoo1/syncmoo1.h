@@ -282,7 +282,8 @@ void sm_door_hangup(const char *why);
 
 /* One-time setup:
  *   1. RESOLVE the shared, read-only MoO1 LBX data dir to an ABSOLUTE path
- *      (realpath()): the SYNCMOO1_LBX env var if it names one, else the
+ *      (isdir() + FULLPATH(), xpdev): the SYNCMOO1_LBX env var if it names
+ *      an existing directory, else the
  *      door's own launch directory (cwd, which for a native door is the
  *      program's SCFG start-up path when one is configured -- conventionally
  *      xtrn/syncmoo1, where a sysop drops the data -- and otherwise just the
@@ -296,7 +297,7 @@ void sm_door_hangup(const char *why);
  *      os_get_paths_data() (XDG dirs, /usr/share/1oom, ...).
  *   2. GUARANTEE: this door never writes anything under $HOME. If
  *      sm_door_home() (above) is non-NULL: mkpath() it (dirwrap.h; creates
- *      any missing path components), realpath()-absolutize it, and hand it
+ *      any missing path components), FULLPATH()-absolutize it, and hand it
  *      to 1oom via os_set_path_user() (os.h) -- which is what 1oom prefixes
  *      onto its config + save file paths (cfg.c's cfg_cfgname(),
  *      game/game_save.c's slot/year fname builders), an ABSOLUTE path, NOT a

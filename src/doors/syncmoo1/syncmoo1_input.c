@@ -33,15 +33,15 @@
  * malformed or lost grid reply can't misroute a later genuine pace-ack into
  * sm_io_set_grid() (which would corrupt the grid and leak an in-flight slot).
  *
- * POSIX only for now, matching syncmoo1_io.c's stated scope (no _WIN32
- * branch yet either): plain read()/non-blocking fd, no Winsock recv().
+ * Portable: the non-blocking read of the door descriptor -- read() on POSIX,
+ * Winsock recv() on Windows -- and the transient-vs-fatal classification of a
+ * failure both live behind syncmoo1_plat.h, as they do in syncmoo1_io.c.
  */
 #include "syncmoo1_input.h"
 
-#include <errno.h>
 #include <stdint.h>
-#include <time.h>
-#include <unistd.h>
+
+#include "syncmoo1_plat.h"   /* clock + non-blocking descriptor I/O */
 
 #include "kbd.h"    /* 1oom: mookey_t, kbd_add_keypress */
 #include "mouse.h"  /* 1oom: mouse_set_xy_from_hw/set_buttons_from_hw/set_scroll_from_hw, MOUSE_BUTTON_MASK_* */
@@ -67,12 +67,9 @@ static unsigned apc_len;           /* bytes swallowed in the current APC/string 
 #define SM_ESC_MS 50
 static uint32_t g_esc_at_ms;
 
-static uint32_t sm_in_now_ms(void)
-{
-    struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
-    return (uint32_t)((uint64_t)t.tv_sec * 1000ULL + (uint64_t)t.tv_nsec / 1000000ULL);
-}
+/* Monotonic millisecond clock (syncmoo1_plat.h, xpdev's xp_timer64) -- the same
+ * clock domain syncmoo1_io.c paces frames on. */
+#define sm_in_now_ms() sm_plat_now_ms()
 
 /* Parse up to `max` ';'-separated decimal params from csi_par; return the
  * count. A leading non-digit/non-';' marker byte (SGR mouse's '<', DA1's
@@ -270,11 +267,11 @@ static void sm_csi_final(char fin)
 int sm_input_pump(int sockfd)
 {
     uint8_t buf[256];
-    ssize_t n;
+    int     n;
     int     i;
 
     if (sockfd < 0)
-        return 0;
+        return 0;   /* no live source (a Windows dev run with no door socket) */
 
     /* Deliver a pending lone ESC once its follow-up window has elapsed, even
      * on a pump call that reads no new bytes -- the menu Escape key shouldn't
@@ -286,18 +283,18 @@ int sm_input_pump(int sockfd)
         pstate = SM_P_NORMAL;
     }
 
-    n = read(sockfd, buf, sizeof buf);
+    n = sm_plat_read(sockfd, buf, sizeof buf);
     if (n > 0) {
         sm_io_wiredump_in(buf, (size_t)n);   /* debug capture; no-op unless SYNCMOO1_WIREDUMP is set */
         {   /* Resolve the audio capability probe (SyncTERM replies with an
              * APC the manager parses); harmless for every other byte. */
             termgfx_audio_t *am = sm_io_audio();
             if (am != NULL)
-                termgfx_audio_feed(am, buf, (int)n);
+                termgfx_audio_feed(am, buf, n);
         }
     }
     if (n < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+        if (n == SM_IO_AGAIN || n == SM_IO_INTR)
             return 0;      /* no input yet / transient: not a hangup */
         return -1;         /* real read error: treat as hangup */
     }

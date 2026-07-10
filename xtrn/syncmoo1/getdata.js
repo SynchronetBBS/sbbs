@@ -268,9 +268,10 @@ function main()
 			print("No usable Master of Orion 1 data found (missing: " + need.join(" ") + ").");
 			print("");
 			print("Master of Orion is commercial content (c) Simtex / MicroProse and is");
-			print("NOT shipped with this door.  Supply your own legally-owned MoO1 v1.3");
-			print("copy (sold as \"Master of Orion 1+2\" on GOG, among others), then put");
-			print("ONE of these into the door directory:");
+			print("NOT shipped with this door.  Purchase a legally-owned MoO1 v1.3 copy --");
+			print("cheapest is \"Master of Orion 1+2\" on GOG (DRM-free, about US$6):");
+			print("    https://www.gog.com/en/game/master_of_orion_1_2");
+			print("then put ONE of these into the door directory:");
 			print("    " + dir);
 			print("  - the loose *.lbx files, or");
 			print("  - a .zip / archive that contains them, or");

@@ -5,9 +5,10 @@ style rules apply depends on which side of that line a file is on.
 
 ## Which files are ours vs. vendored
 
-**Ours:** `hw_sbbs.c`, `syncmoo1_*.c`/`.h`, `syncmoo1.h`, `tests/`, the build
-systems (`CMakeLists.txt`, `build.sh`, `deploy.sh`), and the `*.md` docs
-(`CLAUDE.md`, `README.md`, `DESIGN.md`, `PROVENANCE.md`).
+**Ours:** `hw_sbbs.c`, `syncmoo1_*.c`/`.h`, `syncmoo1.h`, `compat/`, `tests/`,
+the build systems (`CMakeLists.txt`, `build.sh`, `deploy.sh`, `build.bat`,
+`deploy.bat`), and the `*.md` docs (`CLAUDE.md`, `README.md`, `DESIGN.md`,
+`PROVENANCE.md`).
 
 **Vendored:** the entire `1oom/` subdirectory -- a frozen, unmodified snapshot
 of [fork1oom/1oom](https://sourcecraft.dev/fork1oom/1oom) (GitHub is a mirror;
@@ -21,6 +22,45 @@ per-user config, the future node overlay -- lives in **our** files:
 `hw_sbbs.c` (the 1oom `hw` backend) plus `syncmoo1_*.c`/`.h`. `1oom/` supplies
 only the game engine (`game/`, `os/`, `ui/`) via the pluggable `hw` backend
 seam it already has (peer of its own `hw/sdl`, `hw/alleg`, `hw/nop`).
+
+The same seam argument applies to 1oom's *other* pluggable backend directory,
+`os/`: on Windows we compile **our own** `syncmoo1_os_win32.c` instead of the
+vendored `1oom/src/os/win32/os.c`, because that file's `os_make_path()` omits
+the "directory already exists" guard its `os/unix` sibling has -- which breaks
+`cfg_save()` and, worse, game saving. Fixing it in our own backend keeps
+`1oom/` frozen. `*nix` still compiles 1oom's `os/unix/os.c` unchanged.
+
+## Prefer xpdev
+
+This door links **xpdev** (`src/xpdev`), so reach for it before hand-rolling
+platform portability -- the same directive as
+[../syncconquer/CLAUDE.md](../syncconquer/CLAUDE.md), and the practice
+SyncDuke/SyncDOOM follow:
+
+- **Sockets**: `sockwrap.h` -- it normalizes `WSAGetLastError()` into the POSIX
+  `errno` values, so one `EWOULDBLOCK`/`EINTR`/`ENOBUFS` test classifies a
+  failed `send()`/`recv()` on both platforms. No per-call `#ifdef _WIN32`.
+- **Time / sleep**: `genwrap.h`'s `xp_timer64()` (monotonic ms), `xp_timer()`,
+  `SLEEP()`.
+- **Strings**: `stricmp`/`strnicmp` (genwrap.h), not `_stricmp` vs `strcasecmp`.
+- **Files / dirs**: `dirwrap.h`'s `mkpath()`, `isdir()`, `FULLPATH()` (note its
+  `(target, path, size)` argument order -- the reverse of `realpath()`, which
+  MSVC does not have at all). Also `ini_file.h`, `safe_snprintf`.
+
+**All of the door's Windows-vs-POSIX difference is confined to
+`syncmoo1_plat.c`** (clock, sleep, non-blocking descriptor I/O, Winsock
+bring-up, SIGPIPE, console-less stderr capture) plus `syncmoo1_os_win32.c`. It
+is the only translation unit
+that includes `<winsock2.h>`/`<windows.h>` -- deliberately, since those macros
+mix badly with the vendored 1oom headers. Don't scatter `#ifdef _WIN32` back
+into `syncmoo1_io.c` / `_input.c` / `_door.c` / `hw_sbbs.c`; add to the
+`syncmoo1_plat.h` seam instead.
+
+`compat/` holds three MSVC-only shims, on the include path for MSVC alone, so
+that `1oom/` stays unedited: `strings.h` (the vendored `util.h` includes it),
+`unistd.h` (the vendored `game_save.c` includes it; our `syncmoo1_config.c`
+uses it for `getcwd`/`chdir`), and `msvc_compat.h`, force-included with `/FI`
+to define away the one GCC `__attribute__((noreturn))` in `1oom/src/log.h`.
 
 **The vendored `1oom/` tree is NEVER edited.** If the engine's own code needs
 to change to build or run under this door, that is a signal the door glue is

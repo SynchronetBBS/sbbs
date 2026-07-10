@@ -324,7 +324,7 @@ int sm_config_apply(void)
      *
      * Resolve-now, because both candidates below are relative to the launch
      * directory, and step 2's chdir is about to move cwd into the per-user
-     * sandbox: an absolute path (realpath()) keeps resolving afterwards.
+     * sandbox: an absolute path (FULLPATH()) keeps resolving afterwards.
      *
      * Apply-later, because os_set_path_data() called from here would not
      * survive main_1oom(): its options_parse_early() runs cfg_load(), whose
@@ -344,11 +344,19 @@ int sm_config_apply(void)
      * with the remembered cfg "data_path" demoted to what it always was: a
      * cache of a previous search, not a configuration input.
      *
-     * A SYNCMOO1_LBX that realpath() can't resolve (e.g. it doesn't exist) is
-     * reported and ignored, falling through to the launch-dir default. */
+     * A SYNCMOO1_LBX that doesn't name an existing directory is reported and
+     * ignored, falling through to the launch-dir default.
+     *
+     * isdir() + FULLPATH() (both xpdev) rather than POSIX realpath(), which
+     * MSVC does not have. realpath() rolled the existence check and the
+     * absolutize into one call; FULLPATH() canonicalizes lexically and does not
+     * touch the filesystem, so the isdir() guard is what preserves the
+     * "not found -- ignoring" behavior. It also tightens it: realpath()
+     * accepted a SYNCMOO1_LBX naming a regular FILE, which 1oom would then have
+     * searched as a data directory. */
     sm_lbx_dir[0] = '\0';
     if (lbx != NULL && lbx[0] != '\0') {
-        if (realpath(lbx, sm_lbx_dir) == NULL) {
+        if (!isdir(lbx) || FULLPATH(sm_lbx_dir, lbx, sizeof sm_lbx_dir) == NULL) {
             sm_lbx_dir[0] = '\0';
             fprintf(stderr, "syncmoo1: SYNCMOO1_LBX '%s' not found -- ignoring, "
                              "1oom will use its own default data-dir search\n", lbx);
@@ -399,8 +407,8 @@ int sm_config_apply(void)
      * fire.
      *
      * mkpath() FIRST (creates any missing components, e.g. a brand-new user's
-     * nested data/user/0042/moo1/), so realpath() below can resolve it to an
-     * absolute path -- the same absolutize-before-anything-moves discipline
+     * nested data/user/0042/moo1/), so FULLPATH() below has something to
+     * resolve against -- the same absolutize-before-anything-moves discipline
      * step 1 uses, and so the value stays valid past the chdir. The chdir is
      * kept too (harmless, and keeps any stray cwd-relative engine I/O inside
      * the sandbox), but os_set_path_user() is what does the real isolation. */
@@ -412,8 +420,15 @@ int sm_config_apply(void)
             rc = -1;   /* logged, not fatal -- see the doc comment in syncmoo1.h */
         }
         /* Absolutize for os_set_path_user() so the per-user config/save prefix
-         * can't be broken by the chdir below (or by a relative -home value). */
-        os_set_path_user(realpath(home, abs) != NULL ? abs : home);
+         * can't be broken by the chdir below (or by a relative -home value).
+         *
+         * xpdev's FULLPATH(), not POSIX realpath(): MSVC has no realpath, and
+         * this door already links xpdev. Note the argument order is _fullpath's
+         * (target, path, size), the reverse of realpath's. It canonicalizes
+         * lexically rather than resolving symlinks -- which is all that's
+         * wanted here (an absolute path that survives the chdir), and unlike
+         * realpath it doesn't fail when the directory couldn't be created. */
+        os_set_path_user(FULLPATH(abs, home, sizeof abs) != NULL ? abs : home);
         if (chdir(home) != 0) {
             fprintf(stderr, "syncmoo1: cannot enter per-user home '%s'\n", home);
             rc = -1;   /* logged, not fatal -- see the doc comment in syncmoo1.h */

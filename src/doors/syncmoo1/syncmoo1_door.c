@@ -13,8 +13,9 @@
  * DOOR32.SYS (the portable door interface, Synchronet's %f): line 1 = comm
  * type (2 = telnet/socket), line 2 = comm/socket handle, line 7 = user
  * alias, line 9 = minutes left. The handle is an inherited descriptor: a
- * plain fd on *nix (Windows/Winsock is out of M1 scope -- syncmoo1_io.c is
- * POSIX-only for the same reason, see its file header).
+ * plain fd on *nix, an inherited Winsock SOCKET on Windows. Both are carried
+ * as a decimal int and both are consumed through syncmoo1_plat.h, which is
+ * where the whole platform split lives.
  *
  * Call order, wired in hw_sbbs.c's main():
  *   1. sm_door_setup(argc, argv)     -- resolve socket/time/alias, configure
@@ -32,24 +33,25 @@
  */
 #include "syncmoo1_door.h"
 
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <unistd.h>
+#include <unistd.h>         /* _exit() -- on MSVC this is compat/unistd.h -> <process.h> */
 
-#include <netinet/in.h>   /* IPPROTO_TCP */
-#include <netinet/tcp.h>  /* TCP_NODELAY */
-#include <sys/socket.h>   /* setsockopt */
+#include "genwrap.h"        /* xpdev: stricmp() -- strcasecmp on POSIX, _stricmp on MSVC */
+#include "dirwrap.h"        /* xpdev: mkpath() -- recursive mkdir for the log dir */
+#include "sbbs_node.h"      /* termgfx: sbbs_my_node() -- node-tag the log file */
+#include "syncmoo1_plat.h"  /* the door's platform seam: clock, socket setup, write */
 
 #define SM_DOOR_ALIAS_MAX 64
 #define SM_DOOR_HOME_MAX  4096  /* generous fixed buffer for a path; longer
                                  * values are silently truncated (mirrors
                                  * g_alias/SM_DOOR_ALIAS_MAX above) */
+
+#ifndef SM_DOOR_PATH_MAX
+#define SM_DOOR_PATH_MAX  4096
+#endif
 
 static int      g_socket = -1;         /* resolved comm descriptor, or -1 (none) */
 static uint32_t g_time_limit_ms;       /* 0 = no session time limit */
@@ -59,15 +61,10 @@ static char     g_alias[SM_DOOR_ALIAS_MAX];
 static int      g_alias_authoritative;   /* set only by read_door32(): the BBS named the user */
 static char     g_home[SM_DOOR_HOME_MAX];  /* "" = no -home given */
 
-/* Monotonic millisecond clock -- mirrors syncmoo1_io.c's sm_io_now_ms(), used
- * here only for the session deadline so a wall-clock step (NTP, DST) can't
- * mistime it. */
-static uint32_t sm_door_now_ms(void)
-{
-    struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
-    return (uint32_t)((uint64_t)t.tv_sec * 1000ULL + (uint64_t)t.tv_nsec / 1000000ULL);
-}
+/* Monotonic millisecond clock (syncmoo1_plat.h, xpdev's xp_timer64), used here
+ * only for the session deadline so a wall-clock step (NTP, DST) can't mistime
+ * it. */
+#define sm_door_now_ms() sm_plat_now_ms()
 
 /*
  * The single, canonical hangup path for the whole door (DESIGN.md §8 lists
@@ -113,7 +110,7 @@ static int is_door32_path(const char *s)
     const char *b = s + strlen(s);
     while (b > s && b[-1] != '/' && b[-1] != '\\')
         b--;
-    return strcasecmp(b, "door32.sys") == 0;
+    return stricmp(b, "door32.sys") == 0;
 }
 
 /* True iff s is non-empty and every character is an ASCII digit. */
@@ -225,26 +222,16 @@ static void sm_door_resolve(int argc, char **argv)
         g_socket = atoi(s);   /* dev fallback: no DOOR32.SYS/-s<fd> on the cmdline */
 }
 
-/* Non-blocking + TCP_NODELAY + SIGPIPE-ignore (DESIGN.md §8). SIGPIPE is
- * ignored unconditionally (a write to a closed socket should return EPIPE,
- * not kill the process, even in the dev/tty fd-1 fallback); the socket-only
- * options are skipped when nothing resolved. Both are best-effort: a
- * setsockopt()/fcntl() failure (e.g. TCP_NODELAY on a non-socket -s<fd>, or
- * a unix-domain test fd) is silently ignored rather than treated as fatal --
- * matching the general "the door degrades, it doesn't abort" posture here. */
+/* Non-blocking + TCP_NODELAY (DESIGN.md §8), via syncmoo1_plat.h. Best-effort:
+ * a failure (e.g. TCP_NODELAY on a non-socket -s<fd>, or a unix-domain test fd)
+ * is silently ignored rather than treated as fatal -- matching the general "the
+ * door degrades, it doesn't abort" posture here. The SIGPIPE-ignore that used
+ * to live here moved into sm_plat_net_init(), which sm_door_setup() calls
+ * unconditionally: it must apply even when nothing resolved a socket. */
 static void sm_door_configure_socket(int fd)
 {
-    signal(SIGPIPE, SIG_IGN);
-    if (fd >= 0) {
-        int fl = fcntl(fd, F_GETFL, 0);
-        if (fl != -1)
-            fcntl(fd, F_SETFL, fl | O_NONBLOCK);
-
-        {
-            int one = 1;
-            (void)setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
-        }
-    }
+    if (fd >= 0)
+        (void)sm_plat_sock_setup(fd);
 }
 
 /* Paint an immediate "loading" banner to the client the instant the door
@@ -253,16 +240,23 @@ static void sm_door_configure_socket(int fd)
  * door launched (mirrors syncduke_door_splash()'s rationale exactly). Writes
  * directly to `fd` -- syncmoo1_io.c's out-buffer/sixel layer isn't up yet
  * this early (sm_io_init() runs strictly after sm_door_setup() in main()).
- * `fd` is the resolved door socket, or fd 1 (stdout) in dev/tty use when
- * nothing resolved -- same fallback sm_io_init() uses, so a dev run without
- * a socket still sees the banner on its terminal. */
+ *
+ * `fd` is the resolved door socket. On POSIX an unresolved one falls back to
+ * fd 1 (stdout), so a dev run on a tty still sees the banner -- the same
+ * fallback sm_io_init() uses. On Windows there is no such fallback: the door's
+ * descriptor is a Winsock SOCKET and fd 1 is not one, so with nothing resolved
+ * there is simply nothing to paint to this early (a dev run there uses
+ * SYNCMOO1_SIXELOUT capture mode instead). */
 static void sm_door_splash(int fd)
 {
     static const char banner[] =
         "\x1b[2J\x1b[H\x1b[?25l"                          /* clear, home, hide cursor */
         "\x1b[12;28HLoading Master of Orion...";           /* ~centered on an 80-col screen */
 
-    (void)write(fd, banner, sizeof(banner) - 1);
+    if (fd < 0)
+        fd = sm_plat_fallback_fd();
+    if (fd >= 0)
+        (void)sm_plat_write(fd, banner, sizeof(banner) - 1);
 }
 
 /* True if `a` is one of the help-request forms. */
@@ -295,6 +289,65 @@ static void sm_door_usage(const char *argv0)
     fflush(stdout);   /* main() returns after this -- flush since we don't _exit() */
 }
 
+/*
+ * Capture the door's own stderr diagnostics -- the hangup reason, -home setup
+ * failures, the time-limit exit -- to a durable file, so they survive a
+ * console-less launch. This is the door-layer half of the diagnostics story;
+ * 1oom's ENGINE messages (LBX-not-found, cfg errors) are already captured
+ * separately, in <userpath>/1oom_log.txt, which options_parse_early() opens
+ * unconditionally.
+ *
+ * Only meaningful on Windows, and only under a real BBS session (a door
+ * socket): Synchronet spawns a native door with XTRN_NODISPLAY set using
+ * CREATE_NO_WINDOW, and a console-less process's stderr is dead -- so without
+ * this, hiding the console (install-xtrn.ini's XTRN_NODISPLAY) would silently
+ * lose exactly these messages, the trap src/doors/syncdoom & syncduke's
+ * install-xtrn.ini call out. sm_plat_redirect_stderr() is a no-op on POSIX
+ * (where an inherited stderr already reaches the server log) and when there is
+ * no socket (a dev/tty run, where the console is real and wanted).
+ *
+ * Path (mirrors the wire dump in syncmoo1_io.c, and the sibling doors'
+ * data/<door>/<door>_n<node>.log convention -- generated runtime data belongs
+ * in data/, node-tagged so concurrent nodes don't clobber each other):
+ *     $SBBSDATA/syncmoo1/syncmoo1_n<node>.log
+ * $SBBSDATA and $SBBSNNUM (read by sbbs_my_node) are both set by a native
+ * door's launch (xtrn.cpp), so a BBS session always resolves this. With no
+ * $SBBSDATA (an odd config) it degrades to a bare relative name; truncated per
+ * session ("w"), like the wire dump, so the file is always the run you just
+ * had.
+ */
+static void sm_door_capture_diagnostics(void)
+{
+    const char *data = getenv("SBBSDATA");
+    char        path[SM_DOOR_PATH_MAX];
+    int         node = sbbs_my_node();
+
+    if (g_socket < 0)
+        return;   /* no BBS session (dev/tty run): keep stderr where it is */
+    if (!sm_plat_captures_stderr())
+        return;   /* POSIX: stderr is already durable; don't even make the dir */
+
+    if (data != NULL && data[0] != '\0') {
+        size_t dl = strlen(data);
+        char   dir[SM_DOOR_PATH_MAX];
+
+        snprintf(dir, sizeof dir, "%s%ssyncmoo1", data,
+                 (dl && (data[dl - 1] == '/' || data[dl - 1] == '\\')) ? "" : "/");
+        mkpath(dir);                             /* xpdev: recursive mkdir */
+        if (node > 0)
+            snprintf(path, sizeof path, "%s/syncmoo1_n%d.log", dir, node);
+        else
+            snprintf(path, sizeof path, "%s/syncmoo1.log", dir);
+    } else {
+        snprintf(path, sizeof path, "syncmoo1.log");
+    }
+
+    /* Best-effort: a failure leaves stderr as-is (dead on a console-less
+     * Windows launch, but no worse than not trying) -- never a reason to fail
+     * a player's session. */
+    (void)sm_plat_redirect_stderr(path);
+}
+
 int sm_door_setup(int argc, char **argv)
 {
     int i, fd;
@@ -309,11 +362,23 @@ int sm_door_setup(int argc, char **argv)
         }
     }
 
+    /* Before ANY socket call (Winsock's WSAStartup; SIGPIPE off on POSIX). The
+     * first thing to touch the socket is sm_door_configure_socket() below, but
+     * this is deliberately unconditional and this early: a door that reaches
+     * its first send()/recv() with Winsock uninitialized fails with
+     * WSANOTINITIALISED, which the input pump reads as a client hangup. */
+    sm_plat_net_init();
+
     sm_door_resolve(argc, argv);
+
+    /* Right after resolve (g_socket is now known) and before the first
+     * fprintf(stderr) the rest of setup could produce, so nothing is lost on a
+     * console-less Windows launch. */
+    sm_door_capture_diagnostics();
 
     fd = g_socket;
     sm_door_configure_socket(fd);            /* no-op on the socket options if fd < 0 */
-    sm_door_splash(fd >= 0 ? fd : 1);         /* fd 1 (stdout): dev/tty fallback */
+    sm_door_splash(fd);                       /* falls back to the tty on POSIX */
 
     if (g_time_limit_ms > 0) {
         g_deadline_ms = sm_door_now_ms() + g_time_limit_ms;

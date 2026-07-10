@@ -36,8 +36,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
-#include <unistd.h>
 
 #include "hw.h"
 #include "cfg.h"
@@ -53,6 +51,7 @@
 #include "syncmoo1_door.h"
 #include "syncmoo1_input.h"
 #include "syncmoo1_music.h"
+#include "syncmoo1_plat.h"
 
 /* -------------------------------------------------------------------------- */
 
@@ -191,11 +190,13 @@ void hw_log_error(const char *msg)
     fputs(msg, stderr);
 }
 
+/* Monotonic, not wall-clock: 1oom only ever DIFFERENCES this (ui/classic's
+ * uidelay.c and uiclassic.c), plus one use as an RNG seed (rnd.c), so a
+ * since-boot origin is right and an NTP/DST step can't perturb the engine's
+ * frame timing the way the gettimeofday() this replaced could. */
 int64_t hw_get_time_us(void)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (int64_t)tv.tv_usec + 1000000ll * (int64_t)tv.tv_sec;
+    return sm_plat_now_us();
 }
 
 /* -------------------------------------------------------------------------- */

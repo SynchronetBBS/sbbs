@@ -23,29 +23,26 @@
  *                             ImageMagick decode of the file needs no
  *                             carried-over terminal register state). For
  *                             offline verification with no live socket.
- *   (else)                    the sockfd sm_io_init() was given (or fd 1,
- *                             stdout, if it was < 0 -- dev/tty use), written
- *                             non-blocking.
+ *   (else)                    the sockfd sm_io_init() was given, written
+ *                             non-blocking. When none resolved, POSIX falls
+ *                             back to fd 1 (stdout, dev/tty use) and Windows
+ *                             has no live sink at all -- see
+ *                             sm_plat_fallback_fd().
  *
- * POSIX only for now: this door's Windows/MSVC build is DESIGN.md's M2+
- * ("Deferred" milestones), and hw_sbbs.c (the 1oom hw backend this module
- * plugs into) has no _WIN32 branches yet either -- matching that scope
- * rather than adding untested Windows plumbing ahead of it.
+ * Portable: every Windows-vs-POSIX difference this module once carried (the
+ * write() call, O_NONBLOCK, SIGPIPE, the monotonic clock, the sleep) now lives
+ * behind syncmoo1_plat.h, which implements them over xpdev.
  */
 #include "syncmoo1_io.h"
 
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <unistd.h>
 #include <limits.h>
 
 #include "dirwrap.h"   /* xpdev: mkpath() -- recursive mkdir for the capture dir */
+#include "syncmoo1_plat.h"   /* clock, sleep, non-blocking descriptor I/O */
 
 #include "sixel.h"      /* termgfx: sixel_encode_aspect */
 #include "term.h"       /* termgfx: termgfx_term_enter/probe/leave */
@@ -103,9 +100,12 @@ static size_t      g_out_len, g_out_cap, g_out_off;
 static int         g_inited;
 static int         g_file_mode;    /* SYNCMOO1_SIXELOUT capture mode */
 static const char *g_file;
-static int         g_fd = -1;      /* socket / stdout fd */
+static int         g_fd = -1;      /* socket / stdout fd; < 0 = no live sink */
 
-static uint32_t sm_io_now_ms(void);   /* defined below; used by the wire dump */
+/* Monotonic millisecond clock (syncmoo1_plat.h, xpdev's xp_timer64). The
+ * bounded blocking exit-drain, Task 9's DSR-ACK pace timing (deadline reclaim,
+ * RTT sampling) and the wire dump all share this one clock domain. */
+#define sm_io_now_ms() sm_plat_now_ms()
 
 /* --- wire dump (debug aid, off by default) --------------------------------
  * Records BOTH directions of the terminal conversation, in the order the door
@@ -150,7 +150,7 @@ static uint32_t sm_io_now_ms(void);   /* defined below; used by the wire dump */
  * behavior: sm_io_wiredump() only observes (verified: a captured session emits
  * byte-for-byte the same stream as an uncaptured one).
  *
- * ONE GAP, on purpose: the pre-connect splash is a direct write() in
+ * ONE GAP, on purpose: the pre-connect splash is a direct sm_plat_write() in
  * sm_door_setup() (syncmoo1_door.c), which runs before sm_io_init() opens this
  * file, so those ~39 bytes are not in the capture. Everything from
  * termgfx_term_enter onward is.
@@ -279,15 +279,23 @@ int sm_io_out_flush(void)
         return 0;
     }
 
+    if (g_fd < 0) {
+        /* No live sink (a Windows dev run with no door socket, and not in
+         * SYNCMOO1_SIXELOUT capture mode): discard rather than hang up -- there
+         * was never a client to lose. */
+        g_out_len = g_out_off = 0;
+        return 0;
+    }
+
     while (g_out_off < g_out_len) {
-        ssize_t n = write(g_fd, g_out + g_out_off, g_out_len - g_out_off);
+        int n = sm_plat_write(g_fd, g_out + g_out_off, g_out_len - g_out_off);
         if (n > 0) {
             g_out_off += (size_t)n;
             continue;
         }
-        if (n < 0 && errno == EINTR)
+        if (n == SM_IO_INTR)
             continue;
-        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        if (n == SM_IO_AGAIN)
             break;      /* slow client: keep the remainder pending, not an error */
         sm_door_hangup("write error");   /* the single canonical hangup path */
         break;
@@ -297,23 +305,7 @@ int sm_io_out_flush(void)
     return 0;
 }
 
-/* Monotonic millisecond clock: the bounded blocking exit-drain (below) and
- * Task 9's DSR-ACK pace timing (deadline reclaim, RTT sampling) both use
- * this single clock domain. */
-static uint32_t sm_io_now_ms(void)
-{
-    struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
-    return (uint32_t)((uint64_t)t.tv_sec * 1000ULL + (uint64_t)t.tv_nsec / 1000000ULL);
-}
-
-static void sm_io_sleep_ms(int ms)
-{
-    struct timespec t;
-    t.tv_sec  = ms / 1000;
-    t.tv_nsec = (long)(ms % 1000) * 1000000L;
-    nanosleep(&t, NULL);
-}
+#define sm_io_sleep_ms(ms) sm_plat_sleep_ms(ms)
 
 /* Retry sm_io_out_flush() until the staged buffer is fully sent or
  * `timeout_ms` elapses. The fd is non-blocking, so a single flush call only
@@ -639,9 +631,14 @@ int sm_io_init(int sockfd)
     if (g_inited)
         return 0;
     g_inited = 1;
-    g_fd = (sockfd >= 0) ? sockfd : 1;   /* fall back to stdout (dev/tty use) */
+    /* Windows has no stdout fallback (fd 1 is not a Winsock SOCKET), so an
+     * unresolved socket leaves g_fd < 0 = "no live sink". */
+    g_fd = (sockfd >= 0) ? sockfd : sm_plat_fallback_fd();
 
-    signal(SIGPIPE, SIG_IGN);   /* a write to a closed socket returns EPIPE, not a fatal signal */
+    /* Idempotent, and normally already done by sm_door_setup(): Winsock up,
+     * SIGPIPE off. Repeated here because sm_out_put() lazily self-inits this
+     * module, so a future caller could reach the socket through here first. */
+    sm_plat_net_init();
 
     /* Opened before anything is emitted, so the very first bytes (term_enter,
      * the capability probes) land in the capture too. */
@@ -651,9 +648,8 @@ int sm_io_init(int sockfd)
         g_file = s;
         g_file_mode = 1;
     } else {
-        int fl = fcntl(g_fd, F_GETFL, 0);   /* non-blocking: a wedged client never stalls the game */
-        if (fl != -1)
-            fcntl(g_fd, F_SETFL, fl | O_NONBLOCK);
+        /* non-blocking: a wedged client never stalls the game loop */
+        (void)sm_plat_sock_setup(g_fd);
     }
 
     sm_io_ensure_geom();

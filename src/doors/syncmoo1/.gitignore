@@ -1,4 +1,8 @@
 /build/
+/build-msvc/
 /syncmoo1
+/syncmoo1.map
 *.o
 __pycache__/
+# 1oom writes its log into the working directory
+1oom_log.txt

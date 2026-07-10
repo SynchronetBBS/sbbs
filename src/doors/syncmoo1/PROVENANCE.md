@@ -67,6 +67,51 @@ system is not used by this project; the real build is a door-owned
 CMake build (a later task) that reproduces the feature defines these two
 frozen headers capture as static, checked-in config.
 
+## Deliberate non-patches
+
+Adding the Windows/MSVC build surfaced three things that would each be a
+one-line fix *inside* `1oom/`. All three are worked around in door-owned code
+or build flags instead, so the vendored tree stays byte-identical to upstream.
+Recorded here so a future re-vendor does not "fix" them by patching upstream.
+
+1. **`src/os/win32/os.c` is not compiled at all.** Its `os_make_path()` calls
+   `mkdir(path)` with no "already exists" guard — unlike the `os/unix` sibling,
+   which guards with `access(path, F_OK)`. So it reports failure for any
+   directory that already exists, and every caller that asks it to ensure a path
+   bails: `cfg.c:219,241` (`cfg_save`/`cfg_clear` — settings never persist) and
+   `game/game_save.c:882,1064,1086` (**saving a game fails**). Its `mkdir` is
+   also single-level, so a fresh per-user sandbox several components deep could
+   never be created. Windows instead compiles our own
+   [`syncmoo1_os_win32.c`](syncmoo1_os_win32.c) against the same `os.h`
+   contract — 1oom's `os/` is a pluggable backend directory, exactly like the
+   `hw/` one `hw_sbbs.c` plugs into. The vendored `os/win32/osdefs.h` (the
+   `FSDEV_*` separator macros) *is* still used, via the include path.
+   This is an upstream bug and belongs upstream.
+
+   (Incidentally, that file would not compile under MSVC either: it calls the
+   POSIX-named `mkdir()` while including only `<io.h>`, which does not declare
+   it — MSVC puts it in `<direct.h>`. Upstream builds this file with MinGW,
+   whose `<io.h>` does.)
+
+2. **`src/log.h:14`** declares `log_fatal_and_die()` with GCC's
+   `__attribute__((noreturn))`, which MSVC cannot parse — a hard error in every
+   TU that includes it, i.e. most of the engine. `compat/msvc_compat.h` is
+   force-included (`/FI`) into the `syncmoo1` target to define the attribute
+   away. It cannot be a plain `/D`: MSVC's command-line `/D` silently ignores
+   function-like macro definitions.
+
+3. **`src/util.h` includes `<strings.h>`** and **`src/game/game_save.c`
+   includes `<unistd.h>`**, neither of which MSVC ships. `compat/strings.h` and
+   `compat/unistd.h` satisfy them as thin shims onto `<string.h>` /
+   `<io.h>`+`<direct.h>`, on the include path for MSVC only.
+
+The frozen `config.h` needs **no** Windows variant, despite being generated on a
+POSIX host. Of everything it defines, only `HAVE_STRCASECMP` is read by a TU the
+door compiles (`util.h`/`util.c`, which then skip their own fallback
+`strcasecmp` — supplied instead by `compat/strings.h`). `IS_WINDOWS` is read
+only by `hw/sdl`, `IS_MSDOS` only by `hw/nop`, and neither backend is built
+here. `WORDS_BIGENDIAN` correctly stays undefined on x86/x64.
+
 ## Updating
 
 Re-vendor by cloning a fresh upstream commit, stripping `.git`, and
