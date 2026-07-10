@@ -21,7 +21,11 @@ public:
     {
 #ifndef REMASTER_BUILD
 #ifdef _WIN32
-#ifdef _UNICODE
+        // SYNCALERT_KEEP_CRT_ARGV: the SyncConquer door rewrites argv in a pre-main
+        // constructor (neutering its own -s<fd>/-home/drop-file tokens, forcing
+        // -NOMOVIES). Re-deriving ArgV from GetCommandLineW() here would discard
+        // those edits, so the door keeps the CRT's argv. See ../../PROVENANCE.md.
+#if defined(_UNICODE) && !defined(SYNCALERT_KEEP_CRT_ARGV)
         ArgV = CommandLineToArgvU(GetCommandLineW(), &ArgC);
 #endif
 #endif

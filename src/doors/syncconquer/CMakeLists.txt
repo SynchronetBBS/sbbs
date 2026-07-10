@@ -120,6 +120,28 @@ target_sources(VanillaRA PRIVATE
 target_include_directories(VanillaRA PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/door)
 target_link_libraries(VanillaRA termgfx)
 
+# Windows: keep the argv our pre-main constructor rewrote.
+#
+# door_io.c's constructor neuters the door's own tokens out of argv (-s<fd>,
+# -home <dir>, the DOOR32.SYS drop-file path -- Parse_Command_Line() strstr()s
+# every token, so an unsanitized path can mis-set an engine option) and forces
+# -NOMOVIES into a freed slot. On *nix the engine's main() hands that argv
+# straight to Parse_Command_Line() and it all works. On Windows it does NOT:
+# redalert/startup.cpp's `UtfArgs args(argc, argv)` REPLACES ArgV with a fresh
+# parse of GetCommandLineW(), silently throwing our edits away -- so the engine
+# saw the raw command line, movies were never suppressed (FMV played, with the
+# music channel but no dialog audio, since vqaaudio_null.cpp stubs the VQA
+# player's audio hooks), and the door's own flags reached the engine's parser.
+#
+# The vendored utfargs.h is patched to honor this define (PROVENANCE.md), which
+# is scoped to VanillaRA -- startup.cpp is its only includer. UNICODE/_UNICODE
+# stay defined, so common/'s UTF-8 path handling (utf.h's TCHARToUTF8,
+# paths_win.cpp, rawfile.cpp) is unaffected; only the argv re-derivation is
+# skipped. Engine argv is then the CRT's, exactly as on *nix.
+if(WIN32)
+    target_compile_definitions(VanillaRA PRIVATE SYNCALERT_KEEP_CRT_ARGV)
+endif()
+
 # ---------------------------------------------------------------------------
 # JPEG XL -- the APC/SyncTERM graphics tier (shared with SyncDuke/SyncDOOM via
 # termgfx). Optional: without it door_io.c's JXL path is #ifdef WITH_JXL

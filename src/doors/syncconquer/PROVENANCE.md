@@ -216,6 +216,43 @@ inline in `CMakeLists.txt`).
    only guard against overrunning its own `char[MAX_LINE_LENGTH]` is an
    `assert()` that compiles out in Release.
 
+10. `common/utfargs.h`: `UtfArgs`'s Windows constructor no longer replaces
+    `ArgV` with a fresh `CommandLineToArgvU(GetCommandLineW(), &ArgC)` parse
+    when `SYNCALERT_KEEP_CRT_ARGV` is defined (our `CMakeLists.txt` defines it
+    for the `VanillaRA` target, whose `redalert/startup.cpp` is the header's
+    only includer). `door_io.c`'s pre-main constructor rewrites argv in place
+    -- neutering the door's own `-s<fd>` / `-home <dir>` / DOOR32.SYS drop-file
+    tokens and forcing `-NOMOVIES` into a freed slot -- and upstream's
+    re-derivation from the raw process command line silently discarded every
+    one of those edits. Windows-only, and invisible until the door was first
+    built for Windows: on *nix `main()` passes the CRT's argv straight through.
+    Symptoms it caused: movies were never suppressed (the intro and mission
+    FMV played, with music but no dialog audio, because `vqaaudio_null.cpp`
+    stubs the VQA player's audio hooks -- see this project's `CMakeLists.txt`),
+    and the door's own flags reached `Parse_Command_Line()`, whose `strstr()`
+    substring scan over every token can mis-set an engine option from an
+    unrelated path. `UNICODE`/`_UNICODE` stay defined, so `utf.h`'s
+    `TCHARToUTF8` and `common/`'s UTF-8 path handling (`paths_win.cpp`,
+    `rawfile.cpp`) are untouched; only the argv re-derivation is skipped, and
+    the engine then sees the CRT's argv exactly as it does on *nix.
+
+11. `redalert/startup.cpp`: the two `ReadyToQuit` spin-waits (`main()`'s
+    `while (ReadyToQuit == 1)` on a clean exit, and `Emergency_Exit()`'s
+    `while (ReadyToQuit == 3)` before its `exit(code)`) are now additionally
+    gated on `!defined(NEW_VIDEO_BUILD)`. Both post `WM_DESTROY` to
+    `MainWindow` and then spin calling `Keyboard->Check()` until
+    `winstub.cpp`'s `Windows_Procedure()` advances `ReadyToQuit`. The headless
+    door has no Win32 window (`MainWindow` is NULL) and no message pump, so
+    nothing ever advances it: "Exit Game" hung forever, burning CPU in
+    `Keyboard->Check()` -> `door_io_pump()` -> a non-blocking `recv()`, with
+    the door process alive, the terminal still looping its music, and no
+    further frames drawn. Windows-only, and upstream never compiles it: its
+    Windows build always defines `SDL_BUILD`. `NEW_VIDEO_BUILD` is the right
+    guard -- upstream sets it for exactly the backends (SDL1/SDL2) that have no
+    legacy WndProc, so this is a no-op for every upstream configuration. The
+    `ReadyToQuit = 1` store and the `PostMessage()` are left alone (a post to a
+    NULL window is harmless with no pump).
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

@@ -300,6 +300,28 @@ static int door_realpath(const char *in, char *out, size_t outsz)
 	return 1;
 }
 
+/* On Windows the DOOR32.SYS handle is a Winsock SOCKET, and Winsock must be
+ * initialized per-process before ANY send()/recv() on it -- an uninitialized
+ * process gets WSANOTINITIALISED (10093) on the first call, which the pump
+ * reads as a client hangup and exits, dumping the caller straight back to the
+ * BBS. xpdev's sockwrap doesn't self-init Winsock (see syncdoom.c), so bring
+ * it up ourselves, once, from the pre-main constructor -- before door_io_init()
+ * and before the engine's main(). Idempotent: safe to call from both
+ * door_early_setup() and door_early_write(). No WSACleanup(); the door owns
+ * Winsock for its whole lifetime and process exit releases it. */
+static void door_wsa_ensure(void)
+{
+#ifdef _WIN32
+	static int done;
+	WSADATA    wsa;
+
+	if (done || g_cli_sock < 0)
+		return;
+	if (WSAStartup(MAKEWORD(2, 2), &wsa) == 0)
+		done = 1;
+#endif
+}
+
 /* Raw write straight to the client fd/socket, no staging buffer -- used only
  * this early (pre-main constructor), before door_io_init() has resolved
  * g_fd/g_iosock or allocated the g_out staging buffer. Mirrors syncduke_
@@ -311,8 +333,7 @@ static void door_early_write(const char *s)
 	size_t len = strlen(s);
 #ifdef _WIN32
 	if (g_cli_sock >= 0) {
-		WSADATA wsa;
-		WSAStartup(MAKEWORD(2, 2), &wsa);
+		door_wsa_ensure();
 		(void)send((SOCKET)g_cli_sock, s, (int)len, 0);
 		return;
 	}
@@ -636,12 +657,83 @@ static void door_open_node_log(void)
 		snprintf(logpath, sizeof logpath, "%s/syncalert.log", logdir);
 	if (freopen(logpath, "a", stderr) == NULL)
 		return;                             /* best-effort: stderr stays wherever it already was */
-	setvbuf(stderr, NULL, _IOLBF, 0);        /* line-buffered -- a crash/hangup still leaves the tail on disk */
+	/* A crash/hangup must still leave the tail on disk, so don't let the freopen'd
+	 * stderr sit fully buffered. syncduke_config.c hit this too: MSVC's CRT rejects
+	 * setvbuf(_IOLBF) with size 0 (it requires size >= 2 for line/full buffering)
+	 * and fast-fails on the invalid parameter (c0000409), where glibc just ignores
+	 * the size. Unbuffered is valid with size 0 and flushes every write -- the same
+	 * goal. (MSVC would also silently downgrade _IOLBF to _IOFBF, which is exactly
+	 * the buffering we're trying to avoid.) */
+#ifdef _WIN32
+	setvbuf(stderr, NULL, _IONBF, 0);
+#else
+	setvbuf(stderr, NULL, _IOLBF, 0);        /* line-buffered -- lines flush promptly */
+#endif
+}
+
+/* Close the door's own console window (Windows).
+ *
+ * Synchronet spawns a native door with CREATE_NEW_CONSOLE (sbbs3/xtrn.cpp), so a
+ * console window titled "<alias> running <cmd> on node N" pops up on the BBS
+ * machine for every session. The door draws to the CLIENT's terminal over the
+ * DOOR32.SYS socket and prints nothing there -- its diagnostics go to the
+ * per-node log (door_open_node_log() above) -- so the window is pure noise.
+ *
+ * Synchronet can suppress it host-side too: the door's XTRN_NODISPLAY setting
+ * makes xtrn.cpp spawn with CREATE_NO_WINDOW, so no window ever appears (not
+ * even the brief flash before we get here), and xtrn/syncalert/install-xtrn.ini
+ * sets it. We still detach, because a DOOR32.SYS door can be run by a BBS with
+ * no such setting. The two compose: CREATE_NO_WINDOW still gives the process a
+ * console, so the GetConsoleProcessList() == 1 test below holds and this just
+ * frees an already-invisible console.
+ *
+ * Only detach from a console we OWN. GetConsoleProcessList() reports how many
+ * processes are attached: exactly 1 (us) means the console was created for this
+ * process and freeing it closes the window. More than 1 means we inherited a
+ * shell's console (a developer running the door from cmd/bash), and detaching
+ * would silently throw that developer's stdout away -- so leave it alone. Also
+ * skipped for a bare dev launch with no door socket.
+ *
+ * FreeConsole() invalidates ALL three std streams -- including a stderr already
+ * freopen()ed onto a file, whose writes then silently vanish -- so this must run
+ * BEFORE door_open_node_log() redirects stderr, and it re-points every CRT
+ * stream at NUL on the way out. The vendored engine still calls printf() on some
+ * paths (e.g. Print_Error_Exit()), and those must land somewhere valid rather
+ * than write to a closed handle. */
+static int g_console_detached;
+
+static void door_console_detach(void)
+{
+#ifdef _WIN32
+	DWORD pids[2];
+	DWORD n;
+
+	if (g_cli_sock < 0)
+		return;                     /* dev launch, no door socket -- keep the console */
+	n = GetConsoleProcessList(pids, (DWORD)(sizeof pids / sizeof pids[0]));
+	if (n != 1)
+		return;                     /* no console (0), or shared with a shell (>1) */
+
+	fflush(stdout);
+	fflush(stderr);
+	if (!FreeConsole())
+		return;
+	(void)freopen("NUL", "r", stdin);
+	(void)freopen("NUL", "w", stdout);
+	(void)freopen("NUL", "w", stderr);   /* door_open_node_log() re-points this at the log */
+	g_console_detached = 1;
+#endif
 }
 
 static void door_early_setup(void)
 {
-	door_open_node_log();          /* first: every fprintf(stderr, ...) below lands in it too */
+	door_wsa_ensure();             /* Windows: Winsock up before ANY send/recv on the door socket */
+	door_console_detach();         /* Windows: close our own console -- BEFORE stderr is redirected,
+	                                * because FreeConsole() invalidates stderr even when it already
+	                                * points at a file (see door_console_detach()) */
+	door_open_node_log();          /* every fprintf(stderr, ...) below lands in it too */
+	if (g_console_detached)
+		fprintf(stderr, "syncalert: detached from the door's own console window\n");
 	door_resolve_assets_dir();     /* before argv[0] is touched by anything below */
 	door_validate_assets_or_die(); /* fatal on missing/corrupt REDALERT.MIX/MAIN.MIX */
 	door_setup_engine_paths();     /* -home -> chdir + REDALERT.INI [Paths] + argv[0] rewrite */

@@ -505,7 +505,11 @@ int main(int argc, char* argv[])
         PostMessage(MainWindow, WM_DESTROY, 0, 0);
 #endif
 
-#if !defined(REMASTER_BUILD) && defined(_WIN32) && !defined(SDL_BUILD)
+// NEW_VIDEO_BUILD: no Win32 window and no message pump exists (SyncConquer's
+// termgfx backend, like the SDL ones), so nothing will ever run
+// Windows_Procedure()'s WM_DESTROY case to advance ReadyToQuit 1 -> 2. Waiting
+// for it spins forever. See ../../PROVENANCE.md.
+#if !defined(REMASTER_BUILD) && defined(_WIN32) && !defined(SDL_BUILD) && !defined(NEW_VIDEO_BUILD)
         /*
         ** Wait until the message handler has dealt with the message
         */
@@ -703,7 +707,9 @@ void Emergency_Exit(int code)
     PostMessage(MainWindow, WM_DESTROY, 0, 0);
 #endif
 
-#if !defined(REMASTER_BUILD) && defined(_WIN32) && !defined(SDL_BUILD)
+// NEW_VIDEO_BUILD: see the ReadyToQuit == 1 wait in main() above -- no message
+// pump exists to advance ReadyToQuit, so this would spin forever on the way out.
+#if !defined(REMASTER_BUILD) && defined(_WIN32) && !defined(SDL_BUILD) && !defined(NEW_VIDEO_BUILD)
     /*
     ** Wait until the message handler has dealt with the message
     */
