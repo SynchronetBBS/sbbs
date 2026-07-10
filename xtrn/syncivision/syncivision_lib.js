@@ -349,3 +349,46 @@ function sv_last_play(plays, user_number)
 	});
 	return best;
 }
+
+// --- layout ------------------------------------------------------------------
+//
+// Follows exec/xtrn_sec.js: multi-column above 80 columns, one column below it,
+// reading DOWN each column. The column count is derived rather than hardcoded at
+// two, so a 132-column terminal gets three and nobody has to think about it.
+
+function sv_columns(screen_cols, cell_width)
+{
+	var n;
+
+	if (screen_cols < 80)
+		return 1;                      /* xtrn_sec.js's rule, and a good one */
+	n = Math.floor(screen_cols / (cell_width + 1));
+	return n < 1 ? 1 : n;
+}
+
+function sv_page_rows(screen_rows, header_rows, footer_rows)
+{
+	var n = screen_rows - header_rows - footer_rows;
+
+	return n < 1 ? 1 : n;
+}
+
+function sv_paginate(items, per_page)
+{
+	var pages = [];
+	var i;
+
+	if (per_page < 1)
+		per_page = 1;
+	for (i = 0; i < items.length; i += per_page)
+		pages.push(items.slice(i, i + per_page));
+	return pages;
+}
+
+function sv_cell(index, rom, width)
+{
+	var label = rom.title + (rom.year ? " (" + rom.year + ")" : "");
+	var s     = format("%3d | %s", index, label);
+
+	return s.length > width ? s.substr(0, width) : s;
+}

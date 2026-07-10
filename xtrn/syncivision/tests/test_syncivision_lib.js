@@ -357,5 +357,33 @@ eq(vc.length, 1, "tied-rank variants collapse to one");
 eq(vc[0].name, "Tie Game (1983) (Acme) [a1].int",
    "a same-rank tie keeps the lexicographically smaller name");
 
+writeln("7. column layout");
+eq(sv_columns(79, 36), 1, "below 80 cols: one column, always");
+eq(sv_columns(40, 36), 1, "narrow terminal: one column");
+eq(sv_columns(80, 36), 2, "80 cols: two columns");
+eq(sv_columns(132, 36), 3, "132 cols: three columns");
+check(sv_columns(80, 200) >= 1, "an absurd cell width still yields one column");
+
+eq(sv_page_rows(24, 5, 2), 17, "24 rows minus header and footer");
+check(sv_page_rows(4, 5, 2) >= 1, "a tiny terminal still shows one row");
+
+var pages = sv_paginate([1, 2, 3, 4, 5], 2);
+eq(pages.length, 3, "five items, two per page, three pages");
+eq(pages[2].length, 1, "last page holds the remainder");
+eq(sv_paginate([], 10).length, 0, "no items, no pages");
+
+var cell = sv_cell(7, {title: "Astrosmash", year: 1981}, 36);
+check(cell.indexOf("7") >= 0, "cell shows the number");
+check(cell.indexOf("Astrosmash") >= 0, "cell shows the title");
+check(cell.indexOf("1981") >= 0, "cell shows the year");
+check(cell.length <= 36, "cell is clipped to its width");
+
+var longcell = sv_cell(199, {title: "Advanced Dungeons and Dragons Treasure of Tarmin",
+                             year: 1982}, 30);
+eq(longcell.length, 30, "an over-long title is clipped, not wrapped");
+
+var noyear = sv_cell(1, {title: "4tris", year: 0}, 36);
+check(noyear.indexOf("(0)") < 0, "a missing year is omitted, not printed as 0");
+
 writeln(failures ? "FAIL: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);
