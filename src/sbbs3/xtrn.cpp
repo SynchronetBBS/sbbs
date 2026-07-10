@@ -2314,6 +2314,16 @@ char* sbbs_t::cmdstr(const char *instr, const char *fpath, const char *fspec, ch
 				case '-':   /* Chat handle */
 					strncat(cmd, quoted_string(useron.handle, str, sizeof(str)), avail);
 					break;
+				case '<':	/* Terminal type */
+					SAFECOPY(str, term_type());
+					strlwr(str);
+					strncat(cmd, str, avail);
+					break;
+				case '>':	/* Character set/encoding */
+					SAFECOPY(str, term->charset_str());
+					strlwr(str);
+					strncat(cmd, str, avail);
+					break;
 				default:    /* unknown specification */
 					if (IS_DIGIT(instr[i])) {
 						snprintf(str, sizeof str, "%0*d", instr[i] & 0xf, useron.number);
