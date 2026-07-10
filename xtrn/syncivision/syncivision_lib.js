@@ -166,3 +166,88 @@ function sv_discover(roms_dir, exts, excludes)
 	});
 	return out;
 }
+
+// --- the activity store ------------------------------------------------------
+//
+// Append-only, one JSON object per completed play. No aggregate counts file:
+// data_dir is an SMB mount that a second host also writes, so a read-modify-write
+// of a counts file is a lost-update race. Everything is derived by scanning,
+// which at BBS scale is a few thousand lines.
+
+function sv_plays_path(data_dir)
+{
+	var dir = backslash(data_dir) + "syncretro/";
+
+	if (!file_isdir(dir))
+		mkpath(dir);
+	return dir + "plays.jsonl";
+}
+
+// One line, appended under an exclusive open. Returns false rather than throwing:
+// a lost play is not worth failing a player's session over.
+function sv_log_play(path, rec)
+{
+	var f = new File(path);
+
+	if (!f.open("a"))
+		return false;
+	f.writeln(JSON.stringify(rec));
+	f.close();
+	return true;
+}
+
+function sv_read_plays(path)
+{
+	var f = new File(path);
+	var out = [];
+	var lines, i, rec;
+
+	if (!file_exists(path) || !f.open("r"))
+		return out;
+	lines = f.readAll();
+	f.close();
+	for (i = 0; i < lines.length; i++) {
+		if (lines[i] === "")
+			continue;
+		try {
+			rec = JSON.parse(lines[i]);
+		} catch (e) {
+			continue;              /* a torn or hand-edited line is not fatal */
+		}
+		if (rec && rec.rom)
+			out.push(rec);
+	}
+	return out;
+}
+
+function sv_top_played(plays, n)
+{
+	var counts = {};
+	var out = [];
+	var rom;
+
+	plays.forEach(function (p) {
+		counts[p.rom] = (counts[p.rom] || 0) + 1;
+	});
+	for (rom in counts)
+		if (counts.hasOwnProperty(rom))
+			out.push({ rom: rom, title: sv_parse_title(rom).title, count: counts[rom] });
+
+	out.sort(function (a, b) {
+		if (a.count !== b.count)
+			return b.count - a.count;
+		return a.rom < b.rom ? -1 : (a.rom > b.rom ? 1 : 0);   /* stable, name-ordered */
+	});
+	return out.slice(0, n);
+}
+
+function sv_last_play(plays, user_number)
+{
+	var best = null;
+
+	plays.forEach(function (p) {
+		if (p.user === user_number && (best === null || p.t > best.t))
+			best = p;
+	});
+	return best;
+}

@@ -177,5 +177,50 @@ if (file_exists(bios_src)) {
 
 directory(dir + "*").forEach(function (p) { file_remove(p); });
 
+writeln("6. activity store");
+var pdir = "/tmp/sv_data/";
+if (file_isdir(pdir + "syncretro/"))
+	directory(pdir + "syncretro/*").forEach(function (p) { file_remove(p); });
+mkpath(pdir);
+
+var ppath = sv_plays_path(pdir);
+check(ppath.indexOf("syncretro") >= 0, "plays path is under syncretro/");
+check(file_isdir(pdir + "syncretro/"), "sv_plays_path created the directory");
+
+check(sv_log_play(ppath, {t: 100, user: 1, alias: "Digital Man",
+                          rom: "Utopia (1981) (Mattel).int", secs: 600}), "log 1");
+check(sv_log_play(ppath, {t: 200, user: 2, alias: "Nelgin",
+                          rom: "Astrosmash (1981) (Mattel).int", secs: 60}), "log 2");
+check(sv_log_play(ppath, {t: 300, user: 1, alias: "Digital Man",
+                          rom: "Astrosmash (1981) (Mattel).int", secs: 30}), "log 3");
+
+var plays = sv_read_plays(ppath);
+eq(plays.length, 3, "three plays read back");
+eq(plays[2].rom, "Astrosmash (1981) (Mattel).int", "records keep their order");
+eq(plays[0].alias, "Digital Man", "alias round-trips");
+
+// A malformed line must not poison the file.
+var junk = new File(ppath);
+junk.open("a");
+junk.writeln("this is not json");
+junk.close();
+eq(sv_read_plays(ppath).length, 3, "malformed line skipped, not fatal");
+
+var top = sv_top_played(plays, 5);
+eq(top.length, 2, "two distinct games");
+eq(top[0].rom, "Astrosmash (1981) (Mattel).int", "most-played first");
+eq(top[0].count, 2, "counted twice");
+eq(top[0].title, "Astrosmash", "top entries carry a parsed title");
+eq(top[1].count, 1, "runner-up counted once");
+eq(sv_top_played(plays, 1).length, 1, "n caps the list");
+eq(sv_top_played([], 5).length, 0, "no plays, no board");
+
+var last = sv_last_play(plays, 1);
+check(last !== null, "user 1 has a last play");
+eq(last.t, 300, "last play is the most recent, not the first");
+eq(sv_last_play(plays, 99), null, "unknown user has none");
+
+directory(pdir + "syncretro/*").forEach(function (p) { file_remove(p); });
+
 writeln(failures ? "FAIL: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);
