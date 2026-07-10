@@ -39,9 +39,27 @@ set(OPENAL OFF CACHE BOOL "" FORCE)
 #     VanillaRA PUBLIC ${CMAKE_SOURCE_DIR} .), how e.g. conquer.cpp's
 #     #include "common/framelimit.h" resolves): add the real vanilla/ dir
 #     as an extra PUBLIC include dir after add_subdirectory() returns.
+#   - cmake/ (ours, listed FIRST): shadows vanilla/cmake/BuildIcons.cmake so
+#     redalert/CMakeLists.txt's include(BuildIcons) picks up our no-op
+#     make_icon(). The vendored one FATAL_ERRORs on a Windows checkout, where
+#     the resources/ symlink below is a plain text file. See
+#     cmake/BuildIcons.cmake for the full rationale.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vanilla/cmake")
 add_subdirectory(vanilla)
 target_include_directories(VanillaRA PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vanilla)
+
+# The vendored redalert/CMakeLists.txt links VanillaRA as a GUI app
+# (/subsystem:windows, with /ENTRY:mainCRTStartup to keep main()). That's right
+# for a desktop vanillara.exe and wrong for a BBS door: with no console attached,
+# the CRT hands main() invalid std handles, so every stdio write -- including
+# door_core.c's local-mode/-h output and the fatal-error messages a sysop needs
+# when the door won't start -- goes nowhere. Re-link as a console app; the last
+# /subsystem on the link line wins, and these options land after the vendored
+# ones because add_subdirectory(vanilla) has already returned.
+if(MSVC)
+    target_link_options(VanillaRA PRIVATE /subsystem:console /ENTRY:mainCRTStartup)
+endif()
 
 # libtermgfx -- the shared sixel/JXL encoders + APC transport + cap-probe +
 # audio that door_core.c calls into (this task uses only sixel_encode()).

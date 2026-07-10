@@ -109,3 +109,24 @@ milestone (first playable, v1 ship, each subsequent release).
   like the other doors rather than blocking on the refactor.
 - **Reevaluate**: once three doors share near-identical loops, the
   extraction is well-motivated — good post-v1 cleanup.
+
+## Windows x64 build of the door
+
+- **Why deferred**: the Win32 (x86) build is complete and is the target
+  the rest of the Synchronet Windows build uses, so x64 buys nothing
+  today. `build.bat` refuses `x64` up front rather than failing deep
+  into the build.
+- **What blocks it**: the vendored engine's *Windows-without-SDL* path —
+  the one the headless door selects — has Win16-era 32-bit assumptions
+  upstream never compiles (its Windows build always defines `SDL_BUILD`
+  and skips them). Known offenders: `common/wwmouse.cpp` passes a
+  `DWORD`-argument callback to `timeSetEvent()` where `LPTIMECALLBACK`
+  wants `DWORD_PTR`; `redalert/winstub.cpp` assigns a
+  `long(HWND,UINT,UINT,LONG)` to a `WNDPROC`. Both are hard MSVC errors
+  at x64 and harmless at x86, where `DWORD`/`LONG` are pointer-width.
+  The list is not known to be exhaustive — fixing the first two only
+  uncovered the next.
+- **Note**: these are upstream bugs, best fixed upstream (Vanilla
+  Conquer) rather than accumulated as local patches in PROVENANCE.md.
+- **Reevaluate**: if a 64-bit-only Windows dependency appears, or if
+  upstream ports its non-SDL Windows path.

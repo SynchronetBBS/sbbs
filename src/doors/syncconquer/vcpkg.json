@@ -1,0 +1,16 @@
+{
+  "$comment": "Optional dependencies for the JPEG XL graphics tier and the libsndfile OGG-music tier, resolved by vcpkg in manifest mode. This file is only consulted when CMake is configured with the vcpkg toolchain (-DCMAKE_TOOLCHAIN_FILE=.../vcpkg.cmake); a plain cmake build (what build.bat does, via -DCMAKE_PREFIX_PATH into a classic-mode vcpkg prefix) ignores it. See COMPILING.md. The *nix build normally uses system libjxl + libsndfile via pkg-config instead and needs none of this. NOTE: the MinGW-GCC libsndfile vendored in 3rdp/ (for SyncTERM) cannot link into this MSVC door -- an MSVC-native build (vcpkg, here) is required. Mirrors src/doors/syncdoom/vcpkg.json and src/doors/syncduke/vcpkg.json.",
+  "name": "syncconquer",
+  "version": "0.1",
+  "description": "Command & Conquer: Red Alert for Synchronet / SyncTERM (DOOR32.SYS BBS door)",
+  "homepage": "https://gitlab.synchro.net/main/sbbs",
+  "license": "GPL-3.0-only",
+  "dependencies": [
+    "libjxl",
+    "libsndfile"
+  ],
+  "builtin-baseline": "46c9f8d8398360278222d335c28bceb776ebb61f",
+  "overrides": [
+    { "name": "libjxl", "version": "0.11.2" }
+  ]
+}

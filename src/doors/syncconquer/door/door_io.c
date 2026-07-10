@@ -48,6 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <signal.h>   /* sig_atomic_t + SIGTERM: ISO C, so not in the #ifdef below */
 
 #ifdef _WIN32
   #define WIN32_LEAN_AND_MEAN
@@ -64,7 +65,6 @@
   #include <errno.h>
   #include <unistd.h>
   #include <fcntl.h>
-  #include <signal.h>
   #include <time.h>
   #include <sys/socket.h>
   #include <sys/stat.h>

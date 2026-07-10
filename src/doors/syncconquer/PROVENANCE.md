@@ -216,10 +216,43 @@ inline in `CMakeLists.txt`).
    only guard against overrunning its own `char[MAX_LINE_LENGTH]` is an
    `assert()` that compiles out in Release.
 
+## Deliberate non-patches (worked around outside `vanilla/`)
+
+Things that needed changing for the door but were solved WITHOUT touching
+the vendored tree — recorded here so a re-vendor doesn't "fix" them by
+patching upstream, and so the indirection isn't a surprise:
+
+1. **Icon generation** (`redalert/CMakeLists.txt`'s `include(BuildIcons)` +
+   `make_icon(INPUT "${CMAKE_SOURCE_DIR}/resources/vanillara_icon.svg")`).
+   Upstream `make_icon()` `FATAL_ERROR`s when its INPUT doesn't exist, and
+   `resources/` here is a **git symlink** to `vanilla/resources` — which a
+   Windows checkout materializes as a plain text file (the link target as
+   text) unless `core.symlinks` is on with Developer Mode. So configure
+   died on Windows before compiling anything. Rather than patch the
+   vendored CMake, `../cmake/BuildIcons.cmake` (ours) shadows the vendored
+   module: our `cmake/` dir is prepended to `CMAKE_MODULE_PATH`, so
+   `include(BuildIcons)` resolves to our no-op `make_icon()`. A console BBS
+   door has no window and wants no icon, and upstream already treats the
+   icon as optional (`ProductVersion.cmake`: ICON — "no icon will be
+   included if not provided"; vendored `BuildIcons` only warns when
+   ImageMagick is absent).
+
+2. **Link subsystem.** `redalert/CMakeLists.txt` links `VanillaRA` with
+   `/subsystem:windows /ENTRY:mainCRTStartup` under MSVC — correct for a
+   desktop `vanillara.exe`, wrong for a door, which needs a console so the
+   CRT hands `main()` valid std handles (otherwise all stdio, including
+   fatal startup diagnostics, is silently discarded). Our `CMakeLists.txt`
+   re-applies `/subsystem:console` on the target after
+   `add_subdirectory(vanilla)` returns; the last `/subsystem` on the link
+   line wins, so no vendored edit is needed.
+
 ## Updating
 
 Re-vendor by diffing upstream at a new commit against this subset,
 re-applying the local patches above, and updating the commit hash here.
+The non-patches above live outside `vanilla/` and survive a re-vendor
+untouched — but re-check them if upstream reworks its icon/CMake or link
+options.
 
 ## Headless startup behavior (M1 observations)
 

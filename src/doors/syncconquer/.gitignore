@@ -1,1 +1,11 @@
+# build output (build.sh -> build/, build.bat -> build-msvc/)
 build/
+build-msvc/
+/syncalert
+/syncalert.exe
+*.o
+# editor swap
+*.swp
+*.swo
+# libADLMIDI easyloggingpp run artifact (written to CWD)
+myeasylog.log
