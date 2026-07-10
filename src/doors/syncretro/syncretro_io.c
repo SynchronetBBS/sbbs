@@ -572,6 +572,14 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		char wrap[24];
 		int  wn = snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", g_irow, g_icol);
 
+		/* A forced repaint means something painted OVER the game -- the door's
+		 * pause and help screens write text across the whole grid. The sixel
+		 * covers only the centered image rect, so the margin cells around it
+		 * would keep the leftovers (at 80x25 with a 352-wide frame, the first
+		 * and last few columns). Erase first, in the SAME write as the repaint,
+		 * so the clear and the frame reach the terminal together. */
+		if (force)
+			sr_out_puts("\x1b[2J");
 		if (wn > 0)
 			sr_out_put(wrap, (size_t)wn);
 	}
