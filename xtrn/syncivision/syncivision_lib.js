@@ -55,3 +55,114 @@ function sv_parse_title(filename)
 	out.title = name;
 	return out;
 }
+
+// --- discovery ---------------------------------------------------------------
+//
+// roms/ is a dumped ROM set, not a curated folder: it carries metadata litter,
+// BIOS images that are unplayable as cartridges, and (here) short symlink
+// aliases which -- over the install's SMB view -- are indistinguishable from
+// regular files, so readlink() is useless and dedupe must go by content.
+
+// exec.bin and grom.bin. Rejected by CONTENT, so a re-dropped ROM set cannot
+// smuggle one back in under a cartridge's name.
+var SV_BIOS_MD5 = [
+	"62e761035cb657903761800f4437b8af",   // exec.bin, 8192 bytes
+	"0cd5946c6473e42e8e4c2137785e427f"    // grom.bin, 2048 bytes
+];
+
+// The entire Intellivision cartridge range. Anything outside it is not a game.
+var SV_MIN_SIZE = 2 * 1024;
+var SV_MAX_SIZE = 64 * 1024;
+
+// Only these characters break out of the double quotes the door command line
+// wraps a ROM path in. See LAUNCHER.md sec 8.
+function sv_quote_safe(name)
+{
+	return !/["`$\\]/.test(String(name));
+}
+
+// md5_calc() returns BASE64 unless its second argument is true. Ask for hex.
+function sv_file_md5(path, bytes)
+{
+	var f = new File(path);
+	var data;
+
+	if (!f.open("rb"))
+		return "";
+	data = bytes > 0 ? f.read(bytes) : f.read();
+	f.close();
+	if (data === null || data === undefined)
+		return "";
+	return md5_calc(data, true);
+}
+
+function sv_excluded(name, excludes)
+{
+	var lower = String(name).toLowerCase();
+	var i;
+
+	for (i = 0; i < excludes.length; i++)
+		if (excludes[i] !== "" && lower.indexOf(String(excludes[i]).toLowerCase()) >= 0)
+			return true;
+	return false;
+}
+
+function sv_discover(roms_dir, exts, excludes)
+{
+	var seen = {};         // content key -> index into out
+	var out  = [];
+	var dir  = backslash(roms_dir);
+
+	exts.forEach(function (ext) {
+		directory(dir + "*." + ext).forEach(function (path) {
+			var name = file_getname(path);
+			var size = file_size(path);
+			var head, key, prev, parsed;
+
+			if (size < SV_MIN_SIZE || size > SV_MAX_SIZE)
+				return;                       /* not a cartridge */
+			if (sv_excluded(name, excludes))
+				return;
+
+			head = sv_file_md5(path, 4096);
+			if (head === "")
+				return;                       /* unreadable: not our problem */
+			if (SV_BIOS_MD5.indexOf(sv_file_md5(path, 0)) >= 0)
+				return;                       /* a BIOS image, whatever its name */
+
+			/* Content identity: size plus the head hash. Two names for the same
+			 * bytes are one game; keep the more descriptive name. */
+			key = size + ":" + head;
+			if (seen.hasOwnProperty(key)) {
+				prev = out[seen[key]];
+				if (name.length > prev.name.length) {
+					prev.name = name;
+					prev.path = path;
+					parsed = sv_parse_title(name);
+					prev.title     = parsed.title;
+					prev.year      = parsed.year;
+					prev.publisher = parsed.publisher;
+				}
+				return;
+			}
+
+			parsed = sv_parse_title(name);
+			seen[key] = out.length;
+			out.push({
+				path:      path,
+				name:      name,
+				title:     parsed.title,
+				year:      parsed.year,
+				publisher: parsed.publisher,
+				size:      size
+			});
+		});
+	});
+
+	out.sort(function (a, b) {
+		var x = a.title.toLowerCase(), y = b.title.toLowerCase();
+
+		return x < y ? -1 : (x > y ? 1 : 0);
+	});
+	return out;
+}

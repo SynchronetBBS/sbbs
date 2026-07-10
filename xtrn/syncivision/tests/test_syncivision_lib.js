@@ -79,5 +79,103 @@ eq(p.publisher, "Activision", "year range plus marker: publisher");
 p = sv_parse_title("Armor Battle (USA, Europe) (Fast Tanks).int");
 eq(p.year, 0, "still no year where there is none");
 
+writeln("2. quote safety");
+check(sv_quote_safe("Astrosmash (1981) (Mattel).int"), "ordinary name is safe");
+check(sv_quote_safe("Advanced Dungeons & Dragons (1982) (Mattel).int"), "ampersand is safe");
+check(!sv_quote_safe('He said "hi".int'), "double quote is unsafe");
+check(!sv_quote_safe("cost $5.int"), "dollar is unsafe");
+check(!sv_quote_safe("back\\slash.int"), "backslash is unsafe");
+
+writeln("3. md5 of a file's head");
+// Build a scratch tree: two identical files under different names (the symlink
+// case, which over SMB looks like two regular files), one BIOS image, one short
+// file, one oversized file, one non-ROM extension.
+var dir = "/tmp/sv_disco/";
+var f;
+if (file_isdir(dir))
+	directory(dir + "*").forEach(function (p) { file_remove(p); });
+mkpath(dir);
+
+function put(name, bytes, fill)
+{
+	var g = new File(dir + name);
+	var s = "";
+	var i;
+
+	g.open("wb");
+	for (i = 0; i < bytes; i++)
+		s += fill;
+	g.write(s);
+	g.close();
+}
+
+put("Astrosmash (1981) (Mattel).int", 8192, "A");
+put("astrosmash.int", 8192, "A");                 // same content, short alias
+put("Utopia (1981) (Mattel).int", 8192, "U");
+put("tiny.int", 100, "t");                         // under 2 KB
+put("huge.int", 70000, "h");                       // over 64 KB
+put("notes.txt", 8192, "n");                       // wrong extension
+put("Boring Game (1983) (Acme).bin", 4096, "b");
+
+var md_a = sv_file_md5(dir + "Astrosmash (1981) (Mattel).int", 4096);
+var md_b = sv_file_md5(dir + "astrosmash.int", 4096);
+eq(md_a, md_b, "identical content hashes identically");
+check(md_a.length === 32, "md5 is 32 hex chars, not base64");
+check(/^[0-9a-f]+$/.test(md_a), "md5 is lowercase hex");
+eq(sv_file_md5(dir + "does-not-exist.int", 4096), "", "missing file yields empty md5");
+
+writeln("4. discovery");
+var roms = sv_discover(dir, ["int", "bin", "rom"], []);
+var names = roms.map(function (r) { return r.name; });
+
+check(names.indexOf("notes.txt") < 0, "wrong extension excluded");
+check(names.indexOf("tiny.int") < 0, "under 2 KB excluded");
+check(names.indexOf("huge.int") < 0, "over 64 KB excluded");
+check(names.indexOf("Boring Game (1983) (Acme).bin") >= 0, ".bin included");
+
+// Dedupe keeps the more descriptive name.
+check(names.indexOf("Astrosmash (1981) (Mattel).int") >= 0, "dedupe keeps the long name");
+check(names.indexOf("astrosmash.int") < 0, "dedupe drops the short alias");
+
+// Sorted by title, case-insensitively.
+var titles = roms.map(function (r) { return r.title.toLowerCase(); });
+var sorted = titles.slice().sort();
+eq(titles.join("|"), sorted.join("|"), "sorted by title");
+
+// Parsed fields ride along.
+roms.forEach(function (r) {
+	if (r.name === "Astrosmash (1981) (Mattel).int") {
+		eq(r.title, "Astrosmash", "discovery parses the title");
+		eq(r.year, 1981, "discovery parses the year");
+		eq(r.size, 8192, "discovery records the size");
+	}
+});
+
+// Excludes are case-insensitive substrings.
+var fewer = sv_discover(dir, ["int", "bin", "rom"], ["utopia"]);
+check(fewer.map(function (r) { return r.name; }).indexOf("Utopia (1981) (Mattel).int") < 0,
+      "exclude glob drops Utopia");
+
+writeln("5. a BIOS image is never a game");
+// exec.bin's real bytes, so the hash guard is exercised, not just the name.
+var bios_src = "/sbbs/xtrn/syncivision/exec.bin";
+if (file_exists(bios_src)) {
+	var b = new File(bios_src);
+	b.open("rb");
+	var blob = b.read();
+	b.close();
+	var c = new File(dir + "Executive ROM, The (1978) (Mattel).int");
+	c.open("wb"); c.write(blob); c.close();
+
+	var guarded = sv_discover(dir, ["int", "bin", "rom"], []);
+	check(guarded.map(function (r) { return r.name; })
+	      .indexOf("Executive ROM, The (1978) (Mattel).int") < 0,
+	      "BIOS excluded by content hash, whatever it is named");
+} else {
+	writeln("  skip   BIOS hash guard (no exec.bin on this host)");
+}
+
+directory(dir + "*").forEach(function (p) { file_remove(p); });
+
 writeln(failures ? "FAIL: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);
