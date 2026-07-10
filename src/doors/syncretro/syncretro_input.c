@@ -57,6 +57,10 @@
 #include "libretro.h"    /* RETRO_DEVICE_* / RETRO_DEVICE_ID_JOYPAD_* */
 
 #include <errno.h>
+#include <limits.h>      /* PATH_MAX */
+#include <stdarg.h>     /* sr_trace */
+#include <stdio.h>       /* SYNCRETRO_KEYTRACE */
+#include <stdlib.h>      /* getenv */
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
@@ -159,7 +163,7 @@ int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 
 static int g_action;      /* pending SR_DOOR_*, consumed by sr_input_take_action() */
 static int g_suspended;   /* a door screen is up: game keys are swallowed */
-static int g_anykey;      /* a bound key arrived while suspended */
+static int g_anykey;      /* a key arrived while suspended (bound or not) */
 
 int sr_input_take_action(void)
 {
@@ -203,8 +207,22 @@ static void sr_key_apply(int c, int down, int tap)
 	int      id;
 	sr_act_t act = sr_bind_lookup(sr_bind_fold(c), &id);
 
-	if (act == SR_ACT_NONE)
-		return;            /* unbound: it must never reach the core */
+	if (act == SR_ACT_NONE) {
+		/* Unbound: it must never reach the core. But a player pressing a key
+		 * that does nothing is asking "what ARE the keys?", so answer -- the
+		 * legend costs a screen and a keystroke to dismiss.
+		 *
+		 * Printable keys only. CSI sequences (arrows, the DSR pacing replies)
+		 * never arrive here, but a bare C0 byte from the terminal can, and that
+		 * is noise rather than a question. */
+		if (down && c >= 0x20 && c < 0x7f) {
+			if (g_suspended)
+				g_anykey = 1;              /* a screen is up: any key returns */
+			else
+				sr_door_action(SR_DOOR_HELP);
+		}
+		return;
+	}
 
 	if (act == SR_ACT_DOOR) {
 		if (down)
@@ -348,8 +366,8 @@ static void sr_evdev_edge(int code, int down)
 			 * i.e. shift-'/', and evdev reports the physical key. Without this the
 			 * door sees '/' -- unbound -- and help is unreachable on SyncTERM, the
 			 * one terminal that negotiates this path. Shifted letters fold back to
-			 * lowercase in sr_bind_lookup(); shifted digits become punctuation and
-			 * are simply unbound, which is what a real keypad does too. */
+			 * lowercase in sr_bind_lookup(); shifted digits become punctuation,
+			 * which is unbound and so raises the key legend (sr_key_apply). */
 			c = termgfx_evdev_ascii(code, (g_evdev_mods & TERMGFX_MOD_SHIFT) != 0);
 			if (c == 0)
 				return;
@@ -554,6 +572,77 @@ static void sr_csi_final(char fin)
 	}
 }
 
+/* --- input trace (diagnostic) ------------------------------------------------ */
+
+/* Log every inbound byte -- printables literally, the rest as \xNN -- tagged with
+ * the key mode in force. Answers the one question the source cannot: what a given
+ * terminal actually sends for a given key.
+ *
+ * Two ways in. SYNCRETRO_KEYTRACE names the file outright, but bbs.exec() runs a
+ * door through execvp() with the BBS's own environment, so a sysop can't set it
+ * without a restart; failing that, a `keytrace.on` file in the DOOR's directory
+ * turns it on and the trace lands beside it. Neither -> not even a file handle.
+ *
+ * Both are anchored to sr_config_launch_dir(), never to cwd: sr_config_apply()
+ * has already chdir'd into the per-user sandbox by the time a key arrives, so a
+ * relative path here would quietly resolve under data/user/NNNN/. */
+static FILE *sr_trace_fp(void)
+{
+	static FILE *fp;
+	static int   tried;
+
+	if (!tried) {
+		const char *path = getenv("SYNCRETRO_KEYTRACE");
+		const char *dir  = sr_config_launch_dir();
+		char        on[PATH_MAX], log[PATH_MAX];
+
+		tried = 1;
+		if ((path == NULL || *path == '\0') && dir != NULL) {
+			snprintf(on, sizeof on, "%s/keytrace.on", dir);
+			snprintf(log, sizeof log, "%s/keytrace.log", dir);
+			if (access(on, F_OK) == 0)
+				path = log;
+		}
+		if (path != NULL && *path != '\0' && (fp = fopen(path, "w")) != NULL)
+			setvbuf(fp, NULL, _IOLBF, 0);   /* survive a kill mid-session */
+	}
+	return fp;
+}
+
+/* Free-form trace line, shared with syncretro_io.c's pacing probes. */
+void sr_trace(const char *fmt, ...)
+{
+	FILE *  fp = sr_trace_fp();
+	va_list ap;
+
+	if (fp == NULL)
+		return;
+	fprintf(fp, "%10u ", (unsigned)sr_in_now_ms());
+	va_start(ap, fmt);
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	fputc('\n', fp);
+}
+
+static void sr_keytrace(const uint8_t *buf, int n)
+{
+	FILE *fp = sr_trace_fp();
+	int   i;
+
+	if (fp == NULL)
+		return;
+
+	fprintf(fp, "%10u %s in  ", (unsigned)sr_in_now_ms(),
+	        termgfx_keymode_evdev_active(&g_km) ? "evdev" :
+	        termgfx_keymode_kitty_active(&g_km) ? "kitty" : "bytes");
+	for (i = 0; i < n; i++)
+		if (buf[i] >= 0x20 && buf[i] < 0x7f)
+			fputc(buf[i], fp);
+		else
+			fprintf(fp, "\\x%02x", buf[i]);
+	fputc('\n', fp);
+}
+
 /* --- read loop --------------------------------------------------------------- */
 
 void sr_input_pump(void)
@@ -581,6 +670,7 @@ void sr_input_pump(void)
 		sr_door_carrier_lost();   /* peer closed */
 		return;
 	}
+	sr_keytrace(buf, (int)n);
 
 	for (i = 0; i < n; i++) {
 		uint8_t c = buf[i];

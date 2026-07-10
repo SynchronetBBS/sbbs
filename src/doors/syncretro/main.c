@@ -85,29 +85,29 @@ static void sr_puts(const char *s)
 	sr_out_put(s, strlen(s));
 }
 
-static void sr_screen_help(void)
+/* One screen serves pause, '?' and an unbound key: a player who reaches any of
+ * the three wants the same thing -- the list of keys. Only the banner and the
+ * footer differ, because only pause needs a specific key to leave. */
+static void sr_screen_keys(int paused)
 {
 	const char *key, *desc;
 	char        line[80];
 	int         i;
 
 	sr_puts("\x1b[2J\x1b[H");   /* clear + home */
-	sr_puts("SyncRetro -- keys\r\n\r\n");
+	sr_puts(paused ? "SyncRetro -- PAUSED\r\n\r\n" : "SyncRetro -- keys\r\n\r\n");
 	for (i = 0; sr_bind_help_line(i, &key, &desc); i++) {
 		snprintf(line, sizeof line, "  %-18s %s\r\n", key, desc);
 		sr_puts(line);
 	}
-	sr_puts("\r\n  Press any key to return to the game.\r\n");
-	sr_io_out_flush();
-}
-
-static void sr_screen_paused(void)
-{
-	sr_puts("\x1b[2J\x1b[H");
-	sr_puts("SyncRetro -- PAUSED\r\n\r\n");
-	sr_puts("  Space   resume\r\n");
-	sr_puts("  ?       keys\r\n");
-	sr_puts("  Ctrl-Q  quit\r\n");
+	/* Which controller a cartridge reads is per-game, not a convention: both
+	 * Pac-Man ports ignore the left one entirely (start = Tab, then 1), while
+	 * Astrosmash reads either.  So the hint has to be the general one. */
+	sr_puts("\r\n  Some cartridges use the RIGHT hand controller, even for one\r\n");
+	sr_puts("  player.  If a game ignores you, press Tab and try again.\r\n");
+	sr_puts("  Most games start on a keypad digit, not an action button.\r\n");
+	sr_puts(paused ? "\r\n  Press Space to resume.\r\n"
+	               : "\r\n  Press any key to return to the game.\r\n");
 	sr_io_out_flush();
 }
 
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 
 	{
 		int paused  = 0;   /* Space: the core is not being run */
-		int helping = 0;   /* the key legend is up (may sit on top of paused) */
+		int helping = 0;   /* the key legend is up ('?', or an unbound key) */
 
 		for (;;) {
 			int action;
@@ -166,18 +166,14 @@ int main(int argc, char **argv)
 				action = sr_input_take_action();
 
 				if (helping) {
-					/* Any bound key returns -- including Space and '?', which is
-					 * why sr_input_set_suspended() clears the anykey latch when
-					 * the screen opens. */
+					/* Any key returns -- bound or not, which is why
+					 * sr_input_set_suspended() clears the anykey latch when the
+					 * screen opens. */
 					if (action != SR_DOOR_NONE || sr_input_take_anykey()) {
 						helping = 0;
-						if (paused) {
-							sr_screen_paused();
-						} else {
-							sr_input_set_suspended(0);
-							sr_audio_pause(0);
-							sr_io_invalidate();
-						}
+						sr_input_set_suspended(0);
+						sr_audio_pause(0);
+						sr_io_invalidate();
 					}
 				} else if (action == SR_DOOR_PAUSE) {
 					paused = 0;
@@ -185,14 +181,10 @@ int main(int argc, char **argv)
 					sr_audio_pause(0);
 					sr_io_invalidate();
 				} else if (action == SR_DOOR_HELP) {
-					/* Drop any game key struck while paused: it set the anykey
-					 * latch (swallowed, not held) and would otherwise dismiss
-					 * help on the very next iteration. The running->help path
-					 * clears the latch via sr_input_set_suspended(1); we are
-					 * already suspended, so drain it directly. */
+					/* The pause screen already IS the key legend, so '?' behind it
+					 * has nothing to add. Swallow it, and swallow any game key
+					 * struck behind the screen along with it. */
 					(void)sr_input_take_anykey();
-					helping = 1;
-					sr_screen_help();
 				} else if (action == SR_DOOR_RESET) {
 					core.reset();
 					sr_audio_reset();       /* queued audio outlived its game */
@@ -205,6 +197,19 @@ int main(int argc, char **argv)
 				continue;
 			}
 
+			/* Once a second under keytrace: is the core still being run, and what
+			 * pad does it see? Separates "the door stalled" from "the core has
+			 * the input and draws nothing" -- the two look identical on screen. */
+			{
+				static unsigned nrun;
+
+				if ((nrun++ % 60) == 0)
+					sr_trace("core.run #%u pad L=%d R=%d U=%d D=%d", nrun,
+					         sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT),
+					         sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT),
+					         sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP),
+					         sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN));
+			}
 			core.run();             /* -> video/audio/input callbacks fire */
 
 			action = sr_input_take_action();
@@ -214,10 +219,10 @@ int main(int argc, char **argv)
 				sr_audio_pause(1);          /* core stops -> FIFO drains on purpose */
 				if (action == SR_DOOR_PAUSE) {
 					paused = 1;
-					sr_screen_paused();
+					sr_screen_keys(1);
 				} else {
 					helping = 1;
-					sr_screen_help();
+					sr_screen_keys(0);
 				}
 				continue;
 			}

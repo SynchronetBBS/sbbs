@@ -291,6 +291,8 @@ void sr_io_pace_ack(void)
 {
 	uint32_t now = sr_io_now_ms();
 
+	sr_trace("pace ack inflight=%d->%d", g_pace_inflight,
+	         g_pace_inflight > 0 ? g_pace_inflight - 1 : 0);
 	if (g_pace_inflight > 0)
 		g_pace_inflight--;
 	if (g_dsr_h != g_dsr_t) {                     /* match the oldest outstanding DSR */
@@ -554,14 +556,18 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		 * a silent client can't wedge the door into a permanent freeze. */
 		if (g_pace_inflight >= g_pace_depth) {
 			if ((int32_t)(sr_io_now_ms() - g_pace_progress_ms) > SR_PACE_DEADLINE_MS) {
+				sr_trace("pace reclaim inflight=%d depth=%d", g_pace_inflight, g_pace_depth);
 				g_pace_inflight = 0;
 				g_dsr_t = g_dsr_h;   /* drop the stale unacked DSR timestamps */
 			} else {
+				sr_trace("pace drop inflight=%d depth=%d", g_pace_inflight, g_pace_depth);
 				return;              /* still behind: drop, don't queue */
 			}
 		}
-		if (g_out_off < g_out_len)
+		if (g_out_off < g_out_len) {
+			sr_trace("pace draining %zu/%zu", g_out_off, g_out_len);
 			return;                  /* prior frame's bytes not all out yet */
+		}
 
 		/* De-dupe on the SOURCE frame, before paying for quantization: at 60 fps
 		 * a paused game hands us the same pixels over and over. Compared against
@@ -570,8 +576,10 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		if (!force
 		    && have_fb && last_icol == g_icol && last_irow == g_irow
 		    && last_ew == g_ew && last_eh == g_eh
-		    && memcmp(g_last_rgb, rgb, nrgb) == 0)
+		    && memcmp(g_last_rgb, rgb, nrgb) == 0) {
+			sr_trace("dedupe identical-frame");
 			return;
+		}
 	}
 
 	if (sr_io_ensure(&g_idx, &g_idx_cap, npx) != 0)
@@ -649,6 +657,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 
 	sr_out_put("\x1b[6n", 4);    /* DSR: the terminal reports once it has CONSUMED this frame */
 	g_pace_inflight++;
+	sr_trace("sent frame inflight=%d depth=%d", g_pace_inflight, g_pace_depth);
 	/* g_pace_progress_ms (the deadline-reclaim clock) is refreshed on BOTH a send
 	 * (here) and an ack. Harmless: once backpressure engages, sends STOP until an
 	 * ack frees a slot, so the deadline then measures time-since-last-ACK --

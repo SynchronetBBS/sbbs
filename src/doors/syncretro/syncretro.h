@@ -43,6 +43,16 @@ void        sr_door_hangup(const char *why);
  * after sr_door_setup(), before rc_core_load_game(). Returns 0 (non-fatal
  * problems are logged, see DESIGN.md sec 10). */
 int         sr_config_apply(void);
+/* Diagnostic trace: every inbound byte, plus the frame-pacing decisions and a
+ * once-a-second pad sample. OFF unless `keytrace.on` exists in the door's own
+ * directory (or SYNCRETRO_KEYTRACE names a file); the trace lands in
+ * `keytrace.log` beside the switch. A no-op -- not even a file handle -- when
+ * disabled. Answers what no amount of source-reading can: what a given terminal
+ * actually sends, and whether a frozen picture is a stalled door or a core that
+ * has the input and draws nothing. */
+void        sr_trace(const char *fmt, ...);
+
+const char *sr_config_launch_dir(void);             /* the door's own dir (pre-chdir cwd) */
 const char *sr_config_system_dir(void);             /* BIOS dir (shared, read-only) */
 const char *sr_config_save_dir(void);               /* per-user SRAM/save-state dir */
 /* The core .so and ROM, resolved to ABSOLUTE paths against the launch directory

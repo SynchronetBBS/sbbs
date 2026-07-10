@@ -52,6 +52,7 @@
 #define PATH_MAX 4096
 #endif
 
+static char g_launch_dir[PATH_MAX];   /* where the door was started: cwd BEFORE the chdir */
 static char g_system_dir[PATH_MAX];   /* BIOS: shared, read-only, per-install */
 static char g_save_dir[PATH_MAX];     /* per-user SRAM + save states */
 static char g_core_path[PATH_MAX];    /* the .so to dlopen, absolute */
@@ -169,6 +170,7 @@ int sr_config_apply(void)
 	/* The launch directory, captured before anything can move cwd. */
 	if (getcwd(cwd, sizeof cwd) == NULL)
 		snprintf(cwd, sizeof cwd, ".");
+	snprintf(g_launch_dir, sizeof g_launch_dir, "%s", cwd);
 
 	/* syncretro.ini lives in the launch directory, not the per-user sandbox --
 	 * must run before the chdir() in step 3 below moves cwd there. */
@@ -229,6 +231,11 @@ int sr_config_apply(void)
 	}
 
 	return rc;
+}
+
+const char *sr_config_launch_dir(void)
+{
+	return g_launch_dir[0] ? g_launch_dir : NULL;
 }
 
 const char *sr_config_system_dir(void)
