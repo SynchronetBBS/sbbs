@@ -137,6 +137,47 @@ check(names.indexOf("Boring Game (1983) (Acme).bin") >= 0, ".bin included");
 check(names.indexOf("Astrosmash (1981) (Mattel).int") >= 0, "dedupe keeps the long name");
 check(names.indexOf("astrosmash.int") < 0, "dedupe drops the short alias");
 
+// The real 221-cartridge set has two Pac-Man ports, by different publishers,
+// that happen to share their first 4 KB and only differ later in the file:
+// "Pac-Man (1983) (Atarisoft).int" and "Pac-Man (1983) (Intv Corp).int"
+// (both 24576 bytes, head4k=54401dd74a, differing full-file hashes). A dedupe
+// key built from a 4 KB prefix merges them and silently drops a real game;
+// keying on the full file must not. put() cannot make same-prefix/
+// different-tail files, so build them by hand: 4096 identical bytes, then a
+// differing tail, landing both in the 2 KB-64 KB window.
+function put_prefix_tail(name, prefix_fill, tail_fill, tail_len)
+{
+	var g = new File(dir + name);
+	var prefix = "";
+	var tail = "";
+	var i;
+
+	for (i = 0; i < 4096; i++)
+		prefix += prefix_fill;
+	for (i = 0; i < tail_len; i++)
+		tail += tail_fill;
+	g.open("wb");
+	g.write(prefix);
+	g.write(tail);
+	g.close();
+}
+
+put_prefix_tail("Pac-Man (1983) (Atarisoft).int", "P", "1", 4096);
+put_prefix_tail("Pac-Man (1983) (Intv Corp).int", "P", "2", 4096);
+
+var pac_roms = sv_discover(dir, ["int", "bin", "rom"], []);
+var pac_names = pac_roms.map(function (r) { return r.name; });
+check(pac_names.indexOf("Pac-Man (1983) (Atarisoft).int") >= 0,
+      "same-4KB-prefix Pac-Man port (Atarisoft) survives dedupe");
+check(pac_names.indexOf("Pac-Man (1983) (Intv Corp).int") >= 0,
+      "same-4KB-prefix Pac-Man port (Intv Corp) survives dedupe");
+
+// The dedupe must still collapse genuinely identical bytes under different
+// names -- the fix is which hash is used, not whether dedupe happens at all.
+check(pac_names.indexOf("Astrosmash (1981) (Mattel).int") >= 0
+      && pac_names.indexOf("astrosmash.int") < 0,
+      "identical full-file bytes still collapse to one entry");
+
 // Sorted by title, case-insensitively.
 var titles = roms.map(function (r) { return r.title.toLowerCase(); });
 var sorted = titles.slice().sort();

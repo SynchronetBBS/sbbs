@@ -206,22 +206,29 @@ function sv_discover(roms_dir, exts, excludes)
 		directory(dir + "*." + ext).forEach(function (path) {
 			var name = file_getname(path);
 			var size = file_size(path);
-			var head, key, prev, parsed;
+			var full, key, prev, parsed;
 
 			if (size < SV_MIN_SIZE || size > SV_MAX_SIZE)
 				return;                       /* not a cartridge */
 			if (sv_excluded(name, excludes))
 				return;
 
-			head = sv_file_md5(path, 4096);
-			if (head === "")
+			full = sv_file_md5(path, 0);
+			if (full === "")
 				return;                       /* unreadable: not our problem */
-			if (SV_BIOS_MD5.indexOf(sv_file_md5(path, 0)) >= 0)
+			if (SV_BIOS_MD5.indexOf(full) >= 0)
 				return;                       /* a BIOS image, whatever its name */
 
-			/* Content identity: size plus the head hash. Two names for the same
-			 * bytes are one game; keep the more descriptive name. */
-			key = size + ":" + head;
+			/* Content identity: size plus the FULL-FILE hash, not a 4 KB prefix.
+			 * A prefix collides across genuinely different cartridges of the same
+			 * size -- "Pac-Man (1983) (Atarisoft).int" and "Pac-Man (1983) (Intv
+			 * Corp).int" are two different ports (24576 bytes each) that share
+			 * their first 4 KB but differ later in the file; keying on the
+			 * prefix silently drops one of two real games. The full hash costs
+			 * nothing extra: it is already computed above for the BIOS check,
+			 * so reusing it for the dedupe key is free. Two names for the same
+			 * full-file bytes are one game; keep the more descriptive name. */
+			key = size + ":" + full;
 			if (seen.hasOwnProperty(key)) {
 				prev = out[seen[key]];
 				if (name.length > prev.name.length) {
