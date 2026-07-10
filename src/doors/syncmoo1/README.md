@@ -15,25 +15,36 @@ coding contract before touching any source in this directory.
 
 ---
 
-## Status: M1 -- playable vertical slice
+## Status: M1 + audio -- playable, not yet polished
 
-This is the first milestone, **not** the finished game. M1 delivers:
+Delivered:
 
 - Builds as `syncmoo1` and launches via **DOOR32.SYS** on SyncTERM.
-- Renders 1oom's main menu / first screen as **sixel**.
-- **Navigable with keyboard + mouse** (cell-resolution cursor mapping).
+- Renders the whole game as **sixel**, losslessly (the encode never resamples
+  below the engine's native 320x200, so MoO1's 1-pixel font strokes survive).
+- **Navigable with mouse and per-item keyboard hotkeys.**
+- **Audio**: MoO1's sound effects and its 40-track soundtrack, over SyncTERM's
+  audio APC. See [Audio](#audio).
+- **Per-user storage**: config and savegames land in `-home` (never `$HOME`),
+  and a player's config records only the settings they actually changed, so a
+  sysop's defaults keep reaching everyone else. See [`syncmoo1.ini`](#syncmoo1ini).
 - Correct terminal enter/probe/leave and a BBS-restoring teardown on exit or
   hangup.
 
-**Deferred to M2+** (per [DESIGN.md §11](DESIGN.md)): audio; the JXL and
-polished text-tier render paths; the `sbbs_node` who's-online/paging overlay
-(Ctrl-U/Ctrl-P); an MSVC/Windows build + vcpkg; per-user save-sandbox
-hardening; and a full-game playtest/balance pass across every MoO1 screen
-(especially the dense galaxy map, where cell-resolution clicking is tightest
-until SGR-Pixels mode 1016 lands on more terminals).
+**Deferred** (per [DESIGN.md §11](DESIGN.md)): the JXL render path (the door
+probes for it and links `libjxl`, but never encodes -- measured on real frames,
+lossless JXL is ~5x *larger* than sixel for MoO1's indexed pixel art, and only
+lossy JXL wins, at the cost of ringing the UI text); a text/block tier for
+terminals without sixel; the `sbbs_node` who's-online/paging overlay
+(Ctrl-U/Ctrl-P); an MSVC/Windows build + vcpkg; and a full-game playtest pass
+across every MoO1 screen (especially the dense galaxy map, where
+cell-resolution clicking is tightest until SGR-Pixels mode 1016 lands on more
+terminals).
 
-Don't expect a fully polished play experience yet -- expect a working slice
-that proves the rendering, input, and BBS-integration plumbing end to end.
+**Arrow keys do not navigate the menus** -- only the per-item hotkeys (and the
+mouse) do. 1oom drives keyboard navigation by warping the mouse cursor, and the
+directional search does not fire here; the hotkeys, `+`/`-`/`=`, and
+`Shift`+key all work.
 
 ---
 
@@ -43,11 +54,16 @@ that proves the rendering, input, and BBS-integration plumbing end to end.
 **JXL -> sixel -> text/block** (half/quadrant/sextant glyphs), auto-selected
 from the terminal's startup capability probe.
 
-**M1 targets sixel only.** The text-tier fallback comes along for free from
-`termgfx` but isn't a tuned/verified M1 deliverable; JXL support (a
-compile-time option requiring `libjxl`) is polish work deferred past M1. A
-build without `libjxl` still produces a working `syncmoo1` -- it just serves
-sixel/text, same as the other doors in this tree.
+**This door renders sixel only.** Neither the JXL nor the text/block tier has a
+present path here yet, so a terminal without sixel gets no picture. The door
+does probe for JXL at connect and links `libjxl` when it is available, but
+nothing consumes the reply; a build without `libjxl` behaves identically.
+
+The sixel encode is **lossless in both axes**: it never encodes smaller than
+the engine's native 320x200, because the nearest-neighbour resample would
+*delete* whole rows or columns rather than blur them, taking MoO1's 1-pixel
+font strokes with them. Where the fitted image cannot afford the terminal's
+2x pixel-aspect on an axis, that axis drops to 1x and upsamples instead.
 
 ---
 
@@ -134,18 +150,21 @@ The door consumes its own options and leaves everything else for 1oom's
 engine argument parser, so any of 1oom's native switches (e.g. `-data <dir>`)
 pass straight through.
 
-A typical BBS invocation (the BBS fills in the DOOR32.SYS drop-file path):
+A typical BBS invocation (the BBS fills in the DOOR32.SYS drop-file path and
+the per-user storage directory):
 
 ```
-syncmoo1 <path>/door32.sys -name "<user>"
+syncmoo1 <path>/door32.sys -home <data>/user/<num>/moo1/
 ```
+
+No `-name` is needed: DOOR32.SYS line 7 already carries the user's alias.
 
 | Option | Meaning |
 |--------|---------|
 | `<path>/door32.sys` | A bare path whose filename is `door32.sys` (case-insensitive) is auto-detected as a **DOOR32.SYS** drop file: line 1 comm type (`2`=telnet/socket), line 2 socket handle, line 7 user alias, line 9 minutes left. |
 | `-s<fd>` | Client socket descriptor directly (glued form, e.g. `-s7`), when not launching from a drop file. Digit-suffix-only, so it never collides with 1oom's own `-s...` word options (`-sfx`, `-skipintro`, `-savequit`, ...). |
 | `-t<seconds>` | Session time limit in seconds; the door exits cleanly (restoring the terminal) when it elapses. Same digit-suffix-only rule as `-s<fd>`. |
-| `-name <handle>` | Player name. |
+| `-name <handle>` | The player's alias, for the **drop-file-less** dev path (`-s<fd>`/`SYNCMOO1_SOCK`). A DOOR32.SYS drop file always wins: its line 7 is the BBS's own statement of who the user is, and `-name` cannot override it whatever the argument order. The alias pre-fills the new-game emperor name (truncated to the 11 characters that screen lets the player edit); with no alias, 1oom invents one as usual. |
 | `-home <dir>` | Per-user sandbox directory: the door `mkpath`s and `chdir`s into it and points 1oom's config/save path at it (`os_set_path_user()`), so saves and settings don't collide across BBS nodes/users. Created if it doesn't exist. |
 | `-help`, `--help`, `-?` | Print the door's own option summary and exit (checked before any session resolution, so it wins even given a well-formed drop file). |
 
@@ -154,18 +173,58 @@ real terminal size and cell dimensions at connect (DESIGN.md §9).
 
 ---
 
+## Audio
+
+Both of MoO1's audio channels play over SyncTERM's audio APC, on any terminal
+that answers the capability probe. A terminal without it hears silence and is
+otherwise unaffected -- nothing is uploaded, nothing is rendered.
+
+**Sound effects** are the LBX-wrapped Creative VOC samples, shipped to the
+client once each and thereafter played by name.
+
+**Music** is MoO1's 40-track soundtrack. Each track arrives as LBX-wrapped XMI;
+the door converts it to MIDI, and `termgfx` renders it through ADLMIDI, encodes
+OGG, and uploads it -- all on a worker thread, so a first play never stalls the
+frame loop. Tracks whose XMI carries no loop-start controller (the intro
+fanfare, the ending theme) play **once** and stop, rather than looping.
+
+Both kinds are **content-addressed**: the cache name is a hash of the bytes
+that determine the sound, so identical audio is stored once, and changing the
+game data -- or the door's own converter -- renames the entry and invalidates
+every stale copy automatically.
+
+Rendered music is also cached **door-side** under `data/syncmoo1/audio/`, so a
+track rendered for one player ships straight from disk for the next.
+
+Volumes and on/off are 1oom's own settings (`opta.music`, `opta.music_volume`,
+`opta.sfx`, `opta.sfx_volume`), changeable in-game under Options -> Sound and
+seedable by the sysop -- see [`syncmoo1.ini`](#syncmoo1ini). Setting a music
+volume of 0 stops the channel rather than uploading a track nobody will hear.
+
+---
+
 ## `syncmoo1.ini`
 
-Optional door configuration file, read from the **launch directory** (the
-door's `xtrn/syncmoo1/` install dir) at startup -- copy
-[`syncmoo1.example.ini`](syncmoo1.example.ini) to `syncmoo1.ini` beside the
-door binary and uncomment what you need. Every key is optional; a missing
+Door configuration file, read from the **launch directory** (the door's
+`xtrn/syncmoo1/` install dir) at startup.
+
+Synchronet sysops get it for free: `jsexec install-xtrn ../xtrn/syncmoo1`
+seeds `syncmoo1.ini` from `xtrn/syncmoo1/syncmoo1.example.ini` as part of the
+install, and never overwrites one that already exists. (Outside Synchronet, or
+for an install that predates this step, copy the example by hand.)
+
+**Read it before your first player does.** With no `syncmoo1.ini` the door runs
+on 1oom's stock defaults, and MoO1's copy protection is armed: after year 40,
+on a random turn, it demands a ship name printed in the boxed manual and ends
+the game after three wrong answers. The shipped example disables it, and
+enables 1oom's quality-of-life preset besides. Every key is optional; a missing
 file or key falls back to its default.
 
 | Section | Key | Meaning |
 |---------|-----|---------|
 | `[audio]` | `music_quality` | Ogg/Vorbis VBR quality (`0.0`..`1.0`) for encoded music tracks. Lower = smaller upload, softer sound. Default: the termgfx-wide default. |
 | `[debug]` | `wire` | Record both directions of the terminal conversation to `data/syncmoo1/syncmoo1_n<node>.wire` -- multi-MB per session, per node. Decode with `tools/wiredump.py`. Default `false`; only turn this on while actively debugging the door. |
+| `[1oom]` | `<module>.<item>` | Defaults for the engine's own options, keyed by 1oom's cfg names (modules: `opt`, `opta`, `game`, `hw`, `hwx`, `ui`). Applied through 1oom's own parser, so its per-item range checks validate them. These are **defaults, not overrides**: a player who changes one in the in-game options menu keeps their choice; a player who never touches it follows whatever you set, even if you change it later. |
 
 `SYNCMOO1_WIREDUMP=<path>` forces the wire dump on (writing to `<path>`
 instead of the usual `data/syncmoo1/...` location) for a one-off debug run
