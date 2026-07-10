@@ -42,6 +42,7 @@
 #include "hw.h"
 #include "cfg.h"
 #include "main.h"
+#include "mouse.h"     /* 1oom: mouse_set_xy_from_hw() -- see hw_mouse_set_xy() */
 #include "options.h"
 #include "palette.h"
 #include "types.h"
@@ -118,6 +119,10 @@ int main(int argc, char **argv)
     if (sm_door_setup(argc, argv))
         return 1;
     sm_door_sanitize_argv(&argc, argv);
+    /* AFTER the strip -- this appends a genuine 1oom option ("-ngn"), which the
+     * strip would otherwise have to know to keep -- and before main_1oom()
+     * parses argv. Pre-fills the new-game emperor name with the BBS alias. */
+    argv = sm_door_argv_add_emperor_name(&argc, argv);
     sm_config_apply();
     sm_io_init(sm_door_socket());
     /* Registered via atexit(), BEFORE main_1oom() -- not a plain call after it
@@ -396,8 +401,27 @@ bool hw_kbd_set_repeat(bool enabled)
     return false;
 }
 
+/* 1oom implements KEYBOARD menu navigation by warping the mouse: the arrow keys
+ * and keypad pick the nearest widget (uiobj.c's directional search), focus it,
+ * and then call this to drag the pointer there (uiobj.c:1171, gated on
+ * ui_mouse_warp_disabled). While this was an empty stub the hand never moved
+ * and the arrow keys looked dead -- the menus were mouse-only.
+ *
+ * We cannot move a remote terminal's physical pointer, and we do not need to:
+ * the game draws its OWN hand cursor from its internal mouse position, which is
+ * exactly what syncmoo1_input.c feeds with mouse_set_xy_from_hw() on every SGR
+ * mouse report. Writing the same state teleports the cursor the engine draws.
+ *
+ * `mx`/`my` are already in the engine's 320x200 coordinates (they come from
+ * moouse_x/moouse_y), so no scaling belongs here.
+ *
+ * The one asymmetry, inherent to a remote terminal: the user's real pointer
+ * stays put, so their next physical mouse motion snaps the cursor back to it.
+ * Keyboard navigation works until the mouse is touched again -- the same
+ * behavior every warp-emulating port has. */
 void hw_mouse_set_xy(int mx, int my)
 {
+    mouse_set_xy_from_hw(mx, my);
 }
 
 int hw_icon_set(const uint8_t *data, const uint8_t *pal, int w, int h)

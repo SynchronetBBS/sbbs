@@ -134,7 +134,11 @@ static void sm_config_read_ini(void)
     strListFree(&ini);
 }
 
-static char sm_base_cfg[PATH_MAX];   /* base snapshot; "" = none taken */
+/* The base snapshot lives in MEMORY, not on disk: its temp file is written,
+ * read back, and deleted inside sm_config_seed_1oom(), so no exit path -- not
+ * even sm_door_hangup()'s _exit(), which skips atexit() -- can leave it behind.
+ * NULL = no base taken, so the prune is skipped rather than guessing. */
+static char *sm_base_text;
 static char sm_user_cfg[PATH_MAX];   /* user's own cfg path; "" = none taken */
 
 /* Slurp `path` into a malloc'd NUL-terminated buffer, or NULL. */
@@ -211,18 +215,22 @@ void sm_config_seed_1oom(void)
 
     /* 2. Snapshot every option at its sysop-resolved value. cfg_save() rather
      *    than an enumeration, so the base needs no knowledge of the item
-     *    table -- and stays correct as 1oom gains options. */
-    snprintf(sm_base_cfg, sizeof sm_base_cfg, "%s/syncmoo1_base.tmp", user);
-    if (cfg_save(sm_base_cfg) != 0) {
-        /* cfg_save() (1oom/src/cfg.c) opens with "w+" (creating/truncating
-         * the file) and can still fail mid-write via its own goto-fail paths
-         * without removing what it created. Clean up that partial file
-         * ourselves before blanking the name -- once sm_base_cfg[0] is '\0',
-         * sm_config_prune_user_cfg()'s remove(sm_base_cfg) is gated off and
-         * would never run, leaving syncmoo1_base.tmp behind forever. */
-        remove(sm_base_cfg);
-        sm_base_cfg[0] = '\0';   /* no base -> prune is skipped, never guesses */
-    }
+     *    table -- and stays correct as 1oom gains options.
+     *
+     *    cfg_save() only writes files, so the snapshot has to touch the disk.
+     *    Read it straight back into memory and delete it HERE, in the same
+     *    breath: the prune that consumes it runs from atexit(), and a player
+     *    who drops carrier exits through sm_door_hangup()'s _exit(), which
+     *    skips atexit entirely. A temp deleted at prune time would therefore
+     *    survive every disconnected session -- the common way a BBS door ends
+     *    -- and litter each player's directory with a ~3KB file. Holding the
+     *    text costs nothing next to a 44KB sixel frame, and it also removes
+     *    any window in which the base could go stale or be clobbered. */
+    snprintf(tmp, sizeof tmp, "%s/syncmoo1_base.tmp", user);
+    if (cfg_save(tmp) == 0)
+        sm_base_text = sm_slurp(tmp);   /* NULL on failure -> prune is skipped */
+    remove(tmp);                        /* cfg_save() can create then fail; either
+                                         * way nothing survives this function */
 
     /* 3. Cache the user's own cfg path NOW, while os_get_path_user() still
      *    resolves to our sandbox. atexit() is LIFO: hw_sbbs.c's main()
@@ -264,11 +272,11 @@ static const char *const sm_prune_always[] = {
 
 void sm_config_prune_user_cfg(void)
 {
-    char  *base, *user, *pruned = NULL;
+    char  *user, *pruned = NULL;
     size_t n = 0;
     FILE  *f;
 
-    if (sm_base_cfg[0] == '\0' || sm_user_cfg[0] == '\0')
+    if (sm_base_text == NULL || sm_user_cfg[0] == '\0')
         return;
 
     /* Use the path cached by sm_config_seed_1oom(), NOT a fresh cfg_cfgname()
@@ -276,12 +284,12 @@ void sm_config_prune_user_cfg(void)
      * main_shutdown()'s cfg_save()), 1oom's os_shutdown() has already cleared
      * its cached user_path, and a second cfg_cfgname() would silently re-
      * derive a $HOME/XDG path instead of the sandbox (see the comment in
-     * sm_config_seed_1oom()). */
-    base = sm_slurp(sm_base_cfg);
+     * sm_config_seed_1oom()). The base itself was slurped there too, and its
+     * temp file deleted; nothing on disk has to survive until now. */
     user = sm_slurp(sm_user_cfg);
 
-    if (base != NULL && user != NULL
-        && sm_cfg_prune(base, user, sm_prune_always, &pruned, &n) == 0) {
+    if (user != NULL
+        && sm_cfg_prune(sm_base_text, user, sm_prune_always, &pruned, &n) == 0) {
         f = fopen(sm_user_cfg, "wb");
         if (f != NULL) {
             fwrite(pruned, 1, n, f);   /* short write -> file as-is next run */
@@ -290,9 +298,8 @@ void sm_config_prune_user_cfg(void)
     }
     free(pruned);
     free(user);
-    free(base);
-    remove(sm_base_cfg);
-    sm_base_cfg[0] = '\0';
+    free(sm_base_text);
+    sm_base_text = NULL;
     sm_user_cfg[0] = '\0';
 }
 

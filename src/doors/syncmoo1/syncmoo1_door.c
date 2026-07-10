@@ -56,6 +56,7 @@ static uint32_t g_time_limit_ms;       /* 0 = no session time limit */
 static uint32_t g_deadline_ms;         /* only meaningful if g_deadline_armed */
 static int      g_deadline_armed;
 static char     g_alias[SM_DOOR_ALIAS_MAX];
+static int      g_alias_authoritative;   /* set only by read_door32(): the BBS named the user */
 static char     g_home[SM_DOOR_HOME_MAX];  /* "" = no -home given */
 
 /* Monotonic millisecond clock -- mirrors syncmoo1_io.c's sm_io_now_ms(), used
@@ -163,6 +164,7 @@ static void read_door32(const char *path)
                 line[strcspn(line, "\r\n")] = '\0';
                 strncpy(g_alias, line, sizeof(g_alias) - 1);
                 g_alias[sizeof(g_alias) - 1] = '\0';  /* strncpy may not NUL-terminate */
+                g_alias_authoritative = 1;   /* the BBS said so; -name cannot outrank it */
                 break;
             case 8: tmin = atoi(line); break;        /* time left, minutes        */
         }
@@ -194,8 +196,18 @@ static void sm_door_resolve(int argc, char **argv)
         } else if (is_time_arg(a)) {
             g_time_limit_ms = (uint32_t)atoi(a + 2) * 1000u;    /* -t<seconds>   */
         } else if (strcmp(a, "-name") == 0 && i + 1 < argc) {
-            strncpy(g_alias, argv[++i], sizeof(g_alias) - 1);   /* -name <alias> */
-            g_alias[sizeof(g_alias) - 1] = '\0';   /* strncpy may not NUL-terminate */
+            /* -name <alias>: the alias source for the DROPFILE-LESS dev path
+             * (-s<fd>/SYNCMOO1_SOCK), where there is no DOOR32.SYS line 7 to
+             * read. It never outranks a drop file: the BBS's own statement of
+             * who the user is wins, whatever order argv happens to be in.
+             * (Guarding on the flag rather than on g_alias[0] so a drop file
+             * carrying an EMPTY alias still shuts -name out -- an empty line 7
+             * is the BBS saying "no alias", not "help yourself".) */
+            ++i;
+            if (!g_alias_authoritative) {
+                strncpy(g_alias, argv[i], sizeof(g_alias) - 1);
+                g_alias[sizeof(g_alias) - 1] = '\0';   /* strncpy may not NUL-terminate */
+            }
         } else if (strcmp(a, "-home") == 0 && i + 1 < argc) {
             /* -home <dir>: captured HERE (not just stripped) because
              * sm_door_sanitize_argv() below removes it from argv without
@@ -318,6 +330,39 @@ int sm_door_socket(void)
 const char *sm_door_alias(void)
 {
     return g_alias;
+}
+
+/* See syncmoo1.h. The name the new-game prompt will show is edited through
+ * uiobj_read_str(..., 0xb, ...) (uinewgame.c), i.e. ELEVEN characters -- less
+ * than EMPEROR_NAME_LEN's 15 -- so truncate to what the player can actually
+ * see and edit rather than to what the struct can hold. A BBS alias is often
+ * longer; better a clean 11 characters than a name the prompt clips. */
+#define SM_EMPEROR_NAME_MAX 11
+
+char **sm_door_argv_add_emperor_name(int *argc, char **argv)
+{
+    static char name[SM_EMPEROR_NAME_MAX + 1];
+    char      **nv;
+    int         n = *argc;
+
+    if (g_alias[0] == '\0')
+        return argv;   /* no dropfile and no -name: let 1oom invent one */
+
+    strncpy(name, g_alias, sizeof(name) - 1);
+    name[sizeof(name) - 1] = '\0';
+
+    /* +3 for "-ngn", "1", name; +1 for the NULL terminator argv[] carries. */
+    nv = (char **)malloc(((size_t)n + 4) * sizeof(*nv));
+    if (nv == NULL)
+        return argv;   /* OOM: the name is a nicety, not worth failing over */
+
+    memcpy(nv, argv, (size_t)n * sizeof(*nv));
+    nv[n++] = (char *)"-ngn";
+    nv[n++] = (char *)"1";       /* player 1 is the human (see 1oom's -new HUMANS) */
+    nv[n++] = name;
+    nv[n]   = NULL;
+    *argc   = n;
+    return nv;
 }
 
 /* NULL (not "") when unset -- unlike sm_door_alias() above -- so

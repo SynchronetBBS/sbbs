@@ -246,6 +246,21 @@ void sm_door_check_time(void);
  * untouched. Call after sm_door_setup(), before main_1oom(). */
 void sm_door_sanitize_argv(int *argc, char **argv);
 
+/* Pre-fill the new-game emperor name with the player's BBS alias.
+ *
+ * 1oom's new-game name prompt (uinewgame.c's ui_new_game_name()) seeds its edit
+ * buffer from game_opt_new.pdata[0].playername and only invents a random name
+ * when that string is EMPTY. The engine already exposes a way to set it: the
+ * "-ngn <player> <name>" option (game.c's game_opt_set_new_name(), arity 2).
+ * So the door needs no engine change -- it appends that option to argv and the
+ * player sees their own handle as the default, still free to edit it.
+ *
+ * Returns a NEW argv array (malloc'd, NULL-terminated, *argc raised by 3) when
+ * an alias is known, else `argv` unchanged. Call AFTER sm_door_sanitize_argv()
+ * -- the flag is a genuine 1oom option and must survive the strip -- and before
+ * main_1oom(). The result is never freed: it lives for the process. */
+char **sm_door_argv_add_emperor_name(int *argc, char **argv);
+
 /* The single canonical hangup path: client socket dead (read/write error or
  * EOF). Wired to both the read side (hw_sbbs.c's hw_event_handle) and the
  * write side (syncmoo1_io.c's flush), replacing the two earlier ad-hoc
