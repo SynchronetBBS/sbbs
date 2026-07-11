@@ -79,6 +79,7 @@ void fn_Capture_resume(WrenVM *vm);
 void fn_CTerm_ooiiMode(WrenVM *vm);
 void fn_CTerm_ooiiMode_set(WrenVM *vm);
 void fn_CTerm_mouseMode(WrenVM *vm);
+void fn_CTerm_mouseSgrPixels(WrenVM *vm);
 void fn_CTerm_mouseDisabled(WrenVM *vm);
 void fn_CTerm_mouseDisabled_set(WrenVM *vm);
 void fn_CTerm_throttleSpeed(WrenVM *vm);

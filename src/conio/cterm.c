@@ -1976,13 +1976,14 @@ cterm_reset(struct cterminal *cterm)
 		cterm->mouse_state_change(1006, 0, cterm->mouse_state_change_cbdata);
 		cterm->mouse_state_change(1007, 0, cterm->mouse_state_change_cbdata);
 		cterm->mouse_state_change(1015, 0, cterm->mouse_state_change_cbdata);
+		cterm->mouse_state_change(1016, 0, cterm->mouse_state_change_cbdata);
 	}
 }
 
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
 	static bool key_tables_verified = false;
-	char	*revision="$Revision: 1.329 $";
+	char	*revision="$Revision: 1.330 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;

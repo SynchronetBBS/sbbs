@@ -4490,8 +4490,12 @@ mouse_state_change(int type, int action, void *pms)
 			ms->mode = MM_OFF;
 			setup_mouse_events(ms);
 		}
-		if (type == MS_SGR_SET)
-			ms->flags &= ~MS_FLAGS_SGR;
+		if (type == MS_SGR_SET) {
+			if ((ms->flags & MS_FLAGS_SGR_PIXELS) == 0)
+				ms->flags &= ~MS_FLAGS_SGR;
+		}
+		if (type == MS_SGR_PIXELS_SET && (ms->flags & MS_FLAGS_SGR_PIXELS))
+			ms->flags &= ~(MS_FLAGS_SGR | MS_FLAGS_SGR_PIXELS);
 	}
 	else {
 		switch (type) {
@@ -4504,6 +4508,11 @@ mouse_state_change(int type, int action, void *pms)
 				break;
 			case MS_SGR_SET:
 				ms->flags |= MS_FLAGS_SGR;
+				ms->flags &= ~MS_FLAGS_SGR_PIXELS;
+				break;
+			case MS_SGR_PIXELS_SET:
+				ms->flags |= MS_FLAGS_SGR | MS_FLAGS_SGR_PIXELS;
+				break;
 		}
 	}
 }
@@ -4569,7 +4578,9 @@ mouse_state_query(int type, void *pms)
 	struct mouse_state *ms = (struct mouse_state *)pms;
 
 	if (type == MS_SGR_SET)
-		return ms->flags & MS_FLAGS_SGR;
+		return (ms->flags & MS_FLAGS_SGR) && (ms->flags & MS_FLAGS_SGR_PIXELS) == 0;
+	if (type == MS_SGR_PIXELS_SET)
+		return ms->flags & MS_FLAGS_SGR_PIXELS;
 	return type == ms->mode;
 }
 
@@ -4765,6 +4776,22 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 		return 6;
 	}
 	else {
+		if (ms->flags & MS_FLAGS_SGR_PIXELS) {
+			struct text_info ti;
+			int ciovmode;
+			int charwidth;
+			int charheight;
+
+			gettextinfo(&ti);
+			ciovmode = find_vmode(ti.currmode);
+			if (ciovmode != -1 && vparams[ciovmode].charwidth > 0 && vparams[ciovmode].charheight > 0
+			    && (me->startx_res != 0 || me->starty_res != 0)) {
+				charwidth = vparams[ciovmode].charwidth;
+				charheight = vparams[ciovmode].charheight;
+				x = me->startx_res - (cterm->x * charwidth) + 1;
+				y = me->starty_res - (cterm->y * charheight) + 1;
+			}
+		}
 		button |= mods;
 		ret = snprintf(buf, bufsz, "\x1b[<%d;%d;%d%c", button, x, y, release ? 'm' : 'M');
 		if (ret > bufsz)

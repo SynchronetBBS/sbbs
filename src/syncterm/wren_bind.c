@@ -1062,6 +1062,7 @@ static const struct binding BINDINGS[] = {
 	{ "CTerm", true, "ooiiMode",           fn_CTerm_ooiiMode        },
 	{ "CTerm", true, "ooiiMode=(_)",       fn_CTerm_ooiiMode_set    },
 	{ "CTerm", true, "mouseMode",          fn_CTerm_mouseMode       },
+	{ "CTerm", true, "mouseSgrPixels",     fn_CTerm_mouseSgrPixels  },
 	{ "CTerm", true, "mouseDisabled",      fn_CTerm_mouseDisabled   },
 	{ "CTerm", true, "mouseDisabled=(_)",  fn_CTerm_mouseDisabled_set },
 	{ "CTerm", true, "throttleSpeed",      fn_CTerm_throttleSpeed     },

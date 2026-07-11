@@ -1062,6 +1062,7 @@ foreign class CTerm {
   // audio context to match (open while non-zero, closed at 0).
   foreign static ooiiMode=(n)
   foreign static mouseMode
+  foreign static mouseSgrPixels
   foreign static mouseDisabled
   foreign static mouseDisabled=(b)
   // Network character-pacing rate in BPS (Alt-Up / Alt-Down walk it

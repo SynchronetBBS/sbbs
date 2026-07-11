@@ -798,6 +798,19 @@ fn_CTerm_mouseMode(WrenVM *vm)
 	wrenSetSlotDouble(vm, 0, (double)v);
 }
 
+/* CTerm.mouseSgrPixels — true while DECSET 1016 is the active extended
+ * mouse coordinate mode. */
+void
+fn_CTerm_mouseSgrPixels(WrenVM *vm)
+{
+	bool v = false;
+	if (cterm != NULL && cterm->mouse_state_change_cbdata != NULL) {
+		struct mouse_state *ms = cterm->mouse_state_change_cbdata;
+		v = (ms->flags & MS_FLAGS_SGR_PIXELS) != 0;
+	}
+	wrenSetSlotBool(vm, 0, v);
+}
+
 /* CTerm.mouseDisabled — companion to mouseMode: true when the mouse is
  * in a tracking mode but the conio backend has signalled it can't
  * actually report events (no SDL pointer, headless, etc.). */

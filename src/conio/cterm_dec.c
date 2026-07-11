@@ -727,6 +727,7 @@ cterm_handle_decrqm_dec(struct cterminal *cterm, int *speed)	/* CSI ? $ p */
 		case 1006:
 		case 1007:
 		case 1015:
+		case 1016:
 			if (cterm->mouse_state_query)
 				pm = cterm->mouse_state_query((int)cterm->seq_param_int[0],
 				    cterm->mouse_state_query_cbdata) ? 1 : 2;
@@ -757,6 +758,7 @@ cterm_handle_save_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? s */
 		    | CTERM_SAVEMODE_MOUSE_UTF8 | CTERM_SAVEMODE_MOUSE_SGR
 		    | CTERM_SAVEMODE_MOUSE_ALTSCROLL
 		    | CTERM_SAVEMODE_MOUSE_URXVT
+		    | CTERM_SAVEMODE_MOUSE_SGR_PIXELS
 		    | CTERM_SAVEMODE_DECLRMM | CTERM_SAVEMODE_DECBKM);
 		cterm->saved_mode &= ~cterm->saved_mode_mask;
 		cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_AUTOWRAP) ? CTERM_SAVEMODE_AUTOWRAP : 0;
@@ -778,6 +780,7 @@ cterm_handle_save_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? s */
 		cterm->saved_mode |= (cterm->mouse_state_query(1006, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_SGR : 0);
 		cterm->saved_mode |= (cterm->mouse_state_query(1007, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_ALTSCROLL : 0);
 		cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
+		cterm->saved_mode |= (cterm->mouse_state_query(1016, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_SGR_PIXELS : 0);
 		cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECLRMM) ? CTERM_SAVEMODE_DECLRMM : 0;
 		cterm->saved_mode |= (cterm->extattr & CTERM_EXTATTR_DECBKM) ? CTERM_SAVEMODE_DECBKM : 0;
 		setwindow(cterm);
@@ -892,6 +895,11 @@ cterm_handle_save_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? s */
 				cterm->saved_mode &= ~CTERM_SAVEMODE_MOUSE_URXVT;
 				cterm->saved_mode |= (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_URXVT : 0);
 				break;
+			case 1016:
+				cterm->saved_mode_mask |= CTERM_SAVEMODE_MOUSE_SGR_PIXELS;
+				cterm->saved_mode &= ~CTERM_SAVEMODE_MOUSE_SGR_PIXELS;
+				cterm->saved_mode |= (cterm->mouse_state_query(1016, cterm->mouse_state_query_cbdata) ? CTERM_SAVEMODE_MOUSE_SGR_PIXELS : 0);
+				break;
 		}
 	}
 }
@@ -984,6 +992,8 @@ cterm_handle_restore_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? u *
 			cterm->mouse_state_change(1007, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_ALTSCROLL, cterm->mouse_state_change_cbdata);
 		if (cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_URXVT)
 			cterm->mouse_state_change(1015, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_URXVT, cterm->mouse_state_change_cbdata);
+		if (cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_SGR_PIXELS)
+			cterm->mouse_state_change(1016, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_SGR_PIXELS, cterm->mouse_state_change_cbdata);
 		if (cterm->saved_mode_mask & CTERM_SAVEMODE_DECBKM) {
 			if (cterm->saved_mode & CTERM_SAVEMODE_DECBKM)
 				cterm->extattr |= CTERM_EXTATTR_DECBKM;
@@ -1133,6 +1143,10 @@ cterm_handle_restore_dec_modes(struct cterminal *cterm, int *speed)	/* CSI ? u *
 				if (cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_URXVT)
 					cterm->mouse_state_change(1015, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_URXVT, cterm->mouse_state_change_cbdata);
 				break;
+			case 1016:
+				if (cterm->saved_mode_mask & CTERM_SAVEMODE_MOUSE_SGR_PIXELS)
+					cterm->mouse_state_change(1016, cterm->saved_mode & CTERM_SAVEMODE_MOUSE_SGR_PIXELS, cterm->mouse_state_change_cbdata);
+				break;
 		}
 	}
 finish:
@@ -1215,6 +1229,7 @@ cterm_handle_decsm(struct cterminal *cterm, int *speed)	/* CSI ? h */
 			case 1006:
 			case 1007:
 			case 1015:
+			case 1016:
 				if (cterm->mouse_state_change)
 					cterm->mouse_state_change((int)cterm->seq_param_int[i], 1,
 					    cterm->mouse_state_change_cbdata);
@@ -1271,6 +1286,7 @@ cterm_handle_decrm(struct cterminal *cterm, int *speed)	/* CSI ? l */
 			case 1006:
 			case 1007:
 			case 1015:
+			case 1016:
 				if (cterm->mouse_state_change)
 					cterm->mouse_state_change((int)cterm->seq_param_int[i], 0,
 					    cterm->mouse_state_change_cbdata);

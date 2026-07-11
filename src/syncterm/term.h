@@ -31,7 +31,9 @@ struct mouse_state {
 
 #define MS_FLAGS_SGR (1 << 0)
 #define MS_FLAGS_DISABLED (1 << 1)
+#define MS_FLAGS_SGR_PIXELS (1 << 2)
 #define MS_SGR_SET (1006)
+#define MS_SGR_PIXELS_SET (1016)
 	enum mouse_modes mode;
 };
 

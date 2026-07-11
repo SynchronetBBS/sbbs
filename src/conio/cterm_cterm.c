@@ -283,6 +283,8 @@ cterm_handle_ext_state_query(struct cterminal *cterm, int *speed)	/* CSI = n */
 				strcat(tmp, ";1007");
 			if (cterm->mouse_state_query(1015, cterm->mouse_state_query_cbdata))
 				strcat(tmp, ";1015");
+			if (cterm->mouse_state_query(1016, cterm->mouse_state_query_cbdata))
+				strcat(tmp, ";1016");
 			if (strlen(tmp) == 4)
 				strcat(tmp, ";");
 			strcat(tmp, "n");

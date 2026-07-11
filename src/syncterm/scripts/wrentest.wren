@@ -589,8 +589,8 @@ class WrenTest {
 
   static testCTermFlags_() {
     check_(CTerm.doorwayMode is Bool && CTerm.started is Bool &&
-           CTerm.emulation is Num,
-           "CTerm.doorwayMode/.started Bool, .emulation Num")
+           CTerm.mouseSgrPixels is Bool && CTerm.emulation is Num,
+           "CTerm.doorwayMode/.started/.mouseSgrPixels Bool, .emulation Num")
   }
 
   static testBBS_() {

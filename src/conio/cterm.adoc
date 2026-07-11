@@ -785,6 +785,9 @@ SyncTERM APC blob verbs (`DrawPPMBlob`, `DrawJXLBlob`, `LoadPPMBlob`,
 `LoadJXLBlob`, `LoadPBMBlob`, and audio `LoadBlob`) are available in
 revision 1.329 and later.
 
+SGR pixel-position mouse reporting (`DECSET 1016`) is available in
+revision 1.330 and later.
+
 SOURCE: <<ECMA-48>>
 
 === `CSI < Ps c` CTerm Device Attributes (`CTDA`)
@@ -1081,6 +1084,14 @@ SOURCE: <<XTerm>>
 (Not supported by SyncTERM)
 
 SOURCE: <<XTerm>>
+|1016
+|SGR encoded pixel-position coordinates
+
+Uses the same CSI < Pb ; Px ; Py M/m reporting format as
+mode 1006, but Px and Py are one-based pixel positions instead
+of character-cell positions.
+
+SOURCE: <<XTerm>>
 |2004
 |Set bracketed paste mode
 
@@ -1278,6 +1289,10 @@ SOURCE: <<XTerm>>
 |Disable URXVT encoded extended coordinates
 
 (Not supported by SyncTERM)
+
+SOURCE: <<XTerm>>
+|1016
+|Disable SGR encoded pixel-position coordinates
 
 SOURCE: <<XTerm>>
 |2004

@@ -2958,6 +2958,8 @@ emulation-aware logic.
 | Mouse state
 | `mouseMode` (raw enum from `cterm`'s mouse-state struct: 0 = off,
   1 = RIP, 9 = X10, 1000..1003 = the various tracking modes),
+  `mouseSgrPixels` (Bool — true when DECSET 1016 SGR pixel-position
+  reporting is active),
   `mouseDisabled` / `mouseDisabled = b` (Bool — true when ciolib
   has been told to stop delivering events even though a tracking
   mode is set; setter pairs with `Input.setupMouseEvents()`)
@@ -3025,6 +3027,10 @@ emulation-aware logic.
   `0` (`MM_OFF`), `1` (`MM_RIP`), `9` (`MM_X10`), `1000..1003` (the
   XTerm tracking modes).  Used by the default status bar to decide
   whether to light the "M" indicator.
+
+| `CTerm.mouseSgrPixels`
+| Read-only Bool from the live `mouse_state`; true while DECSET 1016
+  is the active SGR pixel-position reporting mode.
 
 | `CTerm.doorwayMode`, `CTerm.doorwayMode = b`
 | Read or write the cterm doorway-mode flag.  When true, the input

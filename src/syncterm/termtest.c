@@ -3111,10 +3111,10 @@ static int test_decrpm_mode80(void) { return test_decrpm_toggle(80, 1); }
 static int
 test_decrpm_mouse_modes(void)
 {
-	static const int modes[] = {9, 1000, 1002, 1003, 1006};
+	static const int modes[] = {9, 1000, 1002, 1003, 1006, 1016};
 	int i, pm;
 
-	for (i = 0; i < 5; i++) {
+	for (i = 0; i < (int)(sizeof(modes) / sizeof(modes[0])); i++) {
 		pm = query_decrqm(modes[i]);
 		if (pm != 2) {
 			fprintf(result_fp, "    mode %d default: expected 2 got %d\n",
