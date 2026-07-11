@@ -1393,15 +1393,23 @@ static int g_dsr_h, g_dsr_t;
 
 static void door_tier_cycle(void)
 {
-	int avail[8], n = 0, i, eff, cur = 0;
+	int avail[8], n = 0, i, eff, cur = 0, jxl_ok = 0;
 
 #ifdef WITH_JXL
-	if (g_jxl_supported)
+	if (g_jxl_supported) {
 		avail[n++] = SA_JXL;
+		jxl_ok     = 1;
+	}
 #endif
 	if (g_have_sixel || !g_probe_replied)
 		avail[n++] = SA_SIXEL;
-	if (g_is_syncterm)
+	/* PPM is a huge UNCOMPRESSED tier and, being a raw P6 with no colorspace
+	 * tag, SyncTERM decodes it as BT.709 rather than our sRGB (the colors look
+	 * off). It only earns its place as the SyncTERM fallback when JXL isn't
+	 * available -- real SyncTERM has JXL -- so keep it OUT of the manual F4
+	 * cycle whenever JXL is. sa_auto_tier() still selects it for a no-JXL
+	 * SyncTERM, so that niche keeps working. */
+	if (g_is_syncterm && !jxl_ok)
 		avail[n++] = SA_PPM;
 	avail[n++] = SA_HALF;   /* half-block glyph exists in BOTH charsets (U+2580 / 0xDF) */
 	/* Quadrant/sextant glyphs are UTF-8 only -- no CP437 equivalent, so on a
