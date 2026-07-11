@@ -1647,7 +1647,7 @@ load_settings(struct syncterm_settings *set)
 	        "TransferFailureKeypressTimeout",
 
                 /* seconds: */ 60);
-	set->custom_cols = iniReadInteger(inifile, "SyncTERM", "CustomCols", 80);
+	set->custom_cols = iniReadInteger(inifile, "SyncTERM", "CustomColumns", 80);
 	set->custom_rows = iniReadInteger(inifile, "SyncTERM", "CustomRows", 25);
 	set->custom_fontheight = iniReadInteger(inifile, "SyncTERM", "CustomFontHeight", 16);
 	set->custom_aw = iniReadInteger(inifile, "SyncTERM", "CustomAspectWidth", 4);
