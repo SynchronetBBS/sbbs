@@ -97,6 +97,7 @@
  * clean swap) and is left as a focused follow-up, ideally with the M3
  * multiplayer work that builds its netgame on sockwrap. */
 #include "genwrap.h"
+#include "ini_file.h"   /* xpdev: merge (not clobber) the per-user REDALERT.INI */
 
 #define DOOR_FB_BYTES ((size_t)DOOR_FB_WIDTH * DOOR_FB_HEIGHT)
 
@@ -536,14 +537,29 @@ static void door_setup_engine_paths(void)
 		snprintf(abs_home, sizeof abs_home, "%s", g_home);   /* fall back to as-given */
 
 	snprintf(ini_path, sizeof ini_path, "%s/REDALERT.INI", abs_home);
-	f = fopen(ini_path, "w");
+	/* MERGE, don't clobber. The old code rewrote this file from scratch every
+	 * launch with only [Paths], which wiped the engine's own persisted settings
+	 * (music/sound volume, etc.) AND left [Intro] PlayIntro absent -- so it
+	 * defaulted true and the door auto-started a game (Special.IsFromInstall)
+	 * every session instead of showing the main menu. Now: read the existing
+	 * INI (xpdev), (re)write only the runtime [Paths], and seed [Intro]
+	 * PlayIntro=false ONLY when it's absent so a fresh install boots to the menu
+	 * while a sysop's (or the engine's own) later value survives. iniWriteFile()
+	 * rewinds+truncates, so everything else in the file is preserved verbatim. */
+	f = iniOpenFile(ini_path, TRUE);   /* r+ if it exists, w+ if new */
 	if (f != NULL) {
-		fprintf(f, "[Paths]\r\nUserPath=%s\r\n", abs_home);
+		str_list_t ini = iniReadFile(f);
+
+		iniSetString(&ini, "Paths", "UserPath", abs_home, NULL);
 		if (g_assets[0] != '\0')
-			fprintf(f, "DataPath=%s\r\n", g_assets);
+			iniSetString(&ini, "Paths", "DataPath", g_assets, NULL);
+		if (!iniKeyExists(ini, "Intro", "PlayIntro"))
+			iniSetBool(&ini, "Intro", "PlayIntro", FALSE, NULL);
+		iniWriteFile(f, ini);
+		iniFreeStringList(ini);
 		fclose(f);
 	} else
-		fprintf(stderr, "syncalert: couldn't write '%s' (UserPath redirection will fall back to the engine default)\n", ini_path);
+		fprintf(stderr, "syncalert: couldn't open '%s' (UserPath redirection will fall back to the engine default)\n", ini_path);
 
 	/* Rewrite argv[0] so PathsClass::Argv_Path() resolves -home as the
 	 * search directory for the REDALERT.INI just written above. The
