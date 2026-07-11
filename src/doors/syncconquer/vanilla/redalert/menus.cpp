@@ -741,13 +741,24 @@ int Main_Menu(unsigned int)
             //			Draw_Caption (TXT_NONE, d_dialog_x, d_dialog_y, d_dialog_w);
             commands->Draw_All();
 #ifndef REMASTER_BUILD
+            //	LOCAL: engine version (top row) + door version (bottom row), each
+            //	CENTERED on its own line.  A single "%s\r%s" TPF_CENTER print only
+            //	centers one of the two lines (the center offset is derived from a
+            //	single line's width), so draw them as two separate centered prints.
             Fancy_Text_Print("%s",
-                             d_dialog_x + d_dialog_w - (1 * RESFACTOR),
+                             d_dialog_x + (d_dialog_w / 2),
+                             d_dialog_y + d_dialog_h - (2 * RESFACTOR),
+                             GadgetClass::Get_Color_Scheme(),
+                             TBLACK,
+                             TPF_6POINT | TPF_NOSHADOW | TPF_CENTER,
+                             Version_Name());
+            Fancy_Text_Print("%s",
+                             d_dialog_x + (d_dialog_w / 2),
                              d_dialog_y + d_dialog_h + (4 * RESFACTOR),
                              GadgetClass::Get_Color_Scheme(),
                              TBLACK,
-                             TPF_6POINT | TPF_NOSHADOW | TPF_RIGHT,
-                             Version_Name());
+                             TPF_6POINT | TPF_NOSHADOW | TPF_CENTER,
+                             SyncAlert_Version_Name());
 #endif
 
             /*

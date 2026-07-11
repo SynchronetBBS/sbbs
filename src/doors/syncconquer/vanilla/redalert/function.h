@@ -626,6 +626,7 @@ int Terrain_Cost(CELL cell, FacingType facing);
 **	VERSION.CPP
 */
 char const* Version_Name(void);
+char const* SyncAlert_Version_Name(void); //	LOCAL: SyncConquer door version line
 
 /*
 **	WEAPON.CPP

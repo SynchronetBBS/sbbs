@@ -317,7 +317,7 @@ void GameOptionsClass::Process(void)
             **	Display the version number at the bottom of the dialog box.
             */
 #ifndef REMASTER_BUILD
-            Fancy_Text_Print("%s\r%s",
+            Fancy_Text_Print("%s\r%s  %s",
                              (OptionX + OptionWidth) - (18 * RESFACTOR),
                              OptionY + OptionHeight
                                  - ((Session.Type == GAME_NORMAL) ? (30 * RESFACTOR) : (19 * RESFACTOR)),
@@ -325,7 +325,8 @@ void GameOptionsClass::Process(void)
                              TBLACK,
                              TPF_6POINT | TPF_NOSHADOW | TPF_RIGHT,
                              Scen.ScenarioName,
-                             Version_Name());
+                             Version_Name(),
+                             SyncAlert_Version_Name()); //	LOCAL: + door version (same line)
 #endif
 
             buttons->Draw_All();

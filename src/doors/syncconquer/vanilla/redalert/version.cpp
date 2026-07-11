@@ -738,4 +738,24 @@ char const* Version_Name(void)
     }
     return (buffer);
 }
+
+//	LOCAL (SyncConquer door): the door's own version line, shown in the menus
+//	alongside Version_Name() (goptions.cpp / menus.cpp) without replacing it.
+//	Bump SYNCALERT_VERSION per release.  The hash/date are the SBBS repo's git
+//	state at build time (common/gitinfo.h) -- Vanilla Conquer is vendored inside
+//	that repo, so this stamps the door build.
+#define SYNCALERT_VERSION "v0.1"
+char const* SyncAlert_Version_Name(void)
+{
+    static char buffer[80];
+
+    //	No hash here: this is drawn on the same line as Version_Name(), which
+    //	already carries the (identical) git short-hash -- avoid duplicating it.
+    snprintf(buffer,
+             sizeof(buffer),
+             "%s %.10s synchro.net",
+             SYNCALERT_VERSION,
+             GitCommitDate);
+    return (buffer);
+}
 #endif

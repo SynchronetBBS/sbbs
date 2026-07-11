@@ -253,6 +253,27 @@ inline in `CMakeLists.txt`).
     `ReadyToQuit = 1` store and the `PostMessage()` are left alone (a post to a
     NULL window is harmless with no pump).
 
+12. `redalert/version.cpp` + `redalert/function.h` + `redalert/menus.cpp` +
+    `redalert/goptions.cpp`: append the SyncConquer door's own version info to
+    the engine version line in the menu footers. `version.cpp` gains
+    `SyncAlert_Version_Name()` (right after the global `Version_Name()`), which
+    formats `"<ver> <date> synchro.net"` from `SYNCALERT_VERSION` (a `#define`,
+    bump per release) plus `GitCommitDate` (`common/gitinfo.h`, already
+    included) -- the date is the SBBS repo's build-time commit date, since
+    Vanilla Conquer is vendored inside it. It omits the git hash on purpose: it
+    is drawn on the SAME line as `Version_Name()`, which already carries the
+    identical short hash. `function.h` declares it next to `Version_Name()`.
+    The two menu `Fancy_Text_Print` footers add it next to `Version_Name()`, so
+    the engine's `r<rev> ~<hash> E` (revision + edition/expansion markers) is
+    preserved and the door's `<ver> <date> synchro.net` sits with it. Placement
+    differs by dialog width: `goptions.cpp`'s options box is wide, so both share
+    one line (`"%s\r%s  %s"` = scenario, then engine+door version); `menus.cpp`'s
+    main-menu box is narrower and the combined line overflowed its left edge, so
+    the door line drops to its own second line there (`"%s\r%s"`). An earlier
+    cut stacked a full second version line that overflowed onto the option
+    buttons and duplicated the hash. `Version_Name()` is unchanged; display-only,
+    no engine behavior change.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching
