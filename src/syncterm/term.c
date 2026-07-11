@@ -4713,6 +4713,7 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 	int  mods = 0;
 	int  ret;
 	bool release;
+	bool unpressed_motion = false;
 
 	/* Gate mouse reporting over SyncTERM's native indicator row.  In
 	 * DECSSDT Ps=1 the row is SyncTERM-owned (clock, hover, help), so
@@ -4737,10 +4738,9 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 		if ((me->kbsm & me->bstate) == 0) {
 			if (ms->mode == MM_BUTTON_EVENT_TRACKING)
 				return 0;
+			unpressed_motion = true;
 		}
 		bit = my_ffs(me->kbsm & me->bstate);
-		if (bit == 0)
-			bit = 4;
 		button = bit - 1;
 		release = false;
 	}
@@ -4749,14 +4749,18 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 		release = (me->event == CIOLIB_BUTTON_RELEASE(button));
 		button--;
 	}
-	if (button < 0)
-		return 0;
-	if (button >= 11)
-		return 0;
-	if (button >= 7)
-		button += 121;
-	else if (button >= 3)
-		button += 61;
+	if (unpressed_motion)
+		button = 3;
+	else {
+		if (button < 0)
+			return 0;
+		if (button >= 11)
+			return 0;
+		if (button >= 7)
+			button += 121;
+		else if (button >= 3)
+			button += 61;
+	}
 	if (me->event == CIOLIB_MOUSE_MOVE)
 		button += 32;
 	if ((ms->flags & MS_FLAGS_SGR) == 0) {

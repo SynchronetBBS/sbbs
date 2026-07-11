@@ -1038,7 +1038,7 @@ Where <button> is ' ' + button number (0-based)
 32 is added to the button number for movement events.
 Mouse button releases will use a button number of 4
 <x> and <y> are '!' + position (0-based)
-If no button is pressed, it acts as though button 0 is.
+If no button is pressed, it reports that all buttons are released.
 
 SOURCE: <<XTerm>>
 |1004
