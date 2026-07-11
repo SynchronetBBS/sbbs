@@ -730,6 +730,8 @@ ssh_output_thread(void *args)
 static _Atomic bool sftp_recv_running;
 static _Atomic bool sftp_recv_shutdown;
 
+#define SFTP_INIT_ABORT_POLL_MS 100
+
 static void
 sftp_recv_thread(void *args)
 {
@@ -754,6 +756,34 @@ sftp_recv_thread(void *args)
 		}
 	}
 	sftp_recv_running = false;
+}
+
+static bool
+sftp_init_wait(xpevent_t init_evt)
+{
+	while (kbhit()) {
+		int ch = getch();
+		if (ch == 0 || ch == 0xe0)
+			(void)getch();
+	}
+
+	while (!conn_api.terminate && sftp_recv_running) {
+		switch (WaitForEvent(init_evt, SFTP_INIT_ABORT_POLL_MS)) {
+			case WAIT_OBJECT_0:
+				return true;
+			case WAIT_FAILED:
+				return false;
+		}
+		if (kbhit()) {
+			int ch = getch();
+			if (ch == 0 || ch == 0xe0)
+				ch |= getch() << 8;
+			(void)ch;
+			conn_api.terminate = true;
+			return false;
+		}
+	}
+	return false;
 }
 
 static bool
@@ -840,10 +870,11 @@ sftp_session_start(struct bbslist *bbs)
 	}
 	struct sftpc_pending *init_p =
 	    sftpc_init(sftp_state, sftp_init_signal_cb, &init_evt);
-	if (init_p != NULL)
-		WaitForEvent(init_evt, INFINITE);
+	bool init_done = init_p != NULL && sftp_init_wait(init_evt);
+	if (init_p != NULL && !init_done)
+		sftpc_finish(sftp_state);
 	CloseEvent(init_evt);
-	bool init_ok = init_p != NULL && init_p->err == SFTP_ERR_OK
+	bool init_ok = init_done && init_p->err == SFTP_ERR_OK
 	    && init_p->result == SSH_FX_OK;
 	sftpc_pending_free(init_p);
 	if (!init_ok) {
@@ -1231,8 +1262,18 @@ ssh_connect(struct bbslist *bbs)
 
 	/* Open the persistent SFTP subsystem channel.  Servers without SFTP
 	 * support will leave sftp_available = false; the shell still works. */
-	if (bbs->sftp_public_key)
+	if (bbs->sftp_public_key) {
 		sftp_session_start(bbs);
+		if (conn_api.terminate) {
+			if (!bbs->hidepopups) {
+				uifc.pop(NULL);
+				uifcmsg("Connection Aborted.", "`Connection Aborted`\n\n"
+				    "Connection to the remote system aborted by keystroke.");
+			}
+			ssh_close();
+			return -1;
+		}
+	}
 
 	if (!bbs->hidepopups)
 		uifc.pop(NULL);
