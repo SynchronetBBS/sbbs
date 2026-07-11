@@ -318,6 +318,18 @@ static void mouse_event(int button, int col, int row, int release)
 	} else {
 		px = (col - 1) * cw + cw / 2;
 		py = (row - 1) * ch + ch / 2;
+		/* A cell-granular terminal (SyncTERM) can only place the cursor at cell
+		 * CENTRES. The LAST row/col centre sits cw/2 or ch/2 px SHORT of the far
+		 * canvas edge -- too far in for RA's edge-scroll zone -- so snap those to
+		 * the image-rect edge to make scroll-down/right reachable (this happened
+		 * in sixel by accident via its reserved-bottom-row clamp). Do NOT snap
+		 * the FIRST row/col: their centre is already near the top/left edge, and
+		 * snapping the top row to y=0 dragged tab clicks into the scroll-up zone
+		 * so the menu tabs couldn't be clicked -- keep the cell centre there. */
+		if (gc > 0 && col >= gc)
+			px = dx + ew - 1;
+		if (gr > 0 && row >= gr)
+			py = dy + eh - 1;
 	}
 	if (px < dx)
 		px = dx;
