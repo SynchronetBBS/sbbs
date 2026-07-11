@@ -68,6 +68,54 @@ them into `roms/` and they appear in the lobby on the next entry.
   dumps of the same game (`[!]`, `[a1]`, …) collapse to the best-ranked dump.
   Hide anything you don't want with `[roms] exclude`.
 
+## Free games, out of the box
+
+The installer offers (prompted) to download **~22 freely-licensed homebrew games**
+(about 1.5 MB), so the door has something to play before you supply a single
+cartridge — `jsexec ../xtrn/syncnes/getroms.js` runs it later.
+
+**Every one of them was published by its author under a free licence.** That is a
+per-game fact, checked by hand, not a property of where the file was found: the
+great majority of NES homebrew states no licence at all — which means ordinary
+copyright — and is deliberately *not* on the list. Being downloadable is not a
+licence. Each ROM is pinned by URL, size and MD5 and verified after download, so
+a file that changed upstream is rejected rather than quietly installed.
+
+**The four CC BY-NC-SA titles are non-commercial.** A hobby BBS is squarely fine;
+if you charge for access to your board, remove them from `getroms.js`.
+
+With thanks to the authors:
+
+| Game | Author | Licence |
+|---|---|---|
+| 31 in 1 Real Game! | Mojon Twins | LGPL-3.0 |
+| Jet Paco - Space Agent! | Mojon Twins | LGPL-3.0 |
+| Lala the Magical | Mojon Twins | LGPL-3.0 |
+| Sgt. Helmet Training Day | Mojon Twins | LGPL-3.0 |
+| Sir Ababol Remastered | Mojon Twins | LGPL-3.0 |
+| Wo Xiang Niao Niao | Mojon Twins | LGPL-3.0 |
+| Yun | Mojon Twins | LGPL-3.0 |
+| Bootee | Mojon Twins | CC BY-NC-SA 3.0 |
+| Cheril the Goddess | Mojon Twins | CC BY-NC-SA 3.0 |
+| Miedow | Mojon Twins | CC BY-NC-SA 3.0 |
+| Super Uwol | Mojon Twins | CC BY-NC-SA 3.0 |
+| Falling | Tragicmuffin | MIT |
+| F-FF | Pubby | MIT |
+| Lunar Limit | Wendell Scott | MIT |
+| RALPH 4 | Michael Chaney | MIT |
+| Star Evil | Pubby | MIT |
+| Double Action Blaster Guys | NovaSquirrel | GPL-3.0 |
+| Concentration Room | Damian Yerrick | GPL-3.0 |
+| NesertBus | Wendell Scott | CC BY-SA 4.0 |
+| RobotFindsKitten | Damian Yerrick | zlib |
+| Nova the Squirrel | NovaSquirrel | GPL-3.0 (code) / CC BY-NC-SA 4.0 (art) |
+| Thwaite | Damian Yerrick | GPL-3.0 |
+
+The Mojon Twins' games and several others are fetched from the
+[retrobrews](https://github.com/retrobrews/nes-games) collection, which
+distributes each author's licence text beside the ROM; Nova the Squirrel and
+Thwaite come from their authors' own release pages.
+
 ## Playing
 
 The lobby lists the cartridges, keeps a play-activity board (who played what,
@@ -111,6 +159,10 @@ Synchronet auto-cleans with the user account.
 ## Legal
 
 The libretro API is permissive and the **FCEUmm** core is GPLv2 — both are free
-to redistribute. **Cartridges are not**, and none are shipped: sourcing
-legally-owned copies is the sysop's responsibility. This door's own code is
-GPL-2.0.
+to redistribute. The homebrew above is free too, each under the licence its own
+author chose, and `getroms.js` *fetches* it from the authors' distribution points
+rather than this repository shipping it.
+
+**Commercial cartridges are none of those things, and none are shipped.**
+Sourcing legally-owned copies is the sysop's responsibility. This door's own code
+is GPL-2.0.
