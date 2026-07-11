@@ -153,11 +153,6 @@ static const struct key_mapping prestel_keys[] = {
 	{'#',                      "_",           1},
 	{'_',                      "`",           1},
 	{'`',                      "#",           1},
-	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
-	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
-	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
-	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
-	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
 	{CIO_KEY_F(7),             "\x1b",        1},
 	{CIO_KEY_HOME,             "\x1e",        1},
 	{CIO_KEY_UP,               "\x8f",        1},
@@ -190,15 +185,15 @@ static const struct key_mapping prestel_keys[] = {
 	{CIO_KEY_CTRL_END,         "\xab",        1},	/* Copy */
 	{CIO_KEY_CTRL_UP,          "\xaf",        1},
 	{CIO_KEY_CTRL_DOWN,        "\xae",        1},
+	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
+	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
+	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
+	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
+	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
 };
 
 static const struct key_mapping beeb_keys[] = {
 	{8,                        "\x7f",        1},
-	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
-	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
-	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
-	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
-	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
 	{CIO_KEY_F(7),             "\x1b",        1},
 	{CIO_KEY_HOME,             "\x1f",        1},
 	{CIO_KEY_UP,               "\x8f",        1},
@@ -231,6 +226,11 @@ static const struct key_mapping beeb_keys[] = {
 	{CIO_KEY_CTRL_END,         "\xab",        1},	/* Copy */
 	{CIO_KEY_CTRL_UP,          "\xaf",        1},
 	{CIO_KEY_CTRL_DOWN,        "\xae",        1},
+	{CIO_KEY_SHIFT_UP,         "\x9f",        1},
+	{CIO_KEY_SHIFT_LEFT,       "\x9c",        1},
+	{CIO_KEY_SHIFT_RIGHT,      "\x9d",        1},
+	{CIO_KEY_SHIFT_END,        "\x9b",        1},	/* Copy */
+	{CIO_KEY_SHIFT_DOWN,       "\x9e",        1},
 };
 
 static const struct key_mapping vt52_keys[] = {
