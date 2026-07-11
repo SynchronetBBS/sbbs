@@ -479,9 +479,17 @@ int main(int argc, char* argv[])
         /*
         ** Save settings if they were changed during gameplay.
         */
-        ini.Load(cfile);
-        Settings.Save(ini);
-        ini.Save(cfile);
+        // LOCAL: reload into a FRESH INIClass. Reusing the startup `ini` here was
+        // a persistence bug: INIClass::Load MERGES (keeps existing entries) rather
+        // than replacing, so re-loading the file did NOT pick up values the game
+        // wrote during play (e.g. music volume via OptionsClass::Save_Settings) --
+        // `ini` still held its startup snapshot, and ini.Save() below clobbered
+        // the file back to those stale values a moment after Save_Settings wrote
+        // the real ones. A fresh object reflects the on-disk state correctly.
+        INIClass exitini;
+        exitini.Load(cfile);
+        Settings.Save(exitini);
+        exitini.Save(cfile);
 
         VisiblePage.Clear();
         HiddenPage.Clear();

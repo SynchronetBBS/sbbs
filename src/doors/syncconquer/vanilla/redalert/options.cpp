@@ -266,13 +266,16 @@ void OptionsClass::Set_Score_Volume(fixed volume, bool feedback)
 }
 
 //	LOCAL (SyncConquer door): nudge the music/score volume ~10% up (dir > 0) or
-//	down and apply it, for the door's +/- hotkeys.  The Sound Controls slider is
-//	unreachable with a cell-granular mouse (SyncTERM), so this drives the same
-//	Options.Set_Score_Volume() the slider does -- it stays in sync and persists.
+//	down and apply it, for the door's +/- hotkeys.  Drives the same
+//	Options.Set_Score_Volume() the Sound Controls slider does, then persists it
+//	via Save_Settings() -- the slider only saves when the options menu is exited
+//	(Resume), which the hotkey path never reaches, so without this an adjustment
+//	made in-game or from the main menu is lost on the next run.
 //	extern "C" so the door's C input layer (door_io.c) can call it.
 extern "C" void SyncAlert_Music_Volume_Step(int dir)
 {
-    int v = Options.ScoreVolume * 256; // current level, 0..256 (see Set_Score_Volume)
+    int old = Options.ScoreVolume * 256; // current level, 0..256 (see Set_Score_Volume)
+    int v = old;
 
     v += (dir > 0) ? 26 : -26;         // ~10% of 256
     if (v < 0) {
@@ -281,7 +284,11 @@ extern "C" void SyncAlert_Music_Volume_Step(int dir)
     if (v > 256) {
         v = 256;
     }
+    if (v == old) {
+        return; // already at the rail -- don't re-apply or rewrite the INI
+    }
     Options.Set_Score_Volume(fixed(v, 256), true);
+    Options.Save_Settings(); // persist so the level survives a restart
 }
 
 /***********************************************************************************************
@@ -744,12 +751,13 @@ void OptionsClass::Save_Settings(void)
     ini.Put_Int(OPTIONS, "ScrollRate", ScrollRate);
     ini.Put_Fixed(OPTIONS, "Brightness", Brightness);
     ini.Put_Fixed(OPTIONS, "Volume", Volume);
-#ifdef FIXIT_VERSION_3
-    if (Session.Type == GAME_NORMAL) //	Save only when non-multiplayer.
-        ini.Put_Fixed(OPTIONS, "ScoreVolume", ScoreVolume);
-#else
+    //	LOCAL: always persist ScoreVolume. Upstream (FIXIT_VERSION_3) wrote it
+    //	only in a GAME_NORMAL session, so a music-volume change made from the
+    //	main menu or a Skirmish game (Session.Type != GAME_NORMAL) was dropped --
+    //	only MultiplayerScoreVolume got saved, yet Load_Settings applies
+    //	ScoreVolume, so the level reset to default on the next run. The MP/SP
+    //	music-volume split is meaningless for a single-user door.
     ini.Put_Fixed(OPTIONS, "ScoreVolume", ScoreVolume);
-#endif
 #ifdef FIXIT_VERSION_3
     ini.Put_Fixed(OPTIONS, "MultiplayerScoreVolume", MultiScoreVolume);
 #endif

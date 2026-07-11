@@ -300,6 +300,87 @@ inline in `CMakeLists.txt`).
     through termgfx's streaming-audio path, giving the cutscenes their dialog.
     One-line additive change; no other engine behavior affected.
 
+15. `redalert/sounddlg.cpp`: the Sound Controls dialog now re-syncs its music
+    slider to `Options.ScoreVolume` at the top of its processing loop. The
+    door's `+`/`-` music-volume hotkeys (patch 13) call
+    `Options.Set_Score_Volume()` directly, but the dialog only seeded the
+    gauge once on entry and redrew it from its own drag events, so a hotkey
+    change wasn't reflected until the menu was re-entered. Each loop pass now
+    pushes ScoreVolume into the gauge only when ScoreVolume ITSELF changed
+    since the previous pass (tracked in `last_score`) -- NOT when the gauge
+    differs from ScoreVolume, which would fight the mouse: during a click or
+    drag the gauge leads ScoreVolume (it commits below on SLIDER_MUSIC), so a
+    gauge-vs-ScoreVolume test snapped the thumb back. Triggering on a real
+    ScoreVolume change leaves the mouse free and still catches the hotkeys.
+
+16. `redalert/scroll.cpp`: `ScrollClass::AI()` widened the edge-scroll trigger
+    from a literal 1-pixel border to an `8 * RESFACTOR` band on all four sides
+    (`at_screen_edge`). Upstream only scrolls when the mouse is at exactly
+    x==0/y==0/width-1/height-1, which relies on a real mouse being clampable to
+    the exact edge pixel. Over a terminal the pointer is cell-quantized (the
+    door maps SGR cell reports to cell centres) and can't hit those pixels --
+    the top/left especially, which the door can't snap to 0 without breaking
+    top-row menu-button clicks -- so edge-scroll was nearly unusable. The band
+    lets the outermost cell centre engage scrolling. Only affects the scroll
+    trigger region; no click coordinate is moved, so menus are unaffected.
+
+17. `redalert/options.cpp`: music-volume (ScoreVolume) persistence. Two parts.
+    (a) `Save_Settings()` now writes `ScoreVolume` unconditionally; upstream
+    (under `FIXIT_VERSION_3`) wrote it only when `Session.Type == GAME_NORMAL`,
+    so a change made from the main menu or a Skirmish game saved only
+    `MultiplayerScoreVolume` -- but `Load_Settings()` always applies
+    `ScoreVolume`, so music volume reset to the 0.25 default every run (FX
+    `Volume` has no such gate, which is why it alone persisted). (b) The door's
+    `+`/`-` hotkey (`SyncAlert_Music_Volume_Step`, patch 13) now calls
+    `Options.Save_Settings()` after adjusting, and no-ops at the min/max rail so
+    held key-repeat doesn't rewrite the INI. The slider path relied on the
+    options-menu Resume to save, which the hotkey never reaches. Together the
+    music level now survives a restart from any context.
+
+18. `redalert/menus.cpp` (`Main_Menu()`) and `redalert/egos.cpp` (the credits
+    scroll) no longer override the music volume. Both saved `Options.ScoreVolume`
+    and, when it was 0 (music muted), forced it to 0.4 so their theme
+    (`THEME_INTRO` / `THEME_CREDITS`) stayed audible, restoring the saved value
+    on exit. In the door that meant a player who muted music heard it "resume"
+    at 0.4 on the main-menu title screen (and again when its idle attract fell
+    through to the credits); the restore-on-exit could also discard a volume
+    change made while there. All music playback is already gated on
+    `ScoreVolume != 0` (`theme.cpp` `Play_Song`), and these were the only two
+    non-commented calls that set it non-zero, so removing the
+    save/override/restore in both makes a mute fully respected (silent), while
+    non-muted volumes were unaffected (they carried over via the normal
+    score-volume scaling).
+
+19. `redalert/init.cpp`: starting a Skirmish/Internet/IPX game no longer
+    overwrites the user's music volume. Under `FIXIT_VERSION_3` the game-start
+    transition did `Options.ScoreVolume = Options.MultiScoreVolume` at all three
+    sites (the multiplayer/skirmish music level is a separate setting upstream),
+    so a player who muted music (`ScoreVolume = 0`) heard it return the moment a
+    Skirmish began -- the intro respected the mute, then the game un-muted it.
+    Flipped to `Options.MultiScoreVolume = Options.ScoreVolume` (the same
+    direction `sounddlg.cpp` already syncs), so the door's single music-volume
+    setting is authoritative everywhere and the MP level just follows it. This
+    was the actual cause of "music starts after the opening and into gameplay";
+    patches 17 (save) and 18 (menu/credits 0.4 override) covered the other
+    screens.
+
+20. `redalert/startup.cpp`: the exit-time settings re-save no longer clobbers
+    what the game persisted during play. After `Main_Game()` returns, RA does
+    `ini.Load(cfile); Settings.Save(ini); ini.Save(cfile)` to persist any
+    video-settings changes -- but it reused the SAME `INIClass ini` loaded at
+    startup, and `INIClass::Load()` MERGES rather than replaces, so the reload
+    kept the startup snapshot of `[Options]`. `ini.Save()` then wrote those
+    stale values back over the file a moment after `OptionsClass::Save_Settings`
+    had written the real ones -- so a music-volume change (or any in-game
+    options change) was silently reverted to its startup value on exit, i.e.
+    never persisted across runs. Root-caused with a backtrace + write-verify
+    diagnostic: `Save_Settings` wrote `ScoreVolume=0` and a re-read confirmed
+    it, then the file flipped back to the startup value ~2s later (CRLF = RA's
+    write) from this exit save. Fixed by loading the exit save into a FRESH
+    `INIClass` so it reflects the on-disk state. This was the dominant blocker
+    behind the volume-persistence symptoms (patches 17-19 addressed real but
+    secondary save-gate/override/MP-split issues).
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

@@ -500,6 +500,75 @@ static void door_validate_assets_or_die(void)
 	_exit(1);
 }
 
+/* Write into `out` a relative path from directory `from` to directory `to`
+ * (both absolute). Lets the per-user REDALERT.INI store DataPath relative to the
+ * per-user home -- which is also the engine's CWD -- instead of a host-specific
+ * absolute path. That shared file is opened on both Vertrauen hosts (Linux
+ * "/sbbs/..." and Windows "S:\\sbbs\\..."), where an absolute path from one host
+ * is wrong on the other; the relative form is identical on both. Splits on
+ * either separator, emits '/' (accepted by both engine builds), and returns 0
+ * (caller keeps the absolute path) if the two share no common root -- e.g. a
+ * different Windows drive. */
+static int door_relpath(const char *from, const char *to, char *out, size_t outsz)
+{
+	char   fbuf[600], tbuf[600], *p;
+	char * fc[80], *tc[80];
+	int    fn = 0, tn = 0, i, common;
+	size_t pos = 0;
+
+	if (from == NULL || to == NULL || out == NULL || outsz == 0)
+		return 0;
+	snprintf(fbuf, sizeof fbuf, "%s", from);
+	snprintf(tbuf, sizeof tbuf, "%s", to);
+
+	/* Split into components in place, dropping empties so a leading separator
+	 * and any doubled separators collapse (a "C:" drive stays its own token). */
+	for (p = fbuf; *p != '\0'; ) {
+		while (*p == '/' || *p == '\\')
+			*p++ = '\0';
+		if (*p == '\0')
+			break;
+		if (fn < (int)(sizeof fc / sizeof fc[0]))
+			fc[fn++] = p;
+		while (*p != '\0' && *p != '/' && *p != '\\')
+			p++;
+	}
+	for (p = tbuf; *p != '\0'; ) {
+		while (*p == '/' || *p == '\\')
+			*p++ = '\0';
+		if (*p == '\0')
+			break;
+		if (tn < (int)(sizeof tc / sizeof tc[0]))
+			tc[tn++] = p;
+		while (*p != '\0' && *p != '/' && *p != '\\')
+			p++;
+	}
+
+	/* Length of the shared leading path (both paths come from the same door's
+	 * realpath(), so a plain strcmp of the install-root components suffices). */
+	for (common = 0; common < fn && common < tn && strcmp(fc[common], tc[common]) == 0; )
+		common++;
+	if (common == 0)
+		return 0;   /* no shared root -> caller keeps the absolute path */
+
+	out[0] = '\0';
+	for (i = common; i < fn; i++) {   /* ".." up out of each leftover 'from' dir */
+		int n = snprintf(out + pos, outsz - pos, "../");
+		if (n < 0 || (size_t)n >= outsz - pos)
+			return 0;
+		pos += (size_t)n;
+	}
+	for (i = common; i < tn; i++) {   /* then down into the leftover 'to' dirs */
+		int n = snprintf(out + pos, outsz - pos, "%s%s", tc[i], (i + 1 < tn) ? "/" : "");
+		if (n < 0 || (size_t)n >= outsz - pos)
+			return 0;
+		pos += (size_t)n;
+	}
+	if (pos == 0)
+		snprintf(out, outsz, ".");   /* same directory */
+	return 1;
+}
+
 /* --- Task 5: per-user engine paths (FACTS.md #9) ---------------------------
  * The vendored Paths::Init("vanillara", "REDALERT.INI", "REDALERT.MIX",
  * args.ArgV[0]) (redalert/startup.cpp) resolves UserPath (where redalert.ini
@@ -550,9 +619,25 @@ static void door_setup_engine_paths(void)
 	if (f != NULL) {
 		str_list_t ini = iniReadFile(f);
 
-		iniSetString(&ini, "Paths", "UserPath", abs_home, NULL);
-		if (g_assets[0] != '\0')
-			iniSetString(&ini, "Paths", "DataPath", g_assets, NULL);
+		/* UserPath is redundant: the argv[0] rewrite below makes PathsClass
+		 * derive UserPath = the per-user home on its own (it falls back to
+		 * Argv_Path() when [Paths]UserPath is absent). Don't bake an absolute
+		 * path into this shared file -- and actively drop any that a previous
+		 * build wrote, so stale absolutes don't linger. */
+		iniRemoveKey(&ini, "Paths", "UserPath");
+		if (g_assets[0] != '\0') {
+			char rel[600];
+			/* Store DataPath RELATIVE to the per-user home (the engine's CWD),
+			 * never absolute: this INI is opened on both Vertrauen hosts and an
+			 * absolute path from one is wrong on the other. Fall back to the
+			 * absolute path only if a relative one can't be formed (no shared
+			 * root, e.g. a different Windows drive). iniSetString overwrites any
+			 * absolute DataPath a previous build left here. */
+			if (door_relpath(abs_home, g_assets, rel, sizeof rel))
+				iniSetString(&ini, "Paths", "DataPath", rel, NULL);
+			else
+				iniSetString(&ini, "Paths", "DataPath", g_assets, NULL);
+		}
 		if (!iniKeyExists(ini, "Intro", "PlayIntro"))
 			iniSetBool(&ini, "Intro", "PlayIntro", FALSE, NULL);
 		iniWriteFile(f, ini);
@@ -1986,7 +2071,11 @@ static void door_stats_draw(int force)
 	         g_mouse_pixels ? "pixel" : "cell",
 	         door_term_is_utf8() ? "utf8" : "cp437", (unsigned)g_rtt_ms,
 	         g_canvas_w, g_canvas_h, g_grid_cols, g_grid_rows, cw, ch, bpf);
-	off = snprintf(buf, sizeof buf, "\x1b[%d;1H\x1b[30;46m%s\x1b[0m", brow, t);
+	/* \x1b[K (erase to end of line) BEFORE the reset clears any leftover tail
+	 * from a previous, longer readout (the line is variable length) and, since
+	 * the cyan attribute is still active, paints the rest of the row as a clean
+	 * full-width status bar via background-color erase. */
+	off = snprintf(buf, sizeof buf, "\x1b[%d;1H\x1b[30;46m%s\x1b[K\x1b[0m", brow, t);
 	if (off < 0 || off >= (int)sizeof buf)
 		return;
 

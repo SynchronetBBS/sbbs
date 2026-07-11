@@ -107,7 +107,16 @@ void ScrollClass::AI(KeyNumType& input, int x, int y)
 #endif
 
         if (!noscroll) {
-            bool at_screen_edge = (y == 0 || x == 0 || x >= SeenBuff.Get_Width() - 1 || y >= SeenBuff.Get_Height() - 1);
+            // LOCAL: widen the 1-pixel edge-scroll border into a small band.
+            // Over a terminal the mouse is cell-quantized and can't land on the
+            // exact edge pixel -- especially the top/left, which the door can't
+            // snap to 0 without breaking menu-button clicks -- so a 1-pixel
+            // trigger is nearly unreachable. A cell-sized band lets the outer
+            // cell centre engage scrolling on all four sides. Does not move any
+            // click coordinate, so menus are unaffected.
+            int edge = 8 * RESFACTOR;
+            bool at_screen_edge = (y <= edge || x <= edge || x >= SeenBuff.Get_Width() - 1 - edge
+                                   || y >= SeenBuff.Get_Height() - 1 - edge);
 
             /*
 			**	Verify that the mouse is over a scroll region.

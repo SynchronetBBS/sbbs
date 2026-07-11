@@ -720,10 +720,11 @@ void Show_Who_Was_Responsible(void)
     /*
     ** Start any old song.
     */
-    fixed oldvolume = Options.ScoreVolume;
-    if (oldvolume == 0) {
-        Options.Set_Score_Volume(fixed(4, 10), false);
-    }
+    // LOCAL: play the credits theme at the user's own ScoreVolume. Upstream
+    // forced it to 0.4 when music was muted (ScoreVolume == 0) so the theme
+    // stayed audible -- same override removed from Main_Menu(). A player who
+    // muted music heard it "resume" at 0.4 when the title screen's idle attract
+    // fell through to the credits. Respect the mute; silent if muted.
     Theme.Queue_Song(THEME_CREDITS);
 
     /*
@@ -913,7 +914,6 @@ void Show_Who_Was_Responsible(void)
     GadgetClass::Set_Color_Scheme(&ColorRemaps[PCOLOR_DIALOG_BLUE]);
 
     Theme.Stop();
-    Options.Set_Score_Volume(oldvolume, false);
 
     for (int index = 0; index < NUM_SLIDES; index++) {
         delete SlideBuffers[index];

@@ -687,10 +687,12 @@ int Main_Menu(unsigned int)
                      TBLACK,
                      TPF_CENTER | TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_NOSHADOW);
 
-    fixed oldvolume = Options.ScoreVolume;
-    if (oldvolume == 0) {
-        Options.Set_Score_Volume(fixed(4, 10), false);
-    }
+    // LOCAL: play the title theme at the user's own ScoreVolume. Upstream
+    // forced it to 0.4 whenever music was muted (ScoreVolume == 0) so the theme
+    // stayed audible -- but that overrode a deliberate mute: a player who turned
+    // music off (e.g. in-game) heard it "resume" at 0.4 on returning to the main
+    // menu, and the matching restore on exit could also clobber a volume change
+    // made while here. Respect the user's setting; if muted, the menu is silent.
     Theme.Play_Song(THEME_INTRO);
 
     /*
@@ -966,8 +968,6 @@ int Main_Menu(unsigned int)
 
         Frame_Limiter();
     }
-
-    Options.Set_Score_Volume(oldvolume, false);
 
     return (retval);
 }

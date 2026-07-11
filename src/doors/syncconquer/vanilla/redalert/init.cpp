@@ -887,7 +887,14 @@ bool Select_Game(bool fade)
                     Theme.Fade_Out();
                     process = false;
 #ifdef FIXIT_VERSION_3
-                    Options.ScoreVolume = Options.MultiScoreVolume;
+                    // LOCAL: keep the user's single music volume when a
+                    // Skirmish/MP game starts. Upstream overwrote ScoreVolume
+                    // with the separate MultiScoreVolume, which un-muted music
+                    // the player had turned off (the door has no use for a
+                    // distinct MP music level). Sync MultiScoreVolume TO the
+                    // user's setting instead -- same direction sounddlg.cpp
+                    // uses. Applies to the Internet/IPX start sites below too.
+                    Options.MultiScoreVolume = Options.ScoreVolume;
 #else
                     Options.ScoreVolume = 0;
 #endif
@@ -906,7 +913,7 @@ bool Select_Game(bool fade)
                         case 1:
                             //	Start game.
 #ifdef FIXIT_VERSION_3
-                            Options.ScoreVolume = Options.MultiScoreVolume;
+                            Options.MultiScoreVolume = Options.ScoreVolume; // LOCAL: see GAME_SKIRMISH note above
 #else
                             Options.ScoreVolume = 0;
 #endif
@@ -955,7 +962,7 @@ bool Select_Game(bool fade)
                     WWDebugString("RA95 - About to call Init_Network.\n");
                     if (Session.Type == GAME_IPX && Init_Network() && Remote_Connect()) {
 #ifdef FIXIT_VERSION_3
-                        Options.ScoreVolume = Options.MultiScoreVolume;
+                        Options.MultiScoreVolume = Options.ScoreVolume; // LOCAL: see GAME_SKIRMISH note above
 #else
                         Options.ScoreVolume = 0;
 #endif
