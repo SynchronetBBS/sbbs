@@ -902,6 +902,12 @@ void SoundImp_Buffer_Sample_Data(SampleTrackerTypeImp *st, const void *data, siz
 // to be committed; `start_ms` anchors the wall clock) and snapshot
 // `status_gen` ONCE here -- see SoundImp_Sample_Status() for why it is
 // never re-snapshotted again after this.
+
+// Deferred music-channel stop state (see SoundImp_Music_Housekeep below). Both
+// Start_Sample (cancel) and Stop_Sample (arm) touch it, so declared above both.
+static int      sa_music_stop_pending;
+static uint32_t sa_music_stop_at;
+
 void SoundImp_Start_Sample(SampleTrackerTypeImp *st)
 {
 	st->total_bytes = st->len;
@@ -921,6 +927,12 @@ void SoundImp_Start_Sample(SampleTrackerTypeImp *st)
 		st->fp = 0;            // M2 Task 4e: fresh stream, fresh identity
 		st->fp_done = false;
 		sa_commit(st);
+	} else {
+		// A new SCORE (music) stream is starting -- typically a theme CHANGE
+		// that just did Stop_Sample(old). Cancel any pending music-channel stop
+		// so the new theme replaces the channel seamlessly (the deferred stop is
+		// only for a real Theme.Stop() with no new theme following).
+		sa_music_stop_pending = 0;
 	}
 	st->status_gen = st->recv_gen;
 }
@@ -1128,8 +1140,27 @@ bool SoundImp_Sample_Status(SampleTrackerTypeImp *st)
 	return (sa_now_ms() - st->start_ms) < sa_bytes_to_ms(st, st->total_bytes);
 }
 
+// Deferred music-channel stop. The score loops CLIENT-SIDE (termgfx uploaded it
+// once), so resetting our tracker doesn't silence it -- we must send a stop to
+// the music channel. But a theme CHANGE also does Stop_Sample(old) right before
+// Start_Sample(new), and the new track's Flush+Load replaces the channel, so an
+// immediate stop there would leave a silence gap. So: arm a pending stop on
+// Stop_Sample of a music tracker, CANCEL it if a new score stream starts
+// (SoundImp_Start_Sample), and otherwise fire it a beat later here. Net: a real
+// Theme.Stop() (the Sound Controls "stop" button, THEME_QUIET) goes quiet; a
+// theme change stays seamless. Called each door tick (door_io_pump).
+extern "C" void SoundImp_Music_Housekeep(void)
+{
+	if (sa_music_stop_pending && (sa_now_ms() - sa_music_stop_at) > 120) {
+		termgfx_audio_music_stop(door_io_audio());
+		sa_music_stop_pending = 0;
+	}
+}
+
 void SoundImp_Stop_Sample(SampleTrackerTypeImp *st)
 {
+	int was_music = st->as_music;
+
 	// M2 Task 4f: sa_commit_final(), not the plain sa_commit() this used to
 	// call -- this IS a confirmed end of stream (an explicit switch/fade
 	// cutting the tracker short, Stop_Sample() before Start_Sample(), or
@@ -1164,4 +1195,12 @@ void SoundImp_Stop_Sample(SampleTrackerTypeImp *st)
 	st->fp_done        = false;
 	st->full_committed = false;
 	st->warm_hit       = false; // M2 Task 4f Minor 3
+
+	// Arm the deferred client-side music-channel stop (see the note above
+	// SoundImp_Music_Housekeep). Only for a music tracker: SFX are one-shot and
+	// need no channel stop.
+	if (was_music) {
+		sa_music_stop_pending = 1;
+		sa_music_stop_at       = sa_now_ms();
+	}
 }

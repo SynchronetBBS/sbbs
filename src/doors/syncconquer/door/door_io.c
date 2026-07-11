@@ -1471,11 +1471,22 @@ static void door_fit_toggle(void)
  * `commit` contract (act only on the press edge; return 1 for a hotkey letter
  * on every edge so the caller swallows repeat/release too). `letter` is a
  * lowercase 'a'..'z'. */
+/* Music/score volume step, defined in the engine (options.cpp, extern "C").
+ * The door's +/- hotkeys nudge Options.ScoreVolume because the Sound Controls
+ * slider is unreachable with a cell-granular (SyncTERM) mouse. */
+extern void SyncAlert_Music_Volume_Step(int dir);
+
+/* Deferred client-side music-channel stop, defined in soundio_termgfx.cpp
+ * (extern "C"). Ticked here each pump so a real Theme.Stop() actually silences
+ * the looping score without gapping a theme change. */
+extern void SoundImp_Music_Housekeep(void);
+
 int door_io_hotkey(int letter, int commit)
 {
 	/* Classify first: is `letter` a door hotkey at all? */
 	switch (letter) {
 		case 'd': case 'f': case 'u': case 'p': case 's':
+		case '+': case '=': case '-': case '_':   /* music volume up ('+'/'=') / down ('-'/'_') */
 			break;
 		default:
 			return 0;   /* not a hotkey -- caller forwards it to the game */
@@ -1489,6 +1500,8 @@ int door_io_hotkey(int letter, int commit)
 		case 'f': door_fit_toggle();            break;   /* Aspect <-> Fill display-fit */
 		case 'u': door_node_userlist_request(); break;   /* who's-online overlay */
 		case 'p': door_node_page_request();     break;   /* page-a-node compose */
+		case '+': case '=': SyncAlert_Music_Volume_Step(1);  break;   /* music volume up */
+		case '-': case '_': SyncAlert_Music_Volume_Step(-1); break;   /* music volume down */
 		case 's':                                        /* live debug stats overlay */
 			g_stats_overlay = !g_stats_overlay;
 			g_stats_last[0] = '\0';   /* reset change-detection across the toggle */
@@ -2351,6 +2364,7 @@ void door_io_pump(void)
 	if (!g_inited)
 		door_io_init();
 	door_check_shutdown();   /* Task 5: SIGTERM/SIGHUP -- exits (via atexit) if requested */
+	SoundImp_Music_Housekeep();   /* fire a pending "stop music" once no theme replaced it */
 	if (g_file_mode)
 		return;   /* offline capture: no client to read from */
 
@@ -2455,6 +2469,10 @@ void door_io_pump(void)
 					 * control byte -- the legacy (non-evdev/kitty) key path. The
 					 * evdev/kitty paths reach door_io_hotkey() from door_input.c
 					 * instead, since there these arrive as decoded key events. */
+				} else if ((c == '+' || c == '=' || c == '-' || c == '_')
+				           && door_io_hotkey(c, 1)) {
+					/* +/- music-volume hotkey as a plain byte (legacy + kitty --
+					 * evdev/SyncTERM reaches door_io_hotkey() via door_input.c). */
 				} else
 					door_input_byte(c);
 				break;

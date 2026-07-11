@@ -97,12 +97,12 @@ int SoundControlsClass::Init(void)
     MSliderX = 147 * factor;
     MSliderY = 28 * factor;
     MSliderW = 108 * factor;
-    MSliderHeight = 5 * factor;
+    MSliderHeight = 8 * factor; //	LOCAL: was 5; taller so a cell-granular (SyncTERM) mouse click lands on it
 
     FXSliderX = 147 * factor;
     FXSliderY = 40 * factor;
     FXSliderW = 108 * factor;
-    FXSliderHeight = 5 * factor;
+    FXSliderHeight = 8 * factor; //	LOCAL: was 5 (see MSliderHeight)
     return (factor);
 }
 

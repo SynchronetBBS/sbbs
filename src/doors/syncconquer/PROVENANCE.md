@@ -274,6 +274,21 @@ inline in `CMakeLists.txt`).
     buttons and duplicated the hash. `Version_Name()` is unchanged; display-only,
     no engine behavior change.
 
+13. `redalert/sounddlg.cpp` + `redalert/options.cpp`: two music/sound-volume
+    fixes for terminal play. (a) `sounddlg.cpp` raises `MSliderHeight`/
+    `FXSliderHeight` from `5 * factor` to `8 * factor` -- the Options sound
+    sliders were a 10px-tall band at 640x400 (RESFACTOR=2), narrower than one
+    text-cell row, so a cell-granular mouse (SyncTERM, no SGR-Pixels) could
+    click between them and miss; 8 base = one full 16px cell row so a click
+    always lands. (b) `options.cpp` adds `extern "C" void
+    SyncAlert_Music_Volume_Step(int dir)` right after `Set_Score_Volume()`,
+    which nudges `Options.ScoreVolume` ~10% and applies it via the same
+    `Set_Score_Volume(..., true)` the slider uses -- called from the door's
+    `+`/`-` hotkeys (door_io.c door_io_hotkey + door_input.c evdev path) so
+    music volume is adjustable without the mouse. Source of truth stays
+    `Options.ScoreVolume` (soundio_termgfx.cpp already drives
+    `termgfx_audio_music_volume` from it), so the hotkeys and slider agree.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

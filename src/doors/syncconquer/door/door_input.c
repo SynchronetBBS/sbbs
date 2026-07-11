@@ -561,6 +561,11 @@ static void evdev_edge(int code, int down)
 			emit_key(vk, !down);
 		return;
 	}
+	/* Door-level music-volume hotkeys (+/-), no modifier -- consumed here in
+	 * evdev mode (SyncTERM) like the Ctrl hotkeys above; fire on press, swallow
+	 * the release too (commit=down). */
+	if ((c == '+' || c == '=' || c == '-' || c == '_') && door_io_hotkey(c, down))
+		return;
 	vk = door_input_vk_from_ascii(c, &shift);
 	if (vk == 0)
 		return;

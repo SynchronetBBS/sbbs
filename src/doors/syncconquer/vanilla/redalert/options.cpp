@@ -265,6 +265,25 @@ void OptionsClass::Set_Score_Volume(fixed volume, bool feedback)
     }
 }
 
+//	LOCAL (SyncConquer door): nudge the music/score volume ~10% up (dir > 0) or
+//	down and apply it, for the door's +/- hotkeys.  The Sound Controls slider is
+//	unreachable with a cell-granular mouse (SyncTERM), so this drives the same
+//	Options.Set_Score_Volume() the slider does -- it stays in sync and persists.
+//	extern "C" so the door's C input layer (door_io.c) can call it.
+extern "C" void SyncAlert_Music_Volume_Step(int dir)
+{
+    int v = Options.ScoreVolume * 256; // current level, 0..256 (see Set_Score_Volume)
+
+    v += (dir > 0) ? 26 : -26;         // ~10% of 256
+    if (v < 0) {
+        v = 0;
+    }
+    if (v > 256) {
+        v = 256;
+    }
+    Options.Set_Score_Volume(fixed(v, 256), true);
+}
+
 /***********************************************************************************************
  * OptionsClass::Set_Sound_Volume -- Sets the sound effects volume level.                      *
  *                                                                                             *
