@@ -27,24 +27,23 @@
  *                              ImageMagick decode needs no carried-over terminal
  *                              register state). For offline verification with no
  *                              live socket.
- *   (else)                     the sockfd sr_io_init() was given (or fd 1,
- *                              stdout, if it was < 0 -- dev/tty use), non-blocking.
+ *   (else)                     the sockfd sr_io_init() was given (or the plat
+ *                              fallback -- fd 1/stdout on POSIX, none on
+ *                              Windows -- if it was < 0), non-blocking.
  *
- * POSIX only for now, matching DESIGN.md sec 12's Windows-is-later scope: plain
- * write()/fcntl(), no Winsock.
+ * All descriptor I/O, the monotonic clock, and the sleep go through
+ * syncretro_plat.h, so this file carries no #ifdef and no direct syscall: on
+ * Windows the DOOR32.SYS handle is a Winsock SOCKET (send/recv, ioctlsocket),
+ * on POSIX a plain fd (write/read, fcntl) -- the seam hides which.
  */
 #include "syncretro.h"
 #include "syncretro_quant.h"
 #include "syncretro_audio.h"
+#include "syncretro_plat.h"
 
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
-#include <unistd.h>
 
 #include "term.h"       /* termgfx: termgfx_term_enter/probe/leave */
 #include "sixel.h"      /* termgfx: sixel_encode */
@@ -125,17 +124,18 @@ int sr_io_out_flush(void)
 	}
 
 	while (g_out_off < g_out_len) {
-		ssize_t n = write(g_fd, g_out + g_out_off, g_out_len - g_out_off);
+		int n = sr_plat_write(g_fd, g_out + g_out_off, g_out_len - g_out_off);
 
 		if (n > 0) {
 			g_out_off += (size_t)n;
 			continue;
 		}
-		if (n < 0 && errno == EINTR)
+		if (n == SR_IO_INTR)
 			continue;
-		if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+		if (n == SR_IO_AGAIN)
 			break;      /* slow client: keep the remainder pending, not an error */
-		sr_door_hangup("write error");   /* the single canonical hangup path */
+		sr_door_hangup("write error");   /* n < 0 (dead socket), or a 0-byte write
+		                                  * that can't happen with len > 0 anyway */
 		break;
 	}
 	if (g_out_off >= g_out_len)
@@ -149,23 +149,10 @@ size_t sr_io_out_backlog(void)
 }
 
 /* Monotonic millisecond clock: the exit drain and the DSR-ACK pace timing share
- * this one clock domain (and syncretro_door.c's deadline uses the same source). */
-static uint32_t sr_io_now_ms(void)
-{
-	struct timespec t;
-
-	clock_gettime(CLOCK_MONOTONIC, &t);
-	return (uint32_t)((uint64_t)t.tv_sec * 1000ULL + (uint64_t)t.tv_nsec / 1000000ULL);
-}
-
-static void sr_io_sleep_ms(int ms)
-{
-	struct timespec t;
-
-	t.tv_sec  = ms / 1000;
-	t.tv_nsec = (long)(ms % 1000) * 1000000L;
-	nanosleep(&t, NULL);
-}
+ * this one clock domain (and syncretro_door.c's deadline uses the same source,
+ * sr_plat_now_ms). */
+#define sr_io_now_ms()    sr_plat_now_ms()
+#define sr_io_sleep_ms(ms) sr_plat_sleep_ms(ms)
 
 /* Retry sr_io_out_flush() until the staged buffer is fully sent or `timeout_ms`
  * elapses. The fd is non-blocking, so a single flush only writes what fits in
@@ -205,7 +192,7 @@ static void sr_io_drain_input(int timeout_ms)
 		return;                      /* capture mode: no client, and g_fd is stdout */
 
 	for (;;) {
-		ssize_t n = read(g_fd, buf, sizeof buf);
+		int n = sr_plat_read(g_fd, buf, sizeof buf);
 
 		if (n > 0) {
 			total += (size_t)n;
@@ -215,7 +202,7 @@ static void sr_io_drain_input(int timeout_ms)
 		}
 		if (n == 0)
 			return;                  /* peer closed: nothing left to swallow */
-		if (errno != EAGAIN && errno != EWOULDBLOCK && errno != EINTR)
+		if (n == SR_IO_ERROR)
 			return;                  /* a dead socket needs no draining */
 		if ((int32_t)(sr_io_now_ms() - start) >= timeout_ms)
 			return;
@@ -432,18 +419,18 @@ int sr_io_init(int sockfd)
 	if (g_inited)
 		return 0;
 	g_inited = 1;
-	g_fd = (sockfd >= 0) ? sockfd : 1;   /* fall back to stdout (dev/tty use) */
+	/* Fall back to the plat's dev sink: stdout on POSIX, none (-1) on Windows,
+	 * where fd 1 is not a Winsock SOCKET. */
+	g_fd = (sockfd >= 0) ? sockfd : sr_plat_fallback_fd();
 
-	signal(SIGPIPE, SIG_IGN);   /* a write to a closed socket returns EPIPE, not a signal */
+	sr_plat_net_init();   /* WSAStartup / SIGPIPE-ignore; idempotent, defensive here */
 
 	if ((s = getenv("SYNCRETRO_SIXELOUT")) != NULL && *s != '\0') {
 		g_file = s;
 		g_file_mode = 1;
 	} else {
-		int fl = fcntl(g_fd, F_GETFL, 0);   /* non-blocking: a wedged client never stalls the core */
-
-		if (fl != -1)
-			fcntl(g_fd, F_SETFL, fl | O_NONBLOCK);
+		/* non-blocking + TCP_NODELAY: a wedged client never stalls the core */
+		(void)sr_plat_sock_setup(g_fd);
 	}
 
 	atexit(sr_io_leave);

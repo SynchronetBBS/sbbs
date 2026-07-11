@@ -43,9 +43,15 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include <unistd.h>
 
-#include "dirwrap.h"   /* xpdev: mkpath() -- recursive mkdir */
+#ifdef _WIN32
+  #include <direct.h>   /* _getcwd, _chdir (POSIX names via _CRT_NONSTDC_NO_DEPRECATE) */
+  #include <io.h>
+#else
+  #include <unistd.h>   /* getcwd, chdir */
+#endif
+
+#include "dirwrap.h"   /* xpdev: mkpath() recursive mkdir, FULLPATH(), fexist() */
 #include "ini_file.h"        /* xpdev: iniReadFile / iniGet* / strListFree */
 #include "audio_mgr.h"       /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
 
@@ -180,23 +186,30 @@ int    sr_config_audio_volume(void)    { return g_audio_volume; }
 int    sr_config_audio_chunk_ms(void)  { return g_audio_chunk_ms; }
 int    sr_config_audio_prebuffer(void) { return g_audio_prebuffer; }
 
-/* realpath() into `dst`, falling back to a verbatim copy when it can't resolve
- * (a path that doesn't exist yet, say). Returns 1 if `dst` is absolute. */
+/* Canonicalize `src` into `dst`, falling back to a verbatim copy when it can't
+ * resolve. Returns 1 if `dst` came back absolute.
+ *
+ * xpdev's FULLPATH(), not POSIX realpath(): MSVC has no realpath, and this door
+ * already links xpdev. FULLPATH is also the more correct tool here -- it
+ * canonicalizes LEXICALLY (against the current cwd) and does NOT require the path
+ * to exist, which is exactly what sr_config_apply() needs when it absolutizes the
+ * -home sandbox before creating it. Note the argument order is _fullpath's
+ * (dest, src, size). */
 static int sr_absolutize(char *dst, size_t sz, const char *src)
 {
 	char abs[PATH_MAX];
 
-	if (realpath(src, abs) != NULL) {
+	if (FULLPATH(abs, src, sizeof abs) != NULL) {
 		snprintf(dst, sz, "%s", abs);
-		return 1;
+		return 1;   /* FULLPATH always yields an absolute path */
 	}
 	snprintf(dst, sz, "%s", src);
-	return src[0] == '/';
+	return 0;
 }
 
 static int sr_exists(const char *path)
 {
-	return access(path, R_OK) == 0;
+	return fexist(path);   /* xpdev: portable existence check (no POSIX access()) */
 }
 
 /* Resolve `name` to an absolute, existing file by trying it as given first, then

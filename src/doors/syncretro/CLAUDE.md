@@ -33,9 +33,26 @@ in this directory.
 
 ## Portability
 
-Frontend C must compile under GCC/Clang (primary) and MSVC (Windows port is
-later). `dlopen`/`dlsym` (POSIX) will need a `LoadLibrary`/`GetProcAddress`
-shim in `retro_core.c` for the Windows build -- keep that seam isolated to
-`retro_core.c`. Otherwise follow the repo-wide C/C++ portability rules in the
-top-level [../../../CLAUDE.md](../../../CLAUDE.md) (no reserved identifiers, no
-`goto` past initializers, return from non-void paths, etc.).
+Frontend C compiles under GCC/Clang (primary) **and** MSVC. The Windows build
+is Win32 (x86), configured by `build.bat` / installed by `deploy.js` (via
+jsexec, shared with the *nix build), mirroring the sibling doors. Two -- and only two -- files carry a Windows-vs-POSIX
+`#ifdef`; keep it that way when adding code:
+
+- **`syncretro_plat.c` / `.h`** -- the whole clock / sleep / socket / stderr
+  seam, over xpdev (`genwrap.h` clock+sleep, `sockwrap.h` sockets with the
+  WSA->errno normalization). Every other `syncretro_*.c` / `main.c` file routes
+  its monotonic clock, sleep, and non-blocking descriptor I/O through this and
+  stays `#ifdef`-free. A Winsock `SOCKET` is not a CRT fd, so the seam uses
+  `send`/`recv`/`ioctlsocket` on Windows and `read`/`write`/`fcntl` on POSIX.
+- **`retro_core.c`** -- the core-load seam (`dlopen`/`dlsym`/`dlclose` vs
+  `LoadLibrary`/`GetProcAddress`/`FreeLibrary`). It is NOT in the plat seam
+  because xpdev's `xp_dlopen()` mangles the name (`lib%s.so` / `%s.dll`, version
+  suffixes) and so cannot load a core by the explicit path we hand it -- the
+  shim loads the path verbatim. A core is a `.dll` on Windows, `.so` on *nix.
+
+Path/existence/canonicalization goes through xpdev (`FULLPATH()`, `fexist()`,
+`mkpath()`), never POSIX `realpath()`/`access()` (MSVC has neither). Otherwise
+follow the repo-wide C/C++ portability rules in the top-level
+[../../../CLAUDE.md](../../../CLAUDE.md) (no reserved identifiers, no `goto` past
+initializers, return from non-void paths, etc.). A clean MSVC build is not full
+verification -- GCC/Clang are stricter; see the top-level file.

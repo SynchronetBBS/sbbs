@@ -349,13 +349,16 @@ the committed copy. Everything else in this directory is ours (house-style
 
 ## 14. Build
 
-Out-of-source CMake, same shape as the sibling doors (`./build.sh`,
-`./build.sh debug`, `./build.sh clean`). Links `../termgfx` and `xpdev`
-(sockets); adds `${CMAKE_DL_LIBS}` for `dlopen`. `libjxl` is optional (degrades
-to sixel/text). No vendored-engine source list -- just `libretro.h` and our
-`*.c`. `./deploy.sh` installs the built binary into the door's `xtrn` dir
-(a no-op on a symlink install where the live binary already symlinks the build
-output).
+Out-of-source CMake, same shape as the sibling doors. **POSIX:** `./build.sh`,
+`./build.sh debug`, `./build.sh clean`; links `../termgfx` and `xpdev`, adds
+`${CMAKE_DL_LIBS}` for `dlopen`, `libjxl` optional. **Windows:** `build.bat` /
+`build.bat clean` (Win32/MSVC/Release, static libjxl via a classic-mode vcpkg
+prefix; `ws2_32` for Winsock) -- see M6 in sec 15 and [CLAUDE.md](CLAUDE.md).
+No vendored-engine source list -- just `libretro.h` and our `*.c`. `deploy.js`
+(run via `jsexec`, both platforms) installs the built binary where the lobby
+looks for it -- flat at the door root on Windows, or in an `<os>-<arch>` sub-dir
+on *nix (`linux-x64`, ...); it is a jsexec script so it shares the lobby's
+`sv_target()` and can't disagree about that location.
 
 ---
 
@@ -387,31 +390,40 @@ output).
   exposes its sound registers through the public libretro ABI.
 - **M5 -- core options + save states** surfaced through the door config and a
   per-user save UI, including the save-state hotkeys.
-- **M6 -- Windows.** The door is POSIX-only today, by decision, not oversight.
-  The seams, and what already exists to fill them:
-    * `retro_core.c` -- `dlopen`/`dlsym`/`dlclose` -> xpdev's `xp_dlopen()` /
-      `xp_dlsym()` / `xp_dlclose()` (already wrap `LoadLibrary`/`GetProcAddress`).
-      `xp_dlsym` stringifies a bare symbol name, so `RC_RESOLVE` needs adapting,
-      not just substituting. Cores are `.dll`, not `.so`.
-    * `syncretro_io.c`, `syncretro_input.c` -- the bulk of the work. A Winsock
-      `SOCKET` is not a file descriptor: `read()`/`write()` do not work on it.
-      Use xpdev `sockwrap.h`'s `recvsocket()`/`sendsocket()` and
-      `socket_recv_buffer_t`; `fcntl(O_NONBLOCK)` becomes `ioctlsocket(FIONBIO)`.
-      Roughly a dozen call sites, all in those two files.
-    * `main.c` -- `clock_nanosleep(TIMER_ABSTIME)` has no real equivalent. The
-      pacer's absolute-deadline design (which is what keeps it from drifting) needs
-      `timeBeginPeriod()` plus a `Sleep()`/spin hybrid.
-    * `syncretro_config.c` -- `chdir`/`mkdir`/`realpath` -> dirwrap's `MKDIR()` /
-      `FULLPATH()`.
-    * Build: `CMakeLists.txt` already has an MSVC/vcpkg branch for JPEG XL. M4
-      added libsndfile, which the door needs to *encode* -- so a Windows build
-      gains a vcpkg libsndfile requirement, or builds with
-      `termgfx_audio_have_ogg() == 0` and is simply silent, a state the audio
-      module already handles as first-class.
-  Nothing in M2 or M4 made this harder: neither added a new syscall class. The
-  sibling doors are in the same position, so converting `syncretro_io.c`,
-  `syncduke_io.c` and friends to sockwrap in one pass would beat three separate
-  ports.
+- **M6 -- Windows. DONE.** The door builds and runs on Win32 (MSVC), configured
+  by `build.bat` and installed by `deploy.js` (via jsexec), in the spirit of the
+  sibling doors. All of the Windows-vs-POSIX difference is confined to two files (see
+  [CLAUDE.md](CLAUDE.md)'s Portability section):
+    * `syncretro_plat.c` / `.h` -- the whole clock / sleep / non-blocking
+      descriptor I/O / console-less-stderr seam, over xpdev. A Winsock `SOCKET`
+      is not a CRT fd, so it uses `send`/`recv`/`ioctlsocket` on Windows and
+      `read`/`write`/`fcntl` on POSIX; `sockwrap.h` normalizes `WSAGetLastError()`
+      onto the POSIX errno values so ONE `classify()` covers both. `io.c`,
+      `input.c`, `door.c`, `main.c` lost their direct syscalls and carry no
+      `#ifdef`.
+    * `retro_core.c` -- `dlopen`/`dlsym`/`dlclose` vs `LoadLibrary` /
+      `GetProcAddress` / `FreeLibrary`. NOT routed through xpdev's `xp_dlopen()`:
+      that mangles the name (`lib%s.so` / `%s.dll`, version suffixes) and cannot
+      load a core by the explicit path `sr_config_core_path()` yields, so the
+      shim loads the path verbatim. Cores are `.dll`, not `.so`.
+    * `main.c`'s pacer -- `clock_nanosleep(TIMER_ABSTIME)` has no Windows
+      equivalent, so the absolute-deadline design (what keeps it from drifting)
+      was reframed into the monotonic-microsecond domain (`sr_plat_now_us`) with
+      a whole-millisecond `SLEEP()` and a recheck loop absorbing the sub-ms
+      rounding. `next` accumulates regardless of actual sleep, so rounding never
+      becomes drift.
+    * `syncretro_config.c` -- `realpath`/`access` -> dirwrap's `FULLPATH()` /
+      `fexist()`; `getcwd`/`chdir` from `<direct.h>` under
+      `_CRT_NONSTDC_NO_DEPRECATE`.
+    * Build: `CMakeLists.txt`'s MSVC branch pulls the static libjxl from a
+      classic-mode vcpkg prefix (`x86-windows-static-md`); absent it the door
+      degrades to the sixel/text tiers. libsndfile (Ogg audio) is likewise
+      optional -- without it `termgfx_audio_have_ogg() == 0` and the door is
+      simply silent, a state the audio module already handles as first-class.
+  Win32 (x86) is the one supported Windows target: a Win32 door runs on both a
+  Win32 and a future Win64 Synchronet host (the DOOR32.SYS handle is
+  32-bit-significant and crosses the process-bitness boundary), and a Win32 door
+  loads a Win32 core `.dll`.
 
 ---
 

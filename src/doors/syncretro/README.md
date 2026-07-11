@@ -34,27 +34,80 @@ to a RetroPad. Swap the core, get a different console.
 
 ## Building
 
+POSIX (Linux/*BSD/macOS):
+
 ```sh
 ./build.sh            # Release -> build/syncretro
 ./build.sh debug
 ./build.sh clean
 ```
 
-Links `../termgfx` + `xpdev`; `dlopen`s the core at runtime. `libjxl` is
-optional (absence degrades to sixel/text). `./deploy.sh` installs the binary
-into the door's `xtrn` dir (a no-op on a symlink install).
+Windows (Visual Studio 2022, Win32):
+
+```bat
+build.bat             :: Win32/Release -> build-msvc\Release\syncretro.exe
+build.bat clean
+```
+
+Then install the built binary with **`deploy.js`** (both platforms):
+
+```
+jsexec src/doors/syncretro/deploy.js          # -> the in-tree bundle
+jsexec src/doors/syncretro/deploy.js <dir>    # also -> a live bundle dir
+```
+
+`deploy.js` is a jsexec script rather than a shell/batch pair on purpose: it
+computes the per-target sub-directory with the SAME `sv_target()` the lobby uses,
+so the two can never disagree (see Installing).
+
+Links `../termgfx` + `xpdev`; loads the core at runtime (`dlopen` on *nix,
+`LoadLibrary` on Windows -- the core is a `.so` or a `.dll` to match). `libjxl`
+is optional (absence degrades to sixel/text); on Windows it comes from a
+classic-mode vcpkg prefix (`vcpkg install libjxl:x86-windows-static-md`).
+
+**Win32 is the one supported Windows target**, deliberately: a Win32 door runs
+on both a Win32 and a future Win64 Synchronet host (the DOOR32.SYS comm handle
+is 32-bit-significant and crosses the process-bitness boundary), and it must
+load a Win32 core `.dll`.
+
+On Windows a BBS launches the door with the local console hidden
+(`XTRN_NODISPLAY`), so the door's own diagnostics -- the hangup reason, `-home`
+/ session errors -- are captured to `data/syncretro/syncretro_n<node>.log`
+instead of a dead console. (On POSIX they stay on the inherited stderr, which
+the terminal server already logs.)
 
 ## Installing
 
-The door's own directory is the install root. A typical Intellivision install
-(`xtrn/syncivision`) looks like:
+The door's own directory is the install root. Where the native artifacts -- the
+door binary and the libretro core -- go depends on the platform, so one shared
+install can serve several hosts at once (a BBS spanning a Linux box and a Windows
+host, or two *nixes of different architecture) without their binaries colliding:
+
+- **Windows is flat** -- `syncretro.exe` and `freeintv_libretro.dll` sit at the
+  door root. Their `.exe`/`.dll` extensions already distinguish them from a *nix
+  host's `syncretro`/`.so`, and there is only one Win32 target, so no sub-dir is
+  needed.
+- **A *nix host uses an `<os>-<arch>` sub-directory** (`linux-x64`, `linux-arm64`,
+  `freebsd-x64`, `darwin-arm64`, ...) -- because every *nix build is named the
+  same (`syncretro` / `freeintv_libretro.so`), so two of them WOULD collide at
+  the root. The lobby **prefers that sub-directory but falls back to the flat
+  door dir** when it isn't populated -- so a single-host install, or the legacy
+  symlink-deploy layout (the live bundle symlinks `syncretro` straight to the
+  build output), keeps working with the binary/core loose at the top level.
+
+`deploy.js` installs the binary and `getcore.js` the core, both deriving the
+location from the same `sv_target()` the lobby uses, so they always agree. The
+BIOS and cartridges are platform-independent and stay at the root:
 
 ```
 xtrn/syncivision/
-    syncretro                 the door binary
-    freeintv_libretro.so      the core
-    exec.bin  grom.bin        the BIOS you supply (case-sensitive names)
-    roms/                     cartridges
+    linux-x64/                    a *nix host uses an <os>-<arch> sub-dir, since
+        syncretro                 its "syncretro"/".so" would collide flat with
+        freeintv_libretro.so      another *nix host's
+    syncretro.exe                 Windows is FLAT: .exe/.dll never collide with a
+    freeintv_libretro.dll         *nix host's names, so no sub-dir is needed
+    exec.bin  grom.bin            the BIOS you supply (case-sensitive names)
+    roms/                         cartridges
         4-tris.rom
 ```
 

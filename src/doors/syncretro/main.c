@@ -14,11 +14,11 @@
 #include "syncretro.h"
 #include "syncretro_binds.h"
 #include "syncretro_audio.h"
+#include "syncretro_plat.h"
 
-#include <errno.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
 
 /* Pace the CORE to its native rate. Video presentation is frame-dropped
  * downstream (syncretro_io.c's DSR-ACK gate); audio, when M4 enables it, stays
@@ -26,48 +26,57 @@
  * audio and run the game in slow motion -- DESIGN.md sec 3's "frame-rate
  * decision".
  *
- * Absolute deadlines (TIMER_ABSTIME) accumulated from a fixed epoch, NOT a
- * relative sleep per frame: a relative sleep pays for the frame's own compute
- * time twice (once running it, once sleeping a full period afterward) and the
- * error compounds, so a 60 fps core would drift slow forever. Recomputing the
- * next deadline from the previous one keeps the long-run average exact.
+ * Absolute deadlines accumulated from a fixed epoch, NOT a relative sleep per
+ * frame: a relative sleep pays for the frame's own compute time twice (once
+ * running it, once sleeping a full period afterward) and the error compounds, so
+ * a 60 fps core would drift slow forever. Recomputing the next deadline from the
+ * previous one keeps the long-run average exact.
+ *
+ * The deadline lives in the monotonic-microsecond domain (sr_plat_now_us),
+ * reframed from the POSIX build's clock_nanosleep(TIMER_ABSTIME) so it ports to
+ * a platform with only a millisecond sleep: we sleep the whole-millisecond part
+ * of the remaining time and let the loop's recheck absorb the sub-millisecond
+ * rounding. Accumulating `next` regardless of how long a sleep actually took is
+ * what keeps that rounding from becoming drift.
  *
  * When a frame overruns its budget (a slow sixel encode, a stalled write) the
- * deadline is already in the past, clock_nanosleep() returns at once, and we do
- * NOT try to catch up by running frames back to back -- the deadline is reset to
- * now, so an overrun costs that frame's lateness and nothing more. Catching up
- * would fast-forward the game.
+ * deadline is already in the past, we do NOT try to catch up by running frames
+ * back to back -- the deadline is reset to now, so an overrun costs that frame's
+ * lateness and nothing more. Catching up would fast-forward the game.
  */
 static void sr_pace_to_rate(double fps)
 {
-	static struct timespec next;
-	static int             armed;
-	long                   period_ns;
-	struct timespec        now;
+	static int64_t next_us;
+	static int     armed;
+	int64_t        period_us, now;
 
 	if (fps <= 0.0)
 		fps = 60.0;                     /* a core with no timing: assume 60 */
-	period_ns = (long)(1000000000.0 / fps);
+	period_us = (int64_t)(1000000.0 / fps);
 
 	if (!armed) {
-		clock_gettime(CLOCK_MONOTONIC, &next);
+		next_us = sr_plat_now_us();
 		armed = 1;
 	}
 
-	next.tv_nsec += period_ns;
-	while (next.tv_nsec >= 1000000000L) {
-		next.tv_nsec -= 1000000000L;
-		next.tv_sec++;
-	}
+	next_us += period_us;
 
-	clock_gettime(CLOCK_MONOTONIC, &now);
-	if (now.tv_sec > next.tv_sec
-	    || (now.tv_sec == next.tv_sec && now.tv_nsec > next.tv_nsec)) {
-		next = now;                     /* overran: resync, never fast-forward */
+	now = sr_plat_now_us();
+	if (now > next_us) {
+		next_us = now;                  /* overran: resync, never fast-forward */
 		return;
 	}
-	while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL) == EINTR)
-		;                               /* a signal must not shorten the frame */
+	/* Sleep the whole-ms remainder, then recheck: a millisecond-granularity
+	 * sleep can wake early or late, so loop until the deadline is reached (or
+	 * passed). A sub-ms remainder is left unslept rather than busy-spun -- `next`
+	 * still advanced by a full period, so the average stays exact. */
+	for (;;) {
+		int64_t rem = next_us - sr_plat_now_us();
+
+		if (rem < 1000)
+			break;
+		sr_plat_sleep_ms((int)(rem / 1000));
+	}
 }
 
 /* The door owns pause and help. FreeIntv has its own -- reachable from RetroPad
@@ -114,12 +123,7 @@ static void sr_screen_keys(int paused)
 /* Sleep out the frame budget while the core is not running. */
 static void sr_idle_ms(long ms)
 {
-	struct timespec ts;
-
-	ts.tv_sec  = ms / 1000;
-	ts.tv_nsec = (ms % 1000) * 1000000L;
-	while (nanosleep(&ts, &ts) == -1 && errno == EINTR)
-		;
+	sr_plat_sleep_ms((int)ms);
 }
 
 int main(int argc, char **argv)

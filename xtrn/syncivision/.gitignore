@@ -1,0 +1,25 @@
+# Runtime content installed into this door directory -- never committed.
+# It is either downloaded by getcore.js, supplied by the sysop, or built from
+# src/doors/syncretro. The version-controlled files here are the JS lobby/lib,
+# syncretro.ini, install-xtrn.ini, getcore.js, and the tests.
+#
+# The native artifacts (binary + core) live in per-platform sub-dirs -- win32/,
+# linux/, freebsd/, darwin/, ... -- so these patterns have NO leading slash and
+# match at any depth.
+
+# The deployed door binary (built by src/doors/syncretro's build.sh/build.bat)
+syncretro
+syncretro.exe
+*.pdb
+
+# The FreeIntv libretro core (getcore.js downloads/extracts it, per platform)
+*_libretro.so
+*_libretro.dll
+*_libretro.dylib
+
+# The Intellivision BIOS -- copyrighted, sysop-supplied (see README/DESIGN)
+exec.bin
+grom.bin
+
+# Cartridges -- sysop-supplied
+/roms/

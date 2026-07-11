@@ -50,27 +50,31 @@
  * drain), so a READ-side hangup -- where the write direction may still be open --
  * still hands the terminal back instead of leaving it in physical-key mode.
  *
- * POSIX only for now, matching syncretro_io.c's stated scope: plain
- * read() on a non-blocking fd, no Winsock recv().
+ * The socket read, the monotonic clock, and the keytrace-switch existence check
+ * go through syncretro_plat.h / xpdev, so this file carries no #ifdef: recv() on
+ * a non-blocking Winsock SOCKET, read() on a POSIX fd -- the seam hides which.
  */
 #include "syncretro.h"
+#include "syncretro_plat.h"
 #include "libretro.h"    /* RETRO_DEVICE_* / RETRO_DEVICE_ID_JOYPAD_* */
 
-#include <errno.h>
 #include <limits.h>      /* PATH_MAX */
 #include <stdarg.h>     /* sr_trace */
 #include <stdio.h>       /* SYNCRETRO_KEYTRACE */
 #include <stdlib.h>      /* getenv */
 #include <string.h>
-#include <time.h>
-#include <unistd.h>
 
+#include "dirwrap.h"     /* xpdev: fexist() -- the keytrace.on switch check */
 #include "caps.h"        /* termgfx: termgfx_caps_parse_jxl */
 #include "audio.h"       /* termgfx: termgfx_audio_parse_caps */
 #include "keymode.h"     /* termgfx: key-mode negotiation + kitty/evdev decode */
 #include "syncretro_binds.h"
 #include "syncretro_keypad.h"
 #include "syncretro_audio.h"
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096   /* MSVC's <limits.h> has no PATH_MAX (it uses _MAX_PATH) */
+#endif
 
 /* Byte-path auto-release window. Long enough that a tap registers for a frame or
  * three at 60 fps, short enough that a released key doesn't drift. Auto-repeat
@@ -84,13 +88,7 @@ static int16_t  g_joypad[SR_PAD_IDS];
 static uint32_t g_expire_ms[SR_PAD_IDS];   /* byte path only: 0 = no timer */
 static int      g_quit;
 
-static uint32_t sr_in_now_ms(void)
-{
-	struct timespec t;
-
-	clock_gettime(CLOCK_MONOTONIC, &t);
-	return (uint32_t)((uint64_t)t.tv_sec * 1000ULL + (uint64_t)t.tv_nsec / 1000000ULL);
-}
+#define sr_in_now_ms()   sr_plat_now_ms()
 
 int sr_input_quit_requested(void) { return g_quit; }
 
@@ -674,7 +672,7 @@ static FILE *sr_trace_fp(void)
 		if ((path == NULL || *path == '\0') && dir != NULL) {
 			snprintf(on, sizeof on, "%s/keytrace.on", dir);
 			snprintf(log, sizeof log, "%s/keytrace.log", dir);
-			if (access(on, F_OK) == 0)
+			if (fexist(on))
 				path = log;
 		}
 		if (path != NULL && *path != '\0' && (fp = fopen(path, "w")) != NULL)
@@ -758,7 +756,7 @@ static void sr_keytrace(const uint8_t *buf, int n)
 void sr_input_pump(void)
 {
 	uint8_t buf[256];
-	ssize_t n;
+	int     n;
 	int     i, fd = sr_io_get_fd();
 
 	/* Expire byte-path taps even on a pump that reads nothing: a key released
@@ -773,9 +771,9 @@ void sr_input_pump(void)
 	if (fd < 0)
 		return;
 
-	n = read(fd, buf, sizeof buf);
+	n = sr_plat_read(fd, buf, sizeof buf);
 	if (n < 0) {
-		if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+		if (n == SR_IO_AGAIN || n == SR_IO_INTR)
 			return;      /* no input yet / transient: not a hangup */
 		sr_door_carrier_lost();
 		return;

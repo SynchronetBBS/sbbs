@@ -8,8 +8,8 @@
 #           ./build.sh debug clean (combine)
 #
 # Builds out-of-source in ./build/, leaving the binary at ./build/syncretro.
-# Building does NOT touch any live install -- run ./deploy.sh afterwards (a
-# no-op on a symlink install where the live binary symlinks the build output).
+# Building does NOT touch any live install -- run `jsexec deploy.js` afterwards
+# to install the binary into the door bundle's per-target sub-dir.
 #
 # syncretro links xpdev (sockets) and ../termgfx (sixel/JXL encode, APC
 # transport, cap-probing, pacing); CMake builds both as sub-targets. It loads
@@ -63,4 +63,4 @@ fi
 
 echo
 echo "[build] Built: $EXE"
-echo "[build] Run ./deploy.sh to install it into the door's xtrn dir."
+echo "[build] Run 'jsexec deploy.js' to install it into the door's xtrn dir."

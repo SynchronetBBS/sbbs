@@ -13,10 +13,43 @@ load(js.exec_dir + "syncivision_lib.js");
 
 var gl = load({}, "game_lobby.js");        /* rpad/clip/ago + live_nodes */
 
-var SR_DIR    = js.exec_dir;               /* xtrn/syncivision/ */
-var SR_BINARY = SR_DIR + "syncretro%.";    /* "%." = .exe on Windows, blank here */
-var SR_CORE   = "freeintv_libretro.so";
-var SR_CFG    = SR_DIR + "syncretro.ini";
+var SYNCRETRO_DIR    = js.exec_dir;               /* xtrn/syncivision/ */
+/* The native artifacts -- the door binary and the libretro core -- live in a
+ * per-target sub-directory (sv_target(): win32, linux-x64, linux-arm64,
+ * darwin-arm64, freebsd-x64, ...) so one shared install can serve several hosts
+ * -- different OSes AND different architectures -- without their same-named
+ * binaries colliding. deploy.js and getcore.js put them there; the BIOS and
+ * cartridges are platform-independent and stay at the door root. SYNCRETRO_CORE is
+ * passed to the door RELATIVE to its launch dir (SYNCRETRO_DIR), which the door
+ * resolves against its cwd (bbs.exec runs it in SYNCRETRO_DIR). "%." on SYNCRETRO_BINARY
+ * expands to .exe on Windows, blank elsewhere; the core extension is explicit. */
+var SYNCRETRO_TARGET = sv_target(system.platform, system.architecture);
+/* Native path separator: js.exec_dir is trailing-slashed with the OS separator
+ * ("\" on Windows, "/" elsewhere), so its last char is it. The binary path uses
+ * it because xtrn.cpp/CreateProcess want native separators, and -- crucially --
+ * the command must start with the drive letter (Windows) or "/" (*nix) so
+ * external() recognizes it as ABSOLUTE and does not prepend the startup dir. A
+ * leading quote defeats that check (cmdline[1] != ':'), so SYNCRETRO_BINARY is
+ * used UNQUOTED in the command below, exactly like the sibling doors' SD_BINARY. */
+var SYNCRETRO_SEP    = SYNCRETRO_DIR.charAt(SYNCRETRO_DIR.length - 1);
+
+/* Where the binary/core live. Windows is FLAT (sv_target() -> "", so SYNCRETRO_SUB
+ * is ""): a .exe/.dll never collides with a *nix "syncretro"/".so" in a shared
+ * dir. A *nix host uses an "<os>-<arch>" sub-dir (linux-x64, ...) so two *nixes
+ * don't collide -- and the lobby PREFERS that sub-dir but FALLS BACK to the flat
+ * door dir when it isn't populated (a single-host install, or the legacy
+ * symlink-deploy layout where `syncretro` symlinks straight to the build output).
+ * Binary and core are probed INDEPENDENTLY, since deploy.js and getcore.js
+ * install them separately. The probe uses the RESOLVED names (".exe" on Windows);
+ * the command keeps "%." for cmdstr() to expand. */
+var SYNCRETRO_SUB    = SYNCRETRO_TARGET ? SYNCRETRO_TARGET + SYNCRETRO_SEP : "";
+var SYNCRETRO_EXE    = "syncretro" + (/^win/i.test(system.platform) ? ".exe" : "");
+var SYNCRETRO_CNAME  = "freeintv_libretro." + sv_core_ext(sv_platform(system.platform));
+var SYNCRETRO_BPFX   = file_exists(SYNCRETRO_DIR + SYNCRETRO_SUB + SYNCRETRO_EXE)   ? SYNCRETRO_SUB : "";
+var SYNCRETRO_CPFX   = file_exists(SYNCRETRO_DIR + SYNCRETRO_SUB + SYNCRETRO_CNAME) ? SYNCRETRO_SUB : "";
+var SYNCRETRO_BINARY = SYNCRETRO_DIR + SYNCRETRO_BPFX + "syncretro%.";
+var SYNCRETRO_CORE   = SYNCRETRO_CPFX + SYNCRETRO_CNAME;
+var SYNCRETRO_CFG    = SYNCRETRO_DIR + "syncretro.ini";
 
 var CELL_W      = 36;
 var HEADER_ROWS = 5;                       /* title, board x2, blank, blank */
@@ -24,7 +57,7 @@ var FOOTER_ROWS = 2;
 
 function cfg()
 {
-	var f = new File(SR_CFG);
+	var f = new File(SYNCRETRO_CFG);
 	var out = { dir: "roms", ext: ["int", "bin", "rom"], exclude: [] };
 	var ini;
 
@@ -49,9 +82,9 @@ function bios_missing()
 {
 	var missing = [];
 
-	if (!file_exists(SR_DIR + "exec.bin"))
+	if (!file_exists(SYNCRETRO_DIR + "exec.bin"))
 		missing.push("exec.bin");
-	if (!file_exists(SR_DIR + "grom.bin"))
+	if (!file_exists(SYNCRETRO_DIR + "grom.bin"))
 		missing.push("grom.bin");
 	return missing;
 }
@@ -114,20 +147,29 @@ function play(rom)
 	}
 	mkpath(home);
 
-	/* The quotes are load-bearing: xtrn.cpp splits the command line on bare
-	 * spaces, and every real cartridge name has them. A quote diverts the line
-	 * through $SHELL -c, which reassembles the argument -- the same path
-	 * `-name %a` already takes on every SyncDOOM and SyncDuke launch. SR_BINARY
-	 * and the -home path get the same treatment: harmless on a stock /sbbs
-	 * install, but either can contain a space on the planned Windows port
-	 * ("C:\Program Files\..."). -name %a is NOT quoted here: cmdstr() already
-	 * quotes the alias itself, and doubling it would hand the door literal
-	 * quote characters. */
-	cmd = '"' + SR_BINARY + '"' + " -s%H -t%T -name %a -core " + SR_CORE
+	/* Quoting is load-bearing on the ARGUMENTS: xtrn.cpp splits the command line
+	 * on bare spaces, and every real cartridge name (and a user's -home path) has
+	 * them, so those are quoted -- which also routes external() through the shell
+	 * on *nix, reassembling the argument. But SYNCRETRO_BINARY (the leading
+	 * program token) is deliberately NOT quoted: external() only recognizes an
+	 * absolute path -- and skips prepending the startup dir to it -- when it
+	 * begins with the drive letter (Windows: cmdline[1]==':') or "/" (*nix). A
+	 * leading quote hides that, so a quoted absolute path gets the startup dir
+	 * prepended and becomes a broken doubled command on Windows. The sibling doors
+	 * use SD_BINARY unquoted for the same reason. -name %a is NOT quoted here:
+	 * cmdstr() already quotes the alias itself, and doubling it would hand the
+	 * door literal quote characters. */
+	cmd = SYNCRETRO_BINARY + " -s%H -t%T -name %a -core " + SYNCRETRO_CORE
 	    + ' -home "' + home + '" "' + rom.path + '"';
 
 	started = time();
-	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN, SR_DIR);
+	/* EX_NODISPLAY: on Windows, spawn the native door with CREATE_NO_WINDOW so
+	 * no per-session console window pops up on the BBS machine (xtrn.cpp) -- the
+	 * door draws to the CLIENT's terminal, and its own diagnostics are captured
+	 * to data/syncretro/syncretro_n<node>.log. No-op on *nix (no console window).
+	 * This is the lobby-launched equivalent of a registered xtrn's XTRN_NODISPLAY
+	 * setting; EX_NODISPLAY is the proper EX_* spelling of that bit for bbs.exec. */
+	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN | EX_NODISPLAY, SYNCRETRO_DIR);
 	secs = time() - started;
 
 	/* Logged whatever the door's exit status: a crash is still a play. */
@@ -149,13 +191,13 @@ function main()
 
 	if (missing.length) {
 		console.putmsg("\r\n\1h\1rThe Intellivision BIOS is missing from "
-		    + SR_DIR + ": " + missing.join(" and ") + "\r\n"
+		    + SYNCRETRO_DIR + ": " + missing.join(" and ") + "\r\n"
 		    + "Without it no cartridge will run. Ask the sysop.\1n\r\n");
 		console.pause();
 		return;
 	}
 
-	roms = sv_discover(SR_DIR + backslash(c.dir), c.ext, c.exclude);
+	roms = sv_discover(SYNCRETRO_DIR + backslash(c.dir), c.ext, c.exclude);
 	if (!roms.length) {
 		console.putmsg("\r\n\1h\1rNo cartridges found in " + c.dir + "/.\1n\r\n");
 		console.pause();
@@ -203,7 +245,7 @@ function main()
 			var n = console.getnum(roms.length);
 			if (n >= 1 && n <= roms.length) {
 				if (play(roms[n - 1])) {    /* numbers index the FULL list */
-					roms = sv_discover(SR_DIR + backslash(c.dir), c.ext, c.exclude);
+					roms = sv_discover(SYNCRETRO_DIR + backslash(c.dir), c.ext, c.exclude);
 					if (!roms.length) {
 						console.putmsg("\r\n\1h\1rNo cartridges found in "
 						    + c.dir + "/.\1n\r\n");

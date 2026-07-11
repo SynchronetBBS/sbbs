@@ -8,8 +8,13 @@
 # committed (sysop-supplied -- see PROVENANCE.md). NOT libretro.h, which IS
 # vendored and tracked.
 *_libretro.so
+*_libretro.dll
 *.bin
 *.rom
+# MSVC build byproducts
+*.pdb
+*.ilk
+*.exp
 # editor swap
 *.swp
 *.swo

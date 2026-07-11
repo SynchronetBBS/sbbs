@@ -21,11 +21,37 @@ add_executable(syncretro
     syncretro_audio.c   # the core's PCM stream -> SyncTERM's audio APC (M4)
     syncretro_door.c    # DOOR32.SYS / -s<fd> / -name / -home / -t / -core
     syncretro_config.c  # per-user sandbox + system/save dirs
-    syncretro_quant.c)  # truecolor frame -> 256-color indexed, for the sixel tier
+    syncretro_quant.c   # truecolor frame -> 256-color indexed, for the sixel tier
+    syncretro_plat.c)   # the door's Windows-vs-POSIX seam (clock/sleep/socket/stderr)
 
 # libretro.h lives in this dir (vendored). Our own code is house-style tabs.
 target_include_directories(syncretro PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 set_target_properties(syncretro PROPERTIES LINKER_LANGUAGE CXX C_STANDARD 11)
+
+# ---------------------------------------------------------------------------
+# MSVC / Windows. Win32 (x86) is the one supported Windows target -- see
+# build.bat's header for why (a Win32 door runs on both a Win32 and a future
+# Win64 Synchronet host; DOOR32.SYS's socket handle is 32-bit-significant and
+# crosses the process-bitness boundary). All of the door's platform difference
+# is in syncretro_plat.c + retro_core.c's dlopen seam; the block below just
+# supplies the CRT quiets, the Winsock link, and crash-symbolication flags,
+# mirroring ../syncmoo1/CMakeLists.txt.
+# ---------------------------------------------------------------------------
+if(MSVC)
+    target_compile_definitions(syncretro PRIVATE
+        _CRT_SECURE_NO_WARNINGS          # fopen/strcpy/snprintf "use the _s variant"
+        _CRT_NONSTDC_NO_DEPRECATE        # getcwd/chdir POSIX names (syncretro_config.c)
+        _WINSOCK_DEPRECATED_NO_WARNINGS) # inet_addr et al. reached via sockwrap.h
+
+    # Winsock: the door's DOOR32.SYS handle is a SOCKET (see syncretro_plat.c).
+    target_link_libraries(syncretro ws2_32)
+
+    # /Zi emits a .pdb for the optimized Release build and /MAP a symbol map, so
+    # procdump+cdb can symbolize a crash dump; /OPT:REF,/OPT:ICF restore the
+    # optimizations /DEBUG would otherwise disable (cf. syncmoo1/syncduke).
+    target_compile_options(syncretro PRIVATE /Zi)
+    target_link_options(syncretro PRIVATE /MAP /DEBUG /OPT:REF /OPT:ICF)
+endif()
 
 # libtermgfx -- shared sixel/JXL encode + APC transport + cap-probe + geometry +
 # pacing + sbbs_node. PUBLIC include dir gives us sixel.h/jxl.h/term.h/caps.h/
@@ -39,20 +65,65 @@ synchronet_gitinfo(syncretro)
 
 # ---------------------------------------------------------------------------
 # JPEG XL -- the APC/SyncTERM graphics tier (shared with the other doors via
-# termgfx). Optional: without it the door serves the sixel/text tiers. This
-# mirrors ../syncmoo1/CMakeLists.txt's block (see there for the MSVC/vcpkg
-# variant); kept minimal here for the *nix skeleton.
+# termgfx). Optional: without it the door serves the sixel/text tiers (the JXL
+# present path is #ifdef WITH_JXL gated, and termgfx/jxl.c compiles a return-0
+# stub). Mirrors ../syncmoo1/CMakeLists.txt: on MSVC the static libjxl + its
+# dependencies come from a classic-mode vcpkg prefix (x86-windows-static-md);
+# everywhere else, pkg-config / find_library.
 # ---------------------------------------------------------------------------
 option(WITHOUT_JPEG_XL "Build without the JPEG XL graphics tier (sixel only)" OFF)
-if(NOT WITHOUT_JPEG_XL AND NOT MSVC)
-    find_package(PkgConfig QUIET)
-    if(PkgConfig_FOUND)
-        pkg_check_modules(JPEG_XL libjxl)
-    endif()
-    if(NOT JPEG_XL_FOUND)
-        find_library(JPEG_XL_LIBRARIES NAMES jxl)
-        if(JPEG_XL_LIBRARIES)
+if(NOT WITHOUT_JPEG_XL)
+    if(MSVC)
+        find_path(JXL_INCLUDE_DIR jxl/encode.h)
+        set(_jxl_required jxl hwy brotlienc brotlidec brotlicommon)
+        set(_jxl_optional jxl_cms lcms2)
+        set(JPEG_XL_LIBRARIES "")
+        set(_jxl_ok TRUE)
+        foreach(_jxl_n ${_jxl_required} ${_jxl_optional})
+            if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+                set(_jxl_root ${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET})
+                find_library(JXL_${_jxl_n}_REL NAMES ${_jxl_n} PATHS ${_jxl_root}/lib NO_DEFAULT_PATH)
+                find_library(JXL_${_jxl_n}_DBG NAMES ${_jxl_n} PATHS ${_jxl_root}/debug/lib NO_DEFAULT_PATH)
+                if(JXL_${_jxl_n}_REL)
+                    list(APPEND JPEG_XL_LIBRARIES optimized ${JXL_${_jxl_n}_REL})
+                    if(JXL_${_jxl_n}_DBG)
+                        list(APPEND JPEG_XL_LIBRARIES debug ${JXL_${_jxl_n}_DBG})
+                    else()
+                        list(APPEND JPEG_XL_LIBRARIES debug ${JXL_${_jxl_n}_REL})
+                    endif()
+                endif()
+                set(_jxl_hit ${JXL_${_jxl_n}_REL})
+            else()
+                find_library(JXL_${_jxl_n}_LIB NAMES ${_jxl_n})
+                if(JXL_${_jxl_n}_LIB)
+                    list(APPEND JPEG_XL_LIBRARIES ${JXL_${_jxl_n}_LIB})
+                endif()
+                set(_jxl_hit ${JXL_${_jxl_n}_LIB})
+            endif()
+            if(NOT _jxl_hit)
+                list(FIND _jxl_required ${_jxl_n} _jxl_req)
+                if(NOT _jxl_req EQUAL -1)
+                    set(_jxl_ok FALSE)
+                endif()
+            endif()
+        endforeach()
+        if(JXL_INCLUDE_DIR AND _jxl_ok)
             set(JPEG_XL_FOUND TRUE)
+            set(JPEG_XL_INCLUDE_DIRS ${JXL_INCLUDE_DIR})
+            target_compile_definitions(syncretro PRIVATE JXL_STATIC_DEFINE)
+            target_compile_definitions(termgfx   PRIVATE JXL_STATIC_DEFINE)
+        endif()
+    endif()
+    if(NOT JPEG_XL_FOUND AND NOT MSVC)
+        find_package(PkgConfig QUIET)
+        if(PkgConfig_FOUND)
+            pkg_check_modules(JPEG_XL libjxl)
+        endif()
+        if(NOT JPEG_XL_FOUND)
+            find_library(JPEG_XL_LIBRARIES NAMES jxl)
+            if(JPEG_XL_LIBRARIES)
+                set(JPEG_XL_FOUND TRUE)
+            endif()
         endif()
     endif()
     if(JPEG_XL_FOUND)
@@ -99,7 +170,9 @@ if(SYNCRETRO_TESTS)
 
     add_executable(test_keypad test_keypad.c syncretro_keypad.c)
     target_include_directories(test_keypad PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    target_link_libraries(test_keypad m)
+    if(NOT WIN32)
+        target_link_libraries(test_keypad m)   # libm: no such separate lib on MSVC
+    endif()
     add_test(NAME keypad COMMAND test_keypad)
 
     add_executable(test_binds test_binds.c syncretro_binds.c)

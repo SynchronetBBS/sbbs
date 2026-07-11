@@ -280,7 +280,13 @@ function sv_discover(roms_dir, exts, excludes)
 
 function sv_plays_path(data_dir)
 {
-	var dir = backslash(data_dir) + "syncretro/";
+	// Strip any trailing separator ("/" or, from a backslash()'d path, "\") and
+	// rebuild with "/", so the result is the same whether or not data_dir came
+	// with a trailing separator, and on every platform (Windows accepts "/").
+	// backslash() alone would not do: it appends the OS-NATIVE separator only
+	// when one is missing, so "<dir>" vs "<dir>/" would yield "<dir>\syncretro/..."
+	// vs "<dir>/syncretro/..." on Windows -- the same path spelled two ways.
+	var dir = String(data_dir).replace(/[\\\/]+$/, "") + "/syncretro/";
 
 	if (!file_isdir(dir))
 		mkpath(dir);
@@ -397,4 +403,93 @@ function sv_cell(index, rom, width)
 	var s     = format("%3d | %s", index, label);
 
 	return s.length > width ? s.substr(0, width) : s;
+}
+
+// --- platform / target token ------------------------------------------------
+//
+// The sub-directory (under the door dir) that holds the platform-specific NATIVE
+// artifacts: the door binary and the libretro core. Keeping them in a
+// per-target sub-dir rather than loose in the door dir is what lets one shared
+// install serve several hosts at once -- e.g. a BBS spanning a Linux box and a
+// Windows host on the same mount (Vertrauen), or two *nixes of different
+// architecture. A bare "syncretro" / "freeintv_libretro.so" would collide
+// between them. The BIOS and cartridges are platform-independent and stay at
+// the door root.
+//
+// sv_target(platform, architecture) is the sub-dir name (or "" = flat door dir):
+//   Windows       ""                      (flat: .exe/.dll never collide flat)
+//   everything    "<os>-<arch>"           "linux-x64", "linux-arm64",
+//   else          e.g.                     "freebsd-x64", "darwin-arm64"
+//
+// The lobby (lobby.js), the core installer (getcore.js) AND the binary installer
+// (deploy.js) all call sv_target(), so they agree on the sub-dir by construction
+// -- that is exactly why deploy is a jsexec script and not a shell/batch pair: a
+// shell deploy would have to re-derive the token from `uname`, whose spellings
+// differ from system.platform/system.architecture, and drift out of agreement.
+//
+// The normalization here is therefore about producing a STABLE, CLEAN,
+// filesystem-safe token from Synchronet's own raw values, not about matching any
+// external tool:
+//   sv_platform() -- the OS half:
+//     * Windows: the door is Win32-only by design (one binary covers a Win32 AND
+//       a Win64 host), but system.platform is "Win64" on a 64-bit Synchronet.
+//       Both collapse to "win32" -- and sv_target() maps that to "" (flat), since
+//       a .exe/.dll never collides with a *nix name and there is one Win32 target.
+//     * macOS: system.platform is "macOS"/"MacOSX" -> one stable "darwin".
+//     * Linux/*BSD: lower-cased, with any stray non-alnum char (the "/" in
+//       "GNU/Hurd") stripped so it cannot nest a path.
+//   sv_arch() -- the CPU half, bucketed so equivalent spellings don't fragment
+//     into separate dirs (i386/i686 -> x86, armv8/aarch64 -> arm64): x64 / x86 /
+//     arm64 / arm, else the token verbatim (riscv64, ppc64, ...).
+//
+// All three take their inputs as arguments (UI-free, so the tests drive them).
+// The core's file extension follows from sv_platform() (win32->dll, darwin->dylib,
+// else->so), so the lobby, getcore.js and deploy all agree on where the core lives.
+function sv_platform(platname)
+{
+	var p = String(platname);
+
+	if (/^win/i.test(p))
+		return "win32";                                  // door is Win32 for every Windows host
+	if (/darwin|mac|osx/i.test(p))
+		return "darwin";                                 // macOS / MacOSX -> one stable name
+	return p.toLowerCase().replace(/[^a-z0-9]+/g, "");   // linux, freebsd, netbsd, ...
+}
+
+function sv_arch(archname)
+{
+	var a = String(archname).toLowerCase();
+
+	if (/x86[_-]?64|amd64|x64/.test(a))
+		return "x64";                                    // x64 / x86_64 / amd64
+	if (/aarch64|arm64|armv8/.test(a))
+		return "arm64";                                  // 64-bit ARM (armv8 = aarch64)
+	if (/arm/.test(a))
+		return "arm";                                    // armv7l / armv6 / arm
+	if (/i[3-7]86|x86/.test(a))
+		return "x86";                                    // i686 / i386 / x86 (32-bit)
+	return a.replace(/[^a-z0-9]+/g, "");                 // riscv64, ppc64, mips, ... verbatim
+}
+
+// The per-target sub-dir name, or "" for the flat door dir (no sub-dir needed).
+//
+// Windows returns "" -- flat. Its artifacts carry a distinguishing extension
+// (syncretro.EXE, freeintv_libretro.DLL), so they never collide with a *nix
+// host's extension-less "syncretro" / ".so" in a shared flat dir, and there is
+// only ever one Win32 target. A *nix host's binary and core ARE named the same
+// on every OS/arch ("syncretro" / ".so"), so they DO collide on a shared mount
+// and get an "<os>-<arch>" sub-dir (linux-x64, linux-arm64, freebsd-x64, ...).
+function sv_target(platname, archname)
+{
+	var plat = sv_platform(platname);
+
+	if (plat == "win32")
+		return "";
+	return plat + "-" + sv_arch(archname);
+}
+
+// The libretro core's shared-library extension for a given sv_platform() token.
+function sv_core_ext(plat)
+{
+	return plat == "win32" ? "dll" : plat == "darwin" ? "dylib" : "so";
 }

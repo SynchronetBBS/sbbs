@@ -393,5 +393,50 @@ eq(longcell.length, 30, "an over-long title is clipped, not wrapped");
 var noyear = sv_cell(1, {title: "4tris", year: 0}, 36);
 check(noyear.indexOf("(0)") < 0, "a missing year is omitted, not printed as 0");
 
+writeln("N. platform token (native-artifact subdir)");
+// Windows is Win32-only by design: both a 32- and a 64-bit Synchronet host
+// resolve to the one "win32" subdir, so a Win64 host finds the Win32 door.
+eq(sv_platform("Win32"), "win32", "Win32 -> win32");
+eq(sv_platform("Win64"), "win32", "Win64 host still maps to the Win32 door dir");
+// macOS: system.platform ("macOS"/"MacOSX") and deploy's uname ("Darwin")
+// must agree on one token.
+eq(sv_platform("macOS"),  "darwin", "macOS -> darwin");
+eq(sv_platform("MacOSX"), "darwin", "MacOSX -> darwin");
+eq(sv_platform("Darwin"), "darwin", "Darwin -> darwin");
+// *nixes: lower-cased, matching `uname -s | tr A-Z a-z`.
+eq(sv_platform("Linux"),   "linux",   "Linux -> linux");
+eq(sv_platform("FreeBSD"), "freebsd", "FreeBSD -> freebsd");
+eq(sv_platform("NetBSD"),  "netbsd",  "NetBSD -> netbsd");
+// A "/" (as in "GNU/Hurd") must not nest a path.
+check(sv_platform("GNU/Hurd").indexOf("/") < 0, "no path separator survives in the token");
+// The core extension follows from the platform token.
+eq(sv_core_ext("win32"),  "dll",   "win32 core is .dll");
+eq(sv_core_ext("darwin"), "dylib", "darwin core is .dylib");
+eq(sv_core_ext("linux"),  "so",    "linux core is .so");
+
+writeln("N. architecture bucket (system.architecture <-> uname -m must agree)");
+// system.architecture spellings...
+eq(sv_arch("x64"),   "x64",   "system.architecture x64 -> x64");
+eq(sv_arch("i686"),  "x86",   "system.architecture i686 -> x86");
+eq(sv_arch("i386"),  "x86",   "system.architecture i386 -> x86");
+eq(sv_arch("arm64"), "arm64", "system.architecture arm64 -> arm64");
+eq(sv_arch("armv7"), "arm",   "system.architecture armv7 -> arm");
+eq(sv_arch("armv8"), "arm64", "system.architecture armv8 (aarch64) -> arm64");
+// ...and the `uname -m` spellings for the SAME hosts land on the same bucket.
+eq(sv_arch("x86_64"),  "x64",   "uname x86_64 -> x64");
+eq(sv_arch("amd64"),   "x64",   "uname amd64 -> x64");
+eq(sv_arch("aarch64"), "arm64", "uname aarch64 -> arm64");
+eq(sv_arch("armv7l"),  "arm",   "uname armv7l -> arm");
+// An unrecognized arch passes through (lower-cased, sanitized).
+eq(sv_arch("riscv64"), "riscv64", "riscv64 passes through");
+
+writeln("N. target sub-dir (platform + arch)");
+eq(sv_target("Win32", "i686"),   "",            "Windows is flat (.exe/.dll never collide)");
+eq(sv_target("Win64", "x64"),    "",            "64-bit Windows host is flat too");
+eq(sv_target("Linux", "x64"),    "linux-x64",   "Linux x86_64");
+eq(sv_target("Linux", "aarch64"),"linux-arm64", "Linux arm64 does not collide with linux-x64");
+eq(sv_target("FreeBSD","amd64"), "freebsd-x64", "FreeBSD amd64");
+eq(sv_target("macOS", "arm64"),  "darwin-arm64","Apple Silicon");
+
 writeln(failures ? "FAIL: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);

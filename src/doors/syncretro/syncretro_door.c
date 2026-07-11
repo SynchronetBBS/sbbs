@@ -6,30 +6,26 @@
  *
  * DOOR32.SYS (the portable door interface, Synchronet's %f): line 1 = comm type
  * (2 = telnet/socket), line 2 = comm/socket handle, line 7 = user alias, line 9
- * = minutes left. The handle is an inherited descriptor: a plain fd on *nix
- * (Windows/Winsock is out of M1 scope, matching syncretro_io.c).
+ * = minutes left. The handle is an inherited descriptor: a plain fd on *nix, a
+ * Winsock SOCKET on Windows -- syncretro_plat.c hides that difference, so nothing
+ * here is #ifdef'd.
  *
  * One thing here has no counterpart in the sibling doors: SyncRetro takes a
- * -core <path> (the libretro .so to dlopen) and a ROM path. Both are its own
+ * -core <path> (the libretro core to load) and a ROM path. Both are its own
  * arguments, resolved here and stripped by sr_door_sanitize_argv() -- the ROM is
  * also accepted positionally, as the one non-flag argument that isn't the
  * DOOR32.SYS drop file.
  */
 #include "syncretro.h"
+#include "syncretro_plat.h"
 
-#include <fcntl.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <time.h>
-#include <unistd.h>
 
-#include <netinet/in.h>   /* IPPROTO_TCP */
-#include <netinet/tcp.h>  /* TCP_NODELAY */
-#include <sys/socket.h>   /* setsockopt */
-
+#include "genwrap.h"           /* xpdev: stricmp() (POSIX strcasecmp) */
+#include "dirwrap.h"           /* xpdev: mkpath() -- the diagnostics-log dir */
+#include "sbbs_node.h"         /* termgfx: sbbs_my_node() -- node-tag the log */
 #include "syncretro_binds.h"   /* sr_bind_help_line(): drives the usage key list */
 
 #define SR_ALIAS_MAX 64
@@ -47,13 +43,7 @@ static char     g_rom[SR_PATH_MAX];    /* "" = no ROM given */
 
 /* Monotonic millisecond clock -- the session deadline uses it so a wall-clock
  * step (NTP, DST) can't mistime it. Same clock domain as syncretro_io.c. */
-static uint32_t sr_door_now_ms(void)
-{
-	struct timespec t;
-
-	clock_gettime(CLOCK_MONOTONIC, &t);
-	return (uint32_t)((uint64_t)t.tv_sec * 1000ULL + (uint64_t)t.tv_nsec / 1000000ULL);
-}
+#define sr_door_now_ms()   sr_plat_now_ms()
 
 /*
  * The single, canonical hangup path (../syncmoo1/syncmoo1_door.c's
@@ -64,8 +54,11 @@ static uint32_t sr_door_now_ms(void)
  * normally at the top of the next frame, through the one teardown path.
  *
  * sr_io_leave() runs first (idempotent, with a BOUNDED drain) so the BBS's
- * terminal is restored rather than left wedged. Then _exit(), not exit(), so no
- * atexit handler can block on the now-dead socket.
+ * terminal is restored rather than left wedged. Then _Exit(), not exit(), so no
+ * atexit handler can block on the now-dead socket. _Exit() (C99, <stdlib.h>) not
+ * POSIX _exit(): both skip the atexit(sr_io_leave) handler and the stdio flush,
+ * but only _Exit() is declared portably without pulling <unistd.h> back into
+ * this otherwise platform-neutral file (MSVC has no <unistd.h>).
  *
  * The `entered` guard makes it re-entrant-safe: sr_io_leave()'s drain calls
  * sr_io_out_flush(), which on a truly dead socket calls back in here.
@@ -75,13 +68,13 @@ void sr_door_hangup(const char *why)
 	static int entered;
 
 	if (entered)
-		_exit(0);   /* re-entered via sr_io_leave()'s drain on a dead socket */
+		_Exit(0);   /* re-entered via sr_io_leave()'s drain on a dead socket */
 	entered = 1;
 
 	fprintf(stderr, "syncretro: client hangup (%s) -- exiting\n", why ? why : "");
 	fflush(stderr);
 	sr_io_leave();
-	_exit(0);
+	_Exit(0);
 }
 
 void sr_door_carrier_lost(void)
@@ -109,7 +102,7 @@ static int is_door32_path(const char *s)
 
 	while (b > s && b[-1] != '/' && b[-1] != '\\')
 		b--;
-	return strcasecmp(b, "door32.sys") == 0;
+	return stricmp(b, "door32.sys") == 0;
 }
 
 /* True iff s is non-empty and every character is an ASCII digit. */
@@ -234,22 +227,17 @@ static void sr_door_resolve(int argc, char **argv)
 		copy_arg(g_rom, sizeof(g_rom), s);
 }
 
-/* Non-blocking + TCP_NODELAY + SIGPIPE-ignore. SIGPIPE is ignored
- * unconditionally (a write to a closed socket should return EPIPE, not kill the
- * process, even in the dev/tty fd-1 fallback); the socket-only options are
- * skipped when nothing resolved. Both are best-effort: a failure (TCP_NODELAY on
- * a non-socket -s<fd>, say) is ignored rather than treated as fatal. */
+/* Bring up the socket layer (WSAStartup / SIGPIPE-ignore) and, when a descriptor
+ * resolved, make it non-blocking + TCP_NODELAY. Both are best-effort via the
+ * plat seam: a failure (TCP_NODELAY on a non-socket -s<fd>, say) is ignored
+ * rather than treated as fatal. sr_plat_net_init() runs even with no descriptor,
+ * because the audio/probe paths may still create sockets and Winsock must be up
+ * first. */
 static void sr_door_configure_socket(int fd)
 {
-	signal(SIGPIPE, SIG_IGN);
-	if (fd >= 0) {
-		int fl = fcntl(fd, F_GETFL, 0);
-		int one = 1;
-
-		if (fl != -1)
-			fcntl(fd, F_SETFL, fl | O_NONBLOCK);
-		(void)setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
-	}
+	sr_plat_net_init();
+	if (fd >= 0)
+		(void)sr_plat_sock_setup(fd);
 }
 
 /* Paint a "loading" banner the instant the door starts, before the core's own
@@ -263,7 +251,7 @@ static void sr_door_splash(int fd)
 		"\x1b[2J\x1b[H\x1b[?25l"                /* clear, home, hide cursor */
 		"\x1b[12;33HLoading SyncRetro...";      /* ~centered on an 80-col screen */
 
-	(void)write(fd, banner, sizeof(banner) - 1);
+	(void)sr_plat_write(fd, banner, sizeof(banner) - 1);
 }
 
 static int sr_door_is_help_arg(const char *a)
@@ -285,7 +273,8 @@ static void sr_door_usage(const char *argv0)
 		"usage: %s [options] [<rom>]\n"
 		"\n"
 		"Content:\n"
-		"  -core <path>       libretro core .so to load (or $SYNCRETRO_CORE)\n"
+		"  -core <path>       libretro core to load: .so (*nix) / .dll (Windows)"
+		" (or $SYNCRETRO_CORE)\n"
 		"  -rom <path>        game ROM; also taken as a bare argument (or $SYNCRETRO_ROM)\n"
 		"\n"
 		"Session:\n"
@@ -317,6 +306,62 @@ static void sr_door_usage(const char *argv0)
 	fflush(stdout);
 }
 
+/*
+ * Capture the door's own stderr diagnostics -- the hangup reason, -home/config
+ * setup failures, the time-limit exit -- to a durable file, so they survive a
+ * console-less launch. This is the door-layer half of the diagnostics story;
+ * the keytrace (syncretro_input.c) is the opt-in wire log, separate.
+ *
+ * Only meaningful on Windows, and only under a real BBS session (a door socket):
+ * Synchronet spawns a native door with XTRN_NODISPLAY set using CREATE_NO_WINDOW,
+ * and a console-less process's stderr is dead -- so without this, hiding the
+ * console (install-xtrn.ini's XTRN_NODISPLAY) would silently lose exactly these
+ * messages, the trap the sibling doors' install-xtrn.ini call out.
+ * sr_plat_redirect_stderr() is a no-op on POSIX (where an inherited stderr
+ * already reaches the server log) and this skips it entirely when there is no
+ * socket (a dev/tty run, where the console is real and wanted).
+ *
+ * Path (the sibling doors' data/<door>/<door>_n<node>.log convention --
+ * generated runtime data belongs in data/, node-tagged so concurrent nodes don't
+ * clobber each other):
+ *     $SBBSDATA/syncretro/syncretro_n<node>.log
+ * $SBBSDATA and $SBBSNNUM (read by sbbs_my_node) are both set by a native door's
+ * launch (xtrn.cpp), so a BBS session always resolves this. With no $SBBSDATA (an
+ * odd config) it degrades to a bare relative name; truncated per session ("w"),
+ * so the file is always the run you just had.
+ */
+static void sr_door_capture_diagnostics(void)
+{
+	const char *data = getenv("SBBSDATA");
+	char        path[SR_PATH_MAX];
+	int         node = sbbs_my_node();
+
+	if (g_socket < 0)
+		return;   /* no BBS session (dev/tty run): keep stderr where it is */
+	if (!sr_plat_captures_stderr())
+		return;   /* POSIX: stderr is already durable; don't even make the dir */
+
+	if (data != NULL && data[0] != '\0') {
+		size_t dl = strlen(data);
+		char   dir[SR_PATH_MAX];
+
+		snprintf(dir, sizeof dir, "%s%ssyncretro", data,
+		         (dl && (data[dl - 1] == '/' || data[dl - 1] == '\\')) ? "" : "/");
+		mkpath(dir);                             /* xpdev: recursive mkdir */
+		if (node > 0)
+			snprintf(path, sizeof path, "%s/syncretro_n%d.log", dir, node);
+		else
+			snprintf(path, sizeof path, "%s/syncretro.log", dir);
+	} else {
+		snprintf(path, sizeof path, "syncretro.log");
+	}
+
+	/* Best-effort: a failure leaves stderr as-is (dead on a console-less Windows
+	 * launch, but no worse than not trying) -- never a reason to fail a player's
+	 * session. */
+	(void)sr_plat_redirect_stderr(path);
+}
+
 int sr_door_setup(int argc, char **argv)
 {
 	int i, fd;
@@ -333,7 +378,8 @@ int sr_door_setup(int argc, char **argv)
 	sr_door_resolve(argc, argv);
 
 	fd = g_socket;
-	sr_door_configure_socket(fd);         /* no-op on the socket options if fd < 0 */
+	sr_door_configure_socket(fd);         /* WSAStartup + non-blocking; no-op opts if fd < 0 */
+	sr_door_capture_diagnostics();        /* Windows: freopen stderr to the node log */
 	/* Capture mode has no terminal on the other end, and on the fd-1 dev
 	 * fallback the banner would land in whatever stdout is redirected to. */
 	if (getenv("SYNCRETRO_SIXELOUT") == NULL)

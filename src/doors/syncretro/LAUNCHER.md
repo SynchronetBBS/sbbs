@@ -172,12 +172,32 @@ anyone who remembers a number. ~17 rows x 2 columns = 34 titles a page.
 Follows SyncDOOM's shape (the door accepts both this and a DOOR32.SYS drop file):
 
 ```js
-var cmd = SR_BINARY + " -s%H -t%T -name %a -core freeintv_libretro.so"
+var cmd = SYNCRETRO_BINARY + " -s%H -t%T -name %a -core " + SYNCRETRO_CORE
         + " -home " + home + ' "' + rom.path + '"';
-bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN, SR_DIR);
+bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN | EX_NODISPLAY, SYNCRETRO_DIR);
 ```
 
 `home` is `<data_dir>/user/<nnnn>/intv`.
+
+**Where the binary and core live depends on the platform.**
+`SYNCRETRO_BINARY`/`SYNCRETRO_CORE` carry `sv_target(system.platform,
+system.architecture)` as a leading path component: **`""` (flat) on Windows** --
+a `.exe`/`.dll` never collides with a *nix host's `syncretro`/`.so`, so no
+sub-dir is needed -- or an `<os>-<arch>` sub-dir on *nix (`linux-x64`,
+`linux-arm64`, `darwin-arm64`, ...) so two *nix hosts don't collide. On *nix the
+lobby probes the sub-dir and **falls back to the flat door dir** when it isn't
+populated (a single-host install, or the legacy symlink-deploy layout where
+`syncretro` symlinks straight to the build output); binary and core are probed
+independently. `SYNCRETRO_CORE` is passed relative to the launch dir
+(`SYNCRETRO_DIR`), which the door resolves against its cwd. The BIOS and
+cartridges are platform-independent and stay at the door root. `deploy.js` and
+`getcore.js` call the same `sv_target()`, so a *deployed* binary, core and lobby
+always agree on the location.
+
+**`EX_NODISPLAY`** spawns the native door with `CREATE_NO_WINDOW` on Windows, so
+no per-session console window pops up on the BBS machine (the door draws to the
+client's terminal; its own diagnostics go to
+`data/syncretro/syncretro_n<node>.log`). No-op on \*nix.
 
 **The quotes matter.** `xtrn.cpp`'s `external()` splits the command line on bare
 spaces, and every real Intellivision filename has them. A `"` (or `<>|;`) in the

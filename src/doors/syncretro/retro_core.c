@@ -1,21 +1,50 @@
-/* retro_core.c -- dlopen a libretro core and resolve its ABI.
+/* retro_core.c -- load a libretro core and resolve its ABI.
  *
- * This is the one place that touches the core .so. Everything else drives the
- * core through the rc_core_t function pointers. See retro_core.h / DESIGN.md.
+ * This is the one place that touches the core module, and (per CLAUDE.md) the
+ * one file outside syncretro_plat.c that carries a Windows-vs-POSIX #ifdef: the
+ * dlopen/dlsym/dlclose seam. It is kept here, not in the plat seam, because
+ * xpdev's xp_dlopen() mangles the name (lib%s.so / %s.dll, plus version
+ * suffixes) and so cannot load a core by the explicit path sr_config_core_path()
+ * hands us. The shim below wraps LoadLibrary/GetProcAddress instead, loading the
+ * path verbatim -- a core is a .dll on Windows, a .so on *nix, which is the
+ * sysop's -core path either way. Everything else drives the core through the
+ * rc_core_t function pointers. See retro_core.h / DESIGN.md.
  */
 #include "retro_core.h"
 #include "syncretro.h"   /* sr_bridge_install(), retro_env callback owner */
 
-#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN
+  #include <windows.h>
+
+static void *rc_dlopen(const char *path) { return (void *)LoadLibraryA(path); }
+static void *rc_dlsym(void *h, const char *sym)
+{
+	return (void *)(uintptr_t)GetProcAddress((HMODULE)h, sym);
+}
+static void  rc_dlclose(void *h) { FreeLibrary((HMODULE)h); }
+/* A single fixed string, not FormatMessage(): the caller logs it beside the
+ * path, and GetLastError()'s text adds nothing a sysop can act on that "cannot
+ * load core '<path>'" doesn't already say. */
+static const char *rc_dlerror(void) { return "LoadLibrary failed"; }
+#else
+  #include <dlfcn.h>
+
+static void *rc_dlopen(const char *path) { return dlopen(path, RTLD_NOW | RTLD_LOCAL); }
+static void *rc_dlsym(void *h, const char *sym) { return dlsym(h, sym); }
+static void  rc_dlclose(void *h) { dlclose(h); }
+static const char *rc_dlerror(void) { return dlerror(); }
+#endif
 
 /* Resolve `sym` into c->field; on failure log and jump to fail. The
  * cast-through-void** is the standard (POSIX-blessed) dlsym idiom. */
 #define RC_RESOLVE(field, sym)                                            \
 	do {                                                                  \
-		*(void **)(&c->field) = dlsym(c->dl, sym);                        \
+		*(void **)(&c->field) = rc_dlsym(c->dl, sym);                     \
 		if (c->field == NULL) {                                           \
 			fprintf(stderr, "syncretro: core is missing '%s'\n", sym);    \
 			goto fail;                                                    \
@@ -26,9 +55,9 @@ int rc_core_open(rc_core_t *c, const char *path)
 {
 	memset(c, 0, sizeof(*c));
 
-	c->dl = dlopen(path, RTLD_NOW | RTLD_LOCAL);
+	c->dl = rc_dlopen(path);
 	if (c->dl == NULL) {
-		fprintf(stderr, "syncretro: cannot load core '%s': %s\n", path, dlerror());
+		fprintf(stderr, "syncretro: cannot load core '%s': %s\n", path, rc_dlerror());
 		return -1;
 	}
 
@@ -56,7 +85,7 @@ int rc_core_open(rc_core_t *c, const char *path)
 	return 0;
 
 fail:
-	dlclose(c->dl);
+	rc_dlclose(c->dl);
 	c->dl = NULL;
 	return -1;
 }
@@ -143,7 +172,7 @@ void rc_core_close(rc_core_t *c)
 		c->unload_game();
 	if (c->deinit)
 		c->deinit();
-	dlclose(c->dl);
+	rc_dlclose(c->dl);
 	c->dl = NULL;
 	c->game_loaded = false;
 	free(c->rom_data);            /* only now: the core may have read it all session */
