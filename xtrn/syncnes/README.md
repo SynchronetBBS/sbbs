@@ -70,7 +70,7 @@ them into `roms/` and they appear in the lobby on the next entry.
 
 ## Free games, out of the box
 
-The installer offers (prompted) to download **~22 freely-licensed homebrew games**
+The installer offers (prompted) to download **20 freely-licensed homebrew games**
 (about 1.5 MB), so the door has something to play before you supply a single
 cartridge — `jsexec ../xtrn/syncnes/getroms.js` runs it later.
 
@@ -106,8 +106,6 @@ With thanks to the authors:
 | Star Evil | Pubby | MIT |
 | Double Action Blaster Guys | NovaSquirrel | GPL-3.0 |
 | Concentration Room | Damian Yerrick | GPL-3.0 |
-| NesertBus | Wendell Scott | CC BY-SA 4.0 |
-| RobotFindsKitten | Damian Yerrick | zlib |
 | Nova the Squirrel | NovaSquirrel | GPL-3.0 (code) / CC BY-NC-SA 4.0 (art) |
 | Thwaite | Damian Yerrick | GPL-3.0 |
 

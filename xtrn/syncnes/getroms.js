@@ -140,17 +140,7 @@ var GAMES = [
 	  size: 24592, md5: "a02eefb66205f41faf3facb9275e29c0",
 	  url: RETROBREWS + "croom.nes" },
 
-	{ file: "nesertbus.nes", as: "NesertBus.nes",
-	  title: "NesertBus",
-	  by: "Wendell Scott", lic: "CC BY-SA 4.0",
-	  size: 24592, md5: "7e08712d0d6003415fa921fcfd9cb3e8",
-	  url: RETROBREWS + "nesertbus.nes" },
 
-	{ file: "robotfindskitten.nes", as: "RobotFindsKitten.nes",
-	  title: "RobotFindsKitten",
-	  by: "Damian Yerrick", lic: "zlib",
-	  size: 32784, md5: "00ce7661dfd2e73cc44f393e2dac5476",
-	  url: RETROBREWS + "robotfindskitten.nes" },
 
 	/* Straight from their authors' release pages. */
 	{ file: "nova.nes", as: "Nova the Squirrel.nes",
