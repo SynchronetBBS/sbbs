@@ -433,6 +433,8 @@ var   EX_BG			=(1<<10);	/* Back-ground/detached process				*/
 var   EX_BIN		=(1<<11);	/* Binary mode (no Unix LF to CR/LF)		*/
 var   EX_NATIVE		=(1<<14);	/* Native 32-bit application (XTRN_NATIVE)	*/
 var   EX_CHKTIME	=(1<<16);	/* Check time left (XTRN_CHKTIME)			*/
+var   EX_NODISPLAY	=(1<<27);	/* Disable local screen/display (XTRN_NODISPLAY):
+									   on Windows, no console window (CREATE_NO_WINDOW) */
 var   EX_NOLOG      =(1<<30);	/* Don't log intercepted stdio              */
 					    		/********************************************/
 
