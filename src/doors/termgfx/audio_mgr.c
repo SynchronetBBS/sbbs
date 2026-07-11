@@ -962,6 +962,49 @@ void termgfx_audio_music_stop(termgfx_audio_t *m)
 	m->music_name[0] = '\0';
 }
 
+// Stream one PCM chunk onto the movie/FMV audio channel for gapless playback.
+// SyncTERM's A;Queue appends the loaded slot to the channel FIFO, so successive
+// chunks play back-to-back: Store the chunk, Load a transient slot, Queue it
+// (no loop, no flush). The VQA cutscene audio backend feeds this per decoded
+// block. Cutscenes play when the game music is idle, so this reuses the MUSIC
+// channel; call termgfx_audio_stream_stop() at the end to flush it. `bytes` =
+// raw PCM byte count; `bits` 8 (unsigned) or 16 (signed); `vol` 0..100.
+void termgfx_audio_stream_chunk(termgfx_audio_t *m, const void *pcm, size_t bytes,
+                                int bits, int channels, int rate, int vol)
+{
+	static unsigned seq;
+	char            leaf[16], fn[64];
+	int             slot;
+
+	if (m == NULL || m->tier < 1 || pcm == NULL || bytes == 0)
+		return;
+	// Rotate through a small fixed set of cache names so a whole cutscene leaves
+	// ~32 files, not hundreds: A;Queue copies the loaded buffer onto the channel
+	// FIFO, so a name is safe to overwrite once its (immediately following) Load
+	// has run -- 32 chunks of reuse lag is far more than that.
+	snprintf(leaf, sizeof leaf, "%u", seq);
+	seq = (seq + 1) & 31;
+	cache_name(m, "strm", leaf, fn, sizeof fn);
+	slot         = m->next_slot;
+	m->next_slot = SFX_SLOT_LO + ((m->next_slot - SFX_SLOT_LO + 1) % (NSLOT - SFX_SLOT_LO));
+
+	send_buf(m, termgfx_audio_cache_pcm(&m->buf, &m->cap, fn, pcm, bytes, bits, channels, rate),
+	         TERMGFX_AUDIO_BULK);
+	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, slot, fn), TERMGFX_AUDIO_BULK);
+	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, slot, vol, 0, 0),
+	         TERMGFX_AUDIO_BULK);
+}
+
+// End a streamed cutscene: flush the movie/music channel. Music state is
+// invalidated since the channel was reused, so the next theme re-ships cleanly.
+void termgfx_audio_stream_stop(termgfx_audio_t *m)
+{
+	if (m == NULL || m->tier < 1)
+		return;
+	send_buf(m, termgfx_audio_flush(&m->buf, &m->cap, MUSIC_CH, 0), TERMGFX_AUDIO_PRIO);
+	m->music_name[0] = '\0';
+}
+
 void termgfx_audio_music_volume(termgfx_audio_t *m, int vol)
 {
 	if (m == NULL || m->tier < 1)

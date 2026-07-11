@@ -289,6 +289,17 @@ inline in `CMakeLists.txt`).
     `Options.ScoreVolume` (soundio_termgfx.cpp already drives
     `termgfx_audio_music_volume` from it), so the hotkeys and slider agree.
 
+14. `redalert/init.cpp`: `Anim_Init()` now also sets
+    `AnimControl.OptionFlags |= VQAOPTF_AUDIO`. It set `VQAOPTF_CAPTIONS |
+    VQAOPTF_EVA` but never enabled audio, so the VQA loader decoded no audio
+    and the FMV cutscenes were silent (the movie's own audio-enable, in
+    `Open_Movie()`, is in an `#if (0)` upstream block). With audio decoding on,
+    the new door-side backend `door/vqaaudio_termgfx.cpp` (which replaces the
+    vendored `common/vqaaudio_null.cpp` stub via the door CMake -- see the
+    "Deliberate non-patches" note below) ships each decoded block to the client
+    through termgfx's streaming-audio path, giving the cutscenes their dialog.
+    One-line additive change; no other engine behavior affected.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

@@ -1278,6 +1278,7 @@ void Anim_Init(void)
 #endif
     AnimControl.Vmode = 0;
     AnimControl.OptionFlags |= VQAOPTF_CAPTIONS | VQAOPTF_EVA;
+    AnimControl.OptionFlags |= VQAOPTF_AUDIO; //	LOCAL: decode cutscene audio (door/vqaaudio_termgfx.cpp ships it)
     if (SlowPalette) {
         AnimControl.OptionFlags |= VQAOPTF_SLOWPAL;
     }

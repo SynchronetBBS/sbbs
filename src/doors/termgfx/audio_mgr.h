@@ -171,6 +171,15 @@ void termgfx_audio_music_stop(termgfx_audio_t *m);
 // track without restarting it -- for a music-volume control.
 void termgfx_audio_music_volume(termgfx_audio_t *m, int vol);
 
+// Streamed audio (FMV cutscene dialog): feed successive decoded PCM chunks and
+// they play back-to-back on the movie channel (SyncTERM A;Queue FIFO). Store +
+// Load + Queue per chunk; keep it fed ahead of playback. termgfx_audio_stream_stop()
+// flushes the channel at the end. Reuses the MUSIC channel (cutscenes play when
+// game music is idle). `bytes` = raw PCM bytes; `bits` 8/16; `vol` 0..100.
+void termgfx_audio_stream_chunk(termgfx_audio_t *m, const void *pcm, size_t bytes,
+                                int bits, int channels, int rate, int vol);
+void termgfx_audio_stream_stop(termgfx_audio_t *m);
+
 // Stop every SFX channel at once (e.g. a "sound off" toggle, or a level change):
 // flushes the pooled SFX channels. Music is on its own channel and is unaffected.
 void termgfx_audio_sfx_stop_all(termgfx_audio_t *m);

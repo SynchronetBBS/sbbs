@@ -104,6 +104,10 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../termgfx termgfx)
 get_target_property(_syncalert_commonv_srcs commonv SOURCES)
 list(FILTER _syncalert_commonv_srcs EXCLUDE REGEX "wwkeyboard_null\\.cpp$")
 list(FILTER _syncalert_commonv_srcs EXCLUDE REGEX "soundio_null\\.cpp$")
+# FMV cutscene audio: drop the vqaaudio_null.cpp stub and use door/
+# vqaaudio_termgfx.cpp (below), which ships decoded VQA audio to the client via
+# termgfx's streaming path so cutscenes have dialog.
+list(FILTER _syncalert_commonv_srcs EXCLUDE REGEX "vqaaudio_null\\.cpp$")
 list(APPEND _syncalert_commonv_srcs "${CMAKE_CURRENT_SOURCE_DIR}/vanilla/common/soundio_common.cpp")
 set_target_properties(commonv PROPERTIES SOURCES "${_syncalert_commonv_srcs}")
 target_compile_definitions(commonv PUBLIC NEW_VIDEO_BUILD)
@@ -112,6 +116,7 @@ target_sources(VanillaRA PRIVATE
     door/video_termgfx.cpp
     door/wwkeyboard_termgfx.cpp
     door/soundio_termgfx.cpp
+    door/vqaaudio_termgfx.cpp
     door/door_core.c
     door/door_io.c
     door/door_input.c
