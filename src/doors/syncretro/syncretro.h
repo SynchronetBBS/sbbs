@@ -20,6 +20,10 @@ int         sr_door_socket(void);                   /* client socket fd, or -1 (
 const char *sr_door_name(void);                     /* player alias, or NULL */
 const char *sr_door_home(void);                     /* -home sandbox dir, or NULL */
 const char *sr_door_core_path(void);                /* -core <path> / config, or NULL */
+const char *sr_door_profile(void);                  /* -profile <name>, or NULL */
+/* Publish "playing <title> (<console>)" as this node's who's-online status, and
+ * clear it on exit. Call once, after the ROM is loaded and the profile resolved. */
+void sr_door_node_playing(const char *rom_path);
 const char *sr_door_rom_path(void);                 /* game ROM path, or NULL */
 /* Strip the door's own args so a core's arg parser (if any) never sees them. */
 void        sr_door_sanitize_argv(int *argc, char **argv);
@@ -79,6 +83,10 @@ const char *sr_config_rom_path(void);
  * three times the audio). */
 int    sr_config_audio_enabled(void);     /* [audio] enabled,   default true */
 double sr_config_audio_quality(void);     /* quality,   0.01..1.0, default 0.15 */
+/* The effective display aspect, given what the core reported. [video] aspect:
+ * "core" (default), "square", "4:3", or a decimal. Returns 0 for square. */
+double sr_config_aspect(double core_aspect);
+const char *sr_config_aspect_mode(void);  /* the raw [video] aspect string */
 int    sr_config_audio_volume(void);      /* volume,    0..100,    default 100 */
 int    sr_config_audio_chunk_ms(void);    /* chunk_ms,  50..250,   default 100 */
 int    sr_config_audio_prebuffer(void);   /* prebuffer, 2..8,      default 3 */
@@ -107,6 +115,9 @@ int  sr_io_get_fd(void);                            /* the adopted fd (socket, o
 /* Probe-reply setters, fed by syncretro_input.c's CSI handler: the ESC[14t
  * pixel canvas and the ESC[6n -> ESC[r;cR text grid. Each recomputes the image
  * rect, so the present path is probe-driven rather than stuck on the default. */
+/* The display aspect (width/height) the core asks for; 0 = assume square pixels.
+ * A console's pixels are NOT square -- see syncretro_io.c. */
+void sr_io_set_aspect(double aspect);
 void sr_io_set_canvas(int w, int h);
 void sr_io_set_grid(int rows, int cols);
 
@@ -120,6 +131,17 @@ void sr_io_pace_ack(void);
  * frame de-dupe and re-emits the sixel palette. Used after anything that wrote
  * over the game area (the pause and help screens) and after a core reset. */
 void sr_io_invalidate(void);
+
+/* Live stats overlay (Ctrl-S): a top-row strip -- render tier, frame rate,
+ * transmit throughput, round-trip and pipeline depth, and the keyboard mode --
+ * the signals that drive the auto pacing, in the spirit of SyncDOOM's overlay.
+ * sr_io_stats_toggle() flips it; sr_io_stats_tick() is called once per frame by
+ * main.c to advance the metrics window and refresh the readout when it changes. */
+/* A one-line message on the reserved bottom row, erased after a moment. Used by
+ * the volume keys: a control you cannot see is a control you cannot trust. */
+void sr_io_toast(const char *text);
+void sr_io_stats_toggle(void);
+void sr_io_stats_tick(void);
 
 /* --- syncretro_input.c: BBS socket decode -> cached RetroPad state ----------
  * sr_input_pump() is the retro_input_poll callback body: a NON-BLOCKING drain
@@ -144,6 +166,9 @@ int     sr_input_take_anykey(void);   /* one-shot: a bound key arrived */
 /* Did the terminal identify itself as SyncTERM? Until a probe reply lands this
  * is 0, i.e. the SAFE assumption (re-send the sixel palette every frame). */
 int     sr_input_is_syncterm(void);
+/* The negotiated keyboard mode, for the stats overlay: "evdev", "kitty" or
+ * "bytes". */
+const char *sr_input_keymode_name(void);
 /* The player pressed the quit key (Ctrl-Q). Polled via sr_door_should_exit(). */
 int     sr_input_quit_requested(void);
 /* Undo whatever key mode was negotiated (kitty flags / SyncTERM physical key

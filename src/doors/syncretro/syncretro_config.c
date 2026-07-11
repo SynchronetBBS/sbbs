@@ -69,6 +69,7 @@ static int  g_disc_is_rotate;         /* does the loaded ROM match? */
 static char g_launch_dir[PATH_MAX];   /* where the door was started: cwd BEFORE the chdir */
 static char g_system_dir[PATH_MAX];   /* BIOS: shared, read-only, per-install */
 static char g_save_dir[PATH_MAX];     /* per-user SRAM + save states */
+static char g_aspect[32] = "core";    /* [video] aspect: core|square|4:3|<decimal> */
 static char g_core_path[PATH_MAX];    /* the .so to dlopen, absolute */
 static char g_rom_path[PATH_MAX];     /* the cartridge, absolute */
 
@@ -160,8 +161,12 @@ static void sr_config_read_ini(void)
 		char       rotate[INI_MAX_VALUE_LEN];   /* iniGetString()'s contract, not ours */
 
 		fclose(f);
+		char       aspect[INI_MAX_VALUE_LEN];
+
 		iniGetString(ini, "disc", "rotate", "", rotate);
 		snprintf(g_disc_rotate, sizeof g_disc_rotate, "%s", rotate);
+		iniGetString(ini, "video", "aspect", "core", aspect);
+		snprintf(g_aspect, sizeof g_aspect, "%s", aspect);
 		g_audio_enabled   = iniGetBool(ini, "audio", "enabled", TRUE);
 		g_audio_quality   = iniGetFloat(ini, "audio", "quality",
 		                                TERMGFX_MUSIC_QUALITY_DEFAULT);
@@ -182,6 +187,44 @@ static void sr_config_read_ini(void)
 
 int    sr_config_audio_enabled(void)   { return g_audio_enabled; }
 double sr_config_audio_quality(void)   { return g_audio_quality; }
+
+/* [video] aspect -- what SHAPE the core's frame should be drawn at.
+ *
+ *   core    (default)  what the core reports: the NES's 1.219 (8:7 pixel aspect),
+ *                      FreeIntv's 1.5714. This is what every other libretro
+ *                      frontend does, so a game looks the way it does elsewhere.
+ *   4:3                what a television actually showed (1.333). Wider than the
+ *                      NES's reported 1.219; some people prefer it, and CRT
+ *                      overscan makes it arguably the more honest number.
+ *   square             the raw framebuffer, pixels unstretched (256x240 = 1.067).
+ *                      This was the door's behavior before M3, and it is a
+ *                      QUARTER too narrow on the NES.
+ *   <decimal>          any width/height you like, e.g. 1.25.
+ *
+ * Returns 0 for "square", which sr_io_set_aspect() reads as "assume square". */
+const char *sr_config_aspect_mode(void) { return g_aspect; }
+
+double sr_config_aspect(double core_aspect)
+{
+	const char *a = g_aspect;
+	double      v;
+
+	if (a[0] == '\0' || stricmp(a, "core") == 0)
+		return core_aspect;
+	if (stricmp(a, "square") == 0 || stricmp(a, "native") == 0 || stricmp(a, "1:1") == 0)
+		return 0.0;
+	if (strcmp(a, "4:3") == 0)
+		return 4.0 / 3.0;
+	if (strcmp(a, "16:9") == 0)
+		return 16.0 / 9.0;
+
+	v = atof(a);
+	if (v >= 0.1 && v <= 10.0)
+		return v;
+
+	fprintf(stderr, "syncretro: [video] aspect \"%s\" not understood; using the core's\n", a);
+	return core_aspect;
+}
 int    sr_config_audio_volume(void)    { return g_audio_volume; }
 int    sr_config_audio_chunk_ms(void)  { return g_audio_chunk_ms; }
 int    sr_config_audio_prebuffer(void) { return g_audio_prebuffer; }

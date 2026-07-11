@@ -82,6 +82,8 @@ static void sr_audio_send(const uint8_t *ogg, size_t len)
 	sr_audio_play(name);
 }
 
+static void sr_audio_stop_channel(void);
+
 static void sr_audio_drop_held(void)
 {
 	int i;
@@ -91,10 +93,17 @@ static void sr_audio_drop_held(void)
 	g_held_n = 0;
 }
 
+/* The core's sample rate, from retro_get_system_av_info() -- NOT a constant.
+ * FreeIntv mixes at 44100 and fceumm at 48000, and a chunk sized or encoded at
+ * the wrong rate is both mis-pitched and mis-timed against the FIFO cushion the
+ * whole pacing scheme rests on. Zero until sr_audio_start(). */
+static int g_rate;
+static int g_enabled;   /* sr_audio_init() said yes; sr_audio_start() may still bail */
+
 /* Encode one closed chunk. Returns malloc'd Ogg bytes in *out, or 0. */
 static size_t sr_audio_encode(uint8_t **out)
 {
-	return termgfx_audio_encode_ogg(g_chunk.buf, g_chunk.len, 1, SR_AUDIO_RATE,
+	return termgfx_audio_encode_ogg(g_chunk.buf, g_chunk.len, 1, g_rate,
 	                                g_quality, out);
 }
 
@@ -118,19 +127,44 @@ static void sr_audio_upload_silence(void)
 	g_have_silence = 1;
 }
 
+/* Config only -- no allocation, no I/O, and above all no rate: the core has not
+ * been loaded yet when main() calls this, so its sample rate does not exist. */
 void sr_audio_init(void)
 {
-	size_t frames;
-
 	if (!sr_config_audio_enabled() || !termgfx_audio_have_ogg())
 		return;                    /* stays SR_AS_OFF: not one audio byte */
-	frames = (size_t)SR_AUDIO_RATE * (size_t)sr_config_audio_chunk_ms() / 1000;
-	if (!sr_chunk_init(&g_chunk, frames))
-		return;
 	g_quality   = sr_config_audio_quality();
 	g_volume    = sr_config_audio_volume();
 	g_prebuffer = sr_config_audio_prebuffer();
-	g_state     = SR_AS_WAIT_CAPS;
+	g_enabled   = 1;
+}
+
+/* Called once from main() after rc_core_load_game(), with the rate the CORE
+ * reports. This is where the chunk is finally sized, because its length in
+ * FRAMES depends on that rate: chunk_ms of audio is 4410 frames at 44.1 kHz and
+ * 4800 at 48 kHz, and the ~300 ms cushion is counted in chunks. */
+void sr_audio_start(int rate)
+{
+	size_t frames;
+
+	if (!g_enabled)
+		return;                    /* audio off, or no Ogg encoder: stay silent */
+
+	/* A core that reports a nonsense rate should be audible-but-wrong, never
+	 * silent, and never a division by zero. */
+	if (rate < 8000 || rate > 192000) {
+		fprintf(stderr, "syncretro: core reports sample_rate %d; using %d\n",
+		        rate, SR_AUDIO_RATE_FALLBACK);
+		rate = SR_AUDIO_RATE_FALLBACK;
+	}
+	g_rate = rate;
+
+	frames = (size_t)g_rate * (size_t)sr_config_audio_chunk_ms() / 1000;
+	if (!sr_chunk_init(&g_chunk, frames))
+		return;
+	fprintf(stderr, "syncretro: audio %d Hz, %d ms chunks (%u frames)\n",
+	        g_rate, sr_config_audio_chunk_ms(), (unsigned)frames);
+	g_state = SR_AS_WAIT_CAPS;
 }
 
 void sr_audio_probe(void)
@@ -164,6 +198,63 @@ void sr_audio_underrun(int ch)
 	g_state = SR_AS_PRIME;         /* re-prime: never dribble into an empty FIFO */
 }
 
+/* --- volume ('+' / '-') ------------------------------------------------------
+ *
+ * The volume is the TERMINAL's mixer-channel volume (A;Volume), not a gain we
+ * apply to the PCM: the player's own client does the scaling, so turning it down
+ * costs us nothing and loses no precision.
+ *
+ * ZERO IS NOT "VERY QUIET". At 0 we stop sending audio ENTIRELY -- no encode, no
+ * upload, no Queue -- and flush what is already queued, so a muted player pays
+ * ZERO bytes for sound rather than streaming ~100 ms Opus chunks at volume 0 to a
+ * terminal that will silently discard them. That is the whole point of a mute on
+ * a BBS door, where the audio is the bulk of the uplink after the frames. */
+int sr_audio_volume(void)
+{
+	return g_volume;
+}
+
+int sr_audio_muted(void)
+{
+	return g_volume <= 0;
+}
+
+/* Step the volume by `delta` (clamped to 0..100) and return the new value. */
+int sr_audio_volume_step(int delta)
+{
+	int was = g_volume;
+
+	g_volume += delta;
+	if (g_volume < 0)
+		g_volume = 0;
+	if (g_volume > 100)
+		g_volume = 100;
+	if (g_volume == was || g_state == SR_AS_OFF)
+		return g_volume;    /* no change, or no audio pipeline to tell */
+
+	if (g_volume == 0) {
+		/* Silence NOW: the ~300 ms cushion already in the terminal's FIFO would
+		 * otherwise keep playing after the player asked for quiet. */
+		sr_audio_stop_channel();
+		sr_audio_drop_held();
+		sr_chunk_reset(&g_chunk);
+		if (g_state == SR_AS_RUN)
+			g_state = SR_AS_PRIME;   /* rebuild the cushion when we come back */
+		return g_volume;
+	}
+
+	sr_apc(termgfx_audio_volume(&g_apc, &g_apc_cap, SR_AUDIO_CH, g_volume));
+	if (was == 0) {
+		/* Coming back from mute: the FIFO is empty and the half-chunk we were
+		 * NOT accumulating is gone, so re-prime rather than dribbling one chunk
+		 * into an empty FIFO (the underrun the whole cushion exists to avoid). */
+		sr_chunk_reset(&g_chunk);
+		if (g_state == SR_AS_RUN)
+			g_state = SR_AS_PRIME;
+	}
+	return g_volume;
+}
+
 void sr_audio_pause(int on)
 {
 	if (g_state == SR_AS_OFF)
@@ -188,6 +279,8 @@ static void sr_audio_chunk_closed(void)
 
 	if (g_chunk.len == 0)
 		return;
+	if (g_volume <= 0)
+		return;                    /* muted: the one place audio leaves the door */
 
 	if (sr_io_out_backlog() > SR_AUDIO_BACKLOG_BYTES)
 		g_strikes++;
@@ -243,6 +336,9 @@ size_t sr_audio_feed(const int16_t *pcm, size_t frames)
 
 	if (g_state == SR_AS_OFF || g_state == SR_AS_WAIT_CAPS || pcm == NULL)
 		return frames;             /* the core must believe we took it all */
+	if (g_volume <= 0)
+		return frames;             /* MUTED: not one sample accumulated, not one
+	                                * byte encoded, not one byte sent */
 
 	while (left > 0) {
 		size_t used = sr_chunk_append(&g_chunk, pcm, left);

@@ -56,6 +56,39 @@ The libretro API header, from **libretro-common**
    44100 Hz, and `need_fullpath = 1` (so the frontend passes a ROM *path*, and
    never has to read the ROM into memory).
 
+   **FCEUmm** (NES), the second target, likewise builds with a bare `make`:
+
+   ```
+   git clone --depth 1 https://github.com/libretro/libretro-fceumm.git
+   cd libretro-fceumm && make   # -> fceumm_libretro.so
+   ```
+
+   Measured against this tree at upstream commit `0d610d9`
+   (`library_version` "(SVN) 0d610d9"), `retro_api_version()` 1:
+   pixel format `XRGB8888`, geometry 256x240, aspect 1.219, **60.0998 fps**
+   (NTSC; 50.0069 PAL, chosen from the ROM's region), **48000 Hz**, and
+   `need_fullpath = 1`.
+
+   Three traps this core exposed, all recorded in
+   [M3_MULTICORE.md](M3_MULTICORE.md) §2:
+
+   * **48000 Hz, not 44100.** The door hardcoded FreeIntv's rate; a second core
+     proved that wrong. The rate now comes from `retro_get_system_av_info()`.
+   * **`SET_CONTENT_INFO_OVERRIDE`.** fceumm declares `need_fullpath = true`, but
+     ALSO registers an override offering `need_fullpath = false`. We refuse the
+     override (`retro_env.c`'s `default:` arm), so the core opens the ROM itself.
+     That refusal is deliberate -- honoring it would drag in `persistent_data`
+     lifetime semantics for nothing.
+   * **`.fds` needs a BIOS** (`disksys.rom`), unlike `.nes`/`.unf`/`.unif`. It is
+     therefore NOT in the NES install's default extension whitelist.
+
+   And a naming trap that cost real time: **FreeIntv reports its `library_name`
+   as `freeintv`, lower-case** -- not the `FreeIntv` spelling used in its own
+   repo, in RetroArch's core list, and throughout our docs (the same trap this
+   file already records for its `.so` filename). `syncretro_profile.c` compares
+   it case-insensitively; a case-sensitive match would silently drop the
+   Intellivision to the generic gamepad profile and lose its keypad.
+
    **Frontend constraint discovered here:** FreeIntv's `retro_init()` passes the
    `GET_SYSTEM_DIRECTORY` answer straight to `fill_pathname_join()` without a
    NULL check, so a frontend that returns `false` (or `true` with a NULL

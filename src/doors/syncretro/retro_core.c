@@ -125,8 +125,7 @@ static void *rc_read_file(const char *path, size_t *size_out)
 
 int rc_core_load_game(rc_core_t *c, const char *rom_path)
 {
-	struct retro_game_info   info;
-	struct retro_system_info si;
+	struct retro_game_info info;
 
 	/* Install callbacks first: the environment cb in particular is queried by
 	 * many cores DURING retro_init/retro_load_game (pixel format, dirs, ...). */
@@ -134,8 +133,8 @@ int rc_core_load_game(rc_core_t *c, const char *rom_path)
 
 	c->init();
 
-	memset(&si, 0, sizeof(si));
-	c->get_system_info(&si);
+	memset(&c->si, 0, sizeof(c->si));
+	c->get_system_info(&c->si);
 
 	memset(&info, 0, sizeof(info));
 	info.path = rom_path;   /* NULL is valid for no-content cores */
@@ -144,7 +143,7 @@ int rc_core_load_game(rc_core_t *c, const char *rom_path)
 	 * info.data must stay NULL. Otherwise the frontend owns the load, and the
 	 * core reads the bytes we hand it -- see rc_core_t.rom_data on why the
 	 * buffer outlives this call. */
-	if (rom_path != NULL && !si.need_fullpath) {
+	if (rom_path != NULL && !c->si.need_fullpath) {
 		c->rom_data = rc_read_file(rom_path, &c->rom_size);
 		if (c->rom_data == NULL)
 			return -1;

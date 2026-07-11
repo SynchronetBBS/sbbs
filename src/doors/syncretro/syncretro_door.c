@@ -25,7 +25,8 @@
 
 #include "genwrap.h"           /* xpdev: stricmp() (POSIX strcasecmp) */
 #include "dirwrap.h"           /* xpdev: mkpath() -- the diagnostics-log dir */
-#include "sbbs_node.h"         /* termgfx: sbbs_my_node() -- node-tag the log */
+#include "sbbs_node.h"         /* termgfx: node number, who's-online status */
+#include "syncretro_profile.h" /* sr_profile_name(): the console fallback */
 #include "syncretro_binds.h"   /* sr_bind_help_line(): drives the usage key list */
 
 #define SR_ALIAS_MAX 64
@@ -39,6 +40,17 @@ static int      g_carrier_lost;
 static char     g_alias[SR_ALIAS_MAX];
 static char     g_home[SR_PATH_MAX];   /* "" = no -home given */
 static char     g_core[SR_PATH_MAX];   /* "" = no -core given */
+/* Which console's key bindings to use ("pad", "intv"). The LOBBY knows which
+ * console it launched, so it says so; a bare command-line run leaves this empty
+ * and the door infers the profile from the core's library_name instead. */
+static char     g_profile[32];         /* "" = infer from the core */
+/* What the player is playing, for the who's-online line. The LOBBY supplies
+ * both: it has already parsed "Astrosmash" out of
+ * "Astrosmash (1981) (Mattel).int", and it knows which console it is. A bare
+ * command-line run supplies neither, and falls back to the ROM's own filename
+ * and the profile's name. */
+static char     g_title[64];           /* -title:   "Astrosmash" */
+static char     g_console[32];         /* -console: "Intellivision" / "NES" */
 static char     g_rom[SR_PATH_MAX];    /* "" = no ROM given */
 
 /* Monotonic millisecond clock -- the session deadline uses it so a wall-clock
@@ -136,7 +148,9 @@ static int is_time_arg(const char *a)
 static int is_valued_flag(const char *a)
 {
 	return strcmp(a, "-name") == 0 || strcmp(a, "-home") == 0
-	       || strcmp(a, "-core") == 0 || strcmp(a, "-rom") == 0;
+	       || strcmp(a, "-core") == 0 || strcmp(a, "-rom") == 0
+	       || strcmp(a, "-profile") == 0 || strcmp(a, "-title") == 0
+	       || strcmp(a, "-console") == 0;
 }
 
 /* Bounded copy into a fixed buffer: NUL-terminates, truncates silently. Spelled
@@ -210,6 +224,12 @@ static void sr_door_resolve(int argc, char **argv)
 			copy_arg(g_home, sizeof(g_home), argv[++i]);
 		} else if (strcmp(a, "-core") == 0 && i + 1 < argc) {
 			copy_arg(g_core, sizeof(g_core), argv[++i]);
+		} else if (strcmp(a, "-profile") == 0 && i + 1 < argc) {
+			copy_arg(g_profile, sizeof(g_profile), argv[++i]);
+		} else if (strcmp(a, "-title") == 0 && i + 1 < argc) {
+			copy_arg(g_title, sizeof(g_title), argv[++i]);
+		} else if (strcmp(a, "-console") == 0 && i + 1 < argc) {
+			copy_arg(g_console, sizeof(g_console), argv[++i]);
 		} else if (strcmp(a, "-rom") == 0 && i + 1 < argc) {
 			copy_arg(g_rom, sizeof(g_rom), argv[++i]);
 		} else if (is_door32_path(a)) {
@@ -273,6 +293,10 @@ static void sr_door_usage(const char *argv0)
 		"usage: %s [options] [<rom>]\n"
 		"\n"
 		"Content:\n"
+		"  -profile <name>    controller profile: pad (default) | intv\n"
+		"                     omitted: inferred from the core's own name\n"
+		"  -title <name>      cartridge title, for the who's-online status\n"
+		"  -console <name>    console name, for the who's-online status\n"
 		"  -core <path>       libretro core to load: .so (*nix) / .dll (Windows)"
 		" (or $SYNCRETRO_CORE)\n"
 		"  -rom <path>        game ROM; also taken as a bare argument (or $SYNCRETRO_ROM)\n"
@@ -396,6 +420,79 @@ int         sr_door_socket(void)    { return g_socket; }
 const char *sr_door_name(void)      { return g_alias[0] ? g_alias : NULL; }
 const char *sr_door_home(void)      { return g_home[0] ? g_home : NULL; }
 const char *sr_door_core_path(void) { return g_core[0] ? g_core : NULL; }
+const char *sr_door_profile(void)   { return g_profile[0] ? g_profile : NULL; }
+
+/* --- who's-online status -----------------------------------------------------
+ *
+ * The sibling doors publish what the player is actually doing -- SyncDOOM names
+ * the WAD and the map, SyncDuke the E#L# -- so the who's-online list reads
+ * "playing SyncDOOM: DOOM2.WAD (MAP01)" instead of "running external program".
+ * SyncRetro had no such line at all. It should name the CARTRIDGE, which is the
+ * only thing a player would want to know.
+ *
+ * Unlike those two, there is nothing to update: a cartridge does not change
+ * mid-session the way a map does. So this is set once, after the ROM is loaded,
+ * and cleared on the way out. */
+
+static int g_node_ok;
+
+static void sr_door_node_atexit(void)
+{
+	if (g_node_ok)
+		sbbs_node_set_ext("");    /* clear our NODE_EXT flag on exit */
+}
+
+/* "<rom>/Astrosmash (1981) (Mattel).int" -> "Astrosmash (1981) (Mattel)". The
+ * fallback for a bare command-line run: the lobby's -title is already the parsed
+ * title, which is nicer, but a door run by hand should still say something. */
+static void sr_door_rom_basename(char *out, size_t cap, const char *path)
+{
+	const char *base = path;
+	const char *p, *dot;
+	size_t      n;
+
+	if (path == NULL || *path == '\0') {
+		snprintf(out, cap, "%s", "a cartridge");
+		return;
+	}
+	for (p = path; *p != '\0'; p++)
+		if (*p == '/' || *p == '\\')
+			base = p + 1;
+
+	dot = strrchr(base, '.');
+	n   = (dot != NULL && dot != base) ? (size_t)(dot - base) : strlen(base);
+	if (n >= cap)
+		n = cap - 1;
+	memcpy(out, base, n);
+	out[n] = '\0';
+}
+
+/* Publish "playing <title> (<console>)". Call once, after the core has loaded the
+ * ROM and the profile is resolved (the profile's name is the console fallback). */
+void sr_door_node_playing(const char *rom_path)
+{
+	char status[128];
+	char fallback[64];
+	const char *title   = g_title;
+	const char *console = g_console[0] ? g_console : sr_profile_name();
+
+	/* $SBBSCTRL locates node.dab; the data dir comes from $SBBSDATA, or -- when a
+	 * door is run by hand without it -- is derived by popping user/####/<console>
+	 * off our -home, which is exactly the shape sr_config_apply() built. Passing
+	 * g_home (rather than "") is what makes that fallback work. */
+	sbbs_node_init(g_home);
+	g_node_ok = sbbs_node_available();
+	if (!g_node_ok)
+		return;                   /* not launched by a BBS: nothing to publish */
+	atexit(sr_door_node_atexit);
+
+	if (title[0] == '\0') {
+		sr_door_rom_basename(fallback, sizeof fallback, rom_path);
+		title = fallback;
+	}
+	snprintf(status, sizeof status, "playing %s (%s)", title, console);
+	sbbs_node_set_ext(status);
+}
 const char *sr_door_rom_path(void)  { return g_rom[0] ? g_rom : NULL; }
 
 /*

@@ -15,7 +15,8 @@ add_executable(syncretro
     retro_bridge.c      # video / audio / input callbacks -> termgfx + door I/O
     syncretro_io.c      # terminal enter/probe/leave + present path
     syncretro_input.c   # socket decode -> cached RetroPad
-    syncretro_binds.c   # the one binding table: keys -> pad / keypad / door
+    syncretro_binds.c   # the binding tables: keys -> pad / keypad / door
+    syncretro_profile.c # which console's controller the keyboard imitates
     syncretro_keypad.c  # Intellivision keypad digits -> RetroPad analog vector
     syncretro_chunk.c   # cut the core's PCM stream into fixed-size mono chunks
     syncretro_audio.c   # the core's PCM stream -> SyncTERM's audio APC (M4)
@@ -175,7 +176,7 @@ if(SYNCRETRO_TESTS)
     endif()
     add_test(NAME keypad COMMAND test_keypad)
 
-    add_executable(test_binds test_binds.c syncretro_binds.c)
+    add_executable(test_binds test_binds.c syncretro_binds.c syncretro_profile.c)
     target_include_directories(test_binds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME binds COMMAND test_binds)
 

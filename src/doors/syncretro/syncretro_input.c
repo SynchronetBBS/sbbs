@@ -42,6 +42,16 @@
  * tables -- lives in ../termgfx/keymode.h, shared with the sibling doors. What
  * stays here is the only per-game part: the map from a key to a RetroPad button.
  *
+ * TWO CONTROLLERS. The Intellivision has two hand controllers, and the door
+ * drives BOTH at once so a solo player uses whichever the cart reads -- no swap
+ * dance -- and two people can play on one keyboard. Player 1 is the WASD / Z X C
+ * / number-row key group (controller 0), player 2 the arrows / , . / / numeric
+ * keypad group (controller 1). Player 2's arrows and numpad have no ASCII form,
+ * so they arrive only on the CSI / evdev / kitty paths (on a plain byte terminal
+ * the numpad is indistinguishable from the number row and falls back to player
+ * 1). All state below is per controller; Tab (g_swap) remaps which core port
+ * reads which player's keys, applied at read time in sr_pad_get().
+ *
  * Whichever mode is negotiated is UNDONE on the way out (`CSI = 2 l` / `CSI = 1 l`
  * for evdev, `CSI < u` to pop the kitty flags), so the BBS gets its terminal back
  * as it lent it. Same as the sibling doors -- with one difference: they restore
@@ -69,6 +79,7 @@
 #include "audio.h"       /* termgfx: termgfx_audio_parse_caps */
 #include "keymode.h"     /* termgfx: key-mode negotiation + kitty/evdev decode */
 #include "syncretro_binds.h"
+#include "syncretro_profile.h"
 #include "syncretro_keypad.h"
 #include "syncretro_audio.h"
 
@@ -81,11 +92,21 @@
  * refreshes it, so a held key stays down. */
 #define SR_HOLD_MS 250
 
-/* Cached RetroPad: one port for M1. Index by RETRO_DEVICE_ID_JOYPAD_*. */
+/* Cached RetroPad. Index by RETRO_DEVICE_ID_JOYPAD_*. */
 #define SR_PAD_IDS (RETRO_DEVICE_ID_JOYPAD_R3 + 1)
 
-static int16_t  g_joypad[SR_PAD_IDS];
-static uint32_t g_expire_ms[SR_PAD_IDS];   /* byte path only: 0 = no timer */
+/* Two controllers: the door drives BOTH Intellivision hand controllers at once,
+ * so a solo player uses whichever the cart reads (no swap needed) and two
+ * players can share one keyboard. Player 1 is the WASD / Z X C / number-row key
+ * group, player 2 the arrows / , . / / numeric keypad group -- see
+ * syncretro_binds.c and M2_INPUT.md. Everything below is indexed by the LOGICAL
+ * controller (0 = player 1, 1 = player 2); Tab (g_swap) only remaps which core
+ * port reads which logical controller, at read time in sr_pad_get(). */
+#define SR_PADS 2
+
+static int16_t  g_joypad[SR_PADS][SR_PAD_IDS];
+static uint32_t g_expire_ms[SR_PADS][SR_PAD_IDS]; /* byte path only: 0 = no timer */
+static int      g_swap;   /* Tab: 1 swaps which core port each player drives */
 static int      g_quit;
 
 #define sr_in_now_ms()   sr_plat_now_ms()
@@ -94,44 +115,50 @@ int sr_input_quit_requested(void) { return g_quit; }
 
 /* --- pad edges -------------------------------------------------------------- */
 
-/* Native paths (kitty/evdev): held until the explicit key-up, so no timer. */
-static void sr_pad_press(int id)
+static int sr_pad_bad(int port, int id)
 {
-	if (id < 0 || id >= SR_PAD_IDS)
-		return;
-	g_joypad[id]   = 1;
-	g_expire_ms[id] = 0;
+	return port < 0 || port >= SR_PADS || id < 0 || id >= SR_PAD_IDS;
 }
 
-static void sr_pad_release(int id)
+/* Native paths (kitty/evdev): held until the explicit key-up, so no timer. */
+static void sr_pad_press(int port, int id)
 {
-	if (id < 0 || id >= SR_PAD_IDS)
+	if (sr_pad_bad(port, id))
 		return;
-	g_joypad[id]   = 0;
-	g_expire_ms[id] = 0;
+	g_joypad[port][id]    = 1;
+	g_expire_ms[port][id] = 0;
+}
+
+static void sr_pad_release(int port, int id)
+{
+	if (sr_pad_bad(port, id))
+		return;
+	g_joypad[port][id]    = 0;
+	g_expire_ms[port][id] = 0;
 }
 
 /* Byte path: press + arm the auto-release timer (a repeat byte refreshes it). */
-static void sr_pad_tap(int id)
+static void sr_pad_tap(int port, int id)
 {
-	if (id < 0 || id >= SR_PAD_IDS)
+	if (sr_pad_bad(port, id))
 		return;
-	g_joypad[id]    = 1;
-	g_expire_ms[id] = sr_in_now_ms() + SR_HOLD_MS;
-	if (g_expire_ms[id] == 0)
-		g_expire_ms[id] = 1;   /* 0 is the "no timer" sentinel */
+	g_joypad[port][id]    = 1;
+	g_expire_ms[port][id] = sr_in_now_ms() + SR_HOLD_MS;
+	if (g_expire_ms[port][id] == 0)
+		g_expire_ms[port][id] = 1;   /* 0 is the "no timer" sentinel */
 }
 
 static void sr_pad_expire(void)
 {
 	uint32_t now = sr_in_now_ms();
-	int      id;
+	int      port, id;
 
-	for (id = 0; id < SR_PAD_IDS; id++)
-		if (g_expire_ms[id] != 0 && (int32_t)(now - g_expire_ms[id]) >= 0) {
-			g_joypad[id]    = 0;
-			g_expire_ms[id] = 0;
-		}
+	for (port = 0; port < SR_PADS; port++)
+		for (id = 0; id < SR_PAD_IDS; id++)
+			if (g_expire_ms[port][id] != 0 && (int32_t)(now - g_expire_ms[port][id]) >= 0) {
+				g_joypad[port][id]    = 0;
+				g_expire_ms[port][id] = 0;
+			}
 	sr_keypad_expire(now);
 }
 
@@ -168,58 +195,76 @@ static const int16_t g_disc_vec[2][2][2] = {   /* [left?][phase][x,y] */
 	{ { -32000,      0 }, { -29565, -12246 } }    /* left: 180 deg, 202.5 deg */
 };
 
-static int           g_disc_phase; /* which of the two adjacent detents is asserted */
-static int           g_disc_dir; /* -1 left, +1 right, 0 not sweeping */
+static int           g_disc_phase[SR_PADS]; /* which of the two detents is asserted */
+static int           g_disc_dir[SR_PADS];   /* -1 left, +1 right, 0 not sweeping */
 
-/* Once per frame, from sr_input_pump() (the core's input_poll). */
-static void sr_disc_tick(void)
+/* Once per frame, per controller, from sr_input_pump() (the core's input_poll). */
+static void sr_disc_tick_port(int port)
 {
-	static unsigned frames;
+	static unsigned frames[SR_PADS];
 	int             left, right;
 
 	if (!sr_config_disc_rotate()) {
-		g_disc_dir = 0;
+		g_disc_dir[port] = 0;
 		return;
 	}
-	left  = g_joypad[RETRO_DEVICE_ID_JOYPAD_LEFT];
-	right = g_joypad[RETRO_DEVICE_ID_JOYPAD_RIGHT];
+	left  = g_joypad[port][RETRO_DEVICE_ID_JOYPAD_LEFT];
+	right = g_joypad[port][RETRO_DEVICE_ID_JOYPAD_RIGHT];
 
 	if (left == right) {          /* neither, or both: no direction to sweep */
-		g_disc_dir = 0;
+		g_disc_dir[port] = 0;
 		return;
 	}
-	if (g_disc_dir == 0)
-		frames = 0;               /* a fresh press steps on its very first frame */
-	g_disc_dir = right ? 1 : -1;
-	if ((frames++ % SR_DISC_TOGGLE_FRAMES) == 0)
-		g_disc_phase ^= 1;
+	if (g_disc_dir[port] == 0)
+		frames[port] = 0;         /* a fresh press steps on its very first frame */
+	g_disc_dir[port] = right ? 1 : -1;
+	if ((frames[port]++ % SR_DISC_TOGGLE_FRAMES) == 0)
+		g_disc_phase[port] ^= 1;
+}
+
+static void sr_disc_tick(void)
+{
+	int port;
+
+	for (port = 0; port < SR_PADS; port++)
+		sr_disc_tick_port(port);
 }
 
 int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 {
-	if (port != 0)
+	unsigned p;
+
+	if (port >= SR_PADS)
 		return 0;
+	p = port ^ (unsigned)g_swap;   /* which logical controller feeds this core port */
+
+	/* The analog stick is the Intellivision's disc and keypad. On a gamepad
+	 * console it is DEAD -- a core that polls it must read a centred stick, or a
+	 * game that reads both would see a phantom deflection. */
 	if (device == RETRO_DEVICE_ANALOG) {
+		if (!sr_profile_analog())
+			return 0;
 		if (index == RETRO_DEVICE_INDEX_ANALOG_LEFT) {
-			if (g_disc_dir == 0)
+			if (g_disc_dir[p] == 0)
 				return 0;         /* not sweeping: leave the disc alone */
 			if (id == RETRO_DEVICE_ID_ANALOG_X)
-				return g_disc_vec[g_disc_dir < 0][g_disc_phase][0];
+				return g_disc_vec[g_disc_dir[p] < 0][g_disc_phase[p]][0];
 			if (id == RETRO_DEVICE_ID_ANALOG_Y)
-				return g_disc_vec[g_disc_dir < 0][g_disc_phase][1];
+				return g_disc_vec[g_disc_dir[p] < 0][g_disc_phase[p]][1];
 			return 0;
 		}
-		return sr_keypad_analog(index, id);   /* right stick = keypad digits */
+		return sr_keypad_analog((int)p, index, id);   /* right stick = keypad digits */
 	}
 	if (device != RETRO_DEVICE_JOYPAD)
 		return 0;
 	if (id >= SR_PAD_IDS)
 		return 0;
-	/* While the disc is being swept, the d-pad must not also claim it. */
-	if (g_disc_dir != 0
+	/* While the disc is being swept, the d-pad must not also claim it. (Only the
+	 * Intellivision ever sweeps; on a pad profile g_disc_dir stays 0.) */
+	if (sr_profile_analog() && g_disc_dir[p] != 0
 	    && (id == RETRO_DEVICE_ID_JOYPAD_LEFT || id == RETRO_DEVICE_ID_JOYPAD_RIGHT))
 		return 0;
-	return g_joypad[id];
+	return g_joypad[p][id];
 }
 
 /* --- the key map: one table, shared by all three paths ---------------------- */
@@ -267,6 +312,14 @@ static void sr_door_action(int id)
 		g_action = id;
 }
 
+/* Tab: swap which core port each player's keys drive, then clear both
+ * controllers so nothing that was held before the remap sticks after it. */
+static void sr_do_swap(void)
+{
+	g_swap ^= 1;
+	sr_input_release_all();
+}
+
 /* Resolve one key press/release into pad, keypad or door state. `down` is 1 for
  * a press or repeat, 0 for a release; `tap` selects the byte path's
  * auto-release dwell over a held press. Door actions fire on the press edge.
@@ -276,8 +329,15 @@ static void sr_door_action(int id)
  * it is remembered, so "press any key to return" is true. */
 static void sr_key_apply(int c, int down, int tap)
 {
-	int      id;
-	sr_act_t act = sr_bind_lookup(sr_bind_fold(c), &id);
+	int      id, port;
+	sr_act_t act = sr_bind_lookup(sr_bind_fold(c), &id, &port);
+
+	/* WHAT THE KEY RESOLVED TO. The trace logged the byte arriving and a
+	 * once-a-second direction sample, and neither can answer the question a
+	 * player actually asks -- "I pressed X and nothing happened" -- because a
+	 * button tap is long gone by the next sample. This line closes that gap. */
+	sr_trace("key %-4s c=0x%02x act=%d id=%d port=%d%s",
+	         down ? "down" : "up", c, (int)act, id, port, tap ? " (tap)" : "");
 
 	if (act == SR_ACT_NONE) {
 		/* Unbound: it must never reach the core. But a player pressing a key
@@ -301,6 +361,17 @@ static void sr_key_apply(int c, int down, int tap)
 			sr_door_action(id);
 		return;
 	}
+	if (act == SR_ACT_SWAP) {
+		/* Behind a door screen Tab just dismisses it, like any other key;
+		 * otherwise it swaps the two controllers. Acts on the press edge. */
+		if (down) {
+			if (g_suspended)
+				g_anykey = 1;
+			else
+				sr_do_swap();
+		}
+		return;
+	}
 	if (g_suspended) {
 		if (down)
 			g_anykey = 1;
@@ -309,19 +380,19 @@ static void sr_key_apply(int c, int down, int tap)
 	switch (act) {
 		case SR_ACT_PAD:
 			if (!down)
-				sr_pad_release(id);
+				sr_pad_release(port, id);
 			else if (tap)
-				sr_pad_tap(id);
+				sr_pad_tap(port, id);
 			else
-				sr_pad_press(id);
+				sr_pad_press(port, id);
 			return;
 		case SR_ACT_DIGIT:
 			if (!down)
-				sr_keypad_release(id);
+				sr_keypad_release(port, id);
 			else if (tap)
-				sr_keypad_tap(id, sr_in_now_ms());
+				sr_keypad_tap(port, id, sr_in_now_ms());
 			else
-				sr_keypad_press(id);
+				sr_keypad_press(port, id);
 			return;
 		default:
 			return;
@@ -337,12 +408,13 @@ static void sr_key_byte(int c) { sr_key_apply(c, 1, 1); }
 
 void sr_input_release_all(void)
 {
-	int id;
+	int port, id;
 
-	for (id = 0; id < SR_PAD_IDS; id++) {
-		g_joypad[id]    = 0;
-		g_expire_ms[id] = 0;
-	}
+	for (port = 0; port < SR_PADS; port++)
+		for (id = 0; id < SR_PAD_IDS; id++) {
+			g_joypad[port][id]    = 0;
+			g_expire_ms[port][id] = 0;
+		}
 	sr_keypad_release_all();
 }
 
@@ -377,6 +449,15 @@ static unsigned          g_evdev_mods; /* held modifiers, TERMGFX_MOD_* */
 
 int sr_input_is_syncterm(void) { return g_is_syncterm; }
 
+const char *sr_input_keymode_name(void)
+{
+	if (termgfx_keymode_evdev_active(&g_km))
+		return "evdev";
+	if (termgfx_keymode_kitty_active(&g_km))
+		return "kitty";
+	return "bytes";
+}
+
 /* Parse up to `max` ';'-separated decimal params from csi_par; return the count.
  * A leading non-digit marker byte (SGR mouse's '<', DA1's '='/'?') is skipped. */
 static int sr_csi_params(int *out, int max)
@@ -408,6 +489,114 @@ static int sr_csi_params(int *out, int max)
 #define SR_EVDEV_RIGHT 106
 #define SR_EVDEV_DOWN  108
 
+/* --- player 2's keypad (the numeric keypad, native paths only) -------------
+ *
+ * Only SyncTERM's evdev reports and the kitty keyboard protocol distinguish the
+ * numeric keypad from the number row (a plain byte terminal sends the same
+ * "1".."0" for both, so there the numpad falls back to player 1's keypad). When
+ * they do, the numpad drives controller 1's keypad: the analog digits through
+ * the keypad module, 5/0/Clear/Enter as the same R3/L3/L2/R2 button bits player
+ * 1 reaches with 5/0/Backspace/Enter. `key` is 0-9, or one of: */
+#define SR_KP_CLEAR (-1)
+#define SR_KP_ENTER (-2)
+
+/* On a GAMEPAD console there is no keypad to drive, and routing the numpad into
+ * the Intellivision's would be nonsense. It becomes what a player actually
+ * reaches for: a second d-pad. 8/4/6/2 are the directions (and the diagonals
+ * press both, as a real d-pad can), numpad Enter is Start, 0 is Select, 5 is the
+ * dead centre it looks like. All on the player's own controller. */
+static void sr_numpad_pad(int key, int down)
+{
+	int a = -1, b = -1;
+	int port = sr_profile_arrow_port();   /* 0 on a gamepad: the player's own */
+
+	switch (key) {
+		case 8: a = RETRO_DEVICE_ID_JOYPAD_UP;    break;
+		case 2: a = RETRO_DEVICE_ID_JOYPAD_DOWN;  break;
+		case 4: a = RETRO_DEVICE_ID_JOYPAD_LEFT;  break;
+		case 6: a = RETRO_DEVICE_ID_JOYPAD_RIGHT; break;
+		case 7: a = RETRO_DEVICE_ID_JOYPAD_UP;    b = RETRO_DEVICE_ID_JOYPAD_LEFT;  break;
+		case 9: a = RETRO_DEVICE_ID_JOYPAD_UP;    b = RETRO_DEVICE_ID_JOYPAD_RIGHT; break;
+		case 1: a = RETRO_DEVICE_ID_JOYPAD_DOWN;  b = RETRO_DEVICE_ID_JOYPAD_LEFT;  break;
+		case 3: a = RETRO_DEVICE_ID_JOYPAD_DOWN;  b = RETRO_DEVICE_ID_JOYPAD_RIGHT; break;
+		case 0:           a = RETRO_DEVICE_ID_JOYPAD_SELECT; break;
+		case SR_KP_ENTER: a = RETRO_DEVICE_ID_JOYPAD_START;  break;
+		default:          return;   /* 5, Clear: nothing to press */
+	}
+	if (down) {
+		sr_pad_press(port, a);
+		if (b >= 0)
+			sr_pad_press(port, b);
+	} else {
+		sr_pad_release(port, a);
+		if (b >= 0)
+			sr_pad_release(port, b);
+	}
+}
+
+static void sr_p2_keypad(int key, int down)
+{
+	int id = -1;
+
+	if (g_suspended) {          /* a door screen is up: swallow, don't hold */
+		if (down)
+			g_anykey = 1;
+		return;
+	}
+	/* The Intellivision keypad is the Intellivision's. Every other console gets a
+	 * d-pad out of the numpad instead. */
+	if (sr_profile() != SR_PROFILE_INTV) {
+		sr_numpad_pad(key, down);
+		return;
+	}
+	switch (key) {
+		case 5:           id = RETRO_DEVICE_ID_JOYPAD_R3; break;
+		case 0:           id = RETRO_DEVICE_ID_JOYPAD_L3; break;
+		case SR_KP_CLEAR: id = RETRO_DEVICE_ID_JOYPAD_L2; break;
+		case SR_KP_ENTER: id = RETRO_DEVICE_ID_JOYPAD_R2; break;
+		default:
+			if (key >= 1 && key <= 9) {
+				if (down)
+					sr_keypad_press(1, key);
+				else
+					sr_keypad_release(1, key);
+			}
+			return;
+	}
+	if (down)
+		sr_pad_press(1, id);
+	else
+		sr_pad_release(1, id);
+}
+
+/* Linux evdev keycode -> numpad key (0-9 / SR_KP_CLEAR / SR_KP_ENTER), or
+ * INT_MIN when `code` is not a numeric-keypad key. */
+static int sr_evdev_numpad(int code)
+{
+	switch (code) {
+		case 71: return 7;   case 72: return 8;   case 73: return 9;
+		case 75: return 4;   case 76: return 5;   case 77: return 6;
+		case 79: return 1;   case 80: return 2;   case 81: return 3;
+		case 82: return 0;
+		case 83: return SR_KP_CLEAR;   /* KP Del / . */
+		case 96: return SR_KP_ENTER;   /* KP Enter */
+		default: return INT_MIN;
+	}
+}
+
+/* kitty functional codepoint -> numpad key, or INT_MIN. KP_0..KP_9 are the
+ * contiguous 57399..57408; KP_DECIMAL (57409) is Clear, KP_ENTER (57414). */
+static int sr_kitty_numpad(int cp)
+{
+	if (cp >= 57399 && cp <= 57408)
+		return cp - 57399;
+	if (cp == 57409)
+		return SR_KP_CLEAR;
+	if (cp == 57414)
+		return SR_KP_ENTER;
+	return INT_MIN;
+}
+
 static void sr_evdev_edge(int code, int down)
 {
 	int  button = -1;
@@ -427,6 +616,17 @@ static void sr_evdev_edge(int code, int down)
 	/* Drop the enable-time resync's press edges (termgfx_keymode.h). */
 	if (down && termgfx_keymode_evdev_settling(&g_km, sr_in_now_ms()))
 		return;
+
+	/* The numeric keypad drives PLAYER 2's keypad (a distinct physical key from
+	 * the number row, which is player 1's). */
+	{
+		int kp = sr_evdev_numpad(code);
+
+		if (kp != INT_MIN) {
+			sr_p2_keypad(kp, down);
+			return;
+		}
+	}
 
 	switch (code) {
 		case SR_EVDEV_UP:    button = RETRO_DEVICE_ID_JOYPAD_UP;    break;
@@ -462,18 +662,24 @@ static void sr_evdev_edge(int code, int down)
 	}
 	if (button < 0)
 		return;
-	/* While a door screen is up, swallow the arrow rather than hold it -- same
-	 * rule sr_key_apply() enforces for every other game key. A press is
-	 * remembered so "press any key to return" is true; a release does nothing. */
+	/* Which controller the arrows drive is the PROFILE's call: the Intellivision
+	 * runs both hand controllers at once, so they are player 2's disc (port 1);
+	 * on a gamepad console there is one player at one keyboard and they are HIS
+	 * d-pad (port 0). This is the evdev path -- the one SyncTERM negotiates -- and
+	 * it hardcoded port 1, so arrows were dead on the NES while WASD worked.
+	 *
+	 * While a door screen is up, swallow the arrow rather than hold it -- same
+	 * rule sr_key_apply() enforces for every other game key. A press is remembered
+	 * so "press any key to return" is true; a release does nothing. */
 	if (g_suspended) {
 		if (down)
 			g_anykey = 1;
 		return;
 	}
 	if (down)
-		sr_pad_press(button);
+		sr_pad_press(sr_profile_arrow_port(), button);
 	else
-		sr_pad_release(button);
+		sr_pad_release(sr_profile_arrow_port(), button);
 }
 
 /* `CSI = Pk[;Pk...] K|k` -- one sequence may carry several edges at once.
@@ -604,9 +810,15 @@ static void sr_csi_final(char fin)
 			}
 			{
 				int mod, ev, cp = termgfx_kitty_parse(csi_par, csi_len, &mod, &ev);
+				int kp;
 
 				if (cp <= 0)
 					return;
+				kp = sr_kitty_numpad(cp);
+				if (kp != INT_MIN) {
+					sr_p2_keypad(kp, ev != 3);   /* numpad -> player 2's keypad */
+					return;
+				}
 				if (termgfx_kitty_ctrl(mod) && cp >= 'a' && cp <= 'z')
 					cp = cp - 'a' + 1;   /* Ctrl-<letter> -> its C0 code */
 				if (cp < 128)
@@ -614,9 +826,9 @@ static void sr_csi_final(char fin)
 			}
 			return;
 
-		case 'A':   /* arrows. Under kitty they carry `1;mod:event`; on the byte */
-		case 'B':   /* path they are bare, and a press is all we get. */
-		case 'C':
+		case 'A':   /* arrows = PLAYER 2's disc. Under kitty they carry */
+		case 'B':   /* `1;mod:event`; on the byte path they are bare, and a */
+		case 'C':   /* press is all we get. */
 		case 'D':
 			if (termgfx_keymode_kitty_active(&g_km)) {
 				int mod, ev, b = sr_arrow_button(fin);
@@ -629,13 +841,13 @@ static void sr_csi_final(char fin)
 					if (ev != 3)
 						g_anykey = 1;
 				} else if (ev == 3)
-					sr_pad_release(b);
+					sr_pad_release(sr_profile_arrow_port(), b);
 				else
-					sr_pad_press(b);
+					sr_pad_press(sr_profile_arrow_port(), b);
 			} else if (g_suspended) {
 				g_anykey = 1;   /* byte-path arrow behind a door screen: swallow */
 			} else {
-				sr_pad_tap(sr_arrow_button(fin));
+				sr_pad_tap(sr_profile_arrow_port(), sr_arrow_button(fin));
 			}
 			return;
 
@@ -765,8 +977,10 @@ void sr_input_pump(void)
 	sr_pad_expire();
 
 	/* input_poll runs once per emulated frame, which is the sweep's clock. It
-	 * must follow sr_pad_expire(): a tap that just timed out is not held. */
-	sr_disc_tick();
+	 * must follow sr_pad_expire(): a tap that just timed out is not held. Only
+	 * the Intellivision has a disc to sweep. */
+	if (sr_profile_analog())
+		sr_disc_tick();
 
 	if (fd < 0)
 		return;

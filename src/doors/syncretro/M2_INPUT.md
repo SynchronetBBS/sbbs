@@ -82,8 +82,14 @@ Two core features we deliberately leave unused, because the door supersedes both
   drawn *into the framebuffer*, where the door cannot intercept it. We never
   assert START.
 
-SELECT is kept: it swaps the left/right controller (`libretro.c:1374`), which a
-solo player genuinely needs, since some titles read only the left controller.
+SELECT is no longer sent to the core. FreeIntv's SELECT swaps which physical
+controller the RetroPad port feeds -- a workaround for a player with a single
+controller. The door instead drives **both** RetroPad ports at once (the core
+polls both -- verified at runtime), so both Intellivision hand controllers are
+live simultaneously: a solo player uses whichever one the cart reads (no swap
+dance), and two people can play on one keyboard. `Tab` is the door's OWN swap of
+which core port each player's keys drive (`sr_pad_get()`'s read-time `g_swap`),
+so it needs no core feature. See the two-controller note in syncretro_input.c.
 
 Note the core polls each button id individually, because our `retro_env.c` does
 not answer `RETRO_ENVIRONMENT_GET_INPUT_BITMASKS` and the core therefore leaves
@@ -95,20 +101,25 @@ also answer `id == RETRO_DEVICE_ID_JOYPAD_MASK`.
 ## 3. The binding table
 
 Bare keys play the game; Ctrl keys drive the door. Function keys are avoided --
-too many terminals mangle them.
+too many terminals mangle them. The two controllers get two key groups:
 
-| Key | Action |
-|---|---|
-| `1`-`9`, `0` | keypad digits |
-| `Backspace` (`0x08` **and** `0x7F`) | keypad Clear |
-| `Enter` (`\r` and `\n`) | keypad Enter |
-| `W` `A` `S` `D`, arrow keys | disc |
-| `Z` / `X` / `C` | action buttons |
-| `Tab` | swap left/right controller |
-| `Space` | pause (door-owned) |
-| `?` | key legend / help (door-owned) |
-| `Ctrl-R` | reset (`retro_reset()`) |
-| `Ctrl-Q` | quit (already implemented) |
+| Player 1 (controller 0) | Player 2 (controller 1) | Action |
+|---|---|---|
+| `W` `A` `S` `D` | arrow keys | disc (16-way) |
+| `Z` `X` `C` | `,` `.` `/` | action buttons |
+| `1`-`9`, `0` | numeric keypad | keypad digits |
+| `Backspace` (`0x08` **and** `0x7F`) | numpad `Del` | keypad Clear |
+| `Enter` (`\r` and `\n`) | numpad `Enter` | keypad Enter |
+
+Door keys (either player): `Tab` swap the two controllers · `Space` pause · `?`
+key legend / help · `Ctrl-R` reset (`retro_reset()`) · `Ctrl-Q` quit.
+
+Player 2's arrows and numpad have no ASCII byte form, so they reach the door
+only on the CSI / evdev / kitty paths. On a plain byte terminal the numpad is
+indistinguishable from the number row, so there player 2's *keypad* falls back
+to player 1's -- player 2's disc (arrows) and action buttons still work on every
+terminal. `Tab`'s swap lets a solo player put their preferred key group on the
+controller the cart actually reads.
 
 **Not `Ctrl-H`.** An earlier draft offered it; `Ctrl-H` *is* `0x08`, which is
 Backspace, which is keypad Clear. Help is `?`.

@@ -41,13 +41,18 @@ typedef struct rc_core {
 	void (*reset)(void);
 
 	struct retro_system_av_info av;         /* captured after load_game() */
+	/* Captured in load_game(). library_name is what identifies the console when
+	 * no -profile was given -- and FreeIntv spells its own "freeintv", lower
+	 * case, so compare it case-INSENSITIVELY (syncretro_profile.c). The strings
+	 * point into the core's own static storage and live as long as it does. */
+	struct retro_system_info si;
 	bool game_loaded;
 
 	/* ROM image, for a core with need_fullpath = false. Held for the core's
 	 * whole lifetime, not just across load_game(): libretro lets a core keep
 	 * pointing into this buffer rather than copying it, and freeing it early
 	 * would leave the core reading a dangling pointer for the whole session. */
-	void  *rom_data;
+	void *rom_data;
 	size_t rom_size;
 } rc_core_t;
 

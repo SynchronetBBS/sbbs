@@ -14,6 +14,7 @@
 #include "syncretro.h"
 #include "syncretro_binds.h"
 #include "syncretro_audio.h"
+#include "syncretro_profile.h"
 #include "syncretro_plat.h"
 
 #include <stdint.h>
@@ -104,17 +105,29 @@ static void sr_screen_keys(int paused)
 	int         i;
 
 	sr_puts("\x1b[2J\x1b[H");   /* clear + home */
-	sr_puts(paused ? "SyncRetro -- PAUSED\r\n\r\n" : "SyncRetro -- keys\r\n\r\n");
+	snprintf(line, sizeof line, "SyncRetro -- %s%s\r\n\r\n",
+	         sr_profile_name(), paused ? " -- PAUSED" : "");
+	sr_puts(line);
 	for (i = 0; sr_bind_help_line(i, &key, &desc); i++) {
 		snprintf(line, sizeof line, "  %-18s %s\r\n", key, desc);
 		sr_puts(line);
 	}
-	/* Which controller a cartridge reads is per-game, not a convention: both
-	 * Pac-Man ports ignore the left one entirely (start = Tab, then 1), while
-	 * Astrosmash reads either.  So the hint has to be the general one. */
-	sr_puts("\r\n  Some cartridges use the RIGHT hand controller, even for one\r\n");
-	sr_puts("  player.  If a game ignores you, press Tab and try again.\r\n");
-	sr_puts("  Most games start on a keypad digit, not an action button.\r\n");
+
+	/* The closing paragraph is the console's, not the door's -- the Intellivision
+	 * needs three lines of explanation that would be nonsense on a gamepad. */
+	if (sr_profile() == SR_PROFILE_INTV) {
+		/* Both hand controllers are live at once, so two people can share the
+		 * keyboard -- and a solo player whose cart reads the "other" controller
+		 * just uses the other key group (or Tab to swap) instead of being stuck. */
+		sr_puts("\r\n  Both controllers are live: player 1 = W A S D / Z X C / number\r\n");
+		sr_puts("  row, player 2 = arrows / , . / / numeric keypad.  Two can play on\r\n");
+		sr_puts("  one keyboard; solo, use whichever set the game reads (or Tab to\r\n");
+		sr_puts("  swap).  Most games start on a keypad digit, not an action button.\r\n");
+	} else {
+		sr_puts("\r\n  Most games start at Enter (Start).  If nothing responds at all,\r\n");
+		sr_puts("  the game may be reading the second controller port: press Tab and\r\n");
+		sr_puts("  try again.\r\n");
+	}
 	sr_puts(paused ? "\r\n  Press Space to resume.\r\n"
 	               : "\r\n  Press any key to return to the game.\r\n");
 	sr_io_out_flush();
@@ -152,6 +165,40 @@ int main(int argc, char **argv)
 
 	if (rc_core_load_game(&core, sr_config_rom_path()) != 0)
 		goto done;
+
+	/* AFTER load_game, and before the first input pump or audio chunk: neither of
+	 * these facts exists any earlier. The core's library_name is only defined once
+	 * it is loaded, and its sample rate only once a game is (the NES is 48000, the
+	 * Intellivision 44100 -- and the door hardcoded 44100 until M3). */
+	sr_profile_select(sr_door_profile(), core.si.library_name);
+	sr_audio_start((int)core.av.timing.sample_rate);
+
+	/* The frame's DISPLAY shape. A console's pixels are not square: the NES's
+	 * 256x240 was shown on a 4:3 television, and fitting it as 256:240 draws it a
+	 * quarter too narrow. FreeIntv masked this for a whole milestone -- its
+	 * 352x224 IS the 1.5714 it reports. See syncretro_io.c / [video] aspect. */
+	{
+		double core_par = (double)core.av.geometry.aspect_ratio;
+		double par      = sr_config_aspect(core_par);
+
+		/* Say which shape we settled on, and where it came from. The door already
+		 * logs its profile and its sample rate; leaving the aspect silent is what
+		 * made a mis-sectioned `aspect =` key (one sitting outside [video]) look
+		 * like the setting was being ignored. */
+		if (par > 0.0)
+			fprintf(stderr, "syncretro: aspect %.3f  ([video] aspect = %s; the core"
+			        " reports %.3f)\n", par, sr_config_aspect_mode(), core_par);
+		else
+			fprintf(stderr, "syncretro: aspect SQUARE pixels ([video] aspect = %s;"
+			        " the core reports %.3f)\n", sr_config_aspect_mode(), core_par);
+		sr_io_set_aspect(par);
+	}
+
+	/* Who's-online now names the CARTRIDGE -- "playing Astrosmash (Intellivision)"
+	 * -- the way SyncDOOM names its WAD and map, instead of the BBS's generic
+	 * "running external program". Set once and cleared on exit: a cartridge, unlike
+	 * a map, does not change mid-session. */
+	sr_door_node_playing(sr_config_rom_path());
 
 	{
 		int paused  = 0;   /* Space: the core is not being run */
@@ -215,6 +262,7 @@ int main(int argc, char **argv)
 					         sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_DOWN));
 			}
 			core.run();             /* -> video/audio/input callbacks fire */
+			sr_io_stats_tick();     /* advance/refresh the Ctrl-S stats overlay */
 
 			action = sr_input_take_action();
 			if (action == SR_DOOR_PAUSE || action == SR_DOOR_HELP) {
@@ -229,6 +277,21 @@ int main(int argc, char **argv)
 					sr_screen_keys(0);
 				}
 				continue;
+			}
+			if (action == SR_DOOR_STATS)
+				sr_io_stats_toggle();       /* Ctrl-S: flip the overlay, keep playing */
+			if (action == SR_DOOR_VOL_UP || action == SR_DOOR_VOL_DOWN) {
+				int  v = sr_audio_volume_step(action == SR_DOOR_VOL_UP ? +10 : -10);
+				char msg[64];
+
+				/* At zero the door sends no audio AT ALL (sr_audio_volume_step),
+				 * so say so -- "0%" alone reads like a quiet stream still costing
+				 * the player bandwidth. */
+				if (v <= 0)
+					snprintf(msg, sizeof msg, "Volume 0%% -- sound off (nothing sent)");
+				else
+					snprintf(msg, sizeof msg, "Volume %d%%", v);
+				sr_io_toast(msg);
 			}
 			if (action == SR_DOOR_RESET) {
 				sr_input_release_all();

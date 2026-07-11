@@ -1,7 +1,7 @@
 /* syncretro_audio.h -- the core's PCM stream -> SyncTERM's audio APC.
  *
- * A libretro core hands the door a continuous 44.1 kHz stream, not the discrete
- * SFX and music tracks the engine doors emit. SyncTERM's mixer channels have a
+ * A libretro core hands the door a continuous PCM stream, not the discrete SFX
+ * and music tracks the engine doors emit. SyncTERM's mixer channels have a
  * FIFO (A;Queue moves a slot's buffer onto it), so consecutive queues play back
  * to back: that FIFO is the live audio ring, and this module feeds it 100 ms
  * Opus chunks. See M4_AUDIO.md.
@@ -19,10 +19,18 @@
 #define SR_AUDIO_CH        2
 #define SR_AUDIO_SLOT      0
 #define SR_AUDIO_RING      4
-#define SR_AUDIO_RATE      44100
 
-/* Read config, size the accumulator. No I/O. Call after sr_config_apply(). */
+/* The sample rate is the CORE's, not a constant -- FreeIntv mixes at 44100,
+ * fceumm at 48000 -- and it arrives with the AV info, i.e. only after the game
+ * is loaded. This is what a core is fallen back to when it reports nonsense. */
+#define SR_AUDIO_RATE_FALLBACK 44100
+
+/* Read config. No allocation, no I/O, and no rate (the core is not loaded yet).
+ * Call after sr_config_apply(). */
 void   sr_audio_init(void);
+/* Size the chunk to the core's sample rate. Call ONCE, from main(), after
+ * rc_core_load_game() -- before this, the module emits nothing. */
+void   sr_audio_start(int rate);
 /* Emit the libsndfile capability query. Call from the io probe. */
 void   sr_audio_probe(void);
 /* The probe reply: tier 1 = libsndfile (stream), 0 = tone-only, -1 = none.
@@ -35,6 +43,13 @@ void   sr_audio_underrun(int ch);
  * produced and the FIFO drains on purpose. Suppresses the spurious underrun and
  * re-primes on resume. */
 void   sr_audio_pause(int on);
+/* '+' / '-': step the terminal's mixer-channel volume, 0..100, and return the
+ * new value. At ZERO the door stops sending audio altogether -- no encode, no
+ * upload, no queue -- and flushes what is already queued, so a muted player
+ * costs zero uplink rather than streaming Opus a terminal would discard. */
+int    sr_audio_volume_step(int delta);
+int    sr_audio_volume(void);
+int    sr_audio_muted(void);
 /* Ctrl-R restarted the console: stop the channel, drop what is queued, re-prime.
  * The audio still in the terminal's FIFO belongs to a game that no longer runs. */
 void   sr_audio_reset(void);

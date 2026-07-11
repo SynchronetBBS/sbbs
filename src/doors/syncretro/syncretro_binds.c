@@ -1,55 +1,141 @@
 /* syncretro_binds.c -- see syncretro_binds.h. */
 #include "syncretro_binds.h"
+#include "syncretro_profile.h"
 #include "libretro.h"    /* RETRO_DEVICE_ID_JOYPAD_* */
 
 #include <stddef.h>
 
-/* `chars` is the set of folded ASCII keys that trigger this row. `keyname` and
- * `desc` are non-NULL only on the row that REPRESENTS a group in the help
- * screen -- the alias rows below it stay silent, so the help reads
- * "W A S D / arrows   disc" rather than four separate lines.
+/* `chars` is the set of folded ASCII keys that trigger this row. `port` is the
+ * controller for SR_ACT_PAD / SR_ACT_DIGIT (0 = player 1, 1 = player 2); it is
+ * ignored for the door rows. `keyname` and `desc` are non-NULL only on the row
+ * that REPRESENTS a group in the help screen -- the alias rows below it stay
+ * silent, so the help reads one line per group rather than one per key.
+ *
+ * Both Intellivision hand controllers are driven at once (see syncretro_input.c
+ * / M2_INPUT.md): player 1 on the left-hand keys below, player 2 on the arrows
+ * (disc), , . / (buttons) and numeric keypad (digits). Only player 1's keys and
+ * player 2's action buttons are ASCII bytes and so live here; player 2's arrows
+ * and numpad arrive as CSI / evdev / kitty sequences and are routed to port 1 in
+ * syncretro_input.c. Tab swaps which core port each player's keys drive.
  *
  * For SR_ACT_DIGIT the id is derived from the character, not from `id`. */
 typedef struct {
 	const char *chars;
 	sr_act_t act;
 	int id;
+	int port;
 	const char *keyname;
 	const char *desc;
 } sr_bind_row_t;
 
-/* The action buttons are RetroPad A, B and Y. The core's help screen calls them
+/* --- the Intellivision (SR_PROFILE_INTV) -------------------------------------
+ *
+ * The action buttons are RetroPad A, B and Y. The core's help screen calls them
  * right / left / top, but controller.c asserts B_LEFT from A and B_RIGHT from
  * B -- the two disagree, and only a BIOS run settles it. So the help says
  * "action buttons" and names none of them. Do not guess. */
 static const sr_bind_row_t g_binds[] = {
-	{ "w",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_UP,     "W A S D / arrows", "disc (16-way)" },
-	{ "a",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_LEFT,   NULL,               NULL },
-	{ "s",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_DOWN,   NULL,               NULL },
-	{ "d",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_RIGHT,  NULL,               NULL },
+	/* --- Player 1 (one controller): W A S D + Z X C + the number row --- */
+	{ "w",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_UP,     0, "W A S D | arrows", "disc (player 1 | 2)" },
+	{ "a",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_LEFT,   0, NULL,               NULL },
+	{ "s",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_DOWN,   0, NULL,               NULL },
+	{ "d",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_RIGHT,  0, NULL,               NULL },
 
-	{ "z",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_A,      "Z X C",            "action buttons" },
-	{ "x",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_B,      NULL,               NULL },
-	{ "c",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_Y,      NULL,               NULL },
+	{ "z",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_A,      0, "Z X C | , . /",    "action buttons" },
+	{ "x",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_B,      0, NULL,               NULL },
+	{ "c",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_Y,      0, NULL,               NULL },
 
 	/* 5 and 0 are absent here on purpose: they are button bits, two rows down. */
-	{ "12346789", SR_ACT_DIGIT, 0,                             "1 - 9, 0",         "keypad digits" },
-	{ "5",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_R3,     NULL,               NULL },
-	{ "0",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_L3,     NULL,               NULL },
+	{ "12346789", SR_ACT_DIGIT, 0,                             0, "1-9,0 | num pad",  "keypad digits" },
+	{ "5",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_R3,     0, NULL,               NULL },
+	{ "0",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_L3,     0, NULL,               NULL },
 
 	/* Terminals disagree: some send BS (0x08) for Backspace, some DEL (0x7f). */
-	{ "\010\177", SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_L2,     "Backspace",        "keypad Clear" },
-	{ "\r\n",     SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_R2,     "Enter",            "keypad Enter" },
+	{ "\010\177", SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_L2,     0, "Bksp | KP Del",    "keypad Clear" },
+	{ "\r\n",     SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_R2,     0, "Enter | KP Enter", "keypad Enter" },
 
-	{ "\t",       SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_SELECT, "Tab",              "swap left/right controller" },
+	/* --- Player 2 action buttons. Its disc (arrows) and keypad (numpad) are
+	 * decoded in syncretro_input.c, not here; these rows are silent in the help
+	 * because player 1's rows above already name them. --- */
+	{ ",",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_A,      1, NULL,               NULL },
+	{ ".",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_B,      1, NULL,               NULL },
+	{ "/",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_Y,      1, NULL,               NULL },
 
-	{ " ",        SR_ACT_DOOR,  SR_DOOR_PAUSE,                 "Space",            "pause / resume" },
-	{ "?",        SR_ACT_DOOR,  SR_DOOR_HELP,                  "?",                "this help" },
-	{ "\022",     SR_ACT_DOOR,  SR_DOOR_RESET,                 "Ctrl-R",           "reset the console" },
-	{ "\021",     SR_ACT_DOOR,  SR_DOOR_QUIT,                  "Ctrl-Q",           "quit" }
+	/* --- door --- */
+	{ "+=",       SR_ACT_DOOR,  SR_DOOR_VOL_UP,                0, "+ -",              "volume up / down (0 = off)" },
+	{ "-_",       SR_ACT_DOOR,  SR_DOOR_VOL_DOWN,              0, NULL,               NULL },
+	{ "\t",       SR_ACT_SWAP,  0,                             0, "Tab",              "swap the two controllers" },
+	{ " ",        SR_ACT_DOOR,  SR_DOOR_PAUSE,                 0, "Space",            "pause / resume" },
+	{ "?",        SR_ACT_DOOR,  SR_DOOR_HELP,                  0, "?",                "this help" },
+	{ "\023",     SR_ACT_DOOR,  SR_DOOR_STATS,                 0, "Ctrl-S",           "stats overlay" },
+	{ "\022",     SR_ACT_DOOR,  SR_DOOR_RESET,                 0, "Ctrl-R",           "reset the console" },
+	{ "\021",     SR_ACT_DOOR,  SR_DOOR_QUIT,                  0, "Ctrl-Q",           "quit" }
 };
 
 #define SR_NBINDS ((int)(sizeof g_binds / sizeof g_binds[0]))
+
+/* --- the gamepad (SR_PROFILE_PAD) -------------------------------------------
+ *
+ * A plain RetroPad, and so the whole of the NES: d-pad, B, A, Select, Start.
+ * The extra face and shoulder buttons are bound because a 4- or 6-button console
+ * (SMS, Genesis, PC Engine) is the same profile with more fingers -- binding them
+ * now costs nothing and means those consoles are an install directory, not a
+ * patch.
+ *
+ * Z=B and X=A is not a guess: fceumm's SET_INPUT_DESCRIPTORS names id 0 "B" and
+ * id 8 "A", and the physical NES pad puts B on the left of A -- which is how Z
+ * and X sit on the keyboard.
+ *
+ * Backspace = Select mirrors the Intellivision profile's Backspace = keypad
+ * Clear: the same physical key keeps the same *role* (the odd one out) across
+ * consoles, so muscle memory does not fight.
+ *
+ * ONE controller, not two. There is one player at one keyboard, so the arrows
+ * are HIS d-pad (port 0 -- see sr_profile_arrow_port()), not a phantom second
+ * player's. Tab still swaps ports, for the rare cartridge that reads port 2. */
+static const sr_bind_row_t g_binds_pad[] = {
+	{ "w",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_UP,     0, "W A S D | arrows", "d-pad" },
+	{ "a",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_LEFT,   0, NULL,               NULL },
+	{ "s",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_DOWN,   0, NULL,               NULL },
+	{ "d",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_RIGHT,  0, NULL,               NULL },
+
+	{ "z",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_B,      0, "Z",                "B" },
+	{ "x",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_A,      0, "X",                "A" },
+	/* Idle on the NES; alive on a 4-/6-button console. */
+	{ "c",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_Y,      0, "C V",              "Y X (if the console has them)" },
+	{ "v",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_X,      0, NULL,               NULL },
+	{ "q",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_L,      0, "Q E",              "L R (if the console has them)" },
+	{ "e",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_R,      0, NULL,               NULL },
+
+	{ "\r\n",     SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_START,  0, "Enter",            "Start" },
+	/* Terminals disagree: some send BS (0x08) for Backspace, some DEL (0x7f). */
+	{ "\010\177", SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_SELECT, 0, "Bksp",             "Select" },
+
+	/* --- door --- */
+	{ "+=",       SR_ACT_DOOR, SR_DOOR_VOL_UP,                0, "+ -",              "volume up / down (0 = off)" },
+	{ "-_",       SR_ACT_DOOR, SR_DOOR_VOL_DOWN,              0, NULL,               NULL },
+	{ "\t",       SR_ACT_SWAP, 0,                             0, "Tab",              "swap the two controller ports" },
+	{ " ",        SR_ACT_DOOR, SR_DOOR_PAUSE,                 0, "Space",            "pause / resume" },
+	{ "?",        SR_ACT_DOOR, SR_DOOR_HELP,                  0, "?",                "this help" },
+	{ "\023",     SR_ACT_DOOR, SR_DOOR_STATS,                 0, "Ctrl-S",           "stats overlay" },
+	{ "\022",     SR_ACT_DOOR, SR_DOOR_RESET,                 0, "Ctrl-R",           "reset the console" },
+	{ "\021",     SR_ACT_DOOR, SR_DOOR_QUIT,                  0, "Ctrl-Q",           "quit" }
+};
+
+#define SR_NBINDS_PAD ((int)(sizeof g_binds_pad / sizeof g_binds_pad[0]))
+
+/* The active table. One table drives BOTH the key handler and the help screen --
+ * the M2 invariant -- so switching profiles switches both, together, and they
+ * cannot drift apart. */
+static const sr_bind_row_t *sr_bind_table(int *n)
+{
+	if (sr_profile() == SR_PROFILE_INTV) {
+		*n = SR_NBINDS;
+		return g_binds;
+	}
+	*n = SR_NBINDS_PAD;
+	return g_binds_pad;
+}
 
 int sr_bind_fold(int c)
 {
@@ -58,33 +144,37 @@ int sr_bind_fold(int c)
 	return c;
 }
 
-sr_act_t sr_bind_lookup(int c, int *id)
+sr_act_t sr_bind_lookup(int c, int *id, int *port)
 {
-	int i, j;
+	int                  n, i, j;
+	const sr_bind_row_t *t = sr_bind_table(&n);
 
-	*id = 0;
+	*id   = 0;
+	*port = 0;
 	if (c <= 0)
 		return SR_ACT_NONE;   /* NUL would match every row's terminator */
 
-	for (i = 0; i < SR_NBINDS; i++)
-		for (j = 0; g_binds[i].chars[j] != '\0'; j++)
-			if ((unsigned char)g_binds[i].chars[j] == (unsigned)c) {
-				*id = (g_binds[i].act == SR_ACT_DIGIT) ? c - '0' : g_binds[i].id;
-				return g_binds[i].act;
+	for (i = 0; i < n; i++)
+		for (j = 0; t[i].chars[j] != '\0'; j++)
+			if ((unsigned char)t[i].chars[j] == (unsigned)c) {
+				*id   = (t[i].act == SR_ACT_DIGIT) ? c - '0' : t[i].id;
+				*port = t[i].port;
+				return t[i].act;
 			}
 	return SR_ACT_NONE;
 }
 
 int sr_bind_help_line(int i, const char **key, const char **desc)
 {
-	int n;
+	int                  n, m;
+	const sr_bind_row_t *t = sr_bind_table(&n);
 
-	for (n = 0; n < SR_NBINDS; n++) {
-		if (g_binds[n].keyname == NULL)
+	for (m = 0; m < n; m++) {
+		if (t[m].keyname == NULL)
 			continue;
 		if (i-- == 0) {
-			*key  = g_binds[n].keyname;
-			*desc = g_binds[n].desc;
+			*key  = t[m].keyname;
+			*desc = t[m].desc;
 			return 1;
 		}
 	}

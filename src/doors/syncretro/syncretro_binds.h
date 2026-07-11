@@ -20,9 +20,10 @@
 
 typedef enum {
 	SR_ACT_NONE = 0,   /* unbound: the key must never reach the core */
-	SR_ACT_PAD,        /* id = RETRO_DEVICE_ID_JOYPAD_* */
-	SR_ACT_DIGIT,      /* id = 1..9 (never 5): an analog keypad digit */
-	SR_ACT_DOOR        /* id = SR_DOOR_* */
+	SR_ACT_PAD,        /* id = RETRO_DEVICE_ID_JOYPAD_* on controller `port` */
+	SR_ACT_DIGIT,      /* id = 1..9 (never 5): an analog keypad digit on `port` */
+	SR_ACT_DOOR,       /* id = SR_DOOR_* */
+	SR_ACT_SWAP        /* Tab: swap which core port each player's keys drive */
 } sr_act_t;
 
 enum {
@@ -30,7 +31,10 @@ enum {
 	SR_DOOR_PAUSE,
 	SR_DOOR_HELP,
 	SR_DOOR_RESET,
-	SR_DOOR_QUIT
+	SR_DOOR_QUIT,
+	SR_DOOR_STATS,     /* Ctrl-S: toggle the live stats overlay */
+	SR_DOOR_VOL_UP,    /* '+' : louder */
+	SR_DOOR_VOL_DOWN   /* '-' : quieter, and at 0 we stop SENDING audio at all */
 };
 
 /* Fold an ASCII key for lookup. ALPHA ONLY: 'A'-'Z' -> lowercase, everything
@@ -39,8 +43,9 @@ enum {
 int sr_bind_fold(int c);
 
 /* Resolve a folded ASCII key. Returns SR_ACT_NONE (and sets *id to 0) when the
- * key is unbound. *id must not be NULL. */
-sr_act_t sr_bind_lookup(int c, int *id);
+ * key is unbound. Sets *port to the controller (0 = player 1, 1 = player 2) for
+ * SR_ACT_PAD / SR_ACT_DIGIT; 0 otherwise. Both out-params must be non-NULL. */
+sr_act_t sr_bind_lookup(int c, int *id, int *port);
 
 /* Walk the help lines: returns 0 once i is past the end, else 1 and sets *key
  * and *desc to static strings. */

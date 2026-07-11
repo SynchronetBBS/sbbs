@@ -11,11 +11,18 @@ vendors no emulator -- you point it at a libretro core `.so` and it drives the
 core's run loop, converting each video frame to sixel/JXL and mapping BBS input
 to a RetroPad. Swap the core, get a different console.
 
-> **Status: M1 (video), M2 (input) and M4 (audio) complete.** The frontend loads
-> a core, loads a ROM, renders frames as sixel, maps terminal keys onto a
-> RetroPad -- including all twelve Intellivision keypad keys -- and streams the
-> core's audio to SyncTERM as Opus chunks. Enter/probe/leave and teardown are
-> correct on every exit path. See DESIGN.md sec 15 for the remaining milestones.
+> **Status: M1 (video), M2 (input), M3 (multi-core), M4 (audio) and M6 (Windows)
+> complete.** The frontend loads a core, loads a ROM, renders frames as sixel,
+> maps terminal keys onto a RetroPad -- including all twelve Intellivision keypad
+> keys -- and streams the core's audio to SyncTERM as Opus chunks at whatever rate
+> the core mixes at. Enter/probe/leave and teardown are correct on every exit path.
+>
+> **Two consoles ship:** Intellivision (`xtrn/syncivision`, FreeIntv) and NES
+> (`xtrn/syncnes`, FCEUmm). They are the SAME door binary against a different
+> core, and adding a third that is also a plain-gamepad console (SMS,
+> ColecoVision, PC Engine, Genesis) needs no C at all -- just an install
+> directory. See M3_MULTICORE.md; DESIGN.md sec 15 for what remains (M5: core
+> options + save states).
 >
 > To actually *play* Intellivision you still need the BIOS (below). Without it
 > FreeIntv loads the cartridge, halts its CPU, and draws its own "PUT GROM/EXEC IN
@@ -143,20 +150,23 @@ terminal's key mode on exit.
 
 ## Keys
 
-| Key | Action |
-|---|---|
-| `W A S D` / arrows | disc (16-way) |
-| `Z X C` | action buttons |
-| `1 - 9, 0` | keypad digits |
-| `Backspace` | keypad Clear |
-| `Enter` | keypad Enter |
-| `Tab` | swap left/right controller |
-| `Space` | pause / resume |
-| `?` | this help |
-| `Ctrl-R` | reset the console |
-| `Ctrl-Q` | quit |
+Both Intellivision hand controllers are driven at once: use whichever one a cart
+reads, or play two-up on one keyboard.
 
-Press `?` in-game to see this same list, drawn as the door's own help screen.
+| Player 1 | Player 2 | Action |
+|---|---|---|
+| `W A S D` | arrow keys | disc (16-way) |
+| `Z X C` | `, . /` | action buttons |
+| `1 - 9, 0` | numeric keypad | keypad digits |
+| `Backspace` | numpad `Del` | keypad Clear |
+| `Enter` | numpad `Enter` | keypad Enter |
+
+Door keys (either player): `Tab` swap the two controllers · `Space` pause · `?`
+help · `Ctrl-S` stats overlay · `Ctrl-R` reset · `Ctrl-Q` quit.
+
+Player 2's arrows and numpad have no ASCII form, so they need SyncTERM or a
+kitty-keyboard terminal; on a plain client player 2's *keypad* falls back to
+player 1's (disc + buttons still work). Press `?` in-game for this same list.
 
 ## Audio
 

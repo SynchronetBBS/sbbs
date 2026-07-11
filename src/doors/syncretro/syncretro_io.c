@@ -305,15 +305,23 @@ static int g_canvas_h = SR_CANVAS_H_DEF;
 static int g_grid_rows, g_grid_cols;
 
 static int g_src_w, g_src_h;               /* the core's current frame size */
-static int g_ew, g_eh;                     /* emitted (scaled) image size */
-static int g_icol = 1, g_irow = 1;         /* 1-based text-cell origin of the image */
-static int g_geom_ready;
+/* The DISPLAY aspect (width/height) the core asks for, or 0 = "assume square
+ * pixels". A console's pixels are not square: the NES's 256x240 framebuffer was
+ * shown on a 4:3 television, and fceumm reports 1.219 (the 8:7 pixel-aspect
+ * convention) -- fit it as 256:240 = 1.067 and the picture is a quarter too
+ * narrow, which is exactly what a player sees. FreeIntv hid this bug for a whole
+ * milestone: its 352x224 IS 1.5714 square, the same number it reports, so
+ * ignoring the aspect happened to be right on the only console we had. */
+static double g_par;
+static int    g_ew, g_eh;                  /* emitted (scaled) image size */
+static int    g_icol = 1, g_irow = 1;      /* 1-based text-cell origin of the image */
+static int    g_geom_ready;
 
 /* Recompute the image rect from the current canvas/grid and the core's frame
  * size. Called when any of those change. */
 static void sr_io_recompute_geom(void)
 {
-	int cw, ch, pagew, pageh, fith, dx, dy;
+	int cw, ch, pagew, pageh, fith, fitw, dx, dy;
 
 	if (g_src_w <= 0 || g_src_h <= 0)
 		return;   /* no frame seen yet: nothing to fit */
@@ -349,9 +357,34 @@ static void sr_io_recompute_geom(void)
 	if (fith < ch)
 		fith = pageh;   /* absurdly short page: don't reserve ourselves to nothing */
 
-	termgfx_geom_fit(pagew, fith, g_src_w, g_src_h, 0, &g_ew, &g_eh);
+	/* Fit the frame at its DISPLAY shape, not its pixel shape: widen (or narrow)
+	 * the source to the aspect the core asks for, and let the resampler stretch
+	 * into the result. The height is left alone -- a terminal has far fewer rows
+	 * than columns to spend, so scaling x is the cheaper axis to distort. */
+	fitw = g_src_w;
+	if (g_par > 0.0) {
+		int aw = (int)((double)g_src_h * g_par + 0.5);
+
+		if (aw > 0)
+			fitw = aw;
+	}
+
+	termgfx_geom_fit(pagew, fith, fitw, g_src_h, 0, &g_ew, &g_eh);
 	termgfx_geom_center(pagew, fith, g_ew, g_eh, cw, ch, &dx, &dy, &g_icol, &g_irow);
 	g_geom_ready = 1;
+}
+
+/* The core's display aspect, from retro_get_system_av_info() (possibly overridden
+ * by [video] aspect). Call once after the game loads, before the first frame. */
+void sr_io_set_aspect(double aspect)
+{
+	if (aspect < 0.1 || aspect > 10.0)
+		aspect = 0.0;              /* nonsense: fall back to square pixels */
+	if (g_par == aspect)
+		return;
+	g_par = aspect;
+	sr_io_recompute_geom();
+	sr_io_invalidate();            /* the image rect moved: repaint in full */
 }
 
 void sr_io_set_canvas(int w, int h)
@@ -370,6 +403,193 @@ void sr_io_set_grid(int rows, int cols)
 	g_grid_rows = rows;
 	g_grid_cols = cols;
 	sr_io_recompute_geom();
+}
+
+/* --- transient toast (volume) ------------------------------------------------
+ *
+ * One line on the BOTTOM text row -- the row sr_io_recompute_geom() already
+ * reserves and keeps clear of the image, so a message there can never disturb
+ * the picture or scroll the page. Shown for a moment and then erased. It exists
+ * because a volume key that changes nothing you can SEE is indistinguishable
+ * from a volume key that does not work. */
+#define SR_TOAST_MS 1500
+
+static char     g_toast[64];
+static uint32_t g_toast_until;
+static int      g_toast_drawn;
+
+static int sr_toast_row(void)
+{
+	return (g_grid_rows > 0) ? g_grid_rows : 24;
+}
+
+static void sr_toast_draw(const char *text)
+{
+	char ov[128];
+	int  n = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[K\x1b[1;37;44m %s \x1b[0m",
+	                  sr_toast_row(), text);
+
+	if (n > 0)
+		sr_out_put(ov, (size_t)n);
+	sr_io_out_flush();
+}
+
+static void sr_toast_clear(void)
+{
+	char ov[32];
+	int  n = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[K", sr_toast_row());
+
+	if (n > 0)
+		sr_out_put(ov, (size_t)n);
+	sr_io_out_flush();
+}
+
+void sr_io_toast(const char *text)
+{
+	if (g_file_mode || g_fd < 0 || text == NULL)
+		return;
+	snprintf(g_toast, sizeof g_toast, "%s", text);
+	g_toast_until = sr_io_now_ms() + SR_TOAST_MS;
+	sr_toast_draw(g_toast);
+	g_toast_drawn = 1;
+}
+
+/* Erase the toast once its moment has passed. Called once per frame. */
+static void sr_io_stats_emit(int force);
+
+static void sr_toast_tick(void)
+{
+	if (!g_toast_drawn)
+		return;
+	if ((int32_t)(sr_io_now_ms() - g_toast_until) < 0)
+		return;
+	sr_toast_clear();
+	g_toast_drawn = 0;
+	sr_io_stats_emit(1);   /* the strip shares this row: give it straight back */
+}
+
+/* --- live stats overlay (Ctrl-S) -------------------------------------------
+ *
+ * A one-line strip on the BOTTOM text row. It shows the render tier, recent frame
+ * rate, transmit throughput to the player, round-trip (current / baseline-min)
+ * and the effective pipeline depth -- the very signals that drive the DSR-ACK
+ * pacing -- plus the negotiated keyboard mode. Like SyncDOOM's, it redraws only
+ * when the text changes, so refreshing it over a de-duped frame is nearly free.
+ *
+ * THE BOTTOM ROW IS THE ONLY PLACEMENT THAT WORKS. sr_io_recompute_geom() already
+ * reserves that row (a sixel reaching the last row scrolls the page), so nothing
+ * else ever paints there -- the strip cannot be overwritten by the image, and it
+ * cannot disturb it. The overlay used to sit top-right, over the image's top
+ * margin, which is exactly where ../syncconquer found it UNREADABLE: sixel shares
+ * the text plane and repaints with a slow progressive pass, so a strip drawn into
+ * it flickers and tears. Same conclusion, same fix.
+ *
+ * It shares the row with the volume toast, which takes precedence while it is up
+ * (sr_toast_tick() forces a redraw when the toast expires). */
+static int      g_stats_on;
+static char     g_ov_last[80];             /* last strip text drawn (skip redundant redraws) */
+static int      g_ov_prev_tn;              /* previous strip width (to blank cells on narrowing) */
+
+/* Frame-rate / throughput over a rolling ~2s window (SyncDOOM's model). */
+static uint32_t g_fps_win_at, g_fps_win_n;
+static uint64_t g_fps_win_bytes;
+static uint32_t g_recent_fps, g_recent_kbps;
+
+/* Count a frame ACTUALLY sent, and its wire byte size. */
+static void sr_stats_add_frame(uint32_t bytes)
+{
+	g_fps_win_n++;
+	g_fps_win_bytes += bytes;
+}
+
+/* Advance the metrics window once per frame (from sr_io_stats_tick). */
+static void sr_stats_window(void)
+{
+	uint32_t nm = sr_io_now_ms();
+
+	if (g_fps_win_at == 0) {
+		g_fps_win_at = nm;
+		return;
+	}
+	if ((int32_t)(nm - g_fps_win_at) >= 2000) {
+		uint32_t span = nm - g_fps_win_at;
+
+		g_recent_fps  = (uint32_t)(g_fps_win_n * 1000u / span);
+		g_recent_kbps = (uint32_t)(g_fps_win_bytes * 1000u / 1024u / span);
+		g_fps_win_n     = 0;
+		g_fps_win_bytes = 0;
+		g_fps_win_at    = nm;
+	}
+}
+
+/* Draw / refresh the strip. force=1 always redraws (a fresh frame just painted
+ * over it); force=0 redraws only when the readout text changed. */
+static void sr_io_stats_emit(int force)
+{
+	char txt[80], ov[192];
+	int  tn, col, ovn, aw;
+
+	/* Guard HERE, not in each caller. It used to be the callers' job, and the
+	 * moment a new one appeared -- sr_toast_tick(), handing the shared bottom row
+	 * back after a volume readout -- the strip painted itself over a session that
+	 * had never pressed Ctrl-S. */
+	if (!g_stats_on)
+		return;
+	if (g_file_mode || g_fd < 0)
+		return;   /* no live terminal to draw on */
+
+	/* tier fps KB/s lag rtt/min depth kbd. The door presents sixel only today
+	 * (JXL is detect-only), so the tier is constant -- shown for parity and so it
+	 * differentiates once a JXL present path lands. */
+	tn = snprintf(txt, sizeof txt, " sixel %ufps %uKB/s lag %u/%ums depth %d %s ",
+	              g_recent_fps, g_recent_kbps, g_rtt_ms, g_rtt_min,
+	              g_pace_depth, sr_input_keymode_name());
+
+	if (g_toast_drawn)
+		return;   /* the volume readout owns the row for its moment */
+
+	if (!force && strcmp(txt, g_ov_last) == 0)
+		return;
+	if (tn > 0 && tn < (int)sizeof g_ov_last)
+		strcpy(g_ov_last, txt);
+
+	/* Bottom row, from column 1, with an erase-to-end-of-line so a shrinking
+	 * readout leaves no tail behind (no blank-the-uncovered-cells dance, and no
+	 * cursor save/restore needed: nothing else draws on this row). */
+	(void)col; (void)aw;
+	ovn = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[K\x1b[30;46m%s\x1b[0m",
+	               sr_toast_row(), txt);
+	g_ov_prev_tn = tn;
+	if (ovn > 0) {
+		sr_out_put(ov, (size_t)ovn);
+		sr_io_out_flush();
+	}
+}
+
+void sr_io_stats_toggle(void)
+{
+	g_stats_on   = !g_stats_on;
+	g_ov_last[0] = '\0';
+	g_ov_prev_tn = 0;
+	if (g_stats_on) {
+		sr_io_stats_emit(1);    /* draw it now */
+		return;
+	}
+	/* ERASE it. The strip lives on the reserved bottom row, where the image never
+	 * paints -- so invalidating the frame (what this used to do, back when the
+	 * strip sat over the image's top margin) would repaint everything EXCEPT the
+	 * row the strip is on, and it would sit there for the rest of the session. */
+	if (!g_toast_drawn)
+		sr_toast_clear();
+}
+
+void sr_io_stats_tick(void)
+{
+	sr_toast_tick();   /* erase a volume readout whose moment has passed */
+
+	sr_stats_window();          /* keep the metrics live even while it's off */
+	if (g_stats_on)
+		sr_io_stats_emit(0);    /* refresh the readout (redraws only on change) */
 }
 
 /* --- terminal setup / teardown ---------------------------------------------- */
@@ -503,7 +723,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	static int     last_icol = -1, last_irow = -1;
 	static int     last_ew = -1, last_eh = -1;
 	uint8_t        pal[SR_PAL_BYTES];
-	size_t         npx, nrgb, n;
+	size_t         npx, nrgb, n, frame_start = 0;
 	int            pal_changed, emit_pal, force;
 
 	if (w <= 0 || h <= 0)
@@ -607,6 +827,8 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	 * frames then carry a redundant palette, which is never WRONG. */
 	emit_pal = pal_changed || !sr_input_is_syncterm();
 
+	frame_start = g_out_len;   /* wire bytes for this frame, for the stats overlay */
+
 	{   /* Save cursor, position at the centered cell, restore after -- the sixel
 		 * is drawn at the text cursor, so this is what centers it without
 		 * disturbing wherever the real cursor was. */
@@ -652,6 +874,10 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	 * exactly what the reclaim wants (a terminal that stopped answering DSR). */
 	g_pace_progress_ms = sr_io_now_ms();
 	sr_pace_dsr_sent(g_pace_progress_ms);
+
+	sr_stats_add_frame((uint32_t)(g_out_len - frame_start));
+	if (g_stats_on)
+		sr_io_stats_emit(1);   /* redraw the strip on top of the fresh frame */
 
 	sr_io_out_flush();
 }
