@@ -2226,17 +2226,17 @@ keys use the low byte for the character and 0 for the high byte.
 [options="header",cols="2,1,3"]
 |===
 | Constant     | Code   | Description
-| `shiftUp`    | 0x3800 | Shift+Up.
+| `shiftUp`    | 0x91E0 | Shift+Up.
 | `ctrlUp`     | 0x8D00 | Ctrl+Up.
 | `altUp`      | 0x9800 | Alt+Up.
-| `shiftDown`  | 0x3200 | Shift+Down.
+| `shiftDown`  | 0x96E0 | Shift+Down.
 | `ctrlDown`   | 0x9100 | Ctrl+Down.
 | `altDown`    | 0xA000 | Alt+Down.
-| `shiftLeft`  | 0x3400 | Shift+Left.
+| `shiftLeft`  | 0x93E0 | Shift+Left.
 | `ctrlLeft`   | 0x7300 | Ctrl+Left.
-| `shiftRight` | 0x3600 | Shift+Right.
+| `shiftRight` | 0x94E0 | Shift+Right.
 | `ctrlRight`  | 0x7400 | Ctrl+Right.
-| `shiftEnd`   | 0x3100 | Shift+End.
+| `shiftEnd`   | 0x95E0 | Shift+End.
 | `ctrlEnd`    | 0x7500 | Ctrl+End.
 |===
 

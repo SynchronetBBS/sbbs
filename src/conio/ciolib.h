@@ -825,15 +825,21 @@ CIOLIBEXPORT int ciokey_wait(void);
 #define CIO_KEY_CTRL_F(x)   ((x<11)?((0x5d + x) << 8):((0x7e + x) << 8))
 #define CIO_KEY_ALT_F(x)    ((x<11)?((0x67 + x) << 8):((0x80 + x) << 8))
 #define CIO_KEY_BACKTAB     (0x0f << 8)
-#define CIO_KEY_SHIFT_UP    (0x38 << 8)
+/*
+ * Shifted navigation keys are CIO-private E0-prefixed tokens.  They are
+ * not BIOS key codes; the high byte follows keypad/navigation order with
+ * gaps left for Home/PgUp/PgDn if those are ever needed:
+ *   0x91 Up, 0x93 Left, 0x94 Right, 0x95 End, 0x96 Down.
+ */
+#define CIO_KEY_SHIFT_UP    0x91E0
 #define CIO_KEY_CTRL_UP     (0x8d << 8)
-#define CIO_KEY_SHIFT_LEFT  (0x34 << 8)
+#define CIO_KEY_SHIFT_LEFT  0x93E0
 #define CIO_KEY_CTRL_LEFT   (0x73 << 8)
-#define CIO_KEY_SHIFT_RIGHT (0x36 << 8)
+#define CIO_KEY_SHIFT_RIGHT 0x94E0
 #define CIO_KEY_CTRL_RIGHT  (0x74 << 8)
-#define CIO_KEY_SHIFT_DOWN  (0x32 << 8)
+#define CIO_KEY_SHIFT_DOWN  0x96E0
 #define CIO_KEY_CTRL_DOWN   (0x91 << 8)
-#define CIO_KEY_SHIFT_END   (0x31 << 8)
+#define CIO_KEY_SHIFT_END   0x95E0
 #define CIO_KEY_CTRL_END    (0x75 << 8)
 
 #define CIO_KEY_MOUSE     0x7dE0	// This is the right mouse on Schneider/Amstrad PC1512 PC keyboards "F-14"

@@ -463,17 +463,17 @@ class Key {
   static ctrlDel     { 0x0600 }
   static altIns      { 0xA200 }
   static altDel      { 0xA300 }
-  static shiftUp     { 0x3800 }
+  static shiftUp     { 0x91E0 }
   static ctrlUp      { 0x8D00 }
   static altUp       { 0x9800 }
   static altDown     { 0xA000 }
-  static shiftLeft   { 0x3400 }
+  static shiftLeft   { 0x93E0 }
   static ctrlLeft    { 0x7300 }
-  static shiftRight  { 0x3600 }
+  static shiftRight  { 0x94E0 }
   static ctrlRight   { 0x7400 }
-  static shiftDown   { 0x3200 }
+  static shiftDown   { 0x96E0 }
   static ctrlDown    { 0x9100 }
-  static shiftEnd    { 0x3100 }
+  static shiftEnd    { 0x95E0 }
   static ctrlEnd     { 0x7500 }
   static f1          { 0x3B00 }
   static f2          { 0x3C00 }
