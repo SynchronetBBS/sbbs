@@ -575,9 +575,9 @@ static void door_setup_engine_paths(void)
  * `int *argc` through, unlike syncduke's game.c patch), every door-owned
  * token is NEUTERED in place: its g_argv[] slot is overwritten to point at
  * a static empty string, which fails every one of Parse_Command_Line's
- * checks harmlessly. -NOMOVIES itself (DESIGN.md: v1 ships no movie files)
- * is then forced into the first neutered slot, so it's always present
- * exactly once regardless of what the sysop's cmd line contained. */
+ * checks harmlessly. -NOMOVIES is no longer forced by default (FMV cutscenes
+ * play now); it's injected into the first neutered slot ONLY when the sysop
+ * sets SYNCALERT_NOMOVIES (see below). */
 static void door_sanitize_argv(void)
 {
 	static const char empty[] = "";
@@ -607,11 +607,19 @@ static void door_sanitize_argv(void)
 			g_argv[flag_index] = (char *)empty;
 		}
 	}
-	if (movies_slot > 0)
-		g_argv[movies_slot] = (char *)"-NOMOVIES";
-	else
-		fprintf(stderr, "syncalert: no door-arg slot free to force -NOMOVIES "
-		        "(a bare/no-arg dev launch) -- movies are NOT suppressed this run\n");
+	/* FMV cutscenes now default ON (user request). They were historically
+	 * force-suppressed via -NOMOVIES (silent VQA audio + heavy full-motion
+	 * bandwidth over the wire); set SYNCALERT_NOMOVIES to force that back. When
+	 * suppressing, -NOMOVIES goes into the first neutered slot so it's present
+	 * exactly once regardless of the sysop's command line. */
+	if (getenv("SYNCALERT_NOMOVIES") != NULL) {
+		if (movies_slot > 0)
+			g_argv[movies_slot] = (char *)"-NOMOVIES";
+		else
+			fprintf(stderr, "syncalert: SYNCALERT_NOMOVIES set but no door-arg slot "
+			        "free to force -NOMOVIES (a bare/no-arg dev launch) -- movies NOT "
+			        "suppressed this run\n");
+	}
 
 	/* Log the EXACT argv the engine's Parse_Command_Line() is about to scan
 	 * -- the most direct way to verify door args never reach it (a build-
