@@ -47,6 +47,11 @@ bool sndfile_available(void);
  */
 bool sndfile_decode(const char *path, int16_t **out_frames, size_t *out_nframes);
 
+/* Decode an in-memory encoded audio file into the same normalized output
+ * format as sndfile_decode().
+ */
+bool sndfile_decode_mem(const void *data, size_t len, int16_t **out_frames, size_t *out_nframes);
+
 #ifdef __cplusplus
 }
 #endif

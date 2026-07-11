@@ -29,6 +29,7 @@
 #include "xmodem.h"
 #include "xpbeep.h"
 #include "xpendian.h"
+#include "xpmap.h"
 #include "xpprintf.h"
 #include "zmodem.h"
 
@@ -47,7 +48,6 @@
 
 #ifdef WITH_JPEG_XL
 #include "libjxl.h"
-#include "xpmap.h"
 #endif
 
 #define ANSI_REPLY_BUFSIZE 2048
@@ -3113,28 +3113,32 @@ is_pbm_whitespace(char c)
 	return false;
 }
 
-bool
-read_pbm_char(FILE *f, off_t *lastpos, char *ch)
+struct pnm_reader {
+	const uint8_t *data;
+	size_t         len;
+	size_t         pos;
+};
+
+static bool
+read_pbm_char(struct pnm_reader *r, size_t *lastpos, char *ch)
 {
-	if (lastpos != NULL) {
-		*lastpos = ftello(f);
-		if (*lastpos == -1)
-			return false;
-	}
-	if (fread(ch, 1, 1, f) != 1)
+	if (lastpos != NULL)
+		*lastpos = r->pos;
+	if (r->pos >= r->len)
 		return false;
+	*ch = r->data[r->pos++];
 	return true;
 }
 
-bool
-skip_pbm_whitespace(FILE *f)
+static bool
+skip_pbm_whitespace(struct pnm_reader *r)
 {
 	char ch;
-	off_t lastpos;
+	size_t lastpos;
 	bool start = true;
 
 	for (;;) {
-		if (!read_pbm_char(f, &lastpos, &ch)) {
+		if (!read_pbm_char(r, &lastpos, &ch)) {
 			return false;
 		}
 		if (start) {
@@ -3145,36 +3149,34 @@ skip_pbm_whitespace(FILE *f)
 		}
 		if (ch == '#') {
 			do {
-				if (!read_pbm_char(f, &lastpos, &ch)) {
+				if (!read_pbm_char(r, &lastpos, &ch)) {
 					return false;
 				}
 			} while (ch != '\r' && ch != '\n');
 		}
 		if (!is_pbm_whitespace(ch)) {
-			if (fseeko(f, lastpos, SEEK_SET) != 0)
-				return false;
+			r->pos = lastpos;
 			return true;
 		}
 	}
 }
 
-uintmax_t
-read_pbm_number(FILE *f)
+static uintmax_t
+read_pbm_number(struct pnm_reader *r)
 {
 	char value[256]; // Should be big enough ;)
 	char *endptr;
 	int i;
-	off_t lastpos;
+	size_t lastpos;
 
 	for (i = 0; i < sizeof(value) - 1; i++) {
-		if (!read_pbm_char(f, &lastpos, &value[i]))
+		if (!read_pbm_char(r, &lastpos, &value[i]))
 			break;
 		if (value[i] < '0' || value[i] > '9') {
 			if (i == 0)
 				return UINTMAX_MAX;
 			value[i] = 0;
-			if (fseeko(f, lastpos, SEEK_SET) != 0)
-				return UINTMAX_MAX;
+			r->pos = lastpos;
 			return strtoumax(value, &endptr, 10);
 		}
 	}
@@ -3182,7 +3184,7 @@ read_pbm_number(FILE *f)
 }
 
 static bool
-read_pbm_text_raster(struct ciolib_mask *ret, size_t sz, FILE *f)
+read_pbm_text_raster(struct ciolib_mask *ret, size_t sz, struct pnm_reader *r)
 {
 	uintmax_t num;
 	size_t    i;
@@ -3191,7 +3193,7 @@ read_pbm_text_raster(struct ciolib_mask *ret, size_t sz, FILE *f)
 
 	memset(ret->bits, 0, (sz + 7) / 8);
 	for (i = 0; i < sz; i++) {
-		num = read_pbm_number(f);
+		num = read_pbm_number(r);
 		if (num > 1)
 			return false;
 		ret->bits[byte] |= num << bit;
@@ -3206,7 +3208,7 @@ read_pbm_text_raster(struct ciolib_mask *ret, size_t sz, FILE *f)
 }
 
 static bool
-read_pbm_raw_raster(struct ciolib_mask *ret, FILE *f)
+read_pbm_raw_raster(struct ciolib_mask *ret, struct pnm_reader *r)
 {
 	size_t  row_bytes = (ret->width + 7) / 8;
 	uint8_t src;
@@ -3214,8 +3216,9 @@ read_pbm_raw_raster(struct ciolib_mask *ret, FILE *f)
 	memset(ret->bits, 0, ((size_t)ret->width * ret->height + 7) / 8);
 	for (uint32_t y = 0; y < ret->height; y++) {
 		for (uint32_t xb = 0; xb < row_bytes; xb++) {
-			if (fread(&src, 1, 1, f) != 1)
+			if (r->pos >= r->len)
 				return false;
+			src = r->data[r->pos++];
 			for (uint32_t bit = 0; bit < 8; bit++) {
 				uint32_t x = xb * 8 + bit;
 				size_t   dst;
@@ -3233,7 +3236,7 @@ read_pbm_raw_raster(struct ciolib_mask *ret, FILE *f)
 }
 
 static bool
-read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f, uintmax_t(*readnum)(FILE *))
+read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, struct pnm_reader *r, uintmax_t(*readnum)(struct pnm_reader *))
 {
 	uintmax_t num;
 	size_t    i;
@@ -3244,19 +3247,19 @@ read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f, ui
 		pdata = 0x80000000;	// RGB value (anything less is palette)
 
 		// Red
-		num = readnum(f);
+		num = readnum(r);
 		if (num > 255)
 			return false;
 		pdata |= (pnm_gamma[num] << 16);
 
 		// Green
-		num = readnum(f);
+		num = readnum(r);
 		if (num > 255)
 			return false;
 		pdata |= (pnm_gamma[num] << 8);
 
 		// Blue
-		num = readnum(f);
+		num = readnum(r);
 		if (num > 255)
 			return false;
 		pdata |= (pnm_gamma[num] << 0);
@@ -3266,25 +3269,23 @@ read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f, ui
 }
 
 static bool
-read_ppm_text_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f)
+read_ppm_text_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, struct pnm_reader *r)
 {
-	return read_ppm_any_raster(p, sz, max, f, read_pbm_number);
+	return read_ppm_any_raster(p, sz, max, r, read_pbm_number);
 }
 
 static uintmax_t
-read_pbm_byte(FILE *f)
+read_pbm_byte(struct pnm_reader *r)
 {
-	uint8_t b;
-
-	if (fread(&b, 1, 1, f) != 1)
+	if (r->pos >= r->len)
 		return UINTMAX_MAX;
-	return b;
+	return r->data[r->pos++];
 }
 
 static bool
-read_ppm_raw_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, FILE *f)
+read_ppm_raw_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, struct pnm_reader *r)
 {
-	return read_ppm_any_raster(p, sz, max, f, read_pbm_byte);
+	return read_ppm_any_raster(p, sz, max, r, read_pbm_byte);
 }
 
 static struct ciolib_pixels *
@@ -3347,23 +3348,25 @@ alloc_ciolib_mask(uint32_t w, uint32_t h)
 }
 
 static void *
-read_pbm(const char *fn, bool bitmap)
+read_pbm_buf(const uint8_t *data, size_t len, bool bitmap)
 {
 	uintmax_t             width;
 	uintmax_t             height;
 	uintmax_t             maxval = 0;
 	uintmax_t             overflow;
-	FILE                 *f = fopen(fn, "rb");
 	struct ciolib_mask   *mret = NULL;
 	struct ciolib_pixels *pret = NULL;
 	size_t                raster_size;
 	char                  magic[2];
 	char                  ws;
 	bool                  b;
+	struct pnm_reader     r = {
+		.data = data,
+		.len = len,
+		.pos = 0
+	};
 
-	if (f == NULL)
-		goto fail;
-	if (fread(magic, sizeof(magic), 1, f) != 1)
+	if (read_pbm_char(&r, NULL, &magic[0]) == false || read_pbm_char(&r, NULL, &magic[1]) == false)
 		goto fail;
 	if (magic[0] != 'P')
 		goto fail;
@@ -3382,18 +3385,18 @@ read_pbm(const char *fn, bool bitmap)
 			goto fail;
 	}
 
-	if (!skip_pbm_whitespace(f))
+	if (!skip_pbm_whitespace(&r))
 		goto fail;
 
 	assert(UINTMAX_MAX > UINT32_MAX);
-	width = read_pbm_number(f);
+	width = read_pbm_number(&r);
 	if (width > UINT32_MAX)
 		goto fail;
 
-	if (!skip_pbm_whitespace(f))
+	if (!skip_pbm_whitespace(&r))
 		goto fail;
 
-	height = read_pbm_number(f);
+	height = read_pbm_number(&r);
 	if (height > UINT32_MAX)
 		goto fail;
 
@@ -3407,10 +3410,10 @@ read_pbm(const char *fn, bool bitmap)
 		goto fail;
 
 	if (magic[1] == '3' || magic[1] == '6') {
-		if (!skip_pbm_whitespace(f))
+		if (!skip_pbm_whitespace(&r))
 			goto fail;
 
-		maxval = read_pbm_number(f);
+		maxval = read_pbm_number(&r);
 		if (maxval == UINTMAX_MAX)
 			goto fail;
 
@@ -3419,51 +3422,60 @@ read_pbm(const char *fn, bool bitmap)
 	}
 
 	if (magic[1] == '4' || magic[1] == '6') {
-		if (!(read_pbm_char(f, NULL, &ws) && is_pbm_whitespace(ws)))
+		if (!(read_pbm_char(&r, NULL, &ws) && is_pbm_whitespace(ws)))
 			goto fail;
 	}
 	else {
-		if (!skip_pbm_whitespace(f))
+		if (!skip_pbm_whitespace(&r))
 			goto fail;
 	}
 
-	switch (magic[1]) {
-		case '1':
-		case '4':
-			mret = alloc_ciolib_mask(width, height);
-			if (mret == NULL)
+		switch (magic[1]) {
+			case '1':
+			case '4':
+				mret = alloc_ciolib_mask(width, height);
+				if (mret == NULL)
+					goto fail;
+				if (magic[1] == '1')
+					b = read_pbm_text_raster(mret, raster_size, &r);
+				else
+					b = read_pbm_raw_raster(mret, &r);
+				if (!b)
+					goto fail;
+				return mret;
+			case '3':
+			case '6':
+				pret = alloc_ciolib_pixels(width, height);
+				if (pret == NULL)
+					goto fail;
+				if (magic[1] == '3')
+					b = read_ppm_text_raster(pret, raster_size, maxval, &r);
+				else
+					b = read_ppm_raw_raster(pret, raster_size, maxval, &r);
+				if (!b)
+					goto fail;
+				return pret;
+			default:
 				goto fail;
-			if (magic[1] == '1')
-				b = read_pbm_text_raster(mret, raster_size, f);
-			else
-				b = read_pbm_raw_raster(mret, f);
-			if (!b)
-				goto fail;
-			fclose(f);
-			return mret;
-		case '3':
-		case '6':
-			pret = alloc_ciolib_pixels(width, height);
-			if (pret == NULL)
-				goto fail;
-			if (magic[1] == '3')
-				b = read_ppm_text_raster(pret, raster_size, maxval, f);
-			else
-				b = read_ppm_raw_raster(pret, raster_size, maxval, f);
-			if (!b)
-				goto fail;
-			fclose(f);
-			return pret;
-		default:
-			goto fail;
-	}
+		}
 
 fail:
 	freemask(mret);
 	freepixels(pret);
-	if (f)
-		fclose(f);
 	return NULL;
+	}
+
+static void *
+read_pbm(const char *fn, bool bitmap)
+{
+	struct xpmapping *map = xpmap(fn, XPMAP_READ);
+	void             *ret;
+
+	if (map == NULL)
+		return NULL;
+	ret = read_pbm_buf(map->addr, map->size, bitmap);
+	xpunmap(map);
+	return ret;
 }
 
 static void *
@@ -3487,16 +3499,69 @@ b64_decode_alloc(const char *strbuf, size_t slen, size_t *outlen)
 	return ret;
 }
 
+enum image_blob_type {
+	IMAGE_BLOB_PPM,
+#ifdef WITH_JPEG_XL
+	IMAGE_BLOB_JXL,
+#endif
+};
+
+#ifdef WITH_JPEG_XL
+static void *read_jxl_buf(const uint8_t *data, size_t len);
+static void *read_jxl(const char *fn);
+#endif
+
+static struct ciolib_pixels *
+read_image_source(enum image_blob_type type, const char *fn, const char *src, size_t srclen, bool blob)
+{
+	char                 *imgfn = NULL;
+	uint8_t              *buf = NULL;
+	size_t                buflen = 0;
+	struct ciolib_pixels *ret = NULL;
+
+	if (blob) {
+		buf = b64_decode_alloc(src, srclen, &buflen);
+		if (buf == NULL)
+			return NULL;
+		switch (type) {
+			case IMAGE_BLOB_PPM:
+				ret = read_pbm_buf(buf, buflen, false);
+				break;
+#ifdef WITH_JPEG_XL
+			case IMAGE_BLOB_JXL:
+				ret = read_jxl_buf(buf, buflen);
+				break;
+#endif
+		}
+		free(buf);
+		return ret;
+	}
+
+	if (asprintf(&imgfn, "%s%s", fn, src) == -1)
+		return NULL;
+	switch (type) {
+		case IMAGE_BLOB_PPM:
+			ret = read_pbm(imgfn, false);
+			break;
+#ifdef WITH_JPEG_XL
+		case IMAGE_BLOB_JXL:
+			ret = read_jxl(imgfn);
+			break;
+#endif
+	}
+	free(imgfn);
+	return ret;
+}
+
 static void
-draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
+draw_image_str_handler(char *str, size_t slen, char *fn, size_t optoff, enum image_blob_type type, bool blob)
 {
 	struct ciolib_mask   *ctmask = NULL;
 	char                 *p;
 	char                 *p2;
 	void                 *mask = NULL;
 	char                 *maskfn = NULL;
-	char                 *ppmfn = NULL;
-	struct ciolib_pixels *ppmp = NULL;
+	struct ciolib_pixels *imgp = NULL;
 	unsigned long        *val;
 	unsigned long         sx = 0; // Source X to start at
 	unsigned long         sy = 0; // Source Y to start at
@@ -3511,7 +3576,7 @@ draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 	size_t                mlen = 0;
 	bool                  mbuf = false;
 
-	for (p = str + 18; p && *p == ';'; p = strchr(p + 1, ';')) {
+	for (p = str + optoff; p && *p == ';'; p = strchr(p + 1, ';')) {
 		val = NULL;
 		switch (p[1]) {
 			case 'S':
@@ -3596,16 +3661,18 @@ draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 		*val = strtoul(p + 4, NULL, 10);
 	}
 
-	if (asprintf(&ppmfn, "%s%s", fn, p + 1) == -1)
+	if (p == NULL || *p != ';')
 		goto done;
-	ppmp = read_pbm(ppmfn, false);
-	if (ppmp == NULL)
+	if (slen <= (size_t)(p + 1 - str))
+		goto done;
+	imgp = read_image_source(type, fn, p + 1, slen - (size_t)(p + 1 - str), blob);
+	if (imgp == NULL)
 		goto done;
 
 	if (sw == 0)
-		sw = ppmp->width - sx;
+		sw = imgp->width - sx;
 	if (sh == 0)
-		sh = ppmp->height - sy;
+		sh = imgp->height - sy;
 
 	if (ctmask != NULL) {
 		if (mlen < (sw * sh + 7) / 8)
@@ -3637,27 +3704,39 @@ draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 	if (mbuf)
 		ctmask = mask_buffer;
 
-	if (ppmp != NULL)
-		setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, ppmp, ctmask);
+	if (imgp != NULL)
+		setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, imgp, ctmask);
 done:
 	free(mask);
 	free(maskfn);
 	if (!mbuf)
 		freemask(ctmask);
-	free(ppmfn);
-	freepixels(ppmp);
+	freepixels(imgp);
 }
 
 static void
-load_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
+draw_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	(void)apcd;
+	draw_image_str_handler(str, slen, fn, 18, IMAGE_BLOB_PPM, false);
+}
+
+static void
+draw_ppm_blob_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	(void)apcd;
+	draw_image_str_handler(str, slen, fn, strlen("SyncTERM:C;DrawPPMBlob"), IMAGE_BLOB_PPM, true);
+}
+
+static void
+load_image_str_handler(char *str, size_t slen, char *fn, size_t optoff, enum image_blob_type type, bool blob)
 {
 	char                 *p;
-	char                 *ppmfn = NULL;
-	struct ciolib_pixels *ppmp = NULL;
+	struct ciolib_pixels *imgp = NULL;
 	unsigned long         bufnum = 0;
 	unsigned long        *val;
 
-	for (p = str + 18; p && *p == ';'; p = strchr(p + 1, ';')) {
+	for (p = str + optoff; p && *p == ';'; p = strchr(p + 1, ';')) {
 		val = NULL;
 		switch (p[1]) {
 			case 'B':
@@ -3675,48 +3754,85 @@ load_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
 	freepixels(pixmap_buffer[bufnum]);
 	pixmap_buffer[bufnum] = NULL;
 
-	if (asprintf(&ppmfn, "%s%s", fn, p + 1) == -1)
+	if (p == NULL || *p != ';')
 		goto done;
-	ppmp = read_pbm(ppmfn, false);
-	if (ppmp == NULL)
+	if (slen <= (size_t)(p + 1 - str))
 		goto done;
-	pixmap_buffer[bufnum] = ppmp;
-	free(ppmfn);
+	imgp = read_image_source(type, fn, p + 1, slen - (size_t)(p + 1 - str), blob);
+	if (imgp == NULL)
+		goto done;
+	pixmap_buffer[bufnum] = imgp;
 	return;
 
 done:
-	free(ppmfn);
-	freepixels(ppmp);
+	freepixels(imgp);
 }
 
 static void
-load_pbm_str_handler(char *str, size_t slen, char *fn, void *apcd)
+load_ppm_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	(void)apcd;
+	load_image_str_handler(str, slen, fn, 18, IMAGE_BLOB_PPM, false);
+}
+
+static void
+load_ppm_blob_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	(void)apcd;
+	load_image_str_handler(str, slen, fn, strlen("SyncTERM:C;LoadPPMBlob"), IMAGE_BLOB_PPM, true);
+}
+
+static void
+load_pbm_str_handler_common(char *str, size_t slen, char *fn, size_t optoff, bool blob)
 {
 	char               *p;
 	char               *maskfn = NULL;
+	uint8_t            *buf = NULL;
+	size_t              buflen = 0;
 
-	p = str + 18;
+	p = str + optoff;
+	if (*p != ';' || slen <= (size_t)(p + 1 - str))
+		return;
+	freemask(mask_buffer);
+	mask_buffer = NULL;
+	if (blob) {
+		buf = b64_decode_alloc(p + 1, slen - (size_t)(p + 1 - str), &buflen);
+		if (buf == NULL)
+			return;
+		mask_buffer = read_pbm_buf(buf, buflen, true);
+		free(buf);
+		return;
+	}
 	if (asprintf(&maskfn, "%s%s", fn, p + 1) == -1)
 		goto done;
-	freemask(mask_buffer);
 	mask_buffer = read_pbm(maskfn, true);
 
 done:
 	free(maskfn);
 }
 
+static void
+load_pbm_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	(void)apcd;
+	load_pbm_str_handler_common(str, slen, fn, 18, false);
+}
+
+static void
+load_pbm_blob_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	(void)apcd;
+	load_pbm_str_handler_common(str, slen, fn, strlen("SyncTERM:C;LoadPBMBlob"), true);
+}
+
 #ifdef WITH_JPEG_XL
 static void *
-read_jxl(const char *fn)
+read_jxl_buf(const uint8_t *data, size_t len)
 {
-	struct xpmapping *map = xpmap(fn, XPMAP_READ);
 	struct ciolib_pixels *pret = NULL;
 	uint8_t         *pbuf = NULL;
 	uintmax_t        width = 0;
 	uintmax_t        height = 0;
-
-	if (map == NULL)
-		return map;
 
 	JxlDecoderStatus st;
 	JxlBasicInfo info;
@@ -3729,7 +3845,6 @@ read_jxl(const char *fn)
 	};
 	JxlDecoder *dec = Jxl.DecoderCreate(NULL);
 	if (dec == NULL) {
-		xpunmap(map);
 		return NULL;
 	}
 #ifdef WITH_JPEG_XL_THREADS
@@ -3744,17 +3859,11 @@ read_jxl(const char *fn)
 		}
 	}
 #endif
-	if (Jxl.DecoderSetInput(dec, map->addr, map->size) != JXL_DEC_SUCCESS) {
-		xpunmap(map);
-		Jxl.DecoderDestroy(dec);
-		return NULL;
-	}
+	if (Jxl.DecoderSetInput(dec, data, len) != JXL_DEC_SUCCESS)
+		goto fail;
 	Jxl.DecoderCloseInput(dec);
-	if (Jxl.DecoderSubscribeEvents(dec, JXL_DEC_BASIC_INFO | JXL_DEC_FULL_IMAGE) != JXL_DEC_SUCCESS) {
-		xpunmap(map);
-		Jxl.DecoderDestroy(dec);
-		return NULL;
-	}
+	if (Jxl.DecoderSubscribeEvents(dec, JXL_DEC_BASIC_INFO | JXL_DEC_FULL_IMAGE) != JXL_DEC_SUCCESS)
+		goto fail;
 	for (bool done = false; !done;) {
 		st = Jxl.DecoderProcessInput(dec);
 		switch(st) {
@@ -3832,211 +3941,59 @@ read_jxl(const char *fn)
 		Jxl.ResizableParallelRunnerDestroy(rpr);
 #endif
 	Jxl.DecoderReleaseInput(dec);
-	xpunmap(map);
 	Jxl.DecoderDestroy(dec);
 	return pret;
+
+fail:
+	free(pbuf);
+	freepixels(pret);
+#ifdef WITH_JPEG_XL_THREADS
+	if (rpr)
+		Jxl.ResizableParallelRunnerDestroy(rpr);
+#endif
+	Jxl.DecoderDestroy(dec);
+	return NULL;
+}
+
+static void *
+read_jxl(const char *fn)
+{
+	struct xpmapping *map = xpmap(fn, XPMAP_READ);
+	void             *ret;
+
+	if (map == NULL)
+		return NULL;
+	ret = read_jxl_buf(map->addr, map->size);
+	xpunmap(map);
+	return ret;
 }
 
 static void
 draw_jxl_str_handler(char *str, size_t slen, char *fn, void *apcd)
 {
-	struct ciolib_mask   *ctmask = NULL;
-	char                 *p;
-	char                 *p2;
-	void                 *mask = NULL;
-	char                 *maskfn = NULL;
-	char                 *jxlfn = NULL;
-	struct ciolib_pixels *jxlp = NULL;
-	unsigned long        *val;
-	unsigned long         sx = 0; // Source X to start at
-	unsigned long         sy = 0; // Source Y to start at
-	unsigned long         sw = 0; // Source width to show
-	unsigned long         sh = 0; // Source height to show
-	unsigned long         dx = 0; // Destination X to start at
-	unsigned long         dy = 0; // Destination Y to start at
-	unsigned long         mx = 0; // Mask X to start at
-	unsigned long         my = 0; // Mask Y to start at
-	unsigned long         mw = 0; // Width of the mask
-	unsigned long         mh = 0; // Height of the mask
-	size_t                mlen = 0;
-	bool                  mbuf = false;
+	(void)apcd;
+	draw_image_str_handler(str, slen, fn, 18, IMAGE_BLOB_JXL, false);
+}
 
-	for (p = str + 18; p && *p == ';'; p = strchr(p + 1, ';')) {
-		val = NULL;
-		switch (p[1]) {
-			case 'S':
-				switch (p[2]) {
-					case 'X':
-						val = &sx;
-						break;
-					case 'Y':
-						val = &sy;
-						break;
-					case 'W':
-						val = &sw;
-						break;
-					case 'H':
-						val = &sh;
-						break;
-				}
-				break;
-			case 'D':
-				switch (p[2]) {
-					case 'X':
-						val = &dx;
-						break;
-					case 'Y':
-						val = &dy;
-						break;
-				}
-				break;
-			case 'M':
-				if (p[2] == 'X') {
-					val = &mx;
-					break;
-				}
-				if (p[2] == 'Y') {
-					val = &my;
-					break;
-				}
-				if (p[2] == 'W') {
-					val = &mw;
-					break;
-				}
-				if (p[2] == 'H') {
-					val = &mh;
-					break;
-				}
-				if (strncmp(p + 2, "FILE=", 5) == 0) {
-					p2 = strchr(p + 7, ';');
-					if (p2 == NULL)
-						goto done;
-					if (!mbuf)
-						freemask(ctmask);
-					mbuf = false;
-					ctmask = NULL;
-					free(mask);
-					mask = strndup(p + 7, p2 - p - 7);
-					continue; // Avoid val check
-				}
-				else if (strncmp(p + 2, "ASK=", 4) == 0) {
-					p2 = strchr(p + 6, ';');
-					if (p2 == NULL)
-						goto done;
-					FREE_AND_NULL(mask);
-					if (!mbuf)
-						freemask(ctmask);
-					mbuf = false;
-					ctmask = alloc_ciolib_mask(0, 0);
-					ctmask->bits = b64_decode_alloc(p + 6, p2 - (p + 6), &mlen);
-					if (ctmask->bits == NULL)
-						goto done;
-					continue; // Avoid val check
-				}
-				else if (strncmp(p + 2, "BUF", 3) == 0) {
-					freemask(ctmask);
-					ctmask = NULL;
-					mbuf = true;
-					continue; // Avoid val check
-				}
-				break;
-		}
-		if (val == NULL || p[3] != '=')
-			break;
-		*val = strtoul(p + 4, NULL, 10);
-	}
-
-	if (asprintf(&jxlfn, "%s%s", fn, p + 1) == -1)
-		goto done;
-	jxlp = read_jxl(jxlfn);
-	if (jxlp == NULL)
-		goto done;
-
-	if (sw == 0)
-		sw = jxlp->width - sx;
-	if (sh == 0)
-		sh = jxlp->height - sy;
-
-	if (ctmask != NULL) {
-		if (mlen < (sw * sh + 7) / 8)
-			goto done;
-		if (mw == 0)
-			mw = sw;
-		if (mh == 0)
-			mh = sh;
-		if (mlen < (mw * mh + 7) / 8)
-			goto done;
-		ctmask->width = mw;
-		ctmask->height = mh;
-	}
-
-	if (mask != NULL) {
-		if (asprintf(&maskfn, "%s%s", fn, (char*)mask) < 0)
-			goto done;
-	}
-
-	if (maskfn != NULL) {
-		freemask(ctmask);
-		ctmask = read_pbm(maskfn, true);
-		if (ctmask == NULL)
-			goto done;
-		if (ctmask->width < sw || ctmask->height < sh)
-			goto done;
-	}
-
-	if (mbuf)
-		ctmask = mask_buffer;
-
-	if (jxlp != NULL)
-		setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, jxlp, ctmask);
-done:
-	free(mask);
-	free(maskfn);
-	if (!mbuf)
-		freemask(ctmask);
-	free(jxlfn);
-	freepixels(jxlp);
+static void
+draw_jxl_blob_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	(void)apcd;
+	draw_image_str_handler(str, slen, fn, strlen("SyncTERM:C;DrawJXLBlob"), IMAGE_BLOB_JXL, true);
 }
 
 static void
 load_jxl_str_handler(char *str, size_t slen, char *fn, void *apcd)
 {
-	char                 *p;
-	char                 *jxlfn = NULL;
-	struct ciolib_pixels *jxlp = NULL;
-	unsigned long         bufnum = 0;
-	unsigned long        *val;
+	(void)apcd;
+	load_image_str_handler(str, slen, fn, 18, IMAGE_BLOB_JXL, false);
+}
 
-	for (p = str + 18; p && *p == ';'; p = strchr(p + 1, ';')) {
-		val = NULL;
-		switch (p[1]) {
-			case 'B':
-				val = &bufnum;
-				break;
-		}
-		if (val == NULL || p[2] != '=')
-			break;
-		*val = strtoul(p + 3, NULL, 10);
-	}
-
-	if (bufnum >= sizeof(pixmap_buffer) / sizeof(pixmap_buffer[0]))
-		goto done;
-
-	freepixels(pixmap_buffer[bufnum]);
-	pixmap_buffer[bufnum] = NULL;
-
-	if (asprintf(&jxlfn, "%s%s", fn, p + 1) == -1)
-		goto done;
-	jxlp = read_jxl(jxlfn);
-	if (jxlp == NULL)
-		goto done;
-	pixmap_buffer[bufnum] = jxlp;
-	free(jxlfn);
-	return;
-
-done:
-	free(jxlfn);
-	freepixels(jxlp);
+static void
+load_jxl_blob_str_handler(char *str, size_t slen, char *fn, void *apcd)
+{
+	(void)apcd;
+	load_image_str_handler(str, slen, fn, strlen("SyncTERM:C;LoadJXLBlob"), IMAGE_BLOB_JXL, true);
 }
 #endif
 
@@ -4313,17 +4270,29 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 		free(buf);
 		fclose(f);
 	}
+	else if (strncmp(strbuf, "SyncTERM:C;LoadPPMBlob", 22) == 0) {
+	        // Load PPM blob into memory buffer
+		load_ppm_blob_str_handler(strbuf, slen, fn, apcd);
+	}
 	else if (strncmp(strbuf, "SyncTERM:C;LoadPPM", 18) == 0) {
-                // Load PPM into memory buffer
+	                // Load PPM into memory buffer
 		load_ppm_str_handler(strbuf, slen, fn, apcd);
 	}
+	else if (strncmp(strbuf, "SyncTERM:C;LoadPBMBlob", 22) == 0) {
+	                // Load PBM blob into memory buffer
+		load_pbm_blob_str_handler(strbuf, slen, fn, apcd);
+	}
 	else if (strncmp(strbuf, "SyncTERM:C;LoadPBM", 18) == 0) {
-                // Load PPM into memory buffer
+	                // Load PBM into memory buffer
 		load_pbm_str_handler(strbuf, slen, fn, apcd);
 	}
 #ifdef WITH_JPEG_XL
+	else if (strncmp(strbuf, "SyncTERM:C;LoadJXLBlob", 22) == 0) {
+	                // Load JPEG XL blob into memory buffer
+		load_jxl_blob_str_handler(strbuf, slen, fn, apcd);
+	}
 	else if (strncmp(strbuf, "SyncTERM:C;LoadJXL", 18) == 0) {
-                // Load JPEG XL into memory buffer
+	                // Load JPEG XL into memory buffer
 		load_jxl_str_handler(strbuf, slen, fn, apcd);
 	}
 #endif
@@ -4447,12 +4416,20 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 			fclose(f);
 		}
 	}
+	else if (strncmp(strbuf, "SyncTERM:C;DrawPPMBlob", 22) == 0) {
+                // Request to draw a 255 max PPM blob
+		draw_ppm_blob_str_handler(strbuf, slen, fn, apcd);
+	}
 	else if (strncmp(strbuf, "SyncTERM:C;DrawPPM", 18) == 0) {
                 // Request to draw a 255 max PPM file from cache
 		//SyncTERM:C;DrawPPM;SX=x;SY=y;SW=w;SH=hDX=x;Dy=y;
 		draw_ppm_str_handler(strbuf, slen, fn, apcd);
 	}
 #ifdef WITH_JPEG_XL
+	else if (strncmp(strbuf, "SyncTERM:C;DrawJXLBlob", 22) == 0) {
+                // Request to draw a JPEG XL blob
+		draw_jxl_blob_str_handler(strbuf, slen, fn, apcd);
+	}
 	else if (strncmp(strbuf, "SyncTERM:C;DrawJXL", 18) == 0) {
                 // Request to draw a JPEG XL file from cache
 		//SyncTERM:C;DrawJXL;SX=x;SY=y;SW=w;SH=hDX=x;Dy=y;

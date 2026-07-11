@@ -22,6 +22,7 @@
  */
 
 #include "audio_apc.h"
+#include "base64.h"
 #include "xp_sndfile.h"
 
 #include <ctype.h>
@@ -190,6 +191,27 @@ parse_shape(const char *s)
 	return -1;
 }
 
+static void *
+apc_b64_decode_alloc(const char *strbuf, size_t slen, size_t *outlen)
+{
+	void  *ret;
+	int    ol;
+	size_t sz;
+
+	sz = (slen + 3) / 4 * 3 + 1;
+	ret = malloc(sz);
+	if (!ret)
+		return NULL;
+	ol = b64_decode(ret, sz, strbuf, slen);
+	if (ol == -1) {
+		free(ret);
+		return NULL;
+	}
+	if (outlen != NULL)
+		*outlen = ol;
+	return ret;
+}
+
 /* ----- verb handlers ----- */
 
 static void
@@ -233,6 +255,45 @@ do_load(struct cterminal *cterm, char *str, char *fn)
 	frames = NULL;                /* ownership transferred */
 done:
 	free(audiofn);
+	free(frames);
+}
+
+static void
+do_load_blob(char *str, size_t slen)
+{
+	char         *p;
+	char         *end;
+	uint8_t      *blob = NULL;
+	int16_t      *frames = NULL;
+	size_t        bloblen = 0;
+	size_t        nframes = 0;
+	unsigned long slot = AUDIO_APC_PATCH_SLOTS;
+
+	for (p = str; p && *p == ';'; p = strchr(p + 1, ';')) {
+		if (p[1] == 'S' && p[2] == '=') {
+			slot = strtoul(p + 3, &end, 10);
+			continue;
+		}
+		break;
+	}
+	if (slot >= AUDIO_APC_PATCH_SLOTS)
+		goto done;
+	if (p == NULL || *p != ';')
+		goto done;
+	if (slen <= (size_t)(p + 1 - str))
+		goto done;
+	blob = apc_b64_decode_alloc(p + 1, slen - (size_t)(p + 1 - str), &bloblen);
+	if (blob == NULL)
+		goto done;
+	if (!sndfile_decode_mem(blob, bloblen, &frames, &nframes))
+		goto done;
+
+	free(patches[slot].frames);
+	patches[slot].frames = frames;
+	patches[slot].nframes = nframes;
+	frames = NULL;
+done:
+	free(blob);
 	free(frames);
 }
 
@@ -540,7 +601,9 @@ audio_apc_handler(char *strbuf, size_t slen, char *fn, void *apcd)
 
 	/* strbuf starts at the verb, e.g. "Load;S=0;test.wav".  Find the
 	 * first ';' — everything beyond is the arg list. */
-	if (strncmp(strbuf, "Load", 4) == 0 && (strbuf[4] == ';' || strbuf[4] == '\0'))
+	if (strncmp(strbuf, "LoadBlob", 8) == 0 && (strbuf[8] == ';' || strbuf[8] == '\0'))
+		do_load_blob(strbuf + 8, slen - 8);
+	else if (strncmp(strbuf, "Load", 4) == 0 && (strbuf[4] == ';' || strbuf[4] == '\0'))
 		do_load(cterm, strbuf + 4, fn);
 	else if (strncmp(strbuf, "Synth", 5) == 0 && (strbuf[5] == ';' || strbuf[5] == '\0'))
 		do_synth(strbuf + 5);

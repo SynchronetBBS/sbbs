@@ -2,7 +2,7 @@
  * xp_sndfile.c — syncterm-local libsndfile wrapper (see xp_sndfile.h).
  *
  * All three build modes (WITHOUT / WITH / STATIC SNDFILE) produce a
- * pair of callable symbols (sndfile_available + sndfile_decode) and
+ * set of callable symbols (sndfile_available + decode helpers) and
  * share the same decode-and-resample logic; only the symbol-lookup
  * strategy changes.  See the macro / typedef switch below for the
  * WITH_SNDFILE dlopen indirection.
@@ -11,6 +11,7 @@
 #include "xp_sndfile.h"
 
 #include <stdlib.h>   /* malloc, free */
+#include <stdio.h>    /* SEEK_* */
 #include <string.h>   /* memset */
 
 #if defined(WITHOUT_SNDFILE)
@@ -24,6 +25,15 @@ bool sndfile_available(void)
 bool sndfile_decode(const char *path, int16_t **out_frames, size_t *out_nframes)
 {
 	(void)path;
+	if (out_frames)  *out_frames  = NULL;
+	if (out_nframes) *out_nframes = 0;
+	return false;
+}
+
+bool sndfile_decode_mem(const void *data, size_t len, int16_t **out_frames, size_t *out_nframes)
+{
+	(void)data;
+	(void)len;
 	if (out_frames)  *out_frames  = NULL;
 	if (out_nframes) *out_nframes = 0;
 	return false;
@@ -44,6 +54,7 @@ sndfile_ensure_loaded(void)
 }
 
 #define SF_CALL_open(path, mode, info)          sf_open(path, mode, info)
+#define SF_CALL_open_virtual(vio, mode, info, data) sf_open_virtual(vio, mode, info, data)
 #define SF_CALL_readf_short(sf, ptr, frames)    sf_readf_short(sf, ptr, frames)
 #define SF_CALL_close(sf)                       sf_close(sf)
 
@@ -63,6 +74,7 @@ sndfile_available(void)
 static struct sndfile_api {
 	dll_handle   dl;
 	SNDFILE *  (*open_fn)(const char *path, int mode, SF_INFO *info);
+	SNDFILE *  (*open_virtual_fn)(SF_VIRTUAL_IO *sfvirtual, int mode, SF_INFO *sfinfo, void *user_data);
 	sf_count_t (*readf_short)(SNDFILE *sf, short *ptr, sf_count_t frames);
 	int        (*close_fn)(SNDFILE *sf);
 } sf_api;
@@ -86,10 +98,12 @@ sndfile_ensure_loaded(void)
 		return false;
 
 	sf_api.open_fn     = xp_dlsym(sf_api.dl, sf_open);
+	sf_api.open_virtual_fn = xp_dlsym(sf_api.dl, sf_open_virtual);
 	sf_api.readf_short = xp_dlsym(sf_api.dl, sf_readf_short);
 	sf_api.close_fn    = xp_dlsym(sf_api.dl, sf_close);
 
-	if (sf_api.open_fn == NULL || sf_api.readf_short == NULL || sf_api.close_fn == NULL) {
+	if (sf_api.open_fn == NULL || sf_api.open_virtual_fn == NULL
+	    || sf_api.readf_short == NULL || sf_api.close_fn == NULL) {
 		xp_dlclose(sf_api.dl);
 		sf_api.dl = NULL;
 		return false;
@@ -99,6 +113,7 @@ sndfile_ensure_loaded(void)
 }
 
 #define SF_CALL_open(path, mode, info)          sf_api.open_fn(path, mode, info)
+#define SF_CALL_open_virtual(vio, mode, info, data) sf_api.open_virtual_fn(vio, mode, info, data)
 #define SF_CALL_readf_short(sf, ptr, frames)    sf_api.readf_short(sf, ptr, frames)
 #define SF_CALL_close(sf)                       sf_api.close_fn(sf)
 
@@ -213,16 +228,53 @@ resample_to_s16_stereo_44100(const int16_t *src, size_t src_nframes, int src_cha
 	return dst;
 }
 
-bool
-sndfile_decode(const char *path, int16_t **out_frames, size_t *out_nframes)
+static bool
+decode_sndfile(SNDFILE *sf, const SF_INFO *info, int16_t **out_frames, size_t *out_nframes)
 {
-	SNDFILE     *sf        = NULL;
-	SF_INFO      info;
 	int16_t     *raw       = NULL;
 	int16_t     *converted = NULL;
 	size_t       raw_bytes;
 	sf_count_t   read;
 	size_t       converted_n;
+
+	if (sf == NULL || info == NULL || out_frames == NULL || out_nframes == NULL)
+		return false;
+	if (info->frames <= 0 || info->channels <= 0 || info->samplerate <= 0)
+		goto fail;
+
+	/* Allocate a buffer for the native interleaved int16 read.  One
+	 * frame = `info.channels` samples; libsndfile handles the internal
+	 * format conversion to S16 via sf_readf_short. */
+	raw_bytes = (size_t)info->frames * (size_t)info->channels * sizeof(int16_t);
+	raw = (int16_t *)malloc(raw_bytes);
+	if (raw == NULL)
+		goto fail;
+	read = SF_CALL_readf_short(sf, raw, info->frames);
+	if (read <= 0)
+		goto fail;
+
+	converted = resample_to_s16_stereo_44100(raw, (size_t)read,
+	                                         info->channels, info->samplerate,
+	                                         &converted_n);
+	if (converted == NULL)
+		goto fail;
+
+	free(raw);
+	*out_frames  = converted;
+	*out_nframes = converted_n;
+	return true;
+
+fail:
+	free(raw);
+	return false;
+}
+
+bool
+sndfile_decode(const char *path, int16_t **out_frames, size_t *out_nframes)
+{
+	SNDFILE     *sf = NULL;
+	SF_INFO      info;
+	bool         ret;
 
 	if (out_frames)  *out_frames  = NULL;
 	if (out_nframes) *out_nframes = 0;
@@ -235,37 +287,114 @@ sndfile_decode(const char *path, int16_t **out_frames, size_t *out_nframes)
 	sf = SF_CALL_open(path, SFM_READ, &info);
 	if (sf == NULL)
 		return false;
-	if (info.frames <= 0 || info.channels <= 0 || info.samplerate <= 0)
-		goto fail;
-
-	/* Allocate a buffer for the native interleaved int16 read.  One
-	 * frame = `info.channels` samples; libsndfile handles the internal
-	 * format conversion to S16 via sf_readf_short. */
-	raw_bytes = (size_t)info.frames * (size_t)info.channels * sizeof(int16_t);
-	raw = (int16_t *)malloc(raw_bytes);
-	if (raw == NULL)
-		goto fail;
-	read = SF_CALL_readf_short(sf, raw, info.frames);
-	if (read <= 0)
-		goto fail;
-
-	converted = resample_to_s16_stereo_44100(raw, (size_t)read,
-	                                         info.channels, info.samplerate,
-	                                         &converted_n);
-	if (converted == NULL)
-		goto fail;
-
+	ret = decode_sndfile(sf, &info, out_frames, out_nframes);
 	SF_CALL_close(sf);
-	free(raw);
-	*out_frames  = converted;
-	*out_nframes = converted_n;
-	return true;
+	return ret;
+}
 
-fail:
-	if (sf != NULL)
-		SF_CALL_close(sf);
-	free(raw);
-	return false;
+struct sndfile_mem {
+	const uint8_t *data;
+	sf_count_t    len;
+	sf_count_t    pos;
+};
+
+static sf_count_t
+sndfile_mem_len(void *user_data)
+{
+	struct sndfile_mem *mem = user_data;
+
+	return mem->len;
+}
+
+static sf_count_t
+sndfile_mem_seek(sf_count_t offset, int whence, void *user_data)
+{
+	struct sndfile_mem *mem = user_data;
+	sf_count_t          pos;
+
+	switch (whence) {
+		case SEEK_SET:
+			pos = offset;
+			break;
+		case SEEK_CUR:
+			pos = mem->pos + offset;
+			break;
+		case SEEK_END:
+			pos = mem->len + offset;
+			break;
+		default:
+			return -1;
+	}
+	if (pos < 0 || pos > mem->len)
+		return -1;
+	mem->pos = pos;
+	return mem->pos;
+}
+
+static sf_count_t
+sndfile_mem_read(void *ptr, sf_count_t count, void *user_data)
+{
+	struct sndfile_mem *mem = user_data;
+	sf_count_t          avail;
+
+	if (count <= 0)
+		return 0;
+	avail = mem->len - mem->pos;
+	if (count > avail)
+		count = avail;
+	memcpy(ptr, mem->data + mem->pos, (size_t)count);
+	mem->pos += count;
+	return count;
+}
+
+static sf_count_t
+sndfile_mem_write(const void *ptr, sf_count_t count, void *user_data)
+{
+	(void)ptr;
+	(void)count;
+	(void)user_data;
+	return 0;
+}
+
+static sf_count_t
+sndfile_mem_tell(void *user_data)
+{
+	struct sndfile_mem *mem = user_data;
+
+	return mem->pos;
+}
+
+bool
+sndfile_decode_mem(const void *data, size_t len, int16_t **out_frames, size_t *out_nframes)
+{
+	static SF_VIRTUAL_IO vio = {
+		.get_filelen = sndfile_mem_len,
+		.seek = sndfile_mem_seek,
+		.read = sndfile_mem_read,
+		.write = sndfile_mem_write,
+		.tell = sndfile_mem_tell
+	};
+	struct sndfile_mem mem;
+	SNDFILE            *sf;
+	SF_INFO             info;
+	bool                ret;
+
+	if (out_frames)  *out_frames  = NULL;
+	if (out_nframes) *out_nframes = 0;
+	if (data == NULL || len > SF_COUNT_MAX || out_frames == NULL || out_nframes == NULL)
+		return false;
+	if (!sndfile_ensure_loaded())
+		return false;
+	mem.data = data;
+	mem.len = (sf_count_t)len;
+	mem.pos = 0;
+	memset(&info, 0, sizeof(info));
+	sf = SF_CALL_open_virtual(&vio, SFM_READ, &info, &mem);
+	if (sf == NULL)
+		return false;
+	ret = decode_sndfile(sf, &info, out_frames, out_nframes);
+	SF_CALL_close(sf);
+	return ret;
 }
 
 #endif /* !WITHOUT_SNDFILE */

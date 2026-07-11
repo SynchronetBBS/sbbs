@@ -781,6 +781,10 @@ is available.  If you are adding features to a forked version of cterm,
 please do so by	adding an extra parameter to the end, not by
 incrementing any existing one!
 
+SyncTERM APC blob verbs (`DrawPPMBlob`, `DrawJXLBlob`, `LoadPPMBlob`,
+`LoadJXLBlob`, `LoadPBMBlob`, and audio `LoadBlob`) are available in
+revision 1.329 and later.
+
 SOURCE: <<ECMA-48>>
 
 === `CSI < Ps c` CTerm Device Attributes (`CTDA`)
@@ -2697,6 +2701,12 @@ does not support more than 255 values per colour channel
 and assumes it is correctly using the BT.709 gamma
 transfer.
 
+=== `APC SyncTERM:C;DrawPPMBlob Ps... Ps1 ST` Draw a PPM Blob (`CTDPB`)
+Draws a base64-encoded PPM directly on the screen without storing it in
+the cache directory. +
+`Ps1` is the base64-encoded PPM data and is required.  `Ps` supports the
+same arguments as `DrawPPM`.
+
 === `APC SyncTERM:C;DrawJXL Ps... Ps1 ST` Draw a JPEG XL from Cache (`CTDJFC`)
 Draws a JPEG XL from the cache directory on the screen. +
 `Ps1` is the filename and is required.  Arguments for
@@ -2761,6 +2771,13 @@ Draws a JPEG XL from the cache directory on the screen. +
 |Uses the loaded mask buffer.
 |===
 
+=== `APC SyncTERM:C;DrawJXLBlob Ps... Ps1 ST` Draw a JPEG XL Blob (`CTDJB`)
+Draws a base64-encoded JPEG XL directly on the screen without storing it
+in the cache directory. +
+`Ps1` is the base64-encoded JPEG XL data and is required.  `Ps` supports
+the same arguments as `DrawJXL`.  JXL support remains runtime-dependent;
+use `APC SyncTERM:Q;JXL ST` before selecting this verb.
+
 === `APC SyncTERM:C;LoadPPM Ps... Ps0 ST` Load a PPM to Buffer (`CTLPTB`)
 Loads a PPM to a buffer.  Ps0 is the filename +
 
@@ -2771,6 +2788,11 @@ Loads a PPM to a buffer.  Ps0 is the filename +
 |`B=#`
 |Selects the buffer (0 or 1 only) to paste from.
 |===
+
+=== `APC SyncTERM:C;LoadPPMBlob Ps... Ps0 ST` Load a PPM Blob to Buffer (`CTLPBB`)
+Loads a base64-encoded PPM directly to a buffer without storing it in the
+cache directory.  `Ps0` is the base64-encoded PPM data.  `Ps` supports
+the same arguments as `LoadPPM`.
 
 === `APC SyncTERM:C;LoadJXL Ps... Ps0 ST` Load a JPEG XL to Buffer (`CTLJTB`)
 Loads a JPEG XL to a buffer.  Ps0 is the filename
@@ -2783,8 +2805,18 @@ Loads a JPEG XL to a buffer.  Ps0 is the filename
 |Selects the buffer (0 or 1 only) to paste from.
 |===
 
+=== `APC SyncTERM:C;LoadJXLBlob Ps... Ps0 ST` Load a JPEG XL Blob to Buffer (`CTLJBB`)
+Loads a base64-encoded JPEG XL directly to a buffer without storing it in
+the cache directory.  `Ps0` is the base64-encoded JPEG XL data.  `Ps`
+supports the same arguments as `LoadJXL`.  JXL support remains
+runtime-dependent; use `APC SyncTERM:Q;JXL ST` before selecting this verb.
+
 === `APC SyncTERM:C;LoadPBM Ps... Ps0 ST` Load a PBM to Buffer (`CTLPBTB`)
 Loads a PBM to a buffer.  Ps0 is the filename
+
+=== `APC SyncTERM:C;LoadPBMBlob Ps0 ST` Load a PBM Blob to Buffer (`CTLPBBB`)
+Loads a base64-encoded PBM directly to the mask buffer without storing it
+in the cache directory.  `Ps0` is the base64-encoded PBM data.
 
 === `APC SyncTERM:P;Copy Ps... ST` Copy Screen into Buffer (`CTCSIB`)
 Copies a portion of the screen into an internal pixel buffer for use with the
@@ -2982,6 +3014,13 @@ Errors are silent.  The BBS can confirm an action succeeded by querying
 Decodes `<filename>` (a file previously uploaded via `SyncTERM:C;S`)
 into slot `N` using libsndfile.  Silently ignored if libsndfile is not
 available — query `SyncTERM:Q;libsndfile` first to confirm.
+
+==== `APC SyncTERM:A;LoadBlob;S=N;<data> ST` Load patch from Blob (`CTALB`)
+Decodes base64-encoded audio file data directly into slot `N` using
+libsndfile without storing it in the cache directory.  Silently ignored
+if libsndfile is not available — query `SyncTERM:Q;libsndfile` first to
+confirm.  Raw headerless PCM is not inferred; use an audio container
+format with enough metadata for libsndfile to decode it.
 
 ==== `APC SyncTERM:A;Synth;S=N;W=<shape>;F=<hz>;T=<dur> ST` Synthesize patch (`CTAS`)
 Generates a waveform into slot `N`.  Shapes: `SIN`, `SAW`, `SQ`,
