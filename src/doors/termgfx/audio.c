@@ -132,6 +132,42 @@ size_t termgfx_audio_cache_pcm(uint8_t **buf, size_t *cap, const char *file,
 	return n;
 }
 
+size_t termgfx_audio_load_blob_file(uint8_t **buf, size_t *cap, int slot,
+                                    const void *data, size_t bytes)
+{
+	size_t   b64len = 4 * ((bytes + 2) / 3);
+	size_t   need   = b64len + 48;               // verb header + ST + slack
+	uint8_t *p;
+
+	if (need > *cap) {
+		*buf = realloc(*buf, need);
+		*cap = need;
+	}
+	p  = *buf;
+	p += sprintf((char *)p, "\x1b_SyncTERM:A;LoadBlob;S=%d;", slot);  // no cache file
+	p += b64_encode((char *)p, data, bytes);                          // base64 payload
+	memcpy(p, "\x1b\\", 2); p += 2;                                   // ST
+	return (size_t)(p - *buf);
+}
+
+size_t termgfx_audio_load_blob(uint8_t **buf, size_t *cap, int slot,
+                               const void *data, size_t bytes,
+                               int bits, int channels, int rate)
+{
+	size_t   wavlen = 44 + bytes;
+	size_t   n;
+	uint8_t *wav;
+
+	wav = malloc(wavlen);
+	if (wav == NULL)
+		return 0;
+	wav_header(wav, bytes, bits, channels, rate);
+	memcpy(wav + 44, data, bytes);
+	n = termgfx_audio_load_blob_file(buf, cap, slot, wav, wavlen);  // wrap-then-Blob
+	free(wav);
+	return n;
+}
+
 // ---- Ogg/Opus encode (optional, libsndfile) ------------------------------
 
 #ifdef TERMGFX_WITH_SNDFILE

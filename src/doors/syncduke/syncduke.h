@@ -79,6 +79,7 @@ int  syncduke_evdev_active(void);                   /* 1 if SyncTERM physical ke
 uint32_t syncduke_rtt(void);                        /* smoothed RTT (ms); drives native-vs-synthetic turn */
 int  syncduke_turn_native(void);                    /* 1 if turn keys use the native hold (low-latency true-key-up) */
 int  syncduke_jxl_supported(void);                  /* 1 if SyncTERM can decode JXL (CTQJS reply); -> JXL/APC tier */
+int  syncduke_img_blob_ok(void);                    /* 1 if CTerm >= 1.329: draw JXL inline (DrawJXLBlob, no cache) */
 int  syncduke_have_sixel(void);                     /* 1 if the terminal advertised sixel (DA1/CTDA cap 4 or SyncTERM) */
 int  syncduke_probe_replied(void);                  /* 1 once the terminal answered the DA capability probe */
 int  syncduke_term_px_w(void);                      /* terminal pixel-canvas width from probe, 0 if unknown */

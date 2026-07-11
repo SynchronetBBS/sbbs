@@ -412,6 +412,8 @@ int syncduke_is_syncterm(void) { return g_is_syncterm; }
  * present path serves the JXL/APC tier (far smaller frames) instead of sixel. */
 static int g_jxl_supported;
 int syncduke_jxl_supported(void) { return g_jxl_supported; }
+static int g_img_blob_ok;   /* CTerm >= 1.329: draw JXL inline (DrawJXLBlob, no cache) */
+int syncduke_img_blob_ok(void) { return g_img_blob_ok; }
 
 /* Sixel support + "the terminal answered our capability probe at all", from the
  * device-attributes reply: DA1 (ESC[c -> ESC[?...c) param 4 = sixel; CTDA
@@ -1317,6 +1319,12 @@ static void csi_final(char fin, int gameplay, int now)
 						if (kn > 0)
 							syncduke_out_put(ks, kn);   /* arms the held-key settle window */
 					}
+				}
+				/* CTerm >= 1.329: enable inline A;LoadBlob audio (the DA1 reply
+				 * "ESC[=67;84;101;114;109;MAJ;MIN;...c" carries the version). */
+				if (termgfx_caps_cterm_version(p, np, (char)csi_par[0]) >= TERMGFX_CTERM_VER_BLOB) {
+					termgfx_audio_set_blob_ok(sd_audio, 1);
+					g_img_blob_ok = 1;   /* DrawJXLBlob: inline video frames */
 				}
 			}
 			return;

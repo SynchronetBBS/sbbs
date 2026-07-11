@@ -1400,6 +1400,7 @@ static int g_probe_replied;    /* any 'c' (DA1/CTDA) reply seen */
 static int g_is_syncterm;      /* CTDA '<'/'=' marker, or a JXL-query answer */
 static int g_have_sixel;       /* DA1/CTDA param 4 */
 static int g_jxl_supported;    /* Q;JXL answered 1 */
+static int g_img_blob_ok;      /* CTerm >= 1.329: draw JXL/PPM inline (no cache file) */
 static int g_grid_rows, g_grid_cols;   /* text grid, from the 999;999 cursor-report fallback */
 static int g_canvas_w, g_canvas_h;     /* pixel canvas -- exact (ESC[14t) or grid*8x16 estimate */
 static int g_px_exact;                 /* g_canvas_w/h came from an exact ESC[4;h;wt reply */
@@ -1705,8 +1706,13 @@ static size_t door_emit_jxl(const uint8_t *fb, const uint8_t *pal8, int ew, int 
 	n = termgfx_jxl_encode(&g_jxl_buf, &g_jxl_cap, rgb, ew, eh, 2.0f, 1);
 	if (n == 0)
 		return 0;
-	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, "syncalert_frame.jxl", "DrawJXL",
-	                         g_jxl_buf, n, dx, dy);
+	/* Per-session cache name (SF syncterm #256): two SyncTERM windows on the same
+	 * dialing-entry share one cache dir, so a fixed frame name would collide. */
+	static char name[32];
+	if (name[0] == '\0')
+		snprintf(name, sizeof name, "syncalert_%08x.jxl", termgfx_session_salt());
+	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, name, "DrawJXL",
+	                         g_jxl_buf, n, dx, dy, g_img_blob_ok);
 }
 #endif
 
@@ -1727,8 +1733,11 @@ static size_t door_emit_ppm(const uint8_t *fb, const uint8_t *pal8, int ew, int 
 		return 0;
 	memcpy(g_ppm_buf, hdr, hlen);
 	memcpy(g_ppm_buf + hlen, rgb, (size_t)ew * eh * 3);
-	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, "syncalert_frame.ppm", "DrawPPM",
-	                         g_ppm_buf, need, dx, dy);
+	static char name[32];   /* per-session cache name (SF syncterm #256) */
+	if (name[0] == '\0')
+		snprintf(name, sizeof name, "syncalert_%08x.ppm", termgfx_session_salt());
+	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, name, "DrawPPM",
+	                         g_ppm_buf, need, dx, dy, g_img_blob_ok);
 }
 
 static int g_rt_mode = -1, g_rt_cols, g_rt_rows;
@@ -2064,12 +2073,14 @@ static void door_stats_draw(int force)
 		snprintf(rate, sizeof rate, "%u Kbps", g_bps / 1000);
 
 	bpf = g_tstat[tier].frames ? g_tstat[tier].bytes / g_tstat[tier].frames : 0;
-	snprintf(t, sizeof t, " %s %dfps %s d%d %s/%s %s %ums %dx%d %dx%d %dx%d %lluB/f ",
+	snprintf(t, sizeof t, " %s %dfps %s d%d %s/%s %s%s %ums %dx%d %dx%d %dx%d %lluB/f ",
 	         sa_tier_name(tier), g_fps, rate, g_auto_depth,
 	         door_io_evdev_active()      ? "evdev"
 	         : door_input_kitty_active() ? "kitty" : "legacy",
 	         g_mouse_pixels ? "pixel" : "cell",
-	         door_term_is_utf8() ? "utf8" : "cp437", (unsigned)g_rtt_ms,
+	         door_term_is_utf8() ? "utf8" : "cp437",
+	         (g_img_blob_ok && (tier == SA_JXL || tier == SA_PPM)) ? " blob" : "",   /* frames shipping inline (Draw*Blob), no cache */
+	         (unsigned)g_rtt_ms,
 	         g_canvas_w, g_canvas_h, g_grid_cols, g_grid_rows, cw, ch, bpf);
 	/* \x1b[K (erase to end of line) BEFORE the reset clears any leftover tail
 	 * from a previous, longer readout (the line is variable length) and, since
@@ -2409,6 +2420,14 @@ static void door_csi_final(char fin)
 							door_out_put(ks, kn);   /* arms the held-key settle window */
 					}
 				}
+			}
+			/* CTerm >= 1.329 adds the APC blob media verbs. The CTDA reply has no
+			 * version field, but the DA1 reply ("ESC[=67;84;101;114;109;MAJ;MIN;
+			 * ...c") does -- enable inline A;LoadBlob audio streaming so cutscene
+			 * chunks skip the C;S cache entirely (no-op on older SyncTERM). */
+			if (termgfx_caps_cterm_version(p, np, (char)g_csi_par[0]) >= TERMGFX_CTERM_VER_BLOB) {
+				termgfx_audio_set_blob_ok(g_audio, 1);
+				g_img_blob_ok = 1;   /* DrawJXLBlob/DrawPPMBlob: inline video frames */
 			}
 			return;
 		case 'n':   /* CTerm state report: our Q;JXL reply is ESC[=1;{0,1}n */

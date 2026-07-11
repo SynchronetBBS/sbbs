@@ -541,9 +541,10 @@ static void sr_io_stats_emit(int force)
 	/* tier fps KB/s lag rtt/min depth kbd. The door presents sixel only today
 	 * (JXL is detect-only), so the tier is constant -- shown for parity and so it
 	 * differentiates once a JXL present path lands. */
-	tn = snprintf(txt, sizeof txt, " sixel %ufps %uKB/s lag %u/%ums depth %d %s ",
+	tn = snprintf(txt, sizeof txt, " sixel %ufps %uKB/s lag %u/%ums depth %d %s%s ",
 	              g_recent_fps, g_recent_kbps, g_rtt_ms, g_rtt_min,
-	              g_pace_depth, sr_input_keymode_name());
+	              g_pace_depth, sr_input_keymode_name(),
+	              sr_audio_blob_active() ? " a-blob" : "");   /* audio streaming inline (A;LoadBlob) */
 
 	if (g_toast_drawn)
 		return;   /* the volume readout owns the row for its moment */

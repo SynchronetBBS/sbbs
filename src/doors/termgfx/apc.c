@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "genwrap.h"   /* xpdev: GetCurrentProcessId() -- getpid() on POSIX */
 
 // base64 (RFC 4648, no line breaks) -> SyncTERM's b64_decode_alloc()
 static const char b64tab[] =
@@ -34,9 +35,21 @@ static size_t b64_encode(char *out, const uint8_t *in, size_t len)
 	return o;
 }
 
+unsigned termgfx_session_salt(void)
+{
+	static unsigned salt;
+
+	if (salt == 0) {
+		salt = (unsigned)GetCurrentProcessId();
+		if (salt == 0)
+			salt = 1;   /* 0 is the "not computed yet" sentinel */
+	}
+	return salt;
+}
+
 size_t termgfx_apc_image(uint8_t **buf, size_t *cap,
                          const char *file, const char *drawverb,
-                         const uint8_t *payload, size_t n, int dx, int dy)
+                         const uint8_t *payload, size_t n, int dx, int dy, int blob)
 {
 	size_t   b64len = 4 * ((n + 2) / 3);                        // base64 chars (no terminator)
 	size_t   need   = strlen(file) * 2 + strlen(drawverb) + 96 + b64len;
@@ -46,10 +59,17 @@ size_t termgfx_apc_image(uint8_t **buf, size_t *cap,
 		*buf = realloc(*buf, need);
 		*cap = need;
 	}
-	p  = *buf;
-	p += sprintf((char *)p, "\x1b_SyncTERM:C;S;%s;", file);     // Store header
-	p += b64_encode((char *)p, payload, n);                    // base64 payload
-	memcpy(p, "\x1b\\", 2); p += 2;                            // ST
-	p += sprintf((char *)p, "\x1b_SyncTERM:C;%s;DX=%d;DY=%d;%s\x1b\\", drawverb, dx, dy, file);
+	p = *buf;
+	if (blob) {
+		// CTerm >= 1.329: draw inline, no C;S Store / cache-file write.
+		p += sprintf((char *)p, "\x1b_SyncTERM:C;%sBlob;DX=%d;DY=%d;", drawverb, dx, dy);
+		p += b64_encode((char *)p, payload, n);                // base64 payload
+		memcpy(p, "\x1b\\", 2); p += 2;                        // ST
+	} else {
+		p += sprintf((char *)p, "\x1b_SyncTERM:C;S;%s;", file);     // Store header
+		p += b64_encode((char *)p, payload, n);                    // base64 payload
+		memcpy(p, "\x1b\\", 2); p += 2;                            // ST
+		p += sprintf((char *)p, "\x1b_SyncTERM:C;%s;DX=%d;DY=%d;%s\x1b\\", drawverb, dx, dy, file);
+	}
 	return (size_t)(p - *buf);
 }

@@ -50,6 +50,12 @@ void termgfx_audio_feed(termgfx_audio_t *m, const uint8_t *buf, int len);
 int  termgfx_audio_tier(const termgfx_audio_t *m);
 void termgfx_audio_set_tier(termgfx_audio_t *m, int tier);
 
+// Tell the manager the client supports the A;LoadBlob audio verb (SyncTERM
+// CTerm version >= 1329 -- see termgfx_caps_cterm_version()). When set, the
+// streaming path ships chunks inline with no cache file. Off by default, so a
+// client that never proves the capability keeps the legacy Store+Load path.
+void termgfx_audio_set_blob_ok(termgfx_audio_t *m, int ok);
+
 // Play sound `id` (0..1023) as a one-shot SFX on the next pooled channel from
 // raw PCM (`bits` 8|16, `channels`, `rate`); the manager wraps it in a WAV and
 // Stores it once. `vol` 0..100, `pan` -100..+100.

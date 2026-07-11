@@ -699,12 +699,16 @@ static void pack_rgb(const uint32_t *fb, int w, int h)
 	}
 }
 
-// base64 `bytes` and push: Store(<file>) then <drawverb>(<file>) -- via termgfx/apc.c.
+static int g_cterm_version = 0; // CTerm/SyncTERM version maj*1000+min (DA1 reply); 0 = unknown
+
+// base64 `bytes` and push: Store(<file>) then <drawverb>(<file>) -- or, on
+// CTerm >= 1.329, DrawJXLBlob/DrawPPMBlob inline (no cache file) -- via termgfx/apc.c.
 static void emit_cached_image(const char *file, const char *drawverb,
                               const uint8_t *bytes, size_t n)
 {
 	size_t len = termgfx_apc_image(&s_apc, &s_apc_cap, file, drawverb,
-	                               bytes, n, g_img_x, g_img_y);   // DX/DY center in the canvas
+	                               bytes, n, g_img_x, g_img_y,     // DX/DY center in the canvas
+	                               g_cterm_version >= TERMGFX_CTERM_VER_BLOB);   // inline blob if new enough
 	out_put(s_apc, len);
 }
 
@@ -717,7 +721,12 @@ static void emit_frame_ppm(int w, int h)
 	ensure(&s_img, &s_img_cap, need);
 	memcpy(s_img, hdr, hlen);
 	memcpy(s_img + hlen, s_rgb, (size_t)w * h * 3);
-	emit_cached_image("syncdoom_frame.ppm", "DrawPPM", s_img, need);
+	{
+		static char name[32];   // per-session cache name (SF syncterm #256)
+		if (name[0] == '\0')
+			snprintf(name, sizeof name, "syncdoom_%08x.ppm", termgfx_session_salt());
+		emit_cached_image(name, "DrawPPM", s_img, need);
+	}
 }
 
 // Sixel tier: a complete DECSIXEL image drawn at the home position so each frame
@@ -816,7 +825,12 @@ static bool emit_frame_jxl(int w, int h)
 	size_t n = termgfx_jxl_encode(&s_img, &s_img_cap, s_rgb, w, h, g_jxl_distance, g_jxl_effort);
 	if (n == 0)
 		return false;
-	emit_cached_image("syncdoom_frame.jxl", "DrawJXL", s_img, n);
+	{
+		static char name[32];   // per-session cache name (SF syncterm #256)
+		if (name[0] == '\0')
+			snprintf(name, sizeof name, "syncdoom_%08x.jxl", termgfx_session_salt());
+		emit_cached_image(name, "DrawJXL", s_img, n);
+	}
 	return true;
 }
 #endif // WITH_JXL
@@ -878,11 +892,13 @@ static void emit_overlay(int force)
 			snprintf(kbd, sizeof(kbd), " %s/%s",
 			         g_evdev_active ? "evdev" : "kitty",
 			         sd_turn_native() ? "nat" : "syn");
-		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s%s ",
+		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s%s%s ",
 		              (g_mode == MODE_SIXEL && g_sixel_fullres) ? "sixel-full" : mode_name(g_mode),
 		              g_recent_fps, bw, g_rtt_ms, g_rtt_min,
 		              max_inflight(), g_inflight_auto ? "/auto" : "",
-		              kbd);
+		              kbd,
+		              ((g_mode == MODE_JXL || g_mode == MODE_PPM)
+		               && g_cterm_version >= TERMGFX_CTERM_VER_BLOB) ? " blob" : "");   // frames inline (Draw*Blob)
 	}
 
 	if (!force && strcmp(txt, g_ov_last) == 0)
@@ -2069,7 +2085,6 @@ static void raw_input_off(void)
 // ---------------------------------------------------------------------------
 
 static int g_jxl_pref = -1;
-static int g_cterm_version = 0; // CTerm/SyncTERM version maj*1000+min (DA1 reply); 0 = unknown
 
 #ifdef WITH_JXL
 // One-time startup handshake: ask SyncTERM whether it can decode JXL.
@@ -2224,11 +2239,15 @@ static int probe_sixel(void)
 								}
 							}
 							done = 1;                // definitive answer
-						} else if (np >= 7 && p[0] == 67 && p[1] == 84 &&
-						           p[2] == 101 && p[3] == 114 && p[4] == 109) {
-							g_cterm_version = p[5] * 1000 + p[6];    // "CTerm" maj.min
-							if (g_cterm_version >= 1002)             // SyncTERM >= 1.2 has APC PPM
-								g_is_syncterm = 1;
+						} else {
+							int ver = termgfx_caps_cterm_version(p, np, marker);
+							if (ver >= 0) {
+								g_cterm_version = ver;               // "CTerm" maj.min
+								if (ver >= TERMGFX_CTERM_VER_PPM)    // SyncTERM >= 1.2 has APC PPM
+									g_is_syncterm = 1;
+								if (ver >= TERMGFX_CTERM_VER_BLOB)   // A;LoadBlob inline audio (no cache)
+									termgfx_audio_set_blob_ok(sd_audio, 1);
+							}
 							// version only -- keep reading for the '<' CTDA reply
 						}
 					}

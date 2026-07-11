@@ -33,6 +33,11 @@ void   sr_audio_init(void);
 void   sr_audio_start(int rate);
 /* Emit the libsndfile capability query. Call from the io probe. */
 void   sr_audio_probe(void);
+/* Enable inline A;LoadBlob streaming (no cache file). Call from the DA1 probe
+ * reply when the client's CTerm version is >= 1329. Off by default. */
+void   sr_audio_set_blob_ok(int ok);
+/* 1 when the audio stream is shipping inline via A;LoadBlob (for the stats). */
+int    sr_audio_blob_active(void);
 /* The probe reply: tier 1 = libsndfile (stream), 0 = tone-only, -1 = none.
  * Anything but 1 disables the module permanently -- a Load the terminal ignores
  * would leave a Queue playing an empty slot. */

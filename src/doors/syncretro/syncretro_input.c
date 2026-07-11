@@ -747,6 +747,10 @@ static void sr_csi_final(char fin)
 					}
 				}
 			}
+			/* CTerm >= 1.329: stream game audio inline via A;LoadBlob (no cache
+			 * ring). Version is in the DA1 reply "ESC[=67;...;MAJ;MIN;...c". */
+			if (termgfx_caps_cterm_version(p, np, (char)csi_par[0]) >= TERMGFX_CTERM_VER_BLOB)
+				sr_audio_set_blob_ok(1);
 			return;
 
 		case 'n':   /* CTerm state report: JXL cap, audio cap, audio channel state */

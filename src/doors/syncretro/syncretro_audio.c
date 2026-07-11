@@ -37,6 +37,7 @@ static int        g_held_n;
 
 static unsigned   g_ring;         /* next cache name index */
 static int        g_have_silence; /* s/z uploaded */
+static int        g_blob_ok;      /* client supports A;LoadBlob (CTerm >= 1.329) */
 
 /* Telemetry, printed at shutdown. */
 static unsigned   g_underruns;
@@ -72,11 +73,37 @@ static void sr_audio_play(const char *name)
 	g_chunks++;
 }
 
-/* Upload an encoded chunk under the next ring name, then play it. */
+/* Enable the inline A;LoadBlob path (CTerm >= 1.329). Set from the input layer
+ * once the DA1 reply's version is known; until then we stay on the cache ring. */
+void sr_audio_set_blob_ok(int ok)
+{
+	g_blob_ok = ok ? 1 : 0;
+}
+
+/* 1 once the inline-blob path is active (streaming chunks skip the cache ring).
+ * For the stats overlay -- retro's video is sixel, so blob only ever applies to
+ * the audio stream here. */
+int sr_audio_blob_active(void)
+{
+	return g_blob_ok;
+}
+
+/* Ship one encoded chunk. On a CTerm >= 1.329 client, inline it via A;LoadBlob
+ * (no cache file, no ring churn); otherwise upload under the next ring name and
+ * play it by name. Unique game-audio chunks never repeat, so the blob path is a
+ * pure win where available. (The named "s/z" silence chunk stays cached -- it
+ * IS replayed, so upload-once-by-name still beats re-sending it.) */
 static void sr_audio_send(const uint8_t *ogg, size_t len)
 {
 	char name[16];
 
+	if (g_blob_ok) {
+		sr_apc(termgfx_audio_load_blob_file(&g_apc, &g_apc_cap, SR_AUDIO_SLOT, ogg, len));
+		sr_apc(termgfx_audio_queue(&g_apc, &g_apc_cap, SR_AUDIO_CH, SR_AUDIO_SLOT, 100, 0, 0));
+		sr_apc(termgfx_audio_update(&g_apc, &g_apc_cap, SR_AUDIO_CH));
+		g_chunks++;
+		return;
+	}
 	sr_audio_name(name, sizeof name, g_ring++);
 	sr_apc(termgfx_audio_cache_file(&g_apc, &g_apc_cap, name, ogg, len));
 	sr_audio_play(name);

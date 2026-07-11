@@ -59,6 +59,7 @@ struct termgfx_audio {
 	termgfx_audio_emit_fn emit;
 	void *ctx;
 	int tier;                              // -1 unknown/none, 0 tone, 1 digital
+	int blob_ok;                           // client supports A;LoadBlob (CTerm >= 1.329)
 
 	uint8_t sfx_up[KEYMAX];                // id has been C;S-Stored (sfx file)
 	int sfx_dur[KEYMAX];                   // exact play time (ms) captured at Store/transcode
@@ -367,6 +368,12 @@ void termgfx_audio_set_tier(termgfx_audio_t *m, int tier)
 {
 	if (m != NULL)
 		m->tier = tier;
+}
+
+void termgfx_audio_set_blob_ok(termgfx_audio_t *m, int ok)
+{
+	if (m != NULL)
+		m->blob_ok = ok ? 1 : 0;
 }
 
 // ---- SFX -----------------------------------------------------------------
@@ -972,25 +979,33 @@ void termgfx_audio_music_stop(termgfx_audio_t *m)
 void termgfx_audio_stream_chunk(termgfx_audio_t *m, const void *pcm, size_t bytes,
                                 int bits, int channels, int rate, int vol)
 {
-	static unsigned seq;
-	char            leaf[16], fn[64];
-	int             slot;
+	int slot;
 
 	if (m == NULL || m->tier < 1 || pcm == NULL || bytes == 0)
 		return;
-	// Rotate through a small fixed set of cache names so a whole cutscene leaves
-	// ~32 files, not hundreds: A;Queue copies the loaded buffer onto the channel
-	// FIFO, so a name is safe to overwrite once its (immediately following) Load
-	// has run -- 32 chunks of reuse lag is far more than that.
-	snprintf(leaf, sizeof leaf, "%u", seq);
-	seq = (seq + 1) & 31;
-	cache_name(m, "strm", leaf, fn, sizeof fn);
 	slot         = m->next_slot;
 	m->next_slot = SFX_SLOT_LO + ((m->next_slot - SFX_SLOT_LO + 1) % (NSLOT - SFX_SLOT_LO));
 
-	send_buf(m, termgfx_audio_cache_pcm(&m->buf, &m->cap, fn, pcm, bytes, bits, channels, rate),
-	         TERMGFX_AUDIO_BULK);
-	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, slot, fn), TERMGFX_AUDIO_BULK);
+	if (m->blob_ok) {
+		// CTerm >= 1.329: ship the chunk inline via A;LoadBlob -- no cache file
+		// at all, so a whole cutscene leaves zero on-disk churn (vs. the rotating
+		// names below). A;Queue then copies the slot onto the channel FIFO.
+		send_buf(m, termgfx_audio_load_blob(&m->buf, &m->cap, slot, pcm, bytes, bits, channels, rate),
+		         TERMGFX_AUDIO_BULK);
+	} else {
+		static unsigned seq;
+		char            leaf[16], fn[64];
+		// Legacy path: Store to a rotating cache name, then Load. A;Queue copies
+		// the loaded buffer onto the FIFO, so a name is safe to overwrite once
+		// its (immediately following) Load has run -- 32 names of reuse lag is
+		// far more than the FIFO ever holds, bounding a cutscene to ~32 files.
+		snprintf(leaf, sizeof leaf, "%u", seq);
+		seq = (seq + 1) & 31;
+		cache_name(m, "strm", leaf, fn, sizeof fn);
+		send_buf(m, termgfx_audio_cache_pcm(&m->buf, &m->cap, fn, pcm, bytes, bits, channels, rate),
+		         TERMGFX_AUDIO_BULK);
+		send_buf(m, termgfx_audio_load(&m->buf, &m->cap, slot, fn), TERMGFX_AUDIO_BULK);
+	}
 	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, slot, vol, 0, 0),
 	         TERMGFX_AUDIO_BULK);
 }

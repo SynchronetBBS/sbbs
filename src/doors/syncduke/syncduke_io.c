@@ -436,8 +436,13 @@ static size_t syncduke_emit_jxl(const uint8_t *fb, const uint8_t *pal, int w, in
 	n = termgfx_jxl_encode(&syncduke_jxl, &syncduke_jxl_cap, syncduke_rgb, w, h, 2.0f, 1);
 	if (n == 0)
 		return 0;
-	n = termgfx_apc_image(&syncduke_apc, &syncduke_apc_cap, "syncduke_frame.jxl", "DrawJXL",
-	                      syncduke_jxl, n, dx, dy);
+	/* Per-session cache name (SF syncterm #256): avoid collision between two
+	 * SyncTERM windows sharing one dialing-entry cache dir. */
+	static char name[32];
+	if (name[0] == '\0')
+		snprintf(name, sizeof name, "syncduke_%08x.jxl", termgfx_session_salt());
+	n = termgfx_apc_image(&syncduke_apc, &syncduke_apc_cap, name, "DrawJXL",
+	                      syncduke_jxl, n, dx, dy, syncduke_img_blob_ok());
 	syncduke_out_put(syncduke_apc, n);
 	return n;
 }
@@ -934,10 +939,11 @@ static void syncduke_emit_overlay(int force)
 				snprintf(kbd, sizeof(kbd), " %s/%s",
 				         syncduke_evdev_active() ? "evdev" : "kitty",
 				         syncduke_turn_native() ? "nat" : "syn");
-			tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s ",
+			tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s%s ",
 			              sd_tier_name(syncduke_last_tier),
 			              fps, bw, rtt, rmin, syncduke_eff_depth(), syncduke_inflight_auto ? "/auto" : "", kb, enc,
-			              kbd);
+			              kbd,
+			              (syncduke_last_tier == 1 && syncduke_img_blob_ok()) ? " blob" : "");   /* JXL inline (DrawJXLBlob) */
 		}
 	}
 	if (tn < 0)

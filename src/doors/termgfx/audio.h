@@ -88,6 +88,18 @@ size_t termgfx_audio_voc_to_pcm(const void *voc, size_t len, uint8_t **pcm, int 
 // A;Load -- decode the cached `file` into patch slot `slot` (0..255).
 size_t termgfx_audio_load(uint8_t **buf, size_t *cap, int slot, const char *file);
 
+// A;LoadBlob -- decode an already-encoded audio file (`data`/`bytes`: WAV, OGG,
+// etc.) directly into patch slot `slot`, base64'd inline, with NO cache file
+// (SyncTERM >= CTerm 1.329; query the version first). Lets transient audio --
+// streamed cutscene/game chunks -- skip the C;S Store + on-disk cache churn.
+size_t termgfx_audio_load_blob_file(uint8_t **buf, size_t *cap, int slot,
+                                    const void *data, size_t bytes);
+
+// As above, but wraps raw PCM (`bits`/`channels`/`rate`) in a WAV header first.
+size_t termgfx_audio_load_blob(uint8_t **buf, size_t *cap, int slot,
+                               const void *data, size_t bytes,
+                               int bits, int channels, int rate);
+
 // A;Queue -- play slot `slot` on channel `ch` (2..15). `vol` is 0..100; `pan`
 // is -100 (full left) .. 0 (center) .. +100 (full right), mapped linearly to
 // the VL/VR keys; `loop` != 0 sets the L flag.
