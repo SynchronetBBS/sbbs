@@ -7,6 +7,10 @@
 # linux/, freebsd/, darwin/, ... -- so these patterns have NO leading slash and
 # match at any depth.
 
+# The live syncretro.ini (seeded from syncretro.example.ini by the installer) is
+# intentionally NOT ignored here -- leave it untracked so a sysop's edited config
+# is visible in `git status` rather than silently invisible.
+
 # The deployed door binary (built by src/doors/syncretro's build.sh/build.bat)
 syncretro
 syncretro.exe

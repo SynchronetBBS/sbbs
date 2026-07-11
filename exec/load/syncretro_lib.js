@@ -1,9 +1,22 @@
-// syncivision_lib.js -- model layer for the SyncRetro (Intellivision) lobby.
+// syncretro_lib.js -- model layer for every SyncRetro console lobby.
 //
 // UI-FREE: no console, no bbs, no user. Everything it needs is passed in. That
-// is what lets tests/test_syncivision_lib.js drive it under jsexec, where those
-// objects do not exist. lobby.js layers the screen and the door command line on
-// top. See src/doors/syncretro/LAUNCHER.md.
+// is what lets xtrn/syncivision/tests/test_syncretro_lib.js drive it under
+// jsexec, where those objects do not exist. Each console's lobby.js layers the
+// screen and the door command line on top.
+// See src/doors/syncretro/LAUNCHER.md and M3_MULTICORE.md.
+//
+// WHY IT LIVES IN exec/load/ AND NOT IN THE DOOR DIR: it serves SEVERAL install
+// dirs -- xtrn/syncivision (Intellivision), xtrn/syncnes (NES), and whatever
+// console comes next -- which all run the same door binary against a different
+// libretro core. A lib serving ONE door belongs in that door's dir (see
+// syncdoom_lib.js, syncduke_lib.js); a lib serving several belongs here, beside
+// game_lobby.js. Copying it per console would fork it, and it would drift.
+//
+// NOTHING HERE KNOWS WHICH CONSOLE IT IS. The console's identity (name, id) and
+// its ROM rules (extensions, size band, BIOS images to reject) arrive as data,
+// from the [console] and [roms] sections of that install's syncretro.ini --
+// which the C door reads too, so the two halves cannot disagree.
 //
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
@@ -63,20 +76,105 @@ function sv_parse_title(filename)
 // aliases which -- over the install's SMB view -- are indistinguishable from
 // regular files, so readlink() is useless and dedupe must go by content.
 
-// exec.bin and grom.bin. Rejected by CONTENT, so a re-dropped ROM set cannot
-// smuggle one back in under a cartridge's name.
-var SV_BIOS_MD5 = [
-	"62e761035cb657903761800f4437b8af",   // exec.bin, 8192 bytes
-	"0cd5946c6473e42e8e4c2137785e427f"    // grom.bin, 2048 bytes
-];
+// --- the console's rules, as data ---------------------------------------------
+//
+// These were Intellivision constants in the code. They are now whatever that
+// install's syncretro.ini says, because "which files in roms/ are cartridges"
+// is a fact about the CONSOLE, not about the launcher:
+//
+//   Intellivision  .int/.bin/.rom   2 KB - 64 KB   rejects exec.bin + grom.bin
+//   NES            .nes/.unf/.unif  8 KB - 4 MB    no BIOS at all
+//                                                  (.fds DOES need disksys.rom)
+//
+// A BIOS is rejected by CONTENT as well as by name, so that a re-dropped ROM set
+// cannot smuggle one back into the picker under a cartridge's name -- and by
+// name as well as by content, since a re-dumped BIOS hashes differently but is
+// still not a game. A console with no BIOS (the NES) simply lists neither.
 
-// The BIOS by name as well as by content: a re-dumped exec.bin has a different
-// hash but is still not a cartridge.
-var SV_BIOS_NAMES = ["exec.bin", "grom.bin"];
+// "64k" / "4m" / "8192" -> bytes. An unparseable value takes the default rather
+// than becoming 0, which would silently reject every ROM.
+function sv_size(v, dflt)
+{
+	var m = String(v == null ? "" : v).trim().toLowerCase().match(/^(\d+)\s*([km]?)b?$/);
 
-// The entire Intellivision cartridge range. Anything outside it is not a game.
-var SV_MIN_SIZE = 2 * 1024;
-var SV_MAX_SIZE = 64 * 1024;
+	if (!m)
+		return dflt;
+	return parseInt(m[1], 10) * (m[2] === "k" ? 1024 : m[2] === "m" ? 1024 * 1024 : 1);
+}
+
+// A list, from either an array (a console spec, written in JS) or a comma-
+// separated string (an ini value, typed by a sysop). Both spellings mean the
+// same thing, so callers never have to care which they were handed.
+function sv_list(v)
+{
+	var a;
+
+	if (v == null)
+		return [];
+	a = (v instanceof Array) ? v : String(v).split(",");
+	return a.map(function (s) { return String(s).trim(); })
+	        .filter(function (s) { return s !== ""; });
+}
+
+// The discovery rules: what a cartridge looks like ON THIS CONSOLE. They come
+// from the console's spec (its lobby.js), not from configuration -- a sysop
+// hides a ROM or moves the roms dir, but a sysop does not redefine what an NES
+// cartridge is. Only `dir` and `exclude` are overridable from syncretro.ini,
+// which the lobby does after calling this.
+function sv_rules(spec)
+{
+	var r = {
+		dir:        "roms",
+		ext:        [],
+		exclude:    [],
+		min_size:   1,
+		max_size:   16 * 1024 * 1024,
+		bios_md5:   [],
+		bios_names: []
+	};
+
+	if (!spec)
+		return r;
+	if (spec.dir_name)
+		r.dir = String(spec.dir_name);
+	/* [".nes", "unf"] and ".nes, unf" must mean the same thing. */
+	r.ext = sv_list(spec.ext).map(function (e) {
+		return e.replace(/^\./, "").toLowerCase();
+	});
+	r.exclude    = sv_list(spec.exclude);
+	r.min_size   = sv_size(spec.min_size, r.min_size);
+	r.max_size   = sv_size(spec.max_size, r.max_size);
+	r.bios_md5   = sv_list(spec.bios_md5).map(function (h) { return h.toLowerCase(); });
+	r.bios_names = sv_list(spec.bios_names).map(function (n) { return n.toLowerCase(); });
+	return r;
+}
+
+// The console's identity. `id` is DERIVED from `short` -- lower-cased and
+// stripped to alphanumerics, because it names a directory (the per-user save
+// dir) and a filename (the ROM cache), and a sysop's display string must never
+// be able to reach either. It is not a separate key: a separate key is a thing
+// to get out of step with the name beside it.
+function sv_console(spec)
+{
+	var c = { name: "", short: "", profile: "pad", core: "", id: "" };
+
+	if (spec) {
+		if (spec.name)
+			c.name = String(spec.name);
+		if (spec.short)
+			c.short = String(spec.short);
+		if (spec.profile)
+			c.profile = String(spec.profile).toLowerCase();
+		if (spec.core)
+			c.core = String(spec.core);
+	}
+	if (c.short === "")
+		c.short = c.name;
+	if (c.name === "")
+		c.name = c.short;
+	c.id = c.short.toLowerCase().replace(/[^a-z0-9]+/g, "");
+	return c;
+}
 
 // Only these characters break out of the double quotes the door command line
 // wraps a ROM path in. See LAUNCHER.md sec 8.
@@ -98,6 +196,82 @@ function sv_file_md5(path, bytes)
 	if (data === null || data === undefined)
 		return "";
 	return md5_calc(data, true);
+}
+
+// --- the discovery cache ------------------------------------------------------
+//
+// Discovery used to open, read and hash EVERY candidate on EVERY lobby entry.
+// The arithmetic was never the problem: the round trips were. The install is an
+// SMB mount, so a remote node paid one open + read + close per cartridge across
+// the wire just to draw a menu -- a visible startup delay on a 200-ROM set, and
+// unusable on the thousands a larger console's ROM set carries.
+//
+// So the hash is cached, keyed by the file's name + size + mtime. A warm run
+// opens exactly ONE file (this cache) instead of one per ROM. cache.hashed is
+// therefore an exact count of ROM opens, which is what the tests assert on.
+//
+// The cache is DERIVED: every entry can be recomputed from the ROM it describes.
+// That is what lets it be written with none of the care plays.jsonl needs -- a
+// lost update (data_dir is shared with a second host) costs a re-hash, never a
+// wrong answer. A torn, stale, hand-edited or missing cache reads as empty, and
+// discovery simply does what it did before.
+
+var SV_CACHE_VERSION = 1;
+
+function sv_cache_path(data_dir, id)
+{
+	// Same trailing-separator care as sv_plays_path(); see there.
+	var dir = String(data_dir).replace(/[\\\/]+$/, "") + "/syncretro/";
+
+	if (!file_isdir(dir))
+		mkpath(dir);
+	return dir + "roms." + String(id).toLowerCase().replace(/[^a-z0-9]+/g, "") + ".json";
+}
+
+function sv_cache_open(path)
+{
+	var cache = { path: path, entries: {}, dirty: false, hashed: 0, reused: 0 };
+	var f = new File(path);
+	var text, obj;
+
+	if (!file_exists(path) || !f.open("r"))
+		return cache;                  /* no cache yet: a cold run, not an error */
+	text = f.read();
+	f.close();
+	try {
+		obj = JSON.parse(text);
+	} catch (e) {
+		return cache;                  /* torn or hand-mangled: cold, never fatal */
+	}
+	if (obj && obj.v === SV_CACHE_VERSION && obj.entries)
+		cache.entries = obj.entries;   /* a version bump invalidates by ignoring */
+	return cache;
+}
+
+// Written only when sv_discover() changed something. temp-file + rename, so a
+// reader on the other host never sees a half-written file.
+function sv_cache_flush(cache)
+{
+	var tmp, f;
+
+	if (!cache || !cache.dirty)
+		return true;                   /* nothing to write is a success */
+
+	tmp = cache.path + ".tmp";
+	f = new File(tmp);
+	if (!f.open("w"))
+		return false;
+	f.write(JSON.stringify({ v: SV_CACHE_VERSION, entries: cache.entries }));
+	f.close();
+
+	if (file_exists(cache.path))
+		file_remove(cache.path);       /* rename-over fails on Windows */
+	if (!file_rename(tmp, cache.path)) {
+		file_remove(tmp);
+		return false;
+	}
+	cache.dirty = false;
+	return true;
 }
 
 function sv_excluded(name, excludes)
@@ -200,29 +374,54 @@ function sv_collapse_variants(roms)
 	return out;
 }
 
-function sv_discover(roms_dir, exts, excludes)
+// `rules` is an sv_rules() object -- the console's extensions, size band, BIOS
+// images and exclusions. `cache` is optional: an sv_cache_open() handle, or
+// omitted/null to hash every candidate the way this did before the cache.
+function sv_discover(roms_dir, rules, cache)
 {
 	var seen = {};         // content key -> index into out
 	var out  = [];
 	var dir  = backslash(roms_dir);
+	var kept = cache ? {} : null;   // the cache we will have after this scan
 
-	exts.forEach(function (ext) {
+	rules.ext.forEach(function (ext) {
 		directory(dir + "*." + ext).forEach(function (path) {
 			var name = file_getname(path);
 			var size = file_size(path);
-			var full, key, prev, parsed;
+			var full, key, prev, parsed, mtime, ent;
 
-			if (size < SV_MIN_SIZE || size > SV_MAX_SIZE)
+			if (size < rules.min_size || size > rules.max_size)
 				return;                       /* not a cartridge */
-			if (sv_excluded(name, excludes))
+			if (sv_excluded(name, rules.exclude))
 				return;
-			if (SV_BIOS_NAMES.indexOf(name.toLowerCase()) >= 0)
+			if (rules.bios_names.indexOf(name.toLowerCase()) >= 0)
 				return;                       /* a BIOS image, by its default name */
 
-			full = sv_file_md5(path, 0);
+			/* The one place a ROM is opened. Everything above this line is a
+			 * stat at worst, which is why the size/name gates come first. */
+			if (cache) {
+				mtime = file_date(path);
+				ent   = cache.entries[name];
+				if (ent && ent.s === size && ent.m === mtime
+				    && typeof ent.h === "string" && ent.h.length === 32) {
+					full = ent.h;             /* hit: no open */
+					cache.reused++;
+				} else {
+					full = sv_file_md5(path, 0);
+					cache.hashed++;
+				}
+			} else {
+				full = sv_file_md5(path, 0);
+			}
 			if (full === "")
 				return;                       /* unreadable: not our problem */
-			if (SV_BIOS_MD5.indexOf(full) >= 0)
+
+			/* Cached BEFORE the BIOS-by-content check, so exec.bin/grom.bin are
+			 * rejected on a warm run without being re-read either. */
+			if (cache)
+				kept[name] = { s: size, m: mtime, h: full };
+
+			if (rules.bios_md5.indexOf(full) >= 0)
 				return;                       /* a BIOS image, whatever its name */
 
 			/* Content identity: size plus the FULL-FILE hash, not a 4 KB prefix.
@@ -260,6 +459,16 @@ function sv_discover(roms_dir, exts, excludes)
 			});
 		});
 	});
+
+	/* Replace the cache wholesale with what this scan actually saw, so a ROM the
+	 * sysop deleted does not linger in it forever. Dirty if anything was hashed
+	 * OR if the set of cached files changed (a pure deletion hashes nothing). */
+	if (cache) {
+		if (cache.hashed > 0
+		    || Object.keys(kept).length !== Object.keys(cache.entries).length)
+			cache.dirty = true;
+		cache.entries = kept;
+	}
 
 	out = sv_collapse_variants(out);
 
@@ -306,7 +515,13 @@ function sv_log_play(path, rec)
 	return true;
 }
 
-function sv_read_plays(path)
+// `id` is optional: keep only that console's plays. One append-only log serves
+// every console, so the board has to filter -- otherwise the NES lobby would
+// show Astrosmash in its Top Played.
+//
+// A record with NO console field predates the field, when the Intellivision was
+// the only console there was. It IS an Intellivision play, and is counted as one.
+function sv_read_plays(path, id)
 {
 	var f = new File(path);
 	var out = [];
@@ -324,8 +539,11 @@ function sv_read_plays(path)
 		} catch (e) {
 			continue;              /* a torn or hand-edited line is not fatal */
 		}
-		if (rec && rec.rom)
-			out.push(rec);
+		if (!rec || !rec.rom)
+			continue;
+		if (id && (rec.console || "intv") !== id)
+			continue;
+		out.push(rec);
 	}
 	return out;
 }
@@ -397,12 +615,19 @@ function sv_paginate(items, per_page)
 	return pages;
 }
 
+// One list cell, in xtrn_sec.js's look (XtrnProgLstFmt): a bright-cyan 3-digit
+// number, a \xb3 (CP437 vertical bar), then the cyan title (+year). `width` is
+// the cell's VISIBLE width; "%N.Ns" pads/clips the name to a fixed column count
+// so the grid lines up even though the returned string carries \1x attribute
+// codes (which take no column). The number+bar prefix is 6 visible columns.
 function sv_cell(index, rom, width)
 {
 	var label = rom.title + (rom.year ? " (" + rom.year + ")" : "");
-	var s     = format("%3d | %s", index, label);
+	var namew = width - 6;
 
-	return s.length > width ? s.substr(0, width) : s;
+	if (namew < 1)
+		namew = 1;
+	return format("\1h\1c%3u \xb3 \1n\1c%-" + namew + "." + namew + "s\1n", index, label);
 }
 
 // --- platform / target token ------------------------------------------------

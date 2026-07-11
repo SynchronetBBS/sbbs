@@ -1,9 +1,9 @@
-// test_syncivision_lib.js -- jsexec tests for the UI-free half of the lobby.
+// test_syncretro_lib.js -- jsexec tests for the UI-free half of the lobby.
 //
-// Run:  /sbbs/exec/jsexec /home/rswindell/sbbs/xtrn/syncivision/tests/test_syncivision_lib.js
+// Run:  /sbbs/exec/jsexec /home/rswindell/sbbs/xtrn/syncivision/tests/test_syncretro_lib.js
 // Exits non-zero on any failure. SpiderMonkey 1.8.5: no let/const/arrows.
 
-load(js.exec_dir + "../syncivision_lib.js");
+load("syncretro_lib.js");
 
 var failures = 0;
 
@@ -125,7 +125,16 @@ check(/^[0-9a-f]+$/.test(md_a), "md5 is lowercase hex");
 eq(sv_file_md5(dir + "does-not-exist.int", 4096), "", "missing file yields empty md5");
 
 writeln("4. discovery");
-var roms = sv_discover(dir, ["int", "bin", "rom"], []);
+// The Intellivision's rules, exactly as xtrn/syncivision/lobby.js declares them.
+var INTV = sv_rules({
+	ext:        ["int", "bin", "rom"],
+	min_size:   2 * 1024,
+	max_size:   64 * 1024,
+	bios_names: ["exec.bin", "grom.bin"],
+	bios_md5:   ["62e761035cb657903761800f4437b8af",
+	             "0cd5946c6473e42e8e4c2137785e427f"]
+});
+var roms = sv_discover(dir, INTV);
 var names = roms.map(function (r) { return r.name; });
 
 check(names.indexOf("notes.txt") < 0, "wrong extension excluded");
@@ -165,7 +174,7 @@ function put_prefix_tail(name, prefix_fill, tail_fill, tail_len)
 put_prefix_tail("Pac-Man (1983) (Atarisoft).int", "P", "1", 4096);
 put_prefix_tail("Pac-Man (1983) (Intv Corp).int", "P", "2", 4096);
 
-var pac_roms = sv_discover(dir, ["int", "bin", "rom"], []);
+var pac_roms = sv_discover(dir, INTV);
 var pac_names = pac_roms.map(function (r) { return r.name; });
 check(pac_names.indexOf("Pac-Man (1983) (Atarisoft).int") >= 0,
       "same-4KB-prefix Pac-Man port (Atarisoft) survives dedupe");
@@ -193,7 +202,8 @@ roms.forEach(function (r) {
 });
 
 // Excludes are case-insensitive substrings.
-var fewer = sv_discover(dir, ["int", "bin", "rom"], ["utopia"]);
+var fewer = sv_discover(dir, sv_rules({ ext: ["int", "bin", "rom"], min_size: 2048,
+                           max_size: 65536, exclude: "utopia" }));
 check(fewer.map(function (r) { return r.name; }).indexOf("Utopia (1981) (Mattel).int") < 0,
       "exclude glob drops Utopia");
 
@@ -208,7 +218,7 @@ if (file_exists(bios_src)) {
 	var c = new File(dir + "Executive ROM, The (1978) (Mattel).int");
 	c.open("wb"); c.write(blob); c.close();
 
-	var guarded = sv_discover(dir, ["int", "bin", "rom"], []);
+	var guarded = sv_discover(dir, INTV);
 	check(guarded.map(function (r) { return r.name; })
 	      .indexOf("Executive ROM, The (1978) (Mattel).int") < 0,
 	      "BIOS excluded by content hash, whatever it is named");
@@ -219,7 +229,7 @@ if (file_exists(bios_src)) {
 // A re-dumped BIOS: right size, right default name, WRONG content (so the
 // hash check alone would miss it). The name check must catch it.
 put("grom.bin", 2048, "x");
-var by_name = sv_discover(dir, ["int", "bin", "rom"], []);
+var by_name = sv_discover(dir, INTV);
 check(by_name.map(function (r) { return r.name; }).indexOf("grom.bin") < 0,
       "a re-dumped grom.bin is excluded by name, not just by hash");
 file_remove(dir + "grom.bin");
@@ -380,15 +390,18 @@ eq(pages.length, 3, "five items, two per page, three pages");
 eq(pages[2].length, 1, "last page holds the remainder");
 eq(sv_paginate([], 10).length, 0, "no items, no pages");
 
+// sv_cell now carries \1x attribute codes; measure the VISIBLE width by stripping them.
+function vislen(s) { return s.replace(/\x01./g, "").length; }
+
 var cell = sv_cell(7, {title: "Astrosmash", year: 1981}, 36);
 check(cell.indexOf("7") >= 0, "cell shows the number");
 check(cell.indexOf("Astrosmash") >= 0, "cell shows the title");
 check(cell.indexOf("1981") >= 0, "cell shows the year");
-check(cell.length <= 36, "cell is clipped to its width");
+eq(vislen(cell), 36, "cell visible width is fixed to its column count");
 
 var longcell = sv_cell(199, {title: "Advanced Dungeons and Dragons Treasure of Tarmin",
                              year: 1982}, 30);
-eq(longcell.length, 30, "an over-long title is clipped, not wrapped");
+eq(vislen(longcell), 30, "an over-long title is clipped to width, not wrapped");
 
 var noyear = sv_cell(1, {title: "4tris", year: 0}, 36);
 check(noyear.indexOf("(0)") < 0, "a missing year is omitted, not printed as 0");
@@ -437,6 +450,158 @@ eq(sv_target("Linux", "x64"),    "linux-x64",   "Linux x86_64");
 eq(sv_target("Linux", "aarch64"),"linux-arm64", "Linux arm64 does not collide with linux-x64");
 eq(sv_target("FreeBSD","amd64"), "freebsd-x64", "FreeBSD amd64");
 eq(sv_target("macOS", "arm64"),  "darwin-arm64","Apple Silicon");
+
+writeln("N. console rules, as data ([roms] / [console] in syncretro.ini)");
+
+// The console's rules come from ITS lobby.js spec, not from a default buried in
+// the shared code: nothing here knows an Intellivision from an NES.
+eq(INTV.ext.join(","), "int,bin,rom", "Intellivision extensions");
+eq(INTV.min_size, 2048,  "Intellivision min size");
+eq(INTV.max_size, 65536, "Intellivision max size");
+eq(INTV.bios_md5.length, 2, "the two Intellivision BIOS hashes");
+
+// An array (a JS spec) and a comma string (an ini value) mean the same thing.
+eq(sv_list(["a", "b"]).join(","), "a,b", "a list from an array");
+eq(sv_list(" a , b ").join(","),  "a,b", "a list from a string, trimmed");
+eq(sv_list(null).length, 0, "a missing list is empty, not a crash");
+
+// Sizes: bare bytes, k and m suffixes.
+eq(sv_size("8192", 0), 8192,       "bare byte count");
+eq(sv_size("64k", 0),  65536,      "k suffix");
+eq(sv_size("4m", 0),   4194304,    "m suffix");
+eq(sv_size("4M", 0),   4194304,    "suffix is case-insensitive");
+eq(sv_size("", 99),    99,         "an empty size takes the default");
+eq(sv_size("banana", 99), 99,      "an unparseable size takes the default, NOT 0");
+
+// The NES: a different console, expressed entirely as data. No BIOS at all --
+// and an EMPTY bios_md5 key must OVERRIDE the Intellivision default, not fall
+// back to it, or the NES would reject a ROM that happened to hash like exec.bin.
+var NES = sv_rules({
+	ext:      [".nes", ".unf", ".unif"],   /* the leading dot is optional */
+	min_size: "8k",
+	max_size: "4m"
+	/* no bios_md5, no bios_names: the NES has no BIOS */
+});
+eq(NES.ext.join(","), "nes,unf,unif", "the leading dot is optional in ext");
+eq(NES.min_size, 8192,    "NES min size");
+eq(NES.max_size, 4194304, "NES max size");
+eq(NES.bios_md5.length, 0,   "the NES has no BIOS to reject");
+eq(NES.bios_names.length, 0, "...by name either");
+
+// A 256 KB NES ROM is a cartridge; the same file would be rejected on the
+// Intellivision's 64 KB ceiling. Same code, different data.
+check(262144 >= NES.min_size && 262144 <= NES.max_size, "256 KB is a NES cartridge");
+check(!(262144 >= INTV.min_size && 262144 <= INTV.max_size), "...and not an Intellivision one");
+
+// The console's identity.
+var ci = sv_console({ name: "Nintendo Entertainment System", short: "NES", profile: "pad" });
+eq(ci.name, "Nintendo Entertainment System", "the long name is what the lobby shows");
+eq(ci.short, "NES", "the short name fits a header column");
+eq(ci.id, "nes", "the id is derived from short: no fourth key to get out of step");
+eq(ci.profile, "pad", "the C door's profile rides in the same section");
+
+// id must be safe to use as a filename component (it names the cache and the
+// per-user save dir), whatever the sysop types.
+eq(sv_console({ short: "PC Engine" }).id, "pcengine", "spaces do not survive into the id");
+eq(sv_console({ short: "../etc" }).id, "etc", "a path traversal cannot come through the id");
+eq(sv_console({ name: "Intellivision" }).short, "Intellivision", "short falls back to name");
+eq(sv_console({ short: "Intv" }).id, "intv", "the Intellivision id stays intv: saves must not be orphaned");
+eq(sv_console({ name: "X" }).profile, "pad", "the default profile is the generic RetroPad");
+eq(sv_console(null).id, "", "no [console] section at all is legal");
+
+writeln("N. discovery cache");
+//
+// The point of the cache is ROUND TRIPS, not arithmetic: discovery used to open
+// and read every candidate on every lobby entry, which over SMB is one open +
+// read + close per ROM across the wire. sv_file_md5() is the ONLY thing in the
+// lib that opens a ROM, so cache.hashed is an exact count of file opens -- which
+// is what these tests assert on. A warm run must open nothing.
+
+// Its own fixtures: test 4's scratch dir is wiped at the end of test 4.
+var croms = "/tmp/sv_cache_roms/";
+var cdir  = "/tmp/sv_cache/";
+[croms, cdir].forEach(function (d) {
+	if (file_isdir(d))
+		directory(d + "*").forEach(function (p) { file_remove(p); });
+	mkpath(d);
+});
+if (file_isdir(cdir + "syncretro/"))
+	directory(cdir + "syncretro/*").forEach(function (p) { file_remove(p); });
+
+function cput(name, bytes, fill)
+{
+	var g = new File(croms + name);
+	var s = "";
+	var i;
+
+	g.open("wb");
+	for (i = 0; i < bytes; i++)
+		s += fill;
+	g.write(s);
+	g.close();
+}
+
+cput("Astrosmash (1981) (Mattel).int", 8192, "A");
+cput("Utopia (1981) (Mattel).int", 8192, "U");
+cput("Boring Game (1983) (Acme).bin", 4096, "b");
+cput("huge.int", 70000, "h");                      // over 64 KB: never a candidate
+
+var cpath = sv_cache_path(cdir, "intv");
+check(cpath.indexOf("roms.intv.json") > 0, "cache path is named for the console id");
+
+// Cold: nothing cached, so every surviving candidate is hashed.
+var c1 = sv_cache_open(cpath);
+var r1 = sv_discover(croms, INTV, c1);
+eq(r1.length, 3, "cold run finds the three cartridges");
+check(c1.hashed > 0, "cold run hashes (opened " + c1.hashed + " files)");
+eq(c1.reused, 0, "cold run reuses nothing");
+check(sv_cache_flush(c1), "cold run writes the cache");
+check(file_exists(cpath), "the cache file exists after a flush");
+
+// Warm: same bytes, same mtimes -> ZERO opens, and the same answer.
+var c2 = sv_cache_open(cpath);
+var r2 = sv_discover(croms, INTV, c2);
+eq(c2.hashed, 0, "WARM RUN OPENS NOTHING");
+check(c2.reused > 0, "warm run reuses the cached hashes");
+eq(r2.length, r1.length, "warm run finds the same number of ROMs");
+eq(r2.map(function (r) { return r.name; }).join("|"),
+   r1.map(function (r) { return r.name; }).join("|"),
+   "warm run returns the identical list, in the identical order");
+
+// Stale: one file's content changes (new size), so exactly that one re-hashes.
+cput("Utopia (1981) (Mattel).int", 9000, "V");
+var c3 = sv_cache_open(cpath);
+sv_discover(croms, INTV, c3);
+eq(c3.hashed, 1, "a changed file re-hashes, and only it");
+check(c3.reused > 0, "the unchanged files still come from the cache");
+sv_cache_flush(c3);
+
+// A file that disappears must not linger in the cache forever.
+var before = sv_cache_open(cpath);
+check(before.entries.hasOwnProperty("huge.int") === false,
+      "a size-rejected file was never cached (it is not a candidate)");
+file_remove(croms + "Boring Game (1983) (Acme).bin");
+var c4 = sv_cache_open(cpath);
+sv_discover(croms, INTV, c4);
+sv_cache_flush(c4);
+var c5 = sv_cache_open(cpath);
+check(!c5.entries.hasOwnProperty("Boring Game (1983) (Acme).bin"),
+      "a deleted ROM is pruned from the cache");
+
+// Torn / hand-mangled / truncated cache: treated as cold, never fatal.
+var tf = new File(cpath);
+tf.open("w");
+tf.write("{ this is not json");
+tf.close();
+var c6 = sv_cache_open(cpath);
+eq(c6.entries ? Object.keys(c6.entries).length : -1, 0, "an unparseable cache reads as empty");
+var r6 = sv_discover(croms, INTV, c6);
+check(c6.hashed > 0, "a torn cache falls back to hashing");
+eq(r6.length, r1.length - 1, "and still finds every ROM (less the one deleted above)");
+
+// No cache at all: the old signature still works, and still discovers.
+var r7 = sv_discover(croms, INTV);
+eq(r7.length, r6.length, "sv_discover() with no cache argument behaves as before");
 
 writeln(failures ? "FAIL: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);

@@ -1,7 +1,7 @@
 // test_lobby_headless.js -- drive lobby.js under jsexec, with no terminal.
 //
 // lobby.js needs console/bbs/user, which jsexec does not provide. That is why
-// the model layer lives in syncivision_lib.js. But "we cannot test the screen"
+// the model layer lives in syncretro_lib.js. But "we cannot test the screen"
 // is not the same as "we cannot execute the file": stub the three objects, feed
 // a scripted key sequence, and capture the door command line it would run.
 //
@@ -63,7 +63,7 @@ this.bbs     = fake_bbs;
 this.user    = fake_user;
 
 // The lobby loads the lib itself, but this harness needs sv_* too.
-load(js.exec_dir + "syncivision_lib.js");
+load("syncretro_lib.js");
 
 var GUARD = sv_plays_path(system.data_dir);
 if (file_exists(GUARD)) {

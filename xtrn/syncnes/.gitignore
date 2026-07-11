@@ -1,0 +1,29 @@
+# Runtime content installed into this door directory -- never committed.
+# It is either downloaded by getcore.js, supplied by the sysop, or built from
+# src/doors/syncretro. The version-controlled files here are the JS lobby,
+# syncretro.ini, install-xtrn.ini and getcore.js.
+#
+# The native artifacts (binary + core) live in per-platform sub-dirs --
+# linux-x64/, linux-arm64/, darwin-arm64/, ... -- or flat on Windows, so these
+# patterns have NO leading slash and match at any depth.
+
+# The live syncretro.ini (seeded from syncretro.example.ini by the installer) is
+# intentionally NOT ignored here -- leave it untracked so a sysop's edited config
+# is visible in `git status` rather than silently invisible.
+
+# The deployed door binary (built by src/doors/syncretro's build.sh/build.bat)
+syncretro
+syncretro.exe
+*.pdb
+
+# The FCEUmm libretro core (getcore.js downloads/extracts it, per platform)
+*_libretro.so
+*_libretro.dll
+*_libretro.dylib
+
+# The Famicom Disk System BIOS -- copyrighted, sysop-supplied, and needed ONLY
+# if you enable .fds in syncretro.ini.
+disksys.rom
+
+# Cartridges -- copyrighted, sysop-supplied
+/roms/

@@ -90,6 +90,21 @@ the lobby keeps the books.
 
 ## 6. Discovery
 
+**Hashes are cached.** Discovery originally opened, read and hashed every
+candidate on every lobby entry. The arithmetic was never the cost; the round
+trips were -- the install is an SMB mount, so a remote node paid one open + read
++ close per cartridge just to draw the menu, which is a startup delay a sysop can
+feel (observed on a remote Windows node reading this dir). The hash is now cached
+in `<data_dir>/syncretro/roms.<id>.json`, keyed by name + size + mtime, so a warm
+run opens exactly **one** file instead of one per ROM (measured on the live
+198-cartridge set: 212 opens -> 0, 62 ms -> 13 ms even locally, where an open is
+cheap). Only a file whose size or mtime moved is re-hashed; a deleted ROM is
+pruned. The cache is *derived*, so unlike `plays.jsonl` it needs no append-only
+discipline -- a lost update across the two hosts costs a re-hash, never a wrong
+answer -- and it is written temp-file + rename. Torn, stale or missing reads as
+cold. A cold run says `Scanning cartridges (first run)...` rather than appearing
+to hang.
+
 Rules, in order:
 
 1. Whitelist `.int` / `.bin` / `.rom` (case-insensitive; configurable).

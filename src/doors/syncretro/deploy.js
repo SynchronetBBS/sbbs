@@ -17,15 +17,43 @@
 // have to re-derive it from `uname`, whose spellings differ from
 // system.platform/system.architecture, and drift out of agreement with the lobby.
 //
-// Deploys only the frontend binary; getcore.js installs the core, and the
-// Intellivision BIOS + cartridges are sysop-supplied. SpiderMonkey 1.8.5.
+// ONE BINARY, MANY CONSOLES: the same door hosts any libretro core, so every
+// console install (xtrn/syncivision, xtrn/syncnes, ...) needs a copy of it. This
+// finds them all rather than naming one -- a console added later is deployed to
+// without touching this script.
+//
+// Deploys only the frontend binary; getcore.js installs each console's core, and
+// the BIOS + cartridges are sysop-supplied. SpiderMonkey 1.8.5.
 //
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
 
-// The door bundle holds the shared platform helpers (sv_target). js.exec_dir is
-// this script's own dir (src/doors/syncretro/); the bundle is three levels up.
-var BUNDLE = js.exec_dir + "../../../xtrn/syncivision/";
-load(BUNDLE + "syncivision_lib.js");   // sv_target()
+load("syncretro_lib.js");   // sv_target() -- now in exec/load, shared by all consoles
+
+// js.exec_dir is this script's own dir (src/doors/syncretro/); xtrn/ is three up.
+var XTRN = js.exec_dir + "../../../xtrn/";
+
+// Every SyncRetro console install: an xtrn dir whose lobby.js drives the shared
+// lobby. That is the definition of "a SyncRetro console", so it cannot go stale.
+function console_dirs()
+{
+	var out = [];
+
+	directory(XTRN + "*").forEach(function (path) {
+		var dir = backslash(path);
+		var f, text;
+
+		if (!file_isdir(dir) || !file_exists(dir + "lobby.js"))
+			return;
+		f = new File(dir + "lobby.js");
+		if (!f.open("r"))
+			return;
+		text = f.read();
+		f.close();
+		if (String(text).indexOf("syncretro_lobby.js") >= 0)
+			out.push(dir);
+	});
+	return out;
+}
 
 function is_win() { return /^win/i.test(system.platform); }
 
@@ -80,9 +108,16 @@ function main()
 	}
 	print("[deploy] target: " + (target ? target + "/" : "flat (door dir)") + "  (" + exename + ")");
 
-	// 1. The in-tree bundle (this IS the live xtrn on a symlink install).
-	if (!deploy_to(BUNDLE, exe, exename, target))
-		ok = false;
+	// 1. Every console install in the tree (this IS the live xtrn on a symlink
+	//    install). One door binary, so each console gets the same one.
+	var dirs = console_dirs();
+	if (!dirs.length)
+		print("[deploy] WARNING: no SyncRetro console install found under " + XTRN);
+	for (i = 0; i < dirs.length; i++) {
+		print("[deploy] console: " + dirs[i]);
+		if (!deploy_to(dirs[i], exe, exename, target))
+			ok = false;
+	}
 
 	// 2. Any extra live bundle dir(s) given on the command line (copy installs).
 	for (i = 0; i < argc; i++) {
