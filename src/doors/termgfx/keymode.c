@@ -168,6 +168,20 @@ static const char evdev_ascii[58][2] = {
 
 char termgfx_evdev_ascii(int code, int shifted)
 {
+	// Numeric keypad (numlock-on) reports its own evdev keycodes above the main
+	// table; without these it returns 0 and the keypad is dead in evdev mode.
+	// Map to the same ASCII the kitty path yields (keypad PUA 57399..57414 ->
+	// "0123456789./*-+\r") so a door behaves identically on SyncTERM (evdev) and
+	// kitty clients. Numpad Enter -> CR is the case the menus need; the rest are
+	// for parity. (KP* is code 55, already in the table.)
+	switch (code) {
+		case 71: return '7'; case 72: return '8'; case 73: return '9';
+		case 75: return '4'; case 76: return '5'; case 77: return '6';
+		case 79: return '1'; case 80: return '2'; case 81: return '3';
+		case 82: return '0'; case 83: return '.';
+		case 74: return '-'; case 78: return '+';
+		case 96: return '\r'; case 98: return '/';
+	}
 	if (code < 0 || code >= (int)(sizeof evdev_ascii / sizeof evdev_ascii[0]))
 		return 0;
 	return evdev_ascii[code][shifted ? 1 : 0];
