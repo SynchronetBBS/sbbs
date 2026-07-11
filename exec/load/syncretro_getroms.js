@@ -54,8 +54,13 @@ function sr_roms_dir(door_dir)
 // list it and the core would choke on it.
 function sr_fetch_rom(game, dstdir)
 {
-	var dst = dstdir + game.file;
-	var tmp = backslash(system.temp_dir) + game.file;
+	/* `as` is what it is INSTALLED as; `file` is only what upstream calls it. The
+	 * lobby parses a game's display name out of its FILENAME, so a ROM fetched as
+	 * "sgthelmet.nes" would sit in the picker as "sgthelmet", next to a properly
+	 * named cartridge. Install it as "Sgt. Helmet Training Day.nes" instead. */
+	var name = game.as ? game.as : game.file;
+	var dst  = dstdir + name;
+	var tmp  = backslash(system.temp_dir) + game.file;
 	var req, n, size, md5;
 
 	if (file_exists(dst)) {
