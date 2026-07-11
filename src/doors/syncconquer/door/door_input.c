@@ -262,11 +262,12 @@ static void door_input_key_tap(int ch)
 	int            shift;
 	unsigned short vk;
 
-	/* Legacy control bytes 0x01-0x1A: map to Ctrl+letter (skip 0x04 F4
-	 * fallback, 0x06 fit toggle, 0x10/0x15 node Ctrl-P/Ctrl-U -- Task 5 --
-	 * and keep 0x08 \b, 0x09 \t, 0x0A \n, 0x0D \r via their normal paths). */
+	/* Legacy control bytes 0x01-0x1A: map to Ctrl+letter (skip the door
+	 * hotkeys 0x04 F4 fallback, 0x06 fit toggle, 0x10/0x15 node Ctrl-P/Ctrl-U,
+	 * 0x13 Ctrl-S stats -- door_io.c consumes those via door_io_hotkey() -- and
+	 * keep 0x08 \b, 0x09 \t, 0x0A \n, 0x0D \r via their normal paths). */
 	if (ch >= 0x01 && ch <= 0x1A) {
-		if (ch != 0x04 && ch != 0x06 && ch != 0x10 && ch != 0x15
+		if (ch != 0x04 && ch != 0x06 && ch != 0x10 && ch != 0x15 && ch != 0x13
 		    && ch != 0x08 && ch != 0x09 && ch != 0x0A && ch != 0x0D) {
 			emit_tap_mod((unsigned short)(VK_A + (ch - 1)), VK_CONTROL);
 			return;
@@ -546,6 +547,12 @@ static void evdev_edge(int code, int down)
 	if (c == 0)
 		return;
 	if ((g_evdev_mods & TERMGFX_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z') {
+		/* Door-level Ctrl+letter hotkeys (Ctrl-U/P/S/F/D) are consumed here and
+		 * never forwarded to the game -- door_io.c's raw-byte branch only catches
+		 * them in legacy mode, not evdev (SyncTERM). Fire on the press edge,
+		 * swallow the release too (commit=down). */
+		if (door_io_hotkey(c | 0x20, down))
+			return;
 		/* Ctrl+letter: the real Ctrl press already went out above (true
 		 * hold), so just inject the plain letter -- Put_Key_Message's
 		 * own Down(KN_LCTRL) OR's WWKEY_CTRL_BIT in. */
@@ -700,6 +707,16 @@ static void csi_final(char fin)
 				}
 				if (cp >= 128)
 					return;   /* other non-ASCII special key: not in the map */
+				/* Door-level Ctrl+letter hotkeys (Ctrl-U/P/S/F/D). kitty carries
+				 * Ctrl as its own modifier event, so the letter reaches here with
+				 * the base codepoint and termgfx_kitty_ctrl(mod) set; consume it
+				 * across all edges (fire on press, ev==1) so a held repeat can't
+				 * leak the letter to the game. Mirrors the evdev path and
+				 * door_io.c's raw byte. */
+				if (termgfx_kitty_ctrl(mod)
+				    && (cp | 0x20) >= 'a' && (cp | 0x20) <= 'z'
+				    && door_io_hotkey(cp | 0x20, ev == 1))
+					return;
 				vk = door_input_vk_from_ascii(cp, &shift);
 				if (vk == 0)
 					return;

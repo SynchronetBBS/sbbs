@@ -751,6 +751,7 @@ static void door_early_setup(void)
 /* --- staged output buffer + sink ------------------------------------------- */
 static uint8_t *   g_out;
 static size_t      g_out_len, g_out_cap, g_out_off;
+static uint64_t    g_tx_bytes;   /* cumulative bytes staged for the wire (Ctrl-S throughput) */
 
 static int         g_inited;
 static int         g_file_mode;       /* SYNCALERT_SIXELOUT capture mode */
@@ -1076,6 +1077,7 @@ static void door_out_put(const void *buf, size_t len)
 	}
 	memcpy(g_out + g_out_len, buf, len);
 	g_out_len += len;
+	g_tx_bytes += len;   /* every wire-bound byte (frame/palette/overlay/DSR/audio) */
 }
 
 static void door_out_puts(const char *s) { door_out_put(s, strlen(s)); }
@@ -1368,7 +1370,10 @@ static void door_stat_dump(const char *reason)
 		fprintf(stderr, "syncalert: stats[%s]: no frames sent yet\n", reason);
 }
 
-static int g_tier_force = -1;        /* -1 = auto; F4 sets an explicit tier */
+static int  g_tier_force = -1;       /* -1 = auto; F4 sets an explicit tier */
+
+static int  g_stats_overlay;         /* Ctrl-S: live debug stats strip (session-only) */
+static char g_stats_last[512];       /* last emitted overlay bytes, for change-detection */
 
 static int sa_auto_tier(void)
 {
@@ -1457,6 +1462,41 @@ static void door_fit_toggle(void)
 	g_fit_fill = !g_fit_fill;
 	door_save_fit();
 	g_have_last = 0;   /* force a full repaint at the new geometry */
+}
+
+/* Single dispatch point for the door-level Ctrl+letter hotkeys, shared by all
+ * three input paths (this file's legacy raw-byte branch + door_input.c's evdev
+ * and kitty decoders) so the mapping lives in exactly one place -- see the
+ * door_io.h prototype for why the two native modes need it too, and for the
+ * `commit` contract (act only on the press edge; return 1 for a hotkey letter
+ * on every edge so the caller swallows repeat/release too). `letter` is a
+ * lowercase 'a'..'z'. */
+int door_io_hotkey(int letter, int commit)
+{
+	/* Classify first: is `letter` a door hotkey at all? */
+	switch (letter) {
+		case 'd': case 'f': case 'u': case 'p': case 's':
+			break;
+		default:
+			return 0;   /* not a hotkey -- caller forwards it to the game */
+	}
+	if (!commit)
+		return 1;       /* recognized, but this edge (repeat/release) doesn't fire */
+
+	/* Actionable press edge: run it. */
+	switch (letter) {
+		case 'd': door_tier_cycle();            break;   /* F4 fallback: cycle graphics tier */
+		case 'f': door_fit_toggle();            break;   /* Aspect <-> Fill display-fit */
+		case 'u': door_node_userlist_request(); break;   /* who's-online overlay */
+		case 'p': door_node_page_request();     break;   /* page-a-node compose */
+		case 's':                                        /* live debug stats overlay */
+			g_stats_overlay = !g_stats_overlay;
+			g_stats_last[0] = '\0';   /* reset change-detection across the toggle */
+			g_have_last     = 0;   /* repaint now so the strip shows... */
+			g_clear_pending = 1;   /* ...and clear it cleanly on toggle-off */
+			break;
+	}
+	return 1;
 }
 
 /* --- scale/pack helpers (dynamic buffers -- no fixed-size overflow risk) --- */
@@ -1681,6 +1721,17 @@ static uint32_t g_auto_adj_at;
 static int      g_rt_high;
 static uint32_t g_rtt_ms, g_rtt_min, g_rtt_min_at;
 
+/* Frames-emitted-per-second and wire throughput, both sampled over the same
+ * rolling ~1s window for the Ctrl-S stats overlay. g_fps holds the last
+ * window's frame rate; g_bps its bits/second (from g_tx_bytes' delta over the
+ * window -- total wire TX, so it includes palette/overlay/DSR/audio, not just
+ * the frame payload the per-tier B/frame stat isolates). */
+static int      g_fps;
+static uint32_t g_fps_win_ms;
+static int      g_fps_frames;
+static uint32_t g_bps;
+static uint64_t g_tx_bytes_at;
+
 static int door_eff_depth(void) { return g_auto_depth; }
 
 static void door_dsr_sent(uint32_t now)
@@ -1833,6 +1884,89 @@ void door_io_note_pixel_report(void)
 	}
 }
 
+/* Advance the Ctrl-S fps/throughput window by `emitted` frames; when the
+ * rolling ~1s window closes, recompute g_fps (frames/s) and g_bps (bits/s, from
+ * g_tx_bytes' delta over the window). Called with 1 per emitted frame and with
+ * 0 on a deduped (unchanged) frame, so a still scene decays toward ~0 fps
+ * instead of freezing at its last value. */
+static void door_fps_tick(int emitted)
+{
+	uint32_t fnow = door_now_ms();
+
+	g_fps_frames += emitted;
+	if (g_fps_win_ms == 0) {
+		g_fps_win_ms  = fnow;
+		g_tx_bytes_at = g_tx_bytes;
+		return;
+	}
+	if (fnow - g_fps_win_ms >= 1000) {
+		uint32_t el = fnow - g_fps_win_ms;
+		g_fps         = (int)((uint64_t)g_fps_frames * 1000 / el);
+		g_bps         = (uint32_t)((g_tx_bytes - g_tx_bytes_at) * 8000 / el);
+		g_fps_frames  = 0;
+		g_fps_win_ms  = fnow;
+		g_tx_bytes_at = g_tx_bytes;
+	}
+}
+
+/* Ctrl-S live stats overlay: one condensed line on the bottom text row, in
+ * EVERY output mode. Reports the runtime facts a live tester needs to
+ * characterise a session without server-side logs -- graphics tier, frame rate,
+ * throughput, pacing depth, keyboard-event mode, mouse granularity, client
+ * charset, RTT, canvas/grid/cell geometry, and the tier's mean bytes/frame.
+ * Session-only; toggled by Ctrl-S in door_io_pump()'s byte parser.
+ *
+ * The bottom row is the one placement that works across every tier: SIXEL can't
+ * paint over it (the fit RESERVES that row, door_calc_rect), and for a layered
+ * APC image (JXL/PPM) or the text tiers a text overlay drawn after the frame
+ * sits on top of it. (A top overlay was unreadable under sixel, which shares the
+ * text plane and repaints with a slow progressive pass.)
+ *
+ * Built into one buffer and compared against the last emitted (g_stats_last):
+ * with `force` false (the deduped/still-frame path) it's re-sent ONLY when the
+ * readout changed, so a static screen doesn't re-emit every tick; with `force`
+ * true (right after a fresh frame that repainted the row) it always redraws.
+ * This is why the overlay does NOT bypass the frame-dedupe -- re-encoding the
+ * whole image every tick just to refresh the text is what made it flicker.
+ * Autowrap stays off all session (term_enter's DECAWM ?7l), so an over-wide
+ * line clips at the right edge instead of wrapping/scrolling the page. */
+static void door_stats_draw(int force)
+{
+	char               buf[256];
+	char               t[160], rate[24];
+	int                cw = 0, ch = 0, tier, off, brow;
+	unsigned long long bpf;
+
+	if (!g_stats_overlay)
+		return;
+	door_cell_size(&cw, &ch);
+	tier = (g_tier_force >= 0) ? g_tier_force : sa_auto_tier();
+	brow = g_grid_rows > 0 ? g_grid_rows : 25;
+
+	/* Throughput: total wire TX over the last window, Mbps once it's >= 1. */
+	if (g_bps >= 1000000)
+		snprintf(rate, sizeof rate, "%u.%u Mbps", g_bps / 1000000, (g_bps % 1000000) / 100000);
+	else
+		snprintf(rate, sizeof rate, "%u Kbps", g_bps / 1000);
+
+	bpf = g_tstat[tier].frames ? g_tstat[tier].bytes / g_tstat[tier].frames : 0;
+	snprintf(t, sizeof t, " %s %dfps %s d%d %s/%s %s %ums %dx%d %dx%d %dx%d %lluB/f ",
+	         sa_tier_name(tier), g_fps, rate, g_auto_depth,
+	         door_io_evdev_active()      ? "evdev"
+	         : door_input_kitty_active() ? "kitty" : "legacy",
+	         g_mouse_pixels ? "pixel" : "cell",
+	         door_term_is_utf8() ? "utf8" : "cp437", (unsigned)g_rtt_ms,
+	         g_canvas_w, g_canvas_h, g_grid_cols, g_grid_rows, cw, ch, bpf);
+	off = snprintf(buf, sizeof buf, "\x1b[%d;1H\x1b[30;46m%s\x1b[0m", brow, t);
+	if (off < 0 || off >= (int)sizeof buf)
+		return;
+
+	if (!force && strcmp(buf, g_stats_last) == 0)
+		return;   /* unchanged readout on the still-frame path -- don't re-emit */
+	snprintf(g_stats_last, sizeof g_stats_last, "%s", buf);
+	door_io_send(buf, (size_t)off);
+}
+
 void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 {
 	static int      cleared;
@@ -1967,10 +2101,20 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 	 * cursor-positioned escapes appended after the frame (below), so a
 	 * static game frame (e.g. sitting at the menu) would otherwise never
 	 * repaint while the overlay is counting down or capturing typed text --
-	 * bypass the dedupe for as long as it's showing. */
+	 * bypass the dedupe for as long as it's showing. The Ctrl-S stats overlay
+	 * does NOT bypass it (that re-encoded the whole image every tick and made
+	 * the strip flicker under sixel/JXL/PPM); instead, on the deduped path it
+	 * refreshes JUST the overlay text below, leaving the image untouched. */
 	if (!fit_changed && !geom_changed && g_have_last && g_last_tier == tier
-	    && !pal_dirty && !door_node_overlay_active() && memcmp(g_last_fb, fb, DOOR_FB_BYTES) == 0)
+	    && !pal_dirty && !door_node_overlay_active()
+	    && memcmp(g_last_fb, fb, DOOR_FB_BYTES) == 0) {
+		door_fps_tick(0);   /* keep the window ticking so a still scene reads ~0 */
+		if (g_stats_overlay) {
+			door_stats_draw(0);
+			door_out_flush();
+		}
 		return;
+	}
 
 	/* Tier change requested a screen clear (see door_tier_cycle()): wipe the
 	 * old tier's content so a letterboxed image doesn't sit on a floor of
@@ -2034,12 +2178,19 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 
 	door_stat_record(tier, n);   /* per-tier bandwidth accounting (JXL vs sixel) */
 
+	door_fps_tick(1);   /* one emitted frame -> fps/throughput window (Ctrl-S overlay) */
+
 	/* Task 5: who's-online / page-compose overlay, on top of the frame just
 	 * staged above (its own cursor-positioned escapes -- door_node_draw()
 	 * no-ops instantly when nothing is showing). Text-grid cols/rows, same
 	 * estimate door_csi_final()'s 999;999 probe reply fills; 80x25 default
 	 * before any reply lands. */
 	door_node_draw(g_grid_cols > 0 ? g_grid_cols : 80, g_grid_rows > 0 ? g_grid_rows : 25);
+
+	/* Ctrl-S debug stats, drawn AFTER the node overlay so it wins the top-right
+	 * cells the node strip's ERASE-TO-EOL would otherwise blank. force=1: the
+	 * fresh frame just repainted these cells, so always redraw. */
+	door_stats_draw(1);
 
 	door_out_put("\x1b[6n", 4);   /* DSR: paces both image and text tiers */
 	g_inflight++;
@@ -2299,15 +2450,12 @@ void door_io_pump(void)
 				}
 				if (c == 0x1b)
 					g_pstate = P_ESC;
-				else if (c == 0x04)          /* legacy Ctrl-D fallback: F4 tier cycle */
-					door_tier_cycle();
-				else if (c == 0x06)          /* Ctrl-F: Aspect <-> Fill display-fit toggle */
-					door_fit_toggle();
-				else if (c == 0x15)          /* Ctrl-U: who's-online overlay */
-					door_node_userlist_request();
-				else if (c == 0x10)          /* Ctrl-P: page-a-node compose */
-					door_node_page_request();
-				else
+				else if (c >= 0x01 && c <= 0x1a && door_io_hotkey(c | 0x60, 1)) {
+					/* Ctrl+letter door hotkey (Ctrl-D/F/U/P/S) consumed as a raw
+					 * control byte -- the legacy (non-evdev/kitty) key path. The
+					 * evdev/kitty paths reach door_io_hotkey() from door_input.c
+					 * instead, since there these arrive as decoded key events. */
+				} else
 					door_input_byte(c);
 				break;
 			case P_ESC:

@@ -58,6 +58,20 @@ uint32_t door_io_now_ms(void);
 // keycode (SyncTERM cap-8 mode) or an rxvt-style ESC[14~.
 void door_io_tier_cycle(void);
 
+// Route a door-level Ctrl+letter hotkey (lowercase 'a'..'z') to its action:
+// 'd' F4-fallback tier cycle, 'f' fit toggle, 'u' who's-online, 'p' page-a-node,
+// 's' live stats overlay. Returns 1 if `letter` IS a door hotkey (the caller
+// must then NOT forward it to the game), 0 otherwise. `commit` actually fires
+// the action -- callers pass true on the one actionable press edge and false on
+// repeat/release edges, so a held hotkey key is fully swallowed across all its
+// edges yet triggers exactly once. Called from all three input paths --
+// door_io.c's legacy raw-control-byte branch and door_input.c's evdev and kitty
+// decoders -- because under evdev/kitty keyboard mode a modified key like Ctrl-U
+// arrives as a decoded key event, not a raw 0x15, so the raw-byte branch alone
+// missed the door hotkeys during play (the same trap door_io_tier_cycle() fixes
+// for F4).
+int door_io_hotkey(int letter, int commit);
+
 // The image-tier fit rectangle for the CURRENT canvas/fit-mode state
 // (termgfx_geom_fit_ex()/termgfx_geom_center(), same math door_io_present()
 // itself uses to size/center the next frame it sends) -- door_input.c's SGR
