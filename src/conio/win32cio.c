@@ -44,7 +44,7 @@ CIOLIBEXPORT const struct keyvals keyval[WIN32_KEYVALS] =
 	{VK_RIGHT, 0x4d00, 0x4d00, 0x7400, 0x9d00}, // 0x27
 	{VK_DOWN, 0x5000, 0x5000, 0x9100, 0xa000},  // 0x28
 	{VK_INSERT, CIO_KEY_IC, CIO_KEY_SHIFT_IC, CIO_KEY_CTRL_IC, CIO_KEY_ALT_IC},  // 0x2d
-	{VK_DELETE, CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_CTRL_IC}, // 0x2e
+	{VK_DELETE, CIO_KEY_DC, CIO_KEY_SHIFT_DC, CIO_KEY_CTRL_DC, CIO_KEY_ALT_DC},  // 0x2e
 	{'0', '0', ')', 0, 0x8100},                 // 0x30
 	{'1', '1', '!', 0, 0x7800},
 	{'2', '2', '@', 0x0300, 0x7900},
