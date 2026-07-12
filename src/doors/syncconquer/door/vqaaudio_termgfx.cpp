@@ -148,6 +148,13 @@ int VQA_StartAudio(VQAHandle* handle)
 	accum.clear();
 	ship_off = total_shipped = 0;
 	termgfx_audio_stream_stop(door_io_audio());   // start on a clean channel
+	// The game theme runs on this SAME (music) channel and leaves it at the
+	// game's MUSIC volume -- which the player may have turned down or muted. A
+	// cutscene's audio is mixed dialog+SFX+music, not "music", so it must play at
+	// full channel volume regardless, or a briefing shown right after the menu
+	// (whose theme lowered the channel) is (near-)inaudible even though its audio
+	// ships fine. The next theme re-sets its own volume when it plays.
+	termgfx_audio_music_volume(door_io_audio(), 100);
 	movie_clk_reset();
 	return 0;
 }
