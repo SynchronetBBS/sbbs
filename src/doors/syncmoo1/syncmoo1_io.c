@@ -47,7 +47,7 @@
 #include "sixel.h"      /* termgfx: sixel_encode_aspect */
 #include "term.h"       /* termgfx: termgfx_term_enter/probe/leave */
 #include "caps.h"       /* termgfx: termgfx_query_jxl */
-#include "geometry.h"   /* termgfx: termgfx_geom_center */
+#include "geometry.h"   /* termgfx: termgfx_geom_center_ex */
 #include "syncmoo1_geom.h"   /* sm_geom_fit_page / sm_geom_encode_dims (+ SM_FB_*, SM_SIXEL_*) */
 #include "sbbs_node.h" /* termgfx: sbbs_my_node() -- node-tag the capture */
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller (termgfx_rtt_sample/termgfx_aimd_update) */
@@ -493,7 +493,20 @@ static void sm_io_recompute_geom(void)
      * fit keeps the encode at the lossless native width whenever the page is
      * wide enough for it. See sm_geom_fit_page(). */
     sm_geom_fit_page(pagew, pageh, ch, &ew, &eh, &fith);
-    termgfx_geom_center(pagew, fith, ew, eh, cw, ch, &dx, &dy, &icol, &irow);
+
+    /* Center with the FRACTIONAL cell size, not the integer cw/ch above. On a
+     * maximized terminal whose pixels-per-cell isn't an exact 8x16 (Windows
+     * Terminal), int truncation of canvas/grid loses a fraction of a cell, and
+     * the centered image lands a cell or two off ("kind of centered"). The
+     * _ex form divides the pixel offset by the true fractional cell so the col/
+     * row round correctly. (termgfx_geom_center_ex, adopted from the shared
+     * fix.) */
+    {
+        double cwf = (g_grid_cols > 0) ? (double)g_canvas_w / g_grid_cols : cw;
+        double chf = (g_grid_rows > 0) ? (double)g_canvas_h / g_grid_rows : ch;
+        termgfx_geom_center_ex(pagew, fith, ew, eh, cwf, chf,
+                               &dx, &dy, &icol, &irow);
+    }
 
     g_geom.ew = ew;
     g_geom.eh = eh;
@@ -847,6 +860,18 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
      * Unknown terminal (no probe reply yet) counts as not-SyncTERM: a few early
      * frames then carry a redundant palette, which is never WRONG. */
     emit_pal = pal_changed || !sm_input_is_syncterm();
+
+    /* Geometry changed since the last frame we SENT -- a probe reply narrowed
+     * the canvas/grid, or the terminal was resized. The previous frame was
+     * drawn at a different cell/size and nothing has wiped its footprint, so a
+     * stale rectangle of the old image (and 1oom's pre-sixel "Loading..." text)
+     * would sit in the background behind the new, smaller or moved frame. Clear
+     * the screen first. have_fb guards the very first frame, already cleared by
+     * term_enter. (Same fix the sibling doors' tier-change path applies with
+     * ESC[2J; here the trigger is the probe-driven geometry change.) */
+    if (have_fb && (last_icol != g_icol || last_irow != g_irow
+                    || last_ew != g_geom.ew || last_eh != g_geom.eh))
+        sm_out_puts("\x1b[2J\x1b[H");
 
     {   /* Save cursor, position at the centered cell, restore after -- the sixel
          * is drawn at the text cursor, so this is what centers it without
