@@ -455,11 +455,30 @@ rest; these are the local edits on top of it (plus a couple of shared
     `SyncDawn_Version_Name()` (`#define SYNCDAWN_VERSION "v0.1"`), formatting
     `"v0.1 <git-commit-date> synchro.net"` from `common/gitinfo.h` (the SBBS
     repo's git state at build time -- Vanilla Conquer is vendored in it). Drawn
-    in `menus.cpp` (main-menu footer, one line below the engine `VersionText`)
-    and `goptions.cpp` (options footer, same line as `VersionText`), declared in
-    `externs.h`. Mirrors Red Alert's patch #12 (`SyncAlert_Version_Name`); the
-    engine `VersionText` (`r<rev> ~<sha>`) is left intact, this only adds the
-    door's own line.
+    in `menus.cpp` (main-menu footer -- the engine `VersionText` and the door
+    line CENTERED as two stacked rows, raised one row off the dialog's bottom
+    edge, like Red Alert's menu) and `goptions.cpp` (options footer, same line
+    as `VersionText`, shifted left off the box edge so it clears the buttons),
+    declared in `externs.h`. Mirrors Red Alert's patch #12
+    (`SyncAlert_Version_Name`); the engine `VersionText` (`r<rev> ~<sha>`) is
+    left intact, this only adds the door's own line.
+
+27. **syncdawn: widen the Scroll Rate slider for a cell-granular mouse.**
+    `tiberiandawn/gamedlg.cpp` (Game Controls dialog): the Scroll Rate slider's
+    height `d_scroll_h` was `6 * factor` = 12px at 640x400, under SyncTERM's
+    ~16px mouse cell. Bumped to `8 * factor` = 16px = one cell row so a click
+    lands on it. (The sibling Game Speed slider was left at 12px -- it proved
+    hittable in practice.) Same rationale as patches #13/#25.
+
+28. **Widen the Visual Controls sliders for a cell-granular mouse (both
+    titles).** `redalert/visudlg.cpp` and `tiberiandawn/visudlg.cpp`: the four
+    Visual Controls sliders (Brightness / Color / Contrast / Tint) share one
+    height (`SliderHeight` / `Slider_Height`), which was `5 * factor` = 10px --
+    unhittable with a cell-granular (SyncTERM) mouse. Bumped both to `8 * factor`
+    = 16px; the inter-slider spacing (`11 * factor` = 22px) already leaves room,
+    so no layout overflow. (Also incidentally fixes a pre-existing visual
+    artifact on these RA sliders that the door's `AllowHardwareBlitFills=false`
+    fix -- software fills only -- had already resolved.)
 
 ## Deliberate non-patches (worked around outside `vanilla/`)
 

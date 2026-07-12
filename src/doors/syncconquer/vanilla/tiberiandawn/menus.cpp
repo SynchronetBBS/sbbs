@@ -811,22 +811,25 @@ int Main_Menu(unsigned int timeout)
 
             Version_Number();
 
+            //	LOCAL (SyncConquer door): engine version and the door's own
+            //	version, CENTERED as two stacked rows (like Red Alert's menu),
+            //	raised one row off the dialog's bottom edge.
             Fancy_Text_Print("%s",
-                             D_DIALOG_X + D_DIALOG_W - 5 * 2,
+                             D_DIALOG_X + D_DIALOG_W / 2,
+                             D_DIALOG_Y + D_DIALOG_H - 16 * 2,
+                             GREEN,
+                             TBLACK,
+                             TPF_6POINT | TPF_FULLSHADOW | TPF_CENTER,
+                             VersionText);
+
+            //	the door's own version, one line below the engine VersionText
+            //	(which already carries the git hash).
+            Fancy_Text_Print("%s",
+                             D_DIALOG_X + D_DIALOG_W / 2,
                              D_DIALOG_Y + D_DIALOG_H - 10 * 2,
                              GREEN,
                              TBLACK,
-                             TPF_6POINT | TPF_FULLSHADOW | TPF_RIGHT,
-                             VersionText);
-
-            //	LOCAL (SyncConquer door): the door's own version, one line below
-            //	the engine VersionText (which already carries the git hash).
-            Fancy_Text_Print("%s",
-                             D_DIALOG_X + D_DIALOG_W - 5 * 2,
-                             D_DIALOG_Y + D_DIALOG_H - 4 * 2,
-                             GREEN,
-                             TBLACK,
-                             TPF_6POINT | TPF_FULLSHADOW | TPF_RIGHT,
+                             TPF_6POINT | TPF_FULLSHADOW | TPF_CENTER,
                              SyncDawn_Version_Name());
 
             /*

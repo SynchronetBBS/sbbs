@@ -50,7 +50,7 @@ int VisualControlsClass::Init(void)
     Slider_X = Option_X + (105 * factor);
     Slider_Y = Option_Y + (30 * factor);
     Slider_Width = 70 * factor;
-    Slider_Height = 5 * factor;
+    Slider_Height = 8 * factor;         // LOCAL: was 5; taller so a cell-granular (SyncTERM) mouse click lands on it
     Slider_Y_Spacing = 11 * factor;
     Button_X = Option_X + (63 * factor);
     Button_Y = Option_Y + (102 * factor);

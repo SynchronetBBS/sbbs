@@ -253,7 +253,7 @@ void GameOptionsClass::Process(void)
             */
             Fancy_Text_Print("%s\r%s  %s",
                              (WindowList[WINDOW_EDITOR][WINDOWX] + WindowList[WINDOW_EDITOR][WINDOWWIDTH])
-                                 - 3 * resfactor,
+                                 - 3 * resfactor - 64,   //	LOCAL: shifted left ~8 cells (64px) off the box edge
                              WindowList[WINDOW_EDITOR][WINDOWY] + WindowList[WINDOW_EDITOR][WINDOWHEIGHT]
                                  - ((GameToPlay == GAME_NORMAL) ? (30 * resfactor) : (19 * resfactor)),
                              GREEN,

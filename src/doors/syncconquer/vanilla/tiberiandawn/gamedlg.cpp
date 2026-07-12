@@ -75,7 +75,7 @@ void GameControlsClass::Process(void)
     int d_speed_y = d_dialog_y + d_top_margin + d_margin1 + d_txt6_h;
 
     int d_scroll_w = d_dialog_w - (20 * factor);
-    int d_scroll_h = 6 * factor;
+    int d_scroll_h = 8 * factor; //	LOCAL: was 6; taller so a cell-granular (SyncTERM) mouse click lands on it
     int d_scroll_x = d_dialog_x + (10 * factor);
     int d_scroll_y = d_speed_y + d_speed_h + d_txt6_h + (d_margin1 * 2) + d_txt6_h;
 
