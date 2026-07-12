@@ -1039,6 +1039,7 @@ static void csi_final(char fin, int gameplay, int now)
 {
 	int p[4];
 
+
 	switch (fin) {
 		case 'A':                                          /* up arrow   -> forward */
 		case 'B':                                          /* down arrow -> back    */
@@ -1231,6 +1232,20 @@ static void csi_final(char fin, int gameplay, int now)
 					}
 					if (cp == 57421 || cp == 57422)            /* KP_PgUp/PgDn: nothing in menus, like the main keys */
 						return;
+				}
+				/* NumLock-OFF numpad Home/End/PgUp/PgDn are Duke's Aim/Look controls, NOT digits
+				 * -- the SAME mapping the legacy CSI ~/H/F path and the evdev path already use
+				 * (look_hold sc_kpad_7/1/9/3). Windows Terminal is the terminal that sends these
+				 * FUNCTION codepoints here; foot/Contour were captured NumLock-ON, whose DIGIT
+				 * codepoints (57406/57400/57408/57402) correctly fold to weapon-select below --
+				 * which is why folding these four to digits (End -> '1' -> holster the pistol) went
+				 * unseen. Handle them before kitty_kp_normalize(), which would erase the distinction. */
+				if (gameplay) {
+					int sc = (cp == 57423) ? sc_kpad_7 :   /* KP_HOME  -> Aim up   */
+					         (cp == 57424) ? sc_kpad_1 :   /* KP_END   -> Aim down */
+					         (cp == 57421) ? sc_kpad_9 :   /* KP_PGUP  -> Look up  */
+					         (cp == 57422) ? sc_kpad_3 : 0; /* KP_PGDN -> Look down */
+					if (sc) { look_hold(sc, ev); return; }
 				}
 				cp = kitty_kp_normalize(cp);            /* NumLock-OFF numpad function -> physical digit-key codepoint */
 				/* Numpad ARROWS alias the main arrows: move/turn in gameplay AND navigate menus.
