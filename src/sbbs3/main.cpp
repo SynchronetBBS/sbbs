@@ -6281,8 +6281,17 @@ NO_PASSTHRU:
 					new_node->online = ON_REMOTE;
 				}
 				/* Wait for pending data to be sent then turn off ssh_mode for uber-output */
-				while (sbbs->output_thread_running && RingBufFull(&sbbs->outbuf))
-					SLEEP(1);
+				// ...but not forever: a dead SSH peer never drains the outbuf, which would
+				// wedge this node thread in a SLEEP(1) spin.  Bail on server shutdown or
+				// after a bounded wait.  (Cf. websrvr close_session_socket.)
+				{
+					time_t ssh_drain_timeout = time(NULL) + 60;
+					while (sbbs->output_thread_running && RingBufFull(&sbbs->outbuf)) {
+						if (terminate_server || time(NULL) >= ssh_drain_timeout)
+							break;
+						SLEEP(1);
+					}
+				}
 				pthread_mutex_lock(&sbbs->ssh_mutex);
 				sbbs->ssh_mode = false;
 				sbbs->ssh_session = 0; // Don't allow subsequent SSH connections to affect this one (!)

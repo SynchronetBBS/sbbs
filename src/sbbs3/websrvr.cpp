@@ -1087,18 +1087,39 @@ static int close_session_socket(http_session_t *session)
 		return -1;
 
 	if (session->is_tls) {
+		// Drain the output ringbuffer and wait for the output thread to finish
+		// transmitting, but not forever: a non-reading client (e.g. an abandoned
+		// scraper connection) never lets the send complete, which would wedge
+		// this thread in a SLEEP(1) spin and, at shutdown, block the entire web
+		// server from terminating.  On give-up, shutdown() the socket to wake
+		// the output thread out of its blocked send so it releases outbuf_write;
+		// then tear down the TLS session.  (Same teardown fix as the terminal
+		// server's shutdown()-instead-of-close() in commit 8101584de.)
+		time_t close_deadline = time(NULL) + startup->max_inactivity;
+		bool   kicked = false;
 		// First, wait for the ringbuffer to drain...
 		len = 1;
 		while (RingBufFull(&session->outbuf) && session->socket != INVALID_SOCKET) {
+			if (terminate_server || time(NULL) >= close_deadline)
+				break;
 			if (len) {
 				if (cryptPopData(session->tls_sess, buf, 1, &len) != CRYPT_OK)
 					len = 0;
 			}
 			SLEEP(1);
 		}
-		// Now wait for tranmission to complete
+		// Now wait for transmission to complete
 		len = 1;
 		while ((locked = pthread_mutex_trylock(&session->outbuf_write)) == EBUSY) {
+			if (!kicked && (terminate_server || time(NULL) >= close_deadline)) {
+				// The output thread is stuck in a send to a dead peer while
+				// holding outbuf_write; shutdown() forces that send to return so
+				// the thread releases the mutex.  Keep spinning until we acquire
+				// it, so we never destroy the TLS session out from under an
+				// in-flight send.
+				shutdown(session->socket, SHUT_RDWR);
+				kicked = true;
+			}
 			if (len) {
 				if (cryptPopData(session->tls_sess, buf, 1, &len) != CRYPT_OK)
 					len = 0;
