@@ -50,6 +50,8 @@
 #include "geometry.h"   /* termgfx: termgfx_geom_fit / _center */
 #include "pace.h"       /* termgfx: termgfx_aimd_update / _rtt_sample */
 #include "caps.h"       /* termgfx: termgfx_query_jxl */
+#include "text.h"       /* termgfx: rt_config / rt_render_frame -- the text tiers */
+#include "charset.h"    /* termgfx: the client's charset (CP437 vs UTF-8) */
 
 /* Default terminal canvas assumed until the probe reply narrows it: an 80x25
  * session at the usual 8x16 font is 640x400 pixels. */
@@ -330,6 +332,96 @@ static int    g_ew, g_eh;                  /* emitted (scaled) image size */
 static int    g_icol = 1, g_irow = 1;      /* 1-based text-cell origin of the image */
 static int    g_geom_ready;
 
+
+/* --- render tiers ------------------------------------------------------------
+ *
+ * SIXEL is the picture; the TEXT tiers are the fallback that always works. A
+ * terminal with no sixel (and there are plenty -- conhost, PuTTY, an ancient
+ * client on a real serial line) can still play the game rendered out of block
+ * characters, in color, at whatever detail its font can carry.
+ *
+ * The tiers are built from what the CLIENT can actually do, not from a menu of
+ * everything termgfx knows:
+ *
+ *   sixel           only if the terminal answered DA1 param 4. Otherwise the door
+ *                   starts on text rather than drawing into the void.
+ *   half-block      one glyph, two pixels (upper/lower). Renders in EITHER charset
+ *                   -- CP437 0xDF, UTF-8 U+2580 -- so every client gets it.
+ *   blocks+shades   2x2 detail from the classic CP437 block/shade glyphs only, so
+ *                   it renders on font-limited terminals (conhost) where the
+ *                   quadrant glyphs come out as missing-glyph boxes.
+ *   quadrant        2x2 detail, exact, via U+2596-259F.   UTF-8 ONLY.
+ *   sextant         2x3 detail via U+1FB00.               UTF-8 ONLY.
+ *
+ * The last two are offered only to a UTF-8 client: cycling a CP437 SyncTERM
+ * through them would step it through two screens of missing-glyph boxes.
+ */
+void sr_io_toast(const char *text);   /* defined below; the tier cycle announces itself */
+
+typedef struct {
+	int text;               /* 0 = sixel (pixels); 1 = one of the text tiers */
+	rt_mode_t rt;
+	rt_charset_t cs;
+	const char * label;
+} sr_tier_t;
+
+static sr_tier_t g_tiers[6];
+static int       g_ntiers;
+static int       g_tier_i;
+static int       g_text_cols, g_text_rows;   /* what rt_config() was last given */
+
+static void sr_tier_add(int text, rt_mode_t rt, rt_charset_t cs, const char *label)
+{
+	if (g_ntiers >= (int)(sizeof g_tiers / sizeof g_tiers[0]))
+		return;
+	g_tiers[g_ntiers].text  = text;
+	g_tiers[g_ntiers].rt    = rt;
+	g_tiers[g_ntiers].cs    = cs;
+	g_tiers[g_ntiers].label = label;
+	g_ntiers++;
+}
+
+/* Built once, after the probe replies have had their say (so g_have_sixel and the
+ * charset are known). */
+static void sr_tiers_build(void)
+{
+	rt_charset_t cs = (termgfx_client_charset() == TERMGFX_UTF8) ? RT_UTF8 : RT_CP437;
+
+	if (g_ntiers > 0)
+		return;
+
+	if (sr_input_has_sixel())
+		sr_tier_add(0, 0, cs, "sixel");
+	sr_tier_add(1, RT_HALF,   cs, "half-block");
+	sr_tier_add(1, RT_BLOCKS, cs, "blocks+shades");
+	if (cs == RT_UTF8) {
+		sr_tier_add(1, RT_QUADRANT, RT_UTF8, "quadrant");
+		sr_tier_add(1, RT_SEXTANT,  RT_UTF8, "sextant");
+	}
+	g_tier_i = 0;                        /* index 0 = the best the client can take */
+}
+
+const char *sr_io_tier_name(void)
+{
+	return (g_ntiers > 0) ? g_tiers[g_tier_i].label : "sixel";
+}
+
+/* F4. Step to the next tier and repaint from scratch: the two kinds of output do
+ * not overwrite one another -- a sixel is pixels laid over the cell grid, and the
+ * text tiers write cells -- so whichever was on screen has to be erased, and the
+ * cell-diff shadow (which believes it knows what is on the terminal) has to be
+ * thrown away with it. */
+void sr_io_cycle_tier(void)
+{
+	if (g_ntiers < 2)
+		return;                          /* nothing to cycle to */
+	g_tier_i = (g_tier_i + 1) % g_ntiers;
+	g_text_cols = g_text_rows = 0;       /* force an rt_config() on the next frame */
+	rt_invalidate();                     /* the shadow describes a screen we are erasing */
+	sr_io_invalidate();                  /* -> ESC[2J + a full frame */
+	sr_io_toast(sr_io_tier_name());
+}
+
 /* Recompute the image rect from the current canvas/grid and the core's frame
  * size. Called when any of those change. */
 static void sr_io_recompute_geom(void)
@@ -493,7 +585,7 @@ static int sr_toast_row(void)
 static void sr_toast_draw(const char *text)
 {
 	char ov[128];
-	int  n = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[K\x1b[1;37;44m %s \x1b[0m",
+	int  n = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[1;37;44m %s \x1b[K\x1b[0m",
 	                  sr_toast_row(), text);
 
 	if (n > 0)
@@ -504,7 +596,7 @@ static void sr_toast_draw(const char *text)
 static void sr_toast_clear(void)
 {
 	char ov[32];
-	int  n = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[K", sr_toast_row());
+	int  n = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[0m\x1b[K", sr_toast_row());
 
 	if (n > 0)
 		sr_out_put(ov, (size_t)n);
@@ -605,11 +697,11 @@ static void sr_io_stats_emit(int force)
 	if (g_file_mode || g_fd < 0)
 		return;   /* no live terminal to draw on */
 
-	/* tier fps KB/s lag rtt/min depth kbd. The door presents sixel only today
-	 * (JXL is detect-only), so the tier is constant -- shown for parity and so it
-	 * differentiates once a JXL present path lands. */
-	tn = snprintf(txt, sizeof txt, " sixel %ufps %uKB/s lag %u/%ums depth %d %s%s ",
-	              g_recent_fps, g_recent_kbps, g_rtt_ms, g_rtt_min,
+	/* tier fps KB/s lag rtt/min depth kbd. The tier is no longer a constant: F4
+	 * cycles it, and which one you are looking at is exactly the thing you want to
+	 * know while comparing them. */
+	tn = snprintf(txt, sizeof txt, " %s %ufps %uKB/s lag %u/%ums depth %d %s%s ",
+	              sr_io_tier_name(), g_recent_fps, g_recent_kbps, g_rtt_ms, g_rtt_min,
 	              g_pace_depth, sr_input_keymode_name(),
 	              sr_audio_blob_active() ? " a-blob" : "");   /* audio streaming inline (A;LoadBlob) */
 
@@ -625,7 +717,14 @@ static void sr_io_stats_emit(int force)
 	 * readout leaves no tail behind (no blank-the-uncovered-cells dance, and no
 	 * cursor save/restore needed: nothing else draws on this row). */
 	(void)col; (void)aw;
-	ovn = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[K\x1b[30;46m%s\x1b[0m",
+	/* ESC[K BEFORE the reset, not before the attribute. Erase-to-end-of-line paints
+	 * with the CURRENT background (BCE), so running it while the cyan is set
+	 * finishes the row as a clean full-width bar AND wipes the tail of a previous,
+	 * longer readout in the same stroke. Erasing first (which is what this did)
+	 * cleared the row to BLACK and then painted a short cyan stub on it -- the strip
+	 * ended wherever the text did. The sibling doors have always done it this way
+	 * (syncdoom.c, syncconquer's door_io.c). */
+	ovn = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[30;46m%s\x1b[K\x1b[0m",
 	               sr_toast_row(), txt);
 	g_ov_prev_tn = tn;
 	if (ovn > 0) {
@@ -839,6 +938,10 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	    && (uint32_t)(sr_io_now_ms() - g_enter_ms) < SR_GEOM_SETTLE_MS)
 		return;
 
+	/* The settle window is over, so DA1 has answered (or never will): we now know
+	 * whether this client has sixel, and what charset it reads. */
+	sr_tiers_build();
+
 	/* one-shot: a door screen overwrote the game area. NOT cleared here --
 	 * several paths below DROP this frame without sending anything (pace
 	 * backpressure, pending output, OOM), and if we cleared on read the
@@ -895,6 +998,64 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 			sr_trace("dedupe identical-frame");
 			return;
 		}
+	}
+
+	/* A TEXT TIER: termgfx's block-character renderer owns the whole path from
+	 * here -- it scales, quantizes to the cell grid, and emits only the cells that
+	 * CHANGED (its own shadow buffer), so none of the sixel machinery below (quant,
+	 * scale, palette, the centered-cursor wrap) applies. */
+	if (g_ntiers > 0 && g_tiers[g_tier_i].text) {
+		const char *cells;
+		size_t      cn;
+		int         tcols = (g_grid_cols > 0) ? g_grid_cols : 80;
+		int         trows = (g_grid_rows > 0) ? g_grid_rows : 24;
+
+		/* Reserve the bottom row, exactly as the sixel path does: it belongs to the
+		 * stats strip and the volume toast, and a renderer that owned it would
+		 * repaint over them every frame. */
+		if (trows > 1)
+			trows--;
+
+		if (tcols != g_text_cols || trows != g_text_rows) {
+			/* 24-bit on SyncTERM (cterm speaks truecolor), 256 elsewhere -- the same
+			 * call the sibling doors make. */
+			rt_config(tcols, trows, g_tiers[g_tier_i].rt,
+			          sr_input_is_syncterm() ? RT_24BIT : RT_8BIT,
+			          g_tiers[g_tier_i].cs);
+			g_text_cols = tcols;
+			g_text_rows = trows;
+			force       = 1;             /* new grid: the shadow is meaningless */
+		}
+		if (force)
+			rt_invalidate();             /* something painted over us: repaint every cell */
+
+		frame_start = g_out_len;
+		if (force)
+			sr_out_puts("\x1b[2J");
+		cells = rt_render_frame(rgb, w, h, &cn);
+		if (cells != NULL && cn > 0)
+			sr_out_put(cells, cn);
+		g_force_repaint = 0;
+
+		if (sr_io_ensure(&g_last_rgb, &g_last_rgb_cap, nrgb) == 0) {
+			memcpy(g_last_rgb, rgb, nrgb);
+			have_fb = 1;
+		}
+		last_icol = g_icol;   /* keep the de-dupe key coherent across a tier switch */
+		last_irow = g_irow;
+		last_ew   = g_ew;
+		last_eh   = g_eh;
+
+		/* The same DSR-ACK pacing and the same accounting as the sixel path: a text
+		 * frame is a payload like any other, and the backpressure is about what the
+		 * TERMINAL has drawn, not about what we drew it with. */
+		sr_out_put("\x1b[6n", 4);
+		g_pace_inflight++;
+		g_pace_progress_ms = sr_io_now_ms();
+		sr_pace_dsr_sent(g_pace_progress_ms);
+		sr_stats_add_frame((uint32_t)(g_out_len - frame_start));
+		sr_io_out_flush();
+		return;
 	}
 
 	if (sr_io_ensure(&g_idx, &g_idx_cap, npx) != 0)

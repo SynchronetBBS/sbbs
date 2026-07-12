@@ -204,6 +204,7 @@ static void sr_screen_keys(int paused)
 	char                 body[256], pos[24];
 	int                  rows = 0, cols = 0;
 	int                  nkeys, nnote, need, top, left, w, inner;
+	int                  spacer = 1;      /* the blank row between keys and prose */
 	int                  i, r, vis;
 
 	sr_io_grid(&rows, &cols);
@@ -238,6 +239,26 @@ static void sr_screen_keys(int paused)
 	/* top rule [+ cartridge + air] + keys + spacer + note + divider + version +
 	 * bottom rule */
 	need = 1 + (game != NULL ? 2 : 0) + nkeys + 1 + nnote + 1 + 1 + 1;
+
+	/* TOO TALL FOR THIS TERMINAL. An 80x24 screen has no room to spare, and the
+	 * key list grows every time the door learns a key -- adding F4 was enough to
+	 * push the bottom border off the bottom of the screen, which is not a thing
+	 * anyone would notice until a player saw it. So shed the ornaments, in order of
+	 * how little they matter, and never let the box run past the last row: the
+	 * cartridge line is a nicety, the blank line is a breath, the closing paragraph
+	 * is advice -- the KEY LIST and the BORDER are the screen. */
+	if (need > rows && game != NULL) {
+		game  = NULL;
+		need -= 2;
+	}
+	if (need > rows && spacer) {
+		spacer = 0;
+		need  -= 1;
+	}
+	while (need > rows && nnote > 0) {
+		nnote--;
+		need--;
+	}
 	top  = (rows > need) ? 1 + (rows - need) / 2 : 1;
 	left = 1 + (cols - w) / 2;
 
@@ -293,7 +314,8 @@ static void sr_screen_keys(int paused)
 		sr_row(r, left, b, body, vis, inner);
 	}
 
-	sr_row(r++, left, b, NULL, 0, inner);   /* a breath between the keys and the prose */
+	if (spacer)
+		sr_row(r++, left, b, NULL, 0, inner);   /* a breath between keys and prose */
 
 	for (i = 0; i < nnote; i++, r++) {
 		snprintf(body, sizeof body, "  " A_NOTE "%s", note[i]);
@@ -492,6 +514,8 @@ int main(int argc, char **argv)
 			}
 			if (action == SR_DOOR_STATS)
 				sr_io_stats_toggle();       /* Ctrl-S: flip the overlay, keep playing */
+			if (action == SR_DOOR_TIER)
+				sr_io_cycle_tier();         /* F4: sixel <-> the text tiers, keep playing */
 			if (action == SR_DOOR_VOL_UP || action == SR_DOOR_VOL_DOWN) {
 				int  v = sr_audio_volume_step(action == SR_DOOR_VOL_UP ? +10 : -10);
 				char msg[64];

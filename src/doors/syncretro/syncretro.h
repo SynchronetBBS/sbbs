@@ -152,6 +152,11 @@ void sr_io_grid(int *rows, int *cols);
 /* A one-line message on the reserved bottom row, erased after a moment. Used by
  * the volume keys: a control you cannot see is a control you cannot trust. */
 void sr_io_toast(const char *text);
+
+/* The render tier the player is looking at, and F4's step to the next one.
+ * sixel when the terminal has it, then the text (block-character) tiers. */
+const char *sr_io_tier_name(void);
+void        sr_io_cycle_tier(void);
 void sr_io_stats_toggle(void);
 void sr_io_stats_tick(void);
 
@@ -178,6 +183,10 @@ int     sr_input_take_anykey(void);   /* one-shot: a bound key arrived */
 /* Did the terminal identify itself as SyncTERM? Until a probe reply lands this
  * is 0, i.e. the SAFE assumption (re-send the sixel palette every frame). */
 int     sr_input_is_syncterm(void);
+/* Did the terminal advertise sixel (DA1 param 4 / CTDA cap 4)? 0 until a reply
+ * lands -- so a client that never answers starts on a TEXT tier rather than
+ * drawing sixels into a terminal that will print them as garbage. */
+int     sr_input_has_sixel(void);
 /* The negotiated keyboard mode, for the stats overlay: "evdev", "kitty" or
  * "bytes". */
 const char *sr_input_keymode_name(void);

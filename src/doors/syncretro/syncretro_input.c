@@ -304,6 +304,8 @@ int sr_input_take_anykey(void)
 	return a;
 }
 
+static void sr_f4(void);   /* defined with the CSI dispatch; the evdev path needs it too */
+
 static void sr_door_action(int id)
 {
 	if (id == SR_DOOR_QUIT)
@@ -448,6 +450,7 @@ static termgfx_keymode_t g_km;     /* which key mode is in force (termgfx) */
 static unsigned          g_evdev_mods; /* held modifiers, TERMGFX_MOD_* */
 
 int sr_input_is_syncterm(void) { return g_is_syncterm; }
+int sr_input_has_sixel(void)   { return g_have_sixel; }
 
 const char *sr_input_keymode_name(void)
 {
@@ -617,6 +620,15 @@ static void sr_evdev_edge(int code, int down)
 	if (down && termgfx_keymode_evdev_settling(&g_km, sr_in_now_ms()))
 		return;
 
+	/* F4 (evdev KEY_F4). On this path the key arrives as a physical keycode rather
+	 * than an escape sequence, so it has to be caught here as well -- and only on
+	 * the press, or the release would cycle the tier a second time. */
+	if (code == 62) {
+		if (down)
+			sr_f4();
+		return;
+	}
+
 	/* The numeric keypad drives PLAYER 2's keypad (a distinct physical key from
 	 * the number row, which is player 1's). */
 	{
@@ -695,11 +707,33 @@ static void sr_evdev_report(int down)
 
 /* --- CSI dispatch ----------------------------------------------------------- */
 
+/* F4 -- the render-tier cycle. It has no byte form, so it never touches the bind
+ * table; it arrives as one of four different escape sequences depending on what
+ * the terminal thinks it is, and (on SyncTERM) as a physical-key report instead.
+ * Every spelling has to land in the same place. */
+static void sr_f4(void)
+{
+	sr_door_action(SR_DOOR_TIER);
+}
+
 static void sr_csi_final(char fin)
 {
 	int p[16], np;
 
 	switch (fin) {
+		case 'S':   /* F4: SS3 "ESC O S" (VT100 PF4 / xterm), and the same final byte
+		             * under xterm's modified-key form and kitty's ("CSI 1;m S"). No
+		             * terminal SENDS a CSI S (scroll-up) as input, so this is
+		             * unambiguous. */
+			sr_f4();
+			return;
+
+		case '~':   /* VT220-style function keys: F4 is ESC[14~ */
+			np = sr_csi_params(p, 2);
+			if (np >= 1 && p[0] == 14)
+				sr_f4();
+			return;
+
 		case 't':   /* window-op reply: ESC[4;h;wt = exact text-area size in pixels */
 			np = sr_csi_params(p, 4);
 			if (np >= 3 && p[0] == 4)

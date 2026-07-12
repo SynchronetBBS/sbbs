@@ -69,7 +69,11 @@ static const sr_bind_row_t g_binds[] = {
 	{ "?",        SR_ACT_DOOR,  SR_DOOR_HELP,                  0, "?",                "this help" },
 	{ "\023",     SR_ACT_DOOR,  SR_DOOR_STATS,                 0, "Ctrl-S",           "stats overlay" },
 	{ "\022",     SR_ACT_DOOR,  SR_DOOR_RESET,                 0, "Ctrl-R",           "reset the console" },
-	{ "\021",     SR_ACT_DOOR,  SR_DOOR_QUIT,                  0, "Ctrl-Q",           "quit" }
+	{ "\021",     SR_ACT_DOOR,  SR_DOOR_QUIT,                  0, "Ctrl-Q",           "quit" },
+	/* F4 has no BYTES: it arrives as an escape sequence (or a physical-key
+	 * report), and syncretro_input.c dispatches it directly. The empty `chars`
+	 * makes this row unmatchable -- it exists so the help screen lists the key. */
+	{ "",        SR_ACT_NONE, 0,                             0, "F4",               "render tier (sixel / text)" }
 };
 
 #define SR_NBINDS ((int)(sizeof g_binds / sizeof g_binds[0]))
@@ -119,7 +123,11 @@ static const sr_bind_row_t g_binds_pad[] = {
 	{ "?",        SR_ACT_DOOR, SR_DOOR_HELP,                  0, "?",                "this help" },
 	{ "\023",     SR_ACT_DOOR, SR_DOOR_STATS,                 0, "Ctrl-S",           "stats overlay" },
 	{ "\022",     SR_ACT_DOOR, SR_DOOR_RESET,                 0, "Ctrl-R",           "reset the console" },
-	{ "\021",     SR_ACT_DOOR, SR_DOOR_QUIT,                  0, "Ctrl-Q",           "quit" }
+	{ "\021",     SR_ACT_DOOR, SR_DOOR_QUIT,                  0, "Ctrl-Q",           "quit" },
+	/* F4 has no BYTES: it arrives as an escape sequence (or a physical-key
+	 * report), and syncretro_input.c dispatches it directly. The empty `chars`
+	 * makes this row unmatchable -- it exists so the help screen lists the key. */
+	{ "",        SR_ACT_NONE, 0,                             0, "F4",               "render tier (sixel / text)" }
 };
 
 #define SR_NBINDS_PAD ((int)(sizeof g_binds_pad / sizeof g_binds_pad[0]))

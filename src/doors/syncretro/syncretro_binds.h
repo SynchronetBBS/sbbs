@@ -33,6 +33,7 @@ enum {
 	SR_DOOR_RESET,
 	SR_DOOR_QUIT,
 	SR_DOOR_STATS,     /* Ctrl-S: toggle the live stats overlay */
+	SR_DOOR_TIER,      /* F4: step to the next render tier (sixel <-> the text tiers) */
 	SR_DOOR_VOL_UP,    /* '+' : louder */
 	SR_DOOR_VOL_DOWN   /* '-' : quieter, and at 0 we stop SENDING audio at all */
 };
