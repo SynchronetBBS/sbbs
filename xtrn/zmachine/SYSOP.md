@@ -255,9 +255,10 @@ startup and picks defaults accordingly, wrapping to the negotiated screen width.
 - **v6 graphics need a pre-baked picture cache.** `getgames.js` bakes `<story>.gfx`
   from the game's Blorb at install time (requires ImageMagick); without it, a v6
   game still plays, in text mode.
-- **Sound completion routines** (used by *Sherlock* to chain one sound after
-  another) are not implemented: each sound plays, but a chained follow-on doesn't
-  auto-fire when the first finishes.
+- **Sound completion routines run at queue time**, not at true playback end.
+  Chained sounds (*Sherlock*'s ambient-loop resume and Big Ben hour chimes)
+  queue behind the playing sound and play in the right order; only a routine's
+  *other* side effects (flag updates) land slightly early.
 - **Transcript/scripting to file** (the in-game `SCRIPT` verb) is not implemented.
 
 ---

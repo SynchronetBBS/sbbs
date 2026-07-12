@@ -120,6 +120,11 @@ try {
   ok(wire.split("A;Queue;C=2").length - 1 === 3, "repeats 3 queues three times");
 
   wire = "";
+  p.sound(4, 2, 8, 0, true);                 // chained start (issued inside a completion routine)
+  ok(wire.indexOf("A;Flush") < 0, "chained start does not flush (appends behind current sound)");
+  ok(wire.indexOf("A;Queue;C=2") >= 0, "chained start queues on the sample channel");
+
+  wire = "";
   p.sound(99, 2, 0, 0);                      // unknown sound number
   ok(wire === "", "unknown sample is silent");
 
@@ -184,16 +189,24 @@ function mkStory(version, code) {
   for (i = 0; i < code.length; i++) m[0x50 + i] = code[i];
   return m;
 }
-function runStory(version, code, withHook) {
-  var g = new JSZM(mkStory(version, code)), calls = [];
+function runStory(version, code, withHook, routine) {
+  var m = mkStory(version, code), i;
+  if (routine) {                       // optional completion routine at 0x80 (packed 0x20)
+    m[0x80] = 0;                       // routine header: 0 locals
+    for (i = 0; i < routine.length; i++) m[0x81 + i] = routine[i];
+  }
+  var g = new JSZM(m), calls = [];
   g.print = function () { }; g.highlight = function () { };
   g.updateStatusLine = function () { }; g.read = function () { return null; };
   if (withHook)
-    g.sound = function (n, fx, vol, rep) { calls.push([n, fx, vol, rep]); };
+    g.sound = function (n, fx, vol, rep, chained) { calls.push([n, fx, vol, rep, !!chained]); };
   g.run();
   return { calls: calls, flags2: g.get(16) };
 }
-function callEq(c, e) { return c && c.length === 4 && c[0] === e[0] && c[1] === e[1] && c[2] === e[2] && c[3] === e[3]; }
+function callEq(c, e) {
+  return c && c.length === 5 && c[0] === e[0] && c[1] === e[1] && c[2] === e[2]
+      && c[3] === e[3] && c[4] === e[4];
+}
 
 var r3 = runStory(3, [
   0xF5, 0x57, 3, 2, 69,                // sound_effect 3, 2, 69   (Lurking Horror shape)
@@ -202,9 +215,9 @@ var r3 = runStory(3, [
   0xBA                                 // quit
 ], true);
 ok(r3.calls.length === 3, "v3: three hook calls");
-ok(callEq(r3.calls[0], [3, 2, 69, 0]), "v3: number/effect/volume decoded, no repeats");
-ok(callEq(r3.calls[1], [1, 2, 0, 0]), "v3: bare bleep defaults effect=start");
-ok(callEq(r3.calls[2], [1, 2, 0, 0]), "v3: zero-operand form bleeps (Beyond Zork)");
+ok(callEq(r3.calls[0], [3, 2, 69, 0, false]), "v3: number/effect/volume decoded, no repeats");
+ok(callEq(r3.calls[1], [1, 2, 0, 0, false]), "v3: bare bleep defaults effect=start");
+ok(callEq(r3.calls[2], [1, 2, 0, 0, false]), "v3: zero-operand form bleeps (Beyond Zork)");
 
 var r5 = runStory(5, [
   0xF5, 0x53, 3, 2, 0x03, 0x45,        // sound_effect 3, 2, $0345 (repeats 3, volume 0x45)
@@ -212,9 +225,36 @@ var r5 = runStory(5, [
   0xBA
 ], true);
 ok(r5.calls.length === 2, "v5: two hook calls");
-ok(callEq(r5.calls[0], [3, 2, 0x45, 3]), "v5: volume low byte / repeats high byte split");
-ok(callEq(r5.calls[1], [4, 3, 0, 255]), "v5: repeats 255 (forever) decoded");
+ok(callEq(r5.calls[0], [3, 2, 0x45, 3, false]), "v5: volume low byte / repeats high byte split");
+ok(callEq(r5.calls[1], [4, 3, 0, 255, false]), "v5: repeats 255 (forever) decoded");
 ok((r5.flags2 & 0x80) === 0x80, "v5: Flags2 bit7 set when sound hook present");
+
+// Completion routine: runs immediately after a non-looping start; a sound the
+// routine starts is flagged chained (the Sherlock ambient-resume/chime shape).
+// Main: sound_effect 3, 2, $0008, routine@0x20-packed; routine: sound_effect 4.
+var rc = runStory(5,
+  [0xF5, 0x51, 3, 2, 0x00, 0x08, 0x20, 0xBA],
+  true,
+  [0xF5, 0x7F, 4, 0xB0]);             // sound_effect 4; rtrue
+ok(rc.calls.length === 2, "routine: ran immediately after the start");
+ok(callEq(rc.calls[0], [3, 2, 8, 0, false]), "routine: the triggering start is unchained");
+ok(callEq(rc.calls[1], [4, 2, 0, 0, true]), "routine: its follow-on sound is chained");
+
+// Looping start (repeats 255): never finishes, so the routine must NOT run --
+// this is what stops Sherlock's default resume-routine recursing forever.
+var rl = runStory(5,
+  [0xF5, 0x51, 6, 2, 0xFF, 0x08, 0x20, 0xBA],
+  true,
+  [0xF5, 0x7F, 4, 0xB0]);
+ok(rl.calls.length === 1, "routine: looping start fires no callback");
+ok(callEq(rl.calls[0], [6, 2, 8, 255, false]), "routine: looping start itself still plays");
+
+// Stop effect with a routine operand: no callback either (only starts finish).
+var rs = runStory(5,
+  [0xF5, 0x51, 3, 3, 0x00, 0x08, 0x20, 0xBA],
+  true,
+  [0xF5, 0x7F, 4, 0xB0]);
+ok(rs.calls.length === 1, "routine: stop effect fires no callback");
 
 var r5n = runStory(5, [0xF5, 0x7F, 1, 0xBA], false);       // no hook wired
 ok((r5n.flags2 & 0x80) === 0, "v5: Flags2 bit7 clear without a sound hook");

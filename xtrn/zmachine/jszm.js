@@ -302,8 +302,10 @@ JSZM.prototype = {
   afterInterrupt: null,// (typedSoFar) -> door refresh after a timed interrupt printed: repaint status (live
                        //   clock), or re-show the in-progress input if the interrupt scrolled the lower window
   graphicsAvailable: null,  // () -> bool: door can display pictures (v6 Flags2 bit 3)
-  sound: null,          // (number, effect, volume, repeats) -> door plays/stops a sound
-                        //   (@sound_effect); null = silent. Presence sets Flags2 bit 7 (v5+).
+  sound: null,          // (number, effect, volume, repeats, chained) -> door plays/stops a
+                        //   sound (@sound_effect); null = silent. Presence sets Flags2 bit 7
+                        //   (v5+). chained = started inside a completion routine: queue it
+                        //   behind the playing sound instead of replacing it.
   windowChanged: null,  // (win) -> door re-reads window geometry after move/size/style/margins
   scrollWindow: null,   // (win, pixels) -> door scrolls the window contents (v6; pixels signed, +up)
   setFont: null,        // (win, font) -> door reports/sets font; null -> engine reports 0 (no change)
@@ -1048,14 +1050,34 @@ JSZM.prototype = {
                    // op2 word: low byte = volume (1..8, 255 = loudest), high byte =
                    // repeats (v5+ only; 255 = forever). No operands at all (Beyond
                    // Zork does this) = a high bleep, per the Z-Standard's remarks.
-                   // The completion-routine operand (op3) is NOT forwarded: the door
-                   // can't know when the terminal finishes playback, so chained
-                   // follow-on sounds (Sherlock) don't fire -- documented limitation.
+                   // The v5+ completion routine (op3) runs IMMEDIATELY after a
+                   // non-looping sample start (the classic interpreter shortcut): a
+                   // sound started INSIDE the routine is flagged chained (hook arg 5)
+                   // so the door queues it onto the same channel BEHIND the current
+                   // one, and the chain plays in order client-side with no
+                   // playback-end notification needed (Sherlock: the ambient-loop
+                   // resume, the recursive Big Ben hour chimes). Looping starts
+                   // (repeats 255) never finish, so no callback -- which also stops
+                   // Sherlock's default resume-routine from recursing forever. The
+                   // routine's game-state side effects thus land at queue time, not
+                   // at true playback end -- harmless for the flag-clears and chime
+                   // countdowns the sound-capable games actually do.
           if (self.sound) {
             var seN = (op0 === undefined) ? 1 : (op0 & 0xffff);
             var seFx = (op1 === undefined) ? 2 : (op1 & 0xffff);
             var seVR = (op2 === undefined) ? 0 : (op2 & 0xffff);
-            self.sound(seN, seFx, seVR & 0xff, self.version >= 5 ? (seVR >> 8) & 0xff : 0);
+            var seRep = self.version >= 5 ? (seVR >> 8) & 0xff : 0;
+            // Capture the routine BEFORE runInterrupt: it executes the routine's own
+            // instructions, which overwrite the shared op0..op3 (cf. read_char below).
+            var seRtn = (self.version >= 5 && op3 !== undefined) ? (op3 & 0xffff) : 0;
+            self.sound(seN, seFx, seVR & 0xff, seRep, !!self.__soundChain);
+            if (seRtn && seFx === 2 && seN > 2 && seRep !== 255) {
+              var sePrev = self.__soundChain;   // save/restore: chime routines nest
+              self.__soundChain = true;
+              var seR = runInterrupt(seRtn);
+              self.__soundChain = sePrev;
+              if (seR === HALT) return HALT;
+            }
           }
           break;
         case 246: // read_char (v4+): read one keypress, store its ZSCII code.

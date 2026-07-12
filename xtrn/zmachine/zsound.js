@@ -18,9 +18,11 @@
 // Z-machine model (Z-Spec 9): only ONE sampled sound plays at a time, so
 // samples own a single fixed channel, flushed before each Queue (voice
 // stealing) and on the stop/finish effects. Bleeps use a second channel so a
-// bleep doesn't cut off a playing sample. The @sound_effect completion routine
-// is not supported (the terminal doesn't report playback end) — jszm.js
-// documents that limitation at the opcode.
+// bleep doesn't cut off a playing sample. A CHAINED start (issued from inside
+// a @sound_effect completion routine -- jszm.js runs those immediately after a
+// non-looping start) skips the flush and appends to the channel FIFO instead,
+// so the chain plays in order client-side (Sherlock's ambient-loop resume and
+// Big Ben hour chimes) with no playback-end notification needed.
 
 // Parse a Blorb's resource index for Snd entries. Returns { <num>: {off, len} }
 // (len covers the full stored file: FORM/AIFF chunks include their own 8-byte
@@ -80,8 +82,9 @@ function JSZM_zsBlorbSnds(path) {
 //               upload as "<tag>/s<num>" ("s" keeps them clear of the picture
 //               bridge's "<tag>/<pic>.ppm" entries in the same cache dir)
 //   cterm     — a load({}, "cterm_lib.js") object (optional; loaded if absent)
-// Returns { sound(number, effect, volume, repeats), tier, stop() }. `sound` is
-// exception-safe: a playback error must never unwind into the interpreter.
+// Returns { sound(number, effect, volume, repeats, chained), tier, stop() }.
+// `sound` is exception-safe: a playback error must never unwind into the
+// interpreter.
 function JSZM_makeZSound(opts) {
   var SND_CH = 2;                    // sampled-sound channel (exclusive, like Z-machine audio)
   var BLEEP_CH = 3;                  // bleeps mix on their own channel
@@ -123,7 +126,7 @@ function JSZM_makeZSound(opts) {
     return Math.round(v * 100 / 8);
   }
 
-  function playSample(num, effect, volume, repeats) {
+  function playSample(num, effect, volume, repeats, chained) {
     if (tier < 2) return;
     var data = sampleData(num);
     if (data == null) return;
@@ -132,7 +135,9 @@ function JSZM_makeZSound(opts) {
       cterm.audio_prefetch(name, data);
       return;
     }
-    cterm.audio_flush(SND_CH);                             // one sound at a time (voice stealing)
+    if (!chained)                                          // one sound at a time (voice stealing)...
+      cterm.audio_flush(SND_CH);                           // ...but a chained start appends behind
+                                                           // the playing sound (completion routines)
     var loop = (repeats === 255);
     var n = loop ? 1 : Math.min(Math.max(repeats, 1), MAX_REPEATS);
     for (var i = 0; i < n; i++)                            // FIFO append = consecutive repeats
@@ -148,7 +153,7 @@ function JSZM_makeZSound(opts) {
 
   return {
     tier: tier,
-    sound: function (number, effect, volume, repeats) {
+    sound: function (number, effect, volume, repeats, chained) {
       try {
         if (number <= 2) {                                 // 0 = stop-all (Z-Spec 1.1), 1/2 = bleeps
           if (number >= 1) { if (effect === 2) bleep(number); }
@@ -159,7 +164,7 @@ function JSZM_makeZSound(opts) {
           if (tier >= 2) cterm.audio_flush(SND_CH);
           return;
         }
-        playSample(number, effect, volume, repeats);
+        playSample(number, effect, volume, repeats, chained);
       } catch (e) {
         log(LOG_WARNING, "zsound: " + e);
       }
