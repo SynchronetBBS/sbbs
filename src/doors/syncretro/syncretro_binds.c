@@ -36,23 +36,23 @@ typedef struct {
  * "action buttons" and names none of them. Do not guess. */
 static const sr_bind_row_t g_binds[] = {
 	/* --- Player 1 (one controller): W A S D + Z X C + the number row --- */
-	{ "w",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_UP,     0, "W A S D | arrows", "disc (player 1 | 2)" },
+	{ "w",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_UP,     0, "W A S D \1 arrows", "disc (player 1 \1 2)" },
 	{ "a",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_LEFT,   0, NULL,               NULL },
 	{ "s",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_DOWN,   0, NULL,               NULL },
 	{ "d",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_RIGHT,  0, NULL,               NULL },
 
-	{ "z",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_A,      0, "Z X C | , . /",    "action buttons" },
+	{ "z",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_A,      0, "Z X C \1 , . /",    "action buttons" },
 	{ "x",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_B,      0, NULL,               NULL },
 	{ "c",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_Y,      0, NULL,               NULL },
 
 	/* 5 and 0 are absent here on purpose: they are button bits, two rows down. */
-	{ "12346789", SR_ACT_DIGIT, 0,                             0, "1-9,0 | num pad",  "keypad digits" },
+	{ "12346789", SR_ACT_DIGIT, 0,                             0, "1-9,0 \1 num pad",  "keypad digits" },
 	{ "5",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_R3,     0, NULL,               NULL },
 	{ "0",        SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_L3,     0, NULL,               NULL },
 
 	/* Terminals disagree: some send BS (0x08) for Backspace, some DEL (0x7f). */
-	{ "\010\177", SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_L2,     0, "Bksp | KP Del",    "keypad Clear" },
-	{ "\r\n",     SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_R2,     0, "Enter | KP Enter", "keypad Enter" },
+	{ "\010\177", SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_L2,     0, "Bksp \1 KP Del",    "keypad Clear" },
+	{ "\r\n",     SR_ACT_PAD,   RETRO_DEVICE_ID_JOYPAD_R2,     0, "Enter \1 KP Enter", "keypad Enter" },
 
 	/* --- Player 2 action buttons. Its disc (arrows) and keypad (numpad) are
 	 * decoded in syncretro_input.c, not here; these rows are silent in the help
@@ -94,7 +94,7 @@ static const sr_bind_row_t g_binds[] = {
  * are HIS d-pad (port 0 -- see sr_profile_arrow_port()), not a phantom second
  * player's. Tab still swaps ports, for the rare cartridge that reads port 2. */
 static const sr_bind_row_t g_binds_pad[] = {
-	{ "w",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_UP,     0, "W A S D | arrows", "d-pad" },
+	{ "w",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_UP,     0, "W A S D \1 arrows", "d-pad" },
 	{ "a",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_LEFT,   0, NULL,               NULL },
 	{ "s",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_DOWN,   0, NULL,               NULL },
 	{ "d",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_RIGHT,  0, NULL,               NULL },

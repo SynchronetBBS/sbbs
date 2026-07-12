@@ -110,11 +110,18 @@ static void sr_puts(const char *s)
 #define A_FRAME  "\x1b[1;34m"      /* the box: bright blue */
 #define A_DOOR   "\x1b[1;37m"      /* "SyncRetro" */
 #define A_CON    "\x1b[1;33m"      /* the console's name */
+/* The badge sets a BACKGROUND, and a background is sticky: the next SGR that
+ * only names a foreground (A_FRAME) leaves the red in place, and the box glyphs
+ * after the badge get drawn on it -- the red bled out of the badge and along the
+ * rule to the corner. Anything that follows the badge must reset FIRST. */
 #define A_PAUSED "\x1b[1;33;41m"   /* the PAUSED badge: yellow on red */
+#define A_UNBADGE A_OFF A_FRAME    /* ...and back to a plain frame, background and all */
 #define A_KEY    "\x1b[1;36m"      /* key names */
 #define A_DESC   "\x1b[0;37m"      /* what they do */
 #define A_NOTE   "\x1b[0;36m"      /* the closing paragraph */
-#define A_VER    "\x1b[0;34m"      /* the version, quiet on the bottom rule */
+#define A_VER    "\x1b[0;37m"      /* the version: quiet, but it has to be READABLE --
+	                                * 0;34 (dark blue on black) was not */
+#define A_HOST   "\x1b[0;36m"      /* "synchro.net" */
 #define A_GAME   "\x1b[1;32m"      /* the cartridge being played */
 #define A_PROMPT "\x1b[1;37m"      /* how to leave */
 
@@ -146,6 +153,37 @@ static void sr_row(int row, int col, const termgfx_box_t *b, const char *body, i
 	sr_puts(A_OFF);
 }
 
+/* Expand SR_SEP ('\1', see syncretro_binds.c) into `sep` -- the client charset's
+ * box-drawing vertical bar. The strings in the bind tables used to carry a literal
+ * '|', which in a key legend reads as a key to press ("W A S D | arrows" -- is the
+ * pipe part of it?); a rule glyph cannot be misread that way, but it is one byte in
+ * CP437 and three in UTF-8, so it cannot live in the table either.
+ *
+ * Returns the VISIBLE width of the result (each marker counts as one column,
+ * whatever it cost in bytes), which is what the padding math needs. */
+static int sr_sep_expand(char *dst, size_t cap, const char *src, const char *sep)
+{
+	size_t sl  = strlen(sep);
+	int    vis = 0;
+	size_t o   = 0;
+
+	for (; *src != '\0'; src++) {
+		if (*src == '\1') {
+			if (o + sl >= cap)
+				break;
+			memcpy(dst + o, sep, sl);
+			o += sl;
+		} else {
+			if (o + 1 >= cap)
+				break;
+			dst[o++] = *src;
+		}
+		vis++;
+	}
+	dst[o] = '\0';
+	return vis;
+}
+
 /* One screen serves pause, '?' and an unbound key: a player who reaches any of
  * the three wants the same thing -- the list of keys. Only the badge and the
  * closing prompt differ, because only pause needs a specific key to leave.
@@ -156,7 +194,9 @@ static void sr_row(int row, int col, const termgfx_box_t *b, const char *body, i
  * here and the player converts CP437 for us. */
 static void sr_screen_keys(int paused)
 {
-	const termgfx_box_t *b    = termgfx_box_double(termgfx_client_charset());
+	termgfx_charset_t    cs   = termgfx_client_charset();
+	const termgfx_box_t *b    = termgfx_box_double(cs);
+	const char *         sep  = termgfx_box_single(cs)->v;   /* the key-list separator */
 	const char *         con  = sr_door_console();
 	const char *         game = sr_door_title();
 	const char *         note[4];
@@ -225,7 +265,7 @@ static void sr_screen_keys(int paused)
 
 		sr_repeat(b->h, (fill > 0) ? fill : 0);
 		sr_repeat(b->h, 1);
-		sr_puts(A_PAUSED " PAUSED " A_FRAME);
+		sr_puts(A_PAUSED " PAUSED " A_UNBADGE);
 		sr_repeat(b->h, 1);
 	} else {
 		sr_repeat(b->h, (inner - vis > 0) ? inner - vis : 0);
@@ -243,11 +283,13 @@ static void sr_screen_keys(int paused)
 		sr_row(r++, left, b, NULL, 0, inner);
 	}
 	for (i = 0; sr_bind_help_line(i, &key, &desc); i++, r++) {
-		int kn = (int)strlen(key);
+		char k[64], d[96];
+		int  kn = sr_sep_expand(k, sizeof k, key, sep);
+		int  dn = sr_sep_expand(d, sizeof d, desc, sep);
 
 		snprintf(body, sizeof body, "  " A_KEY "%s" A_DESC "%*s%s",
-		         key, (kn < 18) ? 18 - kn : 1, "", desc);
-		vis = 2 + ((kn < 18) ? 18 : kn + 1) + (int)strlen(desc);
+		         k, (kn < 18) ? 18 - kn : 1, "", d);
+		vis = 2 + ((kn < 18) ? 18 : kn + 1) + dn;
 		sr_row(r, left, b, body, vis, inner);
 	}
 
@@ -276,8 +318,11 @@ static void sr_screen_keys(int paused)
 		 * line, so keep the date and drop it. */
 		vn = snprintf(ver, sizeof ver, "%s  %s  %.11s  synchro.net",
 		              SR_VERSION, GIT_HASH, GIT_DATE);
-		snprintf(body, sizeof body, "  " A_VER "%s" A_OFF "%*s" A_PROMPT "%s" A_OFF "  ",
-		         ver, (inner - 2 - vn - (int)strlen(leave) - 2 > 0)
+		snprintf(body, sizeof body,
+		         "  " A_VER "%s  %s  %.11s  " A_HOST "synchro.net" A_OFF
+		         "%*s" A_PROMPT "%s" A_OFF "  ",
+		         SR_VERSION, GIT_HASH, GIT_DATE,
+		         (inner - 2 - vn - (int)strlen(leave) - 2 > 0)
 		            ? inner - 2 - vn - (int)strlen(leave) - 2 : 1, "", leave);
 		sr_row(r++, left, b, body, inner, inner);
 	}
