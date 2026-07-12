@@ -61,6 +61,10 @@ typedef struct rc_core {
  * missing symbol / dlopen failure / API mismatch (diagnostic to stderr). */
 int rc_core_open(rc_core_t *c, const char *path);
 
+/* Why the last rc_core_* call failed, in a sentence a PLAYER can read. A door
+ * that dies before the terminal is up dies invisibly otherwise. */
+const char *rc_core_error(void);
+
 /* Wire the six callbacks (from retro_bridge.c), retro_init(), load the ROM, and
  * capture av_info. `rom_path` may be NULL for cores that need no content.
  * Returns 0 on success, -1 on failure. Call AFTER rc_core_open(). */

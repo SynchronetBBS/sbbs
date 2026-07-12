@@ -98,6 +98,41 @@ static void sr_puts(const char *s)
 	sr_out_put(s, strlen(s));
 }
 
+/* The door is dead before it drew a thing. SAY SO, ON THE PLAYER'S SCREEN.
+ *
+ * `why` is the failure in a sentence; `hint` is for the sysop (it is his install
+ * that is broken, and he is usually the first one to hit it) and may be NULL.
+ * Both go to stderr as well, for the BBS log on a platform that keeps one.
+ *
+ * The message is left up for a few seconds: the BBS clears the screen the moment
+ * the door returns, and a message the player cannot read is no better than the
+ * silence this replaces. */
+static void sr_fatal(const char *why, const char *hint)
+{
+	char line[512];
+	int  n;
+
+	fprintf(stderr, "syncretro: %s\n", why);
+	if (hint != NULL)
+		fprintf(stderr, "syncretro: %s\n", hint);
+
+	n = snprintf(line, sizeof line,
+	             "\x1b[0m\x1b[2J\x1b[H\r\n"
+	             "  \x1b[1;31mSyncRetro cannot start.\x1b[0m\r\n\r\n"
+	             "  \x1b[1;37m%s\x1b[0m\r\n", why);
+	if (n > 0)
+		sr_out_put(line, (size_t)n);
+	if (hint != NULL) {
+		n = snprintf(line, sizeof line, "\r\n  \x1b[0;36m%s\x1b[0m\r\n", hint);
+		if (n > 0)
+			sr_out_put(line, (size_t)n);
+	}
+	sr_puts("\r\n  \x1b[0;37mReturning to the BBS...\x1b[0m\r\n");
+	sr_io_out_flush();
+	sr_plat_sleep_ms(5000);      /* long enough to be read, short enough not to annoy */
+	sr_io_out_flush();
+}
+
 /* The door's own version line. SR_VERSION is bumped per release by hand; the
  * hash and date are the SBBS repo's git state at build time (git_hash.h, from
  * the shared synchronet_gitinfo() CMake helper), so they stamp THIS build. Same
@@ -377,28 +412,47 @@ int main(int argc, char **argv)
 	sr_config_apply();
 	sr_audio_init();                    /* reads syncretro.ini; no I/O yet */
 
+	/* THE TERMINAL COMES UP BEFORE THE CORE, and that ordering is the whole point.
+	 *
+	 * Every fatal startup error used to be an fprintf to stderr -- and a door's
+	 * stderr reaches nobody: the BBS spawns it with no console (on Windows, with
+	 * EX_NODISPLAY, there is not even one to spawn). So a door with a missing core
+	 * printed "Loading SyncRetro...", died, and handed the player back to the BBS
+	 * with no message on the screen and no line in any log. "It doesn't work" was
+	 * all anyone could say about it, and that is exactly how the Windows install
+	 * failed: the core .dll was never installed beside the .exe, and the door had
+	 * no way to say so.
+	 *
+	 * A stdio door reads fd 0 and writes fd 1 -- two descriptors, each half-duplex
+	 * -- where a socket door reads and writes one. */
+	if (sr_door_stdio()) {
+		if (sr_io_init_fds(0, 1) != 0)
+			return 1;
+	} else if (sr_io_init(sr_door_socket()) != 0)
+		return 1;
+
 	/* sr_config_apply() has already chdir'd into the per-user sandbox, so the
 	 * core and ROM must come from IT (absolutized against the launch dir), not
 	 * from the raw sr_door_*_path() command-line values. */
 	if (sr_config_core_path() == NULL) {
-		fprintf(stderr, "syncretro: no libretro core (use -core <path> or $SYNCRETRO_CORE)\n");
+		sr_fatal("No libretro core is installed for this console.",
+		         "Sysop: run getcore.js in the door's directory -- and note that it"
+		         " installs the core for the host it RUNS on, so a BBS that spans a"
+		         " Linux and a Windows machine needs it run on both.");
 		return 1;
 	}
-	if (rc_core_open(&core, sr_config_core_path()) != 0)
+	if (rc_core_open(&core, sr_config_core_path()) != 0) {
+		sr_fatal(rc_core_error(),
+		         "Sysop: the core must match the door binary -- a 32-bit .dll for the"
+		         " Win32 .exe, a .so for the *nix build. getcore.js installs the right"
+		         " one for the host it runs on.");
 		return 1;
+	}
 
-	/* A STDIO door reads fd 0 and writes fd 1 -- two descriptors, each half-duplex
-	 * -- where a socket door reads and writes one. The BBS (Mystic on *nix) has
-	 * already done the telnet/SSH work, so what arrives is the same clean stream
-	 * Synchronet's passthru socket delivers. */
-	if (sr_door_stdio()) {
-		if (sr_io_init_fds(0, 1) != 0)
-			goto done;
-	} else if (sr_io_init(sr_door_socket()) != 0)
+	if (rc_core_load_game(&core, sr_config_rom_path()) != 0) {
+		sr_fatal(rc_core_error(), NULL);
 		goto done;
-
-	if (rc_core_load_game(&core, sr_config_rom_path()) != 0)
-		goto done;
+	}
 
 	/* AFTER load_game, and before the first input pump or audio chunk: neither of
 	 * these facts exists any earlier. The core's library_name is only defined once

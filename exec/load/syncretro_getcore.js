@@ -47,13 +47,45 @@ var SYNCRETRO_BUILDBOT = "https://buildbot.libretro.com/nightly/";
 var SYNCRETRO_ARCHIVE_EXT = [".zip", ".7z", ".rar", ".tar", ".tar.gz", ".tgz", ".tar.xz",
                    ".tar.bz2", ".gz", ".xz", ".bz2"];
 
-// The libretro buildbot sub-path for THIS host. Windows is pinned to windows/x86
-// (the door is Win32); *nix/macOS follow the host architecture, since build.sh
-// builds the door for the host.
+// WHICH HOST ARE WE INSTALLING FOR? Not necessarily this one.
+//
+// A BBS can span machines that share one install directory over a mount -- a
+// Linux box and a Windows box both serving /sbbs is the case this door was built
+// for -- and each needs its OWN core: a .so for one, a .dll for the other, and
+// they sit side by side. But this script only ever knew about the host it was
+// RUNNING on, so a sysop who ran it on Linux installed the .so, saw "core
+// installed", and left the Windows half of his BBS with a door that could not
+// start. (That is not hypothetical: it is exactly how the NES door came to be
+// broken on the Windows node of the BBS this was written on.)
+//
+// So the platform is overridable:  jsexec getcore.js -platform win32
+// Accepted: win32, linux, darwin/macos, freebsd  (+ -arch x64|x86|arm64).
+function syncretro_getcore_platform()
+{
+	var i;
+
+	for (i = 0; i < argc - 1; i++)
+		if (argv[i] == "-platform" || argv[i] == "--platform")
+			return String(argv[i + 1]);
+	return system.platform;
+}
+
+function syncretro_getcore_arch()
+{
+	var i;
+
+	for (i = 0; i < argc - 1; i++)
+		if (argv[i] == "-arch" || argv[i] == "--arch")
+			return String(argv[i + 1]);
+	return system.architecture;
+}
+
+// The libretro buildbot sub-path for a host. Windows is pinned to windows/x86
+// (the door is Win32); *nix/macOS follow the architecture.
 function syncretro_buildbot_sub()
 {
-	var p   = system.platform;
-	var a   = String(system.architecture || "").toLowerCase();
+	var p   = syncretro_getcore_platform();
+	var a   = String(syncretro_getcore_arch() || "").toLowerCase();
 	var b64 = /64/.test(a);            // x86_64 / amd64 / x64 / aarch64
 	var arm = /arm|aarch/.test(a);
 
@@ -182,14 +214,19 @@ function syncretro_from_buildbot(dstdir, core, sub)
 function syncretro_getcore(door_dir, base, label)
 {
 	var root   = backslash(door_dir || js.startup_dir || "./");
-	var target = syncretro_target(system.platform, system.architecture);   // "" (flat, Windows), linux-x64, ...
-	var core   = base + "." + syncretro_core_ext(syncretro_platform(system.platform));
+	var plat   = syncretro_getcore_platform();       // this host, or -platform <name>
+	var arch   = syncretro_getcore_arch();
+	var target = syncretro_target(plat, arch);       // "" (flat, Windows), linux-x64, ...
+	var core   = base + "." + syncretro_core_ext(syncretro_platform(plat));
 	var dst    = target ? backslash(root + target) : root;          // <door>/<target>/ or the flat door dir
 	var where  = target ? (target + "/") : "the door dir";
 	var sub    = syncretro_buildbot_sub();
 
 	if (!label)
 		label = base;
+	if (plat != system.platform)
+		print("SyncRetro: installing for " + plat + " (not this host) -- "
+		    + "a shared install serving several hosts needs a core for each.");
 
 	// 1. Already installed?
 	if (file_exists(dst + core)) {

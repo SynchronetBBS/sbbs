@@ -11,6 +11,8 @@
  * rc_core_t function pointers. See retro_core.h / DESIGN.md.
  */
 #include "retro_core.h"
+
+#include <stdarg.h>
 #include "syncretro.h"   /* sr_bridge_install(), retro_env callback owner */
 
 #include <stdio.h>
@@ -40,16 +42,39 @@ static void  rc_dlclose(void *h) { dlclose(h); }
 static const char *rc_dlerror(void) { return dlerror(); }
 #endif
 
+/* The last failure, in words, kept for the PLAYER -- not just for stderr.
+ *
+ * A door's stderr goes nowhere a player can see (on Windows it goes nowhere at
+ * all: the BBS spawns the door with no console). So every fatal reason has to be
+ * recoverable as a string, or the door dies in silence and "it doesn't work" is
+ * all anybody can say about it. */
+static char rc_err[320];
+
+const char *rc_core_error(void)
+{
+	return rc_err[0] ? rc_err : "the libretro core could not be loaded";
+}
+
+static void rc_fail(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	vsnprintf(rc_err, sizeof rc_err, fmt, ap);
+	va_end(ap);
+	fprintf(stderr, "syncretro: %s\n", rc_err);
+}
+
 /* Resolve `sym` into c->field; on failure log and jump to fail. The
  * cast-through-void** is the standard (POSIX-blessed) dlsym idiom. */
 #define RC_RESOLVE(field, sym)                                            \
-	do {                                                                  \
-		*(void **)(&c->field) = rc_dlsym(c->dl, sym);                     \
-		if (c->field == NULL) {                                           \
-			fprintf(stderr, "syncretro: core is missing '%s'\n", sym);    \
-			goto fail;                                                    \
-		}                                                                 \
-	} while (0)
+		do {                                                                  \
+			*(void **)(&c->field) = rc_dlsym(c->dl, sym);                     \
+			if (c->field == NULL) {                                           \
+				rc_fail("the core exports no '%s' -- is it a libretro core?", sym); \
+				goto fail;                                                    \
+			}                                                                 \
+		} while (0)
 
 int rc_core_open(rc_core_t *c, const char *path)
 {
@@ -57,7 +82,7 @@ int rc_core_open(rc_core_t *c, const char *path)
 
 	c->dl = rc_dlopen(path);
 	if (c->dl == NULL) {
-		fprintf(stderr, "syncretro: cannot load core '%s': %s\n", path, rc_dlerror());
+		rc_fail("cannot load the core '%s': %s", path, rc_dlerror());
 		return -1;
 	}
 
@@ -78,7 +103,7 @@ int rc_core_open(rc_core_t *c, const char *path)
 	RC_RESOLVE(reset,                  "retro_reset");
 
 	if (c->api_version() != RETRO_API_VERSION) {
-		fprintf(stderr, "syncretro: core libretro API %u != frontend %u\n",
+		rc_fail("core libretro API %u != frontend %u",
 		        c->api_version(), (unsigned)RETRO_API_VERSION);
 		goto fail;
 	}
@@ -99,11 +124,11 @@ static void *rc_read_file(const char *path, size_t *size_out)
 	size_t got;
 
 	if (f == NULL) {
-		fprintf(stderr, "syncretro: cannot open ROM '%s'\n", path);
+		rc_fail("cannot open the cartridge '%s'", path);
 		return NULL;
 	}
 	if (fseek(f, 0, SEEK_END) != 0 || (len = ftell(f)) < 0 || fseek(f, 0, SEEK_SET) != 0) {
-		fprintf(stderr, "syncretro: cannot size ROM '%s'\n", path);
+		rc_fail("cannot size the cartridge '%s'", path);
 		fclose(f);
 		return NULL;
 	}
@@ -115,7 +140,7 @@ static void *rc_read_file(const char *path, size_t *size_out)
 	got = fread(buf, 1, (size_t)len, f);
 	fclose(f);
 	if (got != (size_t)len) {
-		fprintf(stderr, "syncretro: short read on ROM '%s'\n", path);
+		rc_fail("short read on the cartridge '%s'", path);
 		free(buf);
 		return NULL;
 	}
