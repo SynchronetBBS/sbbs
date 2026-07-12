@@ -85,6 +85,65 @@ function door_exe_name(name, platname)
 	return name + (/^win/i.test(String(platname)) ? ".exe" : "");
 }
 
+// --- finding what was just built --------------------------------------------
+//
+// WHERE the build leaves the binary is not one path, and assuming it was one is a
+// bug this function exists to end: every door's deploy looked for "build/<exe>",
+// which is right on *nix and WRONG ON WINDOWS -- build.bat configures a Visual
+// Studio (multi-config) generator into build-msvc/, so the binary lands in
+// build-msvc/Release/. Deploy therefore failed on every Windows host with
+// "not found -- run build.bat first" immediately AFTER a successful build.bat.
+//
+// So probe, in the order a sysop is likely to have produced them, and let mtime
+// break the tie (below): whatever was built LAST is what a deploy should push.
+function door_built_candidates(exename)
+{
+	if (/^win/i.test(String(system.platform)))
+		return [ "build-msvc/Release/" + exename,   // build.bat (the documented path)
+		         "build-msvc/Debug/" + exename,
+		         "build/Release/" + exename,        // hand-run VS generator (see COMPILING.md)
+		         "build/Debug/" + exename,
+		         "build/" + exename ];              // single-config generator (Ninja/NMake)
+	return [ "build/" + exename,                    // build.sh
+		 "build/Release/" + exename,            // a multi-config generator (Ninja Multi-Config)
+		 "build/Debug/" + exename ];
+}
+
+// The built binary, or null when nothing was built. `built` (spec.built) pins the
+// location explicitly and skips the probe entirely.
+//
+// When several builds exist -- a stale build/Debug beside a fresh build-msvc/Release,
+// say -- take the NEWEST and SAY SO. Silently preferring a fixed order would deploy a
+// binary the sysop did not just build, and the door would then behave like a change
+// that "didn't take", which is exactly the class of bug that is miserable to chase.
+function door_find_built(srcdir, exename, built)
+{
+	var dir = backslash(srcdir);
+	var cands, found = [], best, i;
+
+	if (built)
+		return file_exists(dir + built) ? dir + built : null;
+
+	cands = door_built_candidates(exename);
+	for (i = 0; i < cands.length; i++) {
+		if (file_exists(dir + cands[i]))
+			found.push(dir + cands[i]);
+	}
+	if (!found.length)
+		return null;
+
+	best = found[0];
+	for (i = 1; i < found.length; i++) {
+		if (file_date(found[i]) > file_date(best))
+			best = found[i];
+	}
+	if (found.length > 1) {
+		print("[deploy] " + found.length + " builds of " + exename + " present;"
+		    + " deploying the most recently built: " + best);
+	}
+	return best;
+}
+
 // --- the copy ---------------------------------------------------------------
 
 // Is `dst` already this exact build? Compared by CONTENT, and that is not
@@ -216,7 +275,12 @@ function door_deploy_into(door_dir, exe, exename, subdir)
 // spec:
 //   name    "syncdoom"                 -- the binary's base name
 //   srcdir  js.exec_dir                -- src/doors/<door>/ (the deploy script's own dir)
-//   built   "build/syncdoom"           -- where build.sh/build.bat leaves it, relative to srcdir
+//   built   "build/syncdoom"           -- OPTIONAL: pin the built binary's location,
+//                                         relative to srcdir. Omit it (every door does)
+//                                         and door_find_built() probes the per-platform
+//                                         build dirs -- build/ on *nix, build-msvc/<Config>/
+//                                         for build.bat. Only pin it for a door whose
+//                                         build leaves the binary somewhere unusual.
 //   xtrn    "syncdoom"                 -- the xtrn/<dir> bundle name
 //   subdir  true|false                 -- also install into <os>-<arch>/ (see the header)
 //
@@ -248,19 +312,22 @@ function door_want_subdir(spec)
 function door_deploy(spec)
 {
 	var exename = door_exe_name(spec.name, system.platform);
-	var exe     = backslash(spec.srcdir) + (spec.built || ("build/" + exename));
+	var exe     = door_find_built(spec.srcdir, exename, spec.built);
 	var bundle  = backslash(spec.srcdir) + "../../../xtrn/" + (spec.xtrn || spec.name);
 	var tgt     = door_target(system.platform, system.architecture);
 	var subdir  = door_want_subdir(spec);
 	var ok      = true;
-	var live, i;
+	var live, i, looked;
 
-	if (!file_exists(exe)) {
-		print("[deploy] ERROR: " + exe + " not found -- run "
+	if (exe === null) {
+		looked = spec.built ? [ spec.built ] : door_built_candidates(exename);
+		print("[deploy] ERROR: no " + exename + " found under "
+		    + fullpath(backslash(spec.srcdir)) + " -- run "
 		    + (/^win/i.test(system.platform) ? "build.bat" : "./build.sh") + " first");
+		print("[deploy]        Looked for: " + looked.join(", "));
 		return 1;
 	}
-	print("[deploy] " + exename + " -> "
+	print("[deploy] " + fullpath(exe) + " -> "
 	    + (subdir && tgt ? ("flat + " + tgt + "/") : "the door dir (flat)")
 	    + (subdir || !tgt ? "" : "   [--subdir also installs into " + tgt + "/]"));
 	if (subdir && spec.direct_launch)

@@ -36,15 +36,19 @@ var rc = door_deploy({
 	direct_launch: true
 });
 
-/* SyncDawn (Tiberian Dawn) -- built into build/syncdawn when BUILD_VANILLATD=ON
- * (build.sh's default; "./build.sh ra" skips it). Deploy it too when present; a
- * Red-Alert-only build has no build/syncdawn, so this is a clean no-op there
- * (rather than door_deploy printing a "not found -- run build.sh" error). Its
- * own xtrn bundle (xtrn/syncdawn) and, like syncalert, a direct (non-lobby)
- * launch, so FLAT. */
-var td_exe = backslash(js.exec_dir) + "build/syncdawn"
-    + (/^win/i.test(system.platform) ? ".exe" : "");
-if (file_exists(td_exe)) {
+/* SyncDawn (Tiberian Dawn) -- built alongside syncalert when BUILD_VANILLATD=ON
+ * (the default of both build.sh and build.bat; "ra" skips it). Deploy it too when
+ * present; a Red-Alert-only build produced no syncdawn, so this is a clean no-op
+ * there (rather than door_deploy printing a "not found -- run build.sh" error).
+ * Its own xtrn bundle (xtrn/syncdawn) and, like syncalert, a direct (non-lobby)
+ * launch, so FLAT.
+ *
+ * Ask door_find_built() where the binary is rather than spelling out "build/" --
+ * the answer is build/ on *nix but build-msvc/<Config>/ for build.bat, and
+ * hardcoding the *nix one is precisely the bug that made this gate silently skip
+ * SyncDawn on every Windows build. */
+var td_exe = door_find_built(js.exec_dir, door_exe_name("syncdawn", system.platform));
+if (td_exe !== null) {
 	var rc2 = door_deploy({
 		name:   "syncdawn",
 		srcdir: js.exec_dir,
@@ -55,8 +59,8 @@ if (file_exists(td_exe)) {
 	if (rc2 != 0)
 		rc = rc2;
 } else {
-	print("[deploy] build/syncdawn not present -- skipping SyncDawn"
-	    + " (build both with ./build.sh, or Red Alert only with ./build.sh ra)");
+	print("[deploy] no syncdawn build present -- skipping SyncDawn (both titles are"
+	    + " the default: ./build.sh or build.bat; \"ra\" builds Red Alert alone)");
 }
 
 exit(rc);
