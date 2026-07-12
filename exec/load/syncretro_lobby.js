@@ -38,6 +38,7 @@
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
 
 load("sbbsdefs.js");                       /* EX_NATIVE, EX_BIN, K_*, P_* */
+load("key_defs.js");                       /* KEY_PAGEUP/PAGEDN/HOME/END */
 load("syncretro_lib.js");
 
 var syncretro_lobby_gl = load({}, "game_lobby.js");    /* rpad/clip/ago + live_nodes */
@@ -147,7 +148,7 @@ function syncretro_lobby_draw(roms, page, pages, board, cols, per_col)
 		mp  = "\1hTop played:\1n ";
 		mpv = "Top played: ";
 		for (i = 0; i < board.length && i < 5; i++) {
-			t     = syncretro_lobby_gl.clip(board[i].title, 14);
+			t     = syncretro_lobby_gl.clip(board[i].label || board[i].title, 14);
 			plain = format("%s (%d)  ", t, board[i].count);   /* no rank -- order shows it */
 			if (mpv.length + plain.length > console.screen_columns - 1)
 				break;
@@ -232,7 +233,7 @@ function syncretro_lobby_play(rom)
 	cmd = syncretro_lobby_binary + (syncretro_lobby_stdio ? " -stdio" : " -s%H")
 	    + " -t%T -name %a -core " + syncretro_lobby_core
 	    + " -profile " + syncretro_lobby_con.profile
-	    + ' -title "' + rom.title + '" -console "' + label + '"'
+	    + ' -title "' + (rom.label || rom.title) + '" -console "' + label + '"'
 	    + ' -home "' + home + '" "' + rom.path + '"';
 
 	started = time();
@@ -339,8 +340,23 @@ function syncretro_lobby(spec)
 		key = console.getkey(K_UPPER);
 		if (key === "Q")
 			return;
-		if (key === "N") { if (page + 1 < pages.length) page++; continue; }
-		if (key === "P") { if (page > 0) page--; continue; }
+
+		/* Paging. The nav keys do what their labels say -- Enter and PgDn advance
+		 * like N, PgUp goes back like P, Home and End jump to the ends -- because a
+		 * player's fingers reach for them before they read the prompt.
+		 *
+		 * PgUp is safe to bind even though the terminal layer translates it to
+		 * CTRL_P, which is ALSO the BBS's node-message hotkey: parse_input_sequence()
+		 * turns the escape sequence (ESC[V, ESC[5~) into the key code and returns
+		 * before inkey() gets to its Ctrl-P case, so only a literally typed Ctrl-P
+		 * pages a node. Same for PgDn/CTRL_N, Home/CTRL_B, End/CTRL_E. */
+		if (key === "N" || key === "\r" || key === "\n" || key === KEY_PAGEDN) {
+			if (page + 1 < pages.length) page++;
+			continue;
+		}
+		if (key === "P" || key === KEY_PAGEUP) { if (page > 0) page--; continue; }
+		if (key === KEY_HOME) { page = 0; continue; }
+		if (key === KEY_END) { page = pages.length - 1; continue; }
 		if (key === "/") {
 			console.putmsg("\r\nSearch: ");
 			var term = console.getstr(30, K_LINE).toLowerCase();

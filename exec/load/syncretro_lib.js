@@ -34,6 +34,23 @@ load("door_deploy.js");   // door_platform/arch/target: shared with every deploy
 // 4-digit parenthetical group, not the first, and the publisher as the group
 // after it. A name that does not fit keeps its whole self as the title: a
 // wrong guess is worse than no guess.
+//
+// The NES sets are named to a different convention (No-Intro / GoodNES) that
+// staples CATALOGING TAGS onto the end instead: "Super Mario Bros. (World).nes",
+// "Kirby's Adventure (USA) (Rev 1).nes", "Contra (U) [!].nes". Those tags are
+// noise to a player choosing a game, so they come off the displayed title -- but
+// they are NOT thrown away, because they are the only thing distinguishing two
+// entries that are otherwise identical: "Contra (USA)" and "Contra (Europe)" are
+// different dumps (NTSC vs a slower 50 Hz PAL conversion), and the variant
+// collapse below would otherwise fold them onto one key and HIDE one of them.
+// So a tag is parsed OUT of the title, kept in the entry, made part of the
+// collapse key, and put back on screen only where a title would otherwise be
+// ambiguous (see syncretro_disambiguate).
+//
+// A tag is recognized by its CONTENT, never by its position: a trailing
+// parenthetical that is not a known tag is part of the title and stays there. A
+// publisher ("(Mattel)") and a year are not tags, so the Intellivision naming is
+// untouched by any of this.
 
 function syncretro_strip_ext(name)
 {
@@ -42,14 +59,92 @@ function syncretro_strip_ext(name)
 	return dot > 0 ? name.substr(0, dot) : name;
 }
 
+/* No-Intro region words, alone or comma-separated: "(USA)", "(USA, Europe)". */
+var SYNCRETRO_REGIONS = [
+	"world", "usa", "europe", "japan", "asia", "australia", "brazil", "canada",
+	"china", "denmark", "finland", "france", "germany", "greece", "hong kong",
+	"italy", "korea", "latin america", "mexico", "netherlands", "norway",
+	"poland", "portugal", "russia", "scandinavia", "spain", "sweden", "taiwan",
+	"uk", "united kingdom", "unknown"
+];
+
+/* GoodNES codes: "(U)", "(E)", "(J)", "(UE)", "(JU)", "(PD)", "(Unl)". */
+var SYNCRETRO_GOODCODES = [
+	"u", "e", "j", "w", "f", "g", "i", "s", "a", "b", "c", "k", "ue", "je",
+	"ju", "jue", "pd", "unl"
+];
+
+/* Language codes, alone or listed: "(En)", "(En,Fr,De)". Spelled out rather than
+ * accepting "any two letters", which would eat a title's own parenthetical. */
+var SYNCRETRO_LANGS = [
+	"en", "fr", "de", "es", "it", "ja", "nl", "pt", "sv", "no", "da", "fi",
+	"zh", "ko", "ru", "pl", "el", "cs", "hu", "tr", "he", "ar", "ca", "sk",
+	"uk", "hr", "sl", "et", "lv", "lt", "ro", "bg"
+];
+
+/* Release status / revision words: "(Rev 1)", "(Proto)", "(Beta 2)", "(Alt)". */
+var SYNCRETRO_STATUS = [
+	"proto", "prototype", "beta", "alpha", "sample", "demo", "unl",
+	"unlicensed", "pirate", "hack", "aftermarket", "homebrew", "alt",
+	"kiosk", "promo", "rev", "version", "v", "prg", "virtual console",
+	"classic series", "gamecube", "switch online", "e-reader"
+];
+
+// Is this parenthetical body a cataloging tag rather than part of the title?
+function syncretro_is_meta_tag(body)
+{
+	var s = String(body).toLowerCase().replace(/^\s+|\s+$/g, "");
+	var parts, i, word;
+
+	if (s === "")
+		return false;
+	if (/^\d{4}(-\d{2,4})?$/.test(s))
+		return false;                   /* a year: the parse below owns it */
+
+	/* A comma-separated list: every element must itself be a tag word. That is
+	 * what keeps "(AD&D - Cloudy Mountain)" and "(Intv Corp)" out of here. */
+	parts = s.split(",");
+	for (i = 0; i < parts.length; i++) {
+		word = parts[i].replace(/^\s+|\s+$/g, "");
+		if (word === "")
+			return false;
+		if (SYNCRETRO_REGIONS.indexOf(word) >= 0)
+			continue;
+		if (SYNCRETRO_GOODCODES.indexOf(word) >= 0)
+			continue;
+		if (SYNCRETRO_LANGS.indexOf(word) >= 0)
+			continue;
+		/* "Rev 1", "Rev A", "Beta 2", "v1.1", "PRG0" -- a status word, with an
+		 * optional trailing number/letter. */
+		if (SYNCRETRO_STATUS.indexOf(word.replace(/[\s.]*[\d.]*[a-z]?$/, "")) >= 0)
+			continue;
+		if (SYNCRETRO_STATUS.indexOf(word) >= 0)
+			continue;
+		return false;                   /* one unknown element: not a tag */
+	}
+	return true;
+}
+
 function syncretro_parse_title(filename)
 {
 	var name = syncretro_strip_ext(String(filename));
-	var out  = { title: name, year: 0, publisher: "" };
+	var out  = { title: name, year: 0, publisher: "", tags: [] };
 	var m;
 
 	// One or more stacked dump markers: "[!]", "[a1][!]".
 	name = name.replace(/(\s*\[[^\]]*\])+\s*$/, "");
+
+	// Trailing cataloging tags, right to left: "(USA) (Rev 1)" -> both. Stops at
+	// the first trailing parenthetical that is not a known tag, so a year, a
+	// publisher, or a title's own parenthetical ends the sweep.
+	for (;;) {
+		m = name.match(/^(.*?)\s*\(([^()]*)\)\s*$/);
+		if (!m || !syncretro_is_meta_tag(m[2]))
+			break;
+		out.tags.unshift(m[2].replace(/^\s+|\s+$/g, ""));
+		name = m[1];
+	}
+	out.title = name;
 
 	// "<title> (<4-digit year>) (<publisher>)" anchored at the END of the name.
 	// A year range, e.g. "(1982-83)", takes its first year.
@@ -364,7 +459,12 @@ function syncretro_collapse_variants(roms)
 
 	for (i = 0; i < roms.length; i++) {
 		r = roms[i];
-		key = r.title.toLowerCase() + "|" + r.year + "|" + r.publisher.toLowerCase();
+		/* The cataloging tags are in the key on purpose, exactly as the publisher
+		 * is: "Contra (USA)" and "Contra (Europe)" are two different dumps (NTSC
+		 * and a 50 Hz PAL conversion), not two rips of one, and BOTH must survive
+		 * -- leave them out and one is silently hidden from the picker. */
+		key = r.title.toLowerCase() + "|" + r.year + "|" + r.publisher.toLowerCase()
+		    + "|" + (r.tags || []).join(",").toLowerCase();
 		if (!best.hasOwnProperty(key)) {
 			best[key] = r;
 			order.push(key);
@@ -376,6 +476,41 @@ function syncretro_collapse_variants(roms)
 	for (i = 0; i < order.length; i++)
 		out.push(best[order[i]]);
 	return out;
+}
+
+// --- display titles -----------------------------------------------------------
+//
+// The tags are off the title (that was the point), which leaves one case where
+// the player would be worse off than before: a sysop holding both "Contra (USA)"
+// and "Contra (Europe)" now sees two identical lines and no way to tell which is
+// which. So the tag comes BACK -- but only onto the entries that actually collide,
+// and not onto the 99% that don't. Sets `label`, which is what the picker draws.
+//
+// The same rule fixes an older wart it did not cause: two different PORTS of one
+// game -- "Pac-Man (1983) (Atarisoft)" and "Pac-Man (1983) (Intv Corp)" -- are
+// deliberately both kept by the collapse above, and have always drawn as two
+// identical "Pac-Man (1983)" lines. When a colliding entry has no tag to tell it
+// apart, its publisher does the job.
+function syncretro_disambiguate(roms)
+{
+	var count = {};
+	var i, r, key, mark;
+
+	for (i = 0; i < roms.length; i++) {
+		key = roms[i].title.toLowerCase();
+		count[key] = (count[key] || 0) + 1;
+	}
+	for (i = 0; i < roms.length; i++) {
+		r = roms[i];
+		key = r.title.toLowerCase();
+		if (count[key] < 2) {
+			r.label = r.title;
+			continue;
+		}
+		mark = (r.tags && r.tags.length) ? r.tags.join(", ") : (r.publisher || "");
+		r.label = mark ? r.title + " (" + mark + ")" : r.title;
+	}
+	return roms;
 }
 
 // `rules` is an syncretro_rules() object -- the console's extensions, size band, BIOS
@@ -447,6 +582,7 @@ function syncretro_discover(roms_dir, rules, cache)
 					prev.title     = parsed.title;
 					prev.year      = parsed.year;
 					prev.publisher = parsed.publisher;
+					prev.tags      = parsed.tags;
 				}
 				return;
 			}
@@ -459,6 +595,7 @@ function syncretro_discover(roms_dir, rules, cache)
 				title:     parsed.title,
 				year:      parsed.year,
 				publisher: parsed.publisher,
+				tags:      parsed.tags,
 				size:      size
 			});
 		});
@@ -474,7 +611,7 @@ function syncretro_discover(roms_dir, rules, cache)
 		cache.entries = kept;
 	}
 
-	out = syncretro_collapse_variants(out);
+	out = syncretro_disambiguate(syncretro_collapse_variants(out));
 
 	out.sort(function (a, b) {
 		var x = a.title.toLowerCase(), y = b.title.toLowerCase();
@@ -556,14 +693,21 @@ function syncretro_top_played(plays, n)
 {
 	var counts = {};
 	var out = [];
-	var rom;
+	var rom, parsed;
 
 	plays.forEach(function (p) {
 		counts[p.rom] = (counts[p.rom] || 0) + 1;
 	});
-	for (rom in counts)
-		if (counts.hasOwnProperty(rom))
-			out.push({ rom: rom, title: syncretro_parse_title(rom).title, count: counts[rom] });
+	for (rom in counts) {
+		if (!counts.hasOwnProperty(rom))
+			continue;
+		parsed = syncretro_parse_title(rom);
+		out.push({ rom: rom, title: parsed.title, tags: parsed.tags,
+		           count: counts[rom] });
+	}
+	/* Same collision rule as the picker: two regions of one game played by two
+	 * players are two lines on the board, and must not read as one game twice. */
+	syncretro_disambiguate(out);
 
 	out.sort(function (a, b) {
 		if (a.count !== b.count)
@@ -626,7 +770,7 @@ function syncretro_paginate(items, per_page)
 // codes (which take no column). The number+bar prefix is 6 visible columns.
 function syncretro_cell(index, rom, width)
 {
-	var label = rom.title + (rom.year ? " (" + rom.year + ")" : "");
+	var label = (rom.label || rom.title) + (rom.year ? " (" + rom.year + ")" : "");
 	var namew = width - 6;
 
 	if (namew < 1)
