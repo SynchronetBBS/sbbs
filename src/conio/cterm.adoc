@@ -788,6 +788,9 @@ revision 1.329 and later.
 SGR pixel-position mouse reporting (`DECSET 1016`) is available in
 revision 1.330 and later.
 
+`APC SyncTERM:Q;libsndfileFormat;pm;ps ST` is available in revision
+1.331 and later.
+
 SOURCE: <<ECMA-48>>
 
 === `CSI < Ps c` CTerm Device Attributes (`CTDA`)
@@ -2944,14 +2947,115 @@ Under the dynamic (`WITH_SNDFILE`) build mode, the first query also triggers
 a lazy `xp_dlopen` attempt — no harm if the library is absent, just
 reports unavailable.  The `STATIC_SNDFILE` build mode always reports
 available; `WITHOUT_SNDFILE` always reports unavailable.
+
+|`libsndfileFormat;pm;ps`
+|Queries whether the loaded libsndfile runtime reports support for the
+specific container/subtype pair identified by normalized major format
+`pm` and subtype `ps`.  Values may be decimal or `0x`-prefixed
+hexadecimal.  This query uses libsndfile's `sf_format_check()` and is
+therefore the authoritative answer for the running SyncTERM process.
 |===
 
-The response is a `CSI = Ps n` audio state report with the feature ID
-(100 for libsndfile) and availability (0 / 1) as the pair.  Example
-responses:
+The response is a `CSI = Ps n` audio state report.  The `libsndfile`
+query returns the feature ID (100) and availability (0 / 1) as a pair.
+Example responses:
 
 - libsndfile available: `CSI = 7 ; 100 ; 1 n`
 - libsndfile unavailable: `CSI = 7 ; 100 ; 0 n`
+
+The `libsndfileFormat` query returns feature ID 101, the queried normalized
+major format, the queried subtype, and availability:
+
+- OGG/Opus supported: `CSI = 7 ; 101 ; 32 ; 100 ; 1 n`
+- OGG/Opus unsupported: `CSI = 7 ; 101 ; 32 ; 100 ; 0 n`
+
+For the `libsndfileFormat` query, `pm` and `ps` are derived from
+libsndfile's combined `SF_INFO.format` field as follows:
+
+[source,c]
+----
+pm = (SF_INFO.format & SF_FORMAT_TYPEMASK) >> 16;
+ps =  SF_INFO.format & SF_FORMAT_SUBMASK;
+----
+
+SyncTERM's implementation asserts the libsndfile mask layout it depends on:
+`SF_FORMAT_TYPEMASK == 0x0fff0000` and
+`SF_FORMAT_SUBMASK == 0x0000ffff`.  Unknown numeric values are accepted
+by the protocol and passed to libsndfile; the following registry is copied
+from libsndfile headers for convenience and may be incomplete or out of
+date compared to the library installed on the user's system.
+
+.libsndfile major formats for `libsndfileFormat`
+|===
+|Name |`pm`
+
+|`SF_FORMAT_WAV` |1
+|`SF_FORMAT_AIFF` |2
+|`SF_FORMAT_AU` |3
+|`SF_FORMAT_RAW` |4
+|`SF_FORMAT_PAF` |5
+|`SF_FORMAT_SVX` |6
+|`SF_FORMAT_NIST` |7
+|`SF_FORMAT_VOC` |8
+|`SF_FORMAT_IRCAM` |10
+|`SF_FORMAT_W64` |11
+|`SF_FORMAT_MAT4` |12
+|`SF_FORMAT_MAT5` |13
+|`SF_FORMAT_PVF` |14
+|`SF_FORMAT_XI` |15
+|`SF_FORMAT_HTK` |16
+|`SF_FORMAT_SDS` |17
+|`SF_FORMAT_AVR` |18
+|`SF_FORMAT_WAVEX` |19
+|`SF_FORMAT_SD2` |22
+|`SF_FORMAT_FLAC` |23
+|`SF_FORMAT_CAF` |24
+|`SF_FORMAT_WVE` |25
+|`SF_FORMAT_OGG` |32
+|`SF_FORMAT_MPC2K` |33
+|`SF_FORMAT_RF64` |34
+|`SF_FORMAT_MPEG` |35
+|===
+
+.libsndfile subtypes for `libsndfileFormat`
+|===
+|Name |`ps`
+
+|`SF_FORMAT_PCM_S8` |1
+|`SF_FORMAT_PCM_16` |2
+|`SF_FORMAT_PCM_24` |3
+|`SF_FORMAT_PCM_32` |4
+|`SF_FORMAT_PCM_U8` |5
+|`SF_FORMAT_FLOAT` |6
+|`SF_FORMAT_DOUBLE` |7
+|`SF_FORMAT_ULAW` |16
+|`SF_FORMAT_ALAW` |17
+|`SF_FORMAT_IMA_ADPCM` |18
+|`SF_FORMAT_MS_ADPCM` |19
+|`SF_FORMAT_GSM610` |32
+|`SF_FORMAT_VOX_ADPCM` |33
+|`SF_FORMAT_NMS_ADPCM_16` |34
+|`SF_FORMAT_NMS_ADPCM_24` |35
+|`SF_FORMAT_NMS_ADPCM_32` |36
+|`SF_FORMAT_G721_32` |48
+|`SF_FORMAT_G723_24` |49
+|`SF_FORMAT_G723_40` |50
+|`SF_FORMAT_DWVW_12` |64
+|`SF_FORMAT_DWVW_16` |65
+|`SF_FORMAT_DWVW_24` |66
+|`SF_FORMAT_DWVW_N` |67
+|`SF_FORMAT_DPCM_8` |80
+|`SF_FORMAT_DPCM_16` |81
+|`SF_FORMAT_VORBIS` |96
+|`SF_FORMAT_OPUS` |100
+|`SF_FORMAT_ALAC_16` |112
+|`SF_FORMAT_ALAC_20` |113
+|`SF_FORMAT_ALAC_24` |114
+|`SF_FORMAT_ALAC_32` |115
+|`SF_FORMAT_MPEG_LAYER_I` |128
+|`SF_FORMAT_MPEG_LAYER_II` |129
+|`SF_FORMAT_MPEG_LAYER_III` |130
+|===
 
 === Audio APCs
 
@@ -3028,14 +3132,18 @@ Errors are silent.  The BBS can confirm an action succeeded by querying
 ==== `APC SyncTERM:A;Load;S=N;<filename> ST` Load patch from Store (`CTAL`)
 Decodes `<filename>` (a file previously uploaded via `SyncTERM:C;S`)
 into slot `N` using libsndfile.  Silently ignored if libsndfile is not
-available — query `SyncTERM:Q;libsndfile` first to confirm.
+available — query `SyncTERM:Q;libsndfile` first to confirm libsndfile
+presence, and `SyncTERM:Q;libsndfileFormat;pm;ps` to confirm support for
+a specific container/subtype pair.
 
 ==== `APC SyncTERM:A;LoadBlob;S=N;<data> ST` Load patch from Blob (`CTALB`)
 Decodes base64-encoded audio file data directly into slot `N` using
 libsndfile without storing it in the cache directory.  Silently ignored
 if libsndfile is not available — query `SyncTERM:Q;libsndfile` first to
-confirm.  Raw headerless PCM is not inferred; use an audio container
-format with enough metadata for libsndfile to decode it.
+confirm libsndfile presence, and `SyncTERM:Q;libsndfileFormat;pm;ps` to
+confirm support for a specific container/subtype pair.  Raw headerless
+PCM is not inferred; use an audio container format with enough metadata
+for libsndfile to decode it.
 
 ==== `APC SyncTERM:A;Synth;S=N;W=<shape>;F=<hz>;T=<dur> ST` Synthesize patch (`CTAS`)
 Generates a waveform into slot `N`.  Shapes: `SIN`, `SAW`, `SQ`,

@@ -26,8 +26,10 @@
 #include "xp_sndfile.h"
 
 #include <ctype.h>
+#include <errno.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -46,6 +48,7 @@ extern size_t conn_send(const void *buf, size_t buflen, unsigned timeout);
 #define AUDIO_APC_FIRST_APC_CH     2     /* 0,1 = cterm-owned */
 #define AUDIO_APC_BASE_DB          -12.0f
 #define AUDIO_APC_FEATURE_SNDFILE  100
+#define AUDIO_APC_FEATURE_SNDFILE_FORMAT 101
 
 /* Synth shape sentinel — not a WAVE_SHAPE_* value; maps freq→0. */
 #define APC_SHAPE_SILENCE          (-2)
@@ -624,8 +627,12 @@ audio_apc_handler(char *strbuf, size_t slen, char *fn, void *apcd)
 void
 feature_query_handler(char *strbuf, size_t slen, void *apcd)
 {
-	char  tmp[64];
-	int   avail = 0;
+	char          tmp[64];
+	int           avail = 0;
+	char         *end;
+	char         *substart;
+	unsigned long major;
+	unsigned long subtype;
 	(void)slen;
 	(void)apcd;
 
@@ -634,6 +641,21 @@ feature_query_handler(char *strbuf, size_t slen, void *apcd)
 		avail = sndfile_available() ? 1 : 0;
 		snprintf(tmp, sizeof(tmp), "\x1b[=7;%d;%dn",
 		         AUDIO_APC_FEATURE_SNDFILE, avail);
+		conn_send(tmp, strlen(tmp), 0);
+	}
+	else if (strncmp(strbuf, "libsndfileFormat;", 17) == 0) {
+		errno = 0;
+		major = strtoul(strbuf + 17, &end, 0);
+		if (end == strbuf + 17 || *end != ';' || errno != 0 || major > UINT32_MAX)
+			return;
+		substart = end + 1;
+		errno = 0;
+		subtype = strtoul(substart, &end, 0);
+		if (end == substart || *end != '\0' || errno != 0 || subtype > UINT32_MAX)
+			return;
+		avail = sndfile_format_available((uint32_t)major, (uint32_t)subtype) ? 1 : 0;
+		snprintf(tmp, sizeof(tmp), "\x1b[=7;%d;%lu;%lu;%dn",
+		         AUDIO_APC_FEATURE_SNDFILE_FORMAT, major, subtype, avail);
 		conn_send(tmp, strlen(tmp), 0);
 	}
 }

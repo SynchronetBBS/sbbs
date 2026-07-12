@@ -37,6 +37,14 @@ extern "C" {
  */
 bool sndfile_available(void);
 
+/* Probe support for a specific libsndfile container/subtype pair.
+ * `major` is the SF_FORMAT_TYPEMASK field normalized right by 16 bits,
+ * and `subtype` is the raw SF_FORMAT_SUBMASK field.  This asks the
+ * loaded libsndfile runtime, so it reflects codecs actually available
+ * in that library, not only the headers SyncTERM was built with.
+ */
+bool sndfile_format_available(uint32_t major, uint32_t subtype);
+
 /* Decode `path` into a newly malloc'd S16 stereo 44100 Hz buffer.
  * On success: writes the buffer pointer to *out_frames, frame count to
  * *out_nframes, and returns true.  Caller owns *out_frames and must

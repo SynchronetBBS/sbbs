@@ -1983,7 +1983,7 @@ cterm_reset(struct cterminal *cterm)
 struct cterminal* cterm_init(int height, int width, int xpos, int ypos, int backlines, int backcols, struct vmem_cell *scrollback, int emulation)
 {
 	static bool key_tables_verified = false;
-	char	*revision="$Revision: 1.330 $";
+	char	*revision="$Revision: 1.331 $";
 	char *in;
 	char	*out;
 	struct cterminal *cterm;

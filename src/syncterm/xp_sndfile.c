@@ -22,6 +22,13 @@ bool sndfile_available(void)
 	return false;
 }
 
+bool sndfile_format_available(uint32_t major, uint32_t subtype)
+{
+	(void)major;
+	(void)subtype;
+	return false;
+}
+
 bool sndfile_decode(const char *path, int16_t **out_frames, size_t *out_nframes)
 {
 	(void)path;
@@ -41,7 +48,13 @@ bool sndfile_decode_mem(const void *data, size_t len, int16_t **out_frames, size
 
 #else /* !WITHOUT_SNDFILE */
 
+#include <assert.h>
 #include <sndfile.h>
+
+static_assert(SF_FORMAT_TYPEMASK == 0x0fff0000, "unexpected libsndfile format type mask");
+static_assert(SF_FORMAT_SUBMASK == 0x0000ffff, "unexpected libsndfile format subtype mask");
+
+#define SNDFILE_FORMAT_TYPE_SHIFT 16
 
 #if defined(STATIC_SNDFILE)
 
@@ -57,6 +70,7 @@ sndfile_ensure_loaded(void)
 #define SF_CALL_open_virtual(vio, mode, info, data) sf_open_virtual(vio, mode, info, data)
 #define SF_CALL_readf_short(sf, ptr, frames)    sf_readf_short(sf, ptr, frames)
 #define SF_CALL_close(sf)                       sf_close(sf)
+#define SF_CALL_format_check(info)              sf_format_check(info)
 
 bool
 sndfile_available(void)
@@ -77,6 +91,7 @@ static struct sndfile_api {
 	SNDFILE *  (*open_virtual_fn)(SF_VIRTUAL_IO *sfvirtual, int mode, SF_INFO *sfinfo, void *user_data);
 	sf_count_t (*readf_short)(SNDFILE *sf, short *ptr, sf_count_t frames);
 	int        (*close_fn)(SNDFILE *sf);
+	int        (*format_check)(const SF_INFO *info);
 } sf_api;
 
 static bool sndfile_load_attempted = false;
@@ -101,9 +116,11 @@ sndfile_ensure_loaded(void)
 	sf_api.open_virtual_fn = xp_dlsym(sf_api.dl, sf_open_virtual);
 	sf_api.readf_short = xp_dlsym(sf_api.dl, sf_readf_short);
 	sf_api.close_fn    = xp_dlsym(sf_api.dl, sf_close);
+	sf_api.format_check = xp_dlsym(sf_api.dl, sf_format_check);
 
 	if (sf_api.open_fn == NULL || sf_api.open_virtual_fn == NULL
-	    || sf_api.readf_short == NULL || sf_api.close_fn == NULL) {
+	    || sf_api.readf_short == NULL || sf_api.close_fn == NULL
+	    || sf_api.format_check == NULL) {
 		xp_dlclose(sf_api.dl);
 		sf_api.dl = NULL;
 		return false;
@@ -116,6 +133,7 @@ sndfile_ensure_loaded(void)
 #define SF_CALL_open_virtual(vio, mode, info, data) sf_api.open_virtual_fn(vio, mode, info, data)
 #define SF_CALL_readf_short(sf, ptr, frames)    sf_api.readf_short(sf, ptr, frames)
 #define SF_CALL_close(sf)                       sf_api.close_fn(sf)
+#define SF_CALL_format_check(info)              sf_api.format_check(info)
 
 bool
 sndfile_available(void)
@@ -132,6 +150,25 @@ sndfile_available(void)
 
 #define XPBEEP_TARGET_RATE  44100  /* matches xpbeep.h — avoid pulling that
                                     * header in just for the constant. */
+
+bool
+sndfile_format_available(uint32_t major, uint32_t subtype)
+{
+	SF_INFO  info;
+	uint32_t max_major = SF_FORMAT_TYPEMASK >> SNDFILE_FORMAT_TYPE_SHIFT;
+
+	if (!sndfile_ensure_loaded())
+		return false;
+	if (major == 0 || major > max_major || subtype == 0 || subtype > SF_FORMAT_SUBMASK)
+		return false;
+
+	memset(&info, 0, sizeof(info));
+	info.samplerate = XPBEEP_TARGET_RATE;
+	info.channels = 2;
+	info.format = ((major << SNDFILE_FORMAT_TYPE_SHIFT) & SF_FORMAT_TYPEMASK)
+	    | (subtype & SF_FORMAT_SUBMASK);
+	return SF_CALL_format_check(&info) != 0;
+}
 
 /* Linear-interpolation upsample/downsample from `src_rate` to 44100,
  * and channel-remap to stereo.  Input is interleaved int16_t with
