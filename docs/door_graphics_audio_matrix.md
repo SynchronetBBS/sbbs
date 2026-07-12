@@ -1,0 +1,397 @@
+# Synchronet door graphics & audio support matrix
+
+A cross-implementation comparison of the graphics and audio capabilities of the
+Synchronet game doors that push rich media over the terminal, and the two
+JavaScript doors that do so without the shared C library. It exists to make
+support gaps visible and to explain *why* a mechanism is present in one door but
+absent in another — the answer is almost always one of two axes (see
+[Why the gaps](#why-the-gaps)).
+
+**Doors covered**
+
+| Door | Game | Location | Runtime |
+|------|------|----------|---------|
+| SyncConquer (`syncalert`) | Command & Conquer: Red Alert | `src/doors/syncconquer` | C + [`termgfx`](../src/doors/termgfx) |
+| SyncDuke | Duke Nukem 3D | `src/doors/syncduke` | C + `termgfx` |
+| SyncDOOM | Doom | `src/doors/syncdoom` | C + `termgfx` |
+| SyncRetro | libretro frontend (NES, Intellivision…) | `src/doors/syncretro` | C + `termgfx` |
+| SyncMOO1 | Master of Orion (1oom) | `src/doors/syncmoo1` | C + `termgfx` |
+| zmachine (JSZM) | Z-machine interactive fiction | `xtrn/zmachine` | JavaScript (SpiderMonkey 1.8.5) |
+| minesweeper | Minesweeper | `xtrn/minesweeper` | JavaScript (SpiderMonkey 1.8.5) |
+
+All of the rich-media transports are **SyncTERM/CTerm-proprietary APC** verbs
+(sixel is the one broadly-standard exception). No third-party terminal
+implements JPEG XL, the audio API, or the blob verbs, so on any non-SyncTERM
+client every door degrades to sixel (if the terminal reports it) or to ANSI/text.
+
+---
+
+## Graphics matrix
+
+| Door | Native render | Delivered | Graphics tiers (default **bold**) | Color depth | Frame model | Frame rate | Transport |
+|------|---------------|-----------|-----------------------------------|-------------|-------------|-----------|-----------|
+| **SyncConquer** | 640×400, 8-bit paletted | 640×400 (1:1, no scale) | **JXL**, sixel (full-res), PPM (opt-in), text | sixel 256-color; JXL/PPM 24-bit RGB | per-frame full-screen re-encode, whole-frame dedupe | change-driven (no cap) | full-frame APC; JXL/PPM **inline blob** ≥1.329 |
+| **SyncDuke** | 320×200 → ×2 | 640×400 (client `pan/pad=2`) | **JXL**, sixel (half-res), text (half/blocks) | sixel 256-color; JXL 24-bit RGB | per-frame full-screen re-encode | **30 fps** cap | full-frame APC; JXL inline blob ≥1.329 |
+| **SyncDOOM** | 320×200 → ×2 | 640×400 (client `pan/pad=2`) | **JXL**, PPM (opt-in, LAN), sixel (half-res), text (half/quad/sextant) | sixel 256-color; JXL/PPM 24-bit RGB | per-frame full-screen re-encode | 35 fps sim, **~13 fps** delivered | full-frame APC; JXL/PPM inline blob ≥1.329 |
+| **SyncRetro** | core-defined (e.g. NES 256×240) | core geometry, may resize | **sixel only** (JXL *probed* but detect-only — no present path yet, planned M3) | sixel 256-color (truecolor quantized; legacy consoles <256 colors, so usually exact) | per-frame full-screen re-encode | paced to **core fps** (~50/60 Hz) | raw DECSIXEL |
+| **SyncMOO1** | 320×200 (sixel lossless) | 320×200+ | **sixel only** | sixel 256-color | per-frame full-screen re-encode | change-driven (turn-based) | raw DECSIXEL |
+| **zmachine** | text; v6 games add images | image sub-rects | APC copy-buffer pixels **>** JS-encoded sixel **>** `[picture #N]` text — *v6 games only* | 16-color art baked to 24-bit RGB PPM (gamma 0.55 pre-corrected) | **upload-once + blit** (`P;Paste` sub-rects), integer NN scale ≤2× | n/a (static, event-driven) | `C;LoadPPM`/`LoadPBM` + `P;Paste`; per-BBS cache, MD5-negotiated |
+| **minesweeper** | text; pixel tiles when able | 16×16-px cell tiles | APC copy-buffer pixels, else 16-color CP437 text | true-color PPM + 1-bit PBM mask; CP437 art for splashes | **upload-once + blit** (`P;Paste` 16×16 tiles) | n/a (event/mouse-driven) | `C;LoadPPM`/`LoadPBM` + `P;Paste`; `C;S`/`C;L` cache w/ CRC |
+
+Notes:
+- **JXL is the default tier on all three of Conquer/Duke/DOOM** when the client
+  advertises it (`sa_auto_tier()`/equivalent picks JXL first); the doors differ
+  only in what their *sixel fallback* looks like.
+- **Only SyncConquer renders natively at 640×400** (no upscale) — its 6–8px UI
+  fonts can't survive half-res, which is why its **sixel fallback stays
+  full-res** rather than the half-res `pan/pad=2` doubling Duke/DOOM use (both
+  natively 320×200, so the client integer-doubles their sixel back to 640×400
+  losslessly at ~½ the bytes). SyncRetro's sixel is also full-res, but for a
+  different reason: it up-samples each core frame by arbitrary non-integer
+  ratios, which the client's integer doubling can't express.
+- **The sixel tier never fills the full 640×400, and Ctrl-F (Aspect↔Fill) is
+  visible on SyncTERM.** Two mechanisms shrink the sixel image below the canvas:
+  (1) a **bottom-row reserve** — the sixel tier leaves the last text row free
+  (16px) as a scroll-guard against a bottom-touching sixel scrolling on
+  terminals that ignore DECSDM `?80l`, so the fit height drops to **384**; and
+  (2) a **whole-band clamp** — a sixel band is 6 pixels tall (each sixel char =
+  6 stacked scanlines) and a *partial* final band garbles under SyncTERM's
+  decoder (SF syncterm #258), so the emitted **height** is rounded down to a
+  multiple of 6 (`eh -= eh % 6`, door_io.c:1689). On the common 640×400 canvas
+  the reserve already gives 384 (itself ÷6, so the band clamp is a no-op there),
+  and the two fit modes then diverge — visibly, and with a real legibility
+  trade-off on SyncTERM's ~640×400 canvas:
+  - **Aspect** (the sticky default when unset) preserves the 640×400 (1.6) ratio
+    inside 640×384 → **614×384**, centered with ~13px side margins. Correct
+    proportions, but it **downscales the 640-wide framebuffer to 614** — a ~4%
+    horizontal shrink that blurs RA's small native UI fonts (the COPYRIGHT line
+    and menu labels go noticeably softer/less legible).
+  - **Fill** (Ctrl-F) uses the full **640×384** — the height still squishes 400→
+    384, but the width stays **1:1 with the 640-wide framebuffer**, so text stays
+    crisp at the cost of a ~4% too-wide aspect (the wordmark reads slightly
+    fatter). For SyncConquer's native-res UI many users prefer Fill precisely
+    because 1:1 horizontal keeps the small fonts readable.
+
+  So on SyncTERM the toggle is *not* a no-op: the bottom-row reserve makes Aspect
+  614 wide (narrower than the 640 canvas), which is what Fill stretches into. The
+  fit preference is **sticky per-user** (`syncalert.fill` flag under `-home`), so
+  which state you start a session in is whatever you last chose — not necessarily
+  the Aspect default. (A fit change from Fill→Aspect also used to leave the old
+  wider frame's pixels bleeding through the newly-exposed side margins, because
+  the shrink wasn't cleared — fixed by having `door_fit_toggle()` request a screen
+  clear the way `door_tier_cycle()` already does.)
+
+  The **JXL/PPM** tiers have neither constraint and fill the full 640×400
+  (positioned by absolute APC pixel offset, not sixel bands / text cursor) — which
+  is why the "Delivered" column reads 640×400 for the default tier; the sixel
+  *fallback* is 614×384 (Aspect) / 640×384 (Fill).
+  - The same whole-band height clamp is applied by **SyncDuke, SyncDOOM and
+    SyncMOO1** (`sxh -= sxh % 6` / `h -= h % 6`) — for the half-res doors it's the
+    native 320×200-scale height that's rounded before the client doubles it.
+    **SyncRetro is the exception**: it does not pre-clamp and relies on the
+    encoder padding a partial final band (`bands = (h+5)/6`), so a
+    non-band-multiple core height can still exercise the #258 partial-band path.
+- **The three full-screen doors hide the client's status line to reclaim a 25th
+  row.** SyncTERM is an 80×**25** terminal; when its status line is visible it
+  consumes the 25th row, leaving 24 usable (640×**384** of drawable canvas). On
+  entry each door emits DECSSDT `Ps=0` (`termgfx_term_status_off`) so the status
+  row is freed and the full 80×25 / 640×**400** canvas is available; the canvas
+  probe then reports the reclaimed size and the game fills it (SyncConquer 640×400
+  1:1; Duke/DOOM their ×2 320×200). A carried DECRQSS query captures the pre-door
+  setting so each door's terminal-restore puts it back on exit. **SyncConquer,
+  SyncDuke and SyncDOOM all do this** (default-on); the two JS doors and the
+  sixel-only doors don't reserve a full-screen canvas and leave the status line
+  alone. (Note SyncTERM's default font uses **non-square pixels** that map a
+  640×400 grid to a ~4:3 display — so filling 640×400 there already yields the
+  DOS-authentic aspect; a square-pixel font mode like "LCD 80×25" instead shows
+  640×400 as 8:5.)
+- **PPM tier** is a genuine tier only in **SyncDOOM** (opt-in, LAN/localhost —
+  uncompressed) and, opt-in, SyncConquer. termgfx ships no PPM *encoder*; the
+  door emits the P6 bytes itself.
+- **JXL is a shipping tier in only three doors** (SyncConquer, SyncDuke,
+  SyncDOOM) — and it's the *default* tier in all three when the client
+  advertises it. Duke and DOOM feed it a ×2-upscaled 320×200 frame; SyncConquer
+  a native 640×400 one. Both compress well.
+- **Two doors are sixel-only: SyncRetro and SyncMOO1** — but for opposite
+  reasons, which the "Analyzed & rejected" section below spells out. SyncRetro's
+  JXL tier is **not built yet** (explicitly deferred to milestone M3 — "JXL is
+  detect-only", `syncretro_io.c:542`); it would benefit. SyncMOO1's JXL tier was
+  **analyzed and rejected** — measured on real frames, lossless JXL is ~5×
+  *larger* than sixel for MoO1's indexed pixel art, so it stays sixel-only by
+  choice. Both still *probe* for JXL and link `libjxl`; neither consumes the
+  reply. SyncMOO1's text/block tier is also deferred, so a non-sixel terminal
+  gets **no picture** there (SyncRetro likewise has no text tier).
+- The two **JS doors do not re-encode a full frame per frame.** They use
+  SyncTERM's **copy-buffer** model: upload a PPM/PBM once (client-cached) and
+  blit sub-rectangles with `P;Paste`. zmachine additionally carries its **own
+  pure-ES5 PPM→sixel encoder** for non-SyncTERM sixel terminals.
+
+### Analyzed & rejected (a "no" is not always a "not yet")
+
+Some tiers are absent because they were tried or measured and found *not worth
+it* for that door — a deliberate decision, distinct from a tier that is merely
+unbuilt. Recording the reason keeps the same analysis from being re-run, and
+stops "door X lacks tier Y" from reading as a gap when it is actually a choice.
+
+| Door | Tier considered | Verdict | Reason |
+|------|-----------------|---------|--------|
+| **SyncMOO1** | JXL | **Rejected** | Measured on real frames: **lossless JXL is ~5× *larger* than sixel** for MoO1's indexed pixel art. Only *lossy* JXL beats sixel on size, and it rings the UI text. So the door probes + links `libjxl` but stays sixel-only by design (`syncmoo1/README.md`, DESIGN.md §11). |
+| **SyncConquer** | half-res sixel (`pan/pad=2`) | **Rejected** | Its native UI has 6–8 px fonts that don't survive the client's 2× integer doubling — legibility loss. Keeps full-res sixel instead. (Contrast Duke/DOOM, whose 320×200 art doubles losslessly.) |
+| **SyncRetro** | half-res sixel (`pan/pad=2`) | **Inapplicable** | Not a value judgment: Retro up-samples cores by arbitrary, per-axis non-integer ratios, which the client's integer-only doubling cannot express. Full-res encode is the only correct option. |
+
+Contrast with genuinely *deferred* (unbuilt, would help) tiers: **SyncRetro
+JXL** (M3) and **text/block fallbacks** in SyncRetro and SyncMOO1.
+
+---
+
+## Audio matrix
+
+| Door | Audio? | Transport | SFX source → wire | Music source → synth → codec/rate | Streaming | MIDI (OPL3) |
+|------|--------|-----------|-------------------|-----------------------------------|-----------|-------------|
+| **SyncConquer** | Yes | SyncTERM audio APC | AUD/ADPCM → PCM **22050 Hz** → Opus, upload-once content-hashed cache (1024 slots), L/R pan | Klepacki AUD **22050 Hz** → Opus, door-side disk cache + client `C;L` skip | **Yes — FMV/VQA cutscene**: 22050 Hz **16-bit mono**, 16 KB (~0.37 s) PCM chunks, A/V-synced; uses **`A;LoadBlob`** ≥1.329 | No (digital tracks) |
+| **SyncDuke** | Yes (SyncTERM ≥1.10) | SyncTERM audio APC | Creative **VOC**, 8-bit unsigned, upload-once cache | OPL/MIDI → **OPL3** (libADLMIDI) → Opus **48000 Hz**, worker thread, 3-D positional pan | No (cached) | **Yes** (MIDI source) |
+| **SyncDOOM** | Yes (SyncTERM ≥1.10) | SyncTERM audio APC | Doom **DMX** lumps, 8-bit unsigned mono, lump-native rate | MUS/MIDI → **OPL3** (libADLMIDI) → Opus **48000 Hz**, ship-once client cache | No (cached) | **Yes** (MUS source) |
+| **SyncRetro** | Yes (needs libsndfile) | SyncTERM audio APC | — (no discrete SFX; game audio only) | — | **Yes — live game audio**: core-mixed PCM → **mono Opus 100 ms chunks** (~1.2–2.0 KB, ~20 KB/s); rate = **core's** (44100/48000), not constant | No |
+| **SyncMOO1** | Yes | SyncTERM audio APC | LBX-wrapped **VOC**, upload-once, played by name | 40-track **XMI** → MIDI → **OPL3** (libADLMIDI) → Ogg **48000 Hz**, content-addressed disk cache | No (cached) | **Yes** (XMI source) |
+| **zmachine** | Yes (3-tier) | SyncTERM audio APC via `cterm_lib.js` | Blorb `Snd ` **AIFF** resources → `A;Load` (client libsndfile decodes), channel 2 (one-at-a-time, voice-steal) | — (no music track concept) | — (bleeps: `A;Synth` tones 330/880 Hz, ch 3) | No |
+| **minesweeper** | **No** | — | — | — | No | No |
+
+Notes:
+- **Two doors stream** (the `A;LoadBlob`/`stream_chunk` path): **SyncRetro**
+  (continuous live core audio) and **SyncConquer** (VQA cutscenes). Everyone else
+  uploads-once and caches — better for **repeated** SFX/music, since the client
+  replays a cached slot with no payload.
+- **OPL3 FM music** (libADLMIDI) is used by Duke (MIDI), DOOM (MUS) and MOO1
+  (XMI). SyncConquer and SyncRetro use **digital** audio only, no OPL.
+- **Music encodes at 48 kHz** (Duke/DOOM/MOO1, the Opus-legal rate); native
+  digital content is **22050 Hz** (SyncConquer) or the **core rate**
+  (SyncRetro). SFX is **8-bit unsigned** for the Build/Doom doors (VOC/DMX).
+- **zmachine's three audio tiers** (`zsound.js`): `2 digital` (samples + tones),
+  `1 tone` (tones only, samples silent), `0 bel` (ASCII BEL only). It's the only
+  door that gracefully falls all the way back to the terminal bell.
+- **minesweeper has no audio at all** — despite `.bin` files named `boom`/`mine`,
+  those are CP437 *explosion art*, not sound.
+
+The underlying termgfx audio wire model (shared by all five C doors): 256 patch
+slots (0 = music, 1–255 transient SFX), channels 2–15 (music = 2, one-shot SFX
+pool = 3–10 voice-stealing, looping/ambient = 11–15), WAV-wrapped 8/16-bit PCM
+uploaded and decoded client-side by libsndfile (Opus/OGG/FLAC/WAV/VOC, MP3 on
+libsndfile ≥1.1.0).
+
+---
+
+## Input & control matrix
+
+Input divides the same way rendering does: the five C doors negotiate raw
+terminal input protocols through `termgfx`, while the two JS doors ride
+Synchronet's `console` input layer (which does its own mouse/key handling).
+
+### Mouse
+
+| Door | Mouse? | Modes requested | Granularity | Used for |
+|------|--------|-----------------|-------------|----------|
+| **SyncConquer** | Yes | `?1003h` any-motion + `?1006h` SGR + **`?1016h` SGR-Pixels** | **pixel** where 1016 is honored, else cell (auto-detected from out-of-grid coords) | unit select/move, screen edge-scroll, music-volume slider drag |
+| **SyncDuke** | Yes | `?1003h` + `?1006h` SGR | cell → mapped to a turn rate | mouse-look steer (Ctrl-O cycles off/steer/follow) |
+| **SyncDOOM** | Yes | `?1003h` + `?1006h` SGR | cell → turn rate | mouse-look steer (Ctrl-O cycles off/steer/follow) |
+| **SyncRetro** | **No** | — | — | the libretro pad is keyboard-mapped; no pointer |
+| **SyncMOO1** | Yes | `?1003h` + `?1006h` SGR + **`?1016h` SGR-Pixels** | cell / pixel | MoO1 UI clicks (turn-based, so no motion pacing) |
+| **zmachine** | via `console` | Synchronet `console.mouse` | cell | menu / map clicks (v6) |
+| **minesweeper** | via `console` | `console.mouse` (mode 1003) | cell | reveal / flag a cell |
+
+The **pixel-level (SGR-Pixels, DEC 1016)** nuance the doors have to cope with:
+**xterm and Windows Terminal report pixel coordinates; SyncTERM currently does
+not** (it acknowledges `?1016h` but keeps sending 1-based text cells). So the two
+doors that ask for 1016 (Conquer, MoO1) auto-detect it — a reported coordinate
+past the text grid proves pixels are live — and fall back to cell coords on
+SyncTERM. Duke/DOOM don't bother requesting 1016: a cell is fine for mapping a
+pointer column to a turn rate.
+
+### Keyboard protocol
+
+The C doors negotiate a real key-up protocol so a held key = continuous motion
+(hold-to-move / hold-to-turn); without one, a terminal only sends key-*down* and
+the door has to synthesize releases on a timer.
+
+| Door | Kitty keyboard (`CSI?u`) | evdev (SyncTERM physical keys) | Fallback |
+|------|--------------------------|-------------------------------|----------|
+| **SyncConquer** | Yes | Yes | byte (synthesized releases) |
+| **SyncDuke** | Yes | Yes | byte |
+| **SyncDOOM** | Yes | Yes | byte |
+| **SyncRetro** | Yes | Yes | byte |
+| **SyncMOO1** | **No** | **No** | **byte only** — turn-based, so it never needs key-up |
+| **zmachine** | via `console` | — | `console.getkey` (BBS input layer) |
+| **minesweeper** | via `console` | — | `console.getkey` |
+
+Both negotiations live in the shared `termgfx/keymode.*`; a door emits the
+queries in its startup probe and the reply flips it into hold-to-move mode. MOO1
+deliberately opts out (nothing to hold in a 4X turn game). The JS doors don't see
+raw protocols at all — Synchronet's console gives them decoded keys.
+
+### Door hotkeys
+
+Keys the *door shim* intercepts (distinct from keys forwarded to the game). All
+are live in-session; the C doors read them off the raw byte/evdev/kitty stream,
+the JS doors as typed commands.
+
+| Action | Conquer | Duke | DOOM | Retro | MOO1 | zmachine | mines |
+|--------|:-------:|:----:|:----:|:-----:|:----:|:--------:|:-----:|
+| Cycle graphics tier | `F4` | `F4` | `F4` | — | — | — *(auto)* | — |
+| Frame-pipeline depth | — | `Ctrl-T` | `Ctrl-T` | — | — | — | — |
+| Stats overlay | `Ctrl-S` | `Ctrl-S` | `Ctrl-S` | `Ctrl-S` | — | — | — |
+| Mouse steer toggle | — | `Ctrl-O` | `Ctrl-O` | — | — | — | — |
+| Music/SFX volume | `+` `-` `=` | *(in-game menu)* | *(in-game menu)* | `+` `-` `=` | — | — | — |
+| Display-fit toggle | `Ctrl-F` | — | — | — | — | — | — |
+| Who's online | `Ctrl-U` | `Ctrl-U` | `Ctrl-U` | — | — | — | — |
+| Page a node | `Ctrl-P` | `Ctrl-P` | `Ctrl-P` | — | — | — | — |
+| Redraw / console reset | — | — | — | `Ctrl-R` | — | `Ctrl-R` | — |
+| Emergency quit | `Ctrl-Q` | *(game)* | *(game)* | `Ctrl-Q` | *(game)* | *(game)* | *(game)* |
+
+Notes:
+- **Pipeline-depth (`Ctrl-T`) exists only in Duke/DOOM**, the two doors with the
+  AIMD DSR-ACK frame-pacer. Conquer (change-driven), Retro (paced to core fps)
+  and MOO1 (turn-based) have no in-flight depth to tune.
+- **Door-level volume hotkeys exist only in Conquer and Retro** (both `+`/`-`,
+  with `=` as an unshifted alias for `+`). Duke and DOOM route volume through
+  their engines' own sound-setup
+  menus instead, so the door doesn't shadow those keys.
+- **The node overlay (`Ctrl-U` who's-online, `Ctrl-P` page) is a full-screen-door
+  feature** (Conquer/Duke/DOOM). Retro/MOO1 and the JS doors don't carry it.
+- **MOO1 exposes no door hotkeys at all** — sixel-only and turn-based, it has no
+  tier to cycle, no pacing to tune, and no overlay, so every key goes to 1oom.
+- **zmachine's "hotkeys" are typed `#` commands** rather than control keys,
+  fitting its parser-driven interaction. They toggle the display *layout*, not
+  the graphics tier: `#ansi` forces full-screen ANSI (framed, with a status line
+  and the game's split windows), `#scroll` forces a plain line-scrolling
+  transcript, and `#display` toggles between them. The picture tier itself (APC
+  copy-buffer > sixel > text) is auto-negotiated, with no user toggle.
+
+---
+
+## Capability detection & version gating
+
+Every door probes the terminal before selecting a tier — the mechanisms are the
+same, whether in C (`termgfx/caps.c`) or JS (`exec/load/cterm_lib.js`):
+
+| Probe | Query | Answer identifies |
+|-------|-------|-------------------|
+| Sixel | DA1 (`ESC[c`) attribute 4 | pixel-ops capable terminal |
+| JPEG XL | `ESC_SyncTERM:Q;JXL ST` → `ESC[=1;{0,1}-n` | JXL support (and SyncTERM peer) |
+| Audio / libsndfile | `ESC_SyncTERM:Q;libsndfile ST` → `ESC[=7;100;{0,1}n` | `1` digital / `0` tone-only |
+| CTerm version | DA1 → `ESC[=67;84;101;114;109;MAJ;MIN…c` ("Cterm") | `MAJ*1000+MIN` (e.g. 1.329 → 1329) |
+
+Version thresholds that gate features (named in `termgfx/caps.h`, mirrored in
+`cterm_lib.js`):
+
+| Version | Feature |
+|---------|---------|
+| 1002 | APC PPM pixel-media verbs (`DrawPPM`) — `TERMGFX_CTERM_VER_PPM` |
+| 1189 | Sixel |
+| 1207 | CTerm Device Attributes (CTDA) |
+| 1316 | Copy buffers (the `LoadPPM`/`P;Paste` path the JS doors use) |
+| 1318 | JPEG XL |
+| 1329 | APC **blob** verbs — `A;LoadBlob`, `Draw*Blob`, `Load*Blob` — `TERMGFX_CTERM_VER_BLOB` |
+
+**Blob verbs (≥1.329)** let audio and JXL/PPM frames ship *inline* with no cache
+file. On the non-blob cache path the C doors salt the frame cache filename with
+the door PID (`termgfx_session_salt()`) so two SyncTERM windows of one
+dialing-entry — which share `~/.cache/syncterm/<bbs>/` — don't collide
+(SourceForge syncterm #256).
+
+**Frame pacing** (the five C doors, `termgfx/pace.c`): send a frame + `ESC[6n`,
+wait for the DSR reply, and settle an AIMD in-flight pipeline depth around a
+~40 ms RTT baseline. Delivered fps ≈ pipeline depth ÷ round-trip, which is why
+SyncDOOM's 35 fps sim delivers ~13 fps over a real link. The JS doors have no
+such loop — their graphics are static/event-driven, so no per-frame pacing is
+needed.
+
+---
+
+## Why the gaps
+
+Almost every difference above reduces to **two independent axes**:
+
+### Axis 1 — runtime: compiled C + termgfx vs. interpreted ES5 JS
+
+The five C doors link `termgfx`, which does per-frame pixel quantization, sixel/
+JXL/OPL3/Opus encoding, DSR-ACK pacing, and threaded music rendering in native
+code. The two JS doors run under **SpiderMonkey 1.8.5** (ES5 only, no compiled
+inner loop). Consequences:
+
+- **No real-time full-frame video in JS.** A JS door cannot re-encode a
+  640×400 frame ~30×/sec — the quantize+encode inner loop would be far too slow
+  interpreted. So the JS doors avoid a per-frame pipeline entirely and use the
+  **copy-buffer** model: upload art once (client-cached), then blit sub-rects.
+  That's perfect for a board game or an IF illustration, and impossible to scale
+  to a running 3-D engine.
+- **JS leans on the client's persistent cache** for both graphics and audio
+  (`C;L` MD5/CRC negotiation, `audio_prefetch`) precisely because re-sending
+  payloads each turn is cheap enough interpreted only when it happens rarely.
+- **Everything JS *does* do it does through `cterm_lib.js`**, the shared JS
+  wrapper around the very same SyncTERM APC verbs termgfx emits — so a JS door
+  and a C door reach the identical terminal features; they just drive them at
+  different rates and granularities.
+
+### Axis 2 — media model: continuous engine vs. discrete scene
+
+- **Continuous engines** (Duke, DOOM, Retro, and Conquer's tactical view) produce
+  a new pixel frame every tick → they all need per-frame encode + DSR-ACK pacing.
+  Where a smaller frame pays off over a link they add a JXL tier (Conquer, Duke
+  and DOOM default to it when the client has it; Retro's is still on the
+  roadmap), and the two with a *continuous,
+  unique* audio stream ship it via the blob/stream path (Retro live audio,
+  Conquer FMV).
+- **Turn/scene-driven** experiences (MOO1, zmachine, minesweeper) only redraw on
+  input, so they never need a frame cap or streaming, and a static
+  upload-once/change-driven model suffices. MOO1 is the interesting hinge: it's a
+  C+termgfx door but *turn-based*, so it keeps the full pixel pipeline yet paces
+  change-driven like the JS doors.
+
+Individual consequences that fall out of these axes:
+
+- **Audio streaming exists in exactly two doors** (SyncRetro live game audio,
+  SyncConquer FMV) because only those have a *continuous, unique* audio stream.
+  A repeated SFX or a loopable music track is better served by the upload-once
+  cache, so the SFX/music doors deliberately don't stream.
+- **OPL3/FM music only where the source is a MIDI-family lump** (Duke MIDI, DOOM
+  MUS, MOO1 XMI). RA and libretro cores already carry digital audio, so there's
+  nothing to synthesize.
+- **minesweeper has no audio** because Minesweeper has no sound design — not a
+  capability gap, a content one.
+- **zmachine graphics only for Z-machine v6 games**, audio only for Blorb titles
+  with `Snd ` resources — the format simply doesn't carry media otherwise.
+
+---
+
+## Gaps & opportunities this surfaced
+
+- **One sixel-only door with a real JXL opportunity: SyncRetro.** Its JXL
+  present path is plumbed (probe + `libjxl`) but explicitly deferred to M3; a JXL
+  tier (smaller frames over a remote link) is a genuine win there. **Not
+  SyncMOO1** — that door's JXL was analyzed and rejected (JXL *loses* to sixel on
+  its indexed pixel art; see "Analyzed & rejected"). A **text fallback is missing
+  in both**, though — a non-sixel terminal currently gets *no picture* from
+  either, which is a real gap independent of JXL.
+- **Tone tier is effectively silent at the manager layer.** `termgfx`'s
+  `A;Synth` tone builder exists, but `audio_mgr.c` never calls it, so a `tier 0`
+  (audio-APC-but-no-libsndfile) client gets nothing from the C doors — where
+  zmachine's `zsound.js` *does* fall back to synth tones (and then BEL). The C
+  doors could adopt the same graceful degradation.
+- **The blob transport is audio+JXL/PPM only.** The JS doors' copy-buffer path
+  (`LoadPPM`/`P;Paste`) has no blob equivalent, and none is needed (their images
+  are cached-and-reused, not transient) — worth noting so it isn't mistaken for
+  an omission.
+- **zmachine `@sound_effect` completion (op 3) is not forwarded** — the terminal
+  can't report playback end, so chained follow-on sounds (e.g. Sherlock) never
+  fire. A terminal-side "sound finished" notify (the audio APC has `A;Update`
+  idle/underrun signalling) could close this.
+- **SyncRetro has no networked multiplayer** (deferred); it drives two local
+  players on one keyboard only. Duke/DOOM/Conquer all have UDP netplay.
+- **SyncMOO1 arrow-key menu navigation doesn't work** (mouse/hotkeys only) — a
+  usability gap distinct from graphics/audio.
+
+---
+
+*Maintenance note: regenerate the quantitative cells from the sources when a
+door's tier set, resolution, sample rate, or fps cap changes — the numbers here
+are read from `src/doors/*/` and `xtrn/{zmachine,minesweeper}/` as of the CTerm
+1.329 blob-media work.*
