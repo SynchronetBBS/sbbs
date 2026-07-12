@@ -142,6 +142,11 @@ void syncduke_term_restore(void)
 		if (kn > 0)
 			(void)send(g_iosock, ks, (int)kn, 0);
 	}
+	{   /* restore the status line hidden at entry: captured pre-door type, else default (indicator) */
+		char   sb[8];
+		size_t sn = termgfx_term_status_set(sb, sizeof sb, syncduke_status_type() >= 0 ? syncduke_status_type() : 1);
+		(void)send(g_iosock, sb, (int)sn, 0);
+	}
 	(void)send(g_iosock, termgfx_term_leave, (int)strlen(termgfx_term_leave), 0);
 #else
 	if (g_fd < 0)
@@ -156,6 +161,11 @@ void syncduke_term_restore(void)
 
 		if (kn > 0)
 			(void)write(g_fd, ks, kn);
+	}
+	{   /* restore the status line hidden at entry: captured pre-door type, else default (indicator) */
+		char   sb[8];
+		size_t sn = termgfx_term_status_set(sb, sizeof sb, syncduke_status_type() >= 0 ? syncduke_status_type() : 1);
+		(void)write(g_fd, sb, sn);
 	}
 	(void)write(g_fd, termgfx_term_leave, strlen(termgfx_term_leave));
 #endif
@@ -1036,6 +1046,7 @@ void syncduke_present(void)
 	 * replies. */
 	if (!cleared) {
 		syncduke_out_puts(termgfx_term_enter);   /* clear+home, hide cursor, no autowrap, no sixel scroll (DECSDM ?80l) */
+		syncduke_out_puts(termgfx_term_status_off);   /* hide the client status line -> reclaim the 25th row (640x400); BEFORE the probe so it reports the reclaimed size (syncduke_input captures the DECRQSS reply for restore) */
 		syncduke_out_puts(termgfx_term_probe);   /* learn the terminal's pixel canvas */
 		syncduke_out_puts("\x1b[c\x1b[<c");      /* DA1 + CTDA: detect sixel (DA1 param 4 / CTDA cap 4) + SyncTERM; a no-sixel reply (conhost) -> text tier */
 		syncduke_out_puts(termgfx_query_jxl);    /* Q;JXL: SyncTERM replies ESC[=1;{0,1}-n -> JXL/APC tier when supported */

@@ -25,6 +25,7 @@
 #include "apc.h"                 // termgfx: SyncTERM APC cached-image transport (JXL/PPM)
 #include "jxl.h"                 // termgfx: JPEG XL frame encoder (RGB888 -> JXL)
 #include "caps.h"                // termgfx: cap-probe query + reply parsing (JXL)
+#include "term.h"                // termgfx: status-line (DECSSDT) hide/restore + reply parse
 #include "keymode.h"     // termgfx: key-mode negotiation + evdev decode (shared)
 #include "geometry.h"            // termgfx: shared image fit/center (shared with SyncDuke)
 #include "pace.h"                // termgfx: shared AIMD pipeline-depth controller
@@ -701,6 +702,7 @@ static void pack_rgb(const uint32_t *fb, int w, int h)
 }
 
 static int g_cterm_version = 0; // CTerm/SyncTERM version maj*1000+min (DA1 reply); 0 = unknown
+static int g_status_type = -1;  // pre-door DECSSDT status-line type (DECRQSS reply); -1 = not captured / unsupported
 
 // base64 `bytes` and push: Store(<file>) then <drawverb>(<file>) -- or, on
 // CTerm >= 1.329, DrawJXLBlob/DrawPPMBlob inline (no cache file) -- via termgfx/apc.c.
@@ -1748,7 +1750,7 @@ static void evdev_edge(int code, int down)
 	c = 0;
 	switch (code) {                                  // keypad -> ASCII (assume NumLock; matches kitty PUA folding)
 		case 71: c = '7'; break; case 72: c = '8'; break; case 73: c = '9'; break; case 74: c = '-'; break;
-		case 75: c = '4'; break; case 76: c = '5'; break; case 77: c = '6'; break; case 78: c = '+'; break;
+		case 75: c = '4'; break; case 76: c = '5'; break; case 77: c = '6'; break; case 78: c = '='; break;  // KP+ -> '=' (KEY_EQUALS): DOOM's screen-size-up / automap zoom-in are '=', not '+'; keypad-- ('-'=KEY_MINUS) already matches, so this gives keypad-+ the same parity
 		case 79: c = '1'; break; case 80: c = '2'; break; case 81: c = '3'; break; case 82: c = '0'; break;
 		case 83: c = '.'; break; case 96: c = '\r'; break; case 98: c = '/'; break;
 	}
@@ -1951,7 +1953,10 @@ static void parse_byte(unsigned char c)
 										}
 									}
 									if (cp >= 57399 && cp <= 57414) {    // numpad PUA -> ASCII
-										static const char kp[] = "0123456789./*-+\r";
+										// NB KP_ADD -> '=' not '+': DOOM's screen-size-up / automap
+										// zoom-in are KEY_EQUALS ('='), so keypad-+ must emit '=' to
+										// resize/zoom like keypad-- ('-'=KEY_MINUS) already does.
+										static const char kp[] = "0123456789./*-=\r";
 										cp = (unsigned char)kp[cp - 57399];
 									}
 									if ((mod == 5 || mod == 7) &&
@@ -2317,6 +2322,11 @@ static void terminal_restore(void)
 			emit_all(ks, (int)kn);
 		g_kitty_active = g_evdev_active = 0;   // keep the m_menu.c mirrors in step
 	}
+	{   // restore the status line hidden at entry: captured pre-door type, else default (indicator)
+		char   sb[8];
+		size_t sn = termgfx_term_status_set(sb, sizeof sb, g_status_type >= 0 ? g_status_type : 1);
+		emit_all(sb, (int)sn);
+	}
 	emit_all("\x1b[?7h\x1b[?25h", 11);
 }
 
@@ -2493,6 +2503,10 @@ static void probe_geometry(void)
 	int               al = 0, done = 0;
 	uint32_t          deadline = now_ms() + 600;
 
+	// Hide the client status line (DECSSDT Ps=0) to reclaim the 25th row for a
+	// full 640x400 canvas -- BEFORE the probe below, so it reports the reclaimed
+	// size. The prefixed DECRQSS query's reply is captured in the loop for restore.
+	emit_all(termgfx_term_status_off, strlen(termgfx_term_status_off));
 	emit_all(q, sizeof(q) - 1);
 	while (!done) {
 		int32_t       rem = (int32_t)(deadline - now_ms());
@@ -2558,6 +2572,11 @@ static void probe_geometry(void)
 					break;
 				}
 			}
+		}
+		if (g_status_type < 0) {         // DECRQSS reply to our DECSSDT query -> pre-door status type, for restore
+			int r = termgfx_term_parse_status(acc, al);
+			if (r >= 0)
+				g_status_type = r;
 		}
 	}
 	emit_all("\x1b" "8", 2);             // restore the cursor we parked in the far corner

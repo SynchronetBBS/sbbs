@@ -44,6 +44,7 @@
 #include "keyboard.h"   /* sc_* scancode constants (pure #defines) */
 #include "keymode.h"  /* termgfx: key-mode negotiation + kitty/evdev decode */
 #include "caps.h"       /* termgfx: termgfx_caps_parse_jxl (cap-probe reply scan) */
+#include "term.h"       /* termgfx: termgfx_term_parse_status (DECSSDT reply scan) */
 #include "audio_mgr.h"  /* termgfx: SyncTERM audio-APC manager (cap-probe feed) */
 
 extern termgfx_audio_t *sd_audio;   /* the audio manager (owned by syncduke_io.c) */
@@ -414,6 +415,9 @@ static int g_jxl_supported;
 int syncduke_jxl_supported(void) { return g_jxl_supported; }
 static int g_img_blob_ok;   /* CTerm >= 1.329: draw JXL inline (DrawJXLBlob, no cache) */
 int syncduke_img_blob_ok(void) { return g_img_blob_ok; }
+
+static int g_status_type = -1;   /* pre-door DECSSDT status-line type (DECRQSS reply); -1 = not captured */
+int syncduke_status_type(void) { return g_status_type; }
 
 /* Sixel support + "the terminal answered our capability probe at all", from the
  * device-attributes reply: DA1 (ESC[c -> ESC[?...c) param 4 = sixel; CTDA
@@ -1454,6 +1458,33 @@ void syncduke_input_pump(int fd, int now, int gameplay)
 #endif
 
 	termgfx_audio_feed(sd_audio, buf, n);   /* resolve the audio cap probe (ESC[=7;100;Xn) */
+
+	/* Capture the DECRQSS reply to the DECSSDT status-line query (pre-door type,
+	 * for restore on exit). Raw-byte scan with a small rolling window to bridge a
+	 * reply split across reads -- the DCS reply is otherwise swallowed below. */
+	if (g_status_type < 0) {
+		static uint8_t sacc[32];
+		static int     sacclen;
+		int            r = termgfx_term_parse_status(buf, n);
+
+		if (r < 0) {
+			if (n >= (int)sizeof sacc) {
+				memcpy(sacc, buf + (n - (int)sizeof sacc), sizeof sacc);
+				sacclen = (int)sizeof sacc;
+			} else {
+				int keep = (int)sizeof sacc - n;
+				if (sacclen > keep) {
+					memmove(sacc, sacc + (sacclen - keep), keep);
+					sacclen = keep;
+				}
+				memcpy(sacc + sacclen, buf, n);
+				sacclen += n;
+			}
+			r = termgfx_term_parse_status(sacc, sacclen);
+		}
+		if (r >= 0)
+			g_status_type = r;
+	}
 	{
 		static int sd_prev_tier = -2;       /* log the negotiated audio tier once it resolves */
 		int        t = termgfx_audio_tier(sd_audio);
