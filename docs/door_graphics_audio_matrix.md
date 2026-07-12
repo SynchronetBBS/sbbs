@@ -440,10 +440,15 @@ Individual consequences that fall out of these axes:
   (`LoadPPM`/`P;Paste`) has no blob equivalent, and none is needed (their images
   are cached-and-reused, not transient) — worth noting so it isn't mistaken for
   an omission.
-- **zmachine `@sound_effect` completion (op 3) is not forwarded** — the terminal
-  can't report playback end, so chained follow-on sounds (e.g. Sherlock) never
-  fire. A terminal-side "sound finished" notify (the audio APC has `A;Update`
-  idle/underrun signalling) could close this.
+- **zmachine `@sound_effect` completion routines are not forwarded** — a
+  door-side gap, not a terminal one. The audio APCs have always reported
+  playback state (`A;Update` one-shot idle notify, `A;Wait`, the
+  `CSI =7;<ch> n` state query), and simple chaining needs none of them:
+  queueing the follow-on sound onto the same channel serializes it, and a
+  Queue also ends a looping buf — so Sherlock's two patterns (resume the
+  ambient loop after a one-shot; the recursive Big Ben hour chimes) are both
+  expressible as plain same-channel Queues. What's missing is zmachine-door
+  plumbing to run (or mirror) the game's completion routine.
 - **SyncRetro has no networked multiplayer** (deferred); it drives two local
   players on one keyboard only. Duke/DOOM/Conquer all have UDP netplay.
 - **SyncMOO1 arrow-key menu navigation doesn't work** (mouse/hotkeys only) — a
