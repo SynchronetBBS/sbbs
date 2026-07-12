@@ -1,0 +1,13 @@
+# Locally built door binary (not tracked; built via src/doors/syncconquer/
+# build.sh with the Tiberian Dawn target, deployed here via deploy.sh).
+/syncdawn
+/syncdawn.exe
+
+assets/
+*.iso
+*.zip
+
+# Door runtime artifacts written into this dir on a dev/test run without
+# -home (the live door uses a per-user -home dir instead).
+syncdawn.fill
+CONQUER.INI
