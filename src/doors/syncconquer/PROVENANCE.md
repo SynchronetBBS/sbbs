@@ -513,6 +513,25 @@ rest; these are the local edits on top of it (plus a couple of shared
     factored into shared `chose_gdi`/`chose_nod` flags so mouse and keyboard run
     identical selection code.
 
+32. **Guard the legacy `Winsock` shutdown behind `WINSOCK_IPX`
+    (`tiberiandawn/winstub.cpp`).** The MSVC/Win32 build of `syncdawn` failed to
+    compile: `error C2065: 'Winsock': undeclared identifier`. `TcpipManagerClass
+    Winsock` is declared only in `common/fakesock.h`, which is entirely wrapped
+    in `#ifndef _WIN32` — so on Windows the object does not exist, and
+    `commonv` defines `WINSOCK_IPX` publicly (`common/CMakeLists.txt`) for
+    exactly that reason. RA's `winstub.cpp` already fences every legacy
+    `Winsock` call in `#ifndef WINSOCK_IPX`; TD's `WM_DESTROY` emergency-shutdown
+    path did not, so it referenced the object unconditionally. Wrapped TD's two
+    `Winsock.Get_Connected()` / `Winsock.Close()` lines in the same
+    `#ifndef WINSOCK_IPX` guard, mirroring RA verbatim.
+
+    Upstream never hits this because its Windows build always defines
+    `SDL_BUILD`, which skips this whole non-SDL `WndProc` (the same code path
+    whose Win16-era 32-bit assumptions force the door to Win32-only — see
+    COMPILING.md). The door build is the first thing to compile it. TD's other
+    `Winsock` reference (`Message_Handler`, the same file) is already behind
+    `#ifdef FORCE_WINSOCK`, which nothing defines, so it needed no change.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

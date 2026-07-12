@@ -1,21 +1,29 @@
 @echo off
 rem ===========================================================================
-rem build.bat - Configure and build the Win32 / MSVC (Release) build of
-rem             SyncConquer (the syncalert door).
+rem build.bat - Configure and build the Win32 / MSVC (Release) build of the
+rem             SyncConquer door family (syncalert + syncdawn).
 rem
-rem   Usage:  build.bat            (Win32 release, JPEG-XL via vcpkg if present)
+rem   Usage:  build.bat            (Win32 release, both titles)
+rem           build.bat ra         (Red Alert / syncalert only -- skip Tiberian Dawn)
 rem           build.bat clean      (delete the build tree, then build Win32)
 rem
-rem Mirrors src/doors/syncduke/build.bat and src/doors/syncdoom/build.bat:
+rem Mirrors src/doors/syncconquer/build.sh: this ONE tree + vendored Vanilla
+rem Conquer engine builds BOTH titles -- syncalert (Red Alert) and syncdawn
+rem (Tiberian Dawn, added by -DBUILD_VANILLATD=ON).  Pass "ra" to build Red
+rem Alert alone.  Like the *nix script, both titles are on by default so the two
+rem doors cannot drift apart unnoticed.
+rem
+rem Also mirrors src/doors/syncduke/build.bat and src/doors/syncdoom/build.bat:
 rem Visual Studio 2022, classic-mode vcpkg for the static libjxl (JPEG-XL
 rem graphics tier) and libsndfile (OGG music tier).  When the vcpkg prefix is
 rem absent the configure step falls back to the sixel/text tiers and raw-PCM
 rem music with a warning - the door still builds.
 rem
-rem Building does NOT install the binary -- it is left at
-rem build-msvc\Release\syncalert.exe (the project is syncconquer; the door's
-rem binary is syncalert).  Run `jsexec deploy.js` afterwards when you actually want the
-rem running door updated, so you can rebuild and test first.
+rem Building does NOT install the binaries -- they are left at
+rem build-msvc\Release\syncalert.exe and build-msvc\Release\syncdawn.exe (the
+rem project is syncconquer; the doors' binaries are syncalert and syncdawn).
+rem Run `jsexec deploy.js` afterwards when you actually want the running door
+rem updated, so you can rebuild and test first.
 rem
 rem Win32 (x86) ONLY -- unlike the siblings, this door has no x64 option.  The
 rem vendored Vanilla Conquer engine's Windows-without-SDL path (the one the
@@ -40,13 +48,15 @@ set "PLATFORM=Win32"
 set "CONFIG=Release"
 set "TRIPLET=x86-windows-static-md"
 set "DOCLEAN="
+set "BUILD_TD=ON"
 
-rem --- Parse arguments ("clean"; "x64" is explicitly refused, see header) ----
+rem --- Parse arguments ("clean"/"ra"; "x64" is explicitly refused, see header)
 :parseargs
 if "%~1"=="" goto argsdone
 if /I "%~1"=="x64"   goto no_x64
 if /I "%~1"=="Win32" ( set "PLATFORM=Win32" & set "TRIPLET=x86-windows-static-md" )
 if /I "%~1"=="clean" ( set "DOCLEAN=1" )
+if /I "%~1"=="ra"    ( set "BUILD_TD=OFF" )
 shift
 goto parseargs
 :argsdone
@@ -81,8 +91,8 @@ if defined DOCLEAN (
 )
 
 rem --- Configure -------------------------------------------------------------
-echo [build] Configuring %PLATFORM% (%CONFIG%) ...
-"%CMAKE%" -S "%SRCDIR%" -B "%BUILDDIR%" -G "%GENERATOR%" -A %PLATFORM% %PREFIXARG%
+echo [build] Configuring %PLATFORM% (%CONFIG%, Tiberian Dawn: %BUILD_TD%) ...
+"%CMAKE%" -S "%SRCDIR%" -B "%BUILDDIR%" -G "%GENERATOR%" -A %PLATFORM% %PREFIXARG% -DBUILD_VANILLATD=%BUILD_TD%
 if errorlevel 1 goto error
 
 rem --- Build -----------------------------------------------------------------
@@ -90,17 +100,23 @@ echo [build] Building ...
 "%CMAKE%" --build "%BUILDDIR%" --config %CONFIG%
 if errorlevel 1 goto error
 
-rem --- Confirm the build produced the binary --------------------------------
-set "EXE=%BUILDDIR%\%CONFIG%\syncalert.exe"
-if not exist "%EXE%" (
-    echo [build] ERROR: expected output not found: %EXE%
-    goto error
+rem --- Confirm the build produced the binaries -------------------------------
+rem syncalert (Red Alert) always; syncdawn (Tiberian Dawn) unless "ra" was given.
+set "EXES=syncalert"
+if /I "%BUILD_TD%"=="ON" set "EXES=%EXES% syncdawn"
+
+for %%N in (%EXES%) do (
+    if not exist "%BUILDDIR%\%CONFIG%\%%N.exe" (
+        echo [build] ERROR: expected output not found: %BUILDDIR%\%CONFIG%\%%N.exe
+        goto error
+    )
 )
 
-for %%I in ("%EXE%") do set "BUILT=%%~fI"
 echo.
-echo [build] Built: %BUILT%
-echo [build] Run 'jsexec deploy.js' to install it into the door's xtrn dir.
+for %%N in (%EXES%) do (
+    for %%I in ("%BUILDDIR%\%CONFIG%\%%N.exe") do echo [build] Built: %%~fI
+)
+echo [build] Run 'jsexec deploy.js' to install into the doors' xtrn dirs.
 endlocal
 exit /b 0
 

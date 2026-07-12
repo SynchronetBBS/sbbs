@@ -219,9 +219,11 @@ long FAR PASCAL Windows_Procedure(HWND hwnd, UINT message, UINT wParam, LONG lPa
 #ifndef DEMO
             Shutdown_Network();
 #endif
+#ifndef WINSOCK_IPX
             CCDebugString("C&C95 - Kill the Winsock stuff.\n");
             if (Winsock.Get_Connected())
                 Winsock.Close();
+#endif // WINSOCK_IPX
 #endif // NETWORKING
             CCDebugString("C&C95 - Call ExitProcess.\n");
             ExitProcess(0);
