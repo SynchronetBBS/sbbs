@@ -54,8 +54,8 @@ static char     g_profile[32];         /* "" = infer from the core */
  * "Astrosmash (1981) (Mattel).int", and it knows which console it is. A bare
  * command-line run supplies neither, and falls back to the ROM's own filename
  * and the profile's name. */
-static char     g_title[64];           /* -title:   "Astrosmash" */
-static char     g_console[32];         /* -console: "Intellivision" / "NES" */
+static char g_title[64];               /* -title:   "Astrosmash" */
+static char g_console[32];             /* -console: "Intellivision" / "NES" */
 /* -stdio: the BBS redirected our stdin/stdout instead of handing us a socket.
  * Mystic on *nix forks the door and pipes it -- and does the telnet (and SSH)
  * itself, so what arrives is already a clean 8-bit stream, exactly as
@@ -63,8 +63,8 @@ static char     g_console[32];         /* -console: "Intellivision" / "NES" */
  * is worth having: a door reading a RAW telnet socket would have to negotiate,
  * unescape IAC IAC, and survive a NAWS resize whose payload bytes look like
  * keystrokes -- one of which (0x11) is our quit key. */
-static int      g_stdio;
-static char     g_rom[SR_PATH_MAX];    /* "" = no ROM given */
+static int  g_stdio;
+static char g_rom[SR_PATH_MAX];        /* "" = no ROM given */
 
 /* Monotonic millisecond clock -- the session deadline uses it so a wall-clock
  * step (NTP, DST) can't mistime it. Same clock domain as syncretro_io.c. */
@@ -183,7 +183,7 @@ static void read_door32(const char *path)
 {
 	termgfx_door32_t d;
 
-	const char *why;
+	const char *     why;
 
 	if (termgfx_door32_read(path, &d) != 0) {
 		fprintf(stderr, "syncretro: cannot read %s\n", path);
@@ -454,6 +454,19 @@ const char *sr_door_name(void)      { return g_alias[0] ? g_alias : NULL; }
 const char *sr_door_home(void)      { return g_home[0] ? g_home : NULL; }
 const char *sr_door_core_path(void) { return g_core[0] ? g_core : NULL; }
 const char *sr_door_profile(void)   { return g_profile[0] ? g_profile : NULL; }
+
+/* The console and the cartridge, for the door's own screens (the pause/help
+ * header). The console falls back to the profile's name -- a launch with no
+ * -console still has something honest to show. */
+const char *sr_door_console(void)
+{
+	return g_console[0] ? g_console : NULL;
+}
+
+const char *sr_door_title(void)
+{
+	return g_title[0] ? g_title : NULL;
+}
 int sr_door_stdio(void)            { return g_stdio; }
 
 /* --- who's-online status -----------------------------------------------------
@@ -505,8 +518,8 @@ static void sr_door_rom_basename(char *out, size_t cap, const char *path)
  * ROM and the profile is resolved (the profile's name is the console fallback). */
 void sr_door_node_playing(const char *rom_path)
 {
-	char status[128];
-	char fallback[64];
+	char        status[128];
+	char        fallback[64];
 	const char *title   = g_title;
 	const char *console = g_console[0] ? g_console : sr_profile_name();
 

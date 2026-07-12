@@ -453,6 +453,16 @@ void sr_io_set_canvas(int w, int h)
 	sr_io_recompute_geom();
 }
 
+/* The terminal's text grid, for the door's own text screens (pause/help). 0 for
+ * either means the terminal never told us -- the caller falls back to 80x24. */
+void sr_io_grid(int *rows, int *cols)
+{
+	if (rows != NULL)
+		*rows = g_grid_rows;
+	if (cols != NULL)
+		*cols = g_grid_cols;
+}
+
 void sr_io_set_grid(int rows, int cols)
 {
 	if (rows <= 0 || cols <= 0)

@@ -21,6 +21,8 @@ const char *sr_door_name(void);                     /* player alias, or NULL */
 const char *sr_door_home(void);                     /* -home sandbox dir, or NULL */
 const char *sr_door_core_path(void);                /* -core <path> / config, or NULL */
 const char *sr_door_profile(void);                  /* -profile <name>, or NULL */
+const char *sr_door_console(void);                  /* -console <name>, or NULL */
+const char *sr_door_title(void);                    /* -title <cartridge>, or NULL */
 /* -stdio: the BBS gave us its pipes, not a socket (Mystic on *nix). Read fd 0,
  * write fd 1. POSIX only -- see sr_plat_stdio_ok(). */
 int         sr_door_stdio(void);
@@ -138,6 +140,9 @@ void sr_io_pace_ack(void);
  * frame de-dupe and re-emits the sixel palette. Used after anything that wrote
  * over the game area (the pause and help screens) and after a core reset. */
 void sr_io_invalidate(void);
+
+/* The terminal's text grid (0 = unknown: assume 80x24). */
+void sr_io_grid(int *rows, int *cols);
 
 /* Live stats overlay (Ctrl-S): a top-row strip -- render tier, frame rate,
  * transmit throughput, round-trip and pipeline depth, and the keyboard mode --

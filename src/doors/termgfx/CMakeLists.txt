@@ -24,6 +24,7 @@ add_library(termgfx STATIC
     geometry.c
     hash.c
     door32.c
+    charset.c
     sgrmouse.c
     keymode.c
     pace.c
