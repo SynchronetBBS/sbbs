@@ -106,6 +106,94 @@ void ScrollClass::AI(KeyNumType& input, int x, int y)
         }
 #endif
 
+        /*
+        ** LOCAL: keyboard map scrolling. Stock C&C only scrolls the tactical
+        ** map by pushing the mouse into a screen edge; over a terminal the
+        ** pointer is cell-quantized and that edge is awkward to reach, so bind
+        ** the arrow keys to a one-cell scroll in each cardinal direction and
+        ** Home/End to jump the view to the top/bottom edge of the map. Handled
+        ** (and consumed) here in the map-input AI chain, ahead of any
+        ** Keyboard_Process(), so it behaves identically in both doors -- and so
+        ** the arrows don't also drive Tiberian Dawn's sidebar-scroll binding.
+        */
+        {
+            int kdist;
+
+            /*
+            ** Continuous scroll while an arrow is held. Kitty (Windows Terminal)
+            ** and evdev (SyncTERM) both report key releases, so Down() tracks the
+            ** real hold and the map keeps moving without relying on the terminal
+            ** to auto-repeat the escape. Like the mouse edge-scroll auto path,
+            ** the door runs several game ticks per presented frame, so a
+            ** quarter-cell per tick accumulates into a smooth glide instead of
+            ** flying.
+            */
+            if (Keyboard->Down(KN_UP)) {
+                kdist = CELL_LEPTON_W / 4;
+                Scroll_Map(DIR_N, kdist, true);
+            }
+            if (Keyboard->Down(KN_DOWN)) {
+                kdist = CELL_LEPTON_W / 4;
+                Scroll_Map(DIR_S, kdist, true);
+            }
+            if (Keyboard->Down(KN_LEFT)) {
+                kdist = CELL_LEPTON_W / 4;
+                Scroll_Map(DIR_W, kdist, true);
+            }
+            if (Keyboard->Down(KN_RIGHT)) {
+                kdist = CELL_LEPTON_W / 4;
+                Scroll_Map(DIR_E, kdist, true);
+            }
+
+            /*
+            ** Consume the discrete key event so it doesn't also fall through to
+            ** Keyboard_Process (Tiberian Dawn's sidebar-scroll binding). On a
+            ** legacy terminal that only taps (no key-up), the key has already
+            ** released by now so Down() above missed it -- scroll one full cell
+            ** here for that case. Home/End jump the view to the map top/bottom.
+            */
+            switch (input) {
+            case KN_UP:
+                if (!Keyboard->Down(KN_UP)) {
+                    kdist = CELL_LEPTON_W;
+                    Scroll_Map(DIR_N, kdist, true);
+                }
+                input = KN_NONE;
+                break;
+            case KN_DOWN:
+                if (!Keyboard->Down(KN_DOWN)) {
+                    kdist = CELL_LEPTON_W;
+                    Scroll_Map(DIR_S, kdist, true);
+                }
+                input = KN_NONE;
+                break;
+            case KN_LEFT:
+                if (!Keyboard->Down(KN_LEFT)) {
+                    kdist = CELL_LEPTON_W;
+                    Scroll_Map(DIR_W, kdist, true);
+                }
+                input = KN_NONE;
+                break;
+            case KN_RIGHT:
+                if (!Keyboard->Down(KN_RIGHT)) {
+                    kdist = CELL_LEPTON_W;
+                    Scroll_Map(DIR_E, kdist, true);
+                }
+                input = KN_NONE;
+                break;
+            case KN_HOME:
+                Set_Tactical_Position(XY_Coord(Coord_X(TacticalCoord), Cell_To_Lepton(MapCellY)));
+                input = KN_NONE;
+                break;
+            case KN_END:
+                Set_Tactical_Position(XY_Coord(Coord_X(TacticalCoord), Cell_To_Lepton(MapCellY + MapCellHeight)));
+                input = KN_NONE;
+                break;
+            default:
+                break;
+            }
+        }
+
         if (!noscroll) {
             // LOCAL: widen the 1-pixel edge-scroll border into a small band.
             // Over a terminal the mouse is cell-quantized and can't land on the
@@ -213,7 +301,13 @@ void ScrollClass::AI(KeyNumType& input, int x, int y)
                             Scroll_Map(direction, distance, true);
                             Counter = SCROLL_DELAY;
                         } else {
-                            distance = _rate[rate];
+                            // LOCAL: cut the per-tick edge-scroll distance. Over a
+                            // terminal the door runs many game ticks between the
+                            // frames it actually presents, so a full _rate[] step
+                            // per tick accumulates and the map flies; smaller steps
+                            // scroll slower and smoother. (Keyboard/inertia scroll is
+                            // unaffected -- this is the mouse edge-scroll auto path.)
+                            distance = _rate[rate] / 4;
                             Scroll_Map(direction, distance, true);
 
                             if (Counter == 0 && player_scrolled) {

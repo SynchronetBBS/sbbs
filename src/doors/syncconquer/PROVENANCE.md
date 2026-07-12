@@ -480,6 +480,39 @@ rest; these are the local edits on top of it (plus a couple of shared
     artifact on these RA sliders that the door's `AllowHardwareBlitFills=false`
     fix -- software fills only -- had already resolved.)
 
+29. **Keyboard map scrolling + edge-scroll pacing (`redalert/scroll.cpp`).**
+    `ScrollClass::AI()` gains two things. (a) The mouse edge-scroll auto path
+    now moves `_rate[rate] / 4` per tick instead of the full `_rate[rate]`:
+    the door runs several game ticks per presented frame, so a full step per
+    tick made the map fly; a quarter-cell accumulates into a smooth glide.
+    (b) Keyboard scrolling -- the arrow keys scroll one cell N/S/E/W and
+    Home/End jump the view to the map's top/bottom edge. Held keys scroll
+    continuously by polling `Keyboard->Down()` (kitty/evdev report key
+    releases, so the hold state is real); a legacy tap terminal that reports
+    no key-up scrolls one cell per received tap instead. The keys are consumed
+    (`input = KN_NONE`) in the map-input AI chain, ahead of any
+    `Keyboard_Process()`, so behavior is identical in both doors and the arrows
+    don't also drive Tiberian Dawn's sidebar-scroll binding. Extends patch #16.
+
+30. **Keyboard map scrolling (`tiberiandawn/scroll.cpp`).** The keyboard-scroll
+    half of patch #29 mirrored into TD's `ScrollClass::AI()` verbatim (arrows +
+    Home/End + held-key `Down()` polling, consumed ahead of `Keyboard_Process`).
+    TD's mouse edge-scroll is left as upstream (the 1-pixel border), which makes
+    keyboard scroll the more useful path there.
+
+31. **Keyboard side selection in `Choose_Side` (`tiberiandawn/intro.cpp`).**
+    Stock `Choose_Side()` is mouse-only: you click the GDI or Nod emblem. Added
+    keyboard control to the selection loop -- Left/Right pick GDI/Nod directly
+    (matching their on-screen left/right layout), Tab toggles a highlighted
+    side, and Enter/Space confirms it (GDI default). Since the door can't warp a
+    terminal cursor for feedback, the highlighted side is outlined with a
+    `Draw_Rect(WHITE)` on the composed low-res buffer (gated by a flag so a
+    mouse-only player sees no change). Release edges are ignored (the `0x10FF`
+    key mask drops `WWKEY_RLS_BIT`, so a Tab release would otherwise read as a
+    second Tab press and toggle the highlight back). The GDI/Nod branches are
+    factored into shared `chose_gdi`/`chose_nod` flags so mouse and keyboard run
+    identical selection code.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

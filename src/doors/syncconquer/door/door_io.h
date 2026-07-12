@@ -58,6 +58,13 @@ uint32_t door_io_now_ms(void);
 // keycode (SyncTERM cap-8 mode) or an rxvt-style ESC[14~.
 void door_io_tier_cycle(void);
 
+// Toggle the Ctrl-K / F1 key-bindings help card (and flag the repaint the
+// present loop needs to show/erase it cleanly). door_io_help_active() reports
+// whether it's currently up. Called from door_input.c's emit_key() so F1 opens
+// it and Esc closes it from every keyboard mode.
+void door_io_help_toggle(void);
+int  door_io_help_active(void);
+
 // Route a door-level Ctrl+letter hotkey (lowercase 'a'..'z') to its action:
 // 'd' F4-fallback tier cycle, 'f' fit toggle, 'u' who's-online, 'p' page-a-node,
 // 's' live stats overlay. Returns 1 if `letter` IS a door hotkey (the caller

@@ -113,6 +113,12 @@ void Choose_Side(void)
     BlitList.Clear();
     PseudoSeenBuff = new GraphicBufferClass(320, 200, (void*)NULL);
     int frame = 0, endframe = 255, selection = 0, lettersdone = 0;
+    // LOCAL: keyboard side-selection. Stock Choose_Side is mouse-only (click
+    // the GDI or Nod emblem); over a terminal the pointer is awkward, so Tab
+    // toggles a highlighted side and Enter/Space confirms it, with Left/Right
+    // picking GDI/Nod directly (matching their on-screen left/right layout).
+    // kbd_shown gates the highlight box so a mouse-only player sees no change.
+    int kbd_sel = 0, kbd_shown = 0;
 
     Hide_Mouse();
     /* Change to the six-point font for Text_Print */
@@ -191,6 +197,16 @@ void Choose_Side(void)
         }
         SysMemPage.Blit(*PseudoSeenBuff, 0, 22, 0, 22, 320, 156);
 
+        /* LOCAL: outline the keyboard-selected side (the terminal cursor can't
+        ** be warped for feedback). Drawn on the composed low-res buffer before
+        ** it is scaled/presented; matches the mouse hit-test regions below. */
+        if (kbd_shown && endframe == 255) {
+            if (kbd_sel == 0)
+                PseudoSeenBuff->Draw_Rect(16, 46, 150, 152, WHITE);
+            else
+                PseudoSeenBuff->Draw_Rect(158, 46, 302, 152, WHITE);
+        }
+
         /*
         ** If the sample has stopped or is about to then restart it
         */
@@ -214,27 +230,57 @@ void Choose_Side(void)
         if (frame >= Get_Animation_Frame_Count(anim))
             frame = 0;
         if (Keyboard->Check() && endframe == 255) {
-            if ((Keyboard->Get() & 0x10FF) == KN_LMOUSE) {
+            KeyNumType raw = Keyboard->Get();
+            KeyNumType key = (KeyNumType)(raw & 0x10FF);
+            /* Chose GDI -- shared by a click on the emblem and by keyboard. */
+            bool chose_gdi = false, chose_nod = false;
+
+            /* Ignore key-release edges. The door reports releases (kitty/evdev),
+            ** and the 0x10FF mask above drops WWKEY_RLS_BIT (0x800), so a Tab
+            ** release would otherwise read as a second Tab press and toggle the
+            ** highlight straight back to GDI. */
+            if (raw & WWKEY_RLS_BIT) {
+                /* drained above -- nothing to do */
+            } else if (key == KN_LMOUSE) {
                 if ((Keyboard->MouseQY > 48 * scale_factor) && (Keyboard->MouseQY < 150 * scale_factor)) {
-                    if ((Keyboard->MouseQX > 18 * scale_factor) && (Keyboard->MouseQX < 148 * scale_factor)) {
-                        // Chose GDI
-                        Whom = HOUSE_GOOD;
-                        ScenPlayer = SCEN_PLAYER_GDI;
-                        endframe = 0;
-                        speechhandle = Play_Sample(speechg);
-                        speechplaying = true;
-                        speech = speechg;
-                    } else if ((Keyboard->MouseQX > 160 * scale_factor) && (Keyboard->MouseQX < 300 * scale_factor)) {
-                        // Chose Nod
-                        selection = 1;
-                        endframe = 14;
-                        Whom = HOUSE_BAD;
-                        ScenPlayer = SCEN_PLAYER_NOD;
-                        speechhandle = Play_Sample(speechn);
-                        speechplaying = true;
-                        speech = speechn;
-                    }
+                    if ((Keyboard->MouseQX > 18 * scale_factor) && (Keyboard->MouseQX < 148 * scale_factor))
+                        chose_gdi = true;
+                    else if ((Keyboard->MouseQX > 160 * scale_factor) && (Keyboard->MouseQX < 300 * scale_factor))
+                        chose_nod = true;
                 }
+            } else if (key == KN_TAB) {
+                // LOCAL: Tab toggles the highlighted side.
+                kbd_sel ^= 1;
+                kbd_shown = 1;
+            } else if (key == KN_LEFT) {
+                kbd_sel = 0;
+                kbd_shown = 1;
+            } else if (key == KN_RIGHT) {
+                kbd_sel = 1;
+                kbd_shown = 1;
+            } else if (key == KN_RETURN || key == KN_SPACE) {
+                // LOCAL: Enter/Space confirms the highlighted side (GDI default).
+                if (kbd_sel == 0)
+                    chose_gdi = true;
+                else
+                    chose_nod = true;
+            }
+
+            if (chose_gdi) {
+                Whom = HOUSE_GOOD;
+                ScenPlayer = SCEN_PLAYER_GDI;
+                endframe = 0;
+                speechhandle = Play_Sample(speechg);
+                speechplaying = true;
+                speech = speechg;
+            } else if (chose_nod) {
+                selection = 1;
+                endframe = 14;
+                Whom = HOUSE_BAD;
+                ScenPlayer = SCEN_PLAYER_NOD;
+                speechhandle = Play_Sample(speechn);
+                speechplaying = true;
+                speech = speechn;
             }
         }
     }

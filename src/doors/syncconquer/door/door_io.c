@@ -78,6 +78,7 @@
 #include "door_io.h"
 #include "door_input.h"
 #include "door_node.h"   /* Task 5: sbbs_node status/Ctrl-U/Ctrl-P */
+#include "door_help.h"   /* Ctrl-K key-bindings help card */
 #include "door32.h"      /* termgfx: the shared DOOR32.SYS parser */
 #include "sbbs_node.h"   /* Task 5: sbbs_my_node() for the per-node log filename */
 #include "keymode.h"   /* termgfx: key-mode negotiation (shared with door_input.c) */
@@ -1598,6 +1599,7 @@ static void door_stat_dump(const char *reason)
 static int  g_tier_force = -1;       /* -1 = auto; F4 sets an explicit tier */
 
 static int  g_stats_overlay;         /* Ctrl-S: live debug stats strip (session-only) */
+static int  g_help_painted;          /* Ctrl-K/F1 help card currently on screen (freeze the frame under it) */
 static char g_stats_last[512];       /* last emitted overlay bytes, for change-detection */
 
 static int sa_auto_tier(void)
@@ -1714,7 +1716,7 @@ int door_io_hotkey(int letter, int commit)
 {
 	/* Classify first: is `letter` a door hotkey at all? */
 	switch (letter) {
-		case 'd': case 'f': case 'u': case 'p': case 's':
+		case 'd': case 'f': case 'u': case 'p': case 's': case 'k':
 		case '+': case '=': case '-': case '_':   /* music volume up ('+'/'=') / down ('-'/'_') */
 			break;
 		default:
@@ -1737,8 +1739,25 @@ int door_io_hotkey(int letter, int commit)
 			g_have_last     = 0;   /* repaint now so the strip shows... */
 			g_clear_pending = 1;   /* ...and clear it cleanly on toggle-off */
 			break;
+		case 'k': door_io_help_toggle(); break;          /* Ctrl-K key-bindings help card */
 	}
 	return 1;
+}
+
+/* Toggle the help card and flag the repaint the present loop needs: g_have_last
+ * = 0 forces one full present now (so the card shows over an otherwise-still
+ * frame), g_clear_pending = 1 wipes it cleanly on toggle-off. Also the F1/Esc
+ * entry point from door_input.c's emit_key(). */
+void door_io_help_toggle(void)
+{
+	door_help_toggle();
+	g_have_last     = 0;
+	g_clear_pending = 1;
+}
+
+int door_io_help_active(void)
+{
+	return door_help_active();
 }
 
 /* --- scale/pack helpers (dynamic buffers -- no fixed-size overflow risk) --- */
@@ -2386,6 +2405,17 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 		return;
 	}
 
+	/* Help card up: freeze the display. The card is a large centered panel, and
+	 * re-emitting the sixel frame under it every tick makes it flicker badly (the
+	 * image repaints the card's cells, then the card text repaints on top). The
+	 * toggle set g_clear_pending, so the first present after it opens falls
+	 * through below and paints image+card once; from then on skip the image emit
+	 * (the card stays put) until it's dismissed or the geometry changes. */
+	if (g_help_painted && door_help_active() && !g_clear_pending && !fit_changed && !geom_changed) {
+		door_fps_tick(0);
+		return;
+	}
+
 	/* Tier change requested a screen clear (see door_tier_cycle()): wipe the
 	 * old tier's content so a letterboxed image doesn't sit on a floor of
 	 * stale text/pixels. Force the text renderer to re-init too (g_rt_cols=0)
@@ -2456,6 +2486,11 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 	 * estimate door_csi_final()'s 999;999 probe reply fills; 80x25 default
 	 * before any reply lands. */
 	door_node_draw(g_grid_cols > 0 ? g_grid_cols : 80, g_grid_rows > 0 ? g_grid_rows : 25);
+
+	/* Ctrl-K key-bindings help card, over everything else (drawn last so its
+	 * centered panel isn't clipped by the node strip's ERASE-TO-EOL). */
+	door_help_draw(g_grid_cols > 0 ? g_grid_cols : 80, g_grid_rows > 0 ? g_grid_rows : 25);
+	g_help_painted = door_help_active();   /* frozen from the next present until dismissed */
 
 	/* Ctrl-S debug stats, drawn AFTER the node overlay so it wins the top-right
 	 * cells the node strip's ERASE-TO-EOL would otherwise blank. force=1: the
@@ -2602,7 +2637,24 @@ static void door_csi_final(char fin)
 				}
 				return;
 			}
-			door_tier_cycle();   /* SS3 "ESC O S" or bare CSI "ESC[S" -- F4 */
+			/* Kitty (event-types enabled) reports F4 as CSI S twice per press:
+			 * bare "CSI S" is the press, "CSI 1;1:3S" the release (":<n>" is the
+			 * kitty event type -- 1 press, 2 repeat, 3 release). Only cycle on the
+			 * press, or the release double-cycled the tier (SyncTERM's evdev path
+			 * already gates on the press edge; legacy "CSI S" carries no ":" and
+			 * reads as a press). */
+			{
+				int j, ev = 1;
+				for (j = 0; j + 1 < g_csi_len; j++) {
+					if (g_csi_par[j] == ':') {
+						ev = g_csi_par[j + 1] - '0';
+						break;
+					}
+				}
+				if (ev != 1)
+					return;   /* repeat / release -- ignore */
+			}
+			door_tier_cycle();   /* SS3 "ESC O S" or bare CSI "ESC[S" -- F4 press */
 			return;
 		default:
 			/* Not one of our recognized probe replies -- forward the raw

@@ -111,6 +111,24 @@ int door_input_next_event(door_input_event_t *ev)
 static void emit_key(unsigned short vk, int release)
 {
 	door_input_event_t ev;
+
+	/* F1 is the door-level help key (never forwarded to the game): toggle the
+	 * Ctrl-K help card on its press. Esc closes the card when it's open (and is
+	 * swallowed so the game's Options menu doesn't also open); when the card is
+	 * down, Esc passes through normally. Handled here in the one chokepoint all
+	 * keyboard modes funnel through (evdev/kitty/legacy), so F1/Esc work the same
+	 * everywhere. */
+	if (vk == VK_F1) {
+		static int f1_down = 0;
+		if (!release && !f1_down)   /* leading edge only -- ignore auto-repeat */
+			door_io_help_toggle();
+		f1_down = !release;
+		return;
+	}
+	if (vk == VK_ESCAPE && !release && door_io_help_active()) {
+		door_io_help_toggle();
+		return;
+	}
 	ev.kind    = DOOR_IN_KEY;
 	ev.vk      = vk;
 	ev.release = release;
@@ -438,23 +456,6 @@ static int door_in_csi_params(int *out, int max)
 	return n;
 }
 
-/* kitty reports the numpad with two different codepoint sets depending on
- * NumLock; fold the NumLock-off function set back to the digit-key PUA
- * codepoint so one map below serves both (syncduke_input.c's
- * kitty_kp_normalize -- same data, generic to the protocol). */
-static int kitty_kp_normalize(int cp)
-{
-	switch (cp) {
-		case 57417: return 57403; case 57418: return 57405;
-		case 57419: return 57407; case 57420: return 57401;
-		case 57421: return 57408; case 57422: return 57402;
-		case 57423: return 57406; case 57424: return 57400;
-		case 57425: return 57399; case 57426: return 57409;
-		case 57427: return 57404;
-	}
-	return cp;
-}
-
 /* Kitty's own PUA codepoints for the modifier keys (flag 8, "report all
  * keys"): pressing/releasing Shift/Ctrl/Alt arrives as its own event, so we
  * can give a kitty client TRUE Down(KN_LSHIFT)-style hold tracking (not just
@@ -514,16 +515,16 @@ static void evdev_edge(int code, int down)
 		return;
 
 	switch (code) {
-		case 103: case 72: vk = VK_UP;    break;   /* Up (+ numpad alias, NumLock off) */
-		case 108: case 80: vk = VK_DOWN;  break;
-		case 105: case 75: vk = VK_LEFT;  break;
-		case 106: case 77: vk = VK_RIGHT; break;
-		case 102: vk = VK_HOME;   break;
-		case 107: vk = VK_END;    break;
-		case 104: vk = VK_PRIOR;  break;           /* Page Up */
-		case 109: vk = VK_NEXT;   break;           /* Page Down */
-		case 110: vk = VK_INSERT; break;
-		case 111: vk = VK_DELETE; break;
+		case 103: case 72: vk = VK_UP;    break;   /* Up (+ numpad KP8, NumLock off) */
+		case 108: case 80: vk = VK_DOWN;  break;   /* Down (+ numpad KP2) */
+		case 105: case 75: vk = VK_LEFT;  break;   /* Left (+ numpad KP4) */
+		case 106: case 77: vk = VK_RIGHT; break;   /* Right (+ numpad KP6) */
+		case 102: case 71: vk = VK_HOME;   break;  /* Home (+ numpad KP7) */
+		case 107: case 79: vk = VK_END;    break;  /* End (+ numpad KP1) */
+		case 104: case 73: vk = VK_PRIOR;  break;  /* Page Up (+ numpad KP9) */
+		case 109: case 81: vk = VK_NEXT;   break;  /* Page Down (+ numpad KP3) */
+		case 110: case 82: vk = VK_INSERT; break;  /* Insert (+ numpad KP0) */
+		case 111: case 83: vk = VK_DELETE; break;  /* Delete (+ numpad KP-dot) */
 		case 59:  vk = VK_F1;  break;
 		case 60:  vk = VK_F2;  break;
 		case 61:  vk = VK_F3;  break;
@@ -661,7 +662,9 @@ static void csi_final(char fin)
 				case 11:         vk = VK_F1;     break;
 				case 12:         vk = VK_F2;     break;
 				case 13:         vk = VK_F3;     break;
-				case 14:         door_io_tier_cycle(); return;   /* F4: cycle tier (rxvt ESC[14~) */
+				case 14:         if (ev == 1)                     /* F4: cycle tier (rxvt ESC[14~), press only */
+						door_io_tier_cycle();
+					return;
 				case 15:         vk = VK_F5;     break;
 				case 17:         vk = VK_F6;     break;
 				case 18:         vk = VK_F7;     break;
@@ -705,8 +708,32 @@ static void csi_final(char fin)
 					emit_key((unsigned short)modvk, ev == 3);
 					return;
 				}
-				cp = kitty_kp_normalize(cp);
-				if (cp >= 57399 && cp <= 57414) {   /* keypad PUA -> ASCII */
+				/* NumLock OFF: the keypad reports its navigation function set
+				 * (Home/End/arrows/PgUp/PgDn/Ins/Del). Map those straight to the
+				 * nav VKs so the keypad respects NumLock -- with NumLock ON the
+				 * digit PUA below still yields 0-9 for team-group hotkeys. (This
+				 * replaces the old fold-everything-to-digits behavior, which made
+				 * NumLock-off numpad Home/End act as team-select 7/1.) */
+				{
+					unsigned short npvk = 0;
+					switch (cp) {
+						case 57417: npvk = VK_LEFT;   break;
+						case 57418: npvk = VK_RIGHT;  break;
+						case 57419: npvk = VK_UP;     break;
+						case 57420: npvk = VK_DOWN;   break;
+						case 57421: npvk = VK_PRIOR;  break;
+						case 57422: npvk = VK_NEXT;   break;
+						case 57423: npvk = VK_HOME;   break;
+						case 57424: npvk = VK_END;    break;
+						case 57425: npvk = VK_INSERT; break;
+						case 57426: npvk = VK_DELETE; break;
+					}
+					if (npvk) {
+						emit_key(npvk, ev == 3);
+						return;
+					}
+				}
+				if (cp >= 57399 && cp <= 57414) {   /* NumLock ON: keypad PUA -> ASCII */
 					static const char kp[] = "0123456789./*-+\r";
 					cp = (unsigned char)kp[cp - 57399];
 				}

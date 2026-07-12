@@ -127,6 +127,7 @@ target_sources(VanillaRA PRIVATE
     door/door_io.c
     door/door_input.c
     door/door_node.c
+    door/door_help.c
 )
 target_include_directories(VanillaRA PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/door)
 target_link_libraries(VanillaRA termgfx)
@@ -282,6 +283,7 @@ if(TARGET VanillaTD)
         door/door_io.c
         door/door_input.c
         door/door_node.c
+        door/door_help.c
     )
     target_include_directories(VanillaTD PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/door)
     target_link_libraries(VanillaTD termgfx)
