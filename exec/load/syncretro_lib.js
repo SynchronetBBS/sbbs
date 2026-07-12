@@ -229,7 +229,8 @@ function syncretro_rules(spec)
 		min_size:   1,
 		max_size:   16 * 1024 * 1024,
 		bios_md5:   [],
-		bios_names: []
+		bios_names: [],
+		bios_words: []
 	};
 
 	if (!spec)
@@ -245,7 +246,45 @@ function syncretro_rules(spec)
 	r.max_size   = syncretro_size(spec.max_size, r.max_size);
 	r.bios_md5   = syncretro_list(spec.bios_md5).map(function (h) { return h.toLowerCase(); });
 	r.bios_names = syncretro_list(spec.bios_names).map(function (n) { return n.toLowerCase(); });
+	r.bios_words = syncretro_list(spec.bios_words).map(function (w) { return w.toLowerCase(); });
 	return r;
+}
+
+// The third BIOS net, and the one that scales.
+//
+// A dumped ROM set does not keep its BIOS images under the tidy names the core
+// wants (exec.bin, grom.bin): it names them like cartridges, in the same
+// directory as the cartridges -- "IntelliVoice BIOS (1981) (Mattel).int",
+// "Sears Super Video Arcade BIOS (1978) (Sears) [!].int". They pass the size band
+// (a BIOS is cartridge-sized), they are not called exec.bin, and their hashes are
+// not the two the console knows -- so they land in the picker as games that cannot
+// be played.
+//
+// Listing every hash is a losing game: an Intellivision set may carry the Sears
+// and Intellivision II alternate execs, the ECS and IntelliVoice ROMs, and any
+// number of redumps of each. What they all share is that the SET SAYS SO, in the
+// title. So a console may name words that mark a title as system firmware rather
+// than a game ("bios"), matched as whole words against the parsed title -- which
+// is why this runs on the title and not the raw filename: the year, publisher and
+// dump markers are already off, and a game whose PUBLISHER were "BIOS Software"
+// would not be caught by accident.
+//
+// This is a per-console rule, not a global one, precisely because it is a naming
+// convention and not a fact: a console whose games could plausibly have the word
+// in a title simply does not set it.
+function syncretro_bios_titled(name, words)
+{
+	var title, i;
+
+	if (!words || !words.length)
+		return false;
+	title = syncretro_parse_title(name).title.toLowerCase();
+	for (i = 0; i < words.length; i++) {
+		if (new RegExp("(^|[^a-z0-9])"
+		    + words[i].replace(/[^a-z0-9 ]/g, "") + "([^a-z0-9]|$)").test(title))
+			return true;
+	}
+	return false;
 }
 
 // The console's identity. `id` is DERIVED from `short` -- lower-cased and
@@ -491,18 +530,23 @@ function syncretro_collapse_variants(roms)
 // deliberately both kept by the collapse above, and have always drawn as two
 // identical "Pac-Man (1983)" lines. When a colliding entry has no tag to tell it
 // apart, its publisher does the job.
+// The key is what the player actually SEES -- the title plus the year the cell
+// draws after it -- not the title alone. Two dumps of "4-TRIS" from 2000 and 2001
+// are already told apart by that year, and pinning a publisher onto them as well
+// would be noise of exactly the kind this change set out to remove. (An entry with
+// no year, like the activity board's, keys on the title, which is all it shows.)
 function syncretro_disambiguate(roms)
 {
 	var count = {};
 	var i, r, key, mark;
 
 	for (i = 0; i < roms.length; i++) {
-		key = roms[i].title.toLowerCase();
+		key = roms[i].title.toLowerCase() + "|" + (roms[i].year || "");
 		count[key] = (count[key] || 0) + 1;
 	}
 	for (i = 0; i < roms.length; i++) {
 		r = roms[i];
-		key = r.title.toLowerCase();
+		key = r.title.toLowerCase() + "|" + (r.year || "");
 		if (count[key] < 2) {
 			r.label = r.title;
 			continue;
@@ -535,6 +579,8 @@ function syncretro_discover(roms_dir, rules, cache)
 				return;
 			if (rules.bios_names.indexOf(name.toLowerCase()) >= 0)
 				return;                       /* a BIOS image, by its default name */
+			if (syncretro_bios_titled(name, rules.bios_words))
+				return;                       /* ...or by the way the set titles it */
 
 			/* The one place a ROM is opened. Everything above this line is a
 			 * stat at worst, which is why the size/name gates come first. */

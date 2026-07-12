@@ -36,5 +36,15 @@ syncretro_lobby({
 	bios:       ["exec.bin", "grom.bin"],
 	bios_names: ["exec.bin", "grom.bin"],
 	bios_md5:   ["62e761035cb657903761800f4437b8af",    /* exec.bin, 8192 bytes */
-	             "0cd5946c6473e42e8e4c2137785e427f"]    /* grom.bin, 2048 bytes */
+	             "0cd5946c6473e42e8e4c2137785e427f",    /* grom.bin, 2048 bytes */
+	             /* The other system ROMs a dumped set ships IN roms/, named like
+	              * cartridges. They are cartridge-sized and not called exec.bin, so
+	              * only their content gives them away. */
+	             "d5530f74681ec6e0f282dab42e6b1c5f",    /* IntelliVoice, 2048 bytes */
+	             "8590d338a1bb5e0feed3e8a8cd493035"],   /* Sears exec, 8192 bytes */
+
+	/* ...and the net for the ones whose hash we do not know: an alternate exec, an
+	 * ECS ROM, a redump. Every set titles them the same way, and no Intellivision
+	 * cartridge has the word in its name. */
+	bios_words: ["bios"]
 });
