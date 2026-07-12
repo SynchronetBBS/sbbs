@@ -715,7 +715,13 @@ static int sm_io_ensure_scaled(int w, int h)
  * geometry the last probe reply produced. */
 static void sm_io_encode_dims(int *sxw, int *sxh, int *pad, int *pan)
 {
-    sm_geom_encode_dims(g_geom.ew, g_geom.eh, sxw, sxh, pad, pan);
+    /* is_syncterm decides whether we may lean on the terminal's integer sixel
+     * upscaling (SyncTERM) or must encode 1:1 (strict-DEC terminals like Windows
+     * Terminal, which draw the sixel at its encoded size). Unknown-yet reads as
+     * NOT SyncTERM -- the conservative full-size encode -- until a probe reply
+     * proves otherwise, same as the palette-persistence guard below. */
+    sm_geom_encode_dims(g_geom.ew, g_geom.eh, sm_input_is_syncterm(),
+                        sxw, sxh, pad, pan);
 }
 
 /* Nearest-neighbour scale of the native 320x200 indexed frame into dst

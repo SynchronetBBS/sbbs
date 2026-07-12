@@ -19,7 +19,7 @@ static int encode_w(int pagew, int pageh, int ch)
     int ew, eh, sxw;
 
     sm_geom_fit_page(pagew, pageh, ch, &ew, &eh, 0);
-    sm_geom_encode_dims(ew, eh, &sxw, 0, 0, 0);
+    sm_geom_encode_dims(ew, eh, 1, &sxw, 0, 0, 0);
     return sxw;
 }
 
@@ -30,7 +30,7 @@ static void assert_lossless(int pagew, int pageh, int ch)
     int ew, eh, sxw, sxh;
 
     sm_geom_fit_page(pagew, pageh, ch, &ew, &eh, 0);
-    sm_geom_encode_dims(ew, eh, &sxw, &sxh, 0, 0);
+    sm_geom_encode_dims(ew, eh, 1, &sxw, &sxh, 0, 0);
     assert(sxw >= SM_FB_W);
     assert(sxh >= SM_FB_H);
 }
@@ -48,7 +48,7 @@ int main(void)
     /* Width affords the 2x aspect (640/2 == the native 320). Height does not:
      * 384/2 is 192, eight rows short of the native 200, and those eight rows
      * would be DROPPED. So the vertical takes pan=1 and upsamples instead. */
-    sm_geom_encode_dims(ew, eh, &sxw, &sxh, &pad, &pan);
+    sm_geom_encode_dims(ew, eh, 1, &sxw, &sxh, &pad, &pan);
     assert(pad == 2 && sxw == SM_FB_W);
     assert(pan == 1 && sxh == 384);
     assert(sxw * pad == ew && sxh * pan == eh);   /* displays at the fitted size */
@@ -64,7 +64,7 @@ int main(void)
     assert(encode_w(640, 384, 16) == SM_FB_W);
     /* 368 is not a multiple of 6: the band clamp trims the encode to 366, so
      * the image displays two pixels shy of the fit. */
-    sm_geom_encode_dims(ew, eh, &sxw, &sxh, &pad, &pan);
+    sm_geom_encode_dims(ew, eh, 1, &sxw, &sxh, &pad, &pan);
     assert(pan == 1 && sxh == 366);
 
     /* Every 8x16 page from 20 rows up (any status-line/menu-bar arrangement a
@@ -83,7 +83,7 @@ int main(void)
     assert(ew == 696 && eh == 455);
     /* A page this tall clears the native height at pan=2 (455/2 == 227 >= 200),
      * so it keeps the cheap 2x on BOTH axes -- no doubled raster here. */
-    sm_geom_encode_dims(ew, eh, &sxw, &sxh, &pad, &pan);
+    sm_geom_encode_dims(ew, eh, 1, &sxw, &sxh, &pad, &pan);
     assert(pad == 2 && pan == 2);
     assert(sxw == 348 && sxh == 222);
     assert_lossless(696, 468, 13);
@@ -95,7 +95,7 @@ int main(void)
     sm_geom_fit_page(480, 400, 16, &ew, &eh, 0);
     assert(ew <= 480 && ew > 0);
     assert(ew == 480 && eh == 300);
-    sm_geom_encode_dims(ew, eh, &sxw, &sxh, &pad, &pan);
+    sm_geom_encode_dims(ew, eh, 1, &sxw, &sxh, &pad, &pan);
     assert(pad == 1 && sxw == 480);
     assert(pan == 1 && sxh == 300);
     assert_lossless(480, 400, 16);
@@ -110,15 +110,31 @@ int main(void)
      * at 1, and the downsample (with its dropped rows/columns) is unavoidable.
      * Nothing to guarantee here except that the encode stays inside the fit. */
     sm_geom_fit_page(640, 160, 16, &ew, &eh, 0);
-    sm_geom_encode_dims(ew, eh, &sxw, &sxh, &pad, &pan);
+    sm_geom_encode_dims(ew, eh, 1, &sxw, &sxh, &pad, &pan);
     assert(pad == 1 && pan == 1);
     assert(sxw <= ew && sxh <= eh);
 
     /* Band clamp and the degenerate floors. */
-    sm_geom_encode_dims(640, 800, &sxw, &sxh, &pad, &pan);
+    sm_geom_encode_dims(640, 800, 1, &sxw, &sxh, &pad, &pan);
     assert(pan == 2 && sxh == 396);   /* 400 -> 396: whole 6-row bands only */
-    sm_geom_encode_dims(1, 1, &sxw, &sxh, &pad, &pan);
+    sm_geom_encode_dims(1, 1, 1, &sxw, &sxh, &pad, &pan);
     assert(sxw == 1 && sxh == 6);
+
+    /* --- NON-SyncTERM (is_syncterm = 0): a strict-DEC terminal like Windows
+     * Terminal draws the sixel at its encoded size, so we must encode 1:1 at the
+     * full displayed size -- pad AND pan forced to 1 -- or the picture shows
+     * half-size and the mouse mapping desyncs. On the very geometry that took
+     * pad=2 above (640x384), the non-SyncTERM encode is the full width. */
+    sm_geom_encode_dims(640, 384, 0, &sxw, &sxh, &pad, &pan);
+    assert(pad == 1 && pan == 1);
+    assert(sxw == 640);               /* full width, not the 320 SyncTERM gets */
+    assert(sxh == 384);               /* full height (384 is already a 6-multiple) */
+    assert(sxw * pad == 640 && sxh * pan == 384);   /* displays at the fitted rect */
+
+    /* Same for the wide foot-style page that took pad=2/pan=2 on SyncTERM: on a
+     * strict-DEC terminal it is a full 1:1 encode. */
+    sm_geom_encode_dims(696, 456, 0, &sxw, &sxh, &pad, &pan);
+    assert(pad == 1 && pan == 1 && sxw == 696 && sxh == 456);
 
     return 0;
 }

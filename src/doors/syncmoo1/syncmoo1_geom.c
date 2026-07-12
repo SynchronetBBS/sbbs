@@ -66,12 +66,34 @@ static int sm_geom_aspect(int displayed, int native, int max, int band)
     return 1;
 }
 
-void sm_geom_encode_dims(int ew, int eh, int *sxw, int *sxh, int *pad, int *pan)
+void sm_geom_encode_dims(int ew, int eh, int is_syncterm,
+                         int *sxw, int *sxh, int *pad, int *pan)
 {
-    int hpad = sm_geom_aspect(ew, SM_FB_W, SM_SIXEL_PAD_MAX, 1);
-    int vpan = sm_geom_aspect(eh, SM_FB_H, SM_SIXEL_PAN_MAX, 6);
-    int w = ew / hpad;
-    int h = eh / vpan;
+    int hpad, vpan, w, h;
+
+    if (is_syncterm) {
+        /* SyncTERM/cterm renders each encoded sixel pixel as a pad x pan block,
+         * so we can encode small and let it integer-upscale -- ~1/4 the bytes. */
+        hpad = sm_geom_aspect(ew, SM_FB_W, SM_SIXEL_PAD_MAX, 1);
+        vpan = sm_geom_aspect(eh, SM_FB_H, SM_SIXEL_PAN_MAX, 6);
+    } else {
+        /* A strict-DEC sixel terminal (Windows Terminal, xterm, ...) reads the
+         * pan;pad raster attribute as a 1:1 pixel aspect and draws the sixel at
+         * its ENCODED size -- it does NOT integer-upscale the way SyncTERM does.
+         * Encoding at pad/pan=2 there shows the picture at half size, and throws
+         * the mouse mapping (which assumes the image fills the whole ew x eh
+         * rect, sm_map_mouse) off by the same factor, so the in-game hand no
+         * longer tracks the hardware cursor. Encode 1:1 at the full displayed
+         * size instead: the picture fills the fitted rect on any terminal and
+         * the cursor lines up. Costs ~4x the bytes vs the SyncTERM path -- MoO1
+         * is turn-based and mostly static, so frame de-dup absorbs it, and there
+         * is no correct alternative on a terminal that won't upscale. (The
+         * height is still band-clamped below, same as the SyncTERM path.) */
+        hpad = 1;
+        vpan = 1;
+    }
+    w = ew / hpad;
+    h = eh / vpan;
 
     h -= h % 6;
     if (sxw)

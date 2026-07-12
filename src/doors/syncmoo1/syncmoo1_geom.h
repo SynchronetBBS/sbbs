@@ -61,14 +61,21 @@ void sm_geom_fit_page(int pagew, int pageh, int ch, int *ew, int *eh, int *fith)
  * pixel-aspect the terminal must apply to it: the image displays at
  * (*sxw * *pad) x (*sxh * *pan).
  *
- * Each axis takes the pixel-aspect upscale (2) only when the resulting encode
- * still covers the native frame on that axis; otherwise it takes 1, so the
- * axis UPsamples rather than downsamples.  This is not an optimization: the
- * resample in sm_io_scale_indices() is nearest-neighbour, so an encode smaller
- * than the source DELETES source rows/columns outright, and the UI font's
- * 1-pixel strokes go with them.  Upsampling duplicates, and never loses.
- * Dropping an axis to 1 roughly doubles that axis's raster bytes, which is why
- * it isn't done unconditionally.
+ * `is_syncterm` selects the strategy. On SyncTERM (and cterm), each encoded
+ * sixel pixel renders as a pad x pan block, so each axis takes the upscale (2)
+ * whenever the resulting encode still covers the native frame on that axis --
+ * ~1/4 the raster bytes. This is not merely an optimization: the resample in
+ * sm_io_scale_indices() is nearest-neighbour, so an encode smaller than the
+ * source DELETES rows/columns and the UI font's 1-pixel strokes go with them;
+ * upsampling duplicates and never loses.
+ *
+ * On any OTHER sixel terminal (Windows Terminal, xterm, ...) pad/pan are BOTH
+ * forced to 1 and the encode is the full displayed size. Those terminals read
+ * pan;pad as a 1:1 pixel aspect and draw the sixel at its encoded size rather
+ * than integer-upscaling it -- so a pad/pan=2 encode would show at half size
+ * AND desync the mouse mapping (which assumes the image fills ew x eh). The 1:1
+ * encode costs ~4x the bytes but fills the fitted rect and keeps the cursor
+ * aligned on every terminal.
  *
  * The height is clamped DOWN to a whole number of 6-row sixel bands (a partial
  * final band renders wrong under pan>1).  Both are floored at one pixel / one
@@ -76,6 +83,7 @@ void sm_geom_fit_page(int pagew, int pageh, int ch, int *ew, int *eh, int *fith)
  *
  * Any of sxw/sxh/pad/pan may be NULL.
  */
-void sm_geom_encode_dims(int ew, int eh, int *sxw, int *sxh, int *pad, int *pan);
+void sm_geom_encode_dims(int ew, int eh, int is_syncterm,
+                         int *sxw, int *sxh, int *pad, int *pan);
 
 #endif /* SYNCMOO1_GEOM_H_ */
