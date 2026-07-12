@@ -98,8 +98,34 @@ identically; what changes is which globals exist. (Full class model: the
 
 **Available under jsexec:** `system`, `js`, `server`, `conio`; `msg_area`,
 `file_area`, `xtrn_area`; `User`, `MsgBase`, `FileBase`, `File`, `Archive`,
-`Queue`; `Socket` & friends, `MQTT`, `COM`; the `Crypt*` classes; and `uifc`
-(jsexec-only full-screen UI).
+`Queue`; `Socket` & friends, `MQTT`, `COM`; the `Crypt*` classes; `uifc`
+(jsexec-only full-screen UI); and `env` (jsexec-only, below).
+
+### `env` — the process environment (jsexec-only)
+
+There is **no `getenv()`** anywhere in Synchronet's JS. jsexec instead defines a
+global **`env` OBJECT**, keyed by variable name (`jsexec.cpp`):
+
+```javascript
+env.SBBSCTRL      // "/sbbs/ctrl"
+env.PATH          // ...
+for (var k in env) print(k + "=" + env[k]);
+```
+
+Two things to get right:
+
+- **It is an object, not an array.** `env[0]` is `undefined` and `env.length`
+  is `undefined`; iterate with `for (var k in env)`.
+- **It does not exist in a BBS session** — a script run by `bbs.exec()` or a
+  logon flow gets a `ReferenceError`. Anything meant to run in both contexts
+  cannot use it.
+
+**Prefer `system.*_dir` over `env` for install paths.** `system.ctrl_dir`,
+`system.data_dir`, `system.exec_dir` &c. exist in *both* contexts and name the
+install the script is actually running against — whereas `env.SBBSCTRL` only
+reports whatever the launching shell happened to export, and is absent under the
+BBS. Reach for `env` only for things that genuinely are environment (a caller's
+own variable, `PATH`, a CI flag).
 
 **NOT available under jsexec** (session/terminal-bound — referencing them throws
 `ReferenceError`):

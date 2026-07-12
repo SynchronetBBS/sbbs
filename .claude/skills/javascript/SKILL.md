@@ -137,6 +137,20 @@ host redirects to an acceptable one, request it over **`http://`** and let
 `follow_redirects` land on the good `https://` host — then verify the payload by
 checksum so integrity never depends on the transport.
 
+## Environment variables: there is no `getenv()`
+
+Nothing in Synchronet's JS exposes a `getenv()`. Under **jsexec** there is a
+global **`env` object**, keyed by name (`env.SBBSCTRL`, `env.PATH`) — an object,
+not an array, so `env[0]` and `env.length` are `undefined`; iterate with
+`for (var k in env)`. It is **jsexec-only**: a script under `bbs.exec()` or a
+logon flow gets a `ReferenceError`. See the `jsexec` skill.
+
+**For install paths, don't reach for the environment at all.** `system.ctrl_dir`,
+`system.data_dir`, `system.exec_dir`, `system.text_dir`, `system.mods_dir` exist
+in *both* contexts and name the install the script is actually running against —
+whereas `$SBBSCTRL` only reports what the launching shell exported, and is absent
+under the BBS. (Note also that `$SBBS` is not a real Synchronet variable.)
+
 ## The dialect: SpiderMonkey 1.8.5 (ES3-ish + a few ES5 bits)
 
 Synchronet embeds **SpiderMonkey 1.8.5** (JavaScript-C 1.8.5, 2011). Write to
@@ -429,7 +443,10 @@ normally want" (e.g. when serializing a message that may be read later), use
 `user.settings`.
 
 `console` is only available in a real BBS session — not in `jsexec`, and not
-always in early-startup contexts. Guard accordingly.
+always in early-startup contexts. Guard accordingly. (For testing, that absence
+is exploitable: a jsexec test can define a global `console` *stub* to unit-test
+terminal-facing libraries — see "Unit-testing console-dependent libraries"
+under the tests section.)
 
 ## MsgBase — the message-base API
 
@@ -1001,6 +1018,56 @@ print(typeof some_helper);    // unit-test the helpers directly
 Stock examples: `chat_llm.js`'s `CHAT_LLM_NO_STANDALONE`, `chat_llm_irc.js`'s
 `CHAT_LLM_IRC_NO_MAIN`. This guard-and-`load()` is the reliable way to
 syntax-check a side-effecting module without running it.
+
+### Unit-testing console-dependent libraries under jsexec (stub the console)
+
+`console` being **undefined under jsexec** cuts both ways: you can't run
+terminal code there directly, but a jsexec test can define a global
+`var console = {...}` **stub** and unit-test a library that talks to the
+terminal — simulating the remote terminal's side of the conversation. This
+makes otherwise "needs a live terminal" logic (query/response capability
+probes, escape-sequence emission, response caching) repeatable and assertable:
+
+- **Feed responses:** `write(s)` records everything "sent" into a `wire`
+  string and, when `s` matches a known query, queues the canned reply's chars;
+  `inkey(mode, timeout)` returns queued chars one at a time and `""` when
+  empty (= timeout). Add whatever properties the library touches
+  (`ctrlkey_passthru`, `screen_rows`, `status`, ...).
+- **Assert on the wire:** claims like "query sent exactly once" (caching) or
+  "never sent to a non-answering terminal" fall out of substring counts on
+  `wire`.
+- **Reset between scenarios:** libraries stash session state on `console`
+  (`cterm_lib.js` stashes `cterm_version`, `cterm_font_state`, `cterm_da`,
+  ...) — delete those properties and `load({}, lib)` a fresh copy per
+  scenario.
+
+```javascript
+var wire = "", input = [], responses = {};   // query string -> canned reply
+var console = {
+    ctrlkey_passthru: 0, screen_rows: 24, screen_columns: 80, status: 0,
+    write: function(s) {
+        wire += s;
+        if (responses[s] !== undefined)
+            for (var i = 0; i < responses[s].length; i++)
+                input.push(responses[s].charAt(i));
+    },
+    inkey: function(mode, timeout) { return input.length ? input.shift() : ""; },
+    clearkeybuffer: function() { input = []; }
+};
+console.cterm_version = 1330;   // skip the lib's load-time DA query (or can the "\x1b[c" reply)
+responses["\x1b[<c"] = "\x1b[<0;1;2;3;4;5;6;7c";  // play a graphics-mode SyncTERM
+var cterm = load({}, "cterm_lib.js");
+if (cterm.supports_palettes() !== true) throw new Error("palette probe failed");
+if (wire.split("\x1b[<c").length - 1 !== 1) throw new Error("CTDA queried more than once");
+```
+
+Proven use: `cterm_lib.js`'s CTDA-based capability checks (fonts / palettes /
+sixel / bright-background) were validated exactly this way — six simulated
+terminals (non-CTerm silence, graphics-mode, text-mode, pre-CTDA version,
+prior-setfont results) with no live SyncTERM in the loop. Caveat: the stub
+proves the library's logic against the *documented* wire behavior; when the
+protocol itself is in doubt, verify the terminal's real responses first
+(`src/conio/cterm*.c` / `cterm.adoc`, or a live session).
 
 `exec/syncjslint.js` is a **style** linter (jslint), **not** a syntax gate:
 it emits false positives on valid SpiderMonkey constructs (e.g. a `-` inside

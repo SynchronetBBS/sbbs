@@ -194,9 +194,12 @@ function door_deploy(spec)
 
 	// 2. The LIVE install, if this checkout is not itself the live one.
 	//
-	// The shell scripts reached for $SBBSCTRL to find it; Synchronet's JS has no
-	// getenv, but it has something better and always correct: system.ctrl_dir is
-	// the install we are running against, so the live bundle is right beside it.
+	// The shell scripts reached for $SBBSCTRL to find it. We could too -- jsexec
+	// exposes the environment as a global `env` OBJECT, keyed by name
+	// (env.SBBSCTRL), though only under jsexec and not in a BBS session. But
+	// system.ctrl_dir is strictly better: it is available in both contexts, and it
+	// names the install we are actually running against rather than whatever the
+	// launching shell happened to export.
 	live = backslash(system.ctrl_dir) + "../xtrn/" + (spec.xtrn || spec.name);
 	if (fullpath(backslash(live)) != fullpath(backslash(bundle))) {
 		if (file_isdir(live)) {
