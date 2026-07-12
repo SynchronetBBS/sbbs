@@ -473,11 +473,12 @@ static size_t syncduke_emit_jxl(const uint8_t *fb, const uint8_t *pal, int w, in
  * UTF-8 terminal, CP437 bytes on a CP437 terminal -- the door runs Translate-Character-Set-No
  * (EX_BIN), so whatever we emit reaches the terminal untranslated. */
 static int sd_rt_mode, sd_rt_cols, sd_rt_rows;   /* last rt_config -- reconfigure on change */
+static int syncduke_stats_on;                    /* Ctrl-S live stats strip showing (suppresses the popups) */
 
 static size_t syncduke_emit_text(const uint8_t *fb, const uint8_t *pal, rt_mode_t mode)
 {
-	int         cols = (syncduke_term_px_w() > 0 ? syncduke_term_px_w() : SYNCDUKE_OUT_W_DEF) / 8;
-	int         rows = (syncduke_term_px_h() > 0 ? syncduke_term_px_h() : SYNCDUKE_OUT_H_DEF) / 16;
+	int         cols = syncduke_term_cols();   // the REAL character grid, not px/8 -- see the
+	int         rows = syncduke_term_rows();   // accessors: px/8,px/16 overran non-8x16 cells
 	const char *tb;
 	size_t      tlen;
 
@@ -502,6 +503,11 @@ static size_t syncduke_emit_text(const uint8_t *fb, const uint8_t *pal, rt_mode_
 		int hn = syncduke_hud_lines(&hud), i;
 
 		rt_exclude_clear();
+		if (syncduke_stats_on) {                          /* stats strip owns the bottom row */
+			int ovrow = syncduke_term_rows() - 1;         /* 0-based; only when within the grid */
+			if (ovrow >= 0 && ovrow < rows)
+				rt_exclude_add(ovrow, 0, cols);
+		}
 		for (i = 0; i < hn; i++) {
 			int len = (int)strlen(hud[i].text);
 			int row = hud[i].y * rows / SYNCDUKE_SCREEN_H;
@@ -568,7 +574,6 @@ static int     syncduke_last_tier;   /* tier of the last sent frame (0=sixel, 1=
  * A/B the two tiers on a JXL-capable SyncTERM. */
 static int      syncduke_tier_force = -1;
 static uint32_t syncduke_label_until;   /* hold the F4/Ctrl-T label on screen until this ms (0 = none) */
-static int      syncduke_stats_on;      /* Ctrl-S live stats strip showing (suppresses the popups) */
 
 /* --- DSR-ACK frame pacing (SyncDOOM's model) ---
  * After each frame we emit a DSR (ESC[6n); the terminal's report (ESC[r;cR) comes
@@ -864,28 +869,34 @@ void syncduke_pace_ack(void)
 	syncduke_pace_progress_ms = now;
 }
 
-/* --- live stats overlay (Ctrl-S): a right-justified status strip for diagnosing the
+/* --- live stats overlay (Ctrl-S): a status strip on the BOTTOM row for diagnosing the
  * frame rate. Shows delivered fps, wire KB/s, the DSR round-trip (lag cur/min ms
  * -- high lag = the terminal renders sixel slowly, which is what caps fps), the
  * pipeline (inflight/depth), the last frame size and encode time, and the de-dupe
- * count. Toggled by Ctrl-S (intercepted in syncduke_input, never reaches Duke). Drawn on
- * row 2 (not 1): Duke centers its pickup/quote messages on the top row, so a top-row strip
- * would clobber them (Doom puts them upper-LEFT, clear of the upper-RIGHT strip). */
-#define SYNCDUKE_OV_ROW 2
+ * count. Toggled by Ctrl-S (intercepted in syncduke_input, never reaches Duke). The
+ * bottom row is unused in the sixel tier (recompute_geom reserves one cell so a sixel
+ * never reaches the last text row -- the Windows-Terminal scroll guard), so this is
+ * clear of Duke's top-row pickup/quote messages and, on average, less invasive than
+ * the old top strip that overlaid the game view. */
 static uint32_t syncduke_win_at, syncduke_win_frames;
 static uint64_t syncduke_win_bytes;
 static uint32_t syncduke_recent_fps, syncduke_recent_kbps;
 static uint32_t syncduke_last_kb, syncduke_last_enc_us;
 static uint32_t syncduke_ov_draw_ms;
 static char     syncduke_ov_last[96];
-static int      syncduke_ov_prev_tn;    /* width of the last strip drawn (to blank now-uncovered cells when it narrows) */
 
 void syncduke_stats_toggle(void)
 {
 	syncduke_stats_on = !syncduke_stats_on;
 	syncduke_ov_last[0] = '\0';     /* force the strip to (re)draw */
-	syncduke_ov_prev_tn = 0;
 	syncduke_have_last  = 0;        /* repaint the full frame: shows/erases the strip cleanly */
+	if (!syncduke_stats_on) {       /* erase the strip off the bottom row -- the sixel tier never
+	                                 * repaints it (reserved row), so clear it explicitly */
+		char cb[24];
+		int  cn = snprintf(cb, sizeof(cb), "\x1b" "7\x1b[%d;1H\x1b[0m\x1b[K\x1b" "8", syncduke_term_rows());
+		if (cn > 0)
+			syncduke_out_put(cb, (size_t)cn);
+	}
 }
 
 /* Roll the 2-second stats window: recompute delivered fps + wire KB/s and LOG the
@@ -923,16 +934,13 @@ static void syncduke_emit_overlay(int force)
 {
 	char     txt[96], ov[220], bw[20];
 	uint32_t nm = syncduke_now_ms();
-	int      cols, col, tn, ovn;
+	int      tn, ovn;
 
 	if (!force && nm - syncduke_ov_draw_ms < 250)
 		return;
 
 	/* Build the readout, SyncDOOM-style: spaced fields and KB/s up to 999, then
-	 * fractional MB/s so the throughput field stays narrow on a fast link. The strip
-	 * is right-justified to its CONTENT width; when it narrows (e.g. lag 1471->471, or
-	 * KB/s -> MB/s) the now-uncovered cells to its left are blanked so no stale chars
-	 * linger. */
+	 * fractional MB/s so the throughput field stays narrow on a fast link. */
 	{
 		uint32_t fps  = syncduke_recent_fps  > 9999 ? 9999 : syncduke_recent_fps;
 		uint32_t kbps = syncduke_recent_kbps;
@@ -970,27 +978,14 @@ static void syncduke_emit_overlay(int force)
 		strcpy(syncduke_ov_last, txt);
 	syncduke_ov_draw_ms = nm;
 
-	{   /* right-justify to the real TERMINAL width, not the (capped) image width:
-		 * in a wide window the JXL image fills past out_w, so out_w/8 anchored the
-		 * strip mid-canvas instead of at the right edge. */
-		int cw = syncduke_term_cell_w();
-		if (cw < 1)
-			cw = 8;
-		cols = (syncduke_term_px_w() > 0 ? syncduke_term_px_w() : SYNCDUKE_OUT_W_DEF) / cw;
-	}
-	col  = cols - tn + 1;                                /* right-justify the strip on SYNCDUKE_OV_ROW */
-	if (col < 1)
-		col = 1;
-	if (syncduke_ov_prev_tn > tn) {                      /* narrower than last time: blank the gap to its left */
-		int prev_col = cols - syncduke_ov_prev_tn + 1;
-		if (prev_col < 1)
-			prev_col = 1;
-		ovn = snprintf(ov, sizeof(ov), "\x1b" "7\x1b[%d;%dH\x1b[0m%*s\x1b[1;37;44m%s\x1b[0m\x1b" "8",
-		               SYNCDUKE_OV_ROW, prev_col, col - prev_col, "", txt);
-	} else {
-		ovn = snprintf(ov, sizeof(ov), "\x1b" "7\x1b[%d;%dH\x1b[1;37;44m%s\x1b[0m\x1b" "8", SYNCDUKE_OV_ROW, col, txt);
-	}
-	syncduke_ov_prev_tn = tn;
+	/* Left-justified on the bottom row. Set the strip color FIRST, then erase to
+	 * end-of-line so the background attribute paints the whole row as a full-width
+	 * status bar (SyncConquer's idiom) and drops any tail from a longer prior readout.
+	 * Wrapped in cursor save/restore (ESC 7 / ESC 8) so the game's own cursor is left
+	 * untouched. In the text tier the whole row is excluded from the cell-diff (see
+	 * syncduke_emit_text). */
+	ovn = snprintf(ov, sizeof(ov), "\x1b" "7\x1b[%d;1H\x1b[30;46m%s\x1b[K\x1b[0m\x1b" "8",
+	               syncduke_term_rows(), txt);
 	if (ovn > 0)
 		syncduke_out_put(ov, (size_t)ovn);
 }

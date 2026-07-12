@@ -146,6 +146,7 @@ extern char *   net_player_name;       // net_client.c: defaulted unless we set 
 static char     g_door32_path[PATH_MAX] = ""; // drop-file path (for the terminal.ini node-dir fallback)
 static int      g_cols = 80;           // text-tier columns (from terminal.ini, else 80)
 static int      g_text_cols = 80;      // effective text-render width (g_cols capped by text_max_cols)
+static int      g_text_rows = 25;      // effective text-render height (s_lines capped by text_max_rows)
 
 // Graphics scaling (syncdoom.ini [video]). The bitmap tiers have no inherent
 // size -- we emit whatever pixel dimensions we choose. "fit" sizes the image to
@@ -335,6 +336,7 @@ static int             g_force_text = 0; // -text: force the block-char tier
 static rt_charset_t    g_rt_charset = RT_CP437; // -charset (terminal.ini will set this)
 static rt_mode_t       g_rt_mode    = RT_HALF; // -mode override
 static int             g_rt_mode_set = 0;      // was -mode given?
+static rt_mode_t       g_rt_active  = RT_HALF; // the text sub-tier actually configured (for the stats label)
 static rt_colors_t     g_colors     = RT_4BIT; // color depth (terminal.ini desc / -colors)
 
 // Always-run: a terminal can't reliably hold a run modifier, so the 'R' key
@@ -509,8 +511,9 @@ static uint64_t g_fps_win_bytes = 0;    // wire bytes emitted in the current fps
 static uint32_t *g_last_fb   = NULL;     // copy of the framebuffer last emitted (allocated lazily)
 static int       g_last_fb_ok = 0;       // is g_last_fb a valid match target? (cleared on label/resize)
 static uint32_t  g_dedup_skipped = 0;    // telemetry: identical frames skipped (not re-sent)
-static char      g_ov_last[80] = "";     // last stats-overlay text drawn (to skip redundant redraws)
-static int       g_ov_prev_tn = 0;       // width of the last overlay -> blank the gap when it shrinks
+static uint32_t  g_last_kb = 0;          // last real frame's image payload (KB) -> stats strip
+static uint32_t  g_last_enc_us = 0;      // last real frame's encode time (us) -> stats strip
+static char      g_ov_last[96] = "";     // last stats-overlay text drawn (to skip redundant redraws)
 static int       g_ov_cell_col = 0;      // overlay's cell-grid column (0-based) -> text cell-diff exclusion
 static int       g_ov_cell_w   = 0;      // overlay's width in cells (0 = not drawn yet)
 static char      g_page_ov[10][82];      // shared top banner: wrapped lines (full text) --
@@ -869,17 +872,49 @@ static int overlay_cols(void)
 	return (g_mode == MODE_TEXT) ? g_text_cols : g_cols;
 }
 
-// Live stats overlay (Ctrl-S): a status strip in the top-RIGHT corner. Top-right
-// keeps it clear of Doom's notices (top-left message line) and the HUD/status bar
-// (bottom). Shows the render tier, recent frame rate, transmit throughput (KB/s to
-// the player), round-trip (current / baseline-min) and the effective pipeline depth
-// -- the signals that drive the auto pacing, so a far-away player can watch them.
-// force=1 always redraws (a fresh frame just painted over it); force=0 redraws only
-// when the text changed, so refreshing it over a de-duped (unchanging) frame is free.
+// The persistent stats strip's terminal row: the very last one. In the sixel tier
+// that row is already reserved empty (recompute_geom() fits the image into vh-cellh
+// so a sixel never reaches the last text row -- the Windows-Terminal scroll guard);
+// the JXL/PPM APC tiers place the image by pixel offset and use no text cells there
+// either. So the bottom row is free for a status line, mirroring SyncRetro. Falls
+// back to 25 before the terminal size is known.
+static int sd_overlay_row(void)
+{
+	return s_lines > 0 ? s_lines : 25;
+}
+
+// The stats-strip tier name. Unlike mode_name() (which flattens every text sub-tier
+// to "text"), this spells out the active glyph tier -- matching SyncDuke's readout so
+// the F4 cycle is legible: half-block / blocks+shades / quadrant / sextant.
+static const char *overlay_tier_name(void)
+{
+	if (g_mode == MODE_TEXT) {
+		switch (g_rt_active) {
+			case RT_BLOCKS:   return "blocks+shades";
+			case RT_QUADRANT: return "quadrant";
+			case RT_SEXTANT:  return "sextant";
+			case RT_HALF:
+			default:          return "half-block";
+		}
+	}
+	if (g_mode == MODE_SIXEL && g_sixel_fullres)
+		return "sixel-full";
+	return mode_name(g_mode);
+}
+
+// Live stats overlay (Ctrl-S): a status strip on the BOTTOM row. The bottom row is
+// unused in the graphics tiers (see sd_overlay_row), so this stays clear of Doom's
+// top-row message line and, on average, is less invasive than the old top-right
+// strip that overlaid the game view. Shows the render tier, recent frame rate,
+// transmit throughput (KB/s to the player), round-trip (current / baseline-min) and
+// the effective pipeline depth -- the signals that drive the auto pacing, so a
+// far-away player can watch them. force=1 always redraws (a fresh frame just painted
+// over the reserved row on resize); force=0 redraws only when the text changed, so
+// refreshing it over a de-duped (unchanging) frame is free.
 static void emit_overlay(int force)
 {
-	char txt[80], ov[160], bw[16];
-	int  tn, col, ovn, aw;
+	char txt[96], ov[192], bw[16];
+	int  tn, ovn, row;
 
 	// Throughput: KB/s up to 999, then fractional MB/s (KiB/MiB of wire BYTES) so the
 	// field stays narrow on a fast link.
@@ -890,15 +925,20 @@ static void emit_overlay(int force)
 	{
 		// Keyboard + turn-key model in ONE compact token: "evdev/nat" or "kitty/syn" -- the suffix
 		// is native hold (low-latency true key-up) vs the synthetic constant rate (high-latency).
-		char kbd[16] = "";
+		char     kbd[16] = "";
+		uint32_t kb  = g_last_kb > 9999 ? 9999 : g_last_kb;   // per-frame image size + encode time --
+		uint32_t enc = g_last_enc_us / 1000;                 // the SyncDuke-style diagnostics
+		if (enc > 999)
+			enc = 999;
 		if (g_evdev_active || g_kitty_active)
 			snprintf(kbd, sizeof(kbd), " %s/%s",
 			         g_evdev_active ? "evdev" : "kitty",
 			         sd_turn_native() ? "nat" : "syn");
-		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s%s%s ",
-		              (g_mode == MODE_SIXEL && g_sixel_fullres) ? "sixel-full" : mode_name(g_mode),
+		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s%s ",
+		              overlay_tier_name(),
 		              g_recent_fps, bw, g_rtt_ms, g_rtt_min,
 		              max_inflight(), g_inflight_auto ? "/auto" : "",
+		              kb, enc,
 		              kbd,
 		              ((g_mode == MODE_JXL || g_mode == MODE_PPM)
 		               && g_cterm_version >= TERMGFX_CTERM_VER_BLOB) ? " blob" : "");   // frames inline (Draw*Blob)
@@ -908,26 +948,15 @@ static void emit_overlay(int force)
 		return;                         // unchanged and the frame didn't repaint it -> nothing to send
 	if (tn > 0 && tn < (int)sizeof(g_ov_last))
 		strcpy(g_ov_last, txt);
-	// Anchor to the rendered width: in text mode the grid is capped (text_max_cols),
-	// so right-justifying to the full g_cols would fling the overlay off to the right
-	// of the actual game view on a wide terminal. Graphics tiers use g_cols (the
-	// overlay sits in the centered image's top margin).
-	aw  = overlay_cols();
-	col = aw - tn + 1;                  // right-justify on the top row
-	if (col < 1)
-		col = 1;
-	g_ov_cell_col = col - 1;            // overlay's cell region (0-based) -> excluded from the
-	g_ov_cell_w   = tn;                 // text cell-diff so the game never repaints under it
-	if (g_ov_prev_tn > tn) {            // narrower than last time: blank the now-uncovered cells
-		int prev_col = aw - g_ov_prev_tn + 1;
-		if (prev_col < 1)
-			prev_col = 1;
-		ovn = snprintf(ov, sizeof(ov), "\x1b[1;%dH\x1b[0m%*s\x1b[1;37;44m%s\x1b[0m",
-		               prev_col, col - prev_col, "", txt);
-	} else {
-		ovn = snprintf(ov, sizeof(ov), "\x1b[1;%dH\x1b[1;37;44m%s\x1b[0m", col, txt);
-	}
-	g_ov_prev_tn = tn;
+	// Left-justified on the bottom row. Set the strip's color FIRST, then erase to
+	// end-of-line: with the background attribute active, the erase paints the whole
+	// row as a clean full-width status bar (SyncConquer's idiom) and drops any tail
+	// from a longer prior readout. In the text tier the cell-diff excludes this row
+	// end to end, so the game never repaints under it (see the MODE_TEXT branch).
+	row = sd_overlay_row();
+	g_ov_cell_col = 0;
+	g_ov_cell_w   = overlay_cols();
+	ovn = snprintf(ov, sizeof(ov), "\x1b[%d;1H\x1b[30;46m%s\x1b[K\x1b[0m", row, txt);
 	if (ovn > 0)
 		out_put(ov, (size_t)ovn);
 }
@@ -1020,13 +1049,12 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 	}
 
 	g_out_len = 0; g_out_off = 0;       // begin a fresh frame buffer
-	if (g_clear_row1) {                 // wipe a just-dismissed label/overlay off the top row
+	if (g_clear_row1) {                 // wipe a just-dismissed centered label off the top row
 		out_put("\x1b[1;1H\x1b[2K", 10);
-		g_ov_last[0] = '\0';            // overlay text is gone -> force a redraw if it's still on
-		g_ov_prev_tn = 0;
 		rt_invalidate();               // we cleared the row behind the text renderer -> resync it
 		g_clear_row1 = 0;
 	}
+	long double enc_t0 = xp_timer();    // time the encode (image/text render) for the stats strip
 	if (g_mode == MODE_TEXT) {          // ANSI/CP437 block-char tier (render_text)
 		size_t      tlen;
 		const char *tb;
@@ -1036,11 +1064,10 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 		// the exclusion (pre-render) and the draw (post-render).
 		const char *msg   = HU_message_text();
 		const char *chat  = HU_chat_text();
-		int         ovc0  = (g_stats_overlay && g_ov_cell_w > 0) ? g_ov_cell_col : g_text_cols;
 		int         msgw  = msg  ? (int)strlen(msg)  : 0;
 		int         chatw = chat ? (int)strlen(chat) : 0;
-		if (msgw > ovc0)
-			msgw = ovc0;                                  // keep the left message clear of the right overlay
+		if (msgw > g_text_cols)
+			msgw = g_text_cols;
 		if (chatw > g_text_cols)
 			chatw = g_text_cols;
 
@@ -1050,8 +1077,11 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 			for (pr = 0; pr < g_page_ov_rows; pr++)
 				rt_exclude_add(pr, 0, g_text_cols);
 		}
-		if (g_stats_overlay && g_ov_cell_w > 0)
-			rt_exclude_add(0, g_ov_cell_col, g_ov_cell_col + g_ov_cell_w);
+		if (g_stats_overlay && g_ov_cell_w > 0) {         // stats strip owns the bottom row
+			int ovrow = sd_overlay_row() - 1;             // 0-based; only when within the grid
+			if (ovrow >= 0 && ovrow < g_text_rows)
+				rt_exclude_add(ovrow, g_ov_cell_col, g_ov_cell_col + g_ov_cell_w);
+		}
 		if (msgw > 0)
 			rt_exclude_add(0, 0, msgw);                   // message: cell row 0, top-left
 		if (chatw > 0)
@@ -1084,9 +1114,11 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 		if (!built)
 			emit_frame_ppm(w, h);
 	}
+	g_last_enc_us = (uint32_t)((xp_timer() - enc_t0) * 1000000.0L);   // encode done; g_out_len is the payload
+	g_last_kb     = (uint32_t)((g_out_len + 512) / 1024);
 
 	if (g_stats_overlay)
-		emit_overlay(1);                // the fresh frame painted over row 1 -> always redraw
+		emit_overlay(1);                // the fresh frame painted over the reserved row -> redraw
 	draw_page_overlay();                // incoming-page banner over the top rows (or clear it)
 
 	out_put("\x1b[6n", 4);              // DSR -> the terminal reports when it has consumed this frame
@@ -2343,6 +2375,7 @@ static void setup_text_mode(void)
 	// is "Translate Character Set: No" (EX_BIN) so native UTF-8 reaches the terminal.
 	rt_mode_t mode = g_rt_mode_set ? g_rt_mode
 	               : (g_rt_charset == RT_UTF8 ? RT_BLOCKS : RT_HALF);
+	g_rt_active = mode;                  // the specific text sub-tier the stats label names
 	// Cap the text grid: a maximized terminal (e.g. 561x105) otherwise makes each
 	// frame hundreds of KB (1.5+ MB/s), which floods the link and trips the dead-
 	// client watchdog. Beyond Doom's own detail, extra cells add only bytes -- so
@@ -2353,6 +2386,7 @@ static void setup_text_mode(void)
 	if (g_text_max_rows > 0 && trows > g_text_max_rows)
 		trows = g_text_max_rows;
 	g_text_cols = tcols;                 // the stats overlay anchors to this, not the full g_cols
+	g_text_rows = trows;                 // ...and the bottom-row exclusion needs the grid height
 	rt_config(tcols, trows, mode, g_colors, g_rt_charset);
 	g_mode = MODE_TEXT;
 }
@@ -3390,7 +3424,7 @@ static void toggle_pipeline(void)
 	dlog("pipeline toggle -> frames_in_flight=%s lag~%ums", frames_in_flight_str(), g_rtt_ms);
 }
 
-// Ctrl-S: toggle the live stats overlay (a top-row strip drawn over each frame --
+// Ctrl-S: toggle the live stats overlay (a bottom-row strip drawn over each frame --
 // fps/RTT/depth). Session-only (not persisted; it's a diagnostic, default off). A
 // brief centered label confirms the toggle.
 static void toggle_stats(void)
@@ -3399,6 +3433,12 @@ static void toggle_stats(void)
 	int  pad, n;
 
 	g_stats_overlay = !g_stats_overlay;
+	if (!g_stats_overlay) {                 // erase the strip off the bottom row -- the graphics
+		char cb[24];                        // tiers never repaint it (reserved row), so clear it
+		int  cn = snprintf(cb, sizeof(cb), "\x1b[%d;1H\x1b[0m\x1b[K", sd_overlay_row());
+		emit_all(cb, cn);
+		g_ov_last[0] = '\0';                // force a redraw if it's toggled back on
+	}
 	snprintf(line, sizeof(line), "  STATS %s  ", g_stats_overlay ? "ON" : "OFF");
 	pad = (overlay_cols() - (int)strlen(line)) / 2;
 	if (pad < 0)

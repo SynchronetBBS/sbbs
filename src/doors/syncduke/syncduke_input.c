@@ -366,6 +366,30 @@ int syncduke_term_px_w(void) { return g_term_px_w; }
 int syncduke_term_px_h(void) { return g_term_px_h; }
 int syncduke_term_cell_w(void) { return g_cell_w; }
 int syncduke_term_cell_h(void) { return g_cell_h; }
+
+/* Terminal text-row count for the bottom-anchored stats strip: the size-probe's
+ * cursor report is authoritative; fall back to pixel-canvas / cell height, then 24. */
+int syncduke_term_rows(void)
+{
+	if (g_grid_rows > 0)
+		return g_grid_rows;
+	if (g_term_px_h > 0 && g_cell_h > 0)
+		return g_term_px_h / g_cell_h;
+	return 24;
+}
+
+/* Terminal text-column count, same precedence as syncduke_term_rows(). The text tier
+ * renders one game cell per terminal character cell, so it must use the REAL grid --
+ * dividing the pixel canvas by a hardcoded 8 overcounts columns on any terminal whose
+ * cell isn't 8px wide (e.g. Windows Terminal), spilling the render past the canvas. */
+int syncduke_term_cols(void)
+{
+	if (g_grid_cols > 0)
+		return g_grid_cols;
+	if (g_term_px_w > 0 && g_cell_w > 0)
+		return g_term_px_w / g_cell_w;
+	return 80;
+}
 /* Real graphics canvas for image-fill: XTSMGRAPHICS if SyncTERM answered it, else
  * the text-area pixels (ESC[14t / estimate), so non-SyncTERM terminals still fill. */
 int syncduke_canvas_w(void) { return g_gfx_w > 0 ? g_gfx_w : g_term_px_w; }

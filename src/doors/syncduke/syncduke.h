@@ -91,6 +91,8 @@ int  syncduke_term_px_w(void);                      /* terminal pixel-canvas wid
 int  syncduke_term_px_h(void);                      /* terminal pixel-canvas height from probe, 0 if unknown */
 int  syncduke_term_cell_w(void);                    /* terminal cell width in px from ESC[16t, 0 if unknown */
 int  syncduke_term_cell_h(void);                    /* terminal cell height in px from ESC[16t, 0 if unknown */
+int  syncduke_term_rows(void);                      /* terminal text-row count (bottom stats-strip row); >=1 */
+int  syncduke_term_cols(void);                      /* terminal text-column count (text-tier grid width); >=1 */
 int  syncduke_canvas_w(void);                       /* graphics-canvas width: XTSMGRAPHICS or text-area px */
 int  syncduke_canvas_h(void);                       /* graphics-canvas height: XTSMGRAPHICS or text-area px */
 int  syncduke_jxl_scale_max(void);                  /* JXL fill cap (px), [video] scale_max; 0 = uncapped */
