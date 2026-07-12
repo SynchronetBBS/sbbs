@@ -144,6 +144,66 @@ JXL** (M3) and **text/block fallbacks** in SyncRetro and SyncMOO1.
 
 ---
 
+## Canvas fit
+
+Once a tier is chosen, the door must size the game frame into the terminal's
+graphics canvas — which rarely matches the frame's native aspect (a maximized
+Windows Terminal reports something like 2700×1440; SyncTERM reports ~640×400).
+There are two shared mechanics plus a per-door *policy* on top.
+
+**Shared mechanic 1 — bounded stretch (`termgfx_geom_fit_ex`).** The fit finds
+the largest aspect-preserving rectangle that fits the canvas, then, per axis,
+**snaps a thin leftover bar to the full canvas if it's ≤ `max_stretch_pct`% of
+the image**, else letterboxes:
+
+```c
+if (vw > w && (vw - w) * 100 <= w * max_stretch_pct)  w = vw;   // eat a thin bar
+if (vh > h && (vh - h) * 100 <= h * max_stretch_pct)  h = vh;
+```
+
+So a small mismatch (a 2–5% sliver that reads as a rendering glitch) fills
+cleanly, while a real mismatch letterboxes — with distortion **hard-capped at
+`max_stretch_pct`**. `max_stretch_pct == 0` means true aspect, bars kept full.
+
+**Shared mechanic 2 — the sixel bottom-row reserve + `DOOR_SCALE_MAX`.** The
+sixel tier leaves the last text row free (scroll-guard, see the Graphics notes)
+and clamps emitted width to a bandwidth cap. These shrink/offset the sixel image
+independently of the fit policy, which is why the sixel tier can show margins or
+a slight vertical squish the JXL/PPM tiers don't.
+
+**Per-door policy:**
+
+| Door | Policy | `max_stretch_pct` | Manual toggle | Notes |
+|------|--------|:---:|:---:|-------|
+| **SyncDuke** | bounded stretch | **8** | — | `termgfx_geom_fit` (wrapper defaults to 8); fills near-fits, letterboxes the rest |
+| **SyncDOOM** | bounded stretch | **8** | — | same (`syncdoom.c` fit call); `-scaling off` forces native 640×400 instead |
+| **SyncMOO1** | bounded stretch | **8** | — | `SM_GEOM_STRETCH_PCT`; then widens a height-limited fit back to native 2× |
+| **SyncConquer** | **pure aspect + manual Fill** | **0** | **Ctrl-F** | opts *out* of the shared 8%; see below |
+| **SyncRetro** | **PAR-correct aspect** | — | — | stretches each frame to the *core's* real display ratio (e.g. 256×240 shown as 4:3), not the frame's pixel ratio |
+
+**Why SyncConquer is the exception.** The 8% bounded stretch is the right
+default for the half-res game doors (320×200 upscaled ×2): it uses the screen
+without ever grossly distorting the game. SyncConquer instead renders a **native
+640×400** UI with 6–8px fonts, where two things the 8% policy can't give matter:
+
+- **Aspect** (`max_stretch_pct = 0`, the default): true proportions, but on an
+  off-aspect canvas it *down*-scales the 640-wide frame (e.g. to 614), softening
+  the tiny fonts.
+- **Fill** (Ctrl-F, sticky per-user via `syncalert.fill`): stretches to the full
+  canvas. On a ~640-wide canvas this keeps the width **1:1**, so the fonts stay
+  crisp, at the cost of aspect (the classic width-1:1-vs-true-ratio trade-off).
+
+The effect is subtle on SyncTERM (canvas ≈ native, so Aspect ≈ Fill apart from
+the bottom-row reserve) and dramatic on Windows Terminal (a wide, off-aspect
+canvas, where Fill visibly stretches). Because it's an orthogonal axis to the
+tier — and its ideal value depends on the *client's* canvas aspect, which the
+door knows at probe time — an auto aspect-vs-fill default (rather than a manual
+toggle) is a natural future refinement, and would suit the other doors too if
+they ever want it. See the Graphics notes for the Fill-centering and
+margin-clear details.
+
+---
+
 ## Audio matrix
 
 | Door | Audio? | Transport | SFX source → wire | Music source → synth → codec/rate | Streaming | MIDI (OPL3) |
