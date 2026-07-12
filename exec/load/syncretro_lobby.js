@@ -40,55 +40,55 @@
 load("sbbsdefs.js");                       /* EX_NATIVE, EX_BIN, K_*, P_* */
 load("syncretro_lib.js");
 
-var srl_gl = load({}, "game_lobby.js");    /* rpad/clip/ago + live_nodes */
+var syncretro_lobby_gl = load({}, "game_lobby.js");    /* rpad/clip/ago + live_nodes */
 
-var SRL_CELL_W      = 38;                  /* colored cell visible width (xtrn_sec look) */
-var SRL_HEADER_ROWS = 3;                   /* title, top-played, blank */
-var SRL_FOOTER_ROWS = 3;                   /* blank, prompt, +1 kept empty so a full
+var SYNCRETRO_LOBBY_CELL_W      = 38;                  /* colored cell visible width (xtrn_sec look) */
+var SYNCRETRO_LOBBY_HEADER_ROWS = 3;                   /* title, top-played, blank */
+var SYNCRETRO_LOBBY_FOOTER_ROWS = 3;                   /* blank, prompt, +1 kept empty so a full
                                             * page never trips the terminal more-prompt */
 
 /* Set once, by syncretro_lobby(). */
-var srl_dir, srl_con, srl_rules, srl_bios, srl_binary, srl_core, srl_stdio;
+var syncretro_lobby_dir, syncretro_lobby_con, syncretro_lobby_rules, syncretro_lobby_bios, syncretro_lobby_binary, syncretro_lobby_core, syncretro_lobby_stdio;
 
-function srl_init(spec)
+function syncretro_lobby_init(spec)
 {
 	var f, ini;
 	var target, sep, sub, exe, cname, bpfx, cpfx;
 
-	srl_dir   = backslash(spec.dir);
-	srl_con   = sv_console(spec);
-	srl_rules = sv_rules(spec);
-	srl_bios  = spec.bios || [];
+	syncretro_lobby_dir   = backslash(spec.dir);
+	syncretro_lobby_con   = syncretro_console(spec);
+	syncretro_lobby_rules = syncretro_rules(spec);
+	syncretro_lobby_bios  = spec.bios || [];
 	/* How the door gets the player's connection. Default: a SOCKET (Synchronet
 	 * hands the door one end of a loopback socketpair and pumps it). `stdio: true`
 	 * instead has Synchronet fork the door on a raw pty (EX_STDIO|EX_BIN) and
 	 * relay it -- the same shape Mystic uses on *nix, and so the way to exercise
 	 * the door's -stdio path against a real session. */
-	srl_stdio = spec.stdio ? true : false;
+	syncretro_lobby_stdio = spec.stdio ? true : false;
 
 	/* The sysop's half of syncretro.ini. The console's half is the spec above:
 	 * a sysop hides a ROM or moves the roms dir; a sysop does not redefine what
 	 * an NES cartridge is. */
-	f = new File(srl_dir + "syncretro.ini");
+	f = new File(syncretro_lobby_dir + "syncretro.ini");
 	if (f.open("r")) {
 		ini = f.iniGetObject("roms");
 		f.close();
 		if (ini) {
 			if (ini.dir)
-				srl_rules.dir = String(ini.dir);
+				syncretro_lobby_rules.dir = String(ini.dir);
 			if (ini.exclude != null)
-				srl_rules.exclude = sv_list(ini.exclude);
+				syncretro_lobby_rules.exclude = syncretro_list(ini.exclude);
 		}
 	}
 
 	/* The native artifacts -- the door binary and the libretro core -- live in a
-	 * per-target sub-directory (sv_target(): win32, linux-x64, linux-arm64,
+	 * per-target sub-directory (syncretro_target(): win32, linux-x64, linux-arm64,
 	 * darwin-arm64, freebsd-x64, ...) so one shared install can serve several
 	 * hosts -- different OSes AND different architectures -- without their
 	 * same-named binaries colliding. deploy.js and getcore.js put them there; the
 	 * BIOS and cartridges are platform-independent and stay at the door root.
 	 *
-	 * Windows is FLAT (sv_target() -> ""): a .exe/.dll never collides with a *nix
+	 * Windows is FLAT (syncretro_target() -> ""): a .exe/.dll never collides with a *nix
 	 * "syncretro"/".so" in a shared dir. A *nix host uses an "<os>-<arch>" sub-dir
 	 * -- and the lobby PREFERS it but FALLS BACK to the flat door dir when it
 	 * isn't populated (a single-host install, or the legacy symlink-deploy layout
@@ -98,35 +98,35 @@ function srl_init(spec)
 	 *
 	 * The command must start with the drive letter (Windows) or "/" (*nix) so
 	 * external() recognizes it as ABSOLUTE and does not prepend the startup dir. A
-	 * leading quote defeats that check (cmdline[1] != ':'), so srl_binary is used
+	 * leading quote defeats that check (cmdline[1] != ':'), so syncretro_lobby_binary is used
 	 * UNQUOTED below, exactly like the sibling doors' SD_BINARY. */
-	target = sv_target(system.platform, system.architecture);
-	sep    = srl_dir.charAt(srl_dir.length - 1);
+	target = syncretro_target(system.platform, system.architecture);
+	sep    = syncretro_lobby_dir.charAt(syncretro_lobby_dir.length - 1);
 	sub    = target ? target + sep : "";
 	exe    = "syncretro" + (/^win/i.test(system.platform) ? ".exe" : "");
-	cname  = srl_con.core + "." + sv_core_ext(sv_platform(system.platform));
-	bpfx   = file_exists(srl_dir + sub + exe)   ? sub : "";
-	cpfx   = file_exists(srl_dir + sub + cname) ? sub : "";
+	cname  = syncretro_lobby_con.core + "." + syncretro_core_ext(syncretro_platform(system.platform));
+	bpfx   = file_exists(syncretro_lobby_dir + sub + exe)   ? sub : "";
+	cpfx   = file_exists(syncretro_lobby_dir + sub + cname) ? sub : "";
 
-	srl_binary = srl_dir + bpfx + "syncretro%.";   /* "%." -> .exe on Windows */
-	srl_core   = cpfx + cname;                     /* relative to the door's cwd */
+	syncretro_lobby_binary = syncretro_lobby_dir + bpfx + "syncretro%.";   /* "%." -> .exe on Windows */
+	syncretro_lobby_core   = cpfx + cname;                     /* relative to the door's cwd */
 }
 
 /* The BIOS is what a player actually trips over: without it FreeIntv paints its
  * own LOAD EXEC FAIL screen and the door looks broken. Say so here instead. A
  * console with no BIOS (the NES) lists none, and this never fires. */
-function srl_bios_missing()
+function syncretro_lobby_bios_missing()
 {
 	var missing = [];
 
-	srl_bios.forEach(function (name) {
-		if (!file_exists(srl_dir + name))
+	syncretro_lobby_bios.forEach(function (name) {
+		if (!file_exists(syncretro_lobby_dir + name))
 			missing.push(name);
 	});
 	return missing;
 }
 
-function srl_draw(roms, page, pages, board, cols, per_col)
+function syncretro_lobby_draw(roms, page, pages, board, cols, per_col)
 {
 	var i, j, line, idx, rom, t, plain, mp, mpv;
 
@@ -134,7 +134,7 @@ function srl_draw(roms, page, pages, board, cols, per_col)
 	console.line_counter = 0;   /* we page ourselves (N/P); don't let the terminal
 	                             * insert a more-prompt in the middle of a page */
 
-	console.putmsg("\1h\1cSyncRetro \1n\1c-- " + srl_con.name + "\1n");
+	console.putmsg("\1h\1cSyncRetro \1n\1c-- " + syncretro_lobby_con.name + "\1n");
 	console.crlf();
 
 	/* "Top played" is built to a fixed VISIBLE width -- tracked in the plain-text
@@ -147,7 +147,7 @@ function srl_draw(roms, page, pages, board, cols, per_col)
 		mp  = "\1hTop played:\1n ";
 		mpv = "Top played: ";
 		for (i = 0; i < board.length && i < 5; i++) {
-			t     = srl_gl.clip(board[i].title, 14);
+			t     = syncretro_lobby_gl.clip(board[i].title, 14);
 			plain = format("%s (%d)  ", t, board[i].count);   /* no rank -- order shows it */
 			if (mpv.length + plain.length > console.screen_columns - 1)
 				break;
@@ -166,7 +166,7 @@ function srl_draw(roms, page, pages, board, cols, per_col)
 			if (idx >= pages[page].length)
 				break;
 			rom   = pages[page][idx];
-			line += sv_cell(rom.num, rom, SRL_CELL_W) + " ";   /* fixed-width; no rpad */
+			line += syncretro_cell(rom.num, rom, SYNCRETRO_LOBBY_CELL_W) + " ";   /* fixed-width; no rpad */
 		}
 		if (line !== "")
 			console.putmsg(line + "\r\n");
@@ -183,12 +183,12 @@ function srl_draw(roms, page, pages, board, cols, per_col)
 
 /* Returns true when the caller needs to rescan (the picked cartridge is no
  * longer on disk), false otherwise. */
-function srl_play(rom)
+function syncretro_lobby_play(rom)
 {
-	var home = system.data_dir + "user/" + format("%04d", user.number) + "/" + srl_con.id;
+	var home = system.data_dir + "user/" + format("%04d", user.number) + "/" + syncretro_lobby_con.id;
 	var cmd, started, secs, label;
 
-	if (!sv_quote_safe(rom.name)) {
+	if (!syncretro_quote_safe(rom.name)) {
 		console.putmsg("\r\n\1h\1rThat cartridge's filename contains a quote, "
 		    + "backslash, backtick or dollar sign, which the door's command line "
 		    + "cannot carry. Ask the sysop to rename it.\1n\r\n");
@@ -205,8 +205,8 @@ function srl_play(rom)
 	/* Quoting is load-bearing on the ARGUMENTS: xtrn.cpp splits the command line
 	 * on bare spaces, and every real cartridge name (and a user's -home path) has
 	 * them, so those are quoted -- which also routes external() through the shell
-	 * on *nix, reassembling the argument. But srl_binary (the leading program
-	 * token) is deliberately NOT quoted; see srl_init(). -name %a is NOT quoted
+	 * on *nix, reassembling the argument. But syncretro_lobby_binary (the leading program
+	 * token) is deliberately NOT quoted; see syncretro_lobby_init(). -name %a is NOT quoted
 	 * either: cmdstr() already quotes the alias, and doubling it would hand the
 	 * door literal quote characters.
 	 *
@@ -215,23 +215,23 @@ function srl_play(rom)
 	 * command line, but the lobby KNOWS, so it says so. */
 	/* -title / -console are the who's-online line: the door publishes
 	 * "playing Astrosmash (Intellivision)" as this node's status, the way SyncDOOM
-	 * names its WAD and map. We pass the PARSED title (sv_parse_title already
+	 * names its WAD and map. We pass the PARSED title (syncretro_parse_title already
 	 * stripped "(1981) (Mattel)" and any dump marker off the filename), because
 	 * the door would otherwise have to re-implement that parsing in C.
 	 *
 	 * The console label is the long name when it fits a status line, else the
 	 * short one: "Intellivision" reads better than "Intv", but "Nintendo
 	 * Entertainment System" is too long to sit in a who's-online column. */
-	label = srl_con.name.length <= 20 ? srl_con.name : srl_con.short;
+	label = syncretro_lobby_con.name.length <= 20 ? syncretro_lobby_con.name : syncretro_lobby_con.short;
 
 	/* A SOCKET door is handed the connection (-s%H). A STDIO door is handed
 	 * nothing: Synchronet forks it on a pty and relays fd 0/1 itself, so the
 	 * socket argument must be ABSENT, not empty. EX_BIN is what makes that pty
 	 * raw (cfmakeraw) and stops the LF->CRLF and CP437->UTF8 translation that
 	 * would otherwise mangle a sixel frame. */
-	cmd = srl_binary + (srl_stdio ? " -stdio" : " -s%H")
-	    + " -t%T -name %a -core " + srl_core
-	    + " -profile " + srl_con.profile
+	cmd = syncretro_lobby_binary + (syncretro_lobby_stdio ? " -stdio" : " -s%H")
+	    + " -t%T -name %a -core " + syncretro_lobby_core
+	    + " -profile " + syncretro_lobby_con.profile
 	    + ' -title "' + rom.title + '" -console "' + label + '"'
 	    + ' -home "' + home + '" "' + rom.path + '"';
 
@@ -243,19 +243,19 @@ function srl_play(rom)
 	 * This is the lobby-launched equivalent of a registered xtrn's XTRN_NODISPLAY
 	 * setting; EX_NODISPLAY is the proper EX_* spelling of that bit for bbs.exec. */
 	bbs.exec(bbs.cmdstr(cmd),
-	         EX_NATIVE | EX_BIN | EX_NODISPLAY | (srl_stdio ? EX_STDIO : 0),
-	         srl_dir);
+	         EX_NATIVE | EX_BIN | EX_NODISPLAY | (syncretro_lobby_stdio ? EX_STDIO : 0),
+	         syncretro_lobby_dir);
 	secs = time() - started;
 
 	/* Logged whatever the door's exit status: a crash is still a play. The console
 	 * rides along, so one append-only log serves every console and the board can
 	 * still show only this one's. */
-	sv_log_play(sv_plays_path(system.data_dir), {
+	syncretro_log_play(syncretro_plays_path(system.data_dir), {
 		t:       time(),
 		user:    user.number,
 		alias:   user.alias,
 		rom:     rom.name,
-		console: srl_con.id,
+		console: syncretro_lobby_con.id,
 		secs:    secs
 	});
 	return false;
@@ -268,22 +268,22 @@ function srl_play(rom)
  * trip per ROM, every single time. With it, a warm run opens exactly one file. A
  * cold run still pays the full scan, so it says so rather than appearing to
  * hang -- on a big ROM set that first scan is genuinely slow. */
-function srl_discover()
+function syncretro_lobby_discover()
 {
-	var cache = sv_cache_open(sv_cache_path(system.data_dir, srl_con.id));
+	var cache = syncretro_cache_open(syncretro_cache_path(system.data_dir, syncretro_lobby_con.id));
 	var cold  = !Object.keys(cache.entries).length;
 	var roms;
 
 	if (cold)
 		console.putmsg("\r\n\1hScanning cartridges (first run, this takes a moment)...\1n");
-	roms = sv_discover(srl_dir + backslash(srl_rules.dir), srl_rules, cache);
-	sv_cache_flush(cache);
+	roms = syncretro_discover(syncretro_lobby_dir + backslash(syncretro_lobby_rules.dir), syncretro_lobby_rules, cache);
+	syncretro_cache_flush(cache);
 	if (cold)
 		console.putmsg(" \1h\1c" + roms.length + "\1n\1h found.\1n\r\n");
 	return roms;
 }
 
-function srl_number(roms)
+function syncretro_lobby_number(roms)
 {
 	var i;
 
@@ -297,34 +297,34 @@ function syncretro_lobby(spec)
 	var roms, plays, board, cols, per_col, per_page, pages, page, key, i, filter;
 	var missing;
 
-	srl_init(spec);
+	syncretro_lobby_init(spec);
 
-	missing = srl_bios_missing();
+	missing = syncretro_lobby_bios_missing();
 	if (missing.length) {
-		console.putmsg("\r\n\1h\1rThe " + srl_con.name + " BIOS is missing from "
-		    + srl_dir + ": " + missing.join(" and ") + "\r\n"
+		console.putmsg("\r\n\1h\1rThe " + syncretro_lobby_con.name + " BIOS is missing from "
+		    + syncretro_lobby_dir + ": " + missing.join(" and ") + "\r\n"
 		    + "Without it no cartridge will run. Ask the sysop.\1n\r\n");
 		console.pause();
 		return;
 	}
 
-	roms = srl_discover();
+	roms = syncretro_lobby_discover();
 	if (!roms.length) {
-		console.putmsg("\r\n\1h\1rNo cartridges found in " + srl_rules.dir + "/.\1n\r\n");
+		console.putmsg("\r\n\1h\1rNo cartridges found in " + syncretro_lobby_rules.dir + "/.\1n\r\n");
 		console.pause();
 		return;
 	}
-	srl_number(roms);
+	syncretro_lobby_number(roms);
 
 	filter = roms;
 	page   = 0;
 	while (!js.terminated && bbs.online) {
-		plays    = sv_read_plays(sv_plays_path(system.data_dir), srl_con.id);
-		board    = sv_top_played(plays, 5);
-		cols     = sv_columns(console.screen_columns, SRL_CELL_W);
-		per_col  = sv_page_rows(console.screen_rows, SRL_HEADER_ROWS, SRL_FOOTER_ROWS);
+		plays    = syncretro_read_plays(syncretro_plays_path(system.data_dir), syncretro_lobby_con.id);
+		board    = syncretro_top_played(plays, 5);
+		cols     = syncretro_columns(console.screen_columns, SYNCRETRO_LOBBY_CELL_W);
+		per_col  = syncretro_page_rows(console.screen_rows, SYNCRETRO_LOBBY_HEADER_ROWS, SYNCRETRO_LOBBY_FOOTER_ROWS);
 		per_page = cols * per_col;
-		pages    = sv_paginate(filter, per_page);
+		pages    = syncretro_paginate(filter, per_page);
 		if (page >= pages.length)
 			page = pages.length ? pages.length - 1 : 0;
 		if (!pages.length) {
@@ -334,7 +334,7 @@ function syncretro_lobby(spec)
 			continue;
 		}
 
-		srl_draw(roms, page, pages, board, cols, per_col);
+		syncretro_lobby_draw(roms, page, pages, board, cols, per_col);
 
 		key = console.getkey(K_UPPER);
 		if (key === "Q")
@@ -354,15 +354,15 @@ function syncretro_lobby(spec)
 			console.ungetstr(key);
 			var n = console.getnum(roms.length);
 			if (n >= 1 && n <= roms.length) {
-				if (srl_play(roms[n - 1])) {    /* numbers index the FULL list */
-					roms = srl_discover();
+				if (syncretro_lobby_play(roms[n - 1])) {    /* numbers index the FULL list */
+					roms = syncretro_lobby_discover();
 					if (!roms.length) {
 						console.putmsg("\r\n\1h\1rNo cartridges found in "
-						    + srl_rules.dir + "/.\1n\r\n");
+						    + syncretro_lobby_rules.dir + "/.\1n\r\n");
 						console.pause();
 						return;
 					}
-					srl_number(roms);
+					syncretro_lobby_number(roms);
 					filter = roms;
 					page = 0;
 				}

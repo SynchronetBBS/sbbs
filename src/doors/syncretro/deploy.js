@@ -10,7 +10,7 @@
 // .exe/.dll never collides with a *nix host's names), or in an <os>-<arch>
 // sub-directory on *nix (linux-x64, linux-arm64, darwin-arm64, ...) so a shared
 // install can serve several *nix hosts without their same-named binaries
-// colliding. That location is sv_target(system.platform, system.architecture)
+// colliding. That location is syncretro_target(system.platform, system.architecture)
 // ("" == flat) -- and the whole reason this is a jsexec script and not a
 // shell/batch pair is so it computes that token with the SAME code the lobby
 // (lobby.js) and the core installer (getcore.js) use. A shell/batch deploy would
@@ -27,7 +27,7 @@
 //
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
 
-load("syncretro_lib.js");   // sv_target() -- now in exec/load, shared by all consoles
+load("syncretro_lib.js");   // syncretro_target() -- now in exec/load, shared by all consoles
 
 // js.exec_dir is this script's own dir (src/doors/syncretro/); xtrn/ is three up.
 var XTRN = js.exec_dir + "../../../xtrn/";
@@ -97,7 +97,7 @@ function main()
 {
 	var exe     = built_exe();
 	var exename = is_win() ? "syncretro.exe" : "syncretro";
-	var target  = sv_target(system.platform, system.architecture);
+	var target  = syncretro_target(system.platform, system.architecture);
 	var ok      = true;
 	var i;
 

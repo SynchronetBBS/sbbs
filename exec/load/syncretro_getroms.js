@@ -30,10 +30,10 @@
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
 
 load("http.js");
-load("syncretro_lib.js");   // sv_rules(): where this console keeps its ROMs
+load("syncretro_lib.js");   // syncretro_rules(): where this console keeps its ROMs
 
 // Where the ROMs go: the console's [roms] dir (default "roms"), under the door.
-function sr_roms_dir(door_dir)
+function syncretro_roms_dir(door_dir)
 {
 	var dir = backslash(door_dir);
 	var f   = new File(dir + "syncretro.ini");
@@ -52,7 +52,7 @@ function sr_roms_dir(door_dir)
 // Download one ROM to a temp file, verify it, and only then move it into place.
 // A half-written or wrong file must never land in roms/, where the lobby would
 // list it and the core would choke on it.
-function sr_fetch_rom(game, dstdir)
+function syncretro_fetch_rom(game, dstdir)
 {
 	/* `as` is what it is INSTALLED as; `file` is only what upstream calls it. The
 	 * lobby parses a game's display name out of its FILENAME, so a ROM fetched as
@@ -82,7 +82,7 @@ function sr_fetch_rom(game, dstdir)
 	}
 
 	size = file_size(tmp);
-	md5  = sv_file_md5(tmp, 0);
+	md5  = syncretro_file_md5(tmp, 0);
 	if (size != game.size || md5 != game.md5) {
 		/* Upstream changed. Do NOT install it: the licence, and the fact that this
 		 * is even the game we think it is, were verified against THESE bytes. */
@@ -105,7 +105,7 @@ function sr_fetch_rom(game, dstdir)
 
 function syncretro_getroms(door_dir, console_name, games)
 {
-	var dstdir = sr_roms_dir(door_dir);
+	var dstdir = syncretro_roms_dir(door_dir);
 	var got = 0, had = 0, failed = 0;
 	var i, r;
 
@@ -117,7 +117,7 @@ function syncretro_getroms(door_dir, console_name, games)
 	print("");
 
 	for (i = 0; i < games.length; i++) {
-		r = sr_fetch_rom(games[i], dstdir);
+		r = syncretro_fetch_rom(games[i], dstdir);
 		if (r > 0)
 			got++;
 		else if (r === 0)

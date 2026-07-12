@@ -15,8 +15,10 @@
 //
 // NOTHING HERE KNOWS WHICH CONSOLE IT IS. The console's identity (name, id) and
 // its ROM rules (extensions, size band, BIOS images to reject) arrive as data,
-// from the [console] and [roms] sections of that install's syncretro.ini --
-// which the C door reads too, so the two halves cannot disagree.
+// from that install's lobby.js -- which IS the console definition, and which also
+// passes the same facts to the C door on its command line, so the two halves
+// cannot disagree. Only [roms] dir/exclude comes from syncretro.ini: a sysop
+// hides a ROM, but a sysop does not redefine what an NES cartridge is.
 //
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
@@ -31,16 +33,16 @@
 // after it. A name that does not fit keeps its whole self as the title: a
 // wrong guess is worse than no guess.
 
-function sv_strip_ext(name)
+function syncretro_strip_ext(name)
 {
 	var dot = name.lastIndexOf(".");
 
 	return dot > 0 ? name.substr(0, dot) : name;
 }
 
-function sv_parse_title(filename)
+function syncretro_parse_title(filename)
 {
-	var name = sv_strip_ext(String(filename));
+	var name = syncretro_strip_ext(String(filename));
 	var out  = { title: name, year: 0, publisher: "" };
 	var m;
 
@@ -93,7 +95,7 @@ function sv_parse_title(filename)
 
 // "64k" / "4m" / "8192" -> bytes. An unparseable value takes the default rather
 // than becoming 0, which would silently reject every ROM.
-function sv_size(v, dflt)
+function syncretro_size(v, dflt)
 {
 	var m = String(v == null ? "" : v).trim().toLowerCase().match(/^(\d+)\s*([km]?)b?$/);
 
@@ -105,7 +107,7 @@ function sv_size(v, dflt)
 // A list, from either an array (a console spec, written in JS) or a comma-
 // separated string (an ini value, typed by a sysop). Both spellings mean the
 // same thing, so callers never have to care which they were handed.
-function sv_list(v)
+function syncretro_list(v)
 {
 	var a;
 
@@ -121,7 +123,7 @@ function sv_list(v)
 // hides a ROM or moves the roms dir, but a sysop does not redefine what an NES
 // cartridge is. Only `dir` and `exclude` are overridable from syncretro.ini,
 // which the lobby does after calling this.
-function sv_rules(spec)
+function syncretro_rules(spec)
 {
 	var r = {
 		dir:        "roms",
@@ -138,14 +140,14 @@ function sv_rules(spec)
 	if (spec.dir_name)
 		r.dir = String(spec.dir_name);
 	/* [".nes", "unf"] and ".nes, unf" must mean the same thing. */
-	r.ext = sv_list(spec.ext).map(function (e) {
+	r.ext = syncretro_list(spec.ext).map(function (e) {
 		return e.replace(/^\./, "").toLowerCase();
 	});
-	r.exclude    = sv_list(spec.exclude);
-	r.min_size   = sv_size(spec.min_size, r.min_size);
-	r.max_size   = sv_size(spec.max_size, r.max_size);
-	r.bios_md5   = sv_list(spec.bios_md5).map(function (h) { return h.toLowerCase(); });
-	r.bios_names = sv_list(spec.bios_names).map(function (n) { return n.toLowerCase(); });
+	r.exclude    = syncretro_list(spec.exclude);
+	r.min_size   = syncretro_size(spec.min_size, r.min_size);
+	r.max_size   = syncretro_size(spec.max_size, r.max_size);
+	r.bios_md5   = syncretro_list(spec.bios_md5).map(function (h) { return h.toLowerCase(); });
+	r.bios_names = syncretro_list(spec.bios_names).map(function (n) { return n.toLowerCase(); });
 	return r;
 }
 
@@ -154,7 +156,7 @@ function sv_rules(spec)
 // dir) and a filename (the ROM cache), and a sysop's display string must never
 // be able to reach either. It is not a separate key: a separate key is a thing
 // to get out of step with the name beside it.
-function sv_console(spec)
+function syncretro_console(spec)
 {
 	var c = { name: "", short: "", profile: "pad", core: "", id: "" };
 
@@ -178,13 +180,13 @@ function sv_console(spec)
 
 // Only these characters break out of the double quotes the door command line
 // wraps a ROM path in. See LAUNCHER.md sec 8.
-function sv_quote_safe(name)
+function syncretro_quote_safe(name)
 {
 	return !/["`$\\]/.test(String(name));
 }
 
 // md5_calc() returns BASE64 unless its second argument is true. Ask for hex.
-function sv_file_md5(path, bytes)
+function syncretro_file_md5(path, bytes)
 {
 	var f = new File(path);
 	var data;
@@ -216,11 +218,11 @@ function sv_file_md5(path, bytes)
 // wrong answer. A torn, stale, hand-edited or missing cache reads as empty, and
 // discovery simply does what it did before.
 
-var SV_CACHE_VERSION = 1;
+var SYNCRETRO_CACHE_VERSION = 1;
 
-function sv_cache_path(data_dir, id)
+function syncretro_cache_path(data_dir, id)
 {
-	// Same trailing-separator care as sv_plays_path(); see there.
+	// Same trailing-separator care as syncretro_plays_path(); see there.
 	var dir = String(data_dir).replace(/[\\\/]+$/, "") + "/syncretro/";
 
 	if (!file_isdir(dir))
@@ -228,7 +230,7 @@ function sv_cache_path(data_dir, id)
 	return dir + "roms." + String(id).toLowerCase().replace(/[^a-z0-9]+/g, "") + ".json";
 }
 
-function sv_cache_open(path)
+function syncretro_cache_open(path)
 {
 	var cache = { path: path, entries: {}, dirty: false, hashed: 0, reused: 0 };
 	var f = new File(path);
@@ -243,14 +245,14 @@ function sv_cache_open(path)
 	} catch (e) {
 		return cache;                  /* torn or hand-mangled: cold, never fatal */
 	}
-	if (obj && obj.v === SV_CACHE_VERSION && obj.entries)
+	if (obj && obj.v === SYNCRETRO_CACHE_VERSION && obj.entries)
 		cache.entries = obj.entries;   /* a version bump invalidates by ignoring */
 	return cache;
 }
 
-// Written only when sv_discover() changed something. temp-file + rename, so a
+// Written only when syncretro_discover() changed something. temp-file + rename, so a
 // reader on the other host never sees a half-written file.
-function sv_cache_flush(cache)
+function syncretro_cache_flush(cache)
 {
 	var tmp, f;
 
@@ -261,7 +263,7 @@ function sv_cache_flush(cache)
 	f = new File(tmp);
 	if (!f.open("w"))
 		return false;
-	f.write(JSON.stringify({ v: SV_CACHE_VERSION, entries: cache.entries }));
+	f.write(JSON.stringify({ v: SYNCRETRO_CACHE_VERSION, entries: cache.entries }));
 	f.close();
 
 	if (file_exists(cache.path))
@@ -274,7 +276,7 @@ function sv_cache_flush(cache)
 	return true;
 }
 
-function sv_excluded(name, excludes)
+function syncretro_excluded(name, excludes)
 {
 	var lower = String(name).toLowerCase();
 	var i;
@@ -291,7 +293,7 @@ function sv_excluded(name, excludes)
 // dumps of the SAME game whose BYTES DIFFER --
 // "Dreadnaught Factor, The (1983) (Activision) [!].int" beside
 // "... [a1].bin" -- so size+hash sees two different games. But the dump
-// marker is not part of the title (sv_parse_title strips it), so both
+// marker is not part of the title (syncretro_parse_title strips it), so both
 // entries render identically in the picker: the player sees two lines that
 // look like duplicates, and has no way to tell that one is a verified good
 // dump and the other an inferior rip. 12 of the 221 cartridges in the
@@ -311,9 +313,9 @@ function sv_excluded(name, excludes)
 // unrecognized, 3 = "[o*]" overdump, 4 = "[b*]" bad dump. A name may carry
 // stacked markers ("[a1][!]"), so this looks at every trailing bracket
 // group and returns the BEST (lowest) rank found, not just the last one.
-function sv_dump_rank(filename)
+function syncretro_dump_rank(filename)
 {
-	var name = sv_strip_ext(String(filename));
+	var name = syncretro_strip_ext(String(filename));
 	var m = name.match(/((?:\s*\[[^\]]*\])+)\s*$/);
 	var markers, best, i, body, rank;
 
@@ -342,16 +344,16 @@ function sv_dump_rank(filename)
 // True if `a` should replace `b` as the kept dump for their shared key:
 // the better (lower) rank wins, and a tie resolves to the lexicographically
 // smaller name so the result never depends on directory() enumeration order.
-function sv_dump_better(a, b)
+function syncretro_dump_better(a, b)
 {
-	var ra = sv_dump_rank(a.name), rb = sv_dump_rank(b.name);
+	var ra = syncretro_dump_rank(a.name), rb = syncretro_dump_rank(b.name);
 
 	if (ra !== rb)
 		return ra < rb;
 	return a.name < b.name;
 }
 
-function sv_collapse_variants(roms)
+function syncretro_collapse_variants(roms)
 {
 	var best  = {};        // key -> best entry seen so far
 	var order = [];        // keys in first-seen order, so survivors keep it
@@ -366,7 +368,7 @@ function sv_collapse_variants(roms)
 			order.push(key);
 			continue;
 		}
-		if (sv_dump_better(r, best[key]))
+		if (syncretro_dump_better(r, best[key]))
 			best[key] = r;
 	}
 	for (i = 0; i < order.length; i++)
@@ -374,10 +376,10 @@ function sv_collapse_variants(roms)
 	return out;
 }
 
-// `rules` is an sv_rules() object -- the console's extensions, size band, BIOS
-// images and exclusions. `cache` is optional: an sv_cache_open() handle, or
+// `rules` is an syncretro_rules() object -- the console's extensions, size band, BIOS
+// images and exclusions. `cache` is optional: an syncretro_cache_open() handle, or
 // omitted/null to hash every candidate the way this did before the cache.
-function sv_discover(roms_dir, rules, cache)
+function syncretro_discover(roms_dir, rules, cache)
 {
 	var seen = {};         // content key -> index into out
 	var out  = [];
@@ -392,7 +394,7 @@ function sv_discover(roms_dir, rules, cache)
 
 			if (size < rules.min_size || size > rules.max_size)
 				return;                       /* not a cartridge */
-			if (sv_excluded(name, rules.exclude))
+			if (syncretro_excluded(name, rules.exclude))
 				return;
 			if (rules.bios_names.indexOf(name.toLowerCase()) >= 0)
 				return;                       /* a BIOS image, by its default name */
@@ -407,11 +409,11 @@ function sv_discover(roms_dir, rules, cache)
 					full = ent.h;             /* hit: no open */
 					cache.reused++;
 				} else {
-					full = sv_file_md5(path, 0);
+					full = syncretro_file_md5(path, 0);
 					cache.hashed++;
 				}
 			} else {
-				full = sv_file_md5(path, 0);
+				full = syncretro_file_md5(path, 0);
 			}
 			if (full === "")
 				return;                       /* unreadable: not our problem */
@@ -439,7 +441,7 @@ function sv_discover(roms_dir, rules, cache)
 				if (name.length > prev.name.length) {
 					prev.name = name;
 					prev.path = path;
-					parsed = sv_parse_title(name);
+					parsed = syncretro_parse_title(name);
 					prev.title     = parsed.title;
 					prev.year      = parsed.year;
 					prev.publisher = parsed.publisher;
@@ -447,7 +449,7 @@ function sv_discover(roms_dir, rules, cache)
 				return;
 			}
 
-			parsed = sv_parse_title(name);
+			parsed = syncretro_parse_title(name);
 			seen[key] = out.length;
 			out.push({
 				path:      path,
@@ -470,7 +472,7 @@ function sv_discover(roms_dir, rules, cache)
 		cache.entries = kept;
 	}
 
-	out = sv_collapse_variants(out);
+	out = syncretro_collapse_variants(out);
 
 	out.sort(function (a, b) {
 		var x = a.title.toLowerCase(), y = b.title.toLowerCase();
@@ -487,7 +489,7 @@ function sv_discover(roms_dir, rules, cache)
 // of a counts file is a lost-update race. Everything is derived by scanning,
 // which at BBS scale is a few thousand lines.
 
-function sv_plays_path(data_dir)
+function syncretro_plays_path(data_dir)
 {
 	// Strip any trailing separator ("/" or, from a backslash()'d path, "\") and
 	// rebuild with "/", so the result is the same whether or not data_dir came
@@ -504,7 +506,7 @@ function sv_plays_path(data_dir)
 
 // One line, appended under an exclusive open. Returns false rather than throwing:
 // a lost play is not worth failing a player's session over.
-function sv_log_play(path, rec)
+function syncretro_log_play(path, rec)
 {
 	var f = new File(path);
 
@@ -521,7 +523,7 @@ function sv_log_play(path, rec)
 //
 // A record with NO console field predates the field, when the Intellivision was
 // the only console there was. It IS an Intellivision play, and is counted as one.
-function sv_read_plays(path, id)
+function syncretro_read_plays(path, id)
 {
 	var f = new File(path);
 	var out = [];
@@ -548,7 +550,7 @@ function sv_read_plays(path, id)
 	return out;
 }
 
-function sv_top_played(plays, n)
+function syncretro_top_played(plays, n)
 {
 	var counts = {};
 	var out = [];
@@ -559,7 +561,7 @@ function sv_top_played(plays, n)
 	});
 	for (rom in counts)
 		if (counts.hasOwnProperty(rom))
-			out.push({ rom: rom, title: sv_parse_title(rom).title, count: counts[rom] });
+			out.push({ rom: rom, title: syncretro_parse_title(rom).title, count: counts[rom] });
 
 	out.sort(function (a, b) {
 		if (a.count !== b.count)
@@ -569,7 +571,7 @@ function sv_top_played(plays, n)
 	return out.slice(0, n);
 }
 
-function sv_last_play(plays, user_number)
+function syncretro_last_play(plays, user_number)
 {
 	var best = null;
 
@@ -586,7 +588,7 @@ function sv_last_play(plays, user_number)
 // reading DOWN each column. The column count is derived rather than hardcoded at
 // two, so a 132-column terminal gets three and nobody has to think about it.
 
-function sv_columns(screen_cols, cell_width)
+function syncretro_columns(screen_cols, cell_width)
 {
 	var n;
 
@@ -596,14 +598,14 @@ function sv_columns(screen_cols, cell_width)
 	return n < 1 ? 1 : n;
 }
 
-function sv_page_rows(screen_rows, header_rows, footer_rows)
+function syncretro_page_rows(screen_rows, header_rows, footer_rows)
 {
 	var n = screen_rows - header_rows - footer_rows;
 
 	return n < 1 ? 1 : n;
 }
 
-function sv_paginate(items, per_page)
+function syncretro_paginate(items, per_page)
 {
 	var pages = [];
 	var i;
@@ -620,7 +622,7 @@ function sv_paginate(items, per_page)
 // the cell's VISIBLE width; "%N.Ns" pads/clips the name to a fixed column count
 // so the grid lines up even though the returned string carries \1x attribute
 // codes (which take no column). The number+bar prefix is 6 visible columns.
-function sv_cell(index, rom, width)
+function syncretro_cell(index, rom, width)
 {
 	var label = rom.title + (rom.year ? " (" + rom.year + ")" : "");
 	var namew = width - 6;
@@ -641,13 +643,13 @@ function sv_cell(index, rom, width)
 // between them. The BIOS and cartridges are platform-independent and stay at
 // the door root.
 //
-// sv_target(platform, architecture) is the sub-dir name (or "" = flat door dir):
+// syncretro_target(platform, architecture) is the sub-dir name (or "" = flat door dir):
 //   Windows       ""                      (flat: .exe/.dll never collide flat)
 //   everything    "<os>-<arch>"           "linux-x64", "linux-arm64",
 //   else          e.g.                     "freebsd-x64", "darwin-arm64"
 //
 // The lobby (lobby.js), the core installer (getcore.js) AND the binary installer
-// (deploy.js) all call sv_target(), so they agree on the sub-dir by construction
+// (deploy.js) all call syncretro_target(), so they agree on the sub-dir by construction
 // -- that is exactly why deploy is a jsexec script and not a shell/batch pair: a
 // shell deploy would have to re-derive the token from `uname`, whose spellings
 // differ from system.platform/system.architecture, and drift out of agreement.
@@ -655,22 +657,22 @@ function sv_cell(index, rom, width)
 // The normalization here is therefore about producing a STABLE, CLEAN,
 // filesystem-safe token from Synchronet's own raw values, not about matching any
 // external tool:
-//   sv_platform() -- the OS half:
+//   syncretro_platform() -- the OS half:
 //     * Windows: the door is Win32-only by design (one binary covers a Win32 AND
 //       a Win64 host), but system.platform is "Win64" on a 64-bit Synchronet.
-//       Both collapse to "win32" -- and sv_target() maps that to "" (flat), since
+//       Both collapse to "win32" -- and syncretro_target() maps that to "" (flat), since
 //       a .exe/.dll never collides with a *nix name and there is one Win32 target.
 //     * macOS: system.platform is "macOS"/"MacOSX" -> one stable "darwin".
 //     * Linux/*BSD: lower-cased, with any stray non-alnum char (the "/" in
 //       "GNU/Hurd") stripped so it cannot nest a path.
-//   sv_arch() -- the CPU half, bucketed so equivalent spellings don't fragment
+//   syncretro_arch() -- the CPU half, bucketed so equivalent spellings don't fragment
 //     into separate dirs (i386/i686 -> x86, armv8/aarch64 -> arm64): x64 / x86 /
 //     arm64 / arm, else the token verbatim (riscv64, ppc64, ...).
 //
 // All three take their inputs as arguments (UI-free, so the tests drive them).
-// The core's file extension follows from sv_platform() (win32->dll, darwin->dylib,
+// The core's file extension follows from syncretro_platform() (win32->dll, darwin->dylib,
 // else->so), so the lobby, getcore.js and deploy all agree on where the core lives.
-function sv_platform(platname)
+function syncretro_platform(platname)
 {
 	var p = String(platname);
 
@@ -681,7 +683,7 @@ function sv_platform(platname)
 	return p.toLowerCase().replace(/[^a-z0-9]+/g, "");   // linux, freebsd, netbsd, ...
 }
 
-function sv_arch(archname)
+function syncretro_arch(archname)
 {
 	var a = String(archname).toLowerCase();
 
@@ -704,17 +706,17 @@ function sv_arch(archname)
 // only ever one Win32 target. A *nix host's binary and core ARE named the same
 // on every OS/arch ("syncretro" / ".so"), so they DO collide on a shared mount
 // and get an "<os>-<arch>" sub-dir (linux-x64, linux-arm64, freebsd-x64, ...).
-function sv_target(platname, archname)
+function syncretro_target(platname, archname)
 {
-	var plat = sv_platform(platname);
+	var plat = syncretro_platform(platname);
 
 	if (plat == "win32")
 		return "";
-	return plat + "-" + sv_arch(archname);
+	return plat + "-" + syncretro_arch(archname);
 }
 
-// The libretro core's shared-library extension for a given sv_platform() token.
-function sv_core_ext(plat)
+// The libretro core's shared-library extension for a given syncretro_platform() token.
+function syncretro_core_ext(plat)
 {
 	return plat == "win32" ? "dll" : plat == "darwin" ? "dylib" : "so";
 }

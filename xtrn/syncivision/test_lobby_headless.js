@@ -5,7 +5,7 @@
 // is not the same as "we cannot execute the file": stub the three objects, feed
 // a scripted key sequence, and capture the door command line it would run.
 //
-// This catches a parse error, a misnamed sv_* call, a wrong argument order, and
+// This catches a parse error, a misnamed syncretro_* call, a wrong argument order, and
 // an unquoted ROM path -- every failure mode that would otherwise first appear
 // when a player connects.
 //
@@ -62,10 +62,10 @@ this.console = fake_console;
 this.bbs     = fake_bbs;
 this.user    = fake_user;
 
-// The lobby loads the lib itself, but this harness needs sv_* too.
+// The lobby loads the lib itself, but this harness needs syncretro_* too.
 load("syncretro_lib.js");
 
-var GUARD = sv_plays_path(system.data_dir);
+var GUARD = syncretro_plays_path(system.data_dir);
 if (file_exists(GUARD)) {
 	writeln("REFUSING: " + GUARD + " already exists.");
 	writeln("This test appends a play record and removes the file afterwards.");
@@ -118,8 +118,8 @@ if (launched.length) {
 }
 
 writeln("3. the play was logged");
-LIVE_PLAYS = sv_plays_path(system.data_dir);
-var plays = sv_read_plays(LIVE_PLAYS);
+LIVE_PLAYS = syncretro_plays_path(system.data_dir);
+var plays = syncretro_read_plays(LIVE_PLAYS);
 check(plays.length === 1, "one play recorded (saw " + plays.length + ")");
 if (plays.length) {
 	check(plays[0].user === 1, "records the user number");

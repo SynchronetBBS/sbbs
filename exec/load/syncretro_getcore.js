@@ -14,7 +14,7 @@
 // The cores are GPL (freely redistributable), so -- unlike a console BIOS or the
 // cartridges, which are content the sysop supplies -- a core CAN be fetched
 // automatically. It is a platform-specific shared library, installed into the
-// SAME place the door binary lives (sv_target()): FLAT at the door root on
+// SAME place the door binary lives (syncretro_target()): FLAT at the door root on
 // Windows, or in an <os>-<arch> sub-directory on *nix, so one shared install can
 // serve several hosts without their same-named cores colliding:
 //
@@ -35,22 +35,22 @@
 // Copyright(C) 2026 Rob Swindell / SyncRetro.  GPL-2.0.
 
 load("http.js");
-load("syncretro_lib.js");   // sv_platform(), sv_core_ext(), sv_target()
+load("syncretro_lib.js");   // syncretro_platform(), syncretro_core_ext(), syncretro_target()
 
 // libretro nightly buildbot. The per-platform core zip contains just the core
 // library at the top level (e.g. fceumm_libretro.dll), so extracting by its
-// basename drops it straight into the destination.
-var BUILDBOT = "https://buildbot.libretro.com/nightly/";
+// syncretro_basename drops it straight into the destination.
+var SYNCRETRO_BUILDBOT = "https://buildbot.libretro.com/nightly/";
 
 // Archive extensions we'll look inside for a dropped-in core (libarchive-backed
 // Archive reads all of these). The buildbot ships a plain .zip.
-var ARCHIVE_EXT = [".zip", ".7z", ".rar", ".tar", ".tar.gz", ".tgz", ".tar.xz",
+var SYNCRETRO_ARCHIVE_EXT = [".zip", ".7z", ".rar", ".tar", ".tar.gz", ".tgz", ".tar.xz",
                    ".tar.bz2", ".gz", ".xz", ".bz2"];
 
 // The libretro buildbot sub-path for THIS host. Windows is pinned to windows/x86
 // (the door is Win32); *nix/macOS follow the host architecture, since build.sh
 // builds the door for the host.
-function buildbot_sub()
+function syncretro_buildbot_sub()
 {
 	var p   = system.platform;
 	var a   = String(system.architecture || "").toLowerCase();
@@ -65,7 +65,7 @@ function buildbot_sub()
 }
 
 // Basename of a path (handles both separators; an archive may use '/').
-function basename(p)
+function syncretro_basename(p)
 {
 	var s = String(p).replace(/\\/g, "/");
 	var i = s.lastIndexOf("/");
@@ -73,10 +73,10 @@ function basename(p)
 }
 
 // Pull `core` out of the archive at `path` into `dstdir`. Matches the member by
-// basename, case-insensitively (a sysop-made zip may nest or re-case it), and
+// syncretro_basename, case-insensitively (a sysop-made zip may nest or re-case it), and
 // renames the extracted file to the canonical lower-case core name if needed.
 // Returns true iff the core ends up present in `dstdir`.
-function extract_core_from(path, dstdir, core)
+function syncretro_extract_core_from(path, dstdir, core)
 {
 	var i, names, base, entry;
 
@@ -87,19 +87,19 @@ function extract_core_from(path, dstdir, core)
 			entry = names[i];
 			if (entry.type && entry.type != "file")
 				continue;
-			base = basename(entry.name);
+			base = syncretro_basename(entry.name);
 			if (base.toLowerCase() != core)
 				continue;
-			ar.extract(dstdir, entry.name);        // flattens to the basename
+			ar.extract(dstdir, entry.name);        // flattens to the syncretro_basename
 			if (base != core && file_exists(dstdir + base) && !file_exists(dstdir + core))
 				file_rename(dstdir + base, dstdir + core);
 			if (file_exists(dstdir + core)) {
-				print("  installed " + core + " from " + basename(path));
+				print("  installed " + core + " from " + syncretro_basename(path));
 				return true;
 			}
 		}
 	} catch (e) {
-		print("  ! " + basename(path) + ": " + e);
+		print("  ! " + syncretro_basename(path) + ": " + e);
 	}
 	return false;
 }
@@ -107,17 +107,17 @@ function extract_core_from(path, dstdir, core)
 // Try every archive the sysop may have dropped into the door root, extracting
 // the core into `dstdir`. The common case is the buildbot's own
 // <core>_libretro.<ext>.zip dropped in as-is.
-function from_dropped_archive(root, dstdir, core)
+function syncretro_from_dropped_archive(root, dstdir, core)
 {
 	var list = directory(root + "*");
 	var i, j, lower;
 
 	for (i = 0; i < list.length; i++) {
 		lower = list[i].toLowerCase();
-		for (j = 0; j < ARCHIVE_EXT.length; j++) {
-			if (lower.length >= ARCHIVE_EXT[j].length
-			    && lower.substr(lower.length - ARCHIVE_EXT[j].length) == ARCHIVE_EXT[j]) {
-				if (extract_core_from(list[i], dstdir, core))
+		for (j = 0; j < SYNCRETRO_ARCHIVE_EXT.length; j++) {
+			if (lower.length >= SYNCRETRO_ARCHIVE_EXT[j].length
+			    && lower.substr(lower.length - SYNCRETRO_ARCHIVE_EXT[j].length) == SYNCRETRO_ARCHIVE_EXT[j]) {
+				if (syncretro_extract_core_from(list[i], dstdir, core))
 					return true;
 				break;
 			}
@@ -128,7 +128,7 @@ function from_dropped_archive(root, dstdir, core)
 
 // A loose core file the sysop dropped in (at the door root or already in the
 // platform sub-dir), possibly under a different case. Move/rename it into place.
-function from_loose_file(root, dstdir, core, base)
+function syncretro_from_loose_file(root, dstdir, core, base)
 {
 	var i, hit = directory(root + base + ".*").concat(
 	             directory(dstdir + base + ".*"));
@@ -136,7 +136,7 @@ function from_loose_file(root, dstdir, core, base)
 	// Any hit is in the wrong place or the wrong case (an exact dstdir/core was
 	// already caught by main()'s step 1), so move it to the canonical target.
 	for (i = 0; i < hit.length; i++) {
-		if (basename(hit[i]).toLowerCase() != core)
+		if (syncretro_basename(hit[i]).toLowerCase() != core)
 			continue;
 		file_rename(hit[i], dstdir + core);
 		if (file_exists(dstdir + core)) {
@@ -148,9 +148,9 @@ function from_loose_file(root, dstdir, core, base)
 }
 
 // Download the correct per-platform build and extract the core into `dstdir`.
-function from_buildbot(dstdir, core, sub)
+function syncretro_from_buildbot(dstdir, core, sub)
 {
-	var url = BUILDBOT + sub + "/latest/" + core + ".zip";
+	var url = SYNCRETRO_BUILDBOT + sub + "/latest/" + core + ".zip";
 	var tmp = backslash(system.temp_dir) + core + ".zip";
 	var ok  = false;
 
@@ -163,7 +163,7 @@ function from_buildbot(dstdir, core, sub)
 			print("  ! download failed: HTTP " + req.response_code);
 		} else {
 			print("  downloaded " + n + " bytes; extracting ...");
-			ok = extract_core_from(tmp, dstdir, core);
+			ok = syncretro_extract_core_from(tmp, dstdir, core);
 			if (!ok)
 				print("  ! " + core + " not found in the downloaded archive");
 		}
@@ -182,11 +182,11 @@ function from_buildbot(dstdir, core, sub)
 function syncretro_getcore(door_dir, base, label)
 {
 	var root   = backslash(door_dir || js.startup_dir || "./");
-	var target = sv_target(system.platform, system.architecture);   // "" (flat, Windows), linux-x64, ...
-	var core   = base + "." + sv_core_ext(sv_platform(system.platform));
+	var target = syncretro_target(system.platform, system.architecture);   // "" (flat, Windows), linux-x64, ...
+	var core   = base + "." + syncretro_core_ext(syncretro_platform(system.platform));
 	var dst    = target ? backslash(root + target) : root;          // <door>/<target>/ or the flat door dir
 	var where  = target ? (target + "/") : "the door dir";
-	var sub    = buildbot_sub();
+	var sub    = syncretro_buildbot_sub();
 
 	if (!label)
 		label = base;
@@ -201,20 +201,20 @@ function syncretro_getcore(door_dir, base, label)
 	mkpath(dst);
 
 	// 2. A copy the sysop dropped in (loose file, or an archive at the door root).
-	if (from_loose_file(root, dst, core, base))
+	if (syncretro_from_loose_file(root, dst, core, base))
 		return 0;
-	if (from_dropped_archive(root, dst, core))
+	if (syncretro_from_dropped_archive(root, dst, core))
 		return 0;
 
 	// 3. Download from the libretro buildbot (the cores are GPL).
-	if (from_buildbot(dst, core, sub)) {
+	if (syncretro_from_buildbot(dst, core, sub)) {
 		print("SyncRetro: " + label + " core installed.");
 		return 0;
 	}
 
 	print("SyncRetro: could not install the core automatically. Drop "
 	    + core + " (or its buildbot .zip) into " + root + " -- it is at\n"
-	    + "  " + BUILDBOT + sub + "/latest/" + core + ".zip\n"
+	    + "  " + SYNCRETRO_BUILDBOT + sub + "/latest/" + core + ".zip\n"
 	    + "then re-run this door's getcore.js");
 	return 1;
 }
