@@ -154,8 +154,24 @@ under the BBS. (Note also that `$SBBS` is not a real Synchronet variable.)
 This matters for any script that can be launched **both** ways. `install-xtrn.js`
 runs an installer's `[exec:<file>.js]` steps with `js.exec()` — in the same
 process — and is itself run either from `jsexec` or from inside the BBS
-(`xtrn-setup.js`). Such a child must therefore avoid `env`/`uifc`/`conio` (no BBS)
-*and* `bbs`/`console` (no jsexec), and talk to its caller with `print()`.
+(`xtrn-setup.js`), so a door's `getcore.js`/`getwads.js` runs under whichever the
+sysop chose.
+
+**Detect the context; don't guess it — and probe with `js.global.<name>`.** A bare
+`console` under jsexec throws `ReferenceError`, but `js.global.console` is just a
+property lookup and reads `undefined`. That is why the stock code spells it that
+way (`exec/logonlist.js`, `exec/load/gettext.js`, and `install-xtrn.js` itself):
+
+```javascript
+if (!js.global.bbs) { alert("This module must be run from the BBS"); exit(1); }
+if (js.global.console) { console.putmsg(...); } else { print(...); }
+```
+
+**And most I/O already works in both contexts** — `print()` is far from the only
+option. `write`, `writeln`, `printf`, `alert`, `log`, `read`, `readln`, `prompt`,
+`confirm` and `deny` are all present in a BBS session *and* under jsexec; only
+`console.*` / `bbs` / `user` are terminal-bound (and `uifc`/`env`/`conio` are
+jsexec-only). Full table: <https://wiki.synchro.net/custom:javascript#output>.
 
 ## The dialect: SpiderMonkey 1.8.5 (ES3-ish + a few ES5 bits)
 

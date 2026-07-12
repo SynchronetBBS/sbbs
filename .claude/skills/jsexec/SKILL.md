@@ -127,18 +127,42 @@ reports whatever the launching shell happened to export, and is absent under the
 BBS. Reach for `env` only for things that genuinely are environment (a caller's
 own variable, `PATH`, a CI flag).
 
-**A script that can be run BOTH ways must use only the intersection.** This is
+**A script may be run BOTH ways — detect the context, don't guess it.** This is
 not hypothetical: `install-xtrn.js` runs an installer's `[exec:<file>.js]` steps
 with **`js.exec()`**, i.e. *in the same process*, and `install-xtrn` itself is
 invoked either from the command line (`jsexec install-xtrn ...`) **or from inside
-the BBS** (`xtrn-setup.js`, the sysop's Auto-install menu). So a child script like
-a door's `getcore.js` / `getwads.js` / `getdata.js`:
+the BBS** (`xtrn-setup.js`, the sysop's Auto-install menu). So a door's
+`getcore.js` / `getwads.js` / `getdata.js` runs under whichever the sysop chose.
 
-- must **not** use `env`, `uifc` or `conio` — absent under the BBS;
-- must **not** use `bbs` or `console` — absent under jsexec;
-- may use `system.*`, `js.*`, `file_*`, `print()`, `argv`/`argc`, `load()`.
+**The probe is `js.global.<name>`, not a bare identifier.** A bare `console` in a
+jsexec run throws `ReferenceError`; `js.global.console` is an ordinary property
+lookup and is simply `undefined`. That is why the stock code spells it that way:
 
-`print()` is the safe way for such a script to talk to whoever is running it.
+```javascript
+if (!js.global.bbs) {                       // exec/logonlist.js
+    alert("This module must be run from the BBS");
+    exit(1);
+}
+if (js.global.console !== undefined         // exec/load/gettext.js
+    && typeof js.global.console.charset === 'string') { ... }
+if (js.terminated || (js.global.console && console.aborted))   // install-xtrn.js itself
+```
+
+**Most I/O works in BOTH contexts** — `print()` is not the only option, and the
+full table is at <https://wiki.synchro.net/custom:javascript#output>:
+
+| | works in BBS **and** jsexec | BBS only | jsexec only |
+|---|---|---|---|
+| output | `print` `write` `writeln` `printf` `alert` `log` | `console.print`, `console.putmsg`, `console.*` | — |
+| input | `read` `readln` | `console.getkey`, `console.getnum`, `console.*` | — |
+| prompts | `prompt` `confirm` `deny` | — | `uifc` (full-screen UI) |
+| other | `system` `js` `file_*` `argv`/`argc` `load` | `bbs`, `user` | `env`, `conio` |
+
+So an installer child script has a real vocabulary — `confirm()` to ask, `alert()`
+to warn, `prompt()` to collect, `print()` to narrate — all of which do the right
+thing on a terminal *and* on a command line. Reach for `console.*` only after a
+`js.global.console` check, for the things only a terminal can do (colour, hot
+keys, `putmsg`).
 
 **NOT available under jsexec** (session/terminal-bound — referencing them throws
 `ReferenceError`):
