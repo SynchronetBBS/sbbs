@@ -39,6 +39,29 @@ to a RetroPad. Swap the core, get a different console.
    does not ship.** A legally-owned copy is yours to supply (same as MoO1's data
    in `../syncmoo1`).
 
+## Running under another BBS
+
+The door takes its client connection one of two ways, and a BBS that offers
+either can run it:
+
+- **A socket** — a `DOOR32.SYS` drop file (line 2 is the handle) or `-s<fd>`.
+  This is what Synchronet gives it. Note that Synchronet does NOT hand a door the
+  raw client socket: it interposes a loopback socketpair and pumps the data
+  through its own threads, which is what does the telnet negotiation and the SSH
+  crypto. The door therefore never sees a telnet IAC byte, and works over SSH
+  without knowing SSH exists.
+- **`-stdio`** — the BBS redirected our stdin and stdout instead (Mystic does
+  this on \*nix, forking the door through `/bin/sh` with pipes). It does the
+  telnet and SSH itself, so the stream arrives just as clean. **POSIX only**: on
+  Windows a door is given a Winsock socket, and this door's I/O seam cannot read
+  a CRT pipe.
+
+What the door does NOT do is speak telnet itself. A BBS that hands over the
+**raw client socket** would need that: the door would have to negotiate options,
+unescape `IAC IAC`, and survive a window-resize (NAWS) whose payload bytes arrive
+looking like keystrokes — one of which, `0x11`, is the quit key. Use the stdio
+mode with such a BBS, or add a telnet layer first.
+
 ## Building
 
 POSIX (Linux/*BSD/macOS):

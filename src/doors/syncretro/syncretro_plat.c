@@ -174,9 +174,19 @@ int sr_plat_fallback_fd(void)
 #endif
 }
 
-int sr_plat_redirect_stderr(const char *path)
+int sr_plat_stdio_ok(void)
 {
 #ifdef _WIN32
+	return 0;
+#else
+	return 1;
+#endif
+}
+
+/* Works on BOTH platforms now. WHEN to call it is the door's policy, not the
+ * platform's -- see sr_plat_stderr_needs_capture() and the stdio door. */
+int sr_plat_redirect_stderr(const char *path)
+{
 	if (path == NULL || path[0] == '\0')
 		return -1;
 	if (freopen(path, "w", stderr) == NULL)
@@ -185,12 +195,6 @@ int sr_plat_redirect_stderr(const char *path)
 	 * see the header for why _IONBF specifically and not _IOLBF. */
 	setvbuf(stderr, NULL, _IONBF, 0);
 	return 0;
-#else
-	/* POSIX: the server already routes an inherited stderr somewhere durable;
-	 * redirecting would only hide the door's output from the sysop's log. */
-	(void)path;
-	return 0;
-#endif
 }
 
 int sr_plat_captures_stderr(void)

@@ -81,6 +81,9 @@ int sm_plat_read(int fd, void *buf, size_t len);
  * #ifdef. */
 int sm_plat_fallback_fd(void);
 
+/* Can this platform be a STDIO door (POSIX yes, Windows no)? */
+int sm_plat_stdio_ok(void);
+
 /* Redirect the process's stderr onto `path`, so the door's diagnostics survive
  * even when there is no console to print them to. Returns 0 on success, -1 on
  * failure (in which case stderr is left as it was).

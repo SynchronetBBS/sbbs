@@ -21,6 +21,9 @@ const char *sr_door_name(void);                     /* player alias, or NULL */
 const char *sr_door_home(void);                     /* -home sandbox dir, or NULL */
 const char *sr_door_core_path(void);                /* -core <path> / config, or NULL */
 const char *sr_door_profile(void);                  /* -profile <name>, or NULL */
+/* -stdio: the BBS gave us its pipes, not a socket (Mystic on *nix). Read fd 0,
+ * write fd 1. POSIX only -- see sr_plat_stdio_ok(). */
+int         sr_door_stdio(void);
 /* Publish "playing <title> (<console>)" as this node's who's-online status, and
  * clear it on exit. Call once, after the ROM is loaded and the profile resolved. */
 void sr_door_node_playing(const char *rom_path);
@@ -99,6 +102,10 @@ int    sr_config_audio_prebuffer(void);   /* prebuffer, 2..8,      default 3 */
  * mode overwrites that file with one self-contained frame per present (offline
  * verification with no live terminal). */
 int  sr_io_init(int sockfd);
+/* A STDIO door: the BBS redirected our stdin/stdout rather than handing us a
+ * socket (Mystic on *nix). in_fd and out_fd are two different descriptors. */
+int  sr_io_init_fds(int in_fd, int out_fd);
+int  sr_io_in_fd(void);                             /* the fd to READ from */
 void sr_io_present(const uint8_t *rgb, int w, int h);   /* rgb = w*h*3, top-down */
 void sr_io_leave(void);
 

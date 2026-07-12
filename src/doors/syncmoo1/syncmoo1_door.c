@@ -37,6 +37,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "door32.h"    /* termgfx: the shared DOOR32.SYS parser */
 #include <unistd.h>         /* _exit() -- on MSVC this is compat/unistd.h -> <process.h> */
 
 #include "genwrap.h"        /* xpdev: stricmp() -- strcasecmp on POSIX, _stricmp on MSVC */
@@ -54,6 +56,9 @@
 #endif
 
 static int      g_socket = -1;         /* resolved comm descriptor, or -1 (none) */
+/* DOOR32 comm type 0 / -stdio: the BBS redirected our stdin/stdout instead of
+ * handing us a socket (Synchronet's XTRN_STDIO, Mystic on *nix). POSIX only. */
+static int      g_stdio;
 static uint32_t g_time_limit_ms;       /* 0 = no session time limit */
 static uint32_t g_deadline_ms;         /* only meaningful if g_deadline_armed */
 static int      g_deadline_armed;
@@ -147,33 +152,32 @@ static int is_time_arg(const char *a)
  * here -- matching syncduke_door.c's read_door32() exactly. */
 static void read_door32(const char *path)
 {
-    FILE *f = fopen(path, "r");
-    char  line[256];
-    int   ln = 0, commtype = -1, handle = -1, tmin = -1;
+    termgfx_door32_t d;
+    const char      *why;
 
-    if (f == NULL)
+    if (termgfx_door32_read(path, &d) != 0)
         return;
-    while (fgets(line, sizeof(line), f) != NULL) {
-        switch (ln) {
-            case 0: commtype = atoi(line); break;   /* 0=local 1=serial 2=telnet */
-            case 1: handle   = atoi(line); break;   /* comm/socket descriptor    */
-            case 6:                                  /* user alias / handle       */
-                line[strcspn(line, "\r\n")] = '\0';
-                strncpy(g_alias, line, sizeof(g_alias) - 1);
-                g_alias[sizeof(g_alias) - 1] = '\0';  /* strncpy may not NUL-terminate */
-                g_alias_authoritative = 1;   /* the BBS said so; -name cannot outrank it */
-                break;
-            case 8: tmin = atoi(line); break;        /* time left, minutes        */
-        }
-        if (++ln > 8)
-            break;
-    }
-    fclose(f);
 
-    if (commtype == 2 && handle >= 0)
-        g_socket = handle;
-    if (tmin > 0)
-        g_time_limit_ms = (uint32_t)tmin * 60000u;
+    if (d.socket >= 0)
+        g_socket = d.socket;
+    else if (d.stdio && sm_plat_stdio_ok()) {
+        g_stdio = 1;   /* comm type 0: the BBS redirected our stdin/stdout */
+        /* ...and dup2'd our stderr onto the same stream, so 1oom's config errors
+         * would be painted over the player's screen. Send stderr to a file. */
+        termgfx_stderr_capture("syncmoo1", d.node);
+    }
+
+    if (d.alias[0] != '\0') {
+        snprintf(g_alias, sizeof(g_alias), "%s", d.alias);
+        g_alias_authoritative = 1;   /* the BBS said so; -name cannot outrank it */
+    }
+    if (d.time_limit_ms > 0)
+        g_time_limit_ms = d.time_limit_ms;
+
+    /* Say why a drop file is no use to us: falling through to the dev sink gives
+     * a door that starts, shows nothing, and ignores every key, with no clue. */
+    if ((why = termgfx_door32_why_unusable(&d)) != NULL)
+        fprintf(stderr, "syncmoo1: %s is no use to this door: %s\n", path, why);
 }
 
 /* Parse argv for the door's own arguments, falling back to SYNCMOO1_SOCK
@@ -192,6 +196,12 @@ static void sm_door_resolve(int argc, char **argv)
             g_socket = atoi(a + 2);                             /* -s<fd>        */
         } else if (is_time_arg(a)) {
             g_time_limit_ms = (uint32_t)atoi(a + 2) * 1000u;    /* -t<seconds>   */
+        } else if (strcmp(a, "-stdio") == 0) {
+            if (sm_plat_stdio_ok())
+                g_stdio = 1;
+            else
+                fprintf(stderr, "syncmoo1: -stdio is POSIX-only (a Windows BBS "
+                        "hands a door a socket).\n");
         } else if (strcmp(a, "-name") == 0 && i + 1 < argc) {
             /* -name <alias>: the alias source for the DROPFILE-LESS dev path
              * (-s<fd>/SYNCMOO1_SOCK), where there is no DOOR32.SYS line 7 to
@@ -386,6 +396,8 @@ int sm_door_setup(int argc, char **argv)
     }
     return 0;
 }
+
+int sm_door_stdio(void)  { return g_stdio; }
 
 int sm_door_socket(void)
 {

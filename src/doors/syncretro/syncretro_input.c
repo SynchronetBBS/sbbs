@@ -973,7 +973,7 @@ void sr_input_pump(void)
 {
 	uint8_t buf[256];
 	int     n;
-	int     i, fd = sr_io_get_fd();
+	int     i, fd = sr_io_in_fd();   /* NOT get_fd(): a stdio door reads fd 0, writes fd 1 */
 
 	/* Expire byte-path taps even on a pump that reads nothing: a key released
 	 * during a quiet moment must still come up. Harmless on the native paths,

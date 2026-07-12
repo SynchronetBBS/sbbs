@@ -61,6 +61,7 @@
 #include "net_server.h"         // NET_SV_Run
 #include "unicode.h"            // xpdev: cp437_unicode_tbl (CP437 -> Unicode for UTF-8 terminals)
 #include "sd_splash.h"          // sd_splash[] -- the bespoke waiting-room splash (80x25 char+attr)
+#include "door32.h"      // termgfx: the shared DOOR32.SYS parser
 #include "sbbs_node.h"          // door-native who's-online + page (Ctrl-U / Ctrl-P)
 
 #ifndef _WIN32                  // dev stdio/tty fallback (no socket handle) is *nix-only
@@ -2746,50 +2747,42 @@ void DG_SetWindowTitle(const char *title) { (void)title; }
 // rows are NOT in DOOR32.SYS, but the door live-probes the terminal size at
 // startup (falling back to terminal.ini, else 25), so it doesn't need them.
 // ---------------------------------------------------------------------------
-// True if `s` is a path whose basename is "door32.sys" (case-insensitive), so a
-// bare drop-file path (Synchronet's %f) self-triggers the read -- no -door32
-// flag needed. The path need not be in cwd.
-static int is_door32_path(const char *s)
-{
-	static const char want[] = "door32.sys";
-	const char *      base = s, *p;
-	int               i;
-
-	for (p = s; *p; p++)
-		if (*p == '/' || *p == '\\')
-			base = p + 1;
-	for (i = 0; want[i] != '\0'; i++) {
-		char c = base[i];
-		if (c >= 'A' && c <= 'Z')
-			c += 32;
-		if (c != want[i])
-			return 0;
-	}
-	return base[i] == '\0';
-}
+// Recognizing the drop file among our arguments is termgfx's rule too.
+#define is_door32_path(s)   termgfx_door32_is_path(s)
 
 static void read_door32(const char *path)
 {
-	FILE *f = fopen(path, "r");
-	char  line[256];
-	int   ln = 0, commtype = -1, handle = -1, tmin = -1;
+	termgfx_door32_t d;
+	const char      *why;
 
-	if (f == NULL)
+	if (termgfx_door32_read(path, &d) != 0)
 		return;
-	while (fgets(line, sizeof(line), f) != NULL) {
-		switch (ln) {
-			case 0: commtype = atoi(line); break;   // 0=local 1=serial 2=telnet
-			case 1: handle   = atoi(line); break;   // comm/socket descriptor
-			case 8: tmin     = atoi(line); break;   // time left, minutes
-		}
-		if (++ln > 8)
-			break;
-	}
-	fclose(f);
 
-	if (commtype == 2 && handle >= 0) { g_iosock = (SOCKET)handle; g_sock = true; }
-	if (tmin > 0)
-		g_time_limit_ms = (uint32_t)tmin * 60000u;
+	if (d.socket >= 0) {
+		g_iosock = (SOCKET)d.socket;
+		g_sock   = true;
+	} else if (d.stdio) {
+		// A STDIO door: the BBS redirected our stdin/stdout. Its stderr is dup2'd
+		// onto that same stream, so every line we (and Doom) print would land on
+		// the player's screen, over the game. Send it to a file instead.
+		termgfx_stderr_capture("syncdoom", d.node);
+	}
+	// comm type 0 (local) needs no action: g_sock stays false and conn_read/
+	// emit_all fall through to g_rfd/g_wfd -- stdin and stdout -- which is what a
+	// STDIO door is. SyncDOOM has had that path all along, as the *nix dev/tty
+	// fallback; the drop file now says when the BBS means it (Synchronet's
+	// XTRN_STDIO, Mystic on *nix). Windows has no such path: conn_read returns -1
+	// there, and a Windows BBS hands a door a socket anyway.
+
+	// A drop file we cannot use is worth saying out loud -- serial, an unknown
+	// comm type, a telnet line with no usable handle, or a file so truncated it
+	// has no comm type. Silently falling through to stdout means a door that
+	// starts, shows nothing, and ignores every key, with no clue why.
+	if ((why = termgfx_door32_why_unusable(&d)) != NULL)
+		fprintf(stderr, "syncdoom: %s is no use to this door: %s\n", path, why);
+
+	if (d.time_limit_ms > 0)
+		g_time_limit_ms = d.time_limit_ms;
 }
 
 // ---------------------------------------------------------------------------

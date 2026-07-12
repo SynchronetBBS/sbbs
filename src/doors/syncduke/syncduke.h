@@ -24,6 +24,10 @@ int            syncduke_palette_take_dirty(void); /* 1 if palette changed since 
 
 /* --- provided by syncduke_io.c --- */
 void syncduke_out_put(const void *buf, size_t len);   /* stage bytes for the terminal */
+/* The player's real stdout: a duplicate taken BEFORE the engine's chatter was
+ * routed over fd 1. On a STDIO door this is the client; on a dev run it is the
+ * tty. Never write the terminal stream to a bare fd 1 -- see syncduke_config.c. */
+int  syncduke_stdout_fd(void);
 void syncduke_out_flush(void);                        /* push staged bytes to the sink */
 void syncduke_present(void);                           /* encode + emit one frame      */
 void syncduke_pace_ack(void);                          /* a per-frame DSR report came back (pacing) */

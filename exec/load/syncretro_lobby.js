@@ -21,7 +21,8 @@
 //       ext:      ["nes", "unf", "unif"],           // what a cartridge looks like
 //       min_size: 8 * 1024,
 //       max_size: 4 * 1024 * 1024,
-//       bios:     []                                // files the console needs
+//       bios:     [],                               // files the console needs
+//       stdio:    false                             // true = run as a STDIO door
 //   });
 //
 // `id` is derived from `short` (lower-cased, alphanumerics only) and names the
@@ -47,7 +48,7 @@ var SRL_FOOTER_ROWS = 3;                   /* blank, prompt, +1 kept empty so a 
                                             * page never trips the terminal more-prompt */
 
 /* Set once, by syncretro_lobby(). */
-var srl_dir, srl_con, srl_rules, srl_bios, srl_binary, srl_core;
+var srl_dir, srl_con, srl_rules, srl_bios, srl_binary, srl_core, srl_stdio;
 
 function srl_init(spec)
 {
@@ -58,6 +59,12 @@ function srl_init(spec)
 	srl_con   = sv_console(spec);
 	srl_rules = sv_rules(spec);
 	srl_bios  = spec.bios || [];
+	/* How the door gets the player's connection. Default: a SOCKET (Synchronet
+	 * hands the door one end of a loopback socketpair and pumps it). `stdio: true`
+	 * instead has Synchronet fork the door on a raw pty (EX_STDIO|EX_BIN) and
+	 * relay it -- the same shape Mystic uses on *nix, and so the way to exercise
+	 * the door's -stdio path against a real session. */
+	srl_stdio = spec.stdio ? true : false;
 
 	/* The sysop's half of syncretro.ini. The console's half is the spec above:
 	 * a sysop hides a ROM or moves the roms dir; a sysop does not redefine what
@@ -217,7 +224,13 @@ function srl_play(rom)
 	 * Entertainment System" is too long to sit in a who's-online column. */
 	label = srl_con.name.length <= 20 ? srl_con.name : srl_con.short;
 
-	cmd = srl_binary + " -s%H -t%T -name %a -core " + srl_core
+	/* A SOCKET door is handed the connection (-s%H). A STDIO door is handed
+	 * nothing: Synchronet forks it on a pty and relays fd 0/1 itself, so the
+	 * socket argument must be ABSENT, not empty. EX_BIN is what makes that pty
+	 * raw (cfmakeraw) and stops the LF->CRLF and CP437->UTF8 translation that
+	 * would otherwise mangle a sixel frame. */
+	cmd = srl_binary + (srl_stdio ? " -stdio" : " -s%H")
+	    + " -t%T -name %a -core " + srl_core
 	    + " -profile " + srl_con.profile
 	    + ' -title "' + rom.title + '" -console "' + label + '"'
 	    + ' -home "' + home + '" "' + rom.path + '"';
@@ -229,7 +242,9 @@ function srl_play(rom)
 	 * to data/syncretro/syncretro_n<node>.log. No-op on *nix (no console window).
 	 * This is the lobby-launched equivalent of a registered xtrn's XTRN_NODISPLAY
 	 * setting; EX_NODISPLAY is the proper EX_* spelling of that bit for bbs.exec. */
-	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN | EX_NODISPLAY, srl_dir);
+	bbs.exec(bbs.cmdstr(cmd),
+	         EX_NATIVE | EX_BIN | EX_NODISPLAY | (srl_stdio ? EX_STDIO : 0),
+	         srl_dir);
 	secs = time() - started;
 
 	/* Logged whatever the door's exit status: a crash is still a play. The console

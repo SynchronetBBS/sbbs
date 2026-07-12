@@ -23,6 +23,7 @@ add_library(termgfx STATIC
     term.c
     geometry.c
     hash.c
+    door32.c
     sgrmouse.c
     keymode.c
     pace.c

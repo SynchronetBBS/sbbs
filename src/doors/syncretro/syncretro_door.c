@@ -5,8 +5,12 @@
  * doors (../syncmoo1/syncmoo1_door.c, ../syncduke/syncduke_door.c).
  *
  * DOOR32.SYS (the portable door interface, Synchronet's %f): line 1 = comm type
- * (2 = telnet/socket), line 2 = comm/socket handle, line 7 = user alias, line 9
- * = minutes left. The handle is an inherited descriptor: a plain fd on *nix, a
+ * (0 = local, 1 = serial, 2 = telnet/socket), line 2 = comm/socket handle,
+ * line 7 = user alias, line 9 = minutes left.
+ *
+ * Comm type 0 means THERE IS NO SOCKET -- the BBS redirected our stdin/stdout
+ * instead -- so the drop file alone selects the stdio door; -stdio is the manual
+ * equivalent, for a BBS that writes no drop file at all. The handle is an inherited descriptor: a plain fd on *nix, a
  * Winsock SOCKET on Windows -- syncretro_plat.c hides that difference, so nothing
  * here is #ifdef'd.
  *
@@ -25,6 +29,7 @@
 
 #include "genwrap.h"           /* xpdev: stricmp() (POSIX strcasecmp) */
 #include "dirwrap.h"           /* xpdev: mkpath() -- the diagnostics-log dir */
+#include "door32.h"          /* termgfx: the shared DOOR32.SYS parser */
 #include "sbbs_node.h"         /* termgfx: node number, who's-online status */
 #include "syncretro_profile.h" /* sr_profile_name(): the console fallback */
 #include "syncretro_binds.h"   /* sr_bind_help_line(): drives the usage key list */
@@ -51,6 +56,14 @@ static char     g_profile[32];         /* "" = infer from the core */
  * and the profile's name. */
 static char     g_title[64];           /* -title:   "Astrosmash" */
 static char     g_console[32];         /* -console: "Intellivision" / "NES" */
+/* -stdio: the BBS redirected our stdin/stdout instead of handing us a socket.
+ * Mystic on *nix forks the door and pipes it -- and does the telnet (and SSH)
+ * itself, so what arrives is already a clean 8-bit stream, exactly as
+ * Synchronet's passthru socket delivers. That is the whole reason a stdio door
+ * is worth having: a door reading a RAW telnet socket would have to negotiate,
+ * unescape IAC IAC, and survive a NAWS resize whose payload bytes look like
+ * keystrokes -- one of which (0x11) is our quit key. */
+static int      g_stdio;
 static char     g_rom[SR_PATH_MAX];    /* "" = no ROM given */
 
 /* Monotonic millisecond clock -- the session deadline uses it so a wall-clock
@@ -107,15 +120,8 @@ int sr_door_should_exit(void)
 	return 0;
 }
 
-/* basename(path) == "door32.sys", case-insensitive (Synchronet's %f). */
-static int is_door32_path(const char *s)
-{
-	const char *b = s + strlen(s);
-
-	while (b > s && b[-1] != '/' && b[-1] != '\\')
-		b--;
-	return stricmp(b, "door32.sys") == 0;
-}
+/* Recognizing the drop file among our arguments is termgfx's rule too. */
+#define is_door32_path(s)   termgfx_door32_is_path(s)
 
 /* True iff s is non-empty and every character is an ASCII digit. */
 static int all_digits(const char *s)
@@ -169,35 +175,39 @@ static void copy_arg(char *dst, size_t sz, const char *src)
 	dst[n] = '\0';
 }
 
-/* DOOR32.SYS line numbers below are 0-based (fgets counter); the spec is
- * 1-based, so "line 1/2/7/9" in the file header maps to ln 0/1/6/8. */
+/* The drop file is parsed by termgfx (door32.c), shared with the sibling doors:
+ * five copies of these twenty lines had already drifted apart -- four different
+ * ways to copy the alias, one door that never read it, and only one that knew
+ * that a comm type of 0 means "no socket; I redirected your stdio". */
 static void read_door32(const char *path)
 {
-	FILE *f = fopen(path, "r");
-	char  line[256];
-	int   ln = 0, commtype = -1, handle = -1, tmin = -1;
+	termgfx_door32_t d;
 
-	if (f == NULL)
+	const char *why;
+
+	if (termgfx_door32_read(path, &d) != 0) {
+		fprintf(stderr, "syncretro: cannot read %s\n", path);
 		return;
-	while (fgets(line, sizeof(line), f) != NULL) {
-		switch (ln) {
-			case 0: commtype = atoi(line); break;   /* 0=local 1=serial 2=telnet */
-			case 1: handle   = atoi(line); break;   /* comm/socket descriptor    */
-			case 6:                                 /* user alias / handle       */
-				line[strcspn(line, "\r\n")] = '\0';
-				copy_arg(g_alias, sizeof(g_alias), line);
-				break;
-			case 8: tmin = atoi(line); break;       /* time left, minutes        */
-		}
-		if (++ln > 8)
-			break;
 	}
-	fclose(f);
 
-	if (commtype == 2 && handle >= 0)
-		g_socket = handle;
-	if (tmin > 0)
-		g_time_limit_ms = (uint32_t)tmin * 60000u;
+	if (d.socket >= 0)
+		g_socket = d.socket;
+	else if (d.stdio && sr_plat_stdio_ok())
+		g_stdio = 1;            /* comm type 0: the BBS redirected our stdin/stdout */
+
+	/* A drop file we cannot use is worth SAYING so. Falling back to the dev sink
+	 * silently -- drawing to fd 1 and reading a descriptor nobody is typing into
+	 * -- gives the sysop a door that starts, paints nothing he can see, and
+	 * ignores every key, with no clue anywhere as to why. */
+	if ((why = termgfx_door32_why_unusable(&d)) != NULL)
+		fprintf(stderr, "syncretro: %s is no use to this door: %s\n", path, why);
+	else if (d.stdio && !sr_plat_stdio_ok())
+		fprintf(stderr, "syncretro: %s says stdio (comm type 0), which is POSIX-only.\n",
+		        path);
+	if (d.alias[0] != '\0')
+		copy_arg(g_alias, sizeof(g_alias), d.alias);
+	if (d.time_limit_ms > 0)
+		g_time_limit_ms = d.time_limit_ms;
 }
 
 /* Parse argv for the door's own arguments, falling back to the SYNCRETRO_SOCK /
@@ -230,6 +240,8 @@ static void sr_door_resolve(int argc, char **argv)
 			copy_arg(g_title, sizeof(g_title), argv[++i]);
 		} else if (strcmp(a, "-console") == 0 && i + 1 < argc) {
 			copy_arg(g_console, sizeof(g_console), argv[++i]);
+		} else if (strcmp(a, "-stdio") == 0) {
+			g_stdio = 1;
 		} else if (strcmp(a, "-rom") == 0 && i + 1 < argc) {
 			copy_arg(g_rom, sizeof(g_rom), argv[++i]);
 		} else if (is_door32_path(a)) {
@@ -297,6 +309,8 @@ static void sr_door_usage(const char *argv0)
 		"                     omitted: inferred from the core's own name\n"
 		"  -title <name>      cartridge title, for the who's-online status\n"
 		"  -console <name>    console name, for the who's-online status\n"
+		"  -stdio             the BBS redirected our stdin/stdout instead of\n"
+		"                     giving us a socket (Mystic on *nix). POSIX only.\n"
 		"  -core <path>       libretro core to load: .so (*nix) / .dll (Windows)"
 		" (or $SYNCRETRO_CORE)\n"
 		"  -rom <path>        game ROM; also taken as a bare argument (or $SYNCRETRO_ROM)\n"
@@ -360,10 +374,18 @@ static void sr_door_capture_diagnostics(void)
 	char        path[SR_PATH_MAX];
 	int         node = sbbs_my_node();
 
-	if (g_socket < 0)
-		return;   /* no BBS session (dev/tty run): keep stderr where it is */
-	if (!sr_plat_captures_stderr())
-		return;   /* POSIX: stderr is already durable; don't even make the dir */
+	/* A STDIO door MUST capture on EVERY platform, sr_plat_captures_stderr() or
+	 * not: the BBS dup2()s our stderr onto the same stream as stdout (xtrn.cpp's
+	 * EX_STDIO path), so an un-redirected diagnostic line is painted straight onto
+	 * the player's screen, over the game. POSIX's "an inherited stderr is already
+	 * durable" is true of a SOCKET door and false of this one -- there, stderr IS
+	 * the terminal. */
+	if (!g_stdio) {
+		if (g_socket < 0)
+			return;   /* no BBS session (dev/tty run): keep stderr where it is */
+		if (!sr_plat_captures_stderr())
+			return;   /* POSIX socket door: the server log already has it */
+	}
 
 	if (data != NULL && data[0] != '\0') {
 		size_t dl = strlen(data);
@@ -401,6 +423,17 @@ int sr_door_setup(int argc, char **argv)
 
 	sr_door_resolve(argc, argv);
 
+	if (g_stdio && !sr_plat_stdio_ok()) {
+		fprintf(stderr, "syncretro: -stdio is POSIX-only -- on Windows a BBS hands a\n"
+		        "door a socket (DOOR32.SYS / -s<handle>), and this door's I/O seam\n"
+		        "cannot read a CRT pipe. Use the socket instead.\n");
+		return 1;
+	}
+	if (g_stdio && g_socket >= 0) {
+		fprintf(stderr, "syncretro: -stdio and a socket were BOTH given; using the socket.\n");
+		g_stdio = 0;
+	}
+
 	fd = g_socket;
 	sr_door_configure_socket(fd);         /* WSAStartup + non-blocking; no-op opts if fd < 0 */
 	sr_door_capture_diagnostics();        /* Windows: freopen stderr to the node log */
@@ -421,6 +454,7 @@ const char *sr_door_name(void)      { return g_alias[0] ? g_alias : NULL; }
 const char *sr_door_home(void)      { return g_home[0] ? g_home : NULL; }
 const char *sr_door_core_path(void) { return g_core[0] ? g_core : NULL; }
 const char *sr_door_profile(void)   { return g_profile[0] ? g_profile : NULL; }
+int sr_door_stdio(void)            { return g_stdio; }
 
 /* --- who's-online status -----------------------------------------------------
  *
@@ -514,7 +548,7 @@ void sr_door_sanitize_argv(int *argc, char **argv)
 	for (i = 1; i < n; i++) {
 		const char *a = argv[i];
 
-		if (is_socket_arg(a) || is_time_arg(a))
+		if (is_socket_arg(a) || is_time_arg(a) || strcmp(a, "-stdio") == 0)
 			continue;
 		if (is_valued_flag(a)) {
 			if (i + 1 < n)

@@ -162,6 +162,19 @@ int sm_plat_read(int fd, void *buf, size_t len)
     return (n >= 0) ? n : sm_plat_classify();
 }
 
+/* Can this platform run as a STDIO door? POSIX: yes -- sm_plat_read/write are
+ * read()/write(), which work on fds 0 and 1 exactly as on a socket. Windows: no
+ * -- the seam uses send()/recv(), which cannot touch a CRT pipe, and a Windows
+ * BBS hands a door a socket anyway. */
+int sm_plat_stdio_ok(void)
+{
+#ifdef _WIN32
+    return 0;
+#else
+    return 1;
+#endif
+}
+
 int sm_plat_fallback_fd(void)
 {
 #ifdef _WIN32

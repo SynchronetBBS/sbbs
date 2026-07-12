@@ -56,6 +56,16 @@
 #include "sbbs_node.h"  /* termgfx: sbbs_my_node() -- current node # from SBBSNNUM */
 #include "audio_mgr.h"  /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
 
+/* A duplicate of the ORIGINAL stdout, taken before it is overwritten with stderr
+ * (see syncduke_config_apply). -1 = never taken, i.e. fd 1 is still the terminal. */
+static int g_stdout_dup = -1;
+
+#ifdef _WIN32
+  #define sd_dup(fd)   _dup(fd)
+#else
+  #define sd_dup(fd)   dup(fd)
+#endif
+
 /* Shared, read-only GRP directory (absolute), consulted by the engine's findGRPToUse()
  * (Game/src/game.c).  Deliberately separate from the process CWD: when launched as a door
  * with -home, we chdir into the user's per-user storage dir so Duke's config (duke3d.cfg)
@@ -337,6 +347,14 @@ static void syncduke_config_init(int argc, char **argv)
 	/* --- route the engine's stdout diagnostics to stderr (Synchronet logs it) --- */
 	if (syncduke_is_door(argc, argv)) {
 		fflush(stdout);
+		/* SAVE THE REAL STDOUT FIRST. On a socket door fd 1 is unused and this dup2
+		 * is exactly right: Chocolate Duke's printf/Error() chatter goes to the BBS
+		 * log instead of the player. But on a STDIO door -- where the BBS redirected
+		 * our stdin/stdout instead of handing us a socket -- fd 1 IS the player, and
+		 * replacing it with stderr sends every sixel frame into the log and nothing
+		 * to the terminal. So keep a duplicate of the original descriptor; the I/O
+		 * layer writes to THAT, and the engine still cannot reach it. */
+		g_stdout_dup = sd_dup(STDOUT_FILENO);
 		dup2(STDERR_FILENO, STDOUT_FILENO);   /* engine printf/Error() -> stderr -> BBS log */
 #ifdef _WIN32
 		/* MSVC's CRT rejects setvbuf(_IOLBF) with size 0 (it requires size >= 2 for
@@ -347,6 +365,14 @@ static void syncduke_config_init(int argc, char **argv)
 		setvbuf(stdout, NULL, _IOLBF, 0);     /* line-buffered so lines flush promptly */
 #endif
 	}
+}
+
+/* The player's real stdout, saved before the engine's chatter was routed over it
+ * (above). -1 when we never did that -- a dev/tty run -- in which case fd 1 is
+ * still the terminal and is the right answer. */
+int syncduke_stdout_fd(void)
+{
+	return (g_stdout_dup >= 0) ? g_stdout_dup : STDOUT_FILENO;
 }
 
 /* Run syncduke_config_init() before the engine's main(). glibc passes

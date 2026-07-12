@@ -222,7 +222,13 @@ static void syncduke_io_init(void)
 			g_fd = ds;
 		else if ((s = getenv("SYNCDUKE_SOCK")) != NULL)    /* explicit fd (test) */
 			g_fd = atoi(s);
-		/* else g_fd stays 1 (stdout, dev/tty) */
+		else
+			/* No socket: the player is on our STDOUT -- either a dev/tty run, or a
+			 * STDIO door (the BBS redirected our stdin/stdout; Synchronet's
+			 * XTRN_STDIO, Mystic on *nix). syncduke_stdout_fd(), not a bare 1: the
+			 * engine's chatter was routed over fd 1 by then, and writing there would
+			 * put every frame in the BBS log and nothing on the player's screen. */
+			g_fd = syncduke_stdout_fd();
 		/* non-blocking, so a wedged client never stalls the game loop */
 		if ((fl = fcntl(g_fd, F_GETFL, 0)) != -1)
 			fcntl(g_fd, F_SETFL, fl | O_NONBLOCK);

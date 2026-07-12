@@ -39,4 +39,10 @@ syncretro_lobby({
 	 * so there is nothing for the sysop to supply, and nothing to reject from the
 	 * picker. (The exception is .fds, above.) */
 	bios:     []
+
+	/* To run this door through the BBS's stdin/stdout instead of a socket -- the
+	 * way Mystic does on *nix, and the way to exercise the door's -stdio path --
+	 * add:  stdio: true
+	 * Under Synchronet the socket is the better path (no pty hop), so it is the
+	 * default. Both are live-tested. */
 });

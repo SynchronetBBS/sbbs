@@ -100,7 +100,14 @@ static size_t      g_out_len, g_out_cap, g_out_off;
 static int         g_inited;
 static int         g_file_mode;    /* SYNCMOO1_SIXELOUT capture mode */
 static const char *g_file;
-static int         g_fd = -1;      /* socket / stdout fd; < 0 = no live sink */
+static int         g_fd = -1;      /* the fd we WRITE to: socket, or stdout; < 0 = none */
+/* The fd we READ from. Same as g_fd for a socket (bidirectional). NOT the same
+ * for a STDIO door -- the BBS gave us its pipes, so stdin is 0 and stdout is 1,
+ * and reading fd 1 reads nothing at all. That is what this door did: it read
+ * sm_io_get_fd(), the WRITE fd, which works on a socket and at a dev tty (a tty
+ * descriptor is bidirectional) and silently ignores every keystroke down a
+ * pipe. */
+static int         g_fd_in = -1;
 
 /* Monotonic millisecond clock (syncmoo1_plat.h, xpdev's xp_timer64). The
  * bounded blocking exit-drain, Task 9's DSR-ACK pace timing (deadline reclaim,
@@ -551,6 +558,14 @@ int sm_io_get_fd(void)
     return g_fd;
 }
 
+/* The fd to READ from. Its only consumer is the input pump. */
+int sm_io_in_fd(void)
+{
+    if (!g_inited)
+        sm_io_init(-1);
+    return g_fd_in;
+}
+
 /* --- terminal setup / teardown (Step 3) ------------------------------------ */
 static int g_entered;
 static int g_left;
@@ -626,6 +641,15 @@ void sm_io_leave(void)
 /* --- init (Step 4) ---------------------------------------------------------- */
 int sm_io_init(int sockfd)
 {
+    return sm_io_init_fds(sockfd, sockfd);
+}
+
+/* A STDIO door (the BBS redirected our stdin/stdout instead of handing us a
+ * socket -- Synchronet's XTRN_STDIO, Mystic on *nix) passes 0 and 1: two
+ * DIFFERENT descriptors, each half-duplex. A socket door passes the one socket
+ * twice, which is what it has always done. */
+int sm_io_init_fds(int in_fd, int out_fd)
+{
     const char *s;
 
     if (g_inited)
@@ -633,7 +657,8 @@ int sm_io_init(int sockfd)
     g_inited = 1;
     /* Windows has no stdout fallback (fd 1 is not a Winsock SOCKET), so an
      * unresolved socket leaves g_fd < 0 = "no live sink". */
-    g_fd = (sockfd >= 0) ? sockfd : sm_plat_fallback_fd();
+    g_fd    = (out_fd >= 0) ? out_fd : sm_plat_fallback_fd();
+    g_fd_in = in_fd;
 
     /* Idempotent, and normally already done by sm_door_setup(): Winsock up,
      * SIGPIPE off. Repeated here because sm_out_put() lazily self-inits this
@@ -650,6 +675,14 @@ int sm_io_init(int sockfd)
     } else {
         /* non-blocking: a wedged client never stalls the game loop */
         (void)sm_plat_sock_setup(g_fd);
+        /* The READ fd too. On a socket door it is the same descriptor, so this is
+         * a no-op -- but on a STDIO door it is fd 0, a DIFFERENT descriptor, and a
+         * BLOCKING stdin parks the whole game inside read() until the player
+         * happens to press a key. The game does not render, does not tick, and
+         * looks hung; feed it a stream of bytes and it springs to life, which is
+         * exactly the symptom that found this. */
+        if (g_fd_in >= 0 && g_fd_in != g_fd)
+            (void)sm_plat_sock_setup(g_fd_in);
     }
 
     sm_io_ensure_geom();

@@ -123,7 +123,12 @@ int main(int argc, char **argv)
      * parses argv. Pre-fills the new-game emperor name with the BBS alias. */
     argv = sm_door_argv_add_emperor_name(&argc, argv);
     sm_config_apply();
-    sm_io_init(sm_door_socket());
+    /* A STDIO door reads fd 0 and writes fd 1 -- two descriptors, each
+     * half-duplex -- where a socket door reads and writes the one socket. */
+    if (sm_door_stdio())
+        sm_io_init_fds(0, 1);
+    else
+        sm_io_init(sm_door_socket());
     /* Registered via atexit(), BEFORE main_1oom() -- not a plain call after it
      * returns. 1oom's own game loop (game_do()) returns to here with a plain
      * C `return` on a normal quit; nothing calls exit() at that point, so
@@ -384,7 +389,7 @@ int hw_event_handle(void)
      * mode-restore) before _exit() -- the read side may still have a live
      * write direction to restore to. */
     sm_audio_pump();   /* Stores the queued samples once the tier reply lands */
-    if (sm_input_pump(sm_io_get_fd()) < 0)
+    if (sm_input_pump(sm_io_in_fd()) < 0)
         sm_door_hangup("input pump: peer hung up or socket error");
     return 0;
 }

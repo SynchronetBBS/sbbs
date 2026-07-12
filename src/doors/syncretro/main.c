@@ -160,7 +160,14 @@ int main(int argc, char **argv)
 	if (rc_core_open(&core, sr_config_core_path()) != 0)
 		return 1;
 
-	if (sr_io_init(sr_door_socket()) != 0)
+	/* A STDIO door reads fd 0 and writes fd 1 -- two descriptors, each half-duplex
+	 * -- where a socket door reads and writes one. The BBS (Mystic on *nix) has
+	 * already done the telnet/SSH work, so what arrives is the same clean stream
+	 * Synchronet's passthru socket delivers. */
+	if (sr_door_stdio()) {
+		if (sr_io_init_fds(0, 1) != 0)
+			goto done;
+	} else if (sr_io_init(sr_door_socket()) != 0)
 		goto done;
 
 	if (rc_core_load_game(&core, sr_config_rom_path()) != 0)

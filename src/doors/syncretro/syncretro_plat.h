@@ -82,6 +82,17 @@ int sr_plat_read(int fd, void *buf, size_t len);
  * this decision here is what spares every other file an #ifdef. */
 int sr_plat_fallback_fd(void);
 
+/* Can this platform run as a STDIO door -- the BBS redirecting our stdin/stdout
+ * rather than handing us a socket (Mystic on *nix, and any BBS that forks with
+ * pipes)? POSIX: yes, because sr_plat_read/write are read()/write(), which work
+ * on fds 0 and 1 exactly as they do on a socket. WINDOWS: NO. There the door's
+ * descriptor is a Winsock SOCKET and the seam uses send()/recv(), which cannot
+ * touch a CRT handle -- and a non-blocking read of a Windows pipe needs
+ * PeekNamedPipe polling, a whole mechanism this door does not have. Windows BBSs
+ * hand doors a socket anyway (DOOR32), so nothing is lost. */
+int sr_plat_stdio_ok(void);
+
+
 /* Redirect the process's stderr onto `path`, so the door's diagnostics survive
  * even when there is no console to print them to. Returns 0 on success, -1 on
  * failure (in which case stderr is left as it was).

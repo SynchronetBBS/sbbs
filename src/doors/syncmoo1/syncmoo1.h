@@ -145,6 +145,11 @@ const sm_geom_t *sm_io_geom(void);
  * dev/tty use). Task 6's hw_event_handle() wiring reads this to know what to
  * hand sm_input_pump(). */
 int sm_io_get_fd(void);
+/* The fd to READ from -- NOT sm_io_get_fd(), which is the write fd. They differ
+ * on a STDIO door (stdin 0, stdout 1); see syncmoo1_io.c. */
+int sm_io_in_fd(void);
+/* A STDIO door: the BBS gave us its pipes, not a socket. POSIX only. */
+int sm_io_init_fds(int in_fd, int out_fd);
 
 /* The session's termgfx audio manager (NULL before sm_io_enter()). syncmoo1_
  * input.c feeds it inbound bytes so it can resolve the capability probe. */
@@ -205,6 +210,9 @@ int sm_door_setup(int argc, char **argv);
 /* The resolved client comm descriptor (the DOOR32.SYS/-s<fd> socket), or -1
  * if none resolved (dev/tty use) -- sm_io_init()'s argument in main(). */
 int sm_door_socket(void);
+/* DOOR32 comm type 0 / -stdio: the BBS gave us its pipes, not a socket. Read
+ * fd 0, write fd 1. POSIX only -- see sm_plat_stdio_ok(). */
+int sm_door_stdio(void);
 
 /* The user alias from DOOR32.SYS line 7 / -name, or "" if none given. */
 const char *sm_door_alias(void);

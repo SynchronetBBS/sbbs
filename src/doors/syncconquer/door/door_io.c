@@ -78,6 +78,7 @@
 #include "door_io.h"
 #include "door_input.h"
 #include "door_node.h"   /* Task 5: sbbs_node status/Ctrl-U/Ctrl-P */
+#include "door32.h"      /* termgfx: the shared DOOR32.SYS parser */
 #include "sbbs_node.h"   /* Task 5: sbbs_my_node() for the per-node log filename */
 #include "keymode.h"   /* termgfx: key-mode negotiation (shared with door_input.c) */
 #include "sixel.h"
@@ -176,38 +177,36 @@ static int door_is_door32_path(const char *s)
 	return stricmp(b, "door32.sys") == 0;   /* xpdev genwrap.h: portable */
 }
 
-/* DOOR32.SYS (the portable door interface): line 1 = comm type (2=telnet,
- * matches an inherited socket handle), line 2 = comm/socket handle, line 7 =
- * user alias, line 9 = time left (minutes). Mirrors syncduke_door.c's
- * read_door32() -- socket handle + alias + time-left, nothing else (v1 has
- * no use for baud rate / emulation / security level). */
+/* The drop file is parsed by termgfx (door32.c), shared with the sibling doors --
+ * this was the fifth copy of the same twenty lines, and the comment above it
+ * said as much ("Mirrors syncduke_door.c's read_door32()"). */
 static void door_read_door32(const char *path)
 {
-	FILE *f = fopen(path, "r");
-	char  line[256];
-	int   ln = 0, commtype = -1, handle = -1, tmin = -1;
+	termgfx_door32_t d;
+	const char      *why;
 
-	if (f == NULL)
+	if (termgfx_door32_read(path, &d) != 0)
 		return;
-	while (fgets(line, sizeof(line), f) != NULL) {
-		switch (ln) {
-			case 0: commtype = atoi(line); break;   /* 0=local 1=serial 2=telnet */
-			case 1: handle   = atoi(line); break;   /* comm/socket descriptor    */
-			case 6:                                  /* user alias / handle       */
-				line[strcspn(line, "\r\n")] = '\0';
-				snprintf(g_alias, sizeof(g_alias), "%s", line);
-				break;
-			case 8: tmin = atoi(line); break;        /* time left, minutes        */
-		}
-		if (++ln > 8)
-			break;
-	}
-	fclose(f);
 
-	if (commtype == 2 && handle >= 0)
-		g_cli_sock = handle;
-	if (tmin > 0)
-		g_door_time_left_ms = (uint32_t)tmin * 60000u;
+	if (d.socket >= 0)
+		g_cli_sock = d.socket;
+	else if (d.stdio)
+		/* A STDIO door: the BBS dup2'd our stderr onto the player's stream, so any
+		 * diagnostic would be painted over the game. Send stderr to a file. */
+		termgfx_stderr_capture("syncalert", d.node);
+	/* comm type 0 (local) needs no action: with no socket, door_io writes fd 1 and
+	 * reads fd 0 -- which IS a stdio door (Synchronet's XTRN_STDIO, Mystic on
+	 * *nix). Windows has no such path, and a Windows BBS hands a door a socket. */
+
+	if (d.alias[0] != '\0')
+		snprintf(g_alias, sizeof g_alias, "%s", d.alias);
+	if (d.time_limit_ms > 0)
+		g_door_time_left_ms = d.time_limit_ms;
+
+	/* Say why a drop file is no use to us, rather than falling silently through to
+	 * a sink the player cannot see. */
+	if ((why = termgfx_door32_why_unusable(&d)) != NULL)
+		fprintf(stderr, "syncalert: %s is no use to this door: %s\n", path, why);
 }
 
 static void door_resolve_args(void)
@@ -861,7 +860,13 @@ static const char *g_file;
 static SOCKET      g_iosock = INVALID_SOCKET;
 static int         g_use_sock;
 #else
-static int         g_fd = 1;          /* socket / stdout fd */
+static int         g_fd = 1;          /* the fd we WRITE to: socket, or stdout */
+/* The fd we READ from. The same as g_fd on a socket (bidirectional), but NOT on
+ * a STDIO door -- there the BBS gave us its pipes, so stdin is 0 and stdout is 1,
+ * and reading fd 1 reads nothing. This door read g_fd, the WRITE fd: correct on a
+ * socket, correct at a dev tty (a tty descriptor is bidirectional), and silently
+ * deaf down a pipe. */
+static int         g_fd_in = 0;
 #endif
 
 static void door_term_restore(void);   /* below; the hangup path runs it first */
@@ -1159,13 +1164,17 @@ static void door_io_init(void)
 		}
 		if (fd >= 0) {
 			int one = 1, sz = 96 * 1024;
-			g_fd = fd;
+			g_fd    = fd;
+			g_fd_in = fd;              /* a socket is read AND written */
 			setsockopt(g_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
 			setsockopt(g_fd, SOL_SOCKET, SO_SNDBUF, &sz, sizeof sz);
 		}
-		/* else g_fd stays 1 (stdout, dev/tty) */
+		/* else g_fd stays 1 (stdout) and g_fd_in stays 0 (stdin): a STDIO door,
+		 * which is also exactly what a dev/tty run wants. */
 		if ((fl = fcntl(g_fd, F_GETFL, 0)) != -1)
 			fcntl(g_fd, F_SETFL, fl | O_NONBLOCK);
+		if (g_fd_in != g_fd && (fl = fcntl(g_fd_in, F_GETFL, 0)) != -1)
+			fcntl(g_fd_in, F_SETFL, fl | O_NONBLOCK);
 	}
 #endif
 }
@@ -2513,7 +2522,7 @@ void door_io_pump(void)
 		return;
 	}
 #else
-	n = (int)read(g_fd, buf, sizeof buf);
+	n = (int)read(g_fd_in, buf, sizeof buf);
 	if (n <= 0) {
 		if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR))
 			return;

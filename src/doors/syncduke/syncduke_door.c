@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "door32.h"    /* termgfx: the shared DOOR32.SYS parser */
+
 #ifdef _WIN32
   #define WIN32_LEAN_AND_MEAN
   #include <winsock2.h>          /* the DOOR32.SYS handle is a Winsock SOCKET on Windows */
@@ -222,31 +224,36 @@ static int is_door32_path(const char *s)
 
 static void read_door32(const char *path)
 {
-	FILE *f = fopen(path, "r");
-	char  line[256];
-	int   ln = 0, commtype = -1, handle = -1, tmin = -1;
+	termgfx_door32_t d;
+	const char      *why;
 
-	if (f == NULL)
+	if (termgfx_door32_read(path, &d) != 0)
 		return;
-	while (fgets(line, sizeof(line), f) != NULL) {
-		switch (ln) {
-			case 0: commtype = atoi(line); break;   /* 0=local 1=serial 2=telnet */
-			case 1: handle   = atoi(line); break;   /* comm/socket descriptor    */
-			case 6:                                  /* user alias / handle       */
-				line[strcspn(line, "\r\n")] = '\0';
-				strncpy(g_alias, line, sizeof(g_alias) - 1);
-				break;
-			case 8: tmin = atoi(line); break;        /* time left, minutes        */
-		}
-		if (++ln > 8)
-			break;
-	}
-	fclose(f);
 
-	if (commtype == 2 && handle >= 0)
-		g_socket = handle;
-	if (tmin > 0)
-		g_time_limit_ms = (uint32_t)tmin * 60000u;
+	if (d.socket >= 0)
+		g_socket = d.socket;
+	else if (d.stdio)
+		/* A STDIO door: the BBS redirected our stdin/stdout, and dup2'd our stderr
+		 * onto the same stream -- so the engine chatter this door deliberately
+		 * routes to stderr (syncduke_config.c) would be painted over the player's
+		 * screen. Send stderr to a file. */
+		termgfx_stderr_capture("syncduke", d.node);
+	/* comm type 0 (local) needs no action here: with no socket, syncduke_io.c
+	 * writes fd 1 and syncduke_input_fd() reads fd 0 -- which IS a stdio door.
+	 * SyncDuke has had that path all along as the *nix dev/tty fallback; the drop
+	 * file now says when the BBS means it (Synchronet's XTRN_STDIO, Mystic on
+	 * *nix). */
+
+	if (d.alias[0] != '\0')
+		snprintf(g_alias, sizeof g_alias, "%s", d.alias);
+	if (d.time_limit_ms > 0)
+		g_time_limit_ms = d.time_limit_ms;
+
+	/* A drop file we cannot use is worth saying out loud: silently falling back to
+	 * stdout gives a door that starts, shows the player nothing, and ignores every
+	 * key, with no clue anywhere as to why. */
+	if ((why = termgfx_door32_why_unusable(&d)) != NULL)
+		fprintf(stderr, "syncduke: %s is no use to this door: %s\n", path, why);
 }
 
 static void syncduke_door_resolve(void)

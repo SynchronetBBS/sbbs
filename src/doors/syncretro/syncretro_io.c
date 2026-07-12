@@ -80,7 +80,11 @@ static size_t      g_out_len, g_out_cap, g_out_off;
 static int         g_inited;
 static int         g_file_mode;    /* SYNCRETRO_SIXELOUT capture mode */
 static const char *g_file;
-static int         g_fd = -1;      /* socket / stdout fd */
+static int         g_fd = -1;      /* the fd we WRITE to: socket, stdout, or tty */
+/* The fd we READ from. Identical to g_fd for a socket door -- a socket is
+ * bidirectional -- but NOT for a stdio door, where the BBS gives us its pipes:
+ * stdin is 0 and stdout is 1, and reading fd 1 would read nothing forever. */
+static int         g_fd_in = -1;
 
 void sr_out_put(const void *buf, size_t len)
 {
@@ -213,6 +217,14 @@ static void sr_io_drain_input(int timeout_ms)
 /* The descriptor the input module reads from. -1 in capture mode: there is no
  * client there, and g_fd is stdout -- which, when redirected, is open write-only,
  * so a read() would fail EBADF and be mistaken for a carrier drop. */
+/* The fd to READ from. The only consumer is sr_input_pump(). */
+int sr_io_in_fd(void)
+{
+	if (!g_inited)
+		sr_io_init(-1);
+	return g_fd_in;
+}
+
 int sr_io_get_fd(void)
 {
 	if (!g_inited)
@@ -633,7 +645,17 @@ void sr_io_leave(void)
 	sr_io_drain_input(SR_LEAVE_INPUT_MS);     /* keystrokes must not echo at the BBS prompt */
 }
 
+/* A SOCKET door: one bidirectional descriptor, read and written. */
 int sr_io_init(int sockfd)
+{
+	return sr_io_init_fds(sockfd, sockfd);
+}
+
+/* The general form. A STDIO door (the BBS redirected our stdin/stdout instead of
+ * handing us a socket -- Mystic on *nix) passes 0 and 1, which are two DIFFERENT
+ * descriptors and only half-duplex each. Everything downstream of here already
+ * treats reading and writing separately, so this is the whole of it. */
+int sr_io_init_fds(int in_fd, int out_fd)
 {
 	const char *s;
 
@@ -642,7 +664,8 @@ int sr_io_init(int sockfd)
 	g_inited = 1;
 	/* Fall back to the plat's dev sink: stdout on POSIX, none (-1) on Windows,
 	 * where fd 1 is not a Winsock SOCKET. */
-	g_fd = (sockfd >= 0) ? sockfd : sr_plat_fallback_fd();
+	g_fd    = (out_fd >= 0) ? out_fd : sr_plat_fallback_fd();
+	g_fd_in = in_fd;
 
 	sr_plat_net_init();   /* WSAStartup / SIGPIPE-ignore; idempotent, defensive here */
 
@@ -650,8 +673,13 @@ int sr_io_init(int sockfd)
 		g_file = s;
 		g_file_mode = 1;
 	} else {
-		/* non-blocking + TCP_NODELAY: a wedged client never stalls the core */
+		/* non-blocking + TCP_NODELAY: a wedged client never stalls the core.
+		 * Both ends: on a stdio door the read side is a different descriptor, and
+		 * a BLOCKING stdin would stall the emulator for a whole frame every time
+		 * the player is not typing -- which is nearly always. */
 		(void)sr_plat_sock_setup(g_fd);
+		if (g_fd_in >= 0 && g_fd_in != g_fd)
+			(void)sr_plat_sock_setup(g_fd_in);
 	}
 
 	atexit(sr_io_leave);
