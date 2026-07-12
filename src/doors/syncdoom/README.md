@@ -57,6 +57,39 @@ redistribute copyrighted sound.
 
 ---
 
+## How the door reaches the player
+
+Two ways, and the BBS chooses:
+
+- **A socket** — `DOOR32.SYS` line 2 (comm type **2**), or `-s<fd>`. This is what
+  Synchronet gives it. Note that Synchronet does **not** hand a door the *raw
+  client socket*: it opens a loopback socketpair, gives the door one end, and
+  pumps between that and its own ring buffers — so the BBS does the telnet
+  negotiation and the SSH crypto, and the door never sees a telnet IAC byte. That
+  is why it works over SSH without knowing SSH exists.
+
+- **The BBS's stdin/stdout** — `DOOR32.SYS` comm type **0** ("local"), which means
+  *there is no socket, because I redirected your stdio*. Synchronet writes exactly
+  that when an external program is registered `XTRN_STDIO`; Mystic does the same
+  when it forks a door on \*nix. The door then reads fd 0 and writes fd 1, and the
+  BBS does the telnet/SSH work as before. **\*nix only**: on Windows a door is
+  handed a Winsock `SOCKET`, and the I/O seam uses `send()`/`recv()`, which cannot
+  touch a CRT pipe.
+
+The drop file is parsed by [`../termgfx/door32.c`](../termgfx/door32.h), shared by
+every door — including the case each of the five copies used to miss, comm type 0.
+A drop file the door cannot use (serial, an unknown comm type, a telnet line with
+a dead handle, a truncated file) is reported rather than left to fail silently.
+
+**On a stdio door the BBS `dup2()`s stderr onto the player's stream**, so anything
+written there is painted over the game. Diagnostics are therefore captured to
+`data/<door>/<door>_n<node>.log` — look there when a stdio door misbehaves.
+
+The door does **not** speak telnet itself. A BBS that hands over the *raw client
+socket* would need it to negotiate options, unescape `IAC IAC`, and survive a
+window-resize (NAWS) whose payload bytes arrive looking like keystrokes — one of
+which, `0x11`, is the quit key. Use the stdio mode with such a BBS.
+
 ## Building
 
 The door is plain C and links one library, **xpdev** (cross-platform sockets,
@@ -101,8 +134,11 @@ A typical door invocation (the BBS fills in the DOOR32.SYS drop-file path):
 syncdoom <path>/door32.sys -home <per-user-dir> -iwad <wad> -name "<user>"
 ```
 
-The DOOR32.SYS drop file carries the client socket and session time limit; on a
-BBS that doesn't write one, pass those directly with `-s<fd>` and `-t<seconds>`.
+The DOOR32.SYS drop file carries the client socket (or, with comm type 0, the
+fact that there is *no* socket and the BBS redirected our stdio — see [How the
+door reaches the player](#how-the-door-reaches-the-player)) and the session time
+limit; on a BBS that writes no drop file, pass those with `-s<fd>` and
+`-t<seconds>`.
 (The door live-probes the terminal size, so no screen-rows argument is needed.)
 
 Run `syncdoom -help` (also `--help`, `-?`, `/?`, or with no arguments) to print

@@ -74,10 +74,35 @@ backends):
 - `soundio_termgfx.cpp` — engine-decoded PCM (its existing AUD/ADPCM path)
   into the termgfx audio manager.
 
-Door shell (per-door today, like syncdoom/syncduke): socket I/O from the
+Door shell (per-door today, like syncdoom/syncduke): client I/O from the
 DOOR32.SYS/`-s` handoff, input parser (cloned from syncduke, minus the
 FPS steering model, plus RTS pointer mapping), present/pacing/tier loop,
 sbbs_node integration (who's-online, node.exb status, paging), logging.
+
+## How the door reaches the player
+
+Two ways, and the BBS chooses. The drop file is parsed by
+[`../termgfx/door32.c`](../termgfx/door32.h), shared with the sibling doors.
+
+- **A socket** -- `DOOR32.SYS` line 2 (comm type **2**), or `-s<fd>`. What
+  Synchronet gives it. Synchronet does *not* hand a door the raw client socket: it
+  interposes a loopback socketpair and pumps through its own threads, so the BBS
+  does the telnet negotiation and the SSH crypto and the door never sees an IAC
+  byte. That is why it works over SSH without knowing SSH exists.
+
+- **The BBS's stdin/stdout** -- `DOOR32.SYS` comm type **0** ("local"): there is no
+  socket because the BBS redirected our stdio. Synchronet writes that for an
+  `XTRN_STDIO` program; Mystic does it when forking a door on \*nix. The door reads
+  fd 0 and writes fd 1. **\*nix only** -- on Windows a door is handed a Winsock
+  `SOCKET`, and the I/O seam cannot read a CRT pipe.
+
+On a stdio door the BBS `dup2()`s stderr onto the player's stream, so diagnostics
+are captured to `data/syncalert/syncalert_n<node>.log` rather than painted over the
+game.
+
+The door does not speak telnet itself: a BBS handing over the RAW client socket
+would need IAC negotiation, `IAC IAC` unescaping, and to survive a NAWS resize
+whose payload bytes look like keystrokes (one of them, `0x11`, is the quit key).
 
 ## Rendering & responsiveness (approach C: hybrid, staged)
 

@@ -56,6 +56,13 @@ either can run it:
   Windows a door is given a Winsock socket, and this door's I/O seam cannot read
   a CRT pipe.
 
+The drop file is parsed by [`../termgfx/door32.c`](../termgfx/door32.h), shared by
+every door; a drop file it cannot use (serial, an unknown comm type, a telnet line
+with a dead handle, a truncated file) is reported rather than left to fail
+silently. And because the BBS `dup2()`s a stdio door's stderr onto the player's
+stream, diagnostics are captured to `data/syncretro/syncretro_n<node>.log` instead
+of being painted over the game.
+
 What the door does NOT do is speak telnet itself. A BBS that hands over the
 **raw client socket** would need that: the door would have to negotiate options,
 unescape `IAC IAC`, and survive a window-resize (NAWS) whose payload bytes arrive
