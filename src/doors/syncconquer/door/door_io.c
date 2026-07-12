@@ -114,6 +114,24 @@
  * unsanitized door arg like an absolute -home path can accidentally contain
  * "-SEED"/"-CD"/etc and misfire an engine option -- door_sanitize_argv()
  * below). */
+/* ---- per-title identity ---------------------------------------------------
+ * The SyncConquer door family builds as two separate binaries from this one
+ * shared door: VanillaRA -> syncalert (Red Alert), VanillaTD -> syncdawn
+ * (Tiberian Dawn). The per-target compile define SYNCCONQUER_TD (CMakeLists)
+ * selects the game's branding, its game-data (MIX) manifest (below), and the
+ * per-node data dir / log-file / cache basename -- so the two titles never
+ * collide in data/ or the client's SyncTERM cache. Env-var names (SYNCALERT_*)
+ * stay shared: they're internal/dev knobs, not sysop-facing. */
+#if defined(SYNCCONQUER_TD)
+#  define DOOR_SHORT_NAME   "syncdawn"
+#  define DOOR_DISPLAY_NAME "SyncDawn"
+#  define DOOR_GAME_NAME    "Tiberian Dawn"
+#else   /* Red Alert (default) */
+#  define DOOR_SHORT_NAME   "syncalert"
+#  define DOOR_DISPLAY_NAME "SyncAlert"
+#  define DOOR_GAME_NAME    "Red Alert"
+#endif
+
 static int g_argc;
 static char **  g_argv;
 static int      g_args_resolved;
@@ -121,6 +139,7 @@ static int      g_cli_sock = -1;
 static char     g_home[512];
 static char     g_audiocache[512];  /* -audiocache <dir> / SYNCALERT_AUDIO_CACHE (Task 4) */
 static char     g_assets[512];      /* -assets <dir>; else <binary dir>/assets (door_resolve_assets_dir) */
+static char     g_bindir[512];      /* the door binary's own directory (door_resolve_assets_dir); where <door>.ini lives */
 static char     g_alias[64];        /* DOOR32.SYS line 7 (user alias), for node paging */
 static uint32_t g_door_time_left_ms;/* DOOR32.SYS line 9 (minutes) / 0 = unknown */
 
@@ -193,7 +212,7 @@ static void door_read_door32(const char *path)
 	else if (d.stdio)
 		/* A STDIO door: the BBS dup2'd our stderr onto the player's stream, so any
 		 * diagnostic would be painted over the game. Send stderr to a file. */
-		termgfx_stderr_capture("syncalert", d.node);
+		termgfx_stderr_capture(DOOR_SHORT_NAME, d.node);
 	/* comm type 0 (local) needs no action: with no socket, door_io writes fd 1 and
 	 * reads fd 0 -- which IS a stdio door (Synchronet's XTRN_STDIO, Mystic on
 	 * *nix). Windows has no such path, and a Windows BBS hands a door a socket. */
@@ -206,7 +225,7 @@ static void door_read_door32(const char *path)
 	/* Say why a drop file is no use to us, rather than falling silently through to
 	 * a sink the player cannot see. */
 	if ((why = termgfx_door32_why_unusable(&d)) != NULL)
-		fprintf(stderr, "syncalert: %s is no use to this door: %s\n", path, why);
+		fprintf(stderr, DOOR_SHORT_NAME ": %s is no use to this door: %s\n", path, why);
 }
 
 static void door_resolve_args(void)
@@ -357,6 +376,27 @@ static void door_early_write(const char *s)
 #define DOOR_MIN_REDALERT_MIX (5L * 1024 * 1024)     /* real file: ~25MB */
 #define DOOR_MIN_MAIN_MIX     (50L * 1024 * 1024)    /* real file: ~454MB */
 
+/* Per-title required-asset manifest: the MIX file(s) whose presence proves the
+ * game data is installed, plus a size floor that rejects a truncated/stub file.
+ * SYNCCONQUER_TD (syncdawn) needs CONQUER.MIX; the default (syncalert) needs
+ * REDALERT.MIX + MAIN.MIX. door_assets_valid() / door_validate_assets_or_die()
+ * iterate this so the door stays title-agnostic. */
+typedef struct {
+	const char *name;
+	long        min_bytes;
+} door_asset_req_t;
+#if defined(SYNCCONQUER_TD)
+static const door_asset_req_t DOOR_ASSET_REQ[] = {
+	{ "CONQUER.MIX", 512L * 1024 },          /* real file ~2.4MB; floor rejects a stub */
+};
+#else
+static const door_asset_req_t DOOR_ASSET_REQ[] = {
+	{ "REDALERT.MIX", DOOR_MIN_REDALERT_MIX },
+	{ "MAIN.MIX", DOOR_MIN_MAIN_MIX },
+};
+#endif
+#define DOOR_ASSET_REQ_N ((int)(sizeof DOOR_ASSET_REQ / sizeof DOOR_ASSET_REQ[0]))
+
 #define DOOR_ASSET_OK         1
 #define DOOR_ASSET_MISSING    0     /* absent or below the size floor */
 #define DOOR_ASSET_UNREADABLE (-1)  /* present but open() fails (permissions) */
@@ -383,9 +423,14 @@ static int door_check_asset(const char *dir, const char *name, long min_bytes)
 
 static int door_assets_valid(const char *dir)
 {
-	return dir[0] != '\0'
-	       && door_check_asset(dir, "REDALERT.MIX", DOOR_MIN_REDALERT_MIX) == DOOR_ASSET_OK
-	       && door_check_asset(dir, "MAIN.MIX", DOOR_MIN_MAIN_MIX) == DOOR_ASSET_OK;
+	int i;
+
+	if (dir[0] == '\0')
+		return 0;
+	for (i = 0; i < DOOR_ASSET_REQ_N; i++)
+		if (door_check_asset(dir, DOOR_ASSET_REQ[i].name, DOOR_ASSET_REQ[i].min_bytes) != DOOR_ASSET_OK)
+			return 0;
+	return 1;
 }
 
 static const char *door_asset_desc(int status)
@@ -427,6 +472,7 @@ static void door_resolve_assets_dir(void)
 		if (slash != NULL)
 			*slash = '\0';
 		snprintf(bindir, sizeof bindir, "%s", abs);
+		snprintf(g_bindir, sizeof g_bindir, "%s", bindir);   /* remembered for <door>.ini (door_config_no_movies) */
 	}
 
 	if (g_assets[0] != '\0') {           /* -assets <dir>: resolve to absolute now, no fallback */
@@ -463,39 +509,62 @@ static void door_resolve_assets_dir(void)
 		snprintf(g_assets, sizeof g_assets, "%s/assets", bindir);
 }
 
+/* The resolved game-data (MIX) directory -- the door's -assets dir. Exposed to
+ * the engine because Tiberian Dawn's Init_Game must add it to the CCFileClass
+ * file-search path before opening any mix: the engine CWD is the per-user -home
+ * dir (where savegames + <game>.INI are written), NOT where the shared,
+ * read-only game data lives. Red Alert bridges the same gap via its PathsClass
+ * DataPath (written into REDALERT.INI by door_setup_engine_paths); TD's engine
+ * never calls Paths.Init / Parse_Command_Line, so it reads this directly.
+ * Returns "" until door_resolve_assets_dir() has run (pre-main constructor). */
+const char *door_engine_data_dir(void)
+{
+	return g_assets;
+}
+
 static void door_validate_assets_or_die(void)
 {
-	int ok_ra, ok_main;
+	int  i, all_ok = 1;
+	char names[256];        /* "REDALERT.MIX and MAIN.MIX" / "CONQUER.MIX" */
+	char statuses[512];     /* "REDALERT.MIX=OK, MAIN.MIX=missing/too small" */
 
 	if (g_assets[0] == '\0') {
 		door_early_write(
-			"\r\n\x1b[1;31mSyncAlert: can't locate the assets directory "
+			"\r\n\x1b[1;31m" DOOR_DISPLAY_NAME ": can't locate the assets directory "
 			"(no -assets given and the binary's own directory couldn't be "
 			"resolved).\x1b[0m\r\n"
-			"Ask the sysop to check the door's install (deploy.sh / -assets).\r\n");
-		fprintf(stderr, "syncalert: FATAL: no assets dir resolved -- refusing to start\n");
+			"Ask the sysop to check the door's install (deploy / -assets).\r\n");
+		fprintf(stderr, DOOR_SHORT_NAME ": FATAL: no assets dir resolved -- refusing to start\n");
 		_exit(1);
 	}
-	ok_ra   = door_check_asset(g_assets, "REDALERT.MIX", DOOR_MIN_REDALERT_MIX);
-	ok_main = door_check_asset(g_assets, "MAIN.MIX", DOOR_MIN_MAIN_MIX);
-	if (ok_ra == DOOR_ASSET_OK && ok_main == DOOR_ASSET_OK)
-		return;
 
+	names[0] = statuses[0] = '\0';
+	for (i = 0; i < DOOR_ASSET_REQ_N; i++) {
+		int    status = door_check_asset(g_assets, DOOR_ASSET_REQ[i].name, DOOR_ASSET_REQ[i].min_bytes);
+		size_t nl = strlen(names), sl = strlen(statuses);
+		if (status != DOOR_ASSET_OK)
+			all_ok = 0;
+		snprintf(names + nl, sizeof names - nl, "%s%s", i ? " and " : "", DOOR_ASSET_REQ[i].name);
+		snprintf(statuses + sl, sizeof statuses - sl, "%s%s=%s", i ? ", " : "",
+		         DOOR_ASSET_REQ[i].name, door_asset_desc(status));
+	}
+	if (all_ok)
+		return;
 	{
 		char msg[900];
 		snprintf(msg, sizeof msg,
-		         "\r\n\x1b[1;31mSyncAlert: Red Alert game data is missing or "
-		         "unusable.\x1b[0m\r\n"
-		         "Expected readable REDALERT.MIX and MAIN.MIX in:\r\n  %s\r\n"
-		         "Ask the sysop to run xtrn/syncalert/fetch-assets.js to install "
-		         "the freeware RA95 assets\r\n"
+		         "\r\n\x1b[1;31m" DOOR_DISPLAY_NAME ": " DOOR_GAME_NAME " game data is missing "
+		         "or unusable.\x1b[0m\r\n"
+		         "Expected readable %s in:\r\n  %s\r\n"
+		         "Ask the sysop to run xtrn/" DOOR_SHORT_NAME "/fetch-assets.js to install "
+		         "the freeware game data\r\n"
 		         "(and to make sure they are readable by the BBS user).\r\n"
-		         "(REDALERT.MIX %s, MAIN.MIX %s)\r\n",
-		         g_assets, door_asset_desc(ok_ra), door_asset_desc(ok_main));
+		         "(%s)\r\n",
+		         names, g_assets, statuses);
 		door_early_write(msg);
 	}
-	fprintf(stderr, "syncalert: FATAL: assets missing/invalid in '%s' (REDALERT.MIX=%s MAIN.MIX=%s) "
-	        "-- refusing to start\n", g_assets, door_asset_desc(ok_ra), door_asset_desc(ok_main));
+	fprintf(stderr, DOOR_SHORT_NAME ": FATAL: assets missing/invalid in '%s' (%s) "
+	        "-- refusing to start\n", g_assets, statuses);
 	_exit(1);
 }
 
@@ -597,7 +666,7 @@ static void door_setup_engine_paths(void)
 	door_mkpath(g_home);
 #ifndef _WIN32
 	if (chdir(g_home) != 0)
-		fprintf(stderr, "syncalert: cannot enter per-user dir '%s'\n", g_home);
+		fprintf(stderr, DOOR_SHORT_NAME ": cannot enter per-user dir '%s'\n", g_home);
 #else
 	(void)_chdir(g_home);
 #endif
@@ -643,7 +712,7 @@ static void door_setup_engine_paths(void)
 		iniFreeStringList(ini);
 		fclose(f);
 	} else
-		fprintf(stderr, "syncalert: couldn't open '%s' (UserPath redirection will fall back to the engine default)\n", ini_path);
+		fprintf(stderr, DOOR_SHORT_NAME ": couldn't open '%s' (UserPath redirection will fall back to the engine default)\n", ini_path);
 
 	/* Rewrite argv[0] so PathsClass::Argv_Path() resolves -home as the
 	 * search directory for the REDALERT.INI just written above. The
@@ -653,7 +722,7 @@ static void door_setup_engine_paths(void)
 	 * one process, exits soon after the game does. */
 	if (g_argc > 0) {
 		char   fabricated[700];
-		size_t n = snprintf(fabricated, sizeof fabricated, "%s/syncalert", abs_home);
+		size_t n = snprintf(fabricated, sizeof fabricated, "%s/" DOOR_SHORT_NAME, abs_home);
 		if (n > 0 && n < sizeof fabricated) {
 			char *dup = strdup(fabricated);
 			if (dup != NULL)
@@ -678,6 +747,51 @@ static void door_setup_engine_paths(void)
  * checks harmlessly. -NOMOVIES is no longer forced by default (FMV cutscenes
  * play now); it's injected into the first neutered slot ONLY when the sysop
  * sets SYNCALERT_NOMOVIES (see below). */
+/* Sysop config for movie suppression lives in the door's .ini, NOT an env var:
+ * a sysop can't set an env var per-door (bbs.exec() uses execvp with the BBS's
+ * own environment, no shell), so door behavior is configured via <door>.ini
+ * beside the binary -- "[game] movies = false" suppresses FMV (heavy
+ * full-motion bandwidth). Default is movies ON. SYNCALERT_NOMOVIES remains a
+ * dev/testing override only. Returns 1 to suppress (inject -NOMOVIES), else 0.
+ * The .ini is named after the binary: syncalert.ini / syncdawn.ini. */
+static int door_config_no_movies(void)
+{
+	char        path[700];
+	char        base[128];
+	const char *p;
+	FILE *      f;
+	int         movies = TRUE;   /* default: play movies */
+
+	if (getenv("SYNCALERT_NOMOVIES") != NULL)   /* dev/testing override */
+		return 1;
+	if (g_bindir[0] == '\0' || g_argc <= 0 || g_argv[0] == NULL)
+		return 0;
+	p = strrchr(g_argv[0], '/');
+#ifdef _WIN32
+	{
+		const char *b = strrchr(g_argv[0], '\\');
+		if (b != NULL && (p == NULL || b > p))
+			p = b;
+	}
+#endif
+	p = (p != NULL) ? p + 1 : g_argv[0];
+	snprintf(base, sizeof base, "%s", p);
+	{
+		char *dot = strrchr(base, '.');   /* strip .exe */
+		if (dot != NULL)
+			*dot = '\0';
+	}
+	if (base[0] == '\0')
+		return 0;
+	snprintf(path, sizeof path, "%s/%s.ini", g_bindir, base);
+	f = iniOpenFile(path, FALSE);   /* read-only; do NOT create */
+	if (f != NULL) {
+		movies = iniReadBool(f, "game", "movies", TRUE);
+		fclose(f);
+	}
+	return movies ? 0 : 1;
+}
+
 static void door_sanitize_argv(void)
 {
 	static const char empty[] = "";
@@ -707,18 +821,18 @@ static void door_sanitize_argv(void)
 			g_argv[flag_index] = (char *)empty;
 		}
 	}
-	/* FMV cutscenes now default ON (user request). They were historically
-	 * force-suppressed via -NOMOVIES (silent VQA audio + heavy full-motion
-	 * bandwidth over the wire); set SYNCALERT_NOMOVIES to force that back. When
-	 * suppressing, -NOMOVIES goes into the first neutered slot so it's present
-	 * exactly once regardless of the sysop's command line. */
-	if (getenv("SYNCALERT_NOMOVIES") != NULL) {
+	/* FMV cutscenes default ON. A sysop can suppress them (silent VQA + heavy
+	 * full-motion bandwidth) via the door's .ini -- "[game] movies = false"
+	 * (door_config_no_movies), NOT an env var. When suppressing, -NOMOVIES goes
+	 * into the first neutered slot so it's present exactly once regardless of
+	 * the sysop's command line. */
+	if (door_config_no_movies()) {
 		if (movies_slot > 0)
 			g_argv[movies_slot] = (char *)"-NOMOVIES";
 		else
-			fprintf(stderr, "syncalert: SYNCALERT_NOMOVIES set but no door-arg slot "
-			        "free to force -NOMOVIES (a bare/no-arg dev launch) -- movies NOT "
-			        "suppressed this run\n");
+			fprintf(stderr, DOOR_SHORT_NAME ": movies disabled ([game] movies=false) but no "
+			        "door-arg slot free to force -NOMOVIES (a bare/no-arg dev launch) -- "
+			        "movies NOT suppressed this run\n");
 	}
 
 	/* Log the EXACT argv the engine's Parse_Command_Line() is about to scan
@@ -728,7 +842,7 @@ static void door_sanitize_argv(void)
 	{
 		int  k;
 		char logbuf[512];
-		int  n = snprintf(logbuf, sizeof logbuf, "syncalert: engine argv[%d] =", g_argc);
+		int  n = snprintf(logbuf, sizeof logbuf, DOOR_SHORT_NAME ": engine argv[%d] =", g_argc);
 		for (k = 0; k < g_argc && n < (int)sizeof logbuf; k++)
 			n += snprintf(logbuf + n, sizeof logbuf - n, " '%s'", g_argv[k]);
 		fprintf(stderr, "%s\n", logbuf);
@@ -755,14 +869,14 @@ static void door_open_node_log(void)
 	{
 		size_t      n   = strlen(data);
 		const char *sep = (n && (data[n - 1] == '/' || data[n - 1] == '\\')) ? "" : "/";
-		snprintf(logdir, sizeof logdir, "%s%ssyncalert", data, sep);
+		snprintf(logdir, sizeof logdir, "%s%s" DOOR_SHORT_NAME, data, sep);
 	}
 	door_mkpath(logdir);
 	node = sbbs_my_node();
 	if (node > 0)
-		snprintf(logpath, sizeof logpath, "%s/syncalert_n%d.log", logdir, node);
+		snprintf(logpath, sizeof logpath, "%s/" DOOR_SHORT_NAME "_n%d.log", logdir, node);
 	else
-		snprintf(logpath, sizeof logpath, "%s/syncalert.log", logdir);
+		snprintf(logpath, sizeof logpath, "%s/" DOOR_SHORT_NAME ".log", logdir);
 	if (freopen(logpath, "a", stderr) == NULL)
 		return;                             /* best-effort: stderr stays wherever it already was */
 	/* A crash/hangup must still leave the tail on disk, so don't let the freopen'd
@@ -841,7 +955,7 @@ static void door_early_setup(void)
 	                                * points at a file (see door_console_detach()) */
 	door_open_node_log();          /* every fprintf(stderr, ...) below lands in it too */
 	if (g_console_detached)
-		fprintf(stderr, "syncalert: detached from the door's own console window\n");
+		fprintf(stderr, DOOR_SHORT_NAME ": detached from the door's own console window\n");
 	door_resolve_assets_dir();     /* before argv[0] is touched by anything below */
 	door_validate_assets_or_die(); /* fatal on missing/corrupt REDALERT.MIX/MAIN.MIX */
 	door_setup_engine_paths();     /* -home -> chdir + REDALERT.INI [Paths] + argv[0] rewrite */
@@ -894,7 +1008,7 @@ static void door_hangup(const char *why)
 		_exit(0);   /* re-entered via the restore's drain on a dead socket */
 	entered = 1;
 
-	fprintf(stderr, "syncalert: client hangup (%s) -- exiting\n", why ? why : "");
+	fprintf(stderr, DOOR_SHORT_NAME ": client hangup (%s) -- exiting\n", why ? why : "");
 	fflush(stderr);
 	door_term_restore();
 	_exit(0);   /* skip the engine's atexit cleanup */
@@ -910,9 +1024,9 @@ static const char *door_flag_path(void)
 {
 	static char path[600];
 	if (g_home[0] != '\0')
-		snprintf(path, sizeof path, "%s/syncalert.fill", g_home);
+		snprintf(path, sizeof path, "%s/" DOOR_SHORT_NAME ".fill", g_home);
 	else
-		snprintf(path, sizeof path, "syncalert.fill");
+		snprintf(path, sizeof path, DOOR_SHORT_NAME ".fill");
 	return path;
 }
 
@@ -1000,7 +1114,7 @@ static void door_out_drain_blocking(int timeout_ms)
 		if (g_out_off >= g_out_len)
 			return;                                  /* fully sent */
 		if ((int32_t)(door_now_ms() - start) >= timeout_ms) {
-			fprintf(stderr, "syncalert: shutdown drain timed out after %dms "
+			fprintf(stderr, DOOR_SHORT_NAME ": shutdown drain timed out after %dms "
 			        "with %zu byte(s) unsent\n", timeout_ms, g_out_len - g_out_off);
 			return;
 		}
@@ -1083,7 +1197,7 @@ static void door_check_shutdown(void)
 {
 	if (!g_shutdown_req)
 		return;
-	fprintf(stderr, "syncalert: shutdown requested (SIGTERM/SIGHUP) -- exiting cleanly\n");
+	fprintf(stderr, DOOR_SHORT_NAME ": shutdown requested (SIGTERM/SIGHUP) -- exiting cleanly\n");
 	exit(0);
 }
 
@@ -1105,7 +1219,7 @@ static void door_check_time_limit(void)
 	elapsed     = door_now_ms() - g_time_start_ms;
 	if (elapsed + warn_before >= g_door_time_left_ms) {
 		warned = 1;
-		fprintf(stderr, "syncalert: time-left warning -- session time limit "
+		fprintf(stderr, DOOR_SHORT_NAME ": time-left warning -- session time limit "
 		        "(%u min) approaching\n", g_door_time_left_ms / 60000u);
 	}
 }
@@ -1254,7 +1368,7 @@ static void door_resolve_audio_cache_dir(char *out, size_t outsz)
 	if (data != NULL && data[0] != '\0') {
 		size_t      n   = strlen(data);
 		const char *sep = (n && (data[n - 1] == '/' || data[n - 1] == '\\')) ? "" : "/";
-		snprintf(out, outsz, "%s%ssyncalert/audio", data, sep);
+		snprintf(out, outsz, "%s%s" DOOR_SHORT_NAME "/audio", data, sep);
 		return;
 	}
 	if (g_home[0] != '\0') {
@@ -1268,7 +1382,7 @@ static void door_resolve_audio_cache_dir(char *out, size_t outsz)
 		if (tmp[0] != '\0') {
 			n   = strlen(tmp);
 			sep = (n && (tmp[n - 1] == '/' || tmp[n - 1] == '\\')) ? "" : "/";
-			snprintf(out, outsz, "%s%ssyncalert/audio", tmp, sep);
+			snprintf(out, outsz, "%s%s" DOOR_SHORT_NAME "/audio", tmp, sep);
 			return;
 		}
 	}
@@ -1295,7 +1409,7 @@ static void door_audio_ensure_init(void)
 		return;
 	door_resolve_args();
 	g_audio = termgfx_audio_create(door_audio_emit, NULL);
-	termgfx_audio_set_cache_prefix(g_audio, "syncalert");   /* SyncTERM cache: syncalert/music|sfx/.. */
+	termgfx_audio_set_cache_prefix(g_audio, DOOR_SHORT_NAME);   /* SyncTERM cache: syncalert/music|sfx/.. */
 	{
 		char dir[512];
 		door_resolve_audio_cache_dir(dir, sizeof dir);
@@ -1469,7 +1583,7 @@ static void door_stat_dump(const char *reason)
 			continue;
 		any = 1;
 		fprintf(stderr,
-		        "syncalert: stats[%s] %s: %llu frames, %llu bytes, "
+		        DOOR_SHORT_NAME ": stats[%s] %s: %llu frames, %llu bytes, "
 		        "avg %llu, min %zu, max %zu bytes/frame\n",
 		        reason, sa_tier_name(t),
 		        (unsigned long long)g_tstat[t].frames,
@@ -1478,7 +1592,7 @@ static void door_stat_dump(const char *reason)
 		        g_tstat[t].min, g_tstat[t].max);
 	}
 	if (!any)
-		fprintf(stderr, "syncalert: stats[%s]: no frames sent yet\n", reason);
+		fprintf(stderr, DOOR_SHORT_NAME ": stats[%s]: no frames sent yet\n", reason);
 }
 
 static int  g_tier_force = -1;       /* -1 = auto; F4 sets an explicit tier */
@@ -1589,7 +1703,7 @@ static void door_fit_toggle(void)
 /* Music/score volume step, defined in the engine (options.cpp, extern "C").
  * The door's +/- hotkeys nudge Options.ScoreVolume because the Sound Controls
  * slider is unreachable with a cell-granular (SyncTERM) mouse. */
-extern void SyncAlert_Music_Volume_Step(int dir);
+extern void SyncConquer_Music_Volume_Step(int dir);
 
 /* Deferred client-side music-channel stop, defined in soundio_termgfx.cpp
  * (extern "C"). Ticked here each pump so a real Theme.Stop() actually silences
@@ -1615,8 +1729,8 @@ int door_io_hotkey(int letter, int commit)
 		case 'f': door_fit_toggle();            break;   /* Aspect <-> Fill display-fit */
 		case 'u': door_node_userlist_request(); break;   /* who's-online overlay */
 		case 'p': door_node_page_request();     break;   /* page-a-node compose */
-		case '+': case '=': SyncAlert_Music_Volume_Step(1);  break;   /* music volume up */
-		case '-': case '_': SyncAlert_Music_Volume_Step(-1); break;   /* music volume down */
+		case '+': case '=': SyncConquer_Music_Volume_Step(1);  break;   /* music volume up */
+		case '-': case '_': SyncConquer_Music_Volume_Step(-1); break;   /* music volume down */
 		case 's':                                        /* live debug stats overlay */
 			g_stats_overlay = !g_stats_overlay;
 			g_stats_last[0] = '\0';   /* reset change-detection across the toggle */
@@ -2025,7 +2139,7 @@ void door_io_note_pixel_report(void)
 {
 	if (!g_mouse_pixels) {
 		g_mouse_pixels = 1;
-		fprintf(stderr, "syncalert: SGR-Pixels auto-detected (report exceeded text grid)\n");
+		fprintf(stderr, DOOR_SHORT_NAME ": SGR-Pixels auto-detected (report exceeded text grid)\n");
 	}
 }
 
@@ -2232,7 +2346,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 			door_cell_size(&cw, &ch);
 			door_calc_rect(vw, vh, et == SA_SIXEL, &ew, &eh, &dx, &dy, &icol, &irow);
 			fprintf(stderr,
-			        "syncalert: geometry canvas=%dx%d%s grid=%dx%d cell=%dx%d "
+			        DOOR_SHORT_NAME ": geometry canvas=%dx%d%s grid=%dx%d cell=%dx%d "
 			        "mouse=%s tier=%d fit=%s -> image=%dx%d @px(%d,%d) cell(%d,%d)\n",
 			        g_canvas_w, g_canvas_h, g_px_exact ? "(exact)" : "(est)",
 			        g_grid_cols, g_grid_rows, cw, ch,
@@ -2587,7 +2701,7 @@ void door_io_pump(void)
 		int        t = termgfx_audio_tier(g_audio);
 		if (t != sa_prev_tier) {
 			sa_prev_tier = t;
-			fprintf(stderr, "syncalert: audio tier=%d (%s)\n", t,
+			fprintf(stderr, DOOR_SHORT_NAME ": audio tier=%d (%s)\n", t,
 			        t == 1 ? "digital -- SFX/music should play" :
 			        t == 0 ? "audio APC but no libsndfile -- silent" :
 			        "no audio APC reply -- old SyncTERM or no audio");

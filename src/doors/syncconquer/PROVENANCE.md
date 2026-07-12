@@ -6,9 +6,8 @@
 - Commit: 7f351daed0c19d7c4764dc4ebae1a70c7809ac1f (2025-11-14)
 - License: GPLv3 with EA additional terms (vanilla/License.txt)
 - Vendored subset: CMakeLists.txt, CMakePresets.json, License.txt,
-  README.md, cmake/, common/, redalert/, resources/
-- Not vendored: tiberiandawn/ (deferred syncdawn title), tests/, tools/,
-  scripts/, .github/
+  README.md, cmake/, common/, redalert/, tiberiandawn/, resources/
+- Not vendored: tests/, tools/, scripts/, .github/
 
 ## Local patches (keep this list complete)
 
@@ -380,6 +379,87 @@ inline in `CMakeLists.txt`).
     `INIClass` so it reflects the on-disk state. This was the dominant blocker
     behind the volume-persistence symptoms (patches 17-19 addressed real but
     secondary save-gate/override/MP-split issues).
+
+--- Tiberian Dawn (syncdawn) -------------------------------------------------
+
+The following patches support the second title, syncdawn (Tiberian Dawn),
+built from `tiberiandawn/` with the `SYNCCONQUER_TD` compile define. The
+whole `tiberiandawn/` subdir is vendored at the same pinned commit as the
+rest; these are the local edits on top of it (plus a couple of shared
+`common/`/`redalert/` files the two titles both use).
+
+21. **syncdawn hook neutralization (per-title music-volume hotkey).** The
+    door's +/- music-volume hotkey calls an `extern "C"` engine function.
+    `redalert/options.cpp` originally named it `SyncAlert_Music_Volume_Step`;
+    renamed to the game-neutral `SyncConquer_Music_Volume_Step` in both
+    `redalert/options.cpp` (RA: `Options.Set_Score_Volume(fixed(v,256), true)`)
+    and a NEW hook added to `tiberiandawn/options.cpp` (TD: `ScoreVolume` is a
+    `unsigned char` 0..255, `Set_Score_Volume(int)`), and the call site in
+    `door/door_io.c`. So the one shared door TU links against either engine.
+
+22. **syncdawn: enable FMV cutscene audio (TD).** `tiberiandawn/init.cpp`'s
+    `Anim_Init()` set `VQAOPTF_CAPTIONS | VQAOPTF_EVA` but left `VQAOPTF_AUDIO`
+    off (commented, inside a `#if (0)` block) -- identical to Red Alert before
+    patch #14. Added `AnimControl.OptionFlags |= VQAOPTF_AUDIO;` so the VQA
+    loader decodes audio and `door/vqaaudio_termgfx.cpp` ships the cutscene
+    dialog to the terminal. The TD equivalent of patch #14. (TD launches
+    WITHOUT RA's bootstrap-stall bug -- its `globals.cpp` hardcodes
+    `GameInFocus = true`.)
+
+23. **syncdawn: load fonts/palette from the cached mixes, with a fallback for
+    fonts the freeware data omits.** `tiberiandawn/init.cpp`'s `Init_Game()`
+    loaded the game fonts (`Font6Ptr`, the hi-res `MapFontPtr`/`Green12*`/
+    `ScoreFontPtr`) and the default `TEMPERAT.PAL` palette via stock
+    `Load_Alloc_Data(CCFileClass(...))`, which cannot read an already-**cached**
+    mix -- and the door caches CCLOCAL.MIX (which holds those fonts) at
+    bootstrap, so the stock open fails "CD not found" and the engine's fatal
+    `Prog_End()` does `*((int*)0)=0`. Switched those reads to `MFCD::Retrieve()`
+    (reads the cached mix directly), matching Red Alert's `Init_Fonts()`. The
+    palette copy is NULL-guarded. Additionally, the freeware C&C95 "Gold" data
+    ships NO 12-point green fonts (`12GREEN.FNT`/`12GRNGRD.FNT` absent from
+    every mix -- verified `MFCD::Offset()==0`), so the hi-res branch falls back
+    to the 6-point equivalents when a 12-point font is missing -- exactly what
+    the engine's own low-res branch already does -- instead of a NULL-font crash
+    at the first in-game score/sidebar text draw.
+
+24. **syncdawn: keep the door's game-data dir on the engine file-search path.**
+    `tiberiandawn/init.cpp`'s `Init_Game()` opens its mixfiles via `CCFileClass`,
+    which searches the engine CWD plus the `CDFileClass` search drives. The door
+    `chdir()`s the engine to the per-user `-home` dir (savegames + `CONQUER.INI`),
+    NOT where the shared read-only MIX data lives; RA bridges this via its
+    `PathsClass` DataPath, but TD's engine never calls `Paths.Init()` OR
+    `Parse_Command_Line()` in this build. So `Init_Game()` reads the door's
+    already-resolved assets dir directly -- via a new `extern "C"` accessor
+    `door_engine_data_dir()` (`door/door_io.c`, returns the `-assets` dir) --
+    and `CDFileClass::Add_Search_Drive()`s it before the first mix is opened.
+
+    ALSO `common/cdfile.cpp` (`CDFileClass::Refresh_Search_Drives()`): every CD
+    check (`Force_CD_Available()` -> `Change_Local_Dir()`) calls this, which
+    `Clear_Search_Drives()`es the list and rebuilds it from `Paths.*_Path()` --
+    wiping the door's assets dir. It runs right after the bootstrap mixes load
+    and again on every in-game theater/scenario load, so without re-adding it
+    here only the ~4 bootstrap mixes stayed reachable and everything registered
+    afterwards (CONQUER, TRANSIT, SOUNDS, theaters, ...) silently failed to open
+    -- e.g. `Choose_Side()` crashed in `Play_Sample(STRUGGLE.AUD)` because
+    TRANSIT.MIX never registered. Fix: re-add `door_engine_data_dir()` at the
+    end of every refresh. No-op ("") for a pure-vanilla build.
+
+25. **syncdawn: widen the Sound Controls volume sliders for a cell-granular
+    mouse.** `tiberiandawn/sounddlg.cpp`: the music and FX slider tracks were
+    `5 * factor` px tall = 10px at 640x400. SyncTERM reports the mouse at
+    character-cell granularity (~16px rows), so a click missed a 10px track.
+    Bumped both to `8 * factor` = 16px = one cell row. Identical to Red Alert's
+    patch #13.
+
+26. **syncdawn: door version line in the menus.** `tiberiandawn/init.cpp` gains
+    `SyncDawn_Version_Name()` (`#define SYNCDAWN_VERSION "v0.1"`), formatting
+    `"v0.1 <git-commit-date> synchro.net"` from `common/gitinfo.h` (the SBBS
+    repo's git state at build time -- Vanilla Conquer is vendored in it). Drawn
+    in `menus.cpp` (main-menu footer, one line below the engine `VersionText`)
+    and `goptions.cpp` (options footer, same line as `VersionText`), declared in
+    `externs.h`. Mirrors Red Alert's patch #12 (`SyncAlert_Version_Name`); the
+    engine `VersionText` (`r<rev> ~<sha>`) is left intact, this only adds the
+    door's own line.
 
 ## Deliberate non-patches (worked around outside `vanilla/`)
 

@@ -53,6 +53,10 @@
 #endif
 #endif
 
+/* SyncConquer door (door/door_io.c): the resolved -assets game-data dir, kept on
+** the search path across CD-check refreshes (see Refresh_Search_Drives below). */
+extern "C" const char* door_engine_data_dir(void);
+
 /*
 **	Pointer to the first search path record.
 */
@@ -149,6 +153,22 @@ void CDFileClass::Refresh_Search_Drives(void)
     Add_Search_Drive(Paths.User_Path());
     Set_Search_Drives(RawPath);
     Add_Search_Drive(Paths.Data_Path());
+
+    // SyncConquer door: the door serves the game's MIX data out of its -assets
+    // dir (not a CD, and not Paths.Data_Path() -- Tiberian Dawn never runs
+    // Paths.Init). This refresh is called on every CD check (Force_CD_Available
+    // -> Change_Local_Dir), which Clear_Search_Drives()es the list -- so without
+    // re-adding it here the door's assets dir is lost after the first CD check
+    // and every mix registered afterwards (CONQUER/TRANSIT/theater/... i.e. the
+    // whole game past the bootstrap mixes) fails to open. Re-add it every refresh
+    // so it survives. door_engine_data_dir() (door/door_io.c) returns "" for a
+    // pure-vanilla build, making this a no-op there. PROVENANCE #24.
+    {
+        const char* dd = door_engine_data_dir();
+        if (dd != nullptr && dd[0] != '\0') {
+            Add_Search_Drive(dd);
+        }
+    }
 }
 
 /***********************************************************************************************

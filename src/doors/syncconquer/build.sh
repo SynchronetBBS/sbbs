@@ -1,12 +1,16 @@
 #!/bin/sh
 # ===========================================================================
-# build.sh - Configure and build the SyncConquer engine (headless vanillara).
+# build.sh - Configure and build the SyncConquer door family (headless).
 #
-#   Usage:  ./build.sh             (release build)
+#   Usage:  ./build.sh             (release build, both titles)
 #           ./build.sh debug       (Debug build)
 #           ./build.sh clean       (delete the build tree, then exit)
+#           ./build.sh ra          (Red Alert / syncalert only -- skip Tiberian Dawn)
 #
-# Builds out-of-source in ./build/, leaving the binary at ./build/syncalert.
+# Builds out-of-source in ./build/, leaving the binaries at ./build/syncalert
+# (Red Alert) and ./build/syncdawn (Tiberian Dawn). The SyncConquer door family
+# builds BOTH titles from this one tree + vendored Vanilla Conquer engine
+# (-DBUILD_VANILLATD=ON adds the TD target); pass "ra" to build Red Alert alone.
 # Building does NOT touch any live install -- run `jsexec deploy.js` afterwards when you
 # actually want the running door updated.  (Keeping deploy separate means a sysop
 # can rebuild and test before pushing a new binary to a live BBS.)
@@ -22,13 +26,15 @@ SRCDIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 BUILDDIR="$SRCDIR/build"
 CONFIG=Release
 DOCLEAN=
+BUILD_TD=ON
 
-# --- Parse arguments (order-independent: "debug" and/or "clean") -----------
+# --- Parse arguments (order-independent: "debug"/"clean"/"ra") -------------
 for arg in "$@"; do
 	case "$arg" in
 	clean)             DOCLEAN=1 ;;
 	debug | Debug)     CONFIG=Debug ;;
 	release | Release) CONFIG=Release ;;
+	ra | RA)           BUILD_TD=OFF ;;   # Red Alert (syncalert) only
 	*) echo "build.sh: ignoring unknown argument '$arg'" >&2 ;;
 	esac
 done
@@ -48,19 +54,26 @@ if [ -n "$DOCLEAN" ]; then
 fi
 
 # --- Configure + build -----------------------------------------------------
-echo "[build] Configuring ($CONFIG) ..."
+echo "[build] Configuring ($CONFIG, Tiberian Dawn: $BUILD_TD) ..."
 cmake -B "$BUILDDIR" -S "$SRCDIR" \
-	-DCMAKE_BUILD_TYPE="$CONFIG"
+	-DCMAKE_BUILD_TYPE="$CONFIG" \
+	-DBUILD_VANILLATD="$BUILD_TD"
 
 echo "[build] Building ..."
 cmake --build "$BUILDDIR" -j"$(nproc 2>/dev/null || echo 4)"
 
-# --- Confirm the build produced the binary --------------------------------
-EXE="$BUILDDIR/syncalert"
-if [ ! -x "$EXE" ]; then
-	echo "[build] ERROR: expected output not found: $EXE" >&2
-	exit 1
-fi
+# --- Confirm the build produced the binaries -------------------------------
+# syncalert (Red Alert) always; syncdawn (Tiberian Dawn) unless "ra" was given.
+EXES="syncalert"
+[ "$BUILD_TD" = ON ] && EXES="$EXES syncdawn"
+for name in $EXES; do
+	if [ ! -x "$BUILDDIR/$name" ]; then
+		echo "[build] ERROR: expected output not found: $BUILDDIR/$name" >&2
+		exit 1
+	fi
+done
 
 echo
-ls -la "$EXE"
+for name in $EXES; do
+	ls -la "$BUILDDIR/$name"
+done

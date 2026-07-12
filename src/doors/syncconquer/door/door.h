@@ -89,6 +89,12 @@ void door_mouse_xy(int *x, int *y);
 // buffer handoff) so the seam stays trivial to reason about and replace.
 void door_input_byte(uint8_t b);
 
+// The resolved game-data (MIX) directory (the door's -assets dir), or "" until
+// the pre-main constructor has resolved it. Tiberian Dawn's Init_Game adds this
+// to the engine's CCFileClass file-search path before loading any mix, because
+// the engine CWD is the per-user -home dir, not where the shared game data is.
+const char *door_engine_data_dir(void);
+
 #ifdef __cplusplus
 }
 #endif

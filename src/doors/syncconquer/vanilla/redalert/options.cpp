@@ -272,7 +272,7 @@ void OptionsClass::Set_Score_Volume(fixed volume, bool feedback)
 //	(Resume), which the hotkey path never reaches, so without this an adjustment
 //	made in-game or from the main menu is lost on the next run.
 //	extern "C" so the door's C input layer (door_io.c) can call it.
-extern "C" void SyncAlert_Music_Volume_Step(int dir)
+extern "C" void SyncConquer_Music_Volume_Step(int dir)
 {
     int old = Options.ScoreVolume * 256; // current level, 0..256 (see Set_Score_Volume)
     int v = old;

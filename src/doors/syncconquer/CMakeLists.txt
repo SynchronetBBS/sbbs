@@ -16,7 +16,12 @@ project(syncconquer C CXX)
 # exist until add_subdirectory(vanilla) returns -- swaps the null keyboard
 # backend for ours and turns on NEW_VIDEO_BUILD for it. See the commonv /
 # VanillaRA block for exactly why and how.
-set(BUILD_VANILLATD OFF CACHE BOOL "" FORCE)
+# BUILD_VANILLATD: default OFF (v1 = Red Alert / syncalert only), but overridable
+# -- pass -DBUILD_VANILLATD=ON to also build the Tiberian Dawn engine + door
+# (syncdawn). Plain CACHE (no FORCE) so the RA-only default is untouched while a
+# separate build dir can opt TD in. The VanillaTD target config is a guarded
+# block at the bottom of this file (if(TARGET VanillaTD)).
+set(BUILD_VANILLATD OFF CACHE BOOL "Also build the Tiberian Dawn engine + syncdawn door")
 set(SDL2 OFF CACHE BOOL "" FORCE)
 set(OPENAL OFF CACHE BOOL "" FORCE)
 
@@ -250,3 +255,51 @@ target_link_libraries(VanillaRA xpdev)
 # regardless of how the vendored redalert/CMakeLists.txt names its own
 # vanillara executable).
 set_target_properties(VanillaRA PROPERTIES OUTPUT_NAME syncalert)
+
+# ---------------------------------------------------------------------------
+# Tiberian Dawn (syncdawn) -- the SECOND title, built from the SAME door seam +
+# vendored engine. add_subdirectory(vanilla) above created VanillaTD only when
+# BUILD_VANILLATD is ON, so this whole block is a no-op in the default RA-only
+# build (protecting it). It mirrors every VanillaRA target tweak above: console
+# subsystem, the door engine-seam TUs, termgfx, JXL, xpdev, the Windows argv
+# define, and the door binary name (syncdawn). The commonv modifications
+# (null-backend swaps + NEW_VIDEO_BUILD) are on the shared commonv lib, so both
+# targets inherit them -- not repeated here. The engine-specific door coupling
+# (SyncConquer_Music_Volume_Step) is provided by tiberiandawn/options.cpp
+# (PROVENANCE #21), so the shared door TUs link against TD too.
+# ---------------------------------------------------------------------------
+if(TARGET VanillaTD)
+    if(MSVC)
+        target_link_options(VanillaTD PRIVATE /subsystem:console /ENTRY:mainCRTStartup)
+    endif()
+    target_include_directories(VanillaTD PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/vanilla)
+    target_sources(VanillaTD PRIVATE
+        door/video_termgfx.cpp
+        door/wwkeyboard_termgfx.cpp
+        door/soundio_termgfx.cpp
+        door/vqaaudio_termgfx.cpp
+        door/door_core.c
+        door/door_io.c
+        door/door_input.c
+        door/door_node.c
+    )
+    target_include_directories(VanillaTD PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/door)
+    target_link_libraries(VanillaTD termgfx)
+    # Select the Tiberian Dawn branding + MIX manifest + data/log basename in the
+    # shared door code (door_io.c). RA is the default (no define needed).
+    target_compile_definitions(VanillaTD PRIVATE SYNCCONQUER_TD)
+    if(WIN32)
+        target_compile_definitions(VanillaTD PRIVATE SYNCALERT_KEEP_CRT_ARGV)
+    endif()
+    if(NOT WITHOUT_JPEG_XL AND JPEG_XL_LIBRARIES)
+        target_compile_definitions(VanillaTD PRIVATE WITH_JXL)
+        target_include_directories(VanillaTD PRIVATE ${JPEG_XL_INCLUDE_DIRS})
+        target_link_libraries(VanillaTD ${JPEG_XL_LIBRARIES})
+        if(MSVC)
+            target_compile_definitions(VanillaTD PRIVATE JXL_STATIC_DEFINE)
+        endif()
+    endif()
+    target_include_directories(VanillaTD PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+    target_link_libraries(VanillaTD xpdev)
+    set_target_properties(VanillaTD PROPERTIES OUTPUT_NAME syncdawn)
+endif()
