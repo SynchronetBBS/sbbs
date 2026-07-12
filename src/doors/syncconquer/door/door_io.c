@@ -1572,7 +1572,11 @@ static void door_fit_toggle(void)
 {
 	g_fit_fill = !g_fit_fill;
 	door_save_fit();
-	g_have_last = 0;   /* force a full repaint at the new geometry */
+	g_have_last = 0;      /* force a full repaint at the new geometry */
+	g_clear_pending = 1;  /* Fill (full-width) -> Aspect (narrower, centered) shrinks
+	                       * the image; without a clear the old wider frame's pixels
+	                       * bleed through the newly-exposed side margins (same reason
+	                       * door_tier_cycle() clears on a centering change). */
 }
 
 /* Single dispatch point for the door-level Ctrl+letter hotkeys, shared by all
@@ -1965,6 +1969,15 @@ static void door_calc_rect(int vw, int vh, int reserve_bottom, int *ew, int *eh,
 		termgfx_geom_fit_ex(vw, fitvh, DOOR_FB_WIDTH, DOOR_FB_HEIGHT,
 		                    DOOR_SCALE_MAX, 0, ew, eh);
 	}
+	/* Sixel caps its emitted width at DOOR_SCALE_MAX (door_emit_sixel, a bandwidth
+	 * guard). Fill sets *ew = vw uncapped, so on a canvas wider than the cap the
+	 * center below would place a full-width image but the sixel is actually
+	 * narrower -> it lands flush-left with a lopsided right margin. Apply the same
+	 * cap HERE (sixel only -- reserve_bottom marks the sixel tier; JXL/PPM emit at
+	 * full width) so the image is centered symmetrically. The aspect branch already
+	 * caps inside termgfx_geom_fit_ex, so this only bites Fill. */
+	if (reserve_bottom && *ew > DOOR_SCALE_MAX)
+		*ew = DOOR_SCALE_MAX;
 	termgfx_geom_center(vw, fitvh, *ew, *eh, cellw, cellh, dx, dy, icol, irow);
 }
 
@@ -2075,20 +2088,25 @@ static void door_stats_draw(int force)
 	tier = (g_tier_force >= 0) ? g_tier_force : sa_auto_tier();
 	brow = g_grid_rows > 0 ? g_grid_rows : 25;
 
-	/* Throughput: total wire TX over the last window, Mbps once it's >= 1. */
+	/* Throughput: total wire TX over the last window, Mbps once it's >= 1.
+	 * No space before the unit -- the overlay must fit one 80-col row even with
+	 * the blob + fill tokens both present (see the format string below). */
 	if (g_bps >= 1000000)
-		snprintf(rate, sizeof rate, "%u.%u Mbps", g_bps / 1000000, (g_bps % 1000000) / 100000);
+		snprintf(rate, sizeof rate, "%u.%uMbps", g_bps / 1000000, (g_bps % 1000000) / 100000);
 	else
-		snprintf(rate, sizeof rate, "%u Kbps", g_bps / 1000);
+		snprintf(rate, sizeof rate, "%uKbps", g_bps / 1000);
 
-	bpf = g_tstat[tier].frames ? g_tstat[tier].bytes / g_tstat[tier].frames : 0;
-	snprintf(t, sizeof t, " %s %dfps %s d%d %s/%s %s%s %ums %dx%d %dx%d %dx%d %lluB/f ",
+	/* Bytes/frame rounded to KB (these frames are 10s-100s of KB) -- keeps the
+	 * last field 2-3 digits so the row fits 80 cols; the node log keeps raw bytes. */
+	bpf = g_tstat[tier].frames ? (g_tstat[tier].bytes / g_tstat[tier].frames + 512) / 1024 : 0;
+	snprintf(t, sizeof t, " %s %dfps %s d%d %s/%s %s%s%s %ums %dx%d %dx%d %dx%d %lluKB/f",
 	         sa_tier_name(tier), g_fps, rate, g_auto_depth,
 	         door_io_evdev_active()      ? "evdev"
 	         : door_input_kitty_active() ? "kitty" : "legacy",
 	         g_mouse_pixels ? "pixel" : "cell",
 	         door_term_is_utf8() ? "utf8" : "cp437",
 	         (g_img_blob_ok && (tier == SA_JXL || tier == SA_PPM)) ? " blob" : "",   /* frames shipping inline (Draw*Blob), no cache */
+	         g_fit_fill ? " fill" : "",   /* Ctrl-F Fill (stretch-to-canvas); absent = Aspect (default, true ratio) */
 	         (unsigned)g_rtt_ms,
 	         g_canvas_w, g_canvas_h, g_grid_cols, g_grid_rows, cw, ch, bpf);
 	/* \x1b[K (erase to end of line) BEFORE the reset clears any leftover tail
