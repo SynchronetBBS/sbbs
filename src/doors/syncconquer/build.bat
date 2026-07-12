@@ -14,7 +14,7 @@ rem music with a warning - the door still builds.
 rem
 rem Building does NOT install the binary -- it is left at
 rem build-msvc\Release\syncalert.exe (the project is syncconquer; the door's
-rem binary is syncalert).  Run deploy.bat afterwards when you actually want the
+rem binary is syncalert).  Run `jsexec deploy.js` afterwards when you actually want the
 rem running door updated, so you can rebuild and test first.
 rem
 rem Win32 (x86) ONLY -- unlike the siblings, this door has no x64 option.  The
@@ -100,7 +100,7 @@ if not exist "%EXE%" (
 for %%I in ("%EXE%") do set "BUILT=%%~fI"
 echo.
 echo [build] Built: %BUILT%
-echo [build] Run deploy.bat to install it into the door's xtrn dir.
+echo [build] Run 'jsexec deploy.js' to install it into the door's xtrn dir.
 endlocal
 exit /b 0
 

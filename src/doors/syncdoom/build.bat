@@ -13,7 +13,7 @@ rem vcpkg prefix is absent the configure step falls back to the sixel/text
 rem tiers with a warning - the door still builds.
 rem
 rem Building does NOT install the binary -- it is left at
-rem build-msvc\Release\syncdoom.exe.  Run deploy.bat afterwards when you actually
+rem build-msvc\Release\syncdoom.exe.  Run `jsexec deploy.js` afterwards when you actually
 rem want the running door updated, so you can rebuild and test first.
 rem ===========================================================================
 setlocal enabledelayedexpansion
@@ -88,7 +88,7 @@ if not exist "%EXE%" (
 for %%I in ("%EXE%") do set "BUILT=%%~fI"
 echo.
 echo [build] Built: %BUILT%
-echo [build] Run deploy.bat to install it into the door's xtrn dir.
+echo [build] Run 'jsexec deploy.js' to install it into the door's xtrn dir.
 endlocal
 exit /b 0
 

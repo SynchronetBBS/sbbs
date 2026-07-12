@@ -87,22 +87,79 @@ function door_exe_name(name, platname)
 
 // --- the copy ---------------------------------------------------------------
 
-// Copy `exe` to `dst`, unless dst already IS that file (a symlink-deploy install,
-// where the live entry points straight at the build output -- copying over it
-// would replace the symlink with a stale copy and silently stop tracking builds).
+// Is `dst` already this exact build? Compared by CONTENT, and that is not
+// fastidiousness -- it is the only test that cannot destroy the build output.
+//
+// The usual dev install has the door's live entry SYMLINKED to the build output
+// (./build.sh and the change is live). Copy onto that symlink and file_copy()
+// opens the destination for writing -- which IS the source -- truncating the
+// binary to zero bytes before reading a byte of it. The source is gone, and the
+// "copy" is a 0-byte file. Both doors this happened to also had a build system
+// that then saw a target newer than its sources and cheerfully declined to relink.
+//
+// The two cheaper tests both fail to see it, which is exactly how it got shipped:
+//
+//   * fullpath(dst) == fullpath(exe) -- fullpath() NORMALIZES a path, it does not
+//     RESOLVE it, so a symlink and its target never compare equal.
+//   * size + mtime -- correct on one filesystem, and wrong across the SMB mount a
+//     live install is usually reached through: CIFS reported the same file's mtime
+//     one second off from the local view, so the guard missed and the copy ran.
+//
+// The shell scripts this replaced got it right with `[ "$EXE" -ef "$DST" ]` -- a
+// device+inode identity test. Synchronet's JS has no stat(), but a content hash
+// answers a strictly stronger question, and answers it through symlinks, mounts and
+// clock skew alike: if dst's bytes ARE exe's bytes, there is nothing to copy --
+// whether dst is a symlink to it, a hardlink, or an identical previous copy. The
+// destructive case (dst resolves to exe) is IDENTICAL BY CONSTRUCTION, so it is
+// always taken by this branch and the copy below can never eat its own source.
+function door_deploy_current(exe, dst)
+{
+	var a, b, ha, hb;
+
+	if (!file_exists(dst) || file_size(dst) != file_size(exe))
+		return false;                   // cheap reject before hashing megabytes
+
+	a = new File(exe);
+	b = new File(dst);
+	if (!a.open("rb"))
+		return false;
+	if (!b.open("rb")) {
+		a.close();
+		return false;
+	}
+	// BOTH hashes must be read while the files are OPEN. A closed File's md5_hex is
+	// undefined -- and reading it after close() is not a harmless nit here: the
+	// comparison silently goes false, the guard never fires, and the copy below eats
+	// its own source. That is not hypothetical either; it is how this function
+	// destroyed four door binaries before it was tested.
+	ha = a.md5_hex;
+	hb = b.md5_hex;
+	a.close();
+	b.close();
+	return ha !== undefined && ha === hb;
+}
+
 function door_deploy_file(exe, dst)
 {
-	if (file_exists(dst) && fullpath(dst) == fullpath(exe)) {
-		print("[deploy] " + dst + " already IS the build output -- nothing to copy");
-		return true;
-	}
-	if (file_exists(dst) && file_size(dst) == file_size(exe)
-	    && file_date(dst) == file_date(exe)) {
-		print("[deploy] " + dst + " already up to date -- nothing to copy");
+	var was = file_size(exe);
+
+	if (door_deploy_current(exe, dst)) {
+		print("[deploy] " + dst + " is already this build -- nothing to copy");
 		return true;
 	}
 	if (!file_copy(exe, dst)) {
 		print("[deploy] ERROR: failed to copy " + exe + " -> " + dst);
+		return false;
+	}
+	// The tripwire for the failure above: if the destination resolved back to the
+	// source after all, the source is now the truncated one. It cannot be undone
+	// here, but it must never again be SILENT -- a 0-byte door is a door that dies
+	// at the player's first keystroke, and the build that produced it looks clean.
+	if (file_size(exe) != was || file_size(dst) != was) {
+		print("[deploy] ERROR: " + exe + " was " + was + " bytes and is now "
+		    + file_size(exe) + "; the copy at " + dst + " is " + file_size(dst)
+		    + " bytes. The destination resolves back to the source (a symlink?)"
+		    + " -- REBUILD before running this door.");
 		return false;
 	}
 	print("[deploy] Deployed: " + fullpath(dst));

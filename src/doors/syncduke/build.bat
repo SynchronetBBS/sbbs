@@ -13,7 +13,7 @@ rem absent the configure step falls back to the sixel/text tiers with a warning 
 rem the door still builds.
 rem
 rem Building does NOT install the binary -- it is left at
-rem build-msvc\Release\syncduke.exe.  Run deploy.bat afterwards when you actually
+rem build-msvc\Release\syncduke.exe.  Run `jsexec deploy.js` afterwards when you actually
 rem want the running door updated, so you can rebuild and test first.
 rem
 rem NOTE: Win32 (x86) is the supported target.  The vendored Build engine still
@@ -92,7 +92,7 @@ if not exist "%EXE%" (
 for %%I in ("%EXE%") do set "BUILT=%%~fI"
 echo.
 echo [build] Built: %BUILT%
-echo [build] Run deploy.bat to install it into the door's xtrn dir.
+echo [build] Run 'jsexec deploy.js' to install it into the door's xtrn dir.
 endlocal
 exit /b 0
 

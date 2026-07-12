@@ -35,24 +35,39 @@ var XTRN = js.exec_dir + "../../../xtrn/";
 
 // Every SyncRetro console install: an xtrn dir whose lobby.js drives the shared
 // lobby. That is the definition of "a SyncRetro console", so it cannot go stale.
+//
+// Searched in BOTH this checkout's xtrn/ and the LIVE install's (beside
+// system.ctrl_dir), because they are usually different directories -- and a deploy
+// that quietly skipped the live one left the players running whatever binary was
+// last copied there by hand.
 function console_dirs()
 {
-	var out = [];
+	var out  = [];
+	var seen = {};
+	var roots = [XTRN, backslash(system.ctrl_dir) + "../xtrn/"];
+	var i;
 
-	directory(XTRN + "*").forEach(function (path) {
-		var dir = backslash(path);
-		var f, text;
+	for (i = 0; i < roots.length; i++) {
+		directory(roots[i] + "*").forEach(function (path) {
+			var dir = backslash(path);
+			var key, f, text;
 
-		if (!file_isdir(dir) || !file_exists(dir + "lobby.js"))
-			return;
-		f = new File(dir + "lobby.js");
-		if (!f.open("r"))
-			return;
-		text = f.read();
-		f.close();
-		if (String(text).indexOf("syncretro_lobby.js") >= 0)
-			out.push(dir);
-	});
+			if (!file_isdir(dir) || !file_exists(dir + "lobby.js"))
+				return;
+			key = fullpath(dir).toLowerCase();
+			if (seen[key])
+				return;                 // this checkout IS the live install
+			f = new File(dir + "lobby.js");
+			if (!f.open("r"))
+				return;
+			text = f.read();
+			f.close();
+			if (String(text).indexOf("syncretro_lobby.js") >= 0) {
+				seen[key] = true;
+				out.push(dir);
+			}
+		});
+	}
 	return out;
 }
 
@@ -68,30 +83,29 @@ function built_exe()
 
 // Copy `exe` into <door>/<target>/syncretro[.exe], or straight into <door> when
 // `target` is "" (flat, Windows) -- backslash(backslash(door) + "") collapses to
-// the door dir. Skips a no-op self-copy on a symlink install (where the
-// destination already resolves to the build output). Returns true on success (or
-// nothing-to-do), false on a real failure.
+// the door dir.
+//
+// The COPY ITSELF is door_deploy_file()'s, and this function must never grow its
+// own again: the private copy that used to live here compared the destination by
+// path and timestamp, which cannot see that the destination is a SYMLINK back to
+// the build output -- so it copied the binary onto itself and truncated it to zero.
+// The shared one compares CONTENT. See exec/load/door_deploy.js.
 function deploy_to(door, exe, exename, target)
 {
 	var dstdir = backslash(backslash(door) + target);
-	var dst    = dstdir + exename;
+	var flat   = backslash(door) + exename;
+	var ok;
 
 	mkpath(dstdir);
-	if (file_exists(dst) && fullpath(dst) == fullpath(exe)) {
-		print("[deploy] " + dst + " already IS the build output -- nothing to copy");
-		return true;
-	}
-	if (file_exists(dst) && file_size(dst) == file_size(exe)
-	    && file_date(dst) == file_date(exe)) {
-		print("[deploy] " + dst + " already up to date -- nothing to copy");
-		return true;
-	}
-	if (!file_copy(exe, dst)) {
-		print("[deploy] ERROR: failed to copy " + exe + " -> " + dst);
-		return false;
-	}
-	print("[deploy] Deployed: " + fullpath(dst));
-	return true;
+	ok = door_deploy_file(exe, dstdir + exename);
+
+	// An older install may have a FLAT binary beside the sub-dir. The lobby probes
+	// <target>/ first and falls back to flat, so that copy is inert -- until someone
+	// removes the sub-dir and silently gets a stale door. Keep an existing one in
+	// step; don't create one that wasn't there.
+	if (target !== "" && file_exists(flat))
+		ok = door_deploy_file(exe, flat) && ok;
+	return ok;
 }
 
 function main()

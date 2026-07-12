@@ -8,7 +8,7 @@
 #           ./build.sh debug clean (combine)
 #
 # Builds out-of-source in ./build/, leaving the binary at ./build/syncmoo1.
-# Building does NOT touch any live install -- run ./deploy.sh afterwards when
+# Building does NOT touch any live install -- run `jsexec deploy.js` afterwards when
 # you actually want the running door updated.  (Keeping deploy separate means
 # a sysop can rebuild and test before pushing a new binary to a live BBS.)
 #
@@ -62,4 +62,4 @@ fi
 
 echo
 echo "[build] Built: $EXE"
-echo "[build] Run ./deploy.sh to install it into the door's xtrn dir."
+echo "[build] Run 'jsexec deploy.js' to install it into the door's xtrn dir."

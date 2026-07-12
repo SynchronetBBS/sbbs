@@ -7,7 +7,7 @@
 #           ./build.sh clean       (delete the build tree, then exit)
 #
 # Builds out-of-source in ./build/, leaving the binary at ./build/syncalert.
-# Building does NOT touch any live install -- run ./deploy.sh afterwards when you
+# Building does NOT touch any live install -- run `jsexec deploy.js` afterwards when you
 # actually want the running door updated.  (Keeping deploy separate means a sysop
 # can rebuild and test before pushing a new binary to a live BBS.)
 #
