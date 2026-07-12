@@ -3,9 +3,11 @@
 // SyncAlert ships no game data. Electronic Arts released Command & Conquer:
 // Red Alert as freeware on 2008-08-31, so this fetches the official RA95
 // freeware CD image from archive.org, verifies its checksum, and extracts just
-// the two MIX archives the engine needs (the ~400 MB of FMV on the CD is left
-// behind -- v1 skips movies anyway). Run automatically (and prompted) by the
-// installer via install-xtrn.ini's [exec:fetch-assets.js] step, or by hand:
+// the two MIX archives the engine needs (REDALERT.MIX + MAIN.MIX; the rest of
+// the CD image isn't extracted). The door plays the game's FMV cutscenes --
+// video plus A/V-synced audio, from these mixes via door/vqaaudio_termgfx.cpp.
+// Run automatically (and prompted) by the installer via install-xtrn.ini's
+// [exec:fetch-assets.js] step, or by hand:
 //
 //     jsexec ../xtrn/syncalert/fetch-assets.js
 //

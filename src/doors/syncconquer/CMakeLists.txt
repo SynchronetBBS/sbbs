@@ -85,8 +85,9 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../termgfx termgfx)
 #    a full no-op reimplementation of the whole audio.h game-facing API
 #    (Play_Sample/Load_Sample/...), which would conflict with
 #    soundio_common.cpp below (the SAME API, backed by the real AUD-decode/
-#    streaming logic). vqaaudio_null.cpp stays -- v1 has no movie playback
-#    (DESIGN.md), so the VQA player's own audio hooks are still stubbed.
+#    streaming logic). vqaaudio_null.cpp is ALSO dropped (see below): FMV
+#    cutscenes play (video + A/V-synced audio), so door/vqaaudio_termgfx.cpp
+#    replaces the stub rather than leaving the VQA player's audio hooks no-ops.
 #    soundio_common.cpp is normally paired with soundio_openal.cpp
 #    (OPENAL=ON, vanilla/common/CMakeLists.txt); we add it here unmodified
 #    and pair it with door/soundio_termgfx.cpp (added to VanillaRA below)
@@ -129,14 +130,14 @@ target_link_libraries(VanillaRA termgfx)
 #
 # door_io.c's constructor neuters the door's own tokens out of argv (-s<fd>,
 # -home <dir>, the DOOR32.SYS drop-file path -- Parse_Command_Line() strstr()s
-# every token, so an unsanitized path can mis-set an engine option) and forces
-# -NOMOVIES into a freed slot. On *nix the engine's main() hands that argv
-# straight to Parse_Command_Line() and it all works. On Windows it does NOT:
+# every token, so an unsanitized path can mis-set an engine option), and can
+# inject -NOMOVIES into a freed slot when SYNCALERT_NOMOVIES is set (movies play
+# by default now). On *nix the engine's main() hands that argv straight to
+# Parse_Command_Line() and it all works. On Windows it does NOT:
 # redalert/startup.cpp's `UtfArgs args(argc, argv)` REPLACES ArgV with a fresh
 # parse of GetCommandLineW(), silently throwing our edits away -- so the engine
-# saw the raw command line, movies were never suppressed (FMV played, with the
-# music channel but no dialog audio, since vqaaudio_null.cpp stubs the VQA
-# player's audio hooks), and the door's own flags reached the engine's parser.
+# saw the raw command line, the door's own tokens (and any -NOMOVIES
+# suppression) never took, and the door's flags reached the engine's parser.
 #
 # The vendored utfargs.h is patched to honor this define (PROVENANCE.md), which
 # is scoped to VanillaRA -- startup.cpp is its only includer. UNICODE/_UNICODE

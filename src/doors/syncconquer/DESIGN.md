@@ -229,7 +229,8 @@ repo.**
 
 - `fetch-assets.js` install-time helper: download the RA95 freeware CD image
   from established community mirrors, verify checksum, extract only the
-  required MIX files (movies excluded — v1 skips FMV anyway) via
+  required MIX files (REDALERT.MIX + MAIN.MIX — the FMV movies ride inside
+  MAIN.MIX, so cutscenes play) via
   Synchronet's `Archive` object, which reads ISO9660 through libarchive.
   It is JavaScript, not a shell script, so `install-xtrn.js` can run it
   (`[exec:]` only executes `.js`) and so it works on Windows too.
