@@ -472,7 +472,7 @@ Expected: no SpiderMonkey `SyntaxError`. (Runtime errors about `console`/`bbs` b
 
 - [ ] **Step 7: Live validation (REQUIRED before commit)**
 
-Deploy (`cd /home/rswindell/sbbs/src/doors/syncduke && ./build.sh` is only needed for C; for this JS task copy `lobby.js` + `syncduke_lib.js` to the live `/sbbs/xtrn/syncduke/` via the door's `deploy.sh`, or however the sysop deploys). Then from two BBS nodes: node A runs SyncDuke → `C`reate → the game-type picker appears → choose Dukematch → pick a level → waiting room says "(dukematch)"; node B → `J`oin → the list shows `Mode = Dukematch`. Confirm both drop into a deathmatch (frag bar visible top of screen, no monsters by default). **Hand this to the human to run; do not claim it done from static reasoning.**
+Deploy (`cd /home/rswindell/sbbs/src/doors/syncduke && ./build.sh` is only needed for C; for this JS task copy `lobby.js` + `syncduke_lib.js` to the live `/sbbs/xtrn/syncduke/` via the door's `deploy.js`, or however the sysop deploys). Then from two BBS nodes: node A runs SyncDuke → `C`reate → the game-type picker appears → choose Dukematch → pick a level → waiting room says "(dukematch)"; node B → `J`oin → the list shows `Mode = Dukematch`. Confirm both drop into a deathmatch (frag bar visible top of screen, no monsters by default). **Hand this to the human to run; do not claim it done from static reasoning.**
 
 - [ ] **Step 8: Commit** (after the human confirms the live test)
 

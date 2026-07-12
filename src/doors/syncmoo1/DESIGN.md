@@ -91,7 +91,7 @@ src/doors/syncmoo1/
                         that let the vendored 1oom tree compile unedited
   syncmoo1.h            single cross-module contract; each function carries a
                         provenance comment (which .c provides it, why)
-  CMakeLists.txt  build.sh  deploy.sh  build.bat  deploy.bat
+  CMakeLists.txt  build.sh  deploy.js  build.bat  jsexec deploy.js
   .gitignore  CLAUDE.md  README.md  CREDITS
   tests/                pure-function unit tests (keymap, mouse mapping)
 ```
@@ -159,7 +159,7 @@ motion should repaint; idle still de-dupes to zero).
 - **xpdev**: linked for `sockwrap` / `ini_file` (crypto + audio backends pinned
   off), guarded so it isn't re-added inside a larger tree.
 - Git build info via the shared `synchronet_gitinfo()` macro → `git_hash.h`.
-- No CMake `install()`; deployment is a separate `deploy.sh` that copies the
+- No CMake `install()`; deployment is a separate `deploy.js` that copies the
   built binary into the live `xtrn` dir. Build never touches the live install.
 
 ## 8. BBS integration

@@ -24,6 +24,8 @@
 //
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
 
+load("door_deploy.js");   // door_platform/arch/target: shared with every deploy.js
+
 // --- title parsing ----------------------------------------------------------
 //
 // ROM sets name files "Title (Year) (Publisher).int", with a trailing "[!]" or
@@ -672,48 +674,13 @@ function syncretro_cell(index, rom, width)
 // All three take their inputs as arguments (UI-free, so the tests drive them).
 // The core's file extension follows from syncretro_platform() (win32->dll, darwin->dylib,
 // else->so), so the lobby, getcore.js and deploy all agree on where the core lives.
-function syncretro_platform(platname)
-{
-	var p = String(platname);
-
-	if (/^win/i.test(p))
-		return "win32";                                  // door is Win32 for every Windows host
-	if (/darwin|mac|osx/i.test(p))
-		return "darwin";                                 // macOS / MacOSX -> one stable name
-	return p.toLowerCase().replace(/[^a-z0-9]+/g, "");   // linux, freebsd, netbsd, ...
-}
-
-function syncretro_arch(archname)
-{
-	var a = String(archname).toLowerCase();
-
-	if (/x86[_-]?64|amd64|x64/.test(a))
-		return "x64";                                    // x64 / x86_64 / amd64
-	if (/aarch64|arm64|armv8/.test(a))
-		return "arm64";                                  // 64-bit ARM (armv8 = aarch64)
-	if (/arm/.test(a))
-		return "arm";                                    // armv7l / armv6 / arm
-	if (/i[3-7]86|x86/.test(a))
-		return "x86";                                    // i686 / i386 / x86 (32-bit)
-	return a.replace(/[^a-z0-9]+/g, "");                 // riscv64, ppc64, mips, ... verbatim
-}
-
-// The per-target sub-dir name, or "" for the flat door dir (no sub-dir needed).
-//
-// Windows returns "" -- flat. Its artifacts carry a distinguishing extension
-// (syncretro.EXE, freeintv_libretro.DLL), so they never collide with a *nix
-// host's extension-less "syncretro" / ".so" in a shared flat dir, and there is
-// only ever one Win32 target. A *nix host's binary and core ARE named the same
-// on every OS/arch ("syncretro" / ".so"), so they DO collide on a shared mount
-// and get an "<os>-<arch>" sub-dir (linux-x64, linux-arm64, freebsd-x64, ...).
-function syncretro_target(platname, archname)
-{
-	var plat = syncretro_platform(platname);
-
-	if (plat == "win32")
-		return "";
-	return plat + "-" + syncretro_arch(archname);
-}
+// The platform/arch/target token comes from exec/load/door_deploy.js, shared with
+// every door's deploy.js -- because the deploy step and the lobby MUST agree on
+// where the binary lives, and two copies of that rule is one copy too many. These
+// stay as syncretro_-named wrappers so the callers (and the tests) do not care.
+function syncretro_platform(platname)          { return door_platform(platname); }
+function syncretro_arch(archname)              { return door_arch(archname); }
+function syncretro_target(platname, archname)  { return door_target(platname, archname); }
 
 // The libretro core's shared-library extension for a given syncretro_platform() token.
 function syncretro_core_ext(plat)

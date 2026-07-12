@@ -174,7 +174,19 @@ cmake -B build && cmake --build build -j
 ```
 
 Building never touches any live install -- it only writes under `./build/`.
-Run `./deploy.sh` afterwards to install the freshly-built binary into the
+Run `jsexec deploy.js` afterwards to install the freshly-built binary into the
+
+Deploying installs the binary **flat** in the door directory, which is what
+`ctrl/xtrn.ini` and the usual symlink-to-the-build-output setup expect. Pass
+`--subdir` to *also* install it into an `<os>-<arch>` sub-directory
+(`linux-x64`, `linux-arm64`, `darwin-arm64`, ...), which is what a single install
+directory shared by two \*nix hosts of **different architecture** needs -- the
+binaries are named the same on every \*nix, so they would otherwise overwrite each
+other. Windows never needs it (a `.exe` cannot collide with a \*nix name).
+
+Note that this door is launched **directly** from `ctrl/xtrn.ini`, whose fixed
+command line cannot probe a sub-directory: the **flat** copy is the one that runs.
+The sub-directory is inert here until the door grows a JS launcher.
 door's live `xtrn` directory (see that script's own header for exactly where
 and how; it's a separate, explicit step on purpose, so a sysop can rebuild and
 test before pushing a new binary live).
@@ -184,7 +196,7 @@ test before pushing a new binary live).
 ```
 build.bat            :: Win32 release -> build-msvc\Release\syncmoo1.exe
 build.bat clean      :: wipe the build tree first, then build
-deploy.bat           :: install the built exe into xtrn\syncmoo1\
+jsexec deploy.js           :: install the built exe into xtrn\syncmoo1\
 ```
 
 Needs Visual Studio 2022 (`build.bat` finds the bundled CMake if none is on

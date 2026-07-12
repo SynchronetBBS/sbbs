@@ -63,7 +63,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j$(nproc)
 ```
 
-Building does **not** install the binary. Run **`./deploy.sh`** afterwards to
+Building does **not** install the binary. Run **`jsexec deploy.js`** afterwards to
 copy `build/syncalert` into `xtrn/syncalert/` (and, on a copy-style install,
 into the live install via `$SBBSCTRL` or `SYNCALERT_DEST`).
 
@@ -90,7 +90,7 @@ non-patches*), and neither needs anything passed by hand:
 For a one-command build, the **`build.bat`** helper runs the configure + build
 below (classic-mode vcpkg for the optional tiers when present): `build.bat` (plus
 a `clean` option), leaving `syncalert.exe` under `build-msvc\Release\`. Building
-does **not** install it — run **`deploy.bat`** afterwards to copy it into
+does **not** install it — run **`jsexec deploy.js`** afterwards to copy it into
 `xtrn\syncalert\` (and, on a copy-style install, into the live install via
 `%SBBSCTRL%` or `SYNCALERT_DEST`). The manual steps follow for full control.
 
@@ -181,6 +181,6 @@ Notes:
 | Windows (VS generator, manual) | `build\<Config>\syncalert.exe` |
 
 Use `-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=<dir>` to redirect the binary, or just run
-`deploy.sh` / `deploy.bat`, which put it where the door reads it —
+`deploy.js` / `jsexec deploy.js`, which put it where the door reads it —
 `xtrn/syncalert/`, one level above the `assets/` dir the engine loads its MIX
 files from.

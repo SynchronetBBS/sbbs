@@ -18,6 +18,7 @@
 load("sbbsdefs.js");
 
 var gl = load({}, "game_lobby.js");
+load("door_deploy.js");   // door_target(), door_exe_name(): agree with deploy.js
 var presence = load({}, "presence_lib.js");   // stock node-presence lib (set_node_ext_status)
 
 // The door's own directory (where the syncduke binary + syncduke.ini live):
@@ -25,7 +26,24 @@ var presence = load({}, "presence_lib.js");   // stock node-presence lib (set_no
 var SD_DIR    = js.exec_dir;
 // "%." is a Synchronet cmdstr specifier: ".exe" on Windows, blank on *nix, so one
 // config runs syncduke.exe on Windows yet a non-Windows "syncduke" in the same dir.
-var SD_BINARY = SD_DIR + "syncduke%.";
+// PREFER a per-target sub-dir, FALL BACK to the flat door dir.
+//
+// A *nix binary is named the same on every OS and architecture ("syncduke"), so
+// two *nix hosts sharing one install directory collide -- whichever deployed last
+// wins, and the other host cannot exec it. deploy.js therefore also installs into
+// an "<os>-<arch>" sub-dir (linux-x64, linux-arm64, darwin-arm64, ...), and this
+// is where the lobby looks first. The flat copy remains for the DIRECT xtrn.ini
+// entry, which has a fixed command line and cannot probe.
+//
+// Windows is always flat: door_target() returns "" there, because a .exe never
+// collides with an extension-less *nix name. Same code, both cases.
+var SD_TARGET = door_target(system.platform, system.architecture);
+var SD_SUB    = SD_TARGET
+              ? SD_TARGET + SD_DIR.charAt(SD_DIR.length - 1)   // native separator
+              : "";
+var SD_PFX    = (SD_SUB && file_exists(SD_DIR + SD_SUB + door_exe_name("syncduke", system.platform)))
+              ? SD_SUB : "";
+var SD_BINARY = SD_DIR + SD_PFX + "syncduke%.";
 var SD_CFG    = SD_DIR + "syncduke.ini";
 // Shared game registry (this lobby writes/reads it; same-LAN hosts may share it
 // over the mount, like SyncDOOM's). Created on demand.

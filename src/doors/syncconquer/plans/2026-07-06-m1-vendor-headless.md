@@ -281,7 +281,7 @@ on Linux/gcc14.
 **Interfaces:**
 - Consumes: Task 1's `vanilla/` tree.
 - Produces: `src/doors/syncconquer/build/vanillara` — the canonical build
-  output path all later milestones (deploy.sh, M2 door work) rely on.
+  output path all later milestones (deploy.js, M2 door work) rely on.
   Usage: `./build.sh [debug|clean]`.
 
 - [ ] **Step 1: Write build.sh**

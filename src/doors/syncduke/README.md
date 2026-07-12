@@ -152,15 +152,23 @@ text tiers (a warning is printed at configure time).
 ./build.sh            # release build -> build/syncduke (does NOT deploy)
 ./build.sh debug      # debug build
 ./build.sh clean      # wipe build tree first
-./deploy.sh           # install build/syncduke into the door's xtrn dir(s)
+jsexec deploy.js           # install build/syncduke into the door's xtrn dir(s)
+
+Deploying installs the binary **flat** in the door directory, which is what
+`ctrl/xtrn.ini` and the usual symlink-to-the-build-output setup expect. Pass
+`--subdir` to *also* install it into an `<os>-<arch>` sub-directory
+(`linux-x64`, `linux-arm64`, `darwin-arm64`, ...), which is what a single install
+directory shared by two \*nix hosts of **different architecture** needs -- the
+binaries are named the same on every \*nix, so they would otherwise overwrite each
+other. Windows never needs it (a `.exe` cannot collide with a \*nix name).
 ```
 
 Building and deploying are separate steps: `build.sh` only produces
 `build/syncduke`, so you can rebuild and test without disturbing a running BBS.
-`deploy.sh` copies that binary into the door's `xtrn/syncduke/` dir — and, on a
+`deploy.js` copies that binary into the door's `xtrn/syncduke/` dir — and, on a
 copy-style install, into the live install located via `$SBBSCTRL` (or
 `SYNCDUKE_DEST=<dir>`). On a SYMLINK=1 install the live door already points at
-`build/syncduke`, so `build.sh` alone updates it and `deploy.sh` is a no-op.
+`build/syncduke`, so `build.sh` alone updates it and `deploy.js` is a no-op.
 
 Or by hand:
 
@@ -171,7 +179,7 @@ cmake --build build -j
 
 On **Windows** (Visual Studio 2022 / MSVC), use `build.bat` — it configures and
 builds the Win32 (x86) Release tree in `build-msvc/`, leaving `syncduke.exe`
-under `build-msvc\Release\`. Run `deploy.bat` afterwards to install it into
+under `build-msvc\Release\`. Run `jsexec deploy.js` afterwards to install it into
 `..\..\..\xtrn\syncduke\` (build and deploy are separate, same as the *nix
 scripts):
 
@@ -179,7 +187,7 @@ scripts):
 build.bat            :: Win32 release (JPEG-XL via vcpkg if installed)
 build.bat x64        :: 64-bit release (best-effort; see the 32-bit note below)
 build.bat clean      :: wipe the build tree first
-deploy.bat           :: install build-msvc\Release\syncduke.exe into xtrn\syncduke\
+jsexec deploy.js           :: install build-msvc\Release\syncduke.exe into xtrn\syncduke\
 ```
 
 The JPEG-XL tier links a static **libjxl** built for MSVC; install it with
@@ -204,7 +212,7 @@ GRP (11,035,779 bytes, "SHAREWARE 1.3D") is freely redistributable; the Full
 full GRPs is **required** for third-party user maps and add-on GRPs (see
 [Third-party user maps & add-on GRPs](#third-party-user-maps--add-on-grps)).
 
-1. `./build.sh` then `./deploy.sh` — builds `syncduke` and installs it into
+1. `./build.sh` then `jsexec deploy.js` — builds `syncduke` and installs it into
    `xtrn/syncduke/`.
 2. Put `DUKE3D.GRP` either beside the binary in `xtrn/syncduke/`, or anywhere and
    set its directory in `syncduke.ini` (`[grp] dir = /path/to/grp`).

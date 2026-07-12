@@ -6,8 +6,8 @@ style rules apply depends on which side of that line a file is on.
 ## Which files are ours vs. vendored
 
 **Ours:** `hw_sbbs.c`, `syncmoo1_*.c`/`.h`, `syncmoo1.h`, `compat/`, `tests/`,
-the build systems (`CMakeLists.txt`, `build.sh`, `deploy.sh`, `build.bat`,
-`deploy.bat`), and the `*.md` docs (`CLAUDE.md`, `README.md`, `DESIGN.md`,
+the build systems (`CMakeLists.txt`, `build.sh`, `deploy.js`, `build.bat`,
+`jsexec deploy.js`), and the `*.md` docs (`CLAUDE.md`, `README.md`, `DESIGN.md`,
 `PROVENANCE.md`).
 
 **Vendored:** the entire `1oom/` subdirectory -- a frozen, unmodified snapshot

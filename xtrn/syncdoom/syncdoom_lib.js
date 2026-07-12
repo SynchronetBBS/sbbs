@@ -17,6 +17,7 @@
 load("sbbsdefs.js");
 
 var gl = load({}, "game_lobby.js");   // shared lobby model layer (gl.* helpers)
+load("door_deploy.js");   // door_target(), door_exe_name(): agree with deploy.js
 var presence = load({}, "presence_lib.js");   // stock node-presence lib (set_node_ext_status)
 
 // The door's own directory (where the syncdoom binary + syncdoom.ini live).
@@ -26,7 +27,24 @@ var SD_DIR    = js.exec_dir;
 // "%." is a Synchronet cmdstr specifier: ".exe" on Windows, blank on *nix
 // (expanded by bbs.cmdstr() at launch). So one config runs syncdoom.exe on
 // Windows yet won't collide with a non-Windows "syncdoom" in the same dir.
-var SD_BINARY = SD_DIR + "syncdoom%.";
+// PREFER a per-target sub-dir, FALL BACK to the flat door dir.
+//
+// A *nix binary is named the same on every OS and architecture ("syncdoom"), so
+// two *nix hosts sharing one install directory collide -- whichever deployed last
+// wins, and the other host cannot exec it. deploy.js therefore also installs into
+// an "<os>-<arch>" sub-dir (linux-x64, linux-arm64, darwin-arm64, ...), and this
+// is where the lobby looks first. The flat copy remains for the DIRECT xtrn.ini
+// entry, which has a fixed command line and cannot probe.
+//
+// Windows is always flat: door_target() returns "" there, because a .exe never
+// collides with an extension-less *nix name. Same code, both cases.
+var SD_TARGET = door_target(system.platform, system.architecture);
+var SD_SUB    = SD_TARGET
+              ? SD_TARGET + SD_DIR.charAt(SD_DIR.length - 1)   // native separator
+              : "";
+var SD_PFX    = (SD_SUB && file_exists(SD_DIR + SD_SUB + door_exe_name("syncdoom", system.platform)))
+              ? SD_SUB : "";
+var SD_BINARY = SD_DIR + SD_PFX + "syncdoom%.";
 var SD_CFG    = SD_DIR + "syncdoom.ini";
 var SD_GAMES  = backslash(system.data_dir + "syncdoom/games/");
 var SD_EVENTS = system.data_dir + "syncdoom/events.jsonl";   // door-written activity log

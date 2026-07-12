@@ -27,7 +27,8 @@
 //
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
 
-load("syncretro_lib.js");   // syncretro_target() -- now in exec/load, shared by all consoles
+load("syncretro_lib.js");   // syncretro_target() (which delegates to door_deploy.js)
+load("door_deploy.js");     // door_deploy_into(): the same copy logic every door uses
 
 // js.exec_dir is this script's own dir (src/doors/syncretro/); xtrn/ is three up.
 var XTRN = js.exec_dir + "../../../xtrn/";

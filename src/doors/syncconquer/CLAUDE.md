@@ -6,7 +6,7 @@ snapshot. Which rules apply depends on which side of that line a file is on.
 ## Our code — house style (uncrustify)
 
 Our files live under `door/` plus the top-level scaffolding (`CMakeLists.txt`,
-`build.sh`, `deploy.sh`, the `*.md` docs). For any C/C++ change to these, follow
+`build.sh`, `deploy.js`, the `*.md` docs). For any C/C++ change to these, follow
 the house style in [../../uncrustify.cfg](../../uncrustify.cfg) — write to it
 from the start (tabs, brace placement, spacing) and run it as the closing step:
 

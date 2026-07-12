@@ -50,7 +50,7 @@ build) lives under this directory with our shims beside it.
 ## Layout & naming
 
 - `src/doors/syncconquer/` — door shell, termgfx shims, vendored engine,
-  build.sh/deploy.sh (*nix), build.bat/deploy.bat (Windows/MSVC), this doc,
+  build.sh/deploy.js (*nix), build.bat/jsexec deploy.js (Windows/MSVC), this doc,
   DEFERRED.md.
 - `xtrn/syncalert/` — install-xtrn.ini, lobby.js, fetch-assets helper, docs.
   (`xtrn/syncdawn/` later.)
@@ -244,7 +244,7 @@ repo.**
   deferred-list item, not a v1 promise).
 - Offline capture mode (`SIXELOUT`-style) for render testing without a
   BBS session; 2-node loopback MP as the standard multiplayer smoke test.
-- `build.sh` / `deploy.sh` (*nix) and `build.bat` / `deploy.bat`
+- `build.sh` / `deploy.js` (*nix) and `build.bat` / `jsexec deploy.js`
   (Windows/MSVC, mirroring SyncDuke/SyncDOOM) per house pattern
   (out-of-source CMake; building does not deploy).
 

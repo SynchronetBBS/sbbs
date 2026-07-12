@@ -77,12 +77,12 @@ were found:
 
 Or run the **`build.sh`** helper, which does the configure + build above
 (`./build.sh`, plus `debug` / `clean` options), leaving the binary at
-`build/syncdoom`. Building does **not** deploy — run **`./deploy.sh`** afterwards
+`build/syncdoom`. Building does **not** deploy — run **`jsexec deploy.js`** afterwards
 to copy the binary next to the lobby in this tree's `xtrn/syncdoom/` (and, on a
 copy-style install, into the live install located via `$SBBSCTRL` or
 `SYNCDOOM_DEST=<dir>`). Keeping deploy separate lets you rebuild and test before
 pushing a new binary to a running BBS; on a SYMLINK=1 in-place install the live
-door already points at `build/syncdoom`, so `deploy.sh` is a no-op there.
+door already points at `build/syncdoom`, so `deploy.js` is a no-op there.
 
 ---
 
@@ -98,7 +98,7 @@ needs no extra setup.
 For a one-command build, the **`build.bat`** helper runs the configure + build
 below (classic-mode vcpkg for the JPEG-XL tier when present): `build.bat` (or
 `build.bat x64`, plus a `clean` option), leaving `syncdoom.exe` under
-`build-msvc\Release\`. Building does **not** install it — run **`deploy.bat`**
+`build-msvc\Release\`. Building does **not** install it — run **`jsexec deploy.js`**
 afterwards to copy it into `xtrn\syncdoom\` (and, on a copy-style install, into
 the live install via `%SBBSCTRL%` or `SYNCDOOM_DEST`). The manual steps follow
 for full control.
