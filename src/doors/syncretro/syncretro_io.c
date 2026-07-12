@@ -325,6 +325,7 @@ static int g_src_w, g_src_h;               /* the core's current frame size */
  * milestone: its 352x224 IS 1.5714 square, the same number it reports, so
  * ignoring the aspect happened to be right on the only console we had. */
 static double g_par;
+static int    g_canvas_known;              /* the terminal ANSWERED ESC[14t (vs. our guess) */
 static int    g_ew, g_eh;                  /* emitted (scaled) image size */
 static int    g_icol = 1, g_irow = 1;      /* 1-based text-cell origin of the image */
 static int    g_geom_ready;
@@ -333,40 +334,55 @@ static int    g_geom_ready;
  * size. Called when any of those change. */
 static void sr_io_recompute_geom(void)
 {
-	int cw, ch, pagew, pageh, fith, fitw, dx, dy;
+	double cw, ch;
+	int    pagew, pageh, fith, fitw, dx, dy;
+	int    was_col = g_icol, was_row = g_irow, was_ew = g_ew, was_eh = g_eh;
 
 	if (g_src_w <= 0 || g_src_h <= 0)
 		return;   /* no frame seen yet: nothing to fit */
 
-	/* Real probed cell size (canvas/grid) when the grid is known; the 8x16
-	 * default otherwise. */
-	cw = (g_grid_cols > 0) ? g_canvas_w / g_grid_cols : SR_CELL_W_DEF;
-	ch = (g_grid_rows > 0) ? g_canvas_h / g_grid_rows : SR_CELL_H_DEF;
-	if (cw <= 0)
+	/* THE CELL IS FRACTIONAL, AND ROUNDING IT DOWN IS WHAT PUTS THE PICTURE OFF
+	 * CENTER. A cell is canvas/grid: 1648 px over 164 columns is 10.05, and on a
+	 * display at 125%/150% scaling the fraction is far bigger. Truncate it and the
+	 * page (cols * cell) comes out up to `cols` pixels narrower THAN THE SCREEN --
+	 * ~100 px on a wide terminal -- so centering inside that page lands the image
+	 * half the error to the left. That is the "not quite centered" a player sees.
+	 * Keep the fraction; quantize once, at the very end, where the text cursor
+	 * genuinely forces a whole cell. */
+	if (g_canvas_known && g_grid_cols > 0 && g_grid_rows > 0) {
+		cw    = (double)g_canvas_w / g_grid_cols;
+		ch    = (double)g_canvas_h / g_grid_rows;
+		pagew = g_canvas_w;          /* the terminal told us: the page IS the canvas */
+		pageh = g_canvas_h;
+	} else {
+		/* The canvas is a GUESS -- SyncTERM never answers the ESC[14t probe (its
+		 * CSI 't' is the CTerm-private palette setter), so g_canvas_* is still the
+		 * 640x400 default. NEVER center against a guess. The GRID is real, so take
+		 * the default cell size as truth and derive the page from that: SyncTERM's
+		 * 80x24 comes out at exactly 640x384, which is what it actually is, and the
+		 * bottom-row reserve below stays real. (Deriving the page from the guessed
+		 * canvas is what used to land syncmoo1's image on the last row whenever
+		 * SyncTERM showed its status line.) */
+		cw    = SR_CELL_W_DEF;
+		ch    = SR_CELL_H_DEF;
+		pagew = (g_grid_cols > 0) ? (int)(g_grid_cols * cw) : g_canvas_w;
+		pageh = (g_grid_rows > 0) ? (int)(g_grid_rows * ch) : g_canvas_h;
+	}
+	if (cw <= 0.0)
 		cw = SR_CELL_W_DEF;
-	if (ch <= 0)
+	if (ch <= 0.0)
 		ch = SR_CELL_H_DEF;
-
-	/* Derive the page from the GRID (rows * ch), not from the canvas. The two
-	 * differ, and assuming they don't is what let syncmoo1's image keep landing
-	 * on the last row whenever SyncTERM showed its status line: SyncTERM never
-	 * answers the ESC[14t canvas probe (its CSI 't' is the CTerm-private palette
-	 * setter), so g_canvas_h stays at the 400 default while the grid probe
-	 * correctly reports 24 rows. Deriving the page from the grid makes the
-	 * bottom-row reserve real on both. */
-	pagew = (g_grid_cols > 0) ? g_grid_cols * cw : g_canvas_w;
-	pageh = (g_grid_rows > 0) ? g_grid_rows * ch : g_canvas_h;
-	if (pagew <= 0 || pagew > g_canvas_w)
+	if (pagew <= 0)
 		pagew = g_canvas_w;
-	if (pageh <= 0 || pageh > g_canvas_h)
+	if (pageh <= 0)
 		pageh = g_canvas_h;
 
 	/* Reserve the bottom text row: a sixel that reaches the last row scrolls the
 	 * page on most terminals. Keeping the image off it is what prevents that --
 	 * NOT DECSDM (?80), whose set/reset sense cterm reversed in rev 1.328, so one
 	 * ?80l means opposite things on a released vs. current SyncTERM. */
-	fith = pageh - ch;
-	if (fith < ch)
+	fith = pageh - (int)(ch + 0.5);
+	if (fith < (int)ch)
 		fith = pageh;   /* absurdly short page: don't reserve ourselves to nothing */
 
 	/* Fit the frame at its DISPLAY shape, not its pixel shape: widen (or narrow)
@@ -382,8 +398,36 @@ static void sr_io_recompute_geom(void)
 	}
 
 	termgfx_geom_fit(pagew, fith, fitw, g_src_h, 0, &g_ew, &g_eh);
-	termgfx_geom_center(pagew, fith, g_ew, g_eh, cw, ch, &dx, &dy, &g_icol, &g_irow);
+	termgfx_geom_center_ex(pagew, fith, g_ew, g_eh, cw, ch, &dx, &dy, &g_icol, &g_irow);
 	g_geom_ready = 1;
+
+	if (g_icol == was_col && g_irow == was_row && g_ew == was_ew && g_eh == was_eh)
+		return;                    /* same rect: nothing moved, nothing to erase */
+
+	/* THE IMAGE RECT MOVED, SO THE OLD ONE MUST BE ERASED -- and only a forced
+	 * repaint does that (it emits ESC[2J ahead of the frame).
+	 *
+	 * This is not a corner case, it is EVERY SESSION. The door draws its first
+	 * frames against the assumed 80x25/640x400 canvas, because the terminal's
+	 * probe replies take a network round-trip to come back; when they land, the
+	 * image is re-fitted to the real canvas and moves. A sixel is PIXELS, not
+	 * cells: nothing about drawing the new image erases the old one, so whatever
+	 * the small first image painted outside the big one's rect stays on screen for
+	 * the rest of the session. On a 164-column terminal that leftover is a grey
+	 * slab down the left of the picture -- the console's power-on frame, which is
+	 * what the core was still showing when the first frames went out.
+	 *
+	 * The invalidate has to live HERE and not in the callers: sr_io_set_aspect()
+	 * remembered to call it, sr_io_set_canvas() and sr_io_set_grid() -- the two
+	 * that fire on every single session -- did not. A choke point cannot be
+	 * forgotten. */
+	sr_io_invalidate();
+
+	fprintf(stderr, "syncretro: geometry canvas %dx%d%s grid %dx%d cell %.2fx%.2f"
+	        " page %dx%d image %dx%d at cell %d,%d\n",
+	        g_canvas_w, g_canvas_h, g_canvas_known ? "" : " (assumed)",
+	        g_grid_cols, g_grid_rows, cw, ch, pagew, fith, g_ew, g_eh,
+	        g_icol, g_irow);
 }
 
 /* The core's display aspect, from retro_get_system_av_info() (possibly overridden
@@ -403,8 +447,9 @@ void sr_io_set_canvas(int w, int h)
 {
 	if (w <= 0 || h <= 0)
 		return;   /* malformed/partial reply: keep the current canvas */
-	g_canvas_w = w;
-	g_canvas_h = h;
+	g_canvas_w     = w;
+	g_canvas_h     = h;
+	g_canvas_known = 1;   /* a real reply: the geometry may now trust the canvas */
 	sr_io_recompute_geom();
 }
 
@@ -606,14 +651,29 @@ void sr_io_stats_tick(void)
 }
 
 /* --- terminal setup / teardown ---------------------------------------------- */
-static int g_entered;
-static int g_left;
+static int      g_entered;
+static int      g_left;
+static uint32_t g_enter_ms;
+
+/* How long to hold the FIRST frame while the terminal's probe replies come back.
+ *
+ * The replies cost a network round-trip, and until the grid one lands the door is
+ * guessing 80x25. Painting during that window means painting an image that is
+ * about to move -- a visible jump, and (before the invalidate above) a permanent
+ * smear of leftover pixels. Holding for a moment costs a few black frames that
+ * nobody sees, because "Loading SyncRetro..." is still on the screen.
+ *
+ * It is a CEILING, not a wait: the moment the grid reply arrives the door starts
+ * drawing. The timeout only bounds a terminal that never answers at all, which
+ * then gets the 80x25 default it deserves. */
+#define SR_GEOM_SETTLE_MS   400
 
 static void sr_io_enter(void)
 {
 	if (g_entered || g_file_mode)
 		return;
 	g_entered = 1;
+	g_enter_ms = sr_io_now_ms();
 
 	/* clear+home, hide cursor, no autowrap, DECSDM ?80l, shared sixel color
 	 * registers (?1070l -- without which foot/xterm reset the palette per image
@@ -760,6 +820,14 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	if (!g_inited)
 		sr_io_init(-1);
 	sr_io_enter();
+
+	/* Hold the first frame until the terminal has told us how big it is -- see
+	 * SR_GEOM_SETTLE_MS. The grid reply (ESC[6n -> ESC[r;cR) is the one that
+	 * matters: it is what turns the assumed 80x25 into the real canvas. The core
+	 * keeps running; we just don't paint a picture we are about to move. */
+	if (!g_file_mode && g_grid_cols <= 0
+	    && (uint32_t)(sr_io_now_ms() - g_enter_ms) < SR_GEOM_SETTLE_MS)
+		return;
 
 	/* one-shot: a door screen overwrote the game area. NOT cleared here --
 	 * several paths below DROP this frame without sending anything (pace

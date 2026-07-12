@@ -55,8 +55,9 @@ void termgfx_geom_fit_ex(int vw, int vh, int src_w, int src_h, int scale_max,
 		*eh = h;
 }
 
-void termgfx_geom_center(int vw, int vh, int ew, int eh, int cell_w, int cell_h,
-                         int *dx, int *dy, int *col, int *row)
+void termgfx_geom_center_ex(int vw, int vh, int ew, int eh,
+                            double cell_w, double cell_h,
+                            int *dx, int *dy, int *col, int *row)
 {
 	int x = vw > ew ? (vw - ew) / 2 : 0;
 	int y = vh > eh ? (vh - eh) / 2 : 0;
@@ -66,7 +67,14 @@ void termgfx_geom_center(int vw, int vh, int ew, int eh, int cell_w, int cell_h,
 	if (dy)
 		*dy = y;
 	if (col)
-		*col = (cell_w > 0) ? 1 + x / cell_w : 1;
+		*col = (cell_w > 0.0) ? 1 + (int)(x / cell_w) : 1;
 	if (row)
-		*row = (cell_h > 0) ? 1 + y / cell_h : 1;
+		*row = (cell_h > 0.0) ? 1 + (int)(y / cell_h) : 1;
+}
+
+void termgfx_geom_center(int vw, int vh, int ew, int eh, int cell_w, int cell_h,
+                         int *dx, int *dy, int *col, int *row)
+{
+	termgfx_geom_center_ex(vw, vh, ew, eh, (double)cell_w, (double)cell_h,
+	                       dx, dy, col, row);
 }

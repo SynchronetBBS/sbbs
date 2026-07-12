@@ -35,4 +35,22 @@ void termgfx_geom_fit_ex(int vw, int vh, int src_w, int src_h, int scale_max,
 void termgfx_geom_center(int vw, int vh, int ew, int eh, int cell_w, int cell_h,
                          int *dx, int *dy, int *col, int *row);
 
+// Same, but with a FRACTIONAL cell size -- and a terminal's cell is very often
+// fractional.  A cell is canvas/grid, and 1648 px over 164 columns is 10.05, not
+// 10; on a display at 125% or 150% scaling the fraction is bigger still.
+//
+// Rounding it down costs `cols * frac` pixels of page width -- up to a hundred on
+// a wide terminal -- and a caller that then derives its page as cols*cell_w is
+// centering the image inside a page NARROWER THAN THE SCREEN.  The picture lands
+// half that error to the left, which is exactly the "not quite centered" a player
+// sees.  Keep the cell fractional, center against the true canvas, and only
+// quantize at the last step, where the cell grid genuinely forces it (a sixel is
+// drawn at the text cursor, so the origin must be a whole cell).
+//
+// termgfx_geom_center() is this with the cell dims widened to double, so existing
+// callers behave exactly as before.
+void termgfx_geom_center_ex(int vw, int vh, int ew, int eh,
+                            double cell_w, double cell_h,
+                            int *dx, int *dy, int *col, int *row);
+
 #endif // TERMGFX_GEOMETRY_H_

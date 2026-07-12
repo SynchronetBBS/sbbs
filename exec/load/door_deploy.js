@@ -139,6 +139,26 @@ function door_deploy_current(exe, dst)
 	return ha !== undefined && ha === hb;
 }
 
+// The copy failed. On a live BBS the overwhelmingly likely reason is that the door
+// is RUNNING: an executable that is currently mapped cannot be written in place
+// (ETXTBSY), and somebody is always playing something.
+//
+// SAY SO, AND CHANGE NOTHING. The tempting trick -- copy alongside, rename over the
+// top, the way a package manager replaces a running binary -- is WRONG here, and
+// not theoretically: the door directory is reached over an SMB mount, where
+// rename() onto a file another process is executing DELETES THE TARGET AND THEN
+// FAILS. This function tried exactly that on its first outing and left the live
+// install with a deleted-but-still-open phantom where the door binary had been.
+//
+// A failed deploy must leave the working binary working.
+function door_deploy_busy_note(dst)
+{
+	print("[deploy] ERROR: " + dst + " is IN USE -- somebody is in this door right"
+	    + " now, and a running binary cannot be overwritten.");
+	print("[deploy]        Nothing was changed: the old binary is intact and still"
+	    + " runs. Re-run this deploy once the door is idle.");
+}
+
 function door_deploy_file(exe, dst)
 {
 	var was = file_size(exe);
@@ -148,7 +168,10 @@ function door_deploy_file(exe, dst)
 		return true;
 	}
 	if (!file_copy(exe, dst)) {
-		print("[deploy] ERROR: failed to copy " + exe + " -> " + dst);
+		if (file_exists(dst))
+			door_deploy_busy_note(dst);
+		else
+			print("[deploy] ERROR: failed to copy " + exe + " -> " + dst);
 		return false;
 	}
 	// The tripwire for the failure above: if the destination resolved back to the
