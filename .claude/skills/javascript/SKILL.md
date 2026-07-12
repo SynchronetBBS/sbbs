@@ -151,6 +151,12 @@ in *both* contexts and name the install the script is actually running against �
 whereas `$SBBSCTRL` only reports what the launching shell exported, and is absent
 under the BBS. (Note also that `$SBBS` is not a real Synchronet variable.)
 
+This matters for any script that can be launched **both** ways. `install-xtrn.js`
+runs an installer's `[exec:<file>.js]` steps with `js.exec()` — in the same
+process — and is itself run either from `jsexec` or from inside the BBS
+(`xtrn-setup.js`). Such a child must therefore avoid `env`/`uifc`/`conio` (no BBS)
+*and* `bbs`/`console` (no jsexec), and talk to its caller with `print()`.
+
 ## The dialect: SpiderMonkey 1.8.5 (ES3-ish + a few ES5 bits)
 
 Synchronet embeds **SpiderMonkey 1.8.5** (JavaScript-C 1.8.5, 2011). Write to

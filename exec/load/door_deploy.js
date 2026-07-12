@@ -194,11 +194,16 @@ function door_deploy(spec)
 
 	// 2. The LIVE install, if this checkout is not itself the live one.
 	//
-	// The shell scripts reached for $SBBSCTRL to find it. We could too -- jsexec
-	// exposes the environment as a global `env` OBJECT, keyed by name
-	// (env.SBBSCTRL), though only under jsexec and not in a BBS session. But
-	// system.ctrl_dir is strictly better: it is available in both contexts, and it
-	// names the install we are actually running against rather than whatever the
+	// The shell scripts reached for $SBBSCTRL to find it. Do NOT be tempted back to
+	// the environment: jsexec does expose it as a global `env` OBJECT keyed by name
+	// (env.SBBSCTRL -- an object, not an array), but it exists ONLY under jsexec.
+	// A deploy step wired into an installer's [exec:] section would then break,
+	// because install-xtrn.js runs those children with js.exec() -- in the same
+	// process -- and install-xtrn itself is run either from jsexec OR from inside
+	// the BBS (xtrn-setup.js), where there is no `env` at all.
+	//
+	// system.ctrl_dir has neither problem: it exists in both contexts, and it names
+	// the install we are actually running against rather than whatever the
 	// launching shell happened to export.
 	live = backslash(system.ctrl_dir) + "../xtrn/" + (spec.xtrn || spec.name);
 	if (fullpath(backslash(live)) != fullpath(backslash(bundle))) {

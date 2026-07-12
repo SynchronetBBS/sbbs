@@ -127,6 +127,19 @@ reports whatever the launching shell happened to export, and is absent under the
 BBS. Reach for `env` only for things that genuinely are environment (a caller's
 own variable, `PATH`, a CI flag).
 
+**A script that can be run BOTH ways must use only the intersection.** This is
+not hypothetical: `install-xtrn.js` runs an installer's `[exec:<file>.js]` steps
+with **`js.exec()`**, i.e. *in the same process*, and `install-xtrn` itself is
+invoked either from the command line (`jsexec install-xtrn ...`) **or from inside
+the BBS** (`xtrn-setup.js`, the sysop's Auto-install menu). So a child script like
+a door's `getcore.js` / `getwads.js` / `getdata.js`:
+
+- must **not** use `env`, `uifc` or `conio` — absent under the BBS;
+- must **not** use `bbs` or `console` — absent under jsexec;
+- may use `system.*`, `js.*`, `file_*`, `print()`, `argv`/`argc`, `load()`.
+
+`print()` is the safe way for such a script to talk to whoever is running it.
+
 **NOT available under jsexec** (session/terminal-bound — referencing them throws
 `ReferenceError`):
 - `bbs` — the per-user session object (menus, prompts, user-state mutators)
