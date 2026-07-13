@@ -4871,11 +4871,11 @@ fill_mevent(char *buf, size_t bufsz, struct mouse_event *me, struct mouse_state 
 			gettextinfo(&ti);
 			ciovmode = find_vmode(ti.currmode);
 			if (ciovmode != -1 && vparams[ciovmode].charwidth > 0 && vparams[ciovmode].charheight > 0
-			    && (me->startx_res != 0 || me->starty_res != 0)) {
+			    && me->startx_res >= 0 && me->starty_res >= 0) {
 				charwidth = vparams[ciovmode].charwidth;
 				charheight = vparams[ciovmode].charheight;
-				x = me->startx_res - (cterm->x * charwidth) + 1;
-				y = me->starty_res - (cterm->y * charheight) + 1;
+				x = me->startx_res - ((cterm->x - 1) * charwidth) + 1;
+				y = me->starty_res - ((cterm->y - 1) * charheight) + 1;
 			}
 		}
 		button |= mods;
