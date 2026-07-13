@@ -750,6 +750,29 @@ void sr_io_stats_toggle(void)
 		sr_toast_clear();
 }
 
+/* THE FRAME JUST PAINTED OVER THE BOTTOM ROW -- give it back.
+ *
+ * A forced repaint emits ESC[2J, which erases the whole page, the reserved bottom
+ * row included. Whatever was on that row (the stats strip, or a toast that is
+ * still inside its moment) has to be redrawn on top of the fresh frame, or it
+ * simply vanishes: the strip only ever repaints when its TEXT changes, so after a
+ * clear it stays blank until the frame counter ticks over -- about a second of
+ * nothing, which is exactly what an F4 tier switch looked like.
+ *
+ * The sixel path had half of this (it redrew the strip every frame); the text path
+ * had none of it, and neither path ever put the toast back. One function now, and
+ * both call it. */
+static void sr_io_overlay_after_frame(int cleared)
+{
+	if (g_toast_drawn) {
+		if (cleared)
+			sr_toast_draw(g_toast);   /* the clear ate it; it is still its moment */
+		return;                       /* the toast owns the row either way */
+	}
+	if (g_stats_on)
+		sr_io_stats_emit(1);
+}
+
 void sr_io_stats_tick(void)
 {
 	sr_toast_tick();   /* erase a volume readout whose moment has passed */
@@ -1054,6 +1077,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		g_pace_progress_ms = sr_io_now_ms();
 		sr_pace_dsr_sent(g_pace_progress_ms);
 		sr_stats_add_frame((uint32_t)(g_out_len - frame_start));
+		sr_io_overlay_after_frame(force);   /* the bottom row is ours again */
 		sr_io_out_flush();
 		return;
 	}
@@ -1144,8 +1168,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	sr_pace_dsr_sent(g_pace_progress_ms);
 
 	sr_stats_add_frame((uint32_t)(g_out_len - frame_start));
-	if (g_stats_on)
-		sr_io_stats_emit(1);   /* redraw the strip on top of the fresh frame */
+	sr_io_overlay_after_frame(force);   /* the bottom row is ours again */
 
 	sr_io_out_flush();
 }

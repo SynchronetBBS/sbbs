@@ -707,6 +707,26 @@ static void sr_evdev_report(int down)
 
 /* --- CSI dispatch ----------------------------------------------------------- */
 
+/* Is the escape sequence we are holding a key PRESS, or the same key coming back
+ * up (or auto-repeating)?
+ *
+ * With the kitty protocol negotiated we asked for event types, so F4 arrives
+ * TWICE per press: bare "CSI S" going down, "CSI 1;1:3S" coming up (the ":<n>"
+ * sub-parameter is the event -- 1 press, 2 repeat, 3 release). A tier cycle that
+ * fires on both steps two tiers per keypress and looks like it is skipping them.
+ * SyncConquer hit exactly this and fixed it the same way (5ff3d05955).
+ *
+ * A legacy terminal sends no event sub-parameter at all, and termgfx's decoder
+ * reports that as a press -- which it is. */
+static int sr_key_is_press(void)
+{
+	int mod, ev = 1;
+
+	if (csi_len > 0)
+		(void)termgfx_kitty_parse(csi_par, csi_len, &mod, &ev);
+	return ev == 1;
+}
+
 /* F4 -- the render-tier cycle. It has no byte form, so it never touches the bind
  * table; it arrives as one of four different escape sequences depending on what
  * the terminal thinks it is, and (on SyncTERM) as a physical-key report instead.
@@ -722,15 +742,18 @@ static void sr_csi_final(char fin)
 
 	switch (fin) {
 		case 'S':   /* F4: SS3 "ESC O S" (VT100 PF4 / xterm), and the same final byte
-		             * under xterm's modified-key form and kitty's ("CSI 1;m S"). No
-		             * terminal SENDS a CSI S (scroll-up) as input, so this is
+		             * under xterm's modified-key form and kitty's ("CSI 1;m:ev S").
+		             * No terminal SENDS a CSI S (scroll-up) as input, so this is
 		             * unambiguous. */
+			if (!sr_key_is_press())
+				return;                 /* a repeat or a release -- see sr_key_is_press */
 			sr_f4();
 			return;
 
-		case '~':   /* VT220-style function keys: F4 is ESC[14~ */
+		case '~':   /* VT220-style function keys: F4 is ESC[14~ (and, under kitty,
+		             * "ESC[14;1:3~" on the way back up). */
 			np = sr_csi_params(p, 2);
-			if (np >= 1 && p[0] == 14)
+			if (np >= 1 && p[0] == 14 && sr_key_is_press())
 				sr_f4();
 			return;
 
