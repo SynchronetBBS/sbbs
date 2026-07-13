@@ -187,6 +187,10 @@ int     sr_input_is_syncterm(void);
  * lands -- so a client that never answers starts on a TEXT tier rather than
  * drawing sixels into a terminal that will print them as garbage. */
 int     sr_input_has_sixel(void);
+/* Has the terminal answered the device-attributes probe (DA1/CTDA) AT ALL? Until
+ * it has, "no sixel" means "we have not been told yet" -- which is not the same
+ * thing, and must not be mistaken for it. */
+int     sr_input_probe_replied(void);
 /* The negotiated keyboard mode, for the stats overlay: "evdev", "kitty" or
  * "bytes". */
 const char *sr_input_keymode_name(void);

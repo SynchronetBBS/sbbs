@@ -368,6 +368,7 @@ typedef struct {
 static sr_tier_t g_tiers[6];
 static int       g_ntiers;
 static int       g_tier_i;
+static int       g_tier_chosen;          /* the PLAYER picked this one (F4) -- do not override */
 static int       g_text_cols, g_text_rows;   /* what rt_config() was last given */
 
 static void sr_tier_add(int text, rt_mode_t rt, rt_charset_t cs, const char *label)
@@ -381,14 +382,26 @@ static void sr_tier_add(int text, rt_mode_t rt, rt_charset_t cs, const char *lab
 	g_ntiers++;
 }
 
-/* Built once, after the probe replies have had their say (so g_have_sixel and the
- * charset are known). */
+/* Built once the probe replies have had their say (so g_have_sixel and the charset
+ * are known) -- and REBUILT if sixel turns up afterwards.
+ *
+ * A terminal that misses the settle window (a slow link, a client that answers
+ * DA1 in its own time) would otherwise be stuck on a text tier forever, with no
+ * sixel in the cycle to find: the list is built once, and it was built from an
+ * answer that had not arrived. So if we later learn the terminal CAN draw, the
+ * list is rebuilt with sixel in it -- and the player is left on the tier he is
+ * already looking at, not yanked to a different one behind his back. */
 static void sr_tiers_build(void)
 {
 	rt_charset_t cs = (termgfx_client_charset() == TERMGFX_UTF8) ? RT_UTF8 : RT_CP437;
+	const char * had = NULL;
 
-	if (g_ntiers > 0)
-		return;
+	if (g_ntiers > 0) {
+		if (g_tiers[0].text == 0 || !sr_input_has_sixel())
+			return;                      /* sixel is already offered, or still absent */
+		had     = g_tiers[g_tier_i].label;   /* the tier the player is on right now */
+		g_ntiers = 0;                        /* rebuild: sixel arrived late */
+	}
 
 	if (sr_input_has_sixel())
 		sr_tier_add(0, 0, cs, "sixel");
@@ -398,7 +411,33 @@ static void sr_tiers_build(void)
 		sr_tier_add(1, RT_QUADRANT, RT_UTF8, "quadrant");
 		sr_tier_add(1, RT_SEXTANT,  RT_UTF8, "sextant");
 	}
+
 	g_tier_i = 0;                        /* index 0 = the best the client can take */
+
+	/* A REBUILD -- sixel turned up late, past the settle window (a slow link, a
+	 * client that answers in its own time). Two cases, and they are not the same:
+	 *
+	 *   the player has not touched F4  ->  he is on the fallback only because we
+	 *                                      did not know better yet. Give him the
+	 *                                      picture: adopt the best tier (index 0).
+	 *   the player HAS pressed F4      ->  he chose this tier. Leave him on it, and
+	 *                                      let him find sixel in the cycle himself.
+	 */
+	if (had != NULL && g_tier_chosen) {
+		int i;
+
+		for (i = 0; i < g_ntiers; i++) {
+			if (strcmp(g_tiers[i].label, had) == 0) {
+				g_tier_i = i;
+				break;
+			}
+		}
+	}
+	if (had != NULL && strcmp(g_tiers[g_tier_i].label, had) != 0) {
+		g_text_cols = g_text_rows = 0;   /* the renderer changed under us */
+		rt_invalidate();
+		sr_io_invalidate();
+	}
 }
 
 const char *sr_io_tier_name(void)
@@ -415,8 +454,9 @@ void sr_io_cycle_tier(void)
 {
 	if (g_ntiers < 2)
 		return;                          /* nothing to cycle to */
-	g_tier_i = (g_tier_i + 1) % g_ntiers;
-	g_text_cols = g_text_rows = 0;       /* force an rt_config() on the next frame */
+	g_tier_i     = (g_tier_i + 1) % g_ntiers;
+	g_tier_chosen = 1;                   /* his choice now: a late probe must not undo it */
+	g_text_cols  = g_text_rows = 0;      /* force an rt_config() on the next frame */
 	rt_invalidate();                     /* the shadow describes a screen we are erasing */
 	sr_io_invalidate();                  /* -> ESC[2J + a full frame */
 	sr_io_toast(sr_io_tier_name());
@@ -953,16 +993,22 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		sr_io_init(-1);
 	sr_io_enter();
 
-	/* Hold the first frame until the terminal has told us how big it is -- see
-	 * SR_GEOM_SETTLE_MS. The grid reply (ESC[6n -> ESC[r;cR) is the one that
-	 * matters: it is what turns the assumed 80x25 into the real canvas. The core
-	 * keeps running; we just don't paint a picture we are about to move. */
-	if (!g_file_mode && g_grid_cols <= 0
+	/* Hold the first frame until the terminal has told us TWO things -- how big it
+	 * is, and whether it can draw a picture -- or until SR_GEOM_SETTLE_MS says it
+	 * never will. The core keeps running; we just don't paint yet.
+	 *
+	 * BOTH answers, not just the grid. The door asks for the grid FIRST (the
+	 * ESC[999;999H + ESC[6n inside termgfx_term_probe) and for the device
+	 * attributes second, so the grid reply comes back first -- and this gate used
+	 * to open on it alone. The very next frame then built the tier list while the
+	 * DA1 reply ("I do sixel") was still in flight, read "no sixel", and started
+	 * the player on a TEXT tier with no sixel in the cycle at all. Whether the two
+	 * replies landed in the same read was a matter of packet boundaries, which is
+	 * why sixel would appear once and then never again. */
+	if (!g_file_mode && (g_grid_cols <= 0 || !sr_input_probe_replied())
 	    && (uint32_t)(sr_io_now_ms() - g_enter_ms) < SR_GEOM_SETTLE_MS)
 		return;
 
-	/* The settle window is over, so DA1 has answered (or never will): we now know
-	 * whether this client has sixel, and what charset it reads. */
 	sr_tiers_build();
 
 	/* one-shot: a door screen overwrote the game area. NOT cleared here --

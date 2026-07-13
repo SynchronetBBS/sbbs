@@ -451,6 +451,7 @@ static unsigned          g_evdev_mods; /* held modifiers, TERMGFX_MOD_* */
 
 int sr_input_is_syncterm(void) { return g_is_syncterm; }
 int sr_input_has_sixel(void)   { return g_have_sixel; }
+int sr_input_probe_replied(void) { return g_probe_replied; }
 
 const char *sr_input_keymode_name(void)
 {
@@ -589,14 +590,45 @@ static int sr_evdev_numpad(int code)
 
 /* kitty functional codepoint -> numpad key, or INT_MIN. KP_0..KP_9 are the
  * contiguous 57399..57408; KP_DECIMAL (57409) is Clear, KP_ENTER (57414). */
+/* NUMLOCK CHANGES WHAT KITTY SENDS, AND A GAMEPAD DOES NOT CARE.
+ *
+ * With NumLock ON the numeric keypad reports KP_0..KP_9 (57399-57408). With it
+ * OFF the very same physical keys report the NAVIGATION functions instead --
+ * KP_UP 57419, KP_LEFT 57417, KP_HOME 57423, and so on. This decoder knew only
+ * the digits, so with NumLock off every numpad key fell through and was dropped:
+ * on a kitty terminal the numpad simply did nothing, while SyncTERM's evdev path
+ * (physical keycodes, which NumLock does not touch) worked fine. That is exactly
+ * how it looked from the outside -- arrows drive the bike, the numpad does not.
+ *
+ * Both spellings fold to the same key here, deliberately. NumLock is a typing
+ * distinction: it decides whether the key means "8" or "up". On a game controller
+ * that key IS up -- it is the top of a d-pad, or the 8 of the Intellivision's
+ * keypad -- and a player should not have to think about a lock light to steer.
+ * (SyncConquer, which is a strategy game with a text UI, honors the distinction;
+ * a console door has no reason to.) */
 static int sr_kitty_numpad(int cp)
 {
 	if (cp >= 57399 && cp <= 57408)
-		return cp - 57399;
+		return cp - 57399;          /* NumLock ON: KP_0 .. KP_9 */
 	if (cp == 57409)
-		return SR_KP_CLEAR;
+		return SR_KP_CLEAR;         /* KP_DECIMAL */
 	if (cp == 57414)
 		return SR_KP_ENTER;
+
+	/* NumLock OFF: the same keys, reported as what they navigate. */
+	switch (cp) {
+		case 57417: return 4;              /* KP_LEFT      */
+		case 57418: return 6;              /* KP_RIGHT     */
+		case 57419: return 8;              /* KP_UP        */
+		case 57420: return 2;              /* KP_DOWN      */
+		case 57421: return 9;              /* KP_PAGE_UP   */
+		case 57422: return 3;              /* KP_PAGE_DOWN */
+		case 57423: return 7;              /* KP_HOME      */
+		case 57424: return 1;              /* KP_END       */
+		case 57425: return 0;              /* KP_INSERT    */
+		case 57426: return SR_KP_CLEAR;    /* KP_DELETE    */
+		case 57427: return 5;              /* KP_BEGIN     */
+	}
 	return INT_MIN;
 }
 
