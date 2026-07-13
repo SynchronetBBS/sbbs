@@ -1,6 +1,39 @@
 # termgfx music: Opus transition plan
 
 Status: **DONE (unconditional switch).** Executed 2026-07-01.
+**Update 2026-07-12: capability gate added** — see below.
+
+## Update 2026-07-12: Opus-support gate (the "accepted risk" closed)
+
+The 2026-07-01 switch shipped with a documented accepted risk: a client whose
+libsndfile lacks Opus (e.g. Ubuntu 22.04's libsndfile 1.0.31) got **silent**
+music *and* a wasted upload, because the coarse feature-100 probe can't tell
+Opus support apart from bare libsndfile presence. Phase 2 of the original plan
+below flagged this as needing a SyncTERM-side change ("Coordinate with Deuce").
+
+Deuce delivered it: SyncTERM commit `eaf14c525b` adds a
+`Q;libsndfileFormat;<major>;<subtype>` query (feature **101**) that reports
+whether the client's libsndfile decodes a specific container/subtype — for us
+`32;100` (`SF_FORMAT_OGG>>16 ; SF_FORMAT_OPUS`), reply
+`ESC[=7;101;32;100;{0,1}n`.
+
+termgfx now uses it (a **simple gate**, per sysop direction — NOT the Vorbis
+fallback of the original phase 3):
+
+- `audio.c`: `termgfx_audio_opus_query` + `termgfx_audio_parse_opus()`.
+- `audio_mgr.c`: a per-manager `opus_ok` (-1 unknown / 0 no / 1 yes). When the
+  digital tier is confirmed, the Opus query goes out alongside the C;L query;
+  the reply is parsed from the inbound stream (with a rolling window for a split
+  feed). When `opus_ok == 0`, the three music entry points
+  (`_music_play` / `_music` / `_music_async_submit`) suppress the track — no
+  render, no upload — and mark it current so the door doesn't retry. SFX (raw
+  WAV) are unaffected.
+- **No regression:** `opus_ok == 1` behaves exactly as before, and a client that
+  never answers feature-101 (older SyncTERM) stays `opus_ok == -1` = send, i.e.
+  the current behavior. Only a client that *explicitly* reports no-Opus is gated.
+- Still **silent** music for those clients (the accepted-risk stance stands);
+  the gate just stops wasting the undecodable upload. A Vorbis fallback (working
+  music instead of silence) remains the deliberately-deferred phase-3 option.
 
 ## What was actually done (2026-07-01)
 

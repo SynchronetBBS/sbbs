@@ -59,6 +59,9 @@ struct termgfx_audio {
 	termgfx_audio_emit_fn emit;
 	void *ctx;
 	int tier;                              // -1 unknown/none, 0 tone, 1 digital
+	int opus_ok;                           // client libsndfile decodes Ogg-Opus (our music codec):
+	                                       // -1 unknown (assume yes -- old SyncTERM never answers),
+	                                       // 0 no (suppress music uploads), 1 yes
 	int blob_ok;                           // client supports A;LoadBlob (CTerm >= 1.329)
 
 	uint8_t sfx_up[KEYMAX];                // id has been C;S-Stored (sfx file)
@@ -89,6 +92,8 @@ struct termgfx_audio {
 
 	uint8_t acc[32];                       // rolling window for the probe reply
 	int acclen;
+	uint8_t oacc[32];                      // rolling window bridging the feature-101 (Opus) reply
+	int oacclen;
 
 	// C;L client-cache query (cross-session upload skip): at tier-ready we ask the
 	// client which music files it already holds on its persistent disk cache, then
@@ -138,6 +143,7 @@ termgfx_audio_t *termgfx_audio_create(termgfx_audio_emit_fn emit, void *ctx)
 	m->emit      = emit;
 	m->ctx       = ctx;
 	m->tier      = -1;
+	m->opus_ok   = -1;
 	m->next_slot = SFX_SLOT_LO;
 	m->next_ch   = SFX_CH_LO;
 	m->music_quality = TERMGFX_MUSIC_QUALITY_DEFAULT;
@@ -317,6 +323,26 @@ static int cl_has(termgfx_audio_t *m, const char *base)
 	return 0;
 }
 
+// Append `buf` to the fixed rolling tail window used to bridge the feature-101
+// (Opus) reply across feeds -- the same shape as the tier-probe window inline
+// below, factored out because that one predates it.
+static void oacc_push(termgfx_audio_t *m, const uint8_t *buf, int len)
+{
+	if (len >= (int)sizeof(m->oacc)) {
+		memcpy(m->oacc, buf + (len - (int)sizeof(m->oacc)), sizeof(m->oacc));
+		m->oacclen = (int)sizeof(m->oacc);
+	}
+	else {
+		int keep = (int)sizeof(m->oacc) - len;
+		if (m->oacclen > keep) {
+			memmove(m->oacc, m->oacc + (m->oacclen - keep), keep);
+			m->oacclen = keep;
+		}
+		memcpy(m->oacc + m->oacclen, buf, len);
+		m->oacclen += len;
+	}
+}
+
 void termgfx_audio_feed(termgfx_audio_t *m, const uint8_t *buf, int len)
 {
 	int r;
@@ -350,10 +376,26 @@ void termgfx_audio_feed(termgfx_audio_t *m, const uint8_t *buf, int len)
 		}
 		if (r >= 0) {
 			m->tier = r;
-			if (r >= 1)
+			if (r >= 1) {
 				cl_query(m);             // digital tier -> ask what the client already caches
+				// ...and whether its libsndfile decodes Opus (our music codec).
+				m->emit(m->ctx, termgfx_audio_opus_query,
+				        strlen(termgfx_audio_opus_query), TERMGFX_AUDIO_PRIO);
+			}
 		}
 		return;
+	}
+	// Tier known. Watch for the feature-101 (Opus) reply until it resolves; it
+	// arrives interleaved with the C;L reply, so scan the whole read and bridge a
+	// split across feeds with a small rolling window (like the tier probe above).
+	if (m->opus_ok < 0) {
+		int o = termgfx_audio_parse_opus(buf, len);
+		if (o < 0) {
+			oacc_push(m, buf, len);
+			o = termgfx_audio_parse_opus(m->oacc, m->oacclen);
+		}
+		if (o >= 0)
+			m->opus_ok = o;
 	}
 	if (m->cl_state != 0)                    // tier known, C;L reply still expected -> capture
 		cl_feed(m, buf, len);
@@ -879,6 +921,15 @@ int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol, int 
 	mus_key(name, key, sizeof(key));
 	if (strcmp(m->music_name, key) == 0)        // already playing this track
 		return TERMGFX_MUSIC_CACHED;
+	// Opus gate: the client's libsndfile can't decode our Ogg-Opus music, so
+	// suppress the track -- no render, no upload, no undecodable bytes on the
+	// wire. Record it as current so the door doesn't retry/re-render every call;
+	// SFX are raw WAV and keep playing. (opus_ok -1 = unknown -> send, as before.)
+	if (m->opus_ok == 0) {
+		strncpy(m->music_name, key, sizeof(m->music_name) - 1);
+		m->music_name[sizeof(m->music_name) - 1] = '\0';
+		return TERMGFX_MUSIC_CACHED;
+	}
 	snprintf(leaf, sizeof(leaf), "%s.ogg", key);
 	cache_name(m, "music", leaf, cachefn, sizeof(cachefn));   // "<prefix>/music/<key>.ogg"
 
@@ -926,6 +977,11 @@ void termgfx_audio_music(termgfx_audio_t *m, const char *name,
 	mus_key(name, key, sizeof(key));
 	if (strcmp(m->music_name, key) == 0)        // already playing this track
 		return;
+	if (m->opus_ok == 0) {                      // Opus gate -- see termgfx_audio_music_play()
+		strncpy(m->music_name, key, sizeof(m->music_name) - 1);
+		m->music_name[sizeof(m->music_name) - 1] = '\0';
+		return;
+	}
 	// Ogg/Opus when available (much smaller upload + a door-side disk cache so the
 	// next play -- any session -- skips the render); raw-PCM WAV otherwise (no caching).
 	use_ogg = (bits == 16 && channels > 0 && termgfx_audio_have_ogg());
@@ -1162,6 +1218,11 @@ void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
 	mus_key(name, key, sizeof(key));
 	if (strcmp(m->music_name, key) == 0)             // already playing this track
 		return;
+	if (m->opus_ok == 0) {                           // Opus gate -- see termgfx_audio_music_play()
+		strncpy(m->music_name, key, sizeof(m->music_name) - 1);
+		m->music_name[sizeof(m->music_name) - 1] = '\0';
+		return;
+	}
 	copy = malloc(len);
 	if (copy == NULL)
 		return;

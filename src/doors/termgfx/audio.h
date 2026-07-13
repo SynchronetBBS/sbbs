@@ -38,6 +38,18 @@ extern const char *const termgfx_audio_query;
 // Idempotent over a growing buffer -- call it after each read.
 int termgfx_audio_parse_caps(const uint8_t *acc, int len);
 
+// The Opus-codec capability query + reply parser (SyncTERM feature 101, added
+// 2026-07-12). parse_caps only reports whether libsndfile is present at all; it
+// can't tell whether that libsndfile decodes Ogg-Opus -- our music codec --
+// which older/distro builds (e.g. Ubuntu 22.04's libsndfile 1.0.31) lack. After
+// the digital tier is confirmed, emit termgfx_audio_opus_query and feed replies
+// to the parser. Query/reply carry the normalized format pair 32;100
+// (SF_FORMAT_OGG>>16 ; SF_FORMAT_OPUS). Reply: "ESC [ = 7 ; 101 ; 32 ; 100 ;
+// {0,1} n". Returns 1 (Opus decodable), 0 (not), or -1 (no reply in this
+// window -- an older SyncTERM that never answers, so assume yes as before).
+extern const char *const termgfx_audio_opus_query;
+int termgfx_audio_parse_opus(const uint8_t *acc, int len);
+
 // ---- builders (buf/cap realloc contract, return bytes written) -----------
 
 // C;S Store: cache `data`/`bytes` verbatim under `file`. Use when the bytes are

@@ -94,6 +94,26 @@ int termgfx_audio_parse_caps(const uint8_t *acc, int len)
 	return -1;
 }
 
+// APC: ESC _ SyncTERM:Q;libsndfileFormat;32;100 ST  (32 = SF_FORMAT_OGG>>16,
+// 100 = SF_FORMAT_OPUS). Asks whether the client's libsndfile decodes Ogg-Opus.
+const char *const termgfx_audio_opus_query = "\x1b_SyncTERM:Q;libsndfileFormat;32;100\x1b\\";
+
+int termgfx_audio_parse_opus(const uint8_t *acc, int len)
+{
+	static const char pfx[] = "\x1b[=7;101;32;100;";   // reply echoes our queried pair
+	int               plen  = (int)sizeof(pfx) - 1;
+	int               j;
+
+	// reply: ESC [ = 7 ; 101 ; 32 ; 100 ; {0,1} n
+	for (j = 0; j + plen + 1 < len; j++) {
+		if (memcmp(acc + j, pfx, (size_t)plen) == 0 &&
+		    (acc[j + plen] == '0' || acc[j + plen] == '1') &&
+		    acc[j + plen + 1] == 'n')
+			return acc[j + plen] - '0';
+	}
+	return -1;
+}
+
 // ---- builders ------------------------------------------------------------
 
 size_t termgfx_audio_cache_file(uint8_t **buf, size_t *cap, const char *file,

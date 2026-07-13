@@ -2281,8 +2281,7 @@ static int probe_sixel(void)
 							int ver = termgfx_caps_cterm_version(p, np, marker);
 							if (ver >= 0) {
 								g_cterm_version = ver;               // "CTerm" maj.min
-								if (ver >= TERMGFX_CTERM_VER_PPM)    // SyncTERM >= 1.2 has APC PPM
-									g_is_syncterm = 1;
+								g_is_syncterm = 1;                   // a parsed CTerm version means it IS SyncTERM
 								if (ver >= TERMGFX_CTERM_VER_BLOB)   // A;LoadBlob inline audio (no cache)
 									termgfx_audio_set_blob_ok(sd_audio, 1);
 							}

@@ -27,7 +27,9 @@ int termgfx_caps_parse_jxl(const uint8_t *acc, int len);
 // features land so the magic numbers live in one place. (exec/load/cterm_lib.js
 // has the fuller list: fonts 1155, sixel 1189, CTDA 1207, copy-buffers 1316,
 // JPEG XL 1318, status-query 1327 -- add the ones the doors actually gate on.)
-#define TERMGFX_CTERM_VER_PPM  1002   // APC PPM pixel-media verbs (DrawPPM etc.)
+#define TERMGFX_CTERM_VER_PPM  1316   // APC PPM media: C;LoadPPM + copy buffers (CTerm 1.316;
+                                      // bare DrawPPM landed 1.315). Both newer than Sixel (1189),
+                                      // so any PPM-capable SyncTERM also has Sixel.
 #define TERMGFX_CTERM_VER_BLOB 1329   // APC blob media verbs: A;LoadBlob, Draw*Blob, Load*Blob
 
 // Extract the CTerm version (major*1000 + minor, so 1.329 -> 1329) from a
