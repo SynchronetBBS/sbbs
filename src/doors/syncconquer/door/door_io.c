@@ -119,18 +119,28 @@
  * The SyncConquer door family builds as two separate binaries from this one
  * shared door: VanillaRA -> syncalert (Red Alert), VanillaTD -> syncdawn
  * (Tiberian Dawn). The per-target compile define SYNCCONQUER_TD (CMakeLists)
- * selects the game's branding, its game-data (MIX) manifest (below), and the
- * per-node data dir / log-file / cache basename -- so the two titles never
- * collide in data/ or the client's SyncTERM cache. Env-var names (SYNCALERT_*)
- * stay shared: they're internal/dev knobs, not sysop-facing. */
+ * selects the game's branding, its game-data (MIX) manifest (below), the
+ * ENGINE'S OWN INI FILENAME (below), and the per-node data dir / log-file /
+ * cache basename -- so the two titles never collide in data/ or the client's
+ * SyncTERM cache. Env-var names (SYNCALERT_*) stay shared: they're internal/dev
+ * knobs, not sysop-facing.
+ *
+ * DOOR_ENGINE_INI is not cosmetic. Each engine asks PathsClass::Init() for its
+ * OWN config filename -- redalert/startup.cpp passes "REDALERT.INI",
+ * tiberiandawn/startup.cpp passes "CONQUER.INI" -- and PathsClass looks for
+ * exactly that name (paths.cpp). Writing the wrong one is therefore INVISIBLE
+ * to the engine, not merely untidy: it silently gets neither our [Paths]
+ * DataPath nor our [Intro] PlayIntro=false. */
 #if defined(SYNCCONQUER_TD)
 #  define DOOR_SHORT_NAME   "syncdawn"
 #  define DOOR_DISPLAY_NAME "SyncDawn"
 #  define DOOR_GAME_NAME    "Tiberian Dawn"
+#  define DOOR_ENGINE_INI   "CONQUER.INI"    /* tiberiandawn/startup.cpp Paths.Init() */
 #else   /* Red Alert (default) */
 #  define DOOR_SHORT_NAME   "syncalert"
 #  define DOOR_DISPLAY_NAME "SyncAlert"
 #  define DOOR_GAME_NAME    "Red Alert"
+#  define DOOR_ENGINE_INI   "REDALERT.INI"   /* redalert/startup.cpp Paths.Init() */
 #endif
 
 static int g_argc;
@@ -515,8 +525,12 @@ static void door_resolve_assets_dir(void)
  * file-search path before opening any mix: the engine CWD is the per-user -home
  * dir (where savegames + <game>.INI are written), NOT where the shared,
  * read-only game data lives. Red Alert bridges the same gap via its PathsClass
- * DataPath (written into REDALERT.INI by door_setup_engine_paths); TD's engine
- * never calls Paths.Init / Parse_Command_Line, so it reads this directly.
+ * DataPath, written into REDALERT.INI by door_setup_engine_paths().
+ *
+ * TD reaches the mixes through this function rather than that DataPath -- which
+ * is exactly why the door writing the RA-named INI under TD went unnoticed for
+ * so long: the assets still loaded, so nothing looked broken, while [Intro]
+ * PlayIntro=false silently never reached the engine (see DOOR_ENGINE_INI).
  * Returns "" until door_resolve_assets_dir() has run (pre-main constructor). */
 const char *door_engine_data_dir(void)
 {
@@ -674,7 +688,7 @@ static void door_setup_engine_paths(void)
 	if (!door_realpath(g_home, abs_home, sizeof abs_home))
 		snprintf(abs_home, sizeof abs_home, "%s", g_home);   /* fall back to as-given */
 
-	snprintf(ini_path, sizeof ini_path, "%s/REDALERT.INI", abs_home);
+	snprintf(ini_path, sizeof ini_path, "%s/" DOOR_ENGINE_INI, abs_home);
 	/* MERGE, don't clobber. The old code rewrote this file from scratch every
 	 * launch with only [Paths], which wiped the engine's own persisted settings
 	 * (music/sound volume, etc.) AND left [Intro] PlayIntro absent -- so it
@@ -683,7 +697,23 @@ static void door_setup_engine_paths(void)
 	 * INI (xpdev), (re)write only the runtime [Paths], and seed [Intro]
 	 * PlayIntro=false ONLY when it's absent so a fresh install boots to the menu
 	 * while a sysop's (or the engine's own) later value survives. iniWriteFile()
-	 * rewinds+truncates, so everything else in the file is preserved verbatim. */
+	 * rewinds+truncates, so everything else in the file is preserved verbatim.
+	 *
+	 * DOOR_ENGINE_INI, not a hardcoded "REDALERT.INI": that name is what the
+	 * ENGINE searches for (PathsClass::Init(), given "REDALERT.INI" by RA and
+	 * "CONQUER.INI" by TD), so the RA name written under TD was a file TD never
+	 * opened. TD thus got neither [Paths] DataPath (harmless -- it takes the
+	 * asset dir from door_engine_data_dir() instead, which is what masked this)
+	 * nor [Intro] PlayIntro=false -- so PlayIntro defaulted true and syncdawn
+	 * replayed the from-install path (long intro -> Choose_Side -> straight into
+	 * a mission) on EVERY launch instead of reaching the main menu. It looked
+	 * platform-specific only by accident: with no INI beside argv[0], the
+	 * engine's ini.Save() falls back to PathsClass::User_Path() -- ~/.config/
+	 * vanilla-conquer/vanillatd on POSIX, %APPDATA%\Vanilla-Conquer\vanillatd on
+	 * Windows -- which persists for the *nix BBS user (so the second run onward
+	 * found PlayIntro=false and behaved) but not for the Windows service account.
+	 * That fallback is wrong for a door regardless: it is ONE file shared by
+	 * every caller, which is the very thing -home exists to prevent. */
 	f = iniOpenFile(ini_path, TRUE);   /* r+ if it exists, w+ if new */
 	if (f != NULL) {
 		str_list_t ini = iniReadFile(f);
