@@ -15,6 +15,7 @@ Add Wren scripting engine, REPL console with Ctrl+`
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support
 Add support for "cursor on mode" to Prestel (ala Acorn manual)
+Add scaling, mirroring, and clipping support to graphics APC draws
 
 Version 1.9
 -----------

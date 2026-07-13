@@ -2238,189 +2238,362 @@ int bitmap_setpixel(uint32_t x, uint32_t y, uint32_t colour)
 	return 1;
 }
 
-int bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask)
+struct bitmap_blit_clip {
+	int x;
+	int y;
+	uint32_t width;
+	uint32_t height;
+};
+
+static int
+bitmap_validate_blit_source(struct ciolib_pixels *pixels, struct ciolib_mask *mask, const struct ciolib_blit *blit)
 {
-	uint32_t x, y;
-	uint32_t width,height;
-	int mask_bit;
-	size_t mask_byte;
-	size_t pos;
-	size_t mpos;
+	uint64_t dst_width;
+	uint64_t dst_height;
+
+	if (pixels == NULL || pixels->pixels == NULL || blit == NULL)
+		return 0;
+	if (blit->flags & ~(CIOLIB_BLIT_FLIP_X | CIOLIB_BLIT_FLIP_Y))
+		return 0;
+	if (blit->sw == 0 || blit->sh == 0 || blit->scale_x == 0 || blit->scale_y == 0)
+		return 0;
+	if (blit->sx >= pixels->width || blit->sy >= pixels->height)
+		return 0;
+	if (blit->sw > pixels->width - blit->sx)
+		return 0;
+	if (blit->sh > pixels->height - blit->sy)
+		return 0;
+	if (mask != NULL) {
+		if (mask->bits == NULL)
+			return 0;
+		if (blit->mx >= mask->width || blit->my >= mask->height)
+			return 0;
+		if (blit->sw > mask->width - blit->mx)
+			return 0;
+		if (blit->sh > mask->height - blit->my)
+			return 0;
+	}
+
+	dst_width = (uint64_t)blit->sw * blit->scale_x;
+	dst_height = (uint64_t)blit->sh * blit->scale_y;
+	if (dst_width > INT32_MAX || dst_height > INT32_MAX)
+		return 0;
+
+	return 1;
+}
+
+static bool
+bitmap_clip_blit(const struct ciolib_blit *blit, int screen_width, int screen_height, struct bitmap_blit_clip *clip)
+{
+	int64_t left = blit->dx;
+	int64_t top = blit->dy;
+	int64_t right = left + (int64_t)blit->sw * blit->scale_x;
+	int64_t bottom = top + (int64_t)blit->sh * blit->scale_y;
+
+	if (right <= 0 || bottom <= 0 || left >= screen_width || top >= screen_height)
+		return false;
+	if (left < 0)
+		left = 0;
+	if (top < 0)
+		top = 0;
+	if (right > screen_width)
+		right = screen_width;
+	if (bottom > screen_height)
+		bottom = screen_height;
+	if (left >= right || top >= bottom)
+		return false;
+
+	clip->x = (int)left;
+	clip->y = (int)top;
+	clip->width = (uint32_t)(right - left);
+	clip->height = (uint32_t)(bottom - top);
+	return true;
+}
+
+static inline bool
+bitmap_mask_getbit(struct ciolib_mask *mask, uint32_t x, uint32_t y)
+{
+	size_t pos = (size_t)y * mask->width + x;
+	return (mask->bits[pos / 8] & (0x80 >> (pos % 8))) != 0;
+}
+
+static inline void
+bitmap_put_blit_pixel(size_t dstpos, uint32_t coloura, uint32_t colourb)
+{
+	if (screena.rect->data[dstpos] != coloura) {
+		screena.rect->data[dstpos] = coloura;
+		screena.update_pixels = 1;
+	}
+	if (screenb.rect->data[dstpos] != colourb) {
+		screenb.rect->data[dstpos] = colourb;
+		screenb.update_pixels = 1;
+	}
+}
+
+static void
+bitmap_note_vmem_changed(void)
+{
+	assert_pthread_mutex_lock(&vstat_chlock);
+	if (vstat.vmem != NULL)
+		vstat.vmem->changed = true;
+	assert_pthread_mutex_unlock(&vstat_chlock);
+}
+
+static void
+bitmap_mark_pixel_cells(int x, int y, uint32_t width, uint32_t height)
+{
+	int first_col;
+	int last_col;
+	int first_row;
+	int last_row;
+	int text_width;
+	int text_height;
+
+	if (vstat.vmem == NULL || vstat.vmem->vmem == NULL || vstat.charwidth <= 0 || vstat.charheight <= 0)
+		return;
+
+	text_width = vstat.cols * vstat.charwidth;
+	text_height = vstat.rows * vstat.charheight;
+	if (x >= text_width || y >= text_height)
+		return;
+	if ((int64_t)x + width > text_width)
+		width = text_width - x;
+	if ((int64_t)y + height > text_height)
+		height = text_height - y;
+
+	first_col = x / vstat.charwidth;
+	last_col = (x + width - 1) / vstat.charwidth;
+	first_row = y / vstat.charheight;
+	last_row = (y + height - 1) / vstat.charheight;
+
+	if (bitmap_drawn == NULL) {
+		bitmap_draw_from_vmem(first_col + 1, first_row + 1, last_col + 1, last_row + 1, true, NULL);
+		for (int row = first_row; row <= last_row; row++) {
+			int off = vmem_cell_offset(vstat.vmem, first_col, row);
+			for (int col = first_col; col <= last_col; col++) {
+				vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
+				off = vmem_next_offset(vstat.vmem, off);
+			}
+		}
+		return;
+	}
+
+	for (int row = first_row; row <= last_row; row++) {
+		int off = vmem_cell_offset(vstat.vmem, first_col, row);
+		for (int col = first_col; col <= last_col; col++) {
+			if (!same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off]))
+				bitmap_draw_from_vmem(col + 1, row + 1, col + 1, row + 1, true, NULL);
+			vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
+			bitmap_drawn[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
+			off = vmem_next_offset(vstat.vmem, off);
+		}
+	}
+}
+
+static void
+bitmap_blit_1x1(struct ciolib_pixels *pixels, struct ciolib_mask *mask, const struct ciolib_blit *blit, const struct bitmap_blit_clip *clip)
+{
+	uint32_t *pixelsb = pixels->pixelsb ? pixels->pixelsb : pixels->pixels;
+
+	for (uint32_t y = 0; y < clip->height; y++) {
+		uint32_t src_y = blit->sy + (uint32_t)(clip->y - blit->dy) + y;
+		uint32_t src_x = blit->sx + (uint32_t)(clip->x - blit->dx);
+		size_t srcpos = (size_t)src_y * pixels->width + src_x;
+		size_t dstpos = pixel_offset(&screena, clip->x, clip->y + y);
+
+		if (mask == NULL) {
+			for (uint32_t x = 0; x < clip->width; x++) {
+				bitmap_put_blit_pixel(dstpos, pixels->pixels[srcpos], pixelsb[srcpos]);
+				srcpos++;
+				dstpos++;
+			}
+		}
+		else {
+			size_t maskpos = (size_t)(blit->my + (uint32_t)(clip->y - blit->dy) + y) * mask->width + blit->mx + (uint32_t)(clip->x - blit->dx);
+
+			for (uint32_t x = 0; x < clip->width; x++) {
+				if ((mask->bits[maskpos / 8] & (0x80 >> (maskpos % 8))) != 0)
+					bitmap_put_blit_pixel(dstpos, pixels->pixels[srcpos], pixelsb[srcpos]);
+				srcpos++;
+				dstpos++;
+				maskpos++;
+			}
+		}
+	}
+}
+
+static void
+bitmap_blit_scaled(struct ciolib_pixels *pixels, struct ciolib_mask *mask, const struct ciolib_blit *blit, const struct bitmap_blit_clip *clip)
+{
+	uint32_t *pixelsb = pixels->pixelsb ? pixels->pixelsb : pixels->pixels;
+	uint32_t src_rel_y = (uint32_t)((clip->y - blit->dy) / blit->scale_y);
+	uint32_t y_rem = (uint32_t)((clip->y - blit->dy) % blit->scale_y);
+	uint32_t first_src_rel_x = (uint32_t)((clip->x - blit->dx) / blit->scale_x);
+	uint32_t first_x_rem = (uint32_t)((clip->x - blit->dx) % blit->scale_x);
+	bool flip_x = (blit->flags & CIOLIB_BLIT_FLIP_X) != 0;
+	bool flip_y = (blit->flags & CIOLIB_BLIT_FLIP_Y) != 0;
+
+	for (uint32_t y = 0; y < clip->height; y++) {
+		uint32_t row_rel_y = src_rel_y;
+		uint32_t src_rel_x = first_src_rel_x;
+		uint32_t x_rem = first_x_rem;
+		size_t dstpos = pixel_offset(&screena, clip->x, clip->y + y);
+
+		if (flip_y)
+			row_rel_y = blit->sh - 1 - row_rel_y;
+
+		if (mask == NULL) {
+			for (uint32_t x = 0; x < clip->width; x++) {
+				uint32_t src_x = src_rel_x;
+				size_t srcpos;
+
+				if (flip_x)
+					src_x = blit->sw - 1 - src_x;
+
+				srcpos = (size_t)(blit->sy + row_rel_y) * pixels->width + blit->sx + src_x;
+				bitmap_put_blit_pixel(dstpos, pixels->pixels[srcpos], pixelsb[srcpos]);
+				dstpos++;
+
+				x_rem++;
+				if (x_rem >= blit->scale_x) {
+					x_rem = 0;
+					src_rel_x++;
+				}
+			}
+		}
+		else {
+			for (uint32_t x = 0; x < clip->width; x++) {
+				uint32_t src_x = src_rel_x;
+				size_t srcpos;
+
+				if (flip_x)
+					src_x = blit->sw - 1 - src_x;
+
+				if (bitmap_mask_getbit(mask, blit->mx + src_x, blit->my + row_rel_y)) {
+					srcpos = (size_t)(blit->sy + row_rel_y) * pixels->width + blit->sx + src_x;
+					bitmap_put_blit_pixel(dstpos, pixels->pixels[srcpos], pixelsb[srcpos]);
+				}
+				dstpos++;
+
+				x_rem++;
+				if (x_rem >= blit->scale_x) {
+					x_rem = 0;
+					src_rel_x++;
+				}
+			}
+		}
+
+		y_rem++;
+		if (y_rem >= blit->scale_y) {
+			y_rem = 0;
+			src_rel_y++;
+		}
+	}
+}
+
+static int
+bitmap_blitpixels_locked(struct ciolib_pixels *pixels, struct ciolib_mask *mask, const struct ciolib_blit *blit)
+{
+	struct bitmap_blit_clip clip;
+	int screen_width;
+	int screen_height;
+
+	if (!bitmap_validate_blit_source(pixels, mask, blit))
+		return 0;
+	if (screena.rect == NULL || screenb.rect == NULL)
+		return 0;
+
+	screen_width = screena.screenwidth < screenb.screenwidth ? screena.screenwidth : screenb.screenwidth;
+	screen_height = screena.screenheight < screenb.screenheight ? screena.screenheight : screenb.screenheight;
+	if (!bitmap_clip_blit(blit, screen_width, screen_height, &clip))
+		return 1;
+
+	if (blit->scale_x == 1 && blit->scale_y == 1 && !(blit->flags & (CIOLIB_BLIT_FLIP_X | CIOLIB_BLIT_FLIP_Y))) {
+		bitmap_note_vmem_changed();
+		bitmap_mark_pixel_cells(clip.x, clip.y, clip.width, clip.height);
+		bitmap_blit_1x1(pixels, mask, blit, &clip);
+		return 1;
+	}
+
+	bitmap_note_vmem_changed();
+	bitmap_mark_pixel_cells(clip.x, clip.y, clip.width, clip.height);
+	bitmap_blit_scaled(pixels, mask, blit, &clip);
+	return 1;
+}
+
+int
+bitmap_blitpixels(struct ciolib_pixels *pixels, struct ciolib_mask *mask, const struct ciolib_blit *blit)
+{
+	int ret;
+
+	assert_rwlock_wrlock(&vstatlock);
+	assert_pthread_mutex_lock(&screenlock);
+	ret = bitmap_blitpixels_locked(pixels, mask, blit);
+	assert_pthread_mutex_unlock(&screenlock);
+	assert_rwlock_unlock(&vstatlock);
+
+	return ret;
+}
+
+int
+bitmap_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask)
+{
+	struct ciolib_blit blit;
+	uint32_t width;
+	uint32_t height;
+	int ret;
 
 	if (pixels == NULL)
 		return 0;
-
 	if (sx > ex || sy > ey)
 		return 0;
-
-	if (y_off > pixels->height)
-		return 0;
-	if (x_off > pixels->width)
+	if (x_off > pixels->width || y_off > pixels->height)
 		return 0;
 
 	width = ex - sx + 1;
 	height = ey - sy + 1;
-
-	if (width + x_off > pixels->width)
+	if (width > pixels->width - x_off)
 		return 0;
-
-	if (height + y_off > pixels->height)
+	if (height > pixels->height - y_off)
 		return 0;
 
 	if (mask != NULL) {
-		if (mx_off > mask->width)
+		if (mx_off > mask->width || my_off > mask->height)
 			return 0;
-		if (my_off > mask->height)
+		if (width > mask->width - mx_off)
 			return 0;
-		if (width + mx_off > mask->width)
-			return 0;
-		if (height + my_off > mask->height)
+		if (height > mask->height - my_off)
 			return 0;
 	}
 
+	blit = (struct ciolib_blit) {
+		.sx = x_off,
+		.sy = y_off,
+		.sw = width,
+		.sh = height,
+		.dx = sx,
+		.dy = sy,
+		.scale_x = 1,
+		.scale_y = 1,
+		.mx = mx_off,
+		.my = my_off,
+		.flags = 0,
+	};
+
 	assert_rwlock_wrlock(&vstatlock);
-	assert_pthread_mutex_lock(&vstat_chlock);
-	vstat.vmem->changed = true;
-	assert_pthread_mutex_unlock(&vstat_chlock);
 	assert_pthread_mutex_lock(&screenlock);
-	if (ex > screena.screenwidth || ey > screena.screenheight) {
+	if (screena.rect == NULL || screenb.rect == NULL
+	    || ex >= (uint32_t)screena.screenwidth || ey >= (uint32_t)screena.screenheight
+	    || ex >= (uint32_t)screenb.screenwidth || ey >= (uint32_t)screenb.screenheight) {
 		assert_pthread_mutex_unlock(&screenlock);
 		assert_rwlock_unlock(&vstatlock);
 		return 0;
 	}
-
-	int charsx = sx / vstat.charwidth;
-	int charx = charsx;
-	int chary = sy / vstat.charheight;
-	int cpx = sx % vstat.charwidth;
-	int cpy = sy % vstat.charheight;
-	bool xupdated = false;
-	bool yupdated = false;
-	int off = INT_MIN;
-	int crows = vstat.rows * vstat.charheight;
-	int ccols = vstat.cols * vstat.charwidth;
-	for (y = sy; y <= ey; y++) {
-		pos = pixels->width*(y-sy+y_off)+x_off;
-		bool in_text_area = y < crows;
-		if (in_text_area && !yupdated) {
-			charx = charsx;
-			cpx = sx % vstat.charwidth;
-			off = vmem_cell_offset(vstat.vmem, charx, chary);
-		}
-		if (mask == NULL) {
-			for (x = sx; x <= ex; x++) {
-				if (x >= ccols)
-					in_text_area = false;
-				if (in_text_area) {
-					if (!yupdated) {
-						if (!xupdated) {
-							if (bitmap_drawn == NULL || !same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true, NULL);
-							}
-							if (vstat.vmem && vstat.vmem->vmem) {
-								vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
-							}
-							if (bitmap_drawn) {
-								bitmap_drawn[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
-							}
-							xupdated = true;
-						}
-					}
-					if (++cpx >= vstat.charwidth) {
-						cpx = 0;
-						charx++;
-						xupdated = false;
-						assert(off >= 0);
-						off = vmem_next_offset(vstat.vmem, off);
-					}
-				}
-				if (screena.rect->data[pixel_offset(&screena, x, y)] != pixels->pixels[pos]) {
-					screena.rect->data[pixel_offset(&screena, x, y)] = pixels->pixels[pos];
-					screena.update_pixels = 1;
-				}
-				if (pixels->pixelsb) {
-					if (screenb.rect->data[pixel_offset(&screenb, x, y)] != pixels->pixelsb[pos]) {
-						screenb.rect->data[pixel_offset(&screenb, x, y)] = pixels->pixelsb[pos];
-						screenb.update_pixels = 1;
-					}
-				}
-				else {
-					if (screenb.rect->data[pixel_offset(&screenb, x, y)] != pixels->pixels[pos]) {
-						screenb.rect->data[pixel_offset(&screenb, x, y)] = pixels->pixels[pos];
-						screenb.update_pixels = 1;
-					}
-				}
-				pos++;
-			}
-		}
-		else {
-			mpos = mask->width * (y - sy + my_off) + mx_off;
-			for (x = sx; x <= ex; x++) {
-				if (x >= ccols)
-					in_text_area = false;
-				if (in_text_area) {
-					if (!yupdated) {
-						if (!xupdated) {
-							if (bitmap_drawn == NULL || !same_cell(&bitmap_drawn[off], &vstat.vmem->vmem[off])) {
-								bitmap_draw_from_vmem(charx + 1, chary + 1, charx + 1, chary + 1, true, NULL);
-							}
-							if (vstat.vmem && vstat.vmem->vmem) {
-								vstat.vmem->vmem[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
-							}
-							if (bitmap_drawn) {
-								bitmap_drawn[off].bg |= CIOLIB_BG_PIXEL_GRAPHICS;
-							}
-							xupdated = true;
-						}
-					}
-					if (++cpx >= vstat.charwidth) {
-						cpx = 0;
-						charx++;
-						xupdated = false;
-						off = vmem_next_offset(vstat.vmem, off);
-					}
-				}
-				mask_byte = mpos / 8;
-				mask_bit = mpos % 8;
-				mask_bit = 0x80 >> mask_bit;
-				if (mask->bits[mask_byte] & mask_bit) {
-					if (screena.rect->data[pixel_offset(&screena, x, y)] != pixels->pixels[pos]) {
-						screena.rect->data[pixel_offset(&screena, x, y)] = pixels->pixels[pos];
-						screena.update_pixels = 1;
-					}
-					if (pixels->pixelsb) {
-						if (screenb.rect->data[pixel_offset(&screenb, x, y)] != pixels->pixelsb[pos]) {
-							screenb.rect->data[pixel_offset(&screenb, x, y)] = pixels->pixelsb[pos];
-							screenb.update_pixels = 1;
-						}
-					}
-					else {
-						if (screenb.rect->data[pixel_offset(&screenb, x, y)] != pixels->pixels[pos]) {
-							screenb.rect->data[pixel_offset(&screenb, x, y)] = pixels->pixels[pos];
-							screenb.update_pixels = 1;
-						}
-					}
-				}
-				pos++;
-				mpos++;
-			}
-		}
-		if (y < crows) {
-			cpy++;
-			if (cpy >= vstat.charheight) {
-				chary++;
-				cpy = 0;
-				yupdated = false;
-				xupdated = false;
-			}
-			else
-				yupdated = true;
-		}
-	}
+	ret = bitmap_blitpixels_locked(pixels, mask, &blit);
 	assert_pthread_mutex_unlock(&screenlock);
 	assert_rwlock_unlock(&vstatlock);
 
-	return 1;
+	return ret;
 }
 
 struct ciolib_pixels *bitmap_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force)

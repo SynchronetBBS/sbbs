@@ -791,6 +791,10 @@ revision 1.330 and later.
 `APC SyncTERM:Q;libsndfileFormat;pm;ps ST` is available in revision
 1.331 and later.
 
+Graphics APC `FX`, `FY`, `ZX`, and `ZY` arguments and negative
+`DX`/`DY` destination coordinates are available in revision 1.332 and
+later.
+
 SOURCE: <<ECMA-48>>
 
 === `CSI < Ps c` CTerm Device Attributes (`CTDA`)
@@ -2674,10 +2678,24 @@ Draws a PPM from the cache directory on the screen. +
 |Sets the height of the portion of the image to copy.  Default = Image height - `SH`
 
 |`DX=#`
-|Sets the X position on the screen to draw the image at.  Default = 0.
+|Sets the X position on the screen to draw the image at.  May be
+negative.  Default = 0.
 
 |`DY=#`
-|Sets the Y position on the screen to draw the image at.  Default = 0.
+|Sets the Y position on the screen to draw the image at.  May be
+negative.  Default = 0.
+
+|`FX`
+|Flips the selected source rectangle horizontally before drawing.
+
+|`FY`
+|Flips the selected source rectangle vertically before drawing.
+
+|`ZX=#`
+|Sets the integer X zoom factor.  Default = 1.
+
+|`ZY=#`
+|Sets the integer Y zoom factor.  Default = 1.
 
 |`MX=#`
 |Sets the X position in the mask to start applying from.  Default = 0.
@@ -2717,7 +2735,9 @@ Draws a PPM from the cache directory on the screen. +
 The PPM file may be raw (preferred) or text.  SyncTERM
 does not support more than 255 values per colour channel
 and assumes it is correctly using the BT.709 gamma
-transfer.
+transfer.  `ZX` and `ZY` must be non-zero.  Zoom and flip are applied
+to the source image and mask sampling.  If the destination area extends
+past the screen, the off-screen portion is clipped.
 
 === `APC SyncTERM:C;DrawPPMBlob Ps... Ps1 ST` Draw a PPM Blob (`CTDPB`)
 Draws a base64-encoded PPM directly on the screen without storing it in
@@ -2749,10 +2769,24 @@ Draws a JPEG XL from the cache directory on the screen. +
 |Sets the height of the portion of the image to copy.  Default = Image height - `SH`
 
 |`DX=#`
-|Sets the X position on the screen to draw the image at.  Default = 0.
+|Sets the X position on the screen to draw the image at.  May be
+negative.  Default = 0.
 
 |`DY=#`
-|Sets the Y position on the screen to draw the image at.  Default = 0.
+|Sets the Y position on the screen to draw the image at.  May be
+negative.  Default = 0.
+
+|`FX`
+|Flips the selected source rectangle horizontally before drawing.
+
+|`FY`
+|Flips the selected source rectangle vertically before drawing.
+
+|`ZX=#`
+|Sets the integer X zoom factor.  Default = 1.
+
+|`ZY=#`
+|Sets the integer Y zoom factor.  Default = 1.
 
 |`MX=#`
 |Sets the X position in the mask to start applying from.  Default = 0.
@@ -2788,6 +2822,10 @@ Draws a JPEG XL from the cache directory on the screen. +
 |`MBUF`
 |Uses the loaded mask buffer.
 |===
+
+`ZX` and `ZY` must be non-zero.  Zoom and flip are applied to the
+source image and mask sampling.  If the destination area extends past
+the screen, the off-screen portion is clipped.
 
 === `APC SyncTERM:C;DrawJXLBlob Ps... Ps1 ST` Draw a JPEG XL Blob (`CTDJB`)
 Draws a base64-encoded JPEG XL directly on the screen without storing it
@@ -2883,10 +2921,24 @@ All coordinates and dimensions are in pixels.
 |Sets the height of the portion of the image to copy.  Default = Image height - `SH`
 
 |`DX=#`
-|Sets the X position on the screen to draw the image at.  Default = 0.
+|Sets the X position on the screen to draw the image at.  May be
+negative.  Default = 0.
 
 |`DY=#`
-|Sets the Y position on the screen to draw the image at.  Default = 0.
+|Sets the Y position on the screen to draw the image at.  May be
+negative.  Default = 0.
+
+|`FX`
+|Flips the selected source rectangle horizontally before drawing.
+
+|`FY`
+|Flips the selected source rectangle vertically before drawing.
+
+|`ZX=#`
+|Sets the integer X zoom factor.  Default = 1.
+
+|`ZY=#`
+|Sets the integer Y zoom factor.  Default = 1.
 
 |`MX=#`
 |Sets the X position in the mask to start applying from.  Default = 0.
@@ -2925,6 +2977,10 @@ All coordinates and dimensions are in pixels.
 |`B=#`
 |Selects the buffer (0 or 1 only) to paste from.
 |===
+
+`ZX` and `ZY` must be non-zero.  Zoom and flip are applied to the
+source image and mask sampling.  If the destination area extends past
+the screen, the off-screen portion is clipped.
 
 === `APC SyncTERM:Q;JXL ST` Query JXL Support (`CTQJS`)
 Queries support for the JXL image format. +

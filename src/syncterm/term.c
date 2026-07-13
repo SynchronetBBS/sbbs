@@ -3554,6 +3554,32 @@ read_image_source(enum image_blob_type type, const char *fn, const char *src, si
 }
 
 static void
+draw_pixels(struct ciolib_pixels *pixels, struct ciolib_mask *mask, unsigned long sx, unsigned long sy, unsigned long sw, unsigned long sh, long dx, long dy, unsigned long mx, unsigned long my, unsigned long zx, unsigned long zy, uint32_t flags)
+{
+	struct ciolib_blit blit;
+
+	if (pixels == NULL || sx > UINT32_MAX || sy > UINT32_MAX || sw > UINT32_MAX || sh > UINT32_MAX
+	    || dx < INT32_MIN || dx > INT32_MAX || dy < INT32_MIN || dy > INT32_MAX
+	    || mx > UINT32_MAX || my > UINT32_MAX || zx == 0 || zx > UINT32_MAX || zy == 0 || zy > UINT32_MAX)
+		return;
+
+	blit = (struct ciolib_blit) {
+		.sx = sx,
+		.sy = sy,
+		.sw = sw,
+		.sh = sh,
+		.dx = dx,
+		.dy = dy,
+		.scale_x = zx,
+		.scale_y = zy,
+		.mx = mx,
+		.my = my,
+		.flags = flags,
+	};
+	blitpixels(pixels, mask, &blit);
+}
+
+static void
 draw_image_str_handler(char *str, size_t slen, char *fn, size_t optoff, enum image_blob_type type, bool blob)
 {
 	struct ciolib_mask   *ctmask = NULL;
@@ -3563,21 +3589,26 @@ draw_image_str_handler(char *str, size_t slen, char *fn, size_t optoff, enum ima
 	char                 *maskfn = NULL;
 	struct ciolib_pixels *imgp = NULL;
 	unsigned long        *val;
+	long                 *sval;
 	unsigned long         sx = 0; // Source X to start at
 	unsigned long         sy = 0; // Source Y to start at
 	unsigned long         sw = 0; // Source width to show
 	unsigned long         sh = 0; // Source height to show
-	unsigned long         dx = 0; // Destination X to start at
-	unsigned long         dy = 0; // Destination Y to start at
+	long                  dx = 0; // Destination X to start at
+	long                  dy = 0; // Destination Y to start at
 	unsigned long         mx = 0; // Mask X to start at
 	unsigned long         my = 0; // Mask Y to start at
 	unsigned long         mw = 0; // Width of the mask
 	unsigned long         mh = 0; // Height of the mask
+	unsigned long         zx = 1; // X zoom factor
+	unsigned long         zy = 1; // Y zoom factor
 	size_t                mlen = 0;
 	bool                  mbuf = false;
+	uint32_t              flags = 0;
 
 	for (p = str + optoff; p && *p == ';'; p = strchr(p + 1, ';')) {
 		val = NULL;
+		sval = NULL;
 		switch (p[1]) {
 			case 'S':
 				switch (p[2]) {
@@ -3598,11 +3629,21 @@ draw_image_str_handler(char *str, size_t slen, char *fn, size_t optoff, enum ima
 			case 'D':
 				switch (p[2]) {
 					case 'X':
-						val = &dx;
+						sval = &dx;
 						break;
 					case 'Y':
-						val = &dy;
+						sval = &dy;
 						break;
+				}
+				break;
+			case 'F':
+				switch (p[2]) {
+					case 'X':
+						flags |= CIOLIB_BLIT_FLIP_X;
+						continue;
+					case 'Y':
+						flags |= CIOLIB_BLIT_FLIP_Y;
+						continue;
 				}
 				break;
 			case 'M':
@@ -3655,10 +3696,25 @@ draw_image_str_handler(char *str, size_t slen, char *fn, size_t optoff, enum ima
 					continue; // Avoid val check
 				}
 				break;
+			case 'Z':
+				switch (p[2]) {
+					case 'X':
+						val = &zx;
+						break;
+					case 'Y':
+						val = &zy;
+						break;
+				}
+				break;
 		}
-		if (val == NULL || p[3] != '=')
+		if (val == NULL && sval == NULL)
 			break;
-		*val = strtoul(p + 4, NULL, 10);
+		if (p[3] != '=')
+			break;
+		if (val != NULL)
+			*val = strtoul(p + 4, NULL, 10);
+		else
+			*sval = strtol(p + 4, NULL, 10);
 	}
 
 	if (p == NULL || *p != ';')
@@ -3705,7 +3761,7 @@ draw_image_str_handler(char *str, size_t slen, char *fn, size_t optoff, enum ima
 		ctmask = mask_buffer;
 
 	if (imgp != NULL)
-		setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, imgp, ctmask);
+		draw_pixels(imgp, ctmask, sx, sy, sw, sh, dx, dy, mx, my, zx, zy, flags);
 done:
 	free(mask);
 	free(maskfn);
@@ -4059,25 +4115,30 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	unsigned long       sy = 0; // Source Y
 	unsigned long       sw = 0; // Source width
 	unsigned long       sh = 0; // Source height
-	unsigned long       dx = 0; // Destination X
-	unsigned long       dy = 0; // Destination Y
-	unsigned long       mx = 0; // Destination X
-	unsigned long       my = 0; // Destination Y
+	long                dx = 0; // Destination X
+	long                dy = 0; // Destination Y
+	unsigned long       mx = 0; // Mask X to start at
+	unsigned long       my = 0; // Mask Y to start at
 	unsigned long       mw = 0; // Width of the mask
 	unsigned long       mh = 0; // Height of the mask
 	unsigned long       bufnum = 0;
+	unsigned long       zx = 1; // X zoom factor
+	unsigned long       zy = 1; // Y zoom factor
 	unsigned long      *val;
 	void               *mask = NULL;
 	struct ciolib_mask *ctmask = NULL;
 	char               *maskfn = NULL;
 	char               *p;
 	char               *p2;
+	long               *sval;
 	size_t              mlen = 0;
 	bool                mbuf = false;
 	size_t              poff;
+	uint32_t            flags = 0;
 
 	for (p = str + 16; p && *p == ';'; p = strchr(p + 1, ';')) {
 		val = NULL;
+		sval = NULL;
 		poff = 3;
 		switch (p[1]) {
 			case 'B':
@@ -4103,11 +4164,21 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 			case 'D':
 				switch (p[2]) {
 					case 'X':
-						val = &dx;
+						sval = &dx;
 						break;
 					case 'Y':
-						val = &dy;
+						sval = &dy;
 						break;
+				}
+				break;
+			case 'F':
+				switch (p[2]) {
+					case 'X':
+						flags |= CIOLIB_BLIT_FLIP_X;
+						continue;
+					case 'Y':
+						flags |= CIOLIB_BLIT_FLIP_Y;
+						continue;
 				}
 				break;
 			case 'M':
@@ -4164,10 +4235,25 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 					continue; // Avoid val check
 				}
 				break;
+			case 'Z':
+				switch (p[2]) {
+					case 'X':
+						val = &zx;
+						break;
+					case 'Y':
+						val = &zy;
+						break;
+				}
+				break;
 		}
-		if (val == NULL || p[poff] != '=')
+		if (val == NULL && sval == NULL)
 			goto done;
-		*val = strtoul(p + poff + 1, NULL, 10);
+		if (p[poff] != '=')
+			goto done;
+		if (val != NULL)
+			*val = strtoul(p + poff + 1, NULL, 10);
+		else
+			*sval = strtol(p + poff + 1, NULL, 10);
 	}
 
 	if (bufnum >= sizeof(pixmap_buffer) / sizeof(pixmap_buffer[0]))
@@ -4210,7 +4296,7 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 	if (mbuf)
 		ctmask = mask_buffer;
 
-	setpixels(dx, dy, dx + sw - 1, dy + sh - 1, sx, sy, mx, my, pixmap_buffer[bufnum], ctmask);
+	draw_pixels(pixmap_buffer[bufnum], ctmask, sx, sy, sw, sh, dx, dy, mx, my, zx, zy, flags);
 done:
 	free(mask);
 	if (!mbuf)

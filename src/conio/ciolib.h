@@ -295,6 +295,23 @@ struct ciolib_mask {
 	uint32_t height;
 };
 
+#define CIOLIB_BLIT_FLIP_X 0x00000001
+#define CIOLIB_BLIT_FLIP_Y 0x00000002
+
+struct ciolib_blit {
+	uint32_t sx;
+	uint32_t sy;
+	uint32_t sw;
+	uint32_t sh;
+	int32_t dx;
+	int32_t dy;
+	uint32_t scale_x;
+	uint32_t scale_y;
+	uint32_t mx;
+	uint32_t my;
+	uint32_t flags;
+};
+
 struct vmem_cell {
 	uint8_t legacy_attr;
 	uint8_t ch;
@@ -431,6 +448,7 @@ typedef struct {
 	struct ciolib_pixels *(*getpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
 	struct ciolib_pixels *(*duppixels)(struct ciolib_pixels pix);
 	int		(*setpixels)(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask);
+	int		(*blitpixels)(struct ciolib_pixels *pixels, struct ciolib_mask *mask, const struct ciolib_blit *blit);
 	int 	(*get_modepalette)(uint32_t[16]);
 	int	(*set_modepalette)(uint32_t[16]);
 	uint32_t	(*map_rgb)(uint16_t r, uint16_t g, uint16_t b);
@@ -535,6 +553,7 @@ CIOLIBEXPORT int ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 CIOLIBEXPORT struct ciolib_pixels * ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
 CIOLIBEXPORT struct ciolib_pixels * ciolib_duppixels(struct ciolib_pixels *pix);
 CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask);
+CIOLIBEXPORT int ciolib_blitpixels(struct ciolib_pixels *pixels, struct ciolib_mask *mask, const struct ciolib_blit *blit);
 CIOLIBEXPORT void ciolib_freepixels(struct ciolib_pixels *pixels);
 CIOLIBEXPORT void ciolib_freemask(struct ciolib_mask *mask);
 CIOLIBEXPORT struct ciolib_screen * ciolib_savescreen(void);
@@ -637,6 +656,7 @@ CIOLIBEXPORT void ansi_ciolib_setdoorway(int enable);
 	#define getpixels(a,b,c,d, e)		ciolib_getpixels(a,b,c,d, e)
 	#define duppixels(a)			ciolib_duppixels(a)
 	#define setpixels(a,b,c,d,e,f,g,h,i,j)	ciolib_setpixels(a,b,c,d,e,f,g,h,i,j)
+	#define blitpixels(a,b,c)		ciolib_blitpixels(a,b,c)
 	#define freepixels(a)			ciolib_freepixels(a)
 	#define freemask(a)			ciolib_freemask(a)
 	#define savescreen()			ciolib_savescreen()

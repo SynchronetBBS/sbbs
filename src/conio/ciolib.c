@@ -319,6 +319,7 @@ CIOLIBEXPORT int ciolib_attr2palette(uint8_t attr, uint32_t *fg, uint32_t *bg);
 CIOLIBEXPORT int ciolib_setpixel(uint32_t x, uint32_t y, uint32_t colour);
 CIOLIBEXPORT struct ciolib_pixels * ciolib_getpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, int force);
 CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_t ey, uint32_t x_off, uint32_t y_off, uint32_t mx_off, uint32_t my_off, struct ciolib_pixels *pixels, struct ciolib_mask *mask);
+CIOLIBEXPORT int ciolib_blitpixels(struct ciolib_pixels *pixels, struct ciolib_mask *mask, const struct ciolib_blit *blit);
 CIOLIBEXPORT void ciolib_freepixels(struct ciolib_pixels *pixels);
 CIOLIBEXPORT void ciolib_freemask(struct ciolib_mask *mask);
 CIOLIBEXPORT struct ciolib_screen * ciolib_savescreen(void);
@@ -385,6 +386,7 @@ static int try_gdi_init(int mode)
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
 		cio_api.setpixels=bitmap_setpixels;
+		cio_api.blitpixels=bitmap_blitpixels;
 		cio_api.get_modepalette=bitmap_get_modepalette;
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
@@ -443,6 +445,7 @@ static int try_sdl_init(int mode)
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
 		cio_api.setpixels=bitmap_setpixels;
+		cio_api.blitpixels=bitmap_blitpixels;
 		cio_api.get_modepalette=bitmap_get_modepalette;
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
@@ -512,6 +515,7 @@ static int try_wayland_init(int mode)
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
 		cio_api.setpixels=bitmap_setpixels;
+		cio_api.blitpixels=bitmap_blitpixels;
 		cio_api.get_modepalette=bitmap_get_modepalette;
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
@@ -579,6 +583,7 @@ static int try_quartz_init(int mode)
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
 		cio_api.setpixels=bitmap_setpixels;
+		cio_api.blitpixels=bitmap_blitpixels;
 		cio_api.get_modepalette=bitmap_get_modepalette;
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
@@ -637,6 +642,7 @@ static int try_x_init(int mode)
 		cio_api.setpixel=bitmap_setpixel;
 		cio_api.getpixels=bitmap_getpixels;
 		cio_api.setpixels=bitmap_setpixels;
+		cio_api.blitpixels=bitmap_blitpixels;
 		cio_api.get_modepalette=bitmap_get_modepalette;
 		cio_api.set_modepalette=bitmap_set_modepalette;
 		cio_api.map_rgb = bitmap_map_rgb;
@@ -814,6 +820,7 @@ static int try_retro_init(int mode)
 	cio_api.setpixel=bitmap_setpixel;
 	cio_api.getpixels=bitmap_getpixels;
 	cio_api.setpixels=bitmap_setpixels;
+	cio_api.blitpixels=bitmap_blitpixels;
 	cio_api.get_modepalette=bitmap_get_modepalette;
 	cio_api.set_modepalette=bitmap_set_modepalette;
 	cio_api.map_rgb = bitmap_map_rgb;
@@ -2359,6 +2366,16 @@ CIOLIBEXPORT int ciolib_setpixels(uint32_t sx, uint32_t sy, uint32_t ex, uint32_
 
 	if (cio_api.setpixels)
 		return cio_api.setpixels(sx, sy, ex, ey, x_off, y_off, mx_off, my_off, pixels, mask);
+	return 0;
+}
+
+/* Returns non-zero on success */
+CIOLIBEXPORT int ciolib_blitpixels(struct ciolib_pixels *pixels, struct ciolib_mask *mask, const struct ciolib_blit *blit)
+{
+	CIOLIB_INIT();
+
+	if (cio_api.blitpixels)
+		return cio_api.blitpixels(pixels, mask, blit);
 	return 0;
 }
 
