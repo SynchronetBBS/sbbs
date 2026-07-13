@@ -17,6 +17,11 @@
  * this (see sm_io_wiredump_open()); the ini is the sysop-facing switch. */
 int sm_config_wire_enabled(void);
 
+/* syncmoo1.ini [video] hand_cursor -- nonzero to draw 1oom's own hand-shaped
+ * mouse cursor. Default off: the terminal shows its own pointer, which the
+ * game's hand doesn't align with. See hw_video_get_buf() in hw_sbbs.c. */
+int sm_config_hand_cursor(void);
+
 /* syncmoo1.ini [audio] music_quality -- Ogg/Vorbis VBR quality (0.0..1.0) for
  * encoded music tracks. Defaults to TERMGFX_MUSIC_QUALITY_DEFAULT. */
 double sm_config_music_quality(void);

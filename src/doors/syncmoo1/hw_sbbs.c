@@ -157,9 +157,15 @@ int hw_early_init(void)
  * otherwise overwrite the data path with the one remembered in the player's
  * 1oom config file) and BEFORE options_parse() applies 1oom's own -data
  * option, which is meant to win. See syncmoo1_config.c. */
+/* Cached [video] hand_cursor (sm_config_hand_cursor(), set in hw_init). Draw
+ * the game's own hand cursor? Default 0 (off) so the hand stays hidden even if
+ * a buffer is fetched before hw_init. */
+static int sm_hw_hand_cursor = 0;
+
 int hw_init(void)
 {
     sm_config_apply_data_path();
+    sm_hw_hand_cursor = sm_config_hand_cursor();   /* gate the hand cursor in hw_video_get_buf() */
 
     /* Push the configured volumes into the audio modules. 1oom never does this
      * for us: hw_audio_*_volume() is called ONLY from the in-game Sound-options
@@ -209,6 +215,12 @@ int64_t hw_get_time_us(void)
 
 static uint8_t *video_buf[4] = { NULL, NULL, NULL, NULL };
 static int video_bufi = 0;
+
+/* 1oom's current mouse-cursor sprite index (uicursor.c). Zeroing it turns
+ * ui_cursor_draw1() into a no-op -- see hw_video_get_buf(). Declared here
+ * rather than via ui/classic/uicursor.h, which isn't on this backend's
+ * include path. */
+extern uint16_t ui_cursor_gfx_i;
 
 /* The buffer whose pixels are currently ON SCREEN (the one the last
  * hw_video_draw_buf() presented, before it flipped). hw_video_refresh_palette()
@@ -311,6 +323,19 @@ void hw_video_refresh_palette(void)
 
 uint8_t *hw_video_get_buf(void)
 {
+    /* Suppress 1oom's hand cursor when [video] hand_cursor is off. This getter
+     * is the one seam our backend owns that the engine calls between
+     * ui_cursor_update_gfx_i() -- which sets the sprite index from the active
+     * cursor area -- and ui_cursor_draw1(), the sole path (uiobj_finish_frame(),
+     * uiobj.c) that composites the hand into a terminal-bound frame: the
+     * intervening ui_cursor_store_bg1() fetches the buffer through here. Zeroing
+     * the index makes that draw a no-op, so the hand is hidden while mouse
+     * position and clicks (moouse_x/y) are untouched -- menus still work via the
+     * terminal's own pointer. The moving-cursor path (ui_cursor_draw1's sibling
+     * ui_cursor_draw0 -> hw_video_redraw_front()) already presents nothing here,
+     * so this one gate covers every hand that would reach the terminal. */
+    if (!sm_hw_hand_cursor)
+        ui_cursor_gfx_i = 0;
     return video_buf[video_bufi];
 }
 

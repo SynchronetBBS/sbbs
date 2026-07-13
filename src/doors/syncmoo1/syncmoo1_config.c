@@ -61,11 +61,19 @@ static char sm_lbx_dir[PATH_MAX];
 
 /* syncmoo1.ini-backed config, resolved by sm_config_read_ini() below. */
 static int    sm_wire_enabled;
+static int    sm_hand_cursor;   /* draw 1oom's own hand cursor? default off -- the
+                                 * terminal already shows a mouse pointer, and the
+                                 * game's hand doesn't line up with it (see hw_sbbs.c) */
 static double sm_music_quality = TERMGFX_MUSIC_QUALITY_DEFAULT;
 
 int sm_config_wire_enabled(void)
 {
     return sm_wire_enabled;
+}
+
+int sm_config_hand_cursor(void)
+{
+    return sm_hand_cursor;
 }
 
 double sm_config_music_quality(void)
@@ -128,6 +136,7 @@ static void sm_config_read_ini(void)
     if (ini == NULL)
         return;
     sm_wire_enabled  = iniGetBool(ini, "debug", "wire", FALSE) ? 1 : 0;
+    sm_hand_cursor   = iniGetBool(ini, "video", "hand_cursor", FALSE) ? 1 : 0;
     sm_music_quality = iniGetFloat(ini, "audio", "music_quality",
                                    TERMGFX_MUSIC_QUALITY_DEFAULT);
     sm_config_capture_1oom(ini);
