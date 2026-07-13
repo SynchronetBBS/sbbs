@@ -532,6 +532,45 @@ rest; these are the local edits on top of it (plus a couple of shared
     `Winsock` reference (`Message_Handler`, the same file) is already behind
     `#ifdef FORCE_WINSOCK`, which nothing defines, so it needed no change.
 
+33. **No Win32 window, and no spin-wait on its message pump
+    (`tiberiandawn/startup.cpp`).** Patch #11's two premises — the headless door
+    has *no Win32 window* and *no message pump* — were never ported to TD, and
+    both bit the Windows build:
+
+    - **The stray window.** TD's `main()` called `Create_Main_Window()` under a
+      bare `#if defined(_WIN32) && !defined(SDL_BUILD)`. RA calls it too, but
+      passes `command_show = 0` (`SW_HIDE`), so RA's window is created and never
+      shown. TD instead derives `command_show` from `GetStartupInfo()`
+      (defaulting to `SW_SHOWDEFAULT`) and then does `ShowWindow()` +
+      `UpdateWindow()` + `SetFocus()` on a `WS_EX_TOPMOST | WS_POPUP |
+      WS_MAXIMIZE` window — a fullscreen always-on-top "Command & Conquer" popup
+      on the *BBS machine's* desktop, stealing focus, for a door whose video goes
+      to the caller's terminal. Now gated on `!defined(NEW_VIDEO_BUILD)`:
+      `MainWindow` stays NULL, which is what the rest of the door already assumes.
+
+      Its title rendered as CJK glyphs, which is worth recording because it is
+      *not* our bug and would resurface if the window ever came back: both
+      winstubs register the class with `RegisterClassA` and pass an ANSI title to
+      `CreateWindowExA`, but fall through to the `DefWindowProc` **macro**, which
+      is `DefWindowProcW` under the `UNICODE` build. `WM_NCCREATE`'s default
+      handler then reads `"Command & Conquer"` as UTF-16. Upstream never sees it:
+      its Windows build defines `SDL_BUILD` and compiles none of this.
+
+    - **The exit hang.** `main()`'s `ReadyToQuit` spin-wait (`PostMessage(WM_DESTROY)`
+      then `do { Keyboard->Check(); } while (ReadyToQuit == 1);`) was ungated, so
+      with no pump nothing could ever advance `ReadyToQuit` 1 -> 2 and "Exit Game"
+      spun forever, burning CPU — exactly the hang patch #11 fixed for RA. Gated
+      on `!defined(NEW_VIDEO_BUILD)` the same way. (TD has only the `main()`
+      wait; it has no `Emergency_Exit()` `ReadyToQuit == 3` counterpart.)
+
+    Safe with a NULL `MainWindow`: TD's remaining uses are `MessageBoxA(NULL, …)`
+    on fatal paths, the harmless `PostMessage()` above, multiplayer-only
+    `netdlg.cpp` (the door is single-player), and `common/vqaloader.cpp`'s
+    `VQA_OpenAudio(handle, MainWindow)` — whose `hwnd` the door's
+    `vqaaudio_termgfx.cpp` ignores. TD's `GameInFocus` is already unconditionally
+    `true` (RA needed patch-forcing; TD does not), so losing the window's
+    `WM_ACTIVATEAPP` does not silence TD's audio.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

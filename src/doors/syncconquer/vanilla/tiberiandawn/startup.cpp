@@ -208,7 +208,7 @@ int main(int argc, char** argv)
         printf("Zuwenig Hauptspeicher verf?gbar.\n");
 #else
 #ifdef FRENCH
-        printf("M‚moire vive (RAM) insuffisante.\n");
+        printf("Mï¿½moire vive (RAM) insuffisante.\n");
 #else
         printf("Insufficient RAM available.\n");
 #endif
@@ -297,7 +297,14 @@ int main(int argc, char** argv)
         }
 #endif
 
-#if defined(_WIN32) && !defined(SDL_BUILD)
+// NEW_VIDEO_BUILD: the headless door draws to the CLIENT's terminal and has no
+// Win32 window and no message pump (SyncConquer's door/ backends). Unlike Red
+// Alert -- which passes command_show = 0 (SW_HIDE) and so creates a window
+// nobody ever sees -- TD derives command_show from GetStartupInfo() and SHOWS
+// it: a topmost, maximized "Command & Conquer" popup that appears on the BBS
+// machine's desktop and takes focus. Don't create it at all; MainWindow stays
+// NULL, which is what the rest of the door already assumes.
+#if defined(_WIN32) && !defined(SDL_BUILD) && !defined(NEW_VIDEO_BUILD)
         Create_Main_Window(ProgramInstance, ScreenWidth, ScreenHeight);
 #endif
 
@@ -486,7 +493,11 @@ int main(int argc, char** argv)
         PostMessage(MainWindow, WM_DESTROY, 0, 0);
 #endif
 
-#if !defined(REMASTER_BUILD) && defined(_WIN32) && !defined(SDL_BUILD)
+// NEW_VIDEO_BUILD: no Win32 window and no message pump exists, so nothing can
+// ever run Windows_Procedure()'s WM_DESTROY case to advance ReadyToQuit 1 -> 2.
+// Waiting on it spins forever, burning CPU in Keyboard->Check(). The PostMessage
+// above is harmless with a NULL window. Same fix as redalert/startup.cpp.
+#if !defined(REMASTER_BUILD) && defined(_WIN32) && !defined(SDL_BUILD) && !defined(NEW_VIDEO_BUILD)
         /*
         ** Wait until the message handler has dealt with the message
         */
