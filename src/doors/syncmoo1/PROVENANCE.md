@@ -62,10 +62,54 @@ plus the two frozen generated headers. Diffed against a fresh pristine
 clone of the same commit to confirm: the only files present here that
 aren't in upstream are `1oom/src/config.h` and `1oom/src/version.inc`.
 
-The vendored tree is never edited hereafter. 1oom's own autotools build
-system is not used by this project; the real build is a door-owned
-CMake build (a later task) that reproduces the feature defines these two
-frozen headers capture as static, checked-in config.
+The vendored tree carries only the small, deliberate **local patches**
+listed below (plus the two frozen generated headers) — nothing else is
+edited. 1oom's own autotools build system is not used by this project;
+the real build is a door-owned CMake build that reproduces the feature
+defines these two frozen headers capture as static, checked-in config.
+
+## Local patches (keep this list complete)
+
+Direct edits to vendored `1oom/` sources. Each is tagged in-code with a
+`syncmoo1 door: … PROVENANCE #N` comment (grep `PROVENANCE #` under
+`1oom/` to find them all). These are UI-layer customizations with no
+`hw`/`os` backend seam to route them through — unlike the
+[non-patches](#deliberate-non-patches) below, which do have one. A
+re-vendor must re-apply these by hand.
+
+1. **`src/ui/classic/uinewgame.c:267`** — the new-game "Your Name…"
+   prompt. The walkthrough called `ui_new_game_pname(newopts, d, true)`;
+   with `flag_generate == true` the entry field is *always* seeded with a
+   freshly generated random emperor name (e.g. "Bladrov II"), discarding
+   any pre-filled name. Changed to `false` so it seeds from
+   `newopts->pdata[pi].playername` when that is non-empty — which the door
+   pre-fills with the player's BBS alias via 1oom's own `-ngn 1 <alias>`
+   option (see `sm_door_argv_add_emperor_name()` in `syncmoo1_door.c`) —
+   and falls back to generating a name only when it is empty (AI players,
+   or a launch with no drop file). No behavior change when nothing is
+   pre-filled.
+
+2. **`src/ui/classic/uimainmenu.c:341`** — the main-menu quit item. Its
+   label was the literal `"Quit to OS"`; changed to `"Quit to BBS"`, which
+   is what leaving the door actually does for a BBS user. (The classic UI
+   uses this string literal directly, not the reassignable
+   `game_str_mm_quit` global — that one is read only by 1oom's cmdline UI,
+   which this door does not use — so there is no non-patch way to change
+   it.)
+
+3. **`src/game/game.c` (interactive New Game path, ~line 775)** — the
+   companion to patch #1. `-ngn 1 <alias>` sets the static `game_opt_new`,
+   but the interactive menu builds a *fresh* `game_new_opts =
+   GAME_NEW_OPTS_DEFAULT` (empty names) and only copies `game_opt_new` on
+   the `-new` auto-start path — so the alias never reached the menu.
+   Added a loop that copies each non-empty `game_opt_new.pdata[i].playername`
+   into `game_new_opts` right after `game_set_opts_from_value()`, before
+   `ui_main_menu()`. Names only; players/galaxy-size/difficulty still come
+   from `game_opt_new_value`. Patches #1 and #3 together make the "Your
+   Name..." prompt default to the BBS alias; either one alone is a no-op
+   (the name is discarded, or never arrives). `game_opt_new` is `static` in
+   `game.c`, so this copy cannot live in door-owned code — the interactive
+   `game_new_opts` is a local there.
 
 ## Deliberate non-patches
 

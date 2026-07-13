@@ -264,7 +264,7 @@ static bool ui_new_game_racebannernames(struct game_new_options_s *newopts, stru
     if (0
       || (ui_new_game_choose_race(newopts, d) < 0)
       || (ui_new_game_choose_banner(newopts, d) < 0)
-      || (!ui_new_game_pname(newopts, d, true))
+      || (!ui_new_game_pname(newopts, d, false))   /* syncmoo1 door: false => seed the prompt from a pre-filled -ngn name (the BBS alias); PROVENANCE #1 */
       || (!ui_new_game_hname(newopts, d, true))
     ) {
         return false;

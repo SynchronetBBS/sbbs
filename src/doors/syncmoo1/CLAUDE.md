@@ -62,13 +62,21 @@ that `1oom/` stays unedited: `strings.h` (the vendored `util.h` includes it),
 uses it for `getcwd`/`chdir`), and `msvc_compat.h`, force-included with `/FI`
 to define away the one GCC `__attribute__((noreturn))` in `1oom/src/log.h`.
 
-**The vendored `1oom/` tree is NEVER edited.** If the engine's own code needs
-to change to build or run under this door, that is a signal the door glue is
-missing something, not a reason to patch upstream. Legacy-code compiler
-warnings from `1oom/` are absorbed in the build (`-w -fcommon` on the
-`syncmoo1` target, see `CMakeLists.txt`) rather than silenced by touching the
-vendored sources. This mirrors the same policy in `../syncdoom/CLAUDE.md` and
-`../syncduke/CLAUDE.md` for their vendored engines.
+**Default: don't edit the vendored `1oom/` tree.** If the engine's own code
+needs to change to *build or run* under this door, that is a signal the door
+glue is missing something, not a reason to patch upstream — reach for the
+`hw`/`os` backend seam first. Legacy-code compiler warnings from `1oom/` are
+absorbed in the build (`-w -fcommon` on the `syncmoo1` target, see
+`CMakeLists.txt`) rather than silenced by touching the vendored sources.
+
+The one sanctioned reason to edit `1oom/` directly is a **UI-layer
+customization that genuinely has no backend seam** (a hardcoded menu string, a
+new-game flow that ignores a pre-fill). Those are allowed, but each such edit
+MUST be minimal, tagged in-code with a `syncmoo1 door: … PROVENANCE #N`
+comment, and listed in PROVENANCE.md's "Local patches" section so a re-vendor
+can re-apply them. This matches how `../syncconquer/PROVENANCE.md` tracks its
+vendored edits. Anything with a backend seam still goes through the glue, per
+the paragraph above.
 
 The two exceptions are `1oom/src/config.h` and `1oom/src/version.inc`:
 autotools-generated headers that 1oom's own build would normally regenerate
@@ -98,13 +106,18 @@ introducing tabs partway through a file.
 
 ## Vendored code -- keep upstream intact
 
-- **Never edit anything under `1oom/`.** No reformatting, no "just this one
-  warning fix," no house-style pass. If a build or runtime problem seems to
-  require a change inside `1oom/`, that need almost certainly belongs in
-  `hw_sbbs.c` or a `syncmoo1_*.c` module instead (a config define, a link
+- **Don't edit `1oom/` for build/runtime problems.** No reformatting, no "just
+  this one warning fix," no house-style pass. If a build or runtime problem
+  seems to require a change inside `1oom/`, that need almost certainly belongs
+  in `hw_sbbs.c` or a `syncmoo1_*.c` module instead (a config define, a link
   flag, a wrapper) -- see PROVENANCE.md and DESIGN.md §2/§13 for why this
   door is a new `hw` backend rather than a source patch.
-- The one narrow exception is the two frozen generated headers described
-  above, and even those are not hand-edited casually -- re-generate them from
-  a fresh upstream commit per PROVENANCE.md's "Updating" section rather than
-  hand-patching the committed copy.
+- **UI-layer customizations with no backend seam** (a hardcoded menu string, a
+  new-game flow that discards a pre-fill) may be edited directly, but only as
+  documented **local patches**: minimal, tagged in-code with a
+  `syncmoo1 door: … PROVENANCE #N` comment, and listed in PROVENANCE.md's
+  "Local patches" section. Keep that list complete -- a re-vendor re-applies
+  them by hand.
+- The two frozen generated headers described above are also not hand-edited
+  casually -- re-generate them from a fresh upstream commit per PROVENANCE.md's
+  "Updating" section rather than hand-patching the committed copy.

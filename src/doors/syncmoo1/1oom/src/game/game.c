@@ -773,6 +773,19 @@ int main_do(void)
             }
         } else {
             game_set_opts_from_value(&game_new_opts, game_opt_new_value);
+            /* syncmoo1 door: carry any -ngn pre-filled player name into the
+               interactive New Game menu. game_new_opts is DEFAULT (empty names)
+               here -- only the -new auto-start path above copies game_opt_new --
+               so without this the "Your Name..." prompt ignores the BBS alias
+               the door passes via -ngn 1 <alias>. Names only; players/size/
+               difficulty still come from game_opt_new_value. PROVENANCE #3 */
+            for (int syncmoo1_i = 0; syncmoo1_i < PLAYER_NUM; ++syncmoo1_i) {
+                if (game_opt_new.pdata[syncmoo1_i].playername[0]) {
+                    memcpy(game_new_opts.pdata[syncmoo1_i].playername,
+                           game_opt_new.pdata[syncmoo1_i].playername,
+                           sizeof(game_new_opts.pdata[syncmoo1_i].playername));
+                }
+            }
             game_set_custom_opts_from_cfg(&game_opt_custom);
             main_menu_action = ui_main_menu(&game_new_opts, &game_opt_custom, &game_challenge_opts, &load_game_i);
         }

@@ -338,7 +338,7 @@ static void main_menu_make_main_page(struct main_menu_data_s *d)
     menu_make_page_conditional(menu_allocate_item(), "Game", MAIN_MENU_PAGE_GAME, main_menu_game_active, MOO_KEY_g);
     menu_make_page(menu_allocate_item(), "Rules", MAIN_MENU_PAGE_OPTIONS_RULES, MOO_KEY_r);
     menu_make_page(menu_allocate_item(), "UI Options", MAIN_MENU_PAGE_OPTIONS, MOO_KEY_o);
-    menu_make_action(menu_allocate_item(), "Quit to OS", MAIN_MENU_ACT_QUIT_GAME, MOO_KEY_q);
+    menu_make_action(menu_allocate_item(), "Quit to BBS", MAIN_MENU_ACT_QUIT_GAME, MOO_KEY_q);   /* syncmoo1 door: was "Quit to OS"; PROVENANCE #2 */
 }
 
 static void main_menu_make_game_page(struct main_menu_data_s *d)
