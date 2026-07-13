@@ -113,27 +113,14 @@ JXL-less SyncTERM builds; not a default anywhere), capability probe
 AIMD pipeline pacing, F4 tier cycling. Fastest path to playable; all
 terminal classes covered.
 
-**Phase 2 — responsiveness layer, added to libtermgfx engine-agnostically**
-(all doors benefit):
-
-1. **Dirty-rectangle differ**: compare consecutive framebuffers, transmit
-   only changed rectangles as partial draws. Rect transport on SyncTERM:
-   APC **DrawPPM for small rects** (effectively a memcpy — no encoder
-   latency/dependency; a 24×24 unit ≈ 2.3KB) and **DrawJXL for large
-   ones**, both pixel-positioned via DX/DY with no band-alignment
-   constraint (sidesteps SF #258 entirely). Non-SyncTERM sixel terminals
-   get band-aligned partial sixel. Map scroll ships the leading edge;
-   unit movement ships small rects. The whole-frame path remains the
-   fallback (tier switches, palette changes, full-screen effects).
-2. **Image cache manager**: content-hashed C;S store + C;L client-cache
-   skip, mirroring `audio_mgr`'s pattern, for static art — sidebar frame,
-   cameo icons, shell screens. Upload once per client, ever. Proven
-   pattern: minesweeper.js and synchess.js already do C;L/C;S + cached
-   draws client-side.
-
-Constraint: partial-screen sixel is in the blast radius of SyncTERM's
-partial-band bug (SourceForge #258, root-caused in cterm_dec.c). Rects
-stay 6-pixel band-aligned until the client fix ships.
+**Phase 2 — dirty-rectangle responsiveness layer, added to libtermgfx
+engine-agnostically** (all doors benefit): a shared framebuffer differ ships
+only the regions that changed each present — over a cached/sixel static
+background — plus a content-hashed image cache for static UI art. It keeps
+Phase 1's change-driven present but sends only the pixels that actually moved.
+The full specification (differ, coalescing, per-tier rect transport, fallback,
+constraints, and expected throughput) is the **"Phase 2: Dirty-rectangle
+rendering"** section below.
 
 **Geometry.** RA's internal render resolution is fixed at 640×400
 (GBUFF_INIT_* in redalert/externs.h; Settings.Video.Width/Height only
@@ -166,6 +153,137 @@ Near-zero steady-state bandwidth but thousands of draw commands in battle
 scenes, SyncTERM-only, and requires hooking engine-internal draw calls
 instead of the clean framebuffer seam. Elements of it may return for
 static UI; see DEFERRED.md.
+
+## Phase 2: Dirty-rectangle rendering
+
+Phase 1 sends a whole frame whenever anything changes. Phase 2 keeps that
+change-driven present but ships **only the pixels that actually changed** — the
+RTS equivalent of moving sprites over a static background, done at the
+framebuffer seam rather than by hooking engine draw calls (contrast the
+rejected full-sprite-compositing approach above). It lives entirely in
+**libtermgfx**, so SyncDuke and SyncDOOM inherit it too.
+
+### Architecture: one differ, per-tier encoder backend
+
+The **differ is transport-agnostic** — it compares the just-rendered frame to
+the previous one and emits a set of changed rectangles. Only the per-rect
+**encoder backend** varies by terminal, and it follows the graphics tier the
+full-frame path already picked for that client. The door already retains
+`g_last_fb` (the previous framebuffer) for whole-frame dedupe, so the differ
+extends existing state rather than adding a subsystem.
+
+### The differ
+
+1. Diff the new framebuffer against `g_last_fb` at cell granularity, producing
+   a dirty-cell bitmap.
+2. **Coalesce** nearby dirty cells into a small number of bounding boxes — the
+   first tuning knob. Too fine (many tiny rects) wastes per-rect header/encode
+   overhead and compresses poorly; too coarse (one union box) re-sends
+   unchanged pixels between scattered changes. Cap the rect count.
+3. If the changed union exceeds a **fallback threshold** (% of frame), abandon
+   rects and send a whole frame — the second knob. It bounds the worst case
+   (map scroll, screen-wide explosion, palette change, tier switch) and
+   guarantees the dirty path never does worse than Phase 1.
+
+### Rect transport, by tier
+
+Capability floors (CTerm rev = cterm.c CVS `$Revision:`, encoded as
+`major*1000 + minor`): **Sixel 1189, APC PPM 1316, JPEG-XL 1318, blob verbs
+1329.** Since APC PPM (1316) is newer than Sixel (1189), **every PPM-capable
+SyncTERM also has Sixel** — there is no PPM-only client, so no separate
+PPM-rect backend is needed.
+
+- **JXL client** (SyncTERM ≥ 1318) → **`DrawJXL` rects.** JXL-encode each
+  coalesced bounding box, placed pixel-exact via DX/DY. Cost ≈ changed-fraction
+  × full-frame JXL, with no break-even cliff. Encode latency is the price;
+  coalescing to 1–3 boxes/frame keeps it near the one full-frame encode the
+  door already does.
+- **No-JXL SyncTERM and non-SyncTERM sixel terminals** (xterm/mlterm/wezterm) →
+  **partial sixel rects** over a cached/sixel background. Deliberately **no
+  separate PPM-rect backend**: because PPM ⟹ Sixel, a no-JXL SyncTERM reuses
+  the same sixel-rect path needed for pure sixel terminals, collapsing the
+  whole non-JXL world to one backend.
+- **Text tiers** (half/quadrant/sextant) → already differential; the text
+  renderer diffs its character grid and repaints only changed cells.
+
+Optional micro-optimization: on a JXL client the very smallest rects may go as
+raw **`DrawPPM`** (a memcpy, zero encode latency) — but that is a latency
+tunable, not a bandwidth strategy (see "Why not PPM rects on JXL" below).
+
+### Background handling
+
+The "static background" is two things, handled separately:
+
+- **Static UI art** (sidebar frame, cameo icons, shell/menu screens) → the
+  **image-cache manager**: content-hashed `C;S` store + `C;L` client-cache
+  skip, mirroring `audio_mgr`'s upload-once pattern (the technique
+  minesweeper.js and synchess.js already use). Uploaded once per client, ever,
+  then drawn from the client's own cache.
+- **Dynamic terrain** (the tactical map — static only between scrolls and fog
+  updates) → handled by the differ; only changed terrain cells ship.
+
+**Do not send the background as raw PPM.** It is the single largest transfer,
+so it wants maximum compression or zero re-send: a full 640×400 raw PPM is
+~1 MB base64, vs ~100–300 KB as sixel, vs ~0 if cached. Raw PPM for the
+biggest, least-changing thing is the worst choice.
+
+### Expected throughput
+
+Dirty-rect cost ≈ (changed fraction) × full-frame cost, so the win ≈
+1 / changed-fraction, capped by scrolling. Measured full-frame anchors
+(syncalert, from node logs): full-res **sixel ~80–150 KB/frame at native
+640×400** (200–630 KB at maximized canvases); text tiers ~80–140 KB; JXL
+unmeasured, est. ~30–60 KB.
+
+| Scene | ~Changed | vs full-frame |
+| --- | --- | --- |
+| Idle / studying map | 0% | already free (dedupe) |
+| Unit micro / harvester / building | ~4–6% | ~3–5× native, ~10–20× maximized |
+| Moderate combat | ~10–15% | ~2–3× |
+| Heavy battle | ~25%+ | ~1.5× |
+| **Map scroll** | ~85% | ~1.1–1.3× (the floor) |
+
+The gain is dramatic on **sixel** (verbose full frames) — roughly **5–15×
+average** across typical play (~1.5–3 MB/s → ~150–400 KB/s at native size) —
+and grows with canvas size (more static area). On **JXL** the full frame is
+already compact, so dirty-rect helps only via JXL-encoded rects (the
+proportional win), not raw PPM. **Map scroll is the hard floor** on every tier:
+the whole viewport turns over, so rects degenerate to ~full-frame. These are
+model estimates — validate with the measurement probe (below) before committing
+thresholds.
+
+### Why not PPM rects on JXL
+
+Raw PPM is ~25× less byte-dense than JXL (4 B/px on the wire vs ~0.15 B/px).
+Break-even against re-sending a whole ~40 KB JXL frame is ~10,000 changed px ≈
+**~4% of the frame** (~17 units): below that, PPM rects are cheaper; above it,
+they cost *more* than the whole JXL frame. That crossover is too fragile to
+base a bandwidth strategy on — hence `DrawJXL` rects on JXL clients, with PPM
+reserved only as a smallest-rect latency option.
+
+### Constraints
+
+- **SF #258** (SyncTERM's partial-band sixel bug, root-caused in
+  `cterm_dec.c`): a partial (non-6-px-multiple) last band reuses a stale band
+  buffer. Sixel rects therefore round their height **up to a 6-px band** until
+  the client fix ships. This is a SyncTERM-sixel bug only — pure sixel
+  terminals aren't affected (their band alignment is inherent), and the JXL/PPM
+  APC paths are pixel-positioned and sidestep it entirely.
+- **JXL encode latency** — bounded by coalescing to a few boxes per frame.
+- **Map-scroll floor** — no APC scroll-blit primitive exists, so a scroll
+  re-sends the whole tactical viewport; the fallback threshold catches it.
+
+### Implementation order
+
+0. **Measurement probe (no transport change).** Run the differ + coalescer and
+   *log* the would-be rect bytes per frame per tier during real play, while
+   still sending full frames. Yields true thresholds and win factors from
+   actual gameplay before any wire change.
+1. **Differ + coalescer** in libtermgfx, gated behind the probe/flag.
+2. **Sixel-rect backend** (biggest win; also covers pure sixel terminals) +
+   the image-cache manager for static art.
+3. **`DrawJXL`-rect backend** for JXL clients.
+4. Tune coalescing + fallback threshold against the Phase-0 measurements.
 
 ## Mouse & input
 
