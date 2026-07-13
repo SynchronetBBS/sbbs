@@ -2,7 +2,7 @@
 //
 // Run via jsexec AFTER build.sh / build.bat:
 //
-//     jsexec src/doors/syncretro/deploy.js            (deploy to the in-tree bundle)
+//     jsexec src/doors/syncretro/deploy.js            (deploy to the live install)
 //     jsexec src/doors/syncretro/deploy.js <dir>      (also deploy to a live bundle dir)
 //
 // This REPLACES the old deploy.sh / deploy.bat. The binary and the libretro core

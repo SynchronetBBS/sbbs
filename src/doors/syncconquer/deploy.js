@@ -6,8 +6,8 @@
 //
 // Run via jsexec AFTER build.sh / build.bat:
 //
-//     jsexec src/doors/syncconquer/deploy.js            (the in-tree bundle, and the live
-//                                                    install beside system.ctrl_dir)
+//     jsexec src/doors/syncconquer/deploy.js            (deploy to the live install
+//                                                    beside system.ctrl_dir)
 //     jsexec src/doors/syncconquer/deploy.js <dir> ...  (also deploy to these dirs)
 //
 // This REPLACES the old deploy.sh / deploy.bat pair. The work is in

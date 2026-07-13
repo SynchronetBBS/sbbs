@@ -284,9 +284,9 @@ function door_deploy_into(door_dir, exe, exename, subdir)
 //   xtrn    "syncdoom"                 -- the xtrn/<dir> bundle name
 //   subdir  true|false                 -- also install into <os>-<arch>/ (see the header)
 //
-// The live install (beside system.ctrl_dir) is deployed to as well when it is a
-// different directory from the in-tree bundle. Extra destinations may be given on
-// the command line.
+// The destination is the LIVE install (the xtrn/<door> dir beside system.ctrl_dir) --
+// the only copy anything ever runs. A bare checkout with no BBS installed falls back
+// to the in-tree bundle. Extra destinations may be given on the command line.
 // Is the per-target sub-dir wanted? The spec's default, overridden by the command
 // line (--subdir / --no-subdir).
 //
@@ -335,32 +335,37 @@ function door_deploy(spec)
 		    + " whose fixed command line cannot find a sub-dir. The flat copy is what"
 		    + " runs; the sub-dir is inert until the door grows a JS launcher.");
 
-	// 1. The in-tree bundle. On a symlink-deploy install this IS the live xtrn.
-	if (!door_deploy_into(bundle, exe, exename, subdir))
-		ok = false;
-
-	// 2. The LIVE install, if this checkout is not itself the live one.
+	// THE destination is the LIVE install -- the only copy anything ever runs.
 	//
-	// The shell scripts reached for $SBBSCTRL to find it. Do NOT be tempted back to
-	// the environment: jsexec does expose it as a global `env` OBJECT keyed by name
-	// (env.SBBSCTRL -- an object, not an array), but it exists ONLY under jsexec.
-	// A deploy step wired into an installer's [exec:] section would then break,
-	// because install-xtrn.js runs those children with js.exec() -- in the same
-	// process -- and install-xtrn itself is run either from jsexec OR from inside
-	// the BBS (xtrn-setup.js), where there is no `env` at all.
+	// It used to also copy into the in-tree bundle (<checkout>/xtrn/<door>/), and that
+	// was pure confusion. On the recommended install (install-sbbs.mk SYMLINK=1) the
+	// live xtrn IS a symlink to the repo's, so the two destinations are ONE FILE: the
+	// second pass found the bytes the first had just written and reported "already this
+	// build -- nothing to copy" straight after "Deployed", which reads as a
+	// contradiction to anyone checking whether their build landed. And where they are
+	// genuinely two directories (a copy install; a checkout that is not the install),
+	// nothing ever launches from the checkout -- xtrn.ini runs the door out of the LIVE
+	// dir, and install-xtrn fetches its binary via get-binary.js -- so that copy only
+	// littered the working tree with a gitignored multi-megabyte binary.
 	//
-	// system.ctrl_dir has neither problem: it exists in both contexts, and it names
-	// the install we are actually running against rather than whatever the
-	// launching shell happened to export.
+	// system.ctrl_dir names the install we are actually running against, in both jsexec
+	// and in-BBS contexts (the environment's $SBBSCTRL exists only under jsexec).
 	live = backslash(system.ctrl_dir) + "../xtrn/" + (spec.xtrn || spec.name);
-	if (fullpath(backslash(live)) != fullpath(backslash(bundle))) {
-		if (file_isdir(live)) {
-			if (!door_deploy_into(live, exe, exename, subdir))
-				ok = false;
-		} else {
-			print("[deploy] No live install at " + fullpath(backslash(live))
-			    + " -- skipping (run install-xtrn there for a first install)");
-		}
+	if (file_isdir(live)) {
+		if (!door_deploy_into(live, exe, exename, subdir))
+			ok = false;
+	} else if (file_isdir(bundle)) {
+		// No live install: a bare checkout with no BBS (building for packaging, CI).
+		// The in-tree bundle is then the only sensible destination.
+		print("[deploy] No live install at " + fullpath(backslash(live))
+		    + " -- deploying into the in-tree bundle instead"
+		    + " (run install-xtrn there for a first install)");
+		if (!door_deploy_into(bundle, exe, exename, subdir))
+			ok = false;
+	} else {
+		print("[deploy] ERROR: no live install at " + fullpath(backslash(live))
+		    + " and no bundle at " + fullpath(backslash(bundle)) + " -- nothing to deploy to");
+		ok = false;
 	}
 
 	// 3. Any extra directories given on the command line.
