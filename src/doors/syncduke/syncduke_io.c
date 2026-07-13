@@ -443,10 +443,32 @@ static uint8_t *syncduke_apc;   static size_t syncduke_apc_cap;   /* APC Store+D
 /* Encode the frame as JXL and ship it as a DrawJXL blit at canvas pixel (dx,dy).
  * distance 2.0 / effort 1 (lightning) match SyncDOOM's emit_frame_jxl. Returns the wire
  * byte count, or 0 on encode failure (the caller then falls back to sixel this frame). */
+/* Last APC zoom sent (1 = none: the door upscaled the frame itself).  Surfaced in
+ * the Ctrl-S stats strip so "is the terminal doing the upscale?" is observable. */
+static int syncduke_last_zoom_x = 1;
+static int syncduke_last_zoom_y = 1;
+
 static size_t syncduke_emit_jxl(const uint8_t *fb, const uint8_t *pal, int w, int h,
                                 int dx, int dy)
 {
 	size_t n;
+	int    zx = 1, zy = 1;
+
+	/* When the fit is an exact integer multiple of the native 320x200 -- which is
+	 * the usual case, 2x into a 640x400 canvas -- encode the NATIVE frame and let
+	 * the terminal replicate the pixels (ZX/ZY).  Identical picture (that upscale
+	 * IS nearest-neighbor), a fraction of the bytes.  Any other fit still gets the
+	 * door-side upscale below: SyncTERM has no resampler. */
+	if (syncduke_img_zoom_ok()
+	    && termgfx_geom_zoom(SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, w, h, &zx, &zy)) {
+		w = SYNCDUKE_SCREEN_W;
+		h = SYNCDUKE_SCREEN_H;
+	}
+	else {
+		zx = zy = 1;
+	}
+	syncduke_last_zoom_x = zx;
+	syncduke_last_zoom_y = zy;
 
 	syncduke_pack_rgb(fb, pal, w, h);
 	n = termgfx_jxl_encode(&syncduke_jxl, &syncduke_jxl_cap, syncduke_rgb, w, h, 2.0f, 1);
@@ -457,8 +479,8 @@ static size_t syncduke_emit_jxl(const uint8_t *fb, const uint8_t *pal, int w, in
 	static char name[32];
 	if (name[0] == '\0')
 		snprintf(name, sizeof name, "syncduke_%08x.jxl", termgfx_session_salt());
-	n = termgfx_apc_image(&syncduke_apc, &syncduke_apc_cap, name, "DrawJXL",
-	                      syncduke_jxl, n, dx, dy, syncduke_img_blob_ok());
+	n = termgfx_apc_image_zoom(&syncduke_apc, &syncduke_apc_cap, name, "DrawJXL",
+	                           syncduke_jxl, n, dx, dy, zx, zy, syncduke_img_blob_ok());
 	syncduke_out_put(syncduke_apc, n);
 	return n;
 }
@@ -959,15 +981,25 @@ static void syncduke_emit_overlay(int force)
 			 * "evdev/nat" or "kitty/syn" -- the suffix is native hold (low-latency true key-up)
 			 * vs the synthetic constant rate (high-latency fallback).  Empty on the byte path. */
 			char kbd[16] = "";
+			char zm[12]  = "";                    /* terminal-side upscale (APC ZX/ZY) */
 			if (syncduke_evdev_active() || syncduke_kitty_active())
 				snprintf(kbd, sizeof(kbd), " %s/%s",
 				         syncduke_evdev_active() ? "evdev" : "kitty",
 				         syncduke_turn_native() ? "nat" : "syn");
-			tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s%s ",
+			if (syncduke_last_tier == 1
+			    && (syncduke_last_zoom_x > 1 || syncduke_last_zoom_y > 1)) {
+				if (syncduke_last_zoom_x == syncduke_last_zoom_y)
+					snprintf(zm, sizeof(zm), " x%d", syncduke_last_zoom_x);
+				else
+					snprintf(zm, sizeof(zm), " x%dx%d",
+					         syncduke_last_zoom_x, syncduke_last_zoom_y);
+			}
+			tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s%s%s ",
 			              sd_tier_name(syncduke_last_tier),
 			              fps, bw, rtt, rmin, syncduke_eff_depth(), syncduke_inflight_auto ? "/auto" : "", kb, enc,
 			              kbd,
-			              (syncduke_last_tier == 1 && syncduke_img_blob_ok()) ? " blob" : "");   /* JXL inline (DrawJXLBlob) */
+			              (syncduke_last_tier == 1 && syncduke_img_blob_ok()) ? " blob" : "",   /* JXL inline (DrawJXLBlob) */
+			              zm);                                                                  /* " x2" = terminal upscales */
 		}
 	}
 	if (tn < 0)
@@ -1100,11 +1132,14 @@ void syncduke_present(void)
 	syncduke_update_outsize();                /* adopt the probed terminal canvas, if it answered */
 	pal_dirty = syncduke_palette_take_dirty();
 
-	/* Pixel-aspect scaling: ALWAYS halve vertically (pan=2 -- a portable DEC 2:1
-	 * aspect every sixel terminal honors). Halve horizontally too (pad=2) ONLY on
-	 * SyncTERM, whose cterm treats pad as an integer horizontal scale; a strict-DEC
-	 * terminal would draw a half-width image, so others keep full width (pad=1). The
-	 * sixel is encoded at out/hsc x out/vsc and the terminal scales it back to full. */
+	/* Pixel-aspect scaling: halve vertically (pan=2 -- the DEC 2:1 pixel aspect,
+	 * honored by SyncTERM, foot, Contour and Windows Terminal, but NOT by xterm or
+	 * WezTerm, which render at the encoded size and so show a half-height picture
+	 * until the user picks the full-res tier below). Halve horizontally too (pad=2)
+	 * ONLY on SyncTERM, whose cterm alone reads pad as an integer horizontal scale;
+	 * anywhere else that would draw a half-width image, so others keep pad=1. The
+	 * sixel is encoded at out/hsc x out/vsc and the terminal scales it back to full.
+	 * (See the terminal matrix in termgfx/README.md.) */
 	/* Full-res opt-in: encode 1:1 at the display size (hsc=vsc=1) instead of half-res +
 	 * the terminal's 2x nearest-neighbor upscale.  Sharper (no sub-native downscale) at
 	 * ~4x the sixel bytes.  Applies on SyncTERM too now (drops the raster-aspect scaling);

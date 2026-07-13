@@ -31,6 +31,9 @@ int termgfx_caps_parse_jxl(const uint8_t *acc, int len);
                                       // bare DrawPPM landed 1.315). Both newer than Sixel (1189),
                                       // so any PPM-capable SyncTERM also has Sixel.
 #define TERMGFX_CTERM_VER_BLOB 1329   // APC blob media verbs: A;LoadBlob, Draw*Blob, Load*Blob
+#define TERMGFX_CTERM_VER_ZOOM 1332   // Graphics-APC ZX/ZY integer zoom (also FX/FY mirroring and
+                                      // negative DX/DY). Lets a door ship the NATIVE-res frame and
+                                      // have the terminal replicate pixels -- see termgfx_geom_zoom().
 
 // Extract the CTerm version (major*1000 + minor, so 1.329 -> 1329) from a
 // DA1 reply whose numeric params the door has already split out. `intro` is the

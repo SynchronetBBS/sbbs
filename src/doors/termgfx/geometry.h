@@ -28,6 +28,20 @@ void termgfx_geom_fit(int vw, int vh, int src_w, int src_h, int scale_max,
 void termgfx_geom_fit_ex(int vw, int vh, int src_w, int src_h, int scale_max,
                          int max_stretch_pct, int *ew, int *eh);
 
+// Can the terminal do this upscale for us?  If the fitted emit size (ew x eh) is
+// an exact integer multiple of the source, report the per-axis factors in *zx/*zy
+// (NULL ok) and return 1: the door can then encode the frame at its NATIVE size
+// and let the terminal replicate pixels (graphics-APC ZX/ZY, gated on CTerm >=
+// TERMGFX_CTERM_VER_ZOOM), skipping the door-side upscale and shipping far fewer
+// bytes -- a 2x frame costs roughly 40% of the pre-upscaled one to encode.
+//
+// Returns 0 when the fit isn't an exact multiple (or would shrink the source):
+// SyncTERM has NO resampler -- its only scaling, sixel raster attributes included,
+// is integer pixel replication -- so a non-integer fit still has to be resampled
+// door-side and sent at the fitted size, exactly as before.  Quality is identical
+// either way: replicating pixels is what the door's nearest-neighbor upscale does.
+int termgfx_geom_zoom(int src_w, int src_h, int ew, int eh, int *zx, int *zy);
+
 // Center an ew x eh image in a vw x vh canvas.  *dx/*dy = the pixel offset (e.g.
 // for a SyncTERM APC DrawJXL DX/DY); *col/*row = the 1-based text-cell origin
 // derived from cell_w/cell_h (1,1 -- top-left -- when either cell dim is 0, since

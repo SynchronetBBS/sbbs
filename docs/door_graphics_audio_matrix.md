@@ -31,8 +31,8 @@ client every door degrades to sixel (if the terminal reports it) or to ANSI/text
 | Door | Native render | Delivered | Graphics tiers (default **bold**) | Color depth | Frame model | Frame rate | Transport |
 |------|---------------|-----------|-----------------------------------|-------------|-------------|-----------|-----------|
 | **SyncConquer** | 640×400, 8-bit paletted | 640×400 (1:1, no scale) | **JXL**, sixel (full-res), PPM (opt-in), text | sixel 256-color; JXL/PPM 24-bit RGB | per-frame full-screen re-encode, whole-frame dedupe | change-driven (no cap) | full-frame APC; JXL/PPM **inline blob** ≥1.329 |
-| **SyncDuke** | 320×200 → ×2 | 640×400 (client `pan/pad=2`) | **JXL**, sixel (half-res), text (half/blocks) | sixel 256-color; JXL 24-bit RGB | per-frame full-screen re-encode | **30 fps** cap | full-frame APC; JXL inline blob ≥1.329 |
-| **SyncDOOM** | 320×200 → ×2 | 640×400 (client `pan/pad=2`) | **JXL**, PPM (opt-in, LAN), sixel (half-res), text (half/quad/sextant) | sixel 256-color; JXL/PPM 24-bit RGB | per-frame full-screen re-encode | 35 fps sim, **~13 fps** delivered | full-frame APC; JXL/PPM inline blob ≥1.329 |
+| **SyncDuke** | 320×200 → ×2 | 640×400 (client-scaled: sixel `pan/pad=2`; JXL `ZX/ZY=2` ≥1.332) | **JXL**, sixel (half-res), text (half/blocks) | sixel 256-color; JXL 24-bit RGB | per-frame full-screen re-encode | **30 fps** cap | full-frame APC; JXL inline blob ≥1.329, native-res + `ZX/ZY` ≥1.332 |
+| **SyncDOOM** | 320×200 → ×2 | 640×400 (client-scaled: sixel `pan/pad=2`; JXL/PPM `ZX/ZY=2` ≥1.332) | **JXL**, PPM (opt-in, LAN), sixel (half-res), text (half/quad/sextant) | sixel 256-color; JXL/PPM 24-bit RGB | per-frame full-screen re-encode | 35 fps sim, **~13 fps** delivered | full-frame APC; JXL/PPM inline blob ≥1.329, native-res + `ZX/ZY` ≥1.332 |
 | **SyncRetro** | core-defined (e.g. NES 256×240) | core geometry, may resize | **sixel only** (JXL *probed* but detect-only — no present path yet, planned M3) | sixel 256-color (truecolor quantized; legacy consoles <256 colors, so usually exact) | per-frame full-screen re-encode | paced to **core fps** (~50/60 Hz) | raw DECSIXEL |
 | **SyncMOO1** | 320×200 (sixel lossless) | 320×200+ | **sixel only** | sixel 256-color | per-frame full-screen re-encode | change-driven (turn-based) | raw DECSIXEL |
 | **zmachine** | text; v6 games add images | image sub-rects | APC copy-buffer pixels **>** JS-encoded sixel **>** `[picture #N]` text — *v6 games only* | 16-color art baked to 24-bit RGB PPM (gamma 0.55 pre-corrected) | **upload-once + blit** (`P;Paste` sub-rects), integer NN scale ≤2× | n/a (static, event-driven) | `C;LoadPPM`/`LoadPBM` + `P;Paste`; per-BBS cache, MD5-negotiated |
@@ -46,7 +46,9 @@ Notes:
   fonts can't survive half-res, which is why its **sixel fallback stays
   full-res** rather than the half-res `pan/pad=2` doubling Duke/DOOM use (both
   natively 320×200, so the client integer-doubles their sixel back to 640×400
-  losslessly at ~½ the bytes). SyncRetro's sixel is also full-res, but for a
+  losslessly at ~½ the bytes — *on a client that scales*; see
+  [Client-side scaling](#client-side-scaling--who-performs-the-upscale)).
+  SyncRetro's sixel is also full-res, but for a
   different reason: it up-samples each core frame by arbitrary non-integer
   ratios, which the client's integer doubling can't express.
 - **The sixel tier never fills the full 640×400, and Ctrl-F (Aspect↔Fill) is
@@ -204,6 +206,87 @@ margin-clear details.
 
 ---
 
+## Client-side scaling — who performs the upscale
+
+A door that renders at 320×200 and displays at 640×400 can either **upscale the
+frame itself** and ship the big image, or **ship the small image** and have the
+terminal enlarge it. The second is strictly cheaper — a 2× frame costs roughly
+2.4–2.8× the bytes to encode at any quality setting — and, because every upscale
+in this chain is nearest-neighbor pixel replication, the picture is *identical*
+either way. There is no quality argument, only a compatibility one: **can this
+client scale, and along which axes?**
+
+Two independent mechanisms, one per tier.
+
+### Sixel: the `pan;pad` raster attribute
+
+DECSIXEL's raster attribute carries a pixel *aspect ratio* (`pan;pad`). Reading
+it as a **scale factor** is a cterm extension, and support fragments three ways:
+
+| Terminal | Sixel scaling | Consequence for a half-encoded sixel |
+|----------|---------------|--------------------------------------|
+| **SyncTERM/cterm** | **both axes** — `pan`/`pad` are integer pixel scales | encode at ½×½, terminal restores full size (~½ the bytes) |
+| **foot**, **Contour**, **Windows Terminal** | **vertical only** (the DEC aspect reading) | half-height encode is restored; half-**width** is not |
+| **xterm 390**, **WezTerm** | **none** — renders at the encoded size | a half-encoded sixel appears half-size (needs a full 1:1 encode) |
+
+Hence the doors' sixel policies: `pan=2` (vertical halving) is sent broadly,
+while `pad=2` (horizontal) goes **only** to SyncTERM, because a strict-DEC client
+would draw a half-width image. See `syncduke_io.c` (`vsc`/`hsc`) and SyncDOOM's
+`emit_frame_sixel()`.
+
+> **Careful when observing this: the full-res sixel tier is a *sticky per-user*
+> preference, not a per-session default.** It starts off (`g_sixel_fullres = 0`),
+> but the F4 tier cycle **persists** whatever you land on — SyncDOOM to
+> `[video] sixel_fullres` in the user's `syncdoom.ini`, SyncDuke to a
+> `syncduke.fullres` touch-file rewritten on exit (both under
+> `data/user/<n>/{doom,duke}/`). So cycling tiers once to test leaves the door
+> starting in **sixel-full** on every later session, on every terminal — and a
+> full-res encode (`vsc = hsc = 1`) never exercises the `pan=2` path at all, on any
+> client. It's easy to conclude from a live session that full-res is the default
+> for non-SyncTERM; it isn't. Clear the pref to see the real default.
+
+> **Open issue — the doors disagree, and no probe settles it.** SyncDuke/SyncDOOM
+> assume vertical scaling is portable and keep `pan=2` everywhere; SyncMOO1
+> (commit `11ca7941b1`) assumes *nothing* is portable off SyncTERM and encodes a
+> full 1:1 sixel there. Both can't be right, and each is wrong on a different
+> client: on **xterm/WezTerm** the Duke/DOOM default renders **half-height** until
+> the user manually picks the full-res sixel tier (`SD_SIXEL_FULL`), while on
+> **foot/Contour/Windows Terminal** SyncMOO1 pays ~4× the raster bytes it needs to,
+> since those clients would have honored the vertical halving. Nothing in DA1
+> distinguishes the three classes, so the choice is a guess keyed off "is it
+> SyncTERM". Worth harmonizing on the majority behavior (vertical scaling works
+> everywhere except xterm/WezTerm) rather than leaving each door with its own
+> assumption.
+
+### JXL/PPM: the graphics-APC `ZX`/`ZY` zoom (CTerm ≥ 1.332)
+
+The cached/blob image path had no scaling at all until CTerm 1.332 added `ZX`/`ZY`
+integer zoom factors (SourceForge syncterm feature-request #136), alongside
+`FX`/`FY` mirroring and negative `DX`/`DY` destinations. A door now sends its
+**native** frame plus `ZX=2;ZY=2` instead of a pre-upscaled one — the ~60%
+bandwidth reduction the request was filed for.
+
+The zoom is **integer-only, and SyncTERM has no resampler** (its only scaling
+anywhere — sixel raster attributes included — is whole-pixel replication). So the
+door can delegate the upscale only when the fitted size is an *exact* multiple of
+the native frame; `termgfx_geom_zoom()` makes that call, and any other fit falls
+back to the door-side resample it always did. In practice:
+
+| Canvas | Fit | Zoom |
+|--------|-----|------|
+| 640×400 (80×25, 80×50) | 640×400 | **ZX=2 ZY=2** — encode 320×200 |
+| 640×480 (80×30, 80×60), 1056×400 (132×25) | 640×400 (letterboxed) | **ZX=2 ZY=2** |
+| 640×384 (status line left on) | 640×384 | none — door resamples |
+| 640×392 (80×28), 640×350 (EGA) | 640×392 / 560×350 | none — door resamples |
+| 320×200 (40×25) | 320×200 | 1× (already native) |
+
+Two consequences worth internalizing. The factor is always **2×** — a 4× fit would
+need a 1280-wide canvas and SyncTERM's widest is 1056. And **keeping the status
+line costs the optimization entirely** (640×384 isn't a multiple of 200), which
+is now a load-bearing reason for the doors to hide it, not just a cosmetic one.
+
+---
+
 ## Audio matrix
 
 | Door | Audio? | Transport | SFX source → wire | Music source → synth → codec/rate | Streaming | MIDI (OPL3) |
@@ -350,6 +433,7 @@ Version thresholds that gate features (named in `termgfx/caps.h`, mirrored in
 | 1316 | Copy buffers (the `LoadPPM`/`P;Paste` path the JS doors use) |
 | 1318 | JPEG XL |
 | 1329 | APC **blob** verbs — `A;LoadBlob`, `Draw*Blob`, `Load*Blob` — `TERMGFX_CTERM_VER_BLOB` |
+| 1332 | APC **integer zoom** `ZX`/`ZY` (plus `FX`/`FY` mirroring, negative `DX`/`DY`) — `TERMGFX_CTERM_VER_ZOOM` |
 
 **Blob verbs (≥1.329)** let audio and JXL/PPM frames ship *inline* with no cache
 file. On the non-blob cache path the C doors salt the frame cache filename with

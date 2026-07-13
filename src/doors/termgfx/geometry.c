@@ -55,6 +55,23 @@ void termgfx_geom_fit_ex(int vw, int vh, int src_w, int src_h, int scale_max,
 		*eh = h;
 }
 
+int termgfx_geom_zoom(int src_w, int src_h, int ew, int eh, int *zx, int *zy)
+{
+	if (src_w < 1 || src_h < 1)
+		return 0;
+	// The terminal can only replicate whole pixels: no downscale, no remainder.
+	if (ew < src_w || eh < src_h)
+		return 0;
+	if ((ew % src_w) != 0 || (eh % src_h) != 0)
+		return 0;
+
+	if (zx)
+		*zx = ew / src_w;
+	if (zy)
+		*zy = eh / src_h;
+	return 1;
+}
+
 void termgfx_geom_center_ex(int vw, int vh, int ew, int eh,
                             double cell_w, double cell_h,
                             int *dx, int *dy, int *col, int *row)

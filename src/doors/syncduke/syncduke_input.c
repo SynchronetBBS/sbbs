@@ -440,6 +440,9 @@ int syncduke_jxl_supported(void) { return g_jxl_supported; }
 static int g_img_blob_ok;   /* CTerm >= 1.329: draw JXL inline (DrawJXLBlob, no cache) */
 int syncduke_img_blob_ok(void) { return g_img_blob_ok; }
 
+static int g_img_zoom_ok;   /* CTerm >= 1.332: terminal-side integer upscale (APC ZX/ZY) */
+int syncduke_img_zoom_ok(void) { return g_img_zoom_ok; }
+
 static int g_status_type = -1;   /* pre-door DECSSDT status-line type (DECRQSS reply); -1 = not captured */
 int syncduke_status_type(void) { return g_status_type; }
 
@@ -1365,10 +1368,16 @@ static void csi_final(char fin, int gameplay, int now)
 				}
 				/* CTerm >= 1.329: enable inline A;LoadBlob audio (the DA1 reply
 				 * "ESC[=67;84;101;114;109;MAJ;MIN;...c" carries the version). */
-				if (termgfx_caps_cterm_version(p, np, (char)csi_par[0]) >= TERMGFX_CTERM_VER_BLOB) {
+				int cv = termgfx_caps_cterm_version(p, np, (char)csi_par[0]);
+				if (cv >= TERMGFX_CTERM_VER_BLOB) {
 					termgfx_audio_set_blob_ok(sd_audio, 1);
 					g_img_blob_ok = 1;   /* DrawJXLBlob: inline video frames */
 				}
+				/* CTerm >= 1.332: the terminal can integer-upscale the image
+				 * itself (ZX/ZY), so ship the native 320x200 frame instead of
+				 * a door-upscaled one -- same picture, a fraction of the bytes. */
+				if (cv >= TERMGFX_CTERM_VER_ZOOM)
+					g_img_zoom_ok = 1;
 			}
 			return;
 		case 'P':                                       /* F1 (CSI P / SS3 O P) -> GAME CONTROLS help */

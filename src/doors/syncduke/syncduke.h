@@ -84,6 +84,7 @@ uint32_t syncduke_rtt(void);                        /* smoothed RTT (ms); drives
 int  syncduke_turn_native(void);                    /* 1 if turn keys use the native hold (low-latency true-key-up) */
 int  syncduke_jxl_supported(void);                  /* 1 if SyncTERM can decode JXL (CTQJS reply); -> JXL/APC tier */
 int  syncduke_img_blob_ok(void);                    /* 1 if CTerm >= 1.329: draw JXL inline (DrawJXLBlob, no cache) */
+int  syncduke_img_zoom_ok(void);                    /* 1 if CTerm >= 1.332: terminal-side integer upscale (APC ZX/ZY) */
 int  syncduke_status_type(void);                    /* pre-door DECSSDT status-line type captured for restore, -1 if none */
 int  syncduke_have_sixel(void);                     /* 1 if the terminal advertised sixel (DA1/CTDA cap 4 or SyncTERM) */
 int  syncduke_probe_replied(void);                  /* 1 once the terminal answered the DA capability probe */

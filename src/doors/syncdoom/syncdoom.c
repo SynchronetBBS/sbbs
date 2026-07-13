@@ -679,6 +679,19 @@ static void ensure(uint8_t **buf, size_t *cap, size_t need)
 	if (need > *cap) { *buf = realloc(*buf, need); *cap = need; }
 }
 
+// Doom renders at 320x200 (i_video.h SCREENWIDTH/SCREENHEIGHT) and doomgeneric
+// pixel-doubles that into the DOOMGENERIC_RESX x DOOMGENERIC_RESY framebuffer we
+// get handed -- so the frame carries no more detail than 320x200, and packing at
+// 320x200 (pack_rgb samples every Nth pixel) reconstructs the original exactly.
+// That's what lets us hand the terminal the native frame plus an integer zoom
+// instead of a pre-upscaled one.  The check keeps that exactness honest if the
+// framebuffer size ever changes.
+#define SD_NATIVE_W 320
+#define SD_NATIVE_H 200
+#if (DOOMGENERIC_RESX % SD_NATIVE_W) != 0 || (DOOMGENERIC_RESY % SD_NATIVE_H) != 0
+ #error "doomgeneric framebuffer is not an integer multiple of Doom's 320x200 render"
+#endif
+
 // Pack the rendered frame to RGB888 in s_rgb, vertically scaled to fit the
 // h-row canvas. When the terminal is a row short (status-bar-on -> 384), the
 // full 400-row frame (3D view + status bar) is squished into h rows so the HUD
@@ -710,15 +723,40 @@ static int g_status_type = -1;  // pre-door DECSSDT status-line type (DECRQSS re
 // base64 `bytes` and push: Store(<file>) then <drawverb>(<file>) -- or, on
 // CTerm >= 1.329, DrawJXLBlob/DrawPPMBlob inline (no cache file) -- via termgfx/apc.c.
 static void emit_cached_image(const char *file, const char *drawverb,
-                              const uint8_t *bytes, size_t n)
+                              const uint8_t *bytes, size_t n, int zx, int zy)
 {
-	size_t len = termgfx_apc_image(&s_apc, &s_apc_cap, file, drawverb,
-	                               bytes, n, g_img_x, g_img_y,     // DX/DY center in the canvas
-	                               g_cterm_version >= TERMGFX_CTERM_VER_BLOB);   // inline blob if new enough
+	size_t len = termgfx_apc_image_zoom(&s_apc, &s_apc_cap, file, drawverb,
+	                                    bytes, n, g_img_x, g_img_y,    // DX/DY center in the canvas
+	                                    zx, zy,                        // terminal-side integer upscale
+	                                    g_cterm_version >= TERMGFX_CTERM_VER_BLOB);   // inline blob if new enough
 	out_put(s_apc, len);
 }
 
-static void emit_frame_ppm(int w, int h)
+// Would the terminal upscale this frame for us?  Only when the fit is an exact
+// integer multiple of the native 320x200 and the client is new enough (CTerm >=
+// 1.332).  Then we encode 320x200 and send ZX/ZY -- same picture (the upscale is
+// nearest-neighbor either way), a fraction of the bytes.  Otherwise the door
+// resamples to w x h as before; SyncTERM has no resampler.
+static bool frame_zoom(int w, int h, int *ew, int *eh, int *zx, int *zy)
+{
+	*ew = w; *eh = h; *zx = 1; *zy = 1;
+	if (g_cterm_version < TERMGFX_CTERM_VER_ZOOM)
+		return false;
+	if (!termgfx_geom_zoom(SD_NATIVE_W, SD_NATIVE_H, w, h, zx, zy)) {
+		*zx = *zy = 1;
+		return false;
+	}
+	*ew = SD_NATIVE_W;
+	*eh = SD_NATIVE_H;
+	return true;
+}
+
+// Last APC zoom sent (1 = none: the door upscaled the frame itself).  Surfaced in
+// the Ctrl-S stats strip so "is the terminal doing the upscale?" is observable.
+static int g_last_zoom_x = 1;
+static int g_last_zoom_y = 1;
+
+static void emit_frame_ppm(int w, int h, int zx, int zy)
 {
 	char   hdr[32];
 	int    hlen = snprintf(hdr, sizeof(hdr), "P6\n%d %d\n255\n", w, h);
@@ -731,7 +769,7 @@ static void emit_frame_ppm(int w, int h)
 		static char name[32];   // per-session cache name (SF syncterm #256)
 		if (name[0] == '\0')
 			snprintf(name, sizeof name, "syncdoom_%08x.ppm", termgfx_session_salt());
-		emit_cached_image(name, "DrawPPM", s_img, need);
+		emit_cached_image(name, "DrawPPM", s_img, need, zx, zy);
 	}
 }
 
@@ -826,7 +864,7 @@ static int   g_jxl_effort   = 1;
 
 // Encode s_rgb (w*h RGB888) as JXL via termgfx; emit as a DrawJXL. Returns false on any
 // failure (caller falls back to PPM).
-static bool emit_frame_jxl(int w, int h)
+static bool emit_frame_jxl(int w, int h, int zx, int zy)
 {
 	size_t n = termgfx_jxl_encode(&s_img, &s_img_cap, s_rgb, w, h, g_jxl_distance, g_jxl_effort);
 	if (n == 0)
@@ -835,7 +873,7 @@ static bool emit_frame_jxl(int w, int h)
 		static char name[32];   // per-session cache name (SF syncterm #256)
 		if (name[0] == '\0')
 			snprintf(name, sizeof name, "syncdoom_%08x.jxl", termgfx_session_salt());
-		emit_cached_image(name, "DrawJXL", s_img, n);
+		emit_cached_image(name, "DrawJXL", s_img, n, zx, zy);
 	}
 	return true;
 }
@@ -926,22 +964,30 @@ static void emit_overlay(int force)
 		// Keyboard + turn-key model in ONE compact token: "evdev/nat" or "kitty/syn" -- the suffix
 		// is native hold (low-latency true key-up) vs the synthetic constant rate (high-latency).
 		char     kbd[16] = "";
+		char     zm[12]  = "";                               // terminal-side upscale (APC ZX/ZY)
 		uint32_t kb  = g_last_kb > 9999 ? 9999 : g_last_kb;   // per-frame image size + encode time --
 		uint32_t enc = g_last_enc_us / 1000;                 // the SyncDuke-style diagnostics
 		if (enc > 999)
 			enc = 999;
+		if ((g_mode == MODE_JXL || g_mode == MODE_PPM) && (g_last_zoom_x > 1 || g_last_zoom_y > 1)) {
+			if (g_last_zoom_x == g_last_zoom_y)
+				snprintf(zm, sizeof(zm), " x%d", g_last_zoom_x);
+			else
+				snprintf(zm, sizeof(zm), " x%dx%d", g_last_zoom_x, g_last_zoom_y);
+		}
 		if (g_evdev_active || g_kitty_active)
 			snprintf(kbd, sizeof(kbd), " %s/%s",
 			         g_evdev_active ? "evdev" : "kitty",
 			         sd_turn_native() ? "nat" : "syn");
-		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s%s ",
+		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s%s%s ",
 		              overlay_tier_name(),
 		              g_recent_fps, bw, g_rtt_ms, g_rtt_min,
 		              max_inflight(), g_inflight_auto ? "/auto" : "",
 		              kb, enc,
 		              kbd,
 		              ((g_mode == MODE_JXL || g_mode == MODE_PPM)
-		               && g_cterm_version >= TERMGFX_CTERM_VER_BLOB) ? " blob" : "");   // frames inline (Draw*Blob)
+		               && g_cterm_version >= TERMGFX_CTERM_VER_BLOB) ? " blob" : "",   // frames inline (Draw*Blob)
+		              zm);                                                              // " x2" = terminal upscales
 	}
 
 	if (!force && strcmp(txt, g_ov_last) == 0)
@@ -1105,14 +1151,27 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 				out_put(hb, (size_t)n);
 		}
 	} else {
-		pack_rgb(fb, w, h);
-		if (g_mode == MODE_SIXEL) { emit_frame_sixel(w, h); built = true; }
+		int ew, eh, zx, zy;
+
+		// The sixel tier does its own client-side scaling (half-res + raster
+		// aspect), so the APC zoom only applies to the JXL/PPM tiers.
+		if (g_mode == MODE_SIXEL) {
+			pack_rgb(fb, w, h);
+			emit_frame_sixel(w, h);
+			built = true;
+		}
+		else {
+			frame_zoom(w, h, &ew, &eh, &zx, &zy);
+			g_last_zoom_x = zx;
+			g_last_zoom_y = zy;
+			pack_rgb(fb, ew, eh);
 #ifdef WITH_JXL
-		else if (g_mode == MODE_JXL)
-			built = emit_frame_jxl(w, h);
+			if (g_mode == MODE_JXL)
+				built = emit_frame_jxl(ew, eh, zx, zy);
 #endif
-		if (!built)
-			emit_frame_ppm(w, h);
+			if (!built)
+				emit_frame_ppm(ew, eh, zx, zy);
+		}
 	}
 	g_last_enc_us = (uint32_t)((xp_timer() - enc_t0) * 1000000.0L);   // encode done; g_out_len is the payload
 	g_last_kb     = (uint32_t)((g_out_len + 512) / 1024);

@@ -51,9 +51,25 @@ size_t termgfx_apc_image(uint8_t **buf, size_t *cap,
                          const char *file, const char *drawverb,
                          const uint8_t *payload, size_t n, int dx, int dy, int blob)
 {
+	return termgfx_apc_image_zoom(buf, cap, file, drawverb, payload, n, dx, dy, 1, 1, blob);
+}
+
+size_t termgfx_apc_image_zoom(uint8_t **buf, size_t *cap,
+                              const char *file, const char *drawverb,
+                              const uint8_t *payload, size_t n, int dx, int dy,
+                              int zx, int zy, int blob)
+{
 	size_t   b64len = 4 * ((n + 2) / 3);                        // base64 chars (no terminator)
 	size_t   need   = strlen(file) * 2 + strlen(drawverb) + 96 + b64len;
+	char     zoom[32];
 	uint8_t *p;
+
+	// ZX/ZY are integer replication factors; 1 is the default, so leave them out
+	// and stay byte-identical to what every door emitted before.
+	zoom[0] = '\0';
+	if (zx > 1 || zy > 1)
+		snprintf(zoom, sizeof zoom, "ZX=%d;ZY=%d;", zx > 1 ? zx : 1, zy > 1 ? zy : 1);
+	need += strlen(zoom);
 
 	if (need > *cap) {
 		*buf = realloc(*buf, need);
@@ -62,14 +78,15 @@ size_t termgfx_apc_image(uint8_t **buf, size_t *cap,
 	p = *buf;
 	if (blob) {
 		// CTerm >= 1.329: draw inline, no C;S Store / cache-file write.
-		p += sprintf((char *)p, "\x1b_SyncTERM:C;%sBlob;DX=%d;DY=%d;", drawverb, dx, dy);
+		p += sprintf((char *)p, "\x1b_SyncTERM:C;%sBlob;DX=%d;DY=%d;%s", drawverb, dx, dy, zoom);
 		p += b64_encode((char *)p, payload, n);                // base64 payload
 		memcpy(p, "\x1b\\", 2); p += 2;                        // ST
 	} else {
 		p += sprintf((char *)p, "\x1b_SyncTERM:C;S;%s;", file);     // Store header
 		p += b64_encode((char *)p, payload, n);                    // base64 payload
 		memcpy(p, "\x1b\\", 2); p += 2;                            // ST
-		p += sprintf((char *)p, "\x1b_SyncTERM:C;%s;DX=%d;DY=%d;%s\x1b\\", drawverb, dx, dy, file);
+		p += sprintf((char *)p, "\x1b_SyncTERM:C;%s;DX=%d;DY=%d;%s%s\x1b\\",
+		             drawverb, dx, dy, zoom, file);
 	}
 	return (size_t)(p - *buf);
 }
