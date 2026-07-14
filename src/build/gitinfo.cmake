@@ -20,10 +20,16 @@
 # the mistake of thinking a freshly-built door is an old one. When there is no
 # commit that describes the binary, the only honest date is when it was compiled.
 #
-# Dirtiness is judged from TRACKED changes under src/ only (`--porcelain -uno --
-# :/src`). Untracked files would make every tree dirty (a working install has
-# hundreds), and tracked churn outside src/ -- game data a door rewrites at
-# runtime, e.g. xtrn/lord2/*.dat -- has nothing to do with what got compiled.
+# Dirtiness is judged from TRACKED changes under the trees that FEED the binary --
+# src/ and 3rdp/. 3rdp holds no loose sources, but it does track the build patches
+# (3rdp/build), the source tarballs they are applied to (3rdp/dist: cryptlib.zip,
+# Botan.tar.xz) and the prebuilt libs (win32/win64/darwin.release) -- all of which
+# end up in the binary, so a local change there must mark the build too.
+#
+# Untracked files are ignored: a working install has hundreds, and every tree would
+# read dirty forever. So is tracked churn OUTSIDE those trees -- LORD2 rewrites its
+# own xtrn/lord2/*.dat as people play it, leaving them permanently modified on a
+# live BBS, and those bytes are in no binary. Likewise exec/*.js, text/, ctrl/.
 
 set(GIT_HASH "unknown")
 set(GIT_DATE "")
@@ -38,7 +44,7 @@ if(GIT_FOUND)
         RESULT_VARIABLE _r ERROR_QUIET)
     if(_r EQUAL 0 AND _h)
         execute_process(
-            COMMAND "${GIT_EXECUTABLE}" -C "${SRCDIR}" status --porcelain -uno -- :/src
+            COMMAND "${GIT_EXECUTABLE}" -C "${SRCDIR}" status --porcelain -uno -- :/src :/3rdp
             OUTPUT_VARIABLE _st OUTPUT_STRIP_TRAILING_WHITESPACE
             RESULT_VARIABLE _sr ERROR_QUIET)
         if(_sr EQUAL 0 AND NOT _st STREQUAL "")

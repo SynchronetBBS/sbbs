@@ -11,14 +11,17 @@
 @rem timestamp says nothing about a binary carrying newer, uncommitted code, and
 @rem reporting it invites the mistake of thinking a fresh build is an old one.
 @rem
-@rem Dirtiness is judged from TRACKED changes under src/ only: untracked files
-@rem would make every tree dirty (a working install has hundreds), and tracked
-@rem churn outside src/ -- game data a door rewrites at runtime -- has nothing to
-@rem do with what got compiled. Mirrors ../build/gitinfo.cmake (the doors) and
+@rem Dirtiness is judged from TRACKED changes under the trees that FEED the binary
+@rem -- src/ and 3rdp/. 3rdp holds no loose sources, but it tracks the build patches
+@rem (3rdp/build), the tarballs they patch (3rdp/dist) and the prebuilt libs, all of
+@rem which end up in the binary, so a local change there must mark the build too. Untracked files are ignored (a working
+@rem install has hundreds), as is tracked churn elsewhere -- LORD2 rewrites its own
+@rem xtrn/lord2/*.dat as people play it, and those bytes are in no binary.
+@rem Mirrors ../build/gitinfo.cmake (the doors) and
 @rem sbbs3's targets.mk. `date` comes from the same Git-for-Windows usr/bin that
 @rem already supplies the `tr` below.
 @set GIT_DIRTY=
-@for /f "delims=" %%d in ('git status --porcelain -uno -- :/src') do @set GIT_DIRTY=1
+@for /f "delims=" %%d in ('git status --porcelain -uno -- :/src :/3rdp') do @set GIT_DIRTY=1
 @if defined GIT_DIRTY (
 	@git log -1 HEAD --format="#define GIT_HASH \"~%%h\"" > git_hash.h
 	@date "+#define GIT_DATE \"%%b %%d %%Y %%H:%%M\"" >> git_hash.h

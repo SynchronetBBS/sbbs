@@ -158,12 +158,15 @@ ifneq ($(GIT), NO)
 # invites the mistake of thinking a freshly-built program is an old one. With no
 # commit that describes the binary, the only honest date is when it was compiled.
 #
-# Dirtiness is judged from TRACKED changes under src/ only: untracked files would
-# make every tree dirty (a working install has hundreds), and tracked churn outside
-# src/ -- game data a door rewrites at runtime, e.g. xtrn/lord2/*.dat -- has nothing
-# to do with what got compiled.  Mirrored in ../build/gitinfo.cmake (the doors).
+# Dirtiness is judged from TRACKED changes under the trees that FEED the binary --
+# src/ and 3rdp/. 3rdp holds no loose sources, but it tracks the build patches
+# (3rdp/build), the tarballs they patch (3rdp/dist) and the prebuilt libs, all of
+# which end up in the binary, so a local change there must mark the build too.  Untracked files are ignored (a working install has hundreds, so
+# every tree would read dirty), as is tracked churn elsewhere -- LORD2 rewrites its
+# own xtrn/lord2/*.dat as people play it, and those bytes are in no binary.
+# Mirrored in ../build/gitinfo.cmake (the doors) and ../build/gitinfo.bat (MSVC).
 git_hash.h: FORCE ../../.git
-	$(QUIET)if [ -n "`git status --porcelain -uno -- :/src`" ]; then \
+	$(QUIET)if [ -n "`git status --porcelain -uno -- :/src :/3rdp`" ]; then \
 		echo "#define GIT_HASH \"~`git log -1 HEAD --format=%h`\"" > $@.tmp; \
 		date '+#define GIT_DATE "%b %d %Y %H:%M"' >> $@.tmp; \
 		date '+#define GIT_TIME %s' >> $@.tmp; \
