@@ -137,11 +137,19 @@ key alongside the F4 tier cycle):
 - **Fill**: stretch to the full canvas (80×24 → 640×384; any distortion
   is the user's informed choice).
 
-Divergence from the FPS doors, deliberate: syncalert sends **full-res
-sixel by default** (pan=1;pad=1). Duke/DOOM default to server-side
-half-res + client pan/pad=2 doubling, near-lossless for their 320×200
-native buffers; for RA's fine 640×400 detail (6–8px UI fonts) that path
-discards half the resolution, so syncalert has no half-res mode at all.
+Tier selection is the **same** as the FPS doors: `sa_auto_tier()` picks **JXL
+when the client supports it**, else **sixel**, else PPM/text (F4 cycles). What
+diverges — deliberately — is the **sixel handling**. Duke/DOOM render their
+320×200 buffers at server-side half-res and lean on the client's `pan/pad=2`
+doubling; RA/TD render natively at 640×400 (exactly the 80×25 / 8×16 canvas) and
+send sixel **1:1**, with **no reliance on client-side doubling** — for RA's fine
+6–8px UI fonts the half-res path would throw away half the resolution, so these
+doors have no half-res mode. Scaling, when needed, is **server-side**, and only
+when the canvas is smaller than 640×400 or its height isn't a multiple of 6
+(sixel's band granularity); the sixel width is also clamped to a graphics
+ceiling (`DOOR_SCALE_MAX`, or an assumed 1000×1000 for geometry-less xterm).
+(A big canvas with detected >1000px support could in principle client-double the
+native sixel — a possible optimization, not current behavior.)
 Frame-size cost is acceptable: the RTS present loop is
 change-driven (dedupe + phase-2 dirty rects), not a constant 10–30fps
 stream. Larger canvases scale up (160×50 = 1280×800 is a clean integer
@@ -229,28 +237,36 @@ biggest, least-changing thing is the worst choice.
 
 ### Expected throughput
 
-Dirty-rect cost ≈ (changed fraction) × full-frame cost, so the win ≈
-1 / changed-fraction, capped by scrolling. Measured full-frame anchors
-(syncalert, from node logs): full-res **sixel ~80–150 KB/frame at native
-640×400** (200–630 KB at maximized canvases); text tiers ~80–140 KB; JXL
-unmeasured, est. ~30–60 KB.
+Measured from a real syncalert session via the dirty-rect probe (diff each
+changed frame at 16×16-tile granularity, coalesce, estimate the partial-draw
+upload vs the full frame actually sent). Per-tier session averages:
 
-| Scene | ~Changed | vs full-frame |
-| --- | --- | --- |
-| Idle / studying map | 0% | already free (dedupe) |
-| Unit micro / harvester / building | ~4–6% | ~3–5× native, ~10–20× maximized |
-| Moderate combat | ~10–15% | ~2–3× |
-| Heavy battle | ~25%+ | ~1.5× |
-| **Map scroll** | ~85% | ~1.1–1.3× (the floor) |
+| Tier | Role | Full-frame avg | Changed avg | Dirty-rect (est.) | Ratio |
+| --- | --- | --- | --- | --- | --- |
+| **JXL** | default (JXL-capable client) | ~48 KB | ~21% | ~12 KB | **~4×** |
+| **sixel** | fallback (no-JXL client) | ~153 KB | ~10% | ~22 KB | **~7×** |
+| text (half) | fallback | ~150 B | ~0% | ~190 B | **~0.8× (worse)** |
 
-The gain is dramatic on **sixel** (verbose full frames) — roughly **5–15×
-average** across typical play (~1.5–3 MB/s → ~150–400 KB/s at native size) —
-and grows with canvas size (more static area). On **JXL** the full frame is
-already compact, so dirty-rect helps only via JXL-encoded rects (the
-proportional win), not raw PPM. **Map scroll is the hard floor** on every tier:
-the whole viewport turns over, so rects degenerate to ~full-frame. These are
-model estimates — validate with the measurement probe (below) before committing
-thresholds.
+Calm/near-static scenes go much higher (a ~0%-changed sixel window measured
+~167×); map scroll is the floor (~1×, caught by the fallback threshold).
+Reading them:
+
+- **Sixel ~7× is trustworthy** — sixel compresses locally/linearly, so scaling
+  the real full-frame bytes by changed area is accurate. But it serves the
+  *fallback* population, not the default client.
+- **JXL ~4× is optimistic.** The probe area-scales the full-frame JXL size,
+  which assumes a small scattered rect compresses as well as the whole frame —
+  it won't (less context → worse per-pixel), so the true ratio is lower. Since
+  **JXL is the default tier**, this is the number that matters most and the one
+  still to be pinned down by actually encoding the coalesced rects.
+- **Text tiers regress (~0.8×) — exclude them.** The text renderer already
+  diffs its character grid, so its "full frame" is already tiny and
+  differential; adding rect overhead makes it worse. Measured, not assumed.
+
+So the differ is justified where it's trustworthy (sixel fallback) and
+promising-but-unproven where it matters most (JXL default). The next probe
+refinement should **encode JXL rects for real** rather than area-scale them,
+before committing to build order.
 
 ### Why not PPM rects on JXL
 
@@ -277,13 +293,18 @@ reserved only as a smallest-rect latency option.
 
 0. **Measurement probe (no transport change).** Run the differ + coalescer and
    *log* the would-be rect bytes per frame per tier during real play, while
-   still sending full frames. Yields true thresholds and win factors from
-   actual gameplay before any wire change.
+   still sending full frames. DONE for the area-scaled estimate (see "Expected
+   throughput"); the next refinement is to **encode the coalesced JXL rects for
+   real** so the JXL ratio (the default tier) is trustworthy rather than
+   flattered by area-scaling — settle build order on that number.
 1. **Differ + coalescer** in libtermgfx, gated behind the probe/flag.
-2. **Sixel-rect backend** (biggest win; also covers pure sixel terminals) +
-   the image-cache manager for static art.
-3. **`DrawJXL`-rect backend** for JXL clients.
-4. Tune coalescing + fallback threshold against the Phase-0 measurements.
+2. **Sixel-rect backend** — the biggest *trustworthy* win (~7× measured), and it
+   also covers pure sixel terminals — plus the image-cache manager for static
+   art. (Serves the no-JXL *fallback* population.)
+3. **`DrawJXL`-rect backend** for JXL clients — the *default* tier, so arguably
+   co-priority with (2) pending the real-encode JXL measurement from step 0.
+4. Tune coalescing + fallback threshold against the measurements. **Skip the
+   text tiers** — they already cell-diff and measured a regression (~0.8×).
 
 ### Deferred: SyncTERM sprite-blit primitives (CTerm ≥ 1.332)
 
