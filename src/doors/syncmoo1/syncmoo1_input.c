@@ -226,6 +226,18 @@ static void sm_csi_final(char fin)
         if (np >= 3 && p[0] == 4)
             sm_io_set_canvas(p[2], p[1]);   /* p[1]=height px, p[2]=width px */
         return;
+    case 'S':   /* XTSMGRAPHICS reply ESC[?2;0;W;HS -- the terminal's SIXEL GRAPHICS GEOMETRY (XTSMGRAPHICS
+             * ESC[?2;1S -> ESC[?2;0;W;HS): the largest sixel it will accept, and a HARD
+             * ceiling -- an image whose declared raster exceeds it is not clipped but
+             * DISCARDED WHOLE (xterm graphics_sixel.c: GetExtent -> finished_parsing +
+             * return), which paints the screen BLACK. xterm answers BOTH this and
+             * ESC[14t, reporting min(window, maxGraphicSize) here (1000x1000 by
+             * default), so the window size alone is NOT safe to draw into. This wins
+             * over the ESC[14t reply whichever order they arrive in. */
+        np = sm_csi_params(p, 4);
+        if (np >= 4 && p[0] == 2 && p[1] == 0)
+            sm_io_set_gfx_canvas(p[2], p[3]);
+        return;
     case 'R':   /* ESC[rows;colsR: cursor-position report */
         np = sm_csi_params(p, 2);
         if (sm_io_take_grid_probe()) {

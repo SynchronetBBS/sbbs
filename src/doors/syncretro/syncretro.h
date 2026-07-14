@@ -128,6 +128,7 @@ int  sr_io_get_fd(void);                            /* the adopted fd (socket, o
  * A console's pixels are NOT square -- see syncretro_io.c. */
 void sr_io_set_aspect(double aspect);
 void sr_io_set_canvas(int w, int h);
+void sr_io_set_gfx_canvas(int w, int h);   /* XTSMGRAPHICS: max sixel the terminal draws */
 void sr_io_set_grid(int rows, int cols);
 
 /* DSR-ACK frame pacing. sr_io_take_grid_probe() is a one-shot armed when the

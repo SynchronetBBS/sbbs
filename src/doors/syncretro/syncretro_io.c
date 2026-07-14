@@ -575,13 +575,32 @@ void sr_io_set_aspect(double aspect)
 	sr_io_invalidate();            /* the image rect moved: repaint in full */
 }
 
+static int g_canvas_is_gfx;   /* canvas came from XTSMGRAPHICS: a hard drawing ceiling */
+
 void sr_io_set_canvas(int w, int h)
 {
 	if (w <= 0 || h <= 0)
 		return;   /* malformed/partial reply: keep the current canvas */
+	if (g_canvas_is_gfx)
+		return;   /* the graphics geometry outranks the ESC[14t window (see below) */
 	g_canvas_w     = w;
 	g_canvas_h     = h;
 	g_canvas_known = 1;   /* a real reply: the geometry may now trust the canvas */
+	sr_io_recompute_geom();
+}
+
+/* The terminal's SIXEL graphics geometry: the biggest image it will draw. Not the
+ * same as the window it will fit -- xterm reports min(window, maxGraphicSize) here
+ * (1000x1000 by default) and DISCARDS an entire sixel whose declared raster is
+ * bigger, so sizing to ESC[14t paints a large xterm black. Authoritative. */
+void sr_io_set_gfx_canvas(int w, int h)
+{
+	if (w <= 0 || h <= 0)
+		return;
+	g_canvas_w      = w;
+	g_canvas_h      = h;
+	g_canvas_known  = 1;
+	g_canvas_is_gfx = 1;
 	sr_io_recompute_geom();
 }
 

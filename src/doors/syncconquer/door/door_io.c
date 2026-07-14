@@ -1558,6 +1558,7 @@ static int g_img_blob_ok;      /* CTerm >= 1.329: draw JXL/PPM inline (no cache 
 static int g_grid_rows, g_grid_cols;   /* text grid, from the 999;999 cursor-report fallback */
 static int g_canvas_w, g_canvas_h;     /* pixel canvas -- exact (ESC[14t) or grid*8x16 estimate */
 static int g_px_exact;                 /* g_canvas_w/h came from an exact ESC[4;h;wt reply */
+static int g_canvas_is_gfx;            /* ...or, better, from XTSMGRAPHICS: a hard drawing ceiling */
 static int g_mouse_pixels;             /* SGR-Pixels mouse (DEC 1016) confirmed active: mouse
                                         * reports are canvas PIXELS, not text cells (Windows
                                         * Terminal supports it; SyncTERM does not -> stays cells) */
@@ -2585,9 +2586,9 @@ static void door_csi_final(char fin)
 			}
 			door_pace_ack();
 			return;
-		case 't':   /* ESC[4;h;wt: exact text-area pixel size (authoritative) */
+		case 't':   /* ESC[4;h;wt: exact text-area pixel size */
 			np = door_csi_params(p, 4);
-			if (np >= 3 && p[0] == 4) {
+			if (np >= 3 && p[0] == 4 && !g_canvas_is_gfx) {
 				g_canvas_h = p[1];
 				g_canvas_w = p[2];
 				g_px_exact = 1;
@@ -2661,9 +2662,19 @@ static void door_csi_final(char fin)
 			if (g_csi_len > 0 && g_csi_par[0] == '?') {
 				np = door_csi_params(p, 4);
 				if (np >= 4 && p[0] == 2 && p[1] == 0) {
-					g_canvas_w = p[2];
-					g_canvas_h = p[3];
-					g_px_exact = 1;
+					/* The terminal's SIXEL graphics geometry: the biggest image it
+					 * will DRAW, which is not the window it will FIT. xterm answers
+					 * BOTH this and ESC[14t, reporting min(window, maxGraphicSize)
+					 * -- 1000x1000 by default -- here, and DISCARDS an entire sixel
+					 * whose declared raster exceeds it (graphics_sixel.c: GetExtent
+					 * -> finished_parsing + return) rather than clipping it. Sizing
+					 * to the ESC[14t window therefore paints a large xterm black.
+					 * Mark it authoritative: this used to land on the right value
+					 * only because the 't' reply happened to arrive first. */
+					g_canvas_w      = p[2];
+					g_canvas_h      = p[3];
+					g_px_exact      = 1;
+					g_canvas_is_gfx = 1;
 				}
 				return;
 			}

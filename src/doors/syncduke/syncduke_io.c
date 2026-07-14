@@ -340,7 +340,14 @@ static int     syncduke_out_w = SYNCDUKE_OUT_W_DEF, syncduke_out_h = SYNCDUKE_OU
 /* Adopt the probed terminal canvas (clamped to the buffer) for this frame. */
 static void syncduke_update_outsize(void)
 {
-	int w = syncduke_term_px_w(), h = syncduke_term_px_h();
+	/* The GRAPHICS canvas, not the text-area pixels.  syncduke_canvas_*() prefers the
+	 * terminal's XTSMGRAPHICS geometry (ESC[?2;1S), which is a hard ceiling on what it
+	 * will draw: xterm reports min(window, maxGraphicSize) there -- 1000x1000 by
+	 * default -- and a sixel whose DECLARED raster exceeds it is not clipped but
+	 * DISCARDED WHOLE (xterm graphics_sixel.c: GetExtent -> finished_parsing + return).
+	 * Fitting the sixel to the ESC[14t window instead painted a big xterm BLACK.
+	 * SyncTERM answers the graphics query and not ESC[14t, so it loses nothing here. */
+	int w = syncduke_canvas_w(), h = syncduke_canvas_h();
 	if (w <= 0 || h <= 0)
 		return;                       /* no probe reply yet: keep the default */
 	if (w > SYNCDUKE_OUT_W_MAX)

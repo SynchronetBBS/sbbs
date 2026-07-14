@@ -535,13 +535,34 @@ const sm_geom_t *sm_io_geom(void)
 
 /* --- probe-reply setters (Task 6: fed by syncmoo1_input.c's CSI handler) --- */
 
+static int g_canvas_is_gfx;   /* the canvas came from XTSMGRAPHICS: a hard ceiling */
+
 void sm_io_set_canvas(int w, int h)
 {
     if (w <= 0 || h <= 0)
         return;   /* malformed/partial reply: keep the current canvas */
+    if (g_canvas_is_gfx)
+        return;   /* the graphics geometry outranks the ESC[14t window: see below */
     sm_io_ensure_geom();
     g_canvas_w = w;
     g_canvas_h = h;
+    sm_io_recompute_geom();
+}
+
+/* The terminal's sixel graphics geometry -- the biggest image it will DRAW, which
+ * is not the same thing as the window it will FIT. xterm answers ESC[14t with the
+ * window and this with min(window, maxGraphicSize) -- 1000x1000 by default -- and
+ * silently discards an entire sixel whose declared raster exceeds it. Fitting to
+ * the window therefore paints a large xterm black. Authoritative: once this
+ * arrives, the ESC[14t reply can no longer widen the canvas past it. */
+void sm_io_set_gfx_canvas(int w, int h)
+{
+    if (w <= 0 || h <= 0)
+        return;
+    sm_io_ensure_geom();
+    g_canvas_w      = w;
+    g_canvas_h      = h;
+    g_canvas_is_gfx = 1;
     sm_io_recompute_geom();
 }
 

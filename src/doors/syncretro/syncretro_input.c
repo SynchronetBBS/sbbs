@@ -773,10 +773,26 @@ static void sr_csi_final(char fin)
 	int p[16], np;
 
 	switch (fin) {
-		case 'S':   /* F4: SS3 "ESC O S" (VT100 PF4 / xterm), and the same final byte
-		             * under xterm's modified-key form and kitty's ("CSI 1;m:ev S").
-		             * No terminal SENDS a CSI S (scroll-up) as input, so this is
-		             * unambiguous. */
+		case 'S':   /* Two different things end in 'S'.
+		             *
+		             * "ESC[?2;0;W;H S" is the XTSMGRAPHICS reply: the terminal's SIXEL
+		             * GRAPHICS GEOMETRY -- the biggest image it will DRAW, which is not
+		             * the window it will FIT. A sixel whose declared raster exceeds it
+		             * is not clipped but DISCARDED WHOLE (xterm graphics_sixel.c:
+		             * GetExtent -> finished_parsing + return), so sizing to ESC[14t
+		             * instead paints a large xterm BLACK. xterm answers both, reporting
+		             * min(window, maxGraphicSize) -- 1000x1000 by default -- here, and
+		             * this one is authoritative.
+		             *
+		             * Anything else is F4: SS3 "ESC O S" (VT100 PF4 / xterm), and the
+		             * same final under xterm's modified-key form and kitty's
+		             * ("CSI 1;m:ev S"). The private '?' intro tells them apart. */
+			if (csi_len > 0 && csi_par[0] == '?') {
+				np = sr_csi_params(p, 4);
+				if (np >= 4 && p[0] == 2 && p[1] == 0)
+					sr_io_set_gfx_canvas(p[2], p[3]);
+				return;
+			}
 			if (!sr_key_is_press())
 				return;                 /* a repeat or a release -- see sr_key_is_press */
 			sr_f4();

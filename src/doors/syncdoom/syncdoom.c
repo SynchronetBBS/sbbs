@@ -170,7 +170,16 @@ static int g_text_max_rows = 80;       // maximized terminal otherwise floods th
 // cells aren't 8x16, so for "fit" we want the true window pixels. 0 = not reported
 // (fall back to the cell model). The image is centered: g_img_{col,row} for the
 // sixel text cursor, g_img_{x,y} (pixels) for the SyncTERM APC DX/DY.
-static int g_win_w = 0, g_win_h = 0;   // terminal text-area / graphics-canvas pixels
+static int g_win_w = 0, g_win_h = 0;   // terminal text-area pixels (ESC[14t)
+// The terminal's SIXEL GRAPHICS GEOMETRY (XTSMGRAPHICS ESC[?2;1S -> ESC[?2;0;W;HS):
+// the largest sixel image it will accept. NOT merely a fallback for a terminal that
+// ignores ESC[14t -- xterm answers BOTH, reporting min(window, maxGraphicSize) here,
+// with maxGraphicSize defaulting to 1000x1000. And a sixel whose DECLARED raster
+// exceeds it is not clipped, it is DISCARDED WHOLE (xterm graphics_sixel.c: GetExtent
+// -> finished_parsing + return), so fitting to the window instead painted the screen
+// BLACK in any xterm wider than ~1000px. Prefer it over the window size, as SyncDuke
+// already does (syncduke_canvas_w).
+static int g_gfx_w = 0, g_gfx_h = 0;
 static int g_cell_w = 0, g_cell_h = 0; // terminal cell pixels
 static int g_meas_rows = 0, g_meas_cols = 0; // live size measured via cursor-extreme + DSR (0 = unmeasured)
 static int g_cfg_cell_w = 0, g_cfg_cell_h = 0; // syncdoom.ini [video] cell_width/height
@@ -2738,9 +2747,9 @@ static void probe_geometry(void)
 						p[np++] = (num < 0 ? 0 : num);
 					if (marker == 0 && ch == 't' && np >= 3 && p[0] == 4)      { g_win_h = p[1];  g_win_w = p[2]; }
 					else if (marker == 0 && ch == 't' && np >= 3 && p[0] == 6) { g_cell_h = p[1]; g_cell_w = p[2]; }
-					else if (marker == '?' && ch == 'S' && np >= 4 && p[0] == 2 && p[1] == 0 && g_win_w == 0) {
-						g_win_w = p[2];      // SyncTERM graphics canvas (XTSMGRAPHICS), if ESC[14t didn't answer
-						g_win_h = p[3];
+					else if (marker == '?' && ch == 'S' && np >= 4 && p[0] == 2 && p[1] == 0) {
+						g_gfx_w = p[2];      // graphics geometry: the biggest sixel this terminal takes
+						g_gfx_h = p[3];
 					}
 					else if (marker == 0 && ch == 'R') {
 						if (np >= 2 && p[0] > 0 && p[1] > 0) {   // CPR from the far corner = real size
@@ -2773,6 +2782,15 @@ static void probe_geometry(void)
 	if (g_win_w == 0 && g_cell_w > 0) {
 		g_win_w = g_cols * g_cell_w;
 		g_win_h = s_lines * g_cell_h;
+	}
+
+	// The graphics geometry WINS where the terminal reports one. It is a hard
+	// ceiling, not a hint: a sixel bigger than this is dropped whole, not clipped
+	// (see g_gfx_w above), and SyncTERM reports its true canvas here anyway -- it
+	// answers this and not ESC[14t, so nothing it can draw is lost by preferring it.
+	if (g_gfx_w > 0 && g_gfx_h > 0) {
+		g_win_w = g_gfx_w;
+		g_win_h = g_gfx_h;
 	}
 }
 
