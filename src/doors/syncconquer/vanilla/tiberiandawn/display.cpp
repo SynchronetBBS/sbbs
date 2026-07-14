@@ -2149,6 +2149,19 @@ void DisplayClass::Draw_It(bool forced)
         if (Lepton_To_Pixel(Coord_X(DesiredTacticalCoord)) != Lepton_To_Pixel(Coord_X(TacticalCoord))
             || Lepton_To_Pixel(Coord_Y(DesiredTacticalCoord)) != Lepton_To_Pixel(Coord_Y(TacticalCoord))) {
 
+            /*
+            ** LOCAL: force a full tactical redraw on every scroll. The blit-shift
+            ** optimization below reuses already-drawn pixels via an overlapping
+            ** self-blit (HidPage->HidPage) or a SeenBuff->HidPage DirectDraw blit
+            ** -- neither moves content correctly in the door's plain software
+            ** framebuffer, so a scroll left staircase remnants + black gaps (same
+            ** class as the AllowHardwareBlitFills FillRect no-op). Forcing `forced`
+            ** takes the engine's own full-redraw path (the else branch below).
+            ** Costs nothing here: the door re-encodes the whole frame every
+            ** present regardless, so the partial-redraw optimization saves it none.
+            */
+            forced = true;
+
             int xmod = Lepton_To_Pixel(Coord_X(DesiredTacticalCoord));
             int ymod = Lepton_To_Pixel(Coord_Y(DesiredTacticalCoord));
 

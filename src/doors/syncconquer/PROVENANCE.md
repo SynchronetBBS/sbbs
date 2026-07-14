@@ -584,6 +584,24 @@ rest; these are the local edits on top of it (plus a couple of shared
     scaling). The RA equivalent was patch #15; this is its TD counterpart, which
     had been missed.
 
+35. **Force a full tactical redraw on scroll (`redalert/display.cpp` +
+    `tiberiandawn/display.cpp`).** `DisplayClass::Draw_It()` scrolls the map by
+    reusing already-drawn pixels: it shifts the replicable block via an
+    overlapping self-blit (`HidPage.Blit(HidPage, ...)`) or, for a DirectDraw
+    hid page, a `SeenBuff.Blit(HidPage, ...)`, then redraws only the newly
+    exposed edge. Neither moves content correctly in the door's plain software
+    framebuffer, so any scroll (most visibly the Home/End jump, patch #29/#31)
+    left **staircase remnants of shifted sprites + black gaps** in the 640x400
+    buffer -- transport-independent (identical under sixel and JXL). Set
+    `forced = true` as soon as a scroll is detected, so the blit-shift branch is
+    skipped and the engine's own full-redraw path (its existing `else` fallback,
+    used for full-size scrolls) runs instead. Same class as the
+    `AllowHardwareBlitFills` FillRect no-op (a non-patch, worked around in
+    `door/video_termgfx.cpp`); done as a vendored edit here because the branch
+    is inside `Draw_It()` with no external hook. Costs the door nothing -- it
+    re-encodes the whole frame every present regardless, so the partial-redraw
+    optimization saved it none.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching
