@@ -285,6 +285,17 @@ reserved only as a smallest-rect latency option.
 3. **`DrawJXL`-rect backend** for JXL clients.
 4. Tune coalescing + fallback threshold against the Phase-0 measurements.
 
+### Deferred: SyncTERM sprite-blit primitives (CTerm ≥ 1.332)
+
+SyncTERM's "scaled graphics APC blits" (rev 1.332) add ZX/ZY integer zoom,
+FX/FY mirroring, off-screen clipping (signed DX/DY), and mask/transparency
+(the mask buffer, `C;LoadPBM`) to DrawPPM/DrawJXL/P;Paste — a real sprite
+blitter. These would enable SyncTERM-only extras layered on the portable path:
+static-UI compositing from cached sheets, and a native-res + client-ZX/ZY-zoom
+transport (smaller uploads at large canvases). Deferred because they're
+SyncTERM-only (no other terminal has them) and the framebuffer differ stays the
+cross-terminal plan; see DEFERRED.md ("Client-side sprite compositing").
+
 ## Mouse & input
 
 - SGR 1006 any-motion mouse tracking (already proven in both doors:

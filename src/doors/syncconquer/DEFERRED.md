@@ -76,7 +76,28 @@ milestone (first playable, v1 ship, each subsequent release).
   static-UI compositing from cached sheets (sidebar, cameos via
   C;S/C;L + DrawJXL, the SyncChess pattern) may beat dirty-rects for
   those regions.
-- **Reevaluate**: after phase-2 dirty-rect + image-cache metrics exist.
+- **SyncTERM now has the blit primitives (CTerm rev 1.332,
+  `TERMGFX_CTERM_VER_ZOOM`).** Deuce's "scaled graphics APC blits" commit
+  added, to DrawPPM / DrawJXL / P;Paste: **ZX/ZY** integer zoom (ship
+  native-res, terminal replicates pixels), **FX/FY** mirroring (store one
+  facing, mirror the other), signed **DX/DY** with off-screen **clipping**,
+  and **mask-aware** zoom/flip — the mask buffer (since rev 1.316, fed by
+  `C;LoadPBM`) gives non-rectangular **transparency**. Together that's a real
+  sprite blitter: transparent + mirrored + integer-zoomed + edge-clipped
+  cached blits. This is the missing piece that made cached-sprite-sheet
+  compositing (units, cameos, sidebar) impractical before.
+- **Still deferred — SyncTERM-only.** These are APC verbs no other terminal
+  (sixel xterm/mlterm/wezterm, JXL-less builds) has, so they can't be the
+  cross-terminal rendering path; the framebuffer dirty-rect differ (DESIGN.md
+  Phase 2) stays the portable plan. And full *unit*-sprite compositing still
+  needs engine-invasive draw-call hooking, which these primitives don't
+  remove. What they newly enable cheaply is (a) **static-UI cached blits** on
+  SyncTERM and (b) a **native-res + client ZX/ZY zoom** transport (smaller
+  uploads at large canvases) — both SyncTERM-tier add-ons layered on the
+  portable path, not replacements for it.
+- **Reevaluate**: after phase-2 dirty-rect + image-cache metrics exist; the
+  ZX/ZY native-res-zoom transport can be evaluated independently (it's a
+  full-frame/geometry win, not sprite-specific).
 
 ## Cross-architecture determinism validation
 
