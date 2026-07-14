@@ -223,7 +223,10 @@ function door_deploy_file(exe, dst)
 	var was = file_size(exe);
 
 	if (door_deploy_current(exe, dst)) {
-		print("[deploy] " + dst + " is already this build -- nothing to copy");
+		// fullpath() for the same reason "Deployed:" uses it: a destination composed
+		// as <ctrl_dir>/../xtrn/... is unreadable verbatim, and the sysop is reading
+		// this line to decide whether their build landed.
+		print("[deploy] " + fullpath(dst) + " is already this build -- nothing to copy");
 		return true;
 	}
 	if (!file_copy(exe, dst)) {

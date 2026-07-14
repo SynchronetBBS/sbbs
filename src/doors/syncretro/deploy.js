@@ -20,7 +20,10 @@
 // ONE BINARY, MANY CONSOLES: the same door hosts any libretro core, so every
 // console install (xtrn/syncivision, xtrn/syncnes, ...) needs a copy of it. This
 // finds them all rather than naming one -- a console added later is deployed to
-// without touching this script.
+// without touching this script. They are found in the LIVE install (the xtrn/
+// beside system.ctrl_dir), which is the only copy anything ever runs; a bare
+// checkout with no BBS installed falls back to the in-tree bundle. See
+// console_dirs().
 //
 // Deploys only the frontend binary; getcore.js installs each console's core, and
 // the BIOS + cartridges are sysop-supplied. SpiderMonkey 1.8.5.
@@ -30,44 +33,36 @@
 load("syncretro_lib.js");   // syncretro_target() (which delegates to door_deploy.js)
 load("door_deploy.js");     // door_deploy_into(): the same copy logic every door uses
 
-// js.exec_dir is this script's own dir (src/doors/syncretro/); xtrn/ is three up.
-var XTRN = js.exec_dir + "../../../xtrn/";
+// The LIVE install's xtrn/ -- the one anything actually launches from.
+// system.ctrl_dir names the install we are running against, under jsexec and in
+// the BBS alike.
+var LIVE = backslash(system.ctrl_dir) + "../xtrn/";
 
-// Every SyncRetro console install: an xtrn dir whose lobby.js drives the shared
-// lobby. That is the definition of "a SyncRetro console", so it cannot go stale.
-//
-// Searched in BOTH this checkout's xtrn/ and the LIVE install's (beside
-// system.ctrl_dir), because they are usually different directories -- and a deploy
-// that quietly skipped the live one left the players running whatever binary was
-// last copied there by hand.
-function console_dirs()
+// The in-tree bundle: js.exec_dir is this script's own dir (src/doors/syncretro/),
+// and xtrn/ is three up. Only a fallback -- see main().
+var BUNDLE = js.exec_dir + "../../../xtrn/";
+
+// Every SyncRetro console install under `root`: an xtrn dir whose lobby.js drives
+// the shared lobby. That is the definition of "a SyncRetro console", so it cannot
+// go stale -- a console added later is deployed to without touching this script.
+function console_dirs(root)
 {
-	var out  = [];
-	var seen = {};
-	var roots = [XTRN, backslash(system.ctrl_dir) + "../xtrn/"];
-	var i;
+	var out = [];
 
-	for (i = 0; i < roots.length; i++) {
-		directory(roots[i] + "*").forEach(function (path) {
-			var dir = backslash(path);
-			var key, f, text;
+	directory(backslash(root) + "*").forEach(function (path) {
+		var dir = backslash(path);
+		var f, text;
 
-			if (!file_isdir(dir) || !file_exists(dir + "lobby.js"))
-				return;
-			key = fullpath(dir).toLowerCase();
-			if (seen[key])
-				return;                 // this checkout IS the live install
-			f = new File(dir + "lobby.js");
-			if (!f.open("r"))
-				return;
-			text = f.read();
-			f.close();
-			if (String(text).indexOf("syncretro_lobby.js") >= 0) {
-				seen[key] = true;
-				out.push(dir);
-			}
-		});
-	}
+		if (!file_isdir(dir) || !file_exists(dir + "lobby.js"))
+			return;
+		f = new File(dir + "lobby.js");
+		if (!f.open("r"))
+			return;
+		text = f.read();
+		f.close();
+		if (String(text).indexOf("syncretro_lobby.js") >= 0)
+			out.push(dir);
+	});
 	return out;
 }
 
@@ -123,13 +118,43 @@ function main()
 	}
 	print("[deploy] target: " + (target ? target + "/" : "flat (door dir)") + "  (" + exename + ")");
 
-	// 1. Every console install in the tree (this IS the live xtrn on a symlink
-	//    install). One door binary, so each console gets the same one.
-	var dirs = console_dirs();
-	if (!dirs.length)
-		print("[deploy] WARNING: no SyncRetro console install found under " + XTRN);
+	// 1. Every console install in the LIVE install. One door binary, so each
+	//    console gets the same one.
+	//
+	// This used to scan the in-tree bundle (<checkout>/xtrn/) AS WELL, and that was
+	// pure confusion. On the recommended install (install-sbbs.mk SYMLINK=1 does
+	// "ln -sf $(REPODIR)/xtrn $(SBBSDIR)") the live xtrn IS a symlink to the repo's,
+	// so the two scans address ONE directory -- and the guard meant to collapse them
+	// could not see it: fullpath() NORMALIZES a path, it does not RESOLVE it, so a
+	// symlink and its target never compare equal, and Synchronet's JS has no stat()
+	// to compare inodes with. The second pass then found the bytes the first had just
+	// written and printed "already this build -- nothing to copy" directly after
+	// "Deployed" -- which reads as a contradiction precisely when a sysop is asking
+	// whether their build landed.
+	//
+	// Where the two ARE different directories (a copy-style install, or a checkout
+	// that is not the install), the in-tree copy was pointless anyway: nothing
+	// launches from the checkout -- the lobby runs the door out of the live console
+	// dir -- so it only littered the working tree with a gitignored multi-megabyte
+	// binary. The same reasoning, and the same fix, as door_deploy() in
+	// exec/load/door_deploy.js, which every other door uses. (SyncRetro needs its own
+	// because one binary serves N console dirs, not one.)
+	var dirs = console_dirs(LIVE);
+	if (!dirs.length) {
+		// No console in the live install: a bare checkout with no BBS (packaging,
+		// CI), or a BBS that has not installed a console yet. The in-tree bundle is
+		// then the only sensible destination.
+		dirs = console_dirs(BUNDLE);
+		if (dirs.length)
+			print("[deploy] No SyncRetro console under " + fullpath(LIVE)
+			    + " -- deploying into the in-tree bundle instead"
+			    + " (run install-xtrn there for a first install)");
+		else
+			print("[deploy] WARNING: no SyncRetro console install found under "
+			    + fullpath(LIVE) + " or " + fullpath(BUNDLE));
+	}
 	for (i = 0; i < dirs.length; i++) {
-		print("[deploy] console: " + dirs[i]);
+		print("[deploy] console: " + fullpath(dirs[i]));
 		if (!deploy_to(dirs[i], exe, exename, target))
 			ok = false;
 	}
