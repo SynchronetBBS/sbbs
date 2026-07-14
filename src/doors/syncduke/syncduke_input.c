@@ -40,6 +40,7 @@
   #include <time.h>
 #endif
 
+#include "sixel.h"      /* termgfx: termgfx_sixel_vscale_verdict */
 #include "syncduke.h"
 #include "keyboard.h"   /* sc_* scancode constants (pure #defines) */
 #include "keymode.h"  /* termgfx: key-mode negotiation + kitty/evdev decode */
@@ -442,6 +443,19 @@ int syncduke_img_blob_ok(void) { return g_img_blob_ok; }
 
 static int g_img_zoom_ok;   /* CTerm >= 1.332: terminal-side integer upscale (APC ZX/ZY) */
 int syncduke_img_zoom_ok(void) { return g_img_zoom_ok; }
+
+/* Sixel vertical-scaling probe (termgfx sixel.h): the door draws the same sliver
+ * with pan=1 then pan=2 and we compare how far the cursor advanced. Armed only for
+ * a non-SyncTERM sixel terminal -- SyncTERM scales both axes anyway. The rows come
+ * from the CPR handler below, which already parses them for the size probe. */
+static int g_vscale_rows[3];
+static int g_vscale_n     = -1;   /* -1 = not armed; 0..3 = reports collected */
+static int g_vscale_ok    = 0;    /* verdict: terminal honors pan */
+static int g_vscale_done  = 0;
+
+void syncduke_vscale_arm(void)   { g_vscale_n = 0; g_vscale_done = 0; }
+int  syncduke_vscale_done(void)  { return g_vscale_done; }
+int  syncduke_sixel_vscale(void) { return g_vscale_ok; }
 
 static int g_status_type = -1;   /* pre-door DECSSDT status-line type (DECRQSS reply); -1 = not captured */
 int syncduke_status_type(void) { return g_status_type; }
@@ -1335,6 +1349,15 @@ static void csi_final(char fin, int gameplay, int now)
 			if (csi_params(p, 2) >= 2 && g_grid_rows == 0) {
 				g_grid_rows = p[0]; g_grid_cols = p[1];
 				syncduke_estimate_px();
+			}
+			else if (g_vscale_n >= 0 && g_vscale_n < 3 && csi_params(p, 2) >= 1) {
+				g_vscale_rows[g_vscale_n++] = p[0];    /* the vertical-scaling probe's reports */
+				if (g_vscale_n == 3) {
+					int v = termgfx_sixel_vscale_verdict(g_vscale_rows, 3);
+					g_vscale_ok   = (v == 1);
+					g_vscale_done = 1;
+					g_vscale_n    = -1;                /* disarm: later CPRs are frame acks */
+				}
 			}
 			syncduke_pace_ack();
 			return;

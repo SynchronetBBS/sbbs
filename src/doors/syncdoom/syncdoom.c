@@ -688,6 +688,8 @@ static void ensure(uint8_t **buf, size_t *cap, size_t need)
 // framebuffer size ever changes.
 #define SD_NATIVE_W 320
 #define SD_NATIVE_H 200
+#define DOOM_NATIVE_W SD_NATIVE_W
+#define DOOM_NATIVE_H SD_NATIVE_H
 #if (DOOMGENERIC_RESX % SD_NATIVE_W) != 0 || (DOOMGENERIC_RESY % SD_NATIVE_H) != 0
  #error "doomgeneric framebuffer is not an integer multiple of Doom's 320x200 render"
 #endif
@@ -790,6 +792,9 @@ static uint8_t *s_sx_idx = NULL; static size_t s_sx_idx_cap = 0; // scaled index
 static int      g_sx_pal_seq = -1;     // palette seq last written to the sixel stream (-1 = none)
 static int      g_is_syncterm = 0;     // SyncTERM detected (Q;JXL reply, or CTerm version >= 1.2);
                                        // only SyncTERM persists sixel registers -> define-once there
+static int      g_sixel_vscale = 0;    // measured: this terminal honors the sixel raster
+                                       // attribute's vertical scaling (pan) -- see
+                                       // probe_sixel_vscale(). SyncTERM always does.
 
 static void emit_frame_sixel(int w, int h)
 {
@@ -812,8 +817,19 @@ static void emit_frame_sixel(int w, int h)
 	// encoded height to whole 6-row bands -- a partial final band garbles under pan>1.
 	// Full-res opt-in (1:1, no half-res encode + 2x nearest-neighbor upscale): sharper at
 	// ~4x the sixel bytes.  Applies on SyncTERM too now; the half-res default holds otherwise.
-	int    vsc = g_sixel_fullres ? 1 : SIXEL_SCALE;
-	int    hsc = (g_sixel_fullres || !g_is_syncterm) ? 1 : SIXEL_SCALE;
+	// Halve vertically only where the terminal will scale it back (SyncTERM, or a
+	// terminal the probe measured as honoring pan) -- xterm/WezTerm would just draw
+	// a half-height picture. Halve horizontally ONLY on SyncTERM, the only terminal
+	// that reads pad as an integer scale. Full-res opts out of both.
+	//
+	// And never halve past the NATIVE 320x200 frame: termgfx_geom_sixel_scale() caps
+	// the factor at what keeps the encode >= native, so the default path can't quietly
+	// throw away source pixels (on a 640x384 canvas a fixed 2 would encode 192 rows and
+	// drop 8 of Doom's 200). It answers per axis, and the axes do disagree.
+	int    vsc = (g_sixel_fullres || !(g_is_syncterm || g_sixel_vscale))
+	             ? 1 : termgfx_geom_sixel_scale(h, DOOM_NATIVE_H, SIXEL_SCALE, 6);
+	int    hsc = (g_sixel_fullres || !g_is_syncterm)
+	             ? 1 : termgfx_geom_sixel_scale(w, DOOM_NATIVE_W, SIXEL_SCALE, 1);
 	int    sxw = w / hsc;
 	int    sxh = h / vsc;
 	size_t n;
@@ -2356,6 +2372,65 @@ static int probe_sixel(void)
 	return found;
 }
 
+// Does this terminal honor the sixel raster attribute's VERTICAL scaling (pan)?
+//
+// Only a non-SyncTERM sixel terminal needs asking. SyncTERM scales both axes --
+// that is what g_is_syncterm already tells us -- and a terminal with no sixel
+// never draws one. Everyone else splits two ways and cannot be told apart by
+// name: foot/Contour/Windows Terminal honor pan, xterm/WezTerm ignore it and draw
+// at the ENCODED size, so the half-height sixel this door has always sent them
+// comes out half-height. termgfx measures it instead of guessing (see sixel.h);
+// no answer inside the window reads as "does not scale", the safe assumption --
+// a full-size encode is correct everywhere, merely fatter.
+static void probe_sixel_vscale(void)
+{
+	char          probe[192];
+	unsigned char acc[256];
+	int           al = 0, result = -1;
+	uint32_t      deadline;
+	size_t        pn;
+
+	if (!g_have_sixel || g_is_syncterm)
+		return;
+	pn = termgfx_sixel_vscale_probe(probe, sizeof(probe));
+	if (pn == 0)
+		return;
+	emit_all(probe, pn);
+	deadline = now_ms() + 600;
+	while (result < 0) {
+		int32_t       rem = (int32_t)(deadline - now_ms());
+		unsigned char buf[256];
+		ssize_t       n, i;
+
+		if (rem <= 0)
+			break;
+		if (g_sock) {
+			if (!socket_readable(g_iosock, rem))
+				break;
+		}
+#ifndef _WIN32
+		else {
+			struct pollfd pfd;
+			pfd.fd = g_rfd; pfd.events = POLLIN; pfd.revents = 0;
+			if (poll(&pfd, 1, rem) <= 0)
+				break;
+		}
+#endif
+		n = conn_read(buf, sizeof(buf));
+		if (n == 0) { g_hangup = 1; break; }
+		if (n < 0)
+			continue;
+		for (i = 0; i < n; i++) {
+			parse_byte(buf[i]);            // a stray CPR is inert here: no frame is in
+			if (al < (int)sizeof(acc))     // flight yet, so the DSR handler drops it
+				acc[al++] = buf[i];
+		}
+		result = termgfx_sixel_vscale_parse((const char *)acc, (size_t)al);
+	}
+	g_sixel_vscale = (result == 1);
+	// The two slivers the probe painted are covered by the first full frame.
+}
+
 // ---------------------------------------------------------------------------
 // doomgeneric backend hooks
 // ---------------------------------------------------------------------------
@@ -2453,6 +2528,17 @@ static void setup_text_mode(void)
 // graphics tier, the cycle is [graphics, CP437 half, quadrant, sextant]; if it
 // fell back to text, just the three text tiers. Charset only matters for the
 // half-block glyph (quadrant/sextant carry their own UTF-8 tables).
+// Can this terminal scale a half-res sixel back up? If not, "sixel (half)" is not a
+// preference the player can have -- a half-height encode would simply RENDER half
+// height -- so the only possible encode is 1:1 and the F4 cycle must not pretend
+// otherwise. Note this deliberately does NOT touch the saved sixel_fullres pref:
+// the player may dial in from a scaling terminal tomorrow, and their choice should
+// still be there.
+static int sixel_can_scale(void)
+{
+	return g_is_syncterm || g_sixel_vscale;
+}
+
 static void build_video_states(void)
 {
 	g_vstate_n = 0;
@@ -2466,7 +2552,7 @@ static void build_video_states(void)
 		// half-res) is the leaner payload; "sixel-full" (1:1, no half-res downscale + 2x
 		// nearest-neighbor upscale) is sharper -- on SyncTERM it drops the raster-aspect
 		// scaling, and on terminals that ignore the 2:1 aspect (WezTerm) it fixes the squish.
-		if (g_mode == MODE_SIXEL) {
+		if (g_mode == MODE_SIXEL && sixel_can_scale()) {
 			g_vstates[g_vstate_n].mode    = MODE_SIXEL;
 			g_vstates[g_vstate_n].fullres = !g_sixel_fullres;
 			g_vstates[g_vstate_n].label   = g_sixel_fullres ? "sixel" : "sixel-full";
@@ -2479,13 +2565,15 @@ static void build_video_states(void)
 		// once at the JXL start, so the g_mode==MODE_SIXEL block above never adds it here).
 		if (g_mode == MODE_JXL && g_have_sixel) {
 			g_vstates[g_vstate_n].mode    = MODE_SIXEL;
-			g_vstates[g_vstate_n].fullres = 0;
+			g_vstates[g_vstate_n].fullres = sixel_can_scale() ? 0 : 1;
 			g_vstates[g_vstate_n].label   = "sixel";
 			g_vstate_n++;
-			g_vstates[g_vstate_n].mode    = MODE_SIXEL;
-			g_vstates[g_vstate_n].fullres = 1;
-			g_vstates[g_vstate_n].label   = "sixel-full";
-			g_vstate_n++;
+			if (sixel_can_scale()) {
+				g_vstates[g_vstate_n].mode    = MODE_SIXEL;
+				g_vstates[g_vstate_n].fullres = 1;
+				g_vstates[g_vstate_n].label   = "sixel-full";
+				g_vstate_n++;
+			}
 		}
 #endif
 	}
@@ -2739,6 +2827,8 @@ void DG_Init(void)
 	if (g_mode == MODE_JXL && g_sixel_pref != 0)
 		g_have_sixel = probe_sixel();
 #endif
+
+	probe_sixel_vscale();            // can the terminal scale a half-height sixel back up?
 
 	compute_geometry();              // emitted image size + centering (now that the tier is known)
 

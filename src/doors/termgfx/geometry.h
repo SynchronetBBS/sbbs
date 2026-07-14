@@ -42,6 +42,28 @@ void termgfx_geom_fit_ex(int vw, int vh, int src_w, int src_h, int scale_max,
 // either way: replicating pixels is what the door's nearest-neighbor upscale does.
 int termgfx_geom_zoom(int src_w, int src_h, int ew, int eh, int *zx, int *zy);
 
+// The largest sixel raster scale factor (pan/pad) that is still LOSSLESS on this
+// axis -- i.e. whose encoded size stays at or above the native frame -- or 1 when
+// no factor is.
+//
+// Two sizes get confused here, so be exact: the ENCODE is what carries the pixels,
+// the DISPLAY is encode x factor (the terminal replicates). A bigger factor means a
+// smaller encode and fewer bytes -- but the encode is resampled DOWN from the
+// native frame, and the moment it falls below native you are throwing away pixels
+// the game actually drew. The terminal then replicates them back to the right SIZE,
+// so it still looks right-sized while the detail is gone for good.
+//
+// So: take the biggest factor whose encode still holds the whole native frame.
+// `band` rounds the encode down to whole sixel bands (6 rows vertically, 1
+// horizontally) BEFORE the comparison, because a partial final band garbles (SF
+// syncterm #258) and that rounding can itself push the encode under native.
+//
+// Per axis, and the axes legitimately disagree: fitting 320x200 into 640x384 gives
+// pad=2 (320 encoded columns IS native) but pan=1 (384/2 = 192 < 200). A door that
+// hardcodes 2 on both axes silently drops 8 of the 200 source rows there. This is
+// SyncMOO1's long-standing rule (sm_geom_aspect), hoisted so every door gets it.
+int termgfx_geom_sixel_scale(int displayed, int native, int max_factor, int band);
+
 // Center an ew x eh image in a vw x vh canvas.  *dx/*dy = the pixel offset (e.g.
 // for a SyncTERM APC DrawJXL DX/DY); *col/*row = the 1-based text-cell origin
 // derived from cell_w/cell_h (1,1 -- top-left -- when either cell dim is 0, since

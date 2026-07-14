@@ -37,6 +37,7 @@
  * Winsock recv() on Windows -- and the transient-vs-fatal classification of a
  * failure both live behind syncmoo1_plat.h, as they do in syncmoo1_io.c.
  */
+#include "sixel.h"          /* termgfx: termgfx_sixel_vscale_verdict */
 #include "syncmoo1_input.h"
 
 #include <stdint.h>
@@ -164,6 +165,51 @@ static int g_jxl_supported;
  * sixel colour registers can be trusted to persist across images. Until a probe
  * reply lands this is 0 -- i.e. we assume the SAFE case (re-send the palette),
  * which costs a few early frames some bytes and can never render wrong. */
+/* Sixel vertical-scaling probe (termgfx sixel.h). The door draws the same sliver
+ * with pan=1 then pan=2; a terminal that honors the raster pan advances the cursor
+ * further for the second. Armed only for a non-SyncTERM sixel terminal. The three
+ * reports MUST be consumed here rather than falling through to sm_io_pace_ack() --
+ * they ack no frame, and counting them would corrupt the DSR pipeline. */
+static int g_vscale_rows[3];
+static int g_vscale_n    = -1;    /* -1 = not armed */
+static int g_vscale_ok;
+static int g_vscale_done;
+
+void sm_input_vscale_arm(void)
+{
+    g_vscale_n    = 0;
+    g_vscale_done = 0;
+}
+
+int sm_input_vscale_done(void)
+{
+    return g_vscale_done;
+}
+
+int sm_input_sixel_vscale(void)
+{
+    return g_vscale_ok;
+}
+
+/* Returns 1 if `row` was one of the probe's reports (and is now consumed). */
+static int sm_input_vscale_collect(int row)
+{
+    if (g_vscale_n < 0 || g_vscale_n >= 3 || row < 0)
+        return 0;
+    g_vscale_rows[g_vscale_n++] = row;
+    if (g_vscale_n == 3) {
+        g_vscale_ok   = (termgfx_sixel_vscale_verdict(g_vscale_rows, 3) == 1);
+        g_vscale_done = 1;
+        g_vscale_n    = -1;           /* disarm: later reports are genuine pace-acks */
+    }
+    return 1;
+}
+
+int sm_input_have_sixel(void)
+{
+    return g_have_sixel;
+}
+
 int sm_input_is_syncterm(void)
 {
     return g_is_syncterm;
@@ -198,6 +244,8 @@ static void sm_csi_final(char fin)
                 sm_io_set_grid(p[0], p[1]);     /* rows, cols */
             return;
         }
+        if (sm_input_vscale_collect(np >= 1 ? p[0] : -1))
+            return;                 /* a vertical-scaling probe report: acks no frame */
         /* Every report after the grid probe has been consumed acks one
          * in-flight present()-sent frame's DSR (Task 9): decrements the
          * pipeline count and feeds the round-trip into the shared AIMD depth

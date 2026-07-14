@@ -72,6 +72,21 @@ int termgfx_geom_zoom(int src_w, int src_h, int ew, int eh, int *zx, int *zy)
 	return 1;
 }
 
+int termgfx_geom_sixel_scale(int displayed, int native, int max_factor, int band)
+{
+	int f, n;
+
+	if (native < 1 || displayed < 1 || band < 1)
+		return 1;
+	for (f = max_factor; f > 1; --f) {
+		n = displayed / f;          // what we would encode at this factor
+		n -= n % band;              // whole sixel bands only
+		if (n >= native)            // still holds every source pixel?
+			return f;
+	}
+	return 1;                       // no factor is lossless -> encode 1:1
+}
+
 void termgfx_geom_center_ex(int vw, int vh, int ew, int eh,
                             double cell_w, double cell_h,
                             int *dx, int *dy, int *col, int *row)

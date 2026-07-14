@@ -10,6 +10,7 @@
 // '$' (graphics CR) overlaying the next color on the same band and '-' (graphics
 // NL) advancing to the next band. Runs are RLE-compressed (!count char).
 
+#include <stdio.h>
 #include "sixel.h"
 #include <stdlib.h>
 #include <string.h>
@@ -121,4 +122,86 @@ size_t sixel_encode_aspect(uint8_t **buf, size_t *cap, const uint8_t *idx, int w
 
 	*buf = o.b; *cap = o.cap;
 	return o.len;
+}
+
+// --- vertical-scaling probe (see sixel.h) ------------------------------------
+
+// A 1px-wide, 36px-tall (6 band) sliver: small, quick, and tall enough that the
+// pan=1 and pan=2 copies land on DIFFERENT character rows for every cell height
+// the terminals use (8, 14, 16) -- 36px vs 72px is 3-vs-5 rows at 16, 5-vs-9 at 8.
+#define VSCALE_BANDS  6
+
+static size_t vscale_sliver(char *p, size_t room, int pan)
+{
+	size_t n = 0;
+	int    i;
+
+	// ESC P q "pan;1;1;36  #0;2;0;0;0  then one all-six-pixels column per band.
+	n += (size_t)snprintf(p + n, room - n, "\x1bPq\"%d;1;1;%d#0;2;0;0;0",
+	                      pan, VSCALE_BANDS * 6);
+	for (i = 0; i < VSCALE_BANDS; i++)
+		n += (size_t)snprintf(p + n, room - n, "%s#0~", i ? "-" : "");
+	n += (size_t)snprintf(p + n, room - n, "\x1b\\");
+	return n;
+}
+
+size_t termgfx_sixel_vscale_probe(char *buf, size_t cap)
+{
+	size_t n = 0;
+
+	if (cap < 128)
+		return 0;
+
+	// Sixel scrolling ON (DECSDM reset) or the cursor never moves and the probe
+	// would read "does not scale" on a terminal that does.  This is the doors'
+	// normal state (termgfx_term_enter), so it is a no-op there -- but the probe
+	// must not depend on the caller having got there first.
+	n += (size_t)snprintf(buf + n, cap - n, "\x1b[?80l\x1b[H\x1b[6n");
+	n += vscale_sliver(buf + n, cap - n, 1);                    // unscaled reference
+	n += (size_t)snprintf(buf + n, cap - n, "\x1b[6n");         // row after it
+	n += vscale_sliver(buf + n, cap - n, 2);                    // ask for 2x vertical
+	n += (size_t)snprintf(buf + n, cap - n, "\x1b[6n\x1b[H");   // row after that; tidy up
+	return n;
+}
+
+int termgfx_sixel_vscale_parse(const char *acc, size_t len)
+{
+	int    row[3];
+	int    found = 0;
+	size_t i = 0;
+
+	// Pick out the first three cursor-position reports: ESC [ <row> ; <col> R.
+	while (i + 3 < len && found < 3) {
+		if (acc[i] == '\x1b' && acc[i + 1] == '[') {
+			size_t j = i + 2;
+			int    r = 0, digits = 0;
+
+			while (j < len && acc[j] >= '0' && acc[j] <= '9') {
+				r = r * 10 + (acc[j] - '0');
+				digits++;
+				j++;
+			}
+			if (digits > 0 && j < len && acc[j] == ';') {
+				j++;
+				while (j < len && acc[j] >= '0' && acc[j] <= '9')
+					j++;
+				if (j < len && acc[j] == 'R') {
+					row[found++] = r;
+					i = j + 1;
+					continue;
+				}
+			}
+		}
+		i++;
+	}
+	return termgfx_sixel_vscale_verdict(row, found);
+}
+
+int termgfx_sixel_vscale_verdict(const int *rows, int nrows)
+{
+	if (rows == NULL || nrows < 3)
+		return -1;                       // not all three reports are in hand yet
+
+	// The pan=2 copy advanced the cursor further than the pan=1 copy => pan honored.
+	return (rows[2] - rows[1]) > (rows[1] - rows[0]) ? 1 : 0;
 }

@@ -728,13 +728,16 @@ static int sm_io_ensure_scaled(int w, int h)
  * geometry the last probe reply produced. */
 static void sm_io_encode_dims(int *sxw, int *sxh, int *pad, int *pan)
 {
-    /* is_syncterm decides whether we may lean on the terminal's integer sixel
-     * upscaling (SyncTERM) or must encode 1:1 (strict-DEC terminals like Windows
-     * Terminal, which draw the sixel at its encoded size). Unknown-yet reads as
-     * NOT SyncTERM -- the conservative full-size encode -- until a probe reply
-     * proves otherwise, same as the palette-persistence guard below. */
+    /* Three-way, and all three are MEASURED rather than assumed: SyncTERM scales
+     * both axes (encode small on both); a terminal the vertical-scaling probe
+     * caught honoring the raster pan -- foot, Contour, Windows Terminal -- scales
+     * the height only (halve the height, keep the width 1:1); and one that scales
+     * neither (xterm, WezTerm) needs a full 1:1 encode or the picture comes out
+     * half-size and the mouse mapping goes with it. Unknown-yet reads as neither,
+     * the conservative full-size encode, until a probe reply proves otherwise --
+     * same as the palette-persistence guard below. */
     sm_geom_encode_dims(g_geom.ew, g_geom.eh, sm_input_is_syncterm(),
-                        sxw, sxh, pad, pan);
+                        sm_input_sixel_vscale(), sxw, sxh, pad, pan);
 }
 
 /* Nearest-neighbour scale of the native 320x200 indexed frame into dst
@@ -767,8 +770,42 @@ static void sm_io_scale_indices(uint8_t *dst, int dw, int dh,
 }
 
 /* --- present (Step 2; de-dupe + DSR-ACK backpressure added Task 9) --------- */
+/* Ask a non-SyncTERM sixel terminal, once, whether it honors the raster pan --
+ * SyncTERM scales both axes regardless, and a terminal with no sixel must never be
+ * sent one. Held off until the DA reply names the terminal, and answered before the
+ * first frame: the probe's cursor reports ack no frame, and the input module routes
+ * them away from the DSR pacing (see sm_input_vscale_collect). No answer within the
+ * grace = "does not scale", the safe read (a full 1:1 encode is right everywhere). */
+#define SM_VSCALE_GRACE_MS 400
+
+static void sm_io_vscale_probe(void)
+{
+    static int      sent;
+    static uint32_t sent_ms;
+    char            pb[192];
+    size_t          pn;
+
+    if (sent || !sm_input_have_sixel() || sm_input_is_syncterm())
+        return;
+    pn = termgfx_sixel_vscale_probe(pb, sizeof(pb));
+    if (pn == 0)
+        return;
+    sm_input_vscale_arm();
+    sm_out_put(pb, pn);
+    sm_io_out_flush();
+    sent    = 1;
+    sent_ms = sm_io_now_ms();
+
+    /* MoO1 is turn-based: a short synchronous wait here costs nothing a player can
+     * feel, and it keeps the verdict out of the frame path entirely. */
+    while (!sm_input_vscale_done()
+           && (int32_t)(sm_io_now_ms() - sent_ms) < SM_VSCALE_GRACE_MS)
+        sm_input_pump(sm_io_get_fd());
+}
+
 void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
 {
+    sm_io_vscale_probe();
     static uint8_t *sx;
     static size_t   sxcap;
     static uint8_t  last_pal[768];

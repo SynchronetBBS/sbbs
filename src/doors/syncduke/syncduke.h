@@ -85,6 +85,9 @@ int  syncduke_turn_native(void);                    /* 1 if turn keys use the na
 int  syncduke_jxl_supported(void);                  /* 1 if SyncTERM can decode JXL (CTQJS reply); -> JXL/APC tier */
 int  syncduke_img_blob_ok(void);                    /* 1 if CTerm >= 1.329: draw JXL inline (DrawJXLBlob, no cache) */
 int  syncduke_img_zoom_ok(void);                    /* 1 if CTerm >= 1.332: terminal-side integer upscale (APC ZX/ZY) */
+void syncduke_vscale_arm(void);                     /* arm the sixel vertical-scaling probe's CPR collector */
+int  syncduke_vscale_done(void);                    /* 1 once the probe has answered */
+int  syncduke_sixel_vscale(void);                   /* 1 if the terminal honors the sixel raster pan (vertical scale) */
 int  syncduke_status_type(void);                    /* pre-door DECSSDT status-line type captured for restore, -1 if none */
 int  syncduke_have_sixel(void);                     /* 1 if the terminal advertised sixel (DA1/CTDA cap 4 or SyncTERM) */
 int  syncduke_probe_replied(void);                  /* 1 once the terminal answered the DA capability probe */

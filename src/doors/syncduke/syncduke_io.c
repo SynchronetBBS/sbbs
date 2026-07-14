@@ -695,6 +695,7 @@ const char *syncduke_active_tier_name(void) { return sd_tier_name(syncduke_last_
 /* How long present() holds the first auto-tier frame waiting for the capability probe
  * reply (so a no-sixel terminal like conhost never sees a sixel frame). */
 #define SYNCDUKE_PROBE_GRACE_MS 500
+#define SYNCDUKE_VSCALE_GRACE_MS 400   /* how long to wait for the sixel vertical-scaling probe */
 
 /* The tier auto-selected when there's no F4 override: jxl on a JXL-capable SyncTERM,
  * sixel on a sixel-capable terminal, else the text/block fallback (half-block) so a
@@ -780,11 +781,16 @@ void syncduke_tier_cycle(void)
 #endif
 	if (syncduke_have_sixel() || !syncduke_probe_replied())   /* skip sixel where it can't render */
 		avail[n++] = SD_SIXEL;
-	/* A second sixel stop encoded full-res (hsc=vsc=1): sharper -- no half-res downscale +
-	 * 2x nearest-neighbor upscale -- at ~4x the bytes.  Offered on any sixel-capable client:
-	 * on SyncTERM it drops the raster-aspect scaling; elsewhere (e.g. WezTerm that ignore the
-	 * 2:1 aspect) it also fixes the vertical squish. */
-	if (syncduke_have_sixel() || !syncduke_probe_replied())
+	/* A second sixel stop encoded full-res (hsc=vsc=1): an exact per-pixel scale onto the
+	 * fitted rect, at ~4x the bytes -- the player's bytes-for-fidelity call.  Offered ONLY
+	 * where the half-res stop is actually a different picture, i.e. where the terminal can
+	 * scale it back up (SyncTERM, or one the vertical-scaling probe caught honoring the
+	 * raster pan).  On a terminal that scales neither axis (xterm, WezTerm) the only
+	 * possible encode is 1:1, so a second stop would be the SAME picture under a different
+	 * name.  The saved sixel_fullres pref is left alone -- it still applies wherever it
+	 * means something. */
+	if ((syncduke_have_sixel() || !syncduke_probe_replied())
+	    && (syncduke_is_syncterm() || syncduke_sixel_vscale()))
 		avail[n++] = SD_SIXEL_FULL;
 	avail[n++] = SD_HALF;
 	avail[n++] = SD_BLOCKS;
@@ -1037,6 +1043,8 @@ void syncduke_present(void)
 	static uint8_t *sx;
 	static size_t   sxcap;
 	static int      cleared;
+	static int      vscale_sent;      /* the sixel vertical-scaling probe has been sent */
+	static uint32_t vscale_ms;        /* when -- bounds how long we hold the first frame */
 	static uint32_t cleared_ms;          /* when term-enter probes were sent (startup grace) */
 	static int      mouse_track = 0;     /* terminal's xterm mouse tracking: in sync with the Ctrl-O toggle */
 	const uint8_t * pal = syncduke_palette();
@@ -1089,6 +1097,30 @@ void syncduke_present(void)
 	if (syncduke_mouse_enabled() != mouse_track) {
 		mouse_track = syncduke_mouse_enabled();
 		syncduke_out_puts(mouse_track ? "\x1b[?1003h\x1b[?1006h" : "\x1b[?1003l\x1b[?1006l");
+	}
+
+	/* Sixel vertical-scaling probe: ask ONLY a non-SyncTERM sixel terminal (SyncTERM
+	 * scales both axes; a terminal without sixel must never be sent one, and one that
+	 * has not answered yet is not known to have it). Hold the first frame until it
+	 * answers or the grace expires -- its cursor reports must not land in the middle of
+	 * the DSR frame pacing. No answer = "does not scale", the safe read. */
+	if (!vscale_sent && syncduke_probe_replied() && syncduke_have_sixel()
+	    && !syncduke_is_syncterm()) {
+		char   pb[192];
+		size_t pn = termgfx_sixel_vscale_probe(pb, sizeof(pb));
+
+		if (pn > 0) {
+			syncduke_vscale_arm();
+			syncduke_out_put(pb, pn);
+			syncduke_out_flush();
+		}
+		vscale_sent = 1;
+		vscale_ms   = syncduke_now_ms();
+	}
+	if (vscale_sent && !syncduke_vscale_done()
+	    && (int32_t)(syncduke_now_ms() - vscale_ms) < SYNCDUKE_VSCALE_GRACE_MS) {
+		syncduke_out_flush();
+		goto done;                        /* still waiting on the probe: no frame yet */
 	}
 
 	/* Startup grace: when picking the tier automatically, hold the first frame(s) until
@@ -1144,8 +1176,16 @@ void syncduke_present(void)
 	 * the terminal's 2x nearest-neighbor upscale.  Sharper (no sub-native downscale) at
 	 * ~4x the sixel bytes.  Applies on SyncTERM too now (drops the raster-aspect scaling);
 	 * the default (half-res) still applies otherwise for the leaner payload. */
-	vsc = syncduke_sixel_fullres ? 1 : SYNCDUKE_SIXEL_SCALE;
-	hsc = (syncduke_sixel_fullres || !syncduke_is_syncterm()) ? 1 : SYNCDUKE_SIXEL_SCALE;
+	/* ...and never halve past the NATIVE 320x200 frame: termgfx_geom_sixel_scale() caps
+	 * the factor at what keeps the encode >= native, per axis, so the default path can
+	 * never quietly discard source pixels (a fixed 2 on a 640x384 canvas would encode
+	 * 192 rows and drop 8 of the game's 200). Full-res still opts out of both axes. */
+	vsc = (syncduke_sixel_fullres || !(syncduke_is_syncterm() || syncduke_sixel_vscale()))
+	      ? 1 : termgfx_geom_sixel_scale(syncduke_out_h, SYNCDUKE_SCREEN_H,
+	                                     SYNCDUKE_SIXEL_SCALE, 6);
+	hsc = (syncduke_sixel_fullres || !syncduke_is_syncterm())
+	      ? 1 : termgfx_geom_sixel_scale(syncduke_out_w, SYNCDUKE_SCREEN_W,
+	                                     SYNCDUKE_SIXEL_SCALE, 1);
 
 	/* De-dupe (SyncDOOM-style: memcmp the native framebuffer): if the game image,
 	 * the palette and the output geometry are all unchanged since the last frame we

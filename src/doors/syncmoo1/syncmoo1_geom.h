@@ -83,7 +83,7 @@ void sm_geom_fit_page(int pagew, int pageh, int ch, int *ew, int *eh, int *fith)
  *
  * Any of sxw/sxh/pad/pan may be NULL.
  */
-void sm_geom_encode_dims(int ew, int eh, int is_syncterm,
+void sm_geom_encode_dims(int ew, int eh, int is_syncterm, int vscale_ok,
                          int *sxw, int *sxh, int *pad, int *pan);
 
 #endif /* SYNCMOO1_GEOM_H_ */

@@ -133,7 +133,11 @@ void sm_io_wiredump_in(const void *buf, size_t len);
  * must read "unknown" as "not SyncTERM" and take the conservative branch --
  * which is what sm_io_present() does when deciding whether the terminal's sixel
  * colour registers can be trusted to persist across images. */
+int sm_input_have_sixel(void);       /* 1 if the terminal advertised sixel (DA1 param 4 / CTDA cap 4) */
 int sm_input_is_syncterm(void);
+void sm_input_vscale_arm(void);      /* arm the sixel vertical-scaling probe's CPR collector */
+int  sm_input_vscale_done(void);     /* 1 once the probe has answered */
+int  sm_input_sixel_vscale(void);    /* 1 if the terminal honors the sixel raster pan (vertical scale) */
 
 /* The image rect the last sm_io_present() drew (or the sane 640x400/80x25
  * default before any frame has been drawn) -- Task 6's sm_map_mouse() reads

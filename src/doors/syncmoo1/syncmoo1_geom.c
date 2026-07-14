@@ -66,7 +66,7 @@ static int sm_geom_aspect(int displayed, int native, int max, int band)
     return 1;
 }
 
-void sm_geom_encode_dims(int ew, int eh, int is_syncterm,
+void sm_geom_encode_dims(int ew, int eh, int is_syncterm, int vscale_ok,
                          int *sxw, int *sxh, int *pad, int *pan)
 {
     int hpad, vpan, w, h;
@@ -76,19 +76,25 @@ void sm_geom_encode_dims(int ew, int eh, int is_syncterm,
          * so we can encode small and let it integer-upscale -- ~1/4 the bytes. */
         hpad = sm_geom_aspect(ew, SM_FB_W, SM_SIXEL_PAD_MAX, 1);
         vpan = sm_geom_aspect(eh, SM_FB_H, SM_SIXEL_PAN_MAX, 6);
+    } else if (vscale_ok) {
+        /* Measured (termgfx_sixel_vscale_probe) as honoring the raster pan: foot,
+         * Contour and Windows Terminal read it as the DEC VERTICAL pixel aspect and
+         * scale the image up that axis -- but NOT pad, which only cterm treats as a
+         * horizontal scale. So halve the height and keep the width 1:1. The picture
+         * still fills the fitted ew x eh rect (sxh * pan == eh), so sm_map_mouse's
+         * assumption holds and the in-game hand tracks the hardware cursor. */
+        hpad = 1;
+        vpan = sm_geom_aspect(eh, SM_FB_H, SM_SIXEL_PAN_MAX, 6);
     } else {
-        /* A strict-DEC sixel terminal (Windows Terminal, xterm, ...) reads the
-         * pan;pad raster attribute as a 1:1 pixel aspect and draws the sixel at
-         * its ENCODED size -- it does NOT integer-upscale the way SyncTERM does.
-         * Encoding at pad/pan=2 there shows the picture at half size, and throws
-         * the mouse mapping (which assumes the image fills the whole ew x eh
-         * rect, sm_map_mouse) off by the same factor, so the in-game hand no
-         * longer tracks the hardware cursor. Encode 1:1 at the full displayed
-         * size instead: the picture fills the fitted rect on any terminal and
-         * the cursor lines up. Costs ~4x the bytes vs the SyncTERM path -- MoO1
-         * is turn-based and mostly static, so frame de-dup absorbs it, and there
-         * is no correct alternative on a terminal that won't upscale. (The
-         * height is still band-clamped below, same as the SyncTERM path.) */
+        /* Neither axis: xterm and WezTerm draw the sixel at its ENCODED size. A
+         * pan/pad=2 encode there shows the picture at half size and throws the
+         * mouse mapping (which assumes the image fills the whole ew x eh rect,
+         * sm_map_mouse) off by the same factor, so the in-game hand no longer
+         * tracks the hardware cursor. Encode 1:1 at the full displayed size: the
+         * picture fills the fitted rect and the cursor lines up. Costs ~4x the
+         * bytes -- MoO1 is turn-based and mostly static, so frame de-dup absorbs
+         * it, and there is no correct alternative on a terminal that won't scale.
+         * This is also the fallback when the probe gets no answer. */
         hpad = 1;
         vpan = 1;
     }

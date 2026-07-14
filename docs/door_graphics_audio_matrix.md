@@ -245,18 +245,53 @@ would draw a half-width image. See `syncduke_io.c` (`vsc`/`hsc`) and SyncDOOM's
 > client. It's easy to conclude from a live session that full-res is the default
 > for non-SyncTERM; it isn't. Clear the pref to see the real default.
 
-> **Open issue — the doors disagree, and no probe settles it.** SyncDuke/SyncDOOM
-> assume vertical scaling is portable and keep `pan=2` everywhere; SyncMOO1
-> (commit `11ca7941b1`) assumes *nothing* is portable off SyncTERM and encodes a
-> full 1:1 sixel there. Both can't be right, and each is wrong on a different
-> client: on **xterm/WezTerm** the Duke/DOOM default renders **half-height** until
-> the user manually picks the full-res sixel tier (`SD_SIXEL_FULL`), while on
-> **foot/Contour/Windows Terminal** SyncMOO1 pays ~4× the raster bytes it needs to,
-> since those clients would have honored the vertical halving. Nothing in DA1
-> distinguishes the three classes, so the choice is a guess keyed off "is it
-> SyncTERM". Worth harmonizing on the majority behavior (vertical scaling works
-> everywhere except xterm/WezTerm) rather than leaving each door with its own
-> assumption.
+**The doors no longer guess: they measure.** All three (SyncDuke, SyncDOOM,
+SyncMOO1) run `termgfx_sixel_vscale_probe()` once at startup against any
+non-SyncTERM sixel terminal — it draws the same sliver twice, `pan=1` then
+`pan=2`, and compares how far the cursor advanced. A terminal that honors the
+raster pan advances twice as far. That is self-calibrating (no cell-height
+assumption) and tests the *behavior* rather than sniffing a name that rots, so
+one policy now serves every client:
+
+| | vertical (`pan`) | horizontal (`pad`) |
+|---|:---:|:---:|
+| SyncTERM | 2 | 2 |
+| probe says it scales (foot, Contour, WT) | 2 | 1 |
+| probe says it doesn't (xterm, WezTerm) | 1 | 1 |
+
+No answer within the window reads as "does not scale" — the safe direction, since
+a full 1:1 encode is correct on every terminal and merely fatter.
+
+> **The probe's one blind spot.** It measures the *space* the image occupies, not
+> whether the content was *stretched* to fill it. A terminal that honored `pan` by
+> reserving a taller box and letterboxing the pixels inside would advance the cursor
+> exactly as far as one that scales, and would be misread as scaling. Nothing on the
+> wire distinguishes them — the cursor position is the only thing a terminal ever
+> reports back about a sixel — so any probe over this protocol inherits the hole. No
+> characterized terminal behaves this way, and the failure is loud (a half-size
+> picture in a full-size box) with an immediate remedy: **F4 → full-res**, which
+> encodes 1:1 and is correct regardless of what the terminal does with `pan`. That is
+> exactly why the manual override earns its keep alongside the auto-detection.
+
+**Never encode below native.** Whatever the terminal can scale, the door caps the
+factor at what keeps the *encode* at or above the game's native frame
+(`termgfx_geom_sixel_scale()`, long SyncMOO1's rule, now shared). The encode is
+what carries the pixels; the display is encode × factor. Let the encode fall under
+native and you discard rows the game actually drew, and the terminal then replicates
+them back to the right *size* — right-sized, permanently blurrier. It answers per
+axis, and the axes genuinely disagree: fitting 320×200 into 640×384 gives `pad=2`
+(320 encoded columns *is* native) but `pan=1` (384/2 = 192 < 200). SyncDuke and
+SyncDOOM previously hardcoded 2 on both axes and silently dropped 8 of the 200 rows
+there. Big canvases — where sixel actually lives — are unaffected: their half-res
+encode sits comfortably above native, so it stays lossless *and* cheap.
+
+**What full-res (F4) is now for.** Not correctness — the probe and the guard handle
+that. It is (a) the player's explicit bytes-for-exactness call, since a half-res
+encode quantizes the scale to 2×2 blocks while a 1:1 encode lands on the fitted
+rectangle pixel-exactly, and (b) the backstop when the probe is fooled. It stays a
+sticky per-user preference, and is offered as an F4 stop **only where it is a
+different picture** — on a terminal that scales neither axis the only possible
+encode is 1:1, so a second stop would be the same image under another name.
 
 ### JXL/PPM: the graphics-APC `ZX`/`ZY` zoom (CTerm ≥ 1.332)
 
