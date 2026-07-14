@@ -2146,10 +2146,22 @@ static void door_calc_rect(int vw, int vh, int reserve_bottom, int *ew, int *eh,
 	 * sixel bigger than that is DISCARDED WHOLE (xterm aborts the parse on an
 	 * oversized declared raster), and xterm advertises no geometry at all (window ops
 	 * are off by default), so assume its 1000x1000. Clamping the canvas instead would
-	 * pin the picture left in a big window -- the canvas is what centers it. */
-	termgfx_geom_gfx_clamp(g_canvas_is_gfx ? g_canvas_w : TERMGFX_SIXEL_SAFE_MAX,
-	                       g_canvas_is_gfx ? g_canvas_h : TERMGFX_SIXEL_SAFE_MAX,
-	                       ew, eh);
+	 * pin the picture left in a big window -- the canvas is what centers it.
+	 *
+	 * An exact pixel canvas (ESC[4;h;wt -> g_px_exact) is itself a safe drawing
+	 * ceiling, so trust it whenever any terminal reports it -- Windows Terminal,
+	 * SyncTERM, or any modern sixel terminal -- not just when XTSMGRAPHICS
+	 * (g_canvas_is_gfx) answered. Otherwise a terminal that reported an exact
+	 * e.g. 2700x1440 canvas gets its image clamped to the geometry-less 1000px
+	 * floor and renders small. The 1000px floor stays for genuinely
+	 * geometry-less terminals (xterm with window-ops off never sends ESC[4t, so
+	 * g_px_exact stays false and it's still protected). */
+	{
+		int gfx = g_px_exact || g_canvas_is_gfx;
+		termgfx_geom_gfx_clamp(gfx ? g_canvas_w : TERMGFX_SIXEL_SAFE_MAX,
+		                       gfx ? g_canvas_h : TERMGFX_SIXEL_SAFE_MAX,
+		                       ew, eh);
+	}
 
 	termgfx_geom_center(vw, fitvh, *ew, *eh, cellw, cellh, dx, dy, icol, irow);
 }
@@ -2272,16 +2284,26 @@ static void door_stats_draw(int force)
 	/* Bytes/frame rounded to KB (these frames are 10s-100s of KB) -- keeps the
 	 * last field 2-3 digits so the row fits 80 cols; the node log keeps raw bytes. */
 	bpf = g_tstat[tier].frames ? (g_tstat[tier].bytes / g_tstat[tier].frames + 512) / 1024 : 0;
-	snprintf(t, sizeof t, " %s %dfps %s d%d %s/%s %s%s%s %ums %dx%d %dx%d %dx%d %lluKB/f",
-	         sa_tier_name(tier), g_fps, rate, g_auto_depth,
-	         door_io_evdev_active()      ? "evdev"
-	         : door_input_kitty_active() ? "kitty" : "legacy",
-	         g_mouse_pixels ? "pixel" : "cell",
-	         door_term_is_utf8() ? "utf8" : "cp437",
-	         (g_img_blob_ok && (tier == SA_JXL || tier == SA_PPM)) ? " blob" : "",   /* frames shipping inline (Draw*Blob), no cache */
-	         g_fit_fill ? " fill" : "",   /* Ctrl-F Fill (stretch-to-canvas); absent = Aspect (default, true ratio) */
-	         (unsigned)g_rtt_ms,
-	         g_canvas_w, g_canvas_h, g_grid_cols, g_grid_rows, cw, ch, bpf);
+	/* Geometry-detection provenance (diagnoses why the image is/ isn't clamped):
+	 * S = SyncTERM detected, X = exact px canvas (ESC[4t) / e = grid estimate,
+	 * G = XTSMGRAPHICS gfx ceiling known / - = not. */
+	{
+		char geo[8];
+		snprintf(geo, sizeof geo, "%c%c%c",
+		         g_is_syncterm ? 'S' : '-',
+		         g_px_exact ? 'X' : 'e',
+		         g_canvas_is_gfx ? 'G' : '-');
+		snprintf(t, sizeof t, " %s %dfps %s d%d %s/%s %s%s%s %ums %dx%d/%s %dx%d %dx%d %lluKB/f",
+		         sa_tier_name(tier), g_fps, rate, g_auto_depth,
+		         door_io_evdev_active()      ? "evdev"
+		         : door_input_kitty_active() ? "kitty" : "legacy",
+		         g_mouse_pixels ? "pixel" : "cell",
+		         door_term_is_utf8() ? "utf8" : "cp437",
+		         (g_img_blob_ok && (tier == SA_JXL || tier == SA_PPM)) ? " blob" : "",   /* frames shipping inline (Draw*Blob), no cache */
+		         g_fit_fill ? " fill" : "",   /* Ctrl-F Fill (stretch-to-canvas); absent = Aspect (default, true ratio) */
+		         (unsigned)g_rtt_ms,
+		         g_canvas_w, g_canvas_h, geo, g_grid_cols, g_grid_rows, cw, ch, bpf);
+	}
 	/* \x1b[K (erase to end of line) BEFORE the reset clears any leftover tail
 	 * from a previous, longer readout (the line is variable length) and, since
 	 * the cyan attribute is still active, paints the rest of the row as a clean
