@@ -771,15 +771,38 @@ static void csi_final(char fin)
 /* --- byte-level drain: door_io.c's ring -> csi_final()/plain bytes --------- */
 static enum { DIN_NORMAL, DIN_ESC, DIN_CSI } g_pstate;
 
+/* Lone-ESC disambiguation. A bare ESC (the Escape key -- the in-game menu) shares
+ * its first byte with the start of every escape sequence (arrows are ESC[A, etc.),
+ * so the parser cannot classify it until it sees whether a byte follows. A real
+ * sequence arrives in ONE burst, so if nothing follows within DOOR_ESC_MS the
+ * pending ESC was the key: deliver it.
+ *
+ * Without this, DIN_ESC just sits there and Escape only registers when the NEXT key
+ * is pressed -- and if that next key is also Escape, both land at once and the menu
+ * opens and instantly closes again. SyncTERM never shows it (its evdev/kitty reports
+ * deliver Escape as a key event, never a bare 0x1b); a legacy-key terminal like xterm
+ * shows it every time. SyncDuke and SyncMOO1 already do exactly this. */
+#define DOOR_ESC_MS 50
+static uint32_t g_esc_at_ms;
+
 void door_input_drain(void)
 {
 	uint8_t b;
 
+	/* Resolve a pending lone ESC even on a drain that reads no new bytes. */
+	if (g_pstate == DIN_ESC
+	    && (uint32_t)(door_io_now_ms() - g_esc_at_ms) > DOOR_ESC_MS) {
+		emit_tap(VK_ESCAPE);
+		g_pstate = DIN_NORMAL;
+	}
+
 	while (door_io_input_pop(&b)) {
 		switch (g_pstate) {
 			case DIN_NORMAL:
-				if (b == 0x1b)
-					g_pstate = DIN_ESC;
+				if (b == 0x1b) {
+					g_pstate    = DIN_ESC;
+					g_esc_at_ms = door_io_now_ms();
+				}
 				else
 					door_input_key_tap(b);
 				break;

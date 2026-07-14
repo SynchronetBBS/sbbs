@@ -1663,6 +1663,20 @@ static unsigned char csi_tilde_key(int n)
 
 // Incremental escape-sequence parser state (bytes may split across reads).
 static enum { ST_NORMAL, ST_ESC, ST_CSI, ST_APC, ST_APC_ESC } s_pstate = ST_NORMAL;
+
+// Lone-ESC disambiguation. A bare ESC (the Escape key -- Doom's menu) shares its
+// first byte with the start of every escape sequence (arrows are ESC[A, etc.), so
+// the parser can't classify it until it sees whether a byte follows. A real sequence
+// arrives in ONE burst, so if nothing follows within SD_ESC_MS the pending ESC was
+// the key: deliver it.
+//
+// Without this, ST_ESC just sits there and Escape only registers when the NEXT key
+// is pressed -- and if that next key is also Escape, both land at once and the menu
+// opens and instantly closes. SyncTERM never showed it (its evdev/kitty key reports
+// deliver Escape as a key event, never a bare 0x1b); xterm, on the legacy byte path,
+// shows it every time. SyncDuke already does exactly this (SYNCDUKE_ESC_MS).
+#define SD_ESC_MS 50
+static uint32_t s_esc_at_ms;
 static unsigned s_apc_len;   // bytes swallowed in the current APC/string seq (bail if unterminated)
 static char     s_csi_intro = 0;        // '[' or 'O' for the current CSI/SS3
 static char     s_csi_par[24];          // accumulated parameter bytes ("[<n>~", SGR mouse "[<b;c;r")
@@ -1907,7 +1921,7 @@ static void parse_byte(unsigned char c)
 {
 	switch (s_pstate) {
 		case ST_NORMAL:
-			if (c == 0x1b) { s_pstate = ST_ESC; return; }
+			if (c == 0x1b) { s_pstate = ST_ESC; s_esc_at_ms = now_ms(); return; }
 			{ unsigned char k = map_ascii(c); if (k)
 				  key_seen(k); }
 			return;
@@ -2136,8 +2150,13 @@ static void pump_input(void)
 			g_hangup = 1;                    // EOF / dead socket
 		break;                               // n<0: no data right now
 	}
-	// A dangling lone ESC at end-of-input resolves to Escape after a beat;
-	// KEYUP_IDLE handling and the next read will sort timing out.
+	// A dangling lone ESC resolves to Escape once its follow-up window has elapsed --
+	// a real ESC[ sequence arrives in the same burst and has already advanced past
+	// ST_ESC by now. (See SD_ESC_MS: without this, Escape waits for the next key.)
+	if (s_pstate == ST_ESC && (uint32_t)(now_ms() - s_esc_at_ms) > SD_ESC_MS) {
+		key_seen(KEY_ESCAPE);
+		s_pstate = ST_NORMAL;
+	}
 	expire_keys();
 }
 
