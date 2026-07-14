@@ -289,6 +289,7 @@ void SoundControlsClass::Process(void)
     */
     bool display = true;
     bool process = true;
+    int  last_score = Options.ScoreVolume;   // LOCAL: track external (+/- hotkey) volume changes
 
     while (process) {
 
@@ -302,6 +303,23 @@ void SoundControlsClass::Process(void)
                 process = false;
             }
         }
+
+        /*
+        **	LOCAL: reflect music-volume changes made OUTSIDE this dialog. The
+        **	door's +/- hotkeys call Options.Set_Score_Volume() directly, so
+        **	re-sync the slider when ScoreVolume itself changes -- otherwise the
+        **	thumb only updates on menu re-entry. Trigger on a change to
+        **	ScoreVolume (not gauge != ScoreVolume): during a mouse DRAG the gauge
+        **	leads ScoreVolume, which only commits below on SLIDER_MUSIC, so
+        **	comparing the two would snap the thumb back mid-drag. Mirrors Red
+        **	Alert's sounddlg.cpp fix.
+        */
+        int score_val = Options.ScoreVolume;
+        if (score_val != last_score) {
+            music.Set_Value(score_val);
+            display = true;
+        }
+        last_score = score_val;
 
         /*
         ** If we have just received input focus again after running in the background then

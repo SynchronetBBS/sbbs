@@ -571,6 +571,19 @@ rest; these are the local edits on top of it (plus a couple of shared
     `true` (RA needed patch-forcing; TD does not), so losing the window's
     `WM_ACTIVATEAPP` does not silence TD's audio.
 
+34. **syncdawn: re-sync the Sound Controls music slider to external
+    volume changes (`tiberiandawn/sounddlg.cpp`).** The door's `+`/`-`
+    music-volume hotkeys call `Options.Set_Score_Volume()` directly (patch
+    #13), but the Sound Controls dialog only set the music slider's value once
+    at open, so pressing `+`/`-` with the dialog up changed the volume audibly
+    while the thumb stayed put. Added the RA fix (patch #15): track
+    `last_score = Options.ScoreVolume` and, each loop iteration,
+    `music.Set_Value()` + redraw when `ScoreVolume` changed. Triggers on a
+    change to `ScoreVolume` (not gauge != ScoreVolume) so a mouse drag isn't
+    snapped back mid-drag. TD uses `ScoreVolume` directly (no RA `* 256` fixed
+    scaling). The RA equivalent was patch #15; this is its TD counterpart, which
+    had been missed.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching
