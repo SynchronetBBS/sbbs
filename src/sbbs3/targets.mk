@@ -146,10 +146,32 @@ endif
 FORCE:
 
 ifneq ($(GIT), NO)
+# A build from a DIRTY tree is marked, because otherwise the stamp describes a
+# commit the binary isn't:
+#
+#   clean:  GIT_HASH "a1009085"    GIT_DATE = that COMMIT's date
+#   dirty:  GIT_HASH "~a1009085"   GIT_DATE = the BUILD time
+#
+# The leading '~' is Vanilla Conquer's convention ("based on this commit, plus
+# uncommitted changes"). The DATE moves with it on purpose: the commit's timestamp
+# says nothing about a binary carrying newer, uncommitted code, and reporting it
+# invites the mistake of thinking a freshly-built program is an old one. With no
+# commit that describes the binary, the only honest date is when it was compiled.
+#
+# Dirtiness is judged from TRACKED changes under src/ only: untracked files would
+# make every tree dirty (a working install has hundreds), and tracked churn outside
+# src/ -- game data a door rewrites at runtime, e.g. xtrn/lord2/*.dat -- has nothing
+# to do with what got compiled.  Mirrored in ../build/gitinfo.cmake (the doors).
 git_hash.h: FORCE ../../.git
-	$(QUIET)git log -1 HEAD --format="#define GIT_HASH \"%h\"" > $@.tmp
-	$(QUIET)git log -1 HEAD --format="#define GIT_DATE \"%cd\"" '--date=format-local:%b %d %Y %H:%M' >> $@.tmp
-	$(QUIET)git log -1 HEAD --format="#define GIT_TIME %cd" --date=unix >> $@.tmp
+	$(QUIET)if [ -n "`git status --porcelain -uno -- :/src`" ]; then \
+		echo "#define GIT_HASH \"~`git log -1 HEAD --format=%h`\"" > $@.tmp; \
+		date '+#define GIT_DATE "%b %d %Y %H:%M"' >> $@.tmp; \
+		date '+#define GIT_TIME %s' >> $@.tmp; \
+	else \
+		git log -1 HEAD --format="#define GIT_HASH \"%h\"" > $@.tmp; \
+		git log -1 HEAD --format="#define GIT_DATE \"%cd\"" '--date=format-local:%b %d %Y %H:%M' >> $@.tmp; \
+		git log -1 HEAD --format="#define GIT_TIME %cd" --date=unix >> $@.tmp; \
+	fi
 	$(QUIET)test -e $@ && diff $@.tmp $@ || cp $@.tmp $@
 	$(QUIET)rm -f $@.tmp
 
