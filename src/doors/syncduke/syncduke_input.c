@@ -40,6 +40,7 @@
   #include <time.h>
 #endif
 
+#include "geometry.h"   /* termgfx: TERMGFX_SIXEL_SAFE_MAX */
 #include "sixel.h"      /* termgfx: termgfx_sixel_vscale_verdict */
 #include "syncduke.h"
 #include "keyboard.h"   /* sc_* scancode constants (pure #defines) */
@@ -393,8 +394,17 @@ int syncduke_term_cols(void)
 }
 /* Real graphics canvas for image-fill: XTSMGRAPHICS if SyncTERM answered it, else
  * the text-area pixels (ESC[14t / estimate), so non-SyncTERM terminals still fill. */
-int syncduke_canvas_w(void) { return g_gfx_w > 0 ? g_gfx_w : g_term_px_w; }
-int syncduke_canvas_h(void) { return g_gfx_h > 0 ? g_gfx_h : g_term_px_h; }
+/* No graphics geometry advertised (xterm ships with window ops OFF, so it answers
+ * neither ESC[14t nor XTSMGRAPHICS): assume xterm's default 1000x1000 ceiling rather
+ * than trusting a cols*cell estimate it may refuse to draw. An oversized sixel is
+ * DISCARDED WHOLE, not clipped -- a black screen, not a cropped one. */
+static int syncduke_cap(int px)
+{
+	return (px > TERMGFX_SIXEL_SAFE_MAX) ? TERMGFX_SIXEL_SAFE_MAX : px;
+}
+
+int syncduke_canvas_w(void) { return g_gfx_w > 0 ? g_gfx_w : syncduke_cap(g_term_px_w); }
+int syncduke_canvas_h(void) { return g_gfx_h > 0 ? g_gfx_h : syncduke_cap(g_term_px_h); }
 
 /* Incremental CSI parser state -- bytes of an escape sequence (and of a probe
  * reply) can split across reads, so it persists between syncduke_input_pump() calls. */

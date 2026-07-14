@@ -64,6 +64,23 @@ int termgfx_geom_zoom(int src_w, int src_h, int ew, int eh, int *zx, int *zy);
 // SyncMOO1's long-standing rule (sm_geom_aspect), hoisted so every door gets it.
 int termgfx_geom_sixel_scale(int displayed, int native, int max_factor, int band);
 
+// The largest sixel we dare emit when the terminal has NOT told us its graphics
+// geometry (XTSMGRAPHICS ESC[?2;1S).
+//
+// This is not a stylistic cap, it is the difference between a picture and a black
+// screen. xterm's maxGraphicSize defaults to 1000x1000, and an image whose DECLARED
+// raster exceeds it is not clipped -- xterm aborts the parse and draws NOTHING
+// (graphics_sixel.c: GetExtent -> finished_parsing + return). Worse, xterm ships
+// with window ops DISABLED, so it answers neither ESC[14t nor the XTSMGRAPHICS
+// query: a door that sizes from cols*cell (the only geometry it can still get) will
+// happily build a 1024-wide sixel for a large window and have every frame thrown
+// away. That is exactly what "SyncDOOM is black in a big xterm" was.
+//
+// So when nothing has advertised a limit, assume xterm's. A terminal that can take
+// more will say so and get the bigger image; one that stays silent gets a picture
+// instead of a void.
+#define TERMGFX_SIXEL_SAFE_MAX 1000
+
 // Center an ew x eh image in a vw x vh canvas.  *dx/*dy = the pixel offset (e.g.
 // for a SyncTERM APC DrawJXL DX/DY); *col/*row = the 1-based text-cell origin
 // derived from cell_w/cell_h (1,1 -- top-left -- when either cell dim is 0, since

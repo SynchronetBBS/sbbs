@@ -2792,6 +2792,17 @@ static void probe_geometry(void)
 		g_win_w = g_gfx_w;
 		g_win_h = g_gfx_h;
 	}
+	else {
+	// Nothing advertised a graphics geometry (xterm ships with window ops OFF, so it
+	// answers neither ESC[14t nor XTSMGRAPHICS): fall back on xterm's default ceiling
+	// rather than trusting a cols*cell estimate the terminal may refuse to draw. A
+	// sixel over the limit is DISCARDED WHOLE, not clipped -- that is a black screen,
+	// not a cropped one.
+		if (g_win_w > TERMGFX_SIXEL_SAFE_MAX)
+			g_win_w = TERMGFX_SIXEL_SAFE_MAX;
+		if (g_win_h > TERMGFX_SIXEL_SAFE_MAX)
+			g_win_h = TERMGFX_SIXEL_SAFE_MAX;
+	}
 }
 
 static int resolve_music_cache_dir(char *buf, size_t sz);   // defined below (needs g_wads_dir)

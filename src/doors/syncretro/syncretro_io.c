@@ -583,8 +583,10 @@ void sr_io_set_canvas(int w, int h)
 		return;   /* malformed/partial reply: keep the current canvas */
 	if (g_canvas_is_gfx)
 		return;   /* the graphics geometry outranks the ESC[14t window (see below) */
-	g_canvas_w     = w;
-	g_canvas_h     = h;
+	/* No graphics geometry advertised: assume xterm's 1000x1000 ceiling (see
+	 * sr_io_set_gfx_canvas). An oversized sixel is DISCARDED WHOLE, not clipped. */
+	g_canvas_w     = (w > TERMGFX_SIXEL_SAFE_MAX) ? TERMGFX_SIXEL_SAFE_MAX : w;
+	g_canvas_h     = (h > TERMGFX_SIXEL_SAFE_MAX) ? TERMGFX_SIXEL_SAFE_MAX : h;
 	g_canvas_known = 1;   /* a real reply: the geometry may now trust the canvas */
 	sr_io_recompute_geom();
 }
