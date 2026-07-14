@@ -2142,6 +2142,15 @@ static void door_calc_rect(int vw, int vh, int reserve_bottom, int *ew, int *eh,
 	 * caps inside termgfx_geom_fit_ex, so this only bites Fill. */
 	if (reserve_bottom && *ew > DOOR_SCALE_MAX)
 		*ew = DOOR_SCALE_MAX;
+	/* Shrink the IMAGE -- never the canvas -- to the terminal's graphics ceiling: a
+	 * sixel bigger than that is DISCARDED WHOLE (xterm aborts the parse on an
+	 * oversized declared raster), and xterm advertises no geometry at all (window ops
+	 * are off by default), so assume its 1000x1000. Clamping the canvas instead would
+	 * pin the picture left in a big window -- the canvas is what centers it. */
+	termgfx_geom_gfx_clamp(g_canvas_is_gfx ? g_canvas_w : TERMGFX_SIXEL_SAFE_MAX,
+	                       g_canvas_is_gfx ? g_canvas_h : TERMGFX_SIXEL_SAFE_MAX,
+	                       ew, eh);
+
 	termgfx_geom_center(vw, fitvh, *ew, *eh, cellw, cellh, dx, dy, icol, irow);
 }
 
@@ -2580,18 +2589,8 @@ static void door_csi_final(char fin)
 				g_grid_rows = p[0];
 				g_grid_cols = p[1];
 				if (!g_px_exact) {
-					/* An ESTIMATE the terminal never confirmed. Cap it at
-					 * xterm's default 1000x1000 graphics ceiling: xterm ships
-					 * with window ops OFF, so it answers neither ESC[14t nor
-					 * XTSMGRAPHICS, and it DISCARDS WHOLE (does not clip) any
-					 * sixel whose declared raster is bigger -- a black screen,
-					 * not a cropped one. */
 					g_canvas_w = g_grid_cols * 8;
 					g_canvas_h = g_grid_rows * 16;
-					if (g_canvas_w > TERMGFX_SIXEL_SAFE_MAX)
-						g_canvas_w = TERMGFX_SIXEL_SAFE_MAX;
-					if (g_canvas_h > TERMGFX_SIXEL_SAFE_MAX)
-						g_canvas_h = TERMGFX_SIXEL_SAFE_MAX;
 				}
 			}
 			door_pace_ack();
@@ -2599,9 +2598,8 @@ static void door_csi_final(char fin)
 		case 't':   /* ESC[4;h;wt: exact text-area pixel size */
 			np = door_csi_params(p, 4);
 			if (np >= 3 && p[0] == 4 && !g_canvas_is_gfx) {
-				/* The WINDOW, not the graphics ceiling -- cap it the same way. */
-				g_canvas_h = (p[1] > TERMGFX_SIXEL_SAFE_MAX) ? TERMGFX_SIXEL_SAFE_MAX : p[1];
-				g_canvas_w = (p[2] > TERMGFX_SIXEL_SAFE_MAX) ? TERMGFX_SIXEL_SAFE_MAX : p[2];
+				g_canvas_h = p[1];
+				g_canvas_w = p[2];
 				g_px_exact = 1;
 			}
 			return;

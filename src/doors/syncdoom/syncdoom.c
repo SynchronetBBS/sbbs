@@ -2792,17 +2792,6 @@ static void probe_geometry(void)
 		g_win_w = g_gfx_w;
 		g_win_h = g_gfx_h;
 	}
-	else {
-	// Nothing advertised a graphics geometry (xterm ships with window ops OFF, so it
-	// answers neither ESC[14t nor XTSMGRAPHICS): fall back on xterm's default ceiling
-	// rather than trusting a cols*cell estimate the terminal may refuse to draw. A
-	// sixel over the limit is DISCARDED WHOLE, not clipped -- that is a black screen,
-	// not a cropped one.
-		if (g_win_w > TERMGFX_SIXEL_SAFE_MAX)
-			g_win_w = TERMGFX_SIXEL_SAFE_MAX;
-		if (g_win_h > TERMGFX_SIXEL_SAFE_MAX)
-			g_win_h = TERMGFX_SIXEL_SAFE_MAX;
-	}
 }
 
 static int resolve_music_cache_dir(char *buf, size_t sz);   // defined below (needs g_wads_dir)
@@ -3743,18 +3732,39 @@ static void compute_geometry(void)
 		// position by pixel offset, not a text cell, so they have no last-row quirk).
 		int cap  = (g_mode == MODE_SIXEL && (g_scale_max == 0 || g_scale_max > 1024))
 		           ? 1024 : g_scale_max;
+		// The area we may DRAW into is not the area we CENTER in. A sixel bigger than
+		// the terminal's graphics geometry is DISCARDED WHOLE (xterm: an oversized
+		// declared raster aborts the parse -- a black screen, not a cropped one), and
+		// xterm ships with window ops OFF, so it advertises no geometry at all: assume
+		// its 1000x1000 default. Clamp the FIT to that ceiling; the centering below
+		// still uses the real canvas, or the image would be pinned left in a big window
+		// instead of sitting in the middle of it.
+		int fitw = vw;
+		if (g_mode == MODE_SIXEL) {
+			int gmax_w = g_gfx_w > 0 ? g_gfx_w : TERMGFX_SIXEL_SAFE_MAX;
+			int gmax_h = g_gfx_h > 0 ? g_gfx_h : TERMGFX_SIXEL_SAFE_MAX;
+
+			if (fitw > gmax_w)
+				fitw = gmax_w;
+			if (cap == 0 || cap > gmax_w)
+				cap = gmax_w;
+			if (fitvh > gmax_h)
+				fitvh = gmax_h;
+		}
 		// Reserve ONE cell row at the bottom for the sixel tier so the image never reaches the
 		// last text row; centering within fitvh (below) then lands that row at the very bottom.
 		if (g_mode == MODE_SIXEL && vh > ch * 4)
 			fitvh = vh - ch;
 		// Fit Doom's native 640x400 into the canvas, capped, aspect-preserving, with the
 		// <=8% letterbox stretch -- shared with SyncDuke (termgfx/geometry.c).
-		termgfx_geom_fit(vw, fitvh, 640, 400, cap, &s_pxW, &s_pxH);
+		termgfx_geom_fit(fitw, fitvh, 640, 400, cap, &s_pxW, &s_pxH);
 	}
 
-	// Center the image in the window: pixel offset for the APC DX/DY (SyncTERM
-	// JXL/PPM), cell offset for the sixel text cursor -- shared with SyncDuke.
-	termgfx_geom_center(vw, fitvh, s_pxW, s_pxH, cw, ch,
+	// Center the image in the REAL window (not in the draw-limited box above), so a
+	// capped image still sits in the middle of a big terminal: pixel offset for the
+	// APC DX/DY (SyncTERM JXL/PPM), cell offset for the sixel text cursor.
+	termgfx_geom_center(vw, (g_mode == MODE_SIXEL && vh > ch * 4) ? vh - ch : vh,
+	                    s_pxW, s_pxH, cw, ch,
 	                    &g_img_x, &g_img_y, &g_img_col, &g_img_row);
 
 	// Sixel is positioned by TEXT CELL, but the image is sized in pixels. Without

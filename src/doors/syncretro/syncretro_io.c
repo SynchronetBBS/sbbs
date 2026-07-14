@@ -314,6 +314,7 @@ void sr_io_pace_ack(void)
  * something to fit into, and narrow to the terminal's real values once
  * syncretro_input.c's probe-reply parser calls the setters below. g_grid_* stay
  * 0 (unknown) until then, in which case the assumed 8x16 cell is used. */
+static int g_canvas_is_gfx;   /* canvas came from XTSMGRAPHICS: a hard drawing ceiling */
 static int g_canvas_w = SR_CANVAS_W_DEF;
 static int g_canvas_h = SR_CANVAS_H_DEF;
 static int g_grid_rows, g_grid_cols;
@@ -530,6 +531,14 @@ static void sr_io_recompute_geom(void)
 	}
 
 	termgfx_geom_fit(pagew, fith, fitw, g_src_h, 0, &g_ew, &g_eh);
+
+	/* Shrink the IMAGE -- never the page -- to the terminal's graphics ceiling: an
+	 * oversized sixel is DISCARDED WHOLE (xterm aborts the parse), and xterm ships
+	 * with window ops OFF so it advertises nothing. Clamping the page instead would
+	 * pin the picture left in a big window, since the page is what centers it. */
+	termgfx_geom_gfx_clamp(g_canvas_is_gfx ? g_canvas_w : TERMGFX_SIXEL_SAFE_MAX,
+	                       g_canvas_is_gfx ? g_canvas_h : TERMGFX_SIXEL_SAFE_MAX,
+	                       &g_ew, &g_eh);
 	termgfx_geom_center_ex(pagew, fith, g_ew, g_eh, cw, ch, &dx, &dy, &g_icol, &g_irow);
 	g_geom_ready = 1;
 
@@ -575,7 +584,6 @@ void sr_io_set_aspect(double aspect)
 	sr_io_invalidate();            /* the image rect moved: repaint in full */
 }
 
-static int g_canvas_is_gfx;   /* canvas came from XTSMGRAPHICS: a hard drawing ceiling */
 
 void sr_io_set_canvas(int w, int h)
 {
@@ -583,10 +591,8 @@ void sr_io_set_canvas(int w, int h)
 		return;   /* malformed/partial reply: keep the current canvas */
 	if (g_canvas_is_gfx)
 		return;   /* the graphics geometry outranks the ESC[14t window (see below) */
-	/* No graphics geometry advertised: assume xterm's 1000x1000 ceiling (see
-	 * sr_io_set_gfx_canvas). An oversized sixel is DISCARDED WHOLE, not clipped. */
-	g_canvas_w     = (w > TERMGFX_SIXEL_SAFE_MAX) ? TERMGFX_SIXEL_SAFE_MAX : w;
-	g_canvas_h     = (h > TERMGFX_SIXEL_SAFE_MAX) ? TERMGFX_SIXEL_SAFE_MAX : h;
+	g_canvas_w     = w;
+	g_canvas_h     = h;
 	g_canvas_known = 1;   /* a real reply: the geometry may now trust the canvas */
 	sr_io_recompute_geom();
 }

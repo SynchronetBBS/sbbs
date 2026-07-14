@@ -450,6 +450,7 @@ static int       g_icol = 1, g_irow = 1;   /* 1-based text-cell origin, cursor-p
  * module's probe-reply parser calls the setters below (ESC[14t canvas px,
  * the ESC[6n->ESC[r;cR grid). g_grid_rows/cols stay 0 (unknown) until then,
  * in which case the recompute below falls back to the assumed 8x16 cell. */
+static int g_canvas_is_gfx;   /* the canvas came from XTSMGRAPHICS: a hard ceiling */
 static int g_canvas_w = SM_CANVAS_W_DEF;
 static int g_canvas_h = SM_CANVAS_H_DEF;
 static int g_grid_rows, g_grid_cols;
@@ -494,6 +495,16 @@ static void sm_io_recompute_geom(void)
      * wide enough for it. See sm_geom_fit_page(). */
     sm_geom_fit_page(pagew, pageh, ch, &ew, &eh, &fith);
 
+    /* Shrink the IMAGE -- never the page -- to the terminal's graphics ceiling. A
+     * sixel bigger than that is DISCARDED WHOLE (xterm aborts the parse on an
+     * oversized declared raster: a black screen, not a cropped one), and xterm ships
+     * with window ops OFF so it advertises no geometry at all -- assume its 1000x1000
+     * default. Clamping the PAGE instead would pin the picture to the left of a big
+     * terminal, because the page is what the centering below measures against. */
+    termgfx_geom_gfx_clamp(g_canvas_is_gfx ? g_canvas_w : TERMGFX_SIXEL_SAFE_MAX,
+                           g_canvas_is_gfx ? g_canvas_h : TERMGFX_SIXEL_SAFE_MAX,
+                           &ew, &eh);
+
     /* Center with the FRACTIONAL cell size, not the integer cw/ch above. On a
      * maximized terminal whose pixels-per-cell isn't an exact 8x16 (Windows
      * Terminal), int truncation of canvas/grid loses a fraction of a cell, and
@@ -535,7 +546,6 @@ const sm_geom_t *sm_io_geom(void)
 
 /* --- probe-reply setters (Task 6: fed by syncmoo1_input.c's CSI handler) --- */
 
-static int g_canvas_is_gfx;   /* the canvas came from XTSMGRAPHICS: a hard ceiling */
 
 void sm_io_set_canvas(int w, int h)
 {
@@ -544,10 +554,8 @@ void sm_io_set_canvas(int w, int h)
     if (g_canvas_is_gfx)
         return;   /* the graphics geometry outranks the ESC[14t window: see below */
     sm_io_ensure_geom();
-    /* No graphics geometry advertised: assume xterm's 1000x1000 ceiling (see
-     * sm_io_set_gfx_canvas). An oversized sixel is DISCARDED WHOLE, not clipped. */
-    g_canvas_w = (w > TERMGFX_SIXEL_SAFE_MAX) ? TERMGFX_SIXEL_SAFE_MAX : w;
-    g_canvas_h = (h > TERMGFX_SIXEL_SAFE_MAX) ? TERMGFX_SIXEL_SAFE_MAX : h;
+    g_canvas_w = w;
+    g_canvas_h = h;
     sm_io_recompute_geom();
 }
 

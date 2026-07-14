@@ -1,5 +1,6 @@
 // geometry.c -- see geometry.h.  Shared image fit/center math for termgfx doors.
 
+#include <stddef.h>
 #include "geometry.h"
 
 void termgfx_geom_fit(int vw, int vh, int src_w, int src_h, int scale_max,
@@ -85,6 +86,29 @@ int termgfx_geom_sixel_scale(int displayed, int native, int max_factor, int band
 			return f;
 	}
 	return 1;                       // no factor is lossless -> encode 1:1
+}
+
+void termgfx_geom_gfx_clamp(int gmax_w, int gmax_h, int *ew, int *eh)
+{
+	int w, h;
+
+	if (ew == NULL || eh == NULL || gmax_w < 1 || gmax_h < 1)
+		return;
+	w = *ew;
+	h = *eh;
+	if (w < 1 || h < 1)
+		return;
+
+	if (w > gmax_w) {                   // too wide: scale the height with it
+		h = (int)((long)h * gmax_w / w);
+		w = gmax_w;
+	}
+	if (h > gmax_h) {                   // still too tall: scale the width with it
+		w = (int)((long)w * gmax_h / h);
+		h = gmax_h;
+	}
+	*ew = w < 1 ? 1 : w;
+	*eh = h < 1 ? 1 : h;
 }
 
 void termgfx_geom_center_ex(int vw, int vh, int ew, int eh,

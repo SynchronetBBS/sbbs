@@ -81,6 +81,15 @@ int termgfx_geom_sixel_scale(int displayed, int native, int max_factor, int band
 // instead of a void.
 #define TERMGFX_SIXEL_SAFE_MAX 1000
 
+// Shrink a fitted image to the terminal's graphics ceiling, preserving aspect.
+//
+// Call it on the FIT result, never on the canvas: the canvas is what the image is
+// CENTERED against, and clamping that instead pins the picture to the left of a big
+// window rather than sitting it in the middle. Pass the terminal's advertised
+// geometry, or TERMGFX_SIXEL_SAFE_MAX when it advertised none. No-op if it already
+// fits.
+void termgfx_geom_gfx_clamp(int gmax_w, int gmax_h, int *ew, int *eh);
+
 // Center an ew x eh image in a vw x vh canvas.  *dx/*dy = the pixel offset (e.g.
 // for a SyncTERM APC DrawJXL DX/DY); *col/*row = the 1-based text-cell origin
 // derived from cell_w/cell_h (1,1 -- top-left -- when either cell dim is 0, since

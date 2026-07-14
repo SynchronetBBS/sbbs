@@ -1298,8 +1298,25 @@ void syncduke_present(void)
 			int fitvh = vh - cellh;
 			if (fitvh < SYNCDUKE_SCREEN_H)
 				fitvh = vh;                              /* don't over-shrink a very short window */
-			termgfx_geom_fit(vw, fitvh, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, 1024, &sdw, &sdh);
-			termgfx_geom_center(vw, fitvh, sdw, sdh, cellw, cellh, NULL, NULL, &icol, &irow);
+
+			/* What we may DRAW is not what we CENTER IN. A sixel bigger than the
+			 * terminal's graphics geometry is DISCARDED WHOLE (xterm aborts the parse
+			 * on an oversized declared raster -- black, not cropped), and xterm ships
+			 * with window ops OFF so it advertises nothing: assume its 1000x1000
+			 * default. Clamp the FIT to that; center against the REAL canvas, or a
+			 * capped image sits pinned to the left of a big terminal. */
+			int gmax_w = syncduke_gfx_w() > 0 ? syncduke_gfx_w() : TERMGFX_SIXEL_SAFE_MAX;
+			int gmax_h = syncduke_gfx_h() > 0 ? syncduke_gfx_h() : TERMGFX_SIXEL_SAFE_MAX;
+			int fitw   = (vw > gmax_w) ? gmax_w : vw;
+			int fith   = (fitvh > gmax_h) ? gmax_h : fitvh;
+			int cvw    = syncduke_canvas_w() > 0 ? syncduke_canvas_w() : vw;
+			int cvh    = syncduke_canvas_h() > 0 ? syncduke_canvas_h() : vh;
+			int cfith  = cvh - cellh;
+
+			if (cfith < SYNCDUKE_SCREEN_H)
+				cfith = cvh;
+			termgfx_geom_fit(fitw, fith, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, 1024, &sdw, &sdh);
+			termgfx_geom_center(cvw, cfith, sdw, sdh, cellw, cellh, NULL, NULL, &icol, &irow);
 		}
 		syncduke_out_put(wrap, snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow, icol));
 		/* Mouse-steer center: the sixel is drawn at the centered cursor cell (icol) and
