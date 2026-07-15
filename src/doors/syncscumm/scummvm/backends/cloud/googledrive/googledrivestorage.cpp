@@ -1,0 +1,249 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#include "backends/cloud/googledrive/googledrivestorage.h"
+#include "backends/cloud/cloudmanager.h"
+#include "backends/cloud/googledrive/googledrivetokenrefresher.h"
+#include "backends/cloud/googledrive/googledrivelistdirectorybyidrequest.h"
+#include "backends/cloud/googledrive/googledriveuploadrequest.h"
+#include "backends/networking/http/connectionmanager.h"
+#include "backends/networking/http/httpjsonrequest.h"
+#include "backends/networking/http/networkreadstream.h"
+#include "common/config-manager.h"
+#include "common/debug.h"
+#include "common/formats/json.h"
+#include "common/debug.h"
+
+namespace Cloud {
+namespace GoogleDrive {
+
+#define GOOGLEDRIVE_API_FILES_ALT_MEDIA "https://www.googleapis.com/drive/v3/files/%s?alt=media"
+#define GOOGLEDRIVE_API_FILES "https://www.googleapis.com/drive/v3/files"
+#define GOOGLEDRIVE_API_ABOUT "https://www.googleapis.com/drive/v3/about?fields=storageQuota,user"
+
+GoogleDriveStorage::GoogleDriveStorage(const Common::String &token, const Common::String &refreshToken, bool enabled):
+	IdStorage(token, refreshToken, enabled) {}
+
+GoogleDriveStorage::GoogleDriveStorage(const Common::String &code, Networking::ErrorCallback cb) {
+	getAccessToken(code, cb);
+}
+
+GoogleDriveStorage::GoogleDriveStorage(const Networking::JsonResponse &codeFlowJson, Networking::ErrorCallback cb) {
+	codeFlowComplete(cb, codeFlowJson);
+}
+
+GoogleDriveStorage::~GoogleDriveStorage() {}
+
+Common::String GoogleDriveStorage::cloudProvider() { return "gdrive"; }
+
+uint32 GoogleDriveStorage::storageIndex() { return kStorageGoogleDriveId; }
+
+bool GoogleDriveStorage::needsRefreshToken() { return true; }
+
+bool GoogleDriveStorage::canReuseRefreshToken() { return true; }
+
+void GoogleDriveStorage::saveConfig(const Common::String &keyPrefix) {
+	ConfMan.set(keyPrefix + "access_token", _token, ConfMan.kCloudDomain);
+	ConfMan.set(keyPrefix + "refresh_token", _refreshToken, ConfMan.kCloudDomain);
+	saveIsEnabledFlag(keyPrefix);
+}
+
+Common::String GoogleDriveStorage::name() const {
+	return "Google Drive";
+}
+
+void GoogleDriveStorage::infoInnerCallback(StorageInfoCallback outerCallback, const Networking::JsonResponse &response) {
+	const Common::JSONValue *json = response.value;
+	if (!json) {
+		warning("GoogleDriveStorage::infoInnerCallback: NULL passed instead of JSON");
+		delete outerCallback;
+		return;
+	}
+
+	if (!Networking::HttpJsonRequest::jsonIsObject(json, "GoogleDriveStorage::infoInnerCallback")) {
+		delete json;
+		delete outerCallback;
+		return;
+	}
+
+	Common::JSONObject jsonInfo = json->asObject();
+
+	Common::String uid, displayName, email;
+	uint64 quotaUsed = 0, quotaAllocated = 0;
+
+	if (Networking::HttpJsonRequest::jsonContainsAttribute(jsonInfo, "user", "GoogleDriveStorage::infoInnerCallback") &&
+		Networking::HttpJsonRequest::jsonIsObject(jsonInfo.getVal("user"), "GoogleDriveStorage::infoInnerCallback")) {
+		//"me":true, "kind":"drive#user","photoLink": "",
+		//"displayName":"Alexander Tkachev","emailAddress":"alexander@tkachov.ru","permissionId":""
+		Common::JSONObject user = jsonInfo.getVal("user")->asObject();
+		if (Networking::HttpJsonRequest::jsonContainsString(user, "permissionId", "GoogleDriveStorage::infoInnerCallback"))
+			uid = user.getVal("permissionId")->asString(); //not sure it's user's id, but who cares anyway?
+		if (Networking::HttpJsonRequest::jsonContainsString(user, "displayName", "GoogleDriveStorage::infoInnerCallback"))
+			displayName = user.getVal("displayName")->asString();
+		if (Networking::HttpJsonRequest::jsonContainsString(user, "emailAddress", "GoogleDriveStorage::infoInnerCallback"))
+			email = user.getVal("emailAddress")->asString();
+	}
+
+	if (Networking::HttpJsonRequest::jsonContainsAttribute(jsonInfo, "storageQuota", "GoogleDriveStorage::infoInnerCallback") &&
+		Networking::HttpJsonRequest::jsonIsObject(jsonInfo.getVal("storageQuota"), "GoogleDriveStorage::infoInnerCallback")) {
+		//"usageInDrive":"6332462","limit":"18253611008","usage":"6332462","usageInDriveTrash":"0"
+		Common::JSONObject storageQuota = jsonInfo.getVal("storageQuota")->asObject();
+
+		if (Networking::HttpJsonRequest::jsonContainsString(storageQuota, "usage", "GoogleDriveStorage::infoInnerCallback")) {
+			Common::String usage = storageQuota.getVal("usage")->asString();
+			quotaUsed = usage.asUint64();
+		}
+
+		if (Networking::HttpJsonRequest::jsonContainsString(storageQuota, "limit", "GoogleDriveStorage::infoInnerCallback")) {
+			Common::String limit = storageQuota.getVal("limit")->asString();
+			quotaAllocated = limit.asUint64();
+		}
+	}
+
+	CloudMan.setStorageUsername(kStorageGoogleDriveId, email);
+
+	if (outerCallback) {
+		(*outerCallback)(StorageInfoResponse(nullptr, StorageInfo(uid, displayName, email, quotaUsed, quotaAllocated)));
+		delete outerCallback;
+	}
+
+	delete json;
+}
+
+void GoogleDriveStorage::createDirectoryInnerCallback(BoolCallback outerCallback, const Networking::JsonResponse &response) {
+	const Common::JSONValue *json = response.value;
+	if (!json) {
+		warning("GoogleDriveStorage::createDirectoryInnerCallback: NULL passed instead of JSON");
+		delete outerCallback;
+		return;
+	}
+
+	if (outerCallback) {
+		if (Networking::HttpJsonRequest::jsonIsObject(json, "GoogleDriveStorage::createDirectoryInnerCallback")) {
+			Common::JSONObject jsonInfo = json->asObject();
+			(*outerCallback)(BoolResponse(nullptr, jsonInfo.contains("id")));
+		} else {
+			(*outerCallback)(BoolResponse(nullptr, false));
+		}
+		delete outerCallback;
+	}
+
+	delete json;
+}
+
+Networking::Request *GoogleDriveStorage::listDirectoryById(const Common::String &id, ListDirectoryCallback callback, Networking::ErrorCallback errorCallback) {
+	if (!errorCallback)
+		errorCallback = getErrorPrintingCallback();
+	if (!callback)
+		callback = new Common::Callback<GoogleDriveStorage, const FileArrayResponse &>(this, &GoogleDriveStorage::printFiles);
+	return addRequest(new GoogleDriveListDirectoryByIdRequest(this, id, callback, errorCallback));
+}
+
+Networking::Request *GoogleDriveStorage::upload(const Common::String &path, Common::SeekableReadStream *contents, UploadCallback callback, Networking::ErrorCallback errorCallback) {
+	return addRequest(new GoogleDriveUploadRequest(this, path, contents, callback, errorCallback));
+}
+
+Networking::Request *GoogleDriveStorage::streamFileById(const Common::String &id, Networking::NetworkReadStreamCallback callback, Networking::ErrorCallback errorCallback) {
+	if (callback) {
+		Common::String url = Common::String::format(GOOGLEDRIVE_API_FILES_ALT_MEDIA, Common::percentEncodeString(id).c_str());
+		Common::String header = "Authorization: Bearer " + _token;
+		Networking::RequestHeaders *headersList = new Networking::RequestHeaders();
+		headersList->push_back(header);
+		Networking::NetworkReadStream *stream = Networking::NetworkReadStream::make(url.c_str(), headersList, "");
+		(*callback)(Networking::NetworkReadStreamResponse(nullptr, stream));
+	}
+	delete callback;
+	delete errorCallback;
+	return nullptr;
+}
+
+void GoogleDriveStorage::printInfo(const StorageInfoResponse &response) {
+	debug(9, "\nGoogleDriveStorage: user info:");
+	debug(9, "\tname: %s", response.value.name().c_str());
+	debug(9, "\temail: %s", response.value.email().c_str());
+	debug(9, "\tdisk usage: %llu/%llu",
+		  (unsigned long long)response.value.used(),
+		  (unsigned long long)response.value.available());
+}
+
+Networking::Request *GoogleDriveStorage::createDirectoryWithParentId(const Common::String &parentId, const Common::String &directoryName, BoolCallback callback, Networking::ErrorCallback errorCallback) {
+	if (!errorCallback)
+		errorCallback = getErrorPrintingCallback();
+
+	Common::String url = GOOGLEDRIVE_API_FILES;
+	Networking::JsonCallback innerCallback = new Common::CallbackBridge<GoogleDriveStorage, const BoolResponse &, const Networking::JsonResponse &>(this, &GoogleDriveStorage::createDirectoryInnerCallback, callback);
+	Networking::HttpJsonRequest *request = new GoogleDriveTokenRefresher(this, innerCallback, errorCallback, url.c_str());
+	request->addHeader("Authorization: Bearer " + accessToken());
+	request->addHeader("Content-Type: application/json");
+
+	Common::JSONArray parentsArray;
+	parentsArray.push_back(new Common::JSONValue(parentId));
+
+	Common::JSONObject jsonRequestParameters;
+	jsonRequestParameters.setVal("mimeType", new Common::JSONValue("application/vnd.google-apps.folder"));
+	jsonRequestParameters.setVal("name", new Common::JSONValue(directoryName));
+	jsonRequestParameters.setVal("parents", new Common::JSONValue(parentsArray));
+
+	Common::JSONValue value(jsonRequestParameters);
+	request->addPostField(Common::JSON::stringify(&value));
+
+	return addRequest(request);
+}
+
+Networking::Request *GoogleDriveStorage::info(StorageInfoCallback callback, Networking::ErrorCallback errorCallback) {
+	if (!callback)
+		callback = new Common::Callback<GoogleDriveStorage, const StorageInfoResponse &>(this, &GoogleDriveStorage::printInfo);
+	Networking::JsonCallback innerCallback = new Common::CallbackBridge<GoogleDriveStorage, const StorageInfoResponse &, const Networking::JsonResponse &>(this, &GoogleDriveStorage::infoInnerCallback, callback);
+	Networking::HttpJsonRequest *request = new GoogleDriveTokenRefresher(this, innerCallback, errorCallback, GOOGLEDRIVE_API_ABOUT);
+	request->addHeader("Authorization: Bearer " + _token);
+	return addRequest(request);
+}
+
+Common::String GoogleDriveStorage::savesDirectoryPath() { return "scummvm/saves/"; }
+
+GoogleDriveStorage *GoogleDriveStorage::loadFromConfig(const Common::String &keyPrefix) {
+	if (!ConfMan.hasKey(keyPrefix + "access_token", ConfMan.kCloudDomain)) {
+		warning("GoogleDriveStorage: no access_token found");
+		return nullptr;
+	}
+
+	if (!ConfMan.hasKey(keyPrefix + "refresh_token", ConfMan.kCloudDomain)) {
+		warning("GoogleDriveStorage: no refresh_token found");
+		return nullptr;
+	}
+
+	Common::String accessToken = ConfMan.get(keyPrefix + "access_token", ConfMan.kCloudDomain);
+	Common::String refreshToken = ConfMan.get(keyPrefix + "refresh_token", ConfMan.kCloudDomain);
+	return new GoogleDriveStorage(accessToken, refreshToken, loadIsEnabledFlag(keyPrefix));
+}
+
+void GoogleDriveStorage::removeFromConfig(const Common::String &keyPrefix) {
+	ConfMan.removeKey(keyPrefix + "access_token", ConfMan.kCloudDomain);
+	ConfMan.removeKey(keyPrefix + "refresh_token", ConfMan.kCloudDomain);
+	removeIsEnabledFlag(keyPrefix);
+}
+
+Common::String GoogleDriveStorage::getRootDirectoryId() {
+	return "root";
+}
+
+} // End of namespace GoogleDrive
+} // End of namespace Cloud

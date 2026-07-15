@@ -1,0 +1,13 @@
+engines/scumm/detection.cpp
+engines/scumm/detection_internal.h
+engines/scumm/dialog-createsession.cpp
+engines/scumm/dialog-sessionselector.cpp
+engines/scumm/dialogs.cpp
+engines/scumm/help.cpp
+engines/scumm/input.cpp
+engines/scumm/metaengine.cpp
+engines/scumm/saveload.cpp
+engines/scumm/scumm.cpp
+engines/scumm/he/moonbase/dialog-mapgenerator.cpp
+engines/scumm/he/sound_he.cpp
+engines/scumm/imuse/drivers/amiga.cpp

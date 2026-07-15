@@ -1,0 +1,84 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef TEXTVIEWER_DIALOG_H
+#define TEXTVIEWER_DIALOG_H
+
+#include "common/array.h"
+#include "common/str.h"
+
+#include "gui/dialog.h"
+
+namespace Graphics {
+class Font;
+}
+
+namespace GUI {
+
+class ButtonWidget;
+class ScrollBarWidget;
+#ifdef EMSCRIPTEN
+enum {
+	kDownloadFileCmd = 'dlfc',
+};
+#endif 
+
+class TextViewerDialog : public Dialog {
+private:
+	int	_lineWidth;
+	int	_linesPerPage;
+	int	_currentPos;
+	int	_scrollLine;
+
+	int _charWidth;
+	int _lineHeight;
+	int _padX, _padY;
+
+	Common::StringArray _linesArray;
+
+	ScrollBarWidget *_scrollBar;
+	ButtonWidget *_closeButton;
+#ifdef EMSCRIPTEN
+	ButtonWidget *_downloadButton;
+#endif
+
+	Common::Path _fname;
+	const Graphics::Font *_font = nullptr;
+
+	bool loadFile(const Common::Path &fname);
+	void reflowLayout() override;
+
+public:
+	TextViewerDialog(const Common::Path &fname);
+	~TextViewerDialog();
+
+	void destroy();
+	void open() override;
+	void drawDialog(DrawLayer layerToDraw, bool resetClipping = true) override;
+
+	void handleMouseWheel(int x, int y, int direction) override;
+	void handleKeyDown(Common::KeyState state) override;
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
+};
+
+} // End of namespace GUI
+
+#endif

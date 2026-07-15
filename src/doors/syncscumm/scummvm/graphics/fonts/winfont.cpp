@@ -1,0 +1,442 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#include "common/file.h"
+#include "common/ptr.h"
+#include "common/str.h"
+#include "common/stream.h"
+#include "common/textconsole.h"
+#include "common/formats/winexe_ne.h"
+#include "common/formats/winexe_pe.h"
+#include "graphics/surface.h"
+#include "graphics/fonts/winfont.h"
+
+namespace Graphics {
+
+WinFont::WinFont() {
+	_glyphs = nullptr;
+	close();
+}
+
+WinFont::~WinFont() {
+	close();
+}
+
+void WinFont::close() {
+	_pixHeight = 0;
+	_sizeInPoints = 0;
+	_dpi = 0;
+	_maxWidth = 0;
+	_firstChar = 0;
+	_lastChar = 0;
+	_defaultChar = 0;
+	_glyphCount = 0;
+	delete[] _glyphs;
+	_glyphs = nullptr;
+}
+
+static WinFontDirEntry readDirEntry(Common::SeekableReadStream &stream) {
+	WinFontDirEntry entry;
+
+	stream.skip(68); // Useless
+	entry.points = stream.readUint16LE();
+	stream.skip(43); // Useless (for now, maybe not in the future)
+	stream.readString(); // Skip Device Name
+	entry.faceName = stream.readString();
+
+	return entry;
+}
+
+bool WinFont::loadFromFON(const Common::Path &fileName, const WinFontDirEntry &dirEntry) {
+	Common::ScopedPtr<Common::WinResources> exe(Common::WinResources::createFromEXE(fileName));
+	if (!exe) {
+		return false;
+	}
+
+	return loadFromEXE(exe.get(), fileName, dirEntry);
+}
+
+bool WinFont::loadFromFON(Common::SeekableReadStream &stream, const WinFontDirEntry &dirEntry) {
+	Common::ScopedPtr<Common::WinResources> exe(Common::WinResources::createFromEXE(&stream));
+	if (!exe) {
+		return false;
+	}
+
+	return loadFromEXE(exe.get(), "stream", dirEntry);
+}
+
+bool WinFont::loadFromEXE(Common::WinResources *exe, const Common::Path &fileName, const WinFontDirEntry &dirEntry) {
+	// Let's pull out the font directory
+	Common::ScopedPtr<Common::SeekableReadStream> fontDirectory(exe->getResource(Common::kWinFontDir, Common::WinResourceID("FONTDIR")));
+	if (!fontDirectory) {
+		warning("No font directory in '%s'", fileName.toString(Common::Path::kNativeSeparator).c_str());
+		return false;
+	}
+
+	// Match the face name
+	uint32 fontId = getFontIndex(*fontDirectory.get(), dirEntry);
+	if (fontId == 0xffffffff) {
+		warning("Could not find face '%s' in '%s'", dirEntry.faceName.c_str(),
+				fileName.toString(Common::Path::kNativeSeparator).c_str());
+		return false;
+	}
+
+	// Get the font
+	Common::ScopedPtr<Common::SeekableReadStream> fontStream(exe->getResource(Common::kWinFont, fontId));
+	if (!fontStream) {
+		warning("Could not find font %d in %s", fontId,
+				fileName.toString(Common::Path::kNativeSeparator).c_str());
+		return false;
+	}
+
+	return loadFromFNT(*fontStream.get());
+}
+
+/**
+ * Size in typographic "points"
+ *
+ * While early Macintosh mapped "points" and "pixels" very closely,
+ * that was not the case on Windows.
+ *
+ * Windows used 96 dpi for font rendering so a 10 point font would
+ *
+ * Macintosh used 72 dpi for fonts while Windows used 96 dpi
+ */
+int WinFont::getFontSizeInPointsAtDPI(const int dpi) const {
+	return _sizeInPoints * _dpi / dpi;
+}
+
+uint32 WinFont::getFontIndex(Common::SeekableReadStream &stream, const WinFontDirEntry &dirEntry) {
+	uint16 numFonts = stream.readUint16LE();
+
+	// Probably not possible, so this is really a sanity check
+	if (numFonts == 0) {
+		warning("No fonts in exe");
+		return 0xffffffff;
+	}
+
+	// Search the directory for our matching name
+	for (uint16 i = 0; i < numFonts; i++) {
+		uint16 id = stream.readUint16LE();
+
+		// Use the first name when empty
+		if (dirEntry.faceName.empty()) {
+			_name = getFONFontName(stream);
+			return id;
+		}
+
+		WinFontDirEntry entry = readDirEntry(stream);
+
+		if (dirEntry.faceName.equalsIgnoreCase(entry.faceName) && dirEntry.points == entry.points) // Match!
+			return id;
+	}
+
+	return 0xffffffff;
+}
+
+Common::String WinFont::getFONFontName(Common::SeekableReadStream& stream) {
+	// Currently only works when dirEntry.faceName in getFontIndex is empty
+	// But this can be used for each FONTDIR entry
+	stream.seek(117);
+	/* Device Name = */ stream.readString();
+	Common::String fontName = stream.readString();
+	return fontName;
+}
+
+bool WinFont::loadFromFNT(const Common::Path &fileName) {
+	Common::File file;
+	if (!file.open(fileName)) {
+		return false;
+	}
+	return loadFromFNT(file);
+}
+
+char WinFont::indexToCharacter(uint16 index) const {
+	// Use a space for the sentinel value
+	if (index == _glyphCount - 1)
+		return ' ';
+
+	return index + _firstChar;
+}
+
+uint16 WinFont::characterToIndex(uint32 character) const {
+	// Go to the default character if we didn't find a mapping
+	if (character < _firstChar || character > _lastChar)
+		character = _defaultChar;
+
+	return character - _firstChar;
+}
+
+int WinFont::getCharWidth(uint32 chr) const {
+	return _glyphs[characterToIndex(chr)].charWidth;
+}
+
+bool WinFont::loadFromFNT(Common::SeekableReadStream &stream) {
+	uint32 fontPos = stream.pos();
+
+	// Font versions:
+	// 1.0 Raster: Unsupported. Different bitmap format. Win 1.0 included these.
+	// 2.0 Raster: Supported. Most common format.
+	// 3.0 Raster: Supported. More header fields, 32-bit offsets.
+	// 1.0 Vector: Unsupported. Windows only has three: Modern, Roman, Script
+	// 2.0 Vector: Unsupported. None are known to exist.
+	// 3.0 Vector: Unsupported. None are known to exist.
+	uint16 version = stream.readUint16LE();
+	if (version != 0x100 && version != 0x200 && version != 0x300) {
+		warning("Bad FNT version %04x", version);
+		return false;
+	}
+
+	/* uint32 fontSize = */ stream.readUint32LE();
+	stream.skip(60); // Copyright info
+	uint16 fontType = stream.readUint16LE();
+	_sizeInPoints = stream.readUint16LE();
+	uint16 vertRes = stream.readUint16LE();		// usually 96 as in 96dpi
+	uint16 horizRes = stream.readUint16LE();	// usually 96 as in 96dpi
+
+	if (vertRes != horizRes)
+		warning("WinFont::loadFromFNT(): FNT horizontal resolution and vertical resolution differ (%d vs %d)", horizRes, vertRes);
+
+	_dpi = vertRes;
+
+	_ascent = stream.readUint16LE();
+	/* uint16 internalLeading = */ stream.readUint16LE();
+	/* uint16 externalLeading = */ stream.readUint16LE();
+	_italic = stream.readByte();
+	_underline = stream.readByte();
+	_strikethrough = stream.readByte();
+	_weight = stream.readUint16LE();
+	/* byte charSet = */ stream.readByte();
+	uint16 pixWidth = stream.readUint16LE();
+	_pixHeight = stream.readUint16LE();
+	/* byte pitchAndFamily = */ stream.readByte();
+	/* uint16 avgWidth = */ stream.readUint16LE();
+	_maxWidth = stream.readUint16LE();
+	_firstChar = stream.readByte();
+	_lastChar = stream.readByte();
+	_defaultChar = stream.readByte();
+	/* byte breakChar = */ stream.readByte();
+	/* uint16 widthBytes = */ stream.readUint16LE();
+	/* uint32 device = */ stream.readUint32LE();
+	/* uint32 face = */ stream.readUint32LE();
+	/* uint32 bitsPointer = */ stream.readUint32LE();
+	/* uint32 bitsOffset = */ stream.readUint32LE();
+
+	if (version == 0x200) {
+		/* byte reserved = */ stream.readByte();
+	} else if (version == 0x300) {
+		/* byte reserved = */ stream.readByte();
+
+		// Windows 3.0 added fields for future versions that were never used.
+		// These fields are always zero. True Type replaced this font format.
+		/* uint32 flags = */ stream.readUint32LE();
+		/* uint16 aSpace = */ stream.readUint16LE();
+		/* uint16 bSpace = */ stream.readUint16LE();
+		/* uint16 cSpace = */ stream.readUint16LE();
+		/* uint32 colorPointer = */ stream.readUint32LE();
+		stream.skip(16); // reserved [ dfReserved1 ]
+	}
+
+	// TODO: Add support for the three vector fonts: Modern, Roman, and Script.
+	// Note that the Windows font spec defines how vector points are stored, but not
+	// the line drawing or resizing algorithms; these were implementation specific.
+	// The three vector fonts only appear in the 1.0 format. The Script font has
+	// characters that draw beyond their widths to achieve the connected effect.
+	if (fontType & 1) {
+		warning("WinFont: vector fonts not supported");
+		return false;
+	}
+	// Windows 1.0 raster fonts have significantly different formats for the glyph
+	// entries and the font bitmap. The glyph entry table may not even be present.
+	// 1.0 raster fonts appeared in Windows 1.0 and were upgraded to 2.0 afterwards.
+	if (version == 0x100) {
+		warning("WinFont: 1.0 raster fonts not supported");
+		return false;
+	}
+
+	// Begin loading in the glyphs
+	_glyphCount = (_lastChar - _firstChar) + 2;
+	delete[] _glyphs;
+	_glyphs = new GlyphEntry[_glyphCount];
+
+	for (uint16 i = 0; i < _glyphCount; i++) {
+		_glyphs[i].charWidth = stream.readUint16LE();
+
+		// Use the default if present
+		if (pixWidth)
+			_glyphs[i].charWidth = pixWidth;
+
+		_glyphs[i].offset = (version == 0x300) ? stream.readUint32LE() : stream.readUint16LE();
+	}
+
+	// Read in the bitmaps for the raster images
+	for (uint16 i = 0; i < _glyphCount - 1; i++) {
+		stream.seek(fontPos + _glyphs[i].offset);
+
+		_glyphs[i].bitmap = new byte[_pixHeight * _glyphs[i].charWidth];
+
+		// Calculate the amount of columns
+		byte colCount = (_glyphs[i].charWidth + 7) / 8;
+
+		for (uint16 j = 0; j < colCount; j++) {
+			for (uint16 k = 0; k < _pixHeight; k++) {
+				byte x = stream.readByte();
+				uint offset = j * 8 + k * _glyphs[i].charWidth;
+
+				for (byte l = 0; l < 8 && j * 8 + l < _glyphs[i].charWidth; l++)
+					_glyphs[i].bitmap[offset + l] = (x & (1 << (7 - l))) ? 1 : 0;
+			}
+		}
+
+#if 0
+		// Debug print
+		debug("Character %02x '%c' at %08x", indexToCharacter(i), indexToCharacter(i), _glyphs[i].offset);
+		for (uint16 j = 0; j < _pixHeight; j++) {
+			for (uint16 k = 0; k < _glyphs[i].charWidth; k++)
+				debugN("%c", _glyphs[i].bitmap[k + j * _glyphs[i].charWidth] ? 'X' : ' ');
+
+			debugN("\n");
+		}
+#endif
+	}
+
+	return true;
+}
+
+void WinFont::drawChar(Surface *dst, uint32 chr, int x, int y, uint32 color) const {
+	assert(dst);
+	assert(dst->format.bytesPerPixel == 1 || dst->format.bytesPerPixel == 2 || dst->format.bytesPerPixel == 4);
+	assert(_glyphs);
+
+	GlyphEntry &glyph = _glyphs[characterToIndex(chr)];
+
+	for (uint16 i = 0; i < _pixHeight; i++) {
+		// Boundary check for Y...
+		if (y + i < 0 || y + (int)i >= dst->h)
+			continue;
+
+		for (uint16 j = 0; j < glyph.charWidth; j++) {
+			// Boundary check for X...
+			if (x + j < 0 || x + (int)j >= dst->w)
+				continue;
+
+			if (glyph.bitmap[j + i * glyph.charWidth]) {
+				if (dst->format.bytesPerPixel == 1)
+					*((byte *)dst->getBasePtr(x + j, y + i)) = color;
+				else if (dst->format.bytesPerPixel == 2)
+					*((uint16 *)dst->getBasePtr(x + j, y + i)) = color;
+				else if (dst->format.bytesPerPixel == 4)
+					*((uint32 *)dst->getBasePtr(x + j, y + i)) = color;
+			}
+		}
+	}
+}
+
+int WinFont::getStyle() const {
+	int style = kFontStyleRegular;
+
+	// This has been taken from Wine Source
+	// https://github.com/wine-mirror/wine/blob/b9a61cde89e5dc6264b4c152f4dc24ecf064f8f6/include/wingdi.h#L728
+
+	if (_weight >= 700)
+		style |= kFontStyleBold;
+	if (_italic)
+		style |= kFontStyleItalic;
+	if (_underline)
+		style |= kFontStyleUnderline;
+
+	return style;
+}
+
+WinFont *WinFont::scaleFont(const WinFont *src, int newSize) {
+	if (!src) {
+		warning("WinFont::scaleFont(): Empty font reference in scale font");
+		return nullptr;
+	}
+
+	if (src->getFontHeight() == 0) {
+		warning("WinFont::scaleFont(): Requested to scale 0 size font");
+		return nullptr;
+	}
+
+	WinFont *scaledFont = new WinFont();
+
+	Graphics::Surface srcSurf;
+	srcSurf.create(MAX(src->getFontHeight() * 2, newSize * 2), MAX(src->getFontHeight() * 2, newSize * 2), PixelFormat::createFormatCLUT8());
+	int dstGraySize = newSize * 20 * newSize;
+	int *dstGray = (int *)malloc(dstGraySize * sizeof(int));
+
+	float scale = (float)newSize / (float)src->getFontHeight();
+
+	scaledFont->_pixHeight = (int)(roundf((float)src->_pixHeight * scale));
+	scaledFont->_maxWidth = (int)(roundf((float)src->_maxWidth * scale));
+	scaledFont->_ascent = src->_ascent;
+	scaledFont->_firstChar = src->_firstChar;
+	scaledFont->_lastChar = src->_lastChar;
+	scaledFont->_defaultChar = src->_defaultChar;
+	scaledFont->_italic = src->_italic;
+	scaledFont->_strikethrough = src->_strikethrough;
+	scaledFont->_underline = src->_underline;
+	scaledFont->_weight = src->_weight;
+	scaledFont->_name = Common::String(src->_name);
+
+	scaledFont->_glyphCount = src->_glyphCount;
+
+	GlyphEntry *glyphs = new GlyphEntry[src->_glyphCount];
+	for (int i = 0; i < src->_glyphCount; i++) {
+		glyphs[i].charWidth = (int)(roundf((float)src->_glyphs[i].charWidth * scale));
+		glyphs[i].offset = src->_glyphs[i].offset;
+
+		int boxWidth = glyphs[i].charWidth;
+		int boxHeight = scaledFont->_pixHeight;
+		int grayLevel = (boxWidth * boxHeight) / 3;
+
+		byte *bitmap = new byte[boxWidth * boxHeight];
+		memset(bitmap, 0, boxWidth * boxHeight);
+
+		// Scale single character
+		src->scaleSingleGlyph(&srcSurf, dstGray, dstGraySize, boxWidth, boxHeight, 0, 0, grayLevel, i + src->_firstChar,
+		                      src->_pixHeight, src->_glyphs[i].charWidth, scale);
+
+		// Convert back to bytes representation
+		byte *ptr = bitmap;
+		for (int y = 0; y < boxHeight; y++) {
+			byte *srcd = (byte *)srcSurf.getBasePtr(0, y);
+			byte *dst = ptr;
+
+			for (int x = 0; x < boxWidth; x++, srcd++) {
+				*dst++ = *srcd;
+			}
+
+			ptr += boxWidth;
+		}
+
+		glyphs[i].bitmap = bitmap;
+	}
+	scaledFont->_glyphs = glyphs;
+
+	free(dstGray);
+	srcSurf.free();
+
+	return (WinFont *)scaledFont;
+}
+
+} // End of namespace Graphics

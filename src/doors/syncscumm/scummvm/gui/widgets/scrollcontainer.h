@@ -1,0 +1,92 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef GUI_WIDGETS_SCROLLCONTAINER_H
+#define GUI_WIDGETS_SCROLLCONTAINER_H
+
+#include "gui/widget.h"
+#include "common/str.h"
+#include "gui/widgets/scrollbar.h"
+#include "gui/animation/FluidScroll.h"
+
+namespace GUI {
+
+class ScrollContainerWidget: public Widget, public CommandSender {
+	ScrollBarWidget *_verticalScroll;
+	int16 _scrolledX, _scrolledY;
+	int _scrollbarWidth;
+	uint16 _limitH;
+	uint32 _reflowCmd;
+	ThemeEngine::WidgetBackground _backgroundType;
+	Common::String _dialogName;
+	int _mouseDownY = 0;
+	static const int kDragThreshold;
+	int _mouseDownStartY = 0;
+	bool _isMouseDown = false;
+	bool _isDragging = false;
+	bool _wasAnimating = false;
+	float _scrollPos = 0.0f;
+	FluidScroller *_fluidScroller = nullptr;
+	Widget *_childUnderMouse = nullptr;
+
+	void recalc();
+	void applyScrollPos();
+
+public:
+	ScrollContainerWidget(GuiObject *boss, int x, int y, int w, int h, uint32 reflowCmd = 0);
+	ScrollContainerWidget(GuiObject *boss, const Common::String &name, const Common::String &dialogName, uint32 reflowCmd = 0);
+	~ScrollContainerWidget() override;
+
+	void init();
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
+	void reflowLayout() override;
+
+	bool containsWidget(Widget *) const override;
+
+	void setBackgroundType(ThemeEngine::WidgetBackground backgroundType);
+
+	void handleMouseWheel(int x, int y, int direction) override;
+	void handleMouseDown(int x, int y, int button, int clickCount) override;
+	void handleMouseUp(int x, int y, int button, int clickCount) override;
+	void handleMouseMoved(int x, int y, int button) override;
+	void lostFocusWidget() override;
+	void handleTickle() override;
+
+	// We overload getChildY to make sure child widgets are positioned correctly.
+	// Essentially this compensates for the space taken up by the tab title header.
+	int16	getChildX() const override;
+	int16	getChildY() const override;
+	uint16	getWidth() const override;
+	uint16	getHeight() const override;
+	bool wantsFocus() override { return true; }
+
+	void draw() override;
+	void markAsDirty() override;
+
+protected:
+	void drawWidget() override;
+
+	Widget *findWidget(int x, int y) override;
+};
+
+} // End of namespace GUI
+
+#endif

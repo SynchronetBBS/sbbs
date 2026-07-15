@@ -1,0 +1,331 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef GUI_LAUNCHER_DIALOG_H
+#define GUI_LAUNCHER_DIALOG_H
+
+// Disable the grid for platforms that disable fancy themes
+#ifdef DISABLE_FANCY_THEMES
+#define DISABLE_LAUNCHERDISPLAY_GRID
+#endif
+#define kSwitchLauncherDialog -2
+
+#include "common/hashmap.h"
+
+#include "gui/dialog.h"
+#include "gui/widgets/popup.h"
+#include "gui/MetadataParser.h"
+
+#include "engines/game.h"
+
+namespace GUI {
+
+enum LauncherDisplayType {
+	kLauncherDisplayList = 1,
+	kLauncherDisplayGrid = 2
+};
+
+enum GroupingMethod {
+	kGroupByNone,
+	kGroupByFirstLetter,
+	kGroupByEngine,
+	kGroupBySeries,
+	kGroupByCompany,
+	kGroupByLanguage,
+	kGroupByPlatform,
+	kGroupByYear,
+};
+
+struct GroupingMode {
+	/**
+	 * The name of the mode.  This is for example what is stored in the config file.
+	 */
+	const char *name;
+
+	/**
+	 * A human-readable description for the mode.
+	 */
+	const char *description;
+
+	/**
+	 * A short human-readable description for the mode.
+	 */
+	const char *lowresDescription;
+
+	/**
+	 * ID of he mode.
+	 */
+	GroupingMethod id;
+};
+
+class BrowserDialog;
+class CommandSender;
+class GroupedListWidget;
+class ContainerWidget;
+class EntryContainerWidget;
+class GridWidget;
+class ButtonWidget;
+class PicButtonWidget;
+class GraphicsWidget;
+class StaticTextWidget;
+class EditTextWidget;
+class SaveLoadChooser;
+class PopUpWidget;
+class ScrollContainerWidget;
+
+struct LauncherEntry {
+	Common::String key;
+	Common::String engineid;
+	Common::String gameid;
+	Common::String description;
+	Common::String title;
+	const Common::ConfigManager::Domain *domain;
+
+	LauncherEntry(const Common::String &k, const Common::String &e, const Common::String &g,
+				  const Common::String &d, const Common::String &t, const Common::ConfigManager::Domain *v) :
+		key(k), engineid(e), gameid(g), description(d), title(t), domain(v) {
+	}
+};
+
+class LauncherDialog : public Dialog {
+public:
+	LauncherDialog(const Common::String &dialogName);
+	~LauncherDialog() override;
+
+	void rebuild();
+
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
+
+	virtual LauncherDisplayType getType() const = 0;
+
+	int run();
+
+	void handleKeyDown(Common::KeyState state) override;
+	void handleKeyUp(Common::KeyState state) override;
+	void handleOtherEvent(const Common::Event &evt) override;
+	bool doGameDetection(const Common::Path &path);
+	Common::String getGameConfig(int item, Common::String key);
+	virtual const Common::Array<bool>& getSelectedItems() const = 0; // Get the selected items from the current view (list or grid)
+	const Common::StringArray& getDomains() const { return _domains; }
+protected:
+	EditTextWidget  *_searchWidget;
+#ifndef DISABLE_FANCY_THEMES
+	GraphicsWidget		*_logo;
+	GraphicsWidget		*_searchPic;
+	GraphicsWidget		*_groupPic;
+#endif
+	StaticTextWidget	*_searchDesc;
+	ButtonWidget	*_searchClearButton;
+	ButtonWidget	*_addButton;
+	Widget			*_removeButton;
+	Widget			*_startButton;
+	ButtonWidget	*_loadButton;
+	Widget			*_editButton;
+	Widget			*_mainHelpButton;
+	Common::StringArray		_domains;
+	BrowserDialog	*_browser;
+	SaveLoadChooser	*_loadDialog;
+	PopUpWidget		*_grpChooserPopup;
+	StaticTextWidget	*_grpChooserDesc;
+	GroupingMethod	_groupBy;
+	Common::String	_title;
+	Common::String	_search;
+	MetadataParser	_metadataParser;
+	Common::StringArray _domainTitles;	// Store game titles for each domain
+
+#ifndef DISABLE_LAUNCHERDISPLAY_GRID
+	ButtonWidget		*_listButton;
+	ButtonWidget		*_gridButton;
+
+	/**
+	 * Create two buttons to choose between grid display and list display
+	 * in the launcher.
+	 */
+	void addLayoutChooserButtons();
+	ButtonWidget *createSwitchButton(const Common::String &name, const Common::U32String &desc, const Common::U32String &tooltip, const char *image, uint32 cmd = 0);
+#endif // !DISABLE_LAUNCHERDISPLAY_GRID
+
+	void reflowLayout() override;
+
+	/**
+	 * Fill the list widget with all currently configured targets, and trigger
+	 * a redraw.
+	 */
+	virtual void updateListing(int selPos = -1) = 0;
+
+	virtual int getItemPos(int item) = 0;
+
+	virtual void updateButtons() = 0;
+
+	virtual void build();
+	void clean();
+
+	void open() override;
+	void close() override;
+
+	/**
+	 * Handle "Add game..." button.
+	 */
+	virtual void addGame();
+	void massAddGame();
+
+	/**
+	 * Handle "Remove game..." button.
+	 */
+	void removeGame(int item);
+
+	/**
+	 * Remove multiple games and their addons.
+	 */
+	void removeGamesWithAddons(const Common::StringArray &domainsToRemove);
+
+	/**
+	 * Shared helper for removing games after confirmation.
+	 * Called by subclasses after building their own confirmation message.
+	 */
+	void removeGames(const Common::Array<bool> &selectedItems, bool isGrid);
+
+	/**
+	 * Handle game removal confirmation with selection validation.
+	 * Checks if at least one item is selected, then shows the removal
+	 * confirmation dialog with a list of games to be removed.
+	 */
+	void confirmRemoveGames(const Common::Array<bool> &selectedItems);
+
+	/**
+	 * Update selection after game removal.
+	 * Each subclass handles its own UI-specific selection logic.
+	 */
+	virtual void updateSelectionAfterRemoval() = 0;
+
+	/**
+	 * Check if any items are selected in the given array.
+	 */
+	bool hasAnySelection(const Common::Array<bool> &selectedItems) const;
+
+
+	/**
+	 * Handle "Edit game..." button.
+	 */
+	void editGame(int item);
+
+	/**
+	 * Handle "Record..." button.
+	 */
+	void recordGame(int item);
+
+	/**
+	 * Handle "Load..." button.
+	 */
+	void loadGame(int item);
+
+	Common::Array<LauncherEntry> generateEntries(const Common::ConfigManager::DomainMap &domains, bool skipAddOns);
+
+	/**
+	 * Select the target with the given name in the launcher game list.
+	 * Also scrolls the list so that the newly selected item is visible.
+	 *
+	 * @target	name of target to select
+	 */
+	virtual void selectTarget(const Common::String &target) = 0;
+	virtual int getSelected() = 0;
+private:
+	Common::HashMap<Common::String, Common::StringMap, Common::IgnoreCase_Hash, Common::IgnoreCase_EqualTo> _engines;
+
+	bool checkModifier(int modifier);
+};
+
+/**
+ * Removal confirmation dialog with scrollable content.
+ * Used by LauncherDialog to display game list for removal confirmation.
+ */
+class RemovalConfirmationDialog : public Dialog {
+public:
+	RemovalConfirmationDialog(const Common::U32String &message, const Common::StringArray &gameTitles);
+	~RemovalConfirmationDialog() override;
+
+	void reflowLayout() override;
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
+
+	static const uint32 kRemovalYes = 1;
+	static const uint32 kRemovalNo = 2;
+
+private:
+	static const int kHorizontalMargin = 10;
+	static const int kButtonSpacing = 10;
+	static const int kGamePadding = 10;
+
+	// Pre-calculated values
+	const int _buttonWidth;
+	const int _buttonHeight;
+	const int _scrollbarWidth;
+
+	Common::U32String _message;
+	Common::StringArray _gameTitles;
+	ScrollContainerWidget *_scrollContainer;
+	Common::Array<StaticTextWidget *> _messageWidgets;
+	Common::Array<StaticTextWidget *> _gameNameWidgets;
+	Common::Array<ButtonWidget *> _buttons;
+	Common::Array<Common::U32String> _messageLines;
+	int _maxlineWidth;
+};
+
+class LauncherChooser {
+protected:
+	LauncherDialog *_impl;
+
+public:
+	LauncherChooser();
+	~LauncherChooser();
+
+	int runModal();
+	void selectLauncher();
+};
+
+class LauncherSimple : public LauncherDialog {
+public:
+	LauncherSimple(const Common::String &title);
+	~LauncherSimple() override;
+
+	void handleCommand(CommandSender *sender, uint32 cmd, uint32 data) override;
+	void handleKeyDown(Common::KeyState state) override;
+
+	LauncherDisplayType getType() const override { return kLauncherDisplayList; }
+
+protected:
+	void updateSelectionAfterRemoval() override;
+	const Common::Array<bool>& getSelectedItems() const override;
+	void updateListing(int selPos = -1) override;
+	int getItemPos(int item) override;
+	void groupEntries(const Common::Array<LauncherEntry> &metadata);
+	void updateButtons() override;
+	void selectTarget(const Common::String &target) override;
+	int getSelected() override;
+	void build() override;
+
+private:
+	GroupedListWidget *_list;
+	bool _listInitialized; // Whether the list has already been initialized
+};
+
+} // End of namespace GUI
+
+#endif

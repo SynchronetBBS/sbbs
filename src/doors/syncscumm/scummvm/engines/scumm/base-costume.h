@@ -1,0 +1,191 @@
+/* ScummVM - Graphic Adventure Engine
+ *
+ * ScummVM is the legal property of its developers, whose names
+ * are too numerous to list here. Please refer to the COPYRIGHT
+ * file distributed with this source distribution.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
+#ifndef SCUMM_BASE_COSTUME_H
+#define SCUMM_BASE_COSTUME_H
+
+#include "common/scummsys.h"
+#include "scumm/actor.h"		// for CostumeData
+
+namespace Scumm {
+
+#include "common/pack-start.h"	// START STRUCT PACKING
+
+struct CostumeInfo {
+	uint16 width, height;
+	int16 relX, relY;
+	int16 moveX, moveY;
+} PACKED_STRUCT;
+
+#include "common/pack-end.h"	// END STRUCT PACKING
+
+
+extern const byte smallCostumeScaleTable[256];
+extern const byte bigCostumeScaleTable[768];
+
+
+class Actor;
+class ScummEngine;
+struct VirtScreen;
+
+class BaseCostumeLoader {
+protected:
+	ScummEngine *_vm;
+
+public:
+	BaseCostumeLoader(ScummEngine *vm) : _vm(vm) {}
+	virtual ~BaseCostumeLoader() {}
+
+	virtual void loadCostume(int id) = 0;
+	virtual bool increaseAnims(Actor *a) = 0;
+	virtual void costumeDecodeData(Actor *a, int frame, uint usemask) = 0;
+
+	virtual bool hasManyDirections(int id) { return false; }
+};
+
+
+/**
+ * Base class for both ClassicCostumeRenderer and AkosRenderer.
+ */
+class BaseCostumeRenderer {
+public:
+	Common::Rect _clipOverride;
+	byte _actorID;
+
+	byte _shadowMode;
+	byte *_shadowTable;
+
+	int _actorX, _actorY;
+	byte _zbuf;
+	byte _scaleX, _scaleY;
+
+	int _drawTop, _drawBottom;
+	byte _paletteNum;
+	bool _skipLimbs;
+	bool _actorDrawVirScr;
+
+
+protected:
+	ScummEngine *_vm;
+
+	// flag to enable AkosRenderer's behaviour in paintCelByleRLECommon() and byleRLEDecode()
+	bool _akosRendering;
+
+	// Destination
+	Graphics::Surface _out;
+	int32 _numStrips;
+
+	// Source pointer
+	const byte *_srcPtr;
+
+	// current move offset
+	int _xMove, _yMove;
+
+	// whether to draw the actor mirrored
+	bool _drawActorToRight;
+
+	int _numBlocks;
+
+	// width and height of cel to decode
+	int _width, _height;
+
+	// actor _palette
+	uint16 _palette[256] = {};
+
+public:
+	struct ByleRLEData {
+		// Parameters for the original ("V1") costume codec.
+		int x;
+		int y;
+		const byte *scaleTable;
+		int skipWidth;
+		byte *destPtr;
+		const byte *maskPtr;
+		int scaleXStep;
+		byte mask, shr;
+		byte repColor;
+		byte repLen;
+		Common::Rect boundsRect;
+		int scaleXIndex, scaleYIndex;
+		int scaleIndexMask;
+#ifdef SCUMM_OPTIMISED_CODE
+		int scaledHeight;
+#endif
+	};
+
+    BaseCostumeRenderer(ScummEngine *scumm, bool akosRendering = false) {
+		_actorID = 0;
+		_shadowMode = 0;
+		_shadowTable = nullptr;
+		_actorX = _actorY = 0;
+		_zbuf = 0;
+		_scaleX = _scaleY = 0;
+		_drawTop = _drawBottom = 0;
+
+		_vm = scumm;
+        _akosRendering = akosRendering;
+
+		_numStrips = -1;
+		_srcPtr = nullptr;
+		_xMove = _yMove = 0;
+		_drawActorToRight = false;
+		_width = _height = 0;
+		_skipLimbs = false;
+		_paletteNum = 0;
+		_actorDrawVirScr = false;
+		_numBlocks = 0;
+	}
+	virtual ~BaseCostumeRenderer() {}
+
+	virtual void setPalette(uint16 *palette) = 0;
+	virtual void setFacing(const Actor *a) = 0;
+	virtual void setCostume(int costume, int shadow) = 0;
+
+
+	byte drawCostume(const VirtScreen &vs, int numStrips, const Actor *a, bool drawToBackBuf);
+
+protected:
+	virtual byte drawLimb(const Actor *a, int limb) = 0;
+
+	byte paintCelByleRLECommon(
+		int xMoveCur,
+		int yMoveCur,
+		int numColors,
+		int scaletableSize,
+		bool amiOrPcEngCost,
+		bool c64Cost,
+		ByleRLEData &compData,
+		bool &decode);
+
+	void byleRLEDecode(ByleRLEData &compData, int16 actorHitX = 0, int16 actorHitY = 0, bool *actorHitResult = nullptr, const uint8 *xmap = nullptr);
+#ifdef SCUMM_OPTIMISED_CODE
+	void byleRLEDecodeFast(ByleRLEData &compData, const byte *xmap);
+#endif
+	void skipCelLines(ByleRLEData &compData, int num);
+
+private:
+	// helper function to be called from paintCelByleRLECommon
+	virtual void markAsDirty(const Common::Rect &rect, ByleRLEData &compData, bool &decode) {}
+};
+
+} // End of namespace Scumm
+
+#endif
