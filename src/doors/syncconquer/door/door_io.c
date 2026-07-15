@@ -2320,18 +2320,16 @@ static void door_stats_draw(int force)
 	door_io_send(buf, (size_t)off);
 }
 
-/* --- Phase 2: JXL-tier dirty-rectangle rendering ---------------------------
- * Ship only the changed regions as pixel-positioned DrawJXLBlob rects instead
- * of the whole frame. OFF by default -- enabled by touching data/<door>/
- * dirtyrect. Requires the JXL tier + blob verbs (CTerm >= 1.329, g_img_blob_ok)
- * so each rect draws inline with no per-rect cache-file collision. Diffs fb vs
- * the previous frame at 16x16-tile granularity, coalesces dirty tiles into a
- * few row-band boxes, and DrawJXLBlobs each box at its display position
- * (nearest-neighbor mapped from the fb exactly as door_pack_rgb scales the full
- * frame, so a rect composites seamlessly over the prior frame the client still
- * holds). Falls back to a full frame (returns 0) on a large or over-fragmented
- * change. Measured ~8x on real gameplay (see the dirty-rect probe). */
-#ifdef WITH_JXL
+/* --- Phase 2: dirty-rectangle rendering ------------------------------------
+ * Ship only the regions that changed each present instead of the whole frame,
+ * over the frame the client still holds. OFF by default -- enabled by touching
+ * data/<door>/dirtyrect (re-checked ~every 1.5s so it toggles live). The frame
+ * is diffed against the previous one at 16x16-tile granularity and dirty tiles
+ * are coalesced into a few tight boxes (dr_diff_coalesce, shared by both
+ * backends). The JXL backend (door_dirty_jxl_present) DrawJXLBlobs each box
+ * pixel-exact; the sixel backend (door_dirty_sixel_present) re-emits each box
+ * as a cursor-positioned partial sixel snapped to character cells. Either falls
+ * back to a full frame (returns 0) on a large or over-fragmented change. */
 #define DR_TILE          16
 #define DR_TX            (DOOR_FB_WIDTH / DR_TILE)      /* 40 */
 #define DR_TY            (DOOR_FB_HEIGHT / DR_TILE)     /* 25 */
@@ -2378,6 +2376,219 @@ static int door_dirtyrect_enabled(void)
 
 static uint8_t dr_grid[DR_TY][DR_TX];
 
+struct dr_box {
+	int x1, y1, x2, y2;   /* tile coords, inclusive */
+};
+
+/* Coalesce dr_grid into a small set of tight bounding boxes: label 4-connected
+ * dirty-tile components, then merge boxes that overlap or lie within
+ * DR_MERGE_GAP tiles. This keeps spatially-separated activity (map vs sidebar,
+ * scattered units) as distinct boxes instead of one wide row-band, while still
+ * fusing nearby tiles. Returns the box count (1..DR_MAX_BOXES) or -1 if too
+ * fragmented (caller should send a full frame). */
+static int dr_coalesce(struct dr_box *box)
+{
+	static uint8_t   vis[DR_TY][DR_TX];
+	static int       st[DR_TY * DR_TX];
+	static const int ox[4] = { -1, 1, 0, 0 };
+	static const int oy[4] = { 0, 0, -1, 1 };
+	int              nb = 0, tx, ty, i, j, merged;
+
+	memset(vis, 0, sizeof vis);
+	for (ty = 0; ty < DR_TY; ty++) {
+		for (tx = 0; tx < DR_TX; tx++) {
+			int sp, x1, y1, x2, y2;
+			if (!dr_grid[ty][tx] || vis[ty][tx])
+				continue;
+			if (nb >= DR_MAX_COMPONENTS)
+				return -1;
+			sp          = 0;
+			st[sp++]    = ty * DR_TX + tx;
+			vis[ty][tx] = 1;
+			x1          = x2 = tx;
+			y1          = y2 = ty;
+			while (sp) {
+				int idx = st[--sp], cx = idx % DR_TX, cy = idx / DR_TX, k;
+				if (cx < x1)
+					x1 = cx;
+				if (cx > x2)
+					x2 = cx;
+				if (cy < y1)
+					y1 = cy;
+				if (cy > y2)
+					y2 = cy;
+				for (k = 0; k < 4; k++) {
+					int nx = cx + ox[k], ny = cy + oy[k];
+					if (nx >= 0 && nx < DR_TX && ny >= 0 && ny < DR_TY
+					    && dr_grid[ny][nx] && !vis[ny][nx]) {
+						vis[ny][nx] = 1;
+						st[sp++]    = ny * DR_TX + nx;
+					}
+				}
+			}
+			box[nb].x1 = x1; box[nb].y1 = y1;
+			box[nb].x2 = x2; box[nb].y2 = y2;
+			nb++;
+		}
+	}
+	merged = 1;
+	while (merged) {
+		merged = 0;
+		for (i = 0; i < nb; i++)
+			for (j = i + 1; j < nb; j++)
+				if (box[i].x1 <= box[j].x2 + DR_MERGE_GAP && box[j].x1 <= box[i].x2 + DR_MERGE_GAP
+				    && box[i].y1 <= box[j].y2 + DR_MERGE_GAP && box[j].y1 <= box[i].y2 + DR_MERGE_GAP) {
+					if (box[j].x1 < box[i].x1)
+						box[i].x1 = box[j].x1;
+					if (box[j].y1 < box[i].y1)
+						box[i].y1 = box[j].y1;
+					if (box[j].x2 > box[i].x2)
+						box[i].x2 = box[j].x2;
+					if (box[j].y2 > box[i].y2)
+						box[i].y2 = box[j].y2;
+					box[j] = box[nb - 1];
+					nb--;
+					j--;
+					merged = 1;
+				}
+	}
+	return (nb > DR_MAX_BOXES) ? -1 : nb;
+}
+
+/* Diff fb vs the previous frame at 16x16-tile granularity into dr_grid, then
+ * coalesce. Returns the box count (1..DR_MAX_BOXES), or 0 to tell the caller to
+ * send a full frame (nothing changed / >= DR_FALLBACK_PCT changed / too
+ * fragmented). Shared by the JXL and sixel dirty-rect backends. */
+static int dr_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct dr_box *box)
+{
+	const int tiles = DR_TX * DR_TY;
+	int       tx, ty, r, nb, dirty = 0;
+
+	for (ty = 0; ty < DR_TY; ty++) {
+		for (tx = 0; tx < DR_TX; tx++) {
+			int ch = 0;
+			for (r = 0; r < DR_TILE && !ch; r++) {
+				size_t off = (size_t)(ty * DR_TILE + r) * DOOR_FB_WIDTH + (size_t)tx * DR_TILE;
+				if (memcmp(fb + off, last + off, DR_TILE) != 0)
+					ch = 1;
+			}
+			dr_grid[ty][tx] = (uint8_t)ch;
+			if (ch)
+				dirty++;
+		}
+	}
+	if (dirty == 0 || dirty * 100 / tiles >= DR_FALLBACK_PCT)
+		return 0;                                   /* nothing / big change -> full frame */
+	nb = dr_coalesce(box);
+	return (nb <= 0) ? 0 : nb;                          /* too fragmented -> full frame */
+}
+
+/* Pack a display sub-rect [rx,ry,rw,rh] (in ew x eh scaled-image space) into
+ * g_idx_buf as palette indices, NN-sampled from fb exactly as door_scale_idx
+ * scales the full frame, so the rect lines up with the sixel frame the client
+ * still holds. */
+static const uint8_t *dr_pack_idx_rect(const uint8_t *fb, int ew, int eh,
+                                       int rx, int ry, int rw, int rh)
+{
+	int      i, j;
+	uint8_t *p;
+
+	if (!ensure_cap(&g_idx_buf, &g_idx_cap, (size_t)rw * rh))
+		return NULL;
+	p = g_idx_buf;
+	for (j = 0; j < rh; j++) {
+		const uint8_t *row = fb + (size_t)((ry + j) * DOOR_FB_HEIGHT / eh) * DOOR_FB_WIDTH;
+		for (i = 0; i < rw; i++)
+			*p++ = row[(rx + i) * DOOR_FB_WIDTH / ew];
+	}
+	return g_idx_buf;
+}
+
+/* Present a changed frame as cursor-positioned partial sixels. Returns total
+ * bytes sent, or 0 to send a full frame instead. Sixel can only be placed at a
+ * character cell (unlike a pixel-exact JXL blob), so each coalesced box is
+ * snapped OUT to cell boundaries and its top-left cell is addressed with the
+ * cursor; the box height is rounded up to a 6-px sixel band (SF #258: SyncTERM
+ * mis-decodes a partial last band). On SyncTERM the palette registers persist
+ * from the prior full frame so boxes ship palette-less; other sixel terminals
+ * reset registers per image, so each box re-sends the palette. Caller
+ * guarantees g_have_last and that the client holds the previous sixel frame
+ * (g_last_tier == SA_SIXEL). */
+static size_t door_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
+                                       const uint8_t *pal8, int ew, int eh,
+                                       int icol, int irow)
+{
+	struct dr_box box[DR_MAX_COMPONENTS];
+	int           cw = 0, ch = 0, ehc, nb, k;
+	int           emit_pal = !g_is_syncterm;   /* non-SyncTERM resets registers per image */
+	size_t        total = 0;
+
+	door_cell_size(&cw, &ch);
+	if (cw <= 0 || ch <= 0)
+		return 0;                                   /* no cell metrics -> full frame */
+	ehc = eh - eh % 6;                                  /* the client's actual sixel height */
+	if (ehc < 6)
+		return 0;
+
+	nb = dr_diff_coalesce(fb, last, box);
+	if (nb <= 0)
+		return 0;
+
+	for (k = 0; k < nb; k++) {
+		int            fx1 = box[k].x1 * DR_TILE, fx2 = (box[k].x2 + 1) * DR_TILE;
+		int            fy1 = box[k].y1 * DR_TILE, fy2 = (box[k].y2 + 1) * DR_TILE;
+		int            rx, rx2, ry, ry2, cx, cy, rw, rh, rh6;
+		const uint8_t *idx;
+		size_t         sn;
+
+		/* display rect = the pixels whose NN source falls in [fx1,fx2)x[fy1,fy2) */
+		rx  = (fx1 * ew + DOOR_FB_WIDTH - 1) / DOOR_FB_WIDTH;
+		rx2 = (fx2 * ew + DOOR_FB_WIDTH - 1) / DOOR_FB_WIDTH;
+		ry  = (fy1 * ehc + DOOR_FB_HEIGHT - 1) / DOOR_FB_HEIGHT;
+		ry2 = (fy2 * ehc + DOOR_FB_HEIGHT - 1) / DOOR_FB_HEIGHT;
+		if (rx2 > ew)
+			rx2 = ew;
+		if (ry2 > ehc)
+			ry2 = ehc;
+
+		/* snap OUT to character cells -- sixel places only at a cell corner */
+		cx  = rx / cw;
+		rx  = cx * cw;
+		rx2 = (rx2 + cw - 1) / cw * cw;
+		if (rx2 > ew)
+			rx2 = ew;
+		cy  = ry / ch;
+		ry  = cy * ch;
+		ry2 = (ry2 + ch - 1) / ch * ch;
+		if (ry2 > ehc)
+			ry2 = ehc;
+		rw  = rx2 - rx;
+		rh  = ry2 - ry;
+		if (rw <= 0 || rh <= 0)
+			continue;
+
+		/* round the sixel band up (SF #258) but never sample past the held frame */
+		rh6 = (rh + 5) / 6 * 6;
+		if (ry + rh6 > ehc)
+			rh6 = (ehc - ry) / 6 * 6;
+		if (rh6 < 6)
+			continue;
+
+		idx = dr_pack_idx_rect(fb, ew, ehc, rx, ry, rw, rh6);
+		if (idx == NULL)
+			return 0;                               /* fall back to a full frame */
+		sn = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, rw, rh6, pal8, emit_pal);
+		if (sn == 0)
+			return 0;
+		door_cursor_save_to(irow + cy, icol + cx);
+		door_out_put(g_sixel_buf, sn);
+		door_cursor_restore();
+		total += sn;
+	}
+	return total;
+}
+
+#ifdef WITH_JXL
 /* Pack a display sub-rect [rx,ry,rw,rh] (in ew x eh scaled-image space) into
  * g_rgb_buf as RGB888, sampling fb with the SAME nearest-neighbor mapping
  * door_pack_rgb uses, so the rect lines up pixel-for-pixel with the prior full
@@ -2403,77 +2614,6 @@ static const uint8_t *dr_pack_disp_rect(const uint8_t *fb, const uint8_t *pal,
 	return g_rgb_buf;
 }
 
-struct dr_box {
-	int x1, y1, x2, y2;   /* tile coords, inclusive */
-};
-
-/* Coalesce dr_grid into a small set of tight bounding boxes: label 4-connected
- * dirty-tile components, then merge boxes that overlap or lie within
- * DR_MERGE_GAP tiles. This keeps spatially-separated activity (map vs sidebar,
- * scattered units) as distinct boxes instead of one wide row-band, while still
- * fusing nearby tiles. Returns the box count (1..DR_MAX_BOXES) or -1 if too
- * fragmented (caller should send a full frame). */
-static int dr_coalesce(struct dr_box *box)
-{
-	static uint8_t vis[DR_TY][DR_TX];
-	static int     st[DR_TY * DR_TX];
-	static const int ox[4] = { -1, 1, 0, 0 };
-	static const int oy[4] = { 0, 0, -1, 1 };
-	int            nb = 0, tx, ty, i, j, merged;
-
-	memset(vis, 0, sizeof vis);
-	for (ty = 0; ty < DR_TY; ty++) {
-		for (tx = 0; tx < DR_TX; tx++) {
-			int sp, x1, y1, x2, y2;
-			if (!dr_grid[ty][tx] || vis[ty][tx])
-				continue;
-			if (nb >= DR_MAX_COMPONENTS)
-				return -1;
-			sp          = 0;
-			st[sp++]    = ty * DR_TX + tx;
-			vis[ty][tx] = 1;
-			x1          = x2 = tx;
-			y1          = y2 = ty;
-			while (sp) {
-				int idx = st[--sp], cx = idx % DR_TX, cy = idx / DR_TX, k;
-				if (cx < x1) x1 = cx;
-				if (cx > x2) x2 = cx;
-				if (cy < y1) y1 = cy;
-				if (cy > y2) y2 = cy;
-				for (k = 0; k < 4; k++) {
-					int nx = cx + ox[k], ny = cy + oy[k];
-					if (nx >= 0 && nx < DR_TX && ny >= 0 && ny < DR_TY
-					    && dr_grid[ny][nx] && !vis[ny][nx]) {
-						vis[ny][nx] = 1;
-						st[sp++]    = ny * DR_TX + nx;
-					}
-				}
-			}
-			box[nb].x1 = x1; box[nb].y1 = y1;
-			box[nb].x2 = x2; box[nb].y2 = y2;
-			nb++;
-		}
-	}
-	merged = 1;
-	while (merged) {
-		merged = 0;
-		for (i = 0; i < nb; i++)
-			for (j = i + 1; j < nb; j++)
-				if (box[i].x1 <= box[j].x2 + DR_MERGE_GAP && box[j].x1 <= box[i].x2 + DR_MERGE_GAP
-				    && box[i].y1 <= box[j].y2 + DR_MERGE_GAP && box[j].y1 <= box[i].y2 + DR_MERGE_GAP) {
-					if (box[j].x1 < box[i].x1) box[i].x1 = box[j].x1;
-					if (box[j].y1 < box[i].y1) box[i].y1 = box[j].y1;
-					if (box[j].x2 > box[i].x2) box[i].x2 = box[j].x2;
-					if (box[j].y2 > box[i].y2) box[i].y2 = box[j].y2;
-					box[j] = box[nb - 1];
-					nb--;
-					j--;
-					merged = 1;
-				}
-	}
-	return (nb > DR_MAX_BOXES) ? -1 : nb;
-}
-
 /* Present a changed frame as JXL dirty rects. Returns total bytes sent, or 0 to
  * tell the caller to send a full frame instead (nothing dirty / large change /
  * too fragmented / an encode failed mid-frame -- a full frame is idempotent and
@@ -2482,30 +2622,13 @@ static int dr_coalesce(struct dr_box *box)
 static size_t door_dirty_jxl_present(const uint8_t *fb, const uint8_t *last,
                                      const uint8_t *pal, int ew, int eh, int dx, int dy)
 {
-	const int     tiles = DR_TX * DR_TY;
 	struct dr_box box[DR_MAX_COMPONENTS];
-	int           tx, ty, r, k, nb, dirty = 0;
+	int           k, nb;
 	size_t        total = 0;
 
-	for (ty = 0; ty < DR_TY; ty++) {
-		for (tx = 0; tx < DR_TX; tx++) {
-			int ch = 0;
-			for (r = 0; r < DR_TILE && !ch; r++) {
-				size_t off = (size_t)(ty * DR_TILE + r) * DOOR_FB_WIDTH + (size_t)tx * DR_TILE;
-				if (memcmp(fb + off, last + off, DR_TILE) != 0)
-					ch = 1;
-			}
-			dr_grid[ty][tx] = (uint8_t)ch;
-			if (ch)
-				dirty++;
-		}
-	}
-	if (dirty == 0 || dirty * 100 / tiles >= DR_FALLBACK_PCT)
-		return 0;                                   /* nothing / big change -> full frame */
-
-	nb = dr_coalesce(box);
+	nb = dr_diff_coalesce(fb, last, box);
 	if (nb <= 0)
-		return 0;                                   /* too fragmented -> full frame */
+		return 0;
 
 	for (k = 0; k < nb; k++) {
 		int            fx1 = box[k].x1 * DR_TILE, fx2 = (box[k].x2 + 1) * DR_TILE;
@@ -2739,10 +2862,23 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 		emit_pal = pal_dirty || !g_is_syncterm || g_last_tier != SA_SIXEL;
 
 		if (tier == SA_SIXEL) {
-			door_cursor_save_to(irow, icol);
-			n = door_emit_sixel(fb, pal8, ew, eh, emit_pal);
-			door_out_put(g_sixel_buf, n);
-			door_cursor_restore();
+			size_t dn = 0;
+
+			/* Phase-2 dirty rects (flag-gated): only when the client already
+			 * holds the previous sixel frame to composite over -- same tier, no
+			 * palette/fit/geometry change. Otherwise a full frame. */
+			if (door_dirtyrect_enabled() && g_have_last
+			    && g_last_tier == SA_SIXEL && !pal_dirty && !fit_changed && !geom_changed)
+				dn = door_dirty_sixel_present(fb, g_last_fb, pal8, ew, eh, icol, irow);
+
+			if (dn != 0) {
+				n = dn;   /* dirty rects already sent */
+			} else {
+				door_cursor_save_to(irow, icol);
+				n = door_emit_sixel(fb, pal8, ew, eh, emit_pal);
+				door_out_put(g_sixel_buf, n);
+				door_cursor_restore();
+			}
 		}
 #ifdef WITH_JXL
 		else if (tier == SA_JXL) {
