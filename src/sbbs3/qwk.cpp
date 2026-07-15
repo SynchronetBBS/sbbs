@@ -1142,7 +1142,15 @@ bool sbbs_t::qwk_vote(str_list_t ini, const char* section, smb_net_type_t net_ty
 			msg.hdr.votes = iniGetShortInt(ini, section, "votes", 0);
 			notice = text[PollVoteNotice];
 		}
-		result = votemsg(&cfg, &smb, &msg, notice, text[VoteNoticeFmt]);
+		if (msg.from == NULL) {
+			// A ballot with no voter identity can't be attributed or vote-deduplicated
+			// (and would pass NULL to smb_msg_is_from); skip it rather than import an
+			// unattributable vote from a malformed packet.
+			lprintf(LOG_NOTICE, "Ignoring senderless QWK vote-msg (%s) from %s", section + 5, qnet_id);
+			result = SMB_SUCCESS;
+		}
+		else
+			result = votemsg(&cfg, &smb, &msg, notice, text[VoteNoticeFmt]);
 		if (result == SMB_DUPE_MSG) {
 			lprintf(LOG_INFO, "Duplicate vote-msg (%s) from %s", msg.id, qnet_id);
 		}

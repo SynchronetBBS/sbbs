@@ -1825,7 +1825,11 @@ int smb_init_idx(smb_t* smb, smbmsg_t* msg)
 
 bool smb_msg_is_from(smbmsg_t* msg, const char* name, enum smb_net_type net_type, const void* net_addr)
 {
-	if (stricmp(msg->from, name) != 0)
+	/* Guard against NULL operands: these fields can be absent in imported
+	 * messages (e.g. a QWK network vote record with no from-name), and passing
+	 * NULL to stricmp()/memcmp() is undefined (an assertion on the Win32 debug
+	 * CRT).  A missing identity simply doesn't match. */
+	if (msg->from == NULL || name == NULL || stricmp(msg->from, name) != 0)
 		return false;
 
 	if (msg->from_net.type != net_type)
@@ -1835,9 +1839,11 @@ bool smb_msg_is_from(smbmsg_t* msg, const char* name, enum smb_net_type net_type
 		case NET_NONE:
 			return true;
 		case NET_FIDO:
-			return memcmp(msg->from_net.addr, net_addr, sizeof(fidoaddr_t)) == 0;
+			return msg->from_net.addr != NULL && net_addr != NULL
+			       && memcmp(msg->from_net.addr, net_addr, sizeof(fidoaddr_t)) == 0;
 		default:
-			return stricmp(msg->from_net.addr, net_addr) == 0;
+			return msg->from_net.addr != NULL && net_addr != NULL
+			       && stricmp(msg->from_net.addr, net_addr) == 0;
 	}
 }
 
