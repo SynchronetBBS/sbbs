@@ -778,27 +778,17 @@ static void door_setup_engine_paths(void)
  * checks harmlessly. -NOMOVIES is no longer forced by default (FMV cutscenes
  * play now); it's injected into the first neutered slot ONLY when the sysop
  * sets SYNCALERT_NOMOVIES (see below). */
-/* Sysop config for movie suppression lives in the door's .ini, NOT an env var:
- * a sysop can't set an env var per-door (bbs.exec() uses execvp with the BBS's
- * own environment, no shell), so door behavior is configured via <door>.ini
- * beside the binary -- "[game] movies = false" suppresses FMV (heavy
- * full-motion bandwidth). Default is movies ON. SYNCALERT_NOMOVIES remains a
- * dev/testing override only. Returns 1 to suppress (inject -NOMOVIES), else 0.
- * The .ini is named after the binary: syncalert.ini / syncdawn.ini. */
-/* Read a boolean setting from the door's config <door>.ini beside the binary
- * (named after it: syncalert.ini / syncdawn.ini). Returns `def` when the file
- * or the key is absent. Door I/O has no shell/env of its own, so the .ini is
- * how a sysop configures door behavior. */
-static int door_config_bool(const char *section, const char *key, int def)
+/* Resolve the door's config .ini path: <door>.ini beside the binary, named
+ * after it (syncalert.ini / syncdawn.ini). Returns 1 and fills `out` on
+ * success, 0 if the binary path is unknown. Door I/O has no shell/env of its
+ * own, so this .ini is how a sysop configures door behavior. */
+static int door_ini_path(char *out, size_t len)
 {
-	char        path[700];
 	char        base[128];
 	const char *p;
-	FILE *      f;
-	int         val = def;
 
 	if (g_bindir[0] == '\0' || g_argc <= 0 || g_argv[0] == NULL)
-		return def;
+		return 0;
 	p = strrchr(g_argv[0], '/');
 #ifdef _WIN32
 	{
@@ -815,8 +805,21 @@ static int door_config_bool(const char *section, const char *key, int def)
 			*dot = '\0';
 	}
 	if (base[0] == '\0')
+		return 0;
+	snprintf(out, len, "%s/%s.ini", g_bindir, base);
+	return 1;
+}
+
+/* Read a boolean <door>.ini setting; returns `def` when the file or key is
+ * absent. */
+static int door_config_bool(const char *section, const char *key, int def)
+{
+	char  path[700];
+	FILE *f;
+	int   val = def;
+
+	if (!door_ini_path(path, sizeof path))
 		return def;
-	snprintf(path, sizeof path, "%s/%s.ini", g_bindir, base);
 	f = iniOpenFile(path, FALSE);   /* read-only; do NOT create */
 	if (f != NULL) {
 		val = iniReadBool(f, section, key, def);
@@ -825,6 +828,33 @@ static int door_config_bool(const char *section, const char *key, int def)
 	return val;
 }
 
+/* Tri-state <door>.ini bool: 1 (true), 0 (false), or -1 when the key is absent
+ * -- the caller's "auto"/default state. Distinguishes absent from an explicit
+ * value by reading with both defaults: they differ only when the key is gone. */
+static int door_config_tristate(const char *section, const char *key)
+{
+	char  path[700];
+	FILE *f;
+	int   r = -1;
+
+	if (!door_ini_path(path, sizeof path))
+		return -1;
+	f = iniOpenFile(path, FALSE);   /* read-only; do NOT create */
+	if (f != NULL) {
+		int vt = iniReadBool(f, section, key, TRUE);
+		int vf = iniReadBool(f, section, key, FALSE);
+		r = (vt == vf) ? vt : -1;   /* differ only when the key is absent */
+		fclose(f);
+	}
+	return r;
+}
+
+/* Startup movie decision: inject -NOMOVIES (hard, engine-level off) only when the
+ * sysop EXPLICITLY sets "[game] movies = false". "true" and the default "auto"
+ * both leave movies enabled at startup -- the auto/audio choice is then made per
+ * cutscene by door_movies_suppressed(), since the client's audio capability
+ * isn't known this early. SYNCALERT_NOMOVIES stays a dev/testing override.
+ * Returns 1 to suppress. */
 static int door_config_no_movies(void)
 {
 	if (getenv("SYNCALERT_NOMOVIES") != NULL)   /* dev/testing override */
@@ -1470,6 +1500,30 @@ termgfx_audio_t *door_io_audio(void)
 {
 	door_audio_ensure_init();
 	return g_audio;
+}
+
+/* Play-time movie gate (C linkage; called from each engine's Play_Movie).
+ * Returns 1 to SKIP the cutscene. <door>.ini "[game] movies":
+ *   true          -> always play (return 0)
+ *   false         -> never play (return 1)
+ *   absent (auto) -> play only when the client can actually play audio
+ *                    (termgfx_audio_tier == 1 = digital). A silent cutscene is
+ *                    a poor experience and heavy bandwidth, so skip it when the
+ *                    terminal has no usable audio.
+ * Decided at play time, not startup: the audio tier resolves a few client
+ * round-trips into the session (async), long after -NOMOVIES would be set, but
+ * a cutscene only plays after asset loading -- well after the tier resolves. */
+int door_movies_suppressed(void)
+{
+	static int tri = -2;   /* cache the ini tri-state (-1 auto, 0 off, 1 on) */
+
+	if (tri == -2)
+		tri = door_config_tristate("game", "movies");
+	if (tri == 1)
+		return 0;                          /* sysop forced movies on */
+	if (tri == 0)
+		return 1;                          /* sysop forced movies off */
+	return termgfx_audio_tier(g_audio) != 1;   /* auto: skip if no usable audio */
 }
 
 /* Truncate-write: the capture file always holds exactly the latest frame. */

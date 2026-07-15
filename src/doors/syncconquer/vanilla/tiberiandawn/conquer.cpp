@@ -2125,6 +2125,8 @@ extern void Resume_Audio_Thread(void);
 // Play
 extern void Play_Movie_GlyphX(const char* movie_name, ThemeType theme);
 
+extern "C" int door_movies_suppressed(void);   // SyncConquer: play-time movie gate (door_io.c)
+
 void Play_Movie(char const* name, ThemeType theme, bool clrscrn)
 {
 #if REMASTER_BUILD
@@ -2139,6 +2141,16 @@ void Play_Movie(char const* name, ThemeType theme, bool clrscrn)
     ** Don't play movies in editor mode
     */
     if (Debug_Map) {
+        return;
+    }
+
+    /*
+    ** SyncConquer: skip the movie when the door says so -- [game] movies =
+    ** false, or the default "auto" when the client can't play audio (a silent
+    ** cutscene is a poor experience and a lot of bandwidth). TD has no bNoMovies
+    ** of its own, so this is also what makes "[game] movies = false" work here.
+    */
+    if (door_movies_suppressed()) {
         return;
     }
 

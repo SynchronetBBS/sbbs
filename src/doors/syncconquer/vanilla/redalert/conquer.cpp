@@ -2359,6 +2359,8 @@ extern GraphicBufferClass VQ640;
 
 extern void Play_Movie_GlyphX(const char* movie_name, ThemeType theme, bool immediate);
 
+extern "C" int door_movies_suppressed(void);   // SyncConquer: play-time movie gate (door_io.c)
+
 void Play_Movie(char const* name, ThemeType theme, bool clrscrn, bool immediate)
 {
 #ifdef REMASTER_BUILD
@@ -2384,6 +2386,15 @@ void Play_Movie(char const* name, ThemeType theme, bool clrscrn, bool immediate)
     ** Don't play movies when disabled via -NOMOVIES
     */
     if (bNoMovies) {
+        return;
+    }
+
+    /*
+    ** SyncConquer: skip the movie when the door says so -- [game] movies =
+    ** false, or the default "auto" when the client can't play audio (a silent
+    ** cutscene is a poor experience and a lot of bandwidth).
+    */
+    if (door_movies_suppressed()) {
         return;
     }
 #ifdef CHEAT_KEYS

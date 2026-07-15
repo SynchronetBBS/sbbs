@@ -602,6 +602,20 @@ rest; these are the local edits on top of it (plus a couple of shared
     re-encodes the whole frame every present regardless, so the partial-redraw
     optimization saved it none.
 
+36. **Gate FMV playback on the door at play time (`redalert/conquer.cpp` +
+    `tiberiandawn/conquer.cpp`).** `Play_Movie()` gains, right after the existing
+    editor/`bNoMovies` guards, `if (door_movies_suppressed()) return;` (declared
+    `extern "C" int door_movies_suppressed(void);`, defined in `door/door_io.c`).
+    This implements the `<door>.ini [game] movies` tri-state: `true` always
+    plays, `false` never, and the default *auto* plays a cutscene only when the
+    client can actually play audio (`termgfx_audio_tier() == 1`) -- a silent FMV
+    is a poor experience and a lot of bandwidth. It has to be decided at play
+    time because the audio capability resolves a few client round-trips into the
+    session, long after startup where `-NOMOVIES` is set. Done as a vendored edit
+    because `Play_Movie()` is the only movie chokepoint and has no external hook.
+    Side benefit: TD never read `bNoMovies` (RA-only global), so `[game] movies =
+    false` was a no-op for TD before -- this gate makes it work for both titles.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching
