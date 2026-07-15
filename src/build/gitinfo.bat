@@ -17,15 +17,17 @@
 @rem which end up in the binary, so a local change there must mark the build too. Untracked files are ignored (a working
 @rem install has hundreds), as is tracked churn elsewhere -- LORD2 rewrites its own
 @rem xtrn/lord2/*.dat as people play it, and those bytes are in no binary.
-@rem Mirrors ../build/gitinfo.cmake (the doors) and
-@rem sbbs3's targets.mk. `date` comes from the same Git-for-Windows usr/bin that
-@rem already supplies the `tr` below.
+@rem Mirrors ../build/gitinfo.cmake (the doors) and sbbs3's targets.mk. The
+@rem dirty-build timestamp comes from PowerShell's Get-Date: a bare `date` here
+@rem runs cmd.exe's built-in DATE command (which shadows Git's usr/bin\date.exe,
+@rem even when spelled `date.exe`), and it would try to *set* the clock from the
+@rem format string, fail, and write its interactive prompt into git_hash.h.
 @set GIT_DIRTY=
 @for /f "delims=" %%d in ('git status --porcelain -uno -- :/src :/3rdp') do @set GIT_DIRTY=1
 @if defined GIT_DIRTY (
 	@git log -1 HEAD --format="#define GIT_HASH \"~%%h\"" > git_hash.h
-	@date "+#define GIT_DATE \"%%b %%d %%Y %%H:%%M\"" >> git_hash.h
-	@date "+#define GIT_TIME %%s" >> git_hash.h
+	@for /f "usebackq delims=" %%d in (`powershell -NoProfile -Command "Get-Date -Format 'MMM dd yyyy HH:mm'"`) do @echo #define GIT_DATE "%%d" >> git_hash.h
+	@for /f "usebackq delims=" %%t in (`powershell -NoProfile -Command "[DateTimeOffset]::Now.ToUnixTimeSeconds()"`) do @echo #define GIT_TIME %%t >> git_hash.h
 ) else (
 	@git log -1 HEAD --format="#define GIT_HASH \"%%h\"" > git_hash.h
 	@git log -1 HEAD --format="#define GIT_DATE \"%%cd\"" "--date=format-local:%%b %%d %%Y %%H:%%M" >> git_hash.h
