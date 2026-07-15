@@ -2295,12 +2295,12 @@ static void door_stats_draw(int force)
 		         g_is_syncterm ? 'S' : '-',
 		         g_px_exact ? 'X' : 'e',
 		         g_canvas_is_gfx ? 'G' : '-');
-		snprintf(t, sizeof t, " %s %dfps %s %lluKB/f d%d %s/%s %s%s%s %ums %dx%d/%s %dx%d",
+		snprintf(t, sizeof t, " %s %dfps %s %lluKB/f d%d %s/%s%s%s%s %ums %dx%d/%s %dx%d",
 		         sa_tier_name(tier), g_fps, rate, bpf, g_auto_depth,
 		         door_io_evdev_active()      ? "evdev"
 		         : door_input_kitty_active() ? "kitty" : "legacy",
 		         g_mouse_pixels ? "pixel" : "cell",
-		         door_term_is_utf8() ? "utf8" : "cp437",
+		         sa_is_text_tier(tier) ? (door_term_is_utf8() ? " utf8" : " cp437") : "",   /* charset only matters in text tiers */
 		         (g_img_blob_ok && (tier == SA_JXL || tier == SA_PPM)) ? " blob" : "",   /* frames shipping inline (Draw*Blob), no cache */
 		         g_fit_fill ? " fill" : "",   /* Ctrl-F Fill (stretch-to-canvas); absent = Aspect (default, true ratio) */
 		         (unsigned)g_rtt_ms,
