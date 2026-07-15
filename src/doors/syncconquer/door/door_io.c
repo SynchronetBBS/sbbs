@@ -785,18 +785,20 @@ static void door_setup_engine_paths(void)
  * full-motion bandwidth). Default is movies ON. SYNCALERT_NOMOVIES remains a
  * dev/testing override only. Returns 1 to suppress (inject -NOMOVIES), else 0.
  * The .ini is named after the binary: syncalert.ini / syncdawn.ini. */
-static int door_config_no_movies(void)
+/* Read a boolean setting from the door's config <door>.ini beside the binary
+ * (named after it: syncalert.ini / syncdawn.ini). Returns `def` when the file
+ * or the key is absent. Door I/O has no shell/env of its own, so the .ini is
+ * how a sysop configures door behavior. */
+static int door_config_bool(const char *section, const char *key, int def)
 {
 	char        path[700];
 	char        base[128];
 	const char *p;
 	FILE *      f;
-	int         movies = TRUE;   /* default: play movies */
+	int         val = def;
 
-	if (getenv("SYNCALERT_NOMOVIES") != NULL)   /* dev/testing override */
-		return 1;
 	if (g_bindir[0] == '\0' || g_argc <= 0 || g_argv[0] == NULL)
-		return 0;
+		return def;
 	p = strrchr(g_argv[0], '/');
 #ifdef _WIN32
 	{
@@ -813,14 +815,21 @@ static int door_config_no_movies(void)
 			*dot = '\0';
 	}
 	if (base[0] == '\0')
-		return 0;
+		return def;
 	snprintf(path, sizeof path, "%s/%s.ini", g_bindir, base);
 	f = iniOpenFile(path, FALSE);   /* read-only; do NOT create */
 	if (f != NULL) {
-		movies = iniReadBool(f, "game", "movies", TRUE);
+		val = iniReadBool(f, section, key, def);
 		fclose(f);
 	}
-	return movies ? 0 : 1;
+	return val;
+}
+
+static int door_config_no_movies(void)
+{
+	if (getenv("SYNCALERT_NOMOVIES") != NULL)   /* dev/testing override */
+		return 1;
+	return door_config_bool("game", "movies", TRUE) ? 0 : 1;
 }
 
 static void door_sanitize_argv(void)
@@ -2322,14 +2331,14 @@ static void door_stats_draw(int force)
 
 /* --- Phase 2: dirty-rectangle rendering ------------------------------------
  * Ship only the regions that changed each present instead of the whole frame,
- * over the frame the client still holds. OFF by default -- enabled by touching
- * data/<door>/dirtyrect (re-checked ~every 1.5s so it toggles live). The frame
- * is diffed against the previous one at 16x16-tile granularity and dirty tiles
- * are coalesced into a few tight boxes (dr_diff_coalesce, shared by both
- * backends). The JXL backend (door_dirty_jxl_present) DrawJXLBlobs each box
- * pixel-exact; the sixel backend (door_dirty_sixel_present) re-emits each box
- * as a cursor-positioned partial sixel snapped to character cells. Either falls
- * back to a full frame (returns 0) on a large or over-fragmented change. */
+ * over the frame the client still holds. ON by default; a sysop can disable it
+ * per door via <door>.ini "[video] dirty_rect = false". The frame is diffed
+ * against the previous one at 16x16-tile granularity and dirty tiles are
+ * coalesced into a few tight boxes (dr_diff_coalesce, shared by both backends).
+ * The JXL backend (door_dirty_jxl_present) DrawJXLBlobs each box pixel-exact;
+ * the sixel backend (door_dirty_sixel_present) re-emits each box as a
+ * cursor-positioned partial sixel snapped to character cells. Either falls back
+ * to a full frame (returns 0) on a large or over-fragmented change. */
 #define DR_TILE          16
 #define DR_TX            (DOOR_FB_WIDTH / DR_TILE)      /* 40 */
 #define DR_TY            (DOOR_FB_HEIGHT / DR_TILE)     /* 25 */
@@ -2340,37 +2349,10 @@ static void door_stats_draw(int force)
 
 static int door_dirtyrect_enabled(void)
 {
-	static char     path[600];
-	static int      resolved = -1;   /* -1 unresolved, 0 no SBBSDATA, 1 path ready */
-	static int      cached, checked;
-	static uint32_t next_check;
-	uint32_t        now;
+	static int cached = -1;   /* read the <door>.ini setting once (called every present) */
 
-	if (resolved < 0) {
-		const char *data = getenv("SBBSDATA");
-		resolved = 0;
-		if (data != NULL && data[0] != '\0') {
-			size_t      dl  = strlen(data);
-			const char *sep = (dl && (data[dl - 1] == '/' || data[dl - 1] == '\\')) ? "" : "/";
-			snprintf(path, sizeof path, "%s%s" DOOR_SHORT_NAME "/dirtyrect", data, sep);
-			resolved = 1;
-		}
-	}
-	if (resolved == 0)
-		return 0;
-	/* Re-read the flag ~every 1.5s (not every frame) so it can be toggled live:
-	 * touch / rm data/<door>/dirtyrect and the change takes effect within a
-	 * couple of seconds, no relaunch -- makes A/B-ing the dirty-rect win easy. */
-	now = door_now_ms();
-	if (!checked || (int32_t)(now - next_check) >= 0) {
-#ifdef _WIN32
-		cached = (_access(path, 0) == 0);
-#else
-		cached = (access(path, F_OK) == 0);
-#endif
-		next_check = now + 1500;
-		checked    = 1;
-	}
+	if (cached < 0)
+		cached = door_config_bool("video", "dirty_rect", TRUE);
 	return cached;
 }
 
