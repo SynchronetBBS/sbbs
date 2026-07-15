@@ -20,6 +20,8 @@
 Re-adding an engine = restore its engines/<id>/ dir and any
 dists/engine-data file from the pinned tarball, add it to the configure
 --enable-engine list in build.sh, and door-test the title(s).
+After pruning, remove now-empty directories:
+`find dists/engine-data -mindepth 1 -type d -empty -delete`.
 
 ## Local additions to the vendored tree
 

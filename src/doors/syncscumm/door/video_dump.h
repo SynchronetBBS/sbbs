@@ -26,7 +26,7 @@ public:
 	void unlockScreen() override;
 	void updateScreen() override;
 
-private:
+protected:
 	void dumpFrame();
 
 	Graphics::Surface _screen;

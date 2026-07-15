@@ -1,7 +1,7 @@
 # SyncSCUMM — ScummVM point-and-click adventures as a Synchronet door
 
-Status: M1 complete (vendor + backend skeleton + headless BASS boot)
-Date: 2026-07-14
+Status: M2 complete (terminal video: sixel/JXL dirty-rect path) — pending live validation
+Date: 2026-07-15
 
 ## Goal
 

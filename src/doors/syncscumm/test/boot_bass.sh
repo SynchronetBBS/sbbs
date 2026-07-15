@@ -7,12 +7,20 @@ DOOR=$(dirname "$HERE")
 BIN="$DOOR/build/scummvm"
 GAME="$HERE/games/bass"
 [ -x "$BIN" ] || { echo "FAIL: $BIN not built"; exit 1; }
-[ -f "$GAME/sky.dsk" ] || { echo "FAIL: run test/fetch_bass.sh first"; exit 1; }
+[ -f "$GAME/sky.dsk" ] && [ -f "$GAME/sky.dnr" ] || { echo "FAIL: run test/fetch_bass.sh first"; exit 1; }
+# Exercise the SYNCSCUMM_DATA search-set override for real: run from a game
+# copy WITHOUT sky.cpt, so the engine can only find it via the search set
+# (the fixture's own sky.cpt would otherwise satisfy --path and mask a
+# broken override).
 DUMP=$(mktemp -d)
-INI=$(mktemp)
 trap 'rm -rf "$DUMP" "$INI"' EXIT
-SYNCSCUMM_DUMP="$DUMP" timeout 20 "$BIN" --path="$GAME" \
-  --extrapath="$DOOR/scummvm/dists/engine-data" -c "$INI" sky \
+GAMECOPY="$DUMP/game"
+mkdir -p "$GAMECOPY"
+cp "$GAME/sky.dsk" "$GAME/sky.dnr" "$GAMECOPY/"
+INI=$(mktemp)
+SYNCSCUMM_DATA="$DOOR/scummvm/dists/engine-data" \
+SYNCSCUMM_DUMP="$DUMP" timeout 20 "$BIN" --path="$GAMECOPY" \
+  -c "$INI" sky \
   > "$DUMP/boot.log" 2>&1 || true   # timeout kill (124/143) is the normal end
 FRAMES=$(ls "$DUMP" | grep -c '^frame[0-9]*\.ppm$' || true)
 [ "$FRAMES" -ge 5 ] || { echo "FAIL: only $FRAMES frames dumped"; exit 1; }
