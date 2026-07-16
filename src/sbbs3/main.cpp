@@ -2166,6 +2166,10 @@ void input_thread(void *arg)
 	uint          total_pkts = 0;
 	sbbs_t*       sbbs = (sbbs_t*) arg;
 	SOCKET        sock;
+#ifdef USE_CRYPTLIB
+	// cryptPopData() returns after one SSH packet even if more plaintext is buffered.
+	bool          drain_ssh = false;
+#endif
 #ifdef PREFER_POLL
 	struct pollfd fds[2];
 	int           nfds;
@@ -2197,24 +2201,34 @@ void input_thread(void *arg)
 		}
 
 #ifdef _WIN32   // No spy sockets
-		if (!socket_readable(sbbs->client_socket, 1000)) {
-			++sbbs->socket_inactive;
-			continue;
+#ifdef USE_CRYPTLIB
+		if (!drain_ssh)
+#endif
+		{
+			if (!socket_readable(sbbs->client_socket, 1000)) {
+				++sbbs->socket_inactive;
+				continue;
+			}
 		}
 #else
 #ifdef PREFER_POLL
-		fds[0].fd = sbbs->client_socket;
-		fds[0].events = POLLIN;
-		nfds = 1;
-		if (uspy_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET) {
-			fds[1].fd = uspy_socket[sbbs->cfg.node_num - 1];
-			fds[1].events = POLLIN;
-			nfds++;
-		}
+#ifdef USE_CRYPTLIB
+		if (!drain_ssh)
+#endif
+		{
+			fds[0].fd = sbbs->client_socket;
+			fds[0].events = POLLIN;
+			nfds = 1;
+			if (uspy_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET) {
+				fds[1].fd = uspy_socket[sbbs->cfg.node_num - 1];
+				fds[1].events = POLLIN;
+				nfds++;
+			}
 
-		if (poll(fds, nfds, 1000) < 1) {
-			++sbbs->socket_inactive;
-			continue;
+			if (poll(fds, nfds, 1000) < 1) {
+				++sbbs->socket_inactive;
+				continue;
+			}
 		}
 #else
 #error Spy sockets without poll() was removed in commit 3971ef4dcc3db19f400a648b6110718e56a64cf3
@@ -2243,29 +2257,36 @@ void input_thread(void *arg)
 		// sbbs_t::hangup) may have stored INVALID_SOCKET by then, misrouting
 		// an ordinary client disconnect into spy-socket handling (issue #1184).
 		bool spy_sock = false;
+#ifdef USE_CRYPTLIB
+		if (drain_ssh)
+			sock = sbbs->client_socket;
+		else
+#endif
+		{
 #ifdef _WIN32   // No spy sockets
-		sock = sbbs->client_socket;
+			sock = sbbs->client_socket;
 #else
 #ifdef PREFER_POLL
-		if (fds[0].revents & POLLIN)
-			sock = sbbs->client_socket;
-		else if (uspy_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET && fds[1].revents & POLLIN) {
-			if (socket_recvdone(uspy_socket[sbbs->cfg.node_num - 1], 0)) {
-				close_socket(uspy_socket[sbbs->cfg.node_num - 1]);
-				lprintf(LOG_NOTICE, "Node %d Closing local spy socket: %d", sbbs->cfg.node_num, uspy_socket[sbbs->cfg.node_num - 1]);
-				uspy_socket[sbbs->cfg.node_num - 1] = INVALID_SOCKET;
+			if (fds[0].revents & POLLIN)
+				sock = sbbs->client_socket;
+			else if (uspy_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET && fds[1].revents & POLLIN) {
+				if (socket_recvdone(uspy_socket[sbbs->cfg.node_num - 1], 0)) {
+					close_socket(uspy_socket[sbbs->cfg.node_num - 1]);
+					lprintf(LOG_NOTICE, "Node %d Closing local spy socket: %d", sbbs->cfg.node_num, uspy_socket[sbbs->cfg.node_num - 1]);
+					uspy_socket[sbbs->cfg.node_num - 1] = INVALID_SOCKET;
+					continue;
+				}
+				sock = uspy_socket[sbbs->cfg.node_num - 1];
+				spy_sock = true;
+			}
+			else {
 				continue;
 			}
-			sock = uspy_socket[sbbs->cfg.node_num - 1];
-			spy_sock = true;
-		}
-		else {
-			continue;
-		}
 #else
 #error Spy sockets without poll() was removed in commit 3971ef4dcc3db19f400a648b6110718e56a64cf3
 #endif
 #endif
+		}
 		avail = RingBufFree(&sbbs->inbuf);
 
 		if (avail < 1) { // input buffer full
@@ -2289,6 +2310,7 @@ void input_thread(void *arg)
 #ifdef USE_CRYPTLIB
 		if (sbbs->ssh_mode && !spy_sock) {
 			int err;
+			drain_ssh = false;
 			if (WaitForEvent(sbbs->ssh_active, 1000) == WAIT_TIMEOUT) {
 				pthread_mutex_unlock(&sbbs->input_thread_mutex);
 				continue;
@@ -2317,6 +2339,7 @@ void input_thread(void *arg)
 						sbbs->errormsg(WHERE, ERR_UNLOCK, "input_thread_mutex", 0);
 					continue;
 				}
+				drain_ssh = true;
 				rd = i;
 			}
 		}
