@@ -905,12 +905,14 @@ static void receive_thread(void* arg)
 	char   extdesc[LEN_EXTDESC + 1] = "";
 	char   tmp[MAX_PATH + 1];
 	int    rd;
+	int    tls_read_timeout = 0;
 	off_t  total = 0;
 	off_t  last_total = 0;
 	ulong  dur;
 	ulong  cps;
 	bool   error = false;
 	bool   filedat;
+	bool   drain_tls = false;
 	FILE*  fp;
 	file_t f;
 	xfer_t xfer;
@@ -1010,16 +1012,38 @@ static void receive_thread(void* arg)
 			break;
 		}
 
-		/* Check socket for readability */
-		if (!socket_readable(*xfer.data_sock, 1000))
+		/* Check socket for readability unless Cryptlib may still have plaintext. */
+		if (!drain_tls && !socket_readable(*xfer.data_sock, 1000))
 			continue;
 
 #if defined(SOCKET_DEBUG_RECV_BUF)
 		socket_debug[xfer.ctrl_sock] |= SOCKET_DEBUG_RECV_BUF;
 #endif
 		if (*xfer.data_sess != -1) {
+			if (drain_tls)
+				(void)cryptSetAttribute(*xfer.data_sess, CRYPT_OPTION_NET_READTIMEOUT, 0);
 			int status = cryptPopData(*xfer.data_sess, buf, sizeof(buf), &rd);
-			if (status != CRYPT_OK) {
+			if (status == CRYPT_OK) {
+				if (rd > 0) {
+					if (!drain_tls
+					    && cryptGetAttribute(*xfer.data_sess, CRYPT_OPTION_NET_READTIMEOUT, &tls_read_timeout) != CRYPT_OK)
+						tls_read_timeout = startup->max_inactivity;
+					drain_tls = true;
+				}
+				else {
+					if (drain_tls)
+						(void)cryptSetAttribute(*xfer.data_sess, CRYPT_OPTION_NET_READTIMEOUT, tls_read_timeout);
+					drain_tls = false;
+					continue;
+				}
+			}
+			else if (status == CRYPT_ERROR_TIMEOUT) {
+				if (drain_tls)
+					(void)cryptSetAttribute(*xfer.data_sess, CRYPT_OPTION_NET_READTIMEOUT, tls_read_timeout);
+				drain_tls = false;
+				continue;
+			}
+			else {
 				GCES(status, *xfer.data_sock, *xfer.data_sess, estr, "popping data");
 				if (status != CRYPT_ERROR_COMPLETE)
 					rd = SOCKET_ERROR;
