@@ -276,6 +276,29 @@ static bool js_socket_peek_byte(JSContext *cx, js_socket_private_t *p)
 	return false;
 }
 
+bool js_socket_tls_readable(js_socket_private_t* p)
+{
+	int copied;
+	int status;
+
+	if (p == NULL || p->session == -1)
+		return false;
+	if (p->peeked)
+		return true;
+	if (do_cryptAttribute(p->session, CRYPT_OPTION_NET_READTIMEOUT, 0) != CRYPT_OK)
+		return true;
+	status = cryptPopData(p->session, &p->peeked_byte, 1, &copied);
+	if (status == CRYPT_OK) {
+		if (copied == 1) {
+			p->peeked = true;
+			return true;
+		}
+		return false;
+	}
+	/* Let the normal receive path handle EOF and errors. */
+	return status != CRYPT_ERROR_TIMEOUT;
+}
+
 /* Returns > 0 upon successful data received (even if there was an error or disconnection) */
 /* Returns -1 upon error (and no data received) */
 /* Returns 0 upon timeout or disconnection (and no data received) */
@@ -1941,6 +1964,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	jsval *              argv = JS_ARGV(cx, arglist);
 	js_socket_private_t* p;
 	bool                 poll_for_write = false;
+	bool                 tls_readable;
 	uintN                argn;
 	int                  result;
 	jsrefcount           rc;
@@ -1981,10 +2005,11 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 #endif
 		}
 	}
+	tls_readable = !poll_for_write && js_socket_tls_readable(p);
 
 	rc = JS_SUSPENDREQUEST(cx);
 #ifdef PREFER_POLL
-	if (p->peeked && !poll_for_write) {
+	if (tls_readable) {
 		result = 1;
 	}
 	else {
@@ -2018,7 +2043,7 @@ js_poll(JSContext *cx, uintN argc, jsval *arglist)
 	else
 		rd_set = &socket_set;
 
-	if (p->peeked && !poll_for_write)
+	if (tls_readable)
 		result = 1;
 	else
 		result = select(high + 1, rd_set, wr_set, NULL, &tv);

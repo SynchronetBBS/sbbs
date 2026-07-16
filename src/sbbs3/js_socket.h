@@ -36,6 +36,8 @@ typedef struct
 	bool tls_enhanced_certcheck;
 } js_socket_private_t;
 
+bool js_socket_tls_readable(js_socket_private_t* p);
+
 #ifdef __cplusplus
 extern "C" {
 #endif

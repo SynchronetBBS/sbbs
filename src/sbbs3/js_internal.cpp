@@ -1152,6 +1152,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 	struct js_event_list * ev;
 	struct js_event_list * tev;
 	struct js_event_list * cev;
+	struct js_event_list * rev;
 	jsval                  rval = JSVAL_NULL;
 	jsrefcount             rc;
 	JSBool                 ret = JS_TRUE;
@@ -1180,6 +1181,7 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		ev = NULL;
 		tev = NULL;
 		cev = NULL;
+		rev = NULL;
 #ifdef PREFER_POLL
 		fds = NULL;
 		sc = 0;
@@ -1208,9 +1210,18 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 		FD_ZERO(&rfds);
 		FD_ZERO(&wfds);
 #endif
+		for (ev = *head; ev; ev = ev->next) {
+			if (ev->type != JS_EVENT_SOCKET_READABLE && ev->type != JS_EVENT_SOCKET_READABLE_ONCE)
+				continue;
+			jssp = (js_socket_private_t*)JS_GetPrivate(cx, ev->cx);
+			if (js_socket_tls_readable(jssp)) {
+				rev = ev;
+				break;
+			}
+		}
 
 		rc = JS_SUSPENDREQUEST(cx);
-		if (cb->rq_head)
+		if (cb->rq_head || rev)
 			timeout = 0;
 		for (ev = *head; ev; ev = ev->next) {
 			switch (ev->type) {
@@ -1328,7 +1339,9 @@ js_handle_events(JSContext *cx, js_callback_t *cb, volatile bool *terminated)
 #endif
 			case 0:     // Timeout
 				JS_RESUMEREQUEST(cx, rc);
-				if (tev && tev->cx && tev->cb)
+				if (rev && rev->cx && rev->cb)
+					ev = rev;
+				else if (tev && tev->cx && tev->cb)
 					ev = tev;
 				else if (cev && cev->cx && cev->cb)
 					ev = cev;
@@ -1782,4 +1795,3 @@ js_CreateArrayOfStrings(JSContext* cx, JSObject* parent, const char* name, const
 
 	return JS_TRUE;
 }
-
