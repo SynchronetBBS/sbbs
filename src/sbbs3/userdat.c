@@ -5037,7 +5037,9 @@ bool user_set_bool_property(scfg_t* scfg, int user_number, const char* section, 
 #endif /* !NO_SOCKET_SUPPORT */
 
 /****************************************************************************/
-/* Returns user number or 0 on failure or "user not found".					*/
+/* Returns the number of the active user matching 'inname' (by alias or		*/
+/* real name), or 0 on failure or "user not found". Inactive accounts are	*/
+/* not matched (mail is not deliverable to them).							*/
 /****************************************************************************/
 int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
 {
@@ -5053,7 +5055,7 @@ int lookup_user(scfg_t* cfg, link_list_t* list, const char *inname)
 		for (user.number = 1; ; user.number++) {
 			if (fgetuserdat(cfg, &user, userdat) != 0)
 				break;
-			if (user.misc & DELETED)
+			if (!user_is_active(&user))
 				continue;
 			listPushNodeData(list, &user, sizeof(user));
 		}
