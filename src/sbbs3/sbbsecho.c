@@ -4860,6 +4860,11 @@ int import_netmail(const char* path, const fmsghdr_t* inhdr, FILE** fp, const ch
 		}
 
 		usernumber = atoi(hdr.to);
+		if (usernumber) {   /* Addressed by user number: don't accept an inactive account */
+			user_t user = { .number = usernumber };
+			if (getuserdat(&scfg, &user) != USER_SUCCESS || !user_is_active(&user))
+				usernumber = 0;
+		}
 		if (!usernumber && strListFind(cfg.sysop_alias_list, hdr.to, /* case sensitive: */ false) >= 0)
 			usernumber = 1;
 		if (!usernumber)
