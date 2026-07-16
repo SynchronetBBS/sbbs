@@ -106,6 +106,7 @@
     <ClCompile Include="getstats.c" />
     <ClCompile Include="trash.c" />
     <ClCompile Include="upgrade_to_v320.c" />
+    <ClCompile Include="getmail.c" />
     <ClCompile Include="userdat.c" />
   </ItemGroup>
   <ItemGroup>

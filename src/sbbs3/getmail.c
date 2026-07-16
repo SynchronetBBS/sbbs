@@ -69,6 +69,115 @@ int getmail(scfg_t* cfg, int usernumber, bool sent, int attr)
 }
 
 
+/****************************************************************************/
+/* Permanently removes all mail sent to or from 'usernumber'                */
+/* Intended for use when a user record is created over a deleted user's     */
+/* record, so that the new user does not inherit the previous user's mail   */
+/* (and mail sent by the previous user is not attributed to the new user).  */
+/* Returns the number of messages removed                                   */
+/****************************************************************************/
+int delusermail(scfg_t* cfg, uint usernumber)
+{
+	int       removed = 0;
+	uint32_t  i;
+	uint32_t  kept = 0;
+	idxrec_t *idxbuf;
+	smb_t     smb;
+	smbmsg_t  msg;
+
+	if (cfg == NULL || usernumber < 1)
+		return 0;
+
+	ZERO_VAR(smb);
+	SAFEPRINTF(smb.file, "%smail", cfg->data_dir);
+	smb.retry_time = cfg->smb_retry_time;
+	smb.subnum = INVALID_SUB;
+
+	if (smb_open(&smb) != SMB_SUCCESS)
+		return 0;
+	if (smb_lock(&smb) != SMB_SUCCESS) {
+		smb_close(&smb);
+		return 0;
+	}
+	if (smb_locksmbhdr(&smb) != SMB_SUCCESS) {
+		smb_unlock(&smb);
+		smb_close(&smb);
+		return 0;
+	}
+	if (smb_getstatus(&smb) != SMB_SUCCESS || smb.status.total_msgs < 1) {
+		smb_unlocksmbhdr(&smb);
+		smb_unlock(&smb);
+		smb_close(&smb);
+		return 0;
+	}
+	if ((idxbuf = (idxrec_t *)malloc(smb.status.total_msgs * sizeof(idxrec_t))) == NULL) {
+		smb_unlocksmbhdr(&smb);
+		smb_unlock(&smb);
+		smb_close(&smb);
+		return 0;
+	}
+	if (smb_open_da(&smb) != SMB_SUCCESS) {
+		free(idxbuf);
+		smb_unlocksmbhdr(&smb);
+		smb_unlock(&smb);
+		smb_close(&smb);
+		return 0;
+	}
+	if (smb_open_ha(&smb) != SMB_SUCCESS) {
+		smb_close_da(&smb);
+		free(idxbuf);
+		smb_unlocksmbhdr(&smb);
+		smb_unlock(&smb);
+		smb_close(&smb);
+		return 0;
+	}
+
+	smb_rewind(smb.sid_fp);
+	for (i = 0; i < smb.status.total_msgs; i++) {
+		ZERO_VAR(msg);
+		if (smb_fread(&smb, &msg.idx, sizeof(idxrec_t), smb.sid_fp) != sizeof(idxrec_t))
+			break;
+		/* Note: netmail (idx.to == 0) is never matched (usernumber is never 0 here) */
+		if (msg.idx.to != usernumber && msg.idx.from != usernumber) {
+			idxbuf[kept++] = msg.idx;
+			continue;
+		}
+		/* Don't need to lock the message because the base is locked */
+		if (smb_getmsghdr(&smb, &msg) != SMB_SUCCESS) {
+			idxbuf[kept++] = msg.idx;
+			continue;
+		}
+		msg.hdr.attr |= MSG_DELETE;
+		msg.hdr.attr &= ~MSG_PERMANENT;
+		msg.idx.attr = msg.hdr.attr;
+		if (smb_putmsghdr(&smb, &msg) == SMB_SUCCESS
+		    && smb_freemsg(&smb, &msg) == SMB_SUCCESS) {
+			if (msg.hdr.auxattr & MSG_FILEATTACH)
+				delfattach(cfg, &msg);
+			removed++;
+		} else
+			idxbuf[kept++] = msg.idx;
+		smb_freemsgmem(&msg);
+	}
+
+	smb_rewind(smb.sid_fp);
+	for (i = 0; i < kept; i++) {
+		if (smb_fwrite(&smb, &idxbuf[i], sizeof(idxrec_t), smb.sid_fp) != sizeof(idxrec_t))
+			break;
+	}
+	smb_fflush(smb.sid_fp);
+	smb_fsetlength(smb.sid_fp, i * sizeof(idxrec_t));
+	smb.status.total_msgs = i;
+	smb_putstatus(&smb);
+	free(idxbuf);
+	smb_close_ha(&smb);
+	smb_close_da(&smb);
+	smb_unlocksmbhdr(&smb);
+	smb_unlock(&smb);
+	smb_close(&smb);
+	return removed;
+}
+
 /***************************/
 /* Delete file attachments */
 /***************************/

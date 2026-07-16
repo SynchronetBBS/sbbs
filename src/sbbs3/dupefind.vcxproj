@@ -170,6 +170,7 @@
     <ClCompile Include="getstats.c" />
     <ClCompile Include="sauce.c" />
     <ClCompile Include="trash.c" />
+    <ClCompile Include="getmail.c" />
     <ClCompile Include="userdat.c" />
   </ItemGroup>
   <ItemGroup>

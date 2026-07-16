@@ -31,6 +31,7 @@
 #include "datewrap.h"
 #include "date_str.h"
 #include "smblib.h"
+#include "getmail.h"
 #include "getstats.h"
 #include "msgdate.h"
 #include "scfglib.h"
@@ -3729,6 +3730,9 @@ int newuserdat(scfg_t* cfg, user_t* user)
 
 	SAFEPRINTF2(str, "%suser/ptrs/%04u.ixb", cfg->data_dir, user->number); /* legacy msg ptrs */
 	remove(str);
+
+	/* Delete any mail to/from the previous (deleted) user of this record */
+	delusermail(cfg, user->number);
 
 	/* Update daily statistics database (for system and node) */
 

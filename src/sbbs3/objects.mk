@@ -191,6 +191,7 @@ MAKEUSER_OBJS = 	$(LOAD_CFG_OBJS) \
 			$(OBJODIR)/date_str$(OFILE) \
 			$(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/getmail$(OFILE) \
 			$(OBJODIR)/trash$(OFILE) \
 			$(OBJODIR)/getstats$(OFILE) \
 			$(OBJODIR)/msgdate$(OFILE)
@@ -229,6 +230,7 @@ JSDOOR_OBJS = 		$(LOAD_CFG_OBJS) \
 			$(MTOBJODIR)/scfgsave$(OFILE)\
 			$(MTOBJODIR)/wordwrap$(OFILE)\
 			$(MTOBJODIR)/userdat$(OFILE)\
+			$(MTOBJODIR)/getmail$(OFILE)\
 			$(MTOBJODIR)/trash$(OFILE)\
 			$(MTOBJODIR)/msgdate$(OFILE)\
 			$(MTOBJODIR)/filedat$(OFILE)\
@@ -266,6 +268,7 @@ UPGRADE_TO_V319_OBJS  =	$(LOAD_CFG_OBJS) \
                         $(OBJODIR)/filedat$(OFILE) \
                         $(OBJODIR)/sauce$(OFILE) \
                         $(OBJODIR)/userdat$(OFILE) \
+                        $(OBJODIR)/getmail$(OFILE) \
                         $(OBJODIR)/trash$(OFILE) \
                         $(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/getstats$(OFILE) \
@@ -273,6 +276,7 @@ UPGRADE_TO_V319_OBJS  =	$(LOAD_CFG_OBJS) \
 
 UPGRADE_TO_V320_OBJS  = $(LOAD_CFG_OBJS) \
 			$(OBJODIR)/userdat$(OFILE) \
+			$(OBJODIR)/getmail$(OFILE) \
 			$(OBJODIR)/trash$(OFILE) \
 			$(OBJODIR)/dat_rec$(OFILE) \
 			$(OBJODIR)/getstats$(OFILE) \

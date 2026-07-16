@@ -262,8 +262,6 @@ bool sbbs_t::newuser()
 	if (!(cfg.uq & UQ_NODEF))
 		user_config(&useron);
 
-	delallmail(useron.number, MAIL_ANY);
-
 	if (useron.number != 1 && cfg.valuser) {
 		menu("../feedback", P_NOABORT | P_NOERROR);
 		safe_snprintf(str, sizeof(str), text[NewUserFeedbackHdr]

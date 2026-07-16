@@ -108,6 +108,7 @@
     <ClCompile Include="sauce.c" />
     <ClCompile Include="trash.c" />
     <ClCompile Include="upgrade_to_v319.c" />
+    <ClCompile Include="getmail.c" />
     <ClCompile Include="userdat.c" />
   </ItemGroup>
   <ItemGroup>
