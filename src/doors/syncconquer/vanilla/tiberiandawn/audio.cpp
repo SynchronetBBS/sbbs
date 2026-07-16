@@ -443,6 +443,79 @@ char const* Speech[VOX_COUNT] = {
     //	"BLUEKILT",		//	blue player destroyed
     //	"BLUEWIN"		//	blue player is victorious
 };
+
+// SyncConquer: on-screen captions for the EVA announcements, positionally
+// aligned to Speech[] / the VoxType enum above. Surfaced via the game's own
+// message list when door_captions_enabled() is true (auto = the client has no
+// usable audio), so the spoken combat/economy callouts aren't lost on a deaf
+// player or a no-audio terminal. Add_Message copies the text.
+extern "C" int door_captions_enabled(void);
+
+static char const* const VoxCaption[VOX_COUNT] = {
+    "Mission accomplished",        // VOX_ACCOMPLISHED
+    "Mission failed",              // VOX_FAIL
+    "Building in progress",        // VOX_NO_FACTORY
+    "Construction complete",       // VOX_CONSTRUCTION
+    "Unit ready",                  // VOX_UNIT_READY
+    "New construction options",    // VOX_NEW_CONSTRUCT
+    "Cannot deploy here",          // VOX_DEPLOY
+    "GDI unit destroyed",          // VOX_DEAD_GDI
+    "Nod unit destroyed",          // VOX_DEAD_NOD
+    "Civilian killed",             // VOX_DEAD_CIV
+    "Insufficient funds",          // VOX_NO_CASH
+    "Battle control terminated",   // VOX_CONTROL_EXIT
+    "Reinforcements have arrived", // VOX_REINFORCEMENTS
+    "Canceled",                    // VOX_CANCELED
+    "Building",                    // VOX_BUILDING
+    "Low power",                   // VOX_LOW_POWER
+    "Insufficient power",          // VOX_NO_POWER
+    "Need more funds",             // VOX_NEED_MO_MONEY
+    "Our base is under attack",    // VOX_BASE_UNDER_ATTACK
+    "Incoming missile",            // VOX_INCOMING_MISSILE
+    "Enemy planes approaching",    // VOX_ENEMY_PLANES
+    "Nuclear warhead approaching", // VOX_INCOMING_NUKE
+    "Unable to build more",        // VOX_UNABLE_TO_BUILD
+    "Primary building selected",   // VOX_PRIMARY_SELECTED
+    "Nod building captured",       // VOX_NOD_CAPTURED
+    "GDI building captured",       // VOX_GDI_CAPTURED
+    "Ion cannon charging",         // VOX_ION_CHARGING
+    "Ion cannon ready",            // VOX_ION_READY
+    "Nuclear weapon available",    // VOX_NUKE_AVAILABLE
+    "Nuclear weapon launched",     // VOX_NUKE_LAUNCHED
+    "Unit lost",                   // VOX_UNIT_LOST
+    "Structure lost",              // VOX_STRUCTURE_LOST
+    "Need harvester",              // VOX_NEED_HARVESTER
+    "Select target",               // VOX_SELECT_TARGET
+    "Airstrike ready",             // VOX_AIRSTRIKE_READY
+    "Not ready",                   // VOX_NOT_READY
+    "Nod transport sighted",       // VOX_TRANSPORT_SIGHTED
+    "Nod transport loaded",        // VOX_TRANSPORT_LOADED
+    "Enemy approaching",           // VOX_PREPARE
+    "Silos needed",                // VOX_NEED_MO_CAPACITY
+    "On hold",                     // VOX_SUSPENDED
+    "Repairing",                   // VOX_REPAIRING
+    "Enemy structure destroyed",   // VOX_ENEMY_STRUCTURE
+    "GDI structure destroyed",     // VOX_GDI_STRUCTURE
+    "Nod structure destroyed",     // VOX_NOD_STRUCTURE
+    "Enemy unit destroyed",        // VOX_ENEMY_UNIT
+};
+
+static void EVA_Caption(VoxType voice)
+{
+    if (voice <= VOX_NONE || voice >= VOX_COUNT) {
+        return;
+    }
+    char const* cap = VoxCaption[voice];
+    if (cap == NULL || cap[0] == '\0') {
+        return;
+    }
+    int color = (PlayerPtr != NULL) ? MPlayerTColors[PlayerPtr->RemapColor] : MPlayerTColors[0];
+    // magic/crc = voice so a repeated announcement doesn't stack while visible.
+    Messages.Add_Message(
+        (char*)cap, color, TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW, 1200, (unsigned short)voice, (unsigned short)voice);
+    Map.Flag_To_Redraw(false);
+}
+
 static VoxType CurrentVoice = VOX_NONE;
 
 /***********************************************************************************************
@@ -477,6 +550,12 @@ void Speak(VoxType voice, HouseClass* house, COORDINATE coord)
     }
 
 #else
+    // SyncConquer: caption the EVA announcement on-screen (gated -- auto when the
+    // client has no usable audio) so the callout isn't lost. Independent of the
+    // audio queue below, which no-ops on a no-audio client.
+    if (voice != VOX_NONE && door_captions_enabled()) {
+        EVA_Caption(voice);
+    }
     if (Options.Volume && SampleType != 0 && voice != VOX_NONE && voice != SpeakQueue && voice != CurrentVoice
         && SpeakQueue == VOX_NONE) {
         SpeakQueue = voice;

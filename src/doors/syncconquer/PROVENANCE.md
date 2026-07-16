@@ -648,6 +648,20 @@ rest; these are the local edits on top of it (plus a couple of shared
     Extends the edge-scroll work in #16 (RA band) to the pixel-mouse case and to
     TD.
 
+39. **On-screen EVA-announcement captions (`tiberiandawn/audio.cpp`).** Accessi-
+    bility: the spoken EVA callouts ("construction complete", "unit ready", "our
+    base is under attack", ...) are audio-only in stock C&C, useless to a deaf
+    player or on a no-audio terminal. All of them funnel through one `Speak(Vox
+    Type, ...)` and the game already has an on-screen message list. Add a
+    `VoxCaption[VOX_COUNT]` table (positionally aligned to the existing
+    `Speech[]`) and, in `Speak()`, `Messages.Add_Message()` the caption when
+    `door_captions_enabled()` (declared `extern "C"`, in `door/door_io.c`) is
+    true. That gate is the `<door>.ini [game] captions` tri-state: `true` always,
+    `false` never, absent/auto = on only when the client has no usable audio
+    (`termgfx_audio_tier() != 1`). Dedup by voice so a repeat doesn't stack while
+    on screen. RA (`redalert/audio.cpp`, a larger/different `VoxType`) is a
+    follow-up.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

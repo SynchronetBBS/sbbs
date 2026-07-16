@@ -1526,6 +1526,24 @@ int door_movies_suppressed(void)
 	return termgfx_audio_tier(g_audio) != 1;   /* auto: skip if no usable audio */
 }
 
+/* On-screen EVA-caption gate (C linkage; called from the engine's Speak()).
+ * <door>.ini "[game] captions": true = always, false = never, absent (auto) =
+ * on only when the client has no usable audio (termgfx_audio_tier != 1) -- the
+ * spoken combat/economy callouts are lost there, so surface them as text
+ * (deaf-accessible, and the accessibility complement to the movie audio-gate). */
+int door_captions_enabled(void)
+{
+	static int tri = -2;   /* cache the ini tri-state (-1 auto, 0 off, 1 on) */
+
+	if (tri == -2)
+		tri = door_config_tristate("game", "captions");
+	if (tri == 1)
+		return 1;                          /* sysop forced captions on */
+	if (tri == 0)
+		return 0;                          /* sysop forced captions off */
+	return termgfx_audio_tier(g_audio) != 1;   /* auto: on when no usable audio */
+}
+
 /* Truncate-write: the capture file always holds exactly the latest frame. */
 static void door_out_flush_file(void)
 {
