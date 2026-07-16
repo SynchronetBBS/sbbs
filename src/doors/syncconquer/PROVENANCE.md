@@ -632,6 +632,22 @@ rest; these are the local edits on top of it (plus a couple of shared
     The original body is kept under `#if 0` for reference. Cuts mission-load time
     from ~12s to ~3s.
 
+38. **Mouse edge-scroll for a pixel-granular (SGR 1016) terminal mouse
+    (`redalert/scroll.cpp` + `tiberiandawn/scroll.cpp`).** Two parts, gated on
+    the door's live `door_io_mouse_pixels()` (declared `extern "C"`):
+    (a) **Trigger band.** A pixel mouse can't reliably land on the exact edge
+    pixel over a scaled terminal window, so widen the edge-scroll test band in
+    pixel mode -- RA's `8*RESFACTOR` band goes to `24*RESFACTOR`; TD had only the
+    stock literal 1-pixel border (`x==0 || y==0 || ...`), now a `48`/`16`-px band
+    (SeenBuff is 640x400 there too). Tuned to where the pointer actually sits
+    (measured ~gx 591-635 at the right edge).
+    (b) **Speed.** `ScrollClass::AI` runs at the door's (fast) present rate, so a
+    full `_rate[]` step per tick made the map fly once the band was reachable;
+    cut the auto/mouse edge-scroll step to `_rate[rate] / 4` (RA already had
+    this via PROVENANCE #29; mirrored to TD). Keyboard/inertia scroll unaffected.
+    Extends the edge-scroll work in #16 (RA band) to the pixel-mouse case and to
+    TD.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

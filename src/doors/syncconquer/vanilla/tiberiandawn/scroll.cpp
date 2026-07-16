@@ -37,6 +37,8 @@
 
 #include "function.h"
 
+extern "C" int door_io_mouse_pixels(void);   // SyncConquer: SGR-Pixels mouse active (door_io.c)
+
 #define SCROLL_DELAY 1
 
 CountDownTimerClass ScrollClass::Counter;
@@ -199,13 +201,20 @@ void ScrollClass::AI(KeyNumType& input, int x, int y)
         }
 
         if (!noscroll) {
+            // LOCAL: widen the 1-pixel edge-scroll border into a band -- a
+            // pixel-granular terminal mouse (SGR 1016) can't land on the exact
+            // edge pixel over a scaled window, so 1px is unreachable. Wider in
+            // pixel mode, tighter for a cell pointer. Matches RA (640x400 here).
+            int  edge = door_io_mouse_pixels() ? 48 : 16;
+            bool at_screen_edge = (y <= edge || x <= edge || x >= SeenBuff.Get_Width() - 1 - edge
+                                   || y >= SeenBuff.Get_Height() - 1 - edge);
 
             /*
 			**	Verify that the mouse is over a scroll region.
 			*/
-            if (Inertia || y == 0 || x == 0 || x == (SeenBuff.Get_Width() - 1) || y == (SeenBuff.Get_Height() - 1)) {
+            if (Inertia || at_screen_edge) {
 
-                if (y == 0 || x == 0 || x == (SeenBuff.Get_Width() - 1) || y == (SeenBuff.Get_Height() - 1)) {
+                if (at_screen_edge) {
 
                     player_scrolled = true;
                     /*
@@ -280,7 +289,12 @@ void ScrollClass::AI(KeyNumType& input, int x, int y)
 					**	the map if the delay counter indicates.
 					*/
                     if (Keyboard->Down(KN_LMOUSE) || IsAutoScroll) {
-                        distance = _rate[rate];
+                        // LOCAL: cut the per-tick edge-scroll distance (matches RA,
+                        // redalert/scroll.cpp). Over a terminal the door runs many
+                        // game ticks between the frames it presents, so a full
+                        // _rate[] step per tick makes the map fly; smaller steps
+                        // scroll slower and smoother.
+                        distance = _rate[rate] / 4;
                         Scroll_Map(direction, distance, true);
 
                         if (Counter.Time() == 0 && player_scrolled) {

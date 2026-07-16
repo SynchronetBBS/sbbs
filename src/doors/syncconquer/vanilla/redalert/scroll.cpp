@@ -37,6 +37,8 @@
 
 #include "function.h"
 
+extern "C" int door_io_mouse_pixels(void);   // SyncConquer: SGR-Pixels mouse active (door_io.c)
+
 #define SCROLL_DELAY 1
 
 CDTimerClass<SystemTimerClass> ScrollClass::Counter;
@@ -202,7 +204,13 @@ void ScrollClass::AI(KeyNumType& input, int x, int y)
             // trigger is nearly unreachable. A cell-sized band lets the outer
             // cell centre engage scrolling on all four sides. Does not move any
             // click coordinate, so menus are unaffected.
-            int edge = 8 * RESFACTOR;
+            // LOCAL: a pixel-granular mouse (SGR 1016) loses the cell path's
+            // snap-the-outer-cell-to-the-edge forgiveness (door_input.c), so the
+            // 8*RESFACTOR band is fussy/near-unreachable at the far edges (worse
+            // if SyncTERM's 1016 saturates a cell short of the true edge). Widen
+            // the band in pixel mode; a cell-quantized pointer keeps the tighter
+            // one. door_io_mouse_pixels() is the door's live SGR-Pixels flag.
+            int edge = (door_io_mouse_pixels() ? 24 : 8) * RESFACTOR;
             bool at_screen_edge = (y <= edge || x <= edge || x >= SeenBuff.Get_Width() - 1 - edge
                                    || y >= SeenBuff.Get_Height() - 1 - edge);
 
