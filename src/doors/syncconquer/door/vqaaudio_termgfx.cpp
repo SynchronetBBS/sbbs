@@ -78,6 +78,12 @@ static int                        accum_bits = 16, accum_channels = 1, accum_rat
 
 #define STREAM_CHUNK_BYTES 16384   // one shipped chunk (~0.37s of 22050Hz mono S16)
 
+// Fixed channel level for cutscene audio (A;Volume percent = linear amplitude:
+// 100 = 0 dB). Below 100 for headroom against the mixer's tanh soft-clip knee
+// (already-mixed FMV tracks are hot); well above any muted-music level so
+// briefing/victory dialog stays clearly audible. ~70 = about -3 dB. Tunable.
+#define MOVIE_AUDIO_VOL 70
+
 // Ship whole chunks, but no further ahead of the video clock than ~0.75s so the
 // client FIFO stays shallow. `flush_all` ignores the throttle + chunk floor
 // (end of movie: ship whatever's left).
@@ -150,11 +156,16 @@ int VQA_StartAudio(VQAHandle* handle)
 	termgfx_audio_stream_stop(door_io_audio());   // start on a clean channel
 	// The game theme runs on this SAME (music) channel and leaves it at the
 	// game's MUSIC volume -- which the player may have turned down or muted. A
-	// cutscene's audio is mixed dialog+SFX+music, not "music", so it must play at
-	// full channel volume regardless, or a briefing shown right after the menu
-	// (whose theme lowered the channel) is (near-)inaudible even though its audio
-	// ships fine. The next theme re-sets its own volume when it plays.
-	termgfx_audio_music_volume(door_io_audio(), 100);
+	// cutscene's audio is mixed dialog+SFX+music, not "music", so it plays at a
+	// FIXED level regardless of the music slider, or a briefing shown right after
+	// the menu (whose theme lowered the channel) is (near-)inaudible even though
+	// its audio ships fine. But 100 = A;Volume 0 dB (linear-amplitude percent),
+	// and an already-mixed, hot cutscene track played at unity -- alone on the
+	// just-stopped channel -- drives the mixer's tanh soft-clip knee and distorts
+	// by itself on loud FMVs (termgfx README gain model). Play a few dB down for
+	// headroom; still well above any muted-music level, so dialog stays clear.
+	// The next theme re-sets its own volume when it plays.
+	termgfx_audio_music_volume(door_io_audio(), MOVIE_AUDIO_VOL);
 	movie_clk_reset();
 	return 0;
 }
