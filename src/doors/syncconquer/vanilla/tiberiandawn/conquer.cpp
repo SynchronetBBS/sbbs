@@ -3714,6 +3714,29 @@ bool Force_CD_Available(int cd)
     ThemeType theme_playing = THEME_NONE;
 
     /*
+    ** SyncConquer: the door keeps ALL game data in one local assets dir that is
+    ** already on the file search path (see door_engine_data_dir / PROVENANCE) --
+    ** there is no CD to swap. The stock path below calls Change_Local_Dir, whose
+    ** expensive part is a search-drive DETECTION/REFRESH that reran from the
+    ** MixFileClass constructor for EVERY mix and cost ~3-6s per theater/icon mix
+    ** (measured; not I/O). Skip that. But Change_Local_Dir also does the AUDIO
+    ** setup on a CD-number change -- stop the theme, reinit the score mixfiles,
+    ** rescan theme availability -- and skipping THAT left the music mis-set after
+    ** a load (weird audio). So still do the audio setup, once per CD change.
+    */
+    {
+        static int _sc_last_cd = -999;
+        if (cd != CD_LOCAL && cd != _sc_last_cd) {
+            _sc_last_cd = cd;
+            Theme.Stop();
+            Reinit_Secondary_Mixfiles();
+            ThemeClass::Scan();
+        }
+    }
+    return (true);
+
+#if 0
+    /*
     ** If the required CD is set to -2 then it means that the file is present
     ** on the local hard drive and we shouldn't have to worry about it.
     */
@@ -3729,6 +3752,7 @@ bool Force_CD_Available(int cd)
     }
 
     return (false);
+#endif
 #endif
 }
 

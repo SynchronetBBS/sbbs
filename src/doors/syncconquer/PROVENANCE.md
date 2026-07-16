@@ -616,6 +616,22 @@ rest; these are the local edits on top of it (plus a couple of shared
     Side benefit: TD never read `bNoMovies` (RA-only global), so `[game] movies =
     false` was a no-op for TD before -- this gate makes it work for both titles.
 
+37. **Short-circuit the per-mix CD search in `Force_CD_Available`
+    (`tiberiandawn/conquer.cpp`).** The `MixFileClass` constructor calls
+    `Force_CD_Available(RequiredCD)` as its first action, so it fires for EVERY
+    mix built during a mission load. Its `Change_Local_Dir` path, on a CD-number
+    change, re-runs the search-drive detection/refresh -- measured at ~3s for the
+    theater mix and ~5.9s for the (missing) hi-res icon mix, ~9s of a ~12s load,
+    and NOT I/O (the read is a buffered `fread`; localhost SMB is fast). The door
+    keeps all data in one local assets dir already on the search path, so there
+    is no CD to swap: return `true` immediately. But `Change_Local_Dir` also does
+    the audio setup on a CD-number change (`Theme.Stop()` +
+    `Reinit_Secondary_Mixfiles()` + `ThemeClass::Scan()`), and skipping THAT left
+    the sound system mis-initialized after a load (a buzzer instead of the theme),
+    so we still do it -- once per actual CD change, gated by a static last-CD.
+    The original body is kept under `#if 0` for reference. Cuts mission-load time
+    from ~12s to ~3s.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching
