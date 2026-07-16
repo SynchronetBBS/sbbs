@@ -68,7 +68,11 @@ size_t sixel_encode_aspect(uint8_t **buf, size_t *cap, const uint8_t *idx, int w
 	o.b = *buf; o.cap = *cap; o.len = 0;
 
 	// --- header: intro, raster attributes (pixel aspect pan:pad, W x H) ---
-	ob_put(&o, "\x1bPq");
+	// P2=1 (transparent) ensures terminals do not pre-fill or pre-clear the raster
+	// (seen in Windows Terminal white-block flashes and Foot cell-clearing bars).
+	// P1=0 and P3=0 are defaults; raster attributes override aspect anyway.
+	// All termgfx-consuming doors paint every pixel of every declared raster.
+	ob_put(&o, "\x1bP0;1;0q");
 	ob_putc(&o, '"'); ob_putn(&o, pan); ob_putc(&o, ';'); ob_putn(&o, pad);
 	ob_putc(&o, ';'); ob_putn(&o, w); ob_putc(&o, ';'); ob_putn(&o, h);
 
@@ -136,8 +140,8 @@ static size_t vscale_sliver(char *p, size_t room, int pan)
 	size_t n = 0;
 	int    i;
 
-	// ESC P q "pan;1;1;36  #0;2;0;0;0  then one all-six-pixels column per band.
-	n += (size_t)snprintf(p + n, room - n, "\x1bPq\"%d;1;1;%d#0;2;0;0;0",
+	// ESC P 0;1;0 q "pan;1;1;36  #0;2;0;0;0  then one all-six-pixels column per band.
+	n += (size_t)snprintf(p + n, room - n, "\x1bP0;1;0q\"%d;1;1;%d#0;2;0;0;0",
 	                      pan, VSCALE_BANDS * 6);
 	for (i = 0; i < VSCALE_BANDS; i++)
 		n += (size_t)snprintf(p + n, room - n, "%s#0~", i ? "-" : "");

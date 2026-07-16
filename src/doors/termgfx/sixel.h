@@ -16,8 +16,9 @@
 // still holds from the previous image. That avoids re-sending ~4KB of palette
 // every frame (and keeps the per-frame sixel string smaller and stable).
 //
-// Output is intro (ESC P q), raster attributes, optional palette, the pixel
+// Output is intro (ESC P 0;1;0 q), raster attributes, optional palette, the pixel
 // bands, and ST (ESC \) -- all printable ASCII / C0, telnet-safe, no base64.
+// P2=1 (transparent) tells terminals not to pre-fill/pre-clear the raster.
 // Bytes go into *buf (grown via realloc, *cap updated); returns the length.
 size_t sixel_encode(uint8_t **buf, size_t *cap, const uint8_t *idx, int w, int h,
                     const uint8_t *pal, int emit_palette);
