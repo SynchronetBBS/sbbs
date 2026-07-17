@@ -2058,11 +2058,11 @@ float M_GetFloatVariable(char *name)
 
 static char *GetDefaultConfigDir(void)
 {
-    char *result = (char *)malloc(2);
-    result[0] = '.';
-    result[1] = '\0';
-
-    return result;
+    // syncdoom: return the dir WITH its trailing separator. Callers build paths
+    // as M_StringJoin(configdir, name, NULL), supplying no separator of their
+    // own, so a bare "." silently produced hidden dotfiles (".default.cfg")
+    // rather than "./default.cfg" in the door's per-user -home dir.
+    return M_StringDuplicate("." DIR_SEPARATOR_S);
 }
 
 // 
