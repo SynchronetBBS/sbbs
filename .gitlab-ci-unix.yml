@@ -25,6 +25,14 @@ spec:
       default: 'yes'
     build_doors:
       default: 'no'
+    # The termgfx door family (libtermgfx + the doors that link it) builds with
+    # CMake rather than gmake, so it needs its own gate: build_doors drives
+    # `gmake` command lines that mean nothing to CMake.  These doors build on
+    # Linux and on Windows (MSVC, via each door's build.bat), but the remaining
+    # CI targets -- the BSDs, macOS, alpine, arm64, and the mingw-w64 GCC
+    # cross-build -- are unverified, so platforms opt in as each is confirmed.
+    build_termgfx_doors:
+      default: 'no'
     slow_system:
       default: 'no'
     valgrind_pre_exec:
@@ -1202,6 +1210,127 @@ spec:
     - if: '"$[[ inputs.build_doors ]]" == "no"'
       when: never
     - !reference [.rules, rules]
+
+##################
+# termgfx  doors #
+##################
+# libtermgfx and the doors that link it.  Unlike the ODoors-based doors above,
+# these are CMake projects that build their own dependencies (xpdev, termgfx,
+# and each door's vendored engine) as sub-targets, so they need no *.tgz
+# artifact from the library jobs -- hence `needs: []`, letting them start
+# immediately rather than waiting on the gmake library stage.
+#
+# Each door is driven through its own build.sh, which is the documented entry
+# point and encodes the door's CMake flags (e.g. syncconquer's
+# -DBUILD_VANILLATD=ON, which adds the second Tiberian Dawn binary).  Driving
+# CMake directly here would silently drop those.  build.sh only builds -- it
+# never deploys into a live install -- so it is safe to run unattended.
+#
+# libjxl and libsndfile are OPTIONAL and detected at configure time: without
+# them the doors still build, but degrade (no JPEG-XL tier / music ships as raw
+# PCM instead of OGG).  Their absence on a runner is therefore a silent change
+# in the artifact rather than a build failure -- check the configure log's
+# "termgfx: libsndfile ..." / "JPEG XL graphics tier" lines if an artifact
+# behaves differently than a local build.
+#
+# ccache matches the [syncterm-cmake] job's convention, and matters more here:
+# these trees vendor whole engines (Chocolate Duke, Vanilla Conquer).  It is set
+# via the CMAKE_<LANG>_COMPILER_LAUNCHER *environment* variables rather than
+# -D on the command line, because build.sh owns the cmake invocation for the
+# doors and takes no extra arguments; CMake initializes the cache entry from the
+# environment variable of the same name, so one setting covers every job here.
+
+".$[[ inputs.os ]]-termgfx-door":
+  extends:
+    - .$[[ inputs.os ]]-build
+  variables:
+    GIT_STRATEGY: fetch
+    CMAKE_C_COMPILER_LAUNCHER: ccache
+    CMAKE_CXX_COMPILER_LAUNCHER: ccache
+  needs: []
+  rules:
+    - if: '"$[[ inputs.build_termgfx_doors ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [termgfx]":
+  extends:
+    - .$[[ inputs.os ]]-termgfx-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/termgfx
+    # TERMGFX_TESTS is OFF by default so a consuming door never builds the
+    # tests; this is the one job that turns them on and runs them.
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTERMGFX_TESTS=ON
+    - cmake --build build -j$(nproc 2>/dev/null || echo 4)
+    - cd build && ctest --output-on-failure
+  artifacts:
+    name: "termgfx-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/termgfx/build/libtermgfx.a"
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncdoom]":
+  extends:
+    - .$[[ inputs.os ]]-termgfx-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/syncdoom
+    - ./build.sh
+  artifacts:
+    name: "syncdoom-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/syncdoom/build/syncdoom"
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncduke]":
+  extends:
+    - .$[[ inputs.os ]]-termgfx-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/syncduke
+    - ./build.sh
+  artifacts:
+    name: "syncduke-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/syncduke/build/syncduke"
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncretro]":
+  extends:
+    - .$[[ inputs.os ]]-termgfx-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/syncretro
+    - ./build.sh
+  artifacts:
+    name: "syncretro-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/syncretro/build/syncretro"
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncmoo1]":
+  extends:
+    - .$[[ inputs.os ]]-termgfx-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/syncmoo1
+    - ./build.sh
+  artifacts:
+    name: "syncmoo1-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/syncmoo1/build/syncmoo1"
+
+# Builds BOTH titles from one tree: syncalert (Red Alert) and syncdawn
+# (Tiberian Dawn).
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncconquer]":
+  extends:
+    - .$[[ inputs.os ]]-termgfx-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/syncconquer
+    - ./build.sh
+  artifacts:
+    name: "syncconquer-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/syncconquer/build/syncalert"
+      - "src/doors/syncconquer/build/syncdawn"
 
 #########
 # Tests #
