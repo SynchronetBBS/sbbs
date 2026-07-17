@@ -827,6 +827,13 @@ The currently embedded scripts are:
   and presents the dialing directory and settings UI.  The host calls
   `MainMenu.run(currentName, connected)` whenever the application is
   offline or Alt+E enters the directory over a connected session.
+
+| `menu_host_ui`
+| auto / menu
+| Internal controller used by C connection and startup code for trusted
+  alerts, confirmations, prompts, choices, and progress overlays.  An
+  override must preserve the `MenuHostUI` static method contract described
+  below.  Connected scripts cannot import this menu-only module.
 |===
 
 The `syncterm` module is loaded on demand the first time something
@@ -944,6 +951,27 @@ does not receive arbitrary pathname-open authority: picker upload
 results are read-only, save results are one-shot write-only grants, and
 rights remain attached to the foreign `File` handle as documented in
 <<file-write-consent,Write consent>>.
+
+C-owned startup and connection flows also render their dialogs through
+the persistent menu VM.  These calls do not expose a dialog capability to
+connected scripts.  Blocking alerts, confirmations, prompts, and choices
+save and restore the current screen and establish input barriers both
+before and after the dialog, so synthetic connected-session input cannot
+answer a trusted question.  Progress overlays deliberately do not clear
+or claim input: connection setup continues polling conio so the user can
+abort a stalled operation.  Clearing progress restores the exact screen,
+palette, fonts, video flags, and cursor state saved when the first update
+was shown.
+
+The embedded `menu_host_ui` module exports class `MenuHostUI` with static
+methods `alert(title, message)`, `confirm(title, message)`,
+`prompt(title, message, initial, maxLen, masked)`,
+`choice(title, message, options, current)`, `status(title, lines)`, and
+`statusClear()`.  It is a host-controller ABI rather than a public menu
+script API: application C code holds the call handles and invokes it.
+Menu auto-script overrides are trusted and may replace its presentation,
+but must keep those signatures and return `Bool`, `String`/`null`, and
+numeric choice indexes as appropriate or host dialogs fail closed.
 
 Every reconnect rebuilds the connected VM from scratch.  Connected
 scripts needing cross-session state must persist it through an

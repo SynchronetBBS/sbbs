@@ -7,9 +7,9 @@
 
 #include "bbslist.h"
 #include "conn.h"
+#include "host_ui.h"
 #include "sockwrap.h"
 #include "term.h"	/* get_cterm_size */
-#include "uifcinit.h"
 
 SOCKET rlogin_sock = INVALID_SOCKET;
 
@@ -318,9 +318,6 @@ rlogin_connect(struct bbslist *bbs)
 	char *ruser;
 	char *passwd;
 
-	if (!bbs->hidepopups)
-		init_uifc(true, true);
-
 	ruser = bbs->user;
 	passwd = bbs->password;
 	if (bbs->conn_type == CONN_TYPE_RLOGIN_REVERSED) {
@@ -459,7 +456,7 @@ rlogin_connect(struct bbslist *bbs)
 	_beginthread(rlogin_input_thread, 0, NULL);
 
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 
 	return 0;
 }

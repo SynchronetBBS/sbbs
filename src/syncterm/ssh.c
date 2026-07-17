@@ -20,12 +20,12 @@
 #include "eventwrap.h"
 #include "gen_defs.h"
 #include "genwrap.h"
+#include "host_ui.h"
 #include "sftp.h"
 #include "ssh.h"
 #include "sockwrap.h"
 #include "syncterm.h"
 #include "threadwrap.h"
-#include "uifcinit.h"
 #include "window.h"
 #include "wren_host.h"     /* wren_sftp_active */
 #include "xpendian.h"
@@ -287,25 +287,24 @@ handle_hostkey_result(struct bbslist *bbs)
 					return false;
 				static const char *const wopts[3] = {"Disconnect", "Accept", ""};
 				char fpshow[65], title[96];
-				int slen = 0, choice;
+				char *message = NULL;
 				hex_encode(fpshow, hostkey_sha256, 32);
 				snprintf(title, sizeof(title),
 				    "Weak host key (%u-bit %s)", hostkey_bits, hostkey_algo);
-				asprintf(&uifc.helpbuf,
-				    "`Weak Server Host Key`\n\n"
+				if (asprintf(&message,
 				    "The server presented a %u-bit %s host key.  Keys below 2048 bits\n"
 				    "are considered weak today and within reach of a well-resourced\n"
 				    "attacker (Logjam-class attacks, factoring advances).\n"
 				    "\n"
 				    "This is the first time SyncTERM has seen this host, so there is no\n"
-				    "prior fingerprint to compare against — a genuine weak key and an\n"
+				    "prior fingerprint to compare against. A genuine weak key and an\n"
 				    "active downgrade cannot be distinguished here.\n"
 				    "\n"
 				    "Fingerprint: %s\n",
-				    hostkey_bits, hostkey_algo, fpshow);
-				choice = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &slen, NULL,
-				    title, (char **)wopts);
-				free(uifc.helpbuf);
+				    hostkey_bits, hostkey_algo, fpshow) < 0)
+					return false;
+				int choice = host_ui_choice_message(title, message, wopts, 2, 0);
+				free(message);
 				if (choice != 1)
 					return false;
 			}
@@ -326,7 +325,7 @@ handle_hostkey_result(struct bbslist *bbs)
 			char newfp[65], oldfp[65];
 			char weak_note[160] = "";
 			char title[96];
-			int slen = 0, choice;
+			char *message = NULL;
 			hex_encode(newfp, hostkey_sha256, 32);
 			for (size_t i = 0; i < bbs->ssh_fingerprint_len; i++)
 				sprintf(&oldfp[i * 2], "%02x", bbs->ssh_fingerprint[i]);
@@ -338,25 +337,24 @@ handle_hostkey_result(struct bbslist *bbs)
 				    "active attacker would do.\n\n",
 				    hostkey_bits, hostkey_algo);
 				snprintf(title, sizeof(title),
-				    "Fingerprint Changed — WEAK %u-bit %s key",
+				    "Fingerprint Changed - WEAK %u-bit %s key",
 				    hostkey_bits, hostkey_algo);
 			}
 			else {
 				snprintf(title, sizeof(title), "Fingerprint Changed");
 			}
-			asprintf(&uifc.helpbuf,
-			    "`Fingerprint Changed`\n\n"
+			if (asprintf(&message,
 			    "%s"
 			    "The server fingerprint has changed from the last known good connection.\n"
-			    "This may indicate someone is evesdropping on your connection.\n"
+			    "This may indicate someone is eavesdropping on your connection.\n"
 			    "It is also possible that a host key has just been changed.\n"
 			    "\n"
 			    "Last known fingerprint: %s\n"
 			    "Fingerprint sent now:   %s\n",
-			    weak_note, oldfp, newfp);
-			choice = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &slen, NULL,
-			    title, (char **)opts);
-			free(uifc.helpbuf);
+			    weak_note, oldfp, newfp) < 0)
+				return false;
+			int choice = host_ui_choice_message(title, message, opts, 3, 0);
+			free(message);
 			if (choice == 1) {	/* Update */
 				FILE *lf;
 				str_list_t inifile;
@@ -381,10 +379,9 @@ handle_hostkey_result(struct bbslist *bbs)
 
 /* ----------------------------------------------------------- banner */
 
-/* SSH_MSG_USERAUTH_BANNER (RFC 4252 §5.4).  Fires on the auth-call
- * thread, which is ssh_connect()'s thread, so it's safe to drive
- * uifc directly here.  Displayed modally — banners are meant to be
- * read before the user proceeds. */
+/* SSH_MSG_USERAUTH_BANNER (RFC 4252 section 5.4). Fires on the auth-call
+ * thread, which is ssh_connect()'s thread. Banners are displayed modally
+ * before authentication proceeds. */
 static void
 auth_banner_cb(const uint8_t *message, size_t message_len,
                const uint8_t *language, size_t language_len, void *cbdata)
@@ -399,8 +396,7 @@ auth_banner_cb(const uint8_t *message, size_t message_len,
 		return;
 	memcpy(buf, message, message_len);
 	buf[message_len] = 0;
-	uifc.showbuf(WIN_SAV | WIN_MID, 0, 0, 76, uifc.scrn_len - 2,
-	    "SSH Banner", buf, NULL, NULL);
+	host_ui_alert("SSH Banner", buf);
 	free(buf);
 }
 
@@ -465,7 +461,7 @@ kbi_prompt_cb(const uint8_t *name, size_t name_len,
 		if (msg != NULL) {
 			memcpy(msg, instruction, instruction_len);
 			msg[instruction_len] = 0;
-			uifcmsg("SSH Keyboard-Interactive", msg);
+			host_ui_alert("SSH Keyboard-Interactive", msg);
 			free(msg);
 		}
 	}
@@ -489,15 +485,17 @@ kbi_prompt_cb(const uint8_t *name, size_t name_len,
 		}
 
 		if (!autofill) {
-			/* uifc.input always appends ':' after the title, so
-			   strip a trailing ':' from the server's prompt to
-			   avoid rendering "Password::". */
-			size_t sl = strlen(promptstr);
-			if (sl > 0 && promptstr[sl - 1] == ':')
-				promptstr[--sl] = 0;
-			int mode = echo[i] ? 0 : K_PASSWORD;
-			init_uifc(false, false);
-			uifcinput(promptstr, MAX_PASSWD_LEN, answer, mode, "Enter response.");
+			if (host_ui_prompt("SSH Keyboard-Interactive", promptstr,
+			    answer, sizeof(answer), MAX_PASSWD_LEN, !echo[i]) < 0) {
+				dssh_cleanse(answer, sizeof(answer));
+				for (uint32_t j = 0; j < i; j++) {
+					dssh_cleanse(responses[j], response_lens[j]);
+					free(responses[j]);
+					responses[j] = NULL;
+					response_lens[j] = 0;
+				}
+				return -1;
+			}
 		}
 
 		size_t alen = strlen(answer);
@@ -605,7 +603,7 @@ cryptlib_error_message(int status, const char *msg)
 	char body[256];
 	snprintf(title, sizeof(title), "SSH error %s", msg);
 	snprintf(body, sizeof(body), "Error %d %s\r\n\r\n", status, msg);
-	uifcmsg(title, body);
+	host_ui_alert(title, body);
 }
 
 /* ---------------------------------------------------------- key load */
@@ -1013,10 +1011,10 @@ error_popup(struct bbslist *bbs, const char *blurb)
 		ssh_sock = INVALID_SOCKET;
 	}
 	if (!bbs->hidepopups)
-		uifcmsg("SSH error", (char *)blurb);
+		host_ui_alert("SSH error", blurb);
 	conn_api.terminate = true;
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 }
 
 /*
@@ -1065,10 +1063,10 @@ error_popup_rc(struct bbslist *bbs, const char *what, int rc)
 		ssh_sock = INVALID_SOCKET;
 	}
 	if (!bbs->hidepopups)
-		uifcmsg((char *)what, body);
+		host_ui_alert(what, body);
 	conn_api.terminate = true;
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 }
 
 int
@@ -1082,8 +1080,6 @@ ssh_connect(struct bbslist *bbs)
 	struct dssh_chan_params params;
 	int      auth_rc;
 
-	if (!bbs->hidepopups)
-		init_uifc(true, true);
 	assert_pthread_mutex_init(&ssh_mutex, NULL);
 	io_fail_op = NULL;
 	io_fail_errno = 0;
@@ -1112,7 +1108,7 @@ ssh_connect(struct bbslist *bbs)
 	 * keystroke-blocking data on a 30 Mbps wire. */
 
 	if (!bbs->hidepopups)
-		uifc.pop("Creating Session");
+		host_ui_status("Creating Session");
 	ssh_session = dssh_session_init(true, 0);
 	if (ssh_session == NULL) {
 		error_popup(bbs, "creating session");
@@ -1146,8 +1142,8 @@ ssh_connect(struct bbslist *bbs)
 	}
 
 	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("SSH Handshake");
+		host_ui_status(NULL);
+		host_ui_status("SSH Handshake");
 	}
 	hostkey_result = HOSTKEY_NEW;	/* overwritten by callback */
 	int handshake_rc = dssh_transport_handshake(ssh_session);
@@ -1158,7 +1154,7 @@ ssh_connect(struct bbslist *bbs)
 	}
 	if (!handle_hostkey_result(bbs)) {
 		if (!bbs->hidepopups)
-			uifc.pop(NULL);
+			host_ui_status(NULL);
 		ssh_close();
 		return -1;
 	}
@@ -1166,16 +1162,17 @@ ssh_connect(struct bbslist *bbs)
 	SAFECOPY(password, bbs->password);
 	SAFECOPY(username, bbs->user);
 	if (!username[0]) {
-		if (bbs->hidepopups)
-			init_uifc(false, false);
-		uifcinput("UserID", MAX_USER_LEN, username, 0, "No stored UserID.");
-		if (bbs->hidepopups)
-			uifcbail();
+		if (host_ui_prompt("SSH User ID", "No user ID is stored for this entry.",
+		    username, sizeof(username), MAX_USER_LEN, false) <= 0) {
+			error_popup(bbs, "authentication cancelled: no user ID supplied");
+			ssh_close();
+			return -1;
+		}
 	}
 
 	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Authenticating");
+		host_ui_status(NULL);
+		host_ui_status("Authenticating");
 	}
 
 	/* Probe what the server accepts (RFC 4252 §5.2 "none" auth), then
@@ -1203,14 +1200,10 @@ ssh_connect(struct bbslist *bbs)
 	if (auth_rc != 0 && offers_pw && password[0])
 		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
 	for (int tries = 0; auth_rc != 0 && offers_pw && tries < 3; tries++) {
-		if (bbs->hidepopups)
-			init_uifc(false, false);
 		password[0] = 0;
-		uifcinput("Password", MAX_PASSWD_LEN, password, K_PASSWORD,
-		    tries == 0 ? "Enter password." : "Incorrect password.  Try again.");
-		if (bbs->hidepopups)
-			uifcbail();
-		if (!password[0])
+		if (host_ui_prompt("SSH Password",
+		    tries == 0 ? "Enter password." : "Incorrect password. Try again.",
+		    password, sizeof(password), MAX_PASSWD_LEN, true) <= 0)
 			break;
 		auth_rc = dssh_auth_password(ssh_session, username, password, NULL, NULL);
 	}
@@ -1228,8 +1221,8 @@ ssh_connect(struct bbslist *bbs)
 	}
 
 	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Opening Channel");
+		host_ui_status(NULL);
+		host_ui_status("Opening Channel");
 	}
 
 	if (dssh_session_start(ssh_session) != 0) {
@@ -1266,8 +1259,8 @@ ssh_connect(struct bbslist *bbs)
 		sftp_session_start(bbs);
 		if (conn_api.terminate) {
 			if (!bbs->hidepopups) {
-				uifc.pop(NULL);
-				uifcmsg("Connection Aborted.", "`Connection Aborted`\n\n"
+				host_ui_status(NULL);
+				host_ui_alert("Connection Aborted",
 				    "Connection to the remote system aborted by keystroke.");
 			}
 			ssh_close();
@@ -1276,7 +1269,7 @@ ssh_connect(struct bbslist *bbs)
 	}
 
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 
 	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE)) {
 		conn_api.terminate = true;

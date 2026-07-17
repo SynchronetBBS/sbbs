@@ -5,6 +5,27 @@ import "ui_pane" for Pane
 import "ui_list" for ListView
 import "ui_popup" for Alert, Confirm, Prompt, Popup
 
+class StandaloneChoice is Popup {
+  construct new(message, labels) {
+    super(message)
+    _list = ListView.new()
+    _list.items = labels
+    _list.onSelect = Fn.new {|index, item| dismissWith_(index) }
+    add(_list)
+  }
+
+  selected=(value) { _list.selected = value }
+
+  bounds=(value) {
+    super.bounds = value
+    var cb = contentBounds
+    if (cb == null) return
+    var top = cb.y + msgRows
+    var height = (bounds.y + bounds.h - 1 - top).max(1)
+    _list.bounds = Rect.new(cb.x, top, cb.w, height)
+  }
+}
+
 class MenuUi {
   static promptStandalone(title, message, initial, maxLen, masked) {
     var app = App.new()
@@ -26,6 +47,50 @@ class MenuUi {
     p.onDismiss = Fn.new {|value| app.quit() }
     app.pushModal(p)
     app.runSync()
+  }
+
+  static confirmStandalone(title, message) {
+    var app = App.new()
+    var p = Confirm.new(message)
+    p.title = title
+    p.bounds = Popup.centeredBounds_(message, 1, 24)
+    p.onDismiss = Fn.new {|value| app.quit() }
+    app.pushModal(p)
+    app.runSync()
+    return p.result
+  }
+
+  static choiceStandalone(title, rows, current) {
+    return choiceStandalone(title, "", rows, current)
+  }
+
+  static choiceStandalone(title, message, rows, current) {
+    if (rows.count == 0) return null
+    var app = App.new()
+    var longest = title.count + 6
+    var labels = []
+    for (row in rows) {
+      var label = row is List ? row[1] : row
+      labels.add(label)
+      if (label.count + 4 > longest) longest = label.count + 4
+    }
+    var popup = StandaloneChoice.new(message, labels)
+    popup.title = title
+    popup.bounds = Popup.centeredBounds_(message, labels.count + 1,
+        longest.max(24))
+    if (current == null) {
+      popup.selected = 0
+    } else if (rows[0] is List) {
+      popup.selected = rowIndex(rows, current)
+    } else {
+      popup.selected = current
+    }
+    popup.onDismiss = Fn.new {|value| app.quit() }
+    app.pushModal(popup)
+    app.runSync()
+    if (popup.result == null) return null
+    var row = rows[popup.result]
+    return row is List ? row[0] : popup.result
   }
 
   static rowName(rows, value) {

@@ -8,12 +8,12 @@
 #include "conn.h"
 #include "gen_defs.h"
 #include "genwrap.h"
+#include "host_ui.h"
 #include "rlogin.h"
 #include "sockwrap.h"
 #include "telnet_io.h"
 #include "term.h"
 #include "threadwrap.h"
-#include "uifcinit.h"
 
 extern int telnet_log_level;
 bool telnet_deferred = false;
@@ -134,9 +134,6 @@ telnet_tx_parse_cb(const void *buf, size_t len, size_t *olen)
 int
 telnet_connect(struct bbslist *bbs)
 {
-	if (!bbs->hidepopups)
-		init_uifc(true, true);
-
 	telnet_log_level = bbs->telnet_loglevel;
 
 	/* Explicit atomic init — conn_connect() memsets conn_api but
@@ -186,7 +183,7 @@ telnet_connect(struct bbslist *bbs)
 		send_initial_state();
 
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 
 	return 0;
 }

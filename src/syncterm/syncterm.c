@@ -88,6 +88,7 @@ enum {
 #include "legacy_ciphers/legacy_ciphers.h"
 #endif
 #include "fonts.h"
+#include "host_ui.h"
 #include "syncterm.h"
 #include "term.h"
 #include "uifcinit.h"
@@ -237,7 +238,7 @@ popup_queue_drain(void)
 		assert_pthread_mutex_unlock(&popup_q_mutex);
 		if (e == NULL)
 			break;
-		uifcmsg(e->title, e->body);
+		host_ui_alert(e->title, e->body);
 		free(e->title);
 		free(e->body);
 		free(e);
@@ -1760,18 +1761,12 @@ check_upgrade(void)
 				char oldpath[MAX_PATH+1];
 				snprintf(oldpath, sizeof(oldpath), "%s/.syncterm", home);
 				if (isdir(oldpath)) {
-					init_uifc(true, true);
-					uifc.showbuf(WIN_SAV | WIN_MID | WIN_HLP, 0, 0, 76, uifc.scrn_len - 2, "Upgrade Detected",
-					    "It looks like you've just upgraded SyncTERM.  Previously on POSIX\n"
-					    "systems, all files were usually stored in $HOME/.syncterm.  However,\n"
-					    "with SyncTERM 1.2, files are now stored in the locations defined in the\n"
-					    "XDG Base Directory Specification.\n"
-					    "\n"
-					    "You may want to note the new locations in the File Locations menu\n"
-					    "option in SyncTERM Settings menu, exit SyncTERM (this is important) and\n"
-					    "manually move the files to the new locations, overwriting the newly\n"
-					    "created ini file.\n", NULL, NULL);
-					uifcbail();
+					host_ui_alert("Upgrade Detected",
+					    "It looks like you've just upgraded SyncTERM. Previously on POSIX\n"
+					    "systems, files were usually stored in $HOME/.syncterm. SyncTERM now\n"
+					    "uses locations defined by the XDG Base Directory Specification.\n\n"
+					    "Review the new paths in Settings > File Locations, exit SyncTERM,\n"
+					    "then move the old files to those locations if needed.");
 				}
 			}
 		}
@@ -1923,76 +1918,55 @@ download_thread(void *args)
 void
 update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
 {
-	size_t sz = items * 120;
-	char *helpbuf = malloc(sz);
-	if (helpbuf == NULL)
+	(void)leaveup;
+	if (items == 0)
 		return;
-	size_t pos = 0;
-	static int cur = 0;
-	static int bar = 0;
-	bool errors = false;
+	char (*text)[160] = calloc(items, sizeof(*text));
+	const char **lines = calloc(items, sizeof(*lines));
+	if (text == NULL || lines == NULL) {
+		free(text);
+		free(lines);
+		return;
+	}
 
 	for (size_t i = 0; i < items; i++) {
-		if (sz <= pos)
-			break;
+		lines[i] = text[i];
 		assert_pthread_mutex_lock(&reqs[i].mtx);
-		if (reqs[i].msg) {
-			helpbuf[pos++] = '`';
-			helpbuf[pos] = 0;
-			errors = true;
-		}
-		else if (reqs[i].cb_data & UINT64_C(0x8000000000000000)) {
-			helpbuf[pos++] = '`';
-			helpbuf[pos] = 0;
-			errors = true;
-		}
-		int added = snprintf(&helpbuf[pos], sz - pos, "%-20s: %-20s ",
-		    reqs[i].name, reqs[i].state ? reqs[i].state : "");
-		pos += added;
-		if (sz > pos) {
-			if (reqs[i].msg) {
-				int added = snprintf(&helpbuf[pos], sz - pos, "%s`\r\n", reqs[i].msg);
-				pos += added;
+		const char *name = reqs[i].name == NULL ? "" : reqs[i].name;
+		const char *state = reqs[i].state == NULL ? "" : reqs[i].state;
+		if (reqs[i].msg != NULL)
+			snprintf(text[i], sizeof(text[i]), "%-20s: %s", name,
+			    reqs[i].msg);
+		else if (reqs[i].cb_data & UINT64_C(0x8000000000000000))
+			snprintf(text[i], sizeof(text[i]),
+			    "%-20s: Thread failed to start", name);
+		else if (reqs[i].received_size > 0 || reqs[i].remote_size > 0) {
+			char received[10];
+			char total[10];
+			byte_estimate_to_str(reqs[i].received_size, received,
+			    sizeof(received), 0, 3);
+			byte_estimate_to_str(reqs[i].remote_size, total,
+			    sizeof(total), 0, 3);
+			if (reqs[i].remote_size > 0) {
+				uint64_t percent = reqs[i].received_size >
+				    reqs[i].remote_size ? 100 : (uint64_t)(
+				    (long double)reqs[i].received_size * 100 /
+				    reqs[i].remote_size);
+				snprintf(text[i], sizeof(text[i]),
+				    "%-20s: %-20s %7s/%-7s %3llu%%", name, state,
+				    received, total, (unsigned long long)percent);
 			}
-			else if (reqs[i].cb_data & UINT64_C(0x8000000000000000)) {
-				int added = snprintf(&helpbuf[pos], sz - pos, "Thread Failed to Start`\r\n");
-				pos += added;
-			}
-			else {
-				if (reqs[i].received_size > 0 || reqs[i].remote_size > 0) {
-					char received[10];
-					char total[10];
-					byte_estimate_to_str(reqs[i].received_size, received, sizeof(received), 0, 3);
-					byte_estimate_to_str(reqs[i].remote_size, total, sizeof(total), 0, 3);
-					if (reqs[i].remote_size) {
-						int added = snprintf(&helpbuf[pos], sz - pos, "%7s/%-7s ", received, total);
-						pos += added;
-						if (sz > pos) {
-							int pct = reqs[i].received_size * 10 / reqs[i].remote_size;
-							int added = snprintf(&helpbuf[pos], sz - pos, "~%*s~%*s\r\n", pct, "", 10 - pct, "");
-							pos += added;
-						}
-					}
-					else {
-						int added = snprintf(&helpbuf[pos], sz - pos, "%7s\r\n", received);
-						pos += added;
-					}
-				}
-				else {
-					int added = snprintf(&helpbuf[pos], sz - pos, "\r\n");
-					pos += added;
-				}
-			}
+			else
+				snprintf(text[i], sizeof(text[i]), "%-20s: %-20s %7s",
+				    name, state, received);
 		}
+		else
+			snprintf(text[i], sizeof(text[i]), "%-20s: %s", name, state);
 		assert_pthread_mutex_unlock(&reqs[i].mtx);
 	}
-	uifc.showbuf(((leaveup && errors) ? 0 : WIN_DYN | WIN_ACT) | WIN_HLP | WIN_SAV | WIN_MID | WIN_IMM,
-	    0, 0, 74, items + 4, "Web Cache Update", helpbuf, &cur, &bar);
-	if (leaveup) {
-		cur = 0;
-		bar = 0;
-	}
-	free(helpbuf);
+	host_ui_status_lines("Web Cache Update", lines, items);
+	free(lines);
+	free(text);
 }
 
 int
@@ -2500,6 +2474,12 @@ main(int argc, char **argv)
 		FULLPATH(path, inpath, sizeof(path));
 	}
 	atexit(uifcbail);
+	load_font_files();
+	if (!wren_menu_host_init()) {
+		fputs("Unable to initialize the Wren main menu\n", stderr);
+		return 1;
+	}
+	atexit(wren_menu_host_shutdown);
 
 #ifdef __unix__
 	umask(077);
@@ -2536,7 +2516,6 @@ main(int argc, char **argv)
 	if ((settings.webgetUserList || settings.webgets) && !quitting) {
 		// Update the web list caches...
 
-		init_uifc(true, true);
 		char cache_path[MAX_PATH + 1];
 		if (get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_SYSTEM_CACHE, false)) {
 			size_t items;
@@ -2579,13 +2558,14 @@ main(int argc, char **argv)
 				update_webget_progress(reqs, items, true);
 			}
 		}
-		uifcbail();
+		host_ui_status_clear();
 	}
 
         /* Auto-connect URL */
 	if (url[0]) {
 		if ((bbs = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
-			uifcmsg("Unable to allocate memory", "The system was unable to allocate memory.");
+			host_ui_alert("Unable to Allocate Memory",
+			    "The system was unable to allocate a directory entry.");
 			return 1;
 		}
 		bbs_alloc = true;
@@ -2615,12 +2595,6 @@ main(int argc, char **argv)
 			goto USAGE;
 	}
 
-	load_font_files();
-	if (!wren_menu_host_init()) {
-		fputs("Unable to initialize the Wren main menu\n", stderr);
-		return 1;
-	}
-	atexit(wren_menu_host_shutdown);
 	while ((!quitting) && (bbs != NULL ||
 	    (bbs = wren_menu_host_run(last_bbs, false)) != NULL)) {
 		if (default_hidepopups >= 0)
@@ -2634,8 +2608,6 @@ main(int argc, char **argv)
 			fake_mode = screen_to_ciolib(bbs->screen_mode);
 		textmode(screen_to_ciolib(bbs->screen_mode));
 		set_default_cursor();
-		if (!bbs->hidepopups)
-			init_uifc(true, true);
 		load_font_files();
 		setfont(find_font_id(bbs->font), true, 1);
 		if (conn_connect(bbs)) {
@@ -2644,7 +2616,6 @@ main(int argc, char **argv)
 			textmode(txtinfo.currmode);
 			set_default_cursor();
 			fake_mode = -1;
-			init_uifc(true, true);
 			settitle("SyncTERM");
 		}
 		else {

@@ -10,7 +10,7 @@
  *
  * BBSID and node number are auto-discovered before the live session begins:
  * BBSID by listening for a retained `sbbs/+/version` topic, node number
- * from a uifc picker populated by `sbbs/{BBSID}/node/+/status` retained
+ * from a picker populated by `sbbs/{BBSID}/node/+/status` retained
  * messages.  Both stages fall back to manual input boxes on timeout.
  *
  * The MQTT 5.0 codec is intentionally minimal: only the packet types we
@@ -29,9 +29,9 @@
 #include "conn.h"
 #include "conn_mqtt.h"
 #include "genwrap.h"
+#include "host_ui.h"
 #include "sockwrap.h"
 #include "threadwrap.h"
-#include "uifcinit.h"
 #include "xp_tls.h"
 
 /* ─────────────────────────────────────────────────────────── state */
@@ -572,15 +572,12 @@ node_status_label(int status)
 /* ──────────────────────────────────────────── pickers */
 
 static int
-prompt_node_number(struct bbslist *bbs)
+prompt_node_number(void)
 {
 	char in[8] = "1";
-	uifc.helpbuf =
-	    "`Node Number`\n\n"
-	    "Enter the BBS node number to connect to.";
-	int rc = uifc.input(WIN_MID | WIN_SAV, 0, 0, "Node Number",
-	                    in, sizeof(in) - 1, K_NUMBER | K_EDIT);
-	(void)bbs;
+	int rc = host_ui_prompt("Node Number",
+	    "Enter the BBS node number to connect to.", in, sizeof(in),
+	    sizeof(in) - 1, false);
 	if (rc < 0)
 		return -1;
 	int n = atoi(in);
@@ -592,27 +589,29 @@ prompt_node_number(struct bbslist *bbs)
 static int
 prompt_bbsid(void)
 {
-	uifc.helpbuf =
-	    "`BBS Identifier`\n\n"
-	    "Enter the BBSID (QWK ID) of the BBS.  This is the upper-case\n"
-	    "short identifier configured in scfg under 'System Information'.";
-	int rc = uifc.input(WIN_MID | WIN_SAV, 0, 0, "BBSID",
-	                    mqtt_bbsid, sizeof(mqtt_bbsid) - 1, K_EDIT | K_UPPER);
+	int rc = host_ui_prompt("BBSID",
+	    "Enter the upper-case BBSID (QWK ID) configured in SCFG under "
+	    "System Information.", mqtt_bbsid, sizeof(mqtt_bbsid),
+	    sizeof(mqtt_bbsid) - 1, false);
 	if (rc < 0 || mqtt_bbsid[0] == 0)
 		return -1;
+	for (char *p = mqtt_bbsid; *p != 0; p++) {
+		if (*p >= 'a' && *p <= 'z')
+			*p -= 'a' - 'A';
+	}
 	return 0;
 }
 
 /*
- * Show a uifc.list of discovered nodes; returns chosen node number, or
+ * Show the discovered nodes; returns the chosen node number, or
  * 0 if the user cancelled, or -1 on error.  If no nodes were
  * discovered, falls through to a manual input prompt.
  */
 static int
-pick_node(struct discovery_state *st, struct bbslist *bbs)
+pick_node(struct discovery_state *st)
 {
 	if (st->node_count == 0)
-		return prompt_node_number(bbs);
+		return prompt_node_number();
 
 	qsort(st->nodes, st->node_count, sizeof(st->nodes[0]), node_cmp);
 
@@ -633,18 +632,13 @@ pick_node(struct discovery_state *st, struct bbslist *bbs)
 	n++;
 	opts[n] = NULL;
 
-	int picked = 0;
-	uifc.helpbuf =
-	    "`Pick a Node`\n\n"
-	    "Choose a node to connect to.  The list shows all nodes the\n"
-	    "broker has retained state for; pick one to attach to its\n"
-	    "input/output stream.";
-	int rc = uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &picked, NULL,
-	                   "Active Nodes", opts);
-	if (rc < 0)
+	int picked = host_ui_choice_message("Active Nodes",
+	    "Choose a node whose input/output stream should be attached.",
+	    (const char *const *)opts, (size_t)n, 0);
+	if (picked < 0)
 		return 0;
 	if (picked == st->node_count)
-		return prompt_node_number(bbs);
+		return prompt_node_number();
 	return st->nodes[picked].number;
 }
 
@@ -796,8 +790,6 @@ mqtt_connect(struct bbslist *bbs)
 	char psk_buf[MAX_PASSWD_LEN + 1];
 	const char *fail_reason = NULL;
 
-	if (!bbs->hidepopups)
-		init_uifc(true, true);
 	assert_pthread_mutex_init(&mqtt_io_mutex, NULL);
 
 
@@ -823,7 +815,7 @@ mqtt_connect(struct bbslist *bbs)
 	}
 
 	if (!bbs->hidepopups)
-		uifc.pop("Negotiating TLS-PSK");
+		host_ui_status("Negotiating TLS-PSK");
 
 	lower_copy(id_buf, sizeof(id_buf), bbs->user);
 	lower_copy(psk_buf, sizeof(psk_buf), bbs->password);
@@ -852,18 +844,18 @@ mqtt_connect(struct bbslist *bbs)
 		mqtt_sock = INVALID_SOCKET;
 
 		if (!bbs->hidepopups) {
-			uifc.pop(NULL);
-			uifc.pop("Negotiating TLS (cert)");
+			host_ui_status(NULL);
+			host_ui_status("Negotiating TLS (cert)");
 		}
 		mqtt_sock = conn_socket_connect(bbs, true);
 		if (mqtt_sock == INVALID_SOCKET) {
 			if (!bbs->hidepopups) {
-				uifc.pop(NULL);
+				host_ui_status(NULL);
 				char str[600];
 				snprintf(str, sizeof(str),
 				    "TLS-PSK failed: %s\nTCP reconnect for cert retry failed.",
 				    psk_err);
-				uifcmsg("MQTT TLS Error", str);
+				host_ui_alert("MQTT TLS Error", str);
 			}
 			conn_api.terminate = true;
 			return -1;
@@ -878,7 +870,7 @@ mqtt_connect(struct bbslist *bbs)
 
 	if (mqtt_tls == NULL) {
 		if (!bbs->hidepopups) {
-			uifc.pop(NULL);
+			host_ui_status(NULL);
 			char str[800];
 			if (psk_err[0])
 				snprintf(str, sizeof(str),
@@ -887,7 +879,7 @@ mqtt_connect(struct bbslist *bbs)
 			else
 				snprintf(str, sizeof(str),
 				    "TLS handshake failed: %s", xp_tls_last_err());
-			uifcmsg("MQTT TLS Error", str);
+			host_ui_alert("MQTT TLS Error", str);
 		}
 		closesocket(mqtt_sock);
 		mqtt_sock = INVALID_SOCKET;
@@ -896,8 +888,8 @@ mqtt_connect(struct bbslist *bbs)
 	}
 
 	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Sending CONNECT");
+		host_ui_status(NULL);
+		host_ui_status("Sending CONNECT");
 	}
 	/* Pick MQTT-level credentials based on which TLS kex actually
 	 * negotiated.  PSK path = Synchronet internal broker, MQTT password
@@ -912,19 +904,16 @@ mqtt_connect(struct bbslist *bbs)
 	 * users for a value they never use. */
 	bool used_psk = xp_tls_used_psk(mqtt_tls);
 	if (used_psk && bbs->syspass[0] == 0 && !bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.helpbuf =
-		    "`System Password`\n\n"
-		    "The Synchronet internal MQTT broker authenticates the\n"
-		    "connection with the BBS's system password.  Enter it here.";
-		int rc = uifc.input(WIN_MID | WIN_SAV, 0, 0, "System Password",
-		                    bbs->syspass, sizeof(bbs->syspass) - 1,
-		                    K_EDIT | K_PASSWORD);
+		host_ui_status(NULL);
+		int rc = host_ui_prompt("System Password",
+		    "The Synchronet internal MQTT broker authenticates with the "
+		    "BBS system password.", bbs->syspass, sizeof(bbs->syspass),
+		    sizeof(bbs->syspass) - 1, true);
 		if (rc < 0 || bbs->syspass[0] == 0) {
 			fail_reason = "no system password supplied";
 			goto fail;
 		}
-		uifc.pop("Sending CONNECT");
+		host_ui_status("Sending CONNECT");
 	}
 	const char *mqtt_pw = used_psk ? bbs->syspass : bbs->password;
 	if (send_connect(bbs->user, mqtt_pw) < 0) {
@@ -970,8 +959,8 @@ mqtt_connect(struct bbslist *bbs)
 	}
 	if (!got_connack || type != MQTT_CONNACK || cak_plen < 2) {
 		if (!bbs->hidepopups) {
-			uifc.pop(NULL);
-			uifcmsg("MQTT Error", "No CONNACK received from broker.");
+			host_ui_status(NULL);
+			host_ui_alert("MQTT Error", "No CONNACK received from broker.");
 		}
 		goto fail;
 	}
@@ -981,8 +970,8 @@ mqtt_connect(struct bbslist *bbs)
 			snprintf(str, sizeof(str),
 			         "Broker rejected CONNECT (reason 0x%02X)",
 			         cak_payload[1]);
-			uifc.pop(NULL);
-			uifcmsg("MQTT Auth Error", str);
+			host_ui_status(NULL);
+			host_ui_alert("MQTT Auth Error", str);
 		}
 		goto fail;
 	}
@@ -992,8 +981,8 @@ mqtt_connect(struct bbslist *bbs)
 	   second level returns one retained PUBLISH per BBSID the broker
 	   knows about. */
 	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Discovering BBSID");
+		host_ui_status(NULL);
+		host_ui_status("Discovering BBSID");
 	}
 	if (send_subscribe("sbbs/+") < 0) {
 		fail_reason = "subscribe(sbbs/+): TLS write failed";
@@ -1008,21 +997,21 @@ mqtt_connect(struct bbslist *bbs)
 
 	if (mqtt_bbsid[0] == 0) {
 		if (!bbs->hidepopups)
-			uifc.pop(NULL);
+			host_ui_status(NULL);
 		if (prompt_bbsid() < 0) {
 			if (!bbs->hidepopups)
-				uifcmsg("MQTT Error",
+				host_ui_alert("MQTT Error",
 				    "No BBSID was discovered and none was entered.\n"
 				    "The broker has no retained `sbbs/{BBSID}` topic, which\n"
 				    "means the BBS has not yet published its identity to MQTT.");
 			goto fail;
 		}
 		if (!bbs->hidepopups)
-			uifc.pop("Discovering nodes");
+			host_ui_status("Discovering nodes");
 	}
 	else if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Discovering nodes");
+		host_ui_status(NULL);
+		host_ui_status("Discovering nodes");
 	}
 
 	(void)send_unsubscribe("sbbs/+");
@@ -1044,12 +1033,12 @@ mqtt_connect(struct bbslist *bbs)
 	}
 
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 
-	mqtt_node = pick_node(&st, bbs);
+	mqtt_node = pick_node(&st);
 	if (mqtt_node <= 0) {
 		if (!bbs->hidepopups)
-			uifcmsg("MQTT",
+			host_ui_alert("MQTT",
 			    "No node selected.  Cancelled.");
 		goto fail;
 	}
@@ -1112,14 +1101,14 @@ mqtt_connect(struct bbslist *bbs)
 	}
 
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 	return 0;
 
 fail:
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 	if (!bbs->hidepopups && fail_reason != NULL)
-		uifcmsg("MQTT Error", (char *)fail_reason);
+		host_ui_alert("MQTT Error", fail_reason);
 	if (mqtt_tls != NULL) {
 		xp_tls_close(mqtt_tls, false);
 		mqtt_tls = NULL;

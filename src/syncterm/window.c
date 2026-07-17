@@ -7,9 +7,9 @@
  #include <bitmap_con.h>	/* vstat / vstatlock */
 #endif
 
+#include "host_ui.h"
 #include "syncterm.h"
 #include "term.h"
-#include "uifcinit.h"
 
 void
 get_term_win_size(int *width, int *height, int *pixelw, int *pixelh, int *nostatus)
@@ -107,9 +107,8 @@ drawwin(void)
 		term.x = (txtinfo.screenwidth - term.width) / 2 + 2;
 	term.y = (txtinfo.screenheight - term.height) / 2 + 2;
 	if ((winbuf = (char *)alloca(txtinfo.screenheight * txtinfo.screenwidth * 2)) == NULL) {
-		uifcmsg("Cannot allocate memory for terminal buffer", "`Memory error`\n\n"
-		    "Either your system is dangerously low on resources or your\n"
-		    "window is farking huge!");
+		host_ui_alert("Cannot Allocate Terminal Buffer",
+		    "The system is low on memory or the terminal window is too large.");
 		return -1;
 	}
 	c = 0;

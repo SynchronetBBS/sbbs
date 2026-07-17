@@ -9,7 +9,7 @@
 #include "bbslist.h"
 #include "conn.h"
 #include "fonts.h"
-#include "uifcinit.h"
+#include "host_ui.h"
 #include "window.h"
 
 HANDLE inputRead, inputWrite, outputRead, outputWrite;
@@ -163,7 +163,7 @@ int conpty_connect(struct bbslist *bbs)
 	InitializeProcThreadAttributeList(NULL, 1, 0, &sz);
 	si.lpAttributeList = HeapAlloc(heap, 0, sz);
 	if (si.lpAttributeList == NULL) {
-		uifcmsg("Shell Error", "HeapAlloc Failed");
+		host_ui_alert("Shell Error", "HeapAlloc failed");
 		return -1;
 	}
 
@@ -171,18 +171,18 @@ int conpty_connect(struct bbslist *bbs)
 	if (cmd[0] == 0)
 		cmd = getenv("ComSpec");
 	if (cmd == NULL)  {
-		uifcmsg("Shell Error", "No command shell found");
+		host_ui_alert("Shell Error", "No command shell found");
 		return -1;
 	}
 	if (!CreatePipe(&inputRead, &inputWrite, NULL, 0)) {
-		uifcmsg("Shell Error", "CreatePipe (input) Failed");
+		host_ui_alert("Shell Error", "CreatePipe (input) failed");
 		return -1;
 	}
 	if (!CreatePipe(&outputRead, &outputWrite, NULL, 0)) {
 		CloseHandle(inputRead);
 		CloseHandle(inputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		uifcmsg("Shell Error", "CreatePipe (output) Failed");
+		host_ui_alert("Shell Error", "CreatePipe (output) failed");
 		return -1;
 	}
 	if (FAILED(CreatePseudoConsole(size, inputRead, outputWrite, 0, &cpty))) {
@@ -191,7 +191,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		uifcmsg("Shell Error", "CreatePseudoConsole Failed");
+		host_ui_alert("Shell Error", "CreatePseudoConsole failed");
 		return -1;
 	}
 	if (!InitializeProcThreadAttributeList(si.lpAttributeList, 1, 0, &sz)) {
@@ -200,7 +200,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		uifcmsg("Shell Error", "InitializeProcThreadAttributeList Failed");
+		host_ui_alert("Shell Error", "InitializeProcThreadAttributeList failed");
 		return -1;
 	}
 
@@ -211,7 +211,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		uifcmsg("Shell Error", "UpdateProcThreadAttribute Failed");
+		host_ui_alert("Shell Error", "UpdateProcThreadAttribute failed");
 		return -1;
 	}
 
@@ -222,7 +222,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
 		HeapFree(heap, 0, si.lpAttributeList);
-		uifcmsg("Shell Error", "CreateProcessA Failed");
+		host_ui_alert("Shell Error", "CreateProcessA failed");
 		return -1;
 	}
 	DeleteProcThreadAttributeList(si.lpAttributeList);
@@ -232,7 +232,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(inputWrite);
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
-		uifcmsg("Shell Error", "create_conn_buf (input) Failed");
+		host_ui_alert("Shell Error", "create_conn_buf (input) failed");
 		return -1;
 	}
 	if (!create_conn_buf(&conn_outbuf, BUFFER_SIZE)) {
@@ -241,7 +241,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(inputWrite);
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
-		uifcmsg("Shell Error", "create_conn_buf (output) Failed");
+		host_ui_alert("Shell Error", "create_conn_buf (output) failed");
 		return -1;
 	}
 	if (!(conn_api.rd_buf = (unsigned char *)malloc(BUFFER_SIZE))) {
@@ -251,7 +251,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(inputWrite);
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
-		uifcmsg("Shell Error", "malloc (input) Failed");
+		host_ui_alert("Shell Error", "malloc (input) failed");
 		return -1;
 	}
 	conn_api.rd_buf_size = BUFFER_SIZE;
@@ -263,7 +263,7 @@ int conpty_connect(struct bbslist *bbs)
 		CloseHandle(inputWrite);
 		CloseHandle(outputRead);
 		CloseHandle(outputWrite);
-		uifcmsg("Shell Error", "malloc (output) Failed");
+		host_ui_alert("Shell Error", "malloc (output) failed");
 		return -1;
 	}
 	conn_api.wr_buf_size = BUFFER_SIZE;

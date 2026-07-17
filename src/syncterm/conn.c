@@ -30,10 +30,10 @@
 #include "bbslist.h"
 #include "conn.h"
 #include "conn_mqtt.h"
+#include "host_ui.h"
 #include "raw.h"
 #include "rlogin.h"
 #include "term.h"
-#include "uifcinit.h"
 #include "wren_host.h"
 #ifndef WITHOUT_DEUCESSH
  #include "ssh.h"
@@ -476,10 +476,10 @@ conn_connect(struct bbslist *bbs)
 #endif
 		default:
 			sprintf(str, "%s connections not supported.", conn_types[bbs->conn_type]);
-			uifcmsg(str, "`Connection type not supported`\n\n"
+			host_ui_alert(str,
 			    "The connection type of this entry is not supported by this build.\n"
 			    "Either the protocol was disabled at compile time, or is\n"
-			    "unsupported on this plattform.");
+			    "unsupported on this platform.");
 			conn_api.terminate = true;
 	}
 	if (conn_api.connect) {
@@ -549,7 +549,7 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 	char             str[LIST_ADDR_MAX + 40];
 
 	if (!bbs->hidepopups)
-		uifc.pop("Looking up host");
+		host_ui_status("Looking up host");
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_flags = PF_UNSPEC;
 	switch (bbs->address_family) {
@@ -576,8 +576,8 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 		res = NULL;
 	}
 	if (!bbs->hidepopups) {
-		uifc.pop(NULL);
-		uifc.pop("Connecting...");
+		host_ui_status(NULL);
+		host_ui_status("Connecting...");
 	}
 
 	if (can_cancel) {
@@ -686,7 +686,7 @@ connected:
 				    __FILE__, __LINE__, errno);
 
 			if (!bbs->hidepopups)
-				uifc.pop(NULL);
+				host_ui_status(NULL);
 			return sock;
 		}
 		failcode = FAILURE_DISCONNECTED;
@@ -697,38 +697,34 @@ connected:
 	if (res)
 		freeaddrinfo(res);
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 	conn_api.terminate = true;
 	if (!bbs->hidepopups) {
 		switch (failcode) {
 			case FAILURE_RESOLVE:
 				sprintf(str, "Cannot resolve %s!", bbs->addr);
-				uifcmsg(str, "`Cannot Resolve Host`\n\n"
-				    "The system is unable to resolve the hostname... double check the spelling.\n"
-				    "If it's not an issue with your DNS settings, the issue is probobly\n"
-				    "with the DNS settings of the system you are trying to contact.");
+				host_ui_alert(str,
+				    "The system is unable to resolve the hostname. Check its spelling\n"
+				    "and the DNS configuration for this system and the remote host.");
 				break;
 			case FAILURE_CANT_CREATE:
 				sprintf(str, "Cannot create socket (%d)!", ERROR_VALUE);
-				uifcmsg(str,
-				    "`Unable to create socket`\n\n"
+				host_ui_alert(str,
 				    "Your system is either dangerously low on resources, or there\n"
 				    "is a problem with your TCP/IP stack.");
 				break;
 			case FAILURE_CONNECT_ERROR:
 				sprintf(str, "Connect error (%d)!", ERROR_VALUE);
-				uifcmsg(str,
-				    "`The connect call returned an error`\n\n"
+				host_ui_alert(str,
 				    "The call to connect() returned an unexpected error code.");
 				break;
 			case FAILURE_ABORTED:
-				uifcmsg("Connection Aborted.", "`Connection Aborted`\n\n"
+				host_ui_alert("Connection Aborted",
 				    "Connection to the remote system aborted by keystroke.");
 				break;
 			case FAILURE_DISCONNECTED:
 				sprintf(str, "Connect error (%d)!", ERROR_VALUE);
-				uifcmsg(str,
-				    "`SyncTERM failed to connect`\n\n"
+				host_ui_alert(str,
 				    "After connect() succeeded, the socket was in a disconnected state.");
 				break;
 		}

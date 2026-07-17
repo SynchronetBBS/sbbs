@@ -16,6 +16,7 @@
 #include "filepick.h"
 #include "filewrap.h"
 #include "gen_defs.h"
+#include "host_ui.h"
 #include "saucedefs.h"
 #include "sexyz.h"
 #include "strwrap.h"
@@ -24,7 +25,6 @@
 #include "term.h"
 #include "threadwrap.h"
 #include "audio_apc.h"
-#include "uifcinit.h"
 #include "window.h"
 #include "xmodem.h"
 #include "xpbeep.h"
@@ -5030,8 +5030,7 @@ open_hyperlink(int hyperlink_id)
 		char *url = ciolib_get_hyperlink_url(hyperlink_id);
 		if (url) {
 			copytext(url, strlen(url));
-			if (!wren_host_alert("URL copied to clipboard", url))
-				uifcmsg("URL copied to clipboard", url);
+			host_ui_alert("URL copied to clipboard", url);
 			free(url);
 		}
 	}
@@ -5055,9 +5054,7 @@ open_url_at_cursor(struct mouse_event *mevent)
 				if (!cio_api.openurl
 				    || !cio_api.openurl(url)) {
 					copytext(url, strlen(url));
-					if (!wren_host_alert("URL copied to clipboard",
-					    url))
-						uifcmsg("URL copied to clipboard", url);
+					host_ui_alert("URL copied to clipboard", url);
 				}
 				free(url);
 			}
@@ -5682,10 +5679,8 @@ doterm(struct bbslist *bbs)
 							 * keeps is_connected true until the queue
 							 * drains, so we go straight to teardown. */
 							if (!bbs->hidepopups) {
-								if (!wren_host_alert("Disconnected",
-								    "Remote host dropped connection"))
-									uifcmsg("Disconnected",
-									    "`Disconnected`\n\nRemote host dropped connection");
+								host_ui_alert("Disconnected",
+								    "Remote host dropped connection");
 							}
 							check_exit(false);
 							finish_scrollback();
@@ -5862,7 +5857,6 @@ doterm(struct bbslist *bbs)
 					cterm_suspended = menu_was_suspended;
 					sprintf(title, "SyncTERM - %s\n", bbs->name);
 					settitle(title);
-					uifcbail();
 					setup_mouse_events(&ms);
 					restorescreen(savscrn);
 					freescreen(savscrn);

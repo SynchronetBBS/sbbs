@@ -9,15 +9,25 @@
 #include "dirwrap.h"
 #include "genwrap.h"
 #include "syncterm.h"
+#include "term.h"
 #include "wren.h"
 
 #include <stdio.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
 static struct wren_host_state menu_state;
 static bool menu_active;
 static WrenHandle *menu_run_handle;
+static WrenHandle *menu_ui_class;
+static WrenHandle *menu_alert_handle;
+static WrenHandle *menu_confirm_handle;
+static WrenHandle *menu_prompt_handle;
+static WrenHandle *menu_choice_handle;
+static WrenHandle *menu_status_handle;
+static WrenHandle *menu_status_clear_handle;
+static struct ciolib_screen *menu_status_screen;
 static struct bbslist selected_bbs;
 
 static bool
@@ -315,8 +325,27 @@ wren_menu_host_init(void)
 	}
 	if (!menu_active)
 		wren_menu_bind_shutdown();
-	else
+	else {
 		menu_run_handle = wrenMakeCallHandle(menu_state.vm, "run(_,_)");
+		if (wrenHasModule(menu_state.vm, "menu_host_ui") &&
+		    wrenHasVariable(menu_state.vm, "menu_host_ui", "MenuHostUI")) {
+			wrenEnsureSlots(menu_state.vm, 1);
+			wrenGetVariable(menu_state.vm, "menu_host_ui", "MenuHostUI", 0);
+			menu_ui_class = wrenGetSlotHandle(menu_state.vm, 0);
+			menu_alert_handle = wrenMakeCallHandle(menu_state.vm,
+			    "alert(_,_)");
+			menu_confirm_handle = wrenMakeCallHandle(menu_state.vm,
+			    "confirm(_,_)");
+			menu_prompt_handle = wrenMakeCallHandle(menu_state.vm,
+			    "prompt(_,_,_,_,_)");
+			menu_choice_handle = wrenMakeCallHandle(menu_state.vm,
+			    "choice(_,_,_,_)");
+			menu_status_handle = wrenMakeCallHandle(menu_state.vm,
+			    "status(_,_)");
+			menu_status_clear_handle = wrenMakeCallHandle(menu_state.vm,
+			    "statusClear()");
+		}
+	}
 	wren_host_select_state(old);
 	return menu_active;
 }
@@ -326,10 +355,32 @@ wren_menu_host_shutdown(void)
 {
 	if (!menu_active)
 		return;
+	wren_menu_host_status_clear();
 	struct wren_host_state *old = wren_host_select_state(&menu_state);
 	if (menu_run_handle != NULL)
 		wrenReleaseHandle(menu_state.vm, menu_run_handle);
 	menu_run_handle = NULL;
+	if (menu_ui_class != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_ui_class);
+	if (menu_alert_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_alert_handle);
+	if (menu_confirm_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_confirm_handle);
+	if (menu_prompt_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_prompt_handle);
+	if (menu_choice_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_choice_handle);
+	if (menu_status_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_status_handle);
+	if (menu_status_clear_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_status_clear_handle);
+	menu_ui_class = NULL;
+	menu_alert_handle = NULL;
+	menu_confirm_handle = NULL;
+	menu_prompt_handle = NULL;
+	menu_choice_handle = NULL;
+	menu_status_handle = NULL;
+	menu_status_clear_handle = NULL;
 	wrenFreeVM(menu_state.vm);
 	wren_menu_bind_shutdown();
 	wren_host_select_state(old == &menu_state ? NULL : old);
@@ -351,6 +402,7 @@ wren_menu_host_run(const char *current, bool connected)
 	    !wrenHasVariable(menu_state.vm, "main_menu", "MainMenu"))
 		return NULL;
 
+	wren_menu_host_status_clear();
 	wren_host_input_barrier();
 	struct wren_host_state *old = wren_host_select_state(&menu_state);
 	wrenEnsureSlots(menu_state.vm, 3);
@@ -374,4 +426,159 @@ wren_menu_host_run(const char *current, bool connected)
 	wren_host_select_state(old);
 	wren_host_input_barrier();
 	return selected;
+}
+
+static bool
+menu_ui_call(WrenHandle *handle, int slots, bool blocking)
+{
+	if (!menu_active || menu_state.vm == NULL || menu_ui_class == NULL ||
+	    handle == NULL)
+		return false;
+	struct ciolib_screen *screen = NULL;
+	if (blocking) {
+		wren_host_input_barrier();
+		screen = cp437_savescrn();
+		if (screen == NULL) {
+			wren_host_input_barrier();
+			return false;
+		}
+	}
+	struct wren_host_state *old = wren_host_select_state(&menu_state);
+	wrenEnsureSlots(menu_state.vm, slots);
+	wrenSetSlotHandle(menu_state.vm, 0, menu_ui_class);
+	bool success = wrenCall(menu_state.vm, handle) == WREN_RESULT_SUCCESS;
+	wren_host_select_state(old);
+	if (blocking) {
+		restorescreen(screen);
+		freescreen(screen);
+		wren_host_input_barrier();
+	}
+	return success;
+}
+
+bool
+wren_menu_host_alert(const char *title, const char *message)
+{
+	if (!menu_active || menu_state.vm == NULL || menu_alert_handle == NULL)
+		return false;
+	wrenEnsureSlots(menu_state.vm, 3);
+	wrenSetSlotString(menu_state.vm, 1, title == NULL ? "Alert" : title);
+	wrenSetSlotString(menu_state.vm, 2, message == NULL ? "" : message);
+	return menu_ui_call(menu_alert_handle, 3, true);
+}
+
+bool
+wren_menu_host_confirm(const char *title, const char *message, bool *answer)
+{
+	if (answer == NULL || !menu_active || menu_state.vm == NULL ||
+	    menu_confirm_handle == NULL)
+		return false;
+	wrenEnsureSlots(menu_state.vm, 3);
+	wrenSetSlotString(menu_state.vm, 1, title == NULL ? "Confirm" : title);
+	wrenSetSlotString(menu_state.vm, 2, message == NULL ? "" : message);
+	if (!menu_ui_call(menu_confirm_handle, 3, true) ||
+	    wrenGetSlotType(menu_state.vm, 0) != WREN_TYPE_BOOL)
+		return false;
+	*answer = wrenGetSlotBool(menu_state.vm, 0);
+	return true;
+}
+
+int
+wren_menu_host_prompt(const char *title, const char *message,
+    const char *initial, size_t max_len, bool masked, char *result,
+    size_t result_size)
+{
+	if (result == NULL || result_size == 0 || max_len > INT_MAX ||
+	    !menu_active || menu_state.vm == NULL || menu_prompt_handle == NULL)
+		return -2;
+	wrenEnsureSlots(menu_state.vm, 6);
+	wrenSetSlotString(menu_state.vm, 1, title == NULL ? "Prompt" : title);
+	wrenSetSlotString(menu_state.vm, 2, message == NULL ? "" : message);
+	wrenSetSlotString(menu_state.vm, 3, initial == NULL ? "" : initial);
+	wrenSetSlotDouble(menu_state.vm, 4, (double)max_len);
+	wrenSetSlotBool(menu_state.vm, 5, masked);
+	if (!menu_ui_call(menu_prompt_handle, 6, true))
+		return -2;
+	if (wrenGetSlotType(menu_state.vm, 0) == WREN_TYPE_NULL)
+		return -1;
+	if (wrenGetSlotType(menu_state.vm, 0) != WREN_TYPE_STRING)
+		return -2;
+	int length;
+	const char *value = wrenGetSlotBytes(menu_state.vm, 0, &length);
+	if (length < 0 || (size_t)length >= result_size ||
+	    (size_t)length > max_len)
+		return -2;
+	memcpy(result, value, (size_t)length);
+	result[length] = 0;
+	return length;
+}
+
+int
+wren_menu_host_choice(const char *title, const char *message,
+    const char *const *options, size_t count, int current)
+{
+	if (options == NULL || count == 0 || count > INT_MAX || current < 0 ||
+	    (size_t)current >= count || !menu_active || menu_state.vm == NULL ||
+	    menu_choice_handle == NULL)
+		return -2;
+	wrenEnsureSlots(menu_state.vm, 6);
+	wrenSetSlotString(menu_state.vm, 1, title == NULL ? "Select" : title);
+	wrenSetSlotString(menu_state.vm, 2, message == NULL ? "" : message);
+	wrenSetSlotNewList(menu_state.vm, 3);
+	for (size_t i = 0; i < count; i++) {
+		wrenSetSlotString(menu_state.vm, 5,
+		    options[i] == NULL ? "" : options[i]);
+		wrenInsertInList(menu_state.vm, 3, -1, 5);
+	}
+	wrenSetSlotDouble(menu_state.vm, 4, current);
+	if (!menu_ui_call(menu_choice_handle, 6, true))
+		return -2;
+	if (wrenGetSlotType(menu_state.vm, 0) == WREN_TYPE_NULL)
+		return -1;
+	if (wrenGetSlotType(menu_state.vm, 0) != WREN_TYPE_NUM)
+		return -2;
+	double value = wrenGetSlotDouble(menu_state.vm, 0);
+	if (value < 0 || value >= (double)count || value != (int)value)
+		return -2;
+	return (int)value;
+}
+
+bool
+wren_menu_host_status(const char *title, const char *const *lines,
+    size_t count)
+{
+	if (lines == NULL || count == 0 || count > INT_MAX || !menu_active ||
+	    menu_state.vm == NULL || menu_status_handle == NULL)
+		return false;
+	if (menu_status_screen == NULL) {
+		menu_status_screen = cp437_savescrn();
+		if (menu_status_screen == NULL)
+			return false;
+	}
+	wrenEnsureSlots(menu_state.vm, 4);
+	wrenSetSlotString(menu_state.vm, 1, title == NULL ? "Status" : title);
+	wrenSetSlotNewList(menu_state.vm, 2);
+	for (size_t i = 0; i < count; i++) {
+		wrenSetSlotString(menu_state.vm, 3,
+		    lines[i] == NULL ? "" : lines[i]);
+		wrenInsertInList(menu_state.vm, 2, -1, 3);
+	}
+	if (menu_ui_call(menu_status_handle, 4, false))
+		return true;
+	wren_menu_host_status_clear();
+	return false;
+}
+
+void
+wren_menu_host_status_clear(void)
+{
+	if (menu_active && menu_state.vm != NULL && menu_ui_class != NULL &&
+	    menu_status_clear_handle != NULL) {
+		(void)menu_ui_call(menu_status_clear_handle, 1, false);
+	}
+	if (menu_status_screen != NULL) {
+		restorescreen(menu_status_screen);
+		freescreen(menu_status_screen);
+		menu_status_screen = NULL;
+	}
 }

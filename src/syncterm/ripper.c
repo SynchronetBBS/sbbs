@@ -35,7 +35,7 @@
 #include "syncterm.h"
 #include "term.h"
 #ifndef SYNCVIEW
-#include "uifcinit.h"
+#include "host_ui.h"
 #endif
 #include "window.h"
 
@@ -11320,7 +11320,8 @@ rip_input_dialog(const char *prompt, const char *initial,
 		strlcpy(buf, initial, field_width + 1);
 
 	do {
-		if (uifcinput((char *)prompt, field_width, buf, K_EDIT, NULL) < 0) {
+		if (host_ui_prompt("RIP Input", prompt, buf, field_width + 1,
+		    field_width, false) < 0) {
 			if (!reject_blank) {
 				free(buf);
 				return NULL;

@@ -280,6 +280,7 @@ set(SOURCE
 	bbslist.c
 	bbslist_model.c
 	menu_settings.c
+	host_ui.c
 	conn.c
 	ansi_filter.c
 	conn_pty.c

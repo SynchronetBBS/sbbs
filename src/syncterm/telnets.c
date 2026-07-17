@@ -8,12 +8,12 @@
 #include "conn_telnet.h"
 #include "gen_defs.h"
 #include "genwrap.h"
+#include "host_ui.h"
 #include "sockwrap.h"
 #include "ssh.h"
 #include "syncterm.h"
 #include "telnet_io.h"
 #include "threadwrap.h"
-#include "uifcinit.h"
 #include "window.h"
 #include "xp_tls.h"
 
@@ -29,7 +29,7 @@ xp_tls_error_message(xp_tls_t sess, const char *doing)
 	const char *err = xp_tls_errstr(sess);
 	snprintf(title, sizeof(title), "TLS error %s", doing);
 	snprintf(body, sizeof(body), "Error %s\r\n\r\n%s\r\n\r\n", doing, err);
-	uifcmsg(title, body);
+	host_ui_alert(title, body);
 }
 
 /*
@@ -168,8 +168,6 @@ telnets_connect(struct bbslist *bbs)
 {
 	int off = 1;
 
-	if (!bbs->hidepopups)
-		init_uifc(true, true);
 	assert_pthread_mutex_init(&telnets_mutex, NULL);
 
 	telnets_sock = conn_socket_connect(bbs, true);
@@ -181,7 +179,7 @@ telnets_connect(struct bbslist *bbs)
 		fprintf(stderr, "%s:%d: Error %d calling setsockopt()\n", __FILE__, __LINE__, errno);
 
 	if (!bbs->hidepopups)
-		uifc.pop("Activating Session");
+		host_ui_status("Activating Session");
 	/* 1-second read timeout mirrors the Cryptlib-era behaviour that
 	   the input thread loops around for rekey-detection. */
 	telnets_session = xp_tls_client_open(telnets_sock, bbs->addr, 1);
@@ -189,14 +187,14 @@ telnets_connect(struct bbslist *bbs)
 		char str[512];
 		snprintf(str, sizeof(str), "Error activating session: %s", xp_tls_last_err());
 		if (!bbs->hidepopups)
-			uifcmsg("Error activating session", str);
+			host_ui_alert("Error activating session", str);
 		conn_api.terminate = 1;
 		if (!bbs->hidepopups)
-			uifc.pop(NULL);
+			host_ui_status(NULL);
 		return -1;
 	}
 	if (!bbs->hidepopups)
-		uifc.pop(NULL);
+		host_ui_status(NULL);
 
 	if (!create_conn_buf(&conn_inbuf, BUFFER_SIZE))
 		return -1;

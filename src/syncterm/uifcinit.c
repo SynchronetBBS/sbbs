@@ -7,6 +7,7 @@
 #include <vidmodes.h>
 
 #include "filepick.h"
+#include "host_ui.h"
 #include "syncterm.h"
 #include "uifcinit.h"
 #include "wren_host.h"
@@ -149,61 +150,15 @@ uifcbail(void)
 void
 uifcmsg(char *msg, char *helpbuf)
 {
-	int                   i;
-	struct ciolib_screen *savscrn;
-
-	i = uifc_initialized;
-	if (!i)
-		savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
-	init_uifc(false, false);
-	if (uifc_initialized) {
-		uifc.helpbuf = helpbuf;
-		uifc.msg(msg);
-		check_exit(false);
-	}
-	else {
-		fprintf(stderr, "%s\n", msg);
-	}
-	if (!i) {
-		uifcbail();
-		restorescreen(savscrn);
-		freescreen(savscrn);
-	}
+	(void)helpbuf;
+	host_ui_alert("SyncTERM", msg);
 }
 
 int
 uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
 {
-	int                   i;
-	int                   ret = -1;
-	struct ciolib_screen *savscrn;
-
-	i = uifc_initialized;
-	if (!i)
-		savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
-	init_uifc(false, false);
-	if (uifc_initialized) {
-		uifc.helpbuf = helpbuf;
-		ret = uifc.input(WIN_MID | WIN_SAV, 0, 0, title, msg, len, mode);
-		check_exit(false);
-	}
-	else {
-		fprintf(stderr, "%s\n", msg);
-	}
-	if (!i) {
-		uifcbail();
-		restorescreen(savscrn);
-		freescreen(savscrn);
-	}
-	return ret;
+	return host_ui_prompt(title, helpbuf, msg, (size_t)len + 1,
+	    (size_t)len, (mode & K_PASSWORD) != 0);
 }
 
 /* Shared init/bail wrapper for filepick + filepick_multi.  Mirrors
@@ -236,6 +191,7 @@ uifcfilepick_common(char *title, struct file_pick *fp,
 			ret = filepick(&uifc, title, fp, initial_dir,
 			    default_mask, opts);
 		check_exit(false);
+		wren_host_input_barrier();
 	}
 	if (!i) {
 		uifcbail();
@@ -264,35 +220,6 @@ uifcfilepick_multi(char *title, struct file_pick *fp,
 int
 confirm(char *msg, char *helpbuf)
 {
-	int                   i;
-	struct ciolib_screen *savscrn;
-	char                 *options[] = {
-		"Yes",
-		"No",
-		""
-	};
-	int                   ret = true;
-	int                   copt = 0;
-
-	i = uifc_initialized;
-	if (!i)
-		savscrn = savescreen();
-	setfont(0, false, 1);
-	setfont(0, false, 2);
-	setfont(0, false, 3);
-	setfont(0, false, 4);
-	init_uifc(false, false);
-	if (uifc_initialized) {
-		uifc.helpbuf = helpbuf;
-		if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &copt, NULL, msg, options) != 0) {
-			check_exit(false);
-			ret = false;
-		}
-	}
-	if (!i) {
-		uifcbail();
-		restorescreen(savscrn);
-		freescreen(savscrn);
-	}
-	return ret;
+	(void)helpbuf;
+	return host_ui_confirm("Confirm", msg);
 }
