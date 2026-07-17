@@ -21,6 +21,8 @@ var out = [];       // everything the lobby "printed"
 var keys = [];      // scripted keystrokes, consumed front-to-back
 var launched = [];  // door command lines bbs.exec() was asked to run
 var logged = [];    // node-log lines the lobby wrote via bbs.logline()
+var wrote = [];     // raw bytes written to the "terminal" -- the audio APCs land here
+var probe = [];     // canned terminal reply, one char per inkey() (empty = silence)
 var failures = 0;
 
 // The last page the lobby drew ("Page 3 of 7" -> 3), or 0 if it drew none. The
@@ -45,6 +47,14 @@ function check(cond, msg)
 var fake_console = {
 	screen_columns: 80,
 	screen_rows: 24,
+	// game_lobby.js's enter_sound loads cterm_lib.js, which talks to the terminal.
+	// cterm_version >= 0 makes it skip its load-time DA query, so `probe` answers
+	// only the libsndfile query we care about. With `probe` empty, inkey returns ""
+	// at once, query_fb's read loop ends, and the terminal reports "no audio".
+	cterm_version: 1330,
+	write:   function (s) { wrote.push(String(s)); },
+	inkey:   function () { return probe.length ? probe.shift() : ""; },
+	clearkeybuffer: function () { },
 	clear:   function () { },
 	crlf:    function () { out.push("\n"); },
 	putmsg:  function (s) { out.push(String(s)); },
@@ -217,6 +227,38 @@ check(last_page(out.join("")) === 1, "'-' on page 1 stays on page 1 (saw "
       + last_page(out.join("")) + ")");
 
 check(launched.length === 0, "no paging or search key launched a door");
+
+// Drive game_lobby.js's helper directly, with our own cfg and a scratch file: the
+// harness must not write a [lobby] key into the sysop's live syncretro.ini just to
+// test itself. The stub console ANSWERS the libsndfile probe here, so
+// supports_audio_files() is true and the sound is really uploaded and queued --
+// this is the one check that fails if the lobby stops reaching the terminal.
+writeln("8. a configured enter_sound reaches a terminal that decodes audio");
+var snd_dir = backslash(system.temp_dir);
+var snd_name = "syncretro_enter_test.wav";
+var sf = new File(snd_dir + snd_name);
+if (!sf.open("wb")) {
+	check(false, "could not write the scratch sound " + snd_dir + snd_name);
+} else {
+	sf.write("RIFF$\x00\x00\x00WAVEfmt not-a-real-wav");   // enter_sound only reads bytes
+	sf.close();
+	wrote = [];
+	probe = "\x1b[=7;100;1n\x1b[1;1R".split("");   // "audio APC + libsndfile", then the DSR sentinel
+	var gl8 = load({}, "game_lobby.js");
+	gl8.enter_sound(snd_dir, { lobby: { enter_sound: snd_name } });
+	var w8 = wrote.join("");
+	check(w8.indexOf("C;S;lobby_enter;") >= 0, "uploaded the sound under the lobby_enter name");
+	check(w8.indexOf("A;Load") >= 0, "loaded it into a slot");
+	check(w8.indexOf("A;Queue") >= 0, "queued it on a channel");
+	file_remove(snd_dir + snd_name);
+}
+
+writeln("9. no sound reaches a terminal that cannot decode audio");
+wrote = [];
+probe = [];                                        // silence: the probe times out -> no audio
+var gl9 = load({}, "game_lobby.js");
+gl9.enter_sound(snd_dir, { lobby: { enter_sound: snd_name } });
+check(wrote.join("").indexOf("A;Queue") < 0, "queued nothing");
 
 if (LIVE_PLAYS !== "" && file_exists(LIVE_PLAYS))
 	file_remove(LIVE_PLAYS);           /* leave the live data dir as we found it */

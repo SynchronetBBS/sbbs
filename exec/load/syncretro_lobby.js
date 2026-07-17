@@ -49,7 +49,7 @@ var SYNCRETRO_LOBBY_FOOTER_ROWS = 3;                   /* blank, prompt, +1 kept
                                             * page never trips the terminal more-prompt */
 
 /* Set once, by syncretro_lobby(). */
-var syncretro_lobby_dir, syncretro_lobby_con, syncretro_lobby_rules, syncretro_lobby_bios, syncretro_lobby_binary, syncretro_lobby_core, syncretro_lobby_stdio;
+var syncretro_lobby_dir, syncretro_lobby_con, syncretro_lobby_rules, syncretro_lobby_bios, syncretro_lobby_binary, syncretro_lobby_core, syncretro_lobby_stdio, syncretro_lobby_cfg;
 
 function syncretro_lobby_init(spec)
 {
@@ -70,9 +70,11 @@ function syncretro_lobby_init(spec)
 	/* The sysop's half of syncretro.ini. The console's half is the spec above:
 	 * a sysop hides a ROM or moves the roms dir; a sysop does not redefine what
 	 * an NES cartridge is. */
+	syncretro_lobby_cfg = { lobby: {} };   /* game_lobby.js's shape; never null */
 	f = new File(syncretro_lobby_dir + "syncretro.ini");
 	if (f.open("r")) {
 		ini = f.iniGetObject("roms");
+		syncretro_lobby_cfg.lobby = f.iniGetObject("lobby") || {};
 		f.close();
 		if (ini) {
 			if (ini.dir)
@@ -326,6 +328,12 @@ function syncretro_lobby(spec)
 		return;
 	}
 	syncretro_lobby_number(roms);
+
+	/* One-shot entry sound, if the sysop configured one -- the same helper and the
+	 * same [lobby] enter_sound key SyncDuke and SyncDOOM use. Silent unless the
+	 * terminal can decode audio files. After the guards above, so it never plays
+	 * into an error message. */
+	syncretro_lobby_gl.enter_sound(syncretro_lobby_dir, syncretro_lobby_cfg);
 
 	filter = roms;
 	page   = 0;
