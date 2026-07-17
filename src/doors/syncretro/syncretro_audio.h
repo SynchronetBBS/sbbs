@@ -13,12 +13,13 @@
 #include <stdint.h>
 
 /* --- the streaming module ---------------------------------------------------
- * Fixed resources: mixer channel 2 (first APC-usable), patch slot 0 (A;Queue
- * empties the slot, and APCs are processed in stream order, so one slot serves
- * every chunk), cache names s/0..s/3 plus s/z for silence. */
+ * The machinery is termgfx's (audio_stream.h) and shared with the other doors;
+ * these are the resources THIS door hands it: mixer channel 2 (first
+ * APC-usable), patch slot 0 (A;Queue empties the slot, and APCs are processed
+ * in stream order, so one slot serves every chunk), and the "s" cache prefix
+ * (names s/0..s/3 plus s/z for silence). */
 #define SR_AUDIO_CH        2
 #define SR_AUDIO_SLOT      0
-#define SR_AUDIO_RING      4
 
 /* The sample rate is the CORE's, not a constant -- FreeIntv mixes at 44100,
  * fceumm at 48000 -- and it arrives with the AV info, i.e. only after the game

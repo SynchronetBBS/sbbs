@@ -19,6 +19,8 @@ add_library(termgfx STATIC
     audio.c
     audio_mgr.c
     audio_midi.c
+    audio_stream.c
+    chunk.c
     text.c
     term.c
     geometry.c
@@ -113,4 +115,12 @@ else()
         target_compile_definitions(termgfx PRIVATE LINUX)
     endif()
     target_compile_options(termgfx PRIVATE -Wall -Os -ggdb3)
+endif()
+
+# Opt-in unit tests (see test/CMakeLists.txt). OFF by default so a consuming
+# door's add_subdirectory() of this library never builds them.
+option(TERMGFX_TESTS "Build the libtermgfx unit tests" OFF)
+if(TERMGFX_TESTS)
+    enable_testing()
+    add_subdirectory(test)
 endif()

@@ -700,6 +700,129 @@ the library never builds them.
 
 ---
 
+## Task 3a: Byte-capture harness — the extraction's guard
+
+**Added mid-execution (2026-07-16, user-approved).** Task 3 originally
+said to prove the extraction byte-identical using syncretro's
+`fakecore.c` + `fakterm.py` harness, which `syncretro/M4_AUDIO.md` §9
+describes. **That harness does not exist** — the doc is aspirational, and
+the only `fakterm.py` in the tree belongs to syncmoo1. Syncretro's audio
+state machine has no automated coverage at all today.
+
+Task 3 moves a live door's working audio into a shared library and its
+unit tests do not touch the state machine, so it needs a real guard. The
+seam makes one cheap: the module reaches its door through exactly three
+output functions and five config getters, all stubbable. And because the
+adapter preserves the `sr_audio_*` surface, **the same harness runs
+before and after the extraction** — capture golden output now, extract,
+re-run, require an identical diff.
+
+**Files:**
+- Create: `src/doors/syncretro/test_audio_bytes.c`
+- Modify: `src/doors/syncretro/CMakeLists.txt` (test target, under the
+  existing `SYNCRETRO_TESTS` gate)
+
+**Interfaces:**
+- Consumes: `sr_audio_*` (`syncretro_audio.h`) — the surface Task 3 must
+  preserve unchanged.
+- Produces: a `test_audio_bytes` binary that writes a deterministic
+  transcript of everything the module emits; and a golden transcript
+  committed as the before/after reference.
+
+- [ ] **Step 1: Write the harness**
+
+`test_audio_bytes.c` stubs the door seam and drives the module through a
+scripted session. Unlike the other tests it links the real `audio.c`
+(needs libsndfile) — that is the point: the encoder is not what we are
+testing, but its output must flow through the real call path.
+
+Stub these (they are the module's entire door dependency):
+`sr_out_put`, `sr_io_out_flush`, `sr_io_out_backlog`, and
+`sr_config_audio_{enabled,quality,volume,chunk_ms,prebuffer}`.
+`sr_out_put` appends to a growing buffer; `sr_io_out_backlog` returns a
+value the scenario controls (so the two-strike backlog drop is reachable);
+`sr_io_out_flush` records that it was called.
+
+Scenario, in order — each step exercises a documented behavior:
+1. `sr_audio_init()`, `sr_audio_start(44100)`, `sr_audio_probe()`.
+2. `sr_audio_caps(1)` — digital tier: expect the channel volume, then the
+   silence upload.
+3. Feed a deterministic PCM ramp (NOT random, NOT silence — a ramp whose
+   value derives from the frame index), enough to close well past
+   `prebuffer` chunks, so both the PRIME hold-and-release and steady-state
+   RUN are covered.
+4. Feed a run of pure zeros long enough to close a chunk — the cached
+   silence path (`A;Load`+`A;Queue`, no `C;S`).
+5. Inject `sr_audio_underrun(2)` — expect a re-prime, not a single queue.
+6. Drive `sr_io_out_backlog` over the threshold for two consecutive chunk
+   boundaries — expect a drop.
+7. `sr_audio_shutdown()` — expect `A;Flush` on the channel, no fade.
+
+- [ ] **Step 2: Decide the comparison unit empirically — do not assume**
+
+Ogg streams can carry a random bitstream serial number, which would make
+raw bytes differ run-to-run and turn a raw diff into a false alarm. Find
+out rather than guessing:
+
+```bash
+cd /home/rswindell/sbbs/src/doors/syncretro
+./build/test_audio_bytes > /tmp/cap1.txt
+./build/test_audio_bytes > /tmp/cap2.txt
+diff /tmp/cap1.txt /tmp/cap2.txt && echo "DETERMINISTIC" || echo "NOT deterministic"
+```
+
+- **If identical:** the transcript is the raw emitted bytes, hex-dumped.
+  Strongest possible guard.
+- **If not:** emit a NORMALIZED transcript instead — one line per emitted
+  APC with its verb and parameters (`C;S name=s/0 bytes=1234`,
+  `A;Load slot=0 file=s/0`, `A;Queue ch=2 slot=0 vol=100 loop=0`,
+  `A;Update ch=2`, `A;Flush ch=2 fade=0`), recording each payload's
+  LENGTH but not its content. This is the right unit anyway: the
+  extraction changes call sequencing, not encoding, and the encoder is
+  unchanged code either side.
+
+State in the report which form you used and paste the determinism check.
+
+- [ ] **Step 3: Capture the golden transcript**
+
+```bash
+./build/test_audio_bytes > test_audio_bytes.golden
+```
+Commit it. This file IS the contract Task 3 must not break.
+
+- [ ] **Step 4: Make the test self-checking**
+
+The binary compares its own output against the committed golden and exits
+non-zero on mismatch, so `ctest` catches a regression with no manual diff:
+`add_test(NAME audio_bytes COMMAND test_audio_bytes --check ${CMAKE_CURRENT_SOURCE_DIR}/test_audio_bytes.golden)`.
+Verify it FAILS when the golden is corrupted — a golden test that cannot
+fail is worse than no test.
+
+- [ ] **Step 5: Commit**
+
+```
+syncretro: pin the audio stream's emitted bytes with a golden transcript
+
+The audio state machine has no automated coverage: M4_AUDIO.md section 9
+describes a fakecore/fakterm harness that was never built. That was
+tolerable while the module had one consumer and a human ear on it. It is
+not tolerable now -- the module is about to move into libtermgfx, and a
+port that quietly dropped an Update re-arm or rotated a cache name
+differently would sound fine on a short listen and fail on a long one.
+
+The module's entire door dependency is three output calls and five config
+getters, so a harness can stub them and drive a scripted session: prime,
+run, cached silence, an injected underrun, a sustained backlog, shutdown.
+It records what the module emits and compares it against a committed
+transcript.
+
+The point is the move that follows: the extracted module keeps this same
+surface, so this harness runs unchanged on both sides of it and the
+transcript has to match.
+```
+
+---
+
 ## Task 3: Extract the streaming state machine into termgfx
 
 Move the PRIME/RUN machine, backlog policy, silence caching, blob path,

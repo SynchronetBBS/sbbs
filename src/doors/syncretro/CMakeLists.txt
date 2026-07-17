@@ -18,7 +18,6 @@ add_executable(syncretro
     syncretro_binds.c   # the binding tables: keys -> pad / keypad / door
     syncretro_profile.c # which console's controller the keyboard imitates
     syncretro_keypad.c  # Intellivision keypad digits -> RetroPad analog vector
-    syncretro_chunk.c   # cut the core's PCM stream into fixed-size mono chunks
     syncretro_audio.c   # the core's PCM stream -> SyncTERM's audio APC (M4)
     syncretro_door.c    # DOOR32.SYS / -s<fd> / -name / -home / -t / -core
     syncretro_config.c  # per-user sandbox + system/save dirs
@@ -180,11 +179,23 @@ if(SYNCRETRO_TESTS)
     target_include_directories(test_binds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME binds COMMAND test_binds)
 
-    add_executable(test_chunk test_chunk.c syncretro_chunk.c)
-    target_include_directories(test_chunk PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-    add_test(NAME chunk COMMAND test_chunk)
-
     add_executable(test_quant test_quant.c syncretro_quant.c)
     target_include_directories(test_quant PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME quant COMMAND test_quant)
+
+    # test_audio_bytes -- UNLIKE the three tests above, this one links the
+    # real termgfx audio encoder (needs libsndfile): the whole point is
+    # driving the actual call path syncretro_audio.c hands it, not a stub.
+    # It stubs only the module's door seam (three output calls, five config
+    # getters -- see the file header) and diffs a normalized transcript
+    # against test_audio_bytes.golden, the byte-capture guard for the M4
+    # audio extraction into libtermgfx.
+    add_executable(test_audio_bytes test_audio_bytes.c syncretro_audio.c)
+    target_include_directories(test_audio_bytes PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(test_audio_bytes termgfx)
+    if(NOT WIN32)
+        target_link_libraries(test_audio_bytes m pthread)
+    endif()
+    add_test(NAME audio_bytes COMMAND test_audio_bytes --check
+             ${CMAKE_CURRENT_SOURCE_DIR}/test_audio_bytes.golden)
 endif()
