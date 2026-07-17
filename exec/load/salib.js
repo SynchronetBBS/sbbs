@@ -5,7 +5,7 @@
 
 require('sockdefs.js', 'SOCK_STREAM');
 
-function SPAMC_Message(messagefile, addr, port, user)
+function SPAMC_Message(messagefile, addr, port, user, timeout)
 {
 	if(!file_exists(messagefile))
 		this.error="Message file '"+messagefile+"' does not exist";
@@ -16,6 +16,16 @@ function SPAMC_Message(messagefile, addr, port, user)
 	if(this.port==undefined)
 		this.port='783';
 	this.user=user;
+	/* Seconds to wait for spamd's response.  spamd doesn't answer until it has
+	   finished scanning, which (with network tests/DNSBLs, under load) commonly
+	   exceeds Socket.recvline()'s 30-second default.  recvline()'s timeout is an
+	   absolute deadline from the moment it's called, so expiring mid-response
+	   yields a *truncated* line rather than an error - which parsed as garbage
+	   ("Unable to parse line 'S") or, if no byte had arrived yet, as "No lines
+	   read from spamd".  600 is spamc(1)'s own default (-t). */
+	this.timeout=timeout;
+	if(this.timeout==undefined)
+		this.timeout=600;
 	this.messagefile=messagefile;
 	this.DoCommand=Message_DoCommand;
 	this.check =function() { return(this.DoCommand('CHECK')); };
@@ -86,7 +96,7 @@ function Message_DoCommand(command)
 	sock.is_writeable=false;
 
 	while(1) {
-		tmp=sock.recvline();
+		tmp=sock.recvline(512, this.timeout);
 		if(tmp==undefined || tmp=='')
 			break;
 		if(this.debug)
@@ -249,7 +259,7 @@ function Message_DoLearn(msgclass)
 
 	var rcvd=new Array();
 	while(1) {
-		tmp=sock.recvline();
+		tmp=sock.recvline(512, this.timeout);
 		if(tmp==undefined || tmp=='')
 			break;
 		if(this.debug)
