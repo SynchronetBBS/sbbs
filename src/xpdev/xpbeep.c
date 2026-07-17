@@ -2608,9 +2608,10 @@ xp_mixer_pull(int16_t *out, size_t frames)
 		float                   vl;
 		float                   vr;
 		bool                    dropped_any = false;
-		bool                    play_next;
+		size_t                  off;
 		size_t                  written;
 		bool                    drop;
+		bool                    drop_next;
 
 		if (!s)
 			continue;
@@ -2627,46 +2628,75 @@ xp_mixer_pull(int16_t *out, size_t frames)
 		vl = s->volume_l;
 		vr = s->volume_r;
 
-		/* FIFO: only head is active.  Exception: when head has a
-		 * crossfade overlay into its successor, BOTH head (decaying)
-		 * and head->next (rising) mix concurrently during the overlap.
-		 * Subsequent bufs stay queued and wait their turn.  This bounds
-		 * concurrent playback to two bufs per stream even when the
-		 * caller stacks crossfade appends. */
-		head      = s->head;
-		next      = head->next;
-		play_next = (head->overlay_total > 0) && next;
+		/* FIFO playback with gapless draining.  Normally only the head
+		 * buf is active, but two cases pull a successor within one pull:
+		 *
+		 *   - Crossfade overlay: head (decaying) and head->next (rising)
+		 *     mix CONCURRENTLY over the overlap.  head drops when its
+		 *     overlay expires; this bounds concurrent playback to two bufs
+		 *     and is not drained past in a single pull.
+		 *
+		 *   - Gapless hand-off: a plain head buf that ends part way through
+		 *     this pull hands the REMAINDER of the pull to its successor, so
+		 *     a mid-pull buffer boundary never leaves the pull's tail
+		 *     silent.  A queue of short back-to-back bufs (a streamed audio
+		 *     channel chunked into ~one-pull pieces) would otherwise drop up
+		 *     to one pull of samples at every buffer boundary.
+		 */
+		off = 0;
+		for (;;) {
+			head = s->head;
+			if (head == NULL || off >= frames)
+				break;
+			next = head->next;
 
-		written = 0;
-		drop = mix_one_buf(head, accum, frames, vl, vr, &written);
-		if (written > max_n)
-			max_n = written;
-		if (drop) {
-			s->head = next;
+			if (head->overlay_total > 0 && next) {
+				struct xp_audio_buf *after_next = next->next;
+
+				written = 0;
+				drop = mix_one_buf(head, accum + off * S_CHANNELS,
+				                   frames - off, vl, vr, &written);
+				if (off + written > max_n)
+					max_n = off + written;
+
+				drop_next = mix_one_buf(next, accum + off * S_CHANNELS,
+				                        frames - off, vl, vr, &written);
+				if (off + written > max_n)
+					max_n = off + written;
+				if (drop_next) {
+					head->next = after_next;
+					if (s->tail == next)
+						s->tail = head;
+					free_buf(next);
+					dropped_any = true;
+				}
+				if (drop) {
+					s->head = head->next;
+					if (s->tail == head)
+						s->tail = NULL;
+					free_buf(head);
+					dropped_any = true;
+				}
+				break;   /* one crossfade pair per pull */
+			}
+
+			/* Plain buf (or a lone overlay decaying with no successor --
+			 * mix_one_buf applies any overlay gain either way). */
+			written = 0;
+			drop = mix_one_buf(head, accum + off * S_CHANNELS,
+			                   frames - off, vl, vr, &written);
+			off += written;
+			if (off > max_n)
+				max_n = off;
+			if (!drop)
+				break;   /* head still has samples: the pull is full */
+
+			s->head = head->next;
 			if (s->tail == head)
 				s->tail = NULL;
 			free_buf(head);
-			head = NULL;
 			dropped_any = true;
-		}
-
-		if (play_next) {
-			struct xp_audio_buf *after_next = next->next;
-
-			written = 0;
-			drop = mix_one_buf(next, accum, frames, vl, vr, &written);
-			if (written > max_n)
-				max_n = written;
-			if (drop) {
-				if (head)
-					head->next = after_next;
-				else
-					s->head = after_next;
-				if (s->tail == next)
-					s->tail = head;
-				free_buf(next);
-				dropped_any = true;
-			}
+			/* loop: drain the successor into the rest of this pull */
 		}
 
 		if (s->finished && !s->head && !s->done) {
