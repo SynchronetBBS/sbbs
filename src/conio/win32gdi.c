@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <mmsystem.h>
 
 #include <math.h>
 #include <stdbool.h>
@@ -1144,7 +1145,7 @@ gdi_getch(void)
 void
 gdi_beep(void)
 {
-	MessageBeep(MB_ICONWARNING);
+	PlaySoundW((LPCWSTR)SND_ALIAS_SYSTEMHAND, NULL, SND_ALIAS_ID | SND_ASYNC | SND_SENTRY);
 }
 
 void
