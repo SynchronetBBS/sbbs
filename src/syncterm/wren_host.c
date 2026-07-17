@@ -394,10 +394,10 @@ wren_host_bind_speed(int *speed)
  * Result queue
  * -------------------------------------------------------------------- */
 
-void
-wren_result_push(WrenHandle *fiber, void *data,
-                 wren_result_deliver_fn deliver,
-                 wren_result_free_fn free_fn)
+static void
+wren_result_push_(WrenHandle *fiber, void *data,
+    wren_result_deliver_fn deliver, wren_result_free_fn free_fn,
+    bool input_shaped)
 {
 	if (fiber == NULL)
 		return;
@@ -419,6 +419,8 @@ wren_result_push(WrenHandle *fiber, void *data,
 	r->data    = data;
 	r->deliver = deliver;
 	r->free_fn = free_fn;
+	r->input_shaped = input_shaped;
+	r->input_epoch = state.input_epoch;
 
 	pthread_mutex_lock(&state.result_mutex);
 	if (state.result_tail == NULL)
@@ -430,6 +432,20 @@ wren_result_push(WrenHandle *fiber, void *data,
 	/* Wake the doterm() main loop so the result drains on the next
 	 * iteration without waiting for the WaitForEvent timeout. */
 	doterm_wake();
+}
+
+void
+wren_result_push(WrenHandle *fiber, void *data,
+    wren_result_deliver_fn deliver, wren_result_free_fn free_fn)
+{
+	wren_result_push_(fiber, data, deliver, free_fn, false);
+}
+
+void
+wren_result_push_input(WrenHandle *fiber, void *data,
+    wren_result_deliver_fn deliver, wren_result_free_fn free_fn)
+{
+	wren_result_push_(fiber, data, deliver, free_fn, true);
 }
 
 /* Returns true if the fiber has finished or aborted.  Any error from
@@ -468,7 +484,8 @@ wren_result_drain(void)
 	while (r != NULL) {
 		struct wren_result *next = r->next;
 
-		if (!fiber_is_done(r->fiber)) {
+		if ((!r->input_shaped || r->input_epoch == state.input_epoch) &&
+		    !fiber_is_done(r->fiber)) {
 			wrenEnsureSlots(state.vm, 3);
 			wrenSetSlotHandle(state.vm, 0, r->fiber);
 			r->deliver(state.vm, 1, r->data);
@@ -482,6 +499,14 @@ wren_result_drain(void)
 
 		r = next;
 	}
+}
+
+void
+wren_host_input_barrier(void)
+{
+	if (active)
+		state.input_epoch++;
+	ciolib_clear_input();
 }
 
 /* --------------------------------------------------------------------
@@ -612,11 +637,18 @@ host_load_module(WrenVM *vm, const char *name)
 {
 	(void)vm;
 	WrenLoadModuleResult res = { NULL, NULL, NULL };
+	static const char denied_menu_module[] =
+	    "Fiber.abort(\"syncterm_menu is unavailable in a connected "
+	    "session\")\n";
 
 	if (!valid_module_name(name)) {
 		res.source =
 		    "Fiber.abort(\"invalid Wren module name: only "
 		    "[A-Za-z0-9_] allowed\")\n";
+		return res;
+	}
+	if (strcmp(name, "syncterm_menu") == 0) {
+		res.source = denied_menu_module;
 		return res;
 	}
 
@@ -905,6 +937,12 @@ load_one_script(const char *path)
 
 	char modname[256];
 	modname_from_path(path, modname, sizeof(modname));
+	if (strcmp(modname, "syncterm_menu") == 0) {
+		fprintf(stderr, "[wren] %s: reserved connected-session "
+		    "module name\n", path);
+		free(src);
+		return;
+	}
 
 	WrenInterpretResult r = wrenInterpret(state.vm, modname, src);
 	free(src);
@@ -922,6 +960,7 @@ wren_host_init(struct bbslist *bbs)
 
 	memset(&state, 0, sizeof(state));
 	state.bbs = bbs;
+	state.input_epoch = 1;
 
 	WrenConfiguration cfg;
 	wrenInitConfiguration(&cfg);

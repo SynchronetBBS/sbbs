@@ -793,12 +793,14 @@ extern pthread_once_t ciolib_mouse_initialized;
 extern "C" {
 #endif
 CIOLIBEXPORT void ciomouse_gotevent(int event, int x, int y, int x_res, int y_res, int kbmodifiers);
+CIOLIBEXPORT void ciomouse_reset_input(void);
 CIOLIBEXPORT int mouse_trywait(void);
 CIOLIBEXPORT int mouse_wait(void);
 CIOLIBEXPORT int mouse_pending(void);
 CIOLIBEXPORT void init_mouse(void);
 CIOLIBEXPORT int ciolib_getmouse(struct mouse_event *mevent);
 CIOLIBEXPORT int ciolib_ungetmouse(struct mouse_event *mevent);
+CIOLIBEXPORT void ciolib_clear_input(void);
 CIOLIBEXPORT void ciolib_mouse_thread(void *data);
 CIOLIBEXPORT uint64_t ciomouse_getevents(void);
 CIOLIBEXPORT uint64_t ciomouse_setevents(uint64_t events);
@@ -815,6 +817,7 @@ CIOLIBEXPORT bool ciokey_getevent(struct ciolib_key_event *event);
 CIOLIBEXPORT bool ciokey_pending(void);
 CIOLIBEXPORT size_t ciokey_pressed(uint16_t *keys, size_t max);
 CIOLIBEXPORT void ciokey_clear_events(void);
+CIOLIBEXPORT void ciokey_reset(void);
 CIOLIBEXPORT void ciokey_focus_lost(void);
 CIOLIBEXPORT bool ciokey_setenabled(bool enabled);
 CIOLIBEXPORT bool ciokey_enabled(void);

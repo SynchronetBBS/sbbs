@@ -68,6 +68,11 @@ bool wren_host_dispatch_mouse(struct mouse_event *ev);
 bool wren_host_wants_physical_keys(void);
 void wren_host_enable_physical_key_events(void);
 
+/* Establish a new input epoch and discard every conio event which could
+ * have been queued by the previous owner of the terminal.  Input-shaped
+ * Wren completions from an older epoch are discarded when drained. */
+void wren_host_input_barrier(void);
+
 /* Atomically read-and-clear a pending session-end request (set by a
  * Conn.endSession() Wren call).  Returns true when a request was
  * queued since the last call; on true, `*exit_app_out` reflects

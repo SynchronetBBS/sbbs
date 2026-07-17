@@ -1136,6 +1136,27 @@ CIOLIBEXPORT int ciolib_ungetch_byte(int ch)
 	return(ch);
 }
 
+CIOLIBEXPORT void ciolib_clear_input(void)
+{
+	CIOLIB_INIT();
+
+	/* Invalidate mouse events before draining the backend keyboard queue.
+	 * Backend mouse waiters will discard events from the old generation
+	 * instead of turning them into fresh CIO_KEY_MOUSE markers. */
+	ciomouse_reset_input();
+	ciokey_reset();
+
+	assert_pthread_mutex_lock(&unget_mutex);
+	ungotch = 0;
+	ungot = false;
+	assert_pthread_mutex_unlock(&unget_mutex);
+
+	if (cio_api.kbhit != NULL && cio_api.getch != NULL) {
+		while (cio_api.kbhit())
+			(void)cio_api.getch();
+	}
+}
+
 /* Optional */
 /*
  * Returns non-zero on success

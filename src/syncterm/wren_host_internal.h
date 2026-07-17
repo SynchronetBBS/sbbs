@@ -43,6 +43,8 @@ struct wren_result {
 	void                   *data;     /* owned; freed via free_fn */
 	wren_result_deliver_fn  deliver;
 	wren_result_free_fn     free_fn;
+	uint64_t                input_epoch;
+	bool                    input_shaped;
 	struct wren_result     *next;
 };
 
@@ -53,6 +55,9 @@ struct wren_result {
 void wren_result_push(WrenHandle *fiber, void *data,
                       wren_result_deliver_fn deliver,
                       wren_result_free_fn free_fn);
+void wren_result_push_input(WrenHandle *fiber, void *data,
+                            wren_result_deliver_fn deliver,
+                            wren_result_free_fn free_fn);
 
 /* Maximum simultaneous registrations per hook event and per timer slot.
  * 256 hooks per event is generous headroom for an entirely Wren-driven
@@ -262,6 +267,7 @@ struct wren_host_state {
 	pthread_mutex_t      result_mutex;
 	struct wren_result  *result_head;
 	struct wren_result  *result_tail;
+	uint64_t             input_epoch;
 
 	/* Doubly-linked lists of every live wren_file / wren_directory
 	 * foreign.  Each foreign self-registers in its allocator (or in the

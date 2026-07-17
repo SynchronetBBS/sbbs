@@ -164,6 +164,22 @@ ciokey_clear_events(void)
 }
 
 void
+ciokey_reset(void)
+{
+	struct ciolib_key_event *event;
+
+	pthread_once(&ciokey_initialized, ciokey_init);
+	assert_pthread_mutex_lock(&state.mutex);
+	while ((event = listShiftNode(&state.events)) != NULL)
+		free(event);
+	memset(state.held, 0, sizeof(state.held));
+	state.wake_posted = false;
+	if (state.wake_event != NULL)
+		ResetEvent(state.wake_event);
+	assert_pthread_mutex_unlock(&state.mutex);
+}
+
+void
 ciokey_focus_lost(void)
 {
 	struct ciolib_key_event *event;

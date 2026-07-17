@@ -641,6 +641,7 @@ fn_Wake_post(WrenVM *vm)
 	struct wake_payload    *wp;
 
 	fiber = wrenGetSlotHandle(vm, 1);
+	enum syncterm_wren_foreign value_type = slot_foreign_type(vm, 2);
 	value = wrenGetSlotHandle(vm, 2);
 	wp    = calloc(1, sizeof(*wp));
 	if (wp == NULL) {
@@ -652,7 +653,14 @@ fn_Wake_post(WrenVM *vm)
 		return;
 	}
 	wp->value = value;
-	wren_result_push(fiber, wp, deliver_wake_value, free_wake_payload);
+	if (value_type == SWF_KEY_EVENT ||
+	    value_type == SWF_PHYSICAL_KEY_EVENT ||
+	    value_type == SWF_MOUSE_EVENT)
+		wren_result_push_input(fiber, wp, deliver_wake_value,
+		    free_wake_payload);
+	else
+		wren_result_push(fiber, wp, deliver_wake_value,
+		    free_wake_payload);
 	wrenSetSlotNull(vm, 0);
 }
 

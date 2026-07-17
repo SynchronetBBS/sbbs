@@ -51,9 +51,18 @@ non-NULL, up to `max` evdev codes are copied into it; the return value is
 the total number of held keys.
 
 `ciokey_clear_events()` clears queued edges without changing the held set.
+`ciokey_reset()` silently clears both queued edges and the held set for an
+input-ownership transition.  Unlike `ciokey_focus_lost()`, it does not wake
+the consumer to request a resynchronization.
 `ciokey_focus_lost()` clears queued edges and the held set, then wakes
 enabled consumers so they can resynchronize.  `ciokey_setenabled(false)`
 disables delivery and clears queued edges.
+
+`ciolib_clear_input()` establishes a clean input ownership boundary.  It
+clears translated and ungotten keyboard input, resets physical-key state,
+and invalidates queued or partially assembled mouse gestures.  Mouse events
+are generation-tagged so backend mouse threads cannot publish an old event
+after the reset returns.
 
 == Output Modes
 

@@ -9,6 +9,7 @@
 #include "filepick.h"
 #include "syncterm.h"
 #include "uifcinit.h"
+#include "wren_host.h"
 
 uifcapi_t  uifc; /* User Interface (UIFC) Library API */
 static int uifc_initialized = 0;
@@ -227,6 +228,7 @@ uifcfilepick_common(char *title, struct file_pick *fp,
 	setfont(0, false, 4);
 	init_uifc(false, false);
 	if (uifc_initialized) {
+		wren_host_input_barrier();
 		if (multi)
 			ret = filepick_multi(&uifc, title, fp, initial_dir,
 			    default_mask, opts);
