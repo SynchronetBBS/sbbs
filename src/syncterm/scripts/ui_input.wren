@@ -44,6 +44,7 @@ class TextInput is Widget {
     _maxLen    = null
     _onSubmit  = null
     _onChange  = null
+    _mask      = null
   }
 
   // String round-trip.  Setting value resets the cursor to the end
@@ -75,6 +76,25 @@ class TextInput is Widget {
 
   onSubmit=(fn) { _onSubmit = fn }
   onChange=(fn) { _onChange = fn }
+
+  // Optional one-codepoint display mask.  The underlying value and all
+  // edit callbacks continue to use the original text.
+  mask { _mask }
+  mask=(s) {
+    if (s == null) {
+      _mask = null
+      markDirty()
+      return
+    }
+    var first = null
+    for (c in s) {
+      first = c
+      break
+    }
+    if (first == null) return
+    _mask = first
+    markDirty()
+  }
 
   scrollOff { _scrollOff }
 
@@ -114,7 +134,8 @@ class TextInput is Widget {
     var w = bounds.w
     var i = 0
     while (i < w && _scrollOff + i < _chars.count) {
-      Painter.text(sf, i, 0, _chars[_scrollOff + i], st, 1)
+      var ch = _mask == null ? _chars[_scrollOff + i] : _mask
+      Painter.text(sf, i, 0, ch, st, 1)
       i = i + 1
     }
   }

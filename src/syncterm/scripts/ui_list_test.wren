@@ -23,6 +23,8 @@ class UiListTest {
     testSelectedClampsLow_()
     testSelectedItemAccessor_()
     testSelectedItemNullWhenEmpty_()
+    testOnChangeFiresForMovement_()
+    testOnChangeFiresForReplacement_()
 
     // Navigation
     testUpDown_()
@@ -135,6 +137,26 @@ class UiListTest {
     var l = ListView.new()
     check_(l.selectedItem == null,
            "ListView.selectedItem is null on empty list")
+  }
+
+  static testOnChangeFiresForMovement_() {
+    var l = makeList_(3)
+    var seen = null
+    l.onChange = Fn.new {|i, item| seen = [i, item] }
+    l.selected = 2
+    check_(seen[0] == 2 && seen[1] == "item-2",
+           "ListView onChange: selection movement reports index + item")
+  }
+
+  static testOnChangeFiresForReplacement_() {
+    var l = makeList_(2)
+    var seen = null
+    l.onChange = Fn.new {|i, item| seen = [i, item] }
+    l.items = ["replacement"]
+    var replaced = seen[0] == 0 && seen[1] == "replacement"
+    l.items = []
+    check_(replaced && seen[0] == null && seen[1] == null,
+           "ListView onChange: item replacement and empty list report")
   }
 
   // ----- Navigation -----------------------------------------------

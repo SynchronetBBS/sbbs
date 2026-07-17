@@ -105,6 +105,7 @@ class UiWidgetTest {
     testAppModalTopFallsBackToRoot_()
     testAppModalWidgetInheritsTheme_()
     testAppKeymapBindUnbind_()
+    testAppLayoutNotifiesOnResize_()
     testAppDispatchKeyToFocused_()
     testAppDispatchKeyHitsKeymap_()
     testAppDispatchKeyConsumedSkipsKeymap_()
@@ -575,6 +576,20 @@ class UiWidgetTest {
     check_(app.binding(Key.f1) == fn, "App.bind stores handler")
     app.unbind(Key.f1)
     check_(app.binding(Key.f1) == null, "App.unbind removes handler")
+  }
+
+  static testAppLayoutNotifiesOnResize_() {
+    var app = App.new()
+    var calls = []
+    app.onLayout = Fn.new {|w, h| calls.add([w, h]) }
+    var first = app.layout_(80, 25)
+    var same = app.layout_(80, 25)
+    var resized = app.layout_(100, 30)
+    check_(first && !same && resized && calls.count == 2 &&
+           calls[0][0] == 80 && calls[0][1] == 25 &&
+           calls[1][0] == 100 && calls[1][1] == 30 &&
+           app.root.bounds.w == 100 && app.root.bounds.h == 30,
+           "App layout: callback fires only for first size and resize")
   }
 
   static testAppDispatchKeyToFocused_() {

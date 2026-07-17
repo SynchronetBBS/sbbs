@@ -63,6 +63,7 @@ class App {
     _tickMs      = null
     _surface     = null           // screen-sized backbuffer; lazy alloc
     _surfaceSize = null           // [w, h] last allocated for; reallocs on resize
+    _layoutSize  = null           // [w, h] last passed through layout_
     _backdrop    = null           // Screen.readRect snapshot from first paint
     _savedCursor = null           // CustomCursor snapshot from entry; restored on exit
     _cursorShown = null           // mirrors last applied state; null forces first apply
@@ -70,6 +71,7 @@ class App {
     _status      = null           // PopStatus overlay or null
     _runFiber    = null           // set in run(); target for post() and the claim handler's wake
     _onPost      = null           // user-supplied posted-value handler
+    _onLayout    = null           // called with (width, height) on resize
     _dragHandedOff = false        // see dispatchMouse_ for the belt this catches
     _claim         = null         // ClaimHandle; set by run(), popped on exit
     _tickPending   = false        // true while a Timer.trigger is queued for _runFiber
@@ -89,6 +91,23 @@ class App {
   tickMs=(ms) { _tickMs = ms }
   running     { _running     }
   modalStack  { _modalStack  }
+  onLayout=(fn) { _onLayout = fn }
+
+  // Apply the effective screen bounds and notify layout clients only
+  // when they change.  Public-with-underscore so pure Wren tests can
+  // exercise resize behavior without painting the real screen.
+  layout_(w, h) {
+    var changed = _layoutSize == null || _layoutSize[0] != w ||
+        _layoutSize[1] != h
+    _layoutSize = [w, h]
+    if (_root.bounds == null || _root.bounds.w != w ||
+        _root.bounds.h != h || _root.bounds.x != 1 ||
+        _root.bounds.y != 1) {
+      _root.bounds = Rect.new(1, 1, w, h)
+    }
+    if (changed && _onLayout != null) _onLayout.call(w, h)
+    return changed
+  }
 
   // The widget that owns the foreground — top of the modal stack if
   // any, else the root container.  All event dispatch starts here.
@@ -386,8 +405,9 @@ class App {
     var sh      = Screen.size[1]
     var hideRow = CTerm.statusDisplay > 0
     if (hideRow) sh = sh - 1
-    if (_surface == null || _surfaceSize == null ||
-        _surfaceSize[0] != sw || _surfaceSize[1] != sh) {
+    var resized = _surface == null || _surfaceSize == null ||
+        _surfaceSize[0] != sw || _surfaceSize[1] != sh
+    if (resized) {
       _surface     = Surface.new(sw, sh)
       _surfaceSize = [sw, sh]
       _backdrop    = null
@@ -402,9 +422,7 @@ class App {
     }
     if (_backdrop != null) _surface.putRect(_backdrop, 0, 0)
 
-    if (_root.bounds == null) {
-      _root.bounds = Rect.new(1, 1, sw, sh)
-    }
+    layout_(sw, sh)
     // Composite root's children straight onto the App surface.  Root
     // has no chrome of its own — it's a passthrough container — so
     // skipping its draw() lets the backdrop show through the gaps

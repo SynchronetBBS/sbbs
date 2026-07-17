@@ -36,6 +36,7 @@ class ListView is Widget {
     _scrollTop     = 0
     _showScroll    = true
     _onSelect      = null
+    _onChange      = null
     _sbSide        = "left"        // "left" (UIFC) or "right"
     _sbSep         = true          // separator between scrollbar and content
     _searchBuf     = ""             // type-to-search rolling buffer
@@ -51,6 +52,7 @@ class ListView is Widget {
     _scrollTop = 0
     _searchBuf = ""
     if (_selectionMode == "tag") rebuildTagged_()
+    notifyChange_()
     markDirty()
   }
 
@@ -107,6 +109,7 @@ class ListView is Widget {
     if (i == null || _items.count == 0) {
       if (_selected == -1) return
       _selected = -1
+      notifyChange_()
       markDirty()
       return
     }
@@ -114,6 +117,7 @@ class ListView is Widget {
     if (clamped == _selected) return
     _selected = clamped
     ensureVisible_()
+    notifyChange_()
     markDirty()
   }
 
@@ -154,6 +158,14 @@ class ListView is Widget {
   }
 
   onSelect=(fn) { _onSelect = fn }
+  // Fires whenever the current row changes, without activating it.
+  // Arguments are (index, item), or (null, null) for an empty list.
+  onChange=(fn) { _onChange = fn }
+
+  notifyChange_() {
+    if (_onChange == null) return
+    _onChange.call(selected, selectedItem)
+  }
 
   scrollbarVisible_ {
     if (bounds == null) return false

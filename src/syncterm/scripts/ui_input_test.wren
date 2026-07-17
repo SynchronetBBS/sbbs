@@ -33,6 +33,7 @@ class UiInputTest {
     testMouseClickPositionsCursor_()
     testMouseHoverIgnored_()
     testDrawShowsValue_()
+    testDrawMasksValue_()
     testDrawFocusedStyle_()
 
     var total = __pass + __fail
@@ -266,6 +267,17 @@ class UiInputTest {
     check_(s.cellAt(0, 0).ch == "a" && s.cellAt(1, 0).ch == "b" &&
            s.cellAt(2, 0).ch == "c" && s.cellAt(3, 0).ch == " ",
            "TextInput draw: characters appear, padding is space")
+  }
+
+  static testDrawMasksValue_() {
+    var t = TextInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.value = "secret"
+    t.mask = "*"
+    var s = t.draw()
+    check_(t.value == "secret" && s.cellAt(0, 0).ch == "*" &&
+           s.cellAt(5, 0).ch == "*" && s.cellAt(6, 0).ch == " ",
+           "TextInput mask: hides paint without changing value")
   }
 
   static testDrawFocusedStyle_() {
