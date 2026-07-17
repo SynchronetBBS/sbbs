@@ -32,6 +32,7 @@ rcsid[] = "$Id: i_x.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 #include "d_main.h"
 #include "i_video.h"
 #include "i_system.h"
+#include "m_config.h"
 #include "z_zone.h"
 
 #include "tables.h"
@@ -517,6 +518,10 @@ void I_EnableLoadingDisk(void)
 
 void I_BindVideoVariables (void)
 {
+    // syncdoom: the rest of upstream's video variables are SDL-specific and moot
+    // for a terminal renderer, but gamma is not: F11 cycles usegamma and I_SetPalette
+    // applies it, so bind it or the user's choice is forgotten every session.
+    M_BindVariable("usegamma", &usegamma);
 }
 
 void I_DisplayFPSDots (boolean dots_on)

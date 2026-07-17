@@ -1585,6 +1585,14 @@ static unsigned char map_ascii(unsigned char c)
 	// KEY_F10 are consecutive in doomkeys.h, so F1+(n-1) indexes F1..F6.
 	if (c >= 0x01 && c <= 0x06)
 		return (unsigned char)(KEY_F1 + (c - 1));
+	// Ctrl-G (0x07) -- gamma correction, Doom's F11. Host terminals routinely eat F11
+	// for their own fullscreen toggle (Windows Terminal does; older SyncTERM too), so
+	// F11 can't be relied on to reach us -- it still works where it survives. "G" for
+	// gamma; 0x07 is the last free control byte (Ctrl-H/I/J are Backspace/Tab/Enter,
+	// which is why the F1..F6 run above stops at F6). Every client path folds
+	// Ctrl+letter to its control byte before map_ascii, so this covers all of them.
+	if (c == 0x07)
+		return KEY_F11;
 	// Ctrl-T (0x14) -- door-level "cycle frame-pipeline depth" hotkey (for A/B-ing
 	// the remote-latency frame pacing live). Intercepted in key_seen; never Doom's.
 	if (c == 0x14)
