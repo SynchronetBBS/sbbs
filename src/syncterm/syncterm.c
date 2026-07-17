@@ -92,6 +92,7 @@ enum {
 #include "term.h"
 #include "uifcinit.h"
 #include "window.h"
+#include "wren_menu_host.h"
 #include "wren_host.h"
 #include "xpbeep.h"
 
@@ -2609,6 +2610,8 @@ main(int argc, char **argv)
 	}
 
 	load_font_files();
+	if (wren_menu_host_init())
+		atexit(wren_menu_host_shutdown);
 	while ((!quitting) && (bbs != NULL || (bbs = show_bbslist(last_bbs, false)) != NULL)) {
 		if (default_hidepopups >= 0)
 			bbs->hidepopups = default_hidepopups;

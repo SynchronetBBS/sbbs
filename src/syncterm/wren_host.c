@@ -38,6 +38,7 @@
  * -------------------------------------------------------------------- */
 
 static struct wren_host_state state;
+static struct wren_host_state *selected_state;
 static bool      active;
 static pthread_t owner_thread;
 static bool      physical_key_events_requested;
@@ -333,7 +334,17 @@ wren_log_emit(WrenVM *vm, uint64_t seq, int slot)
 struct wren_host_state *
 wren_host_state(void)
 {
+	if (selected_state != NULL)
+		return selected_state;
 	return active ? &state : NULL;
+}
+
+struct wren_host_state *
+wren_host_select_state(struct wren_host_state *new_state)
+{
+	struct wren_host_state *old = selected_state;
+	selected_state = new_state;
+	return old;
 }
 
 bool
@@ -682,7 +693,9 @@ host_load_module(WrenVM *vm, const char *name)
 
 	for (const struct embedded_script *es = EMBEDDED_SCRIPTS;
 	    es->name != NULL; es++) {
-		if (strcmp(es->name, name) == 0) {
+		if (strcmp(es->name, name) == 0 &&
+		    (es->event == NULL ||
+		    strcmp(es->event, "connected") == 0)) {
 			/* Static source; leave onComplete NULL. */
 			res.source = es->source;
 			return res;
@@ -982,6 +995,7 @@ wren_host_init(struct bbslist *bbs)
 
 	owner_thread = pthread_self();
 	active = true;
+	selected_state = &state;
 
 	/* Glob the user's auto-load dir for the "connected" event to detect
 	 * overrides of embedded entry scripts and to discover any user-only
@@ -1238,6 +1252,8 @@ wren_host_shutdown(void)
 	wrenFreeVM(state.vm);
 	state.vm = NULL;
 	active = false;
+	if (selected_state == &state)
+		selected_state = NULL;
 	physical_key_events_requested = false;
 	pthread_mutex_destroy(&state.result_mutex);
 

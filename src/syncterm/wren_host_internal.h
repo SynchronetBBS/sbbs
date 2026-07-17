@@ -295,6 +295,9 @@ struct wren_host_state {
 
 /* Singleton state pointer (NULL when shut down). */
 extern struct wren_host_state *wren_host_state(void);
+/* Select the state used by foreign bindings while a VM is executing.
+ * Returns the previously selected state so nested host calls can restore it. */
+struct wren_host_state *wren_host_select_state(struct wren_host_state *state);
 /* `wren_host_take_pending_disconnect` lives in the public header
  * `wren_host.h`, so callers (e.g. term.c) only need that include. */
 

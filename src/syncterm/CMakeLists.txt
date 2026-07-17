@@ -295,7 +295,9 @@ set(SOURCE
 	webget.c
 	window.c
 	wren_host.c
+	wren_menu_host.c
 	wren_bind.c
+	wren_bind_menu.c
 	wren_bind_sftp.c
 	wren_bind_fs.c
 	wren_bind_screen.c
@@ -347,14 +349,14 @@ target_compile_options(re1 PRIVATE -w)
 #                                     when something imports them.
 #   * scripts/auto/<event>/*.wren     auto-loaded entry scripts.  Each
 #                                     subdirectory under auto/ names a
-#                                     framework event (connected,
-#                                     startup, ...).  For now only
-#                                     `connected` exists, fired per BBS
-#                                     session.
+#                                     framework event.  `menu` loads once
+#                                     in the trusted persistent VM;
+#                                     `connected` loads in each session VM.
 file(GLOB WREN_LIB_SCRIPTS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.wren")
 file(GLOB WREN_AUTO_SCRIPTS CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/auto/connected/*.wren")
+    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/auto/connected/*.wren"
+    "${CMAKE_CURRENT_SOURCE_DIR}/scripts/auto/menu/*.wren")
 set(WREN_SCRIPTS ${WREN_LIB_SCRIPTS} ${WREN_AUTO_SCRIPTS})
 # Developer-only files are not embedded:
 #   * scripts/auto/connected/runtests.wren — Alt+T hotkey trigger

@@ -416,7 +416,9 @@ WREN_OBJS     := $(addprefix $(MTOBJODIR)$(DIRSEP),\
 
 OBJS   += $(WREN_OBJS)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_menu_host$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_menu$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_sftp$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_fs$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_screen$(OFILE)
@@ -462,10 +464,9 @@ $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE): CFLAGS += -Ire1
 #                                 something imports them.
 #   * scripts/auto/<event>/*.wren — auto-loaded entry scripts.  Each
 #                                    subdirectory under auto/ names a
-#                                    framework event (connected, startup,
-#                                    …); files in it run when that event
-#                                    fires.  For now there's just one,
-#                                    `connected`, fired per BBS session.
+#                                    framework event.  `menu` loads once in
+#                                    the trusted persistent VM; `connected`
+#                                    loads in each session VM.
 #
 # Developer-only files are not embedded:
 #   * scripts/auto/connected/runtests.wren — Alt+T hotkey trigger
@@ -479,7 +480,8 @@ WREN_SCRIPTS    := $(filter-out scripts/wrentest.wren, \
                        $(filter-out scripts/%_demo.wren, \
                                     $(wildcard scripts/*.wren)))) \
                    $(filter-out scripts/auto/connected/runtests.wren, \
-                                $(wildcard scripts/auto/connected/*.wren))
+                                $(wildcard scripts/auto/connected/*.wren)) \
+                   $(wildcard scripts/auto/menu/*.wren)
 WREN_EMBED_GEN  := $(MTOBJODIR)$(DIRSEP)wren_embed_gen$(EXEFILE)
 WREN_EMBED_SRC  := $(MTOBJODIR)$(DIRSEP)embedded_scripts.c
 WREN_EMBED_OBJ  := $(MTOBJODIR)$(DIRSEP)embedded_scripts$(OFILE)
