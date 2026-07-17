@@ -16,6 +16,7 @@ var cterm_version_supports_ctda = 1207;
 var cterm_version_supports_xtsrga = 1208;
 var cterm_version_supports_b64_fonts = 1213;
 var cterm_version_supports_copy_buffers = 1316;
+var cterm_version_supports_sndfile_format = 1331;
 var cterm_version_supports_jpegxl = 1318;
 var font_slot_first = 43;
 var font_slot_last = 255;
@@ -788,16 +789,34 @@ function bright_background(enable)
 // file at all.  Check supports_audio()/supports_audio_files() first.
 //
 // File formats are whatever the CLIENT's runtime libsndfile decodes: WAV, VOC,
-// OGG/Opus and FLAC are safe everywhere; MP3 only on libsndfile >= 1.1.0. There
-// is no per-format probe -- prefer OGG/WAV for portability. `data` is the file's
-// raw bytes as a binary string (File.open("rb").read()).
+// OGG/Opus and FLAC are safe everywhere; MP3 needs libsndfile >= 1.1.0. Ask
+// supports_audio_format() rather than guessing -- but note it only answers on
+// CTerm >= 1331, so a door that must work on older clients still wants OGG/WAV.
+// `data` is the file's raw bytes as a binary string (File.open("rb").read()).
 // ---------------------------------------------------------------------------
 
 var audio_chan_first = 2;      // channels 2..15 are APC-mixable (0/1 are cterm's)
 var audio_chan_last  = 15;
 var audio_slot_last  = 255;    // 256 patch slots (0..255)
 
+// Normalized libsndfile format IDs for supports_audio_format(), from cterm.adoc's
+// registry: major = (SF_INFO.format & SF_FORMAT_TYPEMASK) >> 16, subtype =
+// SF_INFO.format & SF_FORMAT_SUBMASK. Only the pairs a door is likely to ask
+// about -- any other numeric value is passed through to libsndfile untouched.
+var audio_major_wav  = 1;
+var audio_major_voc  = 8;
+var audio_major_flac = 23;
+var audio_major_ogg  = 32;
+var audio_major_mpeg = 35;
+
+var audio_sub_pcm_16   = 2;
+var audio_sub_float    = 6;
+var audio_sub_vorbis   = 96;
+var audio_sub_opus     = 100;
+var audio_sub_mp3      = 130;   // SF_FORMAT_MPEG_LAYER_III
+
 var _audio_caps = undefined;
+var _audio_fmt_caps = {};      // "major;subtype" -> true/false, cached per session
 
 // -1 = no audio APC; 0 = audio APC but Synth tones only (no libsndfile);
 //  1 = audio APC + libsndfile (can decode sound files). Cached after first query.
@@ -821,6 +840,37 @@ function supports_audio()
 function supports_audio_files()
 {
 	return query_audio() === 1;
+}
+
+// Can the client's libsndfile decode this container/subtype pair? `major` and
+// `subtype` are the normalized IDs above (e.g. audio_major_ogg/audio_sub_opus).
+// SyncTERM answers from sf_format_check(), so this is authoritative for the
+// process actually playing the sound -- unlike supports_audio_files(), which only
+// says libsndfile is THERE, not that it reads your format.
+//
+// Returns undefined when the question cannot be asked: no libsndfile at all, or a
+// CTerm older than 1331 (the query does not exist, and the terminal stays silent
+// -- so "unknown", NOT "unsupported"). Callers that must not guess wrong on an old
+// client should prefer a format that needs no query (WAV/OGG). Cached per pair.
+function supports_audio_format(major, subtype)
+{
+	var key = major + ';' + subtype;
+	var r, m;
+
+	if(_audio_fmt_caps[key] !== undefined)
+		return _audio_fmt_caps[key];
+	if(!supports_audio_files())
+		return undefined;
+	if(console.cterm_version === undefined
+	    || console.cterm_version < cterm_version_supports_sndfile_format)
+		return undefined;
+	r = query_fb('\x1b_SyncTERM:Q;libsndfileFormat;' + major + ';' + subtype + '\x1b\\', 'n');
+	// The reply echoes the pair we asked about: CSI = 7 ; 101 ; major ; subtype ; avail n
+	m = r.match(/\x1b\[=7;101;(\d+);(\d+);([01])n/);
+	if(!m || parseInt(m[1], 10) !== major || parseInt(m[2], 10) !== subtype)
+		return undefined;
+	_audio_fmt_caps[key] = (m[3] === '1');
+	return _audio_fmt_caps[key];
 }
 
 // --- low-level APC emitters (one per wire verb) ---
