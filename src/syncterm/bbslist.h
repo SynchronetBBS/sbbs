@@ -19,6 +19,7 @@
 
 #define LIST_NAME_MAX 30
 #define LIST_ADDR_MAX 64
+#define BBSLIST_MAX_ENTRIES 100000
 #define MAX_USER_LEN 30
 #define MAX_PASSWD_LEN 128
 #define MAX_SYSPASS_LEN 128
@@ -33,6 +34,18 @@ enum {
 	BBSLIST_SELECT
 	,
 	BBSLIST_EDIT
+};
+
+enum bbslist_read_status {
+	BBSLIST_READ_OK,
+	BBSLIST_READ_PASSWORD_REQUIRED,
+	BBSLIST_READ_DECRYPT_FAILED,
+	BBSLIST_READ_FAILED,
+	BBSLIST_READ_MIGRATION_LIST_OPEN_FAILED,
+	BBSLIST_READ_MIGRATION_INI_OPEN_FAILED,
+	BBSLIST_READ_MIGRATION_INI_READ_FAILED,
+	BBSLIST_READ_MIGRATION_LIST_WRITE_FAILED,
+	BBSLIST_READ_MIGRATION_INI_WRITE_FAILED,
 };
 
 enum {
@@ -191,13 +204,24 @@ extern int list_keysize;
 void init_sort_profiles(FILE *inifile);
 void read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsname, int id, int type);
 void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
+bool read_list_password(const char *listpath, struct bbslist **list,
+    struct bbslist *defaults, int *count, int type, const char *password,
+    enum bbslist_read_status *status);
 void free_list(struct bbslist **list, int listcount);
-void add_bbs(char *listpath, struct bbslist *bbs, bool isnew);
+void sort_bbs_list(struct bbslist **list, int *listcount);
+bool add_bbs(const char *listpath, struct bbslist *bbs, bool isnew);
+bool save_bbs_defaults(const char *listpath, struct bbslist *defaults);
+bool rename_bbs(const char *listpath, const char *old_name,
+    struct bbslist *bbs);
+bool delete_bbs(const char *listpath, struct bbslist *bbs);
 int edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault, int *init_copt, int *init_bar);
 int get_rate_num(int rate);
 cterm_emulation_t get_emulation(struct bbslist *bbs);
 const char *get_emulation_str(struct bbslist *bbs);
 void get_term_size(struct bbslist *bbs, int *cols, int *rows);
 str_list_t iniReadBBSList(FILE *fp, bool userList);
+str_list_t iniReadBBSListPassword(FILE *fp, bool userList,
+    const char *password, enum bbslist_read_status *status);
+const char *bbslist_read_status_string(enum bbslist_read_status status);
 
 #endif // ifndef _BBSLIST_H_

@@ -278,6 +278,7 @@ endif()
 set(SOURCE
 	audio_apc.c
 	bbslist.c
+	bbslist_model.c
 	conn.c
 	ansi_filter.c
 	conn_pty.c

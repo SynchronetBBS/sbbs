@@ -1,6 +1,7 @@
 #include "wren_menu_host.h"
 
 #include "wren_bind_menu.h"
+#include "wren_bind_internal.h"
 #include "wren_host_internal.h"
 
 #include "dirwrap.h"
@@ -132,6 +133,8 @@ generic_class_allowed(const char *class_name)
 static bool
 generic_method_allowed(const char *class_name, const char *signature)
 {
+	if (strcmp(class_name, "CTerm") == 0)
+		return strcmp(signature, "statusDisplay") == 0;
 	if (!generic_class_allowed(class_name))
 		return false;
 	if (strcmp(class_name, "Input") == 0 &&
@@ -140,7 +143,8 @@ generic_method_allowed(const char *class_name, const char *signature)
 	if (strcmp(class_name, "Host") != 0)
 		return true;
 	static const char *const host_allowed[] = {
-		"altKeyName", "altKeyShort", "downloadDir", "pickFile(_,_,_)",
+		"altKeyName", "altKeyShort", "cacheDirectory", "downloadDir",
+		"pickFile(_,_,_)",
 		"pickFiles(_,_,_)",
 		"pickSavePath(_,_)",
 		"print(_)",
@@ -154,6 +158,12 @@ generic_method_allowed(const char *class_name, const char *signature)
 	return false;
 }
 
+static void
+menu_capability_denied(WrenVM *vm)
+{
+	wren_throw(vm, "this capability is not available in the menu VM");
+}
+
 static WrenForeignMethodFn
 bind_foreign_method(WrenVM *vm, const char *module, const char *class_name,
     bool is_static, const char *signature)
@@ -162,10 +172,15 @@ bind_foreign_method(WrenVM *vm, const char *module, const char *class_name,
 	if (strcmp(module, "syncterm_menu") == 0)
 		return wren_menu_bind_lookup(module, class_name, is_static,
 		    signature);
-	if (strcmp(module, "syncterm") != 0 ||
-	    !generic_method_allowed(class_name, signature))
+	if (strcmp(module, "syncterm") != 0)
 		return NULL;
-	return wren_bind_lookup(module, class_name, is_static, signature);
+	WrenForeignMethodFn fn = wren_bind_lookup(module, class_name,
+	    is_static, signature);
+	if (fn == NULL)
+		return NULL;
+	if (!generic_method_allowed(class_name, signature))
+		return menu_capability_denied;
+	return fn;
 }
 
 static WrenForeignClassMethods
@@ -276,6 +291,7 @@ wren_menu_host_init(void)
 		return true;
 	memset(&menu_state, 0, sizeof(menu_state));
 	menu_state.input_epoch = 1;
+	wren_menu_bind_init();
 
 	WrenConfiguration config;
 	wrenInitConfiguration(&config);
@@ -293,6 +309,8 @@ wren_menu_host_init(void)
 		wrenFreeVM(menu_state.vm);
 		menu_state.vm = NULL;
 	}
+	if (!menu_active)
+		wren_menu_bind_shutdown();
 	wren_host_select_state(old);
 	return menu_active;
 }
@@ -304,6 +322,7 @@ wren_menu_host_shutdown(void)
 		return;
 	struct wren_host_state *old = wren_host_select_state(&menu_state);
 	wrenFreeVM(menu_state.vm);
+	wren_menu_bind_shutdown();
 	wren_host_select_state(old == &menu_state ? NULL : old);
 	memset(&menu_state, 0, sizeof(menu_state));
 	menu_active = false;

@@ -707,10 +707,8 @@ it:
 
 | `scripts/auto/<event>/<name>.wren`
 | Auto-loaded entry script.  Runs at the moment the framework fires
-  `<event>`; typically registers hooks.  Currently the only event is
-  `connected`, fired once per BBS session, but the layout reserves
-  room for `startup` / `ssh` / `ui` / etc. as new auto-load points
-  are added.
+  `<event>`.  `menu` runs once in the persistent main-menu VM;
+  `connected` runs once in each connected-session VM.
 |===
 
 Files anywhere else under `scripts/` (e.g. user-organised
@@ -751,8 +749,14 @@ The currently embedded scripts are:
 | `syncterm`
 | library
 | Foundational module: foreign-class declarations and Wren-side
-  helpers (`REPL`, `Key`, `Color`, `Codepage`, …).  Every other
-  script imports from this one.  Loads on first import.
+  helpers (`REPL`, `Key`, `Color`, `Codepage`, …).  Loads on first
+  import.  The menu VM binds only its trusted UI subset; calling any
+  other declared capability aborts the calling fiber.
+
+| `syncterm_menu`
+| library / menu only
+| Trusted main-menu data model: transactional BBS-list loading and
+  mutable `BBS` records.  The connected loader rejects this module.
 
 | `console`
 | auto / connected
@@ -816,9 +820,11 @@ The currently embedded scripts are:
   See <<status,Status>> for the API and override pattern.
 |===
 
-The `syncterm` module contains only declarations; it has no top-level
-side effects and is loaded on demand the first time something imports
-it.  The auto-load embeds run at the start of each BBS session.
+The `syncterm` module is loaded on demand the first time something
+imports it.  Its top level obtains the host-created `Cache` and
+`Download` objects.  The auto-load embeds run when their owning VM is
+created: once per application for `menu`, and once per BBS session for
+`connected`.
 
 === Overriding Embedded Scripts
 
@@ -858,31 +864,74 @@ nothing.
   filename-derived module.
 
 `import` statements (whether from a script's top-level or inside its
-body) resolve through one lookup chain:
+body) resolve through the lookup chain for the current VM:
 
 . `scripts/<name>.wren` — pure library module.
-. `scripts/auto/connected/<name>.wren` — catches imports of names
-  that are also auto-load entry scripts (rare, but possible if one
-  auto-load module imports another that hasn't auto-loaded yet).
+. `scripts/auto/<event>/<name>.wren` — where `<event>` is `menu` or
+  `connected`; this catches imports of auto-load modules which have
+  not run yet.
 . The embedded table — built-in fallback by module name.
 
 The foundational `syncterm` module lazily loads the first time
 anything imports it; subsequent imports hit Wren's module cache.
 
-A script's top-level code runs once per connection, at the moment
-its event fires.  Top-level code typically registers hooks;
-persistent state should be stored on classes (static fields).
+A script's top-level code runs once in the VM which owns its event.
+Top-level code commonly registers hooks or creates the long-lived menu
+controller; persistent state should be stored on classes (static
+fields).
 
-=== Per-Connection Lifecycle
+=== VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
-The VM is created in `wren_host_init(bbs)` just before SyncTERM's main
-loop and freed in `wren_host_shutdown()` at every exit path.
+SyncTERM deliberately uses two Wren VMs.  They do not share Wren
+objects, handles, modules, globals, hooks, timers, result queues, or
+foreign objects.
 
-Every reconnect rebuilds the VM from scratch — module-level static
-fields, registered hooks, and timer entries do not survive a
-disconnect.  A script that needs cross-session state must persist it
-manually, either through `Cache` (see <<cache>>) or by writing
-configuration into the BBS list.
+* The *menu VM* is created once after conio and configuration are
+  initialized.  It owns `scripts/auto/menu/`, survives connections,
+  is parked while the connected screen is active, and is destroyed at
+  application shutdown.  It can edit the BBS list and settings and can
+  invoke the trusted native file picker.
+* A fresh *connected VM* is created by `wren_host_init(bbs)` for each
+  BBS session and freed by `wren_host_shutdown()` on every exit path.
+  It owns `scripts/auto/connected/`.  Module statics, hooks, timers,
+  claims, and queued results do not survive disconnect.
+
+The remote system is considered hostile.  A remotely supplied script
+may know the active entry's username, password, and system password;
+those values are already meaningful to that remote.  It must not gain
+the authority to enumerate or edit other BBS entries, change global
+settings, start another connection, or mint arbitrary local-file
+access.  Consequently `syncterm_menu` is not merely omitted from the
+connected documentation: the connected loader explicitly rejects it,
+and menu foreign objects cannot cross the VM boundary.
+
+Connected scripts intentionally retain `Input.ungetKey`,
+`Input.ungetMouse`, physical-key synthesis, and the other synthetic
+input bindings.  User scripts need them to automate the current remote
+session.  Isolation is provided by the VM and transition barriers, not
+by removing those session-local controls.
+
+At every ownership transition (connect, disconnect, and entry to or
+return from the menu through Alt+E), the host establishes a new input
+epoch.  It discards pending conio keyboard and mouse pushback, clears
+input claims and waiters owned by the screen being left, and rejects
+late input-shaped results tagged with an older epoch.  This prevents a
+connected script from placing synthetic input in `ungetkey()` /
+`ungetmouse()` just before the trusted menu or picker takes control.
+The same barrier protects the connected VM when control returns from a
+trusted UI.
+
+The native file picker remains a trusted consent broker.  The menu VM
+does not receive arbitrary pathname-open authority: picker upload
+results are read-only, save results are one-shot write-only grants, and
+rights remain attached to the foreign `File` handle as documented in
+<<file-write-consent,Write consent>>.
+
+Every reconnect rebuilds the connected VM from scratch.  Connected
+scripts needing cross-session state must persist it through an
+authorized `Cache` / `Download` file or picker token.  Menu scripts can
+keep ordinary Wren state for the application lifetime, but durable
+changes still require the explicit model save methods.
 
 The owner thread is captured at init; dispatchers called from any
 other thread (background SFTP and SSH writes invoke `conn_send` from
@@ -891,12 +940,23 @@ foreground thread only.
 
 == Importing the API
 
-The host bindings live in module `syncterm`.  Every script — embedded
-or user, entry or library — imports the classes it needs:
+Shared host bindings live in module `syncterm`.  Every script imports
+the classes it needs:
 
 [source,wren]
 ----
 import "syncterm" for Screen, Input, Conn, Hook, Key
+----
+
+An import does not grant all methods declared by that module.  The
+menu VM resolves the declarations so shared UI libraries can load, but
+forbidden methods abort with "this capability is not available in the
+menu VM" if called.  Unknown foreign declarations remain module-load
+errors.  Menu-only data APIs are imported separately:
+
+[source,wren]
+----
+import "syncterm_menu" for Menu, BBS, MenuReadStatus
 ----
 
 `Cache` is injected into the `syncterm` module from C as a
@@ -3133,7 +3193,7 @@ acting as.
                        direct writes to via DECSASD.
 |===
 
-=== BBS [[bbs]]
+=== Connected BBS [[bbs]]
 
 Read-only window into the active `struct bbslist` entry.  Useful
 from `onConnect`-style top-level code that wants to behave
@@ -3185,6 +3245,110 @@ classes documented below.
 | Statistics
 | `added`, `connected`, `calls`, `sortOrder`
 |===
+
+This `BBS` class belongs to the shared `syncterm` module and always
+means the one active connection.  It is unrelated to the mutable menu
+`BBS` class below; the two classes live in different modules and VMs
+and no instance can cross between them.
+
+=== Menu BBS Model [[menu-bbs-model]]
+
+The menu VM imports `Menu`, `BBS`, and `MenuReadStatus` from
+`syncterm_menu`.  `Menu` owns a C-side transactional view of the
+personal, installed system, and web-cache BBS lists.  It is not
+available in a connected VM.
+
+[options="header",cols="2m,4"]
+|===
+| Method | Description
+
+| Menu.load(password)
+| Load all lists and replace the current model only after the complete
+  load succeeds.  `password` is a String or `null`.  Returns a
+  `MenuReadStatus` code.  A failed password, decrypt, parse, or
+  migration leaves the preceding model and its generation intact.
+
+| Menu.statusMessage(status)
+| Return the host diagnostic String for a `MenuReadStatus` value.
+
+| Menu.entries
+| Return a new List of host-created menu `BBS` handles in current sort
+  order.  The records themselves remain C-owned.
+
+| Menu.defaults
+| Return the mutable root-section defaults record, or `null` before a
+  successful load.  Its `save()` writes default fields rather than a
+  named BBS section.
+
+| Menu.nameAvailable(name)
+| Test whether a new personal entry name is valid and unused by another
+  personal entry.  Names are 1..30 bytes and the reserved
+  `syncterm-system-cache` name is rejected.  A personal entry may
+  intentionally shadow a read-only system entry of the same name.
+
+| Menu.create(name)
+| Create an unsaved personal entry from `Menu.defaults`, reset its
+  statistics, sort the model, and return its `BBS` handle.  Returns
+  `null` for an invalid/duplicate name or allocation failure.
+
+| Menu.copy(source, name)
+| Create an unsaved personal copy of `source`, with reset statistics
+  and the supplied name.  Returns `null` on failure.
+
+| Menu.sort()
+| Reapply the configured BBS-list sort profiles.
+|===
+
+`MenuReadStatus` constants are `ok`, `passwordRequired`,
+`decryptFailed`, `readFailed`, `migrationListOpenFailed`,
+`migrationIniOpenFailed`, `migrationIniReadFailed`,
+`migrationListWriteFailed`, and `migrationIniWriteFailed`.
+
+Menu `BBS` properties map directly to the real `struct bbslist`:
+
+[options="header",cols="2,4"]
+|===
+| Group | Properties
+
+| Identity and state
+| Read-only `name`, `type`, `id`, `added`, `connected`, `calls`,
+  `connTypeName`, and `dirty`; methods `rename(name)`, `save()`,
+  `delete()`, and `toString`.
+
+| Address and authentication
+| Read/write `addr`, `port`, `connType`, `user`, `password`,
+  `syspass`, `addressFamily`, `sftpPublicKey`, `sshAllowAes128Cbc`,
+  and `sshAcceptEarlyData`.
+
+| Display and emulation
+| Read/write `music`, `rip`, `comment`, `termName`, `screenMode`,
+  `bpsRate`, `font`, `noStatus`, `hidePopups`, `yellowIsYellow`,
+  `forceLcf`, `palette`, and `lfExpand`.
+
+| Paths and logging
+| Read/write `dlDir`, `ulDir`, `logFile`, `appendLogFile`,
+  `xferLogLevel`, and `telnetLogLevel`.
+
+| Serial and protocol
+| Read/write `stopBits`, `dataBits`, `parity`, `flowControl`,
+  `telnetNoBinary`, `deferTelnetNegotiation`, `ghostProgram`, and
+  `sortOrder`.
+|===
+
+Setters mutate only the in-memory record and set `dirty`; `save()` is
+the persistence boundary and returns Bool.  A rename is likewise
+in-memory until `save()` performs the section rename and field update
+together.  `delete()` removes a personal entry from disk before
+removing it from the model.  System and web-cache records are
+read-only: setters abort, while `rename`, `save`, and `delete` return
+`false`.  Pass one to `Menu.copy` to obtain an editable personal copy.
+
+A successful full load, create, or delete advances the model
+generation.  Every previously obtained menu `BBS` handle then becomes
+stale; using one aborts with an instruction to reacquire it from
+`Menu.entries`.  This makes use-after-delete and references into a
+transactionally replaced list deterministic.  Sorting and in-place
+renaming preserve handles.
 
 ==== ConnType [[conntype]]
 

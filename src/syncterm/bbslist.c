@@ -1423,146 +1423,202 @@ prompt_password(char *keybuf, size_t *sz)
 	return false;
 }
 
+static const char *supplied_list_password;
+
+static bool
+use_supplied_password(char *keybuf, size_t *sz)
+{
+	if (supplied_list_password == NULL || supplied_list_password[0] == 0)
+		return false;
+	if (keybuf != NULL && sz != NULL)
+		*sz = strlcpy(keybuf, supplied_list_password, *sz);
+	return true;
+}
+
+const char *
+bbslist_read_status_string(enum bbslist_read_status status)
+{
+	switch (status) {
+		case BBSLIST_READ_OK:
+			return "OK";
+		case BBSLIST_READ_PASSWORD_REQUIRED:
+			return "The BBS list is encrypted and requires a password.";
+		case BBSLIST_READ_DECRYPT_FAILED:
+			return "Failed to decrypt the BBS list.";
+		case BBSLIST_READ_FAILED:
+			return "Failed to read the BBS list.";
+		case BBSLIST_READ_MIGRATION_LIST_OPEN_FAILED:
+			return "Migration aborted: failed to open the BBS list for rewrite.";
+		case BBSLIST_READ_MIGRATION_INI_OPEN_FAILED:
+			return "Migration aborted: syncterm.ini could not be opened for rewrite.";
+		case BBSLIST_READ_MIGRATION_INI_READ_FAILED:
+			return "Migration aborted: syncterm.ini could not be read.";
+		case BBSLIST_READ_MIGRATION_LIST_WRITE_FAILED:
+			return "Migration aborted: failed to re-encrypt the BBS list.";
+		case BBSLIST_READ_MIGRATION_INI_WRITE_FAILED:
+			return "Migration aborted: syncterm.ini write failed after the BBS list was re-encrypted.";
+	}
+	return "Unknown BBS list read error.";
+}
+
+static enum bbslist_read_status
+migrate_bbslist(str_list_t inifile, enum iniCryptAlgo algo, int keysize,
+    enum xp_crypt_kdf kdf, const char *password)
+{
+	bool kdf_legacy = algo != INI_CRYPT_ALGO_NONE &&
+	    kdf != XP_CRYPT_KDF_SCRYPT;
+	bool cipher_legacy = algo != INI_CRYPT_ALGO_NONE &&
+	    algo != INI_CRYPT_ALGO_AES && algo != INI_CRYPT_ALGO_CHACHA20;
+
+	list_algo = algo;
+	list_keysize = keysize;
+	if (!kdf_legacy && !cipher_legacy)
+		return BBSLIST_READ_OK;
+
+	enum iniCryptAlgo new_algo = cipher_legacy ? INI_CRYPT_ALGO_AES : algo;
+	int new_keysize = cipher_legacy ? 256 : keysize;
+	const char *new_kdf_spec = kdf_legacy ? iniCryptDefaultKDFSpec() :
+	    settings.keyDerivationIterations;
+	FILE *listfp = fopen(settings.list_path, "r+b");
+	if (listfp == NULL)
+		return BBSLIST_READ_MIGRATION_LIST_OPEN_FAILED;
+
+	FILE *inifp = NULL;
+	str_list_t inicontents = NULL;
+	if (kdf_legacy) {
+		char inipath[MAX_PATH + 1];
+		get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI,
+		    false);
+		inifp = fopen(inipath, "r+");
+		if (inifp == NULL) {
+			fclose(listfp);
+			return BBSLIST_READ_MIGRATION_INI_OPEN_FAILED;
+		}
+		inicontents = iniReadFile(inifp);
+		if (inicontents == NULL) {
+			fclose(inifp);
+			fclose(listfp);
+			return BBSLIST_READ_MIGRATION_INI_READ_FAILED;
+		}
+	}
+
+	if (!iniWriteEncryptedFile(listfp, inifile, new_algo, new_keysize,
+	    new_kdf_spec, password)) {
+		if (inicontents != NULL)
+			strListFree(&inicontents);
+		if (inifp != NULL)
+			fclose(inifp);
+		fclose(listfp);
+		return BBSLIST_READ_MIGRATION_LIST_WRITE_FAILED;
+	}
+	fclose(listfp);
+	list_algo = new_algo;
+	list_keysize = new_keysize;
+
+	if (kdf_legacy) {
+		SAFECOPY(settings.keyDerivationIterations,
+		    iniCryptDefaultKDFSpec());
+		iniSetString(&inicontents, "SyncTERM", "KeyDerivationIterations",
+		    settings.keyDerivationIterations, &ini_style);
+		rewind(inifp);
+		if (chsize(fileno(inifp), 0) != 0 ||
+		    !iniWriteFile(inifp, inicontents)) {
+			fclose(inifp);
+			strListFree(&inicontents);
+			return BBSLIST_READ_MIGRATION_INI_WRITE_FAILED;
+		}
+		fclose(inifp);
+		strListFree(&inicontents);
+	}
+	return BBSLIST_READ_OK;
+}
+
+str_list_t
+iniReadBBSListPassword(FILE *fp, bool userList, const char *password,
+    enum bbslist_read_status *status)
+{
+	enum bbslist_read_status result = BBSLIST_READ_OK;
+	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
+	int keysize = 0;
+	enum xp_crypt_kdf kdf = 0;
+
+	supplied_list_password = password;
+	str_list_t inifile = iniReadEncryptedFile(fp, use_supplied_password,
+	    settings.keyDerivationIterations, &algo, &keysize, &kdf);
+	supplied_list_password = NULL;
+	if (inifile == NULL) {
+		result = algo != INI_CRYPT_ALGO_NONE &&
+		    (password == NULL || password[0] == 0)
+		    ? BBSLIST_READ_PASSWORD_REQUIRED
+		    : (algo != INI_CRYPT_ALGO_NONE
+		    ? BBSLIST_READ_DECRYPT_FAILED : BBSLIST_READ_FAILED);
+		goto done;
+	}
+	if (algo != INI_CRYPT_ALGO_NONE &&
+	    !iniGetBool(inifile, NULL, "DecryptionCheck", false)) {
+		result = BBSLIST_READ_DECRYPT_FAILED;
+		goto fail;
+	}
+	if (!userList)
+		goto done;
+
+	result = migrate_bbslist(inifile, algo, keysize, kdf,
+	    password != NULL ? password : "");
+	if (result != BBSLIST_READ_OK)
+		goto fail;
+	strlcpy(list_password, password != NULL ? password : "",
+	    sizeof(list_password));
+
+#ifndef WITHOUT_DEUCESSH
+	/* The signing key is trusted only from the personal list. */
+	{
+		char hex[INI_MAX_VALUE_LEN] = "";
+		iniGetString(inifile, NULL, "WrenPickerHmacKey", "", hex);
+		uint8_t tkey[32];
+		bool have_key = wren_token_key_from_hex(hex, tkey);
+		if (!have_key && wren_token_generate_key(tkey)) {
+			char encoded[65];
+			wren_token_key_to_hex(tkey, encoded);
+			iniSetString(&inifile, NULL, "WrenPickerHmacKey", encoded,
+			    &ini_style);
+			FILE *listfp = fopen(settings.list_path, "r+b");
+			if (listfp != NULL) {
+				iniWriteEncryptedFile(listfp, inifile, list_algo,
+				    list_keysize, settings.keyDerivationIterations,
+				    list_password);
+				fclose(listfp);
+			}
+			have_key = true;
+		}
+		if (have_key)
+			wren_token_set_key(tkey);
+	}
+#endif
+	goto done;
+
+fail:
+	strListFree(&inifile);
+done:
+	if (status != NULL)
+		*status = result;
+	return inifile;
+}
+
 str_list_t
 iniReadBBSList(FILE *fp, bool userList)
 {
-	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
-	int ks;
-	enum xp_crypt_kdf kdf = 0;
-	str_list_t inifile = iniReadEncryptedFile(fp, prompt_password, settings.keyDerivationIterations, &algo, &ks, &kdf);
-	if (inifile == NULL || (algo != INI_CRYPT_ALGO_NONE && !iniGetBool(inifile, NULL, "DecryptionCheck", false))) {
-		uifc.msg("Failed to decrypt BBS list, exiting");
+	enum bbslist_read_status status;
+	str_list_t inifile = iniReadBBSListPassword(fp, userList,
+	    list_password[0] != 0 ? list_password : NULL, &status);
+	if (status == BBSLIST_READ_PASSWORD_REQUIRED &&
+	    prompt_password(NULL, NULL)) {
+		inifile = iniReadBBSListPassword(fp, userList, list_password,
+		    &status);
+	}
+	if (inifile == NULL) {
+		uifc.msg((char *)bbslist_read_status_string(status));
 		exit(EXIT_FAILURE);
 	}
-	if (userList) {
-		/* Legacy-format migration.  We just successfully decrypted,
-		 * so the password is known good.  Migrate any of:
-		 *
-		 *   - PBKDF2 KDF → scrypt (updates syncterm.ini's
-		 *     KeyDerivationIterations setting too)
-		 *   - 3DES/IDEA/CAST/RC2/RC4 cipher → AES-256
-		 *
-		 * Both files we need to touch (bbslist and syncterm.ini) are
-		 * opened before either is written.  If either can't be
-		 * opened for writing we bail without mutating anything — the
-		 * original v1 file stays readable on the next run, which
-		 * means the digit-form PBKDF2 iteration hint in syncterm.ini
-		 * also needs to survive intact. */
-		bool kdf_legacy    = (algo != INI_CRYPT_ALGO_NONE && kdf != XP_CRYPT_KDF_SCRYPT);
-		bool cipher_legacy = (algo != INI_CRYPT_ALGO_NONE
-		                      && algo != INI_CRYPT_ALGO_AES
-		                      && algo != INI_CRYPT_ALGO_CHACHA20);
-		list_algo = algo;
-		list_keysize = ks;
-
-		if (kdf_legacy || cipher_legacy) {
-			enum iniCryptAlgo new_algo = cipher_legacy ? INI_CRYPT_ALGO_AES : algo;
-			int new_ks = cipher_legacy ? 256 : ks;
-			const char *new_kdf_spec = kdf_legacy
-			    ? iniCryptDefaultKDFSpec()
-			    : settings.keyDerivationIterations;
-
-			FILE *listfp = fopen(settings.list_path, "r+b");
-			FILE *inifp = NULL;
-			str_list_t inicontents = NULL;
-			char inipath[MAX_PATH + 1];
-			if (kdf_legacy) {
-				get_syncterm_filename(inipath, sizeof(inipath),
-				    SYNCTERM_PATH_INI, false);
-				inifp = fopen(inipath, "r+");
-				if (inifp != NULL)
-					inicontents = iniReadFile(inifp);
-			}
-			/* Any failure below leaves memory and disk disagreeing
-			 * (the in-memory algo/keysize/KDF spec have already been
-			 * resolved to the new values in local variables; a later
-			 * save via iniWriteEncryptedFile would propagate whichever
-			 * side is stale).  Exit hard so the user can resolve the
-			 * underlying filesystem / permission issue and retry
-			 * cleanly on the next run. */
-			bool ready = (listfp != NULL) && (!kdf_legacy || (inifp != NULL && inicontents != NULL));
-			if (!ready) {
-				if (listfp == NULL)
-					uifc.msg("Migration aborted: failed to open BBS list for rewrite.");
-				else if (inifp == NULL)
-					uifc.msg("Migration aborted: syncterm.ini could not be opened for rewrite.");
-				else
-					uifc.msg("Migration aborted: syncterm.ini could not be read.");
-				if (listfp)
-					fclose(listfp);
-				if (inifp)
-					fclose(inifp);
-				if (inicontents)
-					strListFree(&inicontents);
-				exit(EXIT_FAILURE);
-			}
-			if (!iniWriteEncryptedFile(listfp, inifile, new_algo,
-			                           new_ks, new_kdf_spec,
-			                           list_password)) {
-				uifc.msg("Migration aborted: failed to re-encrypt BBS list.");
-				fclose(listfp);
-				fclose(inifp);
-				strListFree(&inicontents);
-				exit(EXIT_FAILURE);
-			}
-			fclose(listfp);
-			/* bbslist is now AES-256 / scrypt on disk.  Commit the
-			 * in-memory state and (if needed) sync syncterm.ini. */
-			list_algo = new_algo;
-			list_keysize = new_ks;
-			if (kdf_legacy) {
-				SAFECOPY(settings.keyDerivationIterations,
-				    iniCryptDefaultKDFSpec());
-				iniSetString(&inicontents, "SyncTERM",
-				    "KeyDerivationIterations",
-				    settings.keyDerivationIterations,
-				    &ini_style);
-				rewind(inifp);
-				if (chsize(fileno(inifp), 0) != 0 ||
-				    !iniWriteFile(inifp, inicontents)) {
-					uifc.msg("Migration aborted: syncterm.ini write failed after BBS list was re-encrypted.");
-					fclose(inifp);
-					strListFree(&inicontents);
-					exit(EXIT_FAILURE);
-				}
-				fclose(inifp);
-				strListFree(&inicontents);
-			}
-		}
-
-#ifndef WITHOUT_DEUCESSH
-		/* Picker-token signing key (see wren_token.h).  Loaded only
-		 * from the user's personal list — a malicious shared/web list
-		 * must not be able to inject a known key and forge tokens
-		 * against the local install.  Generated on first use; written
-		 * back into the same encrypted blob and re-encrypted with the
-		 * just-typed password. */
-		{
-			char hex[INI_MAX_VALUE_LEN] = "";
-			iniGetString(inifile, NULL, "WrenPickerHmacKey", "", hex);
-			uint8_t tkey[32];
-			bool have_key = wren_token_key_from_hex(hex, tkey);
-			if (!have_key && wren_token_generate_key(tkey)) {
-				char enc[65];
-				wren_token_key_to_hex(tkey, enc);
-				iniSetString(&inifile, NULL, "WrenPickerHmacKey",
-				    enc, &ini_style);
-				FILE *listfp = fopen(settings.list_path, "r+b");
-				if (listfp != NULL) {
-					iniWriteEncryptedFile(listfp, inifile,
-					    list_algo, list_keysize,
-					    settings.keyDerivationIterations,
-					    list_password);
-					fclose(listfp);
-				}
-				have_key = true;
-			}
-			if (have_key)
-				wren_token_set_key(tkey);
-		}
-#endif
-	}
-
 	return inifile;
 }
 
@@ -1642,6 +1698,70 @@ find_insert_point(struct bbslist **list, ini_lv_string_t *bbsname, int sz)
 	return ret;
 }
 
+static bool
+read_list_contents(str_list_t inilines, struct bbslist **list,
+    struct bbslist *defaults, int *count, int type)
+{
+	ini_fp_list_t *parsed = iniFastParseSections(inilines, false);
+	if (parsed == NULL)
+		return false;
+	if (defaults != NULL && type == USER_BBSLIST)
+		read_item(parsed, defaults, NULL, -1, type);
+
+	size_t bbs_count = 0;
+	ini_lv_string_t **bbses = iniGetFastParsedSectionList(parsed, NULL,
+	    &bbs_count);
+	for (size_t j = 0; j < bbs_count; j++) {
+		size_t ip = find_insert_point(list, bbses[j], *count);
+		if (ip < SIZE_MAX) {
+			struct bbslist *entry = malloc(sizeof(*entry));
+			if (entry == NULL) {
+				iniFastParsedSectionListFree(bbses);
+				iniFreeFastParse(parsed);
+				return false;
+			}
+			if (ip < (size_t)*count) {
+				memmove(&list[ip + 1], &list[ip],
+				    ((size_t)*count - ip) * sizeof(*list));
+			}
+			list[ip] = entry;
+			read_item(parsed, entry, bbses[j], *count, type);
+			(*count)++;
+		}
+		if (*count == MAX_OPTS - 1)
+			break;
+	}
+	iniFastParsedSectionListFree(bbses);
+	iniFreeFastParse(parsed);
+	return true;
+}
+
+bool
+read_list_password(const char *listpath, struct bbslist **list,
+    struct bbslist *defaults, int *count, int type, const char *password,
+    enum bbslist_read_status *status)
+{
+	FILE *listfile = fopen(listpath, "rb");
+	if (listfile == NULL) {
+		if (defaults != NULL && type == USER_BBSLIST)
+			read_item(NULL, defaults, NULL, -1, type);
+		if (status != NULL)
+			*status = BBSLIST_READ_OK;
+		return true;
+	}
+	str_list_t inilines = iniReadBBSListPassword(listfile,
+	    type == USER_BBSLIST, password, status);
+	fclose(listfile);
+	if (inilines == NULL)
+		return false;
+	bool success = read_list_contents(inilines, list, defaults, count,
+	    type);
+	strListFree(&inilines);
+	if (!success && status != NULL)
+		*status = BBSLIST_READ_FAILED;
+	return success;
+}
+
 /*
  * Reads in a BBS list from listpath using *i as the counter into bbslist
  * first BBS read goes into list[i]
@@ -1649,53 +1769,24 @@ find_insert_point(struct bbslist **list, ini_lv_string_t *bbsname, int sz)
 void
 read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type)
 {
-	FILE *listfile;
-	ini_lv_string_t **bbses;
-	size_t bbs_cnt;
-	size_t j;
-	str_list_t inilines;
-	ini_fp_list_t *nlines;
-
-	if ((listfile = fopen(listpath, "rb")) != NULL) {
-		inilines = iniReadBBSList(listfile, type == USER_BBSLIST);
-		fclose(listfile);
-		nlines = iniFastParseSections(inilines, false);
-		if ((defaults != NULL) && (type == USER_BBSLIST))
-			read_item(nlines, defaults, NULL, -1, type);
-		bbses = iniGetFastParsedSectionList(nlines, NULL, &bbs_cnt);
-		for (j = 0; j < bbs_cnt; j++) {
-			size_t ip = find_insert_point(list, bbses[j], *i);
-			if (ip < SIZE_MAX) {
-				if (ip < *i) {
-					memmove(&list[ip + 1], &list[ip], (*i - ip) * sizeof(*list));
-				}
-				if ((list[ip] = (struct bbslist *)malloc(sizeof(struct bbslist))) == NULL) {
-					fputs("Out of memory at in read_list()\r\n", stderr);
-					break;
-				}
-				read_item(nlines, list[ip], bbses[j], *i, type);
-				(*i)++;
-			}
-			if (*i == MAX_OPTS - 1) {
-				fprintf(stderr, "Reading too many entries (more than %d)!\r\n", MAX_OPTS);
-				break;
-			}
-		}
-		iniFastParsedSectionListFree(bbses);
-		iniFreeFastParse(nlines);
-		strListFree(&inilines);
-	}
-	else {
-		if ((defaults != NULL) && (type == USER_BBSLIST))
+	FILE *listfile = fopen(listpath, "rb");
+	if (listfile == NULL) {
+		if (defaults != NULL && type == USER_BBSLIST)
 			read_item(NULL, defaults, NULL, -1, type);
+		return;
 	}
+	str_list_t inilines = iniReadBBSList(listfile,
+	    type == USER_BBSLIST);
+	fclose(listfile);
+	if (!read_list_contents(inilines, list, defaults, i, type))
+		fputs("Out of memory while reading BBS list\r\n", stderr);
+	strListFree(&inilines);
+}
 
-#if 0 /*
-         * This isn't necessary (NULL is a sufficient)
-         * Add terminator
-         */
-	list[*i] = (struct bbslist *)"";
-#endif
+void
+sort_bbs_list(struct bbslist **list, int *listcount)
+{
+	sort_list(list, listcount, NULL, NULL, NULL);
 }
 
 static void
@@ -3299,104 +3390,201 @@ edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdef
 	return changed;
 }
 
-void
-add_bbs(char *listpath, struct bbslist *bbs, bool new_entry)
+static void
+update_bbs_ini(str_list_t *inifile, struct bbslist *bbs, bool new_entry)
 {
-	FILE *listfile;
-	str_list_t inifile;
+	const char *section = bbs->name[0] != 0 ? bbs->name : NULL;
 
-	if (safe_mode)
-		return;
-	if ((listfile = fopen(listpath, "rb")) != NULL) {
-		inifile = iniReadBBSList(listfile, true);
-		fclose(listfile);
-	}
-	else
-		inifile = strListInit();
-
-	/*
-	 * Redundant:
-	 * iniAddSection(&inifile,bbs->name,NULL);
-	 */
 	if (new_entry) {
 		bbs->connected = 0;
 		bbs->calls = 0;
 	}
-	iniSetString(&inifile, bbs->name, "Address", bbs->addr, &ini_style);
-	iniSetShortInt(&inifile, bbs->name, "Port", bbs->port, &ini_style);
-	iniSetDateTime(&inifile, bbs->name, "Added", /* include time */ true, time(NULL), &ini_style);
-	iniSetDateTime(&inifile, bbs->name, "LastConnected", /* include time */ true, bbs->connected, &ini_style);
-	iniSetInteger(&inifile, bbs->name, "TotalCalls", bbs->calls, &ini_style);
-	iniSetString(&inifile, bbs->name, "UserName", bbs->user, &ini_style);
-	iniSetString(&inifile, bbs->name, "Password", bbs->password, &ini_style);
-	iniSetString(&inifile, bbs->name, "SystemPassword", bbs->syspass, &ini_style);
-	iniSetEnum(&inifile, bbs->name, "ConnectionType", conn_types_enum, bbs->conn_type, &ini_style);
-	iniSetEnum(&inifile, bbs->name, "FlowControl", fc_enum, fc_to_enum(bbs->flow_control), &ini_style);
-	iniSetEnum(&inifile, bbs->name, "ScreenMode", screen_modes_enum, bbs->screen_mode, &ini_style);
-	iniSetBool(&inifile, bbs->name, "NoStatus", bbs->nostatus, &ini_style);
-	iniSetString(&inifile, bbs->name, "DownloadPath", bbs->dldir, &ini_style);
-	iniSetString(&inifile, bbs->name, "UploadPath", bbs->uldir, &ini_style);
-	iniSetString(&inifile, bbs->name, "LogFile", bbs->logfile, &ini_style);
-	iniSetEnum(&inifile, bbs->name, "TransferLogLevel", log_levels, bbs->xfer_loglevel, &ini_style);
-	iniSetEnum(&inifile, bbs->name, "TelnetLogLevel", log_levels, bbs->telnet_loglevel, &ini_style);
-	iniSetBool(&inifile, bbs->name, "AppendLogFile", bbs->append_logfile, &ini_style);
-	iniSetInteger(&inifile, bbs->name, "BPSRate", bbs->bpsrate, &ini_style);
-	iniSetInteger(&inifile, bbs->name, "ANSIMusic", bbs->music, &ini_style);
-	iniSetEnum(&inifile, bbs->name, "AddressFamily", address_families, bbs->address_family, &ini_style);
-	iniSetString(&inifile, bbs->name, "Font", bbs->font, &ini_style);
-	iniSetBool(&inifile, bbs->name, "HidePopups", bbs->hidepopups, &ini_style);
-	iniSetEnum(&inifile, bbs->name, "RIP", rip_versions, bbs->rip, &ini_style);
-	iniSetString(&inifile, bbs->name, "Comment", bbs->comment, &ini_style);
-	iniSetBool(&inifile, bbs->name, "ForceLCF", bbs->force_lcf, &ini_style);
-	iniSetBool(&inifile, bbs->name, "YellowIsYellow", bbs->yellow_is_yellow, &ini_style);
-	if (bbs->term_name[0]) {
-		iniSetString(&inifile, bbs->name, "TerminalType", bbs->term_name, &ini_style);
+	if (section != NULL)
+		iniSetString(inifile, section, "Address", bbs->addr, &ini_style);
+	iniSetShortInt(inifile, section, "Port", bbs->port, &ini_style);
+	if (section != NULL) {
+		iniSetDateTime(inifile, section, "Added", true, time(NULL),
+		    &ini_style);
+		iniSetDateTime(inifile, section, "LastConnected", true,
+		    bbs->connected, &ini_style);
+		iniSetInteger(inifile, section, "TotalCalls", bbs->calls,
+		    &ini_style);
 	}
-	iniSetBool(&inifile, bbs->name, "LFExpand", bbs->lf_expand, &ini_style);
-	iniSetBool(&inifile, bbs->name, "TelnetBrokenTextmode", bbs->telnet_no_binary, &ini_style);
-	iniSetBool(&inifile, bbs->name, "TelnetDeferNegotiate", bbs->defer_telnet_negotiation, &ini_style);
-	if (bbs->ssh_fingerprint_len > 0) {
+	iniSetString(inifile, section, "UserName", bbs->user, &ini_style);
+	iniSetString(inifile, section, "Password", bbs->password,
+	    &ini_style);
+	iniSetString(inifile, section, "SystemPassword", bbs->syspass,
+	    &ini_style);
+	iniSetEnum(inifile, section, "ConnectionType", conn_types_enum,
+	    bbs->conn_type, &ini_style);
+	iniSetEnum(inifile, section, "FlowControl", fc_enum,
+	    fc_to_enum(bbs->flow_control), &ini_style);
+	iniSetEnum(inifile, section, "ScreenMode", screen_modes_enum,
+	    bbs->screen_mode, &ini_style);
+	iniSetBool(inifile, section, "NoStatus", bbs->nostatus, &ini_style);
+	iniSetString(inifile, section, "DownloadPath", bbs->dldir,
+	    &ini_style);
+	iniSetString(inifile, section, "UploadPath", bbs->uldir,
+	    &ini_style);
+	iniSetString(inifile, section, "LogFile", bbs->logfile, &ini_style);
+	iniSetEnum(inifile, section, "TransferLogLevel", log_levels,
+	    bbs->xfer_loglevel, &ini_style);
+	iniSetEnum(inifile, section, "TelnetLogLevel", log_levels,
+	    bbs->telnet_loglevel, &ini_style);
+	iniSetBool(inifile, section, "AppendLogFile", bbs->append_logfile,
+	    &ini_style);
+	iniSetInteger(inifile, section, "BPSRate", bbs->bpsrate,
+	    &ini_style);
+	iniSetInteger(inifile, section, "ANSIMusic", bbs->music,
+	    &ini_style);
+	iniSetEnum(inifile, section, "AddressFamily", address_families,
+	    bbs->address_family, &ini_style);
+	iniSetString(inifile, section, "Font", bbs->font, &ini_style);
+	iniSetBool(inifile, section, "HidePopups", bbs->hidepopups,
+	    &ini_style);
+	iniSetEnum(inifile, section, "RIP", rip_versions, bbs->rip,
+	    &ini_style);
+	if (section != NULL)
+		iniSetString(inifile, section, "Comment", bbs->comment,
+		    &ini_style);
+	iniSetBool(inifile, section, "ForceLCF", bbs->force_lcf,
+	    &ini_style);
+	iniSetBool(inifile, section, "YellowIsYellow",
+	    bbs->yellow_is_yellow, &ini_style);
+	if (bbs->term_name[0]) {
+		iniSetString(inifile, section, "TerminalType", bbs->term_name,
+		    &ini_style);
+	}
+	iniSetBool(inifile, section, "LFExpand", bbs->lf_expand,
+	    &ini_style);
+	iniSetBool(inifile, section, "TelnetBrokenTextmode",
+	    bbs->telnet_no_binary, &ini_style);
+	iniSetBool(inifile, section, "TelnetDeferNegotiate",
+	    bbs->defer_telnet_negotiation, &ini_style);
+	if (section != NULL && bbs->ssh_fingerprint_len > 0) {
 		char fp[65];	/* up to 64 hex chars (SHA-256) + NUL */
 		for (int i = 0; i < bbs->ssh_fingerprint_len; i++)
 			sprintf(&fp[i * 2], "%02x", bbs->ssh_fingerprint[i]);
 		fp[bbs->ssh_fingerprint_len * 2] = 0;
-		iniSetString(&inifile, bbs->name, "SSHFingerprint", fp, &ini_style);
+		iniSetString(inifile, section, "SSHFingerprint", fp, &ini_style);
 	}
-	iniSetBool(&inifile, bbs->name, "SFTPPublicKey", bbs->sftp_public_key, &ini_style);
-	iniSetBool(&inifile, bbs->name, "SSHAllowAES128CBC", bbs->ssh_allow_aes128_cbc, &ini_style);
-	iniSetBool(&inifile, bbs->name, "SSHAcceptEarlyData", bbs->ssh_accept_early_data, &ini_style);
-	iniSetUShortInt(&inifile, bbs->name, "StopBits", bbs->stop_bits, &ini_style);
-	iniSetUShortInt(&inifile, bbs->name, "DataBits", bbs->data_bits, &ini_style);
-	iniSetEnum(&inifile, bbs->name, "Parity", parity_enum, bbs->parity, &ini_style);
+	iniSetBool(inifile, section, "SFTPPublicKey",
+	    bbs->sftp_public_key, &ini_style);
+	iniSetBool(inifile, section, "SSHAllowAES128CBC",
+	    bbs->ssh_allow_aes128_cbc, &ini_style);
+	iniSetBool(inifile, section, "SSHAcceptEarlyData",
+	    bbs->ssh_accept_early_data, &ini_style);
+	iniSetUShortInt(inifile, section, "StopBits", bbs->stop_bits,
+	    &ini_style);
+	iniSetUShortInt(inifile, section, "DataBits", bbs->data_bits,
+	    &ini_style);
+	iniSetEnum(inifile, section, "Parity", parity_enum, bbs->parity,
+	    &ini_style);
 	static_assert(sizeof(int) == sizeof(uint32_t), "int must be four bytes");
 	if (bbs->palette_size > 0)
-		iniSetIntList(&inifile, bbs->name, "Palette", ",", (int*)bbs->palette, bbs->palette_size, &ini_style);
-	if (bbs->sort_order != DEFAULT_SORT_ORDER_VALUE)
-		iniSetInt32(&inifile, bbs->name, "SortOrder", bbs->sort_order, &ini_style);
-
-	if ((listfile = fopen(listpath, "wb")) != NULL) {
-		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
-		fclose(listfile);
+		iniSetIntList(inifile, section, "Palette", ",",
+		    (int *)bbs->palette, bbs->palette_size, &ini_style);
+	else
+		iniRemoveKey(inifile, section, "Palette");
+	if (section != NULL) {
+		if (bbs->sort_order != DEFAULT_SORT_ORDER_VALUE)
+			iniSetInt32(inifile, section, "SortOrder",
+			    bbs->sort_order, &ini_style);
+		else
+			iniRemoveKey(inifile, section, "SortOrder");
 	}
-	strListFree(&inifile);
 }
 
-static void
-del_bbs(char *listpath, struct bbslist *bbs)
+static str_list_t
+read_personal_list(const char *listpath)
 {
-	FILE *listfile;
-	str_list_t inifile;
+	FILE *listfile = fopen(listpath, "rb");
+	if (listfile == NULL)
+		return strListInit();
+	enum bbslist_read_status status;
+	str_list_t inifile = iniReadBBSListPassword(listfile, true,
+	    list_password[0] != 0 ? list_password : NULL, &status);
+	fclose(listfile);
+	return inifile;
+}
+
+static bool
+write_personal_list(const char *listpath, str_list_t inifile)
+{
+	FILE *listfile = fopen(listpath, "wb");
+	if (listfile == NULL)
+		return false;
+	bool success = iniWriteEncryptedFile(listfile, inifile, list_algo,
+	    list_keysize, settings.keyDerivationIterations, list_password);
+	if (fclose(listfile) != 0)
+		success = false;
+	return success;
+}
+
+bool
+add_bbs(const char *listpath, struct bbslist *bbs, bool new_entry)
+{
+	if (safe_mode)
+		return false;
+	str_list_t inifile = read_personal_list(listpath);
+	if (inifile == NULL)
+		return false;
+	update_bbs_ini(&inifile, bbs, new_entry);
+	bool success = write_personal_list(listpath, inifile);
+	strListFree(&inifile);
+	return success;
+}
+
+bool
+save_bbs_defaults(const char *listpath, struct bbslist *defaults)
+{
+	if (safe_mode)
+		return false;
+	str_list_t inifile = read_personal_list(listpath);
+	if (inifile == NULL)
+		return false;
+	char name[sizeof(defaults->name)];
+	strlcpy(name, defaults->name, sizeof(name));
+	defaults->name[0] = 0;
+	update_bbs_ini(&inifile, defaults, false);
+	strlcpy(defaults->name, name, sizeof(defaults->name));
+	bool success = write_personal_list(listpath, inifile);
+	strListFree(&inifile);
+	return success;
+}
+
+bool
+rename_bbs(const char *listpath, const char *old_name, struct bbslist *bbs)
+{
+	if (safe_mode)
+		return false;
+	str_list_t inifile = read_personal_list(listpath);
+	if (inifile == NULL)
+		return false;
+	bool success = iniRenameSection(&inifile, old_name, bbs->name);
+	if (success) {
+		update_bbs_ini(&inifile, bbs, false);
+		success = write_personal_list(listpath, inifile);
+	}
+	strListFree(&inifile);
+	return success;
+}
+
+bool
+delete_bbs(const char *listpath, struct bbslist *bbs)
+{
 	char cache_path[MAX_PATH + 1];
 
 	if (safe_mode)
-		return;
-	if ((listfile = fopen(listpath, "r+b")) != NULL) {
-		inifile = iniReadBBSList(listfile, bbs->type == USER_BBSLIST);
-		iniRemoveSection(&inifile, bbs->name);
-		iniWriteEncryptedFile(listfile, inifile, list_algo, list_keysize, settings.keyDerivationIterations, list_password);
-		fclose(listfile);
-		strListFree(&inifile);
-	}
+		return false;
+	str_list_t inifile = read_personal_list(listpath);
+	if (inifile == NULL)
+		return false;
+	bool success = iniRemoveSection(&inifile, bbs->name) &&
+	    write_personal_list(listpath, inifile);
+	strListFree(&inifile);
+	if (!success)
+		return false;
 	get_syncterm_filename(cache_path, sizeof(cache_path), SYNCTERM_PATH_CACHE, false);
 	backslash(cache_path);
 	if (strlen(cache_path) + strlen(bbs->name) < sizeof(cache_path)) {
@@ -3406,6 +3594,7 @@ del_bbs(char *listpath, struct bbslist *bbs)
 			rmdir(cache_path);
 		}
 	}
+	return true;
 }
 
 static int
@@ -5293,7 +5482,7 @@ show_bbslist(char *current, int connected)
 							if (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL, str,
 							              YesNo) != 0)
 								break;
-							del_bbs(settings.list_path, list[opt]);
+							delete_bbs(settings.list_path, list[opt]);
 							load_bbslist(list,
 							             BBSLIST_SIZE,
 							             &defaults,

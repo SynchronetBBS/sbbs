@@ -415,6 +415,7 @@ WREN_OBJS     := $(addprefix $(MTOBJODIR)$(DIRSEP),\
                    $(notdir $(WREN_OPT_SRCS:.c=$(OFILE))))
 
 OBJS   += $(WREN_OBJS)
+OBJS   += $(MTOBJODIR)$(DIRSEP)bbslist_model$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_menu_host$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)

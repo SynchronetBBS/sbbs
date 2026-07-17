@@ -1,15 +1,576 @@
 #include "wren_bind_menu.h"
 
+#include "bbslist_model.h"
+#include "conn.h"
+#include "genwrap.h"
+#include "wren_bind_internal.h"
+
+#include <math.h>
+#include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+struct wren_menu_bbs {
+	enum syncterm_wren_foreign type;
+	struct bbslist *bbs;
+	uint64_t generation;
+	bool is_defaults;
+};
+
+static struct bbslist_model menu_model;
+
+void
+wren_menu_bind_init(void)
+{
+	bbslist_model_init(&menu_model);
+}
+
+void
+wren_menu_bind_shutdown(void)
+{
+	bbslist_model_dispose(&menu_model);
+}
+
+static void
+menu_bbs_allocate(WrenVM *vm)
+{
+	struct wren_menu_bbs *wb = wrenSetSlotNewForeign(vm, 0, 0,
+	    sizeof(*wb));
+	wb->type = SWF_MENU_BBS;
+	wb->bbs = NULL;
+	wb->generation = 0;
+	wb->is_defaults = false;
+}
+
+static void
+menu_bbs_finalize(void *data)
+{
+	(void)data;
+}
+
+static struct bbslist *
+bbs_check(WrenVM *vm)
+{
+	if (slot_foreign_type(vm, 0) != SWF_MENU_BBS) {
+		wren_throw(vm, "BBS: invalid receiver");
+		return NULL;
+	}
+	struct wren_menu_bbs *wb = wrenGetSlotForeign(vm, 0);
+	if (!menu_model.loaded || wb->bbs == NULL ||
+	    wb->generation != menu_model.generation ||
+	    (!wb->is_defaults &&
+	    bbslist_model_record(&menu_model, wb->bbs) == NULL) ||
+	    (wb->is_defaults && wb->bbs != &menu_model.defaults)) {
+		wren_throw(vm, "BBS: stale handle; reacquire it from Menu.entries");
+		return NULL;
+	}
+	return wb->bbs;
+}
+
+static struct bbslist *
+bbs_check_mutable(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL && bbs != &menu_model.defaults &&
+	    bbs->type != USER_BBSLIST) {
+		wren_throw(vm, "BBS: system entries are read-only");
+		return NULL;
+	}
+	return bbs;
+}
+
+static void
+push_bbs(WrenVM *vm, int slot, struct bbslist *bbs)
+{
+	wrenEnsureSlots(vm, slot + 2);
+	wrenGetVariable(vm, "syncterm_menu", "BBS", slot + 1);
+	struct wren_menu_bbs *wb = wrenSetSlotNewForeign(vm, slot, slot + 1,
+	    sizeof(*wb));
+	wb->type = SWF_MENU_BBS;
+	wb->bbs = bbs;
+	wb->generation = menu_model.generation;
+	wb->is_defaults = bbs == &menu_model.defaults;
+}
+
+static bool
+slot_string(WrenVM *vm, int slot, char *dest, size_t size)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_STRING) {
+		wren_throw(vm, "BBS: expected a String");
+		return false;
+	}
+	int length = 0;
+	const char *value = wrenGetSlotBytes(vm, slot, &length);
+	if (length < 0 || (size_t)length >= size ||
+	    memchr(value, 0, (size_t)length) != NULL) {
+		wren_throw(vm, "BBS: String is too long or contains NUL");
+		return false;
+	}
+	memcpy(dest, value, (size_t)length);
+	dest[length] = 0;
+	return true;
+}
+
+static bool
+slot_integer(WrenVM *vm, int slot, int64_t minimum, int64_t maximum,
+    int64_t *result)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_NUM) {
+		wren_throw(vm, "BBS: expected an integer Num");
+		return false;
+	}
+	double value = wrenGetSlotDouble(vm, slot);
+	if (!isfinite(value) || trunc(value) != value ||
+	    value < (double)minimum || value > (double)maximum) {
+		wren_throw(vm, "BBS: integer is outside the allowed range");
+		return false;
+	}
+	*result = (int64_t)value;
+	return true;
+}
+
+static bool
+slot_bool(WrenVM *vm, int slot, bool *result)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_BOOL) {
+		wren_throw(vm, "BBS: expected a Bool");
+		return false;
+	}
+	*result = wrenGetSlotBool(vm, slot);
+	return true;
+}
+
+#define BBS_STRING_PROPERTY(name, field)                                \
+	static void fn_BBS_##name(WrenVM *vm)                            \
+	{                                                                 \
+		struct bbslist *bbs = bbs_check(vm);                         \
+		if (bbs != NULL)                                             \
+			wrenSetSlotString(vm, 0, bbs->field);                  \
+	}                                                                 \
+	static void fn_BBS_##name##_set(WrenVM *vm)                       \
+	{                                                                 \
+		struct bbslist *bbs = bbs_check_mutable(vm);                 \
+		if (bbs != NULL && slot_string(vm, 1, bbs->field,            \
+		    sizeof(bbs->field)))                                      \
+			bbslist_model_mark_dirty(&menu_model, bbs);             \
+	}
+
+#define BBS_NUM_PROPERTY(name, field, minimum, maximum)                 \
+	static void fn_BBS_##name(WrenVM *vm)                            \
+	{                                                                 \
+		struct bbslist *bbs = bbs_check(vm);                         \
+		if (bbs != NULL)                                             \
+			wrenSetSlotDouble(vm, 0, (double)bbs->field);          \
+	}                                                                 \
+	static void fn_BBS_##name##_set(WrenVM *vm)                       \
+	{                                                                 \
+		struct bbslist *bbs = bbs_check_mutable(vm);                 \
+		int64_t value;                                               \
+		if (bbs != NULL && slot_integer(vm, 1, minimum, maximum,     \
+		    &value)) {                                                \
+			bbs->field = value;                                     \
+			bbslist_model_mark_dirty(&menu_model, bbs);             \
+		}                                                             \
+	}
+
+#define BBS_BOOL_PROPERTY(name, field)                                 \
+	static void fn_BBS_##name(WrenVM *vm)                            \
+	{                                                                 \
+		struct bbslist *bbs = bbs_check(vm);                         \
+		if (bbs != NULL)                                             \
+			wrenSetSlotBool(vm, 0, bbs->field);                    \
+	}                                                                 \
+	static void fn_BBS_##name##_set(WrenVM *vm)                       \
+	{                                                                 \
+		struct bbslist *bbs = bbs_check_mutable(vm);                 \
+		bool value;                                                  \
+		if (bbs != NULL && slot_bool(vm, 1, &value)) {               \
+			bbs->field = value;                                     \
+			bbslist_model_mark_dirty(&menu_model, bbs);             \
+		}                                                             \
+	}
+
+BBS_STRING_PROPERTY(addr, addr)
+BBS_STRING_PROPERTY(user, user)
+BBS_STRING_PROPERTY(password, password)
+BBS_STRING_PROPERTY(syspass, syspass)
+BBS_STRING_PROPERTY(comment, comment)
+BBS_STRING_PROPERTY(termName, term_name)
+BBS_STRING_PROPERTY(font, font)
+BBS_STRING_PROPERTY(dlDir, dldir)
+BBS_STRING_PROPERTY(ulDir, uldir)
+BBS_STRING_PROPERTY(logFile, logfile)
+BBS_STRING_PROPERTY(ghostProgram, ghost_program)
+
+BBS_NUM_PROPERTY(port, port, 0, 65535)
+BBS_NUM_PROPERTY(connType, conn_type, CONN_TYPE_UNKNOWN,
+    CONN_TYPE_TERMINATOR - 1)
+BBS_NUM_PROPERTY(music, music, CTERM_MUSIC_SYNCTERM, CTERM_MUSIC_ENABLED)
+BBS_NUM_PROPERTY(rip, rip, RIP_VERSION_NONE, RIP_VERSION_3)
+BBS_NUM_PROPERTY(addressFamily, address_family, ADDRESS_FAMILY_UNSPEC,
+    ADDRESS_FAMILY_INET6)
+BBS_NUM_PROPERTY(screenMode, screen_mode, SCREEN_MODE_CURRENT,
+    SCREEN_MODE_TERMINATOR - 1)
+BBS_NUM_PROPERTY(bpsRate, bpsrate, 0, INT_MAX)
+BBS_NUM_PROPERTY(xferLogLevel, xfer_loglevel, 0, 7)
+BBS_NUM_PROPERTY(telnetLogLevel, telnet_loglevel, 0, 7)
+BBS_NUM_PROPERTY(stopBits, stop_bits, 1, 2)
+BBS_NUM_PROPERTY(dataBits, data_bits, 7, 8)
+BBS_NUM_PROPERTY(parity, parity, SYNCTERM_PARITY_NONE,
+    SYNCTERM_PARITY_ODD)
+BBS_NUM_PROPERTY(flowControl, flow_control, 0, 7)
+BBS_NUM_PROPERTY(sortOrder, sort_order, INT32_MIN, INT32_MAX)
+
+BBS_BOOL_PROPERTY(noStatus, nostatus)
+BBS_BOOL_PROPERTY(hidePopups, hidepopups)
+BBS_BOOL_PROPERTY(yellowIsYellow, yellow_is_yellow)
+BBS_BOOL_PROPERTY(forceLcf, force_lcf)
+BBS_BOOL_PROPERTY(appendLogFile, append_logfile)
+BBS_BOOL_PROPERTY(telnetNoBinary, telnet_no_binary)
+BBS_BOOL_PROPERTY(deferTelnetNegotiation, defer_telnet_negotiation)
+BBS_BOOL_PROPERTY(sftpPublicKey, sftp_public_key)
+BBS_BOOL_PROPERTY(sshAllowAes128Cbc, ssh_allow_aes128_cbc)
+BBS_BOOL_PROPERTY(sshAcceptEarlyData, ssh_accept_early_data)
+BBS_BOOL_PROPERTY(lfExpand, lf_expand)
+
+static void
+fn_BBS_name(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		wrenSetSlotString(vm, 0, bbs->name);
+}
+
+static void
+fn_BBS_rename(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	char name[LIST_NAME_MAX + 1];
+	if (bbs == NULL || !slot_string(vm, 1, name, sizeof(name)))
+		return;
+	wrenSetSlotBool(vm, 0,
+	    bbslist_model_rename(&menu_model, bbs, name));
+}
+
+static void
+fn_BBS_type(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		wrenSetSlotDouble(vm, 0, bbs->type);
+}
+
+static void
+fn_BBS_id(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		wrenSetSlotDouble(vm, 0, bbs->id);
+}
+
+static void
+fn_BBS_added(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		wrenSetSlotDouble(vm, 0, (double)bbs->added);
+}
+
+static void
+fn_BBS_connected(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		wrenSetSlotDouble(vm, 0, (double)bbs->connected);
+}
+
+static void
+fn_BBS_calls(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		wrenSetSlotDouble(vm, 0, bbs->calls);
+}
+
+static void
+fn_BBS_connTypeName(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs == NULL)
+		return;
+	const char *name = conn_types[bbs->conn_type];
+	wrenSetSlotString(vm, 0, name != NULL ? name : "Unknown");
+}
+
+static void
+fn_BBS_dirty(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs == NULL)
+		return;
+	struct bbslist_model_record *record = bbslist_model_record(
+	    &menu_model, bbs);
+	wrenSetSlotBool(vm, 0, bbs == &menu_model.defaults
+	    ? menu_model.defaults_dirty : record != NULL && record->dirty);
+}
+
+static void
+fn_BBS_save(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		wrenSetSlotBool(vm, 0, bbslist_model_save(&menu_model, bbs));
+}
+
+static void
+fn_BBS_delete(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		wrenSetSlotBool(vm, 0,
+		    bbslist_model_delete(&menu_model, bbs));
+}
+
+static void
+fn_BBS_palette(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs == NULL)
+		return;
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	unsigned count = bbs->palette_size;
+	if (count > 16)
+		count = 16;
+	for (unsigned i = 0; i < count; i++) {
+		wrenSetSlotDouble(vm, 1, bbs->palette[i] & 0xffffffu);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_BBS_palette_set(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check_mutable(vm);
+	if (bbs == NULL)
+		return;
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST) {
+		wren_throw(vm, "BBS.palette: expected a List");
+		return;
+	}
+	int count = wrenGetListCount(vm, 1);
+	if (count < 0 || count > 16) {
+		wren_throw(vm, "BBS.palette: expected at most 16 colors");
+		return;
+	}
+	wrenEnsureSlots(vm, 3);
+	for (int i = 0; i < count; i++) {
+		wrenGetListElement(vm, 1, i, 2);
+		int64_t value;
+		if (!slot_integer(vm, 2, 0, 0xffffff, &value))
+			return;
+		bbs->palette[i] = (uint32_t)value;
+	}
+	bbs->palette_size = (unsigned)count;
+	bbslist_model_mark_dirty(&menu_model, bbs);
+}
+
+static void
+fn_BBS_toString(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		wrenSetSlotString(vm, 0, bbs->name);
+}
+
+static void
+fn_Menu_load(WrenVM *vm)
+{
+	const char *password = NULL;
+	if (wrenGetSlotType(vm, 1) == WREN_TYPE_STRING)
+		password = wrenGetSlotString(vm, 1);
+	else if (wrenGetSlotType(vm, 1) != WREN_TYPE_NULL) {
+		wren_throw(vm, "Menu.load: password must be a String or null");
+		return;
+	}
+	enum bbslist_read_status status = bbslist_model_load(&menu_model,
+	    password);
+	wrenSetSlotDouble(vm, 0, status);
+}
+
+static void
+fn_Menu_statusMessage(WrenVM *vm)
+{
+	int64_t status;
+	if (!slot_integer(vm, 1, BBSLIST_READ_OK,
+	    BBSLIST_READ_MIGRATION_INI_WRITE_FAILED, &status))
+		return;
+	wrenSetSlotString(vm, 0,
+	    bbslist_read_status_string((enum bbslist_read_status)status));
+}
+
+static void
+fn_Menu_entries(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	if (!menu_model.loaded)
+		return;
+	for (size_t i = 0; i < menu_model.count; i++) {
+		push_bbs(vm, 1, menu_model.entries[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_Menu_defaults(WrenVM *vm)
+{
+	if (!menu_model.loaded)
+		wrenSetSlotNull(vm, 0);
+	else
+		push_bbs(vm, 0, &menu_model.defaults);
+}
+
+static void
+fn_Menu_nameAvailable(WrenVM *vm)
+{
+	char name[LIST_NAME_MAX + 1];
+	if (!slot_string(vm, 1, name, sizeof(name)))
+		return;
+	wrenSetSlotBool(vm, 0,
+	    bbslist_model_user_name_available(&menu_model, name));
+}
+
+static void
+fn_Menu_create(WrenVM *vm)
+{
+	char name[LIST_NAME_MAX + 1];
+	if (!slot_string(vm, 1, name, sizeof(name)))
+		return;
+	struct bbslist *bbs = bbslist_model_create(&menu_model, name, NULL);
+	if (bbs == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		push_bbs(vm, 0, bbs);
+}
+
+static void
+fn_Menu_copy(WrenVM *vm)
+{
+	if (slot_foreign_type(vm, 1) != SWF_MENU_BBS) {
+		wren_throw(vm, "Menu.copy: expected a BBS");
+		return;
+	}
+	struct wren_menu_bbs *source = wrenGetSlotForeign(vm, 1);
+	if (source->generation != menu_model.generation ||
+	    bbslist_model_record(&menu_model, source->bbs) == NULL) {
+		wren_throw(vm, "Menu.copy: stale BBS handle");
+		return;
+	}
+	char name[LIST_NAME_MAX + 1];
+	if (!slot_string(vm, 2, name, sizeof(name)))
+		return;
+	struct bbslist *bbs = bbslist_model_create(&menu_model, name,
+	    source->bbs);
+	if (bbs == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		push_bbs(vm, 0, bbs);
+}
+
+static void
+fn_Menu_sort(WrenVM *vm)
+{
+	bbslist_model_sort(&menu_model);
+	wrenSetSlotNull(vm, 0);
+}
+
+struct binding {
+	const char *class_name;
+	bool is_static;
+	const char *signature;
+	WrenForeignMethodFn function;
+};
+
+#define BBS_GETSET(name)                                                \
+	{ "BBS", false, #name, fn_BBS_##name },                         \
+	{ "BBS", false, #name "=(_)", fn_BBS_##name##_set }
+
+static const struct binding bindings[] = {
+	{ "Menu", true, "load(_)", fn_Menu_load },
+	{ "Menu", true, "statusMessage(_)", fn_Menu_statusMessage },
+	{ "Menu", true, "entries", fn_Menu_entries },
+	{ "Menu", true, "defaults", fn_Menu_defaults },
+	{ "Menu", true, "nameAvailable(_)", fn_Menu_nameAvailable },
+	{ "Menu", true, "create(_)", fn_Menu_create },
+	{ "Menu", true, "copy(_,_)", fn_Menu_copy },
+	{ "Menu", true, "sort()", fn_Menu_sort },
+	{ "BBS", false, "name", fn_BBS_name },
+	{ "BBS", false, "rename(_)", fn_BBS_rename },
+	{ "BBS", false, "type", fn_BBS_type },
+	{ "BBS", false, "id", fn_BBS_id },
+	{ "BBS", false, "added", fn_BBS_added },
+	{ "BBS", false, "connected", fn_BBS_connected },
+	{ "BBS", false, "calls", fn_BBS_calls },
+	{ "BBS", false, "connTypeName", fn_BBS_connTypeName },
+	{ "BBS", false, "dirty", fn_BBS_dirty },
+	{ "BBS", false, "save()", fn_BBS_save },
+	{ "BBS", false, "delete()", fn_BBS_delete },
+	{ "BBS", false, "palette", fn_BBS_palette },
+	{ "BBS", false, "palette=(_)", fn_BBS_palette_set },
+	{ "BBS", false, "toString", fn_BBS_toString },
+	BBS_GETSET(addr),
+	BBS_GETSET(user),
+	BBS_GETSET(password),
+	BBS_GETSET(syspass),
+	BBS_GETSET(comment),
+	BBS_GETSET(termName),
+	BBS_GETSET(font),
+	BBS_GETSET(dlDir),
+	BBS_GETSET(ulDir),
+	BBS_GETSET(logFile),
+	BBS_GETSET(ghostProgram),
+	BBS_GETSET(port),
+	BBS_GETSET(connType),
+	BBS_GETSET(music),
+	BBS_GETSET(rip),
+	BBS_GETSET(addressFamily),
+	BBS_GETSET(screenMode),
+	BBS_GETSET(bpsRate),
+	BBS_GETSET(xferLogLevel),
+	BBS_GETSET(telnetLogLevel),
+	BBS_GETSET(stopBits),
+	BBS_GETSET(dataBits),
+	BBS_GETSET(parity),
+	BBS_GETSET(flowControl),
+	BBS_GETSET(sortOrder),
+	BBS_GETSET(noStatus),
+	BBS_GETSET(hidePopups),
+	BBS_GETSET(yellowIsYellow),
+	BBS_GETSET(forceLcf),
+	BBS_GETSET(appendLogFile),
+	BBS_GETSET(telnetNoBinary),
+	BBS_GETSET(deferTelnetNegotiation),
+	BBS_GETSET(sftpPublicKey),
+	BBS_GETSET(sshAllowAes128Cbc),
+	BBS_GETSET(sshAcceptEarlyData),
+	BBS_GETSET(lfExpand),
+};
 
 WrenForeignMethodFn
 wren_menu_bind_lookup(const char *module, const char *class_name,
     bool is_static, const char *signature)
 {
-	(void)module;
-	(void)class_name;
-	(void)is_static;
-	(void)signature;
+	if (module == NULL || strcmp(module, "syncterm_menu") != 0)
+		return NULL;
+	for (size_t i = 0; i < sizeof(bindings) / sizeof(bindings[0]); i++) {
+		if (bindings[i].is_static == is_static &&
+		    strcmp(bindings[i].class_name, class_name) == 0 &&
+		    strcmp(bindings[i].signature, signature) == 0)
+			return bindings[i].function;
+	}
 	return NULL;
 }
 
@@ -17,7 +578,13 @@ WrenForeignClassMethods
 wren_menu_bind_lookup_class(const char *module, const char *class_name)
 {
 	WrenForeignClassMethods none = { NULL, NULL };
-	(void)module;
-	(void)class_name;
+	if (module == NULL || strcmp(module, "syncterm_menu") != 0)
+		return none;
+	if (strcmp(class_name, "BBS") == 0) {
+		WrenForeignClassMethods methods = {
+			menu_bbs_allocate, menu_bbs_finalize
+		};
+		return methods;
+	}
 	return none;
 }
