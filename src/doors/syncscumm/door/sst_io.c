@@ -26,12 +26,31 @@
 #include "sixel.h"
 #include "jxl.h"
 #include "apc.h"
+/* termgfx_audio_query/_opus_query + their reply parsers: the M4 audio
+ * capability probe (audio_scan_feed(), below). No PCM is staged here -- the
+ * streaming feed is its own module; this file only asks the question and
+ * latches the answer for sst_io_audio_available(). */
+#include "audio.h"
+/* The shared PCM streaming module the mixer's audio goes out through
+ * (sst_io_audio_stream(), below); audio_mgr.h only for the encoder's default
+ * VBR quality. NOT audio_mgr's own termgfx_audio_stream_chunk()/_stop(),
+ * which are a different (FMV) path this door does not use. */
+#include "audio_stream.h"
+#include "audio_mgr.h"
 /* xpdev: iniReadFile()/iniGetInteger() for the sysop sixel_max override
- * (sst_read_ini(), below) -- door/syncscumm.cpp already reads the same
- * syncscumm.ini this way for "subtitles"; this is the identical house
- * pattern, just in the pure-C session layer instead of the C++ ConfMan
- * glue. Also pulls in genwrap.h's stricmp()/strnicmp(), used by the
- * XTVERSION reply match in parse_bytes(). */
+ * (sst_read_ini(), below) and the [audio] tuning keys (audio_read_ini()) --
+ * door/syncscumm.cpp already reads the same syncscumm.ini this way for
+ * "subtitles"; this is the identical house pattern, just in the pure-C
+ * session layer instead of the C++ ConfMan glue. Also pulls in genwrap.h's
+ * stricmp()/strnicmp(), used by the XTVERSION reply match in parse_bytes().
+ *
+ * No include-ORDER constraint here, unlike door/syncscumm.cpp:13-18, where
+ * ini_file.h MUST precede common/scummsys.h -- scummsys pulls in
+ * common/forbidden.h, which poisons strupr()/printf into unusable macros
+ * that ini_file.h -> genwrap.h then trips over. This file is plain C and
+ * includes no scummsys, so it has nothing to order against; the include sits
+ * here purely for readability. Said out loud so the next reader doesn't have
+ * to wonder why the two files disagree. */
 #include "ini_file.h"
 
 static int g_fd = -1, g_fd_in = -1;      /* -1 = headless (no session) */
@@ -98,6 +117,47 @@ static int g_term_rows, g_term_cols;   /* from the 999;999 CPR (real grid size) 
 static int g_cell_w, g_cell_h;         /* from ESC[16t (real cell pixels), 0=unknown */
 static FILE *g_capture;                  /* SYNCSCUMM_SIXELOUT mode */
 
+/* Raw PRE-ENCODE mixer PCM tap: sst_io_audio_stream() appends exactly the
+ * interleaved stereo S16 frames ScummVM's mixer handed us, at SST_AUDIO_RATE,
+ * before termgfx/audio_stream.c resamples, Opus-encodes or drops any of it.
+ * That makes the file the reference signal -- "what the game actually sounds
+ * like" -- to diff an encode against when a session reports distortion.
+ *
+ * Ahead of the pre-encode headroom too (audio_apply_headroom(), below), which
+ * is the one thing between this tap and the encoder that changes the samples
+ * rather than the packaging. Deliberate, and worth knowing before diffing: the
+ * dump is what the MIXER produced, not what the wire carried, so a harness
+ * reproducing the wire has to apply "[audio] headroom" to it the same way the
+ * door does. The alternative -- dumping the scaled PCM -- would have made the
+ * file useless for the question it was added to answer, which is whether a
+ * defect is in the mix or in our path.
+ *
+ * Gated on the SYNCSCUMM_AUDIODUMP=<path> env var, off by default: unset, this
+ * stays NULL and the tap in sst_io_audio_stream() is a single NULL test on a
+ * path that already runs tens of times a second. A dev/test tool only -- like
+ * SYNCSCUMM_DUMP (door/video_dump.cpp) and SYNCSCUMM_SIXELOUT (resolve_fd(),
+ * below), an env var does NOT survive a real door launch, because the BBS
+ * execvp()s the door with no shell; the touch-file gates g_trace/g_tee use
+ * exist for exactly that reason. This one is deliberately env-only: it is for
+ * headless test-script runs (test/boot_bass.sh), not for a live node.
+ *
+ * Opened in sst_io_init() BEFORE resolve_fd(), and tapped BEFORE the g_active
+ * check, so a HEADLESS run -- which has no session at all and streams nothing
+ * -- still dumps. That is the point: the mixer's PCM does not depend on a
+ * terminal being there, and a test script has no terminal.
+ *
+ * Decode with:  ffmpeg -f s16le -ar 24000 -ac 2 -i <path> out.wav
+ * (that -ar is SST_AUDIO_RATE, sst_io.h -- the tap is pre-encode, so it is
+ * the MIXER's rate, never the Opus rate the wire happens to carry.) */
+static FILE *g_audiodump;
+
+/* Release audio_apply_headroom()'s scratch buffer. Forward-declared here, next
+ * to the dump sst_io_shutdown() closes beside it, because the buffer and the
+ * function that grows it belong with the rest of the streaming-audio state much
+ * further down -- and sst_io_shutdown() is defined well above that. Same reason
+ * sst_audio_underrun() is forward-declared below. */
+static void audio_free_scratch(void);
+
 /* Present-path trace: one line per present-attempt -- ms-timestamp, outcome,
  * tier, bytes emitted, in-flight, pacing depth, cumulative dropped-frame count.
  * A permanent diagnostic asset for the fade/pacing behavior (M2). Line-buffered
@@ -159,11 +219,196 @@ static int g_hangup;
  * terminal); restored on sst_io_shutdown() (door_io.c:1134 pattern). */
 static int g_status_type = -1;
 
-/* ---- output staging (door_io.c:~1370 pattern) ---- */
+/* ---- output staging (door_io.c:~1370 pattern) ----
+ *
+ * ONE stage, STRICT FIFO. Video frames (a sixel DCS or a JXL APC, tens of KB)
+ * and audio (a ~2KB Opus APC every 100ms, via termgfx/audio_stream.c) share
+ * g_out and leave it in exactly the order they were staged. Nothing jumps the
+ * queue. That is a deliberate design decision with a history -- see "WHY FIFO"
+ * below -- and the accounting immediately after it exists so that sharing the
+ * queue does not cost audio what it cost it once already.
+ *
+ * THE DEFECT. Beneath a Steel Sky's comic intro played its dialogue with
+ * seconds-long gaps and audible skips for the whole ~260s comic, then was
+ * flawless the moment gameplay started. The session's counters read
+ * audio=1/3323/55/702: 702 of 4025 chunks (~17%, ~70 SECONDS of speech) thrown
+ * away, every one of them during the comic and not one after.
+ *
+ * It was never bandwidth -- the comic averaged 127 KB/s and gameplay 104 KB/s,
+ * and gameplay was perfect. The comic's palette storm forces the full-frame
+ * path (the cheap dirty-rect path needs a stable palette), and those frames
+ * are big: 899 full frames averaging 24KB against gameplay's 7.4KB dirty
+ * rects, 142 of them over 48KB, the largest 82KB.
+ *
+ * termgfx/audio_stream.c drops a chunk once the door's backlog() reports more
+ * than TERMGFX_STREAM_BACKLOG_BYTES (48KB) on two consecutive chunk boundaries
+ * -- a rule meant to detect a link that cannot carry AUDIO. But the door
+ * reported g_out_len, the depth of the SHARED stage, which is video-dominated.
+ * So a SINGLE 82KB video frame sitting in the stage tripped a 48KB AUDIO rule,
+ * and audio -- all of ~20 KB/s of that 127 -- dropped itself to make room for
+ * video's bursts. Audio was punishing itself for video's mistakes. The module's
+ * rule was right; the number the door fed it was not.
+ *
+ * THE FIX: report AUDIO's OWN share of the queue (sst_io_audio_backlog(), via
+ * the g_aseg ring below), so the two-strike rule can only fire when the link
+ * genuinely cannot carry audio -- which is what "sustained link saturation"
+ * always meant. The cushion also grew to ~800ms (see audio_stream_open()) to
+ * hold audio that is late-but-correctly-ordered behind a big frame.
+ *
+ * WHY FIFO, AND NOT "AUDIO FIRST". The obvious alternative -- a second, PRIO
+ * stage written ahead of staged video -- was written, tested, and reverted,
+ * because it CORRUPTED THE WIRE. A video frame is ONE contiguous DCS or APC
+ * sequence; insert an audio APC after its head has gone out and the terminal
+ * decodes garbage. Guarding that with "only insert at a sequence boundary" is
+ * where it died: out_put()'s stage-full guard (below) flushes from INSIDE a
+ * frame, opening the DCS on the wire and draining the stage to EMPTY, so every
+ * local measure of "boundary" -- including g_out_len == 0 -- reported a
+ * boundary that did not exist, and audio walked into the open sequence. Four
+ * flags did not close it and three candidate fixes did not either.
+ *
+ * REORDERING IS WHAT CREATES THE CORRUPTION SURFACE. With strict FIFO there is
+ * no surface: an audio APC cannot land inside a video sequence because it
+ * cannot move relative to it AT ALL. The property is preserved BY
+ * CONSTRUCTION, not by guards -- and there is nothing here to re-derive wrong
+ * the next time out_put() gains a new early exit. If a future change to this
+ * file starts to grow a "may audio go now?" predicate, that is this same
+ * mistake arriving again; stop.
+ *
+ * The cost of FIFO is latency, not loss: audio queued behind an 82KB frame
+ * arrives up to ~650ms late at 127 KB/s. The ~750ms cushion covers it --
+ * measured, not guessed: of the comic's 3673 frames, 318 (8.7%) take longer
+ * than 300ms to drain and NONE exceed 800ms, the worst at 663ms. The cushion is
+ * a PRODUCT, SST_CHUNK_MS x SST_PREBUFFER_CHUNKS, not either one alone; see
+ * audio_stream_open() before changing either. */
 static uint8_t g_out[1 << 18];
 static size_t  g_out_len;
+
+/* Monotonic stream offset of g_out[0]: the total number of bytes that have
+ * ever LEFT the stage (written to the socket, or discarded on a dead peer --
+ * either way, no longer pending). g_out_base + g_out_len is therefore the
+ * offset of the next byte to be staged, so the two together define a stable
+ * coordinate system for "where in the outbound byte stream is this?" that
+ * sst_io_flush()'s memmove cannot disturb. The g_aseg ring below records audio
+ * in these coordinates. */
+static uint64_t g_out_base;
+
+/* The audio segments currently in the FIFO, in stream coordinates, oldest
+ * first. Every staged run of audio bytes gets one, and the parts of them that
+ * are still >= g_out_base are exactly what sst_io_audio_backlog() reports.
+ *
+ * 64 is far more than the door can actually use, and the reasoning is worth
+ * writing down because it is what makes the overflow path in aseg_add() cold.
+ * A new segment is only created when audio is NOT contiguous with the previous
+ * audio -- aseg_add() coalesces when it is, which by itself collapses the
+ * entire prebuffer release (8 chunks put back to back, nothing between them)
+ * into ONE segment. So growth needs VIDEO staged between two audio puts, and
+ * sst_io_present() only ever stages a frame when the FIFO is already empty
+ * (its g_out_len gate) -- an empty FIFO means aseg_prune() has just retired
+ * every segment there was. The live count therefore sits at one or two, and 64
+ * is slack, not a budget.
+ *
+ * "Cold" is not "impossible", so aseg_add() still handles a full ring, and it
+ * MERGES rather than forgets: forgetting a segment would UNDER-report the
+ * backlog, which is the exact class of bug this whole change exists to fix.
+ * Being wrong in the safe direction is a decision, not an accident. */
+#define SST_ASEG_MAX 64
+typedef struct {
+	uint64_t start;   /* stream offset of the first audio byte */
+	uint64_t end;     /* stream offset one past the last */
+} sst_aseg_t;
+static sst_aseg_t g_aseg[SST_ASEG_MAX];
+static int        g_aseg_head;    /* index of the oldest live segment */
+static int        g_aseg_n;       /* live segments */
+static uint32_t   g_aseg_merges;  /* ring overflows survived; see aseg_add() */
+
 static uint64_t g_tx_bytes;      /* every wire-bound byte, for the Ctrl-S KB/frame stat */
 static uint32_t g_dropped_frames;   /* see out_put()'s full-buffer guard, below */
+
+/* Audio APCs the DOOR itself refused, because out_put()'s stage-full guard
+ * could not stage all of one (see sst_stream_put()). Distinct from the
+ * module's own drop counter, which counts chunks it declined to encode.
+ *
+ * This has a getter AND a trace field on purpose. The reverted priority
+ * attempt kept a door-side audio drop counter that was write-only -- never
+ * read, never traced -- so a field failure would have printed dropped=0 and
+ * sent the next investigation looking in the wrong place. That is the same
+ * shape of defect as the g_out_len misreport above: a number that is not the
+ * number it claims to be. If the door ever throws audio away, it says so. */
+static uint32_t g_audio_dropped;
+
+/* Record a staged run of audio bytes [start, end) in stream coordinates.
+ *
+ * Coalesces onto the previous segment when the run continues it exactly, which
+ * is the common case (the prebuffer release puts every held chunk back to back
+ * with nothing between them) and is what keeps the ring from ever filling in
+ * practice.
+ *
+ * On a genuinely full ring, merge the two OLDEST segments into their bounding
+ * span rather than dropping one. That OVER-reports the backlog by whatever
+ * video sits between them -- deliberately: over-reporting can at worst cost a
+ * chunk the module would have kept, while under-reporting is what silently
+ * dropped 70 seconds of dialogue. The over-report is also the shortest-lived
+ * one available, since the oldest bytes are the next to drain. g_aseg_merges
+ * counts it so a trace can never hide it. */
+static void aseg_add(uint64_t start, uint64_t end)
+{
+	int last;
+	int slot;
+
+	if (end <= start)
+		return;
+	if (g_aseg_n > 0) {
+		last = (g_aseg_head + g_aseg_n - 1) % SST_ASEG_MAX;
+		if (g_aseg[last].end == start) {
+			g_aseg[last].end = end;
+			return;
+		}
+	}
+	if (g_aseg_n == SST_ASEG_MAX) {
+		int second = (g_aseg_head + 1) % SST_ASEG_MAX;
+
+		g_aseg[second].start = g_aseg[g_aseg_head].start;
+		g_aseg_head          = second;
+		g_aseg_n--;
+		g_aseg_merges++;
+	}
+	slot               = (g_aseg_head + g_aseg_n) % SST_ASEG_MAX;
+	g_aseg[slot].start = start;
+	g_aseg[slot].end   = end;
+	g_aseg_n++;
+}
+
+/* Retire everything the wire has taken. Segments are ordered and never
+ * reordered (that is the whole point of the FIFO), so only the HEAD can
+ * straddle g_out_base -- clamp that one's start and stop. */
+static void aseg_prune(void)
+{
+	while (g_aseg_n > 0) {
+		if (g_aseg[g_aseg_head].end > g_out_base) {
+			if (g_aseg[g_aseg_head].start < g_out_base)
+				g_aseg[g_aseg_head].start = g_out_base;
+			break;
+		}
+		g_aseg_head = (g_aseg_head + 1) % SST_ASEG_MAX;
+		g_aseg_n--;
+	}
+}
+
+/* Staged-but-unwritten AUDIO bytes. Prunes first, so every live segment lies
+ * wholly at or above g_out_base and the sum is a straight one. */
+static size_t aseg_pending(void)
+{
+	uint64_t tot = 0;
+	int      i;
+
+	aseg_prune();
+	for (i = 0; i < g_aseg_n; i++) {
+		const sst_aseg_t *s = &g_aseg[(g_aseg_head + i) % SST_ASEG_MAX];
+
+		tot += s->end - s->start;
+	}
+	return (size_t)tot;
+}
 
 /* door_io.c's door_out_put() grows an unbounded realloc'd buffer, so it never
  * faces this; ours is a fixed 256KB stage, and a present() call with a big
@@ -178,28 +423,38 @@ static uint32_t g_dropped_frames;   /* see out_put()'s full-buffer guard, below 
  * this call's bytes (counted in g_dropped_frames) instead of spinning --
  * skipping a frame under backpressure is the correct door behavior, and a
  * hard write error already gets funneled through g_hangup below (which the
- * post-flush check here returns out of immediately). */
-static void out_put(const void *p, size_t n)
+ * post-flush check here returns out of immediately).
+ *
+ * Returns how many of `n` bytes were actually staged -- always `n` except on
+ * the drop paths above. sst_stream_put() needs the count for two things the
+ * void version could not give it: the exact extent of the audio run to record
+ * in g_aseg, and whether the door just threw an audio APC away
+ * (g_audio_dropped). Every other caller ignores it, exactly as before. */
+static size_t out_put(const void *p, size_t n)
 {
+	size_t staged = 0;
+
 	if (g_hangup)
-		return;   /* dead session: don't bother staging bytes nobody will read */
+		return 0;   /* dead session: don't bother staging bytes nobody will read */
 	g_tx_bytes += n;
 	while (n) {
 		size_t room = sizeof(g_out) - g_out_len;
 		size_t take = n < room ? n : room;
 		memcpy(g_out + g_out_len, p, take);
 		g_out_len += take; p = (const uint8_t *)p + take; n -= take;
+		staged += take;
 		if (g_out_len == sizeof(g_out)) {
 			size_t before = g_out_len;
 			sst_io_flush();
 			if (g_hangup)
-				return;
+				return staged;
 			if (g_out_len == before) {
 				g_dropped_frames++;
-				return;   /* stage stayed full: drop the remainder, don't spin */
+				return staged;   /* stage stayed full: drop the remainder, don't spin */
 			}
 		}
 	}
+	return staged;
 }
 static void out_puts(const char *s) { out_put(s, strlen(s)); }
 
@@ -208,13 +463,34 @@ static void out_puts(const char *s) { out_put(s, strlen(s)); }
  * next call) rather than busy-looping or discarding it. EINTR retries the
  * same write. Any other errno is a dead peer: mark the session hung up
  * (sst_io_hung_up()) and drop the buffer -- there's no live fd left to
- * drain it to. */
+ * drain it to.
+ *
+ * Writes the stage in stage order and only in stage order: this is the FIFO
+ * the staging block above describes, and the reason no audio APC can ever land
+ * inside a video sequence. Do not add a "write these bytes first" step here.
+ *
+ * `off` counts bytes LEAVING the stage -- written, or discarded on the dead-
+ * peer path -- and so is what advances g_out_base; `sent` counts only bytes a
+ * socket actually took, and so is what the tee records. They are equal except
+ * on the hard-error path, which moves `off` past a tail nobody will ever see:
+ * teeing that tail would make the one capture worth having promise bytes that
+ * were never on the wire. */
 void sst_io_flush(void)
 {
-	size_t off = 0;
+	size_t off  = 0;
+	size_t sent = 0;
 
-	if (g_hangup) { g_out_len = 0; return; }
-	if (g_fd < 0 || !g_out_len) { g_out_len = 0; return; }
+	if (g_hangup || g_fd < 0 || !g_out_len) {
+		/* Nothing can be delivered: the stage's contents are gone either way,
+		 * so charge them to g_out_base and let aseg_prune() retire the audio
+		 * segments over them. Leaving g_out_base behind would leave those
+		 * segments live forever and permanently OVER-report the backlog -- the
+		 * mirror of the bug this file is fixing, and just as wrong. */
+		g_out_base += g_out_len;
+		g_out_len   = 0;
+		aseg_prune();
+		return;
+	}
 	while (off < g_out_len) {
 		ssize_t n = write(g_fd, g_out + off, g_out_len - off);
 		if (n < 0) {
@@ -227,16 +503,19 @@ void sst_io_flush(void)
 			off = g_out_len;        /* drop the unsent tail, nothing left to send it to */
 			break;
 		}
-		off += (size_t)n;
+		off  += (size_t)n;
+		sent += (size_t)n;
 	}
-	if (g_tee != NULL && off > 0)
-		fwrite(g_out, 1, off, g_tee);   /* EXACTLY what reached the socket */
+	if (g_tee != NULL && sent > 0)
+		fwrite(g_out, 1, sent, g_tee);   /* EXACTLY what reached the socket */
+	g_out_base += off;
 	if (off >= g_out_len)
 		g_out_len = 0;
 	else if (off > 0) {
 		memmove(g_out, g_out + off, g_out_len - off);
 		g_out_len -= off;
 	}
+	aseg_prune();
 }
 
 static uint32_t now_ms(void)
@@ -352,6 +631,13 @@ static int  g_xtver_len;
  * "any DSR outstanding" check inside just skips the RTT sample. */
 static void sst_pace_ack(void);
 
+/* Hand the streamed-audio module a channel's FIFO-drained notification. A
+ * forward declaration because the stream itself is defined past the audio
+ * capability state it is built from (which in turn is defined past this
+ * parser), and csi_final() is where the notification lands -- see the 'n'
+ * case below. */
+static void sst_audio_underrun(int ch);
+
 /* Parse up to `max` ';'-separated decimal params from g_csi_par (a leading
  * non-digit marker byte like '<'/'='/'?' is simply skipped). */
 static int csi_params(int *out, int max)
@@ -408,9 +694,29 @@ static void csi_final(char fin)
 			sst_pace_ack();
 			return;
 		case 'n':   /* CTerm state report -- the Q;JXL reply ("ESC[=1;{0,1}n")
-		             * is parsed separately by jxl_scan_feed()'s raw-byte scan;
-		             * just note a reply arrived. */
+		             * and the audio caps replies are parsed separately by the
+		             * raw-byte scanners (jxl_scan_feed(), audio_scan_feed()).
+		             * What lands HERE is the runtime audio idle notification,
+		             * which unlike those is not a probe answer and so has no
+		             * accumulator to scan: it arrives whenever a channel's
+		             * FIFO happens to drain, long after the scanners have
+		             * latched and stopped looking. */
 			g_probe_replied = 1;
+			if (g_csi_len > 0 && g_csi_par[0] == '=') {
+				np = csi_params(p, 8);
+				/* `CSI = 7 ; <ch> ; 0 n`: that channel's FIFO drained. The
+				 * audio CAPS reply shares the "=7" prefix
+				 * ("ESC[=7;100;<tier>n"), and feature id 100 is reserved for
+				 * it, so without the p[1] != 100 guard a caps reply would be
+				 * DISPATCHED here as an underrun on channel 100. The guard
+				 * stops that dispatch; even without it, the module would
+				 * still reject the notification, since
+				 * termgfx_stream_underrun() ignores any channel that isn't
+				 * the stream's own (cfg.ch is 2). Defense in depth, not the
+				 * only thing standing between this and a phantom underrun. */
+				if (np >= 3 && p[0] == 7 && p[1] != 100 && p[2] == 0)
+					sst_audio_underrun(p[1]);
+			}
 			return;
 		case 't':   /* window report: ESC[4;h;wt text-area px, ESC[6;h;wt cell px */
 			np = csi_params(p, 4);
@@ -450,19 +756,64 @@ static uint32_t g_probe_start_ms;
 static uint32_t g_first_present_ms;   /* first present() that reached the holds */
 static int      g_jxl_done;
 
-/* JXL reply via termgfx_caps_parse_jxl() over the raw accumulated buffer --
- * its reply ("ESC[=1;{0,1}-...n") carries a '-' the CSI dispatcher above
- * can't cleanly reconstruct, so this is fed the growing raw byte stream
- * instead (caps.h: "idempotent over a growing buffer"). Keep accumulating
- * until both DA1 and JXL have answered, or a 2s deadline passes, then
- * shrink to a 256-byte tail so the buffer doesn't grow for the rest of the
- * session. */
-static void jxl_scan_feed(const uint8_t *buf, size_t n)
-{
-	int r;
+/* ---- audio capability state (M4) ----
+ * g_audio_tier mirrors termgfx_audio_parse_caps(): -1 none/unknown (the
+ * terminal never answered, i.e. no audio APC at all), 0 tone-only (audio
+ * APC but no libsndfile, so A;Load is a no-op and a Queue would play an
+ * empty slot), 1 digital. g_audio_done latches "the question is answered"
+ * so sst_io_audio_available()'s bounded wait can exit the instant the
+ * reply lands instead of burning its whole window -- the same trick
+ * g_jxl_done plays for the graphics settle (see jxl_scan_feed()). */
+static int g_audio_tier = -1;
+static int g_audio_done;
+static int g_opus_ok = 1;       /* -1 from parse_opus means "no reply": an
+                                 * older SyncTERM that never answers, so
+                                 * assume yes, as termgfx/audio.h:41-51 says */
+static int g_opus_asked;
+static int g_opus_seen;         /* the Opus reply actually landed (vs. the
+                                 * assume-yes default above) -- read by
+                                 * acc_shrink()'s guard, which must not drop
+                                 * a tail the Opus parser still needs */
 
-	if (g_jxl_done && g_probe_replied)
-		return;
+/* Sysop sound switch, syncscumm.ini's "[audio] enabled" key. THE one copy of
+ * that key in this file: read once, at init (sst_read_ini(), below), and read
+ * back by both places that care -- sst_io_audio_available() right below, and
+ * audio_stream_open()'s cfg.enabled. Deliberately NOT two reads of the same
+ * file: both answer the same session the same question ("will sound play?"),
+ * and any shape where the two could disagree is a shape where the door mutes
+ * the stream while still telling the subtitle logic the player can hear it --
+ * which is exactly the defect sst_io_audio_available() documents.
+ *
+ * Defaults to 1 (sound on), so a missing file, a missing key, and a headless
+ * session that never reads an ini at all all behave as they always have. */
+static int g_audio_enabled = 1;
+
+/* The graphics settle window (the JXL reply's deadline), hoisted here from
+ * the present-path constants below: sst_io_audio_available()'s bounded wait
+ * is defined in terms of the same window and is defined above them. */
+#define SST_GFX_SETTLE_MS  2000   /* JXL reply window (matches jxl_scan_feed) */
+
+/* Append raw input to the shared scan accumulator. Split out of
+ * jxl_scan_feed() for M4, when the audio replies became a second scanner
+ * over the SAME growing buffer: the two scanners stop parsing at different
+ * moments, so neither can own the append. Both appending would double every
+ * byte, and leaving it to the JXL scanner would starve the audio scanner the
+ * moment the JXL answer landed first -- the ordinary case, since the JXL
+ * query precedes the audio query in the burst. sst_io_pump() calls this once
+ * per read, ahead of both scanners.
+ *
+ * Unlike jxl_scan_feed()'s own early return once it has latched, this append
+ * (and acc_shrink() below) run on EVERY read for the rest of the session --
+ * there is no "all scanners are done, stop touching the buffer" gate at this
+ * level. That is a real behavior change from the pre-M4 shape, where the
+ * scan and the append were the same function and its early return silenced
+ * both; correctness is unaffected (a stray keystroke just gets memcpy'd into
+ * the tail and immediately shrunk back out), and the cost is negligible next
+ * to the frame path. Same story for a tier-1 terminal that never answers the
+ * Opus query: parse_opus() re-scans the 256-byte window on every read for
+ * the session's life, equally negligible. */
+static void acc_append(const uint8_t *buf, size_t n)
+{
 	if (g_probe_start_ms == 0)
 		g_probe_start_ms = now_ms();
 
@@ -475,6 +826,36 @@ static void jxl_scan_feed(const uint8_t *buf, size_t n)
 		n = sizeof(g_acc) - g_acc_len;
 	memcpy(g_acc + g_acc_len, buf, n);
 	g_acc_len += n;
+}
+
+/* Shrink the accumulator to a 256-byte tail once every scanner that reads it
+ * has its answer (or the 2s deadline passes), so the buffer doesn't keep
+ * growing for the rest of the session. The audio conditions are new (M4):
+ * without them the accumulator could drop the tail an audio reply still
+ * needed. The Opus stage counts only if it was ever asked -- a tone-only or
+ * silent terminal never asks. */
+static void acc_shrink(void)
+{
+	if ((g_jxl_done && g_probe_replied && g_audio_done
+	     && (!g_opus_asked || g_opus_seen))
+	    || (int32_t)(now_ms() - g_probe_start_ms) > SST_GFX_SETTLE_MS) {
+		if (g_acc_len > 256) {
+			memmove(g_acc, g_acc + (g_acc_len - 256), 256);
+			g_acc_len = 256;
+		}
+	}
+}
+
+/* JXL reply via termgfx_caps_parse_jxl() over the raw accumulated buffer --
+ * its reply ("ESC[=1;{0,1}-...n") carries a '-' the CSI dispatcher above
+ * can't cleanly reconstruct, so this is fed the growing raw byte stream
+ * instead (caps.h: "idempotent over a growing buffer"). */
+static void jxl_scan_feed(void)
+{
+	int r;
+
+	if (g_jxl_done && g_probe_replied)
+		return;
 
 	r = termgfx_caps_parse_jxl(g_acc, (int)g_acc_len);
 	if (r >= 0) {
@@ -482,12 +863,41 @@ static void jxl_scan_feed(const uint8_t *buf, size_t n)
 		g_is_syncterm = 1;
 		g_jxl_done = 1;
 	}
+}
 
-	if ((g_jxl_done && g_probe_replied)
-	    || (int32_t)(now_ms() - g_probe_start_ms) > 2000) {
-		if (g_acc_len > 256) {
-			memmove(g_acc, g_acc + (g_acc_len - 256), 256);
-			g_acc_len = 256;
+/* Scan the accumulated input for the audio capability replies. Mirrors
+ * jxl_scan_feed(): termgfx_audio_parse_caps()/_parse_opus() have the same
+ * idempotent-over-a-growing-buffer contract as termgfx_caps_parse_jxl().
+ *
+ * TWO-STAGE, deliberately: parse_caps only reports whether libsndfile is
+ * present at all, not whether it decodes Ogg-Opus -- our codec, which older
+ * distro libsndfile builds lack. So the Opus query goes out only once the
+ * digital tier is confirmed, and a terminal that never answers it keeps the
+ * historical assume-yes (termgfx/audio.h:41-51). */
+static void audio_scan_feed(void)
+{
+	int r;
+
+	if (g_audio_done && (!g_opus_asked || g_opus_seen))
+		return;
+	if (!g_audio_done) {
+		r = termgfx_audio_parse_caps(g_acc, (int)g_acc_len);
+		if (r >= 0) {
+			g_audio_tier  = r;
+			g_audio_done  = 1;
+			g_is_syncterm = 1;   /* only SyncTERM answers this */
+			if (r >= 1 && !g_opus_asked) {
+				out_puts(termgfx_audio_opus_query);
+				sst_io_flush();
+				g_opus_asked = 1;
+			}
+		}
+	}
+	if (g_opus_asked) {
+		r = termgfx_audio_parse_opus(g_acc, (int)g_acc_len);
+		if (r >= 0) {
+			g_opus_ok   = r;
+			g_opus_seen = 1;
 		}
 	}
 }
@@ -625,11 +1035,35 @@ static void sst_read_ini(void)
 	if (ini == NULL)
 		return;
 	g_sixel_max_override = iniGetInteger(ini, ROOT_SECTION, "sixel_max", 0);
+	/* Read HERE, at init, rather than with the rest of the [audio] section in
+	 * audio_read_ini(): that one runs on the first PCM block, and this key is
+	 * needed far earlier -- sst_io_audio_available() is asked during
+	 * initBackend(), before the engine has produced a single sample. The
+	 * other [audio] keys are tuning values the stream's config struct owns
+	 * and nothing outside it reads, so they stay where the struct is built;
+	 * this one is a session-wide fact two callers share, so it lives with
+	 * the session state. audio_stream_open() takes its cfg.enabled from
+	 * g_audio_enabled -- see the note there. */
+	g_audio_enabled = iniGetBool(ini, "audio", "enabled", g_audio_enabled);
 	strListFree(&ini);
 }
 
 int sst_io_init(int argc, char **argv)
 {
+	/* Before resolve_fd()'s headless early-return below, deliberately: the
+	 * mixer produces PCM whether or not a terminal is listening, and the only
+	 * caller that wants this file is a headless test run. See g_audiodump. */
+	{
+		const char *ap = getenv("SYNCSCUMM_AUDIODUMP");
+
+		if (ap != NULL && *ap != '\0') {
+			g_audiodump = fopen(ap, "wb");
+			if (g_audiodump == NULL)
+				fprintf(stderr, "sst_io: SYNCSCUMM_AUDIODUMP=%s: %s (no audio "
+				        "dump)\n", ap, strerror(errno));
+		}
+	}
+
 	if (!resolve_fd(argc, argv))
 		return 0;
 	g_active = 1;
@@ -717,6 +1151,11 @@ int sst_io_init(int argc, char **argv)
 	out_puts(termgfx_term_probe);
 	out_puts("\x1b[c\x1b[<c");
 	out_puts(termgfx_query_jxl);
+	/* Audio caps (SyncTERM:Q;libsndfile). Tail of the burst: nothing gates
+	 * on its absence, and the XTVERSION-before-canvas invariant above
+	 * constrains only those two. The Opus query is NOT sent here -- it is
+	 * two-stage (audio_scan_feed(), above). */
+	out_puts(termgfx_audio_query);
 	sst_io_flush();
 	g_probe_start_ms = now_ms();
 	return 1;
@@ -724,8 +1163,28 @@ int sst_io_init(int argc, char **argv)
 
 void sst_io_shutdown(void)
 {
+	/* Before the !g_active guard, mirroring the open in sst_io_init(): a
+	 * headless run never set g_active, and it is the run that has a dump file
+	 * to close. See g_audiodump. */
+	if (g_audiodump != NULL) {
+		fclose(g_audiodump);
+		g_audiodump = NULL;
+	}
+	/* Ahead of the !g_active guard like the dump above, though for a weaker
+	 * reason: only an active session ever reaches audio_apply_headroom(), so
+	 * today this could sit below the guard just as well. It sits above it
+	 * because freeing a buffer needs no session to be true, and the guard is
+	 * the one line in this function that a future edit might make some other
+	 * path skip. */
+	audio_free_scratch();
 	if (!g_active)
 		return;
+	/* Before the terminal restore, deliberately: the stop is an A;Flush with
+	 * no fade, and it has to land while we are still the thing writing to
+	 * this terminal. Anything left in the channel's FIFO would otherwise play
+	 * on over the BBS prompt we are about to hand back to
+	 * (syncretro/main.c:598). */
+	sst_io_audio_stop();
 	if (g_tee != NULL) {
 		fclose(g_tee);
 		g_tee = NULL;
@@ -811,7 +1270,10 @@ void sst_io_pump(void)
 		}
 
 		sst_trace_in(buf, (int)n);
-		jxl_scan_feed(buf, (size_t)n);
+		acc_append(buf, (size_t)n);
+		jxl_scan_feed();
+		audio_scan_feed();
+		acc_shrink();
 		parse_bytes(buf, (int)n);
 	}
 }
@@ -823,11 +1285,554 @@ int sst_io_jxl_supported(void)  { return g_jxl; }
 int sst_io_stats_visible(void)  { return g_stats; }
 unsigned sst_io_frames_dropped(void) { return g_dropped_frames; }
 
-/* M2 has no audio path at all (see DESIGN.md's Audio path section -- that's
- * M4 work), so there is nothing to probe yet: always report "no audio".
- * M4 replaces this with real per-session audio-tier detection (mirroring
- * the sixel/JXL capability probes above). */
-int sst_io_audio_available(void) { return 0; }
+unsigned sst_io_audio_dropped(void) { return g_audio_dropped; }
+
+/* Total staged bytes not yet written to the socket, audio and video alike.
+ * Stats/test introspection ONLY -- do NOT hand this to the streaming module.
+ * Doing exactly that is what dropped 70 seconds of Beneath a Steel Sky's
+ * dialogue: see the staging block at the top of this file. Unlike syncretro's
+ * equivalent there is no g_out_off to subtract: sst_io_flush() memmoves the
+ * tail down. */
+size_t sst_io_out_backlog(void) { return g_out_len; }
+
+/* Staged AUDIO bytes not yet written to the socket -- audio's own share of the
+ * shared FIFO, and the ONLY backlog the streaming module is entitled to see.
+ * Its two-strike rule (termgfx/audio_stream.h) exists to spot a link that
+ * cannot carry AUDIO, so this must not answer with video's bursts: at 20 KB/s
+ * of speech, crossing the module's 48KB means ~2.5s of undelivered audio, i.e.
+ * a link that genuinely cannot carry it. NOT an instantaneous socket check,
+ * which SyncDOOM tried for SFX and reverted, because the frame path keeps the
+ * socket busy essentially always.
+ *
+ * Not const-clean: aseg_pending() prunes retired segments as it sums. That is
+ * a cache, not an observation -- the answer is identical either way. */
+size_t sst_io_audio_backlog(void) { return aseg_pending(); }
+
+/* Does this session have working audio? Drives the subtitles auto-decision
+ * (door/syncscumm.cpp): no audio -> subtitles on.
+ *
+ * This is the ONE bounded wait in this file that must actually block. Every
+ * other one (the JXL settle at sst_io_present(), the canvas hold) is a
+ * poll-and-return: ScummVM's loop calls present() again, so "hold" means
+ * "return and get asked again". Nobody re-asks this question -- it is called
+ * once, from resolveSubtitles() in initBackend(), before the engine runs and
+ * before a single frame is drawn. Returning "no audio" merely because the
+ * reply had not landed yet would bake subtitles on for the whole session.
+ *
+ * So: pump until the answer latches or the window expires. Anchored on
+ * g_probe_start_ms (init), NOT on first present -- unlike present()'s canvas
+ * hold, which had to move its anchor because engine boot outlasts the grace.
+ * Here we ARE inside boot, so init is the right anchor and the wait is
+ * bounded by what is left of the window.
+ *
+ * Costs up to the full ~2s settle window once, at boot, on a terminal that
+ * never answers (Foot, xterm) -- resolveSubtitles() is the first thing
+ * initBackend() does, so g_probe_start_ms is anchored right at the top of
+ * the burst and a silent terminal pays close to the whole window. That is
+ * today's behavior anyway: the wait expires, subtitles auto-on. A headless/
+ * capture session has no input fd, never probes, and returns 0 immediately.
+ */
+int sst_io_audio_available(void)
+{
+	if (!g_active || g_fd_in < 0 || g_hangup)
+		return 0;   /* headless/capture (no input fd) or dead: never any audio */
+	/* The sysop turned sound off, so nothing will play no matter what the
+	 * terminal can decode -- and the honest answer to "does this session have
+	 * working audio" is therefore no, before the terminal is even consulted.
+	 *
+	 * This question used to be read as a property of the TERMINAL, which cost
+	 * a real defect: a sysop who set "[audio] enabled = false" on a SyncTERM
+	 * got no sound (they asked for that) AND no subtitles (auto saw a capable
+	 * terminal and switched them off), so a CD talkie's dialogue -- Beneath a
+	 * Steel Sky's comic intro carries no text data at all -- was neither
+	 * heard nor seen. The question means "will this player HEAR audio", and
+	 * the sysop's switch is half of that answer.
+	 *
+	 * Returning here rather than after the wait keeps the subtitles
+	 * precedence (user > sysop > auto, resolveSubtitles() in
+	 * door/syncscumm.cpp) exactly as it was -- that caller is unchanged, and
+	 * an explicit user or sysop "subtitles" preference still never reaches
+	 * this function. Only "auto" asks.
+	 *
+	 * Ahead of the wait loop, deliberately: the loop below exists to collect
+	 * a capability reply, and there is no reason to spend up to the whole
+	 * settle window (a once-per-session boot cost the player waits through)
+	 * on an answer already decided. */
+	if (!g_audio_enabled)
+		return 0;
+	while (!g_audio_done
+	       && (int32_t)(now_ms() - g_probe_start_ms) < SST_GFX_SETTLE_MS) {
+		sst_io_pump();
+		if (g_hangup)
+			return 0;
+		if (g_audio_done)
+			break;
+		usleep(2000);   /* 2ms: the reply is one packet away, not a poll loop */
+	}
+	/* Tier 0 is audio-APC-capable but libsndfile-less: A;Load is a no-op
+	 * there, so a Queue would play an empty slot -- silent, and worse than
+	 * silent because subtitles would be off. Only tier 1 counts. g_opus_ok
+	 * defaults to 1 for an older SyncTERM that never answers the Opus query
+	 * (termgfx/audio.h:41-51). */
+	return (g_audio_tier >= 1 && g_opus_ok) ? 1 : 0;
+}
+
+/* ---- streamed audio (M4) ----
+ * The mixer's PCM goes out through termgfx's shared streaming module
+ * (termgfx/audio_stream.h): cushion, backlog policy, silence cache, blob
+ * path and underrun re-prime all live there. This file's job is the door's
+ * half -- the output seam and the session's config. */
+
+static termgfx_stream_t *g_stream;
+
+/* Latches "audio_stream_open() was already tried and did not produce a
+ * stream", so a permanently-failing create (OOM, or any other reason
+ * termgfx_stream_create() hands back NULL) gets exactly one retry instead
+ * of one per PCM block for the rest of the session. g_audio_enabled's own
+ * check below already covers the sysop-disabled case for free -- this flag
+ * is the backstop for every OTHER way open can fail. */
+static int g_stream_open_failed;
+
+/* The pre-encode headroom, in percent of full scale -- "[audio] headroom", read
+ * once alongside the module's own keys (audio_read_ini(), below). Kept here
+ * rather than in the cfg the module is handed because it is not the module's
+ * business: termgfx/audio_stream.c is shared with syncretro, and what a hot
+ * SCUMM mix needs before an Opus encoder is this door's problem to solve on its
+ * own side of the seam. See SST_AUDIO_HEADROOM (sst_io.h) for what it is for
+ * and why the number is 70; audio_apply_headroom() below is where it lands. */
+static int g_audio_headroom = SST_AUDIO_HEADROOM;
+
+/* Scratch for audio_apply_headroom()'s scaled copy: the mixer hands us a const
+ * block it still owns, so scaling has to go somewhere else. Grown on demand and
+ * kept between blocks -- tick() ships a new block tens of times a second, and
+ * they are all about the same size, so this reallocs a couple of times early and
+ * then never again. Freed in sst_io_shutdown(). */
+static int16_t *g_hr_buf;
+static size_t   g_hr_cap;   /* SAMPLES (frames * 2), not frames */
+
+static void audio_free_scratch(void)
+{
+	free(g_hr_buf);
+	g_hr_buf = NULL;
+	g_hr_cap = 0;
+}
+
+/* Stage one audio sequence -- and record WHERE it landed, so
+ * sst_io_audio_backlog() can tell audio's share of the FIFO from video's.
+ *
+ * `start` is captured before out_put() because out_put()'s stage-full guard
+ * can flush from inside the copy, which moves g_out_base and memmoves the
+ * stage; stream coordinates are immune to both, which is why the ring is kept
+ * in them rather than in g_out indices. The staged bytes are contiguous from
+ * `start` whatever happens in there, since out_put() only ever drops a
+ * REMAINDER.
+ *
+ * Every call here is exactly one complete sequence -- termgfx/audio_stream.c
+ * hands its builder's whole APC to put() in a single call -- so a short stage
+ * means the door truncated an APC, and g_audio_dropped is how that becomes
+ * visible instead of merely audible. (Fixing the truncation itself is the
+ * separate follow-up filed against out_put()'s byte-granular drop; see
+ * docs/superpowers/plans/2026-07-16-syncscumm-m4.md.) */
+static void sst_stream_put(void *ctx, const void *buf, size_t len)
+{
+	uint64_t start = g_out_base + (uint64_t)g_out_len;
+	size_t   n;
+
+	(void)ctx;
+	n = out_put(buf, len);
+	if (n > 0)
+		aseg_add(start, start + (uint64_t)n);
+	if (n < len)
+		g_audio_dropped++;
+}
+
+static int sst_stream_flush(void *ctx)
+{
+	(void)ctx;
+	sst_io_flush();
+	return g_hangup ? 0 : 1;
+}
+
+/* AUDIO's backlog, never the stage's. The one-word difference between this and
+ * sst_io_out_backlog() is the entire comic-intro defect. */
+static size_t sst_stream_backlog(void *ctx)
+{
+	(void)ctx;
+	return sst_io_audio_backlog();
+}
+
+static const termgfx_stream_io_t g_stream_io = {
+	sst_stream_put, sst_stream_flush, sst_stream_backlog, NULL
+};
+
+static void sst_audio_underrun(int ch)
+{
+	if (g_stream != NULL)
+		termgfx_stream_underrun(g_stream, ch);
+}
+
+/* Sysop audio settings, syncscumm.ini's [audio] section. Same file and same
+ * lookup as sst_read_ini()'s "sixel_max" above and door/syncscumm.cpp's
+ * resolveSubtitles() -- one syncscumm.ini, fopen()ed relative to CWD, the
+ * door's startup_dir. (Read here rather than folded into sst_read_ini()
+ * because these values belong to the stream's config struct, which does not
+ * exist until audio_stream_open() builds it; parking them in five more
+ * file-static shadows just to copy them across later would be the worse
+ * trade.) A missing file or a missing key leaves every default in place, and
+ * the module clamps whatever it is handed (audio_stream.h: quality
+ * 0.01..1.0, volume 0..100, chunk_ms 50..250, prebuffer 2..8,
+ * channels 1..2), so a nonsense
+ * value cannot break a session -- do NOT re-clamp here and give the door a
+ * second, silently diverging opinion of the valid ranges.
+ *
+ * Every default is spelled in audio_stream_open() below and passed in via
+ * cfg, never restated here: these iniGet* calls hand the CURRENT value back
+ * as the fallback, so there is exactly one place to read the defaults off. */
+static void audio_read_ini(termgfx_stream_cfg_t *cfg)
+{
+	FILE      *f = fopen("syncscumm.ini", "r");
+	str_list_t ini;
+
+	if (f == NULL)
+		return;
+	ini = iniReadFile(f);
+	fclose(f);
+	if (ini == NULL)
+		return;
+	/* No "enabled" here: that key is latched once at init into
+	 * g_audio_enabled (sst_read_ini(), above) because
+	 * sst_io_audio_available() needs it long before this runs, and re-reading
+	 * it here would give the session a second opinion of the same switch. */
+	cfg->quality   = iniGetFloat(ini, "audio", "quality", cfg->quality);
+	cfg->volume    = iniGetInteger(ini, "audio", "volume", cfg->volume);
+	cfg->chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", cfg->chunk_ms);
+	cfg->prebuffer = iniGetInteger(ini, "audio", "prebuffer", cfg->prebuffer);
+	cfg->channels  = iniGetInteger(ini, "audio", "channels", cfg->channels);
+	/* Not a cfg field, and deliberately so: the headroom is applied on THIS
+	 * side of the seam (audio_apply_headroom(), below), because the module it
+	 * would otherwise go in is shared with syncretro. It is read here anyway so
+	 * the whole [audio] section still costs exactly ONE open of syncscumm.ini
+	 * -- on this host that file lives under a CIFS mount, and the reason
+	 * sst_io_audio_stream() bails early for a disabled session is precisely to
+	 * keep this function from becoming an SMB round trip storm. Clamped to
+	 * 1..100 rather than 0..100: 0 is not a quieter stream, it is a silent one
+	 * that still pays the full Opus encode and the full uplink for every chunk,
+	 * which is never what a sysop reaching for a headroom knob meant. Muting is
+	 * "[audio] enabled = false". */
+	g_audio_headroom = iniGetInteger(ini, "audio", "headroom", g_audio_headroom);
+	if (g_audio_headroom < 1)
+		g_audio_headroom = 1;
+	if (g_audio_headroom > 100)
+		g_audio_headroom = 100;
+	strListFree(&ini);
+}
+
+/* Scale one block of the mixer's PCM to g_audio_headroom percent of full scale,
+ * returning the block to hand the encoder. Returns `pcm` itself at 100 (and on
+ * an allocation failure), so the default-off case and the degraded case both
+ * cost one branch and no copy.
+ *
+ * WHY THE ATTENUATION HAS TO BE HERE, upstream of the encoder, and cannot be
+ * the terminal's channel volume instead: see SST_AUDIO_HEADROOM (sst_io.h). The
+ * short version is that a lossy codec reconstructs this mix's hard-clipped
+ * peaks with ringing that overshoots full scale, and libsndfile's S16 read
+ * WRAPS that overshoot into a full-scale sign flip rather than clamping it --
+ * so by the time the channel volume gets a say, the damage is a signed integer
+ * that already has the wrong sign. Scaling before the encode is the only thing
+ * that gives the ringing room to land.
+ *
+ * Deliberately NOT applied to the g_audiodump tap in sst_io_audio_stream(): the
+ * dump's contract is that it is the MIXER's signal, the reference to diff an
+ * encode against, so it stays what ScummVM produced. */
+static const int16_t *audio_apply_headroom(const int16_t *pcm, size_t frames)
+{
+	size_t   samples = frames * 2;   /* *2: the mixer's block is stereo */
+	size_t   i;
+	int16_t *grown;
+
+	if (g_audio_headroom >= 100)
+		return pcm;
+	if (g_hr_cap < samples) {
+		grown = (int16_t *)realloc(g_hr_buf, samples * sizeof(int16_t));
+		if (grown == NULL)
+			return pcm;   /* louder than we meant beats dropping the block */
+		g_hr_buf = grown;
+		g_hr_cap = samples;
+	}
+	/* Rounds to nearest, away from zero, and cannot overflow: the widest
+	 * intermediate is 32767 * 100, well inside an int. Integer rather than
+	 * float because this runs on every sample of every block and the error a
+	 * float would save is ~90dB below a signal the codec is about to hand back
+	 * at ~32dB SNR. */
+	for (i = 0; i < samples; i++)
+		g_hr_buf[i] = (int16_t)((pcm[i] * g_audio_headroom +
+		                         (pcm[i] < 0 ? -50 : 50)) / 100);
+	return g_hr_buf;
+}
+
+/* Lazily create the stream on the first PCM, once the tier is known.
+ * Deliberately not in sst_io_init(): the caps reply has not landed there,
+ * and a stream created against an unknown tier would either drop the
+ * cushion's first chunks or emit to a terminal that cannot play them. */
+static void audio_stream_open(void)
+{
+	termgfx_stream_cfg_t cfg;
+
+	memset(&cfg, 0, sizeof cfg);
+	/* From the init-time latch, not from cfg's own default + audio_read_ini()
+	 * below: g_audio_enabled is the session's single copy of the sysop switch
+	 * and sst_io_audio_available() has already answered the subtitle question
+	 * from it. Both must speak for the same read of the same file. */
+	cfg.enabled      = g_audio_enabled;
+	cfg.quality      = TERMGFX_MUSIC_QUALITY_DEFAULT;
+	/* 100 -- and read this WITH cfg_headroom's ~-3dB below, because the pair is
+	 * one decision, not two. This was 70 for a real reason: SyncTERM's channel
+	 * mixer soft-clips (a tanh knee), this stream is ALREADY mixed -- every
+	 * voice, effect and music track summed by ScummVM -- and at unity the sum
+	 * distorted, so ~70 bought it ~-3dB of headroom, the same fix syncconquer's
+	 * FMV audio needed.
+	 *
+	 * That reason has not gone away; the ~-3dB has MOVED, to
+	 * SST_AUDIO_HEADROOM (sst_io.h), which applies it BEFORE the Opus encode
+	 * instead of after the decode. End to end the terminal sees the identical
+	 * signal it saw at 70 -- 70% x 100% is the same net gain as the 100% x 70%
+	 * that shipped before, so the tanh knee sits at exactly the operating point
+	 * it was tuned to and nothing got louder -- but the same 3dB now does a
+	 * second job it could never do down here: it keeps the CODEC's ringing off
+	 * the rail. A channel volume is applied post-decode, so it can only scale
+	 * samples that Opus's overshoot has already wrapped to the wrong sign; that
+	 * is why the battle scene crunched at volume 70 and why moving the number
+	 * rather than adding another one is the whole fix.
+	 *
+	 * NEVER spell a mute as 0 here: SyncTERM clamps a channel volume of 0 to
+	 * -60dB and bakes it into the channel's entry volume (it cost SyncDuke a
+	 * debugging session); the module stops sending instead. */
+	cfg.volume       = 100;
+	/* 250ms per chunk (SST_CHUNK_MS), the top of the module's 50..250 clamp,
+	 * and the cheapest real improvement available to the pops without touching
+	 * the shared module: every chunk is its OWN Ogg/Opus stream, so a boundary
+	 * is a stream boundary, and this simply makes fewer of them. Measured on
+	 * the 459.9s BASS capture, stereo, against the same path at 100ms:
+	 *
+	 *   boundaries anomalous vs interior 99th pct: 2.6% -> 0.9% (= chance)
+	 *   median step at a boundary:                  395  -> 341
+	 *   bitrate:                                   158.0 -> 110.2 kbps
+	 *
+	 * The bitrate falls because 4598 sets of Ogg headers become 1839, which is
+	 * also why this beats the mono experiment outright: 110.2 kbps STEREO is
+	 * cheaper than 113.7 kbps MONO was, and mono paid for that in worse pops.
+	 * It does NOT fix the framing -- one continuous stream of this same PCM is
+	 * 39.5 kbps -- it just stops making the boundary a 10-a-second event. */
+	cfg.chunk_ms     = SST_CHUNK_MS;
+	/* ~750ms of cushion: the latency budget AND the entire jitter tolerance
+	 * (audio_stream.h). Read this WITH cfg.chunk_ms above -- prebuffer counts
+	 * CHUNKS, so the cushion is their product, and when the chunk grew to 250ms
+	 * this had to fall 8 -> 3 to hold the cushion still. Left at 8 it would be
+	 * a TWO-SECOND cushion: two seconds of speech behind the picture, which is
+	 * a worse defect than the pops it was bought to avoid.
+	 *
+	 * 3 x 250 = 750ms, and the cushion is sized this way because the FIFO is
+	 * shared and strictly ordered, so audio waits out whatever frame was staged
+	 * ahead of it -- see the staging block at the top of this file. That wait is
+	 * MEASURED: of 3673 comic-intro frames, 318 (8.7%) take longer than 300ms to
+	 * drain and NONE exceed 800ms, the worst at 663ms. 750ms still covers that
+	 * worst frame; 2 chunks (500ms) would not, and an underrun re-primes, which
+	 * is another gap -- the cushion has to cover the WORST frame, not the
+	 * average one. That measurement is a drain time and stands on its own: it
+	 * outlived the frame-congestion theory it was originally taken to support
+	 * (the real defect was audio never being flushed while the screen was
+	 * static, since fixed), because the FIFO being shared and ordered is
+	 * structural, not a theory.
+	 *
+	 * The cost is ~750ms of constant speech-behind-picture offset, an offset and
+	 * not drift: both ride one wall clock, so it never accumulates. End to end
+	 * this run is ~100ms LONGER than the old one all the same -- a chunk cannot
+	 * ship until it fills, so 250 + 750 = 1000ms replaces 100 + 800 = 900ms.
+	 * "[audio] prebuffer" still overrides it (audio_read_ini(), called below);
+	 * a sysop who lowers chunk_ms should raise this to keep the product. */
+	cfg.prebuffer    = SST_PREBUFFER_CHUNKS;
+	/* Stereo, and this default was MEASURED BACK from mono, not assumed. The
+	 * case for mono was real on its face: a 459.9s capture of BASS (11,036,672
+	 * frames of the mixer's own pre-encode PCM) has left and right
+	 * BIT-IDENTICAL -- max |L-R| = 0, not one differing frame -- so the title's
+	 * samples are mono, ScummVM duplicates them across the pair, and the wire
+	 * pays for the copy. The module's accumulator downmixes by keeping the left
+	 * sample, which for L==R is exactly lossless. Mono SHOULD have been free.
+	 *
+	 * It was not, on either count, and both numbers contradicted the
+	 * expectation:
+	 *
+	 * 1. It saved ~28%, not the ~50% a halved channel count implies (157.7 ->
+	 *    113.7 kbps). Opus already spent almost nothing on a side channel that
+	 *    is identically zero.
+	 * 2. It made the CHUNK-BOUNDARY pops -- the artifact a listener actually
+	 *    complains about -- measurably WORSE: median boundary step 395 ->
+	 *    1080, boundaries anomalous against the interior 99th pct 2.6% ->
+	 *    17.2%.
+	 *
+	 * The mechanism behind (2), so nobody re-derives it: a MONO Opus stream
+	 * comes back from libsndfile misaligned by about a sample at 24000 (and at
+	 * 48000; 8/12/16k are clean, and a stereo stream is clean at every rate).
+	 * Continuously that is inaudible -- one constant sub-sample offset over the
+	 * whole stream. But this module ships each chunk as its OWN stream, so the
+	 * skew re-lands at every boundary. Trading a 28% uplink saving for a worse
+	 * version of the headline artifact is a bad trade, so the default went
+	 * back.
+	 *
+	 * A default, though, NOT a verdict -- the key stays, and has two real
+	 * users: a sysop on a thin uplink who will take the pops for the 28%, and a
+	 * genuinely stereo title (an engine panning its effects) which needs the
+	 * pair anyway. "[audio] channels = 1" in syncscumm.ini narrows the wire
+	 * again. That is also why the MIXER stays stereo above (audio_term.cpp):
+	 * only the wire changes width, ScummVM's mix path is untouched, and the
+	 * sysop's key can move it either way without the door having to rebuild a
+	 * mixer that was created long before this file was read.
+	 *
+	 * Neither width FIXES the pops -- they are the per-chunk stream boundary's
+	 * fault, and one continuous stream of this same PCM measures 1.03x =
+	 * chance, at 39.5 kbps. Stereo is the width that does not make them worse. */
+	cfg.channels     = 2;
+	cfg.rate         = SST_AUDIO_RATE;
+	cfg.ch           = 2;
+	cfg.slot         = 0;
+	cfg.name         = "syncscumm";
+	cfg.cache_prefix = "s";
+	/* Last, so the sysop's file overrides the defaults above rather than the
+	 * other way around -- and before create(), which takes cfg BY VALUE and
+	 * clamps it once (audio_stream.h -- channels included, 1..2). Deliberately
+	 * does not touch rate/ch/slot/name/cache_prefix: those are properties of
+	 * the door and the mixer, not preferences, and a sysop has no way to know a
+	 * good value for any of them. channels IS a preference -- it depends on the
+	 * game, not on the door -- so it is read like the four keys above it. */
+	audio_read_ini(&cfg);
+	g_stream = termgfx_stream_create(&cfg, &g_stream_io);
+	if (g_stream == NULL)
+		return;
+	/* g_cterm_ver is already latched from the CTDA reply (csi_final()'s 'c'
+	 * case, above; maj*1000+min); the JXL path next to it uses the same
+	 * threshold to pick DrawJXLBlob. >= 1.329 means A;LoadBlob works, so
+	 * chunks ship inline with no cache-file churn at all. */
+	termgfx_stream_set_blob_ok(g_stream, g_cterm_ver >= TERMGFX_CTERM_VER_BLOB);
+	termgfx_stream_caps(g_stream, g_audio_tier >= 1 && g_opus_ok ? 1 : 0);
+}
+
+void sst_io_audio_stream(const int16_t *pcm, size_t frames)
+{
+	if (pcm == NULL || frames == 0)
+		return;
+	/* The diagnostic tap (g_audiodump), ahead of every gate below: this file
+	 * is meant to be the mixer's signal, not the session's. A headless run
+	 * (!g_active) and a disabled-audio session both discard the PCM a few
+	 * lines down, and those are exactly the runs a test script makes. Inert
+	 * unless SYNCSCUMM_AUDIODUMP was set. */
+	if (g_audiodump != NULL)
+		fwrite(pcm, sizeof(int16_t) * 2, frames, g_audiodump);   /* *2: stereo */
+	if (!g_active || g_hangup)
+		return;
+	/* The sysop switch, checked here BEFORE any INI work and before the
+	 * open attempt below: with audio disabled, cfg.enabled is guaranteed
+	 * false (audio_stream_open() takes it straight from g_audio_enabled)
+	 * so termgfx_stream_create() is guaranteed to hand back NULL, and
+	 * g_stream can therefore never latch. Without this check that
+	 * guaranteed failure fell through to the general open-once path below,
+	 * and the caller here is this door's mixer tick -- audio_term.cpp's
+	 * tick() via pollEvent(), tens to hundreds of calls per second for the
+	 * rest of the session -- so every one of them re-ran audio_read_ini():
+	 * an fopen() + iniReadFile() + strListFree() of syncscumm.ini for a
+	 * result already known. On this host that file lives under a
+	 * CIFS-mounted /sbbs, so each retry was a real SMB open/read/close
+	 * round trip; a per-tick storm of those is the same "slow disk access"
+	 * pathology this box has chased before as a scraper or lock-contention
+	 * problem when it was really an open/close storm. Bailing here costs
+	 * nothing (g_audio_enabled is already the init-time latch) and reads
+	 * the INI zero times for a disabled session, rather than the one time
+	 * the general backstop below would still allow. */
+	if (!g_audio_enabled)
+		return;
+	if (g_stream == NULL) {
+		if (!g_audio_done || g_stream_open_failed)
+			return;   /* tier unknown, or open already tried and failed */
+		audio_stream_open();
+		if (g_stream == NULL) {
+			g_stream_open_failed = 1;
+			return;
+		}
+	}
+	/* The pre-encode headroom, applied here rather than inside the module
+	 * (which is shared with syncretro) and AFTER the g_audiodump tap above
+	 * (which is meant to be the mixer's own signal). See SST_AUDIO_HEADROOM in
+	 * sst_io.h: without it this door's hottest passages hand Opus a
+	 * hard-clipped waveform whose reconstruction overshoots full scale, and
+	 * libsndfile -- ours and SyncTERM's alike -- WRAPS that overshoot into a
+	 * sign flip instead of clamping it. */
+	termgfx_stream_feed(g_stream, audio_apply_headroom(pcm, frames), frames);
+	/* ...and PUT IT ON THE WIRE, here, rather than leaving it staged for a
+	 * present() that may never come.
+	 *
+	 * THE DEFECT THIS FIXES: Beneath a Steel Sky's comic intro had
+	 * seconds-long gaps in its dialogue from the very first panel, while
+	 * gameplay -- at a higher byte rate -- was flawless. A comic panel is a
+	 * STILL: drawn once, then talked over for seconds. Two flush policies met
+	 * and left a hole exactly there.
+	 *
+	 * termgfx/audio_stream.c calls io.flush() in exactly TWO places -- when
+	 * the PRIME cushion releases (audio_stream.c:416) and at stop
+	 * (audio_stream.c:470). In steady RUN it only stages chunks through
+	 * io.put() and leaves the writing to the door's main loop. This door's
+	 * main loop only flushed from sst_io_present() (sst_io.c:2350, 2627). So
+	 * with nothing drawn, nothing flushed: every chunk the mixer produced sat
+	 * in g_out unwritten, audio's share of the stage (sst_io_audio_backlog())
+	 * climbed past the module's 48KB rule, and the module began dropping
+	 * chunks -- concluding "this link cannot carry audio" about a socket that
+	 * was IDLE. The trace says it plainly: no present() between 34s and 42s,
+	 * then 71 drops all at once at 42s, the first present after the gap (8s x
+	 * 10 chunks/s ~= 71). Gameplay never showed it because constant
+	 * dirty-rect redraws mean constant flushes. The link was never the
+	 * bottleneck; it does multiple MB/s against 400KB/s peaks.
+	 *
+	 * The module is deliberately NOT the place to fix this: its flush policy
+	 * is shared with syncretro, whose core runs continuously and whose main
+	 * loop therefore flushes on its own. The door that can go quiet is the
+	 * door that has to flush.
+	 *
+	 * WHY HERE IS SAFE -- this cannot split a video sequence. The only caller
+	 * is audio_term.cpp's tick() (audio_term.cpp:79), reached from exactly
+	 * two places, and at neither is a frame partially staged:
+	 *   - syncscumm.cpp:175, in pollEvent(), before sst_io_pump();
+	 *   - video_term.cpp:232, at the TOP of updateScreen(), ahead of compose()
+	 *     and both sst_io_present() calls (video_term.cpp:272, 274).
+	 * sst_io_present() itself never ticks the mixer, so no tick can land
+	 * inside one. Nothing is reordered and no "may audio go now?" boundary
+	 * predicate is introduced: this is the same strictly-ordered FIFO write
+	 * every other caller makes, just made at a moment the door would
+	 * otherwise have stayed silent. An earlier attempt at this defect DID add
+	 * a priority/boundary rule, spliced an A;LoadBlob into an open sixel DCS,
+	 * and was reverted -- see the staging block at the top of this file.
+	 *
+	 * Unconditional, and per feed rather than per closed chunk. Per-chunk
+	 * would be the tighter granularity but the door cannot see a chunk close
+	 * -- that is inside the module, behind termgfx_stream_feed(). Per feed
+	 * costs nothing to be wrong about: on the overwhelmingly common tick the
+	 * module is still accumulating and staged nothing, so sst_io_flush() takes
+	 * its !g_out_len early return, and aseg_prune() there walks an already
+	 * empty ring (an empty stage means every segment is retired by
+	 * definition). The real work -- one write() -- happens only on the ticks
+	 * that actually staged a chunk, which is exactly the tick that needs it. */
+	sst_io_flush();
+}
+
+void sst_io_audio_stop(void)
+{
+	if (g_stream == NULL)
+		return;
+	/* termgfx_stream_destroy() already calls termgfx_stream_stop() internally
+	 * (A;Flush, no fade -- see audio_stream.h), so an explicit stop() here
+	 * would just emit the same A;Flush twice: stop() doesn't advance the
+	 * stream's state, so destroy()'s own call passes the same state check
+	 * and fires again. */
+	termgfx_stream_destroy(g_stream);
+	g_stream = NULL;
+}
 
 /* ============================================================================
  * Present path (Task 4; JXL tier added Task 7). Ported from syncconquer/
@@ -864,7 +1869,8 @@ int sst_io_audio_available(void) { return 0; }
 #define SST_PALSTORM_MIN_MS 80
 #define SST_DSR_RING        16
 #define SST_PROBE_GRACE_MS  500
-#define SST_GFX_SETTLE_MS  2000   /* JXL reply window (matches jxl_scan_feed) */
+/* SST_GFX_SETTLE_MS is defined up with the scan accumulator: the audio
+ * probe's bounded wait shares the window and is defined ahead of here. */
 #define SST_AUTO_DEPTH_MAX  8
 #define SST_CAPTURE_MAX_FRAMES 200
 
@@ -1392,17 +2398,63 @@ static void sst_pace_ack(void)
 	g_pace_progress_ms = now;
 }
 
+/* present()'s last computed emit geometry -- stashed here purely so
+ * sst_trace() can log it without taking new parameters, mirroring how the
+ * pacing globals just above (g_inflight/g_auto_depth, maintained by
+ * sst_pace_ack()/present() but only READ here) feed the same emitter.
+ * Diagnostic-only: nothing downstream of the fit/center block (sst_io_
+ * present()'s "Fit + center") reads these back. Persisting across calls
+ * means an early-out trace line (gated-grace/deadline/etc., logged before a
+ * given present() call reaches the fit/center block) still reports the last
+ * frame's real geometry instead of zeros. */
+static int     g_trace_ew, g_trace_eh;         /* effective (fit+clamped) emit size */
+static int     g_trace_dx, g_trace_dy;         /* JXL pixel offset; stay 0 without WITH_JXL */
+static int     g_trace_cellh;                  /* cell height used for the sixel row-reserve */
+static int     g_trace_icol, g_trace_irow;     /* text-grid column/row the image is centered at */
+
 /* Emit one present-path trace line (SYNCSCUMM_TRACE); see g_trace, above. */
 static void sst_trace(const char *outcome, const char *tier, size_t bytes)
 {
+	unsigned ch = 0, ur = 0, dr = 0;
+
 	if (g_trace == NULL)
 		return;
+	/* audio=<tier>/<chunks>/<underruns>/<dropped>: the stream's own counters,
+	 * on the present line because that is the one line a trace always has --
+	 * audio has no event of its own worth a line, and correlating a drop
+	 * against the frame it happened under is the whole point. Zeros before
+	 * the stream exists (no PCM yet, or a terminal that cannot play it).
+	 *
+	 * abacklog=<audio backlog>/<door drops>/<ring merges> is what the comic-
+	 * intro investigation did not have and needed. The trace showed audio
+	 * dropping 702 chunks and no way to see WHOSE bytes the module was looking
+	 * at when it decided to; the first field is that number
+	 * (sst_io_audio_backlog(), audio's own share of the FIFO -- compare it
+	 * against the whole stage's `bytes` on a full-frame line and the old bug is
+	 * visible at a glance). The second is the door's OWN audio drops
+	 * (g_audio_dropped), which must never be silent the way the reverted
+	 * attempt's counter was. The third is g_aseg ring overflows, which are the
+	 * only condition under which the first field can be too LARGE. */
+	termgfx_stream_stats(g_stream, &ch, &ur, &dr);
+	/* emit=<ew>x<eh>@<dx>,<dy> cell=<cellh> rc=<irow>,<icol>: the fit+center
+	 * block's actual output (sst_io_present()'s "Fit + center", above) --
+	 * added to attribute an unpainted screen row to either a clamp (ew/eh
+	 * short of canvas) or a repaint gap (ew/eh == canvas, dx/dy == 0), which
+	 * canvas=WxH alone cannot distinguish. Values are the FIT/CENTER block's
+	 * last computed geometry (g_trace_ew et al, see their doc comment) --
+	 * stale (last frame's) on an early-out line logged before that block
+	 * runs this call. */
 	fprintf(g_trace, "%u %-13s %-5s %7zu inflight=%d depth=%d dropped=%u"
-	        " canvas=%dx%d%s replied=%d sixel=%d jxl=%d\n",
+	        " canvas=%dx%d%s replied=%d sixel=%d jxl=%d audio=%d/%u/%u/%u"
+	        " abacklog=%zu/%u/%u emit=%dx%d@%d,%d cell=%d rc=%d,%d\n",
 	        (unsigned)now_ms(), outcome, tier, bytes,
 	        g_inflight, g_auto_depth, (unsigned)g_dropped_frames,
 	        g_canvas_w, g_canvas_h, g_canvas_exact ? "!" : "?",
-	        g_probe_replied, g_have_sixel, g_jxl);
+	        g_probe_replied, g_have_sixel, g_jxl,
+	        g_audio_tier, ch, ur, dr,
+	        sst_io_audio_backlog(), (unsigned)g_audio_dropped, g_aseg_merges,
+	        g_trace_ew, g_trace_eh, g_trace_dx, g_trace_dy, g_trace_cellh,
+	        g_trace_irow, g_trace_icol);
 }
 
 /* Dump raw terminal input (SYNCSCUMM_TRACE only): the exact reply bytes the
@@ -1660,7 +2712,27 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 			return;
 		}
 	}
-	if (g_out_len > 0) {   /* prior frame's bytes not all out yet */
+	/* Backpressure gate: the FIFO did not empty, so don't stack another frame
+	 * on top of it. Note this is read AFTER the unconditional sst_io_flush()
+	 * above, so it is not "are there bytes staged" -- it is "did a flush
+	 * attempt fail to place them", i.e. the socket is in EAGAIN and the link is
+	 * genuinely behind.
+	 *
+	 * The audio fix made g_out_len no longer purely video (audio shares this
+	 * FIFO -- see the staging block at the top of this file), so it is worth
+	 * being explicit that the gate still means what it always meant. It does.
+	 * The question it asks is about the LINK, not about whose bytes are queued:
+	 * a frame staged now would sit behind those bytes whatever they are. The
+	 * only new behavior is that ~2KB of undrainable audio can now hold a frame
+	 * -- but that requires the socket to be blocked at that instant, which is
+	 * exactly when a frame should be held, and it costs one skipped frame
+	 * (~80ms, invisible) where the converse -- letting frames pile onto a
+	 * blocked link -- is what feeds out_put()'s drop path.
+	 *
+	 * Deliberately NOT changed to gate on audio bytes only: that would stall
+	 * video behind the cushion. Deliberately NOT removed: the stage is finite
+	 * and this is what bounds it. */
+	if (g_out_len > 0) {
 		sst_trace("gated-outlen", sst_tier_name(sst_tier()), 0);
 		return;
 	}
@@ -1741,6 +2813,17 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 			termgfx_geom_center(g_canvas_w, g_canvas_h, ew, eh, 8, 16, NULL, NULL, &icol, &irow);
 #endif
 		}
+
+		/* Stash for sst_trace() -- see g_trace_ew's doc comment, above. */
+		g_trace_ew = ew;
+		g_trace_eh = eh;
+		g_trace_cellh = cellh;
+		g_trace_icol = icol;
+		g_trace_irow = irow;
+#ifdef WITH_JXL
+		g_trace_dx = dx;
+		g_trace_dy = dy;
+#endif
 	}
 
 	tier_changed = (g_last_tier != tier);

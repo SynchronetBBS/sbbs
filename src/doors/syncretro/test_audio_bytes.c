@@ -282,7 +282,7 @@ static void run_scenario(void)
 	/* 6: sustained backlog over two consecutive chunk boundaries drops the
 	 * second chunk outright (no APC for it); the first, still under the
 	 * 2-strike threshold, sends normally. */
-	g_backlog = 48 * 1024 + 1;    /* > SR_AUDIO_BACKLOG_BYTES */
+	g_backlog = 48 * 1024 + 1;    /* > TERMGFX_STREAM_BACKLOG_BYTES */
 	feed_ramp(FRAMES_PER_CHUNK, &phase);    /* strike 1: still sends */
 	feed_ramp(FRAMES_PER_CHUNK, &phase);    /* strike 2: dropped */
 	g_backlog = 0;

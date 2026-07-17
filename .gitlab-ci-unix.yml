@@ -1300,6 +1300,19 @@ spec:
     - touch ${CI_PIPELINE_ID}.ci
     - cd src/doors/syncretro
     - ./build.sh
+    # test_audio_bytes is the only guard on the PCM streaming state machine
+    # (termgfx's audio_stream.c): a 44-record golden transcript of the bytes a
+    # session puts on the wire.  build.sh does not build it -- SYNCRETRO_TESTS
+    # is OFF by default so a plain door build never needs libsndfile's test
+    # path -- so without this the state machine's cushion could be retuned and
+    # the pipeline would stay green.  Re-configuring build.sh's OWN build dir
+    # keeps the CMAKE_BUILD_TYPE it set (the cache carries it) and reuses its
+    # objects, so this adds the test targets and little else.  The -D must be
+    # explicit: unlike CMAKE_C_COMPILER_LAUNCHER above, an option() is NOT
+    # initialized from the environment.
+    - cmake -S . -B build -DSYNCRETRO_TESTS=ON
+    - cmake --build build -j$(nproc 2>/dev/null || echo 4)
+    - ctest --test-dir build --output-on-failure
   artifacts:
     name: "syncretro-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:

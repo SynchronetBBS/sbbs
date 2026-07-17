@@ -144,13 +144,23 @@ reach for.
 
 ## 5. Architecture
 
-One new translation unit, `syncretro_audio.c`, between `retro_bridge.c`'s
-existing `sr_audio_feed()` and termgfx's audio builders. Nothing else changes
-shape: the APC bytes go out through the same staged `sr_out_put()` as sixel.
+> **Moved 2026-07-16.** The machinery below shipped in `syncretro_audio.c` as
+> described, then SyncSCUMM needed the same continuous-stream handling and it
+> was **extracted into `../termgfx/audio_stream.{c,h}` + `../termgfx/chunk.c`**,
+> shared by both doors. `test_audio_bytes.golden` (§9) was the guard for that
+> move: the transcript did not change. **The design reasoning in this document
+> is unchanged and still correct** -- only the code's address moved. Read
+> `../termgfx/audio_stream.h` for the module's own contract.
 
-- **`syncretro_audio.c` / `.h`** -- chunk accumulator, silence detection, the
-  Opus encode call, the cache-name ring, the prebuffer and underrun state
-  machine, and the drop counter.
+`syncretro_audio.c` remains, now a ~140-line **adapter**: it builds a
+`termgfx_stream_cfg_t` from the door's INI getters, supplies the put/flush/
+backlog vtable, and forwards. The chunk accumulator, silence detection, the
+Opus encode call, the cache-name ring, the prebuffer and underrun state
+machine, and the drop counter all live in termgfx now.
+
+It still sits between `retro_bridge.c`'s existing `sr_audio_feed()` and
+termgfx's audio builders, and nothing else changed shape: the APC bytes go out
+through the same staged `sr_out_put()` as sixel.
 
 Changed:
 
@@ -229,7 +239,7 @@ instead of one per chunk forever.
 ## 7. Backpressure -- drop at the input, never at the output
 
 A chunk is dropped only under **sustained** congestion: when the door's staged
-output backlog exceeds `SR_AUDIO_BACKLOG_BYTES` (48 KB) at **two consecutive
+output backlog exceeds `TERMGFX_STREAM_BACKLOG_BYTES` (48 KB) at **two consecutive
 chunk boundaries** (~200 ms). The drop happens **at the input, before encoding**;
 a chunk already queued to the terminal is never dropped.
 
@@ -296,25 +306,41 @@ learn otherwise.
 
 ## 9. Testing
 
-- **`test_chunk.c`** (new unit test): the chunk accumulator. A 735-frame batch
-  does not close a 4410-frame chunk; six of them close one with 0 remainder;
-  batches that straddle a boundary carry the remainder correctly; an all-zero
-  chunk is detected as silent and one non-zero sample anywhere defeats that.
-- **`fakecore.c`**: emit a known square wave through `audio_batch`, so the door
-  has something deterministic to encode. Gate on an env var so existing scenarios
-  stay silent.
-- **`fakterm.py`** scenarios:
-  - a terminal that never answers the audio probe receives **zero** `A;` APCs;
-  - a tier-1 terminal receives `C;S` -> `A;Load` -> `A;Queue` in that order;
-  - the cache name cycles `s/0..s/3` and repeats;
-  - a silent stretch emits `A;Load`+`A;Queue` and **no** `C;S`;
-  - exactly three chunks are queued before the stream is declared running;
-  - an injected `CSI = 7 ; 2 ; 0 n` triggers a re-prime, not a single queue;
-  - `Ctrl-Q` emits `A;Flush;C=2` before the terminal restore;
-  - a `syncretro.ini` with `[audio] enabled = false` emits **zero** audio APCs on
-    a tier-1 terminal, and one with an out-of-range `chunk_ms = 17` is clamped to
-    50 rather than honored.
+> **Corrected 2026-07-16.** This section previously specified a `fakecore.c` +
+> `fakterm.py` scenario harness. **It was never built** -- the plan was dropped
+> during implementation in favor of the in-process transcript test below, and
+> this section was not updated to say so. It is documented here because a
+> sibling milestone read the old text as a description of existing coverage and
+> spent real time looking for a harness that did not exist. What follows is
+> what is actually in the tree.
+
+- **`test_audio_bytes.c`** + **`test_audio_bytes.golden`** (`ctest -R
+  audio_bytes`): the real coverage. It stubs only the module's door seam (three
+  output calls, five config getters) and drives a scripted session through the
+  **real** termgfx encoder, diffing a normalized transcript against the golden.
+  Being in-process, it needs neither a fake core nor a fake terminal -- which is
+  why both were dropped.
+  - **Why a normalized transcript and not raw bytes:** an Ogg stream carries a
+    **random** bitstream serial number (encode the same PCM twice and the OggS
+    page header differs every time), so a raw-byte golden would be a permanent
+    false alarm. Each line is instead one emitted APC -- verb, parameters, and a
+    payload's **length** but never its content.
+  - This is exactly the right granularity for what it guards: the extraction
+    into libtermgfx (§5) can only change call *sequencing*, not encoding. The
+    cache-name rotation, the prebuffer hold/release batch, the cached-silence
+    no-`C;S` path, the re-prime shape and the backlog drop each show up as a
+    difference in the **sequence** of lines.
+  - File-static state has no reset, so it runs exactly one scenario per process.
+- **The chunk accumulator's own unit test moved with the code**:
+  `../termgfx/test/test_audio_stream.c`. (The `test_chunk.c` this section used to
+  name is gone; only stale `build-msvc/` artifacts still carry the name.)
 - Uncrustify as the closing step, per this directory's CLAUDE.md.
+
+**Still untested by anything automated**, and worth knowing: the `enabled =
+false` and out-of-range-clamp cases this section used to promise `fakterm.py`
+would cover. SyncSCUMM covers the equivalent for its own door
+(`../syncscumm/test/test_sst_io_audio_ini_off.c` and `..._ini_tune.c`, which
+seed an INI in a temp CWD); syncretro has no counterpart.
 
 **What cannot be tested here:** that it *sounds right*. The host is headless
 (no sound device). Every automated check above verifies the byte stream, never

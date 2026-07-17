@@ -6,19 +6,25 @@
 # audio_stream.c, a separate translation unit -- so this target never takes
 # the termgfx library. The accumulator under test is still the real
 # implementation, not a copy.
-add_executable(test_audio_stream
+#
+# Named for what it covers: the target was `test_audio_stream`, which read as
+# a test of the state machine and implied coverage this does not have. The
+# state machine's guard is syncretro's test_audio_bytes golden, which needs
+# the real encoder and libsndfile -- exactly the dependency this target exists
+# to avoid -- so the two stay split, and the names now say which is which.
+add_executable(test_chunk
     ${CMAKE_CURRENT_SOURCE_DIR}/../chunk.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_audio_stream.c)
 
-target_include_directories(test_audio_stream PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(test_chunk PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 if(NOT WIN32)
-    target_link_libraries(test_audio_stream m pthread)
+    target_link_libraries(test_chunk m pthread)
 endif()
-set_target_properties(test_audio_stream PROPERTIES C_STANDARD 11)
+set_target_properties(test_chunk PROPERTIES C_STANDARD 11)
 
 # This test IS its assert()s/CHECKs. A Release configure puts -DNDEBUG in
 # CMAKE_C_FLAGS_<CONFIG>, compiling every assert() to nothing and making the
 # target exit 0 no matter what it "checks". Undefine it for this target only;
 # target_compile_options lands after the per-config flags, so the -U wins.
-target_compile_options(test_audio_stream PRIVATE -UNDEBUG)
-add_test(NAME audio_stream COMMAND test_audio_stream)
+target_compile_options(test_chunk PRIVATE -UNDEBUG)
+add_test(NAME chunk COMMAND test_chunk)

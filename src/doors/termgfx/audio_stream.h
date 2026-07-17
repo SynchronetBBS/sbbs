@@ -112,10 +112,11 @@ int    termgfx_stream_blob_active(const termgfx_stream_t *s);
 // `CSI = 7 ; ch ; 0 n`: that channel's FIFO drained.
 void   termgfx_stream_underrun(termgfx_stream_t *s, int ch);
 
-// The source stopped (or restarted) producing PCM. CAUTION: pause/reset and the
-// volume entry points below arrived with this module's extraction from
-// syncretro, where they are implemented but have NO call sites -- they are
-// untested by use. Read them before trusting them.
+// The source stopped (or restarted) producing PCM. This and _reset/_volume_step
+// below came from syncretro and are live there -- a door screen pauses, Ctrl-R
+// resets, '+'/'-' step the volume -- so they are exercised every session, not
+// merely implemented. The two GETTERS are the exception: nothing calls _volume
+// or _muted, so they are untested by use.
 void   termgfx_stream_pause(termgfx_stream_t *s, int on);
 void   termgfx_stream_reset(termgfx_stream_t *s);
 int    termgfx_stream_volume(const termgfx_stream_t *s);

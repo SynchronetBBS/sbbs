@@ -20,6 +20,13 @@ if [ -f "$DOOR/build/libs/jxl_libs.txt" ]; then
 		esac
 	done
 fi
+# libsndfile: same handoff as JXL above (door/CMakeLists.txt writes
+# sndfile_libs.txt) -- ANY final link of libtermgfx.a needs it once termgfx
+# was built with libsndfile, regardless of whether sst_io.c itself uses it.
+SNDFILE_LIBS=""
+if [ -s "$DOOR/build/libs/sndfile_libs.txt" ]; then
+	SNDFILE_LIBS=$(cat "$DOOR/build/libs/sndfile_libs.txt")
+fi
 # sst_io.c reads syncscumm.ini via xpdev's ini_file.h (sixel_max override --
 # door/syncscumm.cpp's subtitles read does the same), so every cc invocation
 # below needs xpdev's own include dir, not just its static lib.
@@ -28,7 +35,7 @@ XPDEV_INC="-I$DOOR/../../xpdev"
 cc -o /tmp/test_sst_io $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
    "$HERE/test_sst_io.c" "$DOOR/door/sst_io.c" \
    "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
-   -lpthread -lm $JXL_LIBS
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_io
 
 # The non-graphics-terminal gate needs a fresh sst_io session (file-static
@@ -36,7 +43,7 @@ cc -o /tmp/test_sst_io $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_IN
 cc -o /tmp/test_sst_io_nogfx $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
    "$HERE/test_sst_io_nogfx.c" "$DOOR/door/sst_io.c" \
    "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
-   -lpthread -lm $JXL_LIBS
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_io_nogfx
 
 # The canvas-size startup hold (Foot geometry bug) likewise needs a fresh
@@ -44,7 +51,7 @@ cc -o /tmp/test_sst_io_nogfx $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XP
 cc -o /tmp/test_sst_io_canvas $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
    "$HERE/test_sst_io_canvas.c" "$DOOR/door/sst_io.c" \
    "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
-   -lpthread -lm $JXL_LIBS
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_io_canvas
 
 # The XTSMGRAPHICS sixel-ceiling clamp (xterm oversized-sixel discard fix)
@@ -52,7 +59,7 @@ cc -o /tmp/test_sst_io_canvas $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $X
 cc -o /tmp/test_sst_io_gfxmax $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
    "$HERE/test_sst_io_gfxmax.c" "$DOOR/door/sst_io.c" \
    "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
-   -lpthread -lm $JXL_LIBS
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_io_gfxmax
 
 # XTVERSION-identified xterm: an exact canvas report with no XTSMGRAPHICS
@@ -61,8 +68,54 @@ cc -o /tmp/test_sst_io_gfxmax $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $X
 cc -o /tmp/test_sst_io_xterm_ceiling $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
    "$HERE/test_sst_io_xterm_ceiling.c" "$DOOR/door/sst_io.c" \
    "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
-   -lpthread -lm $JXL_LIBS
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_io_xterm_ceiling
+
+# The audio probe needs a fresh sst_io session (file-static tier/settle
+# state, no reset), so it's its own binary rather than another case above.
+cc -o /tmp/test_sst_io_audio $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_io_audio.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_io_audio
+
+# The tone-only audio tier likewise needs a fresh session (the tier latches
+# once per process); its own binary for the same reason.
+cc -o /tmp/test_sst_io_audio_tone $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_io_audio_tone.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_io_audio_tone
+
+# The underrun re-prime dispatch likewise needs a fresh session (the stream
+# and its cushion state latch once per process); its own binary for the
+# same reason.
+cc -o /tmp/test_sst_io_audio_underrun $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_io_audio_underrun.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_io_audio_underrun
+
+# Audio must report ITS OWN share of the shared output FIFO, not the stage's
+# depth -- a parked video frame is not audio congestion (the comic-intro
+# dialogue-dropout defect) -- and the FIFO must stay strictly ordered on the
+# wire. Fresh session, own binary for the same reason as the others above.
+cc -o /tmp/test_sst_io_audio_backlog $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_io_audio_backlog.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_io_audio_backlog
+
+# A STILL screen must not silence the door: with no present() at all, fed PCM
+# still has to reach the wire (the comic-intro dialogue-gap defect -- the
+# module only flushes on PRIME release and stop, so if the door only flushes
+# from present(), a still panel leaves audio staged and unwritten). Fresh
+# session, own binary for the same reason as the others above.
+cc -o /tmp/test_sst_io_audio_static $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_io_audio_static.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_io_audio_static
 
 # Sysop "sixel_max" ini override beats even a reported XTSMGRAPHICS ceiling.
 # Needs a syncscumm.ini in CWD when sst_io_init() runs, so this one is
@@ -70,8 +123,49 @@ cc -o /tmp/test_sst_io_xterm_ceiling $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../term
 cc -o /tmp/test_sst_io_sixelmax_override $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
    "$HERE/test_sst_io_sixelmax_override.c" "$DOOR/door/sst_io.c" \
    "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
-   -lpthread -lm $JXL_LIBS
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 SIXELMAX_TMPDIR=$(mktemp -d)
-trap 'rm -rf "$SIXELMAX_TMPDIR"' EXIT
+INI_TMPDIR=$(mktemp -d)
+TUNE_TMPDIR=$(mktemp -d)
+HEADROOM_TMPDIR=$(mktemp -d)
+trap 'rm -rf "$SIXELMAX_TMPDIR" "$INI_TMPDIR" "$TUNE_TMPDIR" "$HEADROOM_TMPDIR"' EXIT
 printf 'sixel_max = 800\n' > "$SIXELMAX_TMPDIR/syncscumm.ini"
 (cd "$SIXELMAX_TMPDIR" && /tmp/test_sst_io_sixelmax_override)
+
+# Sysop "[audio] enabled = false" must cost the uplink NOTHING on a terminal
+# that could have played the stream -- including no per-PCM-block re-read of
+# syncscumm.ini (a per-mixer-tick SMB open/close storm on this door's usual
+# CIFS-mounted startup_dir). -Wl,--wrap=fopen redirects every fopen() call in
+# sst_io.c to the test's __wrap_fopen(), which counts the syncscumm.ini opens
+# and forwards to the real fopen() via __real_fopen() -- so the door's actual
+# ini reads are unchanged, only counted. Same CWD-sensitive pattern as the
+# sixel_max override above: its own temp dir seeded with the ini.
+cc -o /tmp/test_sst_io_audio_ini_off $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   -Wl,--wrap=fopen \
+   "$HERE/test_sst_io_audio_ini_off.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+printf '[audio]\nenabled = false\n' > "$INI_TMPDIR/syncscumm.ini"
+(cd "$INI_TMPDIR" && /tmp/test_sst_io_audio_ini_off)
+
+# ... and a tuning key must change the bytes, not just parse: "chunk_ms = 50"
+# doubles how many chunks a 1s feed closes, which the 100ms default cannot
+# reach. Fresh session, own binary + temp dir for the same reasons.
+cc -o /tmp/test_sst_io_audio_ini_tune $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_io_audio_ini_tune.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+printf '[audio]\nchunk_ms = 50\n' > "$TUNE_TMPDIR/syncscumm.ini"
+(cd "$TUNE_TMPDIR" && /tmp/test_sst_io_audio_ini_tune)
+
+# ... and the pre-encode headroom is the one tuning key whose whole effect is on
+# the sample VALUES, so no other audio test here can notice it going missing.
+# This one therefore DECODES the A;LoadBlob the door emitted and reads the peak
+# back: "headroom = 50" must put a full-scale sine on the wire at half scale.
+# Fresh session, own binary + temp dir for the same reasons.
+cc -o /tmp/test_sst_io_audio_ini_headroom $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_io_audio_ini_headroom.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+printf '[audio]\nheadroom = 50\n' > "$HEADROOM_TMPDIR/syncscumm.ini"
+(cd "$HEADROOM_TMPDIR" && /tmp/test_sst_io_audio_ini_headroom)

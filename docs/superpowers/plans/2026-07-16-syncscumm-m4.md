@@ -2281,13 +2281,47 @@ whatever memory covers the termgfx library plan.
 
 ---
 
+## Filed follow-up: the audio path has no `g_need_st` resync
+
+**Found by Task 8's review (2026-07-16). Real exposure, deliberately
+deferred — filed here so it is not lost.**
+
+`out_put()` drops the REMAINDER of a call when its 256KB stage stays full
+after a flush attempt (`sst_io.c:203-211`). The drop is byte-granular. For
+a video frame that is a dropped frame; for audio it strands **a truncated
+APC with no ST** on the wire — a different and worse failure.
+
+`present()` already has a rescue for this shape: it arms `g_need_st` by
+diffing `g_dropped_frames` across its own emit. **The audio path has no
+equivalent** — `termgfx_stream_feed()` can have its bytes dropped mid-APC
+with nothing noticing.
+
+Why it is survivable today (the bound, not a fix): the streaming module's
+two-strike/48KB backlog rule drops at the INPUT before audio can fill the
+stage itself; `present()` gates on `g_out_len > 0`; and the next audio
+APC's own ST closes the dangling one. So it needs a ~250KB in-flight frame
+to bite.
+
+**The fix, when it is done:** snapshot `g_dropped_frames` around
+`termgfx_stream_feed()` and arm `g_need_st`/`g_have_last` on a delta.
+Note the original deferral reason ("the statics are ~700 lines lower and
+hoisting them is risky") was **wrong** and should not be repeated:
+`g_dropped_frames` is at `sst_io.c:177`, already above the audio block.
+Only `g_have_last`/`g_need_st` sit below, and a forward-declared
+`static void sst_present_resync(void);` defined beside them is exactly the
+pattern `sst_pace_ack()` and `sst_audio_underrun()` already use in this
+same file. It is a small edit, not a big one.
+
+---
+
 ## Deferred / explicitly out of scope
 
 - Any audio for Foot/xterm (no transport exists).
-- In-door volume/mute hotkeys (SyncTERM's client-side volume serves).
-  Note the extracted module carries syncretro's volume/mute/pause/reset
-  entry points, which have **no call sites in either door** — they are
-  untested-by-use.
+- In-door volume/mute hotkeys for **SyncSCUMM** (SyncTERM's client-side
+  volume serves). The extracted module carries syncretro's volume-step/
+  pause/reset entry points, which stay live and exercised on syncretro's
+  side ('+'/'-', door screens, Ctrl-R); SyncSCUMM simply calls none of
+  them. Only the `_volume`/`_muted` getters are uncalled anywhere.
 - Automatic intro skipping on silent terminals (user chose: keep playing,
   rely on Esc).
 - Sourcing floppy-version intro text for BASS's CD comic (the CD release

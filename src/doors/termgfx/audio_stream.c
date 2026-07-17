@@ -214,6 +214,11 @@ termgfx_stream_create(const termgfx_stream_cfg_t *cfg, const termgfx_stream_io_t
 	         cfg->name == NULL ? "termgfx" : cfg->name);
 	snprintf(s->prefix, sizeof s->prefix, "%s",
 	         cfg->cache_prefix == NULL ? "s" : cfg->cache_prefix);
+	// NEVER memcpy or assign this struct (`termgfx_stream_t tmp = *s;`): these
+	// two point INTO it, at our own copies of the caller's strings, so a
+	// bitwise copy would leave the clone's cfg aliasing the original's
+	// buffers. Safe as written only because the type is opaque and never
+	// copied -- keep it that way.
 	s->cfg.name         = s->name;
 	s->cfg.cache_prefix = s->prefix;
 

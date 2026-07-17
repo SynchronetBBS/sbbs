@@ -11,8 +11,9 @@ GAME="$HERE/games/bass"
 [ -f "$GAME/sky.dsk" ] && [ -f "$GAME/sky.dnr" ] || { echo "FAIL: run test/fetch_bass.sh first"; exit 1; }
 DATA="$DOOR/scummvm/dists/engine-data"
 
-# (a) No sysop ini, no user "subtitles" key at all -> auto, and with no
-# audio path until M4 (sst_io_audio_available() stubbed 0) that means on.
+# (a) No sysop ini, no user "subtitles" key at all -> auto. These boots are
+# headless (no terminal fd), so there is no session to probe for audio and
+# sst_io_audio_available() reports none immediately -> subtitles on.
 CWD_A=$(mktemp -d)
 DUMP_A=$(mktemp -d)
 INI_A=$(mktemp)

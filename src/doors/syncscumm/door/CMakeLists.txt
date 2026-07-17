@@ -37,3 +37,29 @@ if(NOT WITHOUT_JPEG_XL)
         file(WRITE ${CMAKE_BINARY_DIR}/jxl_libs.txt "${JPEG_XL_LIBRARIES}")
     endif()
 endif()
+
+# ScummVM's make links libtermgfx.a by hand (build.sh appends to config.mk),
+# so every external the archive needs must be transcribed across that seam --
+# CMake's PUBLIC link interface does not survive it. termgfx's Ogg/Opus encode
+# (audio.c -> libsndfile) is pulled in the moment sst_io.c references any
+# termgfx_audio_* symbol, so hand build.sh the flags the same way the JXL
+# handoff above does.
+get_target_property(_tg_libs termgfx INTERFACE_LINK_LIBRARIES)
+set(_snd_libs "")
+if(TARGET SndFile::sndfile)
+    set(_snd_out "")
+    get_target_property(_snd_loc SndFile::sndfile IMPORTED_LOCATION)
+    if(_snd_loc)
+        set(_snd_out "${_snd_loc}")
+    else()
+        set(_snd_out "-lsndfile")
+    endif()
+    set(_snd_libs "${_snd_out}")
+elseif(_tg_libs MATCHES "(^|;)sndfile(;|$)")
+    # pkg-config path (termgfx/CMakeLists.txt's fallback branch, taken on this
+    # host): termgfx links the bare library name "sndfile" straight from
+    # SNDFILE_LIBRARIES, so no SndFile::sndfile target ever gets created --
+    # the check above alone would silently miss it.
+    set(_snd_libs "-lsndfile")
+endif()
+file(WRITE ${CMAKE_BINARY_DIR}/sndfile_libs.txt "${_snd_libs}")

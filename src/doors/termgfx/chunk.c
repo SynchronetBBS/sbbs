@@ -66,10 +66,18 @@ termgfx_chunk_append(termgfx_chunk_t *c, const int16_t *pcm, size_t frames)
 	return frames;
 }
 
+// A zero-cap chunk (init() OOM'd, or free()'d) is NOT full: `len >= cap` is
+// true when both are 0, and that lie hangs the caller. feed()'s loop tests
+// full() BEFORE its `used == 0` guard, so a full-reporting empty chunk sends it
+// round forever -- append copies nothing, chunk_closed() sees len == 0 and
+// returns, reset() no-ops, and the frame counter never moves. The state machine
+// only avoids this today because caps() pairs chunk_free() with state = OFF,
+// i.e. the guarantee lives in another function (now another translation unit).
+// Keep it here, where the guard is.
 int
 termgfx_chunk_full(const termgfx_chunk_t *c)
 {
-	return c->len >= c->cap;
+	return c->cap > 0 && c->len >= c->cap;
 }
 
 int

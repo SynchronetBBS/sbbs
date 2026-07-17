@@ -42,8 +42,8 @@
 #include "backends/saves/default/default-saves.h"
 #include "backends/timer/default/default-timer.h"
 #include "backends/events/default/default-events.h"
-#include "backends/mixer/null/null-mixer.h"
 #include "backends/graphics/null/null-graphics.h"
+#include "audio_term.h"
 #include "video_dump.h"
 #include "video_term.h"
 #include "backends/fs/posix/posix-fs-factory.h"
@@ -141,8 +141,12 @@ static void resolveSubtitles() {
 	// to kSessionDomain -- the same domain ScummVM's own "-n"/"--subtitles"
 	// command-line flag would use for this key (base/commandLine.cpp's
 	// sessionSettings[] list), i.e. never saved to disk, exactly like a
-	// command-line override. sst_io_audio_available() always returns 0 for
-	// now (no audio path until M4), so this currently always resolves on.
+	// command-line override. sst_io_audio_available() answers for the
+	// SESSION, not just the terminal: a sysop "[audio] enabled = false"
+	// answers instantly with no probe at all, otherwise it briefly waits for
+	// the terminal's capability reply (see sst_io.h) -- a confirmed digital
+	// audio tier resolves off, anything else -- tone-only, silent, headless
+	// -- resolves on.
 	bool audio = sst_io_audio_available() != 0;
 	ConfMan.setBool("subtitles", !audio, Common::ConfigManager::kSessionDomain);
 	fputs(audio ? "syncscumm: subtitles auto -> off (audio available this session)\n"
@@ -155,7 +159,12 @@ void OSystem_Synchronet::initBackend() {
 	_savefileManager = new DefaultSaveFileManager();
 	_timerManager = new DefaultTimerManager();
 	_eventManager = new DefaultEventManager(this);
-	_mixerManager = new NullMixerManager();
+	// After resolveSubtitles(), deliberately: that is what decides whether
+	// this session will hear audio -- the sysop switch first, with no
+	// blocking at all when it is off, otherwise a bounded wait for the
+	// terminal's capability reply (see sst_io.h) -- and the answer decides
+	// whether sst_io_audio_stream() streams or discards what we pull.
+	_mixerManager = new SyncscummMixerManager();
 	_mixerManager->init();
 	_graphicsManager = new SyncscummTermGraphicsManager();
 	BaseBackend::initBackend();
@@ -163,7 +172,7 @@ void OSystem_Synchronet::initBackend() {
 
 bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 	((DefaultTimerManager *)getTimerManager())->checkTimers();
-	((NullMixerManager *)_mixerManager)->update(1);
+	((SyncscummMixerManager *)_mixerManager)->tick();
 
 	sst_io_pump();
 	if (sst_io_quit_requested() || sst_io_hung_up()) {

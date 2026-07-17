@@ -7,6 +7,7 @@
 
 #include "video_term.h"
 
+#include "audio_term.h"
 #include "sst_quant.h"
 
 SyncscummTermGraphicsManager::SyncscummTermGraphicsManager()
@@ -219,6 +220,17 @@ void SyncscummTermGraphicsManager::compose() {
 }
 
 void SyncscummTermGraphicsManager::updateScreen() {
+	/* BASS's intro drives updateScreen() in a tight loop without ever
+	 * pumping events, so a pollEvent-only tick would starve audio during
+	 * the exact cutscene M4 exists for. tick() is cheap and internally
+	 * rate-limited by the wall clock, so ticking from both sites is safe.
+	 * Reached via the module's own pointer, not g_system: getMixerManager()
+	 * is ModularBackend's, not OSystem's. Ahead of the no-change early
+	 * returns below -- a still frame is exactly when audio must keep
+	 * flowing. */
+	if (g_syncscumm_mixer != NULL)
+		g_syncscumm_mixer->tick();
+
 	/* Dump-vs-present split: the inherited PPM dump (M1's boot-test
 	 * frames) is game-surface-only and must fire strictly on real
 	 * _screen changes (_dirty) -- a cursor-only move/show/sprite change

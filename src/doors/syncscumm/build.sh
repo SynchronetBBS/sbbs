@@ -45,6 +45,13 @@ if [ -f "$HERE/build/libs/jxl_libs.txt" ]; then
 		esac
 	done >> config.mk
 fi
+# libsndfile: termgfx's Ogg/Opus encode (M4 audio). Same seam as JXL above --
+# LIBS, because ScummVM's make does the final link and never saw CMake's
+# PUBLIC link interface. May be an absolute path or an -l token.
+if [ -s "$HERE/build/libs/sndfile_libs.txt" ]; then
+	SNDFILE_LIBS=$(cat "$HERE/build/libs/sndfile_libs.txt")
+	echo "LIBS += $SNDFILE_LIBS" >> config.mk
+fi
 # VER_REV= : the vendored tree lives inside the sbbs repo; without this,
 # ScummVM's version probe appends the HOST repo's git state ("dirty").
 make -j"$(nproc)" VER_REV=

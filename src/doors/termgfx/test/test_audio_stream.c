@@ -116,9 +116,21 @@ int main(void)
 		CHECK(bad.cap == 0);
 		CHECK(termgfx_chunk_append(&bad, one, 1) == 0);   /* copies nothing */
 		CHECK(bad.len == 0);
+		/* A zero-cap chunk must NOT report full: len >= cap is true when both
+		 * are 0, and the state machine's feed() loop tests full() before its
+		 * used == 0 guard -- a full-reporting empty chunk spins it forever,
+		 * hanging the mixer tick and the game. Nor is it silent: silence is a
+		 * property of a FULL chunk (audio_stream.h). */
+		CHECK(termgfx_chunk_full(&bad) == 0);
+		CHECK(termgfx_chunk_is_silent(&bad) == 0);
 		termgfx_chunk_reset(&bad);
 		termgfx_chunk_free(&bad);
 		termgfx_chunk_free(&bad);                          /* idempotent */
+		/* ...and the same holds for a FREED chunk, which is how the state
+		 * machine actually reaches cap == 0 (caps() frees on a tier it cannot
+		 * stream). */
+		CHECK(termgfx_chunk_full(&bad) == 0);
+		CHECK(termgfx_chunk_is_silent(&bad) == 0);
 	}
 
 	termgfx_chunk_free(&c);
@@ -175,6 +187,32 @@ int main(void)
 		CHECK(c.buf[0] == 1234 && c.buf[3] == 1234);
 		termgfx_chunk_free(&c);
 		free(batch);
+	}
+
+	/* channels is CLAMPED to 1..2, and the clamp is load-bearing: append()'s
+	 * else branch memcpy's frames * 2 samples, so a chunk that recorded
+	 * channels == 6 while its buf was sized for 2 would be written past its
+	 * end. Under-range clamps up to mono for the same reason -- buf is sized
+	 * cap * channels either way. */
+	{
+		termgfx_chunk_t c;
+		int16_t   *batch;
+
+		CHECK(termgfx_chunk_init(&c, 4, 6) == 1);
+		CHECK(c.channels == 2);        /* not 6: buf holds cap * 2 samples */
+		batch = stereo(4, 321);
+		CHECK(termgfx_chunk_append(&c, batch, 4) == 4);
+		CHECK(c.buf[0] == 321 && c.buf[7] == 321);   /* both channels kept */
+		termgfx_chunk_free(&c);
+		free(batch);
+
+		CHECK(termgfx_chunk_init(&c, 4, 0) == 1);
+		CHECK(c.channels == 1);        /* not 0: that would size buf at zero */
+		termgfx_chunk_free(&c);
+
+		CHECK(termgfx_chunk_init(&c, 4, -3) == 1);
+		CHECK(c.channels == 1);
+		termgfx_chunk_free(&c);
 	}
 
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "ok", failures);

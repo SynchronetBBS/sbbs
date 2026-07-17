@@ -159,10 +159,11 @@ if(NOT WIN32)
 endif()
 
 # ---------------------------------------------------------------------------
-# Unit tests. Opt-in: cmake -DSYNCRETRO_TESTS=ON. These link no termgfx and no
-# core -- they are pure, and test_keypad.c in particular is the only gate we
-# have on the keypad digit map, because exercising a real cartridge needs the
-# BIOS (see M2_INPUT.md sec 7).
+# Unit tests. Opt-in: cmake -DSYNCRETRO_TESTS=ON. No core is ever linked, and
+# the first three link no termgfx either -- they are pure (test_audio_bytes is
+# the exception; see its own note below). test_keypad.c in particular is the
+# only gate we have on the keypad digit map, because exercising a real
+# cartridge needs the BIOS (see M2_INPUT.md sec 7).
 # ---------------------------------------------------------------------------
 option(SYNCRETRO_TESTS "Build the SyncRetro unit tests" OFF)
 if(SYNCRETRO_TESTS)

@@ -21,11 +21,6 @@
 #define SR_AUDIO_CH        2
 #define SR_AUDIO_SLOT      0
 
-/* The sample rate is the CORE's, not a constant -- FreeIntv mixes at 44100,
- * fceumm at 48000 -- and it arrives with the AV info, i.e. only after the game
- * is loaded. This is what a core is fallen back to when it reports nonsense. */
-#define SR_AUDIO_RATE_FALLBACK 44100
-
 /* Read config. No allocation, no I/O, and no rate (the core is not loaded yet).
  * Call after sr_config_apply(). */
 void   sr_audio_init(void);

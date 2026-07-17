@@ -103,14 +103,46 @@ Enter = left click, Tab = right click.
 
 ## Audio path
 
-ScummVM's mixer hands the backend one mixed PCM stream — music (AdLib/MT-32
-synthesized engine-side), speech, SFX — so iMUSE and talkie versions come
-for free. New work is **continuous streaming** over the audio APCs (the
-siblings do one-shots and looped tracks): chunk mixer output (~1-2 s),
-encode OGG/Opus with termgfx's encoder, C;S + Load + Queue each chunk onto
-one channel — the FIFO plays chunks gapless — pacing uploads against
-playback with a small prefetch depth so audio never starves video. Probe
-once; no libsndfile → silent tier, like the siblings.
+**Shipped in M4.** ScummVM's mixer hands the backend one mixed PCM stream —
+music (AdLib/MT-32 synthesized engine-side), speech, SFX — so iMUSE and
+talkie versions come for free.
+
+The continuous-streaming machinery is **not this door's**: it is
+`termgfx/audio_stream.{c,h}` + `termgfx/chunk.c`, shared with SyncRetro (which
+had the same shape first — a mixed stream with no useful per-sound boundary —
+and where it was originally built and then extracted). The chunk accumulator,
+silence cache, cushion, backlog policy, blob path and underrun re-prime all
+live there. `door/sst_io.c` supplies only the door's half: the put/flush/
+backlog output seam and the session's config.
+
+What actually ships, per session:
+
+- 100 ms chunks of the mixer's genuine **stereo** PCM at 22050 Hz, Opus-encoded
+  (VBR quality 0.15), each `C;S` + `A;Load` + `A;Queue`d onto channel 2 — the
+  FIFO plays them back to back. CTerm ≥ 1.329 takes them inline via `A;LoadBlob`
+  instead, with no cache-file churn at all.
+- A **3-chunk (~300 ms) cushion** before playback starts. It is both the latency
+  budget and the whole jitter tolerance — a FIFO fed one chunk at a time from
+  empty underruns on the first stutter — so an underrun re-primes rather than
+  resumes.
+- **Channel volume 70, not 100**: the stream is already mixed and SyncTERM's
+  mixer soft-clips, so unity distorts. A mute is never spelled `volume = 0`
+  (SyncTERM clamps 0 to −60 dB and bakes it into the channel's entry volume);
+  the module stops sending instead.
+- The stream opens **lazily on the first PCM**, once the capability probe has
+  answered — a stream created against an unknown tier would either drop the
+  cushion's first chunks or emit to a terminal that cannot play them. Tier 1
+  (libsndfile) streams; tone-only or absent degrades to silence, and
+  `subtitles = auto` turns subtitles on for exactly those sessions.
+- Sysop-tunable via `syncscumm.ini`'s `[audio]` section (`enabled`, `quality`,
+  `volume`, `chunk_ms`, `prebuffer`); the module clamps every value, so a
+  nonsense setting costs the default, never the session.
+
+Full rationale — the measurements, the rejected alternatives, the transport
+choice — is in
+[`docs/superpowers/specs/2026-07-16-syncscumm-m4-audio-design.md`](../../../docs/superpowers/specs/2026-07-16-syncscumm-m4-audio-design.md).
+**Read its "Amendment 2026-07-16" section first: on transport it supersedes the
+spec's own body**, which is left intact for its reasoning rather than rewritten.
 
 ## Saves & per-user state
 
