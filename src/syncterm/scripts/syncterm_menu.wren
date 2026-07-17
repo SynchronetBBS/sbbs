@@ -18,6 +18,8 @@ class Menu {
   // previous generation remains active.  password may be null.
   foreign static load(password)
   foreign static quickConnect(url)
+  // A detached Surface snapshot, or null when no completed session exists.
+  foreign static offlineScrollback
   foreign static statusMessage(status)
   foreign static entries
   foreign static defaults
@@ -26,6 +28,15 @@ class Menu {
   foreign static create(name)
   foreign static copy(source, name)
   foreign static sort()
+  // Sort fields are [fieldId, displayName, defaultReversed].  Profiles
+  // are [name, signedFieldIdList]; negating an ID toggles its direction.
+  foreign static sortFields
+  foreign static sortProfiles
+  foreign static activeSortProfile
+  foreign static setActiveSortProfile(index)
+  foreign static addSortProfile(index, name, order)
+  foreign static updateSortProfile(index, name, order)
+  foreign static deleteSortProfile(index)
   // Catalog rows are [numeric value, display name].
   foreign static connectionTypes
   foreign static defaultPort(connectionType)

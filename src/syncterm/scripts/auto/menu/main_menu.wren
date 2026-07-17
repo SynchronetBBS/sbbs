@@ -1,8 +1,10 @@
-import "syncterm" for Key, Screen
+import "syncterm" for KeyEvent, Key, Screen
 import "syncterm_menu" for Menu, MenuReadStatus
 import "menu_ui" for MenuUi
 import "menu_bbs_editor" for BbsEditor
 import "menu_settings_ui" for SettingsMenu
+import "menu_scrollback" for OfflineScrollbackView
+import "menu_sort_profiles" for SortProfiles
 import "ui_app" for App
 import "ui_widget" for Widget, Rect
 import "ui_draw" for Painter
@@ -56,6 +58,25 @@ class EntrySummary is Widget {
   }
 }
 
+class DirectoryList is ListView {
+  construct new(onCycle) {
+    super()
+    _onCycle = onCycle
+  }
+
+  handle(event) {
+    if (event is KeyEvent && event.codepoint == 0x3C) {
+      _onCycle.call(-1)
+      return true
+    }
+    if (event is KeyEvent && event.codepoint == 0x3E) {
+      _onCycle.call(1)
+      return true
+    }
+    return super.handle(event)
+  }
+}
+
 class MainMenuApp {
   construct new(current, connected) {
     _app = App.new()
@@ -72,11 +93,16 @@ class MainMenuApp {
       ["Edit", Fn.new { edit_() }],
       ["New", Fn.new { add_() }],
       ["Delete", Fn.new { delete_() }],
+      ["Sort", Fn.new { sort_() }],
       ["Settings", Fn.new { settings_() }],
       [_connected ? "Close" : "Quick", Fn.new {
         if (_connected) exit_() else quick_()
       }]
     ]
+    if (!_connected) {
+      _bar.items.insert(_bar.items.count - 1,
+          ["Scrollback", Fn.new { OfflineScrollbackView.show(_app) }])
+    }
     _app.root.add(_bar)
 
     _directory = Pane.new()
@@ -85,7 +111,7 @@ class MainMenuApp {
     _directory.helpable = false
     _app.root.add(_directory)
 
-    _list = ListView.new()
+    _list = DirectoryList.new(Fn.new {|delta| cycleSort_(delta) })
     _list.onChange = Fn.new {|index, item|
       _selected = index >= 0 && index < _entries.count ? _entries[index] : null
       _summary.entry = _selected
@@ -111,9 +137,11 @@ class MainMenuApp {
     bind_(Key.ctrlE, Fn.new { edit_() })
     bind_(Key.insert, Fn.new { add_() })
     bind_(Key.delete, Fn.new { delete_() })
+    bind_(Key.ctrlS, Fn.new { sort_() })
     bind_(Key.f5, Fn.new { copy_() })
     bind_(Key.f6, Fn.new { paste_() })
     if (!_connected) bind_(Key.ctrlD, Fn.new { quick_() })
+    if (!_connected) bind_(Key.altB, Fn.new { OfflineScrollbackView.show(_app) })
     _app.root.focusedIndex = 1
     refresh_(current)
   }
@@ -161,6 +189,11 @@ class MainMenuApp {
       _selected = null
       _summary.entry = null
       updateStatus_()
+    }
+    var profiles = Menu.sortProfiles
+    var active = Menu.activeSortProfile
+    if (active >= 0 && active < profiles.count) {
+      _directory.title = "SyncTERM Directory - %(profiles[active][0])"
     }
   }
 
@@ -277,6 +310,21 @@ class MainMenuApp {
       var status = Menu.load(MainMenu.password)
       if (status == MenuReadStatus.ok) refresh_(preferred)
     }
+  }
+
+  sort_() {
+    var preferred = _selected == null ? null : _selected.name
+    SortProfiles.show(_app)
+    refresh_(preferred)
+  }
+
+  cycleSort_(delta) {
+    var profiles = Menu.sortProfiles
+    if (profiles.count == 0) return
+    var next = (Menu.activeSortProfile + delta) % profiles.count
+    if (next < 0) next = next + profiles.count
+    var preferred = _selected == null ? null : _selected.name
+    if (Menu.setActiveSortProfile(next)) refresh_(preferred)
   }
 
   exit_() {

@@ -1,6 +1,7 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
 #include <assert.h>
+#include <limits.h>
 #include <dirwrap.h>
 #include <filewrap.h>  /* chsize */
 #include <ini_file.h>
@@ -992,6 +993,196 @@ find_profile_by_name(const char *name)
 			return (int)i;
 	}
 	return -1;
+}
+
+size_t
+bbslist_sort_field_count(void)
+{
+	return (sizeof(sort_order) / sizeof(sort_order[0])) - 2;
+}
+
+const char *
+bbslist_sort_field_name(int field)
+{
+	if (field == INT_MIN)
+		return NULL;
+	int index = abs(field);
+	if (index <= 0 || (size_t)index >=
+	    sizeof(sort_order) / sizeof(sort_order[0]))
+		return NULL;
+	return sort_order[index].name;
+}
+
+bool
+bbslist_sort_field_reversed(int field)
+{
+	if (bbslist_sort_field_name(field) == NULL)
+		return false;
+	int index = abs(field);
+	return (field < 0) !=
+	    ((sort_order[index].flags & SORT_ORDER_REVERSED) != 0);
+}
+
+size_t
+bbslist_sort_profile_count(void)
+{
+	size_t count = 0;
+	if (sort_profiles != NULL) {
+		while (sort_profiles[count] != NULL)
+			count++;
+	}
+	return count;
+}
+
+const char *
+bbslist_sort_profile_name(size_t index)
+{
+	return index < bbslist_sort_profile_count() ?
+	    sort_profiles[index]->name : NULL;
+}
+
+size_t
+bbslist_sort_profile_order(size_t index, int *order, size_t capacity)
+{
+	if (index >= bbslist_sort_profile_count() || order == NULL ||
+	    capacity == 0)
+		return 0;
+	int parsed[sizeof(sort_order) / sizeof(sort_order[0])] = {0};
+	parse_sort_value(sort_profiles[index]->value, parsed,
+	    sizeof(parsed) / sizeof(parsed[0]));
+	size_t count = 0;
+	while (count < capacity && count <
+	    sizeof(parsed) / sizeof(parsed[0]) &&
+	    bbslist_sort_field_name(parsed[count]) != NULL) {
+		order[count] = parsed[count];
+		count++;
+	}
+	return count;
+}
+
+int
+bbslist_active_sort_profile(void)
+{
+	return active_profile;
+}
+
+static bool
+valid_profile_order(const int *order, size_t count)
+{
+	if (order == NULL || count == 0 ||
+	    count > bbslist_sort_field_count())
+		return false;
+	for (size_t i = 0; i < count; i++) {
+		if (bbslist_sort_field_name(order[i]) == NULL)
+			return false;
+		for (size_t j = 0; j < i; j++) {
+			if (abs(order[i]) == abs(order[j]))
+				return false;
+		}
+	}
+	return true;
+}
+
+static bool
+profile_name_available(const char *name, size_t except)
+{
+	if (name == NULL || name[0] == 0 || strlen(name) >
+	    SORT_PROFILE_NAME_MAX)
+		return false;
+	for (size_t i = 0; i < bbslist_sort_profile_count(); i++) {
+		if (i != except && stricmp(sort_profiles[i]->name, name) == 0)
+			return false;
+	}
+	return true;
+}
+
+static char *
+profile_order_string(const int *order, size_t count)
+{
+	int terminated[sizeof(sort_order) / sizeof(sort_order[0])] = {0};
+	memcpy(terminated, order, count * sizeof(*order));
+	return serialize_sort_order(terminated);
+}
+
+bool
+bbslist_set_active_sort_profile(size_t index)
+{
+	if (index >= bbslist_sort_profile_count())
+		return false;
+	active_profile = (int)index;
+	parse_sort_value(sort_profiles[index]->value, sortorder,
+	    sizeof(sortorder) / sizeof(sortorder[0]));
+	write_sort_profiles();
+	return true;
+}
+
+bool
+bbslist_add_sort_profile(size_t index, const char *name,
+    const int *order, size_t count)
+{
+	size_t profile_count = bbslist_sort_profile_count();
+	if (safe_mode || index > profile_count ||
+	    !profile_name_available(name, SIZE_MAX) ||
+	    !valid_profile_order(order, count))
+		return false;
+	char *value = profile_order_string(order, count);
+	if (value == NULL)
+		return false;
+	named_string_t *inserted = namedStrListInsert(&sort_profiles, name,
+	    value, index);
+	free(value);
+	if (inserted == NULL)
+		return false;
+	if ((size_t)active_profile >= index)
+		active_profile++;
+	write_sort_profiles();
+	return true;
+}
+
+bool
+bbslist_update_sort_profile(size_t index, const char *name,
+    const int *order, size_t count)
+{
+	if (safe_mode || index >= bbslist_sort_profile_count() ||
+	    !profile_name_available(name, index) ||
+	    !valid_profile_order(order, count))
+		return false;
+	char *new_name = strdup(name);
+	char *new_value = profile_order_string(order, count);
+	if (new_name == NULL || new_value == NULL) {
+		free(new_name);
+		free(new_value);
+		return false;
+	}
+	free(sort_profiles[index]->name);
+	free(sort_profiles[index]->value);
+	sort_profiles[index]->name = new_name;
+	sort_profiles[index]->value = new_value;
+	if ((int)index == active_profile) {
+		parse_sort_value(new_value, sortorder,
+		    sizeof(sortorder) / sizeof(sortorder[0]));
+	}
+	write_sort_profiles();
+	return true;
+}
+
+bool
+bbslist_delete_sort_profile(size_t index)
+{
+	size_t count = bbslist_sort_profile_count();
+	if (safe_mode || count <= 1 || index >= count)
+		return false;
+	if (!namedStrListDelete(&sort_profiles, index))
+		return false;
+	if (active_profile > (int)index)
+		active_profile--;
+	else if (active_profile == (int)index &&
+	    active_profile >= (int)(count - 1))
+		active_profile = (int)count - 2;
+	parse_sort_value(sort_profiles[active_profile]->value, sortorder,
+	    sizeof(sortorder) / sizeof(sortorder[0]));
+	write_sort_profiles();
+	return true;
 }
 
 /*

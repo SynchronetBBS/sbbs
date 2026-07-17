@@ -3294,6 +3294,12 @@ available in a connected VM.
   `MainMenu.run`, but `save()`, `rename()`, and `delete()` return
   `false`; use `Menu.create` for a durable entry.
 
+| Menu.offlineScrollback
+| Return a detached `Surface` copy of the most recently completed
+  session's linear scrollback, or `null` when none exists.  The copy
+  is safe to retain across later connections; it does not borrow the
+  process buffer which the next session may resize or replace.
+
 | Menu.statusMessage(status)
 | Return the host diagnostic String for a `MenuReadStatus` value.
 
@@ -3323,6 +3329,37 @@ available in a connected VM.
 
 | Menu.sort()
 | Reapply the configured BBS-list sort profiles.
+
+| Menu.sortFields
+| Return fresh `[fieldId, displayName, defaultReversed]` rows from the
+  host sort-field registry.  Field IDs are positive.  The Boolean says
+  that the field's normal profile direction is descending.
+
+| Menu.sortProfiles
+| Return fresh `[name, order]` rows.  `order` is a non-empty List of
+  unique signed field IDs; negating an ID toggles that field relative
+  to its `defaultReversed` direction.
+
+| Menu.activeSortProfile
+| Zero-based index of the active profile.
+
+| Menu.setActiveSortProfile(index)
+| Select and persist a profile, apply its order, and re-sort the loaded
+  directory.  Returns `false` for an invalid index.
+
+| Menu.addSortProfile(index, name, order)
+| Insert a profile.  Names are 1..19 bytes and case-insensitively
+  unique.  Returns `false` for invalid data, allocation failure, or
+  safe mode.
+
+| Menu.updateSortProfile(index, name, order)
+| Replace a profile's name and field order.  Updating the active
+  profile also re-sorts the loaded directory.  Returns `false` when
+  validation fails or SyncTERM is in safe mode.
+
+| Menu.deleteSortProfile(index)
+| Delete a profile and re-sort with the resulting active profile.
+  The last profile cannot be deleted.  Returns `false` on failure.
 |===
 
 `MenuReadStatus` constants are `ok`, `passwordRequired`,

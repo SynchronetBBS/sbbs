@@ -8,12 +8,14 @@
 #include "wren_bind_internal.h"
 #include "wren_bind_menu_fonts.h"
 #include "wren_bind_menu_settings.h"
+#include "wren_bind_screen.h"
 
 #include <math.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 struct wren_menu_bbs {
@@ -475,6 +477,38 @@ fn_Menu_quickConnect(WrenVM *vm)
 }
 
 static void
+fn_Menu_offlineScrollback(WrenVM *vm)
+{
+	if (scrollback_buf == NULL || scrollback_cols == 0 ||
+	    scrollback_lines == 0 || scrollback_cols > INT_MAX ||
+	    scrollback_lines > INT_MAX ||
+	    scrollback_lines > SIZE_MAX / scrollback_cols ||
+	    (size_t)scrollback_lines * scrollback_cols > INT_MAX ||
+	    (size_t)scrollback_lines * scrollback_cols >
+	    SIZE_MAX / sizeof(struct vmem_cell)) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	size_t count = (size_t)scrollback_cols * scrollback_lines;
+	struct vmem_cell *copy = malloc(count * sizeof(*copy));
+	if (copy == NULL) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	memcpy(copy, scrollback_buf, count * sizeof(*copy));
+	wrenEnsureSlots(vm, 2);
+	wrenGetVariable(vm, "syncterm", "Surface", 1);
+	struct wren_surface *surface = wrenSetSlotNewForeign(vm, 0, 1,
+	    sizeof(*surface));
+	surface->type = SWF_SURFACE;
+	surface->count = (int)count;
+	surface->buf = copy;
+	surface->width = (int)scrollback_cols;
+	surface->height = (int)scrollback_lines;
+	surface->borrowed = false;
+}
+
+static void
 push_indexed_names(WrenVM *vm, char *const *names, int first)
 {
 	wrenEnsureSlots(vm, 3);
@@ -654,6 +688,153 @@ fn_Menu_sort(WrenVM *vm)
 	wrenSetSlotNull(vm, 0);
 }
 
+static void
+fn_Menu_sortFields(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 4);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 1; i <= bbslist_sort_field_count(); i++) {
+		const char *name = bbslist_sort_field_name((int)i);
+		if (name == NULL)
+			continue;
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotDouble(vm, 2, (double)i);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotString(vm, 2, name);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotBool(vm, 2, bbslist_sort_field_reversed((int)i));
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_Menu_sortProfiles(WrenVM *vm)
+{
+	int order[64];
+	wrenEnsureSlots(vm, 4);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; i < bbslist_sort_profile_count(); i++) {
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotString(vm, 2, bbslist_sort_profile_name(i));
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotNewList(vm, 2);
+		size_t count = bbslist_sort_profile_order(i, order,
+		    sizeof(order) / sizeof(order[0]));
+		for (size_t j = 0; j < count; j++) {
+			wrenSetSlotDouble(vm, 3, order[j]);
+			wrenInsertInList(vm, 2, -1, 3);
+		}
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_Menu_activeSortProfile(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, bbslist_active_sort_profile());
+}
+
+static bool
+slot_sort_order(WrenVM *vm, int slot, int *order, size_t capacity,
+    size_t *count)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_LIST) {
+		wren_throw(vm, "sort profile order must be a List");
+		return false;
+	}
+	int length = wrenGetListCount(vm, slot);
+	if (length <= 0 || (size_t)length > capacity ||
+	    (size_t)length > bbslist_sort_field_count()) {
+		wren_throw(vm, "sort profile order has an invalid length");
+		return false;
+	}
+	wrenEnsureSlots(vm, slot + 2);
+	for (int i = 0; i < length; i++) {
+		wrenGetListElement(vm, slot, i, slot + 1);
+		int64_t field;
+		int64_t limit = (int64_t)bbslist_sort_field_count();
+		if (!slot_integer(vm, slot + 1, -limit, limit, &field))
+			return false;
+		order[i] = (int)field;
+	}
+	*count = (size_t)length;
+	return true;
+}
+
+static void
+fn_Menu_setActiveSortProfile(WrenVM *vm)
+{
+	int64_t index;
+	size_t count = bbslist_sort_profile_count();
+	if (count == 0 || !slot_integer(vm, 1, 0, (int64_t)count - 1,
+	    &index))
+		return;
+	bool success = bbslist_set_active_sort_profile((size_t)index);
+	if (success)
+		bbslist_model_sort(&menu_model);
+	wrenSetSlotBool(vm, 0, success);
+}
+
+static void
+fn_Menu_addSortProfile(WrenVM *vm)
+{
+	int64_t index;
+	size_t profiles = bbslist_sort_profile_count();
+	if (!slot_integer(vm, 1, 0, (int64_t)profiles, &index) ||
+	    wrenGetSlotType(vm, 2) != WREN_TYPE_STRING) {
+		if (wrenGetSlotType(vm, 2) != WREN_TYPE_STRING)
+			wren_throw(vm, "sort profile name must be a String");
+		return;
+	}
+	int order[64];
+	size_t count;
+	if (!slot_sort_order(vm, 3, order,
+	    sizeof(order) / sizeof(order[0]), &count))
+		return;
+	wrenSetSlotBool(vm, 0, bbslist_add_sort_profile((size_t)index,
+	    wrenGetSlotString(vm, 2), order, count));
+}
+
+static void
+fn_Menu_updateSortProfile(WrenVM *vm)
+{
+	int64_t index;
+	size_t profiles = bbslist_sort_profile_count();
+	if (profiles == 0 || !slot_integer(vm, 1, 0,
+	    (int64_t)profiles - 1, &index) ||
+	    wrenGetSlotType(vm, 2) != WREN_TYPE_STRING) {
+		if (wrenGetSlotType(vm, 2) != WREN_TYPE_STRING)
+			wren_throw(vm, "sort profile name must be a String");
+		return;
+	}
+	int order[64];
+	size_t count;
+	if (!slot_sort_order(vm, 3, order,
+	    sizeof(order) / sizeof(order[0]), &count))
+		return;
+	bool success = bbslist_update_sort_profile((size_t)index,
+	    wrenGetSlotString(vm, 2), order, count);
+	if (success && index == bbslist_active_sort_profile())
+		bbslist_model_sort(&menu_model);
+	wrenSetSlotBool(vm, 0, success);
+}
+
+static void
+fn_Menu_deleteSortProfile(WrenVM *vm)
+{
+	int64_t index;
+	size_t profiles = bbslist_sort_profile_count();
+	if (profiles == 0 || !slot_integer(vm, 1, 0,
+	    (int64_t)profiles - 1, &index))
+		return;
+	bool success = bbslist_delete_sort_profile((size_t)index);
+	if (success)
+		bbslist_model_sort(&menu_model);
+	wrenSetSlotBool(vm, 0, success);
+}
+
 struct binding {
 	const char *class_name;
 	bool is_static;
@@ -668,6 +849,7 @@ struct binding {
 static const struct binding bindings[] = {
 	{ "Menu", true, "load(_)", fn_Menu_load },
 	{ "Menu", true, "quickConnect(_)", fn_Menu_quickConnect },
+	{ "Menu", true, "offlineScrollback", fn_Menu_offlineScrollback },
 	{ "Menu", true, "statusMessage(_)", fn_Menu_statusMessage },
 	{ "Menu", true, "entries", fn_Menu_entries },
 	{ "Menu", true, "defaults", fn_Menu_defaults },
@@ -675,6 +857,13 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "create(_)", fn_Menu_create },
 	{ "Menu", true, "copy(_,_)", fn_Menu_copy },
 	{ "Menu", true, "sort()", fn_Menu_sort },
+	{ "Menu", true, "sortFields", fn_Menu_sortFields },
+	{ "Menu", true, "sortProfiles", fn_Menu_sortProfiles },
+	{ "Menu", true, "activeSortProfile", fn_Menu_activeSortProfile },
+	{ "Menu", true, "setActiveSortProfile(_)", fn_Menu_setActiveSortProfile },
+	{ "Menu", true, "addSortProfile(_,_,_)", fn_Menu_addSortProfile },
+	{ "Menu", true, "updateSortProfile(_,_,_)", fn_Menu_updateSortProfile },
+	{ "Menu", true, "deleteSortProfile(_)", fn_Menu_deleteSortProfile },
 	{ "Menu", true, "connectionTypes", fn_Menu_connectionTypes },
 	{ "Menu", true, "defaultPort(_)", fn_Menu_defaultPort },
 	{ "Menu", true, "addressFamilies", fn_Menu_addressFamilies },

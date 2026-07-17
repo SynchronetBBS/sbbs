@@ -204,6 +204,20 @@ extern enum iniCryptAlgo list_algo;
 extern int list_keysize;
 
 void init_sort_profiles(FILE *inifile);
+size_t bbslist_sort_field_count(void);
+const char *bbslist_sort_field_name(int field);
+bool bbslist_sort_field_reversed(int field);
+size_t bbslist_sort_profile_count(void);
+const char *bbslist_sort_profile_name(size_t index);
+size_t bbslist_sort_profile_order(size_t index, int *order,
+    size_t capacity);
+int bbslist_active_sort_profile(void);
+bool bbslist_set_active_sort_profile(size_t index);
+bool bbslist_add_sort_profile(size_t index, const char *name,
+    const int *order, size_t count);
+bool bbslist_update_sort_profile(size_t index, const char *name,
+    const int *order, size_t count);
+bool bbslist_delete_sort_profile(size_t index);
 void read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsname, int id, int type);
 void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
 bool read_list_password(const char *listpath, struct bbslist **list,
