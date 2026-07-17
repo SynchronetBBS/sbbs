@@ -17,6 +17,10 @@ stages:
       - xtrn/**/*.{c,h,cpp,hpp,mk}
       - exec/tests/**/*
       - "**/*.mk"
+      # The CI definition itself, so a commit that only edits CI config still
+      # runs one.  Without this a pipeline change cannot test itself: it stays
+      # unvalidated until someone happens to touch src/ or 3rdp/.
+      - .gitlab-ci*.yml
 
 include:
   - local: '.gitlab-ci-unix.yml'
