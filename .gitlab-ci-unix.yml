@@ -1263,7 +1263,12 @@ spec:
     # tests; this is the one job that turns them on and runs them.
     - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DTERMGFX_TESTS=ON
     - cmake --build build -j$(nproc 2>/dev/null || echo 4)
-    - cd build && ctest --output-on-failure
+    # --no-tests=error: ctest's default for an empty test set is to print
+    # "No tests were found!!!" and exit 0, so a job that runs nothing passes.
+    # This one did exactly that, green, from the commit that added it until
+    # the tests it names existed -- if TERMGFX_TESTS is ever renamed or the
+    # -D stops taking effect, the guard must go red, not quiet.
+    - ctest --test-dir build --output-on-failure --no-tests=error
   artifacts:
     name: "termgfx-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
@@ -1312,7 +1317,9 @@ spec:
     # initialized from the environment.
     - cmake -S . -B build -DSYNCRETRO_TESTS=ON
     - cmake --build build -j$(nproc 2>/dev/null || echo 4)
-    - ctest --test-dir build --output-on-failure
+    # See the [termgfx] job: ctest exits 0 on an empty test set, so without
+    # this the guard these three lines exist to be could itself go quiet.
+    - ctest --test-dir build --output-on-failure --no-tests=error
   artifacts:
     name: "syncretro-$[[ inputs.os ]]-$[[ inputs.platform ]]"
     paths:
