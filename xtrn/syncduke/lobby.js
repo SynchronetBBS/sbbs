@@ -23,8 +23,12 @@ var cfg = sd_load_config();
 
 // Run the door for a play session. `cmd` is sd_cmd()'s pre-cmdstr string;
 // bbs.cmdstr() expands the %-specifiers (socket, time, alias, ".exe") before exec.
+// `map` is the picked [map:*] entry (null = stock Duke), logged so the node log
+// names what was played -- the Terminal Server's own "Executing external program"
+// line only names the lobby. Same "X-" code, so one grep finds both.
 // Blocks until the door exits.
-function sd_play(cmd) {
+function sd_play(cmd, map) {
+	bbs.logline("X-", "Playing Duke Nukem 3D: " + (map ? map.key : "stock content"));
 	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN, SD_DIR);
 	// The door writes frames straight to the socket, bypassing Synchronet's console
 	// line counter, leaving it stale -- the next screen would fire an errant
@@ -85,7 +89,7 @@ function sd_solo() {
 	var pick = sd_pick_map();
 	if (pick.cancel)
 		return;
-	sd_play(sd_cmd(null, null, null, null, null, null, pick.map));
+	sd_play(sd_cmd(null, null, null, null, null, null, pick.map), pick.map);
 }
 
 // Pick what to play: stock Duke, or one of the sysop's [map:*] extras (user maps /
@@ -189,7 +193,7 @@ function sd_create() {
 		// joiner already has the peer address, so removing it before launch is safe (this
 		// restores the old remove-on-join behavior the claim-marker model changed).
 		sd_clear_game(entry);
-		sd_play(sd_cmd("master", port, null, lev.num, mode, cfg.dukematch, map));
+		sd_play(sd_cmd("master", port, null, lev.num, mode, cfg.dukematch, map), map);
 	} finally {
 		// Idempotent: covers the cancel/hangup return above and any unexpected throw out
 		// of the waiting room; a no-op on the joined path (already cleared before launch).
@@ -243,7 +247,7 @@ function sd_join_selected(sel) {
 		console.pause();
 		return;
 	}
-	sd_play(sd_cmd("join", null, sd_join_peer(sel), sel.level, sel.mode || "coop", cfg.dukematch, map));
+	sd_play(sd_cmd("join", null, sd_join_peer(sel), sel.level, sel.mode || "coop", cfg.dukematch, map), map);
 }
 
 // Controls reference -- an external, sysop-editable display file (Ctrl-A codes)

@@ -367,6 +367,7 @@ function jszm_door_main() {
   }
   var jszm_lastStory = null;             // last game played -> default selection on return to the menu
   var jszm_lastCat = null;               // last category used -> default selection in the category menu
+  var jszm_playTitle = null;             // title of the picked game -> the node log (null on the -file path)
   // Game chooser for one category directory: list its v3/4/5/8 story files via uselect.
   // `catName` (when categories are in use) is appended to the menu title. NOTE: uselect
   // prepends "Select " to the title, so we pass "a Game[...]", not "Select a Game".
@@ -385,7 +386,9 @@ function jszm_door_main() {
     }
     var sel = console.uselect(dflt);
     if (js.terminated || !bbs.online) return null;
-    return (sel >= 0 && sel < games.length) ? games[sel].path : null;
+    if (!(sel >= 0 && sel < games.length)) return null;
+    jszm_playTitle = games[sel].title;   // the resolved IFDB title, for the node log
+    return games[sel].path;
   }
   function countGames(dir) {             // cheap count for the category menu (no header reads / IFDB)
     var exts = ["*.z3", "*.z4", "*.z5", "*.z6", "*.z8"], n = 0, i;
@@ -517,6 +520,12 @@ function jszm_door_main() {
     var storyId = file_getname(storyPath).replace(/\.[^.]*$/, "")
                     .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
     if (!storyId.length) storyId = "story";
+    // The Terminal Server logs "Executing external program: Z-Machine" when it spawns
+    // the door, but the story is picked in here -- so the node log would otherwise never
+    // say what was played. Same "X-" code as the server's own line, so one grep finds
+    // both. The chooser leaves the resolved title behind; -file has no chooser, so
+    // prettify its filename the way the chooser would have.
+    bbs.logline("X-", "Playing Z-machine story: " + (jszm_playTitle || prettyName(storyPath)));
     showGameIntro(storyPath);   // optional per-game key/help splash before the engine takes the screen
     var game = new JSZM(readStory(storyPath));
     game.screenRows = console.screen_rows || 24;

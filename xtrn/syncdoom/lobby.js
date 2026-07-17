@@ -20,10 +20,18 @@ var cfg = sd_load_config();
 // ---------------------------------------------------------------------------
 
 // Build and run the door for a play session. 'connect' is "host:port" to join
-// (or null for single-player); extra and wsargs are arrays of extra flags and
-// the WAD args. bbs.cmdstr() expands the % specifiers before exec.
-function sd_play(connect, extra, wsargs)
+// (or null for single-player); extra is an array of extra flags and ws is the
+// picked WAD set. bbs.cmdstr() expands the % specifiers before exec.
+function sd_play(connect, extra, ws)
 {
+	var wsargs = sd_wadset_args(cfg, ws);
+
+	// The Terminal Server logs "Executing external program: SyncDOOM" when it
+	// spawns the lobby, but the WAD set is picked in here -- so the node log
+	// would otherwise never say what was actually played. Same "X-" code as the
+	// server's own line, so one grep finds both.
+	bbs.logline("X-", "Playing DOOM WAD set: " + ws.name);
+
 	// %H/%T = socket/time; %a = the alias, *lowercase* so cmdstr quotes
 	// it when it contains a space -- which routes external() through the shell
 	// (it sees the quote) so a multi-word alias survives as one argument. No -l:
@@ -269,7 +277,7 @@ function sd_solo()
 {
 	var ws = sd_pick_wadset("solo");
 	if (ws)
-		sd_play(null, [], sd_wadset_args(cfg, ws));
+		sd_play(null, [], ws);
 }
 
 function sd_mode_label(mode)
@@ -328,7 +336,7 @@ function sd_muster_go(entry, port, ws, mode, skill, K) {
 	else if (mode == "altdeath")
 		extra.push("-altdeath");
 	try {
-		sd_play(gl.creator_connect_host(cfg.net) + ":" + port, extra, sd_wadset_args(cfg, ws));
+		sd_play(gl.creator_connect_host(cfg.net) + ":" + port, extra, ws);
 	} finally {
 		gl.clear_muster(entry);                  // sweep .go + any leftover .wait.*
 	}
@@ -493,7 +501,7 @@ function sd_create()
 			soloextra.push("-deathmatch");
 		else if (mode == "altdeath")
 			soloextra.push("-altdeath");
-		sd_play(gl.creator_connect_host(cfg.net) + ":" + port, soloextra, sd_wadset_args(cfg, ws));
+		sd_play(gl.creator_connect_host(cfg.net) + ":" + port, soloextra, ws);
 		return;
 	}
 
@@ -573,7 +581,7 @@ function sd_muster_join(sel, ws) {
 				gl.remove_waiter(sel.file, joinid);
 				console.ctrlkey_passthru = oldctrl;
 				var dial = (addr && addr.length) ? addr : (sel.addr + ":" + sel.port);
-				sd_play(dial, ["-mustered"], sd_wadset_args(cfg, ws));
+				sd_play(dial, ["-mustered"], ws);
 				return;
 			}
 			if (!file_exists(sel.file) && gl.read_go(sel.file) === null) {
@@ -685,7 +693,7 @@ function sd_join_external()
 	console.print("Select the WAD set this game is using (must match the host):\r\n");
 	var ws = sd_pick_wadset();
 	if (ws)
-		sd_play(addr, [], sd_wadset_args(cfg, ws));
+		sd_play(addr, [], ws);
 }
 
 // Controls reference -- an external, sysop-editable display file (Ctrl-A codes)

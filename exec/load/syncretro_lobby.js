@@ -236,6 +236,13 @@ function syncretro_lobby_play(rom)
 	    + ' -title "' + (rom.label || rom.title) + '" -console "' + label + '"'
 	    + ' -home "' + home + '" "' + rom.path + '"';
 
+	/* The Terminal Server logs "Executing external program: <console>" when it
+	 * spawns the lobby; the cartridge is picked in here, so the node log would
+	 * otherwise never say what was played. Same "X-" code as the server's own
+	 * line (one grep finds both), and the same wording as the who's-online status
+	 * the door publishes from -title/-console above. */
+	bbs.logline("X-", "Playing " + (rom.label || rom.title) + " (" + label + ")");
+
 	started = time();
 	/* EX_NODISPLAY: on Windows, spawn the native door with CREATE_NO_WINDOW so
 	 * no per-session console window pops up on the BBS machine (xtrn.cpp) -- the
