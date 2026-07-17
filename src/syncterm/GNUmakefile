@@ -416,10 +416,12 @@ WREN_OBJS     := $(addprefix $(MTOBJODIR)$(DIRSEP),\
 
 OBJS   += $(WREN_OBJS)
 OBJS   += $(MTOBJODIR)$(DIRSEP)bbslist_model$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)menu_settings$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_menu_host$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_menu$(OFILE)
+OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_menu_settings$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_sftp$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_fs$(OFILE)
 OBJS   += $(MTOBJODIR)$(DIRSEP)wren_bind_screen$(OFILE)

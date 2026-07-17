@@ -131,6 +131,7 @@ extern const char * const bg_colour_enum[10];
 void parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults);
 char *get_syncterm_filename(char *fn, int fnlen, int type, bool shared);
 void load_settings(struct syncterm_settings *set);
+void resolve_list_path(struct syncterm_settings *set);
 int ciolib_to_screen(int screen);
 int screen_to_ciolib(int ciolib);
 bool check_exit(bool force);

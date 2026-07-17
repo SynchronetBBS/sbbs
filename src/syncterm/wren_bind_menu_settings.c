@@ -1,0 +1,831 @@
+#include "wren_bind_menu_settings.h"
+
+#include "bbslist.h"
+#include "ini_crypt.h"
+#include "menu_settings.h"
+#include "named_str_list.h"
+#include "syncterm.h"
+#include "webget.h"
+#include "wren_bind_internal.h"
+
+#include <ciolib.h>
+#include <limits.h>
+#include <math.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
+struct wren_menu_settings {
+	enum syncterm_wren_foreign type;
+	struct syncterm_settings settings;
+	uint64_t generation;
+	bool dirty;
+};
+
+static uint64_t settings_generation;
+
+void
+wren_menu_settings_bind_init(void)
+{
+	settings_generation = 1;
+}
+
+static void
+settings_allocate(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = wrenSetSlotNewForeign(vm, 0, 0,
+	    sizeof(*ws));
+	memset(ws, 0, sizeof(*ws));
+	ws->type = SWF_MENU_SETTINGS;
+}
+
+static void
+settings_finalize(void *data)
+{
+	(void)data;
+}
+
+static struct wren_menu_settings *
+settings_check(WrenVM *vm)
+{
+	if (slot_foreign_type(vm, 0) != SWF_MENU_SETTINGS) {
+		wren_throw(vm, "Settings: invalid receiver");
+		return NULL;
+	}
+	struct wren_menu_settings *ws = wrenGetSlotForeign(vm, 0);
+	if (ws->generation != settings_generation) {
+		wren_throw(vm,
+		    "Settings: stale snapshot; reacquire it from Menu.settings");
+		return NULL;
+	}
+	return ws;
+}
+
+static bool
+slot_string(WrenVM *vm, int slot, char *dest, size_t size)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_STRING) {
+		wren_throw(vm, "Settings: expected a String");
+		return false;
+	}
+	int length;
+	const char *value = wrenGetSlotBytes(vm, slot, &length);
+	if (length < 0 || (size_t)length >= size ||
+	    memchr(value, 0, (size_t)length) != NULL) {
+		wren_throw(vm, "Settings: String is too long or contains NUL");
+		return false;
+	}
+	memcpy(dest, value, (size_t)length);
+	dest[length] = 0;
+	return true;
+}
+
+static bool
+slot_integer(WrenVM *vm, int slot, uint64_t minimum, uint64_t maximum,
+    uint64_t *result)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_NUM) {
+		wren_throw(vm, "Settings: expected an integer Num");
+		return false;
+	}
+	double value = wrenGetSlotDouble(vm, slot);
+	if (!isfinite(value) || trunc(value) != value || value < minimum ||
+	    value > maximum) {
+		wren_throw(vm, "Settings: integer is outside the allowed range");
+		return false;
+	}
+	*result = (uint64_t)value;
+	return true;
+}
+
+static bool
+slot_bool(WrenVM *vm, int slot, bool *result)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_BOOL) {
+		wren_throw(vm, "Settings: expected a Bool");
+		return false;
+	}
+	*result = wrenGetSlotBool(vm, slot);
+	return true;
+}
+
+#define SETTINGS_STRING_PROPERTY(name, field)                          \
+	static void fn_Settings_##name(WrenVM *vm)                        \
+	{                                                                 \
+		struct wren_menu_settings *ws = settings_check(vm);          \
+		if (ws != NULL)                                               \
+			wrenSetSlotString(vm, 0, ws->settings.field);             \
+	}                                                                 \
+	static void fn_Settings_##name##_set(WrenVM *vm)                  \
+	{                                                                 \
+		struct wren_menu_settings *ws = settings_check(vm);          \
+		if (ws != NULL && slot_string(vm, 1, ws->settings.field,      \
+		    sizeof(ws->settings.field)))                              \
+			ws->dirty = true;                                        \
+	}
+
+#define SETTINGS_BOOL_PROPERTY(name, field)                            \
+	static void fn_Settings_##name(WrenVM *vm)                        \
+	{                                                                 \
+		struct wren_menu_settings *ws = settings_check(vm);          \
+		if (ws != NULL)                                               \
+			wrenSetSlotBool(vm, 0, ws->settings.field);               \
+	}                                                                 \
+	static void fn_Settings_##name##_set(WrenVM *vm)                  \
+	{                                                                 \
+		struct wren_menu_settings *ws = settings_check(vm);          \
+		bool value;                                                    \
+		if (ws != NULL && slot_bool(vm, 1, &value)) {                 \
+			ws->settings.field = value;                              \
+			ws->dirty = true;                                        \
+		}                                                             \
+	}
+
+#define SETTINGS_NUM_PROPERTY(name, field, minimum, maximum)           \
+	static void fn_Settings_##name(WrenVM *vm)                        \
+	{                                                                 \
+		struct wren_menu_settings *ws = settings_check(vm);          \
+		if (ws != NULL)                                               \
+			wrenSetSlotDouble(vm, 0, (double)ws->settings.field);     \
+	}                                                                 \
+	static void fn_Settings_##name##_set(WrenVM *vm)                  \
+	{                                                                 \
+		struct wren_menu_settings *ws = settings_check(vm);          \
+		uint64_t value;                                                \
+		if (ws != NULL && slot_integer(vm, 1, minimum, maximum,       \
+		    &value)) {                                                  \
+			ws->settings.field = value;                              \
+			ws->dirty = true;                                        \
+		}                                                             \
+	}
+
+SETTINGS_BOOL_PROPERTY(confirmClose, confirm_close)
+SETTINGS_BOOL_PROPERTY(promptSave, prompt_save)
+SETTINGS_BOOL_PROPERTY(invertWheel, invert_wheel)
+SETTINGS_STRING_PROPERTY(modemDevice, mdm.device_name)
+SETTINGS_STRING_PROPERTY(modemInit, mdm.init_string)
+SETTINGS_STRING_PROPERTY(modemDial, mdm.dial_string)
+SETTINGS_STRING_PROPERTY(listPath, stored_list_path)
+SETTINGS_STRING_PROPERTY(shellTerm, TERM)
+SETTINGS_NUM_PROPERTY(startupMode, startup_mode, SCREEN_MODE_CURRENT,
+    SCREEN_MODE_TERMINATOR - 1)
+SETTINGS_NUM_PROPERTY(cursorStyle, defaultCursor, ST_CT_DEFAULT,
+    ST_CT_SOLID_BLK)
+SETTINGS_NUM_PROPERTY(scrollbackLines, backlines, 1, INT_MAX)
+SETTINGS_NUM_PROPERTY(modemRate, mdm.com_rate, 0, UINT32_MAX)
+SETTINGS_NUM_PROPERTY(customRows, custom_rows, 14, 255)
+SETTINGS_NUM_PROPERTY(customColumns, custom_cols, 40, 255)
+SETTINGS_NUM_PROPERTY(customAspectWidth, custom_aw, 1, INT_MAX)
+SETTINGS_NUM_PROPERTY(customAspectHeight, custom_ah, 1, INT_MAX)
+SETTINGS_NUM_PROPERTY(frameColor, uifc_hclr, 0, 16)
+SETTINGS_NUM_PROPERTY(textColor, uifc_lclr, 0, 16)
+SETTINGS_NUM_PROPERTY(backgroundColor, uifc_bclr, 0, 8)
+SETTINGS_NUM_PROPERTY(inverseColor, uifc_cclr, 0, 8)
+SETTINGS_NUM_PROPERTY(lightbarColor, uifc_lbclr, 0, 16)
+SETTINGS_NUM_PROPERTY(lightbarBackgroundColor, uifc_lbbclr, 0, 8)
+
+static bool
+output_mode_available(uint64_t value)
+{
+	for (size_t i = 0; output_types[i] != NULL; i++) {
+		if ((uint64_t)output_map[i] == value)
+			return true;
+	}
+	return false;
+}
+
+static void
+fn_Settings_outputMode(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	if (ws != NULL)
+		wrenSetSlotDouble(vm, 0, ws->settings.output_mode);
+}
+
+static void
+fn_Settings_outputMode_set(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	uint64_t value;
+	if (ws == NULL || !slot_integer(vm, 1, 0, INT_MAX, &value))
+		return;
+	if (!output_mode_available(value)) {
+		wren_throw(vm, "Settings.outputMode: unavailable in this build");
+		return;
+	}
+	ws->settings.output_mode = (int)value;
+	ws->dirty = true;
+}
+
+static void
+fn_Settings_audioModes(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	if (ws != NULL)
+		wrenSetSlotDouble(vm, 0, ws->settings.audio_output_modes);
+}
+
+static void
+fn_Settings_audioModes_set(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	uint64_t value;
+	if (ws == NULL || !slot_integer(vm, 1, 0, UINT32_MAX, &value))
+		return;
+	unsigned known = 0;
+	for (size_t i = 0; audio_output_bits[i].name != NULL; i++)
+		known |= audio_output_bits[i].bit;
+	if (((unsigned)value & ~known) != 0) {
+		wren_throw(vm, "Settings.audioModes: unknown backend bit");
+		return;
+	}
+	ws->settings.audio_output_modes = (unsigned)value;
+	ws->dirty = true;
+}
+
+static void
+fn_Settings_customFontHeight(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	if (ws != NULL)
+		wrenSetSlotDouble(vm, 0, ws->settings.custom_fontheight);
+}
+
+static void
+fn_Settings_customFontHeight_set(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	uint64_t value;
+	if (ws == NULL || !slot_integer(vm, 1, 8, 16, &value))
+		return;
+	if (value != 8 && value != 14 && value != 16) {
+		wren_throw(vm,
+		    "Settings.customFontHeight: expected 8, 14, or 16");
+		return;
+	}
+	ws->settings.custom_fontheight = (int)value;
+	ws->dirty = true;
+}
+
+static void
+fn_Settings_scalingMode(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	if (ws != NULL)
+		wrenSetSlotDouble(vm, 0,
+		    menu_settings_scaling_mode(&ws->settings));
+}
+
+static void
+fn_Settings_scalingMode_set(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	uint64_t value;
+	if (ws != NULL && slot_integer(vm, 1, 0, 2, &value)) {
+		menu_settings_set_scaling_mode(&ws->settings, (int)value);
+		ws->dirty = true;
+	}
+}
+
+static void
+fn_Settings_kdfShift(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	if (ws == NULL)
+		return;
+	int shift = 15;
+	if (strncmp(ws->settings.keyDerivationIterations, "scrypt-N", 8) == 0)
+		shift = atoi(ws->settings.keyDerivationIterations + 8);
+	wrenSetSlotDouble(vm, 0, shift);
+}
+
+static void
+fn_Settings_kdfShift_set(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	uint64_t value;
+	if (ws != NULL && slot_integer(vm, 1, 8, 24, &value)) {
+		snprintf(ws->settings.keyDerivationIterations,
+		    sizeof(ws->settings.keyDerivationIterations), "scrypt-N%u",
+		    (unsigned)value);
+		ws->dirty = true;
+	}
+}
+
+static void
+fn_Settings_dirty(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	if (ws != NULL)
+		wrenSetSlotBool(vm, 0, ws->dirty);
+}
+
+static void
+fn_Settings_save(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	if (ws == NULL)
+		return;
+	bool success = menu_settings_save(&ws->settings);
+	if (success) {
+		settings_generation++;
+		ws->generation = settings_generation;
+		ws->dirty = false;
+	}
+	wrenSetSlotBool(vm, 0, success);
+}
+
+static void
+fn_Settings_reload(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	if (ws == NULL)
+		return;
+	menu_settings_snapshot(&ws->settings);
+	ws->dirty = false;
+	wrenSetSlotNull(vm, 0);
+}
+
+static void
+push_settings(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenGetVariable(vm, "syncterm_menu", "Settings", 1);
+	struct wren_menu_settings *ws = wrenSetSlotNewForeign(vm, 0, 1,
+	    sizeof(*ws));
+	memset(ws, 0, sizeof(*ws));
+	ws->type = SWF_MENU_SETTINGS;
+	ws->generation = settings_generation;
+	menu_settings_snapshot(&ws->settings);
+}
+
+static void
+fn_Menu_settings(WrenVM *vm)
+{
+	push_settings(vm);
+}
+
+static void
+push_string_list(WrenVM *vm, char *const *values)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; values[i] != NULL; i++) {
+		wrenSetSlotString(vm, 1, values[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+push_pairs(WrenVM *vm, const int *values, char *const *names)
+{
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; names[i] != NULL; i++) {
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotDouble(vm, 2, values[i]);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotString(vm, 2, names[i]);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void fn_Menu_screenModes(WrenVM *vm) { push_string_list(vm, screen_modes); }
+static void fn_Menu_cursorStyles(WrenVM *vm) { push_string_list(vm, cursor_descrs); }
+static void fn_Menu_scalingModes(WrenVM *vm) { push_string_list(vm, scaling_names); }
+static void fn_Menu_colors(WrenVM *vm) { push_string_list(vm, (char *const *)colour_names); }
+static void fn_Menu_backgroundColors(WrenVM *vm) { push_string_list(vm, (char *const *)bg_colour_names); }
+
+static void
+fn_Menu_outputModes(WrenVM *vm)
+{
+	push_pairs(vm, output_map, output_types);
+}
+
+static void
+fn_Menu_audioModes(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; audio_output_types[i].name != NULL; i++) {
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotDouble(vm, 2, audio_output_types[i].bit);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotString(vm, 2, audio_output_types[i].name);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_Menu_currentScreenMode(WrenVM *vm)
+{
+	struct text_info ti;
+	gettextinfo(&ti);
+	wrenSetSlotDouble(vm, 0, ciolib_to_screen(ti.currmode));
+}
+
+static void
+fn_Menu_setScreenMode(WrenVM *vm)
+{
+	uint64_t mode;
+	if (!slot_integer(vm, 1, SCREEN_MODE_80X25,
+	    SCREEN_MODE_TERMINATOR - 1, &mode))
+		return;
+	textmode(screen_to_ciolib((int)mode));
+	set_default_cursor();
+	wrenSetSlotBool(vm, 0, true);
+}
+
+static void
+map_string(WrenVM *vm, int map_slot, int key_slot, int value_slot,
+    const char *key, const char *value)
+{
+	wrenSetSlotString(vm, key_slot, key);
+	wrenSetSlotString(vm, value_slot, value != NULL ? value : "");
+	wrenSetMapValue(vm, map_slot, key_slot, value_slot);
+}
+
+static void
+fn_Menu_fileLocations(WrenVM *vm)
+{
+	char global_list[MAX_PATH + 1] = "";
+	char ini[MAX_PATH + 1] = "";
+	char download[MAX_PATH + 1] = "";
+	char cache[MAX_PATH + 1] = "";
+	char keys[MAX_PATH + 1] = "";
+	char scripts[MAX_PATH + 1] = "";
+	get_syncterm_filename(global_list, sizeof(global_list),
+	    SYNCTERM_PATH_LIST, true);
+	get_syncterm_filename(ini, sizeof(ini), SYNCTERM_PATH_INI, false);
+	get_syncterm_filename(download, sizeof(download),
+	    SYNCTERM_DEFAULT_TRANSFER_PATH, false);
+	get_syncterm_filename(cache, sizeof(cache), SYNCTERM_PATH_CACHE, false);
+	get_syncterm_filename(keys, sizeof(keys), SYNCTERM_PATH_KEYS, false);
+	get_syncterm_filename(scripts, sizeof(scripts), SYNCTERM_PATH_SCRIPTS,
+	    false);
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewMap(vm, 0);
+	map_string(vm, 0, 1, 2, "globalList", global_list);
+	map_string(vm, 0, 1, 2, "personalList", settings.list_path);
+	map_string(vm, 0, 1, 2, "configuration", ini);
+	map_string(vm, 0, 1, 2, "download", download);
+	map_string(vm, 0, 1, 2, "cache", cache);
+	map_string(vm, 0, 1, 2, "keys", keys);
+	map_string(vm, 0, 1, 2, "scripts", scripts);
+}
+
+static void
+fn_Menu_encryptionAlgorithm(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, list_algo);
+}
+
+static void
+fn_Menu_encryptionKeySize(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, list_keysize);
+}
+
+static void
+fn_Menu_encryptionName(WrenVM *vm)
+{
+	if (list_algo == INI_CRYPT_ALGO_NONE) {
+		wrenSetSlotString(vm, 0, "Not Encrypted");
+		return;
+	}
+	char name[80];
+	if (list_keysize != 0)
+		snprintf(name, sizeof(name), "%s (%d)",
+		    iniCryptGetAlgoName(list_algo), list_keysize);
+	else
+		strlcpy(name, iniCryptGetAlgoName(list_algo), sizeof(name));
+	wrenSetSlotString(vm, 0, name);
+}
+
+static void
+fn_Menu_setEncryption(WrenVM *vm)
+{
+	uint64_t algo;
+	uint64_t keysize;
+	if (!slot_integer(vm, 1, INI_CRYPT_ALGO_NONE,
+	    INI_CRYPT_ALGO_CHACHA20, &algo) ||
+	    !slot_integer(vm, 2, 0, 256, &keysize))
+		return;
+	const char *password = NULL;
+	char supplied[sizeof(list_password)];
+	if (wrenGetSlotType(vm, 3) == WREN_TYPE_STRING) {
+		if (!slot_string(vm, 3, supplied, sizeof(supplied)))
+			return;
+		password = supplied;
+	}
+	else if (wrenGetSlotType(vm, 3) != WREN_TYPE_NULL) {
+		wren_throw(vm,
+		    "Menu.setEncryption: password must be a String or null");
+		return;
+	}
+	wrenSetSlotBool(vm, 0, rewrite_bbslist_encryption(settings.list_path,
+	    (enum iniCryptAlgo)algo, (int)keysize, password));
+}
+
+static size_t
+web_list_count(void)
+{
+	size_t count = 0;
+	if (settings.webgets != NULL) {
+		while (settings.webgets[count] != NULL)
+			count++;
+	}
+	return count;
+}
+
+static char *
+fetch_web_list(const char *name, const char *uri)
+{
+	char cache[MAX_PATH + 1];
+	if (get_syncterm_filename(cache, sizeof(cache),
+	    SYNCTERM_PATH_SYSTEM_CACHE, false) == NULL)
+		return strdup("Unable to locate the web-list cache");
+	struct webget_request request;
+	memset(&request, 0, sizeof(request));
+	if (!init_webget_req(&request, cache, name, uri))
+		return strdup("Unable to initialize the web-list request");
+	bool success = iniReadHttp(&request);
+	char *error = success ? NULL : strdup(request.msg != NULL ?
+	    request.msg : "Unable to fetch the web list");
+	destroy_webget_req(&request);
+	return error;
+}
+
+static bool
+insert_web_list(size_t index, const char *name, const char *uri)
+{
+	size_t count = web_list_count();
+	if (index > count)
+		index = count;
+	named_string_t *entry = malloc(sizeof(*entry));
+	if (entry == NULL)
+		return false;
+	entry->name = strdup(name);
+	entry->value = strdup(uri);
+	if (entry->name == NULL || entry->value == NULL) {
+		free(entry->name);
+		free(entry->value);
+		free(entry);
+		return false;
+	}
+	named_string_t **items = realloc(settings.webgets,
+	    (count + 2) * sizeof(*items));
+	if (items == NULL) {
+		free(entry->name);
+		free(entry->value);
+		free(entry);
+		return false;
+	}
+	settings.webgets = items;
+	memmove(&items[index + 1], &items[index],
+	    (count - index + 1) * sizeof(*items));
+	items[index] = entry;
+	return true;
+}
+
+static void
+remove_web_list(size_t index, bool free_entry)
+{
+	size_t count = web_list_count();
+	named_string_t *entry = settings.webgets[index];
+	memmove(&settings.webgets[index], &settings.webgets[index + 1],
+	    (count - index) * sizeof(*settings.webgets));
+	if (free_entry) {
+		free(entry->name);
+		free(entry->value);
+		free(entry);
+	}
+}
+
+static void
+fn_Menu_webLists(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; i < web_list_count(); i++) {
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotString(vm, 2, settings.webgets[i]->name);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotString(vm, 2, settings.webgets[i]->value);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_Menu_addWebList(WrenVM *vm)
+{
+	char name[INI_MAX_VALUE_LEN + 1];
+	char uri[INI_MAX_VALUE_LEN + 1];
+	uint64_t index;
+	if (safe_mode) {
+		wrenSetSlotString(vm, 0, "Web-list editing is disabled in safe mode");
+		return;
+	}
+	if (!slot_string(vm, 1, name, sizeof(name)) ||
+	    !slot_string(vm, 2, uri, sizeof(uri)) ||
+	    !slot_integer(vm, 3, 0, web_list_count(), &index))
+		return;
+	if (name[0] == 0 || uri[0] == 0 ||
+	    stricmp(name, "System List") == 0 ||
+	    (settings.webgets != NULL &&
+	    namedStrListFindName(settings.webgets, name) != NULL)) {
+		wrenSetSlotString(vm, 0, "Invalid or duplicate web-list name");
+		return;
+	}
+	char *error = fetch_web_list(name, uri);
+	if (error != NULL) {
+		wrenSetSlotString(vm, 0, error);
+		free(error);
+		return;
+	}
+	if (!insert_web_list((size_t)index, name, uri)) {
+		wrenSetSlotString(vm, 0, "Unable to allocate the web-list entry");
+		return;
+	}
+	if (!save_webgets()) {
+		remove_web_list((size_t)index, true);
+		wrenSetSlotString(vm, 0, "Unable to save syncterm.ini");
+		return;
+	}
+	wrenSetSlotNull(vm, 0);
+}
+
+static void
+fn_Menu_updateWebList(WrenVM *vm)
+{
+	uint64_t index;
+	char uri[INI_MAX_VALUE_LEN + 1];
+	size_t count = web_list_count();
+	if (safe_mode) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	if (count == 0 || !slot_integer(vm, 1, 0, count - 1, &index) ||
+	    !slot_string(vm, 2, uri, sizeof(uri)))
+		return;
+	if (uri[0] == 0) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	char *replacement = strdup(uri);
+	if (replacement == NULL) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	char *old = settings.webgets[index]->value;
+	settings.webgets[index]->value = replacement;
+	if (!save_webgets()) {
+		settings.webgets[index]->value = old;
+		free(replacement);
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	free(old);
+	wrenSetSlotBool(vm, 0, true);
+}
+
+static void
+fn_Menu_deleteWebList(WrenVM *vm)
+{
+	uint64_t index;
+	size_t count = web_list_count();
+	if (safe_mode) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	if (count == 0 || !slot_integer(vm, 1, 0, count - 1, &index))
+		return;
+	named_string_t *entry = settings.webgets[index];
+	memmove(&settings.webgets[index], &settings.webgets[index + 1],
+	    (count - index) * sizeof(*settings.webgets));
+	if (!save_webgets()) {
+		memmove(&settings.webgets[index + 1], &settings.webgets[index],
+		    (count - index) * sizeof(*settings.webgets));
+		settings.webgets[index] = entry;
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	free(entry->name);
+	free(entry->value);
+	free(entry);
+	wrenSetSlotBool(vm, 0, true);
+}
+
+static void
+fn_Menu_refreshWebList(WrenVM *vm)
+{
+	uint64_t index;
+	size_t count = web_list_count();
+	if (count == 0 || !slot_integer(vm, 1, 0, count - 1, &index))
+		return;
+	char *error = fetch_web_list(settings.webgets[index]->name,
+	    settings.webgets[index]->value);
+	if (error == NULL)
+		wrenSetSlotNull(vm, 0);
+	else {
+		wrenSetSlotString(vm, 0, error);
+		free(error);
+	}
+}
+
+struct binding {
+	const char *class_name;
+	bool is_static;
+	const char *signature;
+	WrenForeignMethodFn function;
+};
+
+#define SETTINGS_GETSET(name)                                          \
+	{ "Settings", false, #name, fn_Settings_##name },                \
+	{ "Settings", false, #name "=(_)", fn_Settings_##name##_set }
+
+static const struct binding bindings[] = {
+	{ "Menu", true, "settings", fn_Menu_settings },
+	{ "Menu", true, "screenModes", fn_Menu_screenModes },
+	{ "Menu", true, "outputModes", fn_Menu_outputModes },
+	{ "Menu", true, "cursorStyles", fn_Menu_cursorStyles },
+	{ "Menu", true, "audioModes", fn_Menu_audioModes },
+	{ "Menu", true, "scalingModes", fn_Menu_scalingModes },
+	{ "Menu", true, "colors", fn_Menu_colors },
+	{ "Menu", true, "backgroundColors", fn_Menu_backgroundColors },
+	{ "Menu", true, "currentScreenMode", fn_Menu_currentScreenMode },
+	{ "Menu", true, "setScreenMode(_)", fn_Menu_setScreenMode },
+	{ "Menu", true, "fileLocations", fn_Menu_fileLocations },
+	{ "Menu", true, "encryptionAlgorithm", fn_Menu_encryptionAlgorithm },
+	{ "Menu", true, "encryptionKeySize", fn_Menu_encryptionKeySize },
+	{ "Menu", true, "encryptionName", fn_Menu_encryptionName },
+	{ "Menu", true, "setEncryption(_,_,_)", fn_Menu_setEncryption },
+	{ "Menu", true, "webLists", fn_Menu_webLists },
+	{ "Menu", true, "addWebList(_,_,_)", fn_Menu_addWebList },
+	{ "Menu", true, "updateWebList(_,_)", fn_Menu_updateWebList },
+	{ "Menu", true, "deleteWebList(_)", fn_Menu_deleteWebList },
+	{ "Menu", true, "refreshWebList(_)", fn_Menu_refreshWebList },
+	{ "Settings", false, "dirty", fn_Settings_dirty },
+	{ "Settings", false, "save()", fn_Settings_save },
+	{ "Settings", false, "reload()", fn_Settings_reload },
+	SETTINGS_GETSET(confirmClose),
+	SETTINGS_GETSET(promptSave),
+	SETTINGS_GETSET(invertWheel),
+	SETTINGS_GETSET(modemDevice),
+	SETTINGS_GETSET(modemInit),
+	SETTINGS_GETSET(modemDial),
+	SETTINGS_GETSET(listPath),
+	SETTINGS_GETSET(shellTerm),
+	SETTINGS_GETSET(startupMode),
+	SETTINGS_GETSET(outputMode),
+	SETTINGS_GETSET(cursorStyle),
+	SETTINGS_GETSET(audioModes),
+	SETTINGS_GETSET(scrollbackLines),
+	SETTINGS_GETSET(modemRate),
+	SETTINGS_GETSET(scalingMode),
+	SETTINGS_GETSET(kdfShift),
+	SETTINGS_GETSET(customRows),
+	SETTINGS_GETSET(customColumns),
+	SETTINGS_GETSET(customFontHeight),
+	SETTINGS_GETSET(customAspectWidth),
+	SETTINGS_GETSET(customAspectHeight),
+	SETTINGS_GETSET(frameColor),
+	SETTINGS_GETSET(textColor),
+	SETTINGS_GETSET(backgroundColor),
+	SETTINGS_GETSET(inverseColor),
+	SETTINGS_GETSET(lightbarColor),
+	SETTINGS_GETSET(lightbarBackgroundColor),
+};
+
+WrenForeignMethodFn
+wren_menu_settings_bind_lookup(const char *module, const char *class_name,
+    bool is_static, const char *signature)
+{
+	if (module == NULL || strcmp(module, "syncterm_menu") != 0)
+		return NULL;
+	for (size_t i = 0; i < sizeof(bindings) / sizeof(bindings[0]); i++) {
+		if (bindings[i].is_static == is_static &&
+		    strcmp(bindings[i].class_name, class_name) == 0 &&
+		    strcmp(bindings[i].signature, signature) == 0)
+			return bindings[i].function;
+	}
+	return NULL;
+}
+
+WrenForeignClassMethods
+wren_menu_settings_bind_lookup_class(const char *module,
+    const char *class_name)
+{
+	WrenForeignClassMethods none = { NULL, NULL };
+	if (module != NULL && strcmp(module, "syncterm_menu") == 0 &&
+	    strcmp(class_name, "Settings") == 0) {
+		WrenForeignClassMethods methods = {
+			settings_allocate, settings_finalize
+		};
+		return methods;
+	}
+	return none;
+}

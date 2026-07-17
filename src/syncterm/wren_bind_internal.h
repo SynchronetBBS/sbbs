@@ -49,6 +49,7 @@ enum syncterm_wren_foreign {
 	SWF_SFTP_ERROR,
 	SWF_TIMER_ELAPSED,
 	SWF_MENU_BBS,
+	SWF_MENU_SETTINGS,
 };
 
 /* Every foreign struct's first field has this exact name and type, so

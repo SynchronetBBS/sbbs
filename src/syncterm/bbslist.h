@@ -197,6 +197,8 @@ extern int         rates[];
 extern int         sortorder[];
 extern ini_style_t ini_style;
 extern char       *screen_modes_enum[];
+extern char       *screen_modes[];
+extern char       *scaling_names[];
 extern char list_password[1024];
 extern enum iniCryptAlgo list_algo;
 extern int list_keysize;
@@ -214,6 +216,10 @@ bool save_bbs_defaults(const char *listpath, struct bbslist *defaults);
 bool rename_bbs(const char *listpath, const char *old_name,
     struct bbslist *bbs);
 bool delete_bbs(const char *listpath, struct bbslist *bbs);
+bool rewrite_bbslist_kdf(const char *listpath, const char *kdf_spec);
+bool rewrite_bbslist_encryption(const char *listpath,
+    enum iniCryptAlgo algo, int keysize, const char *new_password);
+bool save_webgets(void);
 int edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault, int *init_copt, int *init_bar);
 int get_rate_num(int rate);
 cterm_emulation_t get_emulation(struct bbslist *bbs);

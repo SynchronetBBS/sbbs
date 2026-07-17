@@ -279,6 +279,7 @@ set(SOURCE
 	audio_apc.c
 	bbslist.c
 	bbslist_model.c
+	menu_settings.c
 	conn.c
 	ansi_filter.c
 	conn_pty.c
@@ -299,6 +300,7 @@ set(SOURCE
 	wren_menu_host.c
 	wren_bind.c
 	wren_bind_menu.c
+	wren_bind_menu_settings.c
 	wren_bind_sftp.c
 	wren_bind_fs.c
 	wren_bind_screen.c

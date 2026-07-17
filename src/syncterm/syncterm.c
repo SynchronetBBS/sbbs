@@ -1780,6 +1780,37 @@ check_upgrade(void)
 }
 
 void
+resolve_list_path(struct syncterm_settings *set)
+{
+	set->webgetUserList = false;
+	if (list_override != NULL) {
+		SAFECOPY(set->list_path, list_override);
+		return;
+	}
+	if (strnicmp(set->stored_list_path, "http://", 7) == 0 ||
+	    strnicmp(set->stored_list_path, "https://", 8) == 0)
+		set->webgetUserList = true;
+	if (!set->webgetUserList) {
+		SAFECOPY(set->list_path, set->stored_list_path);
+		return;
+	}
+	if (!get_syncterm_filename(set->list_path, sizeof(set->list_path),
+	    SYNCTERM_PATH_CACHE, false)) {
+		SAFECOPY(set->list_path, set->stored_list_path);
+		return;
+	}
+	backslash(set->list_path);
+	strlcat(set->list_path, "syncterm-system-cache",
+	    sizeof(set->list_path));
+	if (mkpath(set->list_path) != 0) {
+		SAFECOPY(set->list_path, set->stored_list_path);
+		return;
+	}
+	backslash(set->list_path);
+	strlcat(set->list_path, "System List.lst", sizeof(set->list_path));
+}
+
+void
 load_settings(struct syncterm_settings *set)
 {
 	FILE      *inifile;
@@ -1814,32 +1845,7 @@ load_settings(struct syncterm_settings *set)
 	set->custom_ah = iniReadInteger(inifile, "SyncTERM", "CustomAspectHeight", 3);
 	get_syncterm_filename(set->stored_list_path, sizeof(set->stored_list_path), SYNCTERM_PATH_LIST, false);
 	iniReadSString(inifile, "SyncTERM", "ListPath", set->stored_list_path, set->stored_list_path, sizeof(set->stored_list_path));
-	if (list_override != NULL) {
-		SAFECOPY(set->list_path, list_override);
-	}
-	else {
-		if (strnicmp(set->stored_list_path, "http://", 7) == 0)
-			set->webgetUserList = true;
-		else if (strnicmp(set->stored_list_path, "https://", 8) == 0)
-			set->webgetUserList = true;
-		if (set->webgetUserList) {
-			if (!get_syncterm_filename(settings.list_path, sizeof(settings.list_path), SYNCTERM_PATH_CACHE, false))
-				SAFECOPY(set->list_path, set->stored_list_path);
-			else {
-				backslash(set->list_path);
-				strlcat(set->list_path, "syncterm-system-cache", sizeof(set->list_path));
-				if (mkpath(set->list_path) != 0)
-					SAFECOPY(set->list_path, set->stored_list_path);
-				else {
-					backslash(set->list_path);
-					strlcat(set->list_path, "System List.lst", sizeof(set->list_path));
-				}
-			}
-		}
-		else {
-			SAFECOPY(set->list_path, set->stored_list_path);
-		}
-	}
+	resolve_list_path(set);
 	set->scaling_factor = iniReadFloat(inifile, "SyncTERM", "ScalingFactor", 0);
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);
 	set->extern_scale = iniReadBool(inifile, "SyncTERM", "ExternalScaling", false);

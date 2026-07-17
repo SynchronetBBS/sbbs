@@ -274,7 +274,7 @@ static const struct {
 };
 #define NUM_DEFAULT_SORT_PROFILES (sizeof(default_sort_profiles) / sizeof(default_sort_profiles[0]))
 
-static char *screen_modes[] = {
+char *screen_modes[] = {
 	"Current", "80x25", "LCD 80x25", "80x28", "80x30", "80x43", "80x50", "80x60", "132x37 (16:9)", "132x52 (5:4)",
 	"132x25", "132x28", "132x30", "132x34", "132x43", "132x50", "132x60", "C64", "C128 (40col)", "C128 (80col)",
 	"Atari", "Atari XEP80", "Custom", "EGA 80x25", "VGA 80x25", "Prestel", "BBC Micro Mode 7", "Atari ST 40x25", "Atari ST 80x25", "Atari ST 80x25 Mono", NULL
@@ -359,7 +359,7 @@ static char *conn_type_help = "`Connection Type`\n\n"
 
 static char *YesNo[3] = {"Yes", "No", ""};
 
-static char *scaling_names[4] = {"Blocky", "Pointy", "External"};
+char *scaling_names[] = {"Blocky", "Pointy", "External", NULL};
 
 ini_style_t ini_style = {
 	/* key_len */
@@ -3509,16 +3509,74 @@ read_personal_list(const char *listpath)
 }
 
 static bool
-write_personal_list(const char *listpath, str_list_t inifile)
+write_personal_list_as(const char *listpath, str_list_t inifile,
+    enum iniCryptAlgo algo, int keysize, const char *kdf,
+    const char *password)
 {
 	FILE *listfile = fopen(listpath, "wb");
 	if (listfile == NULL)
 		return false;
-	bool success = iniWriteEncryptedFile(listfile, inifile, list_algo,
-	    list_keysize, settings.keyDerivationIterations, list_password);
+	bool success = iniWriteEncryptedFile(listfile, inifile, algo, keysize,
+	    kdf, password);
 	if (fclose(listfile) != 0)
 		success = false;
 	return success;
+}
+
+static bool
+write_personal_list(const char *listpath, str_list_t inifile)
+{
+	return write_personal_list_as(listpath, inifile, list_algo,
+	    list_keysize, settings.keyDerivationIterations, list_password);
+}
+
+bool
+rewrite_bbslist_kdf(const char *listpath, const char *kdf_spec)
+{
+	if (safe_mode || kdf_spec == NULL || kdf_spec[0] == 0)
+		return false;
+	if (list_algo == INI_CRYPT_ALGO_NONE)
+		return true;
+	str_list_t inifile = read_personal_list(listpath);
+	if (inifile == NULL)
+		return false;
+	bool success = write_personal_list_as(listpath, inifile, list_algo,
+	    list_keysize, kdf_spec, list_password);
+	strListFree(&inifile);
+	return success;
+}
+
+bool
+rewrite_bbslist_encryption(const char *listpath, enum iniCryptAlgo algo,
+    int keysize, const char *new_password)
+{
+	if (safe_mode || (algo != INI_CRYPT_ALGO_NONE &&
+	    algo != INI_CRYPT_ALGO_AES && algo != INI_CRYPT_ALGO_CHACHA20))
+		return false;
+	if ((algo == INI_CRYPT_ALGO_AES && keysize != 128 && keysize != 256) ||
+	    (algo != INI_CRYPT_ALGO_AES && keysize != 0))
+		return false;
+	const char *password = new_password != NULL ? new_password : list_password;
+	if (algo != INI_CRYPT_ALGO_NONE && password[0] == 0)
+		return false;
+	str_list_t inifile = read_personal_list(listpath);
+	if (inifile == NULL)
+		return false;
+	if (algo == INI_CRYPT_ALGO_NONE)
+		iniRemoveKey(&inifile, NULL, "DecryptionCheck");
+	else
+		iniSetBool(&inifile, NULL, "DecryptionCheck", true, &ini_style);
+	bool success = write_personal_list_as(listpath, inifile, algo, keysize,
+	    settings.keyDerivationIterations, password);
+	strListFree(&inifile);
+	if (!success)
+		return false;
+	list_algo = algo;
+	list_keysize = keysize;
+	strlcpy(list_password,
+	    algo == INI_CRYPT_ALGO_NONE ? "" : password,
+	    sizeof(list_password));
+	return true;
 }
 
 bool
@@ -4663,15 +4721,15 @@ done:
 	return ret;
 }
 
-static void
-write_webgets(void)
+bool
+save_webgets(void)
 {
 	FILE      *inifile;
 	char       inipath[MAX_PATH + 1];
 	str_list_t ini_file;
 
 	if (safe_mode)
-		return;
+		return false;
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
 	if ((inifile = fopen(inipath, "r")) != NULL) {
 		ini_file = iniReadFile(inifile);
@@ -4680,21 +4738,21 @@ write_webgets(void)
 	else {
 		ini_file = strListInit();
 	}
+	if (ini_file == NULL)
+		return false;
 
 	iniRemoveSection(&ini_file, "WebLists");
 	iniAppendSectionWithNamedStrings(&ini_file, "WebLists", (const named_string_t**)settings.webgets, &ini_style);
 
+	bool success = false;
 	if ((inifile = fopen(inipath, "w")) != NULL) {
-		iniWriteFile(inifile, ini_file);
-		fclose(inifile);
-	}
-	else {
-		uifc.helpbuf = "There was an error writing the INI file.\nCheck permissions and try again.\n";
-		uifc.msg("Cannot write to the .ini file!");
-		check_exit(false);
+		success = iniWriteFile(inifile, ini_file);
+		if (fclose(inifile) != 0)
+			success = false;
 	}
 
 	strListFree(&ini_file);
+	return success;
 }
 
 static bool
@@ -4807,7 +4865,12 @@ edit_web_lists(void)
 		}
 	}
 	if (changed) {
-		write_webgets();
+		if (!save_webgets()) {
+			uifc.helpbuf = "There was an error writing the INI file.\n"
+			    "Check permissions and try again.\n";
+			uifc.msg("Cannot write to the .ini file!");
+			check_exit(false);
+		}
 	}
 	return changed;
 }

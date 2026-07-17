@@ -4,6 +4,7 @@
 #include "conn.h"
 #include "genwrap.h"
 #include "wren_bind_internal.h"
+#include "wren_bind_menu_settings.h"
 
 #include <math.h>
 #include <limits.h>
@@ -25,6 +26,7 @@ void
 wren_menu_bind_init(void)
 {
 	bbslist_model_init(&menu_model);
+	wren_menu_settings_bind_init();
 }
 
 void
@@ -565,6 +567,10 @@ wren_menu_bind_lookup(const char *module, const char *class_name,
 {
 	if (module == NULL || strcmp(module, "syncterm_menu") != 0)
 		return NULL;
+	WrenForeignMethodFn fn = wren_menu_settings_bind_lookup(module,
+	    class_name, is_static, signature);
+	if (fn != NULL)
+		return fn;
 	for (size_t i = 0; i < sizeof(bindings) / sizeof(bindings[0]); i++) {
 		if (bindings[i].is_static == is_static &&
 		    strcmp(bindings[i].class_name, class_name) == 0 &&
@@ -580,6 +586,10 @@ wren_menu_bind_lookup_class(const char *module, const char *class_name)
 	WrenForeignClassMethods none = { NULL, NULL };
 	if (module == NULL || strcmp(module, "syncterm_menu") != 0)
 		return none;
+	WrenForeignClassMethods settings_methods =
+	    wren_menu_settings_bind_lookup_class(module, class_name);
+	if (settings_methods.allocate != NULL || settings_methods.finalize != NULL)
+		return settings_methods;
 	if (strcmp(class_name, "BBS") == 0) {
 		WrenForeignClassMethods methods = {
 			menu_bbs_allocate, menu_bbs_finalize

@@ -956,7 +956,7 @@ errors.  Menu-only data APIs are imported separately:
 
 [source,wren]
 ----
-import "syncterm_menu" for Menu, BBS, MenuReadStatus
+import "syncterm_menu" for Menu, BBS, Settings, MenuReadStatus, MenuEncryption
 ----
 
 `Cache` is injected into the `syncterm` module from C as a
@@ -3349,6 +3349,160 @@ stale; using one aborts with an instruction to reacquire it from
 `Menu.entries`.  This makes use-after-delete and references into a
 transactionally replaced list deterministic.  Sorting and in-place
 renaming preserve handles.
+
+=== Menu Program Settings [[menu-program-settings]]
+
+`Menu.settings` returns a C-owned `Settings` snapshot.  Property
+setters change only that snapshot and set `dirty`; they do not change
+the running program or configuration file until `save()` succeeds.
+`reload()` discards unsaved changes and repopulates the same handle
+from the current program settings.
+
+`save()` validates the complete snapshot, preserves unrelated INI
+sections, writes the existing `syncterm.ini` keys, and applies the
+settings which have immediate effects.  These include scrollback
+capacity, scaling, mouse-wheel direction, audio backends, custom-mode
+dimensions, cursor style, and the UIFC colors still used by the trusted
+native picker.  It returns `false` without applying the snapshot if
+validation, allocation, encrypted-list rewriting, or INI persistence
+fails.  Saving is disabled in safe mode.
+
+A successful save advances the settings generation.  The object which
+performed the save remains valid and clean, but any other outstanding
+`Settings` handles become stale and abort when used.  Reacquire a
+snapshot from `Menu.settings` after another component saves settings.
+
+[options="header",cols="2m,4"]
+|===
+| Property | Meaning
+
+| `confirmClose`, `promptSave`, `invertWheel`
+| Bool program options.
+
+| `modemDevice`, `modemInit`, `modemDial`, `shellTerm`
+| Modem strings and the terminal name exported to local shell
+  connections.
+
+| `listPath`
+| Stored personal-list path or URI.  The host resolves it to the active
+  local or cached list path only after a successful save.
+
+| `startupMode`, `outputMode`, `cursorStyle`, `audioModes`,
+  `scalingMode`
+| Catalog-backed display, backend, and audio selections.  `audioModes`
+  is a bit field, so the values in `Menu.audioModes` may be combined.
+
+| `scrollbackLines`, `modemRate`
+| Positive scrollback capacity and modem baud rate.
+
+| `kdfShift`
+| The exponent in the persisted `scrypt-Nn` key-derivation setting;
+  accepted range is 8 through 24.  Changing it rewrites an encrypted
+  personal list using the current password before saving the INI file.
+
+| `customRows`, `customColumns`, `customFontHeight`,
+  `customAspectWidth`, `customAspectHeight`
+| Custom text-mode geometry.  Rows are 14..255, columns are 40..255,
+  font height is exactly 8, 14, or 16, and both aspect values are
+  positive.
+
+| `frameColor`, `textColor`, `backgroundColor`, `inverseColor`,
+  `lightbarColor`, `lightbarBackgroundColor`
+| UIFC palette indexes used for the trusted native picker.  Foreground
+  catalogs include the `Default` entry at index 16; background catalogs
+  include it at index 8.
+|===
+
+The host supplies display catalogs rather than requiring scripts to
+duplicate platform-dependent enum tables:
+
+[options="header",cols="2m,4"]
+|===
+| Menu member | Result
+
+| `screenModes`, `cursorStyles`, `scalingModes`
+| Lists of display names indexed by the corresponding numeric setting.
+
+| `outputModes`
+| Build-dependent List of `[value, displayName]` rows.  Assign only a
+  value present in this list to `Settings.outputMode`.
+
+| `audioModes`
+| Build-dependent List of `[bit, displayName]` rows for selectable
+  audio backends.
+
+| `colors`, `backgroundColors`
+| Foreground and background color-name Lists, including their final
+  `Default` entries.
+
+| `currentScreenMode`
+| Current SyncTERM screen-mode enum value.
+
+| `setScreenMode(mode)`
+| Apply a concrete screen mode immediately and restore the configured
+  default cursor.  `ScreenMode.current` is not accepted.  Returns
+  `true` after dispatching the mode change.
+
+| `fileLocations`
+| Map containing `globalList`, `personalList`, `configuration`,
+  `download`, `cache`, `keys`, and `scripts` paths for display.  These
+  Strings do not confer file-open authority.
+|===
+
+=== Menu List Encryption [[menu-list-encryption]]
+
+`Menu.encryptionAlgorithm`, `Menu.encryptionKeySize`, and
+`Menu.encryptionName` describe the personal BBS list currently in
+memory.  `MenuEncryption` defines `none`, `aes`, and `chacha20`.
+
+`Menu.setEncryption(algorithm, keySize, password)` rewrites the current
+personal list and returns Bool.  AES accepts 128- or 256-bit keys;
+ChaCha20 and unencrypted lists require key size zero.  `password` may
+be `null` to reuse the password already held by the host.  Enabling
+encryption fails if neither source supplies a non-empty password.  A
+successful rewrite updates the current algorithm, key size, and held
+password; a failure leaves them unchanged.  The operation is disabled
+in safe mode.
+
+=== Menu Web Lists [[menu-web-lists]]
+
+`Menu.webLists` returns a fresh List of `[name, uri]` rows.  Names must
+be unique and non-empty; `System List` is reserved.  Indexes refer to
+the order shown by that returned List.
+
+[options="header",cols="2m,4"]
+|===
+| Method | Description
+
+| `addWebList(name, uri, index)`
+| Fetch the URI into the web-list cache, insert the entry, and persist
+  the `WebLists` INI section.  Returns `null` on success or an error
+  String.  Persistence failure rolls the in-memory insertion back.
+
+| `updateWebList(index, uri)`
+| Change and persist an entry's URI.  Returns Bool and restores the old
+  URI if persistence fails.  It does not refresh the cached list.
+
+| `deleteWebList(index)`
+| Remove and persist an entry.  Returns Bool and restores the entry at
+  its original index if persistence fails.
+
+| `refreshWebList(index)`
+| Fetch the current URI into the cache without changing configuration.
+  Returns `null` on success or an error String.
+|===
+
+Add, update, and delete are disabled in safe mode before any fetch or
+in-memory mutation.  Refresh remains a read/fetch operation and is
+permitted.  No web-list method exposes its cache pathname as a file
+capability.
+
+=== Menu BBS Constants [[menu-bbs-constants]]
+
+The menu `BBS` properties use the following numeric constants.  Most
+are shared with the active-connection `BBS` API, but the catalogs
+returned by `Menu` should be preferred when constructing a user-facing
+choice list.
 
 ==== ConnType [[conntype]]
 
