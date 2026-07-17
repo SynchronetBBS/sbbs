@@ -2619,7 +2619,7 @@ fn_Font_available(WrenVM *vm)
 void
 fn_Font_load(WrenVM *vm)
 {
-	const char *path = wren_file_path(vm, 1);
+	const char *path = wren_file_read_path(vm, 1);
 	if (path == NULL) {
 		wrenSetSlotBool(vm, 0, false);
 		return;

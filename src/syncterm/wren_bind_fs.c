@@ -55,15 +55,17 @@ struct wren_directory {
 };
 
 /* Write-consent classes for Files minted from the save picker
- * (Host.pickSavePath).  Read-mode Files (WFC_NONE) keep the historical
- * `r+b` open behaviour; write-consent Files open in their authorized
- * mode exactly once and then become inert.  No File can ever be both
- * read- and write-consent — the consent is set at mint time and
- * doesn't change. */
+ * (Host.pickSavePath).  Picker/token read Files are explicitly read-only;
+ * sandbox Files from Cache/Download are read/write. */
 enum wren_file_write_consent {
-	WFC_NONE = 0,    /* read-mode; existing token model applies */
+	WFC_NONE = 0,    /* ordinary sandbox or picker/token File */
 	WFC_CREATE,      /* `wbx` — must not exist; race-safe single create */
 	WFC_OVERWRITE,   /* `wb` — overwrite confirmed by picker prompt */
+};
+
+enum wren_file_rights {
+	WFR_READ  = 1 << 0,
+	WFR_WRITE = 1 << 1,
 };
 
 struct wren_file {
@@ -79,7 +81,8 @@ struct wren_file {
 	 * intentionally session-bound and single-shot).  Freed in
 	 * wren_file_finalize.  See wren_token.h for the model. */
 	char *token;
-	/* Write consent class (WFC_*).  WFC_NONE on read-mode Files;
+	unsigned rights;
+	/* Write consent class (WFC_*).  WFC_NONE on ordinary Files;
 	 * non-NONE on Files minted by Host.pickSavePath. */
 	enum wren_file_write_consent write_consent;
 	/* Set after the first successful open() on a write-consent
@@ -447,6 +450,9 @@ wren_file_allocate(WrenVM *vm)
 	wf->path[0] = '\0';
 	wf->fp      = NULL;
 	wf->token   = NULL;
+	wf->rights        = WFR_READ | WFR_WRITE;
+	wf->write_consent = WFC_NONE;
+	wf->consent_used  = false;
 	wf->dead    = false;
 	wf->fs_prev = NULL;
 	wf->fs_next = NULL;
@@ -643,6 +649,7 @@ push_new_file(WrenVM *vm, int slot, const char *dir, const char *name)
 	wf->type          = SWF_FILE;
 	wf->fp            = NULL;
 	wf->token         = NULL;
+	wf->rights        = WFR_READ | WFR_WRITE;
 	wf->write_consent = WFC_NONE;
 	wf->consent_used  = false;
 	wf->dead          = false;
@@ -716,12 +723,15 @@ dir_list_impl(WrenVM *vm, struct wren_directory *parent, const char *dir)
 			wrenGetVariable(vm, "syncterm", "File", 2);
 			struct wren_file *wf = wrenSetSlotNewForeign(vm, 3, 2,
 			    sizeof(*wf));
-			wf->type    = SWF_FILE;
-			wf->fp      = NULL;
-			wf->token   = NULL;
-			wf->dead    = false;
-			wf->fs_prev = NULL;
-			wf->fs_next = NULL;
+			wf->type          = SWF_FILE;
+			wf->fp            = NULL;
+			wf->token         = NULL;
+			wf->rights        = WFR_READ | WFR_WRITE;
+			wf->write_consent = WFC_NONE;
+			wf->consent_used  = false;
+			wf->dead          = false;
+			wf->fs_prev       = NULL;
+			wf->fs_next       = NULL;
 			memcpy(wf->path, p, (size_t)len + 1);
 			fs_register_file(wf);
 			wrenSetMapValue(vm, 0, 1, 3);
@@ -1058,6 +1068,7 @@ push_picker_file(WrenVM *vm, int slot, const char *picked)
 	wf->type          = SWF_FILE;
 	wf->fp            = NULL;
 	wf->token         = wren_token_sign(picked);
+	wf->rights        = WFR_READ;
 	wf->write_consent = WFC_NONE;
 	wf->consent_used  = false;
 	wf->dead          = false;
@@ -1087,6 +1098,7 @@ push_picker_save_file(WrenVM *vm, int slot, const char *picked,
 	wf->type          = SWF_FILE;
 	wf->fp            = NULL;
 	wf->token         = NULL;
+	wf->rights        = WFR_WRITE;
 	wf->write_consent = mode;
 	wf->consent_used  = false;
 	wf->dead          = false;
@@ -1150,20 +1162,19 @@ fn_Host_pickFile(WrenVM *vm)
  *
  * Used by Capture.start (transfers the FILE* into cterm->logfile)
  * and CTerm.saveScreenshot (the binding does its own fwrite/fclose). */
-/* Read-only path accessor for a File foreign in slot.  Returns the
+/* Read-authorized path accessor for a File foreign in slot.  Returns the
  * absolute path on success, or NULL when the slot's not a File or
- * the handle is dead.  Caller must NOT free the returned pointer
- * (it lives inside the File foreign).  Used by foreigns that hand
- * the path off to a path-taking C API but don't need write
- * consent — the returned path is still consent-bounded because the
- * File itself was minted by a picker. */
+ * the handle is dead or write-only.  Caller must NOT free the returned
+ * pointer (it lives inside the File foreign).  Used by foreigns that
+ * hand the path off to a path-taking C API but don't need write consent;
+ * the returned path is still consent-bounded by the File. */
 const char *
-wren_file_path(WrenVM *vm, int slot)
+wren_file_read_path(WrenVM *vm, int slot)
 {
 	if (slot_foreign_type(vm, slot) != SWF_FILE)
 		return NULL;
 	struct wren_file *wf = wrenGetSlotForeign(vm, slot);
-	if (wf == NULL || wf->dead)
+	if (wf == NULL || wf->dead || (wf->rights & WFR_READ) == 0)
 		return NULL;
 	return wf->path;
 }
@@ -1318,13 +1329,19 @@ fn_Host_openLocalFile(WrenVM *vm)
 /* ----- File foreign methods ---------------------------------------- */
 
 static struct wren_file *
-file_check_open(WrenVM *vm)
+file_check_open(WrenVM *vm, unsigned rights)
 {
 	struct wren_file *wf = file_check(vm);
 	if (wf == NULL)
 		return NULL;
 	if (wf->fp == NULL) {
 		wren_throw(vm, "File: not open");
+		return NULL;
+	}
+	if ((wf->rights & rights) != rights) {
+		wren_throw(vm, (rights & WFR_WRITE) != 0
+		    ? "File: handle does not grant write access"
+		    : "File: handle does not grant read access");
 		return NULL;
 	}
 	return wf;
@@ -1368,7 +1385,7 @@ fn_File_open(WrenVM *vm)
 			break;
 		case WFC_NONE:
 		default:
-			mode = "r+b";
+			mode = (wf->rights & WFR_WRITE) != 0 ? "r+b" : "rb";
 			break;
 	}
 	wf->fp = fopen(wf->path, mode);
@@ -1442,7 +1459,7 @@ do_read_at(WrenVM *vm, struct wren_file *wf, long off, long count,
 void
 fn_File_readBytes_1(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, WFR_READ);
 	if (wf == NULL)
 		return;
 	long count = (long)wrenGetSlotDouble(vm, 1);
@@ -1453,7 +1470,7 @@ fn_File_readBytes_1(WrenVM *vm)
 void
 fn_File_readBytes_2(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, WFR_READ);
 	if (wf == NULL)
 		return;
 	long count = (long)wrenGetSlotDouble(vm, 1);
@@ -1464,7 +1481,7 @@ fn_File_readBytes_2(WrenVM *vm)
 void
 fn_File_read(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, WFR_READ);
 	if (wf == NULL)
 		return;
 	long off = ftell(wf->fp);
@@ -1505,7 +1522,7 @@ do_write_at(WrenVM *vm, struct wren_file *wf, long off,
 void
 fn_File_writeBytes_1(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, WFR_WRITE);
 	if (wf == NULL)
 		return;
 	int len = 0;
@@ -1517,7 +1534,7 @@ fn_File_writeBytes_1(WrenVM *vm)
 void
 fn_File_writeBytes_2(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, WFR_WRITE);
 	if (wf == NULL)
 		return;
 	int len = 0;
@@ -1535,7 +1552,7 @@ fn_File_writeBytes_2(WrenVM *vm)
 void
 fn_File_readLine(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, WFR_READ);
 	if (wf == NULL)
 		return;
 	long off = ftell(wf->fp);
@@ -1599,7 +1616,7 @@ fn_File_readLine(WrenVM *vm)
 void
 fn_File_writeLine(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, WFR_WRITE);
 	if (wf == NULL)
 		return;
 	int len = 0;
@@ -1633,7 +1650,7 @@ fn_File_writeLine(WrenVM *vm)
 void
 fn_File_write(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, WFR_WRITE);
 	if (wf == NULL)
 		return;
 	int len = 0;
@@ -1659,7 +1676,7 @@ fn_File_write(WrenVM *vm)
 void
 fn_File_offset_get(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, 0);
 	if (wf == NULL)
 		return;
 	wrenSetSlotDouble(vm, 0, (double)ftell(wf->fp));
@@ -1668,7 +1685,7 @@ fn_File_offset_get(WrenVM *vm)
 void
 fn_File_offset_set(WrenVM *vm)
 {
-	struct wren_file *wf = file_check_open(vm);
+	struct wren_file *wf = file_check_open(vm, 0);
 	if (wf == NULL)
 		return;
 	long off = (long)wrenGetSlotDouble(vm, 1);
@@ -1730,6 +1747,10 @@ fn_File_mtime_set(WrenVM *vm)
 	struct wren_file *wf = file_check(vm);
 	if (wf == NULL)
 		return;
+	if ((wf->rights & WFR_WRITE) == 0) {
+		wren_throw(vm, "File: handle does not grant write access");
+		return;
+	}
 	if (wrenGetSlotType(vm, 1) != WREN_TYPE_NUM) {
 		wren_throw(vm, "File.mtime=: argument must be a Num");
 		return;
@@ -1810,6 +1831,10 @@ fn_File_sha1(WrenVM *vm)
 	struct wren_file *wf = file_check(vm);
 	if (wf == NULL)
 		return;
+	if ((wf->rights & WFR_READ) == 0) {
+		wren_throw(vm, "File: handle does not grant read access");
+		return;
+	}
 	struct xpmapping *map;
 	const void *data;
 	size_t len;
@@ -1828,6 +1853,10 @@ fn_File_md5(WrenVM *vm)
 	struct wren_file *wf = file_check(vm);
 	if (wf == NULL)
 		return;
+	if ((wf->rights & WFR_READ) == 0) {
+		wren_throw(vm, "File: handle does not grant read access");
+		return;
+	}
 	struct xpmapping *map;
 	const void *data;
 	size_t len;

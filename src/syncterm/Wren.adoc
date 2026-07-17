@@ -3410,14 +3410,14 @@ pre-bound from these at module load.
   `uifc/filepick.h`).  The returned `File`'s path bypasses the
   relaxed-name policy — the picker UI is the sandbox boundary,
   since the user explicitly chose the path.  The returned
-  `File` carries a `.token` consent token (see "Picker consent
-  tokens" below) when the per-installation signing key is
-  loaded.
+  `File` is read-only and carries a `.token` consent token (see
+  "Picker consent tokens" below) when the per-installation signing
+  key is loaded.
 
 | `Host.pickFiles(initialDir, mask, opts)`
 | Multi-select counterpart of `pickFile`.  Same argument shape.
-  Returns a non-empty `List<File>` on OK (each `File` has a
-  `.token`), or `null` on cancel / empty selection.  Per
+  Returns a non-empty `List<File>` on OK (each `File` is read-only
+  and has a `.token`), or `null` on cancel / empty selection.  Per
   `filepick.h`, `UIFC_FP_ALLOWENTRY` / `UIFC_FP_OVERPROMPT` /
   `UIFC_FP_CREATPROMPT` cannot be combined with multi-select —
   `filepick_multi` rejects them.
@@ -3438,9 +3438,9 @@ pre-bound from these at module load.
   Returns `null` when the token is invalid (HMAC mismatch,
   signing key rotated), the file no longer exists, or the
   file's content has changed since consent (SHA-256 mismatch).
-  This is the only path by which Wren can construct a `File`
-  for a path outside the sandboxed `Cache` / `Download` roots;
-  the token *is* the consent.
+  The reconstructed `File` is read-only.  This is the only path by
+  which Wren can construct a `File` for a path outside the sandboxed
+  `Cache` / `Download` roots; the token *is* the consent.
 
 | `Host.uploadArrow`, `Host.uploadArrow = b`,
   `Host.downloadArrow`, `Host.downloadArrow = b`
@@ -3751,13 +3751,29 @@ methods on the resulting `File` are no-ops if construction failed.
 
 === File
 
+Every `File` carries rights assigned by the host when it is created:
+
+* Files reached through `Cache` or `Download` are read/write.
+* Files returned by `Host.pickFile` / `Host.pickFiles`, or reconstructed
+  by `Host.openLocalFile`, are read-only.  `open()` uses `rb`; write
+  methods and `mtime=()` abort the fiber.  Read-consuming bindings such
+  as `Screen.loadFont()` accept these Files.
+* Files returned by `Host.pickSavePath` are one-shot write-only grants.
+  Read methods, hashes, and read-consuming bindings reject them.  See
+  <<file-write-consent,Write consent>>.
+
+Rights belong to the foreign handle, not the path.  Passing a `File` to
+another binding does not broaden its authority.
+
 [options="header",cols="2,3"]
 |===
 | Method | Description
 
 | `File.open()`
-| Open the file (creating if necessary).  Subsequent reads / writes
-  start at offset 0.
+| Open the file using the mode authorized by its host-assigned rights.
+  Sandbox Files use `r+b`, picker/token Files use `rb`, and save-picker
+  Files use the one-shot mode described below.  Subsequent permitted
+  reads / writes start at offset 0.
 
 | `File.close()`
 | Close the file handle.
@@ -3799,10 +3815,10 @@ methods on the resulting `File` are no-ops if construction failed.
 
 | `File.mtime`, `mtime=(t)`
 | Modification time as POSIX seconds.  Setter calls `setfdate(2)` by
-  path; works on both open and closed handles.  Used by the SFTP
-  queue to stamp completed downloads with the remote's mtime so the
-  browser's status chip can compare local-vs-remote without
-  server-side hash extensions.
+  path, requires write rights, and works on both open and closed
+  handles.  Used by the SFTP queue to stamp completed downloads with
+  the remote's mtime so the browser's status chip can compare
+  local-vs-remote without server-side hash extensions.
 
 | `File.isOpen`
 | `true` while the handle is valid.
@@ -3841,7 +3857,7 @@ the fiber is not aborted.
 ==== Write consent [[file-write-consent]]
 
 `Files` minted by <<host-pickSavePath,`Host.pickSavePath`>> carry a
-*write consent* — a single-shot grant to open the user-picked path
+*write-only consent* — a single-shot grant to open the user-picked path
 exactly once, in a specific mode determined at pick time:
 
 [options="header",cols="2,4"]
@@ -3862,6 +3878,10 @@ The consent is *consumed* by the first successful `open()`.  After
 the matching `close()`, every subsequent `open() / writeBytes /
 write / writeLine / etc.` aborts the fiber with "write consent
 already used".  Re-pick the path to write again.
+
+The grant never includes read authority.  `read`, `readBytes`,
+`readLine`, `sha1`, `md5`, and bindings which consume a readable File
+reject a save-picker File, both before and while it is open.
 
 `File.token` is `null` on write-consent Files: persisting a write
 consent across sessions would defeat the single-shot rule.  The
