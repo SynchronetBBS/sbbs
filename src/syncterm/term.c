@@ -44,6 +44,7 @@
 #include "md5.h"
 #include "ripper.h"
 #include "wren_host.h"
+#include "wren_menu_host.h"
 #include "wren_bind_xfer.h"
 
 #ifdef WITH_JPEG_XL
@@ -5855,12 +5856,13 @@ doterm(struct bbslist *bbs)
 					char                  title[LIST_NAME_MAX + 13];
 					struct ciolib_screen *savscrn;
 					savscrn = cp437_savescrn();
-					wren_host_input_barrier();
-					show_bbslist(bbs->name, true);
+					bool menu_was_suspended = cterm_suspended;
+					cterm_suspended = true;
+					wren_menu_host_run(bbs->name, true);
+					cterm_suspended = menu_was_suspended;
 					sprintf(title, "SyncTERM - %s\n", bbs->name);
 					settitle(title);
 					uifcbail();
-					wren_host_input_barrier();
 					setup_mouse_events(&ms);
 					restorescreen(savscrn);
 					freescreen(savscrn);

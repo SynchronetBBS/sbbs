@@ -17,6 +17,7 @@ class Menu {
   // Transactionally replace the in-memory directory.  On failure the
   // previous generation remains active.  password may be null.
   foreign static load(password)
+  foreign static quickConnect(url)
   foreign static statusMessage(status)
   foreign static entries
   foreign static defaults
@@ -25,6 +26,17 @@ class Menu {
   foreign static create(name)
   foreign static copy(source, name)
   foreign static sort()
+  // Catalog rows are [numeric value, display name].
+  foreign static connectionTypes
+  foreign static defaultPort(connectionType)
+  foreign static addressFamilies
+  foreign static rates
+  foreign static musicModes
+  foreign static ripModes
+  foreign static flowControls
+  foreign static parities
+  foreign static fontsCatalog
+  foreign static logLevels
   foreign static screenModes
   // Each build-dependent pair is [numeric value, display name].
   foreign static outputModes

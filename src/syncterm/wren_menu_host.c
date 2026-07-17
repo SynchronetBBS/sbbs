@@ -2,8 +2,10 @@
 
 #include "wren_bind_menu.h"
 #include "wren_bind_internal.h"
+#include "wren_host.h"
 #include "wren_host_internal.h"
 
+#include "bbslist.h"
 #include "dirwrap.h"
 #include "genwrap.h"
 #include "syncterm.h"
@@ -15,6 +17,8 @@
 
 static struct wren_host_state menu_state;
 static bool menu_active;
+static WrenHandle *menu_run_handle;
+static struct bbslist selected_bbs;
 
 static bool
 valid_module_name(const char *name)
@@ -311,6 +315,8 @@ wren_menu_host_init(void)
 	}
 	if (!menu_active)
 		wren_menu_bind_shutdown();
+	else
+		menu_run_handle = wrenMakeCallHandle(menu_state.vm, "run(_,_)");
 	wren_host_select_state(old);
 	return menu_active;
 }
@@ -321,6 +327,9 @@ wren_menu_host_shutdown(void)
 	if (!menu_active)
 		return;
 	struct wren_host_state *old = wren_host_select_state(&menu_state);
+	if (menu_run_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_run_handle);
+	menu_run_handle = NULL;
 	wrenFreeVM(menu_state.vm);
 	wren_menu_bind_shutdown();
 	wren_host_select_state(old == &menu_state ? NULL : old);
@@ -332,4 +341,37 @@ bool
 wren_menu_host_active(void)
 {
 	return menu_active;
+}
+
+struct bbslist *
+wren_menu_host_run(const char *current, bool connected)
+{
+	if (!menu_active || menu_state.vm == NULL || menu_run_handle == NULL ||
+	    !wrenHasModule(menu_state.vm, "main_menu") ||
+	    !wrenHasVariable(menu_state.vm, "main_menu", "MainMenu"))
+		return NULL;
+
+	wren_host_input_barrier();
+	struct wren_host_state *old = wren_host_select_state(&menu_state);
+	wrenEnsureSlots(menu_state.vm, 3);
+	wrenGetVariable(menu_state.vm, "main_menu", "MainMenu", 0);
+	if (current == NULL)
+		wrenSetSlotNull(menu_state.vm, 1);
+	else
+		wrenSetSlotString(menu_state.vm, 1, current);
+	wrenSetSlotBool(menu_state.vm, 2, connected);
+
+	WrenInterpretResult result = wrenCall(menu_state.vm, menu_run_handle);
+	struct bbslist *selected = NULL;
+	if (result == WREN_RESULT_SUCCESS && !connected &&
+	    wrenGetSlotType(menu_state.vm, 0) != WREN_TYPE_NULL) {
+		if (wren_menu_bind_copy_bbs(menu_state.vm, 0, &selected_bbs))
+			selected = &selected_bbs;
+		else
+			fputs("[wren-menu] MainMenu.run returned an invalid BBS\n",
+			    stderr);
+	}
+	wren_host_select_state(old);
+	wren_host_input_barrier();
+	return selected;
 }

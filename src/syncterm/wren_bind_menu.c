@@ -1,8 +1,10 @@
 #include "wren_bind_menu.h"
 
 #include "bbslist_model.h"
+#include "comio.h"
 #include "conn.h"
 #include "genwrap.h"
+#include "syncterm.h"
 #include "wren_bind_internal.h"
 #include "wren_bind_menu_fonts.h"
 #include "wren_bind_menu_settings.h"
@@ -19,9 +21,41 @@ struct wren_menu_bbs {
 	struct bbslist *bbs;
 	uint64_t generation;
 	bool is_defaults;
+	bool is_transient;
 };
 
 static struct bbslist_model menu_model;
+static struct bbslist menu_transient;
+static uint64_t transient_generation;
+static bool transient_valid;
+
+static bool
+menu_bbs_valid(const struct wren_menu_bbs *wb)
+{
+	if (!menu_model.loaded || wb == NULL || wb->bbs == NULL)
+		return false;
+	if (wb->is_defaults)
+		return wb->bbs == &menu_model.defaults &&
+		    wb->generation == menu_model.generation;
+	if (wb->is_transient)
+		return transient_valid && wb->bbs == &menu_transient &&
+		    wb->generation == transient_generation;
+	return wb->generation == menu_model.generation &&
+	    bbslist_model_record(&menu_model, wb->bbs) != NULL;
+}
+
+bool
+wren_menu_bind_copy_bbs(WrenVM *vm, int slot, struct bbslist *dest)
+{
+	if (vm == NULL || dest == NULL ||
+	    slot_foreign_type(vm, slot) != SWF_MENU_BBS)
+		return false;
+	struct wren_menu_bbs *wb = wrenGetSlotForeign(vm, slot);
+	if (!menu_bbs_valid(wb) || wb->is_defaults)
+		return false;
+	memcpy(dest, wb->bbs, sizeof(*dest));
+	return true;
+}
 
 void
 wren_menu_bind_init(void)
@@ -47,6 +81,7 @@ menu_bbs_allocate(WrenVM *vm)
 	wb->bbs = NULL;
 	wb->generation = 0;
 	wb->is_defaults = false;
+	wb->is_transient = false;
 }
 
 static void
@@ -63,11 +98,7 @@ bbs_check(WrenVM *vm)
 		return NULL;
 	}
 	struct wren_menu_bbs *wb = wrenGetSlotForeign(vm, 0);
-	if (!menu_model.loaded || wb->bbs == NULL ||
-	    wb->generation != menu_model.generation ||
-	    (!wb->is_defaults &&
-	    bbslist_model_record(&menu_model, wb->bbs) == NULL) ||
-	    (wb->is_defaults && wb->bbs != &menu_model.defaults)) {
+	if (!menu_bbs_valid(wb)) {
 		wren_throw(vm, "BBS: stale handle; reacquire it from Menu.entries");
 		return NULL;
 	}
@@ -87,7 +118,7 @@ bbs_check_mutable(WrenVM *vm)
 }
 
 static void
-push_bbs(WrenVM *vm, int slot, struct bbslist *bbs)
+push_bbs_kind(WrenVM *vm, int slot, struct bbslist *bbs, bool transient)
 {
 	wrenEnsureSlots(vm, slot + 2);
 	wrenGetVariable(vm, "syncterm_menu", "BBS", slot + 1);
@@ -95,8 +126,16 @@ push_bbs(WrenVM *vm, int slot, struct bbslist *bbs)
 	    sizeof(*wb));
 	wb->type = SWF_MENU_BBS;
 	wb->bbs = bbs;
-	wb->generation = menu_model.generation;
+	wb->generation = transient ? transient_generation :
+	    menu_model.generation;
 	wb->is_defaults = bbs == &menu_model.defaults;
+	wb->is_transient = transient;
+}
+
+static void
+push_bbs(WrenVM *vm, int slot, struct bbslist *bbs)
+{
+	push_bbs_kind(vm, slot, bbs, false);
 }
 
 static bool
@@ -315,6 +354,11 @@ fn_BBS_dirty(WrenVM *vm)
 	struct bbslist *bbs = bbs_check(vm);
 	if (bbs == NULL)
 		return;
+	struct wren_menu_bbs *wb = wrenGetSlotForeign(vm, 0);
+	if (wb->is_transient) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
 	struct bbslist_model_record *record = bbslist_model_record(
 	    &menu_model, bbs);
 	wrenSetSlotBool(vm, 0, bbs == &menu_model.defaults
@@ -402,8 +446,126 @@ fn_Menu_load(WrenVM *vm)
 	}
 	enum bbslist_read_status status = bbslist_model_load(&menu_model,
 	    password);
+	if (status == BBSLIST_READ_OK) {
+		transient_valid = false;
+		transient_generation++;
+	}
 	wrenSetSlotDouble(vm, 0, status);
 }
+
+static void
+fn_Menu_quickConnect(WrenVM *vm)
+{
+	char url[MAX_PATH + 1];
+	if (!menu_model.loaded || !slot_string(vm, 1, url, sizeof(url)) ||
+	    url[0] == 0) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	memcpy(&menu_transient, &menu_model.defaults,
+	    sizeof(menu_transient));
+	parse_url(url, &menu_transient, menu_model.defaults.conn_type, false);
+	transient_generation++;
+	transient_valid = menu_transient.addr[0] != 0 ||
+	    menu_transient.conn_type == CONN_TYPE_SHELL;
+	if (!transient_valid)
+		wrenSetSlotNull(vm, 0);
+	else
+		push_bbs_kind(vm, 0, &menu_transient, true);
+}
+
+static void
+push_indexed_names(WrenVM *vm, char *const *names, int first)
+{
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (int i = first; names[i] != NULL && names[i][0] != 0; i++) {
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotDouble(vm, 2, i);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotString(vm, 2, names[i]);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_Menu_connectionTypes(WrenVM *vm)
+{
+	push_indexed_names(vm, conn_types, 1);
+}
+
+static void
+fn_Menu_defaultPort(WrenVM *vm)
+{
+	int64_t type;
+	if (slot_integer(vm, 1, CONN_TYPE_UNKNOWN,
+	    CONN_TYPE_TERMINATOR - 1, &type))
+		wrenSetSlotDouble(vm, 0, conn_ports[type]);
+}
+
+static void
+fn_Menu_rates(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (int i = 0; rate_names[i] != NULL; i++) {
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotDouble(vm, 2, rates[i]);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotString(vm, 2, rate_names[i]);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void fn_Menu_musicModes(WrenVM *vm) { push_indexed_names(vm, music_names, 0); }
+static void fn_Menu_logLevels(WrenVM *vm) { push_indexed_names(vm, log_levels, 0); }
+static void fn_Menu_fontsCatalog(WrenVM *vm) { push_indexed_names(vm, font_names, 0); }
+
+static const int address_family_values[] = {
+	ADDRESS_FAMILY_UNSPEC, ADDRESS_FAMILY_INET, ADDRESS_FAMILY_INET6
+};
+static char *const address_family_names[] = {
+	"As per DNS", "IPv4 only", "IPv6 only", NULL
+};
+static const int rip_values[] = {
+	RIP_VERSION_NONE, RIP_VERSION_1, RIP_VERSION_3
+};
+static char *const rip_names[] = { "Off", "RIPv1", "RIPv3", NULL };
+static const int flow_values[] = {
+	COM_FLOW_CONTROL_RTS_CTS,
+	COM_FLOW_CONTROL_XON_OFF,
+	COM_FLOW_CONTROL_RTS_CTS | COM_FLOW_CONTROL_XON_OFF,
+	COM_FLOW_CONTROL_NONE
+};
+static char *const flow_names[] = {
+	"RTS/CTS", "XON/XOFF", "RTS/CTS and XON/XOFF", "None", NULL
+};
+static const int parity_values[] = {
+	SYNCTERM_PARITY_NONE, SYNCTERM_PARITY_EVEN, SYNCTERM_PARITY_ODD
+};
+static char *const parity_names[] = { "None", "Even", "Odd", NULL };
+
+static void
+push_value_names(WrenVM *vm, const int *values, char *const *names)
+{
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (int i = 0; names[i] != NULL; i++) {
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotDouble(vm, 2, values[i]);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotString(vm, 2, names[i]);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void fn_Menu_addressFamilies(WrenVM *vm) { push_value_names(vm, address_family_values, address_family_names); }
+static void fn_Menu_ripModes(WrenVM *vm) { push_value_names(vm, rip_values, rip_names); }
+static void fn_Menu_flowControls(WrenVM *vm) { push_value_names(vm, flow_values, flow_names); }
+static void fn_Menu_parities(WrenVM *vm) { push_value_names(vm, parity_values, parity_names); }
 
 static void
 fn_Menu_statusMessage(WrenVM *vm)
@@ -505,6 +667,7 @@ struct binding {
 
 static const struct binding bindings[] = {
 	{ "Menu", true, "load(_)", fn_Menu_load },
+	{ "Menu", true, "quickConnect(_)", fn_Menu_quickConnect },
 	{ "Menu", true, "statusMessage(_)", fn_Menu_statusMessage },
 	{ "Menu", true, "entries", fn_Menu_entries },
 	{ "Menu", true, "defaults", fn_Menu_defaults },
@@ -512,6 +675,16 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "create(_)", fn_Menu_create },
 	{ "Menu", true, "copy(_,_)", fn_Menu_copy },
 	{ "Menu", true, "sort()", fn_Menu_sort },
+	{ "Menu", true, "connectionTypes", fn_Menu_connectionTypes },
+	{ "Menu", true, "defaultPort(_)", fn_Menu_defaultPort },
+	{ "Menu", true, "addressFamilies", fn_Menu_addressFamilies },
+	{ "Menu", true, "rates", fn_Menu_rates },
+	{ "Menu", true, "musicModes", fn_Menu_musicModes },
+	{ "Menu", true, "ripModes", fn_Menu_ripModes },
+	{ "Menu", true, "flowControls", fn_Menu_flowControls },
+	{ "Menu", true, "parities", fn_Menu_parities },
+	{ "Menu", true, "fontsCatalog", fn_Menu_fontsCatalog },
+	{ "Menu", true, "logLevels", fn_Menu_logLevels },
 	{ "BBS", false, "name", fn_BBS_name },
 	{ "BBS", false, "rename(_)", fn_BBS_rename },
 	{ "BBS", false, "type", fn_BBS_type },

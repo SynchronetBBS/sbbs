@@ -819,6 +819,14 @@ The currently embedded scripts are:
 | auto / connected
 | Default `Status.callable` — paints the terminal's bottom row.
   See <<status,Status>> for the API and override pattern.
+
+| `main_menu`
+| auto / menu
+| The persistent Wren main-menu controller.  It loads the menu BBS
+  model, prompts for an encrypted-directory password when necessary,
+  and presents the dialing directory and settings UI.  The host calls
+  `MainMenu.run(currentName, connected)` whenever the application is
+  offline or Alt+E enters the directory over a connected session.
 |===
 
 The `syncterm` module is loaded on demand the first time something
@@ -880,6 +888,15 @@ A script's top-level code runs once in the VM which owns its event.
 Top-level code commonly registers hooks or creates the long-lived menu
 controller; persistent state should be stored on classes (static
 fields).
+
+The built-in `main_menu` module is also the host entry-point contract.
+An override must export class `MainMenu` with static method
+`run(currentName, connected)`.  `currentName` is a String or `null`.
+When `connected` is false, return a current menu `BBS` handle to start
+that connection or `null` to exit.  Connected invocations are
+edit-only; their return value is ignored.  The host validates and
+copies a returned record while the menu VM is still selected, so the
+Wren foreign object itself never crosses into the connected VM.
 
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
@@ -3269,6 +3286,14 @@ available in a connected VM.
   `MenuReadStatus` code.  A failed password, decrypt, parse, or
   migration leaves the preceding model and its generation intact.
 
+| Menu.quickConnect(url)
+| Parse a String using SyncTERM's normal quick-connect URL rules and
+  return an unsaved transient `BBS`, or `null` when no usable address
+  was produced.  A later `quickConnect` or successful `load` makes an
+  older transient handle stale.  It can be returned from
+  `MainMenu.run`, but `save()`, `rename()`, and `delete()` return
+  `false`; use `Menu.create` for a durable entry.
+
 | Menu.statusMessage(status)
 | Return the host diagnostic String for a `MenuReadStatus` value.
 
@@ -3423,6 +3448,15 @@ duplicate platform-dependent enum tables:
 
 | `screenModes`, `cursorStyles`, `scalingModes`
 | Lists of display names indexed by the corresponding numeric setting.
+
+| `connectionTypes`, `addressFamilies`, `rates`, `musicModes`,
+  `ripModes`, `flowControls`, `parities`, `fontsCatalog`, `logLevels`
+| Lists of `[value, displayName]` rows for directory-entry editors.
+  `fontsCatalog` uses the loaded conio font index as `value`; a BBS's
+  `font` property remains the display-name String.
+
+| `defaultPort(connectionType)`
+| Return the built-in default port for a connection-type value.
 
 | `outputModes`
 | Build-dependent List of `[value, displayName]` rows.  Assign only a
@@ -5812,6 +5846,9 @@ directly; `Enter` activates the focused button; `Tab` cycles focus.
 
 `Prompt` — `TextInput` plus OK / Cancel buttons.  `Enter` in the
 input or on OK submits the value; `Esc` or Cancel returns `null`.
+The read-only `input` getter exposes that `TextInput` so trusted UI
+code can set `maxLen` or a display-only `mask` before presenting the
+popup.
 
 `Find` — compact single-row variant of Prompt.  Title sits in the
 top frame border, the input fills the entire `innerBounds` row (no

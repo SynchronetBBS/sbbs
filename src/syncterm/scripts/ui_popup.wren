@@ -499,6 +499,10 @@ class Prompt is Popup {
     add(_cancel)
   }
 
+  // Exposed for trusted callers which need to set maxLen or a display
+  // mask before presenting the prompt.
+  input { _input }
+
   static show(app, message) { show(app, message, null) }
   static show(app, message, initial) {
     var p = Prompt.new(message, initial)

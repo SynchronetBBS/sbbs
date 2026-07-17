@@ -11,6 +11,7 @@
 #include "wren_bind_internal.h"
 #include "wren_host_internal.h"
 #include "wren_host.h"
+#include "wren_menu_host.h"
 
 #include "bbslist.h"   /* rates[], get_rate_num */
 #include "ciolib.h"
@@ -1119,11 +1120,8 @@ fn_Host_logLevelNames(WrenVM *vm)
 	}
 }
 
-/* Host.editBBSList() — open the bbslist editor over the active
- * connection (UIFC-driven).  Thin shim around show_bbslist + the
- * surrounding screen-save / settitle / uifcbail dance the C-side
- * Alt-E case used to do.  Routes the online-menu's
- * "Edit Dialing Directory" entry through here. */
+/* Host.editBBSList() — park the connected VM and enter the persistent
+ * trusted menu VM over the saved terminal screen. */
 void
 fn_Host_editBBSList(WrenVM *vm)
 {
@@ -1132,7 +1130,20 @@ fn_Host_editBBSList(WrenVM *vm)
 	if (st == NULL || st->bbs == NULL)
 		return;
 	struct ciolib_screen *savscrn = cp437_savescrn();
-	show_bbslist(st->bbs->name, true);
+	bool was_suspended = st->cterm_suspended != NULL &&
+	    *st->cterm_suspended;
+	if (st->cterm_suspended != NULL)
+		*st->cterm_suspended = true;
+	wren_menu_host_run(st->bbs->name, true);
+	if (st->cterm_suspended != NULL)
+		*st->cterm_suspended = was_suspended;
+	if (cterm != NULL && ((cterm->scrollback != scrollback_buf) ||
+	    (cterm->backlines != settings.backlines))) {
+		cterm->scrollback = scrollback_buf;
+		cterm->backlines = settings.backlines;
+		if (cterm->backpos > cterm->backlines)
+			cterm->backpos = cterm->backlines;
+	}
 	char title[LIST_NAME_MAX + 13];
 	sprintf(title, "SyncTERM - %s\n", st->bbs->name);
 	settitle(title);

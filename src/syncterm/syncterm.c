@@ -2616,9 +2616,13 @@ main(int argc, char **argv)
 	}
 
 	load_font_files();
-	if (wren_menu_host_init())
-		atexit(wren_menu_host_shutdown);
-	while ((!quitting) && (bbs != NULL || (bbs = show_bbslist(last_bbs, false)) != NULL)) {
+	if (!wren_menu_host_init()) {
+		fputs("Unable to initialize the Wren main menu\n", stderr);
+		return 1;
+	}
+	atexit(wren_menu_host_shutdown);
+	while ((!quitting) && (bbs != NULL ||
+	    (bbs = wren_menu_host_run(last_bbs, false)) != NULL)) {
 		if (default_hidepopups >= 0)
 			bbs->hidepopups = default_hidepopups;
 		if (default_nostatus >= 0)
