@@ -341,7 +341,7 @@ class MainMenu {
   static password { __password }
   static password=(value) { __password = value }
 
-  static run(current, connected) {
+  static prepare() {
     var status = Menu.load(__password)
     while (status == MenuReadStatus.passwordRequired ||
         status == MenuReadStatus.decryptFailed) {
@@ -351,14 +351,37 @@ class MainMenu {
       }
       var password = MenuUi.promptStandalone("Directory Password",
           message, "", 1023, true)
-      if (password == null) return null
+      if (password == null) return false
       status = Menu.load(password)
       if (status == MenuReadStatus.ok) __password = password
     }
     if (status != MenuReadStatus.ok) {
       MenuUi.alertStandalone("Directory Error", Menu.statusMessage(status))
-      return null
+      return false
     }
+    return true
+  }
+
+  static offerSave(source) {
+    if (!MenuUi.confirmStandalone("Save Directory Entry",
+        "Save this directory entry?")) return false
+    var name = source.name
+    if (!Menu.nameAvailable(name)) {
+      name = MenuUi.promptStandalone("Save Directory Entry",
+          "Personal entry name", name, 30, false)
+      if (name == null) return false
+    }
+    var bbs = Menu.copy(source, name)
+    if (bbs == null) {
+      MenuUi.alertStandalone("Save Directory Entry",
+          "The entry name is invalid or already in use.")
+      return false
+    }
+    return BbsEditor.editStandalone(bbs, false, true)
+  }
+
+  static run(current, connected) {
+    if (!prepare()) return null
     return MainMenuApp.new(current, connected).run()
   }
 }

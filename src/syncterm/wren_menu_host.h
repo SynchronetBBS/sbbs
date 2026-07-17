@@ -18,6 +18,10 @@ bool wren_menu_host_active(void);
  * show_bbslist(); connected mode is edit-only and always returns NULL. */
 struct bbslist *wren_menu_host_run(const char *current, bool connected);
 
+/* Offer a host-owned transient entry to the trusted menu save/editor flow.
+ * The record is copied into menu-owned storage before Wren sees it. */
+bool wren_menu_host_offer_save_bbs(const struct bbslist *bbs);
+
 /* C-owned UI rendered by the trusted menu VM.  Blocking calls establish
  * trusted input boundaries and restore the prior screen before returning.
  * prompt/choice return -2 when the bridge fails and -1 when cancelled. */

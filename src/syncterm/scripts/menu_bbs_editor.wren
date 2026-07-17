@@ -1,23 +1,59 @@
-import "syncterm" for Screen
+import "syncterm" for Key, KeyEvent, Screen
 import "syncterm_menu" for Menu
 import "menu_ui" for MenuUi
+import "ui_app" for App
 import "ui_widget" for Rect
 import "ui_pane" for Pane
 import "ui_list" for ListView
 import "ui_popup" for Alert, Confirm
 
+class EditorPane is Pane {
+  construct new() { super() }
+
+  handle(event) {
+    if (event is KeyEvent && event.code == Key.escape) {
+      triggerClose_()
+      return true
+    }
+    return super.handle(event)
+  }
+}
+
 class BbsEditor {
   static edit(app, bbs, isDefaults, isNew) {
+    var editor = build_(app, bbs, isDefaults, false)
+    app.modal(editor[0])
+    return finish_(editor[1], bbs, isNew)
+  }
+
+  static editStandalone(bbs, isDefaults, isNew) {
+    var app = App.new()
+    var editor = build_(app, bbs, isDefaults, true)
+    app.pushModal(editor[0])
+    app.runSync()
+    return finish_(editor[1], bbs, isNew)
+  }
+
+  static finish_(state, bbs, isNew) {
+    if (!state["saved"] && isNew) bbs.delete()
+    return state["saved"]
+  }
+
+  static build_(app, bbs, isDefaults, standalone) {
     var draft = draft_(bbs)
-    var saved = false
-    var pane = Pane.new()
+    var state = {"saved": false}
+    var pane = EditorPane.new()
     pane.title = "Edit Directory Entry"
     if (isDefaults) pane.title = "Default Connection Settings"
     pane.helpable = false
     pane.focused = true
     var size = Screen.size
     pane.bounds = Rect.new(2, 2, size[0] - 2, size[1] - 2)
-    pane.onClose = Fn.new { app.popModal() }
+    var dismiss = Fn.new {
+      app.popModal()
+      if (standalone) app.quit()
+    }
+    pane.onClose = dismiss
 
     var list = ListView.new()
     list.bounds = pane.innerBounds
@@ -26,14 +62,15 @@ class BbsEditor {
     var rebuild = null
     rebuild = Fn.new {
       var selected = list.selected
+      if (selected == null) selected = 0
       var rows = rows_(app, draft, isDefaults)
       list.items = rows.map {|row| row[0] }.toList
       list.selected = selected.min(rows.count - 1).max(0)
       list.onSelect = Fn.new {|i, item|
         if (i == 0) {
           if (apply_(app, bbs, draft, isDefaults)) {
-            saved = true
-            app.popModal()
+            state["saved"] = true
+            dismiss.call()
           }
         } else {
           rows[i][1].call()
@@ -42,9 +79,7 @@ class BbsEditor {
       }
     }
     rebuild.call()
-    app.modal(pane)
-    if (!saved && isNew) bbs.delete()
-    return saved
+    return [pane, state]
   }
 
   static draft_(b) {

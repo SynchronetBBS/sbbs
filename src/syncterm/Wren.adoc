@@ -897,13 +897,22 @@ controller; persistent state should be stored on classes (static
 fields).
 
 The built-in `main_menu` module is also the host entry-point contract.
-An override must export class `MainMenu` with static method
-`run(currentName, connected)`.  `currentName` is a String or `null`.
-When `connected` is false, return a current menu `BBS` handle to start
-that connection or `null` to exit.  Connected invocations are
-edit-only; their return value is ignored.  The host validates and
-copies a returned record while the menu VM is still selected, so the
-Wren foreign object itself never crosses into the connected VM.
+An override must export class `MainMenu` with these static methods:
+
+* `prepare()` loads the directory, performs any password interaction,
+  and returns a Bool indicating whether the model is ready.
+* `run(currentName, connected)` presents the directory. `currentName`
+  is a String or `null`. When `connected` is false, return a current
+  menu `BBS` handle to start that connection or `null` to exit.
+  Connected invocations are edit-only; their return value is ignored.
+* `offerSave(source)` receives a menu-owned transient `BBS` after a
+  command-line connection and returns whether it was saved. The host
+  calls `prepare()` first, then copies the C record into menu storage;
+  no connection-owned pointer or foreign value is passed into Wren.
+
+The host validates and copies a record returned by `run` while the menu
+VM is still selected, so the Wren foreign object itself never crosses
+into the connected VM.
 
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
@@ -3353,7 +3362,9 @@ available in a connected VM.
 
 | Menu.copy(source, name)
 | Create an unsaved personal copy of `source`, with reset statistics
-  and the supplied name.  Returns `null` on failure.
+  and the supplied name. `source` may be a current directory record or
+  a valid transient produced by `quickConnect` or the host command-line
+  save flow. Returns `null` on failure.
 
 | Menu.sort()
 | Reapply the configured BBS-list sort profiles.

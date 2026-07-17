@@ -140,6 +140,19 @@ push_bbs(WrenVM *vm, int slot, struct bbslist *bbs)
 	push_bbs_kind(vm, slot, bbs, false);
 }
 
+bool
+wren_menu_bind_push_transient_bbs(WrenVM *vm, int slot,
+    const struct bbslist *source)
+{
+	if (vm == NULL || source == NULL || slot < 0 || !menu_model.loaded)
+		return false;
+	memcpy(&menu_transient, source, sizeof(menu_transient));
+	transient_generation++;
+	transient_valid = true;
+	push_bbs_kind(vm, slot, &menu_transient, true);
+	return true;
+}
+
 static bool
 slot_string(WrenVM *vm, int slot, char *dest, size_t size)
 {
@@ -665,8 +678,7 @@ fn_Menu_copy(WrenVM *vm)
 		return;
 	}
 	struct wren_menu_bbs *source = wrenGetSlotForeign(vm, 1);
-	if (source->generation != menu_model.generation ||
-	    bbslist_model_record(&menu_model, source->bbs) == NULL) {
+	if (!menu_bbs_valid(source) || source->is_defaults) {
 		wren_throw(vm, "Menu.copy: stale BBS handle");
 		return;
 	}

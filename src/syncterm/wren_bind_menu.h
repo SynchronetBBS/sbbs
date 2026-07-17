@@ -20,4 +20,9 @@ WrenForeignClassMethods wren_menu_bind_lookup_class(const char *module,
  * boundary. */
 bool wren_menu_bind_copy_bbs(WrenVM *vm, int slot, struct bbslist *dest);
 
+/* Copy a host record into menu-owned transient storage and place a menu BBS
+ * foreign value in slot.  The menu model must already be loaded. */
+bool wren_menu_bind_push_transient_bbs(WrenVM *vm, int slot,
+                                      const struct bbslist *source);
+
 #endif

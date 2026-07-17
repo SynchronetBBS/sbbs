@@ -20,6 +20,8 @@
 static struct wren_host_state menu_state;
 static bool menu_active;
 static WrenHandle *menu_run_handle;
+static WrenHandle *menu_prepare_handle;
+static WrenHandle *menu_offer_save_handle;
 static WrenHandle *menu_ui_class;
 static WrenHandle *menu_alert_handle;
 static WrenHandle *menu_confirm_handle;
@@ -327,6 +329,9 @@ wren_menu_host_init(void)
 		wren_menu_bind_shutdown();
 	else {
 		menu_run_handle = wrenMakeCallHandle(menu_state.vm, "run(_,_)");
+		menu_prepare_handle = wrenMakeCallHandle(menu_state.vm, "prepare()");
+		menu_offer_save_handle = wrenMakeCallHandle(menu_state.vm,
+		    "offerSave(_)");
 		if (wrenHasModule(menu_state.vm, "menu_host_ui") &&
 		    wrenHasVariable(menu_state.vm, "menu_host_ui", "MenuHostUI")) {
 			wrenEnsureSlots(menu_state.vm, 1);
@@ -360,6 +365,12 @@ wren_menu_host_shutdown(void)
 	if (menu_run_handle != NULL)
 		wrenReleaseHandle(menu_state.vm, menu_run_handle);
 	menu_run_handle = NULL;
+	if (menu_prepare_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_prepare_handle);
+	if (menu_offer_save_handle != NULL)
+		wrenReleaseHandle(menu_state.vm, menu_offer_save_handle);
+	menu_prepare_handle = NULL;
+	menu_offer_save_handle = NULL;
 	if (menu_ui_class != NULL)
 		wrenReleaseHandle(menu_state.vm, menu_ui_class);
 	if (menu_alert_handle != NULL)
@@ -426,6 +437,47 @@ wren_menu_host_run(const char *current, bool connected)
 	wren_host_select_state(old);
 	wren_host_input_barrier();
 	return selected;
+}
+
+bool
+wren_menu_host_offer_save_bbs(const struct bbslist *bbs)
+{
+	if (bbs == NULL || !menu_active || menu_state.vm == NULL ||
+	    menu_prepare_handle == NULL || menu_offer_save_handle == NULL ||
+	    !wrenHasModule(menu_state.vm, "main_menu") ||
+	    !wrenHasVariable(menu_state.vm, "main_menu", "MainMenu"))
+		return false;
+
+	wren_menu_host_status_clear();
+	wren_host_input_barrier();
+	struct ciolib_screen *screen = cp437_savescrn();
+	if (screen == NULL) {
+		wren_host_input_barrier();
+		return false;
+	}
+
+	struct wren_host_state *old = wren_host_select_state(&menu_state);
+	wrenEnsureSlots(menu_state.vm, 1);
+	wrenGetVariable(menu_state.vm, "main_menu", "MainMenu", 0);
+	bool ready = wrenCall(menu_state.vm, menu_prepare_handle) ==
+	    WREN_RESULT_SUCCESS &&
+	    wrenGetSlotType(menu_state.vm, 0) == WREN_TYPE_BOOL &&
+	    wrenGetSlotBool(menu_state.vm, 0);
+	bool saved = false;
+	if (ready) {
+		wrenEnsureSlots(menu_state.vm, 3);
+		wrenGetVariable(menu_state.vm, "main_menu", "MainMenu", 0);
+		if (wren_menu_bind_push_transient_bbs(menu_state.vm, 1, bbs) &&
+		    wrenCall(menu_state.vm, menu_offer_save_handle) ==
+		    WREN_RESULT_SUCCESS &&
+		    wrenGetSlotType(menu_state.vm, 0) == WREN_TYPE_BOOL)
+			saved = wrenGetSlotBool(menu_state.vm, 0);
+	}
+	wren_host_select_state(old);
+	restorescreen(screen);
+	freescreen(screen);
+	wren_host_input_barrier();
+	return saved;
 }
 
 static bool

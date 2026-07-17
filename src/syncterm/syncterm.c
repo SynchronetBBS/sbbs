@@ -2692,27 +2692,10 @@ main(int argc, char **argv)
 		}
 		if (quitting || url[0]) {
 			if ((bbs != NULL) && (bbs->id == -1)) {
-				if (!safe_mode) {
-					if (settings.prompt_save) {
-						char *YesNo[3] = {"Yes", "No", ""};
-
-                                                /* Started from the command-line with a URL */
-						init_uifc(true, true);
-						i = 1;
-						if (!bbs->hidepopups) {
-							switch (uifc.list(WIN_MID | WIN_SAV, 0, 0, 0, &i, NULL,
-							    "Save this directory entry?", YesNo)) {
-								case 0: /* Yes */
-									edit_list(NULL, bbs, settings.list_path, false, NULL, NULL);
-									add_bbs(settings.list_path, bbs, false);
-									last_bbs = strdup(bbs->name);
-									break;
-								default: /* ESC/No */
-									break;
-							}
-						}
-					}
-				}
+				/* Started from the command line with a URL. */
+				if (!safe_mode && settings.prompt_save &&
+				    !bbs->hidepopups)
+					(void)wren_menu_host_offer_save_bbs(bbs);
 			}
 			if (bbs_alloc) {
 				bbs_alloc = false;
