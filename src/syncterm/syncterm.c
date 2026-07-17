@@ -1158,26 +1158,15 @@ set_default_cursor(void)
 #endif
 }
 
-/* check_exit — flip the `quitting` latch when the caller has signalled
- * a quit.  When `force` is true and `UIFC_XF_QUIT` isn't already set,
- * `settings.confirm_close` raises a "Are you sure you want to exit?"
- * uifc popup before flipping; that path is reached from bbslist /
- * menu.c ESC handlers.  Disconnect-cluster keys (Alt-X / Ctrl-Q /
- * Alt-H / window-close) come in via the Wren `Conn.endSession` hook,
- * which sets `UIFC_XF_QUIT` before doterm calls into this — so the
- * confirm is skipped there (Wren has already asked the user). */
+/* Set the process quit latch after a trusted menu or connected script has
+ * already obtained any required confirmation. */
 bool
 check_exit(bool force)
 {
 	if (quitting)
 		return true;
-	if (force || (uifc.exit_flags & UIFC_XF_QUIT)) {
-		if (!(uifc.exit_flags & UIFC_XF_QUIT) && settings.confirm_close) {
-			if (!confirm("Are you sure you want to exit?", NULL))
-				return false;
-		}
+	if (force) {
 		quitting = true;
-		uifc.exit_flags |= UIFC_XF_QUIT;
 		return true;
 	}
 	return false;
@@ -1188,7 +1177,6 @@ parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults
 {
 	char             *p1, *p2, *p3;
 
-#define BBSLIST_SIZE ((MAX_OPTS + 1) * sizeof(struct bbslist *))
 	struct  bbslist **list;
 	int               listcount = 0, i;
 
@@ -1289,7 +1277,7 @@ parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults
 	SAFECOPY(bbs->addr, p1);
 
         /* Find BBS listing in users phone book */
-	list = calloc(1, BBSLIST_SIZE);
+	list = calloc(BBSLIST_MAX_ENTRIES + 1, sizeof(*list));
 	read_list(settings.list_path, &list[0], NULL, &listcount, USER_BBSLIST);
 	for (i = 0; i < listcount; i++) {
 		if ((stricmp(bbs->addr, list[i]->addr) == 0)
@@ -2486,29 +2474,6 @@ main(int argc, char **argv)
 #endif
 
 	check_upgrade();
-#if 0
- #ifdef ALPHA
-	init_uifc(true, true);
-	uifc.showbuf(WIN_SAV | WIN_MID | WIN_HLP, 0, 0, 76, uifc.scrn_len - 2, "WARNING: ALPHA VERSION",
-	    "This is an ~`ALPHA`~ version\n"
-	    "\n"
-	    "It has both known and unknown issues and is not believed to be suitable\n"
-	    "for use. By using it, you are agreeing to be free QA to find and report bugs.\n"
-	    "\n"
-	    "There are expected to be many bugs.\n"
-	    "\n"
-	    "Bugs should be reported at `http://sf.net/p/syncterm/tickets/`\n"
-	    "when reporting bugs, please register with a valid email so I can follow\n"
-	    "up with additional questions.\n"
-	    "\n"
-	    "This message will appear every time you start this program.  Please\n"
-	    "consider running the latest release from:\n"
-	    "`https://sourceforge.net/projects/syncterm/files/latest/download`\n"
-	    "if you want a terminal that works.",
-	    NULL, NULL);
-	uifcbail();
- #endif /* ifdef ALPHA */
-#endif /* if 0 */
 
 	if (!winsock_startup())
 		return 1;
@@ -2601,9 +2566,8 @@ main(int argc, char **argv)
 			bbs->hidepopups = default_hidepopups;
 		if (default_nostatus >= 0)
 			bbs->nostatus = default_nostatus;
-		gettextinfo(&txtinfo); /* Current mode may have changed while in show_bbslist() */
+		gettextinfo(&txtinfo); /* The menu may have changed the current mode. */
 		FREE_AND_NULL(last_bbs);
-		uifcbail();
 		if (bbs->screen_mode != SCREEN_MODE_CURRENT)
 			fake_mode = screen_to_ciolib(bbs->screen_mode);
 		textmode(screen_to_ciolib(bbs->screen_mode));
@@ -2612,7 +2576,6 @@ main(int argc, char **argv)
 		setfont(find_font_id(bbs->font), true, 1);
 		if (conn_connect(bbs)) {
 			load_font_files();
-			uifcbail();
 			textmode(txtinfo.currmode);
 			set_default_cursor();
 			fake_mode = -1;
@@ -2644,7 +2607,6 @@ main(int argc, char **argv)
 					strListFree(&inifile);
 				}
 			}
-			uifcbail();
 			sprintf(str, "SyncTERM - %s", bbs->name);
 			settitle(str);
 			term.nostatus = bbs->nostatus;
@@ -2756,7 +2718,6 @@ main(int argc, char **argv)
 		}
 	}
 
-	uifcbail();
 #ifdef _WINSOCKAPI_
 	if (WSAInitialized && (WSACleanup() != 0))
 		fprintf(stderr, "!WSACleanup ERROR %d", ERROR_VALUE);
@@ -2768,7 +2729,6 @@ USAGE:
 		free(bbs);
 	if (cio_api.mode == CIOLIB_MODE_AUTO && isatty(STDOUT_FILENO))
 		initciolib(CIOLIB_MODE_ANSI);
-	uifcbail();
 	clrscr();
 	gettextinfo(&txtinfo);
 	p = lp = usage;

@@ -189,8 +189,6 @@ struct bbslist {
 extern char *music_names[];
 extern char  music_helpbuf[];
 
-struct bbslist *show_bbslist(char *current, int connected);
-
 extern char       *log_levels[];
 extern char       *rate_names[];
 extern int         rates[];
@@ -234,7 +232,7 @@ bool rewrite_bbslist_kdf(const char *listpath, const char *kdf_spec);
 bool rewrite_bbslist_encryption(const char *listpath,
     enum iniCryptAlgo algo, int keysize, const char *new_password);
 bool save_webgets(void);
-int edit_list(struct bbslist **list, struct bbslist *item, char *listpath, int isdefault, int *init_copt, int *init_bar);
+void bbslist_sweep_orphan_caches(struct bbslist **list, size_t listcount);
 int get_rate_num(int rate);
 cterm_emulation_t get_emulation(struct bbslist *bbs);
 const char *get_emulation_str(struct bbslist *bbs);

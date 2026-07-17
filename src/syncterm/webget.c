@@ -1305,23 +1305,3 @@ destroy_webget_req(struct webget_request *req)
 	req->state = NULL;
 	pthread_mutex_destroy(&req->mtx);
 }
-
-#if 0
-#include "uifcinit.h"
-
-int
-main(int argc, char **argv)
-{
-	struct webget_request req;
-	uifc.size = sizeof(uifc);
-	init_uifc(true, true);
-	if (init_webget_req(&req, "/tmp", "Synchronet BBS List", "http://synchro.net/syncterm.lst")) {
-		if (iniReadHttp(&req))
-			puts("Success!");
-		else
-			printf("Failure: '%s'\n", req.msg);
-		destroy_webget_req(&req);
-	}
-	return 0;
-}
-#endif

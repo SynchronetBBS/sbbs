@@ -14,7 +14,6 @@
 #include "gen_defs.h"
 #include "telnet.h"
 #include "term.h"
-#include "uifcinit.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244 4267 4018)

@@ -3,7 +3,7 @@
 // keys_default.wren and the SM_DISCONNECT / SM_EXIT entries in
 // online_menu.wren.  On a Yes, calls Conn.endSession to flag cleanup;
 // doterm() picks the flag up at the top of its next iteration and
-// either returns to the bbslist (`exitApp == false`) or exits
+// either returns to the main menu (`exitApp == false`) or exits
 // SyncTERM entirely (`exitApp == true`).
 
 import "syncterm" for Conn, Input, Screen

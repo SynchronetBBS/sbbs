@@ -14,8 +14,8 @@ void wren_menu_host_shutdown(void);
 bool wren_menu_host_active(void);
 
 /* Run the persistent menu controller.  In selection mode, a successful BBS
- * choice is returned as a host-owned copy with the same lifetime contract as
- * show_bbslist(); connected mode is edit-only and always returns NULL. */
+ * choice is returned as a host-owned copy that the caller must free;
+ * connected mode is edit-only and always returns NULL. */
 struct bbslist *wren_menu_host_run(const char *current, bool connected);
 
 /* Offer a host-owned transient entry to the trusted menu save/editor flow.

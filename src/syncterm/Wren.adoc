@@ -2888,7 +2888,7 @@ Connection-level send and receive.
 | Request a session end.  Sets a flag that doterm() picks up at the
   top of its next iteration, runs the (UI-free) cleanup
   (cterm shutdown, conn close, mouse/cursor restore), then either
-  returns to the bbslist menu (`exitApp == false`, Alt-H / Ctrl-Q
+  returns to the main menu (`exitApp == false`, Alt-H / Ctrl-Q
   semantics) or exits syncterm entirely (`exitApp == true`,
   Alt-X / window-close semantics).  Returns immediately — the
   caller is responsible for any user-facing confirm popup.  The
@@ -2903,9 +2903,11 @@ Connection-level send and receive.
   the historical Shift+Insert handler.
 
 | `Conn.scrollback()`
-| Open the uifc scrollback viewer modal.  Mouse events are disabled
-  for the duration and restored on exit.  Wraps the historical Alt+B
-  handler.
+| Invoke `ScrollbackView.run()` in the connected VM.  The Wren view
+  temporarily presents cterm's scrollback ring, supports keyboard,
+  mouse, selection, URL, and help interaction, then restores the live
+  terminal and mouse subscriptions on exit.  This is the default Alt+B
+  path.
 
 | `Conn.upload()`
 | Open the upload picker / dialog (equivalent to the legacy Alt+U
@@ -4045,17 +4047,14 @@ if (Host.launchScript != null && Host.launchScript.endsWith("foo.wren")) {
   increment back to `0` when it exceeds this cap, matching the
   historical SM_OOII cycle.
 
-| `Host.fontControl()`
-| Open the font picker dialog (uifc-driven font picker for the four
-  cterm font slots).  No-op in safe mode and on text-only video
-  backends.  Mouse events are restored on the way out.  Wraps the
-  historical Alt+F handler.
-
 | `Host.editBBSList()`
-| Open the BBS list editor (uifc-driven directory / settings
-  dialog).  Saves and restores the cterm screen around the dialog,
-  re-applies the window title, and resets the scrollback buffer if
-  the configured size changed.  Wraps the historical Alt+E handler.
+| Suspend terminal byte consumption and enter the persistent trusted
+  menu VM over a saved copy of the connected screen.  The connected VM
+  is parked, no Wren or foreign object crosses between VMs, and trusted
+  input barriers discard queued synthetic keyboard and mouse input in
+  both directions.  On return, the host restores the terminal screen,
+  title, scrollback configuration, and prior suspension state.  This is
+  the default Alt+E path.
 
 | `Host.sshPublicKey`
 | The first locally-configured SSH public key, as a Map

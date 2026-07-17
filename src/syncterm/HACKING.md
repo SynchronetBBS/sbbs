@@ -20,7 +20,7 @@ extend the codebase.
 12. [RIPscrip Graphics (ripper)](#ripscrip-graphics)
 13. [Operation Overkill II (ooii)](#operation-overkill-ii)
 14. [File Transfer Protocols](#file-transfer-protocols)
-15. [UI Framework (uifc)](#ui-framework)
+15. [Wren UI and Native Picker](#ui-framework)
 16. [Cross-Platform Library (xpdev)](#cross-platform-library)
 17. [Character Set Translation](#character-set-translation)
 18. [Utility Libraries](#utility-libraries)
@@ -149,7 +149,7 @@ src/
   sbbs3/sexyz.h   — SEXYZ mode flags
   sbbs3/saucedefs.h — SAUCE record definitions
   syncterm/       — this directory (the application)
-  uifc/           — text-mode UI framework
+  uifc/           — native file-picker implementation
   xpdev/          — cross-platform portability layer
 3rdp/
   dist/           — cryptlib source archive and patches
@@ -162,7 +162,8 @@ src/
 | File | Lines | Purpose |
 |------|-------|---------|
 | `syncterm.c` | ~2400 | main(), settings, URL parsing, webget, init |
-| `bbslist.c` | ~5200 | BBS directory: read/write/edit, INI persistence |
+| `bbslist.c` | ~1700 | BBS directory parsing, persistence, encryption, sorting |
+| `bbslist_model.c` | ~300 | Transactional directory model exposed to the menu VM |
 | `term.c` | ~5500 | Terminal loop (doterm), file transfers, scrollback |
 | `conn.c` | ~800 | Connection abstraction: circular buffers, socket connect |
 | `conn_telnet.c` | ~400 | Telnet: IAC expand, rx/tx parse callbacks |
@@ -179,10 +180,11 @@ src/
 | `ooii_logons.c` | ~1840 | OOII embedded ANSI art logon screens (3 modes × 10) |
 | `ooii_bmenus.c` | ~620 | OOII embedded ANSI art base menus (3 modes × 6) |
 | `ooii_cmenus.c` | ~510 | OOII embedded ANSI art complex menus (3 modes × 5) |
-| `menu.c` | ~300 | Online menu (Alt-Z), scrollback viewer |
 | `window.c` | ~200 | Terminal window sizing, background drawing |
-| `uifcinit.c` | ~200 | UIFC library init/bail with palette/font management |
-| `fonts.c` | ~300 | Custom font file management (INI persistence) |
+| `wren_menu_host.c` | ~640 | Persistent trusted menu VM and C dialog bridge |
+| `wren_bind_menu.c` | ~1000 | Menu-only BBS, settings, font, and catalog bindings |
+| `uifcinit.c` | ~190 | Per-call native picker initialization and teardown |
+| `fonts.c` | ~280 | Custom font INI persistence and runtime loading |
 | `webget.c` | ~400 | HTTP/HTTPS download for BBS lists/cache |
 | `libjxl.c` | ~200 | JPEG XL decoder (dynamic loading) |
 
@@ -323,7 +325,7 @@ src/
 
 `main()` parses command-line arguments and URLs, loads settings from
 `syncterm.ini` via the xpdev INI library, initializes the ciolib display
-backend, and enters the BBS list UI.
+backend and persistent menu VM, and enters the Wren main menu.
 
 #### URL Parsing
 
@@ -337,7 +339,7 @@ The `syncterm_settings` struct holds global configuration: output mode,
 scaling, scrollback lines, modem config, TERM string, transfer paths,
 UI colors, audio modes, cursor type, etc. Persisted via INI file.
 
-### BBS Directory (bbslist.c)
+### BBS Directory (`bbslist.c`, `bbslist_model.c`)
 
 The BBS list is the main navigation interface. Each entry is a `struct
 bbslist` (~168 bytes) containing: name, address, port, credentials,
@@ -347,16 +349,20 @@ settings, RIP version, palette, and more.
 Two list types: `USER_BBSLIST` (personal, read-write) and
 `SYSTEM_BBSLIST` (shared, read-only). Both stored in INI format.
 
-`show_bbslist()` provides the main directory with sort, search,
-add/edit/delete. `edit_list()` is a ~1000-line property editor with
-sub-menus for all fields.
+`bbslist.c` owns format parsing, encrypted persistence, field catalogs,
+cache cleanup, and sort-profile persistence. `bbslist_model.c` loads a
+transactional view of personal and read-only system lists for the trusted
+menu VM. The user-facing directory, editors, settings, font management,
+and sort-profile tools are Wren modules under `scripts/auto/menu/` and
+`scripts/menu_*.wren`.
 
 Named sort profiles (`named_string_t**`) control the directory sort order.
 Each profile maps a display name to a comma-separated list of signed field
 indices into the `sort_order[]` table. Profiles are stored in the
 `[SortProfiles]` INI section; the active profile name in `[SyncTERM]
 ActiveSortProfile`. Users cycle profiles with `<`/`>` keys in the
-directory listing and manage them via `edit_sort_profiles()` (Ctrl+S).
+directory listing and manage them through `menu_sort_profiles.wren`
+(Ctrl+S).
 The active profile's value is parsed into `sortorder[]` for `listcmp()`
 which is the qsort comparator. `listcmp()` unconditionally falls back to
 name comparison for stable ordering.
@@ -1013,25 +1019,31 @@ flag).
 
 ## UI Framework
 
-### uifc (uifc/)
+### Wren Application UI
 
-Novell SYSCON-inspired text-mode UI framework. Function-pointer-based
-API dispatched through `uifcapi_t` struct.
+The application UI is implemented by the widgets in `scripts/ui_*.wren`.
+The persistent main menu is rooted at
+`scripts/auto/menu/main_menu.wren`; connected-session controls, including
+the online menu, scrollback, transfers, capture, music, and font selection,
+live under `scripts/auto/connected/`.
 
-#### Key Components
+The two sets run in separate Wren VMs. The menu VM is trusted and owns
+directory, settings, custom-font, and picker capabilities. A fresh
+connected VM is created per session and may run scripts supplied by the
+remote system, so it cannot import `syncterm_menu` or receive menu foreign
+objects. Alt+E parks the connected VM and terminal byte pump while the menu
+VM runs. Input-epoch barriers discard conio pushback and late asynchronous
+input at every ownership transition. See `Wren.adoc` for the binding and
+security contracts.
 
-- `ulist()` (~1270 lines): Menu system with window save/restore stack,
-  dynamic updates, keyboard/mouse handling, type-ahead search,
-  clipboard, and extensive mode flags (64-bit `uifc_winmode_t`)
-- `ugetstr()`: String input with insert/overwrite, clipboard paste,
-  character filtering, password mode
-- `showbuf()`: Scrollable text viewer with markup (STX/~ toggle inverse)
-- `filepick.c`: Split-pane file/directory browser
+### Native File Picker (`uifc/`)
 
-#### Static State
-
-Only one UIFC instance can exist per process — all state is file-scope
-static.
+UIFC remains only for its split-pane native file picker. `uifcinit.c`
+initializes and tears down the singleton around each picker call and places
+trusted input barriers on both sides. Picker selections mint constrained
+Wren file capabilities: read-only grants for selected inputs and one-shot
+write-only grants for save destinations. Ordinary menus, prompts, viewers,
+and settings no longer call UIFC.
 
 ## Cross-Platform Library
 

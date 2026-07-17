@@ -141,7 +141,6 @@
 #include "conn.h"
 #include "fonts.h"
 #include "syncterm.h"
-#include "uifcinit.h"
 #include "window.h"
 extern int default_font;
 

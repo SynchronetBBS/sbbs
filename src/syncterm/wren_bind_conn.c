@@ -20,7 +20,6 @@
 #include "cterm.h"
 #include "syncterm.h"  /* safe_mode */
 #include "term.h"      /* force_status_update, term, struct mouse_state, setup_mouse_events */
-#include "uifcinit.h"  /* uifc (the singleton), UIFC_XF_QUIT */
 #include "wren_bind_fs.h" /* wren_file_consume_write, FILE_ERR_* */
 #ifndef WITHOUT_OOII
 #include "ooii.h"      /* MAX_OOII_MODE */
@@ -206,7 +205,7 @@ fn_Conn_close(WrenVM *vm)
  * the request up at the top of its next key-dispatch iteration via
  * `wren_host_take_pending_disconnect`, runs the existing
  * "Disconnect... Are you sure?" confirm, and either tears the
- * cterm down + returns to the bbslist (`exitApp == false`, like
+ * cterm down + returns to the main menu (`exitApp == false`, like
  * Alt-H / Ctrl-Q) or also flags syncterm for full exit
  * (`exitApp == true`, like Alt-X / window-close).  Designed for
  * default key handlers that used to live as C cases in doterm();
@@ -226,8 +225,6 @@ fn_Conn_endSession(WrenVM *vm)
 	}
 	st->pending_disconnect      = true;
 	st->pending_disconnect_exit = exit_app;
-	if (exit_app)
-		uifc.exit_flags |= UIFC_XF_QUIT;
 	wrenSetSlotNull(vm, 0);
 }
 
@@ -1120,8 +1117,9 @@ fn_Host_logLevelNames(WrenVM *vm)
 	}
 }
 
-/* Host.editBBSList() — park the connected VM and enter the persistent
- * trusted menu VM over the saved terminal screen. */
+/* Host.editBBSList() parks the connected VM and enters the persistent
+ * trusted menu VM over the saved terminal screen.  Both transitions are
+ * protected by the menu host's input barriers. */
 void
 fn_Host_editBBSList(WrenVM *vm)
 {
@@ -1147,7 +1145,6 @@ fn_Host_editBBSList(WrenVM *vm)
 	char title[LIST_NAME_MAX + 13];
 	sprintf(title, "SyncTERM - %s\n", st->bbs->name);
 	settitle(title);
-	uifcbail();
 	restorescreen(savscrn);
 	freescreen(savscrn);
 }

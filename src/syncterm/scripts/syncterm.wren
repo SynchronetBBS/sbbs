@@ -962,14 +962,13 @@ foreign class Conn {
   // confirm; on yes, hangs up the connection.  When `exitApp` is
   // true (Alt-X / window-close semantics), syncterm exits after
   // hangup; when false (Alt-H / Ctrl-Q semantics), control returns
-  // to the bbslist menu.  The confirm runs on doterm()'s next
+  // to the main menu.  The confirm runs on doterm()'s next
   // iteration, so this returns immediately - handlers don't block.
   foreign static endSession(exitApp)
   // Paste from system clipboard onto the wire - codepage-aware,
   // bracketed-paste-aware.  No-op when clipboard is empty.
   foreign static paste()
-  // Open the uifc scrollback viewer modal.  Mouse events are
-  // disabled for the duration and restored on exit.
+  // Open the Wren scrollback browser for the active terminal.
   foreign static scrollback()
   foreign static connected
   foreign static elapsedSeconds
@@ -1575,8 +1574,8 @@ class Host {
   foreign static logLevel=(n)
   foreign static logLevelNames
 
-  // Open the bbslist editor over the active connection (uifc).  Thin
-  // shim - migrated to Wren when the bbslist editor itself is.
+  // Suspend the active terminal and enter the trusted persistent menu VM.
+  // The connected VM receives no menu objects or capabilities.
   foreign static editBBSList()
 
   // Wren console activity since the user last visited the REPL.

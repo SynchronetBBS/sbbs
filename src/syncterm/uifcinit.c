@@ -7,7 +7,6 @@
 #include <vidmodes.h>
 
 #include "filepick.h"
-#include "host_ui.h"
 #include "syncterm.h"
 #include "uifcinit.h"
 #include "wren_host.h"
@@ -34,21 +33,7 @@ get_title(char *str, size_t sz)
 	snprintf(str, sz, "%.40s - %.30s", syncterm_version, output_descrs[cio_api.mode]);
 }
 
-void
-set_uifc_title(void)
-{
-	char top[80];
-
-	textattr(uifc.bclr | (uifc.cclr<<4));
-	get_title(top, sizeof(top));
-	gotoxy(1,1);
-	clreol();
-	gotoxy(3,1);
-	cputs(top);
-        uifc.timedisplay(true);
-}
-
-int
+static int
 init_uifc(bool scrn, bool bottom)
 {
 	int               i;
@@ -147,25 +132,9 @@ uifcbail(void)
 	uifc_initialized = 0;
 }
 
-void
-uifcmsg(char *msg, char *helpbuf)
-{
-	(void)helpbuf;
-	host_ui_alert("SyncTERM", msg);
-}
-
-int
-uifcinput(char *title, int len, char *msg, int mode, char *helpbuf)
-{
-	return host_ui_prompt(title, helpbuf, msg, (size_t)len + 1,
-	    (size_t)len, (mode & K_PASSWORD) != 0);
-}
-
-/* Shared init/bail wrapper for filepick + filepick_multi.  Mirrors
- * uifcmsg() / uifcinput() / confirm() so the picker can be invoked
- * from a connected session — without this dance, the UIFC layer's
- * per-session state isn't valid and api->list crashes inside the
- * pane-redraw path. */
+/* Shared init/bail wrapper for the one remaining UIFC component: the native
+ * file picker.  It can be invoked from either trusted VM, so each call gets
+ * fresh picker state and trusted input boundaries. */
 static int
 uifcfilepick_common(char *title, struct file_pick *fp,
     const char *initial_dir, const char *default_mask, int opts,
@@ -190,7 +159,8 @@ uifcfilepick_common(char *title, struct file_pick *fp,
 		else
 			ret = filepick(&uifc, title, fp, initial_dir,
 			    default_mask, opts);
-		check_exit(false);
+		if (uifc.exit_flags & UIFC_XF_QUIT)
+			quitting = true;
 		wren_host_input_barrier();
 	}
 	if (!i) {
@@ -215,11 +185,4 @@ uifcfilepick_multi(char *title, struct file_pick *fp,
 {
 	return uifcfilepick_common(title, fp, initial_dir, default_mask,
 	    opts, true);
-}
-
-int
-confirm(char *msg, char *helpbuf)
-{
-	(void)helpbuf;
-	return host_ui_confirm("Confirm", msg);
 }

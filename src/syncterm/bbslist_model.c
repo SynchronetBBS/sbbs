@@ -101,6 +101,7 @@ load_contents(struct bbslist_model *model, const char *password)
 			    sizeof(model->records[i].persisted_name));
 		}
 	}
+	bbslist_sweep_orphan_caches(model->entries, model->count);
 	model->loaded = true;
 	return BBSLIST_READ_OK;
 }

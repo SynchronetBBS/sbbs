@@ -12,6 +12,9 @@ Fully support OOB data in RLogin modes
 Hold Alt during drag-select to copy a rectangular region
 Prototype SFTP client (Alt+S, Alt+B)
 Add Wren scripting engine, REPL console with Ctrl+`
+Replace the dialing directory and settings UI with a persistent Wren menu
+Isolate trusted menu scripts from per-connection Wren scripts
+Retain UIFC only for the trusted native file picker
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support
 Add support for "cursor on mode" to Prestel (ala Acorn manual)
