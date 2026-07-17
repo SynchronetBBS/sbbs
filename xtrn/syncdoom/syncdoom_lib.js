@@ -324,16 +324,22 @@ function sd_list_games(cfg)
 // 'start'/'end' records and player 'death's -- the matching 'frag' already shows).
 function sd_event_text(e)
 {
+	// The door stamps every frag/level/death with the map it happened on; say so,
+	// since "X was killed" on repeat tells the reader nothing. Guarded: a record
+	// written before the door recorded maps has no e.map, and " on undefined" is
+	// worse than saying nothing.
+	var on = e.map ? " on " + e.map : "";
+
 	switch (e.type) {
 		case "frag":
-			return e.killer + " fragged " + e.victim;
+			return e.killer + " fragged " + e.victim + on;
 		case "level":
 			return e.user + " cleared " + e.map + " in " + gl.mmss(e.secs);
 		case "death":
 			if (e.cause == "player")  return null;
-			if (e.cause == "suicide") return e.user + " blew themselves up";
-			if (e.cause == "monster") return e.user + " was killed";
-			return e.user + " died";          // environment
+			if (e.cause == "suicide") return e.user + " blew themselves up" + on;
+			if (e.cause == "monster") return e.user + " was killed" + on;
+			return e.user + " died" + on;     // environment
 	}
 	return null;
 }
