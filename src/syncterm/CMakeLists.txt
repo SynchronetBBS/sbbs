@@ -300,6 +300,7 @@ set(SOURCE
 	wren_menu_host.c
 	wren_bind.c
 	wren_bind_menu.c
+	wren_bind_menu_fonts.c
 	wren_bind_menu_settings.c
 	wren_bind_sftp.c
 	wren_bind_fs.c

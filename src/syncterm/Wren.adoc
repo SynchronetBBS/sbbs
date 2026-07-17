@@ -756,7 +756,8 @@ The currently embedded scripts are:
 | `syncterm_menu`
 | library / menu only
 | Trusted main-menu data model: transactional BBS-list loading and
-  mutable `BBS` records.  The connected loader rejects this module.
+  mutable `BBS` records, program settings, web lists, and custom-font
+  configuration.  The connected loader rejects this module.
 
 | `console`
 | auto / connected
@@ -956,7 +957,7 @@ errors.  Menu-only data APIs are imported separately:
 
 [source,wren]
 ----
-import "syncterm_menu" for Menu, BBS, Settings, MenuReadStatus, MenuEncryption
+import "syncterm_menu" for Menu, BBS, Settings, MenuFont, MenuReadStatus, MenuEncryption, MenuFontSlot
 ----
 
 `Cache` is injected into the `syncterm` module from C as a
@@ -3431,6 +3432,10 @@ duplicate platform-dependent enum tables:
 | Build-dependent List of `[bit, displayName]` rows for selectable
   audio backends.
 
+| `buildOptions`
+| List of `[category, displayName, enabled]` rows describing this
+  executable's crypto, terminal, video, and audio build features.
+
 | `colors`, `backgroundColors`
 | Foreground and background color-name Lists, including their final
   `Default` entries.
@@ -3496,6 +3501,71 @@ Add, update, and delete are disabled in safe mode before any fetch or
 in-memory mutation.  Refresh remains a read/fetch operation and is
 permitted.  No web-list method exposes its cache pathname as a file
 capability.
+
+=== Menu Custom Fonts [[menu-custom-fonts]]
+
+Custom-font configuration is held in a C-owned model separate from
+the loaded conio font slots.  `Menu.fonts` returns a fresh List of
+`MenuFont` handles, or `null` if the INI file could not be read.
+`Menu.fontsDirty` reports whether that model has unsaved edits.
+
+[options="header",cols="2m,4"]
+|===
+| Method | Description
+
+| `Menu.createFont(name, index)`
+| Insert a blank custom font at `index` and return its handle.  Names
+  are unique case-insensitively, contain 1..50 bytes, and may not
+  contain controls or INI section brackets.  Returns `null` for an
+  invalid name, allocation failure, safe mode, or when all 210 custom
+  conio slots are represented.
+
+| `Menu.saveFonts()`
+| Replace the `Font:` sections in `syncterm.ini`, then clear and reload
+  conio's custom font slots.  Returns Bool.  A persistence failure
+  leaves the previously loaded slots in place.
+
+| `Menu.reloadFonts()`
+| Discard unsaved model edits and reread the INI file transactionally.
+  Returns Bool.
+
+| `MenuFont.name`
+| Read/write display and INI-section name.  A duplicate assignment
+  aborts rather than silently merging sections.
+
+| `MenuFont.path(slot)`
+| Configured pathname String for display, or `null`.  Returning a
+  pathname does not mint a `File` and confers no open authority.
+
+| `MenuFont.setFile(slot, file)`
+| Assign a path from a live, read-authorized `File`, normally returned
+  by `Host.pickFile`.  Returns Bool and rejects files whose exact size
+  does not match the selected raw-font slot.
+
+| `MenuFont.clearFile(slot)`
+| Clear one configured size and return Bool.
+
+| `MenuFont.delete()`
+| Remove the record from the in-memory model and return Bool.  Call
+  `Menu.saveFonts()` to persist the deletion.
+|===
+
+`MenuFontSlot` values and their picker masks are:
+
+[options="header",cols="2m,1,1,2"]
+|===
+| Constant | Code | Bytes | Typical mask
+| `eightByEight` | 0 | 2048 | `*.f8`
+| `eightByFourteen` | 1 | 3584 | `*.f14`
+| `eightBySixteen` | 2 | 4096 | `*.f16`
+| `twelveByTwenty` | 3 | 10240 | `*.f20`
+|===
+
+Create and delete advance the font-model generation, invalidating all
+previously obtained `MenuFont` handles.  Rename, file assignment,
+clear, and save preserve handles.  Font mutation and persistence are
+disabled in safe mode; reload remains available because it only reads
+the existing configuration.
 
 === Menu BBS Constants [[menu-bbs-constants]]
 

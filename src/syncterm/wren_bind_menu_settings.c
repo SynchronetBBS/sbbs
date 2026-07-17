@@ -15,6 +15,17 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__unix__) && defined(SOUNDCARD_H_IN) && \
+    (SOUNDCARD_H_IN > 0) && !defined(_WIN32)
+	#if SOUNDCARD_H_IN == 1
+		#include <sys/soundcard.h>
+	#elif SOUNDCARD_H_IN == 2
+		#include <soundcard.h>
+	#elif SOUNDCARD_H_IN == 3
+		#include <linux/soundcard.h>
+	#endif
+#endif
+
 struct wren_menu_settings {
 	enum syncterm_wren_foreign type;
 	struct syncterm_settings settings;
@@ -418,6 +429,143 @@ fn_Menu_audioModes(WrenVM *vm)
 	}
 }
 
+struct build_option {
+	const char *category;
+	const char *name;
+	bool enabled;
+};
+
+static const struct build_option build_options[] = {
+#ifdef WITHOUT_DEUCESSH
+	{ "Crypto", "DeuceSSH (SSH)", false },
+#else
+	{ "Crypto", "DeuceSSH (SSH)", true },
+#endif
+#if defined(XP_CRYPTO_BACKEND_OPENSSL)
+	{ "Crypto", "OpenSSL (TLS, symmetric ciphers)", true },
+#else
+	{ "Crypto", "OpenSSL (TLS, symmetric ciphers)", false },
+#endif
+#if defined(XP_CRYPTO_BACKEND_BOTAN)
+	{ "Crypto", "Botan 3 (TLS, symmetric ciphers)", true },
+#else
+	{ "Crypto", "Botan 3 (TLS, symmetric ciphers)", false },
+#endif
+#ifdef WITHOUT_OOII
+	{ "Terminal", "Operation Overkill ][ Terminal", false },
+#else
+	{ "Terminal", "Operation Overkill ][ Terminal", true },
+#endif
+#ifdef WITH_JPEG_XL
+	{ "Terminal", "JPEG XL support", true },
+#else
+	{ "Terminal", "JPEG XL support", false },
+#endif
+#ifdef WITH_SDL
+	{ "Video", "SDL", true },
+#else
+	{ "Video", "SDL", false },
+#endif
+#ifdef DISABLE_X11
+	{ "Video", "X11 Support", false },
+#else
+	{ "Video", "X11 Support", true },
+#endif
+#ifdef WITH_XINERAMA
+	{ "Video", "Xinerama", true },
+#else
+	{ "Video", "Xinerama", false },
+#endif
+#ifdef WITH_XRANDR
+	{ "Video", "XRandR", true },
+#else
+	{ "Video", "XRandR", false },
+#endif
+#ifdef WITH_XRENDER
+	{ "Video", "XRender", true },
+#else
+	{ "Video", "XRender", false },
+#endif
+#ifdef WITH_GDI
+	{ "Video", "GDI", true },
+#else
+	{ "Video", "GDI", false },
+#endif
+#ifdef WITH_WAYLAND
+	{ "Video", "Wayland", true },
+#else
+	{ "Video", "Wayland", false },
+#endif
+#ifdef WITH_QUARTZ
+	{ "Video", "Quartz", true },
+#else
+	{ "Video", "Quartz", false },
+#endif
+#if (defined SOUNDCARD_H_IN) && (SOUNDCARD_H_IN > 0) && defined(AFMT_U8)
+	{ "Audio", "OSS", true },
+#else
+	{ "Audio", "OSS", false },
+#endif
+#ifdef WITH_SDL_AUDIO
+	{ "Audio", "SDL", true },
+#else
+	{ "Audio", "SDL", false },
+#endif
+#ifdef USE_ALSA_SOUND
+	{ "Audio", "ALSA", true },
+#else
+	{ "Audio", "ALSA", false },
+#endif
+#ifdef _WIN32
+	{ "Audio", "WASAPI", true },
+#else
+	{ "Audio", "WASAPI", false },
+#endif
+#ifdef WITH_PORTAUDIO
+	{ "Audio", "PortAudio", true },
+#else
+	{ "Audio", "PortAudio", false },
+#endif
+#ifdef WITH_PIPEWIRE
+	{ "Audio", "PipeWire", true },
+#else
+	{ "Audio", "PipeWire", false },
+#endif
+#ifdef WITH_PULSEAUDIO
+	{ "Audio", "PulseAudio", true },
+#else
+	{ "Audio", "PulseAudio", false },
+#endif
+#ifdef WITH_COREAUDIO
+	{ "Audio", "Core Audio", true },
+#else
+	{ "Audio", "Core Audio", false },
+#endif
+#if defined(WITH_SNDFILE) || defined(STATIC_SNDFILE)
+	{ "Audio", "libsndfile", true },
+#else
+	{ "Audio", "libsndfile", false },
+#endif
+};
+
+static void
+fn_Menu_buildOptions(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0;
+	    i < sizeof(build_options) / sizeof(build_options[0]); i++) {
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotString(vm, 2, build_options[i].category);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotString(vm, 2, build_options[i].name);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotBool(vm, 2, build_options[i].enabled);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
 static void
 fn_Menu_currentScreenMode(WrenVM *vm)
 {
@@ -753,6 +901,7 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "outputModes", fn_Menu_outputModes },
 	{ "Menu", true, "cursorStyles", fn_Menu_cursorStyles },
 	{ "Menu", true, "audioModes", fn_Menu_audioModes },
+	{ "Menu", true, "buildOptions", fn_Menu_buildOptions },
 	{ "Menu", true, "scalingModes", fn_Menu_scalingModes },
 	{ "Menu", true, "colors", fn_Menu_colors },
 	{ "Menu", true, "backgroundColors", fn_Menu_backgroundColors },

@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #include "bbslist.h"
 #include "ciolib.h"
@@ -30,7 +31,7 @@ free_font_files(struct font_files *ff)
 	free(ff);
 }
 
-void
+bool
 save_font_files(struct font_files *fonts)
 {
 	FILE      *inifile;
@@ -42,15 +43,19 @@ save_font_files(struct font_files *fonts)
 	int        i;
 
 	if (safe_mode)
-		return;
+		return false;
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
 	if ((inifile = fopen(inipath, "r")) != NULL) {
 		ini_file = iniReadFile(inifile);
 		fclose(inifile);
 	}
-	else {
+	else if (errno == ENOENT) {
 		ini_file = strListInit();
 	}
+	else
+		return false;
+	if (ini_file == NULL)
+		return false;
 
 	fontnames = iniGetSectionList(ini_file, "Font:");
 
@@ -62,7 +67,12 @@ save_font_files(struct font_files *fonts)
 
 	if (fonts != NULL) {
 		for (i = 0; fonts[i].name && fonts[i].name[0]; i++) {
-			sprintf(newfont, "Font:%s", fonts[i].name);
+			if (snprintf(newfont, sizeof(newfont), "Font:%s",
+			    fonts[i].name) >= (int)sizeof(newfont)) {
+				strListFree(&fontnames);
+				strListFree(&ini_file);
+				return false;
+			}
 			if (fonts[i].path8x8)
 				iniSetString(&ini_file, newfont, "Path8x8", fonts[i].path8x8, &ini_style);
 			if (fonts[i].path8x14)
@@ -73,65 +83,98 @@ save_font_files(struct font_files *fonts)
 				iniSetString(&ini_file, newfont, "Path12x20", fonts[i].path12x20, &ini_style);
 		}
 	}
+	bool success = false;
 	if ((inifile = fopen(inipath, "w")) != NULL) {
-		iniWriteFile(inifile, ini_file);
-		fclose(inifile);
-	}
-	else {
-		uifc.helpbuf = "There was an error writing the INI file.\nCheck permissions and try again.\n";
-		uifc.msg("Cannot write to the .ini file!");
-		check_exit(false);
+		success = iniWriteFile(inifile, ini_file);
+		if (fclose(inifile) != 0)
+			success = false;
 	}
 
 	strListFree(&fontnames);
 	strListFree(&ini_file);
+	return success;
+}
+
+static bool
+read_font_path(FILE *inifile, const char *section, const char *key,
+    char **result)
+{
+	char fontpath[MAX_PATH + 1];
+	char *value = iniReadSString(inifile, section, key, NULL, fontpath,
+	    sizeof(fontpath));
+	if (value == NULL) {
+		*result = NULL;
+		return true;
+	}
+	*result = strdup(fontpath);
+	return *result != NULL;
 }
 
 struct font_files *
-
-read_font_files(int *count)
+read_font_files(int *count, bool *success)
 {
 	FILE              *inifile;
 	char               inipath[MAX_PATH + 1];
-	char               fontpath[MAX_PATH + 1];
 	char              *fontid;
 	str_list_t         fonts;
 	struct font_files *ret = NULL;
 	struct font_files *tmp;
 
 	*count = 0;
+	*success = false;
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
-	if ((inifile = fopen(inipath, "r")) == NULL)
+	if ((inifile = fopen(inipath, "r")) == NULL) {
+		*success = errno == ENOENT;
 		return ret;
+	}
 	fonts = iniReadSectionList(inifile, "Font:");
 	while ((fontid = strListRemove(&fonts, 0)) != NULL) {
 		if (!fontid[5]) {
 			free(fontid);
 			continue;
 		}
+		if (*count >= 256 - CONIO_FIRST_FREE_FONT) {
+			free(fontid);
+			goto fail;
+		}
 		(*count)++;
 		tmp = (struct font_files *)realloc(ret, sizeof(struct font_files) * (*count + 1));
 		if (tmp == NULL) {
-			(*count)--;
 			free(fontid);
-			continue;
+			goto fail;
 		}
 		ret = tmp;
-		ret[*count].name = NULL;
+		memset(&ret[*count - 1], 0, sizeof(ret[*count - 1]));
+		memset(&ret[*count], 0, sizeof(ret[*count]));
 		ret[*count - 1].name = strdup(fontid + 5);
-		if ((ret[*count - 1].path8x8 = iniReadSString(inifile, fontid, "Path8x8", NULL, fontpath, sizeof(fontpath))) != NULL)
-			ret[*count - 1].path8x8 = strdup(fontpath);
-		if ((ret[*count - 1].path8x14 = iniReadSString(inifile, fontid, "Path8x14", NULL, fontpath, sizeof(fontpath))) != NULL)
-			ret[*count - 1].path8x14 = strdup(fontpath);
-		if ((ret[*count - 1].path8x16 = iniReadSString(inifile, fontid, "Path8x16", NULL, fontpath, sizeof(fontpath))) != NULL)
-			ret[*count - 1].path8x16 = strdup(fontpath);
-		if ((ret[*count - 1].path12x20 = iniReadSString(inifile, fontid, "Path12x20", NULL, fontpath, sizeof(fontpath))) != NULL)
-			ret[*count - 1].path12x20 = strdup(fontpath);
+		if (ret[*count - 1].name == NULL) {
+			free(fontid);
+			goto fail;
+		}
+		if (!read_font_path(inifile, fontid, "Path8x8",
+		    &ret[*count - 1].path8x8) ||
+		    !read_font_path(inifile, fontid, "Path8x14",
+		    &ret[*count - 1].path8x14) ||
+		    !read_font_path(inifile, fontid, "Path8x16",
+		    &ret[*count - 1].path8x16) ||
+		    !read_font_path(inifile, fontid, "Path12x20",
+		    &ret[*count - 1].path12x20)) {
+			free(fontid);
+			goto fail;
+		}
 		free(fontid);
 	}
 	fclose(inifile);
 	strListFree(&fonts);
+	*success = true;
 	return ret;
+
+fail:
+	fclose(inifile);
+	strListFree(&fonts);
+	free_font_files(ret);
+	*count = 0;
+	return NULL;
 }
 
 void
@@ -143,22 +186,21 @@ load_font_files(void)
 	struct font_files *ff;
 	FILE              *fontfile;
 	char              *fontdata;
+	bool               success;
 
-	ff = read_font_files(&count);
-	for (i = 0; i < count; i++) {
-		if (conio_fontdata[nextfont].eight_by_sixteen)
-			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_sixteen);
-		if (conio_fontdata[nextfont].eight_by_fourteen)
-			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_fourteen);
-		if (conio_fontdata[nextfont].eight_by_eight)
-			FREE_AND_NULL(conio_fontdata[nextfont].eight_by_eight);
-		if (conio_fontdata[nextfont].twelve_by_twenty)
-			FREE_AND_NULL(conio_fontdata[nextfont].twelve_by_twenty);
-		if (conio_fontdata[nextfont].desc)
-			FREE_AND_NULL(conio_fontdata[nextfont].desc);
-		if (ff[i].name)
-			conio_fontdata[nextfont].desc = strdup(ff[i].name);
-		else
+	ff = read_font_files(&count, &success);
+	if (!success)
+		return;
+	for (i = CONIO_FIRST_FREE_FONT; i < 256; i++) {
+		FREE_AND_NULL(conio_fontdata[i].eight_by_sixteen);
+		FREE_AND_NULL(conio_fontdata[i].eight_by_fourteen);
+		FREE_AND_NULL(conio_fontdata[i].eight_by_eight);
+		FREE_AND_NULL(conio_fontdata[i].twelve_by_twenty);
+		FREE_AND_NULL(conio_fontdata[i].desc);
+	}
+	for (i = 0; i < count && nextfont < 256; i++) {
+		if (ff[i].name == NULL ||
+		    (conio_fontdata[nextfont].desc = strdup(ff[i].name)) == NULL)
 			continue;
 		if (ff[i].path8x8 && ff[i].path8x8[0]) {
 			if ((fontfile = fopen(ff[i].path8x8, "rb")) != NULL) {
@@ -208,7 +250,9 @@ load_font_files(void)
 	}
 	free_font_files(ff);
 
-	for (i = 0; conio_fontdata[i].desc != NULL; i++) {
+	for (i = 0; i < 257; i++)
+		font_names[i] = NULL;
+	for (i = 0; i < 256 && conio_fontdata[i].desc != NULL; i++) {
 		font_names[i] = conio_fontdata[i].desc;
 		if (!strcmp(conio_fontdata[i].desc, "Codepage 437 English"))
 			default_font = i;
@@ -250,8 +294,14 @@ font_management(void)
 	char               opts[6][80];
 	struct font_files *tmp;
 	char               str[128];
+	bool               success;
 
-	fonts = read_font_files(&count);
+	fonts = read_font_files(&count, &success);
+	if (!success) {
+		uifc.msg("Cannot read font settings from the .ini file!");
+		check_exit(false);
+		return;
+	}
 	opts[4][0] = 0;
 
 	for (; !quitting;) {
@@ -282,7 +332,12 @@ font_management(void)
 		        opt);
 		if (i == -1) {
 			check_exit(false);
-			save_font_files(fonts);
+			if (!save_font_files(fonts)) {
+				uifc.helpbuf = "There was an error writing the INI file.\n"
+				    "Check permissions and try again.\n";
+				uifc.msg("Cannot write to the .ini file!");
+				check_exit(false);
+			}
 			free_font_files(fonts);
 			return;
 		}
@@ -305,6 +360,11 @@ font_management(void)
 				break;
 			}
 			if ((i & MSK_ON) == MSK_INS) {
+				if (count >= 256 - CONIO_FIRST_FREE_FONT) {
+					uifc.msg("All custom font slots are configured.");
+					check_exit(false);
+					break;
+				}
 				str[0] = 0;
 				uifc.helpbuf = "Enter the name of the font as you want it to appear in menus.";
 				if (uifc.input(WIN_SAV | WIN_MID, 0, 0, "Font Name", str, 50, 0) == -1 || !str[0]) {

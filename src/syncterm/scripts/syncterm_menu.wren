@@ -30,6 +30,8 @@ class Menu {
   foreign static outputModes
   foreign static cursorStyles
   foreign static audioModes
+  // [category, display name, enabled] rows for this executable.
+  foreign static buildOptions
   foreign static scalingModes
   foreign static colors
   foreign static backgroundColors
@@ -47,12 +49,38 @@ class Menu {
   foreign static updateWebList(index, uri)
   foreign static deleteWebList(index)
   foreign static refreshWebList(index)
+  // Configured custom fonts are C-owned.  Structural changes invalidate
+  // existing MenuFont handles; saveFonts() persists and reloads slots.
+  foreign static fonts
+  foreign static fontsDirty
+  foreign static reloadFonts()
+  foreign static createFont(name, index)
+  foreign static saveFonts()
 }
 
 class MenuEncryption {
   static none     { 0 }
   static aes      { 6 }
   static chacha20 { 7 }
+}
+
+class MenuFontSlot {
+  static eightByEight    { 0 }
+  static eightByFourteen { 1 }
+  static eightBySixteen  { 2 }
+  static twelveByTwenty  { 3 }
+}
+
+foreign class MenuFont {
+  foreign name
+  foreign name=(value)
+  // path() is for display only.  setFile() requires a read-authorized
+  // File returned by the trusted picker and validates its exact size.
+  foreign path(slot)
+  foreign setFile(slot, file)
+  foreign clearFile(slot)
+  foreign delete()
+  foreign toString
 }
 
 // C-owned editable snapshot of program settings.  Setters affect only

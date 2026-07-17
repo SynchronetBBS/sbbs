@@ -4,6 +4,7 @@
 #include "conn.h"
 #include "genwrap.h"
 #include "wren_bind_internal.h"
+#include "wren_bind_menu_fonts.h"
 #include "wren_bind_menu_settings.h"
 
 #include <math.h>
@@ -26,6 +27,7 @@ void
 wren_menu_bind_init(void)
 {
 	bbslist_model_init(&menu_model);
+	wren_menu_fonts_bind_init();
 	wren_menu_settings_bind_init();
 }
 
@@ -33,6 +35,7 @@ void
 wren_menu_bind_shutdown(void)
 {
 	bbslist_model_dispose(&menu_model);
+	wren_menu_fonts_bind_shutdown();
 }
 
 static void
@@ -567,7 +570,11 @@ wren_menu_bind_lookup(const char *module, const char *class_name,
 {
 	if (module == NULL || strcmp(module, "syncterm_menu") != 0)
 		return NULL;
-	WrenForeignMethodFn fn = wren_menu_settings_bind_lookup(module,
+	WrenForeignMethodFn fn = wren_menu_fonts_bind_lookup(module,
+	    class_name, is_static, signature);
+	if (fn != NULL)
+		return fn;
+	fn = wren_menu_settings_bind_lookup(module,
 	    class_name, is_static, signature);
 	if (fn != NULL)
 		return fn;
@@ -586,6 +593,10 @@ wren_menu_bind_lookup_class(const char *module, const char *class_name)
 	WrenForeignClassMethods none = { NULL, NULL };
 	if (module == NULL || strcmp(module, "syncterm_menu") != 0)
 		return none;
+	WrenForeignClassMethods font_methods =
+	    wren_menu_fonts_bind_lookup_class(module, class_name);
+	if (font_methods.allocate != NULL || font_methods.finalize != NULL)
+		return font_methods;
 	WrenForeignClassMethods settings_methods =
 	    wren_menu_settings_bind_lookup_class(module, class_name);
 	if (settings_methods.allocate != NULL || settings_methods.finalize != NULL)

@@ -3,6 +3,8 @@
 #ifndef _SYNCTERM_FONTS_H
 #define _SYNCTERM_FONTS_H
 
+#include <stdbool.h>
+
 struct font_files {
 	char *name;
 	char *path8x8;
@@ -12,8 +14,8 @@ struct font_files {
 };
 
 void free_font_files(struct font_files *ff);
-void save_font_files(struct font_files *fonts);
-struct font_files *read_font_files(int *count);
+bool save_font_files(struct font_files *fonts);
+struct font_files *read_font_files(int *count, bool *success);
 void load_font_files(void);
 int find_font_id(char *name);
 void font_management(void);
