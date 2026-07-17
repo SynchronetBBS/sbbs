@@ -20,7 +20,20 @@
 var out = [];       // everything the lobby "printed"
 var keys = [];      // scripted keystrokes, consumed front-to-back
 var launched = [];  // door command lines bbs.exec() was asked to run
+var logged = [];    // node-log lines the lobby wrote via bbs.logline()
 var failures = 0;
+
+// The last page the lobby drew ("Page 3 of 7" -> 3), or 0 if it drew none. The
+// footer is redrawn every trip round the picker loop, so the LAST one is where
+// the scripted keys left us. The Ctrl-A attribute codes have to come out first:
+// the footer highlights the number, so the raw bytes read "Page \1h3\1n\1c of",
+// and a /Page (\d+)/ against those never matches.
+function last_page(text)
+{
+	var m = String(text).replace(/\x01./g, "").match(/Page (\d+) of/g);
+
+	return m ? parseInt(m[m.length - 1].replace(/\D+/g, ""), 10) : 0;
+}
 
 function check(cond, msg)
 {
@@ -45,7 +58,8 @@ var fake_console = {
 var fake_bbs = {
 	online: true,       // the picker loop's `while (... && bbs.online)` guard
 	cmdstr: function (s) { return s; },     // no %-expansion needed for this check
-	exec:   function (cmd, mode, dir) { launched.push(cmd); return 0; }
+	exec:   function (cmd, mode, dir) { launched.push(cmd); return 0; },
+	logline: function (code, str) { logged.push(code + " " + str); return true; }
 };
 
 var fake_user = { number: 1, alias: "Digital Man" };
@@ -83,7 +97,12 @@ try {
 }
 var text = out.join("");
 check(text.indexOf("SyncRetro") >= 0, "painted its title");
-check(text.indexOf("Most played") >= 0 || text.indexOf("[1-") >= 0, "painted a board or a footer");
+// Assert the FOOTER, not the board: the "Top played" board only paints once plays
+// exist, and this harness refuses to run unless the plays file is absent -- so on
+// this first pass there is nothing for it to draw. (This check used to look for
+// "Most played" or "[1-", neither of which the lobby has ever printed, so it could
+// only ever fail.)
+check(last_page(text) === 1, "painted the footer, on page 1 (saw " + last_page(text) + ")");
 check(launched.length === 0, "quitting launched no door");
 
 writeln("2. picking entry 1 launches the door with a QUOTED rom path");
@@ -105,14 +124,26 @@ if (launched.length) {
 	check(cmd.indexOf("-name %a") >= 0, "passes the alias (which cmdstr quotes)");
 	check(cmd.indexOf("-home ") >= 0, "passes a per-user home");
 
-	// The binary path and the -home path must also be quoted: a space in
-	// js.exec_dir or system.data_dir (e.g. a future Windows "Program Files"
-	// install) would otherwise split the command line into extra shell words.
-	// fake_bbs.cmdstr() does no %-expansion, so the "%." specifier is still
-	// literal here -- the quotes must wrap it whole regardless.
-	var binary = js.exec_dir + "syncretro%.";
-	check(cmd.indexOf('"' + binary + '"') >= 0,
-	      "the binary path is quoted whole, including the %. specifier");
+	// The leading program token is the door binary, and it is deliberately NOT
+	// quoted -- the opposite of what -home needs. external() only treats the command
+	// as an ABSOLUTE path when it starts with the drive letter (Windows) or '/'
+	// (*nix); a leading quote defeats that test and the door would be looked up
+	// under the startup dir instead. See syncretro_lobby_init().
+	//
+	// Assert the contract rather than a hard-coded path. The "<os>-<arch>" sub-dir
+	// is OPTIONAL: never present on Windows (always flat), and on *nix only when
+	// it is populated -- otherwise the binary sits at the door root. Either layout
+	// is legal, so pinning the path to one of them is wrong whichever you pick.
+	// (The old check pinned the flat path AND asserted the token was quoted, so it
+	// could only ever fail -- on both counts.) NOTE: splitting on a space is sound
+	// only because the path must not contain one -- the quoting that would make a
+	// spaced path safe is the quoting external() forbids.
+	// fake_bbs.cmdstr() does no %-expansion, so "%." is still literal here.
+	var token = cmd.split(" ")[0];          // the leading program token
+	var abs   = /^win/i.test(system.platform) ? /^[A-Za-z]:/ : /^\//;
+	check(token.indexOf('"') < 0, "the binary token carries no quote (it would defeat external()'s absolute-path check)");
+	check(abs.test(token), "the binary token is an absolute path (" + token + ")");
+	check(/syncretro%\.$/.test(token), "the binary token is the door binary, with its %. specifier");
 	check(/-home "[^"]*"/.test(cmd), "the -home path is quoted");
 	check(cmd.indexOf('-name "%a"') < 0, "-name's %a is NOT double-quoted");
 }
@@ -128,7 +159,17 @@ if (plays.length) {
 	check(typeof plays[0].secs === "number", "records a duration");
 }
 
-writeln("4. search narrows the list without renumbering");
+writeln("4. the play was named in the node log");
+check(logged.length === 1, "one logline (saw " + logged.length + ")");
+if (logged.length) {
+	writeln("     log: " + logged[0]);
+	// Same "X-" code the Terminal Server's own "Executing external program" line
+	// uses, so one grep over node.log finds the lobby and what it launched.
+	check(logged[0].indexOf("X- Playing ") === 0, "uses the X- code and says what is playing");
+	check(logged[0].indexOf("(Intellivision)") > 0, "names the console");
+}
+
+writeln("5. search narrows the list without renumbering");
 out = []; launched = [];
 keys = ["/", "utopia", "Q"];
 try {
@@ -137,8 +178,45 @@ try {
 } catch (e) {
 	check(false, "search threw: " + e);
 }
-var t4 = out.join("");
-check(t4.toLowerCase().indexOf("utopia") >= 0, "the filtered page shows Utopia");
+var t5 = out.join("");
+check(t5.toLowerCase().indexOf("utopia") >= 0, "the filtered page shows Utopia");
+
+writeln("6. F finds, the same as the '/' alias");
+out = []; launched = [];
+keys = ["F", "utopia", "Q"];
+try {
+	load(js.exec_dir + "lobby.js");
+	check(true, "F search ran without throwing");
+} catch (e) {
+	check(false, "F search threw: " + e);
+}
+var t6 = out.join("");
+check(t6.toLowerCase().indexOf("utopia") >= 0, "F filtered the page down to Utopia");
+check(t6.indexOf("\1cF\1nind") >= 0, "the prompt names F, not '/'");
+
+// '+'/'-' alias N/P. These assert against the drawn page number rather than a
+// stub call, so they prove the keys reached the pager -- an unbound key would
+// simply redraw the same page and leave the count unmoved.
+writeln("7. '+' pages forward like N, '-' back like P");
+out = []; launched = [];
+keys = ["+", "Q"];
+load(js.exec_dir + "lobby.js");
+check(last_page(out.join("")) === 2, "'+' advanced to page 2 (saw "
+      + last_page(out.join("")) + ")");
+
+out = [];
+keys = ["+", "+", "-", "Q"];
+load(js.exec_dir + "lobby.js");
+check(last_page(out.join("")) === 2, "'+','+','-' landed back on page 2 (saw "
+      + last_page(out.join("")) + ")");
+
+out = [];
+keys = ["-", "Q"];
+load(js.exec_dir + "lobby.js");
+check(last_page(out.join("")) === 1, "'-' on page 1 stays on page 1 (saw "
+      + last_page(out.join("")) + ")");
+
+check(launched.length === 0, "no paging or search key launched a door");
 
 if (LIVE_PLAYS !== "" && file_exists(LIVE_PLAYS))
 	file_remove(LIVE_PLAYS);           /* leave the live data dir as we found it */

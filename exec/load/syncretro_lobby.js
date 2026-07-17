@@ -175,10 +175,13 @@ function syncretro_lobby_draw(roms, page, pages, board, cols, per_col)
 
 	console.crlf();
 	/* Condensed prompt, hotkeys in bright cyan: any number plays that cartridge,
-	 * '/' searches, N/P page, Q quits. No trailing CRLF -- the cursor rests on the
-	 * bottom row, which is never scrolled, so the terminal never pauses. */
+	 * F searches, N/P page, Q quits. The unprompted aliases ('/' for F, '+'/'-'
+	 * and Enter/PgUp/PgDn/Home/End for paging) are left off -- the row has to stay
+	 * inside 80 columns, and every key it does name spells out its own word. No
+	 * trailing CRLF -- the cursor rests on the bottom row, which is never scrolled,
+	 * so the terminal never pauses. */
 	console.putmsg(format(
-	    "\1h\1c#\1n play   \1h\1c/\1n find   \1h\1cN\1next \1h\1cP\1nrev   \1h\1cQ\1nuit"
+	    "\1h\1c#\1n play   \1h\1cF\1nind   \1h\1cN\1next \1h\1cP\1nrev   \1h\1cQ\1nuit"
 	    + "   \1cPage \1h%d\1n\1c of \1h%d\1n: ", page + 1, pages.length));
 }
 
@@ -350,21 +353,27 @@ function syncretro_lobby(spec)
 
 		/* Paging. The nav keys do what their labels say -- Enter and PgDn advance
 		 * like N, PgUp goes back like P, Home and End jump to the ends -- because a
-		 * player's fingers reach for them before they read the prompt.
+		 * player's fingers reach for them before they read the prompt. '+'/'-' page
+		 * the same way: they sit next to each other on the keyboard (and on the
+		 * numeric keypad, under the hand that just typed a cartridge number), so
+		 * they read as forward/back without being told. Both are below '0' in ASCII,
+		 * so neither can be mistaken for the start of a cartridge number below.
 		 *
 		 * PgUp is safe to bind even though the terminal layer translates it to
 		 * CTRL_P, which is ALSO the BBS's node-message hotkey: parse_input_sequence()
 		 * turns the escape sequence (ESC[V, ESC[5~) into the key code and returns
 		 * before inkey() gets to its Ctrl-P case, so only a literally typed Ctrl-P
 		 * pages a node. Same for PgDn/CTRL_N, Home/CTRL_B, End/CTRL_E. */
-		if (key === "N" || key === "\r" || key === "\n" || key === KEY_PAGEDN) {
+		if (key === "N" || key === "+" || key === "\r" || key === "\n" || key === KEY_PAGEDN) {
 			if (page + 1 < pages.length) page++;
 			continue;
 		}
-		if (key === "P" || key === KEY_PAGEUP) { if (page > 0) page--; continue; }
+		if (key === "P" || key === "-" || key === KEY_PAGEUP) { if (page > 0) page--; continue; }
 		if (key === KEY_HOME) { page = 0; continue; }
 		if (key === KEY_END) { page = pages.length - 1; continue; }
-		if (key === "/") {
+		/* 'F'ind is the prompted key -- it names itself the way Next/Prev/Quit do.
+		 * '/' stays bound as the unprompted alias for the fingers that expect it. */
+		if (key === "F" || key === "/") {
 			console.putmsg("\r\nSearch: ");
 			var term = console.getstr(30, K_LINE).toLowerCase();
 			filter = term === "" ? roms : roms.filter(function (r) {
