@@ -19,6 +19,9 @@
 - `getHostNameByAddr()` now supports IPv6
 - Stability and resource-leak fixes across all servers from a
   thorough Coverity scan
+- Windows: `sbbs.exe`, `sbbsNTsvcs.exe`, `jsexec.exe`, and
+  `sbbsctrl.exe` are now large-address-aware, so they can use up to
+  ~4GB (rather than 2GB) of address space on 64-bit Windows
 
 ## Servers
 
