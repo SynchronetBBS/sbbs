@@ -425,8 +425,7 @@ class BbsEditor {
     if (!defaults) {
       text = text + helpItem_("Ctrl-S",
           "Edit the explicit numeric directory sort order") +
-          helpItem_("[ / ]", "Edit the previous or next directory entry") +
-          helpItem_("Comment", "Text shown below the directory")
+          helpItem_("[ / ]", "Edit the previous or next directory entry")
     }
     return text
   }
@@ -475,7 +474,6 @@ class BbsEditor {
     if (key == "logFile") return logFileHelp_()
     if (key == "xferLogLevel") return logLevelHelp_("File Transfer")
     if (key == "telnetLogLevel") return logLevelHelp_("Telnet Command")
-    if (key == "comment") return "# Comment\n\nEnter the text shown below this directory entry."
     return null
   }
 
@@ -974,7 +972,6 @@ class BbsEditor {
     rows.add(row_("Palette", paletteLabel, Fn.new {
       editPalette_(app, d, Fn.new { update_(app, b, d, defaults) })
     }))
-    if (!defaults) rows.add(textRow_(app, d, "comment", "Comment", 1023, false))
     return rows
   }
 

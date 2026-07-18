@@ -932,6 +932,11 @@ comment row is also clickable for direct editing.  An override may present the
 model differently, but it is responsible for preserving this user-visible
 behavior.
 
+The comment is edited only in the main screen's footer.  It is not a field in
+the full directory-entry editor.  F1 and Ctrl-Z in the footer display the
+directory help, and operation-specific alerts and confirmations retain the
+context help for the operation which opened them.
+
 Lists which support appending provide a selectable blank final row.
 Activating the blank row or pressing Insert invokes the same add operation.
 The shipped directory, sort-profile, sort-field, web-list, custom-font, and
@@ -6196,8 +6201,9 @@ import "ui" for Alert, Confirm, Prompt
 
 Alert.show(app, "Disk full")
 Alert.show(app, "Warning", "Disk full")
+Alert.show(app, "Warning", "Disk full", "# Disk Full\n\nFree space first.")
 
-if (Confirm.show(app, "Delete file?")) {
+if (Confirm.show(app, "Delete file?", "# Delete\n\nThis cannot be undone.")) {
   // ...
 }
 
@@ -6207,12 +6213,17 @@ if (name != null) {
 }
 ----
 
-`Alert` — single OK button; any key (or Enter / Esc / mouse click
-on OK) dismisses.  `show` returns `null`.
+`Alert` — single OK button.  Enter, Space, `O`, Esc, or a mouse click
+on OK dismisses it; unrelated keys do not.  `show` returns `null`.
 
 `Confirm` — Yes / No buttons.  `Y` / `N` letter shortcuts dismiss
 directly; `Enter` activates the focused button; `Tab` cycles focus.
 `show` returns `true` on Yes, `false` on No or Esc.
+
+The four-argument titled `Alert.show(app, title, message, helpText)`
+and three-argument `Confirm.show(app, message, helpText)` forms attach
+Markdown context help to the popup.  F1 and Ctrl-Z display that text
+while the popup owns focus.
 
 `Prompt` — `TextInput` plus OK / Cancel buttons.  `Enter` in the
 input or on OK submits the value; `Esc` or Cancel returns `null`.

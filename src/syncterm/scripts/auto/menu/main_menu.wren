@@ -268,6 +268,7 @@ class MainMenuApp {
     _footer = ClassicFooter.new(Fn.new { focusComment_(0) },
         Fn.new {|value, destination| finishComment_(value, destination) },
         Fn.new { focusDirectory_() })
+    _footer.helpText = directoryHelp_()
     _app.root.add(_footer)
 
     _settings = MainPane.new(Fn.new { focusSettings_() })
@@ -470,11 +471,58 @@ class MainMenuApp {
     _app.quit()
   }
 
+  safeModeHelp_(operation) {
+    if (operation == "quick") {
+      return "# Cannot Quick-Connect in safe mode\n\n" +
+          "SyncTERM is currently running in safe mode. This means you " +
+          "cannot use the Quick-Connect feature."
+    }
+    var action = "edit the directory"
+    if (operation == "add") action = "add to the directory"
+    if (operation == "remove") action = "remove from the directory"
+    return "# Cannot edit list in safe mode\n\n" +
+        "SyncTERM is currently running in safe mode. This means you " +
+        "cannot %(action)."
+  }
+
   mutable_(operation) {
     if (!Host.safeMode) return true
     Alert.show(_app, "Safe Mode",
-        "The directory is read-only in safe mode; cannot %(operation).")
+        "Cannot edit list in safe mode", safeModeHelp_(operation))
     return false
+  }
+
+  systemCopyHelp_() {
+    return "# Copy from system directory\n\n" +
+        "This entry was loaded from the system directory. In order to " +
+        "edit it, it must be copied into your personal directory."
+  }
+
+  maxListHelp_() {
+    return "# Max List size reached\n\n" +
+        "The total combined size of loaded entries is currently the " +
+        "highest supported size. You must delete entries before adding " +
+        "more."
+  }
+
+  systemDeleteHelp_() {
+    return "# Cannot delete from system list\n\n" +
+        "This entry was loaded from the system-wide list and cannot be " +
+        "deleted."
+  }
+
+  emptyDeleteHelp_() {
+    return "# Calming down\n\n" +
+        "## Some handy tips on calming down\n\n" +
+        "Close your eyes, imagine yourself alone on a brilliant white " +
+        "beach. Picture the palm trees up towards the small town. " +
+        "Glory in the deep blue of the perfectly clean ocean. Feel the " +
+        "plush comfort of your beach towel. Enjoy the shade of your " +
+        "satellite internet feed which envelops your head, keeping you " +
+        "cool. Set your TEMPEST rated laptop aside on the beach, knowing " +
+        "it is completely impervious to anything on the beach. Reach " +
+        "over to your fridge, grab a cold one. Watch the seagulls in " +
+        "their dance."
   }
 
   editEntry_(first, isNew) {
@@ -508,11 +556,11 @@ class MainMenuApp {
       if (_list.selected == _entries.count) add_()
       return
     }
-    if (!mutable_("edit directory entries")) return
+    if (!mutable_("edit")) return
     var bbs = _selected
     if (bbs.type != 0) {
-      if (!Confirm.show(_app,
-          "Copy this read-only entry to the personal directory?")) return
+      if (!Confirm.show(_app, "Copy from system directory?",
+          systemCopyHelp_())) return
       var name = bbs.name
       bbs = Menu.copy(bbs, name)
       if (bbs == null) {
@@ -532,8 +580,8 @@ class MainMenuApp {
     var bbs = _selected
     if (bbs != null && value != bbs.comment) {
       if (bbs.type != 0) {
-        if (Confirm.show(_app,
-            "Copy this read-only entry to the personal directory?")) {
+        if (Confirm.show(_app, "Copy from system directory?",
+            systemCopyHelp_())) {
           bbs = Menu.copy(bbs, bbs.name)
         } else {
           bbs = null
@@ -560,11 +608,11 @@ class MainMenuApp {
 
   add_() {
     if (!Menu.canAppendEntry) {
-      Alert.show(_app, "New Entry",
-          "The directory is full; delete an entry before adding another.")
+      Alert.show(_app, "New Entry", "Max List size reached!",
+          maxListHelp_())
       return
     }
-    if (!mutable_("add directory entries")) return
+    if (!mutable_("add")) return
     var preferred = _selected == null ? null : _selected.name
     var name = ""
     while (true) {
@@ -618,11 +666,17 @@ class MainMenuApp {
   }
 
   delete_() {
-    if (_selected == null) return
-    if (!mutable_("delete directory entries")) return
+    if (_selected == null) {
+      if (_list.selected == _entries.count && Menu.canAppendEntry) {
+        Alert.show(_app, "Delete Entry", "It's gone, calm down man!",
+            emptyDeleteHelp_())
+      }
+      return
+    }
+    if (!mutable_("remove")) return
     if (_selected.type != 0) {
       Alert.show(_app, "Delete Entry",
-          "Read-only directory entries cannot be deleted.")
+          "Cannot delete system list entries", systemDeleteHelp_())
       return
     }
     var name = _selected.name
@@ -638,7 +692,7 @@ class MainMenuApp {
 
   copy_() {
     if (_selected == null) return
-    if (!mutable_("copy directory entries")) return
+    if (!mutable_("edit")) return
     _clipboard = BbsEditor.draft_(_selected)
     _clipboardType = _selected.type
     _footer.copied = true
@@ -646,7 +700,7 @@ class MainMenuApp {
 
   paste_() {
     if (_clipboard == null) return
-    if (!mutable_("paste directory entries")) return
+    if (!mutable_("edit")) return
     var preferred = _selected == null ? null : _selected.name
     var name = _clipboard["name"]
     if (_clipboardType == 0) {
@@ -683,7 +737,7 @@ class MainMenuApp {
   }
 
   quick_() {
-    if (!mutable_("quick-connect")) return
+    if (!mutable_("quick")) return
     var url = MenuUi.prompt(_app, "Quick Connect", "Address or URL", "",
         1024, false,
         "# SyncTERM Quick Connect\n\n" +
@@ -701,7 +755,7 @@ class MainMenuApp {
 
   entryNameHelp_() {
     return "# Directory Entry Name\n\n" +
-        "Enter the unique name that will appear in the directory."
+        "Enter the name of the entry as it is to appear in the directory."
   }
 
   addressLabel_(type) {
@@ -727,10 +781,13 @@ class MainMenuApp {
   }
 
   addAddressHelp_(type) {
-    var label = addressLabel_(type)
-    var text = "# %(label)\n\nEnter the value for the new directory entry."
+    var text = "# Address, Phone Number, Serial Port, or Command\n\n" +
+        "Enter the hostname, IP address, phone number, or serial port " +
+        "device of the system to connect to. For example: " +
+        "`nix.synchro.net`.\n\nFor a Shell connection, enter the command " +
+        "to run. Shell connections are available on Unix-like systems."
     if (addressCanContainPort_(type)) {
-      text = text + " A TCP port may follow a single colon, such as " +
+      text = text + "\n\nA TCP port may follow a single colon, such as " +
           "`bbs.example.net:2323`."
     }
     return text

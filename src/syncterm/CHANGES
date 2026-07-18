@@ -42,6 +42,7 @@ Restore the intended edit and persistence boundaries in Wren configuration
 Restore UIFC menu aliases, mouse actions, and line-editor controls
 Restore UIFC wheel navigation, help dismissal, and modal click behavior
 Restore UIFC click, drag-selection, and list-scrollbar behavior
+Restore directory delete feedback, context help, and editor fields
 Restore offline scrollback modes, controls, links, and text selection
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support

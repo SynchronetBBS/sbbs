@@ -7,7 +7,9 @@
 //
 // Usage:
 //   Alert.show(app, "Disk full")
+//   Alert.show(app, "Warning", "Disk full", "# Disk Full\n\n...")
 //   if (Confirm.show(app, "Delete file?")) { ... }
+//   if (Confirm.show(app, "Delete file?", "# Delete\n\n...")) { ... }
 //   var name = Prompt.show(app, "Your name?", "default")
 //   if (name != null) { ... }   // null = cancelled
 //   Alert.runStandalone(App.new(), "No enclosing App is running")
@@ -367,6 +369,14 @@ class Alert is Popup {
     return null
   }
 
+  static show(app, title, message, helpText) {
+    var p = Alert.new(title, message)
+    p.helpText = helpText
+    p.bounds = Popup.centeredBounds_(message, 1, 20)
+    app.modal(p)
+    return null
+  }
+
   static runStandalone(app, message) {
     var p = Alert.new(message)
     p.bounds = Popup.centeredBounds_(message, 1, 20)
@@ -439,6 +449,14 @@ class Confirm is Popup {
 
   static show(app, message) {
     var p = Confirm.new(message)
+    p.bounds = Popup.centeredBounds_(message, 1, 24)
+    app.modal(p)
+    return p.result
+  }
+
+  static show(app, message, helpText) {
+    var p = Confirm.new(message)
+    p.helpText = helpText
     p.bounds = Popup.centeredBounds_(message, 1, 24)
     app.modal(p)
     return p.result

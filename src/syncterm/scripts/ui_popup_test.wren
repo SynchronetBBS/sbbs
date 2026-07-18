@@ -75,11 +75,13 @@ class UiPopupTest {
 
     testAlertConstruction_()
     testAlertTitledConstruction_()
+    testAlertShowCarriesHelp_()
     testAlertEscDismisses_()
     testConfirmYes_()
     testConfirmNo_()
     testConfirmEnterIsYes_()
     testConfirmEscIsNo_()
+    testConfirmShowCarriesHelp_()
     testConfirmUnrecognizedKeyDoesNotDismiss_()
     testPromptConstruction_()
     testPromptEnterReturnsValue_()
@@ -121,6 +123,13 @@ class UiPopupTest {
     var a = Alert.new("Notice", "hi")
     check_(a.message == "hi" && a.title == "Notice" && a.result == null,
            "Alert: explicit title on construct")
+  }
+
+  static testAlertShowCarriesHelp_() {
+    var app = FakeApp.new()
+    Alert.show(app, "Notice", "hi", "# Notice Help")
+    check_(app.modalStack[-1].helpText == "# Notice Help",
+           "Alert: optional help reaches the popup")
   }
 
   static testAlertEscDismisses_() {
@@ -182,6 +191,13 @@ class UiPopupTest {
     c.handle(KeyEvent.new(Key.escape))
     check_(c.result == false,
            "Confirm: Esc → result false")
+  }
+
+  static testConfirmShowCarriesHelp_() {
+    var app = FakeApp.new()
+    Confirm.show(app, "Delete?", "# Delete Help")
+    check_(app.modalStack[-1].helpText == "# Delete Help",
+           "Confirm: optional help reaches the popup")
   }
 
   static testConfirmUnrecognizedKeyDoesNotDismiss_() {
