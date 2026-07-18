@@ -24,6 +24,7 @@ Restore direct sort, palette, web-list, font, and encryption editing
 Restore settings submenus, connected-mode filtering, and field limits
 Restore formatted context help throughout the Wren directory and settings UI
 Restore the intended edit and persistence boundaries in Wren configuration
+Restore offline scrollback modes, controls, links, and text selection
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support
 Add support for "cursor on mode" to Prestel (ala Acorn manual)

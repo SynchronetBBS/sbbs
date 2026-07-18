@@ -997,10 +997,11 @@ and menu foreign objects cannot cross the VM boundary.
 
 Menu auto-script overrides are trusted application code, not a sandbox for
 downloaded scripts.  In addition to directory and settings mutation, the
-menu VM can invoke picker-mediated local-file operations and update trusted
-application chrome.  Do not install a remotely supplied script under
-`scripts/auto/menu/`; remote or otherwise untrusted session automation
-belongs in the per-connection VM and receives only that VM's capabilities.
+menu VM can invoke picker-mediated local-file operations, open URLs from the
+completed session's scrollback, and update trusted application chrome.  Do
+not install a remotely supplied script under `scripts/auto/menu/`; remote or
+otherwise untrusted session automation belongs in the per-connection VM and
+receives only that VM's capabilities.
 
 Connected scripts intentionally retain `Input.ungetKey`,
 `Input.ungetMouse`, physical-key synthesis, and the other synthetic
@@ -3402,6 +3403,32 @@ available in a connected VM.
   is safe to retain across later connections; it does not borrow the
   process buffer which the next session may resize or replace.
 
+| Menu.prepareOfflineScrollback()
+| Select the completed session's text mode, restore its mode-specific fonts
+  and palette, and draw the terminal background.  Returns `false` when no
+  scrollback exists or the background cannot be drawn.  This changes global
+  conio state; bracket it with `Screen.save()` and `Screen.restore()`.
+
+| Menu.offlineScrollbackHasStatus
+| Return whether the completed session's terminal layout reserves a status
+  row.  The shipped viewer uses the full screen height for Page Up/Page Down
+  and this value to recover the terminal height used by H/L.
+
+| Menu.openUrl(url)
+| Open a detected plain-text URL with the configured local URL handler.
+  Returns whether it opened.  This menu-only operation carries local browser
+  authority and is unavailable to connected scripts.
+
+| Menu.openHyperlink(id)
+| Open an OSC 8 hyperlink from the conio hyperlink registry.  Returns
+  whether it opened.  The shipped viewer copies the URL to the clipboard
+  when opening fails.
+
+| Menu.setHyperlinkHover(id)
+| Set the offline viewer's pointer and status-row URL for a hyperlink ID;
+  pass zero to clear both.  This is a presentation operation for the trusted
+  menu viewer, not a connected-session capability.
+
 | Menu.applicationTitle
 | Return the classic header text, combining the SyncTERM version and
   active conio output-backend description.  This is display data and does
@@ -3485,6 +3512,16 @@ available in a connected VM.
 | Write the working profiles, active profile, and current order to
   `syncterm.ini`.  Returns Bool; safe mode treats the write as a no-op.
 |===
+
+The shipped offline viewer saves the menu screen, calls
+`prepareOfflineScrollback()`, captures the resulting background, and restores
+the saved mode, fonts, palette, video flags, cursor, mouse subscriptions, and
+screen when it closes.  It starts at the newest screen.  Up/J and Down/K move
+one line, Page Up/Page Down move by the physical screen height, H/L move by
+the terminal content height, the mouse wheel moves one line, F1 opens the
+Markdown help, and Escape returns to the directory.  Clicking opens OSC 8 or
+detected plain-text URLs, hovering shows an OSC 8 URL in the status row, and
+button-one drag invokes SyncTERM's line-mode text selection.
 
 `MenuReadStatus` constants are `ok`, `passwordRequired`,
 `decryptFailed`, `readFailed`, `migrationListOpenFailed`,

@@ -5,6 +5,8 @@
 #include "conn.h"
 #include "genwrap.h"
 #include "syncterm.h"
+#include "term.h"
+#include "window.h"
 #include "wren_bind_internal.h"
 #include "wren_bind_menu_fonts.h"
 #include "wren_bind_menu_settings.h"
@@ -531,6 +533,96 @@ fn_Menu_offlineScrollback(WrenVM *vm)
 }
 
 static void
+fn_Menu_prepareOfflineScrollback(WrenVM *vm)
+{
+	if (scrollback_buf == NULL || scrollback_cols == 0 ||
+	    scrollback_lines == 0) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	textmode((int)scrollback_mode);
+	set_default_cursor();
+	switch (ciolib_to_screen((int)scrollback_mode)) {
+		case SCREEN_MODE_C64:
+			setfont(33, true, 1);
+			break;
+		case SCREEN_MODE_C128_40:
+		case SCREEN_MODE_C128_80:
+			setfont(35, true, 1);
+			break;
+		case SCREEN_MODE_ATARI:
+		case SCREEN_MODE_ATARI_XEP80:
+			setfont(36, true, 1);
+			break;
+	}
+	if (cio_api.options & CONIO_OPT_EXTENDED_PALETTE) {
+		for (size_t i = 0;
+		    i < sizeof(dac_default) / sizeof(dac_default[0]); i++) {
+			setpalette((uint32_t)i + 16,
+			    dac_default[i].red << 8 | dac_default[i].red,
+			    dac_default[i].green << 8 | dac_default[i].green,
+			    dac_default[i].blue << 8 | dac_default[i].blue);
+		}
+	}
+	for (int i = 1; i <= 4; i++)
+		setfont(0, false, i);
+	if (drawwin() != 0) {
+		wrenSetSlotBool(vm, 0, false);
+		return;
+	}
+	set_modepalette(palettes[COLOUR_PALETTE]);
+	wrenSetSlotBool(vm, 0, true);
+}
+
+static void
+fn_Menu_openUrl(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING) {
+		wren_throw(vm, "Menu.openUrl: expected a String");
+		return;
+	}
+	const char *url = wrenGetSlotString(vm, 1);
+	wrenSetSlotBool(vm, 0, url[0] != 0 && cio_api.openurl != NULL &&
+	    cio_api.openurl(url));
+}
+
+static void
+fn_Menu_offlineScrollbackHasStatus(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, !term.nostatus);
+}
+
+static void
+fn_Menu_openHyperlink(WrenVM *vm)
+{
+	int64_t id;
+	if (!slot_integer(vm, 1, 1, UINT16_MAX, &id))
+		return;
+	wrenSetSlotBool(vm, 0, ciolib_open_hyperlink((uint16_t)id));
+}
+
+static void
+fn_Menu_setHyperlinkHover(WrenVM *vm)
+{
+	int64_t id;
+	if (!slot_integer(vm, 1, 0, UINT16_MAX, &id))
+		return;
+	if (id != 0) {
+		char *url = ciolib_get_hyperlink_url((uint16_t)id);
+		if (url != NULL) {
+			show_status_url(url);
+			free(url);
+		}
+		mousepointer(CIOLIB_MOUSEPTR_ARROW);
+	}
+	else {
+		show_status_url("");
+		mousepointer(CIOLIB_MOUSEPTR_BAR);
+	}
+	wrenSetSlotNull(vm, 0);
+}
+
+static void
 fn_Menu_applicationTitle(WrenVM *vm)
 {
 	char title[80];
@@ -1038,6 +1130,11 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "load(_)", fn_Menu_load },
 	{ "Menu", true, "quickConnect(_)", fn_Menu_quickConnect },
 	{ "Menu", true, "offlineScrollback", fn_Menu_offlineScrollback },
+	{ "Menu", true, "prepareOfflineScrollback()", fn_Menu_prepareOfflineScrollback },
+	{ "Menu", true, "offlineScrollbackHasStatus", fn_Menu_offlineScrollbackHasStatus },
+	{ "Menu", true, "openUrl(_)", fn_Menu_openUrl },
+	{ "Menu", true, "openHyperlink(_)", fn_Menu_openHyperlink },
+	{ "Menu", true, "setHyperlinkHover(_)", fn_Menu_setHyperlinkHover },
 	{ "Menu", true, "applicationTitle", fn_Menu_applicationTitle },
 	{ "Menu", true, "timeText", fn_Menu_timeText },
 	{ "Menu", true, "showEntry(_)", fn_Menu_showEntry },
