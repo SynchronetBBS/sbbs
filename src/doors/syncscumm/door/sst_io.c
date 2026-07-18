@@ -3225,6 +3225,20 @@ static unsigned g_capture_frames;
  * path (g_have_last is cleared alongside it, below). */
 static int g_need_st;
 
+/* A frame that a DEFER gate (pacing or backpressure, below) held back
+ * instead of sending -- retained here so sst_io_tick() can retry it once the
+ * gate clears, even with no further engine-side present() call. Without
+ * this, the last frame of a burst on a now-static screen (the F5 panel, the
+ * half-erased speech-toggle X) sits unsent until the NEXT updateScreen(),
+ * which nothing guarantees will ever come (present() is edge-driven off the
+ * engine's own dirty flag). Only the two pacing/backpressure gates retain --
+ * NOT the startup grace/canvas-hold gates just above present()'s body, which
+ * self-retry every frame of the engine's own boot loop and would just waste
+ * a copy retaining a frame that is about to be superseded anyway. */
+static uint8_t g_pending_idx[SST_FB_W * SST_FB_H];
+static uint8_t g_pending_pal[768];
+static int     g_present_pending;
+
 void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 {
 	int      pal_dirty, geom_changed, tier, tier_changed;
@@ -3366,6 +3380,15 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 			g_dsr_t    = g_dsr_h;   /* drop the stale unacked DSR timestamps */
 			sst_trace("deadline", sst_tier_name(sst_tier()), 0);
 		} else {
+			/* Retain so sst_io_tick() can retry once g_inflight drains --
+			 * see g_present_pending's doc comment. The idx != g_pending_idx
+			 * guard skips a self-copy when THIS call already is a retry (tick()
+			 * calls present() with g_pending_idx itself). */
+			if (idx != g_pending_idx) {
+				memcpy(g_pending_idx, idx, SST_FB_W * SST_FB_H);
+				memcpy(g_pending_pal, pal768, 768);
+			}
+			g_present_pending = 1;
 			sst_trace("gated-inflight", sst_tier_name(sst_tier()), 0);
 			return;
 		}
@@ -3391,6 +3414,14 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 	 * video behind the cushion. Deliberately NOT removed: the stage is finite
 	 * and this is what bounds it. */
 	if (g_out_len > 0) {
+		/* Retain, same as the gated-inflight branch above -- a static screen
+		 * that lands here on its last frame of a burst (the FIFO hasn't
+		 * drained yet) would otherwise strand exactly like the pacing case. */
+		if (idx != g_pending_idx) {
+			memcpy(g_pending_idx, idx, SST_FB_W * SST_FB_H);
+			memcpy(g_pending_pal, pal768, 768);
+		}
+		g_present_pending = 1;
 		sst_trace("gated-outlen", sst_tier_name(sst_tier()), 0);
 		return;
 	}
@@ -3485,6 +3516,17 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 	 * from something else (JXL never defined them); other sixel terminals
 	 * reset registers per image, so send every frame there. */
 	emit_pal = pal_dirty || !g_is_syncterm || g_last_tier != SST_TIER_SIXEL;
+
+	/* Past every early-return above (gates, dedupe): this frame IS going out.
+	 * Clear the retain here, not only on a successful commit further down --
+	 * a fresh engine frame that reaches this point supersedes whatever was
+	 * pending (its own bytes are what's about to be staged), and a retry via
+	 * sst_io_tick() reaches this same point on success. A frame that gets
+	 * dropped by out_put()'s stage-full guard just below still leaves this
+	 * cleared -- that is fine and deliberate: a drop already has its own
+	 * resync path (g_need_st/g_have_last), and re-driving THIS gate's retain
+	 * for a dropped frame would fight that path instead of helping it. */
+	g_present_pending = 0;
 
 	/* Stats bar BEFORE the (possibly huge) image, not after: a palette-storm
 	 * full frame can run past out_put()'s 256KB stage, and once that guard
@@ -3601,6 +3643,34 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 	sst_io_flush();
 }
 
+/* Retry a frame a DEFER gate stranded (see g_present_pending's doc comment
+ * above sst_io_present()). Called every poll (door/syncscumm.cpp's
+ * pollEvent()), including on a fully static screen where nothing else would
+ * ever call present() again -- that is the whole point: a burst's last
+ * frame that got gated on entry no longer needs a further engine-side
+ * redraw (e.g. a mouse move) to eventually reach the wire.
+ *
+ * Just calls sst_io_present() again with the retained bytes, so the retry
+ * flows through the EXACT SAME gates as any other present() call -- it can
+ * re-defer (and re-retain, via the idx == g_pending_idx guard in those gates)
+ * exactly as many times as the pacing/backpressure state requires, and can
+ * never send ahead of what the link has actually drained. Once the gate
+ * clears, present()'s own top-of-function sst_io_pump() (fresh g_inflight/
+ * acks) and sst_io_flush() (fresh g_out_len) mean the retry is evaluated
+ * against CURRENT state, not whatever was true when the frame was first
+ * gated.
+ *
+ * RECURSION GUARD: sst_io_present() calls sst_io_pump(), never
+ * sst_io_tick() -- so present() -> pump() -> tick() -> present() cannot
+ * happen. This function itself is only ever called from pollEvent(), never
+ * from present() or pump(), so there is exactly one entry point into a
+ * retry and no path back into this function from within it. */
+void sst_io_tick(void)
+{
+	if (g_present_pending)
+		sst_io_present(g_pending_idx, g_pending_pal);
+}
+
 #ifdef SST_TEST
 /* Test-only seams (test/test_sst_mouse.c): drive sst_mouse_report()'s
  * coordinate mapping without a real session -- no sst_io_init(), no socket,
@@ -3643,5 +3713,24 @@ int sst_io_test_feed(const char *bytes, size_t n)
 {
 	parse_bytes((const uint8_t *)bytes, (int)n);
 	return 1;
+}
+
+/* Test-only seam (test/test_sst_io_present_pending.c): force the DSR-ack
+ * pacing gate's g_inflight without a real multi-frame DSR exchange, so the
+ * strand-on-static-screen regression test can drive present() straight into
+ * "gated-inflight" on demand. */
+int sst_io_test_set_inflight(int n)
+{
+	g_inflight = n;
+	return 1;
+}
+
+/* Test-only seam (test/test_sst_io_present_pending.c): expose g_present_pending
+ * so the strand-on-static-screen regression test can assert a gated present()
+ * retained its frame instead of silently dropping it, and that a successful
+ * send (direct or via sst_io_tick()) clears it again. */
+int sst_io_test_present_pending(void)
+{
+	return g_present_pending;
 }
 #endif

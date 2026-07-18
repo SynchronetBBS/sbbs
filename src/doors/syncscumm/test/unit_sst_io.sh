@@ -82,6 +82,18 @@ cc -o /tmp/test_sst_io_canvas $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $X
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_io_canvas
 
+# The strand-on-static-screen fix (F5 Sky panel / speech-toggle X stay black
+# until the mouse moves): a pacing/backpressure-gated present() must retain
+# its frame and sst_io_tick() must retry it with no further present() call.
+# Needs the SST_TEST seams (sst_io_test_set_inflight()/
+# sst_io_test_present_pending()); fresh session, own binary for the same
+# reason as the others above.
+cc -o /tmp/test_sst_io_present_pending $JXL_DEFINE -DSST_TEST -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_io_present_pending.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_io_present_pending
+
 # The XTSMGRAPHICS sixel-ceiling clamp (xterm oversized-sixel discard fix)
 # likewise needs a fresh session; its own binary for the same reason.
 cc -o /tmp/test_sst_io_gfxmax $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \

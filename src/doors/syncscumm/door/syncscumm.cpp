@@ -175,6 +175,11 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 	((SyncscummMixerManager *)_mixerManager)->tick();
 
 	sst_io_pump();
+	// Retry any frame a pacing/backpressure gate stranded on a now-static
+	// screen (F5 panel, half-erased speech-toggle X): present() only fires
+	// off the engine's own dirty flag, so nothing else would ever retry it.
+	// Every poll, even on a static screen -- see sst_io_tick()'s doc comment.
+	sst_io_tick();
 	if (sst_io_quit_requested() || sst_io_hung_up()) {
 		static bool sentQuit = false;
 		if (!sentQuit) {

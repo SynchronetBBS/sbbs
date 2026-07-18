@@ -164,6 +164,15 @@ void sst_io_audio_stop(void);
  * frame per call (no pacing/dedupe), capped at 200 frames. */
 void sst_io_present(const uint8_t *idx, const uint8_t *pal768);
 
+/* Retry a frame that a pacing/backpressure gate inside sst_io_present()
+ * deferred without sending -- present() is edge-driven off the engine's own
+ * dirty flag, so a frame gated on the LAST redraw of a burst (a static
+ * panel, no further updateScreen() calls) would otherwise sit unsent
+ * indefinitely. A no-op when nothing is pending. Call once per poll
+ * (door/syncscumm.cpp's pollEvent()) -- NEVER from within sst_io_present()
+ * or sst_io_pump(), which would recurse. See sst_io.c. */
+void sst_io_tick(void);
+
 /* ---- input events (mouse + keyboard) ----
  * sst_io_pump()'s parser turns an SGR mouse report (csi_final()'s 'M'/'m'
  * cases) or a decoded key -- a legacy byte, a kitty CSI-u event or a
