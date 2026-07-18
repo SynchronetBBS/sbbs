@@ -2365,14 +2365,68 @@ static int sst_gcd(int a, int b) { while (b) { int t = a % b; a = b; b = t; } re
  * the terminal actually draws it (foot's cell is 6x13) -- which tore the comic
  * panels. Snapping on the real grid makes each box align.
  *
- * The box HEIGHT is snapped to LCM(ch, 6) -- a whole number of BOTH text cells
- * (ch) and 6px sixel bands. Neither alone is enough on a cell-anchored terminal
- * like foot: it draws whole 6px bands and allocates whole cells for them, so a
- * box height that is a multiple of the cell but not the band (e.g. 13) leaves a
- * transparent partial band, and foot backfills the rest of the cell block with
- * the background -- a thin black strip along the box's bottom edge, worst in
- * sparse scenes. ch and 6 are coprime for ch=13, so only their LCM (78) clears
- * both. */
+ * The box HEIGHT is snapped to LCM(ch, 6) (vstep) -- a whole number of BOTH
+ * text cells (ch) and 6px sixel bands. Neither alone is enough on a cell-
+ * anchored terminal like foot: it draws whole 6px bands and allocates whole
+ * cells for them, so a box height that is a multiple of the cell but not the
+ * band (e.g. 13) leaves a transparent partial band, and foot backfills the
+ * rest of the cell block with the background -- a thin black strip along the
+ * box's bottom edge, worst in sparse scenes. ch and 6 are coprime for ch=13,
+ * so only their LCM (78) clears both.
+ *
+ * Shared by both the stranding pre-pass and the emit loop below (was
+ * duplicated inline in each; factored out so the two can never drift). Only
+ * computes geometry -- callers decide what an empty (*rw<=0) or short
+ * (*ry+*rh < *ry2, i.e. stranded) result means. *ry2_out is the box's own
+ * unclamped bottom row, needed by the stranding test. */
+static void sst_box_display_rect(const struct sst_box *b, int ew, int ehc,
+                                 int cw, int ch, int vstep,
+                                 int *rx_out, int *ry_out, int *rw_out, int *rh_out,
+                                 int *ry2_out)
+{
+	int fx1 = b->x1 * SST_TILE, fx2 = (b->x2 + 1) * SST_TILE;
+	int fy1 = b->y1 * SST_TILE, fy2 = (b->y2 + 1) * SST_TILE;
+	int rx, rx2, ry, ry2, cx, cy, rw, rh;
+
+	if (fx2 > SST_FB_W)
+		fx2 = SST_FB_W;
+	if (fy2 > SST_FB_H)
+		fy2 = SST_FB_H;
+
+	/* display rect = the pixels whose NN source falls in [fx1,fx2)x[fy1,fy2) */
+	rx  = (fx1 * ew + SST_FB_W - 1) / SST_FB_W;
+	rx2 = (fx2 * ew + SST_FB_W - 1) / SST_FB_W;
+	ry  = (fy1 * ehc + SST_FB_H - 1) / SST_FB_H;
+	ry2 = (fy2 * ehc + SST_FB_H - 1) / SST_FB_H;
+	if (rx2 > ew)
+		rx2 = ew;
+	if (ry2 > ehc)
+		ry2 = ehc;
+
+	/* snap OUT to character cells -- sixel places only at a cell corner */
+	cx  = rx / cw;
+	rx  = cx * cw;
+	rx2 = (rx2 + cw - 1) / cw * cw;
+	if (rx2 > ew)
+		rx2 = ew;
+	cy  = ry / ch;
+	ry  = cy * ch;                              /* box top at a cell boundary */
+	/* Height up to a whole number of BOTH cells and bands (vstep), so foot
+	 * fills the box's cell block completely -- no partial band/cell left as
+	 * a black strip. Clamp to the frame; the bottom-most box may then fall
+	 * short of a full vstep and no longer cover this box's own changed
+	 * rows [ry+rh, ry2) -- the caller must treat that as stranding and fall
+	 * back to a full frame (which always encodes the whole ehc height with
+	 * no partial band at the bottom) rather than ship a box that silently
+	 * drops those rows. */
+	rh  = (ry2 - ry + vstep - 1) / vstep * vstep;
+	if (ry + rh > ehc)
+		rh = (ehc - ry) / vstep * vstep;   /* stay vstep-aligned at the frame bottom */
+	rw  = rx2 - rx;
+
+	*rx_out = rx; *ry_out = ry; *rw_out = rw; *rh_out = rh; *ry2_out = ry2;
+}
+
 static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
                                       const uint8_t *pal8, int ew, int eh,
                                       int icol, int irow, int cw, int ch)
@@ -2391,55 +2445,41 @@ static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 	if (nb <= 0)
 		return 0;
 
+	/* Stranding pre-pass: a bottom-clamped box that can't cover its own
+	 * changed rows forces a full-frame fallback (see sst_box_display_rect()'s
+	 * comment). That fallback has to be decided BEFORE any box is emitted --
+	 * boxes are out_put() to the wire as each one succeeds, so if the check
+	 * instead lived inside the emit loop, an earlier box's bytes could
+	 * already be on the wire by the time a later (bottom) box strands,
+	 * leaving a partial dirty box AND a full frame both sent for the same
+	 * frame. Running the identical geometry here first, before a single
+	 * out_put(), keeps the fallback atomic: either nothing is sent and the
+	 * caller sends a full frame, or every emitted box is complete. */
 	for (k = 0; k < nb; k++) {
-		int            fx1 = box[k].x1 * SST_TILE, fx2 = (box[k].x2 + 1) * SST_TILE;
-		int            fy1 = box[k].y1 * SST_TILE, fy2 = (box[k].y2 + 1) * SST_TILE;
-		int            rx, rx2, ry, ry2, cx, cy, rw, rh;
+		int rx, ry, rw, rh, ry2;
+
+		sst_box_display_rect(&box[k], ew, ehc, cw, ch, vstep, &rx, &ry, &rw, &rh, &ry2);
+		if (rw <= 0)
+			continue;                               /* empty box: not stranding */
+		if (ry + rh < ry2)
+			return 0;                               /* fall back to a full frame */
+	}
+
+	for (k = 0; k < nb; k++) {
+		int            rx, ry, rw, rh, ry2, cx, cy;
 		const uint8_t *idx;
 		size_t         sn;
 		char           wrap[24];
 		int            wn;
 
-		if (fx2 > SST_FB_W)
-			fx2 = SST_FB_W;
-		if (fy2 > SST_FB_H)
-			fy2 = SST_FB_H;
-
-		/* display rect = the pixels whose NN source falls in [fx1,fx2)x[fy1,fy2) */
-		rx  = (fx1 * ew + SST_FB_W - 1) / SST_FB_W;
-		rx2 = (fx2 * ew + SST_FB_W - 1) / SST_FB_W;
-		ry  = (fy1 * ehc + SST_FB_H - 1) / SST_FB_H;
-		ry2 = (fy2 * ehc + SST_FB_H - 1) / SST_FB_H;
-		if (rx2 > ew)
-			rx2 = ew;
-		if (ry2 > ehc)
-			ry2 = ehc;
-
-		/* snap OUT to character cells -- sixel places only at a cell corner */
-		cx  = rx / cw;
-		rx  = cx * cw;
-		rx2 = (rx2 + cw - 1) / cw * cw;
-		if (rx2 > ew)
-			rx2 = ew;
-		cy  = ry / ch;
-		ry  = cy * ch;                              /* box top at a cell boundary */
-		/* Height up to a whole number of BOTH cells and bands (vstep), so foot
-		 * fills the box's cell block completely -- no partial band/cell left as
-		 * a black strip. Clamp to the frame; the bottom-most box may then fall
-		 * short of a full vstep and no longer cover this box's own changed
-		 * rows [ry+rh, ry2) -- rather than ship a box that silently drops
-		 * those rows (stranding them until the next full frame, which a
-		 * static scene may never send again -- the confirmed bottom-cursor
-		 * defect), fall back to a full frame below, which always encodes the
-		 * whole ehc height with no partial band at the bottom. */
-		rh  = (ry2 - ry + vstep - 1) / vstep * vstep;
-		if (ry + rh > ehc)
-			rh = (ehc - ry) / vstep * vstep;   /* stay vstep-aligned at the frame bottom */
-		if (ry + rh < ry2)
-			return 0;                               /* fall back to a full frame */
-		rw  = rx2 - rx;
+		sst_box_display_rect(&box[k], ew, ehc, cw, ch, vstep, &rx, &ry, &rw, &rh, &ry2);
 		if (rw <= 0)
 			continue;
+		/* No ry+rh < ry2 check here: the pre-pass above already guarantees
+		 * no box in this frame strands, so every box reaching this point is
+		 * complete. */
+		cx = rx / cw;
+		cy = ry / ch;
 
 		/* Encode the box at its exact CELL-ALIGNED height (ry/ry2 were snapped
 		 * to whole cells above) -- do NOT round up to a 6px sixel band. A box

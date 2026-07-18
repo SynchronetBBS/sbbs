@@ -19,15 +19,33 @@
  * [ry+rh, ry2) uncovered, `return 0` (the function's existing "fall back
  * to a full frame" signal) instead of shortening/dropping the box.
  *
+ * ATOMICITY (review follow-up): the stranding check runs in a pre-pass over
+ * ALL boxes, before any box is out_put() to the wire -- not inline in the
+ * emit loop. A frame that dirties an earlier (mid-screen) box AND a later
+ * bottom-strand box is exactly the real cursor case (an erase box above the
+ * cursor's old spot + the bottom box itself), and boxes are written to the
+ * wire as each one succeeds in raster/top-to-bottom order. If the check ran
+ * inline, the mid-screen box's bytes would already be on the wire by the
+ * time the bottom box strands and returns 0 -- so the caller, seeing 0,
+ * would ALSO send a full frame, stacking a partial dirty box plus a full
+ * frame on the same present(). The pre-pass makes the fallback atomic:
+ * either nothing is sent and the caller sends a full frame, or every
+ * emitted box is complete -- mirroring the invariant the JXL present
+ * function documents (sst_io.c: "the caller never stacks a full frame on
+ * top of partial rects").
+ *
  * This test proves it two ways, both in one session (fresh g_last state
  * needed between them, hence the three presents rather than two separate
  * binaries):
  *   1. A frame that dirties BOTH a mid-screen tile AND a bottom-row tile
- *      (tile row 12, fb rows 192..199) must force a FULL frame -- a raster
- *      header at (or near) the full ehc height (576) must appear on the
- *      wire. Pre-fix, the mid-screen box alone sends fine (nonzero
- *      return), so no such full-height raster header ever appears; that is
- *      the RED failure this test catches.
+ *      (tile row 12, fb rows 192..199) must force a FULL frame -- and, with
+ *      the atomic fix, ONLY the full frame: exactly one sixel raster header
+ *      on the wire, at the full ehc height (576), with no smaller dirty
+ *      raster (the mid-screen box's own) ahead of it. Pre-fix (no pre-pass),
+ *      the mid-screen box sends first and its own small raster header hits
+ *      the wire before the bottom box strands and forces the full frame --
+ *      TWO raster headers, the first well under full height; that is the
+ *      RED failure this test catches.
  *   2. A LATER frame that dirties only ANOTHER mid-screen tile (nothing in
  *      the bottom row) must still take the cheap dirty-rect path -- no
  *      full-height raster header, but the dirty path's DECSC ("\x1b7")/
@@ -53,15 +71,14 @@ static int drain(int fd, char *buf, size_t cap)
 }
 
 /* Scan the WHOLE buffer for every sixel DCS raster-attribute header
- * ("Pan;Pad;Ph;Pv") and return the LARGEST Ph/Pv seen -- a present() call
- * can legitimately carry more than one DCS (an earlier dirty box already
- * queued before a later box in the same loop forces a full-frame fallback),
- * so the tell for "was a full frame sent" is the presence of a raster
- * header at (or near) the full image height, not merely a header existing
- * at all. */
-static void sixel_raster_max(const char *s, int n, int *max_ph_out, int *max_pv_out)
+ * ("Pan;Pad;Ph;Pv"), returning the LARGEST Ph/Pv seen and how many headers
+ * were found. With the atomic fallback, a bottom-strand present() must
+ * carry exactly ONE header (the full frame) -- count_out is what lets the
+ * test assert that directly, rather than only checking the max size and
+ * potentially missing an earlier, already-sent partial-box header. */
+static void sixel_raster_max(const char *s, int n, int *max_ph_out, int *max_pv_out, int *count_out)
 {
-	int i, max_ph = -1, max_pv = -1;
+	int i, max_ph = -1, max_pv = -1, count = 0;
 
 	for (i = 0; i < n; i++) {
 		if (s[i] == '"') {
@@ -76,6 +93,7 @@ static void sixel_raster_max(const char *s, int n, int *max_ph_out, int *max_pv_
 				j++;
 			}
 			if (field >= 3) {
+				count++;
 				if (ph > max_ph)
 					max_ph = ph;
 				if (pv > max_pv)
@@ -85,6 +103,7 @@ static void sixel_raster_max(const char *s, int n, int *max_ph_out, int *max_pv_
 	}
 	*max_ph_out = max_ph;
 	*max_pv_out = max_pv;
+	*count_out = count;
 }
 
 /* Set a 16x16 (or shorter, at the fb bottom) tile to a fill value -- tx/ty
@@ -111,7 +130,7 @@ int main(void)
 	static uint8_t pal[768];
 	char           fdarg[32];
 	char *         argv[3];
-	int            n, ph, pv;
+	int            n, ph, pv, cnt;
 	const int      TILE = 16;
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
@@ -158,15 +177,19 @@ int main(void)
 	n = drain(sv[0], out, sizeof out);
 	assert(n > 0);
 
-	sixel_raster_max(out, n, &ph, &pv);
-	/* THE FIX: a bottom-row change that the height snap can't fully cover
-	 * must force a full frame -- proven by a raster header at (or very
-	 * near) the full ehc height (576), not just SOME raster header (the
-	 * mid-screen box's own small one, rh<=140, would otherwise satisfy a
-	 * weaker check). Pre-fix this fails: the largest Pv seen is the
-	 * mid-screen box's own small height, well under 500. */
+	sixel_raster_max(out, n, &ph, &pv, &cnt);
+	/* THE FIX (atomic): a bottom-row change that the height snap can't
+	 * fully cover must force a full frame, and ONLY the full frame -- no
+	 * partial dirty box may have already reached the wire ahead of it.
+	 * That means exactly ONE sixel raster header total, at (or very near)
+	 * the full ehc height (576). Pre-fix (no pre-pass) this fails two ways:
+	 * either no full-height header appears at all (pv stays under 500,
+	 * the mid-screen box's own small height), or -- once the inner check
+	 * alone forced the fallback -- TWO headers appear (the mid-screen
+	 * box's small one plus the full frame), i.e. cnt > 1. */
+	assert(cnt == 1);
 	assert(pv >= 500);
-	printf("SST_IO_BOTTOM_DIRTY bottom-strand forces full frame OK (Ph=%d Pv=%d)\n", ph, pv);
+	printf("SST_IO_BOTTOM_DIRTY bottom-strand forces full frame OK (Ph=%d Pv=%d cnt=%d)\n", ph, pv, cnt);
 
 	/* Third frame: dirty ONLY another mid-screen tile (tx=5,ty=5 -> fb rows
 	 * 80..95), nothing in the bottom row. This must NOT force a full frame
@@ -181,9 +204,10 @@ int main(void)
 	assert(n > 0);
 
 	assert(strstr(out, "\x1b" "7") != NULL);   /* dirty path's DECSC wrap: took the cheap path */
-	sixel_raster_max(out, n, &ph, &pv);
+	sixel_raster_max(out, n, &ph, &pv, &cnt);
+	assert(cnt == 1);                          /* one small dirty box, no full-frame storm */
 	assert(pv > 0 && pv < 500);                /* no full-height raster header emitted */
-	printf("SST_IO_BOTTOM_DIRTY non-bottom change stays dirty-rect OK (Ph=%d Pv=%d)\n", ph, pv);
+	printf("SST_IO_BOTTOM_DIRTY non-bottom change stays dirty-rect OK (Ph=%d Pv=%d cnt=%d)\n", ph, pv, cnt);
 
 	return 0;
 }
