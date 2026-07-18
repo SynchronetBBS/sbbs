@@ -41,8 +41,8 @@ class UiStatusbarTest {
 
   static testNotFocusable_() {
     var s = StatusBar.new()
-    check_(s.focusable == false,
-           "StatusBar: not focusable")
+    check_(!s.focusable && !s.activitySensitive,
+           "StatusBar: not focusable or activity-sensitive")
   }
 
   static testTextPainted_() {

@@ -93,6 +93,7 @@ class ClassicBackdrop is Widget {
   construct new() {
     super()
     focusable = false
+    activitySensitive = false
   }
 
   onPaint_() {
@@ -114,6 +115,7 @@ class ClassicFooter is Widget {
   construct new(onComment) {
     super()
     focusable = false
+    activitySensitive = false
     _comment = ""
     _copied = false
     _onComment = onComment

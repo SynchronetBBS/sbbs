@@ -63,6 +63,7 @@ class Widget {
     _visible   = true
     _dirty     = true
     _focusable = true
+    _activitySensitive = true
     _surface   = null     // lazy; matched to bounds in ensureSurface_
     _helpText  = null
     _shadow    = false    // drop-shadow on right + bottom edges
@@ -176,6 +177,15 @@ class Widget {
   focusable     { _focusable }
   focusable=(b) { _focusable = b }
 
+  // Ambient screen chrome can opt out of active/inactive styling.
+  // This is independent of focusability: a non-focusable widget
+  // inside a Pane normally still inherits that Pane's activity.
+  activitySensitive { _activitySensitive }
+  activitySensitive=(b) {
+    _activitySensitive = b
+    markDirty()
+  }
+
   // Auto-layout sizing hints.  Widgets that have a natural minimum
   // size (a ListView with N items, a Form with measured rows, …)
   // override these to declare the smallest cell budget that displays
@@ -197,15 +207,13 @@ class Widget {
     return Theme.default
   }
 
-  // Resolve a theme role for *this* widget.  When the widget isn't
-  // part of the App's active layer (modalTop subtree), append
-  // ".inactive" so the theme's inactive cascade swaps in the dim
-  // variant.  Widgets call this for every paint — frame, list rows,
-  // input field, button label, scrollbar — so a single layer-state
-  // check cascades through everything visible.
+  // Resolve a theme role for *this* widget.  Activity-sensitive
+  // widgets outside the App's active layer append ".inactive" so
+  // the theme cascade swaps in the inactive variant.  Neutral screen
+  // chrome always resolves its base role.
   style(role) {
     var r = role
-    if (!inActiveLayer) r = role + ".inactive"
+    if (_activitySensitive && !inActiveLayer) r = role + ".inactive"
     return effectiveTheme.style(r)
   }
   glyph(name) { effectiveTheme.glyphs[name] }
@@ -251,7 +259,7 @@ class Widget {
   draw() {
     ensureSurface_()
     if (_surface == null) return null
-    var nowActive = inActiveLayer
+    var nowActive = _activitySensitive ? inActiveLayer : true
     if (_dirty || _renderedInActive != nowActive) {
       onPaint_()
       clearDirty()

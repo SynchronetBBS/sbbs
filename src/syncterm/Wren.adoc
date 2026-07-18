@@ -5504,7 +5504,10 @@ Base class for everything paintable.  Holds:
 * `parent` — pointer to the containing `Container` or `App`.
 * `theme=` — a per-widget Theme override; otherwise inherited via
   `effectiveTheme` walking the parent chain.
-* `focused`, `visible`, `focusable`, `dirty` — boolean state flags.
+* `focused`, `visible`, `focusable`, `activitySensitive`, `dirty` —
+  boolean state flags.  Setting `activitySensitive` to `false` makes
+  ambient screen chrome use its base theme roles regardless of modal
+  activity; it does not affect focus or input dispatch.
 * `helpText=` — string surfaced by `App.showHelp` (F1).
 * `shadow=` — when true, the parent paints a drop shadow on the
   cells immediately right and below the widget's bounds.
@@ -6202,6 +6205,14 @@ A widget lands in the inactive layer for either of two reasons:
   every cell it owns AND every descendant's surface — frame,
   title, bg fill, list rows all agree on active-vs-inactive
   without each subclass having to know.
+
+`activitySensitive=false` opts a widget out of this style selection.
+It continues to report its computed `inActiveLayer` value, but
+`style(role)` always resolves the base role.  This is intended for
+ambient screen backgrounds, title bars, and status/help bars which do
+not have active and inactive forms.  Do not use `focusable=false` for
+this purpose: display-only children such as progress bars still need to
+inherit an inactive containing Pane.
 
 `Theme.default` is the built-in default, memoized so `someTheme ==
 Theme.default` works as identity equality.  It mirrors the classic

@@ -16,6 +16,7 @@ Replace the dialing directory and settings UI with a persistent Wren menu
 Isolate trusted menu scripts from per-connection Wren scripts
 Retain UIFC only for the trusted native file picker
 Preserve the classic two-pane directory layout and configured UI colours
+Keep ambient Wren menu chrome unchanged behind submenus
 Restore formatted context help throughout the Wren directory and settings UI
 Restore historical edit and persistence boundaries in Wren configuration
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections

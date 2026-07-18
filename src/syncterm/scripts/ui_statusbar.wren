@@ -9,7 +9,8 @@
 //      "left", "center", or "right".  Multiple segments share the row
 //      and are placed left-to-right within their allocated portion.
 //
-// Not focusable — StatusBar exists only to display state.
+// Not focusable or activity-sensitive — StatusBar exists only to
+// display ambient state and retains its normal style behind dialogs.
 //
 //   var s = StatusBar.new()
 //   s.bounds = Rect.new(1, sz[1], sz[0], 1)
@@ -31,6 +32,7 @@ class StatusBar is Widget {
   construct new() {
     super()
     focusable = false
+    activitySensitive = false
     _text     = ""
     _segments = null      // when non-null, takes precedence over _text
   }

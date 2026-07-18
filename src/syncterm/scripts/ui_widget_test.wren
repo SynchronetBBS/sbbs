@@ -60,6 +60,7 @@ class UiWidgetTest {
     testWidgetEffectiveThemeFallsBack_()
     testWidgetEffectiveThemeInheritsParent_()
     testWidgetStyleAndGlyphForward_()
+    testWidgetActivitySensitivity_()
     testWidgetMarkDirtyPropagates_()
     testWidgetHitWithoutBounds_()
     testWidgetHitInvisible_()
@@ -175,7 +176,8 @@ class UiWidgetTest {
   static testWidgetDefaults_() {
     var w = Probe.new()
     check_(w.bounds == null && w.parent == null && w.theme == null &&
-           !w.focused && w.visible && w.dirty && w.focusable,
+           !w.focused && w.visible && w.dirty && w.focusable &&
+           w.activitySensitive,
            "Widget defaults")
   }
 
@@ -221,6 +223,25 @@ class UiWidgetTest {
     var s = w.style("default")
     check_(s == sExpected && w.glyph("frame.topLeft") == d.glyphs["frame.topLeft"],
            "Widget.style/glyph forward to effectiveTheme")
+  }
+
+  static testWidgetActivitySensitivity_() {
+    var app = App.new()
+    app.theme = Theme.new({
+      "default":
+        Style.new(0, 0x1F, 0xFFFFFF, 0x0000A8),
+      "default.inactive":
+        Style.new(0, 0x3F, 0xFFFFFF, 0x00AAAA)
+    }, {})
+    var chrome = Probe.new()
+    app.root.add(chrome)
+    app.pushModal(Probe.new())
+    var inactive = chrome.style("default")
+    chrome.activitySensitive = false
+    var neutral = chrome.style("default")
+    check_(!chrome.inActiveLayer && inactive.legacyAttr == 0x3F &&
+           neutral.legacyAttr == 0x1F,
+           "Widget.activitySensitive=false keeps the base style")
   }
 
   static testWidgetMarkDirtyPropagates_() {
