@@ -28,16 +28,20 @@
 extern termgfx_audio_t *sd_audio;
 
 // Music-vs-SFX balance: SFX are loud and transient, OPL music is sustained and
-// peak-normalised, so at equal gain the music perceptually dominates. Cap the
-// music channel well below unity (Doom's 0..127 slider maps onto 0..MAXV).
-// Tunable by ear -- SyncDuke settled near 20; start a touch higher for Doom.
-#define TERM_MUS_MAXV 28
+// peak-normalised, so at equal gain the music perceptually dominates. Trim the
+// music well below unity: Doom's 0..127 slider maps LINEARLY IN DB (how a real
+// fader behaves, unlike a lumpy 0..100 percent) from the floor up to
+// TERM_MUS_TRIM_DB at full. Tunable by ear -- SyncDuke settled at -14 dB; Doom
+// sits a touch higher.
+#define TERM_MUS_TRIM_DB  (-11.0f)   // level at a full music slider (was MAXV 28)
+#define TERM_MUS_FLOOR_DB (-40.0f)   // slider just above 0; 0 itself is the OFF path
 
-static int term_music_vol = TERM_MUS_MAXV * 127 / 100;   // Doom 0..127 (pre-slider default)
+static int term_music_vol = 96;      // Doom 0..127 (pre-slider default; config overrides)
 
-static int term_music_v(void)
+static float term_music_db(void)
 {
-	return term_music_vol * TERM_MUS_MAXV / 127;         // -> termgfx 0..100 (balanced)
+	float f = (float)term_music_vol / 127.0f;   // 0..1; 0 handled by the OFF path
+	return TERM_MUS_FLOOR_DB + f * (TERM_MUS_TRIM_DB - TERM_MUS_FLOOR_DB);
 }
 
 // A registered song: a private copy of the lump bytes plus a content-addressed
@@ -82,7 +86,7 @@ static void term_emit(term_song_t *s)
 	}
 	// Cache hit (the client's own persistent cache, or the door-side OGG on disk):
 	// ship it without rendering. Only render the MIDI/MUS on a full miss.
-	hit = termgfx_audio_music_play(sd_audio, s->name, termgfx_db_from_pct(term_music_v()), 1);
+	hit = termgfx_audio_music_play(sd_audio, s->name, term_music_db(), 1);
 	if (hit != TERMGFX_MUSIC_RENDER) {
 		dlog("music: %s -- %s", s->name,
 		     hit == TERMGFX_MUSIC_CLIENT ? "client-cached (no render, no upload)"
@@ -91,7 +95,7 @@ static void term_emit(term_song_t *s)
 	}
 	// Cold miss: hand the MUS/MIDI to termgfx's worker thread; the game keeps running while it
 	// renders + encodes, and the poll in DG_DrawFrame ships it when ready -- no level-load freeze.
-	termgfx_audio_music_async_submit(sd_audio, s->name, s->data, (size_t)s->len, 48000, termgfx_db_from_pct(term_music_v()), 1);
+	termgfx_audio_music_async_submit(sd_audio, s->name, s->data, (size_t)s->len, 48000, term_music_db(), 1);
 	dlog("music: %s submitted -> async render", s->name);
 }
 
@@ -118,7 +122,7 @@ static void I_Term_SetMusicVolume(int volume)
 	if (term_music_vol == 0)
 		termgfx_audio_music_stop(sd_audio);             // 0% = OFF: stop the loop (no silent transfer)
 	else {
-		termgfx_audio_music_volume(sd_audio, termgfx_db_from_pct(term_music_v()));   // live, no restart
+		termgfx_audio_music_volume(sd_audio, term_music_db());   // live, no restart
 		if (was == 0 && term_current != NULL && termgfx_audio_tier(sd_audio) >= 1)
 			term_emit(term_current);                // raised off 0: resume the current track
 	}
