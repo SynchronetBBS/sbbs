@@ -41,12 +41,19 @@ static int  sd_music_vol = 200;
  * raised back off 0.  (SyncDuke's Setup Sound has no separate MUSIC:OFF, so 0% is the off switch.) */
 static char sd_current_music[16];
 
-/* Music sits a touch under SFX at equal slider settings (as in DOS Duke): the OPL3
- * render is peak-normalized -- a loud, SUSTAINED signal -- while SFX are un-normalized
- * and TRANSIENT, so without trimming the music perceptually dominates. SD_MUSIC_MAXV
- * is the music channel volume (0..100) at a full MusicVolume slider -- tune by ear. */
-#define SD_MUSIC_MAXV 20
-static int sd_music_v(void) { return sd_music_vol * SD_MUSIC_MAXV / 255; }
+/* Music sits under SFX at equal slider settings (as in DOS Duke): the OPL3 render
+ * is peak-normalized -- a loud, SUSTAINED signal -- while SFX are un-normalized and
+ * TRANSIENT, so without trimming the music perceptually dominates. SD_MUSIC_TRIM_DB
+ * is the music channel level (dB, 0 = unity) at a full MusicVolume slider; the
+ * MusicVolume slider maps linearly in dB from the floor up to it, which is how a
+ * real fader behaves (a bare 0..100 percent is lumpy near the bottom). Tune by ear. */
+#define SD_MUSIC_TRIM_DB  (-14.0f)   /* ~ the old SD_MUSIC_MAXV 20 (= -14 dB) */
+#define SD_MUSIC_FLOOR_DB (-40.0f)   /* slider just above 0; 0 itself is the OFF path */
+static float sd_music_db(void)
+{
+	float f = (float)sd_music_vol / 255.0f;   /* 0..1; 0 handled by the callers' OFF path */
+	return SD_MUSIC_FLOOR_DB + f * (SD_MUSIC_TRIM_DB - SD_MUSIC_FLOOR_DB);
+}
 
 /* Per-sound re-dispatch rate limit. Because we return FX_Ok (fire-and-forget; see the
  * sd_fx_play note), the engine's `soundonce` gate is dead -- a CONTINUOUS source (a flying
@@ -256,7 +263,7 @@ void MUSIC_SetVolume(int volume)
 	if (sd_music_vol == 0)
 		termgfx_audio_music_stop(sd_audio);          /* 0% = OFF: stop the loop (no silent transfer) */
 	else {
-		termgfx_audio_music_volume(sd_audio, termgfx_db_from_pct(sd_music_v()));   /* live slider (balanced vs SFX) */
+		termgfx_audio_music_volume(sd_audio, sd_music_db());   /* live slider (balanced vs SFX) */
 		if (was == 0 && sd_current_music[0] != '\0')
 			PlayMusic(sd_current_music);             /* raised off 0: resume the current track */
 	}
@@ -356,7 +363,7 @@ void PlayMusic(char *filename)
 	}
 
 	{
-		int hit = termgfx_audio_music_play(sd_audio, id, termgfx_db_from_pct(sd_music_v()), 1);
+		int hit = termgfx_audio_music_play(sd_audio, id, sd_music_db(), 1);
 		if (hit != TERMGFX_MUSIC_RENDER) {
 			syncduke_log("music: '%s' (%s) -- %s", filename, id,
 			             hit == TERMGFX_MUSIC_CLIENT ? "client-cached (no render, no upload)"
@@ -368,7 +375,7 @@ void PlayMusic(char *filename)
 	/* Cold miss: hand the MIDI to termgfx's worker thread and return -- the game keeps running while
 	 * it renders + encodes; sd_music_poll() (in the frame loop) ships the track when it's ready, so
 	 * the level load no longer freezes for the render.  termgfx copies the bytes. */
-	termgfx_audio_music_async_submit(sd_audio, id, mid, (size_t)len, 48000, termgfx_db_from_pct(sd_music_v()), 1);
+	termgfx_audio_music_async_submit(sd_audio, id, mid, (size_t)len, 48000, sd_music_db(), 1);
 	syncduke_log("music: '%s' (%s) submitted -> async render", filename, id);
 	free(mid);
 }
