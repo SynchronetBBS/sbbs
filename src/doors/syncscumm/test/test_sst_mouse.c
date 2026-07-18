@@ -31,5 +31,21 @@ int main(void) {
 	assert(sst_io_next_event(&ev) && ev.type == SST_EV_MOUSE_MOVE);
 	/* now interpreted as pixels: x ≈ 900/1280*320 */
 	assert(ev.x > 210 && ev.x < 240);
+
+	/* Cell-mode EDGE reachability. In cell mode the reported coordinate is a
+	 * text cell whose CENTER sits cw/2 or ch/2 px inside each canvas edge, so
+	 * the first and last game rows/cols must snap out to the image edges or
+	 * they are unreachable. The first row reaching game y=0 is what makes
+	 * Beneath a Steel Sky's top inventory bar drop -- before the snap it
+	 * mapped to ~y=4 and the bar never appeared. Motion-only reports (b=32),
+	 * so each queues just a MOVE; drain any leftover first. */
+	while (sst_io_next_event(&ev)) { }
+	sst_io_test_set_geom(640, 400, 8, 16, 80, 25, /*pixels=*/0);
+	sst_io_test_mouse_report(/*b=*/32, /*col=*/1, /*row=*/1, /*release=*/0);
+	assert(sst_io_next_event(&ev) && ev.type == SST_EV_MOUSE_MOVE && ev.x == 0 && ev.y == 0);
+	assert(!sst_io_next_event(&ev));
+	sst_io_test_mouse_report(/*b=*/32, /*col=*/80, /*row=*/25, /*release=*/0);
+	assert(sst_io_next_event(&ev) && ev.type == SST_EV_MOUSE_MOVE && ev.x > 300 && ev.y > 190);
+	assert(!sst_io_next_event(&ev));
 	return 0;
 }

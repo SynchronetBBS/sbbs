@@ -3143,12 +3143,21 @@ static void sst_mouse_report(int b, int col, int row, int release)
 		px = (col - 1) * cw + cw / 2;
 		py = (row - 1) * ch + ch / 2;
 		/* A cell-granular terminal can only place the cursor at cell
-		 * CENTERS, which sit cw/2 or ch/2 px short of the far canvas edge --
-		 * snap the LAST row/col to the image-rect edge so it's reachable.
-		 * Don't snap the FIRST row/col: their center already sits near the
-		 * top/left edge. */
+		 * CENTERS, which sit cw/2 or ch/2 px inside each canvas edge -- so
+		 * the extreme game rows/cols are otherwise unreachable. Snap the
+		 * FIRST and LAST row/col out to the image-rect edges. Unlike
+		 * syncconquer (which leaves the top short to keep Red Alert's
+		 * scroll-up zone off the menu tabs), Beneath a Steel Sky NEEDS the
+		 * very top reachable: its inventory bar only drops when the pointer
+		 * reaches game y=0, and the first row's cell center (ch/2 px down)
+		 * never maps there. Snapping all four edges makes the whole play
+		 * area -- top edge included -- reachable. */
+		if (g_term_cols > 0 && col <= 1)
+			px = dx;
 		if (g_term_cols > 0 && col >= g_term_cols)
 			px = dx + ew - 1;
+		if (g_term_rows > 0 && row <= 1)
+			py = dy;
 		if (g_term_rows > 0 && row >= g_term_rows)
 			py = dy + eh - 1;
 	}
@@ -3171,6 +3180,17 @@ static void sst_mouse_report(int b, int col, int row, int release)
 		gy = 0;
 	if (gy >= SST_FB_H)
 		gy = SST_FB_H - 1;
+
+	/* Per-report diagnostic (SYNCSCUMM_TRACE only): the raw cell/pixel
+	 * report, the mode it was read in, the image rect it mapped against, and
+	 * the game coords it produced -- so a "can't reach the top edge" or a
+	 * "stale cursor" report can be diagnosed from a node trace without a live
+	 * capture. Gated on g_trace, so it costs nothing unless tracing is on. */
+	if (g_trace != NULL)
+		fprintf(g_trace, "%u MOUSE b=%d col=%d row=%d %s rect=%dx%d@%d,%d -> g=%d,%d\n",
+		        (unsigned)now_ms(), b, col, row,
+		        termgfx_mouse_pixels(&g_mouse) ? "px1016" : "cell",
+		        ew, eh, dx, dy, gx, gy);
 
 	/* Emit order: always a MOVE (position), then a DOWN/UP for a button
 	 * (release -> UP) or a WHEEL for a notch. A plain motion report queues
