@@ -66,6 +66,9 @@ class Menu {
   foreign static audioModes
   // [category, display name, enabled] rows for this executable.
   foreign static buildOptions
+  // Build-specific maximum path length accepted by menu models.
+  foreign static maxPathLength
+  foreign static encryptionAvailable
   foreign static scalingModes
   foreign static colors
   foreign static backgroundColors

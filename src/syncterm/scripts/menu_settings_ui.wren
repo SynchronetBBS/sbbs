@@ -2,7 +2,7 @@ import "syncterm" for Host, Key, Screen
 import "syncterm_menu" for Menu, MenuEncryption, MenuFontSlot
 import "menu_ui" for MenuUi
 import "menu_bbs_editor" for BbsEditor
-import "ui_popup" for Alert, Confirm
+import "ui_popup" for Alert
 import "ui_help" for Help
 import "ui_widget" for Rect
 
@@ -17,12 +17,16 @@ class SettingsMenu {
     if (!connected) {
       text = text + "Current Screen Mode\n:  Change the current display size and mode\n"
     }
-    return text +
+    text = text +
         "Font Management\n:  Configure additional local font files\n" +
         "Program Settings\n:  Configure hardware, display, and application behavior\n" +
         "File Locations\n:  Display configuration and data paths\n" +
-        "Build Options\n:  Display features selected at build time\n" +
-        "List Encryption\n:  Protect the personal directory with a password"
+        "Build Options\n:  Display features selected at build time"
+    if (!connected && Menu.encryptionAvailable) {
+      text = text +
+          "\nList Encryption\n:  Protect the personal directory with a password"
+    }
+    return text
   }
 
   static rows(connected) {
@@ -35,7 +39,9 @@ class SettingsMenu {
     rows.add([4, "Program Settings"])
     rows.add([5, "File Locations"])
     rows.add([6, "Build Options"])
-    rows.add([7, "List Encryption"])
+    if (!connected && Menu.encryptionAvailable) {
+      rows.add([7, "List Encryption"])
+    }
     return rows
   }
 
@@ -50,11 +56,13 @@ class SettingsMenu {
       var picked = MenuUi.choice(app, "SyncTERM Settings",
           rows(connected), null, helpText(connected))
       if (picked == null) return changed
-      if (runAction(app, picked)) changed = true
+      if (runAction(app, picked, connected)) changed = true
     }
   }
 
-  static runAction(app, picked) {
+  static runAction(app, picked) { runAction(app, picked, false) }
+
+  static runAction(app, picked, connected) {
     if (picked == 0) return webLists_(app)
     if (picked == 1) return BbsEditor.edit(app, Menu.defaults, true, false)
     if (picked == 2) {
@@ -62,10 +70,10 @@ class SettingsMenu {
       return false
     }
     if (picked == 3) {
-      fonts_(app)
+      if (!Host.safeMode) fonts_(app)
       return false
     }
-    if (picked == 4) return program_(app)
+    if (picked == 4) return program_(app, connected)
     if (picked == 5) {
       locations_(app)
       return false
@@ -74,7 +82,9 @@ class SettingsMenu {
       buildOptions_(app)
       return false
     }
-    if (picked == 7) return encryption_(app)
+    if (picked == 7 && !connected && Menu.encryptionAvailable) {
+      return encryption_(app)
+    }
     return false
   }
 
@@ -101,30 +111,32 @@ class SettingsMenu {
     return "%(term)\n:  %(description)\n"
   }
 
-  static programHelp_() {
-    return "# Program Settings\n\n" +
+  static programHelp_(connected) {
+    var text = "# Program Settings\n\n" +
         "Accepted changes are applied to the running program immediately. " +
         "The configuration file is written when you leave this screen.\n\n" +
-        helpItem_("Confirm Close", "Prompt before exiting SyncTERM") +
-        helpItem_("Prompt to Save URL", "Offer to save temporary URL entries") +
+        helpItem_("Confirm Program Exit", "Prompt before exiting SyncTERM") +
+        helpItem_("Prompt to Save", "Offer to save temporary URL entries") +
+        helpItem_("Startup Screen Mode", "The initial screen size and mode") +
+        helpItem_("Video Output Mode", "The video or terminal output implementation") +
+        helpItem_("Default Cursor Style", "The cursor's normal appearance") +
+        helpItem_("Audio Output Mode", "The audio backends SyncTERM may try") +
+        helpItem_("Scrollback Buffer Lines", "The number of retained scrollback rows") +
+        helpItem_("Modem/Comm Device", "The modem communications device") +
+        helpItem_("Modem/Comm Rate", "The modem-port DTE rate") +
+        helpItem_("Modem Init String", "The command used to initialize a modem") +
+        helpItem_("Modem Dial String", "The command prefix used to dial a modem") +
+        helpItem_("List Path", "The path or URI of the personal directory") +
+        helpItem_("TERM For Shell", "The TERM value supplied to local shells") +
+        helpItem_("Scaling", "Cycle the display scaling algorithm") +
         helpItem_("Invert Mouse Wheel", "Reverse wheel-up and wheel-down") +
-        helpItem_("Startup Screen", "The initial screen size and mode") +
-        helpItem_("Output Backend", "The video or terminal output implementation") +
-        helpItem_("Cursor Style", "The cursor's normal appearance") +
-        helpItem_("Scrollback Lines", "The number of retained scrollback rows") +
-        helpItem_("Scaling Mode", "The algorithm used when scaling the display") +
-        helpItem_("Personal List", "The path or URI of the personal directory") +
-        helpItem_("Shell TERM", "The TERM value supplied to local shells") +
-        helpItem_("Modem Device", "The modem communications device") +
-        helpItem_("Modem Init", "The command used to initialize a modem") +
-        helpItem_("Modem Dial", "The command prefix used to dial a modem") +
-        helpItem_("Modem Rate", "The modem-port DTE rate") +
-        helpItem_("KDF Work Factor", "The scrypt cost used for list encryption") +
-        helpItem_("Custom Columns / Rows", "The custom screen dimensions") +
-        helpItem_("Custom Font Height", "The custom mode's font height") +
-        helpItem_("Custom Aspect Width / Height", "The custom mode's aspect ratio") +
-        helpItem_("UI Colors", "The colors used by menus and the native picker") +
-        helpItem_("Audio Output", "The audio backends SyncTERM may try")
+        helpItem_("Key Derivation Shift", "The scrypt cost used for list encryption") +
+        helpItem_("UIFC Colours", "The colors used by menus and the native picker")
+    if (!connected) {
+      text = text + helpItem_("Custom Screen Mode",
+          "The dimensions, font height, and aspect ratio of the custom mode")
+    }
+    return text
   }
 
   static screenModeHelp_() {
@@ -132,15 +144,12 @@ class SettingsMenu {
   }
 
   static settingHelp_(title) {
-    if (title == "Startup Screen") {
+    if (title == "Startup Screen Mode") {
       return "# Startup Screen Mode\n\nSelect the initial screen size and mode used at startup."
     }
-    if (title == "Output Backend") return outputHelp_()
-    if (title == "Cursor Style") {
+    if (title == "Video Output Mode") return outputHelp_()
+    if (title == "Default Cursor Style") {
       return "# Default Cursor Style\n\nSelect the cursor's normal appearance."
-    }
-    if (title == "Scaling Mode") {
-      return "# Scaling Mode\n\nSelect the algorithm used when the terminal display is scaled."
     }
     if (title == "Custom Font Height") {
       return "# Custom Font Height\n\nChoose the font height for the custom screen mode."
@@ -149,7 +158,7 @@ class SettingsMenu {
   }
 
   static outputHelp_() {
-    return "# Output Backend\n\n" +
+    return "# Video Output Mode\n\n" +
         "Autodetect\n:  Try the available backends in preferred order\n" +
         "Curses\n:  Text output through the Curses library\n" +
         "Curses CP437\n:  Curses with a terminal configured for Code Page 437\n" +
@@ -168,7 +177,7 @@ class SettingsMenu {
   }
 
   static listPathHelp_() {
-    return "# Personal List\n\nEnter the complete path or URI of the personal BBS directory."
+    return "# List Path\n\nEnter the complete path or URI of the personal BBS directory."
   }
 
   static shellTermHelp_() {
@@ -178,14 +187,15 @@ class SettingsMenu {
   }
 
   static modemDeviceHelp_() {
-    return "# Modem Device\n\nEnter the device used to communicate with the modem."
+    return "# Modem/Comm Device\n\nEnter the device used to communicate with the modem."
   }
 
   static modemRateHelp_() {
-    return "# Modem Rate\n\nEnter the DTE rate in bits per second. Use " +
+    return "# Modem/Comm Rate\n\nEnter the DTE rate in bits per second. Use " +
         "the highest rate supported by the communications port and modem, " +
         "such as `38400`, `57600`, or `115200`. This is sometimes " +
-        "incorrectly called the baud rate."
+        "incorrectly called the baud rate. Enter `0` to use the current " +
+        "or default communications-port rate."
   }
 
   static modemInitHelp_() {
@@ -228,15 +238,20 @@ class SettingsMenu {
     return "# Custom Rows\n\nEnter 14 through 255 rows for the custom screen mode."
   }
 
+  static customModeHelp_() {
+    return "# Custom Screen Mode\n\nConfigure the rows, columns, font " +
+        "height, and aspect ratio used by the Custom screen mode."
+  }
+
   static customAspectHelp_(width) {
     var dimension = "height"
-    var historical = "3"
+    var defaultValue = "3"
     if (width) {
       dimension = "width"
-      historical = "4"
+      defaultValue = "4"
     }
     return "# Custom Aspect %(dimension)\n\nEnter the %(dimension) part " +
-        "of the aspect ratio. The historical value is `%(historical)`."
+        "of the aspect ratio. The default value is `%(defaultValue)`."
   }
 
   static colorHelp_() {
@@ -244,8 +259,13 @@ class SettingsMenu {
         "menu interface and native file picker."
   }
 
+  static colorsHelp_() {
+    return "# UIFC Colours\n\nSelect the menu element whose colour " +
+        "you want to change."
+  }
+
   static audioHelp_() {
-    return "# Audio Output\n\nToggle the audio backends SyncTERM may " +
+    return "# Audio Output Mode\n\nToggle the audio backends SyncTERM may " +
         "use. Enabled backends are attempted in the order shown."
   }
 
@@ -303,41 +323,33 @@ class SettingsMenu {
     return MenuUi.choice(app, title, rows, current, settingHelp_(title))
   }
 
-  static program_(app) {
+  static program_(app, connected) {
     var s = Menu.settings
     var changed = false
     while (true) {
       var rows = []
-      rows.add([1, settingsLine_("Confirm Close", yesNo_(s.confirmClose))])
-      rows.add([2, settingsLine_("Prompt to Save URL", yesNo_(s.promptSave))])
-      rows.add([3, settingsLine_("Invert Mouse Wheel", yesNo_(s.invertWheel))])
-      rows.add([4, settingsLine_("Startup Screen", Menu.screenModes[s.startupMode])])
-      rows.add([5, settingsLine_("Output Backend", MenuUi.rowName(Menu.outputModes, s.outputMode))])
-      rows.add([6, settingsLine_("Cursor Style", Menu.cursorStyles[s.cursorStyle])])
-      rows.add([7, settingsLine_("Scrollback Lines", s.scrollbackLines)])
-      rows.add([8, settingsLine_("Scaling Mode", Menu.scalingModes[s.scalingMode])])
-      rows.add([9, settingsLine_("Personal List", s.listPath)])
-      rows.add([10, settingsLine_("Shell TERM", s.shellTerm)])
-      rows.add([11, settingsLine_("Modem Device", s.modemDevice)])
-      rows.add([12, settingsLine_("Modem Init", s.modemInit)])
-      rows.add([13, settingsLine_("Modem Dial", s.modemDial)])
-      rows.add([14, settingsLine_("Modem Rate", s.modemRate)])
-      rows.add([15, settingsLine_("KDF Work Factor", "2^%(s.kdfShift)")])
-      rows.add([16, settingsLine_("Custom Columns", s.customColumns)])
-      rows.add([17, settingsLine_("Custom Rows", s.customRows)])
-      rows.add([18, settingsLine_("Custom Font Height", s.customFontHeight)])
-      rows.add([19, settingsLine_("Custom Aspect Width", s.customAspectWidth)])
-      rows.add([20, settingsLine_("Custom Aspect Height", s.customAspectHeight)])
-      rows.add([21, settingsLine_("Frame Color", Menu.colors[s.frameColor])])
-      rows.add([22, settingsLine_("Text Color", Menu.colors[s.textColor])])
-      rows.add([23, settingsLine_("Background Color", Menu.backgroundColors[s.backgroundColor])])
-      rows.add([24, settingsLine_("Inverse Color", Menu.colors[s.inverseColor])])
-      rows.add([25, settingsLine_("Lightbar Color", Menu.colors[s.lightbarColor])])
-      rows.add([26, settingsLine_("Lightbar Background", Menu.backgroundColors[s.lightbarBackgroundColor])])
-      rows.add([27, "Audio Output"])
+      rows.add([1, settingsLine_("Confirm Program Exit", yesNo_(s.confirmClose))])
+      rows.add([2, settingsLine_("Prompt to Save", yesNo_(s.promptSave))])
+      rows.add([3, settingsLine_("Startup Screen Mode", Menu.screenModes[s.startupMode])])
+      rows.add([4, settingsLine_("Video Output Mode", MenuUi.rowName(Menu.outputModes, s.outputMode))])
+      rows.add([5, settingsLine_("Default Cursor Style", Menu.cursorStyles[s.cursorStyle])])
+      rows.add([6, "Audio Output Mode"])
+      rows.add([7, settingsLine_("Scrollback Buffer Lines", s.scrollbackLines)])
+      rows.add([8, settingsLine_("Modem/Comm Device", s.modemDevice)])
+      var rate = s.modemRate == 0 ? "Current" : "%(s.modemRate)bps"
+      rows.add([9, settingsLine_("Modem/Comm Rate", rate)])
+      rows.add([10, settingsLine_("Modem Init String", s.modemInit)])
+      rows.add([11, settingsLine_("Modem Dial String", s.modemDial)])
+      rows.add([12, settingsLine_("List Path", s.listPath)])
+      rows.add([13, settingsLine_("TERM For Shell", s.shellTerm)])
+      rows.add([14, settingsLine_("Scaling", Menu.scalingModes[s.scalingMode])])
+      rows.add([15, settingsLine_("Invert Mouse Wheel", yesNo_(s.invertWheel))])
+      rows.add([16, settingsLine_("Key Derivation Shift", s.kdfShift)])
+      rows.add([17, "UIFC Colours"])
+      if (!connected) rows.add([18, "Custom Screen Mode"])
 
       var picked = MenuUi.choice(app, "Program Settings", rows, null,
-          programHelp_())
+          programHelp_(connected))
       if (picked == null) {
         if (!changed) return false
         if (Host.safeMode || s.save()) return true
@@ -350,75 +362,56 @@ class SettingsMenu {
       } else if (picked == 2) {
         s.promptSave = !s.promptSave
       } else if (picked == 3) {
-        s.invertWheel = !s.invertWheel
-      } else if (picked == 4) {
-        var value = pickSetting_(app, "Startup Screen", Menu.screenModes, s.startupMode)
+        var value = pickSetting_(app, "Startup Screen Mode", Menu.screenModes, s.startupMode)
         if (value != null) s.startupMode = value
-      } else if (picked == 5) {
-        var value = pickSetting_(app, "Output Backend", Menu.outputModes, s.outputMode)
+      } else if (picked == 4) {
+        var value = pickSetting_(app, "Video Output Mode", Menu.outputModes, s.outputMode)
         if (value != null) s.outputMode = value
-      } else if (picked == 6) {
-        var value = pickSetting_(app, "Cursor Style", Menu.cursorStyles, s.cursorStyle)
+      } else if (picked == 5) {
+        var value = pickSetting_(app, "Default Cursor Style", Menu.cursorStyles, s.cursorStyle)
         if (value != null) s.cursorStyle = value
+      } else if (picked == 6) {
+        if (audio_(app, s)) changed = true
       } else if (picked == 7) {
         var value = MenuUi.integer(app, "Scrollback Lines", "Number of retained lines",
-            s.scrollbackLines, 1, 10000000, scrollbackHelp_())
+            s.scrollbackLines, 1, 2147483647, scrollbackHelp_())
         if (value != null) s.scrollbackLines = value
       } else if (picked == 8) {
-        var value = pickSetting_(app, "Scaling Mode", Menu.scalingModes, s.scalingMode)
-        if (value != null) s.scalingMode = value
-      } else if (picked == 9) {
-        var value = MenuUi.prompt(app, "Personal List", "Path or URI",
-            s.listPath, 1024, false, listPathHelp_())
-        if (value != null) s.listPath = value
-      } else if (picked == 10) {
-        var value = MenuUi.prompt(app, "Shell TERM", "Terminal name",
-            s.shellTerm, 255, false, shellTermHelp_())
-        if (value != null) s.shellTerm = value
-      } else if (picked == 11) {
-        var value = MenuUi.prompt(app, "Modem Device", "Serial device",
-            s.modemDevice, 255, false, modemDeviceHelp_())
+        var value = MenuUi.prompt(app, "Modem/Comm Device", "Serial device",
+            s.modemDevice, 1024, false, modemDeviceHelp_())
         if (value != null) s.modemDevice = value
-      } else if (picked == 12) {
-        var value = MenuUi.prompt(app, "Modem Init", "Initialization string",
-            s.modemInit, 255, false, modemInitHelp_())
-        if (value != null) s.modemInit = value
-      } else if (picked == 13) {
-        var value = MenuUi.prompt(app, "Modem Dial", "Dial string",
-            s.modemDial, 255, false, modemDialHelp_())
-        if (value != null) s.modemDial = value
-      } else if (picked == 14) {
-        var value = MenuUi.integer(app, "Modem Rate", "Bits per second",
-            s.modemRate, 1, 2147483647, modemRateHelp_())
+      } else if (picked == 9) {
+        var value = MenuUi.integer(app, "Modem/Comm Rate", "Bits per second",
+            s.modemRate, 0, 4294967295, modemRateHelp_())
         if (value != null) s.modemRate = value
+      } else if (picked == 10) {
+        var value = MenuUi.prompt(app, "Modem Init String", "Initialization string",
+            s.modemInit, 1023, false, modemInitHelp_())
+        if (value != null) s.modemInit = value
+      } else if (picked == 11) {
+        var value = MenuUi.prompt(app, "Modem Dial String", "Dial string",
+            s.modemDial, 1023, false, modemDialHelp_())
+        if (value != null) s.modemDial = value
+      } else if (picked == 12) {
+        var value = MenuUi.prompt(app, "List Path", "Path or URI",
+            s.listPath, Menu.maxPathLength, false, listPathHelp_())
+        if (value != null) s.listPath = value
+      } else if (picked == 13) {
+        var value = MenuUi.prompt(app, "TERM For Shell", "Terminal name",
+            s.shellTerm, 30, false, shellTermHelp_())
+        if (value != null) s.shellTerm = value
+      } else if (picked == 14) {
+        s.scalingMode = (s.scalingMode + 1) % Menu.scalingModes.count
       } else if (picked == 15) {
-        var value = MenuUi.integer(app, "KDF Work Factor",
+        s.invertWheel = !s.invertWheel
+      } else if (picked == 16) {
+        var value = MenuUi.integer(app, "Key Derivation Work Factor",
             "Exponent N for scrypt-Nn", s.kdfShift, 8, 24, kdfHelp_())
         if (value != null) s.kdfShift = value
-      } else if (picked == 16) {
-        var value = MenuUi.integer(app, "Custom Columns", "Columns",
-            s.customColumns, 40, 255, customColumnsHelp_())
-        if (value != null) s.customColumns = value
       } else if (picked == 17) {
-        var value = MenuUi.integer(app, "Custom Rows", "Rows",
-            s.customRows, 14, 255, customRowsHelp_())
-        if (value != null) s.customRows = value
-      } else if (picked == 18) {
-        var choices = [[8, "8"], [14, "14"], [16, "16"]]
-        var value = pickSetting_(app, "Custom Font Height", choices, s.customFontHeight)
-        if (value != null) s.customFontHeight = value
-      } else if (picked == 19) {
-        var value = MenuUi.integer(app, "Custom Aspect Width", "Aspect width",
-            s.customAspectWidth, 1, 255, customAspectHelp_(true))
-        if (value != null) s.customAspectWidth = value
-      } else if (picked == 20) {
-        var value = MenuUi.integer(app, "Custom Aspect Height", "Aspect height",
-            s.customAspectHeight, 1, 255, customAspectHelp_(false))
-        if (value != null) s.customAspectHeight = value
-      } else if (picked >= 21 && picked <= 26) {
-        editColor_(app, s, picked)
-      } else if (picked == 27) {
-        if (audio_(app, s)) changed = true
+        if (colors_(app, s)) changed = true
+      } else if (picked == 18 && !connected) {
+        if (customMode_(app, s)) changed = true
       }
       if (s.dirty && applySettings_(app, s)) changed = true
     }
@@ -432,8 +425,30 @@ class SettingsMenu {
     return false
   }
 
+  static colors_(app, s) {
+    var changed = false
+    while (true) {
+      var rows = [
+        [21, settingsLine_("Frame Colour", Menu.colors[s.frameColor])],
+        [22, settingsLine_("Text Colour", Menu.colors[s.textColor])],
+        [23, settingsLine_("Background Colour",
+            Menu.backgroundColors[s.backgroundColor])],
+        [24, settingsLine_("Inverse Colour",
+            Menu.backgroundColors[s.inverseColor])],
+        [25, settingsLine_("Lightbar Colour", Menu.colors[s.lightbarColor])],
+        [26, settingsLine_("Lightbar Background",
+            Menu.backgroundColors[s.lightbarBackgroundColor])]
+      ]
+      var picked = MenuUi.choice(app, "UIFC Colours", rows, null,
+          colorsHelp_())
+      if (picked == null) return changed
+      editColor_(app, s, picked)
+      if (s.dirty && applySettings_(app, s)) changed = true
+    }
+  }
+
   static editColor_(app, s, which) {
-    var background = which == 23 || which == 26
+    var background = which == 23 || which == 24 || which == 26
     var rows = background ? Menu.backgroundColors : Menu.colors
     var current = s.lightbarBackgroundColor
     if (which == 21) current = s.frameColor
@@ -451,6 +466,47 @@ class SettingsMenu {
     if (which == 26) s.lightbarBackgroundColor = value
   }
 
+  static customMode_(app, s) {
+    var changed = false
+    while (true) {
+      var rows = [
+        [0, settingsLine_("Rows", s.customRows)],
+        [1, settingsLine_("Columns", s.customColumns)],
+        [2, settingsLine_("Font Size", "8x%(s.customFontHeight)")],
+        [3, settingsLine_("Aspect Ratio Width", s.customAspectWidth)],
+        [4, settingsLine_("Aspect Ratio Height", s.customAspectHeight)]
+      ]
+      var picked = MenuUi.choice(app, "Custom Screen Mode", rows, null,
+          customModeHelp_())
+      if (picked == null) return changed
+      if (picked == 0) {
+        var value = MenuUi.integer(app, "Custom Rows", "Rows",
+            s.customRows, 14, 255, customRowsHelp_())
+        if (value != null) s.customRows = value
+      } else if (picked == 1) {
+        var value = MenuUi.integer(app, "Custom Columns", "Columns",
+            s.customColumns, 40, 255, customColumnsHelp_())
+        if (value != null) s.customColumns = value
+      } else if (picked == 2) {
+        var choices = [[8, "8x8"], [14, "8x14"], [16, "8x16"]]
+        var value = MenuUi.choice(app, "Font Size", choices,
+            s.customFontHeight, settingHelp_("Custom Font Height"))
+        if (value != null) s.customFontHeight = value
+      } else if (picked == 3) {
+        var value = MenuUi.integer(app, "Custom Aspect Width",
+            "Aspect width", s.customAspectWidth, 1, 2147483647,
+            customAspectHelp_(true))
+        if (value != null) s.customAspectWidth = value
+      } else if (picked == 4) {
+        var value = MenuUi.integer(app, "Custom Aspect Height",
+            "Aspect height", s.customAspectHeight, 1, 2147483647,
+            customAspectHelp_(false))
+        if (value != null) s.customAspectHeight = value
+      }
+      if (s.dirty && applySettings_(app, s)) changed = true
+    }
+  }
+
   static audio_(app, s) {
     var changed = false
     while (true) {
@@ -459,7 +515,7 @@ class SettingsMenu {
         var enabled = (s.audioModes & row[0]) != 0
         rows.add([row[0], "[%(enabled ? "X" : " ")] %(row[1])"])
       }
-      var bit = MenuUi.choice(app, "Audio Output", rows, null,
+      var bit = MenuUi.choice(app, "Audio Output Mode", rows, null,
           audioHelp_())
       if (bit == null) return changed
       if ((s.audioModes & bit) != 0) {
@@ -530,7 +586,7 @@ class SettingsMenu {
           (command == "select" && index == -1)) {
         if (index == -1) index = lists.count
         var initialName = lists.count == 0 ? "SyncTERM BBS List" : ""
-        var name = MenuUi.prompt(app, "Add Web List", "Name", initialName, 255,
+        var name = MenuUi.prompt(app, "Add Web List", "Name", initialName, 1024,
             false, webListsHelp_())
         if (name == null) continue
         var initialUri = ""

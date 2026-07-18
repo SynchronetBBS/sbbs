@@ -681,7 +681,11 @@ fn_Menu_serialRates(WrenVM *vm)
 }
 
 static void fn_Menu_musicModes(WrenVM *vm) { push_indexed_names(vm, music_names, 0); }
-static void fn_Menu_logLevels(WrenVM *vm) { push_indexed_names(vm, log_levels, 0); }
+static char *const log_level_names[] = {
+	"None", "Alerts", "Critical Errors", "Errors", "Warnings",
+	"Notices", "Normal", "All (Debug)", NULL
+};
+static void fn_Menu_logLevels(WrenVM *vm) { push_indexed_names(vm, log_level_names, 0); }
 static void fn_Menu_fontsCatalog(WrenVM *vm) { push_indexed_names(vm, font_names, 0); }
 
 static const int address_family_values[] = {

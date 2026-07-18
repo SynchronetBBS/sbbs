@@ -3534,6 +3534,11 @@ The shipped entry editor invokes those setters, including `rename()`,
 after each nested field editor accepts a changed value.  It calls
 `save()` for a dirty entry when the entry editor closes.
 
+Download Path and Upload Path remain direct entry rows.  Log Configuration
+opens the four intended logging controls: Log Filename, File Transfer Log
+Level, Telnet Command Log Level, and Append Log File.  Accepted values still
+update the working `BBS` before the logging submenu closes.
+
 A successful full load, create, or delete advances the model
 generation.  Every previously obtained menu `BBS` handle then becomes
 stale; using one aborts with an instruction to reacquire it from
@@ -3576,7 +3581,13 @@ applies or saves settings.
 The shipped Program Settings editor calls `apply()` after each accepted
 setting and calls `save()` once when the editor closes.  Thus settings
 with immediate effects change at field-confirmation time while the INI
-write remains grouped at the historical screen-exit boundary.
+write remains grouped at the Program Settings screen-exit boundary.
+
+The editor keeps UIFC Colours and Custom Screen Mode as nested groups instead
+of flattening their fields into Program Settings.  A connected invocation
+omits Custom Screen Mode.  The connected settings list also omits Current
+Screen Mode and List Encryption; List Encryption is omitted in every mode
+when `Menu.encryptionAvailable` is false.
 
 [options="header",cols="2m,4"]
 |===
@@ -3587,11 +3598,14 @@ write remains grouped at the historical screen-exit boundary.
 
 | `modemDevice`, `modemInit`, `modemDial`, `shellTerm`
 | Modem strings and the terminal name exported to local shell
-  connections.
+  connections.  The shipped editor accepts 1024 bytes for the device,
+  1023 bytes for either modem command, and 30 bytes for `shellTerm`, matching
+  the intended controls and their backing fields.
 
 | `listPath`
 | Stored personal-list path or URI.  The host resolves it to the active
-  local or cached list path after a successful apply or save.
+  local or cached list path after a successful apply or save.  The shipped
+  editor limits it to `Menu.maxPathLength`.
 
 | `startupMode`, `outputMode`, `cursorStyle`, `audioModes`,
   `scalingMode`
@@ -3599,7 +3613,8 @@ write remains grouped at the historical screen-exit boundary.
   is a bit field, so the values in `Menu.audioModes` may be combined.
 
 | `scrollbackLines`, `modemRate`
-| Positive scrollback capacity and modem baud rate.
+| Scrollback capacity is 1 through `INT_MAX`.  Modem DTE rate is 0 through
+  `UINT32_MAX`; zero means the current or default communications-port rate.
 
 | `kdfShift`
 | The exponent in the persisted `scrypt-Nn` key-derivation setting;
@@ -3610,16 +3625,17 @@ write remains grouped at the historical screen-exit boundary.
   `customAspectWidth`, `customAspectHeight`
 | Custom text-mode geometry.  Rows are 14..255, columns are 40..255,
   font height is exactly 8, 14, or 16, and both aspect values are
-  positive.
+  1 through `INT_MAX`.
 
 | `frameColor`, `textColor`, `backgroundColor`, `inverseColor`,
   `lightbarColor`, `lightbarBackgroundColor`
 | UIFC palette indexes used by the shipped Wren main menu and trusted
-  native picker.  Foreground catalogs include the `Default` entry at index
-  16; background catalogs include it at index 8.  The shipped
-  `main_menu.wren` resolves those sentinels to the configured default colors and
-  builds an App `Theme`; a custom main-menu override must apply the values
-  itself if it wants to preserve that preference.
+  native picker.  Frame, text, and lightbar foreground use `Menu.colors`,
+  whose `Default` entry is index 16.  Background, inverse, and lightbar
+  background use `Menu.backgroundColors`, whose `Default` entry is index 8.
+  The shipped `main_menu.wren` resolves those sentinels to the configured
+  default colors and builds an App `Theme`; a custom main-menu override must
+  apply the values itself if it wants to preserve that preference.
 |===
 
 The host supplies display catalogs rather than requiring scripts to
@@ -3663,6 +3679,12 @@ duplicate platform-dependent enum tables:
 | `buildOptions`
 | List of `[category, displayName, enabled]` rows describing this
   executable's crypto, terminal, video, and audio build features.
+
+| `maxPathLength`
+| Build-specific `MAX_PATH` value used by menu-backed path fields.
+
+| `encryptionAvailable`
+| Bool indicating whether this build exposes personal-list encryption.
 
 | `colors`, `backgroundColors`
 | Foreground and background color-name Lists, including their final

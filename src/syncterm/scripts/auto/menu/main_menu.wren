@@ -674,7 +674,7 @@ class MainMenuApp {
   settingsAction_(picked) {
     var preferred = _selected == null ? null : _selected.name
     SettingsMenu.begin()
-    var changed = SettingsMenu.runAction(_app, picked)
+    var changed = SettingsMenu.runAction(_app, picked, _connected)
     if (!changed) return
     if (SettingsMenu.passwordChanged) {
       MainMenu.password = SettingsMenu.directoryPassword

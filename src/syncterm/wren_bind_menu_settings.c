@@ -582,6 +582,22 @@ fn_Menu_buildOptions(WrenVM *vm)
 }
 
 static void
+fn_Menu_maxPathLength(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, MAX_PATH);
+}
+
+static void
+fn_Menu_encryptionAvailable(WrenVM *vm)
+{
+#ifdef WITHOUT_CRYPTO
+	wrenSetSlotBool(vm, 0, false);
+#else
+	wrenSetSlotBool(vm, 0, true);
+#endif
+}
+
+static void
 fn_Menu_currentScreenMode(WrenVM *vm)
 {
 	struct text_info ti;
@@ -917,6 +933,8 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "cursorStyles", fn_Menu_cursorStyles },
 	{ "Menu", true, "audioModes", fn_Menu_audioModes },
 	{ "Menu", true, "buildOptions", fn_Menu_buildOptions },
+	{ "Menu", true, "maxPathLength", fn_Menu_maxPathLength },
+	{ "Menu", true, "encryptionAvailable", fn_Menu_encryptionAvailable },
 	{ "Menu", true, "scalingModes", fn_Menu_scalingModes },
 	{ "Menu", true, "colors", fn_Menu_colors },
 	{ "Menu", true, "backgroundColors", fn_Menu_backgroundColors },

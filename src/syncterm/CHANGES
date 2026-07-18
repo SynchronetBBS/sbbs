@@ -21,6 +21,7 @@ Wrap highlighted Wren lists when navigating past either end
 Restore blank append rows and direct editing keys in Wren menu lists
 Restore directory comments, editor navigation, and serial rate discovery
 Restore direct sort, palette, web-list, font, and encryption editing
+Restore settings submenus, connected-mode filtering, and field limits
 Restore formatted context help throughout the Wren directory and settings UI
 Restore the intended edit and persistence boundaries in Wren configuration
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections

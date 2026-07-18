@@ -257,6 +257,12 @@ class BbsEditor {
     return text + value.toString
   }
 
+  static logLine_(label, value) {
+    var text = label
+    while (text.count < 26) text = text + " "
+    return text + value.toString
+  }
+
   static yesNo_(value) { value ? "Yes" : "No" }
 
   static row_(label, value, action) {
@@ -393,10 +399,7 @@ class BbsEditor {
         "Use the status row as an additional display row") +
         helpItem_("Download Path", "The default destination for downloads") +
         helpItem_("Upload Path", "The default directory for uploads") +
-        helpItem_("Log File", "The optional session log filename") +
-        helpItem_("Append Log File", "Append instead of replacing the log") +
-        helpItem_("Transfer Log Level", "File-transfer log verbosity") +
-        helpItem_("Telnet Log Level", "Telnet-command log verbosity")
+        helpItem_("Log Configuration", "Session and protocol logging options")
     if (!serial_(d["connType"])) {
       text = text + helpItem_("Fake Comm Rate",
           "Throttle displayed characters to the selected rate")
@@ -560,6 +563,14 @@ class BbsEditor {
   static logLevelHelp_(kind) {
     return "# %(kind) Log Level\n\nSelect the logging verbosity. " +
         "Each level includes all messages from the less verbose levels above it."
+  }
+
+  static logHelp_() {
+    return "# Log Configuration\n\n" +
+        helpItem_("Log Filename", "The optional session log filename") +
+        helpItem_("File Transfer Log Level", "File-transfer log verbosity") +
+        helpItem_("Telnet Command Log Level", "Telnet-command log verbosity") +
+        helpItem_("Append Log File", "Append instead of replacing the log")
   }
 
   static paletteHelp_() {
@@ -743,6 +754,40 @@ class BbsEditor {
     }
   }
 
+  static editLog_(app, d, onChange) {
+    while (true) {
+      var rows = [
+        [0, logLine_("Log Filename", d["logFile"])],
+        [1, logLine_("File Transfer Log Level",
+            MenuUi.rowName(Menu.logLevels, d["xferLogLevel"]))],
+        [2, logLine_("Telnet Command Log Level",
+            MenuUi.rowName(Menu.logLevels, d["telnetLogLevel"]))],
+        [3, logLine_("Append Log File", yesNo_(d["appendLogFile"]))]
+      ]
+      var picked = MenuUi.choice(app, "Log Configuration", rows, null,
+          logHelp_())
+      if (picked == null) return
+      if (picked == 0) {
+        var value = MenuUi.prompt(app, "Log File", "Log filename",
+            d["logFile"], Menu.maxPathLength, false, logFileHelp_())
+        if (value != null) d["logFile"] = value
+      } else if (picked == 1) {
+        var value = MenuUi.choice(app, "File Transfer Log Level",
+            Menu.logLevels, d["xferLogLevel"],
+            logLevelHelp_("File Transfer"))
+        if (value != null) d["xferLogLevel"] = value
+      } else if (picked == 2) {
+        var value = MenuUi.choice(app, "Telnet Command Log Level",
+            Menu.logLevels, d["telnetLogLevel"],
+            logLevelHelp_("Telnet Command"))
+        if (value != null) d["telnetLogLevel"] = value
+      } else if (picked == 3) {
+        d["appendLogFile"] = !d["appendLogFile"]
+      }
+      onChange.call()
+    }
+  }
+
   static rows_(app, b, d, defaults) {
     var rows = []
     if (!defaults) rows.add(textRow_(app, d, "name", "Name", 30, false))
@@ -847,14 +892,13 @@ class BbsEditor {
       rows.add(boolRow_(d, "yellowIsYellow", "Yellow is Yellow"))
     }
     rows.add(boolRow_(d, "noStatus", "Hide Status Line"))
-    rows.add(textRow_(app, d, "dlDir", "Download Path", 1024, false))
-    rows.add(textRow_(app, d, "ulDir", "Upload Path", 1024, false))
-    rows.add(textRow_(app, d, "logFile", "Log File", 1024, false))
-    rows.add(boolRow_(d, "appendLogFile", "Append Log File"))
-    rows.add(choiceRow_(app, d, "xferLogLevel", "Transfer Log Level",
-        Menu.logLevels))
-    rows.add(choiceRow_(app, d, "telnetLogLevel", "Telnet Log Level",
-        Menu.logLevels))
+    rows.add(textRow_(app, d, "dlDir", "Download Path",
+        Menu.maxPathLength, false))
+    rows.add(textRow_(app, d, "ulDir", "Upload Path",
+        Menu.maxPathLength, false))
+    rows.add(row_("Log Configuration", "", Fn.new {
+      editLog_(app, d, Fn.new { update_(app, b, d, defaults) })
+    }))
     if (!serial_(d["connType"])) {
       rows.add(choiceRow_(app, d, "bpsRate", "Fake Comm Rate", Menu.rates))
     }
