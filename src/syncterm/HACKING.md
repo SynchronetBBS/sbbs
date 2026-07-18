@@ -1027,6 +1027,14 @@ The persistent main menu is rooted at
 the online menu, scrollback, transfers, capture, music, and font selection,
 live under `scripts/auto/connected/`.
 
+The shipped main menu deliberately retains the classic UIFC composition:
+an offline title/time row, a content-sized directory window at the left, a
+permanent settings window at the right, and comment/command rows at the
+bottom. Both panes remain present while focus changes their active/inactive
+palette. `ClassicTheme` maps the six persisted UIFC color preferences into
+Wren `Theme` roles, so dialogs opened by either pane inherit the same user
+configuration.
+
 The two sets run in separate Wren VMs. The menu VM is trusted and owns
 directory, settings, custom-font, and picker capabilities. A fresh
 connected VM is created per session and may run scripts supplied by the
@@ -1035,6 +1043,12 @@ objects. Alt+E parks the connected VM and terminal byte pump while the menu
 VM runs. Input-epoch barriers discard conio pushback and late asynchronous
 input at every ownership transition. See `Wren.adoc` for the binding and
 security contracts.
+
+Treat `scripts/auto/menu/` overrides as fully trusted application code. The
+menu VM owns directory/settings mutation, picker-mediated local-file
+authority, and application chrome. Remotely supplied scripts belong only in
+the fresh per-connection VM; they must never be promoted into the persistent
+menu VM to work around a missing connected capability.
 
 ### Native File Picker (`uifc/`)
 

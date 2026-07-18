@@ -20,6 +20,10 @@ class Menu {
   foreign static quickConnect(url)
   // A detached Surface snapshot, or null when no completed session exists.
   foreign static offlineScrollback
+  // Classic main-screen chrome supplied by the trusted host.
+  foreign static applicationTitle
+  foreign static timeText
+  foreign static showEntry(entry)
   foreign static statusMessage(status)
   foreign static entries
   foreign static defaults

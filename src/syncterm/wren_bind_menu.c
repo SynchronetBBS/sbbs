@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 struct wren_menu_bbs {
 	enum syncterm_wren_foreign type;
@@ -522,6 +523,73 @@ fn_Menu_offlineScrollback(WrenVM *vm)
 }
 
 static void
+fn_Menu_applicationTitle(WrenVM *vm)
+{
+	char title[80];
+
+	snprintf(title, sizeof(title), "%.40s - %.30s", syncterm_version,
+	    output_descrs[cio_api.mode]);
+	wrenSetSlotString(vm, 0, title);
+}
+
+static void
+fn_Menu_timeText(WrenVM *vm)
+{
+	static const char *const weekdays[] = {
+		"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
+	};
+	static const char *const months[] = {
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+	};
+	char stamp[25] = "";
+	time_t now = time(NULL);
+	struct tm *local = localtime(&now);
+
+	if (local != NULL) {
+		int hour = local->tm_hour % 12;
+		if (hour == 0)
+			hour = 12;
+		snprintf(stamp, sizeof(stamp), "%s %s %02d %4d %02d:%02d %s",
+		    weekdays[local->tm_wday], months[local->tm_mon],
+		    local->tm_mday, local->tm_year + 1900, hour, local->tm_min,
+		    local->tm_hour >= 12 ? "pm" : "am");
+	}
+	wrenSetSlotString(vm, 0, stamp);
+}
+
+static void
+fn_Menu_showEntry(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) == WREN_TYPE_NULL) {
+		settitle(syncterm_version);
+		wrenSetSlotBool(vm, 0, true);
+		return;
+	}
+	if (slot_foreign_type(vm, 1) != SWF_MENU_BBS) {
+		wren_throw(vm, "Menu.showEntry: entry must be a BBS or null");
+		return;
+	}
+	struct wren_menu_bbs *wb = wrenGetSlotForeign(vm, 1);
+	if (!menu_bbs_valid(wb) || wb->is_defaults) {
+		wren_throw(vm, "Menu.showEntry: invalid BBS handle");
+		return;
+	}
+
+	char last[32] = "Never";
+	if (wb->bbs->connected != 0) {
+		const char *stamp = ctime(&wb->bbs->connected);
+		if (stamp != NULL)
+			snprintf(last, sizeof(last), "%.24s", stamp);
+	}
+	char title[1024];
+	snprintf(title, sizeof(title), "%s - %s (%u calls / Last: %s)",
+	    syncterm_version, wb->bbs->name, wb->bbs->calls, last);
+	settitle(title);
+	wrenSetSlotBool(vm, 0, true);
+}
+
+static void
 push_indexed_names(WrenVM *vm, char *const *names, int first)
 {
 	wrenEnsureSlots(vm, 3);
@@ -862,6 +930,9 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "load(_)", fn_Menu_load },
 	{ "Menu", true, "quickConnect(_)", fn_Menu_quickConnect },
 	{ "Menu", true, "offlineScrollback", fn_Menu_offlineScrollback },
+	{ "Menu", true, "applicationTitle", fn_Menu_applicationTitle },
+	{ "Menu", true, "timeText", fn_Menu_timeText },
+	{ "Menu", true, "showEntry(_)", fn_Menu_showEntry },
 	{ "Menu", true, "statusMessage(_)", fn_Menu_statusMessage },
 	{ "Menu", true, "entries", fn_Menu_entries },
 	{ "Menu", true, "defaults", fn_Menu_defaults },

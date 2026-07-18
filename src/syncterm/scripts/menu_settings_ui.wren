@@ -8,40 +8,57 @@ class SettingsMenu {
   static directoryPassword { __directoryPassword }
   static passwordChanged { __passwordChanged }
 
-  static run(app, connected) {
+  static rows(connected) {
+    var rows = [
+      [0, "Web Lists"],
+      [1, "Default Connection Settings"]
+    ]
+    if (!connected) rows.add([2, "Current Screen Mode"])
+    rows.add([3, "Font Management"])
+    rows.add([4, "Program Settings"])
+    rows.add([5, "File Locations"])
+    rows.add([6, "Build Options"])
+    rows.add([7, "List Encryption"])
+    return rows
+  }
+
+  static begin() {
     __passwordChanged = false
+  }
+
+  static run(app, connected) {
+    begin()
     var changed = false
     while (true) {
-      var rows = [
-        [0, "Web Lists"],
-        [1, "Default Connection Settings"]
-      ]
-      if (!connected) rows.add([2, "Current Screen Mode"])
-      rows.add([3, "Font Management"])
-      rows.add([4, "Program Settings"])
-      rows.add([5, "File Locations"])
-      rows.add([6, "Build Options"])
-      rows.add([7, "List Encryption"])
-      var picked = MenuUi.choice(app, "SyncTERM Settings", rows, null)
+      var picked = MenuUi.choice(app, "SyncTERM Settings",
+          rows(connected), null)
       if (picked == null) return changed
-      if (picked == 0) {
-        if (webLists_(app)) changed = true
-      } else if (picked == 1) {
-        if (BbsEditor.edit(app, Menu.defaults, true, false)) changed = true
-      } else if (picked == 2) {
-        screenMode_(app)
-      } else if (picked == 3) {
-        fonts_(app)
-      } else if (picked == 4) {
-        if (program_(app)) changed = true
-      } else if (picked == 5) {
-        locations_(app)
-      } else if (picked == 6) {
-        buildOptions_(app)
-      } else if (picked == 7) {
-        if (encryption_(app)) changed = true
-      }
+      if (runAction(app, picked)) changed = true
     }
+  }
+
+  static runAction(app, picked) {
+    if (picked == 0) return webLists_(app)
+    if (picked == 1) return BbsEditor.edit(app, Menu.defaults, true, false)
+    if (picked == 2) {
+      screenMode_(app)
+      return false
+    }
+    if (picked == 3) {
+      fonts_(app)
+      return false
+    }
+    if (picked == 4) return program_(app)
+    if (picked == 5) {
+      locations_(app)
+      return false
+    }
+    if (picked == 6) {
+      buildOptions_(app)
+      return false
+    }
+    if (picked == 7) return encryption_(app)
+    return false
   }
 
   static screenMode_(app) {

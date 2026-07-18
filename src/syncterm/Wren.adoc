@@ -824,9 +824,14 @@ The currently embedded scripts are:
 | auto / menu
 | The persistent Wren main-menu controller.  It loads the menu BBS
   model, prompts for an encrypted-directory password when necessary,
-  and presents the dialing directory and settings UI.  The host calls
+  and presents the classic dialing directory: the directory and
+  SyncTERM Settings lists remain visible together, the active list uses
+  the configured UIFC palette, and the selected entry's comment and
+  list commands occupy the bottom two rows.  The host calls
   `MainMenu.run(currentName, connected)` whenever the application is
-  offline or Alt+E enters the directory over a connected session.
+  offline or Alt+E enters the directory over a connected session.  The
+  offline form owns the blue application background and title/time row;
+  the connected form leaves the saved terminal screen behind its panes.
 
 | `menu_host_ui`
 | auto / menu
@@ -914,6 +919,16 @@ The host validates and copies a record returned by `run` while the menu
 VM is still selected, so the Wren foreign object itself never crosses
 into the connected VM.
 
+The shipped controller is also the compatibility reference for main-menu
+interaction.  Tab, Backtab, Left, and Right move focus between the
+simultaneously visible directory and settings panes; Enter connects (or
+edits while connected) from the directory and invokes one settings action
+from the settings pane.  F2/Ctrl-E, Insert, Delete, F5/F6, Ctrl-S, `<`/`>`,
+Ctrl-D, and Alt-B retain their historical meanings.  The comment row is
+clickable for direct editing.  An override may present the model
+differently, but it is responsible for any compatibility behavior it wants
+to retain.
+
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
 SyncTERM deliberately uses two Wren VMs.  They do not share Wren
@@ -938,6 +953,13 @@ settings, start another connection, or mint arbitrary local-file
 access.  Consequently `syncterm_menu` is not merely omitted from the
 connected documentation: the connected loader explicitly rejects it,
 and menu foreign objects cannot cross the VM boundary.
+
+Menu auto-script overrides are trusted application code, not a sandbox for
+downloaded scripts.  In addition to directory and settings mutation, the
+menu VM can invoke picker-mediated local-file operations and update trusted
+application chrome.  Do not install a remotely supplied script under
+`scripts/auto/menu/`; remote or otherwise untrusted session automation
+belongs in the per-connection VM and receives only that VM's capabilities.
 
 Connected scripts intentionally retain `Input.ungetKey`,
 `Input.ungetMouse`, physical-key synthesis, and the other synthetic
@@ -3339,6 +3361,22 @@ available in a connected VM.
   is safe to retain across later connections; it does not borrow the
   process buffer which the next session may resize or replace.
 
+| Menu.applicationTitle
+| Return the classic header text, combining the SyncTERM version and
+  active conio output-backend description.  This is display data and does
+  not change the OS window title.
+
+| Menu.timeText
+| Return the current local time in the classic 24-character
+  `Fri Jul 17 2026 07:30 pm` form used by the offline title row.
+
+| Menu.showEntry(entry)
+| Set the OS window title to the classic name/call-count/last-connected
+  summary for a current menu `BBS`.  Passing `null` restores the bare
+  SyncTERM version title.  The purpose-specific operation returns `true`;
+  stale, default, and non-BBS values abort.  It is menu-only so connected
+  scripts do not gain arbitrary application-title authority.
+
 | Menu.statusMessage(status)
 | Return the host diagnostic String for a `MenuReadStatus` value.
 
@@ -3467,7 +3505,8 @@ sections, writes the existing `syncterm.ini` keys, and applies the
 settings which have immediate effects.  These include scrollback
 capacity, scaling, mouse-wheel direction, audio backends, custom-mode
 dimensions, cursor style, and the UIFC colors still used by the trusted
-native picker.  It returns `false` without applying the snapshot if
+native picker and shipped Wren main menu.  It returns `false` without
+applying the snapshot if
 validation, allocation, encrypted-list rewriting, or INI persistence
 fails.  Saving is disabled in safe mode.
 
@@ -3512,9 +3551,12 @@ snapshot from `Menu.settings` after another component saves settings.
 
 | `frameColor`, `textColor`, `backgroundColor`, `inverseColor`,
   `lightbarColor`, `lightbarBackgroundColor`
-| UIFC palette indexes used for the trusted native picker.  Foreground
-  catalogs include the `Default` entry at index 16; background catalogs
-  include it at index 8.
+| UIFC palette indexes used by the shipped Wren main menu and trusted
+  native picker.  Foreground catalogs include the `Default` entry at index
+  16; background catalogs include it at index 8.  The shipped
+  `main_menu.wren` resolves those sentinels to the historical colors and
+  builds an App `Theme`; a custom main-menu override must apply the values
+  itself if it wants to preserve that preference.
 |===
 
 The host supplies display catalogs rather than requiring scripts to
