@@ -952,24 +952,23 @@ static void csi_final(char fin)
 					return;   /* other non-ASCII special key (incl. the
 					           * modifier-key's own PUA event, 57441+): not
 					           * in our map */
-				/* Door-level Ctrl-S (stats) / q / Ctrl-C (quit) hotkeys stay
-				 * reserved under kitty too, same as the legacy byte path
-				 * (parse_bytes()'s P_NORMAL case, below). */
+				/* Door-level Ctrl-S (stats) and Ctrl-Q/Ctrl-C (quit)
+				 * hotkeys stay reserved under kitty too. A bare, unmodified
+				 * letter -- including 'q' -- is NOT reserved here: it falls
+				 * through below and is forwarded to ScummVM like any other
+				 * key, since Global Main Menu save-name entry needs to be
+				 * able to type a 'q' (e.g. "quicksave"). */
 				if (termgfx_kitty_ctrl(mod)) {
 					if ((cp | 0x20) == 's') {
 						if (down)
 							sst_toggle_stats();
 						return;
 					}
-					if ((cp | 0x20) == 'c') {
+					if ((cp | 0x20) == 'c' || (cp | 0x20) == 'q') {
 						if (down)
 							g_quit = 1;
 						return;
 					}
-				} else if (cp == 'q') {
-					if (down)
-						g_quit = 1;
-					return;
 				}
 				if (cp == 0x0d)
 					keycode = SST_KEY_ENTER;
@@ -2996,26 +2995,22 @@ static void sst_evdev_edge(int code, int down)
 	if (c == 0)
 		return;
 	if ((g_evdev_mods & TERMGFX_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z') {
-		/* Door-level Ctrl-S (stats) / Ctrl-C (quit) hotkeys, consumed here
-		 * too -- SyncTERM's evdev mode never reaches the P_NORMAL raw byte
-		 * that catches them in legacy mode. Fire on press, swallow the
-		 * release too. */
+		/* Door-level Ctrl-S (stats) and Ctrl-Q/Ctrl-C (quit) hotkeys,
+		 * consumed here too -- SyncTERM's evdev mode never reaches the
+		 * P_NORMAL raw byte that catches them in legacy mode. Fire on
+		 * press, swallow the release too. A bare, unmodified 'q' is NOT
+		 * reserved (see below): it must reach ScummVM's text entry. */
 		if ((c | 0x20) == 's') {
 			if (down)
 				sst_toggle_stats();
 			return;
 		}
-		if ((c | 0x20) == 'c') {
+		if ((c | 0x20) == 'c' || (c | 0x20) == 'q') {
 			if (down)
 				g_quit = 1;
 			return;
 		}
 		sst_key_event(c | 0x20, 0, SST_MOD_CTRL, down);
-		return;
-	}
-	if (c == 'q') {                            /* quit, door-reserved */
-		if (down)
-			g_quit = 1;
 		return;
 	}
 	sst_key_event(c, c, 0, down);

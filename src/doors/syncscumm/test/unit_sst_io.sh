@@ -56,6 +56,16 @@ cc -o /tmp/test_sst_input $JXL_DEFINE -DSST_TEST -I"$DOOR/door" -I"$DOOR/../term
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_input
 
+# The evdev physical-key decode (M3 Task 5 review fix) needs a FRESH
+# g_km/g_quit -- once test_sst_input above wins kitty on its process's
+# g_km, termgfx's "evdev wins" guard would refuse to also enable evdev
+# there -- so this is its own binary, same SST_TEST seam as above.
+cc -o /tmp/test_sst_input_evdev $JXL_DEFINE -DSST_TEST -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_input_evdev.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_input_evdev
+
 # The non-graphics-terminal gate needs a fresh sst_io session (file-static
 # state, no reset), so it's its own binary rather than another case above.
 cc -o /tmp/test_sst_io_nogfx $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
