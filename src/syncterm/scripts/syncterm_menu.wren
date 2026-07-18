@@ -204,6 +204,8 @@ foreign class BBS {
   foreign added
   foreign connected
   foreign calls
+  foreign sshFingerprint
+  foreign sshFingerprint=(value)
   foreign connTypeName
   foreign dirty
   foreign save()

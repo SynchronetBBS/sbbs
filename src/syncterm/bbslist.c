@@ -1295,7 +1295,9 @@ update_bbs_ini(str_list_t *inifile, struct bbslist *bbs, bool new_entry)
 		iniSetString(inifile, section, "Address", bbs->addr, &ini_style);
 	iniSetShortInt(inifile, section, "Port", bbs->port, &ini_style);
 	if (section != NULL) {
-		iniSetDateTime(inifile, section, "Added", true, time(NULL),
+		bbs->added = new_entry ? time(NULL) :
+		    iniGetDateTime(*inifile, section, "Added", time(NULL));
+		iniSetDateTime(inifile, section, "Added", true, bbs->added,
 		    &ini_style);
 		iniSetDateTime(inifile, section, "LastConnected", true,
 		    bbs->connected, &ini_style);
@@ -1343,10 +1345,8 @@ update_bbs_ini(str_list_t *inifile, struct bbslist *bbs, bool new_entry)
 	    &ini_style);
 	iniSetBool(inifile, section, "YellowIsYellow",
 	    bbs->yellow_is_yellow, &ini_style);
-	if (bbs->term_name[0]) {
-		iniSetString(inifile, section, "TerminalType", bbs->term_name,
-		    &ini_style);
-	}
+	iniSetString(inifile, section, "TerminalType", bbs->term_name,
+	    &ini_style);
 	iniSetBool(inifile, section, "LFExpand", bbs->lf_expand,
 	    &ini_style);
 	iniSetBool(inifile, section, "TelnetBrokenTextmode",
@@ -1360,6 +1360,8 @@ update_bbs_ini(str_list_t *inifile, struct bbslist *bbs, bool new_entry)
 		fp[bbs->ssh_fingerprint_len * 2] = 0;
 		iniSetString(inifile, section, "SSHFingerprint", fp, &ini_style);
 	}
+	else if (section != NULL)
+		iniRemoveKey(inifile, section, "SSHFingerprint");
 	iniSetBool(inifile, section, "SFTPPublicKey",
 	    bbs->sftp_public_key, &ini_style);
 	iniSetBool(inifile, section, "SSHAllowAES128CBC",

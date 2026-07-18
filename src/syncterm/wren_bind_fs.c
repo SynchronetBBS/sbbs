@@ -1121,8 +1121,8 @@ push_picker_save_file(WrenVM *vm, int slot, const char *picked,
  * escape hatch for "upload from anywhere": the returned File's
  * path is NOT validated against fname_is_clean*, since the picker
  * UI itself is the sandbox boundary. */
-void
-fn_Host_pickFile(WrenVM *vm)
+static void
+host_pick_file(WrenVM *vm, const char *title)
 {
 	char        scratch[MAX_PATH + 1];
 	const char *initial = pick_extract_initial(vm, 1,
@@ -1135,7 +1135,7 @@ fn_Host_pickFile(WrenVM *vm)
 		opts = (int)wrenGetSlotDouble(vm, 3);
 
 	struct file_pick fp = { 0 };
-	int rc = uifcfilepick("Pick a file", &fp, initial, mask, opts);
+	int rc = uifcfilepick(title, &fp, initial, mask, opts);
 	if (rc <= 0 || fp.files < 1 || fp.selected == NULL ||
 	    fp.selected[0] == NULL) {
 		filepick_free(&fp);
@@ -1145,6 +1145,22 @@ fn_Host_pickFile(WrenVM *vm)
 	if (push_picker_file(vm, 0, fp.selected[0]) == NULL)
 		wrenSetSlotNull(vm, 0);
 	filepick_free(&fp);
+}
+
+void
+fn_Host_pickFile(WrenVM *vm)
+{
+	host_pick_file(vm, "Pick a file");
+}
+
+void
+fn_Host_pickFileTitle(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 4) != WREN_TYPE_STRING) {
+		wren_throw(vm, "Host.pickFile: title must be a String");
+		return;
+	}
+	host_pick_file(vm, wrenGetSlotString(vm, 4));
 }
 
 /* Consume the write-consent on a File foreign in the given slot.

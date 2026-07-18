@@ -11,9 +11,9 @@
 extern uifcapi_t uifc; /* User Interface (UIFC) Library API */
 void uifcbail(void);
 /* Initialize and tear down UIFC around each native picker call. */
-int uifcfilepick(char *title, struct file_pick *fp,
+int uifcfilepick(const char *title, struct file_pick *fp,
                  const char *initial_dir, const char *default_mask, int opts);
-int uifcfilepick_multi(char *title, struct file_pick *fp,
+int uifcfilepick_multi(const char *title, struct file_pick *fp,
                        const char *initial_dir, const char *default_mask, int opts);
 
 #endif

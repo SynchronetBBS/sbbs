@@ -1464,6 +1464,8 @@ class Host {
   // (when the picker-token signing key is loaded), or null on
   // cancel.  See pickFiles for the multi-select counterpart.
   foreign static pickFile(initialDir, mask, opts)
+  // As above, with a caller-supplied native picker title.
+  foreign static pickFile(initialDir, mask, opts, title)
   // Multi-select counterpart of pickFile.  Returns a non-empty
   // List<File> on OK (each File has a .token), or null on cancel /
   // empty selection.  opts: same UIFC_FP_* bitmask, except

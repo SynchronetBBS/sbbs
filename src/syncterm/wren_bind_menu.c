@@ -363,6 +363,43 @@ fn_BBS_calls(WrenVM *vm)
 }
 
 static void
+fn_BBS_sshFingerprint(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL) {
+		wrenSetSlotBytes(vm, 0, (const char *)bbs->ssh_fingerprint,
+		    bbs->ssh_fingerprint_len);
+	}
+}
+
+static void
+fn_BBS_sshFingerprint_set(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check_mutable(vm);
+	if (bbs == NULL)
+		return;
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING) {
+		wren_throw(vm, "BBS.sshFingerprint: expected a String");
+		return;
+	}
+	int length;
+	const char *value = wrenGetSlotBytes(vm, 1, &length);
+	if (length != 0 && length != 20 && length != 32) {
+		wren_throw(vm,
+		    "BBS.sshFingerprint: expected 0, 20, or 32 bytes");
+		return;
+	}
+	if (bbs->ssh_fingerprint_len == length &&
+	    (length == 0 ||
+	    memcmp(bbs->ssh_fingerprint, value, (size_t)length) == 0))
+		return;
+	if (length > 0)
+		memcpy(bbs->ssh_fingerprint, value, (size_t)length);
+	bbs->ssh_fingerprint_len = (uint8_t)length;
+	bbslist_model_mark_dirty(&menu_model, bbs);
+}
+
+static void
 fn_BBS_connTypeName(WrenVM *vm)
 {
 	struct bbslist *bbs = bbs_check(vm);
@@ -1191,6 +1228,8 @@ static const struct binding bindings[] = {
 	{ "BBS", false, "added", fn_BBS_added },
 	{ "BBS", false, "connected", fn_BBS_connected },
 	{ "BBS", false, "calls", fn_BBS_calls },
+	{ "BBS", false, "sshFingerprint", fn_BBS_sshFingerprint },
+	{ "BBS", false, "sshFingerprint=(_)", fn_BBS_sshFingerprint_set },
 	{ "BBS", false, "connTypeName", fn_BBS_connTypeName },
 	{ "BBS", false, "dirty", fn_BBS_dirty },
 	{ "BBS", false, "save()", fn_BBS_save },

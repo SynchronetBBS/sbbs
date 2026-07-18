@@ -10,6 +10,10 @@
 static void
 free_contents(struct bbslist_model *model)
 {
+	if (model->records != NULL) {
+		for (size_t i = 0; i < model->count; i++)
+			free(model->records[i].shadowed);
+	}
 	if (model->entries != NULL)
 		free_list(model->entries, (int)model->count);
 	free(model->entries);
@@ -183,12 +187,26 @@ append_record(struct bbslist_model *model, struct bbslist *bbs)
 	return true;
 }
 
+static struct bbslist *
+system_entry_named(struct bbslist_model *model, const char *name)
+{
+	for (size_t i = 0; i < model->count; i++) {
+		if (model->entries[i]->type != USER_BBSLIST &&
+		    stricmp(model->entries[i]->name, name) == 0)
+			return model->entries[i];
+	}
+	return NULL;
+}
+
 struct bbslist *
 bbslist_model_create(struct bbslist_model *model, const char *name,
     const struct bbslist *source)
 {
-	if (!model->loaded || model->count >= BBSLIST_MAX_ENTRIES ||
+	if (!model->loaded ||
 	    !bbslist_model_user_name_available(model, name))
+		return NULL;
+	struct bbslist *shadowed = system_entry_named(model, name);
+	if (shadowed == NULL && model->count >= BBSLIST_MAX_ENTRIES)
 		return NULL;
 	struct bbslist *bbs = malloc(sizeof(*bbs));
 	if (bbs == NULL)
@@ -196,13 +214,35 @@ bbslist_model_create(struct bbslist_model *model, const char *name,
 	memcpy(bbs, source != NULL ? source : &model->defaults, sizeof(*bbs));
 	strlcpy(bbs->name, name, sizeof(bbs->name));
 	bbs->type = USER_BBSLIST;
-	bbs->id = (int)model->count;
+	bbs->id = shadowed == NULL ? (int)model->count : shadowed->id;
 	bbs->added = time(NULL);
 	bbs->connected = 0;
 	bbs->calls = 0;
-	if (!append_record(model, bbs)) {
-		free(bbs);
-		return NULL;
+	if (shadowed == NULL) {
+		if (!append_record(model, bbs)) {
+			free(bbs);
+			return NULL;
+		}
+	}
+	else {
+		struct bbslist_model_record *record =
+		    bbslist_model_record(model, shadowed);
+		if (record == NULL) {
+			free(bbs);
+			return NULL;
+		}
+		for (size_t i = 0; i < model->count; i++) {
+			if (model->entries[i] == shadowed) {
+				model->entries[i] = bbs;
+				break;
+			}
+		}
+		*record = (struct bbslist_model_record) {
+			.bbs = bbs,
+			.shadowed = shadowed,
+			.dirty = true,
+			.new_entry = true,
+		};
 	}
 	model->generation++;
 	bbslist_model_sort(model);
@@ -235,6 +275,36 @@ bbslist_model_rename(struct bbslist_model *model, struct bbslist *bbs,
 	return true;
 }
 
+static void
+reveal_renamed_shadow(struct bbslist_model *model,
+    struct bbslist_model_record *record)
+{
+	if (record->shadowed == NULL ||
+	    stricmp(record->bbs->name, record->shadowed->name) == 0)
+		return;
+	if (model->count >= BBSLIST_MAX_ENTRIES) {
+		free(record->shadowed);
+		record->shadowed = NULL;
+		return;
+	}
+	size_t index = (size_t)(record - model->records);
+	struct bbslist_model_record *records = realloc(model->records,
+	    (model->count + 1) * sizeof(*records));
+	if (records == NULL)
+		return;
+	model->records = records;
+	record = &records[index];
+	struct bbslist *shadowed = record->shadowed;
+	record->shadowed = NULL;
+	model->entries[model->count] = shadowed;
+	model->entries[model->count + 1] = NULL;
+	records[model->count] = (struct bbslist_model_record) {
+		.bbs = shadowed,
+	};
+	model->count++;
+	bbslist_model_sort(model);
+}
+
 bool
 bbslist_model_save(struct bbslist_model *model, struct bbslist *bbs)
 {
@@ -265,6 +335,7 @@ bbslist_model_save(struct bbslist_model *model, struct bbslist *bbs)
 	    sizeof(record->persisted_name));
 	record->dirty = false;
 	record->new_entry = false;
+	reveal_renamed_shadow(model, record);
 	return true;
 }
 
@@ -282,6 +353,22 @@ bbslist_model_delete(struct bbslist_model *model, struct bbslist *bbs)
 			return false;
 	}
 	size_t index = (size_t)(record - model->records);
+	if (record->shadowed != NULL) {
+		struct bbslist *shadowed = record->shadowed;
+		for (size_t i = 0; i < model->count; i++) {
+			if (model->entries[i] == bbs) {
+				model->entries[i] = shadowed;
+				break;
+			}
+		}
+		free(bbs);
+		*record = (struct bbslist_model_record) {
+			.bbs = shadowed,
+		};
+		model->generation++;
+		bbslist_model_sort(model);
+		return true;
+	}
 	for (size_t i = 0; i < model->count; i++) {
 		if (model->entries[i] == bbs) {
 			memmove(&model->entries[i], &model->entries[i + 1],

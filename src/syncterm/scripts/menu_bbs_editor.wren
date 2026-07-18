@@ -79,17 +79,16 @@ class PaletteColorPreview is Widget {
 }
 
 class PaletteComponentInput is TextInput {
-  construct new(defaultValue, onChange) {
+  construct new(onChange, onReset) {
     super()
-    _defaultValue = defaultValue
     _notify = onChange
+    _reset = onReset
     maxLen = 3
   }
 
   handle(event) {
     if (event is KeyEvent && event.codepoint == 0x25) {
-      value = _defaultValue.toString
-      _notify.call(value)
+      _reset.call()
       return true
     }
     if (event is KeyEvent && event.codepoint != null &&
@@ -259,6 +258,7 @@ class BbsEditor {
       "sftpPublicKey": b.sftpPublicKey,
       "sshAllowAes128Cbc": b.sshAllowAes128Cbc,
       "sshAcceptEarlyData": b.sshAcceptEarlyData,
+      "sshFingerprint": b.sshFingerprint,
       "palette": b.palette,
       "sortOrder": b.sortOrder
     }
@@ -678,10 +678,17 @@ class BbsEditor {
         preview.color = (values[0] << 16) | (values[1] << 8) | values[2]
       }
     }
+    var reset = Fn.new {
+      for (i in 0...3) {
+        values[i] = defaults[i]
+        inputs[i].value = defaults[i].toString
+      }
+      preview.color = defaultColor
+    }
     for (i in 0...3) {
       var index = i
-      var input = PaletteComponentInput.new(defaults[i],
-          Fn.new {|text| update.call(index, text) })
+      var input = PaletteComponentInput.new(
+          Fn.new {|text| update.call(index, text) }, reset)
       input.value = values[i].toString
       input.onChange = Fn.new {|text| update.call(index, text) }
       input.onSubmit = Fn.new {|text|
@@ -1033,6 +1040,7 @@ class BbsEditor {
     b.sftpPublicKey = d["sftpPublicKey"]
     b.sshAllowAes128Cbc = d["sshAllowAes128Cbc"]
     b.sshAcceptEarlyData = d["sshAcceptEarlyData"]
+    b.sshFingerprint = d["sshFingerprint"]
     b.palette = d["palette"]
     b.sortOrder = d["sortOrder"]
     return true

@@ -9,6 +9,7 @@
 
 struct bbslist_model_record {
 	struct bbslist *bbs;
+	struct bbslist *shadowed;
 	char persisted_name[LIST_NAME_MAX + 1];
 	bool dirty;
 	bool new_entry;

@@ -986,6 +986,15 @@ again summarizes enabled audio backends, and entry rows distinguish automatic
 terminal types, unset passwords, and nonzero communication rates.
 Web-list edits update the in-memory configuration immediately and are written
 when the Web Lists screen closes.
+Saving an existing directory entry preserves its `Added` timestamp.  Clearing
+the Terminal Type field writes the empty override so a subsequent directory
+reload continues to use automatic terminal-type selection.
+In the palette component editor, `%` restores all three components of the
+selected colour from the mode palette while retaining the current field.
+Creating or copying a personal entry with the same name as a read-only entry
+replaces that row immediately.  The model retains the shadowed entry so it
+reappears if the personal override is deleted, or under its original name if
+the personal entry is renamed.
 
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,
@@ -3589,7 +3598,8 @@ Menu `BBS` properties map directly to the real `struct bbslist`:
 | Address and authentication
 | Read/write `addr`, `port`, `connType`, `user`, `password`,
   `syspass`, `addressFamily`, `sftpPublicKey`, `sshAllowAes128Cbc`,
-  and `sshAcceptEarlyData`.
+  `sshAcceptEarlyData`, and binary String `sshFingerprint`.  The
+  fingerprint is empty, 20-byte SHA-1, or 32-byte SHA-256 data.
 
 | Display and emulation
 | Read/write `music`, `rip`, `comment`, `termName`, `screenMode`,
@@ -3617,6 +3627,8 @@ read-only: setters abort, while `rename`, `save`, and `delete` return
 The shipped entry editor invokes those setters, including `rename()`,
 after each nested field editor accepts a changed value.  It calls
 `save()` for a dirty entry when the entry editor closes.
+The fingerprint has no direct editor row; the shipped F5/F6 clipboard carries
+it through the draft so copying an entry preserves an accepted SSH host key.
 
 Download Path and Upload Path remain direct entry rows.  Log Configuration
 opens the four intended logging controls: Log Filename, File Transfer Log
@@ -4139,10 +4151,14 @@ pre-bound from these at module load.
   `opts` is a bitmask of the C-side `UIFC_FP_*` flags (see
   `uifc/filepick.h`).  The returned `File`'s path bypasses the
   relaxed-name policy — the picker UI is the sandbox boundary,
-  since the user explicitly chose the path.  The returned
-  `File` is read-only and carries a `.token` consent token (see
-  "Picker consent tokens" below) when the per-installation signing
-  key is loaded.
+  since the user explicitly chose the path.  The returned `File` is
+  read-only and carries a `.token` consent token (see "Picker consent
+  tokens" below) when the per-installation signing key is loaded.
+
+| `Host.pickFile(initialDir, mask, opts, title)`
+| The same consent picker with a caller-supplied title String.  The
+  title changes only the picker presentation and grants no additional
+  file authority.
 
 | `Host.pickFiles(initialDir, mask, opts)`
 | Multi-select counterpart of `pickFile`.  Same argument shape.

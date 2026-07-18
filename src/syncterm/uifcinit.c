@@ -136,7 +136,7 @@ uifcbail(void)
  * file picker.  It can be invoked from either trusted VM, so each call gets
  * fresh picker state and trusted input boundaries. */
 static int
-uifcfilepick_common(char *title, struct file_pick *fp,
+uifcfilepick_common(const char *title, struct file_pick *fp,
     const char *initial_dir, const char *default_mask, int opts,
     bool multi)
 {
@@ -172,7 +172,7 @@ uifcfilepick_common(char *title, struct file_pick *fp,
 }
 
 int
-uifcfilepick(char *title, struct file_pick *fp,
+uifcfilepick(const char *title, struct file_pick *fp,
     const char *initial_dir, const char *default_mask, int opts)
 {
 	return uifcfilepick_common(title, fp, initial_dir, default_mask,
@@ -180,7 +180,7 @@ uifcfilepick(char *title, struct file_pick *fp,
 }
 
 int
-uifcfilepick_multi(char *title, struct file_pick *fp,
+uifcfilepick_multi(const char *title, struct file_pick *fp,
     const char *initial_dir, const char *default_mask, int opts)
 {
 	return uifcfilepick_common(title, fp, initial_dir, default_mask,

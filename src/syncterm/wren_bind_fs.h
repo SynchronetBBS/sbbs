@@ -57,6 +57,7 @@ void fn_Host_cacheDirectory(WrenVM *vm);
 void fn_Host_downloadDir(WrenVM *vm);
 void fn_Host_uploadPath(WrenVM *vm);
 void fn_Host_pickFile(WrenVM *vm);
+void fn_Host_pickFileTitle(WrenVM *vm);
 void fn_Host_pickFiles(WrenVM *vm);
 void fn_Host_pickSavePath(WrenVM *vm);
 void fn_Host_openLocalFile(WrenVM *vm);

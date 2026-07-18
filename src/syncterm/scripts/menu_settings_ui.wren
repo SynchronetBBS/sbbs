@@ -340,6 +340,13 @@ class SettingsMenu {
     return "*.f20"
   }
 
+  static fontSizeName_(slot) {
+    if (slot == MenuFontSlot.eightByEight) return "8x8"
+    if (slot == MenuFontSlot.eightByFourteen) return "8x14"
+    if (slot == MenuFontSlot.eightBySixteen) return "8x16"
+    return "12x20"
+  }
+
   static encryptionHelp_() {
     return "# List Encryption\n\nChange Password rewrites the directory " +
         "with a new password while retaining its current encryption. The " +
@@ -806,7 +813,8 @@ class SettingsMenu {
         font.name = name
       } else {
         app.releaseFocus()
-        var file = Host.pickFile(".", fontMask_(value), 1)
+        var title = "%(fontSizeName_(value)) %(font.name)"
+        var file = Host.pickFile(".", fontMask_(value), 1, title)
         app.restoreFocus()
         if (file != null && !font.setFile(value, file)) {
           Alert.show(app, "Font File",
