@@ -82,6 +82,12 @@
 #include "door32.h"      /* termgfx: the shared DOOR32.SYS parser */
 #include "sbbs_node.h"   /* Task 5: sbbs_my_node() for the per-node log filename */
 #include "keymode.h"   /* termgfx: key-mode negotiation (shared with door_input.c) */
+#include "../../termgfx/mouse.h"   /* termgfx: shared SGR-Pixels mouse handshake/latch
+                                    * (Task 1) -- a QUALIFIED path, not a bare "mouse.h",
+                                    * because the vendored vanilla/{redalert,tiberiandawn}
+                                    * trees each ship their own (unrelated, C++) mouse.h
+                                    * that wins a bare quoted #include here (their dirs
+                                    * are searched before termgfx's) */
 #include "sixel.h"
 #include "jxl.h"
 #include "apc.h"
@@ -213,7 +219,7 @@ static int door_is_door32_path(const char *s)
 static void door_read_door32(const char *path)
 {
 	termgfx_door32_t d;
-	const char      *why;
+	const char *     why;
 
 	if (termgfx_door32_read(path, &d) != 0)
 		return;
@@ -394,7 +400,7 @@ static void door_early_write(const char *s)
  * iterate this so the door stays title-agnostic. */
 typedef struct {
 	const char *name;
-	long        min_bytes;
+	long min_bytes;
 } door_asset_req_t;
 #if defined(SYNCCONQUER_TD)
 static const door_asset_req_t DOOR_ASSET_REQ[] = {
@@ -1050,7 +1056,7 @@ static int         g_fd = 1;          /* the fd we WRITE to: socket, or stdout *
  * and reading fd 1 reads nothing. This door read g_fd, the WRITE fd: correct on a
  * socket, correct at a dev tty (a tty descriptor is bidirectional), and silently
  * deaf down a pipe. */
-static int         g_fd_in = 0;
+static int g_fd_in = 0;
 #endif
 
 static void door_term_restore(void);   /* below; the hangup path runs it first */
@@ -1143,6 +1149,7 @@ static int g_status_type = -1;         /* pre-door DECSSDT status-line type capt
 static termgfx_audio_t *g_audio;
 static void             door_out_flush(void);
 static void             door_out_put(const void *buf, size_t len);
+static void             door_out_puts(const char *s);
 static uint32_t         door_now_ms(void);
 static void             door_audio_emit(void *ctx, const void *buf, size_t len, int stream);
 static void             door_audio_ensure_init(void);
@@ -1222,7 +1229,7 @@ static void door_term_restore(void)
 	}
 	termgfx_audio_music_stop(g_audio);    /* stop the looping Theme music ... */
 	termgfx_audio_sfx_stop_all(g_audio);  /* ...and any pooled SFX channels */
-	door_out_put("\x1b[?1003l\x1b[?1006l\x1b[?1016l", 24);
+	door_out_puts(termgfx_mouse_restore);
 	{   /* undo whichever key mode was negotiated (termgfx); a no-op if none was */
 		char   ks[TERMGFX_KEYMODE_SEQ_MAX];
 		size_t kn = termgfx_keymode_restore(&g_km, ks, sizeof ks);
@@ -1631,18 +1638,19 @@ static uint32_t door_now_ms(void)
 /* --- terminal capability / geometry probe state ----------------------------
  * Filled in by door_csi_final() as replies to the startup probe come in
  * (termgfx_term_probe, "\x1b[c\x1b[<c" DA1+CTDA, termgfx_query_jxl). */
-static int g_probe_replied;    /* any 'c' (DA1/CTDA) reply seen */
-static int g_is_syncterm;      /* CTDA '<'/'=' marker, or a JXL-query answer */
-static int g_have_sixel;       /* DA1/CTDA param 4 */
-static int g_jxl_supported;    /* Q;JXL answered 1 */
-static int g_img_blob_ok;      /* CTerm >= 1.329: draw JXL/PPM inline (no cache file) */
-static int g_grid_rows, g_grid_cols;   /* text grid, from the 999;999 cursor-report fallback */
-static int g_canvas_w, g_canvas_h;     /* pixel canvas -- exact (ESC[14t) or grid*8x16 estimate */
-static int g_px_exact;                 /* g_canvas_w/h came from an exact ESC[4;h;wt reply */
-static int g_canvas_is_gfx;            /* ...or, better, from XTSMGRAPHICS: a hard drawing ceiling */
-static int g_mouse_pixels;             /* SGR-Pixels mouse (DEC 1016) confirmed active: mouse
-                                        * reports are canvas PIXELS, not text cells (Windows
-                                        * Terminal supports it; SyncTERM does not -> stays cells) */
+static int             g_probe_replied; /* any 'c' (DA1/CTDA) reply seen */
+static int             g_is_syncterm; /* CTDA '<'/'=' marker, or a JXL-query answer */
+static int             g_have_sixel; /* DA1/CTDA param 4 */
+static int             g_jxl_supported; /* Q;JXL answered 1 */
+static int             g_img_blob_ok; /* CTerm >= 1.329: draw JXL/PPM inline (no cache file) */
+static int             g_grid_rows, g_grid_cols; /* text grid, from the 999;999 cursor-report fallback */
+static int             g_canvas_w, g_canvas_h; /* pixel canvas -- exact (ESC[14t) or grid*8x16 estimate */
+static int             g_px_exact;     /* g_canvas_w/h came from an exact ESC[4;h;wt reply */
+static int             g_canvas_is_gfx; /* ...or, better, from XTSMGRAPHICS: a hard drawing ceiling */
+static termgfx_mouse_t g_mouse;        /* SGR-Pixels mouse (DEC 1016) latch (termgfx/mouse, Task 1):
+                                        * .pixels confirmed active means mouse reports are canvas
+                                        * PIXELS, not text cells (Windows Terminal supports it;
+                                        * SyncTERM does not -> stays cells) */
 
 /* --- graphics tiers (F4 cycles) --------------------------------------------
  * SIXEL/JXL/PPM are pixel tiers (PPM via SyncTERM's APC cache, for a client
@@ -2271,7 +2279,7 @@ void door_io_cell_size(int *cw, int *ch)
  * mapper then treats a report's coords as canvas PIXELS, not text cells. */
 int door_io_mouse_pixels(void)
 {
-	return g_mouse_pixels;
+	return termgfx_mouse_pixels(&g_mouse);
 }
 
 /* The text grid (cols x rows), for door_input.c's pixel-report auto-detect. */
@@ -2289,8 +2297,8 @@ void door_io_grid(int *cols, int *rows)
  * can't false-trigger on a genuinely cell-granular terminal. */
 void door_io_note_pixel_report(void)
 {
-	if (!g_mouse_pixels) {
-		g_mouse_pixels = 1;
+	if (!termgfx_mouse_pixels(&g_mouse)) {
+		termgfx_mouse_note_pixel_report(&g_mouse);
 		fprintf(stderr, DOOR_SHORT_NAME ": SGR-Pixels auto-detected (report exceeded text grid)\n");
 	}
 }
@@ -2380,7 +2388,7 @@ static void door_stats_draw(int force)
 		         sa_tier_name(tier), g_fps, rate, bpf, g_auto_depth,
 		         door_io_evdev_active()      ? "evdev"
 		         : door_input_kitty_active() ? "kitty" : "legacy",
-		         g_mouse_pixels ? "pixel" : "cell",
+		         termgfx_mouse_pixels(&g_mouse) ? "pixel" : "cell",
 		         sa_is_text_tier(tier) ? (door_term_is_utf8() ? " utf8" : " cp437") : "",   /* charset only matters in text tiers */
 		         (g_img_blob_ok && (tier == SA_JXL || tier == SA_PPM)) ? " blob" : "",   /* frames shipping inline (Draw*Blob), no cache */
 		         g_fit_fill ? " fill" : "",   /* Ctrl-F Fill (stretch-to-canvas); absent = Aspect (default, true ratio) */
@@ -2770,17 +2778,17 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 		door_out_puts("\x1b[c\x1b[<c");
 		door_out_puts(termgfx_query_jxl);
 		door_out_puts(termgfx_keymode_query_kitty);   /* kitty keyboard-protocol query (Task 3, door_input.c) */
-		door_out_puts("\x1b[?1003h\x1b[?1006h"); /* SGR mouse tracking, always on -- no steering
-		                                           * toggle here (unlike SyncDuke's Ctrl-O), the
-		                                           * RTS mouse cursor/clicks are always wanted */
-		/* Ask for SGR-Pixels (DEC 1016): pixel-granular mouse instead of
+		/* SGR mouse tracking, always on -- no steering toggle here (unlike
+		 * SyncDuke's Ctrl-O), the RTS mouse cursor/clicks are always wanted.
+		 * Also asks for SGR-Pixels (DEC 1016): pixel-granular mouse instead of
 		 * cell-granular, so a fine control (the in-game volume slider) is
-		 * draggable per-pixel. Then DECRQM-query it; door_csi_final()'s 'y'
-		 * case only flips g_mouse_pixels on if the terminal confirms the mode
-		 * is set. Windows Terminal supports it; SyncTERM ignores both and
-		 * stays cell-granular (its reply, if any, is Ps=0). Harmless on a
-		 * terminal that supports neither. */
-		door_out_puts("\x1b[?1016h\x1b[?1016$p");
+		 * draggable per-pixel. Then DECRQM-queries it; door_csi_final()'s 'y'
+		 * case only latches the pixel mode (termgfx_mouse_on_decrpm) if the
+		 * terminal confirms the mode is set. Windows Terminal supports it;
+		 * SyncTERM ignores both and stays cell-granular (its reply, if any, is
+		 * Ps=0). Harmless on a terminal that supports neither.
+		 * (termgfx/mouse.h: "\x1b[?1003h\x1b[?1006h\x1b[?1016h\x1b[?1016$p") */
+		door_out_puts(termgfx_mouse_enable);
 		termgfx_audio_probe(g_audio);    /* Q;libsndfile: SyncTERM replies ESC[=7;100;{0,1}n -> digital tier */
 		door_dsr_sent(door_now_ms());   /* the probe's ESC[6n is a DSR too */
 		cleared    = 1;
@@ -2835,7 +2843,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 			        "mouse=%s tier=%d fit=%s -> image=%dx%d @px(%d,%d) cell(%d,%d)\n",
 			        g_canvas_w, g_canvas_h, g_px_exact ? "(exact)" : "(est)",
 			        g_grid_cols, g_grid_rows, cw, ch,
-			        g_mouse_pixels ? "pixels(1016)" : "cells",
+			        termgfx_mouse_pixels(&g_mouse) ? "pixels(1016)" : "cells",
 			        (g_tier_force >= 0) ? g_tier_force : sa_auto_tier(),
 			        g_fit_fill ? "fill" : "aspect", ew, eh, dx, dy, icol, irow);
 			geom_logged = 1;
@@ -3060,8 +3068,7 @@ static void door_csi_final(char fin)
 		             * Ps 1/3 = mode set (pixel mouse active); 0 = unrecognized
 		             * (SyncTERM), 2/4 = reset -- all leave us in cell mode. */
 			np = door_csi_params(p, 2);
-			if (np >= 2 && p[0] == 1016)
-				g_mouse_pixels = (p[1] == 1 || p[1] == 3);
+			termgfx_mouse_on_decrpm(&g_mouse, p, np);
 			return;
 		case 'c':   /* DA1 (ESC[c) / CTDA (ESC[<c) device-attributes reply */
 			g_probe_replied = 1;
