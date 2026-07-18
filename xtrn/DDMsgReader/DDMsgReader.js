@@ -102,6 +102,13 @@
  *                              last_read was current, and delete-message pointer repair.
  * 2026-07-08 Eric Oulashin     Version 1.97n
  *                              Releasing this version.
+ * 2026-07-18 Eric Oulashin     Version 1.97o
+ *                              Bug fix (with the help of Cursor AI): Fixed
+ *                              userHandleAliasNameMatch() to use exact name equality	
+ *                              instead of substring matching (indexOf). That bug caused
+ *                              short aliases like "Book" to match longer names
+ *                              like "Bookie2018" when listing personal email.
+ *                              Releasing this version.
  */
 
 "use strict";
@@ -220,8 +227,8 @@ require("rip_scrollbar.js", "RIPScrollbar");
 
 
 // Reader version information
-var READER_VERSION = "1.97n";
-var READER_DATE = "2026-07-08";
+var READER_VERSION = "1.97o";
+var READER_DATE = "2026-07-18";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -20665,6 +20672,10 @@ function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 //
 // Return value: Boolean - Whether or not the given name matches the logged-in
 //               user's handle, alias, or name
+//
+// Note: String matching is an exact case-insensitive equality check (not a
+// substring/prefix match). Using indexOf previously caused short aliases like
+// "Book" to incorrectly match longer names like "Bookie2018".
 function userHandleAliasNameMatch(pNameOrCRC16)
 {
 	var checkByCRC16 = (typeof(pNameOrCRC16) === "number");
@@ -20709,19 +20720,19 @@ function userHandleAliasNameMatch(pNameOrCRC16)
 			{
 				if (userHandleAliasNameMatch.userHandleUpper === undefined)
 					userHandleAliasNameMatch.userHandleUpper = user.handle.toUpperCase();
-				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userHandleUpper) > -1);
+				userMatch = (nameUpper == userHandleAliasNameMatch.userHandleUpper);
 			}
 			if (!userMatch && (user.alias.length > 0))
 			{
 				if (userHandleAliasNameMatch.userAliasUpper === undefined)
 					userHandleAliasNameMatch.userAliasUpper = user.alias.toUpperCase();
-				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userAliasUpper) > -1);
+				userMatch = (nameUpper == userHandleAliasNameMatch.userAliasUpper);
 			}
 			if (!userMatch && (user.name.length > 0))
 			{
 				if (userHandleAliasNameMatch.userNameUpper === undefined)
 					userHandleAliasNameMatch.userNameUpper = user.name.toUpperCase();
-				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userNameUpper) > -1);
+				userMatch = (nameUpper == userHandleAliasNameMatch.userNameUpper);
 			}
 		}
 	}
