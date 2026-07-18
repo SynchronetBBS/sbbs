@@ -28,8 +28,10 @@ class UiListTest {
 
     // Navigation
     testUpDown_()
-    testUpAtTop_()
-    testDownAtBottom_()
+    testUpAtTopWraps_()
+    testDownAtBottomWraps_()
+    testNoWrapUpAtTopClamps_()
+    testNoWrapDownAtBottomClamps_()
     testHomeEnd_()
     testPageUpDown_()
     testPageUpClampsAtTop_()
@@ -94,8 +96,9 @@ class UiListTest {
   static testListDefaults_() {
     var l = ListView.new()
     check_(l.count == 0 && l.selected == null && l.scrollTop == 0 &&
-           l.showScroll == true,
-           "List defaults: empty, selected=null, scrollTop=0, showScroll=true")
+           l.showScroll == true && l.wrap == true,
+           "List defaults: empty, selected=null, scrollTop=0, " +
+           "scrolling and wrapping enabled")
   }
 
   static testListItemsSetterResets_() {
@@ -170,19 +173,36 @@ class UiListTest {
     check_(l.selected == 0, "ListView.up moves selection -1")
   }
 
-  static testUpAtTop_() {
+  static testUpAtTopWraps_() {
     var l = makeList_(3)
     l.bounds = Rect.new(1, 1, 10, 5)
     l.up()
-    check_(l.selected == 0, "ListView.up at top is no-op")
+    check_(l.selected == 2, "ListView.up at top wraps to last")
   }
 
-  static testDownAtBottom_() {
+  static testDownAtBottomWraps_() {
     var l = makeList_(3)
     l.bounds = Rect.new(1, 1, 10, 5)
     l.selected = 2
     l.down()
-    check_(l.selected == 2, "ListView.down at bottom is no-op")
+    check_(l.selected == 0, "ListView.down at bottom wraps to first")
+  }
+
+  static testNoWrapUpAtTopClamps_() {
+    var l = makeList_(3)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    l.wrap = false
+    l.up()
+    check_(l.selected == 0, "ListView wrap=false: up at top clamps")
+  }
+
+  static testNoWrapDownAtBottomClamps_() {
+    var l = makeList_(3)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    l.wrap = false
+    l.selected = 2
+    l.down()
+    check_(l.selected == 2, "ListView wrap=false: down at bottom clamps")
   }
 
   static testHomeEnd_() {

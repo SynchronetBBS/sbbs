@@ -5672,6 +5672,11 @@ Mouse: a single click on a row both selects it and fires `onSelect`
 (matches UIFC's `ulist`); wheel scrolls three rows; clicks on the
 scrollbar column step or jump proportionally.
 
+`wrap=` controls single-row Up/Down movement and defaults to `true`:
+Up at the first row wraps to the last, and Down at the last wraps to
+the first.  Set it to `false` to clamp at the ends.  PageUp/PageDown,
+Home/End, and direct `selected=` assignments do not wrap.
+
 `onChange` is independent of activation.  It fires with `(index, item)`
 whenever navigation, assignment, search, or a row click changes the
 current row.  Replacing `items` also fires it so a detail pane can

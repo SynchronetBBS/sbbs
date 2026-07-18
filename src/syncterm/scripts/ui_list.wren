@@ -37,6 +37,7 @@ class ListView is Widget {
     _showScroll    = true
     _onSelect      = null
     _onChange      = null
+    _wrap          = true
     _sbSide        = "left"        // "left" (UIFC) or "right"
     _sbSep         = true          // separator between scrollbar and content
     _searchBuf     = ""             // type-to-search rolling buffer
@@ -101,6 +102,12 @@ class ListView is Widget {
   }
 
   count { _items.count }
+
+  // When true (default), Up at the top wraps to the bottom and Down
+  // at the bottom wraps to the top.  Set false for lists whose
+  // single-row navigation should clamp at the ends.
+  wrap     { _wrap }
+  wrap=(b) { _wrap = b }
 
   // null when no row is selected (empty list, or explicitly cleared);
   // otherwise an integer in 0..count - 1.
@@ -253,10 +260,24 @@ class ListView is Widget {
     return [bounds.x + contentX_, bounds.y + rowOffset]
   }
 
-  // Navigation primitives.  Each clamps via selected= and is a no-op
-  // when there's nothing to select.
-  up()       { selected = _selected - 1 }
-  down()     { selected = _selected + 1 }
+  // Navigation primitives.  Single-row movement wraps by default;
+  // page movement and direct selection continue to clamp.
+  up() {
+    if (_items.count == 0) return
+    if (_wrap && _selected <= 0) {
+      selected = _items.count - 1
+    } else {
+      selected = _selected - 1
+    }
+  }
+  down() {
+    if (_items.count == 0) return
+    if (_wrap && _selected >= _items.count - 1) {
+      selected = 0
+    } else {
+      selected = _selected + 1
+    }
+  }
   pageUp()   { selected = _selected - viewportRows_ + 1 }
   pageDown() { selected = _selected + viewportRows_ - 1 }
   home()     { selected = 0 }
