@@ -933,6 +933,33 @@ spec:
     GIT_STRATEGY: fetch
   needs:
 
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev-test]":
+  extends:
+    - .$[[ inputs.os ]]-test
+  # Headless regression test for xp_mixer_pull (make test -> mixertest,
+  # nonzero exit == failure). Self-contained: it builds xpdev and the test
+  # binary from source and runs it, rather than shipping a binary artifact,
+  # so the single condition -- "only where the freshly built binary can run"
+  # -- stays one rule instead of being spread across a conditional build, a
+  # conditional package and a conditional run. Where valgrind is available the
+  # run goes under the leak checker (--error-exitcode=1). Skipped on
+  # cross-compiled targets, whose foreign-arch binary this runner cannot run.
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/xpdev
+    - touch depend
+    - if [ "$[[ inputs.has_valgrind ]]" = "yes" ]; then VG="$[[ inputs.valgrind_pre_exec ]] valgrind --leak-check=full --error-exitcode=1 --num-callers=20 --track-origins=yes"; else VG=""; fi
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS test VALGRIND="$VG"
+  variables:
+    GIT_STRATEGY: fetch
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+      artifacts: false
+  rules:
+    - if: '"$[[ inputs.cross_platform ]]" == "yes"'
+      when: never
+    - !reference [.rules, rules]
+
 #########
 # Doors #
 #########
