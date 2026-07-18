@@ -72,6 +72,7 @@ class App {
     _runFiber    = null           // set in run(); target for post() and the claim handler's wake
     _onPost      = null           // user-supplied posted-value handler
     _onLayout    = null           // called with (width, height) on resize
+    _onUnhandledMouse = null      // optional non-modal mouse fallback
     _dragHandedOff = false        // see dispatchMouse_ for the belt this catches
     _claim         = null         // ClaimHandle; set by run(), popped on exit
     _tickPending   = false        // true while a Timer.trigger is queued for _runFiber
@@ -92,6 +93,7 @@ class App {
   running     { _running     }
   modalStack  { _modalStack  }
   onLayout=(fn) { _onLayout = fn }
+  onUnhandledMouse=(fn) { _onUnhandledMouse = fn }
 
   // Apply the effective screen bounds and notify layout clients only
   // when they change.  Public-with-underscore so pure Wren tests can
@@ -382,15 +384,19 @@ class App {
     }
     var top = modalTop
     var outside = false
+    var hit = null
     if (top is Container) {
-      var hit = top.hitTest(me.startX, me.startY)
+      hit = top.hitTest(me.startX, me.startY)
       outside = hit == null
       if (hit != null && hit.handle(me)) return true
     } else if (top.hit(me.startX, me.startY)) {
+      hit = top
       if (top.handle(me)) return true
     } else {
       outside = true
     }
+    if (_modalStack.count == 0 && _onUnhandledMouse != null &&
+        _onUnhandledMouse.call(me, hit)) return true
     if (outside && _modalStack.count > 0 &&
         top.closesOnOutsideClick(me.event)) {
       dispatchKey_(KeyEvent.new(Key.escape))

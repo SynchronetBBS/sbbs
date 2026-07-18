@@ -924,6 +924,10 @@ The shipped controller defines the main-menu interaction contract.  Tab from
 the directory enters the selected entry's comment field, then advances to the
 simultaneously visible settings pane; Backtab traverses the same path in
 reverse.  Left and Right move directly between the directory and settings.
+The first completed left click in an inactive pane transfers focus without
+activating a row; a second click activates the row.  A wheel event moves the
+active list regardless of which pane is under the pointer.  A completed left
+click on the main-screen background transfers focus to the other pane.
 Enter connects (or edits while connected) from the directory and invokes one
 settings action from the settings pane.  F2/Ctrl-E, Insert, Delete, F5/F6,
 Ctrl-S, `<`/`>`, Ctrl-D, and Alt-B invoke their documented commands.  F2 does
@@ -5595,6 +5599,12 @@ restoreFocus()
   the first paint and whenever the effective App area changes size.
   The root Container is resized before the callback runs, allowing the
   callback to assign stable responsive bounds to its children.
+* `onUnhandledMouse=(fn)` — register a callback receiving `(event, hit)`
+  after a non-modal mouse event is declined by the hit widget.  `hit` is the
+  declined Widget, or `null` when the event is outside the root.  Returning
+  `true` consumes the event; returning `false` leaves normal App fallback
+  handling, including right-click Escape and drag selection, in place.  The
+  callback is not invoked while a modal owns input.
 * `theme=` — install a custom Theme (see <<ui-theme,Theme>>).
 
 ==== Async work in handlers [[ui-app-runchild]]

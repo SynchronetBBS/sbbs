@@ -120,6 +120,8 @@ class UiWidgetTest {
     testAppConsumedBackspaceDoesNotEscape_()
     testAppDispatchMouseHitsWidget_()
     testAppDispatchMouseModalBlocksRoot_()
+    testAppUnhandledMouseReceivesHit_()
+    testAppUnhandledMouseSkippedForModal_()
     testAppOutsideClickEscapesListModal_()
     testAppDispatchMouseOutsideDrops_()
     testAppRightClickAliasesEscape_()
@@ -724,6 +726,40 @@ class UiWidgetTest {
     var consumed = app.dispatchMouse_(mouse_(15, 6))
     check_(!consumed && rootLeaf.seen.count == 0 && modalLeaf.seen.count == 0,
            "App.dispatchMouse_: modal blocks root, click outside modal drops")
+  }
+
+  static testAppUnhandledMouseReceivesHit_() {
+    var app = App.new()
+    app.root.bounds = Rect.new(1, 1, 80, 25)
+    var leaf = Probe.new()
+    leaf.bounds = Rect.new(10, 5, 20, 3)
+    app.root.add(leaf)
+    var event = mouse_(15, 6)
+    var received = null
+    app.onUnhandledMouse = Fn.new {|unhandled, hit|
+      received = [unhandled, hit]
+      return true
+    }
+    var consumed = app.dispatchMouse_(event)
+    check_(consumed && received != null && received[0] == event &&
+           received[1] == leaf,
+           "App unhandled mouse: receives event and declined hit widget")
+  }
+
+  static testAppUnhandledMouseSkippedForModal_() {
+    var app = App.new()
+    app.root.bounds = Rect.new(1, 1, 80, 25)
+    var modal = Container.new()
+    modal.bounds = Rect.new(40, 10, 20, 10)
+    app.pushModal(modal)
+    var calls = 0
+    app.onUnhandledMouse = Fn.new {|event, hit|
+      calls = calls + 1
+      return true
+    }
+    var consumed = app.dispatchMouse_(mouse_(45, 12))
+    check_(!consumed && calls == 0,
+           "App unhandled mouse: modal ownership suppresses fallback")
   }
 
   static testAppOutsideClickEscapesListModal_() {

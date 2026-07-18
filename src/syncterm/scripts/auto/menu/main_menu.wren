@@ -55,7 +55,9 @@ class CommentInput is TextInput {
 
   handle(event) {
     if (event is MouseEvent && event.event == Mouse.button1Click) {
-      _onFocus.call()
+      var active = parent != null && parent.focused
+      if (!active) _onFocus.call()
+      if (!active) return true
     }
     if (event is MouseEvent && parent != null && !parent.focused &&
         (event.event == Mouse.button2Click ||
@@ -163,7 +165,9 @@ class MainPane is Pane {
     if (event is MouseEvent && bounds != null &&
         bounds.contains(event.startX, event.startY) &&
         event.event == Mouse.button1Click) {
-      _onFocus.call()
+      var active = focused
+      var activate = _onFocus.call()
+      if (!active && activate != true) return true
     }
     return super.handle(event)
   }
@@ -180,13 +184,26 @@ class MainList is ListView {
     _onSwitchPane = onSwitchPane
     _onInsert = onInsert
     _onDelete = onDelete
+    _onInactiveWheel = null
   }
+
+  onInactiveWheel=(fn) { _onInactiveWheel = fn }
 
   handle(event) {
     if (event is MouseEvent && bounds != null &&
         bounds.contains(event.startX, event.startY) &&
         event.event == Mouse.button1Click) {
-      _onFocus.call()
+      var active = parent != null && parent.focused
+      var activate = _onFocus.call()
+      if (!active && activate != true) return true
+    }
+    if (event is MouseEvent && parent != null && !parent.focused &&
+        (event.event == Mouse.wheelUpPress ||
+         event.event == Mouse.wheelUpClick ||
+         event.event == Mouse.wheelDownPress ||
+         event.event == Mouse.wheelDownClick)) {
+      if (_onInactiveWheel != null) _onInactiveWheel.call(event)
+      return true
     }
     if (_onComment != null && event is KeyEvent &&
         event.code == _commentKey) {
@@ -232,6 +249,7 @@ class MainMenuApp {
     _clipboard = null
     _clipboardType = null
     _confirmingExit = false
+    _commentReturn = null
     _settingRows = SettingsMenu.rows(_connected)
 
     _backdrop = ClassicBackdrop.new()
@@ -267,7 +285,7 @@ class MainMenuApp {
 
     _footer = ClassicFooter.new(Fn.new { focusComment_(0) },
         Fn.new {|value, destination| finishComment_(value, destination) },
-        Fn.new { focusDirectory_() })
+        Fn.new { cancelComment_() })
     _footer.helpText = directoryHelp_()
     _app.root.add(_footer)
 
@@ -288,7 +306,14 @@ class MainMenuApp {
     }
     _settings.add(_settingsList)
 
+    var inactiveWheel = Fn.new {|event| routeWheel_(event) }
+    _list.onInactiveWheel = inactiveWheel
+    _settingsList.onInactiveWheel = inactiveWheel
+
     _app.onLayout = Fn.new {|width, height| layout_(width, height) }
+    _app.onUnhandledMouse = Fn.new {|event, hit|
+      backgroundMouse_(event, hit)
+    }
     bind_(Key.escape, Fn.new { exit_(false) })
     _app.bind(Key.quit, Fn.new {|event| exit_(true) })
     bindDirectory_(Key.f2, Fn.new {
@@ -358,31 +383,93 @@ class MainMenuApp {
 
   focusDirectory_() {
     if (_app.root.focusedChild == _footer) {
-      finishComment_(_footer.value, 0)
-      return
+      var activate = _commentReturn == _directory
+      finishComment_(_footer.value, -1)
+      return activate
     }
     _app.root.focusedIndex = 1
+    return false
   }
 
   focusComment_(fallback) {
     if (_selected == null || Host.safeMode) {
+      if (fallback == 0) return false
       if (fallback > 0) {
         focusSettings_()
       } else {
         focusDirectory_()
       }
-      return
+      return false
     }
+    _commentReturn = fallback == 0 ? _app.root.focusedChild : _directory
     _footer.comment = _selected.comment
     _app.root.focusedIndex = 2
+    return true
   }
 
   focusSettings_() {
     if (_app.root.focusedChild == _footer) {
+      var activate = _commentReturn == _settings
       finishComment_(_footer.value, 1)
-      return
+      return activate
     }
     _app.root.focusedIndex = 3
+    return false
+  }
+
+  cancelComment_() {
+    if (_commentReturn == _settings) {
+      _app.root.focusedIndex = 3
+    } else {
+      _app.root.focusedIndex = 1
+    }
+    _commentReturn = null
+  }
+
+  routeWheel_(event) {
+    var up = event.event == Mouse.wheelUpPress ||
+        event.event == Mouse.wheelUpClick
+    var down = event.event == Mouse.wheelDownPress ||
+        event.event == Mouse.wheelDownClick
+    if (!up && !down) return false
+    var focused = _app.root.focusedChild
+    if (focused == _directory) {
+      if (up) {
+        _list.up()
+      } else {
+        _list.down()
+      }
+      return true
+    }
+    if (focused == _settings) {
+      if (up) {
+        _settingsList.up()
+      } else {
+        _settingsList.down()
+      }
+      return true
+    }
+    return true
+  }
+
+  backgroundMouse_(event, hit) {
+    if (event.event == Mouse.wheelUpPress ||
+        event.event == Mouse.wheelUpClick ||
+        event.event == Mouse.wheelDownPress ||
+        event.event == Mouse.wheelDownClick) return routeWheel_(event)
+    if (event.event != Mouse.button1Click) return false
+    if (hit != _app.root && hit != _backdrop) return false
+    var focused = _app.root.focusedChild
+    if (focused == _directory) {
+      focusSettings_()
+    } else if (focused == _settings) {
+      focusDirectory_()
+    } else if (_commentReturn == _directory) {
+      finishComment_(_footer.value, 1)
+    } else {
+      finishComment_(_footer.value, -1)
+    }
+    return true
   }
 
   longest_(rows) {
@@ -599,11 +686,13 @@ class MainMenuApp {
         refresh_(name)
       }
     }
-    if (destination > 0) {
+    if (destination > 0 ||
+        (destination == 0 && _commentReturn == _settings)) {
       _app.root.focusedIndex = 3
     } else {
       _app.root.focusedIndex = 1
     }
+    _commentReturn = null
   }
 
   add_() {

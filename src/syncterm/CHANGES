@@ -45,6 +45,7 @@ Restore UIFC click, drag-selection, and list-scrollbar behavior
 Restore directory delete feedback, context help, and editor fields
 Restore Font Details commands and palette component acceptance
 Restore safe-mode settings editor semantics
+Restore main-menu pane focus and wheel mouse behavior
 Restore offline scrollback modes, controls, links, and text selection
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support
