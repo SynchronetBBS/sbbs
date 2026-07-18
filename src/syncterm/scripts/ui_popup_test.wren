@@ -5,6 +5,7 @@
 
 import "ui_widget" for Rect, Container
 import "ui_popup"  for Alert, Confirm, Prompt, Popup
+import "menu_ui" for MenuUi, ModalPane, StandaloneChoice
 import "syncterm"  for KeyEvent, Key
 
 class FakeApp {
@@ -34,6 +35,16 @@ class FakeApp {
   }
 }
 
+class EscapeFakeApp is FakeApp {
+  construct new() { super() }
+
+  modal(w) {
+    pushModal(w)
+    w.handle(KeyEvent.new(Key.escape))
+    return w
+  }
+}
+
 class UiPopupTest {
   static run() {
     __pass = 0
@@ -52,6 +63,9 @@ class UiPopupTest {
     testPromptEnterReturnsValue_()
     testPromptEscReturnsNull_()
     testPromptForwardsTypingToInput_()
+    testMenuChoiceEscReturnsNull_()
+    testStandaloneChoiceEscReturnsNull_()
+    testModalPaneEscDismisses_()
 
     var total = __pass + __fail
     System.print("=== ui_popup: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -191,4 +205,32 @@ class UiPopupTest {
     check_(p.result == "abC",
            "Prompt: typed char forwarded to TextInput; Enter returns updated value")
   }
+
+  static testMenuChoiceEscReturnsNull_() {
+    var app = EscapeFakeApp.new()
+    var result = MenuUi.choice(app, "Choice", ["One", "Two"], 0)
+    check_(result == null && app.modalStack.count == 0,
+           "MenuUi.choice: Esc returns null and dismisses")
+  }
+
+  static testStandaloneChoiceEscReturnsNull_() {
+    var app = FakeApp.new()
+    var popup = StandaloneChoice.new("", ["One", "Two"])
+    popup.bounds = Rect.new(1, 1, 24, 7)
+    app.pushModal(popup)
+    var consumed = popup.handle(KeyEvent.new(Key.escape))
+    check_(consumed && popup.result == null && app.modalStack.count == 0,
+           "StandaloneChoice: Esc returns null and dismisses")
+  }
+
+  static testModalPaneEscDismisses_() {
+    var app = FakeApp.new()
+    var pane = ModalPane.new(Fn.new { app.popModal() })
+    pane.bounds = Rect.new(1, 1, 24, 7)
+    app.pushModal(pane)
+    var consumed = pane.handle(KeyEvent.new(Key.escape))
+    check_(consumed && app.modalStack.count == 0,
+           "ModalPane: Esc invokes its dismissal callback")
+  }
+
 }

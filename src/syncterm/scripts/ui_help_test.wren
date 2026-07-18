@@ -40,6 +40,8 @@ class UiHelpTest {
     testSplitLinesEmpty_()
     testSplitLinesNoTrailing_()
     testConstruction_()
+    testPreformattedUsesHardLines_()
+    testPreformattedPreservesInlineMarkup_()
     testEscDismisses_()
     testEnterDismisses_()
     testDownScrollsByOne_()
@@ -107,6 +109,25 @@ class UiHelpTest {
     var h = makeHelp_(3, 30, 8)
     check_(h.title == "Help" && h.scrollTop == 0,
            "Help: title set, scrollTop starts at 0")
+  }
+
+  static testPreformattedUsesHardLines_() {
+    var h = Help.new("Report", "  one\n\nSection\n  two\n  three")
+    h.preformatted = true
+    h.bounds = Rect.new(1, 1, 30, 8)
+    h.handle(KeyEvent.new(Key.end))
+    check_(h.preformatted && h.scrollTop == 1,
+           "Help: preformatted body preserves hard lines")
+  }
+
+  static testPreformattedPreservesInlineMarkup_() {
+    var h = Help.new("Report", "    [`√`] option")
+    h.preformatted = true
+    var runs = h.preformattedLines_()[0].runs
+    check_(runs.count == 3 && runs[0].text == "    [" &&
+           runs[1].text == "√" && runs[1].role == "help.code" &&
+           runs[2].text == "] option",
+           "Help: preformatted body keeps indentation and highlights")
   }
 
   // ----- Dismiss --------------------------------------------------

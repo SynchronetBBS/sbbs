@@ -25,7 +25,7 @@
 import "ui_widget"   for Rect
 import "ui_popup"    for Popup
 import "ui_draw"     for Painter
-import "ui_markdown" for Markdown
+import "ui_markdown" for Markdown, MdLine, MdRole
 import "syncterm"    for KeyEvent, MouseEvent, Mouse, Key, Screen
 
 class Help is Popup {
@@ -33,12 +33,22 @@ class Help is Popup {
     super(null)                 // no auto-rendered message line
     title      = titleText
     focused    = true
-    _doc       = Markdown.parse(body == null ? "" : body)
+    _body      = body == null ? "" : body
+    _doc       = Markdown.parse(_body)
     _lines     = []             // populated by ensureLayout_()
     _layoutW   = -1             // width the cached _lines were laid out at
     _scrollTop = 0
     _sbSide    = "left"         // "left" (UIFC) or "right"
     _sbSep     = true           // separator between scrollbar and content
+    _plain     = false
+  }
+
+  preformatted { _plain }
+  preformatted=(value) {
+    if (_plain == value) return
+    _plain = value
+    _layoutW = -1
+    markDirty()
   }
 
   scrollbarSide      { _sbSide }
@@ -77,9 +87,9 @@ class Help is Popup {
     var noSb   = (bounds.w - 4).max(1)             // both sides padded
     var sbOH   = _sbSep ? 2 : 1
     var withSb = (bounds.w - 3 - sbOH).max(1)      // one side padded + scrollbar
-    var lines = Markdown.layout(_doc, noSb)
+    var lines = _plain ? preformattedLines_() : Markdown.layout(_doc, noSb)
     if (lines.count > rows) {
-      lines = Markdown.layout(_doc, withSb)
+      if (!_plain) lines = Markdown.layout(_doc, withSb)
       _layoutW = withSb
     } else {
       _layoutW = noSb
@@ -87,6 +97,14 @@ class Help is Popup {
     _lines = lines
     var maxTop = (_lines.count - rows).max(0)
     if (_scrollTop > maxTop) _scrollTop = maxTop
+  }
+
+  preformattedLines_() {
+    var lines = []
+    for (line in Markdown.splitLines_(_body)) {
+      lines.add(MdLine.new(Markdown.parseInline_(line, MdRole.text)))
+    }
+    return lines
   }
 
   // Default help-dialog placement: matches UIFC.  The dialog is

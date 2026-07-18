@@ -2,7 +2,7 @@ import "syncterm" for KeyEvent, MouseEvent, Key, Mouse
 import "syncterm_menu" for Menu
 import "ui_widget" for Widget, Rect
 import "ui_draw" for Painter
-import "ui_pane" for Pane
+import "menu_ui" for ModalPane
 
 class OfflineScrollbackCanvas is Widget {
   construct new(source) {
@@ -75,12 +75,13 @@ class OfflineScrollbackView {
   static show(app) {
     var source = Menu.offlineScrollback
     if (source == null) return
-    var pane = Pane.new()
+    var dismiss = Fn.new { app.popModal() }
+    var pane = ModalPane.new(dismiss)
     pane.title = "Scrollback"
     pane.helpable = false
     pane.focused = true
     pane.bounds = app.root.bounds
-    pane.onClose = Fn.new { app.popModal() }
+    pane.onClose = dismiss
     var canvas = OfflineScrollbackCanvas.new(source)
     canvas.bounds = pane.innerBounds
     pane.add(canvas)

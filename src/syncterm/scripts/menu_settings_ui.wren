@@ -1,8 +1,10 @@
-import "syncterm" for Host
+import "syncterm" for Host, Screen
 import "syncterm_menu" for Menu, MenuEncryption, MenuFontSlot
 import "menu_ui" for MenuUi
 import "menu_bbs_editor" for BbsEditor
 import "ui_popup" for Alert, Confirm
+import "ui_help" for Help
+import "ui_widget" for Rect
 
 class SettingsMenu {
   static directoryPassword { __directoryPassword }
@@ -240,17 +242,31 @@ class SettingsMenu {
   }
 
   static buildOptions_(app) {
-    var lines = []
+    var lines = ["`SyncTERM Build Options`", ""]
     var last = null
     for (row in Menu.buildOptions) {
       if (row[0] != last) {
-        if (lines.count > 0) lines.add("")
-        lines.add(row[0])
+        if (last != null) lines.add("")
+        if (row[0] != "Terminal") lines.add(row[0])
         last = row[0]
       }
-      lines.add("  [%(row[2] ? "X" : " ")] %(row[1])")
+      var indent = "    "
+      if (row[0] == "Terminal") indent = ""
+      if (row[1] == "Xinerama" || row[1] == "XRandR" ||
+          row[1] == "XRender") indent = "        "
+      var mark = row[2] ? "[`√`]" : "[ ]"
+      lines.add("%(indent)%(mark) %(row[1])")
     }
-    MenuUi.text(app, "Build Options", lines.join("\n"))
+    var body = lines.join("\n")
+    var viewer = Help.new("Build Options", body)
+    viewer.preformatted = true
+    var size = Screen.size
+    var width = 60.min(size[0])
+    var height = 21.min(size[1])
+    var left = ((size[0] - width + 2) / 2).floor.max(1)
+    var top = ((size[1] - height + 1) / 2).floor + 1
+    viewer.bounds = Rect.new(left, top, width, height)
+    app.modal(viewer)
   }
 
   static webLists_(app) {

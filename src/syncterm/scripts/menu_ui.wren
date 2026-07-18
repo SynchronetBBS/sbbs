@@ -1,4 +1,4 @@
-import "syncterm" for Screen
+import "syncterm" for Key, KeyEvent, Screen
 import "ui_app" for App
 import "ui_widget" for Rect
 import "ui_pane" for Pane
@@ -23,6 +23,29 @@ class StandaloneChoice is Popup {
     var top = cb.y + msgRows
     var height = (bounds.y + bounds.h - 1 - top).max(1)
     _list.bounds = Rect.new(cb.x, top, cb.w, height)
+  }
+
+  handle(event) {
+    if (event is KeyEvent && event.code == Key.escape) {
+      dismissWith_(null)
+      return true
+    }
+    return super.handle(event)
+  }
+}
+
+class ModalPane is Pane {
+  construct new(onDismiss) {
+    super()
+    _onDismiss = onDismiss
+  }
+
+  handle(event) {
+    if (event is KeyEvent && event.code == Key.escape) {
+      _onDismiss.call()
+      return true
+    }
+    return super.handle(event)
   }
 }
 
@@ -114,7 +137,8 @@ class MenuUi {
   static choice(app, title, rows, current, helpText) {
     if (rows.count == 0) return null
     var result = null
-    var pane = Pane.new()
+    var cancel = Fn.new { app.popModal() }
+    var pane = ModalPane.new(cancel)
     pane.title = title
     pane.helpText = helpText
     pane.focused = true
@@ -130,7 +154,7 @@ class MenuUi {
     var h = (labels.count + 4).max(7).min(size[1] - 4)
     pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
         ((size[1] - h) / 2).floor + 1, w, h)
-    pane.onClose = Fn.new { app.popModal() }
+    pane.onClose = cancel
 
     var list = ListView.new()
     list.bounds = pane.innerBounds
