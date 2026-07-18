@@ -978,6 +978,14 @@ duplicate names without invoking the rejecting foreign setter.
 Adding a web list skips its initial fetch when no cache path is available but
 still records the configuration; explicit refresh continues to report the
 missing cache.
+Left and Right move directly between the directory and settings panes.
+Leaving the comment field by mouse, pane navigation, or application exit
+commits the accepted edit before focus moves.  The entry editor keeps its
+highlighted field while `[` and `]` move between entries.  Program Settings
+again summarizes enabled audio backends, and entry rows distinguish automatic
+terminal types, unset passwords, and nonzero communication rates.
+Web-list edits update the in-memory configuration immediately and are written
+when the Web Lists screen closes.
 
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,
@@ -3804,33 +3812,36 @@ in safe mode.
 
 `Menu.webLists` returns a fresh List of `[name, uri]` rows.  Names must
 be unique and non-empty; `System List` is reserved.  Indexes refer to
-the order shown by that returned List.
+the order shown by that returned List.  `Menu.webListsDirty` reports
+whether the in-memory list has unpersisted edits.
 
 [options="header",cols="2m,4"]
 |===
 | Method | Description
 
 | `addWebList(name, uri, index)`
-| Fetch the URI into the web-list cache, insert the entry, and persist
-  the `WebLists` INI section.  Returns `null` on success or an error
-  String.  Persistence failure rolls the in-memory insertion back.
+| Fetch the URI into the web-list cache and insert the in-memory entry.
+  Returns `null` on success or an error String.
 
 | `updateWebList(index, uri)`
-| Change and persist an entry's URI.  Returns Bool and restores the old
-  URI if persistence fails.  It does not refresh the cached list.
+| Change an in-memory entry's URI.  Returns Bool.  It does not refresh
+  the cached list.
 
 | `deleteWebList(index)`
-| Remove and persist an entry.  Returns Bool and restores the entry at
-  its original index if persistence fails.
+| Remove an in-memory entry.  Returns Bool.
+
+| `saveWebLists()`
+| Persist the in-memory entries to the `WebLists` INI section.  Returns
+  Bool.  A failed write leaves `webListsDirty` set so it can be retried.
 
 | `refreshWebList(index)`
 | Fetch the current URI into the cache without changing configuration.
   Returns `null` on success or an error String.
 |===
 
-Add, update, and delete are disabled in safe mode before any fetch or
-in-memory mutation.  Refresh remains a read/fetch operation and is
-permitted.  No web-list method exposes its cache pathname as a file
+Add, update, delete, and save are disabled in safe mode before any fetch,
+in-memory mutation, or write.  Refresh remains a read/fetch operation and
+is permitted.  No web-list method exposes its cache pathname as a file
 capability.
 
 === Menu Custom Fonts [[menu-custom-fonts]]

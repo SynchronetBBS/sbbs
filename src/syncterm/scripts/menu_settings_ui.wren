@@ -110,6 +110,14 @@ class SettingsMenu {
 
   static yesNo_(value) { value ? "Yes" : "No" }
 
+  static audioSummary_(s) {
+    var names = []
+    for (row in Menu.audioModes) {
+      if ((s.audioModes & row[0]) != 0) names.add(row[1])
+    }
+    return names.count == 0 ? "<None>" : names.join(", ")
+  }
+
   static helpItem_(term, description) {
     return "%(term)\n:  %(description)\n"
   }
@@ -354,7 +362,7 @@ class SettingsMenu {
       rows.add([3, settingsLine_("Startup Screen Mode", Menu.screenModes[s.startupMode])])
       rows.add([4, settingsLine_("Video Output Mode", MenuUi.rowName(Menu.outputModes, s.outputMode))])
       rows.add([5, settingsLine_("Default Cursor Style", Menu.cursorStyles[s.cursorStyle])])
-      rows.add([6, "Audio Output Mode"])
+      rows.add([6, settingsLine_("Audio Output Mode", audioSummary_(s))])
       rows.add([7, settingsLine_("Scrollback Buffer Lines", s.scrollbackLines)])
       rows.add([8, settingsLine_("Modem/Comm Device", s.modemDevice)])
       var rate = s.modemRate == 0 ? "Current" : "%(s.modemRate)bps"
@@ -620,7 +628,13 @@ class SettingsMenu {
       commands[Key.delete] = ["delete", false]
       var picked = MenuUi.commandChoice(app, "Web Lists", rows, selected,
           webListsHelp_(), commands)
-      if (picked == null) return changed
+      if (picked == null) {
+        if (Menu.webListsDirty && !Menu.saveWebLists()) {
+          Alert.show(app, "Web Lists",
+              "The web-list configuration could not be saved.")
+        }
+        return changed
+      }
       var command = picked[0]
       var index = picked[1]
       selected = index

@@ -134,15 +134,20 @@ class BbsEditor {
   }
 
   static editNavigable(app, bbs, isDefaults, isNew) {
-    var editor = build_(app, bbs, isDefaults, false)
+    return editNavigable(app, bbs, isDefaults, isNew, 0)
+  }
+
+  static editNavigable(app, bbs, isDefaults, isNew, selected) {
+    var editor = build_(app, bbs, isDefaults, false, selected)
     app.modal(editor[0])
     var saved = finish_(editor[1], bbs, isNew)
-    return [saved, saved ? editor[1]["navigate"] : 0]
+    return [saved, saved ? editor[1]["navigate"] : 0,
+        editor[1]["selected"]]
   }
 
   static editStandalone(bbs, isDefaults, isNew) {
     var app = App.new()
-    var editor = build_(app, bbs, isDefaults, true)
+    var editor = build_(app, bbs, isDefaults, true, 0)
     app.pushModal(editor[0])
     app.runSync()
     return finish_(editor[1], bbs, isNew)
@@ -153,9 +158,10 @@ class BbsEditor {
     return state["saved"]
   }
 
-  static build_(app, bbs, isDefaults, standalone) {
+  static build_(app, bbs, isDefaults, standalone, initialSelected) {
     var draft = draft_(bbs)
-    var state = {"saved": false, "navigate": 0}
+    var state = {"saved": false, "navigate": 0,
+        "selected": initialSelected}
     var pane = EditorPane.new()
     pane.title = "Edit Directory Entry"
     if (isDefaults) pane.title = "Default Connection Settings"
@@ -178,12 +184,14 @@ class BbsEditor {
 
     var list = ListView.new()
     list.bounds = pane.innerBounds
+    list.onChange = Fn.new {|index, item|
+      if (index != null) state["selected"] = index
+    }
     pane.add(list)
 
     var rebuild = null
     rebuild = Fn.new {
-      var selected = list.selected
-      if (selected == null) selected = 0
+      var selected = state["selected"]
       var rows = rows_(app, bbs, draft, isDefaults)
       pane.helpText = editorHelp_(draft, isDefaults)
       list.items = rows.map {|row| row[0] }.toList
@@ -275,7 +283,9 @@ class BbsEditor {
   }
 
   static textRow_(app, d, key, label, maxLen, masked) {
-    return row_(label, masked && d[key].count > 0 ? "********" : d[key],
+    var shown = d[key]
+    if (masked) shown = shown.count > 0 ? "********" : "<none>"
+    return row_(label, shown,
         Fn.new {
       var value = MenuUi.prompt(app, label, label, d[key], maxLen, masked,
           fieldHelp_(key, d))
@@ -544,7 +554,7 @@ class BbsEditor {
         "## Serial Connections\n\nSelect the DTE rate for the port."
   }
 
-  static rateName_(rate) { rate == 0 ? "Current" : rate.toString }
+  static rateName_(rate) { rate == 0 ? "Current" : "%(rate)bps" }
 
   static rateSelection_(rates, current) {
     for (row in rates) {
@@ -902,7 +912,13 @@ class BbsEditor {
     if (ssh_(d["connType"]) || telnet_(d["connType"]) ||
         d["connType"] == 1 || d["connType"] == 2 ||
         d["connType"] == 10) {
-      rows.add(textRow_(app, d, "termName", "Terminal Type", 31, false))
+      rows.add(row_("Terminal Type",
+          d["termName"].count == 0 ? "<Automatic>" : d["termName"],
+          Fn.new {
+        var value = MenuUi.prompt(app, "Terminal Type", "Terminal Type",
+            d["termName"], 31, false, terminalTypeHelp_())
+        if (value != null) d["termName"] = value
+      }))
     }
     rows.add(boolRow_(d, "lfExpand", "LF Expand"))
     var fontChoices = Menu.fontsCatalog.map {|row| [row[1], row[1]] }.toList

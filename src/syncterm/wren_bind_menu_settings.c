@@ -719,6 +719,8 @@ web_list_count(void)
 	return count;
 }
 
+static bool web_lists_dirty;
+
 static char *
 fetch_web_list_at(const char *cache, const char *name, const char *uri)
 {
@@ -805,6 +807,12 @@ fn_Menu_webLists(WrenVM *vm)
 }
 
 static void
+fn_Menu_webListsDirty(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, web_lists_dirty);
+}
+
+static void
 fn_Menu_addWebList(WrenVM *vm)
 {
 	char name[INI_MAX_VALUE_LEN + 1];
@@ -839,11 +847,7 @@ fn_Menu_addWebList(WrenVM *vm)
 		wrenSetSlotString(vm, 0, "Unable to allocate the web-list entry");
 		return;
 	}
-	if (!save_webgets()) {
-		remove_web_list((size_t)index, true);
-		wrenSetSlotString(vm, 0, "Unable to save syncterm.ini");
-		return;
-	}
+	web_lists_dirty = true;
 	wrenSetSlotNull(vm, 0);
 }
 
@@ -860,20 +864,18 @@ fn_Menu_updateWebList(WrenVM *vm)
 	if (count == 0 || !slot_integer(vm, 1, 0, count - 1, &index) ||
 	    !slot_string(vm, 2, uri, sizeof(uri)))
 		return;
+	if (strcmp(settings.webgets[index]->value, uri) == 0) {
+		wrenSetSlotBool(vm, 0, true);
+		return;
+	}
 	char *replacement = strdup(uri);
 	if (replacement == NULL) {
 		wrenSetSlotBool(vm, 0, false);
 		return;
 	}
-	char *old = settings.webgets[index]->value;
+	free(settings.webgets[index]->value);
 	settings.webgets[index]->value = replacement;
-	if (!save_webgets()) {
-		settings.webgets[index]->value = old;
-		free(replacement);
-		wrenSetSlotBool(vm, 0, false);
-		return;
-	}
-	free(old);
+	web_lists_dirty = true;
 	wrenSetSlotBool(vm, 0, true);
 }
 
@@ -888,20 +890,22 @@ fn_Menu_deleteWebList(WrenVM *vm)
 	}
 	if (count == 0 || !slot_integer(vm, 1, 0, count - 1, &index))
 		return;
-	named_string_t *entry = settings.webgets[index];
-	memmove(&settings.webgets[index], &settings.webgets[index + 1],
-	    (count - index) * sizeof(*settings.webgets));
-	if (!save_webgets()) {
-		memmove(&settings.webgets[index + 1], &settings.webgets[index],
-		    (count - index) * sizeof(*settings.webgets));
-		settings.webgets[index] = entry;
-		wrenSetSlotBool(vm, 0, false);
+	remove_web_list((size_t)index, true);
+	web_lists_dirty = true;
+	wrenSetSlotBool(vm, 0, true);
+}
+
+static void
+fn_Menu_saveWebLists(WrenVM *vm)
+{
+	if (!web_lists_dirty) {
+		wrenSetSlotBool(vm, 0, true);
 		return;
 	}
-	free(entry->name);
-	free(entry->value);
-	free(entry);
-	wrenSetSlotBool(vm, 0, true);
+	bool success = save_webgets();
+	if (success)
+		web_lists_dirty = false;
+	wrenSetSlotBool(vm, 0, success);
 }
 
 static void
@@ -952,9 +956,11 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "encryptionName", fn_Menu_encryptionName },
 	{ "Menu", true, "setEncryption(_,_,_)", fn_Menu_setEncryption },
 	{ "Menu", true, "webLists", fn_Menu_webLists },
+	{ "Menu", true, "webListsDirty", fn_Menu_webListsDirty },
 	{ "Menu", true, "addWebList(_,_,_)", fn_Menu_addWebList },
 	{ "Menu", true, "updateWebList(_,_)", fn_Menu_updateWebList },
 	{ "Menu", true, "deleteWebList(_)", fn_Menu_deleteWebList },
+	{ "Menu", true, "saveWebLists()", fn_Menu_saveWebLists },
 	{ "Menu", true, "refreshWebList(_)", fn_Menu_refreshWebList },
 	{ "Settings", false, "dirty", fn_Settings_dirty },
 	{ "Settings", false, "apply()", fn_Settings_apply },

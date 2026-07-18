@@ -79,6 +79,8 @@ class ClassicFooter is Container {
     markDirty()
   }
 
+  value { _input.value }
+
   copied=(value) {
     _copied = value
     markDirty()
@@ -162,12 +164,13 @@ class MainPane is Pane {
 }
 
 class MainList is ListView {
-  construct new(onFocus, onCycle, onComment, commentKey) {
+  construct new(onFocus, onCycle, onComment, commentKey, onSwitchPane) {
     super()
     _onFocus = onFocus
     _onCycle = onCycle
     _onComment = onComment
     _commentKey = commentKey
+    _onSwitchPane = onSwitchPane
   }
 
   handle(event) {
@@ -178,6 +181,11 @@ class MainList is ListView {
     if (_onComment != null && event is KeyEvent &&
         event.code == _commentKey) {
       _onComment.call()
+      return true
+    }
+    if (_onSwitchPane != null && event is KeyEvent &&
+        (event.code == Key.left || event.code == Key.right)) {
+      _onSwitchPane.call()
       return true
     }
     if (_onCycle != null && event is KeyEvent &&
@@ -219,7 +227,8 @@ class MainMenuApp {
 
     _list = MainList.new(Fn.new { focusDirectory_() },
         Fn.new {|delta| cycleSort_(delta) },
-        Fn.new { focusComment_(1) }, Key.tab)
+        Fn.new { focusComment_(1) }, Key.tab,
+        Fn.new { focusSettings_() })
     _list.onChange = Fn.new {|index, item|
       _selected = index != null && index >= 0 &&
           index < _entries.count ? _entries[index] : null
@@ -249,7 +258,8 @@ class MainMenuApp {
     _app.root.add(_settings)
 
     _settingsList = MainList.new(Fn.new { focusSettings_() }, null,
-        Fn.new { focusComment_(-1) }, Key.backTab)
+        Fn.new { focusComment_(-1) }, Key.backTab,
+        Fn.new { focusDirectory_() })
     var settingLabels = []
     for (row in _settingRows) settingLabels.add(row[1])
     _settingsList.items = settingLabels
@@ -307,11 +317,11 @@ class MainMenuApp {
         "Ctrl-S\n:  Manage sort profiles\n" +
         "< / >\n:  Cycle through sort profiles\n" +
         "Tab\n:  Edit the selected comment, then move to settings"
-    if (_connected) {
-      return text
+    if (!_connected) {
+      text = text + "\nCtrl-D\n:  Quick-connect to an address or URL\n" +
+          "Alt-B\n:  View the scrollback from the last session"
     }
-    return text + "\nCtrl-D\n:  Quick-connect to an address or URL\n" +
-        "Alt-B\n:  View the scrollback from the last session\n\n" +
+    return text + "\n\n" +
         "## Window Keys\n\n" +
         "Alt-Left / Alt-Right\n:  Snap to the next smaller or larger width\n" +
         "Alt-Enter\n:  Toggle full-screen mode when available\n\n" +
@@ -321,6 +331,10 @@ class MainMenuApp {
   }
 
   focusDirectory_() {
+    if (_app.root.focusedChild == _footer) {
+      finishComment_(_footer.value, 0)
+      return
+    }
     _app.root.focusedIndex = 1
   }
 
@@ -338,6 +352,10 @@ class MainMenuApp {
   }
 
   focusSettings_() {
+    if (_app.root.focusedChild == _footer) {
+      finishComment_(_footer.value, 1)
+      return
+    }
     _app.root.focusedIndex = 3
   }
 
@@ -438,10 +456,12 @@ class MainMenuApp {
     var current = first
     var currentIsNew = isNew
     var finalName = first.name
+    var selected = 0
     while (current != null) {
       var result = BbsEditor.editNavigable(_app, current, false,
-          currentIsNew)
+          currentIsNew, selected)
       if (!result[0]) return finalName
+      selected = result[2]
       finalName = current.name
       Menu.sort()
       if (result[1] == 0) return finalName
@@ -507,9 +527,9 @@ class MainMenuApp {
       }
     }
     if (destination > 0) {
-      focusSettings_()
+      _app.root.focusedIndex = 3
     } else {
-      focusDirectory_()
+      _app.root.focusedIndex = 1
     }
   }
 
@@ -702,7 +722,7 @@ class MainMenuApp {
 
   cycleSort_(delta) {
     var profiles = Menu.sortProfiles
-    if (profiles.count == 0) return
+    if (profiles.count < 2) return
     var next = (Menu.activeSortProfile + delta) % profiles.count
     if (next < 0) next = next + profiles.count
     var preferred = _selected == null ? null : _selected.name
@@ -716,6 +736,9 @@ class MainMenuApp {
   }
 
   exit_(quitApplication) {
+    if (_app.root.focusedChild == _footer) {
+      finishComment_(_footer.value, 0)
+    }
     if (_connected && !quitApplication) {
       while (_app.modalStack.count > 0) _app.popModal()
       _app.quit()

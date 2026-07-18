@@ -91,9 +91,11 @@ class Menu {
   // Web-list rows are [name, URI].  Add/refresh return null on success
   // or an error String; update/delete return Bool.
   foreign static webLists
+  foreign static webListsDirty
   foreign static addWebList(name, uri, index)
   foreign static updateWebList(index, uri)
   foreign static deleteWebList(index)
+  foreign static saveWebLists()
   foreign static refreshWebList(index)
   // Configured custom fonts are C-owned.  Structural changes invalidate
   // existing MenuFont handles; saveFonts() persists and reloads slots.
