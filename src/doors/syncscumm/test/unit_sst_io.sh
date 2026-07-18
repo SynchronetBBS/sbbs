@@ -38,6 +38,15 @@ cc -o /tmp/test_sst_io $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_IN
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_io
 
+# The SGR mouse coordinate mapper (M3) needs the SST_TEST seams compiled in
+# (sst_io_test_set_geom()/sst_io_test_mouse_report()), which the shipped door
+# never defines -- its own binary, and a fresh session like the others above.
+cc -o /tmp/test_sst_mouse $JXL_DEFINE -DSST_TEST -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_mouse.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_mouse
+
 # The non-graphics-terminal gate needs a fresh sst_io session (file-static
 # state, no reset), so it's its own binary rather than another case above.
 cc -o /tmp/test_sst_io_nogfx $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \

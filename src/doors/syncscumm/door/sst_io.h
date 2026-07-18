@@ -164,6 +164,34 @@ void sst_io_audio_stop(void);
  * frame per call (no pacing/dedupe), capped at 200 frames. */
 void sst_io_present(const uint8_t *idx, const uint8_t *pal768);
 
+/* ---- input events (M3: mouse only; keyboard is a later task) ----
+ * sst_io_pump()'s parser turns an SGR mouse report (csi_final()'s 'M'/'m'
+ * cases) into one or more of these and queues them here; the ScummVM
+ * backend's pollEvent() (Task 4) drains them via sst_io_next_event(). */
+typedef enum {
+	SST_EV_MOUSE_MOVE, SST_EV_MOUSE_DOWN, SST_EV_MOUSE_UP,
+	SST_EV_WHEEL, SST_EV_KEY_DOWN, SST_EV_KEY_UP
+} sst_ev_type_t;
+
+/* Modifier bitmask (key events). */
+#define SST_MOD_SHIFT 1
+#define SST_MOD_ALT   2
+#define SST_MOD_CTRL  4
+
+typedef struct {
+	sst_ev_type_t type;
+	int x, y;        /* mouse: game coords, 0..SST_FB_W/H-1 */
+	int button;      /* MOUSE_DOWN/UP: 0 left 1 middle 2 right */
+	int wheel;       /* WHEEL: -1 up, +1 down */
+	int keycode;     /* KEY_*: an SST_KEY_* code (Task 5) or a raw ASCII byte */
+	int ascii;       /* KEY_*: printable char, else 0 */
+	int mods;        /* KEY_*: SST_MOD_* bitmask */
+} sst_input_event_t;
+
+/* Pop the next queued input event. Returns 1 and fills *ev, or 0 if empty.
+ * Drained by the ScummVM backend's pollEvent(). */
+int sst_io_next_event(sst_input_event_t *ev);
+
 /* Frames whose staged bytes were dropped because out_put()'s 256KB stage
  * buffer stayed full after a flush attempt (dead-peer backpressure, not a
  * hard error) -- see sst_io.c's out_put(). Test-introspection / stats. */

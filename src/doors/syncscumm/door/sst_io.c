@@ -26,6 +26,11 @@
 #include "sixel.h"
 #include "jxl.h"
 #include "apc.h"
+/* SGR mouse: enable/restore strings, the DECRPM latch, and the report
+ * classifier (termgfx_sgr_kind_t) -- shared with syncconquer/syncduke/
+ * syncdoom. This file owns the coordinate mapping (sst_mouse_report(),
+ * below); mouse.h only knows the wire protocol. */
+#include "mouse.h"
 /* termgfx_audio_query/_opus_query + their reply parsers: the M4 audio
  * capability probe (audio_scan_feed(), below). No PCM is staged here -- the
  * streaming feed is its own module; this file only asks the question and
@@ -116,6 +121,14 @@ static int g_is_xterm;
 static int g_term_rows, g_term_cols;   /* from the 999;999 CPR (real grid size) */
 static int g_cell_w, g_cell_h;         /* from ESC[16t (real cell pixels), 0=unknown */
 static FILE *g_capture;                  /* SYNCSCUMM_SIXELOUT mode */
+
+/* SGR-Pixels (DEC 1016) latch: 0 = report coords are 1-based text CELLS
+ * (the common case), 1 = 1-based canvas PIXELS -- confirmed by the DECRPM
+ * reply (csi_final()'s 'y' case) or auto-detected the moment a report's
+ * coordinate exceeds the text grid (sst_mouse_report(), below). Session-wide,
+ * never reset once latched -- termgfx_mouse_note_pixel_report()'s own
+ * contract. */
+static termgfx_mouse_t g_mouse;
 
 /* Raw PRE-ENCODE mixer PCM tap: sst_io_audio_stream() appends exactly the
  * interleaved stereo S16 frames ScummVM's mixer handed us, at SST_AUDIO_RATE,
@@ -639,6 +652,13 @@ static void sst_pace_ack(void);
 static void  sst_audio_underrun(int ch);
 static float sst_audio_volume_step(float delta_db);   /* + / - live volume; impl by g_stream */
 
+/* SGR mouse report -> game-coordinate input event(s) (defined with the rest
+ * of the present-path geometry state, below, since it maps through
+ * sst_image_rect() -- the same fit+center rect sst_io_present() draws the
+ * frame in). csi_final()'s 'M'/'m' cases (parser, above sst_tier()) call
+ * this as soon as a report's three params are parsed. */
+static void sst_mouse_report(int b, int col, int row, int release);
+
 #define SST_AUDIO_VOLUME_PCT 50    /* default channel level, percent (-> dB via
                                     * termgfx_db_from_pct); 50 = -6 dB, trimmed
                                     * so BASS sits with the other doors */
@@ -750,6 +770,17 @@ static void csi_final(char fin)
 				}
 			}
 			return;
+		case 'M': case 'm': {            /* xterm SGR mouse: ESC[<b;col;row M/m */
+			int q[3];
+			if (csi_params(q, 3) >= 3)
+				sst_mouse_report(q[0], q[1], q[2], fin == 'm');
+			return;
+		}
+		case 'y': {                      /* DECRPM: ESC[?1016;Ps$y */
+			np = csi_params(p, 4);
+			termgfx_mouse_on_decrpm(&g_mouse, p, np);
+			return;
+		}
 		default:
 			return;
 	}
@@ -1161,6 +1192,13 @@ int sst_io_init(int argc, char **argv)
 	out_puts(termgfx_term_probe);
 	out_puts("\x1b[c\x1b[<c");
 	out_puts(termgfx_query_jxl);
+	/* SGR mouse: motion tracking (1003) + SGR encoding (1006) + SGR-Pixels
+	 * (1016), the last also DECRQM-probed so csi_final()'s 'y' case can latch
+	 * per-pixel precision the moment the reply lands rather than waiting on
+	 * sst_mouse_report()'s past-the-grid auto-detect (termgfx_mouse_enable
+	 * itself sends the DECRQM query). Nothing here gates present() the way
+	 * DA1/JXL do -- a terminal that ignores it just never sends reports. */
+	out_puts(termgfx_mouse_enable);
 	/* Audio caps (SyncTERM:Q;libsndfile). Tail of the burst: nothing gates
 	 * on its absence, and the XTVERSION-before-canvas invariant above
 	 * constrains only those two. The Opus query is NOT sent here -- it is
@@ -1203,6 +1241,10 @@ void sst_io_shutdown(void)
 		fclose(g_capture);
 		g_capture = NULL;
 	} else {
+		/* Undo the mouse tracking modes negotiated at entry, before handing
+		 * the terminal back to the BBS prompt -- it never asked to be left in
+		 * SGR/SGR-Pixels motion-reporting mode. */
+		out_puts(termgfx_mouse_restore);
 		/* Restore the status line hidden at entry (door_io.c:1233-1238 pattern):
 		 * the captured pre-door DECSSDT type, or the usual indicator default
 		 * (type 1) if the DECRQSS reply never came back. */
@@ -2578,6 +2620,218 @@ static void sst_stats_draw(void)
 	out_put(buf, (size_t)off);
 }
 
+/* --- input event FIFO (M3: mouse only) -------------------------------------
+ * Fixed-capacity ring, drop-oldest on overflow: a stuck/never-polled backend
+ * must not grow this without bound, and input latency from dropping a stale
+ * event beats unbounded memory. 64 is far more than one report burst can
+ * produce (at most 2 events -- a MOVE plus a DOWN/UP/WHEEL -- per report),
+ * so overflow is not expected in practice. */
+#define SST_EVQ_CAP 64
+static sst_input_event_t g_evq[SST_EVQ_CAP];
+static int               g_evq_head;   /* index of the oldest queued event */
+static int               g_evq_n;      /* queued events */
+
+static void sst_push_event(const sst_input_event_t *ev)
+{
+	int slot;
+
+	if (g_evq_n == SST_EVQ_CAP) {
+		g_evq_head = (g_evq_head + 1) % SST_EVQ_CAP;   /* drop the oldest */
+		g_evq_n--;
+	}
+	slot = (g_evq_head + g_evq_n) % SST_EVQ_CAP;
+	g_evq[slot] = *ev;
+	g_evq_n++;
+}
+
+int sst_io_next_event(sst_input_event_t *ev)
+{
+	if (g_evq_n == 0)
+		return 0;
+	*ev = g_evq[g_evq_head];
+	g_evq_head = (g_evq_head + 1) % SST_EVQ_CAP;
+	g_evq_n--;
+	return 1;
+}
+
+/* --- SGR mouse: report coords -> SST_FB_W x SST_FB_H game coords ----------
+ * Ported from syncconquer/door/door_input.c:305-417 (mouse_event), with two
+ * differences: this door has only ONE coordinate space to map into (the
+ * fixed 320x200 game surface -- no separate GUI-overlay space to switch
+ * between), and there is no legacy modifier-synthesis-on-click block --
+ * ScummVM reads discrete button-down/up events, not a held-modifier poll, so
+ * a click never needs to bracket synthetic Shift/Alt/Ctrl taps around it;
+ * keyboard modifiers arrive as their own key events (Task 5).
+ *
+ * sst_image_rect(), below, is the SAME fit+center math sst_io_present() uses
+ * to place the frame, so a report always maps against the rect the terminal
+ * is actually looking at (sixel's reserved bottom row included) rather than
+ * a second, potentially-stale idea of where the image is. */
+
+/* Fit the SST_FB_W x SST_FB_H frame into the terminal's canvas and center it
+ * -- extracted from sst_io_present()'s pre-M3 inline "Fit + center" block
+ * (same logic, unchanged) so BOTH present() and sst_mouse_report() key off
+ * one computation instead of two that could drift apart. Pixel-space only:
+ * dx and dy (output via the pointers) give the offset of the image's
+ * top-left corner within the canvas (the SIXEL tier's text-cell CUP origin
+ * is a cheap re-derivation of this in present(), below -- col/row and dx/dy
+ * are independent outputs of the same center call, so recovering one from
+ * the other is exact).
+ *
+ * The SIXEL tier reserves the LAST text row and positions on the terminal's
+ * REAL cell grid; the JXL tier keeps the full canvas. Why the sixel tier
+ * differs: a sixel is drawn at the text cursor, and one drawn into the
+ * bottom row scrolls the page on a ?80l terminal -- seen as the picture
+ * bouncing when a scene repaints. And the cell is often shorter than the
+ * hardcoded 16px (foot ~13), which both mis-sized any reserve and mis-placed
+ * the cell origin. So use the real cell height (ESC[16t, else the canvas /
+ * 999;999-CPR grid) to reserve exactly one row and to center on a fractional
+ * cell. JXL is pixel-addressed and does not scroll at the cursor, so it
+ * always uses the full canvas. */
+static void sst_image_rect(int *ew, int *eh, int *dx, int *dy)
+{
+	int tier  = sst_tier();
+	int cellh = g_cell_h > 0 ? g_cell_h
+	          : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 16);
+	int fit_h = g_canvas_h;
+
+	if (tier == SST_TIER_SIXEL && g_term_rows > 0 && g_canvas_h > cellh)
+		fit_h = g_canvas_h - cellh;   /* keep the image off the last row */
+
+	termgfx_geom_fit(g_canvas_w, fit_h, SST_FB_W, SST_FB_H, SST_SCALE_MAX, ew, eh);
+	/* Effective sixel ceiling -- SIXEL tier only (see g_gfx_max_w's doc
+	 * comment, above, for the full precedence rationale). JXL/APC frames
+	 * aren't subject to xterm's declared-raster discard (a different wire
+	 * format entirely), and the terminals that reach the JXL tier are
+	 * SyncTERM/CTerm builds that already answered DA1/CTDA, not a silent
+	 * xterm. */
+	if (tier == SST_TIER_SIXEL) {
+		int gmax_w, gmax_h;
+
+		if (g_sixel_max_override > 0) {
+			gmax_w = gmax_h = g_sixel_max_override;      /* 1. sysop override */
+		} else if (g_gfx_max_w > 0 && g_gfx_max_h > 0) {
+			gmax_w = g_gfx_max_w;                         /* 2. XTSMGRAPHICS reply */
+			gmax_h = g_gfx_max_h;
+		} else if (g_canvas_exact && !g_is_xterm) {
+			gmax_w = g_canvas_w;                          /* 3. trusted exact canvas */
+			gmax_h = g_canvas_h;
+		} else {
+			gmax_w = gmax_h = TERMGFX_SIXEL_SAFE_MAX;      /* 4. xterm's assumed ceiling */
+		}
+		termgfx_geom_gfx_clamp(gmax_w, gmax_h, ew, eh);
+	}
+
+	if (tier == SST_TIER_SIXEL && g_term_rows > 0) {
+		double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
+		double chd = (double)g_canvas_h / g_term_rows;
+		int    icol, irow;   /* unused here -- present() re-derives them from dx/dy */
+
+		termgfx_geom_center_ex(g_canvas_w, fit_h, *ew, *eh, cw, chd, dx, dy, &icol, &irow);
+	} else {
+		int icol, irow;
+
+		termgfx_geom_center(g_canvas_w, g_canvas_h, *ew, *eh, 8, 16, dx, dy, &icol, &irow);
+	}
+}
+
+static void sst_mouse_report(int b, int col, int row, int release)
+{
+	int                     ew = 0, eh = 0, dx = 0, dy = 0, cw, ch, px, py, gx, gy;
+	termgfx_mouse_report_t  rep;
+	sst_input_event_t       ev;
+
+	/* Auto-detect SGR-Pixels: a reported coord past the text grid proves the
+	 * terminal is sending PIXELS (mode 1016 live) even if the DECRQM
+	 * handshake never confirmed it -- some terminals honor ?1016h but don't
+	 * answer ?1016$p. Cell coords never exceed the grid, so this can't
+	 * false-trigger on a genuinely cell-granular terminal. */
+	if (!termgfx_mouse_pixels(&g_mouse)
+	    && ((g_term_cols > 0 && col > g_term_cols) || (g_term_rows > 0 && row > g_term_rows)))
+		termgfx_mouse_note_pixel_report(&g_mouse);
+
+	sst_image_rect(&ew, &eh, &dx, &dy);
+	cw = g_cell_w > 0 ? g_cell_w : 8;
+	ch = g_cell_h > 0 ? g_cell_h : 16;
+	if (ew <= 0)
+		ew = SST_FB_W;
+	if (eh <= 0)
+		eh = SST_FB_H;
+
+	/* Under SGR-Pixels the report already carries 1-based canvas pixels --
+	 * use them directly. Otherwise SGR reports a 1-based text CELL: convert
+	 * to that cell's centre in the terminal's own canvas pixels. Either way
+	 * px/py end up in canvas pixels; clamp to the displayed-image rect, then
+	 * rescale into game (SST_FB_W x SST_FB_H) coords. */
+	if (termgfx_mouse_pixels(&g_mouse)) {
+		px = col - 1;
+		py = row - 1;
+	} else {
+		px = (col - 1) * cw + cw / 2;
+		py = (row - 1) * ch + ch / 2;
+		/* A cell-granular terminal can only place the cursor at cell
+		 * CENTRES, which sit cw/2 or ch/2 px short of the far canvas edge --
+		 * snap the LAST row/col to the image-rect edge so it's reachable.
+		 * Don't snap the FIRST row/col: their centre already sits near the
+		 * top/left edge. */
+		if (g_term_cols > 0 && col >= g_term_cols)
+			px = dx + ew - 1;
+		if (g_term_rows > 0 && row >= g_term_rows)
+			py = dy + eh - 1;
+	}
+	if (px < dx)
+		px = dx;
+	if (px >= dx + ew)
+		px = dx + ew - 1;
+	if (py < dy)
+		py = dy;
+	if (py >= dy + eh)
+		py = dy + eh - 1;
+
+	gx = (px - dx) * SST_FB_W / ew;
+	gy = (py - dy) * SST_FB_H / eh;
+	if (gx < 0)
+		gx = 0;
+	if (gx >= SST_FB_W)
+		gx = SST_FB_W - 1;
+	if (gy < 0)
+		gy = 0;
+	if (gy >= SST_FB_H)
+		gy = SST_FB_H - 1;
+
+	/* Emit order: always a MOVE (position), then a DOWN/UP for a button
+	 * (release -> UP) or a WHEEL for a notch. A plain motion report queues
+	 * just the MOVE. */
+	memset(&ev, 0, sizeof ev);
+	ev.type = SST_EV_MOUSE_MOVE;
+	ev.x    = gx;
+	ev.y    = gy;
+	sst_push_event(&ev);
+
+	termgfx_mouse_report(&g_mouse, b, col, row, release, &rep);
+	switch (rep.kind) {
+		case TERMGFX_SGR_BUTTON:
+			memset(&ev, 0, sizeof ev);
+			ev.type   = release ? SST_EV_MOUSE_UP : SST_EV_MOUSE_DOWN;
+			ev.x      = gx;
+			ev.y      = gy;
+			ev.button = rep.button;
+			sst_push_event(&ev);
+			break;
+		case TERMGFX_SGR_WHEEL:
+			memset(&ev, 0, sizeof ev);
+			ev.type  = SST_EV_WHEEL;
+			ev.x     = gx;
+			ev.y     = gy;
+			ev.wheel = rep.wheel;
+			sst_push_event(&ev);
+			break;
+		case TERMGFX_SGR_MOVE:
+		default:
+			break;   /* motion-only: the MOVE above already covers it */
+	}
+}
+
 /* --- piece 9: sst_io_present() ties 1-8 together (door_io.c:2707+
  * door_io_present() shape). ------------------------------------------------*/
 static uint8_t g_last_fb[SST_FB_W * SST_FB_H];
@@ -2779,69 +3033,44 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 
 	tier = sst_tier();
 
-	/* Fit + center. The SIXEL tier reserves the LAST text row and positions on
-	 * the terminal's REAL cell grid; the JXL tier keeps the full canvas and the
-	 * pixel-offset (DX/DY) placement SyncTERM was validated with.
-	 *
-	 * Why the sixel tier differs: a sixel is drawn at the text cursor, and one
-	 * drawn into the bottom row scrolls the page on a ?80l terminal -- seen as
-	 * the picture bouncing when a scene repaints. And the cell is often shorter
-	 * than the hardcoded 16px (foot ~13), which both mis-sized any reserve and
-	 * mis-placed the cell origin. So use the real cell height (ESC[16t, else the
-	 * canvas / 999;999-CPR grid) to reserve exactly one row and to center on a
-	 * fractional cell. JXL is pixel-addressed and does not scroll at the cursor,
-	 * so it is left exactly as before.
+	/* Fit + center, via sst_image_rect() -- the SAME helper the SGR mouse
+	 * mapper (sst_mouse_report(), above) calls, so a report always maps
+	 * against the exact rect the frame below is drawn in. See that helper's
+	 * doc comment for the sixel-vs-JXL placement rationale (reserved bottom
+	 * row, pixel-offset vs text-cell origin); this block only turns its
+	 * pixel-space dx/dy back into icol/irow for the sixel CUP.
 	 *
 	 * Computed BEFORE geom_changed/dedupe below (not after, as originally):
-	 * the gfx-ceiling clamp just below can shrink ew/eh on its own, with the
-	 * canvas itself unchanged, whenever a late XTSMGRAPHICS reply lands after
-	 * the first frame already went out -- geom_changed has to see THAT, or a
-	 * static scene would dedupe/dirty-diff against a last-sent frame that was
-	 * emitted at the old, unclamped size. */
+	 * the gfx-ceiling clamp inside sst_image_rect() can shrink ew/eh on its
+	 * own, with the canvas itself unchanged, whenever a late XTSMGRAPHICS
+	 * reply lands after the first frame already went out -- geom_changed has
+	 * to see THAT, or a static scene would dedupe/dirty-diff against a
+	 * last-sent frame that was emitted at the old, unclamped size. */
 	{
 		int cellh = g_cell_h > 0 ? g_cell_h
 		          : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 16);
-		int fit_h = g_canvas_h;
+		int rdx, rdy;   /* pixel offset from sst_image_rect(); rdx/cw, rdy/chd
+		                 * below recovers the SAME icol/irow
+		                 * termgfx_geom_center_ex()/_center() computed inline
+		                 * here before the extraction -- col/row and dx/dy are
+		                 * independent outputs of that math, so re-deriving one
+		                 * from the other is exact, not an approximation. */
 
-		if (tier == SST_TIER_SIXEL && g_term_rows > 0 && g_canvas_h > cellh)
-			fit_h = g_canvas_h - cellh;   /* keep the image off the last row */
-
-		termgfx_geom_fit(g_canvas_w, fit_h, SST_FB_W, SST_FB_H, SST_SCALE_MAX, &ew, &eh);
-		/* Effective sixel ceiling -- SIXEL tier only (see g_gfx_max_w's doc
-		 * comment, above, for the full precedence rationale). JXL/APC frames
-		 * aren't subject to xterm's declared-raster discard (a different wire
-		 * format entirely), and the terminals that reach the JXL tier are
-		 * SyncTERM/CTerm builds that already answered DA1/CTDA, not a silent
-		 * xterm. */
-		if (tier == SST_TIER_SIXEL) {
-			int gmax_w, gmax_h;
-
-			if (g_sixel_max_override > 0) {
-				gmax_w = gmax_h = g_sixel_max_override;      /* 1. sysop override */
-			} else if (g_gfx_max_w > 0 && g_gfx_max_h > 0) {
-				gmax_w = g_gfx_max_w;                         /* 2. XTSMGRAPHICS reply */
-				gmax_h = g_gfx_max_h;
-			} else if (g_canvas_exact && !g_is_xterm) {
-				gmax_w = g_canvas_w;                          /* 3. trusted exact canvas */
-				gmax_h = g_canvas_h;
-			} else {
-				gmax_w = gmax_h = TERMGFX_SIXEL_SAFE_MAX;      /* 4. xterm's assumed ceiling */
-			}
-			termgfx_geom_gfx_clamp(gmax_w, gmax_h, &ew, &eh);
-		}
+		sst_image_rect(&ew, &eh, &rdx, &rdy);
 
 		if (tier == SST_TIER_SIXEL && g_term_rows > 0) {
 			double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
 			double chd = (double)g_canvas_h / g_term_rows;
-			termgfx_geom_center_ex(g_canvas_w, fit_h, ew, eh, cw, chd,
-			                       NULL, NULL, &icol, &irow);
+			icol = 1 + (int)(rdx / cw);
+			irow = 1 + (int)(rdy / chd);
 		} else {
 			/* dx/dy (pixel offset) feed the pixel-addressed JXL APC; sixel
 			 * (no CPR grid) falls back here and uses icol/irow only. */
+			icol = 1 + rdx / 8;
+			irow = 1 + rdy / 16;
 #ifdef WITH_JXL
-			termgfx_geom_center(g_canvas_w, g_canvas_h, ew, eh, 8, 16, &dx, &dy, &icol, &irow);
-#else
-			termgfx_geom_center(g_canvas_w, g_canvas_h, ew, eh, 8, 16, NULL, NULL, &icol, &irow);
+			dx = rdx;
+			dy = rdy;
 #endif
 		}
 
@@ -2998,3 +3227,35 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 
 	sst_io_flush();
 }
+
+#ifdef SST_TEST
+/* Test-only seams (test/test_sst_mouse.c): drive sst_mouse_report()'s
+ * coordinate mapping without a real session -- no sst_io_init(), no socket,
+ * no probe burst. Never compiled into the shipped door (SST_TEST is not
+ * defined by build.sh). Sets the geometry globals sst_image_rect() and
+ * sst_mouse_report() read, AND resets the event FIFO: each call starts a
+ * fresh scenario, as if a probe had just landed with this geometry, rather
+ * than accumulating events (or a stale g_canvas_exact/pixels latch) across
+ * scenarios in the same test binary. */
+int sst_io_test_set_geom(int canvas_w, int canvas_h, int cell_w, int cell_h,
+                         int cols, int rows, int pixels)
+{
+	g_canvas_w     = canvas_w;
+	g_canvas_h     = canvas_h;
+	g_canvas_exact = 1;   /* treat the injected canvas as a landed probe reply */
+	g_cell_w       = cell_w;
+	g_cell_h       = cell_h;
+	g_term_cols    = cols;
+	g_term_rows    = rows;
+	g_mouse.pixels = pixels;
+	g_evq_head = 0;
+	g_evq_n    = 0;
+	return 1;
+}
+
+int sst_io_test_mouse_report(int b, int col, int row, int release)
+{
+	sst_mouse_report(b, col, row, release);
+	return 1;
+}
+#endif
