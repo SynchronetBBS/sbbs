@@ -844,6 +844,12 @@ slot_sort_order(WrenVM *vm, int slot, int *order, size_t capacity,
 }
 
 static void
+fn_Menu_saveSortProfiles(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, bbslist_save_sort_profiles());
+}
+
+static void
 fn_Menu_setActiveSortProfile(WrenVM *vm)
 {
 	int64_t index;
@@ -943,6 +949,7 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "sortFields", fn_Menu_sortFields },
 	{ "Menu", true, "sortProfiles", fn_Menu_sortProfiles },
 	{ "Menu", true, "activeSortProfile", fn_Menu_activeSortProfile },
+	{ "Menu", true, "saveSortProfiles()", fn_Menu_saveSortProfiles },
 	{ "Menu", true, "setActiveSortProfile(_)", fn_Menu_setActiveSortProfile },
 	{ "Menu", true, "addSortProfile(_,_,_)", fn_Menu_addSortProfile },
 	{ "Menu", true, "updateSortProfile(_,_,_)", fn_Menu_updateSortProfile },

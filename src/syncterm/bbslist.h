@@ -216,6 +216,7 @@ bool bbslist_add_sort_profile(size_t index, const char *name,
 bool bbslist_update_sort_profile(size_t index, const char *name,
     const int *order, size_t count);
 bool bbslist_delete_sort_profile(size_t index);
+bool bbslist_save_sort_profiles(void);
 void read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsname, int id, int type);
 void read_list(char *listpath, struct bbslist **list, struct bbslist *defaults, int *i, int type);
 bool read_list_password(const char *listpath, struct bbslist **list,

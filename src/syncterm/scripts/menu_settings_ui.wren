@@ -103,7 +103,8 @@ class SettingsMenu {
 
   static programHelp_() {
     return "# Program Settings\n\n" +
-        "Changes are validated and stored when you leave this screen.\n\n" +
+        "Accepted changes are applied to the running program immediately. " +
+        "The configuration file is written when you leave this screen.\n\n" +
         helpItem_("Confirm Close", "Prompt before exiting SyncTERM") +
         helpItem_("Prompt to Save URL", "Offer to save temporary URL entries") +
         helpItem_("Invert Mouse Wheel", "Reverse wheel-up and wheel-down") +
@@ -294,6 +295,7 @@ class SettingsMenu {
 
   static program_(app) {
     var s = Menu.settings
+    var changed = false
     while (true) {
       var rows = []
       rows.add([1, settingsLine_("Confirm Close", yesNo_(s.confirmClose))])
@@ -327,11 +329,11 @@ class SettingsMenu {
       var picked = MenuUi.choice(app, "Program Settings", rows, null,
           programHelp_())
       if (picked == null) {
-        if (!s.dirty) return false
-        if (s.save()) return true
+        if (!changed) return false
+        if (Host.safeMode || s.save()) return true
         Alert.show(app, "Program Settings",
-            "The settings could not be validated or saved.")
-        return false
+            "The settings could not be saved.")
+        return true
       }
       if (picked == 1) {
         s.confirmClose = !s.confirmClose
@@ -406,9 +408,18 @@ class SettingsMenu {
       } else if (picked >= 21 && picked <= 26) {
         editColor_(app, s, picked)
       } else if (picked == 27) {
-        audio_(app, s)
+        if (audio_(app, s)) changed = true
       }
+      if (s.dirty && applySettings_(app, s)) changed = true
     }
+  }
+
+  static applySettings_(app, s) {
+    if (s.apply()) return true
+    s.reload()
+    Alert.show(app, "Program Settings",
+        "The setting could not be applied.")
+    return false
   }
 
   static editColor_(app, s, which) {
@@ -431,6 +442,7 @@ class SettingsMenu {
   }
 
   static audio_(app, s) {
+    var changed = false
     while (true) {
       var rows = []
       for (row in Menu.audioModes) {
@@ -439,12 +451,13 @@ class SettingsMenu {
       }
       var bit = MenuUi.choice(app, "Audio Output", rows, null,
           audioHelp_())
-      if (bit == null) return
+      if (bit == null) return changed
       if ((s.audioModes & bit) != 0) {
         s.audioModes = s.audioModes & ~bit
       } else {
         s.audioModes = s.audioModes | bit
       }
+      if (applySettings_(app, s)) changed = true
     }
   }
 

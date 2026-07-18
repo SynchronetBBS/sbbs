@@ -221,36 +221,69 @@ apply_settings(const struct syncterm_settings *set)
 	apply_picker_colours(&settings);
 }
 
-bool
-menu_settings_save(const struct syncterm_settings *snapshot)
+static bool
+prepare_settings(const struct syncterm_settings *snapshot,
+    struct vmem_cell **resized)
 {
-	struct vmem_cell *resized = NULL;
-
-	if (safe_mode || snapshot == NULL || !valid_settings(snapshot))
+	*resized = NULL;
+	if (snapshot == NULL || !valid_settings(snapshot))
 		return false;
 	if ((size_t)snapshot->backlines >
 	    SIZE_MAX / 80 / sizeof(*scrollback_buf))
 		return false;
 	if (snapshot->backlines != settings.backlines) {
 		size_t new_cells = (size_t)snapshot->backlines * 80;
-		resized = calloc(new_cells, sizeof(*resized));
-		if (resized == NULL)
+		*resized = calloc(new_cells, sizeof(**resized));
+		if (*resized == NULL)
 			return false;
 		if (scrollback_buf != NULL) {
 			size_t copy_lines = settings.backlines;
 			if (copy_lines > (size_t)snapshot->backlines)
 				copy_lines = (size_t)snapshot->backlines;
-			memcpy(resized, scrollback_buf,
-			    copy_lines * 80 * sizeof(*resized));
+			memcpy(*resized, scrollback_buf,
+			    copy_lines * 80 * sizeof(**resized));
 		}
 	}
 	if (strcmp(snapshot->keyDerivationIterations,
 	    settings.keyDerivationIterations) != 0 &&
 	    !rewrite_bbslist_kdf(settings.list_path,
 	    snapshot->keyDerivationIterations)) {
-		free(resized);
+		free(*resized);
+		*resized = NULL;
 		return false;
 	}
+	return true;
+}
+
+static void
+install_settings(const struct syncterm_settings *snapshot,
+    struct vmem_cell *resized)
+{
+	if (resized != NULL) {
+		free(scrollback_buf);
+		scrollback_buf = resized;
+		if (scrollback_lines > (unsigned)snapshot->backlines)
+			scrollback_lines = (unsigned)snapshot->backlines;
+	}
+	apply_settings(snapshot);
+}
+
+bool
+menu_settings_apply(const struct syncterm_settings *snapshot)
+{
+	struct vmem_cell *resized;
+	if (!prepare_settings(snapshot, &resized))
+		return false;
+	install_settings(snapshot, resized);
+	return true;
+}
+
+bool
+menu_settings_save(const struct syncterm_settings *snapshot)
+{
+	struct vmem_cell *resized;
+	if (safe_mode || !prepare_settings(snapshot, &resized))
+		return false;
 	str_list_t ini = read_ini();
 	if (ini == NULL) {
 		free(resized);
@@ -263,12 +296,6 @@ menu_settings_save(const struct syncterm_settings *snapshot)
 		free(resized);
 		return false;
 	}
-	if (resized != NULL) {
-		free(scrollback_buf);
-		scrollback_buf = resized;
-		if (scrollback_lines > (unsigned)snapshot->backlines)
-			scrollback_lines = (unsigned)snapshot->backlines;
-	}
-	apply_settings(snapshot);
+	install_settings(snapshot, resized);
 	return true;
 }

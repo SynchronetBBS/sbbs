@@ -938,11 +938,18 @@ list and to field-specific help while a choice or prompt is open.  Menu
 overrides should use the normal `Help` Markdown contract described under
 <<ui-help,Help viewer>>; the removed UIFC `helpbuf` markup is not parsed.
 
-The shipped entry, program-settings, font, and sort-field editors persist
-their accumulated changes when the editor closes.  They do not expose the
-underlying model transaction as a selectable Save or Cancel row.  Escape
-from a nested prompt or choice cancels only that nested operation; Escape
-from the owning editor closes it and retains the edits already made.
+The shipped editors preserve the historical distinction between accepting
+an edit and writing its backing file.  A confirmed entry field immediately
+updates the C-owned `BBS`, and a confirmed program setting is immediately
+applied to the running settings.  Their files are written when the owning
+entry or Program Settings editor closes.  Font changes remain in the font
+model until Font Management closes.  Sort-profile operations update the
+working profile model, which is written when Sort Profiles closes; profile
+cycling from the main directory writes immediately.  None of these screens
+exposes the persistence boundary as a selectable Save or Cancel row.
+
+Escape from a nested prompt or choice cancels only that nested operation.
+Escape from an owning editor closes it and retains the edits already made.
 
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
@@ -3438,22 +3445,25 @@ available in a connected VM.
 | Zero-based index of the active profile.
 
 | Menu.setActiveSortProfile(index)
-| Select and persist a profile, apply its order, and re-sort the loaded
+| Select a profile in memory, apply its order, and re-sort the loaded
   directory.  Returns `false` for an invalid index.
 
 | Menu.addSortProfile(index, name, order)
 | Insert a profile.  Names are 1..19 bytes and case-insensitively
-  unique.  Returns `false` for invalid data, allocation failure, or
-  safe mode.
+  unique.  Returns `false` for invalid data or allocation failure.
 
 | Menu.updateSortProfile(index, name, order)
 | Replace a profile's name and field order.  Updating the active
   profile also re-sorts the loaded directory.  Returns `false` when
-  validation fails or SyncTERM is in safe mode.
+  validation fails.
 
 | Menu.deleteSortProfile(index)
 | Delete a profile and re-sort with the resulting active profile.
   The last profile cannot be deleted.  Returns `false` on failure.
+
+| Menu.saveSortProfiles()
+| Write the working profiles, active profile, and current order to
+  `syncterm.ini`.  Returns Bool; safe mode treats the write as a no-op.
 |===
 
 `MenuReadStatus` constants are `ok`, `passwordRequired`,
@@ -3500,6 +3510,10 @@ removing it from the model.  System and web-cache records are
 read-only: setters abort, while `rename`, `save`, and `delete` return
 `false`.  Pass one to `Menu.copy` to obtain an editable personal copy.
 
+The shipped entry editor invokes those setters, including `rename()`,
+after each nested field editor accepts a changed value.  It calls
+`save()` for a dirty entry when the entry editor closes.
+
 A successful full load, create, or delete advances the model
 generation.  Every previously obtained menu `BBS` handle then becomes
 stale; using one aborts with an instruction to reacquire it from
@@ -3510,25 +3524,39 @@ renaming preserve handles.
 === Menu Program Settings [[menu-program-settings]]
 
 `Menu.settings` returns a C-owned `Settings` snapshot.  Property
-setters change only that snapshot and set `dirty`; they do not change
-the running program or configuration file until `save()` succeeds.
-`reload()` discards unsaved changes and repopulates the same handle
-from the current program settings.
+setters change only that snapshot and set `dirty`.  `apply()` validates
+the complete snapshot and applies it to the running program without
+writing `syncterm.ini`.  `reload()` discards changes not yet applied and
+repopulates the same handle from the current running settings.
+
+`dirty` specifically means that the snapshot differs from the running
+settings.  A successful `apply()` clears it.  It does not indicate
+whether those running settings have subsequently been written to
+`syncterm.ini`; code which separates `apply()` from `save()` must track
+that persistence obligation itself.
 
 `save()` validates the complete snapshot, preserves unrelated INI
 sections, writes the existing `syncterm.ini` keys, and applies the
 settings which have immediate effects.  These include scrollback
 capacity, scaling, mouse-wheel direction, audio backends, custom-mode
 dimensions, cursor style, and the UIFC colors still used by the trusted
-native picker and shipped Wren main menu.  It returns `false` without
-applying the snapshot if
+native picker and shipped Wren main menu.  It returns `false` when
 validation, allocation, encrypted-list rewriting, or INI persistence
-fails.  Saving is disabled in safe mode.
+fails.  An unapplied snapshot is not applied after such a failure;
+settings already accepted through `apply()` remain active.  Changing
+the KDF work factor may rewrite an encrypted BBS list during `apply()`.
+Saving `syncterm.ini` is disabled in safe mode.
 
-A successful save advances the settings generation.  The object which
-performed the save remains valid and clean, but any other outstanding
-`Settings` handles become stale and abort when used.  Reacquire a
-snapshot from `Menu.settings` after another component saves settings.
+A successful `apply()` or `save()` advances the settings generation.
+The object which performed the operation remains valid and clean, but
+any other outstanding `Settings` handles become stale and abort when
+used.  Reacquire a snapshot from `Menu.settings` after another component
+applies or saves settings.
+
+The shipped Program Settings editor calls `apply()` after each accepted
+setting and calls `save()` once when the editor closes.  Thus settings
+with immediate effects change at field-confirmation time while the INI
+write remains grouped at the historical screen-exit boundary.
 
 [options="header",cols="2m,4"]
 |===
@@ -3543,7 +3571,7 @@ snapshot from `Menu.settings` after another component saves settings.
 
 | `listPath`
 | Stored personal-list path or URI.  The host resolves it to the active
-  local or cached list path only after a successful save.
+  local or cached list path after a successful apply or save.
 
 | `startupMode`, `outputMode`, `cursorStyle`, `audioModes`,
   `scalingMode`
@@ -3556,7 +3584,7 @@ snapshot from `Menu.settings` after another component saves settings.
 | `kdfShift`
 | The exponent in the persisted `scrypt-Nn` key-derivation setting;
   accepted range is 8 through 24.  Changing it rewrites an encrypted
-  personal list using the current password before saving the INI file.
+  personal list using the current password when the setting is applied.
 
 | `customRows`, `customColumns`, `customFontHeight`,
   `customAspectWidth`, `customAspectHeight`

@@ -234,6 +234,7 @@ int sortorder[sizeof(sort_order) / sizeof(struct sort_order_info)];
 
 static named_string_t **sort_profiles = NULL;
 static int              active_profile = 0;
+static bool             sort_profiles_dirty = false;
 
 static const struct {
 	const char *name;
@@ -485,7 +486,7 @@ load_default_sort_profiles(void)
  * Write sort profiles, active profile name, and current SortOrder to INI.
  * Does a single read-modify-write cycle to avoid inconsistent state.
  */
-static void
+static bool
 write_sort_profiles(void)
 {
 	char inipath[MAX_PATH + 1];
@@ -496,7 +497,7 @@ write_sort_profiles(void)
 	int i;
 
 	if (safe_mode)
-		return;
+		return true;
 	get_syncterm_filename(inipath, sizeof(inipath), SYNCTERM_PATH_INI, false);
 	if ((fp = fopen(inipath, "r")) != NULL) {
 		inicontents = iniReadFile(fp);
@@ -523,11 +524,14 @@ write_sort_profiles(void)
 	iniSetStringList(&inicontents, "SyncTERM", "SortOrder", ",", sortorders, &ini_style);
 	strListFree(&sortorders);
 
+	bool success = false;
 	if ((fp = fopen(inipath, "w")) != NULL) {
-		iniWriteFile(fp, inicontents);
-		fclose(fp);
+		success = iniWriteFile(fp, inicontents);
+		if (fclose(fp) != 0)
+			success = false;
 	}
 	strListFree(&inicontents);
+	return success;
 }
 
 /*
@@ -664,7 +668,7 @@ bbslist_set_active_sort_profile(size_t index)
 	active_profile = (int)index;
 	parse_sort_value(sort_profiles[index]->value, sortorder,
 	    sizeof(sortorder) / sizeof(sortorder[0]));
-	write_sort_profiles();
+	sort_profiles_dirty = true;
 	return true;
 }
 
@@ -673,7 +677,7 @@ bbslist_add_sort_profile(size_t index, const char *name,
     const int *order, size_t count)
 {
 	size_t profile_count = bbslist_sort_profile_count();
-	if (safe_mode || index > profile_count ||
+	if (index > profile_count ||
 	    !profile_name_available(name, SIZE_MAX) ||
 	    !valid_profile_order(order, count))
 		return false;
@@ -687,7 +691,7 @@ bbslist_add_sort_profile(size_t index, const char *name,
 		return false;
 	if ((size_t)active_profile >= index)
 		active_profile++;
-	write_sort_profiles();
+	sort_profiles_dirty = true;
 	return true;
 }
 
@@ -695,7 +699,7 @@ bool
 bbslist_update_sort_profile(size_t index, const char *name,
     const int *order, size_t count)
 {
-	if (safe_mode || index >= bbslist_sort_profile_count() ||
+	if (index >= bbslist_sort_profile_count() ||
 	    !profile_name_available(name, index) ||
 	    !valid_profile_order(order, count))
 		return false;
@@ -714,7 +718,7 @@ bbslist_update_sort_profile(size_t index, const char *name,
 		parse_sort_value(new_value, sortorder,
 		    sizeof(sortorder) / sizeof(sortorder[0]));
 	}
-	write_sort_profiles();
+	sort_profiles_dirty = true;
 	return true;
 }
 
@@ -722,7 +726,7 @@ bool
 bbslist_delete_sort_profile(size_t index)
 {
 	size_t count = bbslist_sort_profile_count();
-	if (safe_mode || count <= 1 || index >= count)
+	if (count <= 1 || index >= count)
 		return false;
 	if (!namedStrListDelete(&sort_profiles, index))
 		return false;
@@ -733,7 +737,18 @@ bbslist_delete_sort_profile(size_t index)
 		active_profile = (int)count - 2;
 	parse_sort_value(sort_profiles[active_profile]->value, sortorder,
 	    sizeof(sortorder) / sizeof(sortorder[0]));
-	write_sort_profiles();
+	sort_profiles_dirty = true;
+	return true;
+}
+
+bool
+bbslist_save_sort_profiles(void)
+{
+	if (!sort_profiles_dirty)
+		return true;
+	if (!write_sort_profiles())
+		return false;
+	sort_profiles_dirty = false;
 	return true;
 }
 
@@ -744,6 +759,7 @@ bbslist_delete_sort_profile(size_t index)
 void
 init_sort_profiles(FILE *inifile)
 {
+	sort_profiles_dirty = false;
 	if (sort_profiles)
 		iniFreeNamedStringList(sort_profiles);
 

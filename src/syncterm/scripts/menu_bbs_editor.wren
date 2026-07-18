@@ -1,4 +1,4 @@
-import "syncterm" for Key, KeyEvent, Screen
+import "syncterm" for Host, Key, KeyEvent, Screen
 import "syncterm_menu" for Menu
 import "menu_ui" for MenuUi
 import "ui_app" for App
@@ -54,7 +54,7 @@ class BbsEditor {
       if (standalone) app.quit()
     }
     pane.onClose = Fn.new {
-      if (apply_(app, bbs, draft, isDefaults)) {
+      if (!bbs.dirty || Host.safeMode || save_(app, bbs)) {
         state["saved"] = true
         dismiss.call()
       }
@@ -68,12 +68,13 @@ class BbsEditor {
     rebuild = Fn.new {
       var selected = list.selected
       if (selected == null) selected = 0
-      var rows = rows_(app, draft, isDefaults)
+      var rows = rows_(app, bbs, draft, isDefaults)
       pane.helpText = editorHelp_(draft, isDefaults)
       list.items = rows.map {|row| row[0] }.toList
       list.selected = selected.min(rows.count - 1).max(0)
       list.onSelect = Fn.new {|i, item|
         rows[i][1].call()
+        update_(app, bbs, draft, isDefaults)
         rebuild.call()
       }
     }
@@ -179,8 +180,9 @@ class BbsEditor {
   static editorHelp_(d, defaults) {
     var heading = "# Edit Default Connection\n\n"
     if (!defaults) heading = "# Edit Directory Entry\n\n"
-    var text = heading + "Select an item to edit. Changes are stored " +
-        "when you leave the editor.\n\n"
+    var text = heading + "Accepted field changes update the working " +
+        "entry immediately. The directory file is written when you " +
+        "leave the editor.\n\n"
     if (!defaults) {
       text = text + helpItem_("Name", "The name shown in the directory")
       var address = "The network address to connect to"
@@ -488,7 +490,7 @@ class BbsEditor {
     }
   }
 
-  static editPalette_(app, d) {
+  static editPalette_(app, d, onChange) {
     while (true) {
       var choices = [[-2, "Done"], [-1, "Use default palette"]]
       var colors = d["palette"]
@@ -501,6 +503,7 @@ class BbsEditor {
       if (picked == null || picked == -2) return
       if (picked == -1) {
         d["palette"] = []
+        onChange.call()
       } else {
         var initial = picked < colors.count ? colors[picked] : 0
         var value = MenuUi.integer(app, "Palette Color",
@@ -513,12 +516,13 @@ class BbsEditor {
             colors.add(value)
           }
           d["palette"] = colors
+          onChange.call()
         }
       }
     }
   }
 
-  static rows_(app, d, defaults) {
+  static rows_(app, b, d, defaults) {
     var rows = []
     if (!defaults) rows.add(textRow_(app, d, "name", "Name", 30, false))
     var addrLabel = "Address"
@@ -633,7 +637,7 @@ class BbsEditor {
     var paletteLabel = "Default"
     if (paletteCount != 0) paletteLabel = "%(paletteCount) custom colors"
     rows.add(row_("Palette", paletteLabel, Fn.new {
-      editPalette_(app, d)
+      editPalette_(app, d, Fn.new { update_(app, b, d, defaults) })
     }))
     if (!defaults) {
       rows.add(row_("Explicit Sort Order", d["sortOrder"], Fn.new {
@@ -648,8 +652,30 @@ class BbsEditor {
   }
 
   static apply_(app, b, d, defaults) {
+    if (!update_(app, b, d, defaults)) return false
+    return save_(app, b)
+  }
+
+  static sameDraft_(left, right) {
+    for (key in left.keys) {
+      if (key == "palette") {
+        if (left[key].count != right[key].count) return false
+        for (i in 0...left[key].count) {
+          if (left[key][i] != right[key][i]) return false
+        }
+      } else if (left[key] != right[key]) {
+        return false
+      }
+    }
+    return true
+  }
+
+  static update_(app, b, d, defaults) {
+    if (sameDraft_(draft_(b), d)) return true
     if (!defaults && d["name"] != b.name && !b.rename(d["name"])) {
-      Alert.show(app, "Save Failed", "The entry name is invalid or already in use.")
+      Alert.show(app, "Entry Name",
+          "The entry name is invalid or already in use.")
+      d["name"] = b.name
       return false
     }
     b.addr = d["addr"]
@@ -689,6 +715,10 @@ class BbsEditor {
     b.sshAcceptEarlyData = d["sshAcceptEarlyData"]
     b.palette = d["palette"]
     b.sortOrder = d["sortOrder"]
+    return true
+  }
+
+  static save_(app, b) {
     if (b.save()) return true
     Alert.show(app, "Save Failed", "The directory entry could not be written.")
     return false

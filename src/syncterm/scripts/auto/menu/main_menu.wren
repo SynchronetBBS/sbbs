@@ -578,7 +578,13 @@ class MainMenuApp {
     var next = (Menu.activeSortProfile + delta) % profiles.count
     if (next < 0) next = next + profiles.count
     var preferred = _selected == null ? null : _selected.name
-    if (Menu.setActiveSortProfile(next)) refresh_(preferred)
+    if (Menu.setActiveSortProfile(next)) {
+      if (!Menu.saveSortProfiles()) {
+        Alert.show(_app, "Sort Profiles",
+            "The active sort profile could not be saved.")
+      }
+      refresh_(preferred)
+    }
   }
 
   exit_() {

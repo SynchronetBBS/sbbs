@@ -37,6 +37,7 @@ class Menu {
   foreign static sortFields
   foreign static sortProfiles
   foreign static activeSortProfile
+  foreign static saveSortProfiles()
   foreign static setActiveSortProfile(index)
   foreign static addSortProfile(index, name, order)
   foreign static updateSortProfile(index, name, order)
@@ -110,10 +111,11 @@ foreign class MenuFont {
   foreign toString
 }
 
-// C-owned editable snapshot of program settings.  Setters affect only
-// this snapshot until save(); reload() discards pending changes.
+// C-owned editable snapshot of program settings.  apply() updates the
+// running program; save() also writes syncterm.ini.
 foreign class Settings {
   foreign dirty
+  foreign apply()
   foreign save()
   foreign reload()
   foreign confirmClose

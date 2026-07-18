@@ -34,7 +34,13 @@ class SortProfiles {
       var active = Menu.activeSortProfile
       var selected = MenuUi.choice(app, "Sort Profiles",
           profileLabels_(profiles, active), active, profilesHelp_())
-      if (selected == null) return
+      if (selected == null) {
+        if (!Menu.saveSortProfiles()) {
+          Alert.show(app, "Sort Profiles",
+              "The sort profiles could not be saved.")
+        }
+        return
+      }
       if (selected == profiles.count) {
         new_(app, profiles, active)
       } else {
@@ -161,14 +167,15 @@ class SortProfiles {
 
   static failed_(app) {
     Alert.show(app, "Sort Profiles",
-        "The profile could not be saved. Check its name and fields.")
+        "The profile could not be changed. Check its name and fields.")
   }
 
   static profilesHelp_() {
     return "# Sort Profiles\n\n" +
         "A sort profile defines the order of entries in the directory. " +
         "Select a profile to use it, edit its fields, rename it, copy it, " +
-        "or delete it.\n\n" +
+        "or delete it. Accepted changes update the working profiles; the " +
+        "configuration file is written when you leave this screen.\n\n" +
         "Select **New Profile...** to create another profile. In the main " +
         "directory, `<` and `>` cycle through the available profiles."
   }
@@ -191,8 +198,8 @@ class SortProfiles {
     return "# Sort Fields\n\n" +
         "Fields are applied from top to bottom. Select a field to reverse " +
         "its direction, move it, or remove it. Select **Add Field...** to " +
-        "insert another available field. Changes are stored when you " +
-        "leave this screen."
+        "insert another available field. The working profile is updated " +
+        "when you leave this screen."
   }
 
   static addFieldHelp_() {

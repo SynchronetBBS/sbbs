@@ -332,6 +332,21 @@ fn_Settings_dirty(WrenVM *vm)
 }
 
 static void
+fn_Settings_apply(WrenVM *vm)
+{
+	struct wren_menu_settings *ws = settings_check(vm);
+	if (ws == NULL)
+		return;
+	bool success = menu_settings_apply(&ws->settings);
+	if (success) {
+		settings_generation++;
+		ws->generation = settings_generation;
+		ws->dirty = false;
+	}
+	wrenSetSlotBool(vm, 0, success);
+}
+
+static void
 fn_Settings_save(WrenVM *vm)
 {
 	struct wren_menu_settings *ws = settings_check(vm);
@@ -918,6 +933,7 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "deleteWebList(_)", fn_Menu_deleteWebList },
 	{ "Menu", true, "refreshWebList(_)", fn_Menu_refreshWebList },
 	{ "Settings", false, "dirty", fn_Settings_dirty },
+	{ "Settings", false, "apply()", fn_Settings_apply },
 	{ "Settings", false, "save()", fn_Settings_save },
 	{ "Settings", false, "reload()", fn_Settings_reload },
 	SETTINGS_GETSET(confirmClose),
