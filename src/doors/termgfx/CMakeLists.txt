@@ -28,6 +28,7 @@ add_library(termgfx STATIC
     door32.c
     charset.c
     sgrmouse.c
+    mouse.c
     keymode.c
     pace.c
     sbbs_node.c)

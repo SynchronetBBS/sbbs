@@ -28,3 +28,15 @@ set_target_properties(test_chunk PROPERTIES C_STANDARD 11)
 # target_compile_options lands after the per-config flags, so the -U wins.
 target_compile_options(test_chunk PRIVATE -UNDEBUG)
 add_test(NAME chunk COMMAND test_chunk)
+
+# Unit test for mouse.c -- the SGR mouse handshake module. Links the full
+# termgfx library (rather than compiling mouse.c standalone like test_chunk
+# does for chunk.c) because mouse.c calls termgfx_sgr_classify() from
+# sgrmouse.c, and linking termgfx also brings in its PUBLIC include dir so
+# test_mouse.c's #include "mouse.h" resolves without an extra -I.
+add_executable(test_mouse
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_mouse.c)
+target_link_libraries(test_mouse termgfx)
+set_target_properties(test_mouse PROPERTIES C_STANDARD 11)
+target_compile_options(test_mouse PRIVATE -UNDEBUG)
+add_test(NAME mouse COMMAND test_mouse)
