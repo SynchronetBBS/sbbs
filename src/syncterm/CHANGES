@@ -25,6 +25,9 @@ Retain the highlighted row while Wren menu editors rebuild their lists
 Restore validation retries, focused commands, and empty-value handling
 Restore entry sorting, rate selection, and settings display information
 Restore window-close handling throughout the Wren main menu
+Restore entry-cache renames and immediate Wren menu colour updates
+Prevent rejected font names from aborting the Wren menu VM
+Retain web-list configuration when no cache path is available
 Restore direct sort, palette, web-list, font, and encryption editing
 Restore settings submenus, connected-mode filtering, and field limits
 Restore formatted context help throughout the Wren directory and settings UI

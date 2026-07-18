@@ -1,6 +1,7 @@
 import "syncterm" for Host, Key, Screen
 import "syncterm_menu" for Menu, MenuEncryption, MenuFontSlot
 import "menu_ui" for MenuUi
+import "menu_theme" for ClassicTheme
 import "menu_bbs_editor" for BbsEditor
 import "ui_popup" for Alert
 import "ui_help" for Help
@@ -307,6 +308,23 @@ class SettingsMenu {
     return "# Font Name\n\nEnter the name that will identify this font in menus."
   }
 
+  static validFontName_(name) {
+    if (name == null || name.bytes.count == 0 || name.bytes.count > 50) {
+      return false
+    }
+    for (byte in name.bytes) {
+      if (byte < 0x20 || byte == 0x5B || byte == 0x5D) return false
+    }
+    return true
+  }
+
+  static fontNameUsed_(fonts, name, except) {
+    for (i in 0...fonts.count) {
+      if (i != except && MenuUi.namesEqual(fonts[i].name, name)) return true
+    }
+    return false
+  }
+
   static fontMask_(slot) {
     if (slot == MenuFontSlot.eightByEight) return "*.f8"
     if (slot == MenuFontSlot.eightByFourteen) return "*.f14"
@@ -422,7 +440,10 @@ class SettingsMenu {
   }
 
   static applySettings_(app, s) {
-    if (s.apply()) return true
+    if (s.apply()) {
+      app.theme = ClassicTheme.from(s)
+      return true
+    }
     s.reload()
     Alert.show(app, "Program Settings",
         "The setting could not be applied.")
@@ -693,7 +714,16 @@ class SettingsMenu {
         if (index == -1) index = fonts.count
         var name = MenuUi.prompt(app, "Add Font", "Font name", "", 50,
             false, fontNameHelp_())
-        if (name != null) {
+        if (name != null && name.count > 0) {
+          if (!validFontName_(name)) {
+            Alert.show(app, "Font Management",
+                "The font name contains an invalid character.")
+            continue
+          }
+          if (fontNameUsed_(fonts, name, -1)) {
+            Alert.show(app, "Font Management", "Duplicate font name.")
+            continue
+          }
           if (Menu.createFont(name, index) == null) {
             Alert.show(app, "Font Management", "The font could not be added.")
           } else {
@@ -748,7 +778,18 @@ class SettingsMenu {
       } else if (value == -1) {
         var name = MenuUi.prompt(app, "Rename Font", "Font name", font.name,
             50, false, fontNameHelp_())
-        if (name != null) font.name = name
+        if (name == null || name.count == 0 ||
+            MenuUi.namesEqual(name, font.name)) continue
+        if (!validFontName_(name)) {
+          Alert.show(app, "Font Management",
+              "The font name contains an invalid character.")
+          continue
+        }
+        if (fontNameUsed_(fonts, name, index)) {
+          Alert.show(app, "Font Management", "Duplicate font name.")
+          continue
+        }
+        font.name = name
       } else {
         app.releaseFocus()
         var file = Host.pickFile(".", fontMask_(value), 1)

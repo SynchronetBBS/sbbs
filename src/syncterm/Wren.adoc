@@ -970,6 +970,14 @@ The window-close event follows the main menu's normal exit path even while a
 nested editor, prompt, help screen, or offline scrollback view is open.
 After confirmation, `Menu.quitApplication()` sets the process exit latch;
 Escape and pane close buttons still only leave a connected Alt+E menu.
+Accepted UIFC colour changes rebuild the active Wren menu theme immediately.
+Renaming a persisted entry also renames its per-entry cache directory after
+the directory file is written successfully.
+Font Management treats an empty name as cancellation and reports invalid or
+duplicate names without invoking the rejecting foreign setter.
+Adding a web list skips its initial fetch when no cache path is available but
+still records the configuration; explicit refresh continues to report the
+missing cache.
 
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,

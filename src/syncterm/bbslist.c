@@ -1517,6 +1517,27 @@ rename_bbs(const char *listpath, const char *old_name, struct bbslist *bbs)
 		success = write_personal_list(listpath, inifile);
 	}
 	strListFree(&inifile);
+	if (success) {
+		char old_cache[MAX_PATH + 1];
+		char new_cache[MAX_PATH + 1];
+		if (get_syncterm_filename(old_cache, sizeof(old_cache),
+		    SYNCTERM_PATH_CACHE, false) != NULL) {
+			backslash(old_cache);
+			strlcpy(new_cache, old_cache, sizeof(new_cache));
+		}
+		else {
+			old_cache[0] = 0;
+			new_cache[0] = 0;
+		}
+		if (old_cache[0] != 0 &&
+		    strlen(old_cache) + strlen(old_name) < sizeof(old_cache) &&
+		    strlen(new_cache) + strlen(bbs->name) < sizeof(new_cache)) {
+			strcat(old_cache, old_name);
+			strcat(new_cache, bbs->name);
+			if (isdir(old_cache))
+				rename(old_cache, new_cache);
+		}
+	}
 	return success;
 }
 

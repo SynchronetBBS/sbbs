@@ -720,12 +720,8 @@ web_list_count(void)
 }
 
 static char *
-fetch_web_list(const char *name, const char *uri)
+fetch_web_list_at(const char *cache, const char *name, const char *uri)
 {
-	char cache[MAX_PATH + 1];
-	if (get_syncterm_filename(cache, sizeof(cache),
-	    SYNCTERM_PATH_SYSTEM_CACHE, false) == NULL)
-		return strdup("Unable to locate the web-list cache");
 	struct webget_request request;
 	memset(&request, 0, sizeof(request));
 	if (!init_webget_req(&request, cache, name, uri))
@@ -735,6 +731,16 @@ fetch_web_list(const char *name, const char *uri)
 	    request.msg : "Unable to fetch the web list");
 	destroy_webget_req(&request);
 	return error;
+}
+
+static char *
+fetch_web_list(const char *name, const char *uri)
+{
+	char cache[MAX_PATH + 1];
+	if (get_syncterm_filename(cache, sizeof(cache),
+	    SYNCTERM_PATH_SYSTEM_CACHE, false) == NULL)
+		return strdup("Unable to locate the web-list cache");
+	return fetch_web_list_at(cache, name, uri);
 }
 
 static bool
@@ -819,11 +825,15 @@ fn_Menu_addWebList(WrenVM *vm)
 		wrenSetSlotString(vm, 0, "Invalid or duplicate web-list name");
 		return;
 	}
-	char *error = fetch_web_list(name, uri);
-	if (error != NULL) {
-		wrenSetSlotString(vm, 0, error);
-		free(error);
-		return;
+	char cache[MAX_PATH + 1];
+	if (get_syncterm_filename(cache, sizeof(cache),
+	    SYNCTERM_PATH_SYSTEM_CACHE, false) != NULL) {
+		char *error = fetch_web_list_at(cache, name, uri);
+		if (error != NULL) {
+			wrenSetSlotString(vm, 0, error);
+			free(error);
+			return;
+		}
 	}
 	if (!insert_web_list((size_t)index, name, uri)) {
 		wrenSetSlotString(vm, 0, "Unable to allocate the web-list entry");
