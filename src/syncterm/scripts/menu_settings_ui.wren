@@ -67,7 +67,12 @@ class SettingsMenu {
 
   static runAction(app, picked, connected) {
     if (picked == 0) return webLists_(app)
-    if (picked == 1) return BbsEditor.edit(app, Menu.defaults, true, false)
+    if (picked == 1) {
+      var changed = BbsEditor.edit(app, Menu.defaults, true, false)
+      // Reloading the model would discard defaults accepted for this
+      // process when safe mode suppresses their file write.
+      return Host.safeMode ? false : changed
+    }
     if (picked == 2) {
       screenMode_(app)
       return false
@@ -304,8 +309,9 @@ class SettingsMenu {
 
   static fontDetailsHelp_() {
     return "# Font Details\n\nSelect Name to rename the font. Select " +
-        "a cell size to choose its file. `[` and `]` move to the previous " +
-        "or next font.\n\n" +
+        "a cell size to choose its file. Insert or the blank final row " +
+        "adds a font before this one, and Delete removes this font. `[` " +
+        "and `]` move to the previous or next font.\n\n" +
         "8 x 8\n:  Modes with at least 35 lines and C64/C128 modes\n" +
         "8 x 14\n:  Modes with 28 through 34 lines\n" +
         "8 x 16\n:  Modes with fewer than 28 lines or exactly 30 lines\n" +
@@ -733,24 +739,9 @@ class SettingsMenu {
       if (command == "insert" ||
           (command == "select" && index == -1)) {
         if (index == -1) index = fonts.count
-        var name = MenuUi.prompt(app, "Add Font", "Font name", "", 50,
-            false, fontNameHelp_())
-        if (name != null && name.count > 0) {
-          if (!validFontName_(name)) {
-            Alert.show(app, "Font Management",
-                "The font name contains an invalid character.")
-            continue
-          }
-          if (fontNameUsed_(fonts, name, -1)) {
-            Alert.show(app, "Font Management", "Duplicate font name.")
-            continue
-          }
-          if (Menu.createFont(name, index) == null) {
-            Alert.show(app, "Font Management", "The font could not be added.")
-          } else {
-            selected = index
-            font_(app, index)
-          }
+        if (addFont_(app, fonts, index)) {
+          selected = index
+          font_(app, index)
         }
       } else if (command == "delete") {
         if (!fonts[index].delete()) {
@@ -763,6 +754,26 @@ class SettingsMenu {
         font_(app, index)
       }
     }
+  }
+
+  static addFont_(app, fonts, index) {
+    var name = MenuUi.prompt(app, "Add Font", "Font name", "", 50,
+        false, fontNameHelp_())
+    if (name == null || name.count == 0) return false
+    if (!validFontName_(name)) {
+      Alert.show(app, "Font Management",
+          "The font name contains an invalid character.")
+      return false
+    }
+    if (fontNameUsed_(fonts, name, -1)) {
+      Alert.show(app, "Font Management", "Duplicate font name.")
+      return false
+    }
+    if (Menu.createFont(name, index) == null) {
+      Alert.show(app, "Font Management", "The font could not be added.")
+      return false
+    }
+    return true
   }
 
   static font_(app, index) {
@@ -783,7 +794,10 @@ class SettingsMenu {
         var path = font.path(slot[0])
         rows.add([slot[0], "%(slot[1])  %(path == null ? "<undefined>" : path)"])
       }
+      rows.add([-2, ""])
       var commands = {}
+      commands[Key.insert] = ["insert", true]
+      commands[Key.delete] = ["delete", false]
       commands[0x5B] = ["previous", true]
       commands[0x5D] = ["next", true]
       var picked = MenuUi.commandChoice(app, "Font Details", rows, selected,
@@ -796,6 +810,16 @@ class SettingsMenu {
         index = index - 1
       } else if (command == "next") {
         index = index + 1
+      } else if (command == "insert" ||
+          (command == "select" && value == -2)) {
+        if (addFont_(app, fonts, index)) selected = -1
+      } else if (command == "delete") {
+        if (!font.delete()) {
+          Alert.show(app, "Font Management",
+              "The font could not be deleted.")
+        } else {
+          return
+        }
       } else if (value == -1) {
         var name = MenuUi.prompt(app, "Rename Font", "Font name", font.name,
             50, false, fontNameHelp_())
@@ -848,7 +872,9 @@ class SettingsMenu {
       password = MenuUi.prompt(app, "List Encryption", "New password", "",
           1023, true, encryptionHelp_())
       if (password == null || password.count == 0) return false
-    } else if (algorithm != MenuEncryption.none &&
+    }
+    if (Host.safeMode) return false
+    if (password == null && algorithm != MenuEncryption.none &&
         Menu.encryptionAlgorithm == MenuEncryption.none) {
       password = MenuUi.prompt(app, "List Encryption", "Password", "",
           1023, true, encryptionHelp_())

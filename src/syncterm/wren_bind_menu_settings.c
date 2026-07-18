@@ -815,13 +815,10 @@ fn_Menu_webListsDirty(WrenVM *vm)
 static void
 fn_Menu_addWebList(WrenVM *vm)
 {
+	/* Safe mode blocks save_webgets(), not working-list edits. */
 	char name[INI_MAX_VALUE_LEN + 1];
 	char uri[INI_MAX_VALUE_LEN + 1];
 	uint64_t index;
-	if (safe_mode) {
-		wrenSetSlotString(vm, 0, "Web-list editing is disabled in safe mode");
-		return;
-	}
 	if (!slot_string(vm, 1, name, sizeof(name)) ||
 	    !slot_string(vm, 2, uri, sizeof(uri)) ||
 	    !slot_integer(vm, 3, 0, web_list_count(), &index))
@@ -857,10 +854,6 @@ fn_Menu_updateWebList(WrenVM *vm)
 	uint64_t index;
 	char uri[INI_MAX_VALUE_LEN + 1];
 	size_t count = web_list_count();
-	if (safe_mode) {
-		wrenSetSlotBool(vm, 0, false);
-		return;
-	}
 	if (count == 0 || !slot_integer(vm, 1, 0, count - 1, &index) ||
 	    !slot_string(vm, 2, uri, sizeof(uri)))
 		return;
@@ -884,10 +877,6 @@ fn_Menu_deleteWebList(WrenVM *vm)
 {
 	uint64_t index;
 	size_t count = web_list_count();
-	if (safe_mode) {
-		wrenSetSlotBool(vm, 0, false);
-		return;
-	}
 	if (count == 0 || !slot_integer(vm, 1, 0, count - 1, &index))
 		return;
 	remove_web_list((size_t)index, true);

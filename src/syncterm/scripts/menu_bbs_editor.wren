@@ -79,17 +79,27 @@ class PaletteColorPreview is Widget {
 }
 
 class PaletteComponentInput is TextInput {
-  construct new(onChange, onReset) {
+  construct new(onReset, onLeave) {
     super()
-    _notify = onChange
     _reset = onReset
+    _leave = onLeave
     maxLen = 3
+  }
+
+  focused=(value) {
+    if (!value && focused) _leave.call()
+    super.focused = value
   }
 
   handle(event) {
     if (event is KeyEvent && event.codepoint == 0x25) {
       _reset.call()
       return true
+    }
+    if (event is KeyEvent &&
+        (event.code == Key.tab || event.code == Key.backTab)) {
+      _leave.call()
+      return false
     }
     if (event is KeyEvent && event.codepoint != null &&
         event.codepoint >= 0x20 &&
@@ -685,12 +695,13 @@ class BbsEditor {
     }
     for (i in 0...3) {
       var index = i
-      var input = PaletteComponentInput.new(
-          Fn.new {|text| update.call(index, text) }, reset)
+      var input = null
+      input = PaletteComponentInput.new(reset,
+          Fn.new { input.value = values[index].toString })
       input.value = values[i].toString
-      input.onChange = Fn.new {|text| update.call(index, text) }
       input.onSubmit = Fn.new {|text|
         update.call(index, text)
+        input.value = values[index].toString
         form.focusNext()
       }
       inputs.add(input)

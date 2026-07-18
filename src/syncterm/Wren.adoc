@@ -964,7 +964,13 @@ The encryption screen has distinct Change Password, algorithm, and Decrypt
 operations; changing algorithms reuses the password already held by the
 host.  Palette editing exposes separate Red, Green, and Blue fields, uses
 Tab and Backtab between them, cycles the preview foreground with Up and Down,
-and uses `%` to restore all three components from the mode default.
+and uses `%` to restore all three components from the mode default.  Enter
+commits the current component; Tab and Backtab move without accepting
+uncommitted text.
+
+Safe mode retains accepted default-entry and web-list changes in memory while
+suppressing their configuration-file writes.  Encryption conversions are
+no-ops; Change Password still presents its password prompt before returning.
 
 Repeating editors retain their highlighted row after an action rebuilds the
 list.  This applies to entry logging and palettes, sort profiles and fields,
@@ -986,6 +992,8 @@ Renaming a persisted entry also renames its per-entry cache directory after
 the directory file is written successfully.
 Font Management treats an empty name as cancellation and reports invalid or
 duplicate names without invoking the rejecting foreign setter.
+Insert, Delete, and the blank add row remain available from Font Details as
+well as the outer Font Management list.
 Adding a web list skips its initial fetch when no cache path is available but
 still records the configuration; explicit refresh continues to report the
 missing cache.
@@ -3872,10 +3880,11 @@ whether the in-memory list has unpersisted edits.
   Returns `null` on success or an error String.
 |===
 
-Add, update, delete, and save are disabled in safe mode before any fetch,
-in-memory mutation, or write.  Refresh remains a read/fetch operation and
-is permitted.  No web-list method exposes its cache pathname as a file
-capability.
+In safe mode, add, update, and delete still update the running configuration,
+and add still performs its initial fetch.  `saveWebLists()` returns `false`
+without writing `syncterm.ini`, so those changes last only for the current
+process.  Refresh remains permitted.  No web-list method exposes its cache
+pathname as a file capability.
 
 === Menu Custom Fonts [[menu-custom-fonts]]
 
