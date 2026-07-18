@@ -959,6 +959,17 @@ and uses `%` to restore the selected component's mode default.
 Repeating editors retain their highlighted row after an action rebuilds the
 list.  This applies to entry logging and palettes, sort profiles and fields,
 program settings and their nested lists, web lists, and font management.
+Directory editing commands apply only while the directory pane owns focus.
+Sort-profile and web-list name prompts repeat after a duplicate name, and
+sort-profile field navigation returns to the last profile visited.
+New entries are sorted again after their connection details are accepted.
+Rate choices select the first supported rate at or above a configured value,
+or Current when no supported rate is high enough, matching the directory
+editor's established catalog behavior.
+The window-close event follows the main menu's normal exit path even while a
+nested editor, prompt, help screen, or offline scrollback view is open.
+After confirmation, `Menu.quitApplication()` sets the process exit latch;
+Escape and pane close buttons still only leave a connected Alt+E menu.
 
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,
@@ -3459,9 +3470,18 @@ available in a connected VM.
 | Menu.statusMessage(status)
 | Return the host diagnostic String for a `MenuReadStatus` value.
 
+| Menu.quitApplication()
+| Set SyncTERM's process exit latch after trusted menu code has completed
+  any required confirmation.  The shipped menu uses this for `Key.quit`,
+  including while it is temporarily displayed over a connected session.
+
 | Menu.entries
 | Return a new List of host-created menu `BBS` handles in current sort
   order.  The records themselves remain C-owned.
+
+| Menu.canAppendEntry
+| Return whether the combined personal and read-only directory has room for
+  another personal entry.
 
 | Menu.defaults
 | Return the mutable root-section defaults record, or `null` before a

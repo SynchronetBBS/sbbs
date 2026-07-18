@@ -889,6 +889,13 @@ fn_Menu_statusMessage(WrenVM *vm)
 }
 
 static void
+fn_Menu_quitApplication(WrenVM *vm)
+{
+	check_exit(true);
+	wrenSetSlotNull(vm, 0);
+}
+
+static void
 fn_Menu_entries(WrenVM *vm)
 {
 	wrenEnsureSlots(vm, 3);
@@ -1148,6 +1155,7 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "timeText", fn_Menu_timeText },
 	{ "Menu", true, "showEntry(_)", fn_Menu_showEntry },
 	{ "Menu", true, "statusMessage(_)", fn_Menu_statusMessage },
+	{ "Menu", true, "quitApplication()", fn_Menu_quitApplication },
 	{ "Menu", true, "entries", fn_Menu_entries },
 	{ "Menu", true, "canAppendEntry", fn_Menu_canAppendEntry },
 	{ "Menu", true, "defaults", fn_Menu_defaults },

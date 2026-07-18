@@ -539,14 +539,23 @@ class SettingsMenu {
 
   static locations_(app) {
     var p = Menu.fileLocations
-    var text = "Global directory:\n  %(p["globalList"])\n\n" +
-        "Personal directory:\n  %(p["personalList"])\n\n" +
-        "Configuration:\n  %(p["configuration"])\n\n" +
-        "Downloads:\n  %(p["download"])\n\n" +
-        "Cache:\n  %(p["cache"])\n\n" +
-        "SSH keys:\n  %(p["keys"])\n\n" +
-        "Wren scripts:\n  %(p["scripts"])"
-    MenuUi.text(app, "File Locations", text)
+    var text = "`SyncTERM File Locations`\n\n" +
+        "Global Dialing Directory (Read-Only)\n  %(p["globalList"])\n" +
+        "Personal Dialing Directory\n  %(p["personalList"])\n" +
+        "Configuration File\n  %(p["configuration"])\n" +
+        "Default Download Directory\n  %(p["download"])\n" +
+        "Cache Directory\n  %(p["cache"])\n" +
+        "SSH Keys File\n  %(p["keys"])\n" +
+        "Wren Scripts Directory\n  %(p["scripts"])"
+    var viewer = Help.new("File Locations", text)
+    viewer.preformatted = true
+    var size = Screen.size
+    var width = 78.min(size[0])
+    var height = 20.min(size[1])
+    var left = ((size[0] - width + 2) / 2).floor.max(1)
+    var top = ((size[1] - height + 1) / 2).floor + 1
+    viewer.bounds = Rect.new(left, top, width, height)
+    app.modal(viewer)
   }
 
   static buildOptions_(app) {
@@ -598,16 +607,30 @@ class SettingsMenu {
           (command == "select" && index == -1)) {
         if (index == -1) index = lists.count
         var initialName = lists.count == 0 ? "SyncTERM BBS List" : ""
-        var name = MenuUi.prompt(app, "Add Web List", "Name", initialName, 1024,
-            false, webListsHelp_())
-        if (name == null) continue
+        var name = initialName
+        while (true) {
+          name = MenuUi.prompt(app, "Add Web List", "Name", name, 1024,
+              false, webListsHelp_())
+          if (name == null || name.count == 0) break
+          if (MenuUi.namesEqual(name, "System List")) {
+            Alert.show(app, "Add Web List", "Invalid web-list name.")
+            continue
+          }
+          var duplicate = false
+          for (list in lists) {
+            if (MenuUi.namesEqual(name, list[0])) duplicate = true
+          }
+          if (!duplicate) break
+          Alert.show(app, "Add Web List", "Duplicate web-list name.")
+        }
+        if (name == null || name.count == 0) continue
         var initialUri = ""
         if (lists.count == 0) {
           initialUri = "http://syncterm.bbsdev.net/syncterm.lst"
         }
         var uri = MenuUi.prompt(app, "Add Web List", "URI", initialUri, 1024,
             false, webListsHelp_())
-        if (uri == null) continue
+        if (uri == null || uri.count == 0) continue
         app.popStatus("Fetching web list")
         var error = Menu.addWebList(name, uri, index)
         app.popStatus(null)
@@ -712,7 +735,7 @@ class SettingsMenu {
       var commands = {}
       commands[0x5B] = ["previous", true]
       commands[0x5D] = ["next", true]
-      var picked = MenuUi.commandChoice(app, font.name, rows, selected,
+      var picked = MenuUi.commandChoice(app, "Font Details", rows, selected,
           fontDetailsHelp_(), commands)
       if (picked == null) return
       var command = picked[0]
@@ -746,7 +769,11 @@ class SettingsMenu {
       [[MenuEncryption.aes, 256], "Encrypt Using AES-256"],
       [[MenuEncryption.none, 0], "Decrypt"]
     ]
-    var picked = MenuUi.choice(app, "List Encryption", choices, null,
+    var title = Menu.encryptionName
+    if (Menu.encryptionAlgorithm != MenuEncryption.none) {
+      title = "Currently %(title)"
+    }
+    var picked = MenuUi.choice(app, title, choices, null,
         encryptionHelp_())
     if (picked == null) return false
     var algorithm = picked[0]

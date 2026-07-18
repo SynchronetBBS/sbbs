@@ -546,6 +546,13 @@ class BbsEditor {
 
   static rateName_(rate) { rate == 0 ? "Current" : rate.toString }
 
+  static rateSelection_(rates, current) {
+    for (row in rates) {
+      if (row[0] == 0 || (current != 0 && current <= row[0])) return row[0]
+    }
+    return rates.count == 0 ? null : rates[0][0]
+  }
+
   static ansiMusicHelp_() {
     return "# ANSI Music\n\n" +
         "ESC [ | only\n:  Enable SyncTERM's `CSI |` music sequence\n" +
@@ -844,7 +851,8 @@ class BbsEditor {
       rows.add(row_("Comm Rate", rateName_(d["bpsRate"]), Fn.new {
         var rates = Menu.rates
         if (d["connType"] != 7) rates = Menu.serialRates(d["addr"])
-        var value = MenuUi.choice(app, "Comm Rate", rates, d["bpsRate"],
+        var current = rateSelection_(rates, d["bpsRate"])
+        var value = MenuUi.choice(app, "Comm Rate", rates, current,
             commRateHelp_())
         if (value != null) d["bpsRate"] = value
       }))
@@ -928,7 +936,13 @@ class BbsEditor {
       editLog_(app, d, Fn.new { update_(app, b, d, defaults) })
     }))
     if (!serial_(d["connType"])) {
-      rows.add(choiceRow_(app, d, "bpsRate", "Fake Comm Rate", Menu.rates))
+      rows.add(row_("Fake Comm Rate", rateName_(d["bpsRate"]), Fn.new {
+        var rates = Menu.rates
+        var current = rateSelection_(rates, d["bpsRate"])
+        var value = MenuUi.choice(app, "Fake Comm Rate", rates, current,
+            commRateHelp_())
+        if (value != null) d["bpsRate"] = value
+      }))
     }
     rows.add(boolRow_(d, "hidePopups", "Hide Popups"))
     var paletteCount = d["palette"].count

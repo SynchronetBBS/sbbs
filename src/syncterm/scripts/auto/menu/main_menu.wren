@@ -281,6 +281,7 @@ class MainMenuApp {
     _selected = null
     _clipboard = null
     _clipboardType = null
+    _confirmingExit = false
     _settingRows = SettingsMenu.rows(_connected)
 
     _backdrop = ClassicBackdrop.new()
@@ -289,7 +290,7 @@ class MainMenuApp {
 
     _directory = MainPane.new(Fn.new { focusDirectory_() })
     _directory.helpText = directoryHelp_()
-    _directory.onClose = Fn.new { exit_() }
+    _directory.onClose = Fn.new { exit_(false) }
     _app.root.add(_directory)
 
     _list = MainList.new(Fn.new { focusDirectory_() },
@@ -320,7 +321,7 @@ class MainMenuApp {
     _settings = MainPane.new(Fn.new { focusSettings_() })
     _settings.title = "SyncTERM Settings"
     _settings.helpText = SettingsMenu.helpText(_connected)
-    _settings.onClose = Fn.new { exit_() }
+    _settings.onClose = Fn.new { exit_(false) }
     _app.root.add(_settings)
 
     _settingsList = MainList.new(Fn.new { focusSettings_() }, null,
@@ -334,15 +335,16 @@ class MainMenuApp {
     _settings.add(_settingsList)
 
     _app.onLayout = Fn.new {|width, height| layout_(width, height) }
-    bind_(Key.escape, Fn.new { exit_() })
-    bind_(Key.f2, Fn.new { edit_() })
-    bind_(Key.ctrlE, Fn.new { edit_() })
-    bind_(Key.insert, Fn.new { add_() })
-    bind_(Key.delete, Fn.new { delete_() })
-    bind_(Key.ctrlS, Fn.new { sort_() })
-    bind_(Key.f5, Fn.new { copy_() })
-    bind_(Key.f6, Fn.new { paste_() })
-    if (!_connected) bind_(Key.ctrlD, Fn.new { quick_() })
+    bind_(Key.escape, Fn.new { exit_(false) })
+    _app.bind(Key.quit, Fn.new {|event| exit_(true) })
+    bindDirectory_(Key.f2, Fn.new { edit_() })
+    bindDirectory_(Key.ctrlE, Fn.new { edit_() })
+    bindDirectory_(Key.insert, Fn.new { add_() })
+    bindDirectory_(Key.delete, Fn.new { delete_() })
+    bindDirectory_(Key.ctrlS, Fn.new { sort_() })
+    bindDirectory_(Key.f5, Fn.new { copy_() })
+    bindDirectory_(Key.f6, Fn.new { paste_() })
+    if (!_connected) bindDirectory_(Key.ctrlD, Fn.new { quick_() })
     if (!_connected) {
       bind_(Key.altB, Fn.new { OfflineScrollbackView.show(_app) })
     }
@@ -353,6 +355,12 @@ class MainMenuApp {
   bind_(key, fn) {
     _app.bind(key, Fn.new {|event|
       if (_app.modalStack.count == 0) fn.call()
+    })
+  }
+
+  bindDirectory_(key, fn) {
+    bind_(key, Fn.new {
+      if (_app.root.focusedChild == _directory) fn.call()
     })
   }
 
@@ -582,6 +590,11 @@ class MainMenuApp {
   }
 
   add_() {
+    if (!Menu.canAppendEntry) {
+      Alert.show(_app, "New Entry",
+          "The directory is full; delete an entry before adding another.")
+      return
+    }
     if (!mutable_("add directory entries")) return
     var preferred = _selected == null ? null : _selected.name
     var name = MenuUi.prompt(_app, "New Entry", "Entry name", "", 30,
@@ -625,6 +638,7 @@ class MainMenuApp {
       refresh_(preferred)
       return
     }
+    Menu.sort()
     refresh_(name)
   }
 
@@ -695,7 +709,7 @@ class MainMenuApp {
         "# SyncTERM Quick Connect\n\n" +
         "Enter a URL in this form:\n\n" +
         "`[(rlogin|telnet|ssh)://][user[:password]@]host[:port]`")
-    if (url == null) return
+    if (url == null || url.count == 0) return
     var bbs = Menu.quickConnect(url)
     if (bbs == null) {
       Alert.show(_app, "Quick Connect", "The address could not be parsed.")
@@ -778,13 +792,23 @@ class MainMenuApp {
     }
   }
 
-  exit_() {
-    if (_connected) {
+  exit_(quitApplication) {
+    if (_connected && !quitApplication) {
+      while (_app.modalStack.count > 0) _app.popModal()
       _app.quit()
       return
     }
+    if (_confirmingExit) return
     var settings = Menu.settings
-    if (!settings.confirmClose || Confirm.show(_app, "Exit SyncTERM?")) {
+    var confirmed = true
+    if (settings.confirmClose) {
+      _confirmingExit = true
+      confirmed = Confirm.show(_app, "Exit SyncTERM?")
+      _confirmingExit = false
+    }
+    if (confirmed) {
+      if (quitApplication) Menu.quitApplication()
+      while (_app.modalStack.count > 0) _app.popModal()
       _app.quit()
     }
   }

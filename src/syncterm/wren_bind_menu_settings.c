@@ -850,10 +850,6 @@ fn_Menu_updateWebList(WrenVM *vm)
 	if (count == 0 || !slot_integer(vm, 1, 0, count - 1, &index) ||
 	    !slot_string(vm, 2, uri, sizeof(uri)))
 		return;
-	if (uri[0] == 0) {
-		wrenSetSlotBool(vm, 0, false);
-		return;
-	}
 	char *replacement = strdup(uri);
 	if (replacement == NULL) {
 		wrenSetSlotBool(vm, 0, false);

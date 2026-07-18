@@ -26,6 +26,14 @@ class SortProfiles {
     return labels
   }
 
+  static nameUsed_(name, except) {
+    var profiles = Menu.sortProfiles
+    for (i in 0...profiles.count) {
+      if (i != except && MenuUi.namesEqual(profiles[i][0], name)) return true
+    }
+    return false
+  }
+
   static show(app) {
     var clipboard = null
     var selected = Menu.activeSortProfile
@@ -73,7 +81,7 @@ class SortProfiles {
       } else if (command == "paste") {
         if (clipboard != null) paste_(app, index, clipboard)
       } else if (command == "select") {
-        editProfiles_(app, index)
+        selected = editProfiles_(app, index)
       }
     }
   }
@@ -81,24 +89,29 @@ class SortProfiles {
   static editProfiles_(app, index) {
     while (true) {
       var profiles = Menu.sortProfiles
-      if (profiles.count == 0) return
+      if (profiles.count == 0) return 0
       index = ((index % profiles.count) + profiles.count) % profiles.count
       var profile = profiles[index]
       var result = editFields_(app, profile[0], profile[1].toList)
       if (!sameOrder_(result[0], profile[1]) &&
           !Menu.updateSortProfile(index, profile[0], result[0])) {
         failed_(app)
-        return
+        return index
       }
-      if (result[1] == 0) return
+      if (result[1] == 0) return index
       index = index + result[1]
     }
   }
 
   static new_(app, index) {
-    var name = MenuUi.prompt(app, "New Sort Profile", "Profile name",
-        "", 19, false, profileNameHelp_())
-    if (name == null) return
+    var name = ""
+    while (true) {
+      name = MenuUi.prompt(app, "New Sort Profile", "Profile name",
+          name, 19, false, profileNameHelp_())
+      if (name == null || name.count == 0) return
+      if (!nameUsed_(name, -1)) break
+      Alert.show(app, "New Sort Profile", "Duplicate profile name.")
+    }
     var result = editFields_(app, name, [1])
     if (!Menu.addSortProfile(index, name, result[0])) failed_(app)
   }
@@ -106,18 +119,24 @@ class SortProfiles {
   static rename_(app, index, profile) {
     var name = MenuUi.prompt(app, "Rename Sort Profile", "Profile name",
         profile[0], 19, false, profileNameHelp_())
-    if (name != null &&
-        !Menu.updateSortProfile(index, name, profile[1])) failed_(app)
+    if (name == null || name.count == 0 ||
+        MenuUi.namesEqual(name, profile[0])) return
+    if (nameUsed_(name, index)) {
+      Alert.show(app, "Rename Sort Profile", "Duplicate profile name.")
+      return
+    }
+    if (!Menu.updateSortProfile(index, name, profile[1])) failed_(app)
   }
 
   static paste_(app, index, clipboard) {
     var name = clipboard[0]
-    for (profile in Menu.sortProfiles) {
-      if (profile[0] == name) {
+    if (nameUsed_(name, -1)) {
+      while (true) {
         name = MenuUi.prompt(app, "Paste Sort Profile", "Profile name",
             name, 19, false, profileNameHelp_())
-        if (name == null) return
-        break
+        if (name == null || name.count == 0) return
+        if (!nameUsed_(name, -1)) break
+        Alert.show(app, "Paste Sort Profile", "Duplicate profile name.")
       }
     }
     if (!Menu.addSortProfile(index, name, clipboard[1])) failed_(app)
