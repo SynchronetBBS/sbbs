@@ -183,6 +183,35 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 			return true;
 		}
 	}
+
+	sst_input_event_t iev;
+	if (sst_io_next_event(&iev)) {
+		switch (iev.type) {
+		case SST_EV_MOUSE_MOVE:
+			_graphicsManager->warpMouse(iev.x, iev.y);   /* compositor draws the cursor here */
+			event.type = Common::EVENT_MOUSEMOVE;
+			event.mouse = Common::Point(iev.x, iev.y);
+			return true;
+		case SST_EV_MOUSE_DOWN:
+		case SST_EV_MOUSE_UP: {
+			bool down = (iev.type == SST_EV_MOUSE_DOWN);
+			event.mouse = Common::Point(iev.x, iev.y);
+			if (iev.button == 0)
+				event.type = down ? Common::EVENT_LBUTTONDOWN : Common::EVENT_LBUTTONUP;
+			else if (iev.button == 2)
+				event.type = down ? Common::EVENT_RBUTTONDOWN : Common::EVENT_RBUTTONUP;
+			else
+				event.type = down ? Common::EVENT_MBUTTONDOWN : Common::EVENT_MBUTTONUP;
+			return true;
+		}
+		case SST_EV_WHEEL:
+			event.mouse = Common::Point(iev.x, iev.y);
+			event.type = (iev.wheel < 0) ? Common::EVENT_WHEELUP : Common::EVENT_WHEELDOWN;
+			return true;
+		default:
+			break;   /* key events: later task */
+		}
+	}
 	return false;
 }
 
