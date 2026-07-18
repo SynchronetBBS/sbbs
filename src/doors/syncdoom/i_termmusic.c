@@ -82,7 +82,7 @@ static void term_emit(term_song_t *s)
 	}
 	// Cache hit (the client's own persistent cache, or the door-side OGG on disk):
 	// ship it without rendering. Only render the MIDI/MUS on a full miss.
-	hit = termgfx_audio_music_play(sd_audio, s->name, term_music_v(), 1);
+	hit = termgfx_audio_music_play(sd_audio, s->name, termgfx_db_from_pct(term_music_v()), 1);
 	if (hit != TERMGFX_MUSIC_RENDER) {
 		dlog("music: %s -- %s", s->name,
 		     hit == TERMGFX_MUSIC_CLIENT ? "client-cached (no render, no upload)"
@@ -91,7 +91,7 @@ static void term_emit(term_song_t *s)
 	}
 	// Cold miss: hand the MUS/MIDI to termgfx's worker thread; the game keeps running while it
 	// renders + encodes, and the poll in DG_DrawFrame ships it when ready -- no level-load freeze.
-	termgfx_audio_music_async_submit(sd_audio, s->name, s->data, (size_t)s->len, 48000, term_music_v(), 1);
+	termgfx_audio_music_async_submit(sd_audio, s->name, s->data, (size_t)s->len, 48000, termgfx_db_from_pct(term_music_v()), 1);
 	dlog("music: %s submitted -> async render", s->name);
 }
 
@@ -118,7 +118,7 @@ static void I_Term_SetMusicVolume(int volume)
 	if (term_music_vol == 0)
 		termgfx_audio_music_stop(sd_audio);             // 0% = OFF: stop the loop (no silent transfer)
 	else {
-		termgfx_audio_music_volume(sd_audio, term_music_v());   // live, no restart
+		termgfx_audio_music_volume(sd_audio, termgfx_db_from_pct(term_music_v()));   // live, no restart
 		if (was == 0 && term_current != NULL && termgfx_audio_tier(sd_audio) >= 1)
 			term_emit(term_current);                // raised off 0: resume the current track
 	}

@@ -40,12 +40,14 @@ void termgfx_audio_sfx_store(termgfx_audio_t *m, const char *leaf,
 }
 
 void termgfx_audio_sfx_play_named(termgfx_audio_t *m, const char *leaf,
-                                  int vol, int pan)
+                                  float db, int pan)
 {
-    (void)m; (void)vol; (void)pan;
+    (void)m; (void)db; (void)pan;
     if (fake_played_n < FAKE_MAX)
         snprintf(fake_played[fake_played_n++], 16, "%s", leaf);
 }
+
+float termgfx_db_from_pct(int pct) { return (float)pct; }   /* stub: level is ignored below */
 
 void termgfx_audio_sfx_stop_all(termgfx_audio_t *m)
 {

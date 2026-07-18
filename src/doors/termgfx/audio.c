@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>       // log10f, for pan -> per-side dB
 #ifdef TERMGFX_WITH_SNDFILE
 #include <sndfile.h>
 #endif
@@ -552,61 +553,96 @@ size_t termgfx_audio_load(uint8_t **buf, size_t *cap, int slot, const char *file
 	                       "\x1b_SyncTERM:A;Load;S=%d;%s\x1b\\", slot, file);
 }
 
-size_t termgfx_audio_queue(uint8_t **buf, size_t *cap, int ch, int slot,
-                           int vol, int pan, int loop)
-{
-	int vl, vr;
+// ---- volume is dB (see audio.h) ------------------------------------------
 
-	if (vol < 0)
-		vol = 0;
-	if (vol > 100)
-		vol = 100;
+// Faithful conversion of a legacy 0..100 percentage to dB: 100 -> 0, 50 -> -6,
+// <=0 -> MUTE. This is exactly what SyncTERM's back-compat path did to a bare
+// percent, so a caller migrating from percent keeps its old loudness.
+float
+termgfx_db_from_pct(int pct)
+{
+	if (pct <= 0)
+		return TERMGFX_DB_MUTE;
+	if (pct > 100)
+		pct = 100;
+	return 20.0f * log10f((float)pct / 100.0f);
+}
+
+// Floor a dB level at the silence floor (never emit -inf/absurd values); leave
+// the ceiling open so callers can boost above unity.
+static float
+termgfx_db_clamp(float db)
+{
+	if (db < TERMGFX_DB_MUTE)
+		return TERMGFX_DB_MUTE;
+	return db;
+}
+
+// The far side's attenuation, in dB, for a -100..+100 pan: 0 at center, the
+// silence floor at a hard pan. The near side is unattenuated.
+static float
+termgfx_pan_atten_db(int pan)
+{
+	int a = pan < 0 ? -pan : pan;
+	if (a >= 100)
+		return TERMGFX_DB_MUTE;
+	if (a <= 0)
+		return 0.0f;
+	return 20.0f * log10f((float)(100 - a) / 100.0f);
+}
+
+size_t
+termgfx_audio_queue(uint8_t **buf, size_t *cap, int ch, int slot,
+                    float db, int pan, int loop)
+{
+	float dl = db, dr = db;
+	float att;
+
 	if (pan < -100)
 		pan = -100;
 	if (pan > 100)
 		pan = 100;
-	vl = (pan > 0) ? vol * (100 - pan) / 100 : vol;
-	vr = (pan < 0) ? vol * (100 + pan) / 100 : vol;
+	att = termgfx_pan_atten_db(pan);
+	if (pan > 0)
+		dl = db + att;          // panned right: attenuate the left
+	else if (pan < 0)
+		dr = db + att;          // panned left: attenuate the right
+	dl = termgfx_db_clamp(dl);
+	dr = termgfx_db_clamp(dr);
 
-	if (*cap < 96) {
-		*buf = realloc(*buf, 96);
-		*cap = 96;
+	if (*cap < 112) {
+		*buf = realloc(*buf, 112);
+		*cap = 112;
 	}
 	return (size_t)sprintf((char *)*buf,
-	                       "\x1b_SyncTERM:A;Queue;C=%d;S=%d;VL=%d;VR=%d%s\x1b\\",
-	                       ch, slot, vl, vr, loop ? ";L" : "");
+	                       "\x1b_SyncTERM:A;Queue;C=%d;S=%d;VL=%.1fdB;VR=%.1fdB%s\x1b\\",
+	                       ch, slot, dl, dr, loop ? ";L" : "");
 }
 
-size_t termgfx_audio_volume(uint8_t **buf, size_t *cap, int ch, int vol)
+size_t
+termgfx_audio_volume(uint8_t **buf, size_t *cap, int ch, float db)
 {
-	if (vol < 0)
-		vol = 0;
-	if (vol > 100)
-		vol = 100;
+	db = termgfx_db_clamp(db);
 	if (*cap < 64) {
 		*buf = realloc(*buf, 64);
 		*cap = 64;
 	}
 	return (size_t)sprintf((char *)*buf,
-	                       "\x1b_SyncTERM:A;Volume;C=%d;V=%d\x1b\\", ch, vol);
+	                       "\x1b_SyncTERM:A;Volume;C=%d;V=%.1fdB\x1b\\", ch, db);
 }
 
-size_t termgfx_audio_volume_lr(uint8_t **buf, size_t *cap, int ch, int vl, int vr)
+size_t
+termgfx_audio_volume_lr(uint8_t **buf, size_t *cap, int ch, float dl, float dr)
 {
-	if (vl < 0)
-		vl = 0;
-	if (vl > 100)
-		vl = 100;
-	if (vr < 0)
-		vr = 0;
-	if (vr > 100)
-		vr = 100;
-	if (*cap < 64) {
-		*buf = realloc(*buf, 64);
-		*cap = 64;
+	dl = termgfx_db_clamp(dl);
+	dr = termgfx_db_clamp(dr);
+	if (*cap < 80) {
+		*buf = realloc(*buf, 80);
+		*cap = 80;
 	}
 	return (size_t)sprintf((char *)*buf,
-	                       "\x1b_SyncTERM:A;Volume;C=%d;VL=%d;VR=%d\x1b\\", ch, vl, vr);
+	                       "\x1b_SyncTERM:A;Volume;C=%d;VL=%.1fdB;VR=%.1fdB\x1b\\",
+	                       ch, dl, dr);
 }
 
 size_t termgfx_audio_synth(uint8_t **buf, size_t *cap, int slot,

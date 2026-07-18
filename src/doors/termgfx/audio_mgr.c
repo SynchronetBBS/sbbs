@@ -86,7 +86,7 @@ struct termgfx_audio {
 	double music_quality;                  // Ogg/Opus VBR quality (0..1) for fresh music encodes
 	char cache_prefix[24];                 // consumer/door name -> SyncTERM cache "<prefix>/music|sfx/.."
 
-	struct { int handle; int vl, vr; } loop[NLOOP_CH]; // looping voices: loop[i] on LOOP_CH_LO+i;
+	struct { int handle; float vl, vr; } loop[NLOOP_CH]; // looping voices: loop[i] on LOOP_CH_LO+i;
 	int loop_seq;                          // .handle 0 = free; loop_seq mints unique handles
 	                                       // .vl/.vr = last L/R volume sent (skip redundant updates)
 
@@ -122,13 +122,14 @@ struct termgfx_audio {
 	// job (main -> worker): the newest submitted track
 	uint8_t * mus_job;                     // copied MIDI/MUS bytes (worker frees after render)
 	size_t mus_job_len;
-	int mus_job_rate, mus_job_vol;
+	int mus_job_rate;
+	float mus_job_vol;
 	char mus_job_key[MUSNAME_MAX];
 	int mus_job_pending;
 	// result (worker -> main): the pre-built C;S upload APC for the finished track
 	uint8_t * mus_res;                     // ready-to-send APC bytes (main frees after emit)
 	size_t mus_res_len;
-	int mus_res_vol;
+	float mus_res_vol;
 	char mus_res_key[MUSNAME_MAX];
 	unsigned mus_res_gen;                  // the gen this result was produced for
 	int mus_res_ready;
@@ -449,7 +450,7 @@ static uint64_t sfx_now_ms(void)
 #endif
 }
 
-static void sfx_dispatch(termgfx_audio_t *m, const char *fn, int vol, int pan, int dur_ms)
+static void sfx_dispatch(termgfx_audio_t *m, const char *fn, float db, int pan, int dur_ms)
 {
 	int      slot = m->next_slot;
 	uint64_t now  = sfx_now_ms();
@@ -473,7 +474,7 @@ static void sfx_dispatch(termgfx_audio_t *m, const char *fn, int vol, int pan, i
 
 	send_buf(m, termgfx_audio_flush(&m->buf, &m->cap, ch, 0), TERMGFX_AUDIO_PRIO);
 	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, slot, fn), TERMGFX_AUDIO_PRIO);
-	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, ch, slot, vol, pan, 0), TERMGFX_AUDIO_PRIO);
+	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, ch, slot, db, pan, 0), TERMGFX_AUDIO_PRIO);
 }
 
 // Rough play time of a complete VOC/WAV file, for the busy tracking above. WAV: total
@@ -492,7 +493,7 @@ static int sfx_file_dur_ms(const uint8_t *d, size_t len)
 
 void termgfx_audio_sfx(termgfx_audio_t *m, int id,
                        const void *pcm, size_t bytes, int bits, int channels,
-                       int rate, int vol, int pan)
+                       int rate, float db, int pan)
 {
 	char fn[48];
 
@@ -514,7 +515,7 @@ void termgfx_audio_sfx(termgfx_audio_t *m, int id,
 		uint64_t bps = (uint64_t)(rate > 0 ? rate : 11025)
 		               * (uint64_t)(channels > 0 ? channels : 1)
 		               * (uint64_t)(bits >= 16 ? 2 : 1);
-		sfx_dispatch(m, fn, vol, pan, (int)((uint64_t)bytes * 1000u / bps));
+		sfx_dispatch(m, fn, db, pan, (int)((uint64_t)bytes * 1000u / bps));
 	}
 }
 
@@ -571,7 +572,7 @@ static int named_find(const termgfx_audio_t *m, const char *leaf)
 }
 
 void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
-                            const void *filedata, size_t filelen, int vol, int pan)
+                            const void *filedata, size_t filelen, float db, int pan)
 {
 	char fn[48];
 
@@ -583,7 +584,7 @@ void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
 		cache_name(m, "sfx", leaf, fn, sizeof(fn));   // "<prefix>/sfx/<id>"
 	}
 	sfx_cache_file_once(m, id, filedata, filelen, fn);
-	sfx_dispatch(m, fn, vol, pan,
+	sfx_dispatch(m, fn, db, pan,
 	             m->sfx_dur[id] > 0 ? m->sfx_dur[id]              // exact (captured at transcode)
 	                                : sfx_file_dur_ms(filedata, filelen));
 }
@@ -621,7 +622,7 @@ void termgfx_audio_sfx_store(termgfx_audio_t *m, const char *leaf,
 }
 
 void termgfx_audio_sfx_play_named(termgfx_audio_t *m, const char *leaf,
-                                  int vol, int pan)
+                                  float db, int pan)
 {
 	char fn[48];
 	int  i;
@@ -634,13 +635,13 @@ void termgfx_audio_sfx_play_named(termgfx_audio_t *m, const char *leaf,
 	if (i < 0)                             // never Stored -> nothing to Load
 		return;
 	cache_name(m, "sfx", leaf, fn, sizeof(fn));
-	sfx_dispatch(m, fn, vol, pan, m->named_dur[i]);
+	sfx_dispatch(m, fn, db, pan, m->named_dur[i]);
 }
 
 // ---- looping SFX (ambience) ----------------------------------------------
 
 int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
-                             const void *filedata, size_t filelen, int vol)
+                             const void *filedata, size_t filelen, float db)
 {
 	char fn[48];
 	int  i, slot;
@@ -681,37 +682,36 @@ int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
 	// channel base one-shots ride, since sfx_dispatch never sends A;Volume) and drive the
 	// live level via A;Volume: the voice stays adjustable AND loops mix at the same level
 	// as one-shots of equal nominal volume (queueing at 100% ran loops up to 12dB hot).
-	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, LOOP_CH_LO + i, slot, 25, 0, 1),
+	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, LOOP_CH_LO + i, slot,
+	                                termgfx_db_from_pct(25), 0, 1),
 	         TERMGFX_AUDIO_PRIO);
-	send_buf(m, termgfx_audio_volume_lr(&m->buf, &m->cap, LOOP_CH_LO + i, vol, vol),
+	send_buf(m, termgfx_audio_volume_lr(&m->buf, &m->cap, LOOP_CH_LO + i, db, db),
 	         TERMGFX_AUDIO_PRIO);
 
 	if (++m->loop_seq <= 0)
 		m->loop_seq = 1;
 	m->loop[i].handle = m->loop_seq;
-	m->loop[i].vl     = vol;        // started centered; FX_Pan3D pans it next frame
-	m->loop[i].vr     = vol;
+	m->loop[i].vl     = db;         // started centered; FX_Pan3D pans it next frame
+	m->loop[i].vr     = db;
 	return m->loop_seq;
 }
 
-int termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan)
+int termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, float db, int pan)
 {
-	int i, vl, vr;
+	int   i;
+	float vl, vr;
 
 	if (m == NULL || m->tier < 1 || handle <= 0)
 		return 0;
-	if (vol < 0)
-		vol = 0;
-	else if (vol > 100)
-		vol = 100;
 	if (pan < -100)
 		pan = -100;
 	else if (pan > 100)
 		pan = 100;
-	// Side toward the source stays at full `vol`; the opposite side attenuates --
-	// matching the original audiolib pan law (and termgfx_audio_queue's VL/VR).
-	vl = (pan > 0) ? vol * (100 - pan) / 100 : vol;
-	vr = (pan < 0) ? vol * (100 + pan) / 100 : vol;
+	// Side toward the source stays at full `db`; the opposite side attenuates in
+	// dB -- matching the original audiolib pan law (and termgfx_audio_queue's
+	// VL/VR). db_from_pct(100-|pan|) is exactly that side's dB attenuation.
+	vl = (pan > 0) ? db + termgfx_db_from_pct(100 - pan) : db;
+	vr = (pan < 0) ? db + termgfx_db_from_pct(100 + pan) : db;
 	for (i = 0; i < NLOOP_CH; i++) {
 		if (m->loop[i].handle == handle) {
 			if (vl == m->loop[i].vl && vr == m->loop[i].vr)   // unchanged -- don't flood APC
@@ -871,13 +871,14 @@ static void mus_write_file(const char *path, const uint8_t *data, size_t len)
 // order, so the small Load/Queue stay behind the track's C;S upload (Store-before-Load)
 // and never race ahead of it. Queue at unity (100) + set the channel base volume
 // separately, so a live music-volume change doesn't multiply with a per-buf level.
-static void mus_ship(termgfx_audio_t *m, const char *cachefn, int vol)
+static void mus_ship(termgfx_audio_t *m, const char *cachefn, float db)
 {
 	send_buf(m, termgfx_audio_flush(&m->buf, &m->cap, MUSIC_CH, 0), TERMGFX_AUDIO_BULK);
 	send_buf(m, termgfx_audio_load(&m->buf, &m->cap, MUSIC_SLOT, cachefn), TERMGFX_AUDIO_BULK);
-	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, MUSIC_SLOT, 100, 0,
+	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, MUSIC_SLOT,
+	                                termgfx_db_from_pct(100), 0,
 	                                m->music_loop), TERMGFX_AUDIO_BULK);
-	send_buf(m, termgfx_audio_volume(&m->buf, &m->cap, MUSIC_CH, vol), TERMGFX_AUDIO_BULK);
+	send_buf(m, termgfx_audio_volume(&m->buf, &m->cap, MUSIC_CH, db), TERMGFX_AUDIO_BULK);
 }
 
 void termgfx_audio_set_music_cache_dir(termgfx_audio_t *m, const char *dir)
@@ -905,7 +906,7 @@ void termgfx_audio_set_music_quality(termgfx_audio_t *m, double quality)
 // cache (and, once C;L is wired, the client's own persistent cache). Returns 1 if it
 // shipped the track (or it's already playing); 0 if the door must render + supply via
 // termgfx_audio_music(). Lets the door skip the expensive MIDI render on a cache hit.
-int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol, int loop)
+int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, float db, int loop)
 {
 	char     key[MUSNAME_MAX];
 	char     leaf[MUSNAME_MAX + 8];
@@ -937,7 +938,7 @@ int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol, int 
 	// Load it straight from there, NO Store/upload, NO disk read, NO render.
 	if (cl_has(m, leaf)) {                       // match the "<key>.ogg" basename
 		mus_remember(m, key);                   // session bookkeeping (no Store needed)
-		mus_ship(m, cachefn, vol);
+		mus_ship(m, cachefn, db);
 		strncpy(m->music_name, key, sizeof(m->music_name) - 1);
 		m->music_name[sizeof(m->music_name) - 1] = '\0';
 		return TERMGFX_MUSIC_CLIENT;            // played with zero upload
@@ -955,7 +956,7 @@ int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol, int 
 		mus_remember(m, key);
 	}
 	free(ogg);
-	mus_ship(m, cachefn, vol);
+	mus_ship(m, cachefn, db);
 	strncpy(m->music_name, key, sizeof(m->music_name) - 1);
 	m->music_name[sizeof(m->music_name) - 1] = '\0';
 	return TERMGFX_MUSIC_CACHED;                // played from the door-side disk cache
@@ -963,7 +964,7 @@ int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol, int 
 
 void termgfx_audio_music(termgfx_audio_t *m, const char *name,
                          const void *pcm, size_t bytes, int bits, int channels,
-                         int rate, int vol, int loop)
+                         int rate, float db, int loop)
 {
 	char key[MUSNAME_MAX];
 	char leaf[MUSNAME_MAX + 8];
@@ -1009,7 +1010,7 @@ void termgfx_audio_music(termgfx_audio_t *m, const char *name,
 		send_buf(m, n, TERMGFX_AUDIO_BULK);
 		mus_remember(m, key);
 	}
-	mus_ship(m, cachefn, vol);
+	mus_ship(m, cachefn, db);
 	strncpy(m->music_name, key, sizeof(m->music_name) - 1);
 	m->music_name[sizeof(m->music_name) - 1] = '\0';
 }
@@ -1033,7 +1034,7 @@ void termgfx_audio_music_stop(termgfx_audio_t *m)
 // channel; call termgfx_audio_stream_stop() at the end to flush it. `bytes` =
 // raw PCM byte count; `bits` 8 (unsigned) or 16 (signed); `vol` 0..100.
 void termgfx_audio_stream_chunk(termgfx_audio_t *m, const void *pcm, size_t bytes,
-                                int bits, int channels, int rate, int vol)
+                                int bits, int channels, int rate, float db)
 {
 	int slot;
 
@@ -1062,7 +1063,7 @@ void termgfx_audio_stream_chunk(termgfx_audio_t *m, const void *pcm, size_t byte
 		         TERMGFX_AUDIO_BULK);
 		send_buf(m, termgfx_audio_load(&m->buf, &m->cap, slot, fn), TERMGFX_AUDIO_BULK);
 	}
-	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, slot, vol, 0, 0),
+	send_buf(m, termgfx_audio_queue(&m->buf, &m->cap, MUSIC_CH, slot, db, 0, 0),
 	         TERMGFX_AUDIO_BULK);
 }
 
@@ -1076,11 +1077,11 @@ void termgfx_audio_stream_stop(termgfx_audio_t *m)
 	m->music_name[0] = '\0';
 }
 
-void termgfx_audio_music_volume(termgfx_audio_t *m, int vol)
+void termgfx_audio_music_volume(termgfx_audio_t *m, float db)
 {
 	if (m == NULL || m->tier < 1)
 		return;
-	send_buf(m, termgfx_audio_volume(&m->buf, &m->cap, MUSIC_CH, vol), TERMGFX_AUDIO_PRIO);
+	send_buf(m, termgfx_audio_volume(&m->buf, &m->cap, MUSIC_CH, db), TERMGFX_AUDIO_PRIO);
 }
 
 void termgfx_audio_sfx_stop_all(termgfx_audio_t *m)
@@ -1136,7 +1137,7 @@ static size_t mus_transcode(termgfx_audio_t *m, const char *key, const void *mid
 }
 
 // Main half: stage the finished upload (once per session), ship the loop, mark it playing.
-static void mus_emit(termgfx_audio_t *m, const char *key, const uint8_t *apc, size_t apclen, int vol)
+static void mus_emit(termgfx_audio_t *m, const char *key, const uint8_t *apc, size_t apclen, float db)
 {
 	char leaf[MUSNAME_MAX + 8];
 	char cachefn[96];
@@ -1148,7 +1149,7 @@ static void mus_emit(termgfx_audio_t *m, const char *key, const uint8_t *apc, si
 			m->emit(m->ctx, apc, apclen, TERMGFX_AUDIO_BULK);   // staged; out_flush drains over frames
 		mus_remember(m, key);
 	}
-	mus_ship(m, cachefn, vol);
+	mus_ship(m, cachefn, db);
 	strncpy(m->music_name, key, sizeof(m->music_name) - 1);
 	m->music_name[sizeof(m->music_name) - 1] = '\0';
 }
@@ -1162,7 +1163,8 @@ static void mus_worker(void *arg)
 	for (;;) {
 		uint8_t *job;
 		size_t   joblen, apclen;
-		int      rate, vol;
+		int      rate;
+		float    vol;
 		char     key[MUSNAME_MAX];
 		unsigned gen;
 
@@ -1206,7 +1208,7 @@ static void mus_worker(void *arg)
 
 void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
                                       const void *music, size_t len, int rate,
-                                      int vol, int loop)
+                                      float db, int loop)
 {
 	char     key[MUSNAME_MAX];
 	uint8_t *copy;
@@ -1240,7 +1242,7 @@ void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
 	}
 	free(m->mus_job);                                // supersede a not-yet-taken job
 	m->mus_job      = copy; m->mus_job_len = len;
-	m->mus_job_rate = rate; m->mus_job_vol = vol;
+	m->mus_job_rate = rate; m->mus_job_vol = db;
 	memcpy(m->mus_job_key, key, sizeof(m->mus_job_key));
 	m->mus_job_pending = 1;
 	m->mus_gen++;
@@ -1252,7 +1254,8 @@ int termgfx_audio_music_async_poll(termgfx_audio_t *m)
 {
 	uint8_t *apc    = NULL;
 	size_t   apclen = 0;
-	int      vol    = 0, ship = 0;
+	float    vol    = 0;
+	int      ship   = 0;
 	char     key[MUSNAME_MAX];
 
 	if (m == NULL || !m->mus_thr_up)

@@ -132,7 +132,7 @@ static int I_Term_StartSound(sfxinfo_t *sfxinfo, int channel, int vol, int sep)
 
 	pan = (sep - 128) * 100 / 128;          // sep 0..255 (128=center) -> -100..+100
 	termgfx_audio_sfx(sd_audio, id, data + 8, (size_t)length,
-	                  8, 1, rate, vol * 100 / 127, pan);
+	                  8, 1, rate, termgfx_db_from_pct(vol * 100 / 127), pan);
 
 	W_ReleaseLumpNum(lumpnum);
 	return channel;

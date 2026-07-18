@@ -104,7 +104,7 @@ static void ship_throttled(bool flush_all)
 		if (!flush_all && (avail < STREAM_CHUNK_BYTES || total_shipped > played + ahead))
 			break;
 		termgfx_audio_stream_chunk(m, accum.data() + ship_off, chunk,
-		                           accum_bits, accum_channels, accum_rate, 100);
+		                           accum_bits, accum_channels, accum_rate, termgfx_db_from_pct(100));
 		ship_off      += chunk;
 		total_shipped += chunk;
 	}
@@ -165,7 +165,7 @@ int VQA_StartAudio(VQAHandle* handle)
 	// by itself on loud FMVs (termgfx README gain model). Play a few dB down for
 	// headroom; still well above any muted-music level, so dialog stays clear.
 	// The next theme re-sets its own volume when it plays.
-	termgfx_audio_music_volume(door_io_audio(), MOVIE_AUDIO_VOL);
+	termgfx_audio_music_volume(door_io_audio(), termgfx_db_from_pct(MOVIE_AUDIO_VOL));
 	movie_clk_reset();
 	return 0;
 }

@@ -605,7 +605,7 @@ static void sa_commit_sfx(SampleTrackerTypeImp *st)
 	hash = sa_fnv1a(st->pcm, st->len);
 	id   = sa_sfx_id_for(hash);
 	termgfx_audio_sfx(m, id, st->pcm, st->len, st->bits, st->channels, st->rate,
-	                  st->vol_pct, 0 /* pan: never reaches this seam, see file header */);
+	                  termgfx_db_from_pct(st->vol_pct), 0 /* pan: never reaches this seam, see file header */);
 }
 
 // Looping music: content-hash identity, cache-checked before rendering -- a
@@ -632,9 +632,9 @@ static void sa_commit_music_named(SampleTrackerTypeImp *st, char *name_out, size
 	snprintf(name, sizeof name, "d_%08x", hash);
 	// loop=1: the terminal loops the score forever, while RA's theme manager is
 	// told when the song "ended" by SoundImp_Sample_Status()'s own duration model.
-	if (termgfx_audio_music_play(m, name, st->vol_pct, 1) == TERMGFX_MUSIC_RENDER)
+	if (termgfx_audio_music_play(m, name, termgfx_db_from_pct(st->vol_pct), 1) == TERMGFX_MUSIC_RENDER)
 		termgfx_audio_music(m, name, st->pcm, st->len, st->bits, st->channels,
-		                    st->rate, st->vol_pct, 1);
+		                    st->rate, termgfx_db_from_pct(st->vol_pct), 1);
 	if (name_out != NULL && name_out_sz > 0)
 		snprintf(name_out, name_out_sz, "%s", name);
 }
@@ -813,7 +813,7 @@ void SoundImp_Set_Sample_Volume(SampleTrackerTypeImp *st, unsigned int volume)
 	// theme transition). One-shot SFX have no such live-update concept in
 	// termgfx's fire-and-forget API, so this is a no-op for those.
 	if (st->as_music)
-		termgfx_audio_music_volume(door_io_audio(), pct);
+		termgfx_audio_music_volume(door_io_audio(), termgfx_db_from_pct(pct));
 }
 
 // No real device/context to (un)suspend -- termgfx ships fully-rendered
@@ -1097,7 +1097,7 @@ bool SoundImp_Sample_Status(SampleTrackerTypeImp *st)
 		if (st->fp_done && sa_map_read(st->fp, cached_name, sizeof cached_name, NULL)) {
 			termgfx_audio_t *m = door_io_audio();
 			if (m != NULL
-			    && termgfx_audio_music_play(m, cached_name, st->vol_pct, 1)
+			    && termgfx_audio_music_play(m, cached_name, termgfx_db_from_pct(st->vol_pct), 1)
 			    != TERMGFX_MUSIC_RENDER) {
 				st->as_music = true;
 				st->len = 0;

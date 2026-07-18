@@ -1,44 +1,44 @@
 000 Q;libsndfile
-001 A;Volume ch=2 vol=100
+001 A;Volume ch=2 vol=0.0dB
 002 C;S name=s/z bytes=922
 003 C;S name=s/0 bytes=1296
 004 A;Load slot=0 file=s/0
-005 A;Queue ch=2 slot=0 vol=100 loop=0
+005 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 006 A;Update ch=2
 007 C;S name=s/1 bytes=1298
 008 A;Load slot=0 file=s/1
-009 A;Queue ch=2 slot=0 vol=100 loop=0
+009 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 010 A;Update ch=2
 011 C;S name=s/2 bytes=1301
 012 A;Load slot=0 file=s/2
-013 A;Queue ch=2 slot=0 vol=100 loop=0
+013 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 014 A;Update ch=2
 015 C;S name=s/3 bytes=1337
 016 A;Load slot=0 file=s/3
-017 A;Queue ch=2 slot=0 vol=100 loop=0
+017 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 018 A;Update ch=2
 019 C;S name=s/0 bytes=1389
 020 A;Load slot=0 file=s/0
-021 A;Queue ch=2 slot=0 vol=100 loop=0
+021 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 022 A;Update ch=2
 023 A;Load slot=0 file=s/z
-024 A;Queue ch=2 slot=0 vol=100 loop=0
+024 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 025 A;Update ch=2
 026 C;S name=s/1 bytes=1338
 027 A;Load slot=0 file=s/1
-028 A;Queue ch=2 slot=0 vol=100 loop=0
+028 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 029 A;Update ch=2
 030 C;S name=s/2 bytes=1319
 031 A;Load slot=0 file=s/2
-032 A;Queue ch=2 slot=0 vol=100 loop=0
+032 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 033 A;Update ch=2
 034 C;S name=s/3 bytes=1318
 035 A;Load slot=0 file=s/3
-036 A;Queue ch=2 slot=0 vol=100 loop=0
+036 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 037 A;Update ch=2
 038 C;S name=s/0 bytes=1324
 039 A;Load slot=0 file=s/0
-040 A;Queue ch=2 slot=0 vol=100 loop=0
+040 A;Queue ch=2 slot=0 vol=0.0dB loop=0
 041 A;Update ch=2
 042 A;Flush ch=2 fade=0
 -- 43 record(s), 3 sr_io_out_flush() call(s) --

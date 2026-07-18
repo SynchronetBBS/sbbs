@@ -84,7 +84,7 @@ termgfx_stream_play(termgfx_stream_t *s, const char *name)
 {
 	termgfx_stream_apc(s, termgfx_audio_load(&s->apc, &s->apc_cap, s->cfg.slot, name));
 	termgfx_stream_apc(s, termgfx_audio_queue(&s->apc, &s->apc_cap, s->cfg.ch,
-	                                          s->cfg.slot, 100, 0, 0));
+	                                          s->cfg.slot, termgfx_db_from_pct(100), 0, 0));
 	termgfx_stream_apc(s, termgfx_audio_update(&s->apc, &s->apc_cap, s->cfg.ch));
 	s->chunks++;
 }
@@ -121,7 +121,7 @@ termgfx_stream_send(termgfx_stream_t *s, const uint8_t *ogg, size_t len)
 		termgfx_stream_apc(s, termgfx_audio_load_blob_file(&s->apc, &s->apc_cap,
 		                                                   s->cfg.slot, ogg, len));
 		termgfx_stream_apc(s, termgfx_audio_queue(&s->apc, &s->apc_cap, s->cfg.ch,
-		                                          s->cfg.slot, 100, 0, 0));
+		                                          s->cfg.slot, termgfx_db_from_pct(100), 0, 0));
 		termgfx_stream_apc(s, termgfx_audio_update(&s->apc, &s->apc_cap, s->cfg.ch));
 		s->chunks++;
 		return;
@@ -261,7 +261,7 @@ termgfx_stream_caps(termgfx_stream_t *s, int tier)
 		return;
 	}
 	termgfx_stream_apc(s, termgfx_audio_volume(&s->apc, &s->apc_cap, s->cfg.ch,
-	                                           s->cfg.volume));
+	                                           termgfx_db_from_pct(s->cfg.volume)));
 	termgfx_stream_upload_silence(s);
 	s->state = TERMGFX_STREAM_PRIME;
 }
@@ -330,7 +330,7 @@ termgfx_stream_volume_step(termgfx_stream_t *s, int delta)
 	}
 
 	termgfx_stream_apc(s, termgfx_audio_volume(&s->apc, &s->apc_cap, s->cfg.ch,
-	                                           s->cfg.volume));
+	                                           termgfx_db_from_pct(s->cfg.volume)));
 	if (was == 0) {
 		// Coming back from mute: the FIFO is empty and the half-chunk we were
 		// NOT accumulating is gone, so re-prime rather than dribbling one chunk

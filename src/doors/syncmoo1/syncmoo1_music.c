@@ -137,10 +137,10 @@ static void sm_music_start(int index)
         g_playing = -1;
         return;
     }
-    if (termgfx_audio_music_play(g_mgr, t->leaf, vol, t->loop)
+    if (termgfx_audio_music_play(g_mgr, t->leaf, termgfx_db_from_pct(vol), t->loop)
         == TERMGFX_MUSIC_RENDER)
         termgfx_audio_music_async_submit(g_mgr, t->leaf, t->midi, t->len,
-                                         SM_MUSIC_RATE, vol, t->loop);
+                                         SM_MUSIC_RATE, termgfx_db_from_pct(vol), t->loop);
     g_playing = index;
 }
 
@@ -188,7 +188,7 @@ void sm_music_set_volume(int moo_vol)
         sm_music_play(g_current);         /* raised off 0: resume, through the
                                             * same tier gate sm_music_play() uses */
     else if (g_playing >= 0)
-        termgfx_audio_music_volume(g_mgr, sm_music_vol());   /* live, no restart */
+        termgfx_audio_music_volume(g_mgr, termgfx_db_from_pct(sm_music_vol()));   /* live, no restart */
 }
 
 void sm_music_pump(void)

@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "audio.h"        // the dB volume model + termgfx_db_from_pct() this API uses
 
 // audio_mgr.h -- stateful policy layer over audio.h's SyncTERM audio-APC
 // builders. One instance per door session. It owns the parts every framebuffer
@@ -58,16 +59,16 @@ void termgfx_audio_set_blob_ok(termgfx_audio_t *m, int ok);
 
 // Play sound `id` (0..1023) as a one-shot SFX on the next pooled channel from
 // raw PCM (`bits` 8|16, `channels`, `rate`); the manager wraps it in a WAV and
-// Stores it once. `vol` 0..100, `pan` -100..+100.
+// Stores it once. `db` is the level in decibels (0 = unity), `pan` -100..+100.
 void termgfx_audio_sfx(termgfx_audio_t *m, int id,
                        const void *pcm, size_t bytes, int bits, int channels,
-                       int rate, int vol, int pan);
+                       int rate, float db, int pan);
 
 // Like termgfx_audio_sfx, but `filedata`/`filelen` is a complete sound FILE
 // (WAV/VOC/OGG/FLAC) cached verbatim -- e.g. Duke's in-memory VOC samples.
-// SyncTERM's libsndfile sniffs the format. `vol` 0..100, `pan` -100..+100.
+// SyncTERM's libsndfile sniffs the format. `db` dB (0 = unity), `pan` -100..+100.
 void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
-                            const void *filedata, size_t filelen, int vol, int pan);
+                            const void *filedata, size_t filelen, float db, int pan);
 
 // Name-addressed SFX. `leaf` is a caller-supplied cache-name component -- use a
 // content hash (see hash.h) so identical bytes reuse one cache entry. CONSTRAINT:
@@ -81,22 +82,23 @@ void termgfx_audio_sfx_file(termgfx_audio_t *m, int id,
 void termgfx_audio_sfx_store(termgfx_audio_t *m, const char *leaf,
                              const void *filedata, size_t filelen);
 void termgfx_audio_sfx_play_named(termgfx_audio_t *m, const char *leaf,
-                                  int vol, int pan);
+                                  float db, int pan);
 
 // Start a LOOPING SFX (Duke ambience: wind, machinery, rushing water, ...).
 // Uploads the file once (VOC transcoded to WAV) like termgfx_audio_sfx_file, then
 // loops it on a dedicated channel. Returns a positive voice handle to pass to
 // termgfx_audio_loop_stop, or 0 if tier < 1 / no looping channel (then nothing
-// plays). `vol` 0..100.
+// plays). `db` dB (0 = unity).
 int termgfx_audio_loop_start(termgfx_audio_t *m, int id,
-                             const void *filedata, size_t filelen, int vol);
+                             const void *filedata, size_t filelen, float db);
 
-// Update the live volume (0..100) and stereo pan (-100 left .. +100 right) of a
+// Update the live level `db` (decibels, 0 = unity) and stereo pan (-100 left ..
+// +100 right) of a
 // running looping voice -- for 3D distance + direction tracking as the player
 // moves relative to an ambient source. No-op (no APC sent) if the resulting L/R
 // is unchanged from the last update or the handle is unknown, so it's safe to
 // call every frame.
-int  termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, int vol, int pan);   /* 1 = handle matched a live channel, 0 = no such loop */
+int  termgfx_audio_loop_volume(termgfx_audio_t *m, int handle, float db, int pan);   /* 1 = handle matched a live channel, 0 = no such loop */
 
 // Stop the looping voice `handle` from termgfx_audio_loop_start (no-op if it's
 // already stopped/unknown -- safe against a stale handle).
@@ -137,7 +139,7 @@ void termgfx_audio_set_music_quality(termgfx_audio_t *m, double quality);
 // stops -- 1oom's intro/ending stingers, whose XMI carries no loop-start
 // controller. Required at _music_play() too, not only at submit, because the
 // _CACHED and _CLIENT paths play without ever rendering.
-int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol, int loop);
+int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, float db, int loop);
 
 // Supply a freshly-rendered track: loop `pcm` on the music channel, replacing any
 // playing track, and (when libsndfile is present) encode it to OGG/Vorbis -- uploaded
@@ -150,7 +152,7 @@ int termgfx_audio_music_play(termgfx_audio_t *m, const char *name, int vol, int 
 // _CACHED and _CLIENT paths play without ever rendering.
 void termgfx_audio_music(termgfx_audio_t *m, const char *name,
                          const void *pcm, size_t bytes, int bits, int channels,
-                         int rate, int vol, int loop);
+                         int rate, float db, int loop);
 
 // Async alternative to (render + termgfx_audio_music) for a cold cache miss: hand the raw MIDI/MUS
 // bytes to _submit() and call _poll() once per frame.  A worker thread renders + encodes + caches +
@@ -167,23 +169,23 @@ void termgfx_audio_music(termgfx_audio_t *m, const char *name,
 // _CACHED and _CLIENT paths play without ever rendering.
 void termgfx_audio_music_async_submit(termgfx_audio_t *m, const char *name,
                                       const void *music, size_t len, int rate,
-                                      int vol, int loop);
+                                      float db, int loop);
 int  termgfx_audio_music_async_poll(termgfx_audio_t *m);
 
 // Stop the music channel (fade out).
 void termgfx_audio_music_stop(termgfx_audio_t *m);
 
-// Set the music channel's live volume (0..100), adjusting the currently-looping
-// track without restarting it -- for a music-volume control.
-void termgfx_audio_music_volume(termgfx_audio_t *m, int vol);
+// Set the music channel's live level `db` (decibels, 0 = unity), adjusting the
+// currently-looping track without restarting it -- for a music-volume control.
+void termgfx_audio_music_volume(termgfx_audio_t *m, float db);
 
 // Streamed audio (FMV cutscene dialog): feed successive decoded PCM chunks and
 // they play back-to-back on the movie channel (SyncTERM A;Queue FIFO). Store +
 // Load + Queue per chunk; keep it fed ahead of playback. termgfx_audio_stream_stop()
 // flushes the channel at the end. Reuses the MUSIC channel (cutscenes play when
-// game music is idle). `bytes` = raw PCM bytes; `bits` 8/16; `vol` 0..100.
+// game music is idle). `bytes` = raw PCM bytes; `bits` 8/16; `db` dB (0 = unity).
 void termgfx_audio_stream_chunk(termgfx_audio_t *m, const void *pcm, size_t bytes,
-                                int bits, int channels, int rate, int vol);
+                                int bits, int channels, int rate, float db);
 void termgfx_audio_stream_stop(termgfx_audio_t *m);
 
 // Stop every SFX channel at once (e.g. a "sound off" toggle, or a level change):

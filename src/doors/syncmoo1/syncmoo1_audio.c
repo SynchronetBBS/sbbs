@@ -170,7 +170,7 @@ void sm_audio_play(int index)
 {
     if (g_mgr == NULL || !sm_audio_valid(index) || g_slot[index][0] == '\0')
         return;
-    termgfx_audio_sfx_play_named(g_mgr, g_slot[index], sm_audio_vol(g_vol), 0);
+    termgfx_audio_sfx_play_named(g_mgr, g_slot[index], termgfx_db_from_pct(sm_audio_vol(g_vol)), 0);
 }
 
 void sm_audio_stop(void)

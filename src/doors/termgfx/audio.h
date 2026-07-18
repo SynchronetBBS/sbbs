@@ -112,22 +112,37 @@ size_t termgfx_audio_load_blob(uint8_t **buf, size_t *cap, int slot,
                                const void *data, size_t bytes,
                                int bits, int channels, int rate);
 
-// A;Queue -- play slot `slot` on channel `ch` (2..15). `vol` is 0..100; `pan`
-// is -100 (full left) .. 0 (center) .. +100 (full right), mapped linearly to
-// the VL/VR keys; `loop` != 0 sets the L flag.
+// ---- volume is dB ---------------------------------------------------------
+//
+// SyncTERM's mixer is dB-native: channels open at a -12 dB base and gains are
+// 10^(dB/20). A;Volume/A;Queue take a `<float>dB` value verbatim and UNCLAMPED,
+// so a level can attenuate OR boost (positive dB) with sub-dB precision -- none
+// of which the old 0..100 integer percent could (it clamped at unity). All the
+// volume entry points here and in audio_mgr.h take a dB level: 0 dB == unity,
+// positive == boost, and TERMGFX_DB_MUTE is the silence floor.
+#define TERMGFX_DB_UNITY 0.0f
+#define TERMGFX_DB_MUTE  (-60.0f)   // SyncTERM's own silence floor
+
+// Faithful conversion of a legacy 0..100 percentage to dB (100 -> 0 dB,
+// 50 -> -6 dB, <=0 -> MUTE), for callers still carrying a percent slider.
+float termgfx_db_from_pct(int pct);
+
+// A;Queue -- play slot `slot` on channel `ch` (2..15) at `db`. `pan` is -100
+// (full left) .. 0 (center) .. +100 (full right); it attenuates the far side in
+// dB (a hard pan mutes it). `loop` != 0 sets the L flag.
 size_t termgfx_audio_queue(uint8_t **buf, size_t *cap, int ch, int slot,
-                           int vol, int pan, int loop);
+                           float db, int pan, int loop);
 
-// A;Volume -- set channel `ch`'s live mix volume (0..100, 100 = unity). Unlike the
-// per-Queue VL/VR (which scale one buffer as it's queued), this sets the channel's
-// base level, so it adjusts a sound that's already playing/looping -- e.g. a live
+// A;Volume -- set channel `ch`'s live mix level to `db`. Unlike the per-Queue
+// VL/VR (which scale one buffer as it's queued), this sets the channel's base
+// level, so it adjusts a sound already playing/looping -- e.g. a live
 // music-volume slider on the reserved music channel.
-size_t termgfx_audio_volume(uint8_t **buf, size_t *cap, int ch, int vol);
+size_t termgfx_audio_volume(uint8_t **buf, size_t *cap, int ch, float db);
 
-// A;Volume with separate left/right -- set channel `ch`'s live per-side mix
-// volume (each 0..100). Like termgfx_audio_volume but carries stereo balance, so
-// a looping voice can be panned in real time (3D distance + direction tracking).
-size_t termgfx_audio_volume_lr(uint8_t **buf, size_t *cap, int ch, int vl, int vr);
+// A;Volume with separate left/right dB -- carries stereo balance, so a looping
+// voice can be panned in real time (3D distance + direction tracking).
+size_t termgfx_audio_volume_lr(uint8_t **buf, size_t *cap, int ch,
+                               float dl, float dr);
 
 // A;Synth -- generate a `ms`-millisecond `freq`-Hz tone of waveform `shape`
 // ("SINE","SQUARE","SAWTOOTH",...) into slot `slot`. The fallback cue source

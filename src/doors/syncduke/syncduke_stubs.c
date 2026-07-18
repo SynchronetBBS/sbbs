@@ -143,7 +143,7 @@ static int sd_fx_play(uint8_t *ptr, int angle, int distance, uint32_t callbackva
 		syncduke_log("sfx: #%d tier=%d vol=%d pan=%d siz=%d", num,
 		             termgfx_audio_tier(sd_audio), vol, pan, (int)soundsiz[num]);
 	}
-	termgfx_audio_sfx_file(sd_audio, num, ptr, (size_t)soundsiz[num], vol, pan);
+	termgfx_audio_sfx_file(sd_audio, num, ptr, (size_t)soundsiz[num], termgfx_db_from_pct(vol), pan);
 	return FX_Ok;
 }
 
@@ -176,7 +176,7 @@ static int sd_loop_play(uint8_t *ptr, int distance, uint32_t callbackval)
 		distance = 255;
 	vol = (255 - distance) * 100 / 255;
 	vol = vol * sd_fx_vol / 255;
-	h   = termgfx_audio_loop_start(sd_audio, num, ptr, (size_t)soundsiz[num], vol);
+	h   = termgfx_audio_loop_start(sd_audio, num, ptr, (size_t)soundsiz[num], termgfx_db_from_pct(vol));
 	syncduke_log("loop: start #%d vol=%d -> handle %d", num, vol, h);
 	return h;
 }
@@ -214,7 +214,7 @@ int32_t FX_Pan3D(int handle, int angle, int distance)
 	vol = (255 - distance) * 100 / 255;
 	vol = vol * sd_fx_vol / 255;
 	pan = sd_angle_to_pan(angle);
-	termgfx_audio_loop_volume(sd_audio, handle, vol, pan);
+	termgfx_audio_loop_volume(sd_audio, handle, termgfx_db_from_pct(vol), pan);
 	return FX_Ok;
 }
 int32_t FX_StopSound(int handle) { termgfx_audio_loop_stop(sd_audio, handle); return FX_Ok; }
@@ -256,7 +256,7 @@ void MUSIC_SetVolume(int volume)
 	if (sd_music_vol == 0)
 		termgfx_audio_music_stop(sd_audio);          /* 0% = OFF: stop the loop (no silent transfer) */
 	else {
-		termgfx_audio_music_volume(sd_audio, sd_music_v());   /* live slider (balanced vs SFX) */
+		termgfx_audio_music_volume(sd_audio, termgfx_db_from_pct(sd_music_v()));   /* live slider (balanced vs SFX) */
 		if (was == 0 && sd_current_music[0] != '\0')
 			PlayMusic(sd_current_music);             /* raised off 0: resume the current track */
 	}
@@ -356,7 +356,7 @@ void PlayMusic(char *filename)
 	}
 
 	{
-		int hit = termgfx_audio_music_play(sd_audio, id, sd_music_v(), 1);
+		int hit = termgfx_audio_music_play(sd_audio, id, termgfx_db_from_pct(sd_music_v()), 1);
 		if (hit != TERMGFX_MUSIC_RENDER) {
 			syncduke_log("music: '%s' (%s) -- %s", filename, id,
 			             hit == TERMGFX_MUSIC_CLIENT ? "client-cached (no render, no upload)"
@@ -368,7 +368,7 @@ void PlayMusic(char *filename)
 	/* Cold miss: hand the MIDI to termgfx's worker thread and return -- the game keeps running while
 	 * it renders + encodes; sd_music_poll() (in the frame loop) ships the track when it's ready, so
 	 * the level load no longer freezes for the render.  termgfx copies the bytes. */
-	termgfx_audio_music_async_submit(sd_audio, id, mid, (size_t)len, 48000, sd_music_v(), 1);
+	termgfx_audio_music_async_submit(sd_audio, id, mid, (size_t)len, 48000, termgfx_db_from_pct(sd_music_v()), 1);
 	syncduke_log("music: '%s' (%s) submitted -> async render", filename, id);
 	free(mid);
 }
