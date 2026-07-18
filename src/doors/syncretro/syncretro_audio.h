@@ -48,8 +48,8 @@ void   sr_audio_pause(int on);
  * new value. At ZERO the door stops sending audio altogether -- no encode, no
  * upload, no queue -- and flushes what is already queued, so a muted player
  * costs zero uplink rather than streaming Opus a terminal would discard. */
-int    sr_audio_volume_step(int delta);
-int    sr_audio_volume(void);
+float  sr_audio_volume_step(float delta_db);   /* returns the new level in dB */
+float  sr_audio_volume(void);                  /* current level in dB (0 = unity) */
 int    sr_audio_muted(void);
 /* Ctrl-R restarted the console: stop the channel, drop what is queued, re-prime.
  * The audio still in the terminal's FIFO belongs to a game that no longer runs. */

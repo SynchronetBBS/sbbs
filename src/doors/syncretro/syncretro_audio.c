@@ -65,7 +65,7 @@ void sr_audio_start(int rate)
 
 	cfg.enabled      = 1;
 	cfg.quality      = sr_config_audio_quality();
-	cfg.volume       = sr_config_audio_volume();
+	cfg.volume_db    = termgfx_db_from_pct(sr_config_audio_volume());   /* percent knob -> dB */
 	cfg.chunk_ms     = sr_config_audio_chunk_ms();
 	cfg.prebuffer    = sr_config_audio_prebuffer();
 	cfg.channels     = 1;
@@ -107,7 +107,7 @@ void sr_audio_pause(int on)
 	termgfx_stream_pause(g_stream, on);
 }
 
-int sr_audio_volume(void)
+float sr_audio_volume(void)
 {
 	return termgfx_stream_volume(g_stream);
 }
@@ -117,9 +117,9 @@ int sr_audio_muted(void)
 	return termgfx_stream_muted(g_stream);
 }
 
-int sr_audio_volume_step(int delta)
+float sr_audio_volume_step(float delta_db)
 {
-	return termgfx_stream_volume_step(g_stream, delta);
+	return termgfx_stream_volume_step(g_stream, delta_db);
 }
 
 void sr_audio_reset(void)

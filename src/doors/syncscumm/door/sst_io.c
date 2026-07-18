@@ -636,10 +636,13 @@ static void sst_pace_ack(void);
  * capability state it is built from (which in turn is defined past this
  * parser), and csi_final() is where the notification lands -- see the 'n'
  * case below. */
-static void sst_audio_underrun(int ch);
-static int  sst_audio_volume_step(int delta);   /* + / - live volume; impl by g_stream */
+static void  sst_audio_underrun(int ch);
+static float sst_audio_volume_step(float delta_db);   /* + / - live volume; impl by g_stream */
 
-#define SST_VOLUME_STEP 10                       /* percent per + / - keypress */
+#define SST_AUDIO_VOLUME_PCT 50    /* default channel level, percent (-> dB via
+                                    * termgfx_db_from_pct); 50 = -6 dB, trimmed
+                                    * so BASS sits with the other doors */
+#define SST_VOLUME_STEP_DB   6.0f  /* dB per + / - keypress */
 
 /* Parse up to `max` ';'-separated decimal params from g_csi_par (a leading
  * non-digit marker byte like '<'/'='/'?' is simply skipped). */
@@ -948,9 +951,9 @@ static void parse_bytes(const uint8_t *buf, int n)
 				else if (c == 'q' || c == 0x03)          /* q / Ctrl-C: request quit */
 					g_quit = 1;
 				else if (c == '+' || c == '=')           /* louder (= is the unshifted +) */
-					sst_audio_volume_step(SST_VOLUME_STEP);
-				else if (c == '-' || c == '_')           /* quieter; 0 = off */
-					sst_audio_volume_step(-SST_VOLUME_STEP);
+					sst_audio_volume_step(SST_VOLUME_STEP_DB);
+				else if (c == '-' || c == '_')           /* quieter; snaps to off at the floor */
+					sst_audio_volume_step(-SST_VOLUME_STEP_DB);
 				break;
 			case P_ESC:
 				if (c == '[' || c == 'O') {
@@ -1482,9 +1485,10 @@ static void sst_audio_underrun(int ch)
  * live-volume hotkeys. The shared module clamps 0..100; at 0 it stops sending
  * (off) and a step back up resumes it. Returns the new volume (0 if no stream
  * -- e.g. a non-audio terminal, where the keys are simply inert). */
-static int sst_audio_volume_step(int delta)
+static float sst_audio_volume_step(float delta_db)
 {
-	return g_stream != NULL ? termgfx_stream_volume_step(g_stream, delta) : 0;
+	return g_stream != NULL ? termgfx_stream_volume_step(g_stream, delta_db)
+	       : TERMGFX_DB_MUTE;
 }
 
 /* Sysop audio settings, syncscumm.ini's [audio] section. Same file and same
@@ -1520,7 +1524,11 @@ static void audio_read_ini(termgfx_stream_cfg_t *cfg)
 	 * sst_io_audio_available() needs it long before this runs, and re-reading
 	 * it here would give the session a second opinion of the same switch. */
 	cfg->quality   = iniGetFloat(ini, "audio", "quality", cfg->quality);
-	cfg->volume    = iniGetInteger(ini, "audio", "volume", cfg->volume);
+	/* volume is the exception to the fallback-is-cfg rule above: the sysop knob
+	 * stays a friendly 0..100 percent, but the module's field is dB, so read the
+	 * percent (default SST_AUDIO_VOLUME_PCT) and convert it. */
+	cfg->volume_db = termgfx_db_from_pct(iniGetInteger(ini, "audio", "volume",
+	                                                   SST_AUDIO_VOLUME_PCT));
 	cfg->chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", cfg->chunk_ms);
 	cfg->prebuffer = iniGetInteger(ini, "audio", "prebuffer", cfg->prebuffer);
 	cfg->channels  = iniGetInteger(ini, "audio", "channels", cfg->channels);
@@ -1630,7 +1638,7 @@ static void audio_stream_open(void)
 	 * one-shots ride SyncTERM's -12dB channel base. -6dB here, atop the -3dB
 	 * headroom, lands the net at ~-9dB -- close to the family, still clear for
 	 * dialogue. (The player can trim it live with the + / - keys.) */
-	cfg.volume       = 50;
+	cfg.volume_db    = termgfx_db_from_pct(SST_AUDIO_VOLUME_PCT);
 	/* 250ms per chunk (SST_CHUNK_MS), the top of the module's 50..250 clamp,
 	 * and the cheapest real improvement available to the pops without touching
 	 * the shared module: every chunk is its OWN Ogg/Opus stream, so a boundary

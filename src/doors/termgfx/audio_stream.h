@@ -75,7 +75,9 @@ typedef struct {
 typedef struct {
 	int enabled;                // 0 = module never emits a byte
 	double quality;             // Opus VBR 0.01..1.0 (TERMGFX_MUSIC_QUALITY_DEFAULT)
-	int volume;                 // channel volume 0..100; 0 = stop sending entirely
+	float volume_db;            // channel level in dB (0 = unity); at or below
+	                            // TERMGFX_DB_MUTE the module stops sending entirely
+	                            // (a muted player pays ZERO uplink for sound)
 	int chunk_ms;               // 50..250
 	int prebuffer;              // 2..8 chunks held before playback starts
 	int channels;               // 1 or 2 (what the accumulator keeps)
@@ -119,11 +121,12 @@ void   termgfx_stream_underrun(termgfx_stream_t *s, int ch);
 // or _muted, so they are untested by use.
 void   termgfx_stream_pause(termgfx_stream_t *s, int on);
 void   termgfx_stream_reset(termgfx_stream_t *s);
-int    termgfx_stream_volume(const termgfx_stream_t *s);
+float  termgfx_stream_volume(const termgfx_stream_t *s);   // dB (0 = unity)
 int    termgfx_stream_muted(const termgfx_stream_t *s);
-// Step the terminal's mixer-channel volume by `delta` (clamped 0..100) and
-// return the new value. At ZERO the module stops sending audio altogether.
-int    termgfx_stream_volume_step(termgfx_stream_t *s, int delta);
+// Step the channel level by `delta_db` and return the new dB. Capped at unity
+// (0 dB -- +/- never boosts a pre-mixed stream); stepping down past a
+// near-silent floor snaps to full mute, which stops the uplink altogether.
+float  termgfx_stream_volume_step(termgfx_stream_t *s, float delta_db);
 
 // Feed interleaved STEREO PCM; `frames` counts per-channel frames. Always
 // returns `frames` -- the source must believe we consumed everything, whatever

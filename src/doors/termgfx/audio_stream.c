@@ -84,7 +84,7 @@ termgfx_stream_play(termgfx_stream_t *s, const char *name)
 {
 	termgfx_stream_apc(s, termgfx_audio_load(&s->apc, &s->apc_cap, s->cfg.slot, name));
 	termgfx_stream_apc(s, termgfx_audio_queue(&s->apc, &s->apc_cap, s->cfg.ch,
-	                                          s->cfg.slot, termgfx_db_from_pct(100), 0, 0));
+	                                          s->cfg.slot, TERMGFX_DB_UNITY, 0, 0));
 	termgfx_stream_apc(s, termgfx_audio_update(&s->apc, &s->apc_cap, s->cfg.ch));
 	s->chunks++;
 }
@@ -121,7 +121,7 @@ termgfx_stream_send(termgfx_stream_t *s, const uint8_t *ogg, size_t len)
 		termgfx_stream_apc(s, termgfx_audio_load_blob_file(&s->apc, &s->apc_cap,
 		                                                   s->cfg.slot, ogg, len));
 		termgfx_stream_apc(s, termgfx_audio_queue(&s->apc, &s->apc_cap, s->cfg.ch,
-		                                          s->cfg.slot, termgfx_db_from_pct(100), 0, 0));
+		                                          s->cfg.slot, TERMGFX_DB_UNITY, 0, 0));
 		termgfx_stream_apc(s, termgfx_audio_update(&s->apc, &s->apc_cap, s->cfg.ch));
 		s->chunks++;
 		return;
@@ -193,10 +193,10 @@ termgfx_stream_create(const termgfx_stream_cfg_t *cfg, const termgfx_stream_io_t
 	// value cannot change under the state machine between two reads of it.
 	if (!(s->cfg.quality >= 0.01 && s->cfg.quality <= 1.0))
 		s->cfg.quality = TERMGFX_MUSIC_QUALITY_DEFAULT;
-	if (s->cfg.volume < 0)
-		s->cfg.volume = 0;
-	else if (s->cfg.volume > 100)
-		s->cfg.volume = 100;
+	if (s->cfg.volume_db < TERMGFX_DB_MUTE)
+		s->cfg.volume_db = TERMGFX_DB_MUTE;
+	else if (s->cfg.volume_db > TERMGFX_DB_UNITY)
+		s->cfg.volume_db = TERMGFX_DB_UNITY;
 	if (s->cfg.chunk_ms < 50)
 		s->cfg.chunk_ms = 50;
 	else if (s->cfg.chunk_ms > 250)
@@ -261,7 +261,7 @@ termgfx_stream_caps(termgfx_stream_t *s, int tier)
 		return;
 	}
 	termgfx_stream_apc(s, termgfx_audio_volume(&s->apc, &s->apc_cap, s->cfg.ch,
-	                                           termgfx_db_from_pct(s->cfg.volume)));
+	                                           s->cfg.volume_db));
 	termgfx_stream_upload_silence(s);
 	s->state = TERMGFX_STREAM_PRIME;
 }
@@ -279,46 +279,53 @@ termgfx_stream_underrun(termgfx_stream_t *s, int ch)
 
 // ---- volume ---------------------------------------------------------------
 //
-// The volume is the TERMINAL's mixer-channel volume (A;Volume), not a gain we
-// apply to the PCM: the player's own client does the scaling, so turning it down
-// costs us nothing and loses no precision.
+// The level is the TERMINAL's mixer-channel volume (A;Volume) in DECIBELS, not
+// a gain we apply to the PCM: the player's own client does the scaling, so
+// turning it down costs us nothing and loses no precision. 0 dB is unity.
 //
-// ZERO IS NOT "VERY QUIET". At 0 we stop sending audio ENTIRELY -- no encode, no
-// upload, no Queue -- and flush what is already queued, so a muted player pays
-// ZERO bytes for sound rather than streaming ~100 ms Opus chunks at volume 0 to a
-// terminal that will silently discard them. That is the whole point of a mute on
-// a BBS door, where the audio is the bulk of the uplink after the frames.
-int
+// MUTE IS NOT "VERY QUIET". At or below TERMGFX_DB_MUTE we stop sending audio
+// ENTIRELY -- no encode, no upload, no Queue -- and flush what is already
+// queued, so a muted player pays ZERO bytes for sound rather than streaming
+// Opus chunks to a terminal that will discard them. That is the whole point of
+// a mute on a BBS door, where audio is the bulk of the uplink after the frames.
+
+// Stepping the level below this snaps to full mute: -36 dB is already near
+// silent, so rather than make the player press '-' all the way to the -60 dB
+// floor, the quiet tail collapses to a real (uplink-stopping) mute.
+#define STREAM_DB_MUTE_BELOW (-36.0f)
+
+float
 termgfx_stream_volume(const termgfx_stream_t *s)
 {
-	return s == NULL ? 0 : s->cfg.volume;
+	return s == NULL ? TERMGFX_DB_MUTE : s->cfg.volume_db;
 }
 
 int
 termgfx_stream_muted(const termgfx_stream_t *s)
 {
-	return s == NULL ? 1 : s->cfg.volume <= 0;
+	return s == NULL ? 1 : s->cfg.volume_db <= TERMGFX_DB_MUTE;
 }
 
-// Step the volume by `delta` (clamped to 0..100) and return the new value.
-int
-termgfx_stream_volume_step(termgfx_stream_t *s, int delta)
+// Step the level by `delta_db` and return the new dB. Capped at unity (0 dB);
+// stepping down past STREAM_DB_MUTE_BELOW snaps to full mute (stops the uplink).
+float
+termgfx_stream_volume_step(termgfx_stream_t *s, float delta_db)
 {
-	int was;
+	float was;
 
 	if (s == NULL)
-		return 0;
-	was = s->cfg.volume;
+		return TERMGFX_DB_MUTE;
+	was = s->cfg.volume_db;
 
-	s->cfg.volume += delta;
-	if (s->cfg.volume < 0)
-		s->cfg.volume = 0;
-	if (s->cfg.volume > 100)
-		s->cfg.volume = 100;
-	if (s->cfg.volume == was || s->state == TERMGFX_STREAM_OFF)
-		return s->cfg.volume;   // no change, or no audio pipeline to tell
+	s->cfg.volume_db += delta_db;
+	if (s->cfg.volume_db > TERMGFX_DB_UNITY)
+		s->cfg.volume_db = TERMGFX_DB_UNITY;
+	else if (s->cfg.volume_db < STREAM_DB_MUTE_BELOW)
+		s->cfg.volume_db = TERMGFX_DB_MUTE;   // snap the quiet tail to real mute
+	if (s->cfg.volume_db == was || s->state == TERMGFX_STREAM_OFF)
+		return s->cfg.volume_db;   // no change, or no audio pipeline to tell
 
-	if (s->cfg.volume == 0) {
+	if (s->cfg.volume_db <= TERMGFX_DB_MUTE) {
 		// Silence NOW: the ~300 ms cushion already in the terminal's FIFO would
 		// otherwise keep playing after the player asked for quiet.
 		termgfx_stream_stop(s);
@@ -326,12 +333,12 @@ termgfx_stream_volume_step(termgfx_stream_t *s, int delta)
 		termgfx_chunk_reset(&s->chunk);
 		if (s->state == TERMGFX_STREAM_RUN)
 			s->state = TERMGFX_STREAM_PRIME;   // rebuild the cushion when we come back
-		return s->cfg.volume;
+		return s->cfg.volume_db;
 	}
 
 	termgfx_stream_apc(s, termgfx_audio_volume(&s->apc, &s->apc_cap, s->cfg.ch,
-	                                           termgfx_db_from_pct(s->cfg.volume)));
-	if (was == 0) {
+	                                           s->cfg.volume_db));
+	if (was <= TERMGFX_DB_MUTE) {
 		// Coming back from mute: the FIFO is empty and the half-chunk we were
 		// NOT accumulating is gone, so re-prime rather than dribbling one chunk
 		// into an empty FIFO (the underrun the whole cushion exists to avoid).
@@ -339,7 +346,7 @@ termgfx_stream_volume_step(termgfx_stream_t *s, int delta)
 		if (s->state == TERMGFX_STREAM_RUN)
 			s->state = TERMGFX_STREAM_PRIME;
 	}
-	return s->cfg.volume;
+	return s->cfg.volume_db;
 }
 
 void
@@ -369,7 +376,7 @@ termgfx_stream_chunk_closed(termgfx_stream_t *s)
 
 	if (s->chunk.len == 0)
 		return;
-	if (s->cfg.volume <= 0)
+	if (s->cfg.volume_db <= TERMGFX_DB_MUTE)
 		return;                    // muted: the one place audio leaves the door
 
 	if (s->io.backlog(s->io.ctx) > TERMGFX_STREAM_BACKLOG_BYTES)
@@ -432,7 +439,7 @@ termgfx_stream_feed(termgfx_stream_t *s, const int16_t *pcm, size_t frames)
 	if (s->state == TERMGFX_STREAM_OFF || s->state == TERMGFX_STREAM_WAIT_CAPS ||
 	    pcm == NULL)
 		return frames;             // the source must believe we took it all
-	if (s->cfg.volume <= 0)
+	if (s->cfg.volume_db <= TERMGFX_DB_MUTE)
 		return frames;             // MUTED: not one sample accumulated, not one
 	                               // byte encoded, not one byte sent
 
