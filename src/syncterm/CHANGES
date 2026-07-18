@@ -18,8 +18,9 @@ Retain UIFC only for the trusted native file picker
 Preserve the classic two-pane directory layout and configured UI colours
 Keep ambient Wren menu chrome unchanged behind submenus
 Wrap highlighted Wren lists when navigating past either end
+Restore blank append rows and direct editing keys in Wren menu lists
 Restore formatted context help throughout the Wren directory and settings UI
-Restore historical edit and persistence boundaries in Wren configuration
+Restore the intended edit and persistence boundaries in Wren configuration
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support
 Add support for "cursor on mode" to Prestel (ala Acorn manual)

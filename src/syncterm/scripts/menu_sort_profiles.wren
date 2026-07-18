@@ -1,4 +1,5 @@
 import "syncterm_menu" for Menu
+import "syncterm" for Key
 import "menu_ui" for MenuUi
 import "ui_popup" for Alert, Confirm
 
@@ -24,27 +25,49 @@ class SortProfiles {
       var marker = i == active ? "* " : "  "
       labels.add("%(marker)%(profiles[i][0])")
     }
-    labels.add("New Profile...")
+    labels.add("")
     return labels
   }
 
   static show(app) {
+    var clipboard = null
     while (true) {
       var profiles = Menu.sortProfiles
       var active = Menu.activeSortProfile
-      var selected = MenuUi.choice(app, "Sort Profiles",
-          profileLabels_(profiles, active), active, profilesHelp_())
-      if (selected == null) {
+      var commands = {}
+      commands[Key.insert] = ["insert", true]
+      commands[Key.delete] = ["delete", false]
+      commands[Key.f2] = ["rename", false]
+      commands[Key.f5] = ["copy", false]
+      commands[Key.ctrlX] = ["cut", false]
+      commands[Key.f6] = ["paste", false]
+      var picked = MenuUi.commandChoice(app, "Sort Profiles",
+          profileLabels_(profiles, active), active, profilesHelp_(), commands)
+      if (picked == null) {
         if (!Menu.saveSortProfiles()) {
           Alert.show(app, "Sort Profiles",
               "The sort profiles could not be saved.")
         }
         return
       }
-      if (selected == profiles.count) {
-        new_(app, profiles, active)
-      } else {
-        profile_(app, selected)
+      var command = picked[0]
+      var index = picked[1]
+      if (command == "insert" ||
+          (command == "select" && index == profiles.count)) {
+        new_(app, profiles, active, index.min(profiles.count))
+      } else if (command == "delete") {
+        if (!Menu.deleteSortProfile(index)) failed_(app)
+      } else if (command == "rename") {
+        rename_(app, index, profiles[index])
+      } else if (command == "copy") {
+        clipboard = [profiles[index][0], profiles[index][1].toList]
+      } else if (command == "cut") {
+        clipboard = [profiles[index][0], profiles[index][1].toList]
+        if (!Menu.deleteSortProfile(index)) failed_(app)
+      } else if (command == "paste") {
+        if (clipboard != null) paste_(app, index, clipboard)
+      } else if (command == "select") {
+        profile_(app, index)
       }
     }
   }
@@ -68,10 +91,7 @@ class SortProfiles {
       if (!sameOrder_(order, profile[1]) &&
           !Menu.updateSortProfile(index, profile[0], order)) failed_(app)
     } else if (action == 2) {
-      var name = MenuUi.prompt(app, "Rename Sort Profile", "Profile name",
-          profile[0], 19, false, profileNameHelp_())
-      if (name != null &&
-          !Menu.updateSortProfile(index, name, profile[1])) failed_(app)
+      rename_(app, index, profile)
     } else if (action == 3) {
       copy_(app, index, profile)
     } else if (action == 4) {
@@ -80,13 +100,20 @@ class SortProfiles {
     }
   }
 
-  static new_(app, profiles, active) {
+  static new_(app, profiles, active, index) {
     var name = MenuUi.prompt(app, "New Sort Profile", "Profile name",
         "", 19, false, profileNameHelp_())
     if (name == null) return
     var order = profiles.count > 0 ? profiles[active][1].toList : [1]
     order = editFields_(app, name, order)
-    if (!Menu.addSortProfile(profiles.count, name, order)) failed_(app)
+    if (!Menu.addSortProfile(index, name, order)) failed_(app)
+  }
+
+  static rename_(app, index, profile) {
+    var name = MenuUi.prompt(app, "Rename Sort Profile", "Profile name",
+        profile[0], 19, false, profileNameHelp_())
+    if (name != null &&
+        !Menu.updateSortProfile(index, name, profile[1])) failed_(app)
   }
 
   static copy_(app, index, profile) {
@@ -96,17 +123,43 @@ class SortProfiles {
     if (!Menu.addSortProfile(index + 1, name, profile[1])) failed_(app)
   }
 
+  static paste_(app, index, clipboard) {
+    var name = clipboard[0]
+    for (profile in Menu.sortProfiles) {
+      if (profile[0] == name) {
+        name = MenuUi.prompt(app, "Paste Sort Profile", "Profile name",
+            name, 19, false, profileNameHelp_())
+        if (name == null) return
+        break
+      }
+    }
+    if (!Menu.addSortProfile(index, name, clipboard[1])) failed_(app)
+  }
+
   static editFields_(app, name, order) {
     while (true) {
       var labels = order.map {|field| fieldLabel_(field) }.toList
-      labels.add("Add Field...")
-      var selected = MenuUi.choice(app, "Sort Fields: %(name)", labels, 0,
-          fieldsHelp_())
-      if (selected == null) return order
-      if (selected == order.count) {
-        addField_(app, order)
-      } else {
-        editField_(app, order, selected)
+      labels.add("")
+      var commands = {}
+      commands[Key.insert] = ["insert", true]
+      commands[Key.delete] = ["delete", false]
+      var picked = MenuUi.commandChoice(app, "Sort Fields: %(name)",
+          labels, 0, fieldsHelp_(), commands)
+      if (picked == null) return order
+      var command = picked[0]
+      var index = picked[1]
+      if (command == "insert" ||
+          (command == "select" && index == order.count)) {
+        addField_(app, order, index.min(order.count))
+      } else if (command == "delete") {
+        if (order.count == 1) {
+          Alert.show(app, "Sort Fields",
+              "A profile must contain at least one field.")
+        } else {
+          order.removeAt(index)
+        }
+      } else if (command == "select") {
+        editField_(app, order, index)
       }
     }
   }
@@ -119,7 +172,7 @@ class SortProfiles {
     return true
   }
 
-  static addField_(app, order) {
+  static addField_(app, order, index) {
     var available = []
     for (row in Menu.sortFields) {
       var used = false
@@ -135,7 +188,7 @@ class SortProfiles {
     var rows = available.map {|row| [row[0], row[1]] }.toList
     var field = MenuUi.choice(app, "Add Sort Field", rows, null,
         addFieldHelp_())
-    if (field != null) order.add(field)
+    if (field != null) order.insert(index, field)
   }
 
   static editField_(app, order, index) {
@@ -158,7 +211,8 @@ class SortProfiles {
       order[index] = following
     } else if (action == 3) {
       if (order.count == 1) {
-        Alert.show(app, "Sort Fields", "A profile must contain at least one field.")
+        Alert.show(app, "Sort Fields",
+            "A profile must contain at least one field.")
       } else {
         order.removeAt(index)
       }
@@ -172,12 +226,11 @@ class SortProfiles {
 
   static profilesHelp_() {
     return "# Sort Profiles\n\n" +
-        "A sort profile defines the order of entries in the directory. " +
-        "Select a profile to use it, edit its fields, rename it, copy it, " +
-        "or delete it. Accepted changes update the working profiles; the " +
-        "configuration file is written when you leave this screen.\n\n" +
-        "Select **New Profile...** to create another profile. In the main " +
-        "directory, `<` and `>` cycle through the available profiles."
+        "Select a profile and press Enter for its actions. Insert or the " +
+        "blank final row creates a profile; Delete removes one. F2 renames, " +
+        "F5 copies, Ctrl-X cuts, and F6 pastes. Changes update the working " +
+        "profiles; the configuration file is written when this screen " +
+        "closes. In the main directory, `<` and `>` cycle profiles."
   }
 
   static profileHelp_() {
@@ -196,10 +249,9 @@ class SortProfiles {
 
   static fieldsHelp_() {
     return "# Sort Fields\n\n" +
-        "Fields are applied from top to bottom. Select a field to reverse " +
-        "its direction, move it, or remove it. Select **Add Field...** to " +
-        "insert another available field. The working profile is updated " +
-        "when you leave this screen."
+        "Fields are applied from top to bottom. Enter opens the selected " +
+        "field's actions. Insert adds a field before the highlight; the " +
+        "blank final row appends one. Delete removes a field."
   }
 
   static addFieldHelp_() {
@@ -213,4 +265,5 @@ class SortProfiles {
         "Move Up / Move Down\n:  Change this field's precedence\n" +
         "Remove\n:  Delete this field from the profile"
   }
+
 }

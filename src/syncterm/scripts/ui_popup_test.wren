@@ -51,6 +51,22 @@ class EscapeFakeApp is FakeApp {
   }
 }
 
+class CommandFakeApp is FakeApp {
+  construct new(key, selected) {
+    super()
+    _key = key
+    _selected = selected
+  }
+
+  modal(w) {
+    pushModal(w)
+    w.children[0].selected = _selected
+    var event = KeyEvent.new(_key)
+    w.handle(event)
+    return w
+  }
+}
+
 class UiPopupTest {
   static run() {
     __pass = 0
@@ -71,6 +87,9 @@ class UiPopupTest {
     testPromptForwardsTypingToInput_()
     testMenuChoiceEscReturnsNull_()
     testMenuChoiceCarriesHelp_()
+    testMenuCommandChoiceReturnsCommandAndRow_()
+    testMenuCommandChoicePreemptsTypeahead_()
+    testMenuCommandChoiceProtectsBlankRow_()
     testMenuPromptCarriesHelp_()
     testStandaloneChoiceEscReturnsNull_()
     testModalPaneEscDismisses_()
@@ -226,6 +245,39 @@ class UiPopupTest {
     MenuUi.choice(app, "Choice", ["One", "Two"], 0, "# Choice Help")
     check_(app.last.helpText == "# Choice Help",
            "MenuUi.choice: optional help reaches the modal pane")
+  }
+
+  static testMenuCommandChoiceReturnsCommandAndRow_() {
+    var app = CommandFakeApp.new(Key.insert, 1)
+    var commands = {}
+    commands[Key.insert] = ["insert", true]
+    var result = MenuUi.commandChoice(app, "Choice",
+        [[10, "One"], [20, "Two"], [-1, ""]], 10, null,
+        commands)
+    check_(result[0] == "insert" && result[1] == 20,
+           "MenuUi.commandChoice: returns command and mapped row")
+  }
+
+  static testMenuCommandChoicePreemptsTypeahead_() {
+    var app = CommandFakeApp.new(0x5B, 0)
+    var commands = {}
+    commands[0x5B] = ["previous", true]
+    var result = MenuUi.commandChoice(app, "Choice",
+        ["One", "Two"], 0, null, commands)
+    check_(result[0] == "previous" && result[1] == 0,
+           "MenuUi.commandChoice: printable command preempts typeahead")
+  }
+
+  static testMenuCommandChoiceProtectsBlankRow_() {
+    var app = CommandFakeApp.new(Key.delete, 2)
+    var commands = {}
+    commands[Key.delete] = ["delete", false]
+    var result = MenuUi.commandChoice(app, "Choice",
+        [[10, "One"], [20, "Two"], [-1, ""]], 10, null,
+        commands)
+    check_(result == null && app.modalStack.count == 1,
+           "MenuUi.commandChoice: disallowed command leaves blank row open")
+    app.popModal()
   }
 
   static testMenuPromptCarriesHelp_() {

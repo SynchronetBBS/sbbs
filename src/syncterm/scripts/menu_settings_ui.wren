@@ -1,4 +1,4 @@
-import "syncterm" for Host, Screen
+import "syncterm" for Host, Key, Screen
 import "syncterm_menu" for Menu, MenuEncryption, MenuFontSlot
 import "menu_ui" for MenuUi
 import "menu_bbs_editor" for BbsEditor
@@ -250,19 +250,21 @@ class SettingsMenu {
   }
 
   static webListsHelp_() {
-    return "# Web Lists\n\nAdd dialing directories available through " +
-        "HTTP or HTTPS. Each entry needs a unique name, used as its cache " +
-        "filename, and the URI from which the directory is downloaded.\n\n" +
+    return "# Web Lists\n\nSelect the blank final row to add a dialing " +
+        "directory available through HTTP or HTTPS. Each entry needs a " +
+        "unique name, used as its cache filename, and the URI from which " +
+        "the directory is downloaded. Insert adds before the highlighted " +
+        "row, Delete removes it, and Enter opens its actions.\n\n" +
         "The SyncTERM project provides these lists:\n\n" +
         "- `http://syncterm.bbsdev.net/syncterm.lst`\n" +
         "- `http://syncterm.bbsdev.net/telnetbbsguide.lst`"
   }
 
   static fontManagementHelp_() {
-    return "# Font Management\n\nAdd and remove font sets used by " +
-        "connection profiles. Select a font to configure the file for " +
-        "each supported cell size. Changes are stored when you leave " +
-        "this screen.\n\n" +
+    return "# Font Management\n\nSelect the blank final row to add a font " +
+        "set used by connection profiles. Insert adds before the highlight, " +
+        "Delete removes it, and Enter opens its details. Changes are stored " +
+        "when you leave this screen.\n\n" +
         "8 x 8\n:  Modes with at least 35 lines and C64/C128 modes\n" +
         "8 x 14\n:  Modes with 28 through 34 lines\n" +
         "8 x 16\n:  Modes with fewer than 28 lines or exactly 30 lines\n" +
@@ -270,8 +272,9 @@ class SettingsMenu {
   }
 
   static fontDetailsHelp_() {
-    return "# Font Details\n\nChoose a cell size to select or clear " +
-        "its font file.\n\n" +
+    return "# Font Details\n\nRename changes the font's menu name. " +
+        "Select a cell size to choose or clear its file. `[` and `]` move " +
+        "to the previous or next font.\n\n" +
         "8 x 8\n:  Modes with at least 35 lines and C64/C128 modes\n" +
         "8 x 14\n:  Modes with 28 through 34 lines\n" +
         "8 x 16\n:  Modes with fewer than 28 lines or exactly 30 lines\n" +
@@ -280,6 +283,13 @@ class SettingsMenu {
 
   static fontNameHelp_() {
     return "# Font Name\n\nEnter the name that will identify this font in menus."
+  }
+
+  static fontMask_(slot) {
+    if (slot == MenuFontSlot.eightByEight) return "*.f8"
+    if (slot == MenuFontSlot.eightByFourteen) return "*.f14"
+    if (slot == MenuFontSlot.eightBySixteen) return "*.f16"
+    return "*.f20"
   }
 
   static encryptionHelp_() {
@@ -504,29 +514,48 @@ class SettingsMenu {
   static webLists_(app) {
     var changed = false
     while (true) {
-      var rows = [[-1, "Add Web List"]]
+      var rows = []
       var lists = Menu.webLists
       for (i in 0...lists.count) rows.add([i, lists[i][0]])
-      var picked = MenuUi.choice(app, "Web Lists", rows, null,
-          webListsHelp_())
+      rows.add([-1, ""])
+      var commands = {}
+      commands[Key.insert] = ["insert", true]
+      commands[Key.delete] = ["delete", false]
+      var picked = MenuUi.commandChoice(app, "Web Lists", rows, null,
+          webListsHelp_(), commands)
       if (picked == null) return changed
-      if (picked == -1) {
-        var name = MenuUi.prompt(app, "Add Web List", "Name", "", 255,
+      var command = picked[0]
+      var index = picked[1]
+      if (command == "insert" ||
+          (command == "select" && index == -1)) {
+        if (index == -1) index = lists.count
+        var initialName = lists.count == 0 ? "SyncTERM BBS List" : ""
+        var name = MenuUi.prompt(app, "Add Web List", "Name", initialName, 255,
             false, webListsHelp_())
         if (name == null) continue
-        var uri = MenuUi.prompt(app, "Add Web List", "URI", "", 1024,
+        var initialUri = ""
+        if (lists.count == 0) {
+          initialUri = "http://syncterm.bbsdev.net/syncterm.lst"
+        }
+        var uri = MenuUi.prompt(app, "Add Web List", "URI", initialUri, 1024,
             false, webListsHelp_())
         if (uri == null) continue
         app.popStatus("Fetching web list")
-        var error = Menu.addWebList(name, uri, lists.count)
+        var error = Menu.addWebList(name, uri, index)
         app.popStatus(null)
         if (error == null) {
           changed = true
         } else {
           Alert.show(app, "Web List", error)
         }
-      } else {
-        if (webList_(app, picked, lists[picked])) changed = true
+      } else if (command == "delete") {
+        if (Menu.deleteWebList(index)) {
+          changed = true
+        } else {
+          Alert.show(app, "Web List", "The web list could not be deleted.")
+        }
+      } else if (command == "select") {
+        if (webList_(app, index, lists[index])) changed = true
       }
     }
   }
@@ -562,10 +591,14 @@ class SettingsMenu {
         Alert.show(app, "Font Management", "The font configuration could not be read.")
         return
       }
-      var rows = [[-1, "Add Font"]]
+      var rows = []
       for (i in 0...fonts.count) rows.add([i, fonts[i].name])
-      var picked = MenuUi.choice(app, "Font Management", rows, null,
-          fontManagementHelp_())
+      rows.add([-1, ""])
+      var commands = {}
+      commands[Key.insert] = ["insert", true]
+      commands[Key.delete] = ["delete", false]
+      var picked = MenuUi.commandChoice(app, "Font Management", rows, null,
+          fontManagementHelp_(), commands)
       if (picked == null) {
         if (Menu.fontsDirty && !Menu.saveFonts()) {
           Alert.show(app, "Font Management",
@@ -573,19 +606,27 @@ class SettingsMenu {
         }
         return
       }
-      if (picked == -1) {
-        var name = MenuUi.prompt(app, "Add Font", "Font name", "", 79,
+      var command = picked[0]
+      var index = picked[1]
+      if (command == "insert" ||
+          (command == "select" && index == -1)) {
+        if (index == -1) index = fonts.count
+        var name = MenuUi.prompt(app, "Add Font", "Font name", "", 50,
             false, fontNameHelp_())
-        if (name != null && Menu.createFont(name, fonts.count) == null) {
+        if (name != null && Menu.createFont(name, index) == null) {
           Alert.show(app, "Font Management", "The font could not be added.")
         }
-      } else {
-        font_(app, fonts[picked])
+      } else if (command == "delete") {
+        if (!fonts[index].delete()) {
+          Alert.show(app, "Font Management", "The font could not be deleted.")
+        }
+      } else if (command == "select") {
+        font_(app, index)
       }
     }
   }
 
-  static font_(app, font) {
+  static font_(app, index) {
     var slots = [
       [MenuFontSlot.eightByEight, "8 x 8"],
       [MenuFontSlot.eightByFourteen, "8 x 14"],
@@ -593,19 +634,32 @@ class SettingsMenu {
       [MenuFontSlot.twelveByTwenty, "12 x 20"]
     ]
     while (true) {
+      var fonts = Menu.fonts
+      if (fonts == null || fonts.count == 0) return
+      index = ((index % fonts.count) + fonts.count) % fonts.count
+      var font = fonts[index]
       var rows = [[-2, "Rename"], [-1, "Delete Font"]]
       for (slot in slots) {
         var path = font.path(slot[0])
         rows.add([slot[0], "%(slot[1])  %(path == null ? "<none>" : path)"])
       }
-      var picked = MenuUi.choice(app, font.name, rows, null,
-          fontDetailsHelp_())
+      var commands = {}
+      commands[0x5B] = ["previous", true]
+      commands[0x5D] = ["next", true]
+      var picked = MenuUi.commandChoice(app, font.name, rows, null,
+          fontDetailsHelp_(), commands)
       if (picked == null) return
-      if (picked == -2) {
+      var command = picked[0]
+      var value = picked[1]
+      if (command == "previous") {
+        index = index - 1
+      } else if (command == "next") {
+        index = index + 1
+      } else if (value == -2) {
         var name = MenuUi.prompt(app, "Rename Font", "Font name", font.name,
-            79, false, fontNameHelp_())
+            50, false, fontNameHelp_())
         if (name != null) font.name = name
-      } else if (picked == -1) {
+      } else if (value == -1) {
         if (Confirm.show(app, "Delete %(font.name)?")) {
           font.delete()
           return
@@ -616,13 +670,14 @@ class SettingsMenu {
             fontDetailsHelp_())
         if (action == 0) {
           app.releaseFocus()
-          var file = Host.pickFile(null, null, 1)
+          var file = Host.pickFile(".", fontMask_(value), 1)
           app.restoreFocus()
-          if (file != null && !font.setFile(picked, file)) {
-            Alert.show(app, "Font File", "The selected file has the wrong size.")
+          if (file != null && !font.setFile(value, file)) {
+            Alert.show(app, "Font File",
+                "The selected file has the wrong size.")
           }
         } else if (action == 1) {
-          font.clearFile(picked)
+          font.clearFile(value)
         }
       }
     }

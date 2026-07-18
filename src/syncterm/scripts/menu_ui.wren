@@ -49,6 +49,25 @@ class ModalPane is Pane {
   }
 }
 
+class CommandPane is ModalPane {
+  construct new(onDismiss, commands, onCommand) {
+    super(onDismiss)
+    _commands = commands
+    _onCommand = onCommand
+  }
+
+  handle(event) {
+    if (event is KeyEvent) {
+      var spec = _commands[event.code]
+      if (spec != null) {
+        _onCommand.call(spec)
+        return true
+      }
+    }
+    return super.handle(event)
+  }
+}
+
 class MenuUi {
   static promptStandalone(title, message, initial, maxLen, masked) {
     return promptStandalone(title, message, initial, maxLen, masked, null)
@@ -141,10 +160,27 @@ class MenuUi {
   }
 
   static choice(app, title, rows, current, helpText) {
+    var picked = commandChoice(app, title, rows, current, helpText, {})
+    if (picked == null) return null
+    return picked[1]
+  }
+
+  // Run a choice list with direct editing commands. `commands` maps
+  // key codes to [commandName, allowOnBlankRow]. Enter returns
+  // ["select", rowValue]; Escape returns null.
+  static commandChoice(app, title, rows, current, helpText, commands) {
     if (rows.count == 0) return null
-    var result = null
+    var state = {"result": null}
     var cancel = Fn.new { app.popModal() }
-    var pane = ModalPane.new(cancel)
+    var list = null
+    var onCommand = Fn.new {|spec|
+      var index = list.selected
+      if (index == null) return
+      if (list.items[index].count == 0 && !spec[1]) return
+      state["result"] = [spec[0], rowValue_(rows, index)]
+      app.popModal()
+    }
+    var pane = CommandPane.new(cancel, commands, onCommand)
     pane.title = title
     pane.helpText = helpText
     pane.focused = true
@@ -162,7 +198,7 @@ class MenuUi {
         ((size[1] - h) / 2).floor + 1, w, h)
     pane.onClose = cancel
 
-    var list = ListView.new()
+    list = ListView.new()
     list.bounds = pane.innerBounds
     list.items = labels
     if (current == null) {
@@ -173,12 +209,16 @@ class MenuUi {
       list.selected = current
     }
     list.onSelect = Fn.new {|i, item|
-      result = rows[i] is List ? rows[i][0] : i
+      state["result"] = ["select", rowValue_(rows, i)]
       app.popModal()
     }
     pane.add(list)
     app.modal(pane)
-    return result
+    return state["result"]
+  }
+
+  static rowValue_(rows, index) {
+    return rows[index] is List ? rows[index][0] : index
   }
 
   static prompt(app, title, message, initial, maxLen, masked) {

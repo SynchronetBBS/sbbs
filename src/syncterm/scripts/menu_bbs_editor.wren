@@ -435,8 +435,9 @@ class BbsEditor {
 
   static paletteHelp_() {
     return "# Edit Palette\n\nSelect an existing color to edit it. " +
-        "Use **Add color** to extend palettes with fewer than sixteen " +
-        "entries, or **Use default palette** to remove the override. " +
+        "Select the blank final row to extend palettes with fewer than sixteen " +
+        "entries; Insert performs the same add operation. Delete removes the " +
+        "final override color. **Use default palette** removes the override. " +
         "Short palettes repeat to fill all sixteen entries."
   }
 
@@ -497,9 +498,24 @@ class BbsEditor {
       for (i in 0...colors.count) {
         choices.add([i, "Color %(i): %(colors[i])"])
       }
-      if (colors.count < 16) choices.add([colors.count, "Add color"])
-      var picked = MenuUi.choice(app, "Palette", choices, -2,
-          paletteHelp_())
+      if (colors.count < 16) choices.add([colors.count, ""])
+      var commands = {}
+      commands[Key.insert] = ["insert", true]
+      commands[Key.delete] = ["delete", false]
+      var result = MenuUi.commandChoice(app, "Palette", choices, -2,
+          paletteHelp_(), commands)
+      if (result == null) return
+      var command = result[0]
+      var picked = result[1]
+      if (command == "delete") {
+        if (colors.count > 1) {
+          colors.removeAt(-1)
+          d["palette"] = colors
+          onChange.call()
+        }
+        continue
+      }
+      if (command == "insert") picked = colors.count
       if (picked == null || picked == -2) return
       if (picked == -1) {
         d["palette"] = []

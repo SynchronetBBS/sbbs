@@ -263,7 +263,13 @@ class MainMenuApp {
       _footer.comment = _selected == null ? "" : _selected.comment
     }
     _list.onSelect = Fn.new {|index, item|
-      if (_connected) edit_() else connect_()
+      if (index == _entries.count) {
+        add_()
+      } else if (_connected) {
+        edit_()
+      } else {
+        connect_()
+      }
     }
     _directory.add(_list)
 
@@ -321,6 +327,7 @@ class MainMenuApp {
         "Enter\n:  %(action)\n" +
         "F2 or Ctrl-E\n:  Edit the selected entry\n" +
         "Insert\n:  Add a new personal entry\n" +
+        "Blank final row\n:  Add a new personal entry\n" +
         "Delete\n:  Remove the selected personal entry\n" +
         "F5 / F6\n:  Copy and paste an entry\n" +
         "Ctrl-S\n:  Manage sort profiles\n" +
@@ -407,9 +414,10 @@ class MainMenuApp {
       labels.add(bbs.name)
       if (preferred != null && bbs.name == preferred) selected = i
     }
+    labels.add("")
     _list.items = labels
     if (labels.count > 0) _list.selected = selected.min(labels.count - 1)
-    if (labels.count == 0) {
+    if (_entries.count == 0) {
       _selected = null
       Menu.showEntry(null)
       _footer.comment = ""
@@ -419,7 +427,7 @@ class MainMenuApp {
     if (active >= 0 && active < profiles.count) {
       _directory.title = "Directory: %(profiles[active][0])"
     } else {
-      _directory.title = "Directory (%(labels.count) items)"
+      _directory.title = "Directory (%(_entries.count) items)"
     }
     _app.root.markDirty()
   }
@@ -431,7 +439,10 @@ class MainMenuApp {
   }
 
   edit_() {
-    if (_selected == null) return
+    if (_selected == null) {
+      if (_list.selected == _entries.count) add_()
+      return
+    }
     var bbs = _selected
     if (bbs.type != 0) {
       if (!Confirm.show(_app,
