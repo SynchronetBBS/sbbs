@@ -164,10 +164,12 @@ void sst_io_audio_stop(void);
  * frame per call (no pacing/dedupe), capped at 200 frames. */
 void sst_io_present(const uint8_t *idx, const uint8_t *pal768);
 
-/* ---- input events (M3: mouse only; keyboard is a later task) ----
+/* ---- input events (mouse + keyboard) ----
  * sst_io_pump()'s parser turns an SGR mouse report (csi_final()'s 'M'/'m'
- * cases) into one or more of these and queues them here; the ScummVM
- * backend's pollEvent() (Task 4) drains them via sst_io_next_event(). */
+ * cases) or a decoded key -- a legacy byte, a kitty CSI-u event or a
+ * SyncTERM evdev physical-key report -- into one or more of these and
+ * queues them here; the ScummVM backend's pollEvent() drains them via
+ * sst_io_next_event(). */
 typedef enum {
 	SST_EV_MOUSE_MOVE, SST_EV_MOUSE_DOWN, SST_EV_MOUSE_UP,
 	SST_EV_WHEEL, SST_EV_KEY_DOWN, SST_EV_KEY_UP
@@ -178,12 +180,24 @@ typedef enum {
 #define SST_MOD_ALT   2
 #define SST_MOD_CTRL  4
 
+/* Non-ASCII keys carried in sst_input_event_t.keycode. Printable keys use
+ * their ASCII value directly (keycode == ascii); these cover the rest. */
+enum {
+	SST_KEY_FIRST = 0x100,
+	SST_KEY_UP, SST_KEY_DOWN, SST_KEY_LEFT, SST_KEY_RIGHT,
+	SST_KEY_HOME, SST_KEY_END, SST_KEY_PAGEUP, SST_KEY_PAGEDOWN,
+	SST_KEY_INSERT, SST_KEY_DELETE,
+	SST_KEY_ENTER, SST_KEY_ESCAPE, SST_KEY_BACKSPACE, SST_KEY_TAB,
+	SST_KEY_F1, SST_KEY_F2, SST_KEY_F3, SST_KEY_F4, SST_KEY_F5,
+	SST_KEY_F6, SST_KEY_F7, SST_KEY_F8, SST_KEY_F9
+};
+
 typedef struct {
 	sst_ev_type_t type;
 	int x, y;        /* mouse: game coords, 0..SST_FB_W/H-1 */
 	int button;      /* MOUSE_DOWN/UP: 0 left 1 middle 2 right */
 	int wheel;       /* WHEEL: -1 up, +1 down */
-	int keycode;     /* KEY_*: an SST_KEY_* code (Task 5) or a raw ASCII byte */
+	int keycode;     /* KEY_*: an SST_KEY_* code or a raw ASCII byte */
 	int ascii;       /* KEY_*: printable char, else 0 */
 	int mods;        /* KEY_*: SST_MOD_* bitmask */
 } sst_input_event_t;

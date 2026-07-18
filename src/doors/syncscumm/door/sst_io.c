@@ -31,6 +31,11 @@
  * syncdoom. This file owns the coordinate mapping (sst_mouse_report(),
  * below); mouse.h only knows the wire protocol. */
 #include "mouse.h"
+/* termgfx: key-mode negotiation (kitty CSI-u / SyncTERM evdev) + the shared
+ * kitty-parameter and evdev-keycode decoders -- this file owns the byte
+ * parser and the queued key events (sst_key_event(), below); keymode.h only
+ * knows the wire protocol, same division of labor as mouse.h above. */
+#include "keymode.h"
 /* termgfx_audio_query/_opus_query + their reply parsers: the M4 audio
  * capability probe (audio_scan_feed(), below). No PCM is staged here -- the
  * streaming feed is its own module; this file only asks the question and
@@ -129,6 +134,12 @@ static FILE *g_capture;                  /* SYNCSCUMM_SIXELOUT mode */
  * never reset once latched -- termgfx_mouse_note_pixel_report()'s own
  * contract. */
 static termgfx_mouse_t g_mouse;
+
+/* The negotiated key mode (termgfx/keymode.h): kitty CSI-u flags pushed, or
+ * SyncTERM evdev physical-key reports enabled, or neither. Set from the
+ * kitty query reply and the CTDA cap-8 check (csi_final()'s 'u' and 'c'
+ * cases, below) and undone in sst_io_shutdown(). */
+static termgfx_keymode_t g_km;
 
 /* Raw PRE-ENCODE mixer PCM tap: sst_io_audio_stream() appends exactly the
  * interleaved stereo S16 frames ScummVM's mixer handed us, at SST_AUDIO_RATE,
@@ -650,7 +661,6 @@ static void sst_pace_ack(void);
  * parser), and csi_final() is where the notification lands -- see the 'n'
  * case below. */
 static void  sst_audio_underrun(int ch);
-static float sst_audio_volume_step(float delta_db);   /* + / - live volume; impl by g_stream */
 
 /* SGR mouse report -> game-coordinate input event(s) (defined with the rest
  * of the present-path geometry state, below, since it maps through
@@ -659,10 +669,23 @@ static float sst_audio_volume_step(float delta_db);   /* + / - live volume; impl
  * this as soon as a report's three params are parsed. */
 static void sst_mouse_report(int b, int col, int row, int release);
 
+/* Keyboard decode (M3 Task 5): forward-declared for the same reason as
+ * sst_mouse_report just above -- defined with the rest of the input-event
+ * FIFO state (needs sst_push_event()), but parse_bytes()'s P_NORMAL/P_ESC
+ * byte handlers and csi_final()'s CSI/SS3/kitty/evdev dispatch, both defined
+ * above that, need to queue key events. sst_toggle_stats() is the one
+ * exception -- it needs no FIFO, just sst_stats_draw()/sst_bottom_row(), so
+ * it is defined right above parse_bytes() instead; declared here only so the
+ * kitty/evdev sections (also above that definition) can reach it too. */
+static void sst_key_event(int keycode, int ascii, int mods, int down);
+static void sst_key_press(int keycode, int ascii, int mods);
+static void sst_key_byte(int c);
+static void sst_evdev_report(int down);
+static void sst_toggle_stats(void);
+
 #define SST_AUDIO_VOLUME_PCT 50    /* default channel level, percent (-> dB via
                                     * termgfx_db_from_pct); 50 = -6 dB, trimmed
                                     * so BASS sits with the other doors */
-#define SST_VOLUME_STEP_DB   6.0f  /* dB per + / - keypress */
 
 /* Parse up to `max` ';'-separated decimal params from g_csi_par (a leading
  * non-digit marker byte like '<'/'='/'?' is simply skipped). */
@@ -682,6 +705,18 @@ static int csi_params(int *out, int max)
 	return n;
 }
 
+/* --- key-mode state readers + the kitty parameter decode -------------------
+ * termgfx (keymode.h) owns the wire protocol and the flags/state; these are
+ * thin wrappers over g_km/g_csi_par so csi_final()'s CSI/SS3 dispatch below
+ * reads no worse than door_input.c's own kitty_active()/kitty_parse(). */
+static int sst_kitty_active(void) { return termgfx_keymode_kitty_active(&g_km); }
+static int sst_evdev_active(void) { return termgfx_keymode_evdev_active(&g_km); }
+
+static int sst_kitty_parse(int *mod, int *ev)
+{
+	return termgfx_kitty_parse(g_csi_par, g_csi_len, mod, ev);
+}
+
 static void csi_final(char fin)
 {
 	int p[16], np, k;
@@ -692,9 +727,22 @@ static void csi_final(char fin)
 			if (g_csi_len > 0 && (g_csi_par[0] == '<' || g_csi_par[0] == '='))
 				g_is_syncterm = 1;
 			np = csi_params(p, 16);
-			for (k = 0; k < np; k++)
+			for (k = 0; k < np; k++) {
 				if (p[k] == 4)
 					g_have_sixel = 1;              /* DA1/CTDA sixel cap */
+				/* CTDA cap 8 = physical key (evdev) reports. Prefer it over
+				 * kitty (a SyncTERM that advertises it doesn't speak kitty
+				 * anyway): enable reports (=1h) and suppress the translated
+				 * byte stream (=2h), so keys arrive only as the CSI=<code>
+				 * K/k edges sst_evdev_report() handles, below. */
+				if (p[k] == 8 && g_csi_par[0] == '<') {
+					char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+					size_t kn = termgfx_keymode_enable_evdev(&g_km, ks, sizeof ks, now_ms());
+
+					if (kn > 0)
+						out_put(ks, kn);   /* arms the held-key settle window */
+				}
+			}
 			k = termgfx_caps_cterm_version(p, np, g_csi_par[0]);
 			if (k > 0)
 				g_cterm_ver = k;                   /* CTDA: maj*1000+min */
@@ -781,6 +829,170 @@ static void csi_final(char fin)
 			termgfx_mouse_on_decrpm(&g_mouse, p, np);
 			return;
 		}
+		/* --- keyboard: legacy CSI/SS3 nav keys, kitty CSI-u, SyncTERM
+		 * evdev physical-key reports. Structure ported from
+		 * syncconquer/door/door_input.c's csi_final(), trimmed to this
+		 * door's neutral SST_KEY_* events. --------------------------------- */
+		case 'A': case 'B': case 'C': case 'D': {   /* arrows */
+			int keycode = (fin == 'A') ? SST_KEY_UP : (fin == 'B') ? SST_KEY_DOWN
+			            : (fin == 'C') ? SST_KEY_RIGHT : SST_KEY_LEFT;
+
+			if (sst_kitty_active()) {
+				int mod, ev;
+				sst_kitty_parse(&mod, &ev);
+				(void)mod;   /* arrows carry no ctrl/alt action -- only the event type matters */
+				sst_key_event(keycode, 0, 0, ev != 3);
+			} else
+				sst_key_press(keycode, 0, 0);
+			return;
+		}
+		case 'H': sst_key_press(SST_KEY_HOME, 0, 0); return;
+		case 'F': sst_key_press(SST_KEY_END,  0, 0); return;
+		case 'K':   /* evdev press report (CSI = code[;code...] K), else cterm End */
+			if (sst_evdev_active() && g_csi_len > 0 && g_csi_par[0] == '=') {
+				sst_evdev_report(1);
+				return;
+			}
+			sst_key_press(SST_KEY_END, 0, 0);
+			return;
+		case 'k':   /* evdev release report */
+			if (sst_evdev_active() && g_csi_len > 0 && g_csi_par[0] == '=')
+				sst_evdev_report(0);
+			return;
+		/* F1/F2 (CSI P/Q or SS3 O P/Q). F3/F4 (SS3 O R/O S) are deliberately
+		 * NOT mapped here -- 'R' and 'S' already mean this file's own
+		 * CPR/DSR and XTSMGRAPHICS replies (the same collision door_input.c
+		 * documents for F3); F3/F4 still work via kitty CSI-u or evdev
+		 * (codes 61/62). */
+		case 'P': case 'Q': {
+			int keycode = (fin == 'P') ? SST_KEY_F1 : SST_KEY_F2;
+
+			if (sst_kitty_active()) {
+				int mod, ev;
+				sst_kitty_parse(&mod, &ev);
+				(void)mod;   /* F1/F2 carry no ctrl/alt action -- only the event type matters */
+				sst_key_event(keycode, 0, 0, ev != 3);
+			} else
+				sst_key_press(keycode, 0, 0);
+			return;
+		}
+		case '~': {   /* nav/F-key numerics: ESC[<n>~ */
+			int mod = 1, ev = 1, keycode = 0;
+
+			if (sst_kitty_active())
+				sst_kitty_parse(&mod, &ev);
+			(void)mod;   /* nav/F-keys carry no ctrl/alt action -- only the event type matters */
+			np = csi_params(p, 1);
+			if (np < 1)
+				return;
+			switch (p[0]) {
+				case 1: case 7:  keycode = SST_KEY_HOME;     break;
+				case 2:          keycode = SST_KEY_INSERT;   break;
+				case 3:          keycode = SST_KEY_DELETE;   break;
+				case 4: case 8:  keycode = SST_KEY_END;      break;
+				case 5:          keycode = SST_KEY_PAGEUP;   break;
+				case 6:          keycode = SST_KEY_PAGEDOWN; break;
+				case 11:         keycode = SST_KEY_F1;       break;
+				case 12:         keycode = SST_KEY_F2;       break;
+				case 13:         keycode = SST_KEY_F3;       break;
+				case 14:         keycode = SST_KEY_F4;       break;
+				case 15:         keycode = SST_KEY_F5;       break;
+				case 17:         keycode = SST_KEY_F6;       break;
+				case 18:         keycode = SST_KEY_F7;       break;
+				case 19:         keycode = SST_KEY_F8;       break;
+				case 20:         keycode = SST_KEY_F9;       break;
+				default:         return;
+			}
+			if (sst_kitty_active())
+				sst_key_event(keycode, 0, 0, ev != 3);
+			else
+				sst_key_press(keycode, 0, 0);
+			return;
+		}
+		case 'u':
+			/* CSI?u negotiation reply: enable the protocol and push our
+			 * flags (1 disambiguate | 2 event types | 8 all keys incl.
+			 * modifiers). termgfx (keymode.h) owns the push itself and the
+			 * evdev-wins guard. */
+			if (g_csi_len > 0 && g_csi_par[0] == '?') {
+				char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+				size_t kn = termgfx_keymode_enable_kitty(&g_km, ks, sizeof ks);
+
+				if (kn > 0)
+					out_put(ks, kn);   /* a no-op if evdev already won */
+				return;
+			}
+			{
+				int mod, ev, cp = sst_kitty_parse(&mod, &ev);
+				int down, keycode, ascii = 0, mods = 0;
+
+				if (cp <= 0)
+					return;
+				down = (ev != 3);
+				/* NumLock OFF: the keypad reports its navigation function
+				 * set (Home/End/arrows/PgUp/PgDn/Ins/Del) -- map those to
+				 * the nav keys so the keypad respects NumLock. */
+				switch (cp) {
+					case 57417: sst_key_event(SST_KEY_LEFT,     0, 0, down); return;
+					case 57418: sst_key_event(SST_KEY_RIGHT,    0, 0, down); return;
+					case 57419: sst_key_event(SST_KEY_UP,       0, 0, down); return;
+					case 57420: sst_key_event(SST_KEY_DOWN,     0, 0, down); return;
+					case 57421: sst_key_event(SST_KEY_PAGEUP,   0, 0, down); return;
+					case 57422: sst_key_event(SST_KEY_PAGEDOWN, 0, 0, down); return;
+					case 57423: sst_key_event(SST_KEY_HOME,     0, 0, down); return;
+					case 57424: sst_key_event(SST_KEY_END,      0, 0, down); return;
+					case 57425: sst_key_event(SST_KEY_INSERT,   0, 0, down); return;
+					case 57426: sst_key_event(SST_KEY_DELETE,   0, 0, down); return;
+				}
+				if (cp >= 57399 && cp <= 57414) {   /* NumLock ON: keypad PUA -> ASCII */
+					static const char kp[] = "0123456789./*-+\r";
+					cp = (unsigned char)kp[cp - 57399];
+				}
+				if (cp >= 128)
+					return;   /* other non-ASCII special key (incl. the
+					           * modifier-key's own PUA event, 57441+): not
+					           * in our map */
+				/* Door-level Ctrl-S (stats) / q / Ctrl-C (quit) hotkeys stay
+				 * reserved under kitty too, same as the legacy byte path
+				 * (parse_bytes()'s P_NORMAL case, below). */
+				if (termgfx_kitty_ctrl(mod)) {
+					if ((cp | 0x20) == 's') {
+						if (down)
+							sst_toggle_stats();
+						return;
+					}
+					if ((cp | 0x20) == 'c') {
+						if (down)
+							g_quit = 1;
+						return;
+					}
+				} else if (cp == 'q') {
+					if (down)
+						g_quit = 1;
+					return;
+				}
+				if (cp == 0x0d)
+					keycode = SST_KEY_ENTER;
+				else if (cp == 0x08 || cp == 0x7f)
+					keycode = SST_KEY_BACKSPACE;
+				else if (cp == 0x09)
+					keycode = SST_KEY_TAB;
+				else if (cp == 0x1b)
+					keycode = SST_KEY_ESCAPE;
+				else if (cp >= 0x20 && cp <= 0x7e) {
+					keycode = cp;
+					ascii   = cp;
+				} else
+					return;
+				if (termgfx_kitty_ctrl(mod))
+					mods |= SST_MOD_CTRL;
+				if (termgfx_kitty_shift(mod))
+					mods |= SST_MOD_SHIFT;
+				if (termgfx_kitty_alt(mod))
+					mods |= SST_MOD_ALT;
+				sst_key_event(keycode, ascii, mods, down);
+			}
+			return;
 		default:
 			return;
 	}
@@ -950,6 +1162,28 @@ static int sst_bottom_row(void)
 	return 25;
 }
 
+/* Ctrl-S: toggle the stats bar. Draw/erase it NOW, not on the next present --
+ * a static/deduped scene may not present again for a while, so waiting would
+ * make the toggle appear to do nothing. Shared by the P_NORMAL byte path and
+ * the kitty/evdev decode (csi_final()'s 'u'/'K' cases, above), so Ctrl-S
+ * stays a door hotkey under every key mode. */
+static void sst_toggle_stats(void)
+{
+	g_stats = !g_stats;
+	if (g_stats) {
+		sst_stats_draw();
+		sst_io_flush();
+	} else {
+		/* Erase the bar we last drew; it sits on the reserved bottom row,
+		 * so clearing the line is enough. */
+		char e[32];
+		int  en = snprintf(e, sizeof e, "\x1b[%d;1H\x1b[0m\x1b[K\x1b[?25l",
+		                   sst_bottom_row());
+		out_put(e, (size_t)en);
+		sst_io_flush();
+	}
+}
+
 static void parse_bytes(const uint8_t *buf, int n)
 {
 	int i;
@@ -960,31 +1194,12 @@ static void parse_bytes(const uint8_t *buf, int n)
 			case P_NORMAL:
 				if (c == 0x1b)
 					g_pstate = P_ESC;
-				else if (c == 0x13) {                   /* Ctrl-S: toggle stats bar */
-					g_stats = !g_stats;
-					/* Draw/erase the bar NOW, not on the next present -- a
-					 * static/deduped scene may not present again for a while, so
-					 * waiting would make the toggle appear to do nothing. */
-					if (g_stats) {
-						sst_stats_draw();
-						sst_io_flush();
-					} else {
-						/* Erase the bar we last drew; it sits on the reserved
-						 * bottom row, so clearing the line is enough. */
-						char e[32];
-						int  en = snprintf(e, sizeof e,
-						                   "\x1b[%d;1H\x1b[0m\x1b[K\x1b[?25l",
-						                   sst_bottom_row());
-						out_put(e, (size_t)en);
-						sst_io_flush();
-					}
-				}
+				else if (c == 0x13)                     /* Ctrl-S: toggle stats bar */
+					sst_toggle_stats();
 				else if (c == 'q' || c == 0x03)          /* q / Ctrl-C: request quit */
 					g_quit = 1;
-				else if (c == '+' || c == '=')           /* louder (= is the unshifted +) */
-					sst_audio_volume_step(SST_VOLUME_STEP_DB);
-				else if (c == '-' || c == '_')           /* quieter; snaps to off at the floor */
-					sst_audio_volume_step(-SST_VOLUME_STEP_DB);
+				else
+					sst_key_byte(c);
 				break;
 			case P_ESC:
 				if (c == '[' || c == 'O') {
@@ -997,8 +1212,11 @@ static void parse_bytes(const uint8_t *buf, int n)
 					g_xtver_len = 0;
 				} else {
 					g_pstate = P_NORMAL;
-					i--;                 /* not a CSI/APC introducer: reprocess c as
-					                      * P_NORMAL (door_io.c:3289-3293 pattern) */
+					/* Not a CSI/APC introducer: the pending ESC was a lone
+					 * Escape key, not the start of a sequence. */
+					sst_key_press(SST_KEY_ESCAPE, 0, 0);
+					i--;                 /* reprocess c as P_NORMAL
+					                      * (door_io.c:3289-3293 pattern) */
 				}
 				break;
 			case P_APC:
@@ -1199,6 +1417,13 @@ int sst_io_init(int argc, char **argv)
 	 * itself sends the DECRQM query). Nothing here gates present() the way
 	 * DA1/JXL do -- a terminal that ignores it just never sends reports. */
 	out_puts(termgfx_mouse_enable);
+	/* Kitty keyboard-protocol query ("does this terminal speak CSI-u?"); a
+	 * '?' reply enables it (csi_final()'s 'u' case, above). SyncTERM's own
+	 * evdev physical-key reports are enabled instead, when eligible, off
+	 * the CTDA reply's cap 8 (csi_final()'s 'c' case) -- evdev wins over
+	 * kitty (termgfx/keymode.h); a terminal that answers neither just keeps
+	 * sending plain bytes, decoded in parse_bytes()'s P_NORMAL case. */
+	out_puts(termgfx_keymode_query_kitty);
 	/* Audio caps (SyncTERM:Q;libsndfile). Tail of the burst: nothing gates
 	 * on its absence, and the XTVERSION-before-canvas invariant above
 	 * constrains only those two. The Opus query is NOT sent here -- it is
@@ -1245,6 +1470,15 @@ void sst_io_shutdown(void)
 		 * the terminal back to the BBS prompt -- it never asked to be left in
 		 * SGR/SGR-Pixels motion-reporting mode. */
 		out_puts(termgfx_mouse_restore);
+		/* Undo whichever key mode was negotiated (kitty or evdev) at entry;
+		 * a no-op (0 bytes) if neither ever engaged. */
+		{
+			char   ks[TERMGFX_KEYMODE_SEQ_MAX];
+			size_t kn = termgfx_keymode_restore(&g_km, ks, sizeof ks);
+
+			if (kn > 0)
+				out_put(ks, kn);
+		}
 		/* Restore the status line hidden at entry (door_io.c:1233-1238 pattern):
 		 * the captured pre-door DECSSDT type, or the usual indicator default
 		 * (type 1) if the DECRQSS reply never came back. */
@@ -1521,16 +1755,6 @@ static void sst_audio_underrun(int ch)
 {
 	if (g_stream != NULL)
 		termgfx_stream_underrun(g_stream, ch);
-}
-
-/* Step the streamed-audio channel volume by `delta` percent, for the + / -
- * live-volume hotkeys. The shared module clamps 0..100; at 0 it stops sending
- * (off) and a step back up resumes it. Returns the new volume (0 if no stream
- * -- e.g. a non-audio terminal, where the keys are simply inert). */
-static float sst_audio_volume_step(float delta_db)
-{
-	return g_stream != NULL ? termgfx_stream_volume_step(g_stream, delta_db)
-	       : TERMGFX_DB_MUTE;
 }
 
 /* Sysop audio settings, syncscumm.ini's [audio] section. Same file and same
@@ -2620,12 +2844,14 @@ static void sst_stats_draw(void)
 	out_put(buf, (size_t)off);
 }
 
-/* --- input event FIFO (M3: mouse only) -------------------------------------
+/* --- input event FIFO (mouse + keyboard) -----------------------------------
  * Fixed-capacity ring, drop-oldest on overflow: a stuck/never-polled backend
  * must not grow this without bound, and input latency from dropping a stale
- * event beats unbounded memory. 64 is far more than one report burst can
- * produce (at most 2 events -- a MOVE plus a DOWN/UP/WHEEL -- per report),
- * so overflow is not expected in practice. */
+ * event beats unbounded memory. 64 is far more than one mouse report burst
+ * can produce (at most 2 events -- a MOVE plus a DOWN/UP/WHEEL -- per
+ * report); an evdev physical-key report can coalesce more codes (a fast
+ * chord), but still nowhere near this ring's depth, so overflow is not
+ * expected in practice either way. */
 #define SST_EVQ_CAP 64
 static sst_input_event_t g_evq[SST_EVQ_CAP];
 static int               g_evq_head;   /* index of the oldest queued event */
@@ -2652,6 +2878,158 @@ int sst_io_next_event(sst_input_event_t *ev)
 	g_evq_head = (g_evq_head + 1) % SST_EVQ_CAP;
 	g_evq_n--;
 	return 1;
+}
+
+/* --- keyboard decode: legacy bytes, kitty CSI-u, SyncTERM evdev -----------
+ * Ported from syncconquer/door/door_input.c's emit_key()/emit_tap()/
+ * evdev_edge()/evdev_report(), trimmed to this door's neutral SST_KEY_*
+ * events: no VK_* space, no WWKeyboard Down()-poll modifier brackets --
+ * ScummVM's pollEvent() (door/syncscumm.cpp) wants discrete key-down/up
+ * events, so a modifier's state folds into SST_MOD_* on the key it
+ * accompanies rather than a standalone press/release of its own. */
+
+static void sst_key_event(int keycode, int ascii, int mods, int down)
+{
+	sst_input_event_t ev;
+
+	memset(&ev, 0, sizeof ev);
+	ev.type    = down ? SST_EV_KEY_DOWN : SST_EV_KEY_UP;
+	ev.keycode = keycode;
+	ev.ascii   = ascii;
+	ev.mods    = mods;
+	sst_push_event(&ev);
+}
+
+/* A legacy/CSI key with no true release from the wire (a plain byte, or a
+ * legacy -- non-kitty -- CSI/SS3 nav key): queue just the press. Unlike
+ * door_input.c's emit_tap(), which synthesizes an immediate release too
+ * (WWKeyboard's Down()-poll model needs one so a key can't stick "held"),
+ * ScummVM's discrete keydown/keyup event stream has no such poll to
+ * satisfy, so a legacy key is a single SST_EV_KEY_DOWN and nothing else --
+ * the same shape a kitty/evdev key gets on ITS press edge, just without a
+ * release edge ever following. */
+static void sst_key_press(int keycode, int ascii, int mods)
+{
+	sst_key_event(keycode, ascii, mods, 1);
+}
+
+/* A legacy P_NORMAL byte outside the ESC/CSI machinery: translate to one key
+ * press. 0x13 (Ctrl-S) and 'q'/0x03 (quit) never reach here -- consumed as
+ * door hotkeys in parse_bytes()'s P_NORMAL case, above them. */
+static void sst_key_byte(int c)
+{
+	int keycode = 0, ascii = 0, mods = 0;
+
+	if (c == 0x0d)
+		keycode = SST_KEY_ENTER;
+	else if (c == 0x08 || c == 0x7f)
+		keycode = SST_KEY_BACKSPACE;
+	else if (c == 0x09)
+		keycode = SST_KEY_TAB;
+	else if (c >= 0x01 && c <= 0x1a) {
+		keycode = 'a' + (c - 1);   /* Ctrl+letter */
+		mods    = SST_MOD_CTRL;
+	} else if (c >= 0x20 && c <= 0x7e) {
+		keycode = c;
+		ascii   = c;
+	} else
+		return;                     /* no mapping (other control bytes,
+		                            * high bit set): drop */
+	sst_key_press(keycode, ascii, mods);
+}
+
+/* --- SyncTERM evdev physical-key reports ------------------------------------
+ * Negotiated off the CTDA cap-8 reply (csi_final()'s 'c' case, above).
+ * Reports arrive as "CSI = code[;code...] K" (press) / "...k" (release),
+ * csi_final()'s 'K'/'k' cases below. */
+static unsigned g_evdev_mods;
+
+/* Apply one physical key edge. Unlike door_input.c's evdev_edge(), a
+ * modifier code only updates g_evdev_mods -- no standalone press/release
+ * event of its own; see the section doc comment above for why. */
+static void sst_evdev_edge(int code, int down)
+{
+	int keycode = 0, c;
+	int mod = termgfx_evdev_modifier(code);   /* L/R Ctrl, Shift, Alt */
+
+	if (mod != 0) {
+		if (down)
+			g_evdev_mods |= (unsigned)mod;
+		else
+			g_evdev_mods &= ~(unsigned)mod;
+		return;
+	}
+
+	/* SyncTERM re-reports the keys already held when physical reports are
+	 * enabled -- the Enter still down from the BBS menu. Drop those press
+	 * edges (termgfx/keymode.h); releases always run, so nothing sticks. */
+	if (down && termgfx_keymode_evdev_settling(&g_km, now_ms()))
+		return;
+
+	switch (code) {
+		case 103: case 72: keycode = SST_KEY_UP;       break;   /* + numpad KP8 */
+		case 108: case 80: keycode = SST_KEY_DOWN;     break;   /* + numpad KP2 */
+		case 105: case 75: keycode = SST_KEY_LEFT;     break;   /* + numpad KP4 */
+		case 106: case 77: keycode = SST_KEY_RIGHT;    break;   /* + numpad KP6 */
+		case 102: case 71: keycode = SST_KEY_HOME;     break;   /* + numpad KP7 */
+		case 107: case 79: keycode = SST_KEY_END;      break;   /* + numpad KP1 */
+		case 104: case 73: keycode = SST_KEY_PAGEUP;   break;   /* + numpad KP9 */
+		case 109: case 81: keycode = SST_KEY_PAGEDOWN; break;   /* + numpad KP3 */
+		case 110: case 82: keycode = SST_KEY_INSERT;   break;   /* + numpad KP0 */
+		case 111: case 83: keycode = SST_KEY_DELETE;   break;   /* + numpad KP-dot */
+		case 59:  keycode = SST_KEY_F1; break;
+		case 60:  keycode = SST_KEY_F2; break;
+		case 61:  keycode = SST_KEY_F3; break;
+		case 62:  keycode = SST_KEY_F4; break;
+		case 63:  keycode = SST_KEY_F5; break;
+		case 64:  keycode = SST_KEY_F6; break;
+		case 65:  keycode = SST_KEY_F7; break;
+		case 66:  keycode = SST_KEY_F8; break;
+		case 67:  keycode = SST_KEY_F9; break;
+	}
+	if (keycode) {
+		sst_key_event(keycode, 0, 0, down);
+		return;
+	}
+
+	c = termgfx_evdev_ascii(code, (g_evdev_mods & TERMGFX_MOD_SHIFT) != 0);
+	if (c == 0)
+		return;
+	if ((g_evdev_mods & TERMGFX_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z') {
+		/* Door-level Ctrl-S (stats) / Ctrl-C (quit) hotkeys, consumed here
+		 * too -- SyncTERM's evdev mode never reaches the P_NORMAL raw byte
+		 * that catches them in legacy mode. Fire on press, swallow the
+		 * release too. */
+		if ((c | 0x20) == 's') {
+			if (down)
+				sst_toggle_stats();
+			return;
+		}
+		if ((c | 0x20) == 'c') {
+			if (down)
+				g_quit = 1;
+			return;
+		}
+		sst_key_event(c | 0x20, 0, SST_MOD_CTRL, down);
+		return;
+	}
+	if (c == 'q') {                            /* quit, door-reserved */
+		if (down)
+			g_quit = 1;
+		return;
+	}
+	sst_key_event(c, c, 0, down);
+}
+
+/* A physical key report ("CSI = code[;code...] K/k"): apply every coalesced
+ * edge. csi_params() skips the leading '=' marker. */
+static void sst_evdev_report(int down)
+{
+	int codes[16], nc, i;
+
+	nc = csi_params(codes, 16);
+	for (i = 0; i < nc; i++)
+		sst_evdev_edge(codes[i], down);
 }
 
 /* --- SGR mouse: report coords -> SST_FB_W x SST_FB_H game coords ----------
@@ -3256,6 +3634,19 @@ int sst_io_test_set_geom(int canvas_w, int canvas_h, int cell_w, int cell_h,
 int sst_io_test_mouse_report(int b, int col, int row, int release)
 {
 	sst_mouse_report(b, col, row, release);
+	return 1;
+}
+
+/* Test-only seam (test/test_sst_input.c): run raw wire bytes through the
+ * exact same byte parser sst_io_pump() feeds (parse_bytes()), so a keyboard
+ * decode test can drive P_NORMAL/P_ESC/P_CSI/csi_final() without a socket
+ * or a probe burst. Does NOT reset the event FIFO -- unlike
+ * sst_io_test_set_geom() above, a keyboard test scenario is a plain
+ * sequence of bytes with no per-scenario geometry latch to re-seed, so
+ * callers drain with sst_io_next_event() between scenarios themselves. */
+int sst_io_test_feed(const char *bytes, size_t n)
+{
+	parse_bytes((const uint8_t *)bytes, (int)n);
 	return 1;
 }
 #endif

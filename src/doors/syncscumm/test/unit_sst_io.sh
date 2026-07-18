@@ -47,6 +47,15 @@ cc -o /tmp/test_sst_mouse $JXL_DEFINE -DSST_TEST -I"$DOOR/door" -I"$DOOR/../term
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_mouse
 
+# The keyboard decode (M3 Task 5) needs the same SST_TEST seam
+# (sst_io_test_feed()), driving parse_bytes() directly with raw wire bytes --
+# fresh session, own binary, same reason as the mouse test above.
+cc -o /tmp/test_sst_input $JXL_DEFINE -DSST_TEST -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_input.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_input
+
 # The non-graphics-terminal gate needs a fresh sst_io session (file-static
 # state, no reset), so it's its own binary rather than another case above.
 cc -o /tmp/test_sst_io_nogfx $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
