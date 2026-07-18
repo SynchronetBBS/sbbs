@@ -111,6 +111,17 @@ cc -o /tmp/test_sst_io_xterm_ceiling $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../term
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_sst_io_xterm_ceiling
 
+# The bottom-of-image dirty-rect strand (stale mouse-cursor sprite never
+# erased at the bottom of a static sixel scene): a dirty box whose bottom
+# vstep-clamp can't cover its own changed rows must force a full frame
+# instead of silently dropping those rows. Fresh session, own binary for the
+# same reason as the others above.
+cc -o /tmp/test_sst_io_bottom_dirty $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_io_bottom_dirty.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_io_bottom_dirty
+
 # The audio probe needs a fresh sst_io session (file-static tier/settle
 # state, no reset), so it's its own binary rather than another case above.
 cc -o /tmp/test_sst_io_audio $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \

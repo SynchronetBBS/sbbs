@@ -2425,15 +2425,20 @@ static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 		ry  = cy * ch;                              /* box top at a cell boundary */
 		/* Height up to a whole number of BOTH cells and bands (vstep), so foot
 		 * fills the box's cell block completely -- no partial band/cell left as
-		 * a black strip. Clamp to the frame; the bottom-most box may fall short
-		 * of a full vstep (a small partial near the reserved row, not visible). */
+		 * a black strip. Clamp to the frame; the bottom-most box may then fall
+		 * short of a full vstep and no longer cover this box's own changed
+		 * rows [ry+rh, ry2) -- rather than ship a box that silently drops
+		 * those rows (stranding them until the next full frame, which a
+		 * static scene may never send again -- the confirmed bottom-cursor
+		 * defect), fall back to a full frame below, which always encodes the
+		 * whole ehc height with no partial band at the bottom. */
 		rh  = (ry2 - ry + vstep - 1) / vstep * vstep;
 		if (ry + rh > ehc)
-			rh = (ehc - ry) / vstep * vstep;   /* stay vstep-aligned at the frame
-			                                    * bottom; a <vstep sliver there is
-			                                    * left to the next full frame */
+			rh = (ehc - ry) / vstep * vstep;   /* stay vstep-aligned at the frame bottom */
+		if (ry + rh < ry2)
+			return 0;                               /* fall back to a full frame */
 		rw  = rx2 - rx;
-		if (rw <= 0 || rh <= 0)
+		if (rw <= 0)
 			continue;
 
 		/* Encode the box at its exact CELL-ALIGNED height (ry/ry2 were snapped
