@@ -53,7 +53,12 @@ class BbsEditor {
       app.popModal()
       if (standalone) app.quit()
     }
-    pane.onClose = dismiss
+    pane.onClose = Fn.new {
+      if (apply_(app, bbs, draft, isDefaults)) {
+        state["saved"] = true
+        dismiss.call()
+      }
+    }
 
     var list = ListView.new()
     list.bounds = pane.innerBounds
@@ -68,15 +73,8 @@ class BbsEditor {
       list.items = rows.map {|row| row[0] }.toList
       list.selected = selected.min(rows.count - 1).max(0)
       list.onSelect = Fn.new {|i, item|
-        if (i == 0) {
-          if (apply_(app, bbs, draft, isDefaults)) {
-            state["saved"] = true
-            dismiss.call()
-          }
-        } else {
-          rows[i][1].call()
-          rebuild.call()
-        }
+        rows[i][1].call()
+        rebuild.call()
       }
     }
     rebuild.call()
@@ -181,8 +179,8 @@ class BbsEditor {
   static editorHelp_(d, defaults) {
     var heading = "# Edit Default Connection\n\n"
     if (!defaults) heading = "# Edit Directory Entry\n\n"
-    var text = heading + "Select an item to edit, then choose **Save " +
-        "Changes** when finished.\n\n"
+    var text = heading + "Select an item to edit. Changes are stored " +
+        "when you leave the editor.\n\n"
     if (!defaults) {
       text = text + helpItem_("Name", "The name shown in the directory")
       var address = "The network address to connect to"
@@ -521,7 +519,7 @@ class BbsEditor {
   }
 
   static rows_(app, d, defaults) {
-    var rows = [["Save Changes", Fn.new {}]]
+    var rows = []
     if (!defaults) rows.add(textRow_(app, d, "name", "Name", 30, false))
     var addrLabel = "Address"
     if (d["connType"] == 7) {

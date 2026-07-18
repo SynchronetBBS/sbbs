@@ -938,6 +938,12 @@ list and to field-specific help while a choice or prompt is open.  Menu
 overrides should use the normal `Help` Markdown contract described under
 <<ui-help,Help viewer>>; the removed UIFC `helpbuf` markup is not parsed.
 
+The shipped entry, program-settings, font, and sort-field editors persist
+their accumulated changes when the editor closes.  They do not expose the
+underlying model transaction as a selectable Save or Cancel row.  Escape
+from a nested prompt or choice cancels only that nested operation; Escape
+from the owning editor closes it and retains the edits already made.
+
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
 SyncTERM deliberately uses two Wren VMs.  They do not share Wren

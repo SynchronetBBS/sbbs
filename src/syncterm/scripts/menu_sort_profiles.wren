@@ -59,7 +59,7 @@ class SortProfiles {
       if (!Menu.setActiveSortProfile(index)) failed_(app)
     } else if (action == 1) {
       var order = editFields_(app, profile[0], profile[1].toList)
-      if (order != null &&
+      if (!sameOrder_(order, profile[1]) &&
           !Menu.updateSortProfile(index, profile[0], order)) failed_(app)
     } else if (action == 2) {
       var name = MenuUi.prompt(app, "Rename Sort Profile", "Profile name",
@@ -80,8 +80,7 @@ class SortProfiles {
     if (name == null) return
     var order = profiles.count > 0 ? profiles[active][1].toList : [1]
     order = editFields_(app, name, order)
-    if (order != null &&
-        !Menu.addSortProfile(profiles.count, name, order)) failed_(app)
+    if (!Menu.addSortProfile(profiles.count, name, order)) failed_(app)
   }
 
   static copy_(app, index, profile) {
@@ -95,18 +94,23 @@ class SortProfiles {
     while (true) {
       var labels = order.map {|field| fieldLabel_(field) }.toList
       labels.add("Add Field...")
-      labels.add("Save")
-      labels.add("Cancel")
       var selected = MenuUi.choice(app, "Sort Fields: %(name)", labels, 0,
           fieldsHelp_())
-      if (selected == null || selected == order.count + 2) return null
-      if (selected == order.count + 1) return order
+      if (selected == null) return order
       if (selected == order.count) {
         addField_(app, order)
       } else {
         editField_(app, order, selected)
       }
     }
+  }
+
+  static sameOrder_(left, right) {
+    if (left.count != right.count) return false
+    for (i in 0...left.count) {
+      if (left[i] != right[i]) return false
+    }
+    return true
   }
 
   static addField_(app, order) {
@@ -187,8 +191,8 @@ class SortProfiles {
     return "# Sort Fields\n\n" +
         "Fields are applied from top to bottom. Select a field to reverse " +
         "its direction, move it, or remove it. Select **Add Field...** to " +
-        "insert another available field, then choose **Save** when the " +
-        "order is complete."
+        "insert another available field. Changes are stored when you " +
+        "leave this screen."
   }
 
   static addFieldHelp_() {

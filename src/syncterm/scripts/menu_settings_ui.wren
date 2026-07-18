@@ -103,8 +103,7 @@ class SettingsMenu {
 
   static programHelp_() {
     return "# Program Settings\n\n" +
-        "Select **Save Changes** to validate and store the settings. " +
-        "Escape discards changes made since this screen was opened.\n\n" +
+        "Changes are validated and stored when you leave this screen.\n\n" +
         helpItem_("Confirm Close", "Prompt before exiting SyncTERM") +
         helpItem_("Prompt to Save URL", "Offer to save temporary URL entries") +
         helpItem_("Invert Mouse Wheel", "Reverse wheel-up and wheel-down") +
@@ -261,7 +260,8 @@ class SettingsMenu {
   static fontManagementHelp_() {
     return "# Font Management\n\nAdd and remove font sets used by " +
         "connection profiles. Select a font to configure the file for " +
-        "each supported cell size, and select **Save Changes** when done.\n\n" +
+        "each supported cell size. Changes are stored when you leave " +
+        "this screen.\n\n" +
         "8 x 8\n:  Modes with at least 35 lines and C64/C128 modes\n" +
         "8 x 14\n:  Modes with 28 through 34 lines\n" +
         "8 x 16\n:  Modes with fewer than 28 lines or exactly 30 lines\n" +
@@ -295,7 +295,7 @@ class SettingsMenu {
   static program_(app) {
     var s = Menu.settings
     while (true) {
-      var rows = [[0, "Save Changes"]]
+      var rows = []
       rows.add([1, settingsLine_("Confirm Close", yesNo_(s.confirmClose))])
       rows.add([2, settingsLine_("Prompt to Save URL", yesNo_(s.promptSave))])
       rows.add([3, settingsLine_("Invert Mouse Wheel", yesNo_(s.invertWheel))])
@@ -327,13 +327,13 @@ class SettingsMenu {
       var picked = MenuUi.choice(app, "Program Settings", rows, null,
           programHelp_())
       if (picked == null) {
-        s.reload()
+        if (!s.dirty) return false
+        if (s.save()) return true
+        Alert.show(app, "Program Settings",
+            "The settings could not be validated or saved.")
         return false
       }
-      if (picked == 0) {
-        if (s.save()) return true
-        Alert.show(app, "Program Settings", "The settings could not be validated or saved.")
-      } else if (picked == 1) {
+      if (picked == 1) {
         s.confirmClose = !s.confirmClose
       } else if (picked == 2) {
         s.promptSave = !s.promptSave
@@ -549,20 +549,18 @@ class SettingsMenu {
         Alert.show(app, "Font Management", "The font configuration could not be read.")
         return
       }
-      var rows = [[-2, "Save Changes"], [-1, "Add Font"]]
+      var rows = [[-1, "Add Font"]]
       for (i in 0...fonts.count) rows.add([i, fonts[i].name])
       var picked = MenuUi.choice(app, "Font Management", rows, null,
           fontManagementHelp_())
       if (picked == null) {
-        if (Menu.fontsDirty && Confirm.show(app, "Discard unsaved font changes?")) Menu.reloadFonts()
-        return
-      }
-      if (picked == -2) {
-        if (!Menu.saveFonts()) {
+        if (Menu.fontsDirty && !Menu.saveFonts()) {
           Alert.show(app, "Font Management",
               "The font configuration could not be saved.")
         }
-      } else if (picked == -1) {
+        return
+      }
+      if (picked == -1) {
         var name = MenuUi.prompt(app, "Add Font", "Font name", "", 79,
             false, fontNameHelp_())
         if (name != null && Menu.createFont(name, fonts.count) == null) {
