@@ -2760,7 +2760,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 
 	/* Under SGR-Pixels the report already carries 1-based canvas pixels --
 	 * use them directly. Otherwise SGR reports a 1-based text CELL: convert
-	 * to that cell's centre in the terminal's own canvas pixels. Either way
+	 * to that cell's center in the terminal's own canvas pixels. Either way
 	 * px/py end up in canvas pixels; clamp to the displayed-image rect, then
 	 * rescale into game (SST_FB_W x SST_FB_H) coords. */
 	if (termgfx_mouse_pixels(&g_mouse)) {
@@ -2770,9 +2770,9 @@ static void sst_mouse_report(int b, int col, int row, int release)
 		px = (col - 1) * cw + cw / 2;
 		py = (row - 1) * ch + ch / 2;
 		/* A cell-granular terminal can only place the cursor at cell
-		 * CENTRES, which sit cw/2 or ch/2 px short of the far canvas edge --
+		 * CENTERS, which sit cw/2 or ch/2 px short of the far canvas edge --
 		 * snap the LAST row/col to the image-rect edge so it's reachable.
-		 * Don't snap the FIRST row/col: their centre already sits near the
+		 * Don't snap the FIRST row/col: their center already sits near the
 		 * top/left edge. */
 		if (g_term_cols > 0 && col >= g_term_cols)
 			px = dx + ew - 1;
