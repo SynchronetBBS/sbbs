@@ -3239,6 +3239,19 @@ static uint8_t g_pending_idx[SST_FB_W * SST_FB_H];
 static uint8_t g_pending_pal[768];
 static int     g_present_pending;
 
+/* Shared by both defer gates below: retain idx/pal768 into g_pending_idx/
+ * g_pending_pal and mark a frame pending. The idx != g_pending_idx guard
+ * skips a self-copy when THIS call already is a retry (tick() calls
+ * present() with g_pending_idx itself). */
+static void sst_present_retain(const uint8_t *idx, const uint8_t *pal768)
+{
+	if (idx != g_pending_idx) {
+		memcpy(g_pending_idx, idx, SST_FB_W * SST_FB_H);
+		memcpy(g_pending_pal, pal768, 768);
+	}
+	g_present_pending = 1;
+}
+
 void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 {
 	int      pal_dirty, geom_changed, tier, tier_changed;
@@ -3381,14 +3394,8 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 			sst_trace("deadline", sst_tier_name(sst_tier()), 0);
 		} else {
 			/* Retain so sst_io_tick() can retry once g_inflight drains --
-			 * see g_present_pending's doc comment. The idx != g_pending_idx
-			 * guard skips a self-copy when THIS call already is a retry (tick()
-			 * calls present() with g_pending_idx itself). */
-			if (idx != g_pending_idx) {
-				memcpy(g_pending_idx, idx, SST_FB_W * SST_FB_H);
-				memcpy(g_pending_pal, pal768, 768);
-			}
-			g_present_pending = 1;
+			 * see g_present_pending's doc comment and sst_present_retain(). */
+			sst_present_retain(idx, pal768);
 			sst_trace("gated-inflight", sst_tier_name(sst_tier()), 0);
 			return;
 		}
@@ -3417,14 +3424,26 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 		/* Retain, same as the gated-inflight branch above -- a static screen
 		 * that lands here on its last frame of a burst (the FIFO hasn't
 		 * drained yet) would otherwise strand exactly like the pacing case. */
-		if (idx != g_pending_idx) {
-			memcpy(g_pending_idx, idx, SST_FB_W * SST_FB_H);
-			memcpy(g_pending_pal, pal768, 768);
-		}
-		g_present_pending = 1;
+		sst_present_retain(idx, pal768);
 		sst_trace("gated-outlen", sst_tier_name(sst_tier()), 0);
 		return;
 	}
+
+	/* Past both defer gates above: this frame is no longer stranded -- it
+	 * will either be sent below or turns out identical to what the terminal
+	 * already shows (the whole-frame dedupe further down, which returns
+	 * before ever reaching a commit). Either way whatever was retained for
+	 * it has been handled, so clear it HERE rather than only past the
+	 * dedupe return. A retry (via sst_io_tick()) whose retained frame
+	 * happens to equal g_last_fb -- e.g. gate A defers frame A, then while
+	 * still congested a byte-identical frame B overwrites the retain, then
+	 * the gate clears and the retry hits the dedupe path -- must still
+	 * clear pending, or sst_io_tick() re-invokes sst_io_present() (a
+	 * 64000-byte memcmp, plus a stats redraw + flush if the bar is on)
+	 * every poll forever on an otherwise-idle static screen. If a LATER
+	 * frame defers again, the gate code above re-retains -- that is
+	 * correct and unaffected by clearing here. */
+	g_present_pending = 0;
 
 	/* Close a DCS a previous drop left dangling (see the drop check below)
 	 * before this frame's own bytes go out. Harmless if g_need_st is unset:
@@ -3517,16 +3536,12 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 	 * reset registers per image, so send every frame there. */
 	emit_pal = pal_dirty || !g_is_syncterm || g_last_tier != SST_TIER_SIXEL;
 
-	/* Past every early-return above (gates, dedupe): this frame IS going out.
-	 * Clear the retain here, not only on a successful commit further down --
-	 * a fresh engine frame that reaches this point supersedes whatever was
-	 * pending (its own bytes are what's about to be staged), and a retry via
-	 * sst_io_tick() reaches this same point on success. A frame that gets
-	 * dropped by out_put()'s stage-full guard just below still leaves this
-	 * cleared -- that is fine and deliberate: a drop already has its own
-	 * resync path (g_need_st/g_have_last), and re-driving THIS gate's retain
-	 * for a dropped frame would fight that path instead of helping it. */
-	g_present_pending = 0;
+	/* g_present_pending was already cleared above, past both defer gates --
+	 * see that comment. A frame that gets dropped by out_put()'s stage-full
+	 * guard just below still leaves it cleared -- that is fine and
+	 * deliberate: a drop already has its own resync path (g_need_st/
+	 * g_have_last), and re-driving a gate's retain for a dropped frame
+	 * would fight that path instead of helping it. */
 
 	/* Stats bar BEFORE the (possibly huge) image, not after: a palette-storm
 	 * full frame can run past out_put()'s 256KB stage, and once that guard

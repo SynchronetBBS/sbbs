@@ -10,6 +10,11 @@
  * present() call needed (the video twin of the M4 audio "static-screen
  * flush" fix).
  *
+ * Also covers the follow-up non-convergence defect: a retry whose retained
+ * frame turns out byte-identical to g_last_fb takes the whole-frame dedupe
+ * early-return, which must still clear g_present_pending or sst_io_tick()
+ * re-invokes sst_io_present() every poll forever on an idle static screen.
+ *
  * Separate binary from test_sst_io.c because sst_io keeps file-static
  * session state with no reset. cc'd + run by unit_sst_io.sh. */
 #include <assert.h>
@@ -109,6 +114,41 @@ int main(void)
 	sst_io_flush();
 	n = drain(sv[0], out, sizeof out);
 	assert(n == 0);
+
+	/* Non-convergence regression: a RETRY whose retained frame turns out
+	 * byte-identical to g_last_fb must still clear g_present_pending, even
+	 * though it takes the whole-frame DEDUPE early-return instead of ever
+	 * reaching a commit. g_last_fb right now is exactly the idx/pal the
+	 * retry above just sent (idx[0] == 9), so gating and re-presenting THAT
+	 * SAME frame reproduces the review's repro path (gate A defers frame A;
+	 * a byte-identical frame B overwrites the retain; gate clears; the
+	 * retry hits dedupe) without needing a second distinct frame. Before
+	 * the fix, g_present_pending's clear sat AFTER the dedupe return, so it
+	 * was never reached here and sst_io_tick() would re-invoke
+	 * sst_io_present() -- a 64000-byte memcmp, plus a stats redraw + flush
+	 * if the bar is on -- every poll forever. */
+	assert(sst_io_test_set_inflight(3) == 1);
+	sst_io_present(idx, pal);                       /* idx/pal unchanged since last send */
+	sst_io_flush();
+	n = drain(sv[0], out, sizeof out);
+	assert(n == 0);                                 /* still gated */
+	assert(sst_io_test_present_pending() == 1);      /* retained for retry */
+
+	assert(sst_io_test_set_inflight(0) == 1);        /* clear the gate */
+	sst_io_tick();                                   /* retry -> now hits dedupe, not a commit */
+	sst_io_flush();
+	n = drain(sv[0], out, sizeof out);
+	assert(n == 0);                                  /* dedupe: nothing to send */
+	assert(sst_io_test_present_pending() == 0);       /* MUST converge -- this is the fix */
+
+	/* Prove it actually converged, not just cleared once: a further tick
+	 * with nothing pending does no work (sst_io_tick() is a no-op guarded
+	 * by g_present_pending) and emits nothing -- no busy-loop. */
+	sst_io_tick();
+	sst_io_flush();
+	n = drain(sv[0], out, sizeof out);
+	assert(n == 0);
+	assert(sst_io_test_present_pending() == 0);
 
 	printf("SST_IO_PRESENT_PENDING OK\n");
 	return 0;
