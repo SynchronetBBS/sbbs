@@ -33,7 +33,7 @@ dh_value_valid(const Botan::BigInt& val, const Botan::BigInt& p)
 {
 	if (val.is_zero())
 		return false;
-	if (val.is_negative())
+	if (val.signum() < 0)
 		return false;
 	if (val >= p)
 		return false;
