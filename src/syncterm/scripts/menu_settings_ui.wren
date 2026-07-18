@@ -52,10 +52,12 @@ class SettingsMenu {
   static run(app, connected) {
     begin()
     var changed = false
+    var selected = 0
     while (true) {
       var picked = MenuUi.choice(app, "SyncTERM Settings",
-          rows(connected), null, helpText(connected))
+          rows(connected), selected, helpText(connected))
       if (picked == null) return changed
+      selected = picked
       if (runAction(app, picked, connected)) changed = true
     }
   }
@@ -326,6 +328,7 @@ class SettingsMenu {
   static program_(app, connected) {
     var s = Menu.settings
     var changed = false
+    var selected = 1
     while (true) {
       var rows = []
       rows.add([1, settingsLine_("Confirm Program Exit", yesNo_(s.confirmClose))])
@@ -348,7 +351,7 @@ class SettingsMenu {
       rows.add([17, "UIFC Colours"])
       if (!connected) rows.add([18, "Custom Screen Mode"])
 
-      var picked = MenuUi.choice(app, "Program Settings", rows, null,
+      var picked = MenuUi.choice(app, "Program Settings", rows, selected,
           programHelp_(connected))
       if (picked == null) {
         if (!changed) return false
@@ -357,6 +360,7 @@ class SettingsMenu {
             "The settings could not be saved.")
         return true
       }
+      selected = picked
       if (picked == 1) {
         s.confirmClose = !s.confirmClose
       } else if (picked == 2) {
@@ -427,6 +431,7 @@ class SettingsMenu {
 
   static colors_(app, s) {
     var changed = false
+    var selected = 21
     while (true) {
       var rows = [
         [21, settingsLine_("Frame Colour", Menu.colors[s.frameColor])],
@@ -439,9 +444,10 @@ class SettingsMenu {
         [26, settingsLine_("Lightbar Background",
             Menu.backgroundColors[s.lightbarBackgroundColor])]
       ]
-      var picked = MenuUi.choice(app, "UIFC Colours", rows, null,
+      var picked = MenuUi.choice(app, "UIFC Colours", rows, selected,
           colorsHelp_())
       if (picked == null) return changed
+      selected = picked
       editColor_(app, s, picked)
       if (s.dirty && applySettings_(app, s)) changed = true
     }
@@ -468,6 +474,7 @@ class SettingsMenu {
 
   static customMode_(app, s) {
     var changed = false
+    var selected = 0
     while (true) {
       var rows = [
         [0, settingsLine_("Rows", s.customRows)],
@@ -476,9 +483,10 @@ class SettingsMenu {
         [3, settingsLine_("Aspect Ratio Width", s.customAspectWidth)],
         [4, settingsLine_("Aspect Ratio Height", s.customAspectHeight)]
       ]
-      var picked = MenuUi.choice(app, "Custom Screen Mode", rows, null,
+      var picked = MenuUi.choice(app, "Custom Screen Mode", rows, selected,
           customModeHelp_())
       if (picked == null) return changed
+      selected = picked
       if (picked == 0) {
         var value = MenuUi.integer(app, "Custom Rows", "Rows",
             s.customRows, 14, 255, customRowsHelp_())
@@ -509,15 +517,17 @@ class SettingsMenu {
 
   static audio_(app, s) {
     var changed = false
+    var selected = null
     while (true) {
       var rows = []
       for (row in Menu.audioModes) {
         var enabled = (s.audioModes & row[0]) != 0
         rows.add([row[0], "[%(enabled ? "X" : " ")] %(row[1])"])
       }
-      var bit = MenuUi.choice(app, "Audio Output Mode", rows, null,
+      var bit = MenuUi.choice(app, "Audio Output Mode", rows, selected,
           audioHelp_())
       if (bit == null) return changed
+      selected = bit
       if ((s.audioModes & bit) != 0) {
         s.audioModes = s.audioModes & ~bit
       } else {
@@ -569,6 +579,7 @@ class SettingsMenu {
 
   static webLists_(app) {
     var changed = false
+    var selected = 0
     while (true) {
       var rows = []
       var lists = Menu.webLists
@@ -577,11 +588,12 @@ class SettingsMenu {
       var commands = {}
       commands[Key.insert] = ["insert", true]
       commands[Key.delete] = ["delete", false]
-      var picked = MenuUi.commandChoice(app, "Web Lists", rows, null,
+      var picked = MenuUi.commandChoice(app, "Web Lists", rows, selected,
           webListsHelp_(), commands)
       if (picked == null) return changed
       var command = picked[0]
       var index = picked[1]
+      selected = index
       if (command == "insert" ||
           (command == "select" && index == -1)) {
         if (index == -1) index = lists.count
@@ -601,12 +613,14 @@ class SettingsMenu {
         app.popStatus(null)
         if (error == null) {
           changed = true
+          selected = index
         } else {
           Alert.show(app, "Web List", error)
         }
       } else if (command == "delete") {
         if (Menu.deleteWebList(index)) {
           changed = true
+          selected = index < Menu.webLists.count ? index : -1
         } else {
           Alert.show(app, "Web List", "The web list could not be deleted.")
         }
@@ -625,6 +639,7 @@ class SettingsMenu {
   }
 
   static fonts_(app) {
+    var selected = 0
     while (true) {
       var fonts = Menu.fonts
       if (fonts == null) {
@@ -637,7 +652,8 @@ class SettingsMenu {
       var commands = {}
       commands[Key.insert] = ["insert", true]
       commands[Key.delete] = ["delete", false]
-      var picked = MenuUi.commandChoice(app, "Font Management", rows, null,
+      var picked = MenuUi.commandChoice(app, "Font Management", rows,
+          selected,
           fontManagementHelp_(), commands)
       if (picked == null) {
         if (Menu.fontsDirty && !Menu.saveFonts()) {
@@ -648,6 +664,7 @@ class SettingsMenu {
       }
       var command = picked[0]
       var index = picked[1]
+      selected = index
       if (command == "insert" ||
           (command == "select" && index == -1)) {
         if (index == -1) index = fonts.count
@@ -657,12 +674,16 @@ class SettingsMenu {
           if (Menu.createFont(name, index) == null) {
             Alert.show(app, "Font Management", "The font could not be added.")
           } else {
+            selected = index
             font_(app, index)
           }
         }
       } else if (command == "delete") {
         if (!fonts[index].delete()) {
           Alert.show(app, "Font Management", "The font could not be deleted.")
+        } else {
+          var remaining = Menu.fonts
+          if (remaining != null && index >= remaining.count) selected = -1
         }
       } else if (command == "select") {
         font_(app, index)
@@ -677,6 +698,7 @@ class SettingsMenu {
       [MenuFontSlot.eightBySixteen, "8 x 16"],
       [MenuFontSlot.twelveByTwenty, "12 x 20"]
     ]
+    var selected = -1
     while (true) {
       var fonts = Menu.fonts
       if (fonts == null || fonts.count == 0) return
@@ -690,11 +712,12 @@ class SettingsMenu {
       var commands = {}
       commands[0x5B] = ["previous", true]
       commands[0x5D] = ["next", true]
-      var picked = MenuUi.commandChoice(app, font.name, rows, null,
+      var picked = MenuUi.commandChoice(app, font.name, rows, selected,
           fontDetailsHelp_(), commands)
       if (picked == null) return
       var command = picked[0]
       var value = picked[1]
+      selected = value
       if (command == "previous") {
         index = index - 1
       } else if (command == "next") {

@@ -28,9 +28,9 @@ class SortProfiles {
 
   static show(app) {
     var clipboard = null
+    var selected = Menu.activeSortProfile
     while (true) {
       var profiles = Menu.sortProfiles
-      var active = Menu.activeSortProfile
       var commands = {}
       commands[Key.insert] = ["insert", true]
       commands[Key.delete] = ["delete", false]
@@ -39,7 +39,7 @@ class SortProfiles {
       commands[Key.ctrlX] = ["cut", false]
       commands[Key.f6] = ["paste", false]
       var picked = MenuUi.commandChoice(app, "Sort Profiles",
-          profileLabels_(profiles), active, profilesHelp_(), commands)
+          profileLabels_(profiles), selected, profilesHelp_(), commands)
       if (picked == null) {
         if (!Menu.saveSortProfiles()) {
           Alert.show(app, "Sort Profiles",
@@ -49,18 +49,27 @@ class SortProfiles {
       }
       var command = picked[0]
       var index = picked[1]
+      selected = index
       if (command == "insert" ||
           (command == "select" && index == profiles.count)) {
         new_(app, index.min(profiles.count))
       } else if (command == "delete") {
-        if (!Menu.deleteSortProfile(index)) failed_(app)
+        if (!Menu.deleteSortProfile(index)) {
+          failed_(app)
+        } else {
+          selected = index.min(Menu.sortProfiles.count)
+        }
       } else if (command == "rename") {
         rename_(app, index, profiles[index])
       } else if (command == "copy") {
         clipboard = [profiles[index][0], profiles[index][1].toList]
       } else if (command == "cut") {
         clipboard = [profiles[index][0], profiles[index][1].toList]
-        if (!Menu.deleteSortProfile(index)) failed_(app)
+        if (!Menu.deleteSortProfile(index)) {
+          failed_(app)
+        } else {
+          selected = index.min(Menu.sortProfiles.count)
+        }
       } else if (command == "paste") {
         if (clipboard != null) paste_(app, index, clipboard)
       } else if (command == "select") {
@@ -115,6 +124,7 @@ class SortProfiles {
   }
 
   static editFields_(app, name, order) {
+    var selected = 0
     while (true) {
       var labels = order.map {|field| fieldLabel_(field) }.toList
       labels.add("")
@@ -124,10 +134,11 @@ class SortProfiles {
       commands[0x5B] = ["previous", true]
       commands[0x5D] = ["next", true]
       var picked = MenuUi.commandChoice(app, "Sort Fields: %(name)",
-          labels, 0, fieldsHelp_(), commands)
+          labels, selected, fieldsHelp_(), commands)
       if (picked == null) return [order, 0]
       var command = picked[0]
       var index = picked[1]
+      selected = index
       if (command == "previous") return [order, -1]
       if (command == "next") return [order, 1]
       if (command == "insert" ||

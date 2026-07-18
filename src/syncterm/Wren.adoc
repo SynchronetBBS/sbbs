@@ -956,6 +956,10 @@ host.  Palette editing exposes separate Red, Green, and Blue fields, uses
 Tab and Backtab between them, cycles the preview foreground with Up and Down,
 and uses `%` to restore the selected component's mode default.
 
+Repeating editors retain their highlighted row after an action rebuilds the
+list.  This applies to entry logging and palettes, sort profiles and fields,
+program settings and their nested lists, web lists, and font management.
+
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,
 and encryption panes assign Markdown `helpText` to their panes and nested

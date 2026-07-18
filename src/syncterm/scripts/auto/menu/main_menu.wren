@@ -460,10 +460,12 @@ class MainMenuApp {
     _settingsList.bounds = _settings.innerBounds
   }
 
-  refresh_(preferred) {
+  refresh_(preferred) { refresh_(preferred, 0) }
+
+  refresh_(preferred, fallback) {
     _entries = Menu.entries
     var labels = []
-    var selected = 0
+    var selected = fallback.max(0)
     for (i in 0..._entries.count) {
       var bbs = _entries[i]
       labels.add(bbs.name)
@@ -635,13 +637,14 @@ class MainMenuApp {
       return
     }
     var name = _selected.name
+    var selected = _list.selected
     if (!Confirm.show(_app, "Delete %(name)?")) return
     if (!_selected.delete()) {
       Alert.show(_app, "Delete Entry",
           "The directory entry could not be deleted.")
       return
     }
-    refresh_(null)
+    refresh_(null, selected)
   }
 
   copy_() {

@@ -722,6 +722,7 @@ class BbsEditor {
     var minimum = paletteInfo[0]
     var defaults = paletteInfo[1]
     var colors = d["palette"]
+    var selected = 0
     while (colors.count < minimum) colors.add(defaults[colors.count])
     while (true) {
       var choices = []
@@ -734,7 +735,7 @@ class BbsEditor {
       commands[Key.delete] = ["delete", false]
       commands[Key.f2] = ["edit", false]
       var result = MenuUi.commandChoice(app, "Edit Palette Entries", choices,
-          0,
+          selected,
           paletteHelp_(), commands)
       if (result == null) {
         if (sameDefaultPalette_(colors, defaults, minimum)) colors = []
@@ -744,9 +745,11 @@ class BbsEditor {
       }
       var command = result[0]
       var picked = result[1]
+      selected = picked
       if (command == "delete") {
         if (colors.count > minimum) {
           colors.removeAt(-1)
+          selected = selected.min(colors.count - 1).max(0)
           d["palette"] = colors
           onChange.call()
         }
@@ -766,6 +769,7 @@ class BbsEditor {
   }
 
   static editLog_(app, d, onChange) {
+    var selected = 0
     while (true) {
       var rows = [
         [0, logLine_("Log Filename", d["logFile"])],
@@ -775,9 +779,10 @@ class BbsEditor {
             MenuUi.rowName(Menu.logLevels, d["telnetLogLevel"]))],
         [3, logLine_("Append Log File", yesNo_(d["appendLogFile"]))]
       ]
-      var picked = MenuUi.choice(app, "Log Configuration", rows, null,
+      var picked = MenuUi.choice(app, "Log Configuration", rows, selected,
           logHelp_())
       if (picked == null) return
+      selected = picked
       if (picked == 0) {
         var value = MenuUi.prompt(app, "Log File", "Log filename",
             d["logFile"], Menu.maxPathLength, false, logFileHelp_())
