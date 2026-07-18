@@ -20,8 +20,16 @@ int main(void) {
 	termgfx_mouse_on_decrpm(&m, set, 2);
 	assert(termgfx_mouse_pixels(&m) == 1);
 
+	/* Ps=3 (permanently set) also latches pixel mode */
+	termgfx_mouse_t m3 = {0};
+	int             permaset[2] = {1016, 3};
+	termgfx_mouse_on_decrpm(&m3, permaset, 2);
+	assert(termgfx_mouse_pixels(&m3) == 1);
+
 	/* auto-detect latch is idempotent */
 	termgfx_mouse_t m2 = {0};
+	termgfx_mouse_note_pixel_report(&m2);
+	assert(termgfx_mouse_pixels(&m2) == 1);
 	termgfx_mouse_note_pixel_report(&m2);
 	assert(termgfx_mouse_pixels(&m2) == 1);
 
