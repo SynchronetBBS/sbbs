@@ -7,6 +7,7 @@
 # ODIR, DIRSEP, LIBFILE, EXEFILE, and DELETE must be pre-defined
 
 WRAPTEST		= $(EXEODIR)$(DIRSEP)wraptest$(EXEFILE)
+MIXERTEST		= $(EXEODIR)$(DIRSEP)mixertest$(EXEFILE)
 SOPENFILE		= $(EXEODIR)$(DIRSEP)sopenfile$(EXEFILE)
 LOCKFILE		= $(EXEODIR)$(DIRSEP)lockfile$(EXEFILE)
 SHOWLOCKS		= $(EXEODIR)$(DIRSEP)showlocks$(EXEFILE)
@@ -18,7 +19,17 @@ XPDEV-MT_SHLIB_BUILD	= $(LIBODIR)$(DIRSEP)$(SHLIBPREFIX)xpdev_mt$(SOFILE)
 
 all: lib mtlib
 
-tests: $(MTOBJODIR) $(LIBODIR) $(EXEODIR) $(WRAPTEST) $(SOPENFILE) $(LOCKFILE) $(SHOWLOCKS)
+tests: $(MTOBJODIR) $(LIBODIR) $(EXEODIR) $(WRAPTEST) $(MIXERTEST) $(SOPENFILE) $(LOCKFILE) $(SHOWLOCKS)
+
+# Build and RUN the automated regression tests (nonzero exit == failure), for
+# CI. mixertest is headless and self-checking; wraptest is interactive, so it
+# is built by "tests" but deliberately not run here. PHONY because the target
+# shares its name with the unrelated (and unbuilt) test.c in this directory.
+.PHONY: test
+# VALGRIND is empty by default (plain run); CI sets it to a valgrind command
+# line so the regression runs under the leak checker where valgrind exists.
+test: $(MTOBJODIR) $(LIBODIR) $(EXEODIR) $(MIXERTEST)
+	$(VALGRIND) $(MIXERTEST)
 
 dl: dl-lib dl-mtlib
 
@@ -33,3 +44,4 @@ dl-mtlib: $(MTOBJODIR) $(LIBODIR) $(XPDEV-MT_SHLIB_BUILD)
 xptime: $(OBJODIR) $(LIBODIR) $(EXEODIR) $(XPTIME)
 
 $(WRAPTEST): $(XPDEV-MT_LIB_BUILD)
+$(MIXERTEST): $(XPDEV-MT_LIB_BUILD)
