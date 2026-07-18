@@ -208,8 +208,49 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 			event.mouse = Common::Point(iev.x, iev.y);
 			event.type = (iev.wheel < 0) ? Common::EVENT_WHEELUP : Common::EVENT_WHEELDOWN;
 			return true;
+		case SST_EV_KEY_DOWN:
+		case SST_EV_KEY_UP: {
+			Common::KeyCode kc;
+			uint16 ascii = (iev.ascii != 0) ? (uint16)iev.ascii : 0;
+			switch (iev.keycode) {
+			case SST_KEY_UP: kc = Common::KEYCODE_UP; break;
+			case SST_KEY_DOWN: kc = Common::KEYCODE_DOWN; break;
+			case SST_KEY_LEFT: kc = Common::KEYCODE_LEFT; break;
+			case SST_KEY_RIGHT: kc = Common::KEYCODE_RIGHT; break;
+			case SST_KEY_HOME: kc = Common::KEYCODE_HOME; break;
+			case SST_KEY_END: kc = Common::KEYCODE_END; break;
+			case SST_KEY_PAGEUP: kc = Common::KEYCODE_PAGEUP; break;
+			case SST_KEY_PAGEDOWN: kc = Common::KEYCODE_PAGEDOWN; break;
+			case SST_KEY_INSERT: kc = Common::KEYCODE_INSERT; break;
+			case SST_KEY_DELETE: kc = Common::KEYCODE_DELETE; break;
+			case SST_KEY_ENTER: kc = Common::KEYCODE_RETURN; ascii = Common::ASCII_RETURN; break;
+			case SST_KEY_ESCAPE: kc = Common::KEYCODE_ESCAPE; ascii = Common::ASCII_ESCAPE; break;
+			case SST_KEY_BACKSPACE: kc = Common::KEYCODE_BACKSPACE; ascii = Common::ASCII_BACKSPACE; break;
+			case SST_KEY_TAB: kc = Common::KEYCODE_TAB; ascii = Common::ASCII_TAB; break;
+			case SST_KEY_F1: kc = Common::KEYCODE_F1; break;
+			case SST_KEY_F2: kc = Common::KEYCODE_F2; break;
+			case SST_KEY_F3: kc = Common::KEYCODE_F3; break;
+			case SST_KEY_F4: kc = Common::KEYCODE_F4; break;
+			case SST_KEY_F5: kc = Common::KEYCODE_F5; break;
+			case SST_KEY_F6: kc = Common::KEYCODE_F6; break;
+			case SST_KEY_F7: kc = Common::KEYCODE_F7; break;
+			case SST_KEY_F8: kc = Common::KEYCODE_F8; break;
+			case SST_KEY_F9: kc = Common::KEYCODE_F9; break;
+			default:
+				/* printable / control ASCII: keycode == the byte */
+				kc = (Common::KeyCode)iev.keycode;
+				break;
+			}
+			byte flags = 0;
+			if (iev.mods & SST_MOD_CTRL)  flags |= Common::KBD_CTRL;
+			if (iev.mods & SST_MOD_ALT)   flags |= Common::KBD_ALT;
+			if (iev.mods & SST_MOD_SHIFT) flags |= Common::KBD_SHIFT;
+			event.type = (iev.type == SST_EV_KEY_DOWN) ? Common::EVENT_KEYDOWN : Common::EVENT_KEYUP;
+			event.kbd = Common::KeyState(kc, ascii, flags);
+			return true;
+		}
 		default:
-			break;   /* key events: later task */
+			break;
 		}
 	}
 	return false;
