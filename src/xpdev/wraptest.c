@@ -5,6 +5,7 @@
 #include <time.h>   /* ctime */
 
 #include "genwrap.h"
+#include "os_info.h"   /* os_version() -- moved here from genwrap.h */
 #include "conwrap.h"
 #include "dirwrap.h"
 #include "filewrap.h"
