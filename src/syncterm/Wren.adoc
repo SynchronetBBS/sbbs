@@ -920,14 +920,16 @@ The host validates and copies a record returned by `run` while the menu
 VM is still selected, so the Wren foreign object itself never crosses
 into the connected VM.
 
-The shipped controller defines the main-menu interaction contract.  Tab,
-Backtab, Left, and Right move focus between the
-simultaneously visible directory and settings panes; Enter connects (or
-edits while connected) from the directory and invokes one settings action
-from the settings pane.  F2/Ctrl-E, Insert, Delete, F5/F6, Ctrl-S, `<`/`>`,
-Ctrl-D, and Alt-B invoke their documented commands.  The comment row is
-clickable for direct editing.  An override may present the model differently,
-but it is responsible for preserving this user-visible behavior.
+The shipped controller defines the main-menu interaction contract.  Tab from
+the directory enters the selected entry's comment field, then advances to the
+simultaneously visible settings pane; Backtab traverses the same path in
+reverse.  Left and Right move directly between the directory and settings.
+Enter connects (or edits while connected) from the directory and invokes one
+settings action from the settings pane.  F2/Ctrl-E, Insert, Delete, F5/F6,
+Ctrl-S, `<`/`>`, Ctrl-D, and Alt-B invoke their documented commands.  The
+comment row is also clickable for direct editing.  An override may present the
+model differently, but it is responsible for preserving this user-visible
+behavior.
 
 Lists which support appending provide a selectable blank final row.
 Activating the blank row or pressing Insert invokes the same add operation.
@@ -3626,6 +3628,11 @@ duplicate platform-dependent enum tables:
 
 | `defaultPort(connectionType)`
 | Return the built-in default port for a connection-type value.
+
+| `serialRates(device)`
+| Open the named serial device and return its supported rates as
+  `[value, displayName]` rows, including `Current` as rate zero.  If the
+  device cannot be queried, return the normal `rates` catalog.
 
 | `outputModes`
 | Build-dependent List of `[value, displayName]` rows.  Assign only a

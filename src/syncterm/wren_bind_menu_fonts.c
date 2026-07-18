@@ -252,6 +252,10 @@ fn_MenuFont_name_set(WrenVM *vm)
 	char name[51];
 	if (font == NULL || !slot_font_name(vm, 1, name))
 		return;
+	if (safe_mode) {
+		wren_throw(vm, "MenuFont.name: fonts are read-only in safe mode");
+		return;
+	}
 	struct wren_menu_font *handle = wrenGetSlotForeign(vm, 0);
 	if (!name_available(name, handle->index)) {
 		wren_throw(vm, "MenuFont.name: duplicate font name");

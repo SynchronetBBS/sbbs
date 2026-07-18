@@ -26,6 +26,7 @@ class Menu {
   foreign static showEntry(entry)
   foreign static statusMessage(status)
   foreign static entries
+  foreign static canAppendEntry
   foreign static defaults
   foreign static settings
   foreign static nameAvailable(name)
@@ -47,6 +48,9 @@ class Menu {
   foreign static defaultPort(connectionType)
   foreign static addressFamilies
   foreign static rates
+  // Query a serial device's supported rates, falling back to rates when
+  // the device cannot be opened or does not publish a rate catalog.
+  foreign static serialRates(device)
   foreign static musicModes
   foreign static ripModes
   foreign static flowControls

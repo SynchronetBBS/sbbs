@@ -112,6 +112,10 @@ static struct bbslist *
 bbs_check_mutable(WrenVM *vm)
 {
 	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL && safe_mode && bbs != &menu_model.defaults) {
+		wren_throw(vm, "BBS: directory entries are read-only in safe mode");
+		return NULL;
+	}
 	if (bbs != NULL && bbs != &menu_model.defaults &&
 	    bbs->type != USER_BBSLIST) {
 		wren_throw(vm, "BBS: system entries are read-only");
@@ -306,7 +310,7 @@ fn_BBS_name(WrenVM *vm)
 static void
 fn_BBS_rename(WrenVM *vm)
 {
-	struct bbslist *bbs = bbs_check(vm);
+	struct bbslist *bbs = bbs_check_mutable(vm);
 	char name[LIST_NAME_MAX + 1];
 	if (bbs == NULL || !slot_string(vm, 1, name, sizeof(name)))
 		return;
@@ -386,7 +390,9 @@ fn_BBS_save(WrenVM *vm)
 {
 	struct bbslist *bbs = bbs_check(vm);
 	if (bbs != NULL)
-		wrenSetSlotBool(vm, 0, bbslist_model_save(&menu_model, bbs));
+		wrenSetSlotBool(vm, 0, (!safe_mode ||
+		    bbs == &menu_model.defaults) &&
+		    bbslist_model_save(&menu_model, bbs));
 }
 
 static void
@@ -394,7 +400,7 @@ fn_BBS_delete(WrenVM *vm)
 {
 	struct bbslist *bbs = bbs_check(vm);
 	if (bbs != NULL)
-		wrenSetSlotBool(vm, 0,
+		wrenSetSlotBool(vm, 0, !safe_mode &&
 		    bbslist_model_delete(&menu_model, bbs));
 }
 
@@ -634,6 +640,44 @@ fn_Menu_rates(WrenVM *vm)
 	}
 }
 
+static void
+fn_Menu_serialRates(WrenVM *vm)
+{
+	char device[LIST_ADDR_MAX + 1];
+	if (!slot_string(vm, 1, device, sizeof(device)))
+		return;
+	COM_HANDLE handle = comOpen(device);
+	if (handle == COM_HANDLE_INVALID) {
+		fn_Menu_rates(vm);
+		return;
+	}
+	ulong values[63];
+	size_t count = comGetBaudRates(handle, values,
+	    sizeof(values) / sizeof(values[0]));
+	comClose(handle);
+	if (count == 0 || count > sizeof(values) / sizeof(values[0])) {
+		fn_Menu_rates(vm);
+		return;
+	}
+
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; i <= count; i++) {
+		char name[32];
+		ulong value = i < count ? values[i] : 0;
+		if (i < count)
+			snprintf(name, sizeof(name), "%lu", value);
+		else
+			strcpy(name, "Current");
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotDouble(vm, 2, (double)value);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotString(vm, 2, name);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
 static void fn_Menu_musicModes(WrenVM *vm) { push_indexed_names(vm, music_names, 0); }
 static void fn_Menu_logLevels(WrenVM *vm) { push_indexed_names(vm, log_levels, 0); }
 static void fn_Menu_fontsCatalog(WrenVM *vm) { push_indexed_names(vm, font_names, 0); }
@@ -707,6 +751,13 @@ fn_Menu_entries(WrenVM *vm)
 }
 
 static void
+fn_Menu_canAppendEntry(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, menu_model.loaded &&
+	    menu_model.count < BBSLIST_MAX_ENTRIES);
+}
+
+static void
 fn_Menu_defaults(WrenVM *vm)
 {
 	if (!menu_model.loaded)
@@ -731,7 +782,8 @@ fn_Menu_create(WrenVM *vm)
 	char name[LIST_NAME_MAX + 1];
 	if (!slot_string(vm, 1, name, sizeof(name)))
 		return;
-	struct bbslist *bbs = bbslist_model_create(&menu_model, name, NULL);
+	struct bbslist *bbs = safe_mode ? NULL :
+	    bbslist_model_create(&menu_model, name, NULL);
 	if (bbs == NULL)
 		wrenSetSlotNull(vm, 0);
 	else
@@ -753,8 +805,8 @@ fn_Menu_copy(WrenVM *vm)
 	char name[LIST_NAME_MAX + 1];
 	if (!slot_string(vm, 2, name, sizeof(name)))
 		return;
-	struct bbslist *bbs = bbslist_model_create(&menu_model, name,
-	    source->bbs);
+	struct bbslist *bbs = safe_mode ? NULL :
+	    bbslist_model_create(&menu_model, name, source->bbs);
 	if (bbs == NULL)
 		wrenSetSlotNull(vm, 0);
 	else
@@ -941,6 +993,7 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "showEntry(_)", fn_Menu_showEntry },
 	{ "Menu", true, "statusMessage(_)", fn_Menu_statusMessage },
 	{ "Menu", true, "entries", fn_Menu_entries },
+	{ "Menu", true, "canAppendEntry", fn_Menu_canAppendEntry },
 	{ "Menu", true, "defaults", fn_Menu_defaults },
 	{ "Menu", true, "nameAvailable(_)", fn_Menu_nameAvailable },
 	{ "Menu", true, "create(_)", fn_Menu_create },
@@ -958,6 +1011,7 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "defaultPort(_)", fn_Menu_defaultPort },
 	{ "Menu", true, "addressFamilies", fn_Menu_addressFamilies },
 	{ "Menu", true, "rates", fn_Menu_rates },
+	{ "Menu", true, "serialRates(_)", fn_Menu_serialRates },
 	{ "Menu", true, "musicModes", fn_Menu_musicModes },
 	{ "Menu", true, "ripModes", fn_Menu_ripModes },
 	{ "Menu", true, "flowControls", fn_Menu_flowControls },

@@ -8,12 +8,35 @@ import "ui_list" for ListView
 import "ui_popup" for Alert, Confirm
 
 class EditorPane is Pane {
-  construct new() { super() }
+  construct new() {
+    super()
+    _onSort = null
+    _onNavigate = null
+  }
+
+  onSort=(fn) { _onSort = fn }
+  onNavigate=(fn) { _onNavigate = fn }
 
   handle(event) {
-    if (event is KeyEvent && event.code == Key.escape) {
-      triggerClose_()
-      return true
+    if (event is KeyEvent) {
+      if (event.code == Key.escape) {
+        triggerClose_()
+        return true
+      }
+      if (event.code == Key.ctrlS && _onSort != null) {
+        _onSort.call()
+        return true
+      }
+      if (_onNavigate != null && event.codepoint == 0x5B) {
+        _onNavigate.call(-1)
+        triggerClose_()
+        return true
+      }
+      if (_onNavigate != null && event.codepoint == 0x5D) {
+        _onNavigate.call(1)
+        triggerClose_()
+        return true
+      }
     }
     return super.handle(event)
   }
@@ -21,9 +44,14 @@ class EditorPane is Pane {
 
 class BbsEditor {
   static edit(app, bbs, isDefaults, isNew) {
+    return editNavigable(app, bbs, isDefaults, isNew)[0]
+  }
+
+  static editNavigable(app, bbs, isDefaults, isNew) {
     var editor = build_(app, bbs, isDefaults, false)
     app.modal(editor[0])
-    return finish_(editor[1], bbs, isNew)
+    var saved = finish_(editor[1], bbs, isNew)
+    return [saved, saved ? editor[1]["navigate"] : 0]
   }
 
   static editStandalone(bbs, isDefaults, isNew) {
@@ -41,7 +69,7 @@ class BbsEditor {
 
   static build_(app, bbs, isDefaults, standalone) {
     var draft = draft_(bbs)
-    var state = {"saved": false}
+    var state = {"saved": false, "navigate": 0}
     var pane = EditorPane.new()
     pane.title = "Edit Directory Entry"
     if (isDefaults) pane.title = "Default Connection Settings"
@@ -54,9 +82,11 @@ class BbsEditor {
       if (standalone) app.quit()
     }
     pane.onClose = Fn.new {
-      if (!bbs.dirty || Host.safeMode || save_(app, bbs)) {
+      if (!bbs.dirty || (isDefaults && Host.safeMode) || save_(app, bbs)) {
         state["saved"] = true
         dismiss.call()
+      } else {
+        state["navigate"] = 0
       }
     }
 
@@ -76,6 +106,21 @@ class BbsEditor {
         rows[i][1].call()
         update_(app, bbs, draft, isDefaults)
         rebuild.call()
+      }
+    }
+    if (!isDefaults) {
+      pane.onSort = Fn.new {
+        var value = MenuUi.integer(app, "Explicit Sort Order",
+            "Signed sort index", draft["sortOrder"],
+            -2147483648, 2147483647, explicitSortHelp_())
+        if (value != null) {
+          draft["sortOrder"] = value
+          update_(app, bbs, draft, isDefaults)
+          rebuild.call()
+        }
+      }
+      if (!standalone) {
+        pane.onNavigate = Fn.new {|delta| state["navigate"] = delta }
       }
     }
     rebuild.call()
@@ -279,8 +324,9 @@ class BbsEditor {
         "Hide connection and disconnection popups") +
         helpItem_("Palette", "The color palette for this entry")
     if (!defaults) {
-      text = text + helpItem_("Explicit Sort Order",
-          "A manual numeric override for directory sorting") +
+      text = text + helpItem_("Ctrl-S",
+          "Edit the explicit numeric directory sort order") +
+          helpItem_("[ / ]", "Edit the previous or next directory entry") +
           helpItem_("Comment", "Text shown below the directory")
     }
     return text
@@ -408,6 +454,8 @@ class BbsEditor {
         "This lets animated ANSI and some games run as intended.\n\n" +
         "## Serial Connections\n\nSelect the DTE rate for the port."
   }
+
+  static rateName_(rate) { rate == 0 ? "Current" : rate.toString }
 
   static ansiMusicHelp_() {
     return "# ANSI Music\n\n" +
@@ -564,7 +612,12 @@ class BbsEditor {
     if (serial_(d["connType"])) {
       rows.add(choiceRow_(app, d, "flowControl", "Flow Control",
           Menu.flowControls))
-      rows.add(choiceRow_(app, d, "bpsRate", "Comm Rate", Menu.rates))
+      rows.add(row_("Comm Rate", rateName_(d["bpsRate"]), Fn.new {
+        var rates = Menu.serialRates(d["addr"])
+        var value = MenuUi.choice(app, "Comm Rate", rates, d["bpsRate"],
+            commRateHelp_())
+        if (value != null) d["bpsRate"] = value
+      }))
       rows.add(row_("Stop Bits", d["stopBits"], Fn.new {
         d["stopBits"] = d["stopBits"] == 1 ? 2 : 1
       }))
@@ -655,15 +708,7 @@ class BbsEditor {
     rows.add(row_("Palette", paletteLabel, Fn.new {
       editPalette_(app, d, Fn.new { update_(app, b, d, defaults) })
     }))
-    if (!defaults) {
-      rows.add(row_("Explicit Sort Order", d["sortOrder"], Fn.new {
-        var value = MenuUi.integer(app, "Explicit Sort Order",
-            "Signed sort index", d["sortOrder"], -2147483648, 2147483647,
-            explicitSortHelp_())
-        if (value != null) d["sortOrder"] = value
-      }))
-      rows.add(textRow_(app, d, "comment", "Comment", 1023, false))
-    }
+    if (!defaults) rows.add(textRow_(app, d, "comment", "Comment", 1023, false))
     return rows
   }
 

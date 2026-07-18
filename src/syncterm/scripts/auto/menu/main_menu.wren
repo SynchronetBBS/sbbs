@@ -1,4 +1,4 @@
-import "syncterm" for KeyEvent, MouseEvent, Key, Mouse
+import "syncterm" for Host, KeyEvent, MouseEvent, Key, Mouse
 import "syncterm_menu" for Menu, MenuReadStatus
 import "menu_ui" for MenuUi
 import "menu_bbs_editor" for BbsEditor
@@ -6,7 +6,8 @@ import "menu_settings_ui" for SettingsMenu
 import "menu_scrollback" for OfflineScrollbackView
 import "menu_sort_profiles" for SortProfiles
 import "ui_app" for App
-import "ui_widget" for Widget, Rect
+import "ui_widget" for Widget, Container, Rect
+import "ui_input" for TextInput
 import "ui_draw" for Painter
 import "ui_style" for Style, Theme
 import "ui_pane" for Pane
@@ -111,33 +112,52 @@ class ClassicBackdrop is Widget {
   }
 }
 
-class ClassicFooter is Widget {
-  construct new(onComment) {
+class CommentInput is TextInput {
+  construct new(onFocus) {
     super()
-    focusable = false
+    _onFocus = onFocus
+  }
+
+  onPaint_() {
+    if (parent.focused) {
+      super.onPaint_()
+      return
+    }
+    var sf = surface
+    Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ",
+        style("classic.comment"))
+    Painter.text(sf, 0, 0, value, style("classic.comment"), bounds.w)
+  }
+
+  handle(event) {
+    if (event is MouseEvent) _onFocus.call()
+    return super.handle(event)
+  }
+}
+
+class ClassicFooter is Container {
+  construct new(onFocus, onCommit, onCancel) {
+    super()
     activitySensitive = false
     _comment = ""
     _copied = false
-    _onComment = onComment
+    _onCommit = onCommit
+    _onCancel = onCancel
+    _input = CommentInput.new(onFocus)
+    _input.maxLen = 1023
+    _input.onSubmit = Fn.new {|value| _onCommit.call(value, 0) }
+    add(_input)
   }
 
   comment=(value) {
     _comment = value == null ? "" : value
+    _input.value = _comment
     markDirty()
   }
 
   copied=(value) {
     _copied = value
     markDirty()
-  }
-
-  cleanLine_(text) {
-    var out = ""
-    for (ch in text) {
-      if (ch == "\r" || ch == "\n") return out
-      out = out + ch
-    }
-    return out
   }
 
   paintHints_(sf) {
@@ -174,21 +194,31 @@ class ClassicFooter is Widget {
         style("classic.hint"))
     if (bounds.h < 2) return
 
-    var text = cleanLine_(_comment)
-    var width = (bounds.w - 4).max(0)
-    var offset = text.count < width ? ((width - text.count) / 2).floor : 0
-    Painter.text(sf, 2 + offset, 0, text, style("classic.comment"),
-        width - offset)
     paintHints_(sf)
+    compositeChildren_()
   }
 
   handle(event) {
-    if (event is MouseEvent && event.event == Mouse.button1Click &&
-        event.startY == bounds.y && _onComment != null) {
-      _onComment.call()
+    if (event is KeyEvent && event.code == Key.tab) {
+      _onCommit.call(_input.value, 1)
       return true
     }
-    return false
+    if (event is KeyEvent && event.code == Key.backTab) {
+      _onCommit.call(_input.value, -1)
+      return true
+    }
+    if (event is KeyEvent && event.code == Key.escape) {
+      _input.value = _comment
+      _onCancel.call()
+      return true
+    }
+    return super.handle(event)
+  }
+
+  bounds=(value) {
+    super.bounds = value
+    _input.bounds = Rect.new(value.x + 2, value.y,
+        (value.w - 4).max(1), 1)
   }
 }
 
@@ -208,16 +238,23 @@ class MainPane is Pane {
 }
 
 class MainList is ListView {
-  construct new(onFocus, onCycle) {
+  construct new(onFocus, onCycle, onComment, commentKey) {
     super()
     _onFocus = onFocus
     _onCycle = onCycle
+    _onComment = onComment
+    _commentKey = commentKey
   }
 
   handle(event) {
     if (event is MouseEvent && bounds != null &&
         bounds.contains(event.startX, event.startY)) {
       _onFocus.call()
+    }
+    if (_onComment != null && event is KeyEvent &&
+        event.code == _commentKey) {
+      _onComment.call()
+      return true
     }
     if (_onCycle != null && event is KeyEvent &&
         event.codepoint == 0x3C) {
@@ -255,7 +292,8 @@ class MainMenuApp {
     _app.root.add(_directory)
 
     _list = MainList.new(Fn.new { focusDirectory_() },
-        Fn.new {|delta| cycleSort_(delta) })
+        Fn.new {|delta| cycleSort_(delta) },
+        Fn.new { focusComment_(1) }, Key.tab)
     _list.onChange = Fn.new {|index, item|
       _selected = index != null && index >= 0 &&
           index < _entries.count ? _entries[index] : null
@@ -273,13 +311,19 @@ class MainMenuApp {
     }
     _directory.add(_list)
 
+    _footer = ClassicFooter.new(Fn.new { focusComment_(0) },
+        Fn.new {|value, destination| finishComment_(value, destination) },
+        Fn.new { focusDirectory_() })
+    _app.root.add(_footer)
+
     _settings = MainPane.new(Fn.new { focusSettings_() })
     _settings.title = "SyncTERM Settings"
     _settings.helpText = SettingsMenu.helpText(_connected)
     _settings.onClose = Fn.new { exit_() }
     _app.root.add(_settings)
 
-    _settingsList = MainList.new(Fn.new { focusSettings_() }, null)
+    _settingsList = MainList.new(Fn.new { focusSettings_() }, null,
+        Fn.new { focusComment_(-1) }, Key.backTab)
     var settingLabels = []
     for (row in _settingRows) settingLabels.add(row[1])
     _settingsList.items = settingLabels
@@ -287,9 +331,6 @@ class MainMenuApp {
       settingsAction_(_settingRows[index][0])
     }
     _settings.add(_settingsList)
-
-    _footer = ClassicFooter.new(Fn.new { editComment_() })
-    _app.root.add(_footer)
 
     _app.onLayout = Fn.new {|width, height| layout_(width, height) }
     bind_(Key.escape, Fn.new { exit_() })
@@ -332,7 +373,7 @@ class MainMenuApp {
         "F5 / F6\n:  Copy and paste an entry\n" +
         "Ctrl-S\n:  Manage sort profiles\n" +
         "< / >\n:  Cycle through sort profiles\n" +
-        "Tab\n:  Move between the directory and settings panes"
+        "Tab\n:  Edit the selected comment, then move to settings"
     if (_connected) {
       return text
     }
@@ -350,8 +391,21 @@ class MainMenuApp {
     _app.root.focusedIndex = 1
   }
 
-  focusSettings_() {
+  focusComment_(fallback) {
+    if (_selected == null || Host.safeMode) {
+      if (fallback > 0) {
+        focusSettings_()
+      } else {
+        focusDirectory_()
+      }
+      return
+    }
+    _footer.comment = _selected.comment
     _app.root.focusedIndex = 2
+  }
+
+  focusSettings_() {
+    _app.root.focusedIndex = 3
   }
 
   longest_(rows) {
@@ -414,7 +468,7 @@ class MainMenuApp {
       labels.add(bbs.name)
       if (preferred != null && bbs.name == preferred) selected = i
     }
-    labels.add("")
+    if (Menu.canAppendEntry) labels.add("")
     _list.items = labels
     if (labels.count > 0) _list.selected = selected.min(labels.count - 1)
     if (_entries.count == 0) {
@@ -438,11 +492,43 @@ class MainMenuApp {
     _app.quit()
   }
 
+  mutable_(operation) {
+    if (!Host.safeMode) return true
+    Alert.show(_app, "Safe Mode",
+        "The directory is read-only in safe mode; cannot %(operation).")
+    return false
+  }
+
+  editEntry_(first, isNew) {
+    var current = first
+    var currentIsNew = isNew
+    var finalName = first.name
+    while (current != null) {
+      var result = BbsEditor.editNavigable(_app, current, false,
+          currentIsNew)
+      if (!result[0]) return finalName
+      finalName = current.name
+      Menu.sort()
+      if (result[1] == 0) return finalName
+      var entries = Menu.entries
+      if (entries.count == 0) return finalName
+      var index = 0
+      for (i in 0...entries.count) {
+        if (entries[i].name == finalName) index = i
+      }
+      index = ((index + result[1]) % entries.count + entries.count) % entries.count
+      current = entries[index]
+      currentIsNew = false
+    }
+    return finalName
+  }
+
   edit_() {
     if (_selected == null) {
       if (_list.selected == _entries.count) add_()
       return
     }
+    if (!mutable_("edit directory entries")) return
     var bbs = _selected
     if (bbs.type != 0) {
       if (!Confirm.show(_app,
@@ -459,33 +545,46 @@ class MainMenuApp {
             "The personal entry name is invalid or already in use.")
         return
       }
-      BbsEditor.edit(_app, bbs, false, true)
+      name = editEntry_(bbs, true)
       refresh_(name)
       return
     }
-    BbsEditor.edit(_app, bbs, false, false)
-    refresh_(bbs.name)
-  }
-
-  editComment_() {
-    if (_selected == null) return
-    if (_selected.type != 0) {
-      edit_()
-      return
-    }
-    var value = MenuUi.prompt(_app, "Entry Comment", "Comment",
-        _selected.comment, 1023, false,
-        "# Comment\n\nEnter the text shown below this directory entry.")
-    if (value == null || value == _selected.comment) return
-    var name = _selected.name
-    _selected.comment = value
-    if (!_selected.save()) {
-      Alert.show(_app, "Entry Comment", "The comment could not be saved.")
-    }
+    var name = editEntry_(bbs, false)
     refresh_(name)
   }
 
+  finishComment_(value, destination) {
+    var bbs = _selected
+    if (bbs != null && value != bbs.comment) {
+      if (bbs.type != 0) {
+        if (Confirm.show(_app,
+            "Copy this read-only entry to the personal directory?")) {
+          bbs = Menu.copy(bbs, bbs.name)
+        } else {
+          bbs = null
+        }
+      }
+      if (bbs == null) {
+        _footer.comment = _selected.comment
+      } else {
+        var name = bbs.name
+        bbs.comment = value
+        if (!bbs.save()) {
+          Alert.show(_app, "Entry Comment",
+              "The comment could not be saved.")
+        }
+        refresh_(name)
+      }
+    }
+    if (destination > 0) {
+      focusSettings_()
+    } else {
+      focusDirectory_()
+    }
+  }
+
   add_() {
+    if (!mutable_("add directory entries")) return
     var name = MenuUi.prompt(_app, "New Entry", "Entry name", "", 30,
         false, entryNameHelp_())
     if (name == null) return
@@ -495,12 +594,13 @@ class MainMenuApp {
           "The entry name is invalid or already in use.")
       return
     }
-    BbsEditor.edit(_app, bbs, false, true)
+    name = editEntry_(bbs, true)
     refresh_(name)
   }
 
   delete_() {
     if (_selected == null) return
+    if (!mutable_("delete directory entries")) return
     if (_selected.type != 0) {
       Alert.show(_app, "Delete Entry",
           "Read-only directory entries cannot be deleted.")
@@ -513,19 +613,19 @@ class MainMenuApp {
           "The directory entry could not be deleted.")
       return
     }
-    _clipboard = null
-    _footer.copied = false
     refresh_(null)
   }
 
   copy_() {
     if (_selected == null) return
+    if (!mutable_("copy directory entries")) return
     _clipboard = BbsEditor.draft_(_selected)
     _footer.copied = true
   }
 
   paste_() {
     if (_clipboard == null) return
+    if (!mutable_("paste directory entries")) return
     var name = MenuUi.prompt(_app, "Paste Entry", "New personal entry name",
         _clipboard["name"], 30, false, entryNameHelp_())
     if (name == null) return
@@ -539,11 +639,18 @@ class MainMenuApp {
     for (key in _clipboard.keys) draft[key] = _clipboard[key]
     draft["palette"] = _clipboard["palette"].toList
     draft["name"] = name
-    if (!BbsEditor.apply_(_app, bbs, draft, false)) bbs.delete()
+    if (!BbsEditor.apply_(_app, bbs, draft, false)) {
+      bbs.delete()
+    } else {
+      name = editEntry_(bbs, false)
+      _clipboard = null
+      _footer.copied = false
+    }
     refresh_(name)
   }
 
   quick_() {
+    if (!mutable_("quick-connect")) return
     var url = MenuUi.prompt(_app, "Quick Connect", "Address or URL", "",
         1024, false,
         "# SyncTERM Quick Connect\n\n" +
