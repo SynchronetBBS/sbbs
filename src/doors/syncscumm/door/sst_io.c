@@ -637,6 +637,9 @@ static void sst_pace_ack(void);
  * parser), and csi_final() is where the notification lands -- see the 'n'
  * case below. */
 static void sst_audio_underrun(int ch);
+static int  sst_audio_volume_step(int delta);   /* + / - live volume; impl by g_stream */
+
+#define SST_VOLUME_STEP 10                       /* percent per + / - keypress */
 
 /* Parse up to `max` ';'-separated decimal params from g_csi_par (a leading
  * non-digit marker byte like '<'/'='/'?' is simply skipped). */
@@ -944,6 +947,10 @@ static void parse_bytes(const uint8_t *buf, int n)
 				}
 				else if (c == 'q' || c == 0x03)          /* q / Ctrl-C: request quit */
 					g_quit = 1;
+				else if (c == '+' || c == '=')           /* louder (= is the unshifted +) */
+					sst_audio_volume_step(SST_VOLUME_STEP);
+				else if (c == '-' || c == '_')           /* quieter; 0 = off */
+					sst_audio_volume_step(-SST_VOLUME_STEP);
 				break;
 			case P_ESC:
 				if (c == '[' || c == 'O') {
@@ -1471,6 +1478,15 @@ static void sst_audio_underrun(int ch)
 		termgfx_stream_underrun(g_stream, ch);
 }
 
+/* Step the streamed-audio channel volume by `delta` percent, for the + / -
+ * live-volume hotkeys. The shared module clamps 0..100; at 0 it stops sending
+ * (off) and a step back up resumes it. Returns the new volume (0 if no stream
+ * -- e.g. a non-audio terminal, where the keys are simply inert). */
+static int sst_audio_volume_step(int delta)
+{
+	return g_stream != NULL ? termgfx_stream_volume_step(g_stream, delta) : 0;
+}
+
 /* Sysop audio settings, syncscumm.ini's [audio] section. Same file and same
  * lookup as sst_read_ini()'s "sixel_max" above and door/syncscumm.cpp's
  * resolveSubtitles() -- one syncscumm.ini, fopen()ed relative to CWD, the
@@ -1606,8 +1622,15 @@ static void audio_stream_open(void)
 	 *
 	 * NEVER spell a mute as 0 here: SyncTERM clamps a channel volume of 0 to
 	 * -60dB and bakes it into the channel's entry volume (it cost SyncDuke a
-	 * debugging session); the module stops sending instead. */
-	cfg.volume       = 100;
+	 * debugging session); the module stops sending instead.
+	 *
+	 * 50 (= -6dB), not 100, so BASS sits with the other doors instead of
+	 * ~9dB above them: this stream carries ScummVM's WHOLE pre-mixed output
+	 * near unity, whereas SyncDOOM/SyncDuke trim music ~11-14dB under SFX and
+	 * one-shots ride SyncTERM's -12dB channel base. -6dB here, atop the -3dB
+	 * headroom, lands the net at ~-9dB -- close to the family, still clear for
+	 * dialogue. (The player can trim it live with the + / - keys.) */
+	cfg.volume       = 50;
 	/* 250ms per chunk (SST_CHUNK_MS), the top of the module's 50..250 clamp,
 	 * and the cheapest real improvement available to the pops without touching
 	 * the shared module: every chunk is its OWN Ogg/Opus stream, so a boundary
