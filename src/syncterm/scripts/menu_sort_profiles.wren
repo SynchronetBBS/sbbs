@@ -1,7 +1,7 @@
 import "syncterm_menu" for Menu
 import "syncterm" for Key
 import "menu_ui" for MenuUi
-import "ui_popup" for Alert, Confirm
+import "ui_popup" for Alert
 
 class SortProfiles {
   static field_(code) {
@@ -19,12 +19,9 @@ class SortProfiles {
     return reversed ? "%(row[1]) (reversed)" : row[1]
   }
 
-  static profileLabels_(profiles, active) {
+  static profileLabels_(profiles) {
     var labels = []
-    for (i in 0...profiles.count) {
-      var marker = i == active ? "* " : "  "
-      labels.add("%(marker)%(profiles[i][0])")
-    }
+    for (profile in profiles) labels.add(profile[0])
     labels.add("")
     return labels
   }
@@ -42,7 +39,7 @@ class SortProfiles {
       commands[Key.ctrlX] = ["cut", false]
       commands[Key.f6] = ["paste", false]
       var picked = MenuUi.commandChoice(app, "Sort Profiles",
-          profileLabels_(profiles, active), active, profilesHelp_(), commands)
+          profileLabels_(profiles), active, profilesHelp_(), commands)
       if (picked == null) {
         if (!Menu.saveSortProfiles()) {
           Alert.show(app, "Sort Profiles",
@@ -54,7 +51,7 @@ class SortProfiles {
       var index = picked[1]
       if (command == "insert" ||
           (command == "select" && index == profiles.count)) {
-        new_(app, profiles, active, index.min(profiles.count))
+        new_(app, index.min(profiles.count))
       } else if (command == "delete") {
         if (!Menu.deleteSortProfile(index)) failed_(app)
       } else if (command == "rename") {
@@ -67,46 +64,34 @@ class SortProfiles {
       } else if (command == "paste") {
         if (clipboard != null) paste_(app, index, clipboard)
       } else if (command == "select") {
-        profile_(app, index)
+        editProfiles_(app, index)
       }
     }
   }
 
-  static profile_(app, index) {
-    var profiles = Menu.sortProfiles
-    if (index < 0 || index >= profiles.count) return
-    var profile = profiles[index]
-    var action = MenuUi.choice(app, profile[0], [
-      "Use Profile",
-      "Edit Fields...",
-      "Rename...",
-      "Copy...",
-      "Delete..."
-    ], 0, profileHelp_())
-    if (action == null) return
-    if (action == 0) {
-      if (!Menu.setActiveSortProfile(index)) failed_(app)
-    } else if (action == 1) {
-      var order = editFields_(app, profile[0], profile[1].toList)
-      if (!sameOrder_(order, profile[1]) &&
-          !Menu.updateSortProfile(index, profile[0], order)) failed_(app)
-    } else if (action == 2) {
-      rename_(app, index, profile)
-    } else if (action == 3) {
-      copy_(app, index, profile)
-    } else if (action == 4) {
-      if (Confirm.show(app, "Delete sort profile %(profile[0])?") &&
-          !Menu.deleteSortProfile(index)) failed_(app)
+  static editProfiles_(app, index) {
+    while (true) {
+      var profiles = Menu.sortProfiles
+      if (profiles.count == 0) return
+      index = ((index % profiles.count) + profiles.count) % profiles.count
+      var profile = profiles[index]
+      var result = editFields_(app, profile[0], profile[1].toList)
+      if (!sameOrder_(result[0], profile[1]) &&
+          !Menu.updateSortProfile(index, profile[0], result[0])) {
+        failed_(app)
+        return
+      }
+      if (result[1] == 0) return
+      index = index + result[1]
     }
   }
 
-  static new_(app, profiles, active, index) {
+  static new_(app, index) {
     var name = MenuUi.prompt(app, "New Sort Profile", "Profile name",
         "", 19, false, profileNameHelp_())
     if (name == null) return
-    var order = profiles.count > 0 ? profiles[active][1].toList : [1]
-    order = editFields_(app, name, order)
-    if (!Menu.addSortProfile(index, name, order)) failed_(app)
+    var result = editFields_(app, name, [1])
+    if (!Menu.addSortProfile(index, name, result[0])) failed_(app)
   }
 
   static rename_(app, index, profile) {
@@ -114,13 +99,6 @@ class SortProfiles {
         profile[0], 19, false, profileNameHelp_())
     if (name != null &&
         !Menu.updateSortProfile(index, name, profile[1])) failed_(app)
-  }
-
-  static copy_(app, index, profile) {
-    var name = MenuUi.prompt(app, "Copy Sort Profile", "New profile name",
-        profile[0], 19, false, profileNameHelp_())
-    if (name == null) return
-    if (!Menu.addSortProfile(index + 1, name, profile[1])) failed_(app)
   }
 
   static paste_(app, index, clipboard) {
@@ -143,23 +121,22 @@ class SortProfiles {
       var commands = {}
       commands[Key.insert] = ["insert", true]
       commands[Key.delete] = ["delete", false]
+      commands[0x5B] = ["previous", true]
+      commands[0x5D] = ["next", true]
       var picked = MenuUi.commandChoice(app, "Sort Fields: %(name)",
           labels, 0, fieldsHelp_(), commands)
-      if (picked == null) return order
+      if (picked == null) return [order, 0]
       var command = picked[0]
       var index = picked[1]
+      if (command == "previous") return [order, -1]
+      if (command == "next") return [order, 1]
       if (command == "insert" ||
           (command == "select" && index == order.count)) {
         addField_(app, order, index.min(order.count))
       } else if (command == "delete") {
-        if (order.count == 1) {
-          Alert.show(app, "Sort Fields",
-              "A profile must contain at least one field.")
-        } else {
-          order.removeAt(index)
-        }
+        if (index < order.count) order.removeAt(index)
       } else if (command == "select") {
-        editField_(app, order, index)
+        order[index] = -order[index]
       }
     }
   }
@@ -191,34 +168,6 @@ class SortProfiles {
     if (field != null) order.insert(index, field)
   }
 
-  static editField_(app, order, index) {
-    var action = MenuUi.choice(app, fieldLabel_(order[index]), [
-      "Reverse Direction",
-      "Move Up",
-      "Move Down",
-      "Remove"
-    ], 0, fieldActionHelp_())
-    if (action == null) return
-    if (action == 0) {
-      order[index] = -order[index]
-    } else if (action == 1 && index > 0) {
-      var previous = order[index - 1]
-      order[index - 1] = order[index]
-      order[index] = previous
-    } else if (action == 2 && index + 1 < order.count) {
-      var following = order[index + 1]
-      order[index + 1] = order[index]
-      order[index] = following
-    } else if (action == 3) {
-      if (order.count == 1) {
-        Alert.show(app, "Sort Fields",
-            "A profile must contain at least one field.")
-      } else {
-        order.removeAt(index)
-      }
-    }
-  }
-
   static failed_(app) {
     Alert.show(app, "Sort Profiles",
         "The profile could not be changed. Check its name and fields.")
@@ -226,20 +175,11 @@ class SortProfiles {
 
   static profilesHelp_() {
     return "# Sort Profiles\n\n" +
-        "Select a profile and press Enter for its actions. Insert or the " +
+        "Select a profile and press Enter to edit its fields. Insert or the " +
         "blank final row creates a profile; Delete removes one. F2 renames, " +
         "F5 copies, Ctrl-X cuts, and F6 pastes. Changes update the working " +
         "profiles; the configuration file is written when this screen " +
         "closes. In the main directory, `<` and `>` cycle profiles."
-  }
-
-  static profileHelp_() {
-    return "# Sort Profile\n\n" +
-        "Use Profile\n:  Make this the active directory sort order\n" +
-        "Edit Fields\n:  Choose the fields and precedence used for sorting\n" +
-        "Rename\n:  Give this profile a unique name\n" +
-        "Copy\n:  Create a new profile from these fields\n" +
-        "Delete\n:  Remove this profile"
   }
 
   static profileNameHelp_() {
@@ -249,21 +189,15 @@ class SortProfiles {
 
   static fieldsHelp_() {
     return "# Sort Fields\n\n" +
-        "Fields are applied from top to bottom. Enter opens the selected " +
-        "field's actions. Insert adds a field before the highlight; the " +
-        "blank final row appends one. Delete removes a field."
+        "Fields are applied from top to bottom. Enter reverses the selected " +
+        "field. Insert adds a field before the highlight; the blank final " +
+        "row appends one. Delete removes a field. Use `[` and `]` to edit " +
+        "the previous or next profile."
   }
 
   static addFieldHelp_() {
     return "# Add Sort Field\n\n" +
         "Select a field that is not already present in this profile."
-  }
-
-  static fieldActionHelp_() {
-    return "# Sort Field\n\n" +
-        "Reverse Direction\n:  Toggle ascending and descending order\n" +
-        "Move Up / Move Down\n:  Change this field's precedence\n" +
-        "Remove\n:  Delete this field from the profile"
   }
 
 }

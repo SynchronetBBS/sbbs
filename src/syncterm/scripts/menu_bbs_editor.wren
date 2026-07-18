@@ -2,9 +2,13 @@ import "syncterm" for Host, Key, KeyEvent, Screen
 import "syncterm_menu" for Menu
 import "menu_ui" for MenuUi
 import "ui_app" for App
-import "ui_widget" for Rect
+import "ui_widget" for Widget, Rect
 import "ui_pane" for Pane
 import "ui_list" for ListView
+import "ui_input" for TextInput
+import "ui_form" for Form
+import "ui_draw" for Painter
+import "ui_style" for Style
 import "ui_popup" for Alert, Confirm
 
 class EditorPane is Pane {
@@ -37,6 +41,83 @@ class EditorPane is Pane {
         triggerClose_()
         return true
       }
+    }
+    return super.handle(event)
+  }
+}
+
+class PaletteColorPreview is Widget {
+  construct new(color, colors) {
+    super()
+    focusable = false
+    _color = color
+    _colors = colors
+    _foreground = 7
+  }
+
+  color=(value) {
+    _color = value
+    markDirty()
+  }
+
+  cycleForeground(delta) {
+    if (_colors.count == 0) return
+    _foreground = ((_foreground + delta) % 16 + 16) % 16
+    markDirty()
+  }
+
+  onPaint_() {
+    var foreground = _colors.count == 0 ? 0xFFFFFF :
+        _colors[_foreground % _colors.count]
+    var sample = Style.new(0, 0, foreground, _color)
+    Painter.fill(surface, Rect.new(0, 0, bounds.w, bounds.h), " ", sample)
+    if (bounds.h > 0) {
+      Painter.text(surface, 1, (bounds.h / 2).floor,
+          "Aa Bb Cc 0123", sample, (bounds.w - 2).max(0))
+    }
+  }
+}
+
+class PaletteComponentInput is TextInput {
+  construct new(defaultValue, onChange) {
+    super()
+    _defaultValue = defaultValue
+    _notify = onChange
+    maxLen = 3
+  }
+
+  handle(event) {
+    if (event is KeyEvent && event.codepoint == 0x25) {
+      value = _defaultValue.toString
+      _notify.call(value)
+      return true
+    }
+    if (event is KeyEvent && event.codepoint != null &&
+        event.codepoint >= 0x20 &&
+        (event.codepoint < 0x30 || event.codepoint > 0x39)) return true
+    return super.handle(event)
+  }
+}
+
+class PaletteColorPane is Pane {
+  construct new(preview, onClose) {
+    super()
+    _preview = preview
+    _close = onClose
+  }
+
+  handle(event) {
+    if (event is KeyEvent && event.code == Key.escape) {
+      _close.call()
+      return true
+    }
+    if (event is KeyEvent && event.code == Key.up) {
+      _preview.cycleForeground(-1)
+      return true
+    }
+    if (event is KeyEvent && event.code == Key.down) {
+      _preview.cycleForeground(1)
+      return true
     }
     return super.handle(event)
   }
@@ -482,16 +563,18 @@ class BbsEditor {
   }
 
   static paletteHelp_() {
-    return "# Edit Palette\n\nSelect an existing color to edit it. " +
-        "Select the blank final row to extend palettes with fewer than sixteen " +
-        "entries; Insert performs the same add operation. Delete removes the " +
-        "final override color. **Use default palette** removes the override. " +
-        "Short palettes repeat to fill all sixteen entries."
+    return "# Edit Palette\n\nSelect an existing color and press Enter or " +
+        "F2 to edit it. Select the blank final row or press Insert to append " +
+        "the mode's default color. Delete removes the final color above the " +
+        "minimum required by the screen mode. Short palettes repeat to fill " +
+        "all sixteen entries."
   }
 
   static paletteColorHelp_() {
-    return "# Palette Color\n\nEnter a 24-bit RGB value from `0` through " +
-        "`16777215` (`0x000000` through `0xFFFFFF`)."
+    return "# Edit Palette Entry\n\nTab and Backtab move between Red, " +
+        "Green, and Blue. Enter accepts the current component. Up and Down " +
+        "change the example foreground color. `\%` resets the focused " +
+        "component to its mode default. Each component ranges from 0 to 255."
   }
 
   static explicitSortHelp_() {
@@ -539,50 +622,124 @@ class BbsEditor {
     }
   }
 
+  static component_(color, shift) { (color >> shift) & 0xFF }
+
+  static editColor_(app, color, defaultColor, colors) {
+    var values = [component_(color, 16), component_(color, 8),
+        component_(color, 0)]
+    var defaults = [component_(defaultColor, 16),
+        component_(defaultColor, 8), component_(defaultColor, 0)]
+    var preview = PaletteColorPreview.new(color, colors)
+    var inputs = []
+    var form = Form.new()
+    var update = Fn.new {|index, text|
+      var value = Num.fromString(text)
+      if (value != null && value.isInteger && value >= 0 && value <= 255) {
+        values[index] = value
+        preview.color = (values[0] << 16) | (values[1] << 8) | values[2]
+      }
+    }
+    for (i in 0...3) {
+      var index = i
+      var input = PaletteComponentInput.new(defaults[i],
+          Fn.new {|text| update.call(index, text) })
+      input.value = values[i].toString
+      input.onChange = Fn.new {|text| update.call(index, text) }
+      input.onSubmit = Fn.new {|text|
+        update.call(index, text)
+        form.focusNext()
+      }
+      inputs.add(input)
+    }
+
+    var pane = null
+    pane = PaletteColorPane.new(preview, Fn.new { app.popModal() })
+    pane.title = "Edit Palette Entry"
+    pane.helpText = paletteColorHelp_()
+    pane.focused = true
+    pane.onClose = Fn.new { app.popModal() }
+    var size = Screen.size
+    var width = 36.min(size[0] - 2)
+    var height = 12.min(size[1] - 2)
+    pane.bounds = Rect.new(((size[0] - width) / 2).floor + 1,
+        ((size[1] - height) / 2).floor + 1, width, height)
+    form.addFieldH("", preview, 3)
+    form.addField("Red", inputs[0])
+    form.addField("Green", inputs[1])
+    form.addField("Blue", inputs[2])
+    form.bounds = pane.innerBounds
+    pane.add(form)
+    app.modal(pane)
+    return (values[0] << 16) | (values[1] << 8) | values[2]
+  }
+
+  static sameDefaultPalette_(left, right, count) {
+    if (left.count != count) return false
+    for (i in 0...left.count) {
+      if (left[i] != right[i]) return false
+    }
+    return true
+  }
+
+  static hexColor_(value) {
+    var digits = ["0", "1", "2", "3", "4", "5", "6", "7",
+        "8", "9", "A", "B", "C", "D", "E", "F"]
+    var result = ""
+    for (shift in [20, 16, 12, 8, 4, 0]) {
+      result = result + digits[(value >> shift) & 15]
+    }
+    return result
+  }
+
   static editPalette_(app, d, onChange) {
+    var paletteInfo = Menu.paletteDefaults(d["screenMode"])
+    if (paletteInfo == null) {
+      Alert.show(app, "Palette", "The screen mode has no editable palette.")
+      return
+    }
+    var minimum = paletteInfo[0]
+    var defaults = paletteInfo[1]
+    var colors = d["palette"]
+    while (colors.count < minimum) colors.add(defaults[colors.count])
     while (true) {
-      var choices = [[-2, "Done"], [-1, "Use default palette"]]
-      var colors = d["palette"]
+      var choices = []
       for (i in 0...colors.count) {
-        choices.add([i, "Color %(i): %(colors[i])"])
+        choices.add([i, "Color %(i): #%(hexColor_(colors[i]))"])
       }
       if (colors.count < 16) choices.add([colors.count, ""])
       var commands = {}
       commands[Key.insert] = ["insert", true]
       commands[Key.delete] = ["delete", false]
-      var result = MenuUi.commandChoice(app, "Palette", choices, -2,
+      commands[Key.f2] = ["edit", false]
+      var result = MenuUi.commandChoice(app, "Edit Palette Entries", choices,
+          0,
           paletteHelp_(), commands)
-      if (result == null) return
+      if (result == null) {
+        if (sameDefaultPalette_(colors, defaults, minimum)) colors = []
+        d["palette"] = colors
+        onChange.call()
+        return
+      }
       var command = result[0]
       var picked = result[1]
       if (command == "delete") {
-        if (colors.count > 1) {
+        if (colors.count > minimum) {
           colors.removeAt(-1)
           d["palette"] = colors
           onChange.call()
         }
         continue
       }
-      if (command == "insert") picked = colors.count
-      if (picked == null || picked == -2) return
-      if (picked == -1) {
-        d["palette"] = []
+      if (command == "insert" || picked == colors.count) {
+        if (colors.count < 16) colors.add(defaults[colors.count])
+        d["palette"] = colors
         onChange.call()
-      } else {
-        var initial = picked < colors.count ? colors[picked] : 0
-        var value = MenuUi.integer(app, "Palette Color",
-            "24-bit RGB value (0 through 16777215)", initial,
-            0, 16777215, paletteColorHelp_())
-        if (value != null) {
-          if (picked < colors.count) {
-            colors[picked] = value
-          } else {
-            colors.add(value)
-          }
-          d["palette"] = colors
-          onChange.call()
-        }
+        continue
       }
+      colors[picked] = editColor_(app, colors[picked],
+          defaults[picked], colors)
+      d["palette"] = colors
+      onChange.call()
     }
   }
 

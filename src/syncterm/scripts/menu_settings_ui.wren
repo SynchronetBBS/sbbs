@@ -254,7 +254,7 @@ class SettingsMenu {
         "directory available through HTTP or HTTPS. Each entry needs a " +
         "unique name, used as its cache filename, and the URI from which " +
         "the directory is downloaded. Insert adds before the highlighted " +
-        "row, Delete removes it, and Enter opens its actions.\n\n" +
+        "row, Delete removes it, and Enter edits its URI.\n\n" +
         "The SyncTERM project provides these lists:\n\n" +
         "- `http://syncterm.bbsdev.net/syncterm.lst`\n" +
         "- `http://syncterm.bbsdev.net/telnetbbsguide.lst`"
@@ -272,9 +272,9 @@ class SettingsMenu {
   }
 
   static fontDetailsHelp_() {
-    return "# Font Details\n\nRename changes the font's menu name. " +
-        "Select a cell size to choose or clear its file. `[` and `]` move " +
-        "to the previous or next font.\n\n" +
+    return "# Font Details\n\nSelect Name to rename the font. Select " +
+        "a cell size to choose its file. `[` and `]` move to the previous " +
+        "or next font.\n\n" +
         "8 x 8\n:  Modes with at least 35 lines and C64/C128 modes\n" +
         "8 x 14\n:  Modes with 28 through 34 lines\n" +
         "8 x 16\n:  Modes with fewer than 28 lines or exactly 30 lines\n" +
@@ -293,10 +293,10 @@ class SettingsMenu {
   }
 
   static encryptionHelp_() {
-    return "# List Encryption\n\nChoose the encryption used for the " +
-        "personal directory. Selecting an encrypted format prompts for a " +
-        "new password and rewrites the list. **Not Encrypted** stores the " +
-        "directory without password protection."
+    return "# List Encryption\n\nChange Password rewrites the directory " +
+        "with a new password while retaining its current encryption. The " +
+        "encryption choices reuse the current password, prompting only when " +
+        "the list is not yet encrypted. Decrypt removes password protection."
   }
 
   static pickSetting_(app, title, rows, current) {
@@ -555,33 +555,17 @@ class SettingsMenu {
           Alert.show(app, "Web List", "The web list could not be deleted.")
         }
       } else if (command == "select") {
-        if (webList_(app, index, lists[index])) changed = true
+        var uri = MenuUi.prompt(app, "Web List URI", "URI", lists[index][1],
+            1024, false, webListsHelp_())
+        if (uri != null) {
+          if (Menu.updateWebList(index, uri)) {
+            changed = true
+          } else {
+            Alert.show(app, "Web List", "The URI could not be saved.")
+          }
+        }
       }
     }
-  }
-
-  static webList_(app, index, row) {
-    var action = MenuUi.choice(app, row[0],
-        [[0, "Edit URI"], [1, "Refresh Cache"], [2, "Delete"]], null,
-        webListsHelp_())
-    if (action == null) return false
-    if (action == 0) {
-      var uri = MenuUi.prompt(app, "Web List URI", "URI", row[1], 1024,
-          false, webListsHelp_())
-      if (uri == null) return false
-      if (Menu.updateWebList(index, uri)) return true
-      Alert.show(app, "Web List", "The URI could not be saved.")
-    } else if (action == 1) {
-      app.popStatus("Fetching web list")
-      var error = Menu.refreshWebList(index)
-      app.popStatus(null)
-      if (error == null) return true
-      Alert.show(app, "Web List", error)
-    } else if (action == 2 && Confirm.show(app, "Delete %(row[0])?")) {
-      if (Menu.deleteWebList(index)) return true
-      Alert.show(app, "Web List", "The web list could not be deleted.")
-    }
-    return false
   }
 
   static fonts_(app) {
@@ -613,8 +597,12 @@ class SettingsMenu {
         if (index == -1) index = fonts.count
         var name = MenuUi.prompt(app, "Add Font", "Font name", "", 50,
             false, fontNameHelp_())
-        if (name != null && Menu.createFont(name, index) == null) {
-          Alert.show(app, "Font Management", "The font could not be added.")
+        if (name != null) {
+          if (Menu.createFont(name, index) == null) {
+            Alert.show(app, "Font Management", "The font could not be added.")
+          } else {
+            font_(app, index)
+          }
         }
       } else if (command == "delete") {
         if (!fonts[index].delete()) {
@@ -638,10 +626,10 @@ class SettingsMenu {
       if (fonts == null || fonts.count == 0) return
       index = ((index % fonts.count) + fonts.count) % fonts.count
       var font = fonts[index]
-      var rows = [[-2, "Rename"], [-1, "Delete Font"]]
+      var rows = [[-1, "Name: %(font.name)"]]
       for (slot in slots) {
         var path = font.path(slot[0])
-        rows.add([slot[0], "%(slot[1])  %(path == null ? "<none>" : path)"])
+        rows.add([slot[0], "%(slot[1])  %(path == null ? "<undefined>" : path)"])
       }
       var commands = {}
       commands[0x5B] = ["previous", true]
@@ -655,29 +643,17 @@ class SettingsMenu {
         index = index - 1
       } else if (command == "next") {
         index = index + 1
-      } else if (value == -2) {
+      } else if (value == -1) {
         var name = MenuUi.prompt(app, "Rename Font", "Font name", font.name,
             50, false, fontNameHelp_())
         if (name != null) font.name = name
-      } else if (value == -1) {
-        if (Confirm.show(app, "Delete %(font.name)?")) {
-          font.delete()
-          return
-        }
       } else {
-        var action = MenuUi.choice(app, "Font File",
-            [[0, "Choose File"], [1, "Clear File"]], null,
-            fontDetailsHelp_())
-        if (action == 0) {
-          app.releaseFocus()
-          var file = Host.pickFile(".", fontMask_(value), 1)
-          app.restoreFocus()
-          if (file != null && !font.setFile(value, file)) {
-            Alert.show(app, "Font File",
-                "The selected file has the wrong size.")
-          }
-        } else if (action == 1) {
-          font.clearFile(value)
+        app.releaseFocus()
+        var file = Host.pickFile(".", fontMask_(value), 1)
+        app.restoreFocus()
+        if (file != null && !font.setFile(value, file)) {
+          Alert.show(app, "Font File",
+              "The selected file has the wrong size.")
         }
       }
     }
@@ -685,32 +661,41 @@ class SettingsMenu {
 
   static encryption_(app) {
     var choices = [
-      [[MenuEncryption.none, 0], "Not Encrypted"],
-      [[MenuEncryption.aes, 128], "AES (128-bit)"],
-      [[MenuEncryption.aes, 256], "AES (256-bit)"],
-      [[MenuEncryption.chacha20, 0], "ChaCha20"]
+      [[-1, 0], "Change Password"],
+      [[MenuEncryption.chacha20, 0], "Encrypt Using ChaCha20"],
+      [[MenuEncryption.aes, 128], "Encrypt Using AES-128"],
+      [[MenuEncryption.aes, 256], "Encrypt Using AES-256"],
+      [[MenuEncryption.none, 0], "Decrypt"]
     ]
     var picked = MenuUi.choice(app, "List Encryption", choices, null,
         encryptionHelp_())
     if (picked == null) return false
+    var algorithm = picked[0]
+    var keySize = picked[1]
     var password = null
-    if (picked[0] != MenuEncryption.none) {
+    if (algorithm == -1) {
+      algorithm = Menu.encryptionAlgorithm
+      keySize = Menu.encryptionKeySize
       password = MenuUi.prompt(app, "List Encryption", "New password", "",
           1023, true, encryptionHelp_())
       if (password == null || password.count == 0) return false
-      var verify = MenuUi.prompt(app, "List Encryption", "Confirm password",
-          "", 1023, true, encryptionHelp_())
-      if (verify != password) {
-        Alert.show(app, "List Encryption", "The passwords do not match.")
-        return false
-      }
+    } else if (algorithm != MenuEncryption.none &&
+        Menu.encryptionAlgorithm == MenuEncryption.none) {
+      password = MenuUi.prompt(app, "List Encryption", "Password", "",
+          1023, true, encryptionHelp_())
+      if (password == null || password.count == 0) return false
     }
-    if (!Menu.setEncryption(picked[0], picked[1], password)) {
+    if (!Menu.setEncryption(algorithm, keySize, password)) {
       Alert.show(app, "List Encryption", "The personal directory could not be rewritten.")
       return false
     }
-    __directoryPassword = password
-    __passwordChanged = true
+    if (algorithm == MenuEncryption.none) {
+      __directoryPassword = null
+      __passwordChanged = true
+    } else if (password != null) {
+      __directoryPassword = password
+      __passwordChanged = true
+    }
     return true
   }
 }

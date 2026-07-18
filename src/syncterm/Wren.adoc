@@ -938,6 +938,17 @@ short-palette editors expose both forms; the palette row is omitted once all
 sixteen colors are present.  Delete and the editor-specific copy, paste,
 rename, and cut keys are direct list commands.
 
+The specialized editors preserve the direct menu operations.  Enter on a
+sort profile opens its field list, and Enter on a sort field reverses that
+field; `[` and `]` move between profiles without returning to the profile
+list.  Enter on a web list edits its URI.  Font details are a flat Name plus
+four cell-size paths, and selecting a path opens the native picker directly.
+The encryption screen has distinct Change Password, algorithm, and Decrypt
+operations; changing algorithms reuses the password already held by the
+host.  Palette editing exposes separate Red, Green, and Blue fields, uses
+Tab and Backtab between them, cycles the preview foreground with Up and Down,
+and uses `%` to restore the selected component's mode default.
+
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,
 and encryption panes assign Markdown `helpText` to their panes and nested
@@ -3445,8 +3456,8 @@ available in a connected VM.
   that the field's normal profile direction is descending.
 
 | Menu.sortProfiles
-| Return fresh `[name, order]` rows.  `order` is a non-empty List of
-  unique signed field IDs; negating an ID toggles that field relative
+| Return fresh `[name, order]` rows.  `order` is a List of unique signed
+  field IDs and may be empty; negating an ID toggles that field relative
   to its `defaultReversed` direction.
 
 | Menu.activeSortProfile
@@ -3467,7 +3478,8 @@ available in a connected VM.
 
 | Menu.deleteSortProfile(index)
 | Delete a profile and re-sort with the resulting active profile.
-  The last profile cannot be deleted.  Returns `false` on failure.
+  Deleting the last profile restores the built-in profiles.  Returns
+  `false` on failure.
 
 | Menu.saveSortProfiles()
 | Write the working profiles, active profile, and current order to
@@ -3605,7 +3617,7 @@ write remains grouped at the historical screen-exit boundary.
 | UIFC palette indexes used by the shipped Wren main menu and trusted
   native picker.  Foreground catalogs include the `Default` entry at index
   16; background catalogs include it at index 8.  The shipped
-  `main_menu.wren` resolves those sentinels to the historical colors and
+  `main_menu.wren` resolves those sentinels to the configured default colors and
   builds an App `Theme`; a custom main-menu override must apply the values
   itself if it wants to preserve that preference.
 |===
@@ -3633,6 +3645,12 @@ duplicate platform-dependent enum tables:
 | Open the named serial device and return its supported rates as
   `[value, displayName]` rows, including `Current` as rate zero.  If the
   device cannot be queried, return the normal `rates` catalog.
+
+| `paletteDefaults(screenMode)`
+| Return `[minimumColorCount, colors]` for a screen mode.  `colors` is a
+  16-element List of mode-specific 24-bit RGB defaults; the minimum is
+  16 for normal modes, 8 for Prestel, and 4 or 2 for the corresponding
+  Atari palettes.  Returns `null` when the mode cannot be mapped.
 
 | `outputModes`
 | Build-dependent List of `[value, displayName]` rows.  Assign only a

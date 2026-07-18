@@ -625,7 +625,7 @@ bbslist_active_sort_profile(void)
 static bool
 valid_profile_order(const int *order, size_t count)
 {
-	if (order == NULL || count == 0 ||
+	if ((order == NULL && count != 0) ||
 	    count > bbslist_sort_field_count())
 		return false;
 	for (size_t i = 0; i < count; i++) {
@@ -656,7 +656,8 @@ static char *
 profile_order_string(const int *order, size_t count)
 {
 	int terminated[sizeof(sort_order) / sizeof(sort_order[0])] = {0};
-	memcpy(terminated, order, count * sizeof(*order));
+	if (count != 0)
+		memcpy(terminated, order, count * sizeof(*order));
 	return serialize_sort_order(terminated);
 }
 
@@ -726,10 +727,17 @@ bool
 bbslist_delete_sort_profile(size_t index)
 {
 	size_t count = bbslist_sort_profile_count();
-	if (count <= 1 || index >= count)
+	if (index >= count)
 		return false;
 	if (!namedStrListDelete(&sort_profiles, index))
 		return false;
+	if (count == 1) {
+		load_default_sort_profiles();
+		parse_sort_value(sort_profiles[active_profile]->value, sortorder,
+		    sizeof(sortorder) / sizeof(sortorder[0]));
+		sort_profiles_dirty = true;
+		return true;
+	}
 	if (active_profile > (int)index)
 		active_profile--;
 	else if (active_profile == (int)index &&

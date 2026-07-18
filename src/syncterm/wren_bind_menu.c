@@ -10,6 +10,8 @@
 #include "wren_bind_menu_settings.h"
 #include "wren_bind_screen.h"
 
+#include <vidmodes.h>
+
 #include <math.h>
 #include <limits.h>
 #include <stddef.h>
@@ -727,6 +729,50 @@ static void fn_Menu_flowControls(WrenVM *vm) { push_value_names(vm, flow_values,
 static void fn_Menu_parities(WrenVM *vm) { push_value_names(vm, parity_values, parity_names); }
 
 static void
+fn_Menu_paletteDefaults(WrenVM *vm)
+{
+	int64_t mode;
+	if (!slot_integer(vm, 1, SCREEN_MODE_CURRENT,
+	    SCREEN_MODE_TERMINATOR - 1, &mode))
+		return;
+	int vmode = find_vmode(screen_to_ciolib((int)mode));
+	if (vmode < 0) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	int palette = vparams[vmode].palette;
+	size_t count;
+	switch (palette) {
+		case PRESTEL_PALETTE:
+			count = 8;
+			break;
+		case ATARI_PALETTE_4:
+			count = 4;
+			break;
+		case ATARI_PALETTE_2:
+			count = 2;
+			break;
+		default:
+			count = 16;
+			break;
+	}
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	wrenSetSlotDouble(vm, 1, (double)count);
+	wrenInsertInList(vm, 0, -1, 1);
+	wrenSetSlotNewList(vm, 1);
+	for (size_t i = 0; i < 16; i++) {
+		uint32_t entry = palettes[palette][i];
+		uint32_t value = (uint32_t)dac_default[entry].red << 16 |
+		    (uint32_t)dac_default[entry].green << 8 |
+		    (uint32_t)dac_default[entry].blue;
+		wrenSetSlotDouble(vm, 2, (double)value);
+		wrenInsertInList(vm, 1, -1, 2);
+	}
+	wrenInsertInList(vm, 0, -1, 1);
+}
+
+static void
 fn_Menu_statusMessage(WrenVM *vm)
 {
 	int64_t status;
@@ -877,7 +923,7 @@ slot_sort_order(WrenVM *vm, int slot, int *order, size_t capacity,
 		return false;
 	}
 	int length = wrenGetListCount(vm, slot);
-	if (length <= 0 || (size_t)length > capacity ||
+	if (length < 0 || (size_t)length > capacity ||
 	    (size_t)length > bbslist_sort_field_count()) {
 		wren_throw(vm, "sort profile order has an invalid length");
 		return false;
@@ -1016,6 +1062,7 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "ripModes", fn_Menu_ripModes },
 	{ "Menu", true, "flowControls", fn_Menu_flowControls },
 	{ "Menu", true, "parities", fn_Menu_parities },
+	{ "Menu", true, "paletteDefaults(_)", fn_Menu_paletteDefaults },
 	{ "Menu", true, "fontsCatalog", fn_Menu_fontsCatalog },
 	{ "Menu", true, "logLevels", fn_Menu_logLevels },
 	{ "BBS", false, "name", fn_BBS_name },
