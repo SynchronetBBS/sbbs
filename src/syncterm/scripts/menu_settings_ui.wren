@@ -10,6 +10,21 @@ class SettingsMenu {
   static directoryPassword { __directoryPassword }
   static passwordChanged { __passwordChanged }
 
+  static helpText(connected) {
+    var text = "# SyncTERM Settings\n\n" +
+        "Web Lists\n:  Configure dialing directories downloaded from the web\n" +
+        "Default Connection Settings\n:  Set initial values for new entries\n"
+    if (!connected) {
+      text = text + "Current Screen Mode\n:  Change the current display size and mode\n"
+    }
+    return text +
+        "Font Management\n:  Configure additional local font files\n" +
+        "Program Settings\n:  Configure hardware, display, and application behavior\n" +
+        "File Locations\n:  Display configuration and data paths\n" +
+        "Build Options\n:  Display features selected at build time\n" +
+        "List Encryption\n:  Protect the personal directory with a password"
+  }
+
   static rows(connected) {
     var rows = [
       [0, "Web Lists"],
@@ -33,7 +48,7 @@ class SettingsMenu {
     var changed = false
     while (true) {
       var picked = MenuUi.choice(app, "SyncTERM Settings",
-          rows(connected), null)
+          rows(connected), null, helpText(connected))
       if (picked == null) return changed
       if (runAction(app, picked)) changed = true
     }
@@ -68,7 +83,7 @@ class SettingsMenu {
     var names = Menu.screenModes
     for (i in 1...names.count) rows.add([i, names[i]])
     var mode = MenuUi.choice(app, "Current Screen Mode", rows,
-        Menu.currentScreenMode)
+        Menu.currentScreenMode, screenModeHelp_())
     if (mode != null && !Menu.setScreenMode(mode)) {
       Alert.show(app, "Screen Mode", "The requested screen mode could not be applied.")
     }
@@ -82,8 +97,199 @@ class SettingsMenu {
 
   static yesNo_(value) { value ? "Yes" : "No" }
 
+  static helpItem_(term, description) {
+    return "%(term)\n:  %(description)\n"
+  }
+
+  static programHelp_() {
+    return "# Program Settings\n\n" +
+        "Select **Save Changes** to validate and store the settings. " +
+        "Escape discards changes made since this screen was opened.\n\n" +
+        helpItem_("Confirm Close", "Prompt before exiting SyncTERM") +
+        helpItem_("Prompt to Save URL", "Offer to save temporary URL entries") +
+        helpItem_("Invert Mouse Wheel", "Reverse wheel-up and wheel-down") +
+        helpItem_("Startup Screen", "The initial screen size and mode") +
+        helpItem_("Output Backend", "The video or terminal output implementation") +
+        helpItem_("Cursor Style", "The cursor's normal appearance") +
+        helpItem_("Scrollback Lines", "The number of retained scrollback rows") +
+        helpItem_("Scaling Mode", "The algorithm used when scaling the display") +
+        helpItem_("Personal List", "The path or URI of the personal directory") +
+        helpItem_("Shell TERM", "The TERM value supplied to local shells") +
+        helpItem_("Modem Device", "The modem communications device") +
+        helpItem_("Modem Init", "The command used to initialize a modem") +
+        helpItem_("Modem Dial", "The command prefix used to dial a modem") +
+        helpItem_("Modem Rate", "The modem-port DTE rate") +
+        helpItem_("KDF Work Factor", "The scrypt cost used for list encryption") +
+        helpItem_("Custom Columns / Rows", "The custom screen dimensions") +
+        helpItem_("Custom Font Height", "The custom mode's font height") +
+        helpItem_("Custom Aspect Width / Height", "The custom mode's aspect ratio") +
+        helpItem_("UI Colors", "The colors used by menus and the native picker") +
+        helpItem_("Audio Output", "The audio backends SyncTERM may try")
+  }
+
+  static screenModeHelp_() {
+    return "# Current Screen Mode\n\nSelect the screen size and mode to use now."
+  }
+
+  static settingHelp_(title) {
+    if (title == "Startup Screen") {
+      return "# Startup Screen Mode\n\nSelect the initial screen size and mode used at startup."
+    }
+    if (title == "Output Backend") return outputHelp_()
+    if (title == "Cursor Style") {
+      return "# Default Cursor Style\n\nSelect the cursor's normal appearance."
+    }
+    if (title == "Scaling Mode") {
+      return "# Scaling Mode\n\nSelect the algorithm used when the terminal display is scaled."
+    }
+    if (title == "Custom Font Height") {
+      return "# Custom Font Height\n\nChoose the font height for the custom screen mode."
+    }
+    return null
+  }
+
+  static outputHelp_() {
+    return "# Output Backend\n\n" +
+        "Autodetect\n:  Try the available backends in preferred order\n" +
+        "Curses\n:  Text output through the Curses library\n" +
+        "Curses CP437\n:  Curses with a terminal configured for Code Page 437\n" +
+        "ANSI\n:  Write CP437 ANSI to standard output; useful for BBS-door operation\n" +
+        "X11\n:  Graphical output through Xlib\n" +
+        "SDL\n:  Graphical output through SDL\n" +
+        "GDI\n:  Native Windows graphical output\n" +
+        "Console\n:  Native text-console output\n\n" +
+        "Fullscreen variants start the corresponding graphical backend " +
+        "in full-screen mode. Only backends present in this build are listed."
+  }
+
+  static scrollbackHelp_() {
+    return "# Scrollback Buffer Lines\n\nEnter the number of retained " +
+        "scrollback rows. The value must be greater than zero."
+  }
+
+  static listPathHelp_() {
+    return "# Personal List\n\nEnter the complete path or URI of the personal BBS directory."
+  }
+
+  static shellTermHelp_() {
+    return "# TERM For Shell\n\nEnter the value assigned to the `TERM` " +
+        "environment variable for local shell connections. For example, " +
+        "`ansi` selects basic ANSI behavior."
+  }
+
+  static modemDeviceHelp_() {
+    return "# Modem Device\n\nEnter the device used to communicate with the modem."
+  }
+
+  static modemRateHelp_() {
+    return "# Modem Rate\n\nEnter the DTE rate in bits per second. Use " +
+        "the highest rate supported by the communications port and modem, " +
+        "such as `38400`, `57600`, or `115200`. This is sometimes " +
+        "incorrectly called the baud rate."
+  }
+
+  static modemInitHelp_() {
+    return "# Modem Initialization\n\nEnter the command used to initialize " +
+        "the modem. `AT&F` loads a Hayes-compatible modem's factory " +
+        "defaults.\n\n" +
+        "## Expected Hayes Settings\n\n" +
+        "Echo on\n:  `E1`\n" +
+        "Verbal result codes\n:  `Q0V1`\n" +
+        "Normal carrier detect\n:  `&C1`\n" +
+        "Normal DTR\n:  `&D2`\n\n" +
+        "## Expected USRobotics Settings\n\n" +
+        "Include connection speed\n:  `&X4`\n" +
+        "Locked speed\n:  `&B1`\n" +
+        "CTS/RTS flow control\n:  `&H1&R2`\n" +
+        "Disable software flow control\n:  `&I0`"
+  }
+
+  static modemDialHelp_() {
+    return "# Modem Dial String\n\nEnter the modem command used before " +
+        "the phone number. For example, `ATDT` selects touch-tone dialing " +
+        "on a Hayes-compatible modem."
+  }
+
+  static kdfHelp_() {
+    return "# Key Derivation Work Factor\n\nThis is the base-2 logarithm " +
+        "of scrypt's N parameter: `N = 2^value`. Higher values make " +
+        "offline dictionary attacks more expensive, but also increase " +
+        "the time and memory needed to unlock the list.\n\n" +
+        "The default `15` uses N=32768 and about 16 MiB. The supported " +
+        "range is 8 through 24; each step doubles CPU and memory cost."
+  }
+
+  static customColumnsHelp_() {
+    return "# Custom Columns\n\nEnter 40 through 255 columns. Values " +
+        "other than 40, 80, and 132 may not be supported by every backend."
+  }
+
+  static customRowsHelp_() {
+    return "# Custom Rows\n\nEnter 14 through 255 rows for the custom screen mode."
+  }
+
+  static customAspectHelp_(width) {
+    var dimension = "height"
+    var historical = "3"
+    if (width) {
+      dimension = "width"
+      historical = "4"
+    }
+    return "# Custom Aspect %(dimension)\n\nEnter the %(dimension) part " +
+        "of the aspect ratio. The historical value is `%(historical)`."
+  }
+
+  static colorHelp_() {
+    return "# UI Color\n\nSelect the color used for this part of the " +
+        "menu interface and native file picker."
+  }
+
+  static audioHelp_() {
+    return "# Audio Output\n\nToggle the audio backends SyncTERM may " +
+        "use. Enabled backends are attempted in the order shown."
+  }
+
+  static webListsHelp_() {
+    return "# Web Lists\n\nAdd dialing directories available through " +
+        "HTTP or HTTPS. Each entry needs a unique name, used as its cache " +
+        "filename, and the URI from which the directory is downloaded.\n\n" +
+        "The SyncTERM project provides these lists:\n\n" +
+        "- `http://syncterm.bbsdev.net/syncterm.lst`\n" +
+        "- `http://syncterm.bbsdev.net/telnetbbsguide.lst`"
+  }
+
+  static fontManagementHelp_() {
+    return "# Font Management\n\nAdd and remove font sets used by " +
+        "connection profiles. Select a font to configure the file for " +
+        "each supported cell size, and select **Save Changes** when done.\n\n" +
+        "8 x 8\n:  Modes with at least 35 lines and C64/C128 modes\n" +
+        "8 x 14\n:  Modes with 28 through 34 lines\n" +
+        "8 x 16\n:  Modes with fewer than 28 lines or exactly 30 lines\n" +
+        "12 x 20\n:  Prestel mode"
+  }
+
+  static fontDetailsHelp_() {
+    return "# Font Details\n\nChoose a cell size to select or clear " +
+        "its font file.\n\n" +
+        "8 x 8\n:  Modes with at least 35 lines and C64/C128 modes\n" +
+        "8 x 14\n:  Modes with 28 through 34 lines\n" +
+        "8 x 16\n:  Modes with fewer than 28 lines or exactly 30 lines\n" +
+        "12 x 20\n:  Prestel mode"
+  }
+
+  static fontNameHelp_() {
+    return "# Font Name\n\nEnter the name that will identify this font in menus."
+  }
+
+  static encryptionHelp_() {
+    return "# List Encryption\n\nChoose the encryption used for the " +
+        "personal directory. Selecting an encrypted format prompts for a " +
+        "new password and rewrites the list. **Not Encrypted** stores the " +
+        "directory without password protection."
+  }
+
   static pickSetting_(app, title, rows, current) {
-    return MenuUi.choice(app, title, rows, current)
+    return MenuUi.choice(app, title, rows, current, settingHelp_(title))
   }
 
   static program_(app) {
@@ -118,7 +324,8 @@ class SettingsMenu {
       rows.add([26, settingsLine_("Lightbar Background", Menu.backgroundColors[s.lightbarBackgroundColor])])
       rows.add([27, "Audio Output"])
 
-      var picked = MenuUi.choice(app, "Program Settings", rows, null)
+      var picked = MenuUi.choice(app, "Program Settings", rows, null,
+          programHelp_())
       if (picked == null) {
         s.reload()
         return false
@@ -143,47 +350,58 @@ class SettingsMenu {
         if (value != null) s.cursorStyle = value
       } else if (picked == 7) {
         var value = MenuUi.integer(app, "Scrollback Lines", "Number of retained lines",
-            s.scrollbackLines, 1, 10000000)
+            s.scrollbackLines, 1, 10000000, scrollbackHelp_())
         if (value != null) s.scrollbackLines = value
       } else if (picked == 8) {
         var value = pickSetting_(app, "Scaling Mode", Menu.scalingModes, s.scalingMode)
         if (value != null) s.scalingMode = value
       } else if (picked == 9) {
-        var value = MenuUi.prompt(app, "Personal List", "Path or URI", s.listPath, 1024, false)
+        var value = MenuUi.prompt(app, "Personal List", "Path or URI",
+            s.listPath, 1024, false, listPathHelp_())
         if (value != null) s.listPath = value
       } else if (picked == 10) {
-        var value = MenuUi.prompt(app, "Shell TERM", "Terminal name", s.shellTerm, 255, false)
+        var value = MenuUi.prompt(app, "Shell TERM", "Terminal name",
+            s.shellTerm, 255, false, shellTermHelp_())
         if (value != null) s.shellTerm = value
       } else if (picked == 11) {
-        var value = MenuUi.prompt(app, "Modem Device", "Serial device", s.modemDevice, 255, false)
+        var value = MenuUi.prompt(app, "Modem Device", "Serial device",
+            s.modemDevice, 255, false, modemDeviceHelp_())
         if (value != null) s.modemDevice = value
       } else if (picked == 12) {
-        var value = MenuUi.prompt(app, "Modem Init", "Initialization string", s.modemInit, 255, false)
+        var value = MenuUi.prompt(app, "Modem Init", "Initialization string",
+            s.modemInit, 255, false, modemInitHelp_())
         if (value != null) s.modemInit = value
       } else if (picked == 13) {
-        var value = MenuUi.prompt(app, "Modem Dial", "Dial string", s.modemDial, 255, false)
+        var value = MenuUi.prompt(app, "Modem Dial", "Dial string",
+            s.modemDial, 255, false, modemDialHelp_())
         if (value != null) s.modemDial = value
       } else if (picked == 14) {
-        var value = MenuUi.integer(app, "Modem Rate", "Bits per second", s.modemRate, 1, 2147483647)
+        var value = MenuUi.integer(app, "Modem Rate", "Bits per second",
+            s.modemRate, 1, 2147483647, modemRateHelp_())
         if (value != null) s.modemRate = value
       } else if (picked == 15) {
-        var value = MenuUi.integer(app, "KDF Work Factor", "Exponent N for scrypt-Nn", s.kdfShift, 8, 24)
+        var value = MenuUi.integer(app, "KDF Work Factor",
+            "Exponent N for scrypt-Nn", s.kdfShift, 8, 24, kdfHelp_())
         if (value != null) s.kdfShift = value
       } else if (picked == 16) {
-        var value = MenuUi.integer(app, "Custom Columns", "Columns", s.customColumns, 40, 255)
+        var value = MenuUi.integer(app, "Custom Columns", "Columns",
+            s.customColumns, 40, 255, customColumnsHelp_())
         if (value != null) s.customColumns = value
       } else if (picked == 17) {
-        var value = MenuUi.integer(app, "Custom Rows", "Rows", s.customRows, 14, 255)
+        var value = MenuUi.integer(app, "Custom Rows", "Rows",
+            s.customRows, 14, 255, customRowsHelp_())
         if (value != null) s.customRows = value
       } else if (picked == 18) {
         var choices = [[8, "8"], [14, "14"], [16, "16"]]
         var value = pickSetting_(app, "Custom Font Height", choices, s.customFontHeight)
         if (value != null) s.customFontHeight = value
       } else if (picked == 19) {
-        var value = MenuUi.integer(app, "Custom Aspect Width", "Aspect width", s.customAspectWidth, 1, 255)
+        var value = MenuUi.integer(app, "Custom Aspect Width", "Aspect width",
+            s.customAspectWidth, 1, 255, customAspectHelp_(true))
         if (value != null) s.customAspectWidth = value
       } else if (picked == 20) {
-        var value = MenuUi.integer(app, "Custom Aspect Height", "Aspect height", s.customAspectHeight, 1, 255)
+        var value = MenuUi.integer(app, "Custom Aspect Height", "Aspect height",
+            s.customAspectHeight, 1, 255, customAspectHelp_(false))
         if (value != null) s.customAspectHeight = value
       } else if (picked >= 21 && picked <= 26) {
         editColor_(app, s, picked)
@@ -202,7 +420,7 @@ class SettingsMenu {
     if (which == 23) current = s.backgroundColor
     if (which == 24) current = s.inverseColor
     if (which == 25) current = s.lightbarColor
-    var value = MenuUi.choice(app, "Color", rows, current)
+    var value = MenuUi.choice(app, "Color", rows, current, colorHelp_())
     if (value == null) return
     if (which == 21) s.frameColor = value
     if (which == 22) s.textColor = value
@@ -219,7 +437,8 @@ class SettingsMenu {
         var enabled = (s.audioModes & row[0]) != 0
         rows.add([row[0], "[%(enabled ? "X" : " ")] %(row[1])"])
       }
-      var bit = MenuUi.choice(app, "Audio Output", rows, null)
+      var bit = MenuUi.choice(app, "Audio Output", rows, null,
+          audioHelp_())
       if (bit == null) return
       if ((s.audioModes & bit) != 0) {
         s.audioModes = s.audioModes & ~bit
@@ -275,12 +494,15 @@ class SettingsMenu {
       var rows = [[-1, "Add Web List"]]
       var lists = Menu.webLists
       for (i in 0...lists.count) rows.add([i, lists[i][0]])
-      var picked = MenuUi.choice(app, "Web Lists", rows, null)
+      var picked = MenuUi.choice(app, "Web Lists", rows, null,
+          webListsHelp_())
       if (picked == null) return changed
       if (picked == -1) {
-        var name = MenuUi.prompt(app, "Add Web List", "Name", "", 255, false)
+        var name = MenuUi.prompt(app, "Add Web List", "Name", "", 255,
+            false, webListsHelp_())
         if (name == null) continue
-        var uri = MenuUi.prompt(app, "Add Web List", "URI", "", 1024, false)
+        var uri = MenuUi.prompt(app, "Add Web List", "URI", "", 1024,
+            false, webListsHelp_())
         if (uri == null) continue
         app.popStatus("Fetching web list")
         var error = Menu.addWebList(name, uri, lists.count)
@@ -298,10 +520,12 @@ class SettingsMenu {
 
   static webList_(app, index, row) {
     var action = MenuUi.choice(app, row[0],
-        [[0, "Edit URI"], [1, "Refresh Cache"], [2, "Delete"]], null)
+        [[0, "Edit URI"], [1, "Refresh Cache"], [2, "Delete"]], null,
+        webListsHelp_())
     if (action == null) return false
     if (action == 0) {
-      var uri = MenuUi.prompt(app, "Web List URI", "URI", row[1], 1024, false)
+      var uri = MenuUi.prompt(app, "Web List URI", "URI", row[1], 1024,
+          false, webListsHelp_())
       if (uri == null) return false
       if (Menu.updateWebList(index, uri)) return true
       Alert.show(app, "Web List", "The URI could not be saved.")
@@ -327,15 +551,20 @@ class SettingsMenu {
       }
       var rows = [[-2, "Save Changes"], [-1, "Add Font"]]
       for (i in 0...fonts.count) rows.add([i, fonts[i].name])
-      var picked = MenuUi.choice(app, "Font Management", rows, null)
+      var picked = MenuUi.choice(app, "Font Management", rows, null,
+          fontManagementHelp_())
       if (picked == null) {
         if (Menu.fontsDirty && Confirm.show(app, "Discard unsaved font changes?")) Menu.reloadFonts()
         return
       }
       if (picked == -2) {
-        if (!Menu.saveFonts()) Alert.show(app, "Font Management", "The font configuration could not be saved.")
+        if (!Menu.saveFonts()) {
+          Alert.show(app, "Font Management",
+              "The font configuration could not be saved.")
+        }
       } else if (picked == -1) {
-        var name = MenuUi.prompt(app, "Add Font", "Font name", "", 79, false)
+        var name = MenuUi.prompt(app, "Add Font", "Font name", "", 79,
+            false, fontNameHelp_())
         if (name != null && Menu.createFont(name, fonts.count) == null) {
           Alert.show(app, "Font Management", "The font could not be added.")
         }
@@ -358,10 +587,12 @@ class SettingsMenu {
         var path = font.path(slot[0])
         rows.add([slot[0], "%(slot[1])  %(path == null ? "<none>" : path)"])
       }
-      var picked = MenuUi.choice(app, font.name, rows, null)
+      var picked = MenuUi.choice(app, font.name, rows, null,
+          fontDetailsHelp_())
       if (picked == null) return
       if (picked == -2) {
-        var name = MenuUi.prompt(app, "Rename Font", "Font name", font.name, 79, false)
+        var name = MenuUi.prompt(app, "Rename Font", "Font name", font.name,
+            79, false, fontNameHelp_())
         if (name != null) font.name = name
       } else if (picked == -1) {
         if (Confirm.show(app, "Delete %(font.name)?")) {
@@ -370,7 +601,8 @@ class SettingsMenu {
         }
       } else {
         var action = MenuUi.choice(app, "Font File",
-            [[0, "Choose File"], [1, "Clear File"]], null)
+            [[0, "Choose File"], [1, "Clear File"]], null,
+            fontDetailsHelp_())
         if (action == 0) {
           app.releaseFocus()
           var file = Host.pickFile(null, null, 1)
@@ -392,13 +624,16 @@ class SettingsMenu {
       [[MenuEncryption.aes, 256], "AES (256-bit)"],
       [[MenuEncryption.chacha20, 0], "ChaCha20"]
     ]
-    var picked = MenuUi.choice(app, "List Encryption", choices, null)
+    var picked = MenuUi.choice(app, "List Encryption", choices, null,
+        encryptionHelp_())
     if (picked == null) return false
     var password = null
     if (picked[0] != MenuEncryption.none) {
-      password = MenuUi.prompt(app, "List Encryption", "New password", "", 1023, true)
+      password = MenuUi.prompt(app, "List Encryption", "New password", "",
+          1023, true, encryptionHelp_())
       if (password == null || password.count == 0) return false
-      var verify = MenuUi.prompt(app, "List Encryption", "Confirm password", "", 1023, true)
+      var verify = MenuUi.prompt(app, "List Encryption", "Confirm password",
+          "", 1023, true, encryptionHelp_())
       if (verify != password) {
         Alert.show(app, "List Encryption", "The passwords do not match.")
         return false

@@ -40,6 +40,7 @@ class UiHelpTest {
     testSplitLinesEmpty_()
     testSplitLinesNoTrailing_()
     testConstruction_()
+    testMenuDefinitionListFormatting_()
     testPreformattedUsesHardLines_()
     testPreformattedPreservesInlineMarkup_()
     testEscDismisses_()
@@ -109,6 +110,17 @@ class UiHelpTest {
     var h = makeHelp_(3, 30, 8)
     check_(h.title == "Help" && h.scrollTop == 0,
            "Help: title set, scrollTop starts at 0")
+  }
+
+  static testMenuDefinitionListFormatting_() {
+    var doc = Markdown.parse("# Settings\n\nName\n:  Entry name\nPort\n:  TCP port")
+    var lines = Markdown.layout(doc, 60)
+    check_(lines.count == 4 &&
+           lines[0].runs[0].role == "help.heading.1" &&
+           lines[2].runs[0].text == "Name" &&
+           lines[2].runs[0].role == "help.bold" &&
+           lines[3].runs[0].text == "Port",
+           "Help: menu headings and definition lists retain formatting")
   }
 
   static testPreformattedUsesHardLines_() {

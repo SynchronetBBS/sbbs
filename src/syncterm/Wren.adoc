@@ -930,6 +930,14 @@ clickable for direct editing.  An override may present the model
 differently, but it is responsible for any compatibility behavior it wants
 to retain.
 
+The shipped menu keeps context help beside the Wren screen that owns each
+control.  Directory, sort-profile, entry-editor, settings, web-list, font,
+and encryption panes assign Markdown `helpText` to their panes and nested
+dialogs.  F1 therefore resolves to the general screen description from the
+list and to field-specific help while a choice or prompt is open.  Menu
+overrides should use the normal `Help` Markdown contract described under
+<<ui-help,Help viewer>>; the removed UIFC `helpbuf` markup is not parsed.
+
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
 SyncTERM deliberately uses two Wren VMs.  They do not share Wren
@@ -6060,6 +6068,10 @@ parent chain looking for a widget with `helpText` set, then calls
 `Help.show` with the title `"Help"` and that text.  Set `helpText`
 on whichever widget is the most-specific scope you want help to
 fall back to.
+
+Prompts and other modal widgets can also carry `helpText`.  Because the
+focused input or list is their child, the same parent walk finds the modal's
+field-specific help before any help attached to the underlying screen.
 
 Default placement: `Help.centeredBounds_()` claims the full cterm
 height minus the status row (`y=1`, `h=screenHeight-1`) and a

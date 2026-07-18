@@ -51,9 +51,15 @@ class ModalPane is Pane {
 
 class MenuUi {
   static promptStandalone(title, message, initial, maxLen, masked) {
+    return promptStandalone(title, message, initial, maxLen, masked, null)
+  }
+
+  static promptStandalone(title, message, initial, maxLen, masked,
+      helpText) {
     var app = App.new()
     var p = Prompt.new(message, initial)
     p.title = title
+    p.helpText = helpText
     p.input.maxLen = maxLen
     if (masked) p.input.mask = "*"
     p.bounds = Popup.centeredBounds_(message, 2, 34)
@@ -176,8 +182,13 @@ class MenuUi {
   }
 
   static prompt(app, title, message, initial, maxLen, masked) {
+    return prompt(app, title, message, initial, maxLen, masked, null)
+  }
+
+  static prompt(app, title, message, initial, maxLen, masked, helpText) {
     var p = Prompt.new(message, initial)
     p.title = title
+    p.helpText = helpText
     p.input.maxLen = maxLen
     if (masked) p.input.mask = "*"
     p.bounds = Popup.centeredBounds_(message, 2, 34)
@@ -186,9 +197,13 @@ class MenuUi {
   }
 
   static integer(app, title, message, initial, minimum, maximum) {
+    return integer(app, title, message, initial, minimum, maximum, null)
+  }
+
+  static integer(app, title, message, initial, minimum, maximum, helpText) {
     while (true) {
       var value = prompt(app, title, message, initial.toString,
-          12, false)
+          12, false, helpText)
       if (value == null) return null
       var number = Num.fromString(value)
       if (number != null && number.isInteger &&

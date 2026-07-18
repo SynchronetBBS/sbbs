@@ -36,9 +36,15 @@ class FakeApp {
 }
 
 class EscapeFakeApp is FakeApp {
-  construct new() { super() }
+  construct new() {
+    super()
+    _last = null
+  }
+
+  last { _last }
 
   modal(w) {
+    _last = w
     pushModal(w)
     w.handle(KeyEvent.new(Key.escape))
     return w
@@ -64,6 +70,8 @@ class UiPopupTest {
     testPromptEscReturnsNull_()
     testPromptForwardsTypingToInput_()
     testMenuChoiceEscReturnsNull_()
+    testMenuChoiceCarriesHelp_()
+    testMenuPromptCarriesHelp_()
     testStandaloneChoiceEscReturnsNull_()
     testModalPaneEscDismisses_()
 
@@ -211,6 +219,20 @@ class UiPopupTest {
     var result = MenuUi.choice(app, "Choice", ["One", "Two"], 0)
     check_(result == null && app.modalStack.count == 0,
            "MenuUi.choice: Esc returns null and dismisses")
+  }
+
+  static testMenuChoiceCarriesHelp_() {
+    var app = EscapeFakeApp.new()
+    MenuUi.choice(app, "Choice", ["One", "Two"], 0, "# Choice Help")
+    check_(app.last.helpText == "# Choice Help",
+           "MenuUi.choice: optional help reaches the modal pane")
+  }
+
+  static testMenuPromptCarriesHelp_() {
+    var app = EscapeFakeApp.new()
+    MenuUi.prompt(app, "Name", "Name", "", 20, false, "# Name Help")
+    check_(app.last.helpText == "# Name Help",
+           "MenuUi.prompt: optional help reaches the prompt")
   }
 
   static testStandaloneChoiceEscReturnsNull_() {

@@ -1035,6 +1035,12 @@ palette. `ClassicTheme` maps the six persisted UIFC color preferences into
 Wren `Theme` roles, so dialogs opened by either pane inherit the same user
 configuration.
 
+Context help remains ordinary Wren UI data. Each shipped menu, editor, or
+settings implementation keeps its Markdown help beside the controls it
+documents and assigns it through `helpText`; nested choices and prompts
+replace the screen overview with field-specific help. Do not reintroduce a
+UIFC help-markup parser when moving or extending these screens.
+
 The two sets run in separate Wren VMs. The menu VM is trusted and owns
 directory, settings, custom-font, and picker capabilities. A fresh
 connected VM is created per session and may run scripts supplied by the

@@ -78,6 +78,13 @@ class ClassicTheme {
     roles["classic.comment"] = inactive
     roles["classic.hint"] = style_(0, inverse)
     roles["classic.hotkey"] = style_(background, inverse)
+    roles["help"] = normal
+    roles["help.bold"] = frameStyle
+    roles["help.code"] = frameStyle
+    roles["help.heading.1"] = style_(background, inverse)
+    roles["help.heading.2"] = style_(background, inverse)
+    roles["help.heading.3"] = style_(background, inverse)
+    roles["help.bullet"] = normal
     return Theme.new(roles, base.glyphs)
   }
 }
@@ -260,7 +267,7 @@ class MainMenuApp {
 
     _settings = MainPane.new(Fn.new { focusSettings_() })
     _settings.title = "SyncTERM Settings"
-    _settings.helpText = settingsHelp_()
+    _settings.helpText = SettingsMenu.helpText(_connected)
     _settings.onClose = Fn.new { exit_() }
     _app.root.add(_settings)
 
@@ -305,24 +312,29 @@ class MainMenuApp {
   }
 
   directoryHelp_() {
-    var text = "Enter connects to the selected entry.  F2 or Ctrl-E edits it.\n" +
-        "Insert adds an entry; Delete removes a personal entry.\n" +
-        "F5 copies and F6 pastes an entry.  Ctrl-S manages sort profiles.\n" +
-        "Use < and > to cycle sort profiles and Tab to move between panes."
+    var action = "Connect to the selected entry"
+    if (_connected) action = "Edit the selected entry"
+    var text = "# SyncTERM Directory\n\n" +
+        "## Commands\n\n" +
+        "Enter\n:  %(action)\n" +
+        "F2 or Ctrl-E\n:  Edit the selected entry\n" +
+        "Insert\n:  Add a new personal entry\n" +
+        "Delete\n:  Remove the selected personal entry\n" +
+        "F5 / F6\n:  Copy and paste an entry\n" +
+        "Ctrl-S\n:  Manage sort profiles\n" +
+        "< / >\n:  Cycle through sort profiles\n" +
+        "Tab\n:  Move between the directory and settings panes"
     if (_connected) {
-      return "Enter, F2, or Ctrl-E edits the selected entry.\n" +
-          "Insert adds an entry; Delete removes a personal entry.\n" +
-          "F5 copies and F6 pastes an entry.  Ctrl-S manages sort profiles.\n" +
-          "Use < and > to cycle sort profiles and Tab to move between panes."
+      return text
     }
-    return text + "\nCtrl-D opens Quick Connect; Alt-B shows the last scrollback."
-  }
-
-  settingsHelp_() {
-    return "Web Lists configures downloaded directories.\n" +
-        "Default Connection Settings supplies values for new entries.\n" +
-        "Program Settings and File Locations configure SyncTERM itself.\n" +
-        "Font Management and List Encryption manage trusted local data."
+    return text + "\nCtrl-D\n:  Quick-connect to an address or URL\n" +
+        "Alt-B\n:  View the scrollback from the last session\n\n" +
+        "## Window Keys\n\n" +
+        "Alt-Left / Alt-Right\n:  Snap to the next smaller or larger width\n" +
+        "Alt-Enter\n:  Toggle full-screen mode when available\n\n" +
+        "## List Keys\n\n" +
+        "Ctrl-F\n:  Find text in the current list\n" +
+        "Ctrl-G\n:  Repeat the last search"
   }
 
   focusDirectory_() {
@@ -423,7 +435,10 @@ class MainMenuApp {
       if (!Confirm.show(_app,
           "Copy this read-only entry to the personal directory?")) return
       var name = MenuUi.prompt(_app, "Copy Entry", "Personal entry name",
-          bbs.name, 30, false)
+          bbs.name, 30, false,
+          "# Copy From System Directory\n\n" +
+          "This entry came from a read-only system directory. Give the " +
+          "new personal copy a unique name before editing it.")
       if (name == null) return
       bbs = Menu.copy(bbs, name)
       if (bbs == null) {
@@ -446,7 +461,8 @@ class MainMenuApp {
       return
     }
     var value = MenuUi.prompt(_app, "Entry Comment", "Comment",
-        _selected.comment, 1023, false)
+        _selected.comment, 1023, false,
+        "# Comment\n\nEnter the text shown below this directory entry.")
     if (value == null || value == _selected.comment) return
     var name = _selected.name
     _selected.comment = value
@@ -457,7 +473,8 @@ class MainMenuApp {
   }
 
   add_() {
-    var name = MenuUi.prompt(_app, "New Entry", "Entry name", "", 30, false)
+    var name = MenuUi.prompt(_app, "New Entry", "Entry name", "", 30,
+        false, entryNameHelp_())
     if (name == null) return
     var bbs = Menu.create(name)
     if (bbs == null) {
@@ -497,7 +514,7 @@ class MainMenuApp {
   paste_() {
     if (_clipboard == null) return
     var name = MenuUi.prompt(_app, "Paste Entry", "New personal entry name",
-        _clipboard["name"], 30, false)
+        _clipboard["name"], 30, false, entryNameHelp_())
     if (name == null) return
     var bbs = Menu.create(name)
     if (bbs == null) {
@@ -515,7 +532,10 @@ class MainMenuApp {
 
   quick_() {
     var url = MenuUi.prompt(_app, "Quick Connect", "Address or URL", "",
-        1024, false)
+        1024, false,
+        "# SyncTERM Quick Connect\n\n" +
+        "Enter a URL in this form:\n\n" +
+        "`[(rlogin|telnet|ssh)://][user[:password]@]host[:port]`")
     if (url == null) return
     var bbs = Menu.quickConnect(url)
     if (bbs == null) {
@@ -524,6 +544,11 @@ class MainMenuApp {
     }
     _result = bbs
     _app.quit()
+  }
+
+  entryNameHelp_() {
+    return "# Directory Entry Name\n\n" +
+        "Enter the unique name that will appear in the directory."
   }
 
   settingsAction_(picked) {
@@ -581,7 +606,9 @@ class MainMenu {
         message = "Password for the personal directory"
       }
       var password = MenuUi.promptStandalone("Directory Password",
-          message, "", 1023, true)
+          message, "", 1023, true,
+          "# Encrypted List\n\nEnter the password used to encrypt the " +
+          "personal directory.")
       if (password == null) return false
       status = Menu.load(password)
       if (status == MenuReadStatus.ok) __password = password
@@ -599,7 +626,8 @@ class MainMenu {
     var name = source.name
     if (!Menu.nameAvailable(name)) {
       name = MenuUi.promptStandalone("Save Directory Entry",
-          "Personal entry name", name, 30, false)
+          "Personal entry name", name, 30, false,
+          "# Directory Entry Name\n\nEnter a unique name for the saved entry.")
       if (name == null) return false
     }
     var bbs = Menu.copy(source, name)
