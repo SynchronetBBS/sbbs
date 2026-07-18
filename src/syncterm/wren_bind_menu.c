@@ -799,6 +799,10 @@ static const int flow_values[] = {
 static char *const flow_names[] = {
 	"RTS/CTS", "XON/XOFF", "RTS/CTS and XON/XOFF", "None", NULL
 };
+static const int flow_norts_values[] = {
+	COM_FLOW_CONTROL_XON_OFF, COM_FLOW_CONTROL_NONE
+};
+static char *const flow_norts_names[] = { "XON/XOFF", "None", NULL };
 static const int parity_values[] = {
 	SYNCTERM_PARITY_NONE, SYNCTERM_PARITY_EVEN, SYNCTERM_PARITY_ODD
 };
@@ -822,6 +826,11 @@ push_value_names(WrenVM *vm, const int *values, char *const *names)
 static void fn_Menu_addressFamilies(WrenVM *vm) { push_value_names(vm, address_family_values, address_family_names); }
 static void fn_Menu_ripModes(WrenVM *vm) { push_value_names(vm, rip_values, rip_names); }
 static void fn_Menu_flowControls(WrenVM *vm) { push_value_names(vm, flow_values, flow_names); }
+static void
+fn_Menu_flowControlsNoRts(WrenVM *vm)
+{
+	push_value_names(vm, flow_norts_values, flow_norts_names);
+}
 static void fn_Menu_parities(WrenVM *vm) { push_value_names(vm, parity_values, parity_names); }
 
 static void
@@ -1162,6 +1171,7 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "musicModes", fn_Menu_musicModes },
 	{ "Menu", true, "ripModes", fn_Menu_ripModes },
 	{ "Menu", true, "flowControls", fn_Menu_flowControls },
+	{ "Menu", true, "flowControlsNoRts", fn_Menu_flowControlsNoRts },
 	{ "Menu", true, "parities", fn_Menu_parities },
 	{ "Menu", true, "paletteDefaults(_)", fn_Menu_paletteDefaults },
 	{ "Menu", true, "fontsCatalog", fn_Menu_fontsCatalog },

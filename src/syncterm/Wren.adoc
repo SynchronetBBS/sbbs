@@ -938,6 +938,13 @@ short-palette editors expose both forms; the palette row is omitted once all
 sixteen colors are present.  Delete and the editor-specific copy, paste,
 rename, and cut keys are direct list commands.
 
+Adding a directory entry prompts for its name, connection type, and address,
+then writes it immediately and returns to the directory.  A single `:port`
+suffix is accepted for network addresses.  F2 or Ctrl-E opens the full entry
+editor.  Editing a read-only entry first offers to create a personal entry
+with the same name.  F5/F6 prompts for a new name when pasting a personal
+entry; a copied read-only entry retains its name when pasted.
+
 The specialized editors preserve the direct menu operations.  Enter on a
 sort profile opens its field list, and Enter on a sort field reverses that
 field; `[` and `]` move between profiles without returning to the profile
@@ -3698,6 +3705,11 @@ duplicate platform-dependent enum tables:
 | Open the named serial device and return its supported rates as
   `[value, displayName]` rows, including `Current` as rate zero.  If the
   device cannot be queried, return the normal `rates` catalog.
+
+| `flowControlsNoRts`
+| Return the `[value, displayName]` flow-control rows valid for a 3-wire
+  serial connection: XON/XOFF and None.  The shipped editor does not replace
+  an existing RTS/CTS value unless the user accepts a new choice.
 
 | `paletteDefaults(screenMode)`
 | Return `[minimumColorCount, colors]` for a screen mode.  `colors` is a

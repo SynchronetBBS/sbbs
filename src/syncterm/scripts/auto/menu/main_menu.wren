@@ -280,6 +280,7 @@ class MainMenuApp {
     _entries = []
     _selected = null
     _clipboard = null
+    _clipboardType = null
     _settingRows = SettingsMenu.rows(_connected)
 
     _backdrop = ClassicBackdrop.new()
@@ -533,16 +534,11 @@ class MainMenuApp {
     if (bbs.type != 0) {
       if (!Confirm.show(_app,
           "Copy this read-only entry to the personal directory?")) return
-      var name = MenuUi.prompt(_app, "Copy Entry", "Personal entry name",
-          bbs.name, 30, false,
-          "# Copy From System Directory\n\n" +
-          "This entry came from a read-only system directory. Give the " +
-          "new personal copy a unique name before editing it.")
-      if (name == null) return
+      var name = bbs.name
       bbs = Menu.copy(bbs, name)
       if (bbs == null) {
         Alert.show(_app, "Copy Failed",
-            "The personal entry name is invalid or already in use.")
+            "The personal entry could not be created.")
         return
       }
       name = editEntry_(bbs, true)
@@ -585,16 +581,48 @@ class MainMenuApp {
 
   add_() {
     if (!mutable_("add directory entries")) return
+    var preferred = _selected == null ? null : _selected.name
     var name = MenuUi.prompt(_app, "New Entry", "Entry name", "", 30,
         false, entryNameHelp_())
-    if (name == null) return
+    if (name == null || name.count == 0) return
     var bbs = Menu.create(name)
     if (bbs == null) {
       Alert.show(_app, "New Entry",
           "The entry name is invalid or already in use.")
       return
     }
-    name = editEntry_(bbs, true)
+
+    var type = BbsEditor.chooseConnectionType(_app, bbs.connType)
+    if (type == null) {
+      bbs.delete()
+      refresh_(preferred)
+      return
+    }
+    bbs.connType = type
+    var port = Menu.defaultPort(type)
+    if (port >= 1 && port <= 65535) bbs.port = port
+
+    var label = addressLabel_(type)
+    var address = MenuUi.prompt(_app, "New Entry", label, bbs.addr, 64,
+        false, addAddressHelp_(type))
+    if (address == null || address.count == 0) {
+      bbs.delete()
+      refresh_(preferred)
+      return
+    }
+    if (addressCanContainPort_(type)) {
+      var parsed = splitAddressPort_(address)
+      address = parsed[0]
+      if (parsed[1] != null) bbs.port = parsed[1]
+    }
+    bbs.addr = address
+    if (!bbs.save()) {
+      Alert.show(_app, "New Entry",
+          "The directory entry could not be written.")
+      bbs.delete()
+      refresh_(preferred)
+      return
+    }
     refresh_(name)
   }
 
@@ -620,15 +648,20 @@ class MainMenuApp {
     if (_selected == null) return
     if (!mutable_("copy directory entries")) return
     _clipboard = BbsEditor.draft_(_selected)
+    _clipboardType = _selected.type
     _footer.copied = true
   }
 
   paste_() {
     if (_clipboard == null) return
     if (!mutable_("paste directory entries")) return
-    var name = MenuUi.prompt(_app, "Paste Entry", "New personal entry name",
-        _clipboard["name"], 30, false, entryNameHelp_())
-    if (name == null) return
+    var preferred = _selected == null ? null : _selected.name
+    var name = _clipboard["name"]
+    if (_clipboardType == 0) {
+      name = MenuUi.prompt(_app, "Paste Entry", "New personal entry name",
+          name, 30, false, entryNameHelp_())
+      if (name == null || name.count == 0) return
+    }
     var bbs = Menu.create(name)
     if (bbs == null) {
       Alert.show(_app, "Paste Entry",
@@ -641,9 +674,12 @@ class MainMenuApp {
     draft["name"] = name
     if (!BbsEditor.apply_(_app, bbs, draft, false)) {
       bbs.delete()
+      refresh_(preferred)
+      return
     } else {
       name = editEntry_(bbs, false)
       _clipboard = null
+      _clipboardType = null
       _footer.copied = false
     }
     refresh_(name)
@@ -669,6 +705,38 @@ class MainMenuApp {
   entryNameHelp_() {
     return "# Directory Entry Name\n\n" +
         "Enter the unique name that will appear in the directory."
+  }
+
+  addressLabel_(type) {
+    if (type == 7) return "Phone Number"
+    if (type == 8 || type == 9) return "Device Name"
+    if (type == 10) return "Command"
+    return "Address"
+  }
+
+  addressCanContainPort_(type) {
+    return type != 7 && type != 8 && type != 9 && type != 10
+  }
+
+  splitAddressPort_(address) {
+    var colon = address.indexOf(":")
+    if (colon <= 0 || address.indexOf(":", colon + 1) >= 0 ||
+        colon + 1 >= address.bytes.count) return [address, null]
+    var port = Num.fromString(address[(colon + 1)...address.bytes.count])
+    if (port == null || !port.isInteger || port < 1 || port > 65535) {
+      return [address, null]
+    }
+    return [address[0...colon], port]
+  }
+
+  addAddressHelp_(type) {
+    var label = addressLabel_(type)
+    var text = "# %(label)\n\nEnter the value for the new directory entry."
+    if (addressCanContainPort_(type)) {
+      text = text + " A TCP port may follow a single colon, such as " +
+          "`bbs.example.net:2323`."
+    }
+    return text
   }
 
   settingsAction_(picked) {

@@ -124,6 +124,11 @@ class PaletteColorPane is Pane {
 }
 
 class BbsEditor {
+  static chooseConnectionType(app, current) {
+    return MenuUi.choice(app, "Connection Type", Menu.connectionTypes,
+        current, connectionTypeHelp_())
+  }
+
   static edit(app, bbs, isDefaults, isNew) {
     return editNavigable(app, bbs, isDefaults, isNew)[0]
   }
@@ -606,7 +611,10 @@ class BbsEditor {
       d["user"] = ""
     }
     d["connType"] = type
-    if (!serial_(type) && type != 10) d["port"] = Menu.defaultPort(type)
+    if (!serial_(type) && type != 10) {
+      var port = Menu.defaultPort(type)
+      if (port >= 1 && port <= 65535) d["port"] = port
+    }
   }
 
   static changeScreen_(d, mode) {
@@ -627,9 +635,12 @@ class BbsEditor {
       d["font"] = fonts[43][1]
     } else if (mode >= 27 && mode <= 29 && fonts.count > 44) {
       d["font"] = fonts[44][1]
-    } else if (old >= 17 && old <= 29 && fonts.count > 0) {
+    } else if (old >= 27 && old <= 29 && fonts.count > 0) {
       d["font"] = fonts[0][1]
-      if (old >= 17 && old <= 21) d["noStatus"] = false
+    } else if (((old >= 17 && old <= 21) || old == 25 || old == 26) &&
+        fonts.count > 0) {
+      d["font"] = fonts[0][1]
+      d["noStatus"] = false
     }
   }
 
@@ -803,8 +814,7 @@ class BbsEditor {
 
     rows.add(row_("Connection Type",
         MenuUi.rowName(Menu.connectionTypes, d["connType"]), Fn.new {
-      var value = MenuUi.choice(app, "Connection Type",
-          Menu.connectionTypes, d["connType"], connectionTypeHelp_())
+      var value = chooseConnectionType(app, d["connType"])
       if (value != null) changeConnection_(d, value)
     }))
     if (network_(d["connType"])) {
@@ -812,10 +822,23 @@ class BbsEditor {
           Menu.addressFamilies))
     }
     if (serial_(d["connType"])) {
-      rows.add(choiceRow_(app, d, "flowControl", "Flow Control",
-          Menu.flowControls))
+      rows.add(row_("Flow Control",
+          MenuUi.rowName(Menu.flowControls, d["flowControl"]), Fn.new {
+        var choices = Menu.flowControls
+        if (d["connType"] == 9) choices = Menu.flowControlsNoRts
+        var current = d["flowControl"]
+        var found = false
+        for (row in choices) {
+          if (row[0] == current) found = true
+        }
+        if (!found) current = choices[-1][0]
+        var value = MenuUi.choice(app, "Flow Control", choices, current,
+            fieldHelp_("flowControl", d))
+        if (value != null) d["flowControl"] = value
+      }))
       rows.add(row_("Comm Rate", rateName_(d["bpsRate"]), Fn.new {
-        var rates = Menu.serialRates(d["addr"])
+        var rates = Menu.rates
+        if (d["connType"] != 7) rates = Menu.serialRates(d["addr"])
         var value = MenuUi.choice(app, "Comm Rate", rates, d["bpsRate"],
             commRateHelp_())
         if (value != null) d["bpsRate"] = value

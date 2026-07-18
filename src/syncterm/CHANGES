@@ -20,6 +20,7 @@ Keep ambient Wren menu chrome unchanged behind submenus
 Wrap highlighted Wren lists when navigating past either end
 Restore blank append rows and direct editing keys in Wren menu lists
 Restore directory comments, editor navigation, and serial rate discovery
+Restore directory add/copy workflows and connection-specific editor behavior
 Restore direct sort, palette, web-list, font, and encryption editing
 Restore settings submenus, connected-mode filtering, and field limits
 Restore formatted context help throughout the Wren directory and settings UI

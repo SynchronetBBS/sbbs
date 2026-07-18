@@ -59,6 +59,7 @@ class Menu {
   foreign static musicModes
   foreign static ripModes
   foreign static flowControls
+  foreign static flowControlsNoRts
   foreign static parities
   // [minimumColorCount, sixteen mode-specific conio default colors].
   foreign static paletteDefaults(screenMode)
