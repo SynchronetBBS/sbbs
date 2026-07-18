@@ -5535,6 +5535,11 @@ Methods of interest:
   call this from their key/mouse handlers.
 * `modal(widget)` — push a modal, drain events until it pops, return
   the widget so the caller can read its `result`.
+  A modal whose `closesOnOutsideClick(event)` method accepts a mouse
+  event receives an Escape when that event occurs outside its bounds.
+  List-style popups accept button 1 and right-click; Help accepts any
+  ordinary mouse-button click.  Text prompts and specialized editors
+  reject outside clicks.
 * `popStatus(message)` — show or clear a transient centered overlay
   that does *not* intercept input.  Useful for "Working..." status
   while blocking on `Input.next` or a long Wren computation.  The
@@ -5686,6 +5691,9 @@ Base class for everything paintable.  Holds:
   ambient screen chrome use its base theme roles regardless of modal
   activity; it does not affect focus or input dispatch.
 * `helpText=` — string surfaced by `App.showHelp` (F1).
+* `closesOnOutsideClick(event)` — returns whether the App should send
+  Escape to this widget when `event` occurs outside its modal bounds.
+  The base implementation returns `false`.
 * `shadow=` — when true, the parent paints a drop shadow on the
   cells immediately right and below the widget's bounds.
 * `surface` — the widget's private Surface backbuffer, allocated
@@ -5847,7 +5855,8 @@ list.onSelect = Fn.new {|i, item| /* ... */ }
 Navigation: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` move
 the selection.  `Enter` fires `onSelect` with `(index, item)`.
 Mouse: a single click on a row both selects it and fires `onSelect`
-(matches UIFC's `ulist`); wheel scrolls three rows; clicks on the
+(matches UIFC's `ulist`); each wheel notch moves the selection one
+row using the same wrapping rules as Up and Down; clicks on the
 scrollbar column step or jump proportionally.
 
 `wrap=` controls single-row Up/Down movement and defaults to `true`:
@@ -5957,16 +5966,19 @@ Keys follow UIFC's line editor.  `Left`, `Right`, `Home`, `End`,
 alias Home and End, and Ctrl-Y truncates at the cursor.  Insert toggles
 insert/overwrite mode.  Ctrl-C / Ctrl-Insert copy the whole field,
 Ctrl-X / Shift-Delete cut it, and Ctrl-V / Shift-Insert paste at the cursor.
+Ctrl-Z opens the focused field's contextual help when one is available.
 `Enter` fires `onSubmit`; printable codepoints edit at the cursor.  `Tab`,
 `BackTab`, `Up`, and `Down` are NOT consumed so containers can use them for
 focus traversal.  A left click positions the cursor and a middle click pastes
 there.  Drag events fall through to the App's screen-selection handler.
 
-`insertMode` reports whether printable input inserts (`true`, the default) or
-overwrites existing characters (`false`).  `cursorShape` is `"solid"` in
-insert mode and `"normal"` in overwrite mode, matching UIFC's visible mode
-indicator.  Pasted control characters are discarded, matching typed-input
-filtering, and `maxLen` applies to pasted text.
+`insertMode` reports whether printable input inserts (`true`, the initial
+mode) or overwrites existing characters (`false`).  The mode is shared by
+all `TextInput` instances, so toggling it in one field applies to the next
+field.  `cursorShape` is `"solid"` in insert mode and `"normal"` in overwrite
+mode, matching UIFC's visible mode indicator.  Pasted control characters are
+discarded, matching typed-input filtering, and `maxLen` applies to pasted
+text.
 
 `mask=` accepts `null` or a non-empty String and uses its first
 codepoint when painting every stored character.  It does not change
@@ -6288,8 +6300,9 @@ Help.show(app, "Help — Editor",
 ----
 
 Keys: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` scroll;
-`Esc` or `Enter` dismisses.  Wheel scrolls three lines; scrollbar
-clicks/drags jump proportionally.  Same scrollbar knobs as
+any other key dismisses.  Wheel scrolls one line; scrollbar
+clicks/drags jump proportionally.  An ordinary mouse-button click also
+dismisses, including a click outside the dialog.  Same scrollbar knobs as
 `ListView` (`scrollbarSide=`, `scrollbarSeparator=`).  Clicking the
 frame's `[X]` corner button dismisses (inherited from `Pane`).
 

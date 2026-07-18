@@ -1,4 +1,4 @@
-import "syncterm" for Key, KeyEvent, Screen
+import "syncterm" for Key, KeyEvent, Mouse, Screen
 import "ui_app" for App
 import "ui_widget" for Rect
 import "ui_pane" for Pane
@@ -15,6 +15,9 @@ class StandaloneChoice is Popup {
   }
 
   selected=(value) { _list.selected = value }
+  closesOnOutsideClick(event) {
+    return event == Mouse.button1Click || event == Mouse.button3Click
+  }
 
   bounds=(value) {
     super.bounds = value
@@ -38,6 +41,10 @@ class ModalPane is Pane {
   construct new(onDismiss) {
     super()
     _onDismiss = onDismiss
+  }
+
+  closesOnOutsideClick(event) {
+    return event == Mouse.button1Click || event == Mouse.button3Click
   }
 
   handle(event) {

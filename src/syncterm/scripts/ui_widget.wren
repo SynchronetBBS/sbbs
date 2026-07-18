@@ -291,6 +291,10 @@ class Widget {
   // Null lets the App use its normal visible-cursor default.
   cursorShape { null }
 
+  // Modal widgets override this when a mouse click outside their
+  // bounds should take the same path as Escape.
+  closesOnOutsideClick(event) { false }
+
   // Hook for parent-driven hotkey activation.  Container scans its
   // children with this when a printable key fell through the focused
   // child; widgets that map their own letter to an action (Button

@@ -557,23 +557,23 @@ class ListView is Widget {
     return b
   }
 
-  // How many rows a single wheel notch moves the viewport.
-  static wheelStep { 3 }
+  // UIFC maps each wheel notch to one Up/Down navigation event.
+  static wheelStep { 1 }
 
   handleMouse_(me) {
     if (bounds == null) return false
     if (!bounds.contains(me.startX, me.startY)) return false
     var e = me.event
 
-    // Scroll wheel: shift the viewport by wheelStep rows.  Backends
+    // Scroll wheel: move the highlighted row by one item.  Backends
     // emit either a PRESS or a CLICK depending on platform; accept
-    // both.  Selection is not touched.
+    // both.
     if (e == Mouse.wheelUpPress || e == Mouse.wheelUpClick) {
-      scrollTop = _scrollTop - ListView.wheelStep
+      up()
       return true
     }
     if (e == Mouse.wheelDownPress || e == Mouse.wheelDownClick) {
-      scrollTop = _scrollTop + ListView.wheelStep
+      down()
       return true
     }
 

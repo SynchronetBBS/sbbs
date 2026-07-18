@@ -18,7 +18,7 @@
 // that do not already have an App event loop routing key events.
 //
 // Keyboard:
-//   Alert    — any key (or Enter / Esc) dismisses; mouse-click OK works too.
+//   Alert    — Enter / Space / O on OK or Esc dismisses.
 //   Confirm  — Y / Enter on Yes → true, N / Esc / Enter on No → false,
 //              Tab cycles focus between Yes / No.
 //   Prompt   — Enter in input or on OK button → submits the value,
@@ -33,7 +33,7 @@ import "ui_pane"   for Pane
 import "ui_input"  for TextInput
 import "ui_button" for Button
 import "ui_draw"   for Painter
-import "syncterm"  for KeyEvent, Key, Screen
+import "syncterm"  for KeyEvent, Key, Mouse, Screen
 
 // Transient status overlay used by App.popStatus(msg) — a frame
 // with a centred message and no buttons.  Not pushed onto the modal
@@ -349,6 +349,10 @@ class Alert is Popup {
     add(_ok)
   }
 
+  closesOnOutsideClick(event) {
+    return event == Mouse.button1Click || event == Mouse.button3Click
+  }
+
   static show(app, message) {
     var p = Alert.new(message)
     p.bounds = Popup.centeredBounds_(message, 1, 20)
@@ -427,6 +431,10 @@ class Confirm is Popup {
     _no.onPress  = Fn.new { dismissWith_(false) }
     add(_yes)
     add(_no)
+  }
+
+  closesOnOutsideClick(event) {
+    return event == Mouse.button1Click || event == Mouse.button3Click
   }
 
   static show(app, message) {

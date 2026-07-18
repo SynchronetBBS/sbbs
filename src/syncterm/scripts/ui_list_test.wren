@@ -61,8 +61,8 @@ class UiListTest {
     testMouseClickScrollbarDownArrow_()
     testMouseClickScrollbarUpArrow_()
     testMouseDragScrollbar_()
-    testMouseWheelScrolls_()
-    testMouseWheelClampsAtTop_()
+    testMouseWheelMovesSelection_()
+    testMouseWheelWrapsSelection_()
     testMouseClickOutsideDrops_()
 
     // Drawing — paint + readback
@@ -407,25 +407,24 @@ class UiListTest {
            "ListView.handle Mouse: scrollbar drag follows endY, selection unchanged")
   }
 
-  static testMouseWheelScrolls_() {
+  static testMouseWheelMovesSelection_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)
-    var prev = l.selected
-    // Wheel-down inside the widget moves scrollTop by wheelStep.
+    // UIFC maps wheel-down to one Down navigation event.
     var ev = MouseEvent.new(Mouse.wheelDownClick, 5, 3, 5, 3)
     var consumed = l.handle(ev)
-    check_(consumed && l.scrollTop == ListView.wheelStep && l.selected == prev,
-           "ListView.handle Mouse: wheel-down scrolls viewport, selection unchanged")
+    check_(consumed && l.selected == 1 && l.scrollTop == 0,
+           "ListView.handle Mouse: wheel-down moves selection one row")
   }
 
-  static testMouseWheelClampsAtTop_() {
+  static testMouseWheelWrapsSelection_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)
-    // scrollTop is already 0; wheel-up clamps, doesn't go negative.
+    // UIFC maps wheel-up to Up, including the normal list wrapping.
     var ev = MouseEvent.new(Mouse.wheelUpClick, 5, 3, 5, 3)
     var consumed = l.handle(ev)
-    check_(consumed && l.scrollTop == 0,
-           "ListView.handle Mouse: wheel-up at top clamps to 0")
+    check_(consumed && l.selected == 19 && l.scrollTop == 15,
+           "ListView.handle Mouse: wheel-up wraps selection")
   }
 
   static testMouseClickOutsideDrops_() {

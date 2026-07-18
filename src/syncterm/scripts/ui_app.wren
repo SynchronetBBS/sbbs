@@ -385,11 +385,20 @@ class App {
       return true
     }
     var top = modalTop
+    var outside = false
     if (top is Container) {
       var hit = top.hitTest(me.startX, me.startY)
+      outside = hit == null
       if (hit != null && hit.handle(me)) return true
     } else if (top.hit(me.startX, me.startY)) {
       if (top.handle(me)) return true
+    } else {
+      outside = true
+    }
+    if (outside && _modalStack.count > 0 &&
+        top.closesOnOutsideClick(me.event)) {
+      dispatchKey_(KeyEvent.new(Key.escape))
+      return true
     }
     if (me.event == Mouse.button1DragStart) {
       // Force rectangular select while a Wren App owns the screen.

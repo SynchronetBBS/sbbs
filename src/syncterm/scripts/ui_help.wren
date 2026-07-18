@@ -13,10 +13,11 @@
 //   Up / Down       scroll one line
 //   PageUp/PageDown scroll one viewport
 //   Home / End      jump to top / bottom
-//   Esc / Enter     dismiss
+//   any other key   dismiss
 // Mouse:
-//   Wheel up/down   scroll three lines
+//   Wheel up/down   scroll one line
 //   Scrollbar drag  scroll proportionally
+//   Other click     dismiss
 //
 // Sizing: by default the dialog claims most of the screen with a
 // 4-cell margin; pass an explicit Rect via the bounds= setter
@@ -62,7 +63,11 @@ class Help is Popup {
     markDirty()
   }
 
-  static wheelStep { 3 }
+  static wheelStep { 1 }
+  closesOnOutsideClick(event) {
+    return event == Mouse.button1Click || event == Mouse.button2Click ||
+        event == Mouse.button3Click
+  }
 
   // Re-layout the parsed doc when the viewport size changes (open,
   // resize, scrollbar appearing/disappearing).  Two-pass to break
@@ -288,7 +293,8 @@ class Help is Popup {
       scrollTop_ = _lines.count
       return true
     }
-    return false
+    dismissWith_(null)
+    return true
   }
 
   static show(app, titleText, body) {
@@ -331,6 +337,11 @@ class Help is Popup {
                                             viewportRows_, _scrollTop)
         return true
       }
+    }
+    if (e == Mouse.button1Click || e == Mouse.button2Click ||
+        e == Mouse.button3Click) {
+      dismissWith_(null)
+      return true
     }
     return false
   }

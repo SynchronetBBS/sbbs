@@ -4,7 +4,7 @@
 import "ui_widget"   for Rect
 import "ui_help"     for Help
 import "ui_markdown" for Markdown
-import "syncterm"    for KeyEvent, Key
+import "syncterm"    for KeyEvent, MouseEvent, Key, Mouse
 
 class FakeApp {
   construct new() {
@@ -51,7 +51,9 @@ class UiHelpTest {
     testEndJumpsToBottom_()
     testPageDownAdvancesByViewport_()
     testWheelDownScrolls_()
-    testRandomKeyNotConsumed_()
+    testRandomKeyDismisses_()
+    testOrdinaryClickDismisses_()
+    testMiddleClickDismisses_()
 
     var total = __pass + __fail
     System.print("=== ui_help: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -205,18 +207,38 @@ class UiHelpTest {
 
   static testWheelDownScrolls_() {
     var h = makeHelp_(20, 30, 9)
-    var app = FakeApp.new()
-    app.modal(h)
-    var ev = KeyEvent.new(Key.pageDown)      // proxy: any key path
-    h.handle(ev)
-    check_(h.scrollTop == 5,
-           "Help: PageDown scrolls (mouse-wheel uses identical scrollTop= path)")
+    var ev = MouseEvent.new(Mouse.wheelDownClick, 5, 3, 5, 3)
+    var consumed = h.handle(ev)
+    check_(consumed && h.scrollTop == 1,
+           "Help: mouse wheel scrolls one line")
   }
 
-  static testRandomKeyNotConsumed_() {
+  static testRandomKeyDismisses_() {
+    var app = FakeApp.new()
     var h = makeHelp_(3, 30, 8)
+    app.modal(h)
     var consumed = h.handle(KeyEvent.new(0x41))   // 'A'
-    check_(!consumed,
-           "Help: random printable key not consumed")
+    check_(consumed && app.modalStack.count == 0,
+           "Help: ordinary printable key dismisses")
+  }
+
+  static testOrdinaryClickDismisses_() {
+    var app = FakeApp.new()
+    var h = makeHelp_(3, 30, 8)
+    app.modal(h)
+    var ev = MouseEvent.new(Mouse.button1Click, 5, 3, 5, 3)
+    var consumed = h.handle(ev)
+    check_(consumed && app.modalStack.count == 0,
+           "Help: ordinary button-1 click dismisses")
+  }
+
+  static testMiddleClickDismisses_() {
+    var app = FakeApp.new()
+    var h = makeHelp_(3, 30, 8)
+    app.modal(h)
+    var ev = MouseEvent.new(Mouse.button2Click, 5, 3, 5, 3)
+    var consumed = h.handle(ev)
+    check_(consumed && app.modalStack.count == 0,
+           "Help: ordinary middle click dismisses")
   }
 }

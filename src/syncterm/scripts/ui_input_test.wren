@@ -11,6 +11,9 @@ class UiInputTest {
     __fail = 0
     System.print("=== ui_input self-test starting ===")
 
+    var reset = TextInput.new()
+    reset.insertMode = true
+
     testDefaults_()
     testValueRoundtrip_()
     testValueResetsCursor_()
@@ -18,6 +21,7 @@ class UiInputTest {
     testInsertCodepoint_()
     testInsertAtCursor_()
     testInsertTogglesOverwrite_()
+    testInsertModeShared_()
     testInsertTextFiltersControls_()
     testBackspace_()
     testBackspaceAtStart_()
@@ -28,6 +32,7 @@ class UiInputTest {
     testCtrlMovementAndTruncate_()
     testMaxLenCaps_()
     testEnterFiresOnSubmit_()
+    testCtrlZConsumed_()
     testOnChangeFires_()
     testTabNotConsumed_()
     testScrollOffTracksCursor_()
@@ -114,9 +119,19 @@ class UiInputTest {
     t.cursor = 1
     t.handle(KeyEvent.new(Key.insert))
     t.handle(KeyEvent.new(0x58))
-    check_(t.value == "aXc" && t.cursor == 2 && !t.insertMode &&
-           t.cursorShape == "normal",
-           "TextInput Insert: toggles overwrite mode")
+    var ok = t.value == "aXc" && t.cursor == 2 && !t.insertMode &&
+        t.cursorShape == "normal"
+    t.insertMode = true
+    check_(ok, "TextInput Insert: toggles overwrite mode")
+  }
+
+  static testInsertModeShared_() {
+    var first = TextInput.new()
+    first.insertMode = false
+    var second = TextInput.new()
+    var ok = !second.insertMode && second.cursorShape == "normal"
+    second.insertMode = true
+    check_(ok, "TextInput insert mode is shared between fields")
   }
 
   static testInsertTextFiltersControls_() {
@@ -125,6 +140,12 @@ class UiInputTest {
     t.insertText_("a\nb\t\u007fc")
     check_(t.value == "abc",
            "TextInput paste path: ignores control characters")
+  }
+
+  static testCtrlZConsumed_() {
+    var t = TextInput.new()
+    check_(t.handle(KeyEvent.new(Key.ctrlZ)),
+           "TextInput Ctrl-Z: opens contextual help when available")
   }
 
   static testBackspace_() {

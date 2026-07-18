@@ -45,8 +45,13 @@ class TextInput is Widget {
     _onSubmit  = null
     _onChange  = null
     _mask      = null
-    _insertMode = true
   }
+
+  static insertMode_ {
+    if (__insertMode == null) __insertMode = true
+    return __insertMode
+  }
+  static insertMode_=(value) { __insertMode = value }
 
   // String round-trip.  Setting value resets the cursor to the end
   // and triggers a repaint.
@@ -78,7 +83,11 @@ class TextInput is Widget {
   onSubmit=(fn) { _onSubmit = fn }
   onChange=(fn) { _onChange = fn }
 
-  insertMode { _insertMode }
+  insertMode { TextInput.insertMode_ }
+  insertMode=(value) {
+    TextInput.insertMode_ = value
+    markDirty()
+  }
 
   // Optional one-codepoint display mask.  The underlying value and all
   // edit callbacks continue to use the original text.
@@ -120,7 +129,7 @@ class TextInput is Widget {
   // ----- Cursor exposure for App ----------------------------------
 
   cursorVisible { true }
-  cursorShape { _insertMode ? "solid" : "normal" }
+  cursorShape { insertMode ? "solid" : "normal" }
   cursorPos {
     if (bounds == null) return null
     var col = _cursor - _scrollOff
@@ -147,7 +156,7 @@ class TextInput is Widget {
   // ----- Edit primitives ------------------------------------------
 
   insertOne_(s) {
-    if (!_insertMode && _cursor < _chars.count) {
+    if (!insertMode && _cursor < _chars.count) {
       _chars[_cursor] = s
       _cursor = _cursor + 1
       ensureVisible_()
@@ -263,8 +272,7 @@ class TextInput is Widget {
       return true
     }
     if (c == Key.insert) {
-      _insertMode = !_insertMode
-      markDirty()
+      insertMode = !insertMode
       return true
     }
     if (c == Key.ctrlC || c == Key.ctrlIns) {
@@ -283,6 +291,10 @@ class TextInput is Widget {
       truncate_()
       return true
     }
+    if (c == Key.ctrlZ) {
+      showHelp_()
+      return true
+    }
     if (c == Key.enter) {
       if (_onSubmit != null) _onSubmit.call(value)
       return true
@@ -297,6 +309,12 @@ class TextInput is Widget {
       return true
     }
     return false
+  }
+
+  showHelp_() {
+    var w = parent
+    while (w is Widget) w = w.parent
+    if (w != null) w.showHelp()
   }
 
   handleMouse_(me) {

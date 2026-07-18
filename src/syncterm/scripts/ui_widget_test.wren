@@ -39,6 +39,11 @@ class Probe is Widget {
   }
 }
 
+class OutsideDismissProbe is Probe {
+  construct new() { super() }
+  closesOnOutsideClick(event) { event == Mouse.button1Click }
+}
+
 class UiWidgetTest {
   static run() {
     __pass = 0
@@ -115,6 +120,7 @@ class UiWidgetTest {
     testAppConsumedBackspaceDoesNotEscape_()
     testAppDispatchMouseHitsWidget_()
     testAppDispatchMouseModalBlocksRoot_()
+    testAppOutsideClickEscapesListModal_()
     testAppDispatchMouseOutsideDrops_()
     testAppRightClickAliasesEscape_()
 
@@ -717,6 +723,20 @@ class UiWidgetTest {
     var consumed = app.dispatchMouse_(mouse_(15, 6))
     check_(!consumed && rootLeaf.seen.count == 0 && modalLeaf.seen.count == 0,
            "App.dispatchMouse_: modal blocks root, click outside modal drops")
+  }
+
+  static testAppOutsideClickEscapesListModal_() {
+    var app = App.new()
+    app.root.bounds = Rect.new(1, 1, 80, 25)
+    var modal = OutsideDismissProbe.new()
+    modal.bounds = Rect.new(40, 10, 20, 10)
+    app.pushModal(modal)
+    var fired = false
+    app.bind(Key.escape, Fn.new {|event| fired = true })
+    var event = MouseEvent.new(Mouse.button1Click, 15, 6, 15, 6)
+    var consumed = app.dispatchMouse_(event)
+    check_(consumed && fired,
+           "App.dispatchMouse_: list modal outside click aliases Escape")
   }
 
   static testAppDispatchMouseOutsideDrops_() {
