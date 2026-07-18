@@ -830,7 +830,8 @@ The currently embedded scripts are:
   list commands occupy the bottom two rows.  The host calls
   `MainMenu.run(currentName, connected)` whenever the application is
   offline or Alt+E enters the directory over a connected session.  The
-  offline form owns the blue application background and title/time row;
+  offline form owns the UIFC light-shade application background and
+  title/time row;
   the connected form leaves the saved terminal screen behind its panes.
 
 | `menu_host_ui`

@@ -73,6 +73,7 @@ class ClassicTheme {
     roles["spinbox"] = selected
     roles["spinbox.focused"] = selected
     roles["statusbar"] = style_(0, inverse)
+    roles["classic.backdrop"] = style_(inverse, background)
     roles["classic.header"] = style_(background, inverse)
     roles["classic.comment"] = inactive
     roles["classic.hint"] = style_(0, inverse)
@@ -89,8 +90,8 @@ class ClassicBackdrop is Widget {
 
   onPaint_() {
     var sf = surface
-    Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ",
-        style("default"))
+    Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), "\u2591",
+        style("classic.backdrop"))
     Painter.fill(sf, Rect.new(0, 0, bounds.w, 1), " ",
         style("classic.header"))
     Painter.text(sf, 2, 0, Menu.applicationTitle, style("classic.header"),
