@@ -606,8 +606,8 @@ class BbsEditor {
   static paletteColorHelp_() {
     return "# Edit Palette Entry\n\nTab and Backtab move between Red, " +
         "Green, and Blue. Enter accepts the current component. Up and Down " +
-        "change the example foreground color. `\%` resets the focused " +
-        "component to its mode default. Each component ranges from 0 to 255."
+        "change the example foreground color. `\%` resets all three " +
+        "components to the mode default. Each component ranges from 0 to 255."
   }
 
   static explicitSortHelp_() {

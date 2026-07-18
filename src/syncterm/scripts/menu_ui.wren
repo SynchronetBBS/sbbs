@@ -58,11 +58,25 @@ class CommandPane is ModalPane {
 
   handle(event) {
     if (event is KeyEvent) {
-      var spec = _commands[event.code]
+      var code = event.code
+      var aliased = true
+      if (code == 0x2B) {
+        code = Key.insert
+      } else if (code == 0x2D || code == Key.delChar) {
+        code = Key.delete
+      } else if (code == Key.ctrlIns) {
+        code = Key.f5
+      } else if (code == Key.shiftIns) {
+        code = Key.f6
+      } else {
+        aliased = false
+      }
+      var spec = _commands[code]
       if (spec != null) {
         _onCommand.call(spec)
         return true
       }
+      if (aliased) return true
     }
     return super.handle(event)
   }

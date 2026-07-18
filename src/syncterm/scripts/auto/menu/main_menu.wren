@@ -164,13 +164,16 @@ class MainPane is Pane {
 }
 
 class MainList is ListView {
-  construct new(onFocus, onCycle, onComment, commentKey, onSwitchPane) {
+  construct new(onFocus, onCycle, onComment, commentKey, onSwitchPane,
+      onInsert, onDelete) {
     super()
     _onFocus = onFocus
     _onCycle = onCycle
     _onComment = onComment
     _commentKey = commentKey
     _onSwitchPane = onSwitchPane
+    _onInsert = onInsert
+    _onDelete = onDelete
   }
 
   handle(event) {
@@ -196,6 +199,14 @@ class MainList is ListView {
     if (_onCycle != null && event is KeyEvent &&
         event.codepoint == 0x3E) {
       _onCycle.call(1)
+      return true
+    }
+    if (event is KeyEvent && event.codepoint == 0x2B) {
+      if (_onInsert != null) _onInsert.call()
+      return true
+    }
+    if (event is KeyEvent && event.codepoint == 0x2D) {
+      if (_onDelete != null) _onDelete.call()
       return true
     }
     return super.handle(event)
@@ -228,7 +239,8 @@ class MainMenuApp {
     _list = MainList.new(Fn.new { focusDirectory_() },
         Fn.new {|delta| cycleSort_(delta) },
         Fn.new { focusComment_(1) }, Key.tab,
-        Fn.new { focusSettings_() })
+        Fn.new { focusSettings_() }, Fn.new { add_() },
+        Fn.new { delete_() })
     _list.onChange = Fn.new {|index, item|
       _selected = index != null && index >= 0 &&
           index < _entries.count ? _entries[index] : null
@@ -259,7 +271,7 @@ class MainMenuApp {
 
     _settingsList = MainList.new(Fn.new { focusSettings_() }, null,
         Fn.new { focusComment_(-1) }, Key.backTab,
-        Fn.new { focusDirectory_() })
+        Fn.new { focusDirectory_() }, null, null)
     var settingLabels = []
     for (row in _settingRows) settingLabels.add(row[1])
     _settingsList.items = settingLabels
@@ -271,13 +283,18 @@ class MainMenuApp {
     _app.onLayout = Fn.new {|width, height| layout_(width, height) }
     bind_(Key.escape, Fn.new { exit_(false) })
     _app.bind(Key.quit, Fn.new {|event| exit_(true) })
-    bindDirectory_(Key.f2, Fn.new { edit_() })
+    bindDirectory_(Key.f2, Fn.new {
+      if (_selected != null) edit_()
+    })
     bindDirectory_(Key.ctrlE, Fn.new { edit_() })
     bindDirectory_(Key.insert, Fn.new { add_() })
     bindDirectory_(Key.delete, Fn.new { delete_() })
+    bindDirectory_(Key.delChar, Fn.new { delete_() })
     bindDirectory_(Key.ctrlS, Fn.new { sort_() })
     bindDirectory_(Key.f5, Fn.new { copy_() })
+    bindDirectory_(Key.ctrlIns, Fn.new { copy_() })
     bindDirectory_(Key.f6, Fn.new { paste_() })
+    bindDirectory_(Key.shiftIns, Fn.new { paste_() })
     if (!_connected) bindDirectory_(Key.ctrlD, Fn.new { quick_() })
     if (!_connected) {
       bind_(Key.altB, Fn.new { OfflineScrollbackView.show(_app) })
@@ -310,10 +327,11 @@ class MainMenuApp {
         "## Commands\n\n" +
         "Enter\n:  %(action)\n" +
         "F2 or Ctrl-E\n:  Edit the selected entry\n" +
-        "Insert\n:  Add a new personal entry\n" +
+        "Insert or +\n:  Add a new personal entry\n" +
         "Blank final row\n:  Add a new personal entry\n" +
-        "Delete\n:  Remove the selected personal entry\n" +
-        "F5 / F6\n:  Copy and paste an entry\n" +
+        "Delete or -\n:  Remove the selected personal entry\n" +
+        "F5 / Ctrl-Insert\n:  Copy an entry\n" +
+        "F6 / Shift-Insert\n:  Paste an entry\n" +
         "Ctrl-S\n:  Manage sort profiles\n" +
         "< / >\n:  Cycle through sort profiles\n" +
         "Tab\n:  Edit the selected comment, then move to settings"
@@ -541,9 +559,15 @@ class MainMenuApp {
     }
     if (!mutable_("add directory entries")) return
     var preferred = _selected == null ? null : _selected.name
-    var name = MenuUi.prompt(_app, "New Entry", "Entry name", "", 30,
-        false, entryNameHelp_())
-    if (name == null || name.count == 0) return
+    var name = ""
+    while (true) {
+      name = MenuUi.prompt(_app, "New Entry", "Entry name", name, 30,
+          false, entryNameHelp_())
+      if (name == null || name.count == 0) return
+      if (Menu.nameAvailable(name)) break
+      Alert.show(_app, "New Entry",
+          "The entry name is invalid or already in use.")
+    }
     var bbs = Menu.create(name)
     if (bbs == null) {
       Alert.show(_app, "New Entry",
@@ -619,9 +643,14 @@ class MainMenuApp {
     var preferred = _selected == null ? null : _selected.name
     var name = _clipboard["name"]
     if (_clipboardType == 0) {
-      name = MenuUi.prompt(_app, "Paste Entry", "New personal entry name",
-          name, 30, false, entryNameHelp_())
-      if (name == null || name.count == 0) return
+      while (true) {
+        name = MenuUi.prompt(_app, "Paste Entry",
+            "New personal entry name", name, 30, false, entryNameHelp_())
+        if (name == null || name.count == 0) return
+        if (Menu.nameAvailable(name)) break
+        Alert.show(_app, "Paste Entry",
+            "The entry name is invalid or already in use.")
+      }
     }
     var bbs = Menu.create(name)
     if (bbs == null) {
@@ -791,11 +820,15 @@ class MainMenu {
     if (!MenuUi.confirmStandalone("Save Directory Entry",
         "Save this directory entry?")) return false
     var name = source.name
-    if (!Menu.nameAvailable(name)) {
+    while (!Menu.nameAvailable(name)) {
       name = MenuUi.promptStandalone("Save Directory Entry",
           "Personal entry name", name, 30, false,
           "# Directory Entry Name\n\nEnter a unique name for the saved entry.")
-      if (name == null) return false
+      if (name == null || name.count == 0) return false
+      if (!Menu.nameAvailable(name)) {
+        MenuUi.alertStandalone("Save Directory Entry",
+            "The entry name is invalid or already in use.")
+      }
     }
     var bbs = Menu.copy(source, name)
     if (bbs == null) {

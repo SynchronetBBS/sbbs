@@ -45,6 +45,7 @@ class SortProfiles {
       commands[Key.f2] = ["rename", false]
       commands[Key.f5] = ["copy", false]
       commands[Key.ctrlX] = ["cut", false]
+      commands[Key.shiftDel] = ["cut", false]
       commands[Key.f6] = ["paste", false]
       var picked = MenuUi.commandChoice(app, "Sort Profiles",
           profileLabels_(profiles), selected, profilesHelp_(), commands)

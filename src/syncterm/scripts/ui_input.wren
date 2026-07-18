@@ -4,11 +4,11 @@
 // strings so the cursor can index by codepoint without paying for a
 // String rebuild per character.  `value` joins on demand.
 //
-// Key handling: Left/Right/Home/End move the cursor; Backspace/Delete
-// edit; Enter fires onSubmit (set by the caller); printable codepoints
-// insert at the cursor.  Mouse clicks position the cursor at the
-// clicked column.  Tab/BackTab/Up/Down are NOT consumed so containers
-// can use them for focus traversal.
+// Key handling follows UIFC's line editor: movement, insert/overwrite,
+// deletion, whole-field copy/cut/paste, and truncate-to-end controls.
+// Enter fires onSubmit (set by the caller); printable codepoints edit at
+// the cursor.  Left clicks position the cursor and middle clicks paste.
+// Tab/BackTab/Up/Down are NOT consumed so containers can traverse focus.
 //
 // Cursor exposure: cursorVisible returns true (text input wants the
 // hardware cursor on screen) and cursorPos reports the cell that
@@ -33,7 +33,7 @@
 
 import "ui_widget" for Widget, Rect
 import "ui_draw"   for Painter
-import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse
+import "syncterm"  for Clipboard, KeyEvent, MouseEvent, Key, Mouse
 
 class TextInput is Widget {
   construct new() {
@@ -45,6 +45,7 @@ class TextInput is Widget {
     _onSubmit  = null
     _onChange  = null
     _mask      = null
+    _insertMode = true
   }
 
   // String round-trip.  Setting value resets the cursor to the end
@@ -76,6 +77,8 @@ class TextInput is Widget {
 
   onSubmit=(fn) { _onSubmit = fn }
   onChange=(fn) { _onChange = fn }
+
+  insertMode { _insertMode }
 
   // Optional one-codepoint display mask.  The underlying value and all
   // edit callbacks continue to use the original text.
@@ -117,6 +120,7 @@ class TextInput is Widget {
   // ----- Cursor exposure for App ----------------------------------
 
   cursorVisible { true }
+  cursorShape { _insertMode ? "solid" : "normal" }
   cursorPos {
     if (bounds == null) return null
     var col = _cursor - _scrollOff
@@ -142,13 +146,36 @@ class TextInput is Widget {
 
   // ----- Edit primitives ------------------------------------------
 
-  insert_(s) {
-    if (_maxLen != null && _chars.count >= _maxLen) return
+  insertOne_(s) {
+    if (!_insertMode && _cursor < _chars.count) {
+      _chars[_cursor] = s
+      _cursor = _cursor + 1
+      ensureVisible_()
+      markDirty()
+      return true
+    }
+    if (_maxLen != null && _chars.count >= _maxLen) return false
     _chars.insert(_cursor, s)
     _cursor = _cursor + 1
     ensureVisible_()
-    if (_onChange != null) _onChange.call(value)
     markDirty()
+    return true
+  }
+
+  insert_(s) {
+    if (insertOne_(s) && _onChange != null) _onChange.call(value)
+  }
+
+  insertText_(text) {
+    if (text == null) return
+    var changed = false
+    for (ch in text) {
+      var bytes = ch.bytes
+      if (bytes.count > 1 || (bytes[0] >= 0x20 && bytes[0] != 0x7F)) {
+        if (insertOne_(ch)) changed = true
+      }
+    }
+    if (changed && _onChange != null) _onChange.call(value)
   }
 
   backspace_() {
@@ -166,6 +193,29 @@ class TextInput is Widget {
     if (_onChange != null) _onChange.call(value)
     markDirty()
   }
+
+  copy_() {
+    if (_chars.count > 0) Clipboard.text = value
+  }
+
+  cut_() {
+    if (_chars.count == 0) return
+    copy_()
+    _chars = []
+    _cursor = 0
+    _scrollOff = 0
+    if (_onChange != null) _onChange.call(value)
+    markDirty()
+  }
+
+  truncate_() {
+    if (_cursor >= _chars.count) return
+    while (_chars.count > _cursor) _chars.removeAt(-1)
+    if (_onChange != null) _onChange.call(value)
+    markDirty()
+  }
+
+  paste_() { insertText_(Clipboard.text) }
 
   // ----- Event handling -------------------------------------------
 
@@ -193,6 +243,14 @@ class TextInput is Widget {
       cursor = _chars.count
       return true
     }
+    if (c == Key.ctrlB) {
+      cursor = 0
+      return true
+    }
+    if (c == Key.ctrlE) {
+      cursor = _chars.count
+      return true
+    }
     if (c == Key.backspace) {
       backspace_()
       return true
@@ -202,6 +260,27 @@ class TextInput is Widget {
     // a given terminal emits depends on its keymap; accept both.
     if (c == Key.delete || c == Key.delChar) {
       delete_()
+      return true
+    }
+    if (c == Key.insert) {
+      _insertMode = !_insertMode
+      markDirty()
+      return true
+    }
+    if (c == Key.ctrlC || c == Key.ctrlIns) {
+      copy_()
+      return true
+    }
+    if (c == Key.ctrlX || c == Key.shiftDel) {
+      cut_()
+      return true
+    }
+    if (c == Key.ctrlV || c == Key.shiftIns) {
+      paste_()
+      return true
+    }
+    if (c == Key.ctrlY) {
+      truncate_()
       return true
     }
     if (c == Key.enter) {
@@ -224,10 +303,13 @@ class TextInput is Widget {
     if (bounds == null) return false
     if (!bounds.contains(me.startX, me.startY)) return false
     var e = me.event
-    if (e != Mouse.button1Press && e != Mouse.button1Click &&
-        e != Mouse.button1DragStart && e != Mouse.button1DragMove) {
-      return false
+    if (e == Mouse.button2Click) {
+      var pasteCol = me.endX - bounds.x
+      cursor = (_scrollOff + pasteCol).max(0).min(_chars.count)
+      paste_()
+      return true
     }
+    if (e != Mouse.button1Press && e != Mouse.button1Click) return false
     var col = me.endX - bounds.x
     cursor = (_scrollOff + col).max(0).min(_chars.count)
     return true

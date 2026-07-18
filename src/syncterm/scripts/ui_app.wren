@@ -66,7 +66,7 @@ class App {
     _layoutSize  = null           // [w, h] last passed through layout_
     _backdrop    = null           // Screen.readRect snapshot from first paint
     _savedCursor = null           // CustomCursor snapshot from entry; restored on exit
-    _cursorShown = null           // mirrors last applied state; null forces first apply
+    _cursorShape = null           // mirrors last applied preset; null forces first apply
     _runMode     = null           // "async" / "sync"; modal() uses to pick pump
     _status      = null           // PopStatus overlay or null
     _runFiber    = null           // set in run(); target for post() and the claim handler's wake
@@ -335,6 +335,16 @@ class App {
   //   3. Otherwise drop.
   dispatchKey_(ke) {
     if (modalTop.handle(ke)) return true
+    if (ke.code == Key.backspace) {
+      var escape = KeyEvent.new(Key.escape)
+      if (modalTop.handle(escape)) return true
+      var escapeFn = _keymap[Key.escape]
+      if (escapeFn != null) {
+        escapeFn.call(escape)
+        return true
+      }
+      return false
+    }
     var fn = _keymap[ke.code]
     if (fn != null) {
       fn.call(ke)
@@ -364,6 +374,10 @@ class App {
   //   (e.g. backend race), we silently absorb it instead of dropping
   //   it on a widget that isn't expecting it.
   dispatchMouse_(me) {
+    if (me.event == Mouse.button3Click) {
+      dispatchKey_(KeyEvent.new(Key.escape))
+      return true
+    }
     if (_dragHandedOff &&
         (me.event == Mouse.button1DragEnd ||
          me.event == Mouse.button1Release)) {
@@ -473,14 +487,20 @@ class App {
     var top = modalTop
     var cp  = top.cursorPos
     if (cp != null) Screen.window.position = cp
-    var want = top.cursorVisible
-    if (want != _cursorShown) {
-      // Visible → "normal" (a sensible cursor for editors).  The
-      // saved state is for restoring on exit; using it here would
-      // inherit whatever the *parent* app left the cursor at, which
-      // could itself be CustomCursor.none.
-      if (want) CustomCursor.normal.apply() else CustomCursor.none.apply()
-      _cursorShown = want
+    var want = top.cursorVisible ? top.cursorShape : "none"
+    if (want == null) want = "normal"
+    if (want != _cursorShape) {
+      // The saved state is for restoring on exit; using it here would
+      // inherit whatever the parent app left the cursor at, which could
+      // itself be hidden or have unrelated geometry.
+      if (want == "solid") {
+        CustomCursor.solid.apply()
+      } else if (want == "normal") {
+        CustomCursor.normal.apply()
+      } else {
+        CustomCursor.none.apply()
+      }
+      _cursorShape = want
     }
   }
 
@@ -538,8 +558,9 @@ class App {
   }
 
   // Save the terminal's current mouse-events bitmask, REPLACE it with
-  // exactly the events a UI cares about (button-1 click + drag, wheel
-  // up/down), and return the saved value so the caller restores on
+  // exactly the events a UI cares about (button-1 click + drag,
+  // middle-click paste, right-click cancel, and wheel up/down), and
+  // return the saved value so the caller restores on
   // exit.  Replacing rather than ORing matters: any events the
   // terminal had enabled for its own tracking would otherwise also
   // get queued during the App's run, which both adds dispatch noise
@@ -553,18 +574,20 @@ class App {
     Input.enableMouseEvent(Mouse.button1DragStart)
     Input.enableMouseEvent(Mouse.button1DragMove)
     Input.enableMouseEvent(Mouse.button1DragEnd)
+    Input.enableMouseEvent(Mouse.button2Click)
+    Input.enableMouseEvent(Mouse.button3Click)
     Input.enableMouseEvent(Mouse.wheelUpPress)
     Input.enableMouseEvent(Mouse.wheelDownPress)
     return saved
   }
 
   // Snapshot the cursor on entry so we can restore it on exit.
-  // _cursorShown is null so the first drawAll_'s `want != _cursorShown`
-  // compare always trips, regardless of what the parent app or terminal
+  // _cursorShape is null so the first drawAll_ comparison always trips,
+  // regardless of what the parent app or terminal
   // had the cursor doing.
   setupCursor_() {
     _savedCursor = CustomCursor.current
-    _cursorShown = null
+    _cursorShape = null
   }
   teardownCursor_() {
     if (_savedCursor != null) {

@@ -926,7 +926,8 @@ simultaneously visible settings pane; Backtab traverses the same path in
 reverse.  Left and Right move directly between the directory and settings.
 Enter connects (or edits while connected) from the directory and invokes one
 settings action from the settings pane.  F2/Ctrl-E, Insert, Delete, F5/F6,
-Ctrl-S, `<`/`>`, Ctrl-D, and Alt-B invoke their documented commands.  The
+Ctrl-S, `<`/`>`, Ctrl-D, and Alt-B invoke their documented commands.  F2 does
+nothing on the blank append row; Ctrl-E invokes the row's add operation.  The
 comment row is also clickable for direct editing.  An override may present the
 model differently, but it is responsible for preserving this user-visible
 behavior.
@@ -935,8 +936,12 @@ Lists which support appending provide a selectable blank final row.
 Activating the blank row or pressing Insert invokes the same add operation.
 The shipped directory, sort-profile, sort-field, web-list, custom-font, and
 short-palette editors expose both forms; the palette row is omitted once all
-sixteen colors are present.  Delete and the editor-specific copy, paste,
-rename, and cut keys are direct list commands.
+sixteen colors are present.  `+` aliases Insert, while `-` and ASCII DEL alias
+Delete.  Ctrl-Insert aliases F5 Copy, Shift-Insert aliases F6 Paste, and
+Shift-Delete invokes Cut where that operation is available.  Backspace and a
+right click alias Escape after the focused widget declines the event.  Delete
+and the editor-specific copy, paste, rename, and cut keys are direct list
+commands.
 
 Adding a directory entry prompts for its name, connection type, and address,
 then writes it immediately and returns to the directory.  A single `:port`
@@ -954,14 +959,15 @@ The encryption screen has distinct Change Password, algorithm, and Decrypt
 operations; changing algorithms reuses the password already held by the
 host.  Palette editing exposes separate Red, Green, and Blue fields, uses
 Tab and Backtab between them, cycles the preview foreground with Up and Down,
-and uses `%` to restore the selected component's mode default.
+and uses `%` to restore all three components from the mode default.
 
 Repeating editors retain their highlighted row after an action rebuilds the
 list.  This applies to entry logging and palettes, sort profiles and fields,
 program settings and their nested lists, web lists, and font management.
 Directory editing commands apply only while the directory pane owns focus.
-Sort-profile and web-list name prompts repeat after a duplicate name, and
-sort-profile field navigation returns to the last profile visited.
+Directory, pasted-entry, command-line-save, sort-profile, and web-list name
+prompts repeat after an invalid or duplicate name, and sort-profile field
+navigation returns to the last profile visited.
 New entries are sorted again after their connection details are accepted.
 Rate choices select the first supported rate at or above a configured value,
 or Current when no supported rate is high enough, matching the directory
@@ -2337,6 +2343,16 @@ surface uses this same shape.
 | `endX`, `endY`
 | Release coordinates (1-based).
 |===
+
+==== Mouse event constants
+
+`Mouse.button1*`, `Mouse.button2*`, and `Mouse.button3*` identify left,
+middle, and right button events.  Each family uses the ciolib order Press,
+Release, Click, double/triple/quadruple Click, DragStart, DragMove, and DragEnd;
+the Wren module currently names every button-1 event and the button-2 and
+button-3 Press, Release, and Click events.  `Mouse.wheelUpPress`,
+`Mouse.wheelUpClick`, `Mouse.wheelDownPress`, and `Mouse.wheelDownClick` cover
+the backend-dependent wheel forms.
 
 === ClaimHandle [[claimhandle]]
 
@@ -5692,9 +5708,10 @@ dirty flag, and returns the surface.
 
 Hardware cursor: `cursorPos` returns `[x, y]` in 1-based screen
 coords (or `null`); `cursorVisible` returns whether the cursor
-should be shown while focused.  `App` reads both off the focused
-leaf each frame and applies them.  `TextInput` reports a real
-cursor; everything else hides it.
+should be shown while focused; and `cursorShape` optionally returns
+`"normal"` or `"solid"`.  `App` reads all three off the focused leaf
+each frame and applies them.  A visible null shape defaults to
+`"normal"`.  Containers forward the focused child's values.
 
 `tryHotkey(ev)` is a parent-driven hotkey hook.  `Container.handle`
 scans its children with this when a printable key fell through the
@@ -5935,11 +5952,21 @@ t.onSubmit = Fn.new {|s| /* Enter */ }
 t.onChange = Fn.new {|s| /* per-keystroke */ }
 ----
 
-Keys: `Left`, `Right`, `Home`, `End`, `Backspace`, `Delete` /
-`DelChar` edit; `Enter` fires `onSubmit`; printable codepoints
-insert at the cursor.  `Tab`, `BackTab`, `Up`, `Down` are NOT
-consumed so containers can use them for focus traversal.  Mouse
-clicks position the cursor at the clicked column.
+Keys follow UIFC's line editor.  `Left`, `Right`, `Home`, `End`,
+`Backspace`, and `Delete` / `DelChar` move and delete; Ctrl-B and Ctrl-E
+alias Home and End, and Ctrl-Y truncates at the cursor.  Insert toggles
+insert/overwrite mode.  Ctrl-C / Ctrl-Insert copy the whole field,
+Ctrl-X / Shift-Delete cut it, and Ctrl-V / Shift-Insert paste at the cursor.
+`Enter` fires `onSubmit`; printable codepoints edit at the cursor.  `Tab`,
+`BackTab`, `Up`, and `Down` are NOT consumed so containers can use them for
+focus traversal.  A left click positions the cursor and a middle click pastes
+there.  Drag events fall through to the App's screen-selection handler.
+
+`insertMode` reports whether printable input inserts (`true`, the default) or
+overwrites existing characters (`false`).  `cursorShape` is `"solid"` in
+insert mode and `"normal"` in overwrite mode, matching UIFC's visible mode
+indicator.  Pasted control characters are discarded, matching typed-input
+filtering, and `maxLen` applies to pasted text.
 
 `mask=` accepts `null` or a non-empty String and uses its first
 codepoint when painting every stored character.  It does not change

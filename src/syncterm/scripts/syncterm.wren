@@ -390,7 +390,8 @@ foreign class MouseEvent {
 // Numeric values from `enum ciolib_mouse_event` in conio/ciolib.h.
 // MouseEvent.event matches one of these.  Each button's slot is
 // press/release/click/dbl/trpl/quad/dragStart/dragMove/dragEnd in
-// that order, offset by 9 per button.  Buttons 4/5 are the scroll
+// that order, offset by 9 per button.  Buttons 1/2/3 are left,
+// middle, and right.  Buttons 4/5 are the scroll
 // wheel (4 = up, 5 = down) and arrive as PRESS or CLICK depending
 // on backend; coords are the cursor's current position.
 class Mouse {
@@ -404,6 +405,12 @@ class Mouse {
   static button1DragStart{ 7 }
   static button1DragMove { 8 }
   static button1DragEnd  { 9 }
+  static button2Press    { 10 }
+  static button2Release  { 11 }
+  static button2Click    { 12 }
+  static button3Press    { 19 }
+  static button3Release  { 20 }
+  static button3Click    { 21 }
   static wheelUpPress   { 28 }   // BUTTON_4_PRESS
   static wheelUpClick   { 30 }   // BUTTON_4_CLICK
   static wheelDownPress { 37 }   // BUTTON_5_PRESS

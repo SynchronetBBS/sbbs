@@ -11,7 +11,7 @@
 import "ui_style"  for Style, Theme
 import "ui_widget" for Rect, Widget, Container
 import "ui_app"    for App
-import "syncterm"  for KeyEvent, MouseEvent, Key
+import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse
 
 // A Widget subclass that records every event it sees, optionally
 // consumes them, and counts draw() invocations.  Focus and bounds
@@ -111,9 +111,12 @@ class UiWidgetTest {
     testAppDispatchKeyHitsKeymap_()
     testAppDispatchKeyConsumedSkipsKeymap_()
     testAppDispatchKeyModalBlocksRoot_()
+    testAppBackspaceAliasesEscape_()
+    testAppConsumedBackspaceDoesNotEscape_()
     testAppDispatchMouseHitsWidget_()
     testAppDispatchMouseModalBlocksRoot_()
     testAppDispatchMouseOutsideDrops_()
+    testAppRightClickAliasesEscape_()
 
     var total = __pass + __fail
     System.print("=== ui_widget: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -657,6 +660,27 @@ class UiWidgetTest {
            "App.dispatchKey_: modal blocks root")
   }
 
+  static testAppBackspaceAliasesEscape_() {
+    var app = App.new()
+    var fired = false
+    app.bind(Key.escape, Fn.new {|event| fired = true })
+    var consumed = app.dispatchKey_(KeyEvent.new(Key.backspace))
+    check_(consumed && fired,
+           "App.dispatchKey_: unconsumed Backspace aliases Escape")
+  }
+
+  static testAppConsumedBackspaceDoesNotEscape_() {
+    var app = App.new()
+    var leaf = Probe.new()
+    leaf.consume = true
+    app.root.add(leaf)
+    var fired = false
+    app.bind(Key.escape, Fn.new {|event| fired = true })
+    var consumed = app.dispatchKey_(KeyEvent.new(Key.backspace))
+    check_(consumed && !fired && leaf.seen.count == 1,
+           "App.dispatchKey_: text editor can consume Backspace")
+  }
+
   // Mouse event constructor: (event, modifiers, sx, sy, ex, ey).
   static mouse_(x, y) { MouseEvent.new(0, x, y, x, y) }
 
@@ -705,5 +729,15 @@ class UiWidgetTest {
     var consumed = app.dispatchMouse_(mouse_(70, 20))
     check_(!consumed && leaf.seen.count == 0,
            "App.dispatchMouse_: outside any widget drops")
+  }
+
+  static testAppRightClickAliasesEscape_() {
+    var app = App.new()
+    var fired = false
+    app.bind(Key.escape, Fn.new {|event| fired = true })
+    var event = MouseEvent.new(Mouse.button3Click, 40, 12, 40, 12)
+    var consumed = app.dispatchMouse_(event)
+    check_(consumed && fired,
+           "App.dispatchMouse_: right click aliases Escape")
   }
 }

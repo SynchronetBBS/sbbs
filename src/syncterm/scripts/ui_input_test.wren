@@ -17,12 +17,15 @@ class UiInputTest {
     testCursorClamps_()
     testInsertCodepoint_()
     testInsertAtCursor_()
+    testInsertTogglesOverwrite_()
+    testInsertTextFiltersControls_()
     testBackspace_()
     testBackspaceAtStart_()
     testDelete_()
     testDeleteAtEnd_()
     testHomeEnd_()
     testLeftRight_()
+    testCtrlMovementAndTruncate_()
     testMaxLenCaps_()
     testEnterFiresOnSubmit_()
     testOnChangeFires_()
@@ -32,6 +35,7 @@ class UiInputTest {
     testCursorVisibleTrue_()
     testMouseClickPositionsCursor_()
     testMouseHoverIgnored_()
+    testMouseDragFallsThrough_()
     testDrawShowsValue_()
     testDrawMasksValue_()
     testDrawFocusedStyle_()
@@ -103,6 +107,26 @@ class UiInputTest {
            "TextInput type at mid: inserts and advances")
   }
 
+  static testInsertTogglesOverwrite_() {
+    var t = TextInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.value = "abc"
+    t.cursor = 1
+    t.handle(KeyEvent.new(Key.insert))
+    t.handle(KeyEvent.new(0x58))
+    check_(t.value == "aXc" && t.cursor == 2 && !t.insertMode &&
+           t.cursorShape == "normal",
+           "TextInput Insert: toggles overwrite mode")
+  }
+
+  static testInsertTextFiltersControls_() {
+    var t = TextInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.insertText_("a\nb\t\u007fc")
+    check_(t.value == "abc",
+           "TextInput paste path: ignores control characters")
+  }
+
   static testBackspace_() {
     var t = TextInput.new()
     t.bounds = Rect.new(1, 1, 10, 1)
@@ -161,6 +185,20 @@ class UiInputTest {
     check_(t.cursor == 1, "TextInput Left: cursor -1")
     t.handle(KeyEvent.new(Key.right))
     check_(t.cursor == 2, "TextInput Right: cursor +1")
+  }
+
+  static testCtrlMovementAndTruncate_() {
+    var t = TextInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.value = "abcd"
+    t.handle(KeyEvent.new(Key.ctrlB))
+    var atStart = t.cursor == 0
+    t.cursor = 2
+    t.handle(KeyEvent.new(Key.ctrlY))
+    var truncated = t.value == "ab"
+    t.handle(KeyEvent.new(Key.ctrlE))
+    check_(atStart && truncated && t.cursor == 2,
+           "TextInput Ctrl-B/Ctrl-E/Ctrl-Y: move and truncate")
   }
 
   // ----- maxLen + callbacks --------------------------------------
@@ -230,8 +268,8 @@ class UiInputTest {
 
   static testCursorVisibleTrue_() {
     var t = TextInput.new()
-    check_(t.cursorVisible == true,
-           "TextInput cursorVisible defaults to true")
+    check_(t.cursorVisible == true && t.cursorShape == "solid",
+           "TextInput cursor defaults to visible solid insert shape")
   }
 
   // ----- Mouse ----------------------------------------------------
@@ -255,6 +293,16 @@ class UiInputTest {
     var consumed = t.handle(ev)
     check_(!consumed && t.cursor == 5,
            "TextInput mouse hover: ignored, cursor unchanged")
+  }
+
+  static testMouseDragFallsThrough_() {
+    var t = TextInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.value = "hello"
+    var ev = MouseEvent.new(Mouse.button1DragStart, 4, 1, 8, 1)
+    var consumed = t.handle(ev)
+    check_(!consumed && t.cursor == 5,
+           "TextInput mouse drag: falls through to screen selection")
   }
 
   // ----- Drawing --------------------------------------------------

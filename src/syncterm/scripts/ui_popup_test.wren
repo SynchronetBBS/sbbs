@@ -90,6 +90,7 @@ class UiPopupTest {
     testMenuCommandChoiceReturnsCommandAndRow_()
     testMenuCommandChoicePreemptsTypeahead_()
     testMenuCommandChoiceProtectsBlankRow_()
+    testMenuCommandChoiceCompatibilityAliases_()
     testMenuPromptCarriesHelp_()
     testStandaloneChoiceEscReturnsNull_()
     testModalPaneEscDismisses_()
@@ -278,6 +279,16 @@ class UiPopupTest {
     check_(result == null && app.modalStack.count == 1,
            "MenuUi.commandChoice: disallowed command leaves blank row open")
     app.popModal()
+  }
+
+  static testMenuCommandChoiceCompatibilityAliases_() {
+    var app = CommandFakeApp.new(0x2B, 1)
+    var commands = {}
+    commands[Key.insert] = ["insert", true]
+    var result = MenuUi.commandChoice(app, "Choice",
+        ["One", "Two"], 0, null, commands)
+    check_(result[0] == "insert" && result[1] == 1,
+           "MenuUi.commandChoice: + aliases Insert")
   }
 
   static testMenuPromptCarriesHelp_() {

@@ -287,6 +287,10 @@ class Widget {
   // visibility.
   cursorVisible { false }
 
+  // Optional App cursor preset while visible: "normal" or "solid".
+  // Null lets the App use its normal visible-cursor default.
+  cursorShape { null }
+
   // Hook for parent-driven hotkey activation.  Container scans its
   // children with this when a printable key fell through the focused
   // child; widgets that map their own letter to an action (Button
@@ -345,6 +349,11 @@ class Container is Widget {
     var c = focusedChild
     if (c == null) return false
     return c.cursorVisible
+  }
+  cursorShape {
+    var c = focusedChild
+    if (c == null) return null
+    return c.cursorShape
   }
 
   add(child) {
