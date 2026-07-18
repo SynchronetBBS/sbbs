@@ -123,6 +123,7 @@ class UiWidgetTest {
     testAppOutsideClickEscapesListModal_()
     testAppDispatchMouseOutsideDrops_()
     testAppRightClickAliasesEscape_()
+    testAppConsumedRightClickDoesNotEscape_()
 
     var total = __pass + __fail
     System.print("=== ui_widget: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -759,5 +760,20 @@ class UiWidgetTest {
     var consumed = app.dispatchMouse_(event)
     check_(consumed && fired,
            "App.dispatchMouse_: right click aliases Escape")
+  }
+
+  static testAppConsumedRightClickDoesNotEscape_() {
+    var app = App.new()
+    app.root.bounds = Rect.new(1, 1, 80, 25)
+    var leaf = Probe.new()
+    leaf.bounds = Rect.new(10, 5, 20, 3)
+    leaf.consume = true
+    app.root.add(leaf)
+    var fired = false
+    app.bind(Key.escape, Fn.new {|event| fired = true })
+    var event = MouseEvent.new(Mouse.button3Click, 15, 6, 15, 6)
+    var consumed = app.dispatchMouse_(event)
+    check_(consumed && leaf.seen.count == 1 && !fired,
+           "App.dispatchMouse_: consumed right click does not Escape")
   }
 }

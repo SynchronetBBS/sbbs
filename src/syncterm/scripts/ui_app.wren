@@ -374,10 +374,6 @@ class App {
   //   (e.g. backend race), we silently absorb it instead of dropping
   //   it on a widget that isn't expecting it.
   dispatchMouse_(me) {
-    if (me.event == Mouse.button3Click) {
-      dispatchKey_(KeyEvent.new(Key.escape))
-      return true
-    }
     if (_dragHandedOff &&
         (me.event == Mouse.button1DragEnd ||
          me.event == Mouse.button1Release)) {
@@ -397,6 +393,12 @@ class App {
     }
     if (outside && _modalStack.count > 0 &&
         top.closesOnOutsideClick(me.event)) {
+      dispatchKey_(KeyEvent.new(Key.escape))
+      return true
+    }
+    // UIFC text fields consume a right-click as paste.  Everywhere
+    // else, an unconsumed right-click takes the Escape path.
+    if (me.event == Mouse.button3Click) {
       dispatchKey_(KeyEvent.new(Key.escape))
       return true
     }

@@ -321,13 +321,13 @@ class TextInput is Widget {
     if (bounds == null) return false
     if (!bounds.contains(me.startX, me.startY)) return false
     var e = me.event
-    if (e == Mouse.button2Click) {
+    if (e == Mouse.button2Click || e == Mouse.button3Click) {
       var pasteCol = me.endX - bounds.x
       cursor = (_scrollOff + pasteCol).max(0).min(_chars.count)
       paste_()
       return true
     }
-    if (e != Mouse.button1Press && e != Mouse.button1Click) return false
+    if (e != Mouse.button1Click) return false
     var col = me.endX - bounds.x
     cursor = (_scrollOff + col).max(0).min(_chars.count)
     return true

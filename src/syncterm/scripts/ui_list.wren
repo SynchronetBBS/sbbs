@@ -577,33 +577,19 @@ class ListView is Widget {
       return true
     }
 
-    // Only react to button-1 press / click / drag.  Mouse-move events
-    // (event == 0) reach handle() too — without this gate, just hovering
-    // over the scrollbar would scroll.
-    if (e != Mouse.button1Press && e != Mouse.button1Click &&
-        e != Mouse.button1DragStart && e != Mouse.button1DragMove) {
-      return false
-    }
+    // UIFC list actions occur on a completed button-1 click.  Press
+    // and drag events fall through to the screen-selection path.
+    if (e != Mouse.button1Click) return false
 
-    // For drags, endX/endY follow the mouse while startX/startY stay
-    // pinned at the original press point.  Hit-test the *grab* with
-    // start (so dragging off the scrollbar still scrolls), but resolve
-    // the new scrollTop from the *current* position via end.
     if (scrollbarVisible_ &&
         me.startX == bounds.x + scrollbarColumn_) {
-      var py = me.endY - bounds.y
-      scrollTop = Painter.scrollbarClick(py, bounds.h, _items.count,
-                                         bounds.h, _scrollTop)
+      var py = me.startY - bounds.y
+      if (py <= 0) pageUp()
+      if (py >= bounds.h - 1) pageDown()
       return true
     }
 
-    // Outside the scrollbar: only press/click selects a row.  Drag
-    // events fall through so dispatchMouse_ can hand them to the
-    // C-side selector for text selection on the visible cells.
-    if (e != Mouse.button1Press && e != Mouse.button1Click) {
-      return false
-    }
-    var idx = _scrollTop + (me.endY - bounds.y)
+    var idx = _scrollTop + (me.startY - bounds.y)
     if (idx >= 0 && idx < _items.count) {
       selected = idx
       // Click-to-activate: matches UIFC's `ulist`, which returns
@@ -611,8 +597,7 @@ class ListView is Widget {
       // Fires only on full clicks (not the initial press of a
       // potential drag) so a click-then-drag for text selection
       // doesn't fire onSelect prematurely.
-      if (e == Mouse.button1Click && _onSelect != null &&
-          selectedItem != null) {
+      if (_onSelect != null && selectedItem != null) {
         _onSelect.call(_selected, selectedItem)
       }
       return true

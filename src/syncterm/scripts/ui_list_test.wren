@@ -56,6 +56,7 @@ class UiListTest {
     testKeyEnterFiresOnSelect_()
     testKeyEnterNoCallback_()
     testMouseClickSelectsRow_()
+    testMousePressDoesNotSelectRow_()
     testMouseHoverIgnored_()
     testMouseClickScrollbarTrackBottom_()
     testMouseClickScrollbarDownArrow_()
@@ -351,6 +352,15 @@ class UiListTest {
            "ListView.handle Mouse: row click selects that row")
   }
 
+  static testMousePressDoesNotSelectRow_() {
+    var l = makeList_(3)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    var ev = MouseEvent.new(Mouse.button1Press, 5, 3, 5, 3)
+    var consumed = l.handle(ev)
+    check_(!consumed && l.selected == 0,
+           "ListView.handle Mouse: row press waits for click")
+  }
+
   static testMouseHoverIgnored_() {
     var l = makeList_(3)
     l.bounds = Rect.new(1, 1, 10, 5)
@@ -364,47 +374,46 @@ class UiListTest {
   static testMouseClickScrollbarTrackBottom_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)            // h=5 → arrows on
-    // Track rows are 1..3 (between the up + down arrows).  Click at
-    // py=3 (screen y=4) is the last track row; maps to maxScroll=15.
+    // UIFC only assigns actions to the arrow cells.  Track clicks
+    // don't move the selection or viewport.
     var prev = l.selected
     var ev = MouseEvent.new(Mouse.button1Click, 1, 4, 1, 4)
     var consumed = l.handle(ev)
-    check_(consumed && l.scrollTop == 15 && l.selected == prev,
-           "ListView.handle Mouse: scrollbar track-bottom click scrolls to end, selection unchanged")
+    check_(consumed && l.scrollTop == 0 && l.selected == prev,
+           "ListView.handle Mouse: scrollbar track click is a no-op")
   }
 
   static testMouseClickScrollbarDownArrow_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)
-    // py=4 (screen y=5) is the down-arrow row; clicking it steps +1.
+    // py=4 is the down-arrow row; UIFC maps it to PageDown.
     var ev = MouseEvent.new(Mouse.button1Click, 1, 5, 1, 5)
     var consumed = l.handle(ev)
-    check_(consumed && l.scrollTop == 1,
-           "ListView.handle Mouse: scrollbar down-arrow click steps +1")
+    check_(consumed && l.selected == 4 && l.scrollTop == 0,
+           "ListView.handle Mouse: down arrow pages the selection")
   }
 
   static testMouseClickScrollbarUpArrow_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)
-    l.scrollTop = 5
-    // py=0 (screen y=1) is the up-arrow row; clicking it steps -1.
+    l.selected = 9
+    // py=0 is the up-arrow row; UIFC maps it to PageUp.
     var ev = MouseEvent.new(Mouse.button1Click, 1, 1, 1, 1)
     var consumed = l.handle(ev)
-    check_(consumed && l.scrollTop == 4,
-           "ListView.handle Mouse: scrollbar up-arrow click steps -1")
+    check_(consumed && l.selected == 5 && l.scrollTop == 5,
+           "ListView.handle Mouse: up arrow pages the selection")
   }
 
   static testMouseDragScrollbar_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)
     var prev = l.selected
-    // DragMove pressed at scrollbar top (startY=1), pointer now at the
-    // bottom of the *track* (endY=4 → py=3).  scrollTop tracks the end
-    // coord; selection stays put.
+    // UIFC hands list drags to screen selection, including drags that
+    // start on the scrollbar.
     var ev = MouseEvent.new(Mouse.button1DragMove, 1, 1, 1, 4)
     var consumed = l.handle(ev)
-    check_(consumed && l.scrollTop == 15 && l.selected == prev,
-           "ListView.handle Mouse: scrollbar drag follows endY, selection unchanged")
+    check_(!consumed && l.scrollTop == 0 && l.selected == prev,
+           "ListView.handle Mouse: scrollbar drag falls through")
   }
 
   static testMouseWheelMovesSelection_() {

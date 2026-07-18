@@ -5,6 +5,15 @@ import "ui_widget" for Rect
 import "ui_input"  for TextInput
 import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse
 
+class PasteProbe is TextInput {
+  construct new() {
+    super()
+    _pasted = false
+  }
+  pasted { _pasted }
+  paste_() { _pasted = true }
+}
+
 class UiInputTest {
   static run() {
     __pass = 0
@@ -39,6 +48,8 @@ class UiInputTest {
     testCursorPosVisible_()
     testCursorVisibleTrue_()
     testMouseClickPositionsCursor_()
+    testMousePressDoesNotPositionCursor_()
+    testRightClickPastes_()
     testMouseHoverIgnored_()
     testMouseDragFallsThrough_()
     testDrawShowsValue_()
@@ -304,6 +315,25 @@ class UiInputTest {
     var consumed = t.handle(ev)
     check_(consumed && t.cursor == 3,
            "TextInput mouse click: positions cursor at column")
+  }
+
+  static testMousePressDoesNotPositionCursor_() {
+    var t = TextInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.value = "hello"
+    var ev = MouseEvent.new(Mouse.button1Press, 2, 1, 2, 1)
+    var consumed = t.handle(ev)
+    check_(!consumed && t.cursor == 5,
+           "TextInput mouse press: ignored until click")
+  }
+
+  static testRightClickPastes_() {
+    var t = PasteProbe.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    var ev = MouseEvent.new(Mouse.button3Click, 2, 1, 2, 1)
+    var consumed = t.handle(ev)
+    check_(consumed && t.pasted,
+           "TextInput right click: uses the paste path")
   }
 
   static testMouseHoverIgnored_() {

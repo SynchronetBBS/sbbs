@@ -289,8 +289,7 @@ class Pane is Container {
   // `this` for clicks inside our bounds that don't land on a child,
   // so the App routes those clicks here.
   handle(ev) {
-    if (ev is MouseEvent &&
-        (ev.event == Mouse.button1Click || ev.event == Mouse.button1Press)) {
+    if (ev is MouseEvent && ev.event == Mouse.button1Click) {
       if (bounds != null) {
         var sx = ev.startX - bounds.x
         var sy = ev.startY - bounds.y

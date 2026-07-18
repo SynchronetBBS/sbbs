@@ -54,7 +54,12 @@ class CommentInput is TextInput {
   }
 
   handle(event) {
-    if (event is MouseEvent) _onFocus.call()
+    if (event is MouseEvent && event.event == Mouse.button1Click) {
+      _onFocus.call()
+    }
+    if (event is MouseEvent && parent != null && !parent.focused &&
+        (event.event == Mouse.button2Click ||
+         event.event == Mouse.button3Click)) return false
     return super.handle(event)
   }
 }
@@ -156,7 +161,8 @@ class MainPane is Pane {
 
   handle(event) {
     if (event is MouseEvent && bounds != null &&
-        bounds.contains(event.startX, event.startY)) {
+        bounds.contains(event.startX, event.startY) &&
+        event.event == Mouse.button1Click) {
       _onFocus.call()
     }
     return super.handle(event)
@@ -178,7 +184,8 @@ class MainList is ListView {
 
   handle(event) {
     if (event is MouseEvent && bounds != null &&
-        bounds.contains(event.startX, event.startY)) {
+        bounds.contains(event.startX, event.startY) &&
+        event.event == Mouse.button1Click) {
       _onFocus.call()
     }
     if (_onComment != null && event is KeyEvent &&

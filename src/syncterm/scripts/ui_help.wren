@@ -319,7 +319,7 @@ class Help is Popup {
       return true
     }
 
-    // Scrollbar drag/click.  Surface column = scrollbarColumn_; in
+    // Scrollbar click.  Surface column = scrollbarColumn_; in
     // screen coords that's bounds.x + scrollbarColumn_.  Convert
     // endY to a scrollbar-local row (0-based, accounting for the
     // top frame) and let Painter.scrollbarClick resolve the action.
@@ -328,8 +328,7 @@ class Help is Popup {
     // text padding.  scrollbarClick wants both separately —
     // maxScroll = total - viewport, but the click position maps
     // through the scrollbar height.
-    if (e == Mouse.button1Press || e == Mouse.button1Click ||
-        e == Mouse.button1DragStart || e == Mouse.button1DragMove) {
+    if (e == Mouse.button1Click) {
       if (scrollbarVisible_ &&
           me.startX == bounds.x + scrollbarColumn_) {
         var py = me.endY - bounds.y - 1

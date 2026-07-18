@@ -54,6 +54,7 @@ class UiHelpTest {
     testRandomKeyDismisses_()
     testOrdinaryClickDismisses_()
     testMiddleClickDismisses_()
+    testDragFallsThrough_()
 
     var total = __pass + __fail
     System.print("=== ui_help: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -240,5 +241,12 @@ class UiHelpTest {
     var consumed = h.handle(ev)
     check_(consumed && app.modalStack.count == 0,
            "Help: ordinary middle click dismisses")
+  }
+
+  static testDragFallsThrough_() {
+    var h = makeHelp_(20, 30, 9)
+    var ev = MouseEvent.new(Mouse.button1DragStart, 1, 3, 5, 3)
+    var consumed = h.handle(ev)
+    check_(!consumed, "Help: mouse drag falls through to screen selection")
   }
 }
