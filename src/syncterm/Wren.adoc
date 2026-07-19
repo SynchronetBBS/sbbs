@@ -933,18 +933,17 @@ settings action from the settings pane.  F2/Ctrl-E, Insert, Delete, F5/F6,
 Ctrl-S, `<`/`>`, Ctrl-D, and Alt-B invoke their documented commands.  F2 does
 nothing on the blank append row; Ctrl-E invokes the row's add operation.  The
 comment row is also clickable for direct editing.  An override may present the
-model differently, but it is responsible for preserving this user-visible
-behavior.
+model differently, but it must provide this user-visible behavior.
 
 The comment is edited only in the main screen's footer.  It is not a field in
 the full directory-entry editor.  F1 and Ctrl-Z in the footer display the
-directory help, and operation-specific alerts and confirmations retain the
+directory help.  Operation-specific alerts and confirmations display the
 context help for the operation which opened them.
 
 The footer advertises edit, copy, paste, insert, and delete only while the
 directory pane owns focus.  The SyncTERM Settings pane advertises only Help
 and Exit, matching the operations available from that pane.  While a comment
-is being edited, the footer retains the hints for the pane that opened it.
+is being edited, the footer shows the hints for the pane that opened it.
 
 Lists which support appending provide a selectable blank final row.
 Activating the blank row or pressing Insert invokes the same add operation.
@@ -962,10 +961,10 @@ then writes it immediately and returns to the directory.  A single `:port`
 suffix is accepted for network addresses.  F2 or Ctrl-E opens the full entry
 editor.  Editing a read-only entry first offers to create a personal entry
 with the same name.  F5/F6 prompts for a new name when pasting a personal
-entry; a copied read-only entry retains its name when pasted.
+entry; pasting a copied read-only entry uses the copied name.
 
-The specialized editors preserve the direct menu operations.  Enter on a
-sort profile opens its field list, and Enter on a sort field reverses that
+The specialized editors provide direct menu operations.  Enter on a sort
+profile opens its field list, and Enter on a sort field reverses that
 field; `[` and `]` move between profiles without returning to the profile
 list.  Enter on a web list edits its URI.  Font details are a flat Name plus
 four cell-size paths, and selecting a path opens the native picker directly.
@@ -973,18 +972,19 @@ The encryption screen has distinct Change Password, algorithm, and Decrypt
 operations; changing algorithms reuses the password already held by the
 host.  Palette editing exposes separate Red, Green, and Blue fields, uses
 Tab and Backtab between them, cycles the preview foreground with Up and Down,
-and uses `%` to restore all three components from the mode default.  Each
+and uses `%` to reset all three components to the mode default.  Each
 component is selected when entered, so typing replaces its current value.
 Enter commits the current component; Tab and Backtab move without accepting
 uncommitted text.
 
-Safe mode retains accepted default-entry and web-list changes in memory while
-suppressing their configuration-file writes.  Encryption conversions are
-no-ops; Change Password still presents its password prompt before returning.
+In safe mode, accepted default-entry and web-list changes update the in-memory
+model but are not written to configuration files.  Encryption conversions are
+no-ops; Change Password presents its password prompt before returning.
 
-Repeating editors retain their highlighted row after an action rebuilds the
-list.  This applies to entry logging and palettes, sort profiles and fields,
-program settings and their nested lists, web lists, and font management.
+When an action rebuilds a repeating editor's list, the editor reselects the
+same row.  This applies to entry logging and palettes, sort profiles and
+fields, program settings and their nested lists, web lists, and font
+management.
 Directory editing commands apply only while the directory pane owns focus.
 Directory, pasted-entry, command-line-save, sort-profile, and web-list name
 prompts repeat after an invalid or duplicate name.  Entry-editor prompts
@@ -992,73 +992,71 @@ distinguish empty, reserved, and duplicate names.  Directory add and
 command-line-save prompts treat an empty edit as cancellation while still
 distinguishing reserved and duplicate names; an entry creation failure is
 reported separately.  Sort-profile field navigation returns to the last
-profile visited.
-New entries are sorted again after their connection details are accepted.
-Quick Connect retains the directory address field's 64-character input limit.
-Current Screen Mode retains its original distinction from the Startup Screen
-Mode setting in both its dialog title and context help.
-Directory password and system-password rows remain obscured in the editor
+profile visited.  New entries are inserted according to the active sort
+profile after their connection details are accepted.  Quick Connect limits
+the directory address field to 64 characters.  Current Screen Mode and
+Startup Screen Mode use distinct dialog titles and context help.
+Directory password and system-password rows are obscured in the editor
 list, but selecting one uses ordinary text editing so the existing value can
-be inspected and corrected.  Personal-directory encryption prompts remain
+be inspected and corrected.  Personal-directory encryption prompts are
 masked.
 Rate choices select the first supported rate at or above a configured value,
-or Current when no supported rate is high enough, matching the directory
-editor's established catalog behavior.
+or Current when no supported rate is high enough.
 The window-close event follows the main menu's normal exit path even while a
 nested editor, prompt, help screen, or offline scrollback view is open.
 After confirmation, `Menu.quitApplication()` sets the process exit latch;
-Escape and pane close buttons still only leave a connected Alt+E menu.
+Escape and pane close buttons leave only a connected Alt+E menu.
 Before stopping, the menu dismisses nested screens through their normal close
 path so accepted edits reach the owning screen's persistence boundary.  A
 failed close-time save leaves the menu open instead of discarding the edits.
 Accepted UIFC colour changes rebuild the active Wren menu theme immediately.
 Renaming a persisted entry also renames its per-entry cache directory after
 the directory file is written successfully.
-Font Management treats an empty name as cancellation when adding a record,
-but otherwise preserves the entered name and the file returned by the picker
-without adding validation that the native menu did not perform.  It reports a
-full custom-font table before prompting for another name.
-The preformatted File Locations and Build Options viewers retain the original
-titles, label emphasis, indentation, dimensions, and section layout while
-using the shared Markdown-capable Help renderer.
-Palette Insert and Delete are exposed only while another color can be added or
-removed, and sort-profile Paste is exposed only after Copy or Cut has supplied
-a clipboard profile.
-Insert, Delete, and the blank add row remain available from Font Details as
-well as the outer Font Management list.
+Font Management treats an empty name as cancellation when adding a record.
+Otherwise, it accepts the entered name and the file returned by the picker as
+the record values.  It reports a full custom-font table before prompting for
+another name.  The preformatted File Locations and Build Options viewers use
+the titles `File Locations` and `Build Options`; their Markdown content defines
+the label emphasis, indentation, dimensions, and section layout rendered by
+the shared Help viewer.
+Palette Insert is exposed only while the palette has room for another color,
+and Delete is exposed only while a color can be deleted.  Sort-profile Paste
+is exposed only after Copy or Cut has supplied a clipboard profile.  Font
+Details and the outer Font Management list both support Insert, Delete, and
+the blank add row.
 Adding a web list skips its initial fetch when no cache path is available but
-still records the configuration; explicit refresh continues to report the
-missing cache.
+records the configuration; explicit refresh reports the missing cache.
 Left and Right move directly between the directory and settings panes.
 Leaving the comment field by mouse, pane navigation, or application exit
-commits the accepted edit before focus moves.  The entry editor keeps its
-highlighted field while `[` and `]` move between entries.  Program Settings
-again summarizes enabled audio backends, and entry rows distinguish automatic
+commits the accepted edit before focus moves.  The entry editor reselects its
+highlighted field after `[` and `]` move between entries.  Program Settings
+summarizes enabled audio backends, and entry rows distinguish automatic
 terminal types, unset passwords, and nonzero communication rates.
 Web-list edits update the in-memory configuration immediately and are written
 when the Web Lists screen closes.
-Saving an existing directory entry preserves its `Added` timestamp.  Clearing
-the Terminal Type field writes the empty override so a subsequent directory
-reload continues to use automatic terminal-type selection.
-In the palette component editor, `%` restores all three components of the
-selected colour from the mode palette while retaining the current field.
+Saving an existing directory entry does not change its `Added` timestamp.
+Clearing the Terminal Type field writes the empty override, so a subsequent
+directory reload uses automatic terminal-type selection.  In the palette
+component editor, `%` resets all three components of the selected colour from
+the mode palette without moving focus to another field.
 Creating or copying a personal entry with the same name as a read-only entry
-replaces that row immediately.  The model retains the shadowed entry so it
-reappears if the personal override is deleted, or under its original name if
-the personal entry is renamed.
+replaces that row immediately.  The model stores the read-only entry beneath
+the personal override.  Deleting the override exposes the read-only entry;
+renaming the personal entry exposes the read-only entry under its own name.
 Adding an entry may create such an override.  Pasting a copied personal entry
 instead requires a name unique across all currently visible entries.
 
 The inactive directory comment is centered across its line.  While the
-directory pane has focus, its selection supplies the OS window title; the
-settings pane restores the bare SyncTERM version.  Editing a comment leaves
-the title from the pane where editing began until focus moves again.  The
-active editor is left-aligned within the middle `screen width - 4` cells.
+directory pane has focus, its selection supplies the OS window title; while
+the settings pane has focus, the title is the bare SyncTERM version.  Editing
+a comment leaves the title from the pane where editing began until focus moves
+again.  The active editor is left-aligned within the middle
+`screen width - 4` cells.
 Its existing value initially appears selected in the text-input lightbar, so
 typing or deleting replaces the complete comment.  Cursor movement or mouse
-positioning preserves the value and switches to the normal menu colors for
-ordinary editing.  Leaving the editor restores the centered inactive row
-immediately, even when its value was unchanged.
+positioning leaves the value unchanged and switches to the normal menu colors
+for ordinary editing.  Leaving the editor immediately centers the inactive
+row, even when its value was unchanged.
 
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,
@@ -1066,21 +1064,22 @@ and encryption panes assign Markdown `helpText` to their panes and nested
 dialogs.  F1 therefore resolves to the general screen description from the
 list and to field-specific help while a choice or prompt is open.  Menu
 overrides should use the normal `Help` Markdown contract described under
-<<ui-help,Help viewer>>; the removed UIFC `helpbuf` markup is not parsed.
+<<ui-help,Help viewer>>.  Help content must be Markdown; UIFC `helpbuf` markup
+is unsupported.
 
 The shipped editors distinguish accepting an edit from writing its backing
 file.  A confirmed entry field immediately
 updates the C-owned `BBS`, and a confirmed program setting is immediately
 applied to the running settings.  Their files are written when the owning
-entry or Program Settings editor closes.  Font changes remain in the font
+entry or Program Settings editor closes.  Font changes stay in the font
 model until Font Management closes.  Sort-profile operations update the
 working profile model, which is written when Sort Profiles closes; profile
 cycling from the main directory writes immediately.  None of these screens
 exposes the persistence boundary as a selectable Save or Cancel row.
 
 Escape from a nested prompt or choice cancels only that nested operation.
-Escape from an owning editor closes it and retains the edits already made.
-An owning menu remains on the modal stack and is rendered behind a nested
+Escape from an owning editor closes it without rolling back accepted edits.
+An owning menu stays on the modal stack and is rendered behind a nested
 prompt, picker, viewer, or submenu until that child is dismissed.
 
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
@@ -1442,14 +1441,11 @@ Hook.onMatch("user (joe|jane|bob)") { |m|
 
 `m[0]` is the matched substring; `m[1..]` are the user-pattern's
 capture groups in registration order.  Both `onMatch` and
-`onMatchClean` are passthrough-only — the callback's return value
-is ignored, and the matched text always reaches the terminal.  The
-historical "Bool true to drop the matched bytes" contract was
-misleading: it dropped only the single byte that completed the
-match (every prior byte already went through cterm), so users
-never actually got a clean "drop the matched span."  Anyone needing
-wire-level drop should use `Hook.onInput`, which is byte-granular
-by design.
+`onMatchClean` are passthrough-only: the callback's return value is
+ignored, and the matched text always reaches the terminal.  Matching
+completes only after preceding bytes have passed through cterm, so these
+hooks cannot drop a complete matched span.  Use the byte-granular
+`Hook.onInput` hook when input must be dropped before reaching cterm.
 
 `Hook.onMatchClean(pattern, fn)` is the escape-aware variant — the
 byte stream feeding the regex VM is pre-filtered through SyncTERM's
@@ -2216,8 +2212,7 @@ writing into a `Cell` field via `fgRgb=` / `bgRgb=`.
 
 === Input
 
-Unified event reader.  Replaces the legacy `getch` / `getMouse`
-two-phase split.
+Unified blocking and nonblocking reader for keyboard and mouse events.
 
 [options="header",cols="2,3"]
 |===
@@ -2609,17 +2604,15 @@ encoding the bytes in a screen cell are in.
 
 A `_b` suffix on a codepage name means "broken vertical" — the
 font variant draws box-drawing pipe characters with one-pixel gaps
-between rows, matching the historical rendering of certain hardware
-terminals.  The base codepage and its `_b` variant cover the same
-character set; only the glyph shapes differ.
+between rows.  The base codepage and its `_b` variant cover the same
+character set; only the box-drawing glyph shapes differ.
 
 [options="header",cols="2,1,4"]
 |===
 | Constant | Index | Description
 
-| `cp437`        | 0  | IBM PC CP437 — original DOS character set,
-                       English plus box-drawing.  The default for
-                       traditional ANSI BBSes.
+| `cp437`        | 0  | IBM PC code page 437 — English plus
+                       box-drawing.  The default for traditional ANSI BBSes.
 | `cp1251`       | 1  | Windows-1251 — Cyrillic (Russian, Bulgarian,
                        Ukrainian, etc.) in a "swiss" font variant.
 | `cp1251_b`     | 2  | Windows-1251 with the broken-vertical
@@ -2882,17 +2875,16 @@ useful slots; every slot is reachable numerically through
 | `Font.microKnightPlus`    | 39 | MicroKnight Plus — Amiga.
 | `Font.topazPlus`          | 40 | Topaz Plus — Amiga.
 | `Font.microKnight`        | 41 | MicroKnight — Amiga.
-| `Font.topaz`              | 42 | Topaz — Amiga (the original Workbench font).
+| `Font.topaz`              | 42 | Topaz — Amiga Workbench font.
 | `Font.prestel`            | 43 | Prestel — UK Viewdata mosaic.
 | `Font.atariSt`            | 44 | Atari ST GEM.
 | `Font.ripterm`            | 45 | RIPterm — RIP graphics terminal font.
 |===
 
 The "thin" variants are the same character set rendered with thinner
-strokes, matching late-1980s VGA BIOS fonts.  A "swiss" variant uses
-the Helvetica-style sans rendering common on certain Amiga and DOS
-displays.  An "(a)" / "(b)" / "(c)" annotation marks distinct
-historical font releases that use the same codepage encoding.
+strokes in the VGA BIOS style.  A "swiss" variant uses a
+Helvetica-style sans rendering.  An "(a)" / "(b)" / "(c)" annotation
+distinguishes bundled font variants that use the same codepage encoding.
 
 [options="header",cols="2,3"]
 |===
@@ -3086,8 +3078,8 @@ Connection-level send and receive.
 
 | `Conn.paste()`
 | Paste from the system clipboard onto the wire — codepage-aware,
-  bracketed-paste-aware.  No-op when the clipboard is empty.  Wraps
-  the historical Shift+Insert handler.
+  bracketed-paste-aware.  No-op when the clipboard is empty.  This is
+  the operation bound to Shift+Insert by the default key hooks.
 
 | `Conn.scrollback()`
 | Invoke `ScrollbackView.run()` in the connected VM.  The Wren view
@@ -3097,14 +3089,14 @@ Connection-level send and receive.
   path.
 
 | `Conn.upload()`
-| Open the upload picker / dialog (equivalent to the legacy Alt+U
-  path).  No-op outside an active session.  Mouse events are
-  refreshed on the way out.
+| Open the upload picker or dialog.  This is the operation bound to
+  Alt+U by the default key hooks.  No-op outside an active session.
+  Mouse events are refreshed on the way out.
 
 | `Conn.download()`
-| Open the download picker / dialog (equivalent to the legacy Alt+D
-  path).  No-op outside an active session.  Mouse events are
-  refreshed on the way out.
+| Open the download picker or dialog.  This is the operation bound to
+  Alt+D by the default key hooks.  No-op outside an active session.
+  Mouse events are refreshed on the way out.
 
 | `Conn.connected`
 | Bool — is the link up?
@@ -3164,12 +3156,10 @@ Mirrors the `<<sftperror,SFTPError>>` / `<<fileerror,FileError>>` /
 
 === Capture [[capture]]
 
-Streaming-log control for the active session.  Replaces the
-historical `CTerm.logMode` / `CTerm.logPaused` getters and the
-uifc-driven `capture_control` dialog (the Wren-side `CaptureMenu`
-in `scripts/auto/connected/capture_menu.wren` now drives the
-user-facing Alt-C flow on top of these primitives).  All methods
-are no-ops when no terminal is active.
+Streaming-log control for the active session.  The Wren-side
+`CaptureMenu` in `scripts/auto/connected/capture_menu.wren` implements
+the user-facing Alt+C flow with these primitives.  All methods are
+no-ops when no terminal is active.
 
 [options="header",cols="2,3"]
 |===
@@ -3206,10 +3196,10 @@ are no-ops when no terminal is active.
 | Clear the PAUSED bit.  No-op when not capturing.
 |===
 
-The screen-snapshot side of the historical capture dialog (Binary
-+ optional SAUCE) lives on `<<cterm,CTerm.saveScreenshot>>` rather
-than on `Capture` — it's a one-shot terminal-state snapshot, not a
-log.
+Use `<<cterm,CTerm.saveScreenshot>>` for a one-shot binary screen
+snapshot with optional SAUCE metadata.  Screen snapshots are terminal
+state rather than streaming logs and therefore are not part of
+`Capture`.
 
 === CTerm [[cterm]]
 
@@ -3509,8 +3499,8 @@ available in a connected VM.
 | Menu.load(password)
 | Load all lists and replace the current model only after the complete
   load succeeds.  `password` is a String or `null`.  Returns a
-  `MenuReadStatus` code.  A failed password, decrypt, parse, or
-  migration leaves the preceding model and its generation intact.
+  `MenuReadStatus` code.  Any password, decryption, parse, or migration
+  failure leaves the current model and its generation unchanged.
 
 | Menu.quickConnect(url)
 | Parse a String using SyncTERM's normal quick-connect URL rules and
@@ -4144,7 +4134,7 @@ character).
 |===
 | Constant | Code | Description
 | `none`   | 0    | RIP support disabled for this connection.
-| `v1`     | 1    | RIPscrip v1.54 — the historic dial-up version.
+| `v1`     | 1    | RIPscrip v1.54 compatibility mode.
 | `v3`     | 2    | SyncTERM's "idealized" RIP v3 — bug-fixed and
                     extended; **not** bug-compatible with v1.54.
 |===
@@ -4212,8 +4202,7 @@ pre-bound from these at module load.
   bytes; no path separators / NUL / control bytes / `.` / `..` /
   Windows reserved devices, but spaces / leading dots / parens
   etc. allowed).  Returns `null` when `DownloadPath` is empty,
-  equal to the user's `$HOME` (the "unfortunate default" guard
-  for old configs), or doesn't exist as a directory on disk —
+  equal to the user's `$HOME`, or doesn't exist as a directory on disk —
   consumer code uniformly null-checks `Download` before use, so
   routing the configured-but-missing case through the same null
   gate keeps every call site simple.  Used as the module-level
@@ -4376,8 +4365,8 @@ if (Host.launchScript != null && Host.launchScript.endsWith("foo.wren")) {
 | `Host.maxOOIIMode`
 | Highest valid OOII mode value (returns `0` in
   `WITHOUT_OOII` builds).  The `online_menu` wraps the OOII
-  increment back to `0` when it exceeds this cap, matching the
-  historical SM_OOII cycle.
+  increment back to `0` when it exceeds this cap, so the mode cycle is
+  `0` through `Host.maxOOIIMode`.
 
 | `Host.editBBSList()`
 | Suspend terminal byte consumption and enter the persistent trusted
@@ -4871,13 +4860,12 @@ Status.callable = Fn.new { |surf|
 ----
 
 The default implementation lives at
-`scripts/auto/connected/status_default.wren` and matches the
-historical C bar's layout (`name (flags) │ ConnType │ speed │
-HH:MM:SS │ ALT-Z menu`) with right-pinned indicators (mouse `M`,
-SFTP arrows).  To override, drop a same-named file in your
-auto-load dir (overrides the embedded default cleanly), or set
-`Status.callable = ...` from any later script — the host releases
-the previous handle so swapping is leak-free.
+`scripts/auto/connected/status_default.wren`.  It uses the layout
+`name (flags) │ ConnType │ speed │ HH:MM:SS │ ALT-Z menu` with
+right-pinned indicators for mouse mode (`M`) and SFTP transfers
+(arrows).  To override it, place a same-named file in the auto-load
+directory, or set `Status.callable = ...` from any later script.  The
+host releases the previous handle when the callable changes.
 
 [options="header",cols="2,3"]
 |===
