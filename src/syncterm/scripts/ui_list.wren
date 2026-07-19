@@ -615,6 +615,8 @@ class ListView is Widget {
     var e = me.event
     var overScrollbar = scrollbarVisible_ &&
         me.startX == bounds.x + scrollbarColumn_
+    var overSeparator = scrollbarVisible_ && _sbSep &&
+        me.startX == bounds.x + separatorColumn_
 
     // Wheel events over list content move one item.  Over the scrollbar,
     // move a viewport page while preserving the lightbar's screen row.
@@ -633,6 +635,7 @@ class ListView is Widget {
     // UIFC list actions occur on a completed button-1 click.  Press
     // and drag events fall through to the screen-selection path.
     if (e != Mouse.button1Click) return false
+    if (overSeparator) return true
 
     if (overScrollbar) {
       var py = me.startY - bounds.y

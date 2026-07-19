@@ -93,6 +93,12 @@ class PickerList is ListView {
     if (bounds != null && bounds.contains(event.startX, event.startY) &&
         event.event == Mouse.button1Click && !focused) {
       _owner.focusWidget(this)
+      if (scrollbarVisible_ &&
+          event.startX == bounds.x + scrollbarColumn_) {
+        return super.handleMouse_(event)
+      }
+      if (scrollbarVisible_ && scrollbarSeparator &&
+          event.startX == bounds.x + separatorColumn_) return true
       var row = scrollTop + event.startY - bounds.y
       if (row >= 0 && row < count) selected = row
       return true

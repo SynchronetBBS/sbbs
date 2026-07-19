@@ -6104,7 +6104,8 @@ each wheel notch over the list content moves the selection one row using
 the same wrapping rules as Up and Down.  Over the scrollbar, a wheel notch
 moves one page.  The scrollbar's top and bottom arrow cells invoke PageUp
 and PageDown; track clicks jump proportionally while keeping the lightbar
-on the same screen row.  Button-1 drags fall through to screen selection.
+on the same screen row.  The separator column between content and scrollbar
+is inert.  Button-1 drags fall through to screen selection.
 
 `wrap=` controls single-row Up/Down movement and defaults to `true`:
 Up at the first row wraps to the last, and Down at the last wraps to

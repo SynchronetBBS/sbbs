@@ -34,6 +34,7 @@ class UiDrawTest {
     testFrameTitleCentered_()
     testFrameTitleTruncated_()
     testFrameTitleNullPlain_()
+    testScrollbarClickInvertsSingleCellThumb_()
 
     // Pane.
     testPaneTitleSetter_()
@@ -248,6 +249,25 @@ class UiDrawTest {
     check_(s.cellAt(0, 0).ch == "┌" && s.cellAt(2, 0).ch == "─" &&
            s.cellAt(5, 0).ch == "┐",
            "Painter.frameTitle: null title draws plain frame")
+  }
+
+  static testScrollbarClickInvertsSingleCellThumb_() {
+    var h = 7
+    var total = 100
+    var viewport = 7
+    var glyphs = Theme.default.glyphs
+    var ok = true
+    var py = 1
+    while (py < h - 1) {
+      var top = Painter.scrollbarClick(py, h, total, viewport, 0)
+      var s = Surface.new(1, h)
+      Painter.scrollbar(s, 0, 0, h, top, total, viewport, glyphs,
+                        testStyle_, styleB_)
+      if (s.cellAt(0, py).ch != glyphs["scrollbar.thumb"]) ok = false
+      py = py + 1
+    }
+    check_(ok,
+           "Painter.scrollbarClick: one-cell thumb lands on clicked row")
   }
 
   // ----- Pane ------------------------------------------------------

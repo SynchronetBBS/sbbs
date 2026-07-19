@@ -221,17 +221,21 @@ class Painter {
     if (h <= 0 || total <= 0) return 0
     var maxScroll = (total - viewport).max(0)
     var hasArrows = h >= 3
+    var trackH = h
+    var pos = py
     if (hasArrows) {
       if (py <= 0) return (current - 1).max(0).min(maxScroll)
       if (py >= h - 1) return (current + 1).max(0).min(maxScroll)
-      var trackH = h - 2
-      if (trackH <= 1) return 0
-      var pos = py - 1
-      return (pos * maxScroll / (trackH - 1)).floor.max(0).min(maxScroll)
+      trackH = h - 2
+      pos = py - 1
     }
-    if (h <= 1) return 0
-    var clamped = py.max(0).min(h - 1)
-    return (clamped * maxScroll / (h - 1)).floor.max(0).min(maxScroll)
+    if (trackH <= 1) return 0
+    pos = pos.max(0).min(trackH - 1)
+    var span = trackH - 1
+    // scrollbar() floors the thumb's track offset.  Round this inverse
+    // upward so a one-cell thumb is drawn on the clicked row instead of
+    // commonly landing one row above it after a second floor operation.
+    return ((pos * maxScroll + span - 1) / span).floor.max(0).min(maxScroll)
   }
 
   // Paint a UIFC-style drop-shadow on the cells around the rect at

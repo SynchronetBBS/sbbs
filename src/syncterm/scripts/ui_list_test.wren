@@ -61,6 +61,7 @@ class UiListTest {
     testMousePressDoesNotSelectRow_()
     testMouseHoverIgnored_()
     testMouseClickScrollbarTrackBottom_()
+    testMouseClickScrollbarSeparatorIgnored_()
     testMouseClickScrollbarDownArrow_()
     testMouseClickScrollbarUpArrow_()
     testMouseDragScrollbar_()
@@ -402,6 +403,16 @@ class UiListTest {
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == 15 && l.selected == 15,
            "ListView.handle Mouse: scrollbar track click jumps viewport")
+  }
+
+  static testMouseClickScrollbarSeparatorIgnored_() {
+    var l = makeList_(20)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    // Right-side scrollbar is x=10; its separator is x=9.
+    var ev = MouseEvent.new(Mouse.button1Click, 9, 3, 9, 3)
+    var consumed = l.handle(ev)
+    check_(consumed && l.scrollTop == 0 && l.selected == 0,
+           "ListView.handle Mouse: scrollbar separator is inert")
   }
 
   static testMouseClickScrollbarDownArrow_() {
