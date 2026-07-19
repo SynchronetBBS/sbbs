@@ -93,12 +93,12 @@ struct syncterm_settings {
 	bool                  webgetUserList;
 	char                  keyDerivationIterations[32];	/* KDF spec string, e.g. "scrypt-N15" */
 	enum CursorTypeEnum   defaultCursor;
-	unsigned              uifc_hclr;
-	unsigned              uifc_lclr;
-	unsigned              uifc_bclr;
-	unsigned              uifc_cclr;
-	unsigned              uifc_lbclr;
-	unsigned              uifc_lbbclr;
+	unsigned              theme_frame_color;
+	unsigned              theme_text_color;
+	unsigned              theme_background_color;
+	unsigned              theme_inverse_color;
+	unsigned              theme_lightbar_color;
+	unsigned              theme_lightbar_background_color;
 };
 
 extern ini_bitdesc_t audio_output_bits[];
@@ -138,7 +138,7 @@ bool check_exit(bool force);
 void set_default_cursor(void);
 
 /* Cross-thread popup queue.  Background threads post (title, body)
- * pairs here instead of calling uifc directly; the doterm() main loop
+ * pairs here instead of drawing dialogs directly; the doterm() main loop
  * drains the queue and displays them on the UI thread. */
 void popup_queue_post(const char *title, const char *body);
 bool popup_queue_drain(void);

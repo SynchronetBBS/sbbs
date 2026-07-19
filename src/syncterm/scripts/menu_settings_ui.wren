@@ -1,7 +1,7 @@
-import "syncterm" for Host, Key
+import "syncterm" for FilePickerOptions, Host, Key
 import "syncterm_menu" for Menu, MenuEncryption, MenuFontSlot
 import "menu_ui" for MenuUi
-import "menu_theme" for ClassicTheme
+import "classic_theme" for ClassicTheme
 import "menu_bbs_editor" for BbsEditor
 import "ui_popup" for Alert
 import "ui_help" for Help
@@ -150,7 +150,8 @@ class SettingsMenu {
         helpItem_("Scaling", "Cycle the display scaling algorithm") +
         helpItem_("Invert Mouse Wheel", "Reverse wheel-up and wheel-down") +
         helpItem_("Key Derivation Shift", "The scrypt cost used for list encryption") +
-        helpItem_("UIFC Colours", "The colors used by menus and the native picker")
+        helpItem_("Classic Theme Colours",
+            "The colours used by the shipped menu and file picker")
     if (!connected) {
       text = text + helpItem_("Custom Screen Mode",
           "The dimensions, font height, and aspect ratio of the custom mode")
@@ -276,12 +277,12 @@ class SettingsMenu {
   }
 
   static colorHelp_() {
-    return "# UI Color\n\nSelect the color used for this part of the " +
-        "menu interface and native file picker."
+    return "# Theme Colour\n\nSelect the colour used for this part of " +
+        "the shipped menu and file picker."
   }
 
   static colorsHelp_() {
-    return "# UIFC Colours\n\nSelect the menu element whose colour " +
+    return "# Classic Theme Colours\n\nSelect the interface element whose colour " +
         "you want to change."
   }
 
@@ -377,7 +378,7 @@ class SettingsMenu {
       rows.add([14, settingsLine_("Scaling", Menu.scalingModes[s.scalingMode])])
       rows.add([15, settingsLine_("Invert Mouse Wheel", yesNo_(s.invertWheel))])
       rows.add([16, settingsLine_("Key Derivation Shift", s.kdfShift)])
-      rows.add([17, "UIFC Colours"])
+      rows.add([17, "Classic Theme Colours"])
       if (!connected) rows.add([18, "Custom Screen Mode"])
 
       var picked = MenuUi.choice(app, "Program Settings", rows, selected,
@@ -483,7 +484,7 @@ class SettingsMenu {
         [26, settingsLine_("Lightbar Background",
             Menu.backgroundColors[s.lightbarBackgroundColor])]
       ]
-      var picked = MenuUi.choice(app, "UIFC Colours", rows, selected,
+      var picked = MenuUi.choice(app, "Classic Theme Colours", rows, selected,
           colorsHelp_(), Fn.new {|value|
         selected = value
         editColor_(app, s, value)
@@ -830,7 +831,7 @@ class SettingsMenu {
           var title = "%(fontSizeName_(value)) %(font.name)"
           var path = font.path(value)
           var file = Host.pickFile(path == null ? "." : path,
-              fontMask_(value), 1, title)
+              fontMask_(value), FilePickerOptions.maskLocked, title)
           app.restoreFocus()
           if (file != null) font.setFile(value, file)
         }

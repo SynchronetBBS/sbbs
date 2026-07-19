@@ -15,7 +15,10 @@ Add Wren scripting engine, REPL console with Ctrl+`
 Make the Wren REPL and error indicator available in the main menu
 Replace the dialing directory and settings UI with a persistent Wren menu
 Isolate trusted menu scripts from per-connection Wren scripts
-Retain UIFC only for the trusted native file picker
+Replace the native file picker with an isolated persistent Wren VM
+Remove SyncTERM's UIFC dependency
+Rename the menu and picker colour settings to Classic Theme
+Remove the nonfunctional -e escape-delay option
 Place Wren UI scrollbars on the right
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support

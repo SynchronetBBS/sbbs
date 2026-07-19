@@ -1,6 +1,5 @@
-// transfer_pick.wren -- Wren replacement for the C-side begin_upload()
-// and begin_download() uifc dialogs.  Each App pops a ListView for
-// the protocol, optionally a file picker (uifc filepick wrapper) or
+// transfer_pick.wren -- upload and download selection flows. Each App
+// pops a ListView for the protocol, optionally a file picker or
 // Prompt for a filename, then dispatches to Transfer.upload /
 // Transfer.uploadBatch / Transfer.download.  The dispatched call
 // blocks (worker thread + main-thread TransferApp loop) until the
@@ -19,7 +18,8 @@
 //   begin_download's gate).  For plain XMODEM the user is prompted
 //   for a filename first (the wire stream has no header).
 
-import "syncterm" for BBS, CTerm, Emulation, Host, Input, Screen, Transfer
+import "syncterm" for BBS, CTerm, Emulation, FilePickerOptions, Host,
+                       Input, Screen, Transfer
 import "ui_app"     for App
 import "ui_pane"    for Pane
 import "ui_picker"  for ListPicker
@@ -66,11 +66,10 @@ class UploadApp {
           var paths = files.map {|f| f.toString }.toList
           Transfer.uploadBatch(kind, paths, lastCh)
         } else {
-          // Single-file picker.  ALLOWENTRY (= 1) lets the user type a
-          // path the picker UI didn't enumerate (e.g. typing in a
-          // file outside the upload dir).  Mirrors the C path's
-          // UIFC_FP_ALLOWENTRY in begin_upload.
-          var file = Host.pickFile(BBS.ulDir, null, 1)
+          // Let the user type a path outside the configured upload
+          // directory as well as choose a listed file.
+          var file = Host.pickFile(BBS.ulDir, null,
+              FilePickerOptions.allowEntry)
           if (file == null) return
           Transfer.upload(kind, file.toString, lastCh)
         }

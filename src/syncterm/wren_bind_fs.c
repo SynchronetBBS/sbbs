@@ -1020,8 +1020,7 @@ fn_Host_uploadPath(WrenVM *vm)
 	wrenSetSlotString(vm, 0, st->bbs->uldir);
 }
 
-/* Resolve `slot`'s value into an initial-path string for the
- * filepick widget.  Accepts:
+/* Resolve `slot`'s value into an initial-path string for the picker. Accepts:
  *   - String: used verbatim.
  *   - Directory foreign: uses its resolved path (handles Cache's
  *     lazy-resolve via wd_resolve).
@@ -1120,12 +1119,12 @@ picker_call_init(struct wren_picker_call *call, enum wren_picker_mode mode,
 	call->initial_path = initial;
 	call->mask = mask;
 	call->options = options;
-	call->colors[0] = settings.uifc_hclr;
-	call->colors[1] = settings.uifc_lclr;
-	call->colors[2] = settings.uifc_bclr;
-	call->colors[3] = settings.uifc_cclr;
-	call->colors[4] = settings.uifc_lbclr;
-	call->colors[5] = settings.uifc_lbbclr;
+	call->colors[0] = settings.theme_frame_color;
+	call->colors[1] = settings.theme_text_color;
+	call->colors[2] = settings.theme_background_color;
+	call->colors[3] = settings.theme_inverse_color;
+	call->colors[4] = settings.theme_lightbar_color;
+	call->colors[5] = settings.theme_lightbar_background_color;
 }
 
 /* Host.pickFile(initialPath, mask, opts) opens the isolated Wren picker.
@@ -1265,9 +1264,8 @@ wren_file_consume_write(WrenVM *vm, int slot, const char **out_path)
  *                    overwrite (open() uses "wb" — truncate)
  *
  * The consent is single-shot: the first successful open()+close()
- * marks the File inert; subsequent ops abort.  No persisted token —
- * write consent doesn't replay across sessions (the historical
- * .token mechanism only covers read consent for upload resume). */
+ * marks the File inert; subsequent ops abort. No persisted token is
+ * created; write consent does not replay across sessions. */
 void
 fn_Host_pickSavePath(WrenVM *vm)
 {

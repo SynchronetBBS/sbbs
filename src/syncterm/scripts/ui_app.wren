@@ -269,9 +269,9 @@ class App {
 
   // ----- Focus hand-off ------------------------------------------
   //
-  // Wrap blocking host UIs that own the screen themselves (the
-  // filepicker, modal C dialogs) so the App's foreground tree
-  // doesn't *also* draw as focused.  Without this, the host UI's
+  // Wrap picker calls while the picker VM owns the screen so the
+  // App's foreground tree doesn't *also* draw as focused. Without
+  // this, the picker's
   // pre-call save captures the App's panes in their focused colour
   // scheme, and the post-call restore re-paints them that way until
   // the next App-driven repaint — visually, two widgets are focused
@@ -286,7 +286,7 @@ class App {
   // release is a no-op.  Operates on `modalTop` so a release while
   // a modal is up correctly defocuses the modal's leaf, not the
   // root's.  Forces an immediate paint so the unfocused state
-  // lands on screen *before* the host UI's screen save.
+  // lands on screen *before* the picker host's screen save.
   releaseFocus() {
     if (_released) return
     _released = true

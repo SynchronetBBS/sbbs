@@ -52,10 +52,8 @@ void show_status_url(const char *url);
 void do_paste(void);
 
 /* Save the current screen in CP437 mode after resetting font slots
- * and the legacy bg-bright / no-blink flags — used by every uifc-
- * shaped dialog so the saved snapshot matches the cp437 attribute
- * model uifc paints in.  Caller restores via restorescreen +
- * freescreen.  Returns NULL on alloc failure. */
+ * and the legacy bg-bright / no-blink flags. Caller restores via
+ * restorescreen + freescreen. Returns NULL on allocation failure. */
 struct ciolib_screen *cp437_savescrn(void);
 
 /* Save the current cterm area (NOT including the status bar) as IBM-

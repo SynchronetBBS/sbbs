@@ -37,7 +37,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\conio\conio_sdl.props" />
-    <Import Project="..\uifc\uifc.props" />
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\build\tcpip.props" />
     <Import Project="..\comio\comio.props" />
@@ -52,7 +51,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\xpdev\xpdev_mt.props" />
     <Import Project="..\conio\conio_sdl.props" />
-    <Import Project="..\uifc\uifc.props" />
     <Import Project="..\build\undeprecate.props" />
     <Import Project="..\build\tcpip.props" />
     <Import Project="..\comio\comio.props" />
@@ -119,7 +117,6 @@
     <ClCompile Include="..\sbbs3\telnet.c" />
     <ClCompile Include="..\sbbs3\xmodem.c" />
     <ClCompile Include="..\sbbs3\zmodem.c" />
-    <ClCompile Include="..\uifc\filepick.c" />
     <ClCompile Include="..\xpdev\xpbeep.c" />
     <ClCompile Include="bbslist.c" />
     <ClCompile Include="conn.c" />
@@ -140,7 +137,6 @@
     <ClCompile Include="telnets.c" />
     <ClCompile Include="telnet_io.c" />
     <ClCompile Include="term.c" />
-    <ClCompile Include="uifcinit.c" />
     <ClCompile Include="window.c" />
     <ClCompile Include="webget.c" />
   </ItemGroup>
@@ -153,9 +149,6 @@
     </ProjectReference>
     <ProjectReference Include="..\sftp\sftp.vcxproj">
       <Project>{4c69a1d2-182a-45d3-ad33-54a8a91b387d}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\uifc\uifc.vcxproj">
-      <Project>{7bfb9820-0e57-4be4-9be9-e0a687874e19}</Project>
     </ProjectReference>
     <ProjectReference Include="..\xpdev\xpdev_mt.vcxproj">
       <Project>{aeed3a81-3a47-4953-be51-fd5e08283890}</Project>

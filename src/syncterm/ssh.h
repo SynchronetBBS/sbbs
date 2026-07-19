@@ -52,8 +52,8 @@ extern sftpc_state_t  sftp_state;
 extern _Atomic bool   sftp_available;
 #endif
 
-/* Deprecated — remove once telnets.c / uifc call sites no longer
-   reference it.  Kept for link-compat during the st-dssh branch. */
+/* Deprecated — remove once the remaining TLS call sites no longer
+   reference it. Kept for link compatibility. */
 void cryptlib_error_message(int status, const char *msg);
 
 #endif	// ifndef _SSH_H_

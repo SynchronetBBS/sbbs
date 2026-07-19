@@ -2,7 +2,7 @@
 .SH NAME
 syncterm \- BBS terminal program
 .SH SYNOPSIS
-\fBsyncterm\fP [\-46chqrts] [\-b\fIlist\fP] [\-e\fIdelay\fP]
+\fBsyncterm\fP [\-46chqrts] [\-b\fIlist\fP]
 [\-i\fIiface\fP] [\-l\fIlines\fP] [\-n\fIconfig\fP]
 [\-w\fIscript\fP] [\fIURL\fP]
 .PP
@@ -21,15 +21,6 @@ Only resolve IPv6 addresses
 Specify an alternative BBS list path
 .IP \fB\-c\fP
 Hide the status line
-.IP \fB\-e\fIdelay\fR
-Specify the "escape delay" in milliseconds for curses(3) mode.
-Since curses uses the escape key for its own purposes, using the escape key for
-other control requires a timeout.
-If this timeout is too low, extended keystrokes such as arrow keys will be
-interpreted as an escape keypress followed by other characters.
-If this delay is too high, there will be a large delay after a single escape is
-pressed.
-If an escape delay of less than 10ms is specified, it is forced to 25ms.
 .IP \fB\-h\fP
 Specifies the default scheme for \fIURL\fP to be ssh://
 .IP \fB\-i\fIinterface\fR
@@ -159,9 +150,7 @@ major usability issues.
 The escape character (ASCII 27) is used in curses and ANSI modes to begin a
 control sequence. As such, there is a delay to detect if the next character
 continues the escape sequence or is a base escape. Because of this, there will
-be a perceptible delay when the escape key is used. This delay can be adjusted
-using the \fI\-e\fP parameter, but selecting the "correct" value is a dark art
-since any value is provably incorrect.
+be a perceptible delay when the escape key is used.
 .PP
 The curses and ANSI modes are not necessarily the correct number of lines for
 a traditional screen mode. As such, filler will be added around the terminal

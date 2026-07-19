@@ -1002,11 +1002,9 @@ class ConnErr {
   static shortSend    { 2 }
 }
 
-// Streaming-log control for the active session.  Replaces the
-// historical CTerm.logMode / CTerm.logPaused getters and the
-// uifc-driven `capture_control` dialog (the Wren-side
-// CaptureMenu now drives the user-facing flow on top of these
-// primitives).  All methods are no-ops when no terminal is active.
+// Streaming-log control for the active session. CaptureMenu drives the
+// user-facing flow on top of these primitives. All methods are no-ops
+// when no terminal is active.
 //
 // `start(file, raw)` consumes the write consent on `file` (must be
 // from Host.pickSavePath).  Returns null on success or a FileError

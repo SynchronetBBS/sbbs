@@ -1,5 +1,5 @@
-// online_menu.wren — Wren replacement for the C-side syncmenu()
-// uifc dialog reached via Alt-Z (always) and Ctrl-S (text-mode only).
+// online_menu.wren — connected controls reached via Alt-Z (always)
+// and Ctrl-S (text-mode only).
 // Presents a ListView of session-control commands and dispatches the
 // selection back into the Wren primitives that already drive the
 // individual hot-keys (ScrollbackView.run, UploadApp.run,

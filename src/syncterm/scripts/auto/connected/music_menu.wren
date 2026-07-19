@@ -1,5 +1,5 @@
-// music_menu.wren — Wren replacement for the C-side music_control()
-// uifc dialog.  Driven by Hook.onKey(Key.altM) in keys_default.wren
+// music_menu.wren — ANSI music controls driven by Hook.onKey(Key.altM)
+// in keys_default.wren
 // and from the Alt-Z online menu's "ANSI Music Control" entry.  A
 // modal ListView seeded with Host.musicNames; choosing an entry
 // updates CTerm.music and closes the modal.

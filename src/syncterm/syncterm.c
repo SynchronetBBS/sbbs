@@ -91,7 +91,6 @@ enum {
 #include "host_ui.h"
 #include "syncterm.h"
 #include "term.h"
-#include "uifcinit.h"
 #include "window.h"
 #include "wren_menu_host.h"
 #include "wren_picker_host.h"
@@ -127,7 +126,6 @@ char *usage =
     "-6  =  Only resolve IPv6 addresses\n"
     "-b/path/to/list = specify user BBS list path\n"
     "-c  =  Hide the status line\n"
-    "-e# =  set escape delay to #msec\n"
     "-h  =  use SSH mode if URL does not include the scheme\n"
     "-iX =  set interface mode to X (default=auto) where X is one of:\n"
     "       A = ANSI mode\n"
@@ -1794,6 +1792,18 @@ resolve_list_path(struct syncterm_settings *set)
 	strlcat(set->list_path, "System List.lst", sizeof(set->list_path));
 }
 
+static unsigned
+read_classic_theme_color(FILE *fp, const char *key, str_list_t names,
+    unsigned default_value)
+{
+	char value[INI_MAX_VALUE_LEN];
+	const char *section = "UIFC";
+
+	if (iniReadExistingString(fp, "ClassicTheme", key, "", value) != NULL)
+		section = "ClassicTheme";
+	return iniReadEnum(fp, section, key, names, default_value);
+}
+
 void
 load_settings(struct syncterm_settings *set)
 {
@@ -1882,13 +1892,19 @@ load_settings(struct syncterm_settings *set)
 	    "scrypt-N15", set->keyDerivationIterations,
 	    sizeof(set->keyDerivationIterations));
 
-	/* UIFC Colours */
-	set->uifc_bclr = iniReadEnum(inifile, "UIFC", "BackgroundColour", (char **)bg_colour_enum, 8);
-	set->uifc_cclr = iniReadEnum(inifile, "UIFC", "InverseColour", (char **)bg_colour_enum, 8);
-	set->uifc_hclr = iniReadEnum(inifile, "UIFC", "FrameColour", (char **)colour_enum, 16);
-	set->uifc_lbclr = iniReadEnum(inifile, "UIFC", "LightbarColour", (char **)colour_enum, 16);
-	set->uifc_lbbclr = iniReadEnum(inifile, "UIFC", "LightbarBackgroundColour", (char **)bg_colour_enum, 8);
-	set->uifc_lclr = iniReadEnum(inifile, "UIFC", "TextColour", (char **)colour_enum, 16);
+	/* Classic Wren UI colours, with per-key fallback for old INI files. */
+	set->theme_background_color = read_classic_theme_color(inifile,
+	    "BackgroundColour", (char **)bg_colour_enum, 8);
+	set->theme_inverse_color = read_classic_theme_color(inifile,
+	    "InverseColour", (char **)bg_colour_enum, 8);
+	set->theme_frame_color = read_classic_theme_color(inifile,
+	    "FrameColour", (char **)colour_enum, 16);
+	set->theme_lightbar_color = read_classic_theme_color(inifile,
+	    "LightbarColour", (char **)colour_enum, 16);
+	set->theme_lightbar_background_color = read_classic_theme_color(inifile,
+	    "LightbarBackgroundColour", (char **)bg_colour_enum, 8);
+	set->theme_text_color = read_classic_theme_color(inifile,
+	    "TextColour", (char **)colour_enum, 16);
 
 	if (inifile)
 		fclose(inifile);
@@ -2167,13 +2183,6 @@ main(int argc, char **argv)
         legacy_ciphers_init();
 #endif
 
-        /* UIFC initialization */
-	memset(&uifc, 0, sizeof(uifc));
-	uifc.mode = UIFC_NOCTRL | UIFC_NHM;
-	uifc.size = sizeof(uifc);
-	uifc.esc_delay = 25;
-	uifc.insert_mode = TRUE;
-	uifc.reverse_cursor = TRUE;
 	url[0] = 0;
 
 	/*
@@ -2275,9 +2284,6 @@ main(int argc, char **argv)
 					break;
 				case 'C':
 					default_nostatus = 1;
-					break;
-				case 'E':
-					uifc.esc_delay = atoi(argv[i] + 2);
 					break;
 				case 'I':
 					switch (toupper(argv[i][2])) {
@@ -2462,7 +2468,6 @@ main(int argc, char **argv)
 	else {
 		FULLPATH(path, inpath, sizeof(path));
 	}
-	atexit(uifcbail);
 	load_font_files();
 	if (!wren_menu_host_init()) {
 		fputs("Unable to initialize the Wren main menu\n", stderr);

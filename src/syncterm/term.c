@@ -13,7 +13,6 @@
 
 #include "conn.h"
 #include "dirwrap.h"
-#include "filepick.h"
 #include "filewrap.h"
 #include "gen_defs.h"
 #include "host_ui.h"

@@ -149,7 +149,6 @@ src/
   sbbs3/sexyz.h   — SEXYZ mode flags
   sbbs3/saucedefs.h — SAUCE record definitions
   syncterm/       — this directory (the application)
-  uifc/           — native file-picker implementation
   xpdev/          — cross-platform portability layer
 3rdp/
   dist/           — cryptlib source archive and patches
@@ -182,8 +181,9 @@ src/
 | `ooii_cmenus.c` | ~510 | OOII embedded ANSI art complex menus (3 modes × 5) |
 | `window.c` | ~200 | Terminal window sizing, background drawing |
 | `wren_menu_host.c` | ~640 | Persistent trusted menu VM and C dialog bridge |
+| `wren_picker_host.c` | ~430 | Persistent isolated picker VM, recovery, and screen ownership |
 | `wren_bind_menu.c` | ~1000 | Menu-only BBS, settings, font, and catalog bindings |
-| `uifcinit.c` | ~190 | Per-call native picker initialization and teardown |
+| `wren_bind_picker.c` | ~750 | Picker-only listing, path-resolution, metadata, and completion bindings |
 | `fonts.c` | ~280 | Custom font INI persistence and runtime loading |
 | `webget.c` | ~400 | HTTP/HTTPS download for BBS lists/cache |
 | `libjxl.c` | ~200 | JPEG XL decoder (dynamic loading) |
@@ -257,16 +257,6 @@ src/
 | `xpendian.h` | ~80 | Byte-order macros (BE_INT32, BE_INT64) |
 | `petdefs.h` | ~90 | PETSCII character constant definitions |
 | `haproxy.h` | ~26 | HAProxy PROXY protocol header struct |
-
-### uifc/ — Text-Mode UI Framework
-
-| File | Lines | Purpose |
-|------|-------|---------|
-| `uifc32.c` | ~3230 | Main implementation: menus, input, popups, help viewer |
-| `filepick.c/h` | ~750 | Split-pane file/directory browser |
-| `uifc.h` | ~550 | API definition: uifcapi_t struct, mode flags, constants |
-| `uifcx.c` | ~530 | Stdio-based fallback implementation (not used by SyncTERM) |
-| `uifc_ini.c` | ~48 | INI configuration reader for UI settings |
 
 ### comio/ — Serial Port I/O Library
 
@@ -1027,43 +1017,57 @@ The persistent main menu is rooted at
 the online menu, scrollback, transfers, capture, music, and font selection,
 live under `scripts/auto/connected/`.
 
-The shipped main menu deliberately retains the classic UIFC composition:
+The shipped main menu uses SyncTERM's classic composition:
 an offline title/time row, a content-sized directory window at the left, a
 permanent settings window at the right, and comment/command rows at the
 bottom. Both panes remain present while focus changes their active/inactive
-palette. `ClassicTheme` maps the six persisted UIFC color preferences into
-Wren `Theme` roles, so dialogs opened by either pane inherit the same user
-configuration.
+palette. `ClassicTheme` maps the six persisted `[ClassicTheme]` color
+preferences into Wren `Theme` roles, so dialogs opened by either pane
+inherit the same user configuration. The shipped picker uses the same theme;
+connected-session interfaces use their own themes.
 
 Context help remains ordinary Wren UI data. Each shipped menu, editor, or
 settings implementation keeps its Markdown help beside the controls it
 documents and assigns it through `helpText`; nested choices and prompts
-replace the screen overview with field-specific help. Do not reintroduce a
-UIFC help-markup parser when moving or extending these screens.
+replace the screen overview with field-specific help. Help content is
+Markdown and is rendered by the shared Wren Help viewer.
 
-The two sets run in separate Wren VMs. The menu VM is trusted and owns
-directory, settings, custom-font, and picker capabilities. A fresh
+The application uses three separate Wren VMs. The persistent menu VM is
+trusted and owns directory, settings, and custom-font capabilities. A fresh
 connected VM is created per session and may run scripts supplied by the
 remote system, so it cannot import `syncterm_menu` or receive menu foreign
-objects. Alt+E parks the connected VM and terminal byte pump while the menu
-VM runs. Input-epoch barriers discard conio pushback and late asynchronous
-input at every ownership transition. See `Wren.adoc` for the binding and
-security contracts.
+objects. The persistent picker VM owns `scripts/auto/picker/` and receives
+only request-scoped directory listing, path resolution, metadata, and
+completion capabilities; it cannot open files. Alt+E parks the connected VM
+and terminal byte pump while the menu VM runs. Picker calls park their caller
+while the picker owns the screen. Input-epoch barriers discard conio
+pushback and late asynchronous input at every ownership transition. See
+`Wren.adoc` for the binding and security contracts.
 
 Treat `scripts/auto/menu/` overrides as fully trusted application code. The
 menu VM owns directory/settings mutation, picker-mediated local-file
 authority, and application chrome. Remotely supplied scripts belong only in
 the fresh per-connection VM; they must never be promoted into the persistent
-menu VM to work around a missing connected capability.
+menu VM to work around a missing connected capability. Picker overrides are
+also trusted local application code, but belong under
+`scripts/auto/picker/` and keep the picker VM's restricted foreign surface.
 
-### Native File Picker (`uifc/`)
+### Wren File Picker
 
-UIFC remains only for its split-pane native file picker. `uifcinit.c`
-initializes and tears down the singleton around each picker call and places
-trusted input barriers on both sides. Picker selections mint constrained
-Wren file capabilities: read-only grants for selected inputs and one-shot
-write-only grants for save destinations. Ordinary menus, prompts, viewers,
-and settings no longer call UIFC.
+`wren_picker_host.c` creates the picker VM once and parks it between calls.
+`scripts/auto/picker/file_picker.wren` implements the split-pane browser,
+including single-file, directory, save, and cross-directory multi-file
+selection. `wren_bind_picker.c` exposes no general filesystem objects:
+picker code can list a requested directory, resolve a path, inspect returned
+metadata, and complete the active request.
+
+The host saves and restores screen, mouse-event, and cursor state around each
+call and places input barriers on both transitions. Selected inputs become
+read-only Wren file capabilities. Save completion explicitly distinguishes
+create from overwrite and becomes a one-shot write-only capability without a
+second pathname check. The embedded picker bootstrap remains available when
+an override fails, providing the picker-local Ctrl+` REPL, Escape-to-cancel,
+and application-quit recovery path.
 
 ## Cross-Platform Library
 
@@ -1267,6 +1271,6 @@ extended SGR, DECRQSS extensions, OSC 8 hyperlinks, and more.
 - **String safety**: `strlcpy`/`strlcat` preferred over `strcpy`/`strcat`;
   `snprintf` over `sprintf`
 - **Thread safety**: File-scope statics acceptable for single-instance
-  subsystems (UIFC, scaling); atomic/mutex for shared state
+  subsystems (scaling); atomic/mutex for shared state
 - **Memory**: `FREE_AND_NULL` macro for safe free+null; `SAFECOPY`/
   `SAFEPRINTF` macros for bounded string operations

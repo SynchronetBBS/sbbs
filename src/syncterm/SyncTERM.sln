@@ -9,8 +9,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xpdev_mt", "..\xpdev\xpdev_
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "conio_sdl", "..\conio\conio_sdl.vcxproj", "{8E3CE9E8-447A-452A-9306-2587FE3154A4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "uifc", "..\uifc\uifc.vcxproj", "{7BFB9820-0E57-4BE4-9BE9-E0A687874E19}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "comio", "..\comio\comio.vcxproj", "{79CF784E-4438-4FCC-9B7A-10ACB716C948}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sftp", "..\sftp\sftp.vcxproj", "{4C69A1D2-182A-45D3-AD33-54A8A91B387D}"
@@ -33,10 +31,6 @@ Global
 		{8E3CE9E8-447A-452A-9306-2587FE3154A4}.Debug|Win32.Build.0 = Debug|Win32
 		{8E3CE9E8-447A-452A-9306-2587FE3154A4}.Release|Win32.ActiveCfg = Release|Win32
 		{8E3CE9E8-447A-452A-9306-2587FE3154A4}.Release|Win32.Build.0 = Release|Win32
-		{7BFB9820-0E57-4BE4-9BE9-E0A687874E19}.Debug|Win32.ActiveCfg = Debug|Win32
-		{7BFB9820-0E57-4BE4-9BE9-E0A687874E19}.Debug|Win32.Build.0 = Debug|Win32
-		{7BFB9820-0E57-4BE4-9BE9-E0A687874E19}.Release|Win32.ActiveCfg = Release|Win32
-		{7BFB9820-0E57-4BE4-9BE9-E0A687874E19}.Release|Win32.Build.0 = Release|Win32
 		{79CF784E-4438-4FCC-9B7A-10ACB716C948}.Debug|Win32.ActiveCfg = Debug|Win32
 		{79CF784E-4438-4FCC-9B7A-10ACB716C948}.Debug|Win32.Build.0 = Debug|Win32
 		{79CF784E-4438-4FCC-9B7A-10ACB716C948}.Release|Win32.ActiveCfg = Release|Win32

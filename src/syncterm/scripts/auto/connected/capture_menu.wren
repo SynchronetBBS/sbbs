@@ -1,5 +1,5 @@
-// capture_menu.wren — Wren replacement for the C-side capture_control()
-// uifc dialog.  Driven by Hook.onKey(Key.altC) in keys_default.wren.
+// capture_menu.wren — capture controls driven by Hook.onKey(Key.altC)
+// in keys_default.wren.
 //
 // Three states based on the current Capture.* status:
 //
@@ -10,8 +10,7 @@
 //   paused         →  ask "Unpause" or "Close"
 //   active         →  ask "Pause" or "Close"
 //
-// Help text and option labels are kept close to the historical uifc
-// dialog so muscle memory carries over.
+// Help text and option labels describe the current capture controls.
 
 import "syncterm"  for Capture, CTerm, Download, Host, Input, Screen
 import "ui_picker" for ListPicker

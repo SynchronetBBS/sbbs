@@ -1,5 +1,5 @@
-// font_pick.wren -- Wren replacement for the C-side font_control()
-// uifc dialog.  Driven by Hook.onKey(Key.altF) in keys_default.wren
+// font_pick.wren -- connected-session font selector. Driven by
+// Hook.onKey(Key.altF) in keys_default.wren
 // and the online menu's "Font Setup" entry.
 //
 // Two flows:
@@ -10,13 +10,14 @@
 //     altfont[0] cache.
 //   - Load from file (Insert key).  Pops Host.pickFile, then
 //     Font.load(file) — same path-as-File consent shape as
-//     Transfer.upload's filepick.
+//     Transfer.upload's picker.
 //
 // Gated by ScreenSupports.fontSelection: text-mode backends (curses,
 // ANSI, conio) can't change the font at runtime; pop an Alert and
 // bail.
 
-import "syncterm" for CTerm, Font, Host, Input, Key, Screen, ScreenSupports
+import "syncterm" for CTerm, FilePickerOptions, Font, Host, Input, Key,
+                       Screen, ScreenSupports
 import "ui_app"     for App
 import "ui_pane"    for Pane
 import "ui_list"    for ListView
@@ -134,7 +135,7 @@ class FontApp {
   }
 
   static loadFromFile_() {
-    var file = Host.pickFile(null, null, 1)
+    var file = Host.pickFile(null, null, FilePickerOptions.maskLocked)
     if (file == null) return
     Font.load(file)
   }

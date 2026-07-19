@@ -86,9 +86,8 @@ Hook.onKey(Key.altB) { |k|
   return true
 }
 
-// Alt-C — open the capture menu (Wren-driven; replaces the
-// historical uifc capture_control dialog).  CaptureMenu spawns a
-// child fiber that drives the modal flow.
+// Alt-C — open the capture menu. CaptureMenu spawns a child fiber
+// that drives the modal flow.
 Hook.onKey(Key.altC) { |k|
   CaptureMenu.run()
   return true
@@ -102,8 +101,7 @@ Hook.onKey(Key.altM) { |k|
   return true
 }
 
-// Alt-D / Alt-U — download / upload protocol pickers (replaces the
-// historical begin_download / begin_upload uifc dialogs).  Auto-Z
+// Alt-D / Alt-U — download / upload protocol pickers. Auto-Z
 // (in-stream ZRQINIT detection from doterm()) bypasses the picker
 // and reaches UploadApp directly via wren_run_upload_app() in C.
 Hook.onKey(Key.altD) { |k|
@@ -115,8 +113,7 @@ Hook.onKey(Key.altU) { |k|
   return true
 }
 
-// Alt-F — font picker (replaces the historical font_control uifc
-// dialog).  FontApp pops a ListView of conio_fontdata names; Insert
+// Alt-F — font picker. FontApp pops a ListView of conio_fontdata names; Insert
 // keys into the load-from-file flow, gated by ScreenSupports.loadableFonts.
 Hook.onKey(Key.altF) { |k|
   FontApp.run()

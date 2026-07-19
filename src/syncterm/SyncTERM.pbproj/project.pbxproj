@@ -147,20 +147,16 @@
 			children = (
 				DEFDC20908F104B500A8000E,
 				DEFDC20A08F104B500A8000E,
-				DEFDC20B08F104B500A8000E,
 				DEFDC20C08F104B500A8000E,
 				DEFDC20D08F104B500A8000E,
 				DEFDC20E08F104B500A8000E,
 				DEFDC20F08F104B500A8000E,
-				DEFDC21008F104B500A8000E,
 				DEFDC21108F104B500A8000E,
 				DEFDC21408F104B500A8000E,
 				DEFDC21508F104B500A8000E,
 				DEFDC21608F104B500A8000E,
 				DEFDC21708F104B500A8000E,
 				DEFDC21908F104B500A8000E,
-				DEFDC22D08F10C2500A8000E,
-				DEFDC22F08F10C5700A8000E,
 				DEFDC23108F10C9100A8000E,
 				DEFDC23208F10C9100A8000E,
 				DEFDC23508F10CB500A8000E,
@@ -232,12 +228,12 @@
 			);
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "\"/Library/Frameworks\"";
-				HEADER_SEARCH_PATHS = "/automount/synchronet/src/include/cryptlib /automount/synchronet/src/src/smblib /automount/synchronet/src/src/sbbs3 /automount/synchronet/src/src/conio /automount/synchronet/src/src/uifc /automount/synchronet/src/src/xpdev /Library/Frameworks/SDL.framework/Headers";
+				HEADER_SEARCH_PATHS = "/automount/synchronet/src/include/cryptlib /automount/synchronet/src/src/smblib /automount/synchronet/src/src/sbbs3 /automount/synchronet/src/src/conio /automount/synchronet/src/src/xpdev /Library/Frameworks/SDL.framework/Headers";
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = "/automount/synchronet/src/lib/cryptlib/darwin.power_macintosh.release /automount/synchronet/src/src/conio/gcc.darwin.power_macintosh.lib.release /automount/synchronet/src/src/uifc/gcc.darwin.power_macintosh.lib.release /automount/synchronet/src/src/xpdev/gcc.darwin.power_macintosh.lib.release";
+				LIBRARY_SEARCH_PATHS = "/automount/synchronet/src/lib/cryptlib/darwin.power_macintosh.release /automount/synchronet/src/src/conio/gcc.darwin.power_macintosh.lib.release /automount/synchronet/src/src/xpdev/gcc.darwin.power_macintosh.lib.release";
 				OPTIMIZATION_CFLAGS = "-O3";
 				OTHER_CFLAGS = "-D__BIG_ENDIAN__ -DHAS_INTTYPES_H -D__unix__ -D__DARWIN__ -D_THREAD_SAFE -D_REENTRANT -D__EXTENSIONS__ -DHAVE_VASPRINTF -DSTATIC_CRYPTLIB -DPREFIX=\\\\\"/usr\\\\\" -DSYSTEM_LIST_DIR=\\\\\"/etc\\\\\" -DDISABLE_X11 -DHAS_DEV_URANDOM -DURANDOM_DEV=\\\\\"/dev/urandom\\\\\" -DHAS_DEV_RANDOM -DRANDOM_DEV=\\\\\"/dev/random\\\\\" -DHAS_RANDOM_FUNC -DWITH_SDL_AUDIO -DSTATIC_SDL -DLINK_LIST_THREADSAFE -DXPDEV_THREAD_SAFE -DUSE_XP_SEMAPHORES";
-				OTHER_LDFLAGS = "-framework SDL -lxpdev_mt -lciolib_mt -luifc_mt -lcurses -lcl -lz /usr/local/lib/libdl.a";
+				OTHER_LDFLAGS = "-framework SDL -lxpdev_mt -lciolib_mt -lcurses -lcl -lz /usr/local/lib/libdl.a";
 				PRODUCT_NAME = SyncTERM;
 				SECTORDER_FLAGS = "";
 				WARNING_CFLAGS = "-Wmost -Wno-four-char-constants -Wno-unknown-pragmas";
@@ -310,13 +306,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				DEFDC21B08F104B500A8000E,
-				DEFDC21D08F104B500A8000E,
 				DEFDC21E08F104B500A8000E,
 				DEFDC21F08F104B500A8000E,
 				DEFDC22608F104B500A8000E,
 				DEFDC22808F104B500A8000E,
 				DEFDC22B08F104B500A8000E,
-				DEFDC23008F10C5700A8000E,
 				DEFDC23408F10C9100A8000E,
 				DEFDC23808F10CB500A8000E,
 				DEFDC23E08F10D1400A8000E,
@@ -346,11 +340,9 @@
 				DEFDC21C08F104B500A8000E,
 				DEFDC22008F104B500A8000E,
 				DEFDC22108F104B500A8000E,
-				DEFDC22208F104B500A8000E,
 				DEFDC22308F104B500A8000E,
 				DEFDC22708F104B500A8000E,
 				DEFDC22908F104B500A8000E,
-				DEFDC22E08F10C2500A8000E,
 				DEFDC23308F10C9100A8000E,
 				DEFDC23708F10CB500A8000E,
 				DEFDC23D08F10D1400A8000E,
@@ -665,13 +657,6 @@
 			path = /private/automount/synchronet/src/src/syncterm/window.c;
 			refType = 0;
 		};
-		DEFDC20B08F104B500A8000E = {
-			fileEncoding = 7;
-			isa = PBXFileReference;
-			name = uifcinit.h;
-			path = /private/automount/synchronet/src/src/syncterm/uifcinit.h;
-			refType = 0;
-		};
 		DEFDC20C08F104B500A8000E = {
 			fileEncoding = 7;
 			isa = PBXFileReference;
@@ -698,13 +683,6 @@
 			isa = PBXFileReference;
 			name = telnet_io.c;
 			path = /private/automount/synchronet/src/src/syncterm/telnet_io.c;
-			refType = 0;
-		};
-		DEFDC21008F104B500A8000E = {
-			fileEncoding = 7;
-			isa = PBXFileReference;
-			name = uifcinit.c;
-			path = /private/automount/synchronet/src/src/syncterm/uifcinit.c;
 			refType = 0;
 		};
 		DEFDC21108F104B500A8000E = {
@@ -761,12 +739,6 @@
 			settings = {
 			};
 		};
-		DEFDC21D08F104B500A8000E = {
-			fileRef = DEFDC20B08F104B500A8000E;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
 		DEFDC21E08F104B500A8000E = {
 			fileRef = DEFDC20C08F104B500A8000E;
 			isa = PBXBuildFile;
@@ -787,12 +759,6 @@
 		};
 		DEFDC22108F104B500A8000E = {
 			fileRef = DEFDC20F08F104B500A8000E;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		DEFDC22208F104B500A8000E = {
-			fileRef = DEFDC21008F104B500A8000E;
 			isa = PBXBuildFile;
 			settings = {
 			};
@@ -829,32 +795,6 @@
 		};
 		DEFDC22B08F104B500A8000E = {
 			fileRef = DEFDC21908F104B500A8000E;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		DEFDC22D08F10C2500A8000E = {
-			fileEncoding = 7;
-			isa = PBXFileReference;
-			name = filepick.c;
-			path = /automount/synchronet/src/src/uifc/filepick.c;
-			refType = 0;
-		};
-		DEFDC22E08F10C2500A8000E = {
-			fileRef = DEFDC22D08F10C2500A8000E;
-			isa = PBXBuildFile;
-			settings = {
-			};
-		};
-		DEFDC22F08F10C5700A8000E = {
-			fileEncoding = 7;
-			isa = PBXFileReference;
-			name = filepick.h;
-			path = /automount/synchronet/src/src/uifc/filepick.h;
-			refType = 0;
-		};
-		DEFDC23008F10C5700A8000E = {
-			fileRef = DEFDC22F08F10C5700A8000E;
 			isa = PBXBuildFile;
 			settings = {
 			};

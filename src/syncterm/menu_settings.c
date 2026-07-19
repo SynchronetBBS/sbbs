@@ -1,8 +1,6 @@
 #include "menu_settings.h"
 
 #include "bbslist.h"
-#include "uifcinit.h"
-
 #include <ciolib.h>
 #include <ini_file.h>
 #include <stdint.h>
@@ -108,30 +106,19 @@ set_ini_values(str_list_t *ini, const struct syncterm_settings *set)
 	    &ini_style);
 	iniSetInteger(ini, "SyncTERM", "CustomAspectHeight", set->custom_ah,
 	    &ini_style);
-	iniSetEnum(ini, "UIFC", "FrameColour", (char **)colour_enum,
-	    set->uifc_hclr, &ini_style);
-	iniSetEnum(ini, "UIFC", "TextColour", (char **)colour_enum,
-	    set->uifc_lclr, &ini_style);
-	iniSetEnum(ini, "UIFC", "BackgroundColour", (char **)bg_colour_enum,
-	    set->uifc_bclr, &ini_style);
-	iniSetEnum(ini, "UIFC", "InverseColour", (char **)bg_colour_enum,
-	    set->uifc_cclr, &ini_style);
-	iniSetEnum(ini, "UIFC", "LightbarColour", (char **)colour_enum,
-	    set->uifc_lbclr, &ini_style);
-	iniSetEnum(ini, "UIFC", "LightbarBackgroundColour",
-	    (char **)bg_colour_enum, set->uifc_lbbclr, &ini_style);
-}
-
-static void
-apply_picker_colours(const struct syncterm_settings *set)
-{
-	uifc.hclr = set->uifc_hclr == 16 ? YELLOW : set->uifc_hclr;
-	uifc.lclr = set->uifc_lclr == 16 ? WHITE : set->uifc_lclr;
-	uifc.bclr = set->uifc_bclr == 8 ? BLUE : set->uifc_bclr;
-	uifc.cclr = set->uifc_cclr == 8 ? CYAN : set->uifc_cclr;
-	unsigned fg = set->uifc_lbclr == 16 ? BLUE : set->uifc_lbclr;
-	unsigned bg = set->uifc_lbbclr == 8 ? LIGHTGRAY : set->uifc_lbbclr;
-	uifc.lbclr = fg | (bg << 4);
+	iniSetEnum(ini, "ClassicTheme", "FrameColour", (char **)colour_enum,
+	    set->theme_frame_color, &ini_style);
+	iniSetEnum(ini, "ClassicTheme", "TextColour", (char **)colour_enum,
+	    set->theme_text_color, &ini_style);
+	iniSetEnum(ini, "ClassicTheme", "BackgroundColour",
+	    (char **)bg_colour_enum, set->theme_background_color, &ini_style);
+	iniSetEnum(ini, "ClassicTheme", "InverseColour",
+	    (char **)bg_colour_enum, set->theme_inverse_color, &ini_style);
+	iniSetEnum(ini, "ClassicTheme", "LightbarColour",
+	    (char **)colour_enum, set->theme_lightbar_color, &ini_style);
+	iniSetEnum(ini, "ClassicTheme", "LightbarBackgroundColour",
+	    (char **)bg_colour_enum, set->theme_lightbar_background_color,
+	    &ini_style);
 }
 
 static void
@@ -165,7 +152,6 @@ apply_settings(const struct syncterm_settings *set)
 			textmode(CIOLIB_MODE_CUSTOM);
 	}
 	set_default_cursor();
-	apply_picker_colours(&settings);
 }
 
 static bool
@@ -237,6 +223,7 @@ menu_settings_save(const struct syncterm_settings *snapshot)
 		return false;
 	}
 	set_ini_values(&ini, snapshot);
+	iniRemoveSection(&ini, "UIFC");
 	bool success = write_ini(ini);
 	strListFree(&ini);
 	if (!success) {

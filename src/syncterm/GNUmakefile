@@ -599,10 +599,10 @@ endif
 MANPREFIX ?= $(PREFIX)/share
 CFLAGS	+=	-DSYSTEM_LIST_DIR=\"${SYSTEM_LIST_DIR}\"
 
-CFLAGS	+=	$(UIFC-MT_CFLAGS) $(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS) -I. -I../sbbs3 -I../comio
-LDFLAGS	+=	$(UIFC-MT_LDFLAGS) $(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS)
+CFLAGS	+=	$(CIOLIB-MT_CFLAGS) $(XPDEV-MT_CFLAGS) $(ENCODE_CFLAGS) $(HASH_CFLAGS) -I. -I../sbbs3 -I../comio
+LDFLAGS	+=	$(CIOLIB-MT_LDFLAGS) $(XPDEV-MT_LDFLAGS) $(ENCODE_LDFLAGS) $(HASH_LDFLAGS)
 
-vpath %.c ../sbbs3 ../uifc ../comio
+vpath %.c ../sbbs3 ../comio
 
 ifdef DEBUG
  INSTALL_EXE	?=	install
@@ -653,7 +653,7 @@ $(MTOBJODIR)$(DIRSEP)ciolib_res$(OFILE): ${CIOLIB-MT}
 
 $(SYNCTERM): $(DEPS) $(EXEODIR) $(OBJS) $(BUILD_DEPENDS)
 	@echo Linking $@
-	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(UIFC-MT_LIBS) $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(TRAILING_LIBS)
+	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) $(OBJS) -o $@ $(EXTRA_LIBS) $(CIOLIB-MT_LIBS) $(XPDEV-MT_LIBS) $(ENCODE_LIBS) $(HASH_LIBS) $(TRAILING_LIBS)
 ifdef win
 	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c $(MTOBJODIR)$(DIRSEP)syncterm_res$(OFILE) $(CIOLIB_SRC)/$(MTOBJODIR)/ciolib_res.o -s -o $(EXEODIR)/syncterm.exe -L$(EXEODIR) -lsyncterm -mwindows
 	${QUIET}$(CXX) $(LDFLAGS) $(MT_LDFLAGS) win32_stub.c $(MTOBJODIR)$(DIRSEP)syncterm_res$(OFILE) $(CIOLIB_SRC)/$(MTOBJODIR)/ciolib_res.o -s -o $(EXEODIR)/syncterm.com -L$(EXEODIR) -lsyncterm -mconsole
@@ -800,7 +800,7 @@ tags: cscope.files
 	exctags -VL cscope.files
 
 cscope.files::
-	find . ../conio ../uifc ../xpdev -name '*.c' -o -name '*.cpp' -o -name '*.h' > cscope.files
+	find . ../conio ../xpdev -name '*.c' -o -name '*.cpp' -o -name '*.h' > cscope.files
 	echo ../sbbs3/telnet.c >> cscope.files
 	echo ../sbbs3/telnet.h >> cscope.files
 	echo ../sbbs3/zmodem.c >> cscope.files

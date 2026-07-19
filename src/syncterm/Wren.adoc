@@ -758,6 +758,29 @@ The currently embedded scripts are:
   mutable `BBS` records, program settings, web lists, and custom-font
   configuration.  The connected loader rejects this module.
 
+| `syncterm_picker`
+| library / picker only
+| Request-scoped file-picker interface.  It exposes directory listings,
+  path resolution, metadata, and completion methods, but no file-open
+  capability.  Menu and connected scripts cannot import it.
+
+| `picker_bootstrap`
+| reserved library / picker only
+| Host-controlled picker entry and recovery surface.  SyncTERM always
+  interprets its embedded copy before loading picker overrides.
+
+| `file_picker`
+| auto / picker
+| Split-pane file and directory browser.  It implements single-file,
+  directory, save, and cross-directory multi-file selection and exports
+  `FilePicker.run(request)` as the picker host entry point.
+
+| `classic_theme`
+| library
+| Maps the six Classic Theme settings to Wren `Theme` roles.  The shipped
+  menu and file picker use it; connected interfaces continue to use their
+  own themes, including `Theme.default` unless changed by script.
+
 | `console`
 | auto / connected
 | Connected-session Ctrl+&#96; hook for the shared `wren_console`
@@ -831,13 +854,13 @@ The currently embedded scripts are:
   model, prompts for an encrypted-directory password when necessary,
   and presents the classic dialing directory: the directory and
   SyncTERM Settings lists remain visible together, the active list uses
-  the configured UIFC palette, and the selected entry's comment and
+  the configured Classic Theme palette, and the selected entry's comment and
   list commands occupy the bottom two rows.  The host calls
   `MainMenu.run(currentName, connected)` whenever the application is
   offline or Alt+E enters the directory over a connected session.  The
   controller binds Ctrl+&#96; to the menu VM's REPL and displays that
   VM's unread-log indicator in the top-right corner.  The
-  offline form owns the UIFC light-shade application background and
+  offline form owns the classic light-shade application background and
   title/time row;
   the connected form leaves the saved terminal screen behind its panes.
 
@@ -850,22 +873,24 @@ The currently embedded scripts are:
 |===
 
 The `syncterm` module is loaded on demand the first time something
-imports it.  Its top level obtains the host-created `Cache` and
-`Download` objects.  The auto-load embeds run when their owning VM is
-created: once per application for `menu`, and once per BBS session for
-`connected`.
+imports it.  Its top level obtains host-created `Cache` and `Download`
+objects where that VM has them.  The auto-load embeds run when their
+owning VM is created: once per application for `menu` and `picker`, and
+once per BBS session for `connected`.
 
 === Overriding Embedded Scripts
 
 A user script whose basename and role match an embedded module
 overrides the embedded one.  The shared REPL implementation can be
 replaced with
-`~/.local/share/syncterm/scripts/wren_console.wren`; both VMs import
-that library when their built-in menu or connected entry point opens
+`~/.local/share/syncterm/scripts/wren_console.wren`; all three VMs import
+that library when their built-in menu, connected, or picker entry point opens
 the console.  Replacing
 `scripts/auto/connected/console.wren` changes only the connected
 Ctrl+&#96; hook.  Replacing `scripts/auto/menu/main_menu.wren` changes
 the menu key binding along with the rest of the main-menu controller.
+Replacing `scripts/auto/picker/file_picker.wren` changes the picker
+implementation but not its reserved recovery surface.
 
 The check is an exact match on the bare module name *within the same
 script role*.  A root `console.wren` is a library module distinct from
@@ -898,9 +923,9 @@ nothing.
 body) resolve through the lookup chain for the current VM:
 
 . `scripts/<name>.wren` — pure library module.
-. `scripts/auto/<event>/<name>.wren` — where `<event>` is `menu` or
-  `connected`; this catches imports of auto-load modules which have
-  not run yet.
+. `scripts/auto/<event>/<name>.wren` — where `<event>` is `menu`,
+  `connected`, or `picker`; this catches imports of auto-load modules
+  which have not run yet.
 . The embedded table — built-in fallback by module name.
 
 The foundational `syncterm` module lazily loads the first time
@@ -984,7 +1009,7 @@ The specialized editors provide direct menu operations.  Enter on a sort
 profile opens its field list, and Enter on a sort field reverses that
 field; `[` and `]` move between profiles without returning to the profile
 list.  Enter on a web list edits its URI.  Font details are a flat Name plus
-four cell-size paths, and selecting a path opens the native picker directly.
+four cell-size paths, and selecting a path opens the picker directly.
 The encryption screen has distinct Change Password, algorithm, and Decrypt
 operations; changing algorithms reuses the password already held by the
 host.  Palette editing exposes separate Red, Green, and Blue fields, uses
@@ -1026,7 +1051,8 @@ Escape and pane close buttons leave only a connected Alt+E menu.
 Before stopping, the menu dismisses nested screens through their normal close
 path so accepted edits reach the owning screen's persistence boundary.  A
 failed close-time save leaves the menu open instead of discarding the edits.
-Accepted UIFC colour changes rebuild the active Wren menu theme immediately.
+Accepted Classic Theme colour changes rebuild the active Wren menu theme
+immediately.
 Renaming a persisted entry also renames its per-entry cache directory after
 the directory file is written successfully.
 Font Management treats an empty name as cancellation when adding a record.
@@ -1083,8 +1109,8 @@ and encryption panes assign Markdown `helpText` to their panes and nested
 dialogs.  F1 therefore resolves to the general screen description from the
 list and to field-specific help while a choice or prompt is open.  Menu
 overrides should use the normal `Help` Markdown contract described under
-<<ui-help,Help viewer>>.  Help content must be Markdown; UIFC `helpbuf` markup
-is unsupported.
+<<ui-help,Help viewer>>.  Help content must be Markdown; legacy help-buffer
+markup is unsupported.
 
 The shipped editors distinguish accepting an edit from writing its backing
 file.  A confirmed entry field immediately
@@ -1103,7 +1129,7 @@ prompt, picker, viewer, or submenu until that child is dismissed.
 
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
-SyncTERM deliberately uses two Wren VMs.  They do not share Wren
+SyncTERM deliberately uses three Wren VMs.  They do not share Wren
 objects, handles, modules, globals, hooks, timers, result queues, or
 foreign objects.
 
@@ -1111,11 +1137,17 @@ foreign objects.
   initialized.  It owns `scripts/auto/menu/`, survives connections,
   is parked while the connected screen is active, and is destroyed at
   application shutdown.  It can edit the BBS list and settings and can
-  invoke the trusted native file picker.
+  request a picker operation.
 * A fresh *connected VM* is created by `wren_host_init(bbs)` for each
   BBS session and freed by `wren_host_shutdown()` on every exit path.
   It owns `scripts/auto/connected/`.  Module statics, hooks, timers,
   claims, and queued results do not survive disconnect.
+* The *picker VM* is created once after the menu VM, owns
+  `scripts/auto/picker/`, and remains parked except while a picker
+  request is active.  It cannot import `syncterm_menu`, inspect BBS
+  records, change settings, establish connections, or open files.  Its
+  request object exposes only directory listings, path resolution and
+  metadata, and one-shot completion methods.
 
 The remote system is considered hostile.  A remotely supplied script
 may know the active entry's username, password, and system password;
@@ -1140,21 +1172,36 @@ input bindings.  User scripts need them to automate the current remote
 session.  Isolation is provided by the VM and transition barriers, not
 by removing those session-local controls.
 
-At every ownership transition (connect, disconnect, and entry to or
-return from the menu through Alt+E), the host establishes a new input
-epoch.  It discards pending conio keyboard and mouse pushback, clears
-input claims and waiters owned by the screen being left, and rejects
-late input-shaped results tagged with an older epoch.  This prevents a
-connected script from placing synthetic input in `ungetkey()` /
-`ungetmouse()` just before the trusted menu or picker takes control.
-The same barrier protects the connected VM when control returns from a
-trusted UI.
+At every ownership transition (connect, disconnect, entry to or return
+from the menu through Alt+E, and entry to or return from the picker), the
+host establishes a new input epoch.  It discards pending conio keyboard
+and mouse pushback, clears input claims and waiters owned by the screen
+being left, and rejects late input-shaped results tagged with an older
+epoch.  This prevents a connected script from placing synthetic input in
+`ungetkey()` / `ungetmouse()` just before the trusted menu or picker
+takes control.  The same barrier protects the connected VM when control
+returns from a trusted UI.
 
-The native file picker remains a trusted consent broker.  The menu VM
-does not receive arbitrary pathname-open authority: picker upload
-results are read-only, save results are one-shot write-only grants, and
-rights remain attached to the foreign `File` handle as documented in
-<<file-write-consent,Write consent>>.
+The picker VM is the local-file consent broker.  Neither its caller nor
+the picker script receives arbitrary pathname-open authority.  A
+single-file or multi-file completion is converted by C into read-only
+`File` handles.  A save completion explicitly reports create or
+overwrite consent; C converts it into a one-shot write-only grant without
+retesting the pathname.  These rights remain attached to the foreign
+`File` handle as documented in <<file-write-consent,Write consent>>.
+The request object is invalidated as soon as the picker returns, so it
+cannot retain listing or completion authority between calls.
+
+Picker overrides under `scripts/auto/picker/` are trusted local
+application code, but the picker VM still receives only the capabilities
+needed by the browser.  The host always interprets the embedded
+`picker_bootstrap` first.  A picker implementation compile or runtime
+failure therefore enters a recovery screen instead of terminating
+SyncTERM: Ctrl+&#96; opens the picker VM's REPL, Escape cancels the
+request, and `Key.quit` exits the application.  The normal picker shows
+that VM's unread or error indicator at the top right and uses the same
+Ctrl+&#96; binding.  Only failure to initialize the VM or reserved
+bootstrap disables picker operations.
 
 C-owned startup and connection flows also render their dialogs through
 the persistent menu VM.  These calls do not expose a dialog capability to
@@ -3760,8 +3807,8 @@ that persistence obligation itself.
 `save()` preserves unrelated INI sections, writes the existing
 `syncterm.ini` keys, and applies the settings which have immediate effects.
 These include scrollback capacity, scaling, mouse-wheel direction, audio
-backends, custom-mode dimensions, cursor style, and the UIFC colors still
-used by the trusted native picker and shipped Wren main menu.  It returns
+backends, custom-mode dimensions, cursor style, and the Classic Theme
+colours used by the shipped Wren menu and picker.  It returns
 `false` when allocation, encrypted-list rewriting, or INI persistence fails.
 An unapplied snapshot is not applied after such a failure; settings already
 accepted through `apply()` remain active.  Changing the KDF work factor may
@@ -3779,7 +3826,7 @@ setting and calls `save()` once when the editor closes.  Thus settings
 with immediate effects change at field-confirmation time while the INI
 write remains grouped at the Program Settings screen-exit boundary.
 
-The editor keeps UIFC Colours and Custom Screen Mode as nested groups instead
+The editor keeps Classic Theme Colours and Custom Screen Mode as nested groups instead
 of flattening their fields into Program Settings.  A connected invocation
 omits Custom Screen Mode.  The connected settings list also omits Current
 Screen Mode and List Encryption; List Encryption is omitted in every mode
@@ -3827,14 +3874,22 @@ when `Menu.encryptionAvailable` is false.
 
 | `frameColor`, `textColor`, `backgroundColor`, `inverseColor`,
   `lightbarColor`, `lightbarBackgroundColor`
-| UIFC palette indexes used by the shipped Wren main menu and trusted
-  native picker.  Frame, text, and lightbar foreground use `Menu.colors`,
+| Classic Theme palette indexes used by the shipped Wren main menu and
+  picker.  Frame, text, and lightbar foreground use `Menu.colors`,
   whose `Default` entry is index 16.  Background, inverse, and lightbar
   background use `Menu.backgroundColors`, whose `Default` entry is index 8.
-  The shipped `main_menu.wren` resolves those sentinels to the configured
-  default colors and builds an App `Theme`; a custom main-menu override must
-  apply the values itself if it wants to preserve that preference.
+  The shared `classic_theme.wren` module resolves those sentinels and builds
+  an App `Theme`.  Custom menu and picker overrides must apply the values
+  themselves if they want to preserve that preference.  Connected-session
+  interfaces do not receive this theme automatically.
 |===
+
+The six values are persisted under `[ClassicTheme]`.  On load, each
+missing key falls back independently to the same key under the former
+`[UIFC]` section, so a partial new section does not discard old
+preferences.  The next successful Program Settings save writes all six
+`[ClassicTheme]` values and removes `[UIFC]`.  A failed save leaves the
+existing file unchanged.
 
 The host supplies display catalogs rather than requiring scripts to
 duplicate platform-dependent enum tables:
@@ -4250,17 +4305,17 @@ pre-bound from these at module load.
   directly.
 
 | `Host.pickFile(initialPath, mask, opts)`
-| User-consent escape hatch for "upload from anywhere": invokes
-  uifc's filepick UI and returns a `File` whose path is the
-  absolute path the user picked, or `null` on cancel.
+| User-consent escape hatch for "upload from anywhere": invokes the
+  isolated picker VM and returns a `File` whose path is the absolute
+  path the user picked, or `null` on cancel.
   `initialPath` may be a String path, a `Directory` foreign (uses
   its path; handles `Cache` lazy-resolve), or `null` (defaults
   to `BBS.ulDir`).  An existing file path opens its containing
   directory with that file selected.  `mask` may be `null` (defaults
   to `*`).
-  `opts` is a bitmask of the C-side `UIFC_FP_*` flags (see
-  `uifc/filepick.h`).  The returned `File`'s path bypasses the
-  relaxed-name policy — the picker UI is the sandbox boundary,
+  `opts` combines the stable `FilePickerOptions` values documented
+  below.  The returned `File`'s path bypasses the relaxed-name policy;
+  the picker interaction is the local consent boundary,
   since the user explicitly chose the path.  The returned `File` is
   read-only and carries a `.token` consent token (see "Picker consent
   tokens" below) when the per-installation signing key is loaded.
@@ -4273,15 +4328,15 @@ pre-bound from these at module load.
 | `Host.pickFiles(initialDir, mask, opts)`
 | Multi-select counterpart of `pickFile`.  Same argument shape.
   Returns a non-empty `List<File>` on OK (each `File` is read-only
-  and has a `.token`), or `null` on cancel / empty selection.  Per
-  `filepick.h`, `UIFC_FP_ALLOWENTRY` / `UIFC_FP_OVERPROMPT` /
-  `UIFC_FP_CREATPROMPT` cannot be combined with multi-select —
-  `filepick_multi` rejects them.
+  and has a `.token`), or `null` on cancel / empty selection.
+  `allowEntry`, `confirmOverwrite`, and `confirmCreate` cannot be
+  combined with multi-select.
 
 | `Host.pickSavePath(initialDir, mask)` [[host-pickSavePath]]
-| Save-mode picker — wraps `filepick` with `UIFC_FP_ALLOWENTRY +
-  UIFC_FP_OVERPROMPT`, so the user can pick an existing file
-  (overwrite-prompted) or type a new filename.  Returns a
+| Save-mode picker with path entry and overwrite confirmation.  The user
+  can pick an existing file or type a new filename.  The picker reports
+  create or overwrite consent explicitly, and the caller does not stat the
+  path again.  Returns a
   *write-consent* `File` whose `.open()` succeeds exactly once, or
   `null` on cancel.  See <<file-write-consent,Write consent>> below
   for the mode rules and single-shot semantics.  `.token` on the
@@ -4424,6 +4479,64 @@ if (Host.launchScript != null && Host.launchScript.endsWith("foo.wren")) {
   set.  Today only ed25519 is exposed; the structured shape lets
   future RSA / sntrup keys join without breaking consumers.
 |===
+
+=== FilePickerOptions [[file-picker-options]]
+
+Public option bits for `Host.pickFile` and `Host.pickFiles`.  The
+numeric assignments are stable so scripts may combine or persist them.
+
+[options="header",cols="2m,1,4"]
+|===
+| Member | Value | Meaning
+
+| `none`
+| 0
+| No optional behavior.
+
+| `maskLocked`
+| 1
+| Display the mask but do not let the user edit or replace it.
+
+| `maskCaseSensitive`
+| 2
+| Match file and directory masks case-sensitively.
+
+| `caseSensitiveSort`
+| 4
+| Sort entry names case-sensitively.
+
+| `selectDirectory`
+| 8
+| Select a directory rather than a file.
+
+| `pathMustExist`
+| 16
+| Reject a typed path which does not exist.
+
+| `fileMustExist`
+| 32
+| Reject a typed filename which does not exist.
+
+| `showHidden`
+| 64
+| Include hidden entries in directory listings.
+
+| `allowEntry`
+| 256
+| Show the editable Path field.
+
+| `confirmOverwrite`
+| 512
+| Ask before accepting an existing destination.
+
+| `confirmCreate`
+| 1024
+| Ask before accepting a destination which does not exist.
+|===
+
+`allowEntry`, `confirmOverwrite`, and `confirmCreate` are invalid
+with `Host.pickFiles`.  `Host.pickSavePath` supplies its save-mode
+options itself.
 
 === Cache [[cache]]
 
@@ -4812,8 +4925,8 @@ returned byte count to the requested count, just like `fread`.
 Wren scripts must not synthesize `File` foreigns from arbitrary
 paths — that's the whole point of the `Cache` / `Download`
 sandboxed roots and the relaxed-name predicate.  The escape
-hatch is `Host.pickFile` / `Host.pickFiles`, where the UIFC
-filepick widget itself is the user's signal of consent.
+hatch is `Host.pickFile` / `Host.pickFiles`, where the isolated
+picker interaction is the user's signal of consent.
 
 To let queued picker-sourced uploads survive a disconnect, the
 picker mints a *capability token* at consent time: an
@@ -5528,7 +5641,7 @@ SyncTERM ships a pure-Wren widget library on top of the
 no foreign calls per cell, composites them through a screen-sized
 backbuffer, and applies a final `Screen.putRect` per frame, so the
 whole thing runs without flicker even on slow remote BBSes.  The
-visual style follows UIFC conventions: cyan-on-blue dialog frames,
+visual style follows SyncTERM's classic conventions: cyan-on-blue dialog frames,
 yellow titles, lightbar selection, drop shadows on modals, and a
 distinct cyan inactive palette for any pane that's currently behind
 a modal.
@@ -5623,7 +5736,7 @@ Confirm`, etc.  They're listed in <<ui-modules,UI Modules>>.
   doesn't overwrite the SyncTERM status bar) and a one-shot screen
   capture (`Screen.readRect`) used as the backdrop behind
   everything.  Areas not covered by widgets show that capture
-  rather than a styled fill — UIFC convention.
+  rather than a styled fill.
 
 Methods of interest:
 
@@ -5653,10 +5766,10 @@ Methods of interest:
   overlay sits above the foreground widget tree but *below* the
   modal stack, so a dialog the user is actively working with isn't
   obscured by an indicator behind it.
-* `releaseFocus()` / `restoreFocus()` — wrap blocking host UIs
-  that own the screen themselves (the filepicker, modal C
-  dialogs) so the App's foreground tree doesn't *also* draw as
-  focused.  Without this, the host UI's pre-call screen save
+* `releaseFocus()` / `restoreFocus()` — wrap a picker call, where
+  another VM temporarily owns the screen, so the App's foreground tree
+  doesn't *also* draw as
+  focused.  Without this, the picker host's pre-call screen save
   captures the App's panes in their focused colour scheme, and
   the post-call restore re-paints them that way until the next
   App-driven repaint — visually, two widgets are focused at
@@ -5879,7 +5992,7 @@ setter.
 === Pane [[ui-pane]]
 
 `Container` with a frame, optional title, `[?]` and `[X]` corner
-buttons, and an inset interior.  The default look is UIFC: double-
+buttons, and an inset interior.  The default classic look uses a double-
 line frame, title in its own bar row with a horizontal separator
 underneath, both corner buttons enabled.
 
@@ -5890,7 +6003,7 @@ Configuration knobs:
   `+----+` style to `+====+` style.
 * `titleAsBar=` — when true, the title sits inside the frame in its
   own row with a horizontal separator underneath.  When false, the
-  title is embedded in the top border (`-| Title |-`).  UIFC list
+  title is embedded in the top border (`-| Title |-`).  Classic list
   views use the bar form; `Popup` subclasses use the embedded form.
 * `helpable=` / `closeable=` — show or hide the `[?]` and `[X]`
   corner buttons.  Help button calls `onHelp` if set, else
@@ -5902,7 +6015,7 @@ frame, title row, and separator are accounted for — children should
 size themselves against this.
 
 `pane.contentBounds` is `innerBounds` inset by one cell on every
-side: the UIFC convention that text never touches the frame.
+side so text never touches the frame.
 Popup-style widgets (`Alert` / `Confirm` / `Prompt` / `PopStatus` /
 `Help`) lay themselves out inside `contentBounds`; bare `Pane` use
 sites that want the full frame interior (e.g. a `ListView` filling
@@ -5981,8 +6094,8 @@ list.onSelect = Fn.new {|i, item| /* ... */ }
 
 Navigation: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` move
 the selection.  `Enter` fires `onSelect` with `(index, item)`.
-Mouse: a single click on a row both selects it and fires `onSelect`
-(matches UIFC's `ulist`); each wheel notch moves the selection one
+Mouse: a single click on a row both selects it and fires `onSelect`;
+each wheel notch moves the selection one
 row using the same wrapping rules as Up and Down.  The scrollbar's
 top and bottom arrow cells invoke PageUp and PageDown; track clicks
 are ignored.  Button-1 drags fall through to screen selection.
@@ -6090,7 +6203,7 @@ t.onChange = Fn.new {|s| /* per-keystroke */ }
 t.selectAll()                     // optional replace-all entry state
 ----
 
-Keys follow UIFC's line editor.  `Left`, `Right`, `Home`, `End`,
+Keys use SyncTERM's standard line-editor behavior.  `Left`, `Right`, `Home`, `End`,
 `Backspace`, and `Delete` / `DelChar` move and delete; Ctrl-B and Ctrl-E
 alias Home and End, and Ctrl-Y truncates at the cursor.  Insert toggles
 insert/overwrite mode.  Ctrl-C / Ctrl-Insert copy the whole field,
@@ -6110,7 +6223,8 @@ the selection before ordinary editing continues; other non-editing key events
 also dismiss it without changing the value.  Assigning `value` clears the
 state, so callers opt into it explicitly after assignment when needed.
 
-`SelectOnFocusInput` is the existing-value editing variant used by UIFC-style
+`SelectOnFocusInput` is the existing-value editing variant used by
+SyncTERM prompts:
 prompts and inline editors.  It calls `selectAll()` whenever it gains focus,
 clears the selection on focus loss, highlights only the selected text, and
 uses the surrounding default style after cursor movement begins ordinary
@@ -6121,7 +6235,8 @@ appending; use `SelectOnFocusInput` when typing should replace that value.
 mode) or overwrites existing characters (`false`).  The mode is shared by
 all `TextInput` instances, so toggling it in one field applies to the next
 field.  `cursorShape` is `"normal"` in insert mode and `"solid"` in overwrite
-mode, matching SyncTERM's reversed UIFC cursor setting.  `cursorAttr` supplies
+mode, matching SyncTERM's insert/overwrite cursor convention.
+`cursorAttr` supplies
 the focused input style's legacy attribute so bitmap backends render the
 cursor in the field foreground instead of an unrelated global color.  Pasted
 control characters are discarded, matching typed-input filtering, and
@@ -6372,7 +6487,7 @@ Markdown context help to the popup.  F1 and Ctrl-Z display that text
 while the popup owns focus.
 
 `Prompt` — `SelectOnFocusInput` plus OK / Cancel buttons.  A non-empty
-initial value starts selected, matching UIFC `K_EDIT`: typing, keyboard paste,
+initial value starts selected: typing, keyboard paste,
 Backspace, or Delete replaces it, while cursor movement or mouse positioning
 preserves it and begins ordinary editing.  `Enter` in the input or on OK
 submits the value; `Esc` or Cancel returns `null`.  The read-only `input`
@@ -6380,8 +6495,8 @@ getter exposes that input so trusted UI code can set `maxLen` or a display-only
 `mask` before presenting the popup.  `sizeForInput(inputWidth)` and
 `sizeForInput(inputWidth, minimumWidth)` size the field for the requested
 capacity and cap the complete popup to the standard screen margins.  The
-`MenuUi.prompt` wrappers use the field's `maxLen` for this width, matching UIFC
-input sizing: short fields retain the normal minimum while URI, path, password,
+`MenuUi.prompt` wrappers use the field's `maxLen` for this width.
+Short fields retain the normal minimum while URI, path, password,
 and other long fields use the available screen width.
 
 `Find` — compact single-row variant of Prompt.  Title sits in the
@@ -6402,7 +6517,7 @@ if (q != null && q.count > 0) {
 
 ==== Layout
 
-All popups use UIFC-style frame interior padding via
+All popups use the standard frame interior padding via
 `Pane.contentBounds` — a 1-cell pad on every side so text never
 touches the frame.  Buttons (Alert OK, Confirm Yes/No, Prompt
 OK/Cancel) anchor hard against the bottom frame; the empty row
@@ -6523,8 +6638,7 @@ Term and description default to `help.bold` and `help.text`
 respectively.
 
 Headings render as a single-row reverse-video bar: blue-on-cyan
-text with one styled space cell on each end (`" Title "`), matching
-UIFC's backtick-marked title convention.
+text with one styled space cell on each end (`" Title "`).
 
 Layout is reflow-on-width: `Markdown.layout(doc, cols)` returns a
 list of `MdLine`s, each carrying pre-resolved style runs ready for
@@ -6591,7 +6705,7 @@ inherit an inactive containing Pane.
 `Theme.default` is the built-in default, memoized so `someTheme ==
 Theme.default` works as identity equality.  It mirrors the classic
 SyncTERM look: white-on-blue active palette, yellow frame /title,
-lightbar selection, gray-on-blue scrollbar, with a UIFC inactive
+lightbar selection, gray-on-blue scrollbar, with a classic inactive
 palette of bright-white-on-cyan and bright-yellow-on-cyan lightbar.
 
 `Glyphs` entries are either a single string or `[primary,
@@ -6645,7 +6759,7 @@ The most useful entry points:
 
 | `scrollbarClick(py, h, total, viewport, current)` | Resolve a click at row `py` (0-based, scrollbar-local) into a new `scrollTop`.  Top/bottom arrow rows step ±1; track clicks jump proportionally.
 
-| `shadow(s, x0, y0, w, h)` | Paint a UIFC-style drop-shadow on the cells around the rect: 2 columns wide on the right, 1 row tall on the bottom.  Each shadow cell keeps its existing character and dims the attribute (legacy 0x08, RGB fg 0x202020 on bg 0x000000).
+| `shadow(s, x0, y0, w, h)` | Paint a drop shadow on the cells around the rect: 2 columns wide on the right, 1 row tall on the bottom.  Each shadow cell keeps its existing character and dims the attribute (legacy 0x08, RGB fg 0x202020 on bg 0x000000).
 
 | `applyStyle(cell, style)` | Apply a Style to an existing Cell, leaving null fields untouched.  Exposed for callers that mutate a cell view directly.
 |===

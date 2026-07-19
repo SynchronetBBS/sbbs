@@ -1,4 +1,4 @@
-import "menu_theme" for ClassicTheme
+import "classic_theme" for ClassicTheme
 import "syncterm" for FilePickerOptions, Host, Key, KeyEvent, Mouse,
                        MouseEvent, REPL, Screen
 import "ui_app" for App

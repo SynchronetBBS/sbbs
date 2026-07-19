@@ -3,8 +3,6 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)bbslist$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)wren_picker_host$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)wren_bind_picker$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)uifcinit$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)filepick$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)fonts$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)rip_icons$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)ripper$(OFILE) \

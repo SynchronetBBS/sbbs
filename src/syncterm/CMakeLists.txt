@@ -294,7 +294,6 @@ set(SOURCE
 	syncterm.c
 	telnet_io.c
 	term.c
-	uifcinit.c
 	webget.c
 	window.c
 	wren_host.c
@@ -495,7 +494,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	target_sources(syncterm PRIVATE SyncTERM.icns)
 	set_source_files_properties(SyncTERM.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
-require_libs(syncterm ciolib comio encode hash sftp uifc xpdev)
+require_libs(syncterm ciolib comio encode hash sftp xpdev)
 # Add xptls AFTER require_libs() so the xpdev target already exists —
 # xptls links xpdev to inherit its PUBLIC platform / HAS_STDINT_H
 # defines.

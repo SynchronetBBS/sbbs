@@ -133,12 +133,6 @@ Loads the user BBS list from the specified file instead of the default.
 -C::
 Changes the default to no status line.
 
--E##::
-Specifies the escape delay in ANSI on Curses modes. The escape delay
-is how long SyncTERM will wait after an escape key is received from the
-user to see if it's a control sequence or a bare kbd:[Escape] press. The units
-are millisecods, and the default is 25.
-
 -H::
 Use SSH mode when connecting.
 
@@ -297,12 +291,9 @@ kbd:[Alt] key, press the kbd:[0] key on the numeric keypad, then enter
 the decimal value on the numeric keypad. Once the value is entered,
 release the kbd:[Alt] key.
 
-== The User InterFaCe
+== The User Interface
 
-Menus in SyncTERM use a common user interface library named UIFC.  This
-library was originally developed for Synchronet.
-
-The following is the general behaviour of UIFC menus.
+The following is the general behaviour of SyncTERM menus.
 
 Mouse controls::
 
@@ -322,7 +313,7 @@ close the menu. If there is help for the menu, there is also a ? button
 to bring up the help.
 +
 If there are more options than fit in the window, there is a scrollbar
-on the left side.
+on the right side.
 
 	Left-Drag:::
 	Select and copy a region (the copy is made when the button is
@@ -1021,7 +1012,7 @@ see the <<_text_modes>> section of the ciolib chapter.
 The Font Management menu allows you to add and remove fonts.  Each font
 should have a unique name, and at least one file for 8x8, 8x14, or 8x16
 fonts.  The font format is the one used by "DOS fonts".  You can insert
-and delete items using normal UIFC commands.
+and delete items using the normal menu commands.
 
 
 ==== Program Settings
@@ -1099,8 +1090,9 @@ This specifies the number of iterations to derive a key from a password.
 The higher this value, the more difficult brute forcing is, but the longer
 it takes to read the BBS list.
 
-UIFC Colours::
-Allows changing the colours for the User InterFaCe.
+Classic Theme Colours::
+Allows changing the colours used by the shipped main menu and file
+picker. Connected-session Wren interfaces use their own theme.
 
 [[custom_screen_mode]]
 Custom Screen Mode::

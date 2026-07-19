@@ -2,7 +2,7 @@ import "syncterm" for Host, KeyEvent, MouseEvent, Key, Mouse, REPL
 import "syncterm_menu" for Menu, MenuReadStatus
 import "wren_console" for WrenConsole
 import "menu_ui" for MenuUi
-import "menu_theme" for ClassicTheme
+import "classic_theme" for ClassicTheme
 import "menu_bbs_editor" for BbsEditor
 import "menu_settings_ui" for SettingsMenu
 import "menu_scrollback" for OfflineScrollbackView

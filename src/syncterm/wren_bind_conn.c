@@ -228,9 +228,9 @@ fn_Conn_endSession(WrenVM *vm)
 	wrenSetSlotNull(vm, 0);
 }
 
-/* Conn.paste() — clipboard → wire.  Wraps the historical Shift-Insert
- * handler's `do_paste()` call: codepage conversion, alt-font
- * awareness, bracketed-paste mode.  No-op when clipboard is empty. */
+/* Conn.paste() — clipboard to wire with codepage conversion, alt-font
+ * awareness, and bracketed-paste handling. No-op when the clipboard is
+ * empty. */
 void
 fn_Conn_paste(WrenVM *vm)
 {
@@ -238,9 +238,8 @@ fn_Conn_paste(WrenVM *vm)
 	do_paste();
 }
 
-/* Conn.scrollback() — delegates to the Wren-side ScrollbackView.run()
- * in scripts/auto/connected/scrollback_view.wren.  No more uifc viewer;
- * the Wren modal owns the entire scrollback browse experience now. */
+/* Conn.scrollback() delegates to ScrollbackView.run() in
+ * scripts/auto/connected/scrollback_view.wren. */
 void
 fn_Conn_scrollback(WrenVM *vm)
 {
@@ -1184,10 +1183,7 @@ fn_Host_musicNames(WrenVM *vm)
 	}
 }
 
-/* Host.musicHelp — the multi-line help blurb shown by the Wren-side
- * music picker.  Markdown variant of bbslist.c's `music_helpbuf`;
- * the uifc Setup dialog uses the backtick-marked-up version
- * directly, so we don't run a converter at runtime. */
+/* Host.musicHelp — Markdown help shown by the Wren music picker. */
 void
 fn_Host_musicHelp(WrenVM *vm)
 {
