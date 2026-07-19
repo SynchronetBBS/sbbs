@@ -21,7 +21,7 @@ cd "$HERE/build"
 # (libmad0-dev on Debian/Ubuntu.) Vorbis/FLAC stay autodetected -- present here,
 # and no curated title has yet needed them the way queen needs MP3.
 "$HERE/scummvm/configure" --backend="$BACKEND" --disable-all-engines \
-  --enable-engine=scumm,sky,queen,lure,drascula --disable-detection-full \
+  --enable-engine=scumm,sky,queen,lure,drascula,agi,sci --disable-detection-full \
   --enable-mad
 # Bridge our libraries into the generated build config: config.mk accumulates
 # LIBS with +=, and Makefile.common's link rule places $(LIBS) after the

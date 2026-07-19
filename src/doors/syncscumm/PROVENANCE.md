@@ -11,7 +11,10 @@
 ## Pruning (deletions only -- no upstream file is modified)
 
 - engines/: all engine subdirectories except scumm, sky, queen, lure,
-  drascula (engines/ root sources kept -- they are core).
+  drascula, agi, sci (engines/ root sources kept -- they are core). agi and
+  sci were restored from the pinned tarball after the initial prune; sci
+  carries its built-by-default sci32 sub-engine (SCI2-3). Neither needs a
+  dists/engine-data file -- both read the game's own resource files.
 - backends/platform/: all except null.
 - dists/: all except engine-data, itself pruned to the curated engines'
   runtime files (sky.cpt, lure.dat, drascula.dat, queen.tbl, README).
