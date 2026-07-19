@@ -1,12 +1,14 @@
 = SyncTERM Wren Scripting Manual
 :toc:
 
-SyncTERM embeds http://wren.io/[Wren] in two isolated scripting hosts.
-A persistent trusted VM owns the main menu, while every connection gets
-a fresh restricted VM which is torn down at disconnect.  Connected
-scripts hook into keyboard, mouse, inbound bytes, outbound bytes,
-status text, and a periodic timer; menu scripts implement the dialing
-directory and settings UI through a separate set of capabilities.
+SyncTERM embeds http://wren.io/[Wren] in three isolated scripting hosts.
+A persistent trusted VM owns the main menu, a second persistent VM owns
+the file picker, and every connection gets a fresh restricted VM which is
+torn down at disconnect.  Connected scripts hook into keyboard, mouse,
+inbound bytes, outbound bytes, status text, and a periodic timer; menu
+scripts implement the dialing directory and settings UI; and picker
+scripts implement the local-file consent interface.  Each host exposes a
+different set of capabilities.
 
 This document is the reference for that scripting layer: how scripts
 are discovered, how the embedded scripts can be overridden, and the
@@ -707,6 +709,7 @@ it:
 | `scripts/auto/<event>/<name>.wren`
 | Auto-loaded entry script.  Runs at the moment the framework fires
   `<event>`.  `menu` runs once in the persistent main-menu VM;
+  `picker` runs once in the persistent file-picker VM; and
   `connected` runs once in each connected-session VM.
 |===
 
@@ -1175,9 +1178,10 @@ by removing those session-local controls.
 At every ownership transition (connect, disconnect, entry to or return
 from the menu through Alt+E, and entry to or return from the picker), the
 host establishes a new input epoch.  It discards pending conio keyboard
-and mouse pushback, clears input claims and waiters owned by the screen
-being left, and rejects late input-shaped results tagged with an older
-epoch.  This prevents a connected script from placing synthetic input in
+and mouse pushback and rejects late input-shaped results tagged with an
+older epoch.  Input claims remain parked in the VM that owns them and
+cannot run while another VM owns the screen.  This prevents a connected
+script from placing synthetic input in
 `ungetkey()` / `ungetmouse()` just before the trusted menu or picker
 takes control.  The same barrier protects the connected VM when control
 returns from a trusted UI.
