@@ -21,6 +21,7 @@ class ListPicker {
     pane.title    = title
     pane.helpText = helpText
     pane.focused  = true
+    pane.shadow   = true
     pane.onClose  = Fn.new { app.quit() }
     app.root.add(pane)
 

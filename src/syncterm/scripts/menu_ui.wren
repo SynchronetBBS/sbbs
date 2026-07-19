@@ -40,6 +40,7 @@ class StandaloneChoice is Popup {
 class ModalPane is Pane {
   construct new(onDismiss) {
     super()
+    shadow = true
     _onDismiss = onDismiss
   }
 

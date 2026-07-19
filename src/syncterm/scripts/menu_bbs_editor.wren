@@ -14,6 +14,7 @@ import "ui_popup" for Alert, Confirm
 class EditorPane is Pane {
   construct new() {
     super()
+    shadow = true
     _onSort = null
     _onNavigate = null
   }
@@ -112,6 +113,7 @@ class PaletteComponentInput is SelectOnFocusInput {
 class PaletteColorPane is Pane {
   construct new(preview, onClose) {
     super()
+    shadow = true
     _preview = preview
     _close = onClose
   }

@@ -371,8 +371,8 @@ class UiPopupTest {
     pane.bounds = Rect.new(1, 1, 24, 7)
     app.pushModal(pane)
     var consumed = pane.handle(KeyEvent.new(Key.escape))
-    check_(consumed && app.modalStack.count == 0,
-           "ModalPane: Esc invokes its dismissal callback")
+    check_(pane.shadow && consumed && app.modalStack.count == 0,
+           "ModalPane: casts a shadow and Esc invokes dismissal callback")
   }
 
 }
