@@ -22,6 +22,9 @@
 #include "syncterm.h"
 #include "bbslist.h"
 #include "ciolib.h"
+#ifdef main
+#undef main
+#endif
 #include "dirwrap.h"
 #include "genwrap.h"      /* xp_timer */
 #include "term.h"         /* doterm_wake */
