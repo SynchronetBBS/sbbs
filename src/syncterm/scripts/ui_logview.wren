@@ -27,8 +27,9 @@
 //
 // A vertical scrollbar (track + arrow caps + thumb) appears on the
 // right edge whenever the ring's contents exceed the viewport height,
-// matching ListView's default layout.  Mouse wheel scrolls the
-// viewport; click + drag on the scrollbar column jumps the view.
+// matching ListView's default layout.  Mouse wheel scrolls the viewport
+// by one page over the scrollbar and by the normal step over content;
+// click + drag on the scrollbar column jumps the view.
 // One column of frame separator sits between the scrollbar and the
 // log text so they don't run together visually.
 //
@@ -305,14 +306,19 @@ class LogView is Widget {
     if (bounds == null) return false
     var e = me.event
 
-    // Wheel: shift the viewport by wheelStep rows regardless of the
-    // pointer's horizontal column.
+    var overScrollbar = scrollbarVisible_ &&
+        me.startX == bounds.x + scrollbarColumn_
+
+    // Wheel: use the normal row step over content and a full viewport
+    // over the scrollbar.
     if (e == Mouse.wheelUpPress || e == Mouse.wheelUpClick) {
-      scrollBy(-LogView.wheelStep)
+      var step = overScrollbar ? bounds.h.max(1) : LogView.wheelStep
+      scrollBy(-step)
       return true
     }
     if (e == Mouse.wheelDownPress || e == Mouse.wheelDownClick) {
-      scrollBy(LogView.wheelStep)
+      var step = overScrollbar ? bounds.h.max(1) : LogView.wheelStep
+      scrollBy(step)
       return true
     }
 
@@ -326,8 +332,7 @@ class LogView is Widget {
     // scrolls; resolve the new scrollTop from the CURRENT pointer Y
     // (`end`).  The scrollbar is at column scrollbarColumn_ in widget-
     // local coords; convert against bounds.x to get screen coords.
-    if (scrollbarVisible_ &&
-        me.startX == bounds.x + scrollbarColumn_) {
+    if (overScrollbar) {
       var py = me.endY - bounds.y
       var t  = Painter.scrollbarClick(py, bounds.h, _ring.count,
                                       bounds.h, effectiveScrollTop_)

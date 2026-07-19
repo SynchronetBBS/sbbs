@@ -2,7 +2,7 @@
 
 import "ui_widget"  for Rect
 import "ui_logview" for LogView
-import "syncterm"   for Key, KeyEvent
+import "syncterm"   for Key, KeyEvent, Mouse, MouseEvent
 
 class UiLogviewTest {
   static run() {
@@ -28,6 +28,7 @@ class UiLogviewTest {
     testCapacityShiftKeepsScrollAligned_()
     testNoScrollbarWhenContentFits_()
     testScrollbarAppearsWhenOverflowing_()
+    testScrollbarWheelMovesPage_()
 
     var total = __pass + __fail
     System.print("=== ui_logview: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -241,6 +242,18 @@ class UiLogviewTest {
     check_(topCh == 0x1E && sf.cellAt(8, 0).ch == "│" &&
            sf.cellAt(0, 0).ch == "l",
            "right scrollbar has separator and leaves content at column 0")
+  }
+
+  static testScrollbarWheelMovesPage_() {
+    var lv = LogView.new()
+    lv.bounds = Rect.new(1, 1, 10, 5)
+    for (i in 1..12) {
+      lv.append(LogView.LEVEL_INFO, "line %(i)")
+    }
+    var ev = MouseEvent.new(Mouse.wheelUpClick, 10, 3, 10, 3)
+    var consumed = lv.handle(ev)
+    check_(consumed && lv.scrollTop == 2,
+           "wheel over scrollbar moves one viewport page")
   }
 
   // When the ring drops the oldest line on overflow, an active scroll

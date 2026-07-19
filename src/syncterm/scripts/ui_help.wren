@@ -15,8 +15,9 @@
 //   Home / End      jump to top / bottom
 //   any other key   dismiss
 // Mouse:
-//   Wheel up/down   scroll one line
-//   Scrollbar drag  scroll proportionally
+//   Wheel up/down   scroll one line, or one page over the scrollbar
+//   Scrollbar click scroll proportionally
+//   Button-1 drag   fall through to screen text selection
 //   Other click     dismiss
 //
 // Sizing: by default the dialog claims most of the screen with a
@@ -309,14 +310,18 @@ class Help is Popup {
     if (bounds == null) return false
     if (!bounds.contains(me.startX, me.startY)) return false
     var e = me.event
+    var overScrollbar = scrollbarVisible_ &&
+        me.startX == bounds.x + scrollbarColumn_
 
-    // Wheel: shift the viewport.
+    // Wheel: one line over content, one viewport over the scrollbar.
     if (e == Mouse.wheelUpPress || e == Mouse.wheelUpClick) {
-      scrollTop_ = _scrollTop - Help.wheelStep
+      var step = overScrollbar ? viewportRows_.max(1) : Help.wheelStep
+      scrollTop_ = _scrollTop - step
       return true
     }
     if (e == Mouse.wheelDownPress || e == Mouse.wheelDownClick) {
-      scrollTop_ = _scrollTop + Help.wheelStep
+      var step = overScrollbar ? viewportRows_.max(1) : Help.wheelStep
+      scrollTop_ = _scrollTop + step
       return true
     }
 
@@ -330,8 +335,7 @@ class Help is Popup {
     // maxScroll = total - viewport, but the click position maps
     // through the scrollbar height.
     if (e == Mouse.button1Click) {
-      if (scrollbarVisible_ &&
-          me.startX == bounds.x + scrollbarColumn_) {
+      if (overScrollbar) {
         var py = me.endY - bounds.y - 1
         scrollTop_ = Painter.scrollbarClick(py, innerRows_, _lines.count,
                                             viewportRows_, _scrollTop)

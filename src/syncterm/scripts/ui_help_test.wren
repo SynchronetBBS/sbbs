@@ -52,6 +52,7 @@ class UiHelpTest {
     testEndJumpsToBottom_()
     testPageDownAdvancesByViewport_()
     testWheelDownScrolls_()
+    testScrollbarWheelMovesPage_()
     testScrollbarDefaultsRight_()
     testRandomKeyDismisses_()
     testOrdinaryClickDismisses_()
@@ -224,6 +225,14 @@ class UiHelpTest {
     var consumed = h.handle(ev)
     check_(consumed && h.scrollTop == 1,
            "Help: mouse wheel scrolls one line")
+  }
+
+  static testScrollbarWheelMovesPage_() {
+    var h = makeHelp_(20, 30, 9)             // viewport = 5
+    var ev = MouseEvent.new(Mouse.wheelDownClick, 29, 3, 29, 3)
+    var consumed = h.handle(ev)
+    check_(consumed && h.scrollTop == 5,
+           "Help: mouse wheel over scrollbar scrolls one page")
   }
 
   static testScrollbarDefaultsRight_() {

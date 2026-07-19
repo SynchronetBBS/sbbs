@@ -6100,10 +6100,11 @@ list.onSelect = Fn.new {|i, item| /* ... */ }
 Navigation: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` move
 the selection.  `Enter` fires `onSelect` with `(index, item)`.
 Mouse: a single click on a row both selects it and fires `onSelect`;
-each wheel notch moves the selection one
-row using the same wrapping rules as Up and Down.  The scrollbar's
-top and bottom arrow cells invoke PageUp and PageDown; track clicks
-are ignored.  Button-1 drags fall through to screen selection.
+each wheel notch over the list content moves the selection one row using
+the same wrapping rules as Up and Down.  Over the scrollbar, a wheel notch
+moves one page.  The scrollbar's top and bottom arrow cells invoke PageUp
+and PageDown; track clicks jump proportionally while keeping the lightbar
+on the same screen row.  Button-1 drags fall through to screen selection.
 
 `wrap=` controls single-row Up/Down movement and defaults to `true`:
 Up at the first row wraps to the last, and Down at the last wraps to
@@ -6596,11 +6597,12 @@ Help.show(app, "Help — Editor",
 ----
 
 Keys: `Up`, `Down`, `PageUp`, `PageDown`, `Home`, `End` scroll;
-any other key dismisses.  Wheel scrolls one line; scrollbar
-clicks/drags jump proportionally.  An ordinary mouse-button click also
-dismisses, including a click outside the dialog.  Same scrollbar knobs as
-`ListView` (`scrollbarSide=`, `scrollbarSeparator=`).  Clicking the
-frame's `[X]` corner button dismisses (inherited from `Pane`).
+any other key dismisses.  Wheel scrolls one line over the text and one
+page over the scrollbar.  Scrollbar clicks jump proportionally; button-1
+drags fall through to screen text selection.  An ordinary mouse-button
+click also dismisses, including a click outside the dialog.  Same scrollbar
+knobs as `ListView` (`scrollbarSide=`, `scrollbarSeparator=`).  Clicking
+the frame's `[X]` corner button dismisses (inherited from `Pane`).
 
 `App.showHelp` (F1 by default) walks from the focused leaf up the
 parent chain looking for a widget with `helpText` set, then calls

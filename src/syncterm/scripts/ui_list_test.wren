@@ -66,6 +66,7 @@ class UiListTest {
     testMouseDragScrollbar_()
     testMouseWheelMovesSelection_()
     testMouseWheelWrapsSelection_()
+    testMouseWheelScrollbarMovesPage_()
     testMouseClickOutsideDrops_()
 
     // Drawing — paint + readback
@@ -396,13 +397,11 @@ class UiListTest {
   static testMouseClickScrollbarTrackBottom_() {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)            // h=5 → arrows on
-    // UIFC only assigns actions to the arrow cells.  Track clicks
-    // don't move the selection or viewport.
-    var prev = l.selected
+    // py=3 is the final track row, which maps to maxScroll=15.
     var ev = MouseEvent.new(Mouse.button1Click, 10, 4, 10, 4)
     var consumed = l.handle(ev)
-    check_(consumed && l.scrollTop == 0 && l.selected == prev,
-           "ListView.handle Mouse: scrollbar track click is a no-op")
+    check_(consumed && l.scrollTop == 15 && l.selected == 15,
+           "ListView.handle Mouse: scrollbar track click jumps viewport")
   }
 
   static testMouseClickScrollbarDownArrow_() {
@@ -456,6 +455,15 @@ class UiListTest {
     var consumed = l.handle(ev)
     check_(consumed && l.selected == 19 && l.scrollTop == 15,
            "ListView.handle Mouse: wheel-up wraps selection")
+  }
+
+  static testMouseWheelScrollbarMovesPage_() {
+    var l = makeList_(20)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    var ev = MouseEvent.new(Mouse.wheelDownClick, 10, 3, 10, 3)
+    var consumed = l.handle(ev)
+    check_(consumed && l.scrollTop == 4 && l.selected == 4,
+           "ListView.handle Mouse: wheel over scrollbar moves one page")
   }
 
   static testMouseClickOutsideDrops_() {

@@ -157,6 +157,35 @@ class ListView is Widget {
     markDirty()
   }
 
+  // Scrollbar navigation moves the viewport and selection together so the
+  // lightbar stays on the same screen row.  Direct scrollTop= remains
+  // available to callers that intentionally want an independent viewport.
+  scrollViewportTo_(target) {
+    if (bounds == null) return
+    var maxTop = (_items.count - bounds.h).max(0)
+    var next = target.max(0).min(maxTop)
+    if (next == _scrollTop) return
+    var row = 0
+    if (_selected >= 0) {
+      row = (_selected - _scrollTop).max(0).min(bounds.h - 1)
+    }
+    _scrollTop = next
+    if (_selected >= 0) {
+      var nextSelected = (next + row).min(_items.count - 1)
+      if (nextSelected != _selected) {
+        _selected = nextSelected
+        notifyChange_()
+      }
+    }
+    _searchBuf = ""
+    markDirty()
+  }
+
+  scrollViewportPage_(direction) {
+    var rows = (viewportRows_ - 1).max(1)
+    scrollViewportTo_(_scrollTop + direction * rows)
+  }
+
   showScroll { _showScroll }
   showScroll=(b) {
     _showScroll = b
@@ -584,16 +613,20 @@ class ListView is Widget {
     if (bounds == null) return false
     if (!bounds.contains(me.startX, me.startY)) return false
     var e = me.event
+    var overScrollbar = scrollbarVisible_ &&
+        me.startX == bounds.x + scrollbarColumn_
 
-    // Scroll wheel: move the highlighted row by one item.  Backends
-    // emit either a PRESS or a CLICK depending on platform; accept
-    // both.
+    // Wheel events over list content move one item.  Over the scrollbar,
+    // move a viewport page while preserving the lightbar's screen row.
+    // Backends emit either a PRESS or a CLICK; accept both.
     if (e == Mouse.wheelUpPress || e == Mouse.wheelUpClick) {
-      up()
+      if (overScrollbar) scrollViewportPage_(-1)
+      if (!overScrollbar) up()
       return true
     }
     if (e == Mouse.wheelDownPress || e == Mouse.wheelDownClick) {
-      down()
+      if (overScrollbar) scrollViewportPage_(1)
+      if (!overScrollbar) down()
       return true
     }
 
@@ -601,11 +634,15 @@ class ListView is Widget {
     // and drag events fall through to the screen-selection path.
     if (e != Mouse.button1Click) return false
 
-    if (scrollbarVisible_ &&
-        me.startX == bounds.x + scrollbarColumn_) {
+    if (overScrollbar) {
       var py = me.startY - bounds.y
       if (py <= 0) pageUp()
       if (py >= bounds.h - 1) pageDown()
+      if (py > 0 && py < bounds.h - 1) {
+        var target = Painter.scrollbarClick(py, bounds.h, _items.count,
+                                             bounds.h, _scrollTop)
+        scrollViewportTo_(target)
+      }
       return true
     }
 
