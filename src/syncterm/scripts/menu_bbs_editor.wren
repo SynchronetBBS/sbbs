@@ -814,8 +814,8 @@ class BbsEditor {
       }
       if (colors.count < 16) choices.add([colors.count, ""])
       var commands = {}
-      commands[Key.insert] = ["insert", true]
-      commands[Key.delete] = ["delete", false]
+      if (colors.count < 16) commands[Key.insert] = ["insert", true]
+      if (colors.count > minimum) commands[Key.delete] = ["delete", false]
       commands[Key.f2] = ["edit", false]
       var result = MenuUi.commandChoice(app, "Edit Palette Entries", choices,
           selected,

@@ -854,7 +854,7 @@ class MainMenuApp {
   quick_() {
     if (!mutable_("quick")) return
     var url = MenuUi.prompt(_app, "Quick Connect", "Address or URL", "",
-        1024, false,
+        64, false,
         "# SyncTERM Quick Connect\n\n" +
         "Enter a URL in this form:\n\n" +
         "`[(rlogin|telnet|ssh)://][user[:password]@]host[:port]`")

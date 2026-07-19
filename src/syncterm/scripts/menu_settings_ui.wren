@@ -103,7 +103,7 @@ class SettingsMenu {
     var rows = []
     var names = Menu.screenModes
     for (i in 1...names.count) rows.add([i, names[i]])
-    var mode = MenuUi.choice(app, "Current Screen Mode", rows,
+    var mode = MenuUi.choice(app, "Screen Mode", rows,
         Menu.currentScreenMode, screenModeHelp_())
     if (mode != null && !Menu.setScreenMode(mode)) {
       Alert.show(app, "Screen Mode", "The requested screen mode could not be applied.")
@@ -159,7 +159,9 @@ class SettingsMenu {
   }
 
   static screenModeHelp_() {
-    return "# Current Screen Mode\n\nSelect the screen size and mode to use now."
+    return "# Current Screen Mode\n\nChange the current screen size and " +
+        "mode.\n\nTo change the initial screen mode, select Startup " +
+        "Screen Mode under Program Settings instead."
   }
 
   static settingHelp_(title) {
@@ -570,13 +572,14 @@ class SettingsMenu {
   static locations_(app) {
     var p = Menu.fileLocations
     var text = "`SyncTERM File Locations`\n\n" +
-        "Global Dialing Directory (Read-Only)\n  %(p["globalList"])\n" +
-        "Personal Dialing Directory\n  %(p["personalList"])\n" +
-        "Configuration File\n  %(p["configuration"])\n" +
-        "Default Download Directory\n  %(p["download"])\n" +
-        "Cache Directory\n  %(p["cache"])\n" +
-        "SSH Keys File\n  %(p["keys"])\n" +
-        "Wren Scripts Directory\n  %(p["scripts"])"
+        "**Global Dialing Directory (Read-Only)**\n" +
+        "  %(p["globalList"])\n" +
+        "**Personal Dialing Directory**\n  %(p["personalList"])\n" +
+        "**Configuration File**\n  %(p["configuration"])\n" +
+        "**Default download Directory**\n  %(p["download"])\n" +
+        "**Cache Directory**\n  %(p["cache"])\n" +
+        "**SSH Keys File**\n  %(p["keys"])\n" +
+        "**Wren Scripts Directory**\n  %(p["scripts"])"
     var viewer = Help.new("File Locations", text)
     viewer.preformatted = true
     var size = Screen.size

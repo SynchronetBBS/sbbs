@@ -988,6 +988,9 @@ distinguishing reserved and duplicate names; an entry creation failure is
 reported separately.  Sort-profile field navigation returns to the last
 profile visited.
 New entries are sorted again after their connection details are accepted.
+Quick Connect retains the directory address field's 64-character input limit.
+Current Screen Mode retains its original distinction from the Startup Screen
+Mode setting in both its dialog title and context help.
 Rate choices select the first supported rate at or above a configured value,
 or Current when no supported rate is high enough, matching the directory
 editor's established catalog behavior.
@@ -1005,6 +1008,12 @@ Font Management treats an empty name as cancellation when adding a record,
 but otherwise preserves the entered name and the file returned by the picker
 without adding validation that the native menu did not perform.  It reports a
 full custom-font table before prompting for another name.
+The preformatted File Locations and Build Options viewers retain the original
+titles, label emphasis, indentation, dimensions, and section layout while
+using the shared Markdown-capable Help renderer.
+Palette Insert and Delete are exposed only while another color can be added or
+removed, and sort-profile Paste is exposed only after Copy or Cut has supplied
+a clipboard profile.
 Insert, Delete, and the blank add row remain available from Font Details as
 well as the outer Font Management list.
 Adding a web list skips its initial fetch when no cache path is available but
