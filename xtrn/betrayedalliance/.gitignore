@@ -1,0 +1,16 @@
+# This package commits ONLY its own source (the fetcher + config below). The
+# SCI resource files getdata.js downloads (resource.map, resource.001,
+# RESOURCE.CFG) and the game's own LICENSE.TXT, the deployed door binary, the
+# seeded scummvm.ini/syncscumm.ini, and any logs are runtime content -- never
+# committed (the game data is Ryan Slattery's, fetched from his GitHub release,
+# not re-hosted here; see getdata.js).
+#
+# A whitelist rather than a denylist: SCI resource files have no single stable
+# naming scheme, so "ignore everything except the tracked source" is robust.
+/*
+!/.gitignore
+!/getdata.js
+!/install-xtrn.ini
+!/README.md
+!/scummvm.example.ini
+!/syncscumm.example.ini
