@@ -20,9 +20,21 @@ cd "$HERE/build"
 # loudly here rather than ship a talkie door that plays music but no dialogue.
 # (libmad0-dev on Debian/Ubuntu.) Vorbis/FLAC stay autodetected -- present here,
 # and no curated title has yet needed them the way queen needs MP3.
+# --enable-release-mode: build as an official ScummVM release does (defines
+# RELEASE_BUILD), NOT a developer build. Without it, an SCI "uninitialized temp
+# read" that has no engine workaround is a FATAL error() (engines/sci/engine/
+# vm.cpp) -- so a fan game crashes the instant its script hits one. Cascade
+# Quest's Sound->Volume does exactly this (TheMenuBar::handleEvent, script 997,
+# temp 3), for which ScummVM ships a workaround only for Betrayed Alliance. A
+# release build turns that into a warning + fake-0 and continues -- the correct,
+# tolerant behavior for a shipped door, and what real ScummVM users get. It also
+# drops dev-only asserts/debug (hashmap stats, celobj32 bounds checks, ...), all
+# benign. Use --enable-release-mode, NOT --enable-release: the latter also
+# forces optimizations and turns on ScummVM's update-checker (a door must not
+# phone home).
 "$HERE/scummvm/configure" --backend="$BACKEND" --disable-all-engines \
   --enable-engine=scumm,sky,queen,lure,drascula,agi,sci --disable-detection-full \
-  --enable-mad
+  --enable-mad --enable-release-mode
 # Bridge our libraries into the generated build config: config.mk accumulates
 # LIBS with +=, and Makefile.common's link rule places $(LIBS) after the
 # objects, so appending here is ordering-correct and touches no vendor file.
