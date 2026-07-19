@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SyncSCUMM: late half of the local vcpkg MSBuild integration (see
+     Directory.Build.props). vcpkg.targets does the real work: it runs
+     "vcpkg install" for the manifest before ClCompile (reusing the binary
+     cache), computes the installed dir the ScummVM_Global props reference as
+     $(_ZVcpkgCurrentInstalledDir), and auto-links every installed .lib. -->
+<Project>
+  <!-- Enable MSVC language extensions (turn OFF /Za). create_project emits
+       DisableLanguageExtensions=true for every project (ENABLE_LANGUAGE_EXTENSIONS
+       is empty upstream), but our vcpkg media-library headers (SIMD paths in
+       libpng/zlib/etc.) pull in <intrin.h>, and /Za makes MSVC reject its
+       intrinsic declarations (error C2577 on _subborrow_u16, ...). This
+       ItemDefinitionGroup is imported after the ScummVM_Global props, so it
+       wins. Extensions-on is the MSVC default and strictly more permissive, so
+       ScummVM's own sources are unaffected. -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <DisableLanguageExtensions>false</DisableLanguageExtensions>
+      <!-- Turn OFF /GL (whole-program optimization / LTCG). ScummVM's Release
+           enables it, but this MSVC toolset ICEs (C1001) code-generating the
+           AVX-512 intrinsics in <zmmintrin.h> for x86 (the UCRT drags <intrin.h>
+           into every TU). LTCG buys a headless door nothing worth an ICE.
+           Passing /p:WholeProgramOptimization=false on the command line does not
+           work (it is ClCompile metadata, not a property), so override it here,
+           where this ItemDefinitionGroup (imported last) wins. -->
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+    </Link>
+    <Lib>
+      <LinkTimeCodeGeneration>false</LinkTimeCodeGeneration>
+    </Lib>
+  </ItemDefinitionGroup>
+
+  <!-- The door sources (backends/platform/synchronet -> door/) need termgfx and
+       xpdev on the include path, and the final link needs the door's own static
+       libs (termgfx.lib / xpdev_static.lib / ADLMIDI.lib, gathered into
+       build-msvc\lib by build.bat). create_project drops the include-dir and
+       library-dir options on the floor in vcpkg mode (they are only emitted in
+       its non-vcpkg branch), so add them here, scoped to the one project that
+       holds the door sources and produces scummvm.exe. Include dirs are APPENDED (via
+       %(AdditionalIncludeDirectories) first) so ScummVM's own headers always win
+       a name collision; the door's own #include "term.h"/"ini_file.h"/... have
+       no ScummVM counterpart and resolve here. $(MSBuildThisFileDirectory) is
+       build-msvc\ (where build.bat copies this file). -->
+  <ItemDefinitionGroup Condition="'$(ProjectName)' == 'scummvm'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)..\..\termgfx;$(MSBuildThisFileDirectory)..\..\..\xpdev</AdditionalIncludeDirectories>
+      <!-- WITH_JXL gates sst_io.c's JPEG-XL graphics tier (its termgfx encoder
+           is compiled WITH_JXL by door/CMakeLists.txt). Matches build.sh's
+           "DEFINES += -DWITH_JXL". No ScummVM source uses this macro. -->
+      <PreprocessorDefinitions>WITH_JXL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(MSBuildThisFileDirectory)lib</AdditionalLibraryDirectories>
+      <!-- The output binary is syncscumm.exe, not scummvm.exe (matches the *nix
+           build.sh output rename + deploy.js's door_exe_name). create_project
+           hardcodes OutputFile=$(OutDir)scummvm.exe in the Link metadata, so
+           overriding TargetName does nothing; override OutputFile here instead
+           (this Link group, imported last, wins). -->
+      <OutputFile>$(OutDir)syncscumm.exe</OutputFile>
+      <!-- The door's entry point is main() (door/syncscumm.cpp), a console app,
+           not the SDL platform's WinMain(). create_project forces
+           EntryPointSymbol=WinMainCRTStartup (SDL provides WinMain via SDL_main)
+           even though its SubSystem is already Console; override the entry to
+           mainCRTStartup so the CRT calls our main() and no _WinMain@16 is
+           demanded. -->
+      <SubSystem>Console</SubSystem>
+      <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCPKG_ROOT)\scripts\buildsystems\msbuild\vcpkg.targets"
+          Condition="Exists('$(VCPKG_ROOT)\scripts\buildsystems\msbuild\vcpkg.targets')" />
+</Project>

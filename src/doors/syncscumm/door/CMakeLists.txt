@@ -26,6 +26,11 @@ if(NOT WITHOUT_JPEG_XL)
     endif()
     if(NOT JPEG_XL_FOUND)
         find_library(JPEG_XL_LIBRARIES NAMES jxl)
+        # find_library sets no include path; on the MSVC/vcpkg build (no
+        # pkg-config) jxl.c's <jxl/encode.h> would otherwise not be found, so
+        # locate the include dir explicitly via CMAKE_PREFIX_PATH. Harmless on
+        # the *nix pkg-config path above, which already sets JPEG_XL_INCLUDE_DIRS.
+        find_path(JPEG_XL_INCLUDE_DIRS NAMES jxl/encode.h)
         if(JPEG_XL_LIBRARIES)
             set(JPEG_XL_FOUND TRUE)
         endif()
