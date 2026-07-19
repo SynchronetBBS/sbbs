@@ -550,8 +550,8 @@ class FilePicker {
     app.root.add(pane)
     app.root.add(indicator)
     app.onLayout = Fn.new {|width, height|
-      pane.bounds = Rect.new(1, 1, (width - 2).max(1),
-          (height - 1).max(1))
+      pane.bounds = Rect.new(3, 2, (width - 4).max(1),
+          (height - 2).max(1))
       indicator.bounds = Rect.new(width, 1, 1, 1)
     }
     app.onError = Fn.new {|fiber|
