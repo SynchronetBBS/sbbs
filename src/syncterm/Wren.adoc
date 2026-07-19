@@ -1224,6 +1224,8 @@ methods `alert(title, message)`, `confirm(title, message)`,
 `choice(title, message, options, current)`, `status(title, lines)`, and
 `statusClear()`.  It is a host-controller ABI rather than a public menu
 script API: application C code holds the call handles and invokes it.
+Status text wraps within the progress pane, with the resulting block and
+each displayed line centered in the available interior.
 Menu auto-script overrides are trusted and may replace its presentation,
 but must keep those signatures and return `Bool`, `String`/`null`, and
 numeric choice indexes as appropriate or host dialogs fail closed.

@@ -4,6 +4,7 @@ import "ui_app" for App
 import "ui_widget" for Widget, Rect
 import "ui_draw" for Painter
 import "ui_pane" for Pane
+import "ui_popup" for Popup
 
 class HostProgressBody is Widget {
   construct new() {
@@ -17,12 +18,29 @@ class HostProgressBody is Widget {
     markDirty()
   }
 
+  wrappedLines_(width) {
+    var wrapped = []
+    var textWidth = (width - 2).max(1)
+    for (line in _lines) {
+      for (part in Popup.wrap_(line, textWidth)) wrapped.add(part)
+    }
+    return wrapped
+  }
+
+  rowCount(width) { wrappedLines_(width).count }
+
   onPaint_() {
     var sf = surface
     var st = style("default")
     Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ", st)
-    var count = _lines.count.min(bounds.h)
-    for (i in 0...count) Painter.text(sf, 0, i, _lines[i], st, bounds.w)
+    var lines = wrappedLines_(bounds.w)
+    var count = lines.count.min(bounds.h)
+    var row = ((bounds.h - count) / 2).floor
+    for (i in 0...count) {
+      var line = lines[i]
+      var col = ((bounds.w - line.count) / 2).floor
+      Painter.text(sf, col, row + i, line, st)
+    }
   }
 }
 
@@ -65,7 +83,8 @@ class MenuHostUI {
       if (line.count + 4 > longest) longest = line.count + 4
     }
     var w = longest.max(24).min(size[0] - 4)
-    var h = (lines.count + 4).max(5).min(size[1] - 4)
+    var rows = __statusBody.rowCount((w - 2).max(1))
+    var h = (rows + 4).max(5).min(size[1] - 4)
     __statusPane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
         ((size[1] - h) / 2).floor + 1, w, h)
     __statusBody.bounds = __statusPane.innerBounds
