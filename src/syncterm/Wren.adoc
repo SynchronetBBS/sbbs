@@ -1051,7 +1051,10 @@ instead requires a name unique across all currently visible entries.
 The inactive directory comment is centered across its line.  While the
 directory pane has focus, its selection supplies the OS window title; the
 settings pane restores the bare SyncTERM version.  Editing a comment leaves
-the title from the pane where editing began until focus moves again.
+the title from the pane where editing began until focus moves again.  The
+active editor is left-aligned within the middle `screen width - 4` cells and
+uses the normal text-input lightbar and cursor.  Leaving the editor restores
+the centered inactive row immediately, even when its value was unchanged.
 
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,

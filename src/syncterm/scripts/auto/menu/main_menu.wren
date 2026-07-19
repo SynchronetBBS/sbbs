@@ -51,8 +51,8 @@ class CommentInput is TextInput {
     Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ",
         style("classic.comment"))
     var offset = 0
-    if (value.bytes.count < bounds.w) {
-      offset = ((bounds.w - value.bytes.count) / 2).floor
+    if (value.count < bounds.w) {
+      offset = ((bounds.w - value.count) / 2).floor
     }
     Painter.text(sf, offset, 0, value, style("classic.comment"),
         bounds.w - offset)
@@ -85,6 +85,8 @@ class ClassicFooter is Container {
     _input.onSubmit = Fn.new {|value| _onCommit.call(value, 0) }
     add(_input)
   }
+
+  gatesActiveLayer { true }
 
   comment=(value) {
     _comment = value == null ? "" : value
@@ -139,9 +141,14 @@ class ClassicFooter is Container {
 
   onPaint_() {
     var sf = surface
-    Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ",
+    Painter.fill(sf, Rect.new(0, 0, bounds.w, 1), " ",
+        focused ? style("default") : style("classic.comment"))
+    if (bounds.h < 2) {
+      compositeChildren_()
+      return
+    }
+    Painter.fill(sf, Rect.new(0, 1, bounds.w, bounds.h - 1), " ",
         style("classic.hint"))
-    if (bounds.h < 2) return
 
     paintHints_(sf)
     compositeChildren_()
