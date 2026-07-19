@@ -5643,21 +5643,35 @@ NO_SSH:
 		lprintf(LOG_INFO, "Terminal Server thread started for nodes %d through %d", first_node, last_node);
 		mqtt_client_max(&mqtt, (last_node - first_node) + 1);
 
+		bool recycle_pending = false;
 		while (!terminate_server) {
 			YIELD();
 			/* check for re-run flags and recycle/shutdown sem files */
-			if (!(startup->options & BBS_OPT_NO_RECYCLE)
-			    && protected_uint32_value(node_threads_running) == 0) {
+			if (!(startup->options & BBS_OPT_NO_RECYCLE)) {
+				bool recycle = false;
 				if ((p = semfile_list_check(&initialized, recycle_semfiles)) != NULL) {
 					lprintf(LOG_INFO, "Recycle semaphore file (%s) detected"
 					        , p);
-					break;
+					recycle = true;
 				}
 				if (startup->recycle_now == true) {
 					lprintf(LOG_INFO, "Recycle semaphore signaled");
 					startup->recycle_now = false;
-					break;
+					recycle = true;
 				}
+				if (recycle) {
+					recycle_pending = true;
+					/* Flag this server's nodes to re-read their configuration
+					   on their next connection, so configuration changes reach
+					   new logins without waiting for the terminal server to
+					   drain to idle (the full server recycle below still waits
+					   until all nodes are idle). */
+					for (int i = first_node; i <= last_node; i++)
+						set_node_rerun(&scfg, i, /* set: */ true);
+				}
+				if (recycle_pending
+				    && protected_uint32_value(node_threads_running) == 0)
+					break;
 			}
 			if (((p = semfile_list_check(&initialized, shutdown_semfiles)) != NULL
 			     && lprintf(LOG_INFO, "Shutdown semaphore file (%s) detected"
