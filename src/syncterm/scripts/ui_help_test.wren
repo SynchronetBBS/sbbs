@@ -52,6 +52,7 @@ class UiHelpTest {
     testEndJumpsToBottom_()
     testPageDownAdvancesByViewport_()
     testWheelDownScrolls_()
+    testScrollbarDefaultsRight_()
     testRandomKeyDismisses_()
     testOrdinaryClickDismisses_()
     testMiddleClickDismisses_()
@@ -112,8 +113,9 @@ class UiHelpTest {
 
   static testConstruction_() {
     var h = makeHelp_(3, 30, 8)
-    check_(h.title == "Help" && h.scrollTop == 0,
-           "Help: title set, scrollTop starts at 0")
+    check_(h.title == "Help" && h.scrollTop == 0 &&
+           h.scrollbarSide == "right" && h.scrollbarSeparator == true,
+           "Help: title set, scrollTop starts at 0, scrollbar on right")
   }
 
   static testMenuDefinitionListFormatting_() {
@@ -222,6 +224,16 @@ class UiHelpTest {
     var consumed = h.handle(ev)
     check_(consumed && h.scrollTop == 1,
            "Help: mouse wheel scrolls one line")
+  }
+
+  static testScrollbarDefaultsRight_() {
+    var h = makeHelp_(20, 30, 9)
+    var sf = h.draw()
+    var consumed = h.handle(
+        MouseEvent.new(Mouse.button1Click, 29, 8, 29, 8))
+    check_(sf.cellAt(28, 1).chByte == 0x1E &&
+           sf.cellAt(27, 1).ch == "│" && consumed && h.scrollTop == 1,
+           "Help: right scrollbar draws and accepts its down arrow")
   }
 
   static testRandomKeyDismisses_() {

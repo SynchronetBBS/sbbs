@@ -39,7 +39,7 @@ class Help is Popup {
     _lines     = []             // populated by ensureLayout_()
     _layoutW   = -1             // width the cached _lines were laid out at
     _scrollTop = 0
-    _sbSide    = "left"         // "left" (UIFC) or "right"
+    _sbSide    = "right"        // "right" (default) or "left"
     _sbSep     = true           // separator between scrollbar and content
     _plain     = false
   }
@@ -86,8 +86,8 @@ class Help is Popup {
     _layoutBoundsH = bounds.h
     // Width budget accounts for: 2 frame cells + 1-cell padding
     // on each non-scrollbar side.  When the scrollbar appears it
-    // replaces the padding cell on its side (UIFC convention —
-    // text can be flush against the scrollbar / separator).
+    // replaces the padding cell on its side, so text can be flush
+    // against the scrollbar or separator.
     var rows   = (bounds.h - 4).max(0)             // -2 frame, -2 padding
     var noSb   = (bounds.w - 4).max(1)             // both sides padded
     var sbOH   = _sbSep ? 2 : 1

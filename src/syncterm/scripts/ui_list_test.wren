@@ -69,6 +69,7 @@ class UiListTest {
     // Drawing — paint + readback
     testDrawRowsSelected_()
     testDrawScrollbarThumb_()
+    testDrawLeftScrollbarOverride_()
 
     var total = __pass + __fail
     System.print("=== ui_list: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -97,9 +98,10 @@ class UiListTest {
   static testListDefaults_() {
     var l = ListView.new()
     check_(l.count == 0 && l.selected == null && l.scrollTop == 0 &&
-           l.showScroll == true && l.wrap == true,
+           l.showScroll == true && l.wrap == true &&
+           l.scrollbarSide == "right" && l.scrollbarSeparator == true,
            "List defaults: empty, selected=null, scrollTop=0, " +
-           "scrolling and wrapping enabled")
+           "scrolling and wrapping enabled, scrollbar on right")
   }
 
   static testListItemsSetterResets_() {
@@ -298,7 +300,7 @@ class UiListTest {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 20, 5)
     check_(l.innerWidth == 17,
-           "ListView.innerWidth: overflow → bounds.w - 3 (left scrollbar+sep + right pad)")
+           "ListView.innerWidth: overflow → bounds.w - 3 (left pad + right sep/scrollbar)")
   }
 
   static testInnerWidthScrollDisabled_() {
@@ -377,7 +379,7 @@ class UiListTest {
     // UIFC only assigns actions to the arrow cells.  Track clicks
     // don't move the selection or viewport.
     var prev = l.selected
-    var ev = MouseEvent.new(Mouse.button1Click, 1, 4, 1, 4)
+    var ev = MouseEvent.new(Mouse.button1Click, 10, 4, 10, 4)
     var consumed = l.handle(ev)
     check_(consumed && l.scrollTop == 0 && l.selected == prev,
            "ListView.handle Mouse: scrollbar track click is a no-op")
@@ -387,7 +389,7 @@ class UiListTest {
     var l = makeList_(20)
     l.bounds = Rect.new(1, 1, 10, 5)
     // py=4 is the down-arrow row; UIFC maps it to PageDown.
-    var ev = MouseEvent.new(Mouse.button1Click, 1, 5, 1, 5)
+    var ev = MouseEvent.new(Mouse.button1Click, 10, 5, 10, 5)
     var consumed = l.handle(ev)
     check_(consumed && l.selected == 4 && l.scrollTop == 0,
            "ListView.handle Mouse: down arrow pages the selection")
@@ -398,7 +400,7 @@ class UiListTest {
     l.bounds = Rect.new(1, 1, 10, 5)
     l.selected = 9
     // py=0 is the up-arrow row; UIFC maps it to PageUp.
-    var ev = MouseEvent.new(Mouse.button1Click, 1, 1, 1, 1)
+    var ev = MouseEvent.new(Mouse.button1Click, 10, 1, 10, 1)
     var consumed = l.handle(ev)
     check_(consumed && l.selected == 5 && l.scrollTop == 5,
            "ListView.handle Mouse: up arrow pages the selection")
@@ -410,7 +412,7 @@ class UiListTest {
     var prev = l.selected
     // UIFC hands list drags to screen selection, including drags that
     // start on the scrollbar.
-    var ev = MouseEvent.new(Mouse.button1DragMove, 1, 1, 1, 4)
+    var ev = MouseEvent.new(Mouse.button1DragMove, 10, 1, 10, 4)
     var consumed = l.handle(ev)
     check_(!consumed && l.scrollTop == 0 && l.selected == prev,
            "ListView.handle Mouse: scrollbar drag falls through")
@@ -471,13 +473,26 @@ class UiListTest {
     l.items = items
     l.bounds = Rect.new(1, 1, 10, 5)            // overflows
     var s = l.draw()
-    // Scrollbar at column 0 (UIFC-left convention); column 1 is the
-    // separator (frame.left "│"); content from column 2 onward.
-    var top = s.cellAt(0, 0)
-    var bot = s.cellAt(0, 4)
+    // Content starts after the left padding at column 1.  Column 8 is
+    // the separator and column 9 is the right-side scrollbar.
+    var top = s.cellAt(9, 0)
+    var bot = s.cellAt(9, 4)
     check_(top.chByte != bot.chByte,
            "ListView.draw: scrollbar drawn with distinct thumb / track glyphs")
-    check_(s.cellAt(1, 0).ch == "│" && s.cellAt(2, 0).ch == "x",
-           "ListView.draw: separator '│' at col 1, content starts at col 2")
+    check_(s.cellAt(8, 0).ch == "│" && s.cellAt(1, 0).ch == "x",
+           "ListView.draw: content starts at col 1, separator at col 8")
+  }
+
+  static testDrawLeftScrollbarOverride_() {
+    var l = ListView.new()
+    var items = []
+    for (i in 0...20) items.add("x")
+    l.items = items
+    l.bounds = Rect.new(1, 1, 10, 5)
+    l.scrollbarSide = "left"
+    var s = l.draw()
+    check_(s.cellAt(0, 0).chByte == 0x1E &&
+           s.cellAt(1, 0).ch == "│" && s.cellAt(2, 0).ch == "x",
+           "ListView.draw: explicit left scrollbar override")
   }
 }

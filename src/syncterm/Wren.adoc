@@ -5977,7 +5977,7 @@ so does setting `items=`.
 
 Scrollbar layout knobs:
 
-* `scrollbarSide=` — `"left"` (UIFC default) or `"right"`.
+* `scrollbarSide=` — `"right"` (default) or `"left"`.
 * `scrollbarSeparator=` — when true, paints a `+|+` divider between
   the scrollbar column and the content area.
 * `showScroll=` — set to false to disable the scrollbar entirely.
@@ -6418,9 +6418,10 @@ height minus the status row (`y=1`, `h=screenHeight-1`) and a
 `Rect` via the `bounds=` setter after construction to override.
 
 Padding: 1-cell margin on every side except the scrollbar column,
-where text is flush.  The scrollbar / separator span the full
-inner height (between the top and bottom frame chars); only text
-rows inset by the top/bottom padding.
+where text is flush.  The scrollbar defaults to the right, and its
+column plus optional separator span the full inner height (between
+the top and bottom frame chars); only text rows inset by the
+top/bottom padding.
 
 ==== Markdown subset
 

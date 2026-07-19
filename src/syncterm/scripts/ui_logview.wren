@@ -26,8 +26,8 @@
 // auto-tails until the user returns to live with End.
 //
 // A vertical scrollbar (track + arrow caps + thumb) appears on the
-// left edge whenever the ring's contents exceed the viewport height,
-// matching ListView's UIFC-style layout.  Mouse wheel scrolls the
+// right edge whenever the ring's contents exceed the viewport height,
+// matching ListView's default layout.  Mouse wheel scrolls the
 // viewport; click + drag on the scrollbar column jumps the view.
 // One column of frame separator sits between the scrollbar and the
 // log text so they don't run together visually.
@@ -205,16 +205,13 @@ class LogView is Widget {
   static wheelStep { 3 }
 
   // Layout columns when the scrollbar is visible.
-  //   col 0           — scrollbar track + arrow caps + thumb
-  //   col 1           — frame separator (single glyph column)
-  //   col 2 .. w-1    — log text content
+  //   col 0 .. w-3    — log text content
+  //   col w-2         — frame separator (single glyph column)
+  //   col w-1         — scrollbar track + arrow caps + thumb
   // When the scrollbar is hidden, content spans cols 0 .. w-1.
-  scrollbarColumn_ { 0 }
-  separatorColumn_ { 1 }
-  contentColumn_   {
-    if (bounds == null) return 0
-    return scrollbarVisible_ ? 2 : 0
-  }
+  scrollbarColumn_ { bounds.w - 1 }
+  separatorColumn_ { bounds.w - 2 }
+  contentColumn_   { 0 }
   contentWidth_ {
     if (bounds == null) return 0
     return scrollbarVisible_ ? (bounds.w - 2).max(0) : bounds.w

@@ -96,7 +96,7 @@ class UiLogviewTest {
 
   // Viewport 3 rows over a ring of 5 entries: live mode shows the
   // last 3 (entries 2..4).  Scrollbar is visible because 5 > 3, so
-  // content starts at column 2 (col 0 = scrollbar, col 1 = separator).
+  // content ends before the separator at column 18 and scrollbar at 19.
   static testLiveTailShowsLastLines_() {
     var lv = LogView.new()
     lv.bounds = Rect.new(1, 1, 20, 3)
@@ -106,9 +106,9 @@ class UiLogviewTest {
     lv.append(LogView.LEVEL_INFO, "delta")
     lv.append(LogView.LEVEL_INFO, "epsilon")
     var sf = lv.draw()
-    check_(sf.cellAt(2, 0).ch == "g" && sf.cellAt(2, 1).ch == "d" &&
-           sf.cellAt(2, 2).ch == "e",
-           "live tail: last 3 of 5 entries paint top-to-bottom (col 2)")
+    check_(sf.cellAt(0, 0).ch == "g" && sf.cellAt(0, 1).ch == "d" &&
+           sf.cellAt(0, 2).ch == "e",
+           "live tail: last 3 of 5 entries paint top-to-bottom (col 0)")
   }
 
   // Viewport bigger than data: paint at top, leave trailing rows blank.
@@ -211,25 +211,24 @@ class UiLogviewTest {
            "append in scroll mode keeps anchor (no auto-tail)")
   }
 
-  // No scrollbar painted when count fits in the viewport.  Column 0
-  // should hold the row's text (or default-fill space), not the
-  // up-arrow scrollbar cap.
+  // No scrollbar painted when count fits in the viewport.  The last
+  // column should hold content or default-fill space, not an arrow cap.
   static testNoScrollbarWhenContentFits_() {
     var lv = LogView.new()
     lv.bounds = Rect.new(1, 1, 10, 4)
     lv.append(LogView.LEVEL_INFO, "abc")
     lv.append(LogView.LEVEL_INFO, "def")
     var sf = lv.draw()
-    var leftCh = sf.cellAt(0, 0).chByte
+    var rightCh = sf.cellAt(9, 0).chByte
     // Whatever it is, it should not be one of the four scrollbar
     // glyphs (▲▼█░ → CP437 0x1E 0x1F 0xDB 0xB0).
-    var isSb = leftCh == 0x1E || leftCh == 0x1F ||
-               leftCh == 0xDB || leftCh == 0xB0
+    var isSb = rightCh == 0x1E || rightCh == 0x1F ||
+               rightCh == 0xDB || rightCh == 0xB0
     check_(!isSb,
            "no scrollbar drawn when count <= viewport")
   }
 
-  // Scrollbar appears (top-row up-arrow glyph) on the LEFT column
+  // Scrollbar appears (top-row up-arrow glyph) on the right column
   // when the ring exceeds the viewport height.
   static testScrollbarAppearsWhenOverflowing_() {
     var lv = LogView.new()
@@ -238,9 +237,10 @@ class UiLogviewTest {
       lv.append(LogView.LEVEL_INFO, "line %(i)")
     }
     var sf = lv.draw()
-    var topCh = sf.cellAt(0, 0).chByte
-    check_(topCh == 0x1E,
-           "scrollbar up-arrow ▲ (CP437 0x1E) at top of left column")
+    var topCh = sf.cellAt(9, 0).chByte
+    check_(topCh == 0x1E && sf.cellAt(8, 0).ch == "│" &&
+           sf.cellAt(0, 0).ch == "l",
+           "right scrollbar has separator and leaves content at column 0")
   }
 
   // When the ring drops the oldest line on overflow, an active scroll

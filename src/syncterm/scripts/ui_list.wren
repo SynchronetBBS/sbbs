@@ -38,7 +38,7 @@ class ListView is Widget {
     _onSelect      = null
     _onChange      = null
     _wrap          = true
-    _sbSide        = "left"        // "left" (UIFC) or "right"
+    _sbSide        = "right"       // "right" (default) or "left"
     _sbSep         = true          // separator between scrollbar and content
     _searchBuf     = ""             // type-to-search rolling buffer
     _lastSearch    = ""             // most recent Ctrl-F query (for Ctrl-G)
@@ -149,10 +149,9 @@ class ListView is Widget {
     markDirty()
   }
 
-  // Scrollbar layout knobs.  Default is UIFC: scrollbar on the left
-  // with a `│` separator between it and the content.  Set side to
-  // "right" for the older / web-style layout, or separator to false
-  // to drop the divider.
+  // Scrollbar layout knobs.  The scrollbar defaults to the right with
+  // a `│` separator between it and the content.  Set side to "left"
+  // to override the default, or separator to false to drop the divider.
   scrollbarSide      { _sbSide }
   scrollbarSide=(s) {
     _sbSide = s

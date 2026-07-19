@@ -15,6 +15,7 @@ Add Wren scripting engine, REPL console with Ctrl+`
 Replace the dialing directory and settings UI with a persistent Wren menu
 Isolate trusted menu scripts from per-connection Wren scripts
 Retain UIFC only for the trusted native file picker
+Place Wren UI scrollbars on the right
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support
 Add support for "cursor on mode" to Prestel (ala Acorn manual)
