@@ -40,7 +40,7 @@ directories: `find dists/engine-data -mindepth 1 -type d -empty -delete`.
 
 ## Modified upstream files
 
-Three upstream files are modified; everything else is deletions only.
+Five upstream files are modified; everything else is deletions only.
 
 - configure: one added case in the backend switch (search "synchronet") --
   the *nix (gcc/make) build's backend selection.
@@ -58,6 +58,15 @@ Three upstream files are modified; everything else is deletions only.
   backend and defines USE_SYNCHRONET_DRIVER instead of SDL_BACKEND -- the MSVC
   analogue of configure's `synchronet)` case (search "SyncSCUMM local patch"
   in create_project.cpp / .h).
+- base/main.cpp + gui/browser.cpp: SECURITY. The ScummVM launcher and its
+  filesystem browser are compiled OUT of the door, gated on the
+  SYNCSCUMM_NO_LAUNCHER define (set by build.sh's DEFINES on the *nix build and
+  by msvc/Directory.Build.props on the Win32 build). launcherDialog() returns
+  without selecting a game, so scummvm_main() proceeds to a clean exit instead
+  of presenting the launcher (Add Game, options, path pickers); and
+  BrowserDialog::runModal() returns "cancelled" without ever browsing. A remote
+  BBS user must never reach the launcher, nor browse/read/write arbitrary host
+  files. Search "SYNCHRONET DOOR SECURITY".
 
 ## Restored for the Windows build (from the pinned tarball)
 

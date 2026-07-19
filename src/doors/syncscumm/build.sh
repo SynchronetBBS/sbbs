@@ -50,6 +50,13 @@ cd "$HERE/build"
 	# ini_file.h (subtitles precedence: user > sysop > auto).
 	echo "INCLUDES += -I$HERE/../../xpdev"
 } >> config.mk
+# SYNCHRONET DOOR SECURITY: compile the ScummVM launcher and the filesystem
+# browser OUT of the door binary -- base/main.cpp's launcherDialog() and
+# gui/browser.cpp's BrowserDialog::runModal() are #ifdef'd on this so a remote
+# BBS user can never reach the launcher (Add Game, options) or browse/read/
+# write arbitrary host files. DEFINES is folded into CPPFLAGS by
+# Makefile.common, so it reaches those .cpp units. See PROVENANCE.md.
+echo "DEFINES += -DSYNCSCUMM_NO_LAUNCHER" >> config.mk
 # JPEG XL tier: door/CMakeLists.txt writes jxl_libs.txt only when libjxl was
 # found (target_compile_definitions(termgfx PRIVATE WITH_JXL) then applies to
 # termgfx's own jxl.c). sst_io.c's tier-select (door/sst_io.c) is compiled by

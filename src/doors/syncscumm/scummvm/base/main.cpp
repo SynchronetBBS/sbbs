@@ -101,6 +101,18 @@
 #include "gui/dump-all-dialogs.h"
 
 static bool launcherDialog() {
+#ifdef SYNCSCUMM_NO_LAUNCHER
+	// SYNCHRONET DOOR SECURITY: the ScummVM launcher -- and everything it can
+	// reach (Add Game, the filesystem browser, global path/options dialogs) --
+	// must never be presented to a remote BBS user. The door always names one
+	// game on its command line; control reaches here only when that game could
+	// not be started, or a "Return to Launcher" was requested. In either case
+	// refuse the launcher and return WITHOUT selecting a game: scummvm_main()'s
+	// game loop then finds no active domain and proceeds straight to a clean
+	// shutdown/exit. See PROVENANCE.md and build.sh's SYNCSCUMM_NO_LAUNCHER.
+	warning("syncscumm: the ScummVM launcher is disabled in the door; exiting");
+	return false;
+#else
 
 	// Discard any command line options. Those that affect the graphics
 	// mode and the others (like bootparam etc.) should not
@@ -120,6 +132,7 @@ static bool launcherDialog() {
 		status = (dlg.runModal() != -1);
 	} while (noQuit && nullptr == ConfMan.getActiveDomain());
 	return status;
+#endif
 }
 
 static Common::Error identifyGame(const Common::String &debugLevels, const Plugin **detectionPlugin, DetectedGame &game, const void **descriptor) {

@@ -86,6 +86,16 @@ BrowserDialog::BrowserDialog(const Common::U32String &title, bool dirBrowser)
 }
 
 int BrowserDialog::runModal() {
+#ifdef SYNCSCUMM_NO_LAUNCHER
+	// SYNCHRONET DOOR SECURITY: a remote BBS user must never be able to browse
+	// the host filesystem. Refuse the file/directory browser outright and
+	// report "cancelled" (callers test the result for > 0 == a path chosen).
+	// This is the belt-and-suspenders guarantee behind the launcher lockout in
+	// base/main.cpp: even if some dialog tried to open a path picker, no part
+	// of the host filesystem is ever presented. See PROVENANCE.md.
+	warning("syncscumm: the file browser is disabled in the door");
+	return 0;
+#endif
 #if defined(USE_SYSDIALOGS)
 	// Try to use the backend browser
 	Common::DialogManager *dialogManager = g_system->getDialogManager();

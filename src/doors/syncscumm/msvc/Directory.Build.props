@@ -30,6 +30,21 @@
     <VcpkgTriplet>x86-windows-static-md</VcpkgTriplet>
     <VcpkgHostTriplet>x86-windows-static-md</VcpkgHostTriplet>
   </PropertyGroup>
+  <!-- SYNCHRONET DOOR SECURITY: define SYNCSCUMM_NO_LAUNCHER for every MSVC
+       translation unit, the Win32 counterpart of build.sh's
+       DEFINES += -DSYNCSCUMM_NO_LAUNCHER on the Unix build. This #ifdef-
+       compiles the ScummVM launcher and filesystem browser OUT of
+       syncscumm.exe (base/main.cpp launcherDialog(), gui/browser.cpp
+       BrowserDialog::runModal()) so a remote BBS user can never reach the
+       launcher or browse/read/write arbitrary host files. This props file is
+       imported before each project's own ClCompile settings, so create_project's
+       WIN32;RELEASE_BUILD;%(PreprocessorDefinitions) appends onto this. See
+       PROVENANCE.md. -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>SYNCSCUMM_NO_LAUNCHER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <Import Project="$(VCPKG_ROOT)\scripts\buildsystems\msbuild\vcpkg.props"
           Condition="Exists('$(VCPKG_ROOT)\scripts\buildsystems\msbuild\vcpkg.props')" />
 </Project>
