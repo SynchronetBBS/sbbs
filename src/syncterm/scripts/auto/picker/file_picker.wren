@@ -78,8 +78,6 @@ class PickerList is ListView {
     _directories = directories
   }
 
-  gatesActiveLayer { true }
-
   formatItem(item, width) {
     var prefix = ""
     if (!_directories && _owner.multiple) {
