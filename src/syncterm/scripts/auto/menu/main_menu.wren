@@ -1,5 +1,6 @@
-import "syncterm" for Host, KeyEvent, MouseEvent, Key, Mouse
+import "syncterm" for Host, KeyEvent, MouseEvent, Key, Mouse, REPL
 import "syncterm_menu" for Menu, MenuReadStatus
+import "wren_console" for WrenConsole
 import "menu_ui" for MenuUi
 import "menu_theme" for ClassicTheme
 import "menu_bbs_editor" for BbsEditor
@@ -33,6 +34,27 @@ class ClassicBackdrop is Widget {
       Painter.text(sf, bounds.w - 26, 0, Menu.timeText,
           style("classic.header"), 24)
     }
+  }
+}
+
+class ConsoleIndicator is Widget {
+  construct new() {
+    super()
+    focusable = false
+    activitySensitive = false
+    _error = false
+    refresh()
+  }
+
+  refresh() {
+    _error = Host.logUnreadError
+    visible = Host.logUnread
+    markDirty()
+  }
+
+  onPaint_() {
+    Painter.text(surface, 0, 0, "\u203c",
+        style(_error ? "classic.console.error" : "classic.console"), 1)
   }
 }
 
@@ -262,9 +284,22 @@ class MainList is ListView {
   }
 }
 
+class MainMenuEventApp is App {
+  construct new(afterDispatch) {
+    super()
+    _afterDispatch = afterDispatch
+  }
+
+  dispatchSync_(event) {
+    var result = super.dispatchSync_(event)
+    _afterDispatch.call()
+    return result
+  }
+}
+
 class MainMenuApp {
   construct new(current, connected) {
-    _app = App.new()
+    _app = MainMenuEventApp.new(Fn.new { _consoleIndicator.refresh() })
     _app.theme = ClassicTheme.from(Menu.settings)
     _connected = connected
     _current = current
@@ -331,6 +366,14 @@ class MainMenuApp {
     }
     _settings.add(_settingsList)
 
+    _consoleIndicator = ConsoleIndicator.new()
+    _app.root.add(_consoleIndicator)
+    _app.onError = Fn.new {|fiber|
+      System.print("menu UI error: " + fiber.error)
+      REPL.printTrace_(fiber)
+      _consoleIndicator.refresh()
+    }
+
     var inactiveWheel = Fn.new {|event| routeWheel_(event) }
     _list.onInactiveWheel = inactiveWheel
     _settingsList.onInactiveWheel = inactiveWheel
@@ -340,6 +383,7 @@ class MainMenuApp {
       backgroundMouse_(event, hit)
     }
     bind_(Key.escape, Fn.new { exit_(false) })
+    bind_(Key.wrenConsole, Fn.new { console_() })
     _app.bind(Key.quit, Fn.new {|event| exit_(true) })
     bindDirectory_(Key.f2, Fn.new {
       if (_selected != null) edit_()
@@ -378,6 +422,11 @@ class MainMenuApp {
     return _result
   }
 
+  console_() {
+    WrenConsole.run("main_menu")
+    _consoleIndicator.refresh()
+  }
+
   directoryHelp_() {
     var action = "Connect to the selected entry"
     if (_connected) action = "Edit the selected entry"
@@ -399,6 +448,7 @@ class MainMenuApp {
     }
     return text + "\n\n" +
         "## Window Keys\n\n" +
+        "Ctrl-`\n:  Open the Wren console\n" +
         "Alt-Left / Alt-Right\n:  Snap to the next smaller or larger width\n" +
         "Alt-Enter\n:  Toggle full-screen mode when available\n\n" +
         "## List Keys\n\n" +
@@ -526,6 +576,7 @@ class MainMenuApp {
 
   layout_(width, height) {
     _backdrop.bounds = Rect.new(1, 1, width, height)
+    _consoleIndicator.bounds = Rect.new(width, 1, 1, 1)
     _footer.bounds = Rect.new(1, height - 1, width, 2)
 
     var settingW = (longest_(_settingRows) + 5).max(21)

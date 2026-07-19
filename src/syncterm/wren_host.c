@@ -63,50 +63,18 @@ static bool on_owner_thread(void);
  * This keeps memory at one copy per slot worst-case.
  * -------------------------------------------------------------------- */
 
-#define WREN_LOG_CAPACITY  1024
-#define WREN_LOG_MAX_TEXT  (8 * 1024)
-
-struct wren_log_entry {
-	uint64_t             seq;           /* assigned at write time */
-	long double          ts;
-	enum wren_log_source source;
-	char                *text;          /* freed at first read or eviction */
-	size_t               len;
-	WrenHandle          *cached_value;  /* NULL until first read */
-};
-
-struct wren_log {
-	struct wren_log_entry entries[WREN_LOG_CAPACITY];
-	int                   head;
-	int                   count;
-	uint64_t              total;         /* monotonic; survives clear */
-	uint64_t              error_total;   /* same, counting only error
-	                                       * entries (compile error,
-	                                       * runtime error, stack frame) */
-};
-
-/* The user-visible scrollback. */
-static struct wren_log main_log;
-
-/* Side log used during a REPL.eval to capture compile errors that may
- * or may not survive to the user-visible log.  When a captured set
+/* Each host state owns a user-visible log and a side log used during a
+ * REPL.eval to capture compile errors that may or may not survive to the
+ * user-visible log.  When a captured set
  * contains "Expected expression." (the parser's signal that input
  * isn't an expression), REPL.eval drops the side log and retries as a
  * statement.  Otherwise the captured entries are merged into the main
  * log via wren_log_capture_commit. */
-static struct wren_log capture_log;
-
-/* `log_append` writes here.  Default target is the main log; the
- * capture API points it at capture_log between start and
- * commit/clear, redirecting writes without touching the main log at
- * all.  Wren is single-threaded in our use, so no synchronization. */
-static struct wren_log *log_target = &main_log;
-
 static void
-log_release_slot(struct wren_log_entry *e)
+log_release_slot(struct wren_host_state *st, struct wren_log_entry *e)
 {
-	if (e->cached_value != NULL && state.vm != NULL) {
-		wrenReleaseHandle(state.vm, e->cached_value);
+	if (e->cached_value != NULL && st->vm != NULL) {
+		wrenReleaseHandle(st->vm, e->cached_value);
 		e->cached_value = NULL;
 	}
 	if (e->text != NULL) {
@@ -117,10 +85,10 @@ log_release_slot(struct wren_log_entry *e)
 }
 
 static void
-log_drop_all(struct wren_log *log)
+log_drop_all(struct wren_host_state *st, struct wren_log *log)
 {
 	for (int i = 0; i < WREN_LOG_CAPACITY; i++)
-		log_release_slot(&log->entries[i]);
+		log_release_slot(st, &log->entries[i]);
 	log->head  = 0;
 	log->count = 0;
 	/* total intentionally NOT reset — Wren scripts may track a
@@ -132,6 +100,9 @@ log_drop_all(struct wren_log *log)
 static void
 log_append(enum wren_log_source source, const char *text)
 {
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return;
 	if (text == NULL)
 		text = "";
 	size_t len = strlen(text);
@@ -151,9 +122,11 @@ log_append(enum wren_log_source source, const char *text)
 		memcpy(buf + len, trunc_suffix, sizeof(trunc_suffix) - 1);
 	buf[alloc] = '\0';
 
-	struct wren_log       *log = log_target;
+	struct wren_log       *log = st->log.target;
+	if (log == NULL)
+		log = st->log.target = &st->log.main;
 	struct wren_log_entry *e   = &log->entries[log->head];
-	log_release_slot(e);
+	log_release_slot(st, e);
 	e->seq    = log->total++;
 	if (source != WREN_LOG_PRINT)
 		log->error_total++;
@@ -167,6 +140,38 @@ log_append(enum wren_log_source source, const char *text)
 		log->count++;
 }
 
+void
+wren_log_write(const char *text)
+{
+	log_append(WREN_LOG_PRINT, text);
+}
+
+void
+wren_log_error(WrenErrorType type, const char *module, int line,
+    const char *message)
+{
+	char buf[1024];
+
+	switch (type) {
+		case WREN_ERROR_COMPILE:
+			snprintf(buf, sizeof(buf), "%s:%d: %s",
+			    module != NULL ? module : "?", line,
+			    message != NULL ? message : "");
+			log_append(WREN_LOG_COMPILE_ERROR, buf);
+			break;
+		case WREN_ERROR_RUNTIME:
+			log_append(WREN_LOG_RUNTIME_ERROR,
+			    message != NULL ? message : "");
+			break;
+		case WREN_ERROR_STACK_TRACE:
+			snprintf(buf, sizeof(buf), "%s:%d in %s",
+			    module != NULL ? module : "?", line,
+			    message != NULL ? message : "");
+			log_append(WREN_LOG_STACK_FRAME, buf);
+			break;
+	}
+}
+
 /* --------------------------------------------------------------------
  * Capture API: redirect log_append to a side log between start and
  * commit/clear.  REPL.eval uses this to preview compile errors from an
@@ -176,27 +181,34 @@ log_append(enum wren_log_source source, const char *text)
 void
 wren_log_capture_start(void)
 {
-	log_drop_all(&capture_log);
-	capture_log.total = 0;
-	log_target = &capture_log;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return;
+	log_drop_all(st, &st->log.capture);
+	st->log.capture.total = 0;
+	st->log.capture.error_total = 0;
+	st->log.target = &st->log.capture;
 }
 
 bool
 wren_log_capture_active(void)
 {
-	return log_target == &capture_log;
+	struct wren_host_state *st = wren_host_state();
+	return st != NULL && st->log.target == &st->log.capture;
 }
 
 bool
 wren_log_capture_contains(const char *needle)
 {
-	if (needle == NULL)
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || needle == NULL)
 		return false;
-	int n     = capture_log.count;
-	int start = (capture_log.head - n + WREN_LOG_CAPACITY) % WREN_LOG_CAPACITY;
+	struct wren_log *capture = &st->log.capture;
+	int n     = capture->count;
+	int start = (capture->head - n + WREN_LOG_CAPACITY) % WREN_LOG_CAPACITY;
 	for (int i = 0; i < n; i++) {
 		struct wren_log_entry *e =
-		    &capture_log.entries[(start + i) % WREN_LOG_CAPACITY];
+		    &capture->entries[(start + i) % WREN_LOG_CAPACITY];
 		if (e->text != NULL && strstr(e->text, needle) != NULL)
 			return true;
 	}
@@ -206,64 +218,76 @@ wren_log_capture_contains(const char *needle)
 void
 wren_log_capture_clear(void)
 {
-	log_drop_all(&capture_log);
-	log_target = &main_log;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return;
+	log_drop_all(st, &st->log.capture);
+	st->log.target = &st->log.main;
 }
 
 void
 wren_log_capture_commit(void)
 {
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return;
 	/* Swap target back to main, then replay each captured entry
 	 * through log_append so it lands in main with a fresh ring slot.
 	 * Order is oldest-first; we walk from (head - count) forward. */
-	log_target = &main_log;
-	int n     = capture_log.count;
-	int start = (capture_log.head - n + WREN_LOG_CAPACITY) % WREN_LOG_CAPACITY;
+	st->log.target = &st->log.main;
+	struct wren_log *capture = &st->log.capture;
+	int n     = capture->count;
+	int start = (capture->head - n + WREN_LOG_CAPACITY) % WREN_LOG_CAPACITY;
 	for (int i = 0; i < n; i++) {
 		struct wren_log_entry *e =
-		    &capture_log.entries[(start + i) % WREN_LOG_CAPACITY];
+		    &capture->entries[(start + i) % WREN_LOG_CAPACITY];
 		if (e->text != NULL)
 			log_append(e->source, e->text);
 	}
-	log_drop_all(&capture_log);
+	log_drop_all(st, capture);
 }
 
 int
 wren_log_count(void)
 {
-	return main_log.count;
+	struct wren_host_state *st = wren_host_state();
+	return st == NULL ? 0 : st->log.main.count;
 }
 
 uint64_t
 wren_log_total(void)
 {
-	return main_log.total;
+	struct wren_host_state *st = wren_host_state();
+	return st == NULL ? 0 : st->log.main.total;
 }
 
-/* High-water marks of main_log.total / .error_total at the time the
+/* High-water marks of main.total / .error_total at the time the
  * user last left the Wren console.  wren_host_log_unread() is true
  * while either has advanced; wren_host_log_unread_error() distinguishes
  * the error case so the status indicator can tint accordingly. */
-static uint64_t s_log_seen_total;
-static uint64_t s_log_seen_error_total;
-
 bool
 wren_host_log_unread(void)
 {
-	return main_log.total > s_log_seen_total;
+	struct wren_host_state *st = wren_host_state();
+	return st != NULL && st->log.main.total > st->log.seen_total;
 }
 
 bool
 wren_host_log_unread_error(void)
 {
-	return main_log.error_total > s_log_seen_error_total;
+	struct wren_host_state *st = wren_host_state();
+	return st != NULL &&
+	    st->log.main.error_total > st->log.seen_error_total;
 }
 
 void
 wren_host_mark_log_seen(void)
 {
-	s_log_seen_total       = main_log.total;
-	s_log_seen_error_total = main_log.error_total;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return;
+	st->log.seen_total       = st->log.main.total;
+	st->log.seen_error_total = st->log.main.error_total;
 }
 
 bool
@@ -283,13 +307,31 @@ wren_host_alert(const char *title, const char *message)
 void
 wren_log_clear(void)
 {
-	log_drop_all(&main_log);
+	struct wren_host_state *st = wren_host_state();
+	if (st != NULL)
+		log_drop_all(st, &st->log.main);
+}
+
+void
+wren_log_shutdown(void)
+{
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL)
+		return;
+	log_drop_all(st, &st->log.main);
+	log_drop_all(st, &st->log.capture);
+	memset(&st->log, 0, sizeof(st->log));
 }
 
 void
 wren_log_emit(WrenVM *vm, uint64_t seq, int slot)
 {
-	struct wren_log *log = &main_log;
+	struct wren_host_state *st = wren_host_state();
+	if (st == NULL || st->vm != vm) {
+		wrenSetSlotNull(vm, slot);
+		return;
+	}
+	struct wren_log *log = &st->log.main;
 	/* Valid range: oldest seq = log->total - log->count;
 	 * newest seq = log->total - 1. */
 	if (log->count == 0 ||
@@ -528,7 +570,7 @@ static void
 host_write_fn(WrenVM *vm, const char *text)
 {
 	(void)vm;
-	log_append(WREN_LOG_PRINT, text);
+	wren_log_write(text);
 }
 
 static void
@@ -537,23 +579,20 @@ host_error_fn(WrenVM *vm, WrenErrorType type, const char *module, int line,
 {
 	(void)vm;
 	char buf[1024];
+	wren_log_error(type, module, line, message);
 	switch (type) {
 		case WREN_ERROR_COMPILE:
 			snprintf(buf, sizeof(buf), "%s:%d: %s",
 			    module ? module : "?", line, message ? message : "");
-			log_append(WREN_LOG_COMPILE_ERROR, buf);
 			fprintf(stderr, "[wren] compile %s\n", buf);
 			break;
 		case WREN_ERROR_RUNTIME:
-			log_append(WREN_LOG_RUNTIME_ERROR,
-			    message ? message : "");
 			fprintf(stderr, "[wren] runtime %s\n",
 			    message ? message : "");
 			break;
 		case WREN_ERROR_STACK_TRACE:
 			snprintf(buf, sizeof(buf), "%s:%d in %s",
 			    module ? module : "?", line, message ? message : "");
-			log_append(WREN_LOG_STACK_FRAME, buf);
 			fprintf(stderr, "[wren]   at %s\n", buf);
 			break;
 	}
@@ -1247,7 +1286,7 @@ wren_host_shutdown(void)
 
 	/* Release log-buffer cached handles before freeing the VM (they
 	 * reference Wren-heap values). */
-	wren_log_clear();
+	wren_log_shutdown();
 
 	wrenFreeVM(state.vm);
 	state.vm = NULL;

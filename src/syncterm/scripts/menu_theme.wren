@@ -62,6 +62,8 @@ class ClassicTheme {
     roles["statusbar"] = style_(0, inverse)
     roles["classic.backdrop"] = style_(inverse, background)
     roles["classic.header"] = style_(background, inverse)
+    roles["classic.console"] = style_(14, inverse)
+    roles["classic.console.error"] = style_(12, inverse)
     roles["classic.comment"] = inactive
     roles["classic.hint"] = style_(0, inverse)
     roles["classic.hotkey"] = style_(background, inverse)

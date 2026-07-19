@@ -12,6 +12,7 @@ Fully support OOB data in RLogin modes
 Hold Alt during drag-select to copy a rectangular region
 Prototype SFTP client (Alt+S, Alt+B)
 Add Wren scripting engine, REPL console with Ctrl+`
+Make the Wren REPL and error indicator available in the main menu
 Replace the dialing directory and settings UI with a persistent Wren menu
 Isolate trusted menu scripts from per-connection Wren scripts
 Retain UIFC only for the trusted native file picker

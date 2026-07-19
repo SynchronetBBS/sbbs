@@ -134,9 +134,10 @@ generic_class_allowed(const char *class_name)
 {
 	static const char *const allowed[] = {
 		"Cell", "Clipboard", "Codepage", "Color", "CustomCursor",
-		"Directory", "File", "FileError", "Font", "Format", "Host",
+		"Console", "Directory", "File", "FileError", "Font", "Format",
+		"Host",
 		"Hyperlinks", "Input", "KeyEvent", "MouseEvent", "Palette",
-		"PhysicalKeyEvent", "Platform", "Screen", "ScreenFonts",
+		"PhysicalKeyEvent", "Platform", "REPL", "Screen", "ScreenFonts",
 		"ScreenSupports", "ScreenWindow", "Surface", "VideoFlags",
 	};
 	for (size_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++) {
@@ -165,7 +166,7 @@ generic_method_allowed(const char *class_name, const char *signature)
 		"pickFiles(_,_,_)",
 		"pickSavePath(_,_)",
 		"print(_)",
-		"safeMode", "textTerminal",
+		"logUnread", "logUnreadError", "safeMode", "textTerminal",
 	};
 	for (size_t i = 0;
 	    i < sizeof(host_allowed) / sizeof(host_allowed[0]); i++) {
@@ -217,6 +218,7 @@ static void
 write_output(WrenVM *vm, const char *text)
 {
 	(void)vm;
+	wren_log_write(text);
 	fputs(text, stderr);
 }
 
@@ -225,6 +227,7 @@ report_error(WrenVM *vm, WrenErrorType type, const char *module, int line,
     const char *message)
 {
 	(void)vm;
+	wren_log_error(type, module, line, message);
 	const char *kind = type == WREN_ERROR_COMPILE ? "compile" :
 	    type == WREN_ERROR_RUNTIME ? "runtime" : "stack";
 	fprintf(stderr, "[wren-menu] %s %s:%d: %s\n", kind,
@@ -323,6 +326,7 @@ wren_menu_host_init(void)
 	if (menu_state.vm != NULL)
 		menu_active = load_event_scripts();
 	if (!menu_active && menu_state.vm != NULL) {
+		wren_log_shutdown();
 		wrenFreeVM(menu_state.vm);
 		menu_state.vm = NULL;
 	}
@@ -393,6 +397,7 @@ wren_menu_host_shutdown(void)
 	menu_choice_handle = NULL;
 	menu_status_handle = NULL;
 	menu_status_clear_handle = NULL;
+	wren_log_shutdown();
 	wrenFreeVM(menu_state.vm);
 	wren_menu_bind_shutdown();
 	wren_host_select_state(old == &menu_state ? NULL : old);

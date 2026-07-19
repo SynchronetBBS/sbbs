@@ -1,13 +1,12 @@
 = SyncTERM Wren Scripting Manual
 :toc:
 
-SyncTERM embeds the http://wren.io/[Wren] virtual machine as a
-per-connection scripting host.  Every time SyncTERM connects to a BBS
-it spins up a fresh Wren VM, loads the user's scripts, and tears the
-VM down at disconnect.  Scripts hook into keyboard, mouse, inbound
-bytes, outbound bytes, status text, and a periodic timer; they get a
-read/write window into terminal and connection state through a small
-set of foreign classes.
+SyncTERM embeds http://wren.io/[Wren] in two isolated scripting hosts.
+A persistent trusted VM owns the main menu, while every connection gets
+a fresh restricted VM which is torn down at disconnect.  Connected
+scripts hook into keyboard, mouse, inbound bytes, outbound bytes,
+status text, and a periodic timer; menu scripts implement the dialing
+directory and settings UI through a separate set of capabilities.
 
 This document is the reference for that scripting layer: how scripts
 are discovered, how the embedded scripts can be overridden, and the
@@ -761,7 +760,13 @@ The currently embedded scripts are:
 
 | `console`
 | auto / connected
-| Wren REPL.  Triggered by Ctrl+&#96;.
+| Connected-session Ctrl+&#96; hook for the shared `wren_console`
+  implementation.
+
+| `wren_console`
+| library
+| Wren REPL UI shared by the connected and menu VMs.  Each invocation
+  reads the log belonging to its current VM.
 
 | `connected`
 | auto / connected
@@ -830,6 +835,8 @@ The currently embedded scripts are:
   list commands occupy the bottom two rows.  The host calls
   `MainMenu.run(currentName, connected)` whenever the application is
   offline or Alt+E enters the directory over a connected session.  The
+  controller binds Ctrl+&#96; to the menu VM's REPL and displays that
+  VM's unread-log indicator in the top-right corner.  The
   offline form owns the UIFC light-shade application background and
   title/time row;
   the connected form leaves the saved terminal screen behind its panes.
@@ -851,18 +858,20 @@ created: once per application for `menu`, and once per BBS session for
 === Overriding Embedded Scripts
 
 A user script whose basename and role match an embedded module
-overrides the embedded one.  If you create
-`~/.local/share/syncterm/scripts/auto/connected/console.wren`, your
-version replaces the built-in REPL; the embedded version is not
-loaded.  The override runs as the same module name (`console`), so
-other scripts that `import "console"` see your version.
+overrides the embedded one.  The shared REPL implementation can be
+replaced with
+`~/.local/share/syncterm/scripts/wren_console.wren`; both VMs import
+that library when their built-in menu or connected entry point opens
+the console.  Replacing
+`scripts/auto/connected/console.wren` changes only the connected
+Ctrl+&#96; hook.  Replacing `scripts/auto/menu/main_menu.wren` changes
+the menu key binding along with the rest of the main-menu controller.
 
-The check is exact match on the bare module name *within the same
-auto-load directory*.  `console.wren` at the script root would *not*
-override the auto-load `console` — it would simply be a separate
-library module also named `console` (and would only be reached via
-`import`, never auto-run).  Case matters too: `Console.wren` is a
-different module from `console.wren`.
+The check is an exact match on the bare module name *within the same
+script role*.  A root `console.wren` is a library module distinct from
+the connected auto-load module, while a root `wren_console.wren`
+replaces the shared library.  Case matters: `Wren_Console.wren` is a
+different module from `wren_console.wren`.
 
 To opt out of an embedded auto-load script entirely, drop a stub
 override into the matching directory:
@@ -919,6 +928,14 @@ An override must export class `MainMenu` with these static methods:
 The host validates and copies a record returned by `run` while the menu
 VM is still selected, so the Wren foreign object itself never crosses
 into the connected VM.
+
+The shipped controller binds Ctrl+&#96; to the menu VM's REPL.  A CP437
+`‼` in the top-right corner reports unread output from that VM: yellow
+for print output and red for errors.  Synchronous key and mouse handlers
+run through an error boundary; an abort is added to the menu VM's log,
+the indicator is refreshed, and the main menu continues running.  This
+boundary does not hide layout or painting failures, which still abort
+`MainMenu.run` rather than repeatedly failing during every redraw.
 
 The shipped controller defines the main-menu interaction contract.  Tab from
 the directory enters the selected entry's comment field, then advances to the
@@ -1165,6 +1182,11 @@ scripts needing cross-session state must persist it through an
 authorized `Cache` / `Download` file or picker token.  Menu scripts can
 keep ordinary Wren state for the application lifetime, but durable
 changes still require the explicit model save methods.
+
+Console entries, cached entry handles, REPL state, and unread markers
+belong to one VM.  Opening the menu through Alt+E therefore shows the
+menu VM's log, not output produced by the parked connected VM, and no
+console object or handle crosses the trust boundary.
 
 The owner thread is captured at init; dispatchers called from any
 other thread (background SFTP and SSH writes invoke `conn_send` from
@@ -1708,14 +1730,21 @@ work without breaking the App's event loop.
 
 == Built-in REPL
 
-Ctrl+&#96; opens an immediate-mode REPL implemented in
-`scripts/console.wren`.  Compiled-in by default; user override via
-`~/.local/share/syncterm/scripts/console.wren`.
+Ctrl+&#96; opens the immediate-mode REPL for the VM which owns the current
+screen.  The shared UI is implemented in `scripts/wren_console.wren`
+and can be overridden with
+`~/.local/share/syncterm/scripts/wren_console.wren`.  The connected
+entry point is `scripts/auto/connected/console.wren`; the persistent
+menu binds the same key in `scripts/auto/menu/main_menu.wren`.
 
-While the console is open the doterm() main loop is suspended.
-Connection bytes accumulate in the socket buffer but aren't drained
-until you exit the console.  This is acceptable for a development
-tool; not appropriate for "watch a slow BBS scroll" use cases.
+While the connected console is open the doterm() main loop is
+suspended.  Connection bytes accumulate in the socket buffer but
+aren't drained until you exit the console.  This is acceptable for a
+development tool; not appropriate for "watch a slow BBS scroll" use
+cases.  The menu already uses a synchronous event loop, so opening its
+console does not change its event-pumping model.  When the menu was
+entered through Alt+E, the connection is already parked for the entire
+menu visit.
 
 The REPL evaluates input through `REPL.eval(module, src)`.  The
 input is pre-classified by inspecting its leading non-whitespace
@@ -1749,19 +1778,20 @@ the active module:
   navigation, and exit keys.
 
 | `/in <module>`
-| Switch the eval target to `<module>`.  Default is `syncterm`.
+| Switch the eval target to `<module>`.  Default is `syncterm` in the
+  connected VM and `main_menu` in the menu VM.
   Use this to inspect or mutate any other loaded module.  `/in`
   with no argument prints the current target.
 
 | `/mods`
 | List every Wren module currently loaded into the VM, alphabetically
   sorted.  Includes `core` (Wren's built-in classes), every embedded
-  module (`syncterm`, `console`, `connected`), every user script
-  loaded from the scripts directory, and any module pulled in via
-  `import`.
+  module (`syncterm`, `wren_console`, `connected` or `main_menu`),
+  every user script loaded from the scripts directory, and any module
+  pulled in via `import`.
 
 | `/quit`, `/q`
-| Close the REPL and return to the BBS session.
+| Close the REPL and return to the connected session or main menu.
 |===
 
 Modules can plug in their own `/<command>` entries via
@@ -1769,7 +1799,7 @@ Modules can plug in their own `/<command>` entries via
 
 [source,wren]
 ----
-import "console" for WrenConsole
+import "wren_console" for WrenConsole
 
 WrenConsole.register("greet", "say hello [<name>]") { |args|
   if (args == "") {
@@ -2944,10 +2974,10 @@ To attach hyperlinks to text, allocate an ID and assign it to
 
 === Console [[console]]
 
-Read-only access to the always-on print/error log buffer.  The
+Read-only access to the current VM's always-on print/error log buffer.  The
 buffer has 1024 entries of up to 8 KB each; older entries are
 evicted in FIFO order.  Sequence numbers are monotonic across the
-program's lifetime, including across eviction, so an incremental
+VM's lifetime, including across eviction, so an incremental
 "show only entries newer than X" reader works correctly even after
 the ring has wrapped.
 
@@ -2972,9 +3002,10 @@ the ring has wrapped.
 
 | `Console.markSeen()`
 | Snapshot the current `total` and error counters as the "seen"
-  baseline.  The status-bar log indicator (yellow for new prints,
-  red for new errors) compares the live counters against this
-  baseline, so calling `markSeen()` clears the indicator until the
+  baseline.  The connected status-bar indicator and menu top-right
+  indicator (yellow for new prints, red for new errors) compare the
+  live counters against this baseline, so calling `markSeen()` clears
+  the indicator until the
   next entry arrives.  The built-in REPL invokes this on exit so
   console activity logged while the REPL is open doesn't leave the
   indicator lit.
@@ -3015,7 +3046,7 @@ Enum values for the `source` field on `Console` entries.
 === REPL [[repl]]
 
 Primitive for the immediate-mode REPL.  Most scripts will not use
-this directly; the embedded `console` script wraps it.
+this directly; the embedded `wren_console` script wraps it.
 
 [options="header",cols="2,3"]
 |===
@@ -4333,9 +4364,11 @@ if (Host.launchScript != null && Host.launchScript.endsWith("foo.wren")) {
   `logUnread` is true when any non-empty append has happened
   (script print output, hook metrics, etc.); `logUnreadError`
   is the subset for compile / runtime errors and stack frames.
-  The default status bar paints a CP437 `‼` indicator -- red
-  when `logUnreadError` is set, yellow when only `logUnread`
-  is set, blank otherwise.  Cleared by visiting the console pane.
+  The default connected status bar and the main menu's top-right
+  corner paint a CP437 `‼` indicator -- red when `logUnreadError`
+  is set, yellow when only `logUnread` is set, blank otherwise.
+  Each VM has independent counters.  Cleared by visiting that VM's
+  console pane.
 
 | `Host.musicNames`, `Host.musicHelp`
 | ANSI music mode display strings and help blurb, returned as a
@@ -5538,6 +5571,13 @@ the VM on `Input.next()` instead; use it from contexts where
 doterm can't dispatch back into the App, e.g. the Wren console
 (whose REPL itself runs inside a `Hook.onKey`).
 
+`runSync()` dispatches each key or mouse event in a child fiber.  A
+runtime abort from a synchronous handler therefore does not unwind the
+App's event loop.  By default the App writes the error and trace to the
+current VM's console log; set `app.onError = Fn.new {|failedFiber| ... }`
+to replace that reporting.  Layout and painting remain outside this
+boundary so a deterministic redraw failure is not retried forever.
+
 === Importing
 
 Every public class is exported from individual `ui_*.wren` modules
@@ -5593,6 +5633,11 @@ Methods of interest:
   default).  Only one timer is queued at a time per App: the
   `_tickPending` guard means non-tick events (keys, mouse,
   external posts) don't accumulate timers behind the pending one.
+  `runSync()` contains runtime errors raised by key and mouse handlers
+  as described above.
+* `onError=(fn)` — replace `runSync()`'s default reporting for a failed
+  event handler.  The callback receives the failed `Fiber`, whose
+  `error` and `stackTrace` describe the abort.
 * `quit()` — break out of the loop.  Widgets and global handlers
   call this from their key/mouse handlers.
 * `modal(widget)` — push a modal, drain events until it pops, return

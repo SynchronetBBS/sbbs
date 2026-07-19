@@ -17,7 +17,7 @@ import "capture_menu"    for CaptureMenu
 import "music_menu"      for MusicMenu
 import "scrollback_view" for ScrollbackView
 import "connected"       for Connected
-import "console"         for WrenConsole
+import "wren_console"    for WrenConsole
 import "transfer_pick"   for UploadApp, DownloadApp
 import "font_pick"       for FontApp
 

@@ -77,6 +77,44 @@ struct wren_pending_timer {
 	int64_t due_ms;
 };
 
+/* Per-VM console log and REPL compile-error capture.  Entries may cache
+ * handles into their owning VM, so this storage must never be shared by
+ * the connected and persistent menu hosts. */
+#define WREN_LOG_CAPACITY  1024
+#define WREN_LOG_MAX_TEXT  (8 * 1024)
+
+enum wren_log_source {
+	WREN_LOG_PRINT,
+	WREN_LOG_COMPILE_ERROR,
+	WREN_LOG_RUNTIME_ERROR,
+	WREN_LOG_STACK_FRAME
+};
+
+struct wren_log_entry {
+	uint64_t             seq;
+	long double          ts;
+	enum wren_log_source source;
+	char                *text;
+	size_t               len;
+	WrenHandle          *cached_value;
+};
+
+struct wren_log {
+	struct wren_log_entry entries[WREN_LOG_CAPACITY];
+	int                   head;
+	int                   count;
+	uint64_t              total;
+	uint64_t              error_total;
+};
+
+struct wren_log_state {
+	struct wren_log  main;
+	struct wren_log  capture;
+	struct wren_log *target;
+	uint64_t         seen_total;
+	uint64_t         seen_error_total;
+};
+
 enum wren_hook_event {
 	WREN_HOOK_KEY,
 	WREN_HOOK_INPUT,
@@ -147,6 +185,7 @@ struct wren_hook_entry {
 
 struct wren_host_state {
 	WrenVM      *vm;
+	struct wren_log_state log;
 	/* Cached method handles: call() with 0 and 1 arg.  Wren's Fn class
 	 * uses signature "call()" / "call(_)". */
 	WrenHandle  *call0_handle;
@@ -413,12 +452,9 @@ extern const struct embedded_script EMBEDDED_SCRIPTS[];
  * WrenErrorType cases all flow into this buffer.  Wren scripts read
  * via the foreign Console class (count, [i], clear, iterate,
  * iteratorValue).  Per-message text is capped at 8 KB. */
-enum wren_log_source {
-	WREN_LOG_PRINT,
-	WREN_LOG_COMPILE_ERROR,
-	WREN_LOG_RUNTIME_ERROR,
-	WREN_LOG_STACK_FRAME
-};
+void wren_log_write(const char *text);
+void wren_log_error(WrenErrorType type, const char *module, int line,
+                    const char *message);
 
 /* Compile-error capture (used by Repl.eval to peek at errors from an
  * expression-mode compile attempt without committing them to the
@@ -438,6 +474,7 @@ int      wren_log_count(void);
  * mark to drive incremental "show only new entries" rendering. */
 uint64_t wren_log_total(void);
 void     wren_log_clear(void);
+void     wren_log_shutdown(void);
 /* Build (or reuse the cached) Wren tuple [ts, source, text] for the
  * entry whose sequence number is `seq` into Wren slot `slot`.  Sets
  * the slot to null if `seq` is outside the currently-buffered range

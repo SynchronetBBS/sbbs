@@ -33,7 +33,7 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     REPL, Input, Wake, KeyEvent, MouseEvent, Mouse, Cache, Platform,
     Timer, TimerElapsed, WON, FileError, FileErr, WONError, WONErr,
     Error, ScriptError, Surface, Scrollback, Host
-import "console" for WrenConsole
+import "wren_console" for WrenConsole
 import "ui_style_test"  for UiStyleTest
 import "ui_widget_test" for UiWidgetTest
 import "ui_draw_test"   for UiDrawTest

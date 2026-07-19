@@ -1591,10 +1591,11 @@ class Host {
   // Wren console activity since the user last visited the REPL.
   // logUnread covers any non-empty append (script print output, hook
   // metrics, etc.); logUnreadError is the subset for compile/runtime
-  // errors and stack frames.  Default status bar shows a CP437 ‼
-  // indicator -- red when logUnreadError is set, yellow when only
-  // logUnread is set, blank otherwise.  Cleared by visiting the
-  // console pane (Console.markSeen()).
+  // errors and stack frames.  The connected status bar and menu's
+  // top-right corner show a CP437 ‼ indicator -- red when
+  // logUnreadError is set, yellow when only logUnread is set, blank
+  // otherwise.  Each VM has its own counters; visiting its console
+  // pane clears them through Console.markSeen().
   foreign static logUnread
   foreign static logUnreadError
 

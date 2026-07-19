@@ -61,6 +61,11 @@ class RefusingCloseProbe is Probe {
   handle(ev) { true }
 }
 
+class AbortProbe is Probe {
+  construct new() { super() }
+  handle(ev) { Fiber.abort("expected handler failure") }
+}
+
 class UiWidgetTest {
   static run() {
     __pass = 0
@@ -137,6 +142,7 @@ class UiWidgetTest {
     testAppDispatchKeyModalBlocksRoot_()
     testAppBackspaceAliasesEscape_()
     testAppConsumedBackspaceDoesNotEscape_()
+    testAppSyncDispatchContainsError_()
     testAppDispatchMouseHitsWidget_()
     testAppDispatchMouseModalBlocksRoot_()
     testAppUnhandledMouseReceivesHit_()
@@ -722,6 +728,16 @@ class UiWidgetTest {
     var consumed = app.dispatchKey_(KeyEvent.new(Key.backspace))
     check_(consumed && !fired && leaf.seen.count == 1,
            "App.dispatchKey_: text editor can consume Backspace")
+  }
+
+  static testAppSyncDispatchContainsError_() {
+    var app = App.new()
+    var reported = null
+    app.onError = Fn.new {|fiber| reported = fiber.error }
+    app.root.add(AbortProbe.new())
+    var ok = app.dispatchSync_(KeyEvent.new(Key.enter))
+    check_(!ok && reported == "expected handler failure",
+           "App.dispatchSync_: contains and reports handler aborts")
   }
 
   // Mouse event constructor: (event, modifiers, sx, sy, ex, ey).

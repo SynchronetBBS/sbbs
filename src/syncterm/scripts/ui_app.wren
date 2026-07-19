@@ -39,7 +39,8 @@ import "ui_draw"   for Painter
 import "ui_popup"  for PopStatus
 import "ui_help"   for Help
 import "syncterm"  for Input, KeyEvent, MouseEvent, Mouse, Key, Timer,
-                       TimerElapsed, Wake, Screen, Surface, CustomCursor, CTerm
+                       TimerElapsed, Wake, Screen, Surface, CustomCursor, CTerm,
+                       REPL
 
 // Sentinel passed into post() when the caller doesn't supply a value.
 // Identity-comparable so the App can recognise "just wake up, nothing
@@ -75,6 +76,7 @@ class App {
     _onPost      = null           // user-supplied posted-value handler
     _onLayout    = null           // called with (width, height) on resize
     _onUnhandledMouse = null      // optional non-modal mouse fallback
+    _onError       = null         // optional caught sync-handler error reporter
     _dragHandedOff = false        // see dispatchMouse_ for the belt this catches
     _claim         = null         // ClaimHandle; set by run(), popped on exit
     _tickPending   = false        // true while a Timer.trigger is queued for _runFiber
@@ -96,6 +98,7 @@ class App {
   modalStack  { _modalStack  }
   onLayout=(fn) { _onLayout = fn }
   onUnhandledMouse=(fn) { _onUnhandledMouse = fn }
+  onError=(fn) { _onError = fn }
 
   // Apply the effective screen bounds and notify layout clients only
   // when they change.  Public-with-underscore so pure Wren tests can
@@ -436,6 +439,27 @@ class App {
     return false
   }
 
+  // Run one event dispatch in a child fiber so an abort from a
+  // synchronous UI handler does not unwind runSync() and return control
+  // to the application.  The optional onError callback receives the
+  // failed Fiber; without one, App records the error and trace itself.
+  dispatchSync_(ev) {
+    var f = Fiber.new {
+      if (ev is KeyEvent) dispatchKey_(ev)
+      if (ev is MouseEvent) dispatchMouse_(ev)
+    }
+    f.try()
+    if (f.error == null) return true
+    if (_onError != null) {
+      _onError.call(f)
+    } else {
+      System.print("UI handler error: " + f.error)
+      REPL.printTrace_(f)
+    }
+    markAllDirty_()
+    return false
+  }
+
   // Internal: ensure a screen-sized backbuffer Surface, draw widgets
   // into their own Surfaces, composite each into the App's Surface,
   // then blit the App's Surface to the screen with a single putRect.
@@ -592,8 +616,7 @@ class App {
   drainOnceSync_() {
     drawAll_()
     var ev = Input.next()
-    if (ev is KeyEvent)   dispatchKey_(ev)
-    if (ev is MouseEvent) dispatchMouse_(ev)
+    dispatchSync_(ev)
   }
 
   // Save the terminal's current mouse-events bitmask, REPLACE it with
