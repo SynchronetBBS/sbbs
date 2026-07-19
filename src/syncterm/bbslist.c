@@ -1,5 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
+#include <assert.h>
 #include <limits.h>
 #include <dirwrap.h>
 #include <filewrap.h>  /* chsize */
