@@ -76,6 +76,7 @@ class PickerList is ListView {
     super()
     _owner = owner
     _directories = directories
+    highlightWhenUnfocused = false
   }
 
   formatItem(item, width) {

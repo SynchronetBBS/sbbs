@@ -41,6 +41,8 @@ class UiListTest {
     testEnsureVisibleScrollsDown_()
     testEnsureVisibleScrollsUp_()
     testEnsureVisibleNoOpInsideViewport_()
+    testInitialOffscreenSelectionCenters_()
+    testInitialVisibleSelectionStaysAtTop_()
     testHomeResetsScroll_()
 
     // formatItem hook
@@ -68,6 +70,7 @@ class UiListTest {
 
     // Drawing — paint + readback
     testDrawRowsSelected_()
+    testDrawSelectionOnlyWhenFocused_()
     testDrawScrollbarThumb_()
     testDrawLeftScrollbarOverride_()
 
@@ -99,6 +102,7 @@ class UiListTest {
     var l = ListView.new()
     check_(l.count == 0 && l.selected == null && l.scrollTop == 0 &&
            l.showScroll == true && l.wrap == true &&
+           l.highlightWhenUnfocused == true &&
            l.scrollbarSide == "right" && l.scrollbarSeparator == true,
            "List defaults: empty, selected=null, scrollTop=0, " +
            "scrolling and wrapping enabled, scrollbar on right")
@@ -269,6 +273,22 @@ class UiListTest {
     l.selected = 3
     check_(l.scrollTop == 0,
            "ListView.scrollTop stays put when selection is in viewport")
+  }
+
+  static testInitialOffscreenSelectionCenters_() {
+    var l = makeList_(20)
+    l.selected = 12
+    l.bounds = Rect.new(1, 1, 10, 5)
+    check_(l.scrollTop == 10,
+           "ListView layout centers an initially offscreen selection")
+  }
+
+  static testInitialVisibleSelectionStaysAtTop_() {
+    var l = makeList_(20)
+    l.selected = 3
+    l.bounds = Rect.new(1, 1, 10, 5)
+    check_(l.scrollTop == 0,
+           "ListView layout leaves an initially visible selection in place")
   }
 
   static testHomeResetsScroll_() {
@@ -464,6 +484,22 @@ class UiListTest {
            s.cellAt(1, 1).legacyAttr == 0x70 &&
            s.cellAt(0, 1).legacyAttr == 0x70,
            "ListView.draw: rows rendered, selected gets focused style")
+  }
+
+  static testDrawSelectionOnlyWhenFocused_() {
+    var l = ListView.new()
+    l.items = ["aaa", "bbb"]
+    l.bounds = Rect.new(1, 1, 10, 2)
+    l.selected = 1
+    l.highlightWhenUnfocused = false
+    var s = l.draw()
+    check_(s.cellAt(1, 1).legacyAttr == 0x1F,
+           "ListView.draw: optional unfocused selection is not highlighted")
+
+    l.focused = true
+    s = l.draw()
+    check_(s.cellAt(1, 1).legacyAttr == 0x70,
+           "ListView.draw: focused selection remains highlighted")
   }
 
   static testDrawScrollbarThumb_() {

@@ -14,9 +14,8 @@
 //
 // Theme roles consulted:
 //   list.item            — unselected rows
-//   list.item.focused    — the selected row (always shown highlighted,
-//                          regardless of widget focus state — let App
-//                          drive multi-pane styling itself if needed)
+//   list.item.focused    — the selected row (shown regardless of widget
+//                          focus unless highlightWhenUnfocused is false)
 //   scrollbar.track      — scrollbar background
 //   scrollbar.thumb      — scrollbar thumb
 // Theme glyphs:
@@ -38,6 +37,7 @@ class ListView is Widget {
     _onSelect      = null
     _onChange      = null
     _wrap          = true
+    _highlightWhenUnfocused = true
     _sbSide        = "right"       // "right" (default) or "left"
     _sbSep         = true          // separator between scrollbar and content
     _searchBuf     = ""             // type-to-search rolling buffer
@@ -103,11 +103,25 @@ class ListView is Widget {
 
   count { _items.count }
 
+  bounds=(rect) {
+    super.bounds = rect
+    centerSelectedIfHidden_()
+  }
+
   // When true (default), Up at the top wraps to the bottom and Down
   // at the bottom wraps to the top.  Set false for lists whose
   // single-row navigation should clamp at the ends.
   wrap     { _wrap }
   wrap=(b) { _wrap = b }
+
+  // By default the selected row remains visible when another widget has
+  // focus.  Multi-list controls can disable this so only the focused list
+  // displays a lightbar without changing either list's base palette.
+  highlightWhenUnfocused     { _highlightWhenUnfocused }
+  highlightWhenUnfocused=(b) {
+    _highlightWhenUnfocused = b
+    markDirty()
+  }
 
   // null when no row is selected (empty list, or explicitly cleared);
   // otherwise an integer in 0..count - 1.
@@ -292,6 +306,19 @@ class ListView is Widget {
     }
   }
 
+  // Selection is often restored before layout establishes a viewport.
+  // On first layout (or a resize), center an offscreen selection where
+  // possible.  Normal navigation continues to use ensureVisible_(), which
+  // moves only far enough to expose the next selected row.
+  centerSelectedIfHidden_() {
+    if (bounds == null || _selected < 0) return
+    var h = bounds.h
+    if (h <= 0) return
+    if (_selected >= _scrollTop && _selected < _scrollTop + h) return
+    var maxTop = (_items.count - h).max(0)
+    _scrollTop = (_selected - (h / 2).floor).max(0).min(maxTop)
+  }
+
   // Paint into our own Surface (0-based coords).  Read it through
   // Widget's `surface` getter — `_surface` here would refer to a new
   // ListView-scoped field, not Widget's.
@@ -316,7 +343,9 @@ class ListView is Widget {
       var idx = _scrollTop + i
       if (idx >= _items.count) break
       var s    = formatItem(_items[idx], iw)
-      var role = idx == _selected ? "list.item.focused" : "list.item"
+      var highlighted = idx == _selected &&
+          (focused || _highlightWhenUnfocused)
+      var role = highlighted ? "list.item.focused" : "list.item"
       var st   = style(role)
       Painter.fill(sf, Rect.new(fillX, i, fillW, 1), " ", st)
       // Tag-mode marker column: theme `tag.on` / `tag.off` glyph,

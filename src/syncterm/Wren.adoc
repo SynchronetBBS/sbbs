@@ -6120,6 +6120,15 @@ list reports `(null, null)`.
 explicitly cleared with `list.selected = null`); otherwise an
 integer in `0..count - 1`.  `selectedItem` mirrors the same
 contract — `null` when nothing is selected, the item otherwise.
+When a selection is assigned before the list has bounds, first layout
+centres an offscreen selected row where possible.  A selection already in
+the initial viewport leaves that viewport at the top.  Normal navigation
+scrolls only far enough to keep the moving selection visible.
+
+The selected row is highlighted even when the list does not have focus.
+Set `highlightWhenUnfocused=false` in a multi-list control when only the
+list receiving keyboard input should display its selection lightbar.  This
+does not apply the inactive palette to the other list.
 
 ==== Search
 
