@@ -1,5 +1,6 @@
 /* Copyright (C), 2007 by Stephen Hurd */
 
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
