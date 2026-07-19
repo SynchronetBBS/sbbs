@@ -59,10 +59,11 @@ class SettingsMenu {
     var selected = 0
     while (true) {
       var picked = MenuUi.choice(app, "SyncTERM Settings",
-          rows(connected), selected, helpText(connected))
+          rows(connected), selected, helpText(connected), Fn.new {|value|
+        selected = value
+        if (runAction(app, value, connected)) changed = true
+      })
       if (picked == null) return changed
-      selected = picked
-      if (runAction(app, picked, connected)) changed = true
     }
   }
 
@@ -381,7 +382,72 @@ class SettingsMenu {
       if (!connected) rows.add([18, "Custom Screen Mode"])
 
       var picked = MenuUi.choice(app, "Program Settings", rows, selected,
-          programHelp_(connected))
+          programHelp_(connected), Fn.new {|value|
+        selected = value
+        if (value == 1) {
+          s.confirmClose = !s.confirmClose
+        } else if (value == 2) {
+          s.promptSave = !s.promptSave
+        } else if (value == 3) {
+          var next = pickSetting_(app, "Startup Screen Mode",
+              Menu.screenModes, s.startupMode)
+          if (next != null) s.startupMode = next
+        } else if (value == 4) {
+          var next = pickSetting_(app, "Video Output Mode",
+              Menu.outputModes, s.outputMode)
+          if (next != null) s.outputMode = next
+        } else if (value == 5) {
+          var next = pickSetting_(app, "Default Cursor Style",
+              Menu.cursorStyles, s.cursorStyle)
+          if (next != null) s.cursorStyle = next
+        } else if (value == 6) {
+          if (audio_(app, s)) changed = true
+        } else if (value == 7) {
+          var next = MenuUi.integer(app, "Scrollback Lines",
+              "Number of retained lines", s.scrollbackLines, 1,
+              2147483647, scrollbackHelp_())
+          if (next != null) s.scrollbackLines = next
+        } else if (value == 8) {
+          var next = MenuUi.prompt(app, "Modem/Comm Device", "Serial device",
+              s.modemDevice, 1024, false, modemDeviceHelp_())
+          if (next != null) s.modemDevice = next
+        } else if (value == 9) {
+          var next = MenuUi.integer(app, "Modem/Comm Rate",
+              "Bits per second", s.modemRate, 0, 4294967295,
+              modemRateHelp_())
+          if (next != null) s.modemRate = next
+        } else if (value == 10) {
+          var next = MenuUi.prompt(app, "Modem Init String",
+              "Initialization string", s.modemInit, 1023, false,
+              modemInitHelp_())
+          if (next != null) s.modemInit = next
+        } else if (value == 11) {
+          var next = MenuUi.prompt(app, "Modem Dial String", "Dial string",
+              s.modemDial, 1023, false, modemDialHelp_())
+          if (next != null) s.modemDial = next
+        } else if (value == 12) {
+          var next = MenuUi.prompt(app, "List Path", "Path or URI",
+              s.listPath, Menu.maxPathLength, false, listPathHelp_())
+          if (next != null) s.listPath = next
+        } else if (value == 13) {
+          var next = MenuUi.prompt(app, "TERM For Shell", "Terminal name",
+              s.shellTerm, 30, false, shellTermHelp_())
+          if (next != null) s.shellTerm = next
+        } else if (value == 14) {
+          s.scalingMode = (s.scalingMode + 1) % Menu.scalingModes.count
+        } else if (value == 15) {
+          s.invertWheel = !s.invertWheel
+        } else if (value == 16) {
+          var next = MenuUi.integer(app, "Key Derivation Work Factor",
+              "Exponent N for scrypt-Nn", s.kdfShift, 8, 24, kdfHelp_())
+          if (next != null) s.kdfShift = next
+        } else if (value == 17) {
+          if (colors_(app, s)) changed = true
+        } else if (value == 18 && !connected) {
+          if (customMode_(app, s)) changed = true
+        }
+        if (s.dirty && applySettings_(app, s)) changed = true
+      })
       if (picked == null) {
         if (!changed) return false
         if (Host.safeMode || s.save()) return true
@@ -389,64 +455,6 @@ class SettingsMenu {
             "The settings could not be saved.")
         return true
       }
-      selected = picked
-      if (picked == 1) {
-        s.confirmClose = !s.confirmClose
-      } else if (picked == 2) {
-        s.promptSave = !s.promptSave
-      } else if (picked == 3) {
-        var value = pickSetting_(app, "Startup Screen Mode", Menu.screenModes, s.startupMode)
-        if (value != null) s.startupMode = value
-      } else if (picked == 4) {
-        var value = pickSetting_(app, "Video Output Mode", Menu.outputModes, s.outputMode)
-        if (value != null) s.outputMode = value
-      } else if (picked == 5) {
-        var value = pickSetting_(app, "Default Cursor Style", Menu.cursorStyles, s.cursorStyle)
-        if (value != null) s.cursorStyle = value
-      } else if (picked == 6) {
-        if (audio_(app, s)) changed = true
-      } else if (picked == 7) {
-        var value = MenuUi.integer(app, "Scrollback Lines", "Number of retained lines",
-            s.scrollbackLines, 1, 2147483647, scrollbackHelp_())
-        if (value != null) s.scrollbackLines = value
-      } else if (picked == 8) {
-        var value = MenuUi.prompt(app, "Modem/Comm Device", "Serial device",
-            s.modemDevice, 1024, false, modemDeviceHelp_())
-        if (value != null) s.modemDevice = value
-      } else if (picked == 9) {
-        var value = MenuUi.integer(app, "Modem/Comm Rate", "Bits per second",
-            s.modemRate, 0, 4294967295, modemRateHelp_())
-        if (value != null) s.modemRate = value
-      } else if (picked == 10) {
-        var value = MenuUi.prompt(app, "Modem Init String", "Initialization string",
-            s.modemInit, 1023, false, modemInitHelp_())
-        if (value != null) s.modemInit = value
-      } else if (picked == 11) {
-        var value = MenuUi.prompt(app, "Modem Dial String", "Dial string",
-            s.modemDial, 1023, false, modemDialHelp_())
-        if (value != null) s.modemDial = value
-      } else if (picked == 12) {
-        var value = MenuUi.prompt(app, "List Path", "Path or URI",
-            s.listPath, Menu.maxPathLength, false, listPathHelp_())
-        if (value != null) s.listPath = value
-      } else if (picked == 13) {
-        var value = MenuUi.prompt(app, "TERM For Shell", "Terminal name",
-            s.shellTerm, 30, false, shellTermHelp_())
-        if (value != null) s.shellTerm = value
-      } else if (picked == 14) {
-        s.scalingMode = (s.scalingMode + 1) % Menu.scalingModes.count
-      } else if (picked == 15) {
-        s.invertWheel = !s.invertWheel
-      } else if (picked == 16) {
-        var value = MenuUi.integer(app, "Key Derivation Work Factor",
-            "Exponent N for scrypt-Nn", s.kdfShift, 8, 24, kdfHelp_())
-        if (value != null) s.kdfShift = value
-      } else if (picked == 17) {
-        if (colors_(app, s)) changed = true
-      } else if (picked == 18 && !connected) {
-        if (customMode_(app, s)) changed = true
-      }
-      if (s.dirty && applySettings_(app, s)) changed = true
     }
   }
 
@@ -477,11 +485,12 @@ class SettingsMenu {
             Menu.backgroundColors[s.lightbarBackgroundColor])]
       ]
       var picked = MenuUi.choice(app, "UIFC Colours", rows, selected,
-          colorsHelp_())
+          colorsHelp_(), Fn.new {|value|
+        selected = value
+        editColor_(app, s, value)
+        if (s.dirty && applySettings_(app, s)) changed = true
+      })
       if (picked == null) return changed
-      selected = picked
-      editColor_(app, s, picked)
-      if (s.dirty && applySettings_(app, s)) changed = true
     }
   }
 
@@ -516,34 +525,35 @@ class SettingsMenu {
         [4, settingsLine_("Aspect Ratio Height", s.customAspectHeight)]
       ]
       var picked = MenuUi.choice(app, "Custom Screen Mode", rows, selected,
-          customModeHelp_())
+          customModeHelp_(), Fn.new {|value|
+        selected = value
+        if (value == 0) {
+          var next = MenuUi.integer(app, "Custom Rows", "Rows",
+              s.customRows, 14, 255, customRowsHelp_())
+          if (next != null) s.customRows = next
+        } else if (value == 1) {
+          var next = MenuUi.integer(app, "Custom Columns", "Columns",
+              s.customColumns, 40, 255, customColumnsHelp_())
+          if (next != null) s.customColumns = next
+        } else if (value == 2) {
+          var choices = [[8, "8x8"], [14, "8x14"], [16, "8x16"]]
+          var next = MenuUi.choice(app, "Font Size", choices,
+              s.customFontHeight, settingHelp_("Custom Font Height"))
+          if (next != null) s.customFontHeight = next
+        } else if (value == 3) {
+          var next = MenuUi.integer(app, "Custom Aspect Width",
+              "Aspect width", s.customAspectWidth, 1, 2147483647,
+              customAspectHelp_(true))
+          if (next != null) s.customAspectWidth = next
+        } else if (value == 4) {
+          var next = MenuUi.integer(app, "Custom Aspect Height",
+              "Aspect height", s.customAspectHeight, 1, 2147483647,
+              customAspectHelp_(false))
+          if (next != null) s.customAspectHeight = next
+        }
+        if (s.dirty && applySettings_(app, s)) changed = true
+      })
       if (picked == null) return changed
-      selected = picked
-      if (picked == 0) {
-        var value = MenuUi.integer(app, "Custom Rows", "Rows",
-            s.customRows, 14, 255, customRowsHelp_())
-        if (value != null) s.customRows = value
-      } else if (picked == 1) {
-        var value = MenuUi.integer(app, "Custom Columns", "Columns",
-            s.customColumns, 40, 255, customColumnsHelp_())
-        if (value != null) s.customColumns = value
-      } else if (picked == 2) {
-        var choices = [[8, "8x8"], [14, "8x14"], [16, "8x16"]]
-        var value = MenuUi.choice(app, "Font Size", choices,
-            s.customFontHeight, settingHelp_("Custom Font Height"))
-        if (value != null) s.customFontHeight = value
-      } else if (picked == 3) {
-        var value = MenuUi.integer(app, "Custom Aspect Width",
-            "Aspect width", s.customAspectWidth, 1, 2147483647,
-            customAspectHelp_(true))
-        if (value != null) s.customAspectWidth = value
-      } else if (picked == 4) {
-        var value = MenuUi.integer(app, "Custom Aspect Height",
-            "Aspect height", s.customAspectHeight, 1, 2147483647,
-            customAspectHelp_(false))
-        if (value != null) s.customAspectHeight = value
-      }
-      if (s.dirty && applySettings_(app, s)) changed = true
     }
   }
 
@@ -557,15 +567,16 @@ class SettingsMenu {
         rows.add([row[0], "[%(enabled ? "X" : " ")] %(row[1])"])
       }
       var bit = MenuUi.choice(app, "Audio Output Mode", rows, selected,
-          audioHelp_())
+          audioHelp_(), Fn.new {|value|
+        selected = value
+        if ((s.audioModes & value) != 0) {
+          s.audioModes = s.audioModes & ~value
+        } else {
+          s.audioModes = s.audioModes | value
+        }
+        if (applySettings_(app, s)) changed = true
+      })
       if (bit == null) return changed
-      selected = bit
-      if ((s.audioModes & bit) != 0) {
-        s.audioModes = s.audioModes & ~bit
-      } else {
-        s.audioModes = s.audioModes | bit
-      }
-      if (applySettings_(app, s)) changed = true
     }
   }
 
@@ -631,71 +642,72 @@ class SettingsMenu {
       commands[Key.insert] = ["insert", true]
       commands[Key.delete] = ["delete", false]
       var picked = MenuUi.commandChoice(app, "Web Lists", rows, selected,
-          webListsHelp_(), commands)
+          webListsHelp_(), commands, Fn.new {|result|
+        var command = result[0]
+        var index = result[1]
+        selected = index
+        if (command == "insert" ||
+            (command == "select" && index == -1)) {
+          if (index == -1) index = lists.count
+          var initialName = lists.count == 0 ? "SyncTERM BBS List" : ""
+          var name = initialName
+          while (true) {
+            name = MenuUi.prompt(app, "Add Web List", "Name", name, 1024,
+                false, webListsHelp_())
+            if (name == null || name.count == 0) break
+            if (MenuUi.namesEqual(name, "System List")) {
+              Alert.show(app, "Add Web List", "Invalid web-list name.")
+              continue
+            }
+            var duplicate = false
+            for (list in lists) {
+              if (MenuUi.namesEqual(name, list[0])) duplicate = true
+            }
+            if (!duplicate) break
+            Alert.show(app, "Add Web List", "Duplicate web-list name.")
+          }
+          if (name == null || name.count == 0) return
+          var initialUri = ""
+          if (lists.count == 0) {
+            initialUri = "http://syncterm.bbsdev.net/syncterm.lst"
+          }
+          var uri = MenuUi.prompt(app, "Add Web List", "URI", initialUri,
+              1024, false, webListsHelp_())
+          if (uri == null || uri.count == 0) return
+          app.popStatus("Fetching web list")
+          var error = Menu.addWebList(name, uri, index)
+          app.popStatus(null)
+          if (error == null) {
+            changed = true
+            selected = index
+          } else {
+            Alert.show(app, "Web List", error)
+          }
+        } else if (command == "delete") {
+          if (Menu.deleteWebList(index)) {
+            changed = true
+            selected = index < Menu.webLists.count ? index : -1
+          } else {
+            Alert.show(app, "Web List", "The web list could not be deleted.")
+          }
+        } else if (command == "select") {
+          var uri = MenuUi.prompt(app, "Web List URI", "URI", lists[index][1],
+              1024, false, webListsHelp_())
+          if (uri != null) {
+            if (Menu.updateWebList(index, uri)) {
+              changed = true
+            } else {
+              Alert.show(app, "Web List", "The URI could not be saved.")
+            }
+          }
+        }
+      })
       if (picked == null) {
         if (Menu.webListsDirty && !Menu.saveWebLists()) {
           Alert.show(app, "Web Lists",
               "The web-list configuration could not be saved.")
         }
         return changed
-      }
-      var command = picked[0]
-      var index = picked[1]
-      selected = index
-      if (command == "insert" ||
-          (command == "select" && index == -1)) {
-        if (index == -1) index = lists.count
-        var initialName = lists.count == 0 ? "SyncTERM BBS List" : ""
-        var name = initialName
-        while (true) {
-          name = MenuUi.prompt(app, "Add Web List", "Name", name, 1024,
-              false, webListsHelp_())
-          if (name == null || name.count == 0) break
-          if (MenuUi.namesEqual(name, "System List")) {
-            Alert.show(app, "Add Web List", "Invalid web-list name.")
-            continue
-          }
-          var duplicate = false
-          for (list in lists) {
-            if (MenuUi.namesEqual(name, list[0])) duplicate = true
-          }
-          if (!duplicate) break
-          Alert.show(app, "Add Web List", "Duplicate web-list name.")
-        }
-        if (name == null || name.count == 0) continue
-        var initialUri = ""
-        if (lists.count == 0) {
-          initialUri = "http://syncterm.bbsdev.net/syncterm.lst"
-        }
-        var uri = MenuUi.prompt(app, "Add Web List", "URI", initialUri, 1024,
-            false, webListsHelp_())
-        if (uri == null || uri.count == 0) continue
-        app.popStatus("Fetching web list")
-        var error = Menu.addWebList(name, uri, index)
-        app.popStatus(null)
-        if (error == null) {
-          changed = true
-          selected = index
-        } else {
-          Alert.show(app, "Web List", error)
-        }
-      } else if (command == "delete") {
-        if (Menu.deleteWebList(index)) {
-          changed = true
-          selected = index < Menu.webLists.count ? index : -1
-        } else {
-          Alert.show(app, "Web List", "The web list could not be deleted.")
-        }
-      } else if (command == "select") {
-        var uri = MenuUi.prompt(app, "Web List URI", "URI", lists[index][1],
-            1024, false, webListsHelp_())
-        if (uri != null) {
-          if (Menu.updateWebList(index, uri)) {
-            changed = true
-          } else {
-            Alert.show(app, "Web List", "The URI could not be saved.")
-          }
-        }
       }
     }
   }
@@ -715,34 +727,35 @@ class SettingsMenu {
       commands[Key.insert] = ["insert", true]
       commands[Key.delete] = ["delete", false]
       var picked = MenuUi.commandChoice(app, "Font Management", rows,
-          selected,
-          fontManagementHelp_(), commands)
+          selected, fontManagementHelp_(), commands, Fn.new {|result|
+        var command = result[0]
+        var index = result[1]
+        selected = index
+        if (command == "insert" ||
+            (command == "select" && index == -1)) {
+          if (index == -1) index = fonts.count
+          if (addFont_(app, fonts, index)) {
+            selected = index
+            font_(app, index)
+          }
+        } else if (command == "delete") {
+          if (!fonts[index].delete()) {
+            Alert.show(app, "Font Management",
+                "The font could not be deleted.")
+          } else {
+            var remaining = Menu.fonts
+            if (remaining != null && index >= remaining.count) selected = -1
+          }
+        } else if (command == "select") {
+          font_(app, index)
+        }
+      })
       if (picked == null) {
         if (Menu.fontsDirty && !Menu.saveFonts()) {
           Alert.show(app, "Font Management",
               "The font configuration could not be saved.")
         }
         return
-      }
-      var command = picked[0]
-      var index = picked[1]
-      selected = index
-      if (command == "insert" ||
-          (command == "select" && index == -1)) {
-        if (index == -1) index = fonts.count
-        if (addFont_(app, fonts, index)) {
-          selected = index
-          font_(app, index)
-        }
-      } else if (command == "delete") {
-        if (!fonts[index].delete()) {
-          Alert.show(app, "Font Management", "The font could not be deleted.")
-        } else {
-          var remaining = Menu.fonts
-          if (remaining != null && index >= remaining.count) selected = -1
-        }
-      } else if (command == "select") {
-        font_(app, index)
       }
     }
   }
@@ -793,43 +806,45 @@ class SettingsMenu {
       commands[Key.delete] = ["delete", false]
       commands[0x5B] = ["previous", true]
       commands[0x5D] = ["next", true]
+      var deleted = false
       var picked = MenuUi.commandChoice(app, "Font Details", rows, selected,
-          fontDetailsHelp_(), commands)
-      if (picked == null) return
-      var command = picked[0]
-      var value = picked[1]
-      selected = value
-      if (command == "previous") {
-        index = index - 1
-      } else if (command == "next") {
-        index = index + 1
-      } else if (command == "insert" ||
-          (command == "select" && value == -2)) {
-        if (addFont_(app, fonts, index)) selected = -1
-      } else if (command == "delete") {
-        if (!font.delete()) {
-          Alert.show(app, "Font Management",
-              "The font could not be deleted.")
+          fontDetailsHelp_(), commands, Fn.new {|result|
+        var command = result[0]
+        var value = result[1]
+        selected = value
+        if (command == "previous") {
+          index = index - 1
+        } else if (command == "next") {
+          index = index + 1
+        } else if (command == "insert" ||
+            (command == "select" && value == -2)) {
+          if (addFont_(app, fonts, index)) selected = -1
+        } else if (command == "delete") {
+          if (!font.delete()) {
+            Alert.show(app, "Font Management",
+                "The font could not be deleted.")
+          } else {
+            deleted = true
+          }
+        } else if (value == -1) {
+          var name = MenuUi.prompt(app, "Rename Font", "Font name", font.name,
+              50, false, fontNameHelp_())
+          if (name == null || MenuUi.namesEqual(name, font.name)) return
+          if (!fontNameFits_(name)) {
+            Alert.show(app, "Font Management",
+                "The font name is longer than 50 bytes.")
+            return
+          }
+          font.name = name
         } else {
-          return
+          app.releaseFocus()
+          var title = "%(fontSizeName_(value)) %(font.name)"
+          var file = Host.pickFile(".", fontMask_(value), 1, title)
+          app.restoreFocus()
+          if (file != null) font.setFile(value, file)
         }
-      } else if (value == -1) {
-        var name = MenuUi.prompt(app, "Rename Font", "Font name", font.name,
-            50, false, fontNameHelp_())
-        if (name == null || MenuUi.namesEqual(name, font.name)) continue
-        if (!fontNameFits_(name)) {
-          Alert.show(app, "Font Management",
-              "The font name is longer than 50 bytes.")
-          continue
-        }
-        font.name = name
-      } else {
-        app.releaseFocus()
-        var title = "%(fontSizeName_(value)) %(font.name)"
-        var file = Host.pickFile(".", fontMask_(value), 1, title)
-        app.restoreFocus()
-        if (file != null) font.setFile(value, file)
-      }
+      })
+      if (picked == null || deleted) return
     }
   }
 
@@ -845,37 +860,39 @@ class SettingsMenu {
     if (Menu.encryptionAlgorithm != MenuEncryption.none) {
       title = "Currently %(title)"
     }
-    var picked = MenuUi.choice(app, title, choices, null,
-        encryptionHelp_())
-    if (picked == null) return false
-    var algorithm = picked[0]
-    var keySize = picked[1]
-    var password = null
-    if (algorithm == -1) {
-      algorithm = Menu.encryptionAlgorithm
-      keySize = Menu.encryptionKeySize
-      password = MenuUi.prompt(app, "List Encryption", "New password", "",
-          1023, true, encryptionHelp_())
-      if (password == null || password.count == 0) return false
-    }
-    if (Host.safeMode) return false
-    if (password == null && algorithm != MenuEncryption.none &&
-        Menu.encryptionAlgorithm == MenuEncryption.none) {
-      password = MenuUi.prompt(app, "List Encryption", "Password", "",
-          1023, true, encryptionHelp_())
-      if (password == null || password.count == 0) return false
-    }
-    if (!Menu.setEncryption(algorithm, keySize, password)) {
-      Alert.show(app, "List Encryption", "The personal directory could not be rewritten.")
-      return false
-    }
-    if (algorithm == MenuEncryption.none) {
-      __directoryPassword = null
-      __passwordChanged = true
-    } else if (password != null) {
-      __directoryPassword = password
-      __passwordChanged = true
-    }
-    return true
+    var changed = false
+    MenuUi.choice(app, title, choices, null, encryptionHelp_(), Fn.new {|picked|
+      var algorithm = picked[0]
+      var keySize = picked[1]
+      var password = null
+      if (algorithm == -1) {
+        algorithm = Menu.encryptionAlgorithm
+        keySize = Menu.encryptionKeySize
+        password = MenuUi.prompt(app, "List Encryption", "New password", "",
+            1023, true, encryptionHelp_())
+        if (password == null || password.count == 0) return
+      }
+      if (Host.safeMode) return
+      if (password == null && algorithm != MenuEncryption.none &&
+          Menu.encryptionAlgorithm == MenuEncryption.none) {
+        password = MenuUi.prompt(app, "List Encryption", "Password", "",
+            1023, true, encryptionHelp_())
+        if (password == null || password.count == 0) return
+      }
+      if (!Menu.setEncryption(algorithm, keySize, password)) {
+        Alert.show(app, "List Encryption",
+            "The personal directory could not be rewritten.")
+        return
+      }
+      if (algorithm == MenuEncryption.none) {
+        __directoryPassword = null
+        __passwordChanged = true
+      } else if (password != null) {
+        __directoryPassword = password
+        __passwordChanged = true
+      }
+      changed = true
+    })
+    return changed
   }
 }

@@ -48,41 +48,43 @@ class SortProfiles {
       commands[Key.shiftDel] = ["cut", false]
       if (clipboard != null) commands[Key.f6] = ["paste", false]
       var picked = MenuUi.commandChoice(app, "Sort Profiles",
-          profileLabels_(profiles), selected, profilesHelp_(), commands)
+          profileLabels_(profiles), selected, profilesHelp_(), commands,
+          Fn.new {|result|
+        var command = result[0]
+        var index = result[1]
+        selected = index
+        if (command == "insert" ||
+            (command == "select" && index == profiles.count)) {
+          new_(app, index.min(profiles.count))
+        } else if (command == "delete") {
+          if (!Menu.deleteSortProfile(index)) {
+            failed_(app)
+          } else {
+            selected = index.min(Menu.sortProfiles.count)
+          }
+        } else if (command == "rename") {
+          rename_(app, index, profiles[index])
+        } else if (command == "copy") {
+          clipboard = [profiles[index][0], profiles[index][1].toList]
+        } else if (command == "cut") {
+          clipboard = [profiles[index][0], profiles[index][1].toList]
+          if (!Menu.deleteSortProfile(index)) {
+            failed_(app)
+          } else {
+            selected = index.min(Menu.sortProfiles.count)
+          }
+        } else if (command == "paste") {
+          if (clipboard != null) paste_(app, index, clipboard)
+        } else if (command == "select") {
+          selected = editProfiles_(app, index)
+        }
+      })
       if (picked == null) {
         if (!Menu.saveSortProfiles()) {
           Alert.show(app, "Sort Profiles",
               "The sort profiles could not be saved.")
         }
         return
-      }
-      var command = picked[0]
-      var index = picked[1]
-      selected = index
-      if (command == "insert" ||
-          (command == "select" && index == profiles.count)) {
-        new_(app, index.min(profiles.count))
-      } else if (command == "delete") {
-        if (!Menu.deleteSortProfile(index)) {
-          failed_(app)
-        } else {
-          selected = index.min(Menu.sortProfiles.count)
-        }
-      } else if (command == "rename") {
-        rename_(app, index, profiles[index])
-      } else if (command == "copy") {
-        clipboard = [profiles[index][0], profiles[index][1].toList]
-      } else if (command == "cut") {
-        clipboard = [profiles[index][0], profiles[index][1].toList]
-        if (!Menu.deleteSortProfile(index)) {
-          failed_(app)
-        } else {
-          selected = index.min(Menu.sortProfiles.count)
-        }
-      } else if (command == "paste") {
-        if (clipboard != null) paste_(app, index, clipboard)
-      } else if (command == "select") {
-        selected = editProfiles_(app, index)
       }
     }
   }
@@ -153,22 +155,27 @@ class SortProfiles {
       commands[Key.delete] = ["delete", false]
       commands[0x5B] = ["previous", true]
       commands[0x5D] = ["next", true]
+      var navigation = 0
       var picked = MenuUi.commandChoice(app, "Sort Fields: %(name)",
-          labels, selected, fieldsHelp_(), commands)
+          labels, selected, fieldsHelp_(), commands, Fn.new {|result|
+        var command = result[0]
+        var index = result[1]
+        selected = index
+        if (command == "previous") {
+          navigation = -1
+        } else if (command == "next") {
+          navigation = 1
+        } else if (command == "insert" ||
+            (command == "select" && index == order.count)) {
+          addField_(app, order, index.min(order.count))
+        } else if (command == "delete") {
+          if (index < order.count) order.removeAt(index)
+        } else if (command == "select") {
+          order[index] = -order[index]
+        }
+      })
       if (picked == null) return [order, 0]
-      var command = picked[0]
-      var index = picked[1]
-      selected = index
-      if (command == "previous") return [order, -1]
-      if (command == "next") return [order, 1]
-      if (command == "insert" ||
-          (command == "select" && index == order.count)) {
-        addField_(app, order, index.min(order.count))
-      } else if (command == "delete") {
-        if (index < order.count) order.removeAt(index)
-      } else if (command == "select") {
-        order[index] = -order[index]
-      }
+      if (navigation != 0) return [order, navigation]
     }
   }
 

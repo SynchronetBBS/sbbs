@@ -89,6 +89,7 @@ class UiPopupTest {
     testPromptForwardsTypingToInput_()
     testMenuChoiceEscReturnsNull_()
     testMenuChoiceCarriesHelp_()
+    testMenuChoiceRunsCallbackBeforeDismiss_()
     testMenuCommandChoiceReturnsCommandAndRow_()
     testMenuCommandChoicePreemptsTypeahead_()
     testMenuCommandChoiceProtectsBlankRow_()
@@ -262,6 +263,20 @@ class UiPopupTest {
     MenuUi.choice(app, "Choice", ["One", "Two"], 0, "# Choice Help")
     check_(app.last.helpText == "# Choice Help",
            "MenuUi.choice: optional help reaches the modal pane")
+  }
+
+  static testMenuChoiceRunsCallbackBeforeDismiss_() {
+    var app = CommandFakeApp.new(Key.enter, 1)
+    var resident = false
+    var result = MenuUi.choice(app, "Choice", ["One", "Two"], 0, null,
+        Fn.new {|picked|
+      var child = ModalPane.new(Fn.new {})
+      app.pushModal(child)
+      resident = picked == 1 && app.modalStack.count == 2
+      app.popModal()
+    })
+    check_(resident && result == 1 && app.modalStack.count == 0,
+           "MenuUi.choice: callback runs while parent remains modal")
   }
 
   static testMenuCommandChoiceReturnsCommandAndRow_() {

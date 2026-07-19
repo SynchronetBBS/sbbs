@@ -198,7 +198,18 @@ class MenuUi {
   }
 
   static choice(app, title, rows, current, helpText) {
-    var picked = commandChoice(app, title, rows, current, helpText, {})
+    return choice(app, title, rows, current, helpText, null)
+  }
+
+  // When onSelect is supplied, run it while the choice pane remains
+  // immediately below any modal UI opened by the callback.
+  static choice(app, title, rows, current, helpText, onSelect) {
+    var onResult = null
+    if (onSelect != null) {
+      onResult = Fn.new {|picked| onSelect.call(picked[1]) }
+    }
+    var picked = commandChoice(app, title, rows, current, helpText, {},
+        onResult)
     if (picked == null) return null
     return picked[1]
   }
@@ -207,18 +218,31 @@ class MenuUi {
   // key codes to [commandName, allowOnBlankRow]. Enter returns
   // ["select", rowValue]; Escape returns null.
   static commandChoice(app, title, rows, current, helpText, commands) {
+    return commandChoice(app, title, rows, current, helpText, commands, null)
+  }
+
+  // onResult receives [commandName, rowValue] before the choice pane
+  // is dismissed, allowing nested UI to retain the owning menu as its
+  // visible parent.
+  static commandChoice(app, title, rows, current, helpText, commands,
+      onResult) {
     if (rows.count == 0) return null
     var state = {"result": null}
     var cancel = Fn.new { app.popModal() }
     var list = null
+    var pane = null
+    var finish = Fn.new {|result|
+      state["result"] = result
+      if (onResult != null) onResult.call(result)
+      if (app.modalStack.indexOf(pane) >= 0) app.popModal()
+    }
     var onCommand = Fn.new {|spec|
       var index = list.selected
       if (index == null) return
       if (list.items[index].count == 0 && !spec[1]) return
-      state["result"] = [spec[0], rowValue_(rows, index)]
-      app.popModal()
+      finish.call([spec[0], rowValue_(rows, index)])
     }
-    var pane = CommandPane.new(cancel, commands, onCommand)
+    pane = CommandPane.new(cancel, commands, onCommand)
     pane.title = title
     pane.helpText = helpText
     pane.focused = true
@@ -247,8 +271,7 @@ class MenuUi {
       list.selected = current
     }
     list.onSelect = Fn.new {|i, item|
-      state["result"] = ["select", rowValue_(rows, i)]
-      app.popModal()
+      finish.call(["select", rowValue_(rows, i)])
     }
     pane.add(list)
     app.modal(pane)

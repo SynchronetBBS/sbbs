@@ -822,36 +822,34 @@ class BbsEditor {
       if (colors.count > minimum) commands[Key.delete] = ["delete", false]
       commands[Key.f2] = ["edit", false]
       var result = MenuUi.commandChoice(app, "Edit Palette Entries", choices,
-          selected,
-          paletteHelp_(), commands)
+          selected, paletteHelp_(), commands, Fn.new {|value|
+        var command = value[0]
+        var picked = value[1]
+        selected = picked
+        if (command == "delete") {
+          if (colors.count > minimum) {
+            colors.removeAt(-1)
+            selected = selected.min(colors.count - 1).max(0)
+            d["palette"] = colors
+            onChange.call()
+          }
+        } else if (command == "insert" || picked == colors.count) {
+          if (colors.count < 16) colors.add(defaults[colors.count])
+          d["palette"] = colors
+          onChange.call()
+        } else {
+          colors[picked] = editColor_(app, colors[picked],
+              defaults[picked], colors)
+          d["palette"] = colors
+          onChange.call()
+        }
+      })
       if (result == null) {
         if (sameDefaultPalette_(colors, defaults, minimum)) colors = []
         d["palette"] = colors
         onChange.call()
         return
       }
-      var command = result[0]
-      var picked = result[1]
-      selected = picked
-      if (command == "delete") {
-        if (colors.count > minimum) {
-          colors.removeAt(-1)
-          selected = selected.min(colors.count - 1).max(0)
-          d["palette"] = colors
-          onChange.call()
-        }
-        continue
-      }
-      if (command == "insert" || picked == colors.count) {
-        if (colors.count < 16) colors.add(defaults[colors.count])
-        d["palette"] = colors
-        onChange.call()
-        continue
-      }
-      colors[picked] = editColor_(app, colors[picked],
-          defaults[picked], colors)
-      d["palette"] = colors
-      onChange.call()
     }
   }
 
@@ -867,27 +865,28 @@ class BbsEditor {
         [3, logLine_("Append Log File", yesNo_(d["appendLogFile"]))]
       ]
       var picked = MenuUi.choice(app, "Log Configuration", rows, selected,
-          logHelp_())
+          logHelp_(), Fn.new {|value|
+        selected = value
+        if (value == 0) {
+          var next = MenuUi.prompt(app, "Log File", "Log filename",
+              d["logFile"], Menu.maxPathLength, false, logFileHelp_())
+          if (next != null) d["logFile"] = next
+        } else if (value == 1) {
+          var next = MenuUi.choice(app, "File Transfer Log Level",
+              Menu.logLevels, d["xferLogLevel"],
+              logLevelHelp_("File Transfer"))
+          if (next != null) d["xferLogLevel"] = next
+        } else if (value == 2) {
+          var next = MenuUi.choice(app, "Telnet Command Log Level",
+              Menu.logLevels, d["telnetLogLevel"],
+              logLevelHelp_("Telnet Command"))
+          if (next != null) d["telnetLogLevel"] = next
+        } else if (value == 3) {
+          d["appendLogFile"] = !d["appendLogFile"]
+        }
+        onChange.call()
+      })
       if (picked == null) return
-      selected = picked
-      if (picked == 0) {
-        var value = MenuUi.prompt(app, "Log File", "Log filename",
-            d["logFile"], Menu.maxPathLength, false, logFileHelp_())
-        if (value != null) d["logFile"] = value
-      } else if (picked == 1) {
-        var value = MenuUi.choice(app, "File Transfer Log Level",
-            Menu.logLevels, d["xferLogLevel"],
-            logLevelHelp_("File Transfer"))
-        if (value != null) d["xferLogLevel"] = value
-      } else if (picked == 2) {
-        var value = MenuUi.choice(app, "Telnet Command Log Level",
-            Menu.logLevels, d["telnetLogLevel"],
-            logLevelHelp_("Telnet Command"))
-        if (value != null) d["telnetLogLevel"] = value
-      } else if (picked == 3) {
-        d["appendLogFile"] = !d["appendLogFile"]
-      }
-      onChange.call()
     }
   }
 
