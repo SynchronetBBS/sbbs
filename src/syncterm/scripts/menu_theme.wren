@@ -20,12 +20,19 @@ class ClassicTheme {
   }
 
   static from(settings) {
-    var frame = color_(settings.frameColor, 16, 14)
-    var text = color_(settings.textColor, 16, 15)
-    var background = color_(settings.backgroundColor, 8, 1)
-    var inverse = color_(settings.inverseColor, 8, 3)
-    var lightbar = color_(settings.lightbarColor, 16, 1)
-    var lightbarBackground = color_(settings.lightbarBackgroundColor, 8, 7)
+    return fromColors(settings.frameColor, settings.textColor,
+        settings.backgroundColor, settings.inverseColor,
+        settings.lightbarColor, settings.lightbarBackgroundColor)
+  }
+
+  static fromColors(frameValue, textValue, backgroundValue, inverseValue,
+      lightbarValue, lightbarBackgroundValue) {
+    var frame = color_(frameValue, 16, 14)
+    var text = color_(textValue, 16, 15)
+    var background = color_(backgroundValue, 8, 1)
+    var inverse = color_(inverseValue, 8, 3)
+    var lightbar = color_(lightbarValue, 16, 1)
+    var lightbarBackground = color_(lightbarBackgroundValue, 8, 7)
 
     var normal = style_(text, background)
     var inactive = style_(text, inverse)

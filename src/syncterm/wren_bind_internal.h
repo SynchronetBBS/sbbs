@@ -51,6 +51,7 @@ enum syncterm_wren_foreign {
 	SWF_MENU_BBS,
 	SWF_MENU_SETTINGS,
 	SWF_MENU_FONT,
+	SWF_PICKER_REQUEST,
 };
 
 /* Every foreign struct's first field has this exact name and type, so

@@ -6,9 +6,10 @@
 #include "wren_bind_internal.h"
 #include "wren_bind_fs.h"
 #include "wren_host_internal.h"
+#include "wren_picker_host.h"
+#include "wren_bind_picker.h"
 #include "syncterm.h"
 #include "term.h"        /* get_cache_fn_base */
-#include "uifcinit.h"    /* uifcfilepick / uifcfilepick_multi */
 
 #include "sha1.h"
 #include "md5.h"
@@ -1109,11 +1110,29 @@ push_picker_save_file(WrenVM *vm, int slot, const char *picked,
 	return wf;
 }
 
-/* Host.pickFile(initialPath, mask, opts) — wraps uifc/filepick's
- * single-file picker.  initialPath may be a String path, a Directory
- * foreign (uses its path; handles Cache lazy-resolve), or null
+static void
+picker_call_init(struct wren_picker_call *call, enum wren_picker_mode mode,
+    const char *title, const char *initial, const char *mask, int options)
+{
+	memset(call, 0, sizeof(*call));
+	call->mode = mode;
+	call->title = title;
+	call->initial_path = initial;
+	call->mask = mask;
+	call->options = options;
+	call->colors[0] = settings.uifc_hclr;
+	call->colors[1] = settings.uifc_lclr;
+	call->colors[2] = settings.uifc_bclr;
+	call->colors[3] = settings.uifc_cclr;
+	call->colors[4] = settings.uifc_lbclr;
+	call->colors[5] = settings.uifc_lbbclr;
+}
+
+/* Host.pickFile(initialPath, mask, opts) opens the isolated Wren picker.
+ * initialPath may be a String path, a Directory foreign (uses its path;
+ * handles Cache lazy-resolve), or null
  * (defaults to bbs->uldir).  mask may be null (defaults to "*").
- * opts is the UIFC_FP_* bitmask.
+ * opts combines the public FilePickerOptions bits.
  *
  * Returns a File foreign whose path is the absolute path the user
  * picked (with .token populated when the signing key is available),
@@ -1134,17 +1153,20 @@ host_pick_file(WrenVM *vm, const char *title)
 	if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
 		opts = (int)wrenGetSlotDouble(vm, 3);
 
-	struct file_pick fp = { 0 };
-	int rc = uifcfilepick(title, &fp, initial, mask, opts);
-	if (rc <= 0 || fp.files < 1 || fp.selected == NULL ||
-	    fp.selected[0] == NULL) {
-		filepick_free(&fp);
+	struct wren_picker_call call;
+	picker_call_init(&call,
+	    (opts & PICKER_OPT_SELECT_DIRECTORY) != 0 ?
+	    WREN_PICKER_DIRECTORY : WREN_PICKER_FILE,
+	    title, initial, mask, opts);
+	if (!wren_picker_host_run(&call) || call.path_count < 1 ||
+	    call.paths == NULL || call.paths[0] == NULL) {
+		wren_picker_call_dispose(&call);
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	if (push_picker_file(vm, 0, fp.selected[0]) == NULL)
+	if (push_picker_file(vm, 0, call.paths[0]) == NULL)
 		wrenSetSlotNull(vm, 0);
-	filepick_free(&fp);
+	wren_picker_call_dispose(&call);
 }
 
 void
@@ -1231,9 +1253,9 @@ wren_file_consume_write(WrenVM *vm, int slot, const char **out_path)
 	return fp;
 }
 
-/* Host.pickSavePath(initialDir, mask) — wraps uifc filepick in save
- * mode (UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT).  User can either
- * pick an existing file (overwrite-prompted) or type a new filename.
+/* Host.pickSavePath(initialDir, mask) opens the isolated picker in save
+ * mode.  The user can pick an existing file (overwrite-prompted) or type
+ * a new filename.
  *
  * Returns a write-consent File or null on cancel.  The File's
  * write_consent records which open mode the picker authorized:
@@ -1256,30 +1278,28 @@ fn_Host_pickSavePath(WrenVM *vm)
 	if (wrenGetSlotType(vm, 2) == WREN_TYPE_STRING)
 		mask = wrenGetSlotString(vm, 2);
 
-	struct file_pick fp = { 0 };
-	int rc = uifcfilepick("Save as", &fp, initial, mask,
-	    UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT);
-	if (rc <= 0 || fp.files < 1 || fp.selected == NULL ||
-	    fp.selected[0] == NULL) {
-		filepick_free(&fp);
+	struct wren_picker_call call;
+	picker_call_init(&call, WREN_PICKER_SAVE, "Save as", initial, mask,
+	    PICKER_OPT_ALLOW_ENTRY | PICKER_OPT_CONFIRM_OVERWRITE);
+	if (!wren_picker_host_run(&call) || call.path_count < 1 ||
+	    call.paths == NULL || call.paths[0] == NULL) {
+		wren_picker_call_dispose(&call);
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
 	enum wren_file_write_consent mode =
-	    fexist(fp.selected[0]) ? WFC_OVERWRITE : WFC_CREATE;
-	if (push_picker_save_file(vm, 0, fp.selected[0], mode) == NULL)
+	    call.disposition == WREN_PICKER_DISPOSITION_OVERWRITE ?
+	    WFC_OVERWRITE : WFC_CREATE;
+	if (push_picker_save_file(vm, 0, call.paths[0], mode) == NULL)
 		wrenSetSlotNull(vm, 0);
-	filepick_free(&fp);
+	wren_picker_call_dispose(&call);
 }
 
-/* Host.pickFiles(initialDir, mask, opts) — multi-select counterpart
- * of pickFile, wrapping uifc/filepick's filepick_multi.  Same
- * argument shape as pickFile (Directory or String for initialDir).
+/* Host.pickFiles(initialDir, mask, opts) is the multi-select counterpart
+ * of pickFile, with the same Directory-or-String initialDir argument.
  * Returns a non-empty List<File> on OK (each File has a .token),
- * or null on cancel / empty selection / OOM.  Per filepick.h,
- * UIFC_FP_ALLOWENTRY / OVERPROMPT / CREATPROMPT cannot be combined
- * with multi-select — filepick_multi rejects them with -1, which
- * we surface as null. */
+ * or null on cancel / empty selection / OOM.  Entry and confirmation
+ * options cannot be combined with multi-select. */
 void
 fn_Host_pickFiles(WrenVM *vm)
 {
@@ -1293,24 +1313,30 @@ fn_Host_pickFiles(WrenVM *vm)
 	if (wrenGetSlotType(vm, 3) == WREN_TYPE_NUM)
 		opts = (int)wrenGetSlotDouble(vm, 3);
 
-	struct file_pick fp = { 0 };
-	int rc = uifcfilepick_multi("Tag files to upload", &fp, initial,
-	    mask, opts);
-	if (rc <= 0 || fp.files < 1 || fp.selected == NULL) {
-		filepick_free(&fp);
+	if (opts & (PICKER_OPT_ALLOW_ENTRY | PICKER_OPT_CONFIRM_OVERWRITE |
+	    PICKER_OPT_CONFIRM_CREATE)) {
+		wrenSetSlotNull(vm, 0);
+		return;
+	}
+	struct wren_picker_call call;
+	picker_call_init(&call, WREN_PICKER_MULTIPLE, "Tag files to upload",
+	    initial, mask, opts);
+	if (!wren_picker_host_run(&call) || call.path_count < 1 ||
+	    call.paths == NULL) {
+		wren_picker_call_dispose(&call);
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
 	wrenEnsureSlots(vm, 3);
 	wrenSetSlotNewList(vm, 0);
 	int produced = 0;
-	for (int i = 0; i < fp.files; i++) {
-		if (push_picker_file(vm, 1, fp.selected[i]) == NULL)
+	for (size_t i = 0; i < call.path_count; i++) {
+		if (push_picker_file(vm, 1, call.paths[i]) == NULL)
 			continue;
 		wrenInsertInList(vm, 0, -1, 1);
 		produced++;
 	}
-	filepick_free(&fp);
+	wren_picker_call_dispose(&call);
 	if (produced == 0)
 		wrenSetSlotNull(vm, 0);
 }

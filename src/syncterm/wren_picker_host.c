@@ -1,13 +1,17 @@
 #include "wren_picker_host.h"
 
 #include "wren_bind_internal.h"
+#include "wren_bind_picker.h"
 #include "wren_host.h"
 #include "wren_host_internal.h"
 
 #include "dirwrap.h"
 #include "genwrap.h"
 #include "syncterm.h"
+#include "term.h"
 #include "wren.h"
+
+#include <ciolib.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +19,11 @@
 
 static struct wren_host_state picker_state;
 static bool picker_active;
+static WrenHandle *picker_bootstrap_class;
+static WrenHandle *picker_file_class;
+static WrenHandle *picker_run_handle;
+static WrenHandle *picker_recover_handle;
+static char picker_last_error[1024];
 
 static bool
 valid_module_name(const char *name)
@@ -185,15 +194,28 @@ picker_capability_denied(WrenVM *vm)
 	wren_throw(vm, "this capability is not available in the picker VM");
 }
 
+static void
+picker_unavailable_value(WrenVM *vm)
+{
+	wrenSetSlotNull(vm, 0);
+}
+
 static WrenForeignMethodFn
 bind_foreign_method(WrenVM *vm, const char *module, const char *class_name,
     bool is_static, const char *signature)
 {
 	(void)vm;
 	if (strcmp(module, "syncterm_picker") == 0)
-		return picker_capability_denied;
+		return wren_picker_bind_lookup(module, class_name, is_static,
+		    signature);
 	if (strcmp(module, "syncterm") != 0)
 		return NULL;
+	/* syncterm.wren initializes these connected-session globals when the
+	 * module loads.  They are intentionally absent in the picker VM. */
+	if (strcmp(class_name, "Host") == 0 &&
+	    (strcmp(signature, "cacheDirectory") == 0 ||
+	    strcmp(signature, "downloadDir") == 0))
+		return picker_unavailable_value;
 	WrenForeignMethodFn fn = wren_bind_lookup(module, class_name,
 	    is_static, signature);
 	if (fn == NULL)
@@ -208,6 +230,8 @@ bind_foreign_class(WrenVM *vm, const char *module, const char *class_name)
 {
 	WrenForeignClassMethods none = { NULL, NULL };
 	(void)vm;
+	if (strcmp(module, "syncterm_picker") == 0)
+		return wren_picker_bind_lookup_class(module, class_name);
 	if (strcmp(module, "syncterm") != 0 ||
 	    !generic_class_allowed(class_name))
 		return none;
@@ -228,6 +252,9 @@ report_error(WrenVM *vm, WrenErrorType type, const char *module, int line,
 {
 	(void)vm;
 	wren_log_error(type, module, line, message);
+	if (type != WREN_ERROR_STACK_TRACE)
+		strlcpy(picker_last_error, message != NULL ? message : "",
+		    sizeof(picker_last_error));
 	const char *kind = type == WREN_ERROR_COMPILE ? "compile" :
 	    type == WREN_ERROR_RUNTIME ? "runtime" : "stack";
 	fprintf(stderr, "[wren-picker] %s %s:%d: %s\n", kind,
@@ -302,6 +329,17 @@ load_event_scripts(void)
 	}
 }
 
+static WrenHandle *
+class_handle(const char *module, const char *class_name)
+{
+	if (!wrenHasModule(picker_state.vm, module) ||
+	    !wrenHasVariable(picker_state.vm, module, class_name))
+		return NULL;
+	wrenEnsureSlots(picker_state.vm, 1);
+	wrenGetVariable(picker_state.vm, module, class_name, 0);
+	return wrenGetSlotHandle(picker_state.vm, 0);
+}
+
 bool
 wren_picker_host_init(void)
 {
@@ -322,13 +360,39 @@ wren_picker_host_init(void)
 	picker_state.vm = wrenNewVM(&config);
 	const struct embedded_script *bootstrap =
 	    embedded_module("picker_bootstrap", NULL);
+	const struct embedded_script *request =
+	    embedded_module("syncterm_picker", NULL);
 	if (picker_state.vm != NULL && bootstrap != NULL &&
 	    wrenInterpret(picker_state.vm, bootstrap->name,
-	    bootstrap->source) == WREN_RESULT_SUCCESS) {
+	    bootstrap->source) == WREN_RESULT_SUCCESS && request != NULL &&
+	    wrenInterpret(picker_state.vm, request->name,
+	    request->source) == WREN_RESULT_SUCCESS) {
 		picker_active = true;
+		picker_bootstrap_class = class_handle("picker_bootstrap",
+		    "PickerBootstrap");
+		picker_run_handle = wrenMakeCallHandle(picker_state.vm,
+		    "run(_,_)");
+		picker_recover_handle = wrenMakeCallHandle(picker_state.vm,
+		    "recover(_,_)");
 		load_event_scripts();
+		picker_file_class = class_handle("file_picker", "FilePicker");
 	}
+	if (picker_active && (picker_bootstrap_class == NULL ||
+	    picker_run_handle == NULL || picker_recover_handle == NULL))
+		picker_active = false;
 	if (!picker_active && picker_state.vm != NULL) {
+		if (picker_bootstrap_class != NULL)
+			wrenReleaseHandle(picker_state.vm, picker_bootstrap_class);
+		if (picker_file_class != NULL)
+			wrenReleaseHandle(picker_state.vm, picker_file_class);
+		if (picker_run_handle != NULL)
+			wrenReleaseHandle(picker_state.vm, picker_run_handle);
+		if (picker_recover_handle != NULL)
+			wrenReleaseHandle(picker_state.vm, picker_recover_handle);
+		picker_bootstrap_class = NULL;
+		picker_file_class = NULL;
+		picker_run_handle = NULL;
+		picker_recover_handle = NULL;
 		wren_log_shutdown();
 		wrenFreeVM(picker_state.vm);
 		picker_state.vm = NULL;
@@ -343,6 +407,15 @@ wren_picker_host_shutdown(void)
 	if (!picker_active)
 		return;
 	struct wren_host_state *old = wren_host_select_state(&picker_state);
+	wrenReleaseHandle(picker_state.vm, picker_bootstrap_class);
+	if (picker_file_class != NULL)
+		wrenReleaseHandle(picker_state.vm, picker_file_class);
+	wrenReleaseHandle(picker_state.vm, picker_run_handle);
+	wrenReleaseHandle(picker_state.vm, picker_recover_handle);
+	picker_bootstrap_class = NULL;
+	picker_file_class = NULL;
+	picker_run_handle = NULL;
+	picker_recover_handle = NULL;
 	wren_log_shutdown();
 	wrenFreeVM(picker_state.vm);
 	wren_host_select_state(old == &picker_state ? NULL : old);
@@ -354,4 +427,69 @@ bool
 wren_picker_host_active(void)
 {
 	return picker_active;
+}
+
+static WrenInterpretResult
+recover_picker(struct wren_picker_call *call, const char *message)
+{
+	wrenEnsureSlots(picker_state.vm, 3);
+	wrenSetSlotHandle(picker_state.vm, 0, picker_bootstrap_class);
+	if (!wren_picker_bind_push_request(picker_state.vm, 1, call))
+		return WREN_RESULT_RUNTIME_ERROR;
+	wrenSetSlotString(picker_state.vm, 2,
+	    message != NULL && *message != '\0' ? message :
+	    "The file picker implementation is unavailable.");
+	return wrenCall(picker_state.vm, picker_recover_handle);
+}
+
+bool
+wren_picker_host_run(struct wren_picker_call *call)
+{
+	if (!picker_active || picker_state.vm == NULL || call == NULL ||
+	    picker_bootstrap_class == NULL || picker_run_handle == NULL ||
+	    picker_recover_handle == NULL)
+		return false;
+
+	wren_host_input_barrier();
+	struct ciolib_screen *screen = cp437_savescrn();
+	if (screen == NULL) {
+		wren_host_input_barrier();
+		return false;
+	}
+	uint64_t mouse_events = ciomouse_getevents();
+	int cursor_start, cursor_end, cursor_range, cursor_blink, cursor_visible;
+	getcustomcursor(&cursor_start, &cursor_end, &cursor_range,
+	    &cursor_blink, &cursor_visible);
+
+	picker_last_error[0] = '\0';
+	struct wren_host_state *old = wren_host_select_state(&picker_state);
+	WrenInterpretResult result;
+	if (picker_file_class == NULL) {
+		result = recover_picker(call, picker_last_error);
+	} else {
+		wrenEnsureSlots(picker_state.vm, 3);
+		wrenSetSlotHandle(picker_state.vm, 0, picker_bootstrap_class);
+		wrenSetSlotHandle(picker_state.vm, 1, picker_file_class);
+		if (!wren_picker_bind_push_request(picker_state.vm, 2, call)) {
+			result = WREN_RESULT_RUNTIME_ERROR;
+		} else {
+			result = wrenCall(picker_state.vm, picker_run_handle);
+		}
+		if (result != WREN_RESULT_SUCCESS)
+			result = recover_picker(call, picker_last_error);
+	}
+	call->active = false;
+	if (!call->completed)
+		call->completed = true;
+	if (call->quit_application)
+		quitting = true;
+	wren_host_select_state(old);
+
+	restorescreen(screen);
+	freescreen(screen);
+	ciomouse_setevents(mouse_events);
+	setcustomcursor(cursor_start, cursor_end, cursor_range,
+	    cursor_blink, cursor_visible);
+	wren_host_input_barrier();
+	return result == WREN_RESULT_SUCCESS;
 }

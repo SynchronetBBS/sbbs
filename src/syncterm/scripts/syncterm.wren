@@ -1454,12 +1454,29 @@ foreign class HookHandle {
 // purpose, so scripts can't enumerate UploadPath or open files
 // from it directly.
 //
+// File-picker option bits.  The numeric assignments are stable because
+// scripts may persist or combine them, but the names describe picker
+// behavior without exposing the implementation that supplies the UI.
+class FilePickerOptions {
+  static none { 0 }
+  static maskLocked { 1 << 0 }
+  static maskCaseSensitive { 1 << 1 }
+  static caseSensitiveSort { 1 << 2 }
+  static selectDirectory { 1 << 3 }
+  static pathMustExist { 1 << 4 }
+  static fileMustExist { 1 << 5 }
+  static showHidden { 1 << 6 }
+  static allowEntry { 1 << 8 }
+  static confirmOverwrite { 1 << 9 }
+  static confirmCreate { 1 << 10 }
+}
+
 // `pickFile(initialDir, mask, opts)` is the user-consent escape
-// hatch for "upload from anywhere": invokes uifc's filepick UI and
+// hatch for "upload from anywhere": invokes the isolated file picker and
 // returns a File foreign whose path is the absolute path the user
 // picked, or null on cancel.  initialDir / mask may be null
-// (defaults to BBS.ulDir / `*`).  opts is a bitmask of the C-side
-// UIFC_FP_* flags (see uifc/filepick.h).  The returned File bypasses
+// (defaults to BBS.ulDir / `*`).  opts combines FilePickerOptions values.
+// The returned File bypasses
 // the relaxed-name policy - the picker UI is the sandbox boundary,
 // since the user explicitly chose the path.
 class Host {
@@ -1472,16 +1489,17 @@ class Host {
   // (when the picker-token signing key is loaded), or null on
   // cancel.  See pickFiles for the multi-select counterpart.
   foreign static pickFile(initialDir, mask, opts)
-  // As above, with a caller-supplied native picker title.
+  // As above, with a caller-supplied picker title.
   foreign static pickFile(initialDir, mask, opts, title)
   // Multi-select counterpart of pickFile.  Returns a non-empty
   // List<File> on OK (each File has a .token), or null on cancel /
-  // empty selection.  opts: same UIFC_FP_* bitmask, except
-  // ALLOWENTRY / OVERPROMPT / CREATPROMPT cannot be combined with
-  // multi-select (filepick rejects those flags).
+  // empty selection. FilePickerOptions.allowEntry,
+  // confirmOverwrite, and confirmCreate cannot be combined with
+  // multi-select.
   foreign static pickFiles(initialDir, mask, opts)
-  // Save-mode picker.  Wraps uifc filepick with ALLOWENTRY +
-  // OVERPROMPT - user can pick an existing file (overwrite-prompted)
+  // Save-mode picker. The path field permits a new name, while an
+  // existing file requires overwrite confirmation. The user can
+  // pick an existing file
   // or type a new filename.  Returns a write-consent File whose
   // .open() succeeds exactly once (with `wbx` for new paths, `wb`
   // when overwrite was confirmed); the File becomes inert after
