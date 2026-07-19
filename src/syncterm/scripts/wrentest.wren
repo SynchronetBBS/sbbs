@@ -1603,6 +1603,7 @@ class WrenTest {
     var grand = __sumPass + __sumFail
     print_("=== TOTAL: %(grand) tests, %(__sumPass) pass, %(__sumFail) fail ===")
     cleanup_()
+    if (Host.launchScript != null) Conn.send("exit\r")
   }
 
   // Accumulate a [pass, fail] pair returned by a nested test suite

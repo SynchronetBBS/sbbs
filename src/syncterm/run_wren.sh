@@ -1,15 +1,14 @@
 #!/bin/sh
 # run_wren.sh — Compile / execute a Wren script under SyncTERM headless
 #
-# Drives SyncTERM with the SDL backend in offscreen mode, connects via
-# a PTY to /usr/bin/true so the session ends immediately, and loads the
+# Drives SyncTERM with the SDL backend in offscreen mode and loads the
 # named Wren script via -W after the embedded + user auto-load chain
-# has finished.  Any compile or runtime errors caught by the host's
-# Wren errorFn appear on standard error with the "[wren] " prefix; the
-# script's own Host.print output reaches standard output.
+# has finished.  Ordinary scripts get a short-lived /usr/bin/true PTY.
+# wrentest.wren gets the persistent Bash PTY its connection tests require;
+# the suite sends "exit" after its final report.
 #
-# Exit code: 0 if no "[wren] " lines hit stderr, 1 otherwise — suitable
-# for CI / pre-commit gating.
+# Exit code: ordinary scripts succeed if no "[wren] " lines hit stderr.
+# wrentest.wren succeeds only after reporting a TOTAL with zero failures.
 #
 # Usage: run_wren.sh <script.wren>
 #
@@ -35,20 +34,45 @@ if [ ! -x "$SYNCTERM" ]; then
 	exit 1
 fi
 
-ERR=$(mktemp /tmp/run_wren.XXXXXX)
-trap 'rm -f "$ERR"' EXIT
+OUT=$(mktemp /tmp/run_wren.out.XXXXXX)
+ERR=$(mktemp /tmp/run_wren.err.XXXXXX)
+trap 'rm -f "$OUT" "$ERR"' EXIT
 
 export SDL_VIDEODRIVER=offscreen
 export SDL_RENDER_DRIVER=software
 export SDL_VIDEO_EGL_DRIVER=none
 
-# SyncTERM may exit non-zero on the failed shell:/usr/bin/true session
-# even when the Wren load succeeded; ignore the exit code and decide
-# based on stderr scraping instead.
-timeout 30 "$SYNCTERM" -iS -S -Q -W "$SCRIPT" 'shell:/usr/bin/true' 2>"$ERR" || true
+SCRIPT_NAME=${SCRIPT##*/}
+CONNECTION='shell:/usr/bin/true'
+FULL_SUITE=false
+if [ "$SCRIPT_NAME" = "wrentest.wren" ]; then
+	CONNECTION='shell:/bin/bash'
+	FULL_SUITE=true
+fi
+
+# A normal shell disconnect can make SyncTERM return non-zero even after the
+# script completed, so the captured diagnostics/report are authoritative.
+timeout 30 "$SYNCTERM" -iS -S -Q -W "$SCRIPT" "$CONNECTION" \
+	>"$OUT" 2>"$ERR"
+STATUS=$?
+cat "$OUT"
+
+if [ "$STATUS" -eq 124 ]; then
+	echo "Wren test timed out" >&2
+	cat "$ERR" >&2
+	exit 1
+fi
+
+if $FULL_SUITE; then
+	if grep -Eq '^=== TOTAL: [0-9]+ tests, [0-9]+ pass, 0 fail ===$' "$OUT"; then
+		exit 0
+	fi
+	cat "$ERR" >&2
+	exit 1
+fi
 
 if grep -q '^\[wren\] ' "$ERR"; then
-	grep '^\[wren\] ' "$ERR" >&2
+	cat "$ERR" >&2
 	exit 1
 fi
 exit 0
