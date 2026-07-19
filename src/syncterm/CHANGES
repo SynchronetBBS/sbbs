@@ -15,48 +15,6 @@ Add Wren scripting engine, REPL console with Ctrl+`
 Replace the dialing directory and settings UI with a persistent Wren menu
 Isolate trusted menu scripts from per-connection Wren scripts
 Retain UIFC only for the trusted native file picker
-Preserve the classic two-pane directory layout and configured UI colours
-Keep ambient Wren menu chrome unchanged behind submenus
-Wrap highlighted Wren lists when navigating past either end
-Restore blank append rows and direct editing keys in Wren menu lists
-Restore directory comments, editor navigation, and serial rate discovery
-Restore directory add/copy workflows and connection-specific editor behavior
-Retain the highlighted row while Wren menu editors rebuild their lists
-Restore validation retries, focused commands, and empty-value handling
-Restore entry sorting, rate selection, and settings display information
-Restore window-close handling throughout the Wren main menu
-Restore entry-cache renames and immediate Wren menu colour updates
-Restore permissive custom-font names and file selection
-Restore command-line entry-save validation feedback
-Restore File Locations label formatting
-Restore the Quick Connect address input limit
-Restore palette and sort-profile command availability
-Restore Current Screen Mode context help
-Restore visible editing for masked directory credentials
-Retain web-list configuration when no cache path is available
-Restore main-menu pane navigation and pending comment commits
-Restore editor row retention, status summaries, and web-list save timing
-Preserve entry-added dates and allow clearing terminal-type overrides
-Restore custom-font cell size and name in the native picker title
-Restore whole-colour palette reset with the percent key
-Apply and remove personal overrides without duplicate directory rows
-Preserve pinned SSH fingerprints when copying directory entries
-Restore direct sort, palette, web-list, font, and encryption editing
-Restore settings submenus, connected-mode filtering, and field limits
-Restore formatted context help throughout the Wren directory and settings UI
-Restore the intended edit and persistence boundaries in Wren configuration
-Restore UIFC menu aliases, mouse actions, and line-editor controls
-Restore UIFC wheel navigation, help dismissal, and modal click behavior
-Restore UIFC click, drag-selection, and list-scrollbar behavior
-Restore directory delete feedback, context help, and editor fields
-Restore Font Details commands and palette component acceptance
-Restore safe-mode settings editor semantics
-Restore main-menu pane focus and wheel mouse behavior
-Restore menu window titles and centered directory comments
-Restore operation-specific directory name validation
-Report custom-font capacity before prompting for another font
-Persist accepted nested-menu edits during application exit
-Restore offline scrollback modes, controls, links, and text selection
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support
 Add support for "cursor on mode" to Prestel (ala Acorn manual)
