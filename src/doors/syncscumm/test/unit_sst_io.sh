@@ -220,3 +220,12 @@ cc -o /tmp/test_sst_io_audio_ini_headroom $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/..
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 printf '[audio]\nheadroom = 50\n' > "$HEADROOM_TMPDIR/syncscumm.ini"
 (cd "$HEADROOM_TMPDIR" && /tmp/test_sst_io_audio_ini_headroom)
+
+# Talkie/Floppy data-set selection (M5 Task 1): a pure directory-stat helper,
+# no session/socket needed -- its own binary for the same reason as the
+# other standalone probes above.
+cc -o /tmp/test_sst_datadir $JXL_DEFINE -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+   "$HERE/test_sst_datadir.c" "$DOOR/door/sst_io.c" \
+   "$DOOR/build/libs/termgfx/libtermgfx.a" "$DOOR/build/libs/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_sst_datadir

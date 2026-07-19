@@ -7,15 +7,17 @@
  * to what this task needs -- no audio, no mouse, no kitty/evdev key modes
  * (M3's job), no pace-ring wiring (Task 4's job). */
 #include <errno.h>
-#include <fcntl.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
+#include <sys/stat.h>
 #include <time.h>
-#include <unistd.h>
+
+/* The door's whole Windows-vs-POSIX surface -- the monotonic clock, the sleep,
+ * WSAStartup, non-blocking send()/recv(), and the isatty/exists/getpid dev
+ * helpers -- lives behind sst_plat.h, so this file keeps no #ifdef _WIN32 and
+ * pulls in no <winsock2.h>/<netinet/*>/<unistd.h> of its own. See sst_plat.h. */
+#include "sst_plat.h"
 
 #include "sst_io.h"
 #include "term.h"
@@ -62,6 +64,7 @@
  * here purely for readability. Said out loud so the next reader doesn't have
  * to wonder why the two files disagree. */
 #include "ini_file.h"
+#include "dirwrap.h"   /* xpdev: isdir() -- portable directory test (sst_isdir) */
 
 static int g_fd = -1, g_fd_in = -1;      /* -1 = headless (no session) */
 static int g_active;
@@ -516,11 +519,11 @@ void sst_io_flush(void)
 		return;
 	}
 	while (off < g_out_len) {
-		ssize_t n = write(g_fd, g_out + off, g_out_len - off);
+		int n = sst_plat_write(g_fd, g_out + off, g_out_len - off);
 		if (n < 0) {
-			if (errno == EINTR)
+			if (n == SST_IO_INTR)
 				continue;
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
+			if (n == SST_IO_AGAIN)
 				break;              /* backpressure: preserve the tail, try again later */
 			g_hangup = 1;           /* hard write error: dead peer */
 			g_quit = 1;
@@ -544,9 +547,9 @@ void sst_io_flush(void)
 
 static uint32_t now_ms(void)
 {
-	struct timespec t;
-	clock_gettime(CLOCK_MONOTONIC, &t);
-	return (uint32_t)((uint64_t)t.tv_sec * 1000ULL + (uint64_t)t.tv_nsec / 1000000ULL);
+	/* Monotonic ms via xpdev (CLOCK_MONOTONIC on POSIX,
+	 * QueryPerformanceCounter on Windows) -- see sst_plat.c. */
+	return sst_plat_now_ms();
 }
 
 /* argv indices resolve_fd() consumed (the -s<fd> flag, a DOOR32.SYS path):
@@ -577,7 +580,7 @@ int sst_io_consumed(int idx)
  * SYNCSCUMM_SIXELOUT capture; else a real tty on stdout; else headless. */
 static int resolve_fd(int argc, char **argv)
 {
-	int i, fl, door32_seen = 0, cli_sock = -1;
+	int i, door32_seen = 0, cli_sock = -1;
 	const char *e;
 
 	for (i = 1; i < argc; i++) {
@@ -598,11 +601,12 @@ static int resolve_fd(int argc, char **argv)
 	if (cli_sock < 0 && (e = getenv("SYNCSCUMM_SOCK")) != NULL)
 		cli_sock = atoi(e);
 
+	/* Bring up the socket layer (WSAStartup on Windows; ignore SIGPIPE on
+	 * POSIX) before touching the inherited descriptor. Idempotent. */
+	sst_plat_net_init();
+
 	if (cli_sock >= 0) {
-		int one = 1, sz = 96 * 1024;
-		g_fd = g_fd_in = cli_sock;
-		setsockopt(g_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
-		setsockopt(g_fd, SOL_SOCKET, SO_SNDBUF, &sz, sizeof sz);
+		g_fd = g_fd_in = cli_sock;       /* comm type 2: DOOR32.SYS socket */
 	} else if (door32_seen) {
 		g_fd = 1;
 		g_fd_in = 0;                     /* stdio door: BBS redirected our stdio */
@@ -612,17 +616,19 @@ static int resolve_fd(int argc, char **argv)
 			fprintf(stderr, "sst_io: SYNCSCUMM_SIXELOUT=%s: %s (falling back to "
 			        "headless)\n", e, strerror(errno));
 		return g_capture != NULL;        /* capture mode: no input fd at all */
-	} else if (isatty(1)) {
+	} else if (sst_plat_isatty(1)) {
 		g_fd = 1;
 		g_fd_in = 0;
 	} else {
 		return 0;                        /* headless: no session */
 	}
 
-	if ((fl = fcntl(g_fd, F_GETFL, 0)) != -1)
-		fcntl(g_fd, F_SETFL, fl | O_NONBLOCK);
-	if (g_fd_in != g_fd && (fl = fcntl(g_fd_in, F_GETFL, 0)) != -1)
-		fcntl(g_fd_in, F_SETFL, fl | O_NONBLOCK);
+	/* Non-blocking + TCP_NODELAY + large SO_SNDBUF on the live descriptor(s).
+	 * On a socket g_fd == g_fd_in, so one call; a POSIX stdio/tty door has two.
+	 * The TCP_NODELAY/SNDBUF half is best-effort and no-ops on a tty. */
+	sst_plat_sock_setup(g_fd);
+	if (g_fd_in != g_fd)
+		sst_plat_sock_setup(g_fd_in);
 	return 1;
 }
 
@@ -943,6 +949,7 @@ static void csi_final(char fin)
 					case 57424: sst_key_event(SST_KEY_END,      0, 0, down); return;
 					case 57425: sst_key_event(SST_KEY_INSERT,   0, 0, down); return;
 					case 57426: sst_key_event(SST_KEY_DELETE,   0, 0, down); return;
+					case 57427: sst_key_event(SST_KEY_KP5,      0, 0, down); return;   /* KP_BEGIN center: AGI stop */
 				}
 				if (cp >= 57399 && cp <= 57414) {   /* NumLock ON: keypad PUA -> ASCII */
 					static const char kp[] = "0123456789./*-+\r";
@@ -1351,10 +1358,10 @@ int sst_io_init(int argc, char **argv)
 		else
 			snprintf(touch, sizeof touch, "./syncscumm-trace");   /* dev/standalone fallback */
 
-		if (access(touch, F_OK) == 0) {
+		if (sst_plat_file_exists(touch)) {
 			char path[64];
 
-			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.trace", (long)getpid());
+			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.trace", sst_plat_getpid());
 			g_trace = fopen(path, "w");
 			if (g_trace != NULL)
 				setvbuf(g_trace, NULL, _IOLBF, 0);   /* line-buffered */
@@ -1375,10 +1382,10 @@ int sst_io_init(int argc, char **argv)
 		else
 			snprintf(touch, sizeof touch, "./syncscumm-wirecap");   /* dev/standalone fallback */
 
-		if (access(touch, F_OK) == 0) {
+		if (sst_plat_file_exists(touch)) {
 			char path[64];
 
-			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.raw", (long)getpid());
+			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.raw", sst_plat_getpid());
 			g_tee = fopen(path, "wb");
 			if (g_tee != NULL)
 				setvbuf(g_tee, NULL, _IOFBF, 1 << 18);   /* 256KB, fully buffered */
@@ -1511,9 +1518,9 @@ void sst_io_pump(void)
 		return;   /* headless / capture mode (no client to read from) */
 
 	for (;;) {
-		ssize_t n = read(g_fd_in, buf, sizeof buf);
+		int n = sst_plat_read(g_fd_in, buf, sizeof buf);
 		if (n < 0) {
-			if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)
+			if (n == SST_IO_AGAIN || n == SST_IO_INTR)
 				return;         /* nothing more to read this pump */
 			g_hangup = 1;        /* hard read error: treat like a dropped peer */
 			g_quit   = 1;
@@ -1593,29 +1600,40 @@ size_t sst_io_out_backlog(void) { return g_out_len; }
  * a cache, not an observation -- the answer is identical either way. */
 size_t sst_io_audio_backlog(void) { return aseg_pending(); }
 
-/* Does this session have working audio? Drives the subtitles auto-decision
- * (door/syncscumm.cpp): no audio -> subtitles on.
+/* Does this session have working audio? Drives two decisions: the Talkie/
+ * Floppy data-set pick in main() (door/syncscumm.cpp, before scummvm_main()
+ * runs) and the subtitles auto-decision in resolveSubtitles() (called from
+ * initBackend()): no audio -> Floppy / subtitles on.
  *
  * This is the ONE bounded wait in this file that must actually block. Every
  * other one (the JXL settle at sst_io_present(), the canvas hold) is a
  * poll-and-return: ScummVM's loop calls present() again, so "hold" means
- * "return and get asked again". Nobody re-asks this question -- it is called
- * once, from resolveSubtitles() in initBackend(), before the engine runs and
- * before a single frame is drawn. Returning "no audio" merely because the
- * reply had not landed yet would bake subtitles on for the whole session.
+ * "return and get asked again". This question is now asked from TWO call
+ * sites -- main()'s data-set selection, which runs first, right after
+ * sst_io_init() and before the engine starts or a single frame is drawn;
+ * and resolveSubtitles() in initBackend(), which runs later during engine
+ * boot. Both trust the g_audio_tier/g_audio_done/g_opus_ok latch below: the
+ * first call pumps until the answer latches or the window expires, and the
+ * second call finds g_audio_done already set and returns instantly with the
+ * SAME value -- no second wait, and the two callers can never disagree.
+ * Returning "no audio" merely because the reply had not landed yet would
+ * bake subtitles on (and pick Floppy) for the whole session.
  *
  * So: pump until the answer latches or the window expires. Anchored on
- * g_probe_start_ms (init), NOT on first present -- unlike present()'s canvas
- * hold, which had to move its anchor because engine boot outlasts the grace.
- * Here we ARE inside boot, so init is the right anchor and the wait is
- * bounded by what is left of the window.
+ * g_probe_start_ms, which sst_io_init() sets once before either caller runs
+ * -- NOT on first present, unlike present()'s canvas hold, which had to move
+ * its anchor because engine boot outlasts the grace. Here both callers fall
+ * inside (or right after) that same init-anchored window, so init is the
+ * right anchor and the wait is bounded by what is left of it.
  *
  * Costs up to the full ~2s settle window once, at boot, on a terminal that
- * never answers (Foot, xterm) -- resolveSubtitles() is the first thing
- * initBackend() does, so g_probe_start_ms is anchored right at the top of
- * the burst and a silent terminal pays close to the whole window. That is
- * today's behavior anyway: the wait expires, subtitles auto-on. A headless/
- * capture session has no input fd, never probes, and returns 0 immediately.
+ * never answers (Foot, xterm) -- main()'s data-set selection is the first
+ * caller and runs right after sst_io_init(), so g_probe_start_ms is
+ * anchored right at the top of the burst and a silent terminal pays close
+ * to the whole window on that first call; resolveSubtitles()'s later call
+ * costs nothing, since the latch is already set. That is today's behavior
+ * anyway: the wait expires, subtitles auto-on. A headless/capture session
+ * has no input fd, never probes, and returns 0 immediately.
  */
 int sst_io_audio_available(void)
 {
@@ -1652,7 +1670,7 @@ int sst_io_audio_available(void)
 			return 0;
 		if (g_audio_done)
 			break;
-		usleep(2000);   /* 2ms: the reply is one packet away, not a poll loop */
+		sst_plat_sleep_ms(2);   /* the reply is one packet away, not a poll loop */
 	}
 	/* Tier 0 is audio-APC-capable but libsndfile-less: A;Load is a no-op
 	 * there, so a Queue would play an empty slot -- silent, and worse than
@@ -1660,6 +1678,47 @@ int sst_io_audio_available(void)
 	 * defaults to 1 for an older SyncTERM that never answers the Opus query
 	 * (termgfx/audio.h:41-51). */
 	return (g_audio_tier >= 1 && g_opus_ok) ? 1 : 0;
+}
+
+static int sst_isdir(const char *p)
+{
+	/* xpdev's portable directory test: POSIX has S_ISDIR() but MSVC's
+	 * <sys/stat.h> does not define it (only _S_IFDIR), and isdir() hides that. */
+	return isdir(p) ? 1 : 0;
+}
+
+/* Talkie/Floppy data-set selection (M5): see the doc comment in sst_io.h. A
+ * pure directory-stat helper -- no session state -- so it is unit-tested
+ * standalone (test/test_sst_datadir.c) without a socket. */
+const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz)
+{
+	const char *first  = audio ? "talkie" : "floppy";
+	const char *second = audio ? "floppy" : "talkie";
+	char        cand[600];
+	const char *why;
+
+	snprintf(cand, sizeof cand, "%s/%s", base, first);
+	if (sst_isdir(cand)) {
+		snprintf(buf, bufsz, "%s", cand);
+		why = "match";
+	} else {
+		snprintf(cand, sizeof cand, "%s/%s", base, second);
+		if (sst_isdir(cand)) {
+			snprintf(buf, bufsz, "%s", cand);
+			why = "fallback-other-build";
+		} else {
+			snprintf(buf, bufsz, "%s", base);   /* flat --path / single build */
+			why = "fallback-base";
+		}
+	}
+	/* Diagnostic (SYNCSCUMM_TRACE only): which build this session got and the
+	 * audio determination that drove it -- so a "no speech" report can be told
+	 * apart (Floppy picked = audio probe said no vs. Talkie picked = a speech
+	 * config/engine issue) from a node trace without a live debugger. */
+	if (g_trace != NULL)
+		fprintf(g_trace, "%u DATADIR audio=%d base=%s -> %s (%s)\n",
+		        (unsigned)now_ms(), audio, base, buf, why);
+	return buf;
 }
 
 /* ---- streamed audio (M4) ----
@@ -3021,6 +3080,7 @@ static void sst_evdev_edge(int code, int down)
 		case 109: case 81: keycode = SST_KEY_PAGEDOWN; break;   /* + numpad KP3 */
 		case 110: case 82: keycode = SST_KEY_INSERT;   break;   /* + numpad KP0 */
 		case 111: case 83: keycode = SST_KEY_DELETE;   break;   /* + numpad KP-dot */
+		case 76:           keycode = SST_KEY_KP5;      break;   /* numpad KP5 (center): AGI stop */
 		case 59:  keycode = SST_KEY_F1; break;
 		case 60:  keycode = SST_KEY_F2; break;
 		case 61:  keycode = SST_KEY_F3; break;
@@ -3324,7 +3384,11 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 #ifdef WITH_JXL
 	int      dx = 0, dy = 0;
 #endif
-	size_t   n, dn;
+	size_t   n = 0, dn;   /* n: 0 until an encoder sets it; MSVC's C4701 flow
+	                       * analysis can't prove the tier if/else covers every
+	                       * path to the trace calls below, and ScummVM builds
+	                       * with /we4701 (warning-as-error). 0 is the truthful
+	                       * "nothing emitted" byte count for the trace. */
 	unsigned dropped_before;
 
 	if (!g_active || g_hangup)

@@ -12,8 +12,17 @@ cmake --build "$HERE/build/libs" --target termgfx xpdev_static -j"$(nproc)"
 
 # Stage 2: ScummVM with our backend.
 cd "$HERE/build"
+# --enable-mad: MP3 (libmad) is REQUIRED, not optional. The ScummVM freeware
+# "talkie" builds (Flight of the Amazon Queen, and others) store their SPEECH as
+# MP3; without libmad the engine loads the game but every spoken line is silent
+# ("Using MP3 compressed datafile, but MP3 support not compiled in!"). Forcing it
+# on (vs. configure's silent autodetect) makes a missing libmad fail the build
+# loudly here rather than ship a talkie door that plays music but no dialogue.
+# (libmad0-dev on Debian/Ubuntu.) Vorbis/FLAC stay autodetected -- present here,
+# and no curated title has yet needed them the way queen needs MP3.
 "$HERE/scummvm/configure" --backend="$BACKEND" --disable-all-engines \
-  --enable-engine=scumm,sky,queen,lure,drascula --disable-detection-full
+  --enable-engine=scumm,sky,queen,lure,drascula,agi,sci --disable-detection-full \
+  --enable-mad
 # Bridge our libraries into the generated build config: config.mk accumulates
 # LIBS with +=, and Makefile.common's link rule places $(LIBS) after the
 # objects, so appending here is ordering-correct and touches no vendor file.
@@ -55,4 +64,10 @@ fi
 # VER_REV= : the vendored tree lives inside the sbbs repo; without this,
 # ScummVM's version probe appends the HOST repo's git state ("dirty").
 make -j"$(nproc)" VER_REV=
-ls -la "$HERE/build/scummvm"
+# Rename ScummVM's default "scummvm" output to the door's own name. This IS our
+# build (the Synchronet backend compiled in), so "syncscumm" both brands it and
+# avoids any PATH collision with a system-installed "scummvm" when the xtrn.ini
+# cmd runs it. ScummVM's configure has no exe-name option, so rename after make
+# (the vendored build system is left untouched).
+mv -f "$HERE/build/scummvm" "$HERE/build/syncscumm"
+ls -la "$HERE/build/syncscumm"

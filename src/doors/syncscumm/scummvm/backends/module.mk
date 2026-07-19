@@ -325,16 +325,34 @@ endif
 
 ifdef WIN32
 MODULE_OBJS += \
-	audiocd/win32/win32-audiocd.o \
-	dialogs/win32/win32-dialogs.o \
 	fs/windows/windows-fs.o \
 	fs/windows/windows-fs-factory.o \
 	midi/windows.o \
+	platform/sdl/win32/win32_wrapper.o
+# SyncSCUMM: win32_wrapper.o above is the Win32-namespace Unicode/path helper
+# that core backend files (fs/stdiostream.cpp, fs/windows/*, midi/windows.cpp)
+# #include; despite living under platform/sdl/win32 it uses no SDL and is
+# restored on its own (see PROVENANCE.md), so it stays unconditional here.
+# midi/windows.o stays too: base/plugins.cpp does LINK_PLUGIN(WINDOWS) for every
+# WIN32 build, so its g_WINDOWS_* plugin object must be linked in even though a
+# BBS door never drives the host's MIDI device.
+# The remaining Windows backend files (audio-CD, printing, saves, dialogs,
+# taskbar, updates, the plugin provider) belong to ScummVM's SDL/win32 platform
+# and #include backends/platform/sdl/win32/win32_wrapper.h, which this door's
+# vendoring prunes along with the rest of the SDL backend. The door needs none
+# of them -- default AudioCD/SaveFileManager, no host-side CD/printer/taskbar --
+# and nothing references them once win32-provider is out, so gate them on
+# SDL_BACKEND. A no-op for a normal SDL build; excluded for the door.
+ifdef SDL_BACKEND
+MODULE_OBJS += \
+	audiocd/win32/win32-audiocd.o \
+	dialogs/win32/win32-dialogs.o \
 	plugins/win32/win32-provider.o \
 	printing/win32/win32-printman.o \
 	saves/windows/windows-saves.o \
 	updates/win32/win32-updates.o \
 	taskbar/win32/win32-taskbar.o
+endif
 
 ifdef USE_TTS
 MODULE_OBJS += \

@@ -7,8 +7,26 @@
 
 #include <stdlib.h>
 #include <time.h>
-#include <sys/time.h>
-#include <unistd.h>
+
+#ifdef _MSC_VER
+/* The door's own static libraries and the Win32 system libraries they need.
+ * ScummVM's create_project has no notion of these (they live outside the
+ * vendored tree), so name them here in the one door TU the whole binary always
+ * links; build.bat puts them on the linker's search path (--library-dir). The
+ * vcpkg-provided media libraries are auto-linked by the vcpkg MSBuild props. */
+#pragma comment(lib, "termgfx.lib")        // sixel/JXL/APC/audio encoders
+#pragma comment(lib, "ADLMIDI.lib")        // termgfx's OPL3 MIDI synth
+#pragma comment(lib, "xpdev_static.lib")   // ini_file, sockwrap, genwrap, dirwrap
+#pragma comment(lib, "ws2_32.lib")         // Winsock: sst_plat send/recv/WSAStartup
+#pragma comment(lib, "winmm.lib")          // xpdev timers + ScummVM midi/windows
+#pragma comment(lib, "iphlpapi.lib")       // xpdev netwrap: GetNetworkParams()
+#pragma comment(lib, "shlwapi.lib")        // mpg123 (libsndfile mpeg): PathCombineW etc.
+#endif
+
+/* The door's platform seam (monotonic clock, sleep) -- keeps this file free of
+ * <sys/time.h>/<unistd.h>/gettimeofday/usleep, none of which exist under MSVC.
+ * Header-only prototypes over stdint, so no forbidden.h ordering concern. */
+#include "sst_plat.h"
 
 /* xpdev's ini_file.h (-> genwrap.h) declares things like strupr()/strlwr()
  * and uses printf in an attribute -- names common/forbidden.h poisons into
@@ -16,9 +34,22 @@
  * first, before scummsys.h does that poisoning (ini_file.h wraps itself in
  * extern "C" already; no wrapper needed here). */
 #include "ini_file.h"
+/* dirwrap.h (mkpath): pulled in here with ini_file.h, before scummsys.h's
+ * forbidden.h poisons libc names, for the same reason ini_file.h is. */
+#include "dirwrap.h"
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_FILE
 #define FORBIDDEN_SYMBOL_EXCEPTION_stdout
+#ifdef _WIN32
+/* On Windows the filesystem backend is backends/fs/windows/windows-fs.h, which
+ * pulls in <windows.h>, <io.h> and <tchar.h> -- system headers that use the
+ * very libc names common/forbidden.h poisons (strncpy_s, etc.), and which are
+ * unavoidably included after scummsys.h -> forbidden.h. ScummVM's own
+ * windows-fs.cpp solves this the same way: blanket-allow forbidden symbols in
+ * this TU. (On POSIX the narrower per-symbol exceptions below suffice, so the
+ * safety net stays in place there -- this door's Unix build is unchanged.) */
+#define FORBIDDEN_SYMBOL_ALLOW_ALL
+#endif
 #define FORBIDDEN_SYMBOL_EXCEPTION_stderr
 #define FORBIDDEN_SYMBOL_EXCEPTION_fputs
 #define FORBIDDEN_SYMBOL_EXCEPTION_exit
@@ -35,7 +66,15 @@
 #if defined(USE_SYNCHRONET_DRIVER)
 
 #include "common/events.h"
+// Filesystem backend is platform-specific: ScummVM compiles fs/windows/* under
+// WIN32 and fs/posix/* under POSIX (backends/module.mk), and only one of the
+// factory .cpp files is in the link -- so the header we pull and the factory we
+// construct must match the platform, or the door won't link.
+#ifdef WIN32
+#include "backends/fs/windows/windows-fs.h"
+#else
 #include "backends/fs/posix/posix-fs.h"
+#endif
 #include "common/fs.h"
 #include "backends/modular-backend.h"
 #include "backends/mutex/null/null-mutex.h"
@@ -46,7 +85,11 @@
 #include "audio_term.h"
 #include "video_dump.h"
 #include "video_term.h"
+#ifdef WIN32
+#include "backends/fs/windows/windows-fs-factory.h"
+#else
 #include "backends/fs/posix/posix-fs-factory.h"
+#endif
 #include "base/main.h"
 #include "common/config-manager.h"
 #include "common/str.h"
@@ -71,11 +114,15 @@ public:
 	void addSysArchivesToSearchSet(Common::SearchSet &s, int priority) override;
 
 private:
-	timeval _startTime;
+	uint32 _startMs;   // monotonic ms at initBackend(), the getMillis() origin
 };
 
 OSystem_Synchronet::OSystem_Synchronet() {
+#ifdef WIN32
+	_fsFactory = new WindowsFilesystemFactory();
+#else
 	_fsFactory = new POSIXFilesystemFactory();
+#endif
 }
 
 // Subtitles: user > sysop > auto (DESIGN.md M2 follow-up). Decides whether
@@ -154,7 +201,7 @@ static void resolveSubtitles() {
 }
 
 void OSystem_Synchronet::initBackend() {
-	gettimeofday(&_startTime, 0);
+	_startMs = sst_plat_now_ms();
 	resolveSubtitles();
 	_savefileManager = new DefaultSaveFileManager();
 	_timerManager = new DefaultTimerManager();
@@ -228,6 +275,7 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 			case SST_KEY_PAGEDOWN: kc = Common::KEYCODE_PAGEDOWN; break;
 			case SST_KEY_INSERT: kc = Common::KEYCODE_INSERT; break;
 			case SST_KEY_DELETE: kc = Common::KEYCODE_DELETE; break;
+			case SST_KEY_KP5: kc = Common::KEYCODE_KP5; break;
 			case SST_KEY_ENTER: kc = Common::KEYCODE_RETURN; ascii = Common::ASCII_RETURN; break;
 			case SST_KEY_ESCAPE: kc = Common::KEYCODE_ESCAPE; ascii = Common::ASCII_ESCAPE; break;
 			case SST_KEY_BACKSPACE: kc = Common::KEYCODE_BACKSPACE; ascii = Common::ASCII_BACKSPACE; break;
@@ -266,14 +314,12 @@ Common::MutexInternal *OSystem_Synchronet::createMutex() {
 }
 
 uint32 OSystem_Synchronet::getMillis(bool skipRecord) {
-	timeval now;
-	gettimeofday(&now, 0);
-	return (uint32)((now.tv_sec - _startTime.tv_sec) * 1000 +
-		(now.tv_usec - _startTime.tv_usec) / 1000);
+	// Monotonic ms since initBackend(); uint32 subtraction is wrap-safe.
+	return sst_plat_now_ms() - _startMs;
 }
 
 void OSystem_Synchronet::delayMillis(uint msecs) {
-	usleep(msecs * 1000);
+	sst_plat_sleep_ms((int)msecs);
 }
 
 void OSystem_Synchronet::getTimeAndDate(TimeDate &td, bool skipRecord) const {
@@ -336,6 +382,71 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < argc && filteredArgc < (int)(sizeof(filteredArgv) / sizeof(filteredArgv[0])); i++) {
 		if (i == 0 || !sst_io_consumed(i))
 			filteredArgv[filteredArgc++] = argv[i];
+	}
+
+	// Talkie/Floppy: pick the game-data variant from this session's audio
+	// availability before scummvm_main() detects the game from --path. Same
+	// determination that drives subtitles-auto (sst_io_audio_available()): a
+	// session that can play speech gets the Talkie build, one that cannot gets
+	// the Floppy build (guaranteed on-screen text). See sst_select_datadir().
+	//
+	// A given --path=<base> is rewritten to <base>/talkie|floppy in place. If NO
+	// --path was passed, the base defaults to the current directory (the door's
+	// startup_dir, where the talkie/ and floppy/ live) and the selected variant
+	// is INSERTED as an early option -- so an xtrn.ini cmd may omit --path
+	// entirely and still get the right variant, rather than ScummVM assuming the
+	// CWD and failing to find the game (which sits one level down in a variant
+	// subdir).
+	static char pathArg[640];
+	bool        havePath = false;
+	int         audioNow = sst_io_audio_available() != 0;
+	for (int i = 1; i < filteredArgc; i++) {
+		char chosen[600];
+		if (strncmp(filteredArgv[i], "--path=", 7) != 0)
+			continue;
+		sst_select_datadir(filteredArgv[i] + 7, audioNow, chosen, sizeof chosen);
+		snprintf(pathArg, sizeof pathArg, "--path=%s", chosen);
+		filteredArgv[i] = pathArg;
+		havePath = true;
+		break;
+	}
+	if (!havePath && filteredArgc < (int)(sizeof(filteredArgv) / sizeof(filteredArgv[0]))) {
+		char chosen[600];
+		int  i;
+		sst_select_datadir(".", audioNow, chosen, sizeof chosen);
+		snprintf(pathArg, sizeof pathArg, "--path=%s", chosen);
+		for (i = filteredArgc; i > 1; i--)      /* make room right after argv[0] */
+			filteredArgv[i] = filteredArgv[i - 1];
+		filteredArgv[1] = pathArg;
+		filteredArgc++;
+	}
+
+	// Create the per-user directories ScummVM writes into. It REJECTS a
+	// --savepath whose directory does not exist (it will not create it) and
+	// cannot write a -c config file into a missing directory -- and on a
+	// user's first launch data/user/<####>/<game>/ does not yet exist (neither
+	// Synchronet's %j/%4 expansion nor ScummVM makes that leaf). Make them here
+	// before scummvm_main() consumes the options, or the door exits immediately.
+	for (int i = 1; i < filteredArgc; i++) {
+		if (strncmp(filteredArgv[i], "--savepath=", 11) == 0) {
+			mkpath(filteredArgv[i] + 11);
+		} else if (strcmp(filteredArgv[i], "-c") == 0 && i + 1 < filteredArgc) {
+			char  dir[512];
+			char *sep;
+			snprintf(dir, sizeof dir, "%s", filteredArgv[i + 1]);
+			sep = strrchr(dir, '/');
+#ifdef _WIN32
+			{
+				char *bsep = strrchr(dir, '\\');
+				if (bsep != NULL && (sep == NULL || bsep > sep))
+					sep = bsep;
+			}
+#endif
+			if (sep != NULL) {
+				*sep = '\0';
+				mkpath(dir);
+			}
+		}
 	}
 
 	g_system = new OSystem_Synchronet();

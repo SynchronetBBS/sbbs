@@ -1,0 +1,14 @@
+# Runtime content installed/fetched into this door directory -- never
+# committed. sky.* + readme.txt are the freeware CD game data getdata.js
+# downloads straight into this directory; scummvm is the deployed door binary
+# (built by src/doors/syncscumm's build.sh, copied in by deploy.js); scummvm.ini
+# is the per-directory reference config seeded from scummvm.example.ini by the
+# installer's [copy:] step (an edited copy is a live config, not something to
+# track here).
+/sky.*
+/readme.txt
+/syncscumm
+/syncscumm.exe
+/scummvm.ini
+/syncscumm.ini
+/*.log

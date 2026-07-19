@@ -73,6 +73,14 @@ int  sst_io_stats_visible(void);
  * sessions never probe and return 0 immediately. See sst_io.c. */
 int  sst_io_audio_available(void);
 
+/* Choose the game-data directory for this session: <base>/talkie when audio is
+ * available, else <base>/floppy. Falls back to the other variant, then to base
+ * itself, based on which directories actually exist (so a title packaged with
+ * only one build, or a flat --path, still runs). Writes the chosen path into
+ * buf and returns buf. audio is nonzero when the session can play digital audio
+ * (caller passes sst_io_audio_available()). */
+const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
+
 /* How much audio each shipped chunk holds -- the door's default for
  * "[audio] chunk_ms", which a sysop's syncscumm.ini still overrides, and which
  * the module clamps to 50..250 (termgfx/audio_stream.h).
@@ -198,7 +206,9 @@ enum {
 	SST_KEY_INSERT, SST_KEY_DELETE,
 	SST_KEY_ENTER, SST_KEY_ESCAPE, SST_KEY_BACKSPACE, SST_KEY_TAB,
 	SST_KEY_F1, SST_KEY_F2, SST_KEY_F3, SST_KEY_F4, SST_KEY_F5,
-	SST_KEY_F6, SST_KEY_F7, SST_KEY_F8, SST_KEY_F9
+	SST_KEY_F6, SST_KEY_F7, SST_KEY_F8, SST_KEY_F9,
+	SST_KEY_KP5   /* numpad center (NumLock off): AGI "stationary"/stop --
+	               * NOT an ASCII key, so it must not fall through to '5' */
 };
 
 typedef struct {

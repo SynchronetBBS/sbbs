@@ -1,0 +1,14 @@
+# Runtime content installed/fetched into this door directory -- never
+# committed. talkie/ and floppy/ are the freeware game data getdata.js
+# downloads; scummvm is the deployed door binary (built by
+# src/doors/syncscumm's build.sh, copied in by hand -- deploy tooling is a
+# separate task); scummvm.ini is the per-directory reference config seeded
+# from scummvm.example.ini by the installer's [copy:] step (an edited copy
+# is a live config, not something to track here).
+/talkie/
+/floppy/
+/syncscumm
+/syncscumm.exe
+/scummvm.ini
+/syncscumm.ini
+/*.log
