@@ -1,0 +1,16 @@
+# Runtime content installed/fetched into this door directory -- never
+# committed. Packet.001 + audio/ (+ the archives' stray docs, if a sysop
+# unpacks them by hand) are the freeware game data getdata.js downloads here;
+# syncscumm is the deployed door binary (built by src/doors/syncscumm's
+# build.sh, copied in by deploy.js); scummvm.ini is the per-directory
+# reference config seeded from scummvm.example.ini by the installer's [copy:]
+# step (an edited copy is a live config, not something to track here).
+/Packet.001
+/audio/
+/drascula.doc
+/readme.txt
+/syncscumm
+/syncscumm.exe
+/scummvm.ini
+/syncscumm.ini
+/*.log
