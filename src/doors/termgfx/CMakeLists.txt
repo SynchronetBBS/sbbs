@@ -31,6 +31,8 @@ add_library(termgfx STATIC
     mouse.c
     keymode.c
     pace.c
+    sst_plat.c
+    termgfx_termio.c
     sbbs_node.c)
 
 # Public: consumers that #include "sixel.h" / "sbbs_node.h" get this dir.

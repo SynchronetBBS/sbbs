@@ -19,7 +19,7 @@
  * pulls in no <winsock2.h>/<netinet/*>/<unistd.h> of its own. See sst_plat.h. */
 #include "sst_plat.h"
 
-#include "sst_io.h"
+#include "termgfx_termio.h"
 #include "term.h"
 #include "caps.h"
 #include "pace.h"
@@ -41,10 +41,10 @@
 /* termgfx_audio_query/_opus_query + their reply parsers: the M4 audio
  * capability probe (audio_scan_feed(), below). No PCM is staged here -- the
  * streaming feed is its own module; this file only asks the question and
- * latches the answer for sst_io_audio_available(). */
+ * latches the answer for termgfx_termio_audio_available(). */
 #include "audio.h"
 /* The shared PCM streaming module the mixer's audio goes out through
- * (sst_io_audio_stream(), below); audio_mgr.h only for the encoder's default
+ * (termgfx_termio_audio_stream(), below); audio_mgr.h only for the encoder's default
  * VBR quality. NOT audio_mgr's own termgfx_audio_stream_chunk()/_stop(),
  * which are a different (FMV) path this door does not use. */
 #include "audio_stream.h"
@@ -65,6 +65,26 @@
  * to wonder why the two files disagree. */
 #include "ini_file.h"
 #include "dirwrap.h"   /* xpdev: isdir() -- portable directory test (sst_isdir) */
+
+/* ---- module-private defines that used to live in sst_io.h ------------------
+ * The shared API header (termgfx_termio.h) deliberately does NOT export these
+ * (see task-1-report.md): the framebuffer geometry is republished there under
+ * the TERMGFX_TERMIO_FB_* names, and the audio-tuning defaults are syncscumm's
+ * own door policy fed into the already-shared audio module (a future door such
+ * as syncrpg would pick its own). The body below still references them by their
+ * original SST_* spellings, so they are re-declared here, internal to this
+ * file, with their EXACT former values -- a pure relocation, no value change.
+ *
+ * FOLLOW-UP (known, do NOT fix here): the audio defaults are hardcoded here and
+ * the diagnostics further down keep syncscumm's SYNCSCUMM_* env-var/path names
+ * verbatim; parameterizing those for the generic module is a later task. */
+#define SST_FB_W TERMGFX_TERMIO_FB_W   /* 320 -- shared value, single source */
+#define SST_FB_H TERMGFX_TERMIO_FB_H   /* 200 -- shared value, single source */
+#define SST_AUDIO_RATE       24000     /* mixer/stream rate (see the doc comment
+                                        * at termgfx_termio_audio_stream) */
+#define SST_CHUNK_MS         250       /* per-shipped-chunk audio, ms */
+#define SST_PREBUFFER_CHUNKS 3         /* chunks held before playback starts */
+#define SST_AUDIO_HEADROOM   70        /* pre-encode PCM scale, percent (~-3 dB) */
 
 static int g_fd = -1, g_fd_in = -1;      /* -1 = headless (no session) */
 static int g_active;
@@ -87,7 +107,7 @@ static int g_canvas_exact;   /* set once the ESC[4;h;wt pixel report lands */
  * and never answers at all, so this stays 0 for it unless the sysop enables
  * them).
  *
- * The SIXEL tier's effective ceiling (sst_io_present()'s "Fit + center"
+ * The SIXEL tier's effective ceiling (termgfx_termio_present()'s "Fit + center"
  * block) is resolved in this precedence order:
  *
  *   1. g_sixel_max_override (sysop "sixel_max" ini key, sst_read_ini()) --
@@ -142,10 +162,10 @@ static termgfx_mouse_t g_mouse;
 /* The negotiated key mode (termgfx/keymode.h): kitty CSI-u flags pushed, or
  * SyncTERM evdev physical-key reports enabled, or neither. Set from the
  * kitty query reply and the CTDA cap-8 check (csi_final()'s 'u' and 'c'
- * cases, below) and undone in sst_io_shutdown(). */
+ * cases, below) and undone in termgfx_termio_shutdown(). */
 static termgfx_keymode_t g_km;
 
-/* Raw PRE-ENCODE mixer PCM tap: sst_io_audio_stream() appends exactly the
+/* Raw PRE-ENCODE mixer PCM tap: termgfx_termio_audio_stream() appends exactly the
  * interleaved stereo S16 frames ScummVM's mixer handed us, at SST_AUDIO_RATE,
  * before termgfx/audio_stream.c resamples, Opus-encodes or drops any of it.
  * That makes the file the reference signal -- "what the game actually sounds
@@ -161,7 +181,7 @@ static termgfx_keymode_t g_km;
  * defect is in the mix or in our path.
  *
  * Gated on the SYNCSCUMM_AUDIODUMP=<path> env var, off by default: unset, this
- * stays NULL and the tap in sst_io_audio_stream() is a single NULL test on a
+ * stays NULL and the tap in termgfx_termio_audio_stream() is a single NULL test on a
  * path that already runs tens of times a second. A dev/test tool only -- like
  * SYNCSCUMM_DUMP (door/video_dump.cpp) and SYNCSCUMM_SIXELOUT (resolve_fd(),
  * below), an env var does NOT survive a real door launch, because the BBS
@@ -169,7 +189,7 @@ static termgfx_keymode_t g_km;
  * exist for exactly that reason. This one is deliberately env-only: it is for
  * headless test-script runs (test/boot_bass.sh), not for a live node.
  *
- * Opened in sst_io_init() BEFORE resolve_fd(), and tapped BEFORE the g_active
+ * Opened in termgfx_termio_init() BEFORE resolve_fd(), and tapped BEFORE the g_active
  * check, so a HEADLESS run -- which has no session at all and streams nothing
  * -- still dumps. That is the point: the mixer's PCM does not depend on a
  * terminal being there, and a test script has no terminal.
@@ -180,9 +200,9 @@ static termgfx_keymode_t g_km;
 static FILE *g_audiodump;
 
 /* Release audio_apply_headroom()'s scratch buffer. Forward-declared here, next
- * to the dump sst_io_shutdown() closes beside it, because the buffer and the
+ * to the dump termgfx_termio_shutdown() closes beside it, because the buffer and the
  * function that grows it belong with the rest of the streaming-audio state much
- * further down -- and sst_io_shutdown() is defined well above that. Same reason
+ * further down -- and termgfx_termio_shutdown() is defined well above that. Same reason
  * sst_audio_underrun() is forward-declared below. */
 static void audio_free_scratch(void);
 
@@ -207,7 +227,7 @@ static void audio_free_scratch(void);
  * The sst_trace() emitter is defined further down, past the pacing globals it
  * reads (g_inflight/g_auto_depth). */
 static FILE *g_trace;
-/* Raw wire-byte capture: sst_io_init() opens this and sst_io_flush() tees
+/* Raw wire-byte capture: termgfx_termio_init() opens this and termgfx_termio_flush() tees
  * EXACTLY the bytes that reached the socket -- i.e. what the terminal actually
  * received, AFTER any backpressure drop -- for offline decode. Teeing here,
  * not in out_put(), is deliberate: out_put() records the intended bytes,
@@ -234,17 +254,17 @@ static void  sst_trace_in(const uint8_t *buf, int n);   /* defined past pacing g
 static void  sst_stats_draw(void);                      /* defined past pacing globals */
 
 /* Set the instant the peer goes away (EOF/hard read error) or a flush hits a
- * hard write error (not EAGAIN/EINTR) -- see sst_io_flush()/sst_io_pump().
- * Doubles as the "session is dead" flag: sst_io_flush() drops (rather than
+ * hard write error (not EAGAIN/EINTR) -- see termgfx_termio_flush()/termgfx_termio_pump().
+ * Doubles as the "session is dead" flag: termgfx_termio_flush() drops (rather than
  * retries) buffered output once this is set, so out_put()/flush() are safe
  * to keep calling from the caller's normal shutdown path without blocking or
- * erroring. g_quit is also set alongside it so sst_io_quit_requested()
+ * erroring. g_quit is also set alongside it so termgfx_termio_quit_requested()
  * callers unwind the same way they would for an explicit q/Ctrl-C. */
 static int g_hangup;
 
 /* Pre-door DECSSDT status-line type captured from the DECRQSS reply that
  * termgfx_term_status_off provokes (-1 = not captured yet / unsupported
- * terminal); restored on sst_io_shutdown() (door_io.c:1134 pattern). */
+ * terminal); restored on termgfx_termio_shutdown() (door_io.c:1134 pattern). */
 static int g_status_type = -1;
 
 /* ---- output staging (door_io.c:~1370 pattern) ----
@@ -277,7 +297,7 @@ static int g_status_type = -1;
  * video's bursts. Audio was punishing itself for video's mistakes. The module's
  * rule was right; the number the door fed it was not.
  *
- * THE FIX: report AUDIO's OWN share of the queue (sst_io_audio_backlog(), via
+ * THE FIX: report AUDIO's OWN share of the queue (termgfx_termio_audio_backlog(), via
  * the g_aseg ring below), so the two-strike rule can only fire when the link
  * genuinely cannot carry audio -- which is what "sustained link saturation"
  * always meant. The cushion also grew to ~800ms (see audio_stream_open()) to
@@ -316,13 +336,13 @@ static size_t  g_out_len;
  * either way, no longer pending). g_out_base + g_out_len is therefore the
  * offset of the next byte to be staged, so the two together define a stable
  * coordinate system for "where in the outbound byte stream is this?" that
- * sst_io_flush()'s memmove cannot disturb. The g_aseg ring below records audio
+ * termgfx_termio_flush()'s memmove cannot disturb. The g_aseg ring below records audio
  * in these coordinates. */
 static uint64_t g_out_base;
 
 /* The audio segments currently in the FIFO, in stream coordinates, oldest
  * first. Every staged run of audio bytes gets one, and the parts of them that
- * are still >= g_out_base are exactly what sst_io_audio_backlog() reports.
+ * are still >= g_out_base are exactly what termgfx_termio_audio_backlog() reports.
  *
  * 64 is far more than the door can actually use, and the reasoning is worth
  * writing down because it is what makes the overflow path in aseg_add() cold.
@@ -330,7 +350,7 @@ static uint64_t g_out_base;
  * audio -- aseg_add() coalesces when it is, which by itself collapses the
  * entire prebuffer release (8 chunks put back to back, nothing between them)
  * into ONE segment. So growth needs VIDEO staged between two audio puts, and
- * sst_io_present() only ever stages a frame when the FIFO is already empty
+ * termgfx_termio_present() only ever stages a frame when the FIFO is already empty
  * (its g_out_len gate) -- an empty FIFO means aseg_prune() has just retired
  * every segment there was. The live count therefore sits at one or two, and 64
  * is slack, not a budget.
@@ -445,7 +465,7 @@ static size_t aseg_pending(void)
  * "prior frame not flushed" gates normally never let out_put() be called
  * with a backlog already queued, but they say nothing about a SINGLE call
  * that overruns the buffer outright) can otherwise spin here forever: once
- * the stage fills, sst_io_flush() is called mid-loop, and if the peer is
+ * the stage fills, termgfx_termio_flush() is called mid-loop, and if the peer is
  * backpressured (EAGAIN) that flush makes no progress, so the loop would
  * just keep calling it. If a flush truly buys no room, drop the rest of
  * this call's bytes (counted in g_dropped_frames) instead of spinning --
@@ -473,7 +493,7 @@ static size_t out_put(const void *p, size_t n)
 		staged += take;
 		if (g_out_len == sizeof(g_out)) {
 			size_t before = g_out_len;
-			sst_io_flush();
+			termgfx_termio_flush();
 			if (g_hangup)
 				return staged;
 			if (g_out_len == before) {
@@ -490,7 +510,7 @@ static void out_puts(const char *s) { out_put(s, strlen(s)); }
  * error -- defer (stop for now, keep the unwritten tail buffered for the
  * next call) rather than busy-looping or discarding it. EINTR retries the
  * same write. Any other errno is a dead peer: mark the session hung up
- * (sst_io_hung_up()) and drop the buffer -- there's no live fd left to
+ * (termgfx_termio_hung_up()) and drop the buffer -- there's no live fd left to
  * drain it to.
  *
  * Writes the stage in stage order and only in stage order: this is the FIFO
@@ -503,7 +523,7 @@ static void out_puts(const char *s) { out_put(s, strlen(s)); }
  * on the hard-error path, which moves `off` past a tail nobody will ever see:
  * teeing that tail would make the one capture worth having promise bytes that
  * were never on the wire. */
-void sst_io_flush(void)
+void termgfx_termio_flush(void)
 {
 	size_t off  = 0;
 	size_t sent = 0;
@@ -566,7 +586,7 @@ static void mark_consumed(int idx)
 		g_consumed_idx[g_consumed_n++] = idx;
 }
 
-int sst_io_consumed(int idx)
+int termgfx_termio_consumed(int idx)
 {
 	int i;
 	for (i = 0; i < g_consumed_n; i++)
@@ -671,7 +691,7 @@ static void  sst_audio_underrun(int ch);
 
 /* SGR mouse report -> game-coordinate input event(s) (defined with the rest
  * of the present-path geometry state, below, since it maps through
- * sst_image_rect() -- the same fit+center rect sst_io_present() draws the
+ * sst_image_rect() -- the same fit+center rect termgfx_termio_present() draws the
  * frame in). csi_final()'s 'M'/'m' cases (parser, above sst_tier()) call
  * this as soon as a report's three params are parsed. */
 static void sst_mouse_report(int b, int col, int row, int release);
@@ -839,10 +859,10 @@ static void csi_final(char fin)
 		/* --- keyboard: legacy CSI/SS3 nav keys, kitty CSI-u, SyncTERM
 		 * evdev physical-key reports. Structure ported from
 		 * syncconquer/door/door_input.c's csi_final(), trimmed to this
-		 * door's neutral SST_KEY_* events. --------------------------------- */
+		 * door's neutral TERMGFX_KEY_* events. --------------------------------- */
 		case 'A': case 'B': case 'C': case 'D': {   /* arrows */
-			int keycode = (fin == 'A') ? SST_KEY_UP : (fin == 'B') ? SST_KEY_DOWN
-			            : (fin == 'C') ? SST_KEY_RIGHT : SST_KEY_LEFT;
+			int keycode = (fin == 'A') ? TERMGFX_KEY_UP : (fin == 'B') ? TERMGFX_KEY_DOWN
+			            : (fin == 'C') ? TERMGFX_KEY_RIGHT : TERMGFX_KEY_LEFT;
 
 			if (sst_kitty_active()) {
 				int mod, ev;
@@ -853,14 +873,14 @@ static void csi_final(char fin)
 				sst_key_press(keycode, 0, 0);
 			return;
 		}
-		case 'H': sst_key_press(SST_KEY_HOME, 0, 0); return;
-		case 'F': sst_key_press(SST_KEY_END,  0, 0); return;
+		case 'H': sst_key_press(TERMGFX_KEY_HOME, 0, 0); return;
+		case 'F': sst_key_press(TERMGFX_KEY_END,  0, 0); return;
 		case 'K':   /* evdev press report (CSI = code[;code...] K), else cterm End */
 			if (sst_evdev_active() && g_csi_len > 0 && g_csi_par[0] == '=') {
 				sst_evdev_report(1);
 				return;
 			}
-			sst_key_press(SST_KEY_END, 0, 0);
+			sst_key_press(TERMGFX_KEY_END, 0, 0);
 			return;
 		case 'k':   /* evdev release report */
 			if (sst_evdev_active() && g_csi_len > 0 && g_csi_par[0] == '=')
@@ -872,7 +892,7 @@ static void csi_final(char fin)
 		 * documents for F3); F3/F4 still work via kitty CSI-u or evdev
 		 * (codes 61/62). */
 		case 'P': case 'Q': {
-			int keycode = (fin == 'P') ? SST_KEY_F1 : SST_KEY_F2;
+			int keycode = (fin == 'P') ? TERMGFX_KEY_F1 : TERMGFX_KEY_F2;
 
 			if (sst_kitty_active()) {
 				int mod, ev;
@@ -893,21 +913,21 @@ static void csi_final(char fin)
 			if (np < 1)
 				return;
 			switch (p[0]) {
-				case 1: case 7:  keycode = SST_KEY_HOME;     break;
-				case 2:          keycode = SST_KEY_INSERT;   break;
-				case 3:          keycode = SST_KEY_DELETE;   break;
-				case 4: case 8:  keycode = SST_KEY_END;      break;
-				case 5:          keycode = SST_KEY_PAGEUP;   break;
-				case 6:          keycode = SST_KEY_PAGEDOWN; break;
-				case 11:         keycode = SST_KEY_F1;       break;
-				case 12:         keycode = SST_KEY_F2;       break;
-				case 13:         keycode = SST_KEY_F3;       break;
-				case 14:         keycode = SST_KEY_F4;       break;
-				case 15:         keycode = SST_KEY_F5;       break;
-				case 17:         keycode = SST_KEY_F6;       break;
-				case 18:         keycode = SST_KEY_F7;       break;
-				case 19:         keycode = SST_KEY_F8;       break;
-				case 20:         keycode = SST_KEY_F9;       break;
+				case 1: case 7:  keycode = TERMGFX_KEY_HOME;     break;
+				case 2:          keycode = TERMGFX_KEY_INSERT;   break;
+				case 3:          keycode = TERMGFX_KEY_DELETE;   break;
+				case 4: case 8:  keycode = TERMGFX_KEY_END;      break;
+				case 5:          keycode = TERMGFX_KEY_PAGEUP;   break;
+				case 6:          keycode = TERMGFX_KEY_PAGEDOWN; break;
+				case 11:         keycode = TERMGFX_KEY_F1;       break;
+				case 12:         keycode = TERMGFX_KEY_F2;       break;
+				case 13:         keycode = TERMGFX_KEY_F3;       break;
+				case 14:         keycode = TERMGFX_KEY_F4;       break;
+				case 15:         keycode = TERMGFX_KEY_F5;       break;
+				case 17:         keycode = TERMGFX_KEY_F6;       break;
+				case 18:         keycode = TERMGFX_KEY_F7;       break;
+				case 19:         keycode = TERMGFX_KEY_F8;       break;
+				case 20:         keycode = TERMGFX_KEY_F9;       break;
 				default:         return;
 			}
 			if (sst_kitty_active())
@@ -940,17 +960,17 @@ static void csi_final(char fin)
 				 * set (Home/End/arrows/PgUp/PgDn/Ins/Del) -- map those to
 				 * the nav keys so the keypad respects NumLock. */
 				switch (cp) {
-					case 57417: sst_key_event(SST_KEY_LEFT,     0, 0, down); return;
-					case 57418: sst_key_event(SST_KEY_RIGHT,    0, 0, down); return;
-					case 57419: sst_key_event(SST_KEY_UP,       0, 0, down); return;
-					case 57420: sst_key_event(SST_KEY_DOWN,     0, 0, down); return;
-					case 57421: sst_key_event(SST_KEY_PAGEUP,   0, 0, down); return;
-					case 57422: sst_key_event(SST_KEY_PAGEDOWN, 0, 0, down); return;
-					case 57423: sst_key_event(SST_KEY_HOME,     0, 0, down); return;
-					case 57424: sst_key_event(SST_KEY_END,      0, 0, down); return;
-					case 57425: sst_key_event(SST_KEY_INSERT,   0, 0, down); return;
-					case 57426: sst_key_event(SST_KEY_DELETE,   0, 0, down); return;
-					case 57427: sst_key_event(SST_KEY_KP5,      0, 0, down); return;   /* KP_BEGIN center: AGI stop */
+					case 57417: sst_key_event(TERMGFX_KEY_LEFT,     0, 0, down); return;
+					case 57418: sst_key_event(TERMGFX_KEY_RIGHT,    0, 0, down); return;
+					case 57419: sst_key_event(TERMGFX_KEY_UP,       0, 0, down); return;
+					case 57420: sst_key_event(TERMGFX_KEY_DOWN,     0, 0, down); return;
+					case 57421: sst_key_event(TERMGFX_KEY_PAGEUP,   0, 0, down); return;
+					case 57422: sst_key_event(TERMGFX_KEY_PAGEDOWN, 0, 0, down); return;
+					case 57423: sst_key_event(TERMGFX_KEY_HOME,     0, 0, down); return;
+					case 57424: sst_key_event(TERMGFX_KEY_END,      0, 0, down); return;
+					case 57425: sst_key_event(TERMGFX_KEY_INSERT,   0, 0, down); return;
+					case 57426: sst_key_event(TERMGFX_KEY_DELETE,   0, 0, down); return;
+					case 57427: sst_key_event(TERMGFX_KEY_KP5,      0, 0, down); return;   /* KP_BEGIN center: AGI stop */
 				}
 				if (cp >= 57399 && cp <= 57414) {   /* NumLock ON: keypad PUA -> ASCII */
 					static const char kp[] = "0123456789./*-+\r";
@@ -988,24 +1008,24 @@ static void csi_final(char fin)
 					}
 				}
 				if (cp == 0x0d)
-					keycode = SST_KEY_ENTER;
+					keycode = TERMGFX_KEY_ENTER;
 				else if (cp == 0x08 || cp == 0x7f)
-					keycode = SST_KEY_BACKSPACE;
+					keycode = TERMGFX_KEY_BACKSPACE;
 				else if (cp == 0x09)
-					keycode = SST_KEY_TAB;
+					keycode = TERMGFX_KEY_TAB;
 				else if (cp == 0x1b)
-					keycode = SST_KEY_ESCAPE;
+					keycode = TERMGFX_KEY_ESCAPE;
 				else if (cp >= 0x20 && cp <= 0x7e) {
 					keycode = cp;
 					ascii   = cp;
 				} else
 					return;
 				if (termgfx_kitty_ctrl(mod))
-					mods |= SST_MOD_CTRL;
+					mods |= TERMGFX_MOD_CTRL;
 				if (termgfx_kitty_shift(mod))
-					mods |= SST_MOD_SHIFT;
+					mods |= TERMGFX_MOD_SHIFT;
 				if (termgfx_kitty_alt(mod))
-					mods |= SST_MOD_ALT;
+					mods |= TERMGFX_MOD_ALT;
 				sst_key_event(keycode, ascii, mods, down);
 			}
 			return;
@@ -1026,7 +1046,7 @@ static int      g_jxl_done;
  * terminal never answered, i.e. no audio APC at all), 0 tone-only (audio
  * APC but no libsndfile, so A;Load is a no-op and a Queue would play an
  * empty slot), 1 digital. g_audio_done latches "the question is answered"
- * so sst_io_audio_available()'s bounded wait can exit the instant the
+ * so termgfx_termio_audio_available()'s bounded wait can exit the instant the
  * reply lands instead of burning its whole window -- the same trick
  * g_jxl_done plays for the graphics settle (see jxl_scan_feed()). */
 static int g_audio_tier = -1;
@@ -1042,19 +1062,19 @@ static int g_opus_seen;         /* the Opus reply actually landed (vs. the
 
 /* Sysop sound switch, syncscumm.ini's "[audio] enabled" key. THE one copy of
  * that key in this file: read once, at init (sst_read_ini(), below), and read
- * back by both places that care -- sst_io_audio_available() right below, and
+ * back by both places that care -- termgfx_termio_audio_available() right below, and
  * audio_stream_open()'s cfg.enabled. Deliberately NOT two reads of the same
  * file: both answer the same session the same question ("will sound play?"),
  * and any shape where the two could disagree is a shape where the door mutes
  * the stream while still telling the subtitle logic the player can hear it --
- * which is exactly the defect sst_io_audio_available() documents.
+ * which is exactly the defect termgfx_termio_audio_available() documents.
  *
  * Defaults to 1 (sound on), so a missing file, a missing key, and a headless
  * session that never reads an ini at all all behave as they always have. */
 static int g_audio_enabled = 1;
 
 /* The graphics settle window (the JXL reply's deadline), hoisted here from
- * the present-path constants below: sst_io_audio_available()'s bounded wait
+ * the present-path constants below: termgfx_termio_audio_available()'s bounded wait
  * is defined in terms of the same window and is defined above them. */
 #define SST_GFX_SETTLE_MS  2000   /* JXL reply window (matches jxl_scan_feed) */
 
@@ -1064,7 +1084,7 @@ static int g_audio_enabled = 1;
  * moments, so neither can own the append. Both appending would double every
  * byte, and leaving it to the JXL scanner would starve the audio scanner the
  * moment the JXL answer landed first -- the ordinary case, since the JXL
- * query precedes the audio query in the burst. sst_io_pump() calls this once
+ * query precedes the audio query in the burst. termgfx_termio_pump() calls this once
  * per read, ahead of both scanners.
  *
  * Unlike jxl_scan_feed()'s own early return once it has latched, this append
@@ -1153,7 +1173,7 @@ static void audio_scan_feed(void)
 			g_is_syncterm = 1;   /* only SyncTERM answers this */
 			if (r >= 1 && !g_opus_asked) {
 				out_puts(termgfx_audio_opus_query);
-				sst_io_flush();
+				termgfx_termio_flush();
 				g_opus_asked = 1;
 			}
 		}
@@ -1188,7 +1208,7 @@ static void sst_toggle_stats(void)
 	g_stats = !g_stats;
 	if (g_stats) {
 		sst_stats_draw();
-		sst_io_flush();
+		termgfx_termio_flush();
 	} else {
 		/* Erase the bar we last drew; it sits on the reserved bottom row,
 		 * so clearing the line is enough. */
@@ -1196,7 +1216,7 @@ static void sst_toggle_stats(void)
 		int  en = snprintf(e, sizeof e, "\x1b[%d;1H\x1b[0m\x1b[K\x1b[?25l",
 		                   sst_bottom_row());
 		out_put(e, (size_t)en);
-		sst_io_flush();
+		termgfx_termio_flush();
 	}
 }
 
@@ -1232,7 +1252,7 @@ static void parse_bytes(const uint8_t *buf, int n)
 					g_pstate = P_NORMAL;
 					/* Not a CSI/APC introducer: the pending ESC was a lone
 					 * Escape key, not the start of a sequence. */
-					sst_key_press(SST_KEY_ESCAPE, 0, 0);
+					sst_key_press(TERMGFX_KEY_ESCAPE, 0, 0);
 					i--;                 /* reprocess c as P_NORMAL
 					                      * (door_io.c:3289-3293 pattern) */
 				}
@@ -1295,7 +1315,7 @@ static void parse_bytes(const uint8_t *buf, int n)
  * integer pixel ceiling applied to BOTH axes (0/absent -- the default -- means
  * no override, see g_sixel_max_override's doc comment above). Read relative
  * to CWD, the door's launch dir -- the same file, same relative fopen(), and
- * same point in the startup sequence (called from sst_io_init(), itself the
+ * same point in the startup sequence (called from termgfx_termio_init(), itself the
  * very first thing main() does -- door/syncscumm.cpp) as door/syncscumm.cpp's
  * resolveSubtitles() reads its own "subtitles" key from, so no chdir has run
  * between the two reads. A missing file or missing key is not an error --
@@ -1314,7 +1334,7 @@ static void sst_read_ini(void)
 	g_sixel_max_override = iniGetInteger(ini, ROOT_SECTION, "sixel_max", 0);
 	/* Read HERE, at init, rather than with the rest of the [audio] section in
 	 * audio_read_ini(): that one runs on the first PCM block, and this key is
-	 * needed far earlier -- sst_io_audio_available() is asked during
+	 * needed far earlier -- termgfx_termio_audio_available() is asked during
 	 * initBackend(), before the engine has produced a single sample. The
 	 * other [audio] keys are tuning values the stream's config struct owns
 	 * and nothing outside it reads, so they stay where the struct is built;
@@ -1325,7 +1345,7 @@ static void sst_read_ini(void)
 	strListFree(&ini);
 }
 
-int sst_io_init(int argc, char **argv)
+int termgfx_termio_init(int argc, char **argv)
 {
 	/* Before resolve_fd()'s headless early-return below, deliberately: the
 	 * mixer produces PCM whether or not a terminal is listening, and the only
@@ -1433,12 +1453,12 @@ int sst_io_init(int argc, char **argv)
 	/* Once, on entry: clear+home, hide cursor, no autowrap, reset sixel
 	 * scrolling, hide the status line, XTVERSION (xterm identification --
 	 * see g_is_xterm's doc comment), probe the terminal's pixel canvas,
-	 * DA1+CTDA (sixel/SyncTERM detect), Q;JXL (JXL detect). sst_io_pump()'s
+	 * DA1+CTDA (sixel/SyncTERM detect), Q;JXL (JXL detect). termgfx_termio_pump()'s
 	 * parser resolves the replies (door_io.c:2738-2770, minus audio/mouse).
 	 *
 	 * ORDER MATTERS: the XTVERSION query goes out BEFORE term_probe's
 	 * ESC[14t canvas query and 999;999 CPR. A terminal answers queries in
-	 * the order it receives them, and sst_io_present()'s startup holds
+	 * the order it receives them, and termgfx_termio_present()'s startup holds
 	 * release on the canvas/CPR replies alone -- so if XTVERSION trailed
 	 * the canvas query, a real xterm's first present() would run with
 	 * g_canvas_exact already set but g_is_xterm structurally still 0 (its
@@ -1473,14 +1493,14 @@ int sst_io_init(int argc, char **argv)
 	 * constrains only those two. The Opus query is NOT sent here -- it is
 	 * two-stage (audio_scan_feed(), above). */
 	out_puts(termgfx_audio_query);
-	sst_io_flush();
+	termgfx_termio_flush();
 	g_probe_start_ms = now_ms();
 	return 1;
 }
 
-void sst_io_shutdown(void)
+void termgfx_termio_shutdown(void)
 {
-	/* Before the !g_active guard, mirroring the open in sst_io_init(): a
+	/* Before the !g_active guard, mirroring the open in termgfx_termio_init(): a
 	 * headless run never set g_active, and it is the run that has a dump file
 	 * to close. See g_audiodump. */
 	if (g_audiodump != NULL) {
@@ -1501,7 +1521,7 @@ void sst_io_shutdown(void)
 	 * this terminal. Anything left in the channel's FIFO would otherwise play
 	 * on over the BBS prompt we are about to hand back to
 	 * (syncretro/main.c:598). */
-	sst_io_audio_stop();
+	termgfx_termio_audio_stop();
 	if (g_tee != NULL) {
 		fclose(g_tee);
 		g_tee = NULL;
@@ -1530,7 +1550,7 @@ void sst_io_shutdown(void)
 		size_t sn = termgfx_term_status_set(sb, sizeof sb, g_status_type >= 0 ? g_status_type : 1);
 		out_put(sb, sn);
 		out_puts(termgfx_term_leave);
-		sst_io_flush();
+		termgfx_termio_flush();
 	}
 	if (g_trace != NULL) {
 		fclose(g_trace);
@@ -1539,14 +1559,14 @@ void sst_io_shutdown(void)
 	g_active = 0;
 }
 
-int sst_io_active(void) { return g_active; }
-int sst_io_hung_up(void) { return g_hangup; }
+int termgfx_termio_active(void) { return g_active; }
+int termgfx_termio_hung_up(void) { return g_hangup; }
 
-void sst_io_pump(void)
+void termgfx_termio_pump(void)
 {
 	uint8_t buf[256];
 
-	/* Deliberately NOT gated on g_active: sst_io_shutdown() only retires the
+	/* Deliberately NOT gated on g_active: termgfx_termio_shutdown() only retires the
 	 * OUTPUT side (status-line/term_leave + "don't stage more bytes"); the fd
 	 * itself is still whatever it was, and a caller that pumps once more
 	 * after shutdown should still learn the peer is gone rather than get a
@@ -1608,26 +1628,26 @@ void sst_io_pump(void)
 	}
 }
 
-int sst_io_quit_requested(void) { return g_quit; }
+int termgfx_termio_quit_requested(void) { return g_quit; }
 /* One-shot: returns (and clears) true once per Ctrl+<menu_letter> press. */
-int  sst_io_menu_requested(void) { int m = g_menu; g_menu = 0; return m; }
+int  termgfx_termio_menu_requested(void) { int m = g_menu; g_menu = 0; return m; }
 /* Enable the GMM hotkey on Ctrl+<letter> (lowercase a-z); 0 disables it. */
-void sst_io_set_menu_key(int letter) { g_menu_letter = (letter >= 'a' && letter <= 'z') ? (unsigned char)letter : 0; }
-int sst_io_have_sixel(void)     { return g_have_sixel; }
-int sst_io_is_syncterm(void)    { return g_is_syncterm; }
-int sst_io_jxl_supported(void)  { return g_jxl; }
-int sst_io_stats_visible(void)  { return g_stats; }
-unsigned sst_io_frames_dropped(void) { return g_dropped_frames; }
+void termgfx_termio_set_menu_key(int letter) { g_menu_letter = (letter >= 'a' && letter <= 'z') ? (unsigned char)letter : 0; }
+int termgfx_termio_have_sixel(void)     { return g_have_sixel; }
+int termgfx_termio_is_syncterm(void)    { return g_is_syncterm; }
+int termgfx_termio_jxl_supported(void)  { return g_jxl; }
+int termgfx_termio_stats_visible(void)  { return g_stats; }
+unsigned termgfx_termio_frames_dropped(void) { return g_dropped_frames; }
 
-unsigned sst_io_audio_dropped(void) { return g_audio_dropped; }
+unsigned termgfx_termio_audio_dropped(void) { return g_audio_dropped; }
 
 /* Total staged bytes not yet written to the socket, audio and video alike.
  * Stats/test introspection ONLY -- do NOT hand this to the streaming module.
  * Doing exactly that is what dropped 70 seconds of Beneath a Steel Sky's
  * dialogue: see the staging block at the top of this file. Unlike syncretro's
- * equivalent there is no g_out_off to subtract: sst_io_flush() memmoves the
+ * equivalent there is no g_out_off to subtract: termgfx_termio_flush() memmoves the
  * tail down. */
-size_t sst_io_out_backlog(void) { return g_out_len; }
+size_t termgfx_termio_out_backlog(void) { return g_out_len; }
 
 /* Staged AUDIO bytes not yet written to the socket -- audio's own share of the
  * shared FIFO, and the ONLY backlog the streaming module is entitled to see.
@@ -1640,7 +1660,7 @@ size_t sst_io_out_backlog(void) { return g_out_len; }
  *
  * Not const-clean: aseg_pending() prunes retired segments as it sums. That is
  * a cache, not an observation -- the answer is identical either way. */
-size_t sst_io_audio_backlog(void) { return aseg_pending(); }
+size_t termgfx_termio_audio_backlog(void) { return aseg_pending(); }
 
 /* Does this session have working audio? Drives two decisions: the Talkie/
  * Floppy data-set pick in main() (door/syncscumm.cpp, before scummvm_main()
@@ -1648,11 +1668,11 @@ size_t sst_io_audio_backlog(void) { return aseg_pending(); }
  * initBackend()): no audio -> Floppy / subtitles on.
  *
  * This is the ONE bounded wait in this file that must actually block. Every
- * other one (the JXL settle at sst_io_present(), the canvas hold) is a
+ * other one (the JXL settle at termgfx_termio_present(), the canvas hold) is a
  * poll-and-return: ScummVM's loop calls present() again, so "hold" means
  * "return and get asked again". This question is now asked from TWO call
  * sites -- main()'s data-set selection, which runs first, right after
- * sst_io_init() and before the engine starts or a single frame is drawn;
+ * termgfx_termio_init() and before the engine starts or a single frame is drawn;
  * and resolveSubtitles() in initBackend(), which runs later during engine
  * boot. Both trust the g_audio_tier/g_audio_done/g_opus_ok latch below: the
  * first call pumps until the answer latches or the window expires, and the
@@ -1662,7 +1682,7 @@ size_t sst_io_audio_backlog(void) { return aseg_pending(); }
  * bake subtitles on (and pick Floppy) for the whole session.
  *
  * So: pump until the answer latches or the window expires. Anchored on
- * g_probe_start_ms, which sst_io_init() sets once before either caller runs
+ * g_probe_start_ms, which termgfx_termio_init() sets once before either caller runs
  * -- NOT on first present, unlike present()'s canvas hold, which had to move
  * its anchor because engine boot outlasts the grace. Here both callers fall
  * inside (or right after) that same init-anchored window, so init is the
@@ -1670,14 +1690,14 @@ size_t sst_io_audio_backlog(void) { return aseg_pending(); }
  *
  * Costs up to the full ~2s settle window once, at boot, on a terminal that
  * never answers (Foot, xterm) -- main()'s data-set selection is the first
- * caller and runs right after sst_io_init(), so g_probe_start_ms is
+ * caller and runs right after termgfx_termio_init(), so g_probe_start_ms is
  * anchored right at the top of the burst and a silent terminal pays close
  * to the whole window on that first call; resolveSubtitles()'s later call
  * costs nothing, since the latch is already set. That is today's behavior
  * anyway: the wait expires, subtitles auto-on. A headless/capture session
  * has no input fd, never probes, and returns 0 immediately.
  */
-int sst_io_audio_available(void)
+int termgfx_termio_audio_available(void)
 {
 	if (!g_active || g_fd_in < 0 || g_hangup)
 		return 0;   /* headless/capture (no input fd) or dead: never any audio */
@@ -1707,7 +1727,7 @@ int sst_io_audio_available(void)
 		return 0;
 	while (!g_audio_done
 	       && (int32_t)(now_ms() - g_probe_start_ms) < SST_GFX_SETTLE_MS) {
-		sst_io_pump();
+		termgfx_termio_pump();
 		if (g_hangup)
 			return 0;
 		if (g_audio_done)
@@ -1792,7 +1812,7 @@ static int g_audio_headroom = SST_AUDIO_HEADROOM;
  * block it still owns, so scaling has to go somewhere else. Grown on demand and
  * kept between blocks -- tick() ships a new block tens of times a second, and
  * they are all about the same size, so this reallocs a couple of times early and
- * then never again. Freed in sst_io_shutdown(). */
+ * then never again. Freed in termgfx_termio_shutdown(). */
 static int16_t *g_hr_buf;
 static size_t   g_hr_cap;   /* SAMPLES (frames * 2), not frames */
 
@@ -1804,7 +1824,7 @@ static void audio_free_scratch(void)
 }
 
 /* Stage one audio sequence -- and record WHERE it landed, so
- * sst_io_audio_backlog() can tell audio's share of the FIFO from video's.
+ * termgfx_termio_audio_backlog() can tell audio's share of the FIFO from video's.
  *
  * `start` is captured before out_put() because out_put()'s stage-full guard
  * can flush from inside the copy, which moves g_out_base and memmoves the
@@ -1835,16 +1855,16 @@ static void sst_stream_put(void *ctx, const void *buf, size_t len)
 static int sst_stream_flush(void *ctx)
 {
 	(void)ctx;
-	sst_io_flush();
+	termgfx_termio_flush();
 	return g_hangup ? 0 : 1;
 }
 
 /* AUDIO's backlog, never the stage's. The one-word difference between this and
- * sst_io_out_backlog() is the entire comic-intro defect. */
+ * termgfx_termio_out_backlog() is the entire comic-intro defect. */
 static size_t sst_stream_backlog(void *ctx)
 {
 	(void)ctx;
-	return sst_io_audio_backlog();
+	return termgfx_termio_audio_backlog();
 }
 
 static const termgfx_stream_io_t g_stream_io = {
@@ -1887,7 +1907,7 @@ static void audio_read_ini(termgfx_stream_cfg_t *cfg)
 		return;
 	/* No "enabled" here: that key is latched once at init into
 	 * g_audio_enabled (sst_read_ini(), above) because
-	 * sst_io_audio_available() needs it long before this runs, and re-reading
+	 * termgfx_termio_audio_available() needs it long before this runs, and re-reading
 	 * it here would give the session a second opinion of the same switch. */
 	cfg->quality   = iniGetFloat(ini, "audio", "quality", cfg->quality);
 	/* volume is the exception to the fallback-is-cfg rule above: the sysop knob
@@ -1903,7 +1923,7 @@ static void audio_read_ini(termgfx_stream_cfg_t *cfg)
 	 * would otherwise go in is shared with syncretro. It is read here anyway so
 	 * the whole [audio] section still costs exactly ONE open of syncscumm.ini
 	 * -- on this host that file lives under a CIFS mount, and the reason
-	 * sst_io_audio_stream() bails early for a disabled session is precisely to
+	 * termgfx_termio_audio_stream() bails early for a disabled session is precisely to
 	 * keep this function from becoming an SMB round trip storm. Clamped to
 	 * 1..100 rather than 0..100: 0 is not a quieter stream, it is a silent one
 	 * that still pays the full Opus encode and the full uplink for every chunk,
@@ -1931,7 +1951,7 @@ static void audio_read_ini(termgfx_stream_cfg_t *cfg)
  * that already has the wrong sign. Scaling before the encode is the only thing
  * that gives the ringing room to land.
  *
- * Deliberately NOT applied to the g_audiodump tap in sst_io_audio_stream(): the
+ * Deliberately NOT applied to the g_audiodump tap in termgfx_termio_audio_stream(): the
  * dump's contract is that it is the MIXER's signal, the reference to diff an
  * encode against, so it stays what ScummVM produced. */
 static const int16_t *audio_apply_headroom(const int16_t *pcm, size_t frames)
@@ -1961,7 +1981,7 @@ static const int16_t *audio_apply_headroom(const int16_t *pcm, size_t frames)
 }
 
 /* Lazily create the stream on the first PCM, once the tier is known.
- * Deliberately not in sst_io_init(): the caps reply has not landed there,
+ * Deliberately not in termgfx_termio_init(): the caps reply has not landed there,
  * and a stream created against an unknown tier would either drop the
  * cushion's first chunks or emit to a terminal that cannot play them. */
 static void audio_stream_open(void)
@@ -1971,7 +1991,7 @@ static void audio_stream_open(void)
 	memset(&cfg, 0, sizeof cfg);
 	/* From the init-time latch, not from cfg's own default + audio_read_ini()
 	 * below: g_audio_enabled is the session's single copy of the sysop switch
-	 * and sst_io_audio_available() has already answered the subtitle question
+	 * and termgfx_termio_audio_available() has already answered the subtitle question
 	 * from it. Both must speak for the same read of the same file. */
 	cfg.enabled      = g_audio_enabled;
 	cfg.quality      = TERMGFX_MUSIC_QUALITY_DEFAULT;
@@ -2113,7 +2133,7 @@ static void audio_stream_open(void)
 	termgfx_stream_caps(g_stream, g_audio_tier >= 1 && g_opus_ok ? 1 : 0);
 }
 
-void sst_io_audio_stream(const int16_t *pcm, size_t frames)
+void termgfx_termio_audio_stream(const int16_t *pcm, size_t frames)
 {
 	if (pcm == NULL || frames == 0)
 		return;
@@ -2176,9 +2196,9 @@ void sst_io_audio_stream(const int16_t *pcm, size_t frames)
 	 * the PRIME cushion releases (audio_stream.c:416) and at stop
 	 * (audio_stream.c:470). In steady RUN it only stages chunks through
 	 * io.put() and leaves the writing to the door's main loop. This door's
-	 * main loop only flushed from sst_io_present() (sst_io.c:2350, 2627). So
+	 * main loop only flushed from termgfx_termio_present() (sst_io.c:2350, 2627). So
 	 * with nothing drawn, nothing flushed: every chunk the mixer produced sat
-	 * in g_out unwritten, audio's share of the stage (sst_io_audio_backlog())
+	 * in g_out unwritten, audio's share of the stage (termgfx_termio_audio_backlog())
 	 * climbed past the module's 48KB rule, and the module began dropping
 	 * chunks -- concluding "this link cannot carry audio" about a socket that
 	 * was IDLE. The trace says it plainly: no present() between 34s and 42s,
@@ -2195,10 +2215,10 @@ void sst_io_audio_stream(const int16_t *pcm, size_t frames)
 	 * WHY HERE IS SAFE -- this cannot split a video sequence. The only caller
 	 * is audio_term.cpp's tick() (audio_term.cpp:79), reached from exactly
 	 * two places, and at neither is a frame partially staged:
-	 *   - syncscumm.cpp:175, in pollEvent(), before sst_io_pump();
+	 *   - syncscumm.cpp:175, in pollEvent(), before termgfx_termio_pump();
 	 *   - video_term.cpp:232, at the TOP of updateScreen(), ahead of compose()
-	 *     and both sst_io_present() calls (video_term.cpp:272, 274).
-	 * sst_io_present() itself never ticks the mixer, so no tick can land
+	 *     and both termgfx_termio_present() calls (video_term.cpp:272, 274).
+	 * termgfx_termio_present() itself never ticks the mixer, so no tick can land
 	 * inside one. Nothing is reordered and no "may audio go now?" boundary
 	 * predicate is introduced: this is the same strictly-ordered FIFO write
 	 * every other caller makes, just made at a moment the door would
@@ -2210,15 +2230,15 @@ void sst_io_audio_stream(const int16_t *pcm, size_t frames)
 	 * would be the tighter granularity but the door cannot see a chunk close
 	 * -- that is inside the module, behind termgfx_stream_feed(). Per feed
 	 * costs nothing to be wrong about: on the overwhelmingly common tick the
-	 * module is still accumulating and staged nothing, so sst_io_flush() takes
+	 * module is still accumulating and staged nothing, so termgfx_termio_flush() takes
 	 * its !g_out_len early return, and aseg_prune() there walks an already
 	 * empty ring (an empty stage means every segment is retired by
 	 * definition). The real work -- one write() -- happens only on the ticks
 	 * that actually staged a chunk, which is exactly the tick that needs it. */
-	sst_io_flush();
+	termgfx_termio_flush();
 }
 
-void sst_io_audio_stop(void)
+void termgfx_termio_audio_stop(void)
 {
 	if (g_stream == NULL)
 		return;
@@ -2435,7 +2455,7 @@ static const uint8_t *sst_pack_idx_rect(const uint8_t *fb, int ew, int eh,
 
 /* --- piece 4: full-frame emit (door_io.c:1918-1936 door_emit_sixel()
  * pattern -- clamp to whole 6-row sixel bands, SF #258). The centering
- * math (piece 3's fit/center half, in sst_io_present() below) uses the
+ * math (piece 3's fit/center half, in termgfx_termio_present() below) uses the
  * UN-rounded eh; this rounds down only for the encode, same as door_io.c,
  * leaving a few pixels of slack at the bottom of the centered slot. -------*/
 static size_t sst_emit_sixel(const uint8_t *fb, const uint8_t *pal8, int ew, int eh, int emit_pal)
@@ -2844,7 +2864,7 @@ static void sst_pace_ack(void)
  * sst_trace() can log it without taking new parameters, mirroring how the
  * pacing globals just above (g_inflight/g_auto_depth, maintained by
  * sst_pace_ack()/present() but only READ here) feed the same emitter.
- * Diagnostic-only: nothing downstream of the fit/center block (sst_io_
+ * Diagnostic-only: nothing downstream of the fit/center block (termgfx_termio_
  * present()'s "Fit + center") reads these back. Persisting across calls
  * means an early-out trace line (gated-grace/deadline/etc., logged before a
  * given present() call reaches the fit/center block) still reports the last
@@ -2871,7 +2891,7 @@ static void sst_trace(const char *outcome, const char *tier, size_t bytes)
 	 * intro investigation did not have and needed. The trace showed audio
 	 * dropping 702 chunks and no way to see WHOSE bytes the module was looking
 	 * at when it decided to; the first field is that number
-	 * (sst_io_audio_backlog(), audio's own share of the FIFO -- compare it
+	 * (termgfx_termio_audio_backlog(), audio's own share of the FIFO -- compare it
 	 * against the whole stage's `bytes` on a full-frame line and the old bug is
 	 * visible at a glance). The second is the door's OWN audio drops
 	 * (g_audio_dropped), which must never be silent the way the reverted
@@ -2879,7 +2899,7 @@ static void sst_trace(const char *outcome, const char *tier, size_t bytes)
 	 * only condition under which the first field can be too LARGE. */
 	termgfx_stream_stats(g_stream, &ch, &ur, &dr);
 	/* emit=<ew>x<eh>@<dx>,<dy> cell=<cellh> rc=<irow>,<icol>: the fit+center
-	 * block's actual output (sst_io_present()'s "Fit + center", above) --
+	 * block's actual output (termgfx_termio_present()'s "Fit + center", above) --
 	 * added to attribute an unpainted screen row to either a clamp (ew/eh
 	 * short of canvas) or a repaint gap (ew/eh == canvas, dx/dy == 0), which
 	 * canvas=WxH alone cannot distinguish. Values are the FIT/CENTER block's
@@ -2894,7 +2914,7 @@ static void sst_trace(const char *outcome, const char *tier, size_t bytes)
 	        g_canvas_w, g_canvas_h, g_canvas_exact ? "!" : "?",
 	        g_probe_replied, g_have_sixel, g_jxl,
 	        g_audio_tier, ch, ur, dr,
-	        sst_io_audio_backlog(), (unsigned)g_audio_dropped, g_aseg_merges,
+	        termgfx_termio_audio_backlog(), (unsigned)g_audio_dropped, g_aseg_merges,
 	        g_trace_ew, g_trace_eh, g_trace_dx, g_trace_dy, g_trace_cellh,
 	        g_trace_irow, g_trace_icol);
 }
@@ -2998,11 +3018,11 @@ static void sst_stats_draw(void)
  * chord), but still nowhere near this ring's depth, so overflow is not
  * expected in practice either way. */
 #define SST_EVQ_CAP 64
-static sst_input_event_t g_evq[SST_EVQ_CAP];
+static termgfx_input_event_t g_evq[SST_EVQ_CAP];
 static int               g_evq_head;   /* index of the oldest queued event */
 static int               g_evq_n;      /* queued events */
 
-static void sst_push_event(const sst_input_event_t *ev)
+static void sst_push_event(const termgfx_input_event_t *ev)
 {
 	int slot;
 
@@ -3015,7 +3035,7 @@ static void sst_push_event(const sst_input_event_t *ev)
 	g_evq_n++;
 }
 
-int sst_io_next_event(sst_input_event_t *ev)
+int termgfx_termio_next_event(termgfx_input_event_t *ev)
 {
 	if (g_evq_n == 0)
 		return 0;
@@ -3027,18 +3047,18 @@ int sst_io_next_event(sst_input_event_t *ev)
 
 /* --- keyboard decode: legacy bytes, kitty CSI-u, SyncTERM evdev -----------
  * Ported from syncconquer/door/door_input.c's emit_key()/emit_tap()/
- * evdev_edge()/evdev_report(), trimmed to this door's neutral SST_KEY_*
+ * evdev_edge()/evdev_report(), trimmed to this door's neutral TERMGFX_KEY_*
  * events: no VK_* space, no WWKeyboard Down()-poll modifier brackets --
  * ScummVM's pollEvent() (door/syncscumm.cpp) wants discrete key-down/up
- * events, so a modifier's state folds into SST_MOD_* on the key it
+ * events, so a modifier's state folds into TERMGFX_MOD_* on the key it
  * accompanies rather than a standalone press/release of its own. */
 
 static void sst_key_event(int keycode, int ascii, int mods, int down)
 {
-	sst_input_event_t ev;
+	termgfx_input_event_t ev;
 
 	memset(&ev, 0, sizeof ev);
-	ev.type    = down ? SST_EV_KEY_DOWN : SST_EV_KEY_UP;
+	ev.type    = down ? TERMGFX_EV_KEY_DOWN : TERMGFX_EV_KEY_UP;
 	ev.keycode = keycode;
 	ev.ascii   = ascii;
 	ev.mods    = mods;
@@ -3050,7 +3070,7 @@ static void sst_key_event(int keycode, int ascii, int mods, int down)
  * door_input.c's emit_tap(), which synthesizes an immediate release too
  * (WWKeyboard's Down()-poll model needs one so a key can't stick "held"),
  * ScummVM's discrete keydown/keyup event stream has no such poll to
- * satisfy, so a legacy key is a single SST_EV_KEY_DOWN and nothing else --
+ * satisfy, so a legacy key is a single TERMGFX_EV_KEY_DOWN and nothing else --
  * the same shape a kitty/evdev key gets on ITS press edge, just without a
  * release edge ever following. */
 static void sst_key_press(int keycode, int ascii, int mods)
@@ -3066,14 +3086,14 @@ static void sst_key_byte(int c)
 	int keycode = 0, ascii = 0, mods = 0;
 
 	if (c == 0x0d)
-		keycode = SST_KEY_ENTER;
+		keycode = TERMGFX_KEY_ENTER;
 	else if (c == 0x08 || c == 0x7f)
-		keycode = SST_KEY_BACKSPACE;
+		keycode = TERMGFX_KEY_BACKSPACE;
 	else if (c == 0x09)
-		keycode = SST_KEY_TAB;
+		keycode = TERMGFX_KEY_TAB;
 	else if (c >= 0x01 && c <= 0x1a) {
 		keycode = 'a' + (c - 1);   /* Ctrl+letter */
-		mods    = SST_MOD_CTRL;
+		mods    = TERMGFX_MOD_CTRL;
 	} else if (c >= 0x20 && c <= 0x7e) {
 		keycode = c;
 		ascii   = c;
@@ -3112,26 +3132,26 @@ static void sst_evdev_edge(int code, int down)
 		return;
 
 	switch (code) {
-		case 103: case 72: keycode = SST_KEY_UP;       break;   /* + numpad KP8 */
-		case 108: case 80: keycode = SST_KEY_DOWN;     break;   /* + numpad KP2 */
-		case 105: case 75: keycode = SST_KEY_LEFT;     break;   /* + numpad KP4 */
-		case 106: case 77: keycode = SST_KEY_RIGHT;    break;   /* + numpad KP6 */
-		case 102: case 71: keycode = SST_KEY_HOME;     break;   /* + numpad KP7 */
-		case 107: case 79: keycode = SST_KEY_END;      break;   /* + numpad KP1 */
-		case 104: case 73: keycode = SST_KEY_PAGEUP;   break;   /* + numpad KP9 */
-		case 109: case 81: keycode = SST_KEY_PAGEDOWN; break;   /* + numpad KP3 */
-		case 110: case 82: keycode = SST_KEY_INSERT;   break;   /* + numpad KP0 */
-		case 111: case 83: keycode = SST_KEY_DELETE;   break;   /* + numpad KP-dot */
-		case 76:           keycode = SST_KEY_KP5;      break;   /* numpad KP5 (center): AGI stop */
-		case 59:  keycode = SST_KEY_F1; break;
-		case 60:  keycode = SST_KEY_F2; break;
-		case 61:  keycode = SST_KEY_F3; break;
-		case 62:  keycode = SST_KEY_F4; break;
-		case 63:  keycode = SST_KEY_F5; break;
-		case 64:  keycode = SST_KEY_F6; break;
-		case 65:  keycode = SST_KEY_F7; break;
-		case 66:  keycode = SST_KEY_F8; break;
-		case 67:  keycode = SST_KEY_F9; break;
+		case 103: case 72: keycode = TERMGFX_KEY_UP;       break;   /* + numpad KP8 */
+		case 108: case 80: keycode = TERMGFX_KEY_DOWN;     break;   /* + numpad KP2 */
+		case 105: case 75: keycode = TERMGFX_KEY_LEFT;     break;   /* + numpad KP4 */
+		case 106: case 77: keycode = TERMGFX_KEY_RIGHT;    break;   /* + numpad KP6 */
+		case 102: case 71: keycode = TERMGFX_KEY_HOME;     break;   /* + numpad KP7 */
+		case 107: case 79: keycode = TERMGFX_KEY_END;      break;   /* + numpad KP1 */
+		case 104: case 73: keycode = TERMGFX_KEY_PAGEUP;   break;   /* + numpad KP9 */
+		case 109: case 81: keycode = TERMGFX_KEY_PAGEDOWN; break;   /* + numpad KP3 */
+		case 110: case 82: keycode = TERMGFX_KEY_INSERT;   break;   /* + numpad KP0 */
+		case 111: case 83: keycode = TERMGFX_KEY_DELETE;   break;   /* + numpad KP-dot */
+		case 76:           keycode = TERMGFX_KEY_KP5;      break;   /* numpad KP5 (center): AGI stop */
+		case 59:  keycode = TERMGFX_KEY_F1; break;
+		case 60:  keycode = TERMGFX_KEY_F2; break;
+		case 61:  keycode = TERMGFX_KEY_F3; break;
+		case 62:  keycode = TERMGFX_KEY_F4; break;
+		case 63:  keycode = TERMGFX_KEY_F5; break;
+		case 64:  keycode = TERMGFX_KEY_F6; break;
+		case 65:  keycode = TERMGFX_KEY_F7; break;
+		case 66:  keycode = TERMGFX_KEY_F8; break;
+		case 67:  keycode = TERMGFX_KEY_F9; break;
 	}
 	if (keycode) {
 		sst_key_event(keycode, 0, 0, down);
@@ -3164,7 +3184,7 @@ static void sst_evdev_edge(int code, int down)
 				g_menu = 1;
 			return;
 		}
-		sst_key_event(c | 0x20, 0, SST_MOD_CTRL, down);
+		sst_key_event(c | 0x20, 0, TERMGFX_MOD_CTRL, down);
 		return;
 	}
 	sst_key_event(c, c, 0, down);
@@ -3190,13 +3210,13 @@ static void sst_evdev_report(int down)
  * a click never needs to bracket synthetic Shift/Alt/Ctrl taps around it;
  * keyboard modifiers arrive as their own key events (Task 5).
  *
- * sst_image_rect(), below, is the SAME fit+center math sst_io_present() uses
+ * sst_image_rect(), below, is the SAME fit+center math termgfx_termio_present() uses
  * to place the frame, so a report always maps against the rect the terminal
  * is actually looking at (sixel's reserved bottom row included) rather than
  * a second, potentially-stale idea of where the image is. */
 
 /* Fit the SST_FB_W x SST_FB_H frame into the terminal's canvas and center it
- * -- extracted from sst_io_present()'s pre-M3 inline "Fit + center" block
+ * -- extracted from termgfx_termio_present()'s pre-M3 inline "Fit + center" block
  * (same logic, unchanged) so BOTH present() and sst_mouse_report() key off
  * one computation instead of two that could drift apart. Pixel-space only:
  * dx and dy (output via the pointers) give the offset of the image's
@@ -3266,7 +3286,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 {
 	int                     ew = 0, eh = 0, dx = 0, dy = 0, cw, ch, px, py, gx, gy;
 	termgfx_mouse_report_t  rep;
-	sst_input_event_t       ev;
+	termgfx_input_event_t       ev;
 
 	/* Auto-detect SGR-Pixels: a reported coord past the text grid proves the
 	 * terminal is sending PIXELS (mode 1016 live) even if the DECRQM
@@ -3350,7 +3370,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 	 * (release -> UP) or a WHEEL for a notch. A plain motion report queues
 	 * just the MOVE. */
 	memset(&ev, 0, sizeof ev);
-	ev.type = SST_EV_MOUSE_MOVE;
+	ev.type = TERMGFX_EV_MOUSE_MOVE;
 	ev.x    = gx;
 	ev.y    = gy;
 	sst_push_event(&ev);
@@ -3359,7 +3379,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 	switch (rep.kind) {
 		case TERMGFX_SGR_BUTTON:
 			memset(&ev, 0, sizeof ev);
-			ev.type   = release ? SST_EV_MOUSE_UP : SST_EV_MOUSE_DOWN;
+			ev.type   = release ? TERMGFX_EV_MOUSE_UP : TERMGFX_EV_MOUSE_DOWN;
 			ev.x      = gx;
 			ev.y      = gy;
 			ev.button = rep.button;
@@ -3367,7 +3387,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 			break;
 		case TERMGFX_SGR_WHEEL:
 			memset(&ev, 0, sizeof ev);
-			ev.type  = SST_EV_WHEEL;
+			ev.type  = TERMGFX_EV_WHEEL;
 			ev.x     = gx;
 			ev.y     = gy;
 			ev.wheel = rep.wheel;
@@ -3379,7 +3399,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 	}
 }
 
-/* --- piece 9: sst_io_present() ties 1-8 together (door_io.c:2707+
+/* --- piece 9: termgfx_termio_present() ties 1-8 together (door_io.c:2707+
  * door_io_present() shape). ------------------------------------------------*/
 static uint8_t g_last_fb[SST_FB_W * SST_FB_H];
 static uint8_t g_last_pal[768];
@@ -3400,7 +3420,7 @@ static unsigned g_capture_frames;
 static int g_need_st;
 
 /* A frame that a DEFER gate (pacing or backpressure, below) held back
- * instead of sending -- retained here so sst_io_tick() can retry it once the
+ * instead of sending -- retained here so termgfx_termio_tick() can retry it once the
  * gate clears, even with no further engine-side present() call. Without
  * this, the last frame of a burst on a now-static screen (the F5 panel, the
  * half-erased speech-toggle X) sits unsent until the NEXT updateScreen(),
@@ -3426,7 +3446,7 @@ static void sst_present_retain(const uint8_t *idx, const uint8_t *pal768)
 	g_present_pending = 1;
 }
 
-void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
+void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 {
 	int      pal_dirty, geom_changed, tier, tier_changed;
 	int      ew, eh, icol, irow, emit_pal;
@@ -3467,12 +3487,12 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 	 * right when the first frames are being drawn. Reading here makes
 	 * g_probe_replied / g_have_sixel / g_jxl / g_canvas_exact current before
 	 * the geometry and tier are chosen below. */
-	sst_io_pump();
+	termgfx_termio_pump();
 	if (g_hangup)
 		return;
 
 	/* The startup holds below are bounded from the FIRST present attempt, not
-	 * from sst_io_init(): the engine can boot for longer than SST_PROBE_GRACE_MS,
+	 * from termgfx_termio_init(): the engine can boot for longer than SST_PROBE_GRACE_MS,
 	 * so an init-anchored deadline would already be expired the first time we
 	 * ever try to draw and would never actually hold anything (the intro then
 	 * renders against the default 640x400 guess -- small, upper-left -- until
@@ -3482,7 +3502,7 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 		g_first_present_ms = now_ms();
 
 	/* Startup grace: hold the first frame(s) until the capability probe
-	 * answers (sst_io_init()'s DA1/CTDA/JXL burst), so a silent terminal
+	 * answers (termgfx_termio_init()'s DA1/CTDA/JXL burst), so a silent terminal
 	 * gets a bounded wait rather than an indefinite one. sst_tier() only
 	 * ever picks JXL once the probe has actually confirmed it (g_jxl), so
 	 * holding here is enough to keep the first frame from guessing sixel
@@ -3518,7 +3538,7 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 			         "  (such as SyncTERM). This terminal reports neither, so the"
 			         " game\r\n"
 			         "  cannot be displayed.\r\n\r\n");
-			sst_io_flush();
+			termgfx_termio_flush();
 			g_no_gfx_notified = 1;
 		}
 		g_quit = 1;
@@ -3540,7 +3560,7 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 		return;
 	}
 
-	sst_io_flush();   /* drain whatever's left of the previous frame first */
+	termgfx_termio_flush();   /* drain whatever's left of the previous frame first */
 	if (g_hangup)
 		return;
 
@@ -3571,7 +3591,7 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 			g_dsr_t    = g_dsr_h;   /* drop the stale unacked DSR timestamps */
 			sst_trace("deadline", sst_tier_name(sst_tier()), 0);
 		} else {
-			/* Retain so sst_io_tick() can retry once g_inflight drains --
+			/* Retain so termgfx_termio_tick() can retry once g_inflight drains --
 			 * see g_present_pending's doc comment and sst_present_retain(). */
 			sst_present_retain(idx, pal768);
 			sst_trace("gated-inflight", sst_tier_name(sst_tier()), 0);
@@ -3579,7 +3599,7 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 		}
 	}
 	/* Backpressure gate: the FIFO did not empty, so don't stack another frame
-	 * on top of it. Note this is read AFTER the unconditional sst_io_flush()
+	 * on top of it. Note this is read AFTER the unconditional termgfx_termio_flush()
 	 * above, so it is not "are there bytes staged" -- it is "did a flush
 	 * attempt fail to place them", i.e. the socket is in EAGAIN and the link is
 	 * genuinely behind.
@@ -3612,11 +3632,11 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 	 * already shows (the whole-frame dedupe further down, which returns
 	 * before ever reaching a commit). Either way whatever was retained for
 	 * it has been handled, so clear it HERE rather than only past the
-	 * dedupe return. A retry (via sst_io_tick()) whose retained frame
+	 * dedupe return. A retry (via termgfx_termio_tick()) whose retained frame
 	 * happens to equal g_last_fb -- e.g. gate A defers frame A, then while
 	 * still congested a byte-identical frame B overwrites the retain, then
 	 * the gate clears and the retry hits the dedupe path -- must still
-	 * clear pending, or sst_io_tick() re-invokes sst_io_present() (a
+	 * clear pending, or termgfx_termio_tick() re-invokes termgfx_termio_present() (a
 	 * 64000-byte memcmp, plus a stats redraw + flush if the bar is on)
 	 * every poll forever on an otherwise-idle static screen. If a LATER
 	 * frame defers again, the gate code above re-retains -- that is
@@ -3702,7 +3722,7 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 		sst_fps_tick(0);
 		if (g_stats) {
 			sst_stats_draw();
-			sst_io_flush();
+			termgfx_termio_flush();
 		}
 		sst_trace("dedupe", sst_tier_name(tier), 0);
 		return;
@@ -3833,47 +3853,47 @@ void sst_io_present(const uint8_t *idx, const uint8_t *pal768)
 	else
 		sst_trace("full", sst_tier_name(tier), n);
 
-	sst_io_flush();
+	termgfx_termio_flush();
 }
 
 /* Retry a frame a DEFER gate stranded (see g_present_pending's doc comment
- * above sst_io_present()). Called every poll (door/syncscumm.cpp's
+ * above termgfx_termio_present()). Called every poll (door/syncscumm.cpp's
  * pollEvent()), including on a fully static screen where nothing else would
  * ever call present() again -- that is the whole point: a burst's last
  * frame that got gated on entry no longer needs a further engine-side
  * redraw (e.g. a mouse move) to eventually reach the wire.
  *
- * Just calls sst_io_present() again with the retained bytes, so the retry
+ * Just calls termgfx_termio_present() again with the retained bytes, so the retry
  * flows through the EXACT SAME gates as any other present() call -- it can
  * re-defer (and re-retain, via the idx == g_pending_idx guard in those gates)
  * exactly as many times as the pacing/backpressure state requires, and can
  * never send ahead of what the link has actually drained. Once the gate
- * clears, present()'s own top-of-function sst_io_pump() (fresh g_inflight/
- * acks) and sst_io_flush() (fresh g_out_len) mean the retry is evaluated
+ * clears, present()'s own top-of-function termgfx_termio_pump() (fresh g_inflight/
+ * acks) and termgfx_termio_flush() (fresh g_out_len) mean the retry is evaluated
  * against CURRENT state, not whatever was true when the frame was first
  * gated.
  *
- * RECURSION GUARD: sst_io_present() calls sst_io_pump(), never
- * sst_io_tick() -- so present() -> pump() -> tick() -> present() cannot
+ * RECURSION GUARD: termgfx_termio_present() calls termgfx_termio_pump(), never
+ * termgfx_termio_tick() -- so present() -> pump() -> tick() -> present() cannot
  * happen. This function itself is only ever called from pollEvent(), never
  * from present() or pump(), so there is exactly one entry point into a
  * retry and no path back into this function from within it. */
-void sst_io_tick(void)
+void termgfx_termio_tick(void)
 {
 	if (g_present_pending)
-		sst_io_present(g_pending_idx, g_pending_pal);
+		termgfx_termio_present(g_pending_idx, g_pending_pal);
 }
 
 #ifdef SST_TEST
 /* Test-only seams (test/test_sst_mouse.c): drive sst_mouse_report()'s
- * coordinate mapping without a real session -- no sst_io_init(), no socket,
+ * coordinate mapping without a real session -- no termgfx_termio_init(), no socket,
  * no probe burst. Never compiled into the shipped door (SST_TEST is not
  * defined by build.sh). Sets the geometry globals sst_image_rect() and
  * sst_mouse_report() read, AND resets the event FIFO: each call starts a
  * fresh scenario, as if a probe had just landed with this geometry, rather
  * than accumulating events (or a stale g_canvas_exact/pixels latch) across
  * scenarios in the same test binary. */
-int sst_io_test_set_geom(int canvas_w, int canvas_h, int cell_w, int cell_h,
+int termgfx_termio_test_set_geom(int canvas_w, int canvas_h, int cell_w, int cell_h,
                          int cols, int rows, int pixels)
 {
 	g_canvas_w     = canvas_w;
@@ -3889,40 +3909,40 @@ int sst_io_test_set_geom(int canvas_w, int canvas_h, int cell_w, int cell_h,
 	return 1;
 }
 
-int sst_io_test_mouse_report(int b, int col, int row, int release)
+int termgfx_termio_test_mouse_report(int b, int col, int row, int release)
 {
 	sst_mouse_report(b, col, row, release);
 	return 1;
 }
 
 /* Test-only seam (test/test_sst_input.c): run raw wire bytes through the
- * exact same byte parser sst_io_pump() feeds (parse_bytes()), so a keyboard
+ * exact same byte parser termgfx_termio_pump() feeds (parse_bytes()), so a keyboard
  * decode test can drive P_NORMAL/P_ESC/P_CSI/csi_final() without a socket
  * or a probe burst. Does NOT reset the event FIFO -- unlike
- * sst_io_test_set_geom() above, a keyboard test scenario is a plain
+ * termgfx_termio_test_set_geom() above, a keyboard test scenario is a plain
  * sequence of bytes with no per-scenario geometry latch to re-seed, so
- * callers drain with sst_io_next_event() between scenarios themselves. */
-int sst_io_test_feed(const char *bytes, size_t n)
+ * callers drain with termgfx_termio_next_event() between scenarios themselves. */
+int termgfx_termio_test_feed(const char *bytes, size_t n)
 {
 	parse_bytes((const uint8_t *)bytes, (int)n);
 	return 1;
 }
 
-/* Test-only seam (test/test_sst_io_present_pending.c): force the DSR-ack
+/* Test-only seam (test/test_termgfx_termio_present_pending.c): force the DSR-ack
  * pacing gate's g_inflight without a real multi-frame DSR exchange, so the
  * strand-on-static-screen regression test can drive present() straight into
  * "gated-inflight" on demand. */
-int sst_io_test_set_inflight(int n)
+int termgfx_termio_test_set_inflight(int n)
 {
 	g_inflight = n;
 	return 1;
 }
 
-/* Test-only seam (test/test_sst_io_present_pending.c): expose g_present_pending
+/* Test-only seam (test/test_termgfx_termio_present_pending.c): expose g_present_pending
  * so the strand-on-static-screen regression test can assert a gated present()
  * retained its frame instead of silently dropping it, and that a successful
- * send (direct or via sst_io_tick()) clears it again. */
-int sst_io_test_present_pending(void)
+ * send (direct or via termgfx_termio_tick()) clears it again. */
+int termgfx_termio_test_present_pending(void)
 {
 	return g_present_pending;
 }
