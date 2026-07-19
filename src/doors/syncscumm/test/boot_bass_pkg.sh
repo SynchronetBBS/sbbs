@@ -18,7 +18,7 @@
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 DOOR=$(dirname "$HERE")
-BIN="$DOOR/build/scummvm"
+BIN="$DOOR/build/syncscumm"
 PKG="$DOOR/../../../xtrn/syncbass"
 [ -x "$BIN" ] || { echo "FAIL: $BIN not built"; exit 1; }
 [ -f "$PKG/sky.cpt" ] || { echo "FAIL: run xtrn/syncbass/getdata.js first"; exit 1; }

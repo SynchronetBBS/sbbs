@@ -5,7 +5,7 @@
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 DOOR=$(dirname "$HERE")
-BIN="$DOOR/build/scummvm"
+BIN="$DOOR/build/syncscumm"
 GAME="$HERE/games/bass"
 [ -x "$BIN" ] || { echo "FAIL: $BIN not built"; exit 1; }
 [ -f "$GAME/sky.dsk" ] && [ -f "$GAME/sky.dnr" ] || { echo "FAIL: run test/fetch_bass.sh first"; exit 1; }

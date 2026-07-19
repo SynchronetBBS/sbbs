@@ -14,7 +14,7 @@
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 DOOR=$(dirname "$HERE")
-BIN="$DOOR/build/scummvm"
+BIN="$DOOR/build/syncscumm"
 PKG="$DOOR/../../../xtrn/cascadequest"
 [ -x "$BIN" ] || { echo "FAIL: $BIN not built"; exit 1; }
 [ -f "$PKG/resource.map" ] || { echo "FAIL: run xtrn/cascadequest/getdata.js first"; exit 1; }
