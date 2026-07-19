@@ -2,14 +2,14 @@
  * finding): full frames were emitted at 1368x906 -- over xterm's ~1000x1000
  * default XTSMGRAPHICS ceiling -- and xterm discards an oversized sixel
  * WHOLE rather than clipping it, so later dirty boxes (under the limit)
- * rendered over stale content.  sst_io sent the XTSMGRAPHICS query
+ * rendered over stale content.  termgfx_termio sent the XTSMGRAPHICS query
  * (termgfx_term_probe: ESC[?2;1S) but never parsed the reply, so the fit
  * path never learned the ceiling.
  *
  * This exercises, in one session:
  *   1. A big canvas report with NO XTSMGRAPHICS reply and NO XTVERSION
  *      reply -- i.e. a genuinely silent terminal that never identified
- *      itself as xterm. Per the refined ceiling policy (sst_io.c's
+ *      itself as xterm. Per the refined ceiling policy (termgfx_termio.c's
  *      g_gfx_max_w doc comment), an exact canvas report is now TRUSTED
  *      absent a positive xterm identification -- this is exactly the
  *      Windows Terminal / Foot case (both answer ESC[14t, neither answers
@@ -17,7 +17,7 @@
  *      fine), so the emitted sixel must fit the canvas, NOT be clamped
  *      to TERMGFX_SIXEL_SAFE_MAX. (The "terminal positively identified as
  *      xterm" case that DOES still clamp here lives in its own binary,
- *      test_sst_io_xterm_ceiling.c.)
+ *      test_termgfx_termio_xterm_ceiling.c.)
  *   2. The XTSMGRAPHICS reply (ESC[?2;0;700;700S) arriving AFTER that
  *      first frame, with the SAME framebuffer content presented again -- the
  *      geometry change alone (no pixel changed) must still force a fresh
@@ -29,14 +29,14 @@
  *      the bigger frame the report actually allows, not get pinned to
  *      1000x1000 by a leftover default.
  *
- * Separate binary from test_sst_io.c because sst_io keeps file-static
- * session state with no reset.  cc'd + run by unit_sst_io.sh. */
+ * Separate binary from test_termgfx_termio.c because termgfx_termio keeps file-static
+ * session state with no reset.  cc'd + run by unit_termgfx_termio.sh. */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "sst_io.h"
+#include "termgfx_termio.h"
 
 static int drain(int fd, char *buf, size_t cap)
 {
@@ -80,7 +80,7 @@ int main(void)
 {
 	int            sv[2];
 	static char    out[262144];
-	static uint8_t idx[SST_FB_W * SST_FB_H];
+	static uint8_t idx[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 	static uint8_t pal[768];
 	char           fdarg[32];
 	char *         argv[3];
@@ -88,12 +88,12 @@ int main(void)
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_gfxmax";
+	argv[0] = (char *)"test_termgfx_termio_gfxmax";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	assert(sst_io_init(2, argv) == 1);
-	sst_io_flush();
+	assert(termgfx_termio_init(2, argv) == 1);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
 	/* DA1 with sixel (param 4), non-SyncTERM, the 24x80 grid CPR, and a big
@@ -103,9 +103,9 @@ int main(void)
 		const char *r = "\x1b[?62;4c" "\x1b[24;80R" "\x1b[4;1500;2400t";
 		assert(send(sv[0], r, strlen(r), 0) > 0);
 	}
-	sst_io_pump();
-	assert(sst_io_have_sixel() == 1);
-	assert(sst_io_is_syncterm() == 0);
+	termgfx_termio_pump();
+	assert(termgfx_termio_have_sixel() == 1);
+	assert(termgfx_termio_is_syncterm() == 0);
 
 	/* First present: no XTSMGRAPHICS reply on record and the terminal never
 	 * identified itself as xterm -- the exact canvas report must be TRUSTED
@@ -114,8 +114,8 @@ int main(void)
 	 * answer ESC[14t and neither answers XTSMGRAPHICS or XTVERSION. */
 	memset(idx, 5, sizeof idx);
 	memset(pal, 0x30, sizeof pal);
-	sst_io_present(idx, pal);
-	sst_io_flush();
+	termgfx_termio_present(idx, pal);
+	termgfx_termio_flush();
 	n = drain(sv[0], out, sizeof out);
 	assert(strstr(out, "\x1bP") != NULL);   /* emitted */
 	sixel_raster(out, n, &ph, &pv);
@@ -135,10 +135,10 @@ int main(void)
 		const char *r = "\x1b[?2;0;700;700S";
 		assert(send(sv[0], r, strlen(r), 0) > 0);
 	}
-	sst_io_pump();
+	termgfx_termio_pump();
 
-	sst_io_present(idx, pal);
-	sst_io_flush();
+	termgfx_termio_present(idx, pal);
+	termgfx_termio_flush();
 	n = drain(sv[0], out, sizeof out);
 	assert(strstr(out, "\x1bP") != NULL);   /* a real frame went out, not a no-op */
 	sixel_raster(out, n, &ph, &pv);
@@ -157,10 +157,10 @@ int main(void)
 		const char *r = "\x1b[?2;0;2000;2000S";
 		assert(send(sv[0], r, strlen(r), 0) > 0);
 	}
-	sst_io_pump();
+	termgfx_termio_pump();
 
-	sst_io_present(idx, pal);
-	sst_io_flush();
+	termgfx_termio_present(idx, pal);
+	termgfx_termio_flush();
 	n = drain(sv[0], out, sizeof out);
 	assert(strstr(out, "\x1bP") != NULL);   /* a real frame went out, not a no-op */
 	sixel_raster(out, n, &ph, &pv);

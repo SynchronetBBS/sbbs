@@ -1,4 +1,4 @@
-/* test_sst_io_audio_static.c -- fed audio reaches the wire with NO present().
+/* test_termgfx_termio_audio_static.c -- fed audio reaches the wire with NO present().
  *
  * THE DEFECT THIS PINS. Beneath a Steel Sky's comic intro has seconds-long
  * gaps in its dialogue, right from the first panel, while gameplay -- at a
@@ -12,11 +12,11 @@
  *     the PRIME cushion releases (audio_stream.c:416) and at stop
  *     (audio_stream.c:470). In steady RUN it only stages chunks via io.put()
  *     and leaves writing them to the door's main loop.
- *   - sst_io.c only flushed from sst_io_present() (sst_io.c:2350, 2627).
+ *   - termgfx_termio.c only flushed from termgfx_termio_present() (termgfx_termio.c:2350, 2627).
  *
  * So with nothing drawn, nothing flushed, and every chunk the mixer produced
  * sat in the 256KB stage unwritten. Its share of the stage
- * (sst_io_audio_backlog()) then climbed past the module's 48KB rule and the
+ * (termgfx_termio_audio_backlog()) then climbed past the module's 48KB rule and the
  * module started dropping chunks -- concluding "this link cannot carry audio"
  * about a socket that was completely IDLE. The live trace is unambiguous: no
  * present() between 34s and 42s, and 71 drops all landing at once at 42s, the
@@ -25,14 +25,21 @@
  *
  * So the assertion is the defect, stated directly: feed PCM, never present,
  * never flush by hand, and the terminal must still receive the audio. Every
- * sst_io_flush() call in the other audio tests hides this bug -- that is why
+ * termgfx_termio_flush() call in the other audio tests hides this bug -- that is why
  * this test's defining feature is the calls it does NOT make.
  *
- * Its own binary because sst_io keeps file-static session state with no reset,
+ * Its own binary because termgfx_termio keeps file-static session state with no reset,
  * so a fresh probe/stream sequence needs a fresh process. cc'd + run by
- * unit_sst_io.sh.
+ * unit_termgfx_termio.sh.
  */
-#include "sst_io.h"
+#include "termgfx_termio.h"
+
+/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE/SST_CHUNK_MS
+ * defaults (24000, 250) -- termgfx_termio.h no longer exposes these as public
+ * macros the way door/sst_io.h once did, so the test keeps its own copy
+ * rather than guess a literal. */
+#define SST_AUDIO_RATE 24000
+#define SST_CHUNK_MS   250
 
 #include <assert.h>
 #include <stdio.h>
@@ -100,7 +107,7 @@ static void feed_one_chunk(int seq)
 		pcm[2 * i]     = (int16_t)(s * 37);
 		pcm[2 * i + 1] = (int16_t)(s * -37);
 	}
-	sst_io_audio_stream(pcm, STATIC_CHUNK_FRAMES);
+	termgfx_termio_audio_stream(pcm, STATIC_CHUNK_FRAMES);
 }
 
 int main(void)
@@ -114,18 +121,18 @@ int main(void)
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_audio_static";
+	argv[0] = (char *)"test_termgfx_termio_audio_static";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	assert(sst_io_init(2, argv) == 1);
-	assert(sst_io_active() == 1);
+	assert(termgfx_termio_init(2, argv) == 1);
+	assert(termgfx_termio_active() == 1);
 
 	/* The ONE hand flush in this test, and it is startup, not the path under
 	 * test: the capability burst has to reach the terminal before the terminal
 	 * can answer it. Everything after this line stands or falls on the door
 	 * flushing audio by itself. */
-	sst_io_flush();
+	termgfx_termio_flush();
 	sip(sv[0]);
 
 	/* Digital-audio caps reply (ESC[=7;100;1n) plus a JXL "no" (ESC[=1;0n),
@@ -137,16 +144,16 @@ int main(void)
 		const char *reply = "\x1b[=7;100;1n\x1b[=1;0n";
 
 		assert(send(sv[0], reply, strlen(reply), 0) > 0);
-		sst_io_pump();
+		termgfx_termio_pump();
 	}
-	assert(sst_io_audio_available() == 1);
+	assert(termgfx_termio_audio_available() == 1);
 
 	/* 80 chunks == 8 seconds, the exact length of the still-panel gap in the
 	 * trace (34s..42s) that produced 71 drops. Fed one chunk at a time, which
 	 * is how the mixer really feeds it: audio_term.cpp's tick() pulls what the
-	 * wall clock owes and hands that block straight to sst_io_audio_stream().
+	 * wall clock owes and hands that block straight to termgfx_termio_audio_stream().
 	 *
-	 * NOT ONE sst_io_flush() and NOT ONE sst_io_present() in this loop. That
+	 * NOT ONE termgfx_termio_flush() and NOT ONE termgfx_termio_present() in this loop. That
 	 * is the whole test. sip() is the terminal reading its own socket, which
 	 * cannot make the door write anything. */
 	for (i = 0; i < 80; i++) {
@@ -173,11 +180,11 @@ int main(void)
 
 	/* ...and the door itself refused nothing. A drop here would mean the stage
 	 * filled, which with a flush per feed it cannot. */
-	assert(sst_io_audio_dropped() == 0);
+	assert(termgfx_termio_audio_dropped() == 0);
 	/* Nothing is left holding: the door wrote what it staged rather than
 	 * parking it for a present() that a still panel never makes. */
-	assert(sst_io_audio_backlog() == 0);
-	assert(sst_io_hung_up() == 0);
+	assert(termgfx_termio_audio_backlog() == 0);
+	assert(termgfx_termio_hung_up() == 0);
 
 	printf("SST_IO_AUDIO_STATIC OK\n");
 	return 0;

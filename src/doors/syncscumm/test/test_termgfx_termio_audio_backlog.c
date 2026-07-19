@@ -1,4 +1,4 @@
-/* test_sst_io_audio_backlog.c -- audio reports ITS OWN share of the FIFO,
+/* test_termgfx_termio_audio_backlog.c -- audio reports ITS OWN share of the FIFO,
  * and the FIFO stays strictly ordered.
  *
  * THE DEFECT THIS PINS. Beneath a Steel Sky's comic intro dropped 702 of 4025
@@ -21,11 +21,19 @@
  * open sixel DCS. Strict FIFO makes that unrepresentable, and check_nesting()
  * below is what says so about the actual bytes.
  *
- * Its own binary because sst_io keeps file-static session state with no reset,
+ * Its own binary because termgfx_termio keeps file-static session state with no reset,
  * so a fresh probe/stream sequence needs a fresh process. cc'd + run by
- * unit_sst_io.sh.
+ * unit_termgfx_termio.sh.
  */
-#include "sst_io.h"
+#include "termgfx_termio.h"
+
+/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE/SST_CHUNK_MS/
+ * SST_PREBUFFER_CHUNKS defaults (24000, 250, 3) -- termgfx_termio.h no longer
+ * exposes these as public macros the way door/sst_io.h once did, so the test
+ * keeps its own copy rather than guess a literal. */
+#define SST_AUDIO_RATE       24000
+#define SST_CHUNK_MS         250
+#define SST_PREBUFFER_CHUNKS 3
 
 #include <assert.h>
 #include <fcntl.h>
@@ -74,8 +82,8 @@ static void drain_all(int fd)
 	for (i = 0; i < 200; i++) {
 		size_t got = sip(fd, sizeof g_wire);
 
-		sst_io_flush();
-		if (got == 0 && sst_io_out_backlog() == 0)
+		termgfx_termio_flush();
+		if (got == 0 && termgfx_termio_out_backlog() == 0)
 			return;
 	}
 	assert(!"drain_all: door would not empty");
@@ -107,7 +115,7 @@ static void feed_chunks(int chunks)
 		pcm[2 * i]     = (int16_t)(i * 37);
 		pcm[2 * i + 1] = (int16_t)(i * -37);
 	}
-	sst_io_audio_stream(pcm, (size_t)frames);
+	termgfx_termio_audio_stream(pcm, (size_t)frames);
 }
 
 /* Stage one frame shaped like the ones that caused the defect: comfortably
@@ -116,7 +124,7 @@ static void feed_chunks(int chunks)
  * instead of overrunning it. `seed` keeps it from being deduped against the
  * last one.
  *
- * The size is steered by the color count, not by noise alone. test_sst_io.c's
+ * The size is steered by the color count, not by noise alone. test_termgfx_termio.c's
  * frame -- full 256-index noise over a single flat palette -- is built to
  * OVERRUN the stage (it asserts the stage-full guard engages), because sixel
  * encodes one pass per color and 256 identical colors means 256 passes. That
@@ -139,7 +147,7 @@ static void present_big(uint8_t seed)
 		pal[i * 3 + 2] = (uint8_t)(i * 29);
 	}
 	idx[0] = (uint8_t)(seed & 0x0f);
-	sst_io_present(idx, pal);
+	termgfx_termio_present(idx, pal);
 }
 
 /* Count non-overlapping occurrences of a byte string in the capture. Not
@@ -206,7 +214,7 @@ int main(void)
 	size_t      video_backlog;
 	size_t      with_audio;
 	size_t      audio_bytes;
-	char        errpath[] = "/tmp/test_sst_io_audio_backlog_err.XXXXXX";
+	char        errpath[] = "/tmp/test_termgfx_termio_audio_backlog_err.XXXXXX";
 	int         errfd;
 	FILE       *errf;
 	static char errbuf[65536];
@@ -220,12 +228,12 @@ int main(void)
 	setsockopt(sv[0], SOL_SOCKET, SO_RCVBUF, &bufsz, sizeof bufsz);
 
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_audio_backlog";
+	argv[0] = (char *)"test_termgfx_termio_audio_backlog";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	assert(sst_io_init(2, argv) == 1);
-	assert(sst_io_active() == 1);
+	assert(termgfx_termio_init(2, argv) == 1);
+	assert(termgfx_termio_active() == 1);
 	drain_all(sv[0]);
 
 	/* Sixel-capable DA1 + CTerm 1.330, the digital-audio caps reply, and a JXL
@@ -235,27 +243,27 @@ int main(void)
 	{
 		const char *replies = "\x1b[?63;4c" "\x1b[=67;84;101;114;109;1;330c"
 		                      "\x1b[=7;100;1n" "\x1b[=1;0n" "\x1b[24;80R";
-		/* ESC[4;h;wt (test_sst_io.c:98 uses the same report shape). 1280x800 is
+		/* ESC[4;h;wt (test_termgfx_termio.c:98 uses the same report shape). 1280x800 is
 		 * chosen with present_big()'s palette to put a frame at ~75KB: over the
 		 * module's 48KB rule -- without which there would be no misreport to
 		 * catch -- and well under the 256KB stage, so it parks rather than
-		 * overruns. test_sst_io.c reports 4096x2560 instead precisely because
+		 * overruns. test_termgfx_termio.c reports 4096x2560 instead precisely because
 		 * it WANTS the overrun; see present_big(). */
 		const char *canvas_reply = "\x1b[4;800;1280t";
 
 		assert(send(sv[0], replies, strlen(replies), 0) > 0);
-		sst_io_pump();
+		termgfx_termio_pump();
 		assert(send(sv[0], canvas_reply, strlen(canvas_reply), 0) > 0);
-		sst_io_pump();
+		termgfx_termio_pump();
 	}
-	assert(sst_io_audio_available() == 1);
+	assert(termgfx_termio_audio_available() == 1);
 	drain_all(sv[0]);
-	assert(sst_io_audio_backlog() == 0);   /* the probe's own bytes have left */
+	assert(termgfx_termio_audio_backlog() == 0);   /* the probe's own bytes have left */
 
 	/* ---- (1) a big video frame is not audio's backlog ---- */
 
 	present_big(1);
-	video_backlog = sst_io_out_backlog();
+	video_backlog = termgfx_termio_out_backlog();
 	/* The frame really is parked, and really is over the module's 48KB rule --
 	 * otherwise everything below would pass for the wrong reason. */
 	assert(video_backlog > 48 * 1024);
@@ -264,12 +272,12 @@ int main(void)
 	 * refusing the audio outright and this test quietly stops testing the
 	 * backlog accounting at all -- so say so here rather than let it rot into a
 	 * test of the drop path. */
-	assert(sst_io_frames_dropped() == 0);
-	assert(sst_io_hung_up() == 0);   /* EAGAIN is backpressure, not an error */
+	assert(termgfx_termio_frames_dropped() == 0);
+	assert(termgfx_termio_hung_up() == 0);   /* EAGAIN is backpressure, not an error */
 
 	/* THE FIX, in one line. Before it, this returned g_out_len -- the whole
 	 * stage -- and every one of those bytes was video's. */
-	assert(sst_io_audio_backlog() == 0);
+	assert(termgfx_termio_audio_backlog() == 0);
 
 	/* ---- (2) audio's share is exact, and only audio's ---- */
 
@@ -280,11 +288,11 @@ int main(void)
 	 * burst of audio this door can ever put, so it is the right one to test the
 	 * accounting with. */
 	feed_chunks(SST_PREBUFFER_CHUNKS);
-	with_audio  = sst_io_out_backlog();
+	with_audio  = termgfx_termio_out_backlog();
 	audio_bytes = with_audio - video_backlog;
 	assert(audio_bytes > 0);                              /* audio did stage */
-	assert(sst_io_audio_backlog() == audio_bytes);        /* ...and exactly that much */
-	assert(sst_io_audio_dropped() == 0);                  /* the door kept all of it */
+	assert(termgfx_termio_audio_backlog() == audio_bytes);        /* ...and exactly that much */
+	assert(termgfx_termio_audio_dropped() == 0);                  /* the door kept all of it */
 
 	/* ---- (3) exact across PARTIAL flushes ---- */
 
@@ -304,14 +312,14 @@ int main(void)
 	{
 		int i;
 
-		for (i = 0; i < 200 && sst_io_out_backlog() > audio_bytes + 8192; i++) {
+		for (i = 0; i < 200 && termgfx_termio_out_backlog() > audio_bytes + 8192; i++) {
 			sip(sv[0], 8192);
-			sst_io_flush();
-			assert(sst_io_audio_backlog() == audio_bytes);
+			termgfx_termio_flush();
+			assert(termgfx_termio_audio_backlog() == audio_bytes);
 		}
-		assert(sst_io_out_backlog() < with_audio);   /* the wire really did take video */
-		assert(sst_io_out_backlog() > audio_bytes);  /* ...and has not reached audio */
-		assert(sst_io_audio_backlog() == audio_bytes);
+		assert(termgfx_termio_out_backlog() < with_audio);   /* the wire really did take video */
+		assert(termgfx_termio_out_backlog() > audio_bytes);  /* ...and has not reached audio */
+		assert(termgfx_termio_audio_backlog() == audio_bytes);
 	}
 
 	/* Now take the queue apart in small bites all the way down. Audio's
@@ -321,18 +329,18 @@ int main(void)
 		size_t prev = audio_bytes;
 		int    i;
 
-		for (i = 0; i < 400 && sst_io_out_backlog() != 0; i++) {
+		for (i = 0; i < 400 && termgfx_termio_out_backlog() != 0; i++) {
 			size_t now;
 
 			sip(sv[0], 1500);   /* deliberately not a chunk multiple */
-			sst_io_flush();
-			now = sst_io_audio_backlog();
+			termgfx_termio_flush();
+			now = termgfx_termio_audio_backlog();
 			assert(now <= prev);                       /* monotone: nothing re-queues */
-			assert(now <= sst_io_out_backlog());       /* audio is a SHARE of the stage */
+			assert(now <= termgfx_termio_out_backlog());       /* audio is a SHARE of the stage */
 			prev = now;
 		}
-		assert(sst_io_out_backlog() == 0);
-		assert(sst_io_audio_backlog() == 0);           /* fully drained == nothing pending */
+		assert(termgfx_termio_out_backlog() == 0);
+		assert(termgfx_termio_audio_backlog() == 0);           /* fully drained == nothing pending */
 	}
 
 	/* ---- (4) interleaved staging keeps its coordinates ---- */
@@ -344,23 +352,23 @@ int main(void)
 		size_t v1, a1, v2, a2;
 
 		present_big(2);
-		v1 = sst_io_out_backlog();
+		v1 = termgfx_termio_out_backlog();
 		feed_chunks(3);
-		a1 = sst_io_out_backlog() - v1;
-		assert(sst_io_audio_backlog() == a1);
+		a1 = termgfx_termio_out_backlog() - v1;
+		assert(termgfx_termio_audio_backlog() == a1);
 
 		present_big(3);
-		v2 = sst_io_out_backlog();
+		v2 = termgfx_termio_out_backlog();
 		feed_chunks(3);
-		a2 = sst_io_out_backlog() - v2;
-		assert(sst_io_audio_backlog() == a1 + a2);
-		assert(sst_io_audio_dropped() == 0);
+		a2 = termgfx_termio_out_backlog() - v2;
+		assert(termgfx_termio_audio_backlog() == a1 + a2);
+		assert(termgfx_termio_audio_dropped() == 0);
 	}
 
 	/* ---- (5) the wire itself: strict FIFO, nothing spliced ---- */
 
 	drain_all(sv[0]);
-	assert(sst_io_audio_backlog() == 0);
+	assert(termgfx_termio_audio_backlog() == 0);
 	check_nesting();
 
 	/* An audio APC and a sixel DCS both actually reached the wire, so (5) was
@@ -374,7 +382,7 @@ int main(void)
 	/* The whole point: with the fix, a parked 48KB+ frame never reads as audio
 	 * congestion, so the two-strike rule never fires. termgfx_stream_destroy()
 	 * prints its telemetry only when a counter is nonzero, so capture stderr
-	 * around sst_io_audio_stop() -- which is what tears the stream down -- and
+	 * around termgfx_termio_audio_stop() -- which is what tears the stream down -- and
 	 * assert on what it says. Before the fix this read "N drop(s)" with N > 0.
 	 */
 	errfd = mkstemp(errpath);
@@ -382,7 +390,7 @@ int main(void)
 	close(errfd);
 	errf = freopen(errpath, "w", stderr);
 	assert(errf != NULL);
-	sst_io_audio_stop();
+	termgfx_termio_audio_stop();
 	fflush(stderr);
 	errf = freopen("/dev/null", "w", stderr);   /* stop writing to errpath */
 	(void)errf;
@@ -396,7 +404,7 @@ int main(void)
 
 	assert(strstr(errbuf, "chunks") != NULL);      /* the stream really ran */
 	assert(strstr(errbuf, "0 drop(s)") != NULL);   /* ...and never dropped */
-	assert(sst_io_audio_dropped() == 0);
+	assert(termgfx_termio_audio_dropped() == 0);
 
 	printf("SST_IO_AUDIO_BACKLOG OK\n");
 	return 0;

@@ -2,15 +2,21 @@
  * (sst_select_datadir(), M5 Task 1): audio -> talkie, no-audio -> floppy,
  * falling back to whichever variant is actually present, then to a flat
  * base dir. Pure directory-stat helper -- no session, no socket needed, so
- * this is a standalone binary (mirrors test_sst_io_canvas.c's convention).
- * cc'd + run by unit_sst_io.sh. */
+ * this is a standalone binary (mirrors test_termgfx_termio_canvas.c's convention).
+ * cc'd + run by unit_termgfx_termio.sh. */
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "sst_io.h"
+#include "termgfx_termio.h"
+
+/* sst_select_datadir() is not part of the public termgfx_termio.h API (it
+ * kept its original name across the move) -- declared here the same way the
+ * SST_TEST-only seams are declared locally in the other test_termgfx_termio_*.c
+ * files. */
+const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
 
 static void mkd(const char *p) { mkdir(p, 0777); }
 

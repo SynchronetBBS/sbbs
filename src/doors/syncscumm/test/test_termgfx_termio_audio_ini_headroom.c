@@ -1,13 +1,13 @@
-/* test_sst_io_audio_ini_headroom.c -- the pre-encode headroom key reaches the
+/* test_termgfx_termio_audio_ini_headroom.c -- the pre-encode headroom key reaches the
  * ENCODER, and is not merely parsed.
  *
  * "[audio] headroom" is the door's answer to the battle-scene crunch: it scales
  * the mixer's PCM before the Opus encode so the codec's ringing has somewhere to
  * land instead of overshooting full scale and wrapping to the wrong sign (see
- * SST_AUDIO_HEADROOM in sst_io.h). Everything about it lives upstream of the
+ * SST_AUDIO_HEADROOM in termgfx_termio.h). Everything about it lives upstream of the
  * wire, which makes it exactly the kind of knob that rots into a no-op without
  * any test noticing: delete the audio_apply_headroom() call in
- * sst_io_audio_stream() and every other audio test in this directory still
+ * termgfx_termio_audio_stream() and every other audio test in this directory still
  * passes, because chunk counts, ordering, backlog and flush behavior are all
  * unchanged. Only the sample VALUES move.
  *
@@ -29,11 +29,17 @@
  * headroom at ~32700, both far outside the asserted band. Unsatisfiable unless
  * the ini value displaced the default AND the scaling actually ran.
  *
- * Needs a real syncscumm.ini in CWD; unit_sst_io.sh runs this binary from a
- * temp directory seeded with the key. Its own binary because sst_io keeps
- * file-static session state with no reset. cc'd + run by unit_sst_io.sh.
+ * Needs a real syncscumm.ini in CWD; unit_termgfx_termio.sh runs this binary from a
+ * temp directory seeded with the key. Its own binary because termgfx_termio keeps
+ * file-static session state with no reset. cc'd + run by unit_termgfx_termio.sh.
  */
-#include "sst_io.h"
+#include "termgfx_termio.h"
+
+/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE default (24000) --
+ * termgfx_termio.h no longer exposes it as a public macro the way
+ * door/sst_io.h once did, so the test keeps its own copy rather than guess a
+ * literal. */
+#define SST_AUDIO_RATE 24000
 
 #include <assert.h>
 #include <math.h>
@@ -122,30 +128,30 @@ int main(void)
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_audio_ini_headroom";
+	argv[0] = (char *)"test_termgfx_termio_audio_ini_headroom";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	assert(sst_io_init(2, argv) == 1);
-	assert(sst_io_active() == 1);
-	sst_io_flush();
+	assert(termgfx_termio_init(2, argv) == 1);
+	assert(termgfx_termio_active() == 1);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
 	/* Sixel-capable DA1 + a SyncTERM CTDA reporting cterm 1.330 (the same
-	 * replies test_sst_io.c plays): >= TERMGFX_CTERM_VER_BLOB, which is what
+	 * replies test_termgfx_termio.c plays): >= TERMGFX_CTERM_VER_BLOB, which is what
 	 * puts the encoded chunk INLINE in an A;LoadBlob rather than in a cache
 	 * file -- the production path for any current SyncTERM, and the one whose
 	 * payload this test can read straight off the socket. Then the digital-
 	 * audio caps reply + a JXL "no" to latch the settle flag, as in
-	 * test_sst_io_audio.c. */
+	 * test_termgfx_termio_audio.c. */
 	{
 		const char *replies = "\x1b[?63;4c" "\x1b[=67;84;101;114;109;1;330c"
 		                      "\x1b[24;80R" "\x1b[=7;100;1n" "\x1b[=1;0n";
 
 		assert(send(sv[0], replies, strlen(replies), 0) > 0);
-		sst_io_pump();
+		termgfx_termio_pump();
 	}
-	assert(sst_io_audio_available() == 1);
+	assert(termgfx_termio_audio_available() == 1);
 
 	{
 		static int16_t pcm[SST_AUDIO_RATE * 2];   /* 1s of stereo */
@@ -160,10 +166,10 @@ int main(void)
 			pcm[2 * i]     = v;
 			pcm[2 * i + 1] = v;
 		}
-		sst_io_flush();
+		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);   /* clear the caps handshake */
-		sst_io_audio_stream(pcm, SST_AUDIO_RATE);
-		sst_io_flush();
+		termgfx_termio_audio_stream(pcm, SST_AUDIO_RATE);
+		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);
 	}
 

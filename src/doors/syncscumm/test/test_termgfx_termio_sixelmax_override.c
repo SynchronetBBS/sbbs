@@ -1,25 +1,25 @@
 /* Regression test for the sysop "sixel_max" ini override (M2 ceiling
  * refinement): syncscumm.ini's root-section "sixel_max" key is the highest-
- * precedence source in the effective sixel ceiling (sst_io.c's g_gfx_max_w
+ * precedence source in the effective sixel ceiling (termgfx_termio.c's g_gfx_max_w
  * doc comment) -- it must beat even an XTSMGRAPHICS reply reporting a
  * bigger ceiling, not just the TERMGFX_SIXEL_SAFE_MAX/canvas-trust
- * defaults the other sst_io_* tests exercise.
+ * defaults the other termgfx_termio_* tests exercise.
  *
- * Unlike the other sst_io tests, this one needs a real syncscumm.ini
- * present in CWD when sst_io_init() runs (sst_read_ini() fopen()s it
+ * Unlike the other termgfx_termio tests, this one needs a real syncscumm.ini
+ * present in CWD when termgfx_termio_init() runs (sst_read_ini() fopen()s it
  * relative to CWD, the same way door/syncscumm.cpp's resolveSubtitles()
- * reads "subtitles" from the same file) -- so unit_sst_io.sh invokes this
+ * reads "subtitles" from the same file) -- so unit_termgfx_termio.sh invokes this
  * binary from a dedicated temp directory seeded with "sixel_max = 800",
  * rather than from $HERE/$DOOR like the others.
  *
- * Separate binary from the other sst_io tests because sst_io keeps
- * file-static session state with no reset. cc'd + run by unit_sst_io.sh. */
+ * Separate binary from the other termgfx_termio tests because termgfx_termio keeps
+ * file-static session state with no reset. cc'd + run by unit_termgfx_termio.sh. */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "sst_io.h"
+#include "termgfx_termio.h"
 
 static int drain(int fd, char *buf, size_t cap)
 {
@@ -63,7 +63,7 @@ int main(void)
 {
 	int            sv[2];
 	static char    out[262144];
-	static uint8_t idx[SST_FB_W * SST_FB_H];
+	static uint8_t idx[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 	static uint8_t pal[768];
 	char           fdarg[32];
 	char *         argv[3];
@@ -71,15 +71,15 @@ int main(void)
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_sixelmax_override";
+	argv[0] = (char *)"test_termgfx_termio_sixelmax_override";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	/* sst_io_init() -> sst_read_ini() reads CWD's syncscumm.ini here,
-	 * picking up "sixel_max = 800" (unit_sst_io.sh seeds it before running
+	/* termgfx_termio_init() -> sst_read_ini() reads CWD's syncscumm.ini here,
+	 * picking up "sixel_max = 800" (unit_termgfx_termio.sh seeds it before running
 	 * this binary from that directory). */
-	assert(sst_io_init(2, argv) == 1);
-	sst_io_flush();
+	assert(termgfx_termio_init(2, argv) == 1);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
 	/* DA1 with sixel (param 4), non-SyncTERM, the 24x80 grid CPR, a big
@@ -91,14 +91,14 @@ int main(void)
 		                 "\x1b[?2;0;2000;2000S";
 		assert(send(sv[0], r, strlen(r), 0) > 0);
 	}
-	sst_io_pump();
-	assert(sst_io_have_sixel() == 1);
-	assert(sst_io_is_syncterm() == 0);
+	termgfx_termio_pump();
+	assert(termgfx_termio_have_sixel() == 1);
+	assert(termgfx_termio_is_syncterm() == 0);
 
 	memset(idx, 5, sizeof idx);
 	memset(pal, 0x30, sizeof pal);
-	sst_io_present(idx, pal);
-	sst_io_flush();
+	termgfx_termio_present(idx, pal);
+	termgfx_termio_flush();
 	n = drain(sv[0], out, sizeof out);
 	assert(strstr(out, "\x1bP") != NULL);   /* emitted */
 	sixel_raster(out, n, &ph, &pv);

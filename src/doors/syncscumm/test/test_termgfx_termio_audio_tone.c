@@ -1,4 +1,4 @@
-/* test_sst_io_audio_tone.c -- the tone-only audio tier reads as NO audio.
+/* test_termgfx_termio_audio_tone.c -- the tone-only audio tier reads as NO audio.
  *
  * A terminal with the audio APC but no libsndfile (caps reply
  * "ESC[=7;100;0n") can only synth tones: A;Load is a silent no-op there, so
@@ -7,11 +7,17 @@
  * subtitles off. It must resolve to "no audio", and it must never be asked
  * the Opus format query (there is no libsndfile to answer it).
  *
- * Its own binary because sst_io keeps file-static session state with no
+ * Its own binary because termgfx_termio keeps file-static session state with no
  * reset, so a second tier needs a fresh process. cc'd + run by
- * unit_sst_io.sh.
+ * unit_termgfx_termio.sh.
  */
-#include "sst_io.h"
+#include "termgfx_termio.h"
+
+/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE default (24000) --
+ * termgfx_termio.h no longer exposes it as a public macro the way
+ * door/sst_io.h once did, so the test keeps its own copy rather than guess a
+ * literal. */
+#define SST_AUDIO_RATE 24000
 
 #include <assert.h>
 #include <stdio.h>
@@ -42,13 +48,13 @@ int main(void)
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_audio_tone";
+	argv[0] = (char *)"test_termgfx_termio_audio_tone";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	assert(sst_io_init(2, argv) == 1);
-	assert(sst_io_active() == 1);
-	sst_io_flush();
+	assert(termgfx_termio_init(2, argv) == 1);
+	assert(termgfx_termio_active() == 1);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 	assert(strstr(out, "libsndfile") != NULL);
 
@@ -58,13 +64,13 @@ int main(void)
 	{
 		const char *reply = "\x1b[=7;100;0n\x1b[=1;0n";
 		assert(send(sv[0], reply, strlen(reply), 0) > 0);
-		sst_io_pump();
+		termgfx_termio_pump();
 	}
 
-	assert(sst_io_audio_available() == 0);
+	assert(termgfx_termio_audio_available() == 0);
 
 	/* ... and the tone-only tier was never asked the Opus query. */
-	sst_io_flush();
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 	assert(strstr(out, "32;100") == NULL);
 
@@ -76,8 +82,8 @@ int main(void)
 		for (i = 0; i < SST_AUDIO_RATE; i++)
 			pcm[2 * i] = pcm[2 * i + 1] = (int16_t)(i * 37);
 		drain(sv[0], out, sizeof out);   /* clear */
-		sst_io_audio_stream(pcm, SST_AUDIO_RATE);
-		sst_io_flush();
+		termgfx_termio_audio_stream(pcm, SST_AUDIO_RATE);
+		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);
 		assert(strstr(out, "A;") == NULL);
 	}

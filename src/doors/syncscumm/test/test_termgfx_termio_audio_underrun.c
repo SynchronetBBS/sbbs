@@ -1,4 +1,4 @@
-/* test_sst_io_audio_underrun.c -- underrun re-primes rather than dribbling.
+/* test_termgfx_termio_audio_underrun.c -- underrun re-primes rather than dribbling.
  *
  * `CSI = 7 ; <ch> ; 0 n` is CTerm's audio-channel-idle notification: our FIFO
  * on that channel drained. csi_final()'s 'n' case dispatches it to
@@ -16,11 +16,19 @@
  * test that injects only the real underrun would not exercise that guard
  * at all.
  *
- * Its own binary because sst_io keeps file-static session state with no
+ * Its own binary because termgfx_termio keeps file-static session state with no
  * reset, so a fresh probe/stream sequence needs a fresh process. cc'd + run
- * by unit_sst_io.sh.
+ * by unit_termgfx_termio.sh.
  */
-#include "sst_io.h"
+#include "termgfx_termio.h"
+
+/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE/SST_CHUNK_MS/
+ * SST_PREBUFFER_CHUNKS defaults (24000, 250, 3) -- termgfx_termio.h no longer
+ * exposes these as public macros the way door/sst_io.h once did, so the test
+ * keeps its own copy rather than guess a literal. */
+#define SST_AUDIO_RATE       24000
+#define SST_CHUNK_MS         250
+#define SST_PREBUFFER_CHUNKS 3
 
 #include <assert.h>
 #include <fcntl.h>
@@ -83,7 +91,7 @@ static void feed_chunks(int chunks)
 		pcm[2 * i]     = (int16_t)(i * 37);
 		pcm[2 * i + 1] = (int16_t)(i * -37);
 	}
-	sst_io_audio_stream(pcm, (size_t)frames);
+	termgfx_termio_audio_stream(pcm, (size_t)frames);
 }
 
 int main(void)
@@ -92,7 +100,7 @@ int main(void)
 	char        fdarg[32];
 	char       *argv[3];
 	static char out[65536];
-	char        errpath[] = "/tmp/test_sst_io_audio_underrun_err.XXXXXX";
+	char        errpath[] = "/tmp/test_termgfx_termio_audio_underrun_err.XXXXXX";
 	int         errfd;
 	FILE       *errf;
 	static char errbuf[65536];
@@ -100,13 +108,13 @@ int main(void)
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_audio_underrun";
+	argv[0] = (char *)"test_termgfx_termio_audio_underrun";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	assert(sst_io_init(2, argv) == 1);
-	assert(sst_io_active() == 1);
-	sst_io_flush();
+	assert(termgfx_termio_init(2, argv) == 1);
+	assert(termgfx_termio_active() == 1);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
 	/* Land the digital-tier caps reply (plus a JXL "no" to latch the
@@ -114,10 +122,10 @@ int main(void)
 	{
 		const char *reply = "\x1b[=7;100;1n\x1b[=1;0n";
 		assert(send(sv[0], reply, strlen(reply), 0) > 0);
-		sst_io_pump();
+		termgfx_termio_pump();
 	}
-	assert(sst_io_audio_available() == 1);
-	sst_io_flush();
+	assert(termgfx_termio_audio_available() == 1);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
 	/* Feed past the cushion and into RUN, with four chunks of headroom so RUN is
@@ -128,7 +136,7 @@ int main(void)
 	 * ignored the underrun below, this count would be indistinguishable from
 	 * what follows. */
 	feed_chunks(UNDERRUN_MAX_CHUNKS);
-	sst_io_flush();
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 	assert(count_occurrences(out, "A;Queue") >= SST_PREBUFFER_CHUNKS);
 
@@ -138,9 +146,9 @@ int main(void)
 	{
 		const char *reply = "\x1b[=7;100;1n\x1b[=7;2;0n";
 		assert(send(sv[0], reply, strlen(reply), 0) > 0);
-		sst_io_pump();
+		termgfx_termio_pump();
 	}
-	sst_io_flush();
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 	assert(out[0] == '\0');   /* neither CSI produces a reply of its own */
 
@@ -149,7 +157,7 @@ int main(void)
 	 * immediately as its own A;Queue -- that is exactly the dribble the
 	 * re-prime exists to prevent. */
 	feed_chunks(1);
-	sst_io_flush();
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 	assert(count_occurrences(out, "A;Queue") == 0);
 
@@ -159,7 +167,7 @@ int main(void)
 	 * took it 3 -> 8 to cover a big frame's drain, a literal here would have
 	 * had to be re-guessed instead of just following. */
 	feed_chunks(SST_PREBUFFER_CHUNKS - 1);
-	sst_io_flush();
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 	assert(count_occurrences(out, "A;Queue") == SST_PREBUFFER_CHUNKS);
 
@@ -167,14 +175,14 @@ int main(void)
 	 * (not zero -- silently absorbed; not two -- the channel-100 decoy
 	 * misread as a second one). termgfx_stream_destroy() only prints this
 	 * line at all if chunks/underruns/dropped is nonzero, so capture
-	 * stderr around sst_io_audio_stop(), which is what tears the stream
+	 * stderr around termgfx_termio_audio_stop(), which is what tears the stream
 	 * down. */
 	errfd = mkstemp(errpath);
 	assert(errfd >= 0);
 	close(errfd);
 	errf = freopen(errpath, "w", stderr);
 	assert(errf != NULL);
-	sst_io_audio_stop();
+	termgfx_termio_audio_stop();
 	fflush(stderr);
 	errf = freopen("/dev/null", "w", stderr);   /* stop writing to errpath */
 	(void)errf;

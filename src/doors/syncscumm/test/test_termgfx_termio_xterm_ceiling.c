@@ -1,7 +1,7 @@
 /* Regression test for the refined sixel-ceiling policy's xterm branch (M2
  * ceiling refinement): an exact ESC[4;h;wt canvas report is now TRUSTED
- * absent an XTSMGRAPHICS reply (see test_sst_io_gfxmax.c's first part, and
- * sst_io.c's g_gfx_max_w doc comment) -- but ONLY when the terminal has not
+ * absent an XTSMGRAPHICS reply (see test_termgfx_termio_gfxmax.c's first part, and
+ * termgfx_termio.c's g_gfx_max_w doc comment) -- but ONLY when the terminal has not
  * positively identified itself as xterm. A real xterm session answers
  * ESC[14t (so the canvas IS exact) but, with window ops left at their
  * default-off, never answers XTSMGRAPHICS, and discards an oversized
@@ -18,14 +18,14 @@
  * XTSMGRAPHICS reply at all. The emitted sixel must still be clamped to
  * TERMGFX_SIXEL_SAFE_MAX, not fit to the big canvas.
  *
- * Separate binary from the other sst_io tests because sst_io keeps
- * file-static session state with no reset. cc'd + run by unit_sst_io.sh. */
+ * Separate binary from the other termgfx_termio tests because termgfx_termio keeps
+ * file-static session state with no reset. cc'd + run by unit_termgfx_termio.sh. */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "sst_io.h"
+#include "termgfx_termio.h"
 
 static int drain(int fd, char *buf, size_t cap)
 {
@@ -69,7 +69,7 @@ int main(void)
 {
 	int            sv[2];
 	static char    out[262144];
-	static uint8_t idx[SST_FB_W * SST_FB_H];
+	static uint8_t idx[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 	static uint8_t pal[768];
 	char           fdarg[32];
 	char *         argv[3];
@@ -77,12 +77,12 @@ int main(void)
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_xterm_ceiling";
+	argv[0] = (char *)"test_termgfx_termio_xterm_ceiling";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	assert(sst_io_init(2, argv) == 1);
-	sst_io_flush();
+	assert(termgfx_termio_init(2, argv) == 1);
+	termgfx_termio_flush();
 	n = drain(sv[0], out, sizeof out);
 
 	/* The probe burst must solicit XTVERSION (ESC[>0q) BEFORE the ESC[14t
@@ -109,22 +109,22 @@ int main(void)
 		const char *r = "\x1bP>|XTerm(397)\x1b\\";
 		assert(send(sv[0], r, strlen(r), 0) > 0);
 	}
-	sst_io_pump();
+	termgfx_termio_pump();
 	{
 		const char *r = "\x1b[?62;4c" "\x1b[24;80R" "\x1b[4;1500;2400t";
 		assert(send(sv[0], r, strlen(r), 0) > 0);
 	}
-	sst_io_pump();
-	assert(sst_io_have_sixel() == 1);
-	assert(sst_io_is_syncterm() == 0);
+	termgfx_termio_pump();
+	assert(termgfx_termio_have_sixel() == 1);
+	assert(termgfx_termio_is_syncterm() == 0);
 
 	/* No XTSMGRAPHICS report, but the terminal identified itself as xterm --
 	 * the exact canvas must NOT be trusted here; fall all the way to
 	 * TERMGFX_SIXEL_SAFE_MAX, same as a fully silent xterm. */
 	memset(idx, 5, sizeof idx);
 	memset(pal, 0x30, sizeof pal);
-	sst_io_present(idx, pal);
-	sst_io_flush();
+	termgfx_termio_present(idx, pal);
+	termgfx_termio_flush();
 	n = drain(sv[0], out, sizeof out);
 	assert(strstr(out, "\x1bP") != NULL);   /* emitted */
 	sixel_raster(out, n, &ph, &pv);

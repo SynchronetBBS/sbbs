@@ -31,7 +31,7 @@
  * frame on the same present(). The pre-pass makes the fallback atomic:
  * either nothing is sent and the caller sends a full frame, or every
  * emitted box is complete -- mirroring the invariant the JXL present
- * function documents (sst_io.c: "the caller never stacks a full frame on
+ * function documents (termgfx_termio.c: "the caller never stacks a full frame on
  * top of partial rects").
  *
  * This test proves it two ways, both in one session (fresh g_last state
@@ -52,14 +52,14 @@
  *      DECRC ("\x1b8") per-box wrap must be present. This is the bandwidth
  *      guard: the fix must not turn every present() into a full frame.
  *
- * Separate binary from the other sst_io tests because sst_io keeps
- * file-static session state with no reset. cc'd + run by unit_sst_io.sh. */
+ * Separate binary from the other termgfx_termio tests because termgfx_termio keeps
+ * file-static session state with no reset. cc'd + run by unit_termgfx_termio.sh. */
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "sst_io.h"
+#include "termgfx_termio.h"
 
 static int drain(int fd, char *buf, size_t cap)
 {
@@ -107,7 +107,7 @@ static void sixel_raster_max(const char *s, int n, int *max_ph_out, int *max_pv_
 }
 
 /* Set a 16x16 (or shorter, at the fb bottom) tile to a fill value -- tx/ty
- * are tile coordinates (SST_TILE == 16, checked against sst_io.c). */
+ * are tile coordinates (SST_TILE == 16, checked against termgfx_termio.c). */
 static void fill_tile(uint8_t *fb, int tx, int ty, int tile, int fb_w, int fb_h, uint8_t val)
 {
 	int x0 = tx * tile, y0 = ty * tile;
@@ -124,9 +124,9 @@ int main(void)
 {
 	int            sv[2];
 	static char    out[262144];
-	static uint8_t idx1[SST_FB_W * SST_FB_H];
-	static uint8_t idx2[SST_FB_W * SST_FB_H];
-	static uint8_t idx3[SST_FB_W * SST_FB_H];
+	static uint8_t idx1[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
+	static uint8_t idx2[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
+	static uint8_t idx3[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 	static uint8_t pal[768];
 	char           fdarg[32];
 	char *         argv[3];
@@ -135,12 +135,12 @@ int main(void)
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_bottom_dirty";
+	argv[0] = (char *)"test_termgfx_termio_bottom_dirty";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	assert(sst_io_init(2, argv) == 1);
-	sst_io_flush();
+	assert(termgfx_termio_init(2, argv) == 1);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
 	/* DA1 with sixel (param 4), non-SyncTERM, the 24x80 grid CPR, an EXACT
@@ -150,16 +150,16 @@ int main(void)
 		const char *r = "\x1b[?62;4c" "\x1b[24;80R" "\x1b[4;600;1200t" "\x1b[6;20;20t";
 		assert(send(sv[0], r, strlen(r), 0) > 0);
 	}
-	sst_io_pump();
-	assert(sst_io_have_sixel() == 1);
-	assert(sst_io_is_syncterm() == 0);
+	termgfx_termio_pump();
+	assert(termgfx_termio_have_sixel() == 1);
+	assert(termgfx_termio_is_syncterm() == 0);
 
 	/* First frame: flat fill, establishes g_last (always a full frame --
 	 * g_have_last is 0 going in). */
 	memset(idx1, 3, sizeof idx1);
 	memset(pal, 0x30, sizeof pal);
-	sst_io_present(idx1, pal);
-	sst_io_flush();
+	termgfx_termio_present(idx1, pal);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
 	/* Second frame: dirty a mid-screen tile (tx=2,ty=2 -> fb rows 32..47)
@@ -169,11 +169,11 @@ int main(void)
 	 * top-to-bottom), so pre-fix it sends fine on its own and the caller
 	 * never learns the bottom tile got dropped. */
 	memcpy(idx2, idx1, sizeof idx1);
-	fill_tile(idx2, 2, 2, TILE, SST_FB_W, SST_FB_H, 9);
-	fill_tile(idx2, 8, 12, TILE, SST_FB_W, SST_FB_H, 9);
+	fill_tile(idx2, 2, 2, TILE, TERMGFX_TERMIO_FB_W, TERMGFX_TERMIO_FB_H, 9);
+	fill_tile(idx2, 8, 12, TILE, TERMGFX_TERMIO_FB_W, TERMGFX_TERMIO_FB_H, 9);
 
-	sst_io_present(idx2, pal);
-	sst_io_flush();
+	termgfx_termio_present(idx2, pal);
+	termgfx_termio_flush();
 	n = drain(sv[0], out, sizeof out);
 	assert(n > 0);
 
@@ -196,10 +196,10 @@ int main(void)
 	 * -- the bandwidth guard: the fix must only trigger when a change
 	 * actually touches the stranded bottom region. */
 	memcpy(idx3, idx2, sizeof idx2);
-	fill_tile(idx3, 5, 5, TILE, SST_FB_W, SST_FB_H, 9);
+	fill_tile(idx3, 5, 5, TILE, TERMGFX_TERMIO_FB_W, TERMGFX_TERMIO_FB_H, 9);
 
-	sst_io_present(idx3, pal);
-	sst_io_flush();
+	termgfx_termio_present(idx3, pal);
+	termgfx_termio_flush();
 	n = drain(sv[0], out, sizeof out);
 	assert(n > 0);
 

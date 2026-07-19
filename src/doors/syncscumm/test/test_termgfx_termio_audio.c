@@ -1,14 +1,21 @@
-/* test_sst_io_audio.c -- the audio capability probe and its replies.
+/* test_termgfx_termio_audio.c -- the audio capability probe and its replies.
  *
  * Asserts (a) the startup burst solicits the audio caps query, (b) a
- * digital-tier reply resolves sst_io_audio_available() to 1 without eating
+ * digital-tier reply resolves termgfx_termio_audio_available() to 1 without eating
  * the settle window in real time, and (c) the two-stage Opus query is only
  * emitted once the caps reply has landed.
  *
- * sst_io keeps file-static session state with no reset, so exercising the
- * probe cleanly needs a fresh process. cc'd + run by unit_sst_io.sh.
+ * termgfx_termio keeps file-static session state with no reset, so exercising the
+ * probe cleanly needs a fresh process. cc'd + run by unit_termgfx_termio.sh.
  */
-#include "sst_io.h"
+#include "termgfx_termio.h"
+
+/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE/SST_CHUNK_MS
+ * defaults (24000, 250) -- termgfx_termio.h no longer exposes these as public
+ * macros the way door/sst_io.h once did, so the test keeps its own copy
+ * rather than guess a literal. */
+#define SST_AUDIO_RATE 24000
+#define SST_CHUNK_MS   250
 
 #include <assert.h>
 #include <stdio.h>
@@ -56,13 +63,13 @@ int main(void)
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
-	argv[0] = (char *)"test_sst_io_audio";
+	argv[0] = (char *)"test_termgfx_termio_audio";
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	assert(sst_io_init(2, argv) == 1);
-	assert(sst_io_active() == 1);
-	sst_io_flush();
+	assert(termgfx_termio_init(2, argv) == 1);
+	assert(termgfx_termio_active() == 1);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
 	/* (a) the burst solicits the audio caps query ... */
@@ -78,16 +85,16 @@ int main(void)
 	{
 		const char *reply = "\x1b[=7;100;1n\x1b[=1;0n";
 		assert(send(sv[0], reply, strlen(reply), 0) > 0);
-		sst_io_pump();
+		termgfx_termio_pump();
 	}
 
 	/* (b) a confirmed digital tier IS audio. The caps answer is already
 	 * latched, so this must not wait out the settle window; the Opus reply
 	 * never comes, which is the historical assume-yes (termgfx/audio.h:41-51). */
-	assert(sst_io_audio_available() == 1);
+	assert(termgfx_termio_audio_available() == 1);
 
 	/* (c) the caps reply triggers the Opus query. */
-	sst_io_flush();
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 	assert(strstr(out, "32;100") != NULL);
 
@@ -100,8 +107,8 @@ int main(void)
 			pcm[2 * i]     = (int16_t)(i * 37);
 			pcm[2 * i + 1] = (int16_t)(i * -37);
 		}
-		sst_io_audio_stream(pcm, SST_AUDIO_RATE);
-		sst_io_flush();
+		termgfx_termio_audio_stream(pcm, SST_AUDIO_RATE);
+		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);
 		/* A 1s feed closes 1000/SST_CHUNK_MS chunks: the cushion is held
 		 * then released, so they should all ship as A;Queue APCs by the
@@ -119,7 +126,7 @@ int main(void)
 
 	/* A tone-only terminal (libsndfile absent) is NOT audio for our
 	 * purposes: A;Load is a no-op there, so a Queue would play an empty
-	 * slot. Covered in its own binary -- see test_sst_io_audio_tone.c. */
+	 * slot. Covered in its own binary -- see test_termgfx_termio_audio_tone.c. */
 
 	printf("SST_IO_AUDIO OK\n");
 	return 0;

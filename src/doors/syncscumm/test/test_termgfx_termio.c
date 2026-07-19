@@ -1,6 +1,6 @@
-/* Unit test for sst_io: run the session against a socketpair, play the
+/* Unit test for termgfx_termio: run the session against a socketpair, play the
  * terminal's side with canned replies, assert what the door emits and
- * what its parsers conclude.  cc'd + run by unit_sst_io.sh. */
+ * what its parsers conclude.  cc'd + run by unit_termgfx_termio.sh. */
 #include <assert.h>
 #include <signal.h>
 #include <stdio.h>
@@ -8,9 +8,9 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "sst_io.h"
+#include "termgfx_termio.h"
 
-/* Backstop for the backpressure case below: if sst_io_present() ever spins
+/* Backstop for the backpressure case below: if termgfx_termio_present() ever spins
  * (the carried review-flag regressing), fail loudly instead of hanging the
  * test runner forever. */
 static void alarm_handler(int sig)
@@ -37,11 +37,11 @@ int main(void)
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
 	char fdarg[32];
 	snprintf(fdarg, sizeof(fdarg), "-s%d", sv[1]);
-	char *argv[] = { (char *)"test_sst_io", fdarg, NULL };
+	char *argv[] = { (char *)"test_termgfx_termio", fdarg, NULL };
 
-	assert(sst_io_init(2, argv) == 1);
-	assert(sst_io_active() == 1);
-	sst_io_flush();
+	assert(termgfx_termio_init(2, argv) == 1);
+	assert(termgfx_termio_active() == 1);
+	termgfx_termio_flush();
 	drain(sv[0], out, sizeof(out));
 	/* probe burst: enter, status-off, term probe, DA1+CTDA, JXL query */
 	assert(strstr(out, "\x1b[?25l"));                 /* cursor hidden (term_enter) */
@@ -58,8 +58,8 @@ int main(void)
 	 * assertions. */
 	const char *replies = "\x1b[?63;4c" "\x1b[=67;84;101;114;109;1;330c" "\x1b[24;80R";
 	assert(send(sv[0], replies, strlen(replies), 0) > 0);
-	sst_io_pump();
-	assert(sst_io_have_sixel() == 1);
+	termgfx_termio_pump();
+	assert(termgfx_termio_have_sixel() == 1);
 
 	/* hotkeys: Ctrl-S toggles stats, q requests quit.
 	 *
@@ -71,8 +71,8 @@ int main(void)
 	 * (not just the g_stats flag, which was already correct before that
 	 * fix -- only the draw was missing). */
 	assert(send(sv[0], "\x13", 1, 0) == 1);
-	sst_io_pump();
-	assert(sst_io_stats_visible() == 1);
+	termgfx_termio_pump();
+	assert(termgfx_termio_stats_visible() == 1);
 	{
 		int n = drain(sv[0], out, sizeof(out));
 		assert(n > 0);
@@ -80,8 +80,8 @@ int main(void)
 	}
 
 	assert(send(sv[0], "q", 1, 0) == 1);
-	sst_io_pump();
-	assert(sst_io_quit_requested() == 1);
+	termgfx_termio_pump();
+	assert(termgfx_termio_quit_requested() == 1);
 
 	/* backpressure: present() must never hang, even when the peer stops
 	 * draining and out_put()'s 256KB stage buffer can't be flushed. Force a
@@ -92,7 +92,7 @@ int main(void)
 	 * path at all) against a shrunk-SO_RCVBUF socket that nothing drains. */
 	{
 		int rcvbuf = 1024;
-		static uint8_t idx[SST_FB_W * SST_FB_H];
+		static uint8_t idx[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 		static uint8_t pal[768];
 		int i;
 		const char *canvas_reply = "\x1b[4;2560;4096t";   /* ESC[4;h;wt, exact
@@ -105,7 +105,7 @@ int main(void)
 
 		setsockopt(sv[0], SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof rcvbuf);
 		assert(send(sv[0], canvas_reply, strlen(canvas_reply), 0) > 0);
-		sst_io_pump();
+		termgfx_termio_pump();
 
 		for (i = 0; i < (int)sizeof idx; i++)
 			idx[i] = (uint8_t)(i ^ 0x5a);   /* noisy: defeats sixel RLE, maximizing size */
@@ -115,16 +115,16 @@ int main(void)
 		alarm(5);
 		for (i = 0; i < 3; i++) {
 			idx[0] = (uint8_t)i;   /* keep it changing so it's never deduped */
-			sst_io_present(idx, pal);
+			termgfx_termio_present(idx, pal);
 		}
 		alarm(0);
 
-		assert(sst_io_hung_up() == 0);        /* EAGAIN is backpressure, not an error */
-		assert(sst_io_frames_dropped() > 0);   /* the stage-full guard actually engaged */
+		assert(termgfx_termio_hung_up() == 0);        /* EAGAIN is backpressure, not an error */
+		assert(termgfx_termio_frames_dropped() > 0);   /* the stage-full guard actually engaged */
 
 		/* Drain the socket back to empty so out_put()'s stage buffer (still
 		 * holding whatever this storm queued but couldn't flush) empties
-		 * before the shutdown assertions below -- otherwise sst_io_shutdown()'s
+		 * before the shutdown assertions below -- otherwise termgfx_termio_shutdown()'s
 		 * own status-restore write finds the stage still full and gets
 		 * silently dropped by the same guard just verified above.
 		 *
@@ -136,14 +136,14 @@ int main(void)
 		 * included -- computed zero room and silently dropped, with no
 		 * resync marker the way a dropped image gets (g_need_st/g_have_last).
 		 * That starved the bar exactly during the big/heavy frames a player
-		 * is most likely to have it open for. sst_io_present() now queues the
+		 * is most likely to have it open for. termgfx_termio_present() now queues the
 		 * bar BEFORE the image so it wins the race for stage space; confirm
 		 * its distinctive color attribute ("30;46", set nowhere else) shows
 		 * up somewhere in this drain, not just the giant image bytes. */
 		{
 			int saw_stats_marker = 0;
 			for (i = 0; i < 200; i++) {
-				sst_io_flush();
+				termgfx_termio_flush();
 				if (drain(sv[0], out, sizeof(out)) > 0 && strstr(out, "\x1b[30;46m") != NULL)
 					saw_stats_marker = 1;
 			}
@@ -162,8 +162,8 @@ int main(void)
 		 * "\x1b7"/DECSC ... "\x1b8"/DECRC wrap is the tell; the full-frame
 		 * path never emits it). */
 		{
-			unsigned before = sst_io_frames_dropped();
-			static uint8_t idx2[SST_FB_W * SST_FB_H];
+			unsigned before = termgfx_termio_frames_dropped();
+			static uint8_t idx2[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 			static uint8_t pal2[768];
 			const char *   small_canvas = "\x1b[4;400;640t";   /* back to a
 			                                                    * canvas small
@@ -175,15 +175,15 @@ int main(void)
 			int n;
 
 			assert(send(sv[0], small_canvas, strlen(small_canvas), 0) > 0);
-			sst_io_pump();
+			termgfx_termio_pump();
 
 			memset(idx2, 7, sizeof idx2);   /* flat fill: compresses tiny,
 			                                 * keeps the drained bytes free
 			                                 * of embedded NULs for strstr() */
 			memset(pal2, 0x20, sizeof pal2);
 
-			sst_io_present(idx2, pal2);
-			sst_io_flush();
+			termgfx_termio_present(idx2, pal2);
+			termgfx_termio_flush();
 			n = drain(sv[0], out, sizeof(out));
 			assert(n > 2);
 
@@ -198,7 +198,7 @@ int main(void)
 			assert(strstr(out, "\"1;1;") != NULL);          /* sixel raster attributes */
 			assert(strstr(out, "\x1b" "7") == NULL);        /* not the dirty path's wrap */
 
-			assert(sst_io_frames_dropped() == before);      /* this present did not itself drop */
+			assert(termgfx_termio_frames_dropped() == before);      /* this present did not itself drop */
 		}
 	}
 
@@ -211,30 +211,30 @@ int main(void)
 		size_t k;
 		for (k = 0; k < strlen(jxl_reply); k++) {
 			assert(send(sv[0], jxl_reply + k, 1, 0) == 1);
-			sst_io_pump();
+			termgfx_termio_pump();
 		}
 	}
-	assert(sst_io_jxl_supported() == 1);
+	assert(termgfx_termio_jxl_supported() == 1);
 
 #ifdef WITH_JXL
 	/* Present a changed frame now that the door has confirmed both JXL
 	 * decode support (g_jxl, via the reply just fed) and this build's own
-	 * encoder (WITH_JXL, from unit_sst_io.sh's -DWITH_JXL when libjxl was
+	 * encoder (WITH_JXL, from unit_termgfx_termio.sh's -DWITH_JXL when libjxl was
 	 * found): sst_tier() must switch to JXL, and the wire bytes must carry
 	 * the SyncTERM APC introducer + DrawJXL verb (door_io.c:1938-1957
 	 * door_emit_jxl() pattern) instead of a sixel DCS. The CTDA reply fed
 	 * above (cterm version 1.330) is >= TERMGFX_CTERM_VER_BLOB (1.329), so
 	 * this rides the inline DrawJXLBlob path, not cache-file Store+Draw. */
 	{
-		static uint8_t idx3[SST_FB_W * SST_FB_H];
+		static uint8_t idx3[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 		static uint8_t pal3[768];
 		int            n;
 
 		memset(idx3, 9, sizeof idx3);      /* flat fill: tiny JXL encode either way */
 		memset(pal3, 0x55, sizeof pal3);
 
-		sst_io_present(idx3, pal3);
-		sst_io_flush();
+		termgfx_termio_present(idx3, pal3);
+		termgfx_termio_flush();
 		n = drain(sv[0], out, sizeof(out));
 		assert(n > 2);
 
@@ -253,8 +253,8 @@ int main(void)
 		int n;
 
 		assert(send(sv[0], "\x13", 1, 0) == 1);   /* Ctrl-S again: hide */
-		sst_io_pump();
-		assert(sst_io_stats_visible() == 0);
+		termgfx_termio_pump();
+		assert(termgfx_termio_stats_visible() == 0);
 		n = drain(sv[0], out, sizeof(out));
 		assert(n > 0);
 		assert(strstr(out, "\x1b[K") != NULL);        /* erase-to-EOL on the bar's row */
@@ -267,21 +267,21 @@ int main(void)
 	 * of term_leave. Must run BEFORE the close()+hangup test below --
 	 * that closes sv[0], and this side can't drain anything the door
 	 * writes after that. */
-	sst_io_shutdown();
+	termgfx_termio_shutdown();
 	drain(sv[0], out, sizeof(out));
 	assert(strstr(out, "\x1b[1$~"));                   /* status line restored (type 1) */
 	assert(strstr(out, "\x1b[?25h"));                  /* cursor restored (term_leave) */
 
 	/* hangup: closing our end must be detected by the next pump() as a
-	 * peer EOF, even though sst_io_shutdown() already ran above -- see
-	 * sst_io_pump()'s comment on why it isn't gated on g_active. */
+	 * peer EOF, even though termgfx_termio_shutdown() already ran above -- see
+	 * termgfx_termio_pump()'s comment on why it isn't gated on g_active. */
 	close(sv[0]);
-	sst_io_pump();
-	assert(sst_io_hung_up() == 1);
+	termgfx_termio_pump();
+	assert(termgfx_termio_hung_up() == 1);
 
 	/* idempotency: a second shutdown() (e.g. an atexit-style caller that
 	 * doesn't track whether it already ran) must not crash. */
-	sst_io_shutdown();
+	termgfx_termio_shutdown();
 
 	printf("SST_IO OK\n");
 	return 0;
