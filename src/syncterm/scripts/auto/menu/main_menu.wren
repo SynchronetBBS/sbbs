@@ -42,6 +42,18 @@ class CommentInput is TextInput {
     _onFocus = onFocus
   }
 
+  paintStyle_ {
+    if (parent != null && parent.focused && !allSelected) {
+      return style("default")
+    }
+    return super.paintStyle_
+  }
+
+  fillStyle_ {
+    if (parent != null && parent.focused) return style("default")
+    return super.fillStyle_
+  }
+
   onPaint_() {
     if (parent.focused) {
       super.onPaint_()
@@ -95,6 +107,8 @@ class ClassicFooter is Container {
   }
 
   value { _input.value }
+
+  selectComment() { _input.selectAll() }
 
   copied=(value) {
     _copied = value
@@ -428,6 +442,7 @@ class MainMenuApp {
     }
     _commentReturn = fallback == 0 ? _app.root.focusedChild : _directory
     _footer.comment = _selected.comment
+    _footer.selectComment()
     _app.root.focusedIndex = 2
     return true
   }

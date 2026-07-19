@@ -1052,9 +1052,12 @@ The inactive directory comment is centered across its line.  While the
 directory pane has focus, its selection supplies the OS window title; the
 settings pane restores the bare SyncTERM version.  Editing a comment leaves
 the title from the pane where editing began until focus moves again.  The
-active editor is left-aligned within the middle `screen width - 4` cells and
-uses the normal text-input lightbar and cursor.  Leaving the editor restores
-the centered inactive row immediately, even when its value was unchanged.
+active editor is left-aligned within the middle `screen width - 4` cells.
+Its existing value initially appears selected in the text-input lightbar, so
+typing or deleting replaces the complete comment.  Cursor movement or mouse
+positioning preserves the value and switches to the normal menu colors for
+ordinary editing.  Leaving the editor restores the centered inactive row
+immediately, even when its value was unchanged.
 
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,
@@ -6035,6 +6038,7 @@ t.maxLen   = 64                  // optional cap
 t.mask     = "*"                 // optional display-only mask
 t.onSubmit = Fn.new {|s| /* Enter */ }
 t.onChange = Fn.new {|s| /* per-keystroke */ }
+t.selectAll()                     // optional replace-all entry state
 ----
 
 Keys follow UIFC's line editor.  `Left`, `Right`, `Home`, `End`,
@@ -6048,6 +6052,14 @@ Ctrl-Z opens the focused field's contextual help when one is available.
 focus traversal.  A left click positions the cursor; middle- and right-click
 paste there.  An unconsumed right-click elsewhere is Escape.  Drag events
 fall through to the App's screen-selection handler.
+
+`selectAll()` puts a non-empty value into a transient whole-field selection
+state, reported by the read-only `allSelected` getter.  The next printable,
+keyboard paste, Backspace, Delete, or Ctrl-Y operation replaces the complete
+value.  Cursor movement and mouse positioning preserve the value and dismiss
+the selection before ordinary editing continues; other non-editing key events
+also dismiss it without changing the value.  Assigning `value` clears the
+state, so callers opt into it explicitly after assignment when needed.
 
 `insertMode` reports whether printable input inserts (`true`, the initial
 mode) or overwrites existing characters (`false`).  The mode is shared by

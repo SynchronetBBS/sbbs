@@ -32,6 +32,11 @@ class UiInputTest {
     testInsertTogglesOverwrite_()
     testInsertModeShared_()
     testInsertTextFiltersControls_()
+    testSelectAllTypingReplaces_()
+    testSelectAllMovementPreserves_()
+    testSelectAllDeleteClears_()
+    testSelectAllMousePreserves_()
+    testValueClearsSelection_()
     testBackspace_()
     testBackspaceAtStart_()
     testDelete_()
@@ -152,6 +157,69 @@ class UiInputTest {
     t.insertText_("a\nb\t\u007fc")
     check_(t.value == "abc",
            "TextInput paste path: ignores control characters")
+  }
+
+  static testSelectAllTypingReplaces_() {
+    var t = TextInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.value = "hello"
+    var changes = 0
+    var seen = null
+    t.onChange = Fn.new {|s|
+      changes = changes + 1
+      seen = s
+    }
+    t.selectAll()
+    t.handle(KeyEvent.new(0x58))
+    check_(t.value == "X" && t.cursor == 1 && !t.allSelected &&
+           changes == 1 && seen == "X",
+           "TextInput selectAll: typing replaces once")
+  }
+
+  static testSelectAllMovementPreserves_() {
+    var t = TextInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.value = "hello"
+    t.selectAll()
+    t.handle(KeyEvent.new(Key.left))
+    var moved = t.value == "hello" && t.cursor == 4 && !t.allSelected
+    t.handle(KeyEvent.new(0x58))
+    check_(moved && t.value == "hellXo",
+           "TextInput selectAll: movement preserves before editing")
+  }
+
+  static testSelectAllDeleteClears_() {
+    var backspace = TextInput.new()
+    backspace.value = "hello"
+    backspace.selectAll()
+    backspace.handle(KeyEvent.new(Key.backspace))
+    var deleted = TextInput.new()
+    deleted.value = "hello"
+    deleted.selectAll()
+    deleted.handle(KeyEvent.new(Key.delete))
+    check_(backspace.value == "" && deleted.value == "" &&
+           !backspace.allSelected && !deleted.allSelected,
+           "TextInput selectAll: Backspace and Delete clear value")
+  }
+
+  static testSelectAllMousePreserves_() {
+    var t = TextInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.value = "hello"
+    t.selectAll()
+    var ev = MouseEvent.new(Mouse.button1Click, 3, 1, 3, 1)
+    t.handle(ev)
+    check_(t.value == "hello" && t.cursor == 2 && !t.allSelected,
+           "TextInput selectAll: mouse positioning preserves value")
+  }
+
+  static testValueClearsSelection_() {
+    var t = TextInput.new()
+    t.value = "old"
+    t.selectAll()
+    t.value = "new"
+    check_(t.value == "new" && t.cursor == 3 && !t.allSelected,
+           "TextInput value=: clears select-all state")
   }
 
   static testCtrlZConsumed_() {

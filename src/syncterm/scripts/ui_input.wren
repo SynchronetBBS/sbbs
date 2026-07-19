@@ -46,6 +46,7 @@ class TextInput is Widget {
     _onSubmit  = null
     _onChange  = null
     _mask      = null
+    _allSelected = false
   }
 
   static insertMode_ {
@@ -62,6 +63,7 @@ class TextInput is Widget {
     for (c in s) _chars.add(c)
     _cursor    = _chars.count
     _scrollOff = 0
+    _allSelected = false
     ensureVisible_()
     markDirty()
   }
@@ -72,8 +74,17 @@ class TextInput is Widget {
   cursor { _cursor }
   cursor=(i) {
     var clamped = i.max(0).min(_chars.count)
+    var selectionChanged = clearSelection_()
     if (clamped == _cursor) return
     _cursor = clamped
+    ensureVisible_()
+    if (!selectionChanged) markDirty()
+  }
+
+  allSelected { _allSelected }
+  selectAll() {
+    _allSelected = _chars.count > 0
+    _cursor = _chars.count
     ensureVisible_()
     markDirty()
   }
@@ -131,7 +142,7 @@ class TextInput is Widget {
 
   cursorVisible { true }
   cursorShape { insertMode ? "normal" : "solid" }
-  cursorAttr { style("input.focused").legacyAttr }
+  cursorAttr { fillStyle_.legacyAttr }
   cursorPos {
     if (bounds == null) return null
     var col = _cursor - _scrollOff
@@ -142,10 +153,13 @@ class TextInput is Widget {
 
   // ----- Painting --------------------------------------------------
 
+  paintStyle_ { focused ? style("input.focused") : style("input") }
+  fillStyle_ { paintStyle_ }
+
   onPaint_() {
     var sf  = surface
-    var st  = focused ? style("input.focused") : style("input")
-    Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ", st)
+    var st  = paintStyle_
+    Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ", fillStyle_)
     var w = bounds.w
     var i = 0
     while (i < w && _scrollOff + i < _chars.count) {
@@ -156,6 +170,23 @@ class TextInput is Widget {
   }
 
   // ----- Edit primitives ------------------------------------------
+
+  clearSelection_() {
+    if (!_allSelected) return false
+    _allSelected = false
+    markDirty()
+    return true
+  }
+
+  clearSelectedValue_() {
+    if (!_allSelected) return false
+    _allSelected = false
+    _chars = []
+    _cursor = 0
+    _scrollOff = 0
+    markDirty()
+    return true
+  }
 
   insertOne_(s) {
     if (!insertMode && _cursor < _chars.count) {
@@ -174,12 +205,14 @@ class TextInput is Widget {
   }
 
   insert_(s) {
-    if (insertOne_(s) && _onChange != null) _onChange.call(value)
+    var changed = clearSelectedValue_()
+    if (insertOne_(s)) changed = true
+    if (changed && _onChange != null) _onChange.call(value)
   }
 
   insertText_(text) {
     if (text == null) return
-    var changed = false
+    var changed = clearSelectedValue_()
     for (ch in text) {
       var bytes = ch.bytes
       if (bytes.count > 1 || (bytes[0] >= 0x20 && bytes[0] != 0x7F)) {
@@ -190,6 +223,10 @@ class TextInput is Widget {
   }
 
   backspace_() {
+    if (clearSelectedValue_()) {
+      if (_onChange != null) _onChange.call(value)
+      return
+    }
     if (_cursor == 0) return
     _chars.removeAt(_cursor - 1)
     _cursor = _cursor - 1
@@ -199,6 +236,10 @@ class TextInput is Widget {
   }
 
   delete_() {
+    if (clearSelectedValue_()) {
+      if (_onChange != null) _onChange.call(value)
+      return
+    }
     if (_cursor >= _chars.count) return
     _chars.removeAt(_cursor)
     if (_onChange != null) _onChange.call(value)
@@ -212,6 +253,7 @@ class TextInput is Widget {
   cut_() {
     if (_chars.count == 0) return
     copy_()
+    _allSelected = false
     _chars = []
     _cursor = 0
     _scrollOff = 0
@@ -220,6 +262,10 @@ class TextInput is Widget {
   }
 
   truncate_() {
+    if (clearSelectedValue_()) {
+      if (_onChange != null) _onChange.call(value)
+      return
+    }
     if (_cursor >= _chars.count) return
     while (_chars.count > _cursor) _chars.removeAt(-1)
     if (_onChange != null) _onChange.call(value)
@@ -274,11 +320,13 @@ class TextInput is Widget {
       return true
     }
     if (c == Key.insert) {
+      clearSelection_()
       insertMode = !insertMode
       return true
     }
     if (c == Key.ctrlC || c == Key.ctrlIns) {
       copy_()
+      clearSelection_()
       return true
     }
     if (c == Key.ctrlX || c == Key.shiftDel) {
@@ -294,10 +342,12 @@ class TextInput is Widget {
       return true
     }
     if (c == Key.ctrlZ) {
+      clearSelection_()
       showHelp_()
       return true
     }
     if (c == Key.enter) {
+      clearSelection_()
       if (_onSubmit != null) _onSubmit.call(value)
       return true
     }
@@ -310,6 +360,7 @@ class TextInput is Widget {
       insert_(ke.text)
       return true
     }
+    clearSelection_()
     return false
   }
 
