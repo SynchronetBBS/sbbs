@@ -45,6 +45,7 @@ class UiHelpTest {
     testPreformattedPreservesInlineMarkup_()
     testEscDismisses_()
     testEnterDismisses_()
+    testQuitFallsThrough_()
     testDownScrollsByOne_()
     testUpScrollsByOne_()
     testHomeJumpsToTop_()
@@ -163,6 +164,15 @@ class UiHelpTest {
     h.handle(KeyEvent.new(Key.enter))
     check_(app.modalStack.count == 0,
            "Help: Enter dismisses")
+  }
+
+  static testQuitFallsThrough_() {
+    var app = FakeApp.new()
+    var h = makeHelp_(3, 30, 8)
+    app.modal(h)
+    check_(!h.handle(KeyEvent.new(Key.quit)) &&
+        app.modalStack.count == 1,
+        "Help: window-close key falls through to the App")
   }
 
   // ----- Scroll ---------------------------------------------------

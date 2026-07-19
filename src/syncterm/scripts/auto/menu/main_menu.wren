@@ -948,7 +948,7 @@ class MainMenuApp {
       finishComment_(_footer.value, 0)
     }
     if (_connected && !quitApplication) {
-      while (_app.modalStack.count > 0) _app.popModal()
+      if (!_app.closeModals()) return
       _app.quit()
       return
     }
@@ -961,8 +961,8 @@ class MainMenuApp {
       _confirmingExit = false
     }
     if (confirmed) {
+      if (!_app.closeModals()) return
       if (quitApplication) Menu.quitApplication()
-      while (_app.modalStack.count > 0) _app.popModal()
       _app.quit()
     }
   }

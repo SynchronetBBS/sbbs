@@ -156,6 +156,7 @@ class App {
   // hook caller (typically doterm), which causes the visible flash
   // back to the terminal.
   modal(widget) {
+    if (!_running) return widget
     pushModal(widget)
     while (_modalStack.indexOf(widget) >= 0) {
       if (_runMode == "sync") {
@@ -165,6 +166,20 @@ class App {
       }
     }
     return widget
+  }
+
+  // Dismiss each modal through its normal Escape path.  This lets
+  // owning editors run their close-time persistence before the App
+  // stops.  A modal which refuses to close, such as an editor after a
+  // failed save, leaves the App running so the user can recover.
+  closeModals() {
+    var escape = KeyEvent.new(Key.escape)
+    while (_modalStack.count > 0) {
+      var count = _modalStack.count
+      modalTop.handle(escape)
+      if (_modalStack.count >= count) return false
+    }
+    return true
   }
 
   quit() { _running = false }

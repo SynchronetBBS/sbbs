@@ -991,6 +991,9 @@ The window-close event follows the main menu's normal exit path even while a
 nested editor, prompt, help screen, or offline scrollback view is open.
 After confirmation, `Menu.quitApplication()` sets the process exit latch;
 Escape and pane close buttons still only leave a connected Alt+E menu.
+Before stopping, the menu dismisses nested screens through their normal close
+path so accepted edits reach the owning screen's persistence boundary.  A
+failed close-time save leaves the menu open instead of discarding the edits.
 Accepted UIFC colour changes rebuild the active Wren menu theme immediately.
 Renaming a persisted entry also renames its per-entry cache directory after
 the directory file is written successfully.

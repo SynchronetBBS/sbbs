@@ -44,6 +44,23 @@ class OutsideDismissProbe is Probe {
   closesOnOutsideClick(event) { event == Mouse.button1Click }
 }
 
+class ClosingProbe is Probe {
+  construct new() { super() }
+
+  handle(ev) {
+    if (ev is KeyEvent && ev.code == Key.escape) {
+      parent.popModal()
+      return true
+    }
+    return super.handle(ev)
+  }
+}
+
+class RefusingCloseProbe is Probe {
+  construct new() { super() }
+  handle(ev) { true }
+}
+
 class UiWidgetTest {
   static run() {
     __pass = 0
@@ -110,6 +127,8 @@ class UiWidgetTest {
     testAppPopEmptyReturnsNull_()
     testAppModalTopFallsBackToRoot_()
     testAppModalWidgetInheritsTheme_()
+    testAppCloseModals_()
+    testAppCloseModalsCanFail_()
     testAppKeymapBindUnbind_()
     testAppLayoutNotifiesOnResize_()
     testAppDispatchKeyToFocused_()
@@ -600,6 +619,21 @@ class UiWidgetTest {
     app.pushModal(w)
     check_(w.effectiveTheme == t,
            "App: pushed modal inherits app theme via parent walk")
+  }
+
+  static testAppCloseModals_() {
+    var app = App.new()
+    app.pushModal(ClosingProbe.new())
+    app.pushModal(ClosingProbe.new())
+    check_(app.closeModals() && app.modalStack.count == 0,
+        "App closeModals: dismisses every modal through Escape")
+  }
+
+  static testAppCloseModalsCanFail_() {
+    var app = App.new()
+    app.pushModal(RefusingCloseProbe.new())
+    check_(!app.closeModals() && app.modalStack.count == 1,
+        "App closeModals: leaves a modal which refuses to close")
   }
 
   static testAppKeymapBindUnbind_() {

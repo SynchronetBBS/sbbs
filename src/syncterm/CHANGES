@@ -49,6 +49,7 @@ Restore main-menu pane focus and wheel mouse behavior
 Restore menu window titles and centered directory comments
 Restore operation-specific directory name validation
 Report custom-font capacity before prompting for another font
+Persist accepted nested-menu edits during application exit
 Restore offline scrollback modes, controls, links, and text selection
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support
