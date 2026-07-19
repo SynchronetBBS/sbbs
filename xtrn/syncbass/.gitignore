@@ -7,7 +7,7 @@
 # track here).
 /sky.*
 /readme.txt
-/scummvm
-/scummvm.exe
+/syncscumm
+/syncscumm.exe
 /scummvm.ini
 /*.log

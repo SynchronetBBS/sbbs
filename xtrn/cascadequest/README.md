@@ -5,7 +5,7 @@
 SCI interpreter — as a Synchronet external program (door): an EGA, parser-
 driven quest rendered to the terminal as sixel/JPEG-XL graphics via ScummVM.
 
-This directory (`xtrn/cascadequest/`) is the installed door — the `scummvm`
+This directory (`xtrn/cascadequest/`) is the installed door — the `syncscumm`
 binary and the game data live here. The **source** (the ScummVM engine
 collection plus the Synchronet backend that drives it) lives in
 `src/doors/syncscumm/` of the Synchronet source tree; that one binary plays

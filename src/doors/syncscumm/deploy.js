@@ -6,7 +6,7 @@
 //     jsexec src/doors/syncscumm/deploy.js            (deploy to the live install)
 //     jsexec src/doors/syncscumm/deploy.js <dir> ...  (also deploy to these dirs)
 //
-// ONE BINARY, MANY TITLES: build.sh produces a single `scummvm` binary that
+// ONE BINARY, MANY TITLES: build.sh produces a single `syncscumm` binary that
 // plays every SyncSCUMM title (Flight of the Amazon Queen, Beneath a Steel
 // Sky, ...) -- each title is its own individually-installed xtrn/sync<game>/
 // package (see xtrn/syncqueen/README.md), but every one of them runs the
@@ -26,7 +26,7 @@
 // been fetched yet.
 //
 // Every title is launched DIRECTLY from xtrn.ini, with no lobby (see
-// xtrn/syncqueen/install-xtrn.ini's `cmd =` line: `scummvm%. %f ... queen`,
+// xtrn/syncqueen/install-xtrn.ini's `cmd =` line: `syncscumm%. %f ... queen`,
 // run from the package dir as its own CWD), so the binary must be FLAT in
 // each package dir -- the same reasoning as
 // src/doors/syncmoo1/deploy.js, not the per-target sub-dir SyncRetro's lobby
@@ -61,7 +61,7 @@ var BUNDLE = js.exec_dir + "../../../xtrn/";
 
 function main()
 {
-	var exename = door_exe_name("scummvm", system.platform);
+	var exename = door_exe_name("syncscumm", system.platform);
 	var exe     = door_find_built(js.exec_dir, exename);
 	var ok      = true;
 	var deployed = 0;

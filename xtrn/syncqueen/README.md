@@ -6,7 +6,7 @@ program (door): pilot Joe King, flying movie star Faye Russell into the
 Amazon jungle, rendered to the terminal as sixel/JPEG-XL graphics with sound
 streamed to SyncTERM.
 
-This directory (`xtrn/syncqueen/`) is the installed door — the `scummvm`
+This directory (`xtrn/syncqueen/`) is the installed door — the `syncscumm`
 binary and the game data (`talkie/`, `floppy/`) live here. The **source**
 (the ScummVM engine collection plus the Synchronet backend that drives it)
 lives in `src/doors/syncscumm/` of the Synchronet source tree; that one
@@ -14,7 +14,7 @@ binary plays every SyncSCUMM title, this directory just points it at Queen.
 
 ## Building the door binary
 
-The `scummvm` binary is not produced by the normal Synchronet build; build
+The `syncscumm` binary is not produced by the normal Synchronet build; build
 it separately, then deploy it here.
 
 - A checkout of the **Synchronet source tree** — the build compiles against
@@ -28,8 +28,8 @@ cd src/doors/syncscumm
 ./build.sh                 # Windows: build.bat
 ```
 
-Copy (or symlink) the resulting binary in as `xtrn/syncqueen/scummvm`
-(`scummvm.exe` on Windows).
+Copy (or symlink) the resulting binary in as `xtrn/syncqueen/syncscumm`
+(`syncscumm.exe` on Windows).
 
 ## Installing into Synchronet
 

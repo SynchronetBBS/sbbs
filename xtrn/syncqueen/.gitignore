@@ -7,7 +7,7 @@
 # is a live config, not something to track here).
 /talkie/
 /floppy/
-/scummvm
-/scummvm.exe
+/syncscumm
+/syncscumm.exe
 /scummvm.ini
 /*.log

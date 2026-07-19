@@ -64,4 +64,10 @@ fi
 # VER_REV= : the vendored tree lives inside the sbbs repo; without this,
 # ScummVM's version probe appends the HOST repo's git state ("dirty").
 make -j"$(nproc)" VER_REV=
-ls -la "$HERE/build/scummvm"
+# Rename ScummVM's default "scummvm" output to the door's own name. This IS our
+# build (the Synchronet backend compiled in), so "syncscumm" both brands it and
+# avoids any PATH collision with a system-installed "scummvm" when the xtrn.ini
+# cmd runs it. ScummVM's configure has no exe-name option, so rename after make
+# (the vendored build system is left untouched).
+mv -f "$HERE/build/scummvm" "$HERE/build/syncscumm"
+ls -la "$HERE/build/syncscumm"

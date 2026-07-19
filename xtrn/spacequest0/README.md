@@ -6,7 +6,7 @@ Synchronet external program (door): Roger Wilco wakes aboard Labion Orbital
 Station 10 to find the crew murdered, in an old-fashioned text-parser, 16-color
 adventure, rendered to the terminal as sixel/JPEG-XL graphics via ScummVM.
 
-This directory (`xtrn/spacequest0/`) is the installed door — the `scummvm`
+This directory (`xtrn/spacequest0/`) is the installed door — the `syncscumm`
 binary and the game data live here. The **source** (the ScummVM engine
 collection plus the Synchronet backend that drives it) lives in
 `src/doors/syncscumm/` of the Synchronet source tree; that one binary plays
@@ -31,7 +31,7 @@ pinned sha256 lets you verify any copy is identical.
 
 ## Building the door binary
 
-The `scummvm` binary is not produced by the normal Synchronet build; build it
+The `syncscumm` binary is not produced by the normal Synchronet build; build it
 separately (it needs the AGI engine enabled — it is, in `build.sh`), then
 deploy it here.
 
