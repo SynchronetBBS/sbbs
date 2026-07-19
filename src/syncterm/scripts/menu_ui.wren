@@ -115,7 +115,7 @@ class MenuUi {
     p.helpText = helpText
     p.input.maxLen = maxLen
     if (masked) p.input.mask = "*"
-    p.bounds = Popup.centeredBounds_(message, 2, 34)
+    p.sizeForInput(maxLen, 34)
     p.onDismiss = Fn.new {|value| app.quit() }
     app.pushModal(p)
     app.runSync()
@@ -293,7 +293,7 @@ class MenuUi {
     p.helpText = helpText
     p.input.maxLen = maxLen
     if (masked) p.input.mask = "*"
-    p.bounds = Popup.centeredBounds_(message, 2, 34)
+    p.sizeForInput(maxLen, 34)
     app.modal(p)
     return p.result
   }

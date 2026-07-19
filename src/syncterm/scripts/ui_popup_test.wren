@@ -6,7 +6,7 @@
 import "ui_widget" for Rect, Container
 import "ui_popup"  for Alert, Confirm, Prompt, Find, Popup
 import "menu_ui" for MenuUi, ModalPane, StandaloneChoice
-import "syncterm"  for KeyEvent, Key
+import "syncterm"  for KeyEvent, Key, Screen
 
 class FakeApp {
   construct new() {
@@ -85,6 +85,7 @@ class UiPopupTest {
     testConfirmUnrecognizedKeyDoesNotDismiss_()
     testPromptConstruction_()
     testPromptLongInitialShowsEnd_()
+    testPromptSizesForInput_()
     testPromptEnterReturnsValue_()
     testPromptEscReturnsNull_()
     testPromptForwardsTypingToInput_()
@@ -98,6 +99,8 @@ class UiPopupTest {
     testMenuCommandChoiceProtectsBlankRow_()
     testMenuCommandChoiceCompatibilityAliases_()
     testMenuPromptCarriesHelp_()
+    testMenuPromptKeepsMinimumWidth_()
+    testMenuPromptUsesFieldLength_()
     testStandaloneChoiceEscReturnsNull_()
     testModalPaneEscDismisses_()
 
@@ -234,6 +237,16 @@ class UiPopupTest {
            "Prompt: long initial value shows its end and cursor")
   }
 
+  static testPromptSizesForInput_() {
+    var p = Prompt.new("URI", "")
+    p.title = "Web List URI"
+    p.sizeForInput(1024, 34)
+    var size = Screen.size
+    check_(p.bounds.w == size[0] - 4 && p.bounds.right + 2 <= size[0] &&
+           p.input.bounds.w == p.bounds.w - 4,
+           "Prompt.sizeForInput: long fields use available screen width")
+  }
+
   static testPromptEnterReturnsValue_() {
     var app = FakeApp.new()
     var p   = Prompt.new("Name?", "abc")
@@ -364,6 +377,21 @@ class UiPopupTest {
     MenuUi.prompt(app, "Name", "Name", "", 20, false, "# Name Help")
     check_(app.last.helpText == "# Name Help",
            "MenuUi.prompt: optional help reaches the prompt")
+  }
+
+  static testMenuPromptKeepsMinimumWidth_() {
+    var app = EscapeFakeApp.new()
+    MenuUi.prompt(app, "Name", "Name", "", 20, false)
+    var expected = 34.min((Screen.size[0] - 4).max(1))
+    check_(app.last.bounds.w == expected,
+           "MenuUi.prompt: short fields retain the standard minimum width")
+  }
+
+  static testMenuPromptUsesFieldLength_() {
+    var app = EscapeFakeApp.new()
+    MenuUi.prompt(app, "Web List URI", "URI", "", 1024, false)
+    check_(app.last.bounds.w == Screen.size[0] - 4,
+           "MenuUi.prompt: maxLen determines the available field width")
   }
 
   static testStandaloneChoiceEscReturnsNull_() {

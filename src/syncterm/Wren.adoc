@@ -6330,7 +6330,12 @@ Backspace, or Delete replaces it, while cursor movement or mouse positioning
 preserves it and begins ordinary editing.  `Enter` in the input or on OK
 submits the value; `Esc` or Cancel returns `null`.  The read-only `input`
 getter exposes that input so trusted UI code can set `maxLen` or a display-only
-`mask` before presenting the popup.
+`mask` before presenting the popup.  `sizeForInput(inputWidth)` and
+`sizeForInput(inputWidth, minimumWidth)` size the field for the requested
+capacity and cap the complete popup to the standard screen margins.  The
+`MenuUi.prompt` wrappers use the field's `maxLen` for this width, matching UIFC
+input sizing: short fields retain the normal minimum while URI, path, password,
+and other long fields use the available screen width.
 
 `Find` — compact single-row variant of Prompt.  Title sits in the
 top frame border, the input fills the entire `innerBounds` row (no

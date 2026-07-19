@@ -158,9 +158,10 @@ class Popup is Pane {
   }
   static centeredBounds_(message, extraRows, minW, preformatted) {
     var sz   = Screen.size                    // [w, h]
-    var maxW = (sz[0] - 4).max(minW)
+    var maxW = (sz[0] - 4).max(1)
+    var minimumW = minW.min(maxW)
     var longest = longestHardLine_(message)
-    var w  = (longest + 4).max(minW).min(maxW)   // +4 = frame(2)+padding(2)
+    var w  = (longest + 4).max(minimumW).min(maxW) // +4 = frame(2)+padding(2)
     var iw = (w - 4).max(1)
     var rows = 1
     if (message != null) {
@@ -529,10 +530,20 @@ class Prompt is Popup {
   // mask before presenting the prompt.
   input { _input }
 
+  // Size the popup around a requested input width, then cap it to the
+  // standard screen margins.  Four cells account for the frame and
+  // content padding; title width is an independent outer constraint.
+  sizeForInput(inputWidth) { sizeForInput(inputWidth, 30) }
+  sizeForInput(inputWidth, minimumWidth) {
+    var requested = (inputWidth + 4).max(minimumWidth)
+    requested = requested.max(title.count + 6)
+    bounds = Popup.centeredBounds_(message, 2, requested)
+  }
+
   static show(app, message) { show(app, message, null) }
   static show(app, message, initial) {
     var p = Prompt.new(message, initial)
-    p.bounds = Popup.centeredBounds_(message, 2, 30)
+    p.sizeForInput(initial == null ? 0 : initial.count)
     app.modal(p)
     return p.result
   }
@@ -540,7 +551,7 @@ class Prompt is Popup {
   static runStandalone(app, message) { runStandalone(app, message, null) }
   static runStandalone(app, message, initial) {
     var p = Prompt.new(message, initial)
-    p.bounds = Popup.centeredBounds_(message, 2, 30)
+    p.sizeForInput(initial == null ? 0 : initial.count)
     return Popup.runStandalone_(app, p)
   }
 
