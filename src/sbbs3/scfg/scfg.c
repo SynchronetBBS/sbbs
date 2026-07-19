@@ -73,8 +73,10 @@ enum import_list_type determine_msg_list_type(const char* path)
 {
 	const char* fname = getfname(path);
 
-	if (stricmp(fname, "subs.txt") == 0)
+	if (wildmatchi(fname, "*subs.txt", /* path: */ false))
 		return IMPORT_LIST_TYPE_SUBS_TXT;
+	if (wildmatchi(fname, "*subs.ini", /* path: */ false))
+		return IMPORT_LIST_TYPE_SUBS_INI;
 	if (stricmp(fname, "areas.bbs") == 0)
 		return IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS;
 	if (stricmp(fname, "control.dat") == 0)
