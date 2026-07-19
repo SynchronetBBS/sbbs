@@ -94,6 +94,7 @@ enum {
 #include "uifcinit.h"
 #include "window.h"
 #include "wren_menu_host.h"
+#include "wren_picker_host.h"
 #include "wren_host.h"
 #include "xpbeep.h"
 
@@ -2468,6 +2469,10 @@ main(int argc, char **argv)
 		return 1;
 	}
 	atexit(wren_menu_host_shutdown);
+	if (!wren_picker_host_init())
+		fputs("Unable to initialize the Wren file picker\n", stderr);
+	else
+		atexit(wren_picker_host_shutdown);
 
 #ifdef __unix__
 	umask(077);

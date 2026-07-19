@@ -471,7 +471,8 @@ $(MTOBJODIR)$(DIRSEP)wren_host$(OFILE): CFLAGS += -Ire1
 #                                    subdirectory under auto/ names a
 #                                    framework event.  `menu` loads once in
 #                                    the trusted persistent VM; `connected`
-#                                    loads in each session VM.
+#                                    loads in each session VM; `picker` loads
+#                                    once in its trusted VM.
 #
 # Developer-only files are not embedded:
 #   * scripts/auto/connected/runtests.wren — Alt+T hotkey trigger
@@ -486,7 +487,8 @@ WREN_SCRIPTS    := $(filter-out scripts/wrentest.wren, \
                                     $(wildcard scripts/*.wren)))) \
                    $(filter-out scripts/auto/connected/runtests.wren, \
                                 $(wildcard scripts/auto/connected/*.wren)) \
-                   $(wildcard scripts/auto/menu/*.wren)
+                   $(wildcard scripts/auto/menu/*.wren) \
+                   $(wildcard scripts/auto/picker/*.wren)
 WREN_EMBED_GEN  := $(MTOBJODIR)$(DIRSEP)wren_embed_gen$(EXEFILE)
 WREN_EMBED_SRC  := $(MTOBJODIR)$(DIRSEP)embedded_scripts.c
 WREN_EMBED_OBJ  := $(MTOBJODIR)$(DIRSEP)embedded_scripts$(OFILE)

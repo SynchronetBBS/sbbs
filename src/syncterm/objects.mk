@@ -1,6 +1,7 @@
 OBJS = \
                         $(MTOBJODIR)$(DIRSEP)ansi_filter$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)bbslist$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)wren_picker_host$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)uifcinit$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)filepick$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)fonts$(OFILE) \
@@ -17,4 +18,3 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)webget$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)syncterm$(OFILE)
-

@@ -437,9 +437,8 @@ void wren_bind_sweep_pending_timers(void);
  * `event` is NULL for pure library modules (live at scripts/ root,
  * loaded only on import) and "<eventname>" for auto-load entry scripts
  * (live under scripts/auto/<event>/, run when the host fires that
- * event).  Currently only "connected" exists; future events (startup,
- * ssh, ui, …) get their own auto/ subdirectory and matching string.
- * Inferred at build time by wren_embed_gen from the file's path. */
+ * event).  The current events are "connected", "menu", and "picker".
+ * They are inferred at build time by wren_embed_gen from the file's path. */
 struct embedded_script {
 	const char *name;
 	const char *source;
