@@ -1329,6 +1329,32 @@ int sst_io_init(int argc, char **argv)
 		}
 	}
 
+	/* Diagnostic stderr capture (off by default): on a BBS-launched door the
+	 * process's stderr is dead, so ScummVM's own diagnostics -- including a
+	 * fatal error() an engine prints just before it aborts -- go nowhere.
+	 * Touch-file gated like the trace/wirecap gates below: create the file
+	 * <data-dir>/syncscumm/stderr (SBBSDATA for a real door; dev/standalone
+	 * fallback ./syncscumm-stderr) to redirect stderr to a durable file.
+	 * Placed before resolve_fd()'s headless early-return so it also covers a
+	 * boot test. sst_plat_redirect_stderr() keeps the platform #ifdef out of
+	 * this file (see sst_plat.h). */
+	{
+		const char *data_dir = getenv("SBBSDATA");
+		char        touch[512];
+
+		if (data_dir != NULL && *data_dir != '\0')
+			snprintf(touch, sizeof touch, "%s/syncscumm/stderr", data_dir);
+		else
+			snprintf(touch, sizeof touch, "./syncscumm-stderr");   /* dev/standalone fallback */
+
+		if (sst_plat_file_exists(touch)) {
+			char path[64];
+
+			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.stderr", sst_plat_getpid());
+			sst_plat_redirect_stderr(path);
+		}
+	}
+
 	if (!resolve_fd(argc, argv))
 		return 0;
 	g_active = 1;
