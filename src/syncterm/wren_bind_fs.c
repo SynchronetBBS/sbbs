@@ -1019,7 +1019,7 @@ fn_Host_uploadPath(WrenVM *vm)
 	wrenSetSlotString(vm, 0, st->bbs->uldir);
 }
 
-/* Resolve `slot`'s value into an initial-directory string for the
+/* Resolve `slot`'s value into an initial-path string for the
  * filepick widget.  Accepts:
  *   - String: used verbatim.
  *   - Directory foreign: uses its resolved path (handles Cache's
@@ -1109,8 +1109,8 @@ push_picker_save_file(WrenVM *vm, int slot, const char *picked,
 	return wf;
 }
 
-/* Host.pickFile(initialDir, mask, opts) — wraps uifc/filepick's
- * single-file picker.  initialDir may be a String path, a Directory
+/* Host.pickFile(initialPath, mask, opts) — wraps uifc/filepick's
+ * single-file picker.  initialPath may be a String path, a Directory
  * foreign (uses its path; handles Cache lazy-resolve), or null
  * (defaults to bbs->uldir).  mask may be null (defaults to "*").
  * opts is the UIFC_FP_* bitmask.

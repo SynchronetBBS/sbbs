@@ -173,9 +173,9 @@ uifcfilepick_common(const char *title, struct file_pick *fp,
 
 int
 uifcfilepick(const char *title, struct file_pick *fp,
-    const char *initial_dir, const char *default_mask, int opts)
+    const char *initial_path, const char *default_mask, int opts)
 {
-	return uifcfilepick_common(title, fp, initial_dir, default_mask,
+	return uifcfilepick_common(title, fp, initial_path, default_mask,
 	    opts, false);
 }
 

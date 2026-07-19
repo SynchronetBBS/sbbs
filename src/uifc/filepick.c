@@ -48,6 +48,7 @@ struct fp_state {
 	char         path [MAX_PATH * 4 + 1];   /* current directory, trailing slash */
 	char         mask [MAX_PATH * 4 + 1];   /* current glob mask */
 	char         entry[MAX_PATH * 8 + 1];   /* CURRENT_PATH input field text */
+	char         initial_file[MAX_PATH * 4 + 1]; /* initial file-list selection */
 	char        *prev_path;                 /* fallback for unreadable directory */
 
 	struct fp_entry *dirs;
@@ -1033,6 +1034,7 @@ static int fp_refresh_lists(struct fp_state *s)
 {
 	glob_t fgl, dgl;
 	int    rc;
+	size_t i;
 
 	fp_normalize_path(s);
 
@@ -1080,6 +1082,21 @@ static int fp_refresh_lists(struct fp_state *s)
 
 	s->dir_cur = s->dir_bar = 0;
 	s->file_cur = s->file_bar = 0;
+	if (s->initial_file[0] != '\0') {
+		for (i = 0; i < s->file_count; i++) {
+#ifdef _WIN32
+			if (stricmp(s->files[i].name, s->initial_file) != 0)
+#else
+			if (strcmp(s->files[i].name, s->initial_file) != 0)
+#endif
+				continue;
+			s->file_cur = (int)i;
+			s->file_bar = s->list_height > 0 && i >= (size_t)s->list_height
+			    ? s->list_height - 1 : (int)i;
+			break;
+		}
+		s->initial_file[0] = '\0';
+	}
 	fp_refresh_markers(s);
 	return 0;
 }
@@ -1846,7 +1863,7 @@ static int fp_run_browser(struct fp_state *s, struct file_pick *fp)
 /* ------------------------------------------------------------------ */
 
 static int fp_state_init(struct fp_state *s, uifcapi_t *api, enum fp_mode mode,
-                         const char *title, const char *dir, const char *mask, int opts)
+                         const char *title, const char *path, const char *mask, int opts)
 {
 	memset(s, 0, sizeof(*s));
 	s->api  = api;
@@ -1857,8 +1874,14 @@ static int fp_state_init(struct fp_state *s, uifcapi_t *api, enum fp_mode mode,
 	s->title = title ? title : "";
 
 	{
-		const char *src = (dir == NULL || dir[0] == 0) ? "." : dir;
+		const char *src = (path == NULL || path[0] == 0) ? "." : path;
 		FULLPATH(s->path, src, sizeof(s->path));
+	}
+	if (mode == FP_MODE_PICK && fexist(s->path) && !isdir(s->path)) {
+		char *name = getfname(s->path);
+
+		SAFECOPY(s->initial_file, name);
+		*name = '\0';
 	}
 	backslash(s->path);
 
@@ -1909,7 +1932,7 @@ static void fp_state_destroy(struct fp_state *s)
 /* ------------------------------------------------------------------ */
 
 static int fp_run(uifcapi_t *api, const char *title, struct file_pick *fp,
-                  const char *dir, const char *mask, int opts, enum fp_mode mode)
+                  const char *path, const char *mask, int opts, enum fp_mode mode)
 {
 	struct fp_state s;
 	int             rc;
@@ -1923,7 +1946,7 @@ static int fp_run(uifcapi_t *api, const char *title, struct file_pick *fp,
 	    && (opts & (UIFC_FP_ALLOWENTRY | UIFC_FP_OVERPROMPT | UIFC_FP_CREATPROMPT)))
 		return -1;
 
-	if (fp_state_init(&s, api, mode, title, dir, mask, opts) < 0)
+	if (fp_state_init(&s, api, mode, title, path, mask, opts) < 0)
 		return -1;
 
 	hold_update = TRUE;
@@ -1939,10 +1962,10 @@ static int fp_run(uifcapi_t *api, const char *title, struct file_pick *fp,
 }
 
 int filepick(uifcapi_t *api, const char *title, struct file_pick *fp,
-             const char *initial_dir, const char *default_mask, int opts)
+             const char *initial_path, const char *default_mask, int opts)
 {
 	enum fp_mode mode = (opts & UIFC_FP_DIRSEL) ? FP_MODE_DIRSEL : FP_MODE_PICK;
-	return fp_run(api, title, fp, initial_dir, default_mask, opts, mode);
+	return fp_run(api, title, fp, initial_path, default_mask, opts, mode);
 }
 
 int filepick_multi(uifcapi_t *api, const char *title, struct file_pick *fp,

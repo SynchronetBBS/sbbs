@@ -4218,13 +4218,15 @@ pre-bound from these at module load.
   scripts can't enumerate `UploadPath` or open files from it
   directly.
 
-| `Host.pickFile(initialDir, mask, opts)`
+| `Host.pickFile(initialPath, mask, opts)`
 | User-consent escape hatch for "upload from anywhere": invokes
   uifc's filepick UI and returns a `File` whose path is the
   absolute path the user picked, or `null` on cancel.
-  `initialDir` may be a String path, a `Directory` foreign (uses
+  `initialPath` may be a String path, a `Directory` foreign (uses
   its path; handles `Cache` lazy-resolve), or `null` (defaults
-  to `BBS.ulDir`).  `mask` may be `null` (defaults to `*`).
+  to `BBS.ulDir`).  An existing file path opens its containing
+  directory with that file selected.  `mask` may be `null` (defaults
+  to `*`).
   `opts` is a bitmask of the C-side `UIFC_FP_*` flags (see
   `uifc/filepick.h`).  The returned `File`'s path bypasses the
   relaxed-name policy — the picker UI is the sandbox boundary,
@@ -4232,7 +4234,7 @@ pre-bound from these at module load.
   read-only and carries a `.token` consent token (see "Picker consent
   tokens" below) when the per-installation signing key is loaded.
 
-| `Host.pickFile(initialDir, mask, opts, title)`
+| `Host.pickFile(initialPath, mask, opts, title)`
 | The same consent picker with a caller-supplied title String.  The
   title changes only the picker presentation and grants no additional
   file authority.

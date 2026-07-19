@@ -828,7 +828,9 @@ class SettingsMenu {
         } else {
           app.releaseFocus()
           var title = "%(fontSizeName_(value)) %(font.name)"
-          var file = Host.pickFile(".", fontMask_(value), 1, title)
+          var path = font.path(value)
+          var file = Host.pickFile(path == null ? "." : path,
+              fontMask_(value), 1, title)
           app.restoreFocus()
           if (file != null) font.setFile(value, file)
         }

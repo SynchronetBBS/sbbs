@@ -8,6 +8,8 @@
  * filepick() — single-file (or single-directory) browser.
  * filepick_multi() — multi-file browser; user tags any number of files
  *   from any number of directories, then OK confirms the whole batch.
+ * filepick() accepts an existing file as its initial path and opens the
+ * containing directory with that file highlighted.
  *
  * Both populate fp->files (count) and fp->selected (heap array of full paths)
  * and must be released with filepick_free().
@@ -39,7 +41,7 @@ struct file_pick {
 };
 
 int filepick      (uifcapi_t *api, const char *title, struct file_pick *fp,
-                   const char *initial_dir, const char *default_mask, int opts);
+                   const char *initial_path, const char *default_mask, int opts);
 int filepick_multi(uifcapi_t *api, const char *title, struct file_pick *fp,
                    const char *initial_dir, const char *default_mask, int opts);
 int filepick_free (struct file_pick *fp);
