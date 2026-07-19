@@ -26,7 +26,7 @@
 /* The door's platform seam (monotonic clock, sleep) -- keeps this file free of
  * <sys/time.h>/<unistd.h>/gettimeofday/usleep, none of which exist under MSVC.
  * Header-only prototypes over stdint, so no forbidden.h ordering concern. */
-#include "sst_plat.h"
+#include "../../termgfx/sst_plat.h"
 
 /* xpdev's ini_file.h (-> genwrap.h) declares things like strupr()/strlwr()
  * and uses printf in an attribute -- names common/forbidden.h poisons into
@@ -97,7 +97,14 @@
 #include "common/str.h"
 
 extern "C" {
-#include "sst_io.h"
+#include "../../termgfx/termgfx_termio.h"
+
+/* sst_select_datadir(): SyncSCUMM's own Talkie/Floppy data-set selection --
+ * a door-specific helper that lived in the retired sst_io.h and is not part
+ * of the shared termgfx_termio surface (other termgfx doors have no such
+ * concept). Declared here, door-side; defined in termgfx/termgfx_termio.c
+ * (moved there with the rest of the engine body, name unchanged). */
+const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
 }
 
 class OSystem_Synchronet : public ModularMixerBackend, public ModularGraphicsBackend, Common::EventSource {
@@ -190,13 +197,13 @@ static void resolveSubtitles() {
 	// to kSessionDomain -- the same domain ScummVM's own "-n"/"--subtitles"
 	// command-line flag would use for this key (base/commandLine.cpp's
 	// sessionSettings[] list), i.e. never saved to disk, exactly like a
-	// command-line override. sst_io_audio_available() answers for the
+	// command-line override. termgfx_termio_audio_available() answers for the
 	// SESSION, not just the terminal: a sysop "[audio] enabled = false"
 	// answers instantly with no probe at all, otherwise it briefly waits for
-	// the terminal's capability reply (see sst_io.h) -- a confirmed digital
+	// the terminal's capability reply (see termgfx_termio.h) -- a confirmed digital
 	// audio tier resolves off, anything else -- tone-only, silent, headless
 	// -- resolves on.
-	bool audio = sst_io_audio_available() != 0;
+	bool audio = termgfx_termio_audio_available() != 0;
 	ConfMan.setBool("subtitles", !audio, Common::ConfigManager::kSessionDomain);
 	fputs(audio ? "syncscumm: subtitles auto -> off (audio available this session)\n"
 	            : "syncscumm: subtitles auto -> on (no audio this session)\n", stderr);
@@ -239,7 +246,7 @@ static void resolveVolumes() {
 // Save, Load, Options -> Volume, Quit). ScummVM's own "MENU" action defaults to
 // the keyboard "Menu" key, which no terminal sends, so the door provides this
 // instead -- a control byte, so it works on every terminal, not only kitty/
-// evdev. The key is intercepted before the engine (sst_io.c) and delivered as
+// evdev. The key is intercepted before the engine (termgfx_termio.c) and delivered as
 // EVENT_MAINMENU (pollEvent, below). Default: Ctrl-G (free in Drascula/SCI/AGI;
 // in SCUMM it takes over the "very fast mode" toggle, leaving Ctrl-F "fast mode"
 // intact). Configurable per package: syncscumm.ini "[input] menu_key =
@@ -264,7 +271,7 @@ static void resolveMenuKey() {
 				letter = *p;
 		}
 	}
-	sst_io_set_menu_key(letter);
+	termgfx_termio_set_menu_key(letter);
 	if (letter)
 		fprintf(stderr, "syncscumm: GMM hotkey: Ctrl-%c\n", letter - 'a' + 'A');
 	else
@@ -282,8 +289,8 @@ void OSystem_Synchronet::initBackend() {
 	// After resolveSubtitles(), deliberately: that is what decides whether
 	// this session will hear audio -- the sysop switch first, with no
 	// blocking at all when it is off, otherwise a bounded wait for the
-	// terminal's capability reply (see sst_io.h) -- and the answer decides
-	// whether sst_io_audio_stream() streams or discards what we pull.
+	// terminal's capability reply (see termgfx_termio.h) -- and the answer decides
+	// whether termgfx_termio_audio_stream() streams or discards what we pull.
 	_mixerManager = new SyncscummMixerManager();
 	_mixerManager->init();
 	_graphicsManager = new SyncscummTermGraphicsManager();
@@ -294,13 +301,13 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 	((DefaultTimerManager *)getTimerManager())->checkTimers();
 	((SyncscummMixerManager *)_mixerManager)->tick();
 
-	sst_io_pump();
+	termgfx_termio_pump();
 	// Retry any frame a pacing/backpressure gate stranded on a now-static
 	// screen (F5 panel, half-erased speech-toggle X): present() only fires
 	// off the engine's own dirty flag, so nothing else would ever retry it.
-	// Every poll, even on a static screen -- see sst_io_tick()'s doc comment.
-	sst_io_tick();
-	if (sst_io_quit_requested() || sst_io_hung_up()) {
+	// Every poll, even on a static screen -- see termgfx_termio_tick()'s doc comment.
+	termgfx_termio_tick();
+	if (termgfx_termio_quit_requested() || termgfx_termio_hung_up()) {
 		static bool sentQuit = false;
 		if (!sentQuit) {
 			sentQuit = true;
@@ -310,24 +317,24 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 	}
 
 	// Ctrl+<menu_letter> (default Ctrl-G) opens ScummVM's Global Main Menu in
-	// every engine: sst_io.c reserved the key; deliver it as EVENT_MAINMENU,
+	// every engine: termgfx_termio.c reserved the key; deliver it as EVENT_MAINMENU,
 	// which the DefaultEventManager turns into openMainMenuDialog().
-	if (sst_io_menu_requested()) {
+	if (termgfx_termio_menu_requested()) {
 		event.type = Common::EVENT_MAINMENU;
 		return true;
 	}
 
-	sst_input_event_t iev;
-	if (sst_io_next_event(&iev)) {
+	termgfx_input_event_t iev;
+	if (termgfx_termio_next_event(&iev)) {
 		switch (iev.type) {
-		case SST_EV_MOUSE_MOVE:
+		case TERMGFX_EV_MOUSE_MOVE:
 			_graphicsManager->warpMouse(iev.x, iev.y);   /* compositor draws the cursor here */
 			event.type = Common::EVENT_MOUSEMOVE;
 			event.mouse = Common::Point(iev.x, iev.y);
 			return true;
-		case SST_EV_MOUSE_DOWN:
-		case SST_EV_MOUSE_UP: {
-			bool down = (iev.type == SST_EV_MOUSE_DOWN);
+		case TERMGFX_EV_MOUSE_DOWN:
+		case TERMGFX_EV_MOUSE_UP: {
+			bool down = (iev.type == TERMGFX_EV_MOUSE_DOWN);
 			event.mouse = Common::Point(iev.x, iev.y);
 			if (iev.button == 0)
 				event.type = down ? Common::EVENT_LBUTTONDOWN : Common::EVENT_LBUTTONUP;
@@ -337,49 +344,49 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 				event.type = down ? Common::EVENT_MBUTTONDOWN : Common::EVENT_MBUTTONUP;
 			return true;
 		}
-		case SST_EV_WHEEL:
+		case TERMGFX_EV_WHEEL:
 			event.mouse = Common::Point(iev.x, iev.y);
 			event.type = (iev.wheel < 0) ? Common::EVENT_WHEELUP : Common::EVENT_WHEELDOWN;
 			return true;
-		case SST_EV_KEY_DOWN:
-		case SST_EV_KEY_UP: {
+		case TERMGFX_EV_KEY_DOWN:
+		case TERMGFX_EV_KEY_UP: {
 			Common::KeyCode kc;
 			uint16 ascii = (iev.ascii != 0) ? (uint16)iev.ascii : 0;
 			switch (iev.keycode) {
-			case SST_KEY_UP: kc = Common::KEYCODE_UP; break;
-			case SST_KEY_DOWN: kc = Common::KEYCODE_DOWN; break;
-			case SST_KEY_LEFT: kc = Common::KEYCODE_LEFT; break;
-			case SST_KEY_RIGHT: kc = Common::KEYCODE_RIGHT; break;
-			case SST_KEY_HOME: kc = Common::KEYCODE_HOME; break;
-			case SST_KEY_END: kc = Common::KEYCODE_END; break;
-			case SST_KEY_PAGEUP: kc = Common::KEYCODE_PAGEUP; break;
-			case SST_KEY_PAGEDOWN: kc = Common::KEYCODE_PAGEDOWN; break;
-			case SST_KEY_INSERT: kc = Common::KEYCODE_INSERT; break;
-			case SST_KEY_DELETE: kc = Common::KEYCODE_DELETE; break;
-			case SST_KEY_KP5: kc = Common::KEYCODE_KP5; break;
-			case SST_KEY_ENTER: kc = Common::KEYCODE_RETURN; ascii = Common::ASCII_RETURN; break;
-			case SST_KEY_ESCAPE: kc = Common::KEYCODE_ESCAPE; ascii = Common::ASCII_ESCAPE; break;
-			case SST_KEY_BACKSPACE: kc = Common::KEYCODE_BACKSPACE; ascii = Common::ASCII_BACKSPACE; break;
-			case SST_KEY_TAB: kc = Common::KEYCODE_TAB; ascii = Common::ASCII_TAB; break;
-			case SST_KEY_F1: kc = Common::KEYCODE_F1; break;
-			case SST_KEY_F2: kc = Common::KEYCODE_F2; break;
-			case SST_KEY_F3: kc = Common::KEYCODE_F3; break;
-			case SST_KEY_F4: kc = Common::KEYCODE_F4; break;
-			case SST_KEY_F5: kc = Common::KEYCODE_F5; break;
-			case SST_KEY_F6: kc = Common::KEYCODE_F6; break;
-			case SST_KEY_F7: kc = Common::KEYCODE_F7; break;
-			case SST_KEY_F8: kc = Common::KEYCODE_F8; break;
-			case SST_KEY_F9: kc = Common::KEYCODE_F9; break;
+			case TERMGFX_KEY_UP: kc = Common::KEYCODE_UP; break;
+			case TERMGFX_KEY_DOWN: kc = Common::KEYCODE_DOWN; break;
+			case TERMGFX_KEY_LEFT: kc = Common::KEYCODE_LEFT; break;
+			case TERMGFX_KEY_RIGHT: kc = Common::KEYCODE_RIGHT; break;
+			case TERMGFX_KEY_HOME: kc = Common::KEYCODE_HOME; break;
+			case TERMGFX_KEY_END: kc = Common::KEYCODE_END; break;
+			case TERMGFX_KEY_PAGEUP: kc = Common::KEYCODE_PAGEUP; break;
+			case TERMGFX_KEY_PAGEDOWN: kc = Common::KEYCODE_PAGEDOWN; break;
+			case TERMGFX_KEY_INSERT: kc = Common::KEYCODE_INSERT; break;
+			case TERMGFX_KEY_DELETE: kc = Common::KEYCODE_DELETE; break;
+			case TERMGFX_KEY_KP5: kc = Common::KEYCODE_KP5; break;
+			case TERMGFX_KEY_ENTER: kc = Common::KEYCODE_RETURN; ascii = Common::ASCII_RETURN; break;
+			case TERMGFX_KEY_ESCAPE: kc = Common::KEYCODE_ESCAPE; ascii = Common::ASCII_ESCAPE; break;
+			case TERMGFX_KEY_BACKSPACE: kc = Common::KEYCODE_BACKSPACE; ascii = Common::ASCII_BACKSPACE; break;
+			case TERMGFX_KEY_TAB: kc = Common::KEYCODE_TAB; ascii = Common::ASCII_TAB; break;
+			case TERMGFX_KEY_F1: kc = Common::KEYCODE_F1; break;
+			case TERMGFX_KEY_F2: kc = Common::KEYCODE_F2; break;
+			case TERMGFX_KEY_F3: kc = Common::KEYCODE_F3; break;
+			case TERMGFX_KEY_F4: kc = Common::KEYCODE_F4; break;
+			case TERMGFX_KEY_F5: kc = Common::KEYCODE_F5; break;
+			case TERMGFX_KEY_F6: kc = Common::KEYCODE_F6; break;
+			case TERMGFX_KEY_F7: kc = Common::KEYCODE_F7; break;
+			case TERMGFX_KEY_F8: kc = Common::KEYCODE_F8; break;
+			case TERMGFX_KEY_F9: kc = Common::KEYCODE_F9; break;
 			default:
 				/* printable / control ASCII: keycode == the byte */
 				kc = (Common::KeyCode)iev.keycode;
 				break;
 			}
 			byte flags = 0;
-			if (iev.mods & SST_MOD_CTRL)  flags |= Common::KBD_CTRL;
-			if (iev.mods & SST_MOD_ALT)   flags |= Common::KBD_ALT;
-			if (iev.mods & SST_MOD_SHIFT) flags |= Common::KBD_SHIFT;
-			event.type = (iev.type == SST_EV_KEY_DOWN) ? Common::EVENT_KEYDOWN : Common::EVENT_KEYUP;
+			if (iev.mods & TERMGFX_MOD_CTRL)  flags |= Common::KBD_CTRL;
+			if (iev.mods & TERMGFX_MOD_ALT)   flags |= Common::KBD_ALT;
+			if (iev.mods & TERMGFX_MOD_SHIFT) flags |= Common::KBD_SHIFT;
+			event.type = (iev.type == TERMGFX_EV_KEY_DOWN) ? Common::EVENT_KEYDOWN : Common::EVENT_KEYUP;
 			event.kbd = Common::KeyState(kc, ascii, flags);
 			return true;
 		}
@@ -441,13 +448,13 @@ void OSystem_Synchronet::addSysArchivesToSearchSet(Common::SearchSet &s, int pri
 }
 
 int main(int argc, char *argv[]) {
-	sst_io_init(argc, argv);
-	atexit(sst_io_shutdown);   /* quit()'s exit(0) still restores the terminal */
+	termgfx_termio_init(argc, argv);
+	atexit(termgfx_termio_shutdown);   /* quit()'s exit(0) still restores the terminal */
 
 	// ScummVM's own argument parser rejects options it doesn't know, so the
-	// door-only argv entries sst_io_init() just resolved (-s<fd>, a
+	// door-only argv entries termgfx_termio_init() just resolved (-s<fd>, a
 	// DOOR32.SYS path) must not reach scummvm_main() -- build a filtered
-	// copy with everything sst_io_init() did NOT consume.
+	// copy with everything termgfx_termio_init() did NOT consume.
 	char *filteredArgv[64];
 	int   filteredArgc = 0;
 	// A door invocation never legitimately has this many args -- fail loudly
@@ -461,13 +468,13 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	for (int i = 0; i < argc && filteredArgc < (int)(sizeof(filteredArgv) / sizeof(filteredArgv[0])); i++) {
-		if (i == 0 || !sst_io_consumed(i))
+		if (i == 0 || !termgfx_termio_consumed(i))
 			filteredArgv[filteredArgc++] = argv[i];
 	}
 
 	// Talkie/Floppy: pick the game-data variant from this session's audio
 	// availability before scummvm_main() detects the game from --path. Same
-	// determination that drives subtitles-auto (sst_io_audio_available()): a
+	// determination that drives subtitles-auto (termgfx_termio_audio_available()): a
 	// session that can play speech gets the Talkie build, one that cannot gets
 	// the Floppy build (guaranteed on-screen text). See sst_select_datadir().
 	//
@@ -480,7 +487,7 @@ int main(int argc, char *argv[]) {
 	// subdir).
 	static char pathArg[640];
 	bool        havePath = false;
-	int         audioNow = sst_io_audio_available() != 0;
+	int         audioNow = termgfx_termio_audio_available() != 0;
 	for (int i = 1; i < filteredArgc; i++) {
 		char chosen[600];
 		if (strncmp(filteredArgv[i], "--path=", 7) != 0)

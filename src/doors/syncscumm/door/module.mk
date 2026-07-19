@@ -5,8 +5,6 @@ MODULE_OBJS := \
 	video_dump.o \
 	video_term.o \
 	audio_term.o \
-	sst_io.o \
-	sst_plat.o \
 	sst_quant.o
 
 # We don't use rules.mk but rather manually update OBJS and MODULE_DIRS.

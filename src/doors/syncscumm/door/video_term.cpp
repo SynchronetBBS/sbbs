@@ -74,19 +74,19 @@ bool SyncscummTermGraphicsManager::showMouse(bool visible) {
 void SyncscummTermGraphicsManager::warpMouse(int x, int y) {
 	if (x < 0)
 		x = 0;
-	else if (x >= SST_FB_W)
-		x = SST_FB_W - 1;
+	else if (x >= TERMGFX_TERMIO_FB_W)
+		x = TERMGFX_TERMIO_FB_W - 1;
 	if (y < 0)
 		y = 0;
-	else if (y >= SST_FB_H)
-		y = SST_FB_H - 1;
+	else if (y >= TERMGFX_TERMIO_FB_H)
+		y = TERMGFX_TERMIO_FB_H - 1;
 	_cursorX = x;
 	_cursorY = y;
 }
 
 void SyncscummTermGraphicsManager::ensureOverlay() {
 	if (!_overlay.getPixels())
-		_overlay.create(SST_FB_W, SST_FB_H, getOverlayFormat());
+		_overlay.create(TERMGFX_TERMIO_FB_W, TERMGFX_TERMIO_FB_H, getOverlayFormat());
 }
 
 void SyncscummTermGraphicsManager::showOverlay(bool inGUI) {
@@ -122,10 +122,10 @@ void SyncscummTermGraphicsManager::copyRectToOverlay(const void *buf, int pitch,
 	ensureOverlay();
 	if (!_overlay.getPixels())
 		return;
-	assert(x >= 0 && x < SST_FB_W);
-	assert(y >= 0 && y < SST_FB_H);
-	assert(h > 0 && y + h <= SST_FB_H);
-	assert(w > 0 && x + w <= SST_FB_W);
+	assert(x >= 0 && x < TERMGFX_TERMIO_FB_W);
+	assert(y >= 0 && y < TERMGFX_TERMIO_FB_H);
+	assert(h > 0 && y + h <= TERMGFX_TERMIO_FB_H);
+	assert(w > 0 && x + w <= TERMGFX_TERMIO_FB_W);
 	const byte *src = (const byte *)buf;
 	for (int row = 0; row < h; row++)
 		memcpy(_overlay.getBasePtr(x, y + row), src + row * pitch, (size_t)w * _overlay.format.bytesPerPixel);
@@ -134,10 +134,10 @@ void SyncscummTermGraphicsManager::copyRectToOverlay(const void *buf, int pitch,
 
 void SyncscummTermGraphicsManager::compose() {
 	if (!_composed.getPixels())
-		_composed.create(SST_FB_W, SST_FB_H, Graphics::PixelFormat::createFormatCLUT8());
+		_composed.create(TERMGFX_TERMIO_FB_W, TERMGFX_TERMIO_FB_H, Graphics::PixelFormat::createFormatCLUT8());
 
 	if (_screen.getPixels())
-		memcpy(_composed.getPixels(), _screen.getPixels(), (size_t)SST_FB_W * SST_FB_H);
+		memcpy(_composed.getPixels(), _screen.getPixels(), (size_t)TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H);
 
 	bool cursorOn = _cursorVisible && _cursorBuf;
 	int ox = _cursorX - _cursorHotX, oy = _cursorY - _cursorHotY;
@@ -150,13 +150,13 @@ void SyncscummTermGraphicsManager::compose() {
 			return;
 		for (uint cy = 0; cy < _cursorH; cy++) {
 			int ty = oy + (int)cy;
-			if (ty < 0 || ty >= SST_FB_H)
+			if (ty < 0 || ty >= TERMGFX_TERMIO_FB_H)
 				continue;
 			const byte *src = _cursorBuf + cy * _cursorW;
 			byte *dst = (byte *)_composed.getBasePtr(0, ty);
 			for (uint cx = 0; cx < _cursorW; cx++) {
 				int tx = ox + (int)cx;
-				if (tx < 0 || tx >= SST_FB_W)
+				if (tx < 0 || tx >= TERMGFX_TERMIO_FB_W)
 					continue;
 				if (src[cx] != (byte)_cursorKey)
 					dst[tx] = src[cx];
@@ -173,7 +173,7 @@ void SyncscummTermGraphicsManager::compose() {
 	 * the overlay is up; _quantIdx/_quantPal are. */
 	byte *rgb = _composeRgb;   /* member scratch, not a 192KB automatic */
 	const byte *game = (const byte *)_composed.getPixels();
-	for (int i = 0; i < SST_FB_W * SST_FB_H; i++) {
+	for (int i = 0; i < TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H; i++) {
 		const byte *p = _palette + game[i] * 3;
 		rgb[i * 3 + 0] = p[0];
 		rgb[i * 3 + 1] = p[1];
@@ -181,10 +181,10 @@ void SyncscummTermGraphicsManager::compose() {
 	}
 
 	if (_overlay.getPixels()) {
-		for (int y = 0; y < SST_FB_H; y++) {
+		for (int y = 0; y < TERMGFX_TERMIO_FB_H; y++) {
 			const byte *srow = (const byte *)_overlay.getBasePtr(0, y);
-			byte *drow = rgb + (size_t)y * SST_FB_W * 3;
-			for (int x = 0; x < SST_FB_W; x++) {
+			byte *drow = rgb + (size_t)y * TERMGFX_TERMIO_FB_W * 3;
+			for (int x = 0; x < TERMGFX_TERMIO_FB_W; x++) {
 				uint16 px = *(const uint16 *)(srow + x * 2);
 				byte r, g, b;
 				_overlay.format.colorToRGB(px, r, g, b);
@@ -198,13 +198,13 @@ void SyncscummTermGraphicsManager::compose() {
 	if (cursorOn) {
 		for (uint cy = 0; cy < _cursorH; cy++) {
 			int ty = oy + (int)cy;
-			if (ty < 0 || ty >= SST_FB_H)
+			if (ty < 0 || ty >= TERMGFX_TERMIO_FB_H)
 				continue;
 			const byte *src = _cursorBuf + cy * _cursorW;
-			byte *drow = rgb + (size_t)ty * SST_FB_W * 3;
+			byte *drow = rgb + (size_t)ty * TERMGFX_TERMIO_FB_W * 3;
 			for (uint cx = 0; cx < _cursorW; cx++) {
 				int tx = ox + (int)cx;
-				if (tx < 0 || tx >= SST_FB_W)
+				if (tx < 0 || tx >= TERMGFX_TERMIO_FB_W)
 					continue;
 				if (src[cx] != (byte)_cursorKey) {
 					const byte *p = _palette + src[cx] * 3;
@@ -216,7 +216,7 @@ void SyncscummTermGraphicsManager::compose() {
 		}
 	}
 
-	sst_quant_rgb(rgb, SST_FB_W, SST_FB_H, _quantIdx, _quantPal);
+	sst_quant_rgb(rgb, TERMGFX_TERMIO_FB_W, TERMGFX_TERMIO_FB_H, _quantIdx, _quantPal);
 }
 
 void SyncscummTermGraphicsManager::updateScreen() {
@@ -259,19 +259,19 @@ void SyncscummTermGraphicsManager::updateScreen() {
 	if (!screenDirty && !cursorChanged && !overlayChanged)
 		return;   /* nothing changed at all -- keep the no-change path fast */
 
-	if (sst_io_active()) {
+	if (termgfx_termio_active()) {
 		compose();
 		if (overlayVisible) {
 			/* Quantized palettes naturally differ frame to frame, so
-			 * relying on sst_io_present()'s own memcmp-based palette
+			 * relying on termgfx_termio_present()'s own memcmp-based palette
 			 * dirty-check (rather than forcing anything here) is
 			 * correct: two frames that happen to quantize identically
 			 * really do look identical to the client, so skipping the
 			 * palette re-emit for them is the right call, not a bug to
 			 * work around. */
-			sst_io_present(_quantIdx, _quantPal);
+			termgfx_termio_present(_quantIdx, _quantPal);
 		} else if (_composed.getPixels()) {
-			sst_io_present((const byte *)_composed.getPixels(), _palette);
+			termgfx_termio_present((const byte *)_composed.getPixels(), _palette);
 		}
 	}
 

@@ -47,9 +47,10 @@
   <ItemDefinitionGroup Condition="'$(ProjectName)' == 'scummvm'">
     <ClCompile>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(MSBuildThisFileDirectory)..\..\termgfx;$(MSBuildThisFileDirectory)..\..\..\xpdev</AdditionalIncludeDirectories>
-      <!-- WITH_JXL gates sst_io.c's JPEG-XL graphics tier (its termgfx encoder
-           is compiled WITH_JXL by door/CMakeLists.txt). Matches build.sh's
-           "DEFINES += -DWITH_JXL". No ScummVM source uses this macro. -->
+      <!-- WITH_JXL gates termgfx_termio.c's JPEG-XL graphics tier (its termgfx
+           encoder is compiled WITH_JXL by door/CMakeLists.txt). Matches
+           build.sh's "DEFINES += -DWITH_JXL". No ScummVM source uses this
+           macro. -->
       <PreprocessorDefinitions>WITH_JXL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>

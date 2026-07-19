@@ -40,8 +40,9 @@ cd "$HERE/build"
 # objects, so appending here is ordering-correct and touches no vendor file.
 # The termgfx include path goes on INCLUDES (not CXXFLAGS): Makefile.common
 # folds INCLUDES into CPPFLAGS, which the generic build rules for BOTH %.c
-# and %.cpp pick up -- CXXFLAGS alone would leave a plain-C module.mk object
-# (e.g. sst_io.o) unable to find term.h/caps.h/pace.h/door32.h.
+# and %.cpp pick up -- CXXFLAGS alone would leave a door/*.cpp unit (e.g.
+# audio_term.cpp/video_term.cpp/syncscumm.cpp, which include
+# termgfx_termio.h/sst_plat.h) unable to find term.h/caps.h/pace.h/door32.h.
 {
 	echo "LIBS += $HERE/build/libs/termgfx/libtermgfx.a"
 	echo "LIBS += $HERE/build/libs/libxpdev_static.a -lpthread"
@@ -59,11 +60,13 @@ cd "$HERE/build"
 echo "DEFINES += -DSYNCSCUMM_NO_LAUNCHER" >> config.mk
 # JPEG XL tier: door/CMakeLists.txt writes jxl_libs.txt only when libjxl was
 # found (target_compile_definitions(termgfx PRIVATE WITH_JXL) then applies to
-# termgfx's own jxl.c). sst_io.c's tier-select (door/sst_io.c) is compiled by
-# THIS make, a separate translation unit from termgfx's CMake build, so it
-# needs its own WITH_JXL -- DEFINES (not CXXFLAGS) because Makefile.common
-# folds DEFINES into CPPFLAGS, which both the %.c and %.cpp generic rules
-# pick up, so a plain-C module.mk object like sst_io.o sees it too.
+# termgfx's own jxl.c AND termgfx_termio.c's tier-select, both compiled by
+# Stage 1's CMake build above). Nothing left in THIS make (door/module.mk) is
+# a plain-C translation unit needing WITH_JXL of its own -- sst_io.c/sst_io.o
+# moved into termgfx with the rest of the engine -- but the append below is
+# kept as a harmless no-op DEFINES for any future plain-C module.mk object
+# that might need it (DEFINES, not CXXFLAGS, because Makefile.common folds
+# DEFINES into CPPFLAGS, which both the %.c and %.cpp generic rules pick up).
 if [ -f "$HERE/build/libs/jxl_libs.txt" ]; then
 	echo "DEFINES += -DWITH_JXL" >> config.mk
 	for l in $(cat "$HERE/build/libs/jxl_libs.txt" | tr ';' ' '); do

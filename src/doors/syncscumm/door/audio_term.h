@@ -16,22 +16,27 @@
  *
  * The manager is created unconditionally -- engines need a mixer object however
  * the terminal answered -- and whether the pulled PCM is streamed or discarded
- * is sst_io's decision, not ours.
+ * is termgfx_termio's decision, not ours.
  */
 #ifndef SYNCSCUMM_AUDIO_TERM_H_
 #define SYNCSCUMM_AUDIO_TERM_H_
 
 #include "backends/mixer/mixer.h"
-#include "sst_io.h"
+#include "../../termgfx/termgfx_termio.h"
 
-/* The mixer's rate is SST_AUDIO_RATE (sst_io.h), not a rate of our own: the
- * mixer is CREATED at that rate below (init()) and sst_io.c ENCODES at that
- * same rate, and sst_io_audio_stream() takes a frame count, not a rate --
- * the two ends only agree because they read one shared symbol, not because
- * two literals happen to match. Retro adventure audio has no content above
- * ~12kHz, so that rate halves the PCM we handle versus 48000 and costs
- * nothing audible -- and it is deliberately an Opus-legal one, so termgfx's
- * encoder resamples nothing at all. See sst_io.h for why that matters. */
+/* The mixer's rate. This used to be ONE shared symbol with the encoder side
+ * (sst_io.h's SST_AUDIO_RATE, read by both this header and sst_io.c); the M4
+ * extraction into termgfx made that macro file-private to
+ * termgfx/termgfx_termio.c, so it is no longer reachable from here. Respelled
+ * as the door's own constant -- keep it equal to termgfx_termio.c's
+ * SST_AUDIO_RATE (24000) if that ever changes, since the mixer is CREATED at
+ * this rate below (init()) and termgfx_termio_audio_stream() assumes PCM
+ * arriving at that same rate (it takes a frame count, not a rate). Retro
+ * adventure audio has no content above ~12kHz, so that rate halves the PCM we
+ * handle versus 48000 and costs nothing audible -- and it is deliberately an
+ * Opus-legal one, so termgfx's encoder resamples nothing at all. See
+ * termgfx_termio.c's SST_AUDIO_RATE doc comment for why that matters. */
+#define SST_AUDIO_RATE 24000
 
 /* MixerManager's pure virtuals are exactly init()/suspendAudio()/resumeAudio()
  * (backends/mixer/mixer.h); isNullDevice() is virtual with a false default.

@@ -46,8 +46,8 @@ endif()
 # ScummVM's make links libtermgfx.a by hand (build.sh appends to config.mk),
 # so every external the archive needs must be transcribed across that seam --
 # CMake's PUBLIC link interface does not survive it. termgfx's Ogg/Opus encode
-# (audio.c -> libsndfile) is pulled in the moment sst_io.c references any
-# termgfx_audio_* symbol, so hand build.sh the flags the same way the JXL
+# (audio.c -> libsndfile) is pulled in the moment termgfx_termio.c references
+# any termgfx_audio_* symbol, so hand build.sh the flags the same way the JXL
 # handoff above does.
 get_target_property(_tg_libs termgfx INTERFACE_LINK_LIBRARIES)
 set(_snd_libs "")

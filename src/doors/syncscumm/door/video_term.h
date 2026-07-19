@@ -1,6 +1,6 @@
 /* Terminal-rendering graphics manager: extends the M1 dump manager (so
  * SYNCSCUMM_DUMP keeps working) and forwards each changed frame to the
- * sst_io present path when a terminal session is active. M2 Task 5 adds
+ * termgfx_termio present path when a terminal session is active. M2 Task 5 adds
  * server-side cursor compositing: the game surface (_screen, inherited)
  * stays untouched -- dumps and future readers of it see game pixels only
  * -- while updateScreen() presents a separate _composed surface that is
@@ -14,7 +14,7 @@
 #include "video_dump.h"
 
 extern "C" {
-#include "sst_io.h"
+#include "../../termgfx/termgfx_termio.h"
 }
 
 class SyncscummTermGraphicsManager : public SyncscummDumpGraphicsManager {
@@ -36,8 +36,8 @@ public:
 	void clearOverlay() override;
 	void grabOverlay(Graphics::Surface &surface) const override;
 	void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h) override;
-	int16 getOverlayHeight() const override { return SST_FB_H; }
-	int16 getOverlayWidth() const override { return SST_FB_W; }
+	int16 getOverlayHeight() const override { return TERMGFX_TERMIO_FB_H; }
+	int16 getOverlayWidth() const override { return TERMGFX_TERMIO_FB_W; }
 
 private:
 	void compose();
@@ -48,10 +48,11 @@ private:
 
 	Graphics::Surface _composed;         /* game + cursor (+ overlay, Task 6) */
 	/* RGB888 scratch for the overlay composite (game + overlay + cursor before
-	 * quantization). A member, not a compose()-local: at SST_FB_W*SST_FB_H*3 =
-	 * 192000 bytes it would be a large automatic on whatever thread drives
-	 * updateScreen(), so it lives with the (heap-allocated) manager instead. */
-	byte _composeRgb[SST_FB_W * SST_FB_H * 3];
+	 * quantization). A member, not a compose()-local: at
+	 * TERMGFX_TERMIO_FB_W*TERMGFX_TERMIO_FB_H*3 = 192000 bytes it would be a
+	 * large automatic on whatever thread drives updateScreen(), so it lives
+	 * with the (heap-allocated) manager instead. */
+	byte _composeRgb[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H * 3];
 	byte _cursorPal[256 * 3];
 	byte *_cursorBuf;
 	uint _cursorW, _cursorH;
@@ -71,12 +72,13 @@ private:
 	 * animation where the hotspot doesn't move but the image does. */
 	bool _cursorSpriteDirty;
 
-	/* GUI overlay (Task 6): RGB565, always SST_FB_W x SST_FB_H regardless
-	 * of the game's own resolution -- matches getOverlayWidth/Height()
-	 * above, which the GUI theme engine sizes itself against. Created
-	 * lazily on first use (showOverlay() or copyRectToOverlay()). */
+	/* GUI overlay (Task 6): RGB565, always TERMGFX_TERMIO_FB_W x
+	 * TERMGFX_TERMIO_FB_H regardless of the game's own resolution -- matches
+	 * getOverlayWidth/Height() above, which the GUI theme engine sizes itself
+	 * against. Created lazily on first use (showOverlay() or
+	 * copyRectToOverlay()). */
 	Graphics::Surface _overlay;
-	byte _quantIdx[SST_FB_W * SST_FB_H];
+	byte _quantIdx[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 	byte _quantPal[768];
 
 	/* Mirrors the cursor's _lastCursor.../_cursorSpriteDirty pattern: a

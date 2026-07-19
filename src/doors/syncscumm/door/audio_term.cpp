@@ -9,10 +9,6 @@
 #include "audio/mixer_intern.h"
 #include "common/system.h"
 
-extern "C" {
-#include "sst_io.h"
-}
-
 /* One tick's ceiling. A pull is normally ~10-20ms of frames; this only bounds
  * a pathological gap (a long blocking load, a stopped debugger) so we ship one
  * bounded burst and re-anchor rather than allocating a multi-second pull that
@@ -37,7 +33,7 @@ void SyncscummMixerManager::init() {
 	 * same shape NullMixerManager::init() uses.
 	 *
 	 * Stereo, even though the wire is mono by default ("[audio] channels",
-	 * sst_io.c): the downmix belongs downstream, not here. A mono mixer would
+	 * termgfx_termio.c): the downmix belongs downstream, not here. A mono mixer would
 	 * halve the PCM we copy, but it also flips getOutputStereo(), and ScummVM's
 	 * engines branch on that -- digital iMUSE (engines/scumm/imuse_digi) builds
 	 * its waveout and its internal mixer's streams around the answer. That is a
@@ -88,7 +84,7 @@ void SyncscummMixerManager::tick() {
 	_mixer->mixCallback((byte *)_buf, (uint)(frames * 4));
 	_framesPulled += frames;
 
-	sst_io_audio_stream(_buf, (size_t)frames);
+	termgfx_termio_audio_stream(_buf, (size_t)frames);
 }
 
 void SyncscummMixerManager::suspendAudio() {
