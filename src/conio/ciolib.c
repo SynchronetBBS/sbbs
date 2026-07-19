@@ -1144,7 +1144,9 @@ CIOLIBEXPORT void ciolib_clear_input(void)
 	 * Backend mouse waiters will discard events from the old generation
 	 * instead of turning them into fresh CIO_KEY_MOUSE markers. */
 	ciomouse_reset_input();
+#ifdef CIOLIB_KEY_EVENTS
 	ciokey_reset();
+#endif
 
 	assert_pthread_mutex_lock(&unget_mutex);
 	ungotch = 0;
