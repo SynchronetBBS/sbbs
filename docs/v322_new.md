@@ -185,8 +185,9 @@
   auto-configures broker address, port, TLS, and protocol-version
   fields when enabled
 - New import/export of message sub-board configurations via
-  `subs.ini` and file directories via `dirs.ini`, replacing the
-  legacy `subs.txt` / `dirs.txt` purposes (issue #1128)
+  `subs.ini` and file directories via `dirs.ini`, the preferred
+  formats going forward (legacy `subs.txt` import/export remains
+  available) (issue #1128)
 - Creating a new sub-board no longer copies the FidoNet area tag
   or Usenet newsgroup name from the previous sub (issue #1105)
 - Help-text updates for the sub-board Semaphore File and Pointer
