@@ -2,21 +2,47 @@
 
 **Date:** 2026-07-19
 **Status:** design (approved direction; pending spec review)
-**One-liner:** Lift syncscumm's `sst_io.c` terminal-I/O engine into a shared
-libtermgfx module (`termgfx_termio`) with a clean door-facing API, refactor
-syncscumm onto it behavior-identically, so a second door (`syncrpg`, EasyRPG)
-can reuse the proven render/input/socket pipeline.
+**One-liner:** Consolidate the per-door terminal-I/O *orchestration* (present
+pipeline, input decode, socket I/O) — currently reimplemented in every graphical
+door's own `*_io.c` — into one canonical shared libtermgfx module
+(`termgfx_termio`), seeded from syncscumm's `sst_io.c` and validated against the
+other doors' needs. Migrate syncscumm + syncrpg onto it first, behavior-
+identically; retro/duke/doom/conquer migrate later as their own small efforts.
 
 ## Goal
 
-One shared, tested terminal-I/O engine — canvas probing, aspect-preserving
+One canonical, tested terminal-I/O engine — canvas probing, aspect-preserving
 scale, sixel/JXL tier selection + pacing, keyboard/mouse decode, DOOR32/socket
-I/O — that any graphical libtermgfx door drives by handing it native-resolution
-frames and reading back input events. syncscumm is refactored onto it with **no
-user-visible change**; syncrpg (a later sub-project) is the second consumer.
+I/O — that **every** graphical libtermgfx door drives by handing it native-
+resolution frames and reading back input events, instead of each maintaining its
+own copy.
 
-This is sub-project 1 of two. Sub-project 2 (build syncrpg) has its own spec and
-depends on this one landing first.
+The low-level *primitives* are already shared in libtermgfx (`caps`, `geometry`,
+`sixel`, `jxl`, `pace`, `mouse`/`sgrmouse`, `keymode`, `door32`, `audio*`,
+`sbbs_node`). What is NOT shared, and what this consolidates, is the
+*orchestration* that ties them into a present/input/socket loop — duplicated
+today across `syncretro/syncretro_io.c`, `syncscumm/door/sst_io.c`,
+`syncduke/syncduke_io.c`, `syncdoom/{i_video,r_draw,v_video,…}.c`, and
+`syncconquer/door_io.c`.
+
+**Scope of THIS sub-project (bounded first step):** build the canonical module
+and migrate **syncscumm + syncrpg** onto it. The other four graphical doors are
+the intended eventual consumers — the API is designed and validated for them —
+but their migrations are separate later efforts, because each is a shipped door
+with its own divergences to reconcile. This is sub-project 1 of the syncrpg
+effort; sub-project 2 (build syncrpg) has its own spec and depends on this
+landing first.
+
+### Why syncscumm's `sst_io.c` as the seed
+
+It has had the most recent hardening (JXL tiers, the ceiling policy, kitty/evdev
+keyboard, SGR mouse, dirty-rect, deferred-present retry, stats bar), so it is the
+richest starting point. But these doors *co-evolved* — the mouse module was
+extracted from syncconquer, not syncscumm — so the shared API MUST be designed
+against the union of the doors' `*_io.c` needs (an explicit design task below),
+not merely cloned from syncscumm. A libretro framebuffer, a Doom software
+buffer, a ScummVM surface, and an EasyRPG bitmap are all just RGB frames, so the
+`present(rgb,w,h)` / events-out shape already generalizes.
 
 ## Background / motivation
 
@@ -24,14 +50,13 @@ depends on this one landing first.
   clean `BaseUi` backend abstraction, builds on this host, renders a 320×240
   game headlessly. It needs exactly the render/input/scale/canvas machinery
   syncscumm already has.
-- That machinery is `src/doors/syncscumm/door/sst_io.c` (~3000 lines). Carving
-  it into libtermgfx has been the standing "next" item for the door library; a
-  second consumer is the point at which a shared library earns its keep.
-- **Already shared in libtermgfx (out of scope here):** the PCM audio stream
-  (`termgfx_stream_*`, used by syncretro + syncscumm), sixel and JPEG-XL encode,
-  `termgfx_sbbs_node`, the audio caching/music helpers, and the kitty/evdev
-  key-mode negotiation (`termgfx/keymode.h`). This extraction does NOT touch
-  those; it moves the piece that *drives* them.
+- That orchestration is duplicated across all five graphical doors (the Goal
+  lists them); syncscumm's `sst_io.c` alone is ~3000 lines of it. Consolidating
+  it has been the standing "carve the renderer out" item for the door library,
+  and syncrpg — a sixth consumer — is the forcing function.
+- The already-shared primitives (audio stream, sixel/JXL encode, keymode, node,
+  caps, geometry, pace, mouse, door32) are out of scope: this moves the
+  orchestration that *drives* them, not the primitives themselves.
 
 ## Scope
 
@@ -76,6 +101,18 @@ refactor is possible but explicitly NOT required for behavior identity.)
 - Building syncrpg (sub-project 2).
 - An opaque multi-instance context struct.
 - RTP / game-data concerns (a syncrpg-packaging concern, later).
+- Migrating retro/duke/doom/conquer onto the shared module (separate later
+  efforts; the API is *designed* for them here, not adopted by them here).
+
+### Design activity — an API that fits all doors
+
+Before finalizing `termgfx_termio.h`, survey the other four doors' `*_io.c`
+(syncretro, syncduke, syncdoom, syncconquer) for operations they need that
+syncscumm's does not — e.g. a libretro core's variable frame geometry, Doom's
+palette handling, syncconquer's edge-scroll mouse zones. The shared API must be
+a superset those doors can adopt without behavior loss, even though only
+syncscumm + syncrpg migrate in this sub-project. Where a need is genuinely
+door-specific, it stays a door-side hook rather than bloating the shared API.
 
 ## Shared API (`termgfx_termio.h`)
 
@@ -157,6 +194,9 @@ change its behavior. Three gates, all required:
 - The API is sufficient for syncrpg's `BaseUi` backend to drive (frame source +
   event pull + config setters) — validated on paper here, exercised in
   sub-project 2.
+- The API is validated on paper as a superset the other four graphical doors
+  (retro/duke/doom/conquer) can adopt without behavior loss, even though they do
+  not migrate in this sub-project.
 
 ## Open questions (for review)
 
