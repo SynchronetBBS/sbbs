@@ -5,6 +5,9 @@ Revision History (change log)
 =============================
 Version  Date         Description
 -------  ----         -----------
+1.97o    2026-07-18   Bug fix: Improved filtering for personal email to ensure
+                      exact user matching for reading personal email, including
+                      usernames with similar beginnings. Reported by Nelgin.
 1.97n    2026-07-08   Bug fix to prevent this error, reported by Amessyroom:
                       TypeError: msg_area.grp_list[msgbase.cfg.grp_number] is
                       undefined*
