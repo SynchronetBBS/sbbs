@@ -442,10 +442,13 @@ long import_msg_areas(enum import_list_type type, FILE* stream, int grpnum
 			if (added != NULL)
 				(*added)++;
 		}
-		if (type == IMPORT_LIST_TYPE_SUBS_TXT) {
-			/* Copy only the fields the subs.txt format carries, leaving any    */
-			/* others (ptridx, qwkconf, print modes, area_tag, ...) intact so a  */
-			/* re-import doesn't clear settings the legacy format can't express. */
+		if (type == IMPORT_LIST_TYPE_SUBS_TXT || type == IMPORT_LIST_TYPE_SUBS_INI) {
+			/* Complete-detail formats: apply the fields the format carries,     */
+			/* leaving any others intact.  ptridx is deliberately not copied so  */
+			/* the local pointer-file linkage is preserved (the exported ptridx  */
+			/* is meaningless on the importing system).  The legacy subs.txt     */
+			/* format can't express qwkconf/print-modes/area_tag, so a re-import */
+			/* of that format leaves those existing settings untouched.          */
 			sub_t* sub = cfg.sub[j];
 			sub->grp = grpnum;
 			SAFECOPY(sub->code_suffix, tmpsub.code_suffix);
@@ -467,7 +470,13 @@ long import_msg_areas(enum import_list_type type, FILE* stream, int grpnum
 			sub->maxmsgs = tmpsub.maxmsgs;
 			sub->maxcrcs = tmpsub.maxcrcs;
 			sub->maxage = tmpsub.maxage;
-			/* ptridx intentionally not copied: preserve local pointer-file linkage */
+			if (type == IMPORT_LIST_TYPE_SUBS_INI) {
+				/* Fields the .ini format carries that subs.txt does not */
+				SAFECOPY(sub->area_tag, tmpsub.area_tag);
+				sub->qwkconf = tmpsub.qwkconf;
+				sub->pmode = tmpsub.pmode;
+				sub->n_pmode = tmpsub.n_pmode;
+			}
 		} else {
 			cfg.sub[j]->grp = grpnum;
 			SAFECOPY(cfg.sub[j]->code_suffix, tmpsub.code_suffix);
