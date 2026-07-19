@@ -835,9 +835,8 @@ The currently embedded scripts are:
 
 | `online_menu`
 | auto / connected
-| `OnlineMenu.run()` — Wren implementation of `syncmenu` (the
-  SyncTERM "Online Menu" reached via
-  Alt+Z, plus Ctrl+S on text-mode terminals).  Lists the in-terminal
+| `OnlineMenu.run()` — the SyncTERM "Online Menu" reached via
+  Alt+Z, plus Ctrl+S on text-mode terminals.  Lists the in-terminal
   control commands and dispatches the selection back into the
   primitives that drive the individual hot-keys
   (`Conn.scrollback`, `Conn.upload`, `Conn.download`, `CaptureMenu.run`,

@@ -429,12 +429,6 @@ wren_picker_host_shutdown(void)
 	picker_active = false;
 }
 
-bool
-wren_picker_host_active(void)
-{
-	return picker_active;
-}
-
 static WrenInterpretResult
 recover_picker(struct wren_picker_call *call, const char *message)
 {

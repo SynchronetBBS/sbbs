@@ -594,18 +594,6 @@ init_crypt(void)
 	atexit(exit_crypt);
 }
 
-/* Back-compat stub: telnets.c no longer uses this, but ssh.h still
-   declares it.  Remove in the final Cryptlib cleanup. */
-void
-cryptlib_error_message(int status, const char *msg)
-{
-	char title[128];
-	char body[256];
-	snprintf(title, sizeof(title), "SSH error %s", msg);
-	snprintf(body, sizeof(body), "Error %d %s\r\n\r\n", status, msg);
-	host_ui_alert(title, body);
-}
-
 /* ---------------------------------------------------------- key load */
 
 /*

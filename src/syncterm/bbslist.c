@@ -16,7 +16,6 @@
 #include "conn.h"
 #include "named_str_list.h"
 #include "syncterm.h"
-#include "vidmodes.h"
 #include "wren_token.h"
 
 #ifdef _MSC_VER
@@ -1694,36 +1693,4 @@ get_emulation_str(struct bbslist *bbs)
 			return "AtariST+VT52";
 	}
 	return "none";
-}
-
-void
-get_term_size(struct bbslist *bbs, int *cols, int *rows)
-{
-	int cmode = find_vmode(screen_to_ciolib(bbs->screen_mode));
-
-	if (cmode < 0) {
-		// This shouldn't happen, but if it does, make something up.
-		*cols = 80;
-		*rows = 24;
-		return;
-	}
-	if (vparams[cmode].cols < 80) {
-		if (cols)
-			*cols = 40;
-	}
-	else {
-		if (vparams[cmode].cols < 132) {
-			if (cols)
-				*cols = 80;
-		}
-		else {
-			if (cols)
-				*cols = 132;
-		}
-	}
-	if (rows) {
-		*rows = vparams[cmode].rows;
-		if (!bbs->nostatus)
-			(*rows)--;
-	}
 }

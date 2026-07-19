@@ -905,7 +905,7 @@ fn_CTerm_throttleSpeedDown(WrenVM *vm)
 
 /* CTerm.throttleSpeed = bps — set the throttled output rate to a
  * specific value.  Pass 0 to disable throttling.  Values are taken
- * verbatim — the syncmenu supplies one of the entries from
+ * verbatim — the online menu supplies one of the entries from
  * Host.outputRates so no clamping is needed; scripts that hand-pick
  * are trusted to know what they want. */
 void

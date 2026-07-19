@@ -191,13 +191,6 @@ wren_log_capture_start(void)
 }
 
 bool
-wren_log_capture_active(void)
-{
-	struct wren_host_state *st = wren_host_state();
-	return st != NULL && st->log.target == &st->log.capture;
-}
-
-bool
 wren_log_capture_contains(const char *needle)
 {
 	struct wren_host_state *st = wren_host_state();
@@ -842,15 +835,6 @@ wren_host_register_hook_match_ex(WrenVM *vm, int fn_slot,
 	state.hooks[WREN_HOOK_INPUT][n] = h;
 	state.hook_count[WREN_HOOK_INPUT] = n + 1;
 	return h;
-}
-
-struct wren_hook_entry *
-wren_host_register_hook_match(WrenVM *vm, int fn_slot,
-    struct Prog *prog, struct PikeVM *vm_state,
-    char *buf, size_t buf_cap, int nsubp)
-{
-	return wren_host_register_hook_match_ex(vm, fn_slot, prog, vm_state,
-	    buf, buf_cap, nsubp, false);
 }
 
 struct wren_hook_entry *

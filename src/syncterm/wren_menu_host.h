@@ -11,7 +11,6 @@ struct bbslist;
  * during application shutdown. */
 bool wren_menu_host_init(void);
 void wren_menu_host_shutdown(void);
-bool wren_menu_host_active(void);
 
 /* Run the persistent menu controller.  In selection mode, a successful BBS
  * choice is returned as a host-owned copy that the caller must free;

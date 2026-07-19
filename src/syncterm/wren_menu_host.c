@@ -412,12 +412,6 @@ wren_menu_host_shutdown(void)
 	menu_active = false;
 }
 
-bool
-wren_menu_host_active(void)
-{
-	return menu_active;
-}
-
 struct bbslist *
 wren_menu_host_run(const char *current, bool connected)
 {

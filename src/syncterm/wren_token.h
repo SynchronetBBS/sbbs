@@ -60,13 +60,6 @@ void wren_token_key_to_hex(const uint8_t key[32], char out[65]);
  * Returns true on success, false on bad chars or wrong length. */
 bool wren_token_key_from_hex(const char *hex, uint8_t out[32]);
 
-/* Wipe the in-memory key.  Called at VM shutdown / disconnect
- * so the key doesn't sit in memory across BBS-list reloads. */
-void wren_token_clear_key(void);
-
-/* True after wren_token_set_key, false before / after clear. */
-bool wren_token_have_key(void);
-
 /* Mint a base64-encoded consent token for `path`.  Computes the
  * file's SHA-1 (mmap-based, single pass) and binds it into the
  * token with HMAC-SHA1.  Returns a malloc'd NUL-terminated

@@ -114,7 +114,6 @@ bool conn_connect(struct bbslist *bbs);
 int conn_close(void);
 bool conn_connected(void);
 int64_t conn_connected_seconds(void);
-size_t conn_data_waiting(void);
 void conn_binary_mode_on(void);
 void conn_binary_mode_off(void);
 void conn_send_window_change(int text_cols, int text_rows,

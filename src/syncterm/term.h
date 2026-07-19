@@ -89,6 +89,5 @@ void mousedrag_screen(bool force_rect);
 void get_cterm_size(int *cols, int *rows, int ns);
 int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz);
 int get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subdir);
-void send_login(struct bbslist *bbs);
 
 #endif // ifndef _TERM_H_

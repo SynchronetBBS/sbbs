@@ -237,7 +237,6 @@ void bbslist_sweep_orphan_caches(struct bbslist **list, size_t listcount);
 int get_rate_num(int rate);
 cterm_emulation_t get_emulation(struct bbslist *bbs);
 const char *get_emulation_str(struct bbslist *bbs);
-void get_term_size(struct bbslist *bbs, int *cols, int *rows);
 str_list_t iniReadBBSList(FILE *fp, bool userList);
 str_list_t iniReadBBSListPassword(FILE *fp, bool userList,
     const char *password, enum bbslist_read_status *status);

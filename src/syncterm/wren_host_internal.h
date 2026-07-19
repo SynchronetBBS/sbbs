@@ -367,11 +367,6 @@ wren_host_register_hook_match_ex(WrenVM *vm, int fn_slot, struct Prog *prog,
     struct PikeVM *vm_state, char *buf, size_t buf_cap, int nsubp,
     bool clean);
 
-struct wren_hook_entry *
-wren_host_register_hook_match(WrenVM *vm, int fn_slot, struct Prog *prog,
-                              struct PikeVM *vm_state, char *buf,
-                              size_t buf_cap, int nsubp);
-
 /* Timer registration: ms is the recurrence interval, fn_slot holds the
  * callable.  Returns a pointer to the new entry, or NULL on failure. */
 struct wren_hook_entry *
@@ -462,7 +457,6 @@ void wren_log_error(WrenErrorType type, const char *module, int line,
  * private buffer instead.  Single-buffer, single-thread (Wren is); no
  * nesting.  Capture is also a no-op when wren_host_state() is NULL. */
 void     wren_log_capture_start(void);
-bool     wren_log_capture_active(void);
 bool     wren_log_capture_contains(const char *needle);
 void     wren_log_capture_clear(void);    /* drop captured entries */
 void     wren_log_capture_commit(void);   /* flush captured entries to the log */

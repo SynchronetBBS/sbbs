@@ -37,19 +37,6 @@ wren_token_set_key(const uint8_t k[32])
 	g_key_set = true;
 }
 
-void
-wren_token_clear_key(void)
-{
-	memset(g_key, 0, sizeof(g_key));
-	g_key_set = false;
-}
-
-bool
-wren_token_have_key(void)
-{
-	return g_key_set;
-}
-
 bool
 wren_token_generate_key(uint8_t out[32])
 {

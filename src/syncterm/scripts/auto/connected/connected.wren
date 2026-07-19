@@ -1,9 +1,8 @@
 // Wren-side handlers for keys that fire during an active connection.
-// Currently:  Alt+L (0x2600) sends the BBS-list-stored login credentials
-// (user, password, sysop password).  Replaces the C-side `case 0x2600`
-// in term.c that called send_login(bbs).
+// Alt+L (0x2600) sends the BBS-list-stored login credentials (user,
+// password, and sysop password).
 //
-// The send-order rules mirror the original C implementation:
+// Send-order rules:
 //   - rlogin / ssh:        skip user + password (the protocol handles auth);
 //                          still send syspass if set
 //   - sshNoAuth (SSHNA):   skip user (negotiated); send password + syspass
