@@ -73,6 +73,8 @@ enum import_list_type determine_msg_list_type(const char* path)
 {
 	const char* fname = getfname(path);
 
+	if (stricmp(fname, "subs.txt") == 0)
+		return IMPORT_LIST_TYPE_SUBS_TXT;
 	if (stricmp(fname, "areas.bbs") == 0)
 		return IMPORT_LIST_TYPE_SBBSECHO_AREAS_BBS;
 	if (stricmp(fname, "control.dat") == 0)
@@ -1924,7 +1926,7 @@ void getar(const char *desc, char *inar, const char* helpbuf)
 			case 0:
 				uifc.helpbuf =
 					"Key word   Symbol      Description\n"
-					"ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ\n"
+					"ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½\n"
 					"AND          &         More than one requirement (optional)\n"
 					"NOT          !         Logical negation (i.e. NOT EQUAL)\n"
 					"EQUAL        =         Equality required\n"
