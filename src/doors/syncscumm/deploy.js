@@ -48,7 +48,7 @@ load("door_deploy.js");   // door_exe_name(), door_find_built(), door_deploy_int
 
 // Every SyncSCUMM title package -- the xtrn/<dir> name, matching each
 // title's own install-xtrn.ini. See the header comment above.
-var PACKAGES = [ "syncqueen", "syncbass", "spacequest0" ];
+var PACKAGES = [ "syncqueen", "syncbass", "spacequest0", "cascadequest" ];
 
 // The LIVE install's xtrn/ -- the one anything actually launches from.
 // system.ctrl_dir names the install we are running against, under jsexec and
