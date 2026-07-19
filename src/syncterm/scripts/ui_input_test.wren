@@ -52,6 +52,8 @@ class UiInputTest {
     testOnChangeFires_()
     testTabNotConsumed_()
     testScrollOffTracksCursor_()
+    testBoundsShowsInitialValueEnd_()
+    testBoundsResizeRevealsValueEnd_()
     testCursorPosVisible_()
     testCursorVisibleTrue_()
     testCursorAttr_()
@@ -386,6 +388,31 @@ class UiInputTest {
     for (c in s) t.handle(KeyEvent.new(c.bytes[0]))
     check_(t.cursor == 6 && t.scrollOff == 3,
            "TextInput overflow: scrollOff tracks cursor at right edge")
+  }
+
+  static testBoundsShowsInitialValueEnd_() {
+    var t = TextInput.new()
+    t.value = "abcdef"
+    t.bounds = Rect.new(1, 1, 4, 1)
+    var s = t.draw()
+    var p = t.cursorPos
+    check_(t.scrollOff == 3 && s.cellAt(0, 0).ch == "d" &&
+           s.cellAt(1, 0).ch == "e" && s.cellAt(2, 0).ch == "f" &&
+           s.cellAt(3, 0).ch == " " && p[0] == 4,
+           "TextInput bounds=: initial long value shows end and cursor")
+  }
+
+  static testBoundsResizeRevealsValueEnd_() {
+    var t = TextInput.new()
+    t.value = "abcdef"
+    t.bounds = Rect.new(1, 1, 4, 1)
+    t.bounds = Rect.new(1, 1, 6, 1)
+    var s = t.draw()
+    var p = t.cursorPos
+    check_(t.scrollOff == 1 && s.cellAt(0, 0).ch == "b" &&
+           s.cellAt(4, 0).ch == "f" && s.cellAt(5, 0).ch == " " &&
+           p[0] == 6,
+           "TextInput bounds=: resize keeps value end and cursor visible")
   }
 
   static testCursorPosVisible_() {

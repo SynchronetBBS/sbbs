@@ -84,6 +84,7 @@ class UiPopupTest {
     testConfirmShowCarriesHelp_()
     testConfirmUnrecognizedKeyDoesNotDismiss_()
     testPromptConstruction_()
+    testPromptLongInitialShowsEnd_()
     testPromptEnterReturnsValue_()
     testPromptEscReturnsNull_()
     testPromptForwardsTypingToInput_()
@@ -221,6 +222,16 @@ class UiPopupTest {
     check_(p.message == "Name?" && p.title == "Prompt" &&
            p.result == null && p.input.allSelected,
            "Prompt: initial value starts selected")
+  }
+
+  static testPromptLongInitialShowsEnd_() {
+    var p = Prompt.new("URI", "https://example.com/a/long/web-list/path")
+    p.bounds = Rect.new(1, 1, 24, 7)
+    var input = p.input
+    var cursor = input.cursorPos
+    var expected = input.count - input.bounds.w + 1
+    check_(input.scrollOff == expected && cursor[0] == input.bounds.right,
+           "Prompt: long initial value shows its end and cursor")
   }
 
   static testPromptEnterReturnsValue_() {

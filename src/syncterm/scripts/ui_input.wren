@@ -55,6 +55,19 @@ class TextInput is Widget {
   }
   static insertMode_=(value) { __insertMode = value }
 
+  // Layout may assign bounds before or after value.  Rebuild the
+  // viewport from the cursor whenever its width changes so both
+  // orders show the same text, including the insertion cell after a
+  // value whose end lies beyond the field.
+  bounds=(r) {
+    var widthChanged = bounds == null || bounds.w != r.w
+    super.bounds = r
+    if (widthChanged) {
+      _scrollOff = 0
+      ensureVisible_()
+    }
+  }
+
   // String round-trip.  Setting value resets the cursor to the end
   // and triggers a repaint.
   value { _chars.join() }

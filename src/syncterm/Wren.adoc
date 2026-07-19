@@ -6085,6 +6085,12 @@ codepoint when painting every stored character.  It does not change
 `value`, cursor movement, length, or callback arguments, making it
 suitable for password and system-password fields.
 
+Assigning or resizing `bounds` recalculates the horizontal viewport.
+An initial value wider than the field displays its end followed by a
+cell for the insertion cursor, regardless of whether `value` or
+`bounds` was assigned first.  `scrollOff` reports the first displayed
+codepoint index.
+
 `cursorVisible` returns true and `cursorPos` reports the cell that
 corresponds to the current insertion point in screen coords —
 backends that show the hardware cursor track the input as the user
