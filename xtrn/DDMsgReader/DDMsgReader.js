@@ -102,6 +102,19 @@
  *                              last_read was current, and delete-message pointer repair.
  * 2026-07-08 Eric Oulashin     Version 1.97n
  *                              Releasing this version.
+ * 2026-07-18 Eric Oulashin     Version 1.97o
+ *                              Bug fix (with the help of Cursor AI): Fixed
+ *                              userHandleAliasNameMatch() to use exact name equality	
+ *                              instead of substring matching (indexOf). That bug caused
+ *                              short aliases like "Book" to match longer names
+ *                              like "Bookie2018" when listing personal email.
+ *                              Releasing this version.
+ * 2026-07-19 Eric Oulashin     Personal email ("mail") matching now uses destination/
+ *                              source user numbers only (MsgBase index to/from fields
+ *                              and header to_ext/from_ext), matching msglist.js
+ *                              load_msgs(). Name-based matching is no longer used to
+ *                              decide which personal email is readable — the mail
+ *                              msgbase is indexed by user number, not name.
  */
 
 "use strict";
@@ -220,8 +233,8 @@ require("rip_scrollbar.js", "RIPScrollbar");
 
 
 // Reader version information
-var READER_VERSION = "1.97n";
-var READER_DATE = "2026-07-08";
+var READER_VERSION = "1.97o";
+var READER_DATE = "2026-07-18";
 
 // Keyboard key codes for displaying on the screen
 var UP_ARROW = ascii(24);
@@ -5238,10 +5251,26 @@ function DigDistMsgReader_ReadMessageEnhanced(pOffset, pAllowChgArea)
 	if (retObj.msgNotReadable)
 		return retObj;
 
+	// Personal email: only allow reading mail owned by this user number (to_ext/from_ext).
+	// The mail msgbase is indexed by user number, not name.
+	if (this.readingPersonalEmail && !gAllPersonalEmailOptSpecified && !user.is_sysop)
+	{
+		var mailOwnedByUser = msgIsToUserByNum(msgHeader) || msgIsFromUserByNum(msgHeader);
+		if (!mailOwnedByUser)
+		{
+			retObj.msgNotReadable = true;
+			return retObj;
+		}
+	}
+
 	// Mark the message as read if it was written to the current user.
-	// For personal email, the message header should have a "to_ext"
-	// that will match the current user number if the email is to them
-	if (userHandleAliasNameMatch(msgHeader.to) || (msgHeader.hasOwnProperty("to_ext") && msgHeader.to_ext == user.number))
+	// For personal email, the mail msgbase is indexed by user number — match to_ext only.
+	var msgIsToCurrentUser = false;
+	if (this.readingPersonalEmail)
+		msgIsToCurrentUser = (msgHeader.hasOwnProperty("to_ext") && msgHeader.to_ext == user.number);
+	else
+		msgIsToCurrentUser = (userHandleAliasNameMatch(msgHeader.to) || (msgHeader.hasOwnProperty("to_ext") && msgHeader.to_ext == user.number));
+	if (msgIsToCurrentUser)
 	{
 		// Using applyAttrsInMsgHdrInMessagbase(), which loads the header without
 		// expanded fields and saves the attributes with that header.
@@ -20665,6 +20694,10 @@ function shortenStrWithAttrCodes(pStr, pNewLength, pFromLeft)
 //
 // Return value: Boolean - Whether or not the given name matches the logged-in
 //               user's handle, alias, or name
+//
+// Note: String matching is an exact case-insensitive equality check (not a
+// substring/prefix match). Using indexOf previously caused short aliases like
+// "Book" to incorrectly match longer names like "Bookie2018".
 function userHandleAliasNameMatch(pNameOrCRC16)
 {
 	var checkByCRC16 = (typeof(pNameOrCRC16) === "number");
@@ -20709,19 +20742,19 @@ function userHandleAliasNameMatch(pNameOrCRC16)
 			{
 				if (userHandleAliasNameMatch.userHandleUpper === undefined)
 					userHandleAliasNameMatch.userHandleUpper = user.handle.toUpperCase();
-				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userHandleUpper) > -1);
+				userMatch = (nameUpper == userHandleAliasNameMatch.userHandleUpper);
 			}
 			if (!userMatch && (user.alias.length > 0))
 			{
 				if (userHandleAliasNameMatch.userAliasUpper === undefined)
 					userHandleAliasNameMatch.userAliasUpper = user.alias.toUpperCase();
-				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userAliasUpper) > -1);
+				userMatch = (nameUpper == userHandleAliasNameMatch.userAliasUpper);
 			}
 			if (!userMatch && (user.name.length > 0))
 			{
 				if (userHandleAliasNameMatch.userNameUpper === undefined)
 					userHandleAliasNameMatch.userNameUpper = user.name.toUpperCase();
-				userMatch = (nameUpper.indexOf(userHandleAliasNameMatch.userNameUpper) > -1);
+				userMatch = (nameUpper == userHandleAliasNameMatch.userNameUpper);
 			}
 		}
 	}
@@ -21133,6 +21166,121 @@ function readerModeStrToVal(pModeStr)
    return readerModeInt;
 }
 
+// Resolves which user number to use when filtering personal email.
+// Prefers altUserNum / an explicit pUserNum (sysop) over the logged-in user.
+function resolvePersonalEmailUserNum(pUserNum)
+{
+	if (gCmdLineArgVals.hasOwnProperty("altUserNum"))
+		return gCmdLineArgVals.altUserNum;
+	if (user.is_sysop && typeof(pUserNum) === "number" && pUserNum > 0 && pUserNum <= system.lastuser)
+		return pUserNum;
+	return user.number;
+}
+
+// Loads personal email headers for a user number, using the mail MsgBase index
+// (indexed by user number, not name) — same approach as load_msgs() in msglist.js.
+//
+// Parameters:
+//  pMsgbase: An open MsgBase for "mail"
+//  pListingFromUser: true = sent mail (idx.from / from_ext); false = inbox (idx.to / to_ext)
+//  pUserNum: Destination/source user number to match
+//  pStartIndex: Optional 0-based start index
+//  pEndIndex: Optional one-past end index
+//
+// Return value: Object with indexed[] array of message headers
+function loadPersonalEmailMsgHdrs(pMsgbase, pListingFromUser, pUserNum, pStartIndex, pEndIndex)
+{
+	var msgHeaders = { indexed: [] };
+	if (typeof(pMsgbase) !== "object" || !pMsgbase.is_open)
+		return msgHeaders;
+
+	// Work around bug in MsgBase.get_index()/get_all_msg_headers() in v3.17c
+	pMsgbase.last_msg;
+
+	var startMsgIndex = 0;
+	var endMsgIndex = pMsgbase.total_msgs;
+	if (typeof(pStartIndex) === "number" && pStartIndex >= 0 && pStartIndex < pMsgbase.total_msgs)
+		startMsgIndex = pStartIndex;
+	if (typeof(pEndIndex) === "number" && pEndIndex >= 0 && pEndIndex > startMsgIndex && pEndIndex <= pMsgbase.total_msgs)
+		endMsgIndex = pEndIndex;
+
+	var onlyUnread = (gCmdLineArgVals.hasOwnProperty("onlynewpersonalemail") && gCmdLineArgVals.onlynewpersonalemail);
+	var seen_msg_nums = {};
+	var useIndex = (typeof(pMsgbase.get_index) === "function");
+	var idxlist = useIndex ? pMsgbase.get_index() : null;
+
+	if (idxlist != null)
+	{
+		var total_msgs = idxlist.length;
+		if (endMsgIndex > total_msgs)
+			endMsgIndex = total_msgs;
+		for (var i = startMsgIndex; i < endMsgIndex; ++i)
+		{
+			var idx = idxlist[i];
+			if (idx == null)
+				continue;
+			// Same early-stop as msglist.js load_msgs() for unvalidated moderated msgs
+			if ((idx.attr & (MSG_MODERATED | MSG_VALIDATED | MSG_DELETE)) == MSG_MODERATED)
+				break;
+			if (!gAllPersonalEmailOptSpecified)
+			{
+				if (pListingFromUser)
+				{
+					if (idx.from != pUserNum)
+						continue;
+				}
+				else
+				{
+					if (idx.to != pUserNum)
+						continue;
+				}
+			}
+			if (onlyUnread && (idx.attr & MSG_READ))
+				continue;
+			if (((idx.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
+				continue;
+
+			var msgHeader = pMsgbase.get_msg_header(true, i, false);
+			if (msgHeader != null && isReadableMsgHdr(msgHeader, "mail") && !seen_msg_nums.hasOwnProperty(msgHeader.number))
+			{
+				msgHeaders.indexed.push(msgHeader);
+				seen_msg_nums[msgHeader.number] = true;
+			}
+		}
+	}
+	else
+	{
+		// Fallback when get_index() is unavailable: filter headers by to_ext/from_ext
+		for (var msgIdx = startMsgIndex; msgIdx < endMsgIndex; ++msgIdx)
+		{
+			var hdr = pMsgbase.get_msg_header(true, msgIdx, false);
+			if (hdr == null || !isReadableMsgHdr(hdr, "mail"))
+				continue;
+			if (!gAllPersonalEmailOptSpecified)
+			{
+				if (pListingFromUser)
+				{
+					if (!msgIsFromUserByNum(hdr, pUserNum))
+						continue;
+				}
+				else
+				{
+					if (!msgIsToUserByNum(hdr, pUserNum))
+						continue;
+				}
+			}
+			if (onlyUnread && ((hdr.attr & MSG_READ) != 0))
+				continue;
+			if (!seen_msg_nums.hasOwnProperty(hdr.number))
+			{
+				msgHeaders.indexed.push(hdr);
+				seen_msg_nums[hdr.number] = true;
+			}
+		}
+	}
+	return msgHeaders;
+}
+
 // Searches a given range in an open message base and returns an object with arrays
 // containing the message headers (0-based indexed and indexed by message number)
 // with the message headers of any found messages.
@@ -21207,40 +21355,15 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 	{
 		// It might seem odd to have SEARCH_NONE in here, but it's here because
 		// when reading personal email, we need to search for messages only to
-		// the current user.
+		// the current user (by user number — mail is indexed by usernumber).
 		case SEARCH_NONE:
 			if (pSubCode == "mail")
 			{
-				// Set up the match function slightly differently depending on whether
-				// we're looking for mail from the current user or to the current user.
-				if (readingPersonalEmailFromUser)
-				{
-					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
-						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
-						if (typeof(msgText) !== "string")
-							msgText = "";
-						return gAllPersonalEmailOptSpecified || msgIsFromUser(pMsgHdr, pUserNum);
-					}
-				}
-				else
-				{
-					// We're reading mail to the user
-					matchFn = function(pSearchStr, pMsgHdr, pMsgBase, pSubBoardCode) {
-						// If the message is marked for deletion & the user isn't allowed to view it, then skip it
-						//if (Boolean(pMsgHdr.attr & MSG_DELETE) && !canViewDeletedMsgs())
-						//	return false;
-
-						var msgText = strip_ctrl(pMsgBase.get_msg_body(false, pMsgHdr.number, false, false, true, true));
-						if (typeof(msgText) !== "string")
-							msgText = "";
-						var msgMatchesCriteria = (gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr, pUserNum));
-						// If only new/unread personal email is to be displayed, then check
-						// that the message has not been read.
-						if (gCmdLineArgVals.onlynewpersonalemail)
-							msgMatchesCriteria = (msgMatchesCriteria && ((pMsgHdr.attr & MSG_READ) == 0));
-						return msgMatchesCriteria;
-					}
-				}
+				msgHeaders = loadPersonalEmailMsgHdrs(msgbase, readingPersonalEmailFromUser,
+					resolvePersonalEmailUserNum(pUserNum), startMsgIndex, endMsgIndex);
+				msgHeaders.indexed = filterReadableMsgHdrIndexedArray(msgHeaders.indexed, pSubCode);
+				msgbase.close();
+				return msgHeaders;
 			}
 			break;
 		case SEARCH_KEYWORD:
@@ -21255,7 +21378,11 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 					msgText = "";
 				var keywordFound = ((pMsgHdr.subject.toUpperCase().indexOf(pSearchStr) > -1) || (msgText.toUpperCase().indexOf(pSearchStr) > -1));
 				if (pSubBoardCode == "mail")
-					return keywordFound && msgIsToUserByNum(pMsgHdr);
+				{
+					var mailUserOk = gAllPersonalEmailOptSpecified ||
+						(readingPersonalEmailFromUser ? msgIsFromUserByNum(pMsgHdr, pUserNum) : msgIsToUserByNum(pMsgHdr, pUserNum));
+					return keywordFound && mailUserOk;
+				}
 				else
 					return keywordFound;
 			}
@@ -21269,7 +21396,11 @@ function searchMsgbase(pSubCode, pSearchType, pSearchString, pListingPersonalEma
 
 				var fromNameFound = (pMsgHdr.from.toUpperCase() == pSearchStr.toUpperCase());
 				if (pSubBoardCode == "mail")
-					return fromNameFound && (gAllPersonalEmailOptSpecified || msgIsToUserByNum(pMsgHdr));
+				{
+					var mailUserOk = gAllPersonalEmailOptSpecified ||
+						(readingPersonalEmailFromUser ? msgIsFromUserByNum(pMsgHdr, pUserNum) : msgIsToUserByNum(pMsgHdr, pUserNum));
+					return fromNameFound && mailUserOk;
+				}
 				else
 					return fromNameFound;
 			}
@@ -21605,9 +21736,9 @@ function idxToAbsMsgNum(pMsgbase, pMsgIdx)
 	return (msgHdr != null ? msgHdr.number : -1);
 }
 
-// Returns whether or not a message is to the current user (either the current
-// logged-in user or the user specified by the userNum command-line argument)
-// and is not deleted.
+// Returns whether or not a message is to the given/current user by user number
+// (header to_ext). The mail msgbase is indexed by user number — not name — so
+// name matching must not be used to decide personal-email ownership.
 //
 // Parameters:
 //  pMsgHdr: A message header object
@@ -21624,26 +21755,27 @@ function msgIsToUserByNum(pMsgHdr, pUserNum)
 	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
 		return false;
 
-	var userNum = user.number;
-	if (user.is_sysop && typeof(pUserNum) === "number" && pUserNum > 0 && pUserNum <= system.lastuser)
-		userNum = pUserNum;
+	if (!pMsgHdr.hasOwnProperty("to_ext"))
+		return false;
 
-	var msgIsToUser = false;
-	// If an alternate user number was specified on the command line, then use that
-	// user information.  Otherwise, use the current logged-in user.
-	if (gCmdLineArgVals.hasOwnProperty("altUserNum"))
-		msgIsToUser = (pMsgHdr.to_ext == gCmdLineArgVals.altUserNum);
-	else
-	{
-		msgIsToUser = (pMsgHdr.to_ext == userNum);
-		// Legacy netmail may not have to_ext populated; match on the To: name too.
-		if (!msgIsToUser)
-			msgIsToUser = userHandleAliasNameMatch(pMsgHdr.to);
-	}
-	return msgIsToUser;
+	return (pMsgHdr.to_ext == resolvePersonalEmailUserNum(pUserNum));
+}
+
+// Returns whether or not a message is from the given/current user by user number
+// (header from_ext). Used for personal email ("mail"); do not match by name.
+function msgIsFromUserByNum(pMsgHdr, pUserNum)
+{
+	if (typeof(pMsgHdr) !== "object")
+		return false;
+	if (((pMsgHdr.attr & MSG_DELETE) == MSG_DELETE) && !canViewDeletedMsgs())
+		return false;
+	if (!pMsgHdr.hasOwnProperty("from_ext"))
+		return false;
+	return (pMsgHdr.from_ext == resolvePersonalEmailUserNum(pUserNum));
 }
 
 // Returns whether or not a message header is to the current logged-in user by name, alias, or handle
+// (for regular message sub-boards — not personal email).
 function msgIsToCurrentUserByName(pMsgHdrOrIdx)
 {
 	if (typeof(pMsgHdrOrIdx) !== "object" || !pMsgHdrOrIdx.hasOwnProperty("to"))
@@ -21714,6 +21846,10 @@ function anyUnreadMsgsToUser(pSubCode)
 // logged-in user or the user specified by the userNum command-line argument)
 // and is not deleted.
 //
+// For personal email ("mail"), ownership is by user number (from_ext) only.
+// Name matching is only used as a fallback for non-mail contexts when from_ext
+// is absent.
+//
 // Parameters:
 //  pMsgHdr: A message header object
 //  pUserNum: Optional - A user number to match with.  If not specified, this will default to
@@ -21729,38 +21865,21 @@ function msgIsFromUser(pMsgHdr, pUserNum)
 	if (Boolean(pMsgHdr.attr & MSG_DELETE) && !canViewDeletedMsgs())
 		return false;
 
-	var pUserNumIsValid = (typeof(pUserNum) === "number" && pUserNum > 0 && pUserNum <= system.lastuser);
-
-	var isFromUser = false;
-
-	// If an alternate user number was specified on the command line, then use that
-	// user information.  Otherwise, use the current logged-in user.
-
+	// Prefer user-number matching (required for personal email)
 	if (pMsgHdr.hasOwnProperty("from_ext"))
-	{
-		if (gCmdLineArgVals.hasOwnProperty("altUserNum"))
-			isFromUser = (pMsgHdr.from_ext == gCmdLineArgVals.altUserNum);
-		else
-			isFromUser = (pMsgHdr.from_ext == (pUserNumIsValid && user.is_sysop ? pUserNum : user.number));
-	}
-	else
-	{
-		var hdrFromUpper = pMsgHdr.from.toUpperCase();
-		if (gCmdLineArgVals.hasOwnProperty("altUserName") && gCmdLineArgVals.hasOwnProperty("altUserAlias"))
-			isFromUser = ((hdrFromUpper == gCmdLineArgVals.altUserAlias.toUpperCase()) || (hdrFromUpper == gCmdLineArgVals.altUserName.toUpperCase()));
-		else
-		{
-			if (pUserNumIsValid)
-			{
-				var theUser = new User(pUserNum);
-				isFromUser = ((hdrFromUpper == theUser.alias.toUpperCase()) || (hdrFromUpper == theUser.name.toUpperCase()));
-			}
-			else
-				isFromUser = ((hdrFromUpper == user.alias.toUpperCase()) || (hdrFromUpper == user.name.toUpperCase()));
-		}
-	}
+		return msgIsFromUserByNum(pMsgHdr, pUserNum);
 
-	return isFromUser;
+	// Non-mail fallback: match by name/alias when from_ext is absent
+	var pUserNumIsValid = (typeof(pUserNum) === "number" && pUserNum > 0 && pUserNum <= system.lastuser);
+	var hdrFromUpper = pMsgHdr.from.toUpperCase();
+	if (gCmdLineArgVals.hasOwnProperty("altUserName") && gCmdLineArgVals.hasOwnProperty("altUserAlias"))
+		return ((hdrFromUpper == gCmdLineArgVals.altUserAlias.toUpperCase()) || (hdrFromUpper == gCmdLineArgVals.altUserName.toUpperCase()));
+	if (pUserNumIsValid)
+	{
+		var theUser = new User(pUserNum);
+		return ((hdrFromUpper == theUser.alias.toUpperCase()) || (hdrFromUpper == theUser.name.toUpperCase()));
+	}
+	return ((hdrFromUpper == user.alias.toUpperCase()) || (hdrFromUpper == user.name.toUpperCase()));
 }
 
 // Returns whether a given message group index & sub-board index (or the current ones,
