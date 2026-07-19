@@ -26,8 +26,9 @@
 // been fetched yet.
 //
 // Every title is launched DIRECTLY from xtrn.ini, with no lobby (see
-// xtrn/syncqueen/install-xtrn.ini's `cmd =` line: `scummvm%. %f --path=. ...`),
-// so the binary must be FLAT in each package dir -- the same reasoning as
+// xtrn/syncqueen/install-xtrn.ini's `cmd =` line: `scummvm%. %f ... queen`,
+// run from the package dir as its own CWD), so the binary must be FLAT in
+// each package dir -- the same reasoning as
 // src/doors/syncmoo1/deploy.js, not the per-target sub-dir SyncRetro's lobby
 // can probe for.
 //
@@ -47,7 +48,7 @@ load("door_deploy.js");   // door_exe_name(), door_find_built(), door_deploy_int
 
 // Every SyncSCUMM title package -- the xtrn/<dir> name, matching each
 // title's own install-xtrn.ini. See the header comment above.
-var PACKAGES = [ "syncqueen", "syncbass" ];
+var PACKAGES = [ "syncqueen", "syncbass", "spacequest0" ];
 
 // The LIVE install's xtrn/ -- the one anything actually launches from.
 // system.ctrl_dir names the install we are running against, under jsexec and

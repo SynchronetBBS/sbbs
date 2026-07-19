@@ -1,0 +1,15 @@
+# This package commits ONLY its own source (the fetcher + config below). The
+# AGI game files getdata.js downloads (LOGDIR, PICDIR, VIEWDIR, SNDDIR, OBJECT,
+# WORDS.TOK, VOL.*), the deployed door binary, the seeded scummvm.ini, and any
+# logs are runtime content -- never committed (the game data is Jeff Stewart's
+# fan game, fetched from the author's host, not re-hosted here; see getdata.js).
+#
+# A whitelist rather than a denylist: AGI resource files have many, oddly-named
+# entries (no shared extension), so "ignore everything except the tracked
+# source" is the robust rule.
+/*
+!/.gitignore
+!/getdata.js
+!/install-xtrn.ini
+!/README.md
+!/scummvm.example.ini
