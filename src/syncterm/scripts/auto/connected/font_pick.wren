@@ -109,14 +109,12 @@ class FontApp {
       app.quit()
     }
     pane.add(list)
-    pane.fitContent()
+    pane.fitContentToScreen()
     // Pin to the top row, horizontally centered.  Centering vertically
     // (the default centerOnScreen) puts the pane right over the cterm
     // content the user is presumably trying to read while changing
     // fonts; top-aligned leaves the bottom of the screen visible.
-    var sz = Screen.size
-    var x  = ((sz[0] - pane.bounds.w) / 2).floor + 1
-    pane.bounds = Rect.new(x, 1, pane.bounds.w, pane.bounds.h)
+    pane.bounds = Rect.new(pane.bounds.x, 1, pane.bounds.w, pane.bounds.h)
     if (pane.children.count > 0) pane.children[0].bounds = pane.innerBounds
     app.bind(Key.escape, Fn.new { |k| app.quit() })
     if (ScreenSupports.loadableFonts) {

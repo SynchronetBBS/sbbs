@@ -172,7 +172,9 @@ class Pane is Container {
 
   // Auto-size the pane around a single child's preferredWidth /
   // preferredHeight, plus whatever the title bar and corner buttons
-  // demand.  Falls back to existing bounds (or sensible defaults)
+  // demand.  Re-measure after assigning the resulting child bounds
+  // so size-dependent preferences (notably ListView scrollbars) settle
+  // in one call.  Falls back to existing bounds (or sensible defaults)
   // for any axis the child doesn't declare.  If the pane already
   // has bounds, its (x, y) is preserved; otherwise the pane is
   // parked at (1, 1) until centerOnScreen / a parent layout moves
@@ -180,27 +182,69 @@ class Pane is Container {
   //
   // Multi-child panes need to lay themselves out manually — this
   // helper is the single-content-widget convenience.
-  fitContent() {
+  fitContent() { fitContent_(null, null) }
+
+  // Constrained form of fitContent.  Limits apply to the complete
+  // pane, including its frame and title bar.
+  fitContent(maximumWidth, maximumHeight) {
+    fitContent_(maximumWidth, maximumHeight)
+  }
+
+  fitContent_(maximumWidth, maximumHeight) {
     if (children.count == 0) return
     var c = children[0]
-    var pw = c.preferredWidth
-    var ph = c.preferredHeight
-    if (pw == null && ph == null) return
-    var innerW = pw == null ? (bounds == null ? 20 : bounds.w - frameOverheadW_) : pw
-    var innerH = ph == null ? (bounds == null ?  5 : bounds.h - frameOverheadH_) : ph
-    if (innerW < 1) innerW = 1
-    if (innerH < 1) innerH = 1
-    var outerW = innerW + frameOverheadW_
-    // Title and corner-button widths are independent outer-width
-    // demands; pick whichever is largest so neither gets clipped.
-    var titleW   = titleOuterWidth_
-    var buttonsW = cornerButtonsOuterWidth_
-    if (titleW   > outerW) outerW = titleW
-    if (buttonsW > outerW) outerW = buttonsW
     var x = bounds == null ? 1 : bounds.x
     var y = bounds == null ? 1 : bounds.y
-    bounds = Rect.new(x, y, outerW, innerH + frameOverheadH_)
-    c.bounds = innerBounds
+    var pass = 0
+    // The first pass establishes the child's viewport.  The second
+    // incorporates preferences which depend on that viewport.
+    while (pass < 2) {
+      var pw = c.preferredWidth
+      var ph = c.preferredHeight
+      if (pw == null && ph == null) return
+      var innerW = pw == null ? (bounds == null ? 20 : bounds.w - frameOverheadW_) : pw
+      var innerH = ph == null ? (bounds == null ? 5 : bounds.h - frameOverheadH_) : ph
+      if (innerW < 1) innerW = 1
+      if (innerH < 1) innerH = 1
+      var outerW = innerW + frameOverheadW_
+      // Title and corner-button widths are independent outer-width
+      // demands; pick whichever is largest so neither gets clipped.
+      var titleW = titleOuterWidth_
+      var buttonsW = cornerButtonsOuterWidth_
+      if (titleW > outerW) outerW = titleW
+      if (buttonsW > outerW) outerW = buttonsW
+      var outerH = innerH + frameOverheadH_
+      if (maximumWidth != null) outerW = outerW.min(maximumWidth)
+      if (maximumHeight != null) outerH = outerH.min(maximumHeight)
+      bounds = Rect.new(x, y, outerW.max(1), outerH.max(1))
+      c.bounds = innerBounds
+      pass = pass + 1
+    }
+  }
+
+  // Size content within the standard modal margins and center the
+  // result.  The horizontal and vertical margins reserve the full
+  // two-column right shadow and one-row bottom shadow.
+  fitContentToScreen() {
+    var limits = screenFitLimits_
+    fitContent_(limits[0], limits[1])
+    centerOnScreen()
+  }
+
+  // Apply a requested fixed size within the same modal limits.  This
+  // is the fixed-size counterpart to fitContentToScreen, used by panes
+  // such as preformatted Help viewers.
+  fitToScreen(width, height) {
+    var limits = screenFitLimits_
+    var w = width.min(limits[0]).max(1)
+    var h = height.min(limits[1]).max(1)
+    bounds = Rect.new(1, 1, w, h)
+    centerOnScreen()
+  }
+
+  screenFitLimits_ {
+    var size = Screen.size
+    return [(size[0] - 4).max(1), (size[1] - 2).max(1)]
   }
 
   // Reposition the pane so it's centered on the current Screen.

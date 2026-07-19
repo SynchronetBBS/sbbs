@@ -206,8 +206,6 @@ class BbsEditor {
     if (isDefaults) pane.title = "Default Connection Settings"
     pane.helpText = editorHelp_(draft, isDefaults)
     pane.focused = true
-    var size = Screen.size
-    pane.bounds = Rect.new(2, 2, size[0] - 2, size[1] - 2)
     var dismiss = Fn.new {
       app.popModal()
       if (standalone) app.quit()
@@ -222,7 +220,6 @@ class BbsEditor {
     }
 
     var list = ListView.new()
-    list.bounds = pane.innerBounds
     list.onChange = Fn.new {|index, item|
       if (index != null) state["selected"] = index
     }
@@ -234,6 +231,7 @@ class BbsEditor {
       var rows = rows_(app, bbs, draft, isDefaults)
       pane.helpText = editorHelp_(draft, isDefaults)
       list.items = rows.map {|row| row[0] }.toList
+      pane.fitContentToScreen()
       list.selected = selected.min(rows.count - 1).max(0)
       list.onSelect = Fn.new {|i, item|
         rows[i][1].call()

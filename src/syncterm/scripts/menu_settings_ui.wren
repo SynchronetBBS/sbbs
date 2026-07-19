@@ -1,11 +1,10 @@
-import "syncterm" for Host, Key, Screen
+import "syncterm" for Host, Key
 import "syncterm_menu" for Menu, MenuEncryption, MenuFontSlot
 import "menu_ui" for MenuUi
 import "menu_theme" for ClassicTheme
 import "menu_bbs_editor" for BbsEditor
 import "ui_popup" for Alert
 import "ui_help" for Help
-import "ui_widget" for Rect
 
 class SettingsMenu {
   static directoryPassword { __directoryPassword }
@@ -593,12 +592,7 @@ class SettingsMenu {
         "**Wren Scripts Directory**\n  %(p["scripts"])"
     var viewer = Help.new("File Locations", text)
     viewer.preformatted = true
-    var size = Screen.size
-    var width = 78.min(size[0])
-    var height = 20.min(size[1])
-    var left = ((size[0] - width + 2) / 2).floor.max(1)
-    var top = ((size[1] - height + 1) / 2).floor + 1
-    viewer.bounds = Rect.new(left, top, width, height)
+    viewer.fitToScreen(78, 20)
     app.modal(viewer)
   }
 
@@ -621,12 +615,7 @@ class SettingsMenu {
     var body = lines.join("\n")
     var viewer = Help.new("Build Options", body)
     viewer.preformatted = true
-    var size = Screen.size
-    var width = 60.min(size[0])
-    var height = 21.min(size[1])
-    var left = ((size[0] - width + 2) / 2).floor.max(1)
-    var top = ((size[1] - height + 1) / 2).floor + 1
-    viewer.bounds = Rect.new(left, top, width, height)
+    viewer.fitToScreen(60, 21)
     app.modal(viewer)
   }
 

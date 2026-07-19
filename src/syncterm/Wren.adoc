@@ -1016,9 +1016,11 @@ Font Management treats an empty name as cancellation when adding a record.
 Otherwise, it accepts the entered name and the file returned by the picker as
 the record values.  It reports a full custom-font table before prompting for
 another name.  The preformatted File Locations and Build Options viewers use
-the titles `File Locations` and `Build Options`; their Markdown content defines
-the label emphasis, indentation, dimensions, and section layout rendered by
-the shared Help viewer.
+the titles `File Locations` and `Build Options`.  Their maximum dimensions are
+78 by 20 and 60 by 21 cells respectively, capped to preserve the standard
+modal margins and complete drop shadow.  Their Markdown content defines the
+label emphasis, indentation, and section layout rendered by the shared Help
+viewer.
 Palette Insert is exposed only while the palette has room for another color,
 and Delete is exposed only while a color can be deleted.  Sort-profile Paste
 is exposed only after Copy or Cut has supplied a clipboard profile.  Font
@@ -5868,7 +5870,10 @@ focused-child routing to a leaf widget inside.
 
 `Pane.fitContent()` sizes the pane around its single child's
 `preferredWidth` / `preferredHeight`, plus whatever the title bar
-and corner buttons require.  The width is the largest of:
+and corner buttons require.  It repeats measurement after assigning
+the child's bounds, so preferences that depend on the resulting
+viewport, such as a `ListView` scrollbar, settle in one call.  The
+width is the largest of:
 
 * the child's `preferredWidth + 2` (left + right border),
 * the title's outer-width demand (see below), and
@@ -5887,18 +5892,26 @@ The two title modes have different geometry:
 Multi-child panes are not auto-sized -- `fitContent` only inspects
 the first child.  Lay them out manually via `bounds` / `add`.
 
-`Pane.centerOnScreen()` reposititions the pane so its bounds are
+`Pane.fitContent(maximumWidth, maximumHeight)` performs the same
+layout while constraining the complete pane to the supplied maximum
+dimensions.  `Pane.fitContentToScreen()` applies the standard modal
+limits, leaving room for the two-column right shadow and one-row
+bottom shadow, and centers the result.  For a pane with a requested
+fixed size rather than a child-defined size,
+`Pane.fitToScreen(width, height)` applies those same limits and
+centering.
+
+`Pane.centerOnScreen()` repositions the pane so its bounds are
 centered on the current `Screen.size`, then re-anchors its single
-child into the new `innerBounds`.  Pairs naturally with
-`fitContent`:
+child into the new `innerBounds`.  Use `fitContentToScreen()` for the
+usual constrained and centered modal layout:
 
 [source,wren]
 ----
 var pane = Pane.new()
 pane.title = "ANSI Music Setup"
 pane.add(list)
-pane.fitContent()
-pane.centerOnScreen()
+pane.fitContentToScreen()
 ----
 
 === ListView [[ui-list]]
@@ -5993,8 +6006,9 @@ against the frame the parent `Pane` draws.  `innerWidth` is
 Auto-layout: `preferredWidth` returns the longest item's display
 length plus the active insets (left + right padding, or scrollbar
 + padding when overflow is expected); `preferredHeight` returns
-`items.count` (clamped to at least 1).  Combined with
-`Pane.fitContent`, a list-in-pane modal sizes itself to its
+`items.count`, clamped to at least one row.  The parent layout owns
+screen and container constraints.  Combined with
+`Pane.fitContentToScreen`, a list-in-pane modal sizes itself to its
 contents:
 
 [source,wren]
@@ -6008,8 +6022,7 @@ list.items = Host.musicNames
 var pane = Pane.new()
 pane.title = "ANSI Music Setup"
 pane.add(list)
-pane.fitContent()        // pane sized to list + frame + title
-pane.centerOnScreen()    // and centered on the terminal
+pane.fitContentToScreen() // sized to list, constrained, and centered
 ----
 
 === TextInput [[ui-input]]

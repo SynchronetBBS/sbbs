@@ -33,8 +33,7 @@ class ListPicker {
       app.quit()
     }
     pane.add(list)
-    pane.fitContent()
-    pane.centerOnScreen()
+    pane.fitContentToScreen()
 
     app.bind(Key.escape, Fn.new { |k| app.quit() })
     app.run()

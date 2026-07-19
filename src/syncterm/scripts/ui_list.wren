@@ -26,7 +26,7 @@ import "ui_style"  for Style
 import "ui_widget" for Widget, Rect
 import "ui_draw"   for Painter
 import "ui_popup"  for Find
-import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse, Screen
+import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse
 
 class ListView is Widget {
   construct new() {
@@ -221,11 +221,9 @@ class ListView is Widget {
   // without truncation.  Width sums the longest item's display
   // length and both insets (1 cell of breathing space on the
   // frameless side(s) plus whatever the scrollbar would take if
-  // visible).  Height is the item count clamped to "fits on the
-  // screen with chrome budget" — ListView already scrolls, so a
-  // 200-item list reports a viewport-shaped height rather than
-  // forcing the parent pane to overflow vertically.  Callers that
-  // want a specific viewport height can set `bounds` directly.
+  // visible).  Height is the natural item count.  The parent layout
+  // applies screen or container constraints; ListView must not guess
+  // at the surrounding pane's chrome budget.
   preferredWidth {
     var maxLen = 0
     for (item in _items) {
@@ -235,13 +233,7 @@ class ListView is Widget {
     }
     return maxLen + leftInset_ + rightInset_
   }
-  preferredHeight {
-    // Cap at screen height minus chrome budget (title bar + help
-    // text + borders).  6 rows is the typical Pane overhead.
-    var screenH = Screen.size[1]
-    var cap     = (screenH - 6).max(1)
-    return _items.count.max(1).min(cap)
-  }
+  preferredHeight { _items.count.max(1) }
 
   // Subclass hook: format `item` into a String.  `width` is the cell
   // budget for the row; implementations may pad / truncate / column-
