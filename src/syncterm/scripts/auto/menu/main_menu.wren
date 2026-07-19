@@ -8,7 +8,7 @@ import "menu_scrollback" for OfflineScrollbackView
 import "menu_sort_profiles" for SortProfiles
 import "ui_app" for App
 import "ui_widget" for Widget, Container, Rect
-import "ui_input" for TextInput
+import "ui_input" for SelectOnFocusInput
 import "ui_draw" for Painter
 import "ui_pane" for Pane
 import "ui_list" for ListView
@@ -36,22 +36,10 @@ class ClassicBackdrop is Widget {
   }
 }
 
-class CommentInput is TextInput {
+class CommentInput is SelectOnFocusInput {
   construct new(onFocus) {
     super()
     _onFocus = onFocus
-  }
-
-  paintStyle_ {
-    if (parent != null && parent.focused && !allSelected) {
-      return style("default")
-    }
-    return super.paintStyle_
-  }
-
-  fillStyle_ {
-    if (parent != null && parent.focused) return style("default")
-    return super.fillStyle_
   }
 
   onPaint_() {

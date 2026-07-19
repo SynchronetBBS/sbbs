@@ -5,7 +5,7 @@ import "ui_app" for App
 import "ui_widget" for Widget, Rect
 import "ui_pane" for Pane
 import "ui_list" for ListView
-import "ui_input" for TextInput
+import "ui_input" for SelectOnFocusInput
 import "ui_form" for Form
 import "ui_draw" for Painter
 import "ui_style" for Style
@@ -78,7 +78,7 @@ class PaletteColorPreview is Widget {
   }
 }
 
-class PaletteComponentInput is TextInput {
+class PaletteComponentInput is SelectOnFocusInput {
   construct new(onReset, onLeave) {
     super()
     _reset = onReset
@@ -94,6 +94,7 @@ class PaletteComponentInput is TextInput {
   handle(event) {
     if (event is KeyEvent && event.codepoint == 0x25) {
       _reset.call()
+      selectAll()
       return true
     }
     if (event is KeyEvent &&

@@ -973,8 +973,9 @@ The encryption screen has distinct Change Password, algorithm, and Decrypt
 operations; changing algorithms reuses the password already held by the
 host.  Palette editing exposes separate Red, Green, and Blue fields, uses
 Tab and Backtab between them, cycles the preview foreground with Up and Down,
-and uses `%` to restore all three components from the mode default.  Enter
-commits the current component; Tab and Backtab move without accepting
+and uses `%` to restore all three components from the mode default.  Each
+component is selected when entered, so typing replaces its current value.
+Enter commits the current component; Tab and Backtab move without accepting
 uncommitted text.
 
 Safe mode retains accepted default-entry and web-list changes in memory while
@@ -5552,9 +5553,9 @@ and re-exported from the convenience aggregator `ui`:
 
 [source,wren]
 ----
-import "ui" for App, Pane, ListView, TextInput, Button,
+import "ui" for App, Pane, ListView, TextInput, SelectOnFocusInput, Button,
                Checkbox, RadioGroup, SpinBox, MenuBar, StatusBar,
-               Form, Alert, Confirm, Prompt, Help, PopStatus,
+               Form, Alert, Confirm, Prompt, Find, Help, PopStatus,
                Painter, Style, Theme, Glyphs,
                Widget, Container, Rect
 ----
@@ -6061,6 +6062,13 @@ the selection before ordinary editing continues; other non-editing key events
 also dismiss it without changing the value.  Assigning `value` clears the
 state, so callers opt into it explicitly after assignment when needed.
 
+`SelectOnFocusInput` is the existing-value editing variant used by UIFC-style
+prompts and inline editors.  It calls `selectAll()` whenever it gains focus,
+clears the selection on focus loss, highlights only the selected text, and
+uses the surrounding default style after cursor movement begins ordinary
+editing.  Use `TextInput` when focus should leave an assigned value ready for
+appending; use `SelectOnFocusInput` when typing should replace that value.
+
 `insertMode` reports whether printable input inserts (`true`, the initial
 mode) or overwrites existing characters (`false`).  The mode is shared by
 all `TextInput` instances, so toggling it in one field applies to the next
@@ -6309,15 +6317,18 @@ and three-argument `Confirm.show(app, message, helpText)` forms attach
 Markdown context help to the popup.  F1 and Ctrl-Z display that text
 while the popup owns focus.
 
-`Prompt` — `TextInput` plus OK / Cancel buttons.  `Enter` in the
-input or on OK submits the value; `Esc` or Cancel returns `null`.
-The read-only `input` getter exposes that `TextInput` so trusted UI
-code can set `maxLen` or a display-only `mask` before presenting the
-popup.
+`Prompt` — `SelectOnFocusInput` plus OK / Cancel buttons.  A non-empty
+initial value starts selected, matching UIFC `K_EDIT`: typing, keyboard paste,
+Backspace, or Delete replaces it, while cursor movement or mouse positioning
+preserves it and begins ordinary editing.  `Enter` in the input or on OK
+submits the value; `Esc` or Cancel returns `null`.  The read-only `input`
+getter exposes that input so trusted UI code can set `maxLen` or a display-only
+`mask` before presenting the popup.
 
 `Find` — compact single-row variant of Prompt.  Title sits in the
 top frame border, the input fills the entire `innerBounds` row (no
-padding, no buttons, no `[X]`).  Total height is 3 cells.  Used by
+padding, no buttons, no `[X]`).  Total height is 3 cells.  Its previous query
+starts selected under the same replacement rules as Prompt.  Used by
 `ListView`'s Ctrl-F.
 
 [source,wren]
@@ -6591,7 +6602,7 @@ convenience aggregator:
 | `ui_widget`    | `Widget`, `Container`, `Rect`.
 | `ui_pane`      | `Pane`.
 | `ui_list`      | `ListView`.
-| `ui_input`     | `TextInput`.
+| `ui_input`     | `TextInput`, `SelectOnFocusInput`.
 | `ui_button`    | `Button`.
 | `ui_checkbox`  | `Checkbox`.
 | `ui_radio`     | `RadioGroup`.
@@ -6599,7 +6610,7 @@ convenience aggregator:
 | `ui_statusbar` | `StatusBar`.
 | `ui_menubar`   | `MenuBar`.
 | `ui_form`      | `Form`.
-| `ui_popup`     | `Popup`, `Alert`, `Confirm`, `Prompt`, `PopStatus`.
+| `ui_popup`     | `Popup`, `Alert`, `Confirm`, `Prompt`, `Find`, `PopStatus`.
 | `ui_help`      | `Help`.
 | `ui_draw`      | `Painter`.
 | `ui_style`     | `Style`, `Glyphs`, `Theme`.

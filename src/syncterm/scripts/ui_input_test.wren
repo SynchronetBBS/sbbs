@@ -2,7 +2,7 @@
 // cells out of the TextInput's own Surface.
 
 import "ui_widget" for Rect
-import "ui_input"  for TextInput
+import "ui_input"  for TextInput, SelectOnFocusInput
 import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse
 
 class PasteProbe is TextInput {
@@ -37,6 +37,8 @@ class UiInputTest {
     testSelectAllDeleteClears_()
     testSelectAllMousePreserves_()
     testValueClearsSelection_()
+    testSelectOnFocusInput_()
+    testSelectOnFocusPaint_()
     testBackspace_()
     testBackspaceAtStart_()
     testDelete_()
@@ -220,6 +222,34 @@ class UiInputTest {
     t.value = "new"
     check_(t.value == "new" && t.cursor == 3 && !t.allSelected,
            "TextInput value=: clears select-all state")
+  }
+
+  static testSelectOnFocusInput_() {
+    var t = SelectOnFocusInput.new()
+    t.bounds = Rect.new(1, 1, 10, 1)
+    t.value = "old"
+    t.focused = true
+    var selected = t.allSelected
+    t.focused = false
+    var cleared = !t.allSelected
+    t.focused = true
+    t.handle(KeyEvent.new(0x58))
+    check_(selected && cleared && t.value == "X" && !t.allSelected,
+           "SelectOnFocusInput: focus selects and typing replaces")
+  }
+
+  static testSelectOnFocusPaint_() {
+    var t = SelectOnFocusInput.new()
+    t.bounds = Rect.new(1, 1, 5, 1)
+    t.value = "x"
+    t.focused = true
+    var selected = t.draw()
+    var selectedStyle = selected.cellAt(0, 0).legacyAttr == 0x70 &&
+        selected.cellAt(1, 0).legacyAttr == 0x1F
+    t.handle(KeyEvent.new(Key.left))
+    var editing = t.draw()
+    check_(selectedStyle && editing.cellAt(0, 0).legacyAttr == 0x1F,
+           "SelectOnFocusInput: lightbar covers selected text only")
   }
 
   static testCtrlZConsumed_() {

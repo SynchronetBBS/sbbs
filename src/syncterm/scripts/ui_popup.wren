@@ -3,7 +3,7 @@
 // Modal dialogs that push themselves onto an App's modal stack, run
 // the App's drain loop until dismissed, then return a result.  Built
 // on Pane (frame + title + interior) with Button children (and, for
-// Prompt, a TextInput).
+// Prompt, a SelectOnFocusInput).
 //
 // Usage:
 //   Alert.show(app, "Disk full")
@@ -32,7 +32,7 @@
 
 import "ui_widget" for Rect
 import "ui_pane"   for Pane
-import "ui_input"  for TextInput
+import "ui_input"  for SelectOnFocusInput
 import "ui_button" for Button
 import "ui_draw"   for Painter
 import "syncterm"  for KeyEvent, Key, Mouse, Screen
@@ -513,7 +513,7 @@ class Prompt is Popup {
   construct new(message, initial) {
     super(message)
     title  = "Prompt"
-    _input = TextInput.new()
+    _input = SelectOnFocusInput.new()
     _input.value = (initial == null ? "" : initial)
     _input.onSubmit = Fn.new {|s| dismissWith_(s) }
     add(_input)
@@ -587,7 +587,7 @@ class Find is Popup {
     super(null)
     title       = label
     closeable   = false
-    _input      = TextInput.new()
+    _input      = SelectOnFocusInput.new()
     _input.value = (initial == null ? "" : initial)
     _input.onSubmit = Fn.new {|s| dismissWith_(s) }
     _input.focused  = true

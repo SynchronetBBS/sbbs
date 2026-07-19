@@ -4,7 +4,7 @@
 // loop.
 
 import "ui_widget" for Rect, Container
-import "ui_popup"  for Alert, Confirm, Prompt, Popup
+import "ui_popup"  for Alert, Confirm, Prompt, Find, Popup
 import "menu_ui" for MenuUi, ModalPane, StandaloneChoice
 import "syncterm"  for KeyEvent, Key
 
@@ -87,6 +87,8 @@ class UiPopupTest {
     testPromptEnterReturnsValue_()
     testPromptEscReturnsNull_()
     testPromptForwardsTypingToInput_()
+    testPromptMovementPreservesInitial_()
+    testFindReplacesPreviousQuery_()
     testMenuChoiceEscReturnsNull_()
     testMenuChoiceCarriesHelp_()
     testMenuChoiceRunsCallbackBeforeDismiss_()
@@ -216,8 +218,9 @@ class UiPopupTest {
   static testPromptConstruction_() {
     var p = Prompt.new("Name?", "default")
     p.bounds = Rect.new(1, 1, 30, 6)
-    check_(p.message == "Name?" && p.title == "Prompt" && p.result == null,
-           "Prompt: message + title + null result on construct")
+    check_(p.message == "Name?" && p.title == "Prompt" &&
+           p.result == null && p.input.allSelected,
+           "Prompt: initial value starts selected")
   }
 
   static testPromptEnterReturnsValue_() {
@@ -247,8 +250,31 @@ class UiPopupTest {
     app.modal(p)
     p.handle(KeyEvent.new(0x43))      // 'C'
     p.handle(KeyEvent.new(Key.enter))
-    check_(p.result == "abC",
-           "Prompt: typed char forwarded to TextInput; Enter returns updated value")
+    check_(p.result == "C",
+           "Prompt: typing replaces the selected initial value")
+  }
+
+  static testPromptMovementPreservesInitial_() {
+    var app = FakeApp.new()
+    var p = Prompt.new("Name?", "ab")
+    p.bounds = Rect.new(1, 1, 30, 6)
+    app.modal(p)
+    p.handle(KeyEvent.new(Key.left))
+    p.handle(KeyEvent.new(0x43))
+    p.handle(KeyEvent.new(Key.enter))
+    check_(p.result == "aCb",
+           "Prompt: cursor movement preserves initial value")
+  }
+
+  static testFindReplacesPreviousQuery_() {
+    var app = FakeApp.new()
+    var p = Find.new("Find", "previous")
+    p.bounds = Rect.new(1, 1, 30, 3)
+    app.modal(p)
+    p.handle(KeyEvent.new(0x4E))
+    p.handle(KeyEvent.new(Key.enter))
+    check_(p.result == "N",
+           "Find: typing replaces the previous query")
   }
 
   static testMenuChoiceEscReturnsNull_() {

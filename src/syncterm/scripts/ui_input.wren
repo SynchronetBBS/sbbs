@@ -386,3 +386,24 @@ class TextInput is Widget {
     return true
   }
 }
+
+// Existing-value editor.  A non-empty value is selected whenever the
+// widget gains focus, matching UIFC's K_EDIT entry state.  Only the
+// selected text uses the lightbar; the unused row and ordinary editing
+// retain the surrounding default style.
+class SelectOnFocusInput is TextInput {
+  construct new() { super() }
+
+  focused=(value) {
+    var gaining = value && !focused
+    if (!value && focused) clearSelection_()
+    super.focused = value
+    if (gaining) selectAll()
+  }
+
+  paintStyle_ {
+    return allSelected ? style("input.focused") : style("default")
+  }
+
+  fillStyle_ { style("default") }
+}
