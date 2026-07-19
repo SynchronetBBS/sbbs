@@ -1,0 +1,23 @@
+# Runtime content installed/fetched into this door directory -- never
+# committed. The Disk*.vga game resources + LICENSE.txt are the freeware game
+# data getdata.js downloads here (the archive's EGA disks / Lure.exe / PDFs are
+# not fetched, but are ignored defensively in case a sysop unpacks them by
+# hand); syncscumm is the deployed door binary (built by src/doors/syncscumm's
+# build.sh, copied in by deploy.js); scummvm.ini is the per-directory reference
+# config seeded from scummvm.example.ini by the installer's [copy:] step.
+#
+# lure.dat (the ScummVM engine-data file) is NOT ignored -- it ships committed
+# with this package.
+/Disk*.vga
+/disk*.ega
+/Lure.exe
+/*.pdf
+/*.PDF
+/README
+/notes.txt
+/LICENSE.txt
+/syncscumm
+/syncscumm.exe
+/scummvm.ini
+/syncscumm.ini
+/*.log
