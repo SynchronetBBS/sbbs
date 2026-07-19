@@ -320,12 +320,16 @@ class BbsEditor {
   }
 
   static textRow_(app, d, key, label, maxLen, masked) {
+    return textRow_(app, d, key, label, maxLen, masked, masked)
+  }
+
+  static textRow_(app, d, key, label, maxLen, displayMasked, inputMasked) {
     var shown = d[key]
-    if (masked) shown = shown.count > 0 ? "********" : "<none>"
+    if (displayMasked) shown = shown.count > 0 ? "********" : "<none>"
     return row_(label, shown,
         Fn.new {
-      var value = MenuUi.prompt(app, label, label, d[key], maxLen, masked,
-          fieldHelp_(key, d))
+      var value = MenuUi.prompt(app, label, label, d[key], maxLen,
+          inputMasked, fieldHelp_(key, d))
       if (value != null) d[key] = value
     })
   }
@@ -957,8 +961,8 @@ class BbsEditor {
     var sysLabel = d["connType"] == 6 ? "BBS Password" : "System Password"
     rows.add(textRow_(app, d, "user", userLabel, 30, false))
     rows.add(textRow_(app, d, "password", passLabel, 128,
-        d["connType"] != 6 && d["connType"] != 11))
-    rows.add(textRow_(app, d, "syspass", sysLabel, 128, true))
+        d["connType"] != 6 && d["connType"] != 11, false))
+    rows.add(textRow_(app, d, "syspass", sysLabel, 128, true, false))
     if (ssh_(d["connType"])) {
       rows.add(boolRow_(d, "sftpPublicKey", "SFTP Public Key"))
       rows.add(boolRow_(d, "sshAllowAes128Cbc", "Allow AES128-CBC"))

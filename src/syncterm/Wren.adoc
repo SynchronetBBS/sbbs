@@ -991,6 +991,10 @@ New entries are sorted again after their connection details are accepted.
 Quick Connect retains the directory address field's 64-character input limit.
 Current Screen Mode retains its original distinction from the Startup Screen
 Mode setting in both its dialog title and context help.
+Directory password and system-password rows remain obscured in the editor
+list, but selecting one uses ordinary text editing so the existing value can
+be inspected and corrected.  Personal-directory encryption prompts remain
+masked.
 Rate choices select the first supported rate at or above a configured value,
 or Current when no supported rate is high enough, matching the directory
 editor's established catalog behavior.
