@@ -22,9 +22,6 @@
 #include "syncterm.h"
 #include "bbslist.h"
 #include "ciolib.h"
-#ifdef main
-#undef main
-#endif
 #include "dirwrap.h"
 #include "genwrap.h"      /* xp_timer */
 #include "term.h"         /* doterm_wake */
@@ -127,7 +124,7 @@ log_append(enum wren_log_source source, const char *text)
 
 	struct wren_log       *log = st->log.target;
 	if (log == NULL)
-		log = st->log.target = &st->log.main;
+		log = st->log.target = &st->log.mainl;
 	struct wren_log_entry *e   = &log->entries[log->head];
 	log_release_slot(st, e);
 	e->seq    = log->total++;
@@ -225,7 +222,7 @@ wren_log_capture_clear(void)
 	if (st == NULL)
 		return;
 	log_drop_all(st, &st->log.capture);
-	st->log.target = &st->log.main;
+	st->log.target = &st->log.mainl;
 }
 
 void
@@ -237,7 +234,7 @@ wren_log_capture_commit(void)
 	/* Swap target back to main, then replay each captured entry
 	 * through log_append so it lands in main with a fresh ring slot.
 	 * Order is oldest-first; we walk from (head - count) forward. */
-	st->log.target = &st->log.main;
+	st->log.target = &st->log.mainl;
 	struct wren_log *capture = &st->log.capture;
 	int n     = capture->count;
 	int start = (capture->head - n + WREN_LOG_CAPACITY) % WREN_LOG_CAPACITY;
@@ -254,14 +251,14 @@ int
 wren_log_count(void)
 {
 	struct wren_host_state *st = wren_host_state();
-	return st == NULL ? 0 : st->log.main.count;
+	return st == NULL ? 0 : st->log.mainl.count;
 }
 
 uint64_t
 wren_log_total(void)
 {
 	struct wren_host_state *st = wren_host_state();
-	return st == NULL ? 0 : st->log.main.total;
+	return st == NULL ? 0 : st->log.mainl.total;
 }
 
 /* High-water marks of main.total / .error_total at the time the
@@ -272,7 +269,7 @@ bool
 wren_host_log_unread(void)
 {
 	struct wren_host_state *st = wren_host_state();
-	return st != NULL && st->log.main.total > st->log.seen_total;
+	return st != NULL && st->log.mainl.total > st->log.seen_total;
 }
 
 bool
@@ -280,7 +277,7 @@ wren_host_log_unread_error(void)
 {
 	struct wren_host_state *st = wren_host_state();
 	return st != NULL &&
-	    st->log.main.error_total > st->log.seen_error_total;
+	    st->log.mainl.error_total > st->log.seen_error_total;
 }
 
 void
@@ -289,8 +286,8 @@ wren_host_mark_log_seen(void)
 	struct wren_host_state *st = wren_host_state();
 	if (st == NULL)
 		return;
-	st->log.seen_total       = st->log.main.total;
-	st->log.seen_error_total = st->log.main.error_total;
+	st->log.seen_total       = st->log.mainl.total;
+	st->log.seen_error_total = st->log.mainl.error_total;
 }
 
 bool
@@ -312,7 +309,7 @@ wren_log_clear(void)
 {
 	struct wren_host_state *st = wren_host_state();
 	if (st != NULL)
-		log_drop_all(st, &st->log.main);
+		log_drop_all(st, &st->log.mainl);
 }
 
 void
@@ -321,7 +318,7 @@ wren_log_shutdown(void)
 	struct wren_host_state *st = wren_host_state();
 	if (st == NULL)
 		return;
-	log_drop_all(st, &st->log.main);
+	log_drop_all(st, &st->log.mainl);
 	log_drop_all(st, &st->log.capture);
 	memset(&st->log, 0, sizeof(st->log));
 }
@@ -334,7 +331,7 @@ wren_log_emit(WrenVM *vm, uint64_t seq, int slot)
 		wrenSetSlotNull(vm, slot);
 		return;
 	}
-	struct wren_log *log = &st->log.main;
+	struct wren_log *log = &st->log.mainl;
 	/* Valid range: oldest seq = log->total - log->count;
 	 * newest seq = log->total - 1. */
 	if (log->count == 0 ||

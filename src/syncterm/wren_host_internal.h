@@ -108,7 +108,7 @@ struct wren_log {
 };
 
 struct wren_log_state {
-	struct wren_log  main;
+	struct wren_log  mainl;
 	struct wren_log  capture;
 	struct wren_log *target;
 	uint64_t         seen_total;
