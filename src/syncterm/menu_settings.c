@@ -5,65 +5,12 @@
 
 #include <ciolib.h>
 #include <ini_file.h>
-#include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vidmodes.h>
 
 #include "xpbeep.h"
-
-static bool
-valid_output_mode(int mode)
-{
-	for (size_t i = 0; output_types[i] != NULL; i++) {
-		if (output_map[i] == mode)
-			return true;
-	}
-	return false;
-}
-
-static bool
-valid_audio_modes(unsigned modes)
-{
-	unsigned known = 0;
-	for (size_t i = 0; audio_output_bits[i].name != NULL; i++)
-		known |= audio_output_bits[i].bit;
-	return (modes & ~known) == 0;
-}
-
-static int
-kdf_shift(const char *spec)
-{
-	if (spec == NULL || strncmp(spec, "scrypt-N", 8) != 0)
-		return -1;
-	char *end = NULL;
-	long shift = strtol(spec + 8, &end, 10);
-	if (end == spec + 8 || *end != 0 || shift < 8 || shift > 24)
-		return -1;
-	return (int)shift;
-}
-
-static bool
-valid_settings(const struct syncterm_settings *set)
-{
-	if (set->startup_mode < SCREEN_MODE_CURRENT ||
-	    set->startup_mode >= SCREEN_MODE_TERMINATOR ||
-	    !valid_output_mode(set->output_mode) ||
-	    set->defaultCursor < ST_CT_DEFAULT ||
-	    set->defaultCursor > ST_CT_SOLID_BLK || set->backlines < 1 ||
-	    set->custom_rows < 14 || set->custom_rows > 255 ||
-	    set->custom_cols < 40 || set->custom_cols > 255 ||
-	    (set->custom_fontheight != 8 && set->custom_fontheight != 14 &&
-	    set->custom_fontheight != 16) || set->custom_aw < 1 ||
-	    set->custom_ah < 1 || !valid_audio_modes(set->audio_output_modes) ||
-	    set->uifc_hclr > 16 || set->uifc_lclr > 16 ||
-	    set->uifc_bclr > 8 || set->uifc_cclr > 8 ||
-	    set->uifc_lbclr > 16 || set->uifc_lbbclr > 8 ||
-	    kdf_shift(set->keyDerivationIterations) < 0)
-		return false;
-	return true;
-}
 
 void
 menu_settings_snapshot(struct syncterm_settings *snapshot)
@@ -226,7 +173,7 @@ prepare_settings(const struct syncterm_settings *snapshot,
     struct vmem_cell **resized)
 {
 	*resized = NULL;
-	if (snapshot == NULL || !valid_settings(snapshot))
+	if (snapshot == NULL)
 		return false;
 	if ((size_t)snapshot->backlines >
 	    SIZE_MAX / 80 / sizeof(*scrollback_buf))
