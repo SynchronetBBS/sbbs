@@ -4527,7 +4527,8 @@ numeric assignments are stable so scripts may combine or persist them.
 
 | `allowEntry`
 | 256
-| Show the editable Path field.
+| Allow the always-visible Path field to receive focus and accept a
+  typed directory or filename.
 
 | `confirmOverwrite`
 | 512

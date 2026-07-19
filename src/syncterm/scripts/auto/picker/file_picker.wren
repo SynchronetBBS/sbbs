@@ -188,8 +188,8 @@ class PickerPane is Pane {
     add(_mask)
 
     _pathInput = PickerInput.new(this)
-    _pathInput.visible = option_(FilePickerOptions.allowEntry)
-    _pathInput.focusable = _pathInput.visible
+    _pathInput.visible = true
+    _pathInput.focusable = option_(FilePickerOptions.allowEntry)
     _pathInput.onSubmit = Fn.new {|value| applyPath_(value, true) }
     _pathInput.onLeave = Fn.new {|value| applyPath_(value, false) }
     add(_pathInput)
@@ -224,7 +224,7 @@ class PickerPane is Pane {
 
   focusWidget(widget) {
     var index = children.indexOf(widget)
-    if (index >= 0) focusedIndex = index
+    if (index >= 0 && widget.focusable) focusedIndex = index
   }
 
   isSelected(entry) {

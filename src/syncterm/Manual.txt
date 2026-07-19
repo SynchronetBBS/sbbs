@@ -421,10 +421,10 @@ the highlighted file is already tagged.
 
 Mask and Path fields::
 The mask filters the file list (for example `*.bin`).  The path field
-(shown only when the caller permits typing a path, e.g. Upload) lets
-you type a directory or filename directly; long paths are truncated
-from the left with a `...` prefix so the deepest directory stays
-visible.
+always shows the current location.  When the caller permits typing a
+path, e.g. Upload, it also lets you type a directory or filename
+directly.  Long paths are shown from the end so the deepest directory
+stays visible.
 
 The footer holds an `OK` (or `Select`) button and a `Cancel` button.
 In the multi-file picker there is also a `Review` button.
@@ -432,8 +432,8 @@ In the multi-file picker there is also a `Review` button.
 Keyboard Controls::
 
 	kbd:[Tab] / kbd:[Shift+Tab]:::
-	Move focus forward or backward between the panes, Mask, Path
-	(if shown), and the footer buttons.
+	Move focus forward or backward between the panes, Mask, the
+	editable Path field (when enabled), and the footer buttons.
 
 	kbd:[←] / kbd:[→]:::
 	Between the directory and file panes these move focus left or
