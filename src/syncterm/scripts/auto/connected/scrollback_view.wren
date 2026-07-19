@@ -23,29 +23,33 @@ import "ui_app"   for App
 import "ui_help"  for Help
 
 class ScrollbackView {
+  static setupMouse_() {
+    var saved = Input.mouseEvents
+    Input.mouseEvents = 0
+    Input.enableMouseEvent(Mouse.button1DragStart)
+    Input.enableMouseEvent(Mouse.button1DragMove)
+    Input.enableMouseEvent(Mouse.button1DragEnd)
+    Input.enableMouseEvent(Mouse.wheelUpPress)
+    Input.enableMouseEvent(Mouse.wheelDownPress)
+    return saved
+  }
+
   static run() {
     Fiber.new {
+      // Replace the caller's mask for the duration of the viewer.
+      // Retaining a BBS tracking mask would deliver raw motion here,
+      // repainting the indicators for every movement, while a mask
+      // without drag-move/end would strand the C selection loop.
+      var savedMouse = setupMouse_()
       Screen.modalRun(Fn.new {
-        // Save the surrounding terminal's mouse-event mask so we can
-        // hand it back unchanged on exit.  The viewer needs wheel
-        // up/down (to pan) and button-1 drag (to hand off to the C
-        // rect-select copier); those aren't necessarily on by default
-        // in cterm's normal mode.
-        var savedMouse = Input.mouseEvents
-        Input.enableMouseEvent(Mouse.wheelUpPress)
-        Input.enableMouseEvent(Mouse.wheelDownPress)
-        Input.enableMouseEvent(Mouse.button1DragStart)
-
         Scrollback.pushScreen()
         blankSurroundings_()
         viewLoop_()
         // popScreen rewinds via the saved snapshot; the n argument is
         // informational so the value here doesn't matter.
         Scrollback.popScreen(0)
-
-        Input.mouseEvents = savedMouse
       })
-      Input.setupMouseEvents()
+      Input.mouseEvents = savedMouse
     }.call()
   }
 

@@ -3172,8 +3172,9 @@ Connection-level send and receive.
 | Invoke `ScrollbackView.run()` in the connected VM.  The Wren view
   temporarily presents cterm's scrollback ring, supports keyboard,
   mouse, selection, URL, and help interaction, then restores the live
-  terminal and mouse subscriptions on exit.  This is the default Alt+B
-  path.
+  terminal and exact previous mouse-event mask on exit.  While active,
+  the viewer replaces remote tracking subscriptions with only its drag
+  and wheel events.  This is the default Alt+B path.
 
 | `Conn.upload()`
 | Open the upload picker or dialog.  This is the operation bound to

@@ -50,6 +50,7 @@ import "ui_popup_test"     for UiPopupTest
 import "ui_help_test"      for UiHelpTest
 import "ui_progress_test"  for UiProgressTest
 import "ui_logview_test"   for UiLogviewTest
+import "scrollback_view"   for ScrollbackView
 
 class WrenTest {
   static run() {
@@ -216,6 +217,7 @@ class WrenTest {
     // ------ pure C math / util --------------------------------------
     testColor_()
     testMouseEventCtors_()
+    testScrollbackMouseMask_()
     testKeyEventCtorValidation_()
 
     // ------ read-only live bindings ---------------------------------
@@ -490,6 +492,18 @@ class WrenTest {
     // Mouse.move event → bstate 0 by derivation.
     var f = MouseEvent.new(Mouse.move, 0, 0)
     check_(f.bstate == 0, "MouseEvent.new with Mouse.move → bstate 0")
+  }
+
+  static testScrollbackMouseMask_() {
+    var saved = Input.mouseEvents
+    var returned = ScrollbackView.setupMouse_()
+    // Bits 7/8/9 are button-1 drag start/move/end; 28 and 37 are
+    // wheel up/down press.  No raw movement or remote button events.
+    check_(returned == saved && Input.mouseEvents == 137707389824,
+           "ScrollbackView replaces the mouse mask for selection")
+    Input.mouseEvents = returned
+    check_(Input.mouseEvents == saved,
+           "ScrollbackView mouse mask can be restored exactly")
   }
 
   // KeyEvent.new validates that the code is roundtrip-representable
