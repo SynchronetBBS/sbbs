@@ -81,6 +81,12 @@
   emit output already encoded for the remote terminal (its own
   UTF-8 or raw graphics), with no CP437-to-UTF-8 translation or
   bare-LF-to-CRLF expansion applied by the BBS
+- Configuration changes now reach new callers without waiting for
+  every node to disconnect: when a recycle is signaled (the
+  `ctrl/recycle` semaphore, an MQTT recycle, `SIGHUP` /
+  `systemctl reload`, or a console recycle command), active nodes
+  are flagged to re-read their configuration on their next logon
+  (the full server recycle still waits until all nodes are idle)
 
 ## Web Server
 

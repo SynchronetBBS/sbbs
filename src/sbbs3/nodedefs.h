@@ -55,7 +55,7 @@ enum node_status {                  /* Node Status */
 #define NODE_POFF   (1 << 4)          /* Page disabled */
 #define NODE_AOFF   (1 << 5)          /* Activity Alert disabled */
 #define NODE_UDAT   (1 << 6)          /* User data has been updated */
-#define NODE_RRUN   (1 << 7)          /* Re-run this node when log off */
+#define NODE_RRUN   (1 << 7)          /* Re-read this node's config on next logon (rerun) */
 #define NODE_EVENT  (1 << 8)          /* Must run node event after log off */
 #define NODE_DOWN   (1 << 9)          /* Down this node after logoff */
 #define NODE_RPCHT  (1 << 10)         /* Reset private chat */
