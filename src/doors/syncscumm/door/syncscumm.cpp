@@ -7,8 +7,26 @@
 
 #include <stdlib.h>
 #include <time.h>
-#include <sys/time.h>
-#include <unistd.h>
+
+#ifdef _MSC_VER
+/* The door's own static libraries and the Win32 system libraries they need.
+ * ScummVM's create_project has no notion of these (they live outside the
+ * vendored tree), so name them here in the one door TU the whole binary always
+ * links; build.bat puts them on the linker's search path (--library-dir). The
+ * vcpkg-provided media libraries are auto-linked by the vcpkg MSBuild props. */
+#pragma comment(lib, "termgfx.lib")        // sixel/JXL/APC/audio encoders
+#pragma comment(lib, "ADLMIDI.lib")        // termgfx's OPL3 MIDI synth
+#pragma comment(lib, "xpdev_static.lib")   // ini_file, sockwrap, genwrap, dirwrap
+#pragma comment(lib, "ws2_32.lib")         // Winsock: sst_plat send/recv/WSAStartup
+#pragma comment(lib, "winmm.lib")          // xpdev timers + ScummVM midi/windows
+#pragma comment(lib, "iphlpapi.lib")       // xpdev netwrap: GetNetworkParams()
+#pragma comment(lib, "shlwapi.lib")        // mpg123 (libsndfile mpeg): PathCombineW etc.
+#endif
+
+/* The door's platform seam (monotonic clock, sleep) -- keeps this file free of
+ * <sys/time.h>/<unistd.h>/gettimeofday/usleep, none of which exist under MSVC.
+ * Header-only prototypes over stdint, so no forbidden.h ordering concern. */
+#include "sst_plat.h"
 
 /* xpdev's ini_file.h (-> genwrap.h) declares things like strupr()/strlwr()
  * and uses printf in an attribute -- names common/forbidden.h poisons into
@@ -22,6 +40,16 @@
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_FILE
 #define FORBIDDEN_SYMBOL_EXCEPTION_stdout
+#ifdef _WIN32
+/* On Windows the filesystem backend is backends/fs/windows/windows-fs.h, which
+ * pulls in <windows.h>, <io.h> and <tchar.h> -- system headers that use the
+ * very libc names common/forbidden.h poisons (strncpy_s, etc.), and which are
+ * unavoidably included after scummsys.h -> forbidden.h. ScummVM's own
+ * windows-fs.cpp solves this the same way: blanket-allow forbidden symbols in
+ * this TU. (On POSIX the narrower per-symbol exceptions below suffice, so the
+ * safety net stays in place there -- this door's Unix build is unchanged.) */
+#define FORBIDDEN_SYMBOL_ALLOW_ALL
+#endif
 #define FORBIDDEN_SYMBOL_EXCEPTION_stderr
 #define FORBIDDEN_SYMBOL_EXCEPTION_fputs
 #define FORBIDDEN_SYMBOL_EXCEPTION_exit
@@ -38,7 +66,15 @@
 #if defined(USE_SYNCHRONET_DRIVER)
 
 #include "common/events.h"
+// Filesystem backend is platform-specific: ScummVM compiles fs/windows/* under
+// WIN32 and fs/posix/* under POSIX (backends/module.mk), and only one of the
+// factory .cpp files is in the link -- so the header we pull and the factory we
+// construct must match the platform, or the door won't link.
+#ifdef WIN32
+#include "backends/fs/windows/windows-fs.h"
+#else
 #include "backends/fs/posix/posix-fs.h"
+#endif
 #include "common/fs.h"
 #include "backends/modular-backend.h"
 #include "backends/mutex/null/null-mutex.h"
@@ -49,7 +85,11 @@
 #include "audio_term.h"
 #include "video_dump.h"
 #include "video_term.h"
+#ifdef WIN32
+#include "backends/fs/windows/windows-fs-factory.h"
+#else
 #include "backends/fs/posix/posix-fs-factory.h"
+#endif
 #include "base/main.h"
 #include "common/config-manager.h"
 #include "common/str.h"
@@ -74,11 +114,15 @@ public:
 	void addSysArchivesToSearchSet(Common::SearchSet &s, int priority) override;
 
 private:
-	timeval _startTime;
+	uint32 _startMs;   // monotonic ms at initBackend(), the getMillis() origin
 };
 
 OSystem_Synchronet::OSystem_Synchronet() {
+#ifdef WIN32
+	_fsFactory = new WindowsFilesystemFactory();
+#else
 	_fsFactory = new POSIXFilesystemFactory();
+#endif
 }
 
 // Subtitles: user > sysop > auto (DESIGN.md M2 follow-up). Decides whether
@@ -157,7 +201,7 @@ static void resolveSubtitles() {
 }
 
 void OSystem_Synchronet::initBackend() {
-	gettimeofday(&_startTime, 0);
+	_startMs = sst_plat_now_ms();
 	resolveSubtitles();
 	_savefileManager = new DefaultSaveFileManager();
 	_timerManager = new DefaultTimerManager();
@@ -270,14 +314,12 @@ Common::MutexInternal *OSystem_Synchronet::createMutex() {
 }
 
 uint32 OSystem_Synchronet::getMillis(bool skipRecord) {
-	timeval now;
-	gettimeofday(&now, 0);
-	return (uint32)((now.tv_sec - _startTime.tv_sec) * 1000 +
-		(now.tv_usec - _startTime.tv_usec) / 1000);
+	// Monotonic ms since initBackend(); uint32 subtraction is wrap-safe.
+	return sst_plat_now_ms() - _startMs;
 }
 
 void OSystem_Synchronet::delayMillis(uint msecs) {
-	usleep(msecs * 1000);
+	sst_plat_sleep_ms((int)msecs);
 }
 
 void OSystem_Synchronet::getTimeAndDate(TimeDate &td, bool skipRecord) const {

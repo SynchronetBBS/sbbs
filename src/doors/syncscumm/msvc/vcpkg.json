@@ -1,0 +1,17 @@
+{
+  "$comment": "SyncSCUMM door dependency manifest, consumed by vcpkg in MANIFEST mode (build.bat copies this next to the create_project-generated scummvm.sln, and msvc/Directory.Build.{props,targets} import vcpkg's MSBuild integration locally -- no machine-wide 'vcpkg integrate install'). Only the media libraries the curated engines (scumm/sky/queen/lure/drascula) and the M4 audio path actually need are listed; the SDL/OpenGL/curl/discord deps of upstream scummvm/vcpkg.json are intentionally omitted because the Synchronet OSystem backend replaces SDL. build.bat pins the x86-windows-static-md triplet (static libs, dynamic /MD CRT) to match ScummVM's Release RuntimeLibrary and the sibling termgfx doors.",
+  "name": "syncscumm-door",
+  "version-string": "1.0",
+  "dependencies": [
+    "zlib",
+    "libmad",
+    "libogg",
+    "libvorbis",
+    "libflac",
+    "libpng",
+    "libjpeg-turbo",
+    "freetype",
+    "libjxl",
+    "libsndfile"
+  ]
+}

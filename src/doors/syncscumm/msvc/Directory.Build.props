@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SyncSCUMM: local vcpkg MSBuild integration, imported by every project in
+     the create_project-generated scummvm.sln. build.bat copies this (and the
+     matching Directory.Build.targets and vcpkg.json) into build-msvc so vcpkg
+     is wired up per-solution WITHOUT a machine-wide "vcpkg integrate install"
+     (which would inject vcpkg into the user's other MSBuild projects, e.g. the
+     sbbs3 tree). VCPKG_ROOT comes from build.bat's environment. -->
+<Project>
+  <PropertyGroup>
+    <!-- Use the x64-hosted cross-compiler (HostX64\x86\cl.exe) to build the
+         Win32/x86 output. The 32-bit hosted compiler exhausts its ~3 GB address
+         space compiling ScummVM's larger TUs under /MP and dies with an
+         optimizer C1001 (each file compiles fine alone; only the parallel build
+         OOMs). A 64-bit compiler has the headroom; the emitted code is
+         identical x86. -->
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+    <!-- Bypass FileTracker (Tracker.exe). With the x64-hosted compiler selected
+         above, Tracker fails to launch cl.exe ("TRK0002 ... parameter is
+         incorrect"). Disabling access-tracking makes MSBuild invoke cl directly;
+         the only thing lost is incremental-build change detection, which a
+         clean door build (build.bat) does not rely on. -->
+    <TrackFileAccess>false</TrackFileAccess>
+    <VcpkgEnabled>true</VcpkgEnabled>
+    <!-- x86-windows-static-md: static libs, dynamic (/MD) CRT, matching
+         ScummVM's Release RuntimeLibrary (MultiThreadedDLL) and the sibling
+         termgfx doors' triplet. VcpkgUseStatic + VcpkgUseMD select it; the
+         explicit VcpkgTriplet is belt and suspenders. -->
+    <VcpkgUseStatic>true</VcpkgUseStatic>
+    <VcpkgUseMD>true</VcpkgUseMD>
+    <VcpkgTriplet>x86-windows-static-md</VcpkgTriplet>
+    <VcpkgHostTriplet>x86-windows-static-md</VcpkgHostTriplet>
+  </PropertyGroup>
+  <Import Project="$(VCPKG_ROOT)\scripts\buildsystems\msbuild\vcpkg.props"
+          Condition="Exists('$(VCPKG_ROOT)\scripts\buildsystems\msbuild\vcpkg.props')" />
+</Project>
