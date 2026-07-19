@@ -981,8 +981,12 @@ list.  This applies to entry logging and palettes, sort profiles and fields,
 program settings and their nested lists, web lists, and font management.
 Directory editing commands apply only while the directory pane owns focus.
 Directory, pasted-entry, command-line-save, sort-profile, and web-list name
-prompts repeat after an invalid or duplicate name, and sort-profile field
-navigation returns to the last profile visited.
+prompts repeat after an invalid or duplicate name.  Entry-editor prompts
+distinguish empty, reserved, and duplicate names.  Directory add and
+command-line-save prompts treat an empty edit as cancellation while still
+distinguishing reserved and duplicate names; an entry creation failure is
+reported separately.  Sort-profile field navigation returns to the last
+profile visited.
 New entries are sorted again after their connection details are accepted.
 Rate choices select the first supported rate at or above a configured value,
 or Current when no supported rate is high enough, matching the directory
@@ -997,9 +1001,10 @@ failed close-time save leaves the menu open instead of discarding the edits.
 Accepted UIFC colour changes rebuild the active Wren menu theme immediately.
 Renaming a persisted entry also renames its per-entry cache directory after
 the directory file is written successfully.
-Font Management treats an empty name as cancellation and reports invalid or
-duplicate names without invoking the rejecting foreign setter.
-It reports a full custom-font table before prompting for another name.
+Font Management treats an empty name as cancellation when adding a record,
+but otherwise preserves the entered name and the file returned by the picker
+without adding validation that the native menu did not perform.  It reports a
+full custom-font table before prompting for another name.
 Insert, Delete, and the blank add row remain available from Font Details as
 well as the outer Font Management list.
 Adding a web list skips its initial fetch when no cache path is available but
@@ -3917,11 +3922,11 @@ the loaded conio font slots.  `Menu.fonts` returns a fresh List of
   the build's available conio slots, safe mode, and model-read status.
 
 | `Menu.createFont(name, index)`
-| Insert a blank custom font at `index` and return its handle.  Names
-  are unique case-insensitively, contain 1..50 bytes, and may not
-  contain controls or INI section brackets.  Returns `null` for an
-  invalid name, allocation failure, safe mode, or when all available custom
-  conio slots are represented.
+| Insert a blank custom font at `index` and return its handle.  The name
+  contains 1..50 bytes.  As with the native Font Management screen, this
+  operation does not impose uniqueness or character restrictions.  Returns
+  `null` for an empty or overlong name, allocation failure, safe mode, or
+  when all available custom conio slots are represented.
 
 | `Menu.saveFonts()`
 | Replace the `Font:` sections in `syncterm.ini`, then clear and reload
@@ -3933,8 +3938,9 @@ the loaded conio font slots.  `Menu.fonts` returns a fresh List of
   Returns Bool.
 
 | `MenuFont.name`
-| Read/write display and INI-section name.  A duplicate assignment
-  aborts rather than silently merging sections.
+| Read/write display and INI-section name, containing at most 50 bytes.
+  The native editor permits an empty or duplicate replacement name, so the
+  binding does as well.
 
 | `MenuFont.path(slot)`
 | Configured pathname String for display, or `null`.  Returning a
@@ -3942,8 +3948,9 @@ the loaded conio font slots.  `Menu.fonts` returns a fresh List of
 
 | `MenuFont.setFile(slot, file)`
 | Assign a path from a live, read-authorized `File`, normally returned
-  by `Host.pickFile`.  Returns Bool and rejects files whose exact size
-  does not match the selected raw-font slot.
+  by `Host.pickFile`.  Returns Bool.  The picker mask guides selection;
+  the binding does not add a file-size restriction absent from the native
+  Font Management screen.
 
 | `MenuFont.clearFile(slot)`
 | Clear one configured size and return Bool.

@@ -325,22 +325,7 @@ class SettingsMenu {
     return "# Font Name\n\nEnter the name that will identify this font in menus."
   }
 
-  static validFontName_(name) {
-    if (name == null || name.bytes.count == 0 || name.bytes.count > 50) {
-      return false
-    }
-    for (byte in name.bytes) {
-      if (byte < 0x20 || byte == 0x5B || byte == 0x5D) return false
-    }
-    return true
-  }
-
-  static fontNameUsed_(fonts, name, except) {
-    for (i in 0...fonts.count) {
-      if (i != except && MenuUi.namesEqual(fonts[i].name, name)) return true
-    }
-    return false
-  }
+  static fontNameFits_(name) { name.bytes.count <= 50 }
 
   static fontMask_(slot) {
     if (slot == MenuFontSlot.eightByEight) return "*.f8"
@@ -768,13 +753,9 @@ class SettingsMenu {
     var name = MenuUi.prompt(app, "Add Font", "Font name", "", 50,
         false, fontNameHelp_())
     if (name == null || name.count == 0) return false
-    if (!validFontName_(name)) {
+    if (!fontNameFits_(name)) {
       Alert.show(app, "Font Management",
-          "The font name contains an invalid character.")
-      return false
-    }
-    if (fontNameUsed_(fonts, name, -1)) {
-      Alert.show(app, "Font Management", "Duplicate font name.")
+          "The font name is longer than 50 bytes.")
       return false
     }
     if (Menu.createFont(name, index) == null) {
@@ -832,15 +813,10 @@ class SettingsMenu {
       } else if (value == -1) {
         var name = MenuUi.prompt(app, "Rename Font", "Font name", font.name,
             50, false, fontNameHelp_())
-        if (name == null || name.count == 0 ||
-            MenuUi.namesEqual(name, font.name)) continue
-        if (!validFontName_(name)) {
+        if (name == null || MenuUi.namesEqual(name, font.name)) continue
+        if (!fontNameFits_(name)) {
           Alert.show(app, "Font Management",
-              "The font name contains an invalid character.")
-          continue
-        }
-        if (fontNameUsed_(fonts, name, index)) {
-          Alert.show(app, "Font Management", "Duplicate font name.")
+              "The font name is longer than 50 bytes.")
           continue
         }
         font.name = name
@@ -849,10 +825,7 @@ class SettingsMenu {
         var title = "%(fontSizeName_(value)) %(font.name)"
         var file = Host.pickFile(".", fontMask_(value), 1, title)
         app.restoreFocus()
-        if (file != null && !font.setFile(value, file)) {
-          Alert.show(app, "Font File",
-              "The selected file has the wrong size.")
-        }
+        if (file != null) font.setFile(value, file)
       }
     }
   }

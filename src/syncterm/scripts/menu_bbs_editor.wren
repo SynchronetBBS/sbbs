@@ -133,21 +133,31 @@ class PaletteColorPane is Pane {
 }
 
 class BbsEditor {
-  static showNameError(app, title, name) {
+  static nameError_(name) {
     if (name.count == 0) {
-      Alert.show(app, title, "Can not use an empty name",
+      return ["Can not use an empty name",
           "# Can Not Use an Empty Name\n\n" +
-          "Entry names can not be empty. Please enter an entry name.\n")
-    } else if (MenuUi.namesEqual(name, "syncterm-system-cache")) {
-      Alert.show(app, title, "Reserved Name!",
-          "# Reserved Name\n\n" +
-          "The name you entered is reserved for internal use.\n")
-    } else {
-      Alert.show(app, title, "Entry Name Already Exists!",
-          "# Entry Name Already Exists\n\n" +
-          "An entry with that name already exists in the directory.\n" +
-          "Please choose a unique name.\n")
+          "Entry names can not be empty. Please enter an entry name.\n"]
     }
+    if (MenuUi.namesEqual(name, "syncterm-system-cache")) {
+      return ["Reserved Name!",
+          "# Reserved Name\n\n" +
+          "The name you entered is reserved for internal use.\n"]
+    }
+    return ["Entry Name Already Exists!",
+        "# Entry Name Already Exists\n\n" +
+        "An entry with that name already exists in the directory.\n" +
+        "Please choose a unique name.\n"]
+  }
+
+  static showNameError(app, title, name) {
+    var error = nameError_(name)
+    Alert.show(app, title, error[0], error[1])
+  }
+
+  static showNameErrorStandalone(title, name) {
+    var error = nameError_(name)
+    MenuUi.alertStandalone(title, error[0], error[1])
   }
 
   static chooseConnectionType(app, current) {

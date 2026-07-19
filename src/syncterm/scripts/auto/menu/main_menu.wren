@@ -1005,14 +1005,13 @@ class MainMenu {
           "# Directory Entry Name\n\nEnter a unique name for the saved entry.")
       if (name == null || name.count == 0) return false
       if (!Menu.nameAvailable(name)) {
-        MenuUi.alertStandalone("Save Directory Entry",
-            "The entry name is invalid or already in use.")
+        BbsEditor.showNameErrorStandalone("Save Directory Entry", name)
       }
     }
     var bbs = Menu.copy(source, name)
     if (bbs == null) {
       MenuUi.alertStandalone("Save Directory Entry",
-          "The entry name is invalid or already in use.")
+          "The personal entry could not be created.")
       return false
     }
     return BbsEditor.editStandalone(bbs, false, true)

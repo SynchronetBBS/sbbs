@@ -122,8 +122,13 @@ class MenuUi {
   }
 
   static alertStandalone(title, message) {
+    alertStandalone(title, message, null)
+  }
+
+  static alertStandalone(title, message, helpText) {
     var app = App.new()
     var p = Alert.new(title, message)
+    p.helpText = helpText
     p.bounds = Popup.centeredBounds_(message, 1, 24)
     p.onDismiss = Fn.new {|value| app.quit() }
     app.pushModal(p)

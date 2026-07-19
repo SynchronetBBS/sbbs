@@ -11,7 +11,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 struct menu_font_model {
 	struct font_files *fonts;
@@ -110,7 +109,7 @@ slot_index(WrenVM *vm, int slot, size_t maximum, size_t *result)
 }
 
 static bool
-slot_font_name(WrenVM *vm, int slot, char name[51])
+slot_font_name(WrenVM *vm, int slot, char name[51], bool allow_empty)
 {
 	if (wrenGetSlotType(vm, slot) != WREN_TYPE_STRING) {
 		wren_throw(vm, "font name must be a String");
@@ -118,30 +117,15 @@ slot_font_name(WrenVM *vm, int slot, char name[51])
 	}
 	int length;
 	const char *value = wrenGetSlotBytes(vm, slot, &length);
-	if (length < 1 || length > 50 ||
+	if ((!allow_empty && length < 1) || length > 50 ||
 	    memchr(value, 0, (size_t)length) != NULL) {
-		wren_throw(vm, "font name must contain 1 through 50 bytes");
+		wren_throw(vm, allow_empty ?
+		    "font name must contain at most 50 bytes" :
+		    "font name must contain 1 through 50 bytes");
 		return false;
-	}
-	for (int i = 0; i < length; i++) {
-		unsigned char ch = (unsigned char)value[i];
-		if (ch < 0x20 || ch == '[' || ch == ']') {
-			wren_throw(vm, "font name contains an invalid character");
-			return false;
-		}
 	}
 	memcpy(name, value, (size_t)length);
 	name[length] = 0;
-	return true;
-}
-
-static bool
-name_available(const char *name, size_t except)
-{
-	for (size_t i = 0; i < model.count; i++) {
-		if (i != except && stricmp(model.fonts[i].name, name) == 0)
-			return false;
-	}
 	return true;
 }
 
@@ -201,13 +185,9 @@ fn_Menu_createFont(WrenVM *vm)
 	}
 	char name[51];
 	size_t index;
-	if (!slot_font_name(vm, 1, name) ||
+	if (!slot_font_name(vm, 1, name, false) ||
 	    !slot_index(vm, 2, model.count, &index))
 		return;
-	if (!name_available(name, SIZE_MAX)) {
-		wrenSetSlotNull(vm, 0);
-		return;
-	}
 	char *stored_name = strdup(name);
 	if (stored_name == NULL) {
 		wrenSetSlotNull(vm, 0);
@@ -258,15 +238,10 @@ fn_MenuFont_name_set(WrenVM *vm)
 {
 	struct font_files *font = font_check(vm);
 	char name[51];
-	if (font == NULL || !slot_font_name(vm, 1, name))
+	if (font == NULL || !slot_font_name(vm, 1, name, true))
 		return;
 	if (safe_mode) {
 		wren_throw(vm, "MenuFont.name: fonts are read-only in safe mode");
-		return;
-	}
-	struct wren_menu_font *handle = wrenGetSlotForeign(vm, 0);
-	if (!name_available(name, handle->index)) {
-		wren_throw(vm, "MenuFont.name: duplicate font name");
 		return;
 	}
 	char *replacement = strdup(name);
@@ -289,13 +264,6 @@ font_path(struct font_files *font, size_t slot)
 		case 3: return &font->path12x20;
 	}
 	return NULL;
-}
-
-static off_t
-font_size(size_t slot)
-{
-	static const off_t sizes[] = {2048, 3584, 4096, 10240};
-	return sizes[slot];
 }
 
 static void
@@ -326,9 +294,7 @@ fn_MenuFont_setFile(WrenVM *vm)
 	if (!slot_index(vm, 1, 3, &slot))
 		return;
 	const char *path = wren_file_read_path(vm, 2);
-	struct stat st;
-	if (path == NULL || stat(path, &st) != 0 || !S_ISREG(st.st_mode) ||
-	    st.st_size != font_size(slot)) {
+	if (path == NULL) {
 		wrenSetSlotBool(vm, 0, false);
 		return;
 	}

@@ -26,7 +26,8 @@ Restore validation retries, focused commands, and empty-value handling
 Restore entry sorting, rate selection, and settings display information
 Restore window-close handling throughout the Wren main menu
 Restore entry-cache renames and immediate Wren menu colour updates
-Prevent rejected font names from aborting the Wren menu VM
+Restore permissive custom-font names and file selection
+Restore command-line entry-save validation feedback
 Retain web-list configuration when no cache path is available
 Restore main-menu pane navigation and pending comment commits
 Restore editor row retention, status summaries, and web-list save timing
