@@ -428,6 +428,7 @@ wren_menu_host_run(const char *current, bool connected)
 
 	wren_menu_host_status_clear();
 	wren_host_input_barrier();
+	mousepointer(CIOLIB_MOUSEPTR_BAR);
 	struct wren_host_state *old = wren_host_select_state(&menu_state);
 	wrenEnsureSlots(menu_state.vm, 3);
 	wrenGetVariable(menu_state.vm, "main_menu", "MainMenu", 0);

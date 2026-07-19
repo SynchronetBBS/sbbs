@@ -2325,9 +2325,10 @@ Unified blocking and nonblocking reader for keyboard and mouse events.
   builds without physical-key event support.
 
 | `Input.mousedrag()`, `Input.mousedrag(forceRect)`
-| Hand off to SyncTERM's drag-select gesture.  `forceRect=true`
-  forces rectangular select (line-mode select makes no sense across
-  Wren UI chrome).
+| Hand off to SyncTERM's full-screen drag-select gesture.  This uses the
+  current screen dimensions and does not depend on a connected terminal.
+  `forceRect=true` forces rectangular select (line-mode select makes no
+  sense across Wren UI chrome).
 
 | `Input.mouseVisible=(b)`
 | Show or hide the mouse cursor.  Setter only — there is no ciolib

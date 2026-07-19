@@ -202,42 +202,41 @@ highlight_cell(struct vmem_cell *cell)
 	attr2palette(cell->legacy_attr, &cell->fg, &cell->bg);
 }
 
-#if defined(__BORLANDC__)
- #pragma argsused
-#endif
-
-void
-mousedrag(struct vmem_cell *scrollback, bool force_rect)
+static void
+mousedrag_region(int left, int top, int width, int height, bool force_rect)
 {
 	int                   key;
 	struct mouse_event    mevent;
 	struct vmem_cell     *screen;
-	unsigned char        *tscreen;
 	struct vmem_cell     *sbuffer;
 	size_t                sbufsize;
 	int                   pos, startpos, endpos, lines;
 	int                   x, y, x1, y1, x2, y2, rows, cols;
+	int                   startx, starty, endx, endy;
 	int                   outpos;
 	char                 *copybuf = NULL;
 	char                 *newcopybuf;
 	int                   lastchar;
-	struct ciolib_screen *savscrn;
+	struct ciolib_screen *savscrn = NULL;
 	bool                  rect_mode = force_rect;
 	bool                  mode_locked = false;
 
-	sbufsize = (size_t)term.width * sizeof(*screen) * term.height;
+	if (left < 1 || top < 1 || width < 1 || height < 1)
+		return;
+	sbufsize = (size_t)width * sizeof(*screen) * height;
 	screen = malloc(sbufsize);
 	sbuffer = malloc(sbufsize);
-	tscreen = malloc((size_t)term.width * 2 * term.height);
-	if (screen == NULL || sbuffer == NULL || tscreen == NULL) {
+	if (screen == NULL || sbuffer == NULL) {
 		free(screen);
 		free(sbuffer);
-		free(tscreen);
 		return;
 	}
-	vmem_gettext(term.x - 1, term.y - 1, term.x + term.width - 2, term.y + term.height - 2, screen);
-	gettext(term.x - 1, term.y - 1, term.x + term.width - 2, term.y + term.height - 2, tscreen);
+	if (!vmem_gettext(left, top, left + width - 1, top + height - 1,
+	    screen))
+		goto cleanup;
 	savscrn = savescreen();
+	if (savscrn == NULL)
+		goto cleanup;
 	set_modepalette(palettes[COLOUR_PALETTE]);
 	while (1) {
 		key = getch();
@@ -258,29 +257,25 @@ mousedrag(struct vmem_cell *scrollback, bool force_rect)
 						rect_mode = !rect_mode;
 					mode_locked = true;
 				}
-				startpos = ((mevent.starty - 1) * term.width) + (mevent.startx - 1);
-				endpos = ((mevent.endy - 1) * term.width) + (mevent.endx - 1);
-				if (startpos >= term.width * term.height)
-					startpos = term.width * term.height - 1;
-				if (endpos >= term.width * term.height)
-					endpos = term.width * term.height - 1;
+				startx = mevent.startx - left;
+				starty = mevent.starty - top;
+				endx = mevent.endx - left;
+				endy = mevent.endy - top;
+				startx = MAX(0, MIN(startx, width - 1));
+				starty = MAX(0, MIN(starty, height - 1));
+				endx = MAX(0, MIN(endx, width - 1));
+				endy = MAX(0, MIN(endy, height - 1));
+				startpos = starty * width + startx;
+				endpos = endy * width + endx;
 				if (endpos < startpos) {
 					pos = endpos;
 					endpos = startpos;
 					startpos = pos;
 				}
-				x1 = MIN(mevent.startx, mevent.endx) - 1;
-				x2 = MAX(mevent.startx, mevent.endx) - 1;
-				y1 = MIN(mevent.starty, mevent.endy) - 1;
-				y2 = MAX(mevent.starty, mevent.endy) - 1;
-				if (x1 < 0)
-					x1 = 0;
-				if (y1 < 0)
-					y1 = 0;
-				if (x2 >= term.width)
-					x2 = term.width - 1;
-				if (y2 >= term.height)
-					y2 = term.height - 1;
+				x1 = MIN(startx, endx);
+				x2 = MAX(startx, endx);
+				y1 = MIN(starty, endy);
+				y2 = MAX(starty, endy);
 				switch (mevent.event) {
 					case CIOLIB_MOUSE_MOVE:
 						break;
@@ -289,17 +284,17 @@ mousedrag(struct vmem_cell *scrollback, bool force_rect)
 						if (rect_mode) {
 							for (y = y1; y <= y2; y++) {
 								for (x = x1; x <= x2; x++)
-									highlight_cell(&sbuffer[y * term.width + x]);
+									highlight_cell(&sbuffer[y * width + x]);
 							}
 						}
 						else {
 							for (pos = startpos; pos <= endpos; pos++)
 								highlight_cell(&sbuffer[pos]);
 						}
-						vmem_puttext(term.x - 1,
-						    term.y - 1,
-						    term.x + term.width - 2,
-						    term.y + term.height - 2,
+						vmem_puttext(left,
+						    top,
+						    left + width - 1,
+						    top + height - 1,
 						    sbuffer);
 						break;
 					default:
@@ -319,7 +314,7 @@ mousedrag(struct vmem_cell *scrollback, bool force_rect)
 									uint8_t *utf8str;
 									int      cp;
 
-									pos = y * term.width + x;
+									pos = y * width + x;
 									cp = conio_fontdata[screen[pos].font].cp;
 									if (cp == CIOLIB_PRESTEL && (screen[pos].bg & 0x20000000))
 										cp = CIOLIB_PRESTEL_SEP;
@@ -342,7 +337,7 @@ mousedrag(struct vmem_cell *scrollback, bool force_rect)
 							copytext(copybuf, strlen(copybuf));
 						}
 						else {
-							lines = abs(mevent.endy - mevent.starty) + 1;
+							lines = abs(endy - starty) + 1;
 							newcopybuf = realloc(copybuf, (endpos - startpos + 4 + lines * 2) * 4);
 							if (newcopybuf)
 								copybuf = newcopybuf;
@@ -365,7 +360,7 @@ mousedrag(struct vmem_cell *scrollback, bool force_rect)
 								outpos += outlen;
 								if ((screen[pos].ch != ' ') && screen[pos].ch)
 									lastchar = outpos;
-								if ((pos + 1) % term.width == 0) {
+								if ((pos + 1) % width == 0) {
 									outpos = lastchar;
 #ifdef _WIN32
 									copybuf[outpos++] = '\r';
@@ -377,19 +372,19 @@ mousedrag(struct vmem_cell *scrollback, bool force_rect)
 							copybuf[outpos] = 0;
 							copytext(copybuf, strlen(copybuf));
 						}
-						vmem_puttext(term.x - 1,
-						    term.y - 1,
-						    term.x + term.width - 2,
-						    term.y + term.height - 2,
+						vmem_puttext(left,
+						    top,
+						    left + width - 1,
+						    top + height - 1,
 						    screen);
 						goto cleanup;
 				}
 				break;
 			default:
-				vmem_puttext(term.x - 1,
-				    term.y - 1,
-				    term.x + term.width - 2,
-				    term.y + term.height - 2,
+				vmem_puttext(left,
+				    top,
+				    left + width - 1,
+				    top + height - 1,
 				    screen);
 				ungetch(key);
 				goto cleanup;
@@ -399,12 +394,29 @@ mousedrag(struct vmem_cell *scrollback, bool force_rect)
 cleanup:
 	free(screen);
 	free(sbuffer);
-	free(tscreen);
 	if (copybuf)
 		free(copybuf);
-	restorescreen(savscrn);
-	freescreen(savscrn);
-	return;
+	if (savscrn != NULL) {
+		restorescreen(savscrn);
+		freescreen(savscrn);
+	}
+}
+
+void
+mousedrag_terminal(bool force_rect)
+{
+	mousedrag_region(term.x - 1, term.y - 1, term.width, term.height,
+	    force_rect);
+}
+
+void
+mousedrag_screen(bool force_rect)
+{
+	struct text_info txtinfo;
+
+	gettextinfo(&txtinfo);
+	mousedrag_region(1, 1, txtinfo.screenwidth, txtinfo.screenheight,
+	    force_rect);
 }
 
 static struct vmem_cell *status_bar;
@@ -5166,7 +5178,7 @@ handle_mouse_event(struct mouse_state *ms)
 				open_url_at_cursor(&mevent);
 				break;
 			}
-			mousedrag(scrollback_buf, false);
+			mousedrag_terminal(false);
 			break;
 		case CIOLIB_BUTTON_2_CLICK:
 		case CIOLIB_BUTTON_3_CLICK:

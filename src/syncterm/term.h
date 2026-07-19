@@ -83,7 +83,9 @@ void raw_upload(FILE *fp);
  * (caller must free).  No-op if cterm isn't in PRESTEL emulation. */
 void cet_telesoftware_download(struct bbslist *bbs, void **frame_buffer, size_t *buflen);
 bool doterm(struct bbslist *);
-void mousedrag(struct vmem_cell *scrollback, bool force_rect);
+/* Drag-select within the connected terminal or the entire current screen. */
+void mousedrag_terminal(bool force_rect);
+void mousedrag_screen(bool force_rect);
 void get_cterm_size(int *cols, int *rows, int ns);
 int get_cache_fn_base(struct bbslist *bbs, char *fn, size_t fnsz);
 int get_cache_fn_subdir(struct bbslist *bbs, char *fn, size_t fnsz, const char *subdir);
