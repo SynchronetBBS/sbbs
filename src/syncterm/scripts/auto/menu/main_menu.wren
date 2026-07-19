@@ -77,6 +77,7 @@ class ClassicFooter is Container {
     activitySensitive = false
     _comment = ""
     _copied = false
+    _directoryHints = true
     _onCommit = onCommit
     _onCancel = onCancel
     _input = CommentInput.new(onFocus)
@@ -98,20 +99,30 @@ class ClassicFooter is Container {
     markDirty()
   }
 
+  directoryHints=(value) {
+    if (_directoryHints == value) return
+    _directoryHints = value
+    markDirty()
+  }
+
   paintHints_(sf) {
     var segments = [
-      ["F1 ", true], ["Help  ", false],
-      ["F2 ", true], ["Edit Item  ", false],
-      ["F5 ", true], ["Copy  ", false]
+      ["F1 ", true], ["Help  ", false]
     ]
-    if (_copied) {
-      segments.add(["F6 ", true])
-      segments.add(["Paste  ", false])
+    if (_directoryHints) {
+      segments.add(["F2 ", true])
+      segments.add(["Edit Item  ", false])
+      segments.add(["F5 ", true])
+      segments.add(["Copy  ", false])
+      if (_copied) {
+        segments.add(["F6 ", true])
+        segments.add(["Paste  ", false])
+      }
+      segments.add(["INS", true])
+      segments.add(["ert Item  ", false])
+      segments.add(["DEL", true])
+      segments.add(["ete Item  ", false])
     }
-    segments.add(["INS", true])
-    segments.add(["ert Item  ", false])
-    segments.add(["DEL", true])
-    segments.add(["ete Item  ", false])
     segments.add(["ESC ", true])
     segments.add(["Exit", false])
 
@@ -392,6 +403,7 @@ class MainMenuApp {
       finishComment_(_footer.value, -1)
       return activate
     }
+    _footer.directoryHints = true
     _app.root.focusedIndex = 1
     updateWindowTitle_()
     return false
@@ -419,6 +431,7 @@ class MainMenuApp {
       finishComment_(_footer.value, 1)
       return activate
     }
+    _footer.directoryHints = false
     _app.root.focusedIndex = 3
     updateWindowTitle_()
     return false
@@ -426,8 +439,10 @@ class MainMenuApp {
 
   cancelComment_() {
     if (_commentReturn == _settings) {
+      _footer.directoryHints = false
       _app.root.focusedIndex = 3
     } else {
+      _footer.directoryHints = true
       _app.root.focusedIndex = 1
     }
     _commentReturn = null
@@ -707,8 +722,10 @@ class MainMenuApp {
     }
     if (destination > 0 ||
         (destination == 0 && _commentReturn == _settings)) {
+      _footer.directoryHints = false
       _app.root.focusedIndex = 3
     } else {
+      _footer.directoryHints = true
       _app.root.focusedIndex = 1
     }
     _commentReturn = null

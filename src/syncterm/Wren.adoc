@@ -941,6 +941,11 @@ the full directory-entry editor.  F1 and Ctrl-Z in the footer display the
 directory help, and operation-specific alerts and confirmations retain the
 context help for the operation which opened them.
 
+The footer advertises edit, copy, paste, insert, and delete only while the
+directory pane owns focus.  The SyncTERM Settings pane advertises only Help
+and Exit, matching the operations available from that pane.  While a comment
+is being edited, the footer retains the hints for the pane that opened it.
+
 Lists which support appending provide a selectable blank final row.
 Activating the blank row or pressing Insert invokes the same add operation.
 The shipped directory, sort-profile, sort-field, web-list, custom-font, and
