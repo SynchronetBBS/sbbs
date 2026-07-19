@@ -231,6 +231,7 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 			case SST_KEY_PAGEDOWN: kc = Common::KEYCODE_PAGEDOWN; break;
 			case SST_KEY_INSERT: kc = Common::KEYCODE_INSERT; break;
 			case SST_KEY_DELETE: kc = Common::KEYCODE_DELETE; break;
+			case SST_KEY_KP5: kc = Common::KEYCODE_KP5; break;
 			case SST_KEY_ENTER: kc = Common::KEYCODE_RETURN; ascii = Common::ASCII_RETURN; break;
 			case SST_KEY_ESCAPE: kc = Common::KEYCODE_ESCAPE; ascii = Common::ASCII_ESCAPE; break;
 			case SST_KEY_BACKSPACE: kc = Common::KEYCODE_BACKSPACE; ascii = Common::ASCII_BACKSPACE; break;

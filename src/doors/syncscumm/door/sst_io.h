@@ -206,7 +206,9 @@ enum {
 	SST_KEY_INSERT, SST_KEY_DELETE,
 	SST_KEY_ENTER, SST_KEY_ESCAPE, SST_KEY_BACKSPACE, SST_KEY_TAB,
 	SST_KEY_F1, SST_KEY_F2, SST_KEY_F3, SST_KEY_F4, SST_KEY_F5,
-	SST_KEY_F6, SST_KEY_F7, SST_KEY_F8, SST_KEY_F9
+	SST_KEY_F6, SST_KEY_F7, SST_KEY_F8, SST_KEY_F9,
+	SST_KEY_KP5   /* numpad center (NumLock off): AGI "stationary"/stop --
+	               * NOT an ASCII key, so it must not fall through to '5' */
 };
 
 typedef struct {

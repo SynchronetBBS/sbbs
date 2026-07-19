@@ -944,6 +944,7 @@ static void csi_final(char fin)
 					case 57424: sst_key_event(SST_KEY_END,      0, 0, down); return;
 					case 57425: sst_key_event(SST_KEY_INSERT,   0, 0, down); return;
 					case 57426: sst_key_event(SST_KEY_DELETE,   0, 0, down); return;
+					case 57427: sst_key_event(SST_KEY_KP5,      0, 0, down); return;   /* KP_BEGIN center: AGI stop */
 				}
 				if (cp >= 57399 && cp <= 57414) {   /* NumLock ON: keypad PUA -> ASCII */
 					static const char kp[] = "0123456789./*-+\r";
@@ -3073,6 +3074,7 @@ static void sst_evdev_edge(int code, int down)
 		case 109: case 81: keycode = SST_KEY_PAGEDOWN; break;   /* + numpad KP3 */
 		case 110: case 82: keycode = SST_KEY_INSERT;   break;   /* + numpad KP0 */
 		case 111: case 83: keycode = SST_KEY_DELETE;   break;   /* + numpad KP-dot */
+		case 76:           keycode = SST_KEY_KP5;      break;   /* numpad KP5 (center): AGI stop */
 		case 59:  keycode = SST_KEY_F1; break;
 		case 60:  keycode = SST_KEY_F2; break;
 		case 61:  keycode = SST_KEY_F3; break;
