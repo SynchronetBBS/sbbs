@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -1593,29 +1594,40 @@ size_t sst_io_out_backlog(void) { return g_out_len; }
  * a cache, not an observation -- the answer is identical either way. */
 size_t sst_io_audio_backlog(void) { return aseg_pending(); }
 
-/* Does this session have working audio? Drives the subtitles auto-decision
- * (door/syncscumm.cpp): no audio -> subtitles on.
+/* Does this session have working audio? Drives two decisions: the Talkie/
+ * Floppy data-set pick in main() (door/syncscumm.cpp, before scummvm_main()
+ * runs) and the subtitles auto-decision in resolveSubtitles() (called from
+ * initBackend()): no audio -> Floppy / subtitles on.
  *
  * This is the ONE bounded wait in this file that must actually block. Every
  * other one (the JXL settle at sst_io_present(), the canvas hold) is a
  * poll-and-return: ScummVM's loop calls present() again, so "hold" means
- * "return and get asked again". Nobody re-asks this question -- it is called
- * once, from resolveSubtitles() in initBackend(), before the engine runs and
- * before a single frame is drawn. Returning "no audio" merely because the
- * reply had not landed yet would bake subtitles on for the whole session.
+ * "return and get asked again". This question is now asked from TWO call
+ * sites -- main()'s data-set selection, which runs first, right after
+ * sst_io_init() and before the engine starts or a single frame is drawn;
+ * and resolveSubtitles() in initBackend(), which runs later during engine
+ * boot. Both trust the g_audio_tier/g_audio_done/g_opus_ok latch below: the
+ * first call pumps until the answer latches or the window expires, and the
+ * second call finds g_audio_done already set and returns instantly with the
+ * SAME value -- no second wait, and the two callers can never disagree.
+ * Returning "no audio" merely because the reply had not landed yet would
+ * bake subtitles on (and pick Floppy) for the whole session.
  *
  * So: pump until the answer latches or the window expires. Anchored on
- * g_probe_start_ms (init), NOT on first present -- unlike present()'s canvas
- * hold, which had to move its anchor because engine boot outlasts the grace.
- * Here we ARE inside boot, so init is the right anchor and the wait is
- * bounded by what is left of the window.
+ * g_probe_start_ms, which sst_io_init() sets once before either caller runs
+ * -- NOT on first present, unlike present()'s canvas hold, which had to move
+ * its anchor because engine boot outlasts the grace. Here both callers fall
+ * inside (or right after) that same init-anchored window, so init is the
+ * right anchor and the wait is bounded by what is left of it.
  *
  * Costs up to the full ~2s settle window once, at boot, on a terminal that
- * never answers (Foot, xterm) -- resolveSubtitles() is the first thing
- * initBackend() does, so g_probe_start_ms is anchored right at the top of
- * the burst and a silent terminal pays close to the whole window. That is
- * today's behavior anyway: the wait expires, subtitles auto-on. A headless/
- * capture session has no input fd, never probes, and returns 0 immediately.
+ * never answers (Foot, xterm) -- main()'s data-set selection is the first
+ * caller and runs right after sst_io_init(), so g_probe_start_ms is
+ * anchored right at the top of the burst and a silent terminal pays close
+ * to the whole window on that first call; resolveSubtitles()'s later call
+ * costs nothing, since the latch is already set. That is today's behavior
+ * anyway: the wait expires, subtitles auto-on. A headless/capture session
+ * has no input fd, never probes, and returns 0 immediately.
  */
 int sst_io_audio_available(void)
 {
@@ -1660,6 +1672,46 @@ int sst_io_audio_available(void)
 	 * defaults to 1 for an older SyncTERM that never answers the Opus query
 	 * (termgfx/audio.h:41-51). */
 	return (g_audio_tier >= 1 && g_opus_ok) ? 1 : 0;
+}
+
+static int sst_isdir(const char *p)
+{
+	struct stat st;
+	return stat(p, &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+/* Talkie/Floppy data-set selection (M5): see the doc comment in sst_io.h. A
+ * pure directory-stat helper -- no session state -- so it is unit-tested
+ * standalone (test/test_sst_datadir.c) without a socket. */
+const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz)
+{
+	const char *first  = audio ? "talkie" : "floppy";
+	const char *second = audio ? "floppy" : "talkie";
+	char        cand[600];
+	const char *why;
+
+	snprintf(cand, sizeof cand, "%s/%s", base, first);
+	if (sst_isdir(cand)) {
+		snprintf(buf, bufsz, "%s", cand);
+		why = "match";
+	} else {
+		snprintf(cand, sizeof cand, "%s/%s", base, second);
+		if (sst_isdir(cand)) {
+			snprintf(buf, bufsz, "%s", cand);
+			why = "fallback-other-build";
+		} else {
+			snprintf(buf, bufsz, "%s", base);   /* flat --path / single build */
+			why = "fallback-base";
+		}
+	}
+	/* Diagnostic (SYNCSCUMM_TRACE only): which build this session got and the
+	 * audio determination that drove it -- so a "no speech" report can be told
+	 * apart (Floppy picked = audio probe said no vs. Talkie picked = a speech
+	 * config/engine issue) from a node trace without a live debugger. */
+	if (g_trace != NULL)
+		fprintf(g_trace, "%u DATADIR audio=%d base=%s -> %s (%s)\n",
+		        (unsigned)now_ms(), audio, base, buf, why);
+	return buf;
 }
 
 /* ---- streamed audio (M4) ----

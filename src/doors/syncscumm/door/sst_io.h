@@ -73,6 +73,14 @@ int  sst_io_stats_visible(void);
  * sessions never probe and return 0 immediately. See sst_io.c. */
 int  sst_io_audio_available(void);
 
+/* Choose the game-data directory for this session: <base>/talkie when audio is
+ * available, else <base>/floppy. Falls back to the other variant, then to base
+ * itself, based on which directories actually exist (so a title packaged with
+ * only one build, or a flat --path, still runs). Writes the chosen path into
+ * buf and returns buf. audio is nonzero when the session can play digital audio
+ * (caller passes sst_io_audio_available()). */
+const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
+
 /* How much audio each shipped chunk holds -- the door's default for
  * "[audio] chunk_ms", which a sysop's syncscumm.ini still overrides, and which
  * the module clamps to 50..250 (termgfx/audio_stream.h).

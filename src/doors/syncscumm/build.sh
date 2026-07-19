@@ -12,8 +12,17 @@ cmake --build "$HERE/build/libs" --target termgfx xpdev_static -j"$(nproc)"
 
 # Stage 2: ScummVM with our backend.
 cd "$HERE/build"
+# --enable-mad: MP3 (libmad) is REQUIRED, not optional. The ScummVM freeware
+# "talkie" builds (Flight of the Amazon Queen, and others) store their SPEECH as
+# MP3; without libmad the engine loads the game but every spoken line is silent
+# ("Using MP3 compressed datafile, but MP3 support not compiled in!"). Forcing it
+# on (vs. configure's silent autodetect) makes a missing libmad fail the build
+# loudly here rather than ship a talkie door that plays music but no dialogue.
+# (libmad0-dev on Debian/Ubuntu.) Vorbis/FLAC stay autodetected -- present here,
+# and no curated title has yet needed them the way queen needs MP3.
 "$HERE/scummvm/configure" --backend="$BACKEND" --disable-all-engines \
-  --enable-engine=scumm,sky,queen,lure,drascula --disable-detection-full
+  --enable-engine=scumm,sky,queen,lure,drascula --disable-detection-full \
+  --enable-mad
 # Bridge our libraries into the generated build config: config.mk accumulates
 # LIBS with +=, and Makefile.common's link rule places $(LIBS) after the
 # objects, so appending here is ordering-correct and touches no vendor file.

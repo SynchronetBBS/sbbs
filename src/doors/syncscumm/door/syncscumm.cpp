@@ -16,6 +16,9 @@
  * first, before scummsys.h does that poisoning (ini_file.h wraps itself in
  * extern "C" already; no wrapper needed here). */
 #include "ini_file.h"
+/* dirwrap.h (mkpath): pulled in here with ini_file.h, before scummsys.h's
+ * forbidden.h poisons libc names, for the same reason ini_file.h is. */
+#include "dirwrap.h"
 
 #define FORBIDDEN_SYMBOL_EXCEPTION_FILE
 #define FORBIDDEN_SYMBOL_EXCEPTION_stdout
@@ -336,6 +339,71 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < argc && filteredArgc < (int)(sizeof(filteredArgv) / sizeof(filteredArgv[0])); i++) {
 		if (i == 0 || !sst_io_consumed(i))
 			filteredArgv[filteredArgc++] = argv[i];
+	}
+
+	// Talkie/Floppy: pick the game-data variant from this session's audio
+	// availability before scummvm_main() detects the game from --path. Same
+	// determination that drives subtitles-auto (sst_io_audio_available()): a
+	// session that can play speech gets the Talkie build, one that cannot gets
+	// the Floppy build (guaranteed on-screen text). See sst_select_datadir().
+	//
+	// A given --path=<base> is rewritten to <base>/talkie|floppy in place. If NO
+	// --path was passed, the base defaults to the current directory (the door's
+	// startup_dir, where the talkie/ and floppy/ live) and the selected variant
+	// is INSERTED as an early option -- so an xtrn.ini cmd may omit --path
+	// entirely and still get the right variant, rather than ScummVM assuming the
+	// CWD and failing to find the game (which sits one level down in a variant
+	// subdir).
+	static char pathArg[640];
+	bool        havePath = false;
+	int         audioNow = sst_io_audio_available() != 0;
+	for (int i = 1; i < filteredArgc; i++) {
+		char chosen[600];
+		if (strncmp(filteredArgv[i], "--path=", 7) != 0)
+			continue;
+		sst_select_datadir(filteredArgv[i] + 7, audioNow, chosen, sizeof chosen);
+		snprintf(pathArg, sizeof pathArg, "--path=%s", chosen);
+		filteredArgv[i] = pathArg;
+		havePath = true;
+		break;
+	}
+	if (!havePath && filteredArgc < (int)(sizeof(filteredArgv) / sizeof(filteredArgv[0]))) {
+		char chosen[600];
+		int  i;
+		sst_select_datadir(".", audioNow, chosen, sizeof chosen);
+		snprintf(pathArg, sizeof pathArg, "--path=%s", chosen);
+		for (i = filteredArgc; i > 1; i--)      /* make room right after argv[0] */
+			filteredArgv[i] = filteredArgv[i - 1];
+		filteredArgv[1] = pathArg;
+		filteredArgc++;
+	}
+
+	// Create the per-user directories ScummVM writes into. It REJECTS a
+	// --savepath whose directory does not exist (it will not create it) and
+	// cannot write a -c config file into a missing directory -- and on a
+	// user's first launch data/user/<####>/<game>/ does not yet exist (neither
+	// Synchronet's %j/%4 expansion nor ScummVM makes that leaf). Make them here
+	// before scummvm_main() consumes the options, or the door exits immediately.
+	for (int i = 1; i < filteredArgc; i++) {
+		if (strncmp(filteredArgv[i], "--savepath=", 11) == 0) {
+			mkpath(filteredArgv[i] + 11);
+		} else if (strcmp(filteredArgv[i], "-c") == 0 && i + 1 < filteredArgc) {
+			char  dir[512];
+			char *sep;
+			snprintf(dir, sizeof dir, "%s", filteredArgv[i + 1]);
+			sep = strrchr(dir, '/');
+#ifdef _WIN32
+			{
+				char *bsep = strrchr(dir, '\\');
+				if (bsep != NULL && (sep == NULL || bsep > sep))
+					sep = bsep;
+			}
+#endif
+			if (sep != NULL) {
+				*sep = '\0';
+				mkpath(dir);
+			}
+		}
 	}
 
 	g_system = new OSystem_Synchronet();
