@@ -101,6 +101,12 @@ load_module(WrenVM *vm, const char *name)
 		    "[A-Za-z0-9_] allowed\")\n";
 		return result;
 	}
+	if (strcmp(name, "syncterm_menu") == 0) {
+		result.source =
+		    "Fiber.abort(\"syncterm_menu is unavailable in the picker "
+		    "VM\")\n";
+		return result;
+	}
 
 	/* The recovery module is interpreted from the embedded copy before
 	 * any user code, but keep this guard for imports during bootstrap. */

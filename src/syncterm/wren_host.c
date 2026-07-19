@@ -690,6 +690,9 @@ host_load_module(WrenVM *vm, const char *name)
 	static const char denied_menu_module[] =
 	    "Fiber.abort(\"syncterm_menu is unavailable in a connected "
 	    "session\")\n";
+	static const char denied_picker_module[] =
+	    "Fiber.abort(\"picker modules are unavailable in a connected "
+	    "session\")\n";
 
 	if (!valid_module_name(name)) {
 		res.source =
@@ -699,6 +702,11 @@ host_load_module(WrenVM *vm, const char *name)
 	}
 	if (strcmp(name, "syncterm_menu") == 0) {
 		res.source = denied_menu_module;
+		return res;
+	}
+	if (strcmp(name, "syncterm_picker") == 0 ||
+	    strcmp(name, "picker_bootstrap") == 0) {
+		res.source = denied_picker_module;
 		return res;
 	}
 

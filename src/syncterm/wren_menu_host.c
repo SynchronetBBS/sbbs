@@ -93,6 +93,13 @@ load_module(WrenVM *vm, const char *name)
 		    "[A-Za-z0-9_] allowed\")\n";
 		return result;
 	}
+	if (strcmp(name, "syncterm_picker") == 0 ||
+	    strcmp(name, "picker_bootstrap") == 0) {
+		result.source =
+		    "Fiber.abort(\"picker modules are unavailable in the menu "
+		    "VM\")\n";
+		return result;
+	}
 
 	char dir[MAX_PATH + 1];
 	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS,
