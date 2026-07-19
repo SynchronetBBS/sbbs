@@ -68,7 +68,8 @@
 
 static int g_fd = -1, g_fd_in = -1;      /* -1 = headless (no session) */
 static int g_active;
-static int g_quit, g_stats;
+static int g_quit, g_stats, g_menu;
+static unsigned char g_menu_letter;   /* Ctrl+<letter> opens the GMM; 0 = disabled */
 static int g_have_sixel, g_is_syncterm, g_jxl, g_probe_replied;
 static int g_no_gfx_notified;   /* one-shot: unsupported-terminal notice sent */
 static int g_cterm_ver;
@@ -976,6 +977,15 @@ static void csi_final(char fin)
 							g_quit = 1;
 						return;
 					}
+					/* Ctrl+<menu_letter> (default Ctrl-G): open the ScummVM
+					 * Global Main Menu -- intercepted here so it reaches the
+					 * engine as EVENT_MAINMENU, not the letter. Off when
+					 * g_menu_letter == 0 (sysop "[input] menu_key = off"). */
+					if (g_menu_letter && (cp | 0x20) == g_menu_letter) {
+						if (down)
+							g_menu = 1;
+						return;
+					}
 				}
 				if (cp == 0x0d)
 					keycode = SST_KEY_ENTER;
@@ -1204,6 +1214,8 @@ static void parse_bytes(const uint8_t *buf, int n)
 					sst_toggle_stats();
 				else if (c == 'q' || c == 0x03)          /* q / Ctrl-C: request quit */
 					g_quit = 1;
+				else if (g_menu_letter && c == (uint8_t)(g_menu_letter - 'a' + 1))
+					g_menu = 1;                          /* Ctrl+<menu_letter>: open GMM */
 				else
 					sst_key_byte(c);
 				break;
@@ -1597,6 +1609,10 @@ void sst_io_pump(void)
 }
 
 int sst_io_quit_requested(void) { return g_quit; }
+/* One-shot: returns (and clears) true once per Ctrl+<menu_letter> press. */
+int  sst_io_menu_requested(void) { int m = g_menu; g_menu = 0; return m; }
+/* Enable the GMM hotkey on Ctrl+<letter> (lowercase a-z); 0 disables it. */
+void sst_io_set_menu_key(int letter) { g_menu_letter = (letter >= 'a' && letter <= 'z') ? (unsigned char)letter : 0; }
 int sst_io_have_sixel(void)     { return g_have_sixel; }
 int sst_io_is_syncterm(void)    { return g_is_syncterm; }
 int sst_io_jxl_supported(void)  { return g_jxl; }
@@ -3139,6 +3155,13 @@ static void sst_evdev_edge(int code, int down)
 		if ((c | 0x20) == 'c' || (c | 0x20) == 'q') {
 			if (down)
 				g_quit = 1;
+			return;
+		}
+		/* Ctrl+<menu_letter> (default Ctrl-G): open the GMM. Same as the kitty
+		 * and legacy-byte paths -- SyncTERM evdev reaches only here. */
+		if (g_menu_letter && (c | 0x20) == g_menu_letter) {
+			if (down)
+				g_menu = 1;
 			return;
 		}
 		sst_key_event(c | 0x20, 0, SST_MOD_CTRL, down);

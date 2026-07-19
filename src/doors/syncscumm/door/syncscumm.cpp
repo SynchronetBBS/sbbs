@@ -60,6 +60,8 @@
  * pattern in syncduke_config.c/syncretro_config.c/syncmoo1_config.c. */
 #define FORBIDDEN_SYMBOL_EXCEPTION_fopen
 #define FORBIDDEN_SYMBOL_EXCEPTION_fclose
+/* resolveVolumes() logs the applied mixer levels to stderr with fprintf. */
+#define FORBIDDEN_SYMBOL_EXCEPTION_fprintf
 
 #include "common/scummsys.h"
 
@@ -200,9 +202,80 @@ static void resolveSubtitles() {
 	            : "syncscumm: subtitles auto -> on (no audio this session)\n", stderr);
 }
 
+// Mixer volumes: optional per-package syncscumm.ini "[audio]" knobs --
+// music_volume, speech_volume, sfx_volume, each 0-100 (percent of maximum) --
+// so a title whose soundtrack overbears its dialogue (Drascula's loud CD music)
+// can ship a rebalanced default. Outside the SCUMM engine a player cannot
+// easily reach ScummVM's GMM Volume sliders to do it themselves (the GMM's only
+// default key binding is the terminal-absent "Menu" key; the door opens the GMM
+// on F5, but a shipped default spares every player the trip). Absent a knob,
+// that channel keeps ScummVM's own default. These are ScummVM's per-CHANNEL
+// levels, distinct from the "[audio] volume" knob, which scales the whole
+// pre-mixed stream in the player's terminal. Written to kSessionDomain (a door
+// default like a command-line override -- never saved to a player's file).
+static void resolveVolumes() {
+	FILE *f = fopen("syncscumm.ini", "r");
+	if (f == NULL)
+		return;
+	str_list_t ini = iniReadFile(f);
+	fclose(f);
+	static const char *const keys[] = { "music_volume", "speech_volume", "sfx_volume" };
+	for (size_t i = 0; i < sizeof keys / sizeof keys[0]; i++) {
+		// -1 sentinel: an absent key leaves that channel's default alone.
+		long pct = iniGetInteger(ini, "audio", keys[i], -1);
+		if (pct < 0)
+			continue;
+		if (pct > 100)
+			pct = 100;
+		// ScummVM stores channel volumes 0..255 (kMaxMixerVolume is 256).
+		int vol = (int)(pct * 255 / 100);
+		ConfMan.setInt(keys[i], vol, Common::ConfigManager::kSessionDomain);
+		fprintf(stderr, "syncscumm: %s: sysop %ld%% (ScummVM %d/255)\n", keys[i], pct, vol);
+	}
+	strListFree(&ini);
+}
+
+// GMM hotkey: reserve a control key to open ScummVM's Global Main Menu (Resume,
+// Save, Load, Options -> Volume, Quit). ScummVM's own "MENU" action defaults to
+// the keyboard "Menu" key, which no terminal sends, so the door provides this
+// instead -- a control byte, so it works on every terminal, not only kitty/
+// evdev. The key is intercepted before the engine (sst_io.c) and delivered as
+// EVENT_MAINMENU (pollEvent, below). Default: Ctrl-G (free in Drascula/SCI/AGI;
+// in SCUMM it takes over the "very fast mode" toggle, leaving Ctrl-F "fast mode"
+// intact). Configurable per package: syncscumm.ini "[input] menu_key =
+// ctrl-<letter>", or "off" to disable. F5 always stays the game's own menu.
+static void resolveMenuKey() {
+	int letter = 'g';   // default: Ctrl-G, even with no syncscumm.ini present
+	FILE *f = fopen("syncscumm.ini", "r");
+	if (f != NULL) {
+		str_list_t ini = iniReadFile(f);
+		fclose(f);
+		char val[INI_MAX_VALUE_LEN];
+		iniGetString(ini, "input", "menu_key", "ctrl-g", val);
+		strListFree(&ini);
+		letter = 0;   // "off"/unparseable disables it
+		if (scumm_strnicmp(val, "ctrl", 4) == 0) {
+			const char *p = val + 4;
+			if (*p == '-' || *p == '+' || *p == ' ')
+				p++;
+			if (*p >= 'A' && *p <= 'Z')
+				letter = *p - 'A' + 'a';
+			else if (*p >= 'a' && *p <= 'z')
+				letter = *p;
+		}
+	}
+	sst_io_set_menu_key(letter);
+	if (letter)
+		fprintf(stderr, "syncscumm: GMM hotkey: Ctrl-%c\n", letter - 'a' + 'A');
+	else
+		fputs("syncscumm: GMM hotkey: off\n", stderr);
+}
+
 void OSystem_Synchronet::initBackend() {
 	_startMs = sst_plat_now_ms();
 	resolveSubtitles();
+	resolveVolumes();
+	resolveMenuKey();
 	_savefileManager = new DefaultSaveFileManager();
 	_timerManager = new DefaultTimerManager();
 	_eventManager = new DefaultEventManager(this);
@@ -234,6 +307,14 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 			event.type = Common::EVENT_QUIT;
 			return true;
 		}
+	}
+
+	// Ctrl+<menu_letter> (default Ctrl-G) opens ScummVM's Global Main Menu in
+	// every engine: sst_io.c reserved the key; deliver it as EVENT_MAINMENU,
+	// which the DefaultEventManager turns into openMainMenuDialog().
+	if (sst_io_menu_requested()) {
+		event.type = Common::EVENT_MAINMENU;
+		return true;
 	}
 
 	sst_input_event_t iev;

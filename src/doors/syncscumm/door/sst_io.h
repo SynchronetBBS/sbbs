@@ -44,6 +44,8 @@ void sst_io_pump(void);
 void sst_io_flush(void);
 int  sst_io_quit_requested(void);
 int  sst_io_hung_up(void);   /* peer EOF, or a hard read/write error -- see sst_io.c */
+int  sst_io_menu_requested(void);     /* Ctrl+<menu_letter> pressed (one-shot) */
+void sst_io_set_menu_key(int letter); /* GMM hotkey on Ctrl+<letter>; 0 = disabled */
 
 /* Was argv[idx] one sst_io_init() resolved itself (-s<fd>, a DOOR32.SYS
  * path)? main() uses this to strip door-only argv entries before handing
