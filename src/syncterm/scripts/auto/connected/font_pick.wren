@@ -135,7 +135,7 @@ class FontApp {
   }
 
   static loadFromFile_() {
-    var file = Host.pickFile(null, null, FilePickerOptions.maskLocked)
+    var file = Host.pickFile(null, null, FilePickerOptions.none)
     if (file == null) return
     Font.load(file)
   }

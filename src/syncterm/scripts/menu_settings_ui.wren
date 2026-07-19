@@ -831,7 +831,7 @@ class SettingsMenu {
           var title = "%(fontSizeName_(value)) %(font.name)"
           var path = font.path(value)
           var file = Host.pickFile(path == null ? "." : path,
-              fontMask_(value), FilePickerOptions.maskLocked, title)
+              fontMask_(value), FilePickerOptions.allowEntry, title)
           app.restoreFocus()
           if (file != null) font.setFile(value, file)
         }
