@@ -167,6 +167,14 @@ fnScreenWindow_position_set(WrenVM *vm)
 }
 
 void
+fn_Screen_attr(WrenVM *vm)
+{
+	struct text_info ti;
+	gettextinfo(&ti);
+	wrenSetSlotDouble(vm, 0, (double)ti.attribute);
+}
+
+void
 fn_Screen_attr_set(WrenVM *vm)
 {
 	int a = (int)wrenGetSlotDouble(vm, 1);

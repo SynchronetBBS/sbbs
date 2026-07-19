@@ -291,6 +291,10 @@ class Widget {
   // Null lets the App use its normal visible-cursor default.
   cursorShape { null }
 
+  // Legacy text attribute whose foreground should color the cursor.
+  // Null leaves conio's current cursor color unchanged.
+  cursorAttr { null }
+
   // Modal widgets override this when a mouse click outside their
   // bounds should take the same path as Escape.
   closesOnOutsideClick(event) { false }
@@ -358,6 +362,11 @@ class Container is Widget {
     var c = focusedChild
     if (c == null) return null
     return c.cursorShape
+  }
+  cursorAttr {
+    var c = focusedChild
+    if (c == null) return null
+    return c.cursorAttr
   }
 
   add(child) {

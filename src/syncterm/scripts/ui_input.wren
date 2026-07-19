@@ -11,9 +11,10 @@
 // Tab/BackTab/Up/Down are NOT consumed so containers can traverse focus.
 //
 // Cursor exposure: cursorVisible returns true (text input wants the
-// hardware cursor on screen) and cursorPos reports the cell that
-// corresponds to the current insertion point in screen coords.  App
-// reads these each frame and applies them.
+// hardware cursor on screen), cursorPos reports the insertion cell,
+// and cursorAttr supplies the focused field foreground.  Insert mode
+// uses the normal cursor and overwrite uses a solid block, matching
+// SyncTERM's reversed UIFC cursor convention.  App applies all three.
 //
 // Theme roles consulted:
 //   input          — unfocused border / background
@@ -129,7 +130,8 @@ class TextInput is Widget {
   // ----- Cursor exposure for App ----------------------------------
 
   cursorVisible { true }
-  cursorShape { insertMode ? "solid" : "normal" }
+  cursorShape { insertMode ? "normal" : "solid" }
+  cursorAttr { style("input.focused").legacyAttr }
   cursorPos {
     if (bounds == null) return null
     var col = _cursor - _scrollOff

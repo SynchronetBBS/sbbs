@@ -2003,8 +2003,8 @@ sends something.
 | `Screen.moveRect(sx, sy, ex, ey, dx, dy)`
 | Copy a rectangle to a new position.
 
-| `Screen.attr=(a)`
-| Set the active text attribute byte.
+| `Screen.attr`, `Screen.attr=(a)`
+| Read or set the active text attribute byte.
 
 | `Screen.hyperlinkId`, `Screen.hyperlinkId=(id)`
 | Hyperlink ID attached to subsequent window writes.  `0` clears.
@@ -5788,10 +5788,13 @@ dirty flag, and returns the surface.
 
 Hardware cursor: `cursorPos` returns `[x, y]` in 1-based screen
 coords (or `null`); `cursorVisible` returns whether the cursor
-should be shown while focused; and `cursorShape` optionally returns
-`"normal"` or `"solid"`.  `App` reads all three off the focused leaf
-each frame and applies them.  A visible null shape defaults to
-`"normal"`.  Containers forward the focused child's values.
+should be shown while focused; `cursorShape` optionally returns
+`"normal"` or `"solid"`; and `cursorAttr` optionally returns the
+legacy text attribute whose foreground colors the cursor.  `App`
+reads all four off the focused leaf each frame and applies them.  A
+visible null shape defaults to `"normal"`; a null attribute leaves
+the current conio cursor color unchanged.  Containers forward the
+focused child's values.
 
 `tryHotkey(ev)` is a parent-driven hotkey hook.  `Container.handle`
 scans its children with this when a printable key fell through the
@@ -6049,10 +6052,12 @@ fall through to the App's screen-selection handler.
 `insertMode` reports whether printable input inserts (`true`, the initial
 mode) or overwrites existing characters (`false`).  The mode is shared by
 all `TextInput` instances, so toggling it in one field applies to the next
-field.  `cursorShape` is `"solid"` in insert mode and `"normal"` in overwrite
-mode, matching UIFC's visible mode indicator.  Pasted control characters are
-discarded, matching typed-input filtering, and `maxLen` applies to pasted
-text.
+field.  `cursorShape` is `"normal"` in insert mode and `"solid"` in overwrite
+mode, matching SyncTERM's reversed UIFC cursor setting.  `cursorAttr` supplies
+the focused input style's legacy attribute so bitmap backends render the
+cursor in the field foreground instead of an unrelated global color.  Pasted
+control characters are discarded, matching typed-input filtering, and
+`maxLen` applies to pasted text.
 
 `mask=` accepts `null` or a non-empty String and uses its first
 codepoint when painting every stored character.  It does not change

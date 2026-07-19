@@ -129,6 +129,7 @@ foreign class Screen {
     return result
   }
   foreign static moveRect(sx, sy, ex, ey, dx, dy)
+  foreign static attr
   foreign static attr=(a)
   foreign static hyperlinkId
   foreign static hyperlinkId=(id)

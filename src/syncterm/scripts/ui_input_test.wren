@@ -47,6 +47,7 @@ class UiInputTest {
     testScrollOffTracksCursor_()
     testCursorPosVisible_()
     testCursorVisibleTrue_()
+    testCursorAttr_()
     testMouseClickPositionsCursor_()
     testMousePressDoesNotPositionCursor_()
     testRightClickPastes_()
@@ -131,7 +132,7 @@ class UiInputTest {
     t.handle(KeyEvent.new(Key.insert))
     t.handle(KeyEvent.new(0x58))
     var ok = t.value == "aXc" && t.cursor == 2 && !t.insertMode &&
-        t.cursorShape == "normal"
+        t.cursorShape == "solid"
     t.insertMode = true
     check_(ok, "TextInput Insert: toggles overwrite mode")
   }
@@ -140,7 +141,7 @@ class UiInputTest {
     var first = TextInput.new()
     first.insertMode = false
     var second = TextInput.new()
-    var ok = !second.insertMode && second.cursorShape == "normal"
+    var ok = !second.insertMode && second.cursorShape == "solid"
     second.insertMode = true
     check_(ok, "TextInput insert mode is shared between fields")
   }
@@ -300,8 +301,14 @@ class UiInputTest {
 
   static testCursorVisibleTrue_() {
     var t = TextInput.new()
-    check_(t.cursorVisible == true && t.cursorShape == "solid",
-           "TextInput cursor defaults to visible solid insert shape")
+    check_(t.cursorVisible == true && t.cursorShape == "normal",
+           "TextInput cursor defaults to visible normal insert shape")
+  }
+
+  static testCursorAttr_() {
+    var t = TextInput.new()
+    check_(t.cursorAttr == t.style("input.focused").legacyAttr,
+           "TextInput cursor uses the focused input foreground")
   }
 
   // ----- Mouse ----------------------------------------------------

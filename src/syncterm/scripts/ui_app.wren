@@ -66,7 +66,9 @@ class App {
     _layoutSize  = null           // [w, h] last passed through layout_
     _backdrop    = null           // Screen.readRect snapshot from first paint
     _savedCursor = null           // CustomCursor snapshot from entry; restored on exit
+    _savedAttr   = null           // conio text attr also supplies bitmap cursor color
     _cursorShape = null           // mirrors last applied preset; null forces first apply
+    _cursorAttr  = null           // last visible widget cursor attr
     _runMode     = null           // "async" / "sync"; modal() uses to pick pump
     _status      = null           // PopStatus overlay or null
     _runFiber    = null           // set in run(); target for post() and the claim handler's wake
@@ -519,9 +521,13 @@ class App {
     var top = modalTop
     var cp  = top.cursorPos
     if (cp != null) Screen.window.position = cp
-    var want = top.cursorVisible ? top.cursorShape : "none"
+    var visible = top.cursorVisible
+    var want = visible ? top.cursorShape : "none"
     if (want == null) want = "normal"
-    if (want != _cursorShape) {
+    var cursorAttr = visible ? top.cursorAttr : null
+    var attrChanged = cursorAttr != _cursorAttr
+    if (attrChanged && cursorAttr != null) Screen.attr = cursorAttr
+    if (want != _cursorShape || attrChanged) {
       // The saved state is for restoring on exit; using it here would
       // inherit whatever the parent app left the cursor at, which could
       // itself be hidden or have unrelated geometry.
@@ -534,6 +540,7 @@ class App {
       }
       _cursorShape = want
     }
+    _cursorAttr = cursorAttr
   }
 
   markAllDirty_() {
@@ -613,19 +620,26 @@ class App {
     return saved
   }
 
-  // Snapshot the cursor on entry so we can restore it on exit.
+  // Snapshot the cursor and text attribute on entry so both geometry
+  // and bitmap-backend cursor color can be restored on exit.
   // _cursorShape is null so the first drawAll_ comparison always trips,
-  // regardless of what the parent app or terminal
-  // had the cursor doing.
+  // regardless of what the parent app or terminal had the cursor doing.
   setupCursor_() {
     _savedCursor = CustomCursor.current
+    _savedAttr = Screen.attr
     _cursorShape = null
+    _cursorAttr = null
   }
   teardownCursor_() {
+    if (_savedAttr != null) {
+      Screen.attr = _savedAttr
+      _savedAttr = null
+    }
     if (_savedCursor != null) {
       _savedCursor.apply()
       _savedCursor = null
     }
+    _cursorAttr = null
   }
 
   run() {

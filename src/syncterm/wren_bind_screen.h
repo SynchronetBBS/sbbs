@@ -133,6 +133,7 @@ void fn_MouseEvent_toString(WrenVM *vm);
 void push_key_event(WrenVM *vm, uint16_t code, int dst);
 void push_physical_key_event(WrenVM *vm, const struct ciolib_key_event *kev, int dst);
 void push_mouse_event(WrenVM *vm, const struct mouse_event *mev, int dst);
+void fn_Screen_attr(WrenVM *vm);
 void fn_Screen_attr_set(WrenVM *vm);
 void fn_Screen_hyperlinkId(WrenVM *vm);
 void fn_Screen_hyperlinkId_set(WrenVM *vm);

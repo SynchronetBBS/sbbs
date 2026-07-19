@@ -678,6 +678,7 @@ static const struct binding BINDINGS[] = {
 	{ "Screen", true,  "putRect(_,_,_)",        fn_Screen_putRect_3       },
 	{ "Screen", true,  "putRect_(_,_,_,_,_,_,_)", fn_Screen_putRect_7     },
 	{ "Screen", true,  "moveRect(_,_,_,_,_,_)", fn_Screen_moveRect        },
+	{ "Screen", true,  "attr",                   fn_Screen_attr            },
 	{ "Screen", true,  "attr=(_)",              fn_Screen_attr_set        },
 	{ "Screen", true,  "hyperlinkId",           fn_Screen_hyperlinkId     },
 	{ "Screen", true,  "hyperlinkId=(_)",       fn_Screen_hyperlinkId_set },

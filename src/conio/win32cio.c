@@ -1233,14 +1233,17 @@ void win32_setcustomcursor(int s, int e, int r, int b, int v)
 
 	ci.bVisible=v;
 	ci.dwSize=1;
-	if(e>s)
+	if(e<s)
 		ci.bVisible=0;
-	else {
-		if(r>0)
-			ci.dwSize=(1+e-s)/r;
-		else
+	else if(r>0) {
+		ci.dwSize=(1+e-s)*100/r;
+		if(ci.dwSize<1)
+			ci.dwSize=1;
+		if(ci.dwSize>100)
 			ci.dwSize=100;
 	}
+	else
+		ci.dwSize=100;
 	SetConsoleCursorInfo(h, &ci);
 }
 
