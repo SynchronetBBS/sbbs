@@ -133,6 +133,23 @@ class PaletteColorPane is Pane {
 }
 
 class BbsEditor {
+  static showNameError(app, title, name) {
+    if (name.count == 0) {
+      Alert.show(app, title, "Can not use an empty name",
+          "# Can Not Use an Empty Name\n\n" +
+          "Entry names can not be empty. Please enter an entry name.\n")
+    } else if (MenuUi.namesEqual(name, "syncterm-system-cache")) {
+      Alert.show(app, title, "Reserved Name!",
+          "# Reserved Name\n\n" +
+          "The name you entered is reserved for internal use.\n")
+    } else {
+      Alert.show(app, title, "Entry Name Already Exists!",
+          "# Entry Name Already Exists\n\n" +
+          "An entry with that name already exists in the directory.\n" +
+          "Please choose a unique name.\n")
+    }
+  }
+
   static chooseConnectionType(app, current) {
     return MenuUi.choice(app, "Connection Type", Menu.connectionTypes,
         current, connectionTypeHelp_())
@@ -300,6 +317,29 @@ class BbsEditor {
       var value = MenuUi.prompt(app, label, label, d[key], maxLen, masked,
           fieldHelp_(key, d))
       if (value != null) d[key] = value
+    })
+  }
+
+  static nameRow_(app, b, d) {
+    return row_("Name", d["name"], Fn.new {
+      var name = d["name"]
+      while (true) {
+        name = MenuUi.prompt(app, "Name", "Name", name, 30, false,
+            fieldHelp_("name", d))
+        if (name == null) return
+        if (name.count == 0 ||
+            MenuUi.namesEqual(name, "syncterm-system-cache")) {
+          showNameError(app, "Name", name)
+        } else if (name == b.name) {
+          d["name"] = name
+          return
+        } else if (b.rename(name)) {
+          d["name"] = name
+          return
+        } else {
+          showNameError(app, "Name", name)
+        }
+      }
     })
   }
 
@@ -839,7 +879,7 @@ class BbsEditor {
 
   static rows_(app, b, d, defaults) {
     var rows = []
-    if (!defaults) rows.add(textRow_(app, d, "name", "Name", 30, false))
+    if (!defaults) rows.add(nameRow_(app, b, d))
     var addrLabel = "Address"
     if (d["connType"] == 7) {
       addrLabel = "Phone Number"
@@ -1008,8 +1048,7 @@ class BbsEditor {
   static update_(app, b, d, defaults) {
     if (sameDraft_(draft_(b), d)) return true
     if (!defaults && d["name"] != b.name && !b.rename(d["name"])) {
-      Alert.show(app, "Entry Name",
-          "The entry name is invalid or already in use.")
+      showNameError(app, "Entry Name", d["name"])
       d["name"] = b.name
       return false
     }

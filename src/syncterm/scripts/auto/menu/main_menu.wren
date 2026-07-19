@@ -50,7 +50,12 @@ class CommentInput is TextInput {
     var sf = surface
     Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ",
         style("classic.comment"))
-    Painter.text(sf, 0, 0, value, style("classic.comment"), bounds.w)
+    var offset = 0
+    if (value.bytes.count < bounds.w) {
+      offset = ((bounds.w - value.bytes.count) / 2).floor
+    }
+    Painter.text(sf, offset, 0, value, style("classic.comment"),
+        bounds.w - offset)
   }
 
   handle(event) {
@@ -269,7 +274,7 @@ class MainMenuApp {
     _list.onChange = Fn.new {|index, item|
       _selected = index != null && index >= 0 &&
           index < _entries.count ? _entries[index] : null
-      Menu.showEntry(_selected)
+      updateWindowTitle_()
       _footer.comment = _selected == null ? "" : _selected.comment
     }
     _list.onSelect = Fn.new {|index, item|
@@ -388,6 +393,7 @@ class MainMenuApp {
       return activate
     }
     _app.root.focusedIndex = 1
+    updateWindowTitle_()
     return false
   }
 
@@ -414,6 +420,7 @@ class MainMenuApp {
       return activate
     }
     _app.root.focusedIndex = 3
+    updateWindowTitle_()
     return false
   }
 
@@ -424,6 +431,17 @@ class MainMenuApp {
       _app.root.focusedIndex = 1
     }
     _commentReturn = null
+    updateWindowTitle_()
+  }
+
+  updateWindowTitle_() {
+    var focused = _app.root.focusedChild
+    if (focused == _footer) return
+    if (focused == _settings) {
+      Menu.showEntry(null)
+    } else {
+      Menu.showEntry(_selected)
+    }
   }
 
   routeWheel_(event) {
@@ -549,6 +567,7 @@ class MainMenuApp {
     } else {
       _directory.title = "Directory (%(_entries.count) items)"
     }
+    updateWindowTitle_()
     _app.root.markDirty()
   }
 
@@ -693,6 +712,7 @@ class MainMenuApp {
       _app.root.focusedIndex = 1
     }
     _commentReturn = null
+    updateWindowTitle_()
   }
 
   add_() {
@@ -709,13 +729,12 @@ class MainMenuApp {
           false, entryNameHelp_())
       if (name == null || name.count == 0) return
       if (Menu.nameAvailable(name)) break
-      Alert.show(_app, "New Entry",
-          "The entry name is invalid or already in use.")
+      BbsEditor.showNameError(_app, "New Entry", name)
     }
     var bbs = Menu.create(name)
     if (bbs == null) {
       Alert.show(_app, "New Entry",
-          "The entry name is invalid or already in use.")
+          "The personal entry could not be created.")
       return
     }
 
@@ -797,15 +816,14 @@ class MainMenuApp {
         name = MenuUi.prompt(_app, "Paste Entry",
             "New personal entry name", name, 30, false, entryNameHelp_())
         if (name == null || name.count == 0) return
-        if (Menu.nameAvailable(name)) break
-        Alert.show(_app, "Paste Entry",
-            "The entry name is invalid or already in use.")
+        if (pasteNameAvailable_(name)) break
+        BbsEditor.showNameError(_app, "Paste Entry", name)
       }
     }
     var bbs = Menu.create(name)
     if (bbs == null) {
       Alert.show(_app, "Paste Entry",
-          "The entry name is invalid or already in use.")
+          "The personal entry could not be created.")
       return
     }
     var draft = {}
@@ -823,6 +841,14 @@ class MainMenuApp {
       _footer.copied = false
     }
     refresh_(name)
+  }
+
+  pasteNameAvailable_(name) {
+    if (!Menu.nameAvailable(name)) return false
+    for (bbs in Menu.entries) {
+      if (MenuUi.namesEqual(bbs.name, name)) return false
+    }
+    return true
   }
 
   quick_() {

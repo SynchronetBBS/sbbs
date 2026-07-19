@@ -46,6 +46,9 @@ Restore directory delete feedback, context help, and editor fields
 Restore Font Details commands and palette component acceptance
 Restore safe-mode settings editor semantics
 Restore main-menu pane focus and wheel mouse behavior
+Restore menu window titles and centered directory comments
+Restore operation-specific directory name validation
+Report custom-font capacity before prompting for another font
 Restore offline scrollback modes, controls, links, and text selection
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections
 Add PipeWire support

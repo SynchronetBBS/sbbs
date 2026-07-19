@@ -23,6 +23,9 @@ class SettingsMenu {
         "Program Settings\n:  Configure hardware, display, and application behavior\n" +
         "File Locations\n:  Display configuration and data paths\n" +
         "Build Options\n:  Display features selected at build time"
+    if (!connected) {
+      text = text + "\nAlt-B\n:  View scrollback of the last session"
+    }
     if (!connected && Menu.encryptionAvailable) {
       text = text +
           "\nList Encryption\n:  Protect the personal directory with a password"
@@ -757,6 +760,11 @@ class SettingsMenu {
   }
 
   static addFont_(app, fonts, index) {
+    if (!Menu.canCreateFont) {
+      Alert.show(app, "Font Management",
+          "All custom font slots are configured.")
+      return false
+    }
     var name = MenuUi.prompt(app, "Add Font", "Font name", "", 50,
         false, fontNameHelp_())
     if (name == null || name.count == 0) return false
@@ -770,7 +778,8 @@ class SettingsMenu {
       return false
     }
     if (Menu.createFont(name, index) == null) {
-      Alert.show(app, "Font Management", "The font could not be added.")
+      Alert.show(app, "Font Management",
+          "realloc() failure, cannot add font.")
       return false
     }
     return true

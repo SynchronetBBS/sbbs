@@ -101,6 +101,7 @@ class Menu {
   // existing MenuFont handles; saveFonts() persists and reloads slots.
   foreign static fonts
   foreign static fontsDirty
+  foreign static canCreateFont
   foreign static reloadFonts()
   foreign static createFont(name, index)
   foreign static saveFonts()

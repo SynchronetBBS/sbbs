@@ -178,6 +178,14 @@ fn_Menu_fontsDirty(WrenVM *vm)
 }
 
 static void
+fn_Menu_canCreateFont(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, !safe_mode &&
+	    (model.loaded || reload_model()) &&
+	    model.count < 256 - CONIO_FIRST_FREE_FONT);
+}
+
+static void
 fn_Menu_reloadFonts(WrenVM *vm)
 {
 	wrenSetSlotBool(vm, 0, reload_model());
@@ -397,6 +405,7 @@ struct binding {
 static const struct binding bindings[] = {
 	{ "Menu", true, "fonts", fn_Menu_fonts },
 	{ "Menu", true, "fontsDirty", fn_Menu_fontsDirty },
+	{ "Menu", true, "canCreateFont", fn_Menu_canCreateFont },
 	{ "Menu", true, "reloadFonts()", fn_Menu_reloadFonts },
 	{ "Menu", true, "createFont(_,_)", fn_Menu_createFont },
 	{ "Menu", true, "saveFonts()", fn_Menu_saveFonts },

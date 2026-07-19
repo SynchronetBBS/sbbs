@@ -771,8 +771,8 @@ The currently embedded scripts are:
 
 | `keys_default`
 | auto / connected
-| Default `Hook.onKey` bindings for the in-terminal hot-keys that
-  historically lived as `case` blocks in `term.c`'s input loop:
+| Default `Hook.onKey` bindings corresponding to the in-terminal
+  hot-key commands in `term.c`'s input loop:
   Alt+X / Alt+H / `Key.quit` (window-close) and — text-mode terminals
   only — Ctrl+Q route to `DisconnectFlow.run`; Alt+O toggles
   mouse-event reporting; Alt+Up / Alt+Down walk the network throttle
@@ -790,22 +790,22 @@ The currently embedded scripts are:
 
 | `capture_menu`
 | auto / connected
-| `CaptureMenu.run()` — Wren replacement for the historical
-  uifc-driven `capture_control` dialog (capture type / save path /
+| `CaptureMenu.run()` — Wren implementation of the
+  `capture_control` contract (capture type / save path /
   pause / resume / close).  Driven by Alt+C in `keys_default` and
   the "Capture Control" entry in `online_menu`.
 
 | `music_menu`
 | auto / connected
-| `MusicMenu.run()` — Wren replacement for the historical uifc-driven
-  `music_control` dialog (ANSI music mode picker).  Driven by Alt+M
+| `MusicMenu.run()` — Wren implementation of the `music_control`
+  contract (ANSI music mode picker).  Driven by Alt+M
   in `keys_default` and the "ANSI Music Control" entry in
   `online_menu`.
 
 | `online_menu`
 | auto / connected
-| `OnlineMenu.run()` — Wren replacement for the historical
-  uifc-driven `syncmenu` (the SyncTERM "Online Menu" reached via
+| `OnlineMenu.run()` — Wren implementation of `syncmenu` (the
+  SyncTERM "Online Menu" reached via
   Alt+Z, plus Ctrl+S on text-mode terminals).  Lists the in-terminal
   control commands and dispatches the selection back into the
   primitives that drive the individual hot-keys
@@ -996,6 +996,7 @@ Renaming a persisted entry also renames its per-entry cache directory after
 the directory file is written successfully.
 Font Management treats an empty name as cancellation and reports invalid or
 duplicate names without invoking the rejecting foreign setter.
+It reports a full custom-font table before prompting for another name.
 Insert, Delete, and the blank add row remain available from Font Details as
 well as the outer Font Management list.
 Adding a web list skips its initial fetch when no cache path is available but
@@ -1018,6 +1019,13 @@ Creating or copying a personal entry with the same name as a read-only entry
 replaces that row immediately.  The model retains the shadowed entry so it
 reappears if the personal override is deleted, or under its original name if
 the personal entry is renamed.
+Adding an entry may create such an override.  Pasting a copied personal entry
+instead requires a name unique across all currently visible entries.
+
+The inactive directory comment is centered across its line.  While the
+directory pane has focus, its selection supplies the OS window title; the
+settings pane restores the bare SyncTERM version.  Editing a comment leaves
+the title from the pane where editing began until focus moves again.
 
 The shipped menu keeps context help beside the Wren screen that owns each
 control.  Directory, sort-profile, entry-editor, settings, web-list, font,
@@ -3901,11 +3909,15 @@ the loaded conio font slots.  `Menu.fonts` returns a fresh List of
 |===
 | Method | Description
 
+| `Menu.canCreateFont`
+| Return whether another custom-font record can be added.  This includes
+  the build's available conio slots, safe mode, and model-read status.
+
 | `Menu.createFont(name, index)`
 | Insert a blank custom font at `index` and return its handle.  Names
   are unique case-insensitively, contain 1..50 bytes, and may not
   contain controls or INI section brackets.  Returns `null` for an
-  invalid name, allocation failure, safe mode, or when all 210 custom
+  invalid name, allocation failure, safe mode, or when all available custom
   conio slots are represented.
 
 | `Menu.saveFonts()`
