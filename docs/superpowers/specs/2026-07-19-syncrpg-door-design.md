@@ -139,12 +139,22 @@ bitmap is fully rendered without a display surface).
 
 ## Data & control flow
 
-- **Game data (`getdata.js`)** — fetches the freeware Yume Nikki and applies the
-  English fan-translation patch. The most legitimate/stable source is pinned in
-  the implementation plan after research; sourcing follows the project rule
-  (fetch from an established source, never re-host), and the fetched tree is
-  git-ignored (only checksums/manifests are committed). Yume Nikki is
-  self-contained (no RTP).
+- **Game data (`getdata.js`)** — fetches the **official Playism 2012 English
+  release of Yume Nikki 0.10a** (the definitive version — 0.10a is 0.10 plus
+  Kikiyama's official bugfix patch). The `.ldb` text is already English, so
+  there is **no separate translation step**. Source: the archive.org item
+  `yume-nikki-010a` (`YumeNikki_EN (Playism 2012).zip`, ~51 MB), whose own README
+  declares the game Freeware. Extraction is fully **headless — `Setup.exe` is
+  never run**: unpack the outer zip, pull the inner `YumeNikki.lzh` (an LHA
+  archive), and unpack that into the RM2003 game tree (`RPG_RT.ldb` / `.lmt` /
+  `.ini` + `CharSet/ ChipSet/ FaceSet/ Music/ Sound/ Picture/ Panorama/ System/
+  Title/` …). Asset filenames are **Shift-JIS** (e.g. `System/システム.png`);
+  the fetcher must preserve those bytes on extraction, and EasyRPG's encoding
+  detection reads them (it is built for Japanese RM2k/2k3 games). Sourcing
+  follows the project rule (fetch from the established source, never re-host);
+  the fetched tree is git-ignored, and only a checksum manifest (the outer zip's
+  sha256) is committed. Yume Nikki is self-contained (no RTP). The plan pins the
+  portable extraction path (the host has `7z`/`lha`, but a sysop's box may not).
 - **Saves & config** — per-user, at **`data/user/<####>/syncrpg/<game>/`**
   (zero-padded user number, matching the door per-user-save convention). EasyRPG's
   save path is pointed there; the user number comes from the DOOR32.SYS drop file
@@ -153,9 +163,13 @@ bitmap is fully rendered without a display surface).
 - **Launch** — `install-xtrn.ini` registers Yume Nikki as its own `xtrn` menu
   entry; the binary is launched with that game's data path (the syncscumm model).
   Directories are located via `system.*_dir`, never hardcoded.
-- **Input mapping** — arrows = move; Enter / Space = action/confirm; Esc =
-  cancel/menu; Shift = dash; plus the termgfx-reserved hotkeys above. Numeric
-  keypad optional. Exact EasyRPG `Input::Keys` bindings pinned in the plan.
+- **Input mapping** (per Yume Nikki's own README) — arrows = move; Enter / Z /
+  Space = confirm/check; Esc = menu/cancel; Numpad 9 = pinch cheek (wake from
+  the dream); Numpad 1 / 3 = effect actions; Numpad 5 = drop the equipped
+  effect; plus the termgfx-reserved hotkeys above (Ctrl-S stats, Ctrl-Q quit).
+  The door maps the standard RM2k/2k3 key set (so other games work too) plus the
+  numpad; exact `TERMGFX_KEY_*` → EasyRPG `Input::Keys` bindings pinned in the
+  plan.
 
 ## Scope
 
@@ -235,9 +249,10 @@ bitmap is fully rendered without a display surface).
 
 ## Open questions (for review)
 
-- The canonical/stable **Yume Nikki source URL** and the exact English
-  fan-translation patch — researched and pinned in the plan, not here.
 - The exact **32-bit channel order / EasyRPG `format_*` constant** for the
   zero-copy hand-off — pinned in implementation to match termgfx's encoders.
-- Whether **fmmidi** is sufficient for Yume Nikki's audio or a soundfont synth is
-  wanted — decided during M3.
+- Whether **fmmidi** is sufficient or a soundfont synth is wanted — decided
+  during M3. Yume Nikki's BGM is largely WAV, so MIDI synthesis may barely be
+  exercised by the flagship itself; it matters more for later RM2k/2k3 titles.
+- The **portable `.zip`/`.lzh` extraction path** for `getdata.js` on an arbitrary
+  sysop host — pinned in the plan.
