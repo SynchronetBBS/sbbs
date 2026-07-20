@@ -77,6 +77,30 @@ slot_path(WrenVM *vm, int slot, char *path, size_t size,
 }
 
 static bool
+normalize_full_path(const char *source, char *dest, size_t size)
+{
+#ifdef _WIN32
+	size_t length = strlen(source);
+	/* The parent of a drive root is the picker's synthetic drive list. */
+	if (length == 5 && IS_ALPHA(source[0]) && source[1] == ':' &&
+	    IS_PATH_DELIM(source[2]) && source[3] == '.' && source[4] == '.') {
+		return strlcpy(dest, "\\\\?\\", size) < size;
+	}
+#endif
+	if (FULLPATH(dest, source, size) == NULL)
+		return false;
+#ifdef __unix__
+	/* dirwrap's _fullpath() collapses a final /.. at the root to "". */
+	if (dest[0] == '\0') {
+		if (size < 2)
+			return false;
+		strcpy(dest, "/");
+	}
+#endif
+	return true;
+}
+
+static bool
 normalize_directory(const char *source, char *dest, size_t size)
 {
 #ifdef _WIN32
@@ -89,15 +113,8 @@ normalize_directory(const char *source, char *dest, size_t size)
 #endif
 	if (source == NULL || *source == '\0')
 		source = ".";
-	if (FULLPATH(dest, source, size) == NULL)
+	if (!normalize_full_path(source, dest, size))
 		return false;
-#ifdef __unix__
-	if (dest[0] == '\0') {
-		if (size < 2)
-			return false;
-		strcpy(dest, "/");
-	}
-#endif
 	if (strlen(dest) + 2 > size)
 		return false;
 	backslash(dest);
@@ -507,7 +524,7 @@ fn_request_join(WrenVM *vm)
 		return;
 	}
 	char full[MAX_PATH * 4 + 1];
-	if (FULLPATH(full, combined, sizeof(full)) == NULL) {
+	if (!normalize_full_path(combined, full, sizeof(full))) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
@@ -535,7 +552,7 @@ fn_request_resolve(WrenVM *vm)
 		}
 	}
 	char full[MAX_PATH * 4 + 1];
-	if (FULLPATH(full, combined, sizeof(full)) == NULL)
+	if (!normalize_full_path(combined, full, sizeof(full)))
 		strlcpy(full, combined, sizeof(full));
 	char drive[MAX_PATH + 1], dir[MAX_PATH * 4 + 1];
 	char name[MAX_PATH + 1], ext[MAX_PATH + 1];
