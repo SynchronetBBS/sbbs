@@ -1,6 +1,6 @@
 /* repro_fade.c -- headless reproduction of the M2 "jerky fade-in" defect.
  *
- * Drives sst_io_present() directly with a synthetic palette fade (a constant
+ * Drives termgfx_termio_present() directly with a synthetic palette fade (a constant
  * index buffer, the palette ramping black -> target over N steps, presented
  * at ~60Hz) over a socketpair whose reader side plays a terminal with a
  * selectable DSR-ack policy:
@@ -23,7 +23,7 @@
 #include <time.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include "sst_io.h"
+#include "termgfx_termio.h"
 
 #define FADE_STEPS_DEFAULT 60
 #define STEP_HZ            60
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 	int sv[2];
 	char fdarg[32];
 	int  steps = FADE_STEPS_DEFAULT;
-	static uint8_t idx[SST_FB_W * SST_FB_H];
+	static uint8_t idx[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 	static uint8_t pal[768];
 	int  i, step;
 	const char *bwenv = getenv("SYNCSCUMM_REPRO_BW");
@@ -136,9 +136,9 @@ int main(int argc, char **argv)
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
 	{
 		char *av[] = { (char *)"repro_fade", fdarg, NULL };
-		if (sst_io_init(2, av) != 1) { fprintf(stderr, "init failed\n"); return 1; }
+		if (termgfx_termio_init(2, av) != 1) { fprintf(stderr, "init failed\n"); return 1; }
 	}
-	sst_io_flush();
+	termgfx_termio_flush();
 	reader_service();   /* swallow the probe burst */
 
 	/* Capability replies: sixel-capable DA1 + SyncTERM CTDA (cterm 1.330) +
@@ -151,14 +151,14 @@ int main(int argc, char **argv)
 		const char *canvas = "\x1b[4;800;1280t";   /* 1280x800 text area */
 		(void)!write(g_peer, caps, strlen(caps));
 		(void)!write(g_peer, canvas, strlen(canvas));
-		sst_io_pump();
+		termgfx_termio_pump();
 	}
 
 	/* Constant index pattern (a horizontal-ish gradient of indices, so the
 	 * sixel encode is a realistic non-trivial size, not a flat RLE freebie);
 	 * the FADE is entirely in the palette. */
 	for (i = 0; i < (int)sizeof idx; i++) {
-		int x = i % SST_FB_W, y = i / SST_FB_W;
+		int x = i % TERMGFX_TERMIO_FB_W, y = i / TERMGFX_TERMIO_FB_W;
 		idx[i] = (uint8_t)(((x >> 2) + (y >> 2)) & 0xff);
 	}
 
@@ -173,16 +173,16 @@ int main(int argc, char **argv)
 			pal[c * 3 + 1] = (uint8_t)(tg * step / steps);
 			pal[c * 3 + 2] = (uint8_t)(tb * step / steps);
 		}
-		sst_io_present(idx, pal);
+		termgfx_termio_present(idx, pal);
 		reader_service();
-		sst_io_pump();
+		termgfx_termio_pump();
 		/* hold ~1/60s per fade step, servicing acks so slow-mode releases fire */
 		{
 			uint32_t elapsed = now_ms() - t0, budget = 1000 / STEP_HZ;
 			while (elapsed < budget) {
 				sleep_ms(1);
 				reader_service();
-				sst_io_pump();
+				termgfx_termio_pump();
 				elapsed = now_ms() - t0;
 			}
 		}
@@ -193,20 +193,20 @@ int main(int argc, char **argv)
 	{
 		uint32_t start = now_ms();
 		while (now_ms() - start < 2000) {
-			sst_io_present(idx, pal);   /* engine would keep presenting the settled frame */
+			termgfx_termio_present(idx, pal);   /* engine would keep presenting the settled frame */
 			reader_service();
-			sst_io_pump();
+			termgfx_termio_pump();
 			sleep_ms(5);
 		}
 	}
 
-	sst_io_shutdown();
+	termgfx_termio_shutdown();
 	close(g_peer);
 
 	fprintf(stderr,
 	        "mode=%s steps=%d bw=%.0fB/ms  bytes_to_term=%llu dsr_seen=%d acks_sent=%d "
 	        "dropped=%u\n",
 	        argv[1], steps, g_bw, (unsigned long long)g_bytes_seen,
-	        g_dsr_seen, g_acks_sent, sst_io_frames_dropped());
+	        g_dsr_seen, g_acks_sent, termgfx_termio_frames_dropped());
 	return 0;
 }
