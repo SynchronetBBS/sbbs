@@ -6126,6 +6126,13 @@ current row.  Replacing `items` also fires it so a detail pane can
 refresh even when the selected numeric index remains zero.  An empty
 list reports `(null, null)`.
 
+`items=` preserves the selected index and `scrollTop` when replacing a
+populated list, clamping them only when the replacement is shorter.  This
+allows a menu to rebuild changed row labels without moving its viewport.
+`resetItems(list)` replaces the collection and explicitly selects its
+first row at `scrollTop=0`; use it when navigating to a different
+collection rather than redrawing the current one.
+
 `selected` is `null` when no row is selected (empty list, or
 explicitly cleared with `list.selected = null`); otherwise an
 integer in `0..count - 1`.  `selectedItem` mirrors the same

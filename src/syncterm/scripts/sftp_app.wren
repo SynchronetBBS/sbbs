@@ -636,10 +636,10 @@ class SftpApp is App {
       updateDescBar_(null)
       return
     }
-    _bList.items = r
+    _bList.resetItems(r)
     _bLastGen = SftpQueue.gen   // baseline for chip-refresh polling
-    // ListView.items= bypasses the selected= setter, so onSelectionChange
-    // doesn't fire for the initial selection — drive the bar manually.
+    // resetItems bypasses the selected= setter, so onSelectionChange
+    // does not fire for the initial selection; drive the bar manually.
     updateDescBar_(_bList.selectedItem)
   }
 

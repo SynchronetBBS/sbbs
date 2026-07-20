@@ -249,8 +249,8 @@ class PickerPane is Pane {
     if (listing == null) return false
     _listing = listing
     _path = listing.path
-    _directories.items = listing.directories
-    _files.items = listing.files
+    _directories.resetItems(listing.directories)
+    _files.resetItems(listing.files)
     if (selectedName != null && selectedName.count > 0) {
       var i = 0
       while (i < listing.files.count) {
