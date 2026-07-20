@@ -952,6 +952,11 @@ An override must export class `MainMenu` with these static methods:
   calls `prepare()` first, then copies the C record into menu storage;
   no connection-owned pointer or foreign value is passed into Wren.
 
+When the built-in module is loaded, it paints the main-menu background and
+title bar immediately.  Startup alerts and progress panes therefore appear
+over initialized menu chrome before `MainMenu.run()` constructs the
+interactive directory.
+
 The host validates and copies a record returned by `run` while the menu
 VM is still selected, so the Wren foreign object itself never crosses
 into the connected VM.

@@ -1,4 +1,4 @@
-import "syncterm" for Host, KeyEvent, MouseEvent, Key, Mouse, REPL
+import "syncterm" for Host, KeyEvent, MouseEvent, Key, Mouse, REPL, Screen
 import "syncterm_menu" for Menu, MenuReadStatus
 import "wren_console" for WrenConsole
 import "menu_ui" for MenuUi
@@ -1050,6 +1050,16 @@ class MainMenu {
   static password { __password }
   static password=(value) { __password = value }
 
+  static drawBackdrop_() {
+    var app = App.new()
+    app.theme = ClassicTheme.from(Menu.settings)
+    var backdrop = ClassicBackdrop.new()
+    var size = Screen.size
+    backdrop.bounds = Rect.new(1, 1, size[0], size[1])
+    app.root.add(backdrop)
+    app.drawAll_()
+  }
+
   static prepare() {
     var status = Menu.load(__password)
     while (status == MenuReadStatus.passwordRequired ||
@@ -1100,3 +1110,7 @@ class MainMenu {
     return MainMenuApp.new(current, connected).run()
   }
 }
+
+// Startup progress and alerts are displayed after the menu VM loads but
+// before MainMenu.run() creates the interactive controller.
+MainMenu.drawBackdrop_()
