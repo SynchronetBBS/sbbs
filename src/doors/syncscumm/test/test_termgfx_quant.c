@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "sst_quant.h"
+#include "termgfx_quant.h"
 
 int main(void)
 {
@@ -19,7 +19,7 @@ int main(void)
 		case 3: p[0] = 255; p[1] = 255; p[2] = 255; break;
 		}
 	}
-	n = sst_quant_rgb(rgb, W, H, idx, pal);
+	n = termgfx_quant_rgb(rgb, W, H, idx, pal);
 	assert(n >= 4 && n <= 256);
 	/* every pixel must round-trip exactly (only 4 distinct colors) */
 	for (y = 0; y < H; y++) for (x = 0; x < W; x++) {
@@ -30,8 +30,8 @@ int main(void)
 	/* stress: 10k random colors must not crash and must fill <= 256 */
 	srand(42);
 	for (x = 0; x < W * H * 3; x++) rgb[x] = (uint8_t)rand();
-	n = sst_quant_rgb(rgb, W, H, idx, pal);
+	n = termgfx_quant_rgb(rgb, W, H, idx, pal);
 	assert(n > 0 && n <= 256);
-	printf("SST_QUANT OK (%d colors)\n", n);
+	printf("TERMGFX_QUANT OK (%d colors)\n", n);
 	return 0;
 }

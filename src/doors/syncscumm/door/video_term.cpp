@@ -8,7 +8,7 @@
 #include "video_term.h"
 
 #include "audio_term.h"
-#include "sst_quant.h"
+#include "termgfx_quant.h"
 
 SyncscummTermGraphicsManager::SyncscummTermGraphicsManager()
 	: _cursorBuf(NULL), _cursorW(0), _cursorH(0),
@@ -216,7 +216,7 @@ void SyncscummTermGraphicsManager::compose() {
 		}
 	}
 
-	sst_quant_rgb(rgb, TERMGFX_TERMIO_FB_W, TERMGFX_TERMIO_FB_H, _quantIdx, _quantPal);
+	termgfx_quant_rgb(rgb, TERMGFX_TERMIO_FB_W, TERMGFX_TERMIO_FB_H, _quantIdx, _quantPal);
 }
 
 void SyncscummTermGraphicsManager::updateScreen() {

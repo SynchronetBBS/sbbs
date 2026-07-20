@@ -33,6 +33,7 @@ add_library(termgfx STATIC
     pace.c
     sst_plat.c
     termgfx_termio.c
+    termgfx_quant.c
     sbbs_node.c)
 
 # Public: consumers that #include "sixel.h" / "sbbs_node.h" get this dir.

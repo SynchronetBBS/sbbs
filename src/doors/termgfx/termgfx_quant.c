@@ -1,4 +1,4 @@
-/* sst_quant.c -- deterministic median-cut RGB888 -> 256-color quantizer.
+/* termgfx_quant.c -- deterministic median-cut RGB888 -> 256-color quantizer.
  *
  * Histograms into a 15-bit (5:5:5) grid; when the frame already uses <=256
  * distinct grid cells the mapping is exact -- every pixel's original color
@@ -9,17 +9,17 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sst_quant.h"
+#include "termgfx_quant.h"
 
-#define SST_QUANT_BUCKETS (1 << 15)   /* 5:5:5 = 32768 grid cells */
+#define TERMGFX_QUANT_BUCKETS (1 << 15)   /* 5:5:5 = 32768 grid cells */
 
 typedef struct {
 	uint32_t r_sum, g_sum, b_sum;
 	uint32_t count;
 	uint16_t bucket;   /* original 15-bit grid index, for determinism */
-} sst_quant_entry_t;
+} termgfx_quant_entry_t;
 
-typedef struct { int start, end; } sst_quant_box_t;
+typedef struct { int start, end; } termgfx_quant_box_t;
 
 static int sst_bucket_of(uint8_t r, uint8_t g, uint8_t b)
 {
@@ -31,8 +31,8 @@ static int g_sort_axis;
 
 static int sst_entry_cmp(const void *pa, const void *pb)
 {
-	const sst_quant_entry_t *a = (const sst_quant_entry_t *)pa;
-	const sst_quant_entry_t *b = (const sst_quant_entry_t *)pb;
+	const termgfx_quant_entry_t *a = (const termgfx_quant_entry_t *)pa;
+	const termgfx_quant_entry_t *b = (const termgfx_quant_entry_t *)pb;
 	uint32_t va, vb;
 	switch (g_sort_axis) {
 	case 0: va = a->r_sum / a->count; vb = b->r_sum / b->count; break;
@@ -46,7 +46,7 @@ static int sst_entry_cmp(const void *pa, const void *pb)
 	return (a->bucket < b->bucket) ? -1 : (a->bucket > b->bucket ? 1 : 0);
 }
 
-static uint32_t sst_box_weight(const sst_quant_entry_t *e, sst_quant_box_t box)
+static uint32_t sst_box_weight(const termgfx_quant_entry_t *e, termgfx_quant_box_t box)
 {
 	uint32_t w = 0;
 	int i;
@@ -56,7 +56,7 @@ static uint32_t sst_box_weight(const sst_quant_entry_t *e, sst_quant_box_t box)
 }
 
 /* Widest channel (by mean-value range) across box's entries; 0=r,1=g,2=b. */
-static int sst_box_axis(const sst_quant_entry_t *e, sst_quant_box_t box)
+static int sst_box_axis(const termgfx_quant_entry_t *e, termgfx_quant_box_t box)
 {
 	uint32_t rmin = 255, rmax = 0, gmin = 255, gmax = 0, bmin = 255, bmax = 0;
 	uint32_t rr, gr, br;
@@ -85,9 +85,9 @@ static int sst_box_axis(const sst_quant_entry_t *e, sst_quant_box_t box)
  * single distinct color (start/end 1 apart) can't split -- returns a
  * zero-length box at box->end, which the caller's weight-based picker
  * never selects again (weight-of-nothing sorts last). */
-static sst_quant_box_t sst_box_split(sst_quant_entry_t *e, sst_quant_box_t *box)
+static termgfx_quant_box_t sst_box_split(termgfx_quant_entry_t *e, termgfx_quant_box_t *box)
 {
-	sst_quant_box_t right;
+	termgfx_quant_box_t right;
 	uint32_t total, half, acc;
 	int mid, i;
 
@@ -115,23 +115,23 @@ static sst_quant_box_t sst_box_split(sst_quant_entry_t *e, sst_quant_box_t *box)
 	return right;
 }
 
-int sst_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_t *out_pal768)
+int termgfx_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_t *out_pal768)
 {
-	sst_quant_entry_t *buckets;
+	termgfx_quant_entry_t *buckets;
 	int32_t *bucket_idx;   /* 15-bit grid slot -> entries[]/box index, -1 = empty */
 	int npix = w * h, i, nentries, nboxes = 0;
 
 	memset(out_pal768, 0, 768);
 
-	buckets = (sst_quant_entry_t *)calloc(SST_QUANT_BUCKETS, sizeof(*buckets));
-	bucket_idx = (int32_t *)malloc(SST_QUANT_BUCKETS * sizeof(*bucket_idx));
+	buckets = (termgfx_quant_entry_t *)calloc(TERMGFX_QUANT_BUCKETS, sizeof(*buckets));
+	bucket_idx = (int32_t *)malloc(TERMGFX_QUANT_BUCKETS * sizeof(*bucket_idx));
 	if (!buckets || !bucket_idx) {
 		free(buckets);
 		free(bucket_idx);
 		memset(out_idx, 0, (size_t)npix);
 		return 0;
 	}
-	for (i = 0; i < SST_QUANT_BUCKETS; i++)
+	for (i = 0; i < TERMGFX_QUANT_BUCKETS; i++)
 		bucket_idx[i] = -1;
 
 	for (i = 0; i < npix; i++) {
@@ -148,7 +148,7 @@ int sst_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_t *o
 	 * compact in place: nentries <= i always, so the write never clobbers
 	 * a slot not yet read. */
 	nentries = 0;
-	for (i = 0; i < SST_QUANT_BUCKETS; i++) {
+	for (i = 0; i < TERMGFX_QUANT_BUCKETS; i++) {
 		if (buckets[i].count) {
 			buckets[nentries] = buckets[i];
 			buckets[nentries].bucket = (uint16_t)i;
@@ -180,7 +180,7 @@ int sst_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_t *o
 	 * initial box holds > 256 distinct colors, so it (and its
 	 * descendants) can always split at least until 256 boxes exist. */
 	{
-		sst_quant_box_t *boxes = (sst_quant_box_t *)malloc(256 * sizeof(*boxes));
+		termgfx_quant_box_t *boxes = (termgfx_quant_box_t *)malloc(256 * sizeof(*boxes));
 		uint8_t *lut;
 		int nb = 1;
 
@@ -234,9 +234,9 @@ int sst_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_t *o
 		 * (set above); cells the frame never touched are resolved by
 		 * brute-force nearest search against the final palette, so the
 		 * table is general rather than sparse. */
-		lut = (uint8_t *)malloc(SST_QUANT_BUCKETS);
+		lut = (uint8_t *)malloc(TERMGFX_QUANT_BUCKETS);
 		if (lut) {
-			for (i = 0; i < SST_QUANT_BUCKETS; i++) {
+			for (i = 0; i < TERMGFX_QUANT_BUCKETS; i++) {
 				if (bucket_idx[i] >= 0) {
 					lut[i] = (uint8_t)bucket_idx[i];
 					continue;
