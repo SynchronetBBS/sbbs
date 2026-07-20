@@ -1229,8 +1229,11 @@ methods `alert(title, message)`, `confirm(title, message)`,
 `choice(title, message, options, current)`, `status(title, lines)`, and
 `statusClear()`.  It is a host-controller ABI rather than a public menu
 script API: application C code holds the call handles and invokes it.
-Status text wraps within the progress pane, with the resulting block and
-each displayed line centered in the available interior.
+The progress pane is 74 columns wide when the screen permits, matching the
+C formatter and the previous UIFC window.  The pane itself is centered, but
+all status rows share one padded left edge so preformatted columns remain
+aligned between rows and updates.  Text wraps within that common content
+width on narrower screens.
 Menu auto-script overrides are trusted and may replace its presentation,
 but must keep those signatures and return `Bool`, `String`/`null`, and
 numeric choice indexes as appropriate or host dialogs fail closed.
