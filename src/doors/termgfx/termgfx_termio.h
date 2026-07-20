@@ -110,6 +110,13 @@ int  termgfx_termio_audio_available(void);
 // full-res frame per call (no pacing/dedupe), capped.
 void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768);
 
+/* Truecolor present: hand a native-resolution 32-bit frame. `xrgb` is w*h
+ * pixels, memory byte order R,G,B,X (the 4th byte is ignored padding), stride
+ * w*4. The sixel tier quantizes internally; the JXL tier encodes the RGB
+ * directly (no indexed round-trip). Parallel to termgfx_termio_present(), which
+ * stays the entry point for native-indexed sources. */
+void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h);
+
 // Retry a frame that a pacing/backpressure gate inside present() deferred
 // without sending -- present() is edge-driven off the engine's dirty flag, so a
 // frame gated on the last redraw of a burst (a static panel, no further

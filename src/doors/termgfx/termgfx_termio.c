@@ -26,6 +26,8 @@
 #include "door32.h"
 #include "geometry.h"
 #include "sixel.h"
+#include "termgfx_quant.h"   /* termgfx_quant_rgb(): RGB888 -> 256-color, for
+                              * present_rgbx()'s sixel tier (Task 1's shared lib) */
 #include "jxl.h"
 #include "apc.h"
 /* SGR mouse: enable/restore strings, the DECRPM latch, and the report
@@ -2416,6 +2418,12 @@ static int ensure_cap(uint8_t **buf, size_t *cap, size_t need)
 
 static uint8_t *g_idx_buf;   static size_t g_idx_cap;
 static uint8_t *g_sixel_buf; static size_t g_sixel_cap;
+/* Packed RGB888 scratch, shared by the JXL tier's sst_pack_rgb()/_rect()
+ * (below, WITH_JXL only) and present_rgbx()'s sst_scale_rgbx_to_rgb() (which
+ * feeds BOTH the sixel and JXL truecolor tiers), so declared unconditionally
+ * here rather than inside the WITH_JXL block -- a no-libjxl build still uses it
+ * for the sixel truecolor path. */
+static uint8_t *g_rgb_buf;   static size_t g_rgb_cap;
 
 static const uint8_t *sst_scale_idx(const uint8_t *fb, int ew, int eh)
 {
@@ -2430,6 +2438,29 @@ static const uint8_t *sst_scale_idx(const uint8_t *fb, int ew, int eh)
 			o[x] = row[x * SST_FB_W / ew];
 	}
 	return g_idx_buf;
+}
+
+/* NN-scale a native w x h XRGB (R,G,B,X) frame to a packed RGB888 ew x eh
+ * buffer (pad byte dropped). Backs present_rgbx's sixel + JXL tiers. Unlike
+ * sst_scale_idx()/sst_pack_rgb(), the source dimensions are the caller's own
+ * w/h (a truecolor source has no fixed SST_FB_W x SST_FB_H surface), so they
+ * are parameters here rather than the SST_FB_* constants. */
+static const uint8_t *sst_scale_rgbx_to_rgb(const uint8_t *xrgb, int w, int h,
+                                            int ew, int eh)
+{
+	int y;
+	if (!ensure_cap(&g_rgb_buf, &g_rgb_cap, (size_t)ew * eh * 3))
+		return NULL;
+	for (y = 0; y < eh; y++) {
+		const uint8_t *srow = xrgb + (size_t)(y * h / eh) * w * 4;
+		uint8_t *      o    = g_rgb_buf + (size_t)y * ew * 3;
+		int            x;
+		for (x = 0; x < ew; x++) {
+			const uint8_t *p = srow + (size_t)(x * w / ew) * 4;
+			*o++ = p[0]; *o++ = p[1]; *o++ = p[2];
+		}
+	}
+	return g_rgb_buf;
 }
 
 /* Pack a display sub-rect [rx,ry,rw,rh] (in ew x eh scaled-image space) into
@@ -2661,7 +2692,6 @@ static const char *sst_tier_name(int t)
 }
 
 #ifdef WITH_JXL
-static uint8_t *g_rgb_buf; static size_t g_rgb_cap;
 static uint8_t *g_jxl_buf; static size_t g_jxl_cap;
 static uint8_t *g_apc_buf; static size_t g_apc_cap;
 
@@ -2731,6 +2761,20 @@ static size_t sst_emit_jxl(const uint8_t *fb, const uint8_t *pal8, int ew, int e
 	if (rgb == NULL)
 		return 0;
 	n = termgfx_jxl_encode(&g_jxl_buf, &g_jxl_cap, rgb, ew, eh, 2.0f, 1);
+	if (n == 0)
+		return 0;   /* encode failure (or a no-libjxl stub): caller falls back to sixel */
+	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, sst_jxl_name(), "DrawJXL",
+	                         g_jxl_buf, n, dx, dy, g_img_blob_ok);
+}
+
+/* present_rgbx's JXL tier: the tail of sst_emit_jxl() fed already-packed
+ * RGB888 (from sst_scale_rgbx_to_rgb()), skipping the indexed sst_pack_rgb()
+ * round-trip a truecolor source has no need of. Bytes land in g_apc_buf, same
+ * as sst_emit_jxl(). */
+static size_t sst_emit_jxl_rgb(const uint8_t *rgb, int ew, int eh, int dx, int dy)
+{
+	size_t n = termgfx_jxl_encode(&g_jxl_buf, &g_jxl_cap, rgb, ew, eh, 2.0f, 1);
+
 	if (n == 0)
 		return 0;   /* encode failure (or a no-libjxl stub): caller falls back to sixel */
 	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, sst_jxl_name(), "DrawJXL",
@@ -3235,7 +3279,15 @@ static void sst_evdev_report(int down)
  * 999;999-CPR grid) to reserve exactly one row and to center on a fractional
  * cell. JXL is pixel-addressed and does not scroll at the cursor, so it
  * always uses the full canvas. */
-static void sst_image_rect(int *ew, int *eh, int *dx, int *dy)
+/* Source-parameterized core of sst_image_rect(): identical logic, but the
+ * frame's native size (sw x sh) is a parameter instead of the SST_FB_*
+ * constants, so present_rgbx() (a truecolor source with its own w x h) can fit
+ * against the same canvas math. sst_image_rect() below is the unchanged
+ * SST_FB_W x SST_FB_H wrapper the indexed present()/mouse path calls -- passing
+ * those two constants reproduces its former behavior exactly (the source dims
+ * are used only by the termgfx_geom_fit() call; everything after keys off the
+ * canvas and the resulting ew/eh). */
+static void sst_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, int *dy)
 {
 	int tier  = sst_tier();
 	int cellh = g_cell_h > 0 ? g_cell_h
@@ -3245,7 +3297,7 @@ static void sst_image_rect(int *ew, int *eh, int *dx, int *dy)
 	if (tier == SST_TIER_SIXEL && g_term_rows > 0 && g_canvas_h > cellh)
 		fit_h = g_canvas_h - cellh;   /* keep the image off the last row */
 
-	termgfx_geom_fit(g_canvas_w, fit_h, SST_FB_W, SST_FB_H, SST_SCALE_MAX, ew, eh);
+	termgfx_geom_fit(g_canvas_w, fit_h, sw, sh, SST_SCALE_MAX, ew, eh);
 	/* Effective sixel ceiling -- SIXEL tier only (see g_gfx_max_w's doc
 	 * comment, above, for the full precedence rationale). JXL/APC frames
 	 * aren't subject to xterm's declared-raster discard (a different wire
@@ -3280,6 +3332,11 @@ static void sst_image_rect(int *ew, int *eh, int *dx, int *dy)
 
 		termgfx_geom_center(g_canvas_w, g_canvas_h, *ew, *eh, 8, 16, dx, dy, &icol, &irow);
 	}
+}
+
+static void sst_image_rect(int *ew, int *eh, int *dx, int *dy)
+{
+	sst_image_rect_src(SST_FB_W, SST_FB_H, ew, eh, dx, dy);
 }
 
 static void sst_mouse_report(int b, int col, int row, int release)
@@ -3851,6 +3908,227 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	else if (pal_dirty)
 		sst_trace("full-palstorm", sst_tier_name(tier), n);
 	else
+		sst_trace("full", sst_tier_name(tier), n);
+
+	termgfx_termio_flush();
+}
+
+/* Quantized palette scratch for present_rgbx()'s sixel tier (and its JXL->sixel
+ * fallback / capture branch): termgfx_quant_rgb() writes 256 RGB triples here
+ * each frame, which sixel_encode() then emits. Frame-local; the truecolor path
+ * has no persistent palette to diff against (its palette is re-derived per
+ * frame), so emit_pal is always 1 below. */
+static uint8_t g_rgbx_pal[768];
+
+/* Truecolor sibling of termgfx_termio_present(): the same tier / geometry /
+ * pacing flow, but the encoder input is produced from a native w x h XRGB
+ * (R,G,B,X) frame instead of an indexed one -- the sixel tier quantizes it, the
+ * JXL tier encodes the packed RGB directly.
+ *
+ * Full-frame every call: the indexed path's dedupe / dirty-rect / retain
+ * machinery keys off g_last_fb (an indexed SST_FB_W x SST_FB_H surface) and is
+ * deliberately NOT shared here -- factoring it out would have to touch
+ * present()'s tail, which must stay byte-identical for the live indexed door
+ * (syncscumm). The pacing / backpressure gates ARE shared: they gate on the
+ * same g_inflight / g_out_len link state, tier-agnostic. A gated frame is
+ * dropped rather than retained -- there is no rgbx tick()-retry buffer, and a
+ * truecolor source drives its own redraw cadence. */
+void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
+{
+	int            tier, ew, eh, icol, irow;
+#ifdef WITH_JXL
+	int            dx = 0, dy = 0;
+#endif
+	const uint8_t *rgb;
+	size_t         n = 0;
+	unsigned       dropped_before;
+
+	if (!g_active || g_hangup)
+		return;
+
+	if (g_capture != NULL) {
+		/* Capture mode: a self-contained full-res frame per call, no
+		 * pacing/dedupe -- mirrors present()'s capture branch, but quantizes
+		 * the native XRGB frame (identity scale) before sixel_encode(). */
+		if (g_capture_frames >= SST_CAPTURE_MAX_FRAMES)
+			return;
+		rgb = sst_scale_rgbx_to_rgb(xrgb, w, h, w, h);
+		if (rgb == NULL || !ensure_cap(&g_idx_buf, &g_idx_cap, (size_t)w * h))
+			return;
+		termgfx_quant_rgb(rgb, w, h, g_idx_buf, g_rgbx_pal);
+		n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, w, h, g_rgbx_pal, 1);
+		if (n != 0) {
+			fwrite(g_sixel_buf, 1, n, g_capture);
+			g_capture_frames++;
+		}
+		return;
+	}
+
+	/* Read pending probe replies before choosing geometry/tier -- same reason
+	 * as present() (an intro loop may never poll events). */
+	termgfx_termio_pump();
+	if (g_hangup)
+		return;
+
+	if (g_first_present_ms == 0)
+		g_first_present_ms = now_ms();
+
+	/* Startup grace: hold until the capability probe answers (see present()). */
+	if (!g_probe_replied && (int32_t)(now_ms() - g_first_present_ms) < SST_PROBE_GRACE_MS)
+		return;
+
+	/* Non-graphics-terminal gate: neither sixel nor JXL advertised (see
+	 * present()) -- notify once and quit rather than spray unrenderable DCS. */
+	if (!g_have_sixel && !g_jxl && g_probe_replied) {
+		if (!g_jxl_done
+		    && (int32_t)(now_ms() - g_probe_start_ms) <= SST_GFX_SETTLE_MS)
+			return;   /* JXL cap may still be in flight -- keep holding */
+		if (!g_no_gfx_notified) {
+			out_puts("\r\n\x1b[0m\r\n"
+			         "  This game requires a terminal with sixel or JXL graphics"
+			         " support\r\n"
+			         "  (such as SyncTERM). This terminal reports neither, so the"
+			         " game\r\n"
+			         "  cannot be displayed.\r\n\r\n");
+			termgfx_termio_flush();
+			g_no_gfx_notified = 1;
+		}
+		g_quit = 1;
+		return;
+	}
+
+	/* Canvas-size hold: wait for the real pixel canvas (see present()). */
+	if (!g_canvas_exact && (int32_t)(now_ms() - g_first_present_ms) < SST_PROBE_GRACE_MS)
+		return;
+
+	termgfx_termio_flush();   /* drain the previous frame first */
+	if (g_hangup)
+		return;
+
+	/* DSR-ack pacing + backpressure gates (see present()'s two gates). A gated
+	 * frame is skipped, not retained: there is no rgbx retry buffer, and the
+	 * source re-presents on its own. The plain SST_PACE_DEADLINE_MS unstick is
+	 * used -- the shorter palette-storm deadline is an indexed-fade heuristic
+	 * keyed off g_last_pal, which this path does not maintain. */
+	if (g_inflight >= g_auto_depth) {
+		if ((int32_t)(now_ms() - g_pace_progress_ms) > (int32_t)SST_PACE_DEADLINE_MS) {
+			g_inflight = 0;
+			g_dsr_t    = g_dsr_h;   /* drop the stale unacked DSR timestamps */
+		} else
+			return;
+	}
+	if (g_out_len > 0)
+		return;
+
+	/* Close a DCS/APC a previous drop left dangling (see present()). */
+	if (g_need_st) {
+		out_puts("\x1b\\");
+		g_need_st = 0;
+	}
+	dropped_before = g_dropped_frames;
+
+	tier = sst_tier();
+
+	/* Fit + center against the caller's native w x h (present() fits the fixed
+	 * SST_FB_W x SST_FB_H), then re-derive the sixel CUP col/row from the
+	 * pixel offset exactly as present() does. */
+	{
+		int rdx, rdy;
+
+		sst_image_rect_src(w, h, &ew, &eh, &rdx, &rdy);
+		if (tier == SST_TIER_SIXEL && g_term_rows > 0) {
+			double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
+			double chd = (double)g_canvas_h / g_term_rows;
+			icol = 1 + (int)(rdx / cw);
+			irow = 1 + (int)(rdy / chd);
+		} else {
+			icol = 1 + rdx / 8;
+			irow = 1 + rdy / 16;
+#ifdef WITH_JXL
+			dx = rdx;
+			dy = rdy;
+#endif
+		}
+
+		/* Stash for sst_trace() -- same geometry fields present() records. */
+		g_trace_ew    = ew;
+		g_trace_eh    = eh;
+		g_trace_icol  = icol;
+		g_trace_irow  = irow;
+#ifdef WITH_JXL
+		g_trace_dx    = dx;
+		g_trace_dy    = dy;
+#endif
+	}
+
+	/* Stats bar BEFORE the (possibly huge) image, so it wins stage space even
+	 * when the frame runs past out_put()'s cap -- same rationale as present(). */
+	sst_fps_tick(1);
+	sst_stats_draw();
+
+	if (tier == SST_TIER_SIXEL) {
+		char cup[24];
+		int  cn;
+
+		/* Match sst_emit_sixel()'s band/scale clamps, but on the RGB scale:
+		 * clamp width, round height down to whole 6px sixel bands. */
+		if (ew > SST_SCALE_MAX)
+			ew = SST_SCALE_MAX;
+		eh -= eh % 6;
+		if (eh < 6)
+			eh = 6;
+		rgb = sst_scale_rgbx_to_rgb(xrgb, w, h, ew, eh);
+		if (rgb != NULL && ensure_cap(&g_idx_buf, &g_idx_cap, (size_t)ew * eh)) {
+			termgfx_quant_rgb(rgb, ew, eh, g_idx_buf, g_rgbx_pal);
+			cn = snprintf(cup, sizeof cup, "\x1b[%d;%dH", irow, icol);
+			out_put(cup, (size_t)cn);
+			n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, ew, eh, g_rgbx_pal, 1);
+			out_put(g_sixel_buf, n);
+		}
+	}
+#ifdef WITH_JXL
+	else {   /* SST_TIER_JXL: encode the packed RGB directly, no indexing */
+		rgb = sst_scale_rgbx_to_rgb(xrgb, w, h, ew, eh);
+		if (rgb != NULL)
+			n = sst_emit_jxl_rgb(rgb, ew, eh, dx, dy);
+		if (n != 0) {
+			out_put(g_apc_buf, n);
+		} else {
+			/* encode failure (or transient libjxl fail): fall back to sixel for
+			 * just this frame, same as present(). */
+			char cup[24];
+			int  cn;
+
+			if (ew > SST_SCALE_MAX)
+				ew = SST_SCALE_MAX;
+			eh -= eh % 6;
+			if (eh < 6)
+				eh = 6;
+			rgb = sst_scale_rgbx_to_rgb(xrgb, w, h, ew, eh);
+			if (rgb != NULL && ensure_cap(&g_idx_buf, &g_idx_cap, (size_t)ew * eh)) {
+				termgfx_quant_rgb(rgb, ew, eh, g_idx_buf, g_rgbx_pal);
+				cn = snprintf(cup, sizeof cup, "\x1b[%d;%dH", irow, icol);
+				out_put(cup, (size_t)cn);
+				n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, ew, eh, g_rgbx_pal, 1);
+				out_put(g_sixel_buf, n);
+			}
+			tier = SST_TIER_SIXEL;
+		}
+	}
+#endif
+
+	out_put("\x1b[6n", 4);   /* DSR: paces the next frame */
+	g_inflight++;
+	g_pace_progress_ms = now_ms();
+	sst_dsr_sent(g_pace_progress_ms);
+
+	/* A drop mid-frame can leave a DCS/APC open with no ST -- flag the next
+	 * present_rgbx() to close it (g_need_st), same resync marker present()
+	 * uses. No g_have_last handling: this path keeps no last-frame state. */
+	if (g_dropped_frames != dropped_before) {
+		g_need_st = 1;
+		sst_trace("dropped", sst_tier_name(tier), n);
+	} else
 		sst_trace("full", sst_tier_name(tier), n);
 
 	termgfx_termio_flush();
