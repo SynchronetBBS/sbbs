@@ -139,22 +139,27 @@ bitmap is fully rendered without a display surface).
 
 ## Data & control flow
 
-- **Game data (`getdata.js`)** — fetches the **official Playism 2012 English
-  release of Yume Nikki 0.10a** (the definitive version — 0.10a is 0.10 plus
-  Kikiyama's official bugfix patch). The `.ldb` text is already English, so
-  there is **no separate translation step**. Source: the archive.org item
-  `yume-nikki-010a` (`YumeNikki_EN (Playism 2012).zip`, ~51 MB), whose own README
-  declares the game Freeware. Extraction is fully **headless — `Setup.exe` is
-  never run**: unpack the outer zip, pull the inner `YumeNikki.lzh` (an LHA
-  archive), and unpack that into the RM2003 game tree (`RPG_RT.ldb` / `.lmt` /
-  `.ini` + `CharSet/ ChipSet/ FaceSet/ Music/ Sound/ Picture/ Panorama/ System/
-  Title/` …). Asset filenames are **Shift-JIS** (e.g. `System/システム.png`);
-  the fetcher must preserve those bytes on extraction, and EasyRPG's encoding
-  detection reads them (it is built for Japanese RM2k/2k3 games). Sourcing
-  follows the project rule (fetch from the established source, never re-host);
-  the fetched tree is git-ignored, and only a checksum manifest (the outer zip's
-  sha256) is committed. Yume Nikki is self-contained (no RTP). The plan pins the
-  portable extraction path (the host has `7z`/`lha`, but a sysop's box may not).
+- **Game data (`getdata.js`)** — a **portable Synchronet-JS fetcher** (runs on
+  Windows AND Linux via `jsexec`; it is NOT a shell script — that portability is
+  the whole reason the sibling doors use `getdata.js`), mirroring
+  `syncdrascula`/`synclure`: `HTTPRequest.Download` the archive, then
+  `new Archive(zip).extract(...)` — Synchronet's native (libarchive-backed)
+  extractor. Source: the **official Steam/Playism English localization of Yume
+  Nikki 0.10a**, packaged as a **plain ZIP** on rmarchiv.de (the EasyRPG
+  project's recommended archive; page `rmarchiv.de/games/1089`, entry "English
+  0.10a (Steam)", download id `4174`, zip ≈79 MB, sha256
+  `82af2204e2bb39597ac2454d53fc15b2651ea8ec8a5c7258c1ea45ac98e2124d`). The zip is
+  a ready RM2003 tree under `yumenikki/` (`RPG_RT.ldb`/`.lmt`/`.ini` + assets)
+  with **ASCII asset filenames** (`BattleCharSet/00000000003.png`) — so there is
+  **no Shift-JIS transcode and no `--encoding` step**. Verified: Synchronet's
+  native `Archive` extracts it cleanly (2768 files) under both C and UTF-8
+  locales, and EasyRPG boots it headless (320×240). (The freeware-original and
+  the Playism `Setup.exe` packages were **rejected** for portability: they nest
+  the game in an **LHA** archive that Synchronet's `Archive` cannot open —
+  confirmed `archive_read_next_header` fatal — and use Shift-JIS filenames.)
+  Sourcing follows the project rule (fetch from the established archive, never
+  re-host); the fetched tree is git-ignored, only the zip's sha256 manifest is
+  committed. Yume Nikki is self-contained (no RTP).
 - **Saves & config** — per-user, at **`data/user/<####>/syncrpg/<game>/`**
   (zero-padded user number, matching the door per-user-save convention). EasyRPG's
   save path is pointed there; the user number comes from the DOOR32.SYS drop file
@@ -254,5 +259,8 @@ bitmap is fully rendered without a display surface).
 - Whether **fmmidi** is sufficient or a soundfont synth is wanted — decided
   during M3. Yume Nikki's BGM is largely WAV, so MIDI synthesis may barely be
   exercised by the flagship itself; it matters more for later RM2k/2k3 titles.
-- The **portable `.zip`/`.lzh` extraction path** for `getdata.js` on an arbitrary
-  sysop host — pinned in the plan.
+- **rmarchiv download-URL stability** — the direct-download link is tokened
+  (`/games/download/4174/<token>`); the bare `/games/download/4174` returns an
+  HTML page, not the zip. `getdata.js` must therefore use a confirmed-stable
+  tokened URL or fetch + parse the download page for the current direct link.
+  Pinned in the plan.
