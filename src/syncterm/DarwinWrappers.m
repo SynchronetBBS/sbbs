@@ -28,6 +28,7 @@ get_OSX_filename(char *fn, int fnlen, int type, int shared)
 			path = NSLibraryDirectory;
 			break;
 		case SYNCTERM_PATH_SCRIPTS:
+		case SYNCTERM_PATH_THEMES:
 			path = NSApplicationSupportDirectory;
 			break;
 	}
@@ -69,6 +70,11 @@ get_OSX_filename(char *fn, int fnlen, int type, int shared)
 			break;
 		case SYNCTERM_PATH_SCRIPTS:
 			strlcat(fn, "/SyncTERM/scripts", fnlen);
+			mkpath(fn);
+			strlcat(fn, "/", fnlen);
+			break;
+		case SYNCTERM_PATH_THEMES:
+			strlcat(fn, "/SyncTERM/themes", fnlen);
 			mkpath(fn);
 			strlcat(fn, "/", fnlen);
 			break;

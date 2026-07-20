@@ -20,7 +20,8 @@ enum {
 	SYNCTERM_PATH_CACHE,
 	SYNCTERM_PATH_KEYS,
 	SYNCTERM_PATH_SYSTEM_CACHE,
-	SYNCTERM_PATH_SCRIPTS
+	SYNCTERM_PATH_SCRIPTS,
+	SYNCTERM_PATH_THEMES
 };
 
 enum CursorTypeEnum {
@@ -99,6 +100,7 @@ struct syncterm_settings {
 	unsigned              theme_inverse_color;
 	unsigned              theme_lightbar_color;
 	unsigned              theme_lightbar_background_color;
+	char                  theme_file[MAX_PATH + 1];
 };
 
 extern ini_bitdesc_t audio_output_bits[];

@@ -23,6 +23,7 @@
 #include "bbslist.h"
 #include "conn.h"
 #include "term.h"
+#include "theme.h"
 #include "utf8_codepages.h"
 #include "comio.h"
 #include "wren_bind_conn.h"
@@ -567,27 +568,102 @@ wren_bind_sweep_pending_timers(void)
 	st->pending_timer_count = w;
 }
 
-/* ----- Host.themeColors ------------------------------------------ */
+/* ----- Host theme data ------------------------------------------- */
 
-/* Host.themeColors - read-only Classic Theme palette shared by every
- * Wren VM.  The order is the public Wren contract documented on Host. */
-static void
-fn_Host_themeColors(WrenVM *vm)
+static int
+encode_codepoint(uint32_t cp, char out[4])
 {
-	const unsigned colors[] = {
-		settings.theme_frame_color,
-		settings.theme_text_color,
-		settings.theme_background_color,
-		settings.theme_inverse_color,
-		settings.theme_lightbar_color,
-		settings.theme_lightbar_background_color,
-	};
-	wrenEnsureSlots(vm, 2);
-	wrenSetSlotNewList(vm, 0);
-	for (size_t i = 0; i < sizeof(colors) / sizeof(colors[0]); i++) {
-		wrenSetSlotDouble(vm, 1, (double)colors[i]);
-		wrenInsertInList(vm, 0, -1, 1);
+	if (cp <= 0x7f) {
+		out[0] = (char)cp;
+		return 1;
 	}
+	if (cp <= 0x7ff) {
+		out[0] = (char)(0xc0 | (cp >> 6));
+		out[1] = (char)(0x80 | (cp & 0x3f));
+		return 2;
+	}
+	if (cp <= 0xffff) {
+		out[0] = (char)(0xe0 | (cp >> 12));
+		out[1] = (char)(0x80 | ((cp >> 6) & 0x3f));
+		out[2] = (char)(0x80 | (cp & 0x3f));
+		return 3;
+	}
+	out[0] = (char)(0xf0 | (cp >> 18));
+	out[1] = (char)(0x80 | ((cp >> 12) & 0x3f));
+	out[2] = (char)(0x80 | ((cp >> 6) & 0x3f));
+	out[3] = (char)(0x80 | (cp & 0x3f));
+	return 4;
+}
+
+static void
+set_optional_number(WrenVM *vm, int slot, int value)
+{
+	if (value < 0)
+		wrenSetSlotNull(vm, slot);
+	else
+		wrenSetSlotDouble(vm, slot, (double)value);
+}
+
+static void
+push_theme_data(WrenVM *vm, const struct syncterm_theme *theme)
+{
+	wrenEnsureSlots(vm, 5);
+	wrenSetSlotNewList(vm, 0);
+	wrenSetSlotNewList(vm, 1);
+	for (size_t i = 0; i < theme->style_count; i++) {
+		const struct syncterm_theme_style *style = &theme->styles[i];
+		wrenSetSlotNewList(vm, 2);
+		wrenSetSlotString(vm, 3, style->role);
+		wrenInsertInList(vm, 2, -1, 3);
+		set_optional_number(vm, 3, style->font);
+		wrenInsertInList(vm, 2, -1, 3);
+		set_optional_number(vm, 3, style->legacy_attr);
+		wrenInsertInList(vm, 2, -1, 3);
+		set_optional_number(vm, 3, style->foreground);
+		wrenInsertInList(vm, 2, -1, 3);
+		set_optional_number(vm, 3, style->background);
+		wrenInsertInList(vm, 2, -1, 3);
+		wrenInsertInList(vm, 1, -1, 2);
+	}
+	wrenInsertInList(vm, 0, -1, 1);
+
+	wrenSetSlotNewList(vm, 1);
+	for (size_t i = 0; i < theme->glyph_count; i++) {
+		const struct syncterm_theme_glyph *glyph = &theme->glyphs[i];
+		wrenSetSlotNewList(vm, 2);
+		wrenSetSlotString(vm, 3, glyph->name);
+		wrenInsertInList(vm, 2, -1, 3);
+		uint32_t cp = glyph->cp437 < 0x20 ?
+		    cpoint_from_cpchar_ext(CIOLIB_CP437, glyph->cp437) :
+		    cpoint_from_cpchar(CIOLIB_CP437, glyph->cp437);
+		char encoded[4];
+		int length = encode_codepoint(cp, encoded);
+		wrenSetSlotBytes(vm, 3, encoded, (size_t)length);
+		wrenInsertInList(vm, 2, -1, 3);
+		char fallback = (char)glyph->ascii;
+		wrenSetSlotBytes(vm, 3, &fallback, 1);
+		wrenInsertInList(vm, 2, -1, 3);
+		wrenInsertInList(vm, 1, -1, 2);
+	}
+	wrenInsertInList(vm, 0, -1, 1);
+}
+
+static void
+fn_Host_themeGeneration(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, (double)syncterm_theme_generation());
+}
+
+static void
+fn_Host_themeData(WrenVM *vm)
+{
+	push_theme_data(vm, syncterm_theme_active());
+}
+
+static void
+fn_Host_defaultThemeData(WrenVM *vm)
+{
+	push_theme_data(vm, syncterm_theme_default());
 }
 
 /* ----- Host.sshPublicKey ----------------------------------------- */
@@ -1215,7 +1291,9 @@ static const struct binding BINDINGS[] = {
 	{ "Hook",  true, "every(_,_)",     fn_Hook_every        },
 
 	{ "Host", true, "sshPublicKey",      fn_Host_sshPublicKey      },
-	{ "Host", true, "themeColors",       fn_Host_themeColors       },
+	{ "Host", true, "themeGeneration",   fn_Host_themeGeneration   },
+	{ "Host", true, "themeData",         fn_Host_themeData         },
+	{ "Host", true, "defaultThemeData",  fn_Host_defaultThemeData  },
 	{ "Host", true, "safeMode",          fn_Host_safeMode          },
 	{ "Host", true, "textTerminal",      fn_Host_textTerminal      },
 	{ "Host", true, "altKeyName",        fn_Host_altKeyName        },

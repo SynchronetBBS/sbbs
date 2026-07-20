@@ -174,7 +174,7 @@ generic_method_allowed(const char *class_name, const char *signature)
 		"pickSavePath(_,_)",
 		"print(_)",
 		"logUnread", "logUnreadError", "safeMode", "textTerminal",
-		"themeColors",
+		"themeGeneration", "themeData", "defaultThemeData",
 	};
 	for (size_t i = 0;
 	    i < sizeof(host_allowed) / sizeof(host_allowed[0]); i++) {
