@@ -2,9 +2,10 @@
 
 SyncSCUMM is ScummVM (a vendored, engine-pruned copy under `scummvm/`) plus a
 Synchronet `OSystem` backend and door glue in `door/`, linked against the
-shared `termgfx` and `xpdev` libraries. One binary, `scummvm`, plays every
-bundled title; each title is its own `xtrn/sync<game>/` package that launches
-the same binary (see `deploy.js`, `DESIGN.md`).
+shared `termgfx` and `xpdev` libraries. One binary — `syncscumm` (ScummVM's
+own `scummvm` output, renamed by the build) — plays every bundled title; each
+title is its own installable package that launches the same binary (see
+`deploy.js`, `DESIGN.md`).
 
 There are two build paths, because ScummVM has no single cross-platform build
 system:
@@ -75,8 +76,8 @@ Release `RuntimeLibrary`).
    search path; the vcpkg libs auto-link.
 
 Output: `build-msvc\Release\syncscumm.exe` (not installed). Run
-`jsexec deploy.js` afterwards to copy it into the live `syncbass` / `syncqueen`
-packages.
+`jsexec deploy.js` afterwards to copy it into every installed SyncSCUMM package
+(`deploy.js` auto-discovers them; it and `jsexec` are Synchronet-only).
 
 ### The door's platform seam
 
@@ -84,9 +85,11 @@ Windows-vs-POSIX differences in the door glue (the monotonic clock, sleep,
 `WSAStartup`, non-blocking `send()`/`recv()` on the DOOR32.SYS socket, the
 `isatty`/exists/getpid dev helpers) live behind `door/sst_plat.{c,h}`, built
 over xpdev (`sockwrap.h`, `genwrap.h`, `dirwrap.h`) — the same seam the sibling
-termgfx doors ship (`syncmoo1_plat`, `syncretro_plat`). No other door file
-carries an `#ifdef _WIN32`, except syncscumm.cpp's platform filesystem-factory
-selection (ScummVM's `WindowsFilesystemFactory` vs `POSIXFilesystemFactory`).
+termgfx doors ship (`syncmoo1_plat`, `syncretro_plat`). The only door file
+besides `sst_plat.{c,h}` that carries an `#ifdef _WIN32` is `syncscumm.cpp`,
+for its ScummVM-facing platform bindings — the `WindowsFilesystemFactory` vs
+`POSIXFilesystemFactory` selection (and the Windows FS-backend headers it
+pulls) plus a backslash path-separator case in its save-path creation.
 
 ## Linux / *nix — `build.sh`
 
@@ -97,4 +100,5 @@ selection (ScummVM's `WindowsFilesystemFactory` vs `POSIXFilesystemFactory`).
 
 Needs a C/C++ toolchain, GNU make, CMake, and ScummVM's usual dependency
 `-dev` packages (`libmad0-dev` is **required** — see the comment in
-`build.sh`). Produces `build/scummvm`.
+`build.sh`). Produces `build/syncscumm` (make emits `scummvm`, which
+`build.sh` renames).
