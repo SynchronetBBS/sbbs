@@ -20,8 +20,9 @@ rem   Usage:  build.bat            (Win32 Release)
 rem           build.bat clean      (delete the build tree + junction, then build)
 rem
 rem The binary is left at build-msvc\Release\syncscumm.exe (NOT installed). Run
-rem `jsexec deploy.js` afterwards to copy it into the live syncbass/syncqueen
-rem packages. Win32 (x86) only -- matches the sibling termgfx doors' triplet.
+rem `jsexec deploy.js` afterwards to copy it into every installed SyncSCUMM
+rem package (deploy.js auto-discovers them). Win32 (x86) only -- matches the
+rem sibling termgfx doors' triplet.
 rem ===========================================================================
 setlocal enabledelayedexpansion
 
@@ -178,7 +179,7 @@ if not exist "%BUILDDIR%\%CONFIG%" mkdir "%BUILDDIR%\%CONFIG%"
 copy /Y "%OUTEXE%" "%BUILDDIR%\%CONFIG%\syncscumm.exe" >nul
 echo.
 echo [build] Built: %BUILDDIR%\%CONFIG%\syncscumm.exe
-echo [build] Run 'jsexec deploy.js' to install it into the syncbass/syncqueen packages.
+echo [build] Run 'jsexec deploy.js' to install it into every SyncSCUMM package.
 endlocal
 exit /b 0
 
