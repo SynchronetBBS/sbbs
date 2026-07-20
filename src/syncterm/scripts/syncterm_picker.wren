@@ -56,13 +56,6 @@ foreign class PickerRequest {
   foreign mask
   foreign options
 
-  foreign frameColor
-  foreign textColor
-  foreign backgroundColor
-  foreign inverseColor
-  foreign lightbarColor
-  foreign lightbarBackgroundColor
-
   foreign initial_()
   foreign list_(path, mask)
   foreign join_(path, name)

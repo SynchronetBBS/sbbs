@@ -1,6 +1,13 @@
 import "ui_style" for Style, Theme
+import "syncterm" for Host
 
 class ClassicTheme {
+  static current {
+    var colors = Host.themeColors
+    return fromColors(colors[0], colors[1], colors[2], colors[3],
+        colors[4], colors[5])
+  }
+
   static rgb_(index) {
     return [
       0x000000, 0x0000AA, 0x00AA00, 0x00AAAA,

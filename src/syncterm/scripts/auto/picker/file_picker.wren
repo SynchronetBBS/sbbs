@@ -1,4 +1,3 @@
-import "classic_theme" for ClassicTheme
 import "syncterm" for FilePickerOptions, Host, Key, KeyEvent, Mouse,
                        MouseEvent, REPL, Screen
 import "ui_app" for App
@@ -547,9 +546,6 @@ class PickerPane is Pane {
 class FilePicker {
   static run(request) {
     var app = App.new()
-    app.theme = ClassicTheme.fromColors(request.frameColor,
-        request.textColor, request.backgroundColor, request.inverseColor,
-        request.lightbarColor, request.lightbarBackgroundColor)
     var pane = PickerPane.new(app, request)
     var indicator = PickerIndicator.new()
     app.root.add(pane)

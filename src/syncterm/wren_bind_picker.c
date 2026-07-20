@@ -387,21 +387,6 @@ static void fn_request_options(WrenVM *vm)
 		wrenSetSlotDouble(vm, 0, (double)call->options);
 }
 
-#define REQUEST_COLOR_GETTER(name, index) \
-	static void fn_request_##name(WrenVM *vm) \
-	{ \
-		struct wren_picker_call *call = request_call(vm); \
-		if (call != NULL) \
-			wrenSetSlotDouble(vm, 0, (double)call->colors[index]); \
-	}
-
-REQUEST_COLOR_GETTER(frame_color, 0)
-REQUEST_COLOR_GETTER(text_color, 1)
-REQUEST_COLOR_GETTER(background_color, 2)
-REQUEST_COLOR_GETTER(inverse_color, 3)
-REQUEST_COLOR_GETTER(lightbar_color, 4)
-REQUEST_COLOR_GETTER(lightbar_background_color, 5)
-
 static void
 fn_request_initial(WrenVM *vm)
 {
@@ -734,13 +719,6 @@ static const struct binding bindings[] = {
 	{ "PickerRequest", false, "initialPath", fn_request_initial_path },
 	{ "PickerRequest", false, "mask", fn_request_mask },
 	{ "PickerRequest", false, "options", fn_request_options },
-	{ "PickerRequest", false, "frameColor", fn_request_frame_color },
-	{ "PickerRequest", false, "textColor", fn_request_text_color },
-	{ "PickerRequest", false, "backgroundColor", fn_request_background_color },
-	{ "PickerRequest", false, "inverseColor", fn_request_inverse_color },
-	{ "PickerRequest", false, "lightbarColor", fn_request_lightbar_color },
-	{ "PickerRequest", false, "lightbarBackgroundColor",
-	    fn_request_lightbar_background_color },
 	{ "PickerRequest", false, "initial_()", fn_request_initial },
 	{ "PickerRequest", false, "list_(_,_)", fn_request_list },
 	{ "PickerRequest", false, "join_(_,_)", fn_request_join },

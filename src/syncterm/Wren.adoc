@@ -780,9 +780,10 @@ The currently embedded scripts are:
 
 | `classic_theme`
 | library
-| Maps the six Classic Theme settings to Wren `Theme` roles.  The shipped
-  menu and file picker use it; connected interfaces continue to use their
-  own themes, including `Theme.default` unless changed by script.
+| Maps the six program-wide Classic Theme settings to Wren `Theme` roles.
+  `App.new()` uses `ClassicTheme.current` in the menu, picker, and connected
+  VMs, so every shipped and user-created App starts with the same configured
+  theme unless the script explicitly replaces `app.theme`.
 
 | `console`
 | auto / connected
@@ -3886,14 +3887,13 @@ when `Menu.encryptionAvailable` is false.
 
 | `frameColor`, `textColor`, `backgroundColor`, `inverseColor`,
   `lightbarColor`, `lightbarBackgroundColor`
-| Classic Theme palette indexes used by the shipped Wren main menu and
-  picker.  Frame, text, and lightbar foreground use `Menu.colors`,
+| Program-wide Classic Theme palette indexes used by every Wren `App`.
+  Frame, text, and lightbar foreground use `Menu.colors`,
   whose `Default` entry is index 16.  Background, inverse, and lightbar
   background use `Menu.backgroundColors`, whose `Default` entry is index 8.
-  The shared `classic_theme.wren` module resolves those sentinels and builds
-  an App `Theme`.  Custom menu and picker overrides must apply the values
-  themselves if they want to preserve that preference.  Connected-session
-  interfaces do not receive this theme automatically.
+  The shared `classic_theme.wren` module resolves those sentinels, and
+  `App.new()` applies the resulting Theme in every VM.  Assigning
+  `app.theme` explicitly replaces this default for that App.
 |===
 
 The six values are persisted under `[ClassicTheme]`.  On load, each
@@ -4288,6 +4288,14 @@ pre-bound from these at module load.
 [options="header",cols="2,3"]
 |===
 | Member | Description
+
+| `Host.themeColors`
+| Returns a fresh six-element List containing the program-wide Classic
+  Theme palette indexes in this order: frame, text, background, inverse,
+  lightbar foreground, lightbar background.  The three foreground values
+  use 16 as the `Default` sentinel; the three background values use 8.
+  This read-only host state is available in the menu, picker, and connected
+  VMs.  Changing the returned List does not alter the program settings.
 
 | `Host.cacheDirectory`
 | Returns a fresh `Directory` whose path resolves lazily from the
@@ -5733,6 +5741,10 @@ Confirm`, etc.  They're listed in <<ui-modules,UI Modules>>.
 * a global keymap — `app.bind(keyCode, fn)` registers a hotkey that
   fires when no widget consumes the key.  F1 is bound by default to
   `showHelp`.
+* a Theme initialized from `ClassicTheme.current`, which reads the same
+  configured Classic Theme palette in the menu, picker, and connected VMs.
+  Assign `app.theme` only when the App intentionally needs a different
+  theme.
 * a single run-fiber that pumps the event loop.  `run()` pushes an
   input claim (see <<modal-input,Modal Input>>) whose handler
   decides synchronously, from App state alone, whether each event
@@ -6747,11 +6759,20 @@ not have active and inactive forms.  Do not use `focusable=false` for
 this purpose: display-only children such as progress bars still need to
 inherit an inactive containing Pane.
 
-`Theme.default` is the built-in default, memoized so `someTheme ==
-Theme.default` works as identity equality.  It mirrors the classic
-SyncTERM look: white-on-blue active palette, yellow frame /title,
-lightbar selection, gray-on-blue scrollbar, with a classic inactive
-palette of bright-white-on-cyan and bright-yellow-on-cyan lightbar.
+`Theme.default` is the built-in complete fallback, memoized so
+`someTheme == Theme.default` works as identity equality.  Theme builders
+use it to populate roles and glyphs they do not override, and an unattached
+Widget falls back to it when it has no Theme in its parent chain.  It uses a
+white-on-blue palette, yellow frame/title, lightbar selection, gray-on-blue
+scrollbar, and bright-white-on-cyan inactive palette.
+
+`App.new()` instead initializes its Theme from `ClassicTheme.current`.
+That factory reads `Host.themeColors`, resolves the foreground and
+background `Default` sentinels, and applies the user's configured Classic
+Theme consistently in every VM.  `ClassicTheme.from(settings)` supports
+the menu settings editor's live preview, and `ClassicTheme.fromColors(...)`
+builds the same mapping from six explicit palette indexes.  Scripts may
+still assign `app.theme` to replace the program theme for one App.
 
 `Glyphs` entries are either a single string or `[primary,
 fallback]` pairs — primary is the rich Unicode glyph, fallback is

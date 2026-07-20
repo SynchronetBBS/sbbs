@@ -9,6 +9,7 @@
 //   UiWidgetTest.run()
 
 import "ui_style"  for Style, Theme
+import "classic_theme" for ClassicTheme
 import "ui_widget" for Rect, Widget, Container
 import "ui_app"    for App
 import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse
@@ -578,8 +579,12 @@ class UiWidgetTest {
 
   static testAppEffectiveTheme_() {
     var app = App.new()
-    check_(app.effectiveTheme == Theme.default,
-           "App.effectiveTheme defaults to Theme.default")
+    var expected = ClassicTheme.current
+    check_(app.effectiveTheme.style("default") ==
+               expected.style("default") &&
+           app.effectiveTheme.style("button.focused") ==
+               expected.style("button.focused"),
+           "App.effectiveTheme defaults to configured ClassicTheme")
   }
 
   static testAppThemeChange_() {

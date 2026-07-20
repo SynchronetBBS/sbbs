@@ -567,7 +567,28 @@ wren_bind_sweep_pending_timers(void)
 	st->pending_timer_count = w;
 }
 
-/* ----- Status-bar transfer arrows -------------------------------- */
+/* ----- Host.themeColors ------------------------------------------ */
+
+/* Host.themeColors - read-only Classic Theme palette shared by every
+ * Wren VM.  The order is the public Wren contract documented on Host. */
+static void
+fn_Host_themeColors(WrenVM *vm)
+{
+	const unsigned colors[] = {
+		settings.theme_frame_color,
+		settings.theme_text_color,
+		settings.theme_background_color,
+		settings.theme_inverse_color,
+		settings.theme_lightbar_color,
+		settings.theme_lightbar_background_color,
+	};
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; i < sizeof(colors) / sizeof(colors[0]); i++) {
+		wrenSetSlotDouble(vm, 1, (double)colors[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
 
 /* ----- Host.sshPublicKey ----------------------------------------- */
 
@@ -1194,6 +1215,7 @@ static const struct binding BINDINGS[] = {
 	{ "Hook",  true, "every(_,_)",     fn_Hook_every        },
 
 	{ "Host", true, "sshPublicKey",      fn_Host_sshPublicKey      },
+	{ "Host", true, "themeColors",       fn_Host_themeColors       },
 	{ "Host", true, "safeMode",          fn_Host_safeMode          },
 	{ "Host", true, "textTerminal",      fn_Host_textTerminal      },
 	{ "Host", true, "altKeyName",        fn_Host_altKeyName        },

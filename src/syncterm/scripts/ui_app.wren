@@ -33,7 +33,7 @@
 // directly, but may spawn a child fiber that runs an entire UI
 // session and returns a value.
 
-import "ui_style"  for Theme
+import "classic_theme" for ClassicTheme
 import "ui_widget" for Widget, Container, Rect
 import "ui_draw"   for Painter
 import "ui_popup"  for PopStatus
@@ -60,7 +60,7 @@ class App {
     _modalStack  = []
     _keymap      = {}
     _running     = false
-    _theme       = Theme.default
+    _theme       = ClassicTheme.current
     _tickMs      = null
     _surface     = null           // screen-sized backbuffer; lazy alloc
     _surfaceSize = null           // [w, h] last allocated for; reallocs on resize

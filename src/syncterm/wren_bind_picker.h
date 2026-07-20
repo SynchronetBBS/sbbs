@@ -42,7 +42,6 @@ struct wren_picker_call {
 	const char *initial_path;
 	const char *mask;
 	int options;
-	unsigned colors[6];
 	char **paths;
 	size_t path_count;
 	enum wren_picker_disposition disposition;

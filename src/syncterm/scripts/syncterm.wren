@@ -1478,6 +1478,10 @@ class FilePickerOptions {
 // the relaxed-name policy - the picker UI is the sandbox boundary,
 // since the user explicitly chose the path.
 class Host {
+  // Program-wide Classic Theme colors, in frame, text, background,
+  // inverse, lightbar foreground, lightbar background order.  Every VM
+  // receives the same read-only values so App can use one visual theme.
+  foreign static themeColors
   foreign static cacheDirectory
   foreign static downloadDir
   foreign static uploadPath

@@ -2,7 +2,6 @@ import "syncterm" for Host, KeyEvent, MouseEvent, Key, Mouse, REPL, Screen
 import "syncterm_menu" for Menu, MenuReadStatus
 import "wren_console" for WrenConsole
 import "menu_ui" for MenuUi
-import "classic_theme" for ClassicTheme
 import "menu_bbs_editor" for BbsEditor
 import "menu_settings_ui" for SettingsMenu
 import "menu_scrollback" for OfflineScrollbackView
@@ -300,7 +299,6 @@ class MainMenuEventApp is App {
 class MainMenuApp {
   construct new(current, connected) {
     _app = MainMenuEventApp.new(Fn.new { _consoleIndicator.refresh() })
-    _app.theme = ClassicTheme.from(Menu.settings)
     _connected = connected
     _current = current
     _result = null
@@ -995,7 +993,6 @@ class MainMenuApp {
       MainMenu.password = SettingsMenu.directoryPassword
     }
     if (MainMenu.prepare()) {
-      _app.theme = ClassicTheme.from(Menu.settings)
       refresh_(preferred)
     }
   }
@@ -1052,7 +1049,6 @@ class MainMenu {
 
   static drawBackdrop_() {
     var app = App.new()
-    app.theme = ClassicTheme.from(Menu.settings)
     var backdrop = ClassicBackdrop.new()
     var size = Screen.size
     backdrop.bounds = Rect.new(1, 1, size[0], size[1])
