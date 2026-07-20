@@ -191,3 +191,39 @@ remain the authoritative behavior gate for Task 6.
    until the pre-existing `sst_plat.c` link gap (section 3) is separately
    fixed — that failure is NOT something the termio extraction should be
    blamed for introducing or fixing incidentally.
+
+## 8. Task 6 verification result — RESOLVED (extraction is a pure move)
+
+The boot suite (9/9), unit tests (20/20 + sst_quant), and the PRIMARY PPM
+render gate (165 frames, byte-identical, aggregate sha256 `b2cbf878...`
+reproduced) all pass against the post-move build. The refactor renders the
+pixel-identical image.
+
+**The supplementary sixel wire capture is NOT a valid byte-identity gate** and
+was retired as one. A fresh rebuild of the pre-move commit does not reproduce
+the recorded golden `wire.six` sha (`1b45d3ea...`) either, because a syncscumm
+sixel capture varies between *any* two builds for two benign,
+build-nondeterministic reasons, both unrelated to this refactor:
+
+1. **ScummVM build timestamp.** `scummvm/base/version.cpp` bakes
+   `__DATE__ " " __TIME__` into `gScummVMVersionDate`, which ScummVM renders
+   on screen. Two builds made at different times show different digits.
+   Decoded
+   frame forensics traced the entire early-frame pixel difference to this
+   on-screen timestamp text (e.g. `...7:49:54)` vs `...7:48:25)`).
+   ScummVM's own
+   source (`version.cpp`) notes `__DATE__`/`__TIME__` are non-reproducible.
+2. **Palette-register serialization order.** Build-nondeterministic; flips a
+   large fraction of the raw sixel bytes but is a lossless permutation that
+   decodes to the identical image.
+
+Proof: two builds whose raw sixel captures differ by ~90% of bytes decode to
+frames differing by only ~37 pixels, all inside the version-string timestamp
+band and zero pixels anywhere else. The PPM gate is stable because it
+dumps the
+game surface (not the GUI version-string overlay) as raw RGB with no palette
+serialization.
+
+**Valid byte-identity gates for this door:** PPM render + boot suite + unit
+tests + (if comparing sixel) the *decoded* image modulo the ScummVM build
+timestamp. Do not diff raw sixel captures across builds.
