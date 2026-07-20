@@ -116,7 +116,10 @@ Saved at `.superpowers/sdd/termio-baseline/ppm/` (165 files, ~31 MB) with a
 per-file + aggregate checksum manifest at
 `.superpowers/sdd/termio-baseline/ppm-frames.sha256`:
 
-- Aggregate sha256 (sha256sum of the sorted `sha256sum frame*.ppm` listing):
+- Aggregate sha256 = `sha256sum frame*.ppm | sha256sum`, computed in **filename
+  order** — the shell glob is already filename-sorted, so do NOT pipe through a
+  bare `sort` (it reorders by the leading hash digest and will NOT reproduce this
+  value; use `sort -k2` if you must sort explicitly):
   `b2cbf878aa719d1023d3bc207fb3d100080e23f4f173cf3f7435af7e672e9ccb`
 
 Boot log saved at `.superpowers/sdd/termio-baseline/boot.log` (the two runs'
