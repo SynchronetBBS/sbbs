@@ -983,6 +983,13 @@ Program Settings::
 Allows changing settings that are preserved across
 reboots.  Refer to the <<_program_settings>> section for details.
 
+Themes::
+Lists the built-in Classic Theme and `.ini` theme files from the user theme
+directory. Moving the highlight previews a valid theme. Enter selects and
+saves it; Escape restores the previously selected theme. Invalid files may be
+highlighted to display their error but cannot be selected. See `Themes.adoc`
+for the file format.
+
 File Locations::
 Shows the paths to the various files and directories
 that SyncTERM will access.
@@ -1091,8 +1098,9 @@ The higher this value, the more difficult brute forcing is, but the longer
 it takes to read the BBS list.
 
 Classic Theme Colours::
-Allows changing the colours used by the shipped main menu and file
-picker. Connected-session Wren interfaces use their own theme.
+Allows changing the six colours used by the built-in Classic Theme. These
+settings apply to the menu, file picker, and connected Wren interfaces while
+Classic Theme is selected. File themes do not inherit these colour settings.
 
 [[custom_screen_mode]]
 Custom Screen Mode::

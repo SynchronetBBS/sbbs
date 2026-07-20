@@ -1,0 +1,269 @@
+= SyncTERM Themes
+
+SyncTERM themes are INI files which define user-interface styles and glyphs.
+The C host loads one theme for the process and exposes immutable snapshots of
+it to the menu, file-picker, and connected Wren VMs.  All three VMs therefore
+start with the same program-wide theme.
+
+== Storage and Selection
+
+Theme files use the `.ini` extension and live in the per-user `themes`
+directory beside the per-user `scripts` directory.  The exact path is shown
+by *SyncTERM Settings* -> *File Locations*.  Typical locations are:
+
+[cols="1,3"]
+|===
+| Platform | Directory
+
+| Windows
+| `%APPDATA%\SyncTERM\themes\`
+
+| macOS
+| `~/Library/Application Support/SyncTERM/themes/`
+
+| Unix
+| `$XDG_DATA_HOME/syncterm/themes/`, normally
+  `~/.local/share/syncterm/themes/`
+
+| Haiku
+| The user's settings directory followed by `SyncTERM/themes/`
+|===
+
+The selected basename is stored as `ThemeFile` in the `[SyncTERM]` section of
+`syncterm.ini`.  Paths are not accepted.  Selecting the built-in *Classic
+Theme* removes `ThemeFile` instead of storing a special name.
+
+At startup, a missing or invalid selected file falls back to *Classic Theme*
+without deleting the configured filename.  The Themes browser displays that
+file as invalid so it can be diagnosed after the file is restored or fixed.
+The browser previews valid themes as the highlight moves, saves a selection
+on Enter, and restores the committed theme on Escape.  Invalid entries remain
+highlightable for their error text but cannot be selected.
+
+The six settings under `[ClassicTheme]` affect only the built-in *Classic
+Theme*.  A file theme is a sparse overlay on SyncTERM's compiled default and
+does not inherit those six colour preferences.
+
+== File Structure
+
+Metadata is written before any section header:
+
+[source,ini]
+----
+Name = Example Theme
+Author = Example Author
+Description = A short description shown in the Themes browser
+Version = 1.0
+
+[Style:default]
+Foreground = 0xFFFFFF
+Background = 0x000040
+
+[Style:list.item.focused]
+LegacyAttr = 0x70
+Foreground = 0x000000
+Background = 0xC0C0C0
+
+[Glyph:scrollbar.thumb]
+CP437 = 219
+ASCII = 35
+----
+
+`Name` is required and must not be empty.  `Author`, `Description`, and
+`Version` are optional.  Duplicate recognized metadata keys are errors.
+Unrecognized metadata, sections, and keys are ignored for forward
+compatibility.
+
+Recognized section names and keys are case-insensitive.  Two recognized
+sections with the same name, including names which differ only in case, make
+the file invalid.  A malformed value or duplicate recognized key also makes
+the file invalid.
+
+== Styles
+
+A `[Style:role]` section may contain these fields:
+
+[cols="1m,1m,3"]
+|===
+| Field | Range | Meaning
+
+| `Font`
+| `0`..`255`
+| Conio font slot.
+
+| `LegacyAttr`
+| `0`..`255`
+| IBM text attribute used by legacy-colour backends.
+
+| `Foreground`
+| `0`..`0xFFFFFF`
+| 24-bit RGB foreground used by RGB-capable backends.
+
+| `Background`
+| `0`..`0xFFFFFF`
+| 24-bit RGB background used by RGB-capable backends.
+|===
+
+Numbers use C integer syntax, so decimal and `0x` hexadecimal forms are
+accepted.  The case-insensitive value `inherit` clears a field and makes it
+inherit through the Wren role cascade.  Omitted fields retain the compiled
+default value for an existing role; a new role starts with all fields set to
+`inherit`.
+
+Role lookup removes dotted suffixes until it reaches `default`.  For example,
+`list.item.focused` falls back through `list.item`, `list`, and `default`.
+Roles ending in `.inactive` use the parallel inactive cascade before falling
+back to `default`.  The resulting `default` style must contain all four
+fields, so a file which clears one of its fields without replacing it is
+invalid.
+
+The current role registry is:
+
+[cols="2m,4"]
+|===
+| Role | Use
+
+| `default`, `default.inactive`
+| Cascade terminators and general screen/pane colours.
+
+| `frame`, `frame.inactive`
+| Pane and dialog borders.
+
+| `title`, `title.inactive`
+| Pane and dialog border titles.
+
+| `menu.item`, `menu.item.focused`, `menu.item.disabled`
+| Command-menu rows.
+
+| `list.item`, `list.item.focused`, `list.item.disabled`,
+  `list.item.focused.inactive`
+| List rows, including the selected row in an unfocused pane.
+
+| `input`, `input.focused`
+| Text-input fields.
+
+| `button`, `button.hotkey`, `button.focused`, `button.focused.hotkey`
+| Button labels and their shortcut character.
+
+| `statusbar`
+| Status and help bars.
+
+| `checkbox`, `checkbox.focused`
+| Check-box controls.
+
+| `radio.item`, `radio.item.focused`
+| Radio-button rows.
+
+| `spinbox`, `spinbox.focused`
+| Numeric spin controls.
+
+| `menubar`, `menubar.item`, `menubar.item.focused`
+| Menu bars and their entries.
+
+| `scrollbar.track`, `scrollbar.thumb`
+| Scrollbar track and position indicator.
+
+| `progress.fill`
+| Filled portion of a progress bar.
+
+| `logview.info`, `logview.notice`, `logview.warning`, `logview.error`
+| Transfer and diagnostic log severities.
+
+| `help`, `help.text`, `help.bold`, `help.code`, `help.heading.1`,
+  `help.heading.2`, `help.heading.3`, `help.bullet`
+| Markdown help content.
+
+| `popup`, `popup.frame`, `popup.frame.inactive`
+| Status and alert popups.
+
+| `classic.backdrop`, `classic.header`, `classic.console`,
+  `classic.console.error`, `classic.comment`, `classic.hint`,
+  `classic.hotkey`
+| Main-menu screen chrome.  These roles are optional in file themes and
+  otherwise cascade to `default`.
+|===
+
+Scripts may use additional role names.  A theme file may style such a role
+before it becomes part of the built-in registry.
+
+== Glyphs
+
+A `[Glyph:name]` section uses numeric byte values:
+
+* `CP437` is `0`..`255` and identifies the primary CP437 glyph.
+* `ASCII` is a printable ASCII byte, `32`..`126`, used when the primary glyph
+  cannot be rendered.
+
+Literal characters are not accepted because many CP437 glyphs are control
+codes, whitespace, or not representable in the theme file's encoding.  An
+existing glyph may override either value.  A new glyph name must provide both
+`CP437` and `ASCII`.
+
+The built-in glyph registry is:
+
+[cols="3m,1m,1m"]
+|===
+| Name | CP437 | ASCII
+
+| `background` | `32` | `32`
+| `frame.display.topLeft` | `218` | `43`
+| `frame.display.top` | `196` | `45`
+| `frame.display.topRight` | `191` | `43`
+| `frame.display.left` | `179` | `124`
+| `frame.display.right` | `179` | `124`
+| `frame.display.bottomLeft` | `192` | `43`
+| `frame.display.bottom` | `196` | `45`
+| `frame.display.bottomRight` | `217` | `43`
+| `frame.display.tee.left` | `195` | `43`
+| `frame.display.tee.right` | `180` | `43`
+| `frame.display.title.left` | `180` | `45`
+| `frame.display.title.right` | `195` | `45`
+| `frame.display.tee.top` | `194` | `43`
+| `frame.display.tee.bottom` | `193` | `43`
+| `frame.display.cross` | `197` | `43`
+| `frame.display.separator` | `196` | `45`
+| `frame.control.topLeft` | `201` | `43`
+| `frame.control.top` | `205` | `61`
+| `frame.control.topRight` | `187` | `43`
+| `frame.control.left` | `186` | `124`
+| `frame.control.right` | `186` | `124`
+| `frame.control.bottomLeft` | `200` | `43`
+| `frame.control.bottom` | `205` | `61`
+| `frame.control.bottomRight` | `188` | `43`
+| `frame.control.tee.left` | `204` | `43`
+| `frame.control.tee.right` | `185` | `43`
+| `frame.control.title.left` | `181` | `61`
+| `frame.control.title.right` | `198` | `61`
+| `frame.control.tee.top` | `203` | `43`
+| `frame.control.tee.bottom` | `202` | `43`
+| `frame.control.cross` | `206` | `43`
+| `frame.control.separator` | `205` | `61`
+| `scrollbar.track` | `176` | `58`
+| `scrollbar.thumb` | `219` | `35`
+| `scrollbar.up` | `30` | `94`
+| `scrollbar.down` | `31` | `118`
+| `scrollbar.separator` | `179` | `124`
+| `arrow.up` | `24` | `94`
+| `arrow.down` | `25` | `118`
+| `arrow.right` | `16` | `62`
+| `arrow.left` | `17` | `60`
+| `focus.left` | `16` | `62`
+| `focus.right` | `17` | `60`
+| `check.on` | `251` | `88`
+| `check.off` | `32` | `32`
+| `radio.on` | `7` | `42`
+| `radio.off` | `9` | `111`
+| `tag.on` | `175` | `62`
+| `tag.off` | `32` | `32`
+|===
+
+Scripts may define and use additional glyph names, subject to the requirement
+that a new name supplies both byte values.
+
+== Compatibility
+
+The role and glyph registries may grow as UI widgets are added.  Unknown
+content is ignored so a file can include entries understood by newer
+SyncTERM versions, while sparse overlays automatically receive new compiled
+defaults.  Theme authors should still test both RGB and legacy-colour output,
+because every visible style can be rendered through either representation.

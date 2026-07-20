@@ -84,6 +84,14 @@ class Menu {
   foreign static currentScreenMode
   foreign static setScreenMode(mode)
   foreign static fileLocations
+  // Theme rows are [filename, name, author, description, version, error].
+  // An empty filename identifies built-in Classic; a non-null error makes
+  // a row informational and non-selectable.
+  foreign static themes
+  foreign static selectedThemeFile
+  foreign static previewTheme(filename)
+  foreign static cancelThemePreview()
+  foreign static selectTheme(filename)
   foreign static encryptionAlgorithm
   foreign static encryptionKeySize
   foreign static encryptionName

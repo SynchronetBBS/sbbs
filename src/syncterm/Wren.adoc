@@ -778,13 +778,6 @@ The currently embedded scripts are:
   directory, save, and cross-directory multi-file selection and exports
   `FilePicker.run(request)` as the picker host entry point.
 
-| `classic_theme`
-| library
-| Maps the six program-wide Classic Theme settings to Wren `Theme` roles.
-  `App.new()` uses `ClassicTheme.current` in the menu, picker, and connected
-  VMs, so every shipped and user-created App starts with the same configured
-  theme unless the script explicitly replaces `app.theme`.
-
 | `console`
 | auto / connected
 | Connected-session Ctrl+&#96; hook for the shared `wren_console`
@@ -1059,8 +1052,8 @@ Escape and pane close buttons leave only a connected Alt+E menu.
 Before stopping, the menu dismisses nested screens through their normal close
 path so accepted edits reach the owning screen's persistence boundary.  A
 failed close-time save leaves the menu open instead of discarding the edits.
-Accepted Classic Theme colour changes rebuild the active Wren menu theme
-immediately.
+Accepted Classic Theme colour changes rebuild the active theme immediately
+while Classic Theme is selected.  A selected file theme is unaffected.
 Renaming a persisted entry also renames its per-entry cache directory after
 the directory file is written successfully.
 Font Management treats an empty name as cancellation when adding a record.
@@ -1068,7 +1061,7 @@ Otherwise, it accepts the entered name and the file returned by the picker as
 the record values.  It reports a full custom-font table before prompting for
 another name.  The preformatted File Locations and Build Options viewers use
 the titles `File Locations` and `Build Options`.  Their maximum dimensions are
-78 by 20 and 60 by 21 cells respectively, capped to preserve the standard
+78 by 21 and 60 by 21 cells respectively, capped to preserve the standard
 modal margins and complete drop shadow.  Their Markdown content defines the
 label emphasis, indentation, and section layout rendered by the shared Help
 viewer.
@@ -3824,7 +3817,7 @@ that persistence obligation itself.
 `syncterm.ini` keys, and applies the settings which have immediate effects.
 These include scrollback capacity, scaling, mouse-wheel direction, audio
 backends, custom-mode dimensions, cursor style, and the Classic Theme
-colours used by the shipped Wren menu and picker.  It returns
+colours used when the built-in theme is active.  It returns
 `false` when allocation, encrypted-list rewriting, or INI persistence fails.
 An unapplied snapshot is not applied after such a failure; settings already
 accepted through `apply()` remain active.  Changing the KDF work factor may
@@ -3890,13 +3883,12 @@ when `Menu.encryptionAvailable` is false.
 
 | `frameColor`, `textColor`, `backgroundColor`, `inverseColor`,
   `lightbarColor`, `lightbarBackgroundColor`
-| Program-wide Classic Theme palette indexes used by every Wren `App`.
+| Palette indexes used to construct the built-in Classic Theme.
   Frame, text, and lightbar foreground use `Menu.colors`,
   whose `Default` entry is index 16.  Background, inverse, and lightbar
   background use `Menu.backgroundColors`, whose `Default` entry is index 8.
-  The shared `classic_theme.wren` module resolves those sentinels, and
-  `App.new()` applies the resulting Theme in every VM.  Assigning
-  `app.theme` explicitly replaces this default for that App.
+  The C theme loader resolves those sentinels.  File themes are independent
+  sparse overlays on the compiled default.
 |===
 
 The six values are persisted under `[ClassicTheme]`.  On load, each
@@ -3973,9 +3965,33 @@ duplicate platform-dependent enum tables:
 
 | `fileLocations`
 | Map containing `globalList`, `personalList`, `configuration`,
-  `download`, `cache`, `keys`, and `scripts` paths for display.  These
+  `download`, `cache`, `keys`, `scripts`, and `themes` paths for display.  These
   Strings do not confer file-open authority.
 |===
+
+=== Menu Themes [[menu-themes]]
+
+Theme storage and file syntax are documented in `Themes.adoc`.
+
+`Menu.themes` refreshes the C-owned catalog and returns rows in the form
+`[filename, name, author, description, version, error]`.  The built-in
+Classic Theme has an empty filename.  Optional metadata is `null` when
+absent.  An invalid or missing theme has an error String and cannot be
+selected, but remains available for display in the browser.
+
+`Menu.selectedThemeFile` returns the committed filename, or an empty String
+for Classic Theme.  `Menu.previewTheme(filename)` installs a temporary
+process-wide preview and returns `null`, or returns an error String without
+changing the committed selection.  `Menu.cancelThemePreview()` restores the
+committed theme.  Both operations advance `Host.themeGeneration` when they
+change the active snapshot.
+
+`Menu.selectTheme(filename)` validates the catalog entry, writes
+`[SyncTERM] ThemeFile`, and commits the preview as one operation.  Selecting
+Classic removes the key.  It returns `null` on success or an error String on
+failure.  In safe mode the running selection changes but the INI file is not
+written.  A successful selection advances both the theme and settings
+generations, so scripts should reacquire outstanding `Settings` snapshots.
 
 === Menu List Encryption [[menu-list-encryption]]
 
@@ -4292,13 +4308,18 @@ pre-bound from these at module load.
 |===
 | Member | Description
 
-| `Host.themeColors`
-| Returns a fresh six-element List containing the program-wide Classic
-  Theme palette indexes in this order: frame, text, background, inverse,
-  lightbar foreground, lightbar background.  The three foreground values
-  use 16 as the `Default` sentinel; the three background values use 8.
-  This read-only host state is available in the menu, picker, and connected
-  VMs.  Changing the returned List does not alter the program settings.
+| `Host.themeGeneration`
+| Monotonic process-wide generation for the active theme.  Preview,
+  cancellation, and committed selection changes advance it.
+
+| `Host.themeData`, `Host.defaultThemeData`
+| Return fresh immutable-by-ownership snapshots of the active theme and
+  compiled fallback respectively.  Each result is `[styles, glyphs]`.
+  A style row is `[role, font, legacyAttr, foreground, background]`, with
+  `null` representing inheritance.  A glyph row is
+  `[name, primary, asciiFallback]`.  These bindings are available in all
+  three VMs.  Wren may mutate its returned Lists, but that cannot change
+  C-owned theme state or snapshots returned to another VM.
 
 | `Host.cacheDirectory`
 | Returns a fresh `Directory` whose path resolves lazily from the
@@ -5744,10 +5765,11 @@ Confirm`, etc.  They're listed in <<ui-modules,UI Modules>>.
 * a global keymap — `app.bind(keyCode, fn)` registers a hotkey that
   fires when no widget consumes the key.  F1 is bound by default to
   `showHelp`.
-* a Theme initialized from `ClassicTheme.current`, which reads the same
-  configured Classic Theme palette in the menu, picker, and connected VMs.
+* a Theme initialized from `Theme.current`, which decodes the C-owned active
+  theme and refreshes its per-VM cache when `Host.themeGeneration` changes.
+  The menu, picker, and connected VMs therefore use the same selected theme.
   Assign `app.theme` only when the App intentionally needs a different
-  theme.
+  per-App theme.
 * a single run-fiber that pumps the event loop.  `run()` pushes an
   input claim (see <<modal-input,Modal Input>>) whose handler
   decides synchronously, from App state alone, whether each event
@@ -6766,20 +6788,21 @@ not have active and inactive forms.  Do not use `focusable=false` for
 this purpose: display-only children such as progress bars still need to
 inherit an inactive containing Pane.
 
-`Theme.default` is the built-in complete fallback, memoized so
+`Theme.default` is the C-owned compiled fallback decoded into Wren and
+memoized so
 `someTheme == Theme.default` works as identity equality.  Theme builders
 use it to populate roles and glyphs they do not override, and an unattached
 Widget falls back to it when it has no Theme in its parent chain.  It uses a
 white-on-blue palette, yellow frame/title, lightbar selection, gray-on-blue
 scrollbar, and bright-white-on-cyan inactive palette.
 
-`App.new()` instead initializes its Theme from `ClassicTheme.current`.
-That factory reads `Host.themeColors`, resolves the foreground and
-background `Default` sentinels, and applies the user's configured Classic
-Theme consistently in every VM.  `ClassicTheme.from(settings)` supports
-the menu settings editor's live preview, and `ClassicTheme.fromColors(...)`
-builds the same mapping from six explicit palette indexes.  Scripts may
-still assign `app.theme` to replace the program theme for one App.
+`Theme.current` decodes `Host.themeData` and caches the result against
+`Host.themeGeneration`.  `App.new()` initializes from this process-wide
+selection.  The built-in Classic Theme and file themes use the same host
+representation; their storage and complete role/glyph registry are
+documented in `Themes.adoc`.  Scripts may still construct a `Theme` directly
+or assign `app.theme` to replace the program theme for one App.  Such a Wren
+object does not modify the C-owned selection or any other VM.
 
 `Glyphs` entries are either a single string or `[primary,
 fallback]` pairs — primary is the rich Unicode glyph, fallback is
