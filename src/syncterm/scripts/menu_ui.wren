@@ -291,7 +291,7 @@ class MenuUi {
       if (label.count + 4 > longest) longest = label.count + 4
     }
     var w = longest.max(24).min(size[0] - 4)
-    var h = (labels.count + 4).max(7).min(size[1] - 4)
+    var h = (labels.count + 4).min(size[1] - 4)
     pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
         ((size[1] - h) / 2).floor + 1, w, h)
     pane.onClose = cancel
@@ -342,7 +342,7 @@ class MenuUi {
       if (row[1].count + 4 > longest) longest = row[1].count + 4
     }
     var w = longest.max(24).min(size[0] - 4)
-    var h = (labels.count + 4).max(7).min(size[1] - 4)
+    var h = (labels.count + 4).min(size[1] - 4)
     pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
         ((size[1] - h) / 2).floor + 1, w, h)
 
