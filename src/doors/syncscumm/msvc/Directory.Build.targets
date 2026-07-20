@@ -54,6 +54,44 @@
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(MSBuildThisFileDirectory)lib</AdditionalLibraryDirectories>
+      <!-- Link the REAL zlib (vcpkg's zlib 1.3.2, whose static lib vcpkg names
+           zs.lib) BEFORE anything else, so ScummVM's zlib calls bind to the
+           zlib whose headers they were compiled against.
+
+           WHY: libjpeg-turbo's turbojpeg.lib VENDORS its own private copy of
+           zlib - it defines _deflateInit2_, _inflateInit2_, _zlibVersion,
+           _deflate, _inflate, etc. (confirmed via dumpbin /LINKERMEMBER), a
+           second zlib in the link. vcpkg auto-links the whole prefix with a
+           wildcard (vcpkg.targets: AdditionalDependencies += ...\lib\*.lib),
+           which MSBuild/link.exe glob ALPHABETICALLY, so turbojpeg.lib is fed
+           to the linker before zs.lib, and MSVC resolved _deflateInit2_ from
+           turbojpeg's copy. That copy REJECTS ScummVM's gzip-mode deflate
+           parameters: common/compression/zlib.cpp's GZipWriteStream (the
+           engine's savegame compressor) calls deflateInit2() with
+           windowBits = MAX_WBITS + 16 (the +16 asks zlib to write a gzip
+           header), and turbojpeg's zlib returns Z_STREAM_ERROR for it while
+           real zlib 1.3.2 returns Z_OK. deflateInit2 != Z_OK trips the
+           assert(_zlibErr == Z_OK) in that ctor -> abort(). Net effect: the
+           door FAST_FAIL-aborted (killing the caller's session, "exited back to
+           the BBS") the instant a user saved a game; save-time stack
+           Scumm::ScummEngine::saveState -> openSaveFileForWriting ->
+           DefaultSaveFileManager::openForSaving -> wrapCompressedWriteStream.
+           Windows-only: the *nix build links one system zlib, no conflict.
+
+           Proven in isolation (scratch program calling deflateInit2 with those
+           exact params): linking turbojpeg.lib before zs.lib -> returns -2
+           (Z_STREAM_ERROR); linking zs.lib first -> returns 0 (Z_OK). Both
+           report ZLIB_VERSION 1.3.2 / sizeof(z_stream) 56, so it is NOT a
+           version/ABI mismatch, purely which implementation answers the call.
+
+           The door never calls the TurboJPEG API (ScummVM uses the classic
+           libjpeg API in jpeg.lib), so turbojpeg.lib is pure collateral; we
+           cannot easily drop it from the wildcard, but listing zs.lib first
+           makes the linker keep zs.lib's _deflateInit2_ (the duplicate in
+           turbojpeg.lib becomes an ignored LNK4006). This Link group is
+           imported before vcpkg.targets (below), so zs.lib lands ahead of the
+           vcpkg wildcard. -->
+      <AdditionalDependencies>zs.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <!-- The output binary is syncscumm.exe, not scummvm.exe (matches the *nix
            build.sh output rename + deploy.js's door_exe_name). create_project
            hardcodes OutputFile=$(OutDir)scummvm.exe in the Link metadata, so
