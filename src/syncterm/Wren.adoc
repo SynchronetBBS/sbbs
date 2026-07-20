@@ -6489,7 +6489,7 @@ pops itself, then control returns with the result.
 
 [source,wren]
 ----
-import "ui" for Alert, Confirm, Prompt
+import "ui" for Alert, Confirm, Prompt, LinePrompt
 
 Alert.show(app, "Disk full")
 Alert.show(app, "Warning", "Disk full")
@@ -6503,6 +6503,8 @@ var name = Prompt.show(app, "Your name?", "anonymous")
 if (name != null) {
   // user submitted
 }
+
+var path = LinePrompt.show(app, "Path", "/tmp")
 ----
 
 `Alert` — single OK button.  Enter, Space, `O`, Esc, or a mouse click
@@ -6529,6 +6531,17 @@ capacity and cap the complete popup to the standard screen margins.  The
 `MenuUi.prompt` wrappers use the field's `maxLen` for this width.
 Short fields retain the normal minimum while URI, path, password,
 and other long fields use the available screen width.
+
+`LinePrompt` — compact UIFC-style single-line entry.  Its label appears
+to the left of the input on the only interior row; there is no OK / Cancel
+button row.  `Enter` submits and `Esc` returns `null`.  The read-only `input`
+getter and `sizeForInput` methods have the same purpose as Prompt's.  A
+distinct optional `title` may be placed in the top frame, but menu prompts
+omit it when it would merely repeat the field label.  `MenuUi.prompt` uses
+this form for ordinary menu editing and application filename entry; host
+prompts retain `Prompt` because their explanatory message is separate from
+the dialog title.  `LinePrompt.runStandalone(app, label, initial)` is the
+standalone equivalent.
 
 `Find` — compact single-row variant of Prompt.  Title sits in the
 top frame border, the input fills the entire `innerBounds` row (no

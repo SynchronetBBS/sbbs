@@ -4,7 +4,7 @@
 // loop.
 
 import "ui_widget" for Rect, Container
-import "ui_popup"  for Alert, Confirm, Prompt, Find, Popup
+import "ui_popup"  for Alert, Confirm, Prompt, LinePrompt, Find, Popup
 import "menu_ui" for MenuUi, ModalPane, StandaloneChoice
 import "syncterm"  for KeyEvent, Key, Screen
 
@@ -90,6 +90,9 @@ class UiPopupTest {
     testPromptEscReturnsNull_()
     testPromptForwardsTypingToInput_()
     testPromptMovementPreservesInitial_()
+    testLinePromptLayout_()
+    testLinePromptEnterReturnsValue_()
+    testLinePromptEscReturnsNull_()
     testFindReplacesPreviousQuery_()
     testMenuChoiceEscReturnsNull_()
     testMenuChoiceCarriesHelp_()
@@ -99,6 +102,7 @@ class UiPopupTest {
     testMenuCommandChoiceProtectsBlankRow_()
     testMenuCommandChoiceCompatibilityAliases_()
     testMenuPromptCarriesHelp_()
+    testMenuPromptAvoidsDuplicateTitle_()
     testMenuPromptKeepsMinimumWidth_()
     testMenuPromptUsesFieldLength_()
     testStandaloneChoiceEscReturnsNull_()
@@ -290,6 +294,35 @@ class UiPopupTest {
            "Prompt: cursor movement preserves initial value")
   }
 
+  static testLinePromptLayout_() {
+    var p = LinePrompt.new("Name", "abc")
+    p.sizeForInput(20, 34)
+    check_(p.bounds.h == 3 && p.children.count == 1 &&
+           p.input.bounds.y == p.bounds.y + 1 &&
+           p.input.bounds.x == p.bounds.x + 8,
+           "LinePrompt: label and input share the only interior row")
+  }
+
+  static testLinePromptEnterReturnsValue_() {
+    var app = FakeApp.new()
+    var p = LinePrompt.new("Name", "abc")
+    p.sizeForInput(20)
+    app.modal(p)
+    p.handle(KeyEvent.new(Key.enter))
+    check_(p.result == "abc" && app.modalStack.count == 0,
+           "LinePrompt: Enter returns input.value")
+  }
+
+  static testLinePromptEscReturnsNull_() {
+    var app = FakeApp.new()
+    var p = LinePrompt.new("Name", "abc")
+    p.sizeForInput(20)
+    app.modal(p)
+    p.handle(KeyEvent.new(Key.escape))
+    check_(p.result == null && app.modalStack.count == 0,
+           "LinePrompt: Esc cancels")
+  }
+
   static testFindReplacesPreviousQuery_() {
     var app = FakeApp.new()
     var p = Find.new("Find", "previous")
@@ -377,6 +410,13 @@ class UiPopupTest {
     MenuUi.prompt(app, "Name", "Name", "", 20, false, "# Name Help")
     check_(app.last.helpText == "# Name Help",
            "MenuUi.prompt: optional help reaches the prompt")
+  }
+
+  static testMenuPromptAvoidsDuplicateTitle_() {
+    var app = EscapeFakeApp.new()
+    MenuUi.prompt(app, "Name", "Name", "", 20, false)
+    check_(app.last is LinePrompt && app.last.title == null,
+           "MenuUi.prompt: repeated field label is not drawn as a title")
   }
 
   static testMenuPromptKeepsMinimumWidth_() {

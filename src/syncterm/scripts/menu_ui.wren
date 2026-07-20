@@ -3,7 +3,7 @@ import "ui_app" for App
 import "ui_widget" for Rect
 import "ui_pane" for Pane
 import "ui_list" for ListView
-import "ui_popup" for Alert, Confirm, Prompt, Popup
+import "ui_popup" for Alert, Confirm, Prompt, LinePrompt, Popup
 
 class StandaloneChoice is Popup {
   construct new(message, labels) {
@@ -288,8 +288,8 @@ class MenuUi {
   }
 
   static prompt(app, title, message, initial, maxLen, masked, helpText) {
-    var p = Prompt.new(message, initial)
-    p.title = title
+    var p = LinePrompt.new(message, initial)
+    if (title != message) p.title = title
     p.helpText = helpText
     p.input.maxLen = maxLen
     if (masked) p.input.mask = "*"

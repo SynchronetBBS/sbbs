@@ -4,7 +4,8 @@
 // consumers can write a single line:
 //
 //   import "ui" for App, Pane, ListView, TextInput, SelectOnFocusInput,
-//                  Button, Alert, Confirm, Prompt, Find, Help, Rect
+//                  Button, Alert, Confirm, Prompt, LinePrompt, Find,
+//                  Help, Rect
 //
 // instead of chasing individual modules.  The fine-grained modules
 // remain the source of truth — this file only re-exports.
@@ -23,6 +24,6 @@ import "ui_spinbox"   for SpinBox
 import "ui_statusbar" for StatusBar
 import "ui_menubar"   for MenuBar
 import "ui_form"      for Form
-import "ui_popup"     for PopStatus, Popup, Alert, Confirm, Prompt, Find
+import "ui_popup"     for PopStatus, Popup, Alert, Confirm, Prompt, LinePrompt, Find
 import "ui_help"      for Help
 import "ui_app"       for App
