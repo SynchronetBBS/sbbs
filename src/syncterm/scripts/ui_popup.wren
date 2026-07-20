@@ -53,8 +53,8 @@ class PopStatus is Pane {
     shadow      = true
     // Status overlay is dismissed programmatically (popStatus(null))
     // and has no per-pane help — opt out of the corner buttons.  Use
-    // a single-line frame to keep it compact.
-    framePreset = "single"
+    // the informational frame family.
+    frameKind   = "display"
     titleAsBar  = false
     helpable    = false
     closeable   = false
@@ -110,9 +110,10 @@ class Popup is Pane {
     _onDismiss    = null
     focused       = true
     shadow        = true              // dialogs always cast a drop-shadow
-    // Popups use a single-line frame with title embedded in the top
-    // border (UIFC convention for Yes/No / Alert / Prompt).
-    framePreset = "single"
+    // Popups contain controls and use the same frame family as UIFC
+    // lists and input boxes.  Informational subclasses such as Help
+    // override this choice.
+    frameKind   = "control"
     titleAsBar  = false
     helpable    = false            // few popups have context help
     // [X] click dismisses with null — same as Esc in every Popup subclass.
@@ -589,7 +590,7 @@ class Prompt is Popup {
   }
 }
 
-// Compact UIFC-style single-line input box.  The label and input share
+// Compact UIFC-style single-row input box.  The label and input share
 // the sole interior row; Enter submits and Esc cancels without requiring
 // a redundant button row.  A caller may still put contextual text in the
 // top frame through Pane.title.

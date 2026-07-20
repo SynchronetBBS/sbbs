@@ -34,6 +34,7 @@ class Help is Popup {
   construct new(titleText, body) {
     super(null)                 // no auto-rendered message line
     title      = titleText
+    frameKind  = "display"
     focused    = true
     _body      = body == null ? "" : body
     _doc       = Markdown.parse(_body)
@@ -240,7 +241,7 @@ class Help is Popup {
                       _lines.count, rows, glyphs, trackStyle, thumbStyle)
     if (_sbSep) {
       var sepStyle = style("default")
-      var sepGlyph = glyph("frame.left")
+      var sepGlyph = glyph("scrollbar.separator")
       var sx = separatorColumn_
       var i = 0
       while (i < sbH) {

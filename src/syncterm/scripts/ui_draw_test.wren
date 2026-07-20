@@ -43,6 +43,8 @@ class UiDrawTest {
     testPaneConstrainedFitSettlesScrollbar_()
     testPaneFitContentToScreen_()
     testPaneFitToScreen_()
+    testPaneFrameKinds_()
+    testPaneRejectsUnknownFrameKind_()
     testPaneDrawFramesWithTitle_()
     testPaneDrawClearsInterior_()
 
@@ -338,15 +340,32 @@ class UiDrawTest {
            "Pane.fitToScreen: constrains a fixed-size modal")
   }
 
+  static testPaneFrameKinds_() {
+    var p = Pane.new()
+    p.bounds = Rect.new(1, 1, 8, 3)
+    p.helpable = false
+    p.closeable = false
+    var controlCorner = p.draw().cellAt(0, 0).ch
+    p.frameKind = "display"
+    var displayCorner = p.draw().cellAt(0, 0).ch
+    check_(controlCorner == "╔" && displayCorner == "┌",
+           "Pane.frameKind selects control and display glyph families")
+  }
+
+  static testPaneRejectsUnknownFrameKind_() {
+    var p = Pane.new()
+    var error = Fiber.new { p.frameKind = "double" }.try()
+    check_(error is String && error.contains("Pane.frameKind"),
+           "Pane.frameKind rejects appearance-based values")
+  }
+
   static testPaneDrawFramesWithTitle_() {
     var p = Pane.new()
     p.bounds      = Rect.new(1, 1, 10, 4)
-    // Test the embedded-title look (single-line frame, title in the
-    // top border).  Pane's UIFC defaults are double-line + titleAsBar
-    // + corner buttons, which don't match this test's expectations;
-    // opt out of all of them so we're testing Painter.frameTitle's
-    // single-line layout.
-    p.framePreset = "single"
+    // Test the informational embedded-title look.  Pane defaults to a
+    // control frame with titleAsBar and corner buttons, so opt out of
+    // those defaults to isolate Painter.frameTitle's display layout.
+    p.frameKind   = "display"
     p.titleAsBar  = false
     p.helpable    = false
     p.closeable   = false

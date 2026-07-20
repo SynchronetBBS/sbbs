@@ -259,7 +259,8 @@ class UiWidgetTest {
     var d = Theme.default
     var sExpected = d.style("default")
     var s = w.style("default")
-    check_(s == sExpected && w.glyph("frame.topLeft") == d.glyphs["frame.topLeft"],
+    check_(s == sExpected && w.glyph("frame.display.topLeft") ==
+               d.glyphs["frame.display.topLeft"],
            "Widget.style/glyph forward to effectiveTheme")
   }
 

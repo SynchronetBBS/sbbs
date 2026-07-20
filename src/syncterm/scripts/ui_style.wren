@@ -193,8 +193,8 @@ class Theme {
   }
 
   // Built-in default theme.  Mirrors the classic SyncTERM look:
-  // white-on-blue, lightbar selection, yellow titles, single-line
-  // box-drawing borders.  Both legacy attrs and 24-bit RGB are
+  // white-on-blue, lightbar selection, yellow titles, and distinct
+  // control/display frame families.  Both legacy attrs and 24-bit RGB are
   // populated so the renderer can pick whichever the terminal
   // supports.  Font slot 0 (cp437English) is the safe baseline.
   //
@@ -397,48 +397,49 @@ class Theme {
     var glyphs = {
       "background":          [" ",  " "],
 
-      "frame.topLeft":       ["┌", "+"],
-      "frame.top":           ["─", "-"],
-      "frame.topRight":      ["┐", "+"],
-      "frame.left":          ["│", "|"],
-      "frame.right":         ["│", "|"],
-      "frame.bottomLeft":    ["└", "+"],
-      "frame.bottom":        ["─", "-"],
-      "frame.bottomRight":   ["┘", "+"],
-      "frame.tee.left":      ["├", "+"],
-      "frame.tee.right":     ["┤", "+"],
-      // Title flanks rendered as `┤Title├` on the top frame.  Double-
-      // line themes can swap to `╡Title╞` by overriding these.
-      "frame.title.left":    ["┤", "-"],
-      "frame.title.right":   ["├", "-"],
-      "frame.tee.top":       ["┬", "+"],
-      "frame.tee.bottom":    ["┴", "+"],
-      "frame.cross":         ["┼", "+"],
-      "frame.separator":     ["─", "-"],
+      // Informational viewers use the unobtrusive single-line family.
+      "frame.display.topLeft":       ["┌", "+"],
+      "frame.display.top":           ["─", "-"],
+      "frame.display.topRight":      ["┐", "+"],
+      "frame.display.left":          ["│", "|"],
+      "frame.display.right":         ["│", "|"],
+      "frame.display.bottomLeft":    ["└", "+"],
+      "frame.display.bottom":        ["─", "-"],
+      "frame.display.bottomRight":   ["┘", "+"],
+      "frame.display.tee.left":      ["├", "+"],
+      "frame.display.tee.right":     ["┤", "+"],
+      "frame.display.title.left":    ["┤", "-"],
+      "frame.display.title.right":   ["├", "-"],
+      "frame.display.tee.top":       ["┬", "+"],
+      "frame.display.tee.bottom":    ["┴", "+"],
+      "frame.display.cross":         ["┼", "+"],
+      "frame.display.separator":     ["─", "-"],
 
-      // Double-line frame variant — Pane.framePreset = "double" picks
-      // these up via the "frame.double" glyph prefix.  UIFC list /
-      // menu boxes are double-line.  The title brackets stay
-      // `╡Title╞` (double horizontal meeting single vertical of the
-      // title gap).
-      "frame.double.topLeft":     ["╔", "+"],
-      "frame.double.top":         ["═", "="],
-      "frame.double.topRight":    ["╗", "+"],
-      "frame.double.left":        ["║", "|"],
-      "frame.double.right":       ["║", "|"],
-      "frame.double.bottomLeft":  ["╚", "+"],
-      "frame.double.bottom":      ["═", "="],
-      "frame.double.bottomRight": ["╝", "+"],
-      "frame.double.tee.left":    ["╠", "+"],
-      "frame.double.tee.right":   ["╣", "+"],
-      "frame.double.title.left":  ["╡", "="],
-      "frame.double.title.right": ["╞", "="],
-      "frame.double.separator":   ["═", "="],
+      // Panes containing choices or input use the stronger control frame.
+      // The title brackets remain `╡Title╞`, where double horizontals meet
+      // the single vertical edges of the title gap.
+      "frame.control.topLeft":     ["╔", "+"],
+      "frame.control.top":         ["═", "="],
+      "frame.control.topRight":    ["╗", "+"],
+      "frame.control.left":        ["║", "|"],
+      "frame.control.right":       ["║", "|"],
+      "frame.control.bottomLeft":  ["╚", "+"],
+      "frame.control.bottom":      ["═", "="],
+      "frame.control.bottomRight": ["╝", "+"],
+      "frame.control.tee.left":    ["╠", "+"],
+      "frame.control.tee.right":   ["╣", "+"],
+      "frame.control.title.left":  ["╡", "="],
+      "frame.control.title.right": ["╞", "="],
+      "frame.control.tee.top":     ["╦", "+"],
+      "frame.control.tee.bottom":  ["╩", "+"],
+      "frame.control.cross":       ["╬", "+"],
+      "frame.control.separator":   ["═", "="],
 
       "scrollbar.track":     ["░", ":"],
       "scrollbar.thumb":     ["█", "#"],
       "scrollbar.up":        ["▲", "^"],
       "scrollbar.down":      ["▼", "v"],
+      "scrollbar.separator": ["│", "|"],
 
       "arrow.up":            ["↑", "^"],
       "arrow.down":          ["↓", "v"],

@@ -4,7 +4,9 @@
 // loop.
 
 import "ui_widget" for Rect, Container
-import "ui_popup"  for Alert, Confirm, Prompt, LinePrompt, Find, Popup
+import "ui_popup"  for Alert, Confirm, Prompt, LinePrompt, Find, Popup,
+                       PopStatus
+import "ui_help" for Help
 import "menu_ui" for MenuUi, ModalPane, StandaloneChoice
 import "syncterm"  for KeyEvent, Key, Screen
 
@@ -73,6 +75,7 @@ class UiPopupTest {
     __fail = 0
     System.print("=== ui_popup self-test starting ===")
 
+    testSemanticFrameKinds_()
     testAlertConstruction_()
     testAlertTitledConstruction_()
     testAlertShowCarriesHelp_()
@@ -123,6 +126,18 @@ class UiPopupTest {
   }
 
   // ----- Alert ----------------------------------------------------
+
+  static testSemanticFrameKinds_() {
+    var alert = Alert.new("hi")
+    var find = Find.new("Find", "")
+    var choice = StandaloneChoice.new("", ["One"])
+    var help = Help.new("Help", "Body")
+    var status = PopStatus.new("Working")
+    check_(alert.frameKind == "control" && find.frameKind == "control" &&
+           choice.frameKind == "control" && help.frameKind == "display" &&
+           status.frameKind == "display",
+           "Popup frame kinds follow control/display semantics")
+  }
 
   static testAlertConstruction_() {
     var a = Alert.new("hi")

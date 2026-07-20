@@ -6017,15 +6017,17 @@ setter.
 === Pane [[ui-pane]]
 
 `Container` with a frame, optional title, `[?]` and `[X]` corner
-buttons, and an inset interior.  The default classic look uses a double-
-line frame, title in its own bar row with a horizontal separator
-underneath, both corner buttons enabled.
+buttons, and an inset interior.  The default is a control-bearing pane:
+the stronger double-line frame, title in its own bar row with a horizontal
+separator underneath, and both corner buttons enabled.
 
 Configuration knobs:
 
-* `framePreset=` — `"single"` (default for `Popup`) or `"double"`
-  (default for bare `Pane`).  Switches the glyph family from
-  `+----+` style to `+====+` style.
+* `frameKind=` — `"control"` (the default) or `"display"`.  A control
+  frame marks a pane that contains choices, buttons, or editable input and
+  uses the stronger double-line family.  A display frame marks
+  informational content and uses the single-line family.  Assigning any
+  other value aborts the calling fiber.
 * `titleAsBar=` — when true, the title sits inside the frame in its
   own row with a horizontal separator underneath.  When false, the
   title is embedded in the top border (`-| Title |-`).  Classic list
@@ -6494,10 +6496,12 @@ assigning `null` removes the button.
 
 === Popup family [[ui-popup]]
 
-Modal dialogs built on `Pane` (single-line frame, embedded title,
-drop shadow) and pushed onto the App's modal stack.  Each `show`
-is synchronous: the App's `modal()` pumps drain until the popup
-pops itself, then control returns with the result.
+Modal dialogs built on `Pane` (control frame, embedded title, drop
+shadow) and pushed onto the App's modal stack.  Each `show` is
+synchronous: the App's `modal()` pumps drain until the popup pops itself,
+then control returns with the result.  `Help` is the informational
+exception and selects the display frame; transient `PopStatus` uses the
+display frame as well.
 
 [source,wren]
 ----
@@ -6544,7 +6548,7 @@ capacity and cap the complete popup to the standard screen margins.  The
 Short fields retain the normal minimum while URI, path, password,
 and other long fields use the available screen width.
 
-`LinePrompt` — compact UIFC-style single-line entry.  Its label appears
+`LinePrompt` — compact UIFC-style single-row entry.  Its label appears
 to the left of the input on the only interior row; there is no OK / Cancel
 button row.  `Enter` submits and `Esc` returns `null`.  The read-only `input`
 getter and `sizeForInput` methods have the same purpose as Prompt's.  A
@@ -6789,12 +6793,13 @@ characters at all.
 
 Glyph families used by the library:
 
-* `frame.*` — single-line `+--+` borders, plus `tee.left/right`,
-  `title.left/right`, `separator`.
-* `frame.double.*` — double-line `+==+` borders.  `Pane` switches
-  to this family when `framePreset = "double"`.
+* `frame.display.*` — single-line `+--+` borders for informational
+  viewers, plus `tee.left/right`, `title.left/right`, and `separator`.
+* `frame.control.*` — double-line `+==+` borders for panes containing
+  choices, buttons, or editable input.  `Pane.frameKind` selects between
+  the two frame families.
 * `scrollbar.track`, `scrollbar.thumb`, `scrollbar.up`,
-  `scrollbar.down` — scrollbar pieces.
+  `scrollbar.down`, `scrollbar.separator` — scrollbar pieces.
 
 === Painter [[ui-painter]]
 
@@ -6814,7 +6819,7 @@ The most useful entry points:
   `text(s, x, y, str, style, maxW)` | Draw `str` on a single row.  6-arg form caps at `maxW` cells.
 
 | `frame(s, rect, glyphs, style)` +
-  `frame(s, rect, glyphs, style, prefix)` | Box around `rect` using `prefix.*` glyphs.  Default prefix `"frame"`; pass `"frame.double"` for the double-line family.
+  `frame(s, rect, glyphs, style, prefix)` | Box around `rect` using `prefix.*` glyphs.  The default is `"frame.display"`; pass `"frame.control"` for a control-bearing pane.
 
 | `frameTitle(s, rect, glyphs, frameStyle, title, titleStyle, prefix)` | Frame with a centered `+| Title |+` in the top border.
 

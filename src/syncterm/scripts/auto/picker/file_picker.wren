@@ -496,10 +496,10 @@ class PickerPane is Pane {
     var divider = _directories.bounds.right - bounds.x + 1
     var listTop = _directories.bounds.y - bounds.y
     Painter.vline(surface, divider, listTop, _directories.bounds.h,
-        glyph("frame.double.left"), frame)
+        glyph("frame.control.left"), frame)
     var sep = _separatorRow - bounds.y
     Painter.hline(surface, x, sep, width,
-        glyph("frame.double.separator"), frame)
+        glyph("frame.control.separator"), frame)
     Painter.text(surface, 2, _infoRow - bounds.y, _infoLine1, normalStyle,
         bounds.w - 4)
     Painter.text(surface, 2, _infoRow - bounds.y + 1, _infoLine2,
@@ -512,7 +512,7 @@ class PickerPane is Pane {
           style("title"), 6)
     }
     Painter.hline(surface, x, _buttonRow - bounds.y - 1, width,
-        glyph("frame.double.separator"), frame)
+        glyph("frame.control.separator"), frame)
   }
 
   handle(event) {

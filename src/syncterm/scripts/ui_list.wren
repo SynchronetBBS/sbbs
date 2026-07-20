@@ -422,7 +422,7 @@ class ListView is Widget {
                       _items.count, h, glyphs, trackStyle, thumbStyle)
     if (_sbSep) {
       var sepStyle = style("default")
-      var sepGlyph = glyph("frame.left")
+      var sepGlyph = glyph("scrollbar.separator")
       var sx = separatorColumn_
       var i = 0
       while (i < h) {

@@ -95,13 +95,13 @@ class Painter {
     }
   }
 
-  // Frame around `rect` using glyphs under `prefix.*`.  Default
-  // prefix "frame" gives a single-line box (`┌─┐│└┘`); pass
-  // "frame.double" for a double-line one (`╔═╗║╚╝`).  `rect` is in
+  // Frame around `rect` using glyphs under `prefix.*`.  The default
+  // display frame is used for informational content; pass
+  // "frame.control" for a control-bearing pane.  `rect` is in
   // surface-local coords.  Interior cells are not touched.  Rects
   // narrower than 2×2 are no-ops.
   static frame(surface, rect, glyphs, style) {
-    framePrefixed_(surface, rect, glyphs, style, "frame")
+    framePrefixed_(surface, rect, glyphs, style, "frame.display")
   }
   static frame(surface, rect, glyphs, style, prefix) {
     framePrefixed_(surface, rect, glyphs, style, prefix)
@@ -137,10 +137,12 @@ class Painter {
   }
 
   // Frame with a centered title in the top border (`┤ Title ├`).
-  // The `prefix` selects the glyph family ("frame" / "frame.double").
+  // The `prefix` selects the semantic glyph family (`frame.display`
+  // or `frame.control`).
   // Title truncates at rect.w - 6 cells (corners + brackets + spaces).
   static frameTitle(surface, rect, glyphs, frameStyle, title, titleStyle) {
-    frameTitlePrefixed_(surface, rect, glyphs, frameStyle, title, titleStyle, "frame")
+    frameTitlePrefixed_(surface, rect, glyphs, frameStyle, title, titleStyle,
+        "frame.display")
   }
   static frameTitle(surface, rect, glyphs, frameStyle, title, titleStyle, prefix) {
     frameTitlePrefixed_(surface, rect, glyphs, frameStyle, title, titleStyle, prefix)

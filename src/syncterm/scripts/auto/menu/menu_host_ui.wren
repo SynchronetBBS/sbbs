@@ -66,6 +66,7 @@ class MenuHostUI {
       __statusCursor = CustomCursor.current
       __statusApp = App.new()
       __statusPane = Pane.new()
+      __statusPane.frameKind = "display"
       __statusPane.focusable = false
       __statusPane.focused = true
       __statusPane.helpable = false
