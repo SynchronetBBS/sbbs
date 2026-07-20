@@ -260,10 +260,13 @@ class App {
   // redraw until the next event arrives.
   popStatus(message) {
     if (message == null) {
+      if (_status != null) _status.parent = null
       _status = null
       markAllDirty_()
     } else {
+      if (_status != null) _status.parent = null
       _status = PopStatus.show(message)
+      _status.parent = this
     }
     drawAll_()
   }
@@ -598,8 +601,9 @@ class App {
   }
 
   markAllDirty_() {
-    _root.markDirty()
-    for (m in _modalStack) m.markDirty()
+    _root.markTreeDirty_()
+    if (_status != null) _status.markTreeDirty_()
+    for (m in _modalStack) m.markTreeDirty_()
   }
 
   // One iteration of the event loop: paint, park, dispatch.  All

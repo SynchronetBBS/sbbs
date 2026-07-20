@@ -128,6 +128,7 @@ class UiWidgetTest {
     testAppRootParented_()
     testAppEffectiveTheme_()
     testAppThemeChange_()
+    testAppThemeChangeDirtiesAllLayers_()
     testAppPushPopModal_()
     testAppPopEmptyReturnsNull_()
     testAppModalTopFallsBackToRoot_()
@@ -602,6 +603,35 @@ class UiWidgetTest {
     app.root.add(leaf)
     check_(app.effectiveTheme == t && leaf.effectiveTheme == t,
            "App.theme= propagates to widgets via tree walk")
+  }
+
+  static testAppThemeChangeDirtiesAllLayers_() {
+    var app = App.new()
+    app.root.bounds = Rect.new(1, 1, 80, 25)
+
+    var rootBranch = Container.new()
+    rootBranch.bounds = Rect.new(1, 1, 40, 20)
+    var rootLeaf = Probe.new()
+    rootLeaf.bounds = Rect.new(2, 2, 10, 1)
+    rootBranch.add(rootLeaf)
+    app.root.add(rootBranch)
+
+    var modal = Container.new()
+    modal.bounds = Rect.new(10, 5, 30, 10)
+    var modalLeaf = Probe.new()
+    modalLeaf.bounds = Rect.new(11, 6, 10, 1)
+    modal.add(modalLeaf)
+    app.pushModal(modal)
+
+    app.root.draw()
+    modal.draw()
+    var t = Theme.new({
+      "default": Style.new(0, 0x07, 0xCCCCCC, 0x000000)
+    }, {})
+    app.theme = t
+    check_(app.root.dirty && rootBranch.dirty && rootLeaf.dirty &&
+           modal.dirty && modalLeaf.dirty,
+           "App.theme= dirties root and modal descendants")
   }
 
   static testAppPushPopModal_() {

@@ -5787,7 +5787,8 @@ Confirm`, etc.  They're listed in <<ui-modules,UI Modules>>.
   theme and refreshes its per-VM cache when `Host.themeGeneration` changes.
   The menu, picker, and connected VMs therefore use the same selected theme.
   Assign `app.theme` only when the App intentionally needs a different
-  per-App theme.
+  per-App theme.  Assignment invalidates the complete root, transient-status,
+  and modal widget trees so every mounted widget repaints on the next draw.
 * a single run-fiber that pumps the event loop.  `run()` pushes an
   input claim (see <<modal-input,Modal Input>>) whose handler
   decides synchronously, from App state alone, whether each event

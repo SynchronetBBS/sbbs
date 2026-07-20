@@ -231,6 +231,10 @@ class Widget {
     if (_parent != null) _parent.markDirty()
   }
 
+  // Invalidate this complete subtree without bubbling back through its
+  // ancestors. Container extends this to visit every descendant.
+  markTreeDirty_() { _dirty = true }
+
   clearDirty() { _dirty = false }
 
   // True when (px, py) falls inside the widget's bounds and the
@@ -386,6 +390,11 @@ class Container is Widget {
     }
     markDirty()
     return child
+  }
+
+  markTreeDirty_() {
+    super.markTreeDirty_()
+    for (child in _children) child.markTreeDirty_()
   }
 
   remove(child) {
