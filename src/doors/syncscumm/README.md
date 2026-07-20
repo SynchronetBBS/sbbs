@@ -1,18 +1,31 @@
-# SyncSCUMM — ScummVM point-and-click adventures as a Synchronet door
+# SyncSCUMM — ScummVM point-and-click adventures as a BBS door
 
 SyncSCUMM plays classic 2D point-and-click adventure games over a terminal, as
-a Synchronet [external program (door)](https://wiki.synchro.net/config:xtrn).
-It embeds [ScummVM](https://www.scummvm.org/)'s engine collection behind a
-native Synchronet `OSystem` backend, rendering the game to the caller's
-terminal with **graphics** (sixel or JPEG-XL), **mouse**, **keyboard**, and
-**sound** (Opus/Ogg-streamed) — no local ScummVM install on the client, just a
-capable terminal (SyncTERM and other sixel-capable terminals).
+a **BBS door**. It embeds [ScummVM](https://www.scummvm.org/)'s engine
+collection behind a native `OSystem` backend, rendering the game to the
+caller's terminal with **graphics** (sixel or JPEG-XL), **mouse**,
+**keyboard**, and **sound** (Opus/Ogg-streamed) — no local ScummVM install on
+the client, just a capable terminal (SyncTERM and other sixel-capable
+terminals).
+
+**Any DOOR32.SYS BBS can run it.** SyncSCUMM is developed and tested against
+[Synchronet](https://wiki.synchro.net/config:xtrn), but it is a standard
+[DOOR32.SYS](#how-the-caller-connects-door32sys-stdio-vs-socket) door — comm
+over a **socket** on any platform, or **UNIX-stdio** on \*nix — with no
+Synchronet-specific runtime dependency, so it also installs under **Mystic
+BBS** or any other BBS that speaks DOOR32.SYS. This README is written to be
+useful to any sysop: the door contract,
+terminal requirements, and game-install steps are BBS-agnostic, and the
+**Synchronet-only conveniences** (its `%`-macro command line, the
+`install-xtrn.ini` auto-installer, exact SCFG menu names) are labelled as such
+wherever they appear. See [Installing a game](#installing-a-game-worked-example-maniac-mansion)
+for a full worked example (general steps **and** Synchronet SCFG specifics).
 
 The binary is `syncscumm` (`syncscumm.exe` on Windows). One binary plays every
-title; each game is its own installable `xtrn/sync<game>/` package (e.g.
-`xtrn/syncbass`, `xtrn/syncqueen`) that launches the same binary with a
-different game target. See [`DESIGN.md`](DESIGN.md) for the architecture and
-[`COMPILING.md`](COMPILING.md) for building.
+title; each game lives in its own directory that launches the same binary with
+a different game target (on Synchronet, an installable `xtrn/sync<game>/`
+package, e.g. `xtrn/syncbass`, `xtrn/syncqueen`). See [`DESIGN.md`](DESIGN.md)
+for the architecture and [`COMPILING.md`](COMPILING.md) for building.
 
 ## Supported engines and games
 
@@ -83,21 +96,26 @@ Capabilities are probed at connect through the shared
 
 ## How the caller connects (DOOR32.SYS, stdio vs socket)
 
-SyncSCUMM is an `XTRN_DOOR32` door: Synchronet writes a
-[`DOOR32.SYS`](https://wiki.synchro.net/ref:dropfile#door32.sys) drop file and
-passes its path to the door on the command line (the `%f` macro in the
-`install-xtrn.ini` `cmd`). The door reads the drop file to find the caller's
-connection. Two comm types are handled, and platform support differs:
+SyncSCUMM is a [`DOOR32.SYS`](https://wiki.synchro.net/ref:dropfile#door32.sys)
+door — DOOR32.SYS is a **cross-BBS drop-file standard** written by Synchronet,
+Mystic, and most other modern BBS packages. The BBS writes a `DOOR32.SYS` drop
+file and passes its path to the door on the command line (on Synchronet, via
+the `%f` macro — see [Installing a game](#installing-a-game-worked-example-maniac-mansion)).
+The door reads the drop file to find the caller's connection. Two comm types
+are handled, and platform support differs:
 
 | DOOR32.SYS comm type | Transport | *nix | Windows |
 |----------------------|-----------|:----:|:-------:|
 | **2** (socket)       | The BBS hands the door an open TCP **socket** handle; the door does its own non-blocking `send()`/`recv()` on it. | ✅ | ✅ |
 | **0** (stdio)        | The BBS redirects the door's **stdin/stdout** to the caller. | ✅ | ❌ |
 
-- **Socket I/O works on both Windows and \*nix** and is what the bundled
-  packages use (`XTRN_DOOR32` with a socket). On Windows the DOOR32.SYS handle
-  is a Winsock `SOCKET`, which the CRT's `read()`/`write()` cannot touch, so the
-  door uses `send()`/`recv()` — hence a Windows door **requires** socket comm.
+- **Socket I/O works on both Windows and \*nix** and is what every install
+  should use (DOOR32.SYS comm type **2** — on Synchronet, an `XTRN_DOOR32` door
+  with the I/O method set to *Socket*; on Mystic and other BBSes, whatever
+  their door config calls a socket/DOOR32.SYS door). On Windows the DOOR32.SYS
+  handle is a Winsock `SOCKET`, which the CRT's `read()`/`write()` cannot
+  touch, so the door uses `send()`/`recv()` — hence a Windows door **requires**
+  socket comm.
 - **Stdio I/O is \*nix-only.** On POSIX the door's descriptor may be a plain fd
   (the socket, or fd 1 in a dev/tty run) and `read()`/`write()` cover both; on
   Windows there is no stdio-door path. (See `door/sst_plat.h`.)
@@ -107,15 +125,21 @@ door runs **headless** — useful only for the capture/test modes below.
 
 ## Command-line arguments
 
-The door is normally launched from a package's `install-xtrn.ini`, e.g. Flight
-of the Amazon Queen (`xtrn/syncqueen`):
+The BBS launches the door with a command line like this (shown here in
+Synchronet's `%`-macro form, e.g. Flight of the Amazon Queen, `xtrn/syncqueen`):
 
 ```
-cmd = syncscumm%. %f --savepath=%juser/%4/queen/saves -c %juser/%4/queen/scummvm.ini queen
+syncscumm%. %f --savepath=%juser/%4/queen -c %juser/%4/queen/scummvm.ini queen
 ```
 
-(`%.` → the platform executable extension, `%f` → the DOOR32.SYS path, `%j` →
-the data dir, `%4` → the zero-padded user number.) The door's own CLI contract:
+The `%`-tokens are **Synchronet command-line macros** the BBS expands at launch
+(`%.` → the platform executable extension, `%f` → the DOOR32.SYS drop-file
+path, `%j` → the data dir, `%4` → the zero-padded user number). **On another
+BBS**, substitute your BBS's own macros — most importantly its drop-file-path
+macro in place of `%f` — or hard-coded paths; the door itself only cares about
+the resolved values. The minimal generic form is
+`syncscumm <DOOR32.SYS-path> <game>` (e.g. `… maniac`); everything else is
+optional tuning. The door's own CLI contract:
 
 ### Required
 
@@ -129,7 +153,7 @@ the data dir, `%4` → the zero-padded user number.) The door's own CLI contract
 | Argument | Purpose |
 |----------|---------|
 | `--path=<dir>` | Game-data directory. Defaults to the door's own startup dir (where the package's data lives). The door rewrites it per session to the `talkie/` or `floppy/` sub-variant when a title ships both (speech vs guaranteed on-screen text), so a package may omit `--path` and still get the right build. |
-| `--savepath=<dir>` | Where ScummVM writes saves. The bundled packages point it at `data/user/<####>/<game>/saves` for **per-user, per-node-independent** saves; the door creates the directory if missing (ScummVM will not). |
+| `--savepath=<dir>` | Where ScummVM writes saves. The bundled packages point it at `data/user/<####>/<game>` for **per-user, per-node-independent** saves; the door creates the directory if missing (ScummVM will not). |
 | `-c <file>` | A per-user ScummVM config (`scummvm.ini`), so two nodes never race one config; the door creates its parent dir if missing. |
 | Any other ScummVM option (`--subtitles`, `--music-volume=`, `--no-fullscreen`, …) | Passed straight through to `scummvm_main()`. See <https://docs.scummvm.org/en/latest/advanced_topics/command_line.html>. |
 
@@ -141,11 +165,115 @@ live in an optional `syncscumm.ini` the door reads from its startup dir — see
 
 | Variable | Purpose |
 |----------|---------|
-| `SBBSDATA` | Synchronet data dir; used for the node-presence line and to locate the opt-in `trace`/`wirecap` diagnostic touch-files. Set automatically for a real door launch. |
+| `SBBSDATA` | Synchronet data dir; used only to locate the door's opt-in diagnostic files (`trace`/`wirecap`, and a redirected `stderr`) under `<data-dir>/syncscumm/`. Set automatically by Synchronet; **optional** — with it unset (a dev/standalone run, or another BBS) those diagnostics fall back to the door's own startup directory. |
 | `SYNCSCUMM_DATA` | An extra engine-data search directory (added to ScummVM's search set). |
 | `SYNCSCUMM_SOCK` | Client socket fd, as an alternative to a DOOR32.SYS drop file. |
 | `SYNCSCUMM_SIXELOUT` | Capture the door's graphics output to a file instead of a live client (headless testing). |
 | `SYNCSCUMM_TRACE`, `SYNCSCUMM_AUDIODUMP` | Diagnostic dumps (frame/audio), opt-in. |
+
+## Installing a game (worked example: Maniac Mansion)
+
+This walks through installing one title end-to-end. **Maniac Mansion** (the
+LucasArts SCUMM classic) is used because it is a good example of a
+**commercial** title: unlike the freeware flagships in the engine table, its
+data files are not redistributable, so *you supply them from a copy you own*
+(see [Legal](#legal), below). The freeware titles differ only in step 2 — their
+data is fetched for you.
+
+The steps are the same shape on every BBS; only the door-config UI differs.
+First the **general (any DOOR32.SYS BBS)** procedure, then the exact
+**Synchronet SCFG** field values.
+
+### 1. Put the binary in a game directory
+
+Create a directory for this title and place the `syncscumm` binary
+(`syncscumm.exe` on Windows) in it — build it (see [Building](#building)) or
+copy in a prebuilt one. This example uses a directory named `maniac`
+(on Synchronet, `xtrn/maniac/`).
+
+### 2. Supply the game data
+
+Copy your licensed Maniac Mansion data files — the numbered `NN.LFL` files
+(e.g. `00.LFL … 53.LFL`) — **into that same directory**, flat alongside the
+binary. (A `floppy/` sub-directory works too; the door checks `talkie/` then
+`floppy/` and otherwise uses the directory itself.) ScummVM's own detector
+identifies the game from these files — no manual "which game is this" step.
+
+The trailing **game target** on the command line is ScummVM's game id; for
+Maniac Mansion that is **`maniac`**. For other titles, look up the id in
+ScummVM's [compatibility list](https://www.scummvm.org/compatibility/) and its
+[required-datafiles wiki](https://wiki.scummvm.org/index.php/Datafiles).
+
+### 3. Configure the door in your BBS
+
+Add a new external program / door pointing at the binary, with these
+properties (names vary by BBS; the *meaning* is what matters):
+
+- **Command line:** `syncscumm <DOOR32.SYS-path> --savepath=<save-dir> -c <config-file> maniac`
+  — where `<DOOR32.SYS-path>` is your BBS's macro for the drop file it writes
+  for each session. `--savepath`/`-c` are optional (give each user private
+  saves + ScummVM config); the minimal form is just
+  `syncscumm <DOOR32.SYS-path> maniac`.
+- **Drop-file type:** DOOR32.SYS.
+- **I/O method / comm type:** **socket** (DOOR32.SYS comm type 2). Required on
+  Windows, recommended everywhere.
+- **Binary / raw mode:** no CR/LF or character-set translation — the door
+  emits raw sixel/JXL graphics and reads the socket itself.
+- **Multiple concurrent users:** yes (one binary per caller; the per-user
+  `--savepath`/`-c` above keep their saves from colliding).
+- **No local display window**, if your BBS offers the option — the door draws
+  to the *caller's* terminal, not the BBS console.
+- **Access requirement:** a graphics-capable terminal (see
+  [Terminal requirements](#terminal-requirements-and-capabilities)).
+- **Working directory:** the game directory, so the binary and data resolve.
+
+### 3a. Synchronet specifics (SCFG)
+
+On Synchronet, do step 3 in **SCFG**. Put the binary and the `NN.LFL` data in
+`xtrn/maniac/`, then:
+
+**SCFG → External Programs → Online Programs (Doors) → Multimedia Games**, press
+**INS** to add a program, and set:
+
+| SCFG field                  | Value |
+|-----------------------------|-------|
+| Name                        | `Maniac Mansion` |
+| Internal Code               | `MANIAC` |
+| Start-up Directory          | `../xtrn/maniac/` |
+| Command Line                | `syncscumm%. %f --savepath=%juser/%4/maniac -c %juser/%4/maniac/scummvm.ini maniac` |
+| Execution Requirements      | `ANSI` |
+| Multiple Concurrent Users   | `Yes` |
+| Native Executable           | `Yes` |
+| I/O Method                  | `Socket` |
+| Disable Local Display       | `Yes` |
+| BBS Drop File Type          | `DOOR32.SYS` |
+
+The `%`-macros are Synchronet's (see [Command-line arguments](#command-line-arguments)):
+`%.` → executable extension, `%f` → the DOOR32.SYS path, `%j` → the data dir,
+`%4` → the 4-digit user number — so `--savepath`/`-c` give every user their own
+saves and ScummVM config under `data/user/<####>/maniac/`. Use a section other
+than *Multimedia Games* if you prefer; the section is just where it appears in
+the door menu.
+
+Save and exit SCFG — it flags the running servers to re-read their
+configuration on its way out, so the new door appears without a manual recycle.
+
+**A note on `install-xtrn.ini`:** Synchronet's bundled *freeware* titles ship
+an `install-xtrn.ini`, so you can `jsexec install-xtrn ../xtrn/<pkg>` instead
+of the SCFG steps — that auto-installer is documented in each freeware
+package's README (e.g. `xtrn/syncqueen/README.md`). A commercial title like
+Maniac Mansion has no bundled package (you provide the data), so use the SCFG
+steps above.
+
+### Legal
+
+Maniac Mansion is commercial LucasArts software. Install its data files only
+from a copy you legally own — nothing copyrighted-and-unlicensed is shipped
+with this door. The ScummVM engine embedded in the door is GPL-2.0+; this
+door's own code is GPL-2.0. (The freeware flagships in the
+[engine table](#supported-engines-and-games) — Beneath a Steel Sky, Flight of
+the Amazon Queen, Dráscula, and the fan games — need no purchase and fetch
+their own data.)
 
 ## Building
 
@@ -155,8 +283,11 @@ live in an optional `syncscumm.ini` the door reads from its startup dir — see
   vcpkg). Produces `build-msvc\Release\syncscumm.exe`.
 
 Full details, prerequisites, and the graphics/audio tiers are in
-[`COMPILING.md`](COMPILING.md). After building, `jsexec deploy.js` copies the
-binary into the installed `syncbass` / `syncqueen` packages.
+[`COMPILING.md`](COMPILING.md). After building, deploy the binary into each
+game directory: **on Synchronet**, `jsexec deploy.js` does this for you —
+copying the freshly-built binary into every installed SyncSCUMM package it
+auto-discovers (`jsexec` and `deploy.js` are Synchronet-only). On another BBS,
+copy the binary into each game directory yourself.
 
 ## See also
 
