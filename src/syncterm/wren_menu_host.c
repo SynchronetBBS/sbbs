@@ -168,6 +168,7 @@ generic_method_allowed(const char *class_name, const char *signature)
 		return true;
 	static const char *const host_allowed[] = {
 		"altKeyName", "altKeyShort", "cacheDirectory", "downloadDir",
+		"exitRequested_",
 		"pickFile(_,_,_)",
 		"pickFile(_,_,_,_)",
 		"pickFiles(_,_,_)",
