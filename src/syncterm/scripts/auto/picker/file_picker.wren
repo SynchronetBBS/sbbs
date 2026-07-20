@@ -564,10 +564,6 @@ class FilePicker {
       PickerBootstrap.console()
       indicator.refresh()
     })
-    app.bind(Key.quit, Fn.new {|key|
-      request.quitApplication()
-      app.quit()
-    })
     app.runSync()
   }
 }

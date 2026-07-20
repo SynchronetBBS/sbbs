@@ -82,7 +82,7 @@ class ScrollbackView {
       var ev = Input.next()
       if (ev is KeyEvent) {
         var c = ev.code
-        if (c == Key.escape) return
+        if (c == Key.escape || c == Key.quit) return
         if (c == Key.up) {
           top = (top > 0) ? top - 1 : 0
         } else if (c == Key.down) {

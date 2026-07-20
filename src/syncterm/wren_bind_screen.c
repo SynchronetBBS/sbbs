@@ -218,24 +218,6 @@ struct wren_mouse_event {
 	struct mouse_event ev;
 };
 
-/* Read one fully-assembled 16-bit ciolib key (handles 0x00 / 0xe0 high-
- * byte sequences, collapses LITERAL_E0 to plain 0xe0).  Returns the
- * 16-bit value as int.  Mirrors what fn_Input_getch did before. */
-static int
-read_assembled_keycode(void)
-{
-	int ch;
-
-	ch = getch();
-	if (ch == 0 || ch == 0xe0) {
-		int ch2 = getch();
-		ch |= ch2 << 8;
-		if (ch == CIO_KEY_LITERAL_E0)
-			ch = 0xe0;
-	}
-	return ch;
-}
-
 /* Populate a wren_key_event from a raw 16-bit code: normalize the
  * scancode-flavored Esc to plain Esc, then derive codepoint+text from
  * the low byte if the high byte is zero (i.e. a non-extended key).
@@ -569,9 +551,13 @@ push_mouse_event(WrenVM *vm, const struct mouse_event *mev, int dst)
 /* Drain one event from ciolib into slot 0.  When getch returns a marker
  * token, the actual details come from the paired ciolib event queue. */
 static bool
-push_next_event(WrenVM *vm, bool retry_empty_key_event)
+push_next_event(WrenVM *vm, bool retry_empty_key_event, bool at_exit)
 {
-	int code = read_assembled_keycode();
+	int code;
+
+	do {
+		code = (!at_exit && quitting) ? CIO_KEY_QUIT : syncterm_getkey();
+	} while (at_exit && code == CIO_KEY_QUIT);
 	wrenEnsureSlots(vm, 2);
 	if (code == CIO_KEY_MOUSE) {
 		struct mouse_event mev;
@@ -593,7 +579,7 @@ push_next_event(WrenVM *vm, bool retry_empty_key_event)
 			return true;
 		}
 		if (retry_empty_key_event)
-			return push_next_event(vm, true);
+			return push_next_event(vm, true, at_exit);
 		wrenSetSlotNull(vm, 0);
 		return false;
 	}
@@ -964,7 +950,7 @@ wren_bind_claim_stack_clear(void)
 void
 fn_Input_next(WrenVM *vm)
 {
-	push_next_event(vm, true);
+	push_next_event(vm, true, false);
 }
 
 /* Input.next(ms) - wait up to ms milliseconds; null on timeout. */
@@ -972,22 +958,45 @@ void
 fn_Input_next_ms(WrenVM *vm)
 {
 	int ms = (int)wrenGetSlotDouble(vm, 1);
+	if (quitting) {
+		wrenEnsureSlots(vm, 2);
+		push_key_event(vm, CIO_KEY_QUIT, 0);
+		return;
+	}
 	if (kbwait(ms) == 0) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	push_next_event(vm, false);
+	push_next_event(vm, false, false);
 }
 
 /* Input.poll() - non-blocking; null when nothing is ready. */
 void
 fn_Input_poll(WrenVM *vm)
 {
+	if (quitting) {
+		wrenEnsureSlots(vm, 2);
+		push_key_event(vm, CIO_KEY_QUIT, 0);
+		return;
+	}
 	if (!kbhit()) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	push_next_event(vm, false);
+	push_next_event(vm, false, false);
+}
+
+/* Internal App pump: an atExit widget remains interactive while the
+ * process-close request stays latched. */
+void
+fn_Input_next_for_widget(WrenVM *vm)
+{
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_BOOL) {
+		wrenSetSlotString(vm, 0, "Input.nextForWidget_ expects a Bool");
+		wrenAbortFiber(vm, 0);
+		return;
+	}
+	push_next_event(vm, true, wrenGetSlotBool(vm, 1));
 }
 
 /* Input.ungetKey_(ev) / Input.ungetPhysicalKey_(ev) / Input.ungetMouse_(ev)

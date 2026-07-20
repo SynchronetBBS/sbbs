@@ -98,6 +98,7 @@ void fn_Input_mousedrag(WrenVM *vm);
 void fn_Input_next(WrenVM *vm);
 void fn_Input_next_ms(WrenVM *vm);
 void fn_Input_poll(WrenVM *vm);
+void fn_Input_next_for_widget(WrenVM *vm);
 void fn_Input_pushClaim_(WrenVM *vm);
 void fn_Input_synthesizePhysicalKey(WrenVM *vm);
 void fn_Input_ungetKey_(WrenVM *vm);

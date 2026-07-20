@@ -132,6 +132,7 @@ class UiWidgetTest {
     testAppPopEmptyReturnsNull_()
     testAppModalTopFallsBackToRoot_()
     testAppModalWidgetInheritsTheme_()
+    testAppModalWidgetInheritsAtExit_()
     testAppCloseModals_()
     testAppCloseModalsCanFail_()
     testAppKeymapBindUnbind_()
@@ -140,6 +141,10 @@ class UiWidgetTest {
     testAppDispatchKeyHitsKeymap_()
     testAppDispatchKeyConsumedSkipsKeymap_()
     testAppDispatchKeyModalBlocksRoot_()
+    testAppQuitUnwindsOneModal_()
+    testAppAtExitModalIgnoresQuit_()
+    testAppClaimsQuitWithoutFocus_()
+    testAppQuitUnwindsAfterHandlerError_()
     testAppBackspaceAliasesEscape_()
     testAppConsumedBackspaceDoesNotEscape_()
     testAppSyncDispatchContainsError_()
@@ -214,7 +219,7 @@ class UiWidgetTest {
     var w = Probe.new()
     check_(w.bounds == null && w.parent == null && w.theme == null &&
            !w.focused && w.visible && w.dirty && w.focusable &&
-           w.activitySensitive,
+           !w.atExit && w.activitySensitive,
            "Widget defaults")
   }
 
@@ -632,6 +637,17 @@ class UiWidgetTest {
            "App: pushed modal inherits app theme via parent walk")
   }
 
+  static testAppModalWidgetInheritsAtExit_() {
+    var app = App.new()
+    var parent = Probe.new()
+    parent.atExit = true
+    app.pushModal(parent)
+    var child = Probe.new()
+    app.pushModal(child)
+    check_(child.atExit,
+           "App: modal opened by atExit widget inherits atExit")
+  }
+
   static testAppCloseModals_() {
     var app = App.new()
     app.pushModal(ClosingProbe.new())
@@ -712,6 +728,52 @@ class UiWidgetTest {
     app.dispatchKey_(KeyEvent.new(Key.enter))
     check_(modal.seen.count == 1 && rootLeaf.seen.count == 0,
            "App.dispatchKey_: modal blocks root")
+  }
+
+  static testAppQuitUnwindsOneModal_() {
+    var app = App.new()
+    var lower = Probe.new()
+    var top = Probe.new()
+    top.consume = true
+    app.pushModal(lower)
+    app.pushModal(top)
+    var fired = false
+    app.bind(Key.quit, Fn.new {|event| fired = true })
+    var consumed = app.dispatchKey_(KeyEvent.new(Key.quit))
+    check_(consumed && app.modalStack.count == 1 &&
+           app.modalTop == lower && top.seen.count == 1 &&
+           top.seen[0].code == Key.escape && !fired,
+           "App quit: Escape cleanup then one modal frame unwound")
+  }
+
+  static testAppAtExitModalIgnoresQuit_() {
+    var app = App.new()
+    var modal = Probe.new()
+    modal.atExit = true
+    app.pushModal(modal)
+    var fired = false
+    app.bind(Key.quit, Fn.new {|event| fired = true })
+    var consumed = app.dispatchKey_(KeyEvent.new(Key.quit))
+    check_(consumed && app.modalStack.count == 1 &&
+           modal.seen.count == 0 && !fired,
+           "App quit: atExit modal remains interactive without dispatch")
+  }
+
+  static testAppClaimsQuitWithoutFocus_() {
+    var app = App.new()
+    check_(app.shouldConsume_(KeyEvent.new(Key.quit)),
+           "App quit: claimed even when no widget has focus")
+  }
+
+  static testAppQuitUnwindsAfterHandlerError_() {
+    var app = App.new()
+    var reported = null
+    app.onError = Fn.new {|fiber| reported = fiber.error }
+    app.pushModal(AbortProbe.new())
+    var ok = app.dispatchSync_(KeyEvent.new(Key.quit))
+    check_(!ok && reported == "expected handler failure" &&
+           app.modalStack.count == 0,
+           "App quit: handler error is reported and modal still unwinds")
   }
 
   static testAppBackspaceAliasesEscape_() {

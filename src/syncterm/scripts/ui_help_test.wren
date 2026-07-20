@@ -175,7 +175,7 @@ class UiHelpTest {
     app.modal(h)
     check_(!h.handle(KeyEvent.new(Key.quit)) &&
         app.modalStack.count == 1,
-        "Help: window-close key falls through to the App")
+        "Help: process-close key falls through to the App")
   }
 
   // ----- Scroll ---------------------------------------------------

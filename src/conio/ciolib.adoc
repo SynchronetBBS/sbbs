@@ -59,10 +59,11 @@ enabled consumers so they can resynchronize.  `ciokey_setenabled(false)`
 disables delivery and clears queued edges.
 
 `ciolib_clear_input()` establishes a clean input ownership boundary.  It
-clears translated and ungotten keyboard input, resets physical-key state,
-and invalidates queued or partially assembled mouse gestures.  Mouse events
-are generation-tagged so backend mouse threads cannot publish an old event
-after the reset returns.
+clears translated and ungotten keyboard input except `CIO_KEY_QUIT`, resets
+physical-key state, and invalidates queued or partially assembled mouse
+gestures.  A quit request remains queued because it belongs to the process,
+not the input owner.  Mouse events are generation-tagged so backend mouse
+threads cannot publish an old event after the reset returns.
 
 == Output Modes
 

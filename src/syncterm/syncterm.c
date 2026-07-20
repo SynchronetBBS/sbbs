@@ -1172,6 +1172,22 @@ check_exit(bool force)
 	return false;
 }
 
+/* Read one complete ciolib key and latch process-close requests. */
+int
+syncterm_getkey(void)
+{
+	int key = getch();
+
+	if (key == 0 || key == 0xe0) {
+		key |= getch() << 8;
+		if (key == CIO_KEY_LITERAL_E0)
+			key = 0xe0;
+	}
+	if (key == CIO_KEY_QUIT)
+		quitting = true;
+	return key;
+}
+
 void
 parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults)
 {
@@ -2794,11 +2810,8 @@ USAGE:
 		if (i >= txtinfo.screenheight - 1) {
 			textattr(WHITE);
 			cputs("<Press A Key>");
-			switch (getch()) {
-				case 0:
-				case 0xe0:
-					getch();
-			}
+			if (syncterm_getkey() == CIO_KEY_QUIT)
+				return 0;
 			textattr(LIGHTGRAY);
 			gotoxy(1, txtinfo.screenheight);
 			delline();
@@ -2811,11 +2824,7 @@ USAGE:
 	}
 	else {
 		cputs("<Press A Key to Exit>");
-		switch (getch()) {
-			case 0:
-			case 0xe0:
-				getch();
-		}
+		(void)syncterm_getkey();
 	}
 	textattr(LIGHTGRAY);
 	return 0;

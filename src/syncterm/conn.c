@@ -33,6 +33,7 @@
 #include "host_ui.h"
 #include "raw.h"
 #include "rlogin.h"
+#include "syncterm.h"
 #include "term.h"
 #include "wren_host.h"
 #ifndef WITHOUT_DEUCESSH
@@ -572,13 +573,14 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 	if (can_cancel) {
 		/* Drain the input buffer to avoid accidental cancel */
 		while (kbhit()) {
-			int ch = getch();
-			if (ch == 0 || ch == 0xe0) {
-				ch |= (getch() << 8);
-				if (ch == CIO_KEY_QUIT)
-					break;
-			}
+			int ch = syncterm_getkey();
+			if (ch == CIO_KEY_MOUSE)
+				getmouse(NULL);
+			if (quitting)
+				break;
 		}
+		if (quitting)
+			failcode = FAILURE_ABORTED;
 	}
 
 	for (cur = res; cur && sock == INVALID_SOCKET && failcode == FAILURE_WHAT_FAILURE; cur = cur->ai_next) {
@@ -623,6 +625,9 @@ conn_socket_connect(struct bbslist *bbs, bool can_cancel)
 						else {
 							if (can_cancel) {
 								if (kbhit()) {
+									int ch = syncterm_getkey();
+									if (ch == CIO_KEY_MOUSE)
+										getmouse(NULL);
 									failcode = FAILURE_ABORTED;
 									closesocket(sock);
 									sock = INVALID_SOCKET;
@@ -688,7 +693,7 @@ connected:
 	if (!bbs->hidepopups)
 		host_ui_status(NULL);
 	conn_api.terminate = true;
-	if (!bbs->hidepopups) {
+	if (!bbs->hidepopups && !quitting) {
 		switch (failcode) {
 			case FAILURE_RESOLVE:
 				sprintf(str, "Cannot resolve %s!", bbs->addr);

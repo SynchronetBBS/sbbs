@@ -1,5 +1,5 @@
 // disconnect_flow.wren — modal "Disconnect... Are you sure?" Confirm
-// flow shared by the Alt-X / Alt-H / Ctrl-Q / window-close hooks in
+// flow shared by the Alt-X / Alt-H / Ctrl-Q hooks in
 // keys_default.wren and the SM_DISCONNECT / SM_EXIT entries in
 // online_menu.wren.  On a Yes, calls Conn.endSession to flag cleanup;
 // doterm() picks the flag up at the top of its next iteration and

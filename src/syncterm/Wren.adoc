@@ -798,8 +798,8 @@ The currently embedded scripts are:
 | auto / connected
 | Default `Hook.onKey` bindings corresponding to the in-terminal
   hot-key commands in `term.c`'s input loop:
-  Alt+X / Alt+H / `Key.quit` (window-close) and — text-mode terminals
-  only — Ctrl+Q route to `DisconnectFlow.run`; Alt+O toggles
+  Alt+X / Alt+H and — text-mode terminals only — Ctrl+Q route to
+  `DisconnectFlow.run`; Alt+O toggles
   mouse-event reporting; Alt+Up / Alt+Down walk the network throttle
   rate; Shift+Insert pastes from the clipboard; Alt+B opens the
   scrollback viewer; Alt+C delegates to `CaptureMenu.run`; Alt+M
@@ -808,8 +808,8 @@ The currently embedded scripts are:
 | `disconnect_flow`
 | auto / connected
 | `DisconnectFlow.run(exitApp)` — modal "Disconnect... Are you sure?"
-  Confirm popup shared by the Alt+X / Alt+H / Ctrl+Q / window-close
-  hooks in `keys_default`.  On Yes calls `Conn.endSession(exitApp)`.
+  Confirm popup shared by the Alt+X / Alt+H / Ctrl+Q hooks in
+  `keys_default`.  On Yes calls `Conn.endSession(exitApp)`.
   Imported by `keys_default`; not used by `online_menu` (the menu
   selection is itself the confirmation).
 
@@ -1045,13 +1045,12 @@ be inspected and corrected.  Personal-directory encryption prompts are
 masked.
 Rate choices select the first supported rate at or above a configured value,
 or Current when no supported rate is high enough.
-The window-close event follows the main menu's normal exit path even while a
-nested editor, prompt, help screen, or offline scrollback view is open.
-After confirmation, `Menu.quitApplication()` sets the process exit latch;
-Escape and pane close buttons leave only a connected Alt+E menu.
-Before stopping, the menu dismisses nested screens through their normal close
-path so accepted edits reach the owning screen's persistence boundary.  A
-failed close-time save leaves the menu open instead of discarding the edits.
+An OS window-close request sets a sticky process-exit latch.  It does not ask
+the main menu or connected session for confirmation.  An App unwinds nested
+widgets through their normal Escape path one modal frame at a time, allowing
+each Wren call to return and run its normal cleanup.  A widget explicitly
+marked `atExit` remains interactive; the command-line directory-entry save
+workflow uses this for its confirmation, prompts, errors, and editor.
 Accepted Classic Theme colour changes rebuild the active theme immediately
 while Classic Theme is selected.  A selected file theme is unaffected.
 Renaming a persisted entry also renames its per-entry cache directory after
@@ -2368,6 +2367,11 @@ Unified blocking and nonblocking reader for keyboard and mouse events.
   a `<<claimhandle,ClaimHandle>>`.  See <<modal-input,Modal Input>>.
 |===
 
+Once a process-close request has been read, `Input.next()`, `Input.next(ms)`,
+and `Input.poll()` continue returning `Key.quit` until SyncTERM exits.  UI code
+should use `App`, which reserves the event for call-stack unwinding and
+supports the explicit `Widget.atExit` exception.
+
 For posting a synthetic resume to a parked fiber (the wake
 mechanism that `Hook.onInput`-style callbacks use to nudge a UI
 fiber), see <<wake,Wake>>.
@@ -2664,8 +2668,10 @@ than scancodes from a real key.
                            PC1512 "F-14" key encoded as right-mouse —
                            SyncTERM reuses that codepoint.
 | `quit`        | 0x7EE0 | The user requested quit (window close
-                           button, OS close signal).  Modeled on the
-                           PC1512 "F-15" codepoint.
+                           button, OS close signal).  This is a sticky
+                           host request; <<ui-app,`App`>> handles it
+                           before ordinary widget or keymap dispatch.
+                           Modeled on the PC1512 "F-15" codepoint.
 | `wrenConsole` | 0x29E0 | Ctrl+&#96; — opens the Wren console.  High
                            byte is the &#96;-key scancode (0x29).
 |===
@@ -3157,7 +3163,7 @@ Connection-level send and receive.
   (cterm shutdown, conn close, mouse/cursor restore), then either
   returns to the main menu (`exitApp == false`, Alt-H / Ctrl-Q
   semantics) or exits syncterm entirely (`exitApp == true`,
-  Alt-X / window-close semantics).  Returns immediately — the
+  Alt-X semantics).  Returns immediately — the
   caller is responsible for any user-facing confirm popup.  The
   default disconnect-key hooks in `keys_default.wren` raise a
   Wren-side `Confirm` popup before invoking this; the
@@ -3652,8 +3658,8 @@ available in a connected VM.
 
 | Menu.quitApplication()
 | Set SyncTERM's process exit latch after trusted menu code has completed
-  any required confirmation.  The shipped menu uses this for `Key.quit`,
-  including while it is temporarily displayed over a connected session.
+  any required work.  This is available for explicit menu commands;
+  OS window-close requests set the same latch in the host.
 
 | Menu.entries
 | Return a new List of host-created menu `BBS` handles in current sort
@@ -5736,6 +5742,18 @@ current VM's console log; set `app.onError = Fn.new {|failedFiber| ... }`
 to replace that reporting.  Layout and painting remain outside this
 boundary so a deterministic redraw failure is not retried forever.
 
+`Key.quit` is reserved for the host's sticky process-close request.  `App`
+claims it before ordinary widget or global-keymap dispatch.  With a modal
+open, the App sends that modal an Escape for normal cleanup and then removes
+it if it did not close itself; subsequent pump iterations unwind the
+remaining Wren call stack.  With no modal, the App stops.  A widget whose
+`atExit` property is `true` is the explicit exception: it remains interactive
+while the quit latch is set, and modals it opens inherit `atExit`.  Use this
+only for work that must finish or be decided during shutdown, such as a save
+confirmation.  The connected-session host handles a real process-close
+request before dispatching to the connected VM, so remotely supplied scripts
+cannot use `atExit` to delay termination.
+
 === Importing
 
 Every public class is exported from individual `ui_*.wren` modules
@@ -5966,6 +5984,10 @@ Base class for everything paintable.  Holds:
   boolean state flags.  Setting `activitySensitive` to `false` makes
   ambient screen chrome use its base theme roles regardless of modal
   activity; it does not affect focus or input dispatch.
+* `atExit` — `false` by default.  When `true`, this widget remains
+  interactive after a sticky process-close request.  Modals pushed while it
+  is active inherit the property.  Ordinary widgets are unwound through
+  Escape and cannot consume `Key.quit` themselves.
 * `helpText=` — string surfaced by `App.showHelp` (F1).
 * `closesOnOutsideClick(event)` — returns whether the App should send
   Escape to this widget when `event` occurs outside its modal bounds.

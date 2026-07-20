@@ -48,6 +48,23 @@
 
 bool rip_did_reinit;
 
+static int
+rip_read_key(void)
+{
+#ifndef SYNCVIEW
+	return syncterm_getkey();
+#else
+	int key = getch();
+
+	if (key == 0 || key == 0xe0) {
+		key |= getch() << 8;
+		if (key == CIO_KEY_LITERAL_E0)
+			key = 0xe0;
+	}
+	return key;
+#endif
+}
+
 #ifdef HAS_VSTAT
 
 /* enum ansi_state lives in ansi_filter.h now. */
@@ -11536,12 +11553,7 @@ do_popup(const char * const str)
 	ret = -1;
 	while (ret == -1) {
 		ciomouse_addevent(CIOLIB_MOUSE_MOVE);
-		ch = getch();
-		if ((ch == 0) || (ch == 0xe0)) {
-			ch |= getch() << 8;
-			if (ch == CIO_KEY_LITERAL_E0)
-				ch = 0xe0;
-		}
+		ch = rip_read_key();
 		switch (ch) {
 			case CIO_KEY_MOUSE:
 				getmouse(&mevent);
@@ -11581,6 +11593,9 @@ do_popup(const char * const str)
 			case '\x1b':
 				if (!must_answer)
 					ret = -2;
+				break;
+			case CIO_KEY_QUIT:
+				ret = -2;
 				break;
 			default:
 				for (j = 0; j < opts; j++) {
@@ -19030,23 +19045,12 @@ rip_getch(void)
 			return ch;
 		}
 		if ((rip.enabled == false) || rip_suspended) {
-			ch = getch();
-			if ((ch == 0) || (ch == 0xe0)) {
-				ch |= getch() << 8;
-				if (ch == CIO_KEY_LITERAL_E0)
-					ch = 0xe0;
-			}
-			return ch;
+			return rip_read_key();
 		}
 		struct mouse_state *ms = cterm->mouse_state_change_cbdata;
 
 		gotoxy(wherex(), wherey());
-		ch = getch();
-		if ((ch == 0) || (ch == 0xe0)) {
-			ch |= getch() << 8;
-			if (ch == CIO_KEY_LITERAL_E0)
-				ch = 0xe0;
-		}
+		ch = rip_read_key();
 
 		shadow_palette();
 		if (ch == CIO_KEY_MOUSE && (!(ms->flags & MS_FLAGS_DISABLED))) {
@@ -19222,13 +19226,5 @@ rip_getch(void)
 		return ch;
 	}
 #endif
-	int                ch;
-
-	ch = getch();
-	if ((ch == 0) || (ch == 0xe0)) {
-		ch |= getch() << 8;
-		if (ch == CIO_KEY_LITERAL_E0)
-			ch = 0xe0;
-	}
-	return ch;
+	return rip_read_key();
 }

@@ -109,10 +109,23 @@ class MenuUi {
 
   static promptStandalone(title, message, initial, maxLen, masked,
       helpText) {
+    return promptStandalone_(title, message, initial, maxLen, masked,
+        helpText, false)
+  }
+
+  static promptStandaloneAtExit(title, message, initial, maxLen, masked,
+      helpText) {
+    return promptStandalone_(title, message, initial, maxLen, masked,
+        helpText, true)
+  }
+
+  static promptStandalone_(title, message, initial, maxLen, masked,
+      helpText, atExit) {
     var app = App.new()
     var p = Prompt.new(message, initial)
     p.title = title
     p.helpText = helpText
+    p.atExit = atExit
     p.input.maxLen = maxLen
     if (masked) p.input.mask = "*"
     p.sizeForInput(maxLen, 34)
@@ -127,9 +140,22 @@ class MenuUi {
   }
 
   static alertStandalone(title, message, helpText) {
+    alertStandalone_(title, message, helpText, false)
+  }
+
+  static alertStandaloneAtExit(title, message) {
+    alertStandalone_(title, message, null, true)
+  }
+
+  static alertStandaloneAtExit(title, message, helpText) {
+    alertStandalone_(title, message, helpText, true)
+  }
+
+  static alertStandalone_(title, message, helpText, atExit) {
     var app = App.new()
     var p = Alert.new(title, message)
     p.helpText = helpText
+    p.atExit = atExit
     p.bounds = Popup.centeredBounds_(message, 1, 24)
     p.onDismiss = Fn.new {|value| app.quit() }
     app.pushModal(p)
@@ -137,9 +163,18 @@ class MenuUi {
   }
 
   static confirmStandalone(title, message) {
+    return confirmStandalone_(title, message, false)
+  }
+
+  static confirmStandaloneAtExit(title, message) {
+    return confirmStandalone_(title, message, true)
+  }
+
+  static confirmStandalone_(title, message, atExit) {
     var app = App.new()
     var p = Confirm.new(message)
     p.title = title
+    p.atExit = atExit
     p.bounds = Popup.centeredBounds_(message, 1, 24)
     p.onDismiss = Fn.new {|value| app.quit() }
     app.pushModal(p)

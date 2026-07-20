@@ -1138,6 +1138,8 @@ CIOLIBEXPORT int ciolib_ungetch_byte(int ch)
 
 CIOLIBEXPORT void ciolib_clear_input(void)
 {
+	bool preserve_quit = false;
+
 	CIOLIB_INIT();
 
 	/* Invalidate mouse events before draining the backend keyboard queue.
@@ -1149,13 +1151,28 @@ CIOLIBEXPORT void ciolib_clear_input(void)
 #endif
 
 	assert_pthread_mutex_lock(&unget_mutex);
+	if (ungot && ungotch == CIO_KEY_QUIT)
+		preserve_quit = true;
 	ungotch = 0;
 	ungot = false;
 	assert_pthread_mutex_unlock(&unget_mutex);
 
 	if (cio_api.kbhit != NULL && cio_api.getch != NULL) {
-		while (cio_api.kbhit())
-			(void)cio_api.getch();
+		while (cio_api.kbhit()) {
+			int ch = cio_api.getch();
+			if (ch == 0 || ch == 0xe0) {
+				ch |= cio_api.getch() << 8;
+				if (ch == CIO_KEY_QUIT)
+					preserve_quit = true;
+			}
+		}
+	}
+
+	if (preserve_quit) {
+		assert_pthread_mutex_lock(&unget_mutex);
+		ungotch = CIO_KEY_QUIT;
+		ungot = true;
+		assert_pthread_mutex_unlock(&unget_mutex);
 	}
 }
 

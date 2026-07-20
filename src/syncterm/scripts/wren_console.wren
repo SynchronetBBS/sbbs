@@ -215,7 +215,7 @@ class WrenConsole {
         }
       } else {
         var key = ev.code
-        if (key == Key.wrenConsole || key == Key.escape) {
+        if (key == Key.wrenConsole || key == Key.escape || key == Key.quit) {
           done = true
         } else if (key == Key.enter || key == 0x000A) { // CR or LF
           // Submitting in scrollback mode rejoins live first so the

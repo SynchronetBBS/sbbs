@@ -136,6 +136,7 @@ class App {
   binding(keyCode)  { _keymap[keyCode] }
 
   pushModal(widget) {
+    if (modalTop.atExit) widget.atExit = true
     widget.parent = this
     _modalStack.add(widget)
     widget.markDirty()
@@ -338,6 +339,7 @@ class App {
   // no-focused-widget case so an xeyes-style App can sit on screen
   // without intercepting events.
   shouldConsume_(ev) {
+    if (ev is KeyEvent && ev.code == Key.quit) return true
     if (_modalStack.count > 0) return true
     if (_root.focusedChild == null) return false
     if (ev is KeyEvent) return true
@@ -356,6 +358,7 @@ class App {
   //   2. App keymap lookup on the raw code.
   //   3. Otherwise drop.
   dispatchKey_(ke) {
+    if (ke.code == Key.quit) return dispatchQuit_()
     if (modalTop.handle(ke)) return true
     if (ke.code == Key.backspace) {
       var escape = KeyEvent.new(Key.escape)
@@ -373,6 +376,23 @@ class App {
       return true
     }
     return false
+  }
+
+  // CIO_KEY_QUIT is a sticky host termination request, not an ordinary
+  // command.  Give the top modal its normal Escape cleanup path, then pop
+  // it if it refused to close.  The next pump iteration unwinds the next
+  // modal or quits the App.  Widgets explicitly marked atExit keep running
+  // while the request remains latched.
+  dispatchQuit_() {
+    var top = modalTop
+    if (top.atExit) return true
+    if (_modalStack.count == 0) {
+      quit()
+      return true
+    }
+    top.handle(KeyEvent.new(Key.escape))
+    if (_modalStack.count > 0 && _modalStack[-1] == top) popModal()
+    return true
   }
 
   // Mouse flow:
@@ -444,11 +464,21 @@ class App {
   // to the application.  The optional onError callback receives the
   // failed Fiber; without one, App records the error and trace itself.
   dispatchSync_(ev) {
+    var quitTop = null
+    if (ev is KeyEvent && ev.code == Key.quit &&
+        _modalStack.count > 0 && !modalTop.atExit) {
+      quitTop = modalTop
+    }
     var f = Fiber.new {
       if (ev is KeyEvent) dispatchKey_(ev)
       if (ev is MouseEvent) dispatchMouse_(ev)
     }
     f.try()
+    // An abort in the modal's Escape cleanup prevents dispatchQuit_ from
+    // reaching its forced pop.  Complete that one-frame unwind here so the
+    // sticky request cannot retry the same broken handler forever.
+    if (quitTop != null && _modalStack.count > 0 &&
+        _modalStack[-1] == quitTop) popModal()
     if (f.error == null) return true
     if (_onError != null) {
       _onError.call(f)
@@ -615,7 +645,7 @@ class App {
   // inside a runSync context.
   drainOnceSync_() {
     drawAll_()
-    var ev = Input.next()
+    var ev = Input.nextForWidget_(modalTop.atExit)
     dispatchSync_(ev)
   }
 

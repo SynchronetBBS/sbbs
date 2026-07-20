@@ -655,6 +655,12 @@ fn_Host_themeGeneration(WrenVM *vm)
 }
 
 static void
+fn_Host_exitRequested(WrenVM *vm)
+{
+	wrenSetSlotBool(vm, 0, quitting);
+}
+
+static void
 fn_Host_themeData(WrenVM *vm)
 {
 	push_theme_data(vm, syncterm_theme_active());
@@ -882,6 +888,7 @@ static const struct binding BINDINGS[] = {
 	{ "Input",  true,  "next()",              fn_Input_next               },
 	{ "Input",  true,  "next(_)",             fn_Input_next_ms            },
 	{ "Input",  true,  "poll()",              fn_Input_poll               },
+	{ "Input",  true,  "nextForWidget_(_)",   fn_Input_next_for_widget    },
 	{ "Input",  true,  "pushClaim_(_,_)",     fn_Input_pushClaim_         },
 	{ "Wake",   true,  "post(_,_)",           fn_Wake_post                },
 	{ "ClaimHandle", false, "pop()",          fn_ClaimHandle_pop          },
@@ -1291,6 +1298,7 @@ static const struct binding BINDINGS[] = {
 	{ "Hook",  true, "every(_,_)",     fn_Hook_every        },
 
 	{ "Host", true, "sshPublicKey",      fn_Host_sshPublicKey      },
+	{ "Host", true, "exitRequested_",    fn_Host_exitRequested     },
 	{ "Host", true, "themeGeneration",   fn_Host_themeGeneration   },
 	{ "Host", true, "themeData",         fn_Host_themeData         },
 	{ "Host", true, "defaultThemeData",  fn_Host_defaultThemeData  },

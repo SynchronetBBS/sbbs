@@ -30,8 +30,7 @@ class Menu {
   foreign static timeText
   foreign static showEntry(entry)
   foreign static statusMessage(status)
-  // Set the process exit latch after the trusted menu has confirmed
-  // a window-close request.
+  // Set the process exit latch after the trusted menu has chosen to exit.
   foreign static quitApplication()
   foreign static entries
   foreign static canAppendEntry

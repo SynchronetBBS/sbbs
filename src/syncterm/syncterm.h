@@ -137,6 +137,7 @@ void resolve_list_path(struct syncterm_settings *set);
 int ciolib_to_screen(int screen);
 int screen_to_ciolib(int ciolib);
 bool check_exit(bool force);
+int syncterm_getkey(void);
 void set_default_cursor(void);
 
 /* Cross-thread popup queue.  Background threads post (title, body)
