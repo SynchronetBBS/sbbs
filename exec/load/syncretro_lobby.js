@@ -84,6 +84,23 @@ function syncretro_lobby_init(spec)
 		}
 	}
 
+	/* names.json -- display titles for a console whose ROM filenames are
+	 * identifiers the emulator matches on and so cannot be renamed (arcade).
+	 * Optional and per-install: absent for every cartridge console, and a
+	 * malformed one is ignored rather than fatal -- a picker that lists raw
+	 * romset names is worse than it should be, but a door that refuses to start
+	 * because a display-name file has a stray comma is worse still. */
+	syncretro_names_set(null);
+	f = new File(syncretro_lobby_dir + "names.json");
+	if (f.open("r")) {
+		try {
+			syncretro_names_set(JSON.parse(f.read()));
+		} catch (e) {
+			log(LOG_WARNING, "syncretro: ignoring malformed names.json: " + e);
+		}
+		f.close();
+	}
+
 	/* The native artifacts -- the door binary and the libretro core -- live in a
 	 * per-target sub-directory (syncretro_target(): win32, linux-x64, linux-arm64,
 	 * darwin-arm64, freebsd-x64, ...) so one shared install can serve several
@@ -191,7 +208,17 @@ function syncretro_lobby_draw(roms, page, pages, board, cols, per_col)
  * longer on disk), false otherwise. */
 function syncretro_lobby_play(rom)
 {
-	var home = system.data_dir + "user/" + format("%04d", user.number) + "/" + syncretro_lobby_con.id;
+	/* The door's -home: its cwd sandbox, and the save directory the core is
+	 * handed. Per-user for a cartridge console; ONE directory for every player
+	 * on an arcade console, so the high-score table is the machine's and not
+	 * each player's own private copy of it.
+	 *
+	 * Both live under data_dir, not in the door's own xtrn dir: these are
+	 * generated run-time state, and the shared one is no less generated for
+	 * being shared (CLAUDE.md, "Directory hierarchy"). */
+	var home = syncretro_lobby_con.shared_saves
+	    ? system.data_dir + "syncretro/" + syncretro_lobby_con.id + "/shared"
+	    : system.data_dir + "user/" + format("%04d", user.number) + "/" + syncretro_lobby_con.id;
 	var cmd, started, secs, label;
 
 	if (!syncretro_quote_safe(rom.name)) {
@@ -235,6 +262,18 @@ function syncretro_lobby_play(rom)
 	 * socket argument must be ABSENT, not empty. EX_BIN is what makes that pty
 	 * raw (cfmakeraw) and stops the LF->CRLF and CP437->UTF8 translation that
 	 * would otherwise mangle a sixel frame. */
+	/* NO -option HERE, and it is a hard constraint rather than a preference: the
+	 * BBS assembles this command line into xtrn.cpp's `fullcmdline[MAX_PATH + 1]`
+	 * and truncates it there SILENTLY at 260 characters. The line below already
+	 * runs to ~240 for one arcade game, so a couple of pinned core options pushed
+	 * it to 334 and the ROM argument -- the last thing on the line -- was simply
+	 * cut off, giving a door that reported "(no ROM)" for a file the BBS had just
+	 * logged the full path of. Core options are pinned in the console's
+	 * syncretro.ini [options] section instead; see retro_options.h.
+	 *
+	 * That 240 is not comfortable either. A longer game title or a longer user
+	 * alias eats the remaining ~20 characters, so anything added to this line
+	 * from here on has to buy its space from something else on it. */
 	cmd = syncretro_lobby_binary + (syncretro_lobby_stdio ? " -stdio" : " -s%H")
 	    + " -t%T -name %a -core " + syncretro_lobby_core
 	    + " -profile " + syncretro_lobby_con.profile
