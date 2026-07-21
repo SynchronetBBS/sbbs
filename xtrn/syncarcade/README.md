@@ -67,9 +67,11 @@ them into `roms/` and they appear in the lobby on the next entry.
   `puckman.zip` is the puckman driver. Rename it and the game stops existing.
   Readable names for the picker come from `names.json` instead — see
   [Display names](#display-names).
-- **Some games need their parent romset present.** `mspacman.zip` resolves
-  `puckman.zip` in a split set. That is just another zip in `roms/`, not a BIOS
-  you have to hunt down.
+- **Some games need their parent romset present.** In a split set a clone holds
+  only what differs from its parent, and loads the rest — graphics ROMs, PROMs —
+  out of the parent's zip. That parent is just another zip in `roms/`, not a
+  BIOS you have to hunt down. See the warning under
+  [What to hide](#what-to-hide) before you tidy any of them away.
 - **No BIOS is needed** for the classics. (A few later machines have their own
   boot roms, supplied the same way as any other romset.)
 
@@ -152,6 +154,31 @@ Two are worth knowing about here:
   to show), and **vector games** (Battlezone, Tempest) render at 1024×768 —
   twelve times Pac-Man's pixel count — and want a spinner or a dual stick
   besides. Hide them by name.
+
+### Hide unwanted romsets — do not move or delete them
+
+**Use `[roms] exclude`. Do not tidy romsets out of `roms/`.**
+
+A clone cannot load without its parent, and *the parent is often the entry that
+looks most redundant*. Moving `puckman.zip` into a `pruned/` sub-directory —
+which looks like housekeeping, since "Pac-Man (Japan)" and "Pac-Man" are plainly
+the same game — silently breaks `pacman.zip`, because the Midway clone loads its
+graphics ROMs and PROMs out of the Japanese parent's zip. MAME does **not**
+search sub-directories of the ROM directory, so one level down is as fatal as
+deleting it.
+
+Nothing warns you. The parent/clone relationship lives inside MAME's driver
+tables, so neither the lobby nor the door can see it: the game stays in the
+picker and the player is told only that the content is wrong for this core.
+
+`exclude` drops the menu entry while leaving the file where MAME can still reach
+it, which is what you want:
+
+```ini
+[roms]
+; hide the duplicate entry, keep the file pacman.zip depends on
+exclude = puckman
+```
 
 `[audio]` and `[video]` behave as they do for the other consoles; see
 `syncretro.example.ini`, which documents every key.
