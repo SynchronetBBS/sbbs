@@ -1,6 +1,6 @@
 ---
 name: javascript
-description: Use for Synchronet's JavaScript language and host API — the SpiderMonkey 1.8.5 dialect constraints, the object/class model (MsgBase, FileBase, File, User, system, msg_area/file_area, Socket, MQTT, etc.), how those APIs actually behave (including sharp edges like MsgBase.get_all_msg_headers() lazy fields), writing tests in exec/tests/, and the stock exec/*.js module ecosystem as API references. Trigger when authoring or debugging Synchronet .js/.ssjs/.xjs code, asking "how does the MsgBase/User/FileBase API work", "why is h.to_ext undefined", "what JS can I use in Synchronet", or "is there a stock script that does X". For *running* JS (jsexec flags, invocation, debug builds) see the jsexec skill; for storage-layer SMB repair see smbutils.
+description: Use for Synchronet's JavaScript language and host API — the SpiderMonkey 1.8.5 dialect constraints, the object/class model (MsgBase, FileBase, File, User, system, msg_area/file_area, Socket, MQTT, etc.), how those APIs actually behave (including sharp edges like MsgBase.get_all_msg_headers() lazy fields), writing tests in exec/tests/, and the stock exec/*.js module ecosystem as API references. Trigger when authoring or debugging Synchronet .js/.ssjs/.xjs code, asking "how does the MsgBase/User/FileBase API work", "why is h.to_ext undefined", "why is JSON.parse failing on only some lines of my .jsonl", "what JS can I use in Synchronet", or "is there a stock script that does X". For *running* JS (jsexec flags, invocation, debug builds) see the jsexec skill; for storage-layer SMB repair see smbutils.
 ---
 
 # Synchronet JavaScript (the language + host API)
@@ -616,6 +616,46 @@ subject).
 `smbutil`'s `d`/`D` flag/delete **all** messages — for *selective* deletion a
 MsgBase script is the right tool (see `smbutils` for the storage
 layer and when to prefer each).
+
+## Reading text files: `readAll()`/`readln()` split lines at 512 bytes
+
+`File.readAll([maxlen=512])` and `File.readln([maxlen=512])` are **not** "read
+the whole line" — both cap at **512 bytes by default** (`js_file.cpp`,
+`js_readln`: `int32 len = 512`). `readAll` is just a loop over `readln`
+(`js_readall`), and `readln` is `fgets(buf, len+1, fp)`, which stops at
+whichever comes first: the newline, or `maxlen` bytes.
+
+⚠️ **It splits, it does not truncate.** `fgets` leaves the rest of an over-long
+line in the stream, so the remainder comes back as the **next** array element /
+the next `readln()` call — the array silently desynchronizes from the file's
+actual lines. Nothing throws and `f.error` stays 0.
+
+A file holding one 2000-byte line plus one 5-byte line:
+
+| Call | Result |
+|------|--------|
+| `f.readAll()` | **5** elements: 512, 512, 512, 464, 5 |
+| `f.readAll(65536)` | 2 elements: 2000, 5 |
+
+Symptoms: `JSON.parse` throwing on "some" lines (fragments aren't valid JSON);
+a scan for the longest line reporting exactly 512; record counts that come out
+too high; a bug that only shows up on *some* input files — any file whose lines
+all fit in 512 bytes behaves perfectly.
+
+Fixes, in order of preference:
+
+- **`.jsonl`/`.ndjson`: use the stock library** — `load('json_lines.js')` gives
+  `get(filename, num, max_line_len, recover)`, which already does readAll plus a
+  per-line `JSON.parse` in a `try/catch`. ⚠️ **Pass `max_line_len` explicitly:**
+  its own default is **4096**, which still fragments anything larger.
+- **Streaming:** `while ((line = f.readln(65536)) !== null)` — preferred for
+  100KB+ lines, since it avoids holding an array of giant strings at once.
+- **Whole file:** `f.read()` with **no argument** reads from the current
+  position to EOF (`[maxlen=file_length-file_position]`); split on `/\r?\n/`
+  yourself. No line cap at all, at the cost of the whole file in memory.
+
+There is no "unbounded" value for `maxlen` — you must pass a number larger than
+the longest line you expect.
 
 ## Reading INI files (and the trailing-comment trap)
 
