@@ -1,4 +1,5 @@
 /build/
+/build-msvc/
 /easyrpg/build/
 /easyrpg/build-*/
 *.log

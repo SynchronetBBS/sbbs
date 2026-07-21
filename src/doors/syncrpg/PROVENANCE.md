@@ -66,13 +66,33 @@ inih source files are vendored directly.
 ### EasyRPG Player (`easyrpg/`)
 
 - `src/platform/`: all platform backends removed except `sdl/`, which is
-  kept as the `ui_term` reference backend. Removed: `3ds`, `amigaos4`,
-  `android`, `emscripten`, `libretro`, `linux`, `macos`, `morphos`,
-  `opendingux`, `ps4`, `psp`, `psvita`, `switch`, `wii`, `wiiu`, `windows`.
+  kept as the `ui_term` reference backend, and `windows/`, which the MSVC
+  build requires (see below). Removed: `3ds`, `amigaos4`, `android`,
+  `emscripten`, `libretro`, `linux`, `macos`, `morphos`, `opendingux`,
+  `ps4`, `psp`, `psvita`, `switch`, `wii`, `wiiu`.
   `src/platform/clock.h` (a shared, non-platform-specific header) is kept.
-  `src/platform/` now contains only `clock.h` and `sdl/`.
+  `src/platform/` now contains `clock.h`, `sdl/` and `windows/`.
+
+  `windows/` was initially pruned with the rest and then **restored
+  verbatim** from the pinned upstream commit when the Win32/MSVC build was
+  added (see `COMPILING.md`): Player's own `CMakeLists.txt` compiles
+  `src/registry.cpp` plus `src/platform/windows/utils.{cpp,h}` and
+  `src/platform/windows/midiout_device_win32.{cpp,h}` unconditionally on
+  `WIN32`, and `src/player.cpp` (`WindowsUtils::InitMiniDumpWriter()`) and
+  `src/audio_generic_midiout.cpp` (`Win32MidiOutDevice`) reference them, so
+  a Windows build cannot be done without them. The four files are upstream's,
+  unmodified; the door never *uses* the Win32 MIDI-out device, because
+  `PLAYER_WITH_NATIVE_MIDI` is OFF on both platforms (a door must not play
+  game music out of the BBS host's sound card).
 - `resources/`: removed (per-platform icons/installers, ~14 MB; no game
-  or engine-runtime data).
+  or engine-runtime data) **except** `resources/windows/player.rc.in` and
+  `resources/windows/player.manifest`, restored verbatim (as with
+  `src/platform/windows/` above) when the Win32/MSVC build was added:
+  Player's `CMakeLists.txt` `configure_file()`s that `.rc.in` at *configure*
+  time on `WIN32`, so a Windows configure fails outright without it. The
+  200 KB `resources/windows/player.ico` it names stays pruned -- the
+  generated `.rc` belongs to upstream's own `Player.exe` target, which this
+  door never builds (`build.bat` asks for `--target syncrpg`).
 - `tests/`, `bench/`: removed (upstream's unit tests and micro-benchmark
   harness; not needed to build/run the engine).
 - `docs/`, `.github/`: removed (documentation and CI workflow files).

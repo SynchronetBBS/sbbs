@@ -34,6 +34,21 @@ if(NOT TERMGFX_LIB OR NOT XPDEV_LIB)
 	message(FATAL_ERROR "TERMGFX_LIB/XPDEV_LIB not set -- run via build.sh (Stage 1 must build first)")
 endif()
 
+if(MSVC)
+	# The vcpkg triplet this door builds against (x86-windows-static-md) is
+	# static libraries + the DYNAMIC (/MD) CRT, and every translation unit in
+	# the link has to agree. EasyRPG's builds/cmake/Modules/PlayerConfigureWindows
+	# .cmake derives that from VCPKG_CRT_LINKAGE -- a variable the vcpkg
+	# toolchain leaves undefined here -- so its generator expression collapses to
+	# plain "MultiThreaded" (/MT) and every vcpkg archive then comes up as
+	# thousands of unresolved __imp__* externals at link time. Set it before
+	# add_subdirectory(easyrpg), with FORCE: EasyRPG's own set(... CACHE ...)
+	# would otherwise keep whatever a previous configure of this build dir left
+	# behind.
+	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+		CACHE STRING "MSVC runtime library (must match the vcpkg triplet)" FORCE)
+endif()
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/easyrpg easyrpg)
 
 # UI substitution: run EasyRPG through our headless BaseUi_termgfx instead
@@ -48,11 +63,16 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/easyrpg easyrpg)
 # into the object library but go unreferenced; nothing constructs an Sdl2Ui, so
 # no display is ever opened.) TARGET_DIRECTORY (CMake 3.18+) lets the parent set
 # a property on a source owned by the add_subdirectory'd EasyRPG_Player target.
+# (MSVC spells the force-include /FI<path>, one token, no separator.)
+if(MSVC)
+	set(SYNCRPG_FORCE_INCLUDE "/FI${CMAKE_CURRENT_SOURCE_DIR}/door/ui_term.h")
+else()
+	set(SYNCRPG_FORCE_INCLUDE "-include;${CMAKE_CURRENT_SOURCE_DIR}/door/ui_term.h")
+endif()
 set_source_files_properties(
 	${CMAKE_CURRENT_SOURCE_DIR}/easyrpg/src/baseui.cpp
 	TARGET_DIRECTORY EasyRPG_Player
-	PROPERTIES COMPILE_OPTIONS
-		"-include;${CMAKE_CURRENT_SOURCE_DIR}/door/ui_term.h")
+	PROPERTIES COMPILE_OPTIONS "${SYNCRPG_FORCE_INCLUDE}")
 
 add_executable(syncrpg door/syncrpg.cpp door/ui_term.cpp door/video_term.cpp door/input_term.cpp door/audio_term.cpp)
 # List EasyRPG's src/ ahead of ../termgfx: both trees have an "audio.h" (and
@@ -75,4 +95,31 @@ target_include_directories(syncrpg PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/easyrpg/src
 	${CMAKE_CURRENT_SOURCE_DIR}/../termgfx
 	${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
-target_link_libraries(syncrpg PRIVATE EasyRPG_Player ${TERMGFX_LIB} ${XPDEV_LIB} ${JXL_LIBS} ${SNDFILE_LIBS} pthread)
+target_link_libraries(syncrpg PRIVATE EasyRPG_Player ${TERMGFX_LIB} ${XPDEV_LIB} ${JXL_LIBS} ${SNDFILE_LIBS})
+if(WIN32)
+	# libtermgfx.lib/xpdev_static.lib are linked by absolute path, so the Win32
+	# system libraries their CMake targets declare (xpdev/CMakeLists.txt:
+	# iphlpapi/ws2_32/winmm/netapi32/ole32/uuid) do not survive that seam either
+	# -- restate them here. winmm is additionally needed by EasyRPG itself: its
+	# CMakeLists.txt compiles src/platform/windows/midiout_device_win32.cpp into
+	# the object library unconditionally on WIN32, so the midiOut* references
+	# must resolve even though PLAYER_WITH_NATIVE_MIDI is OFF (a door must never
+	# play the game's MIDI out of the *BBS host's* sound card -- the music goes
+	# to the caller's terminal through termgfx; nothing constructs a
+	# Win32MidiOutDevice with HAVE_NATIVE_MIDI undefined).
+	target_link_libraries(syncrpg PRIVATE ws2_32 iphlpapi winmm netapi32 ole32 uuid)
+else()
+	target_link_libraries(syncrpg PRIVATE pthread)
+endif()
+if(MSVC)
+	target_compile_definitions(syncrpg PRIVATE
+		_CRT_SECURE_NO_WARNINGS NOMINMAX WIN32_LEAN_AND_MEAN)
+	# /Zc:__cplusplus -- without it MSVC reports __cplusplus as 199711L even in
+	# C++17 mode, and xpdev's gen_defs.h (reached from dirwrap.h) gates its
+	# HAS_STDINT_H/HAS_INTTYPES_H on that macro: it concludes the compiler has
+	# no <stdint.h> and rolls its own int8_t/int32_t/uint32_t typedefs, which
+	# then collide with the real ones the C++ standard headers already pulled
+	# in (error C2371, "redefinition; different basic types"). The same flag is
+	# used by the sibling SyncConquer MSVC build.
+	target_compile_options(syncrpg PRIVATE /Zc:__cplusplus)
+endif()

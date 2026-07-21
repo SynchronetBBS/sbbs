@@ -1,0 +1,29 @@
+23456 ICON "@CMAKE_CURRENT_SOURCE_DIR@/resources/windows/player.ico"
+#if defined(__MINGW32__) || defined(__CYGWIN__)
+1 24 "@CMAKE_CURRENT_SOURCE_DIR@/resources/windows/player.xml"
+#endif
+1 VERSIONINFO
+FILEVERSION @RC_VERSION@
+PRODUCTVERSION @RC_VERSION@
+FILETYPE 0x00000001L
+{
+	BLOCK "StringFileInfo"
+	{
+		BLOCK "000004E4"
+		{
+			VALUE "Comments", "https://easyrpg.org"
+			VALUE "CompanyName", "EasyRPG Project"
+			VALUE "FileVersion", "@PROJECT_VERSION@"
+			VALUE "FileDescription", "EasyRPG Player"
+			VALUE "InternalName", "easyrpg-player"
+			VALUE "LegalCopyright", "2007-@RC_YEAR@ EasyRPG Project"
+			VALUE "OriginalFilename", "Player.exe"
+			VALUE "ProductName", "EasyRPG Player"
+			VALUE "ProductVersion", "@PROJECT_VERSION@"
+		}
+	}
+	BLOCK "VarFileInfo"
+	{
+		VALUE "Translation", 0x0000, 1252
+	}
+}
