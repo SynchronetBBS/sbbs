@@ -273,12 +273,31 @@ function syncretro_lobby_play(rom)
 	 *
 	 * That 240 is not comfortable either. A longer game title or a longer user
 	 * alias eats the remaining ~20 characters, so anything added to this line
-	 * from here on has to buy its space from something else on it. */
+	 * from here on has to buy its space from something else on it.
+	 *
+	 * Which is why the ROM is passed RELATIVE to the door's directory rather than
+	 * as the absolute path discovery found it at: "roms\pacman.zip" instead of
+	 * "s:\sbbs\xtrn\syncarcade\roms\pacman.zip" is 24 characters back, and the
+	 * ROM argument is the one that gets cut when the line does overflow.
+	 *
+	 * Safe because the BBS starts the door IN this directory -- Synchronet hands
+	 * startup_dir to CreateProcess as the working directory on Windows
+	 * (xtrn.cpp) and chdir()s to it before exec on *nix -- and the door resolves
+	 * a relative ROM against its cwd before it chdir()s into the per-user
+	 * sandbox (syncretro_config.c). It is no new dependency either: the door
+	 * already finds syncretro.ini, its core and its BIOS relative to that same
+	 * cwd, so a door started anywhere else could not run at all.
+	 *
+	 * Built from rules.dir, not a hardcoded "roms", so a sysop who moves the ROM
+	 * directory keeps working -- the lobby names whatever directory it actually
+	 * scanned. (The DOOR's own bare-name fallback is hardcoded to roms/, so
+	 * naming the directory here is what keeps the two in agreement.) */
 	cmd = syncretro_lobby_binary + (syncretro_lobby_stdio ? " -stdio" : " -s%H")
 	    + " -t%T -name %a -core " + syncretro_lobby_core
 	    + " -profile " + syncretro_lobby_con.profile
 	    + ' -title "' + (rom.label || rom.title) + '" -console "' + label + '"'
-	    + ' -home "' + home + '" "' + rom.path + '"';
+	    + ' -home "' + home + '" "'
+	    + backslash(syncretro_lobby_rules.dir) + rom.name + '"';
 
 	/* The Terminal Server logs "Executing external program: <console>" when it
 	 * spawns the lobby; the cartridge is picked in here, so the node log would
