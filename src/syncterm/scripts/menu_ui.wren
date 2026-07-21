@@ -401,6 +401,79 @@ class MenuUi {
     return state["result"]
   }
 
+  // Browser variant with direct commands. Returns [command, rowValue],
+  // where command is "select" for Enter. A direct command closes the
+  // browser after running onCancel so callers can rebuild a changed catalog.
+  static browserCommandChoice(app, title, rows, current, helpFor, onChange,
+      onAccept, onCancel, commands) {
+    if (rows.count == 0) return null
+    var state = {"result": null, "closed": false}
+    var list = null
+    var pane = null
+    var closeWith = Fn.new {|result|
+      if (state["closed"]) return
+      state["closed"] = true
+      state["result"] = result
+      onCancel.call()
+      app.popModal()
+    }
+    var cancel = Fn.new { closeWith.call(null) }
+    var onCommand = Fn.new {|spec|
+      var value = list.selected == null ? null :
+          rowValue_(rows, list.selected)
+      if (value == null && !spec[1]) return
+      closeWith.call([spec[0], value])
+    }
+    pane = CommandPane.new(cancel, commands, onCommand)
+    pane.title = title
+    pane.focused = true
+    pane.onClose = cancel
+
+    var size = Screen.size
+    var longest = title.count + 6
+    var labels = []
+    for (row in rows) {
+      labels.add(row[1])
+      if (row[1].count + 4 > longest) longest = row[1].count + 4
+    }
+    var w = longest.max(24).min(size[0] - 4)
+    var h = (labels.count + 4).min(size[1] - 4)
+    pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
+        ((size[1] - h) / 2).floor + 1, w, h)
+
+    list = ListView.new()
+    list.bounds = pane.innerBounds
+    list.items = labels
+    if (rows[0] is List) {
+      list.selected = rowIndex(rows, current)
+    } else {
+      list.selected = current == null ? 0 : current
+    }
+    list.onChange = Fn.new {|index, item|
+      if (index == null) return
+      var value = rowValue_(rows, index)
+      pane.helpText = helpFor.call(value)
+      onChange.call(value)
+    }
+    list.onSelect = Fn.new {|index, item|
+      var value = rowValue_(rows, index)
+      if (onAccept.call(value) == true) {
+        state["result"] = ["select", value]
+        state["closed"] = true
+        app.popModal()
+      }
+    }
+    pane.add(list)
+    var selected = list.selected
+    if (selected != null) {
+      var value = rowValue_(rows, selected)
+      pane.helpText = helpFor.call(value)
+      onChange.call(value)
+    }
+    app.modal(pane)
+    return state["result"]
+  }
+
   static rowValue_(rows, index) {
     return rows[index] is List ? rows[index][0] : index
   }

@@ -3999,6 +3999,52 @@ failure.  In safe mode the running selection changes but the INI file is not
 written.  A successful selection advances both the theme and settings
 generations, so scripts should reacquire outstanding `Settings` snapshots.
 
+`Menu.newThemeDocument()` returns a new C-owned `ThemeDocument` containing a
+minimal sparse overlay on the compiled default.  Its filename is empty and
+it is dirty until saved.  `Menu.openThemeDocument(filename)` accepts the
+basename of a file accepted by the current theme loader.  These constructors
+and all document methods are menu-VM capabilities; documents cannot be
+created or passed into the connected or picker VMs.
+
+`ThemeDocument.metadata(field)` and `setMetadata(field, value)` use field IDs
+0 Name, 1 Author, 2 Description, and 3 Version.  The optional fields return
+`null` when absent; setting an optional field to an empty String removes it.
+Name cannot be empty.
+
+`ThemeDocument.styles` returns rows
+`[role, builtin, present, font, legacyAttr, foreground, background]`.
+`present` is a bit mask for fields 0 Font, 1 LegacyAttr, 2 Foreground, and
+3 Background.  `setStyle(role, field, mode, value)` uses mode 0 to remove the
+file value and restore the compiled default, mode 1 to write `inherit`, and
+mode 2 to write the supplied numeric value.  `addStyle(role)` creates a
+custom role with inherited fields.  `removeStyle(role)` removes only a custom
+role.
+
+`ThemeDocument.glyphs` returns rows
+`[name, builtin, present, cp437, ascii]`.  Its `present` bits are 0 CP437 and
+1 ASCII.  `setGlyph(name, field, mode, value)` accepts modes 0 Default and
+2 Explicit; mode 1 is not meaningful for glyphs.  `addGlyph(name, cp437,
+ascii)` creates a complete custom glyph and `removeGlyph(name)` removes one.
+
+`ThemeDocument.themeData` returns a fresh Wren theme-data snapshot for the
+draft.  `Theme.fromData(data)` decodes such a snapshot without changing the
+process-wide selected theme.  `dirty`, `canUndo`, and `canRedo` report the
+document state; `undo()` and `redo()` return whether they changed it.
+`importTheme(filename)` replaces all style and glyph sections from an
+installed theme as one history entry while retaining the document filename
+and metadata.  It preserves custom definitions and unknown content rather
+than limiting the import to the built-in registry.
+
+`ThemeDocument.save(filename, force)` returns `[code, error]`, where `error`
+is `null` on success.  A `null` filename saves to the current basename.  The
+codes are 0 success, 1 invalid document, 2 external-change conflict, 3 new
+destination already exists, 4 read-only safe mode, and 5 I/O failure.  A
+true `force` permits replacement for codes 2 and 3; it does not bypass theme
+validation or safe mode.  Save preserves untouched source text, validates
+the completed output, atomically replaces the destination where supported,
+and clears the editing history.  Saving the selected file also reloads the
+active process-wide theme.
+
 === Menu List Encryption [[menu-list-encryption]]
 
 `Menu.encryptionAlgorithm`, `Menu.encryptionKeySize`, and
@@ -6893,6 +6939,12 @@ representation; their storage and complete role/glyph registry are
 documented in `Themes.adoc`.  Scripts may still construct a `Theme` directly
 or assign `app.theme` to replace the program theme for one App.  Such a Wren
 object does not modify the C-owned selection or any other VM.
+
+`Theme.fromData(data)` constructs an independent Theme from the same
+`[styleRows, glyphRows]` representation returned by `Host.themeData` and
+`ThemeDocument.themeData`.  It is intended for draft previews and other
+host-provided snapshots; modifying the returned object does not modify its
+source or the process-wide selection.
 
 `Glyphs` entries are either a single string or `[primary,
 fallback]` pairs — primary is the rich Unicode glyph, fallback is

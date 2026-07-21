@@ -31,6 +31,7 @@ class UiStyleTest {
     testThemeUnknownRoleGetsDefault_()
     testThemeFieldWiseCascade_()
     testThemeGlyphsAccessor_()
+    testThemeFromData_()
 
     testParentRole_()
 
@@ -236,6 +237,21 @@ class UiStyleTest {
            t.glyphs["frame.display.top"]     == "-" &&
            t.glyphs["nonexistent"]   == null,
            "Theme.glyphs returns the configured map")
+  }
+
+  static testThemeFromData_() {
+    var theme = Theme.fromData([
+      [
+        ["default", 0, 0x1f, 0xffffff, 0x0000a8],
+        ["sample", null, 0x70, null, 0xaaaaaa]
+      ],
+      [["sample", "X", "?"]]
+    ])
+    var style = theme.style("sample")
+    check_(style.font == 0 && style.legacyAttr == 0x70 &&
+           style.fgRgb == 0xffffff && style.bgRgb == 0xaaaaaa &&
+           theme.glyphs["sample"] == "X",
+           "Theme.fromData decodes an independent host snapshot")
   }
 
   // ----- parentRole_ edge cases (via Theme instance) --------------

@@ -3,6 +3,7 @@ import "syncterm_menu" for Menu, MenuEncryption, MenuFontSlot
 import "menu_ui" for ChoiceViewState, MenuUi
 import "ui_style" for Theme
 import "menu_bbs_editor" for BbsEditor
+import "menu_theme_editor" for ThemeEditor
 import "ui_popup" for Alert
 import "ui_help" for Help
 
@@ -143,41 +144,75 @@ class SettingsMenu {
     if (entry[4] != null) text = text + "Version\n:  %(entry[4])\n"
     if (entry[3] != null) text = text + "\n%(entry[3])\n"
     if (entry[5] != null) {
-      return text + "\nError\n:  %(entry[5])\n\nThis theme cannot be selected."
+      return text + "\nError\n:  %(entry[5])\n\nThis theme cannot be " +
+          "selected or edited.\n\nInsert\n:  Create a new theme\n" +
+          "Esc\n:  Keep the current theme"
     }
-    return text + "\nEnter\n:  Select this theme\nEsc\n:  Keep the current theme"
+    return text + "\nEnter\n:  Select this theme\nInsert\n:  Create a " +
+        "new theme\nF2\n:  Edit this theme\nEsc\n:  Keep the current theme"
   }
 
   static themes_(app) {
-    var entries = Menu.themes
-    var rows = themeRows_(entries)
-    var current = Menu.selectedThemeFile
-    MenuUi.browserChoice(app, "Themes", rows, current,
-        Fn.new {|filename|
-          themeHelp_(themeEntry_(entries, filename))
-        }, Fn.new {|filename|
-          var entry = themeEntry_(entries, filename)
-          if (entry == null || entry[5] != null) {
+    while (true) {
+      var entries = Menu.themes
+      var rows = themeRows_(entries)
+      var current = Menu.selectedThemeFile
+      var commands = {}
+      commands[Key.insert] = ["new", true]
+      commands[Key.f2] = ["edit", false]
+      var result = MenuUi.browserCommandChoice(app, "Themes", rows, current,
+          Fn.new {|filename|
+            themeHelp_(themeEntry_(entries, filename))
+          }, Fn.new {|filename|
+            var entry = themeEntry_(entries, filename)
+            if (entry == null || entry[5] != null) {
+              Menu.cancelThemePreview()
+            } else {
+              var error = Menu.previewTheme(filename)
+              if (error != null) Menu.cancelThemePreview()
+            }
+            app.theme = Theme.current
+          }, Fn.new {|filename|
+            var entry = themeEntry_(entries, filename)
+            if (entry == null || entry[5] != null) return false
+            var error = Menu.selectTheme(filename)
+            if (error != null) {
+              Alert.show(app, "Themes", error)
+              return false
+            }
+            app.theme = Theme.current
+            return true
+          }, Fn.new {
             Menu.cancelThemePreview()
-          } else {
-            var error = Menu.previewTheme(filename)
-            if (error != null) Menu.cancelThemePreview()
-          }
-          app.theme = Theme.current
-        }, Fn.new {|filename|
-          var entry = themeEntry_(entries, filename)
-          if (entry == null || entry[5] != null) return false
-          var error = Menu.selectTheme(filename)
+            app.theme = Theme.current
+          }, commands)
+      if (result == null || result[0] == "select") return
+
+      var document = null
+      if (result[0] == "new") {
+        document = Menu.newThemeDocument()
+      } else {
+        var entry = themeEntry_(entries, result[1])
+        if (entry == null || entry[5] != null) {
+          Alert.show(app, "Themes", entry == null ?
+              "The selected theme is unavailable." : entry[5])
+          continue
+        }
+        if (result[1].count == 0) {
+          document = Menu.newThemeDocument()
+          var error = document.importTheme("")
           if (error != null) {
             Alert.show(app, "Themes", error)
-            return false
+            continue
           }
-          app.theme = Theme.current
-          return true
-        }, Fn.new {
-          Menu.cancelThemePreview()
-          app.theme = Theme.current
-        })
+          document.setMetadata(0, "Classic Theme Copy")
+        } else {
+          document = Menu.openThemeDocument(result[1])
+        }
+      }
+      ThemeEditor.run(app, document)
+      app.theme = Theme.current
+    }
   }
 
   static screenMode_(app) {

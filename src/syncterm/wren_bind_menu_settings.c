@@ -941,11 +941,13 @@ fn_ThemeDocument_setStyle(WrenVM *vm)
 	char role[INI_MAX_VALUE_LEN];
 	uint64_t field;
 	uint64_t mode;
-	uint64_t value;
+	uint64_t value = 0;
 	if (document == NULL || !theme_document_string_slot(vm, 1, role,
 	    sizeof(role)) || !slot_integer(vm, 2, 0,
 	    SYNCTERM_THEME_STYLE_FIELD_COUNT - 1, &field) ||
-	    !slot_integer(vm, 3, 0, SYNCTERM_THEME_VALUE_EXPLICIT, &mode) ||
+	    !slot_integer(vm, 3, 0, SYNCTERM_THEME_VALUE_EXPLICIT, &mode))
+		return;
+	if (mode == SYNCTERM_THEME_VALUE_EXPLICIT &&
 	    !slot_integer(vm, 4, 0, 0xffffff, &value))
 		return;
 	char error[256] = "";
@@ -1019,11 +1021,13 @@ fn_ThemeDocument_setGlyph(WrenVM *vm)
 	char name[INI_MAX_VALUE_LEN];
 	uint64_t field;
 	uint64_t mode;
-	uint64_t value;
+	uint64_t value = 0;
 	if (document == NULL || !theme_document_string_slot(vm, 1, name,
 	    sizeof(name)) || !slot_integer(vm, 2, 0,
 	    SYNCTERM_THEME_GLYPH_FIELD_COUNT - 1, &field) ||
-	    !slot_integer(vm, 3, 0, SYNCTERM_THEME_VALUE_EXPLICIT, &mode) ||
+	    !slot_integer(vm, 3, 0, SYNCTERM_THEME_VALUE_EXPLICIT, &mode))
+		return;
+	if (mode == SYNCTERM_THEME_VALUE_EXPLICIT &&
 	    !slot_integer(vm, 4, 0, 0xff, &value))
 		return;
 	char error[256] = "";

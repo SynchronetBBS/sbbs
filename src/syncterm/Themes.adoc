@@ -44,6 +44,54 @@ The six settings under `[ClassicTheme]` affect only the built-in *Classic
 Theme*.  A file theme is a sparse overlay on SyncTERM's compiled default and
 does not inherit those six colour preferences.
 
+== Theme Editor
+
+The *Themes* browser accepts Insert to create a theme and F2 to edit the
+highlighted theme.  New themes begin as minimal sparse overlays on the
+compiled default.  The built-in *Classic Theme* cannot be modified in place;
+editing it creates an unsaved copy which must be given a filename.  A file
+which is not accepted by the current theme loader remains visible in the
+browser for diagnosis, but cannot be selected or opened in the editor.
+
+The editor's atlas contains every style role and glyph in the draft.  The
+Styles and Glyphs commands switch between those definitions.  Display
+switches style previews between RGB and legacy colours, or glyph previews
+between CP437 and ASCII.  The inspector shows each resolved style field and
+the role which supplied it.  Enter or a double click edits the selected
+definition; Insert creates a custom definition and Delete removes one.
+
+A built-in style field has three possible states:
+
+* *Default* removes the file's value and uses the compiled value for that
+  role.  A compiled `inherit` value continues through the role cascade.
+* *Inherit* writes `inherit` and explicitly continues through the role
+  cascade.
+* *Explicit* stores the selected value in the theme file.
+
+Built-in glyph fields support *Default* and *Explicit*.  Custom style and
+glyph definitions are stored in full and can be removed.  Metadata edits the
+global `Name`, `Author`, `Description`, and `Version` values.
+
+Import replaces all style and glyph sections with those from another theme
+as one undoable operation.  This includes custom definitions, comments,
+ordering, and unknown fields in those sections.  The destination filename
+and global metadata are retained.  Importing *Classic Theme* synthesizes its
+current complete set of definitions.
+
+Undo and Redo apply only to the current editing session.  Save writes without
+closing the editor and starts a new undo session.  Save As accepts a basename
+in the themes directory; paths are not accepted.  Closing a dirty document
+asks whether to save, discard, or continue editing.  Safe mode permits
+browsing but does not permit saving.
+
+The editor preserves comments, ordering, unrecognized metadata, unrecognized
+sections, and unmodified values from an opened file.  Values changed through
+the editor are rewritten in the normal theme syntax.  Before replacing an
+opened file, Save compares its source lines with the lines originally read
+and asks before overwriting an external change.  New destinations also
+require confirmation before replacement.  The completed output is parsed
+and validated before an atomic replacement is attempted.
+
 == File Structure
 
 Metadata is written before any section header:
