@@ -18,6 +18,13 @@ var bgmask = (1<<4)|(1<<5)|(1<<6);
 var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_".split("");
 var userID = md5_calc(user.alias + system.name, true);
 
+/*	true once the user is gone or the BBS is going down, so the key loops below
+	don't spin forever after a carrier drop (console.getkey() returns 0
+	immediately when offline, so the check has to be in the loop condition) */
+function offline() {
+	return !bbs.online || js.terminated;
+}
+
 var f = new File(js.exec_dir + "server.ini");
 f.open("r");
 var serverIni = f.iniGetObject();
@@ -96,6 +103,8 @@ var Game = function(id) {
 		var userInput = "";
 		frame.cycle();
 		while(!userInput.match(/[A-Z]/) && ascii(userInput) != 13) {
+			if(offline())
+				break;
 			userInput = console.getkey().toUpperCase();
 		}
 		if(userInput.match(/[A-Z]/) && this.shared.players[userID].tiles.indexOf(userInput) >= 0) {
@@ -125,6 +134,8 @@ var Game = function(id) {
 			frame.cycle();
 			userInput = "";
 			while(!userInput.match(/[A-Z]/)) {
+				if(offline())
+					return false;
 				userInput = console.getkey().toUpperCase();
 			}
 			this.blankPrompt1.bottom();
@@ -519,7 +530,7 @@ var doGame = function(id) {
 }
 
 frame.open();
-while(ascii(userInput) != 27) {
+while(ascii(userInput) != 27 && !offline()) {
 	userInput = console.inkey(K_NONE, 5);
 	if(!play) {
 		if(!menuTree) {
