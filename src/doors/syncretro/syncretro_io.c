@@ -341,8 +341,8 @@ static int    g_cell_w, g_cell_h;
  * present path, so these live up here with the geometry rather than beside the
  * buffers they describe. */
 static uint32_t g_dirty_frames, g_full_frames, g_dirty_rects_sent;
-static int    g_icol = 1, g_irow = 1;      /* 1-based text-cell origin of the image */
-static int    g_geom_ready;
+static int      g_icol = 1, g_irow = 1;    /* 1-based text-cell origin of the image */
+static int      g_geom_ready;
 
 
 /* --- render tiers ------------------------------------------------------------
@@ -785,11 +785,22 @@ static void sr_io_stats_emit(int force)
 		/* "dr N%" -- what share of emitted frames were PATCHED rather than
 		 * repainted. The interesting number while comparing tiers or games: a
 		 * static screen approaches 100, an every-pixel-moving one sits at 0 and
-		 * says so, rather than the reader wondering whether the feature is on. */
+		 * says so, rather than the reader wondering whether the feature is on.
+		 *
+		 * That last argument only holds where patching is POSSIBLE, which is
+		 * why "n/a" exists. Patching needs the client to persist its sixel
+		 * colour registers between images (see the preconditions at the
+		 * dirty-rect emit), so on anything but SyncTERM the share is
+		 * structurally 0 -- and a bare "dr 0%" there is indistinguishable from
+		 * a busy screen on a client that COULD patch. Three states, three
+		 * labels: off (the sysop disabled it), n/a (this client cannot), N%
+		 * (this is how it is doing). */
 		uint32_t emitted = g_dirty_frames + g_full_frames;
 
 		if (!sr_config_dirty_rect())
 			snprintf(drtxt, sizeof drtxt, " dr off");
+		else if (!sr_input_is_syncterm())
+			snprintf(drtxt, sizeof drtxt, " dr n/a");
 		else if (emitted > 0)
 			snprintf(drtxt, sizeof drtxt, " dr %u%%", g_dirty_frames * 100 / emitted);
 		else
@@ -1099,12 +1110,12 @@ static int sr_io_pack_rect(const sr_dirty_rect_t *r)
 /* --- present ---------------------------------------------------------------- */
 void sr_io_present(const uint8_t *rgb, int w, int h)
 {
-	static uint8_t last_pal[SR_PAL_BYTES];
-	static int     have_pal;
-	static int     have_fb;
-	static int     last_icol = -1, last_irow = -1;
-	static int     last_ew = -1, last_eh = -1;
-	uint8_t        pal[SR_PAL_BYTES];
+	static uint8_t  last_pal[SR_PAL_BYTES];
+	static int      have_pal;
+	static int      have_fb;
+	static int      last_icol = -1, last_irow = -1;
+	static int      last_ew = -1, last_eh = -1;
+	uint8_t         pal[SR_PAL_BYTES];
 	size_t          npx, nrgb, n, frame_start = 0;
 	int             pal_changed, emit_pal, force;
 	sr_dirty_rect_t rect[SR_DIRTY_MAX_RECTS];
