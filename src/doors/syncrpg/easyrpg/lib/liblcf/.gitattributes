@@ -1,0 +1,19 @@
+*         text=auto
+*.cpp     text
+*.h       text linguist-language=C++
+*.md      text
+*.csv     text
+*.cmake   text
+*.pc      text
+*.in      text
+*.tmpl    text linguist-language=Jinja2
+*.py      text
+*.ac      text
+*.am      text
+
+tests/doctest.h -diff linguist-vendored
+builds/autoconf/m4/ax_*.m4 -diff linguist-vendored
+src/lcf/third_party/*.h -diff linguist-vendored
+CMakePresets.json -diff linguist-generated
+
+src/generated/** -diff

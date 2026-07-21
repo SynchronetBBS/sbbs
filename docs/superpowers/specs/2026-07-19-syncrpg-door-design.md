@@ -110,7 +110,7 @@ test: feed a known XRGB frame, assert the emitted sixel (quantized) and JXL
 src/doors/syncrpg/
   easyrpg/               vendored EasyRPG Player + liblcf + inih (pruned)
   door/
-    syncrpg.cpp          main + BaseUi_Synchronet (analogue of OSystem_Synchronet)
+    syncrpg.cpp          main + BaseUi_termgfx (analogue of OSystem_Synchronet)
     video_term.{cpp,h}   GetDisplaySurface() 32-bit frame -> present_rgbx
     audio_term.{cpp,h}   EasyRPG audio (GenericAudio + decoders) -> termgfx audio stream
     input_term.{cpp,h}   termgfx key events -> EasyRPG Input::Keys
@@ -120,7 +120,7 @@ src/doors/syncrpg/
 
 ## The EasyRPG synchronet backend
 
-`BaseUi_Synchronet : BaseUi` implements the three hot paths:
+`BaseUi_termgfx : BaseUi` implements the three hot paths:
 
 - **`ProcessEvents()`** — drain `termgfx_termio_next_event()` and translate
   `TERMGFX_KEY_*` to EasyRPG `Input::Keys`, plus honor the reserved door hotkeys
@@ -160,7 +160,7 @@ bitmap is fully rendered without a display surface).
   Sourcing follows the project rule (fetch from the established archive, never
   re-host); the fetched tree is git-ignored, only the zip's sha256 manifest is
   committed. Yume Nikki is self-contained (no RTP).
-- **Saves & config** — per-user, at **`data/user/<####>/syncrpg/<game>/`**
+- **Saves & config** — per-user, at **`####>/syncrpg/<game>/`**
   (zero-padded user number, matching the door per-user-save convention). EasyRPG's
   save path is pointed there; the user number comes from the DOOR32.SYS drop file
   that `termgfx_termio` already parses. Global per-game state (if any) lives in
@@ -207,7 +207,7 @@ bitmap is fully rendered without a display surface).
   unchanged (boot 9/9, unit 20/20, PPM/decoded-image identical). Lands in the
   shared module before the door consumes it.
 - **M1 — video.** syncrpg skeleton, vendored/pruned EasyRPG, minimal
-  `BaseUi_Synchronet`; Yume Nikki's title/intro renders over the terminal via
+  `BaseUi_termgfx`; Yume Nikki's title/intro renders over the terminal via
   `present_rgbx`. `test/boot_yumenikki.sh` captures headless frames.
 - **M2 — keyboard.** Movement + action/cancel/menu/dash; exploration is playable.
 - **M3 — audio.** BGM/SFX via EasyRPG decoders + fmmidi → `termgfx_stream_*`.

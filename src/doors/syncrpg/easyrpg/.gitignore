@@ -1,0 +1,125 @@
+/easyrpg-player
+/Player.app
+*.a
+*.elf
+*.o
+*~
+*.orig
+*.bak
+
+# cmake
+/Makefile
+CMakeFiles/
+CMakeScripts/
+CMakeCache.txt
+CMakeDoxyfile.in
+CMakeDoxygenDefaults.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+CTestTestfile.cmake
+cmake_install.cmake
+install_manifest.txt
+
+# msvc / Windows
+*.vcxproj*
+*.sdf
+*.ncb
+*.psess
+*.suo
+*.user
+*.vsp*
+*.lib
+*.exe
+*.exp
+*.ilk
+*.pdb
+/resources/player.rc
+.vs/
+vcpkg/
+
+# ninja
+.ninja_*
+*.ninja
+
+# IntelliJ
+.idea/
+cmake-build*/
+
+# VS Code
+.vscode/
+.cache/
+compile_commands.json
+build/
+
+# doxygen
+/resources/Doxyfile
+/doc/
+
+# manual
+/resources/unix/easyrpg-player.6
+
+# test/run artifacts
+easyrpg_log.txt
+/*.log
+Testing/
+
+# distribution archives
+/easyrpg-player-*/
+easyrpg-player-*.tar.*
+*.zip
+
+# macos
+__MACOSX
+.DS_Store
+/resources/macos/Info.plist
+
+# Xcode
+/*.xcodeproj
+/*.xcworkspace
+/Debug/
+/Release/
+/MinSizeRel/
+/RelWithDebInfo/
+/*.build/
+
+# legacy, used for PLAYER_BUILD_LIBLCF
+/lib/liblcf/
+
+# Android
+*.iml
+local.properties
+*.aar
+
+# libretro
+easyrpg_libretro.*
+
+# switch
+*.nacp
+*.nro
+
+# 3ds
+*.3dsx
+*.smdh
+*.cia
+
+# wii
+/resources/wii/meta.xml
+*.dol
+
+# psvita
+/resources/psvita/template.xml
+eboot.bin
+*.vpk
+*.velf
+
+# ps4
+*.prx
+*.sprx
+
+# flatpak
+/.flatpak-builder
+
+# certificates / signing keys
+*.pem
+*.keystore
+*.jks

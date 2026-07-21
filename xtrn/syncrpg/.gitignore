@@ -1,0 +1,10 @@
+# Runtime content installed/fetched into this door directory -- never
+# committed. yumenikki/ is the freeware game data getdata.js downloads here;
+# syncrpg is the deployed door binary (built by src/doors/syncrpg's build.sh,
+# copied in by deploy.js); syncrpg.ini is the per-directory reference config
+# seeded from syncrpg.example.ini by the installer's [copy:] step.
+/yumenikki/
+/syncrpg
+/syncrpg.exe
+/syncrpg.ini
+/*.log

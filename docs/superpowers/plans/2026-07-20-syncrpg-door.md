@@ -9,7 +9,7 @@ effects/menu system, save/load) as the v1 proof.
 
 **Architecture:** A dedicated door mirroring syncscumm: a vendored+pruned EasyRPG
 Player under `src/doors/syncrpg/easyrpg/`, and a `door/` backend
-(`BaseUi_Synchronet`, the analogue of syncscumm's `OSystem_Synchronet`) that
+(`BaseUi_termgfx`, the analogue of syncscumm's `OSystem_Synchronet`) that
 subclasses EasyRPG's `BaseUi` and drives `termgfx_termio` — handing its 32-bit
 screen surface to `present_rgbx` (zero-copy), translating `termgfx` key events to
 EasyRPG `Input::Keys`, and feeding EasyRPG's `GenericAudio` PCM to the shared
@@ -52,7 +52,7 @@ Synchronet JS (`HTTPRequest` + native `Archive`) for `getdata.js`.
   tree under `yumenikki/`, ASCII asset filenames (no transcode/`--encoding`).
   The direct URL is **tokened** (`/games/download/4174/<token>`; bare
   `/games/download/4174` returns HTML) — M4 resolves a stable URL or scrapes it.
-- **Per-user saves** at `data/user/<####>/syncrpg/<game>/` (zero-padded user
+- **Per-user saves** at `####>/syncrpg/<game>/` (zero-padded user
   number from the DOOR32 drop file). Locate all dirs via `system.*_dir`, never
   hardcoded.
 - **Portable C/C++** (GCC/Clang/MSVC). Only GCC is exercised here; the Windows
@@ -70,7 +70,7 @@ src/doors/syncrpg/
   easyrpg/                vendored + pruned EasyRPG Player + inline liblcf + inih
   door/
     syncrpg.cpp           main(): DOOR32 parse, termgfx init, EasyRPG Player run loop
-    ui_term.{cpp,h}       BaseUi_Synchronet : BaseUi (CreateUi factory + the 3 hot paths)
+    ui_term.{cpp,h}       BaseUi_termgfx : BaseUi (CreateUi factory + the 3 hot paths)
     video_term.{cpp,h}    UpdateDisplay: main_surface -> termgfx_termio_present_rgbx
     input_term.{cpp,h}    ProcessEvents: termgfx key events -> EasyRPG Input::Keys
     audio_term.{cpp,h}    GenericAudio PCM -> termgfx_stream_*
@@ -140,7 +140,7 @@ src/doors/syncrpg/
 
 - [ ] **Step 4: Commit.**
 
-### Task 3: `BaseUi_Synchronet` skeleton — boot a game headless
+### Task 3: `BaseUi_termgfx` skeleton — boot a game headless
 
 **Files:**
 - Create: `door/ui_term.{cpp,h}`; Modify: `door/syncrpg.cpp`
@@ -149,10 +149,10 @@ src/doors/syncrpg/
 - Consumes: EasyRPG `BaseUi` (`baseui.h`: `ProcessEvents()`, `UpdateDisplay()`,
   `GetDisplaySurface()` → `main_surface`, `CreateUi()` factory), `Player::Init`/
   `Player::Run` entry points.
-- Produces: `class BaseUi_Synchronet : public BaseUi` + a `BaseUi::CreateUi`
+- Produces: `class BaseUi_termgfx : public BaseUi` + a `BaseUi::CreateUi`
   path that returns it; `main()` runs `Player::Init(args); Player::Run();`.
 
-- [ ] **Step 1: `BaseUi_Synchronet`** subclass: constructor calls the base with
+- [ ] **Step 1: `BaseUi_termgfx`** subclass: constructor calls the base with
   the game resolution and creates `main_surface` via
   `Bitmap::Create(w, h, …)` in the format from Step 2 of the constraints; stub
   `ProcessEvents()` (drives `termgfx_termio_quit_requested()`/`_hung_up()` →
@@ -310,7 +310,7 @@ src/doors/syncrpg/
   `deploy.js`, `README.md`; Modify: `door/syncrpg.cpp` (save-path wiring)
 
 - [ ] **Step 1: Per-user save path** — in `syncrpg.cpp`, build
-  `data/user/<####>/syncrpg/<game>/` (zero-padded user number from the DOOR32
+  `####>/syncrpg/<game>/` (zero-padded user number from the DOOR32
   drop file via termgfx; `system.data_dir`) and pass it to EasyRPG as
   `--save-path`. Create the dir if absent.
 
