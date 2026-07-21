@@ -879,6 +879,20 @@ static void sr_io_enter(void)
 	 * and our define-on-change frames render transparent). */
 	sr_out_puts(termgfx_term_enter);
 
+	/* Hide the client's status line (DECSSDT Ps=0) to reclaim the row it
+	 * reserves: SyncTERM's default turns an 80x25 / 640x400 terminal into an
+	 * 80x24 / 640x384 canvas, so a console frame is fractionally downscaled and
+	 * loses single-pixel detail for nothing. BEFORE the probe, so the probe
+	 * reports the RECLAIMED size -- after it, the door would scale to the old
+	 * canvas and the extra row would go to waste.
+	 *
+	 * The prefixed DECRQSS asks what the status line was set to first;
+	 * syncretro_input.c captures the reply so sr_io_leave() can put it back
+	 * exactly as it was rather than guessing. A terminal with no status line, or
+	 * no DECSSDT, ignores the whole thing. Same treatment as syncduke,
+	 * syncdoom, syncconquer and syncscumm. */
+	sr_out_puts(termgfx_term_status_off);
+
 	sr_out_puts(termgfx_term_probe);   /* pixel canvas; its ESC[999;999H+ESC[6n is the grid query */
 	g_grid_probe_pending = 1;          /* arm the first-R-is-grid flag at probe-SEND time */
 	sr_out_puts("\x1b[c");             /* DA1: sixel support (param 4) */
@@ -899,6 +913,21 @@ void sr_io_leave(void)
 		return;   /* capture mode: no terminal on the other end */
 
 	sr_input_restore_keys();                  /* undo kitty flags / physical key reports */
+	{
+		/* Put the status line back the way we found it. The BBS lent us this
+		 * terminal; a door that hides the sysop's status line and never restores
+		 * it is a door that broke his client. The pre-door type was captured from
+		 * the DECRQSS reply at entry -- if it never came (an older SyncTERM, a
+		 * terminal with no DECSSDT), fall back to 1 = indicator, SyncTERM's own
+		 * default, rather than leaving it off. */
+		char   sb[8];
+		size_t sn = termgfx_term_status_set(sb, sizeof sb,
+		                                    sr_input_status_type() >= 0
+		                                    ? sr_input_status_type() : 1);
+
+		if (sn > 0)
+			sr_out_put(sb, sn);
+	}
 	sr_out_puts(termgfx_term_leave);          /* restore ?1070h/?80h/?7h/?25h for the BBS */
 	sr_io_drain_blocking(SR_LEAVE_DRAIN_MS);  /* bounded: never hang the exit path */
 	sr_io_drain_input(SR_LEAVE_INPUT_MS);     /* keystrokes must not echo at the BBS prompt */

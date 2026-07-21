@@ -197,6 +197,10 @@ int     sr_input_probe_replied(void);
 const char *sr_input_keymode_name(void);
 /* The player pressed the quit key (Ctrl-Q). Polled via sr_door_should_exit(). */
 int     sr_input_quit_requested(void);
+/* The client's status-line type (DECSSDT) BEFORE the door hid it to reclaim the
+ * row it reserves, captured from the DECRQSS reply at entry; -1 if the terminal
+ * never answered (no status line, or no DECSSDT). sr_io_leave() restores it. */
+int     sr_input_status_type(void);
 /* Undo whatever key mode was negotiated (kitty flags / SyncTERM physical key
  * reports), so the BBS gets its terminal back as it lent it. Staged through the
  * out-buffer; called from sr_io_leave(). */
