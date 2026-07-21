@@ -69,3 +69,42 @@ int termgfx_term_parse_status(const uint8_t *acc, int len)
 	}
 	return -1;
 }
+
+// Scan `acc` (len bytes) for an XTVERSION reply -- DCS > | <name> ... ESC \ (the
+// answer to a "\x1b[>0q" query) -- and report whether the terminal identified
+// itself as xterm. Returns 1 if the name (right after ">|") begins with "xterm"
+// (case-insensitive), 0 if a complete reply names a DIFFERENT terminal, or -1 if
+// no (complete-enough) reply is present yet. A raw-byte scan tolerant of
+// interleaved input, like termgfx_term_parse_status(); a door feeds it a rolling
+// window of inbound bytes.
+//
+// The point is the sixel-ceiling decision: a positively-identified xterm must
+// NOT have its ESC[14t text-area size trusted as a graphics ceiling (xterm's
+// maxGraphicSize stays ~1000x1000 in a huge window and it DISCARDS an oversized
+// sixel whole -- a black screen in a big window). Only "xterm" needs demoting,
+// so the exact non-xterm name is immaterial -- 0 just means "not xterm".
+int termgfx_term_parse_xtversion(const uint8_t *acc, int len)
+{
+	static const char xt[5] = { 'x', 't', 'e', 'r', 'm' };
+	int               j, k;
+
+	for (j = 0; j + 3 < len; j++) {
+		if (acc[j] == 0x1b && acc[j + 1] == 'P'
+		    && acc[j + 2] == '>' && acc[j + 3] == '|') {
+			const uint8_t *p     = acc + j + 4;
+			int            avail = len - (j + 4);
+
+			if (avail < 5)
+				return -1;   // name not fully arrived yet -- keep accumulating
+			for (k = 0; k < 5; k++) {
+				int ch = p[k];
+				if (ch >= 'A' && ch <= 'Z')
+					ch += 32;
+				if (ch != xt[k])
+					return 0;   // a different terminal named itself
+			}
+			return 1;   // xterm
+		}
+	}
+	return -1;
+}

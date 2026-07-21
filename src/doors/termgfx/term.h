@@ -74,4 +74,14 @@ extern const char *const termgfx_term_status_off;
 size_t termgfx_term_status_set(char *out, size_t sz, int type);
 int    termgfx_term_parse_status(const uint8_t *acc, int len);
 
+// XTVERSION (xterm identification). Query with "\x1b[>0q"; the reply is a DCS
+// string > | <name>(<version>) ST. Feed inbound bytes to
+// termgfx_term_parse_xtversion() (a rolling window) to learn whether the
+// terminal is xterm: 1 = xterm, 0 = a different, self-identified terminal,
+// -1 = no complete reply yet. A door needs this to decide the SIXEL ceiling --
+// xterm's ESC[14t text-area size is NOT its graphics ceiling (it discards a
+// sixel larger than ~1000x1000 whole), so a positively-identified xterm must
+// fall back to TERMGFX_SIXEL_SAFE_MAX rather than trust its own big canvas.
+int    termgfx_term_parse_xtversion(const uint8_t *acc, int len);
+
 #endif // TERMGFX_TERM_H_

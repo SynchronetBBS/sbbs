@@ -1647,6 +1647,8 @@ static int             g_grid_rows, g_grid_cols; /* text grid, from the 999;999 
 static int             g_canvas_w, g_canvas_h; /* pixel canvas -- exact (ESC[14t) or grid*8x16 estimate */
 static int             g_px_exact;     /* g_canvas_w/h came from an exact ESC[4;h;wt reply */
 static int             g_canvas_is_gfx; /* ...or, better, from XTSMGRAPHICS: a hard drawing ceiling */
+static int             g_is_xterm;      /* XTVERSION named "xterm": its ESC[14t is NOT a sixel ceiling */
+static int             g_xtver_done;     /* XTVERSION reply resolved (xterm or a named other) -- stop scanning */
 static termgfx_mouse_t g_mouse;        /* SGR-Pixels mouse (DEC 1016) latch (termgfx/mouse, Task 1):
                                         * .pixels confirmed active means mouse reports are canvas
                                         * PIXELS, not text cells (Windows Terminal supports it;
@@ -2233,23 +2235,36 @@ static void door_calc_rect(int vw, int vh, int reserve_bottom, int *ew, int *eh,
 		*ew = DOOR_SCALE_MAX;
 	/* Shrink the IMAGE -- never the canvas -- to the terminal's graphics ceiling: a
 	 * sixel bigger than that is DISCARDED WHOLE (xterm aborts the parse on an
-	 * oversized declared raster), and xterm advertises no geometry at all (window ops
-	 * are off by default), so assume its 1000x1000. Clamping the canvas instead would
-	 * pin the picture left in a big window -- the canvas is what centers it.
+	 * oversized declared raster rather than clipping it), leaving a black screen.
+	 * Clamping the canvas instead would pin the picture left in a big window -- the
+	 * canvas is what centers it. Resolve the ceiling in precedence order:
 	 *
-	 * An exact pixel canvas (ESC[4;h;wt -> g_px_exact) is itself a safe drawing
-	 * ceiling, so trust it whenever any terminal reports it -- Windows Terminal,
-	 * SyncTERM, or any modern sixel terminal -- not just when XTSMGRAPHICS
-	 * (g_canvas_is_gfx) answered. Otherwise a terminal that reported an exact
-	 * e.g. 2700x1440 canvas gets its image clamped to the geometry-less 1000px
-	 * floor and renders small. The 1000px floor stays for genuinely
-	 * geometry-less terminals (xterm with window-ops off never sends ESC[4t, so
-	 * g_px_exact stays false and it's still protected). */
+	 *   1. XTSMGRAPHICS (g_canvas_is_gfx): the terminal REPORTED its real graphics
+	 *      raster ceiling (ESC[?2;0;W;HS) -- believe it. On xterm this is
+	 *      min(window, maxGraphicSize); on SyncTERM it's the whole canvas.
+	 *   2. A trusted exact canvas (ESC[4;h;wt -> g_px_exact) -- but ONLY when the
+	 *      terminal has NOT identified as xterm (g_is_xterm, from XTVERSION). WT
+	 *      and Foot report an exact pixel canvas without ever answering
+	 *      XTSMGRAPHICS and DO render well past 1000px, so trust their own size.
+	 *   3. TERMGFX_SIXEL_SAFE_MAX (~1000): xterm and any geometry-less terminal.
+	 *      xterm answers ESC[4t with its big TEXT-AREA size even in a huge window,
+	 *      but its sixel maxGraphicSize stays ~1000x1000 -- trusting that text
+	 *      area the way WT/Foot are trusted paints a large xterm black (the very
+	 *      bug this gate fixes). A wrong-but-safe slightly-small picture beats a
+	 *      right-looking one that shows nothing. */
 	{
-		int gfx = g_px_exact || g_canvas_is_gfx;
-		termgfx_geom_gfx_clamp(gfx ? g_canvas_w : TERMGFX_SIXEL_SAFE_MAX,
-		                       gfx ? g_canvas_h : TERMGFX_SIXEL_SAFE_MAX,
-		                       ew, eh);
+		int gmax_w, gmax_h;
+
+		if (g_canvas_is_gfx) {
+			gmax_w = g_canvas_w;
+			gmax_h = g_canvas_h;
+		} else if (g_px_exact && !g_is_xterm) {
+			gmax_w = g_canvas_w;
+			gmax_h = g_canvas_h;
+		} else {
+			gmax_w = gmax_h = TERMGFX_SIXEL_SAFE_MAX;
+		}
+		termgfx_geom_gfx_clamp(gmax_w, gmax_h, ew, eh);
 	}
 
 	termgfx_geom_center(vw, fitvh, *ew, *eh, cellw, cellh, dx, dy, icol, irow);
@@ -2377,13 +2392,15 @@ static void door_stats_draw(int force)
 	bpf = g_fps > 0 ? ((uint64_t)g_bps / 8 / (unsigned)g_fps + 512) / 1024 : 0;
 	/* Geometry-detection provenance (diagnoses why the image is/ isn't clamped):
 	 * S = SyncTERM detected, X = exact px canvas (ESC[4t) / e = grid estimate,
-	 * G = XTSMGRAPHICS gfx ceiling known / - = not. */
+	 * G = XTSMGRAPHICS gfx ceiling known / - = not, x = xterm (ESC[14t demoted to
+	 * the safe sixel ceiling). */
 	{
 		char geo[8];
-		snprintf(geo, sizeof geo, "%c%c%c",
+		snprintf(geo, sizeof geo, "%c%c%c%c",
 		         g_is_syncterm ? 'S' : '-',
 		         g_px_exact ? 'X' : 'e',
-		         g_canvas_is_gfx ? 'G' : '-');
+		         g_canvas_is_gfx ? 'G' : '-',
+		         g_is_xterm ? 'x' : '-');
 		snprintf(t, sizeof t, " %s %dfps %s %lluKB/f d%d %s/%s%s%s%s %ums %dx%d/%s %dx%d",
 		         sa_tier_name(tier), g_fps, rate, bpf, g_auto_depth,
 		         door_io_evdev_active()      ? "evdev"
@@ -2774,6 +2791,13 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 		 * query it carries lets door_io_pump() capture the pre-door setting for
 		 * restore in door_term_restore(). */
 		door_out_puts(termgfx_term_status_off);
+		/* XTVERSION (xterm identification), sent BEFORE term_probe's ESC[14t
+		 * canvas query so an answering xterm's reply lands ahead of its canvas
+		 * report -- door_calc_rect() must not trust a big xterm text-area as a
+		 * sixel ceiling (xterm discards an oversized sixel whole -> black screen
+		 * in a large window; the reply sets g_is_xterm below). Terminals that
+		 * don't answer (WT, Foot, SyncTERM) are unaffected. */
+		door_out_puts("\x1b[>0q");
 		door_out_puts(termgfx_term_probe);
 		door_out_puts("\x1b[c\x1b[<c");
 		door_out_puts(termgfx_query_jxl);
@@ -2839,9 +2863,10 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 			door_cell_size(&cw, &ch);
 			door_calc_rect(vw, vh, et == SA_SIXEL, &ew, &eh, &dx, &dy, &icol, &irow);
 			fprintf(stderr,
-			        DOOR_SHORT_NAME ": geometry canvas=%dx%d%s grid=%dx%d cell=%dx%d "
+			        DOOR_SHORT_NAME ": geometry canvas=%dx%d%s%s grid=%dx%d cell=%dx%d "
 			        "mouse=%s tier=%d fit=%s -> image=%dx%d @px(%d,%d) cell(%d,%d)\n",
 			        g_canvas_w, g_canvas_h, g_px_exact ? "(exact)" : "(est)",
+			        g_is_xterm ? " xterm" : "",
 			        g_grid_cols, g_grid_rows, cw, ch,
 			        termgfx_mouse_pixels(&g_mouse) ? "pixels(1016)" : "cells",
 			        (g_tier_force >= 0) ? g_tier_force : sa_auto_tier(),
@@ -3257,6 +3282,37 @@ void door_io_pump(void)
 		}
 		if (r >= 0)
 			g_status_type = r;
+	}
+
+	/* Capture the XTVERSION reply (DCS >|<name> ... ST) to learn whether this is
+	 * xterm -- door_calc_rect() demotes an xterm's ESC[14t text-area canvas to
+	 * the safe sixel ceiling (see g_is_xterm), the fix for the big-window black
+	 * screen. A raw-byte scan with a rolling window, like the status reply above:
+	 * the P_APC state below swallows the DCS otherwise. */
+	if (!g_xtver_done) {
+		static uint8_t xacc[32];
+		static int     xacclen;
+		int            r = termgfx_term_parse_xtversion(buf, n);
+
+		if (r < 0) {
+			if (n >= (int)sizeof xacc) {
+				memcpy(xacc, buf + (n - (int)sizeof xacc), sizeof xacc);
+				xacclen = (int)sizeof xacc;
+			} else {
+				int keep = (int)sizeof xacc - n;
+				if (xacclen > keep) {
+					memmove(xacc, xacc + (xacclen - keep), keep);
+					xacclen = keep;
+				}
+				memcpy(xacc + xacclen, buf, n);
+				xacclen += n;
+			}
+			r = termgfx_term_parse_xtversion(xacc, xacclen);
+		}
+		if (r >= 0) {
+			g_is_xterm   = (r == 1);
+			g_xtver_done = 1;
+		}
 	}
 	{
 		static int sa_prev_tier = -2;   /* log the negotiated audio tier once it resolves */
