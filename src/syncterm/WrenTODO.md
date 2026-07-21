@@ -100,6 +100,14 @@ I/O, filesystem/cache, SFTP, WON serialization, event scaffolding, and enums.
 4. Remove dead `VideoFlags.expand` setter forward declarations from
    `wren_bind_screen.h`.
 
+5. Define when theme glyphs use their ASCII fallback. C-loaded glyph
+   primaries originate as CP437 bytes, so `Codepage.encodes_()` always accepts
+   them, and no backend sets `Glyphs.asciiOnly`. Consequently, built-in and
+   file-theme ASCII fallbacks are currently dormant. Either give them a
+   meaningful selection policy or document/remove them; a policy must also
+   account for non-CP437 style fonts rather than considering only the display
+   backend.
+
 ## Recommended Order
 
 1. Naming pass.
