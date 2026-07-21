@@ -154,7 +154,7 @@ function external_program_menu(xsec)
 		else {
 			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
 			var center = options.center && !multicolumn;
-			var margin = center ? format("%*s", (console.screen_columns * 0.25) - 1, "") : "";
+			var margin = center ? format("%*s", Math.floor(console.screen_columns * 0.25) - 1, "") : "";
 			if(options.sort)
 				prog_list.sort(sort_by_name);
 			if(show_header)
@@ -280,7 +280,7 @@ function external_section_menu()
 
 			var multicolumn = options.multicolumn && sec_list.length > options.singlecolumn_height;
 			var center = options.center && !multicolumn;
-			var margin = center ? format("%*s", ((console.screen_columns - longest)/2) - 5, "") : "";
+			var margin = center ? format("%*s", Math.floor((console.screen_columns - longest)/2) - 5, "") : "";
 
 			if(show_header)
 				printf(margin + options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
