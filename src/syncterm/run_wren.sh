@@ -11,7 +11,7 @@
 # Exit code: ordinary scripts succeed if no "[wren] " lines hit stderr.
 # wrentest.wren succeeds only after reporting a TOTAL with zero failures.
 #
-# Usage: run_wren.sh <script.wren>
+# Usage: run_wren.sh [--menu] <script.wren>
 #
 # The harness uses the GNUmakefile-default debug build at
 #     clang.freebsd.amd64.exe.debug/syncterm
@@ -20,9 +20,15 @@
 
 set -u
 
+MENU_SUITE=false
+if [ "${1:-}" = "--menu" ]; then
+	MENU_SUITE=true
+	shift
+fi
+
 SCRIPT="${1:-}"
 if [ -z "$SCRIPT" ]; then
-	echo "Usage: $0 <script.wren>" >&2
+	echo "Usage: $0 [--menu] <script.wren>" >&2
 	exit 1
 fi
 
@@ -38,9 +44,35 @@ fi
 OUT=$(mktemp /tmp/run_wren.out.XXXXXX)
 ERR=$(mktemp /tmp/run_wren.err.XXXXXX)
 DATA_HOME=$(mktemp -d /tmp/run_wren.data.XXXXXX)
-mkdir -p "$DATA_HOME/syncterm"
-ln -s "$HERE/scripts" "$DATA_HOME/syncterm/scripts"
 trap 'rm -f "$OUT" "$ERR"; rm -rf "$DATA_HOME"' EXIT
+
+if $MENU_SUITE; then
+	SCRIPT_ROOT="$DATA_HOME/syncterm/scripts"
+	mkdir -p "$SCRIPT_ROOT/auto/menu"
+	for MODULE in "$HERE"/scripts/*.wren; do
+		ln -s "$MODULE" "$SCRIPT_ROOT/${MODULE##*/}"
+	done
+	ln -s "$HERE/$SCRIPT" "$SCRIPT_ROOT/menu_test.wren"
+	cat >"$SCRIPT_ROOT/auto/menu/main_menu.wren" <<'EOF'
+import "syncterm_menu" for Menu
+import "menu_test" for MenuTest
+
+class MainMenu {
+  static prepare() { true }
+  static offerSave(source) { false }
+  static run(current, connected) {
+    var result = MenuTest.run()
+    System.print("=== MENU TEST: %(result[0] + result[1]) tests, " +
+        "%(result[0]) pass, %(result[1]) fail ===")
+    Menu.quitApplication()
+    return null
+  }
+}
+EOF
+else
+	mkdir -p "$DATA_HOME/syncterm"
+	ln -s "$HERE/scripts" "$DATA_HOME/syncterm/scripts"
+fi
 
 # Load library, test, and auto-run modules from the source tree.  This keeps
 # the harness independent of whatever the developer has installed in their
@@ -54,17 +86,25 @@ export SDL_VIDEO_EGL_DRIVER=none
 SCRIPT_NAME=${SCRIPT##*/}
 CONNECTION='shell:/usr/bin/true'
 FULL_SUITE=false
-if [ "$SCRIPT_NAME" = "wrentest.wren" ]; then
+if ! $MENU_SUITE && [ "$SCRIPT_NAME" = "wrentest.wren" ]; then
 	CONNECTION='shell:/bin/bash'
 	FULL_SUITE=true
 fi
 
 # A normal shell disconnect can make SyncTERM return non-zero even after the
 # script completed, so the captured diagnostics/report are authoritative.
-timeout 30 "$SYNCTERM" -iS -S -Q -W "$SCRIPT" "$CONNECTION" \
-	>"$OUT" 2>"$ERR"
+if $MENU_SUITE; then
+	timeout 30 "$SYNCTERM" -iS -S -Q >"$OUT" 2>"$ERR"
+else
+	timeout 30 "$SYNCTERM" -iS -S -Q -W "$SCRIPT" "$CONNECTION" \
+		>"$OUT" 2>"$ERR"
+fi
 STATUS=$?
-cat "$OUT"
+if $MENU_SUITE; then
+	cat "$ERR"
+else
+	cat "$OUT"
+fi
 
 if [ "$STATUS" -eq 124 ]; then
 	echo "Wren test timed out" >&2
@@ -77,6 +117,14 @@ if $FULL_SUITE; then
 		exit 0
 	fi
 	cat "$ERR" >&2
+	exit 1
+fi
+
+if $MENU_SUITE; then
+	if grep -Eq '^=== MENU TEST: [0-9]+ tests, [0-9]+ pass, 0 fail ===$' \
+	    "$ERR" && ! grep -q '^\[wren-menu\]' "$ERR"; then
+		exit 0
+	fi
 	exit 1
 fi
 

@@ -1,6 +1,6 @@
 // Full-screen editor for C-owned SyncTERM theme documents.
 
-import "syncterm" for Color, Key, KeyEvent, Mouse, MouseEvent, Screen
+import "syncterm" for Color, Font, Key, KeyEvent, Mouse, MouseEvent, Screen
 import "syncterm_menu" for Menu
 import "ui_widget" for Container, Rect, Widget
 import "ui_pane" for Pane
@@ -18,7 +18,208 @@ import "ui_draw" for Painter
 import "ui_style" for Style, Theme
 import "ui_color_picker" for ColorPicker
 import "ui_popup" for Alert, Confirm, Popup
+import "ui_help" for Help
 import "menu_ui" for MenuUi
+
+class ThemeGlyphGrid is Widget {
+  construct new(mode, value) {
+    super()
+    if (mode != "cp437" && mode != "ascii") {
+      Fiber.abort("ThemeGlyphGrid mode must be \"cp437\" or \"ascii\"")
+    }
+    _mode = mode
+    _minimum = mode == "cp437" ? 0 : 0x20
+    _maximum = mode == "cp437" ? 0xff : 0x7e
+    _selected = value.max(_minimum).min(_maximum)
+    _onChange = null
+    _onSelect = null
+  }
+
+  mode { _mode }
+  minimum { _minimum }
+  maximum { _maximum }
+  columns { 16 }
+  rows { ((_maximum - _minimum + 1 + columns - 1) / columns).floor }
+  preferredWidth { columns * 2 + 1 }
+  preferredHeight { rows }
+  selected { _selected }
+  selected=(value) {
+    var next = value.max(_minimum).min(_maximum)
+    if (next == _selected) return
+    _selected = next
+    if (_onChange != null) _onChange.call(_selected)
+    markDirty()
+  }
+  onChange=(fn) { _onChange = fn }
+  onSelect=(fn) { _onSelect = fn }
+
+  moveHorizontal_(delta) {
+    var count = _maximum - _minimum + 1
+    selected = _minimum + (((_selected - _minimum + delta) % count +
+        count) % count)
+  }
+
+  moveVertical_(delta) {
+    var offset = _selected - _minimum
+    var column = offset % columns
+    var row = (offset / columns).floor
+    var direction = delta < 0 ? -1 : 1
+    var remaining = delta.abs
+    while (remaining > 0) {
+      row = ((row + direction) % rows + rows) % rows
+      while (row * columns + column > _maximum - _minimum) {
+        row = ((row + direction) % rows + rows) % rows
+      }
+      remaining = remaining - 1
+    }
+    selected = _minimum + row * columns + column
+  }
+
+  cursorPos {
+    if (bounds == null) return null
+    var offset = _selected - _minimum
+    return [bounds.x + (offset % columns) * 2 + 1,
+        bounds.y + (offset / columns).floor]
+  }
+
+  onPaint_() {
+    var normal = style("list.item")
+    var selectedStyle = focused ? style("list.item.focused") :
+        effectiveTheme.style("list.item.focused.inactive")
+    Painter.fill(surface, Rect.new(0, 0, bounds.w, bounds.h), " ", normal)
+    var value = _minimum
+    while (value <= _maximum) {
+      var offset = value - _minimum
+      var x = (offset % columns) * 2
+      var y = (offset / columns).floor
+      if (y >= bounds.h) break
+      var st = value == _selected ? selectedStyle : normal
+      if (x >= bounds.w) break
+      if (value == _selected) {
+        Painter.fill(surface, Rect.new(x, y, 3.min(bounds.w - x), 1),
+            " ", st)
+      }
+      var cell = surface.cellAt(x + 1, y)
+      if (cell != null) {
+        Painter.applyStyle(cell, st)
+        cell.font = Font.cp437English
+        cell.chByte = value
+      }
+      value = value + 1
+    }
+  }
+
+  activate_() {
+    if (_onSelect != null) _onSelect.call(_selected)
+  }
+
+  handle(event) {
+    if (event is KeyEvent) return handleKey_(event)
+    if (event is MouseEvent) return handleMouse_(event)
+    return false
+  }
+
+  handleKey_(event) {
+    var code = event.code
+    if (code == Key.left) moveHorizontal_(-1)
+    if (code == Key.right) moveHorizontal_(1)
+    if (code == Key.up) moveVertical_(-1)
+    if (code == Key.down) moveVertical_(1)
+    if (code == Key.pageUp) moveVertical_(-rows.min(4))
+    if (code == Key.pageDown) moveVertical_(rows.min(4))
+    if (code == Key.home) selected = _minimum
+    if (code == Key.end) selected = _maximum
+    if (code == Key.enter || event.codepoint == 0x20) activate_()
+    if (code == Key.left || code == Key.right || code == Key.up ||
+        code == Key.down || code == Key.pageUp || code == Key.pageDown ||
+        code == Key.home || code == Key.end || code == Key.enter ||
+        event.codepoint == 0x20) return true
+    return false
+  }
+
+  handleMouse_(event) {
+    if (bounds == null || !bounds.contains(event.startX, event.startY)) {
+      return false
+    }
+    if (event.event == Mouse.wheelUpPress ||
+        event.event == Mouse.wheelUpClick) {
+      moveVertical_(-1)
+      return true
+    }
+    if (event.event == Mouse.wheelDownPress ||
+        event.event == Mouse.wheelDownClick) {
+      moveVertical_(1)
+      return true
+    }
+    if (event.event != Mouse.button1Click &&
+        event.event != Mouse.button1DblClick) return false
+    var x = event.startX - bounds.x
+    var y = event.startY - bounds.y
+    var value = _minimum + y * columns +
+        (((x - 1).max(0)) / 2).floor
+    if (value > _maximum) return true
+    selected = value
+    if (event.event == Mouse.button1DblClick) activate_()
+    return true
+  }
+}
+
+class ThemeGlyphPickerPane is Pane {
+  construct new(grid, onCancel) {
+    super()
+    shadow = true
+    titleAsBar = false
+    keyHints = [["Arrows", "Move"], ["Enter", "Select"],
+        ["Esc", "Cancel"]]
+    _onCancel = onCancel
+    add(grid)
+  }
+
+  handle(event) {
+    if (event is KeyEvent && event.code == Key.escape) {
+      _onCancel.call()
+      return true
+    }
+    return super.handle(event)
+  }
+}
+
+class ThemeGlyphPicker {
+  static hex_(value) {
+    var chars = "0123456789ABCDEF"
+    return "0x" + chars[(value >> 4) & 0x0f] + chars[value & 0x0f]
+  }
+
+  static title_(mode, value) {
+    if (mode == "cp437") return "CP437 Character - %(hex_(value))"
+    return "ASCII Character - %(value) '%(String.fromCodePoint(value))'"
+  }
+
+  static choose(app, mode, value) {
+    var result = null
+    var grid = ThemeGlyphGrid.new(mode, value)
+    var pane = null
+    var close = Fn.new {|accepted|
+      if (accepted) result = grid.selected
+      app.popModal()
+    }
+    pane = ThemeGlyphPickerPane.new(grid, Fn.new { close.call(false) })
+    pane.title = title_(mode, grid.selected)
+    pane.helpText = mode == "cp437" ?
+        "# CP437 Character\n\nSelect one of the 256 raw CP437 character " +
+        "codes. The grid is rendered with the CP437 font regardless of the " +
+        "font selected by the draft theme." :
+        "# ASCII Character\n\nSelect one of the 95 printable ASCII " +
+        "characters, from space through tilde."
+    pane.focused = true
+    pane.onClose = Fn.new { close.call(false) }
+    grid.onChange = Fn.new {|next| pane.title = title_(mode, next) }
+    grid.onSelect = Fn.new {|next| close.call(true) }
+    pane.fitContentToScreen()
+    app.modal(pane)
+    return result
+  }
+}
 
 class ThemeEditorModel {
   construct new(document) {
@@ -92,6 +293,18 @@ class ThemeEditorModel {
     changed_()
   }
 
+  selectStyle(role) {
+    for (row in _styles) {
+      if (row[0] == role) {
+        _mode = "styles"
+        _selectedStyle = role
+        changed_()
+        return true
+      }
+    }
+    return false
+  }
+
   move(delta) {
     var i = selectedIndex
     if (i == null) i = 0
@@ -160,22 +373,44 @@ class ThemeEditorModel {
     return out
   }
 
-  styleField(role, field) {
+  styleCascade(role, field) {
+    var out = []
+    var found = false
     for (candidate in cascade_(role)) {
       var row = directRow_(candidate)
-      if (row == null) continue
-      var bit = 1 << field
-      var value = row[3 + field]
-      if ((row[2] & bit) != 0) {
-        if (value != -1) return [value, candidate, "explicit"]
-      } else if (row[1] && value != -1) {
-        return [value, candidate, "compiled default"]
+      if (row == null) {
+        out.add([candidate, "absent", null, false])
+        continue
       }
+      var value = row[3 + field]
+      var present = (row[2] & (1 << field)) != 0
+      var kind
+      if (present) {
+        kind = value == -1 ? "explicit inherit" : "explicit"
+      } else if (row[1]) {
+        kind = value == -1 ? "compiled inherit" : "compiled default"
+      } else {
+        kind = "not set"
+      }
+      var winner = !found && value != -1 &&
+          (present || row[1])
+      if (winner) found = true
+      out.add([candidate, kind, value == -1 ? null : value, winner])
     }
-    var resolved = _theme.style(role)
-    var values = [resolved.font, resolved.legacyAttr,
-        resolved.fgRgb, resolved.bgRgb]
-    return [values[field], "default", "resolved"]
+    if (!found) {
+      var resolved = _theme.style(role)
+      var values = [resolved.font, resolved.legacyAttr,
+          resolved.fgRgb, resolved.bgRgb]
+      out.add(["resolved", "fallback", values[field], true])
+    }
+    return out
+  }
+
+  styleField(role, field) {
+    for (entry in styleCascade(role, field)) {
+      if (entry[3]) return [entry[2], entry[0], entry[1]]
+    }
+    Fiber.abort("Theme style cascade did not resolve %(role)")
   }
 
   directMode(row, field) {
@@ -233,6 +468,11 @@ class ThemeAtlas is Widget {
         palette[(attr >> 4) & 0x07])
   }
 
+  hexByte_(value) {
+    var chars = "0123456789ABCDEF"
+    return "0x" + chars[(value >> 4) & 0x0f] + chars[value & 0x0f]
+  }
+
   onPaint_() {
     var base = style("default")
     Painter.fill(surface, Rect.new(0, 0, bounds.w, bounds.h), " ", base)
@@ -284,7 +524,8 @@ class ThemeAtlas is Widget {
     var shownGlyph = _model.theme.glyphs[row[0]]
     var marker = " "
     if (selected) marker = glyph("focus.left")
-    var modeValue = _model.glyphMode == "ascii" ? row[4] : row[3]
+    var modeValue = _model.glyphMode == "ascii" ? row[4].toString :
+        hexByte_(row[3])
     var text = "%(marker) %(shownGlyph)  %(row[0])  [%(modeValue)]"
     Painter.text(surface, 0, y, text, sample, width)
     if (selected) Painter.text(surface, 0, y, marker,
@@ -395,7 +636,10 @@ class ThemeInspector is Widget {
       var source = row[1] ? "built-in" : "custom"
       var cpMode = (row[2] & 1) == 0 ? "default" : "explicit"
       var asciiMode = (row[2] & 2) == 0 ? "default" : "explicit"
-      return [row[0], source, "", "CP437: %(hex_(row[3], 2))",
+      var cpGlyph = _model.glyphMode == "cp437" ?
+          " '%(_model.theme.glyphs[row[0]])'" : ""
+      return [row[0], source, "",
+          "CP437: %(hex_(row[3], 2))%(cpGlyph)",
           "  %(cpMode)", "ASCII: %(row[4]) '%(String.fromCodePoint(row[4]))'",
           "  %(asciiMode)"]
     }
@@ -545,9 +789,11 @@ class ThemeClosePrompt is Popup {
 }
 
 class ThemeWidgetPreviewContent is Container {
-  construct new(draftTheme, onClose) {
+  construct new(draftTheme, onClose, onSelectRole) {
     super()
     theme = draftTheme
+    _onSelectRole = onSelectRole
+    _shownRole = null
 
     _menu = MenuBar.new()
     var idle = Fn.new {}
@@ -602,6 +848,35 @@ class ThemeWidgetPreviewContent is Container {
     add(_controlsPane)
     add(_status)
     focusedIndex = 1
+    updateStatus_()
+  }
+
+  currentRole {
+    var current = focusedChild
+    if (current == _menu) return "menubar.item.focused"
+    if (current == _listPane) return "list.item.focused"
+    if (current != _controlsPane) return null
+    var field = _form.focusedChild
+    if (field == _input) return "input.focused"
+    if (field == _check) return "checkbox.focused"
+    if (field == _radio) return "radio.item.focused"
+    if (field == _spin) return "spinbox.focused"
+    return "button.focused"
+  }
+
+  selectCurrentRole() {
+    var role = currentRole
+    if (role == null) return false
+    _onSelectRole.call(role)
+    return true
+  }
+
+  updateStatus_() {
+    var role = currentRole
+    if (role == _shownRole) return
+    _shownRole = role
+    var shown = role == null ? "No selectable role" : role
+    _status.segments = [["F2 Select Role", "left"], [shown, "right"]]
   }
 
   bounds=(rect) {
@@ -620,9 +895,16 @@ class ThemeWidgetPreviewContent is Container {
   }
 
   onPaint_() {
+    updateStatus_()
     Painter.fill(surface, Rect.new(0, 0, bounds.w, bounds.h), " ",
         style("default"))
     compositeChildren_()
+  }
+
+  handle(event) {
+    var handled = super.handle(event)
+    updateStatus_()
+    return handled
   }
 }
 
@@ -630,14 +912,20 @@ class ThemeWidgetPreviewPane is Pane {
   construct new(content, onClose) {
     super()
     shadow = true
+    _content = content
     _onCancel = onClose
     add(content)
   }
 
   handle(event) {
-    if (event is KeyEvent && event.code == Key.escape) {
-      _onCancel.call()
-      return true
+    if (event is KeyEvent) {
+      if (event.code == Key.escape) {
+        _onCancel.call()
+        return true
+      }
+      if (event.code == Key.f2 && _content.selectCurrentRole()) {
+        return true
+      }
     }
     return super.handle(event)
   }
@@ -698,14 +986,18 @@ class ThemeEditorContent is Container {
     var selected = _primary.focusedItem
     _modeAction = modeLabel
     _displayAction = label
-    _primary.items = [
+    var items = [
       [modeLabel, Fn.new { _actions["mode"].call() }],
       [label, Fn.new { _actions["display"].call() }],
-      ["Preview", Fn.new { _actions["preview"].call() }],
-      ["Edit", Fn.new { _actions["edit"].call() }],
-      ["New", Fn.new { _actions["new"].call() }],
-      ["Remove", Fn.new { _actions["remove"].call() }]
+      ["Preview", Fn.new { _actions["preview"].call() }]
     ]
+    if (_model.mode == "styles") {
+      items.add(["Cascade", Fn.new { _actions["cascade"].call() }])
+    }
+    items.add(["Edit", Fn.new { _actions["edit"].call() }])
+    items.add(["New", Fn.new { _actions["new"].call() }])
+    items.add(["Remove", Fn.new { _actions["remove"].call() }])
+    _primary.items = items
     if (selected != null) _primary.focusedItem = selected
   }
 
@@ -820,6 +1112,7 @@ class ThemeEditor {
       }
     }
     actions["preview"] = Fn.new { showWidgetPreview_(app, model) }
+    actions["cascade"] = Fn.new { showCascade_(app, model) }
     actions["edit"] = Fn.new {
       if (model.mode == "styles") {
         editStyle_(app, model, operation)
@@ -898,16 +1191,21 @@ class ThemeEditor {
 
   static showWidgetPreview_(app, model) {
     var close = Fn.new { app.popModal() }
-    var content = ThemeWidgetPreviewContent.new(model.theme, close)
+    var selectRole = Fn.new {|role|
+      if (model.selectStyle(role)) app.popModal()
+    }
+    var content = ThemeWidgetPreviewContent.new(model.theme, close,
+        selectRole)
     var pane = ThemeWidgetPreviewPane.new(content, close)
     pane.title = "Theme Preview"
     pane.helpText = "# Theme Preview\n\nThis interactive preview uses " +
         "the unsaved draft theme on representative SyncTERM widgets. " +
         "Move focus with Tab or the arrow keys and operate the controls " +
-        "normally. The outer frame retains the installed theme so the " +
-        "preview can always be closed."
+        "normally. Press F2 to close the preview and select the style " +
+        "role used by the focused widget. The outer frame retains the " +
+        "installed theme so the preview can always be closed."
     pane.keyHints = [["F1", "Help"], ["Tab", "Next Control"],
-        ["Esc", "Close"]]
+        ["F2", "Select Role"], ["Esc", "Close"]]
     pane.focused = true
     pane.onClose = close
     var size = Screen.size
@@ -927,7 +1225,9 @@ class ThemeEditor {
         "Show Glyphs / Show Styles\n:  Change the kind of definition shown\n" +
         "Show Legacy / Show RGB\n:  Change the style colour preview\n" +
         "Show ASCII / Show CP437\n:  Change the glyph preview\n" +
-        "Preview\n:  Apply the draft to representative interactive widgets\n" +
+        "Preview\n:  Apply the draft to representative interactive widgets; " +
+        "F2 selects the focused widget's style role\n" +
+        "Cascade\n:  Show every source considered for each style field\n" +
         "Edit\n:  Edit the selected definition\n" +
         "New / Remove\n:  Add or remove custom definitions\n" +
         "Metadata\n:  Edit theme name, author, description, and version\n" +
@@ -941,6 +1241,41 @@ class ThemeEditor {
     if (field == 1) return "Legacy Attribute"
     if (field == 2) return "Foreground"
     return "Background"
+  }
+
+  static cascadeValue_(field, value) {
+    if (value == null) return "inherit"
+    if (field == 1) return hex_(value, 2)
+    if (field == 2 || field == 3) return hex_(value, 6)
+    return value.toString
+  }
+
+  static cascadeText_(model) {
+    if (model.mode != "styles" || model.selectedName == null) {
+      return "# Style Cascade\n\nSelect a style role first."
+    }
+    var text = "# %(model.selectedName)\n\n"
+    for (field in 0..3) {
+      text = text + "## %(styleFieldLabel_(field))\n\n"
+      for (entry in model.styleCascade(model.selectedName, field)) {
+        var marker = entry[3] ? "**winner**" : "considered"
+        var value = entry[2] == null ? "" :
+            ": `%(cascadeValue_(field, entry[2]))`"
+        text = text + "* `%(entry[0])` - %(entry[1])%(value) " +
+            "(%(marker))\n"
+      }
+      text = text + "\n"
+    }
+    return text
+  }
+
+  static showCascade_(app, model) {
+    if (model.mode != "styles") {
+      Alert.show(app, "Style Cascade",
+          "Glyph definitions do not use the style cascade.")
+      return
+    }
+    Help.show(app, "Style Cascade", cascadeText_(model))
   }
 
   static styleValue_(model, row, field) {
@@ -1037,8 +1372,10 @@ class ThemeEditor {
     while (true) {
       var row = model.selectedRow
       if (row == null) return
+      var cpGlyph = model.glyphMode == "cp437" ?
+          " '%(model.theme.glyphs[row[0]])'" : ""
       var rows = [
-        [0, "CP437: %(row[3])"],
+        [0, "CP437: %(hex_(row[3], 2))%(cpGlyph)"],
         [1, "ASCII: %(row[4]) '%(String.fromCodePoint(row[4]))'"]
       ]
       var field = MenuUi.choice(app, row[0], rows, 0,
@@ -1055,9 +1392,8 @@ class ThemeEditor {
       }
       var value = row[3 + field]
       if (mode == 2) {
-        value = MenuUi.integer(app, field == 0 ? "CP437" : "ASCII",
-            "Character Code", value, field == 0 ? 0 : 0x20,
-            field == 0 ? 0xff : 0x7e)
+        value = ThemeGlyphPicker.choose(app,
+            field == 0 ? "cp437" : "ascii", value)
         if (value == null) continue
       }
       operation.call(model.document.setGlyph(row[0], field, mode, value))
@@ -1073,10 +1409,9 @@ class ThemeEditor {
   static addGlyph_(app, document, operation) {
     var name = MenuUi.prompt(app, "New Glyph", "Name", "", 80, false)
     if (name == null) return
-    var cp437 = MenuUi.integer(app, "New Glyph", "CP437 Code", 32, 0, 255)
+    var cp437 = ThemeGlyphPicker.choose(app, "cp437", 32)
     if (cp437 == null) return
-    var ascii = MenuUi.integer(app, "New Glyph", "ASCII Code", 32,
-        0x20, 0x7e)
+    var ascii = ThemeGlyphPicker.choose(app, "ascii", 32)
     if (ascii == null) return
     operation.call(document.addGlyph(name, cp437, ascii))
   }

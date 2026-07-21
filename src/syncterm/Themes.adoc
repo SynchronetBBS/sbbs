@@ -56,14 +56,19 @@ browser for diagnosis, but cannot be selected or opened in the editor.
 The editor's atlas contains every style role and glyph in the draft.  Show
 Glyphs / Show Styles changes the kind of definition shown.  Show Legacy / Show
 RGB changes the style colour display, and Show ASCII / Show CP437 changes the
-glyph display; the title reports the active mode.  Preview opens an
+glyph display; the title reports the active mode.  CP437 mode shows each
+glyph with its hexadecimal byte value, while ASCII mode shows the printable
+fallback and its decimal value.  Preview opens an
 interactive screen of real menu, list, form, input, selection, button,
 progress, and status widgets using the unsaved draft theme.  The preview's
 outer frame retains the installed theme so it remains usable even when the
-draft is incomplete or unreadable.  The inspector shows each resolved style
-field and the role which supplied it.  Enter or a double click edits the
-selected definition; Insert creates a custom definition and Delete removes
-one.
+draft is incomplete or unreadable.  Its status line identifies the role used
+by the focused widget; F2 closes the preview and selects that role in the
+atlas.  The inspector shows each resolved style field and the role which
+supplied it.  Cascade shows every role considered for all four fields,
+including absent and inherited entries and the winning source.  Enter or a
+double click edits the selected definition; Insert creates a custom
+definition and Delete removes one.
 
 A built-in style field has three possible states:
 
@@ -73,9 +78,14 @@ A built-in style field has three possible states:
   cascade.
 * *Explicit* stores the selected value in the theme file.
 
-Built-in glyph fields support *Default* and *Explicit*.  Custom style and
-glyph definitions are stored in full and can be removed.  Metadata edits the
-global `Name`, `Author`, `Description`, and `Version` values.
+Built-in glyph fields support *Default* and *Explicit*.  CP437 values are
+selected from a 16 by 16 grid of all byte values.  ASCII fallbacks are
+selected from a 16 by 6 grid containing space through tilde.  The raw CP437
+grid always uses font slot 0 so a draft style's font cannot change the
+meaning of the cells.  Arrow and page keys wrap through each grid; Enter or
+double click accepts and Escape cancels.  Custom style and glyph definitions
+are stored in full and can be removed.  Metadata edits the global `Name`,
+`Author`, `Description`, and `Version` values.
 
 Import replaces all style and glyph sections with those from another theme
 as one undoable operation.  This includes custom definitions, comments,

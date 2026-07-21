@@ -1126,6 +1126,21 @@ Escape from an owning editor closes it without rolling back accepted edits.
 An owning menu stays on the modal stack and is rendered behind a nested
 prompt, picker, viewer, or submenu until that child is dismissed.
 
+=== Headless Tests
+
+`run_wren.sh scripts/test_name.wren` runs a source-tree script in an
+off-screen connected VM.  `wrentest.wren` receives a Bash PTY and is treated
+as the aggregate connected-VM suite; other scripts receive a short-lived
+`/usr/bin/true` PTY.
+
+`run_wren.sh --menu scripts/test_name.wren` runs a menu-only test without
+opening an interactive SyncTERM window.  The test module must export class
+`MenuTest` with a static `run()` method returning `[passed, failed]`.  The
+harness constructs an isolated scripts directory, installs a temporary
+`MainMenu` entry point, invokes the test in the real menu VM, and exits through
+`Menu.quitApplication()`.  It does not copy scripts into the developer's
+personal scripts directory or expose menu capabilities to a connected VM.
+
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
 SyncTERM deliberately uses three Wren VMs.  They do not share Wren
@@ -4044,6 +4059,17 @@ validation or safe mode.  Save preserves untouched source text, validates
 the completed output, atomically replaces the destination where supported,
 and clears the editing history.  Saving the selected file also reloads the
 active process-wide theme.
+
+The shipped `menu_theme_editor` module keeps the document rows as the editing
+source of truth and builds a separate `Theme.fromData(document.themeData)`
+snapshot for each draft refresh.  Its cascade inspector distinguishes file
+values, explicit inheritance, compiled defaults, compiled inheritance, and
+absent roles for every field.  The interactive widget preview reports the
+theme role associated with its focused control and can return that role to
+the exhaustive atlas.  Glyph values are chosen as raw bytes from 16-column
+CP437 and printable-ASCII grids rather than entered as decimal integers.
+These operations remain menu-VM-only because they retain and modify a
+`ThemeDocument`.
 
 === Menu List Encryption [[menu-list-encryption]]
 
