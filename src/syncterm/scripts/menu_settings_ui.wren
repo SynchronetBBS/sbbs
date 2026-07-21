@@ -1,7 +1,7 @@
 import "syncterm" for FilePickerOptions, Host, Key
 import "syncterm_menu" for Menu, MenuEncryption, MenuFontSlot
 import "menu_ui" for MenuUi
-import "classic_theme" for ClassicTheme
+import "ui_style" for Theme
 import "menu_bbs_editor" for BbsEditor
 import "ui_popup" for Alert
 import "ui_help" for Help
@@ -20,6 +20,7 @@ class SettingsMenu {
     text = text +
         "Font Management\n:  Configure additional local font files\n" +
         "Program Settings\n:  Configure hardware, display, and application behavior\n" +
+        "Themes\n:  Preview and select the user-interface theme\n" +
         "File Locations\n:  Display configuration and data paths\n" +
         "Build Options\n:  Display features selected at build time"
     if (!connected) {
@@ -40,10 +41,11 @@ class SettingsMenu {
     if (!connected) rows.add([2, "Current Screen Mode"])
     rows.add([3, "Font Management"])
     rows.add([4, "Program Settings"])
-    rows.add([5, "File Locations"])
-    rows.add([6, "Build Options"])
+    rows.add([5, "Themes"])
+    rows.add([6, "File Locations"])
+    rows.add([7, "Build Options"])
     if (!connected && Menu.encryptionAvailable) {
-      rows.add([7, "List Encryption"])
+      rows.add([8, "List Encryption"])
     }
     return rows
   }
@@ -86,17 +88,95 @@ class SettingsMenu {
     }
     if (picked == 4) return program_(app, connected)
     if (picked == 5) {
-      locations_(app)
+      themes_(app)
       return false
     }
     if (picked == 6) {
+      locations_(app)
+      return false
+    }
+    if (picked == 7) {
       buildOptions_(app)
       return false
     }
-    if (picked == 7 && !connected && Menu.encryptionAvailable) {
+    if (picked == 8 && !connected && Menu.encryptionAvailable) {
       return encryption_(app)
     }
     return false
+  }
+
+  static themeEntry_(entries, filename) {
+    for (entry in entries) {
+      if (entry[0] == filename) return entry
+    }
+    return null
+  }
+
+  static themeRows_(entries) {
+    var counts = {}
+    for (entry in entries) {
+      var name = entry[1]
+      counts[name] = counts.containsKey(name) ? counts[name] + 1 : 1
+    }
+    var rows = []
+    for (entry in entries) {
+      var label = entry[1]
+      if (counts[label] > 1 && entry[0].count > 0) {
+        label = "%(label) (%(entry[0]))"
+      }
+      if (entry[5] != null) label = "[Invalid] %(label)"
+      rows.add([entry[0], label])
+    }
+    return rows
+  }
+
+  static themeHelp_(entry) {
+    if (entry == null) return "# Themes\n\nThe selected theme is unavailable."
+    var text = "# %(entry[1])\n\n"
+    if (entry[0].count == 0) {
+      text = text + "File\n:  Built-in Classic Theme\n"
+    } else {
+      text = text + "File\n:  `%(entry[0])`\n"
+    }
+    if (entry[2] != null) text = text + "Author\n:  %(entry[2])\n"
+    if (entry[4] != null) text = text + "Version\n:  %(entry[4])\n"
+    if (entry[3] != null) text = text + "\n%(entry[3])\n"
+    if (entry[5] != null) {
+      return text + "\nError\n:  %(entry[5])\n\nThis theme cannot be selected."
+    }
+    return text + "\nEnter\n:  Select this theme\nEsc\n:  Keep the current theme"
+  }
+
+  static themes_(app) {
+    var entries = Menu.themes
+    var rows = themeRows_(entries)
+    var current = Menu.selectedThemeFile
+    MenuUi.browserChoice(app, "Themes", rows, current,
+        Fn.new {|filename|
+          themeHelp_(themeEntry_(entries, filename))
+        }, Fn.new {|filename|
+          var entry = themeEntry_(entries, filename)
+          if (entry == null || entry[5] != null) {
+            Menu.cancelThemePreview()
+          } else {
+            var error = Menu.previewTheme(filename)
+            if (error != null) Menu.cancelThemePreview()
+          }
+          app.theme = Theme.current
+        }, Fn.new {|filename|
+          var entry = themeEntry_(entries, filename)
+          if (entry == null || entry[5] != null) return false
+          var error = Menu.selectTheme(filename)
+          if (error != null) {
+            Alert.show(app, "Themes", error)
+            return false
+          }
+          app.theme = Theme.current
+          return true
+        }, Fn.new {
+          Menu.cancelThemePreview()
+          app.theme = Theme.current
+        })
   }
 
   static screenMode_(app) {
@@ -460,7 +540,7 @@ class SettingsMenu {
 
   static applySettings_(app, s) {
     if (s.apply()) {
-      app.theme = ClassicTheme.from(s)
+      app.theme = Theme.current
       return true
     }
     s.reload()
@@ -590,10 +670,11 @@ class SettingsMenu {
         "**Default download Directory**\n  %(p["download"])\n" +
         "**Cache Directory**\n  %(p["cache"])\n" +
         "**SSH Keys File**\n  %(p["keys"])\n" +
-        "**Wren Scripts Directory**\n  %(p["scripts"])"
+        "**Wren Scripts Directory**\n  %(p["scripts"])\n" +
+        "**Theme Directory**\n  %(p["themes"])"
     var viewer = Help.new("File Locations", text)
     viewer.preformatted = true
-    viewer.fitToScreen(78, 20)
+    viewer.fitToScreen(78, 21)
     app.modal(viewer)
   }
 

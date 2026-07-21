@@ -1,6 +1,7 @@
 #include "menu_settings.h"
 
 #include "bbslist.h"
+#include "theme.h"
 #include <ciolib.h>
 #include <ini_file.h>
 #include <stdint.h>
@@ -106,6 +107,11 @@ set_ini_values(str_list_t *ini, const struct syncterm_settings *set)
 	    &ini_style);
 	iniSetInteger(ini, "SyncTERM", "CustomAspectHeight", set->custom_ah,
 	    &ini_style);
+	if (set->theme_file[0] == '\0')
+		iniRemoveKey(ini, "SyncTERM", "ThemeFile");
+	else
+		iniSetString(ini, "SyncTERM", "ThemeFile", set->theme_file,
+		    &ini_style);
 	iniSetEnum(ini, "ClassicTheme", "FrameColour", (char **)colour_enum,
 	    set->theme_frame_color, &ini_style);
 	iniSetEnum(ini, "ClassicTheme", "TextColour", (char **)colour_enum,
@@ -188,9 +194,25 @@ prepare_settings(const struct syncterm_settings *snapshot,
 	return true;
 }
 
+static bool
+theme_settings_changed(const struct syncterm_settings *snapshot)
+{
+	if (strcmp(snapshot->theme_file, settings.theme_file) != 0)
+		return true;
+	if (snapshot->theme_file[0] != '\0')
+		return false;
+	return snapshot->theme_frame_color != settings.theme_frame_color ||
+	    snapshot->theme_text_color != settings.theme_text_color ||
+	    snapshot->theme_background_color != settings.theme_background_color ||
+	    snapshot->theme_inverse_color != settings.theme_inverse_color ||
+	    snapshot->theme_lightbar_color != settings.theme_lightbar_color ||
+	    snapshot->theme_lightbar_background_color !=
+	    settings.theme_lightbar_background_color;
+}
+
 static void
 install_settings(const struct syncterm_settings *snapshot,
-    struct vmem_cell *resized)
+    struct vmem_cell *resized, struct syncterm_theme *theme)
 {
 	if (resized != NULL) {
 		free(scrollback_buf);
@@ -199,15 +221,25 @@ install_settings(const struct syncterm_settings *snapshot,
 			scrollback_lines = (unsigned)snapshot->backlines;
 	}
 	apply_settings(snapshot);
+	if (theme != NULL)
+		syncterm_theme_install(theme);
 }
 
 bool
 menu_settings_apply(const struct syncterm_settings *snapshot)
 {
 	struct vmem_cell *resized;
-	if (!prepare_settings(snapshot, &resized))
+	struct syncterm_theme *theme = NULL;
+	char error[256];
+	if (theme_settings_changed(snapshot) &&
+	    !syncterm_theme_prepare(snapshot, true, &theme, error,
+	    sizeof(error)))
 		return false;
-	install_settings(snapshot, resized);
+	if (!prepare_settings(snapshot, &resized)) {
+		syncterm_theme_free(theme);
+		return false;
+	}
+	install_settings(snapshot, resized, theme);
 	return true;
 }
 
@@ -215,11 +247,22 @@ bool
 menu_settings_save(const struct syncterm_settings *snapshot)
 {
 	struct vmem_cell *resized;
-	if (safe_mode || !prepare_settings(snapshot, &resized))
+	struct syncterm_theme *theme = NULL;
+	char error[256];
+	if (safe_mode)
 		return false;
+	if (theme_settings_changed(snapshot) &&
+	    !syncterm_theme_prepare(snapshot, true, &theme, error,
+	    sizeof(error)))
+		return false;
+	if (!prepare_settings(snapshot, &resized)) {
+		syncterm_theme_free(theme);
+		return false;
+	}
 	str_list_t ini = read_ini();
 	if (ini == NULL) {
 		free(resized);
+		syncterm_theme_free(theme);
 		return false;
 	}
 	set_ini_values(&ini, snapshot);
@@ -228,8 +271,58 @@ menu_settings_save(const struct syncterm_settings *snapshot)
 	strListFree(&ini);
 	if (!success) {
 		free(resized);
+		syncterm_theme_free(theme);
 		return false;
 	}
-	install_settings(snapshot, resized);
+	install_settings(snapshot, resized, theme);
+	return true;
+}
+
+bool
+menu_settings_select_theme(const char *filename, char *error,
+    size_t error_size)
+{
+	if (filename == NULL)
+		filename = "";
+	if (strlen(filename) > MAX_PATH ||
+	    (filename[0] != '\0' && !syncterm_theme_valid_filename(filename))) {
+		snprintf(error, error_size, "invalid theme filename");
+		return false;
+	}
+	struct syncterm_theme *theme;
+	if (!syncterm_theme_prepare_catalog_selection(filename, &theme, error,
+	    error_size))
+		return false;
+	struct syncterm_settings snapshot;
+	menu_settings_snapshot(&snapshot);
+	strcpy(snapshot.theme_file, filename);
+	struct vmem_cell *resized;
+	if (!prepare_settings(&snapshot, &resized)) {
+		syncterm_theme_free(theme);
+		snprintf(error, error_size, "the theme could not be applied");
+		return false;
+	}
+	if (safe_mode) {
+		install_settings(&snapshot, resized, theme);
+		return true;
+	}
+	str_list_t ini = read_ini();
+	if (ini == NULL) {
+		free(resized);
+		syncterm_theme_free(theme);
+		snprintf(error, error_size, "the configuration file could not be read");
+		return false;
+	}
+	set_ini_values(&ini, &snapshot);
+	iniRemoveSection(&ini, "UIFC");
+	bool success = write_ini(ini);
+	strListFree(&ini);
+	if (!success) {
+		free(resized);
+		syncterm_theme_free(theme);
+		snprintf(error, error_size, "the configuration file could not be written");
+		return false;
+	}
+	install_settings(&snapshot, resized, theme);
 	return true;
 }

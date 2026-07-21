@@ -77,6 +77,30 @@ slot_path(WrenVM *vm, int slot, char *path, size_t size,
 }
 
 static bool
+normalize_full_path(const char *source, char *dest, size_t size)
+{
+#ifdef _WIN32
+	size_t length = strlen(source);
+	/* The parent of a drive root is the picker's synthetic drive list. */
+	if (length == 5 && IS_ALPHA(source[0]) && source[1] == ':' &&
+	    IS_PATH_DELIM(source[2]) && source[3] == '.' && source[4] == '.') {
+		return strlcpy(dest, "\\\\?\\", size) < size;
+	}
+#endif
+	if (FULLPATH(dest, source, size) == NULL)
+		return false;
+#ifdef __unix__
+	/* dirwrap's _fullpath() collapses a final /.. at the root to "". */
+	if (dest[0] == '\0') {
+		if (size < 2)
+			return false;
+		strcpy(dest, "/");
+	}
+#endif
+	return true;
+}
+
+static bool
 normalize_directory(const char *source, char *dest, size_t size)
 {
 #ifdef _WIN32
@@ -89,15 +113,8 @@ normalize_directory(const char *source, char *dest, size_t size)
 #endif
 	if (source == NULL || *source == '\0')
 		source = ".";
-	if (FULLPATH(dest, source, size) == NULL)
+	if (!normalize_full_path(source, dest, size))
 		return false;
-#ifdef __unix__
-	if (dest[0] == '\0') {
-		if (size < 2)
-			return false;
-		strcpy(dest, "/");
-	}
-#endif
 	if (strlen(dest) + 2 > size)
 		return false;
 	backslash(dest);
@@ -387,21 +404,6 @@ static void fn_request_options(WrenVM *vm)
 		wrenSetSlotDouble(vm, 0, (double)call->options);
 }
 
-#define REQUEST_COLOR_GETTER(name, index) \
-	static void fn_request_##name(WrenVM *vm) \
-	{ \
-		struct wren_picker_call *call = request_call(vm); \
-		if (call != NULL) \
-			wrenSetSlotDouble(vm, 0, (double)call->colors[index]); \
-	}
-
-REQUEST_COLOR_GETTER(frame_color, 0)
-REQUEST_COLOR_GETTER(text_color, 1)
-REQUEST_COLOR_GETTER(background_color, 2)
-REQUEST_COLOR_GETTER(inverse_color, 3)
-REQUEST_COLOR_GETTER(lightbar_color, 4)
-REQUEST_COLOR_GETTER(lightbar_background_color, 5)
-
 static void
 fn_request_initial(WrenVM *vm)
 {
@@ -522,7 +524,7 @@ fn_request_join(WrenVM *vm)
 		return;
 	}
 	char full[MAX_PATH * 4 + 1];
-	if (FULLPATH(full, combined, sizeof(full)) == NULL) {
+	if (!normalize_full_path(combined, full, sizeof(full))) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
@@ -550,7 +552,7 @@ fn_request_resolve(WrenVM *vm)
 		}
 	}
 	char full[MAX_PATH * 4 + 1];
-	if (FULLPATH(full, combined, sizeof(full)) == NULL)
+	if (!normalize_full_path(combined, full, sizeof(full)))
 		strlcpy(full, combined, sizeof(full));
 	char drive[MAX_PATH + 1], dir[MAX_PATH * 4 + 1];
 	char name[MAX_PATH + 1], ext[MAX_PATH + 1];
@@ -734,13 +736,6 @@ static const struct binding bindings[] = {
 	{ "PickerRequest", false, "initialPath", fn_request_initial_path },
 	{ "PickerRequest", false, "mask", fn_request_mask },
 	{ "PickerRequest", false, "options", fn_request_options },
-	{ "PickerRequest", false, "frameColor", fn_request_frame_color },
-	{ "PickerRequest", false, "textColor", fn_request_text_color },
-	{ "PickerRequest", false, "backgroundColor", fn_request_background_color },
-	{ "PickerRequest", false, "inverseColor", fn_request_inverse_color },
-	{ "PickerRequest", false, "lightbarColor", fn_request_lightbar_color },
-	{ "PickerRequest", false, "lightbarBackgroundColor",
-	    fn_request_lightbar_background_color },
 	{ "PickerRequest", false, "initial_()", fn_request_initial },
 	{ "PickerRequest", false, "list_(_,_)", fn_request_list },
 	{ "PickerRequest", false, "join_(_,_)", fn_request_join },

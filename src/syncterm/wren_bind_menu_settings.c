@@ -5,6 +5,7 @@
 #include "menu_settings.h"
 #include "named_str_list.h"
 #include "syncterm.h"
+#include "theme.h"
 #include "webget.h"
 #include "wren_bind_internal.h"
 
@@ -636,6 +637,7 @@ fn_Menu_fileLocations(WrenVM *vm)
 	char cache[MAX_PATH + 1] = "";
 	char keys[MAX_PATH + 1] = "";
 	char scripts[MAX_PATH + 1] = "";
+	char themes[MAX_PATH + 1] = "";
 	get_syncterm_filename(global_list, sizeof(global_list),
 	    SYNCTERM_PATH_LIST, true);
 	get_syncterm_filename(ini, sizeof(ini), SYNCTERM_PATH_INI, false);
@@ -644,6 +646,8 @@ fn_Menu_fileLocations(WrenVM *vm)
 	get_syncterm_filename(cache, sizeof(cache), SYNCTERM_PATH_CACHE, false);
 	get_syncterm_filename(keys, sizeof(keys), SYNCTERM_PATH_KEYS, false);
 	get_syncterm_filename(scripts, sizeof(scripts), SYNCTERM_PATH_SCRIPTS,
+	    false);
+	get_syncterm_filename(themes, sizeof(themes), SYNCTERM_PATH_THEMES,
 	    false);
 	wrenEnsureSlots(vm, 3);
 	wrenSetSlotNewMap(vm, 0);
@@ -654,6 +658,101 @@ fn_Menu_fileLocations(WrenVM *vm)
 	map_string(vm, 0, 1, 2, "cache", cache);
 	map_string(vm, 0, 1, 2, "keys", keys);
 	map_string(vm, 0, 1, 2, "scripts", scripts);
+	map_string(vm, 0, 1, 2, "themes", themes);
+}
+
+static void
+insert_nullable_string(WrenVM *vm, int list_slot, int value_slot,
+    const char *value)
+{
+	if (value == NULL)
+		wrenSetSlotNull(vm, value_slot);
+	else
+		wrenSetSlotString(vm, value_slot, value);
+	wrenInsertInList(vm, list_slot, -1, value_slot);
+}
+
+static void
+fn_Menu_themes(WrenVM *vm)
+{
+	if (!syncterm_theme_catalog_refresh(settings.theme_file)) {
+		wren_throw(vm, "Menu.themes: unable to enumerate themes");
+		return;
+	}
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; i < syncterm_theme_catalog_count(); i++) {
+		const struct syncterm_theme_catalog_entry *entry =
+		    syncterm_theme_catalog_entry(i);
+		wrenSetSlotNewList(vm, 1);
+		insert_nullable_string(vm, 1, 2, entry->filename);
+		insert_nullable_string(vm, 1, 2, entry->name);
+		insert_nullable_string(vm, 1, 2, entry->author);
+		insert_nullable_string(vm, 1, 2, entry->description);
+		insert_nullable_string(vm, 1, 2, entry->version);
+		insert_nullable_string(vm, 1, 2, entry->error);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_Menu_selectedThemeFile(WrenVM *vm)
+{
+	wrenSetSlotString(vm, 0, settings.theme_file);
+}
+
+static bool
+theme_filename_slot(WrenVM *vm, int slot, char *filename, size_t size)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_STRING) {
+		wren_throw(vm, "theme filename must be a String");
+		return false;
+	}
+	int length;
+	const char *value = wrenGetSlotBytes(vm, slot, &length);
+	if (length < 0 || (size_t)length >= size ||
+	    memchr(value, 0, (size_t)length) != NULL) {
+		wren_throw(vm, "theme filename is too long or contains NUL");
+		return false;
+	}
+	memcpy(filename, value, (size_t)length);
+	filename[length] = '\0';
+	return true;
+}
+
+static void
+fn_Menu_previewTheme(WrenVM *vm)
+{
+	char filename[MAX_PATH + 1];
+	if (!theme_filename_slot(vm, 1, filename, sizeof(filename)))
+		return;
+	const char *error = syncterm_theme_preview(filename);
+	if (error == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, error);
+}
+
+static void
+fn_Menu_cancelThemePreview(WrenVM *vm)
+{
+	syncterm_theme_cancel_preview();
+	wrenSetSlotNull(vm, 0);
+}
+
+static void
+fn_Menu_selectTheme(WrenVM *vm)
+{
+	char filename[MAX_PATH + 1];
+	if (!theme_filename_slot(vm, 1, filename, sizeof(filename)))
+		return;
+	char error[256];
+	if (menu_settings_select_theme(filename, error, sizeof(error))) {
+		settings_generation++;
+		wrenSetSlotNull(vm, 0);
+	}
+	else
+		wrenSetSlotString(vm, 0, error);
 }
 
 static void
@@ -941,6 +1040,11 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "currentScreenMode", fn_Menu_currentScreenMode },
 	{ "Menu", true, "setScreenMode(_)", fn_Menu_setScreenMode },
 	{ "Menu", true, "fileLocations", fn_Menu_fileLocations },
+	{ "Menu", true, "themes", fn_Menu_themes },
+	{ "Menu", true, "selectedThemeFile", fn_Menu_selectedThemeFile },
+	{ "Menu", true, "previewTheme(_)", fn_Menu_previewTheme },
+	{ "Menu", true, "cancelThemePreview()", fn_Menu_cancelThemePreview },
+	{ "Menu", true, "selectTheme(_)", fn_Menu_selectTheme },
 	{ "Menu", true, "encryptionAlgorithm", fn_Menu_encryptionAlgorithm },
 	{ "Menu", true, "encryptionKeySize", fn_Menu_encryptionKeySize },
 	{ "Menu", true, "encryptionName", fn_Menu_encryptionName },

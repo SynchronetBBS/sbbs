@@ -1,4 +1,4 @@
-// SyncTERM Wren UI library — Popup, Alert, Confirm, Prompt.
+// SyncTERM Wren UI library — Popup, Alert, Confirm, Prompt, LinePrompt.
 //
 // Modal dialogs that push themselves onto an App's modal stack, run
 // the App's drain loop until dismissed, then return a result.  Built
@@ -11,6 +11,7 @@
 //   if (Confirm.show(app, "Delete file?")) { ... }
 //   if (Confirm.show(app, "Delete file?", "# Delete\n\n...")) { ... }
 //   var name = Prompt.show(app, "Your name?", "default")
+//   var path = LinePrompt.show(app, "Path", "/tmp")
 //   if (name != null) { ... }   // null = cancelled
 //   Alert.runStandalone(App.new(), "No enclosing App is running")
 //
@@ -25,6 +26,7 @@
 //              Tab cycles focus between Yes / No.
 //   Prompt   — Enter in input or on OK button → submits the value,
 //              Esc / Cancel button → null.  Tab cycles input ↔ OK ↔ Cancel.
+//   LinePrompt — Enter submits and Esc cancels a compact labelled field.
 //
 // Sizing: each popup auto-fits its message + minimum-button-row
 // against the screen, then centres itself.  Caller can override
@@ -51,8 +53,8 @@ class PopStatus is Pane {
     shadow      = true
     // Status overlay is dismissed programmatically (popStatus(null))
     // and has no per-pane help — opt out of the corner buttons.  Use
-    // a single-line frame to keep it compact.
-    framePreset = "single"
+    // the informational frame family.
+    frameKind   = "display"
     titleAsBar  = false
     helpable    = false
     closeable   = false
@@ -108,9 +110,10 @@ class Popup is Pane {
     _onDismiss    = null
     focused       = true
     shadow        = true              // dialogs always cast a drop-shadow
-    // Popups use a single-line frame with title embedded in the top
-    // border (UIFC convention for Yes/No / Alert / Prompt).
-    framePreset = "single"
+    // Popups contain controls and use the same frame family as UIFC
+    // lists and input boxes.  Informational subclasses such as Help
+    // override this choice.
+    frameKind   = "control"
     titleAsBar  = false
     helpable    = false            // few popups have context help
     // [X] click dismisses with null — same as Esc in every Popup subclass.
@@ -578,6 +581,79 @@ class Prompt is Popup {
   // Esc cancels; Enter / Tab / mouse fall through to the focused
   // child (TextInput or one of the buttons).  TextInput's onSubmit
   // wires Enter-in-the-input to dismissWith_(value).
+  handle(ev) {
+    if (ev is KeyEvent && ev.code == Key.escape) {
+      dismissWith_(null)
+      return true
+    }
+    return super.handle(ev)
+  }
+}
+
+// Compact UIFC-style single-row input box.  The label and input share
+// the sole interior row; Enter submits and Esc cancels without requiring
+// a redundant button row.  A caller may still put contextual text in the
+// top frame through Pane.title.
+class LinePrompt is Popup {
+  construct new(label, initial) {
+    super(null)
+    _label = (label == null ? "" : label)
+    _labelWidth = 0
+    _input = SelectOnFocusInput.new()
+    _input.value = (initial == null ? "" : initial)
+    _input.onSubmit = Fn.new {|s| dismissWith_(s) }
+    add(_input)
+  }
+
+  label { _label }
+  input { _input }
+
+  sizeForInput(inputWidth) { sizeForInput(inputWidth, 30) }
+  sizeForInput(inputWidth, minimumWidth) {
+    var requested = (_label.count + inputWidth + 6).max(minimumWidth)
+    if (title != null) requested = requested.max(title.count + 6)
+    var size = Screen.size
+    var width = requested.min((size[0] - 4).max(1))
+    var x = ((size[0] - width) / 2).floor + 1
+    var y = ((size[1] - 3) / 2).floor + 1
+    bounds = Rect.new(x, y, width, 3)
+  }
+
+  static show(app, label) { show(app, label, null) }
+  static show(app, label, initial) {
+    var p = LinePrompt.new(label, initial)
+    p.sizeForInput(initial == null ? 0 : initial.count)
+    app.modal(p)
+    return p.result
+  }
+
+  static runStandalone(app, label) { runStandalone(app, label, null) }
+  static runStandalone(app, label, initial) {
+    var p = LinePrompt.new(label, initial)
+    p.sizeForInput(initial == null ? 0 : initial.count)
+    return Popup.runStandalone_(app, p)
+  }
+
+  bounds=(r) {
+    super.bounds = r
+    var ib = innerBounds
+    if (ib == null) return
+    // Match UIFC's one-row geometry: one leading label cell, a colon
+    // and space, the input, then one trailing cell before the frame.
+    _labelWidth = _label.count.min((ib.w - 5).max(0))
+    var inputX = ib.x + _labelWidth + 3
+    var inputW = (ib.right - inputX).max(1)
+    _input.bounds = Rect.new(inputX, ib.y, inputW, 1)
+  }
+
+  onPaint_() {
+    super.onPaint_()
+    if (_labelWidth == 0) return
+    var st = style("default")
+    Painter.text(surface, 2, 1, _label, st, _labelWidth)
+    Painter.text(surface, 2 + _labelWidth, 1, ":", st, 1)
+  }
+
   handle(ev) {
     if (ev is KeyEvent && ev.code == Key.escape) {
       dismissWith_(null)

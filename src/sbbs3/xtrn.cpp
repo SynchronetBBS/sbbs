@@ -408,11 +408,37 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	else
 		comspec_str[0] = 0;
 
-	if (startup_dir && cmdline[1] != ':' && cmdline[0] != '/'
-	    && cmdline[0] != '\\' && cmdline[0] != '.')
+	bool   prefix_startup_dir = (startup_dir && cmdline[1] != ':' && cmdline[0] != '/'
+	                             && cmdline[0] != '\\' && cmdline[0] != '.');
+	// What the assembled command line WOULD be, measured rather than taken from
+	// snprintf()'s return value -- and that is deliberate, however backwards it
+	// looks. C99 says snprintf() returns the length it WANTED, which is exactly
+	// what a truncation check needs, but genwrap.h redefines snprintf() to
+	// xpdev's safe_snprintf() unless USE_SNPRINTF is defined, and that wrapper
+	// deliberately CLAMPS its return to size-1 (31 callers accumulate with
+	// `d += snprintf(...)` and would run off the end of the buffer otherwise).
+	// USE_SNPRINTF is set only for darwin and freebsd (xpdev/Common.gmake), so
+	// the return value means the would-be length there and the truncated length
+	// on Linux and Windows. Measuring the inputs is the only form that behaves
+	// the same on all four.
+	size_t cmdline_len = strlen(comspec_str) + strlen(cmdline)
+	                     + (prefix_startup_dir ? strlen(startup_dir) : 0);
+
+	if (prefix_startup_dir)
 		SAFEPRINTF3(fullcmdline, "%s%s%s", comspec_str, startup_dir, cmdline);
 	else
 		SAFEPRINTF2(fullcmdline, "%s%s", comspec_str, cmdline);
+
+	// SAFEPRINTF truncates SILENTLY, and this string IS the child's entire
+	// command line -- so an over-long one loses its trailing arguments and the
+	// program runs with a different invocation than the sysop configured. The
+	// evidence then disagrees with the symptom: the log above prints the command
+	// we MEANT to run, so a door can report its content missing while the log
+	// shows that content's full path. Say so instead.
+	if (cmdline_len >= sizeof fullcmdline)
+		lprintf(LOG_ERR, "!Command line TRUNCATED to %u of %u characters"
+		        " (trailing arguments lost): %s"
+		        , (uint)(sizeof fullcmdline - 1), (uint)cmdline_len, fullcmdline);
 
 	SAFECOPY(realcmdline, fullcmdline); // for errormsg if failed to execute
 
@@ -1186,10 +1212,27 @@ int sbbs_t::external(const char* cmdline, int mode, const char* startup_dir)
 	SAFECOPY(fname, getfname(str));
 
 	snprintf(fullpath, sizeof fullpath, "%s%s", startup_dir, fname);
-	if (cmdline[0] != '/' && cmdline[0] != '.' && fexist(fullpath))
+	// Measured, not snprintf()'s return: that return is the would-be length here
+	// (darwin/freebsd define USE_SNPRINTF) but the CLAMPED length on Linux, where
+	// genwrap.h redirects snprintf() to xpdev's safe_snprintf(). See the Windows
+	// branch of external() for the whole story.
+	size_t cmdline_len = strlen(cmdline);
+	if (cmdline[0] != '/' && cmdline[0] != '.' && fexist(fullpath)) {
+		cmdline_len += strlen(startup_dir);
 		snprintf(fullcmdline, sizeof fullcmdline, "%s%s", startup_dir, cmdline);
-	else
+	} else
 		SAFECOPY(fullcmdline, cmdline);
+
+	// Truncated SILENTLY otherwise, and this string IS the child's entire
+	// command line: over-long, it loses its trailing arguments and the program
+	// runs with a different invocation than the sysop configured, while the log
+	// above still shows the command we MEANT to run. (Below, an over-long line
+	// is either split into argv or handed to the shell -- both inherit the
+	// truncation.)
+	if (cmdline_len >= sizeof fullcmdline)
+		lprintf(LOG_ERR, "!Command line TRUNCATED to %u of %u characters"
+		        " (trailing arguments lost): %s"
+		        , (uint)(sizeof fullcmdline - 1), (uint)cmdline_len, fullcmdline);
 
 	if (native) { // Native (not MS-DOS) external
 

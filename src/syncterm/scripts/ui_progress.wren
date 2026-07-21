@@ -1,4 +1,4 @@
-// SyncTERM Wren UI library — ProgressBar.
+// SyncTERM Wren UI library — progress display widgets.
 //
 // A horizontal progress bar that fills from the left with the medium-
 // shade character (U+2592 = CP437 0xB1) up to the fraction
@@ -23,6 +23,46 @@
 
 import "ui_widget" for Widget, Rect
 import "ui_draw"   for Painter
+import "ui_popup"  for Popup
+
+// A vertically centered block of wrapped progress-status rows.  Every row
+// starts at the same padded left edge so callers can supply aligned columns.
+class ProgressText is Widget {
+  construct new() {
+    super()
+    focusable = false
+    _lines = []
+  }
+
+  lines=(value) {
+    _lines = value
+    markDirty()
+  }
+
+  wrappedLines_(width) {
+    var wrapped = []
+    var textWidth = (width - 2).max(1)
+    for (line in _lines) {
+      for (part in Popup.wrap_(line, textWidth)) wrapped.add(part)
+    }
+    return wrapped
+  }
+
+  rowCount(width) { wrappedLines_(width).count }
+
+  onPaint_() {
+    var sf = surface
+    var st = style("default")
+    var textWidth = (bounds.w - 2).max(1)
+    Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ", st)
+    var lines = wrappedLines_(bounds.w)
+    var count = lines.count.min(bounds.h)
+    var row = ((bounds.h - count) / 2).floor
+    for (i in 0...count) {
+      Painter.text(sf, 1, row + i, lines[i], st, textWidth)
+    }
+  }
+}
 
 class ProgressBar is Widget {
   construct new() {

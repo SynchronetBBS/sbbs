@@ -15,8 +15,11 @@ class UiListTest {
 
     // Construction + items
     testListDefaults_()
-    testListItemsSetterResets_()
+    testListItemsSetterInitializes_()
     testListItemsSetterEmpty_()
+    testListItemsSetterPreservesView_()
+    testListItemsSetterClampsView_()
+    testResetItemsResetsView_()
 
     // Selection clamping
     testSelectedClampsHigh_()
@@ -110,11 +113,11 @@ class UiListTest {
            "scrolling and wrapping enabled, scrollbar on right")
   }
 
-  static testListItemsSetterResets_() {
+  static testListItemsSetterInitializes_() {
     var l = ListView.new()
     l.items = ["a", "b", "c"]
     check_(l.count == 3 && l.selected == 0 && l.scrollTop == 0,
-           "List items=: sets count, selects 0, resets scrollTop")
+           "List items=: initial population selects the first row")
   }
 
   static testListItemsSetterEmpty_() {
@@ -123,6 +126,40 @@ class UiListTest {
     l.items = []
     check_(l.count == 0 && l.selected == null,
            "List items= []: selected becomes null")
+  }
+
+  static testListItemsSetterPreservesView_() {
+    var l = makeList_(20)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    l.selected = 12
+    l.scrollTop = 10
+    var replacement = []
+    for (i in 0...20) replacement.add("new-%(i)")
+    l.items = replacement
+    l.bounds = Rect.new(1, 1, 10, 5)
+    check_(l.selected == 12 && l.scrollTop == 10 &&
+           l.selectedItem == "new-12",
+           "List items=: preserves selection and viewport across layout")
+  }
+
+  static testListItemsSetterClampsView_() {
+    var l = makeList_(20)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    l.selected = 18
+    l.scrollTop = 15
+    l.items = ["a", "b", "c", "d"]
+    check_(l.selected == 3 && l.scrollTop == 0,
+           "List items=: clamps state when replacement is shorter")
+  }
+
+  static testResetItemsResetsView_() {
+    var l = makeList_(20)
+    l.bounds = Rect.new(1, 1, 10, 5)
+    l.selected = 12
+    l.scrollTop = 10
+    l.resetItems(["a", "b", "c"])
+    check_(l.selected == 0 && l.scrollTop == 0,
+           "List resetItems: selects the first row and resets viewport")
   }
 
   // ----- Selection clamping ---------------------------------------

@@ -1,4 +1,3 @@
-import "classic_theme" for ClassicTheme
 import "syncterm" for FilePickerOptions, Host, Key, KeyEvent, Mouse,
                        MouseEvent, REPL, Screen
 import "ui_app" for App
@@ -249,8 +248,8 @@ class PickerPane is Pane {
     if (listing == null) return false
     _listing = listing
     _path = listing.path
-    _directories.items = listing.directories
-    _files.items = listing.files
+    _directories.resetItems(listing.directories)
+    _files.resetItems(listing.files)
     if (selectedName != null && selectedName.count > 0) {
       var i = 0
       while (i < listing.files.count) {
@@ -497,10 +496,10 @@ class PickerPane is Pane {
     var divider = _directories.bounds.right - bounds.x + 1
     var listTop = _directories.bounds.y - bounds.y
     Painter.vline(surface, divider, listTop, _directories.bounds.h,
-        glyph("frame.double.left"), frame)
+        glyph("frame.control.left"), frame)
     var sep = _separatorRow - bounds.y
     Painter.hline(surface, x, sep, width,
-        glyph("frame.double.separator"), frame)
+        glyph("frame.control.separator"), frame)
     Painter.text(surface, 2, _infoRow - bounds.y, _infoLine1, normalStyle,
         bounds.w - 4)
     Painter.text(surface, 2, _infoRow - bounds.y + 1, _infoLine2,
@@ -513,7 +512,7 @@ class PickerPane is Pane {
           style("title"), 6)
     }
     Painter.hline(surface, x, _buttonRow - bounds.y - 1, width,
-        glyph("frame.double.separator"), frame)
+        glyph("frame.control.separator"), frame)
   }
 
   handle(event) {
@@ -547,9 +546,6 @@ class PickerPane is Pane {
 class FilePicker {
   static run(request) {
     var app = App.new()
-    app.theme = ClassicTheme.fromColors(request.frameColor,
-        request.textColor, request.backgroundColor, request.inverseColor,
-        request.lightbarColor, request.lightbarBackgroundColor)
     var pane = PickerPane.new(app, request)
     var indicator = PickerIndicator.new()
     app.root.add(pane)
@@ -567,10 +563,6 @@ class FilePicker {
     app.bind(Key.wrenConsole, Fn.new {|key|
       PickerBootstrap.console()
       indicator.refresh()
-    })
-    app.bind(Key.quit, Fn.new {|key|
-      request.quitApplication()
-      app.quit()
     })
     app.runSync()
   }

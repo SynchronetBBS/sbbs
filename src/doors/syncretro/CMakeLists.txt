@@ -12,6 +12,7 @@ add_executable(syncretro
     main.c
     retro_core.c        # dlopen the core, resolve the retro_* ABI
     retro_env.c         # the retro_environment_t callback (frontend policy)
+    retro_options.c     # core options: what the core offers, what a console pins
     retro_bridge.c      # video / audio / input callbacks -> termgfx + door I/O
     syncretro_io.c      # terminal enter/probe/leave + present path
     syncretro_input.c   # socket decode -> cached RetroPad
@@ -22,6 +23,7 @@ add_executable(syncretro
     syncretro_door.c    # DOOR32.SYS / -s<fd> / -name / -home / -t / -core
     syncretro_config.c  # per-user sandbox + system/save dirs
     syncretro_quant.c   # truecolor frame -> 256-color indexed, for the sixel tier
+    syncretro_dirty.c   # which cells changed: patch the frame instead of repainting
     syncretro_plat.c)   # the door's Windows-vs-POSIX seam (clock/sleep/socket/stderr)
 
 # libretro.h lives in this dir (vendored). Our own code is house-style tabs.
@@ -159,6 +161,31 @@ if(NOT WIN32)
 endif()
 
 # ---------------------------------------------------------------------------
+# probe_core -- the core diagnostic (opt-in: cmake -DSYNCRETRO_PROBE=ON).
+#
+# NOT a test and NOT part of the door: it loads a core, reports what the core
+# actually does (rotation, geometry changes, options, colour count, a thumbnail)
+# and exits. It is how a console's cost gets measured BEFORE an install dir is
+# written -- M3_MULTICORE.md sec 2's fceumm table came from its throwaway
+# ancestor. See probe_core.c's header.
+#
+# It links the door's REAL retro_core.c so what it measures is what the door
+# would do, and supplies its own sr_bridge_install()/sr_environment() -- hence
+# no termgfx, no xpdev, no libjxl, and no terminal.
+# ---------------------------------------------------------------------------
+option(SYNCRETRO_PROBE "Build probe_core, the libretro core diagnostic" OFF)
+if(SYNCRETRO_PROBE)
+    add_executable(probe_core probe_core.c retro_core.c retro_options.c)
+    target_include_directories(probe_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    set_target_properties(probe_core PROPERTIES C_STANDARD 11)
+    if(MSVC)
+        target_compile_definitions(probe_core PRIVATE _CRT_SECURE_NO_WARNINGS)
+    else()
+        target_link_libraries(probe_core ${CMAKE_DL_LIBS})
+    endif()
+endif()
+
+# ---------------------------------------------------------------------------
 # Unit tests. Opt-in: cmake -DSYNCRETRO_TESTS=ON. No core is ever linked, and
 # the first three link no termgfx either -- they are pure (test_audio_bytes is
 # the exception; see its own note below). test_keypad.c in particular is the
@@ -183,6 +210,13 @@ if(SYNCRETRO_TESTS)
     add_executable(test_quant test_quant.c syncretro_quant.c)
     target_include_directories(test_quant PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME quant COMMAND test_quant)
+
+    # test_dirty pins the rectangle geometry: that the rects COVER every changed
+    # pixel (a miss leaves stale pixels on screen until the next full frame) and
+    # stay cell-aligned (a sixel can only be drawn at a cell corner).
+    add_executable(test_dirty test_dirty.c syncretro_dirty.c)
+    target_include_directories(test_dirty PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME dirty COMMAND test_dirty)
 
     # test_audio_bytes -- UNLIKE the three tests above, this one links the
     # real termgfx audio encoder (needs libsndfile): the whole point is

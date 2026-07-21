@@ -125,11 +125,49 @@ function syncretro_is_meta_tag(body)
 	return true;
 }
 
+// A ROM-name -> display-title map, for a console whose filenames are IDENTIFIERS
+// rather than descriptions. Every cartridge console names its files for humans
+// ("Astrosmash (1981) (Mattel).rom"), so the parser below can read a title out of
+// them. An arcade romset cannot: MAME finds the driver BY the zip's basename, so
+// "puckman.zip" has to stay "puckman.zip", and a picker that showed the filename
+// would list two hundred eight-letter codes.
+//
+// Set from a console's install (syncretro_lobby_init reads names.json). Empty for
+// every other console, which is why this costs them nothing.
+var syncretro_names = {};
+
+function syncretro_names_set(map)
+{
+	var k;
+
+	syncretro_names = {};
+	if (!map)
+		return;
+	// Lower-cased keys: a romset's case is not guaranteed across platforms, and
+	// this map is hand-edited by sysops.
+	//
+	// A leading underscore marks a key as NOT a romset -- JSON has no comment
+	// syntax, so the shipped file documents itself in a "_comment" entry, and
+	// this is what keeps that entry from being read as a game called "_comment".
+	for (k in map) {
+		if (map.hasOwnProperty(k) && String(k).charAt(0) !== "_")
+			syncretro_names[String(k).toLowerCase()] = String(map[k]);
+	}
+}
+
 function syncretro_parse_title(filename)
 {
 	var name = syncretro_strip_ext(String(filename));
 	var out  = { title: name, year: 0, publisher: "", tags: [] };
-	var m;
+	var m, mapped;
+
+	// A mapped name is the WHOLE answer: it is a curated display title, so there
+	// is no year/publisher/tag to parse out of it and nothing below should try.
+	mapped = syncretro_names[name.toLowerCase()];
+	if (mapped !== undefined) {
+		out.title = mapped;
+		return out;
+	}
 
 	// One or more stacked dump markers: "[!]", "[a1][!]".
 	name = name.replace(/(\s*\[[^\]]*\])+\s*$/, "");
@@ -294,7 +332,8 @@ function syncretro_bios_titled(name, words)
 // to get out of step with the name beside it.
 function syncretro_console(spec)
 {
-	var c = { name: "", short: "", profile: "pad", core: "", id: "" };
+	var c = { name: "", short: "", profile: "pad", core: "", id: "",
+	          shared_saves: false };
 
 	if (spec) {
 		if (spec.name)
@@ -305,6 +344,13 @@ function syncretro_console(spec)
 			c.profile = String(spec.profile).toLowerCase();
 		if (spec.core)
 			c.core = String(spec.core);
+		// Where the core's saves go. Default: PER-USER, which is right for a
+		// cartridge console -- one player's battery save is not another's.
+		// `shared_saves: true` points every player at one directory instead,
+		// which is right for an ARCADE cabinet: the high-score table is the
+		// whole point of the machine, and there is no per-player save to keep
+		// apart. See the home path in syncretro_lobby.js.
+		c.shared_saves = spec.shared_saves ? true : false;
 	}
 	if (c.short === "")
 		c.short = c.name;

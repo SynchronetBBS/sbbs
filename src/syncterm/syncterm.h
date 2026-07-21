@@ -20,7 +20,8 @@ enum {
 	SYNCTERM_PATH_CACHE,
 	SYNCTERM_PATH_KEYS,
 	SYNCTERM_PATH_SYSTEM_CACHE,
-	SYNCTERM_PATH_SCRIPTS
+	SYNCTERM_PATH_SCRIPTS,
+	SYNCTERM_PATH_THEMES
 };
 
 enum CursorTypeEnum {
@@ -99,6 +100,7 @@ struct syncterm_settings {
 	unsigned              theme_inverse_color;
 	unsigned              theme_lightbar_color;
 	unsigned              theme_lightbar_background_color;
+	char                  theme_file[MAX_PATH + 1];
 };
 
 extern ini_bitdesc_t audio_output_bits[];
@@ -135,6 +137,7 @@ void resolve_list_path(struct syncterm_settings *set);
 int ciolib_to_screen(int screen);
 int screen_to_ciolib(int ciolib);
 bool check_exit(bool force);
+int syncterm_getkey(void);
 void set_default_cursor(void);
 
 /* Cross-thread popup queue.  Background threads post (title, body)

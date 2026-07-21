@@ -78,6 +78,7 @@
 #include "caps.h"        /* termgfx: termgfx_caps_parse_jxl */
 #include "audio.h"       /* termgfx: termgfx_audio_parse_caps */
 #include "keymode.h"     /* termgfx: key-mode negotiation + kitty/evdev decode */
+#include "term.h"        /* termgfx: termgfx_term_parse_status (DECSSDT reply scan) */
 #include "syncretro_binds.h"
 #include "syncretro_profile.h"
 #include "syncretro_keypad.h"
@@ -108,10 +109,18 @@ static int16_t  g_joypad[SR_PADS][SR_PAD_IDS];
 static uint32_t g_expire_ms[SR_PADS][SR_PAD_IDS]; /* byte path only: 0 = no timer */
 static int      g_swap;   /* Tab: 1 swaps which core port each player drives */
 static int      g_quit;
+/* The terminal's status-line type BEFORE the door hid it (DECSSDT), captured
+ * from the DECRQSS reply; -1 = not answered yet, or the terminal has no status
+ * line at all. sr_io_leave() restores it. */
+static int      g_status_type = -1;
 
 #define sr_in_now_ms()   sr_plat_now_ms()
 
 int sr_input_quit_requested(void) { return g_quit; }
+
+/* The status-line type the terminal had before the door hid it, or -1 if it
+ * never told us. sr_io_leave() uses it to put the client back as it was. */
+int sr_input_status_type(void) { return g_status_type; }
 
 /* --- pad edges -------------------------------------------------------------- */
 
@@ -1106,6 +1115,39 @@ void sr_input_pump(void)
 		return;
 	}
 	sr_keytrace(buf, (int)n);
+
+	/* Capture the DECRQSS reply to the status-line query sr_io_enter() sent, so
+	 * sr_io_leave() can restore the player's status line to what it WAS.
+	 *
+	 * A raw-byte scan before the escape parser below, because that parser
+	 * swallows the DCS this reply arrives in. The rolling window bridges a reply
+	 * split across two reads -- over a BBS link a 10-byte DCS can easily arrive in
+	 * two packets, and a scan of each read alone would then never match. Same
+	 * shape as syncduke_input.c. */
+	if (g_status_type < 0) {
+		static uint8_t sacc[32];
+		static int     sacclen;
+		int            r = termgfx_term_parse_status(buf, (int)n);
+
+		if (r < 0) {
+			if ((int)n >= (int)sizeof sacc) {
+				memcpy(sacc, buf + (n - (int)sizeof sacc), sizeof sacc);
+				sacclen = (int)sizeof sacc;
+			} else {
+				int keep = (int)sizeof sacc - (int)n;
+
+				if (sacclen > keep) {
+					memmove(sacc, sacc + (sacclen - keep), keep);
+					sacclen = keep;
+				}
+				memcpy(sacc + sacclen, buf, n);
+				sacclen += (int)n;
+			}
+			r = termgfx_term_parse_status(sacc, sacclen);
+		}
+		if (r >= 0)
+			g_status_type = r;
+	}
 
 	for (i = 0; i < n; i++) {
 		uint8_t c = buf[i];

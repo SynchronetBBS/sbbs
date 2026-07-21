@@ -252,6 +252,10 @@ foreign class Input {
   foreign static next()
   foreign static next(ms)
   foreign static poll()
+  // UI implementation detail. App passes the active Widget's atExit
+  // property so a save-on-exit widget can remain interactive while the
+  // process quit request stays latched.
+  foreign static nextForWidget_(atExit)
   foreign static mousedrag()
   foreign static mousedrag(forceRect)
   foreign static mouseVisible=(b)
@@ -968,7 +972,7 @@ foreign class Conn {
   foreign static close()
   // End the BBS session.  Shows the "Disconnect... Are you sure?"
   // confirm; on yes, hangs up the connection.  When `exitApp` is
-  // true (Alt-X / window-close semantics), syncterm exits after
+  // true (Alt-X semantics), syncterm exits after
   // hangup; when false (Alt-H / Ctrl-Q semantics), control returns
   // to the main menu.  The confirm runs on doterm()'s next
   // iteration, so this returns immediately - handlers don't block.
@@ -1478,6 +1482,13 @@ class FilePickerOptions {
 // the relaxed-name policy - the picker UI is the sandbox boundary,
 // since the user explicitly chose the path.
 class Host {
+  // Private UI-host state used to select atExit widgets during shutdown.
+  foreign static exitRequested_
+  // C-owned program theme. Theme caches the decoded data in each VM and
+  // uses the generation to refresh only after the active theme changes.
+  foreign static themeGeneration
+  foreign static themeData
+  foreign static defaultThemeData
   foreign static cacheDirectory
   foreign static downloadDir
   foreign static uploadPath

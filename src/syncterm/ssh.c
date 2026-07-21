@@ -748,9 +748,13 @@ static bool
 sftp_init_wait(xpevent_t init_evt)
 {
 	while (kbhit()) {
-		int ch = getch();
-		if (ch == 0 || ch == 0xe0)
-			(void)getch();
+		int ch = syncterm_getkey();
+		if (ch == CIO_KEY_MOUSE)
+			getmouse(NULL);
+	}
+	if (quitting) {
+		conn_api.terminate = true;
+		return false;
 	}
 
 	while (!conn_api.terminate && sftp_recv_running) {
@@ -761,10 +765,9 @@ sftp_init_wait(xpevent_t init_evt)
 				return false;
 		}
 		if (kbhit()) {
-			int ch = getch();
-			if (ch == 0 || ch == 0xe0)
-				ch |= getch() << 8;
-			(void)ch;
+			int ch = syncterm_getkey();
+			if (ch == CIO_KEY_MOUSE)
+				getmouse(NULL);
 			conn_api.terminate = true;
 			return false;
 		}

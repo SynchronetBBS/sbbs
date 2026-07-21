@@ -42,7 +42,7 @@ class OnlineMenu {
         Fn.new { ScrollbackView.run() } ],
       // No confirm prompt for the menu's Disconnect / Exit entries —
       // selecting them from the list IS the confirmation step.  The
-      // hot-key paths (Alt-X / Alt-H / Ctrl-Q / window-close) still go
+      // hot-key paths (Alt-X / Alt-H / Ctrl-Q) still go
       // through DisconnectFlow.
       [ disconnectLabel,
         Fn.new { Conn.endSession(false) } ],

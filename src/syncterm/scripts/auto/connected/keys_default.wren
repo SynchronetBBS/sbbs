@@ -19,7 +19,7 @@ import "font_pick"        for FontApp
 // Disconnect / exit cluster.  DisconnectFlow lives in its own module
 // (disconnect_flow.wren) so the online menu can reuse it.  Each hook
 // here just routes to the right exitApp argument:
-//   exitApp = true   → Alt-X / window-close: exit SyncTERM after hangup
+//   exitApp = true   → Alt-X: exit SyncTERM after hangup
 //   exitApp = false  → Alt-H / Ctrl-Q: return to bbslist after hangup
 //
 // Ctrl-Q is gated to text-mode terminals (curses / ANSI) — graphical
@@ -28,10 +28,6 @@ import "font_pick"        for FontApp
 // session, so we check at module load and skip installing the hook
 // in graphical modes rather than process-and-pass-through every key.
 Hook.onKey(Key.altX) { |k|
-  DisconnectFlow.run(true)
-  return true
-}
-Hook.onKey(Key.quit) { |k|
   DisconnectFlow.run(true)
   return true
 }

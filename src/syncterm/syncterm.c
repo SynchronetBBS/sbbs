@@ -91,6 +91,7 @@ enum {
 #include "host_ui.h"
 #include "syncterm.h"
 #include "term.h"
+#include "theme.h"
 #include "window.h"
 #include "wren_menu_host.h"
 #include "wren_picker_host.h"
@@ -1171,6 +1172,22 @@ check_exit(bool force)
 	return false;
 }
 
+/* Read one complete ciolib key and latch process-close requests. */
+int
+syncterm_getkey(void)
+{
+	int key = getch();
+
+	if (key == 0 || key == 0xe0) {
+		key |= getch() << 8;
+		if (key == CIO_KEY_LITERAL_E0)
+			key = 0xe0;
+	}
+	if (key == CIO_KEY_QUIT)
+		quitting = true;
+	return key;
+}
+
 void
 parse_url(char *url, struct bbslist *bbs, int dflt_conn_type, int force_defaults)
 {
@@ -1339,6 +1356,7 @@ get_win_filename(char *fn, int fnlen, int type, int shared)
 				case SYNCTERM_PATH_LIST:
 				case SYNCTERM_PATH_KEYS:
 				case SYNCTERM_PATH_SCRIPTS:
+				case SYNCTERM_PATH_THEMES:
 					if (shared) {
 						if (GKFP(&FOLDERID_ProgramData, KF_FLAG_CREATE, NULL, &path) == S_OK)
 							we_got_this = true;
@@ -1459,6 +1477,17 @@ get_win_filename(char *fn, int fnlen, int type, int shared)
 				}
 			}
 			break;
+		case SYNCTERM_PATH_THEMES:
+			backslash(fn);
+			strncat(fn, "themes", fnlen - strlen(fn) - 1);
+			backslash(fn);
+			if (!isdir(fn)) {
+				if (MKDIR(fn)) {
+					fn[0] = 0;
+					break;
+				}
+			}
+			break;
 	}
 
 	return fn;
@@ -1478,6 +1507,7 @@ get_haiku_filename(char *fn, int fnlen, int type, int shared)
 		case SYNCTERM_PATH_LIST:
 		case SYNCTERM_PATH_KEYS:
 		case SYNCTERM_PATH_SCRIPTS:
+		case SYNCTERM_PATH_THEMES:
 			if (shared)
 				s = find_directory(B_SYSTEM_SETTINGS_DIRECTORY, v, true, fn, fnlen);
 			else
@@ -1526,6 +1556,16 @@ get_haiku_filename(char *fn, int fnlen, int type, int shared)
 			break;
 		case SYNCTERM_PATH_SCRIPTS:
 			sz = strlcat(fn, "/scripts", fnlen);
+			if (sz >= fnlen)
+				return NULL;
+			if (!isdir(fn) && !shared) {
+				if (mkpath(fn))
+					return NULL;
+			}
+			sz = strlcat(fn, "/", fnlen);
+			break;
+		case SYNCTERM_PATH_THEMES:
+			sz = strlcat(fn, "/themes", fnlen);
 			if (sz >= fnlen)
 				return NULL;
 			if (!isdir(fn) && !shared) {
@@ -1641,6 +1681,7 @@ get_unix_filename(char *fn, int fnlen, int type, int shared)
 					return NULL;
 				break;
 			case SYNCTERM_PATH_SCRIPTS:
+			case SYNCTERM_PATH_THEMES:
 				if (get_xdg_path(XDG_DATA_HOME, fn, fnlen) == NULL)
 					return NULL;
 				break;
@@ -1676,6 +1717,14 @@ get_unix_filename(char *fn, int fnlen, int type, int shared)
 			break;
 		case SYNCTERM_PATH_SCRIPTS:
 			strncat(fn, "scripts", fnlen - strlen(fn) - 1);
+			backslash(fn);
+			if (!isdir(fn) && !shared) {
+				if (mkpath(fn))
+					return NULL;
+			}
+			break;
+		case SYNCTERM_PATH_THEMES:
+			strncat(fn, "themes", fnlen - strlen(fn) - 1);
 			backslash(fn);
 			if (!isdir(fn) && !shared) {
 				if (mkpath(fn))
@@ -1905,6 +1954,8 @@ load_settings(struct syncterm_settings *set)
 	    "LightbarBackgroundColour", (char **)bg_colour_enum, 8);
 	set->theme_text_color = read_classic_theme_color(inifile,
 	    "TextColour", (char **)colour_enum, 16);
+	iniReadSString(inifile, "SyncTERM", "ThemeFile", "", set->theme_file,
+	    sizeof(set->theme_file));
 
 	if (inifile)
 		fclose(inifile);
@@ -2221,6 +2272,11 @@ main(int argc, char **argv)
 	}
 
 	load_settings(&settings);
+	if (!syncterm_theme_init(&settings)) {
+		fputs("Unable to initialize the UI theme\n", stderr);
+		return 1;
+	}
+	atexit(syncterm_theme_shutdown);
 	ciolib_swap_mouse_butt45 = settings.invert_wheel;
 	cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
 	vparams[cvmode].cols = settings.custom_cols;
@@ -2754,11 +2810,8 @@ USAGE:
 		if (i >= txtinfo.screenheight - 1) {
 			textattr(WHITE);
 			cputs("<Press A Key>");
-			switch (getch()) {
-				case 0:
-				case 0xe0:
-					getch();
-			}
+			if (syncterm_getkey() == CIO_KEY_QUIT)
+				return 0;
 			textattr(LIGHTGRAY);
 			gotoxy(1, txtinfo.screenheight);
 			delline();
@@ -2771,11 +2824,7 @@ USAGE:
 	}
 	else {
 		cputs("<Press A Key to Exit>");
-		switch (getch()) {
-			case 0:
-			case 0xe0:
-				getch();
-		}
+		(void)syncterm_getkey();
 	}
 	textattr(LIGHTGRAY);
 	return 0;

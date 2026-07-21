@@ -47,10 +47,31 @@ class ListView is Widget {
   }
 
   items { _items }
-  items=(list) {
-    _items     = list
-    _selected  = list.count > 0 ? 0 : -1
-    _scrollTop = 0
+  items=(list) { setItems_(list, false) }
+
+  // Replace the collection and deliberately return to its first row.
+  // Use for navigation to a different collection; ordinary items=
+  // preserves the current selection and viewport across a redraw.
+  resetItems(list) { setItems_(list, true) }
+
+  setItems_(list, resetView) {
+    var hadItems = _items.count > 0
+    var selected = _selected
+    var scrollTop = _scrollTop
+    _items = list
+
+    if (list.count == 0) {
+      _selected = -1
+      _scrollTop = 0
+    } else if (resetView || !hadItems) {
+      _selected = 0
+      _scrollTop = 0
+    } else {
+      _selected = selected < 0 ? -1 : selected.min(list.count - 1)
+      var maxTop = (list.count - viewportRows_).max(0)
+      _scrollTop = scrollTop.max(0).min(maxTop)
+      ensureVisible_()
+    }
     _searchBuf = ""
     if (_selectionMode == "tag") rebuildTagged_()
     notifyChange_()
@@ -401,7 +422,7 @@ class ListView is Widget {
                       _items.count, h, glyphs, trackStyle, thumbStyle)
     if (_sbSep) {
       var sepStyle = style("default")
-      var sepGlyph = glyph("frame.left")
+      var sepGlyph = glyph("scrollbar.separator")
       var sx = separatorColumn_
       var i = 0
       while (i < h) {

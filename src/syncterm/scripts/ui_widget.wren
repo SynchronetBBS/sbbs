@@ -63,6 +63,7 @@ class Widget {
     _visible   = true
     _dirty     = true
     _focusable = true
+    _atExit    = false
     _activitySensitive = true
     _surface   = null     // lazy; matched to bounds in ensureSurface_
     _helpText  = null
@@ -177,6 +178,13 @@ class Widget {
   focusable     { _focusable }
   focusable=(b) { _focusable = b }
 
+  // An at-exit widget remains interactive after the host has requested
+  // process termination.  This is intentionally opt-in; ordinary widgets
+  // are dismissed one modal frame at a time while the quit request remains
+  // latched.  App propagates the flag to modals opened by this widget.
+  atExit     { _atExit }
+  atExit=(b) { _atExit = b }
+
   // Ambient screen chrome can opt out of active/inactive styling.
   // This is independent of focusability: a non-focusable widget
   // inside a Pane normally still inherits that Pane's activity.
@@ -222,6 +230,10 @@ class Widget {
     _dirty = true
     if (_parent != null) _parent.markDirty()
   }
+
+  // Invalidate this complete subtree without bubbling back through its
+  // ancestors. Container extends this to visit every descendant.
+  markTreeDirty_() { _dirty = true }
 
   clearDirty() { _dirty = false }
 
@@ -378,6 +390,11 @@ class Container is Widget {
     }
     markDirty()
     return child
+  }
+
+  markTreeDirty_() {
+    super.markTreeDirty_()
+    for (child in _children) child.markTreeDirty_()
   }
 
   remove(child) {

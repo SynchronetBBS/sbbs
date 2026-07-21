@@ -1,7 +1,7 @@
 // Self-tests for ui_progress.
 
 import "ui_widget"   for Rect
-import "ui_progress" for ProgressBar
+import "ui_progress" for ProgressBar, ProgressText
 
 class UiProgressTest {
   static run() {
@@ -24,6 +24,7 @@ class UiProgressTest {
     testFractionalRoundDown_()
     testTallBarFillsAllRows_()
     testTinyBoundsTruncatesOverlay_()
+    testTextRowsShareLeftEdge_()
 
     var total = __pass + __fail
     System.print("=== ui_progress: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -203,5 +204,21 @@ class UiProgressTest {
     var sf = p.draw()
     check_(sf != null,
            "2-cell bounds with overlay does not crash")
+  }
+
+  static testTextRowsShareLeftEdge_() {
+    var body = ProgressText.new()
+    body.bounds = Rect.new(1, 1, 40, 2)
+    body.lines = [
+      "Alpha               : ok",
+      "Longer Name         : waiting"
+    ]
+    var sf = body.draw()
+    check_(sf.cellAt(0, 0).ch == " " &&
+           sf.cellAt(1, 0).ch == "A" &&
+           sf.cellAt(1, 1).ch == "L" &&
+           sf.cellAt(21, 0).ch == ":" &&
+           sf.cellAt(21, 1).ch == ":",
+           "text rows preserve one left edge and name column")
   }
 }

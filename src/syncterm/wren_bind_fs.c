@@ -1119,12 +1119,6 @@ picker_call_init(struct wren_picker_call *call, enum wren_picker_mode mode,
 	call->initial_path = initial;
 	call->mask = mask;
 	call->options = options;
-	call->colors[0] = settings.theme_frame_color;
-	call->colors[1] = settings.theme_text_color;
-	call->colors[2] = settings.theme_background_color;
-	call->colors[3] = settings.theme_inverse_color;
-	call->colors[4] = settings.theme_lightbar_color;
-	call->colors[5] = settings.theme_lightbar_background_color;
 }
 
 /* Host.pickFile(initialPath, mask, opts) opens the isolated Wren picker.

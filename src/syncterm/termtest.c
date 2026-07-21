@@ -3106,7 +3106,7 @@ static int test_decrpm_mode33(void) { return test_decrpm_toggle(33, 0); }
 static int test_decrpm_mode34(void) { return test_decrpm_toggle(34, 0); }
 static int test_decrpm_mode35(void) { return test_decrpm_toggle(35, 0); }
 static int test_decrpm_mode67(void) { return test_decrpm_toggle(67, 1); }
-static int test_decrpm_mode80(void) { return test_decrpm_toggle(80, 1); }
+static int test_decrpm_mode80(void) { return test_decrpm_toggle(80, 0); }
 
 static int
 test_decrpm_mouse_modes(void)

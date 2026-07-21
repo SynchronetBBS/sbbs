@@ -95,6 +95,10 @@ const char *sr_config_aspect_mode(void);  /* the raw [video] aspect string */
 int    sr_config_audio_volume(void);      /* volume,    0..100,    default 100 */
 int    sr_config_audio_chunk_ms(void);    /* chunk_ms,  50..250,   default 100 */
 int    sr_config_audio_prebuffer(void);   /* prebuffer, 2..8,      default 3 */
+/* [video] dirty_rect (default true) -- repaint only the parts of the frame that
+ * changed, instead of re-sending the whole picture every time. Off falls back to
+ * whole frames, which is always correct and is what the door did before. */
+int    sr_config_dirty_rect(void);
 
 /* --- syncretro_io.c: terminal enter/probe/leave + the present path ---------
  * sr_io_init() adopts the door socket (or the stdout dev fallback) and arms the
@@ -197,6 +201,10 @@ int     sr_input_probe_replied(void);
 const char *sr_input_keymode_name(void);
 /* The player pressed the quit key (Ctrl-Q). Polled via sr_door_should_exit(). */
 int     sr_input_quit_requested(void);
+/* The client's status-line type (DECSSDT) BEFORE the door hid it to reclaim the
+ * row it reserves, captured from the DECRQSS reply at entry; -1 if the terminal
+ * never answered (no status line, or no DECSSDT). sr_io_leave() restores it. */
+int     sr_input_status_type(void);
 /* Undo whatever key mode was negotiated (kitty flags / SyncTERM physical key
  * reports), so the BBS gets its terminal back as it lent it. Staged through the
  * out-buffer; called from sr_io_leave(). */
@@ -214,5 +222,22 @@ void sr_bridge_set_pixfmt(int retro_pixel_format);
 /* --- retro_env.c -----------------------------------------------------------
  * The retro_environment_t callback. Passed to the core via sr_bridge_install(). */
 /* (declared with libretro types in retro_env.c; not needed cross-module) */
+
+/* --- retro_options.c: core options ----------------------------------------
+ * The libretro-typed half of this module lives in retro_options.h, which the
+ * door glue has no business including (it would pull libretro.h into every
+ * caller). These two take plain strings, so they belong here -- the same split
+ * `struct rc_core` gets above.
+ *
+ * Pin one option, from `-option key=value`. The console's lobby.js spec is what
+ * sets these: an option can be part of what a console IS (an arcade core that
+ * opens on a disclaimer screen no BBS player can dismiss), not a sysop's taste.
+ * Call BEFORE rc_core_load_game() -- pins are applied as the core declares each
+ * key, which happens inside it. Returns 0, or -1 on a malformed pin (logged). */
+int  sr_option_pin(const char *key_eq_value);
+/* One summary line for the door log, plus a warning for any pin that matched
+ * nothing this core advertises -- a typo'd or renamed key is otherwise
+ * completely silent. Call after rc_core_load_game(). */
+void sr_options_report(void);
 
 #endif /* SYNCRETRO_H_ */

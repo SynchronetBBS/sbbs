@@ -177,8 +177,15 @@ int rc_core_load_game(rc_core_t *c, const char *rom_path)
 	}
 
 	if (!c->load_game(&info)) {
-		fprintf(stderr, "syncretro: core rejected ROM '%s'\n",
-		        rom_path ? rom_path : "(none)");
+		/* rc_fail(), not a bare fprintf: main.c shows the PLAYER rc_core_error(),
+		 * and a reason that never reaches rc_err leaves them reading the default
+		 * "the libretro core could not be loaded" -- which blames the core for
+		 * what is virtually always the content. That matters most for an arcade
+		 * core, where a romset built for a different MAME version is the single
+		 * commonest failure and looks nothing like a broken core. */
+		rc_fail("this core will not run '%s' -- wrong or incomplete content"
+		        " for this core's version",
+		        rom_path != NULL ? rom_path : "(no ROM)");
 		return -1;
 	}
 	c->game_loaded = true;

@@ -3,16 +3,17 @@
 // A Pane is a Container with a frame and an optional title.  It
 // claims its full bounds (frame + interior) and lays children out
 // within `innerBounds`.  The frame uses the theme's "frame" /
-// "frame.inactive" Style and "frame.*" (or "frame.double.*") glyphs;
+// "frame.inactive" Style and either the "frame.control.*" or
+// "frame.display.*" glyphs;
 // the title uses "title" / "title.inactive".
 //
 // UIFC convention: the focused pane is the "default" (active) look;
 // every other pane is dimmed via the *.inactive variants.
 //
 // Knobs:
-//   framePreset   — "single" (default) or "double".  Switches the
-//                   glyph family from `┌─┐│└┘` to `╔═╗║╚╝`.  UIFC
-//                   list/menu boxes use "double".
+//   frameKind     — "control" (default) or "display".  Control-bearing
+//                   panes use `╔═╗║╚╝`; informational panes use
+//                   `┌─┐│└┘`.
 //   titleAsBar    — when true, the title sits inside the frame in
 //                   its own row with a horizontal separator
 //                   underneath, instead of embedded in the top
@@ -33,13 +34,13 @@ import "ui_draw"   for Painter
 import "syncterm"  for MouseEvent, Mouse, Screen
 
 class Pane is Container {
-  // UIFC-style defaults: double-line frame, title in its own bar
+  // UIFC-style defaults: control frame, title in its own bar
   // row, [?] and [■] corner buttons.  Sub-classes (Popup, PopStatus)
   // override what doesn't fit their look.
   construct new() {
     super()
     _title       = null
-    _framePreset = "double"
+    _frameKind   = "control"
     _titleAsBar  = true
     _helpable    = true
     _closeable   = true
@@ -53,9 +54,12 @@ class Pane is Container {
     markDirty()
   }
 
-  framePreset      { _framePreset }
-  framePreset=(s) {
-    _framePreset = s
+  frameKind      { _frameKind }
+  frameKind=(s) {
+    if (s != "control" && s != "display") {
+      Fiber.abort("Pane.frameKind must be \"control\" or \"display\"")
+    }
+    _frameKind = s
     markDirty()
   }
 
@@ -78,10 +82,9 @@ class Pane is Container {
   onHelp=(fn)  { _onHelp = fn }
   onClose=(fn) { _onClose = fn }
 
-  // Glyph prefix derived from the preset.
+  // Glyph prefix derived from the frame's semantic purpose.
   glyphPrefix_ {
-    if (_framePreset == "double") return "frame.double"
-    return "frame"
+    return "frame." + _frameKind
   }
 
   // True when the title takes its own row inside the frame.

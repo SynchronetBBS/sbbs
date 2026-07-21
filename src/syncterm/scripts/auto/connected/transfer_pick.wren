@@ -1,6 +1,6 @@
 // transfer_pick.wren -- upload and download selection flows. Each App
 // pops a ListView for the protocol, optionally a file picker or
-// Prompt for a filename, then dispatches to Transfer.upload /
+// LinePrompt for a filename, then dispatches to Transfer.upload /
 // Transfer.uploadBatch / Transfer.download.  The dispatched call
 // blocks (worker thread + main-thread TransferApp loop) until the
 // transfer dismisses, so the picker callsite is naturally serialized
@@ -23,7 +23,7 @@ import "syncterm" for BBS, CTerm, Emulation, FilePickerOptions, Host,
 import "ui_app"     for App
 import "ui_pane"    for Pane
 import "ui_picker"  for ListPicker
-import "ui_popup"   for Prompt
+import "ui_popup"   for LinePrompt
 
 class UploadApp {
   // Index → kind name in the order shown to the user.
@@ -143,7 +143,7 @@ class DownloadApp {
     }.call()
   }
 
-  // Wraps Prompt.show in its own App so the dismissal returns
+  // Wraps LinePrompt.show in its own App so the dismissal returns
   // synchronously to the picker flow.  Returns the entered filename
   // (or null on cancel / empty input).
   static askFilename_() {
@@ -158,7 +158,7 @@ class DownloadApp {
     app.root.add(pane)
     pane.fitContent()
     pane.centerOnScreen()
-    return Prompt.runStandalone(app, "Filename", "")
+    return LinePrompt.runStandalone(app, "Filename", "")
   }
 
   static downloadHelp_() {

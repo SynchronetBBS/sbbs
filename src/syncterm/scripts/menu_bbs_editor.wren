@@ -163,6 +163,11 @@ class BbsEditor {
     MenuUi.alertStandalone(title, error[0], error[1])
   }
 
+  static showNameErrorStandaloneAtExit(title, name) {
+    var error = nameError_(name)
+    MenuUi.alertStandaloneAtExit(title, error[0], error[1])
+  }
+
   static chooseConnectionType(app, current) {
     return MenuUi.choice(app, "Connection Type", Menu.connectionTypes,
         current, connectionTypeHelp_())
@@ -185,8 +190,17 @@ class BbsEditor {
   }
 
   static editStandalone(bbs, isDefaults, isNew) {
+    return editStandalone_(bbs, isDefaults, isNew, false)
+  }
+
+  static editStandaloneAtExit(bbs, isDefaults, isNew) {
+    return editStandalone_(bbs, isDefaults, isNew, true)
+  }
+
+  static editStandalone_(bbs, isDefaults, isNew, atExit) {
     var app = App.new()
     var editor = build_(app, bbs, isDefaults, true, 0)
+    editor[0].atExit = atExit
     app.pushModal(editor[0])
     app.runSync()
     return finish_(editor[1], bbs, isNew)

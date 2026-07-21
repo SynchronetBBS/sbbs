@@ -1,8 +1,7 @@
-import "syncterm" for Host, KeyEvent, MouseEvent, Key, Mouse, REPL
+import "syncterm" for Host, KeyEvent, MouseEvent, Key, Mouse, REPL, Screen
 import "syncterm_menu" for Menu, MenuReadStatus
 import "wren_console" for WrenConsole
 import "menu_ui" for MenuUi
-import "classic_theme" for ClassicTheme
 import "menu_bbs_editor" for BbsEditor
 import "menu_settings_ui" for SettingsMenu
 import "menu_scrollback" for OfflineScrollbackView
@@ -300,7 +299,6 @@ class MainMenuEventApp is App {
 class MainMenuApp {
   construct new(current, connected) {
     _app = MainMenuEventApp.new(Fn.new { _consoleIndicator.refresh() })
-    _app.theme = ClassicTheme.from(Menu.settings)
     _connected = connected
     _current = current
     _result = null
@@ -384,7 +382,6 @@ class MainMenuApp {
     }
     bind_(Key.escape, Fn.new { exit_(false) })
     bind_(Key.wrenConsole, Fn.new { console_() })
-    _app.bind(Key.quit, Fn.new {|event| exit_(true) })
     bindDirectory_(Key.f2, Fn.new {
       if (_selected != null) edit_()
     })
@@ -995,7 +992,6 @@ class MainMenuApp {
       MainMenu.password = SettingsMenu.directoryPassword
     }
     if (MainMenu.prepare()) {
-      _app.theme = ClassicTheme.from(Menu.settings)
       refresh_(preferred)
     }
   }
@@ -1050,7 +1046,20 @@ class MainMenu {
   static password { __password }
   static password=(value) { __password = value }
 
+  static drawBackdrop_() {
+    var app = App.new()
+    var backdrop = ClassicBackdrop.new()
+    var size = Screen.size
+    backdrop.bounds = Rect.new(1, 1, size[0], size[1])
+    app.root.add(backdrop)
+    app.drawAll_()
+  }
+
   static prepare() {
+    return prepare_(Host.exitRequested_)
+  }
+
+  static prepare_(atExit) {
     var status = Menu.load(__password)
     while (status == MenuReadStatus.passwordRequired ||
         status == MenuReadStatus.decryptFailed) {
@@ -1058,41 +1067,49 @@ class MainMenu {
       if (status == MenuReadStatus.passwordRequired) {
         message = "Password for the personal directory"
       }
-      var password = MenuUi.promptStandalone("Directory Password",
-          message, "", 1023, true,
-          "# Encrypted List\n\nEnter the password used to encrypt the " +
-          "personal directory.")
+      var help = "# Encrypted List\n\nEnter the password used to encrypt " +
+          "the personal directory."
+      var password = atExit ?
+          MenuUi.promptStandaloneAtExit("Directory Password", message,
+              "", 1023, true, help) :
+          MenuUi.promptStandalone("Directory Password", message, "",
+              1023, true, help)
       if (password == null) return false
       status = Menu.load(password)
       if (status == MenuReadStatus.ok) __password = password
     }
     if (status != MenuReadStatus.ok) {
-      MenuUi.alertStandalone("Directory Error", Menu.statusMessage(status))
+      if (atExit) {
+        MenuUi.alertStandaloneAtExit("Directory Error",
+            Menu.statusMessage(status))
+      } else {
+        MenuUi.alertStandalone("Directory Error", Menu.statusMessage(status))
+      }
       return false
     }
     return true
   }
 
   static offerSave(source) {
-    if (!MenuUi.confirmStandalone("Save Directory Entry",
+    if (!MenuUi.confirmStandaloneAtExit("Save Directory Entry",
         "Save this directory entry?")) return false
     var name = source.name
     while (!Menu.nameAvailable(name)) {
-      name = MenuUi.promptStandalone("Save Directory Entry",
+      name = MenuUi.promptStandaloneAtExit("Save Directory Entry",
           "Personal entry name", name, 30, false,
           "# Directory Entry Name\n\nEnter a unique name for the saved entry.")
       if (name == null || name.count == 0) return false
       if (!Menu.nameAvailable(name)) {
-        BbsEditor.showNameErrorStandalone("Save Directory Entry", name)
+        BbsEditor.showNameErrorStandaloneAtExit("Save Directory Entry", name)
       }
     }
     var bbs = Menu.copy(source, name)
     if (bbs == null) {
-      MenuUi.alertStandalone("Save Directory Entry",
+      MenuUi.alertStandaloneAtExit("Save Directory Entry",
           "The personal entry could not be created.")
       return false
     }
-    return BbsEditor.editStandalone(bbs, false, true)
+    return BbsEditor.editStandaloneAtExit(bbs, false, true)
   }
 
   static run(current, connected) {
@@ -1100,3 +1117,7 @@ class MainMenu {
     return MainMenuApp.new(current, connected).run()
   }
 }
+
+// Startup progress and alerts are displayed after the menu VM loads but
+// before MainMenu.run() creates the interactive controller.
+MainMenu.drawBackdrop_()

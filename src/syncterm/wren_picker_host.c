@@ -191,6 +191,9 @@ generic_method_allowed(const char *class_name, const char *signature)
 	return strcmp(signature, "logUnread") == 0 ||
 	    strcmp(signature, "logUnreadError") == 0 ||
 	    strcmp(signature, "print(_)") == 0 ||
+	    strcmp(signature, "themeGeneration") == 0 ||
+	    strcmp(signature, "themeData") == 0 ||
+	    strcmp(signature, "defaultThemeData") == 0 ||
 	    strcmp(signature, "textTerminal") == 0;
 }
 

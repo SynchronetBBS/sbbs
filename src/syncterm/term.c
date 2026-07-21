@@ -239,12 +239,7 @@ mousedrag_region(int left, int top, int width, int height, bool force_rect)
 		goto cleanup;
 	set_modepalette(palettes[COLOUR_PALETTE]);
 	while (1) {
-		key = getch();
-		if ((key == 0) || (key == 0xe0)) {
-			key |= getch() << 8;
-			if (key == CIO_KEY_LITERAL_E0)
-				key = 0xe0;
-		}
+		key = syncterm_getkey();
 		switch (key) {
 			case CIO_KEY_MOUSE:
 				getmouse(&mevent);
@@ -1200,22 +1195,16 @@ cet_telesoftware_try_get_block(struct cet_ts_state *sp)
 		bool xor = got_start;
 		// Check for user abort...
 		while (kbhit()) {
-			int key = getch();
+			int key = syncterm_getkey();
 			switch (key) {
 				case ESC:
 				case CTRL_C:
 				case CTRL_X:
+				case CIO_KEY_QUIT:
 					sp->aborted = true;
 					break;
-				case 0:
-				case 0xe0:
-					key |= (getch() << 8);
-					if (key == CIO_KEY_MOUSE)
-						getmouse(NULL);
-					if (key == CIO_KEY_QUIT) {
-						check_exit(false);
-						sp->aborted = true;
-					}
+				case CIO_KEY_MOUSE:
+					getmouse(NULL);
 					break;
 			}
 			if (sp->aborted)
@@ -5042,9 +5031,7 @@ drain_drag_events(void)
 	int key;
 
 	while (1) {
-		key = getch();
-		if ((key == 0) || (key == 0xe0))
-			key |= getch() << 8;
+		key = syncterm_getkey();
 		if (key == CIO_KEY_MOUSE) {
 			getmouse(&me);
 			if (me.event == CIOLIB_BUTTON_1_DRAG_END)
@@ -5289,12 +5276,12 @@ feed_ooii(int inch, int *ooii_mode)
 }
 #endif /* !WITHOUT_OOII */
 
-/* check_hangup — pure cleanup.  The caller has already obtained user
- * consent (via the Wren-side Confirm popup that the disconnect-key
- * hooks raise) and we just tear the session down: flush scrollback,
+/* check_hangup — pure cleanup.  A disconnect-key caller has already
+ * obtained user consent via Wren; CIO_KEY_QUIT is the non-interactive
+ * process-close path.  Tear the session down: flush scrollback,
  * end cterm, close the conn, restore mouse + cursor state.  *ret
  * tells doterm() whether to fall through to its outer "exit app"
- * path (Alt-X / window-close keys) or just return to the bbslist
+ * path (Alt-X / CIO_KEY_QUIT) or just return to the bbslist
  * (Alt-H / Ctrl-Q keys).  Always returns true; the bool is kept so
  * existing call sites read symmetrically. */
 static bool
@@ -5755,13 +5742,19 @@ doterm(struct bbslist *bbs)
 				continue;
 			}
 #endif
+			if (key == CIO_KEY_QUIT || quitting) {
+				quitting = true;
+				check_hangup(CIO_KEY_QUIT, &hret, oldmc, &ms);
+				ret = hret;
+				goto end;
+			}
 
 			if (wren_host_dispatch_key(key)) {
 				/* A Wren handler may have called Conn.endSession()
 				 * — drain the pending-disconnect flag now so the
 				 * confirm + cterm tear-down lands in the same
-				 * iteration.  exit_app distinguishes Alt-X /
-				 * window-close (full quit) from Alt-H / Ctrl-Q
+				 * iteration.  exit_app distinguishes Alt-X
+				 * (full quit) from Alt-H / Ctrl-Q
 				 * (hang up + back to bbslist). */
 				bool exit_app = false;
 				if (wren_host_take_pending_disconnect(&exit_app)) {
@@ -5808,7 +5801,7 @@ doterm(struct bbslist *bbs)
 				/* Shift-Insert (paste), Alt-B (scrollback),
 				 * Alt-C (capture), Alt-D (download),
 				 * Alt-F (font picker), Alt-H / Alt-X / Ctrl-Q
-				 * / window-close (hangup or app-exit), Alt-U
+				 * (hangup or app-exit), Alt-U
 				 * (upload) are handled by Wren —
 				 * keys_default.wren registers Hook.onKey hooks
 				 * that call Conn.paste / Conn.scrollback /

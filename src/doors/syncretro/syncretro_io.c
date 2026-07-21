@@ -47,6 +47,7 @@
 
 #include "term.h"       /* termgfx: termgfx_term_enter/probe/leave */
 #include "sixel.h"      /* termgfx: sixel_encode */
+#include "syncretro_dirty.h"   /* which cells actually changed */
 #include "geometry.h"   /* termgfx: termgfx_geom_fit / _center */
 #include "pace.h"       /* termgfx: termgfx_aimd_update / _rtt_sample */
 #include "caps.h"       /* termgfx: termgfx_query_jxl */
@@ -330,6 +331,16 @@ static int g_src_w, g_src_h;               /* the core's current frame size */
 static double g_par;
 static int    g_canvas_known;              /* the terminal ANSWERED ESC[14t (vs. our guess) */
 static int    g_ew, g_eh;                  /* emitted (scaled) image size */
+/* The terminal's cell size, as sr_io_recompute_geom() resolved it. Kept because
+ * a sixel can only be drawn at a cell corner, so the dirty-rect grid has to be
+ * the CELL grid -- see syncretro_dirty.h. */
+static int    g_cell_w, g_cell_h;
+
+/* Dirty-rect accounting: how much of the session avoided a full repaint. Read by
+ * the Ctrl-S overlay and the exit summary, both of which are defined above the
+ * present path, so these live up here with the geometry rather than beside the
+ * buffers they describe. */
+static uint32_t g_dirty_frames, g_full_frames, g_dirty_rects_sent;
 static int    g_icol = 1, g_irow = 1;      /* 1-based text-cell origin of the image */
 static int    g_geom_ready;
 
@@ -564,6 +575,9 @@ static void sr_io_recompute_geom(void)
 	 * forgotten. */
 	sr_io_invalidate();
 
+	g_cell_w = (int)(cw + 0.5);
+	g_cell_h = (int)(ch + 0.5);
+
 	fprintf(stderr, "syncretro: geometry canvas %dx%d%s grid %dx%d cell %.2fx%.2f"
 	        " page %dx%d image %dx%d at cell %d,%d\n",
 	        g_canvas_w, g_canvas_h, g_canvas_known ? "" : " (assumed)",
@@ -752,7 +766,7 @@ static void sr_stats_window(void)
  * over it); force=0 redraws only when the readout text changed. */
 static void sr_io_stats_emit(int force)
 {
-	char txt[80], ov[192];
+	char txt[96], ov[224], drtxt[16];
 	int  tn, col, ovn, aw;
 
 	/* Guard HERE, not in each caller. It used to be the callers' job, and the
@@ -767,9 +781,23 @@ static void sr_io_stats_emit(int force)
 	/* tier fps KB/s lag rtt/min depth kbd. The tier is no longer a constant: F4
 	 * cycles it, and which one you are looking at is exactly the thing you want to
 	 * know while comparing them. */
-	tn = snprintf(txt, sizeof txt, " %s %ufps %uKB/s lag %u/%ums depth %d %s%s ",
+	{
+		/* "dr N%" -- what share of emitted frames were PATCHED rather than
+		 * repainted. The interesting number while comparing tiers or games: a
+		 * static screen approaches 100, an every-pixel-moving one sits at 0 and
+		 * says so, rather than the reader wondering whether the feature is on. */
+		uint32_t emitted = g_dirty_frames + g_full_frames;
+
+		if (!sr_config_dirty_rect())
+			snprintf(drtxt, sizeof drtxt, " dr off");
+		else if (emitted > 0)
+			snprintf(drtxt, sizeof drtxt, " dr %u%%", g_dirty_frames * 100 / emitted);
+		else
+			drtxt[0] = '\0';
+	}
+	tn = snprintf(txt, sizeof txt, " %s %ufps %uKB/s lag %u/%ums depth %d %s%s%s ",
 	              sr_io_tier_name(), g_recent_fps, g_recent_kbps, g_rtt_ms, g_rtt_min,
-	              g_pace_depth, sr_input_keymode_name(),
+	              g_pace_depth, sr_input_keymode_name(), drtxt,
 	              sr_audio_blob_active() ? " a-blob" : "");   /* audio streaming inline (A;LoadBlob) */
 
 	if (g_toast_drawn)
@@ -879,6 +907,20 @@ static void sr_io_enter(void)
 	 * and our define-on-change frames render transparent). */
 	sr_out_puts(termgfx_term_enter);
 
+	/* Hide the client's status line (DECSSDT Ps=0) to reclaim the row it
+	 * reserves: SyncTERM's default turns an 80x25 / 640x400 terminal into an
+	 * 80x24 / 640x384 canvas, so a console frame is fractionally downscaled and
+	 * loses single-pixel detail for nothing. BEFORE the probe, so the probe
+	 * reports the RECLAIMED size -- after it, the door would scale to the old
+	 * canvas and the extra row would go to waste.
+	 *
+	 * The prefixed DECRQSS asks what the status line was set to first;
+	 * syncretro_input.c captures the reply so sr_io_leave() can put it back
+	 * exactly as it was rather than guessing. A terminal with no status line, or
+	 * no DECSSDT, ignores the whole thing. Same treatment as syncduke,
+	 * syncdoom, syncconquer and syncscumm. */
+	sr_out_puts(termgfx_term_status_off);
+
 	sr_out_puts(termgfx_term_probe);   /* pixel canvas; its ESC[999;999H+ESC[6n is the grid query */
 	g_grid_probe_pending = 1;          /* arm the first-R-is-grid flag at probe-SEND time */
 	sr_out_puts("\x1b[c");             /* DA1: sixel support (param 4) */
@@ -898,7 +940,28 @@ void sr_io_leave(void)
 	if (g_file_mode)
 		return;   /* capture mode: no terminal on the other end */
 
+	if (g_dirty_frames + g_full_frames > 0)
+		fprintf(stderr, "syncretro: video %u frames (%u patched, %u full),"
+		        " %u rect(s)\n",
+		        g_dirty_frames + g_full_frames, g_dirty_frames, g_full_frames,
+		        g_dirty_rects_sent);
+
 	sr_input_restore_keys();                  /* undo kitty flags / physical key reports */
+	{
+		/* Put the status line back the way we found it. The BBS lent us this
+		 * terminal; a door that hides the sysop's status line and never restores
+		 * it is a door that broke his client. The pre-door type was captured from
+		 * the DECRQSS reply at entry -- if it never came (an older SyncTERM, a
+		 * terminal with no DECSSDT), fall back to 1 = indicator, SyncTERM's own
+		 * default, rather than leaving it off. */
+		char   sb[8];
+		size_t sn = termgfx_term_status_set(sb, sizeof sb,
+		                                    sr_input_status_type() >= 0
+		                                    ? sr_input_status_type() : 1);
+
+		if (sn > 0)
+			sr_out_put(sb, sn);
+	}
 	sr_out_puts(termgfx_term_leave);          /* restore ?1070h/?80h/?7h/?25h for the BBS */
 	sr_io_drain_blocking(SR_LEAVE_DRAIN_MS);  /* bounded: never hang the exit path */
 	sr_io_drain_input(SR_LEAVE_INPUT_MS);     /* keystrokes must not echo at the BBS prompt */
@@ -952,6 +1015,19 @@ static uint8_t *g_scaled;   /* NN-scaled indices, g_ew * g_eh */
 static size_t   g_scaled_cap;
 static uint8_t *g_last_rgb; /* de-dupe cache of the last SENT frame */
 static size_t   g_last_rgb_cap;
+
+/* --- dirty rects ------------------------------------------------------------
+ * g_prev_scaled is the SCALED, quantized frame the client is currently showing
+ * -- not the native one g_last_rgb caches. Diffing in display space is what
+ * makes every rectangle directly placeable: no mapping back through the
+ * resampler, and the cell grid the rectangles are found on is the cell grid
+ * they are drawn on. g_rect_px is one packed sub-rectangle, since sixel_encode()
+ * wants a tight w*h buffer rather than a stride into a bigger one. */
+static uint8_t *g_prev_scaled;
+static size_t   g_prev_scaled_cap;
+static int      have_prev_scaled;
+static uint8_t *g_rect_px;
+static size_t   g_rect_px_cap;
 static uint8_t *g_sx;       /* encoded sixel bytes */
 static size_t   g_sx_cap;
 static int      g_force_repaint;   /* one-shot: skip the de-dupe, re-emit the palette */
@@ -1002,6 +1078,24 @@ static void sr_io_scale_indices(uint8_t *dst, int dw, int dh,
 	}
 }
 
+/* Copy one sub-rectangle of g_scaled into g_rect_px as a tight w*h buffer,
+ * because sixel_encode() takes an image and not a stride into a larger one.
+ * Returns 0 on allocation failure, in which case the caller stops patching --
+ * the frame is then partially updated, which is fine: the parts already emitted
+ * are correct, and the next frame diffs against what the client actually has. */
+static int sr_io_pack_rect(const sr_dirty_rect_t *r)
+{
+	int y;
+
+	if (sr_io_ensure(&g_rect_px, &g_rect_px_cap, (size_t)r->w * (size_t)r->h) != 0)
+		return 0;
+	for (y = 0; y < r->h; y++)
+		memcpy(g_rect_px + (size_t)y * r->w,
+		       g_scaled + (size_t)(r->y + y) * g_ew + r->x,
+		       (size_t)r->w);
+	return 1;
+}
+
 /* --- present ---------------------------------------------------------------- */
 void sr_io_present(const uint8_t *rgb, int w, int h)
 {
@@ -1011,8 +1105,10 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	static int     last_icol = -1, last_irow = -1;
 	static int     last_ew = -1, last_eh = -1;
 	uint8_t        pal[SR_PAL_BYTES];
-	size_t         npx, nrgb, n, frame_start = 0;
-	int            pal_changed, emit_pal, force;
+	size_t          npx, nrgb, n, frame_start = 0;
+	int             pal_changed, emit_pal, force;
+	sr_dirty_rect_t rect[SR_DIRTY_MAX_RECTS];
+	int             nrect;
 
 	if (w <= 0 || h <= 0)
 		return;
@@ -1194,28 +1290,96 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 
 	frame_start = g_out_len;   /* wire bytes for this frame, for the stats overlay */
 
-	{   /* Save cursor, position at the centered cell, restore after -- the sixel
-		 * is drawn at the text cursor, so this is what centers it without
-		 * disturbing wherever the real cursor was. */
-		char wrap[24];
-		int  wn = snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", g_irow, g_icol);
+	/* PATCH THE FRAME INSTEAD OF REPAINTING IT, when everything lines up.
+	 *
+	 * The terminal is still holding the last frame, and a sixel image can be
+	 * drawn at any character cell -- so the handful of cells that actually
+	 * changed can be painted over it and the rest left alone. On a console that
+	 * is mostly static (a maze, a scoreboard, a play field with a few sprites on
+	 * it) that is the difference between sending the picture and sending the
+	 * movement.
+	 *
+	 * Every precondition below is a correctness one, not a tuning knob, and a
+	 * failed one falls through to the whole-frame path, which is always right:
+	 *
+	 *   force         something painted OVER the game (pause/help), so the parts
+	 *                 we would NOT repaint are the parts that are wrong.
+	 *   pal_changed   the client's colour registers are about to be redefined, so
+	 *                 the pixels it is still holding no longer mean what they did.
+	 *   geometry      the image moved or resized since the frame the client has;
+	 *                 our rectangle coordinates would land somewhere else.
+	 *   !have_prev    no previous scaled frame to diff against (first frame after
+	 *                 a resize, a tier change, or a de-duped run).
+	 *   !SyncTERM     the palette cannot be omitted (registers are not persisted),
+	 *                 and a palette per rectangle costs far more than one frame.
+	 */
+	nrect = 0;
+	if (sr_config_dirty_rect() && !force && !pal_changed && have_prev_scaled
+	    && sr_input_is_syncterm() && g_cell_w > 0 && g_cell_h > 0
+	    && last_ew == g_ew && last_eh == g_eh
+	    && last_icol == g_icol && last_irow == g_irow)
+		nrect = sr_dirty_find(g_scaled, g_prev_scaled, g_ew, g_eh,
+		                      g_cell_w, g_cell_h, rect);
 
-		/* A forced repaint means something painted OVER the game -- the door's
-		 * pause and help screens write text across the whole grid. The sixel
-		 * covers only the centered image rect, so the margin cells around it
-		 * would keep the leftovers (at 80x25 with a 352-wide frame, the first
-		 * and last few columns). Erase first, in the SAME write as the repaint,
-		 * so the clear and the frame reach the terminal together. */
-		if (force)
-			sr_out_puts("\x1b[2J");
-		if (wn > 0)
-			sr_out_put(wrap, (size_t)wn);
+	if (nrect > 0) {
+		int i;
+
+		sr_out_puts("\x1b" "7");                  /* save cursor once, not per rect */
+		for (i = 0; i < nrect; i++) {
+			char pos[24];
+			int  pn;
+
+			if (!sr_io_pack_rect(&rect[i]))
+				break;                             /* OOM: stop patching, keep what landed */
+			pn = snprintf(pos, sizeof pos, "\x1b[%d;%dH",
+			              g_irow + rect[i].row, g_icol + rect[i].col);
+			if (pn > 0)
+				sr_out_put(pos, (size_t)pn);
+			/* emit_palette is 0 for every patch: the preconditions above
+			 * guarantee the registers the client holds are still ours. */
+			n = sixel_encode(&g_sx, &g_sx_cap, g_rect_px, rect[i].w, rect[i].h,
+			                 pal, 0);
+			sr_out_put(g_sx, n);
+			g_dirty_rects_sent++;
+		}
+		sr_out_put("\x1b" "8", 2);                /* restore cursor */
+		g_dirty_frames++;
+	} else {
+		{   /* Save cursor, position at the centered cell, restore after -- the sixel
+			 * is drawn at the text cursor, so this is what centers it without
+			 * disturbing wherever the real cursor was. */
+			char wrap[24];
+			int  wn = snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", g_irow, g_icol);
+
+			/* A forced repaint means something painted OVER the game -- the door's
+			 * pause and help screens write text across the whole grid. The sixel
+			 * covers only the centered image rect, so the margin cells around it
+			 * would keep the leftovers (at 80x25 with a 352-wide frame, the first
+			 * and last few columns). Erase first, in the SAME write as the repaint,
+			 * so the clear and the frame reach the terminal together. */
+			if (force)
+				sr_out_puts("\x1b[2J");
+			if (wn > 0)
+				sr_out_put(wrap, (size_t)wn);
+		}
+
+		n = sixel_encode(&g_sx, &g_sx_cap, g_scaled, g_ew, g_eh, pal, emit_pal);
+		sr_out_put(g_sx, n);
+		sr_out_put("\x1b" "8", 2);   /* restore cursor */
+		g_full_frames++;
 	}
-
-	n = sixel_encode(&g_sx, &g_sx_cap, g_scaled, g_ew, g_eh, pal, emit_pal);
-	sr_out_put(g_sx, n);
-	sr_out_put("\x1b" "8", 2);   /* restore cursor */
 	g_force_repaint = 0;   /* frame actually emitted: the one-shot is spent */
+
+	/* Remember what the CLIENT now has, so the next frame can diff against it.
+	 * Updated on both paths and only after a frame is actually emitted -- a
+	 * dropped or de-duped frame must leave this alone, or the next diff would be
+	 * taken against a picture the client never received. */
+	if (sr_io_ensure(&g_prev_scaled, &g_prev_scaled_cap, (size_t)g_ew * (size_t)g_eh) == 0) {
+		memcpy(g_prev_scaled, g_scaled, (size_t)g_ew * (size_t)g_eh);
+		have_prev_scaled = 1;
+	} else {
+		have_prev_scaled = 0;
+	}
 
 	if (emit_pal) {
 		memcpy(last_pal, pal, sizeof last_pal);

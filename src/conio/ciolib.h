@@ -800,6 +800,7 @@ CIOLIBEXPORT int mouse_pending(void);
 CIOLIBEXPORT void init_mouse(void);
 CIOLIBEXPORT int ciolib_getmouse(struct mouse_event *mevent);
 CIOLIBEXPORT int ciolib_ungetmouse(struct mouse_event *mevent);
+/* Clears input ownership state while preserving CIO_KEY_QUIT. */
 CIOLIBEXPORT void ciolib_clear_input(void);
 CIOLIBEXPORT void ciolib_mouse_thread(void *data);
 CIOLIBEXPORT uint64_t ciomouse_getevents(void);

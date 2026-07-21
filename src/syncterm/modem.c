@@ -122,13 +122,11 @@ modem_response(char *str, size_t maxlen, int timeout)
 
 	start = xp_fast_timer64();
 	while (1) {
+		if (quitting)
+			return 1;
                 /* Abort with keystroke */
 		if (kbhit()) {
-			switch (getch()) {
-				case 0:
-				case 0xe0:
-					getch();
-			}
+			(void)syncterm_getkey();
 			return 1;
 		}
 
@@ -277,14 +275,13 @@ modem_connect(struct bbslist *bbs)
 			return -1;
 		}
 
-                /* drain keyboard input to avoid accidental cancel */
+		/* drain keyboard input to avoid accidental cancel */
 		while (kbhit()) {
-			int ch = getch();
-			if (ch == 0 || ch == 0xe0) {
-				ch |= (getch() << 8);
-				if (ch == CIO_KEY_QUIT)
-					break;
-			}
+			int ch = syncterm_getkey();
+			if (ch == CIO_KEY_MOUSE)
+				getmouse(NULL);
+			if (quitting)
+				break;
 		}
 
 		/* Drain modem output buffer */

@@ -34,7 +34,7 @@ import "ui_pane"     for Pane
 import "ui_widget"   for Widget, Rect
 import "ui_draw"     for Painter
 import "ui_logview"  for LogView
-import "ui_popup"    for Confirm, Prompt
+import "ui_popup"    for Confirm, LinePrompt
 import "syncterm"    for Screen, Key, KeyEvent, MouseEvent, Input, Timer, Transfer
 
 // Named-field wrapper around the fixed-shape List that
@@ -207,7 +207,7 @@ class TransferApp is App {
   // App's stock modal() picks between drainOnce_ (fiber yield) and
   // drainOnceSync_ (Input.next blocking) based on _runMode, neither
   // of which we use; running our custom Input.next(100) loop here
-  // keeps key/mouse routing alive while a Confirm/Prompt is up.  We
+  // keeps key/mouse routing alive while a Confirm/LinePrompt is up.  We
   // intentionally do NOT pump onTick_ inside the modal — the worker
   // is parked waiting on us anyway, so log/tick events won't accrue.
   modal(widget) {
@@ -372,7 +372,7 @@ class TransferApp is App {
   // unblock the parked condvar.  Two kinds today:
   //   1 = XFER_DLG_DUPLICATE — Confirm yes/no → OVERWRITE / SKIP.
   //       (RENAME wired through but no input affordance yet.)
-  //   2 = XFER_DLG_FILENAME_PROMPT — Prompt → text or cancel.
+  //   2 = XFER_DLG_FILENAME_PROMPT — LinePrompt → text or cancel.
   // Response codes must match the XFER_DLG_* enums in
   // wren_bind_xfer.h: 0 / 1 / 2 mean different things per kind.
   handleDialog_(kind) {
@@ -384,7 +384,7 @@ class TransferApp is App {
     } else if (kind == 2) {
       // dialogFilename is overloaded as the prompt label here.
       var label = Transfer.dialogFilename
-      var name  = Prompt.show(this, label)
+      var name  = LinePrompt.show(this, label)
       if (name == null) {
         Transfer.dialogRespond(1, "")            // cancel
       } else {

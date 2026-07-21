@@ -3,7 +3,7 @@ import "ui_app" for App
 import "ui_widget" for Rect
 import "ui_pane" for Pane
 import "ui_list" for ListView
-import "ui_popup" for Alert, Confirm, Prompt, Popup
+import "ui_popup" for Alert, Confirm, Prompt, LinePrompt, Popup
 
 class StandaloneChoice is Popup {
   construct new(message, labels) {
@@ -109,10 +109,23 @@ class MenuUi {
 
   static promptStandalone(title, message, initial, maxLen, masked,
       helpText) {
+    return promptStandalone_(title, message, initial, maxLen, masked,
+        helpText, false)
+  }
+
+  static promptStandaloneAtExit(title, message, initial, maxLen, masked,
+      helpText) {
+    return promptStandalone_(title, message, initial, maxLen, masked,
+        helpText, true)
+  }
+
+  static promptStandalone_(title, message, initial, maxLen, masked,
+      helpText, atExit) {
     var app = App.new()
     var p = Prompt.new(message, initial)
     p.title = title
     p.helpText = helpText
+    p.atExit = atExit
     p.input.maxLen = maxLen
     if (masked) p.input.mask = "*"
     p.sizeForInput(maxLen, 34)
@@ -127,9 +140,22 @@ class MenuUi {
   }
 
   static alertStandalone(title, message, helpText) {
+    alertStandalone_(title, message, helpText, false)
+  }
+
+  static alertStandaloneAtExit(title, message) {
+    alertStandalone_(title, message, null, true)
+  }
+
+  static alertStandaloneAtExit(title, message, helpText) {
+    alertStandalone_(title, message, helpText, true)
+  }
+
+  static alertStandalone_(title, message, helpText, atExit) {
     var app = App.new()
     var p = Alert.new(title, message)
     p.helpText = helpText
+    p.atExit = atExit
     p.bounds = Popup.centeredBounds_(message, 1, 24)
     p.onDismiss = Fn.new {|value| app.quit() }
     app.pushModal(p)
@@ -137,9 +163,18 @@ class MenuUi {
   }
 
   static confirmStandalone(title, message) {
+    return confirmStandalone_(title, message, false)
+  }
+
+  static confirmStandaloneAtExit(title, message) {
+    return confirmStandalone_(title, message, true)
+  }
+
+  static confirmStandalone_(title, message, atExit) {
     var app = App.new()
     var p = Confirm.new(message)
     p.title = title
+    p.atExit = atExit
     p.bounds = Popup.centeredBounds_(message, 1, 24)
     p.onDismiss = Fn.new {|value| app.quit() }
     app.pushModal(p)
@@ -256,7 +291,7 @@ class MenuUi {
       if (label.count + 4 > longest) longest = label.count + 4
     }
     var w = longest.max(24).min(size[0] - 4)
-    var h = (labels.count + 4).max(7).min(size[1] - 4)
+    var h = (labels.count + 4).min(size[1] - 4)
     pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
         ((size[1] - h) / 2).floor + 1, w, h)
     pane.onClose = cancel
@@ -279,6 +314,71 @@ class MenuUi {
     return state["result"]
   }
 
+  // Choice variant for catalogs which preview on row movement and may
+  // contain informational rows that cannot be activated. helpFor and
+  // onChange receive the row value; onAccept returns true to close.
+  static browserChoice(app, title, rows, current, helpFor, onChange,
+      onAccept, onCancel) {
+    if (rows.count == 0) return null
+    var state = {"result": null, "closed": false}
+    var list = null
+    var pane = null
+    var cancel = Fn.new {
+      if (state["closed"]) return
+      state["closed"] = true
+      onCancel.call()
+      app.popModal()
+    }
+    pane = CommandPane.new(cancel, {}, Fn.new {|spec| null })
+    pane.title = title
+    pane.focused = true
+    pane.onClose = cancel
+
+    var size = Screen.size
+    var longest = title.count + 6
+    var labels = []
+    for (row in rows) {
+      labels.add(row[1])
+      if (row[1].count + 4 > longest) longest = row[1].count + 4
+    }
+    var w = longest.max(24).min(size[0] - 4)
+    var h = (labels.count + 4).min(size[1] - 4)
+    pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
+        ((size[1] - h) / 2).floor + 1, w, h)
+
+    list = ListView.new()
+    list.bounds = pane.innerBounds
+    list.items = labels
+    if (rows[0] is List) {
+      list.selected = rowIndex(rows, current)
+    } else {
+      list.selected = current == null ? 0 : current
+    }
+    list.onChange = Fn.new {|index, item|
+      if (index == null) return
+      var value = rowValue_(rows, index)
+      pane.helpText = helpFor.call(value)
+      onChange.call(value)
+    }
+    list.onSelect = Fn.new {|index, item|
+      var value = rowValue_(rows, index)
+      if (onAccept.call(value) == true) {
+        state["result"] = value
+        state["closed"] = true
+        app.popModal()
+      }
+    }
+    pane.add(list)
+    var selected = list.selected
+    if (selected != null) {
+      var value = rowValue_(rows, selected)
+      pane.helpText = helpFor.call(value)
+      onChange.call(value)
+    }
+    app.modal(pane)
+    return state["result"]
+  }
+
   static rowValue_(rows, index) {
     return rows[index] is List ? rows[index][0] : index
   }
@@ -288,8 +388,8 @@ class MenuUi {
   }
 
   static prompt(app, title, message, initial, maxLen, masked, helpText) {
-    var p = Prompt.new(message, initial)
-    p.title = title
+    var p = LinePrompt.new(message, initial)
+    if (title != message) p.title = title
     p.helpText = helpText
     p.input.maxLen = maxLen
     if (masked) p.input.mask = "*"

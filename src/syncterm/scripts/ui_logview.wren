@@ -274,7 +274,7 @@ class LogView is Widget {
                         glyphs, trackStyle, thumbStyle)
       // Single-column separator between scrollbar and content.
       var sepStyle = style("default")
-      var sepGlyph = glyph("frame.left")
+      var sepGlyph = glyph("scrollbar.separator")
       var sx       = separatorColumn_
       var j = 0
       while (j < h) {

@@ -18,6 +18,7 @@ Isolate trusted menu scripts from per-connection Wren scripts
 Replace the native file picker with an isolated persistent Wren VM
 Remove SyncTERM's UIFC dependency
 Rename the menu and picker colour settings to Classic Theme
+Add process-wide INI themes with preview and selection in SyncTERM Settings
 Remove the nonfunctional -e escape-delay option
 Place Wren UI scrollbars on the right
 Pin SO_SNDBUF and SO_RCVBUF to 1 MiB on all TCP connections

@@ -153,8 +153,8 @@ class UiStyleTest {
       "menu.item.focused":
         Style.new(null, 0x70, null, 0xAAAAAA)
     }, {
-      "frame.topLeft": "+",
-      "frame.top":     "-"
+      "frame.display.topLeft": "+",
+      "frame.display.top":     "-"
     })
   }
 
@@ -232,8 +232,8 @@ class UiStyleTest {
 
   static testThemeGlyphsAccessor_() {
     var t = makeTheme_()
-    check_(t.glyphs["frame.topLeft"] == "+" &&
-           t.glyphs["frame.top"]     == "-" &&
+    check_(t.glyphs["frame.display.topLeft"] == "+" &&
+           t.glyphs["frame.display.top"]     == "-" &&
            t.glyphs["nonexistent"]   == null,
            "Theme.glyphs returns the configured map")
   }
@@ -288,10 +288,23 @@ class UiStyleTest {
     var d = Theme.default
     var g = d.glyphs
     var keys = [
-      "frame.topLeft", "frame.top", "frame.topRight",
-      "frame.left", "frame.right",
-      "frame.bottomLeft", "frame.bottom", "frame.bottomRight",
-      "scrollbar.track", "scrollbar.thumb",
+      "frame.display.topLeft", "frame.display.top",
+      "frame.display.topRight", "frame.display.left",
+      "frame.display.right", "frame.display.bottomLeft",
+      "frame.display.bottom", "frame.display.bottomRight",
+      "frame.display.tee.left", "frame.display.tee.right",
+      "frame.display.title.left", "frame.display.title.right",
+      "frame.display.tee.top", "frame.display.tee.bottom",
+      "frame.display.cross", "frame.display.separator",
+      "frame.control.topLeft", "frame.control.top",
+      "frame.control.topRight", "frame.control.left",
+      "frame.control.right", "frame.control.bottomLeft",
+      "frame.control.bottom", "frame.control.bottomRight",
+      "frame.control.tee.left", "frame.control.tee.right",
+      "frame.control.title.left", "frame.control.title.right",
+      "frame.control.tee.top", "frame.control.tee.bottom",
+      "frame.control.cross", "frame.control.separator",
+      "scrollbar.track", "scrollbar.thumb", "scrollbar.separator",
       "arrow.up", "arrow.down", "arrow.left", "arrow.right",
       "tag.on", "tag.off"
     ]

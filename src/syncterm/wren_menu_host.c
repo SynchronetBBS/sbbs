@@ -168,12 +168,14 @@ generic_method_allowed(const char *class_name, const char *signature)
 		return true;
 	static const char *const host_allowed[] = {
 		"altKeyName", "altKeyShort", "cacheDirectory", "downloadDir",
+		"exitRequested_",
 		"pickFile(_,_,_)",
 		"pickFile(_,_,_,_)",
 		"pickFiles(_,_,_)",
 		"pickSavePath(_,_)",
 		"print(_)",
 		"logUnread", "logUnreadError", "safeMode", "textTerminal",
+		"themeGeneration", "themeData", "defaultThemeData",
 	};
 	for (size_t i = 0;
 	    i < sizeof(host_allowed) / sizeof(host_allowed[0]); i++) {

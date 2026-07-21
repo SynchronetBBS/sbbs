@@ -1021,10 +1021,13 @@ The shipped main menu uses SyncTERM's classic composition:
 an offline title/time row, a content-sized directory window at the left, a
 permanent settings window at the right, and comment/command rows at the
 bottom. Both panes remain present while focus changes their active/inactive
-palette. `ClassicTheme` maps the six persisted `[ClassicTheme]` color
-preferences into Wren `Theme` roles, so dialogs opened by either pane
-inherit the same user configuration. The shipped picker uses the same theme;
-connected-session interfaces use their own themes.
+palette. The C theme loader owns the compiled defaults, the selected theme,
+and temporary menu previews. It publishes immutable style and glyph snapshots
+to all three Wren VMs, so menu, picker, and connected interfaces share one
+program-wide look. The built-in Classic Theme maps the six persisted
+`[ClassicTheme]` preferences into that same representation; file themes are
+sparse overlays on the compiled default. See `Themes.adoc` for the storage,
+parser, role, and glyph contracts.
 
 Context help remains ordinary Wren UI data. Each shipped menu, editor, or
 settings implementation keeps its Markdown help beside the controls it
