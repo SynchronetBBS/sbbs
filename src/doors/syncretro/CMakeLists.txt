@@ -160,6 +160,31 @@ if(NOT WIN32)
 endif()
 
 # ---------------------------------------------------------------------------
+# probe_core -- the core diagnostic (opt-in: cmake -DSYNCRETRO_PROBE=ON).
+#
+# NOT a test and NOT part of the door: it loads a core, reports what the core
+# actually does (rotation, geometry changes, options, colour count, a thumbnail)
+# and exits. It is how a console's cost gets measured BEFORE an install dir is
+# written -- M3_MULTICORE.md sec 2's fceumm table came from its throwaway
+# ancestor. See probe_core.c's header.
+#
+# It links the door's REAL retro_core.c so what it measures is what the door
+# would do, and supplies its own sr_bridge_install()/sr_environment() -- hence
+# no termgfx, no xpdev, no libjxl, and no terminal.
+# ---------------------------------------------------------------------------
+option(SYNCRETRO_PROBE "Build probe_core, the libretro core diagnostic" OFF)
+if(SYNCRETRO_PROBE)
+    add_executable(probe_core probe_core.c retro_core.c retro_options.c)
+    target_include_directories(probe_core PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    set_target_properties(probe_core PROPERTIES C_STANDARD 11)
+    if(MSVC)
+        target_compile_definitions(probe_core PRIVATE _CRT_SECURE_NO_WARNINGS)
+    else()
+        target_link_libraries(probe_core ${CMAKE_DL_LIBS})
+    endif()
+endif()
+
+# ---------------------------------------------------------------------------
 # Unit tests. Opt-in: cmake -DSYNCRETRO_TESTS=ON. No core is ever linked, and
 # the first three link no termgfx either -- they are pure (test_audio_bytes is
 # the exception; see its own note below). test_keypad.c in particular is the
