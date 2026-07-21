@@ -55,8 +55,57 @@ bool sr_environment(unsigned cmd, void *data)
 			/* Software cores only -- no GL/Vulkan in a terminal (DESIGN.md sec 12). */
 			return false;
 
-		/* TODO(M2/M3): surface core options + input descriptors:
-		 *   RETRO_ENVIRONMENT_GET_VARIABLE / SET_VARIABLES / SET_CORE_OPTIONS(_V2)
+		/* --- core options (retro_options.c) --------------------------------
+		 * We do NOT answer GET_CORE_OPTIONS_VERSION, which libretro defines as
+		 * "version 0", so a conforming core declares through SET_VARIABLES and
+		 * that is the arm that runs in practice. The v1/v2 arms are here because
+		 * a core that skips the version handshake would otherwise leave the
+		 * store EMPTY and silent -- the exact failure this file used to have. */
+		case RETRO_ENVIRONMENT_SET_VARIABLES:
+			ro_declare_v0(data);
+			return true;
+
+		case RETRO_ENVIRONMENT_SET_CORE_OPTIONS:
+			ro_declare_v1(data);
+			return true;
+
+		case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_INTL:
+			ro_declare_v1(((const struct retro_core_options_intl *)data)->us);
+			return true;
+
+		case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2:
+			ro_declare_v2(data);
+			return true;
+
+		case RETRO_ENVIRONMENT_SET_CORE_OPTIONS_V2_INTL:
+			ro_declare_v2(((const struct retro_core_options_v2_intl *)data)->us);
+			return true;
+
+		/* Answering false here is NOT the same as leaving the core on its own
+		 * defaults, however the docs read: MAME 2003-Plus answers an unset
+		 * sample-rate option with 0 Hz and then emits no audio at all (measured
+		 * -- probe_core.c). Hand back the pinned value, or the core's own
+		 * advertised default. A key we never saw declared still gets false. */
+		case RETRO_ENVIRONMENT_GET_VARIABLE: {
+			struct retro_variable *var = data;
+			const char *           val;
+
+			if (var == NULL || var->key == NULL)
+				return false;
+			if ((val = ro_option_get(var->key)) == NULL)
+				return false;
+			var->value = val;
+			return true;
+		}
+
+		/* Polled EVERY FRAME by some cores (MAME 2003-Plus does). Nothing
+		 * changes an option mid-session, so answer a definite no rather than
+		 * leaving the call unanswered. */
+		case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE:
+			*(bool *)data = ro_options_changed() ? true : false;
+			return true;
+
+		/* TODO(M5): surface input descriptors + controller info:
 		 *   RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS  (drives the key overlay)
 		 *   RETRO_ENVIRONMENT_SET_CONTROLLER_INFO
 		 *   RETRO_ENVIRONMENT_GET_CAN_DUPE  -> true (we drop frames; DESIGN.md sec 3)

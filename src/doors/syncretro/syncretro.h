@@ -215,4 +215,21 @@ void sr_bridge_set_pixfmt(int retro_pixel_format);
  * The retro_environment_t callback. Passed to the core via sr_bridge_install(). */
 /* (declared with libretro types in retro_env.c; not needed cross-module) */
 
+/* --- retro_options.c: core options ----------------------------------------
+ * The libretro-typed half of this module lives in retro_options.h, which the
+ * door glue has no business including (it would pull libretro.h into every
+ * caller). These two take plain strings, so they belong here -- the same split
+ * `struct rc_core` gets above.
+ *
+ * Pin one option, from `-option key=value`. The console's lobby.js spec is what
+ * sets these: an option can be part of what a console IS (an arcade core that
+ * opens on a disclaimer screen no BBS player can dismiss), not a sysop's taste.
+ * Call BEFORE rc_core_load_game() -- pins are applied as the core declares each
+ * key, which happens inside it. Returns 0, or -1 on a malformed pin (logged). */
+int  sr_option_pin(const char *key_eq_value);
+/* One summary line for the door log, plus a warning for any pin that matched
+ * nothing this core advertises -- a typo'd or renamed key is otherwise
+ * completely silent. Call after rc_core_load_game(). */
+void sr_options_report(void);
+
 #endif /* SYNCRETRO_H_ */

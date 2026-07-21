@@ -12,6 +12,7 @@ add_executable(syncretro
     main.c
     retro_core.c        # dlopen the core, resolve the retro_* ABI
     retro_env.c         # the retro_environment_t callback (frontend policy)
+    retro_options.c     # core options: what the core offers, what a console pins
     retro_bridge.c      # video / audio / input callbacks -> termgfx + door I/O
     syncretro_io.c      # terminal enter/probe/leave + present path
     syncretro_input.c   # socket decode -> cached RetroPad

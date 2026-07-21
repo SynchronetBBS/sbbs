@@ -156,7 +156,7 @@ static int is_valued_flag(const char *a)
 	return strcmp(a, "-name") == 0 || strcmp(a, "-home") == 0
 	       || strcmp(a, "-core") == 0 || strcmp(a, "-rom") == 0
 	       || strcmp(a, "-profile") == 0 || strcmp(a, "-title") == 0
-	       || strcmp(a, "-console") == 0;
+	       || strcmp(a, "-console") == 0 || strcmp(a, "-option") == 0;
 }
 
 /* Bounded copy into a fixed buffer: NUL-terminates, truncates silently. Spelled
@@ -240,6 +240,14 @@ static void sr_door_resolve(int argc, char **argv)
 			copy_arg(g_title, sizeof(g_title), argv[++i]);
 		} else if (strcmp(a, "-console") == 0 && i + 1 < argc) {
 			copy_arg(g_console, sizeof(g_console), argv[++i]);
+		} else if (strcmp(a, "-option") == 0 && i + 1 < argc) {
+			/* Handed straight to the option store rather than copied into a
+			 * g_* buffer like the flags above: it is repeatable, and the store
+			 * is the only thing that ever reads it. A malformed pin is logged
+			 * there and skipped -- never fatal, since a door that refuses to
+			 * start over one bad option is worse than one that runs on the
+			 * core's default. */
+			sr_option_pin(argv[++i]);
 		} else if (strcmp(a, "-stdio") == 0) {
 			g_stdio = 1;
 		} else if (strcmp(a, "-rom") == 0 && i + 1 < argc) {
@@ -307,6 +315,8 @@ static void sr_door_usage(const char *argv0)
 		"Content:\n"
 		"  -profile <name>    controller profile: pad (default) | intv\n"
 		"                     omitted: inferred from the core's own name\n"
+		"  -option key=value  pin one libretro core option (repeatable). Any the\n"
+		"                     console does not pin keep the core's own default\n"
 		"  -title <name>      cartridge title, for the who's-online status\n"
 		"  -console <name>    console name, for the who's-online status\n"
 		"  -stdio             the BBS redirected our stdin/stdout instead of\n"

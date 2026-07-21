@@ -459,6 +459,11 @@ int main(int argc, char **argv)
 	 * it is loaded, and its sample rate only once a game is (the NES is 48000, the
 	 * Intellivision 44100 -- and the door hardcoded 44100 until M3). */
 	sr_profile_select(sr_door_profile(), core.si.library_name);
+	/* Before sr_audio_start(), which reads a sample rate the OPTIONS decided:
+	 * MAME 2003-Plus derives its rate from an option and reports 0 Hz when the
+	 * frontend answers nothing. The report is a log line, but it is also the
+	 * only place a mis-typed console pin is ever mentioned. */
+	sr_options_report();
 	sr_audio_start((int)core.av.timing.sample_rate);
 
 	/* The frame's DISPLAY shape. A console's pixels are not square: the NES's

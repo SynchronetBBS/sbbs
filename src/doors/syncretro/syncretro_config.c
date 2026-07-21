@@ -173,6 +173,43 @@ static void sr_config_read_ini(void)
 		g_audio_volume    = iniGetInteger(ini, "audio", "volume", 100);
 		g_audio_chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", 100);
 		g_audio_prebuffer = iniGetInteger(ini, "audio", "prebuffer", 3);
+
+		/* [options] -- libretro core options this install pins.
+		 *
+		 * THIS IS WHY THEY ARE NOT ON THE COMMAND LINE. A door's command line is
+		 * assembled by the BBS into a fixed buffer -- xtrn.cpp's
+		 * `fullcmdline[MAX_PATH + 1]`, i.e. 260 usable characters -- and it is
+		 * TRUNCATED there without a word. The lobby's line for one arcade game
+		 * already runs to ~240 characters (binary path, socket, time, alias,
+		 * core, profile, title, console, home, ROM path), so two pinned options
+		 * pushed it to 334 and the tail simply vanished: the ROM argument fell
+		 * off the end and the door reported "(no ROM)" for content that was
+		 * plainly there in the log the BBS printed -- because the BBS logs the
+		 * untruncated string and passes the truncated one.
+		 *
+		 * The ini has no such limit and is already per-install, so a console
+		 * pins its options here. `-option` still exists for a door run by hand.
+		 *
+		 * iniGetNamedStringList(), NOT iniGetSection(): the latter hands back the
+		 * section's RAW LINES, comments and all, and does not trim around the
+		 * '='. Feeding those to sr_option_pin() pinned "; libretro core options,
+		 * passed to MAME..." as a key and left the real ones unmatched (their
+		 * names kept a trailing space). The named list is already parsed and
+		 * trimmed, which is the whole reason it exists. */
+		{
+			named_string_t **opts = iniGetNamedStringList(ini, "options");
+			char             kv[INI_MAX_VALUE_LEN * 2];
+			size_t           i;
+
+			if (opts != NULL) {
+				for (i = 0; opts[i] != NULL; i++) {
+					snprintf(kv, sizeof kv, "%s=%s", opts[i]->name,
+					         opts[i]->value != NULL ? opts[i]->value : "");
+					sr_option_pin(kv);
+				}
+				iniFreeNamedStringList(opts);
+			}
+		}
 		strListFree(&ini);
 	}
 	/* Positive test, not two one-sided comparisons: NaN compares false under
