@@ -1,6 +1,6 @@
 import "syncterm" for FilePickerOptions, Host, Key
 import "syncterm_menu" for Menu, MenuEncryption, MenuFontSlot
-import "menu_ui" for MenuUi
+import "menu_ui" for ChoiceViewState, MenuUi
 import "ui_style" for Theme
 import "menu_bbs_editor" for BbsEditor
 import "ui_popup" for Alert
@@ -58,12 +58,13 @@ class SettingsMenu {
     begin()
     var changed = false
     var selected = 0
+    var view = ChoiceViewState.new()
     while (true) {
       var picked = MenuUi.choice(app, "SyncTERM Settings",
           rows(connected), selected, helpText(connected), Fn.new {|value|
         selected = value
         if (runAction(app, value, connected)) changed = true
-      })
+      }, view)
       if (picked == null) return changed
     }
   }
@@ -185,8 +186,12 @@ class SettingsMenu {
     for (i in 1...names.count) rows.add([i, names[i]])
     var mode = MenuUi.choice(app, "Screen Mode", rows,
         Menu.currentScreenMode, screenModeHelp_())
-    if (mode != null && !Menu.setScreenMode(mode)) {
-      Alert.show(app, "Screen Mode", "The requested screen mode could not be applied.")
+    if (mode != null) {
+      if (!Menu.setScreenMode(mode)) {
+        Alert.show(app, "Screen Mode", "The requested screen mode could not be applied.")
+      } else {
+        app.invalidateCursorState()
+      }
     }
   }
 
@@ -439,6 +444,7 @@ class SettingsMenu {
     var s = Menu.settings
     var changed = false
     var selected = 1
+    var view = ChoiceViewState.new()
     while (true) {
       var rows = []
       rows.add([1, settingsLine_("Confirm Program Exit", yesNo_(s.confirmClose))])
@@ -527,7 +533,7 @@ class SettingsMenu {
           if (customMode_(app, s)) changed = true
         }
         if (s.dirty && applySettings_(app, s)) changed = true
-      })
+      }, view)
       if (picked == null) {
         if (!changed) return false
         if (Host.safeMode || s.save()) return true
@@ -540,6 +546,8 @@ class SettingsMenu {
 
   static applySettings_(app, s) {
     if (s.apply()) {
+      // Applying settings resets conio's default cursor behind App's cache.
+      app.invalidateCursorState()
       app.theme = Theme.current
       return true
     }
@@ -552,6 +560,7 @@ class SettingsMenu {
   static colors_(app, s) {
     var changed = false
     var selected = 21
+    var view = ChoiceViewState.new()
     while (true) {
       var rows = [
         [21, settingsLine_("Frame Colour", Menu.colors[s.frameColor])],
@@ -569,7 +578,7 @@ class SettingsMenu {
         selected = value
         editColor_(app, s, value)
         if (s.dirty && applySettings_(app, s)) changed = true
-      })
+      }, view)
       if (picked == null) return changed
     }
   }
@@ -596,6 +605,7 @@ class SettingsMenu {
   static customMode_(app, s) {
     var changed = false
     var selected = 0
+    var view = ChoiceViewState.new()
     while (true) {
       var rows = [
         [0, settingsLine_("Rows", s.customRows)],
@@ -632,7 +642,7 @@ class SettingsMenu {
           if (next != null) s.customAspectHeight = next
         }
         if (s.dirty && applySettings_(app, s)) changed = true
-      })
+      }, view)
       if (picked == null) return changed
     }
   }
@@ -640,6 +650,7 @@ class SettingsMenu {
   static audio_(app, s) {
     var changed = false
     var selected = null
+    var view = ChoiceViewState.new()
     while (true) {
       var rows = []
       for (row in Menu.audioModes) {
@@ -655,7 +666,7 @@ class SettingsMenu {
           s.audioModes = s.audioModes | value
         }
         if (applySettings_(app, s)) changed = true
-      })
+      }, view)
       if (bit == null) return changed
     }
   }
@@ -704,6 +715,7 @@ class SettingsMenu {
   static webLists_(app) {
     var changed = false
     var selected = 0
+    var view = ChoiceViewState.new()
     while (true) {
       var rows = []
       var lists = Menu.webLists
@@ -772,7 +784,7 @@ class SettingsMenu {
             }
           }
         }
-      })
+      }, view)
       if (picked == null) {
         if (Menu.webListsDirty && !Menu.saveWebLists()) {
           Alert.show(app, "Web Lists",
@@ -785,6 +797,7 @@ class SettingsMenu {
 
   static fonts_(app) {
     var selected = 0
+    var view = ChoiceViewState.new()
     while (true) {
       var fonts = Menu.fonts
       if (fonts == null) {
@@ -820,7 +833,7 @@ class SettingsMenu {
         } else if (command == "select") {
           font_(app, index)
         }
-      })
+      }, view)
       if (picked == null) {
         if (Menu.fontsDirty && !Menu.saveFonts()) {
           Alert.show(app, "Font Management",
@@ -861,6 +874,7 @@ class SettingsMenu {
       [MenuFontSlot.twelveByTwenty, "12 x 20"]
     ]
     var selected = -1
+    var view = ChoiceViewState.new()
     while (true) {
       var fonts = Menu.fonts
       if (fonts == null || fonts.count == 0) return
@@ -916,7 +930,7 @@ class SettingsMenu {
           app.restoreFocus()
           if (file != null) font.setFile(value, file)
         }
-      })
+      }, view)
       if (picked == null || deleted) return
     }
   }

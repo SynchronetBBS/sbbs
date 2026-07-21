@@ -138,6 +138,7 @@ class UiWidgetTest {
     testAppCloseModalsCanFail_()
     testAppKeymapBindUnbind_()
     testAppLayoutNotifiesOnResize_()
+    testAppCursorStateInvalidation_()
     testAppDispatchKeyToFocused_()
     testAppDispatchKeyHitsKeymap_()
     testAppDispatchKeyConsumedSkipsKeymap_()
@@ -714,6 +715,18 @@ class UiWidgetTest {
            calls[1][0] == 100 && calls[1][1] == 30 &&
            app.root.bounds.w == 100 && app.root.bounds.h == 30,
            "App layout: callback fires only for first size and resize")
+  }
+
+  static testAppCursorStateInvalidation_() {
+    var app = App.new()
+    app.drawAll_()
+    var initiallyHidden = app.cursorShapeCache_ == "none"
+    app.invalidateCursorState()
+    var invalidated = app.cursorShapeCache_ == null
+    app.drawAll_()
+    check_(initiallyHidden && invalidated &&
+           app.cursorShapeCache_ == "none",
+           "App.invalidateCursorState: redraw repairs external cursor change")
   }
 
   static testAppDispatchKeyToFocused_() {

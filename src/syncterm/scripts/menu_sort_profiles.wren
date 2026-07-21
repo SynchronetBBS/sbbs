@@ -1,6 +1,6 @@
 import "syncterm_menu" for Menu
 import "syncterm" for Key
-import "menu_ui" for MenuUi
+import "menu_ui" for ChoiceViewState, MenuUi
 import "ui_popup" for Alert
 
 class SortProfiles {
@@ -37,6 +37,7 @@ class SortProfiles {
   static show(app) {
     var clipboard = null
     var selected = Menu.activeSortProfile
+    var view = ChoiceViewState.new()
     while (true) {
       var profiles = Menu.sortProfiles
       var commands = {}
@@ -78,7 +79,7 @@ class SortProfiles {
         } else if (command == "select") {
           selected = editProfiles_(app, index)
         }
-      })
+      }, view)
       if (picked == null) {
         if (!Menu.saveSortProfiles()) {
           Alert.show(app, "Sort Profiles",
@@ -147,6 +148,7 @@ class SortProfiles {
 
   static editFields_(app, name, order) {
     var selected = 0
+    var view = ChoiceViewState.new()
     while (true) {
       var labels = order.map {|field| fieldLabel_(field) }.toList
       labels.add("")
@@ -173,7 +175,7 @@ class SortProfiles {
         } else if (command == "select") {
           order[index] = -order[index]
         }
-      })
+      }, view)
       if (picked == null) return [order, 0]
       if (navigation != 0) return [order, navigation]
     }

@@ -311,6 +311,15 @@ class App {
     drawAll_()
   }
 
+  // A host operation may call setcustomcursor() behind the App's back.
+  // Drop the applied-state cache so the next draw reasserts the cursor
+  // requested by the focused widget instead of trusting stale state.
+  invalidateCursorState() {
+    _cursorShape = null
+    _cursorAttr = null
+  }
+  cursorShapeCache_ { _cursorShape }
+
   // ----- Context help (F1) ---------------------------------------
   //
   // Walk from the foreground widget tree's focused leaf up through

@@ -1013,21 +1013,20 @@ list.  Enter on a web list edits its URI.  Font details are a flat Name plus
 four cell-size paths, and selecting a path opens the picker directly.
 The encryption screen has distinct Change Password, algorithm, and Decrypt
 operations; changing algorithms reuses the password already held by the
-host.  Palette editing exposes separate Red, Green, and Blue fields, uses
-Tab and Backtab between them, cycles the preview foreground with Up and Down,
-and uses `%` to reset all three components to the mode default.  Each
-component is selected when entered, so typing replaces its current value.
-Enter commits the current component; Tab and Backtab move without accepting
-uncommitted text.
+host.  Palette editing uses a combined RGB, HSV, and hexadecimal colour
+picker.  The RGB ramps accept exact decimal entry, every ramp supports
+keyboard and mouse adjustment, and the contrast grid selects the
+foreground/background pair shown in the sample.  `%` restores the mode
+default; Enter accepts the colour and Escape cancels it.
 
 In safe mode, accepted default-entry and web-list changes update the in-memory
 model but are not written to configuration files.  Encryption conversions are
 no-ops; Change Password presents its password prompt before returning.
 
-When an action rebuilds a repeating editor's list, the editor reselects the
-same row.  This applies to entry logging and palettes, sort profiles and
-fields, program settings and their nested lists, web lists, and font
-management.
+When an action rebuilds a repeating editor's list, the editor retains the
+same row and viewport position.  This applies to entry logging and palettes,
+sort profiles and fields, program settings and their nested lists, web lists,
+and font management.
 Directory editing commands apply only while the directory pane owns focus.
 Directory, pasted-entry, command-line-save, sort-profile, and web-list name
 prompts repeat after an invalid or duplicate name.  Entry-editor prompts
@@ -5849,6 +5848,10 @@ Methods of interest:
   *before* the host UI saves it.  Both are idempotent: a second
   `releaseFocus` before `restoreFocus` is a no-op, and
   `restoreFocus` without a prior release is a no-op.
+* `invalidateCursorState()` — call after a host operation changes conio's
+  cursor directly.  The next draw reapplies the shape, visibility, and
+  colour requested by the focused widget instead of trusting the App's
+  cached state.
 +
 [source,wren]
 ----
@@ -6195,6 +6198,12 @@ allows a menu to rebuild changed row labels without moving its viewport.
 `resetItems(list)` replaces the collection and explicitly selects its
 first row at `scrollTop=0`; use it when navigating to a different
 collection rather than redrawing the current one.
+
+Repeating `MenuUi.choice` and `MenuUi.commandChoice` loops recreate their
+pane after each activation.  Construct one `ChoiceViewState` before the loop
+and pass it as the final argument to the callback overload so each pane uses
+the same `ListView`; row-label updates then retain both selection and
+`scrollTop`.  Use a separate state for each logical menu.
 
 `selected` is `null` when no row is selected (empty list, or
 explicitly cleared with `list.selected = null`); otherwise an

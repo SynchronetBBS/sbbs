@@ -1,6 +1,6 @@
 import "syncterm" for Host, Key, KeyEvent
 import "syncterm_menu" for Menu
-import "menu_ui" for MenuUi
+import "menu_ui" for ChoiceViewState, MenuUi
 import "ui_app" for App
 import "ui_pane" for Pane
 import "ui_list" for ListView
@@ -687,6 +687,7 @@ class BbsEditor {
     var defaults = paletteInfo[1]
     var colors = d["palette"]
     var selected = 0
+    var view = ChoiceViewState.new()
     while (colors.count < minimum) colors.add(defaults[colors.count])
     while (true) {
       var choices = []
@@ -723,7 +724,7 @@ class BbsEditor {
             onChange.call()
           }
         }
-      })
+      }, view)
       if (result == null) {
         if (sameDefaultPalette_(colors, defaults, minimum)) colors = []
         d["palette"] = colors
@@ -735,6 +736,7 @@ class BbsEditor {
 
   static editLog_(app, d, onChange) {
     var selected = 0
+    var view = ChoiceViewState.new()
     while (true) {
       var rows = [
         [0, logLine_("Log Filename", d["logFile"])],
@@ -765,7 +767,7 @@ class BbsEditor {
           d["appendLogFile"] = !d["appendLogFile"]
         }
         onChange.call()
-      })
+      }, view)
       if (picked == null) return
     }
   }

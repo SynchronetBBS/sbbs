@@ -90,7 +90,19 @@ class CommandPane is ModalPane {
   }
 }
 
+// Retains the ListView used by a choice pane across repeated modal runs.
+// Replacing its items then uses ListView's normal selection/viewport
+// preservation instead of rebuilding from selection alone.
+class ChoiceViewState {
+  construct new() { _list = ListView.new() }
+  list { _list }
+}
+
 class MenuUi {
+  static choiceList_(viewState) {
+    return viewState == null ? ListView.new() : viewState.list
+  }
+
   static namesEqual(left, right) {
     if (left.bytes.count != right.bytes.count) return false
     for (i in 0...left.bytes.count) {
@@ -240,12 +252,16 @@ class MenuUi {
   // When onSelect is supplied, run it while the choice pane remains
   // immediately below any modal UI opened by the callback.
   static choice(app, title, rows, current, helpText, onSelect) {
+    return choice(app, title, rows, current, helpText, onSelect, null)
+  }
+
+  static choice(app, title, rows, current, helpText, onSelect, viewState) {
     var onResult = null
     if (onSelect != null) {
       onResult = Fn.new {|picked| onSelect.call(picked[1]) }
     }
     var picked = commandChoice(app, title, rows, current, helpText, {},
-        onResult)
+        onResult, viewState)
     if (picked == null) return null
     return picked[1]
   }
@@ -262,6 +278,12 @@ class MenuUi {
   // visible parent.
   static commandChoice(app, title, rows, current, helpText, commands,
       onResult) {
+    return commandChoice(app, title, rows, current, helpText, commands,
+        onResult, null)
+  }
+
+  static commandChoice(app, title, rows, current, helpText, commands,
+      onResult, viewState) {
     if (rows.count == 0) return null
     var state = {"result": null}
     var cancel = Fn.new { app.popModal() }
@@ -296,7 +318,8 @@ class MenuUi {
         ((size[1] - h) / 2).floor + 1, w, h)
     pane.onClose = cancel
 
-    list = ListView.new()
+    list = choiceList_(viewState)
+    pane.add(list)
     list.bounds = pane.innerBounds
     list.items = labels
     if (current == null) {
@@ -309,7 +332,6 @@ class MenuUi {
     list.onSelect = Fn.new {|i, item|
       finish.call(["select", rowValue_(rows, i)])
     }
-    pane.add(list)
     app.modal(pane)
     return state["result"]
   }
