@@ -604,8 +604,8 @@ set_optional_number(WrenVM *vm, int slot, int value)
 		wrenSetSlotDouble(vm, slot, (double)value);
 }
 
-static void
-push_theme_data(WrenVM *vm, const struct syncterm_theme *theme)
+void
+wren_push_theme_data(WrenVM *vm, const struct syncterm_theme *theme)
 {
 	wrenEnsureSlots(vm, 5);
 	wrenSetSlotNewList(vm, 0);
@@ -663,13 +663,13 @@ fn_Host_exitRequested(WrenVM *vm)
 static void
 fn_Host_themeData(WrenVM *vm)
 {
-	push_theme_data(vm, syncterm_theme_active());
+	wren_push_theme_data(vm, syncterm_theme_active());
 }
 
 static void
 fn_Host_defaultThemeData(WrenVM *vm)
 {
-	push_theme_data(vm, syncterm_theme_default());
+	wren_push_theme_data(vm, syncterm_theme_default());
 }
 
 /* ----- Host.sshPublicKey ----------------------------------------- */

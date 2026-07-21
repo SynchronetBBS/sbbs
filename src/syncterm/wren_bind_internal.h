@@ -51,6 +51,7 @@ enum syncterm_wren_foreign {
 	SWF_MENU_BBS,
 	SWF_MENU_SETTINGS,
 	SWF_MENU_FONT,
+	SWF_MENU_THEME_DOCUMENT,
 	SWF_PICKER_REQUEST,
 };
 
@@ -105,5 +106,8 @@ wren_throw(WrenVM *vm, const char *msg)
  * in wren_bind_screen.c (the file that owns Cell.ch=) but is shared
  * by every binding that handles Wren-side UTF-8 strings. */
 int decode_utf8_first(const char *s, int len, uint32_t *cp_out);
+
+struct syncterm_theme;
+void wren_push_theme_data(WrenVM *vm, const struct syncterm_theme *theme);
 
 #endif /* WREN_BIND_INTERNAL_H */

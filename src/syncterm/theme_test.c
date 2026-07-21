@@ -2,29 +2,35 @@
 
 #include "syncterm.h"
 
+#include <dirwrap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef _WIN32
+#include <direct.h>
 #include <process.h>
 #define getpid _getpid
+#define remove_directory _rmdir
 #else
 #include <unistd.h>
+#define remove_directory rmdir
 #endif
 
 struct syncterm_settings settings;
+int safe_mode;
 
 static unsigned test_number;
 static int failures;
+static char themes_directory[128];
 
 char *
 get_syncterm_filename(char *fn, int fnlen, int type, bool shared)
 {
-	(void)fn;
-	(void)fnlen;
-	(void)type;
 	(void)shared;
-	return NULL;
+	if (type != SYNCTERM_PATH_THEMES ||
+	    snprintf(fn, fnlen, "%s/", themes_directory) >= fnlen)
+		return NULL;
+	return fn;
 }
 
 #define CHECK(expression) do {                                         \
@@ -56,6 +62,51 @@ load_text(const char *text, struct syncterm_theme **theme, char *error,
 	    error_size);
 	remove(path);
 	return result;
+}
+
+static bool
+write_theme_file(const char *filename, const char *text)
+{
+	char path[256];
+	snprintf(path, sizeof(path), "%s/%s", themes_directory, filename);
+	FILE *fp = fopen(path, "w");
+	if (fp == NULL)
+		return false;
+	bool result = fputs(text, fp) >= 0 && fclose(fp) == 0;
+	if (!result)
+		remove(path);
+	return result;
+}
+
+static char *
+read_theme_file(const char *filename)
+{
+	char path[256];
+	snprintf(path, sizeof(path), "%s/%s", themes_directory, filename);
+	FILE *fp = fopen(path, "rb");
+	if (fp == NULL)
+		return NULL;
+	CHECK(fseek(fp, 0, SEEK_END) == 0);
+	long length = ftell(fp);
+	CHECK(length >= 0);
+	CHECK(fseek(fp, 0, SEEK_SET) == 0);
+	if (length < 0) {
+		fclose(fp);
+		return NULL;
+	}
+	char *text = malloc((size_t)length + 1);
+	if (text == NULL) {
+		fclose(fp);
+		return NULL;
+	}
+	if (fread(text, 1, (size_t)length, fp) != (size_t)length) {
+		free(text);
+		fclose(fp);
+		return NULL;
+	}
+	text[length] = '\0';
+	fclose(fp);
+	return text;
 }
 
 static const struct syncterm_theme_style *
@@ -189,9 +240,188 @@ test_missing_startup_theme(void)
 	CHECK(strcmp(settings.theme_file, "missing.ini") == 0);
 }
 
+static bool
+document_has_style(struct syncterm_theme_document *document,
+    const char *role)
+{
+	struct syncterm_theme_document_style style;
+	for (size_t i = 0; i < syncterm_theme_document_style_count(document);
+	    i++) {
+		if (syncterm_theme_document_style(document, i, &style) &&
+		    strcmp(style.role, role) == 0)
+			return true;
+	}
+	return false;
+}
+
+static bool
+document_has_glyph(struct syncterm_theme_document *document,
+    const char *name)
+{
+	struct syncterm_theme_document_glyph glyph;
+	for (size_t i = 0; i < syncterm_theme_document_glyph_count(document);
+	    i++) {
+		if (syncterm_theme_document_glyph(document, i, &glyph) &&
+		    strcmp(glyph.name, name) == 0)
+			return true;
+	}
+	return false;
+}
+
+static void
+test_document_edit_and_save(void)
+{
+	char error[256] = "";
+	struct syncterm_theme_document *document =
+	    syncterm_theme_document_new(error, sizeof(error));
+	CHECK(document != NULL);
+	if (document == NULL)
+		return;
+	CHECK(syncterm_theme_document_dirty(document));
+	CHECK(syncterm_theme_document_set_metadata(document,
+	    SYNCTERM_THEME_METADATA_NAME, "Document Test", error,
+	    sizeof(error)));
+	CHECK(syncterm_theme_document_set_style(document, "button.focused",
+	    SYNCTERM_THEME_STYLE_FOREGROUND, SYNCTERM_THEME_VALUE_EXPLICIT,
+	    0x123456, error, sizeof(error)));
+	CHECK(syncterm_theme_document_add_style(document, "custom.test", error,
+	    sizeof(error)));
+	CHECK(syncterm_theme_document_add_glyph(document, "custom.marker", 219,
+	    '#', error, sizeof(error)));
+	CHECK(document_has_style(document, "custom.test"));
+	CHECK(document_has_glyph(document, "custom.marker"));
+	CHECK(syncterm_theme_document_undo(document));
+	CHECK(!document_has_glyph(document, "custom.marker"));
+	CHECK(syncterm_theme_document_redo(document));
+	CHECK(document_has_glyph(document, "custom.marker"));
+	CHECK(syncterm_theme_document_save(document, "document.ini", false,
+	    error, sizeof(error)) == SYNCTERM_THEME_DOCUMENT_OK);
+	CHECK(!syncterm_theme_document_dirty(document));
+	CHECK(strcmp(syncterm_theme_document_filename(document),
+	    "document.ini") == 0);
+	struct syncterm_theme *loaded = NULL;
+	char path[256];
+	snprintf(path, sizeof(path), "%s/document.ini", themes_directory);
+	CHECK(syncterm_theme_load_path(path, "document.ini", &loaded, error,
+	    sizeof(error)));
+	const struct syncterm_theme_style *style = loaded != NULL ?
+	    find_style(loaded, "button.focused") : NULL;
+	CHECK(style != NULL && style->foreground == 0x123456);
+	CHECK(loaded != NULL && find_style(loaded, "custom.test") != NULL);
+	CHECK(loaded != NULL && find_glyph(loaded, "custom.marker") != NULL);
+	syncterm_theme_free(loaded);
+	syncterm_theme_document_free(document);
+}
+
+static void
+test_document_preservation_and_conflict(void)
+{
+	static const char source[] =
+	    "; root comment\n"
+	    "Name = Preserve Test\n"
+	    "Private = retained\n"
+	    "\n"
+	    "[Style:button]\n"
+	    "; style comment\n"
+	    "Unknown = retained\n"
+	    "Foreground = 7\n"
+	    "\n"
+	    "[Private]\n"
+	    "Value = retained\n";
+	CHECK(write_theme_file("preserve.ini", source));
+	char error[256] = "";
+	struct syncterm_theme_document *document =
+	    syncterm_theme_document_open("preserve.ini", error, sizeof(error));
+	CHECK(document != NULL);
+	if (document == NULL)
+		return;
+	CHECK(syncterm_theme_document_set_style(document, "button",
+	    SYNCTERM_THEME_STYLE_BACKGROUND, SYNCTERM_THEME_VALUE_EXPLICIT,
+	    0x010203, error, sizeof(error)));
+	CHECK(syncterm_theme_document_save(document, NULL, false, error,
+	    sizeof(error)) == SYNCTERM_THEME_DOCUMENT_OK);
+	char *saved = read_theme_file("preserve.ini");
+	CHECK(saved != NULL);
+	if (saved != NULL) {
+		CHECK(strstr(saved, "; root comment") != NULL);
+		CHECK(strstr(saved, "; style comment") != NULL);
+		CHECK(strstr(saved, "Unknown = retained") != NULL);
+		CHECK(strstr(saved, "[Private]\nValue = retained") != NULL);
+		free(saved);
+	}
+	CHECK(syncterm_theme_document_set_metadata(document,
+	    SYNCTERM_THEME_METADATA_AUTHOR, "Changed", error, sizeof(error)));
+	char path[256];
+	snprintf(path, sizeof(path), "%s/preserve.ini", themes_directory);
+	FILE *fp = fopen(path, "a");
+	CHECK(fp != NULL);
+	if (fp != NULL) {
+		CHECK(fputs("; external change\n", fp) >= 0);
+		CHECK(fclose(fp) == 0);
+	}
+	CHECK(syncterm_theme_document_save(document, NULL, false, error,
+	    sizeof(error)) == SYNCTERM_THEME_DOCUMENT_CONFLICT);
+	CHECK(syncterm_theme_document_save(document, NULL, true, error,
+	    sizeof(error)) == SYNCTERM_THEME_DOCUMENT_OK);
+	syncterm_theme_document_free(document);
+}
+
+static void
+test_document_import(void)
+{
+	static const char source[] =
+	    "Name = Import Source\n"
+	    "\n"
+	    "[Style:custom.imported]\n"
+	    "; imported comment\n"
+	    "Foreground = 0xabcdef\n"
+	    "Private = retained\n"
+	    "\n"
+	    "[Glyph:custom.imported]\n"
+	    "CP437 = 177\n"
+	    "ASCII = 43\n";
+	CHECK(write_theme_file("import.ini", source));
+	char error[256] = "";
+	struct syncterm_theme_document *document =
+	    syncterm_theme_document_new(error, sizeof(error));
+	CHECK(document != NULL);
+	if (document == NULL)
+		return;
+	CHECK(syncterm_theme_document_set_metadata(document,
+	    SYNCTERM_THEME_METADATA_NAME, "Import Target", error,
+	    sizeof(error)));
+	CHECK(syncterm_theme_document_import(document, "import.ini", error,
+	    sizeof(error)));
+	CHECK(document_has_style(document, "custom.imported"));
+	CHECK(document_has_glyph(document, "custom.imported"));
+	CHECK(strcmp(syncterm_theme_document_metadata(document,
+	    SYNCTERM_THEME_METADATA_NAME), "Import Target") == 0);
+	CHECK(syncterm_theme_document_undo(document));
+	CHECK(!document_has_style(document, "custom.imported"));
+	CHECK(syncterm_theme_document_redo(document));
+	CHECK(document_has_style(document, "custom.imported"));
+	CHECK(syncterm_theme_document_save(document, "imported.ini", false,
+	    error, sizeof(error)) == SYNCTERM_THEME_DOCUMENT_OK);
+	char *saved = read_theme_file("imported.ini");
+	CHECK(saved != NULL);
+	if (saved != NULL) {
+		CHECK(strstr(saved, "; imported comment") != NULL);
+		CHECK(strstr(saved, "Private = retained") != NULL);
+		CHECK(strstr(saved, "Import Target") != NULL);
+		free(saved);
+	}
+	syncterm_theme_document_free(document);
+}
+
 int
 main(void)
 {
+	snprintf(themes_directory, sizeof(themes_directory),
+	    "theme-test-%ld", (long)getpid());
+	if (MKDIR(themes_directory) != 0) {
+		perror(themes_directory);
+		return EXIT_FAILURE;
+	}
 	memset(&settings, 0, sizeof(settings));
 	settings.theme_frame_color = 16;
 	settings.theme_text_color = 16;
@@ -206,8 +436,20 @@ main(void)
 	test_valid_theme();
 	test_invalid_themes();
 	test_filenames();
+	test_document_edit_and_save();
+	test_document_preservation_and_conflict();
+	test_document_import();
 	test_missing_startup_theme();
 	syncterm_theme_shutdown();
+	static const char *files[] = {
+		"document.ini", "preserve.ini", "import.ini", "imported.ini",
+	};
+	for (size_t i = 0; i < sizeof(files) / sizeof(files[0]); i++) {
+		char path[256];
+		snprintf(path, sizeof(path), "%s/%s", themes_directory, files[i]);
+		remove(path);
+	}
+	remove_directory(themes_directory);
 	if (failures != 0)
 		fprintf(stderr, "%d theme test(s) failed\n", failures);
 	return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

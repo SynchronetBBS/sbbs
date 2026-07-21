@@ -1,6 +1,7 @@
 #include "wren_bind_menu_settings.h"
 
 #include "bbslist.h"
+#include "ini_file.h"
 #include "ini_crypt.h"
 #include "menu_settings.h"
 #include "named_str_list.h"
@@ -34,6 +35,11 @@ struct wren_menu_settings {
 	bool dirty;
 };
 
+struct wren_menu_theme_document {
+	enum syncterm_wren_foreign      type;
+	struct syncterm_theme_document *document;
+};
+
 static uint64_t settings_generation;
 
 void
@@ -55,6 +61,37 @@ static void
 settings_finalize(void *data)
 {
 	(void)data;
+}
+
+static void
+theme_document_allocate(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document =
+	    wrenSetSlotNewForeign(vm, 0, 0, sizeof(*document));
+	memset(document, 0, sizeof(*document));
+	document->type = SWF_MENU_THEME_DOCUMENT;
+}
+
+static void
+theme_document_finalize(void *data)
+{
+	struct wren_menu_theme_document *document = data;
+	syncterm_theme_document_free(document->document);
+}
+
+static struct wren_menu_theme_document *
+theme_document_check(WrenVM *vm)
+{
+	if (slot_foreign_type(vm, 0) != SWF_MENU_THEME_DOCUMENT) {
+		wren_throw(vm, "ThemeDocument: invalid receiver");
+		return NULL;
+	}
+	struct wren_menu_theme_document *document = wrenGetSlotForeign(vm, 0);
+	if (document->document == NULL) {
+		wren_throw(vm, "ThemeDocument: uninitialized document");
+		return NULL;
+	}
+	return document;
 }
 
 static struct wren_menu_settings *
@@ -756,6 +793,382 @@ fn_Menu_selectTheme(WrenVM *vm)
 }
 
 static void
+push_theme_document(WrenVM *vm, struct syncterm_theme_document *source)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenGetVariable(vm, "syncterm_menu", "ThemeDocument", 1);
+	struct wren_menu_theme_document *document =
+	    wrenSetSlotNewForeign(vm, 0, 1, sizeof(*document));
+	memset(document, 0, sizeof(*document));
+	document->type = SWF_MENU_THEME_DOCUMENT;
+	document->document = source;
+}
+
+static void
+fn_Menu_newThemeDocument(WrenVM *vm)
+{
+	char error[256] = "";
+	struct syncterm_theme_document *document =
+	    syncterm_theme_document_new(error, sizeof(error));
+	if (document == NULL) {
+		wren_throw(vm, error[0] != '\0' ? error :
+		    "unable to create theme document");
+		return;
+	}
+	push_theme_document(vm, document);
+}
+
+static void
+fn_Menu_openThemeDocument(WrenVM *vm)
+{
+	char filename[MAX_PATH + 1];
+	if (!theme_filename_slot(vm, 1, filename, sizeof(filename)))
+		return;
+	char error[256] = "";
+	struct syncterm_theme_document *document =
+	    syncterm_theme_document_open(filename, error, sizeof(error));
+	if (document == NULL) {
+		wren_throw(vm, error[0] != '\0' ? error :
+		    "unable to open theme document");
+		return;
+	}
+	push_theme_document(vm, document);
+}
+
+static bool
+theme_document_string_slot(WrenVM *vm, int slot, char *value, size_t size)
+{
+	if (wrenGetSlotType(vm, slot) != WREN_TYPE_STRING) {
+		wren_throw(vm, "ThemeDocument: expected a String");
+		return false;
+	}
+	int length;
+	const char *source = wrenGetSlotBytes(vm, slot, &length);
+	if (length < 0 || (size_t)length >= size ||
+	    memchr(source, 0, (size_t)length) != NULL) {
+		wren_throw(vm, "ThemeDocument: String is too long or contains NUL");
+		return false;
+	}
+	memcpy(value, source, (size_t)length);
+	value[length] = '\0';
+	return true;
+}
+
+static void
+theme_document_result(WrenVM *vm, bool success, const char *error)
+{
+	if (success)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0,
+		    error != NULL && error[0] != '\0' ? error : "operation failed");
+}
+
+static void
+fn_ThemeDocument_filename(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document != NULL)
+		wrenSetSlotString(vm, 0,
+		    syncterm_theme_document_filename(document->document));
+}
+
+static void
+fn_ThemeDocument_metadata(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	uint64_t field;
+	if (document == NULL || !slot_integer(vm, 1, 0,
+	    SYNCTERM_THEME_METADATA_FIELD_COUNT - 1, &field))
+		return;
+	const char *value = syncterm_theme_document_metadata(document->document,
+	    (unsigned)field);
+	if (value == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, value);
+}
+
+static void
+fn_ThemeDocument_setMetadata(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	uint64_t field;
+	char value[INI_MAX_VALUE_LEN];
+	if (document == NULL || !slot_integer(vm, 1, 0,
+	    SYNCTERM_THEME_METADATA_FIELD_COUNT - 1, &field) ||
+	    !theme_document_string_slot(vm, 2, value, sizeof(value)))
+		return;
+	char error[256] = "";
+	bool success = syncterm_theme_document_set_metadata(document->document,
+	    (unsigned)field, value, error, sizeof(error));
+	theme_document_result(vm, success, error);
+}
+
+static void
+fn_ThemeDocument_styles(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document == NULL)
+		return;
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	size_t count = syncterm_theme_document_style_count(document->document);
+	for (size_t i = 0; i < count; i++) {
+		struct syncterm_theme_document_style style;
+		if (!syncterm_theme_document_style(document->document, i, &style))
+			continue;
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotString(vm, 2, style.role);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotBool(vm, 2, style.builtin);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotDouble(vm, 2, style.present);
+		wrenInsertInList(vm, 1, -1, 2);
+		for (unsigned field = 0; field < SYNCTERM_THEME_STYLE_FIELD_COUNT;
+		    field++) {
+			wrenSetSlotDouble(vm, 2, style.values[field]);
+			wrenInsertInList(vm, 1, -1, 2);
+		}
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_ThemeDocument_setStyle(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	char role[INI_MAX_VALUE_LEN];
+	uint64_t field;
+	uint64_t mode;
+	uint64_t value;
+	if (document == NULL || !theme_document_string_slot(vm, 1, role,
+	    sizeof(role)) || !slot_integer(vm, 2, 0,
+	    SYNCTERM_THEME_STYLE_FIELD_COUNT - 1, &field) ||
+	    !slot_integer(vm, 3, 0, SYNCTERM_THEME_VALUE_EXPLICIT, &mode) ||
+	    !slot_integer(vm, 4, 0, 0xffffff, &value))
+		return;
+	char error[256] = "";
+	bool success = syncterm_theme_document_set_style(document->document,
+	    role, (unsigned)field, (enum syncterm_theme_value_mode)mode,
+	    (int)value, error, sizeof(error));
+	theme_document_result(vm, success, error);
+}
+
+static void
+fn_ThemeDocument_addStyle(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	char role[INI_MAX_VALUE_LEN];
+	if (document == NULL || !theme_document_string_slot(vm, 1, role,
+	    sizeof(role)))
+		return;
+	char error[256] = "";
+	bool success = syncterm_theme_document_add_style(document->document,
+	    role, error, sizeof(error));
+	theme_document_result(vm, success, error);
+}
+
+static void
+fn_ThemeDocument_removeStyle(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	char role[INI_MAX_VALUE_LEN];
+	if (document == NULL || !theme_document_string_slot(vm, 1, role,
+	    sizeof(role)))
+		return;
+	char error[256] = "";
+	bool success = syncterm_theme_document_remove_style(document->document,
+	    role, error, sizeof(error));
+	theme_document_result(vm, success, error);
+}
+
+static void
+fn_ThemeDocument_glyphs(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document == NULL)
+		return;
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	size_t count = syncterm_theme_document_glyph_count(document->document);
+	for (size_t i = 0; i < count; i++) {
+		struct syncterm_theme_document_glyph glyph;
+		if (!syncterm_theme_document_glyph(document->document, i, &glyph))
+			continue;
+		wrenSetSlotNewList(vm, 1);
+		wrenSetSlotString(vm, 2, glyph.name);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotBool(vm, 2, glyph.builtin);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotDouble(vm, 2, glyph.present);
+		wrenInsertInList(vm, 1, -1, 2);
+		for (unsigned field = 0; field < SYNCTERM_THEME_GLYPH_FIELD_COUNT;
+		    field++) {
+			wrenSetSlotDouble(vm, 2, glyph.values[field]);
+			wrenInsertInList(vm, 1, -1, 2);
+		}
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static void
+fn_ThemeDocument_setGlyph(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	char name[INI_MAX_VALUE_LEN];
+	uint64_t field;
+	uint64_t mode;
+	uint64_t value;
+	if (document == NULL || !theme_document_string_slot(vm, 1, name,
+	    sizeof(name)) || !slot_integer(vm, 2, 0,
+	    SYNCTERM_THEME_GLYPH_FIELD_COUNT - 1, &field) ||
+	    !slot_integer(vm, 3, 0, SYNCTERM_THEME_VALUE_EXPLICIT, &mode) ||
+	    !slot_integer(vm, 4, 0, 0xff, &value))
+		return;
+	char error[256] = "";
+	bool success = syncterm_theme_document_set_glyph(document->document,
+	    name, (unsigned)field, (enum syncterm_theme_value_mode)mode,
+	    (int)value, error, sizeof(error));
+	theme_document_result(vm, success, error);
+}
+
+static void
+fn_ThemeDocument_addGlyph(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	char name[INI_MAX_VALUE_LEN];
+	uint64_t cp437;
+	uint64_t ascii;
+	if (document == NULL || !theme_document_string_slot(vm, 1, name,
+	    sizeof(name)) || !slot_integer(vm, 2, 0, 0xff, &cp437) ||
+	    !slot_integer(vm, 3, 0x20, 0x7e, &ascii))
+		return;
+	char error[256] = "";
+	bool success = syncterm_theme_document_add_glyph(document->document,
+	    name, (int)cp437, (int)ascii, error, sizeof(error));
+	theme_document_result(vm, success, error);
+}
+
+static void
+fn_ThemeDocument_removeGlyph(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	char name[INI_MAX_VALUE_LEN];
+	if (document == NULL || !theme_document_string_slot(vm, 1, name,
+	    sizeof(name)))
+		return;
+	char error[256] = "";
+	bool success = syncterm_theme_document_remove_glyph(document->document,
+	    name, error, sizeof(error));
+	theme_document_result(vm, success, error);
+}
+
+static void
+fn_ThemeDocument_themeData(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document != NULL)
+		wren_push_theme_data(vm,
+		    syncterm_theme_document_preview(document->document));
+}
+
+static void
+fn_ThemeDocument_dirty(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document != NULL)
+		wrenSetSlotBool(vm, 0,
+		    syncterm_theme_document_dirty(document->document));
+}
+
+static void
+fn_ThemeDocument_canUndo(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document != NULL)
+		wrenSetSlotBool(vm, 0,
+		    syncterm_theme_document_can_undo(document->document));
+}
+
+static void
+fn_ThemeDocument_canRedo(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document != NULL)
+		wrenSetSlotBool(vm, 0,
+		    syncterm_theme_document_can_redo(document->document));
+}
+
+static void
+fn_ThemeDocument_undo(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document != NULL)
+		wrenSetSlotBool(vm, 0,
+		    syncterm_theme_document_undo(document->document));
+}
+
+static void
+fn_ThemeDocument_redo(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document != NULL)
+		wrenSetSlotBool(vm, 0,
+		    syncterm_theme_document_redo(document->document));
+}
+
+static void
+fn_ThemeDocument_import(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	char filename[MAX_PATH + 1];
+	if (document == NULL || !theme_filename_slot(vm, 1, filename,
+	    sizeof(filename)))
+		return;
+	char error[256] = "";
+	bool success = syncterm_theme_document_import(document->document,
+	    filename, error, sizeof(error));
+	theme_document_result(vm, success, error);
+}
+
+static void
+fn_ThemeDocument_save(WrenVM *vm)
+{
+	struct wren_menu_theme_document *document = theme_document_check(vm);
+	if (document == NULL)
+		return;
+	char filename[MAX_PATH + 1];
+	const char *save_as = NULL;
+	if (wrenGetSlotType(vm, 1) == WREN_TYPE_STRING) {
+		if (!theme_filename_slot(vm, 1, filename, sizeof(filename)))
+			return;
+		save_as = filename;
+	}
+	else if (wrenGetSlotType(vm, 1) != WREN_TYPE_NULL) {
+		wren_throw(vm, "ThemeDocument.save: filename must be String or null");
+		return;
+	}
+	bool force;
+	if (!slot_bool(vm, 2, &force))
+		return;
+	char error[256] = "";
+	enum syncterm_theme_document_error result =
+	    syncterm_theme_document_save(document->document, save_as, force,
+	    error, sizeof(error));
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	wrenSetSlotDouble(vm, 1, result);
+	wrenInsertInList(vm, 0, -1, 1);
+	if (result == SYNCTERM_THEME_DOCUMENT_OK)
+		wrenSetSlotNull(vm, 1);
+	else
+		wrenSetSlotString(vm, 1,
+		    error[0] != '\0' ? error : "unable to save theme");
+	wrenInsertInList(vm, 0, -1, 1);
+}
+
+static void
 fn_Menu_encryptionAlgorithm(WrenVM *vm)
 {
 	wrenSetSlotDouble(vm, 0, list_algo);
@@ -1045,6 +1458,8 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "previewTheme(_)", fn_Menu_previewTheme },
 	{ "Menu", true, "cancelThemePreview()", fn_Menu_cancelThemePreview },
 	{ "Menu", true, "selectTheme(_)", fn_Menu_selectTheme },
+	{ "Menu", true, "newThemeDocument()", fn_Menu_newThemeDocument },
+	{ "Menu", true, "openThemeDocument(_)", fn_Menu_openThemeDocument },
 	{ "Menu", true, "encryptionAlgorithm", fn_Menu_encryptionAlgorithm },
 	{ "Menu", true, "encryptionKeySize", fn_Menu_encryptionKeySize },
 	{ "Menu", true, "encryptionName", fn_Menu_encryptionName },
@@ -1056,6 +1471,31 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "deleteWebList(_)", fn_Menu_deleteWebList },
 	{ "Menu", true, "saveWebLists()", fn_Menu_saveWebLists },
 	{ "Menu", true, "refreshWebList(_)", fn_Menu_refreshWebList },
+	{ "ThemeDocument", false, "filename", fn_ThemeDocument_filename },
+	{ "ThemeDocument", false, "metadata(_)", fn_ThemeDocument_metadata },
+	{ "ThemeDocument", false, "setMetadata(_,_)",
+	    fn_ThemeDocument_setMetadata },
+	{ "ThemeDocument", false, "styles", fn_ThemeDocument_styles },
+	{ "ThemeDocument", false, "setStyle(_,_,_,_)",
+	    fn_ThemeDocument_setStyle },
+	{ "ThemeDocument", false, "addStyle(_)", fn_ThemeDocument_addStyle },
+	{ "ThemeDocument", false, "removeStyle(_)",
+	    fn_ThemeDocument_removeStyle },
+	{ "ThemeDocument", false, "glyphs", fn_ThemeDocument_glyphs },
+	{ "ThemeDocument", false, "setGlyph(_,_,_,_)",
+	    fn_ThemeDocument_setGlyph },
+	{ "ThemeDocument", false, "addGlyph(_,_,_)",
+	    fn_ThemeDocument_addGlyph },
+	{ "ThemeDocument", false, "removeGlyph(_)",
+	    fn_ThemeDocument_removeGlyph },
+	{ "ThemeDocument", false, "themeData", fn_ThemeDocument_themeData },
+	{ "ThemeDocument", false, "dirty", fn_ThemeDocument_dirty },
+	{ "ThemeDocument", false, "canUndo", fn_ThemeDocument_canUndo },
+	{ "ThemeDocument", false, "canRedo", fn_ThemeDocument_canRedo },
+	{ "ThemeDocument", false, "undo()", fn_ThemeDocument_undo },
+	{ "ThemeDocument", false, "redo()", fn_ThemeDocument_redo },
+	{ "ThemeDocument", false, "importTheme(_)", fn_ThemeDocument_import },
+	{ "ThemeDocument", false, "save(_,_)", fn_ThemeDocument_save },
 	{ "Settings", false, "dirty", fn_Settings_dirty },
 	{ "Settings", false, "apply()", fn_Settings_apply },
 	{ "Settings", false, "save()", fn_Settings_save },
@@ -1113,6 +1553,13 @@ wren_menu_settings_bind_lookup_class(const char *module,
 	    strcmp(class_name, "Settings") == 0) {
 		WrenForeignClassMethods methods = {
 			settings_allocate, settings_finalize
+		};
+		return methods;
+	}
+	if (module != NULL && strcmp(module, "syncterm_menu") == 0 &&
+	    strcmp(class_name, "ThemeDocument") == 0) {
+		WrenForeignClassMethods methods = {
+			theme_document_allocate, theme_document_finalize
 		};
 		return methods;
 	}

@@ -214,6 +214,8 @@ class Theme {
     return __current
   }
 
+  static fromData(data) { fromData_(data) }
+
   static fromData_(data) {
     var roles = {}
     for (row in data[0]) {

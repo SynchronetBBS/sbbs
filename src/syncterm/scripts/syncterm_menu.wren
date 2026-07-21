@@ -91,6 +91,8 @@ class Menu {
   foreign static previewTheme(filename)
   foreign static cancelThemePreview()
   foreign static selectTheme(filename)
+  foreign static newThemeDocument()
+  foreign static openThemeDocument(filename)
   foreign static encryptionAlgorithm
   foreign static encryptionKeySize
   foreign static encryptionName
@@ -137,6 +139,31 @@ foreign class MenuFont {
   foreign clearFile(slot)
   foreign delete()
   foreign toString
+}
+
+// C-owned source-preserving theme document.  Field IDs and value modes are
+// documented in Themes.adoc.  Mutators return null on success or an error
+// String; save() returns [resultCode, errorOrNull].
+foreign class ThemeDocument {
+  foreign filename
+  foreign metadata(field)
+  foreign setMetadata(field, value)
+  foreign styles
+  foreign setStyle(role, field, mode, value)
+  foreign addStyle(role)
+  foreign removeStyle(role)
+  foreign glyphs
+  foreign setGlyph(name, field, mode, value)
+  foreign addGlyph(name, cp437, ascii)
+  foreign removeGlyph(name)
+  foreign themeData
+  foreign dirty
+  foreign canUndo
+  foreign canRedo
+  foreign undo()
+  foreign redo()
+  foreign importTheme(filename)
+  foreign save(filename, force)
 }
 
 // C-owned editable snapshot of program settings.  apply() updates the
