@@ -821,6 +821,30 @@ static void sm_io_vscale_probe(void)
     pn = termgfx_sixel_vscale_probe(pb, sizeof(pb));
     if (pn == 0)
         return;
+
+    /* Quiesce the pace pipeline before arming. This probe fires from present()
+     * -- AFTER the first few frames have gone out and been paced -- so a frame's
+     * DSR round-trip can still be in flight when we arm. The collector claims the
+     * NEXT cursor report as the probe's `home` (sm_input_vscale_collect), so a
+     * straggling pace-ack arriving first is mis-counted as report #1, shifting
+     * the three-report window by one and INVERTING the verdict: [home, +d, +d]
+     * (equal advances = terminal ignores pan) reads instead as [ack, home, +d]
+     * and looks like it scaled. The door then sends a half-height pan=2 encode to
+     * a terminal that draws at the encoded size (xterm/WezTerm) -- picture half
+     * height, mouse mapping off by 2x. Wait for every outstanding present() DSR
+     * to be acked first (draining routes those reports to sm_io_pace_ack(), since
+     * the collector is not armed yet), so the probe's own three reports are the
+     * only ones in flight once we arm. Bounded by the same grace as the probe
+     * wait; a silent terminal just proceeds (the full-size fallback is safe). The
+     * synchronous probe below blocks further presents, so no new DSR can appear
+     * between here and the verdict. */
+    {
+        uint32_t drain_ms = sm_io_now_ms();
+        while (sm_io_pace_inflight() > 0
+               && (int32_t)(sm_io_now_ms() - drain_ms) < SM_VSCALE_GRACE_MS)
+            sm_input_pump(sm_io_get_fd());
+    }
+
     sm_input_vscale_arm();
     sm_out_put(pb, pn);
     sm_io_out_flush();
