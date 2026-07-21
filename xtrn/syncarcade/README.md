@@ -183,6 +183,29 @@ exclude = puckman
 `[audio]` and `[video]` behave as they do for the other consoles; see
 `syncretro.example.ini`, which documents every key.
 
+### Bandwidth: only the changed cells are sent
+
+`[video] dirty_rect` (on by default) repaints just the parts of the picture that
+changed rather than re-sending the whole frame — the terminal is already holding
+the last one, and a sixel can be drawn at any character cell. How much that wins
+depends entirely on how much of the screen moves, and the `dr N%` field in the
+`Ctrl-S` overlay reports it live. Measured in active play over SyncTERM:
+
+| game | frames patched rather than repainted |
+|---|---|
+| Pac-Man, Frogger | **80–90%** |
+| Galaga | **20–30%** |
+
+The split is the games, not a defect. Pac-Man and Frogger are a static maze or
+a static road with a few sprites crossing it. Galaga moves an entire formation
+at once, so most of its frames change too much of the screen to be worth
+patching and correctly fall back to a whole frame.
+
+Requires SyncTERM (it is the terminal that persists sixel colour registers, so
+the palette can be omitted from each patch). Every other terminal, and any frame
+where the palette changed or a door screen painted over the game, sends a whole
+frame — which is always correct, and is what the door did before this existed.
+
 ## Why MAME 2003-Plus, and not a newer MAME
 
 Measured with `probe_core` (`src/doors/syncretro/probe_core.c`) against MAME
