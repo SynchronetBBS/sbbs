@@ -71,6 +71,9 @@ mode with such a BBS, or add a telnet layer first.
 
 ## Building
 
+In brief below; [COMPILING.md](COMPILING.md) has the prerequisites, the
+configure options, the tests and the per-platform core install.
+
 POSIX (Linux/*BSD/macOS):
 
 ```sh

@@ -36,7 +36,13 @@ jsexec deploy.js           # installs the binary into EVERY console install dir
 ```
 
 If you already installed SyncNES or SyncIvision, you have the binary already —
-it is the same one.
+it is the same one. That holds **per platform**, though: an install shared by a
+Windows host and a \*nix one needs each host's own binary *and* its own core
+(`.dll` at the door root, `.so` under `linux-x64/`). Run `build.sh`/`build.bat`,
+`deploy.js` and `getcore.js` once on each.
+
+Full build instructions — prerequisites, configure options, the unit tests and
+the `probe_core` diagnostic — are in `src/doors/syncretro/COMPILING.md`.
 
 ## Installing into Synchronet
 
