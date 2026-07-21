@@ -2292,7 +2292,8 @@ writing into a `Cell` field via `fgRgb=` / `bgRgb=`.
 | Decode an attribute byte into `[fg, bg]` 24-bit RGB.
 
 | `Color.toLegacyAttr(fg, bg)`
-| Encode two palette indices into one attribute byte.
+| Map 24-bit RGB foreground and background colours to the nearest legacy
+  text attribute byte.
 |===
 
 === Input
@@ -6448,6 +6449,60 @@ Mouse wheel scrolls one step; clicks on the up/down arrow cells
 step ±1.  `value=` clamps to `[min, max]`.  Theme roles: `spinbox`,
 `spinbox.focused`.  Glyphs reused: `scrollbar.up`, `scrollbar.down`.
 
+=== ColorPicker [[ui-color-picker]]
+
+Embeddable 24-bit colour editor with a compact live sample, editable
+Red/Green/Blue ramps, visual Hue/Saturation/Value ramps, and six-digit
+hexadecimal input.
+The control does not provide dialog buttons; its caller owns acceptance,
+cancellation, and any application-specific preview.
+
+[source,wren]
+----
+var picker = ColorPicker.new(0x336699)
+picker.bounds = Rect.new(x, y, 44, picker.preferredHeight)
+picker.onChange = Fn.new {|rgb| /* update a live preview */ }
+----
+
+`value` is the current `0xRRGGBB` integer.  `valid` is false while the
+hexadecimal field is incomplete, and `commitEdits()` returns false until
+the field contains six valid digits.  The RGB ramps accept decimal typing
+from 0 through 255.  HSV ramps remain fully interactive but omit the
+rounded numeric labels and do not accept decimal typing.
+
+RGB ramps show their numeric value and accept decimal input.  HSV ramps do
+not show rounded numeric values.  A digit starts replacement after focus,
+after a complete or out-of-range entry, or after Delete.  Left/Right and the
+mouse wheel move one unit.  PageUp/PageDown move RGB by 16, hue by 15
+degrees, and saturation/value by 10 percent.  Up/Down moves between fields,
+and a containing dialog may complete the navigation ring at the picker
+boundaries.  A completed button-1 click jumps to the clicked ramp position.
+Button presses and drag events remain unconsumed so App can hand drag
+selection to conio's normal text-copy path.
+
+`sampleColors(foreground, background)` replaces the automatic contrasting
+sample pair.  The dialing-directory palette editor uses this to make either
+row of its sixteen-position contrast grid clickable: selecting a cell shows
+that foreground/background combination in the larger sample.
+
+Ramp rows use `default` while idle and `list.item.focused` for their
+edge-to-edge focus lightbar.  Only the three-character RGB numeric field and
+the seven-cell hexadecimal field use `input` / `input.focused`.  Hex input
+is limited to six digits; the final cell displays the insertion cursor after
+a complete value without scrolling away its first digit.
+
+RGB is the canonical value.  HSV conversion retains hue for greys and
+retains hue/saturation for black, so moving away from those edge cases does
+not unexpectedly reset the user's HSV selection.  Ramp and sample cells
+carry both 24-bit RGB and a `Color.toLegacyAttr()` fallback.
+
+The dialing-directory palette editor composes this generic control with a
+separate palette-only preview.  That preview shows the candidate colour as
+both foreground and background against all sixteen effective palette
+positions; this behavior is not part of `ColorPicker`.  In that dialog,
+Home selects the first ramp and End selects the button row when a ramp has
+focus.  The same keys retain normal text-cursor behavior in the hex field.
+
 === MenuBar [[ui-menubar]]
 
 Horizontal strip of activatable items, typically at the top of the
@@ -6901,6 +6956,7 @@ convenience aggregator:
 | `ui_checkbox`  | `Checkbox`.
 | `ui_radio`     | `RadioGroup`.
 | `ui_spinbox`   | `SpinBox`.
+| `ui_color_picker` | `ColorPicker`.
 | `ui_statusbar` | `StatusBar`.
 | `ui_menubar`   | `MenuBar`.
 | `ui_form`      | `Form`.

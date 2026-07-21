@@ -1,8 +1,9 @@
 #!/bin/sh
 # run_wren.sh — Compile / execute a Wren script under SyncTERM headless
 #
-# Drives SyncTERM with the SDL backend in offscreen mode and loads the
-# named Wren script via -W after the embedded + user auto-load chain
+# Drives SyncTERM with the SDL backend in offscreen mode, exposes this
+# checkout's scripts directory through an isolated XDG data root, and loads
+# the named Wren script via -W after the embedded + source auto-load chain
 # has finished.  Ordinary scripts get a short-lived /usr/bin/true PTY.
 # wrentest.wren gets the persistent Bash PTY its connection tests require;
 # the suite sends "exit" after its final report.
@@ -36,7 +37,15 @@ fi
 
 OUT=$(mktemp /tmp/run_wren.out.XXXXXX)
 ERR=$(mktemp /tmp/run_wren.err.XXXXXX)
-trap 'rm -f "$OUT" "$ERR"' EXIT
+DATA_HOME=$(mktemp -d /tmp/run_wren.data.XXXXXX)
+mkdir -p "$DATA_HOME/syncterm"
+ln -s "$HERE/scripts" "$DATA_HOME/syncterm/scripts"
+trap 'rm -f "$OUT" "$ERR"; rm -rf "$DATA_HOME"' EXIT
+
+# Load library, test, and auto-run modules from the source tree.  This keeps
+# the harness independent of whatever the developer has installed in their
+# personal SyncTERM scripts directory.
+export XDG_DATA_HOME="$DATA_HOME"
 
 export SDL_VIDEODRIVER=offscreen
 export SDL_RENDER_DRIVER=software

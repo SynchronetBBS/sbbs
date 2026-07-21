@@ -1,15 +1,11 @@
-import "syncterm" for Host, Key, KeyEvent, Screen
+import "syncterm" for Host, Key, KeyEvent
 import "syncterm_menu" for Menu
 import "menu_ui" for MenuUi
 import "ui_app" for App
-import "ui_widget" for Widget, Rect
 import "ui_pane" for Pane
 import "ui_list" for ListView
-import "ui_input" for SelectOnFocusInput
-import "ui_form" for Form
-import "ui_draw" for Painter
-import "ui_style" for Style
 import "ui_popup" for Alert, Confirm
+import "menu_palette_picker" for PaletteColorPicker
 
 class EditorPane is Pane {
   construct new() {
@@ -42,94 +38,6 @@ class EditorPane is Pane {
         triggerClose_()
         return true
       }
-    }
-    return super.handle(event)
-  }
-}
-
-class PaletteColorPreview is Widget {
-  construct new(color, colors) {
-    super()
-    focusable = false
-    _color = color
-    _colors = colors
-    _foreground = 7
-  }
-
-  color=(value) {
-    _color = value
-    markDirty()
-  }
-
-  cycleForeground(delta) {
-    if (_colors.count == 0) return
-    _foreground = ((_foreground + delta) % 16 + 16) % 16
-    markDirty()
-  }
-
-  onPaint_() {
-    var foreground = _colors.count == 0 ? 0xFFFFFF :
-        _colors[_foreground % _colors.count]
-    var sample = Style.new(0, 0, foreground, _color)
-    Painter.fill(surface, Rect.new(0, 0, bounds.w, bounds.h), " ", sample)
-    if (bounds.h > 0) {
-      Painter.text(surface, 1, (bounds.h / 2).floor,
-          "Aa Bb Cc 0123", sample, (bounds.w - 2).max(0))
-    }
-  }
-}
-
-class PaletteComponentInput is SelectOnFocusInput {
-  construct new(onReset, onLeave) {
-    super()
-    _reset = onReset
-    _leave = onLeave
-    maxLen = 3
-  }
-
-  focused=(value) {
-    if (!value && focused) _leave.call()
-    super.focused = value
-  }
-
-  handle(event) {
-    if (event is KeyEvent && event.codepoint == 0x25) {
-      _reset.call()
-      selectAll()
-      return true
-    }
-    if (event is KeyEvent &&
-        (event.code == Key.tab || event.code == Key.backTab)) {
-      _leave.call()
-      return false
-    }
-    if (event is KeyEvent && event.codepoint != null &&
-        event.codepoint >= 0x20 &&
-        (event.codepoint < 0x30 || event.codepoint > 0x39)) return true
-    return super.handle(event)
-  }
-}
-
-class PaletteColorPane is Pane {
-  construct new(preview, onClose) {
-    super()
-    shadow = true
-    _preview = preview
-    _close = onClose
-  }
-
-  handle(event) {
-    if (event is KeyEvent && event.code == Key.escape) {
-      _close.call()
-      return true
-    }
-    if (event is KeyEvent && event.code == Key.up) {
-      _preview.cycleForeground(-1)
-      return true
-    }
-    if (event is KeyEvent && event.code == Key.down) {
-      _preview.cycleForeground(1)
-      return true
     }
     return super.handle(event)
   }
@@ -681,10 +589,18 @@ class BbsEditor {
   }
 
   static paletteColorHelp_() {
-    return "# Edit Palette Entry\n\nTab and Backtab move between Red, " +
-        "Green, and Blue. Enter accepts the current component. Up and Down " +
-        "change the example foreground color. `\%` resets all three " +
-        "components to the mode default. Each component ranges from 0 to 255."
+    return "# Edit Palette Entry\n\nThe two preview rows show this colour " +
+        "as foreground and background against every palette position. " +
+        "Click one of these combinations to show it in the larger sample. " +
+        "The RGB ramps accept decimal input from 0 to 255; Delete starts " +
+        "a new number. The HSV ramps provide visual adjustment without " +
+        "displaying rounded values, and Hex accepts a six-digit RGB value.\n\n" +
+        "Left and Right adjust one unit. Page Up and Page Down make larger " +
+        "changes. Click a ramp to jump to that position, or use the mouse " +
+        "wheel to move one unit. Up and Down move between fields and wrap " +
+        "at the ends. Home selects Red and End selects the button row. " +
+        "`\%` or Default restores the mode default. Enter accepts the " +
+        "colour; Escape cancels the changes."
   }
 
   static explicitSortHelp_() {
@@ -738,63 +654,9 @@ class BbsEditor {
     }
   }
 
-  static component_(color, shift) { (color >> shift) & 0xFF }
-
-  static editColor_(app, color, defaultColor, colors) {
-    var values = [component_(color, 16), component_(color, 8),
-        component_(color, 0)]
-    var defaults = [component_(defaultColor, 16),
-        component_(defaultColor, 8), component_(defaultColor, 0)]
-    var preview = PaletteColorPreview.new(color, colors)
-    var inputs = []
-    var form = Form.new()
-    var update = Fn.new {|index, text|
-      var value = Num.fromString(text)
-      if (value != null && value.isInteger && value >= 0 && value <= 255) {
-        values[index] = value
-        preview.color = (values[0] << 16) | (values[1] << 8) | values[2]
-      }
-    }
-    var reset = Fn.new {
-      for (i in 0...3) {
-        values[i] = defaults[i]
-        inputs[i].value = defaults[i].toString
-      }
-      preview.color = defaultColor
-    }
-    for (i in 0...3) {
-      var index = i
-      var input = null
-      input = PaletteComponentInput.new(reset,
-          Fn.new { input.value = values[index].toString })
-      input.value = values[i].toString
-      input.onSubmit = Fn.new {|text|
-        update.call(index, text)
-        input.value = values[index].toString
-        form.focusNext()
-      }
-      inputs.add(input)
-    }
-
-    var pane = null
-    pane = PaletteColorPane.new(preview, Fn.new { app.popModal() })
-    pane.title = "Edit Palette Entry"
-    pane.helpText = paletteColorHelp_()
-    pane.focused = true
-    pane.onClose = Fn.new { app.popModal() }
-    var size = Screen.size
-    var width = 36.min(size[0] - 2)
-    var height = 12.min(size[1] - 2)
-    pane.bounds = Rect.new(((size[0] - width) / 2).floor + 1,
-        ((size[1] - height) / 2).floor + 1, width, height)
-    form.addFieldH("", preview, 3)
-    form.addField("Red", inputs[0])
-    form.addField("Green", inputs[1])
-    form.addField("Blue", inputs[2])
-    form.bounds = pane.innerBounds
-    pane.add(form)
-    app.modal(pane)
-    return (values[0] << 16) | (values[1] << 8) | values[2]
+  static editColor_(app, color, defaultColor, colors, entry) {
+    return PaletteColorPicker.choose(app, color, defaultColor, colors,
+        entry, paletteColorHelp_())
   }
 
   static sameDefaultPalette_(left, right, count) {
@@ -853,10 +715,13 @@ class BbsEditor {
           d["palette"] = colors
           onChange.call()
         } else {
-          colors[picked] = editColor_(app, colors[picked],
-              defaults[picked], colors)
-          d["palette"] = colors
-          onChange.call()
+          var color = editColor_(app, colors[picked], defaults[picked],
+              colors, picked)
+          if (color != null) {
+            colors[picked] = color
+            d["palette"] = colors
+            onChange.call()
+          }
         }
       })
       if (result == null) {
