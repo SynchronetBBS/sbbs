@@ -381,7 +381,7 @@ class MainMenuApp {
       backgroundMouse_(event, hit)
     }
     bind_(Key.escape, Fn.new { exit_(false) })
-    bind_(Key.wrenConsole, Fn.new { console_() })
+    _app.bind(Key.wrenConsole, Fn.new {|event| console_() })
     bindDirectory_(Key.f2, Fn.new {
       if (_selected != null) edit_()
     })
