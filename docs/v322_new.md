@@ -264,12 +264,16 @@
   per client. Co-op and deathmatch across the BBS (same host or
   a shared-install LAN) via a JavaScript lobby that browses,
   creates, and joins games. Needs a DOOM or Freedoom IWAD
-- New: **SyncRetro** — legacy game consoles as a door, by
-  hosting a libretro core (FreeIntv for Intellivision, …) and
-  rendering it over the terminal as JXL/sixel graphics, with the
-  console's audio streamed to SyncTERM. Builds and runs on both
-  Linux and Windows (Win32). The core and the console BIOS/ROMs
-  are sysop-supplied content, not shipped
+- New: **SyncRetro** — legacy game consoles and arcade cabinets
+  as a door, by hosting a libretro core (FreeIntv for
+  Intellivision, FCEUmm for NES, MAME 2003-Plus for arcade) and
+  rendering it over the terminal as sixel or color-block text
+  graphics, with the game's audio streamed to SyncTERM. Builds
+  and runs on both Linux and Windows (Win32). The core and the
+  BIOS/ROMs are sysop-supplied content, not shipped
+- New: **SyncArcade** (`xtrn/syncarcade`) — arcade classics via
+  MAME 2003-Plus, with high scores shared by every caller the
+  way a real cabinet's are
 - New: **Avatar Chat** — avatar-first conversations with
   optional ANSI-art send/view and MOTD support
 - New: `typemd.js` and `load/md2asc.js` — Markdown viewer that
