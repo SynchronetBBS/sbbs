@@ -476,6 +476,8 @@ class App {
   // to the application.  The optional onError callback receives the
   // failed Fiber; without one, App records the error and trace itself.
   dispatchSync_(ev) {
+    var modalsBefore = []
+    for (modal in _modalStack) modalsBefore.add(modal)
     var quitTop = null
     if (ev is KeyEvent && ev.code == Key.quit &&
         _modalStack.count > 0 && !modalTop.atExit) {
@@ -492,6 +494,7 @@ class App {
     if (quitTop != null && _modalStack.count > 0 &&
         _modalStack[-1] == quitTop) popModal()
     if (f.error == null) return true
+    discardFailedModalFrames_(modalsBefore)
     if (_onError != null) {
       _onError.call(f)
     } else {
@@ -500,6 +503,19 @@ class App {
     }
     markAllDirty_()
     return false
+  }
+
+  // A failed handler can abort out of app.modal() after pushing its pane,
+  // leaving no live call frame to remove it.  Keep the common pre-dispatch
+  // stack prefix and discard only newer/replacement frames.  Modals which
+  // the handler successfully dismissed before aborting stay dismissed.
+  discardFailedModalFrames_(before) {
+    var common = 0
+    var limit = before.count.min(_modalStack.count)
+    while (common < limit && before[common] == _modalStack[common]) {
+      common = common + 1
+    }
+    while (_modalStack.count > common) popModal()
   }
 
   // Internal: ensure a screen-sized backbuffer Surface, draw widgets

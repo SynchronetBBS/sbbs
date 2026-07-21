@@ -66,6 +66,22 @@ class AbortProbe is Probe {
   handle(ev) { Fiber.abort("expected handler failure") }
 }
 
+class PushModalAbortProbe is ClosingProbe {
+  construct new(app, pushed) {
+    super()
+    _app = app
+    _pushed = pushed
+  }
+
+  handle(ev) {
+    if (ev is KeyEvent && ev.code == Key.enter) {
+      _app.pushModal(_pushed)
+      Fiber.abort("expected handler failure")
+    }
+    return super.handle(ev)
+  }
+}
+
 class UiWidgetTest {
   static run() {
     __pass = 0
@@ -150,6 +166,7 @@ class UiWidgetTest {
     testAppBackspaceAliasesEscape_()
     testAppConsumedBackspaceDoesNotEscape_()
     testAppSyncDispatchContainsError_()
+    testAppSyncErrorDiscardsPushedModal_()
     testAppDispatchMouseHitsWidget_()
     testAppDispatchMouseModalBlocksRoot_()
     testAppUnhandledMouseReceivesHit_()
@@ -848,6 +865,22 @@ class UiWidgetTest {
     var ok = app.dispatchSync_(KeyEvent.new(Key.enter))
     check_(!ok && reported == "expected handler failure",
            "App.dispatchSync_: contains and reports handler aborts")
+  }
+
+  static testAppSyncErrorDiscardsPushedModal_() {
+    var app = App.new()
+    var orphan = Probe.new()
+    var owner = PushModalAbortProbe.new(app, orphan)
+    app.pushModal(owner)
+    var reported = null
+    app.onError = Fn.new {|fiber| reported = fiber.error }
+    var ok = app.dispatchSync_(KeyEvent.new(Key.enter))
+    var restored = !ok && reported == "expected handler failure" &&
+        app.modalStack.count == 1 && app.modalTop == owner &&
+        orphan.parent == null
+    app.dispatchKey_(KeyEvent.new(Key.escape))
+    check_(restored && app.modalStack.count == 0,
+           "App dispatch error: pushed modal discarded before next Escape")
   }
 
   // Mouse event constructor: (event, modifiers, sx, sy, ex, ey).

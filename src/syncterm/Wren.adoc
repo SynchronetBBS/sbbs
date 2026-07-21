@@ -5740,7 +5740,10 @@ runtime abort from a synchronous handler therefore does not unwind the
 App's event loop.  By default the App writes the error and trace to the
 current VM's console log; set `app.onError = Fn.new {|failedFiber| ... }`
 to replace that reporting.  Layout and painting remain outside this
-boundary so a deterministic redraw failure is not retried forever.
+boundary so a deterministic redraw failure is not retried forever.  Modal
+frames pushed by a failed event are discarded before error reporting, so an
+orphaned dialog cannot consume the next Escape or Backspace.  A modal that
+the handler dismissed before aborting remains dismissed.
 
 `Key.quit` is reserved for the host's sticky process-close request.  `App`
 claims it before ordinary widget or global-keymap dispatch.  With a modal
