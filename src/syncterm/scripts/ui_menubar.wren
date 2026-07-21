@@ -18,6 +18,8 @@
 // Layout: each item renders as " label "; items are separated by a
 // single space.  The whole strip uses the `menubar` style; the
 // focused item swaps to `menubar.item.focused`.
+// `onFocus=` optionally lets an owning composite move keyboard focus to the
+// bar before a mouse-activated command runs.
 //
 // Keys (when focused):
 //   Left / Right   move focus between items, with wrap.
@@ -44,6 +46,7 @@ class MenuBar is Widget {
     _items   = []
     _focused = -1
     _layout  = null      // cached [[xStart, xEnd], ...] in surface coords
+    _onFocus = null
   }
 
   items { _items }
@@ -55,6 +58,7 @@ class MenuBar is Widget {
   }
 
   count { _items.count }
+  onFocus=(fn) { _onFocus = fn }
 
   // The currently-highlighted item index (Tab/arrow navigation).  Not
   // the same as "active" — activation requires Enter / Space / click.
@@ -111,7 +115,8 @@ class MenuBar is Widget {
       var x0  = rng[0]
       var x1  = rng[1]
       if (x0 >= bounds.w) break
-      var role = i == _focused ? "menubar.item.focused" : "menubar.item"
+      var role = focused && i == _focused ?
+          "menubar.item.focused" : "menubar.item"
       var st   = style(role)
       var w    = (x1 - x0).min(bounds.w - x0)
       Painter.fill(sf, Rect.new(x0, 0, w, 1), " ", st)
@@ -208,6 +213,7 @@ class MenuBar is Widget {
     while (i < rects.count) {
       var r = rects[i]
       if (lx >= r[0] && lx < r[1]) {
+        if (_onFocus != null) _onFocus.call()
         focusedItem = i
         activate_(i)
         return true

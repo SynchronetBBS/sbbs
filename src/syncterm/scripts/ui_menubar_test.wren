@@ -21,9 +21,11 @@ class UiMenubarTest {
     testHotkeyCaseInsensitive_()
     testHotkeyNoMatchFallsThrough_()
     testMouseClickActivates_()
+    testMouseClickRequestsFocus_()
     testMouseClickGapIgnored_()
     testDrawShowsLabels_()
     testFocusedItemHasDifferentStyle_()
+    testUnfocusedBarHasNoHighlightedItem_()
 
     var total = __pass + __fail
     System.print("=== ui_menubar: %(total) tests, %(__pass) pass, %(__fail) fail ===")
@@ -152,6 +154,16 @@ class UiMenubarTest {
            "MenuBar: click on inter-item gap is dropped")
   }
 
+  static testMouseClickRequestsFocus_() {
+    var fired = null
+    var focused = false
+    var bar = makeBar_(Fn.new {|label| fired = label })
+    bar.onFocus = Fn.new { focused = true }
+    bar.handle(MouseEvent.new(Mouse.button1Click, 2, 1, 2, 1))
+    check_(focused && fired == "File",
+           "MenuBar: item click requests focus before activation")
+  }
+
   static testDrawShowsLabels_() {
     var fired = null
     var bar = makeBar_(Fn.new {|label| fired = label })
@@ -166,6 +178,8 @@ class UiMenubarTest {
     var onFire = Fn.new {|label| fired = label }
     var a = makeBar_(onFire)
     var b = makeBar_(onFire)
+    a.focused = true
+    b.focused = true
     b.handle(KeyEvent.new(Key.right))
     var sa = a.draw()
     var sb = b.draw()
@@ -173,5 +187,17 @@ class UiMenubarTest {
     // focused (so Edit is unfocused) and `b` has Edit focused.
     check_(sa.cellAt(8, 0).legacyAttr != sb.cellAt(8, 0).legacyAttr,
            "MenuBar.draw: focused item style differs from unfocused")
+  }
+
+  static testUnfocusedBarHasNoHighlightedItem_() {
+    var fired = null
+    var onFire = Fn.new {|label| fired = label }
+    var inactive = makeBar_(onFire)
+    var active = makeBar_(onFire)
+    active.focused = true
+    var si = inactive.draw()
+    var sa = active.draw()
+    check_(si.cellAt(1, 0).legacyAttr != sa.cellAt(1, 0).legacyAttr,
+           "MenuBar.draw: inactive bar does not highlight its cursor")
   }
 }

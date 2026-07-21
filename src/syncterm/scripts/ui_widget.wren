@@ -67,6 +67,7 @@ class Widget {
     _activitySensitive = true
     _surface   = null     // lazy; matched to bounds in ensureSurface_
     _helpText  = null
+    _keyHints  = null
     _shadow    = false    // drop-shadow on right + bottom edges
     _renderedInActive = null   // last `inActiveLayer` seen at paint
   }
@@ -85,6 +86,15 @@ class Widget {
   // has something to say.
   helpText { _helpText }
   helpText=(s) { _helpText = s }
+
+  // Context-sensitive key hints for ambient status/footer widgets.
+  // Each entry is [keyLabel, actionLabel].  App.keyHints resolves the
+  // nearest non-null value using the same focused-leaf walk as helpText.
+  keyHints { _keyHints }
+  keyHints=(hints) {
+    _keyHints = hints
+    markDirty()
+  }
 
   // Drop-shadow flag.  When true, the widget's parent (or App, for
   // modals) paints a darkened band on the cells immediately right

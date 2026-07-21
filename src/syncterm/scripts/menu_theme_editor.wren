@@ -6,6 +6,14 @@ import "ui_widget" for Container, Rect, Widget
 import "ui_pane" for Pane
 import "ui_button" for Button
 import "ui_menubar" for MenuBar
+import "ui_list" for ListView
+import "ui_input" for TextInput
+import "ui_checkbox" for Checkbox
+import "ui_radio" for RadioGroup
+import "ui_spinbox" for SpinBox
+import "ui_progress" for ProgressBar
+import "ui_statusbar" for StatusBar
+import "ui_form" for Form
 import "ui_draw" for Painter
 import "ui_style" for Style, Theme
 import "ui_color_picker" for ColorPicker
@@ -181,10 +189,11 @@ class ThemeEditorModel {
 }
 
 class ThemeAtlas is Widget {
-  construct new(model, onEdit) {
+  construct new(model, onEdit, onFocus) {
     super()
     _model = model
     _onEdit = onEdit
+    _onFocus = onFocus
     _scrollTop = 0
   }
 
@@ -254,13 +263,15 @@ class ThemeAtlas is Widget {
     var role = row[0]
     var sample = legacyStyle_(_model.theme.style(role))
     Painter.fill(surface, Rect.new(0, y, width, 1), " ", sample)
-    var marker = selected ? ">" : " "
+    var marker = " "
+    if (selected) marker = glyph("focus.left")
     var text = "%(marker) %(role)"
     var suffix = "  Aa Bb Cc 0123"
     var room = (width - suffix.count).max(1)
     Painter.text(surface, 0, y, text, sample, room)
     if (selected) Painter.text(surface, 0, y, marker,
-        style("list.item.focused"), 1)
+        focused ? style("list.item.focused") :
+            effectiveTheme.style("list.item.focused.inactive"), 1)
     if (width > suffix.count) {
       Painter.text(surface, width - suffix.count, y, suffix, sample,
           suffix.count)
@@ -270,13 +281,15 @@ class ThemeAtlas is Widget {
   paintGlyphRow_(row, selected, y, width) {
     var sample = legacyStyle_(_model.theme.style("default"))
     Painter.fill(surface, Rect.new(0, y, width, 1), " ", sample)
-    var glyph = _model.theme.glyphs[row[0]]
-    var marker = selected ? ">" : " "
+    var shownGlyph = _model.theme.glyphs[row[0]]
+    var marker = " "
+    if (selected) marker = glyph("focus.left")
     var modeValue = _model.glyphMode == "ascii" ? row[4] : row[3]
-    var text = "%(marker) %(glyph)  %(row[0])  [%(modeValue)]"
+    var text = "%(marker) %(shownGlyph)  %(row[0])  [%(modeValue)]"
     Painter.text(surface, 0, y, text, sample, width)
     if (selected) Painter.text(surface, 0, y, marker,
-        style("list.item.focused"), 1)
+        focused ? style("list.item.focused") :
+            effectiveTheme.style("list.item.focused.inactive"), 1)
   }
 
   handle(event) {
@@ -323,6 +336,7 @@ class ThemeAtlas is Widget {
     }
     if (event.event != Mouse.button1Click &&
         event.event != Mouse.button1DblClick) return false
+    _onFocus.call()
     if (overScroll) {
       _scrollTop = Painter.scrollbarClick(event.startY - bounds.y,
           bounds.h, count_, bounds.h, _scrollTop)
@@ -453,6 +467,7 @@ class ThemeColorPane is Pane {
   construct new(content, onCancel) {
     super()
     shadow = true
+    keyHints = [["Enter", "Accept"], ["Esc", "Cancel"]]
     _onCancel = onCancel
     add(content)
   }
@@ -490,6 +505,7 @@ class ThemeColorDialog {
 class ThemeClosePrompt is Popup {
   construct new(onSave) {
     super("Save changes before closing?")
+    keyHints = [["Enter", "Choose"], ["Esc", "Cancel"]]
     title = "Theme Editor"
     atExit = true
     _save = Button.new("Save")
@@ -528,6 +544,105 @@ class ThemeClosePrompt is Popup {
   }
 }
 
+class ThemeWidgetPreviewContent is Container {
+  construct new(draftTheme, onClose) {
+    super()
+    theme = draftTheme
+
+    _menu = MenuBar.new()
+    var idle = Fn.new {}
+    _menu.items = [["File", idle], ["Edit", idle], ["View", idle],
+        ["Help", idle]]
+
+    _listPane = Pane.new()
+    _listPane.title = "List"
+    _listPane.helpable = false
+    _listPane.closeable = false
+    _list = ListView.new()
+    _list.items = ["Selected item", "Ordinary item", "Another item",
+        "A longer list entry", "Fifth item", "Sixth item", "Seventh item",
+        "Eighth item", "Ninth item", "Tenth item", "Eleventh item"]
+    _list.selected = 0
+    _list.onSelect = Fn.new {|index, item| null }
+    _listPane.add(_list)
+
+    _controlsPane = Pane.new()
+    _controlsPane.title = "Controls"
+    _controlsPane.helpable = false
+    _controlsPane.closeable = false
+    _form = Form.new()
+    _input = TextInput.new()
+    _input.value = "Sample text"
+    _input.maxLen = 32
+    _check = Checkbox.new("Enabled")
+    _check.value = true
+    _radio = RadioGroup.new()
+    _radio.items = ["First choice", "Second choice"]
+    _radio.selected = 0
+    _spin = SpinBox.new()
+    _spin.min = 0
+    _spin.max = 100
+    _spin.value = 42
+    _progress = ProgressBar.new()
+    _progress.set(65, 100)
+    _form.addField("Text", _input)
+    _form.addField("Option", _check)
+    _form.addFieldH("Choice", _radio, 2)
+    _form.addField("Value", _spin)
+    _form.addField("Progress", _progress)
+    _form.onSubmit = idle
+    _form.onCancel = onClose
+    _controlsPane.add(_form)
+
+    _status = StatusBar.new()
+    _status.segments = [["Ready", "left"], ["Draft theme", "right"]]
+
+    add(_menu)
+    add(_listPane)
+    add(_controlsPane)
+    add(_status)
+    focusedIndex = 1
+  }
+
+  bounds=(rect) {
+    super.bounds = rect
+    _menu.bounds = Rect.new(rect.x, rect.y, rect.w, 1)
+    _status.bounds = Rect.new(rect.x, rect.bottom, rect.w, 1)
+    var bodyY = rect.y + 1
+    var bodyH = (rect.h - 2).max(1)
+    var leftW = ((rect.w - 1) / 2).floor.max(1)
+    var rightW = (rect.w - leftW - 1).max(1)
+    _listPane.bounds = Rect.new(rect.x, bodyY, leftW, bodyH)
+    _controlsPane.bounds = Rect.new(rect.x + leftW + 1, bodyY,
+        rightW, bodyH)
+    _list.bounds = _listPane.innerBounds
+    _form.bounds = _controlsPane.innerBounds
+  }
+
+  onPaint_() {
+    Painter.fill(surface, Rect.new(0, 0, bounds.w, bounds.h), " ",
+        style("default"))
+    compositeChildren_()
+  }
+}
+
+class ThemeWidgetPreviewPane is Pane {
+  construct new(content, onClose) {
+    super()
+    shadow = true
+    _onCancel = onClose
+    add(content)
+  }
+
+  handle(event) {
+    if (event is KeyEvent && event.code == Key.escape) {
+      _onCancel.call()
+      return true
+    }
+    return super.handle(event)
+  }
+}
+
 class ThemeEditorContent is Container {
   construct new(model, actions) {
     super()
@@ -535,17 +650,17 @@ class ThemeEditorContent is Container {
     _actions = actions
     _primary = MenuBar.new()
     _secondary = MenuBar.new()
-    _atlas = ThemeAtlas.new(model, actions["edit"])
+    _atlas = ThemeAtlas.new(model, actions["edit"], Fn.new {
+      focusedIndex = 2
+    })
     _inspector = ThemeInspector.new(model)
+    _modeAction = null
+    _displayAction = null
 
-    _primary.items = [
-      ["Styles", Fn.new { actions["styles"].call() }],
-      ["Glyphs", Fn.new { actions["glyphs"].call() }],
-      ["Display", Fn.new { actions["display"].call() }],
-      ["Edit", Fn.new { actions["edit"].call() }],
-      ["New", Fn.new { actions["new"].call() }],
-      ["Remove", Fn.new { actions["remove"].call() }]
-    ]
+    _primary.onFocus = Fn.new { focusedIndex = 0 }
+    _secondary.onFocus = Fn.new { focusedIndex = 1 }
+
+    updatePrimary_()
     _secondary.items = [
       ["Metadata", Fn.new { actions["metadata"].call() }],
       ["Import", Fn.new { actions["import"].call() }],
@@ -565,10 +680,33 @@ class ThemeEditorContent is Container {
   atlas { _atlas }
 
   refresh() {
-    _primary.focusedItem = _model.mode == "styles" ? 0 : 1
+    updatePrimary_()
     _atlas.refresh()
     _inspector.refresh()
     markDirty()
+  }
+
+  updatePrimary_() {
+    var modeLabel = _model.mode == "styles" ? "Show Glyphs" : "Show Styles"
+    var label
+    if (_model.mode == "styles") {
+      label = _model.colorMode == "rgb" ? "Show Legacy" : "Show RGB"
+    } else {
+      label = _model.glyphMode == "cp437" ? "Show ASCII" : "Show CP437"
+    }
+    if (modeLabel == _modeAction && label == _displayAction) return
+    var selected = _primary.focusedItem
+    _modeAction = modeLabel
+    _displayAction = label
+    _primary.items = [
+      [modeLabel, Fn.new { _actions["mode"].call() }],
+      [label, Fn.new { _actions["display"].call() }],
+      ["Preview", Fn.new { _actions["preview"].call() }],
+      ["Edit", Fn.new { _actions["edit"].call() }],
+      ["New", Fn.new { _actions["new"].call() }],
+      ["Remove", Fn.new { _actions["remove"].call() }]
+    ]
+    if (selected != null) _primary.focusedItem = selected
   }
 
   bounds=(rect) {
@@ -655,10 +793,13 @@ class ThemeEditor {
     var refresh = Fn.new {
       model.refresh()
       content.refresh()
-      pane.title = title_(document)
+      pane.title = title_(document, model)
     }
     model.onChange = Fn.new {
-      if (content != null) content.refresh()
+      if (content != null) {
+        content.refresh()
+        pane.title = title_(document, model)
+      }
     }
 
     var operation = Fn.new {|error|
@@ -668,8 +809,9 @@ class ThemeEditor {
     }
 
     var actions = {}
-    actions["styles"] = Fn.new { model.mode = "styles" }
-    actions["glyphs"] = Fn.new { model.mode = "glyphs" }
+    actions["mode"] = Fn.new {
+      model.mode = model.mode == "styles" ? "glyphs" : "styles"
+    }
     actions["display"] = Fn.new {
       if (model.mode == "styles") {
         model.colorMode = model.colorMode == "rgb" ? "legacy" : "rgb"
@@ -677,6 +819,7 @@ class ThemeEditor {
         model.glyphMode = model.glyphMode == "cp437" ? "ascii" : "cp437"
       }
     }
+    actions["preview"] = Fn.new { showWidgetPreview_(app, model) }
     actions["edit"] = Fn.new {
       if (model.mode == "styles") {
         editStyle_(app, model, operation)
@@ -723,8 +866,10 @@ class ThemeEditor {
 
     content = ThemeEditorContent.new(model, actions)
     pane = ThemeEditorPane.new(content, actions)
-    pane.title = title_(document)
+    pane.title = title_(document, model)
     pane.helpText = helpText
+    pane.keyHints = [["F1", "Help"], ["Enter", "Edit"],
+        ["Ctrl-S", "Save"], ["F2", "Save As"], ["Esc", "Close"]]
     pane.focused = true
     pane.onClose = actions["close"]
     var size = Screen.size
@@ -739,10 +884,39 @@ class ThemeEditor {
     return [open, state]
   }
 
-  static title_(document) {
+  static title_(document, model) {
     var name = document.metadata(0)
     var dirty = document.dirty ? " *" : ""
-    return "Theme Editor - %(name)%(dirty)"
+    var mode
+    if (model.mode == "styles") {
+      mode = model.colorMode == "rgb" ? "Styles / RGB" : "Styles / Legacy"
+    } else {
+      mode = model.glyphMode == "cp437" ? "Glyphs / CP437" : "Glyphs / ASCII"
+    }
+    return "Theme Editor - %(name) [%(mode)]%(dirty)"
+  }
+
+  static showWidgetPreview_(app, model) {
+    var close = Fn.new { app.popModal() }
+    var content = ThemeWidgetPreviewContent.new(model.theme, close)
+    var pane = ThemeWidgetPreviewPane.new(content, close)
+    pane.title = "Theme Preview"
+    pane.helpText = "# Theme Preview\n\nThis interactive preview uses " +
+        "the unsaved draft theme on representative SyncTERM widgets. " +
+        "Move focus with Tab or the arrow keys and operate the controls " +
+        "normally. The outer frame retains the installed theme so the " +
+        "preview can always be closed."
+    pane.keyHints = [["F1", "Help"], ["Tab", "Next Control"],
+        ["Esc", "Close"]]
+    pane.focused = true
+    pane.onClose = close
+    var size = Screen.size
+    var x = size[0] >= 50 ? 4 : 1
+    var y = size[1] >= 18 ? 2 : 1
+    pane.bounds = Rect.new(x, y, (size[0] - x * 2).max(1),
+        (size[1] - y - 1).max(1))
+    content.bounds = pane.innerBounds
+    app.modal(pane)
   }
 
   static helpText {
@@ -750,8 +924,10 @@ class ThemeEditor {
         "glyph in the draft theme. Select a row to inspect its direct " +
         "value and cascade source. The editor controls retain the installed " +
         "theme while the atlas previews unsaved changes.\n\n" +
-        "Styles / Glyphs\n:  Choose the kind of definition shown\n" +
-        "Display\n:  Toggle RGB/Legacy colour or CP437/ASCII glyph preview\n" +
+        "Show Glyphs / Show Styles\n:  Change the kind of definition shown\n" +
+        "Show Legacy / Show RGB\n:  Change the style colour preview\n" +
+        "Show ASCII / Show CP437\n:  Change the glyph preview\n" +
+        "Preview\n:  Apply the draft to representative interactive widgets\n" +
         "Edit\n:  Edit the selected definition\n" +
         "New / Remove\n:  Add or remove custom definitions\n" +
         "Metadata\n:  Edit theme name, author, description, and version\n" +

@@ -199,6 +199,8 @@ class OfflineScrollbackView {
     var viewer = OfflineScrollbackCanvas.new(app, source, background,
         Menu.offlineScrollbackHasStatus, dismiss)
     viewer.helpText = help_()
+    viewer.keyHints = [["F1", "Help"], ["Arrows", "Scroll"],
+        ["PgUp/PgDn", "Page"], ["Esc", "Close"]]
     viewer.focused = true
     viewer.bounds = Rect.new(1, 1, Screen.size[0], Screen.size[1])
     app.modal(viewer)

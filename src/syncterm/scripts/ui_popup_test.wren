@@ -99,6 +99,7 @@ class UiPopupTest {
     testFindReplacesPreviousQuery_()
     testMenuChoiceEscReturnsNull_()
     testMenuChoiceCarriesHelp_()
+    testMenuChoiceCarriesKeyHints_()
     testMenuChoiceRunsCallbackBeforeDismiss_()
     testMenuCommandChoiceReturnsCommandAndRow_()
     testMenuCommandChoicePreemptsTypeahead_()
@@ -361,6 +362,15 @@ class UiPopupTest {
     MenuUi.choice(app, "Choice", ["One", "Two"], 0, "# Choice Help")
     check_(app.last.helpText == "# Choice Help",
            "MenuUi.choice: optional help reaches the modal pane")
+  }
+
+  static testMenuChoiceCarriesKeyHints_() {
+    var app = EscapeFakeApp.new()
+    MenuUi.choice(app, "Choice", ["One", "Two"], 0, "# Choice Help")
+    var hints = app.last.keyHints
+    check_(hints.count == 3 && hints[0][0] == "F1" &&
+           hints[1][0] == "Enter" && hints[2][0] == "Esc",
+           "MenuUi.choice: modal pane describes its direct commands")
   }
 
   static testMenuChoiceRunsCallbackBeforeDismiss_() {

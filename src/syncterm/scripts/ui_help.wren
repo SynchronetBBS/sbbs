@@ -33,6 +33,8 @@ import "syncterm"    for KeyEvent, MouseEvent, Mouse, Key, Screen
 class Help is Popup {
   construct new(titleText, body) {
     super(null)                 // no auto-rendered message line
+    keyHints = [["Arrows", "Scroll"], ["PgUp/PgDn", "Page"],
+        ["Esc", "Close"]]
     title      = titleText
     frameKind  = "display"
     focused    = true

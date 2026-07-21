@@ -93,12 +93,14 @@ class CommentInput is SelectOnFocusInput {
 }
 
 class ClassicFooter is Container {
-  construct new(onFocus, onCommit, onCancel) {
+  construct new(hints, helpAvailable, onFocus, onCommit, onCancel) {
     super()
     activitySensitive = false
     _comment = ""
-    _copied = false
-    _directoryHints = true
+    _hints = hints
+    _helpAvailable = helpAvailable
+    _paintedHints = null
+    _paintedHelp = false
     _onCommit = onCommit
     _onCancel = onCancel
     _input = CommentInput.new(onFocus)
@@ -119,47 +121,45 @@ class ClassicFooter is Container {
 
   selectComment() { _input.selectAll() }
 
-  copied=(value) {
-    _copied = value
-    markDirty()
-  }
-
-  directoryHints=(value) {
-    if (_directoryHints == value) return
-    _directoryHints = value
-    markDirty()
-  }
-
   paintHints_(sf) {
-    var segments = [
-      ["F1 ", true], ["Help  ", false]
-    ]
-    if (_directoryHints) {
-      segments.add(["F2 ", true])
-      segments.add(["Edit Item  ", false])
-      segments.add(["F5 ", true])
-      segments.add(["Copy  ", false])
-      if (_copied) {
-        segments.add(["F6 ", true])
-        segments.add(["Paste  ", false])
-      }
-      segments.add(["INS", true])
-      segments.add(["ert Item  ", false])
-      segments.add(["DEL", true])
-      segments.add(["ete Item  ", false])
-    }
-    segments.add(["ESC ", true])
-    segments.add(["Exit", false])
-
     var x = 4
-    for (segment in segments) {
-      if (x >= bounds.w) return
-      var text = segment[0]
-      Painter.text(sf, x, 1, text,
-          segment[1] ? style("classic.hotkey") : style("classic.hint"),
+    if (_paintedHelp && !hintsContainHelp_) {
+      Painter.text(sf, x, 1, "F1", style("classic.hotkey"), bounds.w - x)
+      x = x + 2
+      Painter.text(sf, x, 1, " Help  ", style("classic.hint"),
           bounds.w - x)
-      x = x + text.count
+      x = x + 7
     }
+    if (_paintedHints == null) return
+    for (hint in _paintedHints) {
+      if (x >= bounds.w) return
+      var key = hint[0]
+      var action = " " + hint[1] + "  "
+      Painter.text(sf, x, 1, key, style("classic.hotkey"), bounds.w - x)
+      x = x + key.count
+      if (x >= bounds.w) return
+      Painter.text(sf, x, 1, action, style("classic.hint"), bounds.w - x)
+      x = x + action.count
+    }
+  }
+
+  hintsContainHelp_ {
+    if (_paintedHints == null) return false
+    for (hint in _paintedHints) {
+      if (hint[0] == "F1") return true
+    }
+    return false
+  }
+
+  draw() {
+    var hints = _hints.call()
+    var help = _helpAvailable.call()
+    if (hints != _paintedHints || help != _paintedHelp) {
+      _paintedHints = hints
+      _paintedHelp = help
+      markDirty()
+    }
+    return super.draw()
   }
 
   onPaint_() {
@@ -316,6 +316,7 @@ class MainMenuApp {
 
     _directory = MainPane.new(Fn.new { focusDirectory_() })
     _directory.helpText = directoryHelp_()
+    _directory.keyHints = directoryHints_()
     _directory.onClose = Fn.new { exit_(false) }
     _app.root.add(_directory)
 
@@ -341,15 +342,19 @@ class MainMenuApp {
     }
     _directory.add(_list)
 
-    _footer = ClassicFooter.new(Fn.new { focusComment_(0) },
+    _footer = ClassicFooter.new(Fn.new { _app.keyHints },
+        Fn.new { _app.helpAvailable },
+        Fn.new { focusComment_(0) },
         Fn.new {|value, destination| finishComment_(value, destination) },
         Fn.new { cancelComment_() })
     _footer.helpText = directoryHelp_()
+    _footer.keyHints = directoryHints_()
     _app.root.add(_footer)
 
     _settings = MainPane.new(Fn.new { focusSettings_() })
     _settings.title = "SyncTERM Settings"
     _settings.helpText = SettingsMenu.helpText(_connected)
+    _settings.keyHints = settingsHints_()
     _settings.onClose = Fn.new { exit_(false) }
     _app.root.add(_settings)
 
@@ -453,13 +458,27 @@ class MainMenuApp {
         "Ctrl-G\n:  Repeat the last search"
   }
 
+  directoryHints_() {
+    var hints = [
+      ["F1", "Help"], ["F2", "Edit Item"], ["F5", "Copy"]
+    ]
+    if (_clipboard != null) hints.add(["F6", "Paste"])
+    hints.add(["INS", "Add"])
+    hints.add(["DEL", "Delete"])
+    hints.add(["Esc", "Exit"])
+    return hints
+  }
+
+  settingsHints_() {
+    return [["F1", "Help"], ["Enter", "Open"], ["Esc", "Exit"]]
+  }
+
   focusDirectory_() {
     if (_app.root.focusedChild == _footer) {
       var activate = _commentReturn == _directory
       finishComment_(_footer.value, -1)
       return activate
     }
-    _footer.directoryHints = true
     _app.root.focusedIndex = 1
     updateWindowTitle_()
     return false
@@ -476,6 +495,8 @@ class MainMenuApp {
       return false
     }
     _commentReturn = fallback == 0 ? _app.root.focusedChild : _directory
+    _footer.keyHints = _commentReturn == _settings ?
+        settingsHints_() : directoryHints_()
     _footer.comment = _selected.comment
     _footer.selectComment()
     _app.root.focusedIndex = 2
@@ -488,7 +509,6 @@ class MainMenuApp {
       finishComment_(_footer.value, 1)
       return activate
     }
-    _footer.directoryHints = false
     _app.root.focusedIndex = 3
     updateWindowTitle_()
     return false
@@ -496,10 +516,8 @@ class MainMenuApp {
 
   cancelComment_() {
     if (_commentReturn == _settings) {
-      _footer.directoryHints = false
       _app.root.focusedIndex = 3
     } else {
-      _footer.directoryHints = true
       _app.root.focusedIndex = 1
     }
     _commentReturn = null
@@ -780,10 +798,8 @@ class MainMenuApp {
     }
     if (destination > 0 ||
         (destination == 0 && _commentReturn == _settings)) {
-      _footer.directoryHints = false
       _app.root.focusedIndex = 3
     } else {
-      _footer.directoryHints = true
       _app.root.focusedIndex = 1
     }
     _commentReturn = null
@@ -878,7 +894,7 @@ class MainMenuApp {
     if (!mutable_("edit")) return
     _clipboard = BbsEditor.draft_(_selected)
     _clipboardType = _selected.type
-    _footer.copied = true
+    _directory.keyHints = directoryHints_()
   }
 
   paste_() {
@@ -913,7 +929,7 @@ class MainMenuApp {
       name = editEntry_(bbs, false)
       _clipboard = null
       _clipboardType = null
-      _footer.copied = false
+      _directory.keyHints = directoryHints_()
     }
     refresh_(name)
   }

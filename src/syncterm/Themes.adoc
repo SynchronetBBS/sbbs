@@ -53,12 +53,17 @@ editing it creates an unsaved copy which must be given a filename.  A file
 which is not accepted by the current theme loader remains visible in the
 browser for diagnosis, but cannot be selected or opened in the editor.
 
-The editor's atlas contains every style role and glyph in the draft.  The
-Styles and Glyphs commands switch between those definitions.  Display
-switches style previews between RGB and legacy colours, or glyph previews
-between CP437 and ASCII.  The inspector shows each resolved style field and
-the role which supplied it.  Enter or a double click edits the selected
-definition; Insert creates a custom definition and Delete removes one.
+The editor's atlas contains every style role and glyph in the draft.  Show
+Glyphs / Show Styles changes the kind of definition shown.  Show Legacy / Show
+RGB changes the style colour display, and Show ASCII / Show CP437 changes the
+glyph display; the title reports the active mode.  Preview opens an
+interactive screen of real menu, list, form, input, selection, button,
+progress, and status widgets using the unsaved draft theme.  The preview's
+outer frame retains the installed theme so it remains usable even when the
+draft is incomplete or unreadable.  The inspector shows each resolved style
+field and the role which supplied it.  Enter or a double click edits the
+selected definition; Insert creates a custom definition and Delete removes
+one.
 
 A built-in style field has three possible states:
 

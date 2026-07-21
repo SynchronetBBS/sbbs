@@ -139,6 +139,7 @@ class App {
     if (modalTop.atExit) widget.atExit = true
     widget.parent = this
     _modalStack.add(widget)
+    invalidateCursorState()
     widget.markDirty()
     return widget
   }
@@ -147,6 +148,7 @@ class App {
     if (_modalStack.count == 0) return null
     var w = _modalStack.removeAt(-1)
     w.parent = null
+    invalidateCursorState()
     return w
   }
 
@@ -311,9 +313,10 @@ class App {
     drawAll_()
   }
 
-  // A host operation may call setcustomcursor() behind the App's back.
   // Drop the applied-state cache so the next draw reasserts the cursor
-  // requested by the focused widget instead of trusting stale state.
+  // requested by the focused widget.  Host operations can change conio's
+  // cursor behind the App's back, and modal transitions are a natural point
+  // to restore ownership before painting the new foreground widget.
   invalidateCursorState() {
     _cursorShape = null
     _cursorAttr = null
@@ -327,18 +330,36 @@ class App {
   // pop a Help dialog with that text.  No-op if nothing in the
   // chain has help.
   showHelp() {
-    var w = modalTop
-    // Descend to the focused leaf.
-    while (w is Container && w.focusedChild != null) w = w.focusedChild
-    var found = null
+    var found = helpText
+    if (found != null) Help.show(this, "Help", found)
+  }
+
+  helpText {
+    var w = focusedLeaf_
     while (w is Widget) {
-      if (w.helpText != null) {
-        found = w.helpText
-        break
-      }
+      if (w.helpText != null) return w.helpText
       w = w.parent
     }
-    if (found != null) Help.show(this, "Help", found)
+    return null
+  }
+
+  helpAvailable { helpText != null }
+
+  // Key hints use the same nearest-focused-widget inheritance as help.
+  // Ambient footer/status widgets query this; they do not own screen state.
+  keyHints {
+    var w = focusedLeaf_
+    while (w is Widget) {
+      if (w.keyHints != null) return w.keyHints
+      w = w.parent
+    }
+    return null
+  }
+
+  focusedLeaf_ {
+    var w = modalTop
+    while (w is Container && w.focusedChild != null) w = w.focusedChild
+    return w
   }
 
   // Synchronous claim decision — runs in the C dispatch fiber via

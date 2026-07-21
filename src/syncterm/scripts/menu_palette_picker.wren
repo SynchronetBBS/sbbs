@@ -183,6 +183,8 @@ class PalettePickerPane is Pane {
   construct new(content, onDefault, onAccept, onCancel) {
     super()
     shadow = true
+    keyHints = [["F1", "Help"], ["Enter", "Accept"],
+        ["\%", "Default"], ["Esc", "Cancel"]]
     _default = onDefault
     _accept = onAccept
     _cancel = onCancel

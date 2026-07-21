@@ -11,7 +11,7 @@
 import "ui_style"  for Style, Theme
 import "ui_widget" for Rect, Widget, Container
 import "ui_app"    for App
-import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse
+import "syncterm"  for KeyEvent, MouseEvent, Key, Mouse, CustomCursor
 
 // A Widget subclass that records every event it sees, optionally
 // consumes them, and counts draw() invocations.  Focus and bounds
@@ -148,6 +148,7 @@ class UiWidgetTest {
     testAppPushPopModal_()
     testAppPopEmptyReturnsNull_()
     testAppModalTopFallsBackToRoot_()
+    testAppContextFollowsFocusedTree_()
     testAppModalWidgetInheritsTheme_()
     testAppModalWidgetInheritsAtExit_()
     testAppCloseModals_()
@@ -238,7 +239,8 @@ class UiWidgetTest {
     var w = Probe.new()
     check_(w.bounds == null && w.parent == null && w.theme == null &&
            !w.focused && w.visible && w.dirty && w.focusable &&
-           !w.atExit && w.activitySensitive,
+           !w.atExit && w.activitySensitive && w.helpText == null &&
+           w.keyHints == null,
            "Widget defaults")
   }
 
@@ -673,6 +675,32 @@ class UiWidgetTest {
            "App.modalTop falls back to root when stack is empty")
   }
 
+  static testAppContextFollowsFocusedTree_() {
+    var app = App.new()
+    var branch = Container.new()
+    var leaf = Probe.new()
+    var branchHints = [["Esc", "Close"]]
+    var leafHints = [["Enter", "Open"]]
+    branch.helpText = "Branch help"
+    branch.keyHints = branchHints
+    leaf.keyHints = leafHints
+    branch.add(leaf)
+    app.root.add(branch)
+    var leafWins = app.keyHints == leafHints && app.helpText == "Branch help"
+    leaf.keyHints = null
+    var parentFallback = app.keyHints == branchHints && app.helpAvailable
+
+    var modal = Probe.new()
+    var modalHints = [["Esc", "Dismiss"]]
+    modal.keyHints = modalHints
+    app.pushModal(modal)
+    var modalWins = app.keyHints == modalHints && !app.helpAvailable
+    app.popModal()
+    check_(leafWins && parentFallback && modalWins &&
+           app.keyHints == branchHints,
+           "App context: nearest focused widget wins and modal scopes it")
+  }
+
   static testAppModalWidgetInheritsTheme_() {
     var app = App.new()
     var t = Theme.new({
@@ -735,15 +763,26 @@ class UiWidgetTest {
   }
 
   static testAppCursorStateInvalidation_() {
+    var saved = CustomCursor.current
     var app = App.new()
     app.drawAll_()
     var initiallyHidden = app.cursorShapeCache_ == "none"
-    app.invalidateCursorState()
+
+    CustomCursor.normal.apply()
+    var changedExternally = CustomCursor.visible &&
+        CustomCursor.startLine <= CustomCursor.endLine
+    app.pushModal(Probe.new())
     var invalidated = app.cursorShapeCache_ == null
     app.drawAll_()
-    check_(initiallyHidden && invalidated &&
-           app.cursorShapeCache_ == "none",
-           "App.invalidateCursorState: redraw repairs external cursor change")
+    var repaired = !CustomCursor.visible ||
+        CustomCursor.startLine > CustomCursor.endLine
+
+    app.popModal()
+    var invalidatedOnPop = app.cursorShapeCache_ == null
+    saved.apply()
+    check_(initiallyHidden && changedExternally && invalidated && repaired &&
+           invalidatedOnPop,
+           "App cursor state: modal transitions repair external changes")
   }
 
   static testAppDispatchKeyToFocused_() {

@@ -6043,6 +6043,9 @@ Base class for everything paintable.  Holds:
   is active inherit the property.  Ordinary widgets are unwound through
   Escape and cannot consume `Key.quit` themselves.
 * `helpText=` — string surfaced by `App.showHelp` (F1).
+* `keyHints=` — list of `[keyLabel, actionLabel]` pairs for ambient
+  footer/status UI.  `App.keyHints` resolves it from the focused tree using
+  the same nearest-widget rule as `helpText`.
 * `closesOnOutsideClick(event)` — returns whether the App should send
   Escape to this widget when `event` occurs outside its modal bounds.
   The base implementation returns `false`.
@@ -6586,8 +6589,12 @@ first characters activates that item.  `focusedItem` is `null`
 when the bar is empty (or explicitly cleared); otherwise an
 integer in `0..count - 1`.  `tryHotkey(ev)` is exposed
 on the widget so a `Container` parent can route a letter pressed
-elsewhere into the bar's matcher.  Mouse click activates the clicked
-item; clicks on inter-item gaps are dropped.  Theme roles:
+elsewhere into the bar's matcher.  The `focusedItem` cursor is painted with
+the focused role only while the MenuBar widget itself has focus, so multiple
+bars may retain their navigation positions without appearing simultaneously
+active.  Set `onFocus=` when a containing editor needs a mouse click to move
+its own focus to the bar before activation.  Mouse click activates the
+clicked item; clicks on inter-item gaps are dropped.  Theme roles:
 `menubar`, `menubar.item`, `menubar.item.focused`.
 
 === StatusBar [[ui-statusbar]]
@@ -6815,6 +6822,13 @@ parent chain looking for a widget with `helpText` set, then calls
 `Help.show` with the title `"Help"` and that text.  Set `helpText`
 on whichever widget is the most-specific scope you want help to
 fall back to.
+
+`App.helpText`, `App.helpAvailable`, and `App.keyHints` expose that same
+focused context without opening a dialog.  The main-menu footer queries
+these values only when it paints; command ownership remains with the focused
+widget or its nearest containing pane.  Custom modal widgets should set
+`keyHints` for their direct commands.  The standard choices, prompts,
+popups, and Help viewer already do so.
 
 Prompts and other modal widgets can also carry `helpText`.  Because the
 focused input or list is their child, the same parent walk finds the modal's

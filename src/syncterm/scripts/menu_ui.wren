@@ -8,6 +8,7 @@ import "ui_popup" for Alert, Confirm, Prompt, LinePrompt, Popup
 class StandaloneChoice is Popup {
   construct new(message, labels) {
     super(message)
+    keyHints = [["Enter", "Select"], ["Esc", "Close"]]
     _list = ListView.new()
     _list.items = labels
     _list.onSelect = Fn.new {|index, item| dismissWith_(index) }
@@ -99,6 +100,41 @@ class ChoiceViewState {
 }
 
 class MenuUi {
+  static commandLabel_(name) {
+    if (name == "new") return "New"
+    if (name == "edit") return "Edit"
+    if (name == "insert") return "Insert"
+    if (name == "delete") return "Delete"
+    if (name == "rename") return "Rename"
+    if (name == "copy") return "Copy"
+    if (name == "cut") return "Cut"
+    if (name == "paste") return "Paste"
+    if (name == "previous") return "Previous"
+    if (name == "next") return "Next"
+    return name
+  }
+
+  static addCommandHint_(hints, commands, code, key) {
+    var spec = commands[code]
+    if (spec != null) hints.add([key, commandLabel_(spec[0])])
+  }
+
+  static commandHints_(commands, hasHelp) {
+    var hints = []
+    if (hasHelp) hints.add(["F1", "Help"])
+    hints.add(["Enter", "Select"])
+    addCommandHint_(hints, commands, Key.f2, "F2")
+    addCommandHint_(hints, commands, Key.f5, "F5")
+    addCommandHint_(hints, commands, Key.f6, "F6")
+    addCommandHint_(hints, commands, Key.insert, "Insert")
+    addCommandHint_(hints, commands, Key.delete, "Delete")
+    addCommandHint_(hints, commands, Key.ctrlX, "Ctrl-X")
+    addCommandHint_(hints, commands, 0x5B, "[")
+    addCommandHint_(hints, commands, 0x5D, "]")
+    hints.add(["Esc", "Close"])
+    return hints
+  }
+
   static choiceList_(viewState) {
     return viewState == null ? ListView.new() : viewState.list
   }
@@ -303,6 +339,7 @@ class MenuUi {
     pane = CommandPane.new(cancel, commands, onCommand)
     pane.title = title
     pane.helpText = helpText
+    pane.keyHints = commandHints_(commands, helpText != null)
     pane.focused = true
     var size = Screen.size
     var longest = title.count + 6
@@ -353,6 +390,7 @@ class MenuUi {
     }
     pane = CommandPane.new(cancel, {}, Fn.new {|spec| null })
     pane.title = title
+    pane.keyHints = commandHints_({}, true)
     pane.focused = true
     pane.onClose = cancel
 
@@ -426,6 +464,7 @@ class MenuUi {
     }
     pane = CommandPane.new(cancel, commands, onCommand)
     pane.title = title
+    pane.keyHints = commandHints_(commands, true)
     pane.focused = true
     pane.onClose = cancel
 

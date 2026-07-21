@@ -13,10 +13,28 @@ class EditorPane is Pane {
     shadow = true
     _onSort = null
     _onNavigate = null
+    updateHints_()
   }
 
-  onSort=(fn) { _onSort = fn }
-  onNavigate=(fn) { _onNavigate = fn }
+  onSort=(fn) {
+    _onSort = fn
+    updateHints_()
+  }
+  onNavigate=(fn) {
+    _onNavigate = fn
+    updateHints_()
+  }
+
+  updateHints_() {
+    var hints = [["F1", "Help"], ["Enter", "Edit"]]
+    if (_onSort != null) hints.add(["Ctrl-S", "Sort Order"])
+    if (_onNavigate != null) {
+      hints.add(["[", "Previous"])
+      hints.add(["]", "Next"])
+    }
+    hints.add(["Esc", "Save"])
+    keyHints = hints
+  }
 
   handle(event) {
     if (event is KeyEvent) {

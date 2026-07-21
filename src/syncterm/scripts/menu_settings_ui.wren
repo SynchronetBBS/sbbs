@@ -133,8 +133,12 @@ class SettingsMenu {
   }
 
   static themeHelp_(entry) {
-    if (entry == null) return "# Themes\n\nThe selected theme is unavailable."
-    var text = "# %(entry[1])\n\n"
+    var text = "# Themes\n\nMoving the highlight previews a theme without " +
+        "selecting it. Enter installs the highlighted theme. Insert creates " +
+        "a new theme and F2 opens the highlighted theme in the editor. " +
+        "Escape restores the installed theme.\n\n## Highlighted Theme\n\n"
+    if (entry == null) return text + "The selected theme is unavailable."
+    text = text + "Name\n:  %(entry[1])\n"
     if (entry[0].count == 0) {
       text = text + "File\n:  Built-in Classic Theme\n"
     } else {

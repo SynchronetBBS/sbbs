@@ -341,6 +341,7 @@ class Popup is Pane {
 class Alert is Popup {
   construct new(message) {
     super(message)
+    keyHints = [["Enter", "OK"], ["Esc", "Close"]]
     title = "Alert"
     _ok = Button.new("OK")
     _ok.onPress = Fn.new { dismissWith_(null) }
@@ -349,6 +350,7 @@ class Alert is Popup {
 
   construct new(title, message) {
     super(message)
+    keyHints = [["Enter", "OK"], ["Esc", "Close"]]
     this.title = title
     _ok = Button.new("OK")
     _ok.onPress = Fn.new { dismissWith_(null) }
@@ -438,6 +440,7 @@ class Alert is Popup {
 class Confirm is Popup {
   construct new(message) {
     super(message)
+    keyHints = [["Y", "Yes"], ["N", "No"], ["Esc", "No"]]
     title = "Confirm"
     _yes = Button.new("Yes")
     _no  = Button.new("No")
@@ -516,6 +519,7 @@ class Confirm is Popup {
 class Prompt is Popup {
   construct new(message, initial) {
     super(message)
+    keyHints = [["Enter", "Accept"], ["Esc", "Cancel"]]
     title  = "Prompt"
     _input = SelectOnFocusInput.new()
     _input.value = (initial == null ? "" : initial)
@@ -597,6 +601,7 @@ class Prompt is Popup {
 class LinePrompt is Popup {
   construct new(label, initial) {
     super(null)
+    keyHints = [["Enter", "Accept"], ["Esc", "Cancel"]]
     _label = (label == null ? "" : label)
     _labelWidth = 0
     _input = SelectOnFocusInput.new()
@@ -672,6 +677,7 @@ class LinePrompt is Popup {
 class Find is Popup {
   construct new(label, initial) {
     super(null)
+    keyHints = [["Enter", "Find"], ["Esc", "Cancel"]]
     title       = label
     closeable   = false
     _input      = SelectOnFocusInput.new()
