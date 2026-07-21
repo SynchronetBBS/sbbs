@@ -23,6 +23,7 @@ add_executable(syncretro
     syncretro_door.c    # DOOR32.SYS / -s<fd> / -name / -home / -t / -core
     syncretro_config.c  # per-user sandbox + system/save dirs
     syncretro_quant.c   # truecolor frame -> 256-color indexed, for the sixel tier
+    syncretro_dirty.c   # which cells changed: patch the frame instead of repainting
     syncretro_plat.c)   # the door's Windows-vs-POSIX seam (clock/sleep/socket/stderr)
 
 # libretro.h lives in this dir (vendored). Our own code is house-style tabs.
@@ -209,6 +210,13 @@ if(SYNCRETRO_TESTS)
     add_executable(test_quant test_quant.c syncretro_quant.c)
     target_include_directories(test_quant PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME quant COMMAND test_quant)
+
+    # test_dirty pins the rectangle geometry: that the rects COVER every changed
+    # pixel (a miss leaves stale pixels on screen until the next full frame) and
+    # stay cell-aligned (a sixel can only be drawn at a cell corner).
+    add_executable(test_dirty test_dirty.c syncretro_dirty.c)
+    target_include_directories(test_dirty PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME dirty COMMAND test_dirty)
 
     # test_audio_bytes -- UNLIKE the three tests above, this one links the
     # real termgfx audio encoder (needs libsndfile): the whole point is

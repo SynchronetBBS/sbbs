@@ -95,6 +95,10 @@ const char *sr_config_aspect_mode(void);  /* the raw [video] aspect string */
 int    sr_config_audio_volume(void);      /* volume,    0..100,    default 100 */
 int    sr_config_audio_chunk_ms(void);    /* chunk_ms,  50..250,   default 100 */
 int    sr_config_audio_prebuffer(void);   /* prebuffer, 2..8,      default 3 */
+/* [video] dirty_rect (default true) -- repaint only the parts of the frame that
+ * changed, instead of re-sending the whole picture every time. Off falls back to
+ * whole frames, which is always correct and is what the door did before. */
+int    sr_config_dirty_rect(void);
 
 /* --- syncretro_io.c: terminal enter/probe/leave + the present path ---------
  * sr_io_init() adopts the door socket (or the stdout dev fallback) and arms the

@@ -69,6 +69,7 @@ static int  g_disc_is_rotate;         /* does the loaded ROM match? */
 static char g_launch_dir[PATH_MAX];   /* where the door was started: cwd BEFORE the chdir */
 static char g_system_dir[PATH_MAX];   /* BIOS: shared, read-only, per-install */
 static char g_save_dir[PATH_MAX];     /* per-user SRAM + save states */
+static int  g_dirty_rect = 1;   /* [video] dirty_rect */
 static char g_aspect[32] = "core";    /* [video] aspect: core|square|4:3|<decimal> */
 static char g_core_path[PATH_MAX];    /* the .so to dlopen, absolute */
 static char g_rom_path[PATH_MAX];     /* the cartridge, absolute */
@@ -173,6 +174,7 @@ static void sr_config_read_ini(void)
 		g_audio_volume    = iniGetInteger(ini, "audio", "volume", 100);
 		g_audio_chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", 100);
 		g_audio_prebuffer = iniGetInteger(ini, "audio", "prebuffer", 3);
+		g_dirty_rect      = iniGetBool(ini, "video", "dirty_rect", TRUE);
 
 		/* [options] -- libretro core options this install pins.
 		 *
@@ -222,6 +224,7 @@ static void sr_config_read_ini(void)
 	g_audio_prebuffer = sr_clamp_int(g_audio_prebuffer, 2, 8);
 }
 
+int    sr_config_dirty_rect(void)      { return g_dirty_rect; }
 int    sr_config_audio_enabled(void)   { return g_audio_enabled; }
 double sr_config_audio_quality(void)   { return g_audio_quality; }
 
