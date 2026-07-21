@@ -56,6 +56,18 @@ struct termgfx_stream {
 	int have_silence;         // <prefix>/z uploaded
 	int blob_ok;              // client supports A;LoadBlob (CTerm >= 1.329)
 
+	// DC blocking (audio_stream.h). The filter works in place and feed()'s
+	// input is const, so the PCM is copied through this scratch buffer.
+	termgfx_dcblock_t dc;
+	int16_t *dcbuf;
+	size_t dc_cap;            // frames dcbuf holds
+	// ...and the diagnostic: the RAW offset, measured before filtering, so a
+	// source that needed the filter says so in the log instead of waiting to
+	// be heard.
+	double dc_sum;
+	size_t dc_n;
+	int dc_warned;
+
 	// Telemetry, printed at destroy.
 	unsigned underruns;
 	unsigned dropped;
@@ -238,6 +250,14 @@ termgfx_stream_create(const termgfx_stream_cfg_t *cfg, const termgfx_stream_io_t
 	}
 	fprintf(stderr, "%s: audio %d Hz, %d ms chunks (%u frames)\n",
 	        s->cfg.name, s->cfg.rate, s->cfg.chunk_ms, (unsigned)frames);
+
+	// One chunk's worth of scratch is enough for any batch: feed() filters in
+	// buffer-sized bites. A failed allocation is NOT fatal -- the stream just
+	// runs unfiltered, exactly as it did before this existed.
+	termgfx_dcblock_init(&s->dc, s->cfg.rate);
+	s->dcbuf  = malloc(frames * 2 * sizeof *s->dcbuf);
+	s->dc_cap = s->dcbuf == NULL ? 0 : frames;
+
 	s->state = TERMGFX_STREAM_WAIT_CAPS;
 	return s;
 }
@@ -429,6 +449,47 @@ termgfx_stream_chunk_closed(termgfx_stream_t *s)
 	free(ogg);
 }
 
+// An offset this size, sustained for a whole second, is not music: real content
+// averages to ~0 over that long. 256 is 0.8% of full scale -- far below the
+// levels that have actually bitten us (Joust +7710, Xenophobe -17536, and
+// SyncConquer's drift, all several percent or more) and far above the sub-LSB
+// wander of a well-behaved source.
+#define TERMGFX_DC_WARN 256.0
+
+// Measure the RAW offset -- before the blocker removes it -- and say so once.
+// The blocker alone would fix this class of bug SILENTLY, and a silent fix here
+// is a bad trade: a source with a DC offset usually has something wrong with it
+// (a mis-converted unsigned format, a drifting decoder predictor, a core whose
+// DAC idles off-zero), and that is worth knowing about rather than papering
+// over. This line is how the NEXT one gets found from a log instead of from a
+// player noticing a hum.
+static void
+termgfx_stream_dc_watch(termgfx_stream_t *s, const int16_t *pcm, size_t frames)
+{
+	size_t i;
+	double mean;
+
+	if (s->dc_warned)
+		return;
+	for (i = 0; i < frames; i++)
+		s->dc_sum += pcm[2 * i];
+	s->dc_n += frames;
+	if (s->dc_n < (size_t)s->cfg.rate)      // judge on a full second, not a burst
+		return;
+
+	mean      = s->dc_sum / (double)s->dc_n;
+	s->dc_sum = 0.0;
+	s->dc_n   = 0;
+	if (mean > -TERMGFX_DC_WARN && mean < TERMGFX_DC_WARN)
+		return;
+
+	s->dc_warned = 1;
+	fprintf(stderr,
+	        "%s: audio source has a DC offset of %+d (%.1f%% of full scale)"
+	        " -- high-passed; the Ogg encoder cannot carry DC\n",
+	        s->cfg.name, (int)mean, 100.0 * mean / 32768.0);
+}
+
 size_t
 termgfx_stream_feed(termgfx_stream_t *s, const int16_t *pcm, size_t frames)
 {
@@ -444,15 +505,34 @@ termgfx_stream_feed(termgfx_stream_t *s, const int16_t *pcm, size_t frames)
 	                               // byte encoded, not one byte sent
 
 	while (left > 0) {
-		size_t used = termgfx_chunk_append(&s->chunk, pcm, left);
+		const int16_t *src = pcm;
+		size_t         n   = left;
+		size_t         off = 0;
 
-		pcm  += used * 2;          // interleaved stereo
-		left -= used;
-		if (termgfx_chunk_full(&s->chunk)) {
-			termgfx_stream_chunk_closed(s);
-			termgfx_chunk_reset(&s->chunk);
-		} else if (used == 0) {
-			break;                 // cannot happen: a reset chunk has room
+		// DC-block into the scratch buffer, in bites it can hold. Without the
+		// buffer (allocation failed at create) the source's PCM is chunked
+		// verbatim, as it was before the filter existed.
+		if (s->dc_cap > 0) {
+			if (n > s->dc_cap)
+				n = s->dc_cap;
+			termgfx_stream_dc_watch(s, pcm, n);
+			memcpy(s->dcbuf, pcm, n * 2 * sizeof *s->dcbuf);
+			termgfx_dcblock_apply(&s->dc, s->dcbuf, n);
+			src = s->dcbuf;
+		}
+		pcm  += n * 2;             // interleaved stereo
+		left -= n;
+
+		while (off < n) {
+			size_t used = termgfx_chunk_append(&s->chunk, src + off * 2, n - off);
+
+			off += used;
+			if (termgfx_chunk_full(&s->chunk)) {
+				termgfx_stream_chunk_closed(s);
+				termgfx_chunk_reset(&s->chunk);
+			} else if (used == 0) {
+				return frames;     // cannot happen: a reset chunk has room
+			}
 		}
 	}
 	return frames;
@@ -514,6 +594,7 @@ termgfx_stream_destroy(termgfx_stream_t *s)
 		        s->cfg.name, s->chunks, s->underruns, s->dropped);
 	termgfx_stream_drop_held(s);
 	termgfx_chunk_free(&s->chunk);
+	free(s->dcbuf);
 	free(s->apc);
 	free(s);
 }

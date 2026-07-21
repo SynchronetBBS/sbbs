@@ -50,8 +50,54 @@ int    termgfx_chunk_full(const termgfx_chunk_t *c);
 
 // 1 only when the chunk is FULL and every sample is zero. An empty or partial
 // chunk is never "silent" -- silence is a property the encoder acts on.
+//
+// EXACT zeros, deliberately: a threshold here would silence quiet passages of
+// real music. The case that looks like it wants a threshold -- a source idling
+// at a constant NON-zero level -- is handled where it belongs, by the DC
+// blocker below, which turns that idle back into the exact zeros this tests for.
 int    termgfx_chunk_is_silent(const termgfx_chunk_t *c);
 void   termgfx_chunk_reset(termgfx_chunk_t *c);
+
+// ---- DC blocker ----------------------------------------------------------
+//
+// A one-pole high-pass applied to the source's PCM before it is chunked. This
+// is not tone-shaping -- it is a codec requirement.
+//
+// Ogg/Opus and Vorbis CANNOT REPRESENT DC; the encoder high-passes it away. So
+// a chunk holding a constant level decodes as a decay from that level toward
+// zero, and the next chunk snaps back to it: a step at every chunk boundary,
+// i.e. an impulse train at 1/chunk_ms whose amplitude grows with the offset. At
+// the 50 ms chunks a door streams, that is a ~20 Hz buzz -- heard as a low
+// click or rumble that persists until louder audio masks it.
+//
+// Two doors have now hit this from unrelated sources, which is why the defense
+// lives here at the encoder boundary rather than in either door:
+//
+//   - SyncConquer: an IMA-ADPCM predictor drifting into a growing DC offset
+//     (../syncconquer/PROVENANCE.md patch 8).
+//   - SyncArcade: MAME 2003-Plus drivers whose DAC idles off-zero. Joust sits
+//     at a constant +7710 and Xenophobe at -17536 -- peak-to-peak ZERO, i.e.
+//     silence at the wrong level.
+//
+// Removing the offset also RESTORES THE FREE SILENCE PATH: once the filter
+// settles, an idle source at a constant level reads as exact zeros, and a zero
+// chunk is the cached "<prefix>/z" replay that costs no bytes at all. Before
+// the filter those chunks were encoded and uploaded like real audio.
+//
+// The corner is ~10 Hz -- three decades below anything a game plays, and well
+// under the 20 Hz floor of human hearing, so no audible content is touched.
+typedef struct {
+	double r;            // pole position, derived from the source rate
+	double x[2], y[2];   // per-channel history; index 0 = left
+} termgfx_dcblock_t;
+
+void termgfx_dcblock_init(termgfx_dcblock_t *d, int rate);
+
+// In place over `frames` of INTERLEAVED STEREO (both channels always, whatever
+// the chunk accumulator later keeps). Filtering must see every frame the source
+// produced, in order, or the filter state -- and the offset estimate with it --
+// is wrong.
+void termgfx_dcblock_apply(termgfx_dcblock_t *d, int16_t *pcm, size_t frames);
 
 // ---- the streaming state machine -----------------------------------------
 

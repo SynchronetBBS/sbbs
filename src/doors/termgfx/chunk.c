@@ -11,6 +11,7 @@
 // public contract; it declares this half alongside the state machine.
 #include "audio_stream.h"
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -91,6 +92,59 @@ termgfx_chunk_is_silent(const termgfx_chunk_t *c)
 		if (c->buf[i] != 0)
 			return 0;
 	return 1;
+}
+
+// ---- DC blocker -----------------------------------------------------------
+//
+// The classic one-pole:   y[n] = x[n] - x[n-1] + r * y[n-1]
+//
+// with the pole r just inside the unit circle. Its corner sits at
+// (1 - r) * rate / 2pi, so r = 1 - 2pi * fc / rate places it at fc. See
+// audio_stream.h for WHY this filter is here at all -- it is the encoder's
+// requirement, not a tonal choice.
+#define TERMGFX_DCBLOCK_HZ 10.0
+
+void
+termgfx_dcblock_init(termgfx_dcblock_t *d, int rate)
+{
+	if (rate < 8000)
+		rate = 8000;   // a nonsense rate must not put the pole outside the circle
+	d->r    = 1.0 - (2.0 * 3.14159265358979323846 * TERMGFX_DCBLOCK_HZ / rate);
+	d->x[0] = d->x[1] = 0.0;
+	d->y[0] = d->y[1] = 0.0;
+}
+
+// The state is DOUBLE, not int16: an integer accumulator at this pole rounds
+// its own feedback every sample and settles into a limit cycle -- a low-level
+// buzz replacing the one we came to remove.
+static int16_t
+dcblock_one(termgfx_dcblock_t *d, int ch, int16_t in)
+{
+	double y = (double)in - d->x[ch] + d->r * d->y[ch];
+	double v;
+
+	d->x[ch] = (double)in;
+	d->y[ch] = y;
+
+	v = floor(y + 0.5);
+	if (v > 32767.0)
+		v = 32767.0;
+	else if (v < -32768.0)
+		v = -32768.0;
+	return (int16_t)v;
+}
+
+void
+termgfx_dcblock_apply(termgfx_dcblock_t *d, int16_t *pcm, size_t frames)
+{
+	size_t i;
+
+	if (d == NULL || pcm == NULL)
+		return;
+	for (i = 0; i < frames; i++) {
+		pcm[2 * i]     = dcblock_one(d, 0, pcm[2 * i]);
+		pcm[2 * i + 1] = dcblock_one(d, 1, pcm[2 * i + 1]);
+	}
 }
 
 void

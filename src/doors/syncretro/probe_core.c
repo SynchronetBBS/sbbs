@@ -57,14 +57,15 @@ static struct {
 	const char *system_dir;
 	const char *save_dir;
 	const char *ppm;
-	int         frames;
-	int         accept_rotation;   /* answer env 1 true (door: false) */
-	int         optver;            /* answer env 52 with this (<0: door's false) */
-	int         no_options;        /* answer GET_VARIABLE false: the pre-M5 door */
-	int         coin;              /* frame to insert a coin on; 0 = never */
-	int         thumb;             /* ASCII thumbnail of the last frame */
-	int         quiet_env;         /* tally env calls, don't log each first-time */
-} opt = { NULL, NULL, ".", ".", NULL, 300, 0, -1, 0, 0, 1, 0 };
+	const char *wav;
+	int frames;
+	int accept_rotation;           /* answer env 1 true (door: false) */
+	int optver;                    /* answer env 52 with this (<0: door's false) */
+	int no_options;                /* answer GET_VARIABLE false: the pre-M5 door */
+	int coin;                      /* frame to insert a coin on; 0 = never */
+	int thumb;                     /* ASCII thumbnail of the last frame */
+	int quiet_env;                 /* tally env calls, don't log each first-time */
+} opt = { NULL, NULL, ".", ".", NULL, NULL, 300, 0, -1, 0, 0, 1, 0 };
 
 static void usage(void)
 {
@@ -86,6 +87,8 @@ static void usage(void)
 		"                     A coin before the driver has booted is swallowed --\n"
 		"                     MAME 2003-Plus needs N of several hundred\n"
 		"  -ppm <file>        write the last frame as a binary PPM\n"
+		"  -wav <file>        capture the core's PCM as a 16-bit stereo WAV --\n"
+		"                     what the door would encode and stream\n"
 		"  -no-thumb          suppress the ASCII thumbnail of the last frame\n"
 		"  -quiet-env         only the environment tally, not each first call\n",
 		stderr);
@@ -104,7 +107,7 @@ static void usage(void)
 typedef struct {
 	unsigned cmd;
 	unsigned long count;
-	int      answered;
+	int answered;
 } env_tally_t;
 
 #define MAX_TALLY 128
@@ -203,21 +206,31 @@ static int env_seen(unsigned cmd, int answered)
  * ------------------------------------------------------------------------ */
 
 static struct {
-	int           pixfmt;            /* RETRO_PIXEL_FORMAT_*; -1 = never set */
-	int           rotation;          /* quarter-turns CCW the core asked for; -1 none */
-	int           rotation_frame;    /* the frame it asked on (-1 = before run) */
-	int           can_dupe_asked;
+	int pixfmt;                      /* RETRO_PIXEL_FORMAT_*; -1 = never set */
+	int rotation;                    /* quarter-turns CCW the core asked for; -1 none */
+	int rotation_frame;              /* the frame it asked on (-1 = before run) */
+	int can_dupe_asked;
 	unsigned long dupe_frames;       /* video_refresh with data == NULL */
 	unsigned long video_frames;
 	unsigned long audio_frames;      /* sample FRAMES (a stereo pair is one) */
-	int           av_reset;          /* SET_SYSTEM_AV_INFO / SET_GEOMETRY count */
-	unsigned      new_w, new_h;      /* what it tried to change them TO */
-	float         new_aspect;
-	double        new_fps, new_rate;
-	unsigned      w, h;              /* last frame */
-	uint8_t *     rgb;               /* last frame as RGB24, w*h*3 */
-	size_t        rgb_cap;
-} obs = { -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0, 0.0, 0, 0, NULL, 0 };
+	int av_reset;                    /* SET_SYSTEM_AV_INFO / SET_GEOMETRY count */
+	unsigned new_w, new_h;           /* what it tried to change them TO */
+	float new_aspect;
+	double new_fps, new_rate;
+	unsigned w, h;                   /* last frame */
+	uint8_t * rgb;                   /* last frame as RGB24, w*h*3 */
+	size_t rgb_cap;
+	/* Audio LEVEL, not just the frame count. "Is this game silent?" has three
+	 * different answers -- digital silence, a constant non-zero DC level, and
+	 * real quiet sound -- which sound identical in a frame count and do NOT
+	 * behave identically once chunked and encoded. See the audio report. */
+	double audio_sum_l, audio_sum_r;          /* running sums -> the DC mean */
+	int audio_min, audio_max;                 /* peak excursion, both channels */
+	unsigned long audio_zero;                 /* frames with l == 0 && r == 0 */
+	FILE * wav;                               /* -wav capture, or NULL */
+	unsigned long wav_frames;
+} obs = { -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0.0f, 0.0, 0.0, 0, 0, NULL, 0,
+	      0.0, 0.0, 32767, -32768, 0, NULL, 0 };
 
 /* Distinct geometries, in the order first seen -- a core that resizes mid-run
  * (arcade cores do, between service mode / attract / play) makes the ONE
@@ -531,11 +544,11 @@ static void px_rgb(const uint8_t *p, int fmt, uint8_t *out)
 	if (fmt == RETRO_PIXEL_FORMAT_RGB565) {
 		out[0] = (uint8_t)(((v >> 11) & 0x1f) * 255 / 31);
 		out[1] = (uint8_t)(((v >>  5) & 0x3f) * 255 / 63);
-		out[2] = (uint8_t)(( v        & 0x1f) * 255 / 31);
+		out[2] = (uint8_t)((v        & 0x1f) * 255 / 31);
 	} else {                                          /* 0RGB1555, the default */
 		out[0] = (uint8_t)(((v >> 10) & 0x1f) * 255 / 31);
 		out[1] = (uint8_t)(((v >>  5) & 0x1f) * 255 / 31);
-		out[2] = (uint8_t)(( v        & 0x1f) * 255 / 31);
+		out[2] = (uint8_t)((v        & 0x1f) * 255 / 31);
 	}
 }
 
@@ -573,17 +586,104 @@ static void probe_video(const void *data, unsigned w, unsigned h, size_t pitch)
 
 /* --- audio ---------------------------------------------------------------- */
 
+/* Little-endian stores: a WAV is LE regardless of the host, and the int16
+ * samples libretro hands us are host-endian. Writing them byte-wise keeps the
+ * capture correct on a big-endian host instead of accidentally byte-swapped. */
+static void put16le(uint8_t *p, unsigned v)
+{
+	p[0] = (uint8_t)(v & 0xff);
+	p[1] = (uint8_t)((v >> 8) & 0xff);
+}
+
+static void put32le(uint8_t *p, unsigned long v)
+{
+	p[0] = (uint8_t)(v & 0xff);
+	p[1] = (uint8_t)((v >> 8) & 0xff);
+	p[2] = (uint8_t)((v >> 16) & 0xff);
+	p[3] = (uint8_t)((v >> 24) & 0xff);
+}
+
+/* 44-byte canonical WAV header: 16-bit stereo PCM at `rate`. */
+static void wav_header(uint8_t *h, unsigned long rate, unsigned long data_bytes)
+{
+	memcpy(h, "RIFF", 4);
+	put32le(h + 4, 36 + data_bytes);
+	memcpy(h + 8, "WAVEfmt ", 8);
+	put32le(h + 16, 16);            /* fmt chunk size */
+	put16le(h + 20, 1);             /* PCM */
+	put16le(h + 22, 2);             /* channels */
+	put32le(h + 24, rate);
+	put32le(h + 28, rate * 4);      /* byte rate: rate * channels * 2 */
+	put16le(h + 32, 4);             /* block align */
+	put16le(h + 34, 16);            /* bits per sample */
+	memcpy(h + 36, "data", 4);
+	put32le(h + 40, data_bytes);
+}
+
+static void wav_open(const char *path, unsigned long rate)
+{
+	uint8_t h[44];
+
+	obs.wav = fopen(path, "wb");
+	if (obs.wav == NULL) {
+		fprintf(stderr, "probe_core: cannot write '%s'\n", path);
+		return;
+	}
+	wav_header(h, rate, 0);
+	fwrite(h, 1, sizeof h, obs.wav);
+}
+
+static void wav_close(unsigned long rate)
+{
+	uint8_t h[44];
+
+	if (obs.wav == NULL)
+		return;
+	wav_header(h, rate, obs.wav_frames * 4);
+	if (fseek(obs.wav, 0, SEEK_SET) == 0)
+		fwrite(h, 1, sizeof h, obs.wav);
+	fclose(obs.wav);
+	obs.wav = NULL;
+}
+
+/* Every frame goes through here, from either callback. */
+static void audio_tally(int16_t l, int16_t r)
+{
+	obs.audio_frames++;
+	obs.audio_sum_l += l;
+	obs.audio_sum_r += r;
+	if (l < obs.audio_min)
+		obs.audio_min = l;
+	if (r < obs.audio_min)
+		obs.audio_min = r;
+	if (l > obs.audio_max)
+		obs.audio_max = l;
+	if (r > obs.audio_max)
+		obs.audio_max = r;
+	if (l == 0 && r == 0)
+		obs.audio_zero++;
+
+	if (obs.wav != NULL) {
+		uint8_t s[4];
+
+		put16le(s, (unsigned)(uint16_t)l);
+		put16le(s + 2, (unsigned)(uint16_t)r);
+		fwrite(s, 1, sizeof s, obs.wav);
+		obs.wav_frames++;
+	}
+}
+
 static void probe_audio_sample(int16_t l, int16_t r)
 {
-	(void)l;
-	(void)r;
-	obs.audio_frames++;
+	audio_tally(l, r);
 }
 
 static size_t probe_audio_batch(const int16_t *data, size_t frames)
 {
-	(void)data;
-	obs.audio_frames += frames;
+	size_t i;
+
+	for (i = 0; i < frames; i++)
+		audio_tally(data[i * 2], data[i * 2 + 1]);
 	return frames;
 }
 
@@ -751,6 +851,8 @@ static int parse_args(int argc, char **argv)
 			opt.save_dir = argv[++i];
 		} else if (strcmp(a, "-ppm") == 0 && i + 1 < argc) {
 			opt.ppm = argv[++i];
+		} else if (strcmp(a, "-wav") == 0 && i + 1 < argc) {
+			opt.wav = argv[++i];
 		} else if (strcmp(a, "-optver") == 0 && i + 1 < argc) {
 			opt.optver = atoi(argv[++i]);
 		} else if (strcmp(a, "-no-options") == 0) {
@@ -829,6 +931,9 @@ int main(int argc, char **argv)
 	printf("  sample_rate      %.1f\n", c.av.timing.sample_rate);
 	printf("  pixel format     %s\n", pixfmt_name(obs.pixfmt));
 
+	if (opt.wav != NULL)
+		wav_open(opt.wav, (unsigned long)c.av.timing.sample_rate);
+
 	printf("\n-- run %d frames -----------------------------------------------\n",
 	       opt.frames);
 	for (i = 0; i < opt.frames; i++)
@@ -841,6 +946,26 @@ int main(int argc, char **argv)
 	       obs.audio_frames,
 	       obs.video_frames ? (double)obs.audio_frames / obs.video_frames : 0.0,
 	       c.av.timing.fps > 0 ? c.av.timing.sample_rate / c.av.timing.fps : 0.0);
+	/* The level, not just the count. A game that "makes no sound yet" can be
+	 * emitting digital silence (zero bytes on the wire: the door replays a
+	 * cached silent chunk) or a constant non-zero DC level (NOT silence: every
+	 * chunk is encoded and sent, and each chunk boundary is a step). Those two
+	 * are indistinguishable in a frame count and audibly different in a door. */
+	if (obs.audio_frames) {
+		double n = (double)obs.audio_frames;
+
+		printf("  audio level      DC mean %.1f / %.1f (L/R), peak %d..%d,\n"
+		       "                   %lu of %lu frames digitally silent (%.1f%%)%s\n",
+		       obs.audio_sum_l / n, obs.audio_sum_r / n,
+		       obs.audio_min, obs.audio_max,
+		       obs.audio_zero, obs.audio_frames,
+		       100.0 * (double)obs.audio_zero / n,
+		       obs.audio_zero == obs.audio_frames ? "   <- all silence" : "");
+	}
+	if (obs.wav != NULL) {
+		wav_close((unsigned long)c.av.timing.sample_rate);
+		printf("  wrote %s (%lu frames, 16-bit stereo)\n", opt.wav, obs.wav_frames);
+	}
 	printf("  geometries seen  %d\n", g_ngeom);
 	for (i = 0; i < g_ngeom; i++) {
 		printf("    %ux%u pitch %lu, from frame %lu%s\n",

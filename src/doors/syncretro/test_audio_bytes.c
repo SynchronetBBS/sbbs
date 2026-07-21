@@ -102,7 +102,7 @@ size_t sr_io_out_backlog(void)
 #define MAX_RECORDS 512
 static struct {
 	uint8_t *data;
-	size_t   len;
+	size_t len;
 } g_rec[MAX_RECORDS];
 static int g_rec_n;
 
@@ -153,14 +153,14 @@ static void print_record(FILE *out, int idx, const uint8_t *data, size_t len)
 {
 	static const char prefix[] = "\x1b_SyncTERM:";
 	static const char suffix[] = "\x1b\\";
-	size_t             plen    = sizeof prefix - 1;
-	size_t             slen    = sizeof suffix - 1;
-	char *             body;
-	char *             body_orig;
-	size_t             blen;
-	char *             toks[8];
-	int                ntok;
-	char *             tok;
+	size_t            plen    = sizeof prefix - 1;
+	size_t            slen    = sizeof suffix - 1;
+	char *            body;
+	char *            body_orig;
+	size_t            blen;
+	char *            toks[8];
+	int               ntok;
+	char *            tok;
 
 	if (len < plen + slen ||
 	    memcmp(data, prefix, plen) != 0 ||
@@ -267,9 +267,24 @@ static void run_scenario(void)
 	 * chunks 4-5 close in steady-state RUN and send immediately. */
 	feed_ramp(FRAMES_PER_CHUNK * 5, &phase);
 
-	/* 4: one full chunk of pure zeros -- the cached-silence path (s/z was
-	 * uploaded once in step 2): Load+Queue+Update, no C;S. */
-	feed_zeros(FRAMES_PER_CHUNK);
+	/* 4: pure zeros -- the cached-silence path (s/z was uploaded once in
+	 * step 2): Load+Queue+Update, no C;S.
+	 *
+	 * TWO chunks, not one, and the first of them is NOT free. termgfx's DC
+	 * blocker sits ahead of the accumulator, so when a signal stops the
+	 * filter's output decays toward zero over ~180 ms rather than dropping
+	 * to it -- the tail of the ramp bleeds into the first silent chunk and
+	 * that chunk still encodes. The SECOND one is all zeros and takes the
+	 * cached path. That is the real shape of a source going quiet, and
+	 * pinning only the settled half of it would hide the cost.
+	 *
+	 * The ramp ends near full scale, so the decay to EXACTLY zero takes
+	 * ~170 ms -- two of these 100 ms chunks -- and the third is the free
+	 * one. Chunk sizes differ per door (SyncArcade streams 50 ms), so it is
+	 * the DURATION that is fixed here, not the chunk count. */
+	feed_zeros(FRAMES_PER_CHUNK);   /* decaying: encodes */
+	feed_zeros(FRAMES_PER_CHUNK);   /* still decaying: encodes */
+	feed_zeros(FRAMES_PER_CHUNK);   /* settled: Load s/z, no C;S */
 
 	/* 5: an injected underrun re-primes rather than resuming RUN. The very
 	 * next chunk closed is HELD (no APC at all for it) instead of being
