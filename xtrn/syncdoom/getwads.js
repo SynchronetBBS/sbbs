@@ -23,9 +23,9 @@
 // If a download fails or fails that check, exec/load/xtrn_mirror.js retries
 // against Synchronet's asset mirror before giving up.
 //
-// Downloads stream straight to disk (HTTPRequest.Download in load/http.js), so
-// the ~24 MB / ~11 MB archives are never buffered in memory. SpiderMonkey
-// 1.8.5-compatible (no modern ES).
+// Downloads stream straight to disk (xtrn_mirror_download() over
+// HTTPRequest.Download), so the ~24 MB / ~11 MB archives are never buffered in
+// memory. SpiderMonkey 1.8.5-compatible (no modern ES).
 //
 // Copyright(C) 2026 Rob Swindell / syncdoom. GPL-2.0.
 

@@ -15,9 +15,9 @@
 // left alone, so re-running it does nothing. A download/extract failure is
 // reported but non-fatal -- the sysop can always drop the MIX files in by hand.
 //
-// The download streams straight to disk (HTTPRequest.Download in load/http.js)
-// and the checksum is computed streaming (File.sha1_hex), so the ~556 MB image
-// is never buffered in memory. Synchronet's Archive object (libarchive) reads
+// The download streams straight to disk (xtrn_mirror_download() over
+// HTTPRequest.Download) and the checksum is computed streaming (File.sha1_hex),
+// so the ~556 MB image is never buffered in memory. Synchronet's Archive object (libarchive) reads
 // ISO9660 directly, so no bsdtar/mount is needed and this works on Windows too.
 // SpiderMonkey 1.8.5-compatible (no modern ES).
 //
