@@ -76,9 +76,27 @@ size_t sixel_encode_aspect(uint8_t **buf, size_t *cap, const uint8_t *idx, int w
 	ob_putc(&o, '"'); ob_putn(&o, pan); ob_putc(&o, ';'); ob_putn(&o, pad);
 	ob_putc(&o, ';'); ob_putn(&o, w); ob_putc(&o, ';'); ob_putn(&o, h);
 
-	// --- palette: registers map 1:1 to indices; (re)define only when asked ---
-	if (emit_palette) {
+	// --- palette: registers map 1:1 to indices; define per emit_palette mode.
+	// SIXEL_PAL_USED emits only the registers this image references (a whole-
+	// image scan), at their original index -- so the band data below, which
+	// references original indices, needs no change and the numbering matches
+	// FULL exactly. Every referenced index is in `used[]` by construction, so
+	// a register-resetting terminal always has every color it draws with. ---
+	if (emit_palette != SIXEL_PAL_NONE) {
+		uint8_t used[256];
+
+		if (emit_palette == SIXEL_PAL_USED) {
+			long i, npx = (long)w * (long)h;
+
+			memset(used, 0, sizeof(used));
+			for (i = 0; i < npx; i++)
+				used[idx[i]] = 1;
+		} else {
+			memset(used, 1, sizeof(used));   // SIXEL_PAL_FULL: all 256
+		}
 		for (c = 0; c < 256; c++) {
+			if (!used[c])
+				continue;
 			ob_putc(&o, '#'); ob_putn(&o, c); ob_put(&o, ";2;");
 			ob_putn(&o, (pal[c * 3 + 0] * 100 + 127) / 255); ob_putc(&o, ';');   // 0..100%
 			ob_putn(&o, (pal[c * 3 + 1] * 100 + 127) / 255); ob_putc(&o, ';');

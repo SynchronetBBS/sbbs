@@ -30,7 +30,7 @@ Doom, …) links termgfx and supplies only its engine glue.
 
 | File | Provides | Purpose |
 |------|----------|---------|
-| `sixel.{c,h}` | `sixel_encode`, `sixel_encode_aspect` | Indexed **DECSIXEL** encoder. Color registers map 1:1 to palette indices; the palette is (re)emitted only when it changes. `*_aspect` adds a pan/pad pixel-aspect so a half-size sixel can be scaled up by the terminal. |
+| `sixel.{c,h}` | `sixel_encode`, `sixel_encode_aspect` | Indexed **DECSIXEL** encoder. Color registers map 1:1 to palette indices. The palette is emitted per image in one of three modes: not at all (reuse a persistent terminal's registers), all 256, or — for register-resetting terminals — only the registers the image actually uses, so a small dirty box carries a few hundred palette bytes instead of ~4 KB. `*_aspect` adds a pan/pad pixel-aspect so a half-size sixel can be scaled up by the terminal. |
 | `jxl.{c,h}` | `termgfx_jxl_encode` | **JPEG XL** encoder (RGB888 → codestream) via libjxl, behind `#ifdef WITH_JXL` (else a return-0 stub). Lossy, low-latency settings for game frames. |
 | `apc.{c,h}` | `termgfx_apc_image` | **SyncTERM APC cached-image transport.** Builds the `C;S` *Store* (base64 payload) + `C;Draw{JXL,PPM}` *Draw* escape sequence that caches an image and blits it. |
 | `caps.{c,h}` | `termgfx_query_jxl`, `termgfx_caps_parse_jxl` | **Capability cap-probe.** The `Q;JXL` query string + an I/O-free scanner for the reply, so a door learns whether the terminal can decode JXL. |

@@ -4,14 +4,27 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// emit_palette mode for sixel_encode()/sixel_encode_aspect(). NONE/FULL are
+// the legacy 0/1: NONE emits no register definitions (reuse the terminal's
+// persisted registers -- SyncTERM dirty boxes); FULL (re)defines all 256
+// (persistent-terminal full frames, so later palette-less boxes can rely on
+// them). USED (re)defines ONLY the registers this image references, at their
+// original index -- for register-resetting terminals (xterm/foot/WT), where
+// every image must self-describe its palette and all 256 is wasted bytes.
+// Never pass USED where a later palette-less image will reuse these registers.
+#define SIXEL_PAL_NONE 0
+#define SIXEL_PAL_FULL 1
+#define SIXEL_PAL_USED 2
+
 // Encode a w*h PALETTED image as a complete DECSIXEL sequence. `idx` is w*h
 // palette indices (0-255); `pal` is 256 RGB triples (768 bytes) giving each
 // index's color. Sixel color registers map 1:1 to indices (register N == Doom
 // palette index N), so the palette is identical frame to frame.
 //
-// `emit_palette` controls whether the 256 register definitions are written: pass
-// nonzero on the first frame and whenever the palette actually changes (Doom only
-// swaps it for damage/pickup/radsuit/menu tints); pass zero otherwise, so the
+// `emit_palette` selects which register definitions are written
+// (`SIXEL_PAL_NONE`/`FULL`/`USED`): pass `SIXEL_PAL_FULL` on the first frame
+// and whenever the palette actually changes (Doom only swaps it for
+// damage/pickup/radsuit/menu tints); pass zero otherwise, so the
 // frame carries raster + band data ONLY and reuses the registers the terminal
 // still holds from the previous image. That avoids re-sending ~4KB of palette
 // every frame (and keeps the per-frame sixel string smaller and stable).
