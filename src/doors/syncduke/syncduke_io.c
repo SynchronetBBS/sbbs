@@ -1249,8 +1249,11 @@ void syncduke_present(void)
 	 * (re)definition when (re)entering the sixel tier from another tier: jxl/text never
 	 * define the registers, and a session that started in jxl has none -- so the first sixel
 	 * frame would reference undefined registers and render BLACK on SyncTERM. */
-	emit_pal = pal_dirty || !syncduke_is_syncterm()
-	           || (syncduke_last_tier != SD_SIXEL && syncduke_last_tier != SD_SIXEL_FULL);
+	emit_pal = (pal_dirty
+	            || (syncduke_last_tier != SD_SIXEL && syncduke_last_tier != SD_SIXEL_FULL))
+	           ? SIXEL_PAL_FULL : SIXEL_PAL_NONE;
+	if (!syncduke_is_syncterm())
+		emit_pal = SIXEL_PAL_USED;
 
 	if (sd_is_text_tier(tier)) {
 		/* text/block tier: the renderer positions each cell absolutely and cell-diffs

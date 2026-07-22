@@ -816,7 +816,11 @@ static void emit_frame_sixel(int w, int h)
 	// between images -- omitting the palette there leaves later frames referencing
 	// undefined registers (wrong/default colors). So only SyncTERM gets define-once;
 	// elsewhere re-send the palette every frame (it's now the same stable 1:1 set).
-	int emit_pal = !g_is_syncterm || (g_sx_pal_seq != sd_palette_seq);
+	/* SyncTERM: FULL only when the palette sequence advanced, else NONE.
+	 * Non-SyncTERM resets per image -> self-describe with the used subset. */
+	int emit_pal = (g_sx_pal_seq != sd_palette_seq) ? SIXEL_PAL_FULL : SIXEL_PAL_NONE;
+	if (!g_is_syncterm)
+		emit_pal = SIXEL_PAL_USED;
 	// Client-side scaling (like SyncDuke): encode at 1/scale of the display size and
 	// let the terminal scale it back up via the "pan;pad raster aspect.  SyncTERM does
 	// the integer nearest-neighbor double (pad=2) -> ~1/4 the sixel bytes, and it's

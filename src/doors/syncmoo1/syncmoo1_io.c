@@ -951,7 +951,9 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
      *
      * Unknown terminal (no probe reply yet) counts as not-SyncTERM: a few early
      * frames then carry a redundant palette, which is never WRONG. */
-    emit_pal = pal_changed || !sm_input_is_syncterm();
+    emit_pal = pal_changed ? SIXEL_PAL_FULL : SIXEL_PAL_NONE;
+    if (!sm_input_is_syncterm())
+        emit_pal = SIXEL_PAL_USED;
 
     /* Geometry changed since the last frame we SENT -- a probe reply narrowed
      * the canvas/grid, or the terminal was resized. The previous frame was
