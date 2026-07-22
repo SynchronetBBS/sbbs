@@ -24,6 +24,7 @@
 // Copyright(C) 2026 Rob Swindell / syncalert. GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
 
 // The RA95 freeware CD1 image. SHA-1 rather than SHA-256 because SHA-1 is what
 // Synchronet's JS File object can compute (File.sha1_hex, streamed).
@@ -104,6 +105,7 @@ function main()
 	var iso = door_dir() + ISO_FILE;
 	var part = iso + ".part";
 	var ok = false;
+	var verified = false;   // set when the fresh download was already checked
 
 	try {
 		if (file_exists(iso)) {
@@ -112,11 +114,16 @@ function main()
 			print("  downloading the RA95 freeware CD image (~556 MB) from "
 			    + ISO_URL + " ...");
 			print("  (this will take a while)");
-			var req = new HTTPRequest();
-			req.follow_redirects = 5;   // archive.org redirects to a storage node
-			var n = req.Download(ISO_URL, part);
-			if (req.response_code != 200) {
-				print("  ! download failed: HTTP " + req.response_code);
+			// Verified here, before the rename, so a corrupt or truncated
+			// transfer falls back to the Synchronet mirror instead of
+			// landing a bad image. `name` is required: the mirror keeps
+			// this under ISO_FILE, not the URL's own basename.
+			var n = xtrn_mirror_download(ISO_URL, part, {
+				name:   ISO_FILE,
+				verify: function(p) { return sha1_of(p) == ISO_SHA1; }
+			});
+			if (!n) {
+				print("  ! could not fetch the game data");
 				return 1;
 			}
 			// Only name it ISO_FILE once it's complete, so an interrupted
@@ -125,16 +132,19 @@ function main()
 				print("  ! could not rename " + part + " to " + iso);
 				return 1;
 			}
-			print("  downloaded " + n + " bytes");
+			print("  downloaded " + n + " bytes; checksum verified");
+			verified = true;
 		}
 
-		print("  verifying checksum ...");
-		var hash = sha1_of(iso);
-		if (hash != ISO_SHA1) {
-			print("  ! checksum mismatch (got " + hash + ", expected " + ISO_SHA1
-			    + ") -- refusing to use " + ISO_FILE);
-			print("  ! delete " + iso + " and re-run to download it again");
-			return 1;
+		if (!verified) {
+			print("  verifying checksum ...");
+			var hash = sha1_of(iso);
+			if (hash != ISO_SHA1) {
+				print("  ! checksum mismatch (got " + hash + ", expected " + ISO_SHA1
+				    + ") -- refusing to use " + ISO_FILE);
+				print("  ! delete " + iso + " and re-run to download it again");
+				return 1;
+			}
 		}
 
 		print("  extracting the MIX archives ...");
@@ -178,4 +188,5 @@ function main()
 	return ok ? 0 : 1;
 }
 
-exit(main());
+if (typeof SYNCALERT_FETCH_ASSETS_NO_MAIN == "undefined")
+	exit(main());

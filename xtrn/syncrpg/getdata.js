@@ -50,6 +50,7 @@
 // Copyright (C) 2026 Rob Swindell / syncrpg.  GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
 load("sha256.js");
 
 // rmarchiv.de "Yume Nikki -- English 0.10a (Steam)": page + download id.
@@ -57,6 +58,7 @@ var LANDING_URL = "https://rmarchiv.de/games/1089";
 var DOWNLOAD_ID = "4174";
 
 // Pinned sha256 of that exact release's zip (~79 MB), independently verified.
+var ZIP = "yumenikki-0.10a-steam.zip";
 var EXPECT_SHA256 = "82af2204e2bb39597ac2454d53fc15b2651ea8ec8a5c7258c1ea45ac98e2124d";
 
 // The archive's own top-level folder + the file EasyRPG/liblcf need to find
@@ -112,34 +114,27 @@ function main()
 	}
 	print("  " + url);
 
-	var tmp = backslash(system.temp_dir) + "yumenikki-0.10a-steam.zip";
+	var tmp = backslash(system.temp_dir) + ZIP;
 	print("downloading ...");
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;
-	var n = 0;
-	try {
-		n = req.Download(url, tmp);
-	} catch (e) {
-		print("  ! download failed: " + e);
+	// The mirror name must be given explicitly: this URL ends in a per-request
+	// token (games/download/<id>/<token>), so its basename is not a filename.
+	var n = xtrn_mirror_download(url, tmp, {
+		name: ZIP,
+		verify: function(p) {
+			var got = sha256_of_file(p);
+			if (got == EXPECT_SHA256)
+				return true;
+			print("  ! sha256 MISMATCH -- refusing to extract");
+			print("    expected: " + EXPECT_SHA256);
+			print("    got:      " + got);
+			return false;
+		}
+	});
+	if (!n) {
+		print("  ! could not fetch " + ZIP);
 		return 1;
 	}
-	if (req.response_code != 200 || !n) {
-		print("  ! download failed: HTTP " + req.response_code);
-		if (file_exists(tmp))
-			file_remove(tmp);
-		return 1;
-	}
-	print("  downloaded " + n + " bytes; verifying sha256 ...");
-
-	var got = sha256_of_file(tmp);
-	if (got != EXPECT_SHA256) {
-		print("  ! sha256 MISMATCH -- refusing to extract");
-		print("    expected: " + EXPECT_SHA256);
-		print("    got:      " + got);
-		file_remove(tmp);
-		return 1;
-	}
-	print("  sha256 verified (" + got + ")");
+	print("  downloaded " + n + " bytes; sha256 verified");
 
 	print("  extracting into " + root + " ...");
 	try {

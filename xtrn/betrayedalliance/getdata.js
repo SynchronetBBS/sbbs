@@ -42,6 +42,7 @@
 // GPL-2.0. The game data it downloads is Ryan Slattery's, MIT-licensed.
 
 load("http.js");
+load("xtrn_mirror.js");
 load("sha256.js");
 
 // The one pinned download -- the author's own GitHub release asset.
@@ -73,37 +74,30 @@ function main()
 
 	var tmp = backslash(system.temp_dir) + GAME.zip;
 	print(GAME.label + ": downloading from the author's GitHub release ...");
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;   // GitHub redirects release assets to its CDN
-	var n = 0;
-	try {
-		n = req.Download(GAME.url, tmp);
-	} catch (e) {
-		print("  ! download failed: " + e);
-		return 1;
-	}
-	if (req.response_code != 200 || !n) {
-		print("  ! download failed: HTTP " + req.response_code);
-		if (file_exists(tmp))
-			file_remove(tmp);
-		return 1;
-	}
+	var n = xtrn_mirror_download(GAME.url, tmp, {
+		verify: function(p) {
+			var got_size = file_size(p);
+			var got;
 
-	var got_size = file_size(tmp);
-	if (got_size != GAME.size) {
-		print("  ! size MISMATCH: expected " + GAME.size + ", got " + got_size);
-		file_remove(tmp);
+			if (got_size != GAME.size) {
+				print("  ! size MISMATCH: expected " + GAME.size
+				    + ", got " + got_size);
+				return false;
+			}
+			got = sha256_of_file(p);
+			if (got == GAME.sha256)
+				return true;
+			print("  ! sha256 MISMATCH");
+			print("    expected: " + GAME.sha256);
+			print("    got:      " + got);
+			return false;
+		}
+	});
+	if (!n) {
+		print("  ! could not fetch " + GAME.zip);
 		return 1;
 	}
-	var got = sha256_of_file(tmp);
-	if (got != GAME.sha256) {
-		print("  ! sha256 MISMATCH");
-		print("    expected: " + GAME.sha256);
-		print("    got:      " + got);
-		file_remove(tmp);
-		return 1;
-	}
-	print("  downloaded " + n + " bytes; sha256 verified (" + got + ")");
+	print("  downloaded " + n + " bytes; size + sha256 verified");
 
 	// Extract ONLY the SCI resources + the MIT license, recursing into the
 	// zip's top-level folder and flattening it away (with_path=false). The

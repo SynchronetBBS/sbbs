@@ -67,6 +67,7 @@ var MIXES = [
 ];
 
 load("http.js");
+load("xtrn_mirror.js");
 
 // The door's directory (where the binary and this script live). js.exec_dir is
 // the running SCRIPT's own directory (xtrn/syncdawn), whether launched by the
@@ -130,6 +131,7 @@ function main()
 	var img  = door_dir() + IMAGE_FILE;
 	var part = img + ".part";
 	var ok = false;
+	var verified = false;   // set when the fresh download was already checked
 
 	try {
 		if (file_exists(img)) {
@@ -137,29 +139,37 @@ function main()
 		} else {
 			print("  downloading the freeware Tiberian Dawn game data from "
 			    + IMAGE_URL + " ...");
-			var req = new HTTPRequest();
-			req.follow_redirects = 5;   // archive.org redirects to a storage node
-			var n = req.Download(IMAGE_URL, part);
-			if (req.response_code != 200) {
-				print("  ! download failed: HTTP " + req.response_code);
+			// Verified here, before the rename, so a corrupt or truncated
+			// transfer falls back to the Synchronet mirror instead of
+			// landing a bad image. `name` is required: the mirror keeps
+			// this under IMAGE_FILE, not the URL's own basename.
+			var n = xtrn_mirror_download(IMAGE_URL, part, {
+				name:   IMAGE_FILE,
+				verify: function(p) { return sha1_of(p) == IMAGE_SHA1; }
+			});
+			if (!n) {
+				print("  ! could not fetch the game data");
 				return 1;
 			}
-			// Only name it IMAGE_FILE once complete, so an interrupted download
-			// is never mistaken for a reusable image on the next run.
+			// Only name it IMAGE_FILE once it's complete, so an interrupted
+			// download is never mistaken for a reusable image on the next run.
 			if (!file_rename(part, img)) {
 				print("  ! could not rename " + part + " to " + img);
 				return 1;
 			}
-			print("  downloaded " + n + " bytes");
+			print("  downloaded " + n + " bytes; checksum verified");
+			verified = true;
 		}
 
-		print("  verifying checksum ...");
-		var hash = sha1_of(img);
-		if (hash != IMAGE_SHA1) {
-			print("  ! checksum mismatch (got " + hash + ", expected " + IMAGE_SHA1
-			    + ") -- refusing to use " + IMAGE_FILE);
-			print("  ! delete " + img + " and re-run to download it again");
-			return 1;
+		if (!verified) {
+			print("  verifying checksum ...");
+			var hash = sha1_of(img);
+			if (hash != IMAGE_SHA1) {
+				print("  ! checksum mismatch (got " + hash + ", expected " + IMAGE_SHA1
+				    + ") -- refusing to use " + IMAGE_FILE);
+				print("  ! delete " + img + " and re-run to download it again");
+				return 1;
+			}
 		}
 
 		print("  extracting the MIX archives ...");
@@ -207,4 +217,5 @@ function main()
 	return ok ? 0 : 1;
 }
 
-exit(main());
+if (typeof SYNCDAWN_FETCH_ASSETS_NO_MAIN == "undefined")
+	exit(main());
