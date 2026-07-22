@@ -287,6 +287,7 @@ set(SOURCE
 	conn_telnet.c
 	fonts.c
 	modem.c
+	pixel_image.c
 	rip_icons.c
 	ripper.c
 	rlogin.c
