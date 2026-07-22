@@ -55,6 +55,7 @@
 
 load("http.js");
 load("xtrn_mirror.js");
+load("sha256.js");
 
 var BASE = "https://downloads.scummvm.org/frs/extras/Beneath%20a%20Steel%20Sky";
 
@@ -76,40 +77,6 @@ function door_dir()
 {
 	var d = js.exec_dir || js.startup_dir || "./";
 	return backslash(d);   // ensure a trailing path separator
-}
-
-// Hex-encode a raw byte string (e.g. CryptContext.hashvalue).
-function hexify(s)
-{
-	var out = "", i, c;
-	for (i = 0; i < s.length; i++) {
-		c = s.charCodeAt(i) & 0xff;
-		out += (c < 16 ? "0" : "") + c.toString(16);
-	}
-	return out;
-}
-
-// SHA-256 of a file's contents, streamed in chunks (never buffers the whole
-// file twice). CryptContext(CryptContext.ALGO.SHA2) defaults to 256-bit
-// output; File.read() returns a byte-per-char string (each charCodeAt() is
-// the raw 0-255 byte value), which round-trips losslessly through
-// CryptContext.encrypt() -- including bytes with the high bit set and
-// embedded NULs.
-function sha256_of_file(path)
-{
-	var f = new File(path);
-	if (!f.open("rb"))
-		throw new Error("cannot open " + path + " for hashing");
-	var cc = new CryptContext(CryptContext.ALGO.SHA2);
-	var chunk;
-	try {
-		while ((chunk = f.read(65536)) != null && chunk.length > 0)
-			cc.encrypt(chunk);
-	} finally {
-		f.close();
-	}
-	cc.encrypt("");   // empty final call: finalizes the hash (cryptlib convention)
-	return hexify(cc.hashvalue);
 }
 
 // Fetch and unpack one build.  Returns true on success (including "already

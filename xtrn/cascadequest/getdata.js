@@ -40,6 +40,7 @@
 // GPL-2.0. The game data it downloads is Phil Fortier's, not ours.
 
 load("http.js");
+load("sha256.js");
 
 // The one pinned download.  url is the author-community host; sha256 + size
 // are verified after download; marker (resource.map, the SCI resource index)
@@ -57,36 +58,6 @@ function door_dir()
 {
 	var d = js.exec_dir || js.startup_dir || "./";
 	return backslash(d);
-}
-
-function hexify(s)
-{
-	var out = "", i, c;
-	for (i = 0; i < s.length; i++) {
-		c = s.charCodeAt(i) & 0xff;
-		out += (c < 16 ? "0" : "") + c.toString(16);
-	}
-	return out;
-}
-
-// SHA-256 of a file, streamed in chunks. File.read() is byte-preserving and
-// round-trips losslessly through CryptContext.encrypt(); the SHA2 context
-// defaults to 256-bit output.
-function sha256_of_file(path)
-{
-	var f = new File(path);
-	if (!f.open("rb"))
-		throw new Error("cannot open " + path + " for hashing");
-	var cc = new CryptContext(CryptContext.ALGO.SHA2);
-	var chunk;
-	try {
-		while ((chunk = f.read(65536)) != null && chunk.length > 0)
-			cc.encrypt(chunk);
-	} finally {
-		f.close();
-	}
-	cc.encrypt("");   // finalize (cryptlib convention)
-	return hexify(cc.hashvalue);
 }
 
 function main()

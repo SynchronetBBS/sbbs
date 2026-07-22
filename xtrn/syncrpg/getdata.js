@@ -50,6 +50,7 @@
 // Copyright (C) 2026 Rob Swindell / syncrpg.  GPL-2.0.
 
 load("http.js");
+load("sha256.js");
 
 // rmarchiv.de "Yume Nikki -- English 0.10a (Steam)": page + download id.
 var LANDING_URL = "https://rmarchiv.de/games/1089";
@@ -69,38 +70,6 @@ function pkg_dir()
 {
 	var d = js.exec_dir || js.startup_dir || "./";
 	return backslash(d);
-}
-
-// Hex-encode a raw byte string (e.g. CryptContext.hashvalue).
-function hexify(s)
-{
-	var out = "", i, c;
-	for (i = 0; i < s.length; i++) {
-		c = s.charCodeAt(i) & 0xff;
-		out += (c < 16 ? "0" : "") + c.toString(16);
-	}
-	return out;
-}
-
-// SHA-256 of a file's contents, streamed in chunks (never buffers the whole
-// file twice). CryptContext(CryptContext.ALGO.SHA2) defaults to 256-bit
-// output; File.read() returns a byte-per-char string that round-trips
-// losslessly through CryptContext.encrypt(), high-bit and NUL bytes included.
-function sha256_of_file(path)
-{
-	var f = new File(path);
-	if (!f.open("rb"))
-		throw new Error("cannot open " + path + " for hashing");
-	var cc = new CryptContext(CryptContext.ALGO.SHA2);
-	var chunk;
-	try {
-		while ((chunk = f.read(65536)) != null && chunk.length > 0)
-			cc.encrypt(chunk);
-	} finally {
-		f.close();
-	}
-	cc.encrypt("");   // empty final call: finalizes the hash (cryptlib convention)
-	return hexify(cc.hashvalue);
 }
 
 // Fetch the game's landing page fresh and scrape out THIS run's direct-

@@ -42,40 +42,7 @@
 
 load("http.js");
 load("xtrn_mirror.js");
-
-// Hex-encode a raw byte string (e.g. CryptContext.hashvalue).
-function hexify(s)
-{
-	var out = "", i, c;
-
-	for (i = 0; i < s.length; i++) {
-		c = s.charCodeAt(i) & 0xff;
-		out += (c < 16 ? "0" : "") + c.toString(16);
-	}
-	return out;
-}
-
-// SHA-256 of a file's contents, streamed in chunks so the package is never
-// buffered twice. CryptContext(CryptContext.ALGO.SHA2) defaults to 256-bit
-// output; File.read() returns a byte-per-char string that round-trips through
-// encrypt() losslessly, high bit and embedded NULs included.
-function sha256_of_file(path)
-{
-	var f = new File(path);
-	var cc, chunk;
-
-	if (!f.open("rb"))
-		return null;
-	cc = new CryptContext(CryptContext.ALGO.SHA2);
-	try {
-		while ((chunk = f.read(65536)) != null && chunk.length > 0)
-			cc.encrypt(chunk);
-	} finally {
-		f.close();
-	}
-	cc.encrypt("");   // empty final call: finalizes the hash (cryptlib convention)
-	return hexify(cc.hashvalue);
-}
+load("sha256.js");
 
 // The shareware install package. The outer zip's inner self-extractor and the
 // GRP inside it have fixed names; GRP_SIZE is the canonical shareware 1.3D GRP

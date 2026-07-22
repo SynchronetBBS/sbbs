@@ -92,9 +92,22 @@ function xtrn_mirror_try(url, path, verify)
 	if (!n) {
 		if (req.response_code)
 			print("  ! " + url + ": HTTP " + req.response_code);
-	} else if (typeof verify == "function" && !verify(path)) {
-		print("  ! " + url + ": failed verification");
-		n = 0;
+	} else if (typeof verify == "function") {
+		// A verify callback that throws must not escape: this function
+		// promises never to throw, and a caller's hash helper failing on, say,
+		// an unopenable temp file would otherwise abort the whole install
+		// instead of falling back to the other source.
+		var good = false;
+		try {
+			good = verify(path);
+		} catch (e) {
+			print("  ! " + url + ": verification error: " + e);
+			good = false;
+		}
+		if (!good) {
+			print("  ! " + url + ": failed verification");
+			n = 0;
+		}
 	}
 	if (!n && file_exists(path))
 		file_remove(path);

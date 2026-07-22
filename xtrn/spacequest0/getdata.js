@@ -43,6 +43,7 @@
 // GPL-2.0. The game data it downloads is Jeff Stewart's, not ours.
 
 load("http.js");
+load("sha256.js");
 
 // The one pinned download.  url is the author's own host; sha256 + size are
 // verified after download; marker (LOGDIR, a core AGI resource file) both
@@ -63,38 +64,6 @@ function door_dir()
 {
 	var d = js.exec_dir || js.startup_dir || "./";
 	return backslash(d);
-}
-
-// Hex-encode a raw byte string (e.g. CryptContext.hashvalue).
-function hexify(s)
-{
-	var out = "", i, c;
-	for (i = 0; i < s.length; i++) {
-		c = s.charCodeAt(i) & 0xff;
-		out += (c < 16 ? "0" : "") + c.toString(16);
-	}
-	return out;
-}
-
-// SHA-256 of a file's contents, streamed in chunks. File.read() returns a
-// byte-per-char string that round-trips losslessly through
-// CryptContext.encrypt() (including high-bit bytes and embedded NULs);
-// CryptContext(CryptContext.ALGO.SHA2) defaults to 256-bit output.
-function sha256_of_file(path)
-{
-	var f = new File(path);
-	if (!f.open("rb"))
-		throw new Error("cannot open " + path + " for hashing");
-	var cc = new CryptContext(CryptContext.ALGO.SHA2);
-	var chunk;
-	try {
-		while ((chunk = f.read(65536)) != null && chunk.length > 0)
-			cc.encrypt(chunk);
-	} finally {
-		f.close();
-	}
-	cc.encrypt("");   // finalize (cryptlib convention)
-	return hexify(cc.hashvalue);
 }
 
 function main()

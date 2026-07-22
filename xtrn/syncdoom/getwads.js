@@ -31,40 +31,7 @@
 
 load("http.js");
 load("xtrn_mirror.js");
-
-// Hex-encode a raw byte string (e.g. CryptContext.hashvalue).
-function hexify(s)
-{
-	var out = "", i, c;
-
-	for (i = 0; i < s.length; i++) {
-		c = s.charCodeAt(i) & 0xff;
-		out += (c < 16 ? "0" : "") + c.toString(16);
-	}
-	return out;
-}
-
-// SHA-256 of a file's contents, streamed in chunks so a 24 MB archive is never
-// buffered twice. CryptContext(CryptContext.ALGO.SHA2) defaults to 256-bit
-// output; File.read() returns a byte-per-char string that round-trips through
-// encrypt() losslessly, high bit and embedded NULs included.
-function sha256_of_file(path)
-{
-	var f = new File(path);
-	var cc, chunk;
-
-	if (!f.open("rb"))
-		return null;
-	cc = new CryptContext(CryptContext.ALGO.SHA2);
-	try {
-		while ((chunk = f.read(65536)) != null && chunk.length > 0)
-			cc.encrypt(chunk);
-	} finally {
-		f.close();
-	}
-	cc.encrypt("");   // empty final call: finalizes the hash (cryptlib convention)
-	return hexify(cc.hashvalue);
-}
+load("sha256.js");
 
 // Pinned Freedoom release. Bump VER on a new release (the asset names and the
 // in-zip top-level directory both follow the freedoom-<VER>/ , freedm-<VER>/
