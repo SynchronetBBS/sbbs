@@ -35,6 +35,7 @@
 // Copyright(C) 2026 Rob Swindell / SyncRetro.  GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
 load("syncretro_lib.js");   // syncretro_platform(), syncretro_core_ext(), syncretro_target()
 
 // libretro nightly buildbot. The per-platform core zip contains just the core
@@ -186,13 +187,23 @@ function syncretro_from_buildbot(dstdir, core, sub)
 	var tmp = backslash(system.temp_dir) + core + ".zip";
 	var ok  = false;
 
+	// The buildbot serves every platform's build under the same name, so the
+	// mirrored copy is platform-qualified to coexist in one flat directory:
+	// fceumm_libretro.so-linux-x86_64.zip, and so on. `core` already carries
+	// the .so/.dll extension by this point (see the caller), which is why the
+	// mirror name keeps it too.
+	//
+	// Only the platforms the mirror actually stocks will resolve; anywhere else
+	// the fallback 404s and the buildbot failure stands, as before. No checksum
+	// is pinned because these are NIGHTLY builds -- what the mirror holds is a
+	// snapshot for when the buildbot is unreachable, not a substitute for it.
+	var mirror_name = core + "-" + sub.replace(/\//g, "-") + ".zip";
+
 	print("  downloading " + core + " (" + url + ") ...");
 	try {
-		var req = new HTTPRequest();
-		req.follow_redirects = 5;
-		var n = req.Download(url, tmp);
-		if (req.response_code != 200) {
-			print("  ! download failed: HTTP " + req.response_code);
+		var n = xtrn_mirror_download(url, tmp, { name: mirror_name });
+		if (!n) {
+			print("  ! could not fetch " + core);
 		} else {
 			print("  downloaded " + n + " bytes; extracting ...");
 			ok = syncretro_extract_core_from(tmp, dstdir, core);

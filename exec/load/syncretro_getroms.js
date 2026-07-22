@@ -30,6 +30,7 @@
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
 load("syncretro_lib.js");   // syncretro_rules(): where this console keeps its ROMs
 
 // Where the ROMs go: the console's [roms] dir (default "roms"), under the door.
@@ -61,35 +62,35 @@ function syncretro_fetch_rom(game, dstdir)
 	var name = game.as ? game.as : game.file;
 	var dst  = dstdir + name;
 	var tmp  = backslash(system.temp_dir) + game.file;
-	var req, n, size, md5;
+	var n;
 
 	if (file_exists(dst)) {
 		print("  = " + game.title + " (already here)");
 		return 0;                       /* 0 = nothing to do, not a failure */
 	}
 
-	try {
-		req = new HTTPRequest();
-		req.follow_redirects = 5;
-		n = req.Download(game.url, tmp);
-		if (req.response_code != 200) {
-			print("  ! " + game.title + ": HTTP " + req.response_code);
-			return -1;
-		}
-	} catch (e) {
-		print("  ! " + game.title + ": " + e);
-		return -1;
-	}
+	/* The pinned size/md5 check runs inside the download helper's verify
+	 * callback rather than after it, so bytes that fail it are treated exactly
+	 * like an unreachable host: the fetch retries against the Synchronet mirror
+	 * before giving up. A ROM that changed upstream is still never installed --
+	 * the licence, and the fact that this is even the game we think it is, were
+	 * verified against THESE bytes. */
+	n = xtrn_mirror_download(game.url, tmp, {
+		verify: function(p) {
+			var got_size = file_size(p);
+			var got_md5  = syncretro_file_md5(p, 0);
 
-	size = file_size(tmp);
-	md5  = syncretro_file_md5(tmp, 0);
-	if (size != game.size || md5 != game.md5) {
-		/* Upstream changed. Do NOT install it: the licence, and the fact that this
-		 * is even the game we think it is, were verified against THESE bytes. */
-		print("  ! " + game.title + ": not the expected file (got " + size
-		    + " bytes / " + md5.substr(0, 8) + ", wanted " + game.size + " / "
-		    + game.md5.substr(0, 8) + ") -- skipped");
-		file_remove(tmp);
+			if (got_size == game.size && got_md5 == game.md5)
+				return true;
+			print("  ! " + game.title + ": not the expected file (got "
+			    + got_size + " bytes / " + String(got_md5).substr(0, 8)
+			    + ", wanted " + game.size + " / " + game.md5.substr(0, 8)
+			    + ")");
+			return false;
+		}
+	});
+	if (!n) {
+		print("  ! " + game.title + ": could not fetch -- skipped");
 		return -1;
 	}
 
