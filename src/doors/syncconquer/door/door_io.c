@@ -2599,7 +2599,9 @@ static size_t door_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 {
 	struct dr_box box[DR_MAX_COMPONENTS];
 	int           cw = 0, ch = 0, ehc, nb, k;
-	int           emit_pal = !g_is_syncterm;   /* non-SyncTERM resets registers per image */
+	/* SyncTERM: registers persist, box carries no palette. Others self-
+	 * describe, subset to the box's used colors. */
+	int           emit_pal = g_is_syncterm ? SIXEL_PAL_NONE : SIXEL_PAL_USED;
 	size_t        total = 0;
 
 	door_cell_size(&cw, &ch);
@@ -2946,7 +2948,10 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 		 * them only on a real palette change, or when (re)entering the
 		 * sixel tier from something else (which never defined them). Other
 		 * terminals reset registers per image, so send every frame there. */
-		emit_pal = pal_dirty || !g_is_syncterm || g_last_tier != SA_SIXEL;
+		emit_pal = (pal_dirty || g_last_tier != SA_SIXEL)
+		           ? SIXEL_PAL_FULL : SIXEL_PAL_NONE;
+		if (!g_is_syncterm)
+			emit_pal = SIXEL_PAL_USED;
 
 		if (tier == SA_SIXEL) {
 			size_t dn = 0;
