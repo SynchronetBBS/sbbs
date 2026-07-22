@@ -30,6 +30,7 @@
 #include "wren_bind_hook.h"
 #include "wren_bind_sftp.h"
 #include "wren_bind_fs.h"
+#include "wren_bind_pixels.h"
 #include "wren_bind_screen.h"
 #include "wren_bind_won.h"
 #include "wren_bind_xfer.h"
@@ -1375,6 +1376,10 @@ wren_bind_lookup(const char *module, const char *className, bool isStatic,
 {
 	if (module == NULL || strcmp(module, "syncterm") != 0)
 		return NULL;
+	WrenForeignMethodFn pixel_fn = wren_bind_pixels_lookup(className,
+	    isStatic, signature);
+	if (pixel_fn != NULL)
+		return pixel_fn;
 	for (size_t i = 0; i < sizeof(BINDINGS) / sizeof(BINDINGS[0]); i++) {
 		if (BINDINGS[i].isStatic == isStatic &&
 		    strcmp(BINDINGS[i].className, className) == 0 &&
@@ -1390,6 +1395,10 @@ wren_bind_lookup_class(const char *module, const char *className)
 	WrenForeignClassMethods none = { NULL, NULL };
 	if (module == NULL || strcmp(module, "syncterm") != 0)
 		return none;
+	WrenForeignClassMethods pixel_methods =
+	    wren_bind_pixels_lookup_class(className);
+	if (pixel_methods.allocate != NULL || pixel_methods.finalize != NULL)
+		return pixel_methods;
 	if (strcmp(className, "Cell") == 0) {
 		WrenForeignClassMethods m = {
 			wren_cell_allocate, wren_cell_finalize

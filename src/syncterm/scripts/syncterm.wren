@@ -129,6 +129,13 @@ foreign class Screen {
     return result
   }
   foreign static moveRect(sx, sy, ex, ey, dx, dy)
+  foreign static pixelSize
+  foreign static cellPixelSize
+  foreign static readPixels(x, y, width, height)
+  foreign static readPixels(x, y, width, height, force)
+  foreign static setPixel(x, y, color)
+  foreign static blitPixels(buffer, descriptor)
+  foreign static blitPixels(buffer, mask, descriptor)
   foreign static attr
   foreign static attr=(a)
   foreign static hyperlinkId
@@ -141,6 +148,94 @@ foreign class Screen {
   static videoFlags { VideoFlags     }
   static color      { Color          }
 }
+
+// Native pixel colours retain ciolib's RGB/palette discriminator so a
+// captured buffer can be changed and written back without losing palette
+// references.  `toRgb` resolves either form through the active palette.
+class PixelColor {
+  foreign static rgb(rgb)
+  foreign static palette(index)
+  foreign static isRgb(value)
+  foreign static rgbValue(value)
+  foreign static paletteIndex(value)
+  foreign static toRgb(value)
+}
+
+foreign class PixelBuffer is Sequence {
+  construct new(width, height) {}
+  construct new(width, height, fill) {}
+  foreign static fromRgb24(width, height, bytes)
+  foreign static fromRgb24(width, height, bytes, alternateBytes)
+  foreign static fromPpm(source)
+  foreign static fromJxl(source)
+  foreign static jxlSupported
+  foreign count
+  foreign [i]
+  foreign [i]=(color)
+  foreign iterate(iterator)
+  foreign iteratorValue(iterator)
+  foreign width
+  foreign height
+  foreign pixelAt(x, y)
+  foreign setPixel(x, y, color)
+  foreign fill(color)
+  foreign clone()
+  foreign rgb24
+  foreign hasAlternate
+  foreign alternateAt(index)
+  foreign setAlternate(x, y, color)
+  foreign fillAlternate(color)
+  foreign alternateRgb24
+  foreign setAlternateRgb24(bytes)
+  foreign clearAlternate()
+}
+
+foreign class PixelMask is Sequence {
+  construct new(width, height) {}
+  construct new(width, height, fill) {}
+  foreign static fromPbm(source)
+  foreign static fromBits(width, height, bits)
+  foreign bits
+  foreign count
+  foreign [i]
+  foreign [i]=(value)
+  foreign iterate(iterator)
+  foreign iteratorValue(iterator)
+  foreign width
+  foreign height
+  foreign bitAt(x, y)
+  foreign setBit(x, y, value)
+  foreign fill(value)
+}
+
+foreign class PixelBlit {
+  construct new() {}
+  foreign sourceX
+  foreign sourceX=(value)
+  foreign sourceY
+  foreign sourceY=(value)
+  foreign sourceWidth
+  foreign sourceWidth=(value)
+  foreign sourceHeight
+  foreign sourceHeight=(value)
+  foreign destinationX
+  foreign destinationX=(value)
+  foreign destinationY
+  foreign destinationY=(value)
+  foreign scaleX
+  foreign scaleX=(value)
+  foreign scaleY
+  foreign scaleY=(value)
+  foreign maskX
+  foreign maskX=(value)
+  foreign maskY
+  foreign maskY=(value)
+  foreign flipX
+  foreign flipX=(value)
+  foreign flipY
+  foreign flipY=(value)
+}
+
 // Cursor shape (start/end scanlines, range, blink, visibility).  Two
 // access modes:
 //

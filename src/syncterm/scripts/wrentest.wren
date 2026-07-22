@@ -32,7 +32,8 @@ import "syncterm" for Hook, Conn, Console, Screen, CTerm, BBS, Key,
     RipVersion, LogMode, StatusDisplay, Color, Cell, Hyperlinks,
     REPL, Input, Wake, KeyEvent, MouseEvent, Mouse, Cache, Platform,
     Timer, TimerElapsed, WON, FileError, FileErr, WONError, WONErr,
-    Error, ScriptError, Surface, Scrollback, Host
+    Error, ScriptError, Surface, Scrollback, Host, PixelColor,
+    PixelBuffer, PixelMask, PixelBlit
 import "wren_console" for WrenConsole
 import "ui_style_test"  for UiStyleTest
 import "ui_widget_test" for UiWidgetTest
@@ -222,6 +223,9 @@ class WrenTest {
 
     // ------ pure C math / util --------------------------------------
     testColor_()
+    testPixelBuffers_()
+    testPixelDecoders_()
+    testScreenPixels_()
     testMouseEventCtors_()
     testScrollbackMouseMask_()
     testKeyEventCtorValidation_()
@@ -454,6 +458,249 @@ class WrenTest {
     var back = Color.toLegacyAttr(pair[0], pair[1])
     check_(back is Num && back >= 0 && back <= 0xff,
            "Color.toLegacyAttr produces a byte attr")
+  }
+
+  static testPixelBuffers_() {
+    var red = PixelColor.rgb(0x123456)
+    var pal = PixelColor.palette(7)
+    check_(PixelColor.isRgb(red) && PixelColor.rgbValue(red) == 0x123456 &&
+           PixelColor.paletteIndex(red) == null &&
+           !PixelColor.isRgb(pal) && PixelColor.paletteIndex(pal) == 7,
+           "PixelColor preserves native RGB and palette values")
+
+    var pixels = PixelBuffer.new(2, 2, red)
+    pixels[1] = pal
+    pixels.setPixel(0, 1, PixelColor.rgb(0xabcdef))
+    check_(pixels.count == 4 && pixels.width == 2 && pixels.height == 2 &&
+           pixels.pixelAt(0, 0) == red && pixels[1] == pal &&
+           pixels.toList.count == 4,
+           "PixelBuffer indexing, 2D access, and Sequence iteration")
+
+    var rgb = String.fromByte(1) + String.fromByte(2) + String.fromByte(3) +
+              String.fromByte(4) + String.fromByte(5) + String.fromByte(6)
+    var imported = PixelBuffer.fromRgb24(2, 1, rgb)
+    check_(imported.rgb24 == rgb && !imported.hasAlternate,
+           "PixelBuffer RGB24 import/export round trip")
+    imported.setAlternate(1, 0, PixelColor.rgb(0x102030))
+    check_(imported.hasAlternate && imported.alternateAt(0) == imported[0] &&
+           imported.alternateAt(1) == PixelColor.rgb(0x102030) &&
+           imported.clone().alternateRgb24 == imported.alternateRgb24,
+           "PixelBuffer alternate plane is explicit and cloned")
+    imported.clearAlternate()
+    check_(!imported.hasAlternate && imported.alternateRgb24 == null,
+           "PixelBuffer alternate plane can be cleared")
+
+    var mask = PixelMask.fromBits(3, 2, String.fromByte(0xa8))
+    check_(mask.count == 6 && mask[0] && !mask[1] && mask.bitAt(1, 1) &&
+           mask.bits.bytes[0] == 0xa8,
+           "PixelMask uses packed row-major MSB-first bits")
+    mask.setBit(1, 0, true)
+    mask[5] = false
+    check_(mask.toList.join("") == "truetruetruefalsetruefalse",
+           "PixelMask mutation and Sequence iteration")
+
+    var blit = PixelBlit.new()
+    blit.destinationX = -2
+    blit.scaleX = 3
+    blit.flipY = true
+    check_(blit.sourceWidth == 0 && blit.sourceHeight == 0 &&
+           blit.destinationX == -2 && blit.scaleX == 3 && blit.scaleY == 1 &&
+           blit.flipY && !blit.flipX,
+           "PixelBlit defaults and mutable fields")
+    var bad = Fiber.new {
+      var descriptor = PixelBlit.new()
+      descriptor.scaleX = 0
+    }.try()
+    check_(bad is String && bad.contains("positive"),
+           "PixelBlit rejects zero scale")
+
+    bad = Fiber.new { PixelBuffer.new(4294967295, 4294967295) }.try()
+    check_(bad is String && bad.contains("invalid dimensions"),
+           "PixelBuffer rejects overflowing allocation dimensions")
+    bad = Fiber.new { PixelBuffer.fromRgb24(2, 2, "short") }.try()
+    check_(bad is String && bad.contains("byte length"),
+           "PixelBuffer rejects malformed RGB24 lengths")
+    bad = Fiber.new { PixelMask.fromBits(9, 1, String.fromByte(0)) }.try()
+    check_(bad is String && bad.contains("byte length"),
+           "PixelMask rejects malformed packed lengths")
+  }
+
+  static testPixelDecoders_() {
+    var ppmData = "P3\n2 1\n255\n0 0 0 255 255 255\n"
+    var ppm = PixelBuffer.fromPpm(ppmData)
+    check_(ppm is PixelBuffer && ppm.width == 2 && ppm.height == 1 &&
+           PixelColor.toRgb(ppm[0]) == 0 &&
+           PixelColor.toRgb(ppm[1]) == 0xffffff,
+           "PixelBuffer decodes text PPM from memory")
+    var pbmData = "P1\n3 2\n0 1 0\n1 0 1\n"
+    var pbm = PixelMask.fromPbm(pbmData)
+    check_(pbm is PixelMask && pbm.width == 3 && pbm.height == 2 &&
+           !pbm.bitAt(0, 0) && pbm.bitAt(1, 0) && pbm.bitAt(2, 1),
+           "PixelMask decodes text PBM from memory")
+
+    var p6 = "P6\n2 1\n255\n" + String.fromByte(0) +
+             String.fromByte(0) + String.fromByte(0) +
+             String.fromByte(255) + String.fromByte(255) +
+             String.fromByte(255)
+    var rawPpm = PixelBuffer.fromPpm(p6)
+    check_(rawPpm is PixelBuffer && PixelColor.toRgb(rawPpm[0]) == 0 &&
+           PixelColor.toRgb(rawPpm[1]) == 0xffffff,
+           "PixelBuffer decodes raw PPM from binary String data")
+
+    var p4 = "P4\n9 2\n" + String.fromByte(0x80) +
+             String.fromByte(0x80) + String.fromByte(0x40) +
+             String.fromByte(0)
+    var rawPbm = PixelMask.fromPbm(p4)
+    check_(rawPbm is PixelMask && rawPbm.bitAt(0, 0) &&
+           rawPbm.bitAt(8, 0) && rawPbm.bitAt(1, 1) &&
+           !rawPbm.bitAt(0, 1),
+           "PixelMask removes raw PBM row padding")
+
+    var ppmName = "__wt_pixels.ppm"
+    if (Cache.contains(ppmName)) Cache.delete(ppmName)
+    var ppmFile = Cache.create(ppmName)
+    ppmFile.open()
+    ppmFile.writeBytes(ppmData)
+    ppmFile.close()
+    var filePpm = PixelBuffer.fromPpm(ppmFile)
+    check_(filePpm is PixelBuffer && filePpm.width == 2 &&
+           PixelColor.toRgb(filePpm[1]) == 0xffffff,
+           "PixelBuffer decodes a readable File without a Wren copy")
+    Cache.delete(ppmName)
+
+    var pbmName = "__wt_pixels.pbm"
+    if (Cache.contains(pbmName)) Cache.delete(pbmName)
+    var pbmFile = Cache.create(pbmName)
+    pbmFile.open()
+    pbmFile.writeBytes(pbmData)
+    pbmFile.close()
+    var filePbm = PixelMask.fromPbm(pbmFile)
+    check_(filePbm is PixelMask && filePbm.bitAt(1, 0) &&
+           filePbm.bitAt(2, 1),
+           "PixelMask decodes a readable File without a Wren copy")
+    Cache.delete(pbmName)
+
+    check_(PixelBuffer.fromPpm("not a PPM") == null &&
+           PixelMask.fromPbm("not a PBM") == null &&
+           PixelBuffer.jxlSupported is Bool,
+           "pixel decoders reject malformed input and report JXL support")
+
+    if (PixelBuffer.jxlSupported) {
+      var jxl = bytesFromHex_(
+          "ff0a001010505c080802010098024b189b9c71840338800338204ac03905" +
+          "01002044800810012240e4ff917bfa1e5a67575555552549921050777777" +
+          "7777ffffffbf556f66666606fedfbfe7bf87c69c73aeb5cfbd4992240454" +
+          "5555555555ffffffcfbdafbbbbbb1bfedfbfe7bf87c69c73aeb5cfbd4992" +
+          "2404545555555555ffffffcfbdafbbbbbb1bfedfbfe7bf87c69c73aeb5cf" +
+          "bd49922404545555555555ffffffcfbdafbbbbbbfb022100b81237c28d30")
+      var decoded = PixelBuffer.fromJxl(jxl)
+      check_(decoded is PixelBuffer && decoded.width == 1 &&
+             decoded.height == 1 && PixelColor.toRgb(decoded[0]) == 0x123456,
+             "PixelBuffer decodes JXL from binary String data")
+    } else {
+      check_(PixelBuffer.fromJxl("not JXL") == null,
+             "PixelBuffer JXL API is stable when libjxl is unavailable")
+    }
+  }
+
+  static testScreenPixels_() {
+    var size = Screen.pixelSize
+    var cell = Screen.cellPixelSize
+    check_((!Screen.supports.pixels && size == null && cell == null) ||
+           (size is List && size.count == 2 && size[0] > 0 && size[1] > 0 &&
+            cell is List && cell.count == 2 && cell[0] > 0 && cell[1] > 0),
+           "Screen pixel and cell geometry follow backend support")
+    if (!Screen.supports.pixels) return
+
+    var saved = Screen.readPixels(0, 0, 12, 12, true)
+    check_(saved is PixelBuffer && saved.width == 12 && saved.height == 12,
+           "Screen.readPixels captures native pixels")
+    if (!(saved is PixelBuffer)) return
+    var replacement = PixelColor.rgb(0x010203)
+    check_(Screen.setPixel(0, 0, replacement),
+           "Screen.setPixel accepts native colours")
+    var captured = Screen.readPixels(0, 0, 1, 1)
+    check_(captured is PixelBuffer && captured[0] == replacement,
+           "Screen pixel write can be captured")
+    var colors = [0x110000, 0x002200, 0x000033,
+                  0x444400, 0x005555, 0x660066]
+    var source = PixelBuffer.new(3, 2)
+    for (i in 0...colors.count) source[i] = PixelColor.rgb(colors[i])
+    var operation = PixelBlit.new()
+    operation.sourceX = 1
+    operation.sourceWidth = 2
+    operation.sourceHeight = 2
+    operation.destinationX = 2
+    operation.destinationY = 2
+    operation.scaleX = 2
+    operation.scaleY = 3
+    operation.flipX = true
+    operation.flipY = true
+    check_(Screen.blitPixels(source, operation),
+           "Screen.blitPixels accepts crop, independent scale, and flips")
+    var scaled = Screen.readPixels(2, 2, 4, 6)
+    var expected = [0x660066, 0x660066, 0x005555, 0x005555,
+                    0x660066, 0x660066, 0x005555, 0x005555,
+                    0x660066, 0x660066, 0x005555, 0x005555,
+                    0x000033, 0x000033, 0x002200, 0x002200,
+                    0x000033, 0x000033, 0x002200, 0x002200,
+                    0x000033, 0x000033, 0x002200, 0x002200]
+    var scaledOk = scaled is PixelBuffer
+    if (scaledOk) {
+      for (i in 0...expected.count) {
+        if (PixelColor.toRgb(scaled[i]) != expected[i]) scaledOk = false
+      }
+    }
+    check_(scaledOk,
+           "scaled and mirrored blit has deterministic nearest-neighbor layout")
+
+    var clippedSource = PixelBuffer.new(2, 1)
+    clippedSource[0] = PixelColor.rgb(0x123400)
+    clippedSource[1] = PixelColor.rgb(0x005678)
+    operation = PixelBlit.new()
+    operation.destinationX = -1
+    operation.scaleX = 2
+    check_(Screen.blitPixels(clippedSource, operation),
+           "Screen.blitPixels accepts a signed partially clipped destination")
+    var clipped = Screen.readPixels(0, 0, 3, 1)
+    check_(clipped is PixelBuffer &&
+           PixelColor.toRgb(clipped[0]) == 0x123400 &&
+           PixelColor.toRgb(clipped[1]) == 0x005678 &&
+           PixelColor.toRgb(clipped[2]) == 0x005678,
+           "clipping preserves a partial scaled source pixel")
+
+    var maskedSaved = Screen.readPixels(8, 8, 2, 1)
+    var maskedSource = PixelBuffer.new(2, 1, PixelColor.rgb(0xabcdef))
+    var mask = PixelMask.fromBits(2, 1, String.fromByte(0x80))
+    operation = PixelBlit.new()
+    operation.destinationX = 8
+    operation.destinationY = 8
+    check_(Screen.blitPixels(maskedSource, mask, operation),
+           "Screen.blitPixels accepts a source-aligned mask")
+    var masked = Screen.readPixels(8, 8, 2, 1)
+    check_(masked is PixelBuffer && PixelColor.toRgb(masked[0]) == 0xabcdef &&
+           masked[1] == maskedSaved[1],
+           "masked blit leaves transparent destination pixels unchanged")
+
+    var alternating = PixelBuffer.new(1, 1, PixelColor.rgb(0x102030))
+    alternating.setAlternate(0, 0, PixelColor.rgb(0xa0b0c0))
+    operation = PixelBlit.new()
+    operation.destinationX = 10
+    operation.destinationY = 10
+    check_(Screen.blitPixels(alternating, operation),
+           "Screen.blitPixels writes both blink-phase planes")
+    var alternate = Screen.readPixels(10, 10, 1, 1)
+    check_(alternate is PixelBuffer && alternate.hasAlternate &&
+           PixelColor.toRgb(alternate[0]) == 0x102030 &&
+           PixelColor.toRgb(alternate.alternateAt(0)) == 0xa0b0c0,
+           "Screen.readPixels preserves both blink-phase planes")
+
+    var restore = PixelBlit.new()
+    check_(Screen.blitPixels(saved, restore),
+           "Screen.blitPixels restores an unscaled buffer")
+    restore.destinationX = size[0]
+    check_(Screen.blitPixels(saved, restore),
+           "fully off-screen pixel blit succeeds")
   }
 
   // Five MouseEvent.new overloads share a single C allocator that

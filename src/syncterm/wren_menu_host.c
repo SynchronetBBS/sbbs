@@ -144,6 +144,7 @@ generic_class_allowed(const char *class_name)
 		"Console", "Directory", "File", "FileError", "Font", "Format",
 		"Host",
 		"Hyperlinks", "Input", "KeyEvent", "MouseEvent", "Palette",
+		"PixelBlit", "PixelBuffer", "PixelColor", "PixelMask",
 		"PhysicalKeyEvent", "Platform", "REPL", "Screen", "ScreenFonts",
 		"ScreenSupports", "ScreenWindow", "Surface", "VideoFlags",
 	};

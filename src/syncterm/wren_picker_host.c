@@ -158,7 +158,8 @@ generic_class_allowed(const char *class_name)
 	static const char *const allowed[] = {
 		"Cell", "Clipboard", "Codepage", "Color", "Console",
 		"CustomCursor", "Host", "Input", "KeyEvent", "MouseEvent",
-		"Palette", "REPL", "Screen", "ScreenFonts", "ScreenSupports",
+		"Palette", "PixelBlit", "PixelBuffer", "PixelColor", "PixelMask",
+		"REPL", "Screen", "ScreenFonts", "ScreenSupports",
 		"ScreenWindow", "Surface", "VideoFlags",
 	};
 	for (size_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++) {

@@ -309,6 +309,7 @@ set(SOURCE
 	wren_bind_picker.c
 	wren_bind_sftp.c
 	wren_bind_fs.c
+	wren_bind_pixels.c
 	wren_bind_screen.c
 	wren_bind_conn.c
 	wren_bind_hook.c

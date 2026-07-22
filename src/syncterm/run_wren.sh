@@ -11,7 +11,7 @@
 # Exit code: ordinary scripts succeed if no "[wren] " lines hit stderr.
 # wrentest.wren succeeds only after reporting a TOTAL with zero failures.
 #
-# Usage: run_wren.sh [--menu|--menu-write] <script.wren>
+# Usage: run_wren.sh [--menu|--menu-write|--picker] <script.wren>
 #
 # The harness uses the GNUmakefile-default debug build at
 #     clang.freebsd.amd64.exe.debug/syncterm
@@ -22,17 +22,21 @@ set -u
 
 MENU_SUITE=false
 MENU_WRITABLE=false
-if [ "${1:-}" = "--menu" ] || [ "${1:-}" = "--menu-write" ]; then
+PICKER_SUITE=false
+if [ "${1:-}" = "--menu" ] || [ "${1:-}" = "--menu-write" ] ||
+    [ "${1:-}" = "--picker" ]; then
 	MENU_SUITE=true
 	if [ "$1" = "--menu-write" ]; then
 		MENU_WRITABLE=true
+	elif [ "$1" = "--picker" ]; then
+		PICKER_SUITE=true
 	fi
 	shift
 fi
 
 SCRIPT="${1:-}"
 if [ -z "$SCRIPT" ]; then
-	echo "Usage: $0 [--menu|--menu-write] <script.wren>" >&2
+	echo "Usage: $0 [--menu|--menu-write|--picker] <script.wren>" >&2
 	exit 1
 fi
 
@@ -56,8 +60,41 @@ if $MENU_SUITE; then
 	for MODULE in "$HERE"/scripts/*.wren; do
 		ln -s "$MODULE" "$SCRIPT_ROOT/${MODULE##*/}"
 	done
-	ln -s "$HERE/$SCRIPT" "$SCRIPT_ROOT/menu_test.wren"
-	cat >"$SCRIPT_ROOT/auto/menu/main_menu.wren" <<'EOF'
+	if $PICKER_SUITE; then
+		ln -s "$HERE/$SCRIPT" "$SCRIPT_ROOT/picker_test.wren"
+		mkdir -p "$SCRIPT_ROOT/auto/picker"
+		cat >"$SCRIPT_ROOT/auto/picker/file_picker.wren" <<'EOF'
+import "picker_test" for PixelVmTest
+
+class FilePicker {
+  static run(request) {
+    var result = PixelVmTest.run()
+    System.print("=== PICKER TEST: %(result[0] + result[1]) tests, " +
+        "%(result[0]) pass, %(result[1]) fail ===")
+    request.cancel()
+  }
+}
+EOF
+	else
+		ln -s "$HERE/$SCRIPT" "$SCRIPT_ROOT/menu_test.wren"
+	fi
+	if $PICKER_SUITE; then
+		cat >"$SCRIPT_ROOT/auto/menu/main_menu.wren" <<'EOF'
+import "syncterm" for Host
+import "syncterm_menu" for Menu
+
+class MainMenu {
+  static prepare() { true }
+  static offerSave(source) { false }
+  static run(current, connected) {
+    Host.pickFile(null, "*", 0)
+    Menu.quitApplication()
+    return null
+  }
+}
+EOF
+	else
+		cat >"$SCRIPT_ROOT/auto/menu/main_menu.wren" <<'EOF'
 import "syncterm_menu" for Menu
 import "menu_test" for MenuTest
 
@@ -73,6 +110,7 @@ class MainMenu {
   }
 }
 EOF
+	fi
 else
 	mkdir -p "$DATA_HOME/syncterm"
 	ln -s "$HERE/scripts" "$DATA_HOME/syncterm/scripts"
@@ -129,6 +167,13 @@ if $FULL_SUITE; then
 fi
 
 if $MENU_SUITE; then
+	if $PICKER_SUITE; then
+		if grep -Eq '^=== PICKER TEST: [0-9]+ tests, [0-9]+ pass, 0 fail ===$' \
+		    "$ERR" && ! grep -q '^\[wren-picker\]' "$ERR"; then
+			exit 0
+		fi
+		exit 1
+	fi
 	if grep -Eq '^=== MENU TEST: [0-9]+ tests, [0-9]+ pass, 0 fail ===$' \
 	    "$ERR" && ! grep -q '^\[wren-menu\]' "$ERR"; then
 		exit 0
