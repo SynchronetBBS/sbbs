@@ -534,7 +534,10 @@ function Unthrottled_Recvq() {
 /* this = IRC_Queue object */
 function Recvq_Unthrottle() {
 	this.throttled = false;
-	this.num_sent = 3;
+	/* Start the new window empty. Resuming at 3 left room for a single
+	   command before Process_Recvq() re-throttled at 4, so every window
+	   after the first admitted one command instead of four. */
+	this.num_sent = 0;
 	this.time_marker = system.timer;
 	js.setImmediate(Process_Recvq, this);
 }
