@@ -21,17 +21,67 @@
 //
 // Synchronet's Archive (libarchive) reads both layers, so we extract the inner
 // .SHR from the outer zip, then the GRP from the .SHR. The download streams
-// straight to disk (HTTPRequest.Download in load/http.js), never buffered in
-// memory. SpiderMonkey 1.8.5-compatible (no modern ES).
+// straight to disk, never buffered in memory. SpiderMonkey 1.8.5-compatible
+// (no modern ES).
+//
+// Integrity: the package is verified against PKG_SHA256 before either layer is
+// opened. This fetcher checked nothing at all previously, which was tolerable
+// while dnr.duke4.net was the only source; with the mirror fallback in play an
+// unverified download would accept whatever either host handed it.
+//
+// Unlike the ScummVM doors, that constant is NOT published by anyone --
+// dnr.duke4.net offers no checksum -- so it was minted from what that host
+// served on 2026-07-21. It therefore attests that the mirror matches the
+// official source as vetted, not that anyone upstream vouches for the bytes.
+// That is still the property a mirror needs.
+//
+// If the download fails or fails that check, exec/load/xtrn_mirror.js retries
+// against Synchronet's asset mirror before giving up.
 //
 // Copyright(C) 2026 Rob Swindell / syncduke. GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
+
+// Hex-encode a raw byte string (e.g. CryptContext.hashvalue).
+function hexify(s)
+{
+	var out = "", i, c;
+
+	for (i = 0; i < s.length; i++) {
+		c = s.charCodeAt(i) & 0xff;
+		out += (c < 16 ? "0" : "") + c.toString(16);
+	}
+	return out;
+}
+
+// SHA-256 of a file's contents, streamed in chunks so the package is never
+// buffered twice. CryptContext(CryptContext.ALGO.SHA2) defaults to 256-bit
+// output; File.read() returns a byte-per-char string that round-trips through
+// encrypt() losslessly, high bit and embedded NULs included.
+function sha256_of_file(path)
+{
+	var f = new File(path);
+	var cc, chunk;
+
+	if (!f.open("rb"))
+		return null;
+	cc = new CryptContext(CryptContext.ALGO.SHA2);
+	try {
+		while ((chunk = f.read(65536)) != null && chunk.length > 0)
+			cc.encrypt(chunk);
+	} finally {
+		f.close();
+	}
+	cc.encrypt("");   // empty final call: finalizes the hash (cryptlib convention)
+	return hexify(cc.hashvalue);
+}
 
 // The shareware install package. The outer zip's inner self-extractor and the
 // GRP inside it have fixed names; GRP_SIZE is the canonical shareware 1.3D GRP
 // length, used as a post-extract sanity check.
 var PKG_URL  = "https://dnr.duke4.net/dl/024fbc5/3dduke13.zip";
+var PKG_SHA256 = "c67efd179022bc6d9bde54f404c707cbcbdc15423c20be72e277bc2bdddf3d0e";
 var SHR      = "DN3DSW13.SHR";    // member of the outer zip (a self-extracting ZIP)
 var GRP      = "DUKE3D.GRP";      // member of the .SHR -- what we want
 var GRP_SIZE = 11035779;          // SHAREWARE 1.3D
@@ -89,14 +139,23 @@ function main()
 
 	print("  downloading the shareware install package (" + PKG_URL + ") ...");
 	try {
-		var req = new HTTPRequest();
-		req.follow_redirects = 5;
-		var n = req.Download(PKG_URL, tmpzip);
-		if (req.response_code != 200) {
-			print("  ! download failed: HTTP " + req.response_code);
+		var n = xtrn_mirror_download(PKG_URL, tmpzip, {
+			verify: function(p) {
+				var got = sha256_of_file(p);
+				if (got == PKG_SHA256)
+					return true;
+				print("  ! sha256 MISMATCH for 3dduke13.zip");
+				print("    expected: " + PKG_SHA256);
+				print("    got:      " + got);
+				return false;
+			}
+		});
+		if (!n) {
+			print("  ! could not fetch the shareware package");
 			return 1;
 		}
-		print("  downloaded " + n + " bytes; extracting " + SHR + " ...");
+		print("  downloaded " + n + " bytes; sha256 verified; extracting "
+		    + SHR + " ...");
 
 		// Layer 1: pull the inner self-extractor out of the outer zip.
 		new Archive(tmpzip).extract(backslash(system.temp_dir), SHR);
@@ -137,4 +196,5 @@ function main()
 	return ok ? 0 : 1;
 }
 
-exit(main());
+if (typeof SYNCDUKE_DOWNLOAD_NO_MAIN == "undefined")
+	exit(main());

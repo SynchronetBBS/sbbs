@@ -12,6 +12,17 @@
 // re-running it only fetches what's missing. A download/extract failure is
 // reported but non-fatal -- the sysop can always drop WADs in by hand.
 //
+// Integrity: each release zip is verified against the PINNED sha256 on its set
+// below before anything is extracted. This fetcher checked nothing at all
+// previously, which was tolerable while GitHub was the only source; with the
+// mirror fallback in play an unverified download would accept whatever either
+// host handed it, so adding a second source would have weakened it rather than
+// strengthened it. An archive that changed upstream is now REJECTED instead of
+// silently installed.
+//
+// If a download fails or fails that check, exec/load/xtrn_mirror.js retries
+// against Synchronet's asset mirror before giving up.
+//
 // Downloads stream straight to disk (HTTPRequest.Download in load/http.js), so
 // the ~24 MB / ~11 MB archives are never buffered in memory. SpiderMonkey
 // 1.8.5-compatible (no modern ES).
@@ -19,6 +30,41 @@
 // Copyright(C) 2026 Rob Swindell / syncdoom. GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
+
+// Hex-encode a raw byte string (e.g. CryptContext.hashvalue).
+function hexify(s)
+{
+	var out = "", i, c;
+
+	for (i = 0; i < s.length; i++) {
+		c = s.charCodeAt(i) & 0xff;
+		out += (c < 16 ? "0" : "") + c.toString(16);
+	}
+	return out;
+}
+
+// SHA-256 of a file's contents, streamed in chunks so a 24 MB archive is never
+// buffered twice. CryptContext(CryptContext.ALGO.SHA2) defaults to 256-bit
+// output; File.read() returns a byte-per-char string that round-trips through
+// encrypt() losslessly, high bit and embedded NULs included.
+function sha256_of_file(path)
+{
+	var f = new File(path);
+	var cc, chunk;
+
+	if (!f.open("rb"))
+		return null;
+	cc = new CryptContext(CryptContext.ALGO.SHA2);
+	try {
+		while ((chunk = f.read(65536)) != null && chunk.length > 0)
+			cc.encrypt(chunk);
+	} finally {
+		f.close();
+	}
+	cc.encrypt("");   // empty final call: finalizes the hash (cryptlib convention)
+	return hexify(cc.hashvalue);
+}
 
 // Pinned Freedoom release. Bump VER on a new release (the asset names and the
 // in-zip top-level directory both follow the freedoom-<VER>/ , freedm-<VER>/
@@ -31,6 +77,7 @@ var BASE = "https://github.com/freedoom/freedoom/releases/download/v" + VER + "/
 var SETS = [
 	{
 		zip: "freedoom-" + VER + ".zip",
+		sha256: "3f9b264f3e3ce503b4fb7f6bdcb1f419d93c7b546f4df3e874dd878db9688f59",
 		wads: [
 			{ name: "freedoom1.wad", member: "freedoom-" + VER + "/freedoom1.wad" },
 			{ name: "freedoom2.wad", member: "freedoom-" + VER + "/freedoom2.wad" }
@@ -38,6 +85,7 @@ var SETS = [
 	},
 	{
 		zip: "freedm-" + VER + ".zip",
+		sha256: "b420f13508ef745d7b38e83d15e55e0fc0b09d9a503c96741cddd9773d43f7c9",
 		wads: [
 			{ name: "freedm.wad", member: "freedm-" + VER + "/freedm.wad" }
 		]
@@ -109,15 +157,27 @@ function main()
 		print("  downloading " + set.zip + " (" + url + ") ...");
 
 		try {
-			var req = new HTTPRequest();
-			req.follow_redirects = 5;   // GitHub redirects asset URLs to a CDN
-			var n = req.Download(url, tmpzip);
-			if (req.response_code != 200) {
-				print("  ! download failed: HTTP " + req.response_code);
+			// xtrn_mirror_download() follows redirects (GitHub sends asset
+			// URLs to a CDN) and, if the pinned sha256 does not match,
+			// treats that exactly like an unreachable host: it retries
+			// against the mirror rather than accepting the bytes.
+			var n = xtrn_mirror_download(url, tmpzip, {
+				verify: function(p) {
+					var got = sha256_of_file(p);
+					if (got == set.sha256)
+						return true;
+					print("  ! sha256 MISMATCH for " + set.zip);
+					print("    expected: " + set.sha256);
+					print("    got:      " + got);
+					return false;
+				}
+			});
+			if (!n) {
+				print("  ! could not fetch " + set.zip);
 				ok = false;
 				continue;
 			}
-			print("  downloaded " + n + " bytes; extracting ...");
+			print("  downloaded " + n + " bytes; sha256 verified; extracting ...");
 			var ar = new Archive(tmpzip);
 			for (m = 0; m < missing.length; m++) {
 				ar.extract(wads, missing[m].member);
@@ -148,4 +208,5 @@ function main()
 	return ok ? 0 : 1;
 }
 
-exit(main());
+if (typeof SYNCDOOM_GETWADS_NO_MAIN == "undefined")
+	exit(main());
