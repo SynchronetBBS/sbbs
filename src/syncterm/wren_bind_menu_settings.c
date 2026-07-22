@@ -7,6 +7,7 @@
 #include "named_str_list.h"
 #include "syncterm.h"
 #include "theme.h"
+#include "theme_cloud.h"
 #include "webget.h"
 #include "wren_bind_internal.h"
 
@@ -738,6 +739,12 @@ fn_Menu_selectedThemeFile(WrenVM *vm)
 	wrenSetSlotString(vm, 0, settings.theme_file);
 }
 
+static void
+fn_Menu_selectedThemePackage(WrenVM *vm)
+{
+	wrenSetSlotString(vm, 0, settings.theme_package);
+}
+
 static bool
 theme_filename_slot(WrenVM *vm, int slot, char *filename, size_t size)
 {
@@ -793,6 +800,139 @@ fn_Menu_selectTheme(WrenVM *vm)
 }
 
 static void
+fn_Menu_deleteTheme(WrenVM *vm)
+{
+	char filename[MAX_PATH + 1];
+	if (!theme_filename_slot(vm, 1, filename, sizeof(filename)))
+		return;
+	bool selected = stricmp(settings.theme_file, filename) == 0;
+	char error[256];
+	if (menu_settings_delete_theme(filename, error, sizeof(error))) {
+		if (selected)
+			settings_generation++;
+		wrenSetSlotNull(vm, 0);
+	}
+	else
+		wrenSetSlotString(vm, 0, error);
+}
+
+static void
+fn_Menu_refreshCloudThemes(WrenVM *vm)
+{
+	char error[256] = "";
+	bool loaded = syncterm_cloud_themes_refresh(true,
+	    settings.theme_package, error, sizeof(error));
+	if (loaded && settings.theme_package[0] != '\0') {
+		struct syncterm_theme *theme = NULL;
+		char reload_error[256];
+		if (syncterm_theme_prepare(&settings, true, &theme, reload_error,
+		    sizeof(reload_error)) && theme != NULL) {
+			syncterm_theme_install(theme);
+			settings_generation++;
+		}
+	}
+	if (!loaded || error[0] != '\0')
+		wrenSetSlotString(vm, 0, error[0] != '\0' ? error :
+		    "unable to load the cloud theme catalog");
+	else
+		wrenSetSlotNull(vm, 0);
+}
+
+static void
+fn_Menu_cloudThemes(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 3);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; i < syncterm_cloud_theme_count(); i++) {
+		const struct syncterm_cloud_theme_entry *entry =
+		    syncterm_cloud_theme_entry(i);
+		wrenSetSlotNewList(vm, 1);
+		insert_nullable_string(vm, 1, 2, entry->package);
+		insert_nullable_string(vm, 1, 2, entry->name);
+		insert_nullable_string(vm, 1, 2, entry->author);
+		insert_nullable_string(vm, 1, 2, entry->description);
+		insert_nullable_string(vm, 1, 2, entry->version);
+		wrenSetSlotBool(vm, 2, entry->cached);
+		wrenInsertInList(vm, 1, -1, 2);
+		wrenSetSlotBool(vm, 2, entry->update_available);
+		wrenInsertInList(vm, 1, -1, 2);
+		insert_nullable_string(vm, 1, 2, entry->error);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+}
+
+static bool
+theme_package_slot(WrenVM *vm, int slot, char *package, size_t size)
+{
+	if (!theme_filename_slot(vm, slot, package, size))
+		return false;
+	if (!syncterm_theme_valid_package(package)) {
+		wren_throw(vm, "invalid theme package");
+		return false;
+	}
+	return true;
+}
+
+static void
+fn_Menu_previewCloudTheme(WrenVM *vm)
+{
+	char package[MAX_PATH + 1];
+	if (!theme_package_slot(vm, 1, package, sizeof(package)))
+		return;
+	const char *error = syncterm_cloud_theme_preview(package);
+	if (error == NULL)
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, error);
+}
+
+static void
+fn_Menu_selectCloudTheme(WrenVM *vm)
+{
+	char package[MAX_PATH + 1];
+	if (!theme_package_slot(vm, 1, package, sizeof(package)))
+		return;
+	char error[256];
+	if (!syncterm_cloud_theme_cache(package, error, sizeof(error)) ||
+	    !menu_settings_select_theme_package(package, error, sizeof(error))) {
+		wrenSetSlotString(vm, 0, error);
+		return;
+	}
+	settings_generation++;
+	wrenSetSlotNull(vm, 0);
+}
+
+static void
+fn_Menu_deleteCloudTheme(WrenVM *vm)
+{
+	char package[MAX_PATH + 1];
+	if (!theme_package_slot(vm, 1, package, sizeof(package)))
+		return;
+	bool selected = strcmp(settings.theme_package, package) == 0;
+	char error[256];
+	if (menu_settings_delete_theme_package(package, error, sizeof(error))) {
+		if (selected)
+			settings_generation++;
+		wrenSetSlotNull(vm, 0);
+	}
+	else
+		wrenSetSlotString(vm, 0, error);
+}
+
+static void
+fn_Menu_cacheCloudTheme(WrenVM *vm)
+{
+	char package[MAX_PATH + 1];
+	if (!theme_package_slot(vm, 1, package, sizeof(package)))
+		return;
+	char error[256];
+	if (syncterm_cloud_theme_cache(package, error, sizeof(error)))
+		wrenSetSlotNull(vm, 0);
+	else
+		wrenSetSlotString(vm, 0, error);
+}
+
+static void
 push_theme_document(WrenVM *vm, struct syncterm_theme_document *source)
 {
 	wrenEnsureSlots(vm, 2);
@@ -830,6 +970,23 @@ fn_Menu_openThemeDocument(WrenVM *vm)
 	if (document == NULL) {
 		wren_throw(vm, error[0] != '\0' ? error :
 		    "unable to open theme document");
+		return;
+	}
+	push_theme_document(vm, document);
+}
+
+static void
+fn_Menu_copyCloudTheme(WrenVM *vm)
+{
+	char package[MAX_PATH + 1];
+	if (!theme_package_slot(vm, 1, package, sizeof(package)))
+		return;
+	char error[256] = "";
+	struct syncterm_theme_document *document =
+	    syncterm_cloud_theme_copy(package, error, sizeof(error));
+	if (document == NULL) {
+		wren_throw(vm, error[0] != '\0' ? error :
+		    "unable to copy cloud theme");
 		return;
 	}
 	push_theme_document(vm, document);
@@ -1459,11 +1616,20 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "fileLocations", fn_Menu_fileLocations },
 	{ "Menu", true, "themes", fn_Menu_themes },
 	{ "Menu", true, "selectedThemeFile", fn_Menu_selectedThemeFile },
+	{ "Menu", true, "selectedThemePackage", fn_Menu_selectedThemePackage },
 	{ "Menu", true, "previewTheme(_)", fn_Menu_previewTheme },
 	{ "Menu", true, "cancelThemePreview()", fn_Menu_cancelThemePreview },
 	{ "Menu", true, "selectTheme(_)", fn_Menu_selectTheme },
+	{ "Menu", true, "deleteTheme(_)", fn_Menu_deleteTheme },
 	{ "Menu", true, "newThemeDocument()", fn_Menu_newThemeDocument },
 	{ "Menu", true, "openThemeDocument(_)", fn_Menu_openThemeDocument },
+	{ "Menu", true, "refreshCloudThemes()", fn_Menu_refreshCloudThemes },
+	{ "Menu", true, "cloudThemes", fn_Menu_cloudThemes },
+	{ "Menu", true, "previewCloudTheme(_)", fn_Menu_previewCloudTheme },
+	{ "Menu", true, "selectCloudTheme(_)", fn_Menu_selectCloudTheme },
+	{ "Menu", true, "deleteCloudTheme(_)", fn_Menu_deleteCloudTheme },
+	{ "Menu", true, "cacheCloudTheme(_)", fn_Menu_cacheCloudTheme },
+	{ "Menu", true, "copyCloudTheme(_)", fn_Menu_copyCloudTheme },
 	{ "Menu", true, "encryptionAlgorithm", fn_Menu_encryptionAlgorithm },
 	{ "Menu", true, "encryptionKeySize", fn_Menu_encryptionKeySize },
 	{ "Menu", true, "encryptionName", fn_Menu_encryptionName },

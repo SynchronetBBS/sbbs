@@ -4,7 +4,7 @@ import "menu_ui" for ChoiceViewState, MenuUi
 import "ui_style" for Theme
 import "menu_bbs_editor" for BbsEditor
 import "menu_theme_editor" for ThemeEditor
-import "ui_popup" for Alert
+import "ui_popup" for Alert, Confirm
 import "ui_help" for Help
 
 class SettingsMenu {
@@ -73,6 +73,10 @@ class SettingsMenu {
   static runAction(app, picked) { runAction(app, picked, false) }
 
   static runAction(app, picked, connected) {
+    return runAction(app, picked, connected, null)
+  }
+
+  static runAction(app, picked, connected, onComment) {
     if (picked == 0) return webLists_(app)
     if (picked == 1) {
       var changed = BbsEditor.edit(app, Menu.defaults, true, false)
@@ -90,7 +94,7 @@ class SettingsMenu {
     }
     if (picked == 4) return program_(app, connected)
     if (picked == 5) {
-      themes_(app)
+      themes_(app, onComment)
       return false
     }
     if (picked == 6) {
@@ -107,9 +111,50 @@ class SettingsMenu {
     return false
   }
 
-  static themeEntry_(entries, filename) {
+  static installedThemeEntries_(localEntries, cloudEntries) {
+    var entries = []
+    for (entry in localEntries) {
+      var source = entry[0]
+      var kind = source.count == 0 ? "classic" : "file"
+      var identity = kind == "classic" ? "classic" : "file:%(source)"
+      entries.add([identity, entry[1], entry[2], entry[3], entry[4],
+          entry[5], kind, source, false])
+    }
+    for (entry in cloudEntries) {
+      if (!entry[5]) continue
+      entries.add(["package:%(entry[0])", entry[1], entry[2], entry[3],
+          entry[4], entry[7], "package", entry[0], entry[6]])
+    }
+    return entries
+  }
+
+  static onlineThemeEntries_(cloudEntries) {
+    var entries = []
+    for (entry in cloudEntries) {
+      if (!entry[5]) entries.add(entry)
+    }
+    return entries
+  }
+
+  static selectedThemeIdentity_(filename, package) {
+    if (package.count > 0) return "package:%(package)"
+    if (filename.count > 0) return "file:%(filename)"
+    return "classic"
+  }
+
+  static themeComment_(entry) {
+    if (entry == null || entry[3] == null) return ""
+    return entry[3]
+  }
+
+  static themeDeleteHelp_(entry) {
+    if (Host.safeMode || entry == null || entry[6] == "classic") return ""
+    return "\nDelete\n:  Delete this theme"
+  }
+
+  static themeEntry_(entries, identity) {
     for (entry in entries) {
-      if (entry[0] == filename) return entry
+      if (entry[0] == identity) return entry
     }
     return null
   }
@@ -123,10 +168,14 @@ class SettingsMenu {
     var rows = []
     for (entry in entries) {
       var label = entry[1]
-      if (counts[label] > 1 && entry[0].count > 0) {
-        label = "%(label) (%(entry[0]))"
+      if (counts[label] > 1 && entry[6] != "classic") {
+        label = "%(label) (%(entry[7]))"
       }
-      if (entry[5] != null) label = "[Invalid] %(label)"
+      if (entry[5] != null) {
+        label = entry[8] ? "[Update failed] %(label)" : "[Invalid] %(label)"
+      } else if (entry[8]) {
+        label = "[Update] %(label)"
+      }
       rows.add([entry[0], label])
     }
     return rows
@@ -135,51 +184,87 @@ class SettingsMenu {
   static themeHelp_(entry) {
     var text = "# Themes\n\nMoving the highlight previews a theme without " +
         "selecting it. Enter installs the highlighted theme. Insert creates " +
-        "a new theme and F2 opens the highlighted theme in the editor. " +
-        "Escape restores the installed theme.\n\n## Highlighted Theme\n\n"
+        "a new theme, F2 opens the highlighted theme in the editor, and F6 " +
+        "browses themes available online. Escape restores the installed " +
+        "theme.\n\n" +
+        "## Highlighted Theme\n\n"
     if (entry == null) return text + "The selected theme is unavailable."
     text = text + "Name\n:  %(entry[1])\n"
-    if (entry[0].count == 0) {
+    if (entry[6] == "classic") {
       text = text + "File\n:  Built-in Classic Theme\n"
+    } else if (entry[6] == "package") {
+      text = text + "Package\n:  `%(entry[7])`\n"
     } else {
-      text = text + "File\n:  `%(entry[0])`\n"
+      text = text + "File\n:  `%(entry[7])`\n"
     }
     if (entry[2] != null) text = text + "Author\n:  %(entry[2])\n"
     if (entry[4] != null) text = text + "Version\n:  %(entry[4])\n"
+    if (entry[8]) text = text + "Update\n:  Available\n"
     if (entry[3] != null) text = text + "\n%(entry[3])\n"
     if (entry[5] != null) {
+      if (entry[6] == "package") {
+        return text + "\nError\n:  %(entry[5])\n\nEnter retries the download " +
+            "and selects the theme. F2 retries the download and creates an " +
+            "editable local copy.\n\nF6\n:  Browse online themes\n" +
+            "Esc\n:  Keep the current theme" + themeDeleteHelp_(entry)
+      }
       return text + "\nError\n:  %(entry[5])\n\nThis theme cannot be " +
           "selected or edited.\n\nInsert\n:  Create a new theme\n" +
-          "Esc\n:  Keep the current theme"
+          "F6\n:  Browse online themes\nEsc\n:  Keep the current theme" +
+          themeDeleteHelp_(entry)
+    }
+    if (entry[6] == "package") {
+      return text + "\nEnter\n:  Select this theme\nInsert\n:  Create a " +
+          "new theme\nF2\n:  Create an editable local copy\nF6\n:  Browse " +
+          "online themes\nEsc\n:  Keep the current theme" +
+          themeDeleteHelp_(entry)
     }
     return text + "\nEnter\n:  Select this theme\nInsert\n:  Create a " +
-        "new theme\nF2\n:  Edit this theme\nEsc\n:  Keep the current theme"
+        "new theme\nF2\n:  Edit this theme\nF6\n:  Browse online " +
+        "themes\nEsc\n:  Keep the current theme" + themeDeleteHelp_(entry)
   }
 
-  static themes_(app) {
+  static themes_(app, onComment) {
     while (true) {
-      var entries = Menu.themes
+      var entries = installedThemeEntries_(Menu.themes, Menu.cloudThemes)
       var rows = themeRows_(entries)
-      var current = Menu.selectedThemeFile
+      var current = selectedThemeIdentity_(Menu.selectedThemeFile,
+          Menu.selectedThemePackage)
       var commands = {}
       commands[Key.insert] = ["new", true]
       commands[Key.f2] = ["edit", false]
+      if (!Host.safeMode) commands[Key.delete] = ["delete", false]
+      commands[Key.f6] = ["Online", true]
       var result = MenuUi.browserCommandChoice(app, "Themes", rows, current,
-          Fn.new {|filename|
-            themeHelp_(themeEntry_(entries, filename))
-          }, Fn.new {|filename|
-            var entry = themeEntry_(entries, filename)
+          Fn.new {|identity|
+            themeHelp_(themeEntry_(entries, identity))
+          }, Fn.new {|identity|
+            var entry = themeEntry_(entries, identity)
+            if (onComment != null) onComment.call(themeComment_(entry))
             if (entry == null || entry[5] != null) {
               Menu.cancelThemePreview()
+            } else if (entry[6] == "package") {
+              if (entry[8]) {
+                Menu.cancelThemePreview()
+              } else {
+                var error = Menu.previewCloudTheme(entry[7])
+                if (error != null) Menu.cancelThemePreview()
+              }
             } else {
-              var error = Menu.previewTheme(filename)
+              var error = Menu.previewTheme(entry[7])
               if (error != null) Menu.cancelThemePreview()
             }
             app.theme = Theme.current
-          }, Fn.new {|filename|
-            var entry = themeEntry_(entries, filename)
-            if (entry == null || entry[5] != null) return false
-            var error = Menu.selectTheme(filename)
+          }, Fn.new {|identity|
+            var entry = themeEntry_(entries, identity)
+            if (entry == null) return false
+            if (entry[6] != "package" && entry[5] != null) return false
+            var error = null
+            if (entry[6] == "package") {
+              error = Menu.selectCloudTheme(entry[7])
+            } else {
+              error = Menu.selectTheme(entry[7])
+            }
             if (error != null) {
               Alert.show(app, "Themes", error)
               return false
@@ -189,20 +274,45 @@ class SettingsMenu {
           }, Fn.new {
             Menu.cancelThemePreview()
             app.theme = Theme.current
-          }, commands)
+          }, commands, 1)
       if (result == null || result[0] == "select") return
+      if (result[0] == "Online") {
+        cloudThemes_(app, onComment)
+        continue
+      }
+      if (result[0] == "delete") {
+        var entry = themeEntry_(entries, result[1])
+        if (entry == null) continue
+        if (entry[6] == "classic") {
+          Alert.show(app, "Themes", "The built-in Classic Theme cannot be deleted.")
+          continue
+        }
+        if (!Confirm.show(app, "Delete theme '%(entry[1])'?")) continue
+        var error = null
+        if (entry[6] == "package") {
+          error = Menu.deleteCloudTheme(entry[7])
+        } else {
+          error = Menu.deleteTheme(entry[7])
+        }
+        if (error != null) {
+          Alert.show(app, "Delete Theme", error)
+        } else {
+          app.theme = Theme.current
+        }
+        continue
+      }
 
       var document = null
       if (result[0] == "new") {
         document = Menu.newThemeDocument()
       } else {
         var entry = themeEntry_(entries, result[1])
-        if (entry == null || entry[5] != null) {
+        if (entry == null || (entry[6] != "package" && entry[5] != null)) {
           Alert.show(app, "Themes", entry == null ?
               "The selected theme is unavailable." : entry[5])
           continue
         }
-        if (result[1].count == 0) {
+        if (entry[6] == "classic") {
           document = Menu.newThemeDocument()
           var error = document.importTheme("")
           if (error != null) {
@@ -210,10 +320,118 @@ class SettingsMenu {
             continue
           }
           document.setMetadata(0, "Classic Theme Copy")
+        } else if (entry[6] == "file") {
+          document = Menu.openThemeDocument(entry[7])
         } else {
-          document = Menu.openThemeDocument(result[1])
+          app.popStatus("Downloading theme")
+          var error = Menu.cacheCloudTheme(entry[7])
+          app.popStatus(null)
+          if (error != null) {
+            Alert.show(app, "Themes", error)
+            continue
+          }
+          document = Menu.copyCloudTheme(entry[7])
         }
       }
+      ThemeEditor.run(app, document)
+      app.theme = Theme.current
+    }
+  }
+
+  static cloudThemeEntry_(entries, package) {
+    for (entry in entries) {
+      if (entry[0] == package) return entry
+    }
+    return null
+  }
+
+  static cloudThemeRows_(entries) {
+    var counts = {}
+    for (entry in entries) {
+      counts[entry[1]] = counts.containsKey(entry[1]) ? counts[entry[1]] + 1 : 1
+    }
+    var rows = []
+    for (entry in entries) {
+      var label = entry[1]
+      if (counts[label] > 1) label = "%(label) (%(entry[0]))"
+      if (entry[7] != null) label = "[Unavailable] %(label)"
+      rows.add([entry[0], label])
+    }
+    return rows
+  }
+
+  static cloudThemeHelp_(entry) {
+    var text = "# Online Themes\n\nEnter downloads and selects the " +
+        "highlighted theme. F2 opens it as a new local theme document. " +
+        "F5 refreshes the manifest and updates downloaded themes.\n\n" +
+        "## Highlighted Theme\n\n"
+    if (entry == null) return text + "The selected package is unavailable."
+    text = text + "Name\n:  %(entry[1])\nPackage\n:  `%(entry[0])`\n"
+    if (entry[2] != null) text = text + "Author\n:  %(entry[2])\n"
+    if (entry[4] != null) text = text + "Version\n:  %(entry[4])\n"
+    if (entry[3] != null) text = text + "\n%(entry[3])\n"
+    if (entry[7] != null) text = text + "\nError\n:  %(entry[7])\n"
+    return text + "\nEnter\n:  Download and select\nF2\n:  Create " +
+        "an editable local copy\nF5\n:  Check for updates\nEsc\n:  Return to local themes"
+  }
+
+  static cloudThemes_(app, onComment) {
+    var refresh = true
+    while (true) {
+      if (refresh) {
+        app.popStatus("Updating theme manifest")
+        var warning = Menu.refreshCloudThemes()
+        app.popStatus(null)
+        app.theme = Theme.current
+        if (warning != null) Alert.show(app, "Online Themes", warning)
+        refresh = false
+      }
+      var entries = onlineThemeEntries_(Menu.cloudThemes)
+      if (entries.count == 0) return
+      var rows = cloudThemeRows_(entries)
+      var commands = {}
+      commands[Key.f2] = ["copy", false]
+      commands[Key.f5] = ["refresh", true]
+      var result = MenuUi.browserCommandChoice(app, "Online Themes", rows,
+          Menu.selectedThemePackage, Fn.new {|package|
+            cloudThemeHelp_(cloudThemeEntry_(entries, package))
+          }, Fn.new {|package|
+            var entry = cloudThemeEntry_(entries, package)
+            if (onComment != null) onComment.call(themeComment_(entry))
+            if (entry == null || !entry[5] || entry[6] || entry[7] != null) {
+              Menu.cancelThemePreview()
+            } else {
+              var error = Menu.previewCloudTheme(package)
+              if (error != null) Menu.cancelThemePreview()
+            }
+            app.theme = Theme.current
+          }, Fn.new {|package|
+            app.popStatus("Downloading theme")
+            var error = Menu.selectCloudTheme(package)
+            app.popStatus(null)
+            if (error != null) {
+              Alert.show(app, "Online Themes", error)
+              return false
+            }
+            app.theme = Theme.current
+            return true
+          }, Fn.new {
+            Menu.cancelThemePreview()
+            app.theme = Theme.current
+          }, commands, 1)
+      if (result == null || result[0] == "select") return
+      if (result[0] == "refresh") {
+        refresh = true
+        continue
+      }
+      app.popStatus("Downloading theme")
+      var error = Menu.cacheCloudTheme(result[1])
+      app.popStatus(null)
+      if (error != null) {
+        Alert.show(app, "Online Themes", error)
+        continue
+      }
+      var document = Menu.copyCloudTheme(result[1])
       ThemeEditor.run(app, document)
       app.theme = Theme.current
     }

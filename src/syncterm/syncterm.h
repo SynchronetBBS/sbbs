@@ -101,6 +101,7 @@ struct syncterm_settings {
 	unsigned              theme_lightbar_color;
 	unsigned              theme_lightbar_background_color;
 	char                  theme_file[MAX_PATH + 1];
+	char                  theme_package[MAX_PATH + 1];
 };
 
 extern ini_bitdesc_t audio_output_bits[];

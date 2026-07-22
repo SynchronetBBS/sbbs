@@ -30,19 +30,111 @@ by *SyncTERM Settings* -> *File Locations*.  Typical locations are:
 |===
 
 The selected basename is stored as `ThemeFile` in the `[SyncTERM]` section of
-`syncterm.ini`.  Paths are not accepted.  Selecting the built-in *Classic
-Theme* removes `ThemeFile` instead of storing a special name.
+`syncterm.ini`.  Paths are not accepted.  A theme installed from the online
+catalog is instead stored as `ThemePackage`, using a stable identifier such
+as `official/dark-mode`.  `ThemeFile` and `ThemePackage` are mutually
+exclusive.  Selecting the built-in *Classic Theme* removes both keys instead
+of storing a special name.
 
-At startup, a missing or invalid selected file falls back to *Classic Theme*
-without deleting the configured filename.  The Themes browser displays that
-file as invalid so it can be diagnosed after the file is restored or fixed.
-The browser previews valid themes as the highlight moves, saves a selection
-on Enter, and restores the committed theme on Escape.  Invalid entries remain
-highlightable for their error text but cannot be selected.
+At startup, a missing or invalid selected file or cached package falls back
+to *Classic Theme* without deleting the configured identity.  The appropriate
+theme browser displays that selection as invalid so it can be diagnosed after
+the file or package is restored.  The browser previews valid themes as the
+highlight moves, saves a selection on Enter, and restores the committed theme
+on Escape.  Invalid entries remain highlightable for their error text but
+cannot be selected.
 
 The six settings under `[ClassicTheme]` affect only the built-in *Classic
 Theme*.  A file theme is a sparse overlay on SyncTERM's compiled default and
 does not inherit those six colour preferences.
+
+== Online Themes
+
+The Themes browser lists the built-in Classic Theme, local theme files, and
+packages which have been downloaded into the cache.  F6 opens *Online
+Themes*, which lists only manifest packages without a cached copy.  Enter
+downloads and selects an online package, F2 downloads it as an unsaved local
+copy in the theme editor, and F5 refreshes the manifest and downloaded
+packages.  Cloud packages are read-only cache entries; editing one creates an
+ordinary file in the per-user `themes` directory which is no longer
+associated with manifest updates.  Both browsers show the highlighted
+theme's Description on the main-screen comment line.  Delete removes a local
+theme file or cached package; deleting the selected theme first selects
+Classic Theme.  A deleted cached package returns to Online Themes.
+
+The official manifest and its packages are stored below
+`syncterm-system-cache/themes/official` in SyncTERM's cache directory.  This
+keeps automatically managed files separate from manually installed themes.
+Files ending in `.download` are HTTP cache bodies.  SyncTERM promotes a body
+to `manifest.lst` or `<id>.ini` only after validation, so an invalid response
+does not replace the last accepted copy.  Clearing the system cache removes
+downloaded packages but does not remove `ThemePackage` from `syncterm.ini`.
+SyncTERM falls back to Classic until that package is available again.
+
+Once an online catalog has been used, SyncTERM checks it during startup.
+Packages already present in the cache, including the selected package, are
+updated when their manifest SHA-256 changes.  Entering the Online Themes
+browser also checks for updates.  A network or validation failure retains the
+previous validated package and is shown in the browser.
+
+The official catalog is read from
+`http://syncterm.bbsdev.net/themes/manifest.lst`.  Its contents use INI
+syntax:
+
+[source,ini]
+----
+Repository = official
+Name = SyncTERM Themes
+
+[Theme:dark-mode]
+Name = Dark Mode
+Author = Example Author
+Description = A dark theme
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/dark-mode.ini
+SHA256 = 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+----
+
+`Repository` must occur exactly once and currently must be `official`.
+Section suffixes are stable package IDs containing only lowercase ASCII
+letters, digits, periods, underscores, and hyphens.  `Name`, an absolute HTTP
+or HTTPS `URI`, and a 64-digit `SHA256` are required.  `Author`, `Description`,
+and `Version` are optional.  Duplicate package sections or duplicate
+recognized fields make the complete manifest invalid.  The
+SHA-256 identifies the exact theme file bytes; after the hash matches, the
+normal theme loader must also accept the file before it can be installed.
+
+=== Classic Extended
+
+*Classic Extended* retains the default Classic Theme's legacy 16-colour
+attributes role for role.  On RGB-capable backends it expands the familiar
+blue, cyan, yellow, grey, and red scheme with additional shades for focused,
+inactive, input, status, help, log, and popup roles.
+
+== Official Colour-Vision Themes
+
+The official catalog includes ten palettes for colour-vision conditions.
+Each theme defines every built-in style in both RGB and legacy 16-colour
+form.  Legacy attributes keep bit 7 clear, so they do not request blinking
+text on VGA-compatible backends.  Focus, inactive, disabled, input, status,
+warning, and popup states are reinforced by luminance or reversal rather
+than hue alone.
+
+[cols="2,2"]
+|===
+| Condition | Theme
+
+| Protanomaly | *Emberworn*
+| Protanopia | *Emberless*
+| Deuteranomaly | *Verdantworn*
+| Deuteranopia | *Verdantless*
+| Tritanomaly | *Azureworn*
+| Tritanopia | *Azureless*
+| Red-cone monochromacy | *Crimsonbound*
+| Green-cone monochromacy | *Viridianbound*
+| Blue-cone monochromacy | *Ceruleanbound*
+| Achromatopsia | *Ashen*
+|===
 
 == Theme Editor
 

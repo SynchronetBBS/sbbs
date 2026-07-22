@@ -17,4 +17,5 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)webget$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)syncterm$(OFILE) \
-                        $(MTOBJODIR)$(DIRSEP)theme$(OFILE)
+                        $(MTOBJODIR)$(DIRSEP)theme$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)theme_cloud$(OFILE)

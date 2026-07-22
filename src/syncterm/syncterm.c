@@ -92,6 +92,7 @@ enum {
 #include "syncterm.h"
 #include "term.h"
 #include "theme.h"
+#include "theme_cloud.h"
 #include "window.h"
 #include "wren_menu_host.h"
 #include "wren_picker_host.h"
@@ -1956,6 +1957,10 @@ load_settings(struct syncterm_settings *set)
 	    "TextColour", (char **)colour_enum, 16);
 	iniReadSString(inifile, "SyncTERM", "ThemeFile", "", set->theme_file,
 	    sizeof(set->theme_file));
+	iniReadSString(inifile, "SyncTERM", "ThemePackage", "",
+	    set->theme_package, sizeof(set->theme_package));
+	if (set->theme_package[0] != '\0')
+		set->theme_file[0] = '\0';
 
 	if (inifile)
 		fclose(inifile);
@@ -1987,6 +1992,11 @@ update_webget_progress(struct webget_request *reqs, size_t items, bool leaveup)
 
 	for (size_t i = 0; i < items; i++) {
 		lines[i] = text[i];
+		if (!reqs[i].initialized) {
+			snprintf(text[i], sizeof(text[i]),
+			    "Web request: unable to initialize");
+			continue;
+		}
 		assert_pthread_mutex_lock(&reqs[i].mtx);
 		const char *name = reqs[i].name == NULL ? "" : reqs[i].name;
 		const char *state = reqs[i].state == NULL ? "" : reqs[i].state;
@@ -2277,6 +2287,7 @@ main(int argc, char **argv)
 		return 1;
 	}
 	atexit(syncterm_theme_shutdown);
+	atexit(syncterm_cloud_themes_shutdown);
 	ciolib_swap_mouse_butt45 = settings.invert_wheel;
 	cvmode = find_vmode(CIOLIB_MODE_CUSTOM);
 	vparams[cvmode].cols = settings.custom_cols;
@@ -2544,6 +2555,20 @@ main(int argc, char **argv)
 	if (!winsock_startup())
 		return 1;
 
+	if (!quitting && (settings.theme_package[0] != '\0' ||
+	    syncterm_cloud_themes_available())) {
+		char error[256];
+		host_ui_status("Updating themes");
+		if (syncterm_cloud_themes_refresh(true, settings.theme_package,
+		    error, sizeof(error)) && settings.theme_package[0] != '\0') {
+			struct syncterm_theme *theme = NULL;
+			if (syncterm_theme_prepare(&settings, true, &theme, error,
+			    sizeof(error)) && theme != NULL)
+				syncterm_theme_install(theme);
+		}
+		host_ui_status_clear();
+	}
+
 	if ((settings.webgetUserList || settings.webgets) && !quitting) {
 		// Update the web list caches...
 
@@ -2556,7 +2581,9 @@ main(int argc, char **argv)
 			}
 			else
 				items = 0;
-			struct webget_request *reqs = calloc(items + settings.webgetUserList, sizeof(struct webget_request));
+			size_t request_count = items + settings.webgetUserList;
+			struct webget_request *reqs = calloc(request_count,
+			    sizeof(struct webget_request));
 			if (reqs != NULL) {
 				sem_init(&download_complete_sem, 0, 0);
 				if (settings.webgetUserList) {
@@ -2583,10 +2610,13 @@ main(int argc, char **argv)
 					if (sem_trywait_block(&download_complete_sem, 200) == 0) {
 						started--;
 					}
-					update_webget_progress(reqs, items, false);
+					update_webget_progress(reqs, request_count, false);
 				}
 				sem_destroy(&download_complete_sem);
-				update_webget_progress(reqs, items, true);
+				update_webget_progress(reqs, request_count, true);
+				for (size_t i = 0; i < request_count; i++)
+					destroy_webget_req(&reqs[i]);
+				free(reqs);
 			}
 		}
 		host_ui_status_clear();

@@ -15,7 +15,7 @@
 #endif
 #include "xpprintf.h"
 
-#define MAX_LIST_SIZE (16 * 1024 * 1024)
+#define MAX_WEBGET_SIZE (16 * 1024 * 1024)
 
 struct http_cache_info {
 	char *etag;
@@ -704,13 +704,13 @@ parse_headers(struct http_session *sess)
 		else if(strnicmp(line, "content-length:", 15) == 0) {
 			long long ll;
 			if (paranoid_strtoll(&line[15], NULL, 10, &ll)) {
-				if (ll > MAX_LIST_SIZE) {
+				if (ll > MAX_WEBGET_SIZE) {
 					set_msgf(sess->req, "Content Too Large (%lld)", ll);
 					goto error_return;
 				}
 				sess->got_size = true;
 				assert_pthread_mutex_lock(&sess->req->mtx);
-				/* Clamped above to <= MAX_LIST_SIZE (16 MB) which fits
+				/* Clamped above to <= MAX_WEBGET_SIZE (16 MB) which fits
 				 * size_t on every supported platform. */
 				sess->req->remote_size = (size_t)ll;
 				assert_pthread_mutex_unlock(&sess->req->mtx);
@@ -786,8 +786,7 @@ parse_uri(struct http_session *sess)
 		assert_pthread_mutex_unlock(&sess->req->mtx);
 		goto error_return;
 	}
-	size_t copied = strlcpy(sess->hacky_list_entry.name, sess->req->name, sizeof(sess->hacky_list_entry.name));
-	assert(copied <= LIST_NAME_MAX);
+	strlcpy(sess->hacky_list_entry.name, sess->req->name, sizeof(sess->hacky_list_entry.name));
 	assert_pthread_mutex_unlock(&sess->req->mtx);
 	char *slash = strchr(sess->hostname, '/');
 	if (slash == NULL) {
@@ -800,7 +799,7 @@ parse_uri(struct http_session *sess)
 		set_msg_locked(sess->req, "Hostname Too Long");
 		goto error_return;
 	}
-	copied = strlcpy(sess->hacky_list_entry.addr, sess->hostname, sizeof(sess->hacky_list_entry.addr));
+	size_t copied = strlcpy(sess->hacky_list_entry.addr, sess->hostname, sizeof(sess->hacky_list_entry.addr));
 	assert(copied <= LIST_ADDR_MAX);
 	return true;
 
@@ -813,7 +812,7 @@ open_cacheinfo(struct http_session *sess)
 {
 	char *path = NULL;
 
-	int len = asprintf(&path, "%s/%s.cacheinfo", sess->req->cache_root, sess->req->name);
+	int len = asprintf(&path, "%s/%s.cacheinfo", sess->req->cache_root, sess->req->cache_key);
 	if (len == -1)
 		path = NULL;
 	if (len < 0) {
@@ -963,7 +962,7 @@ read_chunked(struct http_session *sess, FILE *out)
 		if (chunk_size == 0)
 			break;
 		total += chunk_size;
-		if (total > MAX_LIST_SIZE)  {
+		if (total > MAX_WEBGET_SIZE)  {
 			set_msg(sess->req, "Total Size Too Large");
 			goto error_return;
 		}
@@ -1040,7 +1039,7 @@ read_body(struct http_session *sess, FILE *out)
 			if (eof)
 				break;
 			received += rb;
-			if (received >= MAX_LIST_SIZE) {
+			if (received >= MAX_WEBGET_SIZE) {
 				set_msg(sess->req, "Total Size Too Large");
 				goto error_return;
 			}
@@ -1109,7 +1108,7 @@ do_request(struct http_session *sess)
 	if (sess->not_modified)
 		goto success_return;
 
-	int len = asprintf(&npath, "%s/%s.new", sess->req->cache_root, sess->req->name);
+	int len = asprintf(&npath, "%s/%s.new", sess->req->cache_root, sess->req->cache_key);
 	if (len == -1)
 		npath = NULL;
 	if (len < 1) {
@@ -1122,14 +1121,14 @@ do_request(struct http_session *sess)
 		goto error_return;
 	}
 	if (!sess->not_modified) {
-		len = asprintf(&path, "%s/%s.lst", sess->req->cache_root, sess->req->name);
+		len = asprintf(&path, "%s/%s", sess->req->cache_root, sess->req->output_name);
 		if (len == -1)
 			path = NULL;
 		if (len < 1) {
 			set_msg(sess->req, "asprintf(&path, ...) error");
 			goto error_return;
 		}
-		set_state(sess->req, "Reading list");
+		set_state(sess->req, "Reading response");
 		if (sess->is_chunked)
 			ret = read_chunked(sess, newfile);
 		else
@@ -1207,7 +1206,7 @@ is_fresh(struct http_session *sess)
 	if (sess->cache.must_revalidate) {
 		// Delete stale file
 		char *path;
-		int len = asprintf(&path, "%s/%s.lst", sess->req->cache_root, sess->req->name);
+		int len = asprintf(&path, "%s/%s", sess->req->cache_root, sess->req->output_name);
 		if (len == -1)
 			path = NULL;
 		if (len > 0) {
@@ -1219,10 +1218,11 @@ is_fresh(struct http_session *sess)
 	return false;
 }
 
-// TODO: Cache
 bool
-iniReadHttp(struct webget_request *req)
+webget_fetch(struct webget_request *req, bool force)
 {
+	if (req == NULL || !req->initialized)
+		return false;
 	struct http_session sess = {
 		.sock = INVALID_SOCKET,
 		.req = req,
@@ -1236,15 +1236,18 @@ iniReadHttp(struct webget_request *req)
 		},
 	};
 
-	if (req == NULL)
-		goto error_return;
 	set_state(req, "Opening Cache Info");
 	if (!open_cacheinfo(&sess))
 		goto error_return;
 	set_state(req, "Reading Cache Info");
 	if (!parse_cacheinfo(&sess))
 		goto error_return;
-	if (!is_fresh(&sess)) {
+	if (force) {
+		free(sess.cache.etag);
+		sess.cache.etag = NULL;
+		sess.cache.last_modified = 0;
+	}
+	if (force || !is_fresh(&sess)) {
 		if (!do_request(&sess))
 			goto error_return;
 	}
@@ -1260,8 +1263,27 @@ error_return:
 }
 
 bool
-init_webget_req(struct webget_request *req, const char *cache_root, const char *name, const char *uri)
+iniReadHttp(struct webget_request *req)
 {
+	return webget_fetch(req, false);
+}
+
+static bool
+valid_cache_component(const char *value)
+{
+	if (value == NULL || value[0] == 0 || strcmp(value, ".") == 0 || strcmp(value, "..") == 0)
+		return false;
+	return strchr(value, '/') == NULL && strchr(value, '\\') == NULL;
+}
+
+bool
+init_webget_file_req(struct webget_request *req, const char *cache_root, const char *name, const char *uri,
+    const char *cache_key, const char *output_name)
+{
+	if (req == NULL || cache_root == NULL || name == NULL || uri == NULL
+	    || !valid_cache_component(cache_key) || !valid_cache_component(output_name))
+		return false;
+	memset(req, 0, sizeof(*req));
 	if (pthread_mutex_init(&req->mtx, NULL) != 0)
 		return false;
 	req->name = strdup(name);
@@ -1285,23 +1307,65 @@ init_webget_req(struct webget_request *req, const char *cache_root, const char *
 		pthread_mutex_destroy(&req->mtx);
 		return false;
 	}
+	req->cache_key = strdup(cache_key);
+	if (req->cache_key == NULL)
+		goto allocation_failure;
+	req->output_name = strdup(output_name);
+	if (req->output_name == NULL)
+		goto allocation_failure;
 	req->state = NULL;
 	req->msg = NULL;
 	req->remote_size = 0;
 	req->received_size = 0;
+	req->initialized = true;
 	return true;
+
+allocation_failure:
+	free((void *)req->cache_key);
+	req->cache_key = NULL;
+	free((void *)req->cache_root);
+	req->cache_root = NULL;
+	free((void *)req->uri);
+	req->uri = NULL;
+	free((void *)req->name);
+	req->name = NULL;
+	pthread_mutex_destroy(&req->mtx);
+	return false;
+}
+
+bool
+init_webget_req(struct webget_request *req, const char *cache_root, const char *name, const char *uri)
+{
+	char *output_name = NULL;
+	int len = asprintf(&output_name, "%s.lst", name);
+	if (len < 1) {
+		free(output_name);
+		return false;
+	}
+	bool ret = init_webget_file_req(req, cache_root, name, uri, name, output_name);
+	free(output_name);
+	return ret;
 }
 
 void
 destroy_webget_req(struct webget_request *req)
 {
+	if (req == NULL || !req->initialized)
+		return;
 	free((void *)req->name);
 	req->name = NULL;
 	free((void *)req->uri);
 	req->uri = NULL;
+	free((void *)req->cache_root);
+	req->cache_root = NULL;
+	free((void *)req->cache_key);
+	req->cache_key = NULL;
+	free((void *)req->output_name);
+	req->output_name = NULL;
 	free((void *)req->msg);
 	req->msg = NULL;
 	free((void *)req->state);
 	req->state = NULL;
 	pthread_mutex_destroy(&req->mtx);
+	req->initialized = false;
 }

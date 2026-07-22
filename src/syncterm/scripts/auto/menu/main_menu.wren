@@ -1001,8 +1001,11 @@ class MainMenuApp {
 
   settingsAction_(picked) {
     var preferred = _selected == null ? null : _selected.name
+    var previousComment = _selected == null ? "" : _selected.comment
     SettingsMenu.begin()
-    var changed = SettingsMenu.runAction(_app, picked, _connected)
+    var changed = SettingsMenu.runAction(_app, picked, _connected,
+        Fn.new {|value| _footer.comment = value })
+    _footer.comment = previousComment
     if (!changed) return
     if (SettingsMenu.passwordChanged) {
       MainMenu.password = SettingsMenu.directoryPassword

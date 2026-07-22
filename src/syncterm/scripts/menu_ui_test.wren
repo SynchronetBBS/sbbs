@@ -10,6 +10,7 @@ class MenuUiTest {
     System.print("=== menu_ui self-test starting ===")
 
     testChoiceViewState_()
+    testBrowserMaximumHeight_()
 
     var total = __pass + __fail
     System.print("=== menu_ui: %(total) tests, %(__pass) pass, " +
@@ -40,5 +41,11 @@ class MenuUiTest {
     check_(first == second && fresh != first && second.selected == 10 &&
            second.scrollTop == 8,
            "ChoiceViewState: repeated choices retain ListView viewport")
+  }
+
+  static testBrowserMaximumHeight_() {
+    check_(MenuUi.browserMaximumHeight_(25, 0) == 21 &&
+           MenuUi.browserMaximumHeight_(25, 1) == 20,
+           "MenuUi browser bottom clearance reserves the shadow row")
   }
 }

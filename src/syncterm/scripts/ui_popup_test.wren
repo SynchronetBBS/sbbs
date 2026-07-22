@@ -102,6 +102,7 @@ class UiPopupTest {
     testMenuChoiceCarriesKeyHints_()
     testMenuChoiceRunsCallbackBeforeDismiss_()
     testMenuCommandChoiceReturnsCommandAndRow_()
+    testMenuCommandChoiceUsesCompactInsertDeleteHints_()
     testMenuCommandChoicePreemptsTypeahead_()
     testMenuCommandChoiceProtectsBlankRow_()
     testMenuCommandChoiceCompatibilityAliases_()
@@ -396,6 +397,20 @@ class UiPopupTest {
         commands)
     check_(result[0] == "insert" && result[1] == 20,
            "MenuUi.commandChoice: returns command and mapped row")
+  }
+
+  static testMenuCommandChoiceUsesCompactInsertDeleteHints_() {
+    var app = EscapeFakeApp.new()
+    var commands = {}
+    commands[Key.insert] = ["insert", true]
+    commands[Key.delete] = ["delete", false]
+    MenuUi.commandChoice(app, "Choice", ["One", "Two"], 0, null,
+        commands)
+    var hints = app.last.keyHints
+    check_(hints.count == 4 && hints[1][0] == "INS" &&
+           hints[1][1] == "Add" && hints[2][0] == "DEL" &&
+           hints[2][1] == "Delete",
+           "MenuUi.commandChoice: Insert/Delete use compact hints")
   }
 
   static testMenuCommandChoicePreemptsTypeahead_() {

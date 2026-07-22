@@ -103,7 +103,7 @@ class MenuUi {
   static commandLabel_(name) {
     if (name == "new") return "New"
     if (name == "edit") return "Edit"
-    if (name == "insert") return "Insert"
+    if (name == "insert") return "Add"
     if (name == "delete") return "Delete"
     if (name == "rename") return "Rename"
     if (name == "copy") return "Copy"
@@ -126,8 +126,8 @@ class MenuUi {
     addCommandHint_(hints, commands, Key.f2, "F2")
     addCommandHint_(hints, commands, Key.f5, "F5")
     addCommandHint_(hints, commands, Key.f6, "F6")
-    addCommandHint_(hints, commands, Key.insert, "Insert")
-    addCommandHint_(hints, commands, Key.delete, "Delete")
+    addCommandHint_(hints, commands, Key.insert, "INS")
+    addCommandHint_(hints, commands, Key.delete, "DEL")
     addCommandHint_(hints, commands, Key.ctrlX, "Ctrl-X")
     addCommandHint_(hints, commands, 0x5B, "[")
     addCommandHint_(hints, commands, 0x5D, "]")
@@ -444,6 +444,16 @@ class MenuUi {
   // browser after running onCancel so callers can rebuild a changed catalog.
   static browserCommandChoice(app, title, rows, current, helpFor, onChange,
       onAccept, onCancel, commands) {
+    return browserCommandChoice(app, title, rows, current, helpFor, onChange,
+        onAccept, onCancel, commands, 0)
+  }
+
+  static browserMaximumHeight_(screenHeight, bottomClearance) {
+    return (screenHeight - 4 - bottomClearance.max(0)).max(4)
+  }
+
+  static browserCommandChoice(app, title, rows, current, helpFor, onChange,
+      onAccept, onCancel, commands, bottomClearance) {
     if (rows.count == 0) return null
     var state = {"result": null, "closed": false}
     var list = null
@@ -476,7 +486,8 @@ class MenuUi {
       if (row[1].count + 4 > longest) longest = row[1].count + 4
     }
     var w = longest.max(24).min(size[0] - 4)
-    var h = (labels.count + 4).min(size[1] - 4)
+    var h = (labels.count + 4).min(
+        browserMaximumHeight_(size[1], bottomClearance))
     pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
         ((size[1] - h) / 2).floor + 1, w, h)
 

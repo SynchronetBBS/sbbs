@@ -2,6 +2,7 @@
 
 #include "bbslist.h"
 #include "theme.h"
+#include "theme_cloud.h"
 #include <ciolib.h>
 #include <ini_file.h>
 #include <stdint.h>
@@ -112,6 +113,11 @@ set_ini_values(str_list_t *ini, const struct syncterm_settings *set)
 	else
 		iniSetString(ini, "SyncTERM", "ThemeFile", set->theme_file,
 		    &ini_style);
+	if (set->theme_package[0] == '\0')
+		iniRemoveKey(ini, "SyncTERM", "ThemePackage");
+	else
+		iniSetString(ini, "SyncTERM", "ThemePackage", set->theme_package,
+		    &ini_style);
 	iniSetEnum(ini, "ClassicTheme", "FrameColour", (char **)colour_enum,
 	    set->theme_frame_color, &ini_style);
 	iniSetEnum(ini, "ClassicTheme", "TextColour", (char **)colour_enum,
@@ -199,7 +205,10 @@ theme_settings_changed(const struct syncterm_settings *snapshot)
 {
 	if (strcmp(snapshot->theme_file, settings.theme_file) != 0)
 		return true;
-	if (snapshot->theme_file[0] != '\0')
+	if (strcmp(snapshot->theme_package, settings.theme_package) != 0)
+		return true;
+	if (snapshot->theme_file[0] != '\0' ||
+	    snapshot->theme_package[0] != '\0')
 		return false;
 	return snapshot->theme_frame_color != settings.theme_frame_color ||
 	    snapshot->theme_text_color != settings.theme_text_color ||
@@ -278,24 +287,14 @@ menu_settings_save(const struct syncterm_settings *snapshot)
 	return true;
 }
 
-bool
-menu_settings_select_theme(const char *filename, char *error,
-    size_t error_size)
+static bool
+select_theme(const char *filename, const char *package,
+    struct syncterm_theme *theme, char *error, size_t error_size)
 {
-	if (filename == NULL)
-		filename = "";
-	if (strlen(filename) > MAX_PATH ||
-	    (filename[0] != '\0' && !syncterm_theme_valid_filename(filename))) {
-		snprintf(error, error_size, "invalid theme filename");
-		return false;
-	}
-	struct syncterm_theme *theme;
-	if (!syncterm_theme_prepare_catalog_selection(filename, &theme, error,
-	    error_size))
-		return false;
 	struct syncterm_settings snapshot;
 	menu_settings_snapshot(&snapshot);
 	strcpy(snapshot.theme_file, filename);
+	strcpy(snapshot.theme_package, package);
 	struct vmem_cell *resized;
 	if (!prepare_settings(&snapshot, &resized)) {
 		syncterm_theme_free(theme);
@@ -325,4 +324,87 @@ menu_settings_select_theme(const char *filename, char *error,
 	}
 	install_settings(&snapshot, resized, theme);
 	return true;
+}
+
+bool
+menu_settings_select_theme(const char *filename, char *error,
+    size_t error_size)
+{
+	if (filename == NULL)
+		filename = "";
+	if (strlen(filename) > MAX_PATH ||
+	    (filename[0] != '\0' && !syncterm_theme_valid_filename(filename))) {
+		snprintf(error, error_size, "invalid theme filename");
+		return false;
+	}
+	struct syncterm_theme *theme;
+	if (!syncterm_theme_prepare_catalog_selection(filename, &theme, error,
+	    error_size))
+		return false;
+	return select_theme(filename, "", theme, error, error_size);
+}
+
+bool
+menu_settings_select_theme_package(const char *package, char *error,
+    size_t error_size)
+{
+	if (package == NULL || strlen(package) > MAX_PATH ||
+	    !syncterm_theme_valid_package(package)) {
+		snprintf(error, error_size, "invalid theme package");
+		return false;
+	}
+	struct syncterm_theme *theme;
+	if (!syncterm_theme_load_package(package, &theme, error, error_size))
+		return false;
+	return select_theme("", package, theme, error, error_size);
+}
+
+static bool
+select_classic_theme(char *error, size_t error_size)
+{
+	struct syncterm_settings snapshot;
+	menu_settings_snapshot(&snapshot);
+	snapshot.theme_file[0] = '\0';
+	snapshot.theme_package[0] = '\0';
+	struct syncterm_theme *theme = NULL;
+	if (!syncterm_theme_prepare(&snapshot, true, &theme, error, error_size))
+		return false;
+	return select_theme("", "", theme, error, error_size);
+}
+
+bool
+menu_settings_delete_theme(const char *filename, char *error,
+    size_t error_size)
+{
+	if (safe_mode) {
+		snprintf(error, error_size, "themes cannot be deleted in safe mode");
+		return false;
+	}
+	if (filename == NULL || filename[0] == '\0' ||
+	    !syncterm_theme_valid_filename(filename)) {
+		snprintf(error, error_size, "invalid theme filename");
+		return false;
+	}
+	if (stricmp(settings.theme_file, filename) == 0 &&
+	    !select_classic_theme(error, error_size))
+		return false;
+	return syncterm_theme_delete(filename, error, error_size);
+}
+
+bool
+menu_settings_delete_theme_package(const char *package, char *error,
+    size_t error_size)
+{
+	if (safe_mode) {
+		snprintf(error, error_size, "themes cannot be deleted in safe mode");
+		return false;
+	}
+	if (package == NULL || !syncterm_theme_valid_package(package)) {
+		snprintf(error, error_size, "invalid theme package");
+		return false;
+	}
+	if (strcmp(settings.theme_package, package) == 0 &&
+	    !select_classic_theme(error, error_size))
+		return false;
+	return syncterm_cloud_theme_delete(package, error, error_size);
 }

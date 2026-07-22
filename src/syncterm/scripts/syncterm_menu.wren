@@ -88,11 +88,22 @@ class Menu {
   // a row informational and non-selectable.
   foreign static themes
   foreign static selectedThemeFile
+  foreign static selectedThemePackage
   foreign static previewTheme(filename)
   foreign static cancelThemePreview()
   foreign static selectTheme(filename)
+  foreign static deleteTheme(filename)
   foreign static newThemeDocument()
   foreign static openThemeDocument(filename)
+  // Cloud rows are [package, name, author, description, version,
+  // cached, updateAvailable, error].
+  foreign static refreshCloudThemes()
+  foreign static cloudThemes
+  foreign static previewCloudTheme(package)
+  foreign static selectCloudTheme(package)
+  foreign static deleteCloudTheme(package)
+  foreign static cacheCloudTheme(package)
+  foreign static copyCloudTheme(package)
   foreign static encryptionAlgorithm
   foreign static encryptionKeySize
   foreign static encryptionName

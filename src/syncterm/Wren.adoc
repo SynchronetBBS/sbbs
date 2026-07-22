@@ -4001,7 +4001,9 @@ absent.  An invalid or missing theme has an error String and cannot be
 selected, but remains available for display in the browser.
 
 `Menu.selectedThemeFile` returns the committed filename, or an empty String
-for Classic Theme.  `Menu.previewTheme(filename)` installs a temporary
+when Classic or a cloud package is selected.  `Menu.selectedThemePackage`
+returns the committed `repository/id`, or an empty String for Classic and
+local files.  `Menu.previewTheme(filename)` installs a temporary
 process-wide preview and returns `null`, or returns an error String without
 changing the committed selection.  `Menu.cancelThemePreview()` restores the
 committed theme.  Both operations advance `Host.themeGeneration` when they
@@ -4013,6 +4015,40 @@ Classic removes the key.  It returns `null` on success or an error String on
 failure.  In safe mode the running selection changes but the INI file is not
 written.  A successful selection advances both the theme and settings
 generations, so scripts should reacquire outstanding `Settings` snapshots.
+
+`Menu.deleteTheme(filename)` removes a local theme file and returns `null`, or
+an error String.  Deleting the selected file first commits Classic Theme.
+
+`Menu.refreshCloudThemes()` refreshes the official manifest, updates cached
+packages whose SHA-256 changed, and returns `null` or a warning String.  A
+warning may be returned while the previously validated manifest remains
+available.  `Menu.cloudThemes` then returns rows
+`[package, name, author, description, version, cached, updateAvailable,
+error]`.  Optional metadata and `error` are `null` when
+absent.
+
+`Menu.previewCloudTheme(package)` previews a validated cached package and
+returns `null` or an error String.  `Menu.cacheCloudTheme(package)` downloads
+and validates a package without selecting it.  `Menu.selectCloudTheme(package)`
+does the same as needed, writes `[SyncTERM] ThemePackage`, removes
+`ThemeFile`, and commits the selection.  `Menu.copyCloudTheme(package)`
+returns an unsaved `ThemeDocument` populated from the cached package.  These
+catalog and document operations are menu-VM capabilities; the cache location
+is never exposed as general filesystem authority.
+
+`Menu.deleteCloudTheme(package)` removes a cached package so it appears in
+Online Themes again, returning `null` or an error String.  Deleting the
+selected package first commits Classic Theme.  Both deletion operations are
+unavailable in safe mode.
+
+The shipped Themes browser combines `Menu.themes` with cached rows from
+`Menu.cloudThemes`, using distinct identities for Classic, local files, and
+packages when tracking its selection.  Its Online Themes browser displays
+only `Menu.cloudThemes` rows whose `cached` member is `false`.  Downloading a
+package therefore moves it from the online-only browser to the main Themes
+browser.  Both browsers publish the highlighted row's description through
+the main menu's comment callback and reserve the comment row when sizing
+their shadowed panes.
 
 `Menu.newThemeDocument()` returns a new C-owned `ThemeDocument` containing a
 minimal sparse overlay on the compiled default.  Its filename is empty and

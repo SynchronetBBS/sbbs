@@ -8,6 +8,8 @@
 struct syncterm_settings;
 struct syncterm_theme_document;
 
+#define SYNCTERM_THEME_REPOSITORY "official"
+
 struct syncterm_theme_style {
 	char   *role;
 	int     font;
@@ -24,6 +26,7 @@ struct syncterm_theme_glyph {
 
 struct syncterm_theme {
 	char                         *filename;
+	char                         *package;
 	char                         *name;
 	char                         *author;
 	char                         *description;
@@ -113,18 +116,29 @@ size_t syncterm_theme_catalog_count(void);
 const struct syncterm_theme_catalog_entry *syncterm_theme_catalog_entry(
     size_t index);
 const char *syncterm_theme_preview(const char *filename);
+const char *syncterm_theme_preview_loaded(
+    const struct syncterm_theme *theme);
 void syncterm_theme_cancel_preview(void);
 bool syncterm_theme_prepare_catalog_selection(const char *filename,
     struct syncterm_theme **result, char *error, size_t error_size);
 
 bool syncterm_theme_valid_filename(const char *filename);
+bool syncterm_theme_valid_package(const char *package);
+bool syncterm_theme_delete(const char *filename, char *error,
+    size_t error_size);
+bool syncterm_theme_package_path(const char *package, char *path,
+    size_t path_size);
 bool syncterm_theme_load_path(const char *path, const char *filename,
+    struct syncterm_theme **result, char *error, size_t error_size);
+bool syncterm_theme_load_package(const char *package,
     struct syncterm_theme **result, char *error, size_t error_size);
 
 struct syncterm_theme_document *syncterm_theme_document_new(char *error,
     size_t error_size);
 struct syncterm_theme_document *syncterm_theme_document_open(
     const char *filename, char *error, size_t error_size);
+struct syncterm_theme_document *syncterm_theme_document_copy_path(
+    const char *path, char *error, size_t error_size);
 void syncterm_theme_document_free(struct syncterm_theme_document *document);
 
 const char *syncterm_theme_document_filename(

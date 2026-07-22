@@ -1,0 +1,106 @@
+Repository = official
+Name = SyncTERM Official Themes
+
+[Theme:classic-extended]
+Name = Classic Extended
+Author = SyncTERM Project
+Description = The familiar Classic theme with its original 16-colour attributes and a richer RGB palette.
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/classic-extended.ini
+SHA256 = 8e90317b090fe1121f5ab29c57fdc8d7151897ee3d3174765a382c873bf760cf
+
+[Theme:dark-mode]
+Name = Dark Mode
+Author = Deuce and OpenAI Codex
+Description = A neutral charcoal interface with cyan structure, amber focus, and distinct status colours.
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/DarkMode.ini
+SHA256 = bd482d3dbe08f1685302787a2b3afba1592c93f7ff2f70d0afb09a6468d3d4c4
+
+[Theme:hot-dog-stand]
+Name = Hot Dog Stand
+Author = Deuce and OpenAI Codex
+Description = An unapologetic red-and-yellow homage to the Windows 3.x colour scheme.
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/HotDogStand.ini
+SHA256 = 05d466768eca747dbe90eaa4eecbc2e4594a1799103bb4d5c0c8ff0d7daa2417
+
+[Theme:emberworn]
+Name = Emberworn
+Author = SyncTERM Project
+Description = A blue-and-amber high-contrast palette designed for protanomaly (reduced red sensitivity).
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/emberworn.ini
+SHA256 = 88f1d0d86d4e1131959166a90ec18f21185f1292e7807bf32af1375b1301d6b3
+
+[Theme:emberless]
+Name = Emberless
+Author = SyncTERM Project
+Description = A maximal-contrast blue, yellow, black, and white palette designed for protanopia (absent red-cone function).
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/emberless.ini
+SHA256 = 0def685e41fdc2a8d37311de2f6db25b63585de8d6faddd74c5c3a2edda33986
+
+[Theme:verdantworn]
+Name = Verdantworn
+Author = SyncTERM Project
+Description = A sky-and-gold high-contrast palette designed for deuteranomaly (reduced green sensitivity).
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/verdantworn.ini
+SHA256 = f287c001000e696a9e162596d2521981d0c0a984b0b3ae277e7ce587d37d12c8
+
+[Theme:verdantless]
+Name = Verdantless
+Author = SyncTERM Project
+Description = A maximal-contrast cyan, gold, black, and white palette designed for deuteranopia (absent green-cone function).
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/verdantless.ini
+SHA256 = 69be3e595eb85a7bc3daa003bdce9cacd20424e0f0942eb0b2ac0e612cd9adfd
+
+[Theme:azureworn]
+Name = Azureworn
+Author = SyncTERM Project
+Description = A coral-and-aqua high-contrast palette designed for tritanomaly (reduced blue sensitivity), with luminance reinforcing every state.
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/azureworn.ini
+SHA256 = b64ae8741ea85c8bf18ce5bb61448de0905f7ba0e5b9ddd0796249f52db4159a
+
+[Theme:azureless]
+Name = Azureless
+Author = SyncTERM Project
+Description = A maximal-luminance coral, aqua, black, and white palette designed for tritanopia (absent blue-cone function).
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/azureless.ini
+SHA256 = d5f80ff749019c7c1af8ae50661d017c360b29f553d1d255a0324bf6cca19551
+
+[Theme:crimsonbound]
+Name = Crimsonbound
+Author = SyncTERM Project
+Description = A red-intensity palette designed for red-cone monochromacy, using brightness and reversal rather than hue to separate states.
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/crimsonbound.ini
+SHA256 = e6bb82cc7e8299265fd651d16480f897692551d8b7d44078bd0e2450333e7d45
+
+[Theme:viridianbound]
+Name = Viridianbound
+Author = SyncTERM Project
+Description = A green-intensity palette designed for green-cone monochromacy, using brightness and reversal rather than hue to separate states.
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/viridianbound.ini
+SHA256 = ae5cdd2d3b04e2e71c6b6941f8c5d61739f5365888ff1d2c931114cdf9db28fe
+
+[Theme:ceruleanbound]
+Name = Ceruleanbound
+Author = SyncTERM Project
+Description = A blue-intensity palette designed for blue-cone monochromacy, using brightness and reversal rather than hue to separate states.
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/ceruleanbound.ini
+SHA256 = aa4a33b1a5dc284baf7737f1c28943e2d4496b039023521dc16471eedb3bbaeb
+
+[Theme:ashen]
+Name = Ashen
+Author = SyncTERM Project
+Description = A strictly grayscale high-contrast palette designed for achromatopsia, with brightness and reversal separating every interactive state.
+Version = 1.0
+URI = http://syncterm.bbsdev.net/themes/ashen.ini
+SHA256 = 4a7d14350e5425de62bd4ba47f26377fec80a0aa9bb13d6bfdb9df266f35a7d4

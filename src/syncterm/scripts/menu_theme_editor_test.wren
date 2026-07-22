@@ -2,6 +2,7 @@
 
 import "syncterm" for Font, Key, KeyEvent, Mouse, MouseEvent
 import "ui_widget" for Rect
+import "menu_settings_ui" for SettingsMenu
 import "menu_theme_editor" for ThemeAtlas, ThemeEditor, ThemeEditorModel,
     ThemeGlyphGrid, ThemeInspector, ThemeWidgetPreviewContent,
     ThemeWidgetPreviewPane
@@ -44,6 +45,9 @@ class MenuTest {
     testCascadeTrace_()
     testCp437Display_()
     testPreviewRoleSelection_()
+    testThemeBrowserPartition_()
+    testThemeSelectionIdentity_()
+    testThemeComment_()
 
     var total = __pass + __fail
     System.print("=== menu_theme_editor: %(total) tests, %(__pass) pass, " +
@@ -195,5 +199,41 @@ class MenuTest {
     var handled = pane.handle(KeyEvent.new(Key.f2))
     check_(initial && input && handled && selected == "input.focused",
            "Theme widget preview: F2 selects the focused widget role")
+  }
+
+  static testThemeBrowserPartition_() {
+    var local = [
+      ["", "Classic Theme", "SyncTERM", null, null, null],
+      ["local.ini", "Local", null, null, null, null]
+    ]
+    var cloud = [
+      ["official/cached", "Cached", null, null, null, true, false, null],
+      ["official/online", "Online", null, null, null, false, false, null]
+    ]
+    var installed = SettingsMenu.installedThemeEntries_(local, cloud)
+    var online = SettingsMenu.onlineThemeEntries_(cloud)
+    check_(installed.count == 3 && installed[0][0] == "classic" &&
+           installed[1][0] == "file:local.ini" &&
+           installed[2][0] == "package:official/cached" &&
+           online.count == 1 && online[0][0] == "official/online",
+           "Theme browsers partition cached and online-only packages")
+  }
+
+  static testThemeSelectionIdentity_() {
+    check_(SettingsMenu.selectedThemeIdentity_("", "") == "classic" &&
+           SettingsMenu.selectedThemeIdentity_("local.ini", "") ==
+               "file:local.ini" &&
+           SettingsMenu.selectedThemeIdentity_("", "official/cached") ==
+               "package:official/cached",
+           "Theme browser identities distinguish files and packages")
+  }
+
+  static testThemeComment_() {
+    var entry = ["package:official/cached", "Cached", null,
+        "Cached description", null, null, "package", "official/cached",
+        false]
+    check_(SettingsMenu.themeComment_(entry) == "Cached description" &&
+           SettingsMenu.themeComment_(null) == "",
+           "Theme browser exposes descriptions through the comment line")
   }
 }

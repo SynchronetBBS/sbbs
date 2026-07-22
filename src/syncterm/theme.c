@@ -271,6 +271,7 @@ syncterm_theme_free(struct syncterm_theme *theme)
 	if (theme == NULL)
 		return;
 	free(theme->filename);
+	free(theme->package);
 	free(theme->name);
 	free(theme->author);
 	free(theme->description);
@@ -291,11 +292,13 @@ clone_theme(const struct syncterm_theme *source)
 	if (theme == NULL)
 		return NULL;
 	theme->filename = dup_string(source->filename);
+	theme->package = dup_string(source->package);
 	theme->name = dup_string(source->name);
 	theme->author = dup_string(source->author);
 	theme->description = dup_string(source->description);
 	theme->version = dup_string(source->version);
 	if ((source->filename != NULL && theme->filename == NULL) ||
+	    (source->package != NULL && theme->package == NULL) ||
 	    (source->name != NULL && theme->name == NULL) ||
 	    (source->author != NULL && theme->author == NULL) ||
 	    (source->description != NULL && theme->description == NULL) ||
@@ -845,6 +848,38 @@ syncterm_theme_valid_filename(const char *filename)
 	return extension != NULL && stricmp(extension, ".ini") == 0;
 }
 
+bool
+syncterm_theme_valid_package(const char *package)
+{
+	static const char prefix[] = SYNCTERM_THEME_REPOSITORY "/";
+	if (package == NULL || strncmp(package, prefix, sizeof(prefix) - 1) != 0)
+		return false;
+	const char *id = package + sizeof(prefix) - 1;
+	if (id[0] == '\0' || strcmp(id, ".") == 0 || strcmp(id, "..") == 0)
+		return false;
+	for (const unsigned char *p = (const unsigned char *)id; *p; p++) {
+		if (!(*p >= 'a' && *p <= 'z') && !(*p >= '0' && *p <= '9') &&
+		    *p != '.' && *p != '_' && *p != '-')
+			return false;
+	}
+	return true;
+}
+
+bool
+syncterm_theme_package_path(const char *package, char *path,
+    size_t path_size)
+{
+	if (!syncterm_theme_valid_package(package) || path == NULL || path_size == 0)
+		return false;
+	char cache[MAX_PATH + 1];
+	if (get_syncterm_filename(cache, sizeof(cache),
+	    SYNCTERM_PATH_SYSTEM_CACHE, false) == NULL)
+		return false;
+	const char *id = strchr(package, '/') + 1;
+	return snprintf(path, path_size, "%s/themes/%s/%s.ini", cache,
+	    SYNCTERM_THEME_REPOSITORY, id) < (int)path_size;
+}
+
 static bool
 load_theme_file(const char *filename, struct syncterm_theme **result,
     char *error, size_t error_size)
@@ -868,6 +903,28 @@ load_theme_file(const char *filename, struct syncterm_theme **result,
 	return syncterm_theme_load_path(path, filename, result, error, error_size);
 }
 
+bool
+syncterm_theme_load_package(const char *package,
+    struct syncterm_theme **result, char *error, size_t error_size)
+{
+	char path[MAX_PATH + 1];
+	if (!syncterm_theme_package_path(package, path, sizeof(path))) {
+		set_error(error, error_size, "invalid theme package");
+		return false;
+	}
+	struct syncterm_theme *theme = NULL;
+	if (!syncterm_theme_load_path(path, "", &theme, error, error_size))
+		return false;
+	theme->package = strdup(package);
+	if (theme->package == NULL) {
+		set_error(error, error_size, "out of memory");
+		syncterm_theme_free(theme);
+		return false;
+	}
+	*result = theme;
+	return true;
+}
+
 static bool
 same_filename(const char *left, const char *right)
 {
@@ -889,7 +946,16 @@ syncterm_theme_init(const struct syncterm_settings *settings)
 		syncterm_theme_shutdown();
 		return false;
 	}
-	if (settings->theme_file[0] != '\0') {
+	if (settings->theme_package[0] != '\0') {
+		struct syncterm_theme *selected;
+		char error[256];
+		if (syncterm_theme_load_package(settings->theme_package, &selected,
+		    error, sizeof(error))) {
+			syncterm_theme_free(committed_theme);
+			committed_theme = selected;
+		}
+	}
+	else if (settings->theme_file[0] != '\0') {
 		struct syncterm_theme *selected;
 		char error[256];
 		if (load_theme_file(settings->theme_file, &selected, error,
@@ -927,8 +993,13 @@ syncterm_theme_prepare(const struct syncterm_settings *settings,
 	*result = NULL;
 	if (!force_reload && committed_theme != NULL &&
 	    same_filename(settings->theme_file,
-	    committed_theme->filename != NULL ? committed_theme->filename : ""))
+	    committed_theme->filename != NULL ? committed_theme->filename : "") &&
+	    strcmp(settings->theme_package,
+	    committed_theme->package != NULL ? committed_theme->package : "") == 0)
 		return true;
+	if (settings->theme_package[0] != '\0')
+		return syncterm_theme_load_package(settings->theme_package, result,
+		    error, error_size);
 	if (settings->theme_file[0] == '\0') {
 		*result = build_classic_theme(settings);
 		if (*result == NULL) {
@@ -1113,6 +1184,25 @@ syncterm_theme_catalog_entry(size_t index)
 }
 
 const char *
+syncterm_theme_preview_loaded(const struct syncterm_theme *source)
+{
+	static char error[256];
+	if (source == NULL) {
+		snprintf(error, sizeof(error), "theme is unavailable");
+		return error;
+	}
+	struct syncterm_theme *theme = clone_theme(source);
+	if (theme == NULL) {
+		snprintf(error, sizeof(error), "out of memory");
+		return error;
+	}
+	syncterm_theme_free(preview_theme);
+	preview_theme = theme;
+	theme_generation++;
+	return NULL;
+}
+
+const char *
 syncterm_theme_preview(const char *filename)
 {
 	static char error[256];
@@ -1124,15 +1214,7 @@ syncterm_theme_preview(const char *filename)
 	}
 	if (entry->error != NULL)
 		return entry->error;
-	struct syncterm_theme *theme = clone_theme(entry->theme);
-	if (theme == NULL) {
-		snprintf(error, sizeof(error), "out of memory");
-		return error;
-	}
-	syncterm_theme_free(preview_theme);
-	preview_theme = theme;
-	theme_generation++;
-	return NULL;
+	return syncterm_theme_preview_loaded(entry->theme);
 }
 
 void
@@ -1152,7 +1234,8 @@ syncterm_theme_prepare_catalog_selection(const char *filename,
 	*result = NULL;
 	if (filename == NULL)
 		filename = "";
-	if (preview_theme != NULL && preview_theme->filename != NULL &&
+	if (preview_theme != NULL && preview_theme->package == NULL &&
+	    preview_theme->filename != NULL &&
 	    same_filename(preview_theme->filename, filename)) {
 		*result = clone_theme(preview_theme);
 		if (*result != NULL)
@@ -1414,6 +1497,24 @@ theme_filename_path(const char *filename, char *path, size_t path_size,
 	if (snprintf(path, path_size, "%s%s", directory, filename) >=
 	    (int)path_size) {
 		set_error(error, error_size, "theme path is too long");
+		return false;
+	}
+	return true;
+}
+
+bool
+syncterm_theme_delete(const char *filename, char *error, size_t error_size)
+{
+	if (safe_mode) {
+		set_error(error, error_size, "themes cannot be deleted in safe mode");
+		return false;
+	}
+	char path[MAX_PATH + 1];
+	if (!theme_filename_path(filename, path, sizeof(path), error, error_size))
+		return false;
+	if (remove(path) != 0) {
+		set_error(error, error_size, "unable to delete theme: %s",
+		    strerror(errno));
 		return false;
 	}
 	return true;
@@ -1894,13 +1995,10 @@ syncterm_theme_document_new(char *error, size_t error_size)
 	return document;
 }
 
-struct syncterm_theme_document *
-syncterm_theme_document_open(const char *filename, char *error,
+static struct syncterm_theme_document *
+theme_document_open_path(const char *path, const char *filename, char *error,
     size_t error_size)
 {
-	char path[MAX_PATH + 1];
-	if (!theme_filename_path(filename, path, sizeof(path), error, error_size))
-		return NULL;
 	str_list_t source = read_theme_source(path, error, error_size);
 	if (source == NULL)
 		return NULL;
@@ -1952,6 +2050,27 @@ failed:
 	syncterm_theme_free(theme);
 	syncterm_theme_document_free(document);
 	return NULL;
+}
+
+struct syncterm_theme_document *
+syncterm_theme_document_open(const char *filename, char *error,
+    size_t error_size)
+{
+	char path[MAX_PATH + 1];
+	if (!theme_filename_path(filename, path, sizeof(path), error, error_size))
+		return NULL;
+	return theme_document_open_path(path, filename, error, error_size);
+}
+
+struct syncterm_theme_document *
+syncterm_theme_document_copy_path(const char *path, char *error,
+    size_t error_size)
+{
+	if (path == NULL || path[0] == '\0') {
+		set_error(error, error_size, "invalid theme path");
+		return NULL;
+	}
+	return theme_document_open_path(path, "", error, error_size);
 }
 
 void

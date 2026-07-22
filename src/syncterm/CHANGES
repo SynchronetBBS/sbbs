@@ -20,6 +20,7 @@ Remove SyncTERM's UIFC dependency
 Rename the menu and picker colour settings to Classic Theme
 Add process-wide INI themes with preview and selection in SyncTERM Settings
 Add a full theme editor with cascade inspection, import, and undo/redo
+Add a web theme catalog with validated caching and automatic updates
 Replace the palette-entry editor with an RGB/HSV colour picker
 Remove the nonfunctional -e escape-delay option
 Place Wren UI scrollbars on the right
