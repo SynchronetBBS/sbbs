@@ -3964,7 +3964,7 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 		if (rgb == NULL || !ensure_cap(&g_idx_buf, &g_idx_cap, (size_t)w * h))
 			return;
 		termgfx_quant_rgb(rgb, w, h, g_idx_buf, g_rgbx_pal);
-		n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, w, h, g_rgbx_pal, 1);
+		n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, w, h, g_rgbx_pal, SIXEL_PAL_USED);
 		if (n != 0) {
 			fwrite(g_sixel_buf, 1, n, g_capture);
 			g_capture_frames++;
@@ -4090,7 +4090,7 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 			termgfx_quant_rgb(rgb, ew, eh, g_idx_buf, g_rgbx_pal);
 			cn = snprintf(cup, sizeof cup, "\x1b[%d;%dH", irow, icol);
 			out_put(cup, (size_t)cn);
-			n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, ew, eh, g_rgbx_pal, 1);
+			n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, ew, eh, g_rgbx_pal, SIXEL_PAL_USED);
 			out_put(g_sixel_buf, n);
 		}
 	}
@@ -4117,7 +4117,7 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 				termgfx_quant_rgb(rgb, ew, eh, g_idx_buf, g_rgbx_pal);
 				cn = snprintf(cup, sizeof cup, "\x1b[%d;%dH", irow, icol);
 				out_put(cup, (size_t)cn);
-				n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, ew, eh, g_rgbx_pal, 1);
+				n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, ew, eh, g_rgbx_pal, SIXEL_PAL_USED);
 				out_put(g_sixel_buf, n);
 			}
 			tier = SST_TIER_SIXEL;
