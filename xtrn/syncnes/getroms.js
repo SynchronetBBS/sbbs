@@ -156,4 +156,8 @@ var GAMES = [
 	  url: THWAITE + "thwaite.nes" }
 ];
 
-exit(syncretro_getroms(js.exec_dir, "NES", GAMES));
+// Guarded so the GAMES table above can be read by another script (the pinned
+// url/size/md5 inventory is useful to more than just the installer) without
+// running an install as a side effect of load().
+if (typeof SYNCNES_GETROMS_NO_MAIN == "undefined")
+	exit(syncretro_getroms(js.exec_dir, "NES", GAMES));
