@@ -2736,6 +2736,7 @@ void output_thread(void* arg)
 			continue;
 		}
 
+		uint sendbytes = buftop - bufbot;   // Bytes offered to the transport this iteration
 #ifdef USE_CRYPTLIB
 		if (sbbs->ssh_mode) {
 			int err;
@@ -2749,23 +2750,22 @@ void output_thread(void* arg)
 				continue;
 			}
 			if (sbbs->session_channel == -1) {
-				i = buftop - bufbot;    // Pretend we sent it all
+				i = sendbytes;    // Pretend we sent it all
 			}
 			else {
 				if (cryptStatusError((err = cryptSetAttribute(sbbs->ssh_session, CRYPT_SESSINFO_SSH_CHANNEL, sbbs->session_channel)))) {
 					GCESSTR(err, node, sbbs->ssh_session, "setting channel");
 					sbbs->online = false;
-					i = buftop - bufbot;    // Pretend we sent it all
+					i = sendbytes;    // Pretend we sent it all
 				}
 				else {
 					/*
 					 * Limit as per js_socket.c.
 					 * Sure, this is TLS, not SSH, but we see weird stuff here in sz file transfers.
 					 */
-					size_t sendbytes = buftop - bufbot;
 					if (sendbytes > 0x2000)
 						sendbytes = 0x2000;
-					if (cryptStatusError((err = cryptPushData(sbbs->ssh_session, (char*)buf + bufbot, buftop - bufbot, &i)))) {
+					if (cryptStatusError((err = cryptPushData(sbbs->ssh_session, (char*)buf + bufbot, sendbytes, &i)))) {
 						/* Handle the SSH error here. The lprintf inside GCESSTR
 						 * runs while ssh_mutex is held; releasing+reacquiring it
 						 * across the error report would make the error-handling
@@ -2774,7 +2774,8 @@ void output_thread(void* arg)
 						// coverity[SLEEP:SUPPRESS]
 						GCESSTR(err, node, sbbs->ssh_session, "pushing data");
 						sbbs->online = false;
-						i = buftop - bufbot;    // Pretend we sent it all
+						sendbytes = buftop - bufbot;
+						i = sendbytes;    // Pretend we sent it all
 					}
 					else {
 						// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
@@ -2788,7 +2789,8 @@ void output_thread(void* arg)
 							GCESSTR(err, node, sbbs->ssh_session, "flushing data");
 							if (err != CRYPT_ERROR_TIMEOUT) {
 								sbbs->online = false;
-								i = buftop - bufbot;    // Pretend we sent it all
+								sendbytes = buftop - bufbot;
+								i = sendbytes;    // Pretend we sent it all
 							}
 						}
 						// READ = WRITE TIMEOUT HACK... REMOVE WHEN FIXED
@@ -2801,7 +2803,7 @@ void output_thread(void* arg)
 		}
 		else
 #endif
-		i = sendsocket(sbbs->client_socket, (char*)buf + bufbot, buftop - bufbot);
+		i = sendsocket(sbbs->client_socket, (char*)buf + bufbot, sendbytes);
 		if (i == SOCKET_ERROR) {
 			SOCKET sock = sbbs->client_socket.load();
 			if (SOCKET_ERRNO == ENOTSOCK)
@@ -2819,7 +2821,7 @@ void output_thread(void* arg)
 				        , sock, sbbs->client.protocol, sbbs->client_ipaddr, SOCKET_ERRNO, SOCKET_STRERROR(errmsg, sizeof errmsg));
 			sbbs->online = false;
 			/* was break; on 4/7/00 */
-			i = buftop - bufbot;    // Pretend we sent it all
+			i = sendbytes;    // Pretend we sent it all
 		}
 
 		if (sbbs->cfg.node_num > 0 && !(sbbs->sys_status & SS_FILEXFER)) {
@@ -2848,15 +2850,15 @@ void output_thread(void* arg)
 #endif
 		}
 
-		if (i != (int)(buftop - bufbot)) {
+		if (i != (int)sendbytes) {
 			lprintf(LOG_WARNING, "%s !Short socket send (%u instead of %u)"
-			        , node, i, buftop - bufbot);
+			        , node, i, sendbytes);
 			short_sends++;
 		}
 		bufbot += i;
 		total_sent += i;
 		total_pkts++;
-		if (bufbot == buftop)	// linear buffer fully transmitted
+		if (bufbot == buftop)   // linear buffer fully transmitted
 			sbbs->output_thread_busy = false;
 	}
 
