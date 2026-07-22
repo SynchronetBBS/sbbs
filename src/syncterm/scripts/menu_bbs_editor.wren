@@ -1,4 +1,4 @@
-import "syncterm" for Host, Key, KeyEvent
+import "syncterm" for Host, Key, KeyEvent, MouseEvent
 import "syncterm_menu" for Menu
 import "menu_ui" for ChoiceViewState, MenuUi
 import "ui_app" for App
@@ -55,6 +55,207 @@ class EditorPane is Pane {
         _onNavigate.call(1)
         triggerClose_()
         return true
+      }
+    }
+    return super.handle(event)
+  }
+}
+
+class ScriptListView is ListView {
+  construct new(owner) {
+    super()
+    _owner = owner
+    selectionMode = "tag"
+  }
+
+  handle(event) {
+    if (_owner.moving && event is MouseEvent) return true
+    return super.handle(event)
+  }
+}
+
+class ScriptListPane is Pane {
+  construct new(app, scripts, onChange) {
+    super()
+    shadow = true
+    title = "Wren Scripts"
+    helpText = BbsEditor.wrenScriptsHelp_()
+    focused = true
+    _app = app
+    _scripts = scripts
+    _onChange = onChange
+    _catalog = Menu.scriptModules
+    _moving = false
+    _moveStart = -1
+    _list = ScriptListView.new(this)
+    _list.onChange = Fn.new {|index, item| updateHints_() }
+    _list.onSelect = Fn.new {|index, item| select_(index) }
+    add(_list)
+    onClose = Fn.new { close_() }
+    refresh_(0)
+    fitContentToScreen()
+  }
+
+  moving { _moving }
+  selected { _list.selected }
+  selected=(index) { _list.selected = index }
+  tagged { _list.tagged }
+
+  labels_() {
+    var labels = []
+    for (name in _scripts) {
+      labels.add(_catalog.indexOf(name) < 0 ? "[Missing] %(name)" : name)
+    }
+    labels.add("")
+    return labels
+  }
+
+  refresh_(selected) {
+    _list.items = labels_()
+    _list.selected = selected.max(0).min(_scripts.count)
+    if (_moving) _list.toggleTagged(_list.selected)
+    updateHints_()
+  }
+
+  updateHints_() {
+    if (_moving) {
+      keyHints = [["Up/Down", "Move"], ["Enter", "Place"],
+          ["Esc", "Cancel"]]
+    } else {
+      var enterAction = _list.selected == _scripts.count ? "Add" : "Move"
+      keyHints = [["F1", "Help"], ["Enter", enterAction],
+          ["INS", "Add"], ["DEL", "Delete"], ["Esc", "Close"]]
+    }
+  }
+
+  available_() {
+    var used = (_scripts.count - 1).max(0)
+    for (name in _scripts) used = used + name.bytes.count
+    var separator = _scripts.count == 0 ? 0 : 1
+    return _catalog.where {|name|
+      return _scripts.indexOf(name) < 0 &&
+          used + separator + name.bytes.count <=
+          Menu.wrenScriptsMaxLength
+    }.toList
+  }
+
+  add_(index) {
+    var available = available_()
+    if (available.count == 0) {
+      var unselected = _catalog.where {|name|
+        return _scripts.indexOf(name) < 0
+      }.toList
+      var message = unselected.count == 0 ?
+          "No additional scripts are available." :
+          "The per-connection script list is full."
+      Alert.show(_app, "Add Wren Script",
+          message, helpText)
+      return
+    }
+    var choices = available.map {|name| [name, name] }.toList
+    var name = MenuUi.choice(_app, "Add Wren Script", choices,
+        choices[0][0], BbsEditor.wrenScriptsHelp_())
+    if (name == null) return
+    var at = index.max(0).min(_scripts.count)
+    _scripts.insert(at, name)
+    refresh_(at)
+    fitContentToScreen()
+    _onChange.call()
+  }
+
+  delete_() {
+    var index = _list.selected
+    if (index == null || index >= _scripts.count) return
+    _scripts.removeAt(index)
+    refresh_(index.min(_scripts.count))
+    fitContentToScreen()
+    _onChange.call()
+  }
+
+  select_(index) {
+    if (index == null) return
+    if (index >= _scripts.count) {
+      add_(_scripts.count)
+      return
+    }
+    _moving = true
+    _moveStart = index
+    refresh_(index)
+  }
+
+  move_(delta) {
+    var index = _list.selected
+    if (index == null || _scripts.count < 2) return
+    var target = (index + delta).max(0).min(_scripts.count - 1)
+    if (target == index) return
+    var name = _scripts.removeAt(index)
+    _scripts.insert(target, name)
+    refresh_(target)
+  }
+
+  finishMove_() {
+    _moving = false
+    _moveStart = -1
+    refresh_(_list.selected)
+    _onChange.call()
+  }
+
+  cancelMove_() {
+    var index = _list.selected
+    var name = _scripts.removeAt(index)
+    _scripts.insert(_moveStart, name)
+    var restore = _moveStart
+    _moving = false
+    _moveStart = -1
+    refresh_(restore)
+  }
+
+  close_() {
+    if (_moving) {
+      cancelMove_()
+      return
+    }
+    _app.popModal()
+  }
+
+  handle(event) {
+    if (event is KeyEvent) {
+      var code = event.code
+      if (_moving) {
+        if (code == Key.up) {
+          move_(-1)
+          return true
+        }
+        if (code == Key.down) {
+          move_(1)
+          return true
+        }
+        if (code == Key.enter) {
+          finishMove_()
+          return true
+        }
+        if (code == Key.escape) {
+          cancelMove_()
+          return true
+        }
+        if (code == Key.pageUp || code == Key.pageDown ||
+            code == Key.home || code == Key.end || code == Key.insert ||
+            code == Key.delete || code == Key.delChar ||
+            event.codepoint == 0x20) return true
+      } else {
+        if (code == Key.escape) {
+          close_()
+          return true
+        }
+        if (code == Key.insert || code == 0x2B) {
+          add_(_list.selected)
+          return true
+        }
+        if (code == Key.delete || code == Key.delChar || code == 0x2D) {
+          delete_()
+          return true
+        }
+        if (event.codepoint == 0x20) return true
       }
     }
     return super.handle(event)
@@ -237,6 +438,7 @@ class BbsEditor {
       "sshAllowAes128Cbc": b.sshAllowAes128Cbc,
       "sshAcceptEarlyData": b.sshAcceptEarlyData,
       "sshFingerprint": b.sshFingerprint,
+      "wrenScripts": b.wrenScripts,
       "palette": b.palette,
       "sortOrder": b.sortOrder
     }
@@ -428,6 +630,8 @@ class BbsEditor {
         "Hide connection and disconnection popups") +
         helpItem_("Palette", "The color palette for this entry")
     if (!defaults) {
+      text = text + helpItem_("Wren Scripts",
+          "The ordered scripts loaded only for this connection")
       text = text + helpItem_("Ctrl-S",
           "Edit the explicit numeric directory sort order") +
           helpItem_("[ / ]", "Edit the previous or next directory entry")
@@ -480,6 +684,17 @@ class BbsEditor {
     if (key == "xferLogLevel") return logLevelHelp_("File Transfer")
     if (key == "telnetLogLevel") return logLevelHelp_("Telnet Command")
     return null
+  }
+
+  static wrenScriptsHelp_() {
+    return "# Wren Scripts\n\nScripts listed here load only when this " +
+        "directory entry connects. They run in order after the global " +
+        "`auto/connected` scripts.\n\nSelect the blank final row or press " +
+        "Insert to add an available root script module. Delete removes " +
+        "the selected module. Press Enter to tag a module, use Up and " +
+        "Down to move it, then press Enter to place it. Escape while " +
+        "moving restores the original order. Missing modules remain " +
+        "listed so their configuration is not silently discarded."
   }
 
   static nameHelp_() {
@@ -930,6 +1145,17 @@ class BbsEditor {
       }))
     }
     rows.add(boolRow_(d, "hidePopups", "Hide Popups"))
+    if (!defaults) {
+      var scriptCount = d["wrenScripts"].count
+      var scriptLabel = scriptCount == 0 ? "None" :
+          (scriptCount == 1 ? "1 script" : "%(scriptCount) scripts")
+      rows.add(row_("Wren Scripts", scriptLabel, Fn.new {
+        var pane = ScriptListPane.new(app, d["wrenScripts"], Fn.new {
+          update_(app, b, d, defaults)
+        })
+        app.modal(pane)
+      }))
+    }
     var paletteCount = d["palette"].count
     var paletteLabel = "Default"
     if (paletteCount != 0) paletteLabel = "%(paletteCount) custom colors"
@@ -946,7 +1172,7 @@ class BbsEditor {
 
   static sameDraft_(left, right) {
     for (key in left.keys) {
-      if (key == "palette") {
+      if (key == "palette" || key == "wrenScripts") {
         if (left[key].count != right[key].count) return false
         for (i in 0...left[key].count) {
           if (left[key][i] != right[key][i]) return false
@@ -1001,6 +1227,7 @@ class BbsEditor {
     b.sshAllowAes128Cbc = d["sshAllowAes128Cbc"]
     b.sshAcceptEarlyData = d["sshAcceptEarlyData"]
     b.sshFingerprint = d["sshFingerprint"]
+    if (!defaults) b.wrenScripts = d["wrenScripts"]
     b.palette = d["palette"]
     b.sortOrder = d["sortOrder"]
     return true

@@ -351,8 +351,7 @@ class MenuUi {
     }
     var w = longest.max(24).min(size[0] - 4)
     var h = (labels.count + 4).min(size[1] - 4)
-    pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
-        ((size[1] - h) / 2).floor + 1, w, h)
+    pane.bounds = Pane.modalBounds(w, h)
     pane.onClose = cancel
 
     list = choiceList_(viewState)
@@ -403,8 +402,7 @@ class MenuUi {
     }
     var w = longest.max(24).min(size[0] - 4)
     var h = (labels.count + 4).min(size[1] - 4)
-    pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
-        ((size[1] - h) / 2).floor + 1, w, h)
+    pane.bounds = Pane.modalBounds(w, h)
 
     list = ListView.new()
     list.bounds = pane.innerBounds
@@ -488,8 +486,7 @@ class MenuUi {
     var w = longest.max(24).min(size[0] - 4)
     var h = (labels.count + 4).min(
         browserMaximumHeight_(size[1], bottomClearance))
-    pane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
-        ((size[1] - h) / 2).floor + 1, w, h)
+    pane.bounds = Pane.modalBounds(w, h)
 
     list = ListView.new()
     list.bounds = pane.innerBounds

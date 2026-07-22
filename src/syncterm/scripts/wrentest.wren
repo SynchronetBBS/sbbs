@@ -615,8 +615,8 @@ class WrenTest {
 
   static testBBS_() {
     check_(BBS.name is String && BBS.name.count > 0 &&
-           BBS.connType is Num,
-           "BBS.name non-empty String, BBS.connType Num")
+           BBS.connType is Num && BBS.wrenScripts is List,
+           "BBS identity fields and Wren script list are available")
   }
 
   // ===== Console + REPL ===========================================

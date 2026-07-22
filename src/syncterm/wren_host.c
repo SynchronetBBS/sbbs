@@ -971,11 +971,17 @@ modname_from_path(const char *path, char *out, size_t outsz)
  * embedded iteration in wren_host_init.  Imports of other modules
  * (including "syncterm") resolve through host_load_module. */
 static void
-load_one_script(const char *path)
+load_one_script(const char *path, bool configured)
 {
 	char *src = read_script_file(path);
 	if (src == NULL) {
 		fprintf(stderr, "[wren] cannot read %s\n", path);
+		if (configured) {
+			char message[512];
+			snprintf(message, sizeof(message),
+			    "configured Wren script could not be read: %s", path);
+			wren_log_error(WREN_ERROR_RUNTIME, NULL, -1, message);
+		}
 		return;
 	}
 
@@ -992,6 +998,46 @@ load_one_script(const char *path)
 	free(src);
 	if (r != WREN_RESULT_SUCCESS)
 		fprintf(stderr, "[wren] %s: load failed\n", path);
+}
+
+static void
+load_configured_scripts(struct bbslist *bbs, const char *dir)
+{
+	str_list_t scripts = bbslist_get_wren_scripts(bbs);
+	for (size_t i = 0; scripts != NULL && scripts[i] != NULL; i++) {
+		const char *name = scripts[i];
+		if (!bbslist_wren_script_name_valid(name)) {
+			char message[512];
+			snprintf(message, sizeof(message),
+			    "invalid configured Wren module name: %s", name);
+			wren_log_error(WREN_ERROR_RUNTIME, NULL, -1, message);
+			fprintf(stderr, "[wren] %s\n", message);
+			continue;
+		}
+		if (wrenHasModule(state.vm, name))
+			continue;
+		if (dir == NULL) {
+			char message[512];
+			snprintf(message, sizeof(message),
+			    "cannot locate configured Wren script: %s", name);
+			wren_log_error(WREN_ERROR_RUNTIME, NULL, -1, message);
+			fprintf(stderr, "[wren] %s\n", message);
+			continue;
+		}
+		char path[MAX_PATH + 8];
+		int length = snprintf(path, sizeof(path), "%s%s.wren", dir,
+		    name);
+		if (length < 0 || (size_t)length >= sizeof(path)) {
+			char message[512];
+			snprintf(message, sizeof(message),
+			    "configured Wren script path is too long: %s", name);
+			wren_log_error(WREN_ERROR_RUNTIME, NULL, -1, message);
+			fprintf(stderr, "[wren] %s\n", message);
+			continue;
+		}
+		load_one_script(path, true);
+	}
+	strListFree(&scripts);
 }
 
 void
@@ -1038,8 +1084,9 @@ wren_host_init(struct bbslist *bbs)
 	memset(&gl, 0, sizeof(gl));
 	bool have_user_dir = false;
 	char auto_dir[MAX_PATH + 32];
-	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS, false)
-	    != NULL) {
+	bool have_scripts_dir = get_syncterm_filename(dir, sizeof(dir),
+	    SYNCTERM_PATH_SCRIPTS, false) != NULL;
+	if (have_scripts_dir) {
 		snprintf(auto_dir, sizeof(auto_dir), "%sauto/%s/", dir, event);
 		char pat[MAX_PATH + 32];
 		snprintf(pat, sizeof(pat), "%s*.wren", auto_dir);
@@ -1088,10 +1135,15 @@ wren_host_init(struct bbslist *bbs)
 			modname_from_path(gl.gl_pathv[i], umod, sizeof(umod));
 			if (wrenHasModule(state.vm, umod))
 				continue;
-			load_one_script(gl.gl_pathv[i]);
+			load_one_script(gl.gl_pathv[i], false);
 		}
 		globfree(&gl);
 	}
+
+	/* Load modules selected by this directory entry in their configured
+	 * order.  Global connected scripts run first so they can establish
+	 * shared policy and hooks; -W remains the final launch-time override. */
+	load_configured_scripts(bbs, have_scripts_dir ? dir : NULL);
 
 	/* -W: extra script supplied on the command line, loaded last so
 	 * its imports resolve against the full embedded + user surface.
@@ -1107,7 +1159,7 @@ wren_host_init(struct bbslist *bbs)
 		char modname[256];
 		modname_from_path(launch_script, modname, sizeof(modname));
 		if (!wrenHasModule(state.vm, modname))
-			load_one_script(launch_script);
+			load_one_script(launch_script, false);
 	}
 
 	/* Cache Hook + its dispatch_ method handles.  Every hook fire

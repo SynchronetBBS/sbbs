@@ -34,6 +34,10 @@ class Menu {
   foreign static quitApplication()
   foreign static entries
   foreign static canAppendEntry
+  // Valid root script modules available for per-entry connected loading.
+  foreign static scriptModules
+  // Maximum byte length of the comma-separated WrenScripts INI value.
+  foreign static wrenScriptsMaxLength
   foreign static defaults
   foreign static settings
   foreign static nameAvailable(name)
@@ -327,6 +331,9 @@ foreign class BBS {
   foreign sshAcceptEarlyData=(value)
   foreign palette
   foreign palette=(value)
+  // Ordered root script modules loaded for this entry after auto/connected.
+  foreign wrenScripts
+  foreign wrenScripts=(value)
   foreign sortOrder
   foreign sortOrder=(value)
   foreign lfExpand

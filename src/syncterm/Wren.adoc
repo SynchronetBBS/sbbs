@@ -702,9 +702,10 @@ it:
 | Path                       | Role
 
 | `scripts/<name>.wren`
-| Pure library module.  Loaded only when something imports it via
-  `import "<name>"`.  Has no auto-run side effects.  Where you put
-  reusable code that other scripts pull in.
+| Importable module.  Loaded when something imports it via
+  `import "<name>"`, or when a personal directory entry explicitly
+  lists it as a per-connection script.  Put reusable libraries and
+  selectively loaded connection scripts here.
 
 | `scripts/auto/<event>/<name>.wren`
 | Auto-loaded entry script.  Runs at the moment the framework fires
@@ -716,7 +717,7 @@ it:
 Files anywhere else under `scripts/` (e.g. user-organised
 subdirectories of pure library code) are reached only via `import` —
 the framework owns `scripts/auto/` and ignores everything else for
-auto-load purposes.
+auto-load and per-connection selection purposes.
 
 === Module Names
 
@@ -914,11 +915,15 @@ nothing.
   override runs instead).
 . Each user script in `scripts/auto/<event>/` runs as its own
   filename-derived module.
+. For `connected`, root modules selected by the active personal directory
+  entry run in their stored order.  A module already loaded by an earlier
+  script or import is skipped because Wren modules execute only once per VM.
+. A command-line `-W` script runs last in the connected VM.
 
 `import` statements (whether from a script's top-level or inside its
 body) resolve through the lookup chain for the current VM:
 
-. `scripts/<name>.wren` — pure library module.
+. `scripts/<name>.wren` — importable root module.
 . `scripts/auto/<event>/<name>.wren` — where `<event>` is `menu`,
   `connected`, or `picker`; this catches imports of auto-load modules
   which have not run yet.
@@ -926,6 +931,36 @@ body) resolve through the lookup chain for the current VM:
 
 The foundational `syncterm` module lazily loads the first time
 anything imports it; subsequent imports hit Wren's module cache.
+
+=== Per-Connection Scripts
+
+A personal directory entry may contain an ordered `WrenScripts` INI value:
+
+[source,ini]
+----
+[Example BBS]
+WrenScripts = session_logger,custom_keys
+----
+
+Each value names `scripts/<name>.wren`; do not include a path or extension.
+Names contain only ASCII letters, digits, and underscore, are at most 255
+bytes, and are case-sensitive Wren module names.  The menu does not offer a
+module already present in the entry, and the host removes exact duplicates
+assigned through the menu API.  `syncterm_menu`, `syncterm_picker`, and
+`picker_bootstrap` are reserved and cannot be selected.
+
+The entry editor's Wren Scripts row opens the ordered-list editor.  Select the
+blank final row or press Insert to add a root module; Delete removes one.
+Enter tags the selected module, Up and Down move it, and Enter places it.
+Escape while moving restores its original position.  A configured module
+whose file is no longer present remains visible as `[Missing]` so opening and
+saving the entry does not silently discard it.
+
+Only personal named entries load this field.  Defaults, installed system
+entries, web-list entries, and quick-connect records cannot activate scripts.
+At connection time, an unreadable configured module is reported in the
+connected VM log and error indicator, and loading continues with the next
+configured module.
 
 A script's top-level code runs once in the VM which owns its event.
 Top-level code commonly registers hooks or creates the long-lived menu
@@ -1140,6 +1175,9 @@ harness constructs an isolated scripts directory, installs a temporary
 `MainMenu` entry point, invokes the test in the real menu VM, and exits through
 `Menu.quitApplication()`.  It does not copy scripts into the developer's
 personal scripts directory or expose menu capabilities to a connected VM.
+Use `--menu-write` for a test which must mutate the directory or settings.
+It removes safe mode only inside the same temporary XDG data tree; the tree is
+deleted when the harness exits.
 
 === VM Lifetimes and Trust Boundaries [[vm-trust-boundaries]]
 
@@ -3588,6 +3626,10 @@ classes documented below.
 
 | Statistics
 | `added`, `connected`, `calls`, `sortOrder`
+
+| Scripts
+| `wrenScripts`, a fresh List of root module names selected for this
+  connection in load order
 |===
 
 This `BBS` class belongs to the shared `syncterm` module and always
@@ -3683,6 +3725,15 @@ available in a connected VM.
 | Menu.canAppendEntry
 | Return whether the combined personal and read-only directory has room for
   another personal entry.
+
+| Menu.scriptModules
+| Return a fresh List of valid root script-module names available for
+  per-entry connected loading.  Reserved menu and picker module names are
+  omitted.  The entry editor separately omits names already selected.
+
+| Menu.wrenScriptsMaxLength
+| Maximum byte length of the comma-separated `WrenScripts` INI value.  The
+  shipped editor omits additions which would exceed it.
 
 | Menu.defaults
 | Return the mutable root-section defaults record, or `null` before a
@@ -3790,6 +3841,10 @@ Menu `BBS` properties map directly to the real `struct bbslist`:
 | Read/write `stopBits`, `dataBits`, `parity`, `flowControl`,
   `telnetNoBinary`, `deferTelnetNegotiation`, `ghostProgram`, and
   `sortOrder`.
+
+| Scripts
+| Read/write `wrenScripts`, an ordered List of unique root module names.
+  It is supported only by personal named entries.
 |===
 
 Setters mutate only the in-memory record and set `dirty`; `save()` is
@@ -3803,6 +3858,9 @@ read-only: setters abort, while `rename`, `save`, and `delete` return
 The shipped entry editor invokes those setters, including `rename()`,
 after each nested field editor accepts a changed value.  It calls
 `save()` for a dirty entry when the entry editor closes.
+The Wren Scripts editor applies additions, deletions, and completed moves to
+the in-memory `BBS` immediately; `save()` writes them as the comma-separated
+`WrenScripts` value in that entry's INI section.
 The fingerprint has no direct editor row; the shipped F5/F6 clipboard carries
 it through the draft so copying an entry preserves an accepted SSH host key.
 
@@ -6247,12 +6305,14 @@ the first child.  Lay them out manually via `bounds` / `add`.
 
 `Pane.fitContent(maximumWidth, maximumHeight)` performs the same
 layout while constraining the complete pane to the supplied maximum
-dimensions.  `Pane.fitContentToScreen()` applies the standard modal
-limits, leaving room for the two-column right shadow and one-row
-bottom shadow, and centers the result.  For a pane with a requested
-fixed size rather than a child-defined size,
+dimensions.  `Pane.fitContentToScreen()` applies the standard menu
+modal limits.  It preserves the title row and two-row footer, leaves
+room for the two-column right shadow and one-row bottom shadow, and
+centers the result in the remaining work area.  For a pane with a
+requested fixed size rather than a child-defined size,
 `Pane.fitToScreen(width, height)` applies those same limits and
-centering.
+centering.  `Pane.modalBounds(width, height)` returns that constrained
+and centered rectangle for manually laid-out shadowed panes.
 
 `Pane.centerOnScreen()` repositions the pane so its bounds are
 centered on the current `Screen.size`, then re-anchors its single
@@ -6773,7 +6833,7 @@ submits the value; `Esc` or Cancel returns `null`.  The read-only `input`
 getter exposes that input so trusted UI code can set `maxLen` or a display-only
 `mask` before presenting the popup.  `sizeForInput(inputWidth)` and
 `sizeForInput(inputWidth, minimumWidth)` size the field for the requested
-capacity and cap the complete popup to the standard screen margins.  The
+capacity and cap the complete popup to the standard menu modal work area.  The
 `MenuUi.prompt` wrappers use the field's `maxLen` for this width.
 Short fields retain the normal minimum while URI, path, password,
 and other long fields use the available screen width.
@@ -6896,10 +6956,11 @@ Prompts and other modal widgets can also carry `helpText`.  Because the
 focused input or list is their child, the same parent walk finds the modal's
 field-specific help before any help attached to the underlying screen.
 
-Default placement: `Help.centeredBounds_()` claims the full cterm
-height minus the status row (`y=1`, `h=screenHeight-1`) and a
-2-cell horizontal margin (`w=screenWidth-4`).  Pass an explicit
-`Rect` via the `bounds=` setter after construction to override.
+Default placement: `Help.centeredBounds_()` uses the standard menu modal
+work area.  The frame remains below the title row, its bottom shadow remains
+above the two-row footer, and it retains the 2-cell horizontal margins.
+Pass an explicit `Rect` via the `bounds=` setter after construction to
+override.
 
 Padding: 1-cell margin on every side except the scrollbar column,
 where text is flush.  The scrollbar defaults to the right, and its
