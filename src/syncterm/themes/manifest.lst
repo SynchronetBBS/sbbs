@@ -95,7 +95,7 @@ Author = SyncTERM Project
 Description = A blue-intensity palette designed for blue-cone monochromacy, using brightness and reversal rather than hue to separate states.
 Version = 1.0
 URI = http://syncterm.bbsdev.net/themes/ceruleanbound.ini
-SHA256 = aa4a33b1a5dc284baf7737f1c28943e2d4496b039023521dc16471eedb3bbaeb
+SHA256 = 535d571dca4e9531968cd0fc8425f702652a65ee5aca0c3cd8259b4cf0ef5112
 
 [Theme:ashen]
 Name = Ashen
