@@ -460,6 +460,23 @@ int main(int argc, char **argv)
 	 * it is loaded, and its sample rate only once a game is (the NES is 48000, the
 	 * Intellivision 44100 -- and the door hardcoded 44100 until M3). */
 	sr_profile_select(sr_door_profile(), core.si.library_name);
+
+	/* Select a controller type, if this install pinned one. AFTER load_game --
+	 * a core builds its port/device tables while loading content, and MAME
+	 * 2003-Plus in particular decides how many buttons a driver wants there.
+	 * Silent by default ([input] device = 0): saying nothing leaves the core on
+	 * its own choice, which is what the door has always done and is right for
+	 * every console that offers only a plain RetroPad. */
+	{
+		int dev = sr_config_input_device();
+
+		if (dev > 0) {
+			core.set_controller_port_device(0, (unsigned)dev);
+			core.set_controller_port_device(1, (unsigned)dev);
+			fprintf(stderr, "syncretro: controller device %d selected"
+			        " on ports 0 and 1\n", dev);
+		}
+	}
 	/* Before sr_audio_start(), which reads a sample rate the OPTIONS decided:
 	 * MAME 2003-Plus derives its rate from an option and reports 0 Hz when the
 	 * frontend answers nothing. The report is a log line, but it is also the

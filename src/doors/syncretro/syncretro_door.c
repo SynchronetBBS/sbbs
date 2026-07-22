@@ -313,7 +313,7 @@ static void sr_door_usage(const char *argv0)
 		"usage: %s [options] [<rom>]\n"
 		"\n"
 		"Content:\n"
-		"  -profile <name>    controller profile: pad (default) | intv\n"
+		"  -profile <name>    controller profile: pad (default) | intv | arcade\n"
 		"                     omitted: inferred from the core's own name\n"
 		"  -option key=value  pin one libretro core option (repeatable). Any the\n"
 		"                     console does not pin keep the core's own default\n"

@@ -132,6 +132,61 @@ static const sr_bind_row_t g_binds_pad[] = {
 
 #define SR_NBINDS_PAD ((int)(sizeof g_binds_pad / sizeof g_binds_pad[0]))
 
+/* --- the arcade cabinet (SR_PROFILE_ARCADE) ----------------------------------
+ *
+ * The SAME RetroPad bindings as `pad`, deliberately: a control panel is a stick
+ * and a row of buttons, and MAME reads them through a RetroPad like any other
+ * core. This table exists because the WORDS in the one above are a console's,
+ * and a cabinet player reading them is misled at the moment it matters most --
+ * nothing happens on a cabinet until a coin goes in, and a help screen that
+ * calls the coin slot "Select" never says so.
+ *
+ * BUTTON NUMBERS, NOT LETTERS. MAME 2003-Plus reports what a driver wants
+ * ("Supports 6 distinct button controls" for Street Fighter II, 0 for Pac-Man)
+ * but sends no SET_INPUT_DESCRIPTORS, so the core cannot tell us WHICH arcade
+ * button each RetroPad id became. Numbering them 1-6 in the core's own order is
+ * therefore the most the door can honestly claim; naming them "punch" and
+ * "kick" would be a guess, and a wrong guess on a help screen is worse than a
+ * vague one. A game that uses fewer simply ignores the rest.
+ *
+ * No Tab. `pad` swaps the two controller ports for the rare cartridge that
+ * reads port 2; on a cabinet that silently moves the player onto player two's
+ * controls, where his coin and start buttons are different inputs again -- a
+ * dead game and no clue why. */
+static const sr_bind_row_t g_binds_arcade[] = {
+	{ "w",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_UP,     0, "W A S D \1 arrows", "joystick" },
+	{ "a",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_LEFT,   0, NULL,               NULL },
+	{ "s",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_DOWN,   0, NULL,               NULL },
+	{ "d",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_RIGHT,  0, NULL,               NULL },
+
+	{ "z",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_B,      0, "Z X",              "buttons 1 and 2" },
+	{ "x",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_A,      0, NULL,               NULL },
+	{ "c",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_Y,      0, "C V",              "buttons 3 and 4" },
+	{ "v",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_X,      0, NULL,               NULL },
+	{ "q",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_L,      0, "Q E",              "buttons 5 and 6" },
+	{ "e",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_R,      0, NULL,               NULL },
+
+	/* The two that actually start a game, named as the cabinet names them.
+	 * Terminals disagree about Backspace (BS 0x08 vs DEL 0x7f), so both. */
+	{ "\010\177", SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_SELECT, 0, "Bksp",             "INSERT COIN" },
+	{ "\r\n",     SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_START,  0, "Enter",            "1-player start (after a coin)" },
+
+	/* --- door --- */
+	{ "+=",       SR_ACT_DOOR, SR_DOOR_VOL_UP,                0, "+ -",              "volume up / down (0 = off)" },
+	{ "-_",       SR_ACT_DOOR, SR_DOOR_VOL_DOWN,              0, NULL,               NULL },
+	{ " ",        SR_ACT_DOOR, SR_DOOR_PAUSE,                 0, "Space",            "pause / resume" },
+	{ "?",        SR_ACT_DOOR, SR_DOOR_HELP,                  0, "?",                "this help" },
+	{ "\023",     SR_ACT_DOOR, SR_DOOR_STATS,                 0, "Ctrl-S",           "stats overlay" },
+	{ "\022",     SR_ACT_DOOR, SR_DOOR_RESET,                 0, "Ctrl-R",           "reset the machine" },
+	{ "\021",     SR_ACT_DOOR, SR_DOOR_QUIT,                  0, "Ctrl-Q",           "quit" },
+	/* F4 has no BYTES: it arrives as an escape sequence (or a physical-key
+	 * report) and syncretro_input.c dispatches it directly. The empty `chars`
+	 * makes this row unmatchable -- it exists so the help screen lists the key. */
+	{ "",         SR_ACT_NONE, 0,                             0, "F4",               "render tier (sixel / text)" }
+};
+
+#define SR_NBINDS_ARCADE ((int)(sizeof g_binds_arcade / sizeof g_binds_arcade[0]))
+
 /* The active table. One table drives BOTH the key handler and the help screen --
  * the M2 invariant -- so switching profiles switches both, together, and they
  * cannot drift apart. */
@@ -140,6 +195,10 @@ static const sr_bind_row_t *sr_bind_table(int *n)
 	if (sr_profile() == SR_PROFILE_INTV) {
 		*n = SR_NBINDS;
 		return g_binds;
+	}
+	if (sr_profile() == SR_PROFILE_ARCADE) {
+		*n = SR_NBINDS_ARCADE;
+		return g_binds_arcade;
 	}
 	*n = SR_NBINDS_PAD;
 	return g_binds_pad;

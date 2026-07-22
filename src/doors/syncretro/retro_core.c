@@ -101,6 +101,7 @@ int rc_core_open(rc_core_t *c, const char *path)
 	RC_RESOLVE(unload_game,            "retro_unload_game");
 	RC_RESOLVE(run,                    "retro_run");
 	RC_RESOLVE(reset,                  "retro_reset");
+	RC_RESOLVE(set_controller_port_device, "retro_set_controller_port_device");
 
 	if (c->api_version() != RETRO_API_VERSION) {
 		rc_fail("core libretro API %u != frontend %u",
