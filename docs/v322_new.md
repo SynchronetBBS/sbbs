@@ -311,6 +311,16 @@
   (in preparation for v3.30): `for each` replaced with
   `for...in`, E4X removed from `funclib.js`, top-level `const`
   changed to `var`. v3.22 itself still runs SpiderMonkey 1.8.5
+- Door game-data downloads fall back to a Synchronet-hosted
+  mirror when a game's own publisher can't be reached, so an
+  installer no longer fails because a download site moved,
+  renamed a release, or went away
+- Every archive a door installer downloads is now verified
+  against a checksum built into the installer, from either
+  source: one that doesn't match is refused rather than
+  installed. Affects the game-data fetchers for SyncDOOM,
+  SyncDuke, SyncAlert, SyncDawn, SyncNES and the ScummVM-based
+  doors, several of which previously checked nothing
 
 ## JavaScript
 
@@ -362,6 +372,11 @@
 - `jsexec` and `jsdoor` now ship with auto-generated object/API
   documentation; `jsexec`-only globals no longer leak into
   `jsobjs.html`
+- New `load("sha256.js")` library provides `sha256_of_file()`,
+  streaming a file through cryptlib so large archives are never
+  held in memory. Synchronet has native `File.md5_hex` and
+  `File.sha1_hex` but no SHA-256 equivalent; the library uses one
+  automatically if a future release adds it
 
 ## JSexec
 
