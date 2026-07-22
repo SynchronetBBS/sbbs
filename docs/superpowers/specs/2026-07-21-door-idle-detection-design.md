@@ -50,7 +50,9 @@ The door's own `-t%T` deadline was the only backstop, and because
 - Every termgfx graphical door detects that its *user* has stopped providing
   input, on a signal that DSR pacing cannot forge.
 - The threshold is sysop-configurable in all six doors, by command-line
-  argument or by the door's own ini.
+  argument or by the door's own ini, with no dependency on Synchronet-side
+  JS — these doors also run under other BBS software via DOOR32.SYS, and the
+  feature must be configurable there too.
 - Users exempt from inactivity timeouts by the BBS's own convention are exempt
   here too, in the doors whose launch path can determine that.
 - A silent user who is still engaged — watching a cutscene, an FMV, a
@@ -164,13 +166,41 @@ key-up expiry timers, which would forge activity for a user who has left.
 
 ### Configuration
 
-Two launch shapes, because only half the doors have a lobby.
+**Every door honors `-i<seconds>` and its own `[idle]` ini section.** That is
+the base contract, and it is deliberately not conditional on a lobby: these
+doors run under other BBS software too — Mystic and anything else that writes a
+DOOR32.SYS — where no Synchronet JS exists at all. A non-Synchronet install
+configures the timeout exactly the way a lobby-less Synchronet install does,
+by ini or by argument.
 
-**Doors with a JS lobby** — syncretro (`exec/load/syncretro_lobby.js:295`),
-syncduke (`xtrn/syncduke/syncduke_lib.js:211`), syncdoom
-(`xtrn/syncdoom/lobby.js:47`). The lobby reads the door's ini, evaluates an
-exempt ARS with `bbs.compare_ars()`, and appends `-i<seconds>` to the command
-line alongside the existing `-s%H -t%T`:
+The JS lobby is an **additional layer on top**, available only on Synchronet
+and only for the three doors that have one, and its sole added value is
+evaluating the exempt ARS.
+
+#### The base contract (all six doors, every BBS)
+
+```ini
+[idle]
+timeout    = 15m    ; 0 or absent = disabled
+warn       = 60s    ; countdown before exit
+```
+
+`-i<seconds>` on the command line overrides the ini. `-i0` disables. This is
+the whole configuration story for syncscumm, syncconquer and syncmoo1 on any
+BBS, and for all six doors on a non-Synchronet BBS.
+
+For syncscumm the ini is the practical route: its `cmd` is already near the
+100-char `LEN_CMD` ceiling that `xtrn/syncscumm/install-xtrn.ini:22` warns
+about, and that ini is **per-title** (one per game package, `startup_dir` per
+entry — `/sbbs/ctrl/xtrn.ini:854`, `:868`, …), not per-door. A sysop
+configuring idle timeouts for syncscumm sets them once per installed title.
+
+#### The lobby layer (Synchronet only; syncretro, syncduke, syncdoom)
+
+syncretro (`exec/load/syncretro_lobby.js:295`), syncduke
+(`xtrn/syncduke/syncduke_lib.js:211`) and syncdoom (`xtrn/syncdoom/lobby.js:47`)
+read the door's ini, evaluate an exempt ARS with `bbs.compare_ars()`, and append
+`-i<seconds>` to the command line alongside the existing `-s%H -t%T`:
 
 ```ini
 [idle]
@@ -186,20 +216,18 @@ ARS keyword taking a letter argument (`ars.c:466`); a bare `H` is not valid ARS.
 Exempt users get an explicit `-i0` rather than an omitted flag, so "exempt"
 positively overrides any ini default instead of silently falling through to it.
 
-**Doors without a lobby** — syncscumm, syncconquer, syncmoo1 — are static
-`ctrl/xtrn.ini` entries. They take the same `[idle] timeout` and `warn` keys
-from their own ini, and additionally honor `-i<seconds>` on the static command
-line so a sysop can set it per-entry without touching the ini. `exempt_ars` is
-ignored in these doors; nothing on this path can evaluate it.
-
-For syncscumm the ini is the practical route: its `cmd` is already near the
-100-char `LEN_CMD` ceiling that `xtrn/syncscumm/install-xtrn.ini:22` warns
-about, and that ini is **per-title** (one per game package, `startup_dir` per
-entry — `/sbbs/ctrl/xtrn.ini:854`, `:868`, …), not per-door. A sysop
-configuring idle timeouts for syncscumm sets them once per installed title.
+`exempt_ars` is read and acted on **only** by a lobby. The doors themselves
+ignore the key entirely — on a lobby-less door, or any door on a non-Synchronet
+BBS, there is nothing that can evaluate an ARS.
 
 **Precedence, uniform everywhere:** `-i` wins when present; absent it, the door
-reads `[idle] timeout` from its own ini. This mirrors `-t%T`.
+reads `[idle] timeout` from its own ini. This mirrors `-t%T`. Because a lobby
+always emits `-i` (including `-i0` for an exempt user), the lobby's answer wins
+on a Synchronet install without the door needing to know a lobby exists.
+
+An implementation consequence worth stating: each door must read its ini
+**before** it arms the clock, so the ini fallback is populated when no `-i`
+was given.
 
 Per-door ini files and readers: `syncretro.ini` (`syncretro_config.c:156`),
 `syncduke.ini` (`syncduke_config.c:218`), `syncdoom.ini` (`syncdoom.c:3238`),
@@ -210,11 +238,13 @@ Per-door ini files and readers: `syncretro.ini` (`syncretro_config.c:156`),
 #### Exemption asymmetry
 
 An `EXEMPT H` user is exempt from the idle timeout in syncretro, syncduke and
-syncdoom, and is **not** exempt in syncscumm, syncconquer and syncmoo1. This is
-a deliberate, accepted consequence of those three doors having no launch-time
-JS, recorded here so it is a known asymmetry rather than a surprise. Sysops who
-need those three to leave a particular user alone set `[idle] timeout = 0` for
-that door, which disables the feature door-wide.
+syncdoom **on Synchronet**, and is **not** exempt in syncscumm, syncconquer and
+syncmoo1 — nor in any of the six on a non-Synchronet BBS, where no ARS exists to
+evaluate. This is a deliberate, accepted consequence of the exemption being a
+lobby-layer feature, recorded here so it is a known asymmetry rather than a
+surprise. Sysops without a lobby who need a door to leave a particular user
+alone set `[idle] timeout = 0` for that door, which disables the feature
+door-wide.
 
 If this becomes a real complaint, the fix is to give those doors a launcher, or
 to add a narrow exempt-flag read to termgfx — both larger changes than this one,
