@@ -637,7 +637,19 @@ fn_PixelBuffer_setAlternateRgb24(WrenVM *vm)
 {
 	struct ciolib_pixels *pixels = pixel_buffer(vm)->pixels;
 	size_t count = buffer_count(pixels);
+	int length;
 
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_STRING) {
+		wren_throw(vm,
+		    "setAlternateRgb24: byte length must be width * height * 3");
+		return;
+	}
+	(void)wrenGetSlotBytes(vm, 1, &length);
+	if (count > INT_MAX / 3 || length != (int)(count * 3)) {
+		wren_throw(vm,
+		    "setAlternateRgb24: byte length must be width * height * 3");
+		return;
+	}
 	if (!ensure_alternate(pixels)) {
 		wrenSetSlotNull(vm, 0);
 		return;

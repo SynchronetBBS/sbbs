@@ -77,6 +77,7 @@ void fn_Cell_hyperlinkId(WrenVM *vm);
 void fn_Cell_hyperlinkId_set(WrenVM *vm);
 void fn_Cell_legacyAttr(WrenVM *vm);
 void fn_Cell_legacyAttr_set(WrenVM *vm);
+void fn_Cell_pixelGraphics(WrenVM *vm);
 void fn_Cell_eqContent(WrenVM *vm);
 void fn_Cell_toString(WrenVM *vm);
 void fn_Font_available(WrenVM *vm);
@@ -120,11 +121,16 @@ void fn_PhysicalKeyEvent_toString(WrenVM *vm);
 void fn_MouseEvent_bstate(WrenVM *vm);
 void fn_MouseEvent_endX(WrenVM *vm);
 void fn_MouseEvent_endY(WrenVM *vm);
+void fn_MouseEvent_endPixelX(WrenVM *vm);
+void fn_MouseEvent_endPixelY(WrenVM *vm);
 void fn_MouseEvent_event(WrenVM *vm);
 void fn_MouseEvent_modifiers(WrenVM *vm);
 void fn_MouseEvent_startX(WrenVM *vm);
 void fn_MouseEvent_startY(WrenVM *vm);
+void fn_MouseEvent_startPixelX(WrenVM *vm);
+void fn_MouseEvent_startPixelY(WrenVM *vm);
 void fn_MouseEvent_toString(WrenVM *vm);
+void fn_MouseEvent_withPixels(WrenVM *vm);
 
 /* Build a Wren-side KeyEvent / PhysicalKeyEvent / MouseEvent foreign in slot `dst`.  Uses
  * slot `dst + 1` as scratch for the class lookup, so the caller must

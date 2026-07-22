@@ -408,6 +408,36 @@ wren_mouse_event_finalize(void *data)
 	(void)data;
 }
 
+/* MouseEvent.withPixels(...) constructs the fully explicit event shape
+ * without adding another arity to the already overloaded foreign
+ * constructor.  Slot 0 is the MouseEvent class; use a separate class slot
+ * so the result can replace it safely. */
+void
+fn_MouseEvent_withPixels(WrenVM *vm)
+{
+	struct mouse_event ev;
+
+	memset(&ev, 0, sizeof(ev));
+	ev.event       = (int)wrenGetSlotDouble(vm, 1);
+	ev.startx      = (int)wrenGetSlotDouble(vm, 2);
+	ev.starty      = (int)wrenGetSlotDouble(vm, 3);
+	ev.endx        = (int)wrenGetSlotDouble(vm, 4);
+	ev.endy        = (int)wrenGetSlotDouble(vm, 5);
+	ev.kbmodifiers = (int)wrenGetSlotDouble(vm, 6);
+	ev.bstate      = (int)wrenGetSlotDouble(vm, 7);
+	ev.startx_res  = (int)wrenGetSlotDouble(vm, 8);
+	ev.starty_res  = (int)wrenGetSlotDouble(vm, 9);
+	ev.endx_res    = (int)wrenGetSlotDouble(vm, 10);
+	ev.endy_res    = (int)wrenGetSlotDouble(vm, 11);
+
+	wrenEnsureSlots(vm, 13);
+	wrenGetVariable(vm, "syncterm", "MouseEvent", 12);
+	struct wren_mouse_event *me =
+	    wrenSetSlotNewForeign(vm, 0, 12, sizeof(*me));
+	me->type = SWF_MOUSE_EVENT;
+	me->ev = ev;
+}
+
 /* KeyEvent field accessors. */
 void
 fn_KeyEvent_code(WrenVM *vm)
@@ -463,6 +493,10 @@ MOUSE_FIELD(startX,    startx)
 MOUSE_FIELD(startY,    starty)
 MOUSE_FIELD(endX,      endx)
 MOUSE_FIELD(endY,      endy)
+MOUSE_FIELD(startPixelX, startx_res)
+MOUSE_FIELD(startPixelY, starty_res)
+MOUSE_FIELD(endPixelX, endx_res)
+MOUSE_FIELD(endPixelY, endy_res)
 
 #undef MOUSE_FIELD
 
@@ -2124,6 +2158,13 @@ fn_Cell_blink_set(WrenVM *vm)
 		d->legacy_attr |= 0x80u;
 	else
 		d->legacy_attr &= (uint8_t)~0x80u;
+}
+
+void
+fn_Cell_pixelGraphics(WrenVM *vm)
+{
+	struct vmem_cell *d = slot_cell_data(vm, 0);
+	wrenSetSlotBool(vm, 0, (d->bg & CIOLIB_BG_PIXEL_GRAPHICS) != 0);
 }
 
 /* fg/bg follow the same pattern: bit 31 selects RGB vs palette; bits

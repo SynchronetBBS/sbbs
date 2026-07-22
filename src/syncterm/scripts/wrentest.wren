@@ -520,6 +520,10 @@ class WrenTest {
     bad = Fiber.new { PixelBuffer.fromRgb24(2, 2, "short") }.try()
     check_(bad is String && bad.contains("byte length"),
            "PixelBuffer rejects malformed RGB24 lengths")
+    var noAlternate = PixelBuffer.new(2, 1)
+    bad = Fiber.new { noAlternate.setAlternateRgb24("short") }.try()
+    check_(bad is String && !noAlternate.hasAlternate,
+           "invalid alternate RGB24 data does not mutate the buffer")
     bad = Fiber.new { PixelMask.fromBits(9, 1, String.fromByte(0)) }.try()
     check_(bad is String && bad.contains("byte length"),
            "PixelMask rejects malformed packed lengths")
@@ -619,6 +623,9 @@ class WrenTest {
     var replacement = PixelColor.rgb(0x010203)
     check_(Screen.setPixel(0, 0, replacement),
            "Screen.setPixel accepts native colours")
+    var marked = Screen.readRect(1, 1, 1, 1)
+    check_(marked is Surface && marked[0].pixelGraphics,
+           "Cell.pixelGraphics reports raster content under the cell")
     var captured = Screen.readPixels(0, 0, 1, 1)
     check_(captured is PixelBuffer && captured[0] == replacement,
            "Screen pixel write can be captured")
@@ -714,7 +721,9 @@ class WrenTest {
     var a = MouseEvent.new(Mouse.button1Click, 5, 6)
     check_(a.event == Mouse.button1Click && a.startX == 5 &&
            a.startY == 6 && a.endX == 5 && a.endY == 6 &&
-           a.modifiers == 0 && a.bstate == 1,
+           a.modifiers == 0 && a.bstate == 1 &&
+           a.startPixelX == 0 && a.startPixelY == 0 &&
+           a.endPixelX == 0 && a.endPixelY == 0,
            "MouseEvent.new(event, sx, sy) defaults correctly")
 
     // 4-arg: explicit modifiers, defaults for end and bstate.
@@ -745,6 +754,15 @@ class WrenTest {
     // Mouse.move event → bstate 0 by derivation.
     var f = MouseEvent.new(Mouse.move, 0, 0)
     check_(f.bstate == 0, "MouseEvent.new with Mouse.move → bstate 0")
+
+    var g = MouseEvent.withPixels(Mouse.button1DragMove,
+        2, 3, 4, 5, 6, 7, 20, 30, 40, 50)
+    check_(g.event == Mouse.button1DragMove && g.startX == 2 &&
+           g.startY == 3 && g.endX == 4 && g.endY == 5 &&
+           g.modifiers == 6 && g.bstate == 7 &&
+           g.startPixelX == 20 && g.startPixelY == 30 &&
+           g.endPixelX == 40 && g.endPixelY == 50,
+           "MouseEvent.withPixels preserves explicit raster coordinates")
   }
 
   static testScrollbackMouseMask_() {
@@ -915,6 +933,7 @@ class WrenTest {
     // legacy_attr's bit field, so setting them after legacyAttr would
     // mutate legacyAttr's stored value.
     var c = Cell.new()
+    check_(!c.pixelGraphics, "Cell.new has no pixel graphics")
     c.ch = "A"
     check_(c.ch == "A" && c.chByte == 65, "Cell.ch + chByte")
     c.legacyAttr = 0x1e

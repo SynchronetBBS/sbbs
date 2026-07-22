@@ -478,6 +478,8 @@ foreign class MouseEvent {
   construct new(event, startX, startY, endX, endY) {}
   construct new(event, startX, startY, endX, endY, modifiers) {}
   construct new(event, startX, startY, endX, endY, modifiers, bstate) {}
+  foreign static withPixels(event, startX, startY, endX, endY, modifiers,
+      bstate, startPixelX, startPixelY, endPixelX, endPixelY)
   foreign event
   foreign bstate
   foreign modifiers
@@ -485,6 +487,10 @@ foreign class MouseEvent {
   foreign startY
   foreign endX
   foreign endY
+  foreign startPixelX
+  foreign startPixelY
+  foreign endPixelX
+  foreign endPixelY
   foreign toString
 }
 // Numeric values from `enum ciolib_mouse_event` in conio/ciolib.h.
@@ -792,6 +798,7 @@ foreign class Cell {
   foreign bright=(b)
   foreign blink
   foreign blink=(b)
+  foreign pixelGraphics
   foreign fgPalette
   foreign fgPalette=(n)
   foreign fgRgb

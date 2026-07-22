@@ -1,6 +1,7 @@
 // Pixel API availability checks shared by the menu and picker VM harnesses.
 
-import "syncterm" for PixelBlit, PixelBuffer, PixelColor, PixelMask, Screen
+import "syncterm" for Cell, Mouse, MouseEvent, PixelBlit, PixelBuffer,
+    PixelColor, PixelMask, Screen
 
 class PixelVmTest {
   static run() {
@@ -22,6 +23,10 @@ class PixelVmTest {
     check.call(mask.count == 2 && mask[0] && mask[1])
     check.call(blit.scaleX == 1 && blit.scaleY == 1)
     check.call(Screen.pixelSize == null || Screen.pixelSize.count == 2)
+    check.call(!Cell.new().pixelGraphics)
+    var mouse = MouseEvent.withPixels(Mouse.move,
+        1, 2, 3, 4, 0, 0, 10, 20, 30, 40)
+    check.call(mouse.startPixelX == 10 && mouse.endPixelY == 40)
     return [pass, fail]
   }
 }

@@ -2140,6 +2140,29 @@ sends something.
 | `Screen.moveRect(sx, sy, ex, ey, dx, dy)`
 | Copy a rectangle to a new position.
 
+| `Screen.pixelSize`
+| Internal raster size as `[width, height]`, or `null` when the current
+  backend has no pixel surface.
+
+| `Screen.cellPixelSize`
+| Character-cell size as `[width, height]` pixels, or `null` when it is
+  unavailable.
+
+| `Screen.readPixels(x, y, width, height)`,
+  `Screen.readPixels(x, y, width, height, force)`
+| Capture a 0-based raster rectangle as a <<pixelbuffer,`PixelBuffer`>>.
+  See <<pixel-screen,Pixel screen operations>> for `force` and failure
+  behavior.
+
+| `Screen.setPixel(x, y, color)`
+| Set one 0-based raster pixel to a native <<pixelcolor,pixel color>>.
+
+| `Screen.blitPixels(buffer, descriptor)`,
+  `Screen.blitPixels(buffer, mask, descriptor)`
+| Draw a <<pixelbuffer,`PixelBuffer`>> using a
+  <<pixelblit,`PixelBlit`>>, optionally through a
+  <<pixelmask,`PixelMask`>>.
+
 | `Screen.attr`, `Screen.attr=(a)`
 | Read or set the active text attribute byte.
 
@@ -2348,6 +2371,241 @@ writing into a `Cell` field via `fgRgb=` / `bgRgb=`.
   text attribute byte.
 |===
 
+=== Pixel graphics [[pixel-graphics]]
+
+The pixel API exposes ciolib's internal raster directly in the connected,
+menu, and picker VMs.  Raster coordinates are 0-based and refer to the
+unscaled video-mode surface, not operating-system window coordinates.  User
+display scaling does not change these coordinates.  `Screen.pixelSize`
+includes any raster rows that do not belong to a complete text cell.
+
+Pixel buffers, masks, and blit descriptors are foreign objects owned by the
+VM that created them.  Their native allocations are released by Wren's
+garbage collector.  They cannot be passed between SyncTERM's isolated VMs.
+
+==== PixelColor [[pixelcolor]]
+
+Pixel buffers retain ciolib's native colour words.  A native word is either a
+palette index in `0..65535` or a 24-bit RGB value tagged with
+`CIOLIB_COLOR_RGB`.  A plain `0xRRGGBB` number is therefore not necessarily a
+native RGB colour; construct it with `PixelColor.rgb` before placing it in a
+buffer.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `PixelColor.rgb(rgb)`
+| Tag a raw `0xRRGGBB` value as native RGB.
+
+| `PixelColor.palette(index)`
+| Construct a native palette colour.  `index` may be `0..65535`.
+
+| `PixelColor.isRgb(value)`
+| Return `true` when `value` is a tagged RGB colour.
+
+| `PixelColor.rgbValue(value)`
+| Return raw `0xRRGGBB` for a tagged RGB colour, or `null` for a palette
+  colour.
+
+| `PixelColor.paletteIndex(value)`
+| Return the index for a palette colour, or `null` for tagged RGB.
+
+| `PixelColor.toRgb(value)`
+| Return raw `0xRRGGBB`, resolving palette colours through the active
+  palette.  Returns `null` if the palette index cannot be resolved.
+|===
+
+All methods reject fractional, negative, out-of-range, or malformed native
+colour values by aborting the calling fiber.
+
+==== PixelBuffer [[pixelbuffer]]
+
+`PixelBuffer` is a row-major `Sequence` of native colour words.  Linear index
+`i` is `(y * width) + x`.  Ordinary reads, writes, fills, and blits operate on
+the native array directly.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `PixelBuffer.new(width, height)`,
+  `PixelBuffer.new(width, height, fill)`
+| Allocate a buffer, initially palette index 0 or `fill`.
+
+| `width`, `height`, `count`
+| Dimensions and total pixel count.
+
+| `[i]`, `[i]=(color)`
+| Read or write one row-major native colour word.
+
+| `pixelAt(x, y)`, `setPixel(x, y, color)`
+| Read or write one 0-based buffer coordinate.
+
+| `fill(color)`
+| Fill the primary plane.
+
+| `clone()`
+| Copy the buffer and both blink-phase planes.  Returns `null` on allocation
+  failure.
+
+| `PixelBuffer.fromRgb24(width, height, bytes)`,
+  `PixelBuffer.fromRgb24(width, height, bytes, alternateBytes)`
+| Import packed RGB bytes in `R,G,B` order.  Each string must contain exactly
+  `width * height * 3` bytes.  Imported pixels become tagged RGB colours.
+
+| `rgb24`
+| Export the primary plane as packed RGB bytes.  Palette words are resolved
+  through the active palette.
+
+| `hasAlternate`, `alternateAt(i)`
+| Inspect the optional alternate blink-phase plane.  `alternateAt` returns
+  `null` while no explicit plane exists.
+
+| `setAlternate(x, y, color)`, `fillAlternate(color)`,
+  `setAlternateRgb24(bytes)`
+| Create or update the alternate plane.  Its first creation copies the
+  complete primary plane before applying the requested change.
+
+| `alternateRgb24`
+| Export the alternate plane as packed RGB, or return `null` when it is
+  absent.
+
+| `clearAlternate()`
+| Remove the explicit alternate plane.  Native drawing then uses the primary
+  plane for both blink phases.
+
+| `PixelBuffer.fromPpm(source)`
+| Decode a P3 or P6 PPM image.
+
+| `PixelBuffer.fromJxl(source)`
+| Decode JPEG XL.  Returns `null` for invalid data, allocation failure, or an
+  unavailable decoder.
+
+| `PixelBuffer.jxlSupported`
+| `true` when libjxl was compiled in and can be loaded.  The JXL methods are
+  present even when this is `false`.
+|===
+
+Decoder `source` may be a binary Wren `String` or a readable, consent-bounded
+<<file,`File`>>.  A `File` is mapped and decoded directly; SyncTERM does not
+first copy its contents into a Wren string.  Decoded images contain only a
+primary plane.
+
+Capture and clone preserve ciolib's primary and alternate planes exactly.
+RGB24 export is a conversion and resolves palette references at export time;
+use native indexing when palette identity must survive a round trip.
+
+==== PixelMask [[pixelmask]]
+
+`PixelMask` is a row-major `Sequence` of Bool values.  A true bit draws its
+source pixel; a false bit leaves the destination unchanged.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `PixelMask.new(width, height)`,
+  `PixelMask.new(width, height, fill)`
+| Allocate a false-filled mask, or initialize every bit to `fill`.
+
+| `PixelMask.fromBits(width, height, bits)`
+| Import continuous row-major packed bits, most-significant bit first.  The
+  string length must be `ceil(width * height / 8)`.
+
+| `PixelMask.fromPbm(source)`
+| Decode a P1 or P4 PBM from a binary `String` or readable `File`.  P4's
+  per-row padding is removed; `PixelMask.bits` always uses continuous bits.
+
+| `width`, `height`, `count`, `[i]`, `[i]=(value)`
+| Dimensions and linear Boolean access.
+
+| `bitAt(x, y)`, `setBit(x, y, value)`, `fill(value)`
+| 0-based coordinate access and bulk fill.
+
+| `bits`
+| Export continuous row-major packed bits, most-significant bit first.
+|===
+
+==== PixelBlit [[pixelblit]]
+
+`PixelBlit` is a reusable mutable descriptor.  `PixelBlit.new()` selects the
+whole source, destination `(0, 0)`, scale `(1, 1)`, mask origin `(0, 0)`, and
+no mirroring.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `sourceX`, `sourceY`
+| 0-based source origin.  Values must be non-negative integers.
+
+| `sourceWidth`, `sourceHeight`
+| Source extent.  Zero means the remainder of that source dimension,
+  evaluated when the descriptor is used.
+
+| `destinationX`, `destinationY`
+| Signed 0-based destination origin.  Negative values request clipping at the
+  left or top edge.
+
+| `scaleX`, `scaleY`
+| Positive integer nearest-neighbour scale factors.
+
+| `maskX`, `maskY`
+| 0-based mask origin.  The mask region has the same unscaled extent as the
+  source region.
+
+| `flipX`, `flipY`
+| Mirror the selected source and corresponding mask region before scaling.
+|===
+
+Descriptor setters reject wrong types, fractional values, out-of-range
+coordinates, and zero scale by aborting the calling fiber.  Reusing a
+descriptor does not retain a source, mask, or screen reference.
+
+==== Pixel screen operations [[pixel-screen]]
+
+`Screen.readPixels(x, y, width, height)` captures a positive-sized rectangle
+and returns a new `PixelBuffer`.  Passing `force=true` first requests a full
+refresh from text vmem before capture; use the default `false` when capturing
+pixel changes that have already been drawn.  Capture returns `null` for an
+unsupported backend, an out-of-screen rectangle, or allocation failure.
+
+`Screen.setPixel(x, y, color)` and both `Screen.blitPixels` overloads return a
+Bool.  A blit validates the source and optional mask regions, clips the scaled
+destination to the screen, and returns `true` without drawing when the entire
+destination is off-screen.  Scaling is nearest-neighbour and independent in
+X and Y.  If the source has no alternate plane, its primary pixels are used
+for both destination blink phases.  Masks are the transparency mechanism;
+there is no alpha blending.
+
+Blitting uses the supplied native buffers directly and performs no per-blit
+allocation.  Keep decoded or constructed buffers and descriptors for repeated
+sprite draws rather than rebuilding RGB strings.  Capture, decode, clone,
+RGB24 conversion, and first alternate-plane creation do allocate.
+
+[source,wren]
+----
+var sprite = PixelBuffer.fromPpm(ppmBytes)
+var mask = PixelMask.fromPbm(pbmBytes)
+var blit = PixelBlit.new()
+blit.destinationX = 40
+blit.destinationY = 24
+blit.scaleX = 2
+blit.scaleY = 2
+blit.flipX = true
+
+if (sprite != null && Screen.supports.pixels) {
+  Screen.blitPixels(sprite, mask, blit)
+}
+----
+
+Invalid argument types, fractional or out-of-range integers, invalid native
+colours, malformed packed lengths, and invalid descriptor fields abort the
+calling fiber.  Constructors also abort on allocation failure because Wren
+foreign constructors cannot return `null`; factories, decoders, capture, and
+clone return `null` for recoverable allocation or decoding failure.
+
 === Input
 
 Unified blocking and nonblocking reader for keyboard and mouse events.
@@ -2525,6 +2783,12 @@ surface uses this same shape.
   or `0` for `Mouse.move`.  The seven-arg form is the canonical
   fully-explicit constructor.
 
+| `MouseEvent.withPixels(event, startX, startY, endX, endY, modifiers,
+  bstate, startPixelX, startPixelY, endPixelX, endPixelY)`
+| Construct a fully explicit synthetic event including internal raster
+  coordinates.  This is a named factory rather than a sixth overloaded
+  constructor so pixel and cell coordinates cannot be confused by arity.
+
 | `event`
 | Mouse event type code.
 
@@ -2541,6 +2805,15 @@ surface uses this same shape.
 
 | `endX`, `endY`
 | Release coordinates (1-based).
+
+| `startPixelX`, `startPixelY`
+| Click-down coordinates in the 0-based internal raster.  Native backends that
+  cannot report pixel positions use `-1`.  Ordinary `MouseEvent.new(...)`
+  constructors initialize these fields to `0`.
+
+| `endPixelX`, `endPixelY`
+| Release coordinates in the 0-based internal raster, with the same `-1` and
+  synthetic-constructor rules as the start fields.
 |===
 
 ==== Mouse event constants
@@ -2835,6 +3108,11 @@ and color state.  Use cases: read a rectangle through
 
 | `blink`, `blink=(b)`
 | Blink bit.
+
+| `pixelGraphics`
+| Read-only.  `true` when pixel drawing has marked this text cell as containing
+  raster data outside the `vmem_cell`.  Capture that data separately with
+  `Screen.readPixels`; it is not contained in a `Cell` or `Surface`.
 
 | `fgPalette`, `bgPalette`
 | Foreground / background palette indices.
