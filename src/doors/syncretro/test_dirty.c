@@ -216,6 +216,39 @@ int main(void)
 		free(cur); free(prev);
 	}
 
+	/* band_align=1 STRANDING: a bottom-clamped rect that can't cover its
+	 * own changed rows must fall back to a full frame (return 0), not
+	 * ship a rect that silently misses the stranded rows.
+	 *
+	 * ch=13 -> vstep=LCM(13,6)=78. h=100 is not a multiple of vstep. One
+	 * component -- a single column dirty from cell row 0 to row 7 -- has
+	 * y0=0, y2=(7+1)*13=104 clamped to h=100. Bottom-clamped:
+	 * rh=(100-0)/78*78=78, so the rect would stop at y=78, short of
+	 * y2=100 -> 0+78 < 100: stranded.
+	 *
+	 * The same geometry with band_align=0 must NOT return 0, so the test
+	 * proves the stranding return is specific to band_align, not just
+	 * "always empty". */
+	{
+		int      w = 64, h = 100, cw = 8, ch = 13;
+		uint8_t *cur  = calloc((size_t)w * h, 1);
+		uint8_t *prev = calloc((size_t)w * h, 1);
+		sr_dirty_rect_t r[SR_DIRTY_MAX_RECTS];
+		int      n, y;
+
+		for (y = 0; y < h; y++)
+			cur[y * w + 0] = 0xAB;   /* one column, dirty top-to-bottom */
+
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		CHECK(n == 0);   /* stranded -> full frame, not a partial rect */
+
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 0, r);
+		CHECK(n == 1);   /* same geometry, band_align=0: a normal rect */
+		CHECK(r[0].x == 0 && r[0].y == 0 && r[0].w == cw && r[0].h == h);
+
+		free(cur); free(prev);
+	}
+
 	/* --- degenerate inputs are refusals, not crashes ----------------------- */
 	CHECK(sr_dirty_find(NULL, prev, W, H, CW, CH, 0, r) == 0);
 	CHECK(sr_dirty_find(cur, NULL, W, H, CW, CH, 0, r) == 0);
