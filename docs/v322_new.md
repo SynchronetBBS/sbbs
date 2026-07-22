@@ -71,9 +71,6 @@
   from v3.21)
 - Goodbye messages and pre-login banners no longer log noisy
   "send failed" warnings when the client disconnects mid-message
-- The final output before a hang-up is now fully transmitted
-  before the connection is torn down, so the echoed key of a
-  fast log-off (`/O`) is no longer lost on SSH connections
 - Fix line-wrap divide-by-zero crash when an SFTP-only client
   connects (no terminal dimensions negotiated, issue #1120)
 - VT320 status-line control (`DECSSDT` / `DECSASD`) — the BBS can
