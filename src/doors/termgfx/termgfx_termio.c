@@ -2586,7 +2586,9 @@ static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 	struct sst_box box[SST_MAX_COMPONENTS];
 	int             ehc, nb, k;
 	int             vstep = ch / sst_gcd(ch, 6) * 6;   /* LCM(ch,6): cell & band */
-	int             emit_pal = !g_is_syncterm;   /* non-SyncTERM resets registers per image */
+	/* SyncTERM: registers persist, box carries no palette (NONE). Every other
+	 * terminal resets per image, so the box self-describes its used colors. */
+	int             emit_pal = g_is_syncterm ? SIXEL_PAL_NONE : SIXEL_PAL_USED;
 	size_t          total = 0;
 
 	ehc = eh - eh % 6;                           /* the client's actual sixel height */
@@ -3789,7 +3791,13 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * only on a real palette change, or when (re)entering the sixel tier
 	 * from something else (JXL never defined them); other sixel terminals
 	 * reset registers per image, so send every frame there. */
-	emit_pal = pal_dirty || !g_is_syncterm || g_last_tier != SST_TIER_SIXEL;
+	/* SyncTERM: FULL only on a real palette change or sixel-tier re-entry,
+	 * else NONE (reuse persisted registers). Non-SyncTERM: always self-
+	 * describe, subset to the frame's used colors. */
+	emit_pal = (pal_dirty || g_last_tier != SST_TIER_SIXEL)
+	           ? SIXEL_PAL_FULL : SIXEL_PAL_NONE;
+	if (!g_is_syncterm)
+		emit_pal = SIXEL_PAL_USED;
 
 	/* g_present_pending was already cleared above, past both defer gates --
 	 * see that comment. A frame that gets dropped by out_put()'s stage-full
