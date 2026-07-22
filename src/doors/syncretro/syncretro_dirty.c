@@ -174,8 +174,11 @@ static void sort_boxes(sr_cellbox_t *box, int nb)
 	}
 }
 
+/* Greatest common divisor, for LCM(ch,6) in the band_align path below. */
+static int sr_gcd(int a, int b) { while (b) { int t = a % b; a = b; b = t; } return a; }
+
 int sr_dirty_find(const uint8_t *cur, const uint8_t *prev, int w, int h,
-                  int cw, int ch, sr_dirty_rect_t *out)
+                  int cw, int ch, int band_align, sr_dirty_rect_t *out)
 {
 	sr_cellbox_t box[SR_DIRTY_MAX_COMPONENTS];
 	int          cols, rows, cx, cy, nb, i, dirty = 0, total;
@@ -212,20 +215,60 @@ int sr_dirty_find(const uint8_t *cur, const uint8_t *prev, int w, int h,
 		return 0;                      /* still too fragmented to be worth it */
 	sort_boxes(box, nb);
 
-	for (i = 0; i < nb; i++) {
-		int x0 = box[i].x1 * cw;
-		int y0 = box[i].y1 * ch;
-		int x1 = (box[i].x2 + 1) * cw;
-		int y1 = (box[i].y2 + 1) * ch;
+	if (band_align) {
+		int vstep = ch / sr_gcd(ch, 6) * 6;   /* LCM(ch, 6) */
 
-		if (x1 > w) x1 = w;            /* clamp the partial last cell to the frame */
-		if (y1 > h) y1 = h;
-		out[i].x   = x0;
-		out[i].y   = y0;
-		out[i].w   = x1 - x0;
-		out[i].h   = y1 - y0;
-		out[i].col = box[i].x1;
-		out[i].row = box[i].y1;
+		/* Pre-pass: if any bottom-clamped box can't cover its own changed
+		 * rows at a whole vstep, bail to a full frame (return 0) before
+		 * writing any rect -- the caller's whole-frame path is always right. */
+		for (i = 0; i < nb; i++) {
+			int y0  = box[i].y1 * ch;
+			int y2  = (box[i].y2 + 1) * ch;   /* this box's changed-rows bottom */
+			int rh;
+
+			if (y2 > h)
+				y2 = h;
+			rh = (y2 - y0 + vstep - 1) / vstep * vstep;
+			if (y0 + rh > h)
+				rh = (h - y0) / vstep * vstep;   /* stay vstep-aligned at frame bottom */
+			if (y0 + rh < y2)
+				return 0;                         /* stranded -> full frame */
+		}
+		for (i = 0; i < nb; i++) {
+			int x0 = box[i].x1 * cw;
+			int y0 = box[i].y1 * ch;
+			int x1 = (box[i].x2 + 1) * cw;
+			int y2 = (box[i].y2 + 1) * ch;
+			int rh;
+
+			if (x1 > w) x1 = w;
+			if (y2 > h) y2 = h;
+			rh = (y2 - y0 + vstep - 1) / vstep * vstep;
+			if (y0 + rh > h)
+				rh = (h - y0) / vstep * vstep;
+			out[i].x   = x0;
+			out[i].y   = y0;
+			out[i].w   = x1 - x0;
+			out[i].h   = rh;
+			out[i].col = box[i].x1;
+			out[i].row = box[i].y1;
+		}
+	} else {
+		for (i = 0; i < nb; i++) {
+			int x0 = box[i].x1 * cw;
+			int y0 = box[i].y1 * ch;
+			int x1 = (box[i].x2 + 1) * cw;
+			int y1 = (box[i].y2 + 1) * ch;
+
+			if (x1 > w) x1 = w;            /* clamp the partial last cell to the frame */
+			if (y1 > h) y1 = h;
+			out[i].x   = x0;
+			out[i].y   = y0;
+			out[i].w   = x1 - x0;
+			out[i].h   = y1 - y0;
+			out[i].col = box[i].x1;
+			out[i].row = box[i].y1;
+		}
 	}
 	return nb;
 }

@@ -1330,7 +1330,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	    && last_ew == g_ew && last_eh == g_eh
 	    && last_icol == g_icol && last_irow == g_irow)
 		nrect = sr_dirty_find(g_scaled, g_prev_scaled, g_ew, g_eh,
-		                      g_cell_w, g_cell_h, rect);
+		                      g_cell_w, g_cell_h, 0, rect);
 
 	if (nrect > 0) {
 		int i;

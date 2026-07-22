@@ -51,9 +51,16 @@ typedef struct {
  * degrades into it rather than into a wrong picture.
  *
  * Rectangles never overlap and are returned in top-to-bottom, left-to-right
- * order, so painting them in order cannot leave a seam. */
+ * order, so painting them in order cannot leave a seam.
+ *
+ * band_align: when nonzero, snap each rect height to LCM(ch,6) -- a whole
+ * number of BOTH text cells and 6px sixel bands -- so a cell-anchored terminal
+ * (foot) has no partial trailing band to backfill as a black strip, and return
+ * 0 (caller repaints a full frame) if a bottom-clamped rect cannot cover its
+ * own changed rows. Pass 0 for terminals that don't need it (SyncTERM), which
+ * keeps the cell-only geometry unchanged. */
 int sr_dirty_find(const uint8_t *cur, const uint8_t *prev, int w, int h,
-                  int cw, int ch, sr_dirty_rect_t *out);
+                  int cw, int ch, int band_align, sr_dirty_rect_t *out);
 
 /* Percentage of the frame's cells that must change before sr_dirty_find() gives
  * up and asks for a full frame. Exposed for the test. */

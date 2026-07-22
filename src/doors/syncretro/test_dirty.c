@@ -108,13 +108,13 @@ int main(void)
 	reset();
 	blit(cur, 0, 0, W, H, 3);
 	blit(prev, 0, 0, W, H, 3);
-	CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, 0, r) == 0);
 
 	/* --- one small sprite moves: one tight rectangle ----------------------- */
 	reset();
 	blit(prev, 40, 32, 8, 8, 1);
 	blit(cur,  48, 32, 8, 8, 1);
-	n = sr_dirty_find(cur, prev, W, H, CW, CH, r);
+	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, r);
 	CHECK(n >= 1);
 	CHECK(uncovered(r, n) == 0);
 	check_aligned(r, n);
@@ -128,7 +128,7 @@ int main(void)
 	reset();
 	blit(prev, 15, 20, 2, 2, 1);
 	blit(cur,  17, 20, 2, 2, 1);
-	n = sr_dirty_find(cur, prev, W, H, CW, CH, r);
+	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, r);
 	CHECK(n == 1);
 	CHECK(uncovered(r, n) == 0);
 
@@ -144,7 +144,7 @@ int main(void)
 	blit(cur,  4, H - 12, 6, 6, 2);
 	blit(prev, W - 12, H - 12, 6, 6, 1);
 	blit(cur,  W - 12, H - 12, 6, 6, 2);
-	n = sr_dirty_find(cur, prev, W, H, CW, CH, r);
+	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, r);
 	CHECK(n == 4);
 	CHECK(uncovered(r, n) == 0);
 	check_aligned(r, n);
@@ -153,7 +153,7 @@ int main(void)
 	/* --- a full-screen change asks for a full frame ------------------------ */
 	reset();
 	blit(cur, 0, 0, W, H, 7);
-	CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, 0, r) == 0);
 
 	/* --- scattered single pixels everywhere ask for a full frame -----------
 	 * Too fragmented to describe cheaply: the answer must be 0 (repaint), not
@@ -166,7 +166,7 @@ int main(void)
 			for (x = 4; x < W; x += 12)
 				cur[y * W + x] = 9;
 	}
-	n = sr_dirty_find(cur, prev, W, H, CW, CH, r);
+	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, r);
 	CHECK(n == 0 || n <= SR_DIRTY_MAX_RECTS);
 	if (n > 0)
 		CHECK(uncovered(r, n) == 0);
@@ -179,7 +179,7 @@ int main(void)
 		const int ocw = 7, och = 13;   /* neither divides W or H */
 		int       x, y, i, miss = 0;
 
-		n = sr_dirty_find(cur, prev, W, H, ocw, och, r);
+		n = sr_dirty_find(cur, prev, W, H, ocw, och, 0, r);
 		CHECK(n >= 1);
 		for (y = 0; y < H; y++)
 			for (x = 0; x < W; x++) {
@@ -199,13 +199,30 @@ int main(void)
 		}
 	}
 
+	/* band_align=1 snaps each rect height to LCM(ch,6). ch=13 -> vstep=78. */
+	{
+		int      w = 64, h = 156, cw = 8, ch = 13;   /* 156 = 2*78, exact */
+		uint8_t *cur  = calloc((size_t)w * h, 1);
+		uint8_t *prev = calloc((size_t)w * h, 1);
+		sr_dirty_rect_t r[SR_DIRTY_MAX_RECTS];
+		int      n, i;
+
+		/* dirty a small patch near the top so its natural height < 78 */
+		memset(cur + (size_t)10 * w + 4, 0xAB, 20);
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		CHECK(n > 0);
+		for (i = 0; i < n; i++)
+			CHECK(r[i].h % 78 == 0);           /* whole LCM(ch,6) bands */
+		free(cur); free(prev);
+	}
+
 	/* --- degenerate inputs are refusals, not crashes ----------------------- */
-	CHECK(sr_dirty_find(NULL, prev, W, H, CW, CH, r) == 0);
-	CHECK(sr_dirty_find(cur, NULL, W, H, CW, CH, r) == 0);
-	CHECK(sr_dirty_find(cur, prev, 0, H, CW, CH, r) == 0);
-	CHECK(sr_dirty_find(cur, prev, W, H, 0, CH, r) == 0);
-	CHECK(sr_dirty_find(cur, prev, W, H, CW, 0, r) == 0);
-	CHECK(sr_dirty_find(cur, prev, 100000, 100000, 1, 1, r) == 0);  /* over the grid */
+	CHECK(sr_dirty_find(NULL, prev, W, H, CW, CH, 0, r) == 0);
+	CHECK(sr_dirty_find(cur, NULL, W, H, CW, CH, 0, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, 0, H, CW, CH, 0, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, W, H, 0, CH, 0, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, W, H, CW, 0, 0, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, 100000, 100000, 1, 1, 0, r) == 0);  /* over the grid */
 
 	printf(failures ? "\n%d FAILURE(S)\n" : "\nall dirty-rect tests passed\n",
 	       failures);
