@@ -67,4 +67,23 @@ elseif(_tg_libs MATCHES "(^|;)sndfile(;|$)")
     # the check above alone would silently miss it.
     set(_snd_libs "-lsndfile")
 endif()
+# Safety net -- the invariant is "termgfx compiled with TERMGFX_WITH_SNDFILE
+# ==> libtermgfx.a references sf_*() ==> the final link needs libsndfile."
+# Neither branch above is guaranteed to catch that. When termgfx finds
+# libsndfile via find_package(SndFile CONFIG) (Arch, vcpkg, any distro shipping
+# SndFileConfig.cmake -- preferred over pkg-config), the imported target
+# SndFile::sndfile is directory-scoped to the termgfx add_subdirectory() and is
+# NOT visible here in the parent, so the TARGET test above is false; and the
+# name it leaves in INTERFACE_LINK_LIBRARIES is "SndFile::sndfile", which the
+# bare-"sndfile" regex does not match either. Result: an empty sndfile_libs.txt,
+# no -lsndfile on ScummVM's link, and undefined references to sf_open_virtual /
+# sf_command / sf_writef_short / sf_close from audio.c. Key off the compile
+# definition (readable on the regular termgfx target from any scope) and fall
+# back to -lsndfile so the flag is present whenever the symbols are.
+if(NOT _snd_libs)
+    get_target_property(_tg_defs termgfx COMPILE_DEFINITIONS)
+    if(_tg_defs MATCHES "TERMGFX_WITH_SNDFILE")
+        set(_snd_libs "-lsndfile")
+    endif()
+endif()
 file(WRITE ${CMAKE_BINARY_DIR}/sndfile_libs.txt "${_snd_libs}")
