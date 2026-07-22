@@ -98,7 +98,44 @@ pulls) plus a backslash path-separator case in its save-path creation.
 ./build.sh null         # null backend (headless bring-up)
 ```
 
-Needs a C/C++ toolchain, GNU make, CMake, and ScummVM's usual dependency
-`-dev` packages (`libmad0-dev` is **required** — see the comment in
-`build.sh`). Produces `build/syncscumm` (make emits `scummvm`, which
-`build.sh` renames).
+Produces `build/syncscumm` (make emits `scummvm`, which `build.sh` renames).
+
+### Prerequisites
+
+A C/C++ toolchain, GNU make, and CMake, plus ScummVM's dependency `-dev`
+packages. On Debian/Ubuntu:
+
+```
+sudo apt-get install build-essential cmake \
+    libmad0-dev \
+    libpng-dev libjpeg-dev libfreetype-dev \
+    libogg-dev libvorbis-dev libflac-dev libopus-dev \
+    libjxl-dev libsndfile1-dev zlib1g-dev
+```
+
+On Arch (and other distros that don't split out `-dev` packages — the headers
+ship in the base library package, so there is no separate `libmad0-dev`):
+
+```
+sudo pacman -S --needed base-devel cmake \
+    libmad \
+    libpng libjpeg-turbo freetype2 \
+    libogg libvorbis flac opus \
+    libjxl libsndfile zlib
+```
+
+- **`libmad` (MP3) is required — the build fails without it.** `build.sh`
+  forces `--enable-mad` on purpose (not configure's silent autodetect): the
+  freeware "talkie" titles (Flight of the Amazon Queen and others) store their
+  *speech* as MP3, so a build missing libmad would load the game but play every
+  spoken line silently. Forcing it makes a missing libmad fail loudly at
+  compile time (`fatal error: mad.h: No such file or directory`) instead of
+  shipping a talkie door with music but no dialogue. See the comment in
+  `build.sh`.
+- **`libjxl-dev` and `libsndfile1-dev` are optional but recommended** — they
+  drive termgfx's JPEG-XL graphics tier and the Opus/Ogg audio streaming (the
+  same two libraries the sibling termgfx doors use). Absent them the door still
+  builds, degraded to the sixel + raw-PCM tiers.
+- The remaining libraries (png/jpeg/freetype for graphics and fonts,
+  ogg/vorbis/flac/opus for audio, zlib) are ScummVM's usual deps and are
+  autodetected by its `configure`.
