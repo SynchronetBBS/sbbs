@@ -4170,6 +4170,16 @@ void sbbs_t::hangup(void)
 	if (online) {
 		term->clear_hotspots();
 		lprintf(LOG_DEBUG, "disconnecting client");
+		// Wait for the last of the output -- e.g. the echoed command key of a
+		// fast log-off (/O), which is the only output that command produces --
+		// to be *transmitted* before tearing the connection down.  Do this
+		// while still online: flush_output() short-circuits on !online.
+		// WaitForOutbufEmpty() alone would not be enough either; it returns in
+		// the gap between output_thread's ring->linear read and its send
+		// (GitLab #1157), and on SSH the ssh_session_destroy() below then
+		// discards those still-untransmitted bytes.
+		if (client_socket != INVALID_SOCKET)
+			WaitForOutbufDrained(1000);
 		online = false;   // moved from the bottom of this function on Jan-25-2009
 	}
 	if (client_socket_dup != INVALID_SOCKET && client_socket_dup != client_socket)
@@ -4177,7 +4187,6 @@ void sbbs_t::hangup(void)
 	client_socket_dup = INVALID_SOCKET;
 
 	if (client_socket != INVALID_SOCKET) {
-		mswait(1000);   /* Give socket output buffer time to flush */
 		client_off(client_socket);
 		if (ssh_mode) {
 			pthread_mutex_lock(&ssh_mutex);
