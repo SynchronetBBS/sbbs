@@ -220,14 +220,17 @@ static int sr_sep_expand(char *dst, size_t cap, const char *src, const char *sep
 }
 
 /* One screen serves pause, '?' and an unbound key: a player who reaches any of
- * the three wants the same thing -- the list of keys. Only the badge and the
- * closing prompt differ, because only pause needs a specific key to leave.
+ * the three wants the same thing -- the list of keys. The core is stopped behind
+ * all three of them -- the door never runs it while a screen is up -- so the
+ * PAUSED badge is unconditional: it reports the core's state, not which key got
+ * the player here. Only the closing prompt differs, because only the Space pause
+ * needs a specific key to leave.
  *
  * PLAIN TEXT, NOT PIXELS, and drawn with box-drawing glyphs in the CLIENT'S
  * charset (termgfx_client_charset): it has to render on a graphics-less terminal
  * and on a UTF-8 ssh client alike, and a door writes raw bytes -- nothing between
  * here and the player converts CP437 for us. */
-static void sr_screen_keys(int paused)
+static void sr_screen_keys(int from_pause)
 {
 	termgfx_charset_t    cs   = termgfx_client_charset();
 	const termgfx_box_t *b    = termgfx_box_double(cs);
@@ -316,15 +319,13 @@ static void sr_screen_keys(int paused)
 		sr_puts(A_FRAME " ");
 		vis += 1 + 1 + (int)strlen(con) + 1;
 	}
-	if (paused) {
+	{
 		int fill = inner - vis - 10;    /* badge (8) + the rule's own two cells */
 
 		sr_repeat(b->h, (fill > 0) ? fill : 0);
 		sr_repeat(b->h, 1);
 		sr_puts(A_PAUSED " PAUSED " A_UNBADGE);
 		sr_repeat(b->h, 1);
-	} else {
-		sr_repeat(b->h, (inner - vis > 0) ? inner - vis : 0);
 	}
 	sr_puts(b->tr);
 	sr_puts(A_OFF);
@@ -367,7 +368,7 @@ static void sr_screen_keys(int paused)
 	sr_puts(A_OFF);
 
 	{
-		const char *leave = paused ? "Space to resume" : "any key to return";
+		const char *leave = from_pause ? "Space to resume" : "any key to return";
 		char        ver[80];
 		int         vn;
 
