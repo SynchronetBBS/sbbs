@@ -18,9 +18,19 @@
 // it from the game) is NOT part of this download -- it ships committed in this
 // package directory, and the door finds it via --path.
 //
-// Integrity: the archive is verified against ScummVM's published
-// lure-1.1.zip.sha256 using CryptContext(CryptContext.ALGO.SHA2) (cryptlib's
-// SHA-2 context defaults to 256-bit output) before it is unpacked.
+// Integrity: the archive is verified before it is unpacked against the PINNED
+// sha256 below -- the value ScummVM publishes alongside it -- using
+// CryptContext(CryptContext.ALGO.SHA2) (cryptlib's SHA-2 context defaults to
+// 256-bit output).
+//
+// Pinned rather than fetched at run time, which is what this did before. The
+// mirror fallback means the archive can arrive from a second host, and a hash
+// retrieved from whichever host served the file proves nothing about it. A pin
+// in git is checked once, by a person, and an archive that changed upstream is
+// REJECTED rather than silently installed.
+//
+// If the download fails or fails that check, exec/load/xtrn_mirror.js retries
+// against Synchronet's asset mirror before giving up.
 //
 // Run automatically (and prompted) by the installer via install-xtrn.ini's
 // [exec:getdata.js] step, or by hand any time:
@@ -33,10 +43,12 @@
 // Copyright (C) 2026 Rob Swindell / synclure.  GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
 
 var BASE   = "https://downloads.scummvm.org/frs/extras/Lure%20of%20the%20Temptress";
 var ZIP    = "lure-1.1.zip";
 var MARKER = "Disk1.vga";
+var SHA256 = "f3178245a1483da1168c3a11e70b65d33c389f1f5df63d4f3a356886c1890108";
 
 // The door's own directory (where this script lives). js.exec_dir is the
 // running SCRIPT's own dir -- correct whether launched by the installer or by
@@ -78,21 +90,6 @@ function sha256_of_file(path)
 	return hexify(cc.hashvalue);
 }
 
-// Fetch <url> (ScummVM's published "<zip>.sha256") and pull the first 64-hex-
-// char hash out of it -- a standard sha256sum-format file.
-function fetch_sha256(url)
-{
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;
-	var body = req.Get(url);
-	if (req.response_code != 200)
-		throw new Error("HTTP " + req.response_code + " fetching " + url);
-	var m = String(body).match(/([0-9a-fA-F]{64})/);
-	if (!m)
-		throw new Error("no sha256 hash found in " + url);
-	return m[1].toLowerCase();
-}
-
 function main()
 {
 	var root = door_dir();
@@ -108,40 +105,22 @@ function main()
 	var tmp = backslash(system.temp_dir) + ZIP;
 
 	print("downloading " + ZIP + " ...");
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;
-	var n = 0;
-	try {
-		n = req.Download(url, tmp);
-	} catch (e) {
-		print("  ! download failed: " + e);
+	var n = xtrn_mirror_download(url, tmp, {
+		verify: function(p) {
+			var got = sha256_of_file(p);
+			if (got == SHA256)
+				return true;
+			print("  ! sha256 MISMATCH for " + ZIP);
+			print("    expected: " + SHA256);
+			print("    got:      " + got);
+			return false;
+		}
+	});
+	if (!n) {
+		print("  ! could not fetch " + ZIP);
 		return 1;
 	}
-	if (req.response_code != 200 || !n) {
-		print("  ! download failed: HTTP " + req.response_code);
-		if (file_exists(tmp))
-			file_remove(tmp);
-		return 1;
-	}
-	print("  downloaded " + n + " bytes; verifying sha256 ...");
-
-	var expect;
-	try {
-		expect = fetch_sha256(url + ".sha256");
-	} catch (e) {
-		print("  ! could not fetch/parse " + ZIP + ".sha256: " + e);
-		file_remove(tmp);
-		return 1;
-	}
-	var got = sha256_of_file(tmp);
-	if (got != expect) {
-		print("  ! sha256 MISMATCH for " + ZIP);
-		print("    expected: " + expect);
-		print("    got:      " + got);
-		file_remove(tmp);
-		return 1;
-	}
-	print("  sha256 verified (" + got + ")");
+	print("  downloaded " + n + " bytes; sha256 verified");
 
 	print("  extracting into " + root + " ...");
 	try {

@@ -28,11 +28,19 @@
 // talkie/ + floppy/ subdirs in here and the door picks per session
 // automatically.
 //
-// Integrity: verified against ScummVM's published <zip>.sha256 using
-// CryptContext(CryptContext.ALGO.SHA2) -- cryptlib's SHA-2 context defaults
-// to 256-bit output. This is a real hash check, unlike the sibling fetchers
-// (exec/load/syncretro_getcore.js, syncmoo1/getdata.js), which trust HTTPS +
-// the known source and don't hash-verify at all.
+// Integrity: verified against the PINNED sha256 below -- the value ScummVM
+// publishes alongside the archive -- using CryptContext(CryptContext.ALGO.SHA2),
+// cryptlib's SHA-2 context defaulting to 256-bit output.
+//
+// Pinned rather than fetched at run time, which is what this did before. The
+// mirror fallback means the archive can arrive from a second host, and a hash
+// retrieved from whichever host served the file proves nothing about it -- so a
+// downloaded checksum would have made the second source exactly as trusted as
+// the first. A pin in git is checked once, by a person, and an archive that
+// changed upstream is REJECTED rather than silently installed.
+//
+// If the download fails or fails that check, exec/load/xtrn_mirror.js retries
+// against Synchronet's asset mirror before giving up.
 //
 // Run automatically (and prompted) by the installer via install-xtrn.ini's
 // [exec:getdata.js] step, or by hand any time:
@@ -46,6 +54,7 @@
 // Copyright (C) 2026 Rob Swindell / syncbass.  GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
 
 var BASE = "https://downloads.scummvm.org/frs/extras/Beneath%20a%20Steel%20Sky";
 
@@ -56,7 +65,8 @@ var BASE = "https://downloads.scummvm.org/frs/extras/Beneath%20a%20Steel%20Sky";
 // the engine-data file the CD build carries and the floppy build lacks, so its
 // presence proves a complete, runnable set.
 var BUILDS = [
-	{ zip: "bass-cd-1.2.zip", dir: "", marker: "sky.cpt", label: "CD (speech + subtitles)" }
+	{ zip: "bass-cd-1.2.zip", dir: "", marker: "sky.cpt", label: "CD (speech + subtitles)",
+	  sha256: "53209b9400eab6fd7fa71518b2f357c8de75cfeaa5ba57024575ab79cc974593" }
 ];
 
 // The door's own directory (where this script lives).  js.exec_dir is the
@@ -102,22 +112,6 @@ function sha256_of_file(path)
 	return hexify(cc.hashvalue);
 }
 
-// Fetch <url> (ScummVM's published "<zip>.sha256") and pull the first 64-hex-
-// char hash out of it -- the file is standard sha256sum format ("<hash>" or
-// "<hash>  <filename>"); take field 1.
-function fetch_sha256(url)
-{
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;
-	var body = req.Get(url);
-	if (req.response_code != 200)
-		throw new Error("HTTP " + req.response_code + " fetching " + url);
-	var m = String(body).match(/([0-9a-fA-F]{64})/);
-	if (!m)
-		throw new Error("no sha256 hash found in " + url);
-	return m[1].toLowerCase();
-}
-
 // Fetch and unpack one build.  Returns true on success (including "already
 // present"), false on any failure (never throws).
 function fetch_build(b, root)
@@ -134,41 +128,22 @@ function fetch_build(b, root)
 	var tmp = backslash(system.temp_dir) + b.zip;
 
 	print(b.label + ": downloading " + b.zip + " ...");
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;
-	var n = 0;
-	try {
-		n = req.Download(url, tmp);
-	} catch (e) {
-		print("  ! download failed: " + e);
+	var n = xtrn_mirror_download(url, tmp, {
+		verify: function(p) {
+			var got = sha256_of_file(p);
+			if (got == b.sha256)
+				return true;
+			print("  ! sha256 MISMATCH for " + b.zip);
+			print("    expected: " + b.sha256);
+			print("    got:      " + got);
+			return false;
+		}
+	});
+	if (!n) {
+		print("  ! could not fetch " + b.zip);
 		return false;
 	}
-	if (req.response_code != 200 || !n) {
-		print("  ! download failed: HTTP " + req.response_code);
-		if (file_exists(tmp))
-			file_remove(tmp);
-		return false;
-	}
-	print("  downloaded " + n + " bytes; verifying sha256 ...");
-
-	var expect;
-	try {
-		expect = fetch_sha256(url + ".sha256");
-	} catch (e) {
-		print("  ! could not fetch/parse " + b.zip + ".sha256: " + e);
-		file_remove(tmp);
-		return false;
-	}
-
-	var got = sha256_of_file(tmp);
-	if (got != expect) {
-		print("  ! sha256 MISMATCH for " + b.zip);
-		print("    expected: " + expect);
-		print("    got:      " + got);
-		file_remove(tmp);
-		return false;
-	}
-	print("  sha256 verified (" + got + ")");
+	print("  downloaded " + n + " bytes; sha256 verified");
 
 	print("  extracting into " + destdir + " ...");
 	try {

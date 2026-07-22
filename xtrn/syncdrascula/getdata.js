@@ -24,10 +24,20 @@
 //                                 (Vorbis/FLAC are only autodetected). Absent
 //                                 it, Drascula still plays with Adlib music.
 //
-// Integrity: each archive is verified against ScummVM's published
-// <zip>.sha256 using CryptContext(CryptContext.ALGO.SHA2) (cryptlib's SHA-2
-// context defaults to 256-bit output) before it is unpacked -- the same real
-// hash check the syncqueen/syncbass fetchers do.
+// Integrity: each archive is verified before it is unpacked against the PINNED
+// sha256 on its build below -- the value ScummVM publishes alongside it --
+// using CryptContext(CryptContext.ALGO.SHA2) (cryptlib's SHA-2 context defaults
+// to 256-bit output), the same real hash check the syncqueen/syncbass fetchers
+// do.
+//
+// Pinned rather than fetched at run time, which is what this did before. The
+// mirror fallback means an archive can arrive from a second host, and a hash
+// retrieved from whichever host served the file proves nothing about it. A pin
+// in git is checked once, by a person, and an archive that changed upstream is
+// REJECTED rather than silently installed.
+//
+// If a download fails or fails that check, exec/load/xtrn_mirror.js retries
+// against Synchronet's asset mirror before giving up.
 //
 // Run automatically (and prompted) by the installer via install-xtrn.ini's
 // [exec:getdata.js] step, or by hand any time:
@@ -42,6 +52,7 @@
 // Copyright (C) 2026 Rob Swindell / syncdrascula.  GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
 
 var BASE = "https://downloads.scummvm.org/frs/extras/" +
            "Drascula_%20The%20Vampire%20Strikes%20Back";
@@ -55,10 +66,12 @@ var BASE = "https://downloads.scummvm.org/frs/extras/" +
 var BUILDS = [
 	{ zip: "drascula-1.0.zip",           marker: "Packet.001",
 	  with_path: false, file: "Packet.001",
-	  label: "game (required)",          required: true },
+	  label: "game (required)",          required: true,
+	  sha256: "b731f6cb5a22ba8b4c3b3362f570b9a10a67b6cb0b395394b19a94b36e4e42de" },
 	{ zip: "drascula-audio-mp3-2.0.zip", marker: "audio/track1.mp3",
 	  with_path: true,  file: "audio/*.mp3",
-	  label: "CD soundtrack (optional)", required: false }
+	  label: "CD soundtrack (optional)", required: false,
+	  sha256: "32bdb6d5163e538ffe20f6320e20e0b24050823be516775364be629ab1b52eee" }
 ];
 
 // The door's own directory (where this script lives).  js.exec_dir is the
@@ -102,21 +115,6 @@ function sha256_of_file(path)
 	return hexify(cc.hashvalue);
 }
 
-// Fetch <url> (ScummVM's published "<zip>.sha256") and pull the first 64-hex-
-// char hash out of it -- a standard sha256sum-format file ("<hash>  <name>").
-function fetch_sha256(url)
-{
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;
-	var body = req.Get(url);
-	if (req.response_code != 200)
-		throw new Error("HTTP " + req.response_code + " fetching " + url);
-	var m = String(body).match(/([0-9a-fA-F]{64})/);
-	if (!m)
-		throw new Error("no sha256 hash found in " + url);
-	return m[1].toLowerCase();
-}
-
 // Fetch and unpack one archive into the door directory.  Returns true on
 // success (including "already present"), false on any failure (never throws --
 // a failed optional archive is reported and the game archive is unaffected).
@@ -131,41 +129,22 @@ function fetch_build(b, root)
 	var tmp = backslash(system.temp_dir) + b.zip;
 
 	print(b.label + ": downloading " + b.zip + " ...");
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;
-	var n = 0;
-	try {
-		n = req.Download(url, tmp);
-	} catch (e) {
-		print("  ! download failed: " + e);
+	var n = xtrn_mirror_download(url, tmp, {
+		verify: function(p) {
+			var got = sha256_of_file(p);
+			if (got == b.sha256)
+				return true;
+			print("  ! sha256 MISMATCH for " + b.zip);
+			print("    expected: " + b.sha256);
+			print("    got:      " + got);
+			return false;
+		}
+	});
+	if (!n) {
+		print("  ! could not fetch " + b.zip);
 		return false;
 	}
-	if (req.response_code != 200 || !n) {
-		print("  ! download failed: HTTP " + req.response_code);
-		if (file_exists(tmp))
-			file_remove(tmp);
-		return false;
-	}
-	print("  downloaded " + n + " bytes; verifying sha256 ...");
-
-	var expect;
-	try {
-		expect = fetch_sha256(url + ".sha256");
-	} catch (e) {
-		print("  ! could not fetch/parse " + b.zip + ".sha256: " + e);
-		file_remove(tmp);
-		return false;
-	}
-
-	var got = sha256_of_file(tmp);
-	if (got != expect) {
-		print("  ! sha256 MISMATCH for " + b.zip);
-		print("    expected: " + expect);
-		print("    got:      " + got);
-		file_remove(tmp);
-		return false;
-	}
-	print("  sha256 verified (" + got + ")");
+	print("  downloaded " + n + " bytes; sha256 verified");
 
 	print("  extracting into " + root + " ...");
 	try {

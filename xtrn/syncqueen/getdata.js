@@ -7,8 +7,9 @@
 // hosting, rather than expecting the sysop to supply a copy.
 //
 // "FOTAQ_Talkie-1.0.zip" (an earlier draft's guess) exists on ScummVM's
-// server but has no matching .sha256 published, so it cannot be verified --
-// this uses FOTAQ_Talkie-1.1.zip instead, which does have one. Verified by
+// server but has no matching .sha256 published, so there is no publisher-
+// attested value to pin -- this uses FOTAQ_Talkie-1.1.zip instead, which does
+// have one, and its published sum is the constant below. Verified by
 // hand at authoring time: both zips download, both sha256s check out, and
 // neither build needs ScummVM's external queen.tbl engine-data file (the
 // Talkie build's queen.1c is a self-contained "rebuilt" resource file --
@@ -17,13 +18,21 @@
 // the engine hardcodes a table for, "PEM10"). So, unlike Beneath a Steel
 // Sky, this title needs no SYNCSCUMM_DATA / --extrapath at all.
 //
-// Integrity: verified against ScummVM's published <zip>.sha256 using
-// CryptContext(CryptContext.ALGO.SHA2) -- cryptlib's SHA-2 context defaults
-// to 256-bit output (confirmed at authoring time against known SHA-256 test
+// Integrity: verified against the PINNED sha256 on each build below -- the
+// value ScummVM publishes alongside the archive -- using
+// CryptContext(CryptContext.ALGO.SHA2), cryptlib's SHA-2 context defaulting to
+// 256-bit output (confirmed at authoring time against known SHA-256 test
 // vectors, including embedded-NUL/high-bit binary input, via File.read()'s
-// byte-preserving string round trip). This is a real hash check, unlike the
-// sibling fetchers (exec/load/syncretro_getcore.js, syncmoo1/getdata.js),
-// which trust HTTPS + the known source and don't hash-verify at all.
+// byte-preserving string round trip).
+//
+// Pinned rather than fetched at run time, which is what this did before. The
+// mirror fallback means an archive can arrive from a second host, and a hash
+// retrieved from whichever host served the file proves nothing about it. A pin
+// in git is checked once, by a person, and an archive that changed upstream is
+// REJECTED rather than silently installed.
+//
+// If a download fails or fails that check, exec/load/xtrn_mirror.js retries
+// against Synchronet's asset mirror before giving up.
 //
 // Run automatically (and prompted) by the installer via install-xtrn.ini's
 // [exec:getdata.js] step, or by hand any time:
@@ -38,6 +47,7 @@
 // Copyright (C) 2026 Rob Swindell / syncqueen.  GPL-2.0.
 
 load("http.js");
+load("xtrn_mirror.js");
 
 var BASE = "https://downloads.scummvm.org/frs/extras/Flight%20of%20the%20Amazon%20Queen";
 
@@ -45,8 +55,10 @@ var BASE = "https://downloads.scummvm.org/frs/extras/Flight%20of%20the%20Amazon%
 // door directory; marker is the file fetch_build() uses to decide a build is
 // already installed (matches the old getdata.sh's idempotency check).
 var BUILDS = [
-	{ zip: "FOTAQ_Talkie-1.1.zip", dir: "talkie", marker: "queen.1c", label: "talkie" },
-	{ zip: "FOTAQ_Floppy.zip",     dir: "floppy", marker: "queen.1",  label: "floppy" }
+	{ zip: "FOTAQ_Talkie-1.1.zip", dir: "talkie", marker: "queen.1c", label: "talkie",
+	  sha256: "a25cdd5e003a0a5e402af99b218cc7ea81ad032cb36b8c05df3bd1167038d8a8" },
+	{ zip: "FOTAQ_Floppy.zip",     dir: "floppy", marker: "queen.1",  label: "floppy",
+	  sha256: "2e59de85f708cdb32bf85c85b394ac091c05f7647e856b71f5b3ae73fde761e0" }
 ];
 
 // The door's own directory (where this script lives).  js.exec_dir is the
@@ -92,22 +104,6 @@ function sha256_of_file(path)
 	return hexify(cc.hashvalue);
 }
 
-// Fetch <url> (ScummVM's published "<zip>.sha256") and pull the first 64-hex-
-// char hash out of it -- same as the old getdata.sh's `awk '{print $1}'` on a
-// standard sha256sum-format file ("<hash>  <filename>").
-function fetch_sha256(url)
-{
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;
-	var body = req.Get(url);
-	if (req.response_code != 200)
-		throw new Error("HTTP " + req.response_code + " fetching " + url);
-	var m = String(body).match(/([0-9a-fA-F]{64})/);
-	if (!m)
-		throw new Error("no sha256 hash found in " + url);
-	return m[1].toLowerCase();
-}
-
 // Fetch and unpack one build.  Returns true on success (including "already
 // present"), false on any failure (never throws -- a failed build is
 // reported and the other build is still attempted).
@@ -125,41 +121,22 @@ function fetch_build(b, root)
 	var tmp = backslash(system.temp_dir) + b.zip;
 
 	print(b.label + ": downloading " + b.zip + " ...");
-	var req = new HTTPRequest();
-	req.follow_redirects = 5;
-	var n = 0;
-	try {
-		n = req.Download(url, tmp);
-	} catch (e) {
-		print("  ! download failed: " + e);
+	var n = xtrn_mirror_download(url, tmp, {
+		verify: function(p) {
+			var got = sha256_of_file(p);
+			if (got == b.sha256)
+				return true;
+			print("  ! sha256 MISMATCH for " + b.zip);
+			print("    expected: " + b.sha256);
+			print("    got:      " + got);
+			return false;
+		}
+	});
+	if (!n) {
+		print("  ! could not fetch " + b.zip);
 		return false;
 	}
-	if (req.response_code != 200 || !n) {
-		print("  ! download failed: HTTP " + req.response_code);
-		if (file_exists(tmp))
-			file_remove(tmp);
-		return false;
-	}
-	print("  downloaded " + n + " bytes; verifying sha256 ...");
-
-	var expect;
-	try {
-		expect = fetch_sha256(url + ".sha256");
-	} catch (e) {
-		print("  ! could not fetch/parse " + b.zip + ".sha256: " + e);
-		file_remove(tmp);
-		return false;
-	}
-
-	var got = sha256_of_file(tmp);
-	if (got != expect) {
-		print("  ! sha256 MISMATCH for " + b.zip);
-		print("    expected: " + expect);
-		print("    got:      " + got);
-		file_remove(tmp);
-		return false;
-	}
-	print("  sha256 verified (" + got + ")");
+	print("  downloaded " + n + " bytes; sha256 verified");
 
 	print("  extracting into " + destdir + " ...");
 	try {
