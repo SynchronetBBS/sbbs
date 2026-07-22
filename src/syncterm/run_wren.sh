@@ -11,7 +11,7 @@
 # Exit code: ordinary scripts succeed if no "[wren] " lines hit stderr.
 # wrentest.wren succeeds only after reporting a TOTAL with zero failures.
 #
-# Usage: run_wren.sh [--menu] <script.wren>
+# Usage: run_wren.sh [--menu|--menu-write] <script.wren>
 #
 # The harness uses the GNUmakefile-default debug build at
 #     clang.freebsd.amd64.exe.debug/syncterm
@@ -21,14 +21,18 @@
 set -u
 
 MENU_SUITE=false
-if [ "${1:-}" = "--menu" ]; then
+MENU_WRITABLE=false
+if [ "${1:-}" = "--menu" ] || [ "${1:-}" = "--menu-write" ]; then
 	MENU_SUITE=true
+	if [ "$1" = "--menu-write" ]; then
+		MENU_WRITABLE=true
+	fi
 	shift
 fi
 
 SCRIPT="${1:-}"
 if [ -z "$SCRIPT" ]; then
-	echo "Usage: $0 [--menu] <script.wren>" >&2
+	echo "Usage: $0 [--menu|--menu-write] <script.wren>" >&2
 	exit 1
 fi
 
@@ -94,7 +98,11 @@ fi
 # A normal shell disconnect can make SyncTERM return non-zero even after the
 # script completed, so the captured diagnostics/report are authoritative.
 if $MENU_SUITE; then
-	timeout 30 "$SYNCTERM" -iS -S -Q >"$OUT" 2>"$ERR"
+	if $MENU_WRITABLE; then
+		timeout 30 "$SYNCTERM" -iS -Q >"$OUT" 2>"$ERR"
+	else
+		timeout 30 "$SYNCTERM" -iS -S -Q >"$OUT" 2>"$ERR"
+	fi
 else
 	timeout 30 "$SYNCTERM" -iS -S -Q -W "$SCRIPT" "$CONNECTION" \
 		>"$OUT" 2>"$ERR"

@@ -323,10 +323,11 @@ class UiDrawTest {
     p.add(l)
     p.fitContentToScreen()
     var size = Screen.size
-    check_(p.bounds.w == size[0] - 4 && p.bounds.h <= size[1] - 2 &&
-           p.bounds.right + 2 <= size[0] && p.bounds.bottom + 1 <= size[1] &&
+    check_(p.bounds.w == size[0] - 4 && p.bounds.h <= size[1] - 4 &&
+           p.bounds.y >= 2 && p.bounds.right + 2 <= size[0] &&
+           p.bounds.bottom + 1 <= size[1] - 2 &&
            l.bounds == p.innerBounds,
-           "Pane.fitContentToScreen: caps, centers, and leaves shadow room")
+           "Pane.fitContentToScreen: preserves title, footer, and shadow room")
   }
 
   static testPaneFitToScreen_() {
@@ -334,10 +335,11 @@ class UiDrawTest {
     p.fitToScreen(78, 20)
     var size = Screen.size
     var maxW = (size[0] - 4).max(1)
-    var maxH = (size[1] - 2).max(1)
+    var maxH = (size[1] - 4).max(1)
     check_(p.bounds.w == 78.min(maxW) && p.bounds.h == 20.min(maxH) &&
-           p.bounds.right + 2 <= size[0] && p.bounds.bottom + 1 <= size[1],
-           "Pane.fitToScreen: constrains a fixed-size modal")
+           p.bounds.y >= 2 && p.bounds.right + 2 <= size[0] &&
+           p.bounds.bottom + 1 <= size[1] - 2,
+           "Pane.fitToScreen: keeps a fixed modal clear of menu chrome")
   }
 
   static testPaneFrameKinds_() {

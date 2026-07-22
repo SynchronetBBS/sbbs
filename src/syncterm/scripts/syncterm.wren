@@ -1140,6 +1140,8 @@ foreign class BBS {
   foreign static music
   foreign static rip
   foreign static comment
+  // Ordered profile-selected modules loaded for this connection.
+  foreign static wrenScripts
   foreign static type
   foreign static id
   foreign static addressFamily

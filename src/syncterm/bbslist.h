@@ -161,6 +161,7 @@ struct bbslist {
 	int                rip;
 	int                flow_control;
 	char               comment[1024];
+	char               wren_scripts[INI_MAX_VALUE_LEN];
 	bool               force_lcf;
 	bool               yellow_is_yellow;
 	/* SSH host-key fingerprint.  ssh_fingerprint_len is 0 (no stored
@@ -229,6 +230,9 @@ bool save_bbs_defaults(const char *listpath, struct bbslist *defaults);
 bool rename_bbs(const char *listpath, const char *old_name,
     struct bbslist *bbs);
 bool delete_bbs(const char *listpath, struct bbslist *bbs);
+bool bbslist_wren_script_name_valid(const char *name);
+str_list_t bbslist_get_wren_scripts(const struct bbslist *bbs);
+bool bbslist_set_wren_scripts(struct bbslist *bbs, const str_list_t scripts);
 bool rewrite_bbslist_kdf(const char *listpath, const char *kdf_spec);
 bool rewrite_bbslist_encryption(const char *listpath,
     enum iniCryptAlgo algo, int keysize, const char *new_password);

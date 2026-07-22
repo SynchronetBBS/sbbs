@@ -422,6 +422,68 @@ sort_list(struct bbslist **list, int *listcount)
 	qsort(list, *listcount, sizeof(struct bbslist *), listcmp);
 }
 
+bool
+bbslist_wren_script_name_valid(const char *name)
+{
+	if (name == NULL || *name == '\0' || strlen(name) >= 256)
+		return false;
+	for (const char *p = name; *p != '\0'; p++) {
+		unsigned char c = (unsigned char)*p;
+		if (!((c >= 'A' && c <= 'Z') ||
+		    (c >= 'a' && c <= 'z') ||
+		    (c >= '0' && c <= '9') || c == '_'))
+			return false;
+	}
+	return strcmp(name, "syncterm_menu") != 0 &&
+	    strcmp(name, "syncterm_picker") != 0 &&
+	    strcmp(name, "picker_bootstrap") != 0;
+}
+
+str_list_t
+bbslist_get_wren_scripts(const struct bbslist *bbs)
+{
+	if (bbs == NULL || bbs->wren_scripts[0] == '\0')
+		return strListInit();
+	return strListSplitCopy(NULL, bbs->wren_scripts, ",");
+}
+
+bool
+bbslist_set_wren_scripts(struct bbslist *bbs, const str_list_t scripts)
+{
+	if (bbs == NULL)
+		return false;
+	str_list_t unique = strListInit();
+	if (unique == NULL)
+		return false;
+	char value[sizeof(bbs->wren_scripts)];
+	size_t used = 0;
+	value[0] = '\0';
+	for (size_t i = 0; scripts != NULL && scripts[i] != NULL; i++) {
+		const char *name = scripts[i];
+		if (!bbslist_wren_script_name_valid(name)) {
+			strListFree(&unique);
+			return false;
+		}
+		if (strListFind(unique, name, true) >= 0)
+			continue;
+		size_t length = strlen(name);
+		size_t separator = used > 0 ? 1 : 0;
+		if (used + separator + length >= sizeof(value) ||
+		    strListPush(&unique, name) == NULL) {
+			strListFree(&unique);
+			return false;
+		}
+		if (separator != 0)
+			value[used++] = ',';
+		memcpy(value + used, name, length);
+		used += length;
+		value[used] = '\0';
+	}
+	strListFree(&unique);
+	memcpy(bbs->wren_scripts, value, used + 1);
+	return true;
+}
+
 
 /*
  * Parse a comma-separated string of signed integers into an order array.
@@ -923,6 +985,15 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	entry->address_family = iniGetEnum(section, NULL, "AddressFamily", address_families, ADDRESS_FAMILY_UNSPEC);
 	iniGetSString(section, NULL, "Font", "Codepage 437 English", entry->font, sizeof(entry->font));
 	iniGetSString(section, NULL, "Comment", "", entry->comment, sizeof(entry->comment));
+	entry->wren_scripts[0] = '\0';
+	if (!sys && bbsname != NULL) {
+		str_list_t scripts = iniGetStringList(section, NULL,
+		    "WrenScripts", ",", NULL);
+		if (scripts != NULL) {
+			bbslist_set_wren_scripts(entry, scripts);
+			strListFree(&scripts);
+		}
+	}
 	entry->type = type;
 	entry->id = id;
 
@@ -1341,6 +1412,14 @@ update_bbs_ini(str_list_t *inifile, struct bbslist *bbs, bool new_entry)
 	if (section != NULL)
 		iniSetString(inifile, section, "Comment", bbs->comment,
 		    &ini_style);
+	if (section != NULL) {
+		if (bbs->wren_scripts[0] != '\0') {
+			iniSetString(inifile, section, "WrenScripts",
+			    bbs->wren_scripts, &ini_style);
+		}
+		else
+			iniRemoveKey(inifile, section, "WrenScripts");
+	}
 	iniSetBool(inifile, section, "ForceLCF", bbs->force_lcf,
 	    &ini_style);
 	iniSetBool(inifile, section, "YellowIsYellow",

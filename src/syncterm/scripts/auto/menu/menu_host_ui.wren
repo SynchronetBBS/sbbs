@@ -1,7 +1,6 @@
 import "syncterm" for CustomCursor, Screen
 import "menu_ui" for MenuUi
 import "ui_app" for App
-import "ui_widget" for Rect
 import "ui_pane" for Pane
 import "ui_progress" for ProgressText
 
@@ -50,8 +49,7 @@ class MenuHostUI {
     var w = statusWidth_(size[0])
     var rows = __statusBody.rowCount((w - 2).max(1))
     var h = (rows + 4).max(5).min(size[1] - 4)
-    __statusPane.bounds = Rect.new(((size[0] - w) / 2).floor + 1,
-        ((size[1] - h) / 2).floor + 1, w, h)
+    __statusPane.bounds = Pane.modalBounds(w, h)
     __statusBody.bounds = __statusPane.innerBounds
     __statusApp.drawAll_()
   }

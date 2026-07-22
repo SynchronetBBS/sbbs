@@ -63,16 +63,14 @@ class PopStatus is Pane {
   message { _message }
 
   // Width: msgW + 2 (frame) + 2 (padding); height: 5 (frame top +
-  // padding row + msg + padding row + frame bot).  Capped at the
-  // screen with a 2-cell margin like every other popup.
+  // padding row + msg + padding row + frame bot).  Capped and placed
+  // inside the standard menu modal work area.
   static centeredBounds_(message) {
     var sz   = Screen.size
     var msgW = (message == null ? 0 : message.count)
     var w    = (msgW + 4).max(20).min(sz[0] - 4)
     var h    = 5
-    var x    = ((sz[0] - w) / 2).floor + 1
-    var y    = ((sz[1] - h) / 2).floor + 1
-    return Rect.new(x, y, w, h)
+    return Pane.modalBounds(w, h)
   }
 
   static show(message) {
@@ -146,7 +144,7 @@ class Popup is Pane {
     return lines.count.max(1)
   }
 
-  // Pre-compute Pane bounds centred on the screen.  Layout reserves
+  // Pre-compute Pane bounds centred in the menu work area.  Layout reserves
   // 2 frame rows + 2 padding rows + however many rows the wrapped
   // message needs + `extraRows` for whatever the subclass paints
   // below the message.  `minW` lets callers bump the minimum width
@@ -176,12 +174,8 @@ class Popup is Pane {
       }
       rows = lines.count.max(1)
     }
-    var h    = 4 + rows + extraRows              // 2 frame + 2 padding
-    var maxH = sz[1] - 2
-    if (h > maxH) h = maxH
-    var x = ((sz[0] - w) / 2).floor + 1
-    var y = ((sz[1] - h) / 2).floor + 1
-    return Rect.new(x, y, w, h)
+    var h = 4 + rows + extraRows                 // 2 frame + 2 padding
+    return Pane.modalBounds(w, h)
   }
 
   // Length (codepoints ≅ display cells for the strings we draw) of
@@ -538,7 +532,7 @@ class Prompt is Popup {
   input { _input }
 
   // Size the popup around a requested input width, then cap it to the
-  // standard screen margins.  Four cells account for the frame and
+  // standard menu modal work area.  Four cells account for the frame and
   // content padding; title width is an independent outer constraint.
   sizeForInput(inputWidth) { sizeForInput(inputWidth, 30) }
   sizeForInput(inputWidth, minimumWidth) {
@@ -619,9 +613,7 @@ class LinePrompt is Popup {
     if (title != null) requested = requested.max(title.count + 6)
     var size = Screen.size
     var width = requested.min((size[0] - 4).max(1))
-    var x = ((size[0] - width) / 2).floor + 1
-    var y = ((size[1] - 3) / 2).floor + 1
-    bounds = Rect.new(x, y, width, 3)
+    bounds = Pane.modalBounds(width, 3)
   }
 
   static show(app, label) { show(app, label, null) }
@@ -703,9 +695,7 @@ class Find is Popup {
     var lb = (label == null) ? 0 : label.bytes.count
     var w  = (lb + 6 + 20).min(sz[0] - 4).max(20)
     var h  = 3
-    var x  = ((sz[0] - w) / 2).floor + 1
-    var y  = ((sz[1] - h) / 2).floor + 1
-    return Rect.new(x, y, w, h)
+    return Pane.modalBounds(w, h)
   }
 
   // Single-row layout — input fills the entire innerBounds row,

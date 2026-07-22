@@ -104,6 +104,21 @@ static void fn_BBS_music(WrenVM *vm)        { BBS_FIELD_NUM(music); }
 static void fn_BBS_rip(WrenVM *vm)          { BBS_FIELD_NUM(rip); }
 static void fn_BBS_comment(WrenVM *vm)      { BBS_FIELD_STR(comment); }
 
+static void
+fn_BBS_wrenScripts(WrenVM *vm)
+{
+	struct wren_host_state *st = wren_host_state();
+	str_list_t scripts = bbslist_get_wren_scripts(
+	    st != NULL ? st->bbs : NULL);
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; scripts != NULL && scripts[i] != NULL; i++) {
+		wrenSetSlotString(vm, 1, scripts[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+	strListFree(&scripts);
+}
+
 static void fn_BBS_type(WrenVM *vm)         { BBS_FIELD_NUM(type); }
 static void fn_BBS_id(WrenVM *vm)           { BBS_FIELD_NUM(id); }
 static void fn_BBS_addressFamily(WrenVM *vm){ BBS_FIELD_NUM(address_family); }
@@ -1211,6 +1226,7 @@ static const struct binding BINDINGS[] = {
 	{ "BBS",   true, "music",                   fn_BBS_music                 },
 	{ "BBS",   true, "rip",                     fn_BBS_rip                   },
 	{ "BBS",   true, "comment",                 fn_BBS_comment               },
+	{ "BBS",   true, "wrenScripts",             fn_BBS_wrenScripts           },
 	{ "BBS",   true, "type",                    fn_BBS_type                  },
 	{ "BBS",   true, "id",                      fn_BBS_id                    },
 	{ "BBS",   true, "addressFamily",           fn_BBS_addressFamily         },

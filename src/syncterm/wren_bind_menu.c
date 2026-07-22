@@ -12,6 +12,7 @@
 #include "wren_bind_menu_settings.h"
 #include "wren_bind_screen.h"
 
+#include <dirwrap.h>
 #include <vidmodes.h>
 
 #include <math.h>
@@ -298,6 +299,84 @@ BBS_BOOL_PROPERTY(forceLcf, force_lcf)
 BBS_BOOL_PROPERTY(appendLogFile, append_logfile)
 BBS_BOOL_PROPERTY(telnetNoBinary, telnet_no_binary)
 BBS_BOOL_PROPERTY(deferTelnetNegotiation, defer_telnet_negotiation)
+
+static void
+push_wren_scripts(WrenVM *vm, const struct bbslist *bbs)
+{
+	str_list_t scripts = bbslist_get_wren_scripts(bbs);
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+	for (size_t i = 0; scripts != NULL && scripts[i] != NULL; i++) {
+		wrenSetSlotString(vm, 1, scripts[i]);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+	strListFree(&scripts);
+}
+
+static void
+fn_BBS_wrenScripts(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs != NULL)
+		push_wren_scripts(vm, bbs);
+}
+
+static void
+fn_BBS_wrenScripts_set(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check_mutable(vm);
+	if (bbs == NULL)
+		return;
+	struct wren_menu_bbs *wb = wrenGetSlotForeign(vm, 0);
+	if (wb->is_defaults || wb->is_transient) {
+		wren_throw(vm,
+		    "BBS.wrenScripts: only personal directory entries support scripts");
+		return;
+	}
+	if (wrenGetSlotType(vm, 1) != WREN_TYPE_LIST) {
+		wren_throw(vm, "BBS.wrenScripts: expected a List");
+		return;
+	}
+	int count = wrenGetListCount(vm, 1);
+	str_list_t scripts = strListInit();
+	if (scripts == NULL) {
+		wren_throw(vm, "BBS.wrenScripts: out of memory");
+		return;
+	}
+	wrenEnsureSlots(vm, 3);
+	for (int i = 0; i < count; i++) {
+		wrenGetListElement(vm, 1, i, 2);
+		if (wrenGetSlotType(vm, 2) != WREN_TYPE_STRING) {
+			strListFree(&scripts);
+			wren_throw(vm,
+			    "BBS.wrenScripts: expected a List of Strings");
+			return;
+		}
+		const char *name = wrenGetSlotString(vm, 2);
+		if (!bbslist_wren_script_name_valid(name)) {
+			strListFree(&scripts);
+			wren_throw(vm,
+			    "BBS.wrenScripts: invalid connected module name");
+			return;
+		}
+		if (strListFind(scripts, name, true) < 0 &&
+		    strListPush(&scripts, name) == NULL) {
+			strListFree(&scripts);
+			wren_throw(vm, "BBS.wrenScripts: out of memory");
+			return;
+		}
+	}
+	char previous[sizeof(bbs->wren_scripts)];
+	strlcpy(previous, bbs->wren_scripts, sizeof(previous));
+	bool valid = bbslist_set_wren_scripts(bbs, scripts);
+	strListFree(&scripts);
+	if (!valid) {
+		wren_throw(vm, "BBS.wrenScripts: script list is too long");
+		return;
+	}
+	if (strcmp(previous, bbs->wren_scripts) != 0)
+		bbslist_model_mark_dirty(&menu_model, bbs);
+}
 BBS_BOOL_PROPERTY(sftpPublicKey, sftp_public_key)
 BBS_BOOL_PROPERTY(sshAllowAes128Cbc, ssh_allow_aes128_cbc)
 BBS_BOOL_PROPERTY(sshAcceptEarlyData, ssh_accept_early_data)
@@ -953,6 +1032,54 @@ fn_Menu_canAppendEntry(WrenVM *vm)
 }
 
 static void
+fn_Menu_scriptModules(WrenVM *vm)
+{
+	wrenEnsureSlots(vm, 2);
+	wrenSetSlotNewList(vm, 0);
+
+	char dir[MAX_PATH + 1];
+	if (get_syncterm_filename(dir, sizeof(dir), SYNCTERM_PATH_SCRIPTS,
+	    false) == NULL)
+		return;
+	char pattern[MAX_PATH + 8];
+	int pattern_length = snprintf(pattern, sizeof(pattern), "%s*.wren",
+	    dir);
+	if (pattern_length < 0 || (size_t)pattern_length >= sizeof(pattern))
+		return;
+
+	glob_t gl;
+	memset(&gl, 0, sizeof(gl));
+	if (glob(pattern, 0, NULL, &gl) != 0)
+		return;
+	for (size_t i = 0; i < gl.gl_pathc; i++) {
+		const char *base = strrchr(gl.gl_pathv[i], '/');
+		const char *winbase = strrchr(gl.gl_pathv[i], '\\');
+		if (winbase != NULL && (base == NULL || winbase > base))
+			base = winbase;
+		base = base == NULL ? gl.gl_pathv[i] : base + 1;
+		size_t length = strlen(base);
+		if (length <= 5 || strcmp(base + length - 5, ".wren") != 0 ||
+		    length - 5 >= 256)
+			continue;
+		char name[256];
+		memcpy(name, base, length - 5);
+		name[length - 5] = '\0';
+		if (!bbslist_wren_script_name_valid(name))
+			continue;
+		wrenSetSlotString(vm, 1, name);
+		wrenInsertInList(vm, 0, -1, 1);
+	}
+	globfree(&gl);
+}
+
+static void
+fn_Menu_wrenScriptsMaxLength(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0,
+	    sizeof(((struct bbslist *)NULL)->wren_scripts) - 1);
+}
+
+static void
 fn_Menu_defaults(WrenVM *vm)
 {
 	if (!menu_model.loaded)
@@ -1195,6 +1322,8 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "quitApplication()", fn_Menu_quitApplication },
 	{ "Menu", true, "entries", fn_Menu_entries },
 	{ "Menu", true, "canAppendEntry", fn_Menu_canAppendEntry },
+	{ "Menu", true, "scriptModules", fn_Menu_scriptModules },
+	{ "Menu", true, "wrenScriptsMaxLength", fn_Menu_wrenScriptsMaxLength },
 	{ "Menu", true, "defaults", fn_Menu_defaults },
 	{ "Menu", true, "nameAvailable(_)", fn_Menu_nameAvailable },
 	{ "Menu", true, "create(_)", fn_Menu_create },
@@ -1236,6 +1365,8 @@ static const struct binding bindings[] = {
 	{ "BBS", false, "delete()", fn_BBS_delete },
 	{ "BBS", false, "palette", fn_BBS_palette },
 	{ "BBS", false, "palette=(_)", fn_BBS_palette_set },
+	{ "BBS", false, "wrenScripts", fn_BBS_wrenScripts },
+	{ "BBS", false, "wrenScripts=(_)", fn_BBS_wrenScripts_set },
 	{ "BBS", false, "toString", fn_BBS_toString },
 	BBS_GETSET(addr),
 	BBS_GETSET(user),

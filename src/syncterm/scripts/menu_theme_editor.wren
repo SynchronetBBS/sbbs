@@ -1167,9 +1167,7 @@ class ThemeEditor {
     pane.onClose = actions["close"]
     var size = Screen.size
     var x = size[0] >= 46 ? 3 : 1
-    var y = size[1] >= 19 ? 2 : 1
-    pane.bounds = Rect.new(x, y, (size[0] - x * 2).max(1),
-        (size[1] - y - 1).max(1))
+    pane.bounds = Pane.modalBounds((size[0] - x * 2).max(1), size[1])
     content.bounds = pane.innerBounds
     content.refresh()
 
@@ -1210,9 +1208,7 @@ class ThemeEditor {
     pane.onClose = close
     var size = Screen.size
     var x = size[0] >= 50 ? 4 : 1
-    var y = size[1] >= 18 ? 2 : 1
-    pane.bounds = Rect.new(x, y, (size[0] - x * 2).max(1),
-        (size[1] - y - 1).max(1))
+    pane.bounds = Pane.modalBounds((size[0] - x * 2).max(1), size[1])
     content.bounds = pane.innerBounds
     app.modal(pane)
   }

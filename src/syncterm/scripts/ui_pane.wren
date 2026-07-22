@@ -225,29 +225,44 @@ class Pane is Container {
     }
   }
 
-  // Size content within the standard modal margins and center the
-  // result.  The horizontal and vertical margins reserve the full
-  // two-column right shadow and one-row bottom shadow.
+  // Size content within the standard modal work area and center the
+  // result.  Row 1 and the final two rows are reserved for the menu's
+  // title and footer; the frame stops one row earlier so its bottom
+  // shadow cannot overwrite the footer.
   fitContentToScreen() {
     var limits = screenFitLimits_
     fitContent_(limits[0], limits[1])
-    centerOnScreen()
+    if (bounds == null) return
+    bounds = Pane.modalBounds(bounds.w, bounds.h)
+    if (children.count > 0) children[0].bounds = innerBounds
   }
 
   // Apply a requested fixed size within the same modal limits.  This
   // is the fixed-size counterpart to fitContentToScreen, used by panes
   // such as preformatted Help viewers.
   fitToScreen(width, height) {
-    var limits = screenFitLimits_
-    var w = width.min(limits[0]).max(1)
-    var h = height.min(limits[1]).max(1)
-    bounds = Rect.new(1, 1, w, h)
-    centerOnScreen()
+    bounds = Pane.modalBounds(width, height)
+    if (children.count > 0) children[0].bounds = innerBounds
   }
 
   screenFitLimits_ {
     var size = Screen.size
-    return [(size[0] - 4).max(1), (size[1] - 2).max(1)]
+    return [(size[0] - 4).max(1), (size[1] - 4).max(1)]
+  }
+
+  // Constrain and center a shadowed menu frame without touching the
+  // title row or either footer row.  The usable vertical area is
+  // asymmetric, so ordinary whole-screen centering would place the
+  // bottom shadow one row too low at the maximum height.
+  static modalBounds(width, height) {
+    var size = Screen.size
+    var w = width.min((size[0] - 4).max(1)).max(1)
+    var h = height.min((size[1] - 4).max(1)).max(1)
+    var x = ((size[0] - w) / 2).floor + 1
+    var y = ((size[1] - h) / 2).floor
+    if (size[1] >= 5) y = y.max(2)
+    if (y < 1) y = 1
+    return Rect.new(x, y, w, h)
   }
 
   // Reposition the pane so it's centered on the current Screen.

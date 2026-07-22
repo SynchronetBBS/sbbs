@@ -76,6 +76,7 @@ class UiPopupTest {
     System.print("=== ui_popup self-test starting ===")
 
     testSemanticFrameKinds_()
+    testCenteredFramesAvoidMenuChrome_()
     testAlertConstruction_()
     testAlertTitledConstruction_()
     testAlertShowCarriesHelp_()
@@ -139,6 +140,31 @@ class UiPopupTest {
            choice.frameKind == "control" && help.frameKind == "display" &&
            status.frameKind == "display",
            "Popup frame kinds follow control/display semantics")
+  }
+
+  static clearsMenuChrome_(bounds) {
+    var height = Screen.size[1]
+    return bounds.y >= 2 && bounds.bottom + 1 <= height - 2
+  }
+
+  static testCenteredFramesAvoidMenuChrome_() {
+    var status = PopStatus.centeredBounds_("Working")
+    var popup = Popup.centeredBounds_("Tall", Screen.size[1], 24)
+    var help = Help.centeredBounds_()
+    var line = LinePrompt.new("Name", "")
+    line.sizeForInput(20)
+    var find = Find.centeredBounds_("Find")
+
+    var app = FakeApp.new()
+    var rows = []
+    for (i in 0...Screen.size[1]) rows.add("Row %(i)")
+    MenuUi.commandChoice(app, "Tall Choice", rows, null, null, {})
+    var choice = app.modalStack[-1].bounds
+
+    check_(clearsMenuChrome_(status) && clearsMenuChrome_(popup) &&
+           clearsMenuChrome_(help) && clearsMenuChrome_(line.bounds) &&
+           clearsMenuChrome_(find) && clearsMenuChrome_(choice),
+           "Centered shadowed frames preserve title and footer rows")
   }
 
   static testAlertConstruction_() {

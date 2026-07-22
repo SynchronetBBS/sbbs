@@ -20,11 +20,12 @@
 //   Button-1 drag   fall through to screen text selection
 //   Other click     dismiss
 //
-// Sizing: by default the dialog claims most of the screen with a
-// 4-cell margin; pass an explicit Rect via the bounds= setter
-// after construction to override.
+// Sizing: by default the dialog claims the menu modal work area while
+// preserving the title and footer; pass an explicit Rect via the bounds=
+// setter after construction to override.
 
 import "ui_widget"   for Rect
+import "ui_pane"     for Pane
 import "ui_popup"    for Popup
 import "ui_draw"     for Painter
 import "ui_markdown" for Markdown, MdLine, MdRole
@@ -116,19 +117,12 @@ class Help is Popup {
     return lines
   }
 
-  // Default help-dialog placement: matches UIFC.  The dialog is
-  // 2-cell margin on each side (so the body sits 2 cells inside
-  // the screen edge) and stretches full cterm height minus the
-  // status bar — which is painted on the bottom row of the cterm
-  // area (term.c update_status), so we drop one row off the
-  // bottom and pin the top at row 1.
+  // Default help-dialog placement uses the same menu work area as
+  // every other shadowed frame, preserving the title and footer.
   static centeredBounds_() {
     var sz = Screen.size
-    var w  = (sz[0] - 4).max(20)
-    var h  = (sz[1] - 1).max(8)
-    var x  = ((sz[0] - w) / 2).floor + 1
-    var y  = 1
-    return Rect.new(x, y, w, h)
+    return Pane.modalBounds((sz[0] - 4).max(20),
+        (sz[1] - 4).max(8))
   }
 
   scrollTop { _scrollTop }
