@@ -25,11 +25,16 @@ syncretro_lobby({
 	short:    "Arcade",                  /* -> id "arcade": the save dir and ROM cache */
 	core:     "mame2003_plus_libretro",  /* no extension: .so / .dll / .dylib */
 
-	/* An arcade control panel is a stick, a coin slot and a start button, which
-	 * IS a plain RetroPad -- so no console-specific C. MAME maps the coin slot to
-	 * SELECT and 1-player start to START, which the `pad` table already has on
-	 * Backspace and Enter. Insert a coin, then press start. */
-	profile:  "pad",
+	/* An arcade control panel is a stick, a coin slot and a row of buttons, which
+	 * IS a plain RetroPad -- so the `arcade` profile BINDS exactly what `pad`
+	 * binds, and exists for the words rather than the wiring. A player told that
+	 * Backspace is "Select" does not know it is the coin slot, and on a cabinet
+	 * nothing happens at all until a coin goes in. It also drops the Tab
+	 * controller-swap, which here only moves the player onto player two's
+	 * controls and leaves him with a dead machine.
+	 *
+	 * Insert a coin, then press start. */
+	profile:  "arcade",
 
 	/* A romset is a .zip, and -- unlike every other console -- its FILENAME IS
 	 * DATA. MAME identifies the game by the zip's basename ("puckman.zip" ->

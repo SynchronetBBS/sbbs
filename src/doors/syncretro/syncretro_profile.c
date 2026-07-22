@@ -14,8 +14,12 @@ typedef struct {
 } sr_profile_row_t;
 
 static const sr_profile_row_t g_profiles[] = {
-	{ SR_PROFILE_PAD,  "pad",  "gamepad",        0, 0 },
-	{ SR_PROFILE_INTV, "intv", "Intellivision",  1, 1 }
+	{ SR_PROFILE_PAD,    "pad",    "gamepad",        0, 0 },
+	{ SR_PROFILE_INTV,   "intv",   "Intellivision",  1, 1 },
+	/* Same two facts as `pad` -- no analog, arrows on port 0 -- because an
+	 * arcade panel IS a gamepad electrically. What differs is the bind table's
+	 * labels (syncretro_binds.c) and the absent Tab swap. */
+	{ SR_PROFILE_ARCADE, "arcade", "arcade",         0, 0 }
 };
 
 #define SR_NPROFILES ((int)(sizeof g_profiles / sizeof g_profiles[0]))

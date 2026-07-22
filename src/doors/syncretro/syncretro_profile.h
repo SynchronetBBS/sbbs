@@ -20,13 +20,27 @@
  *                     stick's angle, a paddle disc swept per frame, and BOTH
  *                     hand controllers driven at once (many cartridges read only
  *                     the right one). See M2_INPUT.md.
+ *
+ *   SR_PROFILE_ARCADE a coin-op cabinet. The BINDINGS are the gamepad's -- a
+ *                     control panel is a stick and a row of buttons, which is
+ *                     what a RetroPad already is -- so this profile exists for
+ *                     the WORDS, and that is not a cosmetic distinction. A
+ *                     player who is told "Select" does not know it is the coin
+ *                     slot, and on a cabinet nothing happens at all until a coin
+ *                     goes in; "d-pad" is a console part that no cabinet has;
+ *                     and "B/A/Y/X/L/R" names a gamepad's face buttons rather
+ *                     than the six a fighting game actually has. It also drops
+ *                     the Tab controller-swap, which on a cabinet does nothing a
+ *                     player wants and silently moves his input to a second
+ *                     player's controls.
  */
 #ifndef SYNCRETRO_PROFILE_H_
 #define SYNCRETRO_PROFILE_H_
 
 typedef enum {
 	SR_PROFILE_PAD = 0,
-	SR_PROFILE_INTV
+	SR_PROFILE_INTV,
+	SR_PROFILE_ARCADE
 } sr_profile_id_t;
 
 /* Resolve the profile. Call ONCE, after rc_core_load_game() and before the first

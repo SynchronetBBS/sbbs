@@ -99,6 +99,12 @@ int    sr_config_audio_prebuffer(void);   /* prebuffer, 2..8,      default 3 */
  * changed, instead of re-sending the whole picture every time. Off falls back to
  * whole frames, which is always correct and is what the door did before. */
 int    sr_config_dirty_rect(void);
+/* [input] device -- the RETRO_DEVICE id to select on the core's controller
+ * ports, or 0 to leave the core's own default alone (the default, and what the
+ * door did before this existed). MAME 2003-Plus advertises RetroPad (1),
+ * Fightstick (257), 8-Button (513) and 6-Button (769); which ids a core accepts
+ * comes from its SET_CONTROLLER_INFO, which probe_core prints. */
+int    sr_config_input_device(void);
 
 /* --- syncretro_io.c: terminal enter/probe/leave + the present path ---------
  * sr_io_init() adopts the door socket (or the stdout dev fallback) and arms the

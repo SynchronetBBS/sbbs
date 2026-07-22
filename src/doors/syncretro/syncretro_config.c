@@ -70,6 +70,7 @@ static char g_launch_dir[PATH_MAX];   /* where the door was started: cwd BEFORE 
 static char g_system_dir[PATH_MAX];   /* BIOS: shared, read-only, per-install */
 static char g_save_dir[PATH_MAX];     /* per-user SRAM + save states */
 static int  g_dirty_rect = 1;   /* [video] dirty_rect */
+static int  g_input_device;     /* [input] device: 0 = leave the core's default */
 static char g_aspect[32] = "core";    /* [video] aspect: core|square|4:3|<decimal> */
 static char g_core_path[PATH_MAX];    /* the .so to dlopen, absolute */
 static char g_rom_path[PATH_MAX];     /* the cartridge, absolute */
@@ -175,6 +176,12 @@ static void sr_config_read_ini(void)
 		g_audio_chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", 100);
 		g_audio_prebuffer = iniGetInteger(ini, "audio", "prebuffer", 3);
 		g_dirty_rect      = iniGetBool(ini, "video", "dirty_rect", TRUE);
+		/* [input] device -- a RETRO_DEVICE id to hand the core for both ports.
+		 * 0 (the default) means say NOTHING, leaving whatever the core chose:
+		 * that is the behaviour the door has always had, and the safe one, since
+		 * a wrong device id silently rewires every button. A core advertises the
+		 * ids it accepts through SET_CONTROLLER_INFO, which probe_core dumps. */
+		g_input_device    = iniGetInteger(ini, "input", "device", 0);
 
 		/* [options] -- libretro core options this install pins.
 		 *
@@ -225,6 +232,7 @@ static void sr_config_read_ini(void)
 }
 
 int    sr_config_dirty_rect(void)      { return g_dirty_rect; }
+int    sr_config_input_device(void)    { return g_input_device; }
 int    sr_config_audio_enabled(void)   { return g_audio_enabled; }
 double sr_config_audio_quality(void)   { return g_audio_quality; }
 

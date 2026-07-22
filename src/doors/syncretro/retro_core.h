@@ -39,6 +39,11 @@ typedef struct rc_core {
 	void (*unload_game)(void);
 	void (*run)(void);
 	void (*reset)(void);
+	/* Which CONTROLLER the core should read on a port. A core may offer several
+	 * (MAME 2003-Plus advertises RetroPad / Fightstick / 8-Button / 6-Button via
+	 * SET_CONTROLLER_INFO) and stays on its default until the frontend says
+	 * otherwise -- which the door could not do at all until this was resolved. */
+	void (*set_controller_port_device)(unsigned port, unsigned device);
 
 	struct retro_system_av_info av;         /* captured after load_game() */
 	/* Captured in load_game(). library_name is what identifies the console when
