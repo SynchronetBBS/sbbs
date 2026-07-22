@@ -47,52 +47,47 @@ The door's own `-t%T` deadline was the only backstop, and because
 
 ## Goals
 
-- A graphical door detects that its *user* has stopped providing input, on a
-  signal that DSR pacing cannot forge.
-- The threshold is sysop-configurable, and users exempt from inactivity
-  timeouts by the BBS's own convention are exempt here too.
+- Every termgfx graphical door detects that its *user* has stopped providing
+  input, on a signal that DSR pacing cannot forge.
+- The threshold is sysop-configurable in all six doors, by command-line
+  argument or by the door's own ini.
+- Users exempt from inactivity timeouts by the BBS's own convention are exempt
+  here too, in the doors whose launch path can determine that.
 - A silent user who is still engaged — watching a cutscene, an FMV, a
   deliberately-running attract loop — gets a warning and a chance to stay,
   rather than being dropped mid-scene.
-- The mechanism is shared, so the remaining five doors adopt it rather than
-  each growing its own.
+- The clock is written once and shared, not reimplemented per door.
 
 ## Non-goals
 
-- **Sibling-door adoption.** `termgfx/idle.{h,c}` is built to serve all six
-  doors, but only SyncRetro wires it up in this change. syncduke, syncdoom,
-  syncscumm, syncconquer and syncmoo1 adopt it as follow-on work, tracked
-  below, so the behavior difference is deliberate and visible rather than
-  drift.
-- **Hard disconnect from the door.** The door exits to the lobby; hanging up
-  is the BBS's job (see "Exit path").
+- **Hard disconnect from the door.** The door exits to the lobby or the BBS
+  menu; hanging up is the BBS's job (see "Behavior and exit path").
 - **ARS evaluation in C.** The door has no `scfg_t` and no user record.
-  Evaluating an ARS there would mean linking `userdat` and re-reading the user
-  base for one boolean. The lobby does it instead.
-- **Fixing `max_inactivity` itself.** Making the Terminal Server distinguish
-  user input from terminal auto-replies would mean teaching `input_thread()`
-  to parse terminal responses — a much larger change to a much more
-  load-bearing component, and one that would still be blind to a door that
+  `termgfx/sbbs_node.c` deliberately avoids `load_cfg` (see its header note),
+  and DOOR32.SYS carries no exempt flags — `termgfx_door32_t`
+  (`termgfx/door32.h:43`) parses commtype, socket, stdio, time limit, node and
+  alias, and not even the security level on line 8. Evaluating an ARS in the
+  door would mean linking `userdat` and re-reading the user base. The lobby
+  does it where a lobby exists; where none exists there is no exemption (see
+  "Exemption asymmetry", which is an accepted consequence).
+- **Fixing `max_inactivity` itself.** Teaching `input_thread()` to distinguish
+  user input from terminal auto-replies means parsing terminal responses in a
+  much more load-bearing component, and it would still be blind to a door that
   reads the socket directly via `-s<fd>`. Out of scope.
+- **Giving the lobby-less doors a lobby.** syncscumm, syncconquer and syncmoo1
+  are static `xtrn.ini` entries. Converting them is a much larger change with
+  its own design; this spec configures them by argument and ini instead.
 
 ## Design
 
-### Where the code lands
+### The shared clock
 
-| Piece | Home | Shared by |
-|---|---|---|
-| Idle clock + state machine | new `termgfx/idle.{h,c}` | all six doors |
-| `parse_duration()` default-unit arg; ini + ARS → seconds | `exec/load/game_lobby.js` | all door lobbies |
-| `-i` parse, activity hook, warning paint, exit check | SyncRetro (this change) | — |
-
-`termgfx/idle.c` is deliberately dumb: no I/O, no config parsing, no rendering,
-no clock of its own. It is fed a monotonic millisecond stamp by its caller. That
-keeps it usable both by SyncRetro, which owns its I/O loop, and by syncscumm,
-which goes through `termgfx_termio`, without either restructuring — and it
-makes the module a pure function, unit-testable in the existing
-`test_binds.c` / `test_dirty.c` / `test_quant.c` pattern.
-
-Proposed surface:
+New `termgfx/idle.{h,c}`, used by all six doors. Deliberately dumb: no I/O, no
+config parsing, no rendering, and no clock of its own — it is fed a monotonic
+millisecond stamp by its caller. That keeps it usable both by the doors that
+own their I/O loop and by syncscumm, which goes through `termgfx_termio`,
+without either restructuring, and makes it a pure function, unit-testable in
+the existing `test_binds.c` / `test_dirty.c` / `test_quant.c` pattern.
 
 ```c
 typedef enum {
@@ -114,12 +109,9 @@ than underflowing into a never-firing or instantly-firing timer.
 ### What counts as activity
 
 The entire point is that "the socket had bytes" is the wrong signal. Activity
-is anything that reaches the door's key/action dispatch — for SyncRetro,
-`sr_key_apply()` (covering both the byte path via `sr_key_byte()` and edges via
-`sr_key_edge()`), the SyncTERM evdev path, and mouse button/motion events.
-
-Explicitly *not* activity: every terminal auto-reply that `sr_csi_final()`
-already handles as a distinct case —
+is anything reaching a door's key/action dispatch. Explicitly *not* activity:
+the terminal auto-replies every door's CSI dispatcher already handles as
+distinct cases —
 
 | Reply | CSI final | Source |
 |---|---|---|
@@ -128,52 +120,112 @@ already handles as a distinct case —
 | XTSMGRAPHICS (sixel geometry) | `S` | capability probe |
 | Window-op text-area size | `t` | geometry probe |
 | kitty keyboard-flags query reply | `u` | key-mode negotiation |
-| Audio DSR ack | — | `termgfx/audio_mgr.c` |
+| DECRPM | `y` | mode query |
+| Audio DSR ack | `n` | `termgfx/audio_mgr.c` |
 
-That the input parser already separates these two populations is what makes the
-hook small: `termgfx_idle_activity()` goes on the dispatch side, and no
-auto-reply path touches it.
+All six doors separate these two populations cleanly — verified per door. In
+syncconquer the separation is structural: `door_csi_final()`
+(`door/door_io.c:3067`) consumes every auto-reply and re-emits only
+unrecognized bytes into the key parser (`:3199-3206`), so an auto-reply cannot
+reach the key path even in principle.
 
-The clock keeps running while a door screen or pause menu is up — a user who
-pauses and walks away is still idle — but keys that arrive while suspended
-still count, because `g_anykey` is set even for unbound keys.
+**Mouse.** Mouse button, wheel and motion all count. Placement differs, and the
+difference matters: only syncscumm/termio decodes motion into a queued event
+(`TERMGFX_EV_MOUSE_MOVE`). The other doors treat motion as position-only state
+and queue nothing, so their hook must go in the mouse **report handler**, not
+the event queue. syncretro has no mouse support at all — it never enables
+DECSET 1000/1006/1016 and never parses mouse reports — so it has no mouse hook.
+
+**Door hotkeys.** Ctrl-S and friends are real keystrokes but bypass the game
+key path in several doors. They count as activity; the per-door hook list below
+includes them where they diverge.
+
+The clock keeps running while a door screen, pause menu or help card is up — a
+user who pauses and walks away is still idle — but keys arriving while
+suspended still count.
+
+### Per-door hook points
+
+| Door | Activity hook(s) | Mouse hook | Exit check | Warning render |
+|---|---|---|---|---|
+| syncretro | `sr_key_apply()` `syncretro_input.c:341` | none (no mouse support) | `sr_door_should_exit()` `syncretro_door.c:112` | `sr_io_toast()` `syncretro_io.c:686` |
+| syncduke | `press()` `:144`, `hold_press()` `:182`, `hold_release()` `:194`, `handle_key()` `:838` (all `syncduke_input.c`) | `syncduke_mouse_event()` `syncduke_input.c:599` | scattered: `_nextpage()` `syncduke_plat.c:285`, `syncduke_hangup()` `syncduke_door.c:60` | `banner_set()` `syncduke_node.c:28` |
+| syncdoom | `key_seen()` `:1365`, `key_dispatch()` `:1743` (both `syncdoom.c`) | `mouse_seen()` `syncdoom.c:1438` | `check_hangup()` `:2172`, `check_timelimit()` `:2181` | `draw_page_overlay()` `syncdoom.c:1043` |
+| syncscumm | `sst_push_event()` `termgfx_termio.c:3069`, plus hotkeys at `:1235`, `:3207`, `:996` | same (`sst_mouse_report()` `:3342`) | `pollEvent()` `syncscumm.cpp:310` — **no time limit exists** | **none — must be built** |
+| syncconquer | `emit_key()` `door_input.c:111`, optionally `door_io_hotkey()` `door_io.c:1837` | `mouse_event()` `door_input.c:305` (motion queues nothing) | `door_check_time_limit()` `door_io.c:1288` (warn-only stub) | `banner_set()` `door_node.c:49` |
+| syncmoo1 | four sites in `syncmoo1_input.c`: `:323`, `:346`, `:384`, `:402` | `sm_mouse_event()` `syncmoo1_input.c:111` | `sm_door_check_time()` `syncmoo1_door.c:458` | **none — must be built** |
+
+Two doors grew parallel key dispatchers (legacy-byte vs native kitty/evdev) and
+therefore need multi-site hooks: syncduke's `csi_final()` routes arrows and
+F-keys straight past `handle_key()`, and syncdoom's `key_dispatch()` calls
+`key_seen()` only for hotkeys. Hooking the deepest common point instead
+(`rawq_push()`, `keyq_push()`) is rejected: both are also called by synthetic
+key-up expiry timers, which would forge activity for a user who has left.
 
 ### Configuration
 
-In the door's own ini (`xtrn/syncnes/syncretro.ini` and siblings), which the
-lobby already reads for `[roms]` and `[lobby]` (`syncretro_lobby.js:74-77`),
-following the established split: the console's half is the spec in `lobby.js`,
-the sysop's half is the ini.
+Two launch shapes, because only half the doors have a lobby.
+
+**Doors with a JS lobby** — syncretro (`exec/load/syncretro_lobby.js:295`),
+syncduke (`xtrn/syncduke/syncduke_lib.js:211`), syncdoom
+(`xtrn/syncdoom/lobby.js:47`). The lobby reads the door's ini, evaluates an
+exempt ARS with `bbs.compare_ars()`, and appends `-i<seconds>` to the command
+line alongside the existing `-s%H -t%T`:
 
 ```ini
 [idle]
 timeout    = 15m         ; 0 or absent = disabled
 warn       = 60s         ; countdown before exit
-exempt_ars = EXEMPT H    ; evaluated by the lobby via bbs.compare_ars()
+exempt_ars = EXEMPT H    ; evaluated by the lobby
 ```
 
 `exempt_ars` defaults to `EXEMPT H`, matching `getnode.cpp:146`
 (`useron.exempt & FLAG('H')` sets `CON_NO_INACT`), so an H-exempt user is
-exempt here for the same reason they are exempt everywhere else. A sysop
-wanting different criteria writes any valid ARS. `EXEMPT` is an ARS keyword
-taking a letter argument (`ars.c:466`); a bare `H` is not valid ARS.
+exempt here for the same reason they are exempt everywhere else. `EXEMPT` is an
+ARS keyword taking a letter argument (`ars.c:466`); a bare `H` is not valid ARS.
+Exempt users get an explicit `-i0` rather than an omitted flag, so "exempt"
+positively overrides any ini default instead of silently falling through to it.
 
-The lobby evaluates the ARS and appends `-i<seconds>` to the door command line,
-alongside the existing `-s%H -t%T`. Exempt users get an explicit `-i0` rather
-than an omitted flag, so "exempt" positively overrides any ini default instead
-of silently falling through to it.
+**Doors without a lobby** — syncscumm, syncconquer, syncmoo1 — are static
+`ctrl/xtrn.ini` entries. They take the same `[idle] timeout` and `warn` keys
+from their own ini, and additionally honor `-i<seconds>` on the static command
+line so a sysop can set it per-entry without touching the ini. `exempt_ars` is
+ignored in these doors; nothing on this path can evaluate it.
 
-**Precedence**, mirroring `-t%T`: `-i` wins when present. Absent it, the door
-reads `[idle] timeout` from its own ini — the path taken by a door registered
-directly as an `xtrn` and by dev/standalone runs, where no lobby computes a
-value. That path cannot evaluate the ARS, so the raw timeout applies.
+For syncscumm the ini is the practical route: its `cmd` is already near the
+100-char `LEN_CMD` ceiling that `xtrn/syncscumm/install-xtrn.ini:22` warns
+about, and that ini is **per-title** (one per game package, `startup_dir` per
+entry — `/sbbs/ctrl/xtrn.ini:854`, `:868`, …), not per-door. A sysop
+configuring idle timeouts for syncscumm sets them once per installed title.
+
+**Precedence, uniform everywhere:** `-i` wins when present; absent it, the door
+reads `[idle] timeout` from its own ini. This mirrors `-t%T`.
+
+Per-door ini files and readers: `syncretro.ini` (`syncretro_config.c:156`),
+`syncduke.ini` (`syncduke_config.c:218`), `syncdoom.ini` (`syncdoom.c:3238`),
+`syncscumm.ini` (`termgfx_termio.c:1327` and `syncscumm.cpp:178`/`:256`),
+`<argv0>.ini` i.e. `syncalert.ini`/`syncdawn.ini` (`door_io.c:791`),
+`syncmoo1.ini` (`syncmoo1_config.c:127`). All use xpdev `iniGet*`.
+
+#### Exemption asymmetry
+
+An `EXEMPT H` user is exempt from the idle timeout in syncretro, syncduke and
+syncdoom, and is **not** exempt in syncscumm, syncconquer and syncmoo1. This is
+a deliberate, accepted consequence of those three doors having no launch-time
+JS, recorded here so it is a known asymmetry rather than a surprise. Sysops who
+need those three to leave a particular user alone set `[idle] timeout = 0` for
+that door, which disables the feature door-wide.
+
+If this becomes a real complaint, the fix is to give those doors a launcher, or
+to add a narrow exempt-flag read to termgfx — both larger changes than this one,
+and neither is in scope here.
 
 ### The duration-parsing hazard
 
 `game_lobby.js:531` already has `parse_duration()`, but its bare unit is
-**days**, while xpdev's C `parse_duration()` — which the door will use for the
-same key on the no-lobby path — treats a bare number as **seconds**. The same
-ini string would mean 15 minutes to the door and 900 days to the lobby.
+**days**, while xpdev's C `parse_duration()` — which the doors use for the same
+key — treats a bare number as **seconds**. The same ini string would mean 15
+minutes to the door and 900 days to the lobby.
 
 That failure is silent and points the safe-looking way: a sysop writing
 `timeout = 900` and expecting 15 minutes would get an effectively disabled
@@ -191,24 +243,64 @@ bare.
 
 ### Behavior and exit path
 
-At `timeout - warn`, the door paints a warning with a live countdown through
-its existing overlay path, and keeps painting it as the countdown runs. Any
-real key clears the warning and resets the clock — no menu, no confirmation, no
-penalty.
+At `timeout - warn`, the door paints a warning with a live countdown, and keeps
+it refreshed as the countdown runs. Any real key clears the warning and resets
+the clock — no menu, no confirmation, no penalty.
 
-If the grace elapses, `sr_door_should_exit()` returns 1 and the door tears down
-exactly as the existing `-t` deadline does. Control returns to the lobby, then
-to the BBS menu.
+If the grace elapses, the door exits the way its existing time-limit path
+already does. Control returns to the lobby where one exists, otherwise to the
+BBS menu.
 
 This composes with the layer below rather than duplicating it. Once the door
 exits there is no more DSR pacing, so `socket_inactive` starts accumulating for
 real and Synchronet's ordinary `max_session_inactivity` reaps the user from the
-menu on its own. The door does not need to hang up the socket, and a user who
-returns during the BBS's own grace can still do something else with the
-session.
+menu on its own. The door does not hang up the socket, and a user who returns
+during the BBS's own grace can still do something else with the session.
 
-The exit is logged to the node log the way the existing deadline exit is, so a
-sysop reading logs can tell an idle-reap from a quit or a time-limit exit.
+The exit is logged to the per-node log the way existing deadline exits are, so
+a sysop reading logs can distinguish an idle-reap from a quit or a time-limit
+exit.
+
+### Doors needing new machinery
+
+Three doors need more than a hook, and these are the bulk of the work:
+
+**syncscumm** has no session time limit at all: `termgfx_termio.c:618` reads
+`d.time_limit_ms` from the drop file and discards it, and there is no `-t`
+handling anywhere in termio or the glue. The deadline concept must be
+introduced. It also has no transient overlay — only the Ctrl-S stats strip
+(`sst_stats_draw()` `termgfx_termio.c:3025`, which early-returns when the
+toggle is off). Both are built in `termgfx_termio.c` rather than the glue, so
+syncrpg inherits them; `sst_bottom_row()` / `out_put()` /
+`termgfx_termio_flush()` are the working precedent to copy.
+
+**syncmoo1** has no overlay of any kind — `syncmoo1_io.c:372` says so
+explicitly. The only on-screen text path is the pre-session splash
+(`sm_door_splash()` `syncmoo1_door.c:260`), which the first present wipes. A
+transient bottom-row primitive must be written, modeled on syncretro's
+`sr_io_toast()`.
+
+**syncduke** has no unified exit check; its time-limit exit lives in
+`_nextpage()` (`syncduke_plat.c:285`) and carrier loss in `syncduke_hangup()`.
+The idle check needs a per-present home consistent with the others.
+
+By contrast **syncconquer** is the cheapest and the natural first
+implementation: a documented single keyboard chokepoint, a timed banner, and a
+`door_check_time_limit()` (`door_io.c:1288`) that is already a warn-only stub
+whose own comment (`:1279-1283`) invites exactly this escalation.
+
+syncretro's `sr_io_toast()` carries a fixed `SR_TOAST_MS` 1500 ms dwell, so its
+countdown is driven by re-arming the toast each second rather than by a
+long-lived banner.
+
+### Suggested order
+
+syncconquer (cheapest, proves the shared clock) → syncretro → syncmoo1 (needs
+an overlay) → syncdoom → syncduke (multi-site hook, needs an exit-check home) →
+syncscumm (needs both a deadline concept and an overlay, in shared code).
+
+One commit per door, each independently testable, so a door that turns out
+harder than surveyed does not block the rest.
 
 ## Testing
 
@@ -216,20 +308,21 @@ sysop reading logs can tell an idle-reap from a quit or a time-limit exit.
   boundaries, activity resetting mid-warn, `threshold_s == 0` disabling,
   `warn > timeout` clamping, and monotonic-stamp wraparound (the `int32_t`
   difference idiom `sr_door_should_exit()` already uses for `g_deadline_ms`).
-- A JS test for `parse_duration()`'s new argument covering bare numbers under
-  both default units, each suffix, and the existing `activity_max_age`
-  behavior remaining unchanged.
-- Live verification on a node: confirm a paced-but-silent session warns and
+- A JS test for `parse_duration()`'s new argument: bare numbers under both
+  default units, each suffix, and `activity_max_age` behavior unchanged.
+- Per door, a live session verifying that a paced-but-silent session warns and
   exits at the configured threshold, that a keypress during the warning clears
-  it and resets the clock, and that an `EXEMPT H` user is never warned. Per
-  house rule, this change is not committed on static reasoning alone.
+  it and resets the clock, and — in the three lobby doors — that an `EXEMPT H`
+  user is never warned. Per house rule, no door's change is committed on static
+  reasoning alone.
+- Regression check that the synthetic key-up expiry timers in syncduke
+  (`syncduke_input.c:173`) and syncdoom (`:1427`) do **not** register as
+  activity; this is the specific failure mode that would make the feature
+  silently inert.
 
 ## Follow-on work
 
-- Adopt `termgfx/idle.{h,c}` in syncduke, syncdoom, syncscumm, syncconquer and
-  syncmoo1 — one commit per door, each with its own `[idle]` ini section and
-  its own warning render. Until then those five doors retain the current
-  behavior, in which an idle user is bounded only by the `-t%T` deadline.
 - Consider a SCFG helpbuf note on "Maximum Inactivity" recording that it is
   socket-based and therefore inert for doors that pace the terminal, so the
   next sysop does not set it and assume it works.
+- syncrpg inherits the termio work automatically; confirm when it lands.
