@@ -200,6 +200,22 @@ class MdWrapState {
 class Markdown {
   // ----- Parsing -------------------------------------------------
 
+  static hasClosingMarker_(cps, start, marker, width) {
+    var i = start
+    while (i < cps.count) {
+      if (cps[i] == "\\" && i + 1 < cps.count) {
+        i = i + 2
+        continue
+      }
+      if (cps[i] == marker &&
+          (width == 1 || (i + 1 < cps.count && cps[i + 1] == marker))) {
+        return true
+      }
+      i = i + 1
+    }
+    return false
+  }
+
   // Parse `source` into a List<MdBlock>.  Inline markup inside
   // each block is also resolved here — layout doesn't re-parse.
   static parse(source) {
@@ -286,8 +302,8 @@ class Markdown {
   // Parse inline markup into runs.  Bold (`**...**`) and code
   // (`` `...` ``) toggle the active role on / off; backslash
   // escapes a literal `*`, `` ` ``, or `\`.  Unmatched markers
-  // pass through as literal characters by reverting the role at
-  // end-of-input — this matches CommonMark's permissive lexer.
+  // pass through as literal characters, matching CommonMark's
+  // permissive lexer.
   //
   // We materialise the string into a list of codepoints up front
   // because the inline scanner needs lookahead (`**`, escape pairs)
@@ -311,6 +327,12 @@ class Markdown {
         }
       }
       if (c == "*" && i + 1 < n && cps[i + 1] == "*") {
+        if (role != MdRole.bold &&
+            !hasClosingMarker_(cps, i + 2, "*", 2)) {
+          buf = buf + "**"
+          i = i + 2
+          continue
+        }
         if (buf != "") {
           runs.add(MdRun.new(buf, role))
           buf = ""
@@ -320,6 +342,12 @@ class Markdown {
         continue
       }
       if (c == "`") {
+        if (role != MdRole.code &&
+            !hasClosingMarker_(cps, i + 1, "`", 1)) {
+          buf = buf + c
+          i = i + 1
+          continue
+        }
         if (buf != "") {
           runs.add(MdRun.new(buf, role))
           buf = ""

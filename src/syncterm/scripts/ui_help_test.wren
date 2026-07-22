@@ -41,6 +41,7 @@ class UiHelpTest {
     testSplitLinesNoTrailing_()
     testConstruction_()
     testMenuDefinitionListFormatting_()
+    testUnmatchedInlineMarkersRemainLiteral_()
     testPreformattedUsesHardLines_()
     testPreformattedPreservesInlineMarkup_()
     testEscDismisses_()
@@ -128,6 +129,19 @@ class UiHelpTest {
            lines[2].runs[0].role == "help.bold" &&
            lines[3].runs[0].text == "Port",
            "Help: menu headings and definition lists retain formatting")
+  }
+
+  static testUnmatchedInlineMarkersRemainLiteral_() {
+    var doc = Markdown.parse("Ctrl-` and **literal")
+    var lines = Markdown.layout(doc, 60)
+    var text = ""
+    var ordinary = true
+    for (run in lines[0].runs) {
+      text = text + run.text
+      if (run.role != "help.text") ordinary = false
+    }
+    check_(lines.count == 1 && text == "Ctrl-` and **literal" && ordinary,
+           "Markdown: unmatched inline markers remain literal")
   }
 
   static testPreformattedUsesHardLines_() {
