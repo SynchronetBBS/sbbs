@@ -21,6 +21,7 @@ import "ui_button"    for Button
 import "ui_checkbox"  for Checkbox
 import "ui_radio"     for RadioGroup
 import "ui_spinbox"   for SpinBox
+import "ui_date_picker" for CalendarDate, DatePicker
 import "ui_color_picker" for ColorPicker
 import "ui_statusbar" for StatusBar
 import "ui_menubar"   for MenuBar

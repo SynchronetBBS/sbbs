@@ -19,6 +19,7 @@ import "ui_input"     for TextInput
 import "ui_checkbox"  for Checkbox
 import "ui_radio"     for RadioGroup
 import "ui_spinbox"   for SpinBox
+import "ui_date_picker" for DatePicker
 import "ui_statusbar" for StatusBar
 import "ui_menubar"   for MenuBar
 import "ui_form"      for Form
@@ -58,6 +59,7 @@ class UiDemo {
         ["Checkbox - boolean toggle",                Fn.new { runCheckboxDemo_() }],
         ["RadioGroup - mutually exclusive choices",  Fn.new { runRadioDemo_() }],
         ["SpinBox - numeric +/- with arrows",        Fn.new { runSpinboxDemo_() }],
+        ["DatePicker - month calendar",              Fn.new { runDatePickerDemo_() }],
         ["MenuBar - horizontal command strip",       Fn.new { runMenubarDemo_(app) }],
         ["StatusBar - bottom strip with segments",   Fn.new { runStatusbarDemo_() }],
         ["Form - mixed widgets in a layout",         Fn.new { runFormDemo_(app) }],
@@ -227,6 +229,39 @@ class UiDemo {
       pane.add(s)
 
       app.bind(Key.escape, Fn.new {|k| app.quit() })
+      app.runSync()
+    })
+  }
+
+  static runDatePickerDemo_() {
+    Screen.modalRun(Fn.new {
+      var app = App.new()
+      var pane = Pane.new()
+      pane.bounds = Pane.modalBounds(36, 13)
+      pane.title = "DatePicker"
+      pane.focused = true
+      pane.onClose = Fn.new { app.quit() }
+      pane.helpText = "DatePicker month calendar.\n\n" +
+          "Left / Right       previous / next day\n" +
+          "Up / Down          previous / next week\n" +
+          "PageUp / PageDown  previous / next month\n" +
+          "Home / End         first / last day\n" +
+          "Mouse wheel        previous / next month\n" +
+          "Enter / double-click accepts and shows the date\n" +
+          "Esc returns to the gallery."
+      app.root.add(pane)
+
+      var picker = DatePicker.new(2026, 7, 23)
+      var inner = pane.innerBounds
+      picker.bounds = Rect.new(
+          inner.x + ((inner.w - picker.preferredWidth) / 2).floor,
+          inner.y, picker.preferredWidth, picker.preferredHeight)
+      picker.onAccept = Fn.new {
+        Alert.show(app, "Selected %(picker.value)")
+      }
+      pane.add(picker)
+
+      app.bind(Key.escape, Fn.new {|key| app.quit() })
       app.runSync()
     })
   }

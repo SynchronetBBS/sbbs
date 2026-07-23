@@ -6209,7 +6209,8 @@ and re-exported from the convenience aggregator `ui`:
 [source,wren]
 ----
 import "ui" for App, Pane, ListView, TextInput, SelectOnFocusInput, Button,
-               Checkbox, RadioGroup, SpinBox, MenuBar, StatusBar,
+               Checkbox, RadioGroup, SpinBox, DatePicker, CalendarDate,
+               MenuBar, StatusBar,
                Form, Alert, Confirm, Prompt, Find, Help, PopStatus,
                Painter, Style, Theme, Glyphs,
                Widget, Container, Rect
@@ -6910,6 +6911,44 @@ Mouse wheel scrolls one step; clicks on the up/down arrow cells
 step ±1.  `value=` clamps to `[min, max]`.  Theme roles: `spinbox`,
 `spinbox.focused`.  Glyphs reused: `scrollbar.up`, `scrollbar.down`.
 
+=== DatePicker [[ui-date-picker]]
+
+Embeddable month calendar with a named month/year header, Sunday-through-
+Saturday columns, and six date rows.  Neighboring-month dates fill unused
+grid cells and can be selected directly.  The control does not provide
+dialog buttons; its caller owns acceptance and cancellation.
+
+[source,wren]
+----
+var picker = DatePicker.new(2026, 7, 23)
+picker.bounds = Rect.new(x, y, picker.preferredWidth,
+    picker.preferredHeight)
+picker.onChange = Fn.new {|year, month, day| /* update preview */ }
+picker.onAccept = Fn.new { /* commit picker.value */ }
+----
+
+`year`, `month`, and `day` expose the selected components; `date` returns
+them as a three-element List, and `value` returns `YYYY-MM-DD`.
+`setDate(year, month, day)` clamps to years 1 through 9999 and to the
+selected month's valid day range.  `moveDays(offset)` and
+`moveMonths(offset)` provide programmatic navigation.  `onChange` fires
+only when the selected date changes; `onAccept` fires on Enter, Space, or
+a date double-click.
+
+Left/Right moves one day, Up/Down moves one week, PageUp/PageDown changes
+month, and Home/End selects the first/last day of the month.  Header-arrow
+clicks and the mouse wheel change month.  A single click selects a visible
+date.
+
+`CalendarDate` supplies Gregorian helpers used by the widget:
+`monthNames`, `daysInMonth(year, month)`, `iso(year, month, day)`,
+`fromTimestamp(seconds)`, `isoFromTimestamp(seconds)`,
+`daysFromCivil(year, month, day)`, `civilFromDays(days)`, and
+`weekday(year, month, day)` (Sunday is 0).  Timestamp conversion is UTC.
+
+Preferred size is 28x8 cells.  Theme roles: `button`, `list.item`,
+`list.item.focused`, and `list.item.disabled`.
+
 === ColorPicker [[ui-color-picker]]
 
 Embeddable 24-bit colour editor with a compact live sample, editable
@@ -7435,6 +7474,7 @@ convenience aggregator:
 | `ui_checkbox`  | `Checkbox`.
 | `ui_radio`     | `RadioGroup`.
 | `ui_spinbox`   | `SpinBox`.
+| `ui_date_picker` | `DatePicker`, `CalendarDate`.
 | `ui_color_picker` | `ColorPicker`.
 | `ui_statusbar` | `StatusBar`.
 | `ui_menubar`   | `MenuBar`.

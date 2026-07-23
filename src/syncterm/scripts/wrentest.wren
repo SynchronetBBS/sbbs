@@ -44,6 +44,7 @@ import "ui_button_test"    for UiButtonTest
 import "ui_checkbox_test"  for UiCheckboxTest
 import "ui_radio_test"     for UiRadioTest
 import "ui_spinbox_test"   for UiSpinboxTest
+import "ui_date_picker_test" for UiDatePickerTest
 import "ui_color_picker_test" for UiColorPickerTest
 import "menu_ui_test" for MenuUiTest
 import "menu_palette_picker_test" for MenuPalettePickerTest
@@ -193,6 +194,7 @@ class WrenTest {
     fold_(UiCheckboxTest.run())
     fold_(UiRadioTest.run())
     fold_(UiSpinboxTest.run())
+    fold_(UiDatePickerTest.run())
     fold_(UiColorPickerTest.run())
     fold_(MenuUiTest.run())
     fold_(MenuPalettePickerTest.run())

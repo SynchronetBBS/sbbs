@@ -36,18 +36,20 @@ survives game renames.
 The cache and whole-state clipboard export use compact WON so large saved C;10
 path maps do not acquire megabytes of pretty-printing whitespace.
 
-Live tools send game commands. Start them at the Main or Computer command prompt
-shown in the tool's help. Live `C;10` and sensor results are parsed and saved
-directly. Sector actions now show their target count, batches, and
-turn/resource risk before offering **Run now**, **Preview**, optional **Copy**,
-or **Cancel**. Direct runs send one batch at a time and wait for a returned
-Main-command Help screen before advancing. Completion and failure status popups
-appear immediately; reopening the Alt-Y panel is not required.
+The first two Alt-Y choices provide quick access to replacement `C;3` travel
+and adjacent-sector fighter placement. Other live tools remain grouped in the
+**Live tools** submenu. Start command-sending actions at the Main or Computer
+command prompt shown in the tool's help. Live `C;10` and sensor results are
+parsed and saved directly. Sector actions now show their target count, batches,
+and turn/resource risk before offering **Run now**, **Preview**, optional
+**Copy**, or **Cancel**. Direct runs send one batch at a time and wait for a
+returned Main-command Help screen before advancing. Completion and failure
+status popups appear immediately; reopening the Alt-Y panel is not required.
 
 ## Multiple games on one BBS
 
 One BBS cache can contain any number of independent Yankee Trader games. Use
-**Switch game** at the top of the Alt-Y menu, or **Profile and data**, to add,
+**Switch game** in the Alt-Y menu, or **Profile and data**, to add,
 rename, switch, or delete games. The active game's name remains visible in every
 major submenu.
 

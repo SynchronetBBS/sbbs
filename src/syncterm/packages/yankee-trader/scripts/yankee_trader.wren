@@ -1,9 +1,11 @@
 // Yankee Trader control panel for SyncTERM.
 // Install as a connected Wren script and press Alt-Y.
 
-import "syncterm" for Clipboard, Conn, Hook, Input, Key, Screen, Timer, WON,
-                       WONError
+import "syncterm" for BBS, Clipboard, Conn, Hook, Input, Key, Screen, Timer,
+                       WON, WONError
 import "ui_app" for App
+import "ui_button" for Button
+import "ui_date_picker" for CalendarDate, DatePicker
 import "ui_form" for Form
 import "ui_input" for SelectOnFocusInput
 import "ui_logview" for LogView
@@ -78,33 +80,43 @@ class YankeeTrader {
       __liveNotice = null
     }
     if (YTState.lastError != null) alert_("State Recovery", YTState.lastError)
+    var selected = 0
     while (true) {
-      var picked = pick_("Yankee Trader: %(YTState.activeGameName)",
+      var picked = pickWithSelection_(
+          "Yankee Trader: %(YTState.activeGameName)",
           help_, [
-        "Switch game: %(YTState.activeGameName)",
-        "Dashboard",
-        "Live tools",
+        "Replacement C;3: scan every traveled sector",
+        "Drop one fighter in every adjacent sector",
         "Calculators",
         "Universe and log tools",
-        "Records and notes",
+        "Dashboard",
+        "Live tools",
         "F1-F12 key bindings",
         "Profile and data",
-        "Strategy reference"
-      ])
+        "Strategy reference",
+        "Switch game: %(YTState.activeGameName)",
+        "Records and notes"
+      ], selected)
       if (picked < 0) return null
-      if (picked == 0) switchGame_()
-      if (picked == 1) dashboard_()
-      if (picked == 2) {
-        var action = liveMenu_()
-        if (action != null) return action
+      selected = picked
+      if (picked == 0) {
+        var target = integer_("Route Scan", "Target sector", 1, 1,
+            YTState.data["profile"]["maxSector"])
+        if (target != null) return Fn.new { startRoute_(target) }
       }
-      if (picked == 3) calculators_()
-      if (picked == 4) {
+      if (picked == 1) {
+        var home = integer_("Adjacent Fighters", "Current sector", 1, 1,
+            YTState.data["profile"]["maxSector"])
+        if (home != null) return Fn.new { startFighterScan_(home) }
+      }
+      if (picked == 2) calculators_()
+      if (picked == 3) {
         var action = universe_()
         if (action != null) return action
       }
+      if (picked == 4) dashboard_()
       if (picked == 5) {
-        var action = records_()
+        var action = liveMenu_()
         if (action != null) return action
       }
       if (picked == 6) macros_()
@@ -113,6 +125,11 @@ class YankeeTrader {
         if (action != null) return action
       }
       if (picked == 8) reference_()
+      if (picked == 9) switchGame_()
+      if (picked == 10) {
+        var action = records_()
+        if (action != null) return action
+      }
     }
   }
 
@@ -120,10 +137,7 @@ class YankeeTrader {
     var p = YTState.data["profile"]
     var s = YTState.summary
     var b = YTState.data["benchmarks"]
-    var benchmarks = b.count == 0 ? "none recorded" :
-        "T1 %(b["t1"] == null ? "-" : b["t1"])  " +
-        "T2 %(b["t2"] == null ? "-" : b["t2"])  " +
-        "T3 %(b["t3"] == null ? "-" : b["t3"])"
+    var benchmarks = benchmarkSummary_(b)
     var m = c10Status_
     var saved = YTState.data["lastAnalysis"]
     var savedMap = "none"
@@ -184,8 +198,6 @@ class YankeeTrader {
 
   static liveMenu_() {
     var picked = pick_("Live Tools: %(YTState.activeGameName)", liveHelp_, [
-      "Replacement C;3: scan every traveled sector",
-      "Drop one fighter in every adjacent sector",
       "Run no-turn C;10 universe sweep",
       "Benchmark T1: news and score",
       "Benchmark T2: trading-pair report",
@@ -194,18 +206,6 @@ class YankeeTrader {
     ])
     if (picked < 0) return null
     if (picked == 0) {
-      var target = integer_("Route Scan", "Target sector", 1, 1,
-          YTState.data["profile"]["maxSector"])
-      if (target == null) return null
-      return Fn.new { startRoute_(target) }
-    }
-    if (picked == 1) {
-      var home = integer_("Adjacent Fighters", "Current sector", 1, 1,
-          YTState.data["profile"]["maxSector"])
-      if (home == null) return null
-      return Fn.new { startFighterScan_(home) }
-    }
-    if (picked == 2) {
       var max = YTState.data["profile"]["maxSector"]
       var source = integer_("C;10 Sweep", "Viewpoint/source sector", 1, 1,
           max)
@@ -219,10 +219,10 @@ class YankeeTrader {
           "sector %(source)? Progress is checkpointed every 100 paths.")) return null
       return Fn.new { startC10_(source, start, stop) }
     }
-    if (picked == 3) return Fn.new { startT1_() }
-    if (picked == 4) return Fn.new { startT2_() }
-    if (picked == 5) return Fn.new { startT3_() }
-    if (picked == 6) {
+    if (picked == 1) return Fn.new { startT1_() }
+    if (picked == 2) return Fn.new { startT2_() }
+    if (picked == 3) return Fn.new { startT3_() }
+    if (picked == 4) {
       cancelAutomation_()
       alert_("Live Tools", "Pending Yankee Trader automation was cancelled.")
     }
@@ -411,6 +411,7 @@ class YankeeTrader {
   }
 
   static calculators_() {
+    var selected = 0
     while (true) {
       var p = YTState.data["profile"]
       var rows = []
@@ -427,9 +428,11 @@ class YankeeTrader {
         rows.add([7, "Mercenary bribe and fighter surrender"])
       }
       rows.add([8, "Port-pair earnings"])
-      var picked = pick_("Calculators: %(YTState.activeGameName)",
-          calculatorHelp_, rows.map {|row| row[1] }.toList)
+      var picked = pickWithSelection_(
+          "Calculators: %(YTState.activeGameName)", calculatorHelp_,
+          rows.map {|row| row[1] }.toList, selected)
       if (picked < 0) return
+      selected = picked
       var action = rows[picked][0]
       if (action == 0) plasmaDamage_()
       if (action == 1) plasmaNeeded_()
@@ -824,6 +827,7 @@ class YankeeTrader {
   }
 
   static universe_() {
+    var selected = 0
     while (true) {
       var rows = [
         [7, "View saved C;10 map"],
@@ -839,9 +843,11 @@ class YankeeTrader {
       if (commandRunStatus_["active"]) {
         rows.add([9, "Cancel running command plan"])
       }
-      var picked = pick_("Universe: %(YTState.activeGameName)",
-          universeHelp_, rows.map {|row| row[1] }.toList)
+      var picked = pickWithSelection_(
+          "Universe: %(YTState.activeGameName)", universeHelp_,
+          rows.map {|row| row[1] }.toList, selected)
       if (picked < 0) return
+      selected = picked
       var action = rows[picked][0]
       if (action == 7) c10Map_()
       if (action == 8) legacyImports_()
@@ -873,13 +879,16 @@ class YankeeTrader {
   }
 
   static legacyImports_() {
+    var selected = 0
     while (true) {
-      var picked = pick_("Legacy Imports: %(YTState.activeGameName)",
+      var picked = pickWithSelection_(
+          "Legacy Imports: %(YTState.activeGameName)",
           legacyImportHelp_, [
         "Import old 10-scan C;10 CSV from clipboard",
         "Import sensor/session log from clipboard"
-      ])
+      ], selected)
       if (picked < 0) return
+      selected = picked
       if (picked == 0) analyze10_()
       if (picked == 1) analyzeLog_()
     }
@@ -896,8 +905,10 @@ class YankeeTrader {
     var deadEnds = sortedMapEdges_(analysisList_(result, "deadEnds"))
     var linked = sortedMapEdges_(analysisList_(result, "linked"))
     var rifts = sortedMapEdges_(analysisList_(result, "rifts"))
+    var selected = 0
     while (true) {
-      var picked = pick_("Saved C;10 Map: %(YTState.activeGameName)",
+      var picked = pickWithSelection_(
+          "Saved C;10 Map: %(YTState.activeGameName)",
           mapHelp_, [
         "Map summary",
         "Direct outgoing warps (%(direct.count))",
@@ -906,8 +917,9 @@ class YankeeTrader {
         "Long-number-gap link probes (%(linked.count))",
         "Possible rift entrance probes (%(rifts.count))",
         "Find captured path by target sector"
-      ])
+      ], selected)
       if (picked < 0) return
+      selected = picked
       if (picked == 0) c10Summary_(result, direct, coverage, deadEnds,
           linked, rifts)
       if (picked == 1) browseMapSectors_("Direct Outgoing Warps", result,
@@ -961,9 +973,11 @@ class YankeeTrader {
       return
     }
     var labels = sectors.map {|sector| "Sector %(sector)" }.toList
+    var selected = 0
     while (true) {
-      var picked = pick_(title, mapHelp_, labels)
+      var picked = pickWithSelection_(title, mapHelp_, labels, selected)
       if (picked < 0) return
+      selected = picked
       var sector = sectors[picked]
       var routes = YTUniverse.routesContainingSector(result, sector)
       browseMapRoutes_("%(title): sector %(sector)", routes,
@@ -982,9 +996,11 @@ class YankeeTrader {
       if (edge.count >= 3) label = label + " (%(edge[2]) paths)"
       labels.add(label)
     }
+    var selected = 0
     while (true) {
-      var picked = pick_(title, mapHelp_, labels)
+      var picked = pickWithSelection_(title, mapHelp_, labels, selected)
       if (picked < 0) return
+      selected = picked
       var edge = edges[picked]
       var detail = "Selected edge: %(edge[0]) -> %(edge[1])"
       if (edge.count >= 3) {
@@ -1005,10 +1021,13 @@ class YankeeTrader {
       return
     }
     var labels = mapRouteLabels_(routes)
+    var selected = 0
     while (true) {
-      var picked = pick_(title, "Select a captured target route containing " +
-          "this map feature.", labels)
+      var picked = pickWithSelection_(title,
+          "Select a captured target route containing this map feature.",
+          labels, selected)
       if (picked < 0) return
+      selected = picked
       showMapPath_(title, routes[picked][0], routes[picked][1], detail)
     }
   }
@@ -1256,14 +1275,16 @@ class YankeeTrader {
         "Run now closes the panel and sends one batch at a time from the Main " +
         "Command prompt. A harmless Help request marks the end of each batch " +
         "before the next is sent. Copy is retained as an optional fallback."
+    var selected = 0
     while (true) {
-      var picked = pick_("%(title): Review", help, [
+      var picked = pickWithSelection_("%(title): Review", help, [
         "Run now from Main Command",
         "Preview first batch",
         "Copy batches to clipboard",
         "Cancel"
-      ])
+      ], selected)
       if (picked < 0 || picked == 3) return null
+      selected = picked
       if (picked == 0) {
         if (confirm_(title,
             "%(description)\n\n%(warning)\n\nRun %(commands.count) monitored " +
@@ -1287,8 +1308,10 @@ class YankeeTrader {
   }
 
   static records_() {
+    var selected = 0
     while (true) {
-      var picked = pick_("Records: %(YTState.activeGameName)",
+      var picked = pickWithSelection_(
+          "Records: %(YTState.activeGameName)",
           recordsHelp_, [
         "Add or update sector note",
         "Add planet record",
@@ -1299,8 +1322,9 @@ class YankeeTrader {
         "Browse port pairs",
         "Browse tracked locations",
         "Run planet/fighter reconciliation reports"
-      ])
+      ], selected)
       if (picked < 0) return
+      selected = picked
       if (picked == 0) addSector_()
       if (picked == 1) addPlanet_()
       if (picked == 2) addPair_()
@@ -1327,7 +1351,7 @@ class YankeeTrader {
         "black hole", "Xannor", "mercenary", "enemy", "friendly", "other"]
     var kind = pick_("Sector Kind", null, kinds)
     if (kind < 0) return
-    var date = prompt_("Sector Note", "Date or last visit", "")
+    var date = date_("Sector Note", "Date or last visit")
     if (date == null) return
     var note = prompt_("Sector Note", "Note", "")
     if (note == null) return
@@ -1354,7 +1378,7 @@ class YankeeTrader {
     var forces = number_("Planet Record", "Ground forces", 0, 0,
         999999999999999)
     if (forces == null) return
-    var date = prompt_("Planet Record", "Last visit or revealed date", "")
+    var date = date_("Planet Record", "Last visit or revealed date")
     if (date == null) return
     var note = prompt_("Planet Record", "Route and notes", "")
     if (note == null) return
@@ -1386,7 +1410,7 @@ class YankeeTrader {
     if (kind < 0) return
     var owner = prompt_("Tracked Location", "Owner or label", "")
     if (owner == null) return
-    var date = prompt_("Tracked Location", "Date", "")
+    var date = date_("Tracked Location", "Date")
     if (date == null) return
     var note = prompt_("Tracked Location", "Note", "")
     if (note == null) return
@@ -1482,9 +1506,11 @@ class YankeeTrader {
   }
 
   static profile_() {
+    var selected = 0
     while (true) {
       var p = YTState.data["profile"]
-      var picked = pick_("Games: %(YTState.activeGameName)", dataHelp_, [
+      var picked = pickWithSelection_(
+          "Games: %(YTState.activeGameName)", dataHelp_, [
         "Switch game (%(YTState.games.count) configured)",
         "Add another game",
         "Rename active game",
@@ -1506,8 +1532,9 @@ class YankeeTrader {
         "Spies: %(enabled_(p["spies"]))",
         "Copy all BBS games as WON",
         "Replace all BBS games from clipboard WON"
-      ])
+      ], selected)
       if (picked < 0) return
+      selected = picked
       if (picked == 0) switchGame_()
       if (picked == 1) addGame_()
       if (picked == 2) {
@@ -2299,11 +2326,88 @@ class YankeeTrader {
     }
   }
 
-  static oneDecimal_(value) { (value * 10).round / 10 }
+  static benchmarkSummary_(benchmarks) {
+    if (benchmarks.count == 0) return "none recorded"
+    return "T1 %(oneDecimal_(benchmarks["t1"]))  " +
+        "T2 %(oneDecimal_(benchmarks["t2"]))  " +
+        "T3 %(oneDecimal_(benchmarks["t3"]))"
+  }
+
+  static oneDecimal_(value) {
+    if (!(value is Num) || value.isNan || value.isInfinity) return "-"
+    var tenths = (value * 10).round
+    var sign = tenths < 0 ? "-" : ""
+    var magnitude = tenths.abs
+    return "%(sign)%((magnitude / 10).floor)." +
+        "%((magnitude % 10).floor)"
+  }
+
+  static date_(title, message) {
+    var result = null
+    var today = CalendarDate.fromTimestamp(BBS.connected + Conn.elapsedSeconds)
+    Screen.modalRun(Fn.new {
+      var app = App.new()
+      var pane = Pane.new()
+      pane.title = message
+      pane.focused = true
+      pane.shadow = true
+      pane.helpText = "# %(title): %(message)\n\nDefaults to today. Select a " +
+          "day from the month calendar. Neighboring-month days can be chosen " +
+          "directly.\n\nArrow keys move by a day or week.\n" +
+          "Page Up / Page Down changes month.\n" +
+          "Home / End selects the first or last day.\n" +
+          "Enter or a double-click chooses the highlighted date."
+      pane.onClose = Fn.new { app.quit() }
+      pane.bounds = Pane.modalBounds(36, 14)
+      app.root.add(pane)
+
+      var calendar = DatePicker.new(today[0], today[1], today[2])
+      var choose = Fn.new {
+        result = calendar.value
+        app.quit()
+      }
+      calendar.onAccept = choose
+
+      var todayButton = Button.new("Today")
+      todayButton.onPress = Fn.new {
+        calendar.setDate(today[0], today[1], today[2])
+      }
+      var chooseButton = Button.new("Choose")
+      chooseButton.onPress = choose
+      var cancelButton = Button.new("Cancel")
+      cancelButton.onPress = Fn.new { app.quit() }
+
+      var inner = pane.innerBounds
+      var calendarX = inner.x + ((inner.w - calendar.preferredWidth) / 2).floor
+      calendar.bounds = Rect.new(calendarX, inner.y,
+          calendar.preferredWidth, calendar.preferredHeight)
+      var buttonWidth = todayButton.intrinsicWidth +
+          chooseButton.intrinsicWidth + cancelButton.intrinsicWidth + 2
+      var buttonX = inner.x + ((inner.w - buttonWidth) / 2).floor
+      var buttonY = inner.bottom
+      todayButton.bounds = Rect.new(buttonX, buttonY,
+          todayButton.intrinsicWidth, 1)
+      buttonX = buttonX + todayButton.intrinsicWidth + 1
+      chooseButton.bounds = Rect.new(buttonX, buttonY,
+          chooseButton.intrinsicWidth, 1)
+      buttonX = buttonX + chooseButton.intrinsicWidth + 1
+      cancelButton.bounds = Rect.new(buttonX, buttonY,
+          cancelButton.intrinsicWidth, 1)
+
+      pane.add(calendar)
+      pane.add(todayButton)
+      pane.add(chooseButton)
+      pane.add(cancelButton)
+      app.runSync()
+    })
+    return result
+  }
 
   static enabled_(value) { value ? "on" : "off" }
 
   static help_ { "# Yankee Trader Control Panel\n\nAlt-Y opens this panel. " +
+      "The first two entries provide quick access to the frequently used " +
+      "route-scan and adjacent-fighter actions. " +
       "It combines the site's ZOC scripts, spreadsheet calculators, mapping " +
       "helpers, records, macros, and strategy notes. Each BBS may contain " +
       "multiple independent Yankee Trader games." }
@@ -2367,7 +2471,8 @@ class YankeeTrader {
       "that contain it, followed by the full sector sequence and jump count." }
   static recordsHelp_ { "# Records\n\nPer-BBS notes replace the site's suggested " +
       "Notepad tabs: planets, dead ends, revealed locations, intelligence, and " +
-      "profitable port pairs." }
+      "profitable port pairs. Date fields open a month calendar defaulted to " +
+      "today and save the selection as YYYY-MM-DD." }
   static macroHelp_ { "# F1-F12 Key Bindings\n\nThese are active key bindings, " +
       "not menu actions. Close the panel and press a function key at the " +
       "appropriate Yankee Trader prompt. The site's /R repeat suffixes are " +

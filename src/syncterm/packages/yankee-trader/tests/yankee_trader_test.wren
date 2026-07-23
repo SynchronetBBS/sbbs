@@ -1,4 +1,6 @@
-import "syncterm" for Cache, FileError, Key, KeyEvent, WON, WONError
+import "syncterm" for Cache, FileError, Key, KeyEvent, Mouse, MouseEvent, WON,
+                       WONError
+import "ui_date_picker" for CalendarDate, DatePicker
 import "ui_input" for SelectOnFocusInput
 import "ui_widget" for Rect
 import "yankee_trader_calc" for YTCalc
@@ -75,6 +77,43 @@ class YankeeTraderTest {
     var detector = YankeeTrader.detectStatus_
     check_(!detector["active"] && detector["low"] == 1 &&
         detector["high"] == 100000, "settings detector state initializes")
+    check_(YankeeTrader.benchmarkSummary_({}) == "none recorded",
+        "dashboard reports no benchmark results compactly")
+    var benchmarkSummary = YankeeTrader.benchmarkSummary_({
+      "t1": 1.234567890123, "t2": 20, "t3": 300.099999999999
+    })
+    check_(benchmarkSummary == "T1 1.2  T2 20.0  T3 300.1" &&
+        benchmarkSummary.count == 25,
+        "dashboard limits all benchmark values to one decimal place")
+    check_(YankeeTrader.oneDecimal_(-2.26) == "-2.3" &&
+        YankeeTrader.oneDecimal_(null) == "-",
+        "dashboard timing formatter handles rounding and missing values")
+    check_(CalendarDate.isoFromTimestamp(0) == "1970-01-01" &&
+        CalendarDate.isoFromTimestamp(951782400) == "2000-02-29" &&
+        CalendarDate.iso(1, 2, 3) == "0001-02-03",
+        "record date formatter produces ISO dates")
+    check_(CalendarDate.daysInMonth(2024, 2) == 29 &&
+        CalendarDate.daysInMonth(2023, 2) == 28 &&
+        CalendarDate.daysInMonth(2026, 4) == 30 &&
+        CalendarDate.daysInMonth(2026, 7) == 31 &&
+        CalendarDate.weekday(2026, 7, 23) == 4,
+        "record date picker follows calendar and leap-year month lengths")
+    var calendar = DatePicker.new(2024, 2, 29)
+    calendar.moveMonths(12)
+    check_(calendar.value == "2025-02-28",
+        "calendar clamps leap day when changing year")
+    calendar.moveDays(1)
+    check_(calendar.value == "2025-03-01",
+        "calendar day navigation crosses month boundaries")
+    calendar.bounds = Rect.new(1, 1, 28, 8)
+    var calendarSurface = calendar.draw()
+    check_(calendarSurface.cellAt(9, 0).ch == "M" &&
+        calendarSurface.cellAt(1, 1).ch == "S" &&
+        calendarSurface.cellAt(25, 1).ch == "S",
+        "calendar renders named month and weekday grid")
+    calendar.handle(MouseEvent.new(Mouse.button1Click, 26, 1))
+    check_(calendar.value == "2025-04-01",
+        "calendar next-month header control is clickable")
     YankeeTrader.startDetect_()
     check_(YankeeTrader.detectStatus_["active"],
         "settings detector starts as live automation")
