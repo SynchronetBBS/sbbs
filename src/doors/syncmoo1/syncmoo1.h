@@ -1,7 +1,7 @@
 /* syncmoo1.h -- cross-module contract for the syncmoo1 door.
  *
  * DESIGN.md §4: a SINGLE header shared by every syncmoo1_*.c module (plus
- * hw_sbbs.c, the 1oom `hw` backend), so a function that crosses a module
+ * hw_term.c, the 1oom `hw` backend), so a function that crosses a module
  * boundary has ONE declaration and a provenance comment saying which .c
  * provides it and why -- unlike syncduke/syncconquer's per-file private
  * headers. As later tasks add syncmoo1_input.c/_door.c/_config.c/_node.c,
@@ -24,7 +24,7 @@
 
 /* --- syncmoo1_io.c: terminal out-buffer, enter/probe/leave, sixel present --
  *
- * Consumed by hw_sbbs.c (the 1oom hw backend): hw_video_draw_buf() calls
+ * Consumed by hw_term.c (the 1oom hw backend): hw_video_draw_buf() calls
  * sm_io_present() on every flip, hw_video_set_palette() feeds it a running
  * 768-byte RGB888 palette. Task 6's input module reads sm_io_geom() for the
  * SGR-mouse -> game-pixel mapping.
@@ -174,7 +174,7 @@ void sm_io_set_pixel_mode(int on);
 /* --- syncmoo1_input.c: socket read loop, ESC/CSI/APC state machine, key +
  * mouse decode, capability-probe reply parsing --
  *
- * Consumed by hw_sbbs.c: hw_event_handle() calls sm_input_pump(sm_io_get_fd())
+ * Consumed by hw_term.c: hw_event_handle() calls sm_input_pump(sm_io_get_fd())
  * on every 1oom engine poll. Drains `sockfd` non-blocking, runs the bytes
  * through the ESC/CSI/APC(DCS/OSC/PM) state machine, and injects the result
  * into 1oom's global input state: keys via kbd_add_keypress() (kbd.h), mouse
@@ -191,7 +191,7 @@ int sm_input_pump(int sockfd);
 /* --- syncmoo1_door.c: DOOR32.SYS / -s<fd> dropfile, socket resolution,
  * splash, argv sanitize, hangup (DESIGN.md §8) --
  *
- * Consumed by hw_sbbs.c's main(): sm_door_setup() resolves the client comm
+ * Consumed by hw_term.c's main(): sm_door_setup() resolves the client comm
  * descriptor and paints an instant splash BEFORE 1oom's own (slow, LBX-
  * scanning) init runs, so sm_io_init() gets the REAL socket fd before the
  * first present -- fixing the Task 5/6 "stdout fallback" carry-over (sm_io_
@@ -235,7 +235,7 @@ const char *sm_door_home(void);
  * none was given (no limit enforced). */
 uint32_t sm_door_time_limit_ms(void);
 
-/* Checked once per present tick (hw_sbbs.c's hw_video_draw_buf()): if the
+/* Checked once per present tick (hw_term.c's hw_video_draw_buf()): if the
  * DOOR32 session time limit has elapsed since sm_door_setup(), logs and
  * exits cleanly (exit(), not sm_door_hangup() -- the socket is presumably
  * still live, so the atexit-registered sm_io_leave() restores the BBS
@@ -254,7 +254,7 @@ void sm_door_check_time(void);
  * above) before this function strips the flag+value pair from argv --
  * syncmoo1_config.c's sm_config_apply() (DESIGN.md §8) reads it from there,
  * not from argv, since by the time sm_config_apply() runs (after this strip,
- * per hw_sbbs.c's main() call order) argv no longer carries it. Compacts in
+ * per hw_term.c's main() call order) argv no longer carries it. Compacts in
  * place, keeps argv[0], lowers *argc, and leaves any genuine 1oom option
  * untouched. Call after sm_door_setup(), before main_1oom(). */
 void sm_door_sanitize_argv(int *argc, char **argv);
@@ -275,7 +275,7 @@ void sm_door_sanitize_argv(int *argc, char **argv);
 char **sm_door_argv_add_emperor_name(int *argc, char **argv);
 
 /* The single canonical hangup path: client socket dead (read/write error or
- * EOF). Wired to both the read side (hw_sbbs.c's hw_event_handle) and the
+ * EOF). Wired to both the read side (hw_term.c's hw_event_handle) and the
  * write side (syncmoo1_io.c's flush), replacing the two earlier ad-hoc
  * bare-_exit paths. Runs sm_io_leave() (bounded drain + BBS terminal-mode
  * restore) first, then _exit(0) to skip the engine's other atexit handlers
@@ -286,7 +286,7 @@ void sm_door_hangup(const char *why);
 /* --- syncmoo1_config.c: per-user -home sandbox + shared LBX data-path
  * resolution (DESIGN.md §8 per-user sandbox, §15 assets) --
  *
- * Consumed by hw_sbbs.c's main(), called AFTER sm_door_sanitize_argv() (so
+ * Consumed by hw_term.c's main(), called AFTER sm_door_sanitize_argv() (so
  * -home has already been captured by sm_door_resolve()/sm_door_home() above,
  * since sanitize strips it from argv) and BEFORE sm_io_init()/main_1oom() (so
  * the chdir below happens before main_1oom() ever reaches lbxfile_find_dir(),

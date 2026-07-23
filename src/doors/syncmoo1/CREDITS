@@ -11,7 +11,7 @@ Engine (vendored in this directory, 1oom/)
   A portable, faithful reimplementation of Master of Orion 1's engine. Vendored
   here as a frozen, unmodified snapshot -- exact upstream commit, clone date,
   and license verification recorded in PROVENANCE.md. Never edited; all door
-  logic lives in our own files (hw_sbbs.c + syncmoo1_*.c), which implement a
+  logic lives in our own files (hw_term.c + syncmoo1_*.c), which implement a
   new 1oom `hw` backend rather than patching the engine.
 
 Master of Orion (the original game)
@@ -26,7 +26,7 @@ Master of Orion (the original game)
 
 syncmoo1's own code (this directory, outside 1oom/)
 -----------------------------------------------------
-- hw_sbbs.c -- the 1oom `hw` backend: delegates 1oom's video/event/mouse/
+- hw_term.c -- the 1oom `hw` backend: delegates 1oom's video/event/mouse/
   audio/timing hooks to the modules below instead of a native SDL/Allegro
   backend.
 - syncmoo1_io.c/.h -- terminal present path (sixel encode via termgfx,

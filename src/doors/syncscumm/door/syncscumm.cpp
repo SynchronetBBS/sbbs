@@ -1,5 +1,5 @@
 /* SyncSCUMM -- ScummVM as a Synchronet door.
- * M1 skeleton: OSystem_Synchronet is a null-equivalent backend; the
+ * M1 skeleton: OSystem_Termgfx is a null-equivalent backend; the
  * frame-dump graphics manager (video_dump.cpp) is swapped in by
  * initBackend(). Terminal I/O via libtermgfx arrives in M2+.
  * GPLv2+, like the ScummVM tree this compiles into.
@@ -65,7 +65,7 @@
 
 #include "common/scummsys.h"
 
-#if defined(USE_SYNCHRONET_DRIVER)
+#if defined(USE_TERMGFX_DRIVER)
 
 #include "common/events.h"
 // Filesystem backend is platform-specific: ScummVM compiles fs/windows/* under
@@ -107,10 +107,10 @@ extern "C" {
 const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
 }
 
-class OSystem_Synchronet : public ModularMixerBackend, public ModularGraphicsBackend, Common::EventSource {
+class OSystem_Termgfx : public ModularMixerBackend, public ModularGraphicsBackend, Common::EventSource {
 public:
-	OSystem_Synchronet();
-	virtual ~OSystem_Synchronet() {}
+	OSystem_Termgfx();
+	virtual ~OSystem_Termgfx() {}
 
 	void initBackend() override;
 	bool pollEvent(Common::Event &event) override;
@@ -126,7 +126,7 @@ private:
 	uint32 _startMs;   // monotonic ms at initBackend(), the getMillis() origin
 };
 
-OSystem_Synchronet::OSystem_Synchronet() {
+OSystem_Termgfx::OSystem_Termgfx() {
 #ifdef WIN32
 	_fsFactory = new WindowsFilesystemFactory();
 #else
@@ -278,7 +278,7 @@ static void resolveMenuKey() {
 		fputs("syncscumm: GMM hotkey: off\n", stderr);
 }
 
-void OSystem_Synchronet::initBackend() {
+void OSystem_Termgfx::initBackend() {
 	_startMs = sst_plat_now_ms();
 	resolveSubtitles();
 	resolveVolumes();
@@ -297,7 +297,7 @@ void OSystem_Synchronet::initBackend() {
 	BaseBackend::initBackend();
 }
 
-bool OSystem_Synchronet::pollEvent(Common::Event &event) {
+bool OSystem_Termgfx::pollEvent(Common::Event &event) {
 	((DefaultTimerManager *)getTimerManager())->checkTimers();
 	((SyncscummMixerManager *)_mixerManager)->tick();
 
@@ -397,20 +397,20 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 	return false;
 }
 
-Common::MutexInternal *OSystem_Synchronet::createMutex() {
+Common::MutexInternal *OSystem_Termgfx::createMutex() {
 	return new NullMutexInternal();
 }
 
-uint32 OSystem_Synchronet::getMillis(bool skipRecord) {
+uint32 OSystem_Termgfx::getMillis(bool skipRecord) {
 	// Monotonic ms since initBackend(); uint32 subtraction is wrap-safe.
 	return sst_plat_now_ms() - _startMs;
 }
 
-void OSystem_Synchronet::delayMillis(uint msecs) {
+void OSystem_Termgfx::delayMillis(uint msecs) {
 	sst_plat_sleep_ms((int)msecs);
 }
 
-void OSystem_Synchronet::getTimeAndDate(TimeDate &td, bool skipRecord) const {
+void OSystem_Termgfx::getTimeAndDate(TimeDate &td, bool skipRecord) const {
 	time_t curTime = time(0);
 	struct tm t = *localtime(&curTime);
 	td.tm_sec = t.tm_sec;
@@ -422,12 +422,12 @@ void OSystem_Synchronet::getTimeAndDate(TimeDate &td, bool skipRecord) const {
 	td.tm_wday = t.tm_wday;
 }
 
-void OSystem_Synchronet::quit() {
+void OSystem_Termgfx::quit() {
 	destroy();
 	exit(0);
 }
 
-void OSystem_Synchronet::logMessage(LogMessageType::Type type, const char *message) {
+void OSystem_Termgfx::logMessage(LogMessageType::Type type, const char *message) {
 	FILE *output = (type == LogMessageType::kInfo || type == LogMessageType::kDebug)
 		? stdout : stderr;
 	fputs(message, output);
@@ -439,7 +439,7 @@ void OSystem_Synchronet::logMessage(LogMessageType::Type type, const char *messa
 // directory (the door install sets it; dev runs point it at
 // scummvm/dists/engine-data). SearchMan invokes this at priority -1, so
 // explicit game paths always win.
-void OSystem_Synchronet::addSysArchivesToSearchSet(Common::SearchSet &s, int priority) {
+void OSystem_Termgfx::addSysArchivesToSearchSet(Common::SearchSet &s, int priority) {
 	const char *data = getenv("SYNCSCUMM_DATA");
 	if (data && *data)
 		s.add("syncscumm-data", new Common::FSDirectory(data, 4), priority);
@@ -537,11 +537,11 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	g_system = new OSystem_Synchronet();
+	g_system = new OSystem_Termgfx();
 	assert(g_system);
 	int res = scummvm_main(filteredArgc, filteredArgv);
 	g_system->destroy();
 	return res;
 }
 
-#endif /* USE_SYNCHRONET_DRIVER */
+#endif /* USE_TERMGFX_DRIVER */

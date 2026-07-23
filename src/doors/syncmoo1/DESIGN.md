@@ -69,7 +69,7 @@ the wire. 1oom renders on change and blocks on input when idle, so syncmoo1
 ```
 src/doors/syncmoo1/
   1oom/                 vendored frozen fork (game/ os/ ui/ hw/ …) — never edited
-  hw_sbbs.c             new 1oom hw backend: hw_video_*, hw_event_handle,
+  hw_term.c             new 1oom hw backend: hw_video_*, hw_event_handle,
                         hw_mouse_set_xy, hw_audio_*, hw_get_time_us; thin —
                         delegates to the modules below
   syncmoo1_io.c/.h      present path, tier selection, sixel/jxl/text emit,
@@ -145,7 +145,7 @@ motion should repaint; idle still de-dupes to zero).
 - `project(syncmoo1 C CXX)` — CXX because `termgfx` pulls in C++ libADLMIDI;
   set `LINKER_LANGUAGE CXX` so libstdc++ links last.
 - `add_executable(syncmoo1 …)` listing 1oom's `game/`+`os/`+`ui/` sources +
-  our `hw_sbbs.c` + `syncmoo1_*.c`. Exclude 1oom's `hw/sdl`, `hw/alleg`,
+  our `hw_term.c` + `syncmoo1_*.c`. Exclude 1oom's `hw/sdl`, `hw/alleg`,
   `hw/nop`.
 - Reproduce 1oom's autotools-generated `config.h` as a checked-in static
   header (feature defines the engine expects).

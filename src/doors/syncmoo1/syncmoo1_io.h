@@ -1,6 +1,6 @@
 /* syncmoo1_io.h -- header for syncmoo1_io.c.
  *
- * The module's public contract (consumed by hw_sbbs.c and, later, the input
+ * The module's public contract (consumed by hw_term.c and, later, the input
  * module) lives in syncmoo1.h -- DESIGN.md's single cross-module contract
  * header, shared by every syncmoo1_*.c file. This header just pulls that in
  * so syncmoo1_io.c has a matching-name header to #include, per the usual .c/

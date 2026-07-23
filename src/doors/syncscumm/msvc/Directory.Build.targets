@@ -33,7 +33,7 @@
     </Lib>
   </ItemDefinitionGroup>
 
-  <!-- The door sources (backends/platform/synchronet -> door/) need termgfx and
+  <!-- The door sources (backends/platform/termgfx -> door/) need termgfx and
        xpdev on the include path, and the final link needs the door's own static
        libs (termgfx.lib / xpdev_static.lib / ADLMIDI.lib, gathered into
        build-msvc\lib by build.bat). create_project drops the include-dir and

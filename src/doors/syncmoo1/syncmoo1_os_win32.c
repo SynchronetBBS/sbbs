@@ -2,7 +2,7 @@
  *
  * 1oom's os/ is a pluggable backend directory: os/{unix,win32,msdos}/ each
  * supply an os.c + osdefs.h implementing the contract in 1oom/src/os.h. This
- * file is a fourth such backend, living in OUR tree -- exactly as hw_sbbs.c is
+ * file is a fourth such backend, living in OUR tree -- exactly as hw_term.c is
  * our own `hw` backend, a peer of the vendored hw/{sdl,alleg,nop}. It replaces
  * 1oom/src/os/win32/os.c for this door; the vendored osdefs.h from that
  * directory is still used (it is only FSDEV_* path-separator macros).

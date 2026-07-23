@@ -1,7 +1,7 @@
 /* SyncRPG -- door entry point.
  *
  * Boots the vendored EasyRPG Player headless through our BaseUi_termgfx
- * backend (ui_term.cpp), the door analogue of syncscumm's OSystem_Synchronet.
+ * backend (ui_term.cpp), the door analogue of syncscumm's OSystem_Termgfx.
  * termgfx_termio_init() parses DOOR32.SYS / -s<fd> and stands up the terminal
  * session; we then hand EasyRPG a clean argv (never the raw door argv -- the
  * engine's own parser would reject -s<fd>/a DOOR32 path) and run it.

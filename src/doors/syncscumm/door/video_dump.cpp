@@ -7,7 +7,7 @@
 
 #include "common/scummsys.h"
 
-#if defined(USE_SYNCHRONET_DRIVER)
+#if defined(USE_TERMGFX_DRIVER)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -92,4 +92,4 @@ void SyncscummDumpGraphicsManager::dumpFrame() {
 	_frameNo++;
 }
 
-#endif /* USE_SYNCHRONET_DRIVER */
+#endif /* USE_TERMGFX_DRIVER */

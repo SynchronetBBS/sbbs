@@ -1,4 +1,4 @@
-/* hw_sbbs.c -- 1oom "hw" backend for the syncmoo1 Synchronet door.
+/* hw_term.c -- 1oom "hw" backend for the syncmoo1 terminal door.
  *
  * Task 2 (build-plumbing) stub: a legitimate 1oom hw backend (peer of
  * hw/nop, hw/sdl, hw/alleg) that lets main_1oom() run headlessly so the

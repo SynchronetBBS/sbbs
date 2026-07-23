@@ -2,7 +2,7 @@
  * and non-blocking descriptor I/O, over xpdev.
  *
  * Everything Windows-vs-POSIX about this door lives behind these six
- * functions, so no other syncmoo1_*.c / hw_sbbs.c file needs a single #ifdef
+ * functions, so no other syncmoo1_*.c / hw_term.c file needs a single #ifdef
  * _WIN32 (nor <winsock2.h>, whose macro soup does not mix well with the
  * vendored 1oom headers). The implementation is thin: xpdev already solved
  * each of these portably, and this door already links xpdev for ini_file and

@@ -31,7 +31,7 @@ directories: `find dists/engine-data -mindepth 1 -type d -empty -delete`.
 
 ## Local additions to the vendored tree
 
-- backends/platform/synchronet -- a directory SYMLINK to ../../../door (all
+- backends/platform/termgfx -- a directory SYMLINK to ../../../door (all
   code we author lives outside the vendored tree in door/). Git stores it with
   mode 120000; on a Windows checkout (core.symlinks=false) it materializes as a
   13-byte text file, so build.bat replaces it with a directory JUNCTION to
@@ -42,7 +42,7 @@ directories: `find dists/engine-data -mindepth 1 -type d -empty -delete`.
 
 Five upstream files are modified; everything else is deletions only.
 
-- configure: one added case in the backend switch (search "synchronet") --
+- configure: one added case in the backend switch (search "termgfx") --
   the *nix (gcc/make) build's backend selection.
 - backends/module.mk: the WIN32 block's SDL/win32 platform files (audio-CD,
   MIDI, printing, saves, dialogs, taskbar, updates, plugin provider -- all of
@@ -53,10 +53,10 @@ Five upstream files are modified; everything else is deletions only.
   never has that combination. Search "SyncSCUMM" in the file.
 - devtools/create_project/: ScummVM's own MSVC project generator, RESTORED
   from the pinned tarball (Windows has no gcc/configure path, so build.bat
-  drives create_project instead). Patched with a `--synchronet` option that
-  emits our backends/platform/synchronet module in place of the SDL platform
-  backend and defines USE_SYNCHRONET_DRIVER instead of SDL_BACKEND -- the MSVC
-  analogue of configure's `synchronet)` case (search "SyncSCUMM local patch"
+  drives create_project instead). Patched with a `--termgfx` option that
+  emits our backends/platform/termgfx module in place of the SDL platform
+  backend and defines USE_TERMGFX_DRIVER instead of SDL_BACKEND -- the MSVC
+  analogue of configure's `termgfx)` case (search "SyncSCUMM local patch"
   in create_project.cpp / .h).
 - base/main.cpp + gui/browser.cpp: SECURITY. The ScummVM launcher and its
   filesystem browser are compiled OUT of the door, gated on the

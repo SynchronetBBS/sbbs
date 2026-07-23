@@ -1,9 +1,9 @@
 #!/bin/sh
 # SyncSCUMM build: out-of-tree ScummVM build with the curated engine set.
-# Usage: ./build.sh [null|synchronet]   (backend; default: synchronet)
+# Usage: ./build.sh [null|termgfx]   (backend; default: termgfx)
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
-BACKEND="${1:-synchronet}"
+BACKEND="${1:-termgfx}"
 mkdir -p "$HERE/build"
 
 # Stage 1: the door's C libraries (termgfx + xpdev), via their own CMake.
@@ -87,7 +87,7 @@ fi
 # ScummVM's version probe appends the HOST repo's git state ("dirty").
 make -j"$(nproc)" VER_REV=
 # Rename ScummVM's default "scummvm" output to the door's own name. This IS our
-# build (the Synchronet backend compiled in), so "syncscumm" both brands it and
+# build (the termgfx backend compiled in), so "syncscumm" both brands it and
 # avoids any PATH collision with a system-installed "scummvm" when the xtrn.ini
 # cmd runs it. ScummVM's configure has no exe-name option, so rename after make
 # (the vendored build system is left untouched).

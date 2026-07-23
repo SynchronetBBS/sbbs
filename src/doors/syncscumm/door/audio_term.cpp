@@ -1,7 +1,7 @@
 /* audio_term.cpp -- see audio_term.h. */
 #include "common/scummsys.h"
 
-#if defined(USE_SYNCHRONET_DRIVER)
+#if defined(USE_TERMGFX_DRIVER)
 
 #include <stdlib.h>
 
@@ -109,4 +109,4 @@ bool SyncscummMixerManager::isNullDevice() const {
 	return false;
 }
 
-#endif /* USE_SYNCHRONET_DRIVER */
+#endif /* USE_TERMGFX_DRIVER */

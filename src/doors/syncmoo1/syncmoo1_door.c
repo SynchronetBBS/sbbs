@@ -5,7 +5,7 @@
  * read_door32()/-s<fd>/-t<sec>/-name/bare-*door32.sys-path resolution and
  * sanitize_cmdline, with one deliberate structural change: syncduke's engine
  * owns main() (a DOS-era port), so it has to grab argv via a pre-main
- * .init_array constructor. hw_sbbs.c (this door's 1oom "hw" backend) OWNS
+ * .init_array constructor. hw_term.c (this door's 1oom "hw" backend) OWNS
  * main() directly -- so sm_door_setup() is just an ordinary function called
  * first thing in main(), no constructor dance needed (the resolved decision
  * for open question #3 in DESIGN.md §14).
@@ -17,7 +17,7 @@
  * as a decimal int and both are consumed through syncmoo1_plat.h, which is
  * where the whole platform split lives.
  *
- * Call order, wired in hw_sbbs.c's main():
+ * Call order, wired in hw_term.c's main():
  *   1. sm_door_setup(argc, argv)     -- resolve socket/time/alias, configure
  *                                        the socket, paint the splash.
  *   2. sm_door_sanitize_argv(&argc, argv) -- strip door args so 1oom's own
@@ -75,7 +75,7 @@ static char     g_home[SM_DOOR_HOME_MAX];  /* "" = no -home given */
  * The single, canonical hangup path for the whole door (DESIGN.md §8 lists
  * hangup as a produced interface; syncduke sets the precedent with one
  * syncduke_hangup() called from both its read and write sides). Wired to
- * BOTH failure sites: the read side (hw_sbbs.c's hw_event_handle(), when
+ * BOTH failure sites: the read side (hw_term.c's hw_event_handle(), when
  * sm_input_pump() returns < 0) and the write side (syncmoo1_io.c's
  * sm_io_out_flush(), on a genuine write error) -- replacing the two earlier
  * ad-hoc bare-_exit(0) paths so there is exactly one place the door dies on
@@ -496,7 +496,7 @@ void sm_door_check_time(void)
  * unrecognized "-home" flag (this is the exact syncduke lesson referenced
  * above). syncmoo1_config.c's sm_config_apply() (DESIGN.md §8) reads
  * sm_door_home() to mkpath+chdir into the per-user sandbox; it must run
- * AFTER this strip (per hw_sbbs.c's main() call order) since the value has
+ * AFTER this strip (per hw_term.c's main() call order) since the value has
  * already been saved off by sm_door_resolve() before this function ever ran.
  *
  * Compacts in place, keeps argv[0], lowers *argc, and leaves any genuine

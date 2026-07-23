@@ -331,12 +331,12 @@ int main(int argc, char *argv[]) {
 			setup.useXCFramework = true;
 		} else if (!std::strcmp(argv[i], "--vcpkg")) {
 			setup.useVcpkg = true;
-		} else if (!std::strcmp(argv[i], "--synchronet")) {
-			// SyncSCUMM local patch: target the Synchronet door OSystem backend
-			// (backends/platform/synchronet, symlinked to the door/ sources)
+		} else if (!std::strcmp(argv[i], "--termgfx")) {
+			// SyncSCUMM local patch: target the termgfx door OSystem backend
+			// (backends/platform/termgfx, symlinked to the door/ sources)
 			// instead of the SDL platform backend. Mirrors configure's
-			// --backend=synchronet for the MSVC build path.
-			setup.synchronet = true;
+			// --backend=termgfx for the MSVC build path.
+			setup.termgfx = true;
 		} else if (!std::strcmp(argv[i], "--libs-path")) {
 			if (i + 1 >= argc) {
 				std::cerr << "ERROR: Missing \"path\" parameter for \"--libs-path\"!\n";
@@ -508,14 +508,14 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	if (setup.synchronet) {
-		// SyncSCUMM local patch: the Synchronet door backend replaces SDL
+	if (setup.termgfx) {
+		// SyncSCUMM local patch: the termgfx door backend replaces SDL
 		// entirely -- no SDL_BACKEND define, no SDL platform module. Our
-		// OSystem (backends/platform/synchronet -> door/) provides video,
+		// OSystem (backends/platform/termgfx -> door/) provides video,
 		// events, mixer, timers, saves and main(). Matches configure's
-		// `synchronet)` case (append_var DEFINES -DUSE_SYNCHRONET_DRIVER).
-		cout << "\nBuilding the Synchronet door backend (no SDL)\n\n";
-		setup.defines.push_back("USE_SYNCHRONET_DRIVER");
+		// `termgfx)` case (append_var DEFINES -DUSE_TERMGFX_DRIVER).
+		cout << "\nBuilding the termgfx door backend (no SDL)\n\n";
+		setup.defines.push_back("USE_TERMGFX_DRIVER");
 	} else if (projectType != kProjectXcode || !setup.appleEmbedded) {
 		setup.defines.push_back("SDL_BACKEND");
 		if (setup.useSDL == kSDLVersion1) {
@@ -867,6 +867,8 @@ void displayHelp(const char *exe) {
 	        " --libs-path path           Specify the path of pre-built libraries instead of using the\n"
 			"                            " LIBS_DEFINE " environment variable\n "
 	        " --vcpkg                    Use vcpkg-provided libraries instead of pre-built libraries\n"
+	        "                            (default: false)\n"
+	        " --termgfx                  Build the termgfx door backend instead of SDL (SyncSCUMM)\n"
 	        "                            (default: false)\n"
 	        "\n"
 	        "XCode specific settings:\n"
@@ -2017,9 +2019,9 @@ void ProjectProvider::createProject(BuildSetup &setup) {
 		pchEx.clear();
 		// File list for the Project file
 		createModuleList(setup.srcDir + "/backends", setup.defines, setup.testDirs, in, ex, pchDirs, pchEx);
-		if (setup.synchronet) {
+		if (setup.termgfx) {
 			// SyncSCUMM local patch: our platform module in place of SDL's.
-			createModuleList(setup.srcDir + "/backends/platform/synchronet", setup.defines, setup.testDirs, in, ex, pchDirs, pchEx);
+			createModuleList(setup.srcDir + "/backends/platform/termgfx", setup.defines, setup.testDirs, in, ex, pchDirs, pchEx);
 		} else if (std::find(setup.defines.begin(), setup.defines.end(), "SDL_BACKEND") != setup.defines.end()) {
 			createModuleList(setup.srcDir + "/backends/platform/sdl", setup.defines, setup.testDirs, in, ex, pchDirs, pchEx);
 		}

@@ -1,4 +1,4 @@
-MODULE := backends/platform/synchronet
+MODULE := backends/platform/termgfx
 
 MODULE_OBJS := \
 	syncscumm.o \

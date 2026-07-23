@@ -215,7 +215,7 @@ nothing from x64 anyway. The code is 64-bit-clean (1oom is; our glue is), so
 ### Notes
 
 The `CMakeLists.txt` enumerates 1oom's `game/`+`os/`+`ui/` sources (derived
-from the vendored `Makefile.am`) plus `hw_sbbs.c` and the `syncmoo1_*.c`
+from the vendored `Makefile.am`) plus `hw_term.c` and the `syncmoo1_*.c`
 glue, links the shared `../termgfx` library and `xpdev`, and absorbs the
 vendored engine's legacy-code compiler warnings (`-w -fcommon`, `/w` on MSVC)
 rather than patching upstream -- see [CLAUDE.md](CLAUDE.md) for that policy,
@@ -360,7 +360,7 @@ APCs are just bytes on a wire until something on the other end decodes and
 plays them. The bugs that matter most -- a column the scale+encode path
 drops, a music track that loops when it shouldn't -- are invisible to the
 unit tests in `tests/`, because those never run the terminal-facing code in
-`hw_sbbs.c`/`syncmoo1_io.c` at all.
+`hw_term.c`/`syncmoo1_io.c` at all.
 
 `tools/fakterm.py` closes that gap: it runs the **real, built** `syncmoo1`
 binary under a raw pty, answers its capability probes and per-frame DSR

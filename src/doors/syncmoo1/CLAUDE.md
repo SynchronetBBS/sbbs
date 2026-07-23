@@ -5,7 +5,7 @@ style rules apply depends on which side of that line a file is on.
 
 ## Which files are ours vs. vendored
 
-**Ours:** `hw_sbbs.c`, `syncmoo1_*.c`/`.h`, `syncmoo1.h`, `compat/`, `tests/`,
+**Ours:** `hw_term.c`, `syncmoo1_*.c`/`.h`, `syncmoo1.h`, `compat/`, `tests/`,
 the build systems (`CMakeLists.txt`, `build.sh`, `deploy.js`, `build.bat`,
 `jsexec deploy.js`), and the `*.md` docs (`CLAUDE.md`, `README.md`, `DESIGN.md`,
 `PROVENANCE.md`).
@@ -19,7 +19,7 @@ frozen generated headers `1oom/src/config.h` + `1oom/src/version.inc`).
 
 All door logic -- terminal I/O, input decode, DOOR32.SYS/session setup,
 per-user config, the future node overlay -- lives in **our** files:
-`hw_sbbs.c` (the 1oom `hw` backend) plus `syncmoo1_*.c`/`.h`. `1oom/` supplies
+`hw_term.c` (the 1oom `hw` backend) plus `syncmoo1_*.c`/`.h`. `1oom/` supplies
 only the game engine (`game/`, `os/`, `ui/`) via the pluggable `hw` backend
 seam it already has (peer of its own `hw/sdl`, `hw/alleg`, `hw/nop`).
 
@@ -53,7 +53,7 @@ bring-up, SIGPIPE, console-less stderr capture) plus `syncmoo1_os_win32.c`. It
 is the only translation unit
 that includes `<winsock2.h>`/`<windows.h>` -- deliberately, since those macros
 mix badly with the vendored 1oom headers. Don't scatter `#ifdef _WIN32` back
-into `syncmoo1_io.c` / `_input.c` / `_door.c` / `hw_sbbs.c`; add to the
+into `syncmoo1_io.c` / `_input.c` / `_door.c` / `hw_term.c`; add to the
 `syncmoo1_plat.h` seam instead.
 
 `compat/` holds three MSVC-only shims, on the include path for MSVC alone, so
@@ -87,7 +87,7 @@ something to regenerate or hand-edit further.
 
 ## Our code -- house style is 4-space, NOT the repo's uncrustify tabs
 
-**Actual, established style:** every `syncmoo1_*.c`/`.h` file and `hw_sbbs.c`
+**Actual, established style:** every `syncmoo1_*.c`/`.h` file and `hw_term.c`
 is written with **4-space indentation** (verified: zero tab-indented lines
 across all of them). This document describes the real style in the code, not
 the plan's original assumption.
@@ -109,7 +109,7 @@ introducing tabs partway through a file.
 - **Don't edit `1oom/` for build/runtime problems.** No reformatting, no "just
   this one warning fix," no house-style pass. If a build or runtime problem
   seems to require a change inside `1oom/`, that need almost certainly belongs
-  in `hw_sbbs.c` or a `syncmoo1_*.c` module instead (a config define, a link
+  in `hw_term.c` or a `syncmoo1_*.c` module instead (a config define, a link
   flag, a wrapper) -- see PROVENANCE.md and DESIGN.md §2/§13 for why this
   door is a new `hw` backend rather than a source patch.
 - **UI-layer customizations with no backend seam** (a hardcoded menu string, a
