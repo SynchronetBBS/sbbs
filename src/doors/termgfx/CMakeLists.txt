@@ -31,6 +31,7 @@ add_library(termgfx STATIC
     mouse.c
     keymode.c
     pace.c
+    idle.c
     sst_plat.c
     termgfx_termio.c
     termgfx_quant.c

@@ -40,3 +40,14 @@ target_link_libraries(test_mouse termgfx)
 set_target_properties(test_mouse PROPERTIES C_STANDARD 11)
 target_compile_options(test_mouse PRIVATE -UNDEBUG)
 add_test(NAME mouse COMMAND test_mouse)
+
+# Unit test for idle.c -- the pure idle-user clock. Compiled as a bare SOURCE
+# and linked against nothing, like test_chunk: the module is arithmetic over
+# timestamps, with no I/O and no dependencies at all.
+add_executable(test_idle
+    ${CMAKE_CURRENT_SOURCE_DIR}/../idle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_idle.c)
+target_include_directories(test_idle PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set_target_properties(test_idle PROPERTIES C_STANDARD 11)
+target_compile_options(test_idle PRIVATE -UNDEBUG)
+add_test(NAME idle COMMAND test_idle)
