@@ -2803,6 +2803,7 @@ void output_thread(void* arg)
 		}
 		else
 #endif
+		// coverity[INTEGER_OVERFLOW:SUPPRESS] bufbot < buftop and 0 <= i <= sendbytes by loop invariant
 		i = sendsocket(sbbs->client_socket, (char*)buf + bufbot, sendbytes);
 		if (i == SOCKET_ERROR) {
 			SOCKET sock = sbbs->client_socket.load();
@@ -2841,6 +2842,7 @@ void output_thread(void* arg)
 					        , node, result, errno, i, spy_topic);
 			}
 			if (spy_socket[sbbs->cfg.node_num - 1] != INVALID_SOCKET)
+				// coverity[INTEGER_OVERFLOW:SUPPRESS] bufbot < buftop and 0 <= i <= sendbytes by loop invariant
 				if (sendsocket(spy_socket[sbbs->cfg.node_num - 1], (char*)buf + bufbot, i) != i && SOCKET_ERRNO != EPIPE)
 					errprintf(LOG_ERR, WHERE, "%s ERROR %d writing to spy socket", node, SOCKET_ERRNO);
 #ifdef __unix__
