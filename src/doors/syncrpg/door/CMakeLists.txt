@@ -107,4 +107,17 @@ elseif(_tg_libs MATCHES "(^|;)sndfile(;|$)")
     # the check above alone would silently miss it.
     set(_snd_libs "-lsndfile")
 endif()
+# Safety net -- the invariant is "termgfx compiled with TERMGFX_WITH_SNDFILE
+# ==> libtermgfx.a references sf_*() ==> the final link needs libsndfile." If
+# the detection above still produced nothing (some unforeseen way for the link
+# interface to present libsndfile), key off the compile definition (readable on
+# the regular termgfx target from any scope) and fall back to -lsndfile so the
+# flag is present whenever the symbols are. Skipped on MSVC, where vcpkg
+# auto-links libsndfile and this handoff file is unused.
+if(NOT _snd_libs AND NOT MSVC)
+    get_target_property(_tg_defs termgfx COMPILE_DEFINITIONS)
+    if(_tg_defs MATCHES "TERMGFX_WITH_SNDFILE")
+        set(_snd_libs "-lsndfile")
+    endif()
+endif()
 file(WRITE ${CMAKE_BINARY_DIR}/sndfile_libs.txt "${_snd_libs}")

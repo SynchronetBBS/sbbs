@@ -51,12 +51,27 @@ endif()
 # handoff above does.
 get_target_property(_tg_libs termgfx INTERFACE_LINK_LIBRARIES)
 set(_snd_libs "")
+# IMPORTED targets are directory-scoped: the SndFile::sndfile that
+# termgfx/CMakeLists.txt's find_package(SndFile CONFIG) created is not visible
+# HERE, in the parent scope, so ask for it again (a no-op second lookup -- the
+# result is cached in SndFile_DIR). On the *nix/pkg-config path this finds
+# nothing and the elseif below still does the work. Without this, a distro that
+# ships SndFileConfig.cmake (Arch, vcpkg -- preferred over pkg-config) leaves an
+# empty sndfile_libs.txt, no -lsndfile on ScummVM's link, and undefined
+# references to sf_open_virtual / sf_command / sf_writef_short / sf_close from
+# termgfx/audio.c.
+find_package(SndFile CONFIG QUIET)
 if(TARGET SndFile::sndfile)
     set(_snd_out "")
     get_target_property(_snd_loc SndFile::sndfile IMPORTED_LOCATION)
+    if(NOT _snd_loc)
+        # vcpkg/MSVC: the imported target is per-configuration, so the plain
+        # IMPORTED_LOCATION property is unset -- read the Release one.
+        get_target_property(_snd_loc SndFile::sndfile IMPORTED_LOCATION_RELEASE)
+    endif()
     if(_snd_loc)
         set(_snd_out "${_snd_loc}")
-    else()
+    elseif(NOT MSVC)
         set(_snd_out "-lsndfile")
     endif()
     set(_snd_libs "${_snd_out}")
@@ -68,19 +83,13 @@ elseif(_tg_libs MATCHES "(^|;)sndfile(;|$)")
     set(_snd_libs "-lsndfile")
 endif()
 # Safety net -- the invariant is "termgfx compiled with TERMGFX_WITH_SNDFILE
-# ==> libtermgfx.a references sf_*() ==> the final link needs libsndfile."
-# Neither branch above is guaranteed to catch that. When termgfx finds
-# libsndfile via find_package(SndFile CONFIG) (Arch, vcpkg, any distro shipping
-# SndFileConfig.cmake -- preferred over pkg-config), the imported target
-# SndFile::sndfile is directory-scoped to the termgfx add_subdirectory() and is
-# NOT visible here in the parent, so the TARGET test above is false; and the
-# name it leaves in INTERFACE_LINK_LIBRARIES is "SndFile::sndfile", which the
-# bare-"sndfile" regex does not match either. Result: an empty sndfile_libs.txt,
-# no -lsndfile on ScummVM's link, and undefined references to sf_open_virtual /
-# sf_command / sf_writef_short / sf_close from audio.c. Key off the compile
-# definition (readable on the regular termgfx target from any scope) and fall
-# back to -lsndfile so the flag is present whenever the symbols are.
-if(NOT _snd_libs)
+# ==> libtermgfx.a references sf_*() ==> the final link needs libsndfile." If
+# the detection above still produced nothing (some unforeseen way for the link
+# interface to present libsndfile), key off the compile definition (readable on
+# the regular termgfx target from any scope) and fall back to -lsndfile so the
+# flag is present whenever the symbols are. Skipped on MSVC, where vcpkg
+# auto-links libsndfile and this handoff file is unused.
+if(NOT _snd_libs AND NOT MSVC)
     get_target_property(_tg_defs termgfx COMPILE_DEFINITIONS)
     if(_tg_defs MATCHES "TERMGFX_WITH_SNDFILE")
         set(_snd_libs "-lsndfile")
