@@ -170,8 +170,8 @@ static void resolveSubtitles() {
 	}
 
 	// 2) SYSOP: syncscumm.ini, read relative to CWD -- the door's
-	// startup_dir (xtrn/syncscumm/install-xtrn.ini's startup_dir comment: the
-	// vendored scummvm/ tree, i.e. the process's actual CWD when the
+	// startup_dir (see xtrn/syncqueen/install-xtrn.ini's startup_dir comment:
+	// the package directory, i.e. the process's actual CWD when the
 	// Terminal Server execs this binary). A missing file, missing key, or an
 	// explicit "auto" all defer to step 3; only "on"/"off" decide here.
 	int sysopOn = -1;   // -1 = no opinion (auto), 0 = off, 1 = on

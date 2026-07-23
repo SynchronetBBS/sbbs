@@ -35,9 +35,9 @@
 //      syncscumm binary. This is the first-install case: a freeware package
 //      fetched but not yet deployed has no binary yet, but its installer data
 //      names the door, so its first binary lands here too. The test is the
-//      invoked-binary token, not any mention of the word -- the M2 test
-//      skeleton (xtrn/syncscumm) names "SyncSCUMM" in its Name/Desc but
-//      launches ../build/scummvm, and must NOT be treated as a deploy target.
+//      invoked-binary token, not any mention of the word, so a package whose
+//      installer names "SyncSCUMM" in its Name/Desc but launches some other
+//      binary is not mistaken for a deploy target.
 //
 // (1) alone would miss a never-deployed freeware package; (2) alone would miss
 // a hand-registered commercial title. Neither marker can go stale the way the
