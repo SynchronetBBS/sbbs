@@ -5,6 +5,7 @@
 #   Usage:  ./build.sh             (release build, both titles)
 #           ./build.sh debug       (Debug build)
 #           ./build.sh clean       (delete the build tree, then exit)
+#           ./build.sh clean all   (delete the build tree, then build)
 #           ./build.sh ra          (Red Alert / syncalert only -- skip Tiberian Dawn)
 #
 # Builds out-of-source in ./build/, leaving the binaries at ./build/syncalert
@@ -26,12 +27,14 @@ SRCDIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 BUILDDIR="$SRCDIR/build"
 CONFIG=Release
 DOCLEAN=
+DOALL=
 BUILD_TD=ON
 
-# --- Parse arguments (order-independent: "debug"/"clean"/"ra") -------------
+# --- Parse arguments (order-independent: "debug"/"clean"/"all"/"ra") -------
 for arg in "$@"; do
 	case "$arg" in
 	clean)             DOCLEAN=1 ;;
+	all)               DOALL=1 ;;
 	debug | Debug)     CONFIG=Debug ;;
 	release | Release) CONFIG=Release ;;
 	ra | RA)           BUILD_TD=OFF ;;   # Red Alert (syncalert) only
@@ -44,13 +47,17 @@ if ! command -v cmake >/dev/null 2>&1; then
 	exit 1
 fi
 
-# --- Clean if requested (and exit) -----------------------------------------
+# --- Clean if requested ----------------------------------------------------
+# "clean" alone cleans and exits; "clean all" cleans and then builds -- the
+# same convention as the make targets in ../../build/rules.mk.
 if [ -n "$DOCLEAN" ]; then
 	if [ -d "$BUILDDIR" ]; then
 		echo "[build] Removing build tree $BUILDDIR"
 		rm -rf "$BUILDDIR"
 	fi
-	exit 0
+	if [ -z "$DOALL" ]; then
+		exit 0
+	fi
 fi
 
 # --- Configure + build -----------------------------------------------------

@@ -4,8 +4,9 @@
 #
 #   Usage:  ./build.sh             (release build)
 #           ./build.sh debug       (Debug build)
-#           ./build.sh clean       (delete the build tree, then build)
-#           ./build.sh debug clean (combine)
+#           ./build.sh clean       (delete the build tree, then exit)
+#           ./build.sh clean all   (delete the build tree, then build)
+#           ./build.sh debug clean all (combine)
 #
 # Builds out-of-source in ./build/, leaving the binary at ./build/syncmoo1.
 # Building does NOT touch any live install -- run `jsexec deploy.js` afterwards when
@@ -24,11 +25,13 @@ SRCDIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 BUILDDIR="$SRCDIR/build"
 CONFIG=Release
 DOCLEAN=
+DOALL=
 
-# --- Parse arguments (order-independent: "debug" and/or "clean") -----------
+# --- Parse arguments (order-independent: "debug", "clean" and/or "all") ----
 for arg in "$@"; do
 	case "$arg" in
 	clean)             DOCLEAN=1 ;;
+	all)               DOALL=1 ;;
 	debug | Debug)     CONFIG=Debug ;;
 	release | Release) CONFIG=Release ;;
 	*) echo "build.sh: ignoring unknown argument '$arg'" >&2 ;;
@@ -41,9 +44,16 @@ if ! command -v cmake >/dev/null 2>&1; then
 fi
 
 # --- Clean if requested ----------------------------------------------------
-if [ -n "$DOCLEAN" ] && [ -d "$BUILDDIR" ]; then
-	echo "[build] Removing build tree $BUILDDIR"
-	rm -rf "$BUILDDIR"
+# "clean" alone cleans and exits; "clean all" cleans and then builds -- the
+# same convention as the make targets in ../../build/rules.mk.
+if [ -n "$DOCLEAN" ]; then
+	if [ -d "$BUILDDIR" ]; then
+		echo "[build] Removing build tree $BUILDDIR"
+		rm -rf "$BUILDDIR"
+	fi
+	if [ -z "$DOALL" ]; then
+		exit 0
+	fi
 fi
 
 # --- Configure + build -----------------------------------------------------
