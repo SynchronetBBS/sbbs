@@ -275,7 +275,7 @@ if (localmode || lanmode)
 /* Initialize variables. */
 getdate(&dat); gettime(&tim);
 tmpc = myclock();
-mins = (tmpc / CLK_TCK) / 60L;
+mins = (tmpc / CLOCKS_PER_SEC) / 60L;
 
 /* top_output() needs all numeric values to be strings. */
 itoa(dat.da_mon, (char*)outnum[0], 10);
@@ -466,7 +466,7 @@ for (d = 0, failed = 1; failed; d++)
     if (failed == -1)
     	{
         for(cl = myclock();
-            ((float) myclock() - (float) cl) / (float) CLK_TCK <
+            ((float) myclock() - (float) cl) / (float) CLOCKS_PER_SEC <
             (float) RETRYINTERVAL;);
         }
     /* Perform the record locking. */

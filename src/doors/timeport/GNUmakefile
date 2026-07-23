@@ -45,25 +45,25 @@ install$(BINSUFFIX): install.c
 	${CC} ${CFLAGS} -o install$(BINSUFFIX) install.c $(CURSLIB)
 
 twenties$(BINSUFFIX): ${REQLIBS} twenties.c
-	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o twenties$(BINSUFFIX) twenties.c
+	${CC} ${CFLAGS} ${LFLAGS} -o twenties$(BINSUFFIX) twenties.c $(LIBS)
 
 makemod$(BINSUFFIX): ${REQLIBS} makemod.c
-	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o makemod$(BINSUFFIX) makemod.c
+	${CC} ${CFLAGS} ${LFLAGS} -o makemod$(BINSUFFIX) makemod.c $(LIBS)
 
 stoneage$(BINSUFFIX): ${REQLIBS} stoneage.c
-	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o stoneage$(BINSUFFIX) stoneage.c
+	${CC} ${CFLAGS} ${LFLAGS} -o stoneage$(BINSUFFIX) stoneage.c $(LIBS)
 
 timeport$(BINSUFFIX): ${REQLIBS} timeport.c timeport.h
-	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o timeport$(BINSUFFIX) timeport.c
+	${CC} ${CFLAGS} ${LFLAGS} -o timeport$(BINSUFFIX) timeport.c $(LIBS)
 
 tp-event$(BINSUFFIX): ${REQLIBS} tp-event.c
-	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o tp-event$(BINSUFFIX) tp-event.c
+	${CC} ${CFLAGS} ${LFLAGS} -o tp-event$(BINSUFFIX) tp-event.c $(LIBS)
 
 outside$(BINSUFFIX): ${REQLIBS} outside.c
-	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o outside$(BINSUFFIX) outside.c
+	${CC} ${CFLAGS} ${LFLAGS} -o outside$(BINSUFFIX) outside.c $(LIBS)
 
 badtimes$(BINSUFFIX): ${REQLIBS} badtimes.c
-	${CC} ${CFLAGS} ${LFLAGS} $(LIBS) -o badtimes$(BINSUFFIX) badtimes.c
+	${CC} ${CFLAGS} ${LFLAGS} -o badtimes$(BINSUFFIX) badtimes.c $(LIBS)
 
 $(LIBPREFIX)tplib.o: tplib.c tplib.h doors.h $(LIBPREFIX)
 	${CC} -c ${CFLAGS} -o $(LIBPREFIX)tplib.o tplib.c

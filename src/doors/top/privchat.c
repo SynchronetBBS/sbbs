@@ -115,12 +115,12 @@ void privatechat(XINT pcnode)
         {
         /* Private chat buffer polling is hardcoded at once every tenth of
            a second. */
-        if ((((float) myclock() - (float) privlastpoll) / (float) CLK_TCK) >=
+        if ((((float) myclock() - (float) privlastpoll) / (float) CLOCKS_PER_SEC) >=
             0.10) // Configurable later!
             {
             privchatreadbuf();
             /* BBS polling is harcoded at once every second. */
-            if ((((float) myclock() - (float) privlastbbspoll) / (float) CLK_TCK) >=
+            if ((((float) myclock() - (float) privlastbbspoll) / (float) CLOCKS_PER_SEC) >=
                 1.00) // Configurable later!
                 {
                 /* Incoming BBS pages are still displayed in chat mode. */

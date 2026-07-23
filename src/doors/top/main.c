@@ -214,12 +214,12 @@ for(;;)
     if (pos == 0 || (pos > 0 && !(user.pref1 & PREF1_BLKWHILETYP)))
         {
         /* Only poll for messages once enough time has elapsed. */
-        if ((((float) myclock() - (float) lastpoll) / (float) CLK_TCK) >=
+        if ((((float) myclock() - (float) lastpoll) / (float) CLOCKS_PER_SEC) >=
             POLLTIMEDELAY)
             {
             /* Poker operations, unused. */
 /*//|            if ((((float) myclock() - (float) lastpokerpoll) /
-                   (float) CLK_TCK) >=
+                   (float) CLOCKS_PER_SEC) >=
                    ((float) cfg.pokerpolltime / 10.0))
                 {
                 XINT pokd;
