@@ -9,7 +9,7 @@ shouldn't -- are invisible to unit tests AND to the SYNCMOO1_SIXELOUT capture
 mode (see README.md's "Why fakterm.py, not SYNCMOO1_SIXELOUT" section: capture
 mode encodes the native 320x200 frame, bypassing scale+encode entirely, and
 never sets O_NONBLOCK, so its input pump blocks on read()). This harness is
-what actually exercises hw_sbbs.c's terminal-facing code end to end. It found
+what actually exercises hw_term.c's terminal-facing code end to end. It found
 the encode-narrower-than-native sixel bug during the sixel work, and it is
 the only tool in this tree that can assert the music loop (";L") flag.
 

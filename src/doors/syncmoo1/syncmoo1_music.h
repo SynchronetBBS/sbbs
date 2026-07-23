@@ -1,5 +1,5 @@
 /* syncmoo1_music.h -- 1oom's hw_audio_music_* contract over termgfx's music
- * channel. hw_sbbs.c forwards the engine's hooks here, exactly as it forwards
+ * channel. hw_term.c forwards the engine's hooks here, exactly as it forwards
  * hw_audio_sfx_* to syncmoo1_audio.c.
  *
  * Design: docs/superpowers/specs/2026-07-09-syncmoo1-music-design.md

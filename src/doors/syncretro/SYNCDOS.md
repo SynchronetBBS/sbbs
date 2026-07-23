@@ -201,7 +201,7 @@ things make this tractable and worthwhile:
   *receive* mouse events is partly there; what is missing is *exposing* them as a
   libretro device rather than folding everything into the pad cache.
 - It is written **once and reused**. Unlike SyncMOO1, where mouse handling lived
-  in a per-engine `hw_sbbs.c` backend, here the mouse/keyboard bridge is written
+  in a per-engine `hw_term.c` backend, here the mouse/keyboard bridge is written
   against the standard libretro device API and **every** keyboard/mouse core
   inherits it -- MOO2, any DOS game, point-and-click adventures. It is
   console-level, not per-title.

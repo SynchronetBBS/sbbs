@@ -1,15 +1,15 @@
 @echo off
 rem ===========================================================================
 rem build.bat -- Win32 / MSVC (Release) build of the SyncSCUMM door (syncscumm.exe:
-rem              the vendored ScummVM engine collection with our Synchronet
+rem              the vendored ScummVM engine collection with our termgfx
 rem              OSystem backend). The *nix counterpart is build.sh; unlike it,
 rem              Windows has no gcc/configure path, so this drives ScummVM's own
 rem              MSVC project generator (devtools/create_project) instead:
 rem
-rem   1. Junction backends/platform/synchronet -> door (git stores it as a POSIX
+rem   1. Junction backends/platform/termgfx -> door (git stores it as a POSIX
 rem      symlink that Windows checks out as a plain text file; the build needs a
 rem      real directory there so create_project and MSBuild see the door sources).
-rem   2. Build create_project.exe (patched for our --synchronet backend).
+rem   2. Build create_project.exe (patched for our --termgfx backend).
 rem   3. Build the door's own C libraries -- termgfx + xpdev -- as MSVC static
 rem      libs via door/CMakeLists.txt (the same libs build.sh stages first).
 rem   4. Generate scummvm.sln with the curated engines and OUR backend (no SDL),
@@ -76,8 +76,8 @@ if defined DOCLEAN (
     if exist "%BUILDDIR%" rmdir /S /Q "%BUILDDIR%"
 )
 
-rem --- 1. Junction backends\platform\synchronet -> door ----------------------
-set "BACKLINK=%SVM%\backends\platform\synchronet"
+rem --- 1. Junction backends\platform\termgfx -> door ----------------------
+set "BACKLINK=%SVM%\backends\platform\termgfx"
 if not exist "%BACKLINK%\module.mk" (
     if exist "%BACKLINK%" del /Q "%BACKLINK%" 2>nul
     echo [build] Creating junction to door backend
@@ -85,7 +85,7 @@ if not exist "%BACKLINK%\module.mk" (
     if errorlevel 1 goto error
 )
 rem Keep git from reporting the junction (which replaces the tracked symlink).
-git -C "%SRCDIR%" update-index --skip-worktree src/doors/syncscumm/scummvm/backends/platform/synchronet >nul 2>nul
+git -C "%SRCDIR%" update-index --skip-worktree src/doors/syncscumm/scummvm/backends/platform/termgfx >nul 2>nul
 
 rem --- 2. Build create_project.exe (Debug -- host tool; Release LTCG ICEs) ----
 rem Built through devtools\create_project\cmake\CMakeLists.txt rather than
@@ -139,8 +139,8 @@ rem it into every source reference, and its ObjectFileName is
 rem $(IntDir)dists\msvc\%%(RelativeDir) -- an ABSOLUTE source path there embeds a
 rem drive letter mid-path and MSBuild rejects it (MSB3191). Relative keeps the
 rem per-object intermediate dirs valid.
-echo [build] Generating MSVC project files (create_project --synchronet) ...
-"%CP%" "..\scummvm" --msvc --synchronet --vcpkg ^
+echo [build] Generating MSVC project files (create_project --termgfx) ...
+"%CP%" "..\scummvm" --msvc --termgfx --vcpkg ^
   --disable-all-engines ^
   --enable-engine=scumm --enable-engine=sky --enable-engine=queen ^
   --enable-engine=lure --enable-engine=drascula ^
@@ -193,11 +193,11 @@ exit /b 0
 
 :drop_junction
 rem Remove the junction (rmdir, not del) and restore the tracked symlink file.
-set "_BL=%SVM%\backends\platform\synchronet"
+set "_BL=%SVM%\backends\platform\termgfx"
 if exist "%_BL%\module.mk" (
-    git -C "%SRCDIR%" update-index --no-skip-worktree src/doors/syncscumm/scummvm/backends/platform/synchronet >nul 2>nul
+    git -C "%SRCDIR%" update-index --no-skip-worktree src/doors/syncscumm/scummvm/backends/platform/termgfx >nul 2>nul
     rmdir "%_BL%" 2>nul
-    git -C "%SRCDIR%" checkout -- src/doors/syncscumm/scummvm/backends/platform/synchronet >nul 2>nul
+    git -C "%SRCDIR%" checkout -- src/doors/syncscumm/scummvm/backends/platform/termgfx >nul 2>nul
 )
 exit /b 0
 

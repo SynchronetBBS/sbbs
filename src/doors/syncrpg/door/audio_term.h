@@ -63,7 +63,7 @@
 #include "audio_generic.h"
 
 /* The mixer's rate. Must equal termgfx_termio.c's own (file-private since the
- * M4 extraction into termgfx, so no longer a shared symbol) SST_AUDIO_RATE --
+ * M4 extraction into termgfx, so no longer a shared symbol) TERMGFX_AUDIO_RATE --
  * 24000 as of this writing; see that file's doc comment on
  * termgfx_termio_audio_stream() if it ever changes. Same value, same
  * reasoning as syncscumm's audio_term.h: an Opus-legal rate with no content

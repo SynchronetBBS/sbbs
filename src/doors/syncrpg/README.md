@@ -134,6 +134,14 @@ rest of the command line is the game/project path and the connection.
 | `SYNCRPG_GAME` | The RPG Maker project directory, as an alternative to the trailing positional argument. |
 | `SYNCRPG_FMT_PROBE` | Diagnostic: dumps the candidate 32-bit pixel-format byte layouts to stderr at startup (used to confirm the zero-copy `present_rgbx` channel order — see `door/ui_term.cpp`). |
 | `SYNCRPG_FRAMELOG` | Diagnostic: logs every 60th `UpdateDisplay()` call to stderr (used to check the engine keeps redrawing a still screen). |
+| `SYNCRPG_SOCK` | The client socket descriptor, as an alternative to `-s<fd>`/DOOR32.SYS. |
+| `SYNCRPG_SIXELOUT` | Capture the door's graphics output to a file instead of a live client (headless testing). |
+| `SYNCRPG_TRACE`, `SYNCRPG_AUDIODUMP` | Diagnostic dumps (present-path trace, pre-encode PCM), opt-in. |
+
+The last four come from the shared termgfx session layer, which names them —
+and its optional sysop settings file `syncrpg.ini` (root `sixel_max`, the
+`[audio]` section), plus its touch-file gates under `<data-dir>/syncrpg/` —
+after the door.
 
 ## Installing the game
 

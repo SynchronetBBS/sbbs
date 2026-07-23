@@ -19,12 +19,12 @@
 // queue live behind this API.
 //
 // Single instance per process: the implementation keeps file-static state, so
-// there is no context handle -- one door process drives one session. This
-// mirrors syncscumm's sst_io_* surface verbatim (renamed), the source the body
-// is extracted from; only syncscumm and the future syncrpg adopt it now. Where
-// other doors need more (variable frame geometry, direct-RGB present, edge
-// scroll), that stays a door-side hook until a door actually adopts this API --
-// see the survey note in the extraction plan.
+// there is no context handle -- one door process drives one session. The body
+// is an extraction of syncscumm's own door-side terminal I/O layer, carried
+// over verbatim and renamed into this namespace; only syncscumm and the future
+// syncrpg adopt it now. Where other doors need more (variable frame geometry,
+// direct-RGB present, edge scroll), that stays a door-side hook until a door
+// actually adopts this API -- see the survey note in the extraction plan.
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,6 +38,21 @@ extern "C" {
 #define TERMGFX_TERMIO_FB_H 200
 
 // ---- lifecycle / transport --------------------------------------------------
+
+// The door's short name -- everything door-specific this module touches is
+// derived from it, nothing is hardcoded:
+//
+//   settings     <name>.ini             (root "sixel_max", the [audio] section)
+//   env-vars     <NAME>_SOCK, <NAME>_SIXELOUT, <NAME>_AUDIODUMP, <NAME>_TRACE
+//   diagnostics  <data-dir>/<name>/{stderr,trace,wirecap} touch-files, the
+//                dev fallback ./<name>-<what>, and /tmp/<name>.<pid>.<what>
+//
+// termgfx_termio_init() defaults it to argv[0]'s basename (minus any .exe), so
+// a door named after its binary needs no call at all. Call this BEFORE init()
+// to pin the name -- which a door should do if its sysop-facing <name>.ini
+// must survive an operator renaming the binary, and which a test must do
+// because its binary name is not a door name.
+void termgfx_termio_set_app_name(const char *name);
 
 // Parse the door's argv (DOOR32.SYS path, -s<fd> socket, capture-mode flags),
 // open the session, probe terminal capabilities and negotiate key/mouse modes.

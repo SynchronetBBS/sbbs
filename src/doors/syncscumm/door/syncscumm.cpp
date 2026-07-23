@@ -1,5 +1,5 @@
 /* SyncSCUMM -- ScummVM as a Synchronet door.
- * M1 skeleton: OSystem_Synchronet is a null-equivalent backend; the
+ * M1 skeleton: OSystem_Termgfx is a null-equivalent backend; the
  * frame-dump graphics manager (video_dump.cpp) is swapped in by
  * initBackend(). Terminal I/O via libtermgfx arrives in M2+.
  * GPLv2+, like the ScummVM tree this compiles into.
@@ -17,7 +17,7 @@
 #pragma comment(lib, "termgfx.lib")        // sixel/JXL/APC/audio encoders
 #pragma comment(lib, "ADLMIDI.lib")        // termgfx's OPL3 MIDI synth
 #pragma comment(lib, "xpdev_static.lib")   // ini_file, sockwrap, genwrap, dirwrap
-#pragma comment(lib, "ws2_32.lib")         // Winsock: sst_plat send/recv/WSAStartup
+#pragma comment(lib, "ws2_32.lib")         // Winsock: termgfx_plat send/recv/WSAStartup
 #pragma comment(lib, "winmm.lib")          // xpdev timers + ScummVM midi/windows
 #pragma comment(lib, "iphlpapi.lib")       // xpdev netwrap: GetNetworkParams()
 #pragma comment(lib, "shlwapi.lib")        // mpg123 (libsndfile mpeg): PathCombineW etc.
@@ -26,7 +26,7 @@
 /* The door's platform seam (monotonic clock, sleep) -- keeps this file free of
  * <sys/time.h>/<unistd.h>/gettimeofday/usleep, none of which exist under MSVC.
  * Header-only prototypes over stdint, so no forbidden.h ordering concern. */
-#include "../../termgfx/sst_plat.h"
+#include "../../termgfx/termgfx_plat.h"
 
 /* xpdev's ini_file.h (-> genwrap.h) declares things like strupr()/strlwr()
  * and uses printf in an attribute -- names common/forbidden.h poisons into
@@ -65,7 +65,7 @@
 
 #include "common/scummsys.h"
 
-#if defined(USE_SYNCHRONET_DRIVER)
+#if defined(USE_TERMGFX_DRIVER)
 
 #include "common/events.h"
 // Filesystem backend is platform-specific: ScummVM compiles fs/windows/* under
@@ -99,18 +99,18 @@
 extern "C" {
 #include "../../termgfx/termgfx_termio.h"
 
-/* sst_select_datadir(): SyncSCUMM's own Talkie/Floppy data-set selection --
- * a door-specific helper that lived in the retired sst_io.h and is not part
+/* termgfx_select_datadir(): SyncSCUMM's own Talkie/Floppy data-set selection --
+ * a door-specific helper that lived in the retired termgfx_termio.h and is not part
  * of the shared termgfx_termio surface (other termgfx doors have no such
  * concept). Declared here, door-side; defined in termgfx/termgfx_termio.c
  * (moved there with the rest of the engine body, name unchanged). */
-const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
+const char *termgfx_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
 }
 
-class OSystem_Synchronet : public ModularMixerBackend, public ModularGraphicsBackend, Common::EventSource {
+class OSystem_Termgfx : public ModularMixerBackend, public ModularGraphicsBackend, Common::EventSource {
 public:
-	OSystem_Synchronet();
-	virtual ~OSystem_Synchronet() {}
+	OSystem_Termgfx();
+	virtual ~OSystem_Termgfx() {}
 
 	void initBackend() override;
 	bool pollEvent(Common::Event &event) override;
@@ -126,7 +126,7 @@ private:
 	uint32 _startMs;   // monotonic ms at initBackend(), the getMillis() origin
 };
 
-OSystem_Synchronet::OSystem_Synchronet() {
+OSystem_Termgfx::OSystem_Termgfx() {
 #ifdef WIN32
 	_fsFactory = new WindowsFilesystemFactory();
 #else
@@ -278,8 +278,8 @@ static void resolveMenuKey() {
 		fputs("syncscumm: GMM hotkey: off\n", stderr);
 }
 
-void OSystem_Synchronet::initBackend() {
-	_startMs = sst_plat_now_ms();
+void OSystem_Termgfx::initBackend() {
+	_startMs = termgfx_plat_now_ms();
 	resolveSubtitles();
 	resolveVolumes();
 	resolveMenuKey();
@@ -297,7 +297,7 @@ void OSystem_Synchronet::initBackend() {
 	BaseBackend::initBackend();
 }
 
-bool OSystem_Synchronet::pollEvent(Common::Event &event) {
+bool OSystem_Termgfx::pollEvent(Common::Event &event) {
 	((DefaultTimerManager *)getTimerManager())->checkTimers();
 	((SyncscummMixerManager *)_mixerManager)->tick();
 
@@ -397,20 +397,20 @@ bool OSystem_Synchronet::pollEvent(Common::Event &event) {
 	return false;
 }
 
-Common::MutexInternal *OSystem_Synchronet::createMutex() {
+Common::MutexInternal *OSystem_Termgfx::createMutex() {
 	return new NullMutexInternal();
 }
 
-uint32 OSystem_Synchronet::getMillis(bool skipRecord) {
+uint32 OSystem_Termgfx::getMillis(bool skipRecord) {
 	// Monotonic ms since initBackend(); uint32 subtraction is wrap-safe.
-	return sst_plat_now_ms() - _startMs;
+	return termgfx_plat_now_ms() - _startMs;
 }
 
-void OSystem_Synchronet::delayMillis(uint msecs) {
-	sst_plat_sleep_ms((int)msecs);
+void OSystem_Termgfx::delayMillis(uint msecs) {
+	termgfx_plat_sleep_ms((int)msecs);
 }
 
-void OSystem_Synchronet::getTimeAndDate(TimeDate &td, bool skipRecord) const {
+void OSystem_Termgfx::getTimeAndDate(TimeDate &td, bool skipRecord) const {
 	time_t curTime = time(0);
 	struct tm t = *localtime(&curTime);
 	td.tm_sec = t.tm_sec;
@@ -422,12 +422,12 @@ void OSystem_Synchronet::getTimeAndDate(TimeDate &td, bool skipRecord) const {
 	td.tm_wday = t.tm_wday;
 }
 
-void OSystem_Synchronet::quit() {
+void OSystem_Termgfx::quit() {
 	destroy();
 	exit(0);
 }
 
-void OSystem_Synchronet::logMessage(LogMessageType::Type type, const char *message) {
+void OSystem_Termgfx::logMessage(LogMessageType::Type type, const char *message) {
 	FILE *output = (type == LogMessageType::kInfo || type == LogMessageType::kDebug)
 		? stdout : stderr;
 	fputs(message, output);
@@ -439,7 +439,7 @@ void OSystem_Synchronet::logMessage(LogMessageType::Type type, const char *messa
 // directory (the door install sets it; dev runs point it at
 // scummvm/dists/engine-data). SearchMan invokes this at priority -1, so
 // explicit game paths always win.
-void OSystem_Synchronet::addSysArchivesToSearchSet(Common::SearchSet &s, int priority) {
+void OSystem_Termgfx::addSysArchivesToSearchSet(Common::SearchSet &s, int priority) {
 	const char *data = getenv("SYNCSCUMM_DATA");
 	if (data && *data)
 		s.add("syncscumm-data", new Common::FSDirectory(data, 4), priority);
@@ -448,6 +448,11 @@ void OSystem_Synchronet::addSysArchivesToSearchSet(Common::SearchSet &s, int pri
 }
 
 int main(int argc, char *argv[]) {
+	// Pin the door name termgfx derives its syncscumm.ini, its <DOOR>_* env-vars
+	// and its diagnostic paths from, rather than letting it fall back to
+	// argv[0]'s basename -- the sysop's ini keeps working if the binary is
+	// renamed.
+	termgfx_termio_set_app_name("syncscumm");
 	termgfx_termio_init(argc, argv);
 	atexit(termgfx_termio_shutdown);   /* quit()'s exit(0) still restores the terminal */
 
@@ -476,7 +481,7 @@ int main(int argc, char *argv[]) {
 	// availability before scummvm_main() detects the game from --path. Same
 	// determination that drives subtitles-auto (termgfx_termio_audio_available()): a
 	// session that can play speech gets the Talkie build, one that cannot gets
-	// the Floppy build (guaranteed on-screen text). See sst_select_datadir().
+	// the Floppy build (guaranteed on-screen text). See termgfx_select_datadir().
 	//
 	// A given --path=<base> is rewritten to <base>/talkie|floppy in place. If NO
 	// --path was passed, the base defaults to the current directory (the door's
@@ -492,7 +497,7 @@ int main(int argc, char *argv[]) {
 		char chosen[600];
 		if (strncmp(filteredArgv[i], "--path=", 7) != 0)
 			continue;
-		sst_select_datadir(filteredArgv[i] + 7, audioNow, chosen, sizeof chosen);
+		termgfx_select_datadir(filteredArgv[i] + 7, audioNow, chosen, sizeof chosen);
 		snprintf(pathArg, sizeof pathArg, "--path=%s", chosen);
 		filteredArgv[i] = pathArg;
 		havePath = true;
@@ -501,7 +506,7 @@ int main(int argc, char *argv[]) {
 	if (!havePath && filteredArgc < (int)(sizeof(filteredArgv) / sizeof(filteredArgv[0]))) {
 		char chosen[600];
 		int  i;
-		sst_select_datadir(".", audioNow, chosen, sizeof chosen);
+		termgfx_select_datadir(".", audioNow, chosen, sizeof chosen);
 		snprintf(pathArg, sizeof pathArg, "--path=%s", chosen);
 		for (i = filteredArgc; i > 1; i--)      /* make room right after argv[0] */
 			filteredArgv[i] = filteredArgv[i - 1];
@@ -537,11 +542,11 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	g_system = new OSystem_Synchronet();
+	g_system = new OSystem_Termgfx();
 	assert(g_system);
 	int res = scummvm_main(filteredArgc, filteredArgv);
 	g_system->destroy();
 	return res;
 }
 
-#endif /* USE_SYNCHRONET_DRIVER */
+#endif /* USE_TERMGFX_DRIVER */

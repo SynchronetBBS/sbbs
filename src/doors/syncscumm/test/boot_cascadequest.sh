@@ -8,7 +8,7 @@
 # SCUMM by boot_bass_pkg.sh / boot_queen.sh). The SCI resource files
 # (resource.map + resource.001) are a flat set with no talkie/floppy split, so
 # --path points straight at the package dir (as the door's default --path does
-# after sst_select_datadir() falls back to the base). ScummVM detects the data
+# after termgfx_select_datadir() falls back to the base). ScummVM detects the data
 # as game id "sci-fanmade" (Cascade Quest); it renders EGA doubled to a 320x200
 # surface, parser/keyboard-driven, so no input is needed to reach the intro.
 set -e

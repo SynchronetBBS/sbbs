@@ -12,7 +12,7 @@
 # production).
 #
 # --path points straight at the package dir (as the door's default --path does
-# after sst_select_datadir() finds no ./talkie or ./floppy sub-dir and falls
+# after termgfx_select_datadir() finds no ./talkie or ./floppy sub-dir and falls
 # back to the base) -- exercising the flat single-build data set the same way
 # a real session does.
 set -e

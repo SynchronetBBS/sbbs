@@ -145,7 +145,7 @@ AudioInterface& BaseUi_termgfx::GetAudio() {
 void BaseUi_termgfx::vGetConfig(Game_ConfigVideo& cfg) const {
 	/* Headless: report a fixed software renderer and hide the window/display
 	 * options a terminal door can't act on. */
-	cfg.renderer.Lock("Synchronet (headless)");
+	cfg.renderer.Lock("termgfx (headless)");
 	cfg.vsync.SetOptionVisible(false);
 	cfg.fullscreen.SetOptionVisible(false);
 	cfg.window_zoom.SetOptionVisible(false);

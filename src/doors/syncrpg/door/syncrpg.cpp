@@ -1,7 +1,7 @@
 /* SyncRPG -- door entry point.
  *
  * Boots the vendored EasyRPG Player headless through our BaseUi_termgfx
- * backend (ui_term.cpp), the door analogue of syncscumm's OSystem_Synchronet.
+ * backend (ui_term.cpp), the door analogue of syncscumm's OSystem_Termgfx.
  * termgfx_termio_init() parses DOOR32.SYS / -s<fd> and stands up the terminal
  * session; we then hand EasyRPG a clean argv (never the raw door argv -- the
  * engine's own parser would reject -s<fd>/a DOOR32 path) and run it.
@@ -42,6 +42,11 @@ extern "C" {
 
 int main(int argc, char **argv)
 {
+	// Pin the door name termgfx derives its syncrpg.ini, its <DOOR>_* env-vars
+	// and its diagnostic paths from, rather than letting it fall back to
+	// argv[0]'s basename -- the sysop's ini keeps working if the binary is
+	// renamed.
+	termgfx_termio_set_app_name("syncrpg");
 	termgfx_termio_init(argc, argv);
 	atexit(termgfx_termio_shutdown);
 

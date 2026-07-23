@@ -4,7 +4,7 @@ project(syncmoo1 C CXX)   # CXX: termgfx links C++ libADLMIDI
 # syncmoo1 -- Master of Orion 1 (via the vendored 1oom engine) for Synchronet /
 # SyncTERM (DOOR32.SYS BBS door). Parallels src/doors/syncduke and
 # src/doors/syncdoom: the vendored engine's platform layer is a new 1oom `hw`
-# backend (hw_sbbs.c, a peer of hw/nop, hw/sdl, hw/alleg) rather than a source
+# backend (hw_term.c, a peer of hw/nop, hw/sdl, hw/alleg) rather than a source
 # patch, so the vendored 1oom tree in 1oom/ stays frozen and unedited.
 #
 # Task 2 (this file): prove the source enumeration + config.h + termgfx link
@@ -32,7 +32,7 @@ list(FILTER GAME_SRC EXCLUDE REGEX "saveconv")
 # macros: '/' vs '\\').
 #
 # On *nix we compile 1oom's own os/unix/os.c unchanged. On Windows we supply
-# OUR OWN backend, syncmoo1_os_win32.c -- a peer of hw_sbbs.c, and for the same
+# OUR OWN backend, syncmoo1_os_win32.c -- a peer of hw_term.c, and for the same
 # reason: the vendored os/win32/os.c has an os_make_path() that calls mkdir()
 # with no "already exists" guard (the unix backend guards with access()), so it
 # fails on any existing directory and thereby breaks cfg_save() AND game saving
@@ -48,7 +48,7 @@ endif()
 
 add_executable(syncmoo1
     ${UTIL_SRC} ${AUDIO_SRC} ${UI_SRC} ${GAME_SRC} ${CLASSIC_SRC} ${OS_SRC}
-    hw_sbbs.c
+    hw_term.c
     syncmoo1_io.c
     syncmoo1_input.c
     syncmoo1_door.c

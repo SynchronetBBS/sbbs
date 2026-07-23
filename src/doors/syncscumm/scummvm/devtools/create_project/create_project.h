@@ -303,7 +303,7 @@ struct BuildSetup {
 	bool useVcpkg = false;             ///< Whether to load libraries from vcpkg or SCUMMVM_LIBS
 	bool useSlnx = false;              ///< Whether to use old .sln or new .slnx format
 	bool win32 = false;                ///< Target is Windows
-	bool synchronet = false;           ///< Target the Synchronet door backend (no SDL) -- SyncSCUMM local patch
+	bool termgfx = false;              ///< Target the termgfx door backend (no SDL) -- SyncSCUMM local patch
 	bool featureEnabled(const std::string &feature) const;
 	Feature getFeature(const std::string &feature) const;
 	const char *getSDLName() const;

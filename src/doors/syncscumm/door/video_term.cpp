@@ -1,6 +1,6 @@
 #include "common/scummsys.h"
 
-#if defined(USE_SYNCHRONET_DRIVER)
+#if defined(USE_TERMGFX_DRIVER)
 
 #include <stdlib.h>
 #include <string.h>

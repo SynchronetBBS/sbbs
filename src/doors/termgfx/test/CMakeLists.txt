@@ -64,3 +64,14 @@ target_include_directories(test_stats PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set_target_properties(test_stats PROPERTIES C_STANDARD 11)
 target_compile_options(test_stats PRIVATE -UNDEBUG)
 add_test(NAME stats COMMAND test_stats)
+
+# The rest of this directory's tests -- termgfx_termio (23 binaries), the
+# quantizer, present_rgbx, the sixel palette test and the repro_fade harness --
+# are driven by the unit_termgfx_*.sh scripts here rather than by CTest: they
+# are POSIX-only (socketpair(2) terminals, __wrap_fopen link tricks) and they
+# link against a door's already-built stage-1 libraries. Run them after any
+# door's build.sh:
+#
+#     ./unit_termgfx_termio.sh        # or TERMGFX_LIBS=<door>/build/libs ...
+#     ./unit_termgfx_quant.sh
+#     ./unit_termgfx_present_rgbx.sh

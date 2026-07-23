@@ -1,7 +1,7 @@
 /* syncmoo1_config.c -- per-user -home sandbox + shared MoO1 LBX data-path
  * resolution for the syncmoo1 Synchronet door.
  *
- * DESIGN.md §8 (per-user sandbox), §15 (asset caveat). Wired into hw_sbbs.c's
+ * DESIGN.md §8 (per-user sandbox), §15 (asset caveat). Wired into hw_term.c's
  * main() as:
  *   1. sm_door_setup()          -- resolve socket/time/alias/-home, splash.
  *   2. sm_door_sanitize_argv()  -- strip door args (incl. -home) from argv
@@ -63,7 +63,7 @@ static char sm_lbx_dir[PATH_MAX];
 static int    sm_wire_enabled;
 static int    sm_hand_cursor;   /* draw 1oom's own hand cursor? default off -- the
                                  * terminal already shows a mouse pointer, and the
-                                 * game's hand doesn't line up with it (see hw_sbbs.c) */
+                                 * game's hand doesn't line up with it (see hw_term.c) */
 static double sm_music_quality = TERMGFX_MUSIC_QUALITY_DEFAULT;
 
 int sm_config_wire_enabled(void)
@@ -242,7 +242,7 @@ void sm_config_seed_1oom(void)
                                          * way nothing survives this function */
 
     /* 3. Cache the user's own cfg path NOW, while os_get_path_user() still
-     *    resolves to our sandbox. atexit() is LIFO: hw_sbbs.c's main()
+     *    resolves to our sandbox. atexit() is LIFO: hw_term.c's main()
      *    registers sm_config_prune_user_cfg() BEFORE calling main_1oom(),
      *    which itself registers atexit(main_shutdown) (main.c). So at actual
      *    process exit, main_shutdown() (the LATER registration) fires FIRST

@@ -181,7 +181,7 @@ lines with `cl`". Each item is a real trap, in the order it bites:
 Windows-vs-POSIX differences in the door glue (the monotonic clock, sleep,
 `WSAStartup`, non-blocking `send()`/`recv()` on the DOOR32.SYS socket, the
 `isatty`/exists/getpid dev helpers) live in the shared `../termgfx` library
-behind `sst_plat.{c,h}`, built over xpdev — the same seam every sibling termgfx
+behind `termgfx_plat.{c,h}`, built over xpdev — the same seam every sibling termgfx
 door uses. SyncRPG's own five `door/*.cpp` files carry **no** `#ifdef _WIN32`
 and no POSIX-only headers at all; the only platform-dependent thing
 `door/syncrpg.cpp` does is build the save path with xpdev's `PATH_DELIM` /

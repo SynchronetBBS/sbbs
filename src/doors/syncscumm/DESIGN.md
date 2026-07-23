@@ -10,7 +10,7 @@ Date: 2026-07-15 (design); shipped 2026-07-18
 
 A libtermgfx game door (joining SyncDOOM, SyncDuke, SyncConquer, SyncMOO1,
 SyncRetro) that plays classic 2D point-and-click adventures over a terminal:
-ScummVM's engine collection driven through a native Synchronet backend, with
+ScummVM's engine collection driven through a native termgfx backend, with
 graphics, mouse, and sound. v1 decisions made at design time:
 
 - **Multi-title, one binary**: a single door binary plays every title, but
@@ -38,7 +38,7 @@ ScummVM (GPLv2+) is the maintained interpreter collection for SCUMM and
 SDL-ectomy, Conquer's null-backend selection), ScummVM requires **no seam
 carving**: its `OSystem` class is the project's published porting API —
 every port (SDL, libretro, consoles) is an `OSystem` implementation. We
-implement a Synchronet `OSystem` (sources in our `door/` directory, a thin
+implement a termgfx `OSystem` (sources in our `door/` directory, a thin
 registration shim in-tree — see Layout) and the engines never know they are
 in a terminal.
 
@@ -61,7 +61,7 @@ src/doors/syncscumm/           door + backend + vendored engine
                                mixer, saves, timers) + door glue (main,
                                config, node.exb). Registered into ScummVM's
                                build via a thin in-tree shim under
-                               scummvm/backends/platform/synchronet/ that
+                               scummvm/backends/platform/termgfx/ that
                                only points at door/ sources — the one local
                                vendor-tree touch, documented in PROVENANCE.md
   build.sh, deploy.js          house pattern; live binary is a symlink
@@ -120,7 +120,7 @@ The continuous-streaming machinery is **not this door's**: it is
 had the same shape first — a mixed stream with no useful per-sound boundary —
 and where it was originally built and then extracted). The chunk accumulator,
 silence cache, cushion, backlog policy, blob path and underrun re-prime all
-live there. `door/sst_io.c` supplies only the door's half: the put/flush/
+live there. `door/termgfx_termio.c` supplies only the door's half: the put/flush/
 backlog output seam and the session's config.
 
 What actually ships, per session:

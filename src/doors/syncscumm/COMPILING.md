@@ -1,7 +1,7 @@
 # Compiling SyncSCUMM
 
 SyncSCUMM is ScummVM (a vendored, engine-pruned copy under `scummvm/`) plus a
-Synchronet `OSystem` backend and door glue in `door/`, linked against the
+termgfx `OSystem` backend and door glue in `door/`, linked against the
 shared `termgfx` and `xpdev` libraries. One binary — `syncscumm` (ScummVM's
 own `scummvm` output, renamed by the build) — plays every bundled title; each
 title is its own installable package that launches the same binary (see
@@ -47,7 +47,7 @@ Release `RuntimeLibrary`).
 
 ### What `build.bat` does
 
-1. **Junction.** `scummvm/backends/platform/synchronet` is a git symlink to
+1. **Junction.** `scummvm/backends/platform/termgfx` is a git symlink to
    `../../../door`; on a Windows checkout it materializes as a plain text file,
    so build.bat replaces it with a directory *junction* (and marks it
    `--skip-worktree` so git ignores the swap). This is what lets create_project
@@ -61,7 +61,7 @@ Release `RuntimeLibrary`).
    termgfx compiles the **JPEG-XL** graphics tier (`WITH_JXL`, via libjxl) and
    the **Opus/Ogg audio** streaming (via libsndfile); absent those libs the door
    still builds, degraded to the sixel + raw-PCM tiers.
-4. **Generate.** Runs the patched `create_project --synchronet` to emit
+4. **Generate.** Runs the patched `create_project --termgfx` to emit
    `scummvm.sln` with the curated engines (scumm, sky, queen, lure, drascula,
    agi, sci)
    and *our* backend instead of SDL, with the SDL / OpenGL / network / cloud /
@@ -83,10 +83,10 @@ Output: `build-msvc\Release\syncscumm.exe` (not installed). Run
 
 Windows-vs-POSIX differences in the door glue (the monotonic clock, sleep,
 `WSAStartup`, non-blocking `send()`/`recv()` on the DOOR32.SYS socket, the
-`isatty`/exists/getpid dev helpers) live behind `door/sst_plat.{c,h}`, built
+`isatty`/exists/getpid dev helpers) live behind `door/termgfx_plat.{c,h}`, built
 over xpdev (`sockwrap.h`, `genwrap.h`, `dirwrap.h`) — the same seam the sibling
 termgfx doors ship (`syncmoo1_plat`, `syncretro_plat`). The only door file
-besides `sst_plat.{c,h}` that carries an `#ifdef _WIN32` is `syncscumm.cpp`,
+besides `termgfx_plat.{c,h}` that carries an `#ifdef _WIN32` is `syncscumm.cpp`,
 for its ScummVM-facing platform bindings — the `WindowsFilesystemFactory` vs
 `POSIXFilesystemFactory` selection (and the Windows FS-backend headers it
 pulls) plus a backslash path-separator case in its save-path creation.
@@ -94,7 +94,7 @@ pulls) plus a backslash path-separator case in its save-path creation.
 ## Linux / *nix — `build.sh`
 
 ```
-./build.sh              # synchronet backend (default)
+./build.sh              # termgfx backend (default)
 ./build.sh null         # null backend (headless bring-up)
 ```
 

@@ -1,5 +1,5 @@
 /* syncmoo1_audio.h -- 1oom's hw_audio_sfx_* contract over termgfx's audio
- * manager. hw_sbbs.c forwards the engine's hooks here, the way hw_video_*
+ * manager. hw_term.c forwards the engine's hooks here, the way hw_video_*
  * forwards to syncmoo1_io.c; nothing else in the door knows about audio.
  *
  * Design: docs/superpowers/specs/2026-07-08-syncmoo1-sfx-audio-design.md

@@ -128,7 +128,7 @@ Recorded here so a future re-vendor does not "fix" them by patching upstream.
    never be created. Windows instead compiles our own
    [`syncmoo1_os_win32.c`](syncmoo1_os_win32.c) against the same `os.h`
    contract — 1oom's `os/` is a pluggable backend directory, exactly like the
-   `hw/` one `hw_sbbs.c` plugs into. The vendored `os/win32/osdefs.h` (the
+   `hw/` one `hw_term.c` plugs into. The vendored `os/win32/osdefs.h` (the
    `FSDEV_*` separator macros) *is* still used, via the include path.
    This is an upstream bug and belongs upstream.
 

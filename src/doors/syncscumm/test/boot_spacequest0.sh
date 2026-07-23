@@ -7,7 +7,7 @@
 # This is the AGI-engine boot check (the SCUMM engine is covered by
 # boot_bass_pkg.sh / boot_queen.sh). AGI game data (LOGDIR + VOL.*) is a flat
 # set with no talkie/floppy split, so --path points straight at the package
-# dir (as the door's default --path does after sst_select_datadir() finds no
+# dir (as the door's default --path does after termgfx_select_datadir() finds no
 # ./talkie or ./floppy sub-dir and falls back to the base). ScummVM detects the
 # data as game id "sq0"; AGI renders 16-color 160x168 doubled to a 320x200
 # surface, keyboard/parser-driven (no mouse), so no input is needed to reach
