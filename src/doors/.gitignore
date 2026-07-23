@@ -1,0 +1,48 @@
+# per-target logs written by ./build.sh -q
+/.build-logs/
+
+# Build output from the legacy doors that build in-tree.
+#
+# Most doors here need no entry: the modern ones keep their own .gitignore,
+# clans-src has one too, and dgnlance/freevote/gac/ny2008/smurfcombat build
+# into the gcc.<platform>.<kind>.<config> directories that ../build/Common.gmake
+# creates, which the root .gitignore already covers via "gcc.*". The five below
+# predate that scheme and drop objects and binaries straight into the source
+# directory, so they are listed by name.
+
+/oxgen/oxgen
+
+/sde/*.o
+/sde/dynasty
+
+# timeport's GNUmakefile builds eight binaries plus a shared library. The
+# suffixed names an SEPOS=1 build produces (timeport.linux, ...) are NOT listed:
+# that suffix is lowercase, so a wildcard for it would also swallow the tracked
+# timeport.c / timeport.h sources.
+/timeport/*.o
+/timeport/libtp.so*
+/timeport/libs.*/
+/timeport/badtimes
+/timeport/install
+/timeport/makemod
+/timeport/outside
+/timeport/stoneage
+/timeport/timeport
+/timeport/tp-event
+/timeport/twenties
+
+# top suffixes its output with $(shell uname), so the patterns match an initial
+# capital -- that distinguishes top.Linux/top.FreeBSD from the tracked lowercase
+# top.cfg and top.h.
+/top/obj.*/
+/top/top.[A-Z]*
+/top/topact.[A-Z]*
+/top/topmaint.[A-Z]*
+
+/vbbs/build
+/vbbs/src/bin/
+/vbbs/src/obj/
+
+# libtermgfx is normally built as a CMake sub-project inside each door's own
+# build tree; this directory only appears when it is configured standalone.
+/termgfx/build/
