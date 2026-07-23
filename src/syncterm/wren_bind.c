@@ -30,6 +30,7 @@
 #include "wren_bind_hook.h"
 #include "wren_bind_sftp.h"
 #include "wren_bind_fs.h"
+#include "wren_bind_pixels.h"
 #include "wren_bind_screen.h"
 #include "wren_bind_won.h"
 #include "wren_bind_xfer.h"
@@ -932,6 +933,8 @@ static const struct binding BINDINGS[] = {
 	{ "PhysicalKeyEvent", false, "toString", fn_PhysicalKeyEvent_toString },
 
 	/* MouseEvent (instance) */
+	{ "MouseEvent", true, "withPixels(_,_,_,_,_,_,_,_,_,_,_)",
+	    fn_MouseEvent_withPixels },
 	{ "MouseEvent", false, "event",      fn_MouseEvent_event      },
 	{ "MouseEvent", false, "bstate",     fn_MouseEvent_bstate     },
 	{ "MouseEvent", false, "modifiers",  fn_MouseEvent_modifiers  },
@@ -939,6 +942,10 @@ static const struct binding BINDINGS[] = {
 	{ "MouseEvent", false, "startY",     fn_MouseEvent_startY     },
 	{ "MouseEvent", false, "endX",       fn_MouseEvent_endX       },
 	{ "MouseEvent", false, "endY",       fn_MouseEvent_endY       },
+	{ "MouseEvent", false, "startPixelX", fn_MouseEvent_startPixelX },
+	{ "MouseEvent", false, "startPixelY", fn_MouseEvent_startPixelY },
+	{ "MouseEvent", false, "endPixelX",  fn_MouseEvent_endPixelX  },
+	{ "MouseEvent", false, "endPixelY",  fn_MouseEvent_endPixelY  },
 	{ "MouseEvent", false, "toString",   fn_MouseEvent_toString   },
 
 	/* Clipboard (all static) */
@@ -971,6 +978,7 @@ static const struct binding BINDINGS[] = {
 	{ "Cell",  false, "bright=(_)",      fn_Cell_bright_set      },
 	{ "Cell",  false, "blink",           fn_Cell_blink           },
 	{ "Cell",  false, "blink=(_)",       fn_Cell_blink_set       },
+	{ "Cell",  false, "pixelGraphics",   fn_Cell_pixelGraphics   },
 	{ "Cell",  false, "fgPalette",       fn_Cell_fgPalette       },
 	{ "Cell",  false, "fgPalette=(_)",   fn_Cell_fgPalette_set   },
 	{ "Cell",  false, "fgRgb",           fn_Cell_fgRgb           },
@@ -1375,6 +1383,10 @@ wren_bind_lookup(const char *module, const char *className, bool isStatic,
 {
 	if (module == NULL || strcmp(module, "syncterm") != 0)
 		return NULL;
+	WrenForeignMethodFn pixel_fn = wren_bind_pixels_lookup(className,
+	    isStatic, signature);
+	if (pixel_fn != NULL)
+		return pixel_fn;
 	for (size_t i = 0; i < sizeof(BINDINGS) / sizeof(BINDINGS[0]); i++) {
 		if (BINDINGS[i].isStatic == isStatic &&
 		    strcmp(BINDINGS[i].className, className) == 0 &&
@@ -1390,6 +1402,10 @@ wren_bind_lookup_class(const char *module, const char *className)
 	WrenForeignClassMethods none = { NULL, NULL };
 	if (module == NULL || strcmp(module, "syncterm") != 0)
 		return none;
+	WrenForeignClassMethods pixel_methods =
+	    wren_bind_pixels_lookup_class(className);
+	if (pixel_methods.allocate != NULL || pixel_methods.finalize != NULL)
+		return pixel_methods;
 	if (strcmp(className, "Cell") == 0) {
 		WrenForeignClassMethods m = {
 			wren_cell_allocate, wren_cell_finalize

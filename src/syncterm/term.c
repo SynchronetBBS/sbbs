@@ -6,7 +6,6 @@
 #include <eventwrap.h>
 #include <genwrap.h>
 #include <float.h>
-#include <math.h>
 #include <stdbool.h>
 #include <string.h>
 #include <vidmodes.h>
@@ -28,7 +27,6 @@
 #include "xmodem.h"
 #include "xpbeep.h"
 #include "xpendian.h"
-#include "xpmap.h"
 #include "xpprintf.h"
 #include "zmodem.h"
 
@@ -41,14 +39,11 @@
 #endif
 #include "base64.h"
 #include "md5.h"
+#include "pixel_image.h"
 #include "ripper.h"
 #include "wren_host.h"
 #include "wren_menu_host.h"
 #include "wren_bind_xfer.h"
-
-#ifdef WITH_JPEG_XL
-#include "libjxl.h"
-#endif
 
 #define ANSI_REPLY_BUFSIZE 2048
 static char ansi_replybuf[2048];
@@ -73,30 +68,6 @@ static size_t ooii_buf_len;
 
 static struct ciolib_pixels *pixmap_buffer[2];
 static struct ciolib_mask *mask_buffer;
-static uint8_t pnm_gamma[256] = {
-	0,  13, 22, 28, 34, 38, 42, 46, 50, 53, 56, 59, 61, 64, 66, 69,
-	71, 73, 75, 77, 79, 81, 83, 85, 86, 88, 90, 92, 93, 95, 96, 98,
-	99, 101, 102, 104, 105, 106, 108, 109, 110, 112, 113, 114, 115,
-	117, 118, 119, 120, 121, 122, 124, 125, 126, 127, 128, 129, 130,
-	131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143,
-	144, 145, 146, 147, 148, 148, 149, 150, 151, 152, 153, 154, 155,
-	155, 156, 157, 158, 159, 159, 160, 161, 162, 163, 163, 164, 165,
-	166, 167, 167, 168, 169, 170, 170, 171, 172, 173, 173, 174, 175,
-	175, 176, 177, 178, 178, 179, 180, 180, 181, 182, 182, 183, 184,
-	185, 185, 186, 187, 187, 188, 189, 189, 190, 190, 191, 192, 192,
-	193, 194, 194, 195, 196, 196, 197, 197, 198, 199, 199, 200, 200,
-	201, 202, 202, 203, 203, 204, 205, 205, 206, 206, 207, 208, 208,
-	209, 209, 210, 210, 211, 212, 212, 213, 213, 214, 214, 215, 215,
-	216, 216, 217, 218, 218, 219, 219, 220, 220, 221, 221, 222, 222,
-	223, 223, 224, 224, 225, 226, 226, 227, 227, 228, 228, 229, 229,
-	230, 230, 231, 231, 232, 232, 233, 233, 234, 234, 235, 235, 236,
-	236, 237, 237, 238, 238, 238, 239, 239, 240, 240, 241, 241, 242,
-	242, 243, 243, 244, 244, 245, 245, 246, 246, 246, 247, 247, 248,
-	248, 249, 249, 250, 250, 251, 251, 251, 252, 252, 253, 253, 254,
-	254, 255, 255
-};
-static uint8_t pnm_gamma_max = 255;
-
 void
 get_cterm_size(int *cols, int *rows, int ns)
 {
@@ -3026,459 +2997,6 @@ clean_path(char *fn, size_t fnsz)
 	return 1;
 }
 
-// ============ This section taken from pnmgamma.c ============
-/* pnmgamma.c - perform gamma correction on a PNM image
-**
-** Copyright (C) 1991 by Bill Davidson and Jef Poskanzer.
-**
-** Permission to use, copy, modify, and distribute this software and its
-** documentation for any purpose and without fee is hereby granted, provided
-** that the above copyright notice appear in all copies and that both that
-** copyright notice and this permission notice appear in supporting
-** documentation.  This software is provided "as is" without express or
-** implied warranty.
-*/
-
-static void
-buildBt709ToSrgbGamma(const uint8_t maxval) {
-    uint8_t const newMaxval = 255;
-    double const gammaSrgb = 2.4;
-/*----------------------------------------------------------------------------
-   Build a gamma table of size maxval+1 for the combination of the
-   inverse of ITU Rec BT.709 and the forward SRGB gamma transfer
-   functions.  I.e. this converts from Rec 709 to SRGB.
-
-   'gammaSrgb' must be 2.4 for true SRGB.
------------------------------------------------------------------------------*/
-    double const oneOverGamma709  = 0.45;
-    double const gamma709         = 1.0 / oneOverGamma709;
-    double const oneOverGammaSrgb = 1.0 / gammaSrgb;
-    double const normalizer       = 1.0 / maxval;
-
-    if (pnm_gamma_max == maxval)
-	return;
-    /* This transfer function is linear for sample values 0
-       .. maxval*.018 and an exponential for larger sample values.
-       The exponential is slightly stretched and translated, though,
-       unlike the popular pure exponential gamma transfer function.
-    */
-
-    uint8_t const linearCutoff709 = (uint8_t) (maxval * 0.018 + 0.5);
-    double const linearCompression709 =
-        0.018 / (1.099 * pow(0.018, oneOverGamma709) - 0.099);
-
-    double const linearCutoffSrgb = 0.0031308;
-    double const linearExpansionSrgb =
-        (1.055 * pow(0.0031308, oneOverGammaSrgb) - 0.055) / 0.0031308;
-
-    int i;
-
-    for (i = 0; i <= maxval; ++i) {
-        double const normalized = i * normalizer;
-            /* Xel sample value normalized to 0..1 */
-        double radiance;
-        double srgb;
-
-        if (i < linearCutoff709 / linearCompression709)
-            radiance = normalized * linearCompression709;
-        else
-            radiance = pow((normalized + 0.099) / 1.099, gamma709);
-
-        assert(radiance <= 1.0);
-
-        if (radiance < linearCutoffSrgb * normalizer)
-            srgb = radiance * linearExpansionSrgb;
-        else
-            srgb = 1.055 * pow(normalized, oneOverGammaSrgb) - 0.055;
-
-        assert(srgb <= 1.0);
-
-        pnm_gamma[i] = srgb * newMaxval + 0.5;
-    }
-    pnm_gamma_max = maxval;
-}
-
-
-// ====================== End of section ======================
-
-bool
-is_pbm_whitespace(char c)
-{
-	switch(c) {
-		case ' ':
-		case '\t':
-		case '\r':
-		case '\n':
-			return true;
-	}
-	return false;
-}
-
-struct pnm_reader {
-	const uint8_t *data;
-	size_t         len;
-	size_t         pos;
-};
-
-static bool
-read_pbm_char(struct pnm_reader *r, size_t *lastpos, char *ch)
-{
-	if (lastpos != NULL)
-		*lastpos = r->pos;
-	if (r->pos >= r->len)
-		return false;
-	*ch = r->data[r->pos++];
-	return true;
-}
-
-static bool
-skip_pbm_whitespace(struct pnm_reader *r)
-{
-	char ch;
-	size_t lastpos;
-	bool start = true;
-
-	for (;;) {
-		if (!read_pbm_char(r, &lastpos, &ch)) {
-			return false;
-		}
-		if (start) {
-			if (!is_pbm_whitespace(ch)) {
-				return false;
-			}
-			start = false;
-		}
-		if (ch == '#') {
-			do {
-				if (!read_pbm_char(r, &lastpos, &ch)) {
-					return false;
-				}
-			} while (ch != '\r' && ch != '\n');
-		}
-		if (!is_pbm_whitespace(ch)) {
-			r->pos = lastpos;
-			return true;
-		}
-	}
-}
-
-static uintmax_t
-read_pbm_number(struct pnm_reader *r)
-{
-	char value[256]; // Should be big enough ;)
-	char *endptr;
-	int i;
-	size_t lastpos;
-
-	for (i = 0; i < sizeof(value) - 1; i++) {
-		if (!read_pbm_char(r, &lastpos, &value[i]))
-			break;
-		if (value[i] < '0' || value[i] > '9') {
-			if (i == 0)
-				return UINTMAX_MAX;
-			value[i] = 0;
-			r->pos = lastpos;
-			return strtoumax(value, &endptr, 10);
-		}
-	}
-	return UINTMAX_MAX;
-}
-
-static bool
-read_pbm_text_raster(struct ciolib_mask *ret, size_t sz, struct pnm_reader *r)
-{
-	uintmax_t num;
-	size_t    i;
-	size_t    byte = 0;
-	uint8_t   bit = 7;
-
-	memset(ret->bits, 0, (sz + 7) / 8);
-	for (i = 0; i < sz; i++) {
-		num = read_pbm_number(r);
-		if (num > 1)
-			return false;
-		ret->bits[byte] |= num << bit;
-		if (bit == 0) {
-			bit = 7;
-			byte++;
-		}
-		else
-			bit--;
-	}
-	return true;
-}
-
-static bool
-read_pbm_raw_raster(struct ciolib_mask *ret, struct pnm_reader *r)
-{
-	size_t  row_bytes = (ret->width + 7) / 8;
-	uint8_t src;
-
-	memset(ret->bits, 0, ((size_t)ret->width * ret->height + 7) / 8);
-	for (uint32_t y = 0; y < ret->height; y++) {
-		for (uint32_t xb = 0; xb < row_bytes; xb++) {
-			if (r->pos >= r->len)
-				return false;
-			src = r->data[r->pos++];
-			for (uint32_t bit = 0; bit < 8; bit++) {
-				uint32_t x = xb * 8 + bit;
-				size_t   dst;
-
-				if (x >= ret->width)
-					break;
-				if (src & (0x80 >> bit)) {
-					dst = (size_t)y * ret->width + x;
-					ret->bits[dst / 8] |= 0x80 >> (dst % 8);
-				}
-			}
-		}
-	}
-	return true;
-}
-
-static bool
-read_ppm_any_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, struct pnm_reader *r, uintmax_t(*readnum)(struct pnm_reader *))
-{
-	uintmax_t num;
-	size_t    i;
-	uint32_t  pdata;
-
-	buildBt709ToSrgbGamma(max);
-	for (i = 0; i < sz; i++) {
-		pdata = 0x80000000;	// RGB value (anything less is palette)
-
-		// Red
-		num = readnum(r);
-		if (num > 255)
-			return false;
-		pdata |= (pnm_gamma[num] << 16);
-
-		// Green
-		num = readnum(r);
-		if (num > 255)
-			return false;
-		pdata |= (pnm_gamma[num] << 8);
-
-		// Blue
-		num = readnum(r);
-		if (num > 255)
-			return false;
-		pdata |= (pnm_gamma[num] << 0);
-		p->pixels[i] = pdata;
-	}
-	return true;
-}
-
-static bool
-read_ppm_text_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, struct pnm_reader *r)
-{
-	return read_ppm_any_raster(p, sz, max, r, read_pbm_number);
-}
-
-static uintmax_t
-read_pbm_byte(struct pnm_reader *r)
-{
-	if (r->pos >= r->len)
-		return UINTMAX_MAX;
-	return r->data[r->pos++];
-}
-
-static bool
-read_ppm_raw_raster(struct ciolib_pixels *p, size_t sz, uint8_t max, struct pnm_reader *r)
-{
-	return read_ppm_any_raster(p, sz, max, r, read_pbm_byte);
-}
-
-static struct ciolib_pixels *
-alloc_ciolib_pixels(uint32_t w, uint32_t h)
-{
-	struct ciolib_pixels *ret;
-	size_t pszo;
-	size_t psz;
-
-	pszo = w * h;
-	if (h != 0 && pszo / h != w)
-		return NULL;
-	psz = pszo * sizeof(uint32_t);
-	if (psz / sizeof(uint32_t) != pszo)
-		return NULL;
-	ret = malloc(sizeof(*ret));
-	if (ret == NULL)
-		return ret;
-	ret->width = w;
-	ret->height = h;
-	ret->pixelsb = NULL;
-	if (psz > 0) {
-		ret->pixels = malloc(psz);
-		if (ret->pixels == NULL) {
-			free(ret);
-			return NULL;
-		}
-	}
-	else {
-		ret->pixels = NULL;
-	}
-	return ret;
-}
-
-static struct ciolib_mask *
-alloc_ciolib_mask(uint32_t w, uint32_t h)
-{
-	struct ciolib_mask *ret;
-	size_t psz;
-
-	psz = w * h;
-	if (h != 0 && psz / h != w)
-		return NULL;
-	ret = malloc(sizeof(*ret));
-	if (ret == NULL)
-		return ret;
-	ret->width = w;
-	ret->height = h;
-	if (psz > 0) {
-		ret->bits = malloc((psz + 7) / 8);
-		if (ret->bits == NULL) {
-			free(ret);
-			return NULL;
-		}
-	}
-	else {
-		ret->bits = NULL;
-	}
-	return ret;
-}
-
-static void *
-read_pbm_buf(const uint8_t *data, size_t len, bool bitmap)
-{
-	uintmax_t             width;
-	uintmax_t             height;
-	uintmax_t             maxval = 0;
-	uintmax_t             overflow;
-	struct ciolib_mask   *mret = NULL;
-	struct ciolib_pixels *pret = NULL;
-	size_t                raster_size;
-	char                  magic[2];
-	char                  ws;
-	bool                  b;
-	struct pnm_reader     r = {
-		.data = data,
-		.len = len,
-		.pos = 0
-	};
-
-	if (read_pbm_char(&r, NULL, &magic[0]) == false || read_pbm_char(&r, NULL, &magic[1]) == false)
-		goto fail;
-	if (magic[0] != 'P')
-		goto fail;
-	switch (magic[1]) {
-		case '1':
-		case '4':
-			if (!bitmap)
-				goto fail;
-			break;
-		case '3':
-		case '6':
-			if (bitmap)
-				goto fail;
-			break;
-		default:
-			goto fail;
-	}
-
-	if (!skip_pbm_whitespace(&r))
-		goto fail;
-
-	assert(UINTMAX_MAX > UINT32_MAX);
-	width = read_pbm_number(&r);
-	if (width > UINT32_MAX)
-		goto fail;
-
-	if (!skip_pbm_whitespace(&r))
-		goto fail;
-
-	height = read_pbm_number(&r);
-	if (height > UINT32_MAX)
-		goto fail;
-
-	// Check for multiplcation overflow
-	overflow = width * height;
-	if (width != 0 && overflow / height != width)
-		goto fail;
-	// Check for type truncation
-	raster_size = overflow;
-	if (raster_size != overflow)
-		goto fail;
-
-	if (magic[1] == '3' || magic[1] == '6') {
-		if (!skip_pbm_whitespace(&r))
-			goto fail;
-
-		maxval = read_pbm_number(&r);
-		if (maxval == UINTMAX_MAX)
-			goto fail;
-
-		if (maxval > 255)
-			goto fail;
-	}
-
-	if (magic[1] == '4' || magic[1] == '6') {
-		if (!(read_pbm_char(&r, NULL, &ws) && is_pbm_whitespace(ws)))
-			goto fail;
-	}
-	else {
-		if (!skip_pbm_whitespace(&r))
-			goto fail;
-	}
-
-		switch (magic[1]) {
-			case '1':
-			case '4':
-				mret = alloc_ciolib_mask(width, height);
-				if (mret == NULL)
-					goto fail;
-				if (magic[1] == '1')
-					b = read_pbm_text_raster(mret, raster_size, &r);
-				else
-					b = read_pbm_raw_raster(mret, &r);
-				if (!b)
-					goto fail;
-				return mret;
-			case '3':
-			case '6':
-				pret = alloc_ciolib_pixels(width, height);
-				if (pret == NULL)
-					goto fail;
-				if (magic[1] == '3')
-					b = read_ppm_text_raster(pret, raster_size, maxval, &r);
-				else
-					b = read_ppm_raw_raster(pret, raster_size, maxval, &r);
-				if (!b)
-					goto fail;
-				return pret;
-			default:
-				goto fail;
-		}
-
-fail:
-	freemask(mret);
-	freepixels(pret);
-	return NULL;
-	}
-
-static void *
-read_pbm(const char *fn, bool bitmap)
-{
-	struct xpmapping *map = xpmap(fn, XPMAP_READ);
-	void             *ret;
-
-	if (map == NULL)
-		return NULL;
-	ret = read_pbm_buf(map->addr, map->size, bitmap);
-	xpunmap(map);
-	return ret;
-}
-
 static void *
 b64_decode_alloc(const char *strbuf, size_t slen, size_t *outlen)
 {
@@ -3507,11 +3025,6 @@ enum image_blob_type {
 #endif
 };
 
-#ifdef WITH_JPEG_XL
-static void *read_jxl_buf(const uint8_t *data, size_t len);
-static void *read_jxl(const char *fn);
-#endif
-
 static struct ciolib_pixels *
 read_image_source(enum image_blob_type type, const char *fn, const char *src, size_t srclen, bool blob)
 {
@@ -3526,11 +3039,11 @@ read_image_source(enum image_blob_type type, const char *fn, const char *src, si
 			return NULL;
 		switch (type) {
 			case IMAGE_BLOB_PPM:
-				ret = read_pbm_buf(buf, buflen, false);
+				ret = pixel_image_decode_ppm(buf, buflen);
 				break;
 #ifdef WITH_JPEG_XL
 			case IMAGE_BLOB_JXL:
-				ret = read_jxl_buf(buf, buflen);
+				ret = pixel_image_decode_jxl(buf, buflen);
 				break;
 #endif
 		}
@@ -3542,11 +3055,11 @@ read_image_source(enum image_blob_type type, const char *fn, const char *src, si
 		return NULL;
 	switch (type) {
 		case IMAGE_BLOB_PPM:
-			ret = read_pbm(imgfn, false);
+			ret = pixel_image_decode_ppm_file(imgfn);
 			break;
 #ifdef WITH_JPEG_XL
 		case IMAGE_BLOB_JXL:
-			ret = read_jxl(imgfn);
+			ret = pixel_image_decode_jxl_file(imgfn);
 			break;
 #endif
 	}
@@ -3684,7 +3197,7 @@ draw_image_str_handler(char *str, size_t slen, char *fn, size_t optoff, enum ima
 					if (!mbuf)
 						freemask(ctmask);
 					mbuf = false;
-					ctmask = alloc_ciolib_mask(0, 0);
+					ctmask = pixel_image_alloc_mask(0, 0);
 					ctmask->bits = b64_decode_alloc(p + 6, p2 - (p + 6), &mlen);
 					if (ctmask->bits == NULL)
 						goto done;
@@ -3751,7 +3264,7 @@ draw_image_str_handler(char *str, size_t slen, char *fn, size_t optoff, enum ima
 
 	if (maskfn != NULL) {
 		freemask(ctmask);
-		ctmask = read_pbm(maskfn, true);
+		ctmask = pixel_image_decode_pbm_file(maskfn);
 		if (ctmask == NULL)
 			goto done;
 		if (ctmask->width < sw || ctmask->height < sh)
@@ -3856,13 +3369,13 @@ load_pbm_str_handler_common(char *str, size_t slen, char *fn, size_t optoff, boo
 		buf = b64_decode_alloc(p + 1, slen - (size_t)(p + 1 - str), &buflen);
 		if (buf == NULL)
 			return;
-		mask_buffer = read_pbm_buf(buf, buflen, true);
+		mask_buffer = pixel_image_decode_pbm(buf, buflen);
 		free(buf);
 		return;
 	}
 	if (asprintf(&maskfn, "%s%s", fn, p + 1) == -1)
 		goto done;
-	mask_buffer = read_pbm(maskfn, true);
+	mask_buffer = pixel_image_decode_pbm_file(maskfn);
 
 done:
 	free(maskfn);
@@ -3883,148 +3396,6 @@ load_pbm_blob_str_handler(char *str, size_t slen, char *fn, void *apcd)
 }
 
 #ifdef WITH_JPEG_XL
-static void *
-read_jxl_buf(const uint8_t *data, size_t len)
-{
-	struct ciolib_pixels *pret = NULL;
-	uint8_t         *pbuf = NULL;
-	uintmax_t        width = 0;
-	uintmax_t        height = 0;
-
-	JxlDecoderStatus st;
-	JxlBasicInfo info;
-	size_t sz = 0;
-	JxlPixelFormat format = {
-		.num_channels = 3,
-		.data_type = JXL_TYPE_UINT8,
-		.endianness = JXL_NATIVE_ENDIAN,
-		.align = 1
-	};
-	JxlDecoder *dec = Jxl.DecoderCreate(NULL);
-	if (dec == NULL) {
-		return NULL;
-	}
-#ifdef WITH_JPEG_XL_THREADS
-	void *rpr = NULL;
-	if (Jxl.status == JXL_STATUS_OK) {
-		rpr = Jxl.ResizableParallelRunnerCreate(NULL);
-		if (rpr) {
-			if (Jxl.DecoderSetParallelRunner(dec, Jxl.ResizableParallelRunner, rpr) != JXL_DEC_SUCCESS) {
-				Jxl.ResizableParallelRunnerDestroy(rpr);
-				rpr = NULL;
-			}
-		}
-	}
-#endif
-	if (Jxl.DecoderSetInput(dec, data, len) != JXL_DEC_SUCCESS)
-		goto fail;
-	Jxl.DecoderCloseInput(dec);
-	if (Jxl.DecoderSubscribeEvents(dec, JXL_DEC_BASIC_INFO | JXL_DEC_FULL_IMAGE) != JXL_DEC_SUCCESS)
-		goto fail;
-	for (bool done = false; !done;) {
-		st = Jxl.DecoderProcessInput(dec);
-		switch(st) {
-			case JXL_DEC_ERROR:
-				done = true;
-				break;
-			case JXL_DEC_BASIC_INFO:
-				if (Jxl.DecoderGetBasicInfo(dec, &info) != JXL_DEC_SUCCESS) {
-					done = true;
-					break;
-				}
-				width = info.xsize;
-				height = info.ysize;
-#ifdef WITH_JPEG_XL_THREADS
-				if (Jxl.status == JXL_STATUS_OK && rpr) {
-					Jxl.ResizableParallelRunnerSetThreads(rpr, Jxl.ResizableParallelRunnerSuggestThreads(info.xsize, info.ysize));
-				}
-#endif
-				break;
-			case JXL_DEC_NEED_IMAGE_OUT_BUFFER:
-				if (width == 0 || height == 0 || width >= 0x40000000 || height >= 0x40000000) {
-					done = true;
-					break;
-				}
-				if (Jxl.DecoderImageOutBufferSize(dec, &format, &sz) != JXL_DEC_SUCCESS) {
-					done = true;
-					break;
-				}
-				// This may break things, but Coverity wants it.
-				free(pbuf);
-				pbuf = malloc(sz);
-				if (pbuf == NULL) {
-					done = true;
-					break;
-				}
-				freepixels(pret);
-				pret = alloc_ciolib_pixels(width, height);
-				if (pret == NULL) {
-					done = true;
-					break;
-				}
-				if (Jxl.DecoderSetImageOutBuffer(dec, &format, pbuf, sz) != JXL_DEC_SUCCESS) {
-					done = true;
-					break;
-				}
-				break;
-			case JXL_DEC_FULL_IMAGE:
-				// Got a single frame... this is not necessarily the whole image though.
-				break;
-			case JXL_DEC_SUCCESS:
-				done = true;
-				break;
-			default:
-				// Everything else is fail.
-				done = true;
-				break;
-		}
-	}
-	if (st != JXL_DEC_SUCCESS) {
-		freepixels(pret);
-		pret = NULL;
-	}
-	else {
-		for (size_t i = 0; i < sz; i += 3) {
-			size_t j = i / 3;
-			pret->pixels[j] = 0x80000000;
-			pret->pixels[j] |= pbuf[i] << 16;
-			pret->pixels[j] |= pbuf[i+1] << 8;
-			pret->pixels[j] |= pbuf[i+2];
-		}
-	}
-	free(pbuf);
-#ifdef WITH_JPEG_XL_THREADS
-	if (rpr)
-		Jxl.ResizableParallelRunnerDestroy(rpr);
-#endif
-	Jxl.DecoderReleaseInput(dec);
-	Jxl.DecoderDestroy(dec);
-	return pret;
-
-fail:
-	free(pbuf);
-	freepixels(pret);
-#ifdef WITH_JPEG_XL_THREADS
-	if (rpr)
-		Jxl.ResizableParallelRunnerDestroy(rpr);
-#endif
-	Jxl.DecoderDestroy(dec);
-	return NULL;
-}
-
-static void *
-read_jxl(const char *fn)
-{
-	struct xpmapping *map = xpmap(fn, XPMAP_READ);
-	void             *ret;
-
-	if (map == NULL)
-		return NULL;
-	ret = read_jxl_buf(map->addr, map->size);
-	xpunmap(map);
-	return ret;
-}
-
 static void
 draw_jxl_str_handler(char *str, size_t slen, char *fn, void *apcd)
 {
@@ -4221,7 +3592,7 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 					FREE_AND_NULL(mask);
 					if (!mbuf)
 						freemask(ctmask);
-					ctmask = alloc_ciolib_mask(0, 0);
+					ctmask = pixel_image_alloc_mask(0, 0);
 					if (ctmask == NULL)
 						goto done;
 					ctmask->bits = b64_decode_alloc(p + 6, p2 - (p + 6), &mlen);
@@ -4288,7 +3659,7 @@ paste_pixmap(char *str, size_t slen, char *fn, void *apcd)
 
 	if (maskfn != NULL) {
 		freemask(ctmask);
-		ctmask = read_pbm(maskfn, true);
+		ctmask = pixel_image_decode_pbm_file(maskfn);
 		free(maskfn);
 		if (ctmask == NULL)
 			goto done;
@@ -4530,23 +3901,11 @@ apc_handler(char *strbuf, size_t slen, void *apcd)
 		paste_pixmap(strbuf, slen, fn, apcd);
 	}
 	else if (strncmp(strbuf, "SyncTERM:Q;JXL", 14) == 0) {
-#ifdef WITH_JPEG_XL
-		if (cio_api.options & CONIO_OPT_SET_PIXEL) {
-			switch(Jxl.status) {
-				case JXL_STATUS_OK:
-				case JXL_STATUS_NOTHREADS:
-					conn_send("\x1b[=1;1-n", 8, 0);
-					break;
-				default:
-					conn_send("\x1b[=1;0-n", 8, 0);
-					break;
-			}
-		}
+		if ((cio_api.options & CONIO_OPT_SET_PIXEL)
+		    && pixel_image_jxl_supported())
+			conn_send("\x1b[=1;1-n", 8, 0);
 		else
 			conn_send("\x1b[=1;0-n", 8, 0);
-#else
-		conn_send("\x1b[=1;0-n", 8, 0);
-#endif
 	}
 	else if (strncmp(strbuf, "SyncTERM:A;", 11) == 0) {
 		audio_apc_handler(strbuf + 11, slen - 11, fn, apcd);
@@ -5461,15 +4820,6 @@ doterm(struct bbslist *bbs)
 	ooii_buf[0] = 0;
 	ooii_buf_len = 0;
 #endif
-#ifdef WITH_JPEG_XL
-	if (cio_api.options & CONIO_OPT_SET_PIXEL) {
-		if (load_jxl_funcs())
-			logmsg(LOG_DEBUG, "JPEG-XL library loaded successfully");
-		else
-			logmsg(LOG_WARNING, "JPEG-XL library load failure");
-	}
-#endif
-
         /* Main input loop */
 	oldmc = hold_update;
 	showmouse();
