@@ -18,8 +18,11 @@ useful to any sysop: the door contract,
 terminal requirements, and game-install steps are BBS-agnostic, and the
 **Synchronet-only conveniences** (its `%`-macro command line, the
 `install-xtrn.ini` auto-installer, exact SCFG menu names) are labelled as such
-wherever they appear. See [Installing a game](#installing-a-game-worked-example-maniac-mansion)
-for a full worked example (general steps **and** Synchronet SCFG specifics).
+wherever they appear. **Synchronet sysops** installing a bundled title can jump
+to [Ready-to-install packages](#ready-to-install-packages-synchronet) for a
+one-command install; [Installing a game](#installing-a-game-worked-example-maniac-mansion)
+is the full worked example (general steps **and** Synchronet SCFG specifics) for
+any other title.
 
 The binary is `syncscumm` (`syncscumm.exe` on Windows). One binary plays every
 title; each game lives in its own directory that launches the same binary with
@@ -171,6 +174,40 @@ live in an optional `syncscumm.ini` the door reads from its startup dir — see
 | `SYNCSCUMM_SIXELOUT` | Capture the door's graphics output to a file instead of a live client (headless testing). |
 | `SYNCSCUMM_TRACE`, `SYNCSCUMM_AUDIODUMP` | Diagnostic dumps (frame/audio), opt-in. |
 
+## Ready-to-install packages (Synchronet)
+
+Seven titles ship as **pre-built Synchronet packages** — no SCFG typing, no
+hunting for data files. Each carries an `install-xtrn.ini`, so a single command
+registers the door, seeds its per-user config, and runs the package's
+`getdata.js` to fetch the game data straight from its rights-holder or author
+(nothing copyrighted is stored in this repository — each package's own
+`README.md` records the provenance). Run from your Synchronet `exec/` directory:
+
+```
+jsexec install-xtrn ../xtrn/syncqueen        # e.g. Flight of the Amazon Queen
+```
+
+Swap in any package directory from the table below. It is safe to re-run
+(`getdata.js` is idempotent), and SCFG's servers reload automatically when the
+install finishes. All seven are **free** and **graphics-required** (see
+[Terminal requirements](#terminal-requirements-and-capabilities)) — the four
+officially-relicensed freeware classics plus three free fan games:
+
+| Package (`../xtrn/…`) | Title | Engine | Kind |
+|-----------------------|-------|:------:|------|
+| `syncbass`         | Beneath a Steel Sky                | `sky`      | relicensed freeware |
+| `syncqueen`        | Flight of the Amazon Queen         | `queen`    | relicensed freeware |
+| `synclure`         | Lure of the Temptress              | `lure`     | relicensed freeware |
+| `syncdrascula`     | Dráscula: The Vampire Strikes Back | `drascula` | relicensed freeware |
+| `spacequest0`      | Space Quest 0: Replicated          | `agi`      | free fan game |
+| `cascadequest`     | Cascade Quest                      | `sci`      | free fan game |
+| `betrayedalliance` | Betrayed Alliance Book 1           | `sci`      | free fan game |
+
+`install-xtrn` and `jsexec` are **Synchronet-only** conveniences. To add a
+**commercial** title you own the data for — or to install any title on another
+DOOR32.SYS BBS — follow the worked example below (on another BBS you also run
+the package's `getdata.js` by hand to fetch a freeware title's data).
+
 ## Installing a game (worked example: Maniac Mansion)
 
 This walks through installing one title end-to-end. **Maniac Mansion** (the
@@ -258,12 +295,10 @@ the door menu.
 Save and exit SCFG — it flags the running servers to re-read their
 configuration on its way out, so the new door appears without a manual recycle.
 
-**A note on `install-xtrn.ini`:** Synchronet's bundled *freeware* titles ship
-an `install-xtrn.ini`, so you can `jsexec install-xtrn ../xtrn/<pkg>` instead
-of the SCFG steps — that auto-installer is documented in each freeware
-package's README (e.g. `xtrn/syncqueen/README.md`). A commercial title like
-Maniac Mansion has no bundled package (you provide the data), so use the SCFG
-steps above.
+**A note on `install-xtrn.ini`:** the bundled *freeware* titles skip all of the
+manual steps above — see [Ready-to-install packages](#ready-to-install-packages-synchronet)
+for the one-command installer. Only a commercial title like Maniac Mansion,
+where you supply the data files, needs these SCFG steps.
 
 ### Legal
 
