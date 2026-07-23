@@ -9,10 +9,12 @@
  * enabled here, termgfx's "evdev wins" guard would refuse to also enable
  * evdev in the same g_km. cc'd (with -DTERMGFX_TEST) + run by unit_termgfx_termio.sh. */
 #include <assert.h>
+#include <stdint.h>
 #include <string.h>
 #include "termgfx_termio.h"
 
 int termgfx_termio_test_feed(const char *bytes, size_t n);
+void termgfx_termio_test_esc_timeout(uint32_t age_ms);
 
 int main(void) {
 	termgfx_input_event_t ev;
@@ -56,6 +58,63 @@ int main(void) {
 	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_BACKSPACE);
 	termgfx_termio_test_feed("\x09", 1);
 	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_TAB);
+
+	/* LF is Enter too, not Ctrl-J. A client whose Enter sends LF used to land
+	 * in the Ctrl+letter branch as 'j' -- which a game binding HJKL movement
+	 * (EasyRPG: J = DOWN) read as a step downward instead of a confirm. */
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+	termgfx_termio_test_feed("\x0a", 1);
+	assert(termgfx_termio_next_event(&ev) && ev.type == TERMGFX_EV_KEY_DOWN
+	       && ev.keycode == TERMGFX_KEY_ENTER && ev.mods == 0);
+
+	/* ...but CRLF is ONE Enter, not two: the LF half is swallowed. */
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+	termgfx_termio_test_feed("\x0d\x0a", 2);
+	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_ENTER);
+	assert(!termgfx_termio_next_event(&ev));
+
+	/* A LF that does NOT follow a CR is still its own Enter (the CR latch is
+	 * cleared by any intervening byte). */
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+	termgfx_termio_test_feed("\x0d" "a" "\x0a", 3);
+	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_ENTER);
+	assert(termgfx_termio_next_event(&ev) && ev.keycode == 'a');
+	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_ENTER);
+
+	/* A LONE Escape resolves on the timer. ESC introduces every CSI/APC
+	 * sequence, so the parser must wait to see whether more bytes follow --
+	 * but a bare Escape keypress has none, and before the timeout existed the
+	 * press never fired at all (it surfaced later, bundled with whatever key
+	 * was pressed next). Nothing queues on the byte alone... */
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+	termgfx_termio_test_feed("\x1b", 1);
+	assert(!termgfx_termio_next_event(&ev));
+	/* ...nor before the deadline... */
+	termgfx_termio_test_esc_timeout(10);
+	assert(!termgfx_termio_next_event(&ev));
+	/* ...and exactly one ESC press once it passes. */
+	termgfx_termio_test_esc_timeout(60);
+	assert(termgfx_termio_next_event(&ev) && ev.type == TERMGFX_EV_KEY_DOWN
+	       && ev.keycode == TERMGFX_KEY_ESCAPE);
+	assert(!termgfx_termio_next_event(&ev));
+
+	/* The timer must not fire for an ESC that WAS a sequence introducer: a
+	 * complete arrow decodes to one nav key and no stray Escape, and a later
+	 * timeout call finds nothing pending. */
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+	termgfx_termio_test_feed("\x1b[A", 3);
+	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_UP);
+	assert(!termgfx_termio_next_event(&ev));
+	termgfx_termio_test_esc_timeout(60);
+	assert(!termgfx_termio_next_event(&ev));
+
+	/* A half-arrived sequence must not be shredded by the timer either: the
+	 * ESC is consumed by the '[' that follows, however late it lands. */
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+	termgfx_termio_test_feed("\x1b", 1);
+	termgfx_termio_test_feed("[B", 2);
+	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_DOWN);
+	assert(!termgfx_termio_next_event(&ev));
 
 	/* legacy Home/End: ESC [ H / ESC [ F. */
 	while (termgfx_termio_next_event(&ev)) {}   /* drain */

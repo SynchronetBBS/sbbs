@@ -60,7 +60,11 @@ add_executable(syncmoo1
     syncmoo1_music.c
     syncmoo1_plat.c)   # the door's entire Windows-vs-POSIX seam, over xpdev
 
-target_include_directories(syncmoo1 PRIVATE ${OOM} ${OOM}/game ${OS_DIR})
+# CMAKE_CURRENT_SOURCE_DIR: our own headers by name from anywhere in the
+# target -- specifically syncmoo1.h from the vendored 1oom/src/ui/classic/
+# uimainmenu.c, which paints the door's build-info footer (PROVENANCE #4).
+target_include_directories(syncmoo1 PRIVATE
+    ${OOM} ${OOM}/game ${OS_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(syncmoo1 PRIVATE HAVE_CONFIG_H)
 set_target_properties(syncmoo1 PROPERTIES LINKER_LANGUAGE CXX C_STANDARD 11)
 

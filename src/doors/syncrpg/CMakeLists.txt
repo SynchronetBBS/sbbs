@@ -74,7 +74,7 @@ set_source_files_properties(
 	TARGET_DIRECTORY EasyRPG_Player
 	PROPERTIES COMPILE_OPTIONS "${SYNCRPG_FORCE_INCLUDE}")
 
-add_executable(syncrpg door/syncrpg.cpp door/ui_term.cpp door/video_term.cpp door/input_term.cpp door/audio_term.cpp)
+add_executable(syncrpg door/syncrpg.cpp door/ui_term.cpp door/video_term.cpp door/input_term.cpp door/audio_term.cpp door/help_term.cpp)
 # List EasyRPG's src/ ahead of ../termgfx: both trees have an "audio.h" (and
 # other short names), and the door TUs need EasyRPG's. Ordering the engine
 # headers first makes a bare `#include "audio.h"` (and audio_term.h's bare
@@ -96,6 +96,27 @@ target_include_directories(syncrpg PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/../termgfx
 	${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
 target_link_libraries(syncrpg PRIVATE EasyRPG_Player ${TERMGFX_LIB} ${XPDEV_LIB} ${JXL_LIBS} ${SNDFILE_LIBS})
+
+# Git build info (git_hash.h: GIT_HASH/GIT_DATE/GIT_TIME), via the shared helper
+# in src/build. Regenerated each build into the binary dir and added to the
+# syncrpg target's include path, where door/syncrpg.cpp reads it to build the
+# door's version line.
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../build/SynchronetMacros.cmake)
+synchronet_gitinfo(syncrpg)
+
+# The startup-splash patch (PROVENANCE "Local patches" #1) calls
+# syncrpg_version_line(), declared in door/syncrpg_version.h. Put door/ on the
+# include path for THAT ONE engine source rather than for the whole
+# EasyRPG_Player target: the two trees have colliding short header names (see
+# the include-ordering note above), so a target-wide -I risks shadowing an
+# engine header in some unrelated TU. Same per-source mechanism as the
+# baseui.cpp force-include, and it needs no counterpart on the syncrpg target
+# (door/syncrpg.cpp is compiled from that directory, so its own quote-include
+# resolves without help).
+set_source_files_properties(
+	${CMAKE_CURRENT_SOURCE_DIR}/easyrpg/src/scene_logo.cpp
+	TARGET_DIRECTORY EasyRPG_Player
+	PROPERTIES INCLUDE_DIRECTORIES ${CMAKE_CURRENT_SOURCE_DIR}/door)
 if(WIN32)
 	# libtermgfx.lib/xpdev_static.lib are linked by absolute path, so the Win32
 	# system libraries their CMake targets declare (xpdev/CMakeLists.txt:

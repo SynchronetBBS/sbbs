@@ -23,6 +23,7 @@
 #include "audio_term.h"
 #include "video_term.h"
 #include "input_term.h"
+#include "help_term.h"
 
 extern "C" {
 #include "termgfx_termio.h"
@@ -103,6 +104,15 @@ bool BaseUi_termgfx::ProcessEvents() {
 	if (termgfx_termio_quit_requested() || termgfx_termio_hung_up())
 		return false;
 
+	/* The GMM hotkey (Ctrl+<letter>, sysop-set via syncrpg.ini "[input]
+	 * menu_key" -- see syncrpg.cpp; off unless configured) is the door's
+	 * second way into the help overlay. termgfx consumes the keystroke in all
+	 * three of its decode paths before it can reach the game, so this poll is
+	 * the only place it surfaces. Polled BEFORE input_term_pump() so the
+	 * overlay is already up when that call starts steering keys at it. */
+	if (termgfx_termio_menu_requested())
+		help_term_show();
+
 	/* Keyboard (Task 5 / M2): drain whatever termgfx_termio_pump() just queued
 	 * into EasyRPG's raw key state. Must run every poll regardless of quit/
 	 * hang-up above having already returned -- it hasn't here -- so a key
@@ -122,7 +132,12 @@ bool BaseUi_termgfx::ProcessEvents() {
 
 void BaseUi_termgfx::UpdateDisplay() {
 	/* The engine has drawn this frame into main_surface (32-bit R,G,B,X);
-	 * forward it to termgfx's truecolor present path. */
+	 * composite the door's help overlay on top of it (a no-op unless the page
+	 * is up), then forward the result to termgfx's truecolor present path.
+	 * Drawing into main_surface is safe precisely because the engine repaints
+	 * it every frame -- which is also what makes the overlay vanish on the
+	 * first frame after it is dismissed, with no restore step of our own. */
+	help_term_draw(*GetDisplaySurface());
 	video_term_present(*GetDisplaySurface());
 
 	/* Static-screen investigation (Task 4 step 3): count present calls so a

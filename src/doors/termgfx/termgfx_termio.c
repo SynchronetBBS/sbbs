@@ -824,6 +824,10 @@ static int resolve_fd(int argc, char **argv)
  * pattern), plus an APC/DCS swallow so the DECRQSS reply to
  * termgfx_term_status_off doesn't leak stray bytes into the hotkey path. --- */
 static enum { P_NORMAL, P_ESC, P_CSI, P_APC, P_APC_ESC } g_pstate;
+/* When P_ESC was entered (now_ms()), so a LONE Escape keypress can be resolved
+ * on a timer instead of waiting for a byte that may never come -- see
+ * termgfx_esc_timeout() below. */
+static uint32_t g_esc_ms;
 static char g_csi_par[40];
 static int  g_csi_len;
 static int  g_apc_len;
@@ -1395,8 +1399,10 @@ static void parse_bytes(const uint8_t *buf, int n)
 		uint8_t c = buf[i];
 		switch (g_pstate) {
 			case P_NORMAL:
-				if (c == 0x1b)
+				if (c == 0x1b) {
 					g_pstate = P_ESC;
+					g_esc_ms = now_ms();   /* start the lone-ESC timer */
+				}
 				else if (c == 0x13)                     /* Ctrl-S: toggle stats bar */
 					termgfx_toggle_stats();
 				else if (c == 'q' || c == 0x03)          /* q / Ctrl-C: request quit */
@@ -1738,6 +1744,37 @@ void termgfx_termio_shutdown(void)
 int termgfx_termio_active(void) { return g_active; }
 int termgfx_termio_hung_up(void) { return g_hangup; }
 
+/* Resolve a LONE Escape keypress.
+ *
+ * ESC is both a key and the introducer of every CSI/APC sequence, so parse_
+ * bytes() cannot tell them apart from the ESC byte alone -- it parks in P_ESC
+ * and waits for the next byte to decide. That is correct for a sequence, whose
+ * remaining bytes are already in flight, but a lone Escape has NO next byte:
+ * without this timer the keypress simply never fires, and then fires late,
+ * bundled with whatever key the user pressed next. (Symptom: ESC does nothing
+ * in a door whose game uses it -- EasyRPG/RPG Maker's Cancel/Open-Menu, 1oom's
+ * back-out.)
+ *
+ * TERMGFX_ESC_TIMEOUT_MS is the usual escape-vs-Alt/CSI disambiguation
+ * tradeoff. A terminal writes ESC and the rest of a sequence in ONE write, so
+ * they land in the same TCP segment and are parsed in the same pump; the
+ * timeout only has to outlast a segment split, not a human. 50ms is far longer
+ * than that and still well under the ~100ms at which a keypress feels laggy.
+ * Called once per pump, so the press is delivered on the first pump after the
+ * deadline rather than exactly at it -- immaterial at any frame rate a door
+ * runs at. */
+#define TERMGFX_ESC_TIMEOUT_MS 50
+
+static void termgfx_esc_timeout(void)
+{
+	if (g_pstate != P_ESC)
+		return;
+	if ((uint32_t)(now_ms() - g_esc_ms) < TERMGFX_ESC_TIMEOUT_MS)
+		return;
+	g_pstate = P_NORMAL;
+	termgfx_key_press(TERMGFX_KEY_ESCAPE, 0, 0);
+}
+
 void termgfx_termio_pump(void)
 {
 	uint8_t buf[256];
@@ -1753,6 +1790,10 @@ void termgfx_termio_pump(void)
 	 * real no-read cases. */
 	if (g_capture != NULL || g_fd_in < 0)
 		return;   /* headless / capture mode (no client to read from) */
+
+	/* Before reading: a lone Escape from an EARLIER pump has no further bytes
+	 * coming, so nothing below would ever resolve it. */
+	termgfx_esc_timeout();
 
 	for (;;) {
 		int n = termgfx_plat_read(g_fd_in, buf, sizeof buf);
@@ -3475,10 +3516,28 @@ static void termgfx_key_press(int keycode, int ascii, int mods)
 static void termgfx_key_byte(int c)
 {
 	int keycode = 0, ascii = 0, mods = 0;
+	/* Previous byte was CR, so a LF arriving now is the second half of a CRLF
+	 * Enter rather than an Enter of its own. Cleared by every other byte. */
+	static int g_saw_cr;
+	int        was_cr = g_saw_cr;
 
-	if (c == 0x0d)
+	g_saw_cr = (c == 0x0d);
+
+	/* CR *and* LF are Enter. A terminal's Enter is CR, CRLF or (rarely) LF
+	 * depending on the client and its newline mode, and 0x0a is otherwise
+	 * indistinguishable from Ctrl+J -- so without this case LF fell into the
+	 * Ctrl+letter branch below as 'j', which a game that binds HJKL movement
+	 * (EasyRPG's default table: J = DOWN) reads as a step downward. Enter then
+	 * either did nothing or moved the player, depending on what the client
+	 * sent. Ctrl+J is given up deliberately: at the byte level it IS LF, the
+	 * two cannot be told apart, and Enter is what a door user is pressing. CR
+	 * (Ctrl+M), BS (Ctrl+H) and TAB (Ctrl+I) are already claimed the same way
+	 * by the cases here; LF was the gap. */
+	if (c == 0x0d || c == 0x0a) {
+		if (c == 0x0a && was_cr)
+			return;   /* CRLF: the CR already delivered this Enter */
 		keycode = TERMGFX_KEY_ENTER;
-	else if (c == 0x08 || c == 0x7f)
+	} else if (c == 0x08 || c == 0x7f)
 		keycode = TERMGFX_KEY_BACKSPACE;
 	else if (c == 0x09)
 		keycode = TERMGFX_KEY_TAB;
@@ -3552,6 +3611,29 @@ static void termgfx_evdev_edge(int code, int down)
 	c = termgfx_evdev_ascii(code, (g_evdev_mods & TERMGFX_MOD_SHIFT) != 0);
 	if (c == 0)
 		return;
+
+	/* Control ASCII -> the TERMGFX_KEY_* code EVERY other decode path reports
+	 * for these keys. termgfx_evdev_ascii() answers in ASCII (ESC=27,
+	 * Enter=13 -- including keypad Enter, code 96 -- BkSp=8, Tab=9), which is
+	 * what a text-entry consumer wants but NOT what a door's key table
+	 * switches on: both termgfx_key_byte() (legacy) and the kitty CSI-u path
+	 * translate these four to TERMGFX_KEY_* before reporting them. Without
+	 * this, SyncTERM's evdev mode alone delivered bare keycodes 27/13, which
+	 * sit below TERMGFX_KEY_FIRST and so fall into a door's printable-ASCII
+	 * fallback -- where they match nothing and are silently dropped.
+	 * Symptom: Escape and Enter dead on SyncTERM while the arrows (mapped in
+	 * the switch above) and ordinary letters worked. */
+	switch (c) {
+		case 27:   keycode = TERMGFX_KEY_ESCAPE;    break;
+		case '\r': keycode = TERMGFX_KEY_ENTER;     break;
+		case 8:    keycode = TERMGFX_KEY_BACKSPACE; break;
+		case 9:    keycode = TERMGFX_KEY_TAB;       break;
+	}
+	if (keycode) {
+		termgfx_key_event(keycode, 0, 0, down);
+		return;
+	}
+
 	if ((g_evdev_mods & TERMGFX_MOD_CTRL) && (c | 0x20) >= 'a' && (c | 0x20) <= 'z') {
 		/* Door-level Ctrl-S (stats) and Ctrl-Q/Ctrl-C (quit) hotkeys,
 		 * consumed here too -- SyncTERM's evdev mode never reaches the
@@ -4521,6 +4603,18 @@ void termgfx_termio_tick(void)
 }
 
 #ifdef TERMGFX_TEST
+/* Test-only seam (test/test_termgfx_termio_input.c): back-date the pending
+ * lone-ESC by `age_ms` and then run the timeout check termgfx_termio_pump()
+ * runs once per pump. Back-dating rather than sleeping keeps the test
+ * deterministic and instant -- a real 50ms sleep would be both slow and
+ * flaky under load. A no-op unless the parser is actually sitting in P_ESC,
+ * which is exactly the condition under test. */
+void termgfx_termio_test_esc_timeout(uint32_t age_ms)
+{
+	g_esc_ms -= age_ms;
+	termgfx_esc_timeout();
+}
+
 /* Test-only seams (test/test_termgfx_termio_mouse.c): drive termgfx_termio_mouse_report()'s
  * coordinate mapping without a real session -- no termgfx_termio_init(), no socket,
  * no probe burst. Never compiled into the shipped door (TERMGFX_TEST is not

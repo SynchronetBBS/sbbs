@@ -26,7 +26,31 @@ source-level `#undef` overrides the build's `-DUSE_SDL=2` regardless of
 door's own files and CMake wiring. The SDL sources still compile into the
 object library but go unreferenced (nothing constructs an `Sdl2Ui`, so no
 display is ever opened). Should this ever need to become a genuine vendored
-patch, it would be recorded here instead.
+patch, it would be recorded in "Local patches" below instead.
+
+## Local patches (keep this list complete)
+
+Direct edits to vendored `easyrpg/` sources. Each is tagged in-code with a
+`syncrpg door: ... PROVENANCE local patch #N` comment (grep
+`PROVENANCE local patch #` under `easyrpg/` to find them all), and a re-vendor
+must re-apply them by hand. Everything else about this door is build-wiring or
+lives in `door/` -- see the section above, and keep it that way: this list is
+short on purpose.
+
+1. **`easyrpg/src/scene_logo.cpp`** (the `#include` at the top, and the
+   `Text::AlignRight` draw in `Scene_Logo::DrawTextOnLogo()`) -- the startup
+   splash. Stock draws EasyRPG's own version left-aligned and
+   `WEBSITE_ADDRESS` (`easyrpg.org`) right-aligned on a single row at y=215;
+   nothing on it identified the DOOR, or which build of it a caller was
+   running. The right slot now draws `syncrpg_version_line()`
+   (`door/syncrpg_version.h` -- the door's version, git hash and build date
+   from the generated `git_hash.h`), while EasyRPG's version keeps the left
+   slot. The two share the row because there is no second one to be had: it
+   already runs to y=231 of a 240px screen. `easyrpg.org` is still shown in
+   the engine's own Settings > About window (`window_about.cpp`), so no
+   attribution is lost. This is drawn by the engine rather than composited
+   door-side because the splash bitmap is assembled inside `Scene_Logo` and
+   never crosses the `BaseUi` seam as text.
 
 ## Vendored library: liblcf
 

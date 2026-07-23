@@ -31,6 +31,7 @@
 #include "uipal.h"
 #include "uisound.h"
 #include "version.h"
+#include "syncmoo1.h"   /* syncmoo1 door: sm_door_version_line(); PROVENANCE #4 */
 
 /* -------------------------------------------------------------------------- */
 
@@ -240,6 +241,13 @@ static void main_menu_draw_cb(void *vptr)
     hw_video_copy_back_to_page2();
     lbxfont_select(2, 7, 0, 0);
     lbxfont_print_str_right(315, 193, PACKAGE_NAME " " VERSION_STR, UI_SCREEN_W, ui_scale);
+    /* syncmoo1 door: the stock footer names only the ENGINE; add the DOOR's
+       own version/git/date at the left of that same row, as the sibling
+       Synchronet doors do on their menus. The string is built (and fitted to
+       the gap left of 1oom's own) door-side. PROVENANCE #4 */
+    lbxfont_print_str_normal(5, 193,
+        sm_door_version_line(315 - lbxfont_calc_str_width(PACKAGE_NAME " " VERSION_STR) - 11),
+        UI_SCREEN_W, ui_scale);
     if (force_restart) {
         lbxfont_select(2, 2, 0, 0);
         lbxfont_print_str_center(160, 60, "Application restart required", UI_SCREEN_W, ui_scale);

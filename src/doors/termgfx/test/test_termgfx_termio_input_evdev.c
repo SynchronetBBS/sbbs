@@ -38,6 +38,41 @@ int main(void) {
 	termgfx_termio_test_feed("\x1b[=16k", 6);   /* release */
 	while (termgfx_termio_next_event(&ev)) {}   /* drain */
 
+	/* Escape (evdev code 1) and Enter (28) must report the TERMGFX_KEY_*
+	 * codes, not the bare ASCII 27/13 that termgfx_evdev_ascii() yields --
+	 * those sit below TERMGFX_KEY_FIRST, so a door's key table never matches
+	 * them and both keys go dead on SyncTERM while arrows and letters work.
+	 * Keypad Enter (96), Backspace (14) and Tab (15) travel the same path. */
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+	termgfx_termio_test_feed("\x1b[=1K", 5);    /* Escape down */
+	assert(termgfx_termio_next_event(&ev) && ev.type == TERMGFX_EV_KEY_DOWN
+	       && ev.keycode == TERMGFX_KEY_ESCAPE);
+	termgfx_termio_test_feed("\x1b[=1k", 5);    /* Escape up */
+	assert(termgfx_termio_next_event(&ev) && ev.type == TERMGFX_EV_KEY_UP
+	       && ev.keycode == TERMGFX_KEY_ESCAPE);
+
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+	termgfx_termio_test_feed("\x1b[=28K", 6);   /* Enter down */
+	assert(termgfx_termio_next_event(&ev) && ev.type == TERMGFX_EV_KEY_DOWN
+	       && ev.keycode == TERMGFX_KEY_ENTER);
+	termgfx_termio_test_feed("\x1b[=28k", 6);   /* Enter up */
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+
+	termgfx_termio_test_feed("\x1b[=96K", 6);   /* keypad Enter down */
+	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_ENTER);
+	termgfx_termio_test_feed("\x1b[=96k", 6);
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+
+	termgfx_termio_test_feed("\x1b[=14K", 6);   /* Backspace down */
+	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_BACKSPACE);
+	termgfx_termio_test_feed("\x1b[=14k", 6);
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+
+	termgfx_termio_test_feed("\x1b[=15K", 6);   /* Tab down */
+	assert(termgfx_termio_next_event(&ev) && ev.keycode == TERMGFX_KEY_TAB);
+	termgfx_termio_test_feed("\x1b[=15k", 6);
+	while (termgfx_termio_next_event(&ev)) {}   /* drain */
+
 	/* Ctrl-Q: hold LeftCtrl (evdev code 29) then press 'q' (code 16) --
 	 * quits, and is swallowed, not forwarded as a key. */
 	termgfx_termio_test_feed("\x1b[=29K", 6);   /* LeftCtrl down */
