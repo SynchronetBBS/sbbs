@@ -111,6 +111,19 @@ re-vendor must re-apply these by hand.
    `game.c`, so this copy cannot live in door-owned code — the interactive
    `game_new_opts` is a local there.
 
+4. **`src/ui/classic/uimainmenu.c:243`** (plus the `#include "syncmoo1.h"` at
+   the top) — the main-menu footer. Stock right-aligns the ENGINE's version
+   (`"1oom v1.11.8"`) at x=315 on the one 320px-wide row left free below the
+   title art, and names the door nowhere; added a left-aligned
+   `sm_door_version_line()` call on that same row so the menu also carries the
+   DOOR's version, git hash and build date — the version/git/date footer every
+   sibling termgfx door paints on its menu (SyncDOOM `m_menu.c`, SyncDuke
+   `menues.c`, SyncRetro `main.c`). All of the content and the fit-to-the-gap
+   trimming live door-side in [`syncmoo1_door.c`](syncmoo1_door.c), so this
+   patch is one `#include` plus one call. The classic UI draws this footer
+   inline in `main_menu_draw_cb()` with no hook, override or string global, so
+   there is no non-patch way in.
+
 ## Deliberate non-patches
 
 Adding the Windows/MSVC build surfaced three things that would each be a

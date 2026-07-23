@@ -222,6 +222,22 @@ int sm_door_stdio(void);
 /* The user alias from DOOR32.SYS line 7 / -name, or "" if none given. */
 const char *sm_door_alias(void);
 
+/* The DOOR's own build-identity line -- version, git hash, build date, e.g.
+ * "v0.1  *9378ed4ee2  Jul 22 2026  synchro.net" -- for the 1oom main menu
+ * footer, which stock only names the ENGINE ("1oom v1.11.8"). The same
+ * version/git/date footer the sibling termgfx doors paint on their menus
+ * (SyncDOOM's m_menu.c, SyncDuke's menues.c, SyncRetro's main.c); the hash and
+ * date come from the generated git_hash.h.
+ *
+ * 1oom right-aligns its own string at x=315 on the one 320px-wide row left
+ * free below the title art, so only the left of that row is ours. `maxw` is
+ * how many pixels are free there: the line is built longest-first and drops
+ * its tail (the site, then the date, then the hash) until it fits the
+ * CURRENTLY SELECTED lbxfont, so a wider font can never overrun into 1oom's
+ * string. Pass 0 to skip fitting entirely. Returns a static buffer, valid
+ * until the next call -- draw-path use only, like the rest of the engine. */
+const char *sm_door_version_line(int maxw);
+
 /* The -home <dir> value (per-user config/save sandbox), or NULL if none was
  * given -- unlike sm_door_alias() above, NULL (not "") on absence, so
  * syncmoo1_config.c's sm_config_apply() can test it directly. Captured by
