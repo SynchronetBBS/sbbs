@@ -42,7 +42,7 @@ cd "$HERE/build"
 # folds INCLUDES into CPPFLAGS, which the generic build rules for BOTH %.c
 # and %.cpp pick up -- CXXFLAGS alone would leave a door/*.cpp unit (e.g.
 # audio_term.cpp/video_term.cpp/syncscumm.cpp, which include
-# termgfx_termio.h/sst_plat.h) unable to find term.h/caps.h/pace.h/door32.h.
+# termgfx_termio.h/termgfx_plat.h) unable to find term.h/caps.h/pace.h/door32.h.
 {
 	echo "LIBS += $HERE/build/libs/termgfx/libtermgfx.a"
 	echo "LIBS += $HERE/build/libs/libxpdev_static.a -lpthread"
@@ -62,7 +62,7 @@ echo "DEFINES += -DSYNCSCUMM_NO_LAUNCHER" >> config.mk
 # found (target_compile_definitions(termgfx PRIVATE WITH_JXL) then applies to
 # termgfx's own jxl.c AND termgfx_termio.c's tier-select, both compiled by
 # Stage 1's CMake build above). Nothing left in THIS make (door/module.mk) is
-# a plain-C translation unit needing WITH_JXL of its own -- sst_io.c/sst_io.o
+# a plain-C translation unit needing WITH_JXL of its own -- termgfx_termio.c/termgfx_termio.o
 # moved into termgfx with the rest of the engine -- but the append below is
 # kept as a harmless no-op DEFINES for any future plain-C module.mk object
 # that might need it (DEFINES, not CXXFLAGS, because Makefile.common folds

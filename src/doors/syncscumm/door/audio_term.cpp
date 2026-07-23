@@ -13,7 +13,7 @@
  * a pathological gap (a long blocking load, a stopped debugger) so we ship one
  * bounded burst and re-anchor rather than allocating a multi-second pull that
  * would arrive as a wall of stale audio anyway. */
-#define MAX_TICK_FRAMES (SST_AUDIO_RATE / 2)   /* 500ms */
+#define MAX_TICK_FRAMES (SYNCSCUMM_AUDIO_RATE / 2)   /* 500ms */
 
 SyncscummMixerManager *g_syncscumm_mixer;
 
@@ -44,7 +44,7 @@ void SyncscummMixerManager::init() {
 	 * syncscumm.ini's [audio] section is read on the first PCM block, so a
 	 * sysop asking for stereo could not get it back. Mix stereo, narrow the
 	 * wire. */
-	_mixer = new Audio::MixerImpl(SST_AUDIO_RATE, true, 4096);
+	_mixer = new Audio::MixerImpl(SYNCSCUMM_AUDIO_RATE, true, 4096);
 	assert(_mixer);
 	_mixer->setReady(true);
 	_bufFrames = MAX_TICK_FRAMES;
@@ -64,7 +64,7 @@ void SyncscummMixerManager::tick() {
 		return;
 
 	uint32 elapsed = g_system->getMillis() - _startMs;
-	uint64 due = (uint64)elapsed * SST_AUDIO_RATE / 1000;
+	uint64 due = (uint64)elapsed * SYNCSCUMM_AUDIO_RATE / 1000;
 	if (due <= _framesPulled)
 		return;
 

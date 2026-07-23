@@ -17,7 +17,7 @@
 #pragma comment(lib, "termgfx.lib")        // sixel/JXL/APC/audio encoders
 #pragma comment(lib, "ADLMIDI.lib")        // termgfx's OPL3 MIDI synth
 #pragma comment(lib, "xpdev_static.lib")   // ini_file, sockwrap, genwrap, dirwrap
-#pragma comment(lib, "ws2_32.lib")         // Winsock: sst_plat send/recv/WSAStartup
+#pragma comment(lib, "ws2_32.lib")         // Winsock: termgfx_plat send/recv/WSAStartup
 #pragma comment(lib, "winmm.lib")          // xpdev timers + ScummVM midi/windows
 #pragma comment(lib, "iphlpapi.lib")       // xpdev netwrap: GetNetworkParams()
 #pragma comment(lib, "shlwapi.lib")        // mpg123 (libsndfile mpeg): PathCombineW etc.
@@ -26,7 +26,7 @@
 /* The door's platform seam (monotonic clock, sleep) -- keeps this file free of
  * <sys/time.h>/<unistd.h>/gettimeofday/usleep, none of which exist under MSVC.
  * Header-only prototypes over stdint, so no forbidden.h ordering concern. */
-#include "../../termgfx/sst_plat.h"
+#include "../../termgfx/termgfx_plat.h"
 
 /* xpdev's ini_file.h (-> genwrap.h) declares things like strupr()/strlwr()
  * and uses printf in an attribute -- names common/forbidden.h poisons into
@@ -99,12 +99,12 @@
 extern "C" {
 #include "../../termgfx/termgfx_termio.h"
 
-/* sst_select_datadir(): SyncSCUMM's own Talkie/Floppy data-set selection --
- * a door-specific helper that lived in the retired sst_io.h and is not part
+/* termgfx_select_datadir(): SyncSCUMM's own Talkie/Floppy data-set selection --
+ * a door-specific helper that lived in the retired termgfx_termio.h and is not part
  * of the shared termgfx_termio surface (other termgfx doors have no such
  * concept). Declared here, door-side; defined in termgfx/termgfx_termio.c
  * (moved there with the rest of the engine body, name unchanged). */
-const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
+const char *termgfx_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
 }
 
 class OSystem_Termgfx : public ModularMixerBackend, public ModularGraphicsBackend, Common::EventSource {
@@ -279,7 +279,7 @@ static void resolveMenuKey() {
 }
 
 void OSystem_Termgfx::initBackend() {
-	_startMs = sst_plat_now_ms();
+	_startMs = termgfx_plat_now_ms();
 	resolveSubtitles();
 	resolveVolumes();
 	resolveMenuKey();
@@ -403,11 +403,11 @@ Common::MutexInternal *OSystem_Termgfx::createMutex() {
 
 uint32 OSystem_Termgfx::getMillis(bool skipRecord) {
 	// Monotonic ms since initBackend(); uint32 subtraction is wrap-safe.
-	return sst_plat_now_ms() - _startMs;
+	return termgfx_plat_now_ms() - _startMs;
 }
 
 void OSystem_Termgfx::delayMillis(uint msecs) {
-	sst_plat_sleep_ms((int)msecs);
+	termgfx_plat_sleep_ms((int)msecs);
 }
 
 void OSystem_Termgfx::getTimeAndDate(TimeDate &td, bool skipRecord) const {
@@ -476,7 +476,7 @@ int main(int argc, char *argv[]) {
 	// availability before scummvm_main() detects the game from --path. Same
 	// determination that drives subtitles-auto (termgfx_termio_audio_available()): a
 	// session that can play speech gets the Talkie build, one that cannot gets
-	// the Floppy build (guaranteed on-screen text). See sst_select_datadir().
+	// the Floppy build (guaranteed on-screen text). See termgfx_select_datadir().
 	//
 	// A given --path=<base> is rewritten to <base>/talkie|floppy in place. If NO
 	// --path was passed, the base defaults to the current directory (the door's
@@ -492,7 +492,7 @@ int main(int argc, char *argv[]) {
 		char chosen[600];
 		if (strncmp(filteredArgv[i], "--path=", 7) != 0)
 			continue;
-		sst_select_datadir(filteredArgv[i] + 7, audioNow, chosen, sizeof chosen);
+		termgfx_select_datadir(filteredArgv[i] + 7, audioNow, chosen, sizeof chosen);
 		snprintf(pathArg, sizeof pathArg, "--path=%s", chosen);
 		filteredArgv[i] = pathArg;
 		havePath = true;
@@ -501,7 +501,7 @@ int main(int argc, char *argv[]) {
 	if (!havePath && filteredArgc < (int)(sizeof(filteredArgv) / sizeof(filteredArgv[0]))) {
 		char chosen[600];
 		int  i;
-		sst_select_datadir(".", audioNow, chosen, sizeof chosen);
+		termgfx_select_datadir(".", audioNow, chosen, sizeof chosen);
 		snprintf(pathArg, sizeof pathArg, "--path=%s", chosen);
 		for (i = filteredArgc; i > 1; i--)      /* make room right after argv[0] */
 			filteredArgv[i] = filteredArgv[i - 1];

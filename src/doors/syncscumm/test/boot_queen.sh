@@ -5,7 +5,7 @@
 # xtrn/syncqueen/floppy/ (run xtrn/syncqueen/getdata.js once).
 #
 # Unlike boot_bass.sh, --path points straight at each variant's own directory
-# rather than the package root: sst_select_datadir() (door/sst_io.c) only
+# rather than the package root: termgfx_select_datadir() (door/termgfx_termio.c) only
 # picks talkie/ vs floppy/ under the given --path, so pointing it AT
 # talkie/ or floppy/ directly (neither of which has its own nested
 # talkie/floppy sub-dir) makes it fall back to using that directory as-is --

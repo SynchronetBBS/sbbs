@@ -1,5 +1,5 @@
 /* Regression test for the Talkie/Floppy data-set selection helper
- * (sst_select_datadir(), M5 Task 1): audio -> talkie, no-audio -> floppy,
+ * (termgfx_select_datadir(), M5 Task 1): audio -> talkie, no-audio -> floppy,
  * falling back to whichever variant is actually present, then to a flat
  * base dir. Pure directory-stat helper -- no session, no socket needed, so
  * this is a standalone binary (mirrors test_termgfx_termio_canvas.c's convention).
@@ -12,17 +12,17 @@
 #include <unistd.h>
 #include "termgfx_termio.h"
 
-/* sst_select_datadir() is not part of the public termgfx_termio.h API (it
+/* termgfx_select_datadir() is not part of the public termgfx_termio.h API (it
  * kept its original name across the move) -- declared here the same way the
- * SST_TEST-only seams are declared locally in the other test_termgfx_termio_*.c
+ * TERMGFX_TEST-only seams are declared locally in the other test_termgfx_termio_*.c
  * files. */
-const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
+const char *termgfx_select_datadir(const char *base, int audio, char *buf, size_t bufsz);
 
 static void mkd(const char *p) { mkdir(p, 0777); }
 
 int main(void)
 {
-	char tmpl[] = "/tmp/sst_dd_XXXXXX";
+	char tmpl[] = "/tmp/termgfx_dd_XXXXXX";
 	char *base = mkdtemp(tmpl);
 	assert(base);
 	char t[512], f[512], buf[600];
@@ -31,18 +31,18 @@ int main(void)
 
 	/* both present: audio -> talkie, no-audio -> floppy */
 	mkd(t); mkd(f);
-	assert(strcmp(sst_select_datadir(base, 1, buf, sizeof buf), t) == 0);
-	assert(strcmp(sst_select_datadir(base, 0, buf, sizeof buf), f) == 0);
+	assert(strcmp(termgfx_select_datadir(base, 1, buf, sizeof buf), t) == 0);
+	assert(strcmp(termgfx_select_datadir(base, 0, buf, sizeof buf), f) == 0);
 
 	/* only talkie present: no-audio falls back to talkie */
 	rmdir(f);
-	assert(strcmp(sst_select_datadir(base, 0, buf, sizeof buf), t) == 0);
+	assert(strcmp(termgfx_select_datadir(base, 0, buf, sizeof buf), t) == 0);
 
 	/* neither present: falls back to base itself (flat --path) */
 	rmdir(t);
-	assert(strcmp(sst_select_datadir(base, 1, buf, sizeof buf), base) == 0);
+	assert(strcmp(termgfx_select_datadir(base, 1, buf, sizeof buf), base) == 0);
 
 	rmdir(base);
-	printf("SST_DATADIR OK\n");
+	printf("TERMGFX_DATADIR OK\n");
 	return 0;
 }

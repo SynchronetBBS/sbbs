@@ -20,11 +20,11 @@
  */
 #include "termgfx_termio.h"
 
-/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE default (24000) --
+/* Mirrors termgfx_termio.c's own internal TERMGFX_AUDIO_RATE default (24000) --
  * termgfx_termio.h no longer exposes it as a public macro the way
- * door/sst_io.h once did, so the test keeps its own copy rather than guess a
+ * door/termgfx_termio.h once did, so the test keeps its own copy rather than guess a
  * literal. */
-#define SST_AUDIO_RATE 24000
+#define TERMGFX_AUDIO_RATE 24000
 
 #include <assert.h>
 #include <stdio.h>
@@ -91,22 +91,22 @@ int main(void)
 	assert(termgfx_termio_audio_available() == 1);
 
 	{
-		static int16_t pcm[SST_AUDIO_RATE * 2];   /* 1s of stereo, non-silent */
+		static int16_t pcm[TERMGFX_AUDIO_RATE * 2];   /* 1s of stereo, non-silent */
 		int            i;
 
-		for (i = 0; i < SST_AUDIO_RATE; i++) {
+		for (i = 0; i < TERMGFX_AUDIO_RATE; i++) {
 			pcm[2 * i]     = (int16_t)(i * 37);
 			pcm[2 * i + 1] = (int16_t)(i * -37);
 		}
 		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);   /* clear the caps handshake */
-		termgfx_termio_audio_stream(pcm, SST_AUDIO_RATE);
+		termgfx_termio_audio_stream(pcm, TERMGFX_AUDIO_RATE);
 		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);
 		queued = count_occurrences(out, "A;Queue");
 		/* 20 chunks close at the seeded 50ms; the cushion is held then
 		 * released, so >= 15 leaves room for cushion/boundary effects while
-		 * staying far above the 4 that the SST_CHUNK_MS default (250ms)
+		 * staying far above the 4 that the TERMGFX_CHUNK_MS default (250ms)
 		 * could ever produce from a 1s feed. That gap is the whole point of
 		 * the test -- it is what proves the key reached the encoder rather
 		 * than merely parsing -- and seeding the SHORTEST chunk against the
@@ -114,6 +114,6 @@ int main(void)
 		assert(queued >= 15);
 	}
 
-	printf("SST_IO_AUDIO_INI_TUNE OK (%d chunks queued)\n", queued);
+	printf("TERMGFX_TERMIO_AUDIO_INI_TUNE OK (%d chunks queued)\n", queued);
 	return 0;
 }

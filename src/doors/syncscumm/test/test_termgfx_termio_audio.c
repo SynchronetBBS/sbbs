@@ -10,12 +10,12 @@
  */
 #include "termgfx_termio.h"
 
-/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE/SST_CHUNK_MS
+/* Mirrors termgfx_termio.c's own internal TERMGFX_AUDIO_RATE/TERMGFX_CHUNK_MS
  * defaults (24000, 250) -- termgfx_termio.h no longer exposes these as public
- * macros the way door/sst_io.h once did, so the test keeps its own copy
+ * macros the way door/termgfx_termio.h once did, so the test keeps its own copy
  * rather than guess a literal. */
-#define SST_AUDIO_RATE 24000
-#define SST_CHUNK_MS   250
+#define TERMGFX_AUDIO_RATE 24000
+#define TERMGFX_CHUNK_MS   250
 
 #include <assert.h>
 #include <stdio.h>
@@ -81,7 +81,7 @@ int main(void)
 
 	/* Inject a digital-audio caps reply (ESC[=7;100;1n) plus a JXL "no"
 	 * (ESC[=1;0n), which latches the graphics settle flag so no test eats
-	 * SST_GFX_SETTLE_MS of real time. */
+	 * TERMGFX_GFX_SETTLE_MS of real time. */
 	{
 		const char *reply = "\x1b[=7;100;1n\x1b[=1;0n";
 		assert(send(sv[0], reply, strlen(reply), 0) > 0);
@@ -100,17 +100,17 @@ int main(void)
 
 	/* Streamed PCM reaches the wire as audio APCs on a digital terminal. */
 	{
-		static int16_t pcm[SST_AUDIO_RATE * 2];   /* 1s of stereo, non-silent */
+		static int16_t pcm[TERMGFX_AUDIO_RATE * 2];   /* 1s of stereo, non-silent */
 		int            i;
 
-		for (i = 0; i < SST_AUDIO_RATE; i++) {
+		for (i = 0; i < TERMGFX_AUDIO_RATE; i++) {
 			pcm[2 * i]     = (int16_t)(i * 37);
 			pcm[2 * i + 1] = (int16_t)(i * -37);
 		}
-		termgfx_termio_audio_stream(pcm, SST_AUDIO_RATE);
+		termgfx_termio_audio_stream(pcm, TERMGFX_AUDIO_RATE);
 		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);
-		/* A 1s feed closes 1000/SST_CHUNK_MS chunks: the cushion is held
+		/* A 1s feed closes 1000/TERMGFX_CHUNK_MS chunks: the cushion is held
 		 * then released, so they should all ship as A;Queue APCs by the
 		 * end of the feed. Derived from the chunk length rather than
 		 * asserted as a literal -- this read ">= 7" against the 10 that a
@@ -121,13 +121,13 @@ int main(void)
 		 * bare "A;" check passes even if termgfx_stream_feed() queued
 		 * nothing at all. One chunk of slack absorbs boundary effects while
 		 * staying impossible to satisfy from the handshake alone. */
-		assert(count_occurrences(out, "A;Queue") >= (1000 / SST_CHUNK_MS) - 1);
+		assert(count_occurrences(out, "A;Queue") >= (1000 / TERMGFX_CHUNK_MS) - 1);
 	}
 
 	/* A tone-only terminal (libsndfile absent) is NOT audio for our
 	 * purposes: A;Load is a no-op there, so a Queue would play an empty
 	 * slot. Covered in its own binary -- see test_termgfx_termio_audio_tone.c. */
 
-	printf("SST_IO_AUDIO OK\n");
+	printf("TERMGFX_TERMIO_AUDIO OK\n");
 	return 0;
 }

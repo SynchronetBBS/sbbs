@@ -83,10 +83,10 @@ Output: `build-msvc\Release\syncscumm.exe` (not installed). Run
 
 Windows-vs-POSIX differences in the door glue (the monotonic clock, sleep,
 `WSAStartup`, non-blocking `send()`/`recv()` on the DOOR32.SYS socket, the
-`isatty`/exists/getpid dev helpers) live behind `door/sst_plat.{c,h}`, built
+`isatty`/exists/getpid dev helpers) live behind `door/termgfx_plat.{c,h}`, built
 over xpdev (`sockwrap.h`, `genwrap.h`, `dirwrap.h`) — the same seam the sibling
 termgfx doors ship (`syncmoo1_plat`, `syncretro_plat`). The only door file
-besides `sst_plat.{c,h}` that carries an `#ifdef _WIN32` is `syncscumm.cpp`,
+besides `termgfx_plat.{c,h}` that carries an `#ifdef _WIN32` is `syncscumm.cpp`,
 for its ScummVM-facing platform bindings — the `WindowsFilesystemFactory` vs
 `POSIXFilesystemFactory` selection (and the Windows FS-backend headers it
 pulls) plus a backslash path-separator case in its save-path creation.

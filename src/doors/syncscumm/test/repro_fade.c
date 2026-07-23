@@ -143,7 +143,7 @@ int main(int argc, char **argv)
 
 	/* Capability replies: sixel-capable DA1 + SyncTERM CTDA (cterm 1.330) +
 	 * an initial DSR ack, then an exact canvas size. Deliberately NOT the JXL
-	 * reply, so sst_tier() stays on the sixel path (deterministic, no libjxl
+	 * reply, so termgfx_tier() stays on the sixel path (deterministic, no libjxl
 	 * encode-time variance). A large-ish text-area canvas so a full frame is
 	 * a realistically heavy sixel image (the crux of the fade defect). */
 	{

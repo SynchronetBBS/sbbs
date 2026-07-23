@@ -53,7 +53,7 @@ int main(void)
 	 * rides the inline DrawJXLBlob path because of this same reply), then a
 	 * DSR ack. Deliberately NOT feeding the JXL-capable reply yet: that's
 	 * done further down, AFTER the sixel-tier backpressure/recovery tests
-	 * below -- sst_tier() would otherwise pick JXL for every present() call
+	 * below -- termgfx_tier() would otherwise pick JXL for every present() call
 	 * from here on (in a build with WITH_JXL), breaking their sixel-DCS
 	 * assertions. */
 	const char *replies = "\x1b[?63;4c" "\x1b[=67;84;101;114;109;1;330c" "\x1b[24;80R";
@@ -100,7 +100,7 @@ int main(void)
 		                                                    * 4096x2560 (320:200
 		                                                    * aspect exactly) so
 		                                                    * the fit hits
-		                                                    * SST_SCALE_MAX
+		                                                    * TERMGFX_SCALE_MAX
 		                                                    * (2048) wide. */
 
 		setsockopt(sv[0], SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof rcvbuf);
@@ -132,7 +132,7 @@ int main(void)
 		 * since the hotkey test above and was never toggled off, so all 3
 		 * oversized presents above tried to draw it. Before the fix, once
 		 * out_put()'s stage-full guard pinned g_out_len at its 256KB cap,
-		 * EVERY later out_put() call that present() made -- sst_stats_draw()
+		 * EVERY later out_put() call that present() made -- termgfx_stats_draw()
 		 * included -- computed zero room and silently dropped, with no
 		 * resync marker the way a dropped image gets (g_need_st/g_have_last).
 		 * That starved the bar exactly during the big/heavy frames a player
@@ -158,7 +158,7 @@ int main(void)
 		 * left dangling by leading with the recovery ST before its own DCS,
 		 * and (b) sends a FULL frame rather than diffing against the
 		 * partial frame the client never fully received -- i.e. it must
-		 * NOT take the dirty path (sst_dirty_sixel_present()'s per-box
+		 * NOT take the dirty path (termgfx_dirty_sixel_present()'s per-box
 		 * "\x1b7"/DECSC ... "\x1b8"/DECRC wrap is the tell; the full-frame
 		 * path never emits it). */
 		{
@@ -220,7 +220,7 @@ int main(void)
 	/* Present a changed frame now that the door has confirmed both JXL
 	 * decode support (g_jxl, via the reply just fed) and this build's own
 	 * encoder (WITH_JXL, from unit_termgfx_termio.sh's -DWITH_JXL when libjxl was
-	 * found): sst_tier() must switch to JXL, and the wire bytes must carry
+	 * found): termgfx_tier() must switch to JXL, and the wire bytes must carry
 	 * the SyncTERM APC introducer + DrawJXL verb (door_io.c:1938-1957
 	 * door_emit_jxl() pattern) instead of a sixel DCS. The CTDA reply fed
 	 * above (cterm version 1.330) is >= TERMGFX_CTERM_VER_BLOB (1.329), so
@@ -283,6 +283,6 @@ int main(void)
 	 * doesn't track whether it already ran) must not crash. */
 	termgfx_termio_shutdown();
 
-	printf("SST_IO OK\n");
+	printf("TERMGFX_IO OK\n");
 	return 0;
 }

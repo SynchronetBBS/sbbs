@@ -109,7 +109,7 @@ int main(void)
 
 	/* First present: no XTSMGRAPHICS reply on record and the terminal never
 	 * identified itself as xterm -- the exact canvas report must be TRUSTED
-	 * (Ph past TERMGFX_SIXEL_SAFE_MAX, up to the canvas/SST_SCALE_MAX fit),
+	 * (Ph past TERMGFX_SIXEL_SAFE_MAX, up to the canvas/TERMGFX_SCALE_MAX fit),
 	 * not clamped down to it. This is the Windows Terminal / Foot case: both
 	 * answer ESC[14t and neither answers XTSMGRAPHICS or XTVERSION. */
 	memset(idx, 5, sizeof idx);
@@ -122,7 +122,7 @@ int main(void)
 	assert(ph > 1000);   /* NOT clamped to SAFE_MAX: an exact, un-xterm'd canvas is trusted */
 	assert(ph <= 2400);   /* still inside the reported canvas width (ESC[4;h;w t: 2400 wide) */
 	assert(pv > 0 && pv <= 1500);   /* inside the reported canvas height (1500 tall) */
-	printf("SST_IO_GFXMAX pre-reply OK (Ph=%d Pv=%d)\n", ph, pv);
+	printf("TERMGFX_TERMIO_GFXMAX pre-reply OK (Ph=%d Pv=%d)\n", ph, pv);
 
 	/* Now an XTSMGRAPHICS reply lands, reporting a ceiling well below both
 	 * TERMGFX_SIXEL_SAFE_MAX and the pre-reply (canvas-trusted) fit size --
@@ -145,7 +145,7 @@ int main(void)
 	assert(ph > 0 && ph <= 700);
 	assert(pv > 0 && pv <= 700);
 
-	printf("SST_IO_GFXMAX post-reply OK (Ph=%d Pv=%d)\n", ph, pv);
+	printf("TERMGFX_TERMIO_GFXMAX post-reply OK (Ph=%d Pv=%d)\n", ph, pv);
 
 	/* Now a BIGGER XTSMGRAPHICS reply lands (a terminal with a larger real
 	 * ceiling than xterm's assumed default) -- above SAFE_MAX this time, not
@@ -168,6 +168,6 @@ int main(void)
 	assert(ph <= 2000);
 	assert(pv <= 2000);
 
-	printf("SST_IO_GFXMAX bigger-report OK (Ph=%d Pv=%d)\n", ph, pv);
+	printf("TERMGFX_TERMIO_GFXMAX bigger-report OK (Ph=%d Pv=%d)\n", ph, pv);
 	return 0;
 }

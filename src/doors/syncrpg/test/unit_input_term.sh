@@ -1,7 +1,7 @@
 #!/bin/sh
 # Build + run input_term's mapping/tap-hold unit test (M2 / Task 5) against
 # Stage 1's prebuilt termgfx/xpdev libraries. Mirrors syncscumm/test/
-# unit_termgfx_termio.sh's SST_TEST pattern for the termgfx_termio.c half;
+# unit_termgfx_termio.sh's TERMGFX_TEST pattern for the termgfx_termio.c half;
 # input_term.cpp/test_input_term.cpp are plain C++17 needing only EasyRPG's
 # headers (no liblcf/SDL2 *library*, just its headers -- keys.h pulls in
 # system.h/lcf/enum_tags.h, header-only from this test's point of view).

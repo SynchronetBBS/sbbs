@@ -7,7 +7,7 @@
 # A second SCI-engine boot check (alongside boot_cascadequest.sh). The SCI
 # resource files are a flat set with no talkie/floppy split, so --path points
 # straight at the package dir (as the door's default --path does after
-# sst_select_datadir() falls back to the base). ScummVM detects the data as
+# termgfx_select_datadir() falls back to the base). ScummVM detects the data as
 # game id "sci-fanmade" (Betrayed Alliance 1.3.3.1); it renders EGA doubled to
 # a 320x200 surface, parser/keyboard-driven, so no input is needed for the
 # intro.

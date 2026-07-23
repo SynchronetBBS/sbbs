@@ -13,11 +13,11 @@
  */
 #include "termgfx_termio.h"
 
-/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE default (24000) --
+/* Mirrors termgfx_termio.c's own internal TERMGFX_AUDIO_RATE default (24000) --
  * termgfx_termio.h no longer exposes it as a public macro the way
- * door/sst_io.h once did, so the test keeps its own copy rather than guess a
+ * door/termgfx_termio.h once did, so the test keeps its own copy rather than guess a
  * literal. */
-#define SST_AUDIO_RATE 24000
+#define TERMGFX_AUDIO_RATE 24000
 
 #include <assert.h>
 #include <stdio.h>
@@ -59,7 +59,7 @@ int main(void)
 	assert(strstr(out, "libsndfile") != NULL);
 
 	/* Tone-only caps reply, plus a JXL "no" (ESC[=1;0n) to latch the
-	 * graphics settle flag so this test eats none of SST_GFX_SETTLE_MS in
+	 * graphics settle flag so this test eats none of TERMGFX_GFX_SETTLE_MS in
 	 * real time. */
 	{
 		const char *reply = "\x1b[=7;100;0n\x1b[=1;0n";
@@ -76,18 +76,18 @@ int main(void)
 
 	/* The same PCM on a tone-only terminal must produce ZERO audio bytes. */
 	{
-		static int16_t pcm[SST_AUDIO_RATE * 2];
+		static int16_t pcm[TERMGFX_AUDIO_RATE * 2];
 		int            i;
 
-		for (i = 0; i < SST_AUDIO_RATE; i++)
+		for (i = 0; i < TERMGFX_AUDIO_RATE; i++)
 			pcm[2 * i] = pcm[2 * i + 1] = (int16_t)(i * 37);
 		drain(sv[0], out, sizeof out);   /* clear */
-		termgfx_termio_audio_stream(pcm, SST_AUDIO_RATE);
+		termgfx_termio_audio_stream(pcm, TERMGFX_AUDIO_RATE);
 		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);
 		assert(strstr(out, "A;") == NULL);
 	}
 
-	printf("SST_IO_AUDIO_TONE OK\n");
+	printf("TERMGFX_TERMIO_AUDIO_TONE OK\n");
 	return 0;
 }

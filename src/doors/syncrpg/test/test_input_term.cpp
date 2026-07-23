@@ -8,7 +8,7 @@
  *     evdev's CTDA capability negotiation.
  *
  *  2. input_term_pump() driven through termgfx_termio's real parser via the
- *     SST_TEST seam (termgfx_termio_test_feed(), the same seam
+ *     TERMGFX_TEST seam (termgfx_termio_test_feed(), the same seam
  *     test_termgfx_termio_input.c in syncscumm/test uses) -- confirms the
  *     tap/hold release-synthesis: a legacy CSI byte (no true release) reads
  *     pressed for exactly the poll it arrived in and is released the next;

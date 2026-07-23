@@ -131,6 +131,6 @@ int main(void)
 	assert(ph > 0 && ph <= 1000);   /* xterm ID demotes the exact canvas to SAFE_MAX */
 	assert(pv > 0 && pv <= 1000);
 
-	printf("SST_IO_XTERM_CEILING OK (Ph=%d Pv=%d)\n", ph, pv);
+	printf("TERMGFX_TERMIO_XTERM_CEILING OK (Ph=%d Pv=%d)\n", ph, pv);
 	return 0;
 }

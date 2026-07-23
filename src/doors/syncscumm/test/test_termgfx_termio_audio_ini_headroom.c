@@ -4,7 +4,7 @@
  * "[audio] headroom" is the door's answer to the battle-scene crunch: it scales
  * the mixer's PCM before the Opus encode so the codec's ringing has somewhere to
  * land instead of overshooting full scale and wrapping to the wrong sign (see
- * SST_AUDIO_HEADROOM in termgfx_termio.h). Everything about it lives upstream of the
+ * TERMGFX_AUDIO_HEADROOM in termgfx_termio.h). Everything about it lives upstream of the
  * wire, which makes it exactly the kind of knob that rots into a no-op without
  * any test noticing: delete the audio_apply_headroom() call in
  * termgfx_termio_audio_stream() and every other audio test in this directory still
@@ -25,7 +25,7 @@
  * over the square wave the defect involves precisely because Opus reproduces it
  * without ringing, so the peak is the scaling factor and nothing else. Seeded
  * with "headroom = 50" the peak must land near 32767 * 0.50 = 16384; the
- * SST_AUDIO_HEADROOM default of 70 would put it at ~22900 and an un-applied
+ * TERMGFX_AUDIO_HEADROOM default of 70 would put it at ~22900 and an un-applied
  * headroom at ~32700, both far outside the asserted band. Unsatisfiable unless
  * the ini value displaced the default AND the scaling actually ran.
  *
@@ -35,11 +35,11 @@
  */
 #include "termgfx_termio.h"
 
-/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE default (24000) --
+/* Mirrors termgfx_termio.c's own internal TERMGFX_AUDIO_RATE default (24000) --
  * termgfx_termio.h no longer exposes it as a public macro the way
- * door/sst_io.h once did, so the test keeps its own copy rather than guess a
+ * door/termgfx_termio.h once did, so the test keeps its own copy rather than guess a
  * literal. */
-#define SST_AUDIO_RATE 24000
+#define TERMGFX_AUDIO_RATE 24000
 
 #include <assert.h>
 #include <math.h>
@@ -154,21 +154,21 @@ int main(void)
 	assert(termgfx_termio_audio_available() == 1);
 
 	{
-		static int16_t pcm[SST_AUDIO_RATE * 2];   /* 1s of stereo */
+		static int16_t pcm[TERMGFX_AUDIO_RATE * 2];   /* 1s of stereo */
 		int            i;
 
 		/* Full-scale 300Hz sine. 32767, not 32768: the point is a clean peak
 		 * the codec can return unchanged, and this test is measuring the
 		 * scaling, not the rail behavior the knob exists to avoid. */
-		for (i = 0; i < SST_AUDIO_RATE; i++) {
-			int16_t v = (int16_t)(32767.0 * sin(2.0 * M_PI * 300.0 * i / SST_AUDIO_RATE));
+		for (i = 0; i < TERMGFX_AUDIO_RATE; i++) {
+			int16_t v = (int16_t)(32767.0 * sin(2.0 * M_PI * 300.0 * i / TERMGFX_AUDIO_RATE));
 
 			pcm[2 * i]     = v;
 			pcm[2 * i + 1] = v;
 		}
 		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);   /* clear the caps handshake */
-		termgfx_termio_audio_stream(pcm, SST_AUDIO_RATE);
+		termgfx_termio_audio_stream(pcm, TERMGFX_AUDIO_RATE);
 		termgfx_termio_flush();
 		drain(sv[0], out, sizeof out);
 	}
@@ -178,7 +178,7 @@ int main(void)
 	 * if it reached the encoder at all it reached this chunk. */
 	{
 		static unsigned char ogg[1 << 20];
-		static short         dec[SST_AUDIO_RATE * 2];
+		static short         dec[TERMGFX_AUDIO_RATE * 2];
 		const char          *blob = strstr(out, "A;LoadBlob;");
 		const char          *b64, *end;
 		size_t               n;
@@ -202,7 +202,7 @@ int main(void)
 		memset(&info, 0, sizeof info);
 		sf = sf_open_virtual(&vio, SFM_READ, &info, &m);
 		assert(sf != NULL);
-		got = sf_readf_short(sf, dec, SST_AUDIO_RATE);
+		got = sf_readf_short(sf, dec, TERMGFX_AUDIO_RATE);
 		sf_close(sf);
 		assert(got > 0);
 		for (i = 0; i < (int)got * info.channels; i++)
@@ -212,12 +212,12 @@ int main(void)
 
 	/* 32767 * 0.50 = 16384, and Opus returns this sine within a couple of
 	 * percent. The band is deliberately wider than that and still cannot be
-	 * reached by any other headroom: the SST_AUDIO_HEADROOM default of 70 puts
+	 * reached by any other headroom: the TERMGFX_AUDIO_HEADROOM default of 70 puts
 	 * the peak at ~22900 and a headroom that never ran at ~32700. That gap is
 	 * the whole test -- it proves the seeded VALUE was used, not merely that
 	 * some scaling happened. */
 	assert(peak > 14000 && peak < 19000);
 
-	printf("SST_IO_AUDIO_INI_HEADROOM OK (decoded peak %d at headroom = 50)\n", peak);
+	printf("TERMGFX_TERMIO_AUDIO_INI_HEADROOM OK (decoded peak %d at headroom = 50)\n", peak);
 	return 0;
 }

@@ -21,15 +21,15 @@ typedef struct {
 
 typedef struct { int start, end; } termgfx_quant_box_t;
 
-static int sst_bucket_of(uint8_t r, uint8_t g, uint8_t b)
+static int termgfx_bucket_of(uint8_t r, uint8_t g, uint8_t b)
 {
 	return ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
 }
 
-/* Sort key for sst_entry_cmp(): the axis picked by the current split. */
+/* Sort key for termgfx_entry_cmp(): the axis picked by the current split. */
 static int g_sort_axis;
 
-static int sst_entry_cmp(const void *pa, const void *pb)
+static int termgfx_entry_cmp(const void *pa, const void *pb)
 {
 	const termgfx_quant_entry_t *a = (const termgfx_quant_entry_t *)pa;
 	const termgfx_quant_entry_t *b = (const termgfx_quant_entry_t *)pb;
@@ -46,7 +46,7 @@ static int sst_entry_cmp(const void *pa, const void *pb)
 	return (a->bucket < b->bucket) ? -1 : (a->bucket > b->bucket ? 1 : 0);
 }
 
-static uint32_t sst_box_weight(const termgfx_quant_entry_t *e, termgfx_quant_box_t box)
+static uint32_t termgfx_box_weight(const termgfx_quant_entry_t *e, termgfx_quant_box_t box)
 {
 	uint32_t w = 0;
 	int i;
@@ -56,7 +56,7 @@ static uint32_t sst_box_weight(const termgfx_quant_entry_t *e, termgfx_quant_box
 }
 
 /* Widest channel (by mean-value range) across box's entries; 0=r,1=g,2=b. */
-static int sst_box_axis(const termgfx_quant_entry_t *e, termgfx_quant_box_t box)
+static int termgfx_box_axis(const termgfx_quant_entry_t *e, termgfx_quant_box_t box)
 {
 	uint32_t rmin = 255, rmax = 0, gmin = 255, gmax = 0, bmin = 255, bmax = 0;
 	uint32_t rr, gr, br;
@@ -85,7 +85,7 @@ static int sst_box_axis(const termgfx_quant_entry_t *e, termgfx_quant_box_t box)
  * single distinct color (start/end 1 apart) can't split -- returns a
  * zero-length box at box->end, which the caller's weight-based picker
  * never selects again (weight-of-nothing sorts last). */
-static termgfx_quant_box_t sst_box_split(termgfx_quant_entry_t *e, termgfx_quant_box_t *box)
+static termgfx_quant_box_t termgfx_box_split(termgfx_quant_entry_t *e, termgfx_quant_box_t *box)
 {
 	termgfx_quant_box_t right;
 	uint32_t total, half, acc;
@@ -95,10 +95,10 @@ static termgfx_quant_box_t sst_box_split(termgfx_quant_entry_t *e, termgfx_quant
 	if (box->end - box->start < 2)
 		return right;
 
-	g_sort_axis = sst_box_axis(e, *box);
-	qsort(e + box->start, (size_t)(box->end - box->start), sizeof(*e), sst_entry_cmp);
+	g_sort_axis = termgfx_box_axis(e, *box);
+	qsort(e + box->start, (size_t)(box->end - box->start), sizeof(*e), termgfx_entry_cmp);
 
-	total = sst_box_weight(e, *box);
+	total = termgfx_box_weight(e, *box);
 	half = total / 2;
 	acc = 0;
 	mid = box->start + 1;   /* default split keeps both halves non-empty */
@@ -136,7 +136,7 @@ int termgfx_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_
 
 	for (i = 0; i < npix; i++) {
 		uint8_t r = rgb[i * 3 + 0], g = rgb[i * 3 + 1], b = rgb[i * 3 + 2];
-		int bk = sst_bucket_of(r, g, b);
+		int bk = termgfx_bucket_of(r, g, b);
 		buckets[bk].r_sum += r;
 		buckets[bk].g_sum += g;
 		buckets[bk].b_sum += b;
@@ -167,7 +167,7 @@ int termgfx_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_
 			bucket_idx[buckets[i].bucket] = i;
 		}
 		for (i = 0; i < npix; i++) {
-			int bk = sst_bucket_of(rgb[i * 3 + 0], rgb[i * 3 + 1], rgb[i * 3 + 2]);
+			int bk = termgfx_bucket_of(rgb[i * 3 + 0], rgb[i * 3 + 1], rgb[i * 3 + 2]);
 			out_idx[i] = (uint8_t)bucket_idx[bk];
 		}
 		free(buckets);
@@ -200,7 +200,7 @@ int termgfx_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_
 				uint32_t wgt;
 				if (boxes[i].end - boxes[i].start < 2)
 					continue;
-				wgt = sst_box_weight(buckets, boxes[i]);
+				wgt = termgfx_box_weight(buckets, boxes[i]);
 				if (wgt > bestw) {
 					bestw = wgt;
 					pick = i;
@@ -208,7 +208,7 @@ int termgfx_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_
 			}
 			if (pick < 0)
 				break;   /* every remaining box is a singleton */
-			boxes[nb] = sst_box_split(buckets, &boxes[pick]);
+			boxes[nb] = termgfx_box_split(buckets, &boxes[pick]);
 			nb++;
 		}
 		nboxes = nb;
@@ -258,13 +258,13 @@ int termgfx_quant_rgb(const uint8_t *rgb, int w, int h, uint8_t *out_idx, uint8_
 				}
 			}
 			for (i = 0; i < npix; i++)
-				out_idx[i] = lut[sst_bucket_of(rgb[i * 3 + 0], rgb[i * 3 + 1], rgb[i * 3 + 2])];
+				out_idx[i] = lut[termgfx_bucket_of(rgb[i * 3 + 0], rgb[i * 3 + 1], rgb[i * 3 + 2])];
 			free(lut);
 		} else {
 			/* OOM building the LUT: fall back to the sparse map alone
 			 * (every actually-used grid cell still has a box index). */
 			for (i = 0; i < npix; i++) {
-				int bk = sst_bucket_of(rgb[i * 3 + 0], rgb[i * 3 + 1], rgb[i * 3 + 2]);
+				int bk = termgfx_bucket_of(rgb[i * 3 + 0], rgb[i * 3 + 1], rgb[i * 3 + 2]);
 				out_idx[i] = (uint8_t)(bucket_idx[bk] >= 0 ? bucket_idx[bk] : 0);
 			}
 		}

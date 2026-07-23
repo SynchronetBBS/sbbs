@@ -34,7 +34,7 @@
  * build line for this binary): __wrap_fopen() counts every open whose path
  * contains "syncscumm.ini" and forwards to the real fopen() via
  * __real_fopen(), so termgfx_termio.c's behavior (including the two real ini reads
- * it does -- sst_read_ini() at init, audio_read_ini() from the stream-open
+ * it does -- termgfx_read_ini() at init, audio_read_ini() from the stream-open
  * path) is otherwise completely unchanged. This was chosen over deleting or
  * chmod-000'ing the ini file after init because that would only prove "a
  * failed re-read doesn't crash", not "no re-read was attempted" -- with
@@ -114,7 +114,7 @@ int main(void)
 	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
-	/* termgfx_termio_init() -> sst_read_ini() opens syncscumm.ini exactly once, to
+	/* termgfx_termio_init() -> termgfx_read_ini() opens syncscumm.ini exactly once, to
 	 * latch g_sixel_max_override and g_audio_enabled. That is the ONE
 	 * legitimate read before any PCM has flowed; everything from here on
 	 * is measured as a delta off this baseline. */
@@ -136,7 +136,7 @@ int main(void)
 
 	/* A digital-audio caps reply (ESC[=7;100;1n) -- this terminal CAN play a
 	 * streamed chunk -- plus a JXL "no" (ESC[=1;0n) to latch the graphics
-	 * settle flag so this test eats none of SST_GFX_SETTLE_MS in real time. */
+	 * settle flag so this test eats none of TERMGFX_GFX_SETTLE_MS in real time. */
 	{
 		const char *reply = "\x1b[=7;100;1n\x1b[=1;0n";
 		assert(send(sv[0], reply, strlen(reply), 0) > 0);
@@ -197,6 +197,6 @@ int main(void)
 		assert(g_ini_fopen_calls == base_fopen_calls);
 	}
 
-	printf("SST_IO_AUDIO_INI_OFF OK\n");
+	printf("TERMGFX_TERMIO_AUDIO_INI_OFF OK\n");
 	return 0;
 }

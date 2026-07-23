@@ -25,7 +25,7 @@
  * EasyRPG's button layer already does the Numbers/Decision/Cancel wiring.
  *
  * -- The NumLock-off numpad ambiguity --
- * termgfx's evdev decode (termgfx_termio.c's sst_evdev_edge()) reports a
+ * termgfx's evdev decode (termgfx_termio.c's termgfx_evdev_edge()) reports a
  * physical numpad key with NumLock off as its NAVIGATION function, not a
  * digit: KP9->PAGEUP, KP1->END, KP3->PAGEDOWN, KP5->TERMGFX_KEY_KP5,
  * KP7->HOME, KP0->INSERT, KP-dot->DELETE. Kitty's CSI-u NumLock-off keypad
@@ -107,7 +107,7 @@ int input_term_map_key(const termgfx_input_event_t &ev, InputKey out[INPUT_TERM_
 	if (ev.keycode < TERMGFX_KEY_FIRST) {
 		/* Printable byte or Ctrl+letter (Ctrl+letter's ascii is 0, but its
 		 * keycode is still the plain letter -- termgfx_termio.c's
-		 * sst_key_byte() -- so keying off keycode, not ascii, covers both). */
+		 * termgfx_key_byte() -- so keying off keycode, not ascii, covers both). */
 		InputKey k = ascii_to_key(ev.keycode);
 		if (k != Input::Keys::NONE) {
 			out[0] = k;

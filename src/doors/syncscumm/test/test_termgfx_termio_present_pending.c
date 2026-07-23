@@ -24,11 +24,11 @@
 #include <unistd.h>
 #include "termgfx_termio.h"
 
-/* SST_TEST-only seams: termgfx_termio_test_set_inflight() forces the DSR-ack pacing
+/* TERMGFX_TEST-only seams: termgfx_termio_test_set_inflight() forces the DSR-ack pacing
  * gate to defer (as if g_auto_depth in-flight frames were already
  * unacknowledged) without needing a real multi-frame DSR exchange, and
  * termgfx_termio_test_present_pending() exposes whether a present() call retained a
- * frame instead of sending it. Neither exists on the shipped door (SST_TEST
+ * frame instead of sending it. Neither exists on the shipped door (TERMGFX_TEST
  * is never defined by build.sh). */
 int termgfx_termio_test_set_inflight(int n);
 int termgfx_termio_test_present_pending(void);
@@ -84,7 +84,7 @@ int main(void)
 	drain(sv[0], out, sizeof out);
 
 	/* Force the DSR-ack pacing gate to defer: g_inflight >= g_auto_depth
-	 * (default depth 3), well inside SST_PACE_DEADLINE_MS so the unstick
+	 * (default depth 3), well inside TERMGFX_PACE_DEADLINE_MS so the unstick
 	 * deadline does not fire and mask the gate. */
 	assert(termgfx_termio_test_set_inflight(3) == 1);
 
@@ -150,6 +150,6 @@ int main(void)
 	assert(n == 0);
 	assert(termgfx_termio_test_present_pending() == 0);
 
-	printf("SST_IO_PRESENT_PENDING OK\n");
+	printf("TERMGFX_TERMIO_PRESENT_PENDING OK\n");
 	return 0;
 }

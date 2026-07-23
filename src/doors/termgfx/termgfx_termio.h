@@ -19,12 +19,12 @@
 // queue live behind this API.
 //
 // Single instance per process: the implementation keeps file-static state, so
-// there is no context handle -- one door process drives one session. This
-// mirrors syncscumm's sst_io_* surface verbatim (renamed), the source the body
-// is extracted from; only syncscumm and the future syncrpg adopt it now. Where
-// other doors need more (variable frame geometry, direct-RGB present, edge
-// scroll), that stays a door-side hook until a door actually adopts this API --
-// see the survey note in the extraction plan.
+// there is no context handle -- one door process drives one session. The body
+// is an extraction of syncscumm's own door-side terminal I/O layer, carried
+// over verbatim and renamed into this namespace; only syncscumm and the future
+// syncrpg adopt it now. Where other doors need more (variable frame geometry,
+// direct-RGB present, edge scroll), that stays a door-side hook until a door
+// actually adopts this API -- see the survey note in the extraction plan.
 
 #ifdef __cplusplus
 extern "C" {

@@ -9,7 +9,7 @@
 # boot_drascula.sh). Lure's game data (Disk1.vga .. Disk4.vga) is a flat set,
 # and its engine-data file lure.dat ships in the package, so --path points
 # straight at the package dir (as the door's default --path does after
-# sst_select_datadir() falls back to the base). ScummVM detects the data as
+# termgfx_select_datadir() falls back to the base). ScummVM detects the data as
 # game id "lure" (VGA/DOS/English); unlike Drascula, Lure's intro free-runs, so
 # a frame-count check is valid here.
 set -e

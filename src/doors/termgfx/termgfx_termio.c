@@ -1,4 +1,4 @@
-/* sst_io.c -- terminal session: fd resolution, probe burst, reply parsing,
+/* termgfx_termio.c -- terminal session: fd resolution, probe burst, reply parsing,
  * hotkeys, pacing bookkeeping.  Present path arrives in Task 4.
  *
  * Ported from syncconquer/door/door_io.c (fd resolution: door_io.c:1297-1364;
@@ -15,9 +15,9 @@
 
 /* The door's whole Windows-vs-POSIX surface -- the monotonic clock, the sleep,
  * WSAStartup, non-blocking send()/recv(), and the isatty/exists/getpid dev
- * helpers -- lives behind sst_plat.h, so this file keeps no #ifdef _WIN32 and
- * pulls in no <winsock2.h>/<netinet/*>/<unistd.h> of its own. See sst_plat.h. */
-#include "sst_plat.h"
+ * helpers -- lives behind termgfx_plat.h, so this file keeps no #ifdef _WIN32 and
+ * pulls in no <winsock2.h>/<netinet/*>/<unistd.h> of its own. See termgfx_plat.h. */
+#include "termgfx_plat.h"
 
 #include "termgfx_termio.h"
 #include "term.h"
@@ -32,12 +32,12 @@
 #include "apc.h"
 /* SGR mouse: enable/restore strings, the DECRPM latch, and the report
  * classifier (termgfx_sgr_kind_t) -- shared with syncconquer/syncduke/
- * syncdoom. This file owns the coordinate mapping (sst_mouse_report(),
+ * syncdoom. This file owns the coordinate mapping (termgfx_termio_mouse_report(),
  * below); mouse.h only knows the wire protocol. */
 #include "mouse.h"
 /* termgfx: key-mode negotiation (kitty CSI-u / SyncTERM evdev) + the shared
  * kitty-parameter and evdev-keycode decoders -- this file owns the byte
- * parser and the queued key events (sst_key_event(), below); keymode.h only
+ * parser and the queued key events (termgfx_key_event(), below); keymode.h only
  * knows the wire protocol, same division of labor as mouse.h above. */
 #include "keymode.h"
 /* termgfx_audio_query/_opus_query + their reply parsers: the M4 audio
@@ -52,7 +52,7 @@
 #include "audio_stream.h"
 #include "audio_mgr.h"
 /* xpdev: iniReadFile()/iniGetInteger() for the sysop sixel_max override
- * (sst_read_ini(), below) and the [audio] tuning keys (audio_read_ini()) --
+ * (termgfx_read_ini(), below) and the [audio] tuning keys (audio_read_ini()) --
  * door/syncscumm.cpp already reads the same syncscumm.ini this way for
  * "subtitles"; this is the identical house pattern, just in the pure-C
  * session layer instead of the C++ ConfMan glue. Also pulls in genwrap.h's
@@ -66,27 +66,27 @@
  * here purely for readability. Said out loud so the next reader doesn't have
  * to wonder why the two files disagree. */
 #include "ini_file.h"
-#include "dirwrap.h"   /* xpdev: isdir() -- portable directory test (sst_isdir) */
+#include "dirwrap.h"   /* xpdev: isdir() -- portable directory test (termgfx_isdir) */
 
-/* ---- module-private defines that used to live in sst_io.h ------------------
+/* ---- module-private defines that used to live in termgfx_termio.h ------------------
  * The shared API header (termgfx_termio.h) deliberately does NOT export these
  * (see task-1-report.md): the framebuffer geometry is republished there under
  * the TERMGFX_TERMIO_FB_* names, and the audio-tuning defaults are syncscumm's
  * own door policy fed into the already-shared audio module (a future door such
  * as syncrpg would pick its own). The body below still references them by their
- * original SST_* spellings, so they are re-declared here, internal to this
+ * original TERMGFX_* spellings, so they are re-declared here, internal to this
  * file, with their EXACT former values -- a pure relocation, no value change.
  *
  * FOLLOW-UP (known, do NOT fix here): the audio defaults are hardcoded here and
  * the diagnostics further down keep syncscumm's SYNCSCUMM_* env-var/path names
  * verbatim; parameterizing those for the generic module is a later task. */
-#define SST_FB_W TERMGFX_TERMIO_FB_W   /* 320 -- shared value, single source */
-#define SST_FB_H TERMGFX_TERMIO_FB_H   /* 200 -- shared value, single source */
-#define SST_AUDIO_RATE       24000     /* mixer/stream rate (see the doc comment
+#define TERMGFX_FB_W TERMGFX_TERMIO_FB_W   /* 320 -- shared value, single source */
+#define TERMGFX_FB_H TERMGFX_TERMIO_FB_H   /* 200 -- shared value, single source */
+#define TERMGFX_AUDIO_RATE       24000     /* mixer/stream rate (see the doc comment
                                         * at termgfx_termio_audio_stream) */
-#define SST_CHUNK_MS         250       /* per-shipped-chunk audio, ms */
-#define SST_PREBUFFER_CHUNKS 3         /* chunks held before playback starts */
-#define SST_AUDIO_HEADROOM   70        /* pre-encode PCM scale, percent (~-3 dB) */
+#define TERMGFX_CHUNK_MS         250       /* per-shipped-chunk audio, ms */
+#define TERMGFX_PREBUFFER_CHUNKS 3         /* chunks held before playback starts */
+#define TERMGFX_AUDIO_HEADROOM   70        /* pre-encode PCM scale, percent (~-3 dB) */
 
 static int g_fd = -1, g_fd_in = -1;      /* -1 = headless (no session) */
 static int g_active;
@@ -99,7 +99,7 @@ static int g_cterm_ver;
 /* CTerm >= 1.329 (TERMGFX_CTERM_VER_BLOB): DrawJXLBlob draws inline, no C;S
  * cache-file round trip -- set from the DA1/CTDA reply's version field
  * (csi_final()'s 'c' case, below). Only meaningful when this build has a
- * real JXL encoder to feed it (see sst_tier(), piece 6). */
+ * real JXL encoder to feed it (see termgfx_tier(), piece 6). */
 static int g_img_blob_ok;
 #endif
 static int g_canvas_w = 640, g_canvas_h = 400;   /* until the probe answers */
@@ -112,7 +112,7 @@ static int g_canvas_exact;   /* set once the ESC[4;h;wt pixel report lands */
  * The SIXEL tier's effective ceiling (termgfx_termio_present()'s "Fit + center"
  * block) is resolved in this precedence order:
  *
- *   1. g_sixel_max_override (sysop "sixel_max" ini key, sst_read_ini()) --
+ *   1. g_sixel_max_override (sysop "sixel_max" ini key, termgfx_read_ini()) --
  *      authoritative if the sysop set one; clamps both axes to the same
  *      value.
  *   2. g_gfx_max_w/h (this reply) -- the terminal told us its real ceiling,
@@ -137,7 +137,7 @@ static int g_canvas_exact;   /* set once the ESC[4;h;wt pixel report lands */
  *      shows a (slightly undersized) picture beats a right-looking one that
  *      shows nothing. */
 static int g_gfx_max_w, g_gfx_max_h;
-/* Sysop override, syncscumm.ini's "sixel_max" key (sst_read_ini()): 0 = no
+/* Sysop override, syncscumm.ini's "sixel_max" key (termgfx_read_ini()): 0 = no
  * override (the default), else the pixel ceiling applied to BOTH axes,
  * ahead of every other source above. */
 static int g_sixel_max_override;
@@ -156,7 +156,7 @@ static FILE *g_capture;                  /* SYNCSCUMM_SIXELOUT mode */
 /* SGR-Pixels (DEC 1016) latch: 0 = report coords are 1-based text CELLS
  * (the common case), 1 = 1-based canvas PIXELS -- confirmed by the DECRPM
  * reply (csi_final()'s 'y' case) or auto-detected the moment a report's
- * coordinate exceeds the text grid (sst_mouse_report(), below). Session-wide,
+ * coordinate exceeds the text grid (termgfx_termio_mouse_report(), below). Session-wide,
  * never reset once latched -- termgfx_mouse_note_pixel_report()'s own
  * contract. */
 static termgfx_mouse_t g_mouse;
@@ -168,7 +168,7 @@ static termgfx_mouse_t g_mouse;
 static termgfx_keymode_t g_km;
 
 /* Raw PRE-ENCODE mixer PCM tap: termgfx_termio_audio_stream() appends exactly the
- * interleaved stereo S16 frames ScummVM's mixer handed us, at SST_AUDIO_RATE,
+ * interleaved stereo S16 frames ScummVM's mixer handed us, at TERMGFX_AUDIO_RATE,
  * before termgfx/audio_stream.c resamples, Opus-encodes or drops any of it.
  * That makes the file the reference signal -- "what the game actually sounds
  * like" -- to diff an encode against when a session reports distortion.
@@ -197,7 +197,7 @@ static termgfx_keymode_t g_km;
  * terminal being there, and a test script has no terminal.
  *
  * Decode with:  ffmpeg -f s16le -ar 24000 -ac 2 -i <path> out.wav
- * (that -ar is SST_AUDIO_RATE, sst_io.h -- the tap is pre-encode, so it is
+ * (that -ar is TERMGFX_AUDIO_RATE, termgfx_termio.h -- the tap is pre-encode, so it is
  * the MIXER's rate, never the Opus rate the wire happens to carry.) */
 static FILE *g_audiodump;
 
@@ -205,7 +205,7 @@ static FILE *g_audiodump;
  * to the dump termgfx_termio_shutdown() closes beside it, because the buffer and the
  * function that grows it belong with the rest of the streaming-audio state much
  * further down -- and termgfx_termio_shutdown() is defined well above that. Same reason
- * sst_audio_underrun() is forward-declared below. */
+ * termgfx_audio_underrun() is forward-declared below. */
 static void audio_free_scratch(void);
 
 /* Present-path trace: one line per present-attempt -- ms-timestamp, outcome,
@@ -223,10 +223,10 @@ static void audio_free_scratch(void);
  *    real door launch; a dev/standalone run with no SBBSDATA falls back to a
  *    relative ./syncscumm-trace in the cwd). When enabled, opens
  *    /tmp/syncscumm.<pid>.trace (the pid keeps two nodes' traces from
- *    colliding). Disabled by default: no file is opened and sst_trace() pays
+ *    colliding). Disabled by default: no file is opened and termgfx_trace() pays
  *    nothing for it.
  *
- * The sst_trace() emitter is defined further down, past the pacing globals it
+ * The termgfx_trace() emitter is defined further down, past the pacing globals it
  * reads (g_inflight/g_auto_depth). */
 static FILE *g_trace;
 /* Raw wire-byte capture: termgfx_termio_init() opens this and termgfx_termio_flush() tees
@@ -252,8 +252,8 @@ static FILE *g_trace;
  * an acceptable trade for an opt-in debug aid that must not itself stall a
  * real session. */
 static FILE *g_tee;
-static void  sst_trace_in(const uint8_t *buf, int n);   /* defined past pacing globals */
-static void  sst_stats_draw(void);                      /* defined past pacing globals */
+static void  termgfx_trace_in(const uint8_t *buf, int n);   /* defined past pacing globals */
+static void  termgfx_stats_draw(void);                      /* defined past pacing globals */
 
 /* Set the instant the peer goes away (EOF/hard read error) or a flush hits a
  * hard write error (not EAGAIN/EINTR) -- see termgfx_termio_flush()/termgfx_termio_pump().
@@ -328,7 +328,7 @@ static int g_status_type = -1;
  * arrives up to ~650ms late at 127 KB/s. The ~750ms cushion covers it --
  * measured, not guessed: of the comic's 3673 frames, 318 (8.7%) take longer
  * than 300ms to drain and NONE exceed 800ms, the worst at 663ms. The cushion is
- * a PRODUCT, SST_CHUNK_MS x SST_PREBUFFER_CHUNKS, not either one alone; see
+ * a PRODUCT, TERMGFX_CHUNK_MS x TERMGFX_PREBUFFER_CHUNKS, not either one alone; see
  * audio_stream_open() before changing either. */
 static uint8_t g_out[1 << 18];
 static size_t  g_out_len;
@@ -361,12 +361,12 @@ static uint64_t g_out_base;
  * MERGES rather than forgets: forgetting a segment would UNDER-report the
  * backlog, which is the exact class of bug this whole change exists to fix.
  * Being wrong in the safe direction is a decision, not an accident. */
-#define SST_ASEG_MAX 64
+#define TERMGFX_ASEG_MAX 64
 typedef struct {
 	uint64_t start;   /* stream offset of the first audio byte */
 	uint64_t end;     /* stream offset one past the last */
-} sst_aseg_t;
-static sst_aseg_t g_aseg[SST_ASEG_MAX];
+} termgfx_aseg_t;
+static termgfx_aseg_t g_aseg[TERMGFX_ASEG_MAX];
 static int        g_aseg_head;    /* index of the oldest live segment */
 static int        g_aseg_n;       /* live segments */
 static uint32_t   g_aseg_merges;  /* ring overflows survived; see aseg_add() */
@@ -375,7 +375,7 @@ static uint64_t g_tx_bytes;      /* every wire-bound byte, for the Ctrl-S KB/fra
 static uint32_t g_dropped_frames;   /* see out_put()'s full-buffer guard, below */
 
 /* Audio APCs the DOOR itself refused, because out_put()'s stage-full guard
- * could not stage all of one (see sst_stream_put()). Distinct from the
+ * could not stage all of one (see termgfx_stream_put()). Distinct from the
  * module's own drop counter, which counts chunks it declined to encode.
  *
  * This has a getter AND a trace field on purpose. The reverted priority
@@ -408,21 +408,21 @@ static void aseg_add(uint64_t start, uint64_t end)
 	if (end <= start)
 		return;
 	if (g_aseg_n > 0) {
-		last = (g_aseg_head + g_aseg_n - 1) % SST_ASEG_MAX;
+		last = (g_aseg_head + g_aseg_n - 1) % TERMGFX_ASEG_MAX;
 		if (g_aseg[last].end == start) {
 			g_aseg[last].end = end;
 			return;
 		}
 	}
-	if (g_aseg_n == SST_ASEG_MAX) {
-		int second = (g_aseg_head + 1) % SST_ASEG_MAX;
+	if (g_aseg_n == TERMGFX_ASEG_MAX) {
+		int second = (g_aseg_head + 1) % TERMGFX_ASEG_MAX;
 
 		g_aseg[second].start = g_aseg[g_aseg_head].start;
 		g_aseg_head          = second;
 		g_aseg_n--;
 		g_aseg_merges++;
 	}
-	slot               = (g_aseg_head + g_aseg_n) % SST_ASEG_MAX;
+	slot               = (g_aseg_head + g_aseg_n) % TERMGFX_ASEG_MAX;
 	g_aseg[slot].start = start;
 	g_aseg[slot].end   = end;
 	g_aseg_n++;
@@ -439,7 +439,7 @@ static void aseg_prune(void)
 				g_aseg[g_aseg_head].start = g_out_base;
 			break;
 		}
-		g_aseg_head = (g_aseg_head + 1) % SST_ASEG_MAX;
+		g_aseg_head = (g_aseg_head + 1) % TERMGFX_ASEG_MAX;
 		g_aseg_n--;
 	}
 }
@@ -453,7 +453,7 @@ static size_t aseg_pending(void)
 
 	aseg_prune();
 	for (i = 0; i < g_aseg_n; i++) {
-		const sst_aseg_t *s = &g_aseg[(g_aseg_head + i) % SST_ASEG_MAX];
+		const termgfx_aseg_t *s = &g_aseg[(g_aseg_head + i) % TERMGFX_ASEG_MAX];
 
 		tot += s->end - s->start;
 	}
@@ -476,7 +476,7 @@ static size_t aseg_pending(void)
  * post-flush check here returns out of immediately).
  *
  * Returns how many of `n` bytes were actually staged -- always `n` except on
- * the drop paths above. sst_stream_put() needs the count for two things the
+ * the drop paths above. termgfx_stream_put() needs the count for two things the
  * void version could not give it: the exact extent of the audio run to record
  * in g_aseg, and whether the door just threw an audio APC away
  * (g_audio_dropped). Every other caller ignores it, exactly as before. */
@@ -542,11 +542,11 @@ void termgfx_termio_flush(void)
 		return;
 	}
 	while (off < g_out_len) {
-		int n = sst_plat_write(g_fd, g_out + off, g_out_len - off);
+		int n = termgfx_plat_write(g_fd, g_out + off, g_out_len - off);
 		if (n < 0) {
-			if (n == SST_IO_INTR)
+			if (n == TERMGFX_IO_INTR)
 				continue;
-			if (n == SST_IO_AGAIN)
+			if (n == TERMGFX_IO_AGAIN)
 				break;              /* backpressure: preserve the tail, try again later */
 			g_hangup = 1;           /* hard write error: dead peer */
 			g_quit = 1;
@@ -571,20 +571,20 @@ void termgfx_termio_flush(void)
 static uint32_t now_ms(void)
 {
 	/* Monotonic ms via xpdev (CLOCK_MONOTONIC on POSIX,
-	 * QueryPerformanceCounter on Windows) -- see sst_plat.c. */
-	return sst_plat_now_ms();
+	 * QueryPerformanceCounter on Windows) -- see termgfx_plat.c. */
+	return termgfx_plat_now_ms();
 }
 
 /* argv indices resolve_fd() consumed (the -s<fd> flag, a DOOR32.SYS path):
  * main() needs these to build the filtered argv scummvm_main() gets, since
  * it rejects options it doesn't recognize (door/syncscumm.cpp). */
-#define SST_MAX_CONSUMED 8
-static int g_consumed_idx[SST_MAX_CONSUMED];
+#define TERMGFX_MAX_CONSUMED 8
+static int g_consumed_idx[TERMGFX_MAX_CONSUMED];
 static int g_consumed_n;
 
 static void mark_consumed(int idx)
 {
-	if (g_consumed_n < SST_MAX_CONSUMED)
+	if (g_consumed_n < TERMGFX_MAX_CONSUMED)
 		g_consumed_idx[g_consumed_n++] = idx;
 }
 
@@ -626,7 +626,7 @@ static int resolve_fd(int argc, char **argv)
 
 	/* Bring up the socket layer (WSAStartup on Windows; ignore SIGPIPE on
 	 * POSIX) before touching the inherited descriptor. Idempotent. */
-	sst_plat_net_init();
+	termgfx_plat_net_init();
 
 	if (cli_sock >= 0) {
 		g_fd = g_fd_in = cli_sock;       /* comm type 2: DOOR32.SYS socket */
@@ -636,10 +636,10 @@ static int resolve_fd(int argc, char **argv)
 	} else if ((e = getenv("SYNCSCUMM_SIXELOUT")) != NULL) {
 		g_capture = fopen(e, "wb");
 		if (g_capture == NULL)
-			fprintf(stderr, "sst_io: SYNCSCUMM_SIXELOUT=%s: %s (falling back to "
+			fprintf(stderr, "termgfx_termio: SYNCSCUMM_SIXELOUT=%s: %s (falling back to "
 			        "headless)\n", e, strerror(errno));
 		return g_capture != NULL;        /* capture mode: no input fd at all */
-	} else if (sst_plat_isatty(1)) {
+	} else if (termgfx_plat_isatty(1)) {
 		g_fd = 1;
 		g_fd_in = 0;
 	} else {
@@ -649,9 +649,9 @@ static int resolve_fd(int argc, char **argv)
 	/* Non-blocking + TCP_NODELAY + large SO_SNDBUF on the live descriptor(s).
 	 * On a socket g_fd == g_fd_in, so one call; a POSIX stdio/tty door has two.
 	 * The TCP_NODELAY/SNDBUF half is best-effort and no-ops on a tty. */
-	sst_plat_sock_setup(g_fd);
+	termgfx_plat_sock_setup(g_fd);
 	if (g_fd_in != g_fd)
-		sst_plat_sock_setup(g_fd_in);
+		termgfx_plat_sock_setup(g_fd_in);
 	return 1;
 }
 
@@ -672,8 +672,8 @@ static int  g_apc_kind;
  * "Windows Terminal 1.22.11141.0" all fit easily); a longer/garbage payload
  * is simply truncated, not a parse error. Reset on every DCS entry (P_ESC's
  * 'P' case) so a stale payload from an earlier DCS string is never matched. */
-#define SST_XTVER_CAP 64
-static char g_xtver_buf[SST_XTVER_CAP];
+#define TERMGFX_XTVER_CAP 64
+static char g_xtver_buf[TERMGFX_XTVER_CAP];
 static int  g_xtver_len;
 
 /* Pacing: forward-declared here (defined with the rest of the present-path
@@ -682,37 +682,37 @@ static int  g_xtver_len;
  * bookkeeping (door_io.c:2107-2121 door_pace_ack() pattern). Harmless when
  * the ring is still empty (present() hasn't sent a paced frame yet): the
  * "any DSR outstanding" check inside just skips the RTT sample. */
-static void sst_pace_ack(void);
+static void termgfx_pace_ack(void);
 
 /* Hand the streamed-audio module a channel's FIFO-drained notification. A
  * forward declaration because the stream itself is defined past the audio
  * capability state it is built from (which in turn is defined past this
  * parser), and csi_final() is where the notification lands -- see the 'n'
  * case below. */
-static void  sst_audio_underrun(int ch);
+static void  termgfx_audio_underrun(int ch);
 
 /* SGR mouse report -> game-coordinate input event(s) (defined with the rest
  * of the present-path geometry state, below, since it maps through
- * sst_image_rect() -- the same fit+center rect termgfx_termio_present() draws the
- * frame in). csi_final()'s 'M'/'m' cases (parser, above sst_tier()) call
+ * termgfx_image_rect() -- the same fit+center rect termgfx_termio_present() draws the
+ * frame in). csi_final()'s 'M'/'m' cases (parser, above termgfx_tier()) call
  * this as soon as a report's three params are parsed. */
-static void sst_mouse_report(int b, int col, int row, int release);
+static void termgfx_termio_mouse_report(int b, int col, int row, int release);
 
 /* Keyboard decode (M3 Task 5): forward-declared for the same reason as
- * sst_mouse_report just above -- defined with the rest of the input-event
- * FIFO state (needs sst_push_event()), but parse_bytes()'s P_NORMAL/P_ESC
+ * termgfx_termio_mouse_report just above -- defined with the rest of the input-event
+ * FIFO state (needs termgfx_push_event()), but parse_bytes()'s P_NORMAL/P_ESC
  * byte handlers and csi_final()'s CSI/SS3/kitty/evdev dispatch, both defined
- * above that, need to queue key events. sst_toggle_stats() is the one
- * exception -- it needs no FIFO, just sst_stats_draw()/sst_bottom_row(), so
+ * above that, need to queue key events. termgfx_toggle_stats() is the one
+ * exception -- it needs no FIFO, just termgfx_stats_draw()/termgfx_bottom_row(), so
  * it is defined right above parse_bytes() instead; declared here only so the
  * kitty/evdev sections (also above that definition) can reach it too. */
-static void sst_key_event(int keycode, int ascii, int mods, int down);
-static void sst_key_press(int keycode, int ascii, int mods);
-static void sst_key_byte(int c);
-static void sst_evdev_report(int down);
-static void sst_toggle_stats(void);
+static void termgfx_key_event(int keycode, int ascii, int mods, int down);
+static void termgfx_key_press(int keycode, int ascii, int mods);
+static void termgfx_key_byte(int c);
+static void termgfx_evdev_report(int down);
+static void termgfx_toggle_stats(void);
 
-#define SST_AUDIO_VOLUME_PCT 50    /* default channel level, percent (-> dB via
+#define TERMGFX_AUDIO_VOLUME_PCT 50    /* default channel level, percent (-> dB via
                                     * termgfx_db_from_pct); 50 = -6 dB, trimmed
                                     * so BASS sits with the other doors */
 
@@ -738,10 +738,10 @@ static int csi_params(int *out, int max)
  * termgfx (keymode.h) owns the wire protocol and the flags/state; these are
  * thin wrappers over g_km/g_csi_par so csi_final()'s CSI/SS3 dispatch below
  * reads no worse than door_input.c's own kitty_active()/kitty_parse(). */
-static int sst_kitty_active(void) { return termgfx_keymode_kitty_active(&g_km); }
-static int sst_evdev_active(void) { return termgfx_keymode_evdev_active(&g_km); }
+static int termgfx_kitty_active(void) { return termgfx_keymode_kitty_active(&g_km); }
+static int termgfx_evdev_active(void) { return termgfx_keymode_evdev_active(&g_km); }
 
-static int sst_kitty_parse(int *mod, int *ev)
+static int termgfx_termio_kitty_parse(int *mod, int *ev)
 {
 	return termgfx_kitty_parse(g_csi_par, g_csi_len, mod, ev);
 }
@@ -763,7 +763,7 @@ static void csi_final(char fin)
 				 * kitty (a SyncTERM that advertises it doesn't speak kitty
 				 * anyway): enable reports (=1h) and suppress the translated
 				 * byte stream (=2h), so keys arrive only as the CSI=<code>
-				 * K/k edges sst_evdev_report() handles, below. */
+				 * K/k edges termgfx_evdev_report() handles, below. */
 				if (p[k] == 8 && g_csi_par[0] == '<') {
 					char   ks[TERMGFX_KEYMODE_SEQ_MAX];
 					size_t kn = termgfx_keymode_enable_evdev(&g_km, ks, sizeof ks, now_ms());
@@ -794,7 +794,7 @@ static void csi_final(char fin)
 					g_term_cols = p[1];
 				}
 			}
-			sst_pace_ack();
+			termgfx_pace_ack();
 			return;
 		case 'n':   /* CTerm state report -- the Q;JXL reply ("ESC[=1;{0,1}n")
 		             * and the audio caps replies are parsed separately by the
@@ -818,7 +818,7 @@ static void csi_final(char fin)
 				 * the stream's own (cfg.ch is 2). Defense in depth, not the
 				 * only thing standing between this and a phantom underrun. */
 				if (np >= 3 && p[0] == 7 && p[1] != 100 && p[2] == 0)
-					sst_audio_underrun(p[1]);
+					termgfx_audio_underrun(p[1]);
 			}
 			return;
 		case 't':   /* window report: ESC[4;h;wt text-area px, ESC[6;h;wt cell px */
@@ -850,7 +850,7 @@ static void csi_final(char fin)
 		case 'M': case 'm': {            /* xterm SGR mouse: ESC[<b;col;row M/m */
 			int q[3];
 			if (csi_params(q, 3) >= 3)
-				sst_mouse_report(q[0], q[1], q[2], fin == 'm');
+				termgfx_termio_mouse_report(q[0], q[1], q[2], fin == 'm');
 			return;
 		}
 		case 'y': {                      /* DECRPM: ESC[?1016;Ps$y */
@@ -866,27 +866,27 @@ static void csi_final(char fin)
 			int keycode = (fin == 'A') ? TERMGFX_KEY_UP : (fin == 'B') ? TERMGFX_KEY_DOWN
 			            : (fin == 'C') ? TERMGFX_KEY_RIGHT : TERMGFX_KEY_LEFT;
 
-			if (sst_kitty_active()) {
+			if (termgfx_kitty_active()) {
 				int mod, ev;
-				sst_kitty_parse(&mod, &ev);
+				termgfx_termio_kitty_parse(&mod, &ev);
 				(void)mod;   /* arrows carry no ctrl/alt action -- only the event type matters */
-				sst_key_event(keycode, 0, 0, ev != 3);
+				termgfx_key_event(keycode, 0, 0, ev != 3);
 			} else
-				sst_key_press(keycode, 0, 0);
+				termgfx_key_press(keycode, 0, 0);
 			return;
 		}
-		case 'H': sst_key_press(TERMGFX_KEY_HOME, 0, 0); return;
-		case 'F': sst_key_press(TERMGFX_KEY_END,  0, 0); return;
+		case 'H': termgfx_key_press(TERMGFX_KEY_HOME, 0, 0); return;
+		case 'F': termgfx_key_press(TERMGFX_KEY_END,  0, 0); return;
 		case 'K':   /* evdev press report (CSI = code[;code...] K), else cterm End */
-			if (sst_evdev_active() && g_csi_len > 0 && g_csi_par[0] == '=') {
-				sst_evdev_report(1);
+			if (termgfx_evdev_active() && g_csi_len > 0 && g_csi_par[0] == '=') {
+				termgfx_evdev_report(1);
 				return;
 			}
-			sst_key_press(TERMGFX_KEY_END, 0, 0);
+			termgfx_key_press(TERMGFX_KEY_END, 0, 0);
 			return;
 		case 'k':   /* evdev release report */
-			if (sst_evdev_active() && g_csi_len > 0 && g_csi_par[0] == '=')
-				sst_evdev_report(0);
+			if (termgfx_evdev_active() && g_csi_len > 0 && g_csi_par[0] == '=')
+				termgfx_evdev_report(0);
 			return;
 		/* F1/F2 (CSI P/Q or SS3 O P/Q). F3/F4 (SS3 O R/O S) are deliberately
 		 * NOT mapped here -- 'R' and 'S' already mean this file's own
@@ -896,20 +896,20 @@ static void csi_final(char fin)
 		case 'P': case 'Q': {
 			int keycode = (fin == 'P') ? TERMGFX_KEY_F1 : TERMGFX_KEY_F2;
 
-			if (sst_kitty_active()) {
+			if (termgfx_kitty_active()) {
 				int mod, ev;
-				sst_kitty_parse(&mod, &ev);
+				termgfx_termio_kitty_parse(&mod, &ev);
 				(void)mod;   /* F1/F2 carry no ctrl/alt action -- only the event type matters */
-				sst_key_event(keycode, 0, 0, ev != 3);
+				termgfx_key_event(keycode, 0, 0, ev != 3);
 			} else
-				sst_key_press(keycode, 0, 0);
+				termgfx_key_press(keycode, 0, 0);
 			return;
 		}
 		case '~': {   /* nav/F-key numerics: ESC[<n>~ */
 			int mod = 1, ev = 1, keycode = 0;
 
-			if (sst_kitty_active())
-				sst_kitty_parse(&mod, &ev);
+			if (termgfx_kitty_active())
+				termgfx_termio_kitty_parse(&mod, &ev);
 			(void)mod;   /* nav/F-keys carry no ctrl/alt action -- only the event type matters */
 			np = csi_params(p, 1);
 			if (np < 1)
@@ -932,10 +932,10 @@ static void csi_final(char fin)
 				case 20:         keycode = TERMGFX_KEY_F9;       break;
 				default:         return;
 			}
-			if (sst_kitty_active())
-				sst_key_event(keycode, 0, 0, ev != 3);
+			if (termgfx_kitty_active())
+				termgfx_key_event(keycode, 0, 0, ev != 3);
 			else
-				sst_key_press(keycode, 0, 0);
+				termgfx_key_press(keycode, 0, 0);
 			return;
 		}
 		case 'u':
@@ -952,7 +952,7 @@ static void csi_final(char fin)
 				return;
 			}
 			{
-				int mod, ev, cp = sst_kitty_parse(&mod, &ev);
+				int mod, ev, cp = termgfx_termio_kitty_parse(&mod, &ev);
 				int down, keycode, ascii = 0, mods = 0;
 
 				if (cp <= 0)
@@ -962,17 +962,17 @@ static void csi_final(char fin)
 				 * set (Home/End/arrows/PgUp/PgDn/Ins/Del) -- map those to
 				 * the nav keys so the keypad respects NumLock. */
 				switch (cp) {
-					case 57417: sst_key_event(TERMGFX_KEY_LEFT,     0, 0, down); return;
-					case 57418: sst_key_event(TERMGFX_KEY_RIGHT,    0, 0, down); return;
-					case 57419: sst_key_event(TERMGFX_KEY_UP,       0, 0, down); return;
-					case 57420: sst_key_event(TERMGFX_KEY_DOWN,     0, 0, down); return;
-					case 57421: sst_key_event(TERMGFX_KEY_PAGEUP,   0, 0, down); return;
-					case 57422: sst_key_event(TERMGFX_KEY_PAGEDOWN, 0, 0, down); return;
-					case 57423: sst_key_event(TERMGFX_KEY_HOME,     0, 0, down); return;
-					case 57424: sst_key_event(TERMGFX_KEY_END,      0, 0, down); return;
-					case 57425: sst_key_event(TERMGFX_KEY_INSERT,   0, 0, down); return;
-					case 57426: sst_key_event(TERMGFX_KEY_DELETE,   0, 0, down); return;
-					case 57427: sst_key_event(TERMGFX_KEY_KP5,      0, 0, down); return;   /* KP_BEGIN center: AGI stop */
+					case 57417: termgfx_key_event(TERMGFX_KEY_LEFT,     0, 0, down); return;
+					case 57418: termgfx_key_event(TERMGFX_KEY_RIGHT,    0, 0, down); return;
+					case 57419: termgfx_key_event(TERMGFX_KEY_UP,       0, 0, down); return;
+					case 57420: termgfx_key_event(TERMGFX_KEY_DOWN,     0, 0, down); return;
+					case 57421: termgfx_key_event(TERMGFX_KEY_PAGEUP,   0, 0, down); return;
+					case 57422: termgfx_key_event(TERMGFX_KEY_PAGEDOWN, 0, 0, down); return;
+					case 57423: termgfx_key_event(TERMGFX_KEY_HOME,     0, 0, down); return;
+					case 57424: termgfx_key_event(TERMGFX_KEY_END,      0, 0, down); return;
+					case 57425: termgfx_key_event(TERMGFX_KEY_INSERT,   0, 0, down); return;
+					case 57426: termgfx_key_event(TERMGFX_KEY_DELETE,   0, 0, down); return;
+					case 57427: termgfx_key_event(TERMGFX_KEY_KP5,      0, 0, down); return;   /* KP_BEGIN center: AGI stop */
 				}
 				if (cp >= 57399 && cp <= 57414) {   /* NumLock ON: keypad PUA -> ASCII */
 					static const char kp[] = "0123456789./*-+\r";
@@ -991,7 +991,7 @@ static void csi_final(char fin)
 				if (termgfx_kitty_ctrl(mod)) {
 					if ((cp | 0x20) == 's') {
 						if (down)
-							sst_toggle_stats();
+							termgfx_toggle_stats();
 						return;
 					}
 					if ((cp | 0x20) == 'c' || (cp | 0x20) == 'q') {
@@ -1028,7 +1028,7 @@ static void csi_final(char fin)
 					mods |= TERMGFX_MOD_SHIFT;
 				if (termgfx_kitty_alt(mod))
 					mods |= TERMGFX_MOD_ALT;
-				sst_key_event(keycode, ascii, mods, down);
+				termgfx_key_event(keycode, ascii, mods, down);
 			}
 			return;
 		default:
@@ -1036,8 +1036,8 @@ static void csi_final(char fin)
 	}
 }
 
-#define SST_ACC_CAP 4096
-static uint8_t  g_acc[SST_ACC_CAP];
+#define TERMGFX_ACC_CAP 4096
+static uint8_t  g_acc[TERMGFX_ACC_CAP];
 static size_t   g_acc_len;
 static uint32_t g_probe_start_ms;
 static uint32_t g_first_present_ms;   /* first present() that reached the holds */
@@ -1063,7 +1063,7 @@ static int g_opus_seen;         /* the Opus reply actually landed (vs. the
                                  * a tail the Opus parser still needs */
 
 /* Sysop sound switch, syncscumm.ini's "[audio] enabled" key. THE one copy of
- * that key in this file: read once, at init (sst_read_ini(), below), and read
+ * that key in this file: read once, at init (termgfx_read_ini(), below), and read
  * back by both places that care -- termgfx_termio_audio_available() right below, and
  * audio_stream_open()'s cfg.enabled. Deliberately NOT two reads of the same
  * file: both answer the same session the same question ("will sound play?"),
@@ -1078,7 +1078,7 @@ static int g_audio_enabled = 1;
 /* The graphics settle window (the JXL reply's deadline), hoisted here from
  * the present-path constants below: termgfx_termio_audio_available()'s bounded wait
  * is defined in terms of the same window and is defined above them. */
-#define SST_GFX_SETTLE_MS  2000   /* JXL reply window (matches jxl_scan_feed) */
+#define TERMGFX_GFX_SETTLE_MS  2000   /* JXL reply window (matches jxl_scan_feed) */
 
 /* Append raw input to the shared scan accumulator. Split out of
  * jxl_scan_feed() for M4, when the audio replies became a second scanner
@@ -1125,7 +1125,7 @@ static void acc_shrink(void)
 {
 	if ((g_jxl_done && g_probe_replied && g_audio_done
 	     && (!g_opus_asked || g_opus_seen))
-	    || (int32_t)(now_ms() - g_probe_start_ms) > SST_GFX_SETTLE_MS) {
+	    || (int32_t)(now_ms() - g_probe_start_ms) > TERMGFX_GFX_SETTLE_MS) {
 		if (g_acc_len > 256) {
 			memmove(g_acc, g_acc + (g_acc_len - 256), 256);
 			g_acc_len = 256;
@@ -1191,7 +1191,7 @@ static void audio_scan_feed(void)
 
 /* The terminal's bottom text row: the real grid from the 999;999 CPR, else a
  * cell-height guess. Shared by the stats bar and its erase-on-hide. */
-static int sst_bottom_row(void)
+static int termgfx_bottom_row(void)
 {
 	if (g_term_rows > 0)
 		return g_term_rows;
@@ -1205,18 +1205,18 @@ static int sst_bottom_row(void)
  * make the toggle appear to do nothing. Shared by the P_NORMAL byte path and
  * the kitty/evdev decode (csi_final()'s 'u'/'K' cases, above), so Ctrl-S
  * stays a door hotkey under every key mode. */
-static void sst_toggle_stats(void)
+static void termgfx_toggle_stats(void)
 {
 	g_stats = !g_stats;
 	if (g_stats) {
-		sst_stats_draw();
+		termgfx_stats_draw();
 		termgfx_termio_flush();
 	} else {
 		/* Erase the bar we last drew; it sits on the reserved bottom row,
 		 * so clearing the line is enough. */
 		char e[32];
 		int  en = snprintf(e, sizeof e, "\x1b[%d;1H\x1b[0m\x1b[K\x1b[?25l",
-		                   sst_bottom_row());
+		                   termgfx_bottom_row());
 		out_put(e, (size_t)en);
 		termgfx_termio_flush();
 	}
@@ -1233,13 +1233,13 @@ static void parse_bytes(const uint8_t *buf, int n)
 				if (c == 0x1b)
 					g_pstate = P_ESC;
 				else if (c == 0x13)                     /* Ctrl-S: toggle stats bar */
-					sst_toggle_stats();
+					termgfx_toggle_stats();
 				else if (c == 'q' || c == 0x03)          /* q / Ctrl-C: request quit */
 					g_quit = 1;
 				else if (g_menu_letter && c == (uint8_t)(g_menu_letter - 'a' + 1))
 					g_menu = 1;                          /* Ctrl+<menu_letter>: open GMM */
 				else
-					sst_key_byte(c);
+					termgfx_key_byte(c);
 				break;
 			case P_ESC:
 				if (c == '[' || c == 'O') {
@@ -1254,7 +1254,7 @@ static void parse_bytes(const uint8_t *buf, int n)
 					g_pstate = P_NORMAL;
 					/* Not a CSI/APC introducer: the pending ESC was a lone
 					 * Escape key, not the start of a sequence. */
-					sst_key_press(TERMGFX_KEY_ESCAPE, 0, 0);
+					termgfx_key_press(TERMGFX_KEY_ESCAPE, 0, 0);
 					i--;                 /* reprocess c as P_NORMAL
 					                      * (door_io.c:3289-3293 pattern) */
 				}
@@ -1271,7 +1271,7 @@ static void parse_bytes(const uint8_t *buf, int n)
 					 * DECRQSS status reply included) is still just swallowed --
 					 * only a 'P' introducer whose captured payload starts ">|"
 					 * is matched, below. */
-					if (g_apc_kind == 'P' && g_xtver_len < SST_XTVER_CAP)
+					if (g_apc_kind == 'P' && g_xtver_len < TERMGFX_XTVER_CAP)
 						g_xtver_buf[g_xtver_len++] = (char)c;
 					if (++g_apc_len > (1 << 16))
 						/* Deliberately tighter than door_io.c's 1<<20: this task
@@ -1322,7 +1322,7 @@ static void parse_bytes(const uint8_t *buf, int n)
  * resolveSubtitles() reads its own "subtitles" key from, so no chdir has run
  * between the two reads. A missing file or missing key is not an error --
  * iniGetInteger()'s default (0) is exactly "no override". */
-static void sst_read_ini(void)
+static void termgfx_read_ini(void)
 {
 	FILE *f = fopen("syncscumm.ini", "r");
 	str_list_t ini;
@@ -1358,7 +1358,7 @@ int termgfx_termio_init(int argc, char **argv)
 		if (ap != NULL && *ap != '\0') {
 			g_audiodump = fopen(ap, "wb");
 			if (g_audiodump == NULL)
-				fprintf(stderr, "sst_io: SYNCSCUMM_AUDIODUMP=%s: %s (no audio "
+				fprintf(stderr, "termgfx_termio: SYNCSCUMM_AUDIODUMP=%s: %s (no audio "
 				        "dump)\n", ap, strerror(errno));
 		}
 	}
@@ -1370,8 +1370,8 @@ int termgfx_termio_init(int argc, char **argv)
 	 * <data-dir>/syncscumm/stderr (SBBSDATA for a real door; dev/standalone
 	 * fallback ./syncscumm-stderr) to redirect stderr to a durable file.
 	 * Placed before resolve_fd()'s headless early-return so it also covers a
-	 * boot test. sst_plat_redirect_stderr() keeps the platform #ifdef out of
-	 * this file (see sst_plat.h). */
+	 * boot test. termgfx_plat_redirect_stderr() keeps the platform #ifdef out of
+	 * this file (see termgfx_plat.h). */
 	{
 		const char *data_dir = getenv("SBBSDATA");
 		char        touch[512];
@@ -1381,11 +1381,11 @@ int termgfx_termio_init(int argc, char **argv)
 		else
 			snprintf(touch, sizeof touch, "./syncscumm-stderr");   /* dev/standalone fallback */
 
-		if (sst_plat_file_exists(touch)) {
+		if (termgfx_plat_file_exists(touch)) {
 			char path[64];
 
-			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.stderr", sst_plat_getpid());
-			sst_plat_redirect_stderr(path);
+			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.stderr", termgfx_plat_getpid());
+			termgfx_plat_redirect_stderr(path);
 		}
 	}
 
@@ -1393,7 +1393,7 @@ int termgfx_termio_init(int argc, char **argv)
 		return 0;
 	g_active = 1;
 
-	sst_read_ini();
+	termgfx_read_ini();
 
 	/* Env-var gate (test scripts): explicit path takes precedence. */
 	{
@@ -1418,10 +1418,10 @@ int termgfx_termio_init(int argc, char **argv)
 		else
 			snprintf(touch, sizeof touch, "./syncscumm-trace");   /* dev/standalone fallback */
 
-		if (sst_plat_file_exists(touch)) {
+		if (termgfx_plat_file_exists(touch)) {
 			char path[64];
 
-			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.trace", sst_plat_getpid());
+			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.trace", termgfx_plat_getpid());
 			g_trace = fopen(path, "w");
 			if (g_trace != NULL)
 				setvbuf(g_trace, NULL, _IOLBF, 0);   /* line-buffered */
@@ -1442,10 +1442,10 @@ int termgfx_termio_init(int argc, char **argv)
 		else
 			snprintf(touch, sizeof touch, "./syncscumm-wirecap");   /* dev/standalone fallback */
 
-		if (sst_plat_file_exists(touch)) {
+		if (termgfx_plat_file_exists(touch)) {
 			char path[64];
 
-			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.raw", sst_plat_getpid());
+			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.raw", termgfx_plat_getpid());
 			g_tee = fopen(path, "wb");
 			if (g_tee != NULL)
 				setvbuf(g_tee, NULL, _IOFBF, 1 << 18);   /* 256KB, fully buffered */
@@ -1479,7 +1479,7 @@ int termgfx_termio_init(int argc, char **argv)
 	/* SGR mouse: motion tracking (1003) + SGR encoding (1006) + SGR-Pixels
 	 * (1016), the last also DECRQM-probed so csi_final()'s 'y' case can latch
 	 * per-pixel precision the moment the reply lands rather than waiting on
-	 * sst_mouse_report()'s past-the-grid auto-detect (termgfx_mouse_enable
+	 * termgfx_termio_mouse_report()'s past-the-grid auto-detect (termgfx_mouse_enable
 	 * itself sends the DECRQM query). Nothing here gates present() the way
 	 * DA1/JXL do -- a terminal that ignores it just never sends reports. */
 	out_puts(termgfx_mouse_enable);
@@ -1578,9 +1578,9 @@ void termgfx_termio_pump(void)
 		return;   /* headless / capture mode (no client to read from) */
 
 	for (;;) {
-		int n = sst_plat_read(g_fd_in, buf, sizeof buf);
+		int n = termgfx_plat_read(g_fd_in, buf, sizeof buf);
 		if (n < 0) {
-			if (n == SST_IO_AGAIN || n == SST_IO_INTR)
+			if (n == TERMGFX_IO_AGAIN || n == TERMGFX_IO_INTR)
 				return;         /* nothing more to read this pump */
 			g_hangup = 1;        /* hard read error: treat like a dropped peer */
 			g_quit   = 1;
@@ -1621,7 +1621,7 @@ void termgfx_termio_pump(void)
 				g_status_type = r;
 		}
 
-		sst_trace_in(buf, (int)n);
+		termgfx_trace_in(buf, (int)n);
 		acc_append(buf, (size_t)n);
 		jxl_scan_feed();
 		audio_scan_feed();
@@ -1728,13 +1728,13 @@ int termgfx_termio_audio_available(void)
 	if (!g_audio_enabled)
 		return 0;
 	while (!g_audio_done
-	       && (int32_t)(now_ms() - g_probe_start_ms) < SST_GFX_SETTLE_MS) {
+	       && (int32_t)(now_ms() - g_probe_start_ms) < TERMGFX_GFX_SETTLE_MS) {
 		termgfx_termio_pump();
 		if (g_hangup)
 			return 0;
 		if (g_audio_done)
 			break;
-		sst_plat_sleep_ms(2);   /* the reply is one packet away, not a poll loop */
+		termgfx_plat_sleep_ms(2);   /* the reply is one packet away, not a poll loop */
 	}
 	/* Tier 0 is audio-APC-capable but libsndfile-less: A;Load is a no-op
 	 * there, so a Queue would play an empty slot -- silent, and worse than
@@ -1744,17 +1744,17 @@ int termgfx_termio_audio_available(void)
 	return (g_audio_tier >= 1 && g_opus_ok) ? 1 : 0;
 }
 
-static int sst_isdir(const char *p)
+static int termgfx_isdir(const char *p)
 {
 	/* xpdev's portable directory test: POSIX has S_ISDIR() but MSVC's
 	 * <sys/stat.h> does not define it (only _S_IFDIR), and isdir() hides that. */
 	return isdir(p) ? 1 : 0;
 }
 
-/* Talkie/Floppy data-set selection (M5): see the doc comment in sst_io.h. A
+/* Talkie/Floppy data-set selection (M5): see the doc comment in termgfx_termio.h. A
  * pure directory-stat helper -- no session state -- so it is unit-tested
  * standalone (test/test_sst_datadir.c) without a socket. */
-const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bufsz)
+const char *termgfx_select_datadir(const char *base, int audio, char *buf, size_t bufsz)
 {
 	const char *first  = audio ? "talkie" : "floppy";
 	const char *second = audio ? "floppy" : "talkie";
@@ -1762,12 +1762,12 @@ const char *sst_select_datadir(const char *base, int audio, char *buf, size_t bu
 	const char *why;
 
 	snprintf(cand, sizeof cand, "%s/%s", base, first);
-	if (sst_isdir(cand)) {
+	if (termgfx_isdir(cand)) {
 		snprintf(buf, bufsz, "%s", cand);
 		why = "match";
 	} else {
 		snprintf(cand, sizeof cand, "%s/%s", base, second);
-		if (sst_isdir(cand)) {
+		if (termgfx_isdir(cand)) {
 			snprintf(buf, bufsz, "%s", cand);
 			why = "fallback-other-build";
 		} else {
@@ -1806,9 +1806,9 @@ static int g_stream_open_failed;
  * rather than in the cfg the module is handed because it is not the module's
  * business: termgfx/audio_stream.c is shared with syncretro, and what a hot
  * SCUMM mix needs before an Opus encoder is this door's problem to solve on its
- * own side of the seam. See SST_AUDIO_HEADROOM (sst_io.h) for what it is for
+ * own side of the seam. See TERMGFX_AUDIO_HEADROOM (termgfx_termio.h) for what it is for
  * and why the number is 70; audio_apply_headroom() below is where it lands. */
-static int g_audio_headroom = SST_AUDIO_HEADROOM;
+static int g_audio_headroom = TERMGFX_AUDIO_HEADROOM;
 
 /* Scratch for audio_apply_headroom()'s scaled copy: the mixer hands us a const
  * block it still owns, so scaling has to go somewhere else. Grown on demand and
@@ -1841,7 +1841,7 @@ static void audio_free_scratch(void)
  * visible instead of merely audible. (Fixing the truncation itself is the
  * separate follow-up filed against out_put()'s byte-granular drop; see
  * docs/superpowers/plans/2026-07-16-syncscumm-m4.md.) */
-static void sst_stream_put(void *ctx, const void *buf, size_t len)
+static void termgfx_stream_put(void *ctx, const void *buf, size_t len)
 {
 	uint64_t start = g_out_base + (uint64_t)g_out_len;
 	size_t   n;
@@ -1854,7 +1854,7 @@ static void sst_stream_put(void *ctx, const void *buf, size_t len)
 		g_audio_dropped++;
 }
 
-static int sst_stream_flush(void *ctx)
+static int termgfx_stream_flush(void *ctx)
 {
 	(void)ctx;
 	termgfx_termio_flush();
@@ -1863,26 +1863,26 @@ static int sst_stream_flush(void *ctx)
 
 /* AUDIO's backlog, never the stage's. The one-word difference between this and
  * termgfx_termio_out_backlog() is the entire comic-intro defect. */
-static size_t sst_stream_backlog(void *ctx)
+static size_t termgfx_stream_backlog(void *ctx)
 {
 	(void)ctx;
 	return termgfx_termio_audio_backlog();
 }
 
 static const termgfx_stream_io_t g_stream_io = {
-	sst_stream_put, sst_stream_flush, sst_stream_backlog, NULL
+	termgfx_stream_put, termgfx_stream_flush, termgfx_stream_backlog, NULL
 };
 
-static void sst_audio_underrun(int ch)
+static void termgfx_audio_underrun(int ch)
 {
 	if (g_stream != NULL)
 		termgfx_stream_underrun(g_stream, ch);
 }
 
 /* Sysop audio settings, syncscumm.ini's [audio] section. Same file and same
- * lookup as sst_read_ini()'s "sixel_max" above and door/syncscumm.cpp's
+ * lookup as termgfx_read_ini()'s "sixel_max" above and door/syncscumm.cpp's
  * resolveSubtitles() -- one syncscumm.ini, fopen()ed relative to CWD, the
- * door's startup_dir. (Read here rather than folded into sst_read_ini()
+ * door's startup_dir. (Read here rather than folded into termgfx_read_ini()
  * because these values belong to the stream's config struct, which does not
  * exist until audio_stream_open() builds it; parking them in five more
  * file-static shadows just to copy them across later would be the worse
@@ -1908,15 +1908,15 @@ static void audio_read_ini(termgfx_stream_cfg_t *cfg)
 	if (ini == NULL)
 		return;
 	/* No "enabled" here: that key is latched once at init into
-	 * g_audio_enabled (sst_read_ini(), above) because
+	 * g_audio_enabled (termgfx_read_ini(), above) because
 	 * termgfx_termio_audio_available() needs it long before this runs, and re-reading
 	 * it here would give the session a second opinion of the same switch. */
 	cfg->quality   = iniGetFloat(ini, "audio", "quality", cfg->quality);
 	/* volume is the exception to the fallback-is-cfg rule above: the sysop knob
 	 * stays a friendly 0..100 percent, but the module's field is dB, so read the
-	 * percent (default SST_AUDIO_VOLUME_PCT) and convert it. */
+	 * percent (default TERMGFX_AUDIO_VOLUME_PCT) and convert it. */
 	cfg->volume_db = termgfx_db_from_pct(iniGetInteger(ini, "audio", "volume",
-	                                                   SST_AUDIO_VOLUME_PCT));
+	                                                   TERMGFX_AUDIO_VOLUME_PCT));
 	cfg->chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", cfg->chunk_ms);
 	cfg->prebuffer = iniGetInteger(ini, "audio", "prebuffer", cfg->prebuffer);
 	cfg->channels  = iniGetInteger(ini, "audio", "channels", cfg->channels);
@@ -1945,7 +1945,7 @@ static void audio_read_ini(termgfx_stream_cfg_t *cfg)
  * cost one branch and no copy.
  *
  * WHY THE ATTENUATION HAS TO BE HERE, upstream of the encoder, and cannot be
- * the terminal's channel volume instead: see SST_AUDIO_HEADROOM (sst_io.h). The
+ * the terminal's channel volume instead: see TERMGFX_AUDIO_HEADROOM (termgfx_termio.h). The
  * short version is that a lossy codec reconstructs this mix's hard-clipped
  * peaks with ringing that overshoots full scale, and libsndfile's S16 read
  * WRAPS that overshoot into a full-scale sign flip rather than clamping it --
@@ -2005,7 +2005,7 @@ static void audio_stream_open(void)
 	 * FMV audio needed.
 	 *
 	 * That reason has not gone away; the ~-3dB has MOVED, to
-	 * SST_AUDIO_HEADROOM (sst_io.h), which applies it BEFORE the Opus encode
+	 * TERMGFX_AUDIO_HEADROOM (termgfx_termio.h), which applies it BEFORE the Opus encode
 	 * instead of after the decode. End to end the terminal sees the identical
 	 * signal it saw at 70 -- 70% x 100% is the same net gain as the 100% x 70%
 	 * that shipped before, so the tanh knee sits at exactly the operating point
@@ -2026,8 +2026,8 @@ static void audio_stream_open(void)
 	 * one-shots ride SyncTERM's -12dB channel base. -6dB here, atop the -3dB
 	 * headroom, lands the net at ~-9dB -- close to the family, still clear for
 	 * dialogue. (The player can trim it live with the + / - keys.) */
-	cfg.volume_db    = termgfx_db_from_pct(SST_AUDIO_VOLUME_PCT);
-	/* 250ms per chunk (SST_CHUNK_MS), the top of the module's 50..250 clamp,
+	cfg.volume_db    = termgfx_db_from_pct(TERMGFX_AUDIO_VOLUME_PCT);
+	/* 250ms per chunk (TERMGFX_CHUNK_MS), the top of the module's 50..250 clamp,
 	 * and the cheapest real improvement available to the pops without touching
 	 * the shared module: every chunk is its OWN Ogg/Opus stream, so a boundary
 	 * is a stream boundary, and this simply makes fewer of them. Measured on
@@ -2042,7 +2042,7 @@ static void audio_stream_open(void)
 	 * cheaper than 113.7 kbps MONO was, and mono paid for that in worse pops.
 	 * It does NOT fix the framing -- one continuous stream of this same PCM is
 	 * 39.5 kbps -- it just stops making the boundary a 10-a-second event. */
-	cfg.chunk_ms     = SST_CHUNK_MS;
+	cfg.chunk_ms     = TERMGFX_CHUNK_MS;
 	/* ~750ms of cushion: the latency budget AND the entire jitter tolerance
 	 * (audio_stream.h). Read this WITH cfg.chunk_ms above -- prebuffer counts
 	 * CHUNKS, so the cushion is their product, and when the chunk grew to 250ms
@@ -2069,7 +2069,7 @@ static void audio_stream_open(void)
 	 * ship until it fills, so 250 + 750 = 1000ms replaces 100 + 800 = 900ms.
 	 * "[audio] prebuffer" still overrides it (audio_read_ini(), called below);
 	 * a sysop who lowers chunk_ms should raise this to keep the product. */
-	cfg.prebuffer    = SST_PREBUFFER_CHUNKS;
+	cfg.prebuffer    = TERMGFX_PREBUFFER_CHUNKS;
 	/* Stereo, and this default was MEASURED BACK from mono, not assumed. The
 	 * case for mono was real on its face: a 459.9s capture of BASS (11,036,672
 	 * frames of the mixer's own pre-encode PCM) has left and right
@@ -2111,7 +2111,7 @@ static void audio_stream_open(void)
 	 * fault, and one continuous stream of this same PCM measures 1.03x =
 	 * chance, at 39.5 kbps. Stereo is the width that does not make them worse. */
 	cfg.channels     = 2;
-	cfg.rate         = SST_AUDIO_RATE;
+	cfg.rate         = TERMGFX_AUDIO_RATE;
 	cfg.ch           = 2;
 	cfg.slot         = 0;
 	cfg.name         = "syncscumm";
@@ -2179,8 +2179,8 @@ void termgfx_termio_audio_stream(const int16_t *pcm, size_t frames)
 	}
 	/* The pre-encode headroom, applied here rather than inside the module
 	 * (which is shared with syncretro) and AFTER the g_audiodump tap above
-	 * (which is meant to be the mixer's own signal). See SST_AUDIO_HEADROOM in
-	 * sst_io.h: without it this door's hottest passages hand Opus a
+	 * (which is meant to be the mixer's own signal). See TERMGFX_AUDIO_HEADROOM in
+	 * termgfx_termio.h: without it this door's hottest passages hand Opus a
 	 * hard-clipped waveform whose reconstruction overshoots full scale, and
 	 * libsndfile -- ours and SyncTERM's alike -- WRAPS that overshoot into a
 	 * sign flip instead of clamping it. */
@@ -2198,7 +2198,7 @@ void termgfx_termio_audio_stream(const int16_t *pcm, size_t frames)
 	 * the PRIME cushion releases (audio_stream.c:416) and at stop
 	 * (audio_stream.c:470). In steady RUN it only stages chunks through
 	 * io.put() and leaves the writing to the door's main loop. This door's
-	 * main loop only flushed from termgfx_termio_present() (sst_io.c:2350, 2627). So
+	 * main loop only flushed from termgfx_termio_present() (termgfx_termio.c:2350, 2627). So
 	 * with nothing drawn, nothing flushed: every chunk the mixer produced sat
 	 * in g_out unwritten, audio's share of the stage (termgfx_termio_audio_backlog())
 	 * climbed past the module's 48KB rule, and the module began dropping
@@ -2256,8 +2256,8 @@ void termgfx_termio_audio_stop(void)
 /* ============================================================================
  * Present path (Task 4; JXL tier added Task 7). Ported from syncconquer/
  * door/door_io.c's Phase-2 dirty-rect present loop, resized to SyncSCUMM's
- * fixed SST_FB_W x SST_FB_H (320x200) framebuffer and simplified: two image
- * tiers only, auto-selected (JXL > sixel, sst_tier()) -- no block/text tiers
+ * fixed TERMGFX_FB_W x TERMGFX_FB_H (320x200) framebuffer and simplified: two image
+ * tiers only, auto-selected (JXL > sixel, termgfx_tier()) -- no block/text tiers
  * (SCUMM's palette-fade-heavy frames don't suit them the way an RTS or FPS
  * door's HUD does, and the spec forbids text tiers outright), no manual
  * cycle/force (auto-select settles once, at the startup probe), and a fixed
@@ -2265,15 +2265,15 @@ void termgfx_termio_audio_stop(void)
  * canvas -- door_cell_size()'s dynamic derivation is future work).
  * ==========================================================================*/
 
-#define SST_TILE            16
-#define SST_TX              (SST_FB_W / SST_TILE)                    /* 20 */
-#define SST_TY              ((SST_FB_H + SST_TILE - 1) / SST_TILE)   /* 13: bottom row is 8px */
-#define SST_MAX_BOXES       16
-#define SST_MAX_COMPONENTS  128
-#define SST_MERGE_GAP       2
-#define SST_FALLBACK_PCT    45
-#define SST_SCALE_MAX       2048
-#define SST_PACE_DEADLINE_MS 750
+#define TERMGFX_TILE            16
+#define TERMGFX_TX              (TERMGFX_FB_W / TERMGFX_TILE)                    /* 20 */
+#define TERMGFX_TY              ((TERMGFX_FB_H + TERMGFX_TILE - 1) / TERMGFX_TILE)   /* 13: bottom row is 8px */
+#define TERMGFX_MAX_BOXES       16
+#define TERMGFX_MAX_COMPONENTS  128
+#define TERMGFX_MERGE_GAP       2
+#define TERMGFX_FALLBACK_PCT    45
+#define TERMGFX_SCALE_MAX       2048
+#define TERMGFX_PACE_DEADLINE_MS 750
 /* Palette-storm unstick deadline: during a fade the SCUMM engine repaints the
  * palette every frame, which forces the full-frame path (the cheap dirty-rect
  * path needs a stable palette -- a pal-only change moves every displayed
@@ -2285,49 +2285,49 @@ void termgfx_termio_audio_stop(void)
  * giving an even ~12fps cadence with no long dark gap; the g_out_len
  * backpressure gate still holds the next frame until this one has left the
  * stage, so this can't overrun a slow link into a drop-storm. */
-#define SST_PALSTORM_MIN_MS 80
-#define SST_DSR_RING        16
-#define SST_PROBE_GRACE_MS  500
-/* SST_GFX_SETTLE_MS is defined up with the scan accumulator: the audio
+#define TERMGFX_PALSTORM_MIN_MS 80
+#define TERMGFX_DSR_RING        16
+#define TERMGFX_PROBE_GRACE_MS  500
+/* TERMGFX_GFX_SETTLE_MS is defined up with the scan accumulator: the audio
  * probe's bounded wait shares the window and is defined ahead of here. */
-#define SST_AUTO_DEPTH_MAX  8
-#define SST_CAPTURE_MAX_FRAMES 200
+#define TERMGFX_AUTO_DEPTH_MAX  8
+#define TERMGFX_CAPTURE_MAX_FRAMES 200
 
-/* --- piece 1: sst_now_ms() -- reuse the file's existing CLOCK_MONOTONIC
+/* --- piece 1: termgfx_now_ms() -- reuse the file's existing CLOCK_MONOTONIC
  * helper (now_ms(), declared above for the probe-grace/jxl-scan timers). No
  * separate function needed; door_io.c's door_now_ms() equivalent already
  * exists here. */
 
 /* --- piece 2: tile diff + coalesce (door_io.c:2425-2520 dr_coalesce() /
- * dr_diff_coalesce(), SST_ constants). The bottom tile row is only 8px tall
- * (200 isn't a multiple of 16), so the memcmp span per tile row is SST_TILE
- * except for ty == SST_TY-1, where it's SST_FB_H - ty*SST_TILE. ---------- */
-struct sst_box { int x1, y1, x2, y2; };
-static uint8_t sst_grid[SST_TY][SST_TX];
+ * dr_diff_coalesce(), TERMGFX_ constants). The bottom tile row is only 8px tall
+ * (200 isn't a multiple of 16), so the memcmp span per tile row is TERMGFX_TILE
+ * except for ty == TERMGFX_TY-1, where it's TERMGFX_FB_H - ty*TERMGFX_TILE. ---------- */
+struct termgfx_box { int x1, y1, x2, y2; };
+static uint8_t termgfx_grid[TERMGFX_TY][TERMGFX_TX];
 
-static int sst_coalesce(struct sst_box *box)
+static int termgfx_coalesce(struct termgfx_box *box)
 {
-	static uint8_t   vis[SST_TY][SST_TX];
-	static int       st[SST_TY * SST_TX];
+	static uint8_t   vis[TERMGFX_TY][TERMGFX_TX];
+	static int       st[TERMGFX_TY * TERMGFX_TX];
 	static const int ox[4] = { -1, 1, 0, 0 };
 	static const int oy[4] = { 0, 0, -1, 1 };
 	int              nb = 0, tx, ty, i, j, merged;
 
 	memset(vis, 0, sizeof vis);
-	for (ty = 0; ty < SST_TY; ty++) {
-		for (tx = 0; tx < SST_TX; tx++) {
+	for (ty = 0; ty < TERMGFX_TY; ty++) {
+		for (tx = 0; tx < TERMGFX_TX; tx++) {
 			int sp, x1, y1, x2, y2;
-			if (!sst_grid[ty][tx] || vis[ty][tx])
+			if (!termgfx_grid[ty][tx] || vis[ty][tx])
 				continue;
-			if (nb >= SST_MAX_COMPONENTS)
+			if (nb >= TERMGFX_MAX_COMPONENTS)
 				return -1;
 			sp          = 0;
-			st[sp++]    = ty * SST_TX + tx;
+			st[sp++]    = ty * TERMGFX_TX + tx;
 			vis[ty][tx] = 1;
 			x1          = x2 = tx;
 			y1          = y2 = ty;
 			while (sp) {
-				int idx = st[--sp], cx = idx % SST_TX, cy = idx / SST_TX, k;
+				int idx = st[--sp], cx = idx % TERMGFX_TX, cy = idx / TERMGFX_TX, k;
 				if (cx < x1)
 					x1 = cx;
 				if (cx > x2)
@@ -2338,10 +2338,10 @@ static int sst_coalesce(struct sst_box *box)
 					y2 = cy;
 				for (k = 0; k < 4; k++) {
 					int nx = cx + ox[k], ny = cy + oy[k];
-					if (nx >= 0 && nx < SST_TX && ny >= 0 && ny < SST_TY
-					    && sst_grid[ny][nx] && !vis[ny][nx]) {
+					if (nx >= 0 && nx < TERMGFX_TX && ny >= 0 && ny < TERMGFX_TY
+					    && termgfx_grid[ny][nx] && !vis[ny][nx]) {
 						vis[ny][nx] = 1;
-						st[sp++]    = ny * SST_TX + nx;
+						st[sp++]    = ny * TERMGFX_TX + nx;
 					}
 				}
 			}
@@ -2355,8 +2355,8 @@ static int sst_coalesce(struct sst_box *box)
 		merged = 0;
 		for (i = 0; i < nb; i++)
 			for (j = i + 1; j < nb; j++)
-				if (box[i].x1 <= box[j].x2 + SST_MERGE_GAP && box[j].x1 <= box[i].x2 + SST_MERGE_GAP
-				    && box[i].y1 <= box[j].y2 + SST_MERGE_GAP && box[j].y1 <= box[i].y2 + SST_MERGE_GAP) {
+				if (box[i].x1 <= box[j].x2 + TERMGFX_MERGE_GAP && box[j].x1 <= box[i].x2 + TERMGFX_MERGE_GAP
+				    && box[i].y1 <= box[j].y2 + TERMGFX_MERGE_GAP && box[j].y1 <= box[i].y2 + TERMGFX_MERGE_GAP) {
 					if (box[j].x1 < box[i].x1)
 						box[i].x1 = box[j].x1;
 					if (box[j].y1 < box[i].y1)
@@ -2371,31 +2371,31 @@ static int sst_coalesce(struct sst_box *box)
 					merged = 1;
 				}
 	}
-	return (nb > SST_MAX_BOXES) ? -1 : nb;
+	return (nb > TERMGFX_MAX_BOXES) ? -1 : nb;
 }
 
-static int sst_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct sst_box *box)
+static int termgfx_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct termgfx_box *box)
 {
-	const int tiles = SST_TX * SST_TY;
+	const int tiles = TERMGFX_TX * TERMGFX_TY;
 	int       tx, ty, r, nb, dirty = 0;
 
-	for (ty = 0; ty < SST_TY; ty++) {
-		int rows = (ty == SST_TY - 1) ? (SST_FB_H - ty * SST_TILE) : SST_TILE;
-		for (tx = 0; tx < SST_TX; tx++) {
+	for (ty = 0; ty < TERMGFX_TY; ty++) {
+		int rows = (ty == TERMGFX_TY - 1) ? (TERMGFX_FB_H - ty * TERMGFX_TILE) : TERMGFX_TILE;
+		for (tx = 0; tx < TERMGFX_TX; tx++) {
 			int ch = 0;
 			for (r = 0; r < rows && !ch; r++) {
-				size_t off = (size_t)(ty * SST_TILE + r) * SST_FB_W + (size_t)tx * SST_TILE;
-				if (memcmp(fb + off, last + off, SST_TILE) != 0)
+				size_t off = (size_t)(ty * TERMGFX_TILE + r) * TERMGFX_FB_W + (size_t)tx * TERMGFX_TILE;
+				if (memcmp(fb + off, last + off, TERMGFX_TILE) != 0)
 					ch = 1;
 			}
-			sst_grid[ty][tx] = (uint8_t)ch;
+			termgfx_grid[ty][tx] = (uint8_t)ch;
 			if (ch)
 				dirty++;
 		}
 	}
-	if (dirty == 0 || dirty * 100 / tiles >= SST_FALLBACK_PCT)
+	if (dirty == 0 || dirty * 100 / tiles >= TERMGFX_FALLBACK_PCT)
 		return 0;                                   /* nothing / big change -> full frame */
-	nb = sst_coalesce(box);
+	nb = termgfx_coalesce(box);
 	return (nb <= 0) ? 0 : nb;                       /* too fragmented -> full frame */
 }
 
@@ -2418,34 +2418,34 @@ static int ensure_cap(uint8_t **buf, size_t *cap, size_t need)
 
 static uint8_t *g_idx_buf;   static size_t g_idx_cap;
 static uint8_t *g_sixel_buf; static size_t g_sixel_cap;
-/* Packed RGB888 scratch, shared by the JXL tier's sst_pack_rgb()/_rect()
- * (below, WITH_JXL only) and present_rgbx()'s sst_scale_rgbx_to_rgb() (which
+/* Packed RGB888 scratch, shared by the JXL tier's termgfx_pack_rgb()/_rect()
+ * (below, WITH_JXL only) and present_rgbx()'s termgfx_scale_rgbx_to_rgb() (which
  * feeds BOTH the sixel and JXL truecolor tiers), so declared unconditionally
  * here rather than inside the WITH_JXL block -- a no-libjxl build still uses it
  * for the sixel truecolor path. */
 static uint8_t *g_rgb_buf;   static size_t g_rgb_cap;
 
-static const uint8_t *sst_scale_idx(const uint8_t *fb, int ew, int eh)
+static const uint8_t *termgfx_scale_idx(const uint8_t *fb, int ew, int eh)
 {
 	int y;
 	if (!ensure_cap(&g_idx_buf, &g_idx_cap, (size_t)ew * eh))
 		return NULL;
 	for (y = 0; y < eh; y++) {
-		const uint8_t *row = fb + (size_t)(y * SST_FB_H / eh) * SST_FB_W;
+		const uint8_t *row = fb + (size_t)(y * TERMGFX_FB_H / eh) * TERMGFX_FB_W;
 		uint8_t *      o   = g_idx_buf + (size_t)y * ew;
 		int            x;
 		for (x = 0; x < ew; x++)
-			o[x] = row[x * SST_FB_W / ew];
+			o[x] = row[x * TERMGFX_FB_W / ew];
 	}
 	return g_idx_buf;
 }
 
 /* NN-scale a native w x h XRGB (R,G,B,X) frame to a packed RGB888 ew x eh
  * buffer (pad byte dropped). Backs present_rgbx's sixel + JXL tiers. Unlike
- * sst_scale_idx()/sst_pack_rgb(), the source dimensions are the caller's own
- * w/h (a truecolor source has no fixed SST_FB_W x SST_FB_H surface), so they
- * are parameters here rather than the SST_FB_* constants. */
-static const uint8_t *sst_scale_rgbx_to_rgb(const uint8_t *xrgb, int w, int h,
+ * termgfx_scale_idx()/termgfx_pack_rgb(), the source dimensions are the caller's own
+ * w/h (a truecolor source has no fixed TERMGFX_FB_W x TERMGFX_FB_H surface), so they
+ * are parameters here rather than the TERMGFX_FB_* constants. */
+static const uint8_t *termgfx_scale_rgbx_to_rgb(const uint8_t *xrgb, int w, int h,
                                             int ew, int eh)
 {
 	int y;
@@ -2464,10 +2464,10 @@ static const uint8_t *sst_scale_rgbx_to_rgb(const uint8_t *xrgb, int w, int h,
 }
 
 /* Pack a display sub-rect [rx,ry,rw,rh] (in ew x eh scaled-image space) into
- * g_idx_buf, NN-sampled from fb exactly as sst_scale_idx() scales the full
+ * g_idx_buf, NN-sampled from fb exactly as termgfx_scale_idx() scales the full
  * frame, so the rect lines up with the sixel frame the client still holds
  * (door_io.c's dr_pack_idx_rect()). */
-static const uint8_t *sst_pack_idx_rect(const uint8_t *fb, int ew, int eh,
+static const uint8_t *termgfx_pack_idx_rect(const uint8_t *fb, int ew, int eh,
                                         int rx, int ry, int rw, int rh)
 {
 	int      i, j;
@@ -2477,9 +2477,9 @@ static const uint8_t *sst_pack_idx_rect(const uint8_t *fb, int ew, int eh,
 		return NULL;
 	p = g_idx_buf;
 	for (j = 0; j < rh; j++) {
-		const uint8_t *row = fb + (size_t)((ry + j) * SST_FB_H / eh) * SST_FB_W;
+		const uint8_t *row = fb + (size_t)((ry + j) * TERMGFX_FB_H / eh) * TERMGFX_FB_W;
 		for (i = 0; i < rw; i++)
-			*p++ = row[(rx + i) * SST_FB_W / ew];
+			*p++ = row[(rx + i) * TERMGFX_FB_W / ew];
 	}
 	return g_idx_buf;
 }
@@ -2489,16 +2489,16 @@ static const uint8_t *sst_pack_idx_rect(const uint8_t *fb, int ew, int eh,
  * math (piece 3's fit/center half, in termgfx_termio_present() below) uses the
  * UN-rounded eh; this rounds down only for the encode, same as door_io.c,
  * leaving a few pixels of slack at the bottom of the centered slot. -------*/
-static size_t sst_emit_sixel(const uint8_t *fb, const uint8_t *pal8, int ew, int eh, int emit_pal)
+static size_t termgfx_emit_sixel(const uint8_t *fb, const uint8_t *pal8, int ew, int eh, int emit_pal)
 {
 	const uint8_t *idx;
 
-	if (ew > SST_SCALE_MAX)
-		ew = SST_SCALE_MAX;
+	if (ew > TERMGFX_SCALE_MAX)
+		ew = TERMGFX_SCALE_MAX;
 	eh -= eh % 6;
 	if (eh < 6)
 		eh = 6;
-	idx = sst_scale_idx(fb, ew, eh);
+	idx = termgfx_scale_idx(fb, ew, eh);
 	if (idx == NULL)
 		return 0;
 	return sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, ew, eh, pal8, emit_pal);
@@ -2509,7 +2509,7 @@ static size_t sst_emit_sixel(const uint8_t *fb, const uint8_t *pal8, int ew, int
  * grid tracking yet), not a derived door_cell_size(). Caller guarantees
  * g_have_last and that the client holds the previous sixel frame (this
  * door only ever emits sixel, so "same tier" is implicit). ---------------*/
-static int sst_gcd(int a, int b) { while (b) { int t = a % b; a = b; b = t; } return a; }
+static int termgfx_gcd(int a, int b) { while (b) { int t = a % b; a = b; b = t; } return a; }
 
 /* cw/ch are the terminal's REAL text-cell pixels: a dirty box is placed by
  * CUP at a cell, so its display-pixel rect must snap to that cell grid, or the
@@ -2531,25 +2531,25 @@ static int sst_gcd(int a, int b) { while (b) { int t = a % b; a = b; b = t; } re
  * computes geometry -- callers decide what an empty (*rw<=0) or short
  * (*ry+*rh < *ry2, i.e. stranded) result means. *ry2_out is the box's own
  * unclamped bottom row, needed by the stranding test. */
-static void sst_box_display_rect(const struct sst_box *b, int ew, int ehc,
+static void termgfx_box_display_rect(const struct termgfx_box *b, int ew, int ehc,
                                  int cw, int ch, int vstep,
                                  int *rx_out, int *ry_out, int *rw_out, int *rh_out,
                                  int *ry2_out)
 {
-	int fx1 = b->x1 * SST_TILE, fx2 = (b->x2 + 1) * SST_TILE;
-	int fy1 = b->y1 * SST_TILE, fy2 = (b->y2 + 1) * SST_TILE;
+	int fx1 = b->x1 * TERMGFX_TILE, fx2 = (b->x2 + 1) * TERMGFX_TILE;
+	int fy1 = b->y1 * TERMGFX_TILE, fy2 = (b->y2 + 1) * TERMGFX_TILE;
 	int rx, rx2, ry, ry2, cx, cy, rw, rh;
 
-	if (fx2 > SST_FB_W)
-		fx2 = SST_FB_W;
-	if (fy2 > SST_FB_H)
-		fy2 = SST_FB_H;
+	if (fx2 > TERMGFX_FB_W)
+		fx2 = TERMGFX_FB_W;
+	if (fy2 > TERMGFX_FB_H)
+		fy2 = TERMGFX_FB_H;
 
 	/* display rect = the pixels whose NN source falls in [fx1,fx2)x[fy1,fy2) */
-	rx  = (fx1 * ew + SST_FB_W - 1) / SST_FB_W;
-	rx2 = (fx2 * ew + SST_FB_W - 1) / SST_FB_W;
-	ry  = (fy1 * ehc + SST_FB_H - 1) / SST_FB_H;
-	ry2 = (fy2 * ehc + SST_FB_H - 1) / SST_FB_H;
+	rx  = (fx1 * ew + TERMGFX_FB_W - 1) / TERMGFX_FB_W;
+	rx2 = (fx2 * ew + TERMGFX_FB_W - 1) / TERMGFX_FB_W;
+	ry  = (fy1 * ehc + TERMGFX_FB_H - 1) / TERMGFX_FB_H;
+	ry2 = (fy2 * ehc + TERMGFX_FB_H - 1) / TERMGFX_FB_H;
 	if (rx2 > ew)
 		rx2 = ew;
 	if (ry2 > ehc)
@@ -2579,13 +2579,13 @@ static void sst_box_display_rect(const struct sst_box *b, int ew, int ehc,
 	*rx_out = rx; *ry_out = ry; *rw_out = rw; *rh_out = rh; *ry2_out = ry2;
 }
 
-static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
+static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
                                       const uint8_t *pal8, int ew, int eh,
                                       int icol, int irow, int cw, int ch)
 {
-	struct sst_box box[SST_MAX_COMPONENTS];
+	struct termgfx_box box[TERMGFX_MAX_COMPONENTS];
 	int             ehc, nb, k;
-	int             vstep = ch / sst_gcd(ch, 6) * 6;   /* LCM(ch,6): cell & band */
+	int             vstep = ch / termgfx_gcd(ch, 6) * 6;   /* LCM(ch,6): cell & band */
 	/* SyncTERM: registers persist, box carries no palette (NONE). Every other
 	 * terminal resets per image, so the box self-describes its used colors. */
 	int             emit_pal = g_is_syncterm ? SIXEL_PAL_NONE : SIXEL_PAL_USED;
@@ -2595,12 +2595,12 @@ static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 	if (ehc < 6)
 		return 0;
 
-	nb = sst_diff_coalesce(fb, last, box);
+	nb = termgfx_diff_coalesce(fb, last, box);
 	if (nb <= 0)
 		return 0;
 
 	/* Stranding pre-pass: a bottom-clamped box that can't cover its own
-	 * changed rows forces a full-frame fallback (see sst_box_display_rect()'s
+	 * changed rows forces a full-frame fallback (see termgfx_box_display_rect()'s
 	 * comment). That fallback has to be decided BEFORE any box is emitted --
 	 * boxes are out_put() to the wire as each one succeeds, so if the check
 	 * instead lived inside the emit loop, an earlier box's bytes could
@@ -2612,7 +2612,7 @@ static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 	for (k = 0; k < nb; k++) {
 		int rx, ry, rw, rh, ry2;
 
-		sst_box_display_rect(&box[k], ew, ehc, cw, ch, vstep, &rx, &ry, &rw, &rh, &ry2);
+		termgfx_box_display_rect(&box[k], ew, ehc, cw, ch, vstep, &rx, &ry, &rw, &rh, &ry2);
 		if (rw <= 0)
 			continue;                               /* empty box: not stranding */
 		if (ry + rh < ry2)
@@ -2626,7 +2626,7 @@ static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 		char           wrap[24];
 		int            wn;
 
-		sst_box_display_rect(&box[k], ew, ehc, cw, ch, vstep, &rx, &ry, &rw, &rh, &ry2);
+		termgfx_box_display_rect(&box[k], ew, ehc, cw, ch, vstep, &rx, &ry, &rw, &rh, &ry2);
 		if (rw <= 0)
 			continue;
 		/* No ry+rh < ry2 check here: the pre-pass above already guarantees
@@ -2644,7 +2644,7 @@ static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 		 * 6px bands (the trailing band is partial); SF #258's round-up guarded
 		 * SyncTERM's sixel decoder, and SyncTERM uses the JXL tier, never this
 		 * sixel-dirty path. */
-		idx = sst_pack_idx_rect(fb, ew, ehc, rx, ry, rw, rh);
+		idx = termgfx_pack_idx_rect(fb, ew, ehc, rx, ry, rw, rh);
 		if (idx == NULL)
 			return 0;                               /* fall back to a full frame */
 		sn = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, rw, rh, pal8, emit_pal);
@@ -2667,25 +2667,25 @@ static size_t sst_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
  * in that case, which Makefile.common folds into CPPFLAGS for both the %.c
  * and %.cpp generic rules -- see build.sh's comment). Without it,
  * termgfx_jxl_encode() is still linkable (jxl.c ships a stub that always
- * returns 0), but sst_tier() never routes there, so a no-libjxl build never
+ * returns 0), but termgfx_tier() never routes there, so a no-libjxl build never
  * pays for a doomed RGB888 expansion + guaranteed-fail encode call every
  * frame just to fall back to sixel anyway. --------------------------------*/
-#define SST_TIER_SIXEL 0
-#define SST_TIER_JXL   1
+#define TERMGFX_TIER_SIXEL 0
+#define TERMGFX_TIER_JXL   1
 
-static int sst_tier(void)
+static int termgfx_tier(void)
 {
 #ifdef WITH_JXL
 	if (g_jxl)
-		return SST_TIER_JXL;
+		return TERMGFX_TIER_JXL;
 #endif
-	return SST_TIER_SIXEL;   /* also the pre-reply default */
+	return TERMGFX_TIER_SIXEL;   /* also the pre-reply default */
 }
 
-static const char *sst_tier_name(int t)
+static const char *termgfx_tier_name(int t)
 {
 #ifdef WITH_JXL
-	if (t == SST_TIER_JXL)
+	if (t == TERMGFX_TIER_JXL)
 		return "jxl";
 #else
 	(void)t;
@@ -2698,20 +2698,20 @@ static uint8_t *g_jxl_buf; static size_t g_jxl_cap;
 static uint8_t *g_apc_buf; static size_t g_apc_cap;
 
 /* Full-frame RGB888 expansion (door_io.c's door_pack_rgb() pattern): same NN
- * source mapping sst_scale_idx() uses for the sixel path, but through the
+ * source mapping termgfx_scale_idx() uses for the sixel path, but through the
  * palette so JXL gets real pixels instead of indices -- SyncTERM's decoder
  * has no palette concept for JXL/PPM. */
-static const uint8_t *sst_pack_rgb(const uint8_t *fb, const uint8_t *pal, int ew, int eh)
+static const uint8_t *termgfx_pack_rgb(const uint8_t *fb, const uint8_t *pal, int ew, int eh)
 {
 	int y;
 	if (!ensure_cap(&g_rgb_buf, &g_rgb_cap, (size_t)ew * eh * 3))
 		return NULL;
 	for (y = 0; y < eh; y++) {
-		const uint8_t *row = fb + (size_t)(y * SST_FB_H / eh) * SST_FB_W;
+		const uint8_t *row = fb + (size_t)(y * TERMGFX_FB_H / eh) * TERMGFX_FB_W;
 		uint8_t *      p   = g_rgb_buf + (size_t)y * ew * 3;
 		int            x;
 		for (x = 0; x < ew; x++) {
-			const uint8_t *c = pal + (size_t)row[x * SST_FB_W / ew] * 3;
+			const uint8_t *c = pal + (size_t)row[x * TERMGFX_FB_W / ew] * 3;
 			*p++ = c[0]; *p++ = c[1]; *p++ = c[2];
 		}
 	}
@@ -2719,12 +2719,12 @@ static const uint8_t *sst_pack_rgb(const uint8_t *fb, const uint8_t *pal, int ew
 }
 
 /* Same, but a display sub-rect [rx,ry,rw,rh] (door_io.c's dr_pack_disp_rect()
- * pattern) -- the dirty-box counterpart of sst_pack_rgb(), sampled with the
+ * pattern) -- the dirty-box counterpart of termgfx_pack_rgb(), sampled with the
  * identical NN mapping so the rect lines up with the held full JXL frame.
  * JXL is pixel-addressed (unlike sixel, which snaps dirty boxes out to whole
  * 8x16 cells because it can only place at a text cursor), so no cell
  * snapping here -- rx/ry/rw/rh stay pixel-exact. */
-static const uint8_t *sst_pack_rgb_rect(const uint8_t *fb, const uint8_t *pal,
+static const uint8_t *termgfx_pack_rgb_rect(const uint8_t *fb, const uint8_t *pal,
                                         int ew, int eh, int rx, int ry, int rw, int rh)
 {
 	int      i, j;
@@ -2734,9 +2734,9 @@ static const uint8_t *sst_pack_rgb_rect(const uint8_t *fb, const uint8_t *pal,
 		return NULL;
 	p = g_rgb_buf;
 	for (j = 0; j < rh; j++) {
-		const uint8_t *row = fb + (size_t)((ry + j) * SST_FB_H / eh) * SST_FB_W;
+		const uint8_t *row = fb + (size_t)((ry + j) * TERMGFX_FB_H / eh) * TERMGFX_FB_W;
 		for (i = 0; i < rw; i++) {
-			const uint8_t *c = pal + (size_t)row[(rx + i) * SST_FB_W / ew] * 3;
+			const uint8_t *c = pal + (size_t)row[(rx + i) * TERMGFX_FB_W / ew] * 3;
 			*p++ = c[0]; *p++ = c[1]; *p++ = c[2];
 		}
 	}
@@ -2747,7 +2747,7 @@ static const uint8_t *sst_pack_rgb_rect(const uint8_t *fb, const uint8_t *pal,
  * same dialing entry share one cache dir, so a fixed name would collide.
  * Only used on the non-blob (Store+Draw) path; a blob-capable client never
  * touches the cache at all, but the name still has to exist to pass in. */
-static const char *sst_jxl_name(void)
+static const char *termgfx_jxl_name(void)
 {
 	static char name[32];
 	if (name[0] == '\0')
@@ -2755,9 +2755,9 @@ static const char *sst_jxl_name(void)
 	return name;
 }
 
-static size_t sst_emit_jxl(const uint8_t *fb, const uint8_t *pal8, int ew, int eh, int dx, int dy)
+static size_t termgfx_emit_jxl(const uint8_t *fb, const uint8_t *pal8, int ew, int eh, int dx, int dy)
 {
-	const uint8_t *rgb = sst_pack_rgb(fb, pal8, ew, eh);
+	const uint8_t *rgb = termgfx_pack_rgb(fb, pal8, ew, eh);
 	size_t         n;
 
 	if (rgb == NULL)
@@ -2765,21 +2765,21 @@ static size_t sst_emit_jxl(const uint8_t *fb, const uint8_t *pal8, int ew, int e
 	n = termgfx_jxl_encode(&g_jxl_buf, &g_jxl_cap, rgb, ew, eh, 2.0f, 1);
 	if (n == 0)
 		return 0;   /* encode failure (or a no-libjxl stub): caller falls back to sixel */
-	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, sst_jxl_name(), "DrawJXL",
+	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, termgfx_jxl_name(), "DrawJXL",
 	                         g_jxl_buf, n, dx, dy, g_img_blob_ok);
 }
 
-/* present_rgbx's JXL tier: the tail of sst_emit_jxl() fed already-packed
- * RGB888 (from sst_scale_rgbx_to_rgb()), skipping the indexed sst_pack_rgb()
+/* present_rgbx's JXL tier: the tail of termgfx_emit_jxl() fed already-packed
+ * RGB888 (from termgfx_scale_rgbx_to_rgb()), skipping the indexed termgfx_pack_rgb()
  * round-trip a truecolor source has no need of. Bytes land in g_apc_buf, same
- * as sst_emit_jxl(). */
-static size_t sst_emit_jxl_rgb(const uint8_t *rgb, int ew, int eh, int dx, int dy)
+ * as termgfx_emit_jxl(). */
+static size_t termgfx_emit_jxl_rgb(const uint8_t *rgb, int ew, int eh, int dx, int dy)
 {
 	size_t n = termgfx_jxl_encode(&g_jxl_buf, &g_jxl_cap, rgb, ew, eh, 2.0f, 1);
 
 	if (n == 0)
 		return 0;   /* encode failure (or a no-libjxl stub): caller falls back to sixel */
-	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, sst_jxl_name(), "DrawJXL",
+	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, termgfx_jxl_name(), "DrawJXL",
 	                         g_jxl_buf, n, dx, dy, g_img_blob_ok);
 }
 
@@ -2790,42 +2790,42 @@ static size_t sst_emit_jxl_rgb(const uint8_t *rgb, int ew, int eh, int dx, int d
  * g_dropped_frames) so the caller never stacks a full frame on top of partial
  * rects. Caller guarantees
  * g_have_last, an unchanged palette (a pure palette fade can leave the INDEX
- * buffer sst_diff_coalesce() diffs completely unchanged while every pixel's
+ * buffer termgfx_diff_coalesce() diffs completely unchanged while every pixel's
  * displayed color moves -- unlike sixel's separate palette registers, JXL
  * bakes the palette into each frame's RGB pixels, so a fade MUST force a
  * full re-encode, exactly like the sixel path's own pal_dirty gate), and
  * that the client currently holds the previous JXL frame in blob mode
  * (g_img_blob_ok -- a non-blob dirty box would need its own unique cache
  * file per box, which this task doesn't build). */
-static size_t sst_dirty_jxl_present(const uint8_t *fb, const uint8_t *last,
+static size_t termgfx_dirty_jxl_present(const uint8_t *fb, const uint8_t *last,
                                     const uint8_t *pal8, int ew, int eh, int dx, int dy)
 {
-	struct sst_box box[SST_MAX_COMPONENTS];
+	struct termgfx_box box[TERMGFX_MAX_COMPONENTS];
 	int             k, nb;
 	size_t          total = 0;
 
-	nb = sst_diff_coalesce(fb, last, box);
+	nb = termgfx_diff_coalesce(fb, last, box);
 	if (nb <= 0)
 		return 0;
 
 	for (k = 0; k < nb; k++) {
-		int            fx1 = box[k].x1 * SST_TILE, fx2 = (box[k].x2 + 1) * SST_TILE;
-		int            fy1 = box[k].y1 * SST_TILE, fy2 = (box[k].y2 + 1) * SST_TILE;
+		int            fx1 = box[k].x1 * TERMGFX_TILE, fx2 = (box[k].x2 + 1) * TERMGFX_TILE;
+		int            fy1 = box[k].y1 * TERMGFX_TILE, fy2 = (box[k].y2 + 1) * TERMGFX_TILE;
 		int            rx, rx2, ry, ry2, rw, rh;
 		const uint8_t *rgb;
 		size_t         jn, an;
 
-		if (fx2 > SST_FB_W)
-			fx2 = SST_FB_W;
-		if (fy2 > SST_FB_H)
-			fy2 = SST_FB_H;
+		if (fx2 > TERMGFX_FB_W)
+			fx2 = TERMGFX_FB_W;
+		if (fy2 > TERMGFX_FB_H)
+			fy2 = TERMGFX_FB_H;
 
 		/* display rect = the pixels whose NN source falls in [fx1,fx2)x[fy1,fy2);
-		 * pixel-exact, no cell-snap (contrast sst_dirty_sixel_present()). */
-		rx  = (fx1 * ew + SST_FB_W - 1) / SST_FB_W;
-		rx2 = (fx2 * ew + SST_FB_W - 1) / SST_FB_W;
-		ry  = (fy1 * eh + SST_FB_H - 1) / SST_FB_H;
-		ry2 = (fy2 * eh + SST_FB_H - 1) / SST_FB_H;
+		 * pixel-exact, no cell-snap (contrast termgfx_dirty_sixel_present()). */
+		rx  = (fx1 * ew + TERMGFX_FB_W - 1) / TERMGFX_FB_W;
+		rx2 = (fx2 * ew + TERMGFX_FB_W - 1) / TERMGFX_FB_W;
+		ry  = (fy1 * eh + TERMGFX_FB_H - 1) / TERMGFX_FB_H;
+		ry2 = (fy2 * eh + TERMGFX_FB_H - 1) / TERMGFX_FB_H;
 		if (rx2 > ew)
 			rx2 = ew;
 		if (ry2 > eh)
@@ -2835,7 +2835,7 @@ static size_t sst_dirty_jxl_present(const uint8_t *fb, const uint8_t *last,
 		if (rw <= 0 || rh <= 0)
 			continue;
 
-		rgb = sst_pack_rgb_rect(fb, pal8, ew, eh, rx, ry, rw, rh);
+		rgb = termgfx_pack_rgb_rect(fb, pal8, ew, eh, rx, ry, rw, rh);
 		jn = (rgb != NULL)
 		   ? termgfx_jxl_encode(&g_jxl_buf, &g_jxl_cap, rgb, rw, rh, 2.0f, 1)
 		   : 0;
@@ -2858,7 +2858,7 @@ static size_t sst_dirty_jxl_present(const uint8_t *fb, const uint8_t *last,
 		/* Blob mode only (caller-guaranteed g_img_blob_ok): each box is its
 		 * own self-terminated APC sequence (ST-closed by termgfx_apc_image()
 		 * itself, door_io.c:2696-2697 pattern) -- no cache-file name needed. */
-		an = termgfx_apc_image(&g_apc_buf, &g_apc_cap, sst_jxl_name(), "DrawJXL",
+		an = termgfx_apc_image(&g_apc_buf, &g_apc_cap, termgfx_jxl_name(), "DrawJXL",
 		                       g_jxl_buf, jn, dx + rx, dy + ry, 1 /* blob */);
 		if (an > 0) {
 			out_put(g_apc_buf, an);
@@ -2871,7 +2871,7 @@ static size_t sst_dirty_jxl_present(const uint8_t *fb, const uint8_t *last,
 
 /* --- piece 7 (pacing half): DSR ring + AIMD depth (door_io.c:2075-2121
  * door_dsr_sent()/door_pace_ack() pattern, termgfx/pace.h). ---------------*/
-static uint32_t g_dsr_ts[SST_DSR_RING];
+static uint32_t g_dsr_ts[TERMGFX_DSR_RING];
 static int      g_dsr_h, g_dsr_t;
 static int      g_inflight;
 static uint32_t g_pace_progress_ms;
@@ -2880,17 +2880,17 @@ static uint32_t g_auto_adj_at;
 static int      g_rt_high;
 static uint32_t g_rtt_ms, g_rtt_min, g_rtt_min_at;
 
-static void sst_dsr_sent(uint32_t now)
+static void termgfx_dsr_sent(uint32_t now)
 {
 	g_dsr_ts[g_dsr_h] = now;
-	g_dsr_h = (g_dsr_h + 1) % SST_DSR_RING;
+	g_dsr_h = (g_dsr_h + 1) % TERMGFX_DSR_RING;
 }
 
 /* A DSR cursor-position report came back: one in-flight frame was consumed.
  * (Forward-declared near csi_final(), above, so its 'R' case can call this
  * on every CPR reply -- including the startup 999;999 grid probe, when the
  * ring is still empty and this is a harmless no-op.) */
-static void sst_pace_ack(void)
+static void termgfx_pace_ack(void)
 {
 	uint32_t now = now_ms();
 
@@ -2898,18 +2898,18 @@ static void sst_pace_ack(void)
 		g_inflight--;
 	if (g_dsr_h != g_dsr_t) {
 		uint32_t rtt = now - g_dsr_ts[g_dsr_t];
-		g_dsr_t = (g_dsr_t + 1) % SST_DSR_RING;
+		g_dsr_t = (g_dsr_t + 1) % TERMGFX_DSR_RING;
 		if (termgfx_rtt_sample(&g_rtt_ms, &g_rtt_min, &g_rtt_min_at, &g_rt_high, rtt, now, 0, 0))
 			termgfx_aimd_update(1, &g_auto_depth, &g_auto_adj_at,
-			                    g_rtt_ms, g_rtt_min, g_rt_high, SST_AUTO_DEPTH_MAX, now);
+			                    g_rtt_ms, g_rtt_min, g_rt_high, TERMGFX_AUTO_DEPTH_MAX, now);
 	}
 	g_pace_progress_ms = now;
 }
 
 /* present()'s last computed emit geometry -- stashed here purely so
- * sst_trace() can log it without taking new parameters, mirroring how the
+ * termgfx_trace() can log it without taking new parameters, mirroring how the
  * pacing globals just above (g_inflight/g_auto_depth, maintained by
- * sst_pace_ack()/present() but only READ here) feed the same emitter.
+ * termgfx_pace_ack()/present() but only READ here) feed the same emitter.
  * Diagnostic-only: nothing downstream of the fit/center block (termgfx_termio_
  * present()'s "Fit + center") reads these back. Persisting across calls
  * means an early-out trace line (gated-grace/deadline/etc., logged before a
@@ -2921,7 +2921,7 @@ static int     g_trace_cellh;                  /* cell height used for the sixel
 static int     g_trace_icol, g_trace_irow;     /* text-grid column/row the image is centered at */
 
 /* Emit one present-path trace line (SYNCSCUMM_TRACE); see g_trace, above. */
-static void sst_trace(const char *outcome, const char *tier, size_t bytes)
+static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 {
 	unsigned ch = 0, ur = 0, dr = 0;
 
@@ -2968,7 +2968,7 @@ static void sst_trace(const char *outcome, const char *tier, size_t bytes)
 /* Dump raw terminal input (SYNCSCUMM_TRACE only): the exact reply bytes the
  * terminal sent, escaped, so a trace shows WHAT the terminal answered to the
  * probe and WHEN -- e.g. whether/when the ESC[4;h;wt canvas report arrives. */
-static void sst_trace_in(const uint8_t *buf, int n)
+static void termgfx_trace_in(const uint8_t *buf, int n)
 {
 	int i;
 	if (g_trace == NULL)
@@ -2997,7 +2997,7 @@ static int      g_fps, g_fps_frames;
 static uint32_t g_fps_win_ms, g_bps;
 static uint64_t g_tx_bytes_at;
 
-static void sst_fps_tick(int emitted)
+static void termgfx_fps_tick(int emitted)
 {
 	uint32_t fnow = now_ms();
 
@@ -3024,7 +3024,7 @@ static void sst_fps_tick(int emitted)
 	}
 }
 
-static void sst_stats_draw(void)
+static void termgfx_stats_draw(void)
 {
 	char               buf[160];
 	int                off, brow;
@@ -3035,7 +3035,7 @@ static void sst_stats_draw(void)
 	/* Bottom text row from the real grid (999;999 CPR), NOT g_canvas_h/16 --
 	 * the cell is often shorter than 16px (foot ~13), which put the bar rows
 	 * above the true bottom. */
-	brow = sst_bottom_row();
+	brow = termgfx_bottom_row();
 	if (brow < 1)
 		brow = 25;
 	bpf = g_fps > 0 ? ((uint64_t)g_bps / 8 / (unsigned)g_fps + 512) / 1024 : 0;
@@ -3045,11 +3045,11 @@ static void sst_stats_draw(void)
 	if (g_fps > 0)
 		off = snprintf(buf, sizeof buf,
 		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums\x1b[K\x1b[0m\x1b[?25l",
-		              brow, sst_tier_name(sst_tier()), g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms);
+		              brow, termgfx_tier_name(termgfx_tier()), g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms);
 	else
 		off = snprintf(buf, sizeof buf,
 		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums\x1b[K\x1b[0m\x1b[?25l",
-		              brow, sst_tier_name(sst_tier()), g_auto_depth, (unsigned)g_rtt_ms);
+		              brow, termgfx_tier_name(termgfx_tier()), g_auto_depth, (unsigned)g_rtt_ms);
 	if (off < 0 || off >= (int)sizeof buf)
 		return;
 	out_put(buf, (size_t)off);
@@ -3063,20 +3063,20 @@ static void sst_stats_draw(void)
  * report); an evdev physical-key report can coalesce more codes (a fast
  * chord), but still nowhere near this ring's depth, so overflow is not
  * expected in practice either way. */
-#define SST_EVQ_CAP 64
-static termgfx_input_event_t g_evq[SST_EVQ_CAP];
+#define TERMGFX_EVQ_CAP 64
+static termgfx_input_event_t g_evq[TERMGFX_EVQ_CAP];
 static int               g_evq_head;   /* index of the oldest queued event */
 static int               g_evq_n;      /* queued events */
 
-static void sst_push_event(const termgfx_input_event_t *ev)
+static void termgfx_push_event(const termgfx_input_event_t *ev)
 {
 	int slot;
 
-	if (g_evq_n == SST_EVQ_CAP) {
-		g_evq_head = (g_evq_head + 1) % SST_EVQ_CAP;   /* drop the oldest */
+	if (g_evq_n == TERMGFX_EVQ_CAP) {
+		g_evq_head = (g_evq_head + 1) % TERMGFX_EVQ_CAP;   /* drop the oldest */
 		g_evq_n--;
 	}
-	slot = (g_evq_head + g_evq_n) % SST_EVQ_CAP;
+	slot = (g_evq_head + g_evq_n) % TERMGFX_EVQ_CAP;
 	g_evq[slot] = *ev;
 	g_evq_n++;
 }
@@ -3086,7 +3086,7 @@ int termgfx_termio_next_event(termgfx_input_event_t *ev)
 	if (g_evq_n == 0)
 		return 0;
 	*ev = g_evq[g_evq_head];
-	g_evq_head = (g_evq_head + 1) % SST_EVQ_CAP;
+	g_evq_head = (g_evq_head + 1) % TERMGFX_EVQ_CAP;
 	g_evq_n--;
 	return 1;
 }
@@ -3099,7 +3099,7 @@ int termgfx_termio_next_event(termgfx_input_event_t *ev)
  * events, so a modifier's state folds into TERMGFX_MOD_* on the key it
  * accompanies rather than a standalone press/release of its own. */
 
-static void sst_key_event(int keycode, int ascii, int mods, int down)
+static void termgfx_key_event(int keycode, int ascii, int mods, int down)
 {
 	termgfx_input_event_t ev;
 
@@ -3108,7 +3108,7 @@ static void sst_key_event(int keycode, int ascii, int mods, int down)
 	ev.keycode = keycode;
 	ev.ascii   = ascii;
 	ev.mods    = mods;
-	sst_push_event(&ev);
+	termgfx_push_event(&ev);
 }
 
 /* A legacy/CSI key with no true release from the wire (a plain byte, or a
@@ -3119,15 +3119,15 @@ static void sst_key_event(int keycode, int ascii, int mods, int down)
  * satisfy, so a legacy key is a single TERMGFX_EV_KEY_DOWN and nothing else --
  * the same shape a kitty/evdev key gets on ITS press edge, just without a
  * release edge ever following. */
-static void sst_key_press(int keycode, int ascii, int mods)
+static void termgfx_key_press(int keycode, int ascii, int mods)
 {
-	sst_key_event(keycode, ascii, mods, 1);
+	termgfx_key_event(keycode, ascii, mods, 1);
 }
 
 /* A legacy P_NORMAL byte outside the ESC/CSI machinery: translate to one key
  * press. 0x13 (Ctrl-S) and 'q'/0x03 (quit) never reach here -- consumed as
  * door hotkeys in parse_bytes()'s P_NORMAL case, above them. */
-static void sst_key_byte(int c)
+static void termgfx_key_byte(int c)
 {
 	int keycode = 0, ascii = 0, mods = 0;
 
@@ -3146,7 +3146,7 @@ static void sst_key_byte(int c)
 	} else
 		return;                     /* no mapping (other control bytes,
 		                            * high bit set): drop */
-	sst_key_press(keycode, ascii, mods);
+	termgfx_key_press(keycode, ascii, mods);
 }
 
 /* --- SyncTERM evdev physical-key reports ------------------------------------
@@ -3158,7 +3158,7 @@ static unsigned g_evdev_mods;
 /* Apply one physical key edge. Unlike door_input.c's evdev_edge(), a
  * modifier code only updates g_evdev_mods -- no standalone press/release
  * event of its own; see the section doc comment above for why. */
-static void sst_evdev_edge(int code, int down)
+static void termgfx_evdev_edge(int code, int down)
 {
 	int keycode = 0, c;
 	int mod = termgfx_evdev_modifier(code);   /* L/R Ctrl, Shift, Alt */
@@ -3200,7 +3200,7 @@ static void sst_evdev_edge(int code, int down)
 		case 67:  keycode = TERMGFX_KEY_F9; break;
 	}
 	if (keycode) {
-		sst_key_event(keycode, 0, 0, down);
+		termgfx_key_event(keycode, 0, 0, down);
 		return;
 	}
 
@@ -3215,7 +3215,7 @@ static void sst_evdev_edge(int code, int down)
 		 * reserved (see below): it must reach ScummVM's text entry. */
 		if ((c | 0x20) == 's') {
 			if (down)
-				sst_toggle_stats();
+				termgfx_toggle_stats();
 			return;
 		}
 		if ((c | 0x20) == 'c' || (c | 0x20) == 'q') {
@@ -3230,24 +3230,24 @@ static void sst_evdev_edge(int code, int down)
 				g_menu = 1;
 			return;
 		}
-		sst_key_event(c | 0x20, 0, TERMGFX_MOD_CTRL, down);
+		termgfx_key_event(c | 0x20, 0, TERMGFX_MOD_CTRL, down);
 		return;
 	}
-	sst_key_event(c, c, 0, down);
+	termgfx_key_event(c, c, 0, down);
 }
 
 /* A physical key report ("CSI = code[;code...] K/k"): apply every coalesced
  * edge. csi_params() skips the leading '=' marker. */
-static void sst_evdev_report(int down)
+static void termgfx_evdev_report(int down)
 {
 	int codes[16], nc, i;
 
 	nc = csi_params(codes, 16);
 	for (i = 0; i < nc; i++)
-		sst_evdev_edge(codes[i], down);
+		termgfx_evdev_edge(codes[i], down);
 }
 
-/* --- SGR mouse: report coords -> SST_FB_W x SST_FB_H game coords ----------
+/* --- SGR mouse: report coords -> TERMGFX_FB_W x TERMGFX_FB_H game coords ----------
  * Ported from syncconquer/door/door_input.c:305-417 (mouse_event), with two
  * differences: this door has only ONE coordinate space to map into (the
  * fixed 320x200 game surface -- no separate GUI-overlay space to switch
@@ -3256,14 +3256,14 @@ static void sst_evdev_report(int down)
  * a click never needs to bracket synthetic Shift/Alt/Ctrl taps around it;
  * keyboard modifiers arrive as their own key events (Task 5).
  *
- * sst_image_rect(), below, is the SAME fit+center math termgfx_termio_present() uses
+ * termgfx_image_rect(), below, is the SAME fit+center math termgfx_termio_present() uses
  * to place the frame, so a report always maps against the rect the terminal
  * is actually looking at (sixel's reserved bottom row included) rather than
  * a second, potentially-stale idea of where the image is. */
 
-/* Fit the SST_FB_W x SST_FB_H frame into the terminal's canvas and center it
+/* Fit the TERMGFX_FB_W x TERMGFX_FB_H frame into the terminal's canvas and center it
  * -- extracted from termgfx_termio_present()'s pre-M3 inline "Fit + center" block
- * (same logic, unchanged) so BOTH present() and sst_mouse_report() key off
+ * (same logic, unchanged) so BOTH present() and termgfx_termio_mouse_report() key off
  * one computation instead of two that could drift apart. Pixel-space only:
  * dx and dy (output via the pointers) give the offset of the image's
  * top-left corner within the canvas (the SIXEL tier's text-cell CUP origin
@@ -3281,32 +3281,32 @@ static void sst_evdev_report(int down)
  * 999;999-CPR grid) to reserve exactly one row and to center on a fractional
  * cell. JXL is pixel-addressed and does not scroll at the cursor, so it
  * always uses the full canvas. */
-/* Source-parameterized core of sst_image_rect(): identical logic, but the
- * frame's native size (sw x sh) is a parameter instead of the SST_FB_*
+/* Source-parameterized core of termgfx_image_rect(): identical logic, but the
+ * frame's native size (sw x sh) is a parameter instead of the TERMGFX_FB_*
  * constants, so present_rgbx() (a truecolor source with its own w x h) can fit
- * against the same canvas math. sst_image_rect() below is the unchanged
- * SST_FB_W x SST_FB_H wrapper the indexed present()/mouse path calls -- passing
+ * against the same canvas math. termgfx_image_rect() below is the unchanged
+ * TERMGFX_FB_W x TERMGFX_FB_H wrapper the indexed present()/mouse path calls -- passing
  * those two constants reproduces its former behavior exactly (the source dims
  * are used only by the termgfx_geom_fit() call; everything after keys off the
  * canvas and the resulting ew/eh). */
-static void sst_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, int *dy)
+static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, int *dy)
 {
-	int tier  = sst_tier();
+	int tier  = termgfx_tier();
 	int cellh = g_cell_h > 0 ? g_cell_h
 	          : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 16);
 	int fit_h = g_canvas_h;
 
-	if (tier == SST_TIER_SIXEL && g_term_rows > 0 && g_canvas_h > cellh)
+	if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0 && g_canvas_h > cellh)
 		fit_h = g_canvas_h - cellh;   /* keep the image off the last row */
 
-	termgfx_geom_fit(g_canvas_w, fit_h, sw, sh, SST_SCALE_MAX, ew, eh);
+	termgfx_geom_fit(g_canvas_w, fit_h, sw, sh, TERMGFX_SCALE_MAX, ew, eh);
 	/* Effective sixel ceiling -- SIXEL tier only (see g_gfx_max_w's doc
 	 * comment, above, for the full precedence rationale). JXL/APC frames
 	 * aren't subject to xterm's declared-raster discard (a different wire
 	 * format entirely), and the terminals that reach the JXL tier are
 	 * SyncTERM/CTerm builds that already answered DA1/CTDA, not a silent
 	 * xterm. */
-	if (tier == SST_TIER_SIXEL) {
+	if (tier == TERMGFX_TIER_SIXEL) {
 		int gmax_w, gmax_h;
 
 		if (g_sixel_max_override > 0) {
@@ -3323,7 +3323,7 @@ static void sst_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, int *d
 		termgfx_geom_gfx_clamp(gmax_w, gmax_h, ew, eh);
 	}
 
-	if (tier == SST_TIER_SIXEL && g_term_rows > 0) {
+	if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0) {
 		double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
 		double chd = (double)g_canvas_h / g_term_rows;
 		int    icol, irow;   /* unused here -- present() re-derives them from dx/dy */
@@ -3336,12 +3336,12 @@ static void sst_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, int *d
 	}
 }
 
-static void sst_image_rect(int *ew, int *eh, int *dx, int *dy)
+static void termgfx_image_rect(int *ew, int *eh, int *dx, int *dy)
 {
-	sst_image_rect_src(SST_FB_W, SST_FB_H, ew, eh, dx, dy);
+	termgfx_image_rect_src(TERMGFX_FB_W, TERMGFX_FB_H, ew, eh, dx, dy);
 }
 
-static void sst_mouse_report(int b, int col, int row, int release)
+static void termgfx_termio_mouse_report(int b, int col, int row, int release)
 {
 	int                     ew = 0, eh = 0, dx = 0, dy = 0, cw, ch, px, py, gx, gy;
 	termgfx_mouse_report_t  rep;
@@ -3356,19 +3356,19 @@ static void sst_mouse_report(int b, int col, int row, int release)
 	    && ((g_term_cols > 0 && col > g_term_cols) || (g_term_rows > 0 && row > g_term_rows)))
 		termgfx_mouse_note_pixel_report(&g_mouse);
 
-	sst_image_rect(&ew, &eh, &dx, &dy);
+	termgfx_image_rect(&ew, &eh, &dx, &dy);
 	cw = g_cell_w > 0 ? g_cell_w : 8;
 	ch = g_cell_h > 0 ? g_cell_h : 16;
 	if (ew <= 0)
-		ew = SST_FB_W;
+		ew = TERMGFX_FB_W;
 	if (eh <= 0)
-		eh = SST_FB_H;
+		eh = TERMGFX_FB_H;
 
 	/* Under SGR-Pixels the report already carries 1-based canvas pixels --
 	 * use them directly. Otherwise SGR reports a 1-based text CELL: convert
 	 * to that cell's center in the terminal's own canvas pixels. Either way
 	 * px/py end up in canvas pixels; clamp to the displayed-image rect, then
-	 * rescale into game (SST_FB_W x SST_FB_H) coords. */
+	 * rescale into game (TERMGFX_FB_W x TERMGFX_FB_H) coords. */
 	if (termgfx_mouse_pixels(&g_mouse)) {
 		px = col - 1;
 		py = row - 1;
@@ -3403,16 +3403,16 @@ static void sst_mouse_report(int b, int col, int row, int release)
 	if (py >= dy + eh)
 		py = dy + eh - 1;
 
-	gx = (px - dx) * SST_FB_W / ew;
-	gy = (py - dy) * SST_FB_H / eh;
+	gx = (px - dx) * TERMGFX_FB_W / ew;
+	gy = (py - dy) * TERMGFX_FB_H / eh;
 	if (gx < 0)
 		gx = 0;
-	if (gx >= SST_FB_W)
-		gx = SST_FB_W - 1;
+	if (gx >= TERMGFX_FB_W)
+		gx = TERMGFX_FB_W - 1;
 	if (gy < 0)
 		gy = 0;
-	if (gy >= SST_FB_H)
-		gy = SST_FB_H - 1;
+	if (gy >= TERMGFX_FB_H)
+		gy = TERMGFX_FB_H - 1;
 
 	/* Per-report diagnostic (SYNCSCUMM_TRACE only): the raw cell/pixel
 	 * report, the mode it was read in, the image rect it mapped against, and
@@ -3432,7 +3432,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 	ev.type = TERMGFX_EV_MOUSE_MOVE;
 	ev.x    = gx;
 	ev.y    = gy;
-	sst_push_event(&ev);
+	termgfx_push_event(&ev);
 
 	termgfx_mouse_report(&g_mouse, b, col, row, release, &rep);
 	switch (rep.kind) {
@@ -3442,7 +3442,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 			ev.x      = gx;
 			ev.y      = gy;
 			ev.button = rep.button;
-			sst_push_event(&ev);
+			termgfx_push_event(&ev);
 			break;
 		case TERMGFX_SGR_WHEEL:
 			memset(&ev, 0, sizeof ev);
@@ -3450,7 +3450,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 			ev.x     = gx;
 			ev.y     = gy;
 			ev.wheel = rep.wheel;
-			sst_push_event(&ev);
+			termgfx_push_event(&ev);
 			break;
 		case TERMGFX_SGR_MOVE:
 		default:
@@ -3460,7 +3460,7 @@ static void sst_mouse_report(int b, int col, int row, int release)
 
 /* --- piece 9: termgfx_termio_present() ties 1-8 together (door_io.c:2707+
  * door_io_present() shape). ------------------------------------------------*/
-static uint8_t g_last_fb[SST_FB_W * SST_FB_H];
+static uint8_t g_last_fb[TERMGFX_FB_W * TERMGFX_FB_H];
 static uint8_t g_last_pal[768];
 static int     g_have_last;
 static int     g_last_canvas_w, g_last_canvas_h;
@@ -3488,7 +3488,7 @@ static int g_need_st;
  * NOT the startup grace/canvas-hold gates just above present()'s body, which
  * self-retry every frame of the engine's own boot loop and would just waste
  * a copy retaining a frame that is about to be superseded anyway. */
-static uint8_t g_pending_idx[SST_FB_W * SST_FB_H];
+static uint8_t g_pending_idx[TERMGFX_FB_W * TERMGFX_FB_H];
 static uint8_t g_pending_pal[768];
 static int     g_present_pending;
 
@@ -3496,10 +3496,10 @@ static int     g_present_pending;
  * g_pending_pal and mark a frame pending. The idx != g_pending_idx guard
  * skips a self-copy when THIS call already is a retry (tick() calls
  * present() with g_pending_idx itself). */
-static void sst_present_retain(const uint8_t *idx, const uint8_t *pal768)
+static void termgfx_present_retain(const uint8_t *idx, const uint8_t *pal768)
 {
 	if (idx != g_pending_idx) {
-		memcpy(g_pending_idx, idx, SST_FB_W * SST_FB_H);
+		memcpy(g_pending_idx, idx, TERMGFX_FB_W * TERMGFX_FB_H);
 		memcpy(g_pending_pal, pal768, 768);
 	}
 	g_present_pending = 1;
@@ -3529,9 +3529,9 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		 * every call here already IS a changed frame; the offline capture
 		 * test just wants real DCS sixel frames to grep, capped so the file
 		 * can't grow unbounded on a long boot. */
-		if (g_capture_frames >= SST_CAPTURE_MAX_FRAMES)
+		if (g_capture_frames >= TERMGFX_CAPTURE_MAX_FRAMES)
 			return;
-		n = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, SST_FB_W, SST_FB_H, pal768, 1);
+		n = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, TERMGFX_FB_W, TERMGFX_FB_H, pal768, 1);
 		if (n != 0) {
 			fwrite(g_sixel_buf, 1, n, g_capture);
 			g_capture_frames++;
@@ -3551,7 +3551,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		return;
 
 	/* The startup holds below are bounded from the FIRST present attempt, not
-	 * from termgfx_termio_init(): the engine can boot for longer than SST_PROBE_GRACE_MS,
+	 * from termgfx_termio_init(): the engine can boot for longer than TERMGFX_PROBE_GRACE_MS,
 	 * so an init-anchored deadline would already be expired the first time we
 	 * ever try to draw and would never actually hold anything (the intro then
 	 * renders against the default 640x400 guess -- small, upper-left -- until
@@ -3562,7 +3562,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 
 	/* Startup grace: hold the first frame(s) until the capability probe
 	 * answers (termgfx_termio_init()'s DA1/CTDA/JXL burst), so a silent terminal
-	 * gets a bounded wait rather than an indefinite one. sst_tier() only
+	 * gets a bounded wait rather than an indefinite one. termgfx_tier() only
 	 * ever picks JXL once the probe has actually confirmed it (g_jxl), so
 	 * holding here is enough to keep the first frame from guessing sixel
 	 * against a JXL-only reply that just hasn't landed yet. (The exact pixel
@@ -3570,8 +3570,8 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * actually has a graphics tier -- a no-graphics terminal is turned away by
 	 * the gate in between and must not be held here for a canvas it will never
 	 * use.) */
-	if (!g_probe_replied && (int32_t)(now_ms() - g_first_present_ms) < SST_PROBE_GRACE_MS) {
-		sst_trace("gated-grace", sst_tier_name(sst_tier()), 0);
+	if (!g_probe_replied && (int32_t)(now_ms() - g_first_present_ms) < TERMGFX_PROBE_GRACE_MS) {
+		termgfx_trace("gated-grace", termgfx_tier_name(termgfx_tier()), 0);
 		return;
 	}
 
@@ -3580,14 +3580,14 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * has advertised neither tier, wait out the JXL reply window (a sixel DA1
 	 * would already have set g_have_sixel) and then conclude it cannot display
 	 * the game: emit a one-time plain-text notice and request quit, rather than
-	 * spraying unrenderable sixel DCS at it (sst_tier() otherwise defaults to
+	 * spraying unrenderable sixel DCS at it (termgfx_tier() otherwise defaults to
 	 * sixel). A terminal that stayed *silent* (no DA1 at all) is left to the
 	 * historical default-to-sixel path -- a graphics terminal that simply
 	 * doesn't answer device-attributes shouldn't be turned away. */
 	if (!g_have_sixel && !g_jxl && g_probe_replied) {
 		if (!g_jxl_done
-		    && (int32_t)(now_ms() - g_probe_start_ms) <= SST_GFX_SETTLE_MS) {
-			sst_trace("gated-grace", sst_tier_name(sst_tier()), 0);
+		    && (int32_t)(now_ms() - g_probe_start_ms) <= TERMGFX_GFX_SETTLE_MS) {
+			termgfx_trace("gated-grace", termgfx_tier_name(termgfx_tier()), 0);
 			return;   /* JXL cap may still be in flight -- keep holding */
 		}
 		if (!g_no_gfx_notified) {
@@ -3614,8 +3614,8 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * masked it). Hold until the real canvas is known, bounded by the same
 	 * grace -- a terminal that never reports its size just proceeds at the
 	 * default once the grace elapses, exactly as before. */
-	if (!g_canvas_exact && (int32_t)(now_ms() - g_first_present_ms) < SST_PROBE_GRACE_MS) {
-		sst_trace("gated-grace", sst_tier_name(sst_tier()), 0);
+	if (!g_canvas_exact && (int32_t)(now_ms() - g_first_present_ms) < TERMGFX_PROBE_GRACE_MS) {
+		termgfx_trace("gated-grace", termgfx_tier_name(termgfx_tier()), 0);
 		return;
 	}
 
@@ -3637,23 +3637,23 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * acks lag, so the pipeline pins at g_auto_depth and only the deadline
 	 * unsticks it. At the normal 750ms that is ~3 frames then a 750ms dark gap
 	 * -- the "stays dark for a long time" defect. During a palette storm we use
-	 * the far shorter SST_PALSTORM_MIN_MS unstick instead: the fade is
+	 * the far shorter TERMGFX_PALSTORM_MIN_MS unstick instead: the fade is
 	 * monotonic so a force-sent frame just carries the newest palette, and the
 	 * g_out_len backpressure gate just below still holds the next frame until
 	 * this one has fully left the stage -- so a short unstick paces evenly to
 	 * the link's actual rate rather than overrunning it into a drop-storm. */
 	if (g_inflight >= g_auto_depth) {
-		uint32_t deadline = (pal_dirty && g_have_last) ? SST_PALSTORM_MIN_MS
-		                                               : SST_PACE_DEADLINE_MS;
+		uint32_t deadline = (pal_dirty && g_have_last) ? TERMGFX_PALSTORM_MIN_MS
+		                                               : TERMGFX_PACE_DEADLINE_MS;
 		if ((int32_t)(now_ms() - g_pace_progress_ms) > (int32_t)deadline) {
 			g_inflight = 0;
 			g_dsr_t    = g_dsr_h;   /* drop the stale unacked DSR timestamps */
-			sst_trace("deadline", sst_tier_name(sst_tier()), 0);
+			termgfx_trace("deadline", termgfx_tier_name(termgfx_tier()), 0);
 		} else {
 			/* Retain so termgfx_termio_tick() can retry once g_inflight drains --
-			 * see g_present_pending's doc comment and sst_present_retain(). */
-			sst_present_retain(idx, pal768);
-			sst_trace("gated-inflight", sst_tier_name(sst_tier()), 0);
+			 * see g_present_pending's doc comment and termgfx_present_retain(). */
+			termgfx_present_retain(idx, pal768);
+			termgfx_trace("gated-inflight", termgfx_tier_name(termgfx_tier()), 0);
 			return;
 		}
 	}
@@ -3681,8 +3681,8 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		/* Retain, same as the gated-inflight branch above -- a static screen
 		 * that lands here on its last frame of a burst (the FIFO hasn't
 		 * drained yet) would otherwise strand exactly like the pacing case. */
-		sst_present_retain(idx, pal768);
-		sst_trace("gated-outlen", sst_tier_name(sst_tier()), 0);
+		termgfx_present_retain(idx, pal768);
+		termgfx_trace("gated-outlen", termgfx_tier_name(termgfx_tier()), 0);
 		return;
 	}
 
@@ -3711,17 +3711,17 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	}
 	dropped_before = g_dropped_frames;
 
-	tier = sst_tier();
+	tier = termgfx_tier();
 
-	/* Fit + center, via sst_image_rect() -- the SAME helper the SGR mouse
-	 * mapper (sst_mouse_report(), above) calls, so a report always maps
+	/* Fit + center, via termgfx_image_rect() -- the SAME helper the SGR mouse
+	 * mapper (termgfx_termio_mouse_report(), above) calls, so a report always maps
 	 * against the exact rect the frame below is drawn in. See that helper's
 	 * doc comment for the sixel-vs-JXL placement rationale (reserved bottom
 	 * row, pixel-offset vs text-cell origin); this block only turns its
 	 * pixel-space dx/dy back into icol/irow for the sixel CUP.
 	 *
 	 * Computed BEFORE geom_changed/dedupe below (not after, as originally):
-	 * the gfx-ceiling clamp inside sst_image_rect() can shrink ew/eh on its
+	 * the gfx-ceiling clamp inside termgfx_image_rect() can shrink ew/eh on its
 	 * own, with the canvas itself unchanged, whenever a late XTSMGRAPHICS
 	 * reply lands after the first frame already went out -- geom_changed has
 	 * to see THAT, or a static scene would dedupe/dirty-diff against a
@@ -3729,16 +3729,16 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	{
 		int cellh = g_cell_h > 0 ? g_cell_h
 		          : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 16);
-		int rdx, rdy;   /* pixel offset from sst_image_rect(); rdx/cw, rdy/chd
+		int rdx, rdy;   /* pixel offset from termgfx_image_rect(); rdx/cw, rdy/chd
 		                 * below recovers the SAME icol/irow
 		                 * termgfx_geom_center_ex()/_center() computed inline
 		                 * here before the extraction -- col/row and dx/dy are
 		                 * independent outputs of that math, so re-deriving one
 		                 * from the other is exact, not an approximation. */
 
-		sst_image_rect(&ew, &eh, &rdx, &rdy);
+		termgfx_image_rect(&ew, &eh, &rdx, &rdy);
 
-		if (tier == SST_TIER_SIXEL && g_term_rows > 0) {
+		if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0) {
 			double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
 			double chd = (double)g_canvas_h / g_term_rows;
 			icol = 1 + (int)(rdx / cw);
@@ -3754,7 +3754,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 #endif
 		}
 
-		/* Stash for sst_trace() -- see g_trace_ew's doc comment, above. */
+		/* Stash for termgfx_trace() -- see g_trace_ew's doc comment, above. */
 		g_trace_ew = ew;
 		g_trace_eh = eh;
 		g_trace_cellh = cellh;
@@ -3772,18 +3772,18 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 
 	/* Whole-frame de-dupe: fb + palette + canvas/emit geometry + tier all
 	 * unchanged since the last SENT frame -> nothing new to draw. tier can
-	 * in practice only change once per session (sst_tier() settles as soon
+	 * in practice only change once per session (termgfx_tier() settles as soon
 	 * as the startup probe answers, before any frame has gone out), but
 	 * checking it here costs nothing and keeps this correct if that ever
 	 * stops being true. */
 	if (g_have_last && !pal_dirty && !geom_changed && !tier_changed
-	    && memcmp(g_last_fb, idx, SST_FB_W * SST_FB_H) == 0) {
-		sst_fps_tick(0);
+	    && memcmp(g_last_fb, idx, TERMGFX_FB_W * TERMGFX_FB_H) == 0) {
+		termgfx_fps_tick(0);
 		if (g_stats) {
-			sst_stats_draw();
+			termgfx_stats_draw();
 			termgfx_termio_flush();
 		}
-		sst_trace("dedupe", sst_tier_name(tier), 0);
+		termgfx_trace("dedupe", termgfx_tier_name(tier), 0);
 		return;
 	}
 
@@ -3793,7 +3793,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * what the terminal already holds. Other sixel terminals reset registers
 	 * per image, so non-SyncTERM always self-describes with the frame's
 	 * used-colour subset instead. */
-	emit_pal = (pal_dirty || g_last_tier != SST_TIER_SIXEL)
+	emit_pal = (pal_dirty || g_last_tier != TERMGFX_TIER_SIXEL)
 	           ? SIXEL_PAL_FULL : SIXEL_PAL_NONE;
 	if (!g_is_syncterm)
 		emit_pal = SIXEL_PAL_USED;
@@ -3808,7 +3808,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	/* Stats bar BEFORE the (possibly huge) image, not after: a palette-storm
 	 * full frame can run past out_put()'s 256KB stage, and once that guard
 	 * pins g_out_len at exactly its cap, EVERY later out_put() call this
-	 * present() makes -- including a trailing sst_stats_draw() -- computes
+	 * present() makes -- including a trailing termgfx_stats_draw() -- computes
 	 * zero room and silently drops (out_put()'s own "stage stayed full"
 	 * path), with no resync marker the way a dropped image gets (g_need_st/
 	 * g_have_last). That starved the bar during exactly the big-frame scenes
@@ -3816,11 +3816,11 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * it would show once on Ctrl-S, then never again until frames shrank
 	 * back under the cap. Queuing it first costs nothing (it always fits by
 	 * itself) and guarantees it wins the race for stage space every time. */
-	sst_fps_tick(1);
-	sst_stats_draw();
+	termgfx_fps_tick(1);
+	termgfx_stats_draw();
 
 	dn = 0;
-	if (tier == SST_TIER_SIXEL) {
+	if (tier == TERMGFX_TIER_SIXEL) {
 		/* Dirty-rect sixel: each box is CUP-positioned at a text cell, so it
 		 * only lands correctly when its display-pixel rect is snapped to the
 		 * terminal's REAL cell grid. With that grid known (999;999 CPR /
@@ -3834,7 +3834,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		        : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 0);
 
 		if (cdw > 0 && cdh > 0 && g_have_last && !pal_dirty && !geom_changed && !tier_changed)
-			dn = sst_dirty_sixel_present(idx, g_last_fb, pal768, ew, eh,
+			dn = termgfx_dirty_sixel_present(idx, g_last_fb, pal768, ew, eh,
 			                             icol, irow, cdw, cdh);
 
 		if (dn != 0) {
@@ -3843,33 +3843,33 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 			char cup[24];
 			int  cn = snprintf(cup, sizeof cup, "\x1b[%d;%dH", irow, icol);
 			out_put(cup, (size_t)cn);
-			n = sst_emit_sixel(idx, pal768, ew, eh, emit_pal);
+			n = termgfx_emit_sixel(idx, pal768, ew, eh, emit_pal);
 			out_put(g_sixel_buf, n);
 		}
 	}
 #ifdef WITH_JXL
-	else {   /* SST_TIER_JXL */
+	else {   /* TERMGFX_TIER_JXL */
 		if (g_have_last && !pal_dirty && !geom_changed && !tier_changed && g_img_blob_ok)
-			dn = sst_dirty_jxl_present(idx, g_last_fb, pal768, ew, eh, dx, dy);
+			dn = termgfx_dirty_jxl_present(idx, g_last_fb, pal768, ew, eh, dx, dy);
 
 		if (dn != 0) {
 			n = dn;   /* dirty rects already sent */
 		} else {
-			n = sst_emit_jxl(idx, pal768, ew, eh, dx, dy);
+			n = termgfx_emit_jxl(idx, pal768, ew, eh, dx, dy);
 			if (n != 0) {
 				out_put(g_apc_buf, n);
 			} else {
 				/* encode failure this frame (or a no-libjxl stub -- can't
-				 * happen here since sst_tier() only returns JXL when
+				 * happen here since termgfx_tier() only returns JXL when
 				 * WITH_JXL is compiled in and the probe confirmed it, but a
 				 * transient libjxl failure is still possible): fall back to
 				 * sixel for just this frame, same as door_io.c. */
 				char cup[24];
 				int  cn = snprintf(cup, sizeof cup, "\x1b[%d;%dH", irow, icol);
 				out_put(cup, (size_t)cn);
-				n = sst_emit_sixel(idx, pal768, ew, eh, 1);
+				n = termgfx_emit_sixel(idx, pal768, ew, eh, 1);
 				out_put(g_sixel_buf, n);
-				tier = SST_TIER_SIXEL;
+				tier = TERMGFX_TIER_SIXEL;
 			}
 		}
 	}
@@ -3878,7 +3878,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	out_put("\x1b[6n", 4);   /* DSR: paces the next frame */
 	g_inflight++;
 	g_pace_progress_ms = now_ms();
-	sst_dsr_sent(g_pace_progress_ms);
+	termgfx_dsr_sent(g_pace_progress_ms);
 
 	if (g_dropped_frames != dropped_before) {
 		/* out_put()'s stage-full guard dropped part of this frame (sixel
@@ -3898,7 +3898,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		g_have_last = 0;
 		g_need_st   = 1;
 	} else {
-		memcpy(g_last_fb, idx, SST_FB_W * SST_FB_H);
+		memcpy(g_last_fb, idx, TERMGFX_FB_W * TERMGFX_FB_H);
 		memcpy(g_last_pal, pal768, 768);
 		g_last_canvas_w = g_canvas_w;
 		g_last_canvas_h = g_canvas_h;
@@ -3909,13 +3909,13 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	}
 
 	if (g_dropped_frames != dropped_before)
-		sst_trace("dropped", sst_tier_name(tier), n);
+		termgfx_trace("dropped", termgfx_tier_name(tier), n);
 	else if (dn != 0)
-		sst_trace("dirty", sst_tier_name(tier), n);
+		termgfx_trace("dirty", termgfx_tier_name(tier), n);
 	else if (pal_dirty)
-		sst_trace("full-palstorm", sst_tier_name(tier), n);
+		termgfx_trace("full-palstorm", termgfx_tier_name(tier), n);
 	else
-		sst_trace("full", sst_tier_name(tier), n);
+		termgfx_trace("full", termgfx_tier_name(tier), n);
 
 	termgfx_termio_flush();
 }
@@ -3934,7 +3934,7 @@ static uint8_t g_rgbx_pal[768];
  * JXL tier encodes the packed RGB directly.
  *
  * Full-frame every call: the indexed path's dedupe / dirty-rect / retain
- * machinery keys off g_last_fb (an indexed SST_FB_W x SST_FB_H surface) and is
+ * machinery keys off g_last_fb (an indexed TERMGFX_FB_W x TERMGFX_FB_H surface) and is
  * deliberately NOT shared here -- factoring it out would have to touch
  * present()'s tail, which must stay byte-identical for the live indexed door
  * (syncscumm). The pacing / backpressure gates ARE shared: they gate on the
@@ -3958,9 +3958,9 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 		/* Capture mode: a self-contained full-res frame per call, no
 		 * pacing/dedupe -- mirrors present()'s capture branch, but quantizes
 		 * the native XRGB frame (identity scale) before sixel_encode(). */
-		if (g_capture_frames >= SST_CAPTURE_MAX_FRAMES)
+		if (g_capture_frames >= TERMGFX_CAPTURE_MAX_FRAMES)
 			return;
-		rgb = sst_scale_rgbx_to_rgb(xrgb, w, h, w, h);
+		rgb = termgfx_scale_rgbx_to_rgb(xrgb, w, h, w, h);
 		if (rgb == NULL || !ensure_cap(&g_idx_buf, &g_idx_cap, (size_t)w * h))
 			return;
 		termgfx_quant_rgb(rgb, w, h, g_idx_buf, g_rgbx_pal);
@@ -3982,14 +3982,14 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 		g_first_present_ms = now_ms();
 
 	/* Startup grace: hold until the capability probe answers (see present()). */
-	if (!g_probe_replied && (int32_t)(now_ms() - g_first_present_ms) < SST_PROBE_GRACE_MS)
+	if (!g_probe_replied && (int32_t)(now_ms() - g_first_present_ms) < TERMGFX_PROBE_GRACE_MS)
 		return;
 
 	/* Non-graphics-terminal gate: neither sixel nor JXL advertised (see
 	 * present()) -- notify once and quit rather than spray unrenderable DCS. */
 	if (!g_have_sixel && !g_jxl && g_probe_replied) {
 		if (!g_jxl_done
-		    && (int32_t)(now_ms() - g_probe_start_ms) <= SST_GFX_SETTLE_MS)
+		    && (int32_t)(now_ms() - g_probe_start_ms) <= TERMGFX_GFX_SETTLE_MS)
 			return;   /* JXL cap may still be in flight -- keep holding */
 		if (!g_no_gfx_notified) {
 			out_puts("\r\n\x1b[0m\r\n"
@@ -4006,7 +4006,7 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 	}
 
 	/* Canvas-size hold: wait for the real pixel canvas (see present()). */
-	if (!g_canvas_exact && (int32_t)(now_ms() - g_first_present_ms) < SST_PROBE_GRACE_MS)
+	if (!g_canvas_exact && (int32_t)(now_ms() - g_first_present_ms) < TERMGFX_PROBE_GRACE_MS)
 		return;
 
 	termgfx_termio_flush();   /* drain the previous frame first */
@@ -4015,11 +4015,11 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 
 	/* DSR-ack pacing + backpressure gates (see present()'s two gates). A gated
 	 * frame is skipped, not retained: there is no rgbx retry buffer, and the
-	 * source re-presents on its own. The plain SST_PACE_DEADLINE_MS unstick is
+	 * source re-presents on its own. The plain TERMGFX_PACE_DEADLINE_MS unstick is
 	 * used -- the shorter palette-storm deadline is an indexed-fade heuristic
 	 * keyed off g_last_pal, which this path does not maintain. */
 	if (g_inflight >= g_auto_depth) {
-		if ((int32_t)(now_ms() - g_pace_progress_ms) > (int32_t)SST_PACE_DEADLINE_MS) {
+		if ((int32_t)(now_ms() - g_pace_progress_ms) > (int32_t)TERMGFX_PACE_DEADLINE_MS) {
 			g_inflight = 0;
 			g_dsr_t    = g_dsr_h;   /* drop the stale unacked DSR timestamps */
 		} else
@@ -4035,16 +4035,16 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 	}
 	dropped_before = g_dropped_frames;
 
-	tier = sst_tier();
+	tier = termgfx_tier();
 
 	/* Fit + center against the caller's native w x h (present() fits the fixed
-	 * SST_FB_W x SST_FB_H), then re-derive the sixel CUP col/row from the
+	 * TERMGFX_FB_W x TERMGFX_FB_H), then re-derive the sixel CUP col/row from the
 	 * pixel offset exactly as present() does. */
 	{
 		int rdx, rdy;
 
-		sst_image_rect_src(w, h, &ew, &eh, &rdx, &rdy);
-		if (tier == SST_TIER_SIXEL && g_term_rows > 0) {
+		termgfx_image_rect_src(w, h, &ew, &eh, &rdx, &rdy);
+		if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0) {
 			double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
 			double chd = (double)g_canvas_h / g_term_rows;
 			icol = 1 + (int)(rdx / cw);
@@ -4058,7 +4058,7 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 #endif
 		}
 
-		/* Stash for sst_trace() -- same geometry fields present() records. */
+		/* Stash for termgfx_trace() -- same geometry fields present() records. */
 		g_trace_ew    = ew;
 		g_trace_eh    = eh;
 		g_trace_icol  = icol;
@@ -4071,21 +4071,21 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 
 	/* Stats bar BEFORE the (possibly huge) image, so it wins stage space even
 	 * when the frame runs past out_put()'s cap -- same rationale as present(). */
-	sst_fps_tick(1);
-	sst_stats_draw();
+	termgfx_fps_tick(1);
+	termgfx_stats_draw();
 
-	if (tier == SST_TIER_SIXEL) {
+	if (tier == TERMGFX_TIER_SIXEL) {
 		char cup[24];
 		int  cn;
 
-		/* Match sst_emit_sixel()'s band/scale clamps, but on the RGB scale:
+		/* Match termgfx_emit_sixel()'s band/scale clamps, but on the RGB scale:
 		 * clamp width, round height down to whole 6px sixel bands. */
-		if (ew > SST_SCALE_MAX)
-			ew = SST_SCALE_MAX;
+		if (ew > TERMGFX_SCALE_MAX)
+			ew = TERMGFX_SCALE_MAX;
 		eh -= eh % 6;
 		if (eh < 6)
 			eh = 6;
-		rgb = sst_scale_rgbx_to_rgb(xrgb, w, h, ew, eh);
+		rgb = termgfx_scale_rgbx_to_rgb(xrgb, w, h, ew, eh);
 		if (rgb != NULL && ensure_cap(&g_idx_buf, &g_idx_cap, (size_t)ew * eh)) {
 			termgfx_quant_rgb(rgb, ew, eh, g_idx_buf, g_rgbx_pal);
 			cn = snprintf(cup, sizeof cup, "\x1b[%d;%dH", irow, icol);
@@ -4095,10 +4095,10 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 		}
 	}
 #ifdef WITH_JXL
-	else {   /* SST_TIER_JXL: encode the packed RGB directly, no indexing */
-		rgb = sst_scale_rgbx_to_rgb(xrgb, w, h, ew, eh);
+	else {   /* TERMGFX_TIER_JXL: encode the packed RGB directly, no indexing */
+		rgb = termgfx_scale_rgbx_to_rgb(xrgb, w, h, ew, eh);
 		if (rgb != NULL)
-			n = sst_emit_jxl_rgb(rgb, ew, eh, dx, dy);
+			n = termgfx_emit_jxl_rgb(rgb, ew, eh, dx, dy);
 		if (n != 0) {
 			out_put(g_apc_buf, n);
 		} else {
@@ -4107,12 +4107,12 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 			char cup[24];
 			int  cn;
 
-			if (ew > SST_SCALE_MAX)
-				ew = SST_SCALE_MAX;
+			if (ew > TERMGFX_SCALE_MAX)
+				ew = TERMGFX_SCALE_MAX;
 			eh -= eh % 6;
 			if (eh < 6)
 				eh = 6;
-			rgb = sst_scale_rgbx_to_rgb(xrgb, w, h, ew, eh);
+			rgb = termgfx_scale_rgbx_to_rgb(xrgb, w, h, ew, eh);
 			if (rgb != NULL && ensure_cap(&g_idx_buf, &g_idx_cap, (size_t)ew * eh)) {
 				termgfx_quant_rgb(rgb, ew, eh, g_idx_buf, g_rgbx_pal);
 				cn = snprintf(cup, sizeof cup, "\x1b[%d;%dH", irow, icol);
@@ -4120,7 +4120,7 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 				n = sixel_encode(&g_sixel_buf, &g_sixel_cap, g_idx_buf, ew, eh, g_rgbx_pal, SIXEL_PAL_USED);
 				out_put(g_sixel_buf, n);
 			}
-			tier = SST_TIER_SIXEL;
+			tier = TERMGFX_TIER_SIXEL;
 		}
 	}
 #endif
@@ -4128,16 +4128,16 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 	out_put("\x1b[6n", 4);   /* DSR: paces the next frame */
 	g_inflight++;
 	g_pace_progress_ms = now_ms();
-	sst_dsr_sent(g_pace_progress_ms);
+	termgfx_dsr_sent(g_pace_progress_ms);
 
 	/* A drop mid-frame can leave a DCS/APC open with no ST -- flag the next
 	 * present_rgbx() to close it (g_need_st), same resync marker present()
 	 * uses. No g_have_last handling: this path keeps no last-frame state. */
 	if (g_dropped_frames != dropped_before) {
 		g_need_st = 1;
-		sst_trace("dropped", sst_tier_name(tier), n);
+		termgfx_trace("dropped", termgfx_tier_name(tier), n);
 	} else
-		sst_trace("full", sst_tier_name(tier), n);
+		termgfx_trace("full", termgfx_tier_name(tier), n);
 
 	termgfx_termio_flush();
 }
@@ -4170,12 +4170,12 @@ void termgfx_termio_tick(void)
 		termgfx_termio_present(g_pending_idx, g_pending_pal);
 }
 
-#ifdef SST_TEST
-/* Test-only seams (test/test_sst_mouse.c): drive sst_mouse_report()'s
+#ifdef TERMGFX_TEST
+/* Test-only seams (test/test_sst_mouse.c): drive termgfx_termio_mouse_report()'s
  * coordinate mapping without a real session -- no termgfx_termio_init(), no socket,
- * no probe burst. Never compiled into the shipped door (SST_TEST is not
- * defined by build.sh). Sets the geometry globals sst_image_rect() and
- * sst_mouse_report() read, AND resets the event FIFO: each call starts a
+ * no probe burst. Never compiled into the shipped door (TERMGFX_TEST is not
+ * defined by build.sh). Sets the geometry globals termgfx_image_rect() and
+ * termgfx_termio_mouse_report() read, AND resets the event FIFO: each call starts a
  * fresh scenario, as if a probe had just landed with this geometry, rather
  * than accumulating events (or a stale g_canvas_exact/pixels latch) across
  * scenarios in the same test binary. */
@@ -4197,7 +4197,7 @@ int termgfx_termio_test_set_geom(int canvas_w, int canvas_h, int cell_w, int cel
 
 int termgfx_termio_test_mouse_report(int b, int col, int row, int release)
 {
-	sst_mouse_report(b, col, row, release);
+	termgfx_termio_mouse_report(b, col, row, release);
 	return 1;
 }
 

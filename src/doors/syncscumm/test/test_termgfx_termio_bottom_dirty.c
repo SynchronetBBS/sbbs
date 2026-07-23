@@ -3,7 +3,7 @@
  * live on Windows Terminal sixel -- see docs/superpowers/sdd/syncscumm-m3/
  * fix-sixel-bottom-cursor-report.md).
  *
- * Root cause: sst_dirty_sixel_present()'s per-box height snap rounds a
+ * Root cause: termgfx_dirty_sixel_present()'s per-box height snap rounds a
  * box's height UP to a whole vstep (LCM(cell,6)), then -- only at the frame
  * bottom -- rounds back DOWN to stay vstep-aligned. At this test's geometry
  * (canvas 1200x600, cell 20x20 -> vstep=LCM(20,6)=60; eh=580, ehc=576) a
@@ -107,7 +107,7 @@ static void sixel_raster_max(const char *s, int n, int *max_ph_out, int *max_pv_
 }
 
 /* Set a 16x16 (or shorter, at the fb bottom) tile to a fill value -- tx/ty
- * are tile coordinates (SST_TILE == 16, checked against termgfx_termio.c). */
+ * are tile coordinates (TERMGFX_TILE == 16, checked against termgfx_termio.c). */
 static void fill_tile(uint8_t *fb, int tx, int ty, int tile, int fb_w, int fb_h, uint8_t val)
 {
 	int x0 = tx * tile, y0 = ty * tile;
@@ -165,7 +165,7 @@ int main(void)
 	/* Second frame: dirty a mid-screen tile (tx=2,ty=2 -> fb rows 32..47)
 	 * AND a bottom-row tile (tx=8,ty=12 -> fb rows 192..199, tile row 12 is
 	 * the door's last, 8px-tall row -- exactly where a bottom cursor sits).
-	 * The mid-screen tile is scanned first (sst_coalesce() visits tiles
+	 * The mid-screen tile is scanned first (termgfx_coalesce() visits tiles
 	 * top-to-bottom), so pre-fix it sends fine on its own and the caller
 	 * never learns the bottom tile got dropped. */
 	memcpy(idx2, idx1, sizeof idx1);
@@ -189,7 +189,7 @@ int main(void)
 	 * box's small one plus the full frame), i.e. cnt > 1. */
 	assert(cnt == 1);
 	assert(pv >= 500);
-	printf("SST_IO_BOTTOM_DIRTY bottom-strand forces full frame OK (Ph=%d Pv=%d cnt=%d)\n", ph, pv, cnt);
+	printf("TERMGFX_TERMIO_BOTTOM_DIRTY bottom-strand forces full frame OK (Ph=%d Pv=%d cnt=%d)\n", ph, pv, cnt);
 
 	/* Third frame: dirty ONLY another mid-screen tile (tx=5,ty=5 -> fb rows
 	 * 80..95), nothing in the bottom row. This must NOT force a full frame
@@ -207,7 +207,7 @@ int main(void)
 	sixel_raster_max(out, n, &ph, &pv, &cnt);
 	assert(cnt == 1);                          /* one small dirty box, no full-frame storm */
 	assert(pv > 0 && pv < 500);                /* no full-height raster header emitted */
-	printf("SST_IO_BOTTOM_DIRTY non-bottom change stays dirty-rect OK (Ph=%d Pv=%d cnt=%d)\n", ph, pv, cnt);
+	printf("TERMGFX_TERMIO_BOTTOM_DIRTY non-bottom change stays dirty-rect OK (Ph=%d Pv=%d cnt=%d)\n", ph, pv, cnt);
 
 	return 0;
 }

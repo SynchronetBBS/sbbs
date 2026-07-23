@@ -40,7 +40,7 @@ int input_term_map_key(const termgfx_input_event_t &ev,
  * `keys` (BaseUi::keys). Call once per ProcessEvents() poll, after
  * termgfx_termio_pump() has had a chance to fill the FIFO.
  *
- * termgfx's legacy/CSI byte path (termgfx_termio.c's sst_key_press()) emits
+ * termgfx's legacy/CSI byte path (termgfx_termio.c's termgfx_key_press()) emits
  * KEY_DOWN with no matching KEY_UP ever -- a plain terminal byte carries no
  * release -- while its kitty CSI-u and SyncTERM evdev paths emit true
  * KEY_DOWN/KEY_UP pairs (plus, for a terminal that reports key-repeat,

@@ -339,7 +339,7 @@ learn otherwise.
 **Still untested by anything automated**, and worth knowing: the `enabled =
 false` and out-of-range-clamp cases this section used to promise `fakterm.py`
 would cover. SyncSCUMM covers the equivalent for its own door
-(`../syncscumm/test/test_sst_io_audio_ini_off.c` and `..._ini_tune.c`, which
+(`../syncscumm/test/test_termgfx_termio_audio_ini_off.c` and `..._ini_tune.c`, which
 seed an INI in a temp CWD); syncretro has no counterpart.
 
 **What cannot be tested here:** that it *sounds right*. The host is headless

@@ -121,7 +121,7 @@ are handled, and platform support differs:
   socket comm.
 - **Stdio I/O is \*nix-only.** On POSIX the door's descriptor may be a plain fd
   (the socket, or fd 1 in a dev/tty run) and `read()`/`write()` cover both; on
-  Windows there is no stdio-door path. (See `door/sst_plat.h`.)
+  Windows there is no stdio-door path. (See `door/termgfx_plat.h`.)
 
 If no connection resolves (no drop file, no `-s<fd>`, no `$SYNCSCUMM_SOCK`), the
 door runs **headless** — useful only for the capture/test modes below.

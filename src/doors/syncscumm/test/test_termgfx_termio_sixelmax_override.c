@@ -6,7 +6,7 @@
  * defaults the other termgfx_termio_* tests exercise.
  *
  * Unlike the other termgfx_termio tests, this one needs a real syncscumm.ini
- * present in CWD when termgfx_termio_init() runs (sst_read_ini() fopen()s it
+ * present in CWD when termgfx_termio_init() runs (termgfx_read_ini() fopen()s it
  * relative to CWD, the same way door/syncscumm.cpp's resolveSubtitles()
  * reads "subtitles" from the same file) -- so unit_termgfx_termio.sh invokes this
  * binary from a dedicated temp directory seeded with "sixel_max = 800",
@@ -75,7 +75,7 @@ int main(void)
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	/* termgfx_termio_init() -> sst_read_ini() reads CWD's syncscumm.ini here,
+	/* termgfx_termio_init() -> termgfx_read_ini() reads CWD's syncscumm.ini here,
 	 * picking up "sixel_max = 800" (unit_termgfx_termio.sh seeds it before running
 	 * this binary from that directory). */
 	assert(termgfx_termio_init(2, argv) == 1);
@@ -105,6 +105,6 @@ int main(void)
 	assert(ph > 0 && ph <= 800);   /* sysop override beats the 2000x2000 XTSMGRAPHICS reply */
 	assert(pv > 0 && pv <= 800);
 
-	printf("SST_IO_SIXELMAX_OVERRIDE OK (Ph=%d Pv=%d)\n", ph, pv);
+	printf("TERMGFX_TERMIO_SIXELMAX_OVERRIDE OK (Ph=%d Pv=%d)\n", ph, pv);
 	return 0;
 }

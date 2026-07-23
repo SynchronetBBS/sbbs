@@ -27,13 +27,13 @@
  */
 #include "termgfx_termio.h"
 
-/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE/SST_CHUNK_MS/
- * SST_PREBUFFER_CHUNKS defaults (24000, 250, 3) -- termgfx_termio.h no longer
- * exposes these as public macros the way door/sst_io.h once did, so the test
+/* Mirrors termgfx_termio.c's own internal TERMGFX_AUDIO_RATE/TERMGFX_CHUNK_MS/
+ * TERMGFX_PREBUFFER_CHUNKS defaults (24000, 250, 3) -- termgfx_termio.h no longer
+ * exposes these as public macros the way door/termgfx_termio.h once did, so the test
  * keeps its own copy rather than guess a literal. */
-#define SST_AUDIO_RATE       24000
-#define SST_CHUNK_MS         250
-#define SST_PREBUFFER_CHUNKS 3
+#define TERMGFX_AUDIO_RATE       24000
+#define TERMGFX_CHUNK_MS         250
+#define TERMGFX_PREBUFFER_CHUNKS 3
 
 #include <assert.h>
 #include <fcntl.h>
@@ -93,17 +93,17 @@ static void drain_all(int fd)
  * Non-silent matters: the module ships silence from a cached name without
  * encoding, so a silent feed would never exercise the drop rule at all.
  *
- * Sized off SST_PREBUFFER_CHUNKS with headroom: the cushion is what the
+ * Sized off TERMGFX_PREBUFFER_CHUNKS with headroom: the cushion is what the
  * largest feed below has to clear, so the buffer has to follow it rather than
  * pin a literal that a later cushion change would silently overrun.
  *
- * A chunk's frame count comes from SST_AUDIO_RATE and SST_CHUNK_MS, never from
+ * A chunk's frame count comes from TERMGFX_AUDIO_RATE and TERMGFX_CHUNK_MS, never from
  * a literal: this file spelled it 2205 ("100ms at 22050Hz") and kept doing so
  * after the mixer moved to 24000, which quietly made every "chunk" here 92ms of
  * a 100ms chunk. It survived only because the assertions below are >= bounds
  * rather than exact counts. Derive it and it cannot rot again. */
-#define BACKLOG_CHUNK_FRAMES ((SST_AUDIO_RATE * SST_CHUNK_MS) / 1000)
-#define BACKLOG_MAX_CHUNKS (SST_PREBUFFER_CHUNKS + 4)
+#define BACKLOG_CHUNK_FRAMES ((TERMGFX_AUDIO_RATE * TERMGFX_CHUNK_MS) / 1000)
+#define BACKLOG_MAX_CHUNKS (TERMGFX_PREBUFFER_CHUNKS + 4)
 static void feed_chunks(int chunks)
 {
 	static int16_t pcm[BACKLOG_CHUNK_FRAMES * 2 * BACKLOG_MAX_CHUNKS];
@@ -281,13 +281,13 @@ int main(void)
 
 	/* ---- (2) audio's share is exact, and only audio's ---- */
 
-	/* A full cushion's worth: below SST_PREBUFFER_CHUNKS the module is still in
+	/* A full cushion's worth: below TERMGFX_PREBUFFER_CHUNKS the module is still in
 	 * PRIME and holds every chunk internally, so it would stage nothing and
 	 * there would be no audio in the FIFO to measure. Completing the cushion
 	 * releases all of them back to back -- which is also the largest single
 	 * burst of audio this door can ever put, so it is the right one to test the
 	 * accounting with. */
-	feed_chunks(SST_PREBUFFER_CHUNKS);
+	feed_chunks(TERMGFX_PREBUFFER_CHUNKS);
 	with_audio  = termgfx_termio_out_backlog();
 	audio_bytes = with_audio - video_backlog;
 	assert(audio_bytes > 0);                              /* audio did stage */
@@ -406,6 +406,6 @@ int main(void)
 	assert(strstr(errbuf, "0 drop(s)") != NULL);   /* ...and never dropped */
 	assert(termgfx_termio_audio_dropped() == 0);
 
-	printf("SST_IO_AUDIO_BACKLOG OK\n");
+	printf("TERMGFX_TERMIO_AUDIO_BACKLOG OK\n");
 	return 0;
 }

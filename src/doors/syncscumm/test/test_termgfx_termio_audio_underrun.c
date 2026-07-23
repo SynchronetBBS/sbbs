@@ -22,13 +22,13 @@
  */
 #include "termgfx_termio.h"
 
-/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE/SST_CHUNK_MS/
- * SST_PREBUFFER_CHUNKS defaults (24000, 250, 3) -- termgfx_termio.h no longer
- * exposes these as public macros the way door/sst_io.h once did, so the test
+/* Mirrors termgfx_termio.c's own internal TERMGFX_AUDIO_RATE/TERMGFX_CHUNK_MS/
+ * TERMGFX_PREBUFFER_CHUNKS defaults (24000, 250, 3) -- termgfx_termio.h no longer
+ * exposes these as public macros the way door/termgfx_termio.h once did, so the test
  * keeps its own copy rather than guess a literal. */
-#define SST_AUDIO_RATE       24000
-#define SST_CHUNK_MS         250
-#define SST_PREBUFFER_CHUNKS 3
+#define TERMGFX_AUDIO_RATE       24000
+#define TERMGFX_CHUNK_MS         250
+#define TERMGFX_PREBUFFER_CHUNKS 3
 
 #include <assert.h>
 #include <fcntl.h>
@@ -67,19 +67,19 @@ static int count_occurrences(const char *hay, const char *needle)
 }
 
 /* Feed `chunks` worth of non-silent stereo PCM in one call.
- * Sized off SST_PREBUFFER_CHUNKS with headroom: the cushion is what the
+ * Sized off TERMGFX_PREBUFFER_CHUNKS with headroom: the cushion is what the
  * largest feed below has to clear, so the buffer has to follow it.
  *
- * A chunk is a DURATION (the door's SST_CHUNK_MS default, audio_stream_open()),
+ * A chunk is a DURATION (the door's TERMGFX_CHUNK_MS default, audio_stream_open()),
  * so its frame count is derived from BOTH the rate and that duration rather
  * than from the number they happen to produce today: the counts asserted below
  * are exact, so a literal here silently mis-feeds -- and did, twice. A
  * hardcoded 2205 stopped being one chunk when the mixer rate moved to 24000,
- * and the SST_AUDIO_RATE/10 that replaced it stopped being one chunk when the
+ * and the TERMGFX_AUDIO_RATE/10 that replaced it stopped being one chunk when the
  * chunk moved to 250ms. Both spellings baked in a value that was never this
  * test's to choose. */
-#define UNDERRUN_CHUNK_FRAMES ((SST_AUDIO_RATE * SST_CHUNK_MS) / 1000)
-#define UNDERRUN_MAX_CHUNKS (SST_PREBUFFER_CHUNKS + 4)
+#define UNDERRUN_CHUNK_FRAMES ((TERMGFX_AUDIO_RATE * TERMGFX_CHUNK_MS) / 1000)
+#define UNDERRUN_MAX_CHUNKS (TERMGFX_PREBUFFER_CHUNKS + 4)
 static void feed_chunks(int chunks)
 {
 	static int16_t pcm[UNDERRUN_CHUNK_FRAMES * 2 * UNDERRUN_MAX_CHUNKS];
@@ -129,7 +129,7 @@ int main(void)
 	drain(sv[0], out, sizeof out);
 
 	/* Feed past the cushion and into RUN, with four chunks of headroom so RUN is
-	 * unambiguous. Spelled off SST_PREBUFFER_CHUNKS, not as a literal: this read
+	 * unambiguous. Spelled off TERMGFX_PREBUFFER_CHUNKS, not as a literal: this read
 	 * "12" when the cushion was 8, which silently became a buffer-overrunning
 	 * demand for 12 chunks of a 7-chunk array the moment the cushion changed.
 	 * This is the baseline the underrun must disturb: if the module silently
@@ -138,7 +138,7 @@ int main(void)
 	feed_chunks(UNDERRUN_MAX_CHUNKS);
 	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
-	assert(count_occurrences(out, "A;Queue") >= SST_PREBUFFER_CHUNKS);
+	assert(count_occurrences(out, "A;Queue") >= TERMGFX_PREBUFFER_CHUNKS);
 
 	/* Inject the real underrun (channel 2) alongside a caps-shaped decoy
 	 * (channel 100) in ONE buffer, so the guard has to do real work to
@@ -162,14 +162,14 @@ int main(void)
 	assert(count_occurrences(out, "A;Queue") == 0);
 
 	/* Completing the cushion releases it as ONE batch: a fresh cushion
-	 * release, not a dribble. Spelled against SST_PREBUFFER_CHUNKS rather than
+	 * release, not a dribble. Spelled against TERMGFX_PREBUFFER_CHUNKS rather than
 	 * a literal, because the count IS the cushion -- when the comic-intro fix
 	 * took it 3 -> 8 to cover a big frame's drain, a literal here would have
 	 * had to be re-guessed instead of just following. */
-	feed_chunks(SST_PREBUFFER_CHUNKS - 1);
+	feed_chunks(TERMGFX_PREBUFFER_CHUNKS - 1);
 	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
-	assert(count_occurrences(out, "A;Queue") == SST_PREBUFFER_CHUNKS);
+	assert(count_occurrences(out, "A;Queue") == TERMGFX_PREBUFFER_CHUNKS);
 
 	/* Confirm exactly one underrun was actually counted by the module
 	 * (not zero -- silently absorbed; not two -- the channel-100 decoy
@@ -197,6 +197,6 @@ int main(void)
 	assert(strstr(errbuf, "1 underrun(s)") != NULL);
 	assert(strstr(errbuf, "2 underrun(s)") == NULL);
 
-	printf("SST_IO_AUDIO_UNDERRUN OK\n");
+	printf("TERMGFX_TERMIO_AUDIO_UNDERRUN OK\n");
 	return 0;
 }

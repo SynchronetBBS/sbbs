@@ -100,6 +100,6 @@ int main(void)
 	ph = sixel_ph(out, n);
 	assert(ph > 640);   /* fit to the 1200-wide canvas, not the 640 default */
 
-	printf("SST_IO_CANVAS OK (Ph=%d)\n", ph);
+	printf("TERMGFX_TERMIO_CANVAS OK (Ph=%d)\n", ph);
 	return 0;
 }

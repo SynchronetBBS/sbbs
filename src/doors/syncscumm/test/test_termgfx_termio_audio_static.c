@@ -34,12 +34,12 @@
  */
 #include "termgfx_termio.h"
 
-/* Mirrors termgfx_termio.c's own internal SST_AUDIO_RATE/SST_CHUNK_MS
+/* Mirrors termgfx_termio.c's own internal TERMGFX_AUDIO_RATE/TERMGFX_CHUNK_MS
  * defaults (24000, 250) -- termgfx_termio.h no longer exposes these as public
- * macros the way door/sst_io.h once did, so the test keeps its own copy
+ * macros the way door/termgfx_termio.h once did, so the test keeps its own copy
  * rather than guess a literal. */
-#define SST_AUDIO_RATE 24000
-#define SST_CHUNK_MS   250
+#define TERMGFX_AUDIO_RATE 24000
+#define TERMGFX_CHUNK_MS   250
 
 #include <assert.h>
 #include <stdio.h>
@@ -89,13 +89,13 @@ static int count_bytes(const unsigned char *needle, size_t len)
  * ships silence from a cached name without encoding, so a silent feed would
  * never put a chunk in the stage and the test would pass on an empty stream.
  *
- * Exactly one chunk, derived from SST_AUDIO_RATE and SST_CHUNK_MS, so `blocks`
+ * Exactly one chunk, derived from TERMGFX_AUDIO_RATE and TERMGFX_CHUNK_MS, so `blocks`
  * below still reads as "chunks fed" whatever those two say. It was spelled
  * "2205" for "100ms at 22050Hz" and stayed that way through the move to 24000,
  * where it silently became 92ms of a 100ms chunk -- and the count asserted
  * below is a near-exact >= bound, so this feeding fractional chunks is how the
  * assertion breaks without the module doing anything wrong. */
-#define STATIC_CHUNK_FRAMES ((SST_AUDIO_RATE * SST_CHUNK_MS) / 1000)
+#define STATIC_CHUNK_FRAMES ((TERMGFX_AUDIO_RATE * TERMGFX_CHUNK_MS) / 1000)
 static void feed_one_chunk(int seq)
 {
 	static int16_t pcm[STATIC_CHUNK_FRAMES * 2];
@@ -137,7 +137,7 @@ int main(void)
 
 	/* Digital-audio caps reply (ESC[=7;100;1n) plus a JXL "no" (ESC[=1;0n),
 	 * which latches the graphics settle flag so nothing here waits out
-	 * SST_GFX_SETTLE_MS in real time. No sixel DA1 and no canvas report: this
+	 * TERMGFX_GFX_SETTLE_MS in real time. No sixel DA1 and no canvas report: this
 	 * session never presents, so the graphics tier is deliberately left
 	 * uninteresting. */
 	{
@@ -170,7 +170,7 @@ int main(void)
 	 * a stream carrying no audio at all. */
 	queues = count_bytes(queue, sizeof queue);
 	printf("A;Queue on the wire with no present(): %d of 80 chunks fed\n", queues);
-	/* 80 fed, 80 expected: the cushion holds the first SST_PREBUFFER_CHUNKS
+	/* 80 fed, 80 expected: the cushion holds the first TERMGFX_PREBUFFER_CHUNKS
 	 * and then releases all of them, so by the end of the feed every closed
 	 * chunk should have shipped. >=72 leaves the cushion's worth of slack for
 	 * a chunk-boundary straggler while staying impossible to reach if the
@@ -186,6 +186,6 @@ int main(void)
 	assert(termgfx_termio_audio_backlog() == 0);
 	assert(termgfx_termio_hung_up() == 0);
 
-	printf("SST_IO_AUDIO_STATIC OK\n");
+	printf("TERMGFX_TERMIO_AUDIO_STATIC OK\n");
 	return 0;
 }

@@ -1,5 +1,5 @@
 /* Unit test for termgfx_termio's keyboard decode: drives termgfx_termio_test_feed() (the
- * SST_TEST seam) with raw wire bytes -- no socket, no termgfx_termio_init() -- and
+ * TERMGFX_TEST seam) with raw wire bytes -- no socket, no termgfx_termio_init() -- and
  * reads back the queued key events via termgfx_termio_next_event(). Covers the
  * legacy P_NORMAL byte path, the legacy CSI/SS3 nav-key path, and (by
  * feeding the same "CSI?u" negotiation reply csi_final() parses) the kitty
@@ -74,7 +74,7 @@ int main(void) {
 	/* --- kitty CSI-u path: negotiate kitty on via the same "CSI?u" reply
 	 * csi_final() itself parses (g_csi_par[0] == '?'), then drive real
 	 * kitty key reports through parse_bytes()/csi_final() -- no new
-	 * SST_TEST seam needed, termgfx_termio_test_feed() reaches all of it already.
+	 * TERMGFX_TEST seam needed, termgfx_termio_test_feed() reaches all of it already.
 	 * Regression coverage for the review fix: bare 'q' must NOT be the
 	 * quit hotkey once ScummVM's Global Main Menu save-name field needs to
 	 * accept it; only Ctrl-Q (and Ctrl-C) may quit. */

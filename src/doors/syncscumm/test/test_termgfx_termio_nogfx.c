@@ -75,6 +75,6 @@ int main(void)
 	assert(strstr(out, "\x1bP") == NULL);          /* still no sixel */
 	(void)n;
 
-	printf("SST_IO_NOGFX OK\n");
+	printf("TERMGFX_TERMIO_NOGFX OK\n");
 	return 0;
 }

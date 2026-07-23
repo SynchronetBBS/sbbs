@@ -4,7 +4,7 @@
  * held-key settle window (TERMGFX_KEYMODE_SETTLE_MS, ../../termgfx/keymode.h)
  * so press edges aren't dropped as re-reported already-held keys, then
  * drives real evdev press/release reports through
- * parse_bytes()/sst_evdev_edge() -- no new SST_TEST seam needed,
+ * parse_bytes()/termgfx_evdev_edge() -- no new TERMGFX_TEST seam needed,
  * termgfx_termio_test_feed() reaches all of it already. Own process/binary:
  * enabling evdev here would be refused if kitty (test_termgfx_termio_input.c) had
  * already won the same g_km in that process. cc'd (with -DSST_TEST) + run

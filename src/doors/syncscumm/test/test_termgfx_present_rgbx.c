@@ -84,7 +84,7 @@ static void fill_frame(uint8_t *buf, int r, int g, int b,
 
 int main(void)
 {
-	char           tmpl[] = "/tmp/sst_rgbx_XXXXXX";
+	char           tmpl[] = "/tmp/termgfx_rgbx_XXXXXX";
 	int            fd;
 	static uint8_t frame[W * H * 4];
 	char          *argv[2];

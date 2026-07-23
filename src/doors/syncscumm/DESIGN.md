@@ -120,7 +120,7 @@ The continuous-streaming machinery is **not this door's**: it is
 had the same shape first — a mixed stream with no useful per-sound boundary —
 and where it was originally built and then extracted). The chunk accumulator,
 silence cache, cushion, backlog policy, blob path and underrun re-prime all
-live there. `door/sst_io.c` supplies only the door's half: the put/flush/
+live there. `door/termgfx_termio.c` supplies only the door's half: the put/flush/
 backlog output seam and the session's config.
 
 What actually ships, per session:
