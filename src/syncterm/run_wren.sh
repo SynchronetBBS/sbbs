@@ -112,14 +112,38 @@ class MainMenu {
 EOF
 	fi
 else
-	mkdir -p "$DATA_HOME/syncterm"
-	ln -s "$HERE/scripts" "$DATA_HOME/syncterm/scripts"
+	SCRIPT_ROOT="$DATA_HOME/syncterm/scripts"
+	mkdir -p "$SCRIPT_ROOT"
+	ln -s "$HERE/scripts/auto" "$SCRIPT_ROOT/auto"
+	for MODULE in "$HERE"/scripts/*.wren; do
+		ln -s "$MODULE" "$SCRIPT_ROOT/${MODULE##*/}"
+	done
+
+	# A launch script may belong to a separately installable package rather
+	# than SyncTERM's embedded source tree.  Stage modules beside the launch
+	# script and in a sibling package scripts/ directory so imports exercise
+	# the package exactly as they will appear in the user's script root.
+	case "$SCRIPT" in
+		/*) SCRIPT_PATH="$SCRIPT" ;;
+		*)  SCRIPT_PATH="$HERE/$SCRIPT" ;;
+	esac
+	SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$SCRIPT_PATH")" && pwd)
+	for MODULE_DIR in "$SCRIPT_DIR" "$SCRIPT_DIR/../scripts"; do
+		if [ -d "$MODULE_DIR" ]; then
+			for MODULE in "$MODULE_DIR"/*.wren; do
+				[ -f "$MODULE" ] || continue
+				ln -sf "$MODULE" "$SCRIPT_ROOT/${MODULE##*/}"
+			done
+		fi
+	done
 fi
 
 # Load library, test, and auto-run modules from the source tree.  This keeps
 # the harness independent of whatever the developer has installed in their
 # personal SyncTERM scripts directory.
 export XDG_DATA_HOME="$DATA_HOME"
+export XDG_CACHE_HOME="$DATA_HOME/cache"
+mkdir -p "$XDG_CACHE_HOME"
 
 export SDL_VIDEODRIVER=offscreen
 export SDL_RENDER_DRIVER=software
