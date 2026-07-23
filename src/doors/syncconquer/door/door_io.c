@@ -82,6 +82,7 @@
 #include "door32.h"      /* termgfx: the shared DOOR32.SYS parser */
 #include "sbbs_node.h"   /* Task 5: sbbs_my_node() for the per-node log filename */
 #include "keymode.h"   /* termgfx: key-mode negotiation (shared with door_input.c) */
+#include "idle.h"      /* termgfx: the shared idle-USER clock */
 #include "../../termgfx/mouse.h"   /* termgfx: shared SGR-Pixels mouse handshake/latch
                                     * (Task 1) -- a QUALIFIED path, not a bare "mouse.h",
                                     * because the vendored vanilla/{redalert,tiberiandawn}
@@ -153,6 +154,10 @@ static int g_argc;
 static char **  g_argv;
 static int      g_args_resolved;
 static int      g_cli_sock = -1;
+/* -i<seconds>, the idle-user threshold. Declared up here with the other
+ * argument state because door_resolve_args() below fills it in; the clock it
+ * feeds lives further down with door_check_idle(). */
+static int      g_idle_arg = -1;   /* -1 = not given */
 static char     g_home[512];
 static char     g_audiocache[512];  /* -audiocache <dir> / SYNCALERT_AUDIO_CACHE (Task 4) */
 static char     g_assets[512];      /* -assets <dir>; else <binary dir>/assets (door_resolve_assets_dir) */
@@ -256,6 +261,8 @@ static void door_resolve_args(void)
 		const char *a = g_argv[i];
 		if (a[0] == '-' && a[1] == 's' && a[2] != '\0')
 			g_cli_sock = atoi(a + 2);                                   /* -s<fd> */
+		else if (a[0] == '-' && a[1] == 'i' && a[2] != '\0')
+			g_idle_arg = atoi(a + 2);                                   /* -i<seconds> */
 		else if (strcmp(a, "-home") == 0 && i + 1 < g_argc)
 			snprintf(g_home, sizeof g_home, "%s", g_argv[++i]);         /* -home <dir> */
 		else if (strcmp(a, "-audiocache") == 0 && i + 1 < g_argc)
@@ -834,6 +841,26 @@ static int door_config_bool(const char *section, const char *key, int def)
 	return val;
 }
 
+/* Read a duration <door>.ini setting as SECONDS ("15m", "900", "1h"); returns
+ * `def` when the file or key is absent. A bare number is seconds, per xpdev's
+ * parse_duration -- and per the lobby-side parser the sibling doors use on
+ * these same keys, so one spelling means one thing everywhere. */
+static unsigned door_config_duration(const char *section, const char *key, unsigned def)
+{
+	char     path[700];
+	FILE *   f;
+	unsigned val = def;
+
+	if (!door_ini_path(path, sizeof path))
+		return def;
+	f = iniOpenFile(path, FALSE);   /* read-only; do NOT create */
+	if (f != NULL) {
+		val = (unsigned)iniReadDuration(f, section, key, (double)def);
+		fclose(f);
+	}
+	return val;
+}
+
 /* Tri-state <door>.ini bool: 1 (true), 0 (false), or -1 when the key is absent
  * -- the caller's "auto"/default state. Distinguishes absent from an explicit
  * value by reading with both defaults: they differ only when the key is gone. */
@@ -881,6 +908,8 @@ static void door_sanitize_argv(void)
 
 		if (a[0] == '-' && a[1] == 's' && a[2] != '\0')
 			neuter = 1;                                    /* -s<fd> */
+		else if (a[0] == '-' && a[1] == 'i' && a[2] != '\0')
+			neuter = 1;                                    /* -i<seconds> */
 		else if (strcmp(a, "-home") == 0 || strcmp(a, "-audiocache") == 0
 		         || strcmp(a, "-assets") == 0) {
 			neuter = 1;
@@ -1285,6 +1314,83 @@ static void door_check_shutdown(void)
  * just makes sure it's visible in the per-node log. */
 static uint32_t g_time_start_ms;
 
+/* --- idle-USER detection -------------------------------------------------
+ *
+ * Distinct from the session time limit above: that one bounds how long the
+ * visit may last, this one notices that nobody is driving it. It exists at all
+ * because the BBS's own "Maximum Inactivity" cannot see this door -- that
+ * counter is reset by any socket traffic, and DSR frame pacing makes the
+ * terminal answer ~10x/second on its own, so it never fires. Presence has to be
+ * judged on real input, which only the door can tell from its own pace-acks.
+ *
+ * Warn-then-terminate, because a player watching an FMV cutscene is silent but
+ * present. See ../termgfx/idle.h. */
+#define DOOR_IDLE_DEFAULT 600            /* 10 minutes; matches the sibling doors */
+
+static termgfx_idle_t g_idle;
+static int            g_idle_warning;    /* the countdown is on screen right now */
+
+/* Feed genuine input to the clock; returns 1 if this input answered an
+ * on-screen countdown, in which case the CALLER MUST CONSUME the event rather
+ * than pass it to the game. "Press any key" has to mean any key -- dispatched
+ * normally, the keystroke that answers the countdown would also fire whatever
+ * that key does (F1 opens the help card, Esc opens Options, a click gives an
+ * order) for a player who only meant "I'm still here". */
+int door_io_idle_wake(void)
+{
+	int woke = g_idle_warning;
+
+	termgfx_idle_activity(&g_idle, door_now_ms());
+	if (woke) {
+		g_idle_warning = 0;
+		door_node_notice_expire();   /* wipe the row now, not after the dwell */
+	}
+	return woke;
+}
+
+static void door_stats_draw(int force);   /* defined below; see the hand-back */
+
+static void door_check_idle(void)
+{
+	static unsigned last_shown = 0;
+	static int      notice_was;
+	int             notice_now;
+	unsigned        left = 0;
+	char            msg[96];
+
+	/* The notice shares the bottom row with the stats strip, which repaints
+	 * only when its text CHANGES -- so once the notice goes away the row would
+	 * keep showing stale pixels until something else moved. Force the strip
+	 * back the moment the notice clears. */
+	notice_now = door_node_notice_active();
+	if (notice_was && !notice_now)
+		door_stats_draw(1);
+	notice_was = notice_now;
+
+	switch (termgfx_idle_poll(&g_idle, door_now_ms(), &left)) {
+		case TERMGFX_IDLE_WARN:
+			if (left != last_shown) {
+				/* "terminating", not "disconnecting": this ends the GAME and
+				 * hands the player back to the BBS -- it does not drop the
+				 * call. Same wording as the sibling doors, deliberately. */
+				snprintf(msg, sizeof msg,
+				         "Still there? Press any key -- terminating in %u second%s",
+				         left, (left == 1) ? "" : "s");
+				door_node_notice(msg, 1500);   /* re-armed each second: dwell > tick */
+				last_shown = left;
+			}
+			g_idle_warning = 1;
+			break;
+		case TERMGFX_IDLE_EXPIRED:
+			fprintf(stderr, DOOR_SHORT_NAME ": idle timeout -- no user input; exiting\n");
+			exit(0);   /* exit(), not _exit(): atexit(door_term_restore) must run */
+		default:
+			last_shown = 0;
+			g_idle_warning = 0;
+			break;
+	}
+}
+
 static void door_check_time_limit(void)
 {
 	static int warned;
@@ -1315,6 +1421,22 @@ static void door_io_init(void)
 	atexit(door_term_restore);
 	g_fit_fill      = DOOR_FIT_PRESENT();
 	g_time_start_ms = door_now_ms();
+	/* -i wins when given (from a BBS launcher it is the ARS-aware answer, and
+	 * -i0 positively excuses an exempt user); otherwise the door's own ini.
+	 * Safe here: door_resolve_args() ran at the top of this function, so both
+	 * the argument and g_home (which door_ini_path() needs) are resolved.
+	 *
+	 * DOOR_IDLE_DEFAULT is the shipped policy, not just a fallback -- with no
+	 * [idle] section at all a player idle this long is still returned to the
+	 * BBS. Lenient on purpose: a player watching a cutscene or reading a
+	 * briefing is not gone, and a false termination costs far more than a node
+	 * held a few extra minutes. `timeout = 0` disables it outright. */
+	termgfx_idle_init(&g_idle,
+	                  (g_idle_arg >= 0) ? (unsigned)g_idle_arg
+	                                    : door_config_duration("idle", "timeout",
+	                                                           DOOR_IDLE_DEFAULT),
+	                  door_config_duration("idle", "warn", 60),
+	                  door_now_ms());
 	door_audio_ensure_init();   /* Task 4 -- see door_audio_ensure_init()'s comment for why
 	                             * this can't just live inline here. */
 	door_node_init(g_home);     /* Task 5 -- sbbs_node status/Ctrl-U/Ctrl-P (no-op off a BBS) */
@@ -1741,6 +1863,12 @@ static int sa_auto_tier(void)
 
 /* forward decls used by door_tier_cycle()/door_fit_toggle() to force a repaint */
 static int g_have_last;
+/* A repaint asked for by something OTHER than the frame itself (an overlay that
+ * wiped rows it had drawn over). It cannot be expressed as g_have_last = 0: the
+ * overlay draw happens near the END of door_io_present(), after which the same
+ * call sets g_have_last = 1 and swallows the request. This flag is read by the
+ * dedupe check at the TOP of the next present and cleared there. */
+static int g_repaint_req;
 static int g_clear_pending;   /* emit a screen clear before the next frame (tier change) */
 static int g_inflight;
 static int g_dsr_h, g_dsr_t;
@@ -1801,6 +1929,17 @@ static void door_tier_cycle(void)
  * in CTDA cap-8 mode, which door_io_init() enables) or an rxvt-style ESC[14~
  * both arrive as game keys through door_input.c, not as the SS3/CSI "S" this
  * file matches -- so without this hook F4 was silently swallowed there. */
+/* Force the next present to emit a FULL frame instead of deduping against the
+ * last one. door_node_draw() calls this after wiping an expired banner: the
+ * erase clears the whole row (which is what removes text from the margins the
+ * image never covers), and on a top-anchored banner that row overlaps the game
+ * picture -- so without a repaint the wipe leaves a black band across the UI
+ * until something else happens to change the frame. */
+void door_io_force_repaint(void)
+{
+	g_repaint_req = 1;
+}
+
 void door_io_tier_cycle(void)
 {
 	door_tier_cycle();
@@ -2373,6 +2512,12 @@ static void door_stats_draw(int force)
 
 	if (!g_stats_overlay)
 		return;
+	/* A one-line door notice (the idle countdown) owns the bottom row while it
+	 * is up -- an imminent termination outranks telemetry, and without this the
+	 * two would overwrite each other once a second. door_check_idle() forces a
+	 * strip redraw when the notice goes away. */
+	if (door_node_notice_active())
+		return;
 	tier = (g_tier_force >= 0) ? g_tier_force : sa_auto_tier();
 	brow = g_grid_rows > 0 ? g_grid_rows : 25;
 
@@ -2758,6 +2903,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 	int             fit_changed;
 	int             geom_changed;
 	int             pal_dirty;
+	int             full_repaint;   /* an overlay wiped rows: patches won't do */
 	int             vw, vh;
 	size_t          n = 0;
 
@@ -2766,6 +2912,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 
 	door_check_shutdown();    /* Task 5: SIGTERM/SIGHUP -- exits (via atexit) if requested */
 	door_check_time_limit();  /* Task 5: DOOR32.SYS time-left -- v1 warn-only */
+	door_check_idle();        /* idle-user countdown / forced exit */
 	door_node_tick();         /* Task 5: node.exb status refresh + pending Ctrl-U/Ctrl-P */
 
 	scale_palette(pal768, pal8);
@@ -2896,7 +3043,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 	 * the strip flicker under sixel/JXL/PPM); instead, on the deduped path it
 	 * refreshes JUST the overlay text below, leaving the image untouched. */
 	if (!fit_changed && !geom_changed && g_have_last && g_last_tier == tier
-	    && !pal_dirty && !door_node_overlay_active()
+	    && !pal_dirty && !door_node_overlay_active() && !g_repaint_req
 	    && memcmp(g_last_fb, fb, DOOR_FB_BYTES) == 0) {
 		door_fps_tick(0);   /* keep the window ticking so a still scene reads ~0 */
 		if (g_stats_overlay) {
@@ -2905,6 +3052,16 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 		}
 		return;
 	}
+	/* Consumed HERE, not at the end of this function: the overlay draw below
+	 * may set it again for the NEXT frame, and clearing it afterwards would
+	 * throw that request away -- which is exactly how an expired banner's black
+	 * band survived on screen.
+	 *
+	 * It must also force a WHOLE frame, not a dirty-rect patch: the wipe changed
+	 * the SCREEN without changing the framebuffer, so a diff against the
+	 * unchanged previous frame finds nothing to send and the band stays. */
+	full_repaint  = g_repaint_req;
+	g_repaint_req = 0;
 
 	/* Help card up: freeze the display. The card is a large centered panel, and
 	 * re-emitting the sixel frame under it every tick makes it flicker badly (the
@@ -2959,7 +3116,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 			/* Phase-2 dirty rects (flag-gated): only when the client already
 			 * holds the previous sixel frame to composite over -- same tier, no
 			 * palette/fit/geometry change. Otherwise a full frame. */
-			if (door_dirtyrect_enabled() && g_have_last
+			if (door_dirtyrect_enabled() && g_have_last && !full_repaint
 			    && g_last_tier == SA_SIXEL && !pal_dirty && !fit_changed && !geom_changed)
 				dn = door_dirty_sixel_present(fb, g_last_fb, pal8, ew, eh, icol, irow);
 
@@ -2980,7 +3137,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 			 * holds the previous JXL frame to composite over -- same tier, no
 			 * palette/fit/geometry change, blob verbs available. Otherwise a
 			 * full frame. */
-			if (door_dirtyrect_enabled() && g_have_last && g_img_blob_ok
+			if (door_dirtyrect_enabled() && g_have_last && g_img_blob_ok && !full_repaint
 			    && g_last_tier == SA_JXL && !pal_dirty && !fit_changed && !geom_changed)
 				dn = door_dirty_jxl_present(fb, g_last_fb, pal8, ew, eh, dx, dy);
 

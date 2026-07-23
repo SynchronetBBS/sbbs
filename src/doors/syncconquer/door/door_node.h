@@ -35,6 +35,18 @@ int door_node_overlay_active(void);
 // Ctrl-U: flag the who's-online banner to (re)build on the next tick.
 void door_node_userlist_request(void);
 
+/* A one-line transient banner for `ms`, on the same overlay as the page and
+ * who's-online notices. Used by the idle countdown. */
+void door_node_notice(const char *text, int ms);
+
+/* True while such a notice is on screen. It is drawn on the BOTTOM row -- the
+ * row the Ctrl-S stats strip also owns -- so the strip checks this before
+ * repainting, and redraws itself once the notice expires. */
+int door_node_notice_active(void);
+
+/* Retire the current notice immediately instead of waiting out its dwell. */
+void door_node_notice_expire(void);
+
 // Ctrl-P: flag the page-compose overlay to open on the next tick.
 void door_node_page_request(void);
 
