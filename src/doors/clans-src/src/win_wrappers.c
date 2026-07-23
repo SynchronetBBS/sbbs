@@ -9,13 +9,6 @@
 
 #include "win_wrappers.h"
 
-#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
-char *strdup(const char *s)
-{
-	return _strdup(s);
-}
-#endif
-
 bool plat_CreateSemfile(const char *filename, const char *content)
 {
 	FILE *fp = fopen(filename, "w+x");
@@ -101,6 +94,11 @@ void plat_GetExePath(const char *argv0, char *buf, size_t bufsz)
 int plat_stricmp(const char *s1, const char *s2)
 {
 	return _stricmp(s1, s2);
+}
+
+int plat_strnicmp(const char *s1, const char *s2, size_t n)
+{
+	return _strnicmp(s1, s2, n);
 }
 
 void plat_Delay(unsigned msec)

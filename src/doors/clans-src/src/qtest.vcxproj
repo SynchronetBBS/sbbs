@@ -14,6 +14,7 @@
     <ClCompile Include="language.c" />
     <ClCompile Include="npc.c" />
     <ClCompile Include="quests.c" />
+    <ClCompile Include="scripteng.c" />
     <ClCompile Include="tools.c" />
   </ItemGroup>
   <ItemGroup>
