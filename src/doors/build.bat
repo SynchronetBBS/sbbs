@@ -48,11 +48,18 @@ rem ===========================================================================
 setlocal enabledelayedexpansion
 
 rem --- Source dir = location of this script (no trailing backslash) ----------
+rem The SB_ prefix on the state below is not decoration: every child build
+rem inherits this environment, and cmd has no way to hide a variable from it.
+rem RC, CONFIG and PLATFORM all mean something down there -- CMake reads %RC%
+rem as the resource compiler, and MSBuild turns any environment variable into a
+rem property of the same name -- so a bare "set RC=0" here is a build failure in
+rem a door. It was: a leaked RC=0 made syncrpg's Ninja configure resolve rc.exe
+rem to the file literally named "0" that sits in Synchronet's exec dir on PATH.
 set "SRCDIR=%~dp0"
 set "SRCDIR=%SRCDIR:~0,-1%"
 set "LOGDIR=%SRCDIR%\.build-logs"
-set "CONFIG=Release"
-set "PLATFORM=Win32"
+set "SB_CONFIG=Release"
+set "SB_PLATFORM=Win32"
 set "DOCLEAN="
 set "DOALL="
 set "DOLIST="
@@ -146,14 +153,14 @@ set /a NRES=0
 set /a NPASS=0
 set /a NFAIL=0
 
-echo [build] Configuration: %CONFIG% ^(%PLATFORM%^)
+echo [build] Configuration: %SB_CONFIG% ^(%SB_PLATFORM%^)
 echo.
 
 for %%T in (%SELECTED%) do call :run_one %%T
 
 rem --- Summary ---------------------------------------------------------------
 echo ==========================================================
-echo  Build summary ^(%CONFIG% / %PLATFORM%^)
+echo  Build summary ^(%SB_CONFIG% / %SB_PLATFORM%^)
 echo ==========================================================
 for /L %%I in (1,1,%NRES%) do (
     for /f "tokens=1-3" %%a in ("!RES_%%I!") do (
@@ -237,7 +244,7 @@ if /I "!KIND_%CT%!"=="msbuild" (
     call :find_msbuild
     if defined MSBUILD (
         echo [build] !CT!: MSBuild /t:Clean in !DIR_%CT%!
-        "!MSBUILD!" "%SRCDIR%\!DIR_%CT%!\!SLN_%CT%!" /nologo /v:q /t:Clean /p:Configuration=%CONFIG% /p:Platform=x86 >nul 2>nul
+        "!MSBUILD!" "%SRCDIR%\!DIR_%CT%!\!SLN_%CT%!" /nologo /v:q /t:Clean /p:Configuration=%SB_CONFIG% /p:Platform=x86 >nul 2>nul
     ) else (
         echo [build] !CT!: MSBuild not found, leaving !DIR_%CT%! alone
     )
@@ -279,9 +286,9 @@ if /I "!KIND_%BT%!"=="bat" (
     )
     pushd "!BD!"
     call "!BD!\build.bat"
-    set "RC=!errorlevel!"
+    set "SB_RC=!errorlevel!"
     popd
-    exit /b !RC!
+    exit /b !SB_RC!
 )
 if /I "!KIND_%BT%!"=="msbuild" (
     call :find_msbuild
@@ -290,10 +297,10 @@ if /I "!KIND_%BT%!"=="msbuild" (
         exit /b 2
     )
     pushd "!BD!"
-    "!MSBUILD!" "!BD!\!SLN_%BT%!" /nologo /m /v:m /p:Configuration=%CONFIG% /p:Platform=x86
-    set "RC=!errorlevel!"
+    "!MSBUILD!" "!BD!\!SLN_%BT%!" /nologo /m /v:m /p:Configuration=%SB_CONFIG% /p:Platform=x86
+    set "SB_RC=!errorlevel!"
     popd
-    exit /b !RC!
+    exit /b !SB_RC!
 )
 1>&2 echo [build] !BT!: unknown kind '!KIND_%BT%!'
 exit /b 2
@@ -308,19 +315,19 @@ if defined QUIET (
 ) else (
     call :build_target "!T!"
 )
-set "RC=!errorlevel!"
+set "SB_RC=!errorlevel!"
 call :now T1
 set /a SECS=T1-T0
 if !SECS! lss 0 set /a SECS+=86400
 set /a NRES+=1
-if "!RC!"=="0" (
+if "!SB_RC!"=="0" (
     set /a NPASS+=1
     set "RES_!NRES!=PASS !T! !SECS!"
     echo ^<== !T! OK ^(!SECS!s^)
 ) else (
     set /a NFAIL+=1
     set "RES_!NRES!=FAIL !T! !SECS!"
-    1>&2 echo ^<== !T! FAILED ^(rc=!RC!^)
+    1>&2 echo ^<== !T! FAILED ^(rc=!SB_RC!^)
     if defined QUIET (
         1>&2 echo --- tail of %LOGDIR%\!T!.log ---
         call :tail "%LOGDIR%\!T!.log" 15 1>&2
