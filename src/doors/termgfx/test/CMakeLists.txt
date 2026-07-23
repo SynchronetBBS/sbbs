@@ -51,3 +51,16 @@ target_include_directories(test_idle PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set_target_properties(test_idle PROPERTIES C_STANDARD 11)
 target_compile_options(test_idle PRIVATE -UNDEBUG)
 add_test(NAME idle COMMAND test_idle)
+
+# Unit test for stats.c -- the shared Ctrl-S strip's window arithmetic and
+# field formatting. Bare SOURCE like test_chunk/test_idle: the module is
+# arithmetic plus snprintf, with no I/O and no dependencies. Worth its own
+# target because the three doors' strips now agree only as far as this file
+# does -- the KB/s-to-MB/s threshold in particular is what drifted before.
+add_executable(test_stats
+    ${CMAKE_CURRENT_SOURCE_DIR}/../stats.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_stats.c)
+target_include_directories(test_stats PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set_target_properties(test_stats PROPERTIES C_STANDARD 11)
+target_compile_options(test_stats PRIVATE -UNDEBUG)
+add_test(NAME stats COMMAND test_stats)

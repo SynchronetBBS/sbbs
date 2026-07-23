@@ -29,6 +29,7 @@
 #include "keymode.h"     // termgfx: key-mode negotiation + evdev decode (shared)
 #include "geometry.h"            // termgfx: shared image fit/center (shared with SyncDuke)
 #include "pace.h"                // termgfx: shared AIMD pipeline-depth controller
+#include "stats.h"               // termgfx: shared Ctrl-S strip window + fields
 #include "audio_mgr.h"           // termgfx: SyncTERM audio-APC manager (digital SFX)
 #include "m_argv.h"             // myargc/myargv (set directly for the dedicated path)
 #include "mp_server.h"          // mp_dedicated_main() headless server
@@ -503,11 +504,10 @@ static int sd_turn_native(void)
 	return (g_kitty_active || g_evdev_active) && native;
 }
 #define RTT_MIN_WINDOW 8000u            // re-seed the baseline min if no lower sample in this long
-static uint32_t g_recent_fps = 0;       // frames/s over a recent window (the bandwidth signal for auto)
-static uint32_t g_recent_kbps = 0;      // transmit throughput (KB/s) over the same window (overlay)
-static uint32_t g_fps_win_at = 0;       // current fps-window start time
-static uint32_t g_fps_win_n = 0;        // frames emitted in the current fps window
-static uint64_t g_fps_win_bytes = 0;    // wire bytes emitted in the current fps window
+// Frames/s (the bandwidth signal for auto) and transmit throughput over a
+// rolling window, kept by termgfx/stats.h -- the same window and the same
+// readout fields SyncDuke and SyncRetro use.
+static termgfx_stats_t g_stats;
 
 // Frame de-duplication: Doom re-renders the SAME game state several times between
 // its 35Hz sim tics (TryRunTics returns early to keep menus responsive), so back-
@@ -913,21 +913,8 @@ static bool emit_frame_jxl(int w, int h, int zx, int zy)
 // decays toward 0 fps / 0 KB/s instead of freezing the readout at the last value.
 static void fps_window_tick(uint32_t frame_bytes)
 {
-	uint32_t nm = now_ms();
-
-	if (frame_bytes)
-		g_fps_win_n++;
-	g_fps_win_bytes += frame_bytes;
-	if (g_fps_win_at == 0)
-		g_fps_win_at = nm;
-	else if (nm - g_fps_win_at >= 2000) {
-		uint32_t span = nm - g_fps_win_at;
-		g_recent_fps  = g_fps_win_n * 1000 / span;
-		g_recent_kbps = (uint32_t)(g_fps_win_bytes * 1000 / 1024 / span);
-		g_fps_win_n     = 0;
-		g_fps_win_bytes = 0;
-		g_fps_win_at    = nm;
-	}
+	termgfx_stats_frame(&g_stats, frame_bytes);
+	termgfx_stats_roll(&g_stats, now_ms());
 }
 
 // Width the on-screen labels/overlay center or right-justify within: the RENDERED
@@ -980,38 +967,29 @@ static const char *overlay_tier_name(void)
 // refreshing it over a de-duped (unchanging) frame is free.
 static void emit_overlay(int force)
 {
-	char txt[96], ov[192], bw[16];
+	char txt[96], ov[192], head[80];
 	int  tn, ovn, row;
 
-	// Throughput: KB/s up to 999, then fractional MB/s (KiB/MiB of wire BYTES) so the
-	// field stays narrow on a fast link.
-	if (g_recent_kbps > 999)
-		snprintf(bw, sizeof(bw), "%u.%uMB/s", g_recent_kbps / 1024, (g_recent_kbps % 1024) * 10 / 1024);
-	else
-		snprintf(bw, sizeof(bw), "%uKB/s", g_recent_kbps);
+	// The leading fields -- tier, fps, throughput, lag, depth -- are termgfx's, so
+	// this strip, SyncDuke's and SyncRetro's read identically. Throughput
+	// abbreviates to MB/s past 999KB/s there; what follows is SyncDOOM's own.
+	termgfx_stats_head(head, sizeof(head), overlay_tier_name(),
+	                   g_stats.fps, g_stats.kbps, g_rtt_ms, g_rtt_min,
+	                   max_inflight(), g_inflight_auto);
 	{
-		// Keyboard + turn-key model in ONE compact token: "evdev/nat" or "kitty/syn" -- the suffix
-		// is native hold (low-latency true key-up) vs the synthetic constant rate (high-latency).
-		char     kbd[16] = "";
-		char     zm[12]  = "";                               // terminal-side upscale (APC ZX/ZY)
+		char     kbd[16];                                     // keyboard protocol + turn-key model
+		char     zm[12];                                      // terminal-side upscale (APC ZX/ZY)
 		uint32_t kb  = g_last_kb > 9999 ? 9999 : g_last_kb;   // per-frame image size + encode time --
 		uint32_t enc = g_last_enc_us / 1000;                 // the SyncDuke-style diagnostics
 		if (enc > 999)
 			enc = 999;
-		if ((g_mode == MODE_JXL || g_mode == MODE_PPM) && (g_last_zoom_x > 1 || g_last_zoom_y > 1)) {
-			if (g_last_zoom_x == g_last_zoom_y)
-				snprintf(zm, sizeof(zm), " x%d", g_last_zoom_x);
-			else
-				snprintf(zm, sizeof(zm), " x%dx%d", g_last_zoom_x, g_last_zoom_y);
-		}
-		if (g_evdev_active || g_kitty_active)
-			snprintf(kbd, sizeof(kbd), " %s/%s",
-			         g_evdev_active ? "evdev" : "kitty",
-			         sd_turn_native() ? "nat" : "syn");
-		tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s%s%s ",
-		              overlay_tier_name(),
-		              g_recent_fps, bw, g_rtt_ms, g_rtt_min,
-		              max_inflight(), g_inflight_auto ? "/auto" : "",
+		termgfx_stats_zoom(zm, sizeof(zm),
+		                   (g_mode == MODE_JXL || g_mode == MODE_PPM) ? g_last_zoom_x : 1,
+		                   (g_mode == MODE_JXL || g_mode == MODE_PPM) ? g_last_zoom_y : 1);
+		termgfx_stats_kbd(kbd, sizeof(kbd), g_evdev_active || g_kitty_active,
+		                  !g_evdev_active, sd_turn_native());
+		tn = snprintf(txt, sizeof(txt), "%s %uKB enc %2ums%s%s%s ",
+		              head,
 		              kb, enc,
 		              kbd,
 		              ((g_mode == MODE_JXL || g_mode == MODE_PPM)
