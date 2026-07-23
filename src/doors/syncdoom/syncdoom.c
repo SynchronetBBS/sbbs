@@ -54,6 +54,7 @@
 #include "dirwrap.h"            // xpdev: mkpath() (recursive mkdir), MKDIR, getdirname/getfname
 #include "genwrap.h"            // xpdev: stricmp (+ cross-platform helpers)
 #include "ini_file.h"          // xpdev: iniReadFile/iniGetString/iniGetInteger (terminal.ini)
+#include "idle.h"              // termgfx: the shared idle-USER clock
 
 #include "i_system.h"           // I_Error, I_Quit
 #include "i_timer.h"            // I_Sleep
@@ -130,6 +131,24 @@ static int      s_pxW    = 640;  // graphics canvas width  (cols * 8)
 static int      s_pxH    = 400;  // graphics canvas height (lines * cellH), capped to RESY
 
 static uint32_t g_time_limit_ms = 0;   // user's BBS time at launch (-t<seconds>); 0 = no limit
+
+// Idle-USER detection (../termgfx/idle.h). Distinct from the time limit above:
+// that one bounds how long the visit may last, this one notices that nobody is
+// driving it. The BBS's own "Maximum Inactivity" cannot: it is reset by any
+// socket read, and DSR frame pacing makes the terminal answer ~10x/second on
+// its own, so presence has to be judged on real input.
+//
+// SD_IDLE_DEFAULT is the shipped policy, not merely a fallback -- unset is NOT
+// off. Lenient on purpose; `timeout = 0` disables outright. Matches the sibling
+// doors, keep them in step.
+#define SD_IDLE_DEFAULT 600            // 10 minutes
+static termgfx_idle_t g_idle;
+static int      g_idle_arg     = -1;   // -i<seconds>; -1 = not given
+static unsigned g_idle_timeout = SD_IDLE_DEFAULT;   // [idle] timeout
+static unsigned g_idle_warn    = 60;               // [idle] warn
+static int      g_idle_showing = 0;    // the countdown owns the overlay row
+static char     g_idle_msg[96] = "";   // ...and this is what it says
+static int      g_idle_clear   = 0;    // it just went away: wipe the row once
 static uint32_t g_start_ms      = 0;   // door start time (set in DG_Init)
 
 static uint64_t g_tx_bytes  = 0;       // telemetry: total frame bytes put on the wire
@@ -373,6 +392,8 @@ static void cycle_video(void);
 void        sd_save_user_prefs(void); // persist per-user prefs (cycle_video uses it before its defn)
 static void toggle_pipeline(void); // Ctrl-T: cycle frame-pipeline depth + persist
 static void toggle_stats(void);    // Ctrl-S: toggle the live stats overlay (session-only)
+static int  sd_idle_wake(void);        // idle clock: feed it, and say if it woke a countdown
+static void sd_overlay_or_clear(int);  // draw the reserved row, or wipe it when the countdown goes
 static void toggle_mouse(void);    // Ctrl-O: cycle mouse steering off/steer/follow + persist
 static int  mouse_mode_parse(const char *v, int dflt); // parse [input] mouse value (defn below)
 static int g_stats_overlay = 0;       // show fps/RTT/depth overlaid on each frame
@@ -997,6 +1018,13 @@ static void emit_overlay(int force)
 		              zm);                                                              // " x2" = terminal upscales
 	}
 
+	// The idle countdown owns this row while it is up: an imminent termination
+	// outranks telemetry, and routing it through the SAME writer (rather than a
+	// second one) is what stops the two overwriting each other once a second.
+	// It also inherits the post-frame redraw below for free.
+	if (g_idle_showing)
+		snprintf(txt, sizeof(txt), "%s", g_idle_msg);
+
 	if (!force && strcmp(txt, g_ov_last) == 0)
 		return;                         // unchanged and the frame didn't repaint it -> nothing to send
 	if (tn > 0 && tn < (int)sizeof(g_ov_last))
@@ -1093,9 +1121,9 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 		g_tx_progress_ms = now_ms();    // nothing to render -> the client isn't stalled
 		g_dedup_skipped++;
 		fps_window_tick(0);
-		if (g_stats_overlay) {
+		if (g_stats_overlay || g_idle_showing || g_idle_clear) {
 			g_out_len = 0; g_out_off = 0;
-			emit_overlay(0);            // redraw only if the readout text changed
+			sd_overlay_or_clear(0);
 			out_flush();
 		}
 		return;
@@ -1183,8 +1211,8 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 	g_last_enc_us = (uint32_t)((xp_timer() - enc_t0) * 1000000.0L);   // encode done; g_out_len is the payload
 	g_last_kb     = (uint32_t)((g_out_len + 512) / 1024);
 
-	if (g_stats_overlay)
-		emit_overlay(1);                // the fresh frame painted over the reserved row -> redraw
+	if (g_stats_overlay || g_idle_showing || g_idle_clear)
+		sd_overlay_or_clear(1);         // the fresh frame painted over the reserved row -> redraw
 	draw_page_overlay();                // incoming-page banner over the top rows (or clear it)
 
 	out_put("\x1b[6n", 4);              // DSR -> the terminal reports when it has consumed this frame
@@ -1349,6 +1377,13 @@ static void key_seen(unsigned char key)
 	int      i;
 	uint32_t t = now_ms();
 
+	// A genuine keystroke on the legacy-byte path. Hooked HERE and in
+	// key_dispatch() rather than at their common keyq_push(), because
+	// expire_keys() synthesizes key-ups through that too -- which would forge
+	// activity for a player who has already walked away.
+	if (sd_idle_wake())
+		return;                           // it answered the countdown: consumed
+
 	if (key == KEY_F4) {                      // door-level hotkey: cycle render tier
 		cycle_video();                        // (handled here -- never reaches Doom)
 		return;
@@ -1422,6 +1457,11 @@ static void mouse_seen(int button, int col, int row, int release)
 	int      b = button & 0x03;
 	int      bit;
 	uint32_t t = now_ms();
+
+	// Mouse activity is presence too, motion included: with -mouse steer/follow
+	// a player can drive DOOM for a long stretch without a keystroke.
+	if (sd_idle_wake())
+		return;
 
 	// FOLLOW: re-anchor the delta reference on the first report or after an idle
 	// gap, so a resumed pointer doesn't turn by the whole distance it jumped while
@@ -1726,6 +1766,10 @@ static void key_dispatch(unsigned char key, int ev)
 {
 	if (!key)
 		return;
+	// The native (kitty/evdev) dispatcher -- the other real-input path. Same
+	// reasoning as key_seen(); keyq_push() is deliberately not the hook.
+	if (ev == 1 && sd_idle_wake())
+		return;                           // the press answered the countdown
 	if (g_page_compose) {                     // in-game Ctrl-P compose: eat all keys, capture text
 		if (ev == 1)                          // (fresh press only; releases are swallowed too)
 			sd_page_compose_key(key);
@@ -2157,6 +2201,91 @@ static void check_hangup(void)
 		M_SaveDefaults();        // persist Doom's options (screen size, messages,
 		exit(0);                 // detail...) -- I_AtExit's saver only runs via
 	}                            // I_Quit, which a hangup/time-limit exit skips
+}
+
+// True iff s is non-empty and all ASCII digits.
+static int sd_all_digits(const char *s)
+{
+	if (*s == '\0')
+		return 0;
+	for (; *s != '\0'; ++s)
+		if (*s < '0' || *s > '9')
+			return 0;
+	return 1;
+}
+
+// Feed the idle clock from REAL input; returns 1 when that input answered an
+// on-screen countdown, in which case the caller must CONSUME it rather than
+// pass it to the game. "Press any key" must not also fire that key -- in DOOM
+// every key does something, and Escape opens the menu.
+static int sd_idle_wake(void)
+{
+	int woke = g_idle_showing;
+
+	termgfx_idle_activity(&g_idle, now_ms());
+	if (woke) {
+		g_idle_showing = 0;
+		g_idle_clear   = 1;      // wipe the row on the next frame
+		g_ov_last[0]   = '\0';   // ...and let the stats strip redraw itself
+	}
+	return woke;
+}
+
+// Idle-user countdown / forced exit. Runs once per frame beside the time-limit
+// check below. The countdown is drawn by emit_overlay(), which owns the same
+// reserved row -- so the two can never fight over it, and the existing
+// "the frame painted over the reserved row" redraw keeps it on screen.
+static void check_idle(void)
+{
+	static unsigned last_shown = 0;
+	unsigned        left = 0;
+
+	switch (termgfx_idle_poll(&g_idle, now_ms(), &left)) {
+		case TERMGFX_IDLE_WARN:
+			if (left != last_shown) {
+				// "terminating", not "disconnecting": this ends the GAME and
+				// hands the player back to the BBS. Same wording as the siblings.
+				snprintf(g_idle_msg, sizeof(g_idle_msg),
+				         " Still there? Press any key -- terminating in %u second%s ",
+				         left, (left == 1) ? "" : "s");
+				g_ov_last[0] = '\0';     // force the row to redraw with the new text
+				last_shown   = left;
+			}
+			g_idle_showing = 1;
+			break;
+		case TERMGFX_IDLE_EXPIRED: {
+			static const char bye[] = "\x1b[?25h\r\nIdle too long -- returning to the BBS.\r\n";
+			emit_all(bye, sizeof(bye) - 1);
+			M_SaveDefaults();        // persist Doom's options, as the time limit does
+			exit(0);
+		}
+		default:
+			last_shown = 0;
+			g_idle_showing = 0;
+			break;
+	}
+}
+
+// Draw the reserved row, or wipe it once the countdown has gone and there is no
+// stats strip to put back. The wipe clears the WHOLE row -- the only way to
+// reach the margins the frame never covers -- and then asks for a full repaint,
+// because in the bitmap tiers that row IS part of the picture and would
+// otherwise be left as a black band (the same trap the sibling door hit).
+static void sd_overlay_or_clear(int force)
+{
+	if (g_stats_overlay || g_idle_showing) {
+		emit_overlay(force);
+		g_idle_clear = 0;
+		return;
+	}
+	if (g_idle_clear) {
+		char ov[32];
+		int  n = snprintf(ov, sizeof(ov), "\x1b[%d;1H\x1b[0m\x1b[K", sd_overlay_row());
+		if (n > 0)
+			out_put(ov, (size_t)n);
+		g_idle_clear = 0;
+		g_last_fb_ok = 0;               // force a full repaint under the wiped row
+	}
 }
 
 // Honor the user's BBS time limit (-t<seconds>, from %T): exit when it's spent.
@@ -2937,6 +3066,7 @@ void DG_DrawFrame(void)
 	pump_input();
 	check_hangup();
 	check_timelimit();
+	check_idle();
 }
 
 void DG_SleepMs(uint32_t ms)
@@ -3247,6 +3377,11 @@ static void read_syncdoom_ini(const char *argv0)
 	// All [video]/[input] keys below are optional; an absent key keeps the value
 	// already set (terminal.ini auto-detect or built-in default). The command-line
 	// flags are parsed after this, so they override anything set here.
+	// [idle] -- iniGetDuration() so "15m"/"900"/"1h" all parse, and so a bare
+	// number means SECONDS here exactly as it does in the sibling doors.
+	g_idle_timeout = (unsigned)iniGetDuration(ini, "idle", "timeout", SD_IDLE_DEFAULT);
+	g_idle_warn    = (unsigned)iniGetDuration(ini, "idle", "warn", 60);
+
 	iniGetString(ini, "video", "scale", "", val);
 	if (val[0]) g_scale_fit = !(stricmp(val, "off")    == 0 || stricmp(val, "0") == 0 ||
 		                        stricmp(val, "native") == 0 || stricmp(val, "no") == 0);
@@ -4898,6 +5033,12 @@ int main(int argc, char **argv)
 			if (*v == '\0' && i + 1 < argc)
 				v = argv[++i];                               // "-s 7"
 			if (*v) { g_iosock = (SOCKET)atoi(v); g_sock = true; }
+		} else if (argv[i][0] == '-' && argv[i][1] == 'i'
+		           && sd_all_digits(argv[i] + 2)) {
+			// -i<seconds>, the idle threshold. Matched on an ALL-DIGIT suffix
+			// rather than by prefix like -s/-t above: "-i" as a prefix would
+			// also match DOOM's own -iwad and eat the WAD selection.
+			g_idle_arg = atoi(argv[i] + 2);
 		} else if (strcmp(argv[i], "-text") == 0) {         // before -t (which is prefix-matched)
 			g_force_text = 1;                                // force the block-char tier
 		} else if (strncmp(argv[i], "-term", 5) == 0) {     // before -t; read in pre-scan, consume value here
@@ -4985,6 +5126,15 @@ int main(int argc, char **argv)
 #endif
 		}
 	}
+	// Arm the idle clock now that BOTH sources are known: read_syncdoom_ini()
+	// ran before this loop (its [idle] keys), and -i was parsed inside it. The
+	// argument wins when given, so a launcher can pass -i0 to excuse an exempt
+	// user; otherwise the door's own ini governs, which is the only mechanism
+	// available on a non-Synchronet BBS.
+	termgfx_idle_init(&g_idle,
+	                  (g_idle_arg >= 0) ? (unsigned)g_idle_arg : g_idle_timeout,
+	                  g_idle_warn, now_ms());
+
 	// Per-user input-feel overrides (saved by the in-game Options > Input sliders)
 	// layer over the [input] ini defaults now that -home and any -kp* flags are known.
 	load_user_prefs();
@@ -5057,6 +5207,8 @@ int main(int argc, char **argv)
 				child[cn++] = argv[++i];                   // which would otherwise eat "-skill"
 			continue;
 		}
+		if (argv[i][0] == '-' && argv[i][1] == 'i' && sd_all_digits(argv[i] + 2))
+			continue;                                      // -i<seconds>: ours, and never -iwad
 		if (strncmp(argv[i], "-l", 2) == 0 || strncmp(argv[i], "-s", 2) == 0 ||
 		    strncmp(argv[i], "-t", 2) == 0) {              // -s/-t (+ legacy -l) door flags: not for the engine
 			if (argv[i][2] == '\0')
