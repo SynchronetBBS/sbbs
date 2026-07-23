@@ -224,7 +224,7 @@ yourself.
 
 - `docs/superpowers/specs/2026-07-19-syncrpg-door-design.md` — architecture
   design (the `BaseUi_termgfx` backend, the truecolor `present_rgbx` path
-  shared with future doors, data/control flow, milestones).
+  shared with future doors, data/control flow).
 - `PROVENANCE.md` — what is vendored from EasyRPG Player/liblcf, pruned, and
   patched.
 - `test/boot_yumenikki.sh` — headless boot acceptance test (video + audio).

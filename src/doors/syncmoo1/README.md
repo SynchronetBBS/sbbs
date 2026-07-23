@@ -9,13 +9,13 @@ turn-based, mouse-driven point-and-click** (no multiplayer/net code); the
 primary interaction-model reference is `../syncconquer` (an RTS).
 
 See [DESIGN.md](DESIGN.md) for the full design (architecture, data flow,
-mouse mapping, milestones) and [PROVENANCE.md](PROVENANCE.md) for exactly
+mouse mapping) and [PROVENANCE.md](PROVENANCE.md) for exactly
 what was vendored and how. See [CLAUDE.md](CLAUDE.md) for the ours-vs-vendored
 coding contract before touching any source in this directory.
 
 ---
 
-## Status: M1 + audio -- playable, not yet polished
+## Status: playable, not yet polished
 
 Delivered:
 

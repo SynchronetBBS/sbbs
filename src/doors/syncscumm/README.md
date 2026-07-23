@@ -292,7 +292,7 @@ copy the binary into each game directory yourself.
 ## See also
 
 - [`DESIGN.md`](DESIGN.md) — architecture: the `OSystem` backend, video/input/
-  audio paths, saves, presence, milestones.
+  audio paths, saves, presence.
 - [`PROVENANCE.md`](PROVENANCE.md) — what is vendored from ScummVM, pruned, and
   patched.
 - [`COMPILING.md`](COMPILING.md) — building on \*nix and Windows.

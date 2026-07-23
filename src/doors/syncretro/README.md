@@ -11,7 +11,7 @@ vendors no emulator -- you point it at a libretro core `.so` and it drives the
 core's run loop, converting each video frame to sixel/JXL and mapping BBS input
 to a RetroPad. Swap the core, get a different console.
 
-> **Status: M1 (video), M2 (input), M3 (multi-core), M4 (audio) and M6 (Windows)
+> **Status: video, input, multi-core, audio, and the Windows build are all
 > complete.** The frontend loads a core, loads a ROM, renders frames as sixel,
 > maps terminal keys onto a RetroPad -- including all twelve Intellivision keypad
 > keys -- and streams the core's audio to SyncTERM as Opus chunks at whatever rate
@@ -21,8 +21,8 @@ to a RetroPad. Swap the core, get a different console.
 > (`xtrn/syncnes`, FCEUmm). They are the SAME door binary against a different
 > core, and adding a third that is also a plain-gamepad console (SMS,
 > ColecoVision, PC Engine, Genesis) needs no C at all -- just an install
-> directory. See M3_MULTICORE.md; DESIGN.md sec 15 for what remains (M5: core
-> options + save states).
+> directory. See the multi-core notes (`M3_MULTICORE.md`) and DESIGN.md sec 15
+> for what remains: core options and save states.
 >
 > To actually *play* Intellivision you still need the BIOS (below). Without it
 > FreeIntv loads the cartridge, halts its CPU, and draws its own "PUT GROM/EXEC IN
