@@ -788,19 +788,19 @@ static void sr_io_stats_emit(int force)
 		 * says so, rather than the reader wondering whether the feature is on.
 		 *
 		 * That last argument only holds where patching is POSSIBLE, which is
-		 * why "n/a" exists. Patching needs the client to persist its sixel
-		 * colour registers between images (see the preconditions at the
-		 * dirty-rect emit), so on anything but SyncTERM the share is
-		 * structurally 0 -- and a bare "dr 0%" there is indistinguishable from
-		 * a busy screen on a client that COULD patch. Three states, three
-		 * labels: off (the sysop disabled it), n/a (this client cannot), N%
-		 * (this is how it is doing). */
+		 * why "n/a" exists. Patching needs a known cell grid to place a
+		 * rectangle in (see the preconditions at the dirty-rect emit); a
+		 * client with no cell geometry yet cannot patch at all, and a bare
+		 * "dr 0%" there would be indistinguishable from a busy screen on a
+		 * client that COULD patch. Three states, three labels: off (the
+		 * sysop disabled it), n/a (no usable cell grid), N% (this is how it
+		 * is doing). */
 		uint32_t emitted = g_dirty_frames + g_full_frames;
 
 		if (!sr_config_dirty_rect())
 			snprintf(drtxt, sizeof drtxt, " dr off");
-		else if (!sr_input_is_syncterm())
-			snprintf(drtxt, sizeof drtxt, " dr n/a");
+		else if (g_cell_w <= 0 || g_cell_h <= 0)
+			snprintf(drtxt, sizeof drtxt, " dr n/a");   /* no cell grid: cannot place patches */
 		else if (emitted > 0)
 			snprintf(drtxt, sizeof drtxt, " dr %u%%", g_dirty_frames * 100 / emitted);
 		else
@@ -1321,16 +1321,20 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	 *                 our rectangle coordinates would land somewhere else.
 	 *   !have_prev    no previous scaled frame to diff against (first frame after
 	 *                 a resize, a tier change, or a de-duped run).
-	 *   !SyncTERM     the palette cannot be omitted (registers are not persisted),
-	 *                 and a palette per rectangle costs far more than one frame.
+	 *
+	 * Dirty patching now runs off SyncTERM too: a non-SyncTERM patch carries
+	 * its own used-colour subset (emit_pal below), so it does not depend on
+	 * register persistence, and band_align makes its geometry safe on a
+	 * cell-anchored terminal (foot). SyncTERM keeps zero-palette patches and
+	 * cell-only geometry.
 	 */
 	nrect = 0;
 	if (sr_config_dirty_rect() && !force && !pal_changed && have_prev_scaled
-	    && sr_input_is_syncterm() && g_cell_w > 0 && g_cell_h > 0
+	    && g_cell_w > 0 && g_cell_h > 0
 	    && last_ew == g_ew && last_eh == g_eh
 	    && last_icol == g_icol && last_irow == g_irow)
 		nrect = sr_dirty_find(g_scaled, g_prev_scaled, g_ew, g_eh,
-		                      g_cell_w, g_cell_h, 0, rect);
+		                      g_cell_w, g_cell_h, !sr_input_is_syncterm(), rect);
 
 	if (nrect > 0) {
 		int i;
@@ -1346,10 +1350,12 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 			              g_irow + rect[i].row, g_icol + rect[i].col);
 			if (pn > 0)
 				sr_out_put(pos, (size_t)pn);
-			/* emit_palette is 0 for every patch: the preconditions above
-			 * guarantee the registers the client holds are still ours. */
+			/* SyncTERM: registers persist, patch carries no palette. Every
+			 * other terminal resets per image, so each patch self-describes
+			 * with the used-colour subset -- correct regardless of whether the
+			 * client honours the ?1070l request term_enter sent. */
 			n = sixel_encode(&g_sx, &g_sx_cap, g_rect_px, rect[i].w, rect[i].h,
-			                 pal, 0);
+			                 pal, sr_input_is_syncterm() ? SIXEL_PAL_NONE : SIXEL_PAL_USED);
 			sr_out_put(g_sx, n);
 			g_dirty_rects_sent++;
 		}
