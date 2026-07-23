@@ -24,6 +24,7 @@
 #include "term.h"
 #include "caps.h"
 #include "pace.h"
+#include "idle.h"
 #include "door32.h"
 #include "geometry.h"
 #include "sixel.h"
@@ -184,6 +185,30 @@ static const char *app_ini(void)
 static int g_fd = -1, g_fd_in = -1;      /* -1 = headless (no session) */
 static int g_active;
 static int g_quit, g_stats, g_menu;
+
+/* --- idle-USER detection (idle.h) -----------------------------------------
+ * Lives HERE, in shared termio, so every door driven through it gets the same
+ * behavior -- syncscumm today, syncrpg by inheritance.
+ *
+ * It exists because the BBS's own "Maximum Inactivity" cannot see a DSR-paced
+ * door: that counter is reset by any socket read, and frame pacing makes the
+ * terminal answer ~10x/second on its own, so the threshold is never reached.
+ * Presence has to be judged on REAL input, which only the door can tell apart
+ * from its own pace-acks.
+ *
+ * TERMGFX_IDLE_DEFAULT is the shipped policy, not merely a fallback: unset is
+ * NOT off. `timeout = 0` in the door's ini disables it. Matches the sibling
+ * doors (syncretro/syncconquer/syncmoo1/syncdoom/syncduke); keep them in step. */
+#define TERMGFX_IDLE_DEFAULT 600      /* 10 minutes */
+static termgfx_idle_t g_idle;
+static int      g_idle_armed;
+static int      g_idle_arg = -1;      /* -i<seconds>; -1 = not given */
+static unsigned g_idle_timeout = TERMGFX_IDLE_DEFAULT;
+static unsigned g_idle_warn    = 60;
+static int      g_idle_showing;       /* the countdown owns the bottom row */
+static char     g_idle_msg[96];
+static int      g_idle_clear;         /* it just went: wipe the row once */
+static int      g_idle_expired_logged;/* the exit line is logged exactly once */
 static unsigned char g_menu_letter;   /* Ctrl+<letter> opens the GMM; 0 = disabled */
 static int g_have_sixel, g_is_syncterm, g_jxl, g_probe_replied;
 static int g_no_gfx_notified;   /* one-shot: unsupported-terminal notice sent */
@@ -348,6 +373,7 @@ static FILE *g_trace;
 static FILE *g_tee;
 static void  termgfx_trace_in(const uint8_t *buf, int n);   /* defined past pacing globals */
 static void  termgfx_stats_draw(void);                      /* defined past pacing globals */
+static void  idle_poll(void);                               /* idle clock; driven by the pump */
 
 /* Set the instant the peer goes away (EOF/hard read error) or a flush hits a
  * hard write error (not EAGAIN/EINTR) -- see termgfx_termio_flush()/termgfx_termio_pump().
@@ -691,6 +717,17 @@ int termgfx_termio_consumed(int idx)
 	return 0;
 }
 
+/* True iff s is non-empty and every character is an ASCII digit. */
+static int all_digits(const char *s)
+{
+	if (*s == '\0')
+		return 0;
+	for (; *s != '\0'; ++s)
+		if (*s < '0' || *s > '9')
+			return 0;
+	return 1;
+}
+
 /* --- fd resolution (door_io.c:1297-1364 pattern, simplified) --------------
  * Activation order: -s<fd> / a DOOR32.SYS argv (its socket, or -- comm type
  * 0, a stdio door -- default fd 1/0) / <DOOR>_SOCK env; else
@@ -704,6 +741,12 @@ static int resolve_fd(int argc, char **argv)
 		const char *a = argv[i];
 		if (a[0] == '-' && a[1] == 's' && a[2] != '\0') {
 			cli_sock = atoi(a + 2);                                  /* -s<fd> */
+			mark_consumed(i);
+		} else if (a[0] == '-' && a[1] == 'i' && all_digits(a + 2)) {
+			/* -i<seconds>: the idle threshold. ALL-DIGIT suffix, never a
+			 * prefix match -- a game engine's own word option beginning with
+			 * -i (DOOM's -iwad is the cautionary case) must pass through. */
+			g_idle_arg = atoi(a + 2);
 			mark_consumed(i);
 		} else if (termgfx_door32_is_path(a)) {
 			termgfx_door32_t d;
@@ -1428,6 +1471,13 @@ static void termgfx_read_ini(void)
 	if (ini == NULL)
 		return;
 	g_sixel_max_override = iniGetInteger(ini, ROOT_SECTION, "sixel_max", 0);
+	/* [idle] -- iniGetDuration() so "15m"/"900"/"1h" all parse, and so a bare
+	 * number means SECONDS here exactly as it does in the sibling doors and in
+	 * the JS lobby that may pass -i. Read at init, well before the clock is
+	 * armed on first input. */
+	g_idle_timeout = (unsigned)iniGetDuration(ini, "idle", "timeout",
+	                                          TERMGFX_IDLE_DEFAULT);
+	g_idle_warn    = (unsigned)iniGetDuration(ini, "idle", "warn", 60);
 	/* Read HERE, at init, rather than with the rest of the [audio] section in
 	 * audio_read_ini(): that one runs on the first PCM block, and this key is
 	 * needed far earlier -- termgfx_termio_audio_available() is asked during
@@ -1663,6 +1713,8 @@ int termgfx_termio_hung_up(void) { return g_hangup; }
 void termgfx_termio_pump(void)
 {
 	uint8_t buf[256];
+
+	idle_poll();   /* rendering-independent: see idle_poll()'s comment */
 
 	/* Deliberately NOT gated on g_active: termgfx_termio_shutdown() only retires the
 	 * OUTPUT side (status-line/term_leave + "don't stage more bytes"); the fd
@@ -3120,20 +3172,136 @@ static void termgfx_fps_tick(int emitted)
 	}
 }
 
+/* Arm on FIRST USE rather than at init: the door's ini is read lazily through
+ * app_ini() and -i is resolved during argv parsing, so first use is the
+ * earliest point where BOTH are certainly known. Arming earlier has silently
+ * ignored the ini in every sibling door that tried it. */
+static void idle_ensure_armed(void)
+{
+	if (g_idle_armed)
+		return;
+	g_idle_armed = 1;
+	termgfx_idle_init(&g_idle,
+	                  (g_idle_arg >= 0) ? (unsigned)g_idle_arg : g_idle_timeout,
+	                  g_idle_warn, termgfx_plat_now_ms());
+}
+
+/* Feed the clock from REAL input; 1 => this input answered an on-screen
+ * countdown and the caller must CONSUME it instead of queueing it for the
+ * game. "Press any key" must not also press that key at the game. */
+static int idle_wake(void)
+{
+	int woke;
+
+	idle_ensure_armed();
+	woke = g_idle_showing;
+	termgfx_idle_activity(&g_idle, termgfx_plat_now_ms());
+	if (woke) {
+		g_idle_showing = 0;
+		g_idle_clear   = 1;
+	}
+	return woke;
+}
+
+/* Poll the idle clock. Driven by termgfx_termio_pump() -- the door's "call
+ * every poll" service point -- and deliberately NOT by the present path: this
+ * door only presents when the engine's dirty flag says the frame CHANGED, so a
+ * player who walks away at a static screen would produce no frames and the
+ * countdown would stall exactly when it is needed most.
+ *
+ * For the same reason the countdown paints itself the moment its text changes
+ * rather than waiting for the next present, which is the trick
+ * termgfx_toggle_stats() already uses for the stats bar.
+ *
+ * Expiry sets g_quit, the door's existing clean-quit flag, rather than exiting
+ * here: the engine then unwinds through its normal shutdown (saving whatever
+ * it saves) and termgfx_termio_leave() restores the terminal, exactly as a
+ * player-initiated Ctrl-Q does. */
+static void idle_poll(void)
+{
+	static unsigned last_shown = 0;
+	unsigned        left = 0;
+	int             was_showing = g_idle_showing, changed = 0;
+
+	idle_ensure_armed();
+	switch (termgfx_idle_poll(&g_idle, termgfx_plat_now_ms(), &left)) {
+		case TERMGFX_IDLE_WARN:
+			if (left != last_shown) {
+				/* "terminating", not "disconnecting": this ends the GAME and
+				 * hands the player back to the BBS -- it does not drop the
+				 * call. Same wording as every sibling door. */
+				snprintf(g_idle_msg, sizeof g_idle_msg,
+				         " Still there? Press any key -- terminating in %u second%s ",
+				         left, (left == 1) ? "" : "s");
+				last_shown = left;
+				changed    = 1;
+			}
+			if (!was_showing || changed) {
+				g_idle_showing = 1;
+				termgfx_stats_draw();      /* paint NOW; a static scene may never present */
+				termgfx_termio_flush();
+			}
+			g_idle_showing = 1;
+			break;
+		case TERMGFX_IDLE_EXPIRED:
+			/* Latched: g_quit only ASKS the engine to stop, and it takes a few
+			 * pump cycles to unwind -- without this the same line lands in the
+			 * log three or four times on every idle exit. */
+			if (!g_idle_expired_logged) {
+				g_idle_expired_logged = 1;
+				fprintf(stderr, "termgfx: idle timeout -- no user input; exiting\n");
+			}
+			g_quit = 1;
+			break;
+		default:
+			last_shown = 0;
+			if (was_showing) {
+				g_idle_showing = 0;
+				g_idle_clear   = 1;
+				termgfx_stats_draw();      /* wipe it now, same reasoning */
+				termgfx_termio_flush();
+			}
+			g_idle_showing = 0;
+			break;
+	}
+}
+
 static void termgfx_stats_draw(void)
 {
 	char               buf[160];
 	int                off, brow;
 	unsigned long long bpf;
 
-	if (!g_stats)
-		return;
 	/* Bottom text row from the real grid (999;999 CPR), NOT g_canvas_h/16 --
 	 * the cell is often shorter than 16px (foot ~13), which put the bar rows
 	 * above the true bottom. */
 	brow = termgfx_bottom_row();
 	if (brow < 1)
 		brow = 25;
+
+	/* The idle countdown owns this row while it is up -- an imminent
+	 * termination outranks telemetry -- and it is drawn by THIS function
+	 * rather than a second writer, so the two can never overwrite each other.
+	 * It draws even when the player never pressed Ctrl-S, hence the g_stats
+	 * check moved below rather than guarding the whole function. */
+	if (g_idle_showing) {
+		off = snprintf(buf, sizeof buf,
+		               "\x1b[%d;1H\x1b[1;37;44m%s\x1b[K\x1b[0m\x1b[?25l",
+		               brow, g_idle_msg);
+		if (off > 0 && off < (int)sizeof buf)
+			out_put(buf, (size_t)off);
+		return;
+	}
+	if (g_idle_clear) {
+		/* Wipe it: nothing else repaints this row, so the last countdown would
+		 * otherwise sit there. If the stats bar is on it redraws just below. */
+		off = snprintf(buf, sizeof buf, "\x1b[%d;1H\x1b[0m\x1b[K\x1b[?25l", brow);
+		if (off > 0 && off < (int)sizeof buf)
+			out_put(buf, (size_t)off);
+		g_idle_clear = 0;
+	}
+	if (!g_stats)
+		return;
 	bpf = g_fps > 0 ? ((uint64_t)g_bps / 8 / (unsigned)g_fps + 512) / 1024 : 0;
 	/* No present completed in the last window (e.g. a paused game, or -- before
 	 * the palette-storm fix -- a fade's dark gap): show '-' rather than a
@@ -3198,6 +3366,13 @@ int termgfx_termio_next_event(termgfx_input_event_t *ev)
 static void termgfx_key_event(int keycode, int ascii, int mods, int down)
 {
 	termgfx_input_event_t ev;
+
+	/* A genuine keystroke -- the one thing DSR pacing cannot forge. Safe as a
+	 * single chokepoint here (unlike the sibling doors, which had to hook two
+	 * or three dispatchers) because nothing synthesizes key events on this
+	 * path: a legacy key is one KEY_DOWN and no release ever follows. */
+	if (down && idle_wake())
+		return;                       /* it answered the countdown: consumed */
 
 	memset(&ev, 0, sizeof ev);
 	ev.type    = down ? TERMGFX_EV_KEY_DOWN : TERMGFX_EV_KEY_UP;
@@ -3439,6 +3614,11 @@ static void termgfx_image_rect(int *ew, int *eh, int *dx, int *dy)
 
 static void termgfx_termio_mouse_report(int b, int col, int row, int release)
 {
+	/* Mouse activity is presence too, motion included: a point-and-click
+	 * adventure can go a long while with no keystroke at all. */
+	if (idle_wake())
+		return;
+
 	int                     ew = 0, eh = 0, dx = 0, dy = 0, cw, ch, px, py, gx, gy;
 	termgfx_mouse_report_t  rep;
 	termgfx_input_event_t       ev;
