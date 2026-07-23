@@ -143,6 +143,13 @@ static int compose_eat_sc(int sc)
 
 static void press(int sc, int now)
 {
+	/* A genuine keystroke (legacy-byte path). Hooked here and in hold_press()
+	 * rather than at their common rawq_push(), because syncduke_input_expire()
+	 * synthesizes key-ups through that -- which would forge activity for a
+	 * player who has already walked away. */
+	if (syncduke_idle_wake())
+		return;                 /* it answered the countdown: consumed */
+
 	if (sc <= 0 || sc >= 128)
 		return;
 	if (compose_eat_sc(sc))
@@ -181,6 +188,10 @@ void syncduke_input_expire(int now)
  * A repeat re-asserts an existing down (idempotent); release clears it. */
 static void hold_press(int sc)
 {
+	/* The native (kitty/evdev) key-down path -- the other REAL input source. */
+	if (syncduke_idle_wake())
+		return;
+
 	if (sc <= 0 || sc >= 128)
 		return;
 	if (compose_eat_sc(sc))
@@ -193,6 +204,10 @@ static void hold_press(int sc)
 
 static void hold_release(int sc)
 {
+	/* A real key-up counts as presence, but is never CONSUMED: swallowing a
+	 * release would leave the key stuck down in the engine. */
+	(void)syncduke_idle_wake();
+
 	if (sc <= 0 || sc >= 128)
 		return;
 	if (held[sc]) {
@@ -598,6 +613,12 @@ static int syncduke_follow_edge(void)
  * button low 2 bits = which button; bit 5 (32) marks a motion (not click) report. */
 static void syncduke_mouse_event(int button, int col, int row, int release)
 {
+	/* Mouse activity is presence too: with mouse-steer a player can drive for a
+	 * long stretch without a keystroke. Consumed on wake so that answering the
+	 * countdown cannot also fire a weapon. */
+	if (syncduke_idle_wake())
+		return;
+
 	uint32_t now = syncduke_in_now_ms();
 	(void)row;
 

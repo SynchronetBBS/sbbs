@@ -52,6 +52,16 @@
 #endif
 
 #include "ini_file.h"   /* xpdev: iniReadFile / iniGetString */
+
+/* syncduke.ini [idle]. The default is the shipped POLICY, not merely a
+ * fallback: unset is NOT off; `timeout = 0` disables. Keep in step with the
+ * sibling doors. */
+#define SYNCDUKE_IDLE_DEFAULT_S 600    /* 10 minutes */
+static unsigned syncduke_idle_timeout = SYNCDUKE_IDLE_DEFAULT_S;
+static unsigned syncduke_idle_warn    = 60;
+
+unsigned syncduke_config_idle_timeout(void) { return syncduke_idle_timeout; }
+unsigned syncduke_config_idle_warn(void)    { return syncduke_idle_warn; }
 #include "dirwrap.h"    /* xpdev: mkpath() (recursive mkdir) */
 #include "sbbs_node.h"  /* termgfx: sbbs_my_node() -- current node # from SBBSNNUM */
 #include "audio_mgr.h"  /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
@@ -245,6 +255,11 @@ static void syncduke_config_init(int argc, char **argv)
 		if (!logpath[0] && iniGetExistingString(ini, "debug", "log", "", logpath) == NULL)
 			strncpy(logpath, "syncduke.log", sizeof(logpath) - 1);
 		syncduke_allow_record = iniGetBool(ini, "game", "record", FALSE);   /* demos off by default */
+		/* [idle] -- iniGetDuration() so "15m"/"900"/"1h" all parse, and so a bare
+		 * number means SECONDS here exactly as it does in the sibling doors. */
+		syncduke_idle_timeout = (unsigned)iniGetDuration(ini, "idle", "timeout",
+		                                                 SYNCDUKE_IDLE_DEFAULT_S);
+		syncduke_idle_warn    = (unsigned)iniGetDuration(ini, "idle", "warn", 60);
 		syncduke_play_attract = iniGetBool(ini, "game", "attract_demos", FALSE);   /* title attract demos off by default */
 		syncduke_scale_max = iniGetInteger(ini, "video", "scale_max", syncduke_scale_max);
 		syncduke_sixel_w = iniGetInteger(ini, "video", "sixel_max_width", syncduke_sixel_w);

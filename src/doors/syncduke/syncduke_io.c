@@ -967,6 +967,35 @@ static void syncduke_emit_overlay(int force)
 	if (!force && nm - syncduke_ov_draw_ms < 250)
 		return;
 
+	/* The idle countdown owns this row while it is up -- an imminent
+	 * termination outranks telemetry -- and it is drawn by THIS function rather
+	 * than a second writer, so the two can never overwrite each other and it
+	 * inherits the post-frame redraw above for free. When it goes away with no
+	 * stats strip to put back, the row is wiped and a full repaint forced: the
+	 * sixel tier never repaints this reserved row on its own, so a bare wipe
+	 * would leave it blank. */
+	if (syncduke_idle_showing()) {
+		char ib[220];
+		int  ibn = snprintf(ib, sizeof(ib), "\x1b" "7\x1b[%d;1H\x1b[1;37;44m%s\x1b[K\x1b[0m\x1b" "8",
+		                    syncduke_term_rows(), syncduke_idle_text());
+		if (ibn > 0)
+			syncduke_out_put(ib, (size_t)ibn);
+		syncduke_ov_draw_ms = nm;
+		syncduke_ov_last[0] = '\0';   /* the strip must redraw itself afterwards */
+		return;
+	}
+	if (syncduke_idle_clear_due()) {
+		char cb[24];
+		int  cn = snprintf(cb, sizeof(cb), "\x1b" "7\x1b[%d;1H\x1b[0m\x1b[K\x1b" "8",
+		                   syncduke_term_rows());
+		if (cn > 0)
+			syncduke_out_put(cb, (size_t)cn);
+		syncduke_idle_clear_done();
+		syncduke_have_last = 0;        /* force a full repaint under the wiped row */
+		if (!syncduke_stats_on)
+			return;
+	}
+
 	/* The leading fields -- tier, fps, throughput, lag, depth -- are termgfx's
 	 * (stats.h), so this strip reads exactly like SyncDOOM's and SyncRetro's:
 	 * spaced fields, KB/s up to 999 then fractional MB/s so the throughput stays
@@ -1384,7 +1413,7 @@ done:
 	syncduke_hud_begin();                     /* per-frame HUD reset: next frame's operatefta refills it (or leaves
 	                                             it empty in a menu, where operatefta doesn't run) -- no stale overlay */
 	syncduke_stats_window();                  /* always track + log the 2s window (so Ctrl-S is live immediately) */
-	if (syncduke_stats_on)
+	if (syncduke_stats_on || syncduke_idle_showing() || syncduke_idle_clear_due())
 		syncduke_emit_overlay(sent);          /* force a redraw when a fresh frame just painted over it */
 	syncduke_out_flush();
 }

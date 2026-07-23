@@ -292,6 +292,15 @@ void _nextpage(void)
 	syncduke_node_tick();   /* status broadcast; who's-online build; message poll */
 	syncduke_events_tick();   /* events.jsonl activity log (no-op without -eventlog) */
 
+	/* Idle-USER timeout. This door had no unified exit check to hang it on, so
+	 * it rides here beside the session time limit -- the one place already
+	 * reached every presented frame. */
+	if (syncduke_idle_check()) {
+		syncduke_log("idle timeout -- no user input; exiting");
+		syncduke_term_restore();  /* restore the BBS terminal before we go */
+		_exit(0);
+	}
+
 	/* Door session time limit: leave cleanly when it's up (the BBS reclaims the
 	 * node). Crude hard-exit, but a door's lifetime is the BBS's to bound. */
 	if (lim) {

@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "door32.h"    /* termgfx: the shared DOOR32.SYS parser */
+#include "idle.h"      /* termgfx: the shared idle-USER clock */
 
 #ifdef _WIN32
   #define WIN32_LEAN_AND_MEAN
@@ -77,6 +78,20 @@ static char **  g_argv;
 static int      g_resolved;
 static int      g_socket = -1;
 static uint32_t g_time_limit_ms;
+
+/* Idle-USER detection (../termgfx/idle.h). Distinct from the time limit above:
+ * that one bounds how long the visit may last, this one notices that nobody is
+ * driving it. The BBS's own "Maximum Inactivity" cannot -- it is reset by any
+ * socket read, and DSR pacing makes the terminal answer ~10x/second on its own.
+ *
+ * SD_IDLE_DEFAULT is the shipped policy, not merely a fallback: unset is NOT
+ * off. `timeout = 0` disables. Matches the sibling doors; keep them in step. */
+#define SYNCDUKE_IDLE_DEFAULT 600      /* 10 minutes */
+static termgfx_idle_t g_idle;
+static int            g_idle_arg = -1; /* -i<seconds>; -1 = not given */
+static int            g_idle_showing;  /* the countdown owns the overlay row */
+static char           g_idle_msg[96];  /* ...and this is what it says */
+static int            g_idle_clear;    /* it just went: wipe the row once */
 static char     g_alias[64];
 
 /*
@@ -267,11 +282,14 @@ static void syncduke_door_resolve(void)
 			g_socket = atoi(a + 2);                            /* -s<fd>        */
 		else if (a[0] == '-' && a[1] == 't' && a[2] != '\0')
 			g_time_limit_ms = (uint32_t)atoi(a + 2) * 1000u;   /* -t<seconds>   */
+		else if (a[0] == '-' && a[1] == 'i' && syncduke_all_digits(a + 2))
+			g_idle_arg = atoi(a + 2);                          /* -i<seconds>   */
 		else if (strcmp(a, "-name") == 0 && i + 1 < g_argc)
 			strncpy(g_alias, g_argv[++i], sizeof(g_alias) - 1); /* -name <alias> */
 		else if (is_door32_path(a))
 			read_door32(a);
 	}
+
 }
 
 int syncduke_door_socket(void)
@@ -279,6 +297,101 @@ int syncduke_door_socket(void)
 	if (!g_resolved)
 		syncduke_door_resolve();
 	return g_socket;
+}
+
+/* True iff s is non-empty and every character is an ASCII digit. */
+int syncduke_all_digits(const char *s)
+{
+	if (*s == '\0')
+		return 0;
+	for (; *s != '\0'; ++s)
+		if (*s < '0' || *s > '9')
+			return 0;
+	return 1;
+}
+
+/* Arm the idle clock. Called once the arguments AND syncduke.ini are both
+ * known: -i wins when given (a launcher passes -i0 to excuse an exempt user),
+ * otherwise the door's own [idle] section, which on a non-Synchronet BBS is the
+ * only mechanism there is. */
+void syncduke_idle_arm(void)
+{
+	unsigned secs = (g_idle_arg >= 0) ? (unsigned)g_idle_arg
+	                                  : syncduke_config_idle_timeout();
+
+	termgfx_idle_init(&g_idle, secs, syncduke_config_idle_warn(),
+	                  syncduke_clock_ms());
+}
+
+/* Arm on FIRST USE, never from syncduke_door_resolve(). The resolve is reached
+ * from syncduke_door_splash() inside the pre-main constructor, and the ini is
+ * read by syncduke_config_init() -- a constructor in a DIFFERENT translation
+ * unit, whose relative order is undefined. Arming there therefore raced the ini
+ * and lost, silently falling back to the compile-time default and ignoring
+ * [idle] entirely. Both callers below run at main time, after every
+ * constructor, so by then -i and the ini are both known. */
+static void idle_ensure_armed(void)
+{
+	static int armed;
+
+	if (!armed) {
+		armed = 1;
+		syncduke_idle_arm();
+	}
+}
+
+/* Feed the clock from REAL input; returns 1 when that input answered an
+ * on-screen countdown, in which case the caller must CONSUME it rather than
+ * queue it for the engine. "Press any key" must not also press that key at
+ * Duke, where every key does something. */
+int syncduke_idle_wake(void)
+{
+	int woke;
+
+	idle_ensure_armed();
+	woke = g_idle_showing;
+
+	termgfx_idle_activity(&g_idle, syncduke_clock_ms());
+	if (woke) {
+		g_idle_showing = 0;
+		g_idle_clear   = 1;
+	}
+	return woke;
+}
+
+int         syncduke_idle_showing(void)  { return g_idle_showing; }
+int         syncduke_idle_clear_due(void){ return g_idle_clear; }
+void        syncduke_idle_clear_done(void){ g_idle_clear = 0; }
+const char *syncduke_idle_text(void)     { return g_idle_msg; }
+
+/* Per frame, from _nextpage() beside the session time limit. Returns 1 when the
+ * threshold has passed and the caller should leave. */
+int syncduke_idle_check(void)
+{
+	static unsigned last_shown = 0;
+	unsigned        left = 0;
+
+	idle_ensure_armed();
+	switch (termgfx_idle_poll(&g_idle, syncduke_clock_ms(), &left)) {
+		case TERMGFX_IDLE_WARN:
+			if (left != last_shown) {
+				/* "terminating", not "disconnecting": this ends the GAME and
+				 * hands the player back to the BBS. Same wording as the
+				 * sibling doors, deliberately. */
+				snprintf(g_idle_msg, sizeof(g_idle_msg),
+				         " Still there? Press any key -- terminating in %u second%s ",
+				         left, (left == 1) ? "" : "s");
+				last_shown = left;
+			}
+			g_idle_showing = 1;
+			return 0;
+		case TERMGFX_IDLE_EXPIRED:
+			return 1;
+		default:
+			last_shown     = 0;
+			g_idle_showing = 0;
+			return 0;
+	}
 }
 
 uint32_t syncduke_door_time_limit_ms(void)
@@ -333,6 +446,11 @@ void syncduke_sanitize_cmdline(int *argc, char **argv)
 		}
 		/* -s<fd> socket descriptor / -t<seconds> time limit (attached door args) */
 		if (a[0] == '-' && (a[1] == 's' || a[1] == 't') && a[2] != '\0')
+			continue;
+		/* -i<seconds>: ours. Matched on an ALL-DIGIT suffix rather than by the
+		 * looser rule above, so a Duke word option beginning with -i could never
+		 * be swallowed by it. */
+		if (a[0] == '-' && a[1] == 'i' && syncduke_all_digits(a + 2))
 			continue;
 		/* -name <alias>: drop flag + value (a "/"-leading alias would misparse) */
 		if (strcmp(a, "-name") == 0) {

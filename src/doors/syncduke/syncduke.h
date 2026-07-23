@@ -130,6 +130,30 @@ void syncduke_kb_fastturn_set(int v);
  * BBS client socket (so the engine never has to know about door args). */
 int      syncduke_door_socket(void);          /* client comm socket fd, or -1 if none (local/dev) */
 uint32_t syncduke_door_time_limit_ms(void);   /* session time limit in ms, or 0 if none */
+
+/* --- idle-USER detection (../termgfx/idle.h) ------------------------------
+ * Fed from the REAL key/mouse dispatch ONLY -- never from rawq_push(), which
+ * syncduke_input_expire() also drives with synthesized key-ups.
+ *
+ * syncduke_idle_arm()      once, after the args and syncduke.ini are known.
+ * syncduke_idle_wake()     feed it; 1 => the input answered an on-screen
+ *                          countdown and the caller MUST consume it.
+ * syncduke_idle_check()    once per presented frame; 1 => threshold passed.
+ * The showing/clear/text trio lets the Ctrl-S strip carry the countdown on the
+ * bottom row instead of a second writer competing for it. */
+void        syncduke_idle_arm(void);
+int         syncduke_idle_wake(void);
+int         syncduke_idle_check(void);
+int         syncduke_idle_showing(void);
+int         syncduke_idle_clear_due(void);
+void        syncduke_idle_clear_done(void);
+const char *syncduke_idle_text(void);
+int         syncduke_all_digits(const char *s);
+
+/* syncduke.ini [idle], in SECONDS. Default 10 minutes -- UNSET IS NOT OFF;
+ * timeout = 0 disables. The only configuration path off a Synchronet BBS. */
+unsigned syncduke_config_idle_timeout(void);
+unsigned syncduke_config_idle_warn(void);
 const char *syncduke_door_alias(void);        /* user's alias/handle, or "" */
 
 /* --- provided by syncduke_config.c (command-line / syncduke.ini derived state) --- */
