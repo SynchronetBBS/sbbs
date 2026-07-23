@@ -3788,12 +3788,11 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	}
 
 	/* SyncTERM persists sixel color registers across images -- (re)send them
-	 * only on a real palette change, or when (re)entering the sixel tier
-	 * from something else (JXL never defined them); other sixel terminals
-	 * reset registers per image, so send every frame there. */
-	/* SyncTERM: FULL only on a real palette change or sixel-tier re-entry,
-	 * else NONE (reuse persisted registers). Non-SyncTERM: always self-
-	 * describe, subset to the frame's used colors. */
+	 * (FULL) only on a real palette change, or when (re)entering the sixel
+	 * tier from something else (JXL never defined them); else NONE, reusing
+	 * what the terminal already holds. Other sixel terminals reset registers
+	 * per image, so non-SyncTERM always self-describes with the frame's
+	 * used-colour subset instead. */
 	emit_pal = (pal_dirty || g_last_tier != SST_TIER_SIXEL)
 	           ? SIXEL_PAL_FULL : SIXEL_PAL_NONE;
 	if (!g_is_syncterm)
@@ -3925,7 +3924,8 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
  * fallback / capture branch): termgfx_quant_rgb() writes 256 RGB triples here
  * each frame, which sixel_encode() then emits. Frame-local; the truecolor path
  * has no persistent palette to diff against (its palette is re-derived per
- * frame), so emit_pal is always 1 below. */
+ * frame), so emit_pal is always SIXEL_PAL_USED below (the used-colour
+ * subset). */
 static uint8_t g_rgbx_pal[768];
 
 /* Truecolor sibling of termgfx_termio_present(): the same tier / geometry /

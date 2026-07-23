@@ -24,7 +24,7 @@
 // `emit_palette` selects which register definitions are written
 // (`SIXEL_PAL_NONE`/`FULL`/`USED`): pass `SIXEL_PAL_FULL` on the first frame
 // and whenever the palette actually changes (Doom only swaps it for
-// damage/pickup/radsuit/menu tints); pass zero otherwise, so the
+// damage/pickup/radsuit/menu tints); pass `SIXEL_PAL_NONE` otherwise, so the
 // frame carries raster + band data ONLY and reuses the registers the terminal
 // still holds from the previous image. That avoids re-sending ~4KB of palette
 // every frame (and keeps the per-frame sixel string smaller and stable).
