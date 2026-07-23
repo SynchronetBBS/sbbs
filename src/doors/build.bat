@@ -8,7 +8,7 @@ rem           build.bat syncdoom syncduke  (build only the named doors)
 rem           build.bat clean              (delete the build trees, then exit)
 rem           build.bat clean all          (delete the build trees, then build)
 rem           build.bat -l                 (list the targets and exit)
-rem           build.bat -q                 (quiet: log to .build-logs\, show failures)
+rem           build.bat -q                 (quiet: log to .build-logs\win32\, show failures)
 rem
 rem This is an umbrella over the per-door build systems -- it does NOT replace
 rem them, and it passes no argument a door's own build.bat wouldn't accept.
@@ -57,7 +57,10 @@ rem a door. It was: a leaked RC=0 made syncrpg's Ninja configure resolve rc.exe
 rem to the file literally named "0" that sits in Synchronet's exec dir on PATH.
 set "SRCDIR=%~dp0"
 set "SRCDIR=%SRCDIR:~0,-1%"
-set "LOGDIR=%SRCDIR%\.build-logs"
+rem Logs go in a win32 subdirectory of the one build.sh uses: this checkout is
+rem shared with the *nix host, so both scripts can run -q against the same tree
+rem and would otherwise overwrite each other's per-target logs.
+set "LOGDIR=%SRCDIR%\.build-logs\win32"
 set "SB_CONFIG=Release"
 set "SB_PLATFORM=Win32"
 set "DOCLEAN="
@@ -375,5 +378,5 @@ echo           build.bat syncdoom syncduke  ^(build only the named doors^)
 echo           build.bat clean              ^(delete the build trees, then exit^)
 echo           build.bat clean all          ^(delete the build trees, then build^)
 echo           build.bat -l                 ^(list the targets and exit^)
-echo           build.bat -q                 ^(quiet: log to .build-logs\, show failures^)
+echo           build.bat -q                 ^(quiet: log to .build-logs\win32\, show failures^)
 exit /b 0

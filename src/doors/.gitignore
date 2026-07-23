@@ -1,4 +1,6 @@
-# per-target logs written by ./build.sh -q
+# per-target logs written by ./build.sh -q, and by build.bat -q in the win32
+# subdirectory -- both platforms build out of one checkout here, so they keep
+# their logs apart rather than overwriting each other's.
 /.build-logs/
 
 # Build output from the legacy doors that build in-tree.
