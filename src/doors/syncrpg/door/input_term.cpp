@@ -43,6 +43,7 @@
  * alone.
  */
 #include "input_term.h"
+#include "help_term.h"   /* the door's help overlay intercepts F1 / any-key-to-close */
 
 using Input::Keys::InputKey;
 
@@ -90,6 +91,14 @@ int input_term_map_key(const termgfx_input_event_t &ev, InputKey out[INPUT_TERM_
 	 * settings/debug UI and a game reset with no gameplay upside, so this
 	 * table simply drops them -- same class of exposure as an unintended
 	 * launcher hotkey.
+	 *
+	 * F1 (SETTINGS_MENU) was trialled and REJECTED: Scene_Settings carries far
+	 * more than a BBS caller should reach -- video/audio/input settings, key
+	 * rebinding, an engine hotkey list naming the F-keys above -- and it can
+	 * write a config to a SYSTEM-WIDE profile directory, escaping the door's
+	 * per-user sandbox entirely. If the door ever needs an about/version page
+	 * of its own, it should draw one door-side (cf. syncretro/main.c's pause
+	 * box) rather than open the engine's.
 	 */
 	/* NumLock-off numpad / dedicated-key ambiguity -- see file doc above:
 	 * set both the plain nav key and Yume Nikki's numpad Effect/wake key. */
@@ -135,6 +144,25 @@ void input_term_pump(std::bitset<Input::Keys::KEYS_COUNT> &keys)
 	termgfx_input_event_t ev;
 	InputKey mapped[INPUT_TERM_MAX_KEYS];
 	while (termgfx_termio_next_event(&ev)) {
+		/* The door's help overlay (help_term.h) sits in front of the engine:
+		 * F1 raises it, and while it is up EVERY key press closes it and is
+		 * swallowed, so the keystroke that dismisses the page cannot also act
+		 * on the game behind it. Releases are ignored on both counts -- acting
+		 * on the DOWN edge and then eating the matching UP is what keeps a
+		 * single F1 tap from opening and instantly closing the page. */
+		if (ev.type == TERMGFX_EV_KEY_DOWN) {
+			if (help_term_active()) {
+				help_term_dismiss();
+				continue;
+			}
+			if (ev.keycode == TERMGFX_KEY_F1) {
+				help_term_show();
+				continue;
+			}
+		} else if (ev.type == TERMGFX_EV_KEY_UP && help_term_active()) {
+			continue;
+		}
+
 		int n = input_term_map_key(ev, mapped);
 		if (n == 0)
 			continue;

@@ -34,6 +34,7 @@
 #include "rand.h"
 #include "text.h"
 #include "version.h"
+#include "syncrpg_version.h"   // syncrpg door: syncrpg_version_line(); PROVENANCE local patch #1
 #include <ctime>
 #include <memory>
 
@@ -202,7 +203,14 @@ void Scene_Logo::DrawTextOnLogo(bool verbose) {
 	for (auto& color: {shadow_color, text_color}) {
 		logo_img->TextDraw(text_rect, color, "v" + Version::GetVersionString(verbose, verbose), Text::AlignLeft);
 		if (!verbose) {
-			logo_img->TextDraw(text_rect, color, WEBSITE_ADDRESS, Text::AlignRight);
+			// syncrpg door: stock right-aligns WEBSITE_ADDRESS (easyrpg.org)
+			// here. Show the DOOR's version/git/date instead, so a BBS caller
+			// can see which build of the door they are on -- the engine's own
+			// version keeps the left slot, and easyrpg.org is still listed in
+			// Settings > About (window_about.cpp). This row is the only text
+			// on the splash and already runs to y=231 of a 240px screen, so
+			// there is no second row to put it on. PROVENANCE local patch #1
+			logo_img->TextDraw(text_rect, color, syncrpg_version_line(), Text::AlignRight);
 		}
 		text_rect.x--;
 		text_rect.y--;
