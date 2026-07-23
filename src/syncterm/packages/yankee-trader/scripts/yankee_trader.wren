@@ -86,14 +86,14 @@ class YankeeTrader {
       var picked = pickWithSelection_(
           "Yankee Trader: %(YTState.activeGameName)",
           help_, [
-        "Replacement C;3: scan every traveled sector",
-        "Drop one fighter in every adjacent sector",
+        "Travel to a sector and scan the route",
+        "Place fighter breadcrumbs in adjacent sectors",
         "Calculators",
-        "Universe and log tools",
+        "Universe mapping and actions",
         "Dashboard",
         "Live tools",
         "F1-F12 key bindings",
-        "Profile and data",
+        "Games and settings",
         "Strategy reference",
         "Switch game: %(YTState.activeGameName)",
         "Records and notes"
@@ -200,8 +200,8 @@ class YankeeTrader {
   static liveMenu_() {
     var picked = pick_("Live Tools: %(YTState.activeGameName)", liveHelp_, [
       "Run no-turn C;10 universe sweep",
-      "Benchmark T1: news and score",
-      "Benchmark T2: trading-pair report",
+      "Benchmark T1: command and sensor response",
+      "Benchmark T2: paged trading-pair report",
       "Benchmark T3: 20 path searches",
       "Cancel pending automation"
     ])
@@ -731,13 +731,12 @@ class YankeeTrader {
       pane.focused = true
       pane.shadow = true
       var resultPosition = sideResults ? "to the right" : "below the fields"
-      pane.helpText = "# %(title)\n\nAll inputs stay visible so values can " +
-          "be compared and corrected. Word-wrapped results update in the " +
-          "panel %(resultPosition) after every edit; there is no " +
-          "calculation step or result popup to dismiss.\n\n" +
+      pane.helpText = "# %(title)\n\nEdit the inputs and read the current " +
+          "estimate in the Results panel %(resultPosition). Change one value " +
+          "at a time to compare combat, production, or trading scenarios.\n\n" +
           "Tab / Down      next field\n" +
           "BackTab / Up    previous field\n" +
-          "Typing / paste  immediately refreshes results\n" +
+          "Typing / paste  edit a value and refresh the estimate\n" +
           "Enter           select the current number for replacement\n" +
           "Space / Enter   select a target choice\n" +
           "Esc             close the calculator"
@@ -1020,7 +1019,8 @@ class YankeeTrader {
     var labels = sectors.map {|sector| "Sector %(sector)" }.toList
     var selected = 0
     while (true) {
-      var picked = pickWithSelection_(title, mapHelp_, labels, selected)
+      var picked = pickWithSelection_(title,
+          mapSectorListHelp_(title), labels, selected)
       if (picked < 0) return
       selected = picked
       var sector = sectors[picked]
@@ -1043,7 +1043,8 @@ class YankeeTrader {
     }
     var selected = 0
     while (true) {
-      var picked = pickWithSelection_(title, mapHelp_, labels, selected)
+      var picked = pickWithSelection_(title,
+          mapEdgeListHelp_(title), labels, selected)
       if (picked < 0) return
       selected = picked
       var edge = edges[picked]
@@ -1069,7 +1070,7 @@ class YankeeTrader {
     var selected = 0
     while (true) {
       var picked = pickWithSelection_(title,
-          "Select a captured target route containing this map feature.",
+          mapRouteHelp_,
           labels, selected)
       if (picked < 0) return
       selected = picked
@@ -1176,7 +1177,7 @@ class YankeeTrader {
           "scan first.")
       return
     }
-    var source = pick_("Analysis Targets", mapHelp_, [
+    var source = pick_("Analysis Targets", analysisTargetsHelp_, [
       "Coverage/scouting sectors", "Dead-end probe destinations",
       "Long-number-gap destinations", "Possible rift destinations"
     ])
@@ -1266,7 +1267,7 @@ class YankeeTrader {
 
   static avoid_() {
     var slots = YTState.data["profile"]["sectorAvoidSlots"]
-    var picked = pick_("Navigation Avoids", commandActionHelp_, [
+    var picked = pick_("Navigation Avoids", avoidHelp_, [
       "Set avoid sectors",
       "Clear all %(slots) avoid slots"
     ])
@@ -1320,11 +1321,8 @@ class YankeeTrader {
       alert_(title, "No commands were generated.")
       return null
     }
-    var help = "# %(title)\n\n%(description)\n\nTargets/actions: " +
-        "%(itemCount)\nBatches: %(commands.count)\n\nWarning: %(warning)\n\n" +
-        "Run now closes the panel and sends one batch at a time from the Main " +
-        "Command prompt. A harmless Help request marks the end of each batch " +
-        "before the next is sent. Copy is retained as an optional fallback."
+    var help = commandPlanHelp_(title, description, warning, itemCount,
+        commands.count)
     var selected = 0
     while (true) {
       var picked = pickWithSelection_("%(title): Review", help, [
@@ -1350,6 +1348,21 @@ class YankeeTrader {
         alert_(title, "Copied %(commands.count) reviewed command batches.")
       }
     }
+  }
+
+  static commandPlanHelp_(title, description, warning, itemCount, batchCount) {
+    return "# %(title)\n\n%(description)\n\n" +
+        "## Scope\n\nTargets or actions: %(itemCount)\n" +
+        "Monitored batches: %(batchCount)\n\n" +
+        "## In-game impact\n\n%(warning)\n\n" +
+        "## Choices\n\n" +
+        "**Run now from Main Command** checks the current prompt, sends one " +
+        "batch, waits for its completion, and then continues.\n\n" +
+        "**Preview first batch** shows the exact first command string so you " +
+        "can verify the generated sector numbers and answers.\n\n" +
+        "**Copy batches to clipboard** copies one command string per line for " +
+        "manual use or archival.\n\n" +
+        "**Cancel** returns without running or copying the plan."
   }
 
   static commandPreview_(command) {
@@ -1399,7 +1412,7 @@ class YankeeTrader {
     if (sector == null) return
     var kinds = ["dead end", "unused hideout", "dangerous", "revealed",
         "black hole", "Xannor", "mercenary", "enemy", "friendly", "other"]
-    var kind = pick_("Sector Kind", null, kinds)
+    var kind = pick_("Sector Kind", sectorKindHelp_, kinds)
     if (kind < 0) return
     var date = date_("Sector Note", "Date or last visit")
     if (date == null) return
@@ -1456,7 +1469,7 @@ class YankeeTrader {
     var kinds = ["revealed planet", "enemy planet", "friendly planet",
         "Xannor group", "Xannor HQ", "Mercenary Base", "mercenaries",
         "fighter group", "black hole", "top player", "other"]
-    var kind = pick_("Location Kind", null, kinds)
+    var kind = pick_("Location Kind", locationKindHelp_, kinds)
     if (kind < 0) return
     var owner = prompt_("Tracked Location", "Owner or label", "")
     if (owner == null) return
@@ -1475,7 +1488,7 @@ class YankeeTrader {
     var labels = rows.map {|r|
       return "%(r["sector"])  %(r["kind"] == null ? "mapped" : r["kind"])"
     }.toList
-    var picked = pick_("Sector Notes", null, labels)
+    var picked = pick_("Sector Notes", sectorBrowserHelp_, labels)
     if (picked < 0) return
     var r = rows[picked]
     alert_("Sector %(r["sector"])",
@@ -1484,28 +1497,30 @@ class YankeeTrader {
         "Date: %(r["date"])\n%(r["note"])")
   }
 
-  static browsePlanets_() { browseList_("Planets", YTState.data["planets"],
+  static browsePlanets_() { browseList_("Planets", planetBrowserHelp_,
+      YTState.data["planets"],
       Fn.new {|r| "%(r["sector"])  %(r["name"])" }, Fn.new {|r|
         "Sector: %(r["sector"])\nFighters: %(r["fighters"])\n" +
         "Credits: %(r["creditsMillions"]) million\n" +
         "Ground forces: %(r["groundForces"])\nDate: %(r["date"])\n%(r["note"])"
       }) }
 
-  static browsePairs_() { browseList_("Port Pairs", YTState.data["portPairs"],
+  static browsePairs_() { browseList_("Port Pairs", portPairBrowserHelp_,
+      YTState.data["portPairs"],
       Fn.new {|r| "%(r["first"])-%(r["second"])  %(r["profitPerHold"])/hold" },
       Fn.new {|r| "Sectors: %(r["first"])-%(r["second"])\n" +
           "Profit per hold: %(r["profitPerHold"])\n%(r["note"])" }) }
 
   static browseLocations_() { browseList_("Tracked Locations",
-      YTState.data["locations"],
+      locationBrowserHelp_, YTState.data["locations"],
       Fn.new {|r| "%(r["sector"])  %(r["kind"])  %(r["owner"])" },
       Fn.new {|r| "Sector: %(r["sector"])\nType: %(r["kind"])\n" +
           "Owner: %(r["owner"])\nDate: %(r["date"])\n%(r["note"])" }) }
 
-  static browseList_(title, rows, label, detail) {
+  static browseList_(title, helpText, rows, label, detail) {
     if (rows.count == 0) return alert_(title, "No records yet.")
     var labels = rows.map {|r| label.call(r) }.toList
-    var picked = pick_(title, null, labels)
+    var picked = pick_(title, helpText, labels)
     if (picked >= 0) alert_(title, detail.call(rows[picked]))
   }
 
@@ -1552,7 +1567,7 @@ class YankeeTrader {
   static addGame_() {
     var name = prompt_("Add Game", "Game name", "Game %(YTState.games.count + 1)")
     if (name == null) return
-    var version = pick_("Initial Game Type", null,
+    var version = pick_("Initial Game Type", initialGameTypeHelp_,
         presetNames_)
     if (version < 0) return
     reportSave_(YTState.addGame(name, presetVersion_(version)))
@@ -1611,7 +1626,7 @@ class YankeeTrader {
         }
       }
       if (picked == 5) {
-        var version = pick_("Apply Version Defaults", null,
+        var version = pick_("Apply Version Defaults", versionDefaultsHelp_,
             presetNames_)
         if (version >= 0 && confirm_("Apply Version Defaults",
             "Reset this game's feature flags, sector limit, turns, and macro " +
@@ -1950,8 +1965,8 @@ class YankeeTrader {
       ["This game's rules", "%(YTState.activeGameName): sectors 1-%(p["maxSector"]), " +
         "%(p["turnsPerDay"]) turns/day, %(p["maxPlanets"]) planets, " +
         "%(p["maxPorts"]) ports, %(p["sectorAvoidSlots"]) avoid slots, and " +
-        "command repeats up to %(p["macroRepeats"]). Feature flags in Profile " +
-        "and Data override the %(p["version"]) starting preset."],
+        "command repeats up to %(p["macroRepeats"]). Review Games and Settings " +
+        "when this door uses locally modified limits or features."],
       ["Daily play", "Early game: explore, record dead ends and port pairs, " +
         "build planets, and read both newspapers. Late game: protect secrecy, " +
         "cycle productive planets, map with missiles, and plan Xannor turn refills."],
@@ -1972,21 +1987,23 @@ class YankeeTrader {
       ["Mercenaries", "A bribe costs 2.5 credits per fighter. To absorb a huge " +
         "group, exclude its sector and put at least 100 defensive fighters in every " +
         "adjacent sector near the end of the day."],
-      ["Mapping", "Use travel logs or the no-turn C;10 sweep. Native analysis finds " +
-        "direct dead ends, unique coverage candidates, long links, and possible " +
-        "single-entrance rifts, then exports missile/planet/robot scripts."],
+      ["Mapping", "Run a no-turn C;10 sweep from a useful viewpoint, then inspect " +
+        "coverage sectors and the captured routes behind each suggested edge. " +
+        "Travel-and-sensor actions add outgoing warp and port data; missiles or " +
+        "robots can scout selected targets remotely."],
       ["Scanners and spies", "YT 3.2 uses sensor robots. Stock 3.6 removes them, " +
         "adds the 250,000-credit Danger Scanner that stops before hazards, and " +
         "adds up to three 333,000-credit spies that roam and report enemy forces " +
         "or planets. Modified games may enable a different combination."],
-      ["Advanced", "The control panel covers route scanning, adjacent fighter " +
-        "breadcrumbs, Xannor HQ retaliation backtracing support, Mercenary Base safe " +
-        "plasma shots, Group 20 notes, avoid lists, and black-hole missile scripts."],
+      ["Advanced", "Date every revealed location so stale intelligence is obvious. " +
+        "Use captured paths to trace approaches to an Xannor HQ or special sector, " +
+        "mark black holes and hostile forces in navigation avoids, and use the " +
+        "plasma safe-shot calculator before attacking a valuable fixed target."],
       ["Operational caution", "Mines and attacks are random; online multiplayer has " +
         "known stale-location behavior. Missile, plasma, surrender, mercenary, and " +
         "retaliation events can reveal locations. Keep captures and verify outputs."]
     ]
-    var picked = pick_("Strategy Reference", null,
+    var picked = pick_("Strategy Reference", strategyReferenceHelp_,
         topics.map {|t| t[0] }.toList)
     if (picked >= 0) alert_(topics[picked][0], topics[picked][1])
   }
@@ -2502,93 +2519,356 @@ class YankeeTrader {
 
   static enabled_(value) { value ? "on" : "off" }
 
-  static help_ { "# Yankee Trader Control Panel\n\nAlt-Y opens this panel. " +
-      "The first two entries provide quick access to the frequently used " +
-      "route-scan and adjacent-fighter actions. " +
-      "It combines the site's ZOC scripts, spreadsheet calculators, mapping " +
-      "helpers, records, macros, and strategy notes. Each BBS may contain " +
-      "multiple independent Yankee Trader games." }
-  static liveHelp_ { "# Live Tools\n\nLive actions send commands to the connected " +
-      "game. Start them from an untouched Main Command prompt; the cursor line " +
-      "is checked before anything is sent. Use Cancel to stop future scripted " +
-      "sends. Completion and error status appears automatically. YT 3.6 " +
-      "performs pathfinding from disk, so C;10 " +
-      "response time may increase during a large sweep." }
-  static calculatorHelp_ { "# Calculators\n\nFormulas are converted from the " +
-      "Yankee Trader Assistant spreadsheet and the website's damage tables. " +
-      "Each calculator shows every input together and refreshes its result " +
-      "beside the form as values are edited, making repeated what-if " +
-      "calculations immediate." }
-  static universeHelp_ { "# Universe Tools\n\nLive C;10 sweeps and sensor " +
-      "scans are captured and saved automatically. Actions are reviewed in " +
-      "the panel, then either run directly in monitored batches or optionally " +
-      "copied. Start direct actions at Yankee Trader's Main Command prompt. " +
-      "Turn-sensitive runs use short target or movement batches. If the door " +
-      "reports too few turns, the runner stops before sending another step. " +
-      "Cancel stops future batches but cannot retract the current batch. " +
-      "Old external captures are isolated under Legacy and recovery imports." }
-  static legacyImportHelp_ { "# Legacy and Recovery Imports\n\nThese tools are " +
-      "not part of normal live operation. Use them only to recover an old " +
-      "10-scan CSV or a previously captured terminal session. They read the " +
-      "clipboard and merge or replace the active game's saved map analysis." }
-  static commandActionHelp_ { "# In-Game Actions\n\nChoose what Yankee Trader " +
-      "should do with the selected sectors. Before anything is sent, the next " +
-      "screen shows the number of targets and batches, describes turn/resource " +
-      "risk, and offers Run now, Preview, Copy, or Cancel. Direct runs must " +
-      "start at Main Command and can be stopped with Cancel pending automation." }
-  static mapHelp_ { "# Saved C;10 Map\n\nA C;10 sweep records shortest paths " +
-      "from one source sector. It is not a complete adjacency map. An edge " +
-      "`A -> B` means that directed step occurred in a captured path; it does " +
-      "not prove `B -> A` exists.\n\n" +
-      "## Map summary\n\nShows the viewpoint, queried target range, completion " +
-      "state, and response count. Check this first to see whether the sweep " +
-      "covered the intended range or is only a partial checkpoint.\n\n" +
-      "## Direct outgoing warps\n\nDestinations reached from the viewpoint in " +
-      "one jump. These are the exits C;10 exposed directly from the source and " +
-      "are useful for understanding or checking that starting position.\n\n" +
-      "## Coverage/scouting sectors\n\nSectors appearing in exactly one saved " +
-      "shortest path. This is the original 10-scan missile/visit list: scouting " +
-      "these uncommon branches is more useful than repeatedly probing sectors " +
-      "shared by many routes. It is a coverage heuristic, not a claim that the " +
-      "listed sector itself is a dead end.\n\n" +
-      "## Dead-end probe edges\n\nThe final `A -> B` step of a saved route when " +
-      "target B is also a coverage sector. Probe B from A to determine whether " +
-      "it is really a dead end. The sweep alone does not confirm that B has no " +
-      "other outgoing warp.\n\n" +
-      "## Long-number-gap link probes\n\nA path edge whose sector numbers differ " +
-      "by more than 10. The old scanner used this numerical-gap heuristic to " +
-      "find possible entrances to separately numbered branches. It is not " +
-      "distance and does not by itself prove an isolated region.\n\n" +
-      "## Possible rift entrance probes\n\nAn edge whose destination occurs in " +
-      "20 through 119 captured paths. The old scanner treated that frequency " +
-      "as a clue that the edge may lead into an isolated, single-entrance group " +
-      "of roughly that size. Follow-up probing is required; this list is not " +
-      "proof of a rift.\n\n" +
-      "## Find captured path by target sector\n\nOpens the exact saved shortest " +
-      "path from the viewpoint to a queried target. Only targets successfully " +
-      "captured by this sweep are available.\n\n" +
-      "Selecting any listed sector or edge shows the captured target routes " +
-      "that contain it, followed by the full sector sequence and jump count." }
-  static recordsHelp_ { "# Records\n\nPer-BBS notes replace the site's suggested " +
-      "Notepad tabs: planets, dead ends, revealed locations, intelligence, and " +
-      "profitable port pairs. Date fields open a month calendar defaulted to " +
-      "today and save the selection as YYYY-MM-DD." }
-  static macroHelp_ { "# F1-F12 Key Bindings\n\nThese are active key bindings, " +
-      "not menu actions. Close the panel and press a function key at the " +
-      "Yankee Trader Main Command prompt. A binding is rejected without " +
-      "sending anything if the cursor is elsewhere or text has already been " +
-      "entered on the prompt line. The site's /R repeat suffixes are expanded " +
-      "natively using this game's repeat setting." }
-  static dataHelp_ { "# Games and Data\n\nEach game has independent settings, " +
-      "maps, notes, analyses, and benchmarks. Modern and YT 3.2 defaults are " +
-      "starting points; every feature flag and limit can be changed per game. " +
-      "Detect Game Settings reads safe player screens, binary-searches the " +
-      "sector ceiling, and asks you to verify state-dependent values before " +
-      "applying them. Each game uses separate profile, universe, and records " +
-      "WON files in this BBS's SyncTERM cache." }
-  static gameHelp_ { "# Select Game\n\nSwitching changes the settings and records " +
-      "used by every control-panel feature. Any pending live automation is " +
-      "cancelled before the switch." }
+  static help_ { "# Yankee Trader Control Panel\n\n" +
+      "**Travel to a sector and scan the route** asks C;3 for a course, then " +
+      "moves and runs sensors at each sector. Use it when ordinary autopilot " +
+      "would skip useful map data.\n\n" +
+      "**Place fighter breadcrumbs** scans the current sector, visits each " +
+      "adjacent sector, drops one fighter, scans, and returns home.\n\n" +
+      "**Calculators** provides live combat, planet, Xannor, mercenary, and " +
+      "trade estimates using this game's enabled features.\n\n" +
+      "**Universe mapping and actions** opens saved C;10 paths, port reports, " +
+      "mapping target lists, sector-range actions, avoids, and legacy imports.\n\n" +
+      "**Dashboard** summarizes this game's settings, saved records, mapping " +
+      "progress, command progress, and benchmark results.\n\n" +
+      "**Live tools** runs the no-turn C;10 mapper and server benchmarks.\n\n" +
+      "**F1-F12 key bindings** explains the commands available directly from " +
+      "the Yankee Trader Main Command prompt.\n\n" +
+      "**Games and settings** maintains separate profiles and data for every " +
+      "Yankee Trader game on this BBS.\n\n" +
+      "**Strategy reference** organizes the practical game notes by topic.\n\n" +
+      "**Switch game** changes the active profile quickly.\n\n" +
+      "**Records and notes** stores sectors, planets, port pairs, and " +
+      "intelligence for the active game." }
+
+  static liveHelp_ { "# Live Tools\n\nStart these tools at an untouched Yankee " +
+      "Trader Main Command prompt.\n\n" +
+      "**C;10 universe sweep** asks for a viewpoint and target range, runs one " +
+      "zero-turn shortest-path query per target, and saves the resulting path " +
+      "map. A full sweep is best for finding scouting branches and unusual " +
+      "links; a smaller range is useful for testing game speed or filling a " +
+      "partial map.\n\n" +
+      "**Benchmark T1** times three short instruction/sensor command cycles. " +
+      "It reflects general command and screen response speed.\n\n" +
+      "**Benchmark T2** times the paged C;16 trading-pair report, including " +
+      "four page advances.\n\n" +
+      "**Benchmark T3** times twenty C;10 path searches and is the most direct " +
+      "measure of the door's disk-backed pathfinding speed.\n\n" +
+      "**Cancel pending automation** stops the next unsent step of a mapper, " +
+      "benchmark, detector, route scan, or reviewed command plan.\n\n" +
+      "The Dashboard shows current progress and the latest T1, T2, and T3 " +
+      "times for this game." }
+
+  static calculatorHelp_ { "# Calculators\n\n" +
+      "**Plasma damage and safe shot** shows distance-adjusted damage and the " +
+      "largest shot that leaves a chosen defensive or productivity amount.\n\n" +
+      "**Plasma bolts needed** estimates bolts for layered targets and for a " +
+      "player's fighters plus shields.\n\n" +
+      "**Missile damage** shows damage ranges and missiles needed for planet " +
+      "ground forces and productivity.\n\n" +
+      "**Planet daily production** estimates the next day's commodities, " +
+      "fighters, weapons, credits, and ground forces.\n\n" +
+      "**Planet bank estimate** turns a measured 60-second ground-force gain " +
+      "into daily production and an estimated credit bank.\n\n" +
+      "**Productivity investment** estimates credits needed to reach one " +
+      "plasma bolt per day.\n\n" +
+      "**Xannor planning** estimates safe planet forces, a controlled plasma " +
+      "shot, and an expected Xannoron retake force.\n\n" +
+      "**Mercenary bribe and fighter surrender** calculates bribe cost and " +
+      "the surrender outcome for opposing fighter groups.\n\n" +
+      "**Port-pair earnings** converts holds, profit per hold, and round trips " +
+      "into total credits and turns.\n\n" +
+      "Open a calculator and edit any field; its Results pane updates " +
+      "immediately for quick what-if comparisons." }
+
+  static universeHelp_ { "# Universe Mapping and Actions\n\n" +
+      "**View saved C;10 map** explores the latest live or imported path sweep " +
+      "and shows the complete routes behind each suggested sector or edge.\n\n" +
+      "**Scan saved ports** requests a C;2 report for every port found in saved " +
+      "sensor data. Use it to review current prices and port ownership.\n\n" +
+      "**Act on saved C;10 analysis** chooses a map-derived target category, " +
+      "then prepares missile, report, robot, travel, or port-report commands.\n\n" +
+      "**Scan a sector range** prepares the same actions for a numeric range " +
+      "you select.\n\n" +
+      "**Manage navigation avoids** sets or clears the Computer's avoid slots " +
+      "used by routing.\n\n" +
+      "**Surround mercenaries with fighters** visits the supplied adjacent " +
+      "sectors and places defensive fighters after avoiding the center sector.\n\n" +
+      "**Legacy and recovery imports** converts older C;10 CSV data or a saved " +
+      "terminal sensor log into this game's current map data.\n\n" +
+      "**Cancel running command plan** stops later batches of the active " +
+      "Universe or Records action.\n\n" +
+      "Actions that contact the door open a review screen before sending or " +
+      "copying commands." }
+
+  static legacyImportHelp_ { "# Legacy and Recovery Imports\n\n" +
+      "**Import old 10-scan C;10 CSV** reads path rows from the clipboard. You " +
+      "supply the target sector represented by the first row; the importer " +
+      "numbers subsequent rows and saves a browsable C;10 analysis.\n\n" +
+      "**Import sensor/session log** reads copied terminal output, recognizes " +
+      "sensor blocks, and merges their sectors, outgoing warps, and ports into " +
+      "the active game's universe.\n\n" +
+      "Choose the active game before importing so the recovered map is stored " +
+      "with the correct door configuration." }
+
+  static mapHelp_ { "# Saved C;10 Map\n\nA C;10 sweep stores directed shortest " +
+      "paths from one viewpoint to many targets. Each displayed `A -> B` edge " +
+      "is an outgoing step observed in one or more of those paths. Combine " +
+      "these paths with sensor records when you need every local warp.\n\n" +
+      "**Map summary** shows the viewpoint, target range, completed queries, " +
+      "captured paths, and counts for each analysis category.\n\n" +
+      "**Direct outgoing warps** lists the first jump from the viewpoint. Use " +
+      "it to identify the source sector's known exits.\n\n" +
+      "**Coverage/scouting sectors** lists sectors appearing in exactly one " +
+      "captured path. Visiting or firing a missile at these uncommon branches " +
+      "usually adds more knowledge than revisiting shared routes.\n\n" +
+      "**Dead-end probe edges** lists the final step into a coverage target. " +
+      "Travel or probe from A toward B, then inspect B's sensor exits to " +
+      "classify the branch.\n\n" +
+      "**Long-number-gap link probes** lists path steps whose sector numbers " +
+      "differ by more than 10. They are useful leads for connections between " +
+      "separately numbered regions.\n\n" +
+      "**Possible rift entrance probes** lists edges whose destination appears " +
+      "in 20 through 119 captured paths. Repeated use of one entrance can " +
+      "indicate a substantial branch reached through that edge.\n\n" +
+      "**Find captured path by target sector** opens the saved route and jump " +
+      "count for a target you enter.\n\n" +
+      "Selecting a listed feature opens the captured target routes containing " +
+      "it, so every suggestion can be traced back to its path data." }
+
+  static mapSectorListHelp_(title) {
+    var meaning = "These sectors were selected by the current C;10 analysis."
+    if (title == "Direct Outgoing Warps") {
+      meaning = "Each sector is a first jump from the sweep viewpoint."
+    }
+    if (title == "Coverage/Scouting Sectors") {
+      meaning = "Each sector appears in exactly one captured shortest path, " +
+          "making it a strong candidate for focused scouting."
+    }
+    return "# %(title)\n\n%(meaning)\n\nSelect a sector to list every captured " +
+        "target route that contains it. Open a route to see the full ordered " +
+        "sector sequence and decide how to approach or scout the feature."
+  }
+
+  static mapEdgeListHelp_(title) {
+    var meaning = "Each `A -> B` entry is a directed step selected by the " +
+        "current analysis."
+    if (title == "Dead-end Probe Edges") {
+      meaning = "Each `A -> B` is the final step into an uncommon target. " +
+          "Probe B from A and inspect B's outgoing sensor warps."
+    }
+    if (title == "Long-number-gap Link Probes") {
+      meaning = "Each edge joins sector numbers separated by more than 10, a " +
+          "useful lead for links between numbering regions."
+    }
+    if (title == "Possible Rift Entrance Probes") {
+      meaning = "Each destination is shared by 20 through 119 captured paths, " +
+          "making the edge a useful entrance to investigate."
+    }
+    return "# %(title)\n\n%(meaning)\n\nSelect an edge to list the captured " +
+        "target routes containing that exact step. A count in parentheses is " +
+        "the number of captured paths associated with the destination."
+  }
+
+  static mapRouteHelp_ { "# Captured Routes\n\nEach row names the C;10 target " +
+      "and the number of jumps in its saved shortest path. Select a row to see " +
+      "the complete ordered route, including the selected sector or edge. Use " +
+      "the sequence to choose an approach sector, verify direction, or plan a " +
+      "manual scouting run." }
+
+  static analysisTargetsHelp_ { "# Analysis Targets\n\nChoose which C;10 " +
+      "analysis list will supply sectors to the next action menu.\n\n" +
+      "**Coverage/scouting sectors** focuses on uncommon branches that appear " +
+      "in one captured path.\n\n" +
+      "**Dead-end probe destinations** uses the B side of each final probe " +
+      "edge, suitable for travel, sensors, missiles, or reports.\n\n" +
+      "**Long-number-gap destinations** targets the far side of links between " +
+      "different numbering regions.\n\n" +
+      "**Possible rift destinations** targets frequently shared entrance " +
+      "sectors that may lead into a larger branch.\n\n" +
+      "After choosing a list, select the in-game action and review its exact " +
+      "target count and commands." }
+
+  static commandActionHelp_ { "# Action for Selected Sectors\n\n" +
+      "**Launch one missile at each sector** scouts remotely and consumes live " +
+      "missiles; launches may reveal your location or trigger retaliation.\n\n" +
+      "**Request planet reports** uses C;9 to display planet information for " +
+      "the selected sectors.\n\n" +
+      "**Send sensor robots** dispatches one robot per target in games that " +
+      "support them.\n\n" +
+      "**Travel and sensor-scan** follows an autopilot course to each target " +
+      "and records the resulting sensor blocks. It consumes travel turns and " +
+      "can encounter normal route hazards.\n\n" +
+      "**Request port reports** uses C;2 to display port information for each " +
+      "target.\n\n" +
+      "The next screen shows the target and batch counts, in-game impact, exact " +
+      "first command, and choices to run or copy the plan." }
+
+  static avoidHelp_ { "# Navigation Avoids\n\nYankee Trader's Computer excludes " +
+      "avoid sectors when it builds autopilot and missile routes.\n\n" +
+      "**Set avoid sectors** accepts a comma-separated list and replaces the " +
+      "first available avoid slots with those sectors. Use this before routing " +
+      "around a black hole, hostile force, mercenary sector, or exposed base.\n\n" +
+      "**Clear all avoid slots** restores unrestricted routing across all " +
+      "configured slots.\n\n" +
+      "Both choices open a command review before changing the connected game." }
+
+  static recordsHelp_ { "# Records and Notes\n\n" +
+      "**Sector notes** classify a sector and attach a dated free-form note. " +
+      "Saving an existing sector updates its record while retaining captured " +
+      "warp and port data.\n\n" +
+      "**Planet records** store location, name, defenses, banked credits, " +
+      "ground forces, visit date, route, and operational notes.\n\n" +
+      "**Profitable port pairs** store both sectors, profit per cargo hold, and " +
+      "the goods or trading sequence.\n\n" +
+      "**Revealed or special locations** tracks intelligence such as enemy " +
+      "planets, Xannor groups, mercenaries, black holes, and top players.\n\n" +
+      "**Browse** entries open the saved details for the selected record.\n\n" +
+      "**Reconciliation reports** requests the game's current planet and " +
+      "fighter lists so you can compare them with your saved records.\n\n" +
+      "Dates use the month calendar and are stored as year-month-day." }
+
+  static sectorKindHelp_ { "# Sector Kind\n\nChoose the label that will make this " +
+      "sector useful in later browsing. Add specifics such as owner, route, " +
+      "force size, or reason in the note field.\n\n" +
+      "**Dead end** — a branch endpoint or sector with a single useful exit.\n" +
+      "**Unused hideout** — a quiet candidate for a concealed planet or cache.\n" +
+      "**Dangerous** — mines, hostile fighters, ambush risk, or another hazard.\n" +
+      "**Revealed** — a location whose secrecy has been compromised.\n" +
+      "**Black hole** — a known black-hole sector or dangerous approach.\n" +
+      "**Xannor** — an Xannor group, route, or activity site.\n" +
+      "**Mercenary** — a mercenary group, base, or surrounding sector.\n" +
+      "**Enemy / Friendly** — territory or forces associated with a player.\n" +
+      "**Other** — any useful classification covered by your note." }
+
+  static sectorBrowserHelp_ { "# Sector Notes\n\nRows are sorted by sector and " +
+      "show the saved classification. Select one to see its port flag, captured " +
+      "outgoing warps, date, and note. Use these details when planning travel, " +
+      "choosing scouting targets, or revisiting stale intelligence." }
+
+  static planetBrowserHelp_ { "# Planet Records\n\nEach row shows a planet's " +
+      "sector and name. Select one to review defensive fighters, banked credits " +
+      "in millions, ground forces, last-visit or reveal date, route, and notes. " +
+      "Older dates are useful reminders to revisit production planets." }
+
+  static portPairBrowserHelp_ { "# Port Pairs\n\nEach row shows the two sectors " +
+      "and saved profit per cargo hold. Select a pair to review the goods and " +
+      "trading notes. Compare the stored profit with fresh C;2 reports when " +
+      "market conditions or ownership may have changed." }
+
+  static locationKindHelp_ { "# Location Kind\n\nUse tracked locations for dated " +
+      "intelligence tied to a sector and an owner or label.\n\n" +
+      "**Revealed planet** records any planet whose location became public.\n" +
+      "**Enemy / Friendly planet** records allegiance and owner.\n" +
+      "**Xannor group / Xannor HQ** separates roaming forces from the HQ.\n" +
+      "**Mercenary Base / mercenaries** separates the base from roaming groups.\n" +
+      "**Fighter group** records a notable deployed force and its owner.\n" +
+      "**Black hole** records a hazard or route constraint.\n" +
+      "**Top player** records a player location or lead worth following.\n" +
+      "**Other** stores intelligence described by your label and note." }
+
+  static locationBrowserHelp_ { "# Tracked Locations\n\nRows show sector, type, " +
+      "and owner or label. Select one to read its date and intelligence note. " +
+      "Sort your next scouting or retaliation work by comparing the record date " +
+      "with current newspaper, spy, and sensor information." }
+
+  static macroHelp_ { "# F1-F12 Key Bindings\n\nClose the panel and press a " +
+      "function key at an untouched Yankee Trader Main Command prompt. Select " +
+      "a row here to inspect the exact command assigned to that key.\n\n" +
+      "**F1** player ranking.\n" +
+      "**F2 / F3** today's and yesterday's newspapers.\n" +
+      "**F4** scan the current sector, then prompt for movement.\n" +
+      "**F5 / F6 / F7** sell planet equipment, organics, or ore to the port.\n" +
+      "**F8** transfer port cargo to the planet.\n" +
+      "**F9 / F10 / F11** sell a commodity and refill the planet.\n" +
+      "**F12** drop one fighter, scan, and prompt for movement.\n\n" +
+      "The configured macro repeat count controls the repeated cargo cycles." }
+
+  static dataHelp_ { "# Games and Settings\n\n" +
+      "**Switch, add, rename, and delete** maintains one assistant profile for " +
+      "each Yankee Trader game offered by this BBS. Every profile has its own " +
+      "universe map, records, C;10 analysis, and benchmarks.\n\n" +
+      "**Detect game settings** reads Info, Version, Help, and Computer screens, " +
+      "finds the sector ceiling with C;2 queries, and presents every detected or " +
+      "inferred value for review.\n\n" +
+      "**Apply version defaults** loads the documented limits and feature set " +
+      "for stock 3.6, the 3.6G modification, or 3.2 while preserving this " +
+      "game's maps and records.\n\n" +
+      "**Universe size, turns, planet and port limits, avoid slots, and macro " +
+      "repeats** control validation, estimates, and generated commands.\n\n" +
+      "**Feature switches** keep the menus and calculators aligned with the " +
+      "door's missiles, plasma, Xannor, mercenaries, robots, scanner, and spies.\n\n" +
+      "**Copy all BBS games as WON** creates a portable text backup on the " +
+      "clipboard. **Replace all BBS games** restores such a backup after " +
+      "showing a confirmation." }
+
+  static gameHelp_ { "# Select Game\n\nChoose the Yankee Trader game currently " +
+      "open in the terminal. The selected profile supplies sector limits, " +
+      "feature availability, maps, notes, analyses, and benchmarks throughout " +
+      "the control panel. Switching also stops pending automation so its next " +
+      "command cannot be sent under the wrong game's settings." }
+
+  static initialGameTypeHelp_ { "# Initial Game Type\n\nChoose the closest ruleset " +
+      "for the new game. You can run Detect Game Settings or edit individual " +
+      "values afterward.\n\n" +
+      "**Stock YT 3.6** starts with 3,000 sectors, missiles, plasma, Danger " +
+      "Scanner, and spies.\n\n" +
+      "**YT 3.6G mod** starts with 2,004 sectors, plasma, Danger Scanner, and " +
+      "spies, with missiles disabled.\n\n" +
+      "**YT 3.2** starts with 1,000 sectors, missiles and sensor robots, and " +
+      "the earlier planet and port limits." }
+
+  static versionDefaultsHelp_ { "# Apply Version Defaults\n\nSelect the ruleset " +
+      "whose documented limits and features should replace the active game's " +
+      "profile settings. The confirmation lists the scope before applying it.\n\n" +
+      "**Stock YT 3.6** — 3,000 sectors and the modern feature set.\n" +
+      "**YT 3.6G mod** — 2,004 sectors, plasma and modern scanners, no missiles.\n" +
+      "**YT 3.2** — 1,000 sectors, sensor robots, and classic limits.\n\n" +
+      "Use this to establish a clean baseline, then Detect Game Settings or " +
+      "edit values for a locally modified door." }
+
+  static strategyReferenceHelp_ { "# Strategy Reference\n\n" +
+      "**This game's rules** summarizes the active profile and enabled features.\n" +
+      "**Daily play** gives an early- and late-game routine.\n" +
+      "**Money and ports** covers profitable pairs and port intelligence.\n" +
+      "**Planets** covers placement, secrecy, production, and defenses.\n" +
+      "**Warfare** summarizes plasma and missile effects.\n" +
+      "**Xannor** covers planet defense, controlled kills, and turn recovery.\n" +
+      "**Mercenaries** covers bribes and surrounding a group safely.\n" +
+      "**Mapping** explains route, sensor, and C;10 scouting work.\n" +
+      "**Scanners and spies** compares information tools by game version.\n" +
+      "**Advanced** collects retaliation, special-location, and avoid-list ideas.\n" +
+      "**Operational caution** reviews actions that expose a location or depend " +
+      "on random combat outcomes.\n\nSelect a topic to open its practical notes." }
+
+  static menuHelpCatalog_ { [
+    help_,
+    liveHelp_,
+    calculatorHelp_,
+    universeHelp_,
+    legacyImportHelp_,
+    mapHelp_,
+    mapSectorListHelp_("Coverage/Scouting Sectors"),
+    mapEdgeListHelp_("Dead-end Probe Edges"),
+    mapRouteHelp_,
+    analysisTargetsHelp_,
+    commandActionHelp_,
+    avoidHelp_,
+    commandPlanHelp_("Test Plan", "Test description.", "Test impact.", 2, 1),
+    recordsHelp_,
+    sectorKindHelp_,
+    sectorBrowserHelp_,
+    planetBrowserHelp_,
+    portPairBrowserHelp_,
+    locationKindHelp_,
+    locationBrowserHelp_,
+    macroHelp_,
+    dataHelp_,
+    gameHelp_,
+    initialGameTypeHelp_,
+    versionDefaultsHelp_,
+    strategyReferenceHelp_
+  ] }
 }
 
 YankeeTrader.initialize_()

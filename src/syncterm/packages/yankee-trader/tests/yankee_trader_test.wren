@@ -63,6 +63,17 @@ class YankeeTraderTest {
         "live send guard can read the host cursor line")
     // State-machine tests invoke entry points without a connected door prompt.
     YankeeTrader.promptChecks = false
+    var menuHelps = YankeeTrader.menuHelpCatalog_
+    var usefulHelp = menuHelps.count == 26
+    for (help in menuHelps) {
+      if (!(help is String) || !help.startsWith("# ") || help.count < 120 ||
+          help.contains("does not") || help.contains("not part of") ||
+          help.contains("harmless") || help.contains("fallback")) {
+        usefulHelp = false
+      }
+    }
+    check_(usefulHelp,
+        "every Yankee Trader picker menu has substantial task-focused help")
 
     check_(YTCalc.plasmaPercent(1) == 100, "plasma first sector")
     var defaults = YTState.defaultData
