@@ -7,7 +7,7 @@
  * all of it through the real parser. The evdev physical-key path still
  * needs its own fresh process (see test_termgfx_termio_input_evdev.c): once kitty is
  * enabled here, termgfx's "evdev wins" guard would refuse to also enable
- * evdev in the same g_km. cc'd (with -DSST_TEST) + run by unit_termgfx_termio.sh. */
+ * evdev in the same g_km. cc'd (with -DTERMGFX_TEST) + run by unit_termgfx_termio.sh. */
 #include <assert.h>
 #include <string.h>
 #include "termgfx_termio.h"

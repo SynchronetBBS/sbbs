@@ -29,7 +29,7 @@
  * headroom at ~32700, both far outside the asserted band. Unsatisfiable unless
  * the ini value displaced the default AND the scaling actually ran.
  *
- * Needs a real syncscumm.ini in CWD; unit_termgfx_termio.sh runs this binary from a
+ * Needs a real termgfx_test.ini in CWD; unit_termgfx_termio.sh runs this binary from a
  * temp directory seeded with the key. Its own binary because termgfx_termio keeps
  * file-static session state with no reset. cc'd + run by unit_termgfx_termio.sh.
  */
@@ -132,6 +132,9 @@ int main(void)
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
+	/* Pin the name the ini file is looked up under: this binary is a
+	 * test, not a door, so argv[0] is no basis for one. */
+	termgfx_termio_set_app_name("termgfx_test");
 	assert(termgfx_termio_init(2, argv) == 1);
 	assert(termgfx_termio_active() == 1);
 	termgfx_termio_flush();

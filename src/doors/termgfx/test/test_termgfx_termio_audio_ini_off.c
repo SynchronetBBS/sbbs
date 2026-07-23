@@ -1,7 +1,7 @@
 /* test_termgfx_termio_audio_ini_off.c -- the sysop "[audio] enabled = false" key
  * produces ZERO audio bytes AND reports "no audio this session", on a
  * terminal that CAN play them -- and, just as importantly, does that
- * WITHOUT re-reading syncscumm.ini on every PCM block for the rest of the
+ * WITHOUT re-reading termgfx_test.ini on every PCM block for the rest of the
  * session.
  *
  * The distinction that makes this test worth its own binary: the tone-only
@@ -15,7 +15,7 @@
  *
  * The re-read regression this also guards: termgfx_termio_audio_stream() used to
  * retry audio_stream_open() (and therefore audio_read_ini() -> fopen() +
- * iniReadFile() + strListFree() of syncscumm.ini) every single time it was
+ * iniReadFile() + strListFree() of termgfx_test.ini) every single time it was
  * called with g_stream still NULL -- which, with audio disabled,
  * termgfx_stream_create() is guaranteed to keep returning, so g_stream never
  * latches and NOTHING ever stops the retries. The real caller is this door's
@@ -26,13 +26,13 @@
  * chased before as "slow disk access" and found to be an open/close storm.
  * A single PCM block (the pre-fix version of this test) cannot see that --
  * one call looks identical whether the fix bails before the retry or after
- * it. Feeding MANY blocks and counting fopen("...syncscumm.ini") calls
+ * it. Feeding MANY blocks and counting fopen("...termgfx_test.ini") calls
  * across all of them is what actually distinguishes "opened once, ever"
  * from "opened once per block".
  *
  * Made observable via a link-time --wrap of fopen() (see unit_termgfx_termio.sh's
  * build line for this binary): __wrap_fopen() counts every open whose path
- * contains "syncscumm.ini" and forwards to the real fopen() via
+ * contains "termgfx_test.ini" and forwards to the real fopen() via
  * __real_fopen(), so termgfx_termio.c's behavior (including the two real ini reads
  * it does -- termgfx_read_ini() at init, audio_read_ini() from the stream-open
  * path) is otherwise completely unchanged. This was chosen over deleting or
@@ -42,7 +42,7 @@
  * same guaranteed-NULL stream, so that approach cannot tell a fixed build
  * from a broken one. Counting the actual calls can.
  *
- * Like test_termgfx_termio_sixelmax_override.c, this one needs a real syncscumm.ini
+ * Like test_termgfx_termio_sixelmax_override.c, this one needs a real termgfx_test.ini
  * in CWD when the door reads it, so unit_termgfx_termio.sh runs this binary from a
  * dedicated temp directory seeded with the key rather than from $HERE/$DOOR.
  *
@@ -59,7 +59,7 @@
 #include <unistd.h>
 
 /* --wrap=fopen (unit_termgfx_termio.sh, this binary only): every fopen() call in
- * termgfx_termio.c is redirected here. Only "syncscumm.ini" opens are counted --
+ * termgfx_termio.c is redirected here. Only "termgfx_test.ini" opens are counted --
  * the door also fopen()s a trace/tee/capture path off an env var elsewhere,
  * and those are not what this test is about. */
 extern FILE *__real_fopen(const char *path, const char *mode);
@@ -68,7 +68,7 @@ static int g_ini_fopen_calls = 0;
 
 FILE *__wrap_fopen(const char *path, const char *mode)
 {
-	if (path != NULL && strstr(path, "syncscumm.ini") != NULL)
+	if (path != NULL && strstr(path, "termgfx_test.ini") != NULL)
 		g_ini_fopen_calls++;
 	return __real_fopen(path, mode);
 }
@@ -109,12 +109,15 @@ int main(void)
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
+	/* Pin the name the ini file is looked up under: this binary is a
+	 * test, not a door, so argv[0] is no basis for one. */
+	termgfx_termio_set_app_name("termgfx_test");
 	assert(termgfx_termio_init(2, argv) == 1);
 	assert(termgfx_termio_active() == 1);
 	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);
 
-	/* termgfx_termio_init() -> termgfx_read_ini() opens syncscumm.ini exactly once, to
+	/* termgfx_termio_init() -> termgfx_read_ini() opens termgfx_test.ini exactly once, to
 	 * latch g_sixel_max_override and g_audio_enabled. That is the ONE
 	 * legitimate read before any PCM has flowed; everything from here on
 	 * is measured as a delta off this baseline. */
@@ -190,7 +193,7 @@ int main(void)
 		assert(strstr(out, "A;") == NULL);
 
 		/* THE regression assertion: 50 blocks fed to a permanently-disabled
-		 * stream must not have opened syncscumm.ini even once more than the
+		 * stream must not have opened termgfx_test.ini even once more than the
 		 * single init-time read above. Pre-fix, each of the 50 calls above
 		 * hit g_stream == NULL, retried audio_stream_open(), and therefore
 		 * audio_read_ini()'s fopen() -- so this would read 51, not 1. */

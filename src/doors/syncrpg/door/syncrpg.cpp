@@ -42,6 +42,11 @@ extern "C" {
 
 int main(int argc, char **argv)
 {
+	// Pin the door name termgfx derives its syncrpg.ini, its <DOOR>_* env-vars
+	// and its diagnostic paths from, rather than letting it fall back to
+	// argv[0]'s basename -- the sysop's ini keeps working if the binary is
+	// renamed.
+	termgfx_termio_set_app_name("syncrpg");
 	termgfx_termio_init(argc, argv);
 	atexit(termgfx_termio_shutdown);
 

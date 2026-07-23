@@ -6,6 +6,7 @@
  * parser: door_io.c's door_csi_final()/door_io_pump(), ~3016-3316), trimmed
  * to what this task needs -- no audio, no mouse, no kitty/evdev key modes
  * (M3's job), no pace-ring wiring (Task 4's job). */
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,9 +54,9 @@
 #include "audio_mgr.h"
 /* xpdev: iniReadFile()/iniGetInteger() for the sysop sixel_max override
  * (termgfx_read_ini(), below) and the [audio] tuning keys (audio_read_ini()) --
- * door/syncscumm.cpp already reads the same syncscumm.ini this way for
- * "subtitles"; this is the identical house pattern, just in the pure-C
- * session layer instead of the C++ ConfMan glue. Also pulls in genwrap.h's
+ * a door's own C++ glue already reads the same <door>.ini this way (e.g.
+ * door/syncscumm.cpp, for "subtitles"); this is the identical house pattern,
+ * just in the pure-C session layer instead of the C++ ConfMan glue. Also pulls in genwrap.h's
  * stricmp()/strnicmp(), used by the XTVERSION reply match in parse_bytes().
  *
  * No include-ORDER constraint here, unlike door/syncscumm.cpp:13-18, where
@@ -77,9 +78,10 @@
  * original TERMGFX_* spellings, so they are re-declared here, internal to this
  * file, with their EXACT former values -- a pure relocation, no value change.
  *
- * FOLLOW-UP (known, do NOT fix here): the audio defaults are hardcoded here and
- * the diagnostics further down keep syncscumm's SYNCSCUMM_* env-var/path names
- * verbatim; parameterizing those for the generic module is a later task. */
+ * The door-specific half of that -- the ini filename, the env-var prefix and
+ * the diagnostic paths -- is no longer hardcoded: it derives from the door's
+ * own name (see g_app / termgfx_termio_set_app_name() below). The audio
+ * defaults above are still fixed values every door shares. */
 #define TERMGFX_FB_W TERMGFX_TERMIO_FB_W   /* 320 -- shared value, single source */
 #define TERMGFX_FB_H TERMGFX_TERMIO_FB_H   /* 200 -- shared value, single source */
 #define TERMGFX_AUDIO_RATE       24000     /* mixer/stream rate (see the doc comment
@@ -87,6 +89,97 @@
 #define TERMGFX_CHUNK_MS         250       /* per-shipped-chunk audio, ms */
 #define TERMGFX_PREBUFFER_CHUNKS 3         /* chunks held before playback starts */
 #define TERMGFX_AUDIO_HEADROOM   70        /* pre-encode PCM scale, percent (~-3 dB) */
+
+/* The door's short name. This module has no business knowing WHICH door it is
+ * driving, but each door still needs its own sysop settings file, its own
+ * diagnostic env-vars and its own directory under the BBS data dir -- so all
+ * three derive from this one string instead of being hardcoded:
+ *
+ *   settings     <name>.ini                       (sixel_max, [audio])
+ *   env-vars     <NAME>_SOCK / _SIXELOUT / _AUDIODUMP / _TRACE
+ *   diagnostics  <data-dir>/<name>/{stderr,trace,wirecap} touch-files, the
+ *                dev fallback ./<name>-<what>, and /tmp/<name>.<pid>.<what>
+ *
+ * Defaults to argv[0]'s basename minus any .exe -- which is exactly the
+ * "syncscumm" these were hardcoded to for that door, and the right name for
+ * every other one. A door whose binary name is not its door name (and a unit
+ * test, whose binary name is not a door name at all) calls
+ * termgfx_termio_set_app_name() before termgfx_termio_init(). */
+static char g_app[24];
+
+void termgfx_termio_set_app_name(const char *name)
+{
+	size_t i = 0;
+
+	g_app[0] = '\0';
+	if (name == NULL)
+		return;
+	/* One name has to survive as both a filename component and an env-var
+	 * name, so keep it to the character set both can carry; a path- or
+	 * shell-significant byte ends it rather than escaping into either. */
+	while (i + 1 < sizeof g_app && name[i] != '\0'
+	       && (isalnum((unsigned char)name[i]) || name[i] == '_' || name[i] == '-')) {
+		g_app[i] = name[i];
+		i++;
+	}
+	g_app[i] = '\0';
+}
+
+/* The door's name, or "termgfx" if nothing has set one yet. */
+static const char *app_name(void)
+{
+	return g_app[0] != '\0' ? g_app : "termgfx";
+}
+
+/* Derive the name from argv[0] unless the door set one explicitly. */
+static void app_name_from_argv0(const char *argv0)
+{
+	const char *base, *p;
+	char        buf[sizeof g_app];
+	size_t      n;
+
+	if (g_app[0] != '\0' || argv0 == NULL || *argv0 == '\0')
+		return;
+	base = argv0;
+	for (p = argv0; *p != '\0'; p++)
+		if (*p == '/' || *p == '\\')
+			base = p + 1;
+	n = strlen(base);
+	if (n > 4 && base[n - 4] == '.'
+	    && tolower((unsigned char)base[n - 3]) == 'e'
+	    && tolower((unsigned char)base[n - 2]) == 'x'
+	    && tolower((unsigned char)base[n - 1]) == 'e')
+		n -= 4;                                  /* syncscumm.exe -> syncscumm */
+	if (n >= sizeof buf)
+		n = sizeof buf - 1;
+	memcpy(buf, base, n);
+	buf[n] = '\0';
+	termgfx_termio_set_app_name(buf);
+}
+
+/* "<APPNAME>_<suffix>" -- e.g. SYNCSCUMM_TRACE. Returns a static buffer: one
+ * live result at a time, which is all any caller below needs. */
+static const char *app_env(const char *suffix)
+{
+	static char buf[sizeof g_app + 24];
+	const char *name = app_name();
+	size_t      i;
+
+	for (i = 0; i + 1 < sizeof buf && name[i] != '\0'; i++)
+		buf[i] = (char)toupper((unsigned char)name[i]);
+	snprintf(buf + i, sizeof buf - i, "_%s", suffix);
+	return buf;
+}
+
+/* "<name>.ini" -- the sysop's per-door settings file, read from the door's
+ * launch directory. Static buffer, same one-at-a-time rule as app_env(). */
+static const char *app_ini(void)
+{
+	static char buf[sizeof g_app + 8];
+
+	snprintf(buf, sizeof buf, "%s.ini", app_name());
+	return buf;
+}
 
 static int g_fd = -1, g_fd_in = -1;      /* -1 = headless (no session) */
 static int g_active;
@@ -137,7 +230,7 @@ static int g_canvas_exact;   /* set once the ESC[4;h;wt pixel report lands */
  *      shows a (slightly undersized) picture beats a right-looking one that
  *      shows nothing. */
 static int g_gfx_max_w, g_gfx_max_h;
-/* Sysop override, syncscumm.ini's "sixel_max" key (termgfx_read_ini()): 0 = no
+/* Sysop override, <door>.ini's "sixel_max" key (termgfx_read_ini()): 0 = no
  * override (the default), else the pixel ceiling applied to BOTH axes,
  * ahead of every other source above. */
 static int g_sixel_max_override;
@@ -151,7 +244,7 @@ static int g_sixel_max_override;
 static int g_is_xterm;
 static int g_term_rows, g_term_cols;   /* from the 999;999 CPR (real grid size) */
 static int g_cell_w, g_cell_h;         /* from ESC[16t (real cell pixels), 0=unknown */
-static FILE *g_capture;                  /* SYNCSCUMM_SIXELOUT mode */
+static FILE *g_capture;                  /* <DOOR>_SIXELOUT mode */
 
 /* SGR-Pixels (DEC 1016) latch: 0 = report coords are 1-based text CELLS
  * (the common case), 1 = 1-based canvas PIXELS -- confirmed by the DECRPM
@@ -182,10 +275,11 @@ static termgfx_keymode_t g_km;
  * file useless for the question it was added to answer, which is whether a
  * defect is in the mix or in our path.
  *
- * Gated on the SYNCSCUMM_AUDIODUMP=<path> env var, off by default: unset, this
+ * Gated on the <DOOR>_AUDIODUMP=<path> env var (the door's own name, upper-
+ * cased -- SYNCSCUMM_AUDIODUMP for syncscumm), off by default: unset, this
  * stays NULL and the tap in termgfx_termio_audio_stream() is a single NULL test on a
  * path that already runs tens of times a second. A dev/test tool only -- like
- * SYNCSCUMM_DUMP (door/video_dump.cpp) and SYNCSCUMM_SIXELOUT (resolve_fd(),
+ * <DOOR>_DUMP (door/video_dump.cpp) and <DOOR>_SIXELOUT (resolve_fd(),
  * below), an env var does NOT survive a real door launch, because the BBS
  * execvp()s the door with no shell; the touch-file gates g_trace/g_tee use
  * exist for exactly that reason. This one is deliberately env-only: it is for
@@ -215,14 +309,14 @@ static void audio_free_scratch(void);
  * last-line file. Gated behind EITHER an env var OR a touch-file, with the env
  * var taking precedence:
  *
- * 1. SYNCSCUMM_TRACE=<path> env var (for test scripts): open the specified
+ * 1. <DOOR>_TRACE=<path> env var (for test scripts): open the specified
  *    absolute path directly.
  * 2. Touch-file gate (for BBS-launched doors -- env vars don't survive execvp):
  *    enabled only when the operator creates the touch-file <data-dir>/
- *    syncscumm/trace (SBBSDATA -- see xtrn/CLAUDE.md's env-var table -- for a
+ *    <door>/trace (SBBSDATA -- see xtrn/CLAUDE.md's env-var table -- for a
  *    real door launch; a dev/standalone run with no SBBSDATA falls back to a
- *    relative ./syncscumm-trace in the cwd). When enabled, opens
- *    /tmp/syncscumm.<pid>.trace (the pid keeps two nodes' traces from
+ *    relative ./<door>-trace in the cwd). When enabled, opens
+ *    /tmp/<door>.<pid>.trace (the pid keeps two nodes' traces from
  *    colliding). Disabled by default: no file is opened and termgfx_trace() pays
  *    nothing for it.
  *
@@ -238,12 +332,12 @@ static FILE *g_trace;
  * Gated behind a touch-file, not an env var: the BBS execs the door via
  * execvp with no shell, so an env var set before launch does not survive
  * into the process. Enabled only when the operator creates the touch-file
- * <data-dir>/syncscumm/wirecap (SBBSDATA -- see xtrn/CLAUDE.md's env-var
+ * <data-dir>/<door>/wirecap (SBBSDATA -- see xtrn/CLAUDE.md's env-var
  * table -- for a real door launch; a dev/standalone run with no SBBSDATA
- * falls back to a relative ./syncscumm-wirecap in the cwd). Disabled by
+ * falls back to a relative ./<door>-wirecap in the cwd). Disabled by
  * default: no file is opened and out_put()/flush() pay nothing for it.
  *
- * When enabled, opens /tmp/syncscumm.<pid>.raw (the pid keeps two nodes'
+ * When enabled, opens /tmp/<door>.<pid>.raw (the pid keeps two nodes'
  * captures from colliding) FULLY buffered (256KB), not unbuffered: a
  * palette-storm frame can be 0.5-1.5MB, and an earlier always-on+unbuffered
  * version of this tee turned every present() into a synchronous disk write
@@ -599,8 +693,8 @@ int termgfx_termio_consumed(int idx)
 
 /* --- fd resolution (door_io.c:1297-1364 pattern, simplified) --------------
  * Activation order: -s<fd> / a DOOR32.SYS argv (its socket, or -- comm type
- * 0, a stdio door -- default fd 1/0) / SYNCSCUMM_SOCK env; else
- * SYNCSCUMM_SIXELOUT capture; else a real tty on stdout; else headless. */
+ * 0, a stdio door -- default fd 1/0) / <DOOR>_SOCK env; else
+ * <DOOR>_SIXELOUT capture; else a real tty on stdout; else headless. */
 static int resolve_fd(int argc, char **argv)
 {
 	int i, door32_seen = 0, cli_sock = -1;
@@ -621,7 +715,7 @@ static int resolve_fd(int argc, char **argv)
 			 * fd 1/0 default below -- door32_seen alone still activates. */
 		}
 	}
-	if (cli_sock < 0 && (e = getenv("SYNCSCUMM_SOCK")) != NULL)
+	if (cli_sock < 0 && (e = getenv(app_env("SOCK"))) != NULL)
 		cli_sock = atoi(e);
 
 	/* Bring up the socket layer (WSAStartup on Windows; ignore SIGPIPE on
@@ -633,11 +727,11 @@ static int resolve_fd(int argc, char **argv)
 	} else if (door32_seen) {
 		g_fd = 1;
 		g_fd_in = 0;                     /* stdio door: BBS redirected our stdio */
-	} else if ((e = getenv("SYNCSCUMM_SIXELOUT")) != NULL) {
+	} else if ((e = getenv(app_env("SIXELOUT"))) != NULL) {
 		g_capture = fopen(e, "wb");
 		if (g_capture == NULL)
-			fprintf(stderr, "termgfx_termio: SYNCSCUMM_SIXELOUT=%s: %s (falling back to "
-			        "headless)\n", e, strerror(errno));
+			fprintf(stderr, "termgfx_termio: %s=%s: %s (falling back to "
+			        "headless)\n", app_env("SIXELOUT"), e, strerror(errno));
 		return g_capture != NULL;        /* capture mode: no input fd at all */
 	} else if (termgfx_plat_isatty(1)) {
 		g_fd = 1;
@@ -1062,7 +1156,7 @@ static int g_opus_seen;         /* the Opus reply actually landed (vs. the
                                  * acc_shrink()'s guard, which must not drop
                                  * a tail the Opus parser still needs */
 
-/* Sysop sound switch, syncscumm.ini's "[audio] enabled" key. THE one copy of
+/* Sysop sound switch, <door>.ini's "[audio] enabled" key. THE one copy of
  * that key in this file: read once, at init (termgfx_read_ini(), below), and read
  * back by both places that care -- termgfx_termio_audio_available() right below, and
  * audio_stream_open()'s cfg.enabled. Deliberately NOT two reads of the same
@@ -1313,18 +1407,18 @@ static void parse_bytes(const uint8_t *buf, int n)
 	}
 }
 
-/* Sysop sixel_max override: syncscumm.ini's root-section "sixel_max" key, an
+/* Sysop sixel_max override: <door>.ini's root-section "sixel_max" key, an
  * integer pixel ceiling applied to BOTH axes (0/absent -- the default -- means
  * no override, see g_sixel_max_override's doc comment above). Read relative
  * to CWD, the door's launch dir -- the same file, same relative fopen(), and
  * same point in the startup sequence (called from termgfx_termio_init(), itself the
- * very first thing main() does -- door/syncscumm.cpp) as door/syncscumm.cpp's
+ * very first thing main() does -- e.g. door/syncscumm.cpp) as that door's
  * resolveSubtitles() reads its own "subtitles" key from, so no chdir has run
  * between the two reads. A missing file or missing key is not an error --
  * iniGetInteger()'s default (0) is exactly "no override". */
 static void termgfx_read_ini(void)
 {
-	FILE *f = fopen("syncscumm.ini", "r");
+	FILE *f = fopen(app_ini(), "r");
 	str_list_t ini;
 
 	if (f == NULL)
@@ -1349,17 +1443,19 @@ static void termgfx_read_ini(void)
 
 int termgfx_termio_init(int argc, char **argv)
 {
+	app_name_from_argv0(argc > 0 ? argv[0] : NULL);
+
 	/* Before resolve_fd()'s headless early-return below, deliberately: the
 	 * mixer produces PCM whether or not a terminal is listening, and the only
 	 * caller that wants this file is a headless test run. See g_audiodump. */
 	{
-		const char *ap = getenv("SYNCSCUMM_AUDIODUMP");
+		const char *ap = getenv(app_env("AUDIODUMP"));
 
 		if (ap != NULL && *ap != '\0') {
 			g_audiodump = fopen(ap, "wb");
 			if (g_audiodump == NULL)
-				fprintf(stderr, "termgfx_termio: SYNCSCUMM_AUDIODUMP=%s: %s (no audio "
-				        "dump)\n", ap, strerror(errno));
+				fprintf(stderr, "termgfx_termio: %s=%s: %s (no audio "
+				        "dump)\n", app_env("AUDIODUMP"), ap, strerror(errno));
 		}
 	}
 
@@ -1367,8 +1463,8 @@ int termgfx_termio_init(int argc, char **argv)
 	 * process's stderr is dead, so ScummVM's own diagnostics -- including a
 	 * fatal error() an engine prints just before it aborts -- go nowhere.
 	 * Touch-file gated like the trace/wirecap gates below: create the file
-	 * <data-dir>/syncscumm/stderr (SBBSDATA for a real door; dev/standalone
-	 * fallback ./syncscumm-stderr) to redirect stderr to a durable file.
+	 * <data-dir>/<door>/stderr (SBBSDATA for a real door; dev/standalone
+	 * fallback ./<door>-stderr) to redirect stderr to a durable file.
 	 * Placed before resolve_fd()'s headless early-return so it also covers a
 	 * boot test. termgfx_plat_redirect_stderr() keeps the platform #ifdef out of
 	 * this file (see termgfx_plat.h). */
@@ -1377,14 +1473,14 @@ int termgfx_termio_init(int argc, char **argv)
 		char        touch[512];
 
 		if (data_dir != NULL && *data_dir != '\0')
-			snprintf(touch, sizeof touch, "%s/syncscumm/stderr", data_dir);
+			snprintf(touch, sizeof touch, "%s/%s/stderr", data_dir, app_name());
 		else
-			snprintf(touch, sizeof touch, "./syncscumm-stderr");   /* dev/standalone fallback */
+			snprintf(touch, sizeof touch, "./%s-stderr", app_name());   /* dev/standalone */
 
 		if (termgfx_plat_file_exists(touch)) {
 			char path[64];
 
-			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.stderr", termgfx_plat_getpid());
+			snprintf(path, sizeof path, "/tmp/%s.%ld.stderr", app_name(), termgfx_plat_getpid());
 			termgfx_plat_redirect_stderr(path);
 		}
 	}
@@ -1397,7 +1493,7 @@ int termgfx_termio_init(int argc, char **argv)
 
 	/* Env-var gate (test scripts): explicit path takes precedence. */
 	{
-		const char *tp = getenv("SYNCSCUMM_TRACE");
+		const char *tp = getenv(app_env("TRACE"));
 		if (tp != NULL && *tp != '\0') {
 			g_trace = fopen(tp, "w");
 			if (g_trace != NULL)
@@ -1406,22 +1502,22 @@ int termgfx_termio_init(int argc, char **argv)
 	}
 
 	/* Touch-file gate (BBS-launched doors): env vars don't survive execvp.
-	 * Enabled when the operator creates the touch-file <data-dir>/syncscumm/
-	 * trace (SBBSDATA for a real door; dev/standalone fallback ./syncscumm-
+	 * Enabled when the operator creates the touch-file <data-dir>/<door>/
+	 * trace (SBBSDATA for a real door; dev/standalone fallback ./<door>-
 	 * trace). Env var above takes precedence if both are set. */
 	if (g_trace == NULL) {
 		const char *data_dir = getenv("SBBSDATA");
 		char        touch[512];
 
 		if (data_dir != NULL && *data_dir != '\0')
-			snprintf(touch, sizeof touch, "%s/syncscumm/trace", data_dir);
+			snprintf(touch, sizeof touch, "%s/%s/trace", data_dir, app_name());
 		else
-			snprintf(touch, sizeof touch, "./syncscumm-trace");   /* dev/standalone fallback */
+			snprintf(touch, sizeof touch, "./%s-trace", app_name());   /* dev/standalone */
 
 		if (termgfx_plat_file_exists(touch)) {
 			char path[64];
 
-			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.trace", termgfx_plat_getpid());
+			snprintf(path, sizeof path, "/tmp/%s.%ld.trace", app_name(), termgfx_plat_getpid());
 			g_trace = fopen(path, "w");
 			if (g_trace != NULL)
 				setvbuf(g_trace, NULL, _IOLBF, 0);   /* line-buffered */
@@ -1438,14 +1534,14 @@ int termgfx_termio_init(int argc, char **argv)
 		char        touch[512];
 
 		if (data_dir != NULL && *data_dir != '\0')
-			snprintf(touch, sizeof touch, "%s/syncscumm/wirecap", data_dir);
+			snprintf(touch, sizeof touch, "%s/%s/wirecap", data_dir, app_name());
 		else
-			snprintf(touch, sizeof touch, "./syncscumm-wirecap");   /* dev/standalone fallback */
+			snprintf(touch, sizeof touch, "./%s-wirecap", app_name());   /* dev/standalone */
 
 		if (termgfx_plat_file_exists(touch)) {
 			char path[64];
 
-			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.raw", termgfx_plat_getpid());
+			snprintf(path, sizeof path, "/tmp/%s.%ld.raw", app_name(), termgfx_plat_getpid());
 			g_tee = fopen(path, "wb");
 			if (g_tee != NULL)
 				setvbuf(g_tee, NULL, _IOFBF, 1 << 18);   /* 256KB, fully buffered */
@@ -1753,7 +1849,7 @@ static int termgfx_isdir(const char *p)
 
 /* Talkie/Floppy data-set selection (M5): see the doc comment in termgfx_termio.h. A
  * pure directory-stat helper -- no session state -- so it is unit-tested
- * standalone (test/test_sst_datadir.c) without a socket. */
+ * standalone (test/test_termgfx_termio_datadir.c) without a socket. */
 const char *termgfx_select_datadir(const char *base, int audio, char *buf, size_t bufsz)
 {
 	const char *first  = audio ? "talkie" : "floppy";
@@ -1775,7 +1871,7 @@ const char *termgfx_select_datadir(const char *base, int audio, char *buf, size_
 			why = "fallback-base";
 		}
 	}
-	/* Diagnostic (SYNCSCUMM_TRACE only): which build this session got and the
+	/* Diagnostic (<DOOR>_TRACE only): which build this session got and the
 	 * audio determination that drove it -- so a "no speech" report can be told
 	 * apart (Floppy picked = audio probe said no vs. Talkie picked = a speech
 	 * config/engine issue) from a node trace without a live debugger. */
@@ -1879,9 +1975,9 @@ static void termgfx_audio_underrun(int ch)
 		termgfx_stream_underrun(g_stream, ch);
 }
 
-/* Sysop audio settings, syncscumm.ini's [audio] section. Same file and same
+/* Sysop audio settings, <door>.ini's [audio] section. Same file and same
  * lookup as termgfx_read_ini()'s "sixel_max" above and door/syncscumm.cpp's
- * resolveSubtitles() -- one syncscumm.ini, fopen()ed relative to CWD, the
+ * resolveSubtitles() -- one <door>.ini, fopen()ed relative to CWD, the
  * door's startup_dir. (Read here rather than folded into termgfx_read_ini()
  * because these values belong to the stream's config struct, which does not
  * exist until audio_stream_open() builds it; parking them in five more
@@ -1898,7 +1994,7 @@ static void termgfx_audio_underrun(int ch)
  * as the fallback, so there is exactly one place to read the defaults off. */
 static void audio_read_ini(termgfx_stream_cfg_t *cfg)
 {
-	FILE      *f = fopen("syncscumm.ini", "r");
+	FILE      *f = fopen(app_ini(), "r");
 	str_list_t ini;
 
 	if (f == NULL)
@@ -1923,7 +2019,7 @@ static void audio_read_ini(termgfx_stream_cfg_t *cfg)
 	/* Not a cfg field, and deliberately so: the headroom is applied on THIS
 	 * side of the seam (audio_apply_headroom(), below), because the module it
 	 * would otherwise go in is shared with syncretro. It is read here anyway so
-	 * the whole [audio] section still costs exactly ONE open of syncscumm.ini
+	 * the whole [audio] section still costs exactly ONE open of <door>.ini
 	 * -- on this host that file lives under a CIFS mount, and the reason
 	 * termgfx_termio_audio_stream() bails early for a disabled session is precisely to
 	 * keep this function from becoming an SMB round trip storm. Clamped to
@@ -2101,7 +2197,7 @@ static void audio_stream_open(void)
 	 * A default, though, NOT a verdict -- the key stays, and has two real
 	 * users: a sysop on a thin uplink who will take the pops for the 28%, and a
 	 * genuinely stereo title (an engine panning its effects) which needs the
-	 * pair anyway. "[audio] channels = 1" in syncscumm.ini narrows the wire
+	 * pair anyway. "[audio] channels = 1" in <door>.ini narrows the wire
 	 * again. That is also why the MIXER stays stereo above (audio_term.cpp):
 	 * only the wire changes width, ScummVM's mix path is untouched, and the
 	 * sysop's key can move it either way without the door having to rebuild a
@@ -2114,7 +2210,7 @@ static void audio_stream_open(void)
 	cfg.rate         = TERMGFX_AUDIO_RATE;
 	cfg.ch           = 2;
 	cfg.slot         = 0;
-	cfg.name         = "syncscumm";
+	cfg.name         = app_name();
 	cfg.cache_prefix = "s";
 	/* Last, so the sysop's file overrides the defaults above rather than the
 	 * other way around -- and before create(), which takes cfg BY VALUE and
@@ -2143,7 +2239,7 @@ void termgfx_termio_audio_stream(const int16_t *pcm, size_t frames)
 	 * is meant to be the mixer's signal, not the session's. A headless run
 	 * (!g_active) and a disabled-audio session both discard the PCM a few
 	 * lines down, and those are exactly the runs a test script makes. Inert
-	 * unless SYNCSCUMM_AUDIODUMP was set. */
+	 * unless <DOOR>_AUDIODUMP was set. */
 	if (g_audiodump != NULL)
 		fwrite(pcm, sizeof(int16_t) * 2, frames, g_audiodump);   /* *2: stereo */
 	if (!g_active || g_hangup)
@@ -2157,7 +2253,7 @@ void termgfx_termio_audio_stream(const int16_t *pcm, size_t frames)
 	 * and the caller here is this door's mixer tick -- audio_term.cpp's
 	 * tick() via pollEvent(), tens to hundreds of calls per second for the
 	 * rest of the session -- so every one of them re-ran audio_read_ini():
-	 * an fopen() + iniReadFile() + strListFree() of syncscumm.ini for a
+	 * an fopen() + iniReadFile() + strListFree() of <door>.ini for a
 	 * result already known. On this host that file lives under a
 	 * CIFS-mounted /sbbs, so each retry was a real SMB open/read/close
 	 * round trip; a per-tick storm of those is the same "slow disk access"
@@ -2751,7 +2847,7 @@ static const char *termgfx_jxl_name(void)
 {
 	static char name[32];
 	if (name[0] == '\0')
-		snprintf(name, sizeof name, "syncscumm_%08x.jxl", termgfx_session_salt());
+		snprintf(name, sizeof name, "%s_%08x.jxl", app_name(), termgfx_session_salt());
 	return name;
 }
 
@@ -2920,7 +3016,7 @@ static int     g_trace_dx, g_trace_dy;         /* JXL pixel offset; stay 0 witho
 static int     g_trace_cellh;                  /* cell height used for the sixel row-reserve */
 static int     g_trace_icol, g_trace_irow;     /* text-grid column/row the image is centered at */
 
-/* Emit one present-path trace line (SYNCSCUMM_TRACE); see g_trace, above. */
+/* Emit one present-path trace line (<DOOR>_TRACE); see g_trace, above. */
 static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 {
 	unsigned ch = 0, ur = 0, dr = 0;
@@ -2965,7 +3061,7 @@ static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 	        g_trace_irow, g_trace_icol);
 }
 
-/* Dump raw terminal input (SYNCSCUMM_TRACE only): the exact reply bytes the
+/* Dump raw terminal input (<DOOR>_TRACE only): the exact reply bytes the
  * terminal sent, escaped, so a trace shows WHAT the terminal answered to the
  * probe and WHEN -- e.g. whether/when the ESC[4;h;wt canvas report arrives. */
 static void termgfx_trace_in(const uint8_t *buf, int n)
@@ -3414,7 +3510,7 @@ static void termgfx_termio_mouse_report(int b, int col, int row, int release)
 	if (gy >= TERMGFX_FB_H)
 		gy = TERMGFX_FB_H - 1;
 
-	/* Per-report diagnostic (SYNCSCUMM_TRACE only): the raw cell/pixel
+	/* Per-report diagnostic (<DOOR>_TRACE only): the raw cell/pixel
 	 * report, the mode it was read in, the image rect it mapped against, and
 	 * the game coords it produced -- so a "can't reach the top edge" or a
 	 * "stale cursor" report can be diagnosed from a node trace without a live
@@ -4171,7 +4267,7 @@ void termgfx_termio_tick(void)
 }
 
 #ifdef TERMGFX_TEST
-/* Test-only seams (test/test_sst_mouse.c): drive termgfx_termio_mouse_report()'s
+/* Test-only seams (test/test_termgfx_termio_mouse.c): drive termgfx_termio_mouse_report()'s
  * coordinate mapping without a real session -- no termgfx_termio_init(), no socket,
  * no probe burst. Never compiled into the shipped door (TERMGFX_TEST is not
  * defined by build.sh). Sets the geometry globals termgfx_image_rect() and
@@ -4201,7 +4297,7 @@ int termgfx_termio_test_mouse_report(int b, int col, int row, int release)
 	return 1;
 }
 
-/* Test-only seam (test/test_sst_input.c): run raw wire bytes through the
+/* Test-only seam (test/test_termgfx_termio_input.c): run raw wire bytes through the
  * exact same byte parser termgfx_termio_pump() feeds (parse_bytes()), so a keyboard
  * decode test can drive P_NORMAL/P_ESC/P_CSI/csi_final() without a socket
  * or a probe burst. Does NOT reset the event FIFO -- unlike

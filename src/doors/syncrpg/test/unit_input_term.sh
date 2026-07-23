@@ -36,7 +36,7 @@ XPDEV_INC="-I$DOOR/../../xpdev"
 # actually pulled in by keys.h's include chain, so no -isystem SDL2 needed.
 EP_INC="-I$DOOR/easyrpg/src -I$DOOR/easyrpg/lib/liblcf/src -DUSE_SDL=2"
 
-cc -c -DSST_TEST -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
+cc -c -DTERMGFX_TEST -I"$DOOR/door" -I"$DOOR/../termgfx" $XPDEV_INC \
    -o /tmp/input_term_termio.o "$DOOR/../termgfx/termgfx_termio.c"
 
 c++ -std=c++17 -c $EP_INC -I"$DOOR/door" -I"$DOOR/../termgfx" \

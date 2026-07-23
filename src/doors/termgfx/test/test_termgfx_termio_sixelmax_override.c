@@ -1,11 +1,11 @@
 /* Regression test for the sysop "sixel_max" ini override (M2 ceiling
- * refinement): syncscumm.ini's root-section "sixel_max" key is the highest-
+ * refinement): termgfx_test.ini's root-section "sixel_max" key is the highest-
  * precedence source in the effective sixel ceiling (termgfx_termio.c's g_gfx_max_w
  * doc comment) -- it must beat even an XTSMGRAPHICS reply reporting a
  * bigger ceiling, not just the TERMGFX_SIXEL_SAFE_MAX/canvas-trust
  * defaults the other termgfx_termio_* tests exercise.
  *
- * Unlike the other termgfx_termio tests, this one needs a real syncscumm.ini
+ * Unlike the other termgfx_termio tests, this one needs a real termgfx_test.ini
  * present in CWD when termgfx_termio_init() runs (termgfx_read_ini() fopen()s it
  * relative to CWD, the same way door/syncscumm.cpp's resolveSubtitles()
  * reads "subtitles" from the same file) -- so unit_termgfx_termio.sh invokes this
@@ -75,9 +75,12 @@ int main(void)
 	argv[1] = fdarg;
 	argv[2] = NULL;
 
-	/* termgfx_termio_init() -> termgfx_read_ini() reads CWD's syncscumm.ini here,
+	/* termgfx_termio_init() -> termgfx_read_ini() reads CWD's termgfx_test.ini here,
 	 * picking up "sixel_max = 800" (unit_termgfx_termio.sh seeds it before running
 	 * this binary from that directory). */
+	/* Pin the name the ini file is looked up under: this binary is a
+	 * test, not a door, so argv[0] is no basis for one. */
+	termgfx_termio_set_app_name("termgfx_test");
 	assert(termgfx_termio_init(2, argv) == 1);
 	termgfx_termio_flush();
 	drain(sv[0], out, sizeof out);

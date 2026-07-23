@@ -7,7 +7,7 @@
  * parse_bytes()/termgfx_evdev_edge() -- no new TERMGFX_TEST seam needed,
  * termgfx_termio_test_feed() reaches all of it already. Own process/binary:
  * enabling evdev here would be refused if kitty (test_termgfx_termio_input.c) had
- * already won the same g_km in that process. cc'd (with -DSST_TEST) + run
+ * already won the same g_km in that process. cc'd (with -DTERMGFX_TEST) + run
  * by unit_termgfx_termio.sh. */
 #include <assert.h>
 #include <string.h>

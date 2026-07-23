@@ -39,6 +39,21 @@ extern "C" {
 
 // ---- lifecycle / transport --------------------------------------------------
 
+// The door's short name -- everything door-specific this module touches is
+// derived from it, nothing is hardcoded:
+//
+//   settings     <name>.ini             (root "sixel_max", the [audio] section)
+//   env-vars     <NAME>_SOCK, <NAME>_SIXELOUT, <NAME>_AUDIODUMP, <NAME>_TRACE
+//   diagnostics  <data-dir>/<name>/{stderr,trace,wirecap} touch-files, the
+//                dev fallback ./<name>-<what>, and /tmp/<name>.<pid>.<what>
+//
+// termgfx_termio_init() defaults it to argv[0]'s basename (minus any .exe), so
+// a door named after its binary needs no call at all. Call this BEFORE init()
+// to pin the name -- which a door should do if its sysop-facing <name>.ini
+// must survive an operator renaming the binary, and which a test must do
+// because its binary name is not a door name.
+void termgfx_termio_set_app_name(const char *name);
+
 // Parse the door's argv (DOOR32.SYS path, -s<fd> socket, capture-mode flags),
 // open the session, probe terminal capabilities and negotiate key/mouse modes.
 // Returns nonzero on a live (or capture) session, 0 if there is nothing to

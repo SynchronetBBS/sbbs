@@ -1,7 +1,7 @@
 /* Unit test for termgfx_termio's SGR mouse mapper: drives termgfx_termio_mouse_report() through
  * the TERMGFX_TEST seams (termgfx_termio_test_set_geom()/termgfx_termio_test_mouse_report()) and
  * reads back the queued input events via termgfx_termio_next_event() -- no socket,
- * no termgfx_termio_init(). cc'd (with -DSST_TEST) + run by unit_termgfx_termio.sh. */
+ * no termgfx_termio_init(). cc'd (with -DTERMGFX_TEST) + run by unit_termgfx_termio.sh. */
 #include <assert.h>
 #include "termgfx_termio.h"
 int termgfx_termio_test_set_geom(int canvas_w, int canvas_h, int cell_w, int cell_h,

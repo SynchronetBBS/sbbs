@@ -16,7 +16,7 @@
  *     terminal's own key-repeat) stays pressed the whole time; and a real
  *     kitty release clears it immediately rather than waiting a poll.
  *
- * cc'd (with -DSST_TEST, C++17) + run by unit_input_term.sh.
+ * cc'd (with -DTERMGFX_TEST, C++17) + run by unit_input_term.sh.
  */
 #include <cassert>
 #include <bitset>

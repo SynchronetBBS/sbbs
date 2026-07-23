@@ -9,12 +9,12 @@
  *              isolates the door's own pacing logic)
  *   none    -- never ack (total CPR loss: exposes the 750ms deadline floor)
  *   slow    -- ack each DSR only once the bytes queued ahead of it have
- *              "drained" at a fixed virtual link bandwidth (SYNCSCUMM_REPRO_BW
+ *              "drained" at a fixed virtual link bandwidth (TERMGFX_REPRO_BW
  *              bytes/ms, default 96) -- the realistic bandwidth-limited BBS
  *              case: a big full frame's CPR reply queues behind its own DCS
  *              bytes, so acks lag exactly in proportion to frame size.
  *
- * NOT part of the unit suite; a measurement tool. Set SYNCSCUMM_TRACE to
+ * NOT part of the unit suite; a measurement tool. Set TERMGFX_TEST_TRACE to
  * capture the per-present trace. Usage: repro_fade <prompt|none|slow> [steps]
  */
 #include <stdio.h>
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	static uint8_t idx[TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H];
 	static uint8_t pal[768];
 	int  i, step;
-	const char *bwenv = getenv("SYNCSCUMM_REPRO_BW");
+	const char *bwenv = getenv("TERMGFX_REPRO_BW");
 
 	if (argc < 2) {
 		fprintf(stderr, "usage: %s <prompt|none|slow> [steps]\n", argv[0]);
@@ -136,6 +136,7 @@ int main(int argc, char **argv)
 	snprintf(fdarg, sizeof fdarg, "-s%d", sv[1]);
 	{
 		char *av[] = { (char *)"repro_fade", fdarg, NULL };
+		termgfx_termio_set_app_name("termgfx_test");   /* not a door: pin the env-var name */
 		if (termgfx_termio_init(2, av) != 1) { fprintf(stderr, "init failed\n"); return 1; }
 	}
 	termgfx_termio_flush();

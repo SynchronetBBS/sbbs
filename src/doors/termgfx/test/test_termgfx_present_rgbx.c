@@ -1,5 +1,5 @@
 /* test_termgfx_present_rgbx.c -- headless truecolor present via
- * SYNCSCUMM_SIXELOUT capture mode. Feeds known 32-bit R,G,B,X frames through
+ * <DOOR>_SIXELOUT capture mode. Feeds known 32-bit R,G,B,X frames through
  * termgfx_termio_present_rgbx() and decodes the captured sixel's palette
  * registers, proving the R,G,B,X byte order (pad byte dropped), the
  * 0-255 -> 0-100 sixel scale conversion, and that the quantizer sees
@@ -94,7 +94,10 @@ int main(void)
 	fd = mkstemp(tmpl);
 	assert(fd >= 0);
 	close(fd);
-	setenv("SYNCSCUMM_SIXELOUT", tmpl, 1);
+	/* Pin the name termgfx derives its env-vars from -- this binary is a
+	 * test, not a door, so argv[0] is no basis for one. */
+	termgfx_termio_set_app_name("termgfx_test");
+	setenv("TERMGFX_TEST_SIXELOUT", tmpl, 1);
 
 	argv[0] = (char *)"test_termgfx_present_rgbx";
 	argv[1] = NULL;
