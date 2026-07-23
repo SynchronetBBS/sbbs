@@ -45,6 +45,14 @@
 #include "engines/engine.h"
 #include "engines/metaengine.h"
 
+/* SYNCSCUMM: the door's own name + version, shown on the GMM in place of
+ * ScummVM's (which the About button on that same menu still carries in full).
+ * SYNCSCUMM_VERSION is bumped by hand per release, exactly as the sibling
+ * doors do it (SYNCDUKE_VERSION, SYNCDAWN_VERSION, SR_VERSION). */
+#include "git_hash.h"          /* GIT_HASH, GIT_DATE -- build.sh/gitinfo.cmake */
+#define SYNCSCUMM_VERSION "v0.1"
+#define SYNCSCUMM_TITLE   "SyncSCUMM " SYNCSCUMM_VERSION
+
 MainMenuDialog::MainMenuDialog(Engine *engine)
 	: GUI::Dialog("GlobalMenu"), _engine(engine) {
 	_backgroundType = GUI::ThemeEngine::kDialogBackgroundSpecial;
@@ -55,16 +63,37 @@ MainMenuDialog::MainMenuDialog(Engine *engine)
 		_logo = new GUI::GraphicsWidget(this, "GlobalMenu.Logo");
 		_logo->setGfxFromTheme(GUI::ThemeEngine::kImageLogoSmall);
 	} else {
-		GUI::StaticTextWidget *title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", Common::U32String("ScummVM"));
+		GUI::StaticTextWidget *title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", Common::U32String(SYNCSCUMM_TITLE));
 		title->setAlign(Graphics::kTextAlignCenter);
 	}
 #else
-	GUI::StaticTextWidget *title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", Common::U32String("ScummVM"));
+	GUI::StaticTextWidget *title = new GUI::StaticTextWidget(this, "GlobalMenu.Title", Common::U32String(SYNCSCUMM_TITLE));
 	title->setAlign(Graphics::kTextAlignCenter);
 #endif
 
-	GUI::StaticTextWidget *version = new GUI::StaticTextWidget(this, "GlobalMenu.Version", Common::U32String(gScummVMVersionDate));
-	version->setAlign(Graphics::kTextAlignCenter);
+	/* SYNCSCUMM: these two lines carry the DOOR's identity and build, not
+	 * ScummVM's. Nothing is lost -- the About button on this same menu still
+	 * shows ScummVM's full version and attribution, and with the launcher
+	 * compiled out (SYNCSCUMM_NO_LAUNCHER) the GMM is the only place a player
+	 * can reach it. What the door lacked was any way to tell WHICH door and
+	 * WHICH build they were talking to, which made a stale install invisible.
+	 *
+	 * The hash and date come from the shared Synchronet git stamp (build.sh
+	 * runs build/gitinfo.cmake), so a dirty tree reads "~hash" rather than
+	 * claiming a commit this binary does not contain.
+	 *
+	 * NO BUILD DATE HERE, deliberately. This widget is 160px in the lowres
+	 * layout (210 highres) -- about 26 characters -- and hash + date + site ran
+	 * to 36, so the GUI ellipsized it and ate the middle. The hash alone
+	 * identifies the build exactly; the date only made it readable-ish, and a
+	 * truncated stamp is worse than a short one. gitinfo.cmake still records
+	 * GIT_DATE for anything that has room for it. */
+	{
+		char vbuf[64];
+		snprintf(vbuf, sizeof(vbuf), "%s synchro.net", GIT_HASH);
+		GUI::StaticTextWidget *version = new GUI::StaticTextWidget(this, "GlobalMenu.Version", Common::U32String(vbuf));
+		version->setAlign(Graphics::kTextAlignCenter);
+	}
 
 	new GUI::ButtonWidget(this, "GlobalMenu.Resume", _("~R~esume"), Common::U32String(), kPlayCmd, 'P');
 

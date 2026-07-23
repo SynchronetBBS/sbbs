@@ -40,7 +40,7 @@ directories: `find dists/engine-data -mindepth 1 -type d -empty -delete`.
 
 ## Modified upstream files
 
-Five upstream files are modified; everything else is deletions only.
+Six upstream files are modified; everything else is deletions only.
 
 - configure: one added case in the backend switch (search "termgfx") --
   the *nix (gcc/make) build's backend selection.
@@ -67,6 +67,16 @@ Five upstream files are modified; everything else is deletions only.
   BrowserDialog::runModal() returns "cancelled" without ever browsing. A remote
   BBS user must never reach the launcher, nor browse/read/write arbitrary host
   files. Search "SYNCHRONET DOOR SECURITY".
+- engines/dialogs.cpp: the Global Main Menu's two heading lines carry the
+  DOOR's name and build ("SyncSCUMM v0.1" / "<git hash> <date> synchro.net")
+  instead of ScummVM's. Nothing is lost: the About button on that same menu
+  still shows ScummVM's full version and attribution, and since the launcher is
+  compiled out (above) the GMM is the only route to it either way. The door
+  previously identified itself nowhere at all, which is what let seven of eight
+  installs sit on a months-old binary unnoticed. The hash/date come from the
+  shared Synchronet stamp (build.sh runs build/gitinfo.cmake into build/
+  git_hash.h), so a dirty tree reads "~hash" plus the build time rather than
+  naming a commit the binary does not contain. Search "SYNCSCUMM" in the file.
 
 ## Restored for the Windows build (from the pinned tarball)
 

@@ -50,7 +50,15 @@ cd "$HERE/build"
 	# door/syncscumm.cpp reads the sysop's syncscumm.ini via xpdev's
 	# ini_file.h (subtitles precedence: user > sysop > auto).
 	echo "INCLUDES += -I$HERE/../../xpdev"
+	# The door's build stamp, shown on the GMM (engines/dialogs.cpp). Generated
+	# by the SHARED helper rather than a hand-rolled `git describe` here, so this
+	# door reports its build exactly like every sibling -- including the part
+	# that matters: a dirty tree yields "~hash" and the BUILD time, so a stamp
+	# never claims a commit the binary does not actually contain.
+	echo "INCLUDES += -I$HERE/build"
 } >> config.mk
+cmake -DOUT="$HERE/build/git_hash.h" -DSRCDIR="$HERE" \
+      -P "$HERE/../../build/gitinfo.cmake"
 # SYNCHRONET DOOR SECURITY: compile the ScummVM launcher and the filesystem
 # browser OUT of the door binary -- base/main.cpp's launcherDialog() and
 # gui/browser.cpp's BrowserDialog::runModal() are #ifdef'd on this so a remote
