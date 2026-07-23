@@ -7,7 +7,7 @@ collecting reality-bending "Effects." There is no combat and no stated goal;
 it is pure atmosphere and exploration, rendered to the terminal as sixel /
 JPEG-XL graphics with sound streamed to SyncTERM.
 
-This directory (`xtrn/syncrpg/`) is the installed door — the `syncrpg` binary,
+This directory (`xtrn/yumenikki/`) is the installed door — the `syncrpg` binary,
 the game data (`yumenikki/`), and the fetched-data helper live here. The
 **source** (the vendored EasyRPG Player engine plus the Synchronet backend that
 drives it) lives in `src/doors/syncrpg/` of the Synchronet source tree; that one
@@ -29,10 +29,10 @@ and a C++ compiler (**GCC**/**Clang**, or **MSVC** on Windows).
 ```
 cd src/doors/syncrpg
 ./build.sh                 # Windows: build.bat
-jsexec deploy.js           # copies the binary into xtrn/syncrpg/
+jsexec deploy.js           # copies the binary into xtrn/yumenikki/
 ```
 
-`deploy.js` copies the built binary in as `xtrn/syncrpg/syncrpg`
+`deploy.js` copies the built binary in as `xtrn/yumenikki/syncrpg`
 (`syncrpg.exe` on Windows).
 
 ## Installing into Synchronet
@@ -42,8 +42,8 @@ you — no manual SCFG entry needed:
 
 - **From the BBS, as a sysop** — run **Auto-install New External Programs**
   (the `xtrn-setup` module), find **Yume Nikki**, install it.
-- **Command line** — `jsexec install-xtrn ../xtrn/syncrpg`.
-- **Terminal sysop command** — `;exec ?install-xtrn ../xtrn/syncrpg`.
+- **Command line** — `jsexec install-xtrn ../xtrn/yumenikki`.
+- **Terminal sysop command** — `;exec ?install-xtrn ../xtrn/yumenikki`.
 
 It registers Yume Nikki under **Games → RPG** as a native DOOR32.SYS door
 (binary socket I/O, multi-node), with per-user saves. The installer also offers
@@ -57,7 +57,7 @@ demand — it downloads the official Playism English localization of **Yume Nikk
 verifies** it before extracting:
 
 ```
-jsexec ../xtrn/syncrpg/getdata.js
+jsexec ../xtrn/yumenikki/getdata.js
 ```
 
 (The `install-xtrn` step above offers to run this for you.) It writes the

@@ -14,7 +14,7 @@
 // drift out of agreement.
 //
 // SyncRPG is a single-flagship door (Yume Nikki, v1): xtrn.ini launches the
-// binary directly (`cmd = syncrpg%. %f ...`, see xtrn/syncrpg/install-xtrn.ini),
+// binary directly (`cmd = syncrpg%. %f ...`, see xtrn/yumenikki/install-xtrn.ini),
 // resolved against the door directory, and a fixed command line cannot probe
 // a per-host sub-dir. So the binary must be FLAT. `subdir: false` -- and it
 // stays false until the door grows a JS launcher that can do the probing
@@ -30,7 +30,7 @@ load("door_deploy.js");
 exit(door_deploy({
 	name:   "syncrpg",
 	srcdir: js.exec_dir,
-	xtrn:   "syncrpg",
+	xtrn:   "yumenikki",
 	subdir: false,         /* --subdir opts in, but see the note above */
 	direct_launch: true
 }));

@@ -42,7 +42,7 @@
 //
 // Run by hand any time:
 //
-//     jsexec ../xtrn/syncrpg/getdata.js
+//     jsexec ../xtrn/yumenikki/getdata.js
 //
 // SpiderMonkey 1.8.5 compatible (no modern ES) -- runs unchanged on Windows
 // and Linux, unlike a POSIX shell fetch script.

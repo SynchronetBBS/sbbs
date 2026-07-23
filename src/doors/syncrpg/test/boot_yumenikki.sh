@@ -27,15 +27,15 @@
 # Task 6 report.
 #
 # The game tree is not in the repo (copyright). Supply it as $1 or via
-# $SYNCRPG_YN; defaults to the xtrn/syncrpg package's yumenikki/ (fetched by
-# xtrn/syncrpg/getdata.js). A decoded PNG of the first frame is written to
+# $SYNCRPG_YN; defaults to the xtrn/yumenikki package's yumenikki/ (fetched by
+# xtrn/yumenikki/getdata.js). A decoded PNG of the first frame is written to
 # build/yn_title.png for eyeballing.
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd)
 DOOR=$(dirname "$HERE")
 BIN="$DOOR/build/syncrpg"
 SIXDECODE="$DOOR/../syncmoo1/tools"
-GAME=${1:-${SYNCRPG_YN:-$DOOR/../../../xtrn/syncrpg/yumenikki}}
+GAME=${1:-${SYNCRPG_YN:-$DOOR/../../../xtrn/yumenikki/yumenikki}}
 PNG="$DOOR/build/yn_title.png"
 
 [ -x "$BIN" ] || { echo "FAIL: $BIN not built (run ./build.sh)"; exit 1; }

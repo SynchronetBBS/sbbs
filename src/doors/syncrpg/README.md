@@ -30,7 +30,7 @@ architecture; `PROVENANCE.md` for what is vendored from EasyRPG and pruned).
 [Yume Nikki](https://en.wikipedia.org/wiki/Yume_Nikki) is a freeware surreal
 exploration RPG by Kikiyama, built with RPG Maker 2003. It is a single
 self-contained project (no external RTP required). The bundled package
-(`xtrn/syncrpg/`, on Synchronet) fetches the **official English localization**
+(`xtrn/yumenikki/`, on Synchronet) fetches the **official English localization**
 (the Playism/Steam 0.10a release, hosted on
 [rmarchiv.de](https://rmarchiv.de/games/1089) — the EasyRPG project's own
 recommended archive) via `getdata.js`.
@@ -139,13 +139,13 @@ rest of the command line is the game/project path and the connection.
 
 ### 1. Put the binary in the game directory
 
-The bundled Yume Nikki package (Synchronet: `xtrn/syncrpg/`) holds the
+The bundled Yume Nikki package (Synchronet: `xtrn/yumenikki/`) holds the
 `syncrpg` binary (`syncrpg.exe` on Windows) — build it (see
 [Building](#building)) and deploy it there, flat, alongside the game data.
 
 ### 2. Supply the game data
 
-`xtrn/syncrpg/getdata.js` fetches Yume Nikki's official English localization
+`xtrn/yumenikki/getdata.js` fetches Yume Nikki's official English localization
 (freeware) from rmarchiv.de and sha256-verifies it, extracting into a
 `yumenikki/` sub-directory (the archive's own top-level folder — an RM2003
 project: `RPG_RT.ldb`/`.lmt`/`.ini` + assets, no RTP dependency).
@@ -170,7 +170,7 @@ properties (names vary by BBS; the *meaning* is what matters):
   draws to the *caller's* terminal, not the BBS console.
 - **Access requirement:** a graphics-capable terminal (see
   [Terminal requirements](#terminal-requirements-and-capabilities)).
-- **Working directory:** the game package directory (`xtrn/syncrpg/`), so the
+- **Working directory:** the game package directory (`xtrn/yumenikki/`), so the
   binary and `yumenikki/` data resolve.
 
 ### Synchronet specifics (SCFG / install-xtrn)
@@ -179,15 +179,15 @@ On Synchronet, the bundled package ships an `install-xtrn.ini`, so instead of
 manual SCFG steps you can run:
 
 ```
-jsexec install-xtrn ../xtrn/syncrpg
+jsexec install-xtrn ../xtrn/yumenikki
 ```
 
-(or `;exec ?install-xtrn ../xtrn/syncrpg` from the terminal). It registers
+(or `;exec ?install-xtrn ../xtrn/yumenikki` from the terminal). It registers
 Yume Nikki as its own external-program entry (Command Line
 `syncrpg%. %f --save-path=%juser/%4/yumenikki yumenikki`, DOOR32.SYS/Socket
 I/O, Multiple Concurrent Users, Native Executable, Disable Local Display) and
 offers to fetch the game data via `getdata.js`. See
-`xtrn/syncrpg/install-xtrn.ini` for the full annotated installer data, and
+`xtrn/yumenikki/install-xtrn.ini` for the full annotated installer data, and
 `SCFG → External Programs → Online Programs (Doors)` if you prefer to review
 or adjust the installed entry by hand afterward.
 
@@ -216,7 +216,7 @@ list, and what each stage does.
 
 After building, deploy the binary into the game directory: **on Synchronet**,
 `jsexec deploy.js` copies the freshly-built binary into the live
-`xtrn/syncrpg/` package (falling back to the in-tree bundle when no live
+`xtrn/yumenikki/` package (falling back to the in-tree bundle when no live
 install exists). On another BBS, copy the binary into the game directory
 yourself.
 
