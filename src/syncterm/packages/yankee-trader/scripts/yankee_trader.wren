@@ -40,6 +40,7 @@ class YankeeTrader {
     __c10Missed = 0
     __liveNotice = null
     __immediateNotices = true
+    __promptChecks = true
     __benchmark = null
     __benchmarkStarted = 0
     __benchmarkCommands = []
@@ -230,18 +231,21 @@ class YankeeTrader {
   }
 
   static startRoute_(target) {
+    if (!requireMainPrompt_("Route scan")) return null
     cancelAutomation_()
     __routePending = true
     send_("c;3;%(target)\r")
   }
 
   static startFighterScan_(home) {
+    if (!requireMainPrompt_("Adjacent fighter placement")) return null
     cancelAutomation_()
     __fighterHome = home
     send_("s\r")
   }
 
   static startC10_(source, start, stop) {
+    if (!requireMainPrompt_("C;10 universe sweep")) return null
     cancelAutomation_()
     __c10Active = true
     __c10AwaitingResult = false
@@ -273,6 +277,11 @@ class YankeeTrader {
   }
 
   static startCommandRun_(name, batches) {
+    if (!requireMainPrompt_(name)) return null
+    startCommandRunReady_(name, batches)
+  }
+
+  static startCommandRunReady_(name, batches) {
     cancelAutomation_()
     __commandRunActive = true
     __commandRunName = name
@@ -324,7 +333,41 @@ class YankeeTrader {
     return null
   }
 
+  static activeTurnRunName_ {
+    if (__routePending) return "Route scan"
+    if (__fighterHome != null) return "Adjacent fighter placement"
+    if (__commandRunActive) return __commandRunName
+    return null
+  }
+
+  static stopForTurnLimit_(autopilotPrompt) {
+    var name = activeTurnRunName_
+    if (name == null) return null
+    var progress = ""
+    if (__commandRunActive) {
+      progress = " Stopped after %(__commandRunIndex) of " +
+          "%(__commandRunBatches.count) monitored batches; no later batch " +
+          "will be sent."
+    } else {
+      progress = " No turn-consuming batch was started."
+    }
+    if (autopilotPrompt && __routePending) send_("n\r")
+    cancelAutomation_()
+    showLiveNotice_("%(name) stopped because Yankee Trader reports that " +
+        "there are not enough turns for the requested action.%(progress)")
+    return null
+  }
+
+  static onAutopilotTurnLimit_(match) {
+    return stopForTurnLimit_(true)
+  }
+
+  static onNoTurns_(match) {
+    return stopForTurnLimit_(false)
+  }
+
   static startT1_() {
+    if (!requireMainPrompt_("Benchmark T1")) return null
     cancelAutomation_()
     __benchmark = "t1"
     __benchmarkStarted = Timer.now
@@ -333,6 +376,7 @@ class YankeeTrader {
   }
 
   static startT2_() {
+    if (!requireMainPrompt_("Benchmark T2")) return null
     cancelAutomation_()
     __benchmark = "t2"
     __benchmarkStarted = Timer.now
@@ -341,6 +385,7 @@ class YankeeTrader {
   }
 
   static startT3_() {
+    if (!requireMainPrompt_("Benchmark T3")) return null
     cancelAutomation_()
     var max = YTState.data["profile"]["maxSector"]
     for (i in 1..20) {
@@ -1173,8 +1218,12 @@ class YankeeTrader {
         rows.map {|row| row[1] }.toList)
     if (picked < 0) return
     var kind = rows[picked][0]
-    var per = integer_("Command Batches", "Sectors per batch", 100, 1, 500)
-    if (per == null) return
+    var turnSensitive = kind == 2 || kind == 3
+    var per = 1
+    if (!turnSensitive) {
+      per = integer_("Command Batches", "Sectors per batch", 100, 1, 500)
+      if (per == null) return
+    }
     var commands
     if (kind == 0) commands = YTCommands.missiles(sectors, per)
     if (kind == 1) commands = YTCommands.planetScans(sectors, per)
@@ -1256,13 +1305,14 @@ class YankeeTrader {
       alert_("Mercenary Surround", "Enter at least one adjacent sector.")
       return
     }
-    var command = YTCommands.surroundMercenaries(center, adjacent, fighters)
+    var commands = YTCommands.surroundMercenaryBatches(center, adjacent,
+        fighters)
     return reviewCommandPlan_("Mercenary Surround",
         "Avoid sector %(center), visit %(adjacent.count) adjacent sectors, " +
         "and drop %(fighters) fighters in each.",
         "Consumes travel turns and %(fighters * adjacent.count) fighters. " +
         "Autopilot can encounter hazards; the avoid list is changed.",
-        [command], adjacent.count)
+        commands, adjacent.count)
   }
 
   static reviewCommandPlan_(title, description, warning, commands, itemCount) {
@@ -1478,9 +1528,12 @@ class YankeeTrader {
         YTState.data["profile"]["macroRepeats"])
     if (index < 0 || index >= macros.count) return false
     if (__routePending || __fighterHome != null || __c10Active ||
-        __benchmark != null || __detectActive) {
+        __benchmark != null || __commandRunActive || __detectActive) {
       showLiveNotice_("Function-key macro %(macros[index][0]) was ignored " +
           "while live automation was active.")
+      return true
+    }
+    if (!requireMainPrompt_("%(macros[index][0]) — %(macros[index][1])")) {
       return true
     }
     send_(macros[index][2] + "\r")
@@ -1624,6 +1677,7 @@ class YankeeTrader {
   }
 
   static startDetect_() {
+    if (!requireMainPrompt_("Game-setting detection")) return null
     cancelAutomation_()
     __detectActive = true
     __detectPhase = "info"
@@ -1948,8 +2002,13 @@ class YankeeTrader {
       showLiveNotice_("The C;3 route was not recognized; no movement was sent.")
       return null
     }
-    send_("n;1;s;" + YTCommands.scanRoute(route) + "\r")
-    showLiveNotice_("Route scan queued for %(route.count) sectors.")
+    var commands = ["n;1;s"]
+    commands.addAll(YTCommands.routeScans(route, 1))
+    startCommandRunReady_("Route scan", commands)
+    if (__commandRunActive) {
+      showLiveNotice_("Route scan queued for %(route.count) sectors in " +
+          "%(commands.count) monitored steps.")
+    }
     return null
   }
 
@@ -1976,17 +2035,14 @@ class YankeeTrader {
       showLiveNotice_("No adjacent sectors were recognized; no movement was sent.")
       return null
     }
-    var command = ""
-    for (sector in adjacent) {
-      if (command.count > 0) command = command + ";"
-      command = command + "m;%(sector);f;1;s;m;%(home)"
-    }
-    send_(command + "\r")
-    var message = "Fighter breadcrumbs queued in %(adjacent.count) sectors."
+    var commands = YTCommands.fighterBreadcrumbs(home, adjacent)
+    startCommandRunReady_("Adjacent fighter placement", commands)
+    var message = "Fighter breadcrumbs queued in %(adjacent.count) sectors " +
+        "with movement and placement monitored separately."
     if (saveError != null) {
       message = message + " Sensor-map save failed: %(saveError)"
     }
-    showLiveNotice_(message)
+    if (__commandRunActive) showLiveNotice_(message)
     return null
   }
 
@@ -2137,6 +2193,46 @@ class YankeeTrader {
     return error
   }
 
+  static cursorLine_ {
+    var bounds = Screen.window.bounds
+    var position = Screen.window.position
+    if (!(bounds is List) || bounds.count < 4 ||
+        !(position is List) || position.count < 2) return null
+    var row = bounds[1] + position[1] - 1
+    var surface = Screen.readRect(bounds[0], row, bounds[2], row)
+    if (surface == null) return null
+    var line = ""
+    for (cell in surface) {
+      line = line + (cell.chByte == 0 ? " " : cell.ch)
+    }
+    return line.trim()
+  }
+
+  static promptLineMatches_(line, prompt) {
+    if (!(line is String)) return false
+    var clean = line.trim()
+    if (prompt == "main") {
+      return clean.endsWith("Main Command (?=Help)?") ||
+          clean.endsWith("Main Command (?=help)?")
+    }
+    if (prompt == "computer") {
+      return clean.endsWith("Computer command (?=help)?") ||
+          clean.endsWith("Computer command (?=Help)?")
+    }
+    return false
+  }
+
+  static requireMainPrompt_(action) {
+    if (!__promptChecks) return true
+    var line = cursorLine_
+    if (promptLineMatches_(line, "main")) return true
+    var shown = line == null || line.count == 0 ? "(blank line)" : line
+    showLiveNotice_("%(action) was not started because the cursor is not at " +
+        "Yankee Trader's Main Command prompt.\n\nCurrent cursor line:\n" +
+        "%(shown)\n\nReturn to Main Command and try again.")
+    return false
+  }
+
   // Each short-lived UI App must own a screen snapshot. App.run()/runSync()
   // intentionally leave their final frame visible; modalRun restores the
   // menu or terminal content that the child covered.
@@ -2254,6 +2350,7 @@ class YankeeTrader {
   }
 
   static immediateNotices=(enabled) { __immediateNotices = enabled == true }
+  static promptChecks=(enabled) { __promptChecks = enabled == true }
   static commandRunSends=(enabled) { __commandRunSends = enabled == true }
 
   static reportSave_(error) {
@@ -2412,9 +2509,10 @@ class YankeeTrader {
       "helpers, records, macros, and strategy notes. Each BBS may contain " +
       "multiple independent Yankee Trader games." }
   static liveHelp_ { "# Live Tools\n\nLive actions send commands to the connected " +
-      "game. Start them from the expected Main or Computer command prompt. " +
-      "Use Cancel to stop future scripted sends. Completion and error status " +
-      "appears automatically. YT 3.6 performs pathfinding from disk, so C;10 " +
+      "game. Start them from an untouched Main Command prompt; the cursor line " +
+      "is checked before anything is sent. Use Cancel to stop future scripted " +
+      "sends. Completion and error status appears automatically. YT 3.6 " +
+      "performs pathfinding from disk, so C;10 " +
       "response time may increase during a large sweep." }
   static calculatorHelp_ { "# Calculators\n\nFormulas are converted from the " +
       "Yankee Trader Assistant spreadsheet and the website's damage tables. " +
@@ -2425,7 +2523,9 @@ class YankeeTrader {
       "scans are captured and saved automatically. Actions are reviewed in " +
       "the panel, then either run directly in monitored batches or optionally " +
       "copied. Start direct actions at Yankee Trader's Main Command prompt. " +
-      "Cancel stops future batches but cannot retract a batch already sent. " +
+      "Turn-sensitive runs use short target or movement batches. If the door " +
+      "reports too few turns, the runner stops before sending another step. " +
+      "Cancel stops future batches but cannot retract the current batch. " +
       "Old external captures are isolated under Legacy and recovery imports." }
   static legacyImportHelp_ { "# Legacy and Recovery Imports\n\nThese tools are " +
       "not part of normal live operation. Use them only to recover an old " +
@@ -2475,8 +2575,10 @@ class YankeeTrader {
       "today and save the selection as YYYY-MM-DD." }
   static macroHelp_ { "# F1-F12 Key Bindings\n\nThese are active key bindings, " +
       "not menu actions. Close the panel and press a function key at the " +
-      "appropriate Yankee Trader prompt. The site's /R repeat suffixes are " +
-      "expanded natively using this game's repeat setting." }
+      "Yankee Trader Main Command prompt. A binding is rejected without " +
+      "sending anything if the cursor is elsewhere or text has already been " +
+      "entered on the prompt line. The site's /R repeat suffixes are expanded " +
+      "natively using this game's repeat setting." }
   static dataHelp_ { "# Games and Data\n\nEach game has independent settings, " +
       "maps, notes, analyses, and benchmarks. Modern and YT 3.2 defaults are " +
       "starting points; every feature flag and limit can be changed per game. " +
@@ -2519,6 +2621,10 @@ Hook.onMatchClean("Invalid sector number!(.+?)Enter sector number port is in",
     Fn.new {|match| YankeeTrader.onDetectInvalidSector_(match) })
 Hook.onMatchClean("Hit [Enter]",
     Fn.new {|match| YankeeTrader.onDetectContinue_(match) })
+Hook.onMatchClean("Not enough turns left to autopilot this course",
+    Fn.new {|match| YankeeTrader.onAutopilotTurnLimit_(match) })
+Hook.onMatchClean("Sorry but you have no turns left",
+    Fn.new {|match| YankeeTrader.onNoTurns_(match) })
 Hook.onMatchClean("Course will(.+?)Enter course into autopilot",
     Fn.new {|match| YankeeTrader.onRoute_(match) })
 Hook.onMatchClean("[ Sensors Activated ](.+?)[ End Sensor Scan ]",

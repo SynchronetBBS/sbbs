@@ -368,6 +368,16 @@ class YTCommands {
     return repeatBatches_(sectors, perBatch, "m;", ";s;m;", ";s")
   }
 
+  static fighterBreadcrumbs(home, sectors) {
+    var out = []
+    for (sector in sectors) {
+      out.add("m;%(sector)")
+      out.add("f;1;s")
+      out.add("m;%(home)")
+    }
+    return out
+  }
+
   static c10Command(sector) { c10Command(1, sector) }
 
   static c10Command(source, sector) { "10;%(source);%(sector)\r" }
@@ -399,6 +409,15 @@ class YTCommands {
     var out = avoid([center])
     for (sector in adjacent) {
       out = out + ";c;3;%(sector);y;f;%(fighters)"
+    }
+    return out
+  }
+
+  static surroundMercenaryBatches(center, adjacent, fighters) {
+    var out = [avoid([center]) + ";1"]
+    for (sector in adjacent) {
+      out.add("c;3;%(sector);y")
+      out.add("f;%(fighters)")
     }
     return out
   }

@@ -38,13 +38,22 @@ path maps do not acquire megabytes of pretty-printing whitespace.
 
 The first two Alt-Y choices provide quick access to replacement `C;3` travel
 and adjacent-sector fighter placement. Other live tools remain grouped in the
-**Live tools** submenu. Start command-sending actions at the Main or Computer
-command prompt shown in the tool's help. Live `C;10` and sensor results are
+**Live tools** submenu. Start command-sending actions at the Yankee Trader Main
+Command prompt. Live `C;10` and sensor results are
 parsed and saved directly. Sector actions now show their target count, batches,
 and turn/resource risk before offering **Run now**, **Preview**, optional
 **Copy**, or **Cancel**. Direct runs send one batch at a time and wait for a
 returned Main-command Help screen before advancing. Completion and failure
 status popups appear immediately; reopening the Alt-Y panel is not required.
+Turn-sensitive route, fighter, travel, robot, and mercenary runs use
+short target or movement batches. Fighter drops are not sent until the preceding
+move completes. If the door reports that too few turns remain, the active run
+stops cleanly without sending its later steps.
+
+Before any user-triggered live tool, reviewed run, detector, benchmark, or
+function-key binding sends data, it reads the terminal line containing the
+cursor and requires an untouched Yankee Trader **Main Command** prompt. A wrong
+menu or partially entered command produces an error popup and sends nothing.
 
 ## Multiple games on one BBS
 

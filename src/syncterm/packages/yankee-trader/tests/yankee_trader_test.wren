@@ -49,6 +49,20 @@ class YankeeTraderTest {
     // Hook-completion popups are immediate in production. Keep this headless
     // unit suite on the deferred path so simulated hooks do not await OK.
     YankeeTrader.immediateNotices = false
+    check_(YankeeTrader.promptLineMatches_(
+        "Time: 179:38  Main Command (?=Help)?", "main") &&
+        YankeeTrader.promptLineMatches_(
+            "Time: 179:38  Main Command (?=help)?   ", "main") &&
+        !YankeeTrader.promptLineMatches_(
+            "Time: 179:38  Computer command (?=help)?", "main") &&
+        !YankeeTrader.promptLineMatches_(
+            "Time: 179:38  Main Command (?=Help)? c", "main"),
+        "live send guard requires an untouched Main Command cursor line")
+    var cursorLine = YankeeTrader.cursorLine_
+    check_(cursorLine == null || cursorLine is String,
+        "live send guard can read the host cursor line")
+    // State-machine tests invoke entry points without a connected door prompt.
+    YankeeTrader.promptChecks = false
 
     check_(YTCalc.plasmaPercent(1) == 100, "plasma first sector")
     var defaults = YTState.defaultData
@@ -69,7 +83,8 @@ class YankeeTraderTest {
         YankeeTrader.onMainPrompt_(null) == null &&
         YankeeTrader.onMore_(null) == null &&
         YankeeTrader.onComputerPrompt_(null) == null &&
-        YankeeTrader.onComputerDeactivated_(null) == null,
+        YankeeTrader.onComputerDeactivated_(null) == null &&
+        YankeeTrader.onNoTurns_(null) == null,
         "connected hook static fields initialize")
     var mapper = YankeeTrader.c10Status_
     check_(!mapper["active"] && mapper["total"] == 0,
@@ -175,6 +190,33 @@ class YankeeTraderTest {
     check_(!commandRun["active"] && commandRun["completed"] == 2 &&
         YankeeTrader.pendingNotice_.contains("completed 2 monitored batches"),
         "command runner reports completed plan")
+    YankeeTrader.startCommandRun_("Travel and Sensor Scan",
+        ["c;3;8;y;s", "c;3;10;y;s"])
+    YankeeTrader.onNoTurns_(["Sorry but you have no turns left."])
+    commandRun = YankeeTrader.commandRunStatus_
+    check_(!commandRun["active"] &&
+        YankeeTrader.pendingNotice_.contains("Travel and Sensor Scan stopped") &&
+        YankeeTrader.pendingNotice_.contains("no later batch will be sent"),
+        "out-of-turn response stops later monitored command batches")
+    YankeeTrader.startRoute_(10)
+    check_(YankeeTrader.activeTurnRunName_ == "Route scan",
+        "route query is tracked before its movement plan is available")
+    YankeeTrader.onAutopilotTurnLimit_([
+        "Not enough turns left to autopilot this course!"
+    ])
+    check_(YankeeTrader.activeTurnRunName_ == null &&
+        YankeeTrader.pendingNotice_.contains("Route scan stopped"),
+        "insufficient-turn C3 response declines autopilot and clears route state")
+    YankeeTrader.startRoute_(10)
+    YankeeTrader.onRoute_([
+        "Course will take 2 turns:\nfrom sector 1\n1, 8, 10\n" +
+        "Enter course into autopilot"
+    ])
+    commandRun = YankeeTrader.commandRunStatus_
+    check_(commandRun["active"] && commandRun["name"] == "Route scan" &&
+        commandRun["total"] == 3,
+        "route scanner monitors setup and each traveled sector separately")
+    YankeeTrader.onNoTurns_(["Sorry but you have no turns left."])
     YankeeTrader.cancelAutomation_()
     YankeeTrader.commandRunSends = true
     var classic = YTState.defaultProfile("3.2")
@@ -479,6 +521,16 @@ class YankeeTraderTest {
         "profile-sized avoid command")
     check_(YTCommands.clearAvoid(30).contains("7;30;;1"),
         "clear all documented avoid slots")
+    var breadcrumbs = YTCommands.fighterBreadcrumbs(1, [8, 10])
+    check_(breadcrumbs.count == 6 &&
+        breadcrumbs[0] == "m;8" && breadcrumbs[1] == "f;1;s" &&
+        breadcrumbs[2] == "m;1" && breadcrumbs[3] == "m;10",
+        "fighter placement does not queue a drop behind an unverified move")
+    var surround = YTCommands.surroundMercenaryBatches(44, [43, 45], 100)
+    check_(surround.count == 5 && surround[0].endsWith(";1") &&
+        surround[1] == "c;3;43;y" && surround[2] == "f;100" &&
+        surround[3] == "c;3;45;y" && surround[4] == "f;100",
+        "mercenary surround verifies each move before dropping fighters")
     var macros = YTCommands.defaultMacros(2)
     check_(!macros[4][2].contains("/R") &&
         macros[4][2].contains(";L;3;;P"), "native macro repetition")
