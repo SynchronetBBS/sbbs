@@ -1296,8 +1296,10 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	 * but a terminal that ignores mode 1070 would still be wrong.
 	 *
 	 * Unknown terminal (no probe reply yet) counts as not-SyncTERM: a few early
-	 * frames then carry a redundant palette, which is never WRONG. */
-	emit_pal = pal_changed || !sr_input_is_syncterm();
+	 * frames then carry a used-colour subset, which is never WRONG. */
+	emit_pal = pal_changed ? SIXEL_PAL_FULL : SIXEL_PAL_NONE;
+	if (!sr_input_is_syncterm())
+		emit_pal = SIXEL_PAL_USED;
 
 	frame_start = g_out_len;   /* wire bytes for this frame, for the stats overlay */
 
