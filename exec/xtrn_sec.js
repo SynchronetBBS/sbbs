@@ -154,7 +154,25 @@ function external_program_menu(xsec)
 		else {
 			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
 			var center = options.center && !multicolumn;
-			var margin = center ? format("%*s", Math.floor(console.screen_columns * 0.25) - 1, "") : "";
+			// Center on the actual rendered row width, not a fixed fraction of
+			// the screen: screen_columns/4 as a left margin only lands near
+			// center at 80 columns and drifts left as the terminal widens. Take
+			// the widest row's DISPLAYED width (strip_ctrl drops the zero-width
+			// \x01 attribute codes) and split the slack -- the same
+			// measure-the-content approach the section list below already uses.
+			var margin = "";
+			if(center) {
+				var widest = 0;
+				for(var pi = 0; pi < prog_list.length; pi++) {
+					var w = strip_ctrl(format(options.singlecolumn_fmt,
+						pi + 1, prog_list[pi].name, prog_list[pi].cost)).length;
+					if(w > widest)
+						widest = w;
+				}
+				var pad = Math.floor((console.screen_columns - widest) / 2);
+				if(pad > 0)
+					margin = format("%*s", pad, "");
+			}
 			if(options.sort)
 				prog_list.sort(sort_by_name);
 			if(show_header)
