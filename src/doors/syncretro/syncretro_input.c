@@ -343,6 +343,17 @@ static void sr_key_apply(int c, int down, int tap)
 	int      id, port;
 	sr_act_t act = sr_bind_lookup(sr_bind_fold(c), &id, &port);
 
+	/* A genuine keystroke -- the one thing DSR pacing cannot forge. Deliberately
+	 * here and not in the CSI dispatcher, which also sees the terminal's own
+	 * pace-acks and capability replies. syncretro has no mouse path to hook.
+	 *
+	 * If it answered the idle countdown, that is ALL it does: the press is
+	 * consumed here rather than dispatched below. Otherwise "press any key"
+	 * would pause the game, Space being bound to pause in every profile. The
+	 * release edge still falls through, so nothing is left stuck down. */
+	if (sr_door_idle_wake() && down)
+		return;
+
 	/* WHAT THE KEY RESOLVED TO. The trace logged the byte arriving and a
 	 * once-a-second direction sample, and neither can answer the question a
 	 * player actually asks -- "I pressed X and nothing happened" -- because a

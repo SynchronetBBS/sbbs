@@ -103,7 +103,7 @@ const char *script_consume(const char *expected_type)
 
 	size_t tlen = strlen(expected_type);
 	size_t alen = (size_t)(eq - line);
-	if (alen != tlen || strncasecmp(line, expected_type, tlen) != 0) {
+	if (alen != tlen || plat_strnicmp(line, expected_type, tlen) != 0) {
 		char actual[64] = "(unknown)";
 		if (alen < sizeof(actual)) {
 			memcpy(actual, line, alen);
@@ -220,7 +220,7 @@ int16_t hook_get_string_choice(const char **apszChoices,
 	int found  = -1;
 	int matches = 0;
 	for (int i = 0; i < NumChoices; i++) {
-		if (strncasecmp(val, apszChoices[i], vlen) == 0) {
+		if (plat_strnicmp(val, apszChoices[i], vlen) == 0) {
 			found = i;
 			matches++;
 		}

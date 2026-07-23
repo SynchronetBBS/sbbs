@@ -45,6 +45,7 @@ bool plat_mkdir(const char *dir);
 void plat_GetExePath(const char *argv0, char *buf, size_t bufsz);
 FILE *plat_fsopen(const char *pathname, const char *mode, int shflag);
 int plat_stricmp(const char *s1, const char *s2);
+int plat_strnicmp(const char *s1, const char *s2, size_t n);
 bool plat_DeleteFile(const char *fname);
 void plat_Delay(unsigned msec);
 void FreeFileList(char **fl);

@@ -112,6 +112,16 @@ static void emit_key(unsigned short vk, int release)
 {
 	door_input_event_t ev;
 
+	/* A genuine keystroke -- the one thing DSR pacing cannot forge. Safe here
+	 * because door_csi_final() consumes every terminal auto-reply upstream and
+	 * re-emits only unrecognized bytes, so a pace-ack can never reach this
+	 * function. Deliberately ABOVE the F1/Esc handling below: if this key
+	 * answered the idle countdown then that is all it does, otherwise pressing
+	 * F1 to say "I'm here" would also open the help card. The release edge
+	 * still falls through, so no key is left stuck down. */
+	if (door_io_idle_wake() && !release)
+		return;
+
 	/* F1 is the door-level help key (never forwarded to the game): toggle the
 	 * Ctrl-K help card on its press. Esc closes the card when it's open (and is
 	 * swallowed so the game's Options menu doesn't also open); when the card is
@@ -315,6 +325,14 @@ static void mouse_event(int button, int col, int row, int release)
 	door_io_grid(&gc, &gr);
 	if (!door_io_mouse_pixels() && ((gc > 0 && col > gc) || (gr > 0 && row > gr)))
 		door_io_note_pixel_report();
+
+	/* Mouse activity counts as presence too -- MOTION included, not just
+	 * buttons: a player nudging units around a map with the mouse is plainly
+	 * there, and this door reports motion, so keyless play must not time out.
+	 * As with a keystroke, input that answers the countdown is consumed rather
+	 * than delivered, so waking up cannot also issue an order. */
+	if (door_io_idle_wake())
+		return;
 
 	door_io_get_rect(&ew, &eh, &dx, &dy);
 	door_io_cell_size(&cw, &ch);

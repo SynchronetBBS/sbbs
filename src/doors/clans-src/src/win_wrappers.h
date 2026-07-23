@@ -23,10 +23,13 @@
 #define S_IWRITE _S_IWRITE
 #endif
 
-// These are extensions that Microsoft (correctly) added a leading underscore to...
-#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202311L
-char *strdup(const char *s);
-#endif
+// These are extensions that Microsoft (correctly) added a leading underscore to.
+// Map the POSIX spelling onto the underscored one rather than declaring it: the
+// UCRT already declares strdup itself, so a second declaration draws C4273
+// (inconsistent dll linkage) and every call site draws C4996 for the deprecated
+// POSIX name -- which /sdl, on in the MSVC projects, turns into an error.
+// <string.h> is included above, so this rewrites our calls, not that declaration.
+#define strdup _strdup
 
 void display_win32_error();
 

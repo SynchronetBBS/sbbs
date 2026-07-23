@@ -522,18 +522,24 @@ function event_feed(path, max, fmt, max_age) {
 	return out;
 }
 
-// Parse a duration string to SECONDS. A bare number is DAYS (fractions allowed, e.g.
-// "0.5"); an optional letter suffix overrides the unit: s, m(inutes), h(ours),
-// d(ays), w(eeks), y(ears) -- e.g. "48h", "2w", "0.5d". Blank/invalid/<=0 -> 0 (which
-// callers treat as "no limit"). Same suffix letters as xpdev's parse_duration; its
-// bare unit is seconds, ours is days (a lobby-config convenience -- JS iniGetValue
-// has no native duration parsing yet).
-function parse_duration(str) {
+// Parse a duration string to SECONDS. A bare number takes `dflt_unit` (default
+// "d" -- DAYS, fractions allowed, e.g. "0.5"); an optional letter suffix always
+// overrides it: s, m(inutes), h(ours), d(ays), w(eeks), y(ears) -- e.g. "48h",
+// "2w". Blank/invalid/<=0 -> 0 (which callers treat as "no limit"). Same suffix
+// letters as xpdev's parse_duration.
+//
+// WHY dflt_unit EXISTS: xpdev's parse_duration() reads a bare number as
+// SECONDS, and the doors use it (via iniGetDuration/iniReadDuration) on the
+// very same [idle] ini keys this lobby reads. With a days default on this side
+// only, "timeout = 900" would mean 15 minutes to the door and 900 days here --
+// a silent disable. Duration keys shared with a door MUST pass "s"; the days
+// default stays for activity_max_age, which predates this and is lobby-only.
+function parse_duration(str, dflt_unit) {
 	var n = parseFloat(str);
 	if (isNaN(n) || n <= 0)
 		return 0;
 	var m = String(str).match(/[a-zA-Z]/);
-	switch (m ? m[0].toLowerCase() : "d") {
+	switch (m ? m[0].toLowerCase() : (dflt_unit || "d")) {
 		case "s": return Math.round(n);
 		case "m": return Math.round(n * 60);
 		case "h": return Math.round(n * 3600);

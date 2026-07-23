@@ -154,7 +154,25 @@ function external_program_menu(xsec)
 		else {
 			var multicolumn = options.multicolumn && prog_list.length > options.singlecolumn_height;
 			var center = options.center && !multicolumn;
-			var margin = center ? format("%*s", Math.floor(console.screen_columns * 0.25) - 1, "") : "";
+			// Center on the actual rendered row width, not a fixed fraction of
+			// the screen: screen_columns/4 as a left margin only lands near
+			// center at 80 columns and drifts left as the terminal widens. Take
+			// the widest row's DISPLAYED width (strip_ctrl drops the zero-width
+			// \x01 attribute codes) and split the slack -- the same
+			// measure-the-content approach the section list below already uses.
+			var margin = "";
+			if(center) {
+				var widest = 0;
+				for(var pi = 0; pi < prog_list.length; pi++) {
+					var w = strip_ctrl(format(options.singlecolumn_fmt,
+						pi + 1, prog_list[pi].name, prog_list[pi].cost)).length;
+					if(w > widest)
+						widest = w;
+				}
+				var pad = Math.floor((console.screen_columns - widest) / 2);
+				if(pad > 0)
+					margin = format("%*s", pad, "");
+			}
 			if(options.sort)
 				prog_list.sort(sort_by_name);
 			if(show_header)
@@ -241,9 +259,6 @@ function external_section_menu()
 {
     var i,j;
     var xsec=0;
-	var longest = 0;
-	for(i = 0; i < xtrn_area.sec_list.length; i++)
-		longest = Math.max(xtrn_area.sec_list[i].name.length, longest);
 
     while(bbs.online) {
 
@@ -280,7 +295,24 @@ function external_section_menu()
 
 			var multicolumn = options.multicolumn && sec_list.length > options.singlecolumn_height;
 			var center = options.center && !multicolumn;
-			var margin = center ? format("%*s", Math.floor((console.screen_columns - longest)/2) - 5, "") : "";
+			// Center on the widest row's DISPLAYED width (strip_ctrl drops the
+			// zero-width \x01 attribute codes), the same way the program list
+			// does. The old (screen_columns - longest)/2 - 5 measured only the
+			// section NAME and guessed a 5-column decoration offset, so it
+			// mis-centered whenever section_fmt was customized.
+			var margin = "";
+			if(center) {
+				var widest = 0;
+				for(i = 0; i < sec_list.length; i++) {
+					var w = strip_ctrl(format(options.section_fmt,
+						i + 1, sec_list[i].name)).length;
+					if(w > widest)
+						widest = w;
+				}
+				var pad = Math.floor((console.screen_columns - widest) / 2);
+				if(pad > 0)
+					margin = format("%*s", pad, "");
+			}
 
 			if(show_header)
 				printf(margin + options.section_header_fmt.replace('\x01l', ''), options.section_header_title);

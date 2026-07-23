@@ -48,6 +48,7 @@
 #include "text.h"       /* termgfx: text/block render tiers (rt_config / rt_render_frame) */
 #include "geometry.h"   /* termgfx: shared image fit/center (shared with SyncDOOM) */
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller */
+#include "stats.h"      /* termgfx: shared Ctrl-S strip window + fields */
 #include "audio_mgr.h"  /* termgfx: SyncTERM audio-APC manager (digital SFX) */
 #include <dirwrap.h>    /* xpdev: mkpath (recursive mkdir) for the audio cache dir */
 
@@ -913,9 +914,9 @@ void syncduke_pace_ack(void)
  * never reaches the last text row -- the Windows-Terminal scroll guard), so this is
  * clear of Duke's top-row pickup/quote messages and, on average, less invasive than
  * the old top strip that overlaid the game view. */
-static uint32_t syncduke_win_at, syncduke_win_frames;
-static uint64_t syncduke_win_bytes;
-static uint32_t syncduke_recent_fps, syncduke_recent_kbps;
+/* The rolling fps/throughput window and the strip's leading fields come from
+ * termgfx/stats.h, shared with SyncDOOM and SyncRetro. */
+static termgfx_stats_t syncduke_stats;
 static uint32_t syncduke_last_kb, syncduke_last_enc_us;
 static uint32_t syncduke_ov_draw_ms;
 static char     syncduke_ov_last[96];
@@ -941,25 +942,17 @@ void syncduke_stats_toggle(void)
  * every session the way SyncDOOM does. */
 static void syncduke_stats_window(void)
 {
-	uint32_t nm = syncduke_now_ms();
-	uint32_t span;
-
-	if (syncduke_win_at == 0) {
-		syncduke_win_at = nm;
+	if (!termgfx_stats_roll(&syncduke_stats, syncduke_now_ms()))
 		return;
-	}
-	if (nm - syncduke_win_at < 2000)
-		return;
-	span = nm - syncduke_win_at;
-	syncduke_recent_fps  = syncduke_win_frames * 1000 / span;
-	syncduke_recent_kbps = (uint32_t)(syncduke_win_bytes * 1000 / 1024 / span);
-	/* 0fps just means a still scene (de-duped); inflight/dim included for diagnosis. */
+	/* The LOG line keeps raw KB/s deliberately: a log is grepped and plotted,
+	 * where a unit that changes with the value is a nuisance. Only the on-screen
+	 * strip, where width costs a column, abbreviates.
+	 * 0fps just means a still scene (de-duped); inflight/dim included for diagnosis. */
 	fprintf(stderr, "syncduke: stats %s %ufps %uKB/s lag %u/%ums depth %d%s inflight %d %uKB enc %ums %dx%d\n",
 	        sd_tier_name(syncduke_last_tier),
-	        syncduke_recent_fps, syncduke_recent_kbps, syncduke_rtt_ms, syncduke_rtt_min,
+	        syncduke_stats.fps, syncduke_stats.kbps, syncduke_rtt_ms, syncduke_rtt_min,
 	        syncduke_eff_depth(), syncduke_inflight_auto ? "/auto" : "", syncduke_inflight, syncduke_last_kb,
 	        syncduke_last_enc_us / 1000, syncduke_out_w, syncduke_out_h);
-	syncduke_win_at = nm; syncduke_win_frames = 0; syncduke_win_bytes = 0;
 }
 
 /* force=1: a fresh frame just painted over the strip, so always repaint it.
@@ -967,53 +960,40 @@ static void syncduke_stats_window(void)
  * de-duped) screen, but rate-limited to 4Hz so de-dupe churn can't spam the wire. */
 static void syncduke_emit_overlay(int force)
 {
-	char     txt[96], ov[220], bw[20];
+	char     txt[96], ov[220], head[80];
 	uint32_t nm = syncduke_now_ms();
 	int      tn, ovn;
 
 	if (!force && nm - syncduke_ov_draw_ms < 250)
 		return;
 
-	/* Build the readout, SyncDOOM-style: spaced fields and KB/s up to 999, then
-	 * fractional MB/s so the throughput field stays narrow on a fast link. */
+	/* The leading fields -- tier, fps, throughput, lag, depth -- are termgfx's
+	 * (stats.h), so this strip reads exactly like SyncDOOM's and SyncRetro's:
+	 * spaced fields, KB/s up to 999 then fractional MB/s so the throughput stays
+	 * narrow on a fast link, every number clamped to four digits. The rest of the
+	 * row below is SyncDuke's own. */
+	termgfx_stats_head(head, sizeof(head), sd_tier_name(syncduke_last_tier),
+	                   syncduke_stats.fps, syncduke_stats.kbps,
+	                   syncduke_rtt_ms, syncduke_rtt_min,
+	                   syncduke_eff_depth(), syncduke_inflight_auto);
 	{
-		uint32_t fps  = syncduke_recent_fps  > 9999 ? 9999 : syncduke_recent_fps;
-		uint32_t kbps = syncduke_recent_kbps;
-		uint32_t rtt  = syncduke_rtt_ms      > 9999 ? 9999 : syncduke_rtt_ms;
-		uint32_t rmin = syncduke_rtt_min     > 9999 ? 9999 : syncduke_rtt_min;
-		uint32_t kb   = syncduke_last_kb     > 9999 ? 9999 : syncduke_last_kb;
-		uint32_t enc  = syncduke_last_enc_us / 1000;
+		char     kbd[16];                                     /* protocol + turn-key model; empty on the byte path */
+		char     zm[12];                                      /* terminal-side upscale (APC ZX/ZY) */
+		uint32_t kb  = syncduke_last_kb > 9999 ? 9999 : syncduke_last_kb;
+		uint32_t enc = syncduke_last_enc_us / 1000;
 		if (enc > 999)
 			enc = 999;
-		if (kbps > 999)
-			snprintf(bw, sizeof(bw), "%u.%uMB/s", kbps / 1024, (kbps % 1024) * 10 / 1024);
-		else
-			snprintf(bw, sizeof(bw), "%uKB/s", kbps);
-		{
-			/* Keyboard + turn-key model in ONE compact token (width = the old "kbd:evdev"):
-			 * "evdev/nat" or "kitty/syn" -- the suffix is native hold (low-latency true key-up)
-			 * vs the synthetic constant rate (high-latency fallback).  Empty on the byte path. */
-			char kbd[16] = "";
-			char zm[12]  = "";                    /* terminal-side upscale (APC ZX/ZY) */
-			if (syncduke_evdev_active() || syncduke_kitty_active())
-				snprintf(kbd, sizeof(kbd), " %s/%s",
-				         syncduke_evdev_active() ? "evdev" : "kitty",
-				         syncduke_turn_native() ? "nat" : "syn");
-			if (syncduke_last_tier == 1
-			    && (syncduke_last_zoom_x > 1 || syncduke_last_zoom_y > 1)) {
-				if (syncduke_last_zoom_x == syncduke_last_zoom_y)
-					snprintf(zm, sizeof(zm), " x%d", syncduke_last_zoom_x);
-				else
-					snprintf(zm, sizeof(zm), " x%dx%d",
-					         syncduke_last_zoom_x, syncduke_last_zoom_y);
-			}
-			tn = snprintf(txt, sizeof(txt), " %s %ufps %s lag %u/%ums depth %d%s %uKB enc %2ums%s%s%s ",
-			              sd_tier_name(syncduke_last_tier),
-			              fps, bw, rtt, rmin, syncduke_eff_depth(), syncduke_inflight_auto ? "/auto" : "", kb, enc,
-			              kbd,
-			              (syncduke_last_tier == 1 && syncduke_img_blob_ok()) ? " blob" : "",   /* JXL inline (DrawJXLBlob) */
-			              zm);                                                                  /* " x2" = terminal upscales */
-		}
+		termgfx_stats_kbd(kbd, sizeof(kbd),
+		                  syncduke_evdev_active() || syncduke_kitty_active(),
+		                  !syncduke_evdev_active(), syncduke_turn_native());
+		termgfx_stats_zoom(zm, sizeof(zm),
+		                   syncduke_last_tier == 1 ? syncduke_last_zoom_x : 1,
+		                   syncduke_last_tier == 1 ? syncduke_last_zoom_y : 1);
+		tn = snprintf(txt, sizeof(txt), "%s %uKB enc %2ums%s%s%s ",
+		              head, kb, enc,
+		              kbd,
+		              (syncduke_last_tier == 1 && syncduke_img_blob_ok()) ? " blob" : "",   /* JXL inline (DrawJXLBlob) */
+		              zm);                                                                  /* " x2" = terminal upscales */
 	}
 	if (tn < 0)
 		return;
@@ -1387,8 +1367,7 @@ void syncduke_present(void)
 	syncduke_pace_progress_ms = syncduke_now_ms();
 	syncduke_dsr_sent(syncduke_pace_progress_ms);
 	syncduke_last_kb = (uint32_t)(n / 1024);
-	syncduke_win_frames++;
-	syncduke_win_bytes += n;
+	termgfx_stats_frame(&syncduke_stats, (uint32_t)n);
 	sent = 1;
 
 	memcpy(syncduke_last_fb, fb, SYNCDUKE_SCREEN_W * SYNCDUKE_SCREEN_H);

@@ -77,6 +77,23 @@ static char g_aspect[32] = "core";    /* [video] aspect: core|square|4:3|<decima
 static char g_core_path[PATH_MAX];    /* the .so to dlopen, absolute */
 static char g_rom_path[PATH_MAX];     /* the cartridge, absolute */
 
+/* syncretro.ini, [idle] -- the idle-USER timeout and its countdown, in seconds.
+ * Its own declaration group rather than joined to the block above: `unsigned` is
+ * a wider type, and folding it in there re-aligns a dozen untouched lines. */
+/* SR_IDLE_DEFAULT is the shipped policy, not just an ini fallback: with no
+ * [idle] section at all a door still times an idle player out after 10 minutes.
+ * Deliberately lenient -- a player reading a hint screen, watching an attract
+ * loop or answering the door is not gone, and a false termination is far worse
+ * than a node held a few extra minutes. Set `timeout = 0` to disable outright.
+ *
+ * exec/load/syncretro_lobby.js CARRIES THE SAME NUMBER for the lobby path (it
+ * always passes -i, so its fallback governs there). The two must agree; change
+ * both together. */
+#define SR_IDLE_DEFAULT 600           /* 10 minutes */
+
+static unsigned g_idle_timeout = SR_IDLE_DEFAULT;   /* [idle] timeout; 0 = off */
+static unsigned g_idle_warn = 60;     /* [idle] warn */
+
 /* Where the sysop keeps cartridges, relative to the door's launch directory. */
 #define SR_ROM_SUBDIR "roms"
 
@@ -179,6 +196,12 @@ static void sr_config_read_ini(void)
 		g_audio_prebuffer = iniGetInteger(ini, "audio", "prebuffer", 3);
 		g_dirty_rect      = iniGetBool(ini, "video", "dirty_rect", TRUE);
 		g_palette_subset  = iniGetBool(ini, "video", "palette_subset", TRUE);
+		/* [idle] -- iniGetDuration() so "15m"/"900"/"1h" all work, and so a bare
+		 * number means SECONDS here exactly as it does in the lobby (which passes
+		 * "s" to its own parse_duration for these same keys). */
+		g_idle_timeout    = (unsigned)iniGetDuration(ini, "idle", "timeout",
+		                                             SR_IDLE_DEFAULT);
+		g_idle_warn       = (unsigned)iniGetDuration(ini, "idle", "warn", 60);
 		/* [debug] dirty_log -- a per-frame trace of the dirty-rect decision (why
 		 * a frame took the patch path or the full-repaint path), plus one
 		 * startup line with the geometry that governs band alignment. Off by
@@ -243,6 +266,8 @@ static void sr_config_read_ini(void)
 
 int    sr_config_dirty_rect(void)      { return g_dirty_rect; }
 int    sr_config_palette_subset(void)  { return g_palette_subset; }
+unsigned sr_config_idle_timeout(void)  { return g_idle_timeout; }
+unsigned sr_config_idle_warn(void)     { return g_idle_warn; }
 int    sr_config_dirty_log(void)       { return g_dirty_log; }
 int    sr_config_input_device(void)    { return g_input_device; }
 int    sr_config_audio_enabled(void)   { return g_audio_enabled; }

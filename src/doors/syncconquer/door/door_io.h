@@ -58,11 +58,22 @@ uint32_t door_io_now_ms(void);
 // keycode (SyncTERM cap-8 mode) or an rxvt-style ESC[14~.
 void door_io_tier_cycle(void);
 
+/* Force the next present to emit a full frame rather than dedupe. Used after an
+ * overlay wipes rows that overlap the game picture. */
+void door_io_force_repaint(void);
+
 // Toggle the Ctrl-K / F1 key-bindings help card (and flag the repaint the
 // present loop needs to show/erase it cleanly). door_io_help_active() reports
 // whether it's currently up. Called from door_input.c's emit_key() so F1 opens
 // it and Esc closes it from every keyboard mode.
 void door_io_help_toggle(void);
+
+/* Idle-user detection. Feed this from the REAL key/mouse dispatch only, never
+ * from the terminal auto-reply path: DSR frame pacing makes socket traffic
+ * worthless as a presence signal. Returns 1 if this input answered an on-screen
+ * countdown, in which case the caller must CONSUME the event instead of passing
+ * it to the game -- "press any key" must not also fire that key's action. */
+int door_io_idle_wake(void);
 int  door_io_help_active(void);
 
 // Route a door-level Ctrl+letter hotkey (lowercase 'a'..'z') to its action:

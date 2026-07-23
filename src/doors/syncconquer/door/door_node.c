@@ -45,45 +45,90 @@ static uint32_t node_now_ms(void)
 static char     g_ov[SA_NODE_OVROWS][SA_NODE_OVCOLS];
 static int      g_ov_rows;
 static uint32_t g_ov_until;      /* ms deadline (same clock as pacing) */
+/* Anchor the overlay to the BOTTOM row instead of the top. Set only by
+ * door_node_notice(): the page and who's-online banners are multi-row and stay
+ * top-anchored, but a one-line door notice belongs on the bottom row -- that is
+ * where this door already puts its Ctrl-S stats strip, and where the sibling
+ * doors put the same idle countdown. One feature, one place on screen. */
+static int      g_ov_bottom;
+/* What an expiring banner left on screen, so the next draw can wipe it. The
+ * overlay used to just stop drawing, which leaves its last text sitting there:
+ * the game image does not reach the margins, so nothing repaints those cells
+ * and the message persists until something else happens to overwrite them. */
+static int      g_ov_erase;        /* rows still needing an erase */
+static int      g_ov_erase_bottom; /* ...and which anchor they used */
 
 static void banner_set(int nrows, int ms)
 {
 	if (nrows > SA_NODE_OVROWS)
 		nrows = SA_NODE_OVROWS;
-	g_ov_rows  = nrows;
-	g_ov_until = node_now_ms() + (uint32_t)ms;
+	g_ov_rows   = nrows;
+	g_ov_until  = node_now_ms() + (uint32_t)ms;
+	g_ov_bottom = 0;                 /* top-anchored unless the caller says otherwise */
 }
 
 static int banner_live(void)
 {
-	if (g_ov_rows > 0 && (int32_t)(node_now_ms() - g_ov_until) >= 0)
-		g_ov_rows = 0;           /* expired */
+	if (g_ov_rows > 0 && (int32_t)(node_now_ms() - g_ov_until) >= 0) {
+		g_ov_erase        = g_ov_rows;      /* remember what to wipe */
+		g_ov_erase_bottom = g_ov_bottom;
+		g_ov_rows         = 0;              /* expired */
+	}
 	return g_ov_rows > 0;
 }
 
 int door_node_overlay_active(void)
 {
-	return banner_live();
+	/* A PENDING ERASE counts as active. door_io_present() skips the whole
+	 * overlay draw on a deduped frame unless this says otherwise, so a banner
+	 * that expires over a static game screen (sitting at a menu, or paused)
+	 * would have its erase queued and never emitted -- leaving the last message
+	 * stranded on screen indefinitely. Staying "active" for the one extra frame
+	 * it takes to wipe the row is what closes that hole. */
+	return banner_live() || g_ov_erase > 0;
 }
 
 void door_node_draw(int cols, int rows)
 {
 	int i;
-	(void)rows;
-	if (!banner_live())
-		return;
 	if (cols <= 0)
 		cols = 80;
+	if (rows <= 0)
+		rows = 25;
+	if (!banner_live()) {
+		/* Just expired: ERASE the rows it occupied. Nothing else repaints
+		 * them, so without this the last message stays on screen -- which is
+		 * how a dismissed idle countdown was left stranded in the margin.
+		 *
+		 * The erase clears the WHOLE row, deliberately: that is the only way
+		 * to reach the left/right margins the game picture never covers. But a
+		 * top-anchored banner sits ON the picture, so the same wipe punches a
+		 * black band through the UI -- hence the repaint request below, which
+		 * makes the next present redraw the image over these rows instead of
+		 * deduping against a frame that no longer matches the screen. */
+		for (i = 0; i < g_ov_erase; i++) {
+			char ob[32];
+			int  n = snprintf(ob, sizeof ob, "\x1b[%d;1H\x1b[0m\x1b[K",
+			                  g_ov_erase_bottom ? rows : i + 1);
+			if (n > 0)
+				door_io_send(ob, (size_t)n);
+		}
+		g_ov_erase = 0;
+		door_io_force_repaint();
+		return;
+	}
 	for (i = 0; i < g_ov_rows; i++) {
 		char ob[SA_NODE_OVCOLS + 32];
 		int  len = (int)strlen(g_ov[i]);
 		int  n;
 		if (len > cols)
 			len = cols;
-		/* White-on-red top strip, one line per row: position, set attr,
-		 * ERASE-TO-EOL, then the text (mirrors syncduke_node.c's overlay). */
+		/* White-on-red strip, one line per row: position, set attr,
+		 * ERASE-TO-EOL, then the text (mirrors syncduke_node.c's overlay).
+		 * Top-anchored by default; a one-line notice sits on the bottom row
+		 * instead (see g_ov_bottom). */
 		n = snprintf(ob, sizeof ob, "\x1b[%d;1H\x1b[1;37;41m\x1b[K%.*s\x1b[0m",
-		             i + 1, len, g_ov[i]);
+		             g_ov_bottom ? rows : i + 1, len, g_ov[i]);
 		if (n > 0)
 			door_io_send(ob, (size_t)n);
 	}
@@ -126,6 +171,34 @@ static void door_node_status(void)
 }
 
 void door_node_userlist_request(void) { g_want_userlist = 1; }
+
+/* One-line transient banner, for a door-level message that is neither a page
+ * nor a who's-online list (today: the idle countdown). Deliberately the SAME
+ * overlay the other two use rather than a second drawing path, so it inherits
+ * their draw, expiry and redraw behavior for free. */
+void door_node_notice(const char *text, int ms)
+{
+	snprintf(g_ov[0], SA_NODE_OVCOLS, " %s", (text != NULL) ? text : "");
+	banner_set(1, ms);
+	g_ov_bottom = 1;      /* after banner_set(), which clears it */
+}
+
+/* Is a bottom-anchored notice on screen? The stats strip owns that same row and
+ * asks before repainting, so the two cannot fight over it. */
+int door_node_notice_active(void)
+{
+	return g_ov_bottom && banner_live();
+}
+
+/* Retire a notice NOW rather than waiting out its dwell -- the idle countdown
+ * calls this the moment the player proves they are there. Expiring rather than
+ * clearing directly means the erase still runs through banner_live()'s one
+ * path, so the row is wiped exactly as it would be on a natural timeout. */
+void door_node_notice_expire(void)
+{
+	if (g_ov_bottom && g_ov_rows > 0)
+		g_ov_until = node_now_ms();
+}
 
 static void door_node_userlist(void)
 {

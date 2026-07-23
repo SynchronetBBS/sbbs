@@ -81,6 +81,11 @@ int plat_stricmp(const char *s1, const char *s2)
 	return strcasecmp(s1, s2);
 }
 
+int plat_strnicmp(const char *s1, const char *s2, size_t n)
+{
+	return strncasecmp(s1, s2, n);
+}
+
 bool plat_DeleteFile(const char *fname)
 {
 	const int rc = unlink(fname);

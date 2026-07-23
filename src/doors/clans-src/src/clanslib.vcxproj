@@ -18,6 +18,7 @@
     <ClCompile Include="random.c" />
     <ClCompile Include="readcfg.c" />
     <ClCompile Include="serialize.c" />
+    <ClCompile Include="u8cp437.c" />
     <ClCompile Include="video.c" />
   </ItemGroup>
   <ItemGroup>
@@ -45,6 +46,7 @@
     <ClInclude Include="serialize.h" />
     <ClInclude Include="structs.h" />
     <ClInclude Include="system.h" />
+    <ClInclude Include="u8cp437.h" />
     <ClInclude Include="user.h" />
     <ClInclude Include="video.h" />
     <ClInclude Include="win_wrappers.h" />

@@ -41,6 +41,30 @@ set_target_properties(test_mouse PROPERTIES C_STANDARD 11)
 target_compile_options(test_mouse PRIVATE -UNDEBUG)
 add_test(NAME mouse COMMAND test_mouse)
 
+# Unit test for idle.c -- the pure idle-user clock. Compiled as a bare SOURCE
+# and linked against nothing, like test_chunk: the module is arithmetic over
+# timestamps, with no I/O and no dependencies at all.
+add_executable(test_idle
+    ${CMAKE_CURRENT_SOURCE_DIR}/../idle.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_idle.c)
+target_include_directories(test_idle PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set_target_properties(test_idle PROPERTIES C_STANDARD 11)
+target_compile_options(test_idle PRIVATE -UNDEBUG)
+add_test(NAME idle COMMAND test_idle)
+
+# Unit test for stats.c -- the shared Ctrl-S strip's window arithmetic and
+# field formatting. Bare SOURCE like test_chunk/test_idle: the module is
+# arithmetic plus snprintf, with no I/O and no dependencies. Worth its own
+# target because the three doors' strips now agree only as far as this file
+# does -- the KB/s-to-MB/s threshold in particular is what drifted before.
+add_executable(test_stats
+    ${CMAKE_CURRENT_SOURCE_DIR}/../stats.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_stats.c)
+target_include_directories(test_stats PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set_target_properties(test_stats PROPERTIES C_STANDARD 11)
+target_compile_options(test_stats PRIVATE -UNDEBUG)
+add_test(NAME stats COMMAND test_stats)
+
 # The rest of this directory's tests -- termgfx_termio (23 binaries), the
 # quantizer, present_rgbx, the sixel palette test and the repro_fade harness --
 # are driven by the unit_termgfx_*.sh scripts here rather than by CTest: they
