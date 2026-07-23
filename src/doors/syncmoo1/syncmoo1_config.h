@@ -41,4 +41,10 @@ void sm_config_seed_1oom(void);
  * as 1oom wrote it. */
 void sm_config_prune_user_cfg(void);
 
+/* [idle] timeout / warn, in SECONDS ("15m", "900" and "1h" all parse; a bare
+ * number is seconds). Default 10 minutes -- UNSET IS NOT OFF; timeout = 0
+ * disables. These are the only configuration path on a non-Synchronet BBS. */
+unsigned sm_config_idle_timeout(void);
+unsigned sm_config_idle_warn(void);
+
 #endif /* SYNCMOO1_CONFIG_H */

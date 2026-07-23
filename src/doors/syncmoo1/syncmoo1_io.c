@@ -1022,3 +1022,67 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
 
     sm_io_out_flush();
 }
+
+/* --- one-line transient notice, on the RESERVED bottom row ----------------
+ *
+ * The idle countdown's display. It goes on the bottom text row, which
+ * sm_geom_fit_page() already holds back from the image (see the fit above), so
+ * unlike the sibling doors' overlays this one can never paint over the game
+ * picture -- and the erase below cannot punch a hole in it either. There is no
+ * stats strip here to share the row with (M1 has none), so no precedence
+ * dance is needed.
+ *
+ * Written straight out rather than staged into a frame: it must appear on a
+ * still screen, and the frame path may legitimately emit nothing at all when
+ * the picture has not changed.
+ */
+static int      g_notice_drawn;
+static uint32_t g_notice_until;
+
+static int sm_notice_row(void)
+{
+    return (g_grid_rows > 0) ? g_grid_rows : 24;
+}
+
+void sm_io_notice(const char *text, int ms)
+{
+    char ov[160];
+    int  n;
+
+    if (text == NULL || sm_io_get_fd() < 0)
+        return;
+    n = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[1;37;44m %s \x1b[K\x1b[0m",
+                 sm_notice_row(), text);
+    if (n > 0)
+        sm_out_put(ov, (size_t)n);
+    sm_io_out_flush();
+    g_notice_drawn = 1;
+    g_notice_until = sm_io_now_ms() + (uint32_t)ms;
+}
+
+/* Retire it NOW instead of waiting out the dwell -- the countdown calls this
+ * the moment the player proves they are there. */
+void sm_io_notice_expire(void)
+{
+    if (g_notice_drawn)
+        g_notice_until = sm_io_now_ms();
+}
+
+/* Called once per frame: erase the notice once its moment has passed. Nothing
+ * else repaints the reserved row, so without this the last message would stay
+ * on screen indefinitely. */
+void sm_io_notice_tick(void)
+{
+    char ov[32];
+    int  n;
+
+    if (!g_notice_drawn)
+        return;
+    if ((int32_t)(sm_io_now_ms() - g_notice_until) < 0)
+        return;
+    n = snprintf(ov, sizeof ov, "\x1b[%d;1H\x1b[0m\x1b[K", sm_notice_row());
+    if (n > 0)
+        sm_out_put(ov, (size_t)n);
+    sm_io_out_flush();
+    g_notice_drawn = 0;
+}

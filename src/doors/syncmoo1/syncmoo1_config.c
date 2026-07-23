@@ -66,6 +66,20 @@ static int    sm_hand_cursor;   /* draw 1oom's own hand cursor? default off -- t
                                  * game's hand doesn't line up with it (see hw_term.c) */
 static double sm_music_quality = TERMGFX_MUSIC_QUALITY_DEFAULT;
 
+/* syncmoo1.ini [idle]. SM_IDLE_DEFAULT is the shipped POLICY, not merely a
+ * fallback: with no [idle] section at all a player idle this long is still
+ * returned to the BBS. Lenient on purpose -- someone studying a star map or
+ * reading a council report is not gone, and a false termination costs far more
+ * than a node held a few extra minutes. `timeout = 0` disables it outright.
+ * Matches the sibling doors' default; keep the three in step. */
+#define SM_IDLE_DEFAULT 600           /* 10 minutes */
+
+static unsigned sm_idle_timeout = SM_IDLE_DEFAULT;   /* [idle] timeout; 0 = off */
+static unsigned sm_idle_warn    = 60;                /* [idle] warn */
+
+unsigned sm_config_idle_timeout(void) { return sm_idle_timeout; }
+unsigned sm_config_idle_warn(void)    { return sm_idle_warn; }
+
 int sm_config_wire_enabled(void)
 {
     return sm_wire_enabled;
@@ -139,6 +153,11 @@ static void sm_config_read_ini(void)
     sm_hand_cursor   = iniGetBool(ini, "video", "hand_cursor", FALSE) ? 1 : 0;
     sm_music_quality = iniGetFloat(ini, "audio", "music_quality",
                                    TERMGFX_MUSIC_QUALITY_DEFAULT);
+    /* [idle] via iniGetDuration() so "15m"/"900"/"1h" all parse, and so a bare
+     * number means SECONDS here exactly as it does in the sibling doors. */
+    sm_idle_timeout = (unsigned)iniGetDuration(ini, "idle", "timeout",
+                                               SM_IDLE_DEFAULT);
+    sm_idle_warn    = (unsigned)iniGetDuration(ini, "idle", "warn", 60);
     sm_config_capture_1oom(ini);
     strListFree(&ini);
 }

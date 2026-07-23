@@ -120,6 +120,14 @@ void sm_out_put(const void *buf, size_t len);
  * session. Returns 0. */
 int sm_io_out_flush(void);
 
+/* One-line transient notice on the RESERVED bottom row (the idle countdown).
+ * The row is held back from the image by sm_geom_fit_page(), so this can never
+ * paint over the picture. sm_io_notice_tick() erases it once its dwell is up
+ * and must be called once per frame; sm_io_notice_expire() retires it early. */
+void sm_io_notice(const char *text, int ms);
+void sm_io_notice_expire(void);
+void sm_io_notice_tick(void);
+
 /* Record inbound bytes into the SYNCMOO1_WIREDUMP capture, if one is open.
  * Called by syncmoo1_input.c's read loop; a no-op (and free) otherwise. The
  * outbound side is captured inside sm_out_put(), so the two interleave in the
@@ -242,6 +250,16 @@ uint32_t sm_door_time_limit_ms(void);
  * terminal same as any other clean quit). A no-op when no time limit was
  * given. */
 void sm_door_check_time(void);
+
+/* Idle-USER detection. sm_door_idle_arm() must run AFTER sm_config_apply(),
+ * which is what reads the [idle] ini keys the threshold falls back to.
+ * sm_door_idle_wake() returns 1 when the input answered an on-screen countdown
+ * -- the caller must then CONSUME that input instead of handing it to the
+ * engine, or "press any key" also presses that key at the game.
+ * sm_door_check_idle() runs once per present, beside the time check. */
+void sm_door_idle_arm(void);
+int  sm_door_idle_wake(void);
+void sm_door_check_idle(void);
 
 /* Strip the door's own arguments (-s<digits>, -t<digits>, -name <alias>,
  * -home <dir>, a bare *door32.sys path) from argv before 1oom's own

@@ -32,6 +32,7 @@
  *   4. main_1oom(argc, argv)         -- engine drives from here.
  */
 #include "syncmoo1_door.h"
+#include "syncmoo1_config.h"   /* sm_config_idle_timeout()/warn() */
 
 #include <stdint.h>
 #include <stdio.h>
@@ -39,6 +40,7 @@
 #include <string.h>
 
 #include "door32.h"    /* termgfx: the shared DOOR32.SYS parser */
+#include "idle.h"      /* termgfx: the shared idle-USER clock */
 #include <unistd.h>         /* _exit() -- on MSVC this is compat/unistd.h -> <process.h> */
 
 #include "genwrap.h"        /* xpdev: stricmp() -- strcasecmp on POSIX, _stricmp on MSVC */
@@ -62,6 +64,15 @@ static int      g_stdio;
 static uint32_t g_time_limit_ms;       /* 0 = no session time limit */
 static uint32_t g_deadline_ms;         /* only meaningful if g_deadline_armed */
 static int      g_deadline_armed;
+
+/* The idle-USER clock. Distinct from the session deadline above: that one
+ * bounds how long the visit may last, this one notices that nobody is driving
+ * it. It exists because the BBS's own "Maximum Inactivity" cannot see a
+ * DSR-paced door -- that counter is reset by any socket traffic, and frame
+ * pacing makes the terminal answer ~10x/second on its own. See ../termgfx/idle.h. */
+static termgfx_idle_t g_idle;
+static int            g_idle_arg = -1;   /* -i<seconds>; -1 = not given */
+static int            g_idle_warning;    /* the countdown is on screen right now */
 static char     g_alias[SM_DOOR_ALIAS_MAX];
 static int      g_alias_authoritative;   /* set only by read_door32(): the BBS named the user */
 static char     g_home[SM_DOOR_HOME_MAX];  /* "" = no -home given */
@@ -147,6 +158,14 @@ static int is_time_arg(const char *a)
     return a[0] == '-' && a[1] == 't' && all_digits(a + 2);
 }
 
+/* -i<seconds>: the idle-user threshold. A predicate for the same reason the two
+ * above are -- sm_door_sanitize_argv() must strip exactly what the parse
+ * consumed, or 1oom's options_parse() sees an unknown flag and aborts. */
+static int is_idle_arg(const char *a)
+{
+    return a[0] == '-' && a[1] == 'i' && all_digits(a + 2);
+}
+
 /* DOOR32.SYS line numbers below are 0-based (fgets counter); the spec itself
  * is 1-based, so "line 1/2/7/9" in the file header above maps to ln 0/1/6/8
  * here -- matching syncduke_door.c's read_door32() exactly. */
@@ -196,6 +215,8 @@ static void sm_door_resolve(int argc, char **argv)
             g_socket = atoi(a + 2);                             /* -s<fd>        */
         } else if (is_time_arg(a)) {
             g_time_limit_ms = (uint32_t)atoi(a + 2) * 1000u;    /* -t<seconds>   */
+        } else if (is_idle_arg(a)) {
+            g_idle_arg = atoi(a + 2);                          /* -i<seconds>   */
         } else if (strcmp(a, "-stdio") == 0) {
             if (sm_plat_stdio_ok())
                 g_stdio = 1;
@@ -455,6 +476,68 @@ uint32_t sm_door_time_limit_ms(void)
     return g_time_limit_ms;
 }
 
+/* Arm the idle clock. NOT done in sm_door_setup() beside the -t deadline:
+ * setup() is step 1 of main()'s sequence and sm_config_apply() -- which reads
+ * syncmoo1.ini -- is step 3, so arming there would read a threshold of zero and
+ * silently leave every install with no timeout at all. main() calls this right
+ * after sm_config_apply(). */
+void sm_door_idle_arm(void)
+{
+    unsigned secs = (g_idle_arg >= 0) ? (unsigned)g_idle_arg
+                                      : sm_config_idle_timeout();
+
+    termgfx_idle_init(&g_idle, secs, sm_config_idle_warn(), sm_door_now_ms());
+}
+
+/* Feed genuine input to the clock; returns 1 if it answered an on-screen
+ * countdown, in which case the caller must CONSUME the input rather than hand
+ * it to the engine. "Press any key" must not also mean "press that key" -- in
+ * 1oom almost every key does something, and Escape opens a menu. */
+int sm_door_idle_wake(void)
+{
+    int woke = g_idle_warning;
+
+    termgfx_idle_activity(&g_idle, sm_door_now_ms());
+    if (woke) {
+        g_idle_warning = 0;
+        sm_io_notice_expire();   /* clear the row now, not after the dwell */
+    }
+    return woke;
+}
+
+/* Per frame, beside sm_door_check_time(). */
+void sm_door_check_idle(void)
+{
+    static unsigned last_shown = 0;
+    unsigned        left = 0;
+    char            msg[96];
+
+    switch (termgfx_idle_poll(&g_idle, sm_door_now_ms(), &left)) {
+        case TERMGFX_IDLE_WARN:
+            if (left != last_shown) {
+                /* "terminating", not "disconnecting": this ends the GAME and
+                 * hands the player back to the BBS. Same wording as the
+                 * sibling doors, deliberately. */
+                snprintf(msg, sizeof msg,
+                         "Still there? Press any key -- terminating in %u second%s",
+                         left, (left == 1) ? "" : "s");
+                sm_io_notice(msg, 1500);   /* re-armed each second: dwell > tick */
+                last_shown = left;
+            }
+            g_idle_warning = 1;
+            break;
+        case TERMGFX_IDLE_EXPIRED:
+            fprintf(stderr, "syncmoo1: idle timeout -- no user input; exiting\n");
+            fflush(stderr);
+            exit(0);   /* clean exit, like the time limit below: atexit runs */
+        default:
+            last_shown = 0;
+            g_idle_warning = 0;
+            break;
+    }
+    sm_io_notice_tick();   /* erase the notice once its dwell has passed */
+}
+
 void sm_door_check_time(void)
 {
     if (!g_deadline_armed)
@@ -514,7 +597,7 @@ void sm_door_sanitize_argv(int *argc, char **argv)
         /* -s<digits> socket descriptor / -t<digits> time limit (attached door
          * args) -- digit-suffix-only so -sfx/-skipintro/-savequit et al pass
          * through to 1oom untouched (see is_socket_arg()/is_time_arg()). */
-        if (is_socket_arg(a) || is_time_arg(a))
+        if (is_socket_arg(a) || is_time_arg(a) || is_idle_arg(a))
             continue;
         /* -name <alias> / -home <dir>: drop flag + value */
         if (strcmp(a, "-name") == 0 || strcmp(a, "-home") == 0) {

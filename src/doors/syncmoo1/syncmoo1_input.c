@@ -108,12 +108,35 @@ static int g_mouse_mask;
  * mouse mode 1006). Port of syncconquer door_input.c:285-385's mouse_event(),
  * MINUS the RTS legacy-modifier-synthesis (no held-modifier state to fake
  * here -- M1 has no native modifier tracking to prefer over it either). */
+/* Every REAL key the terminal sends reaches the engine through here, and the
+ * idle clock is fed from this one place. Deliberately NOT sm_csi_final()'s
+ * dispatcher, which also sees the DSR pace-ack and the capability replies --
+ * those are the terminal talking to itself and prove nothing about the player.
+ *
+ * A key that answers the idle countdown is CONSUMED rather than delivered:
+ * "press any key" must not also press that key at the game, where nearly every
+ * key does something and Escape opens a menu. */
+static void sm_key_deliver(mookey_t key, uint32_t mod, char c)
+{
+    if (sm_door_idle_wake())
+        return;
+    kbd_add_keypress(key, mod, c);
+}
+
 static void sm_mouse_event(int button, int col, int row, int release)
 {
     int gx, gy, b = 0, wheel = 0, bit;
 
     sm_map_mouse(sm_io_geom(), col, row, &gx, &gy);
     mouse_set_xy_from_hw(gx, gy);
+
+    /* Mouse activity is presence too, MOTION included -- MoO1 is played almost
+     * entirely with the mouse, so a player clicking and hovering but never
+     * touching the keyboard must not be judged absent. Deliberately AFTER the
+     * position update above, so the pointer keeps tracking and only the EVENT
+     * is consumed: waking the door up must not also click on something. */
+    if (sm_door_idle_wake())
+        return;
 
     /* The button field is classified in termgfx (sgrmouse.h), not here: the
      * motion bit has to be tested before the wheel bit, because SyncTERM
@@ -320,7 +343,7 @@ static void sm_csi_final(char fin)
 
         np = sm_csi_params(p, 16);
         if (sm_map_csi(p, np, fin, &key, &mod))
-            kbd_add_keypress(key, mod, 0);
+            sm_key_deliver(key, mod, 0);
         return;
     }
     }
@@ -343,7 +366,7 @@ int sm_input_pump(int sockfd)
      * same burst as the ESC that started it, so it will have already
      * advanced past SM_P_ESC before this fires. */
     if (pstate == SM_P_ESC && (uint32_t)(sm_in_now_ms() - g_esc_at_ms) > SM_ESC_MS) {
-        kbd_add_keypress(MOO_KEY_ESCAPE, 0, 0x1b);
+        sm_key_deliver(MOO_KEY_ESCAPE, 0, 0x1b);
         pstate = SM_P_NORMAL;
     }
 
@@ -381,7 +404,7 @@ int sm_input_pump(int sockfd)
                 char     ch;
 
                 if (sm_map_ascii(c, &key, &mod, &ch))
-                    kbd_add_keypress(key, mod, ch);
+                    sm_key_deliver(key, mod, ch);
             }
             break;
         case SM_P_ESC:
@@ -399,7 +422,7 @@ int sm_input_pump(int sockfd)
                 apc_len = 0;
             } else {
                 /* Lone ESC (Escape key), reprocess c in NORMAL. */
-                kbd_add_keypress(MOO_KEY_ESCAPE, 0, 0x1b);
+                sm_key_deliver(MOO_KEY_ESCAPE, 0, 0x1b);
                 pstate = SM_P_NORMAL;
                 i--;
             }

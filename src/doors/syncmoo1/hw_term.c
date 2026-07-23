@@ -123,6 +123,7 @@ int main(int argc, char **argv)
      * parses argv. Pre-fills the new-game emperor name with the BBS alias. */
     argv = sm_door_argv_add_emperor_name(&argc, argv);
     sm_config_apply();
+    sm_door_idle_arm();     /* AFTER the ini read above: [idle] is its fallback */
     /* A STDIO door reads fd 0 and writes fd 1 -- two descriptors, each
      * half-duplex -- where a socket door reads and writes the one socket. */
     if (sm_door_stdio())
@@ -352,6 +353,7 @@ uint8_t *hw_video_draw_buf(void)
      * gave us runs out. A no-op when no -t<seconds>/DOOR32.SYS time limit
      * was given. */
     sm_door_check_time();
+    sm_door_check_idle();   /* idle-user countdown / clean exit; erases the notice */
 
     /* Present the buffer the engine just finished drawing into (the CURRENT
      * back buffer, before the flip below) -- mirrors hw/sdl/hwsdl_video.c's
