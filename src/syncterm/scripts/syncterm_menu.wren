@@ -28,6 +28,7 @@ class Menu {
   // Classic main-screen chrome supplied by the trusted host.
   foreign static applicationTitle
   foreign static timeText
+  foreign static timestamp
   foreign static showEntry(entry)
   foreign static statusMessage(status)
   // Set the process exit latch after the trusted menu has chosen to exit.
@@ -250,6 +251,8 @@ foreign class BBS {
   foreign name
   foreign rename(name)
   foreign type
+  // Fixed Directory rooted at this personal entry's per-BBS cache.
+  foreign cache
   foreign id
   foreign added
   foreign connected

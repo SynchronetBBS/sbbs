@@ -981,6 +981,25 @@ An override must export class `MainMenu` with these static methods:
   calls `prepare()` first, then copies the C record into menu storage;
   no connection-owned pointer or foreign value is passed into Wren.
 
+Additional trusted `auto/menu` scripts can extend the shipped controller
+without replacing it:
+
+[source,wren]
+----
+import "syncterm" for Key
+import "main_menu" for MainMenu
+
+MainMenu.registerCommand(Key.altY, "Alt-Y", "Open an offline planner",
+    Fn.new {|app, connected| Planner.show(app) })
+----
+
+`registerCommand(key, keyName, description, callback)` replaces an earlier
+extension on the same key or appends a new one.  Registration happens during
+menu-VM startup, before `MainMenu.run` builds its controller.  The callback
+receives the running `App` and the connected-directory Bool, is suppressed
+while another modal is open, and its key name and description are appended to
+the directory help.
+
 When the built-in module is loaded, it paints the main-menu background and
 title bar immediately.  Startup alerts and progress panes therefore appear
 over initialized menu chrome before `MainMenu.run()` constructs the
@@ -3981,6 +4000,11 @@ available in a connected VM.
 | Return the current local time in the classic 24-character
   `Fri Jul 17 2026 07:30 pm` form used by the offline title row.
 
+| Menu.timestamp
+| Return the current Unix timestamp as a Num.  Trusted offline applications
+  can use it to initialize date-oriented widgets without a connected `BBS`
+  or `Conn` clock.
+
 | Menu.showEntry(entry)
 | Set the OS window title to the classic name/call-count/last-connected
   summary for a current menu `BBS`.  Passing `null` restores the bare
@@ -4112,7 +4136,7 @@ Menu `BBS` properties map directly to the real `struct bbslist`:
   `forceLcf`, `palette`, and `lfExpand`.
 
 | Paths and logging
-| Read/write `dlDir`, `ulDir`, `logFile`, `appendLogFile`,
+| Read-only `cache`; read/write `dlDir`, `ulDir`, `logFile`, `appendLogFile`,
   `xferLogLevel`, and `telnetLogLevel`.
 
 | Serial and protocol
@@ -4124,6 +4148,13 @@ Menu `BBS` properties map directly to the real `struct bbslist`:
 | Read/write `wrenScripts`, an ordered List of unique root module names.
   It is supported only by personal named entries.
 |===
+
+`BBS.cache` returns a fixed `Directory` rooted at that personal named entry's
+per-BBS cache, creating the cache directory through SyncTERM's normal cache
+resolver when necessary.  Defaults, system/web entries, and quick-connect
+transients abort instead.  This menu-only authority lets a trusted offline
+application select a personal entry and reuse the same saved state that its
+connected script sees; it does not expose arbitrary filesystem construction.
 
 Setters mutate only the in-memory record and set `dirty`; `save()` is
 the persistence boundary and returns Bool.  A rename is likewise

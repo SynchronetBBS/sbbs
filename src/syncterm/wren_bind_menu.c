@@ -8,6 +8,7 @@
 #include "term.h"
 #include "window.h"
 #include "wren_bind_internal.h"
+#include "wren_bind_fs.h"
 #include "wren_bind_menu_fonts.h"
 #include "wren_bind_menu_settings.h"
 #include "wren_bind_screen.h"
@@ -410,6 +411,25 @@ fn_BBS_type(WrenVM *vm)
 }
 
 static void
+fn_BBS_cache(WrenVM *vm)
+{
+	struct bbslist *bbs = bbs_check(vm);
+	if (bbs == NULL)
+		return;
+	struct wren_menu_bbs *wb = wrenGetSlotForeign(vm, 0);
+	if (wb->is_defaults || wb->is_transient ||
+	    bbs->type != USER_BBSLIST) {
+		wren_throw(vm,
+		    "BBS.cache: only personal named entries have a cache");
+		return;
+	}
+	char path[MAX_PATH + 1];
+	if (!get_cache_fn_base(bbs, path, sizeof(path)) ||
+	    !wren_push_directory_root(vm, 0, path, false))
+		wrenSetSlotNull(vm, 0);
+}
+
+static void
 fn_BBS_id(WrenVM *vm)
 {
 	struct bbslist *bbs = bbs_check(vm);
@@ -772,6 +792,12 @@ fn_Menu_timeText(WrenVM *vm)
 		    local->tm_hour >= 12 ? "pm" : "am");
 	}
 	wrenSetSlotString(vm, 0, stamp);
+}
+
+static void
+fn_Menu_timestamp(WrenVM *vm)
+{
+	wrenSetSlotDouble(vm, 0, (double)time(NULL));
 }
 
 static void
@@ -1317,6 +1343,7 @@ static const struct binding bindings[] = {
 	{ "Menu", true, "setHyperlinkHover(_)", fn_Menu_setHyperlinkHover },
 	{ "Menu", true, "applicationTitle", fn_Menu_applicationTitle },
 	{ "Menu", true, "timeText", fn_Menu_timeText },
+	{ "Menu", true, "timestamp", fn_Menu_timestamp },
 	{ "Menu", true, "showEntry(_)", fn_Menu_showEntry },
 	{ "Menu", true, "statusMessage(_)", fn_Menu_statusMessage },
 	{ "Menu", true, "quitApplication()", fn_Menu_quitApplication },
@@ -1353,6 +1380,7 @@ static const struct binding bindings[] = {
 	{ "BBS", false, "name", fn_BBS_name },
 	{ "BBS", false, "rename(_)", fn_BBS_rename },
 	{ "BBS", false, "type", fn_BBS_type },
+	{ "BBS", false, "cache", fn_BBS_cache },
 	{ "BBS", false, "id", fn_BBS_id },
 	{ "BBS", false, "added", fn_BBS_added },
 	{ "BBS", false, "connected", fn_BBS_connected },

@@ -11,10 +11,22 @@ import "ui_list"  for ListView
 
 class ListPicker {
   static pick(title, helpText, items) {
-    return pickWithSelection(title, helpText, items, null)
+    return pick_(title, helpText, items, null, false)
   }
 
   static pickWithSelection(title, helpText, items, selected) {
+    return pick_(title, helpText, items, selected, false)
+  }
+
+  static pickSync(title, helpText, items) {
+    return pick_(title, helpText, items, null, true)
+  }
+
+  static pickWithSelectionSync(title, helpText, items, selected) {
+    return pick_(title, helpText, items, selected, true)
+  }
+
+  static pick_(title, helpText, items, selected, synchronous) {
     var picked = -1
     var app  = App.new()
     var pane = Pane.new()
@@ -36,7 +48,11 @@ class ListPicker {
     pane.fitContentToScreen()
 
     app.bind(Key.escape, Fn.new { |k| app.quit() })
-    app.run()
+    if (synchronous) {
+      app.runSync()
+    } else {
+      app.run()
+    }
     return picked
   }
 }

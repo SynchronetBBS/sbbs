@@ -79,6 +79,7 @@ class UiPopupTest {
     testCenteredFramesAvoidMenuChrome_()
     testAlertConstruction_()
     testAlertTitledConstruction_()
+    testAlertTitledSizingAvoidsCloseButton_()
     testAlertShowCarriesHelp_()
     testAlertEscDismisses_()
     testConfirmYes_()
@@ -177,6 +178,16 @@ class UiPopupTest {
     var a = Alert.new("Notice", "hi")
     check_(a.message == "hi" && a.title == "Notice" && a.result == null,
            "Alert: explicit title on construct")
+  }
+
+  static testAlertTitledSizingAvoidsCloseButton_() {
+    var app = FakeApp.new()
+    var title = "Travel and Sensor Scan"
+    Alert.show(app, title, "Ready")
+    var alert = app.modalStack[-1]
+    var start = ((alert.bounds.w - title.count - 4) / 2).floor
+    check_(alert.bounds.w >= title.count + 12 && start >= 4,
+           "Alert: explicit title remains clear of the close button")
   }
 
   static testAlertShowCarriesHelp_() {

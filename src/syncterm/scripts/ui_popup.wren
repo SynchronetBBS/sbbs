@@ -178,6 +178,20 @@ class Popup is Pane {
     return Pane.modalBounds(w, h)
   }
 
+  // A frame-border title shares its row with Popup's three-cell close
+  // button.  Reserve the same amount of room on both sides of the centered
+  // title so the button cannot overwrite its leading characters.
+  static centeredTitledBounds_(title, message, extraRows, minW) {
+    return centeredTitledBounds_(title, message, extraRows, minW, false)
+  }
+  static centeredTitledBounds_(title, message, extraRows, minW, preformatted) {
+    var requested = minW
+    if (title is String && title.count > 0) {
+      requested = requested.max(title.count + 12)
+    }
+    return centeredBounds_(message, extraRows, requested, preformatted)
+  }
+
   // Length (codepoints ≅ display cells for the strings we draw) of
   // the longest line bounded by CR / LF / EOS.  Used by
   // centeredBounds_ to size the popup wide enough to avoid wrapping
@@ -364,7 +378,7 @@ class Alert is Popup {
 
   static show(app, title, message) {
     var p = Alert.new(title, message)
-    p.bounds = Popup.centeredBounds_(message, 1, 20)
+    p.bounds = Popup.centeredTitledBounds_(title, message, 1, 20)
     app.modal(p)
     return null
   }
@@ -372,7 +386,7 @@ class Alert is Popup {
   static show(app, title, message, helpText) {
     var p = Alert.new(title, message)
     p.helpText = helpText
-    p.bounds = Popup.centeredBounds_(message, 1, 20)
+    p.bounds = Popup.centeredTitledBounds_(title, message, 1, 20)
     app.modal(p)
     return null
   }
@@ -386,7 +400,7 @@ class Alert is Popup {
 
   static runStandalone(app, title, message) {
     var p = Alert.new(title, message)
-    p.bounds = Popup.centeredBounds_(message, 1, 20)
+    p.bounds = Popup.centeredTitledBounds_(title, message, 1, 20)
     Popup.runStandalone_(app, p)
     return null
   }
@@ -537,8 +551,7 @@ class Prompt is Popup {
   sizeForInput(inputWidth) { sizeForInput(inputWidth, 30) }
   sizeForInput(inputWidth, minimumWidth) {
     var requested = (inputWidth + 4).max(minimumWidth)
-    requested = requested.max(title.count + 6)
-    bounds = Popup.centeredBounds_(message, 2, requested)
+    bounds = Popup.centeredTitledBounds_(title, message, 2, requested)
   }
 
   static show(app, message) { show(app, message, null) }

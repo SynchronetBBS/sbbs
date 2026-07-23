@@ -204,7 +204,7 @@ class MenuUi {
     var p = Alert.new(title, message)
     p.helpText = helpText
     p.atExit = atExit
-    p.bounds = Popup.centeredBounds_(message, 1, 24)
+    p.bounds = Popup.centeredTitledBounds_(title, message, 1, 24)
     p.onDismiss = Fn.new {|value| app.quit() }
     app.pushModal(p)
     app.runSync()
@@ -223,7 +223,7 @@ class MenuUi {
     var p = Confirm.new(message)
     p.title = title
     p.atExit = atExit
-    p.bounds = Popup.centeredBounds_(message, 1, 24)
+    p.bounds = Popup.centeredTitledBounds_(title, message, 1, 24)
     p.onDismiss = Fn.new {|value| app.quit() }
     app.pushModal(p)
     app.runSync()
@@ -237,7 +237,7 @@ class MenuUi {
   static choiceStandalone(title, message, rows, current) {
     if (rows.count == 0) return null
     var app = App.new()
-    var longest = title.count + 6
+    var longest = title.count + 12
     var labels = []
     for (row in rows) {
       var label = row is List ? row[1] : row
@@ -560,7 +560,7 @@ class MenuUi {
   static text(app, title, message) {
     var p = Alert.new(title, message)
     p.preformatted = true
-    p.bounds = Popup.centeredBounds_(message, 1, 34, true)
+    p.bounds = Popup.centeredTitledBounds_(title, message, 1, 34, true)
     app.modal(p)
   }
 }

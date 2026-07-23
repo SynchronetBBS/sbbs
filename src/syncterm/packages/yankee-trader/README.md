@@ -2,13 +2,15 @@
 
 `yankee_trader.wren` converts the scripts, calculators, log-cleanup steps,
 recordkeeping system, and command helpers documented at `yt.starflt.com` into a
-connected SyncTERM Wren application.
+connected SyncTERM Wren application. The in-app strategy reference is a
+detailed, topic-by-topic adaptation of the site's Strategy Guide by Zharous.
 
 ## Install and open
 
-This is an optional user package; none of its Wren modules are compiled into
-SyncTERM. Install the four files from this package's `scripts/` directory into
-your personal SyncTERM scripts directory:
+This is an optional user package; none of its Yankee Trader Wren modules are
+compiled into SyncTERM. Install the seven root modules and the
+`auto/menu/yankee_trader_menu.wren` entry point from this package into your
+personal SyncTERM scripts directory, preserving the `auto/menu/` subdirectory:
 
 | Platform | Destination |
 | --- | --- |
@@ -22,8 +24,8 @@ On Unix-like systems, `./install.sh` performs the copy. On Windows, run
 directory and preserve replaced files with a `.bak` suffix.
 
 In SyncTERM, edit the Yankee Trader BBS entry, open **Wren Scripts**, and add
-the module `yankee_trader` (without a path or `.wren` extension). Its three
-library modules load automatically when the connection script starts.
+the module `yankee_trader` (without a path or `.wren` extension). Its connected
+libraries load automatically when the connection script starts.
 
 Connect to the Yankee Trader BBS and press **Alt-Y**. State is stored in
 SyncTERM's cache directory for that BBS. `yankee-trader-games.won` is a small
@@ -32,6 +34,20 @@ game registry; every game then has independent `gN-profile.won`,
 prefix. Changing settings therefore never serializes a C;10 path map, and
 changing one game never rewrites another game's data. The stable `gN` identity
 survives game renames.
+
+From SyncTERM's main dialing-directory screen, **Alt-Y** opens the offline
+planner installed under `auto/menu/`. It lists personal BBS entries whose
+Wren Scripts setting contains `yankee_trader`; when only one entry qualifies,
+that choice is skipped. It then lists the games saved in that BBS-specific
+cache, again skipping the choice when only one game exists.
+
+The offline panel includes every connection-independent part of the control
+panel: calculators, saved C;10 map exploration, command planning, the
+dashboard, function-key reference, game/profile maintenance, the strategy
+guide, and records. Generated in-game command batches can be previewed or
+copied for a later session, but the offline panel never offers to send them.
+Live scans, benchmarks, prompt automation, and game-setting detection remain
+connected-only.
 
 The cache and whole-state clipboard export use compact WON so large saved C;10
 path maps do not acquire megabytes of pretty-printing whitespace.
@@ -130,8 +146,9 @@ values, at the user's choice. Nothing is applied until the final confirmation.
   3.2 1,000-sector starting profiles, plus per-game overrides for custom BBS
   configurations. The live settings detector records the detected build and
   per-field provenance with the game profile.
-- Condensed in-app reference material covering daily routines, money, planets,
-  warfare, Xannor, mercenaries, mapping, and advanced techniques.
+- A scrollable, detailed in-app strategy guide preserving the original
+  progression plans, commands, formulas, numeric breakpoints, version
+  differences, tactical sequences, and risk notes across 29 focused topics.
 
 ## Version notes
 
@@ -178,12 +195,15 @@ From the SyncTERM source directory:
 
 ```sh
 ./run_wren.sh packages/yankee-trader/tests/yankee_trader_test.wren
+./run_wren.sh --menu-write packages/yankee-trader/tests/yankee_trader_menu_test.wren
 ./run_wren.sh packages/yankee-trader/scripts/yankee_trader.wren
 ```
 
 The first command exercises multi-game state, formula and calculator-form
-examples, parsers, analysis, and command generation. The second compiles and
-loads the connected application and all of its modules under the headless
+examples, parsers, analysis, and command generation. The menu-VM test verifies
+personal-entry filtering, per-BBS cache isolation, offline game selection, and
+date-picker time support in a disposable directory. The final command compiles
+and loads the connected application and all of its modules under the headless
 SyncTERM harness.
 
 The live prompt matchers target the English prompts used by the archived ZOC

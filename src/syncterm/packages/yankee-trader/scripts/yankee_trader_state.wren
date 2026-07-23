@@ -1,17 +1,30 @@
 // Per-BBS registry plus per-game persistent state for Yankee Trader.
 
-import "syncterm" for Cache, FileError, WON, WONError
+import "syncterm" for Cache, Directory, FileError, WON, WONError
 
 class YTState {
   static initialize_() {
     __stateData = null
     __stateError = null
+    __cacheDirectory = null
   }
 
   static registryFilename { "yankee-trader-games.won" }
   static profileFilename_(id) { "yankee-trader-%(id)-profile.won" }
   static universeFilename_(id) { "yankee-trader-%(id)-universe.won" }
   static recordsFilename_(id) { "yankee-trader-%(id)-records.won" }
+
+  // A registry is introduced when game metadata is first saved. Existing
+  // single-game split stores can legitimately predate it; connected loading
+  // treats those files as the default g1 game, so the offline selector must
+  // recognize the same state.
+  static hasStoredData(directory) {
+    if (!(directory is Directory)) return false
+    return directory.contains(registryFilename) ||
+        directory.contains(profileFilename_("g1")) ||
+        directory.contains(universeFilename_("g1")) ||
+        directory.contains(recordsFilename_("g1"))
+  }
 
   static defaultProfile(version) {
     if (version == "3.2") {
@@ -108,6 +121,21 @@ class YTState {
   static gameNames { games.map {|game| game["name"] }.toList }
   static lastError { __stateError }
 
+  // The connected VM uses its module-level Cache. The trusted menu VM can
+  // inject the cache belonging to a selected personal BBS entry.
+  static useCache(directory) {
+    if (!(directory is Directory)) {
+      return "Yankee Trader cache is not a Directory."
+    }
+    __cacheDirectory = directory
+    __stateData = null
+    __stateError = null
+    load()
+    return null
+  }
+
+  static cache_ { __cacheDirectory == null ? Cache : __cacheDirectory }
+
   static load() {
     __stateError = null
     __stateData = defaultData
@@ -136,8 +164,8 @@ class YTState {
   }
 
   static readMap_(name) {
-    if (!Cache.contains(name)) return null
-    var file = Cache.list[name]
+    if (!cache_.contains(name)) return null
+    var file = cache_.list[name]
     var result = file.open()
     if (result is FileError) {
       noteError_(result.toString)
@@ -171,10 +199,10 @@ class YTState {
 
   static writeStore_(name, value) {
     var file
-    if (Cache.contains(name)) {
-      file = Cache.list[name]
+    if (cache_.contains(name)) {
+      file = cache_.list[name]
     } else {
-      file = Cache.create(name)
+      file = cache_.create(name)
     }
     if (file == null) return "Could not create %(name)."
     var result = file.open()
@@ -248,8 +276,12 @@ class YTState {
   }
 
   static applyRegistry_(store) {
+    if (store == null) return
     if (!(store is Map) || store["schema"] != 1 ||
-        !(store["games"] is List)) return
+        !(store["games"] is List)) {
+      noteError_("%(registryFilename): invalid game registry.")
+      return
+    }
     var existing = {}
     for (game in __stateData["games"]) existing[game["id"]] = game
     var merged = []
@@ -268,7 +300,10 @@ class YTState {
       merged.add(game)
       used[id] = true
     }
-    if (merged.count == 0) return
+    if (merged.count == 0) {
+      noteError_("%(registryFilename): no valid game entries.")
+      return
+    }
     __stateData["games"] = merged
     var active = store["activeGame"]
     if (!(active is Num) || !active.isInteger || active < 0 ||
@@ -328,6 +363,15 @@ class YTState {
         index >= games.count) return "Invalid game selection."
     root["activeGame"] = index
     return saveRegistry_()
+  }
+
+  // Select an initially chosen offline game without rewriting the registry's
+  // connected-session preference merely because it was viewed.
+  static selectGameLocal(index) {
+    if (!(index is Num) || !index.isInteger || index < 0 ||
+        index >= games.count) return "Invalid game selection."
+    root["activeGame"] = index
+    return null
   }
 
   static addGame(name, version) {
@@ -406,11 +450,16 @@ class YTState {
     return saveUniverse_(data)
   }
 
-  static mergeGraph(graph) {
+  static mergeGraph(graph, date) {
     for (key in graph.keys) {
       var incoming = graph[key]
       var row = data["sectors"][key]
       if (row == null) row = {"sector": incoming["sector"]}
+      if (row["kind"] == null) row["kind"] = "automapped"
+      if (!(row["date"] is String) || row["date"].count == 0) {
+        row["date"] = date
+      }
+      if (row["note"] == null) row["note"] = ""
       row["warps"] = incoming["warps"]
       row["port"] = incoming["port"]
       data["sectors"][key] = row
@@ -519,6 +568,13 @@ class YTState {
     }
     game["profile"].remove("game")
     if (!(game["sectors"] is Map)) game["sectors"] = {}
+    for (key in game["sectors"].keys) {
+      var sector = game["sectors"][key]
+      if (!(sector is Map)) continue
+      if (sector["kind"] == null) sector["kind"] = "automapped"
+      if (sector["date"] == null) sector["date"] = ""
+      if (sector["note"] == null) sector["note"] = ""
+    }
     if (!(game["planets"] is List)) game["planets"] = []
     if (!(game["portPairs"] is List)) game["portPairs"] = []
     if (!(game["locations"] is List)) game["locations"] = []
@@ -563,9 +619,9 @@ class YTState {
     if (!(next is Num) || !next.isInteger || next < 1) next = 1
     var id = "g%(next)"
     while (gameIdExistsIn_(games, id) ||
-        Cache.contains(profileFilename_(id)) ||
-        Cache.contains(universeFilename_(id)) ||
-        Cache.contains(recordsFilename_(id))) {
+        cache_.contains(profileFilename_(id)) ||
+        cache_.contains(universeFilename_(id)) ||
+        cache_.contains(recordsFilename_(id))) {
       next = next + 1
       id = "g%(next)"
     }

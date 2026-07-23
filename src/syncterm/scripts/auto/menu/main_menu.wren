@@ -403,8 +403,15 @@ class MainMenuApp {
     if (!_connected) {
       bind_(Key.altB, Fn.new { OfflineScrollbackView.show(_app) })
     }
+    for (command in MainMenu.commands_) bindCommand_(command)
     _app.root.focusedIndex = 1
     refresh_(current)
+  }
+
+  bindCommand_(command) {
+    bind_(command[0], Fn.new {
+      command[3].call(_app, _connected)
+    })
   }
 
   bind_(key, fn) {
@@ -447,6 +454,9 @@ class MainMenuApp {
     if (!_connected) {
       text = text + "\nCtrl-D\n:  Quick-connect to an address or URL\n" +
           "Alt-B\n:  View the scrollback from the last session"
+    }
+    for (command in MainMenu.commands_) {
+      text = text + "\n%(command[1])\n:  %(command[2])"
     }
     return text + "\n\n" +
         "## Window Keys\n\n" +
@@ -1064,6 +1074,28 @@ class MainMenuApp {
 class MainMenu {
   static password { __password }
   static password=(value) { __password = value }
+
+  // Trusted auto/menu extensions register before MainMenu.run constructs the
+  // controller. callback receives the active App and whether this directory
+  // is being shown over a connected session.
+  static registerCommand(key, keyName, description, callback) {
+    if (!(key is Num) || !key.isInteger || !(keyName is String) ||
+        !(description is String) || !(callback is Fn)) {
+      Fiber.abort("MainMenu.registerCommand: invalid command")
+    }
+    for (i in 0...commands_.count) {
+      if (commands_[i][0] == key) {
+        commands_[i] = [key, keyName, description, callback]
+        return
+      }
+    }
+    commands_.add([key, keyName, description, callback])
+  }
+
+  static commands_ {
+    if (__commands == null) __commands = []
+    return __commands
+  }
 
   static drawBackdrop_() {
     var app = App.new()

@@ -1,6 +1,8 @@
 #ifndef WREN_BIND_FS_H
 #define WREN_BIND_FS_H
 
+#include <stdbool.h>
+
 /* Per-module declarations for the Directory / File / Host foreign
  * surface — pulled in by wren_bind.c so its BINDINGS table and
  * wren_bind_lookup_class can reference these functions.  Defined in
@@ -15,6 +17,12 @@ void wren_file_allocate(WrenVM *vm);
 void wren_file_finalize(void *data);
 void wren_file_error_allocate(WrenVM *vm);
 void wren_file_error_finalize(void *data);
+
+/* Build a fixed-path Directory foreign into `slot`.  The path must name an
+ * existing directory; a missing trailing separator is added.  This is used by
+ * trusted bindings which already resolved an authorized root. */
+bool wren_push_directory_root(WrenVM *vm, int slot, const char *path,
+                              bool relaxed_names);
 
 /* Directory instance methods. */
 void fn_Directory_contains(WrenVM *vm);

@@ -74,6 +74,25 @@ class YankeeTraderTest {
     }
     check_(usefulHelp,
         "every Yankee Trader picker menu has substantial task-focused help")
+    var strategyTopics = YankeeTrader.strategyTopics_
+    var strategyText = ""
+    var detailedStrategy = strategyTopics.count == 29
+    for (topic in strategyTopics) {
+      if (!(topic is List) || topic.count != 2 ||
+          !(topic[0] is String) || !(topic[1] is String) ||
+          !topic[1].startsWith("# ") || topic[1].count < 700) {
+        detailedStrategy = false
+      } else {
+        strategyText = strategyText + topic[1]
+      }
+    }
+    check_(detailedStrategy && strategyText.count > 30000 &&
+        strategyText.contains("8,333,250") &&
+        strategyText.contains("m;117;p;;;;;m;115;p;;;;/r20") &&
+        strategyText.contains("2.5 credits per fighter") &&
+        strategyText.contains("!;2315;1/") &&
+        strategyText.contains("floor(sqrt(Xannor / 50,000 - 2))"),
+        "strategy reference retains detailed formulas, commands, and tactics")
 
     check_(YTCalc.plasmaPercent(1) == 100, "plasma first sector")
     var defaults = YTState.defaultData
@@ -252,9 +271,12 @@ class YankeeTraderTest {
       "schema": 2, "activeGame": 1, "games": [gameA, gameB]
     })
     check_(multi["activeGame"] == 1 && multi["games"][0]["sectors"].count == 1 &&
+        multi["games"][0]["sectors"]["44"]["kind"] == "automapped" &&
+        multi["games"][0]["sectors"]["44"]["date"] == "" &&
+        multi["games"][0]["sectors"]["44"]["note"] == "" &&
         multi["games"][1]["sectors"].count == 0 &&
         multi["games"][1]["profile"]["maxSector"] == 1200,
-        "independent multi-game records and settings")
+        "independent multi-game records normalize automatic map metadata")
     check_(YTState.replace({"schema": 1}) != null,
         "state import rejects unsupported schemas")
     check_(YTCalc.plasmaPercent(2) == 98, "plasma dissipation")
@@ -442,6 +464,20 @@ class YankeeTraderTest {
     check_(YTState.setAnalysis(liveAnalysis) == null &&
         YTState.data["lastAnalysis"]["paths"]["52"][0] == 44,
         "C10 path map persists in state")
+    var mappedGraph = {
+      "90": {"sector": 90, "warps": [91], "port": false}
+    }
+    check_(YTState.mergeGraph(mappedGraph, "2026-07-23") == null &&
+        YTState.data["sectors"]["90"]["kind"] == "automapped" &&
+        YTState.data["sectors"]["90"]["date"] == "2026-07-23" &&
+        YTState.data["sectors"]["90"]["note"] == "",
+        "automatic map records include kind, date, and empty notes")
+    check_(YTState.putSector(90, "dangerous", "minefield", "2026-07-20") ==
+        null && YTState.mergeGraph(mappedGraph, "2026-07-23") == null &&
+        YTState.data["sectors"]["90"]["kind"] == "dangerous" &&
+        YTState.data["sectors"]["90"]["date"] == "2026-07-20" &&
+        YTState.data["sectors"]["90"]["note"] == "minefield",
+        "automatic map refresh preserves authored sector-note fields")
     var universeFile = YTState.universeFilename_(YTState.data["id"])
     var universeBeforeProfile = cacheText_(universeFile)
     var detectedProfile = YTState.defaultProfile("modern")

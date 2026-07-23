@@ -417,6 +417,35 @@ wren_directory_allocate(WrenVM *vm)
 	fs_register_dir(wd);
 }
 
+bool
+wren_push_directory_root(WrenVM *vm, int slot, const char *path,
+    bool relaxed_names)
+{
+	if (vm == NULL || slot < 0 || path == NULL || !isdir(path))
+		return false;
+	size_t pn = strlen(path);
+	bool need_slash = pn > 0 && path[pn - 1] != '/' &&
+	    path[pn - 1] != '\\';
+	if (pn == 0 || pn + (need_slash ? 1 : 0) >= MAX_PATH)
+		return false;
+	wrenEnsureSlots(vm, slot + 2);
+	wrenGetVariable(vm, "syncterm", "Directory", slot + 1);
+	struct wren_directory *wd = wrenSetSlotNewForeign(vm, slot, slot + 1,
+	    sizeof(*wd));
+	wd->type          = SWF_DIRECTORY;
+	wd->is_cache      = false;
+	wd->relaxed_names = relaxed_names;
+	wd->dead          = false;
+	wd->fs_prev       = NULL;
+	wd->fs_next       = NULL;
+	memcpy(wd->path, path, pn);
+	if (need_slash)
+		wd->path[pn++] = '/';
+	wd->path[pn] = '\0';
+	fs_register_dir(wd);
+	return true;
+}
+
 static const char *
 wd_resolve(WrenVM *vm, struct wren_directory *wd, char *scratch,
     size_t scratchsz)
@@ -957,35 +986,13 @@ fn_Host_cacheDirectory(WrenVM *vm)
 static void
 push_relaxed_root_(WrenVM *vm, const char *path)
 {
-	wrenEnsureSlots(vm, 2);
 	if (is_dangerous_default_(path)) {
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
-	if (!isdir(path)) {
+	if (!wren_push_directory_root(vm, 0, path, true)) {
 		wrenSetSlotNull(vm, 0);
-		return;
 	}
-	size_t pn = strlen(path);
-	bool need_slash = pn > 0 && path[pn - 1] != '/' && path[pn - 1] != '\\';
-	if (pn + (need_slash ? 1 : 0) >= MAX_PATH) {
-		wrenSetSlotNull(vm, 0);
-		return;
-	}
-	wrenGetVariable(vm, "syncterm", "Directory", 1);
-	struct wren_directory *wd = wrenSetSlotNewForeign(vm, 0, 1,
-	    sizeof(*wd));
-	wd->type          = SWF_DIRECTORY;
-	wd->is_cache      = false;
-	wd->relaxed_names = true;
-	wd->dead          = false;
-	wd->fs_prev       = NULL;
-	wd->fs_next       = NULL;
-	memcpy(wd->path, path, pn);
-	if (need_slash)
-		wd->path[pn++] = '/';
-	wd->path[pn] = '\0';
-	fs_register_dir(wd);
 }
 
 /* Host.downloadDir — relaxed-name Directory rooted at bbs->dldir.

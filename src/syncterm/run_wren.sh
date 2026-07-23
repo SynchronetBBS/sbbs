@@ -77,6 +77,21 @@ class FilePicker {
 EOF
 	else
 		ln -s "$HERE/$SCRIPT" "$SCRIPT_ROOT/menu_test.wren"
+		# Package menu tests need the installable modules beside their
+		# tests/ directory, just as connected package tests do below.
+		case "$SCRIPT" in
+			/*) SCRIPT_PATH="$SCRIPT" ;;
+			*)  SCRIPT_PATH="$HERE/$SCRIPT" ;;
+		esac
+		SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$SCRIPT_PATH")" && pwd)
+		for MODULE_DIR in "$SCRIPT_DIR" "$SCRIPT_DIR/../scripts"; do
+			if [ -d "$MODULE_DIR" ]; then
+				for MODULE in "$MODULE_DIR"/*.wren; do
+					[ -f "$MODULE" ] || continue
+					ln -sf "$MODULE" "$SCRIPT_ROOT/${MODULE##*/}"
+				done
+			fi
+		done
 	fi
 	if $PICKER_SUITE; then
 		cat >"$SCRIPT_ROOT/auto/menu/main_menu.wren" <<'EOF'

@@ -146,7 +146,8 @@ generic_class_allowed(const char *class_name)
 		"Hyperlinks", "Input", "KeyEvent", "MouseEvent", "Palette",
 		"PixelBlit", "PixelBuffer", "PixelColor", "PixelMask",
 		"PhysicalKeyEvent", "Platform", "REPL", "Screen", "ScreenFonts",
-		"ScreenSupports", "ScreenWindow", "Surface", "VideoFlags",
+		"ScreenSupports", "ScreenWindow", "Surface", "VideoFlags", "WON",
+		"WONError",
 	};
 	for (size_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++) {
 		if (strcmp(class_name, allowed[i]) == 0)
