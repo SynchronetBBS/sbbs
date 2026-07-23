@@ -74,6 +74,7 @@ static char g_rom[SR_PATH_MAX];        /* "" = no ROM given */
 static termgfx_idle_t g_idle;
 static int            g_idle_arg = -1; /* -i<seconds>; -1 = not given */
 static int            g_idle_expired;  /* latched by the tick, read by should_exit */
+static int            g_idle_warning;  /* the countdown is on screen right now */
 
 /* Monotonic millisecond clock -- the session deadline uses it so a wall-clock
  * step (NTP, DST) can't mistime it. Same clock domain as syncretro_io.c. */
@@ -513,6 +514,30 @@ void sr_door_idle_activity(void)
 	termgfx_idle_activity(&g_idle, sr_door_now_ms());
 }
 
+/* Feed genuine input to the clock, and say whether it answered a countdown that
+ * was on screen. A caller that gets 1 back must CONSUME the keystroke instead of
+ * dispatching it.
+ *
+ * That matters more than it sounds. The countdown says "press any key", and the
+ * likeliest key a player reaches for is the space bar -- which every profile
+ * binds to pause (syncretro_binds.c). Dispatched normally, answering "press any
+ * key" would pause the game and raise the pause/legend screen. Any other bound
+ * key would fire its action for a player who only meant "I'm still here".
+ *
+ * The countdown is also retired at once rather than waiting out its dwell, so
+ * the shared bottom row goes back to the stats strip immediately. */
+int sr_door_idle_wake(void)
+{
+	int woke = g_idle_warning;
+
+	sr_door_idle_activity();
+	if (woke) {
+		g_idle_warning = 0;
+		sr_io_toast_expire();
+	}
+	return woke;
+}
+
 /* Once per frame: paint the countdown while it runs, latch the expiry for
  * sr_door_should_exit(). Re-arming the toast each second is what keeps it on
  * screen -- sr_io_toast()'s dwell is a fixed SR_TOAST_MS. */
@@ -535,12 +560,14 @@ void sr_door_idle_tick(void)
 				sr_io_toast(msg);
 				last_shown = left;
 			}
+			g_idle_warning = 1;
 			break;
 		case TERMGFX_IDLE_EXPIRED:
 			g_idle_expired = 1;
 			break;
 		default:
 			last_shown = 0;
+			g_idle_warning = 0;
 			break;
 	}
 }

@@ -80,7 +80,18 @@ static char g_rom_path[PATH_MAX];     /* the cartridge, absolute */
 /* syncretro.ini, [idle] -- the idle-USER timeout and its countdown, in seconds.
  * Its own declaration group rather than joined to the block above: `unsigned` is
  * a wider type, and folding it in there re-aligns a dozen untouched lines. */
-static unsigned g_idle_timeout;       /* [idle] timeout; 0 = disabled */
+/* SR_IDLE_DEFAULT is the shipped policy, not just an ini fallback: with no
+ * [idle] section at all a door still times an idle player out after 10 minutes.
+ * Deliberately lenient -- a player reading a hint screen, watching an attract
+ * loop or answering the door is not gone, and a false termination is far worse
+ * than a node held a few extra minutes. Set `timeout = 0` to disable outright.
+ *
+ * exec/load/syncretro_lobby.js CARRIES THE SAME NUMBER for the lobby path (it
+ * always passes -i, so its fallback governs there). The two must agree; change
+ * both together. */
+#define SR_IDLE_DEFAULT 600           /* 10 minutes */
+
+static unsigned g_idle_timeout = SR_IDLE_DEFAULT;   /* [idle] timeout; 0 = off */
 static unsigned g_idle_warn = 60;     /* [idle] warn */
 
 /* Where the sysop keeps cartridges, relative to the door's launch directory. */
@@ -188,7 +199,8 @@ static void sr_config_read_ini(void)
 		/* [idle] -- iniGetDuration() so "15m"/"900"/"1h" all work, and so a bare
 		 * number means SECONDS here exactly as it does in the lobby (which passes
 		 * "s" to its own parse_duration for these same keys). */
-		g_idle_timeout    = (unsigned)iniGetDuration(ini, "idle", "timeout", 0);
+		g_idle_timeout    = (unsigned)iniGetDuration(ini, "idle", "timeout",
+		                                             SR_IDLE_DEFAULT);
 		g_idle_warn       = (unsigned)iniGetDuration(ini, "idle", "warn", 60);
 		/* [debug] dirty_log -- a per-frame trace of the dirty-rect decision (why
 		 * a frame took the patch path or the full-repaint path), plus one

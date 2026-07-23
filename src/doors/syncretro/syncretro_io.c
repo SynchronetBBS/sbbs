@@ -52,6 +52,7 @@
 #include "syncretro_dirty.h"   /* which cells actually changed */
 #include "geometry.h"   /* termgfx: termgfx_geom_fit / _center */
 #include "pace.h"       /* termgfx: termgfx_aimd_update / _rtt_sample */
+#include "stats.h"      /* termgfx: the shared Ctrl-S strip window + fields */
 #include "caps.h"       /* termgfx: termgfx_query_jxl */
 #include "text.h"       /* termgfx: rt_config / rt_render_frame -- the text tiers */
 #include "charset.h"    /* termgfx: the client's charset (CP437 vs UTF-8) */
@@ -349,7 +350,7 @@ static int    g_cell_w, g_cell_h;
  * present path, so these live up here with the geometry rather than beside the
  * buffers they describe. g_dirty_frames/g_full_frames are LIFETIME totals (the
  * exit summary wants the whole session); the overlay instead wants a windowed
- * reading -- see g_dr_win_* beside g_fps_win_* below, and sr_stats_window(). */
+ * reading -- see g_dr_win_* beside g_stats below, and sr_stats_window(). */
 static uint32_t g_dirty_frames, g_full_frames, g_dirty_rects_sent;
 static int      g_icol = 1, g_irow = 1;    /* 1-based text-cell origin of the image */
 static int      g_geom_ready;
@@ -569,7 +570,7 @@ static FILE *sr_dirty_log_fp(void)
  * this never even tries to open the file for the common (off) case. */
 static void sr_dirty_logf(const char *fmt, ...)
 {
-	FILE   *fp = sr_dirty_log_fp();
+	FILE *  fp = sr_dirty_log_fp();
 	va_list ap;
 
 	if (fp == NULL)
@@ -853,6 +854,15 @@ void sr_io_toast(const char *text)
 	g_toast_drawn = 1;
 }
 
+/* Retire the toast NOW instead of waiting out its dwell. The idle countdown
+ * uses this the instant the player proves they are there: setting the deadline
+ * to now lets the next sr_toast_tick() retire it through the ONE path that also
+ * hands the shared bottom row back to the stats strip. */
+void sr_io_toast_expire(void)
+{
+	g_toast_until = sr_io_now_ms();
+}
+
 /* Erase the toast once its moment has passed. Called once per frame. */
 static void sr_io_stats_emit(int force);
 
@@ -885,14 +895,14 @@ static void sr_toast_tick(void)
  *
  * It shares the row with the volume toast, which takes precedence while it is up
  * (sr_toast_tick() forces a redraw when the toast expires). */
-static int      g_stats_on;
-static char     g_ov_last[80];             /* last strip text drawn (skip redundant redraws) */
-static int      g_ov_prev_tn;              /* previous strip width (to blank cells on narrowing) */
+static int  g_stats_on;
+static char g_ov_last[80];                 /* last strip text drawn (skip redundant redraws) */
+static int  g_ov_prev_tn;                  /* previous strip width (to blank cells on narrowing) */
 
-/* Frame-rate / throughput over a rolling ~2s window (SyncDOOM's model). */
-static uint32_t g_fps_win_at, g_fps_win_n;
-static uint64_t g_fps_win_bytes;
-static uint32_t g_recent_fps, g_recent_kbps;
+/* Frame-rate / throughput over a rolling ~2s window -- termgfx/stats.h, the
+ * same window SyncDOOM and SyncDuke roll, so the three strips cannot drift
+ * apart again the way this one's raw KB/s did. */
+static termgfx_stats_t g_stats;
 
 /* dr% over the SAME rolling window, so the overlay reads "how is the CURRENT
  * screen doing" rather than a lifetime average that a session's early full
@@ -908,36 +918,25 @@ static int      g_recent_dr_have;
 /* Count a frame ACTUALLY sent, and its wire byte size. */
 static void sr_stats_add_frame(uint32_t bytes)
 {
-	g_fps_win_n++;
-	g_fps_win_bytes += bytes;
+	termgfx_stats_frame(&g_stats, bytes);
 }
 
-/* Advance the metrics window once per frame (from sr_io_stats_tick). */
+/* Advance the metrics window once per frame (from sr_io_stats_tick). The dr%
+ * share rides the SAME window: roll() says when it closed, and the dirty/full
+ * tally is folded in and reset there rather than on a clock of its own. */
 static void sr_stats_window(void)
 {
-	uint32_t nm = sr_io_now_ms();
+	uint32_t dwtot = g_dr_win_dirty + g_dr_win_full;
 
-	if (g_fps_win_at == 0) {
-		g_fps_win_at = nm;
+	if (!termgfx_stats_roll(&g_stats, sr_io_now_ms()))
 		return;
-	}
-	if ((int32_t)(nm - g_fps_win_at) >= 2000) {
-		uint32_t span  = nm - g_fps_win_at;
-		uint32_t dwtot = g_dr_win_dirty + g_dr_win_full;
 
-		g_recent_fps  = (uint32_t)(g_fps_win_n * 1000u / span);
-		g_recent_kbps = (uint32_t)(g_fps_win_bytes * 1000u / 1024u / span);
-		g_fps_win_n     = 0;
-		g_fps_win_bytes = 0;
-		g_fps_win_at    = nm;
-
-		if (dwtot > 0) {
-			g_recent_dr_pct  = g_dr_win_dirty * 100u / dwtot;
-			g_recent_dr_have = 1;
-		}
-		g_dr_win_dirty = 0;
-		g_dr_win_full  = 0;
+	if (dwtot > 0) {
+		g_recent_dr_pct  = g_dr_win_dirty * 100u / dwtot;
+		g_recent_dr_have = 1;
 	}
+	g_dr_win_dirty = 0;
+	g_dr_win_full  = 0;
 }
 
 /* Draw / refresh the strip. force=1 always redraws (a fresh frame just painted
@@ -973,7 +972,7 @@ static void sr_io_stats_emit(int force)
 		 * client that COULD patch. Three states, three labels: off (the
 		 * sysop disabled it), n/a (no usable cell grid), N% (this is how it
 		 * is doing) -- the N% is a rolling ~2s window (g_recent_dr_pct, kept by
-		 * sr_stats_window() the same way g_recent_fps/g_recent_kbps are), not a
+		 * sr_stats_window() the same way g_stats.fps/g_stats.kbps are), not a
 		 * lifetime average: a session's early frames (before dirty-rect has a
 		 * previous frame to diff against) would otherwise drag a long
 		 * session's number down forever, and a later static screen could
@@ -987,10 +986,21 @@ static void sr_io_stats_emit(int force)
 		else
 			drtxt[0] = '\0';
 	}
-	tn = snprintf(txt, sizeof txt, " %s %ufps %uKB/s lag %u/%ums depth %d %s%s%s ",
-	              sr_io_tier_name(), g_recent_fps, g_recent_kbps, g_rtt_ms, g_rtt_min,
-	              g_pace_depth, sr_input_keymode_name(), drtxt,
-	              sr_audio_blob_active() ? " a-blob" : "");   /* audio streaming inline (A;LoadBlob) */
+	{
+		/* The head -- tier, fps, throughput, lag, depth -- is termgfx's, so it
+		 * reads identically here, in SyncDOOM and in SyncDuke: the throughput
+		 * abbreviates to MB/s past 999KB/s (this door used to print a bare
+		 * "1382KB/s") and every number is clamped so a bad sample cannot widen
+		 * the strip past the row. What follows is SyncRetro's own. */
+		char head[80];
+
+		termgfx_stats_head(head, sizeof head, sr_io_tier_name(),
+		                   g_stats.fps, g_stats.kbps, g_rtt_ms, g_rtt_min,
+		                   g_pace_depth, 0);
+		tn = snprintf(txt, sizeof txt, "%s %s%s%s ",
+		              head, sr_input_keymode_name(), drtxt,
+		              sr_audio_blob_active() ? " a-blob" : "");   /* audio streaming inline (A;LoadBlob) */
+	}
 
 	if (g_toast_drawn)
 		return;   /* the volume readout owns the row for its moment */

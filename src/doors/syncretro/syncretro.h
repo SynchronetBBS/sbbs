@@ -183,6 +183,8 @@ void sr_io_grid(int *rows, int *cols);
 /* A one-line message on the reserved bottom row, erased after a moment. Used by
  * the volume keys: a control you cannot see is a control you cannot trust. */
 void sr_io_toast(const char *text);
+/* Retire the current toast now instead of waiting out its dwell. */
+void sr_io_toast_expire(void);
 
 /* Idle-user detection: activity is fed from the REAL key path only (never the
  * DSR pace-ack path), and the tick paints the countdown once per frame.
@@ -191,6 +193,11 @@ void sr_io_toast(const char *text);
 void sr_door_idle_arm(void);
 void sr_door_idle_activity(void);
 void sr_door_idle_tick(void);
+/* Feed the clock and report whether this input answered an on-screen countdown.
+ * A caller that gets 1 back must CONSUME the keystroke rather than dispatch it:
+ * "press any key" has to mean any key, and every profile binds the likeliest
+ * one (Space) to pause. */
+int  sr_door_idle_wake(void);
 
 /* The render tier the player is looking at, and F4's step to the next one.
  * sixel when the terminal has it, then the text (block-character) tiers. */

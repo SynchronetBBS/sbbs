@@ -43,6 +43,12 @@ load("syncretro_lib.js");
 
 var syncretro_lobby_gl = load({}, "game_lobby.js");    /* rpad/clip/ago + live_nodes */
 
+/* Idle timeout used when syncretro.ini has no [idle] timeout. This lobby always
+ * passes -i, so THIS is the shipped policy on a lobby install -- and it must
+ * match SR_IDLE_DEFAULT in src/doors/syncretro/syncretro_config.c, which
+ * governs the no-lobby (DOOR32.SYS/other-BBS) path. Change both together. */
+var SYNCRETRO_IDLE_DEFAULT      = 600;                 /* 10 minutes */
+
 var SYNCRETRO_LOBBY_CELL_W      = 38;                  /* colored cell visible width (xtrn_sec look) */
 var SYNCRETRO_LOBBY_HEADER_ROWS = 3;                   /* title, top-played, blank */
 var SYNCRETRO_LOBBY_FOOTER_ROWS = 3;                   /* blank, prompt, +1 kept empty so a full
@@ -301,8 +307,13 @@ function syncretro_lobby_play(rom)
 	 * same key on the door side. */
 	var idle_cfg = syncretro_lobby_cfg.idle || {};
 	var idle_ars = idle_cfg.exempt_ars || "EXEMPT H";
-	var idle_secs = bbs.compare_ars(idle_ars)
-	    ? 0 : syncretro_lobby_gl.parse_duration(idle_cfg.timeout, "s");
+	var idle_secs;
+	if (bbs.compare_ars(idle_ars))
+		idle_secs = 0;                  /* exempt: positively excused */
+	else if (idle_cfg.timeout === undefined || String(idle_cfg.timeout) === "")
+		idle_secs = SYNCRETRO_IDLE_DEFAULT;   /* unconfigured: the shipped policy */
+	else
+		idle_secs = syncretro_lobby_gl.parse_duration(idle_cfg.timeout, "s");
 
 	cmd = syncretro_lobby_binary + (syncretro_lobby_stdio ? " -stdio" : " -s%H")
 	    + " -t%T -i" + idle_secs + " -name %a -core " + syncretro_lobby_core
