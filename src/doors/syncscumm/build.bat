@@ -88,10 +88,18 @@ rem Keep git from reporting the junction (which replaces the tracked symlink).
 git -C "%SRCDIR%" update-index --skip-worktree src/doors/syncscumm/scummvm/backends/platform/synchronet >nul 2>nul
 
 rem --- 2. Build create_project.exe (Debug -- host tool; Release LTCG ICEs) ----
-set "CP=%SVM%\devtools\create_project\msvc\Debug\create_project.exe"
+rem Built through devtools\create_project\cmake\CMakeLists.txt rather than
+rem upstream's devtools\create_project\msvc\create_project.sln: ScummVM's
+rem .gitignore blanket-ignores *.sln and *.vcxproj*, so that solution is not in
+rem the vendored copy and a fresh checkout has no way to bootstrap from it. The
+rem CMake project is tracked, builds the same sources (ours, with the
+rem --synchronet patch), and lands the tool in our own build tree.
+set "CP=%BUILDDIR%\create_project\Debug\create_project.exe"
 if not exist "%CP%" (
     echo [build] Building create_project.exe ...
-    "%MSBUILD%" "%SVM%\devtools\create_project\msvc\create_project.sln" /p:Configuration=Debug /p:Platform=Win32 /v:minimal /nologo
+    "%CMAKE%" -S "%SVM%\devtools\create_project\cmake" -B "%BUILDDIR%\create_project" -A %PLATFORM%
+    if errorlevel 1 goto error
+    "%CMAKE%" --build "%BUILDDIR%\create_project" --config Debug
     if errorlevel 1 goto error
 )
 
