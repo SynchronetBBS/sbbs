@@ -70,6 +70,8 @@ static char g_launch_dir[PATH_MAX];   /* where the door was started: cwd BEFORE 
 static char g_system_dir[PATH_MAX];   /* BIOS: shared, read-only, per-install */
 static char g_save_dir[PATH_MAX];     /* per-user SRAM + save states */
 static int  g_dirty_rect = 1;   /* [video] dirty_rect */
+static int  g_palette_subset = 1;   /* [video] palette_subset */
+static int  g_dirty_log;        /* [debug] dirty_log, default FALSE */
 static int  g_input_device;     /* [input] device: 0 = leave the core's default */
 static char g_aspect[32] = "core";    /* [video] aspect: core|square|4:3|<decimal> */
 static char g_core_path[PATH_MAX];    /* the .so to dlopen, absolute */
@@ -176,6 +178,14 @@ static void sr_config_read_ini(void)
 		g_audio_chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", 100);
 		g_audio_prebuffer = iniGetInteger(ini, "audio", "prebuffer", 3);
 		g_dirty_rect      = iniGetBool(ini, "video", "dirty_rect", TRUE);
+		g_palette_subset  = iniGetBool(ini, "video", "palette_subset", TRUE);
+		/* [debug] dirty_log -- a per-frame trace of the dirty-rect decision (why
+		 * a frame took the patch path or the full-repaint path), plus one
+		 * startup line with the geometry that governs band alignment. Off by
+		 * default: it is real per-frame stderr traffic, meant for a short
+		 * diagnostic session (see README.md's Diagnostics section), not to run
+		 * continuously. */
+		g_dirty_log       = iniGetBool(ini, "debug", "dirty_log", FALSE);
 		/* [input] device -- a RETRO_DEVICE id to hand the core for both ports.
 		 * 0 (the default) means say NOTHING, leaving whatever the core chose:
 		 * that is the behaviour the door has always had, and the safe one, since
@@ -232,6 +242,8 @@ static void sr_config_read_ini(void)
 }
 
 int    sr_config_dirty_rect(void)      { return g_dirty_rect; }
+int    sr_config_palette_subset(void)  { return g_palette_subset; }
+int    sr_config_dirty_log(void)       { return g_dirty_log; }
 int    sr_config_input_device(void)    { return g_input_device; }
 int    sr_config_audio_enabled(void)   { return g_audio_enabled; }
 double sr_config_audio_quality(void)   { return g_audio_quality; }

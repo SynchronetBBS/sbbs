@@ -44,6 +44,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include <limits.h>
 
 #include "term.h"       /* termgfx: termgfx_term_enter/probe/leave */
 #include "sixel.h"      /* termgfx: sixel_encode */
@@ -53,6 +55,12 @@
 #include "caps.h"       /* termgfx: termgfx_query_jxl */
 #include "text.h"       /* termgfx: rt_config / rt_render_frame -- the text tiers */
 #include "charset.h"    /* termgfx: the client's charset (CP437 vs UTF-8) */
+#include "sbbs_node.h"  /* termgfx: sbbs_my_node() -- the dirty_log file's node tag */
+#include "dirwrap.h"    /* xpdev: mkpath() -- the dirty_log dir */
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 /* Default terminal canvas assumed until the probe reply narrows it: an 80x25
  * session at the usual 8x16 font is 640x400 pixels. */
@@ -339,7 +347,9 @@ static int    g_cell_w, g_cell_h;
 /* Dirty-rect accounting: how much of the session avoided a full repaint. Read by
  * the Ctrl-S overlay and the exit summary, both of which are defined above the
  * present path, so these live up here with the geometry rather than beside the
- * buffers they describe. */
+ * buffers they describe. g_dirty_frames/g_full_frames are LIFETIME totals (the
+ * exit summary wants the whole session); the overlay instead wants a windowed
+ * reading -- see g_dr_win_* beside g_fps_win_* below, and sr_stats_window(). */
 static uint32_t g_dirty_frames, g_full_frames, g_dirty_rects_sent;
 static int      g_icol = 1, g_irow = 1;    /* 1-based text-cell origin of the image */
 static int      g_geom_ready;
@@ -474,6 +484,102 @@ void sr_io_cycle_tier(void)
 	sr_io_toast(sr_io_tier_name());
 }
 
+/* --- [debug] dirty_log's OWN file, independent of stderr --------------------
+ *
+ * NOT fprintf(stderr, ...): a native door is launched EX_BIN, and the BBS EATS
+ * its stderr outright (src/sbbs3/xtrn.cpp, "Eat stderr if mode is EX_BIN") --
+ * verified empirically on this host (a live session left nothing in the
+ * server log, journalctl, or any recently-touched file). So every OTHER
+ * "syncretro: ..." fprintf(stderr, ...) in this file is likewise invisible
+ * under a real BBS session; dirty_log cannot make that mistake too, since the
+ * whole point is a sysop/dev being able to actually read the trace.
+ *
+ * This mirrors ../syncduke/syncduke_log.c exactly: our own fopen()'d file,
+ * opened lazily on first write, appended (never truncated, so a rerun doesn't
+ * lose the previous session's tail), and fflush'd after every line so a
+ * killed/hung session still leaves a readable file on disk rather than
+ * something buffered that dies with the process.
+ *
+ * Destination, highest precedence first:
+ *   $SBBSDATA/syncretro/syncretro_dirty_n<node>.log
+ *     $SBBSDATA is reliably present for a NATIVE door: xtrn.cpp setenv()s it
+ *     fresh (along with SBBSCTRL/SBBSEXEC/SBBSNNUM) immediately before EVERY
+ *     execvp() of a native external, not just at BBS startup -- the same
+ *     variable syncretro_door.c's existing (Windows-only-effective) stderr
+ *     capture already trusts for this exact directory. Node-tagged (the sibling
+ *     doors' data/<door>/<door>_n<node>.log convention -- see syncduke_config.c
+ *     and syncretro_door.c's sr_door_capture_diagnostics) so concurrent
+ *     sessions never share a file; a DIFFERENT basename ("_dirty_") than the
+ *     existing syncretro_n<node>.log, so this opt-in trace can never collide
+ *     with (or be silently overwritten by) that unrelated capture file.
+ *   <the dir syncretro.ini was read from>/syncretro_dirty.log
+ *     Falls back here when $SBBSDATA is unset (a dev/direct run with no BBS
+ *     session -- sr_config_apply() calls sr_config_read_ini() before doing
+ *     anything else, so the door had to already resolve this directory to
+ *     have found syncretro.ini at all: sr_config_launch_dir() reports it,
+ *     guaranteed known by the time a frame is ever presented). No node tag:
+ *     a dev run has no node.
+ */
+static FILE *g_dirty_log_fp;
+static int   g_dirty_log_tried;   /* attempted to open (success or not) -- try once */
+
+static FILE *sr_dirty_log_fp(void)
+{
+	const char *data;
+	int         node;
+	char        path[PATH_MAX];
+
+	if (g_dirty_log_tried)
+		return g_dirty_log_fp;   /* g_dirty_log_fp stays NULL if the open failed */
+	g_dirty_log_tried = 1;
+
+	data = getenv("SBBSDATA");
+	node = sbbs_my_node();
+	if (data != NULL && data[0] != '\0') {
+		size_t dl = strlen(data);
+		char   dir[PATH_MAX];
+
+		snprintf(dir, sizeof dir, "%s%ssyncretro", data,
+		         (dl && (data[dl - 1] == '/' || data[dl - 1] == '\\')) ? "" : "/");
+		mkpath(dir);                            /* xpdev: recursive mkdir, best-effort */
+		if (node > 0)
+			snprintf(path, sizeof path, "%s/syncretro_dirty_n%d.log", dir, node);
+		else
+			snprintf(path, sizeof path, "%s/syncretro_dirty.log", dir);
+	} else {
+		const char *launch = sr_config_launch_dir();
+
+		if (launch != NULL && launch[0] != '\0')
+			snprintf(path, sizeof path, "%s/syncretro_dirty.log", launch);
+		else
+			snprintf(path, sizeof path, "syncretro_dirty.log");   /* last resort: cwd */
+	}
+
+	/* fopen() failing (a read-only/missing dir the mkpath() above couldn't fix)
+	 * is never fatal: g_dirty_log_fp stays NULL and sr_dirty_logf() below just
+	 * becomes a no-op, exactly like a disabled logger. Never spam the player's
+	 * screen with the failure -- there is nowhere else for this to go. */
+	g_dirty_log_fp = fopen(path, "a");
+	return g_dirty_log_fp;
+}
+
+/* printf-style write to the dirty_log file, opening it on first use. A no-op
+ * (silently) when the file couldn't be opened, or when dirty_log itself is
+ * off -- callers already check sr_config_dirty_log() before calling this, so
+ * this never even tries to open the file for the common (off) case. */
+static void sr_dirty_logf(const char *fmt, ...)
+{
+	FILE   *fp = sr_dirty_log_fp();
+	va_list ap;
+
+	if (fp == NULL)
+		return;
+	va_start(ap, fmt);
+	vfprintf(fp, fmt, ap);
+	va_end(ap);
+	fflush(fp);   /* per line: a killed/hung session still leaves the tail on disk */
+}
+
 /* Recompute the image rect from the current canvas/grid and the core's frame
  * size. Called when any of those change. */
 static void sr_io_recompute_geom(void)
@@ -550,6 +656,36 @@ static void sr_io_recompute_geom(void)
 	termgfx_geom_gfx_clamp(g_canvas_is_gfx ? g_canvas_w : TERMGFX_SIXEL_SAFE_MAX,
 	                       g_canvas_is_gfx ? g_canvas_h : TERMGFX_SIXEL_SAFE_MAX,
 	                       &g_ew, &g_eh);
+
+	/* Commit the integer cell size NOW, before it is used for the rounding
+	 * just below -- sr_dirty_find()'s band_align path (syncretro_dirty.c)
+	 * trusts g_cell_h to be the exact value g_eh was rounded against, and
+	 * computing "(int)(ch + 0.5)" twice in two places invites the two to
+	 * quietly drift apart. */
+	g_cell_w = (int)(cw + 0.5);
+	g_cell_h = (int)(ch + 0.5);
+
+	/* Round the sixel canvas height DOWN to a whole number of text cells for
+	 * every client that will walk sr_dirty_find()'s band_align path -- i.e.
+	 * every NON-SyncTERM client (SyncTERM itself passes band_align=0 and
+	 * clamps to the full height already, so leave its geometry untouched).
+	 * That path's "hcell" clamp exists so patch boxes stay cell-aligned, but
+	 * it means a sub-cell remainder at the bottom of the image can never be
+	 * covered by any patch: the dirty grid must TILE the image exactly, or
+	 * whatever lands in that remainder renders stale forever. This went
+	 * unnoticed for a long time because the live geometry (1254x806, cell
+	 * 6x13) happened to divide evenly (62*13=806); a terminal resize that
+	 * broke that coincidence is what surfaced the stale bottom strip. Fixing
+	 * it here, at the source, keeps hcell == g_eh always, so the clamp in
+	 * syncretro_dirty.c becomes a no-op instead of something that can ever
+	 * discard real rows. */
+	if (!sr_input_is_syncterm() && g_cell_h > 0) {
+		int eh_aligned = g_eh / g_cell_h * g_cell_h;
+
+		if (eh_aligned >= g_cell_h)
+			g_eh = eh_aligned;
+	}
+
 	termgfx_geom_center_ex(pagew, fith, g_ew, g_eh, cw, ch, &dx, &dy, &g_icol, &g_irow);
 	g_geom_ready = 1;
 
@@ -575,14 +711,37 @@ static void sr_io_recompute_geom(void)
 	 * forgotten. */
 	sr_io_invalidate();
 
-	g_cell_w = (int)(cw + 0.5);
-	g_cell_h = (int)(ch + 0.5);
-
 	fprintf(stderr, "syncretro: geometry canvas %dx%d%s grid %dx%d cell %.2fx%.2f"
 	        " page %dx%d image %dx%d at cell %d,%d\n",
 	        g_canvas_w, g_canvas_h, g_canvas_known ? "" : " (assumed)",
 	        g_grid_cols, g_grid_rows, cw, ch, pagew, fith, g_ew, g_eh,
 	        g_icol, g_irow);
+
+	/* [debug] dirty_log's ONE startup line: the numbers that govern band
+	 * alignment (syncretro_dirty.c's band_align comment), logged once at the
+	 * first geometry settle -- this can by itself explain a stranded dirty-rect
+	 * path (vstep > hcell means every box is un-patchable) without waiting for
+	 * a per-frame trace. Guarded by a local "already logged" flag rather than
+	 * hooking a separate call site: this is the one place g_cell_w/g_cell_h and
+	 * g_ew/g_eh are all current together, and it only runs when something about
+	 * the rect actually changed (the early return above). */
+	if (sr_config_dirty_log()) {
+		static int logged;
+
+		if (!logged) {
+			int a = g_cell_h, b = 6, t, vstep, hcell;
+
+			while (b != 0) { t = a % b; a = b; b = t; }   /* gcd(cell_h, 6) */
+			vstep = (a > 0) ? (g_cell_h / a * 6) : 6;      /* LCM(cell_h, 6) */
+			hcell = (g_cell_h > 0) ? (g_eh / g_cell_h * g_cell_h) : g_eh;
+			sr_dirty_logf("syncretro: dirty-log geometry cell=%dx%d image=%dx%d"
+			              " vstep=%d hcell=%d syncterm=%d%s\n",
+			              g_cell_w, g_cell_h, g_ew, g_eh, vstep, hcell,
+			              sr_input_is_syncterm(),
+			              (vstep > hcell) ? " (vstep>hcell: every box strands)" : "");
+			logged = 1;
+		}
+	}
 }
 
 /* The core's display aspect, from retro_get_system_av_info() (possibly overridden
@@ -735,6 +894,17 @@ static uint32_t g_fps_win_at, g_fps_win_n;
 static uint64_t g_fps_win_bytes;
 static uint32_t g_recent_fps, g_recent_kbps;
 
+/* dr% over the SAME rolling window, so the overlay reads "how is the CURRENT
+ * screen doing" rather than a lifetime average that a session's early full
+ * frames (before the first prev-scaled frame exists) drag down forever and a
+ * later static screen can never move. g_recent_dr_have is false until a
+ * window with at least one emitted frame has closed -- same "nothing to show
+ * yet" gap the fps/kbps readout also has for its first ~2s, kept for
+ * consistency rather than special-cased away. */
+static uint32_t g_dr_win_dirty, g_dr_win_full;
+static uint32_t g_recent_dr_pct;
+static int      g_recent_dr_have;
+
 /* Count a frame ACTUALLY sent, and its wire byte size. */
 static void sr_stats_add_frame(uint32_t bytes)
 {
@@ -752,13 +922,21 @@ static void sr_stats_window(void)
 		return;
 	}
 	if ((int32_t)(nm - g_fps_win_at) >= 2000) {
-		uint32_t span = nm - g_fps_win_at;
+		uint32_t span  = nm - g_fps_win_at;
+		uint32_t dwtot = g_dr_win_dirty + g_dr_win_full;
 
 		g_recent_fps  = (uint32_t)(g_fps_win_n * 1000u / span);
 		g_recent_kbps = (uint32_t)(g_fps_win_bytes * 1000u / 1024u / span);
 		g_fps_win_n     = 0;
 		g_fps_win_bytes = 0;
 		g_fps_win_at    = nm;
+
+		if (dwtot > 0) {
+			g_recent_dr_pct  = g_dr_win_dirty * 100u / dwtot;
+			g_recent_dr_have = 1;
+		}
+		g_dr_win_dirty = 0;
+		g_dr_win_full  = 0;
 	}
 }
 
@@ -794,15 +972,18 @@ static void sr_io_stats_emit(int force)
 		 * "dr 0%" there would be indistinguishable from a busy screen on a
 		 * client that COULD patch. Three states, three labels: off (the
 		 * sysop disabled it), n/a (no usable cell grid), N% (this is how it
-		 * is doing). */
-		uint32_t emitted = g_dirty_frames + g_full_frames;
-
+		 * is doing) -- the N% is a rolling ~2s window (g_recent_dr_pct, kept by
+		 * sr_stats_window() the same way g_recent_fps/g_recent_kbps are), not a
+		 * lifetime average: a session's early frames (before dirty-rect has a
+		 * previous frame to diff against) would otherwise drag a long
+		 * session's number down forever, and a later static screen could
+		 * never move it. */
 		if (!sr_config_dirty_rect())
 			snprintf(drtxt, sizeof drtxt, " dr off");
 		else if (g_cell_w <= 0 || g_cell_h <= 0)
 			snprintf(drtxt, sizeof drtxt, " dr n/a");   /* no cell grid: cannot place patches */
-		else if (emitted > 0)
-			snprintf(drtxt, sizeof drtxt, " dr %u%%", g_dirty_frames * 100 / emitted);
+		else if (g_recent_dr_have)
+			snprintf(drtxt, sizeof drtxt, " dr %u%%", g_recent_dr_pct);
 		else
 			drtxt[0] = '\0';
 	}
@@ -1299,7 +1480,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	 * frames then carry a used-colour subset, which is never WRONG. */
 	emit_pal = pal_changed ? SIXEL_PAL_FULL : SIXEL_PAL_NONE;
 	if (!sr_input_is_syncterm())
-		emit_pal = SIXEL_PAL_USED;
+		emit_pal = sr_config_palette_subset() ? SIXEL_PAL_USED : SIXEL_PAL_FULL;
 
 	frame_start = g_out_len;   /* wire bytes for this frame, for the stats overlay */
 
@@ -1331,12 +1512,73 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	 * cell-only geometry.
 	 */
 	nrect = 0;
-	if (sr_config_dirty_rect() && !force && !pal_changed && have_prev_scaled
-	    && g_cell_w > 0 && g_cell_h > 0
-	    && last_ew == g_ew && last_eh == g_eh
-	    && last_icol == g_icol && last_irow == g_irow)
-		nrect = sr_dirty_find(g_scaled, g_prev_scaled, g_ew, g_eh,
-		                      g_cell_w, g_cell_h, !sr_input_is_syncterm(), rect);
+	{
+		int gate_cfg      = sr_config_dirty_rect();
+		int gate_haveprev = have_prev_scaled;
+		int gate_cell_ok  = (g_cell_w > 0 && g_cell_h > 0);
+		int gate_geom_ok  = (last_ew == g_ew && last_eh == g_eh
+		                     && last_icol == g_icol && last_irow == g_irow);
+		int gate_pass = gate_cfg && !force && !pal_changed && gate_haveprev
+		                && gate_cell_ok && gate_geom_ok;
+
+		if (gate_pass)
+			nrect = sr_dirty_find(g_scaled, g_prev_scaled, g_ew, g_eh,
+			                      g_cell_w, g_cell_h, !sr_input_is_syncterm(), rect);
+
+		/* [debug] dirty_log's per-frame trace. Only ever reached for a frame that
+		 * is actually being presented (the de-dupe/pace/backpressure returns
+		 * above are all earlier), so a deduped frame never logs -- exactly the
+		 * "don't flood on the common case" the feature needs.
+		 *
+		 * Distinguishes "the gate in THIS function never called sr_dirty_find()"
+		 * from "sr_dirty_find() was called and said no" -- a small top-of-frame
+		 * box (SMB's HUD coin) can never hit the band-align stranding path (that
+		 * only strands boxes near the BOTTOM), so if foot still shows dr 0% on
+		 * that content, gate=<name> here is what proves the rejection is above
+		 * sr_dirty_find() entirely, not inside it. */
+		if (sr_config_dirty_log()) {
+			char extra[128];
+
+			extra[0] = '\0';
+			if (!gate_geom_ok)
+				snprintf(extra, sizeof extra,
+				         " ew=%d eh=%d last_ew=%d last_eh=%d icol=%d irow=%d"
+				         " last_icol=%d last_irow=%d",
+				         g_ew, g_eh, last_ew, last_eh, g_icol, g_irow,
+				         last_icol, last_irow);
+
+			if (nrect > 0) {
+				sr_dirty_logf("syncretro: dirty syncterm=%d band_align=%d cfg=%d"
+				              " force=%d palchg=%d haveprev=%d cell=%dx%d geom=%d"
+				              " path=dirty nrect=%d%s\n",
+				              sr_input_is_syncterm(), !sr_input_is_syncterm(), gate_cfg,
+				              force, pal_changed, gate_haveprev, g_cell_w, g_cell_h,
+				              gate_geom_ok, nrect, extra);
+			} else if (!gate_pass) {
+				const char *gate = !gate_cfg ? "cfg"
+				                   : force ? "force"
+				                   : pal_changed ? "palchg"
+				                   : !gate_haveprev ? "haveprev"
+				                   : !gate_cell_ok ? "cell"
+				                   : "geom";
+
+				sr_dirty_logf("syncretro: dirty syncterm=%d band_align=%d cfg=%d"
+				              " force=%d palchg=%d haveprev=%d cell=%dx%d geom=%d"
+				              " path=full gate=%s%s\n",
+				              sr_input_is_syncterm(), !sr_input_is_syncterm(), gate_cfg,
+				              force, pal_changed, gate_haveprev, g_cell_w, g_cell_h,
+				              gate_geom_ok, gate, extra);
+			} else {
+				sr_dirty_logf("syncretro: dirty syncterm=%d band_align=%d cfg=%d"
+				              " force=%d palchg=%d haveprev=%d cell=%dx%d geom=%d"
+				              " path=full reason=%s pct=%d%%%s\n",
+				              sr_input_is_syncterm(), !sr_input_is_syncterm(), gate_cfg,
+				              force, pal_changed, gate_haveprev, g_cell_w, g_cell_h,
+				              gate_geom_ok, sr_dirty_reason_name(sr_dirty_last_reason()),
+				              sr_dirty_last_pct(), extra);
+			}
+		}
+	}
 
 	if (nrect > 0) {
 		int i;
@@ -1357,12 +1599,14 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 			 * with the used-colour subset -- correct regardless of whether the
 			 * client honours the ?1070l request term_enter sent. */
 			n = sixel_encode(&g_sx, &g_sx_cap, g_rect_px, rect[i].w, rect[i].h,
-			                 pal, sr_input_is_syncterm() ? SIXEL_PAL_NONE : SIXEL_PAL_USED);
+			                 pal, sr_input_is_syncterm() ? SIXEL_PAL_NONE
+			                 : (sr_config_palette_subset() ? SIXEL_PAL_USED : SIXEL_PAL_FULL));
 			sr_out_put(g_sx, n);
 			g_dirty_rects_sent++;
 		}
 		sr_out_put("\x1b" "8", 2);                /* restore cursor */
 		g_dirty_frames++;
+		g_dr_win_dirty++;
 	} else {
 		{   /* Save cursor, position at the centered cell, restore after -- the sixel
 			 * is drawn at the text cursor, so this is what centers it without
@@ -1386,6 +1630,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		sr_out_put(g_sx, n);
 		sr_out_put("\x1b" "8", 2);   /* restore cursor */
 		g_full_frames++;
+		g_dr_win_full++;
 	}
 	g_force_repaint = 0;   /* frame actually emitted: the one-shot is spent */
 

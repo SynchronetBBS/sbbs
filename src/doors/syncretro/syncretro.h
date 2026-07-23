@@ -99,6 +99,20 @@ int    sr_config_audio_prebuffer(void);   /* prebuffer, 2..8,      default 3 */
  * changed, instead of re-sending the whole picture every time. Off falls back to
  * whole frames, which is always correct and is what the door did before. */
 int    sr_config_dirty_rect(void);
+/* [video] palette_subset (default true) -- on a non-SyncTERM terminal, emit
+ * only the sixel colors actually used by the frame instead of the whole
+ * palette. Off restores the pre-feature behavior of always emitting the
+ * full palette on those terminals (an A/B toggle for live-testing whether
+ * subsetting itself is implicated in a rendering issue). */
+int    sr_config_palette_subset(void);
+/* [debug] dirty_log (default false) -- log why every non-deduped frame took
+ * the dirty-rect or full-repaint path (syncretro: dirty ...), plus one
+ * startup line with the geometry that governs band alignment. Written to its
+ * own file (NOT stderr, which a native EX_BIN door never gets to keep -- see
+ * syncretro_io.c's sr_dirty_log_fp()), fflush'd per line. Off by default: it
+ * is one line per frame, meant for a short, deliberate diagnostic session,
+ * not to run all the time. See README.md's Diagnostics section. */
+int    sr_config_dirty_log(void);
 /* [input] device -- the RETRO_DEVICE id to select on the core's controller
  * ports, or 0 to leave the core's own default alone (the default, and what the
  * door did before this existed). MAME 2003-Plus advertises RetroPad (1),

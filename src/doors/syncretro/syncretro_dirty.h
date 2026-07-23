@@ -66,4 +66,36 @@ int sr_dirty_find(const uint8_t *cur, const uint8_t *prev, int w, int h,
  * up and asks for a full frame. Exposed for the test. */
 #define SR_DIRTY_FULL_PCT 40
 
+/* WHY the last call returned 0, for diagnostics (sr_io.c's dirty_log). A file-
+ * static "last reason" rather than an out-parameter: sr_dirty_find()'s callers
+ * (and its unit test) already exist and its signature is pinned, so adding a
+ * side channel costs nothing they need to change. Not thread-safe, which is
+ * fine -- this door, like its siblings, runs the whole present path on one
+ * thread. SR_DR_OK is also set on a successful (nonzero) return, so a caller
+ * can log the reason unconditionally without a separate success check. */
+enum {
+	SR_DR_OK = 0,       /* returned nb > 0: rectangles are usable */
+	SR_DR_ARGS,         /* NULL or invalid (w/h/cw/ch <= 0) arguments */
+	SR_DR_GRID,         /* cols*rows exceeds the sanity ceiling, or an OOM
+	                     * growing a grid/vis/stack buffer to fit it */
+	SR_DR_NOTHING,      /* dirty == 0: no cell differs */
+	SR_DR_COVERAGE,     /* dirty% >= SR_DIRTY_FULL_PCT */
+	SR_DR_COMPONENTS,   /* label_components() saw more than it tracks */
+	SR_DR_FRAGMENTED,   /* merged down to more than SR_DIRTY_MAX_RECTS boxes */
+	SR_DR_BANDFIT       /* band_align pre-pass: a box won't fit vstep-aligned */
+};
+
+/* The reason code for the MOST RECENT sr_dirty_find() call. */
+int sr_dirty_last_reason(void);
+
+/* Short, lowercase name for a reason code (above), for a log line -- e.g.
+ * "ok", "coverage", "bandfit". Never NULL, even for an out-of-range value
+ * (returns "?"). */
+const char *sr_dirty_reason_name(int reason);
+
+/* The dirty percentage (dirty*100/total, 0..100) OBSERVED by the most recent
+ * sr_dirty_find() call -- how close a real frame lands to SR_DIRTY_FULL_PCT.
+ * -1 if the call never got as far as computing it (SR_DR_ARGS/SR_DR_GRID). */
+int sr_dirty_last_pct(void);
+
 #endif /* SYNCRETRO_DIRTY_H_ */

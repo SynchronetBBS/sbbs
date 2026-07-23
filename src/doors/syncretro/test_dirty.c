@@ -249,6 +249,116 @@ int main(void)
 		free(cur); free(prev);
 	}
 
+	/* band_align=1 NEAR-BOTTOM, NON-FULL-HEIGHT box PATCHES (does not strand).
+	 *
+	 * Same metrics as the strand test above (ch=13 -> vstep=78, h=100 ->
+	 * hcell = h/ch*ch = 91), but this time the dirty region is cell rows 5-6
+	 * only (pixel rows 65..90), not the whole column -- a bottom-active sprite
+	 * or status line, not a full-height change. Growing the patch rect UPWARD
+	 * from a vstep-aligned bottom (at hcell) should reach back far enough to
+	 * cover pixel row 65 without falling off the top of the frame, so this
+	 * must return a rect, never the full-frame 0 the stranding bug produced. */
+	{
+		int      w = 64, h = 100, cw = 8, ch = 13;
+		uint8_t *cur  = calloc((size_t)w * h, 1);
+		uint8_t *prev = calloc((size_t)w * h, 1);
+		sr_dirty_rect_t r[SR_DIRTY_MAX_RECTS];
+		int      n, y;
+
+		for (y = 65; y <= 90; y++)
+			cur[y * w + 0] = 0xAB;   /* one narrow column, rows 65..90 only */
+
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		CHECK(n >= 1);                                  /* patches, not stranded */
+		if (n >= 1) {
+			CHECK(r[0].h % 78 == 0);                    /* vstep-aligned height */
+			CHECK(r[0].y <= 65 && r[0].y + r[0].h >= 91);   /* covers changed rows */
+			CHECK(r[0].y % 13 == 0);                    /* cell-aligned top */
+			CHECK(r[0].y + r[0].h <= 91);                /* fits within h/ch*ch */
+		}
+
+		free(cur); free(prev);
+	}
+
+	/* band_align=1 BOTTOM-ROW REMAINDER: pins the invariant the live regression
+	 * violated. syncretro_io.c is now expected to round the sixel canvas
+	 * height DOWN to a whole multiple of the cell height before it ever
+	 * reaches sr_dirty_find(), so in practice h/ch*ch == h here and this
+	 * scenario should not arise. But this function cannot enforce that on
+	 * its caller, so it must still not silently drop rows if a NON-aligned
+	 * height ever reaches it: it must never return a rect whose bottom
+	 * stops short of h/ch*ch (the last whole-cell row), and if it cannot
+	 * cover that row it must fall back to a full frame (return 0) instead of
+	 * shipping a rect that quietly omits the changed rows.
+	 *
+	 * ch=13, h=800 = 61*13 + 7 -- NOT a multiple of 13, so hcell=793 < h.
+	 * Dirty a small patch inside the LAST cell row (pixel rows 793..799,
+	 * the 7px remainder) and check the outcome either way. */
+	{
+		int      w = 64, h = 800, cw = 6, ch = 13;
+		uint8_t *cur  = calloc((size_t)w * h, 1);
+		uint8_t *prev = calloc((size_t)w * h, 1);
+		sr_dirty_rect_t r[SR_DIRTY_MAX_RECTS];
+		int      n, i, x, y, hcell = h / ch * ch;   /* 793 */
+
+		/* NOT blit() -- it bound-checks against the file-global W/H (128x96),
+		 * which this local w x h buffer does not share. Write directly. */
+		for (y = 795; y < 799; y++)
+			for (x = 4; x < 8; x++)
+				cur[y * w + x] = 0xAB;   /* inside the 793..799 remainder */
+
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		if (n == 0) {
+			CHECK(n == 0);   /* full-frame fallback: never loses rows */
+		} else {
+			CHECK(n >= 1);
+			for (i = 0; i < n; i++)
+				CHECK(r[i].y + r[i].h >= hcell);   /* reaches the last whole cell row */
+		}
+
+		free(cur); free(prev);
+	}
+
+	/* --- FOOT GEOMETRY: a real live-session case, not a synthetic one ------
+	 * cell 6x13 on a 1254x806 image is 209 cols x 62 rows -- over the old
+	 * 160-column cap, so sr_dirty_find() returned 0 on EVERY frame of a live
+	 * foot session (139/145 logged frames, reason=grid) even though the
+	 * total cell count (209*62=12,958) is smaller than the old array
+	 * capacity (160*100=16,000): the per-dimension caps were the wrong
+	 * shape, not an actual size problem. One small dirty patch near the top
+	 * of the frame, dirty% far under SR_DIRTY_FULL_PCT, must still produce
+	 * a usable rect covering it. */
+	{
+		int      w = 1254, h = 806, cw = 6, ch = 13;
+		uint8_t *cur  = calloc((size_t)w * h, 1);
+		uint8_t *prev = calloc((size_t)w * h, 1);
+		sr_dirty_rect_t r[SR_DIRTY_MAX_RECTS];
+		int      n, x, y, miss = 0;
+
+		for (y = 8; y < 16; y++)
+			for (x = 8; x < 16; x++)
+				cur[y * w + x] = 5;
+
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		CHECK(n >= 1);
+		for (y = 8; y < 16 && n >= 1; y++)
+			for (x = 8; x < 16; x++) {
+				int i, found = 0;
+
+				for (i = 0; i < n; i++)
+					if (x >= r[i].x && x < r[i].x + r[i].w
+					    && y >= r[i].y && y < r[i].y + r[i].h) {
+						found = 1;
+						break;
+					}
+				if (!found)
+					miss++;
+			}
+		CHECK(miss == 0);
+
+		free(cur); free(prev);
+	}
+
 	/* --- degenerate inputs are refusals, not crashes ----------------------- */
 	CHECK(sr_dirty_find(NULL, prev, W, H, CW, CH, 0, r) == 0);
 	CHECK(sr_dirty_find(cur, NULL, W, H, CW, CH, 0, r) == 0);

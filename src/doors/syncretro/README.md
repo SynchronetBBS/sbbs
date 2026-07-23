@@ -252,6 +252,58 @@ SyncTERM: menu/static screens and stable-palette games benefit most, while
 content that changes its color set every frame (NTSC/dither-filtered cores,
 for example) still falls back to full frames.
 
+## Diagnostics
+
+`[debug] dirty_log = true` in `syncretro.ini` turns on a per-frame trace of
+the dirty-rect decision -- why a given frame took the patch path or the full
+repaint path. Unlike this file's other diagnostic lines, it does NOT go to
+stderr: a native door is launched `EX_BIN`, and the BBS eats its stderr
+outright, so an `fprintf(stderr, ...)` here would be invisible under a real
+session. Instead it is its own `fopen(..., "a")`'d file (mirrors
+`../syncduke/syncduke_log.c`), fflush'd after every line so a killed/hung
+session still leaves a readable tail, at:
+
+- `$SBBSDATA/syncretro/syncretro_dirty_n<node>.log` when the BBS sets
+  `$SBBSDATA` (every native door launch on a real session) -- a different
+  basename than the existing `syncretro_n<node>.log` capture file, so this
+  opt-in trace can't collide with it.
+- otherwise (a dev/direct run with no BBS session) `syncretro_dirty.log`
+  beside `syncretro.ini`, in whichever directory the door was launched from.
+
+Off by default -- it is one line per non-deduped frame, meant for a short
+session, not to run continuously.
+
+One line is logged once, the first time geometry settles, with the numbers
+that govern band alignment (see `syncretro_dirty.c`'s band_align comment):
+
+```
+syncretro: dirty-log geometry cell=8x16 image=352x208 vstep=48 hcell=208 syncterm=0
+```
+
+Then one line per non-deduped frame:
+
+```
+syncretro: dirty syncterm=0 band_align=1 cfg=1 force=0 palchg=0 haveprev=1 cell=8x16 geom=1 path=dirty nrect=2
+syncretro: dirty syncterm=0 band_align=1 cfg=1 force=0 palchg=0 haveprev=1 cell=8x16 geom=0 ew=352 eh=208 last_ew=344 last_eh=208 icol=3 irow=2 last_icol=3 last_irow=2 path=full gate=geom
+syncretro: dirty syncterm=0 band_align=1 cfg=1 force=0 palchg=0 haveprev=1 cell=8x16 geom=1 path=full reason=coverage pct=52%
+```
+
+`path=full gate=<name>` means the gate in `sr_io_present()` itself blocked
+the dirty-rect attempt before `sr_dirty_find()` was ever called (`cfg` =
+`[video] dirty_rect` is off, `force`/`palchg` = something else forced a
+repaint, `haveprev` = no previous scaled frame yet, `cell` = no usable cell
+grid, `geom` = the image moved/resized since the last frame the client has --
+the `ew`/`eh`/`icol`/`irow` fields only appear when `geom=0`, so you can see
+what changed). `path=full reason=<name> pct=N%` means the gate passed and
+`sr_dirty_find()` itself returned "send a full frame", with `reason` one of
+`nothing`, `coverage`, `components`, `fragmented`, `bandfit`, `grid`, `args`
+(see `syncretro_dirty.h`) and `pct` the dirty-cell percentage it measured
+against the `SR_DIRTY_FULL_PCT` (40%) cutoff.
+
+The Ctrl-S overlay's `dr N%` reading is a **rolling ~2s window** (the same
+window the fps/KB-per-second readout uses), not a lifetime average -- it
+reflects what the current screen is doing, not the whole session.
+
 ## License
 
 Frontend glue: GPL-2.0 (matching the door family). libretro API: permissive.
