@@ -209,6 +209,21 @@ static int      g_idle_showing;       /* the countdown owns the bottom row */
 static char     g_idle_msg[96];
 static int      g_idle_clear;         /* it just went: wipe the row once */
 static int      g_idle_expired_logged;/* the exit line is logged exactly once */
+
+/* --- session time limit (the BBS's, not ours) -----------------------------
+ * The minutes the BBS says the caller has left, from DOOR32.SYS line 9 or an
+ * explicit -t<seconds>. Until now termio read the drop file for its socket and
+ * DISCARDED this, so a door driven through here ran until the player quit --
+ * the BBS reclaimed the node only when the session itself ended.
+ *
+ * Distinct from the idle clock above in the way that matters to a player: this
+ * one cannot be reset by pressing a key. It counts down regardless, so its
+ * warning says "your BBS time", not "still there?". */
+#define TERMGFX_TIMELIMIT_WARN_S 60   /* visible countdown over the last minute */
+static uint32_t g_time_limit_ms;      /* 0 = no limit given */
+static uint32_t g_deadline_ms;
+static int      g_deadline_armed;
+static int      g_deadline_logged;
 static unsigned char g_menu_letter;   /* Ctrl+<letter> opens the GMM; 0 = disabled */
 static int g_have_sixel, g_is_syncterm, g_jxl, g_probe_replied;
 static int g_no_gfx_notified;   /* one-shot: unsupported-terminal notice sent */
@@ -374,6 +389,7 @@ static FILE *g_tee;
 static void  termgfx_trace_in(const uint8_t *buf, int n);   /* defined past pacing globals */
 static void  termgfx_stats_draw(void);                      /* defined past pacing globals */
 static void  idle_poll(void);                               /* idle clock; driven by the pump */
+static void  deadline_poll(void);                           /* BBS session limit; likewise */
 
 /* Set the instant the peer goes away (EOF/hard read error) or a flush hits a
  * hard write error (not EAGAIN/EINTR) -- see termgfx_termio_flush()/termgfx_termio_pump().
@@ -742,6 +758,13 @@ static int resolve_fd(int argc, char **argv)
 		if (a[0] == '-' && a[1] == 's' && a[2] != '\0') {
 			cli_sock = atoi(a + 2);                                  /* -s<fd> */
 			mark_consumed(i);
+		} else if (a[0] == '-' && a[1] == 't' && all_digits(a + 2)) {
+			/* -t<seconds>: the session limit, as every sibling door spells it
+			 * (Synchronet's %T). Wins over the drop file, which is what the
+			 * siblings do too. All-digit suffix so an engine word option
+			 * starting with -t passes through. */
+			g_time_limit_ms = (uint32_t)atoi(a + 2) * 1000u;
+			mark_consumed(i);
 		} else if (a[0] == '-' && a[1] == 'i' && all_digits(a + 2)) {
 			/* -i<seconds>: the idle threshold. ALL-DIGIT suffix, never a
 			 * prefix match -- a game engine's own word option beginning with
@@ -752,8 +775,13 @@ static int resolve_fd(int argc, char **argv)
 			termgfx_door32_t d;
 			door32_seen = 1;
 			mark_consumed(i);
-			if (termgfx_door32_read(a, &d) == 0 && d.socket >= 0)
-				cli_sock = d.socket;                                 /* comm type 2 */
+			if (termgfx_door32_read(a, &d) == 0) {
+				if (d.socket >= 0)
+					cli_sock = d.socket;                             /* comm type 2 */
+				/* Line 9, the caller's minutes left. -t below overrides it. */
+				if (d.time_limit_ms > 0 && g_time_limit_ms == 0)
+					g_time_limit_ms = d.time_limit_ms;
+			}
 			/* comm type 0 (stdio) or a read failure: fall through to the
 			 * fd 1/0 default below -- door32_seen alone still activates. */
 		}
@@ -1714,7 +1742,8 @@ void termgfx_termio_pump(void)
 {
 	uint8_t buf[256];
 
-	idle_poll();   /* rendering-independent: see idle_poll()'s comment */
+	idle_poll();       /* rendering-independent: see idle_poll()'s comment */
+	deadline_poll();   /* ...and it must run second; see deadline_poll() */
 
 	/* Deliberately NOT gated on g_active: termgfx_termio_shutdown() only retires the
 	 * OUTPUT side (status-line/term_leave + "don't stage more bytes"); the fd
@@ -3184,6 +3213,51 @@ static void idle_ensure_armed(void)
 	termgfx_idle_init(&g_idle,
 	                  (g_idle_arg >= 0) ? (unsigned)g_idle_arg : g_idle_timeout,
 	                  g_idle_warn, termgfx_plat_now_ms());
+	if (g_time_limit_ms > 0) {
+		g_deadline_ms    = termgfx_plat_now_ms() + g_time_limit_ms;
+		g_deadline_armed = 1;
+	}
+}
+
+/* The BBS session limit. Runs from the pump for the same reason the idle poll
+ * does -- this door presents only on a changed frame, so a present-driven check
+ * would stall on a static screen.
+ *
+ * Deliberately AFTER idle_poll() in the pump: over the last minute this claims
+ * the shared notice row, and it must win. The idle countdown can be dismissed
+ * by pressing a key; this one cannot, and telling a player "press any key" when
+ * no key will help would be a lie. */
+static void deadline_poll(void)
+{
+	static unsigned last_shown = 0;
+	int32_t         left_ms;
+	unsigned        left;
+
+	if (!g_deadline_armed)
+		return;
+	left_ms = (int32_t)(g_deadline_ms - termgfx_plat_now_ms());
+	if (left_ms <= 0) {
+		if (!g_deadline_logged) {
+			g_deadline_logged = 1;
+			fprintf(stderr, "termgfx: BBS time limit reached -- exiting\n");
+		}
+		g_quit = 1;               /* clean unwind, exactly as an idle exit does */
+		return;
+	}
+	if (left_ms > TERMGFX_TIMELIMIT_WARN_S * 1000)
+		return;                   /* not yet worth interrupting the player */
+
+	left = (unsigned)((left_ms + 999) / 1000);
+	if (left != last_shown) {
+		last_shown = left;
+		snprintf(g_idle_msg, sizeof g_idle_msg,
+		         " Your time on the BBS is up in %u second%s ",
+		         left, (left == 1) ? "" : "s");
+		g_idle_showing = 1;       /* shares the notice row; see the note above */
+		termgfx_stats_draw();     /* paint NOW: a static scene may never present */
+		termgfx_termio_flush();
+	}
+	g_idle_showing = 1;
 }
 
 /* Feed the clock from REAL input; 1 => this input answered an on-screen
