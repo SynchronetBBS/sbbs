@@ -1,7 +1,10 @@
 # SyncSCUMM — ScummVM point-and-click adventures as a Synchronet door
 
-Status: M2 complete (terminal video: sixel/JXL dirty-rect path) — pending live validation
-Date: 2026-07-15
+Status: Shipped — one binary, one installable xtrn package per title
+(SyncBASS, SyncQueen, SyncLure, SyncDrascula ship freeware-ready; commercial
+titles play when the sysop supplies the data files). There is no in-door game
+picker/lobby — not planned.
+Date: 2026-07-15 (design); shipped 2026-07-18
 
 ## Goal
 
@@ -10,11 +13,14 @@ SyncRetro) that plays classic 2D point-and-click adventures over a terminal:
 ScummVM's engine collection driven through a native Synchronet backend, with
 graphics, mouse, and sound. v1 decisions made at design time:
 
-- **Multi-title from day one**: one door, a game picker, a curated catalog.
-  The officially-freeware adventures are the bundled flagships — Beneath a
-  Steel Sky, Flight of the Amazon Queen, Lure of the Temptress, Drascula —
-  with commercial titles (the LucasArts SCUMM classics) playable when a
-  sysop supplies the data files.
+- **Multi-title, one binary**: a single door binary plays every title, but
+  each game installs as its own Synchronet xtrn package pointing at that
+  shared binary (see `deploy.js`, `COMPILING.md`) — there is **no** in-door
+  game picker or lobby, and none is planned. The officially-freeware
+  adventures ship as ready-made packages — Beneath a Steel Sky (SyncBASS),
+  Flight of the Amazon Queen (SyncQueen), Lure of the Temptress (SyncLure),
+  Drascula (SyncDrascula) — with commercial titles (the LucasArts SCUMM
+  classics) playable when a sysop supplies the data files.
 - **Graphics required, mouse optional**: no text tier (these games are
   meaningless without pixels); mouse when the terminal reports it, a
   keyboard-driven cursor always.
@@ -60,14 +66,16 @@ src/doors/syncscumm/           door + backend + vendored engine
                                vendor-tree touch, documented in PROVENANCE.md
   build.sh, deploy.js          house pattern; live binary is a symlink
   DESIGN.md, PROVENANCE.md
-xtrn/syncscumm/                install side
-  install-xtrn.ini             registers door; runs fetch-games.js
-  fetch-games.js               freeware provisioner (HTTPRequest.Download +
-                               Archive; idempotent, non-fatal, .js per the
-                               xtrn [exec:] rule — never a shell script)
-  lobby JS + curated catalog   picker; per-title door-tested status
-  games/<id>/                  game data (freeware fetched; commercial
-                               sysop-dropped; validated by ScummVM's detector)
+xtrn/<title>/                  install side — ONE package per title
+  install-xtrn.ini             registers that title's door command (the
+                               shared binary + that game's id); no picker,
+                               no lobby
+  games/<id>/                  game data (freeware bundled/dropped in;
+                               commercial sysop-supplied; validated by
+                               ScummVM's detector)
+  (a freeware auto-provisioner -- getgames/fetch-games.js, HTTPRequest.Download
+   + Archive -- is a DEFERRED idea, not shipped; freeware titles ship as
+   ready-made packages instead)
 ```
 
 ## Video path
@@ -169,8 +177,10 @@ constraint recorded above.
 - **M3 input**: keymode, the 1016/1006/keyboard mouse ladder,
   `termgfx_mouse`; playable start-to-hotspot.
 - **M4 audio**: chunked mixer streaming; music + speech validated.
-- **M5 ship**: SavefileManager, picker/lobby, fetch-games.js, catalog,
-  install-xtrn.ini, node.exb, SYSOP docs.
+- **M5 ship**: SavefileManager, node.exb, per-title install-xtrn.ini
+  packages, SYSOP docs. **Dropped from M5:** an in-door picker/lobby (not
+  planned — each title installs as its own xtrn package instead) and
+  fetch-games.js (deferred — freeware titles ship as ready-made packages).
 - **M6 polish**: Windows build, autosave-on-hangup investigation, engine
   additions, spectate groundwork.
 
