@@ -75,18 +75,24 @@ axes belongs here only if nothing better hosts it:
 
 1. **Native reimplementation door** -- Vanilla Conquer -> C&C / Red Alert
    (`syncconquer` / `syncalert`), Chocolate Duke -> Duke3D, 1oom -> MOO1, the DOOM
-   door. Cleanest integration; a game with a native door is **never** run under a
-   core. (This is why C&C and Red Alert are *not* `syncdos` candidates despite
-   fitting perfectly -- we reimplemented them.)
-2. **Purpose-fit libretro core** -- ScummVM for the adventure catalog. A separate
-   console, [SYNCSCUMM.md](SYNCSCUMM.md).
+   door, ScummVM -> the adventure catalog ([`../syncscumm`](../syncscumm/README.md)),
+   EasyRPG -> RPG Maker 2000/2003 ([`../syncrpg`](../syncrpg/README.md)). Cleanest
+   integration; a game with a native door is **never** run under a core. (This is
+   why C&C and Red Alert are *not* `syncdos` candidates despite fitting perfectly
+   -- we reimplemented them.)
+2. **Purpose-fit libretro core** -- a core that reimplements a whole engine or
+   platform rather than emulating a machine. **Currently empty:** ScummVM was the
+   candidate ([SYNCSCUMM.md](SYNCSCUMM.md)), but it was built natively as a door
+   instead and moved up to tier 1. The tier stays as a slot for the next such
+   core.
 3. **dosbox_pure (`syncdos`, this doc)** -- the DOS long tail with neither of the
    above.
 
 So the genuine `syncdos` list is what survives all three cuts: 320x200,
 latency-tolerant, and un-reimplemented. The Sierra/LucasArts adventures that look
-like they belong here move to tier 2 ([SYNCSCUMM.md](SYNCSCUMM.md)); C&C/RA are
-tier 1; MOO2 stays, but as the SVGA stress-test.
+like they belong here are gone to tier 1, in the native
+[`../syncscumm`](../syncscumm/README.md) door; C&C/RA are tier 1; MOO2 stays, but
+as the SVGA stress-test.
 
 ---
 

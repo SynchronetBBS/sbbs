@@ -1,5 +1,21 @@
 # SyncRetro -- `syncscumm` sketch: adventures via the ScummVM core
 
+> **SUPERSEDED -- this console was never built, and won't be.** ScummVM
+> adventures ship instead as [`../syncscumm`](../syncscumm/README.md), a
+> **native** door that embeds ScummVM directly rather than hosting
+> `scummvm_libretro` through SyncRetro. That is tier 1 of the three-tier rule in
+> §1 below, and the rule forbids hosting through a core a catalog that has a
+> native door -- so this document lost its subject to its own tier rule. **Note
+> the name collision:** the door that exists took the name `syncscumm` used
+> throughout this sketch; every `syncscumm` below means the *proposed SyncRetro
+> console*, not the shipped door.
+>
+> **Kept, not retired, for one reason:** [SYNCDOS.md](SYNCDOS.md) and
+> [SIBLINGS.md](SIBLINGS.md) still cross-reference it for the shared
+> **mouse/keyboard input bridge** (§5 there), and the analysis of what a
+> mouse-driven core needs from the frontend is still the best write-up we have.
+> Read it for the bridge; do not read it as a plan.
+
 Status: **sketch. Nothing here is built.** Companion to
 [SYNCDOS.md](SYNCDOS.md); read that first for the shared machinery (the console
 model, the probe-first discipline, and especially the mouse/keyboard input

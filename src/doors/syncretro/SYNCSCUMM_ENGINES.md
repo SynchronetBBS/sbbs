@@ -1,5 +1,13 @@
 # `syncscumm` -- the ScummVM engine tour, as a curation guide
 
+> **The console this was written for was superseded** -- ScummVM ships as the
+> native [`../syncscumm`](../syncscumm/README.md) door, not as a SyncRetro
+> console ([SYNCSCUMM.md](SYNCSCUMM.md) banner). **The engine tour below is
+> unaffected and still current:** which engine families clear the terminal bar is
+> a property of ScummVM's catalog, not of how we host it, so this remains the
+> curation guide for the door. Only the `scummvm_libretro`-specific framing
+> (§"one core") is stale.
+
 Companion to [SYNCSCUMM.md](SYNCSCUMM.md). ScummVM is **100+ engines / 325+ named
 games** (2025), and via AGS/Wintermute/Director effectively thousands more. This
 doc is not an inventory -- the ScummVM wiki is -- it is a **fit guide**: which
