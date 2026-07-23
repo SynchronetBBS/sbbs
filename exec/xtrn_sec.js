@@ -259,9 +259,6 @@ function external_section_menu()
 {
     var i,j;
     var xsec=0;
-	var longest = 0;
-	for(i = 0; i < xtrn_area.sec_list.length; i++)
-		longest = Math.max(xtrn_area.sec_list[i].name.length, longest);
 
     while(bbs.online) {
 
@@ -298,7 +295,24 @@ function external_section_menu()
 
 			var multicolumn = options.multicolumn && sec_list.length > options.singlecolumn_height;
 			var center = options.center && !multicolumn;
-			var margin = center ? format("%*s", Math.floor((console.screen_columns - longest)/2) - 5, "") : "";
+			// Center on the widest row's DISPLAYED width (strip_ctrl drops the
+			// zero-width \x01 attribute codes), the same way the program list
+			// does. The old (screen_columns - longest)/2 - 5 measured only the
+			// section NAME and guessed a 5-column decoration offset, so it
+			// mis-centered whenever section_fmt was customized.
+			var margin = "";
+			if(center) {
+				var widest = 0;
+				for(i = 0; i < sec_list.length; i++) {
+					var w = strip_ctrl(format(options.section_fmt,
+						i + 1, sec_list[i].name)).length;
+					if(w > widest)
+						widest = w;
+				}
+				var pad = Math.floor((console.screen_columns - widest) / 2);
+				if(pad > 0)
+					margin = format("%*s", pad, "");
+			}
 
 			if(show_header)
 				printf(margin + options.section_header_fmt.replace('\x01l', ''), options.section_header_title);
