@@ -411,6 +411,7 @@ int main(int argc, char **argv)
 		return 1;
 	sr_door_sanitize_argv(&argc, argv);
 	sr_config_apply();
+	sr_door_idle_arm();                 /* AFTER the ini read: [idle] is its fallback */
 	sr_audio_init();                    /* reads syncretro.ini; no I/O yet */
 
 	/* THE TERMINAL COMES UP BEFORE THE CORE, and that ordering is the whole point.
@@ -574,6 +575,7 @@ int main(int argc, char **argv)
 			}
 			core.run();             /* -> video/audio/input callbacks fire */
 			sr_io_stats_tick();     /* advance/refresh the Ctrl-S stats overlay */
+			sr_door_idle_tick();    /* idle countdown / expiry latch */
 
 			action = sr_input_take_action();
 			if (action == SR_DOOR_PAUSE || action == SR_DOOR_HELP) {

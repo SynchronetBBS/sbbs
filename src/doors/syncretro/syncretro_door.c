@@ -30,6 +30,7 @@
 #include "genwrap.h"           /* xpdev: stricmp() (POSIX strcasecmp) */
 #include "dirwrap.h"           /* xpdev: mkpath() -- the diagnostics-log dir */
 #include "door32.h"          /* termgfx: the shared DOOR32.SYS parser */
+#include "idle.h"              /* termgfx: the shared idle-USER clock */
 #include "sbbs_node.h"         /* termgfx: node number, who's-online status */
 #include "syncretro_profile.h" /* sr_profile_name(): the console fallback */
 #include "syncretro_binds.h"   /* sr_bind_help_line(): drives the usage key list */
@@ -43,8 +44,8 @@ static uint32_t g_deadline_ms;
 static int      g_deadline_armed;
 static int      g_carrier_lost;
 static char     g_alias[SR_ALIAS_MAX];
-static char     g_home[SR_PATH_MAX];   /* "" = no -home given */
-static char     g_core[SR_PATH_MAX];   /* "" = no -core given */
+static char     g_home[SR_PATH_MAX];       /* "" = no -home given */
+static char     g_core[SR_PATH_MAX];       /* "" = no -core given */
 /* Which console's key bindings to use ("pad", "intv"). The LOBBY knows which
  * console it launched, so it says so; a bare command-line run leaves this empty
  * and the door infers the profile from the core's library_name instead. */
@@ -65,6 +66,14 @@ static char g_console[32];             /* -console: "Intellivision" / "NES" */
  * keystrokes -- one of which (0x11) is our quit key. */
 static int  g_stdio;
 static char g_rom[SR_PATH_MAX];        /* "" = no ROM given */
+
+/* The idle-USER clock, distinct from the session deadline above: that one bounds
+ * how long the visit may LAST, this one notices that nobody is driving it. Its
+ * own declaration group -- termgfx_idle_t is a wider type, and folding it into
+ * the block above would re-align a dozen untouched lines. */
+static termgfx_idle_t g_idle;
+static int            g_idle_arg = -1; /* -i<seconds>; -1 = not given */
+static int            g_idle_expired;  /* latched by the tick, read by should_exit */
 
 /* Monotonic millisecond clock -- the session deadline uses it so a wall-clock
  * step (NTP, DST) can't mistime it. Same clock domain as syncretro_io.c. */
@@ -117,6 +126,10 @@ int sr_door_should_exit(void)
 		fprintf(stderr, "syncretro: DOOR32 time limit exceeded -- exiting\n");
 		return 1;
 	}
+	if (g_idle_expired) {
+		fprintf(stderr, "syncretro: idle timeout -- no user input; exiting\n");
+		return 1;
+	}
 	return 0;
 }
 
@@ -148,6 +161,15 @@ static int is_socket_arg(const char *a)
 static int is_time_arg(const char *a)
 {
 	return a[0] == '-' && a[1] == 't' && all_digits(a + 2);
+}
+
+/* -i<seconds>: the idle-user threshold. A predicate rather than an inline test
+ * in sr_door_resolve(), for the reason stated above -- sr_door_sanitize_argv()
+ * has to strip exactly what the parse consumed, and a second spelling of the
+ * rule is how the two drift apart. */
+static int is_idle_arg(const char *a)
+{
+	return a[0] == '-' && a[1] == 'i' && all_digits(a + 2);
 }
 
 /* A flag taking a separate value argument (the pair is stripped together). */
@@ -225,6 +247,8 @@ static void sr_door_resolve(int argc, char **argv)
 			g_socket = atoi(a + 2);                              /* -s<fd>      */
 		} else if (is_time_arg(a)) {
 			g_time_limit_ms = (uint32_t)atoi(a + 2) * 1000u;     /* -t<seconds> */
+		} else if (is_idle_arg(a)) {
+			g_idle_arg = atoi(a + 2);                            /* -i<seconds> */
 		} else if (strcmp(a, "-name") == 0 && i + 1 < argc) {
 			copy_arg(g_alias, sizeof(g_alias), argv[++i]);
 		} else if (strcmp(a, "-home") == 0 && i + 1 < argc) {
@@ -459,6 +483,68 @@ int sr_door_setup(int argc, char **argv)
 	return 0;
 }
 
+/* The idle threshold actually in force: -i wins when given (from a lobby it is
+ * the ARS-aware answer, and -i0 is how an exempt user is positively excused),
+ * otherwise the door's own ini. Mirrors how -t beats the drop file.
+ *
+ * The ini fallback is NOT a Synchronet-only nicety: this door also runs under
+ * other BBS software via DOOR32.SYS, where no lobby and no ARS exist, and the
+ * sysop configures the timeout entirely through syncretro.ini or a -i on the
+ * static command line. Both paths must work with no JS involved. */
+static unsigned sr_door_idle_threshold(void)
+{
+	return (g_idle_arg >= 0) ? (unsigned)g_idle_arg : sr_config_idle_timeout();
+}
+
+/* Arm the idle clock. Deliberately NOT done in sr_door_setup() beside the -t
+ * deadline: setup() runs before sr_config_apply(), so the [idle] ini values do
+ * not exist yet and every no-lobby install would silently arm a threshold of
+ * zero -- i.e. no timeout at all, on exactly the path where the ini is the only
+ * way to configure one. main() calls this immediately after sr_config_apply().
+ */
+void sr_door_idle_arm(void)
+{
+	termgfx_idle_init(&g_idle, sr_door_idle_threshold(),
+	                  sr_config_idle_warn(), sr_door_now_ms());
+}
+
+void sr_door_idle_activity(void)
+{
+	termgfx_idle_activity(&g_idle, sr_door_now_ms());
+}
+
+/* Once per frame: paint the countdown while it runs, latch the expiry for
+ * sr_door_should_exit(). Re-arming the toast each second is what keeps it on
+ * screen -- sr_io_toast()'s dwell is a fixed SR_TOAST_MS. */
+void sr_door_idle_tick(void)
+{
+	static unsigned last_shown = 0;
+	unsigned        left = 0;
+	char            msg[64];
+
+	switch (termgfx_idle_poll(&g_idle, sr_door_now_ms(), &left)) {
+		case TERMGFX_IDLE_WARN:
+			if (left != last_shown) {
+				/* "terminating", not "disconnecting": this ends the GAME and
+				 * returns the player to the BBS -- it does not drop the call.
+				 * (Once back at a normal BBS prompt the BBS's own inactivity
+				 * timer applies, and that one does work.) */
+				snprintf(msg, sizeof msg,
+				         "Still there? Press any key -- terminating in %u second%s",
+				         left, (left == 1) ? "" : "s");
+				sr_io_toast(msg);
+				last_shown = left;
+			}
+			break;
+		case TERMGFX_IDLE_EXPIRED:
+			g_idle_expired = 1;
+			break;
+		default:
+			last_shown = 0;
+			break;
+	}
+}
+
 int         sr_door_socket(void)    { return g_socket; }
 const char *sr_door_name(void)      { return g_alias[0] ? g_alias : NULL; }
 const char *sr_door_home(void)      { return g_home[0] ? g_home : NULL; }
@@ -571,7 +657,8 @@ void sr_door_sanitize_argv(int *argc, char **argv)
 	for (i = 1; i < n; i++) {
 		const char *a = argv[i];
 
-		if (is_socket_arg(a) || is_time_arg(a) || strcmp(a, "-stdio") == 0)
+		if (is_socket_arg(a) || is_time_arg(a) || is_idle_arg(a)
+		    || strcmp(a, "-stdio") == 0)
 			continue;
 		if (is_valued_flag(a)) {
 			if (i + 1 < n)

@@ -75,6 +75,7 @@ function syncretro_lobby_init(spec)
 	if (f.open("r")) {
 		ini = f.iniGetObject("roms");
 		syncretro_lobby_cfg.lobby = f.iniGetObject("lobby") || {};
+		syncretro_lobby_cfg.idle = f.iniGetObject("idle") || {};
 		f.close();
 		if (ini) {
 			if (ini.dir)
@@ -292,8 +293,19 @@ function syncretro_lobby_play(rom)
 	 * directory keeps working -- the lobby names whatever directory it actually
 	 * scanned. (The DOOR's own bare-name fallback is hardcoded to roms/, so
 	 * naming the directory here is what keeps the two in agreement.) */
+	/* Idle timeout: seconds, or 0 when disabled or the user is exempt. The ARS
+	 * is evaluated HERE because the door has no scfg_t and no user record --
+	 * and -i0 is passed explicitly rather than omitting the flag, so "exempt"
+	 * positively overrides any [idle] timeout in the door's own ini. "s" is the
+	 * default unit so this agrees with xpdev's parse_duration() reading the
+	 * same key on the door side. */
+	var idle_cfg = syncretro_lobby_cfg.idle || {};
+	var idle_ars = idle_cfg.exempt_ars || "EXEMPT H";
+	var idle_secs = bbs.compare_ars(idle_ars)
+	    ? 0 : syncretro_lobby_gl.parse_duration(idle_cfg.timeout, "s");
+
 	cmd = syncretro_lobby_binary + (syncretro_lobby_stdio ? " -stdio" : " -s%H")
-	    + " -t%T -name %a -core " + syncretro_lobby_core
+	    + " -t%T -i" + idle_secs + " -name %a -core " + syncretro_lobby_core
 	    + " -profile " + syncretro_lobby_con.profile
 	    + ' -title "' + (rom.label || rom.title) + '" -console "' + label + '"'
 	    + ' -home "' + home + '" "'

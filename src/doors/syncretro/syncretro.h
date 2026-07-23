@@ -105,6 +105,12 @@ int    sr_config_dirty_rect(void);
  * full palette on those terminals (an A/B toggle for live-testing whether
  * subsetting itself is implicated in a rendering issue). */
 int    sr_config_palette_subset(void);
+/* [idle] timeout / warn, in SECONDS ("15m", "900" and "1h" all parse; a bare
+ * number is seconds). timeout 0 -- the default -- disables the idle check.
+ * These are the no-lobby configuration path: on a non-Synchronet BBS they are
+ * the ONLY way to set an idle timeout, so they must work with no JS in play. */
+unsigned sr_config_idle_timeout(void);
+unsigned sr_config_idle_warn(void);
 /* [debug] dirty_log (default false) -- log why every non-deduped frame took
  * the dirty-rect or full-repaint path (syncretro: dirty ...), plus one
  * startup line with the geometry that governs band alignment. Written to its
@@ -177,6 +183,14 @@ void sr_io_grid(int *rows, int *cols);
 /* A one-line message on the reserved bottom row, erased after a moment. Used by
  * the volume keys: a control you cannot see is a control you cannot trust. */
 void sr_io_toast(const char *text);
+
+/* Idle-user detection: activity is fed from the REAL key path only (never the
+ * DSR pace-ack path), and the tick paints the countdown once per frame.
+ * sr_door_idle_arm() must run AFTER sr_config_apply(), which is what reads the
+ * [idle] ini keys the threshold falls back to. */
+void sr_door_idle_arm(void);
+void sr_door_idle_activity(void);
+void sr_door_idle_tick(void);
 
 /* The render tier the player is looking at, and F4's step to the next one.
  * sixel when the terminal has it, then the text (block-character) tiers. */
