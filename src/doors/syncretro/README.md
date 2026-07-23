@@ -241,8 +241,16 @@ terminal rendering well.
 
 Frames are truecolor, and sixel is a 256-color format, so each frame is quantized
 ([`syncretro_quant.c`](syncretro_quant.c)). Legacy consoles use far fewer than
-256 colors, so the reduction is normally **exact** and the palette is stable
-enough that the color registers are sent once.
+256 colors, so the reduction is normally **exact** and the palette is stable.
+On SyncTERM, sixel color registers persist between images, so that stable
+palette is defined once and reused. Other terminals (foot, xterm, Windows
+Terminal, etc.) reset their color registers on every image, so there each
+image -- including each dirty-rect patch -- carries only the small subset of
+colors it actually uses rather than a full palette. That per-image subset is
+also what lets dirty-rect patching work on those terminals now, not just on
+SyncTERM: menu/static screens and stable-palette games benefit most, while
+content that changes its color set every frame (NTSC/dither-filtered cores,
+for example) still falls back to full frames.
 
 ## License
 
