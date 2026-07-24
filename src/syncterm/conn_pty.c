@@ -415,7 +415,10 @@ pty_connect(struct bbslist *bbs)
 	int            cp;
 	int            i;
 
-	ts.c_iflag = TTYDEF_IFLAG;
+	/* A PTY provides reliable kernel backpressure, so start it without
+	 * software flow control.  Interactive programs may change these
+	 * settings after forkpty() returns. */
+	ts.c_iflag = TTYDEF_IFLAG & ~(IXON | IXOFF | IXANY);
 	ts.c_oflag = TTYDEF_OFLAG;
 	ts.c_lflag = TTYDEF_LFLAG;
 	ts.c_cflag = TTYDEF_CFLAG;
@@ -450,12 +453,6 @@ pty_connect(struct bbslist *bbs)
 #endif
 #ifdef VQUIT
 	ts.c_cc[VQUIT] = CQUIT;
-#endif
-#ifdef VSTART
-	ts.c_cc[VSTART] = CSTART;
-#endif
-#ifdef VSTOP
-	ts.c_cc[VSTOP] = CSTOP;
 #endif
 #ifdef VSUSP
 	ts.c_cc[VSUSP] = CSUSP;
