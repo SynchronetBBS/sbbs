@@ -1090,9 +1090,9 @@ data_waiting(void *unused, unsigned timeout /* seconds */)
 		return true;
 	if (recv_byte_buffer_len)
 		return true;
-	assert_pthread_mutex_lock(&(conn_inbuf.mutex));
+	assert_pthread_mutex_lock(&(conn_inbuf.read_mutex));
 	ret = conn_buf_wait_bytes(&conn_inbuf, 1, timeout * 1000) != 0;
-	assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
+	assert_pthread_mutex_unlock(&(conn_inbuf.read_mutex));
 	return ret;
 }
 

@@ -40,12 +40,12 @@ modem_input_thread(void *args)
 			bufsz += rd;
 		}
 		if (bufsz) {
-			assert_pthread_mutex_lock(&(conn_inbuf.mutex));
+			assert_pthread_mutex_lock(&(conn_inbuf.write_mutex));
 			conn_buf_wait_free(&conn_inbuf, 1, 1000);
 			buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
 			memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
 			bufsz -= buffered;
-			assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_inbuf.write_mutex));
 		}
 		if (args == NULL) {
 			if ((comGetModemStatus(com) & COM_DCD) == 0)
@@ -78,11 +78,11 @@ modem_output_thread(void *args)
 			monitor_dsr = false;
 	}
 	while (com != COM_HANDLE_INVALID && !conn_api.terminate) {
-		assert_pthread_mutex_lock(&(conn_outbuf.mutex));
+		assert_pthread_mutex_lock(&(conn_outbuf.read_mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
-			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.read_mutex));
 			if (seven_bits) {
 				for (i = 0; i < wr; i++)
 					conn_api.wr_buf[i] &= 0x7f;
@@ -98,7 +98,7 @@ modem_output_thread(void *args)
 			}
 		}
 		else {
-			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.read_mutex));
 		}
 		if (args == NULL) {
 			if ((comGetModemStatus(com) & COM_DCD) == 0)

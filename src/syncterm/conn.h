@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include "bbslist.h"
+#include "eventwrap.h"
 #include "sockwrap.h"
 #include "threadwrap.h"
 
@@ -96,12 +97,12 @@ struct conn_api {
 struct conn_buffer {
 	unsigned char  *buf;
 	size_t          bufsize;
-	size_t          buftop;
-	size_t          bufbot;
-	int             isempty;
-	pthread_mutex_t mutex;
-	sem_t           in_sem;
-	sem_t           out_sem;
+	atomic_size_t   head;
+	atomic_size_t   tail;
+	pthread_mutex_t read_mutex;
+	pthread_mutex_t write_mutex;
+	xpevent_t       data_event;
+	xpevent_t       space_event;
 };
 
 /*
@@ -133,6 +134,7 @@ struct conn_buffer *create_conn_buf(struct conn_buffer *buf, size_t size);
 void destroy_conn_buf(struct conn_buffer *buf);
 void conn_buf_reset(struct conn_buffer *buf);
 size_t conn_buf_bytes(struct conn_buffer *buf);
+size_t conn_buf_free(struct conn_buffer *buf);
 size_t conn_buf_peek(struct conn_buffer *buf, void *voutbuf, size_t outlen);
 size_t conn_buf_get(struct conn_buffer *buf, void *outbuf, size_t outlen);
 size_t conn_buf_put(struct conn_buffer *buf, const void *outbuf, size_t outlen);

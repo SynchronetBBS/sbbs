@@ -107,12 +107,12 @@ telnets_input_thread(void *args)
 		}
 		if (bufsz) {
 			while (bufsz > 0 && !conn_api.terminate) {
-				assert_pthread_mutex_lock(&(conn_inbuf.mutex));
+				assert_pthread_mutex_lock(&(conn_inbuf.write_mutex));
 				conn_buf_wait_free(&conn_inbuf, 1, 1000);
 				buffered = conn_buf_put(&conn_inbuf, conn_api.rd_buf, bufsz);
 				memmove(conn_api.rd_buf, &conn_api.rd_buf[buffered], bufsz - buffered);
 				bufsz -= buffered;
-				assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
+				assert_pthread_mutex_unlock(&(conn_inbuf.write_mutex));
 			}
 		}
 	}
@@ -129,11 +129,11 @@ telnets_output_thread(void *args)
 	SetThreadName("TelnetS Output");
 	conn_api.output_thread_running = 1;
 	while (!conn_api.terminate) {
-		assert_pthread_mutex_lock(&(conn_outbuf.mutex));
+		assert_pthread_mutex_lock(&(conn_outbuf.read_mutex));
 		wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
-			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.read_mutex));
 			sent = 0;
 			while ((!conn_api.terminate) && sent < wr) {
 				assert_pthread_mutex_lock(&telnets_mutex);
@@ -156,7 +156,7 @@ telnets_output_thread(void *args)
 			}
 		}
 		else {
-			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.read_mutex));
 		}
 	}
 	shutdown(telnets_sock, SHUT_RDWR);

@@ -687,11 +687,11 @@ mqtt_input_thread(void *args)
 					   if the buffer is temporarily full. */
 					size_t off = 0;
 					while (off < body_l && !conn_api.terminate) {
-						assert_pthread_mutex_lock(&(conn_inbuf.mutex));
+						assert_pthread_mutex_lock(&(conn_inbuf.write_mutex));
 						conn_buf_wait_free(&conn_inbuf, 1, 1000);
 						size_t put = conn_buf_put(&conn_inbuf,
 						    body + off, body_l - off);
-						assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
+						assert_pthread_mutex_unlock(&(conn_inbuf.write_mutex));
 						off += put;
 					}
 				}
@@ -725,7 +725,7 @@ mqtt_output_thread(void *args)
 	conn_api.output_thread_running = 1;
 
 	while (!conn_api.terminate) {
-		assert_pthread_mutex_lock(&(conn_outbuf.mutex));
+		assert_pthread_mutex_lock(&(conn_outbuf.read_mutex));
 		size_t wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			/* Cap each PUBLISH at 512 bytes payload to keep the
@@ -734,7 +734,7 @@ mqtt_output_thread(void *args)
 				wr = 512;
 			wr = conn_buf_get(&conn_outbuf, buf, wr);
 		}
-		assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
+		assert_pthread_mutex_unlock(&(conn_outbuf.read_mutex));
 
 		if (wr) {
 			if (send_publish(mqtt_input_topic, buf, wr) < 0) {

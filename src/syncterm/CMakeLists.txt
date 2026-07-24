@@ -282,6 +282,7 @@ set(SOURCE
 	menu_settings.c
 	host_ui.c
 	conn.c
+	conn_buf.c
 	ansi_filter.c
 	conn_pty.c
 	conn_telnet.c
@@ -667,6 +668,10 @@ add_executable(xmodem_cancel_test
 require_libs(xmodem_cancel_test hash xpdev)
 target_include_directories(xmodem_cancel_test PRIVATE ../sbbs3)
 add_test(NAME xmodem_cancel_test COMMAND xmodem_cancel_test)
+add_executable(conn_buffer_test conn_buffer_test.c conn_buf.c)
+require_libs(conn_buffer_test xpdev)
+target_include_directories(conn_buffer_test PRIVATE ../conio)
+add_test(NAME conn_buffer_test COMMAND conn_buffer_test)
 if(UNIX AND NOT WITHOUT_SDL)
 	add_executable(termtest termtest.c)
 	add_test(NAME termtest

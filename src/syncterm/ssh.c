@@ -646,10 +646,10 @@ ssh_input_thread(void *args)
 				break;   /* shell EOF — handled after loop */
 			size_t buffered = 0;
 			while ((size_t)buffered < (size_t)n && !conn_api.terminate) {
-				assert_pthread_mutex_lock(&(conn_inbuf.mutex));
+				assert_pthread_mutex_lock(&(conn_inbuf.write_mutex));
 				size_t free_bytes = conn_buf_wait_free(&conn_inbuf, (size_t)n - buffered, 100);
 				buffered += conn_buf_put(&conn_inbuf, conn_api.rd_buf + buffered, free_bytes);
-				assert_pthread_mutex_unlock(&(conn_inbuf.mutex));
+				assert_pthread_mutex_unlock(&(conn_inbuf.write_mutex));
 			}
 		}
 		if ((events & DSSH_POLL_READEXT) && stderr_sink != NULL) {
@@ -679,11 +679,11 @@ ssh_output_thread(void *args)
 	SetThreadName("SSH Output");
 	conn_api.output_thread_running = 1;
 	while (!conn_api.terminate && sftp_shell_alive) {
-		assert_pthread_mutex_lock(&(conn_outbuf.mutex));
+		assert_pthread_mutex_lock(&(conn_outbuf.read_mutex));
 		size_t wr = conn_buf_wait_bytes(&conn_outbuf, 1, 100);
 		if (wr) {
 			wr = conn_buf_get(&conn_outbuf, conn_api.wr_buf, conn_api.wr_buf_size);
-			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.read_mutex));
 			size_t sent = 0;
 			while (sent < wr && !conn_api.terminate && sftp_shell_alive) {
 				int64_t n = dssh_chan_write(ssh_chan, 0, conn_api.wr_buf + sent, wr - sent);
@@ -695,7 +695,7 @@ ssh_output_thread(void *args)
 			}
 		}
 		else {
-			assert_pthread_mutex_unlock(&(conn_outbuf.mutex));
+			assert_pthread_mutex_unlock(&(conn_outbuf.read_mutex));
 		}
 	}
 	/* Same as ssh_input_thread: leave conn_api.terminate clear if

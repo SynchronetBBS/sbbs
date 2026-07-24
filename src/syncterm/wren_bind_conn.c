@@ -300,7 +300,9 @@ fn_Conn_peek(WrenVM *vm)
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
+	assert_pthread_mutex_lock(&conn_inbuf.read_mutex);
 	size_t got = conn_buf_peek(&conn_inbuf, tmp, (size_t)n);
+	assert_pthread_mutex_unlock(&conn_inbuf.read_mutex);
 	wrenSetSlotBytes(vm, 0, tmp, got);
 	free(tmp);
 }
@@ -320,7 +322,9 @@ fn_Conn_recv(WrenVM *vm)
 		wrenSetSlotNull(vm, 0);
 		return;
 	}
+	assert_pthread_mutex_lock(&conn_inbuf.read_mutex);
 	size_t got = conn_buf_get(&conn_inbuf, tmp, (size_t)n);
+	assert_pthread_mutex_unlock(&conn_inbuf.read_mutex);
 	wrenSetSlotBytes(vm, 0, tmp, got);
 	free(tmp);
 }

@@ -10,6 +10,7 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)telnet_io$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn_telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)conn$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)conn_buf$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)telnet$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)term$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)window$(OFILE) \
