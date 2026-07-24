@@ -1749,8 +1749,14 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
 				tx_type = ZCRCE;
 			else {
 				if (zm->can_overlap_io && !zm->no_streaming && (zm->recv_bufsize == 0 || buf_sent + len < zm->recv_bufsize)) {
-					if (zm->can_full_duplex && zm->max_window_size)
-						tx_type = (subpkts_sent % (zm->max_window_size / zm->block_size / 4)) == 0 ? ZCRCQ : ZCRCG;
+					if (zm->can_full_duplex && zm->max_window_size) {
+						/* A window narrower than 4 blocks has no quarter-window
+						   interval to ACK on; clamp to 1 (GitLab #1197). */
+						unsigned interval = zm->max_window_size / zm->block_size / 4;
+						if (interval < 1)
+							interval = 1;
+						tx_type = (subpkts_sent % interval) == 0 ? ZCRCQ : ZCRCG;
+					}
 					else
 						tx_type = ZCRCG;
 				}
@@ -2485,7 +2491,7 @@ const char* zmodem_source(void)
 
 char* zmodem_ver(char *buf)
 {
-	return strcpy(buf, "2.3");
+	return strcpy(buf, "2.4");
 }
 
 void zmodem_init(zmodem_t* zm, void* cbdata

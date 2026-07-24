@@ -395,6 +395,20 @@
 - `smbutil` no longer leaks memory or leaves the message base
   locked on Ctrl-C/break abort
 
+## sexyz (X/Y/ZMODEM file transfer)
+
+- Fixed a hang on windowed (`-w`) ZMODEM sends of files larger
+  than 2 GB — the transmit-window and ACK positions were signed
+  32-bit and went negative past 2 GB (issue #1196). Validated to
+  2.36 GB; 4 GB remains a hard ZMODEM protocol limit
+- Fixed a crash (divide-by-zero) at the start of any send where
+  the transmit window is smaller than four times the block size,
+  e.g. `-8 -w8192` or a comparable `MaxWindowSize` in
+  `sexyz.ini` (issue #1197)
+- ZMODEM send-path speedups (table-driven byte classification,
+  slicing-by-4 CRC-32, buffered whole-file CRC), shared with
+  SyncTERM's built-in transfers
+
 ## SFTP Server
 
 The Synchronet SFTP server now advertises several extensions
