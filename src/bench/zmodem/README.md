@@ -102,6 +102,7 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
    | *v4/v5* — abort-aware `purge_output` on ZRPOS + bounded 2 KB read | fast | 0/3 |
    | *v6* — flush at `recv_buffer()` (the single back-channel choke point), transient errors, no byte drops; batch 512 B–4 KB | 115.8 MB/s | 0–1/3 |
    | *v7* — `SINGLE_THREADED TRUE` + buffered `send_byte`, **blocking** writes | 115.8 MB/s | **2/3** |
+   | *v8* — batch 4 KB + a `flush()` that really drains the ring to the wire | 115.8 MB/s | 1/3 |
 
    Failure modes actually identified, so nobody repeats them: a **`void` flush
    callback silently swallowing a failed write**; a **mid-subpacket blocking
@@ -125,15 +126,30 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
    lrz can't either, yet it recovers. The abort-aware `purge_output` detour was
    solving a non-problem.
 
-   **Recommended path — and v7 says what's missing.** Dropping to a single
-   thread with a buffered `send_byte` held 115.8 MB/s, cut voluntary
-   context switches from 1,464,130 to **1,585** (`lsz` does 1,402), and lifted
-   the gate from 0–1/3 to **2/3**. What still fails is the **blocking**
-   `sendbuf()`: when the socket fills while the receiver is trying to send a
-   ZRPOS, the sender stops reading the back-channel and the session stalls. So
-   the target is precisely what `lrz` is — single-threaded, buffered,
-   **non-blocking output with `select()`/`poll()` on both directions**. Remove
-   the two-thread ring rather than optimize it. A real rewrite, not a patch.
+   **What `lsz` actually does — verified, and it is NOT non-blocking I/O.** An
+   earlier revision of this file said the missing ingredient was "non-blocking
+   output with `select()` on both directions, like `lrz`". Wrong. `lrzsz` uses
+   plain **blocking stdio**: output is `putchar`/`fwrite` to `stdout`
+   (`zm.c:109-110`), `flushmo()` is `fflush(stdout)` (`zglobal.h:411`), there is
+   no `O_NONBLOCK`/`fcntl`/`FIONBIO` in `lsz.c` or `zm.c` at all, and the only
+   `select()` (`lsz.c:754`) is the pre-handshake purge, not the data path. It
+   escapes via a lookup table with `fwrite()` of unescaped runs
+   (`zm.c:285-320`) — the class-table *and* span-write ideas, since the 1990s.
+   Its per-subpacket loop (`lsz.c:2093-2120`) is `ZSDATA(...)` →
+   `fflush(stdout)` → `while (rdchk(fd))` drain the back-channel to empty.
+
+   So the property is "everything is on the wire before you look for a reply".
+   `sexyz`'s `flush()` callback is a **no-op on the socket path** (it only
+   `fflush(stdout)`s, and only in stdio mode), so `zmodem_flush()` returns with
+   bytes still in the ring. That looked decisive — but v8, which waits for the
+   ring to empty inside `flush()`, still failed at 1/3. Fix it anyway; it is not
+   the cause.
+
+   **Where that leaves it.** Best result remains v7: single-threaded + buffered,
+   115.8 MB/s at 0.83 CPU-s with 1,585 context switches, gate 2/3. **The
+   mechanism is still unidentified**, and the next step should be diagnosis, not
+   a ninth prototype — instrument a failing run and find what the receiver sees
+   after a ZRPOS that it does not see with the per-byte sender.
 
    **But first ask whether it's worth it (Deuce):** this whole exercise measured
    **localhost**, which is largely beside the point — below ~8 ms RTT the socket

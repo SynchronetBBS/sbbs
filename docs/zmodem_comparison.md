@@ -300,7 +300,7 @@ lrzsz's 203.9** — it has not been measured, because no prototype has yet used
 non-blocking output. The obstacle is not the engine and not raw performance —
 it is that every batched prototype so far breaks error recovery (§3.3).
 
-### 3.3 Why the fix is hard: six prototypes, one gate
+### 3.3 Why the fix is hard: eight prototypes, one gate
 
 Batching the producer is trivially fast and repeatedly wrong. Note that every
 "115.8" below is the I/O-stalled plateau described in §0, not a ceiling: these
@@ -317,7 +317,8 @@ The shipped per-byte sender passes **3/3**.
 | batch 1 KB, output thread kept | — | — | 1/3 |
 | batch 2 KB, output thread kept | — | — | 1/3 |
 | batch 4 KB, output thread kept | 115.7 MB/s | 1.0 s | 0/3 |
-| single-threaded + batch 4 KB, **blocking** writes | 115.8 MB/s | 0.83 s | 2/3 |
+| single-threaded + batch 4 KB, **blocking** writes | 115.8 MB/s | 0.83 s | **2/3** |
+| batch 4 KB + a `flush()` that really drains the ring to the wire (§3.4) | 115.8 MB/s | 1.11 s | 1/3 |
 
 Two results are worth keeping:
 
@@ -329,10 +330,20 @@ Two results are worth keeping:
 - **The output thread is most of the problem, but not all of it.** Dropping to a
   single thread with a buffered `send_byte` reached the same 115.8 MB/s, cut
   voluntary context switches from 1,464,130 to **1,585** (`lsz` does 1,402), and
-  lifted the gate from 0–1/3 to **2/3**. What remains is that the prototype's
-  `sendbuf()` still *blocks*: when the socket fills while the receiver is trying
-  to send a ZRPOS, the sender stops reading the back-channel and the session
-  stalls.
+  lifted the gate from 0–1/3 to **2/3** — the best result so far.
+- **A real flush-to-wire is not the answer either.** `sexyz`'s `flush()`
+  callback is a **no-op for the socket path** — it only `fflush(stdout)`s, and
+  only in stdio mode — so `zmodem_flush()` returns with the bytes still sitting
+  in the ring. `lsz` does a genuine `fflush(stdout)` immediately before draining
+  the back-channel (§3.4), which looked like the missing invariant. Implementing
+  it (wait for the ring to empty inside `flush()`) still failed at 1/3. Worth
+  fixing on its own merits; not the cause.
+
+**What is now excluded**, which is the useful part of eight failures: it is not
+the *data rate* (rate-capped control), not the *batch size* (64 B – 4 KB all
+fail), not *dropped or latched errors* (fixed, still fails), not *flush-to-wire
+ordering*, and only partly the *output thread* (removing it moves 0–1/3 → 2/3
+but does not fix it). **The mechanism remains unidentified.**
 
 Earlier failed variants are catalogued in `src/bench/zmodem/README.md`; two of
 their failure modes are now understood and should not be repeated — a `void`
@@ -342,8 +353,41 @@ that turned one transient full-buffer timeout into an infinite
 flush as **transient**, keep the unwritten remainder buffered, and let
 `zmodem.c`'s own retry/abort logic run.
 
-That leaves exactly one missing ingredient, and it is the one `lrz` has and none
-of the prototypes did: **non-blocking output with `select()` on both directions**.
+### 3.4 What `lsz` actually does (verified, and it is not what this doc said)
+
+An earlier revision claimed the missing ingredient was "non-blocking output with
+`select()` on both directions, the way `lrz` does it". **That is wrong** —
+`lrzsz` uses plain *blocking* stdio. Reading the source settles it:
+
+- Output is `putchar`/`fwrite` into `stdout` (`zm.c:109-110`,
+  `#define sendline(c) putchar((c) & 0377)`). There is **no** `O_NONBLOCK`,
+  `fcntl` or `FIONBIO` anywhere in `lsz.c` or `zm.c`.
+- `flushmo()` is literally `fflush(stdout)` (`zglobal.h:411`).
+- The only `select()` in the sender (`lsz.c:754`) is in the pre-handshake purge
+  that drains stale input before ZRQINIT — **not** in the data path.
+- Escaping uses a **lookup table plus span writes** (`zm.c:285-320`): scan
+  forward with `zsendline_tab[]` for a run needing no escape, `fwrite()` the
+  whole run, and drop to per-byte only for the escape itself. That is both the
+  class-table idea Deuce implemented in 2026-07-24 and the "hand `send_byte` a
+  span" idea — `lrzsz` has had both since the 1990s.
+
+Its per-subpacket loop (`lsz.c:2093-2120`) is:
+
+```c
+ZSDATA (DATAADR, n, e);            /* send the subpacket             */
+fflush (stdout);                   /* 1. force it onto the wire      */
+while (rdchk (io_mode_fd)) {       /* 2. drain back-channel to empty */
+    switch (READLINE_PF (1)) {
+    case CAN: case ZPAD:
+        c = getinsync (zi, 1);     /*    handle ZRPOS / ZACK         */
+```
+
+So the property is "everything is on the wire before you look for a reply",
+with blocking I/O throughout — not non-blocking sockets. `zmodem.c` already has
+the matching drain loop (`while (is_data_waiting(...))`, `zmodem.c:1684`) and
+already calls `zmodem_flush()` per subpacket (`zmodem.c:663`); what sexyz lacks
+is a `flush()` that means anything. Supplying one did not fix the gate (§3.3),
+so this is a real difference but not the decisive one.
 
 ---
 
@@ -503,14 +547,22 @@ exactly where a modern BBS file transfer runs.
      brought context switches down to `lsz`'s level, and got the gate to 2/3.
      The remaining failure is the blocking `sendbuf()`.
 
-   So the target is what `lrz` actually is: **single-threaded, buffered,
-   non-blocking output, `select()`/`poll()` on both directions**, with the
-   protocol thread owning its own output buffer and flushing it in step with
-   protocol state. The two-thread ring should go away rather than be optimized.
-   Implementation notes that cost time to learn: a failed flush is **transient**
-   (keep the remainder buffered, never latch an error, never drop bytes), and
-   the flush must happen before any wait on the back-channel — `recv_buffer()`
-   is the single choke point for that in `sexyz.c`. GitLab #1195.
+   **The mechanism is still not identified** — see the exclusion list in §3.3.
+   What `lrz` actually does (verified, §3.4) is *blocking* stdio with span
+   writes, a real `fflush()` per subpacket, and an unbounded back-channel drain
+   loop; an earlier revision of this doc wrongly credited it with non-blocking
+   output and `select()`. Supplying sexyz with the equivalent real flush did not
+   fix the gate.
+
+   Best direction on the evidence: **single-threaded and buffered**, with the
+   protocol thread owning its output buffer — that is the only variant to reach
+   2/3, and it drops context switches to `lsz`'s level. Beyond that, the next
+   step is diagnosis, not another prototype: instrument a failing run to find
+   what the receiver sees after a ZRPOS that it does not see with the per-byte
+   sender. Implementation notes that cost time to learn: a failed flush is
+   **transient** (keep the remainder buffered, never latch an error, never drop
+   bytes), and the flush must happen before any wait on the back-channel —
+   `recv_buffer()` is the single choke point for that in `sexyz.c`. GitLab #1195.
 
 3. **✅ DONE (and no longer the lever) — per-byte `zmodem.c` send cost.** Deuce
    reworked the shared send path on 2026-07-24 (class-table byte classifier,
