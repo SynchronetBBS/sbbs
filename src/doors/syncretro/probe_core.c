@@ -65,7 +65,9 @@ static struct {
 	int coin;                      /* frame to insert a coin on; 0 = never */
 	int thumb;                     /* ASCII thumbnail of the last frame */
 	int quiet_env;                 /* tally env calls, don't log each first-time */
-} opt = { NULL, NULL, ".", ".", NULL, NULL, 300, 0, -1, 0, 0, 1, 0 };
+	int hold;                      /* JOYPAD id to hold down, or -1 */
+	int hold_from;                 /* first frame to hold it on */
+} opt = { NULL, NULL, ".", ".", NULL, NULL, 300, 0, -1, 0, 0, 1, 0, -1, 500 };
 
 static void usage(void)
 {
@@ -86,6 +88,12 @@ static void usage(void)
 		"                     N+90: insert a coin, start a 1-player arcade game.\n"
 		"                     A coin before the driver has booted is swallowed --\n"
 		"                     MAME 2003-Plus needs N of several hundred\n"
+		"  -hold N            hold RetroPad id N (0-15) from -hold-from onward:\n"
+		"                     which BUTTON is this cabinet's fire? MAME 2003-Plus\n"
+		"                     sends no SET_INPUT_DESCRIPTORS, so the only way to\n"
+		"                     find out is to press one and look at the frame\n"
+		"  -hold-from N       first frame to hold it on (default 500). Must be\n"
+		"                     after -coin's start, or you measure attract mode\n"
 		"  -ppm <file>        write the last frame as a binary PPM\n"
 		"  -wav <file>        capture the core's PCM as a 16-bit stereo WAV --\n"
 		"                     what the door would encode and stream\n"
@@ -705,6 +713,12 @@ static int16_t probe_input(unsigned port, unsigned device, unsigned index, unsig
 	(void)index;
 	if (opt.coin <= 0 || port != 0 || device != RETRO_DEVICE_JOYPAD)
 		return 0;
+	/* A button held to the end of the run, so the captured frame shows what it
+	 * did. The frame threshold matters: a cabinet ignores every button until a
+	 * credit is in and the game has started, and a hold that begins before that
+	 * measures the attract mode -- which looks exactly like a dead button. */
+	if (opt.hold >= 0 && (int)id == opt.hold && f >= opt.hold_from)
+		return 1;
 	if (id == RETRO_DEVICE_ID_JOYPAD_SELECT && f >= opt.coin && f < opt.coin + 10)
 		return 1;
 	if (id == RETRO_DEVICE_ID_JOYPAD_START && f >= opt.coin + 90 && f < opt.coin + 100)
@@ -863,6 +877,10 @@ static int parse_args(int argc, char **argv)
 			opt.accept_rotation = 1;
 		} else if (strcmp(a, "-coin") == 0) {
 			opt.coin = (i + 1 < argc && argv[i + 1][0] != '-') ? atoi(argv[++i]) : 60;
+		} else if (strcmp(a, "-hold") == 0 && i + 1 < argc) {
+			opt.hold = atoi(argv[++i]);
+		} else if (strcmp(a, "-hold-from") == 0 && i + 1 < argc) {
+			opt.hold_from = atoi(argv[++i]);
 		} else if (strcmp(a, "-no-thumb") == 0) {
 			opt.thumb = 0;
 		} else if (strcmp(a, "-quiet-env") == 0) {
