@@ -52,24 +52,51 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
    (Original sexyz ≈ 11 MB/s; the reverted batched prototype ≈ 66; the
    `zmodem.c` per-byte ceiling ≈ 85; lrzsz ≈ 204.)
 
-2. **Gate on error recovery, with MULTIPLE runs.** The first batching attempt was
-   committed on a *single* passing error run and later shown to fail **0/3**
-   (Fix A) and **1/3** (Fix B), while the shipped per-byte sender passes **3/3**.
-   The injected-error model is chaotic (a retransmit shifts where later
-   corruption lands), so one pass is not validation — run it ≥3×.
+2. **Gate on error recovery, with MULTIPLE runs.** A batching attempt was once
+   committed on a *single* passing error run and later shown to fail. The
+   injected-error model is chaotic (a retransmit shifts where later corruption
+   lands), so one pass is not validation — run it ≥3× and require all pass.
+   Reference: the shipped per-byte sender passes **3/3** (~50 s each).
 
-3. **Why the prototypes failed — the design constraint.** Batching a whole
-   subpacket before one *blocking* flush leaves the sender stuck inside the flush
-   (ring full while the receiver is back-pressured mid-retransmit-storm), so it
-   never services the incoming ZRPOS → bidirectional stall. The shipped sender
-   writes each byte to the ring *as produced*, so the output thread drains
-   continuously and the protocol thread reaches the back-channel check promptly.
-   **A correct batched sender must keep servicing the back-channel while
-   sending** — interleave, or flush in back-channel-yielding chunks — not block
-   on a single whole-subpacket flush. lrzsz batches *and* recovers, so it's
-   achievable.
+3. **The bottleneck is the *producer*, confirmed.** The protocol thread's
+   per-byte `RingBufWrite` (mutex-locked) caps the send at ~11 MB/s. `ztx_buf`
+   (same `zmodem.o`, buffered `send_byte`, no ring) does the identical per-byte
+   escape/CRC work at ~85 MB/s — so it is the ring write, not zmodem's escaping,
+   that costs the ~7.5×. Consumer-side coalescing of the output thread was tried
+   and did **nothing** (11.4→11.5 MB/s): the data already trickles in per byte,
+   so only *producer* batching can help.
 
-4. **Two stacked costs.** ~7.5× is `sexyz.c` (ring per-byte → futex storm /
-   84-byte writes; sexyz-only) and ~2.4× is `zmodem.c` (per-byte
-   `send_byte`-callback + escape + CRC; shared with SyncTERM, ~85 MB/s ceiling).
-   A full fix needs both, and `zmodem.c`'s share is where SyncTERM benefits too.
+4. **Producer batching is the crux — and it keeps breaking error recovery.**
+   Three distinct batching prototypes each reached ~66–88 MB/s and each FAILED
+   the 3× error gate (0/3, 1/3, 0/3) where the per-byte sender passes 3/3:
+   - *Fix A* (`fixA.patch`): accumulate a subpacket, flush via the void `flush()`
+     callback. Bug: a failed flush was silently dropped (void return), so the
+     sender kept going and desynced the receiver.
+   - *Fix B* (`fixB.patch`): a `send_buf` span callback in `zmodem.c`. Same class
+     of failure, plus a mid-subpacket blocking flush that starves the back-channel.
+   - *v3* (not saved; see git history around this README): flush on an 8 KB
+     threshold *inside* `send_byte` so the error propagates, and a boundary
+     `flush()` that never drops. Still failed 0/3 — it sent ZFIN at 4.9 MB of an
+     8 MB file, i.e. the sender's position accounting desynced from the wire.
+
+   **Root cause (the real design constraint):** batching decouples *what zmodem
+   believes it has sent* (`send_byte` returned success) from *what is actually on
+   the wire* (still in the transport buffer). ZMODEM error recovery (ZRPOS →
+   seek → resend) assumes those track. On a reposition, the buffered-but-unsent
+   bytes are stale and must be reconciled — dropped, kept, and re-based against
+   the new position — which the decoupled `send_byte` sink cannot do on its own.
+   lrzsz batches *and* recovers because its buffering is integrated with the
+   protocol and it purges/repositions its output buffer on ZRPOS.
+
+   **What a correct fix needs:** make the transport **abort/reposition aware** —
+   a hook from `zmodem.c` to the transport to *purge the pending output buffer*
+   when the protocol repositions (ZRPOS) or aborts, so the buffer never carries
+   stale bytes across a reposition. That is a coordinated `zmodem.c` +
+   `sexyz.c`/`term.c` change, not a transport-only tweak. Until then, the
+   robust-but-slow per-byte sender stays.
+
+5. **`zmodem.c`'s own share (~2.4×, 204→85).** Even a correct batched sender is
+   capped ~85 MB/s by the per-byte `send_byte`-callback + escape + CRC pipeline,
+   shared with SyncTERM. Reducing that (batch the escape/CRC inner loop, hand the
+   transport spans) is the second, shared lever — but only worth doing once the
+   abort-aware buffering above makes batching safe.
