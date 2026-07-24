@@ -1,3 +1,25 @@
+# Commit messages are for a future human, not for this session
+
+A commit message is read months or years later by someone who was not here.
+Write it so it stands on its own: what changed, and why. Keep it succinct.
+
+**Never reference ephemeral local state.** The working tree, the index, a
+scratch worktree, a file you reverted mid-session, what a subagent reported,
+what "HEAD" happened to be while you worked — none of that exists for the
+reader, and none of it survives the commit. Sentences like "Both files are
+therefore back to HEAD" or "the temporary probe in the worktree is removed"
+are chat replies, not commit messages. Delete them.
+
+Likewise, don't narrate the session: no blow-by-blow of approaches tried and
+abandoned, no "as discussed above", no addressing the user. Describe the diff
+as it will be read by someone applying `git show` to it cold.
+
+## The test
+
+Before committing, read the message as if you had never seen this session.
+If any sentence only makes sense to someone who watched the work happen,
+rewrite it or cut it.
+
 # Comment discipline for C/C++ source and headers
 
 Comments explain what the code cannot: the non-obvious, the edge case, the
