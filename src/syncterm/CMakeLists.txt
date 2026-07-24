@@ -653,6 +653,7 @@ add_executable(theme_test theme_test.c theme.c theme_cloud.c)
 require_libs(theme_test hash xpdev)
 target_include_directories(theme_test PRIVATE ../conio ../sbbs3)
 target_compile_definitions(theme_test PRIVATE
+	SDL_MAIN_HANDLED
 	SYNCTERM_THEME_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/themes")
 add_test(NAME theme_test COMMAND theme_test)
 if(UNIX AND NOT WITHOUT_SDL)
