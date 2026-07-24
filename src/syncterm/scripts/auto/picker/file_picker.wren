@@ -212,9 +212,21 @@ class PickerPane is Pane {
     add(_cancel)
 
     var initial = request.initial
-    if (initial == null || !refresh_(initial["path"], initial["selected"])) {
+    if (initial == null) {
       request.cancel()
-      Fiber.abort("Cannot read the initial directory")
+      Fiber.abort("Cannot resolve the initial path: %(request.initialPath)")
+    }
+    if (!refresh_(initial["path"], initial["selected"])) {
+      var path = initial["path"]
+      var resolved = request.resolve(path, path)
+      request.cancel()
+      if (resolved != null && !resolved.exists) {
+        Fiber.abort("The initial directory does not exist: %(path)")
+      }
+      if (resolved != null && !resolved.isDirectory) {
+        Fiber.abort("The initial path is not a directory: %(path)")
+      }
+      Fiber.abort("Cannot read the initial directory: %(path)")
     }
     focusedIndex = directoryMode ? children.indexOf(_directories) :
         children.indexOf(_files)
