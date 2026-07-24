@@ -297,6 +297,7 @@ set(SOURCE
 	theme_cloud.c
 	telnet_io.c
 	term.c
+	xfer_queue.c
 	webget.c
 	window.c
 	wren_host.c
@@ -656,6 +657,8 @@ target_compile_definitions(theme_test PRIVATE
 	SDL_MAIN_HANDLED
 	SYNCTERM_THEME_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/themes")
 add_test(NAME theme_test COMMAND theme_test)
+add_executable(xfer_queue_test xfer_queue_test.c xfer_queue.c)
+add_test(NAME xfer_queue_test COMMAND xfer_queue_test)
 if(UNIX AND NOT WITHOUT_SDL)
 	add_executable(termtest termtest.c)
 	add_test(NAME termtest

@@ -44,6 +44,7 @@
 #include "wren_host.h"
 #include "wren_menu_host.h"
 #include "wren_bind_xfer.h"
+#include "xfer_queue.h"
 
 #define ANSI_REPLY_BUFSIZE 2048
 static char ansi_replybuf[2048];
@@ -1090,12 +1091,6 @@ count_data_waiting(void)
 	    + (recv_byte_buffer_len - recv_byte_buffer_pos);
 }
 
-enum transfer_ready_sequence {
-	TRANSFER_READY_ZRQINIT,
-	TRANSFER_READY_ZRINIT,
-	TRANSFER_READY_XYMODEM,
-};
-
 /*
  * Drop stale protocol-start requests accumulated while the user was
  * navigating transfer menus, retaining the most recent request and
@@ -1115,7 +1110,7 @@ retain_latest_transfer_ready(enum transfer_ready_sequence sequence)
 {
 	BYTE   *queued;
 	size_t  len = 0;
-	size_t  dropped = 0;
+	size_t  dropped;
 	int     ch;
 
 	queued = malloc(sizeof(recv_replay_buffer));
@@ -1123,36 +1118,10 @@ retain_latest_transfer_ready(enum transfer_ready_sequence sequence)
 		return;
 
 	while (len < sizeof(recv_replay_buffer)
-	    && (ch = recv_byte(NULL, 0)) >= 0) {
-		size_t keep = SIZE_MAX;
-
+	    && (ch = recv_byte(NULL, 0)) >= 0)
 		queued[len++] = (BYTE)ch;
-		switch (sequence) {
-			case TRANSFER_READY_ZRQINIT:
-			case TRANSFER_READY_ZRINIT:
-				if (len >= 5
-				    && queued[len - 5] == ZPAD
-				    && queued[len - 4] == ZDLE
-				    && queued[len - 3] == ZHEX
-				    && queued[len - 2] == '0'
-				    && queued[len - 1] ==
-				        (sequence == TRANSFER_READY_ZRQINIT ? '0' : '1'))
-					keep = len - 5;
-				break;
-			case TRANSFER_READY_XYMODEM:
-				if (len >= 2
-				    && queued[len - 2] == (BYTE)ch
-				    && (ch == NAK || ch == 'C' || ch == 'G'))
-					keep = len - 1;
-				break;
-		}
 
-		if (keep != SIZE_MAX) {
-			dropped += keep;
-			memmove(queued, queued + keep, len - keep);
-			len -= keep;
-		}
-	}
+	len = xfer_queue_compact(queued, len, sequence, &dropped);
 
 	memcpy(recv_replay_buffer, queued, len);
 	recv_replay_buffer_pos = 0;

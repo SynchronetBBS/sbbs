@@ -15,6 +15,7 @@ OBJS = \
                         $(MTOBJODIR)$(DIRSEP)window$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)zmodem$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)xmodem$(OFILE) \
+                        $(MTOBJODIR)$(DIRSEP)xfer_queue$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)webget$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)syncterm$(OFILE) \
                         $(MTOBJODIR)$(DIRSEP)theme$(OFILE) \

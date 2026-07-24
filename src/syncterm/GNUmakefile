@@ -763,6 +763,12 @@ dpkg: $(SYNCTERM) syncterm.1.gz dpkg-control dpkgdirs changelog.gz
 	${QUIET}dpkg-deb --root-owner-group -b dpkg syncterm_1.10a-${shell date -u +%Y%m%d}_${shell dpkg-architecture -q DEB_BUILD_ARCH}.deb
 	${QUIET}rm -rf dpkg
 
+XFER_QUEUE_TEST = $(EXEODIR)$(DIRSEP)xfer_queue_test
+
+$(XFER_QUEUE_TEST): xfer_queue_test.c xfer_queue.c xfer_queue.h | $(EXEODIR)
+	@echo Compiling xfer_queue_test
+	${QUIET}$(CC) $(CFLAGS) -o $@ xfer_queue_test.c xfer_queue.c
+
 ifndef WITHOUT_SDL
 TERMTEST = $(EXEODIR)$(DIRSEP)termtest
 
@@ -770,11 +776,13 @@ $(TERMTEST): termtest.c | $(EXEODIR)
 	@echo Compiling termtest
 	${QUIET}$(CC) -o $@ $<
 
-.PHONY: termtest test parser_vectors
+.PHONY: termtest xfer_queue_test test parser_vectors
 termtest: $(TERMTEST)
+xfer_queue_test: $(XFER_QUEUE_TEST)
 
-test: $(SYNCTERM) $(TERMTEST)
+test: $(SYNCTERM) $(TERMTEST) $(XFER_QUEUE_TEST)
 	./run_termtest.sh $(SYNCTERM) $(TERMTEST)
+	$(XFER_QUEUE_TEST)
 
 # M1 RIP parser vectors.  Drives rip_test/parser_vectors/* through the
 # running harness on $RIP_HARNESS_HOST:$RIP_HARNESS_PORT (default
@@ -784,11 +792,13 @@ parser_vectors:
 	@echo Running RIP parser_vectors against harness
 	${QUIET}python3 rip_test/parser_vectors/run_vectors.py
 else
-.PHONY: termtest test parser_vectors
+.PHONY: termtest xfer_queue_test test parser_vectors
 termtest:
 	@echo "termtest requires SDL (skipped)"
-test:
+xfer_queue_test: $(XFER_QUEUE_TEST)
+test: $(XFER_QUEUE_TEST)
 	@echo "termtest requires SDL (skipped)"
+	$(XFER_QUEUE_TEST)
 parser_vectors:
 	@echo "parser_vectors requires SDL (skipped)"
 endif
