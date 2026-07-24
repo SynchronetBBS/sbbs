@@ -19,8 +19,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
-#ifndef _NOPEN_H
-#define _NOPEN_H
+#ifndef NOPEN_H_
+#define NOPEN_H_
 
 #include <stdio.h>          /* FILE */
 #include <fcntl.h>          /* O_RDONLY */
@@ -28,6 +28,7 @@
 #include "dirwrap.h"        /* MAX_PATH */
 
 #define FNOPEN_BUF_SIZE     (64 * 1024)
+#define FCOPY_BUF_SIZE      (256 * 1024)
 #define LOOP_NOPEN    100   /* Retries before file access denied			*/
 #define LOCK_RETRY_DELAY 100 // Milliseconds between retries on locked resource
 
@@ -49,6 +50,7 @@ fmutex_t fmutex_init(void);
 bool    fmutex_open(fmutex_t*, const char* text, long max_age);
 bool    fmutex_close(fmutex_t*);
 bool    fcompare(const char* fn1, const char* fn2);
+bool    fcopy(const char* src, const char* dest);
 bool    backup(const char* org, int backup_level, bool ren);
 
 #ifdef __cplusplus

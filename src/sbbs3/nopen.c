@@ -19,6 +19,8 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stdlib.h>         /* malloc */
+
 #include "genwrap.h"
 #include "dirwrap.h"
 #include "filewrap.h"
@@ -250,6 +252,50 @@ bool fcompare(const char* fn1, const char* fn2)
 	return success;
 }
 
+/****************************************************************************/
+/* Copies a file, opening the source and destination DENYNONE, so that a		*/
+/* copy in progress never blocks other openers (local or over a network		*/
+/* file system) from writing to either file.								*/
+/****************************************************************************/
+bool fcopy(const char* src, const char* dest)
+{
+	int      in;
+	int      out;
+	int      rd;
+	bool     success = true;
+	uint8_t* buf;
+
+	if ((buf = malloc(FCOPY_BUF_SIZE)) == NULL)
+		return false;
+
+	if ((in = nopen(src, O_RDONLY | O_DENYNONE)) == -1) {
+		free(buf);
+		return false;
+	}
+	if ((out = nopen(dest, O_WRONLY | O_CREAT | O_TRUNC | O_DENYNONE)) == -1) {
+		close(in);
+		free(buf);
+		return false;
+	}
+
+	while ((rd = read(in, buf, FCOPY_BUF_SIZE)) > 0) {
+		if (write(out, buf, rd) != rd) {
+			success = false;
+			break;
+		}
+		MAYBE_YIELD();
+	}
+	if (rd < 0)
+		success = false;
+
+	close(in);
+	if (close(out) != 0)
+		success = false;
+	free(buf);
+
+	return success;
+}
+
 
 /****************************************************************************/
 /****************************************************************************/
@@ -284,7 +330,7 @@ bool backup(const char *fname, int backup_level, bool ren)
 				/* preserve the original time stamp */
 				ut.modtime = fdate(fname);
 
-				if (!CopyFile(fname, newname, /* failIfExists: */ false))
+				if (!fcopy(fname, newname))
 					return false;
 
 				ut.actime = time(NULL);
