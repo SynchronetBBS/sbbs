@@ -5,15 +5,23 @@
 #include "syncretro_profile.h"
 #include "syncretro_games.h"
 #include "libretro.h"
+#include "dirwrap.h"
 
 #include <stdio.h>
 #include <string.h>
+
+/* Own fixture directory (not the cwd) so a parallel ctest run cannot race
+ * test_games.c over a shared games.ini. */
+#define FIXTURE_DIR "bindsfx"
 
 static int failures;
 
 static void write_arcade_fixture(void)
 {
-	FILE *f = fopen("games.ini", "w");
+	FILE *f;
+
+	mkpath(FIXTURE_DIR);
+	f = fopen(FIXTURE_DIR "/games.ini", "w");
 
 	fputs("[bzone]\n"
 	      "name     = Battlezone\n"
@@ -286,7 +294,7 @@ int main(void)
 	 * every unlabelled button GONE -- on Battlezone they do nothing, and listing
 	 * them is the confusion this file removes. */
 	write_arcade_fixture();               /* [bzone] button.Y = Fire, stick2 */
-	sr_games_load(".", "bzone.zip");
+	sr_games_load(FIXTURE_DIR, "bzone.zip");
 	{
 		int saw_fire = 0, saw_stick2 = 0, saw_group = 0, saw_dead = 0;
 
@@ -305,7 +313,7 @@ int main(void)
 		CHECK(!saw_group);   /* grouping is off once anything is labelled */
 		CHECK(!saw_dead);    /* unlabelled buttons are omitted, not renumbered */
 	}
-	remove("games.ini");
+	remove(FIXTURE_DIR "/games.ini");
 
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "ok", failures);
 	return failures != 0;
