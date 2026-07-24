@@ -136,6 +136,17 @@ massively fragmented output. Disabling the `OutbufHighwaterMark` /
 MB/s): the batching only engages when the ring hits *empty*, which steady
 production avoids.
 
+sexyz's three possible send architectures (the third is the fix — see §6):
+
+| sexyz `send_byte` config | threads | batching | per-32 MB kernel cost |
+|---|---|---|---|
+| `SINGLE_THREADED FALSE` (built default) | 2 (ring + drain) | fragmented ~84 B writes | 2.3 M `futex` |
+| `SINGLE_THREADED TRUE` (`sexyz.c:84`, source-edit only) | 1 | **none** — 1 byte per `write()` | ~34 M `write()` |
+| buffered (SyncTERM `term.c` / `ztx_buf`) | 1 | **flush per subpacket** | ~8 K `write()`, 0 futex |
+
+The single-threaded build is a portability/debug fallback, **not** a faster
+mode: it drops the thread but keeps sending one byte per `write()` syscall.
+
 **SyncTERM does not have *this* layer.** Its `send_byte` (`term.c:874`)
 accumulates into an 8 KB `transfer_buffer` and `flush_send`→`conn_send` writes it
 in bulk (one send per subpacket, driven by `zmodem_flush`) — single-threaded, no
@@ -302,6 +313,13 @@ Ordered by impact:
    the ring in spans (or bypass the ring for bulk data), so `write()`s are
    subpacket-sized, not ~84 B, and the producer/consumer stop ping-ponging on a
    futex. ~3× win (8→26 MB/s); sexyz-only. Brings sexyz up to SyncTERM's level.
+   **Caveat — don't just flip `SINGLE_THREADED`.** `sexyz.c:84` still has a
+   `#define SINGLE_THREADED FALSE` (source-level only; no makefile toggle), but
+   its single-threaded `send_byte` (`sexyz.c:682`) calls `sendbuf()` with
+   `len==1` — an **unbuffered `write()` per byte** (~34 M syscalls/32 MB). That
+   trades the futex storm for a write-syscall storm and is generally *worse*. The
+   fix is **buffering**, not thread count: accumulate + flush per subpacket
+   (single-threaded *and* buffered, exactly as SyncTERM's `term.c` does).
 2. **[zmodem.c] Reduce the per-byte send cost.** The `send_byte`-callback-per-
    byte + escape + CRC pipeline caps *any* sender on `zmodem.c` at ~26 MB/s
    (§3.2). Batch the ZDLE-escape/CRC inner loop over a span and hand `send_byte`
