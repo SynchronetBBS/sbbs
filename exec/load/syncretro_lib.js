@@ -132,7 +132,7 @@ function syncretro_is_meta_tag(body)
 // "puckman.zip" has to stay "puckman.zip", and a picker that showed the filename
 // would list two hundred eight-letter codes.
 //
-// Set from a console's install (syncretro_lobby_init reads names.json). Empty for
+// Set from a console's install (syncretro_lobby_init reads games.ini). Empty for
 // every other console, which is why this costs them nothing.
 var syncretro_names = {};
 
@@ -145,12 +145,8 @@ function syncretro_names_set(map)
 		return;
 	// Lower-cased keys: a romset's case is not guaranteed across platforms, and
 	// this map is hand-edited by sysops.
-	//
-	// A leading underscore marks a key as NOT a romset -- JSON has no comment
-	// syntax, so the shipped file documents itself in a "_comment" entry, and
-	// this is what keeps that entry from being read as a game called "_comment".
 	for (k in map) {
-		if (map.hasOwnProperty(k) && String(k).charAt(0) !== "_")
+		if (map.hasOwnProperty(k))
 			syncretro_names[String(k).toLowerCase()] = String(map[k]);
 	}
 }

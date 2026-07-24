@@ -5,7 +5,7 @@ played over the BBS, rendered to the terminal as sixel graphics with the game's
 own audio streamed to SyncTERM.
 
 This directory (`xtrn/syncarcade/`) is the installed door — the `syncretro`
-binary, the MAME 2003-Plus core, the lobby, `syncretro.ini`, `names.json`, and
+binary, the MAME 2003-Plus core, the lobby, `syncretro.ini`, `games.ini`, and
 your romsets. The **source** lives in `src/doors/syncretro/` of the Synchronet
 source tree.
 
@@ -71,8 +71,8 @@ them into `roms/` and they appear in the lobby on the next entry.
   MAME opens the zip itself and expects it.
 - **Never rename a romset.** MAME identifies the game *by the zip's basename*:
   `puckman.zip` is the puckman driver. Rename it and the game stops existing.
-  Readable names for the picker come from `names.json` instead — see
-  [Display names](#display-names).
+  Readable names for the picker come from `games.ini` instead — see
+  [Per-game facts](#per-game-facts).
 - **Some games need their parent romset present.** In a split set a clone holds
   only what differs from its parent, and loads the rest — graphics ROMs, PROMs —
   out of the parent's zip. That parent is just another zip in `roms/`, not a
@@ -136,13 +136,22 @@ that game's scores in memory and write them at exit, so the second one out wins
 and the first one's scores are lost. It is a lost update, not a corrupt file,
 and it needs a busy BBS and one popular game to happen at all.
 
-## Display names
+## Per-game facts
 
-Because a romset cannot be renamed, `names.json` maps romset names to readable
-titles for the picker — `puckman` → *Pac-Man (Japan)*, `mspacman` → *Ms.
-Pac-Man*. A romset with no entry is listed under its raw name, which is ugly but
-harmless. **Extend that file rather than renaming a zip.** Keys beginning with
-`_` are ignored, which is how the shipped file carries its own comment.
+Because a romset cannot be renamed, `games.ini` maps romset names to readable
+titles for the picker — `[puckman] name = Pac-Man (Japan)`. A romset with no
+section is listed under its raw name, which is ugly but harmless. **Extend that
+file rather than renaming a zip.**
+
+It also carries what MAME will not tell the door: `button.<id>` names what a
+RetroPad button actually is on that cabinet, so the in-game help can say
+`C -- Fire` instead of numbering six buttons the driver may not even have. Those
+values are measured with `probe_core -hold`, never guessed, and a cabinet is
+labelled completely or not at all. See
+[GAMES_INI.md](../../src/doors/syncretro/GAMES_INI.md).
+
+**`names.json` is no longer read.** An install that had one keeps its file, and
+the picker ignores it; re-enter any hand-added titles as `games.ini` sections.
 
 ## Configuration
 

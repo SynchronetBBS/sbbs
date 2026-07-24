@@ -39,7 +39,7 @@ syncretro_lobby({
 	/* A romset is a .zip, and -- unlike every other console -- its FILENAME IS
 	 * DATA. MAME identifies the game by the zip's basename ("puckman.zip" ->
 	 * the puckman driver), so a romset must NOT be renamed to something more
-	 * readable. That is why the picker gets its display names from names.json
+	 * readable. That is why the picker gets its display names from games.ini
 	 * rather than from the filename the way a cartridge console does.
 	 *
 	 * MAME also opens the .zip itself (block_extract = true), so nothing here or

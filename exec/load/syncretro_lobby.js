@@ -91,21 +91,31 @@ function syncretro_lobby_init(spec)
 		}
 	}
 
-	/* names.json -- display titles for a console whose ROM filenames are
+	/* games.ini -- per-cabinet facts for a console whose ROM filenames are
 	 * identifiers the emulator matches on and so cannot be renamed (arcade).
-	 * Optional and per-install: absent for every cartridge console, and a
-	 * malformed one is ignored rather than fatal -- a picker that lists raw
-	 * romset names is worse than it should be, but a door that refuses to start
-	 * because a display-name file has a stray comma is worse still. */
+	 * The lobby reads the display TITLE and nothing else; the door reads the
+	 * same file for the control labels its help screen needs (GAMES_INI.md).
+	 *
+	 * Optional and per-install: absent for every cartridge console. An ini
+	 * degrades per line rather than all-or-nothing, so unlike the JSON it
+	 * replaced there is no parse failure that can cost the whole file.
+	 *
+	 * iniGetAllObjects("romset"), NOT iniGetAllObjects(): the default name
+	 * property is "name", which a section's own `name = ` key overwrites --
+	 * the section name would be silently lost. */
 	syncretro_names_set(null);
-	f = new File(syncretro_lobby_dir + "names.json");
+	f = new File(syncretro_lobby_dir + "games.ini");
 	if (f.open("r")) {
-		try {
-			syncretro_names_set(JSON.parse(f.read()));
-		} catch (e) {
-			log(LOG_WARNING, "syncretro: ignoring malformed names.json: " + e);
-		}
+		var rows = f.iniGetAllObjects("romset");
+		var map  = {};
+		var i;
+
 		f.close();
+		for (i = 0; i < rows.length; i++) {
+			if (rows[i].romset && rows[i].name)
+				map[rows[i].romset] = rows[i].name;
+		}
+		syncretro_names_set(map);
 	}
 
 	/* The native artifacts -- the door binary and the libretro core -- live in a
