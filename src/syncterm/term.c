@@ -896,6 +896,16 @@ static BYTE     wire_buffer[BUFFER_SIZE];
 static unsigned wire_buffer_len = 0;
 static unsigned wire_buffer_pos = 0;
 
+/*
+ * Bytes put back after compacting the pre-transfer receive queue.
+ * The input can already be split across recv_byte_buffer, wire_buffer,
+ * and conn_inbuf when a modal file picker opens, so the compactor
+ * drains the logical byte stream and replays the retained suffix here.
+ */
+static BYTE     recv_replay_buffer[BUFFER_SIZE * 4];
+static unsigned recv_replay_buffer_len = 0;
+static unsigned recv_replay_buffer_pos = 0;
+
 /* Per-byte replacement cap, enforced inside wren_host_dispatch_input.
  * Replacements bigger than this log a runtime error and the original
  * byte passes through.  Sized to handle realistic LF→CRLF / escape-
@@ -1010,6 +1020,13 @@ recv_byte(void *unused, unsigned timeout /* seconds */)
 {
 	BYTE ch;
 
+	if (recv_replay_buffer_pos < recv_replay_buffer_len) {
+		ch = recv_replay_buffer[recv_replay_buffer_pos++];
+		if (recv_replay_buffer_pos == recv_replay_buffer_len)
+			recv_replay_buffer_len = recv_replay_buffer_pos = 0;
+		return ch;
+	}
+
 	recv_bytes(timeout * 1000);
 
 	if (recv_byte_buffer_len > 0) {
@@ -1026,6 +1043,13 @@ static int
 recv_byte_ms(void *unused, unsigned timeout /* milliseconds */)
 {
 	BYTE ch;
+
+	if (recv_replay_buffer_pos < recv_replay_buffer_len) {
+		ch = recv_replay_buffer[recv_replay_buffer_pos++];
+		if (recv_replay_buffer_pos == recv_replay_buffer_len)
+			recv_replay_buffer_len = recv_replay_buffer_pos = 0;
+		return ch;
+	}
 
 	recv_bytes(timeout);
 
@@ -1048,6 +1072,8 @@ data_waiting(void *unused, unsigned timeout /* seconds */)
 {
 	bool ret;
 
+	if (recv_replay_buffer_pos < recv_replay_buffer_len)
+		return true;
 	if (recv_byte_buffer_len)
 		return true;
 	assert_pthread_mutex_lock(&(conn_inbuf.mutex));
@@ -1060,7 +1086,83 @@ size_t
 count_data_waiting(void)
 {
 	recv_bytes(0);
-	return recv_byte_buffer_len - recv_byte_buffer_pos;
+	return (recv_replay_buffer_len - recv_replay_buffer_pos)
+	    + (recv_byte_buffer_len - recv_byte_buffer_pos);
+}
+
+enum transfer_ready_sequence {
+	TRANSFER_READY_ZRQINIT,
+	TRANSFER_READY_ZRINIT,
+	TRANSFER_READY_XYMODEM,
+};
+
+/*
+ * Drop stale protocol-start requests accumulated while the user was
+ * navigating transfer menus, retaining the most recent request and
+ * everything after it.  Drain through recv_byte() rather than touching
+ * conn_inbuf directly: some bytes may already be in the receive-side
+ * staging buffers, and Telnet parsing must happen before matching.
+ *
+ * A ZMODEM match starts at the final ZPAD before the header.  Senders
+ * normally emit two ZPADs, but one is sufficient for the receiver's
+ * header scanner and lets this match either form.  X/YMODEM receiver
+ * readiness is a repeated single-byte NAK, C, or G request.  Require
+ * two identical requests before compacting so an ordinary uppercase C
+ * or G in queued terminal text cannot start a transfer prematurely.
+ */
+static void
+retain_latest_transfer_ready(enum transfer_ready_sequence sequence)
+{
+	BYTE   *queued;
+	size_t  len = 0;
+	size_t  dropped = 0;
+	int     ch;
+
+	queued = malloc(sizeof(recv_replay_buffer));
+	if (queued == NULL)
+		return;
+
+	while (len < sizeof(recv_replay_buffer)
+	    && (ch = recv_byte(NULL, 0)) >= 0) {
+		size_t keep = SIZE_MAX;
+
+		queued[len++] = (BYTE)ch;
+		switch (sequence) {
+			case TRANSFER_READY_ZRQINIT:
+			case TRANSFER_READY_ZRINIT:
+				if (len >= 5
+				    && queued[len - 5] == ZPAD
+				    && queued[len - 4] == ZDLE
+				    && queued[len - 3] == ZHEX
+				    && queued[len - 2] == '0'
+				    && queued[len - 1] ==
+				        (sequence == TRANSFER_READY_ZRQINIT ? '0' : '1'))
+					keep = len - 5;
+				break;
+			case TRANSFER_READY_XYMODEM:
+				if (len >= 2
+				    && queued[len - 2] == (BYTE)ch
+				    && (ch == NAK || ch == 'C' || ch == 'G'))
+					keep = len - 1;
+				break;
+		}
+
+		if (keep != SIZE_MAX) {
+			dropped += keep;
+			memmove(queued, queued + keep, len - keep);
+			len -= keep;
+		}
+	}
+
+	memcpy(recv_replay_buffer, queued, len);
+	recv_replay_buffer_pos = 0;
+	recv_replay_buffer_len = len;
+	free(queued);
+
+	if (dropped > 0)
+		lprintf(LOG_DEBUG,
+		    "Discarded %zu stale bytes before the latest transfer request",
+		    dropped);
 }
 
 void ascii_upload(FILE *fp);
@@ -2084,6 +2186,7 @@ zmodem_recv_worker(void *arg)
 	uint64_t              bytes_received = 0;
 	int                   files_received;
 
+	retain_latest_transfer_ready(TRANSFER_READY_ZRQINIT);
 	transfer_buf_len = 0;
 	zmodem_init(&zm,
 	    &cbdata,
@@ -2120,6 +2223,7 @@ zmodem_send_worker(void *arg)
 	struct zmodem_cbdata    cbdata = { .zm = &zm, .bbs = a->bbs };
 	bool                    success;
 
+	retain_latest_transfer_ready(TRANSFER_READY_ZRINIT);
 	transfer_buf_len = 0;
 	zmodem_init(&zm, &cbdata,
 	    lputs, xfer_zmodem_progress_cb,
@@ -2158,6 +2262,7 @@ zmodem_batch_send_worker(void *arg)
 	int                     sent_files  = 0;
 	int64_t                 total_bytes = 0;
 
+	retain_latest_transfer_ready(TRANSFER_READY_ZRINIT);
 	transfer_buf_len = 0;
 	zmodem_init(&zm, &cbdata,
 	    lputs, xfer_zmodem_progress_cb,
@@ -2304,6 +2409,7 @@ struct xmodem_send_arg {
 static void
 xmodem_send_worker_setup_(xmodem_t *xm, struct xmodem_send_arg *a)
 {
+	retain_latest_transfer_ready(TRANSFER_READY_XYMODEM);
 	xmodem_init(xm,
 	    /* cbdata */ xm,
 	    &a->mode,
@@ -4681,6 +4787,8 @@ doterm(struct bbslist *bbs)
 	int                ooii_mode = 0;
 	bool               ret = false;
 	recv_byte_buffer_len = recv_byte_buffer_pos = 0;
+	wire_buffer_len = wire_buffer_pos = 0;
+	recv_replay_buffer_len = recv_replay_buffer_pos = 0;
 	struct mouse_state ms = {0};
 	int                speedwatch = 0;
 
