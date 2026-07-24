@@ -89,6 +89,19 @@ int  termgfx_termio_menu_requested(void);
 // Set the GMM hotkey to Ctrl+<letter>; 0 disables it.
 void termgfx_termio_set_menu_key(int letter);
 
+// Set a short door-owned token appended to the Ctrl-S stats strip (e.g. a game
+// resolution "416x240"). Copied into a small fixed buffer; pass NULL or "" to
+// clear. Doors that never call this get no extra field -- the strip is
+// unchanged. Not thread-safe with the draw, but both run on the one door thread.
+void termgfx_termio_set_stats_extra(const char *s);
+
+// Enable (default) or disable terminal mouse reporting. Call with 0 BEFORE
+// termgfx_termio_init() for a keyboard-only door: it suppresses motion tracking
+// (mode 1003), whose hover reports would otherwise keep resetting the idle clock
+// (mouse motion counts as activity) and waste the wire. Mouse-using doors leave
+// it at the default.
+void termgfx_termio_set_mouse(int enable);
+
 // Was argv[idx] one that termgfx_termio_init() resolved itself (-s<fd>, a
 // DOOR32.SYS path, a capture flag)? A door's main() uses this to strip the
 // door-only argv entries before handing the rest to the game engine, which

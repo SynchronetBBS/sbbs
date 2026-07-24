@@ -209,6 +209,8 @@ static int      g_idle_showing;       /* the countdown owns the bottom row */
 static char     g_idle_msg[96];
 static int      g_idle_clear;         /* it just went: wipe the row once */
 static int      g_idle_expired_logged;/* the exit line is logged exactly once */
+static char     g_stats_extra[24];    /* door-owned Ctrl-S field (set_stats_extra) */
+static int      g_mouse_wanted = 1;   /* 0 = keyboard-only door; see set_mouse() */
 
 /* --- session time limit (the BBS's, not ours) -----------------------------
  * The minutes the BBS says the caller has left, from DOOR32.SYS line 9 or an
@@ -388,6 +390,7 @@ static FILE *g_trace;
 static FILE *g_tee;
 static void  termgfx_trace_in(const uint8_t *buf, int n);   /* defined past pacing globals */
 static void  termgfx_stats_draw(void);                      /* defined past pacing globals */
+static void  termgfx_idle_draw(void);                       /* idle countdown; drawn atop the frame */
 static void  idle_poll(void);                               /* idle clock; driven by the pump */
 static void  deadline_poll(void);                           /* BBS session limit; likewise */
 
@@ -1006,15 +1009,28 @@ static void csi_final(char fin)
 		             * <W>/<H> the terminal's hard raster ceiling in pixels
 		             * (xterm's unadvertised default is ~1000x1000; an image
 		             * whose DECLARED raster exceeds it is discarded WHOLE, not
-		             * clipped). Private '?' marker required -- a bare CSI...S
-		             * with no marker is ANSI "scroll up", not this reply. */
+		             * clipped). The private '?' marker is required and is exactly
+		             * what disambiguates it from F4: kitty/legacy keep F1/F2/F4 on
+		             * the P/Q/S finals, so F4 arrives here as CSI 1;<mods>S (or
+		             * SS3 O S) with NO marker. (F3's 'R' stays ambiguous with CPR,
+		             * so kitty sends F3 as CSI 13~ instead -- case '~'.) Foot in
+		             * kitty mode hit this: F4 was swallowed as a would-be reply.
+		             * Matches syncduke_input.c's own CSI-S = F4 handling. */
 			if (g_csi_len > 0 && g_csi_par[0] == '?') {
 				np = csi_params(p, 4);
 				if (np >= 4 && p[0] == 2 && p[1] == 0 && p[2] > 0 && p[3] > 0) {
 					g_gfx_max_w = p[2];
 					g_gfx_max_h = p[3];
 				}
+				return;
 			}
+			if (termgfx_kitty_active()) {
+				int mod, ev;
+				termgfx_termio_kitty_parse(&mod, &ev);
+				(void)mod;   /* F4 carries no ctrl/alt action -- only the event type */
+				termgfx_key_event(TERMGFX_KEY_F4, 0, 0, ev != 3);
+			} else
+				termgfx_key_press(TERMGFX_KEY_F4, 0, 0);
 			return;
 		case 'M': case 'm': {            /* xterm SGR mouse: ESC[<b;col;row M/m */
 			int q[3];
@@ -1057,11 +1073,11 @@ static void csi_final(char fin)
 			if (termgfx_evdev_active() && g_csi_len > 0 && g_csi_par[0] == '=')
 				termgfx_evdev_report(0);
 			return;
-		/* F1/F2 (CSI P/Q or SS3 O P/Q). F3/F4 (SS3 O R/O S) are deliberately
-		 * NOT mapped here -- 'R' and 'S' already mean this file's own
-		 * CPR/DSR and XTSMGRAPHICS replies (the same collision door_input.c
-		 * documents for F3); F3/F4 still work via kitty CSI-u or evdev
-		 * (codes 61/62). */
+		/* F1/F2 (CSI P/Q or SS3 O P/Q). F4 ('S' final) is decoded in case 'S'
+		 * above -- its collision with the XTSMGRAPHICS reply is broken by that
+		 * reply's required '?' marker. F3 ('R') stays genuinely ambiguous with
+		 * CPR, so it is NOT decoded from 'R'; kitty sends F3 as CSI 13~ (case
+		 * '~') and SyncTERM reports it via evdev (codes 61/62). */
 		case 'P': case 'Q': {
 			int keycode = (fin == 'P') ? TERMGFX_KEY_F1 : TERMGFX_KEY_F2;
 
@@ -1661,8 +1677,13 @@ int termgfx_termio_init(int argc, char **argv)
 	 * per-pixel precision the moment the reply lands rather than waiting on
 	 * termgfx_termio_mouse_report()'s past-the-grid auto-detect (termgfx_mouse_enable
 	 * itself sends the DECRQM query). Nothing here gates present() the way
-	 * DA1/JXL do -- a terminal that ignores it just never sends reports. */
-	out_puts(termgfx_mouse_enable);
+	 * DA1/JXL do -- a terminal that ignores it just never sends reports.
+	 *
+	 * A keyboard-only door (termgfx_termio_set_mouse(0)) sends the DISABLE
+	 * (restore) instead: motion tracking (1003) reports a mere hover as activity,
+	 * which would perpetually reset the idle clock for a door that never reads
+	 * the mouse anyway -- and it saves the wire the report stream too. */
+	out_puts(g_mouse_wanted ? termgfx_mouse_enable : termgfx_mouse_restore);
 	/* Kitty keyboard-protocol query ("does this terminal speak CSI-u?"); a
 	 * '?' reply enables it (csi_final()'s 'u' case, above). SyncTERM's own
 	 * evdev physical-key reports are enabled instead, when eligible, off
@@ -1853,6 +1874,13 @@ int termgfx_termio_quit_requested(void) { return g_quit; }
 int  termgfx_termio_menu_requested(void) { int m = g_menu; g_menu = 0; return m; }
 /* Enable the GMM hotkey on Ctrl+<letter> (lowercase a-z); 0 disables it. */
 void termgfx_termio_set_menu_key(int letter) { g_menu_letter = (letter >= 'a' && letter <= 'z') ? (unsigned char)letter : 0; }
+void termgfx_termio_set_stats_extra(const char *s) {
+	if (s == NULL || *s == '\0')
+		g_stats_extra[0] = '\0';
+	else
+		snprintf(g_stats_extra, sizeof g_stats_extra, "%s", s);
+}
+void termgfx_termio_set_mouse(int enable) { g_mouse_wanted = enable ? 1 : 0; }
 int termgfx_termio_have_sixel(void)     { return g_have_sixel; }
 int termgfx_termio_is_syncterm(void)    { return g_is_syncterm; }
 int termgfx_termio_jxl_supported(void)  { return g_jxl; }
@@ -3295,7 +3323,7 @@ static void deadline_poll(void)
 		         " Your time on the BBS is up in %u second%s ",
 		         left, (left == 1) ? "" : "s");
 		g_idle_showing = 1;       /* shares the notice row; see the note above */
-		termgfx_stats_draw();     /* paint NOW: a static scene may never present */
+		termgfx_idle_draw();      /* paint NOW: a static scene may never present */
 		termgfx_termio_flush();
 	}
 	g_idle_showing = 1;
@@ -3353,7 +3381,7 @@ static void idle_poll(void)
 			}
 			if (!was_showing || changed) {
 				g_idle_showing = 1;
-				termgfx_stats_draw();      /* paint NOW; a static scene may never present */
+				termgfx_idle_draw();       /* paint NOW; a static scene may never present */
 				termgfx_termio_flush();
 			}
 			g_idle_showing = 1;
@@ -3381,6 +3409,29 @@ static void idle_poll(void)
 	}
 }
 
+/* The idle-disconnect countdown, drawn on the bottom row AFTER the frame image
+ * (present()/present_rgbx() call this past the image emit), so it sits on TOP of
+ * a full-canvas frame: the JXL tier reserves no bottom row, so a height-
+ * constrained (4:3) game would otherwise hide this disconnect warning behind the
+ * picture. The debug stats bar deliberately stays BEFORE the image (in
+ * termgfx_stats_draw) -- it is not worth a second writer for a diagnostic. */
+static void termgfx_idle_draw(void)
+{
+	char buf[160];
+	int  off, brow;
+
+	if (!g_idle_showing)
+		return;
+	brow = termgfx_bottom_row();
+	if (brow < 1)
+		brow = 25;
+	off = snprintf(buf, sizeof buf,
+	               "\x1b[%d;1H\x1b[1;37;44m%s\x1b[K\x1b[0m\x1b[?25l",
+	               brow, g_idle_msg);
+	if (off > 0 && off < (int)sizeof buf)
+		out_put(buf, (size_t)off);
+}
+
 static void termgfx_stats_draw(void)
 {
 	char               buf[160];
@@ -3394,19 +3445,12 @@ static void termgfx_stats_draw(void)
 	if (brow < 1)
 		brow = 25;
 
-	/* The idle countdown owns this row while it is up -- an imminent
-	 * termination outranks telemetry -- and it is drawn by THIS function
-	 * rather than a second writer, so the two can never overwrite each other.
-	 * It draws even when the player never pressed Ctrl-S, hence the g_stats
-	 * check moved below rather than guarding the whole function. */
-	if (g_idle_showing) {
-		off = snprintf(buf, sizeof buf,
-		               "\x1b[%d;1H\x1b[1;37;44m%s\x1b[K\x1b[0m\x1b[?25l",
-		               brow, g_idle_msg);
-		if (off > 0 && off < (int)sizeof buf)
-			out_put(buf, (size_t)off);
+	/* The idle countdown owns this row while it is up -- an imminent termination
+	 * outranks telemetry. It is drawn separately, AFTER the frame image
+	 * (termgfx_idle_draw), so a full-canvas frame can't hide the disconnect
+	 * warning; suppress the stats bar under it here. */
+	if (g_idle_showing)
 		return;
-	}
 	if (g_idle_clear) {
 		/* Wipe it: nothing else repaints this row, so the last countdown would
 		 * otherwise sit there. If the stats bar is on it redraws just below. */
@@ -3421,14 +3465,18 @@ static void termgfx_stats_draw(void)
 	/* No present completed in the last window (e.g. a paused game, or -- before
 	 * the palette-storm fix -- a fade's dark gap): show '-' rather than a
 	 * misleading "0fps 0KB/f". */
+	/* A leading space only when the door set an extra token, so the strip is
+	 * byte-for-byte unchanged for doors that never call set_stats_extra(). */
 	if (g_fps > 0)
 		off = snprintf(buf, sizeof buf,
-		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums\x1b[K\x1b[0m\x1b[?25l",
-		              brow, termgfx_tier_name(termgfx_tier()), g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms);
+		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums%s%s\x1b[K\x1b[0m\x1b[?25l",
+		              brow, termgfx_tier_name(termgfx_tier()), g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms,
+		              g_stats_extra[0] ? " " : "", g_stats_extra);
 	else
 		off = snprintf(buf, sizeof buf,
-		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums\x1b[K\x1b[0m\x1b[?25l",
-		              brow, termgfx_tier_name(termgfx_tier()), g_auto_depth, (unsigned)g_rtt_ms);
+		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums%s%s\x1b[K\x1b[0m\x1b[?25l",
+		              brow, termgfx_tier_name(termgfx_tier()), g_auto_depth, (unsigned)g_rtt_ms,
+		              g_stats_extra[0] ? " " : "", g_stats_extra);
 	if (off < 0 || off >= (int)sizeof buf)
 		return;
 	out_put(buf, (size_t)off);
@@ -3770,6 +3818,12 @@ static void termgfx_image_rect(int *ew, int *eh, int *dx, int *dy)
 
 static void termgfx_termio_mouse_report(int b, int col, int row, int release)
 {
+	/* A keyboard-only door (set_mouse(0)) never enables reporting, but drop any
+	 * stray/leftover report outright so it can neither reset the idle clock nor
+	 * queue an event the door does not read. */
+	if (!g_mouse_wanted)
+		return;
+
 	/* Mouse activity is presence too, motion included: a point-and-click
 	 * adventure can go a long while with no keystroke at all. */
 	if (idle_wake())
@@ -4307,6 +4361,8 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	}
 #endif
 
+	termgfx_idle_draw();   /* disconnect warning ON TOP of the frame (see its doc) */
+
 	out_put("\x1b[6n", 4);   /* DSR: paces the next frame */
 	g_inflight++;
 	g_pace_progress_ms = now_ms();
@@ -4501,6 +4557,24 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 #endif
 	}
 
+	/* A change in the displayed image rect erases the whole display first. A
+	 * frame that SHRINKS -- cycling the game resolution from the height-filling
+	 * 320x240 down to a shorter wide mode -- otherwise leaves the taller previous
+	 * frame's bottom rows on screen, since nothing repaints them. One 2J per
+	 * change, NOT per frame (guarded on a real change), so there is no
+	 * steady-state flicker; the new frame repaints immediately below. */
+	{
+		static int last_ew, last_eh, last_icol, last_irow;
+
+		if ((last_ew != 0 || last_eh != 0)
+		    && (ew != last_ew || eh != last_eh || icol != last_icol || irow != last_irow))
+			out_puts("\x1b[2J");
+		last_ew   = ew;
+		last_eh   = eh;
+		last_icol = icol;
+		last_irow = irow;
+	}
+
 	/* Stats bar BEFORE the (possibly huge) image, so it wins stage space even
 	 * when the frame runs past out_put()'s cap -- same rationale as present(). */
 	termgfx_fps_tick(1);
@@ -4556,6 +4630,8 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 		}
 	}
 #endif
+
+	termgfx_idle_draw();   /* disconnect warning ON TOP of the frame (see its doc) */
 
 	out_put("\x1b[6n", 4);   /* DSR: paces the next frame */
 	g_inflight++;
