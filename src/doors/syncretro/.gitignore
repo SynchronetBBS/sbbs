@@ -1,6 +1,8 @@
 # build output
 /build/
 /build-msvc/
+/build-test/
+/build-probe/
 /syncretro
 /syncretro.map
 *.o

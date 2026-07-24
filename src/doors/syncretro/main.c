@@ -463,10 +463,9 @@ int main(int argc, char **argv)
 	 * Intellivision 44100 -- and the door hardcoded 44100 until M3). */
 	sr_profile_select(sr_door_profile(), core.si.library_name);
 
-	/* The cabinet's own facts, for the help screen. AFTER sr_profile_select()
-	 * because only the arcade profile has anything to label, and it takes the
-	 * LAUNCH dir explicitly: sr_config_apply() has already chdir'd into the
-	 * per-user sandbox, so a relative open would look in the wrong place. */
+	/* The cabinet's own facts, for the help screen. Takes the LAUNCH dir
+	 * explicitly: sr_config_apply() has already chdir'd into the per-user
+	 * sandbox, so a relative open would look in the wrong place. */
 	sr_games_load(sr_config_launch_dir(), sr_config_rom_path());
 
 	/* Select a controller type, if this install pinned one. AFTER load_game --

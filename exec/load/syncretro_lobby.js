@@ -104,6 +104,9 @@ function syncretro_lobby_init(spec)
 	 * property is "name", which a section's own `name = ` key overwrites --
 	 * the section name would be silently lost. */
 	syncretro_names_set(null);
+	if (file_exists(syncretro_lobby_dir + "names.json"))
+		log(LOG_WARNING, "syncretro: names.json is no longer read -- "
+			+ "re-enter any custom titles as games.ini sections");
 	f = new File(syncretro_lobby_dir + "games.ini");
 	if (f.open("r")) {
 		var rows = f.iniGetAllObjects("romset");

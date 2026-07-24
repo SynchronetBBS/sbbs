@@ -59,7 +59,11 @@ static void write_fixture(void)
 	      "\n"
 	      "[weird]\n"
 	      "name      = Odd One\n"
-	      "button.ZZ = Nonsense\n", f);
+	      "button.ZZ = Nonsense\n"
+	      "\n"
+	      "[lc]\n"
+	      "name     = Lowercase\n"
+	      "button.y = Fire\n", f);
 	fclose(f);
 }
 
@@ -117,6 +121,36 @@ int main(void)
 	sr_games_load(FIXTURE_DIR, NULL);
 	CHECK(!sr_games_labelled());
 
+	/* xpdev's ini reader matches keys CASE-INSENSITIVELY (ini_file.c uses
+	 * stricmp()), so a lower-case "button.y" is honoured exactly like
+	 * "button.Y" is. The validator has to agree: a case-sensitive compare here
+	 * would flag a key the reader just finished honouring, which is the
+	 * validator lying about the file's own most natural sysop typo. Capture
+	 * stderr for this one load and prove the bogus warning is gone. */
+	{
+		FILE * cap;
+		char   buf[4096];
+		size_t got = 0;
+
+		fflush(stderr);
+		freopen(FIXTURE_DIR "/stderr.txt", "w", stderr);
+		sr_games_load(FIXTURE_DIR, "lc.zip");
+		fflush(stderr);
+
+		CHECK(sr_games_labelled());
+		CHECK_STR(sr_games_button_label(RETRO_DEVICE_ID_JOYPAD_Y), "Fire");
+
+		buf[0] = '\0';
+		cap = fopen(FIXTURE_DIR "/stderr.txt", "r");
+		if (cap != NULL) {
+			got = fread(buf, 1, sizeof buf - 1, cap);
+			fclose(cap);
+		}
+		buf[got] = '\0';
+		CHECK(strstr(buf, "is not a RetroPad button") == NULL);
+	}
+
+	remove(FIXTURE_DIR "/stderr.txt");
 	remove(FIXTURE_DIR "/games.ini");
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "ok", failures);
 	return failures != 0;

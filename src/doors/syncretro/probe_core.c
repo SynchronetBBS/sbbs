@@ -705,13 +705,22 @@ static size_t probe_audio_batch(const int16_t *data, size_t frames)
  * The frame is an ARGUMENT, not a constant: a coin inserted before the driver
  * has finished booting is swallowed, and how long that takes is per-core (MAME
  * 2003-Plus spends several hundred frames on its disclaimer and ROM checks).
- * Getting this wrong looks exactly like a core that ignores input. */
+ * Getting this wrong looks exactly like a core that ignores input.
+ *
+ * -hold is independent of -coin: this is the ONLY tool that measures a
+ * games.ini button entry (GAMES_INI.md sec 8), and gating it behind -coin
+ * meant -hold alone silently did nothing -- the exact false negative this
+ * file exists to prevent. A cabinet that ignores every button until a credit
+ * is in still measures accurately with -hold alone: the held id simply
+ * reaches attract mode, same as it always could, and -hold-from's usage text
+ * still says to start it after -coin's start when that is what is being
+ * measured. */
 static int16_t probe_input(unsigned port, unsigned device, unsigned index, unsigned id)
 {
 	long f = (long)obs.video_frames;
 
 	(void)index;
-	if (opt.coin <= 0 || port != 0 || device != RETRO_DEVICE_JOYPAD)
+	if (port != 0 || device != RETRO_DEVICE_JOYPAD)
 		return 0;
 	/* A button held to the end of the run, so the captured frame shows what it
 	 * did. The frame threshold matters: a cabinet ignores every button until a
@@ -719,9 +728,11 @@ static int16_t probe_input(unsigned port, unsigned device, unsigned index, unsig
 	 * measures the attract mode -- which looks exactly like a dead button. */
 	if (opt.hold >= 0 && (int)id == opt.hold && f >= opt.hold_from)
 		return 1;
-	if (id == RETRO_DEVICE_ID_JOYPAD_SELECT && f >= opt.coin && f < opt.coin + 10)
+	if (opt.coin > 0 && id == RETRO_DEVICE_ID_JOYPAD_SELECT
+	    && f >= opt.coin && f < opt.coin + 10)
 		return 1;
-	if (id == RETRO_DEVICE_ID_JOYPAD_START && f >= opt.coin + 90 && f < opt.coin + 100)
+	if (opt.coin > 0 && id == RETRO_DEVICE_ID_JOYPAD_START
+	    && f >= opt.coin + 90 && f < opt.coin + 100)
 		return 1;
 	return 0;
 }

@@ -315,6 +315,61 @@ int main(void)
 	}
 	remove(FIXTURE_DIR "/games.ini");
 
+	/* `solo` duplicates the key spelling already in `chars`, with nothing
+	 * pinning the two to agree -- an edit to one and not the other would
+	 * silently print the wrong letter on a labelled cabinet's help screen.
+	 * Label all six buttons so every arcade-table button row surfaces its
+	 * `solo` spelling, then confirm TYPING that spelling (folded) is what
+	 * actually reaches the RetroPad id the label names. */
+	{
+		static const struct {
+			int id;
+			const char *label;
+		} want[] = {
+			{ RETRO_DEVICE_ID_JOYPAD_B, "LabelB" },
+			{ RETRO_DEVICE_ID_JOYPAD_A, "LabelA" },
+			{ RETRO_DEVICE_ID_JOYPAD_Y, "LabelY" },
+			{ RETRO_DEVICE_ID_JOYPAD_X, "LabelX" },
+			{ RETRO_DEVICE_ID_JOYPAD_L, "LabelL" },
+			{ RETRO_DEVICE_ID_JOYPAD_R, "LabelR" }
+		};
+		FILE *f;
+		int   seen = 0;
+
+		mkpath(FIXTURE_DIR);
+		f = fopen(FIXTURE_DIR "/games.ini", "w");
+		fputs("[allsix]\n"
+		      "name     = All Six\n"
+		      "button.B = LabelB\n"
+		      "button.A = LabelA\n"
+		      "button.Y = LabelY\n"
+		      "button.X = LabelX\n"
+		      "button.L = LabelL\n"
+		      "button.R = LabelR\n", f);
+		fclose(f);
+		sr_games_load(FIXTURE_DIR, "allsix.zip");
+
+		for (i = 0; sr_bind_help_line(i, &key, &desc); i++) {
+			int w;
+
+			for (w = 0; w < (int)(sizeof want / sizeof want[0]); w++) {
+				int      id, port;
+				sr_act_t act;
+
+				if (strcmp(desc, want[w].label) != 0)
+					continue;
+				CHECK(strlen(key) == 1);
+				act = sr_bind_lookup(sr_bind_fold((unsigned char)key[0]), &id, &port);
+				CHECK(act == SR_ACT_PAD);
+				CHECK(id == want[w].id);
+				CHECK(port == 0);
+				seen++;
+			}
+		}
+		CHECK(seen == (int)(sizeof want / sizeof want[0]));
+		remove(FIXTURE_DIR "/games.ini");
+	}
+
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "ok", failures);
 	return failures != 0;
 }

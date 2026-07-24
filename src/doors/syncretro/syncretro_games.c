@@ -5,7 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "dirwrap.h"     /* xpdev: getfname() */
+#include "dirwrap.h"     /* xpdev: getfname(), PATH_MAX */
+#include "genwrap.h"     /* xpdev: strnicmp()/stricmp() -- ini keys fold case */
 #include "ini_file.h"    /* xpdev: the reader both this and syncretro.ini use */
 
 /* The RetroPad buttons a cabinet can label, and the spelling games.ini uses for
@@ -47,14 +48,16 @@ static void sr_games_romset(const char *rom_path, char *out, size_t len)
 
 void sr_games_load(const char *dir, const char *rom_path)
 {
-	char       path[512];
-	char       romset[128];
-	char       key[64];
-	char       val[INI_MAX_VALUE_LEN];
-	str_list_t ini;
-	str_list_t keys;
-	FILE *     f;
-	int        i;
+	char        path[PATH_MAX];
+	char        romset[128];
+	char        key[64];
+	char        val[INI_MAX_VALUE_LEN];
+	str_list_t  ini;
+	str_list_t  keys;
+	FILE *      f;
+	int         i;
+	int         buttons;
+	const char *reportdir;
 
 	/* Clear FIRST and unconditionally: every early return below leaves a console
 	 * with no file answering "nothing known" rather than inheriting the labels
@@ -63,26 +66,43 @@ void sr_games_load(const char *dir, const char *rom_path)
 		g_label[i][0] = '\0';
 	g_stick2[0] = '\0';
 	g_labelled  = 0;
+	reportdir   = dir != NULL ? dir : ".";
 
 	sr_games_romset(rom_path, romset, sizeof romset);
 	if (romset[0] == '\0')
 		return;
 
-	snprintf(path, sizeof path, "%s/games.ini", dir != NULL ? dir : ".");
+	snprintf(path, sizeof path, "%s/games.ini", reportdir);
 	f = fopen(path, "r");
-	if (f == NULL)
-		return;                 /* no file is the normal case, not an error */
+	if (f == NULL) {
+		/* Missing, mistyped, and unmeasured all used to look identical from
+		 * outside this module -- silence in the name of "non-fatal" made the
+		 * feature undiagnosable (GAMES_INI.md sec 7). Non-fatal stays; silent
+		 * does not. */
+		fprintf(stderr, "syncretro: games.ini: no file in %s\n", reportdir);
+		return;
+	}
 	ini = iniReadFile(f);
 	fclose(f);
-	if (ini == NULL)
+	if (ini == NULL) {
+		fprintf(stderr, "syncretro: games.ini: no file in %s\n", reportdir);
 		return;
+	}
 
+	if (!iniSectionExists(ini, romset)) {
+		fprintf(stderr, "syncretro: games.ini: no section for \"%s\"\n", romset);
+		iniFreeStringList(ini);
+		return;
+	}
+
+	buttons = 0;
 	for (i = 0; i < SR_GAMES_IDS; i++) {
 		snprintf(key, sizeof key, "button.%s", g_ids[i].name);
 		iniGetString(ini, romset, key, "", val);
 		if (val[0] != '\0') {
 			snprintf(g_label[i], sizeof g_label[i], "%s", val);
 			g_labelled = 1;
+			buttons++;
 		}
 	}
 	iniGetString(ini, romset, "stick2", "", val);
@@ -96,10 +116,14 @@ void sr_games_load(const char *dir, const char *rom_path)
 		int k, j;
 
 		for (k = 0; keys[k] != NULL; k++) {
-			if (strncmp(keys[k], "button.", 7) != 0)
+			/* iniGetString() above (and every other xpdev ini lookup) matches
+			 * keys case-insensitively (ini_file.c uses stricmp()), so a
+			 * case-sensitive check here would flag a key the reader honours --
+			 * "button.y" reads fine and this validator called it invalid. */
+			if (strnicmp(keys[k], "button.", 7) != 0)
 				continue;
 			for (j = 0; j < SR_GAMES_IDS; j++)
-				if (strcmp(keys[k] + 7, g_ids[j].name) == 0)
+				if (stricmp(keys[k] + 7, g_ids[j].name) == 0)
 					break;
 			if (j == SR_GAMES_IDS)
 				fprintf(stderr, "syncretro: games.ini [%s]: \"%s\" is not a"
@@ -108,6 +132,14 @@ void sr_games_load(const char *dir, const char *rom_path)
 		}
 		iniFreeStringList(keys);
 	}
+
+	if (g_stick2[0] != '\0')
+		fprintf(stderr, "syncretro: games.ini: [%s] %d button%s, stick2 \"%s\"\n",
+		        romset, buttons, buttons == 1 ? "" : "s", g_stick2);
+	else
+		fprintf(stderr, "syncretro: games.ini: [%s] %d button%s\n",
+		        romset, buttons, buttons == 1 ? "" : "s");
+
 	iniFreeStringList(ini);
 }
 
