@@ -519,11 +519,21 @@ int zmodem_send_data32(zmodem_t* zm, uchar subpkt_type, unsigned char * p, size_
 {
 	int      result;
 	uint32_t crc;
+	unsigned i;
 
 //	lprintf(zm, LOG_DEBUG, __FUNCTION__ " %s (%u bytes)", chr(subpkt_type), l);
 
 	crc = 0xffffffffl;
 
+	while (l >= 4) {
+		crc = ucrc32_4(p, crc);
+		for (i = 0; i < 4; i++) {
+			if ((result = zmodem_tx(zm, p[i])) != SEND_SUCCESS)
+				return result;
+		}
+		p += 4;
+		l -= 4;
+	}
 	while (l > 0) {
 		crc = ucrc32(*p, crc);
 		if ((result = zmodem_tx(zm, *p++)) != SEND_SUCCESS)

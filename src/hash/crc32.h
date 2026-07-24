@@ -30,7 +30,9 @@ extern "C" {
 #endif
 
 extern int32_t crc32tbl[];
+extern const uint32_t crc32tbl_slicing[3][256];
 
+uint32_t crc32_update(uint32_t crc, const void* buf, size_t);
 uint32_t crc32i(uint32_t crc, const char* buf, size_t);
 uint32_t fcrc32(FILE* fp, size_t);
 
@@ -39,6 +41,17 @@ uint32_t fcrc32(FILE* fp, size_t);
 #endif
 
 #define ucrc32(ch, crc) (crc32tbl[(crc ^ (ch)) & 0xff] ^ (crc >> 8))
+static inline uint32_t ucrc32_4(const unsigned char* p, uint32_t crc)
+{
+	crc ^= (uint32_t)p[0]
+	    | ((uint32_t)p[1] << 8)
+	    | ((uint32_t)p[2] << 16)
+	    | ((uint32_t)p[3] << 24);
+	return crc32tbl_slicing[2][crc & 0xff]
+	    ^ crc32tbl_slicing[1][(crc >> 8) & 0xff]
+	    ^ crc32tbl_slicing[0][(crc >> 16) & 0xff]
+	    ^ (uint32_t)crc32tbl[crc >> 24];
+}
 #define crc32(x, y) crc32i(0xffffffff, x, y)
 
 #endif  /* Don't add anything after this line */

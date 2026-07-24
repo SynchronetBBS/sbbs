@@ -21,6 +21,7 @@
 
 #include <string.h> /* strlen */
 #include "crc32.h"
+#include "crc32_slicing.h"
 
 int32_t crc32tbl[] = {    /* CRC polynomial 0xedb88320 */
 	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
@@ -58,19 +59,32 @@ int32_t crc32tbl[] = {    /* CRC polynomial 0xedb88320 */
 };
 
 /****************************************************************************/
+/* Update an uncomplemented CRC-32 state using four bytes per iteration.     */
+/****************************************************************************/
+uint32_t crc32_update(uint32_t crc, const void* buf, size_t len)
+{
+	const uint8_t* p = buf;
+
+	while (len >= 4) {
+		crc = ucrc32_4(p, crc);
+		p += 4;
+		len -= 4;
+	}
+	while (len-- > 0)
+		crc = ucrc32(*p++, crc);
+	return crc;
+}
+
+/****************************************************************************/
 /* Returns CRC-32 of sequence of bytes (binary or ASCIIZ)					*/
 /* Pass len of 0 to auto-determine ASCIIZ string length						*/
 /* or non-zero for arbitrary binary data									*/
 /****************************************************************************/
 uint32_t crc32i(uint32_t crc, const char *buf, size_t len)
 {
-	size_t l;
-
 	if (len == 0 && buf != NULL)
 		len = strlen(buf);
-	for (l = 0; l < len; l++)
-		crc = ucrc32(buf[l], crc);
-	return ~crc;
+	return ~crc32_update(crc, buf, len);
 }
 
 uint32_t fcrc32(FILE* fp, size_t len)
