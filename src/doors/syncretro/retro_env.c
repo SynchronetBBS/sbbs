@@ -106,9 +106,17 @@ bool sr_environment(unsigned cmd, void *data)
 			return true;
 
 		/* TODO(M5): surface input descriptors + controller info:
-		 *   RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS  (drives the key overlay)
+		 *   RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS
 		 *   RETRO_ENVIRONMENT_SET_CONTROLLER_INFO
 		 *   RETRO_ENVIRONMENT_GET_CAN_DUPE  -> true (we drop frames; DESIGN.md sec 3)
+		 * MAME 2003-Plus calls neither of the first two, so this callback has
+		 * nothing to answer for the arcade console regardless of this TODO.
+		 * games.ini answers the arcade key-overlay need a different way: a
+		 * hand-curated button/stick-label table, read directly by the door and
+		 * the lobby (see GAMES_INI.md), which is the right answer precisely
+		 * because there are no descriptors here for this environment command to
+		 * capture. A core that DOES call SET_INPUT_DESCRIPTORS remains
+		 * unhandled and is what this TODO is for.
 		 */
 
 		default:

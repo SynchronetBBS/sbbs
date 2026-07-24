@@ -117,10 +117,23 @@ happens until you do.
 Door keys: `Space` pause · `?` help · `Ctrl-S` stats overlay · `F4` cycle the
 graphics tier · `+`/`-` volume · `Ctrl-R` reset · `Ctrl-Q` quit.
 
-> **Known rough edge.** The in-game help (`?`) still shows the generic RetroPad
-> names it uses for the NES — "Select", "d-pad", "B/A" — rather than "insert
-> coin", "joystick", "button 1". The *bindings* are correct; only the labels
-> read as console rather than cabinet.
+**Twin-stick cabinets** (Battlezone's two treads, Robotron's move-and-aim) get
+a second stick on `I` `K` (up/down). MAME 2003-Plus reads a machine's second
+stick off the RetroPad's right analog stick and nowhere else — no button, no
+d-pad, no core option reaches it — so these two keys are the only path in. A
+game with one stick simply ignores them; its driver never reads that axis.
+
+A cabinet's own control labels — which button fires, whether it has a second
+stick — are not something MAME 2003-Plus tells the door: it reports button
+*counts* per driver, never what a button *does*. `games.ini` supplies that,
+measured per romset rather than guessed (see
+[Per-game facts](#per-game-facts)). The in-game help (`?`) renders one line per
+labelled key on a cabinet with an entry, and falls back to the generic
+"buttons 1 and 2" grouping on one without; it shows the `I`/`K` row only for a
+cabinet whose `games.ini` section sets `stick2` — most romsets have no second
+stick, and the row would be noise on every one of them. Battlezone is the
+labelled example: its help reads `C  Fire` and `I K  Right tread` in place of
+"buttons 3 and 4" and a row every other cabinet would also show.
 
 ## High scores are shared
 
@@ -144,10 +157,13 @@ section is listed under its raw name, which is ugly but harmless. **Extend that
 file rather than renaming a zip.**
 
 It also carries what MAME will not tell the door: `button.<id>` names what a
-RetroPad button actually is on that cabinet, so the in-game help can say
-`C -- Fire` instead of numbering six buttons the driver may not even have. Those
-values are measured with `probe_core -hold`, never guessed, and a cabinet is
-labelled completely or not at all. See
+RetroPad button actually is on that cabinet, and `stick2` labels a twin-stick
+cabinet's second stick — the one reached only via `I`/`K` (see
+[Playing](#playing)) — so the in-game help can say `C -- Fire` and
+`I K -- Right tread` instead of numbering six buttons the driver may not even
+have and showing a second-stick row on cabinets that have no second stick.
+Those values are measured with `probe_core -hold`, never guessed, and a
+cabinet is labelled completely or not at all. See
 [GAMES_INI.md](../../src/doors/syncretro/GAMES_INI.md).
 
 **`names.json` is no longer read.** An install that had one keeps its file, and
@@ -160,15 +176,22 @@ Two are worth knowing about here:
 
 - **`[options]`** — libretro core options, as `key = value`. This console pins
   `mame2003-plus_skip_disclaimer` and `mame2003-plus_skip_warnings` so a player
-  is not made to sit through MAME's legal screens. Anything not listed keeps the
-  core's own default. These live in the ini rather than on the door's command
-  line because the BBS builds that command line in a fixed 260-character buffer
-  and truncates it silently.
+  is not made to sit through MAME's legal screens, and — measured with
+  `probe_core` — `mame2003-plus_vector_resolution = original` and
+  `mame2003-plus_vector_antialias = disabled`, which draw Battlezone at its own
+  400×300 rather than the core's supersampled 1024×768 default and keep the
+  sixel quantizer's colour count exact. Anything not listed keeps the core's
+  own default. These live in the ini rather than on the door's command line
+  because the BBS builds that command line in a fixed 260-character buffer and
+  truncates it silently.
 - **`[roms] exclude`** — a MAME collection is mostly things you do *not* want in
-  a BBS picker. Every game has several clones and bootlegs (the parent is the one
-  to show), and **vector games** (Battlezone, Tempest) render at 1024×768 —
-  twelve times Pac-Man's pixel count — and want a spinner or a dual stick
-  besides. Hide them by name.
+  a BBS picker. Every game has several clones and bootlegs (the parent is the
+  one to show), and **Tempest** wants a spinner this door has no input path
+  for. Battlezone is not in the same boat: measured with `probe_core`, its
+  native vector resolution is 400×300 (120k pixels a frame, under Pac-Man's own
+  200k/frame budget), and its controls are two digital joysticks, which this
+  console's own key bindings already reach (see [Playing](#playing)). Hide
+  unwanted romsets by name.
 
 ### Hide unwanted romsets — do not move or delete them
 

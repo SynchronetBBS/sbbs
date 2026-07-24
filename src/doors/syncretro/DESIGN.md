@@ -150,7 +150,7 @@ matter for a terminal frontend:
 | `GET_SYSTEM_DIRECTORY`           | the BIOS dir (per-install, sysop-supplied -- see §10). **Never NULL** -- see below |
 | `GET_SAVE_DIRECTORY`             | the per-user sandbox (SRAM + save states, §11). **Never NULL** |
 | `GET_VARIABLE` / `SET_CORE_OPTIONS(_V2)` | expose core options (region, controller) via door config |
-| `SET_INPUT_DESCRIPTORS`          | capture the core's button labels -> input help overlay |
+| `SET_INPUT_DESCRIPTORS`          | not handled -- the help overlay is driven by our own static binding table instead (see §7); deferred to M3, for a core we know nothing about |
 | `GET_LOG_INTERFACE`              | route core logs to the door log                       |
 | `SET_HW_RENDER`                  | **refuse** (return false) -- software cores only (§13) |
 | unknown                          | return false (core adapts / continues)                |
@@ -235,10 +235,15 @@ write direction still open also hands the terminal back.
 
 The interesting part is **per-console controller quirks**. Intellivision's
 controller is a 12-key keypad + a 16-direction disc + three side buttons -- it
-does not map cleanly to a d-pad+buttons. The `SET_INPUT_DESCRIPTORS` data the
-core supplies (see §5) gives the button labels, which drive an on-screen key
-overlay (number row -> keypad, arrows/WASD -> disc, etc.). This overlay is
-per-core polish, not core plumbing.
+does not map cleanly to a d-pad+buttons. Rather than lean on
+`SET_INPUT_DESCRIPTORS` (see §5) -- not every core sends it, and its strings
+describe the core's own RetroPad convention, not the remap we impose -- M2 puts
+one static binding table (`syncretro_binds.c`) behind both the key handler and
+the on-screen help, so the two cannot drift apart; see
+[M2_INPUT.md](M2_INPUT.md). A core that sends no descriptors at all -- MAME
+2003-Plus, for the arcade console -- gets a hand-curated per-game label table
+instead ([GAMES_INI.md](GAMES_INI.md)). This overlay is per-core polish, not
+core plumbing.
 
 ---
 

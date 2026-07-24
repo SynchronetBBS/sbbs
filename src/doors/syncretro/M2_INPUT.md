@@ -114,6 +114,14 @@ too many terminals mangle them. The two controllers get two key groups:
 Door keys (either player): `Tab` swap the two controllers · `Space` pause · `?`
 key legend / help · `Ctrl-R` reset (`retro_reset()`) · `Ctrl-Q` quit.
 
+**The arcade profile only:** `I` / `K`, action `SR_ACT_AXIS`, bound to the
+RetroPad's right analog stick (up/down). MAME 2003-Plus reads a twin-stick
+cabinet's second stick off that axis and nowhere else -- no button, no d-pad,
+no core option reaches it (measured: `mame_remapping`, `input_interface`, and
+`digital_joy_centering` each changed nothing). This binding table's Intellivision
+and NES profiles have no analog stick to give it and do not carry these two
+rows; see `syncretro_binds.c`'s `g_binds_arcade` table.
+
 Player 2's arrows and numpad have no ASCII byte form, so they reach the door
 only on the CSI / evdev / kitty paths. On a plain byte terminal the numpad is
 indistinguishable from the number row, so there player 2's *keypad* falls back
@@ -261,9 +269,13 @@ invalidates the frame cache.
   downsample of the playfield in 16 colors. Plausible for Astrosmash, likely
   illegible for text-heavy titles. Stays in M3, where the tier work lives.
 
-- **`SET_INPUT_DESCRIPTORS`-driven help.** Useless here: the core's descriptor
-  strings describe *its* RetroPad convention, which our remap invalidates. It
-  becomes the right fallback in M3, for cores we know nothing about.
+- **`SET_INPUT_DESCRIPTORS`-driven help.** Useless for a core that sends
+  descriptors: its strings describe *its* RetroPad convention, which our remap
+  invalidates. It becomes the right fallback in M3, for cores we know nothing
+  about. This is not a decision to never name a cabinet's buttons -- MAME
+  2003-Plus is the case the reasoning above does not cover, because it sends no
+  descriptors at all, and for that case `games.ini` is the hand-curated answer
+  (see [GAMES_INI.md](GAMES_INI.md)).
 
 - **Save-state hotkeys.** DESIGN.md §15 lists these under M2, but save states
   themselves are M5. Moving them there keeps M2 to one coherent change; M5 adds
