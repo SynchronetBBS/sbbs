@@ -274,40 +274,69 @@ int zmodem_send_esc(zmodem_t* zm, unsigned char c)
  * transmit a character; ZDLE escaping if appropriate
  */
 
+enum zmodem_tx_class {
+	ZMODEM_TX_NORMAL        = 0,
+	ZMODEM_TX_ESCAPE_ALWAYS = 1 << 0,
+	ZMODEM_TX_ESCAPE_CTRL   = 1 << 1,
+	ZMODEM_TX_ESCAPE_CR     = 1 << 2,
+	ZMODEM_TX_ESCAPE_IAC    = 1 << 3,
+};
+
+/*
+ * Classify bytes without a data-dependent decision tree.  Each byte has
+ * exactly one class bit; zmodem_tx() masks that class against the escape
+ * modes active for the current session and previous byte.
+ */
+#define TXN ZMODEM_TX_NORMAL
+#define TXA ZMODEM_TX_ESCAPE_ALWAYS
+#define TXC ZMODEM_TX_ESCAPE_CTRL
+#define TXR ZMODEM_TX_ESCAPE_CR
+#define TXI ZMODEM_TX_ESCAPE_IAC
+static const unsigned char zmodem_tx_classes[256] = {
+	/* 00 */ TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXR, TXC, TXC,
+	/* 10 */ TXA, TXA, TXC, TXA, TXC, TXC, TXC, TXC, TXA, TXC, TXC, TXC, TXC, TXC, TXC, TXC,
+	/* 20 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* 30 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* 40 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* 50 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* 60 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* 70 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* 80 */ TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXR, TXC, TXC,
+	/* 90 */ TXA, TXA, TXC, TXA, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC, TXC,
+	/* A0 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* B0 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* C0 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* D0 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* E0 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN,
+	/* F0 */ TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXN, TXI,
+};
+#undef TXN
+#undef TXA
+#undef TXC
+#undef TXR
+#undef TXI
+
 int zmodem_tx(zmodem_t* zm, unsigned char c)
 {
-	int result;
+	unsigned active;
+	unsigned action;
+	unsigned escape_ctrl = !!zm->escape_ctrl_chars;
+	int      result;
 
-	switch (c) {
-		case DLE:
-		case DLE | 0x80:          /* even if high-bit set */
-		case XON:
-		case XON | 0x80:
-		case XOFF:
-		case XOFF | 0x80:
-		case ZDLE:
-			return zmodem_send_esc(zm, c);
-		case CR:
-		case CR | 0x80:
-			if (zm->escape_ctrl_chars && (zm->last_sent & 0x7f) == '@')
-				return zmodem_send_esc(zm, c);
-			break;
-		case TELNET_IAC:
-			if (zm->escape_telnet_iac) {
-				if ((result = zmodem_send_raw(zm, ZDLE)) != SEND_SUCCESS)
-					return result;
-				return zmodem_send_raw(zm, ZRUB1);
-			}
-			break;
-		default:
-			if (zm->escape_ctrl_chars && (c & 0x60) == 0)
-				return zmodem_send_esc(zm, c);
-			break;
+	active = ZMODEM_TX_ESCAPE_ALWAYS
+	    | (escape_ctrl * ZMODEM_TX_ESCAPE_CTRL)
+	    | ((escape_ctrl & ((zm->last_sent & 0x7f) == '@')) * ZMODEM_TX_ESCAPE_CR)
+	    | (!!zm->escape_telnet_iac * ZMODEM_TX_ESCAPE_IAC);
+	action = zmodem_tx_classes[c] & active;
+
+	if (action == ZMODEM_TX_NORMAL)
+		return zmodem_send_raw(zm, c);
+	if (action == ZMODEM_TX_ESCAPE_IAC) {
+		if ((result = zmodem_send_raw(zm, ZDLE)) != SEND_SUCCESS)
+			return result;
+		return zmodem_send_raw(zm, ZRUB1);
 	}
-	/*
-	 * anything that ends here is so normal we might as well transmit it.
-	 */
-	return zmodem_send_raw(zm, c);
+	return zmodem_send_esc(zm, c);
 }
 
 /**********************************************/
