@@ -15,6 +15,7 @@ gate** that the first attempt skipped.
 | `zbench.py` | Original two-pipe variant (separate stdin/stdout). Superseded by `zbench_sock.py`. |
 | `ztx_buf.c` | A ~150-line ZMODEM sender that links the **real `zmodem.o`** behind a buffered `send_byte` (no ring, no thread). Isolates "how much is `zmodem.c`" from "how much is `sexyz.c`" — **not** a throughput model of SyncTERM (SyncTERM is BDP/socket-buffer tuned and faster). Build it at `-O3` to match the release flags; `-O2` under-reports. |
 | `matrix.sh` | Driver for the block-size / CRC / latency / bandwidth / error sweeps. |
+| `zdecode.py` | Decodes a `--tap` wire capture into a frame trace (`ZRPOS pos=…`, `ZACK pos=…`, subpacket lengths). Resynchronises on ZPAD/ZDLE like a receiver, so it survives corrupted stretches. Diff a passing run against a failing one to see recovery behaviour directly. |
 | `fixA.patch` | **Reverted.** Batch a subpacket span into the ring per flush (`sexyz.c`). Fast, but regressed error recovery. |
 | `fixB.patch` | **Reverted.** Add a `send_buf` span callback to `zmodem.c` so the escape/CRC loop hands whole spans to the transport. Same error-recovery regression. |
 
@@ -39,6 +40,12 @@ python3 zbench_sock.py --file bigfile.256M --outdir /tmp/o \
 python3 zbench_sock.py --file test.8M --outdir /tmp/o \
     --sender "/path/sexyz -8 sz test.8M" --receiver "/path/lrz -y" \
     --corrupt-rate 0.000003 --timeout 200
+
+# Diagnose a failing run: capture the wire, then read the frame trace.
+#   --tap      writes <outdir>/wire.fwd and wire.bwd (post-corruption)
+#   --sockbuf  bounds SO_SNDBUF/SO_RCVBUF, i.e. the sender's in-flight backlog
+python3 zbench_sock.py ... --tap --sockbuf 8192
+python3 zdecode.py /tmp/o/wire.bwd | head -40
 
 # matrix.sh: DATA=<dir> ./matrix.sh {block|crc|lat|bw|err}  (edit binary paths at top)
 ```
@@ -145,11 +152,41 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
    ring to empty inside `flush()`, still failed at 1/3. Fix it anyway; it is not
    the cause.
 
-   **Where that leaves it.** Best result remains v7: single-threaded + buffered,
-   115.8 MB/s at 0.83 CPU-s with 1,585 context switches, gate 2/3. **The
-   mechanism is still unidentified**, and the next step should be diagnosis, not
-   a ninth prototype — instrument a failing run and find what the receiver sees
-   after a ZRPOS that it does not see with the per-byte sender.
+   **MECHANISM FOUND — it is queue depth, not batching.** Capture the wire
+   (`zbench_sock.py --tap`) and decode it (`zdecode.py wire.bwd`). On the
+   receiver→sender channel the shipped sender needs **one** ZRPOS per error;
+   the batched sender makes the receiver repeat the **same** ZRPOS **2–8 times**
+   before it can resynchronise, because the sender keeps feeding queued stale
+   data from beyond the reposition point. Wire overhead on the same run:
+   **+7.3 % shipped vs +216 % batched**.
+
+   Bounding the in-flight bytes proves it, with no code change beyond batching:
+
+   | Batched prototype | Gate | Wire overhead |
+   |---|:--:|--:|
+   | default (16 K ring, default socket buffers) | 0/3 | −63 … −83 % (aborted) |
+   | `OutbufSize=1024` (ini knob only) | **2/3** | — |
+   | `OutbufSize=1024` + `--sockbuf 8192` | **3/3** | **+10.2 … +10.7 %** |
+   | *control:* shipped sender, same config | 3/3 | — |
+
+   And it is free: a 1 KB ring costs no throughput (115.80 vs 115.79 MB/s).
+   A per-byte producer at 11 MB/s cannot outrun the drain so its queue stays
+   shallow; a batched producer at 115 MB/s keeps it full. This is Deuce's
+   socket-buffer/BDP point arrived at from the other side — on a real link the
+   correct bound on in-flight bytes *is* the BDP.
+
+   **Correction:** the "not a speed artifact" control above is too strong.
+   `--rate-bps` throttles the *relay*, not the sender's backlog, so it never
+   tested this. Use `--sockbuf` (added for exactly this) to bound backlog.
+
+   **`-w` does not substitute:** batched + `-w32768` timed out 3/3, `-w8192`
+   moved essentially nothing (−99.96 %). The batched prototype deadlocks under
+   windowed mode — a defect in it, not in `-w`.
+
+   **Shipping form:** buffer the producer, prefer the single-threaded variant
+   (same speed, 0.83 CPU-s, 1,585 ctx switches), and have sexyz bound its own
+   in-flight bytes (ring size + `SO_SNDBUF`) instead of relying on the
+   environment.
 
    **But first ask whether it's worth it (Deuce):** this whole exercise measured
    **localhost**, which is largely beside the point — below ~8 ms RTT the socket

@@ -300,7 +300,7 @@ lrzsz's 203.9** — it has not been measured, because no prototype has yet used
 non-blocking output. The obstacle is not the engine and not raw performance —
 it is that every batched prototype so far breaks error recovery (§3.3).
 
-### 3.3 Why the fix is hard: eight prototypes, one gate
+### 3.3 Why the fix looked hard: eight prototypes, one gate
 
 Batching the producer is trivially fast and repeatedly wrong. Note that every
 "115.8" below is the I/O-stalled plateau described in §0, not a ceiling: these
@@ -339,11 +339,66 @@ Two results are worth keeping:
   it (wait for the ring to empty inside `flush()`) still failed at 1/3. Worth
   fixing on its own merits; not the cause.
 
-**What is now excluded**, which is the useful part of eight failures: it is not
-the *data rate* (rate-capped control), not the *batch size* (64 B – 4 KB all
-fail), not *dropped or latched errors* (fixed, still fails), not *flush-to-wire
-ordering*, and only partly the *output thread* (removing it moves 0–1/3 → 2/3
-but does not fix it). **The mechanism remains unidentified.**
+### 3.3.1 The mechanism, found: queue depth, not batching
+
+Capturing the wire (`zbench_sock.py --tap`, decoded with `zdecode.py`) shows the
+difference immediately. Same 2 MB file, same `--corrupt-rate 0.00001`, decoding
+the **receiver→sender** channel:
+
+```
+shipped (per-byte)            batched prototype
+  ZRPOS  pos=154624             ZRPOS  pos=154624
+  ZACK   pos=158720             ZRPOS  pos=154624     <-- same position
+  ZRPOS  pos=166912             ZRPOS  pos=154624
+  ZACK   pos=168960             ZRPOS  pos=154624
+                                ZRPOS  pos=154624
+                                ZRPOS  pos=154624
+                                ZACK   pos=158720
+```
+
+The shipped sender needs **one** ZRPOS per error. The batched sender makes the
+receiver repeat the *same* ZRPOS **2–8 times** before it can resynchronise,
+because the sender keeps feeding it queued stale data from beyond the reposition
+point. Wire overhead on that run: **+7.3 % shipped vs +216 % batched**.
+
+So the variable is **how many bytes are queued ahead of the sender when the
+ZRPOS is generated** — ring plus socket buffers — not batching itself. A
+per-byte producer at 11 MB/s cannot outrun the drain, so its queue stays nearly
+empty; a batched producer at 115 MB/s keeps it full.
+
+**Proof, by bounding the queue.** With no code change beyond the batching
+itself:
+
+| Batched prototype | Error gate | Wire overhead |
+|---|:--:|--:|
+| default (16 K ring, default socket buffers) | 0/3 | −63 % … −83 % (aborted) |
+| `OutbufSize=1024` (ini knob only) | **2/3** | — |
+| `OutbufSize=1024` + 8 KB socket buffers (`--sockbuf`) | **3/3** | **+10.2 … +10.7 %** |
+| *control:* shipped sender, same bounded config | 3/3 | — |
+
+And it is **free**: shrinking the ring from 16 K to 1 K costs no throughput at
+all (115.80 vs 115.79 MB/s) because the batching already removed the per-byte
+cost.
+
+This lands exactly on Deuce's socket-buffer/BDP point from a different
+direction: on a real link the right bound on in-flight bytes *is* the
+bandwidth-delay product, and error-recovery cost scales with how far past the
+reposition point the sender has already run.
+
+**Correction to §3.3:** the earlier claim that this "is not a speed artifact"
+was too strong. That control used `--rate-bps`, which throttles the *relay*, not
+the sender's backlog — the sender still filled ring and socket buffers at full
+speed. It never tested the queue-depth hypothesis.
+
+**One thing that does *not* substitute:** ZMODEM's own transmit window (`-w`).
+Batched + `-w32768` timed out 3/3 and `-w8192` transferred essentially nothing
+(−99.96 % overhead) — the batched prototype deadlocks under windowed mode, a
+separate defect in it, not in `-w`.
+
+**Still open:** the remaining prototypes' 2/3-vs-3/3 difference tracks socket
+buffer size, which is a harness-side knob here. A shipped fix needs sexyz to
+bound its own in-flight bytes (ring size plus `SO_SNDBUF`) rather than relying
+on the environment.
 
 Earlier failed variants are catalogued in `src/bench/zmodem/README.md`; two of
 their failure modes are now understood and should not be repeated — a `void`
@@ -547,22 +602,26 @@ exactly where a modern BBS file transfer runs.
      brought context switches down to `lsz`'s level, and got the gate to 2/3.
      The remaining failure is the blocking `sendbuf()`.
 
-   **The mechanism is still not identified** — see the exclusion list in §3.3.
-   What `lrz` actually does (verified, §3.4) is *blocking* stdio with span
-   writes, a real `fflush()` per subpacket, and an unbounded back-channel drain
-   loop; an earlier revision of this doc wrongly credited it with non-blocking
-   output and `select()`. Supplying sexyz with the equivalent real flush did not
-   fix the gate.
+   **The mechanism is now identified (§3.3.1): queue depth, not batching.** A
+   batched producer keeps the ring and socket buffers full, so after a ZRPOS the
+   receiver has to chew through everything already queued and repeats the same
+   ZRPOS 2–8 times before it can resynchronise. Bounding the in-flight bytes
+   (1 KB ring + 8 KB socket buffers) takes the batched prototype from 0/3 to
+   **3/3** with near-shipped wire overhead, and costs **zero** throughput.
 
-   Best direction on the evidence: **single-threaded and buffered**, with the
-   protocol thread owning its output buffer — that is the only variant to reach
-   2/3, and it drops context switches to `lsz`'s level. Beyond that, the next
-   step is diagnosis, not another prototype: instrument a failing run to find
-   what the receiver sees after a ZRPOS that it does not see with the per-byte
-   sender. Implementation notes that cost time to learn: a failed flush is
-   **transient** (keep the remainder buffered, never latch an error, never drop
-   bytes), and the flush must happen before any wait on the back-channel —
-   `recv_buffer()` is the single choke point for that in `sexyz.c`. GitLab #1195.
+   So the fix is: **buffer the producer, and bound the sender's in-flight
+   backlog** — ring size plus `SO_SNDBUF`, sized to the link's bandwidth-delay
+   product rather than left to the environment. Prefer the **single-threaded**
+   form of the buffered sender: same 115.8 MB/s, but 0.83 CPU-s and 1,585
+   context switches versus 1.0 s and 63,047, and it was the best-behaved variant
+   before the queue bound was found. Note that ZMODEM's own transmit window
+   (`-w`) does *not* substitute — the batched prototype deadlocks under it.
+
+   Implementation notes that cost time to learn: a failed flush is **transient**
+   (keep the remainder buffered, never latch an error, never drop bytes), the
+   flush must happen before any wait on the back-channel (`recv_buffer()` is the
+   single choke point in `sexyz.c`), and `flush()` itself is currently a no-op on
+   the socket path (§3.4) and should be made real regardless. GitLab #1195.
 
 3. **✅ DONE (and no longer the lever) — per-byte `zmodem.c` send cost.** Deuce
    reworked the shared send path on 2026-07-24 (class-table byte classifier,

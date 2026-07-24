@@ -20,7 +20,7 @@ def sha256(path):
             h.update(b)
     return h.hexdigest()
 
-def relay(src, dst, latency_s, rate_bps, counter, name, corrupt_rate=0.0, rng=None):
+def relay(src, dst, latency_s, rate_bps, counter, name, corrupt_rate=0.0, rng=None, tap=None):
     tokens = 0.0
     last = time.monotonic()
     total = 0
@@ -35,6 +35,8 @@ def relay(src, dst, latency_s, rate_bps, counter, name, corrupt_rate=0.0, rng=No
                     if rng.random() < corrupt_rate:
                         ba[i] ^= (1 << rng.randrange(8))
                 data = bytes(ba)
+            if tap is not None:
+                tap.write(data)
             if latency_s > 0:
                 time.sleep(latency_s)
             off, n = 0, len(data)
@@ -71,6 +73,10 @@ def main():
     ap.add_argument('--rate-back-bps', type=float, default=0.0)  # asymmetric back-channel cap
     ap.add_argument('--corrupt-rate', type=float, default=0.0)   # per-byte bit-flip prob (fwd only)
     ap.add_argument('--label', default='')
+    ap.add_argument('--sockbuf', type=int, default=0,
+                    help='SO_SNDBUF/SO_RCVBUF on the socketpairs, to bound in-flight backlog')
+    ap.add_argument('--tap', action='store_true',
+                    help='write post-corruption wire captures to <outdir>/wire.fwd and wire.bwd')
     ap.add_argument('--timeout', type=float, default=1800)
     args = ap.parse_args()
 
@@ -82,6 +88,10 @@ def main():
 
     s_end, s_relay = socket.socketpair()
     r_end, r_relay = socket.socketpair()
+    if args.sockbuf:
+        for sk in (s_end, s_relay, r_end, r_relay):
+            sk.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, args.sockbuf)
+            sk.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, args.sockbuf)
     serr = open(os.path.join(args.outdir, 'sender.stderr'), 'wb')
     rerr = open(os.path.join(args.outdir, 'recv.stderr'), 'wb')
 
@@ -95,9 +105,12 @@ def main():
 
     counter = {}
     rback = args.rate_back_bps if args.rate_back_bps > 0 else args.rate_bps
+    tap_f = open(os.path.join(args.outdir, 'wire.fwd'), 'wb') if args.tap else None
+    tap_b = open(os.path.join(args.outdir, 'wire.bwd'), 'wb') if args.tap else None
     fwd = threading.Thread(target=relay, args=(s_relay, r_relay, lat, args.rate_bps, counter, 'fwd',
-                                               args.corrupt_rate, random.Random(1234)))
-    bwd = threading.Thread(target=relay, args=(r_relay, s_relay, lat, rback, counter, 'bwd'))
+                                               args.corrupt_rate, random.Random(1234), tap_f))
+    bwd = threading.Thread(target=relay, args=(r_relay, s_relay, lat, rback, counter, 'bwd',
+                                               0.0, None, tap_b))
     fwd.start(); bwd.start()
 
     try:
