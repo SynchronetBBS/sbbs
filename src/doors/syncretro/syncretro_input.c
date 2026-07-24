@@ -93,8 +93,26 @@
  * refreshes it, so a held key stays down. */
 #define SR_HOLD_MS 250
 
-/* Cached RetroPad. Index by RETRO_DEVICE_ID_JOYPAD_*. */
-#define SR_PAD_IDS (RETRO_DEVICE_ID_JOYPAD_R3 + 1)
+/* Cached RetroPad. Index by RETRO_DEVICE_ID_JOYPAD_*.
+ *
+ * SR_PAD_REAL_IDS is how many of these are BUTTONS the core may read; the array
+ * is longer, because the two SR_ACT_AXIS slots (syncretro_binds.h) ride it to
+ * inherit the press / release / auto-release-dwell machinery below rather than
+ * duplicating it. sr_pad_get() never hands a slot at or above SR_PAD_REAL_IDS
+ * to the core as a button -- it is readable only as an analog deflection. */
+#define SR_PAD_REAL_IDS (RETRO_DEVICE_ID_JOYPAD_R3 + 1)
+#define SR_PAD_IDS      (SR_AXIS_RIGHT_Y_POS + 1)
+
+/* The axis slots must sit ABOVE the last button id, or pressing I would press
+ * R3 at the core. A negative array size here is a build failure, deliberately:
+ * this is the invariant the whole scheme rests on, and no test can catch a
+ * collision that the compiler has already resolved. */
+typedef char sr_axis_ids_are_not_buttons[
+		(SR_AXIS_RIGHT_Y_NEG >= SR_PAD_REAL_IDS && SR_AXIS_RIGHT_Y_POS >= SR_PAD_REAL_IDS) ? 1 : -1];
+
+/* Full-scale deflection. An arcade driver's stick is a SWITCH -- MAME reads the
+ * axis through a threshold -- so a key gives it all or nothing, never a ramp. */
+#define SR_AXIS_FULL 0x7fff
 
 /* Two controllers: the door drives BOTH Intellivision hand controllers at once,
  * so a solo player uses whichever the cart reads (no swap needed) and two
@@ -251,6 +269,23 @@ int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 	 * console it is DEAD -- a core that polls it must read a centred stick, or a
 	 * game that reads both would see a phantom deflection. */
 	if (device == RETRO_DEVICE_ANALOG) {
+		/* ...except a TWIN-STICK CABINET, whose second stick MAME 2003-Plus put
+		 * on the right stick and nowhere else (see syncretro_binds.c). Answered
+		 * from two keys, and deliberately NOT by turning sr_profile_analog() on
+		 * for the arcade: that flag means "this console's stick IS the disc and
+		 * keypad", and setting it here would hand the right stick to
+		 * sr_keypad_analog() and let a disc sweep suppress the d-pad below.
+		 *
+		 * Every other axis, and every cabinet whose driver never reads one,
+		 * still reads a CENTRED stick -- byte for byte what the core got here
+		 * before this existed. Both keys down is a stick pulled two ways: 0. */
+		if (sr_profile() == SR_PROFILE_ARCADE) {
+			if (index != RETRO_DEVICE_INDEX_ANALOG_RIGHT
+			    || id != RETRO_DEVICE_ID_ANALOG_Y)
+				return 0;
+			return (int16_t)((g_joypad[p][SR_AXIS_RIGHT_Y_POS] ? SR_AXIS_FULL : 0)
+			                 - (g_joypad[p][SR_AXIS_RIGHT_Y_NEG] ? SR_AXIS_FULL : 0));
+		}
 		if (!sr_profile_analog())
 			return 0;
 		if (index == RETRO_DEVICE_INDEX_ANALOG_LEFT) {
@@ -266,8 +301,8 @@ int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 	}
 	if (device != RETRO_DEVICE_JOYPAD)
 		return 0;
-	if (id >= SR_PAD_IDS)
-		return 0;
+	if (id >= SR_PAD_REAL_IDS)
+		return 0;   /* the axis slots live above this: never a button */
 	/* While the disc is being swept, the d-pad must not also claim it. (Only the
 	 * Intellivision ever sweeps; on a pad profile g_disc_dir stays 0.) */
 	if (sr_profile_analog() && g_disc_dir[p] != 0
@@ -401,6 +436,10 @@ static void sr_key_apply(int c, int down, int tap)
 	}
 	switch (act) {
 		case SR_ACT_PAD:
+		/* An axis key is a pad key that happens to be read as a deflection: same
+		 * slots, same edges, same byte-path dwell, so a held key stays deflected
+		 * and a released one centres. Only sr_pad_get() tells them apart. */
+		case SR_ACT_AXIS:
 			if (!down)
 				sr_pad_release(port, id);
 			else if (tap)

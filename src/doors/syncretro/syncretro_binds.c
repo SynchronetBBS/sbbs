@@ -166,6 +166,24 @@ static const sr_bind_row_t g_binds_arcade[] = {
 	{ "q",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_L,      0, "Q E",              "buttons 5 and 6" },
 	{ "e",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_R,      0, NULL,               NULL },
 
+	/* THE SECOND STICK, and the one binding here that is not a button.
+	 *
+	 * A twin-stick cabinet drives each half of the machine from its own stick:
+	 * Battlezone's two treads, Robotron's move-and-aim. MAME 2003-Plus reads the
+	 * second one off the RetroPad's RIGHT ANALOG STICK and nothing else, so a
+	 * keyboard cannot reach it through the d-pad or any button -- measured, not
+	 * assumed: every input-related core option (mame_remapping, input_interface,
+	 * digital_joy_centering) leaves it exactly where it is. Battlezone without
+	 * these two keys answers on one tread only, which pivots but never drives.
+	 *
+	 * W/S is the left stick, I/K the right -- the same two fingers each hand
+	 * would use on the cabinet. The help says "twin-stick" rather than naming
+	 * treads: the core sends no SET_INPUT_DESCRIPTORS, so the door cannot tell
+	 * WHICH game it is running, and a game with one stick simply ignores these
+	 * (its driver never reads the axis). Same reason the buttons are numbered. */
+	{ "i",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_NEG,           0, "I K",              "2nd stick up / down (twin-stick cabinets)" },
+	{ "k",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_POS,           0, NULL,               NULL },
+
 	/* The two that actually start a game, named as the cabinet names them.
 	 * Terminals disagree about Backspace (BS 0x08 vs DEL 0x7f), so both. */
 	{ "\010\177", SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_SELECT, 0, "Bksp",             "INSERT COIN" },

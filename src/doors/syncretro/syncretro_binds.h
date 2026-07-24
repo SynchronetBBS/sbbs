@@ -22,9 +22,27 @@ typedef enum {
 	SR_ACT_NONE = 0,   /* unbound: the key must never reach the core */
 	SR_ACT_PAD,        /* id = RETRO_DEVICE_ID_JOYPAD_* on controller `port` */
 	SR_ACT_DIGIT,      /* id = 1..9 (never 5): an analog keypad digit on `port` */
+	SR_ACT_AXIS,       /* id = SR_AXIS_* : an analog DEFLECTION on `port` */
 	SR_ACT_DOOR,       /* id = SR_DOOR_* */
 	SR_ACT_SWAP        /* Tab: swap which core port each player's keys drive */
 } sr_act_t;
+
+/* SR_ACT_AXIS ids -- a stick deflection a KEY has to produce, because the core
+ * put a control there and nowhere else.
+ *
+ * A twin-stick cabinet (Battlezone's two treads, Robotron's aim) is the case:
+ * MAME 2003-Plus binds the second stick to the RetroPad's RIGHT stick only --
+ * no button, no d-pad, and no core option moves it (mame_remapping,
+ * input_interface and digital_joy_centering were all measured against it) -- so
+ * on a keyboard half the control panel is unreachable without this. Battlezone
+ * could pivot but never drive straight, because only one tread answered.
+ *
+ * These are NOT RetroPad button ids and must never be sent as one. They are
+ * state slots ABOVE the last real id (R3 = 15) so they ride the pad's existing
+ * press/release/dwell machinery; syncretro_input.c pins that with a build-time
+ * check and refuses to hand any id this high to the core as a button. */
+#define SR_AXIS_RIGHT_Y_NEG 16   /* right stick UP    (libretro Y is DOWN-positive) */
+#define SR_AXIS_RIGHT_Y_POS 17   /* right stick DOWN */
 
 enum {
 	SR_DOOR_NONE = 0,
@@ -45,7 +63,8 @@ int sr_bind_fold(int c);
 
 /* Resolve a folded ASCII key. Returns SR_ACT_NONE (and sets *id to 0) when the
  * key is unbound. Sets *port to the controller (0 = player 1, 1 = player 2) for
- * SR_ACT_PAD / SR_ACT_DIGIT; 0 otherwise. Both out-params must be non-NULL. */
+ * SR_ACT_PAD / SR_ACT_DIGIT / SR_ACT_AXIS; 0 otherwise. Both out-params must be
+ * non-NULL. */
 sr_act_t sr_bind_lookup(int c, int *id, int *port);
 
 /* Walk the help lines: returns 0 once i is past the end, else 1 and sets *key

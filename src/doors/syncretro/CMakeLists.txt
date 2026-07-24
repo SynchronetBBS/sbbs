@@ -207,6 +207,23 @@ if(SYNCRETRO_TESTS)
     target_include_directories(test_binds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME binds COMMAND test_binds)
 
+    # test_axis -- like test_audio_bytes, this one links the REAL module
+    # (syncretro_input.c) rather than a stub, and fakes only the platform read
+    # seam: the claim under test is that a keystroke survives the whole door
+    # path and arrives at the core as an analog deflection. A twin-stick
+    # cabinet's second stick lives on that axis and nowhere else, so a stubbed
+    # input layer would prove nothing. termgfx for the key-mode parsers.
+    add_executable(test_axis test_axis.c syncretro_input.c syncretro_binds.c
+                   syncretro_profile.c syncretro_keypad.c)
+    target_include_directories(test_axis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../termgfx
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+    target_link_libraries(test_axis termgfx xpdev)
+    if(NOT WIN32)
+        target_link_libraries(test_axis m pthread)
+    endif()
+    add_test(NAME axis COMMAND test_axis)
+
     add_executable(test_quant test_quant.c syncretro_quant.c)
     target_include_directories(test_quant PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME quant COMMAND test_quant)

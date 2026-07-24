@@ -206,6 +206,57 @@ int main(void)
 	}
 	CHECK(lines > 0);
 
+	/* --- the arcade cabinet's table ------------------------------------------
+	 * Same wiring as `pad` for the stick and buttons -- what differs is the two
+	 * that start a game (a cabinet does nothing until a coin goes in) and the
+	 * SECOND STICK, which a keyboard can only reach as an analog deflection. */
+	sr_profile_select("arcade", NULL);
+	CHECK(sr_profile() == SR_PROFILE_ARCADE);
+	CHECK(sr_profile_analog() == 0);   /* the disc/keypad flag stays OFF here */
+
+	check_act('w', SR_ACT_PAD, RETRO_DEVICE_ID_JOYPAD_UP,     0);
+	check_act('s', SR_ACT_PAD, RETRO_DEVICE_ID_JOYPAD_DOWN,   0);
+	check_act('z', SR_ACT_PAD, RETRO_DEVICE_ID_JOYPAD_B,      0);
+	check_act(0x08, SR_ACT_PAD, RETRO_DEVICE_ID_JOYPAD_SELECT, 0);   /* INSERT COIN */
+	check_act('\r', SR_ACT_PAD, RETRO_DEVICE_ID_JOYPAD_START,  0);
+
+	/* The second stick. MAME 2003-Plus puts a twin-stick cabinet's other stick
+	 * on the RetroPad's right stick and NOWHERE else, so these two keys are the
+	 * only way a terminal player reaches it -- without them Battlezone's right
+	 * tread is dead and the tank can pivot but never drive. */
+	check_act('i', SR_ACT_AXIS, SR_AXIS_RIGHT_Y_NEG, 0);
+	check_act('k', SR_ACT_AXIS, SR_AXIS_RIGHT_Y_POS, 0);
+
+	/* An axis id is NOT a button id. It rides the pad state array in slots above
+	 * the last RetroPad id, and sr_input_state() refuses to send anything that
+	 * high as a button -- if these ever collided, pressing I would press R3. */
+	CHECK(SR_AXIS_RIGHT_Y_NEG > RETRO_DEVICE_ID_JOYPAD_R3);
+	CHECK(SR_AXIS_RIGHT_Y_POS > RETRO_DEVICE_ID_JOYPAD_R3);
+	CHECK(SR_AXIS_RIGHT_Y_NEG != SR_AXIS_RIGHT_Y_POS);
+
+	/* Nothing else in the cabinet table may resolve to an axis: two keys, and
+	 * the six button keys must stay buttons. */
+	for (i = 1; i < 128; i++) {
+		int      id   = -1;
+		int      port = -1;
+		sr_act_t act  = sr_bind_lookup(i, &id, &port);
+
+		if (act != SR_ACT_AXIS)
+			continue;
+		CHECK(i == 'i' || i == 'k');
+		CHECK(port == 0);
+	}
+
+	/* The second stick is the CABINET's. A cartridge console must not grow two
+	 * phantom keys: on those profiles the core reads a centred stick, and I / K
+	 * stay unbound exactly as they were. */
+	sr_profile_select("pad", NULL);
+	check_act('i', SR_ACT_NONE, 0, 0);
+	check_act('k', SR_ACT_NONE, 0, 0);
+	sr_profile_select("intv", NULL);
+	check_act('i', SR_ACT_NONE, 0, 0);
+	check_act('k', SR_ACT_NONE, 0, 0);
+
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "ok", failures);
 	return failures != 0;
 }
