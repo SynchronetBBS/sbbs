@@ -17,6 +17,7 @@ add_executable(syncretro
     syncretro_io.c      # terminal enter/probe/leave + present path
     syncretro_input.c   # socket decode -> cached RetroPad
     syncretro_binds.c   # the binding tables: keys -> pad / keypad / door
+    syncretro_games.c   # per-cabinet button/stick labels, from games.ini
     syncretro_profile.c # which console's controller the keyboard imitates
     syncretro_keypad.c  # Intellivision keypad digits -> RetroPad analog vector
     syncretro_audio.c   # the core's PCM stream -> SyncTERM's audio APC (M4)
@@ -203,8 +204,11 @@ if(SYNCRETRO_TESTS)
     endif()
     add_test(NAME keypad COMMAND test_keypad)
 
-    add_executable(test_binds test_binds.c syncretro_binds.c syncretro_profile.c)
-    target_include_directories(test_binds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_executable(test_binds test_binds.c syncretro_binds.c syncretro_profile.c
+                   syncretro_games.c)
+    target_include_directories(test_binds PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+    target_link_libraries(test_binds xpdev)
     add_test(NAME binds COMMAND test_binds)
 
     # test_axis -- like test_audio_bytes, this one links the REAL module
@@ -214,7 +218,7 @@ if(SYNCRETRO_TESTS)
     # cabinet's second stick lives on that axis and nowhere else, so a stubbed
     # input layer would prove nothing. termgfx for the key-mode parsers.
     add_executable(test_axis test_axis.c syncretro_input.c syncretro_binds.c
-                   syncretro_profile.c syncretro_keypad.c)
+                   syncretro_profile.c syncretro_keypad.c syncretro_games.c)
     target_include_directories(test_axis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
                                ${CMAKE_CURRENT_SOURCE_DIR}/../termgfx
                                ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)

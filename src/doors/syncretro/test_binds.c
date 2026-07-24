@@ -3,12 +3,24 @@
  * M2_INPUT.md sec 3 promises the player. */
 #include "syncretro_binds.h"
 #include "syncretro_profile.h"
+#include "syncretro_games.h"
 #include "libretro.h"
 
 #include <stdio.h>
 #include <string.h>
 
 static int failures;
+
+static void write_arcade_fixture(void)
+{
+	FILE *f = fopen("games.ini", "w");
+
+	fputs("[bzone]\n"
+	      "name     = Battlezone\n"
+	      "button.Y = Fire\n"
+	      "stick2   = Right tread\n", f);
+	fclose(f);
+}
 
 #define CHECK(cond) \
 		do { \
@@ -256,6 +268,44 @@ int main(void)
 	sr_profile_select("intv", NULL);
 	check_act('i', SR_ACT_NONE, 0, 0);
 	check_act('k', SR_ACT_NONE, 0, 0);
+
+	/* --- per-cabinet help labels ---------------------------------------------
+	 * With no cabinet loaded the button rows stay GROUPED, exactly as they are
+	 * for every game whose controls nobody has measured. */
+	sr_profile_select("arcade", NULL);
+	sr_games_load("/nonexistent-directory", NULL);
+	lines = 0;
+	for (i = 0; sr_bind_help_line(i, &key, &desc); i++) {
+		if (strcmp(key, "Z X") == 0)
+			lines++;
+		CHECK(strcmp(key, "I K") != 0);   /* no second stick: no I/K line */
+	}
+	CHECK(lines == 1);                    /* the grouped row is present */
+
+	/* A labelled cabinet: one line per key, the label as its description, and
+	 * every unlabelled button GONE -- on Battlezone they do nothing, and listing
+	 * them is the confusion this file removes. */
+	write_arcade_fixture();               /* [bzone] button.Y = Fire, stick2 */
+	sr_games_load(".", "bzone.zip");
+	{
+		int saw_fire = 0, saw_stick2 = 0, saw_group = 0, saw_dead = 0;
+
+		for (i = 0; sr_bind_help_line(i, &key, &desc); i++) {
+			if (strcmp(key, "C") == 0 && strcmp(desc, "Fire") == 0)
+				saw_fire = 1;
+			if (strcmp(key, "I K") == 0 && strcmp(desc, "Right tread") == 0)
+				saw_stick2 = 1;
+			if (strcmp(key, "Z X") == 0 || strcmp(key, "C V") == 0)
+				saw_group = 1;
+			if (strcmp(key, "Z") == 0 || strcmp(key, "V") == 0)
+				saw_dead = 1;
+		}
+		CHECK(saw_fire);
+		CHECK(saw_stick2);
+		CHECK(!saw_group);   /* grouping is off once anything is labelled */
+		CHECK(!saw_dead);    /* unlabelled buttons are omitted, not renumbered */
+	}
+	remove("games.ini");
 
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "ok", failures);
 	return failures != 0;

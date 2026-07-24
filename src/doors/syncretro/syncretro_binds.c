@@ -1,6 +1,7 @@
 /* syncretro_binds.c -- see syncretro_binds.h. */
 #include "syncretro_binds.h"
 #include "syncretro_profile.h"
+#include "syncretro_games.h"
 #include "libretro.h"    /* RETRO_DEVICE_ID_JOYPAD_* */
 
 #include <stddef.h>
@@ -26,6 +27,10 @@ typedef struct {
 	int port;
 	const char *keyname;
 	const char *desc;
+	/* This key's OWN name, for the per-cabinet help that renders one line per
+	 * key instead of the grouped rows. NULL on rows that are never rendered
+	 * that way -- the two cartridge tables set it nowhere. */
+	const char *solo;
 } sr_bind_row_t;
 
 /* --- the Intellivision (SR_PROFILE_INTV) -------------------------------------
@@ -159,12 +164,12 @@ static const sr_bind_row_t g_binds_arcade[] = {
 	{ "s",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_DOWN,   0, NULL,               NULL },
 	{ "d",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_RIGHT,  0, NULL,               NULL },
 
-	{ "z",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_B,      0, "Z X",              "buttons 1 and 2" },
-	{ "x",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_A,      0, NULL,               NULL },
-	{ "c",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_Y,      0, "C V",              "buttons 3 and 4" },
-	{ "v",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_X,      0, NULL,               NULL },
-	{ "q",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_L,      0, "Q E",              "buttons 5 and 6" },
-	{ "e",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_R,      0, NULL,               NULL },
+	{ "z",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_B,      0, "Z X",              "buttons 1 and 2",  "Z" },
+	{ "x",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_A,      0, NULL,               NULL,               "X" },
+	{ "c",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_Y,      0, "C V",              "buttons 3 and 4",  "C" },
+	{ "v",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_X,      0, NULL,               NULL,               "V" },
+	{ "q",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_L,      0, "Q E",              "buttons 5 and 6",  "Q" },
+	{ "e",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_R,      0, NULL,               NULL,               "E" },
 
 	/* THE SECOND STICK, and the one binding here that is not a button.
 	 *
@@ -181,8 +186,8 @@ static const sr_bind_row_t g_binds_arcade[] = {
 	 * treads: the core sends no SET_INPUT_DESCRIPTORS, so the door cannot tell
 	 * WHICH game it is running, and a game with one stick simply ignores these
 	 * (its driver never reads the axis). Same reason the buttons are numbered. */
-	{ "i",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_NEG,           0, "I K",              "2nd stick up / down (twin-stick cabinets)" },
-	{ "k",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_POS,           0, NULL,               NULL },
+	{ "i",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_NEG,           0, "I K",              "2nd stick up / down (twin-stick cabinets)", NULL },
+	{ "k",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_POS,           0, NULL,               NULL,               NULL },
 
 	/* The two that actually start a game, named as the cabinet names them.
 	 * Terminals disagree about Backspace (BS 0x08 vs DEL 0x7f), so both. */
@@ -249,17 +254,46 @@ sr_act_t sr_bind_lookup(int c, int *id, int *port)
 	return SR_ACT_NONE;
 }
 
+/* Is this row one of the six cabinet buttons -- the rows a labelled cabinet
+ * re-renders one-per-key? The axis and door rows are not. */
+static int sr_bind_is_button(const sr_bind_row_t *r)
+{
+	return r->act == SR_ACT_PAD && r->solo != NULL;
+}
+
 int sr_bind_help_line(int i, const char **key, const char **desc)
 {
 	int                  n, m;
-	const sr_bind_row_t *t = sr_bind_table(&n);
+	const sr_bind_row_t *t     = sr_bind_table(&n);
+	int                  named = sr_games_labelled();
 
 	for (m = 0; m < n; m++) {
-		if (t[m].keyname == NULL)
-			continue;
+		const char *k = t[m].keyname;
+		const char *d = t[m].desc;
+
+		if (sr_bind_is_button(&t[m]) && named) {
+			/* This cabinet's buttons are known by name. Every button row is
+			 * rendered on its own, and one with no label is DROPPED: a section
+			 * that labels anything asserts the rest do nothing, and printing
+			 * "button 4" for a button that does nothing is the confusion
+			 * games.ini exists to remove (GAMES_INI.md sec 6). */
+			d = sr_games_button_label(t[m].id);
+			if (d == NULL)
+				continue;
+			k = t[m].solo;
+		} else if (t[m].act == SR_ACT_AXIS) {
+			/* The second stick is bound on every cabinet, because the door
+			 * cannot know which have one. Only a cabinet that says so gets the
+			 * keys on its help screen, under its own name for them. */
+			d = sr_games_stick2();
+			if (d == NULL || k == NULL)
+				continue;
+		} else if (k == NULL) {
+			continue;   /* an alias row: the group above it speaks for it */
+		}
 		if (i-- == 0) {
-			*key  = t[m].keyname;
-			*desc = t[m].desc;
+			*key  = k;
+			*desc = d;
 			return 1;
 		}
 	}
