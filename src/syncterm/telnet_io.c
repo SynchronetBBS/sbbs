@@ -142,7 +142,8 @@ request_telnet_opt(uchar cmd, uchar opt)
 }
 
 BYTE *
-telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
+telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen,
+    bool *command_received)
 {
 	BYTE  command;
 	BYTE  option;
@@ -150,6 +151,7 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 	BYTE *first_int = NULL;
 	int   i;
 
+	*command_received = false;
 	if (inlen < 1) {
 		*outlen = 0;
 		return inbuf; /* no length? No interpretation */
@@ -228,10 +230,12 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 						request_telnet_opt(TELNET_WILL, TELNET_NEGOTIATE_WINDOW_SIZE);
 					}
 					telnet_cmdlen = 0;
+					*command_received = true;
 				}
 			}
 			else if ((telnet_cmdlen == 2) && (inbuf[i] < TELNET_WILL)) {
 				telnet_cmdlen = 0;
+				*command_received = true;
 			}
 			else if (telnet_cmdlen >= 3) { /* telnet option negotiation */
 				lprintf(LOG_INFO, "RX: %s %s",
@@ -289,6 +293,7 @@ telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen)
 				}
 
 				telnet_cmdlen = 0;
+				*command_received = true;
 			}
 		}
 		else {

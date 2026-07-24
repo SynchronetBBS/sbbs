@@ -103,16 +103,17 @@ send_initial_state(void)
 void *
 telnet_rx_parse_cb(const void *buf, size_t inlen, size_t *olen)
 {
+	bool telnet_command;
+
         // telnet_interpret() can add up to one byte to inbuf ('\r')
 	void *ret = malloc(inlen + 1);
 
 	if (ret == NULL)
 		return ret;
-	if (telnet_interpret((BYTE *)buf, inlen, ret, olen) != ret) {
+	if (telnet_interpret((BYTE *)buf, inlen, ret, olen, &telnet_command) != ret)
 		memcpy(ret, buf, *olen);
-		if (telnet_deferred)
-			send_initial_state();
-	}
+	if (telnet_deferred && telnet_command)
+		send_initial_state();
 	return ret;
 }
 

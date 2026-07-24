@@ -3,6 +3,8 @@
 #ifndef _TELNET_IO_H_
 #define _TELNET_IO_H_
 
+#include <stdbool.h>
+
 #ifndef TELNET_NO_DLL
  #define TELNET_NO_DLL
 #endif
@@ -13,7 +15,8 @@
 
 extern uchar telnet_local_option[0x100];
 extern uchar telnet_remote_option[0x100];
-BYTE *telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen);
+BYTE *telnet_interpret(BYTE *inbuf, size_t inlen, BYTE *outbuf, size_t *outlen,
+                       bool *command_received);
 void request_telnet_opt(uchar cmd, uchar opt);
 void telnet_send_window_change(int text_cols, int text_rows,
                                int pixel_cols, int pixel_rows);
