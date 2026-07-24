@@ -44,6 +44,7 @@
  */
 #include "input_term.h"
 #include "help_term.h"   /* the door's help overlay intercepts F1 / any-key-to-close */
+#include "video_term.h"  /* video_term_cycle_resolution() -- the F4 hotkey */
 
 using Input::Keys::InputKey;
 
@@ -157,6 +158,14 @@ void input_term_pump(std::bitset<Input::Keys::KEYS_COUNT> &keys)
 			}
 			if (ev.keycode == TERMGFX_KEY_F1) {
 				help_term_show();
+				continue;
+			}
+			/* F4 -- door-owned resolution cycle (Original/Widescreen/Ultrawide).
+			 * The door consumes it here rather than forwarding: EasyRPG's F4 is
+			 * TOGGLE_FULLSCREEN (meaningless in a terminal), and all of F1..F9 are
+			 * dropped by input_term_map_key() below anyway. See video_term.cpp. */
+			if (ev.keycode == TERMGFX_KEY_F4) {
+				video_term_cycle_resolution();
 				continue;
 			}
 		} else if (ev.type == TERMGFX_EV_KEY_UP && help_term_active()) {

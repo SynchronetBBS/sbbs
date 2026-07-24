@@ -38,6 +38,7 @@ static const char *const help_lines[] = {
 	"DROP EFFECT    Number 5",
 	"",
 	"THIS PAGE      F1",
+	"RESOLUTION     F4  (Original/Wide/Ultra)",
 	"STATS BAR      Ctrl-S",
 	"QUIT TO BBS    Ctrl-Q or Ctrl-C",
 };
@@ -58,7 +59,7 @@ void help_term_draw(Bitmap &surface)
 	const int line_h = 12;
 	const int pad    = 8;
 	const int title_h = line_h + 4;
-	const int box_h  = pad * 2 + title_h + nlines * line_h + line_h;
+	const int box_h  = pad * 2 + title_h + nlines * line_h + 2 * line_h;
 	const int box_w  = (sw > 40) ? sw - 24 : sw;
 	const int box_x  = (sw - box_w) / 2;
 	int       box_y  = (sh - box_h) / 2;
@@ -90,10 +91,10 @@ void help_term_draw(Bitmap &surface)
 	}
 
 	/* The build stamp -- the reason this page carries an "about" role at all.
-	 * Same string the startup splash shows, which flashes past too fast to
-	 * read. Right-aligned, dim: it is reference, not instruction. */
-	surface.TextDraw(Rect(tx, y, tw, line_h), dim_col, syncrpg_version_line(), Text::AlignRight);
-	surface.TextDraw(Rect(tx, y, tw, line_h), dim_col, "any key to close", Text::AlignLeft);
+	 * Same string the startup splash shows, which flashes past too fast to read.
+	 * Centered on its own row, a blank row below the controls to set it apart. */
+	y += line_h;
+	surface.TextDraw(Rect(tx, y, tw, line_h), dim_col, syncrpg_version_line(), Text::AlignCenter);
 }
 
 /* Not listed on the page: a bare 'q'. termgfx's LEGACY byte path reserves it

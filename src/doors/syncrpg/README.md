@@ -63,8 +63,9 @@ graphical door in this tree use), each rung degrading to the next:
   **silence**.
 - **Keyboard** — the standard RPG Maker 2000/2003 key set (arrows to move,
   Enter/Z/Space to confirm, Esc for the menu, the numpad effect/action keys
-  Yume Nikki uses) plus the termgfx-reserved hotkeys (Ctrl-S stats, Ctrl-Q
-  quit).
+  Yume Nikki uses) plus the door hotkeys: **F1** (help/about overlay), **F4**
+  (cycle game resolution), and the termgfx-reserved **Ctrl-S** (stats) and
+  **Ctrl-Q** (quit).
 
 ## How the caller connects (DOOR32.SYS, stdio vs socket)
 
@@ -139,9 +140,94 @@ rest of the command line is the game/project path and the connection.
 | `SYNCRPG_TRACE`, `SYNCRPG_AUDIODUMP` | Diagnostic dumps (present-path trace, pre-encode PCM), opt-in. |
 
 The last four come from the shared termgfx session layer, which names them —
-and its optional sysop settings file `syncrpg.ini` (root `sixel_max`, the
-`[audio]` section), plus its touch-file gates under `<data-dir>/syncrpg/` —
-after the door.
+along with the optional `syncrpg.ini` settings file (see
+[Sysop settings](#sysop-settings-syncrpgini) below) and its touch-file gates
+under `<data-dir>/syncrpg/` — after the door.
+
+## Sysop settings (`syncrpg.ini`)
+
+`syncrpg.ini` is an **optional** INI file the door reads at startup from its
+working directory (the game package directory). Every key has a sensible
+default, so the file can be omitted entirely. `[input] menu_key` and
+`[video] resolution` are the door's own; the remaining keys are knobs of the
+shared `termgfx` session layer — identical across the graphical doors in this
+tree — read from this same file.
+
+| Section | Key | Values (default) | Purpose |
+|---------|-----|------------------|---------|
+| *(root)* | `sixel_max` | integer (`0` = off) | Cap the largest sixel dimension the door will emit; `0` derives the limit from the terminal. A sysop override for terminals that misreport their geometry. |
+| `[input]` | `menu_key` | `ctrl-<letter>` or `off` (`ctrl-g`) | Control-key that opens the door's help/about overlay. **F1 always opens it regardless of this setting.** |
+| `[video]` | `resolution` | `original` / `widescreen` / `ultrawide` (`original`) | **Initial** game resolution — 320×240 / 416×240 / 560×240. A player changes it live with **F4**, and their choice is remembered per-user, overriding this default for them thereafter (see below). Widescreen/Ultrawide are EasyRPG's *experimental* modes; a game that forces its own resolution ignores this. |
+| `[idle]` | `timeout` | duration (`10m` / `600`) | Disconnect an idle caller after this long with no input. Accepts `900`, `15m`, `1h`; `0` disables the idle timer. |
+| `[idle]` | `warn` | seconds (`60`) | On-screen countdown shown before an idle disconnect. |
+| `[audio]` | `enabled` | `true` / `false` (auto) | Master audio switch. Default follows the terminal's reported audio capability. |
+| `[audio]` | `volume` | percent `0`–`100` | Playback volume (applied after decode, on the terminal side). |
+| `[audio]` | `quality` | `0.01`–`1.0` (`0.15`) | Opus encode quality; higher is better-sounding and larger. |
+| `[audio]` | `chunk_ms` | `50`–`250` | Length of each streamed audio chunk, in milliseconds. |
+| `[audio]` | `prebuffer` | `2`–`8` | Chunks buffered before playback starts (higher rides out more jitter at the cost of latency). |
+| `[audio]` | `channels` | `1` or `2` | Mono or stereo on the wire. |
+| `[audio]` | `headroom` | percent `1`–`100` | Pre-encode attenuation applied to loud mixes to avoid clipping. |
+
+Example `syncrpg.ini`:
+
+```ini
+[input]
+menu_key = ctrl-g
+
+[video]
+resolution = widescreen
+
+[idle]
+timeout  = 15m
+warn     = 60
+
+[audio]
+enabled  = true
+volume   = 80
+```
+
+### EasyRPG engine configuration (`config.ini`)
+
+EasyRPG keeps its *engine* settings (video/audio/input) in its own `config.ini`,
+which is **separate** from `syncrpg.ini` and not something a `syncrpg.ini` key
+can set. SyncRPG reads that `config.ini` at startup from a **door-owned
+directory** so it is never shared between callers: with `--save-path` set (the
+bundled default), EasyRPG's `config.ini` and its logfile live in that per-user
+directory alongside the user's saves; without `--save-path` they land in the game
+package directory. The door **never** reads or writes the global per-OS-user
+EasyRPG config under `~/.config/EasyRPG/Player/` (or its logfile under
+`~/.local/state/`) — the one file every caller would otherwise share.
+
+**Most of these settings are not adjustable from inside the door.** EasyRPG's F1
+settings menu — and its other engine function keys (FPS overlay, log, fullscreen,
+zoom, screenshot, debug, reset) — are deliberately **not** reachable: that UI
+exposes key rebinding, debug tools, and a config write that would escape the
+door's per-user sandbox, none of which a BBS caller should reach. In syncrpg,
+**F1 instead opens the door's own help/about overlay** (as does the optional
+`[input] menu_key` hotkey above). So EasyRPG otherwise runs at its compiled
+defaults unless a `config.ini` is present in the door-owned directory above.
+
+**Game resolution is the exception — the door surfaces it directly**, so neither
+the sysop nor the player needs to touch `config.ini`:
+
+- **Player, live:** pressing **F4** cycles Original → Widescreen → Ultrawide →
+  Original and applies it immediately. It has no effect for a game that forces
+  its own resolution.
+- **Remembered per user:** an F4 choice is saved to that player's own `config.ini`
+  (in their `--save-path` directory) and is the resolution *their* next session
+  starts at — it never affects anyone else. Without a `--save-path` (no per-user
+  directory) the choice is session-only.
+- **Sysop default:** `syncrpg.ini` `[video] resolution` (see the table above) is
+  the *initial* resolution — what a player who has never pressed F4 starts at.
+  Once a player has made an F4 choice, their saved value takes precedence and the
+  sysop default no longer overrides it for them. Set no key and the engine
+  default (Original) applies.
+- **Ctrl-S** shows the current resolution (e.g. `416x240`) at the right end of
+  the stats strip.
+
+Widescreen (416×240) and Ultrawide (560×240) are EasyRPG's *experimental*
+fake-resolution modes and can glitch some games; Original (320×240) is the RPG
+Maker native size.
 
 ## Installing the game
 

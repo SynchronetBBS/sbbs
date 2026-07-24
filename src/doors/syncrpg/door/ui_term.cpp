@@ -60,6 +60,15 @@ static void syncrpg_probe_pixel_formats()
 	}
 }
 
+/* Push the current game resolution onto the shared Ctrl-S stats strip as a
+ * "WxH" token. One writer for both entry points (ctor + resolution change). */
+static void syncrpg_stats_set_resolution(int width, int height)
+{
+	char buf[16];
+	snprintf(buf, sizeof buf, "%dx%d", width, height);
+	termgfx_termio_set_stats_extra(buf);
+}
+
 BaseUi_termgfx::BaseUi_termgfx(long width, long height, const Game_Config& cfg)
 	: BaseUi(cfg)
 {
@@ -80,6 +89,12 @@ BaseUi_termgfx::BaseUi_termgfx(long width, long height, const Game_Config& cfg)
 	current_display_mode.height = (int)height;
 	current_display_mode.bpp = 32;
 	current_display_mode.effective = true;
+
+	/* Seed the Ctrl-S resolution readout with the starting size. A later switch
+	 * (Scene_Title applying --game-resolution, or the F4 hotkey) refreshes it from
+	 * vChangeDisplaySurfaceResolution; the Original case never calls that (the
+	 * size is unchanged, so BaseUi short-circuits), so it must be set here too. */
+	syncrpg_stats_set_resolution((int)width, (int)height);
 
 #ifdef SUPPORT_AUDIO
 	/* M3 (Task 6): route EasyRPG's mixed PCM into termgfx's shared audio
@@ -185,5 +200,6 @@ bool BaseUi_termgfx::vChangeDisplaySurfaceResolution(int new_width, int new_heig
 	main_surface = new_surface;
 	current_display_mode.width = new_width;
 	current_display_mode.height = new_height;
+	syncrpg_stats_set_resolution(new_width, new_height);
 	return true;
 }
