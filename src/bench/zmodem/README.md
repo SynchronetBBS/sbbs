@@ -88,15 +88,31 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
    lrzsz batches *and* recovers because its buffering is integrated with the
    protocol and it purges/repositions its output buffer on ZRPOS.
 
-   **What a correct fix needs:** make the transport **abort/reposition aware** —
-   a hook from `zmodem.c` to the transport to *purge the pending output buffer*
-   when the protocol repositions (ZRPOS) or aborts, so the buffer never carries
-   stale bytes across a reposition. That is a coordinated `zmodem.c` +
-   `sexyz.c`/`term.c` change, not a transport-only tweak. Until then, the
-   robust-but-slow per-byte sender stays.
+   **Abort-aware purge was tried — it helps but is not sufficient.** A
+   `purge_output` callback was added to `zmodem.c` (called from
+   `zmodem_handle_zrpos`) and implemented in `sexyz.c` to clear `txbuf`, the ring
+   (`RingBufReInit`), and the output thread's linear buffer on every reposition;
+   the output-thread read was also bounded (2 KB) so the in-flight chunk a purge
+   cannot recall stays small. The purge fires correctly (confirmed) and the
+   transfer gets noticeably further under errors (~1.3 MB → ~2.7 MB before
+   failing) — but it **still failed the error gate**: under heavy corruption the
+   block size collapses to 128 B, retransmit storms fill the ring, the receiver
+   eventually gives up, and the sender stalls (`waiting for output buffer to
+   flush, 16384 bytes`). Five distinct batched-transport variants now fail while
+   the per-byte sender passes 3/3.
+
+   **Recommended path (untried here):** stop fighting the two-thread ring for the
+   *sender*. The provably-fast-AND-robust reference is lrzsz: single-threaded,
+   the protocol thread owns its output buffer, and it flushes/repositions that
+   buffer *synchronously* with protocol state (so there is never a second thread
+   holding stale bytes it can't recall, and the back-channel is serviced between
+   subpackets). Re-architecting sexyz's sender that way — a buffered,
+   single-threaded send path integrated with the protocol, rather than a
+   ring + `output_thread` — is the change most likely to be both fast and
+   error-robust. It is a real rewrite, not a patch.
 
 5. **`zmodem.c`'s own share (~2.4×, 204→85).** Even a correct batched sender is
    capped ~85 MB/s by the per-byte `send_byte`-callback + escape + CRC pipeline,
    shared with SyncTERM. Reducing that (batch the escape/CRC inner loop, hand the
    transport spans) is the second, shared lever — but only worth doing once the
-   abort-aware buffering above makes batching safe.
+   send architecture above makes batching safe.
