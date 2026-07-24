@@ -224,6 +224,14 @@ if(SYNCRETRO_TESTS)
     endif()
     add_test(NAME axis COMMAND test_axis)
 
+    # test_games -- the per-cabinet table. Links xpdev for the ini reader; no
+    # termgfx and no core, so it runs anywhere.
+    add_executable(test_games test_games.c syncretro_games.c)
+    target_include_directories(test_games PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+    target_link_libraries(test_games xpdev)
+    add_test(NAME games COMMAND test_games)
+
     add_executable(test_quant test_quant.c syncretro_quant.c)
     target_include_directories(test_quant PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME quant COMMAND test_quant)
