@@ -5,7 +5,6 @@
 #include <ctype.h>
 #include <dirwrap.h>
 #include <errno.h>
-#include <glob.h>
 #include <ini_file.h>
 #include <limits.h>
 #include <stdarg.h>
@@ -24,6 +23,7 @@
 #include <unistd.h>
 #endif
 
+#include <dirwrap.h>
 #define THEME_INHERIT (-1)
 
 struct style_template {
