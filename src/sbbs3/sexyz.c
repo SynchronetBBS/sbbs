@@ -625,52 +625,63 @@ int recv_byte(void* unused, unsigned timeout /* seconds */)
 /*************************/
 /* Send a byte to remote */
 /*************************/
+static uchar    txbuf[MAX_OUTBUF_SIZE];
+static size_t   txbuf_len = 0;
+static unsigned txbuf_timeout = 10;
+
+/* Push the accumulated txbuf span into the output ring buffer (drained
+   asynchronously by output_thread), waiting for ring space as needed. */
+static int send_flush(unsigned timeout)
+{
+	uchar* p = txbuf;
+	size_t remain = txbuf_len;
+
+	while (remain) {
+		unsigned avail = RingBufFree(&outbuf);
+		if (avail == 0) {
+#if !defined(RINGBUF_EVENT)
+			ResetEvent(outbuf_empty);
+#endif
+			if ((avail = RingBufFree(&outbuf)) == 0) {
+				fprintf(statfp, "FLOW");
+				flows++;
+				if (WaitForEvent(outbuf_empty, timeout * 1000) != WAIT_OBJECT_0) {
+					lprintf(LOG_WARNING, "TIMEOUT (%u seconds) waiting for output buffer to flush (%u bytes)"
+					        , timeout, RingBufFull(&outbuf));
+					fprintf(statfp, "\b\b\b\b    \b\b\b\b");
+					txbuf_len = 0;
+					return -1;
+				}
+				fprintf(statfp, "\b\b\b\b    \b\b\b\b");
+				avail = RingBufFree(&outbuf);
+			}
+		}
+		if (avail > remain)
+			avail = remain;
+		RingBufWrite(&outbuf, p, avail);
+		p += avail;
+		remain -= avail;
+	}
+	txbuf_len = 0;
+	return 0;
+}
+
 int send_byte(void* unused, uchar ch, unsigned timeout)
 {
 	uchar    buf[2] = { TELNET_IAC, TELNET_IAC };
 	unsigned len = 1;
-	DWORD    result;
 
 	if (telnet && ch == TELNET_IAC)    /* escape IAC char */
 		len = 2;
 	else
 		buf[0] = ch;
 
-	if (RingBufFree(&outbuf) < len) {
-#if !defined(RINGBUF_EVENT)
-		ResetEvent(outbuf_empty);
-#endif
-		fprintf(statfp, "FLOW");
-		flows++;
-		result = WaitForEvent(outbuf_empty, timeout * 1000);
-		fprintf(statfp, "\b\b\b\b    \b\b\b\b");
-		if (result != WAIT_OBJECT_0) {
-			lprintf(LOG_WARNING
-			        , "TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)"
-			        , result, timeout, RingBufFull(&outbuf));
-			fprintf(statfp
-			        , "\n!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
-			        , result, timeout, RingBufFull(&outbuf));
-			newline = TRUE;
-			if ((result = RingBufFree(&outbuf)) < len) {
-				lprintf(LOG_ERR, "Still not enough space in ring buffer (need %d, avail=%d)", len, result);
-				return -1;
-			}
-		}
-		if ((result = RingBufFree(&outbuf)) < len) {
-			lprintf(LOG_ERR, "Not enough space in ring buffer (need %d, avail=%d) although empty event is set!", len, result);
+	txbuf_timeout = timeout;
+	if (txbuf_len + len > sizeof(txbuf))
+		if (send_flush(timeout) != 0)
 			return -1;
-		}
-	}
-
-	if ((result = RingBufWrite(&outbuf, buf, len)) != len) {
-		lprintf(LOG_ERR, "RingBufWrite() returned %d, expected %d", result, len);
-	}
-
-#if 0
-	if (debug_tx)
-		lprintf(LOG_DEBUG, "TX: %s", chr(ch));
-#endif
+	memcpy(txbuf + txbuf_len, buf, len);
+	txbuf_len += len;
 	return 0;
 }
 
@@ -780,10 +791,8 @@ static void output_thread(void* arg)
 /* Flush output buffer */
 void flush(void* unused)
 {
-#ifdef __unix__
-	if (stdio)
-		fflush(stdout);
-#endif
+	if (txbuf_len)
+		send_flush(txbuf_timeout);
 }
 
 BOOL is_connected(void* unused)
@@ -1973,6 +1982,8 @@ int main(int argc, char **argv)
 		retval = receive_files(fname_list, fnames);
 	else
 		retval = send_files(fname_list, fnames);
+
+	flush(NULL);   /* push any residual buffered output into the ring */
 
 #if !SINGLE_THREADED
 	lprintf(LOG_DEBUG, "Waiting for output buffer to empty... ");
