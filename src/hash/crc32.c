@@ -195,15 +195,24 @@ uint32_t crc32i(uint32_t crc, const char *buf, size_t len)
 
 uint32_t fcrc32(FILE* fp, size_t len)
 {
-	int      ch;
+	uint8_t  buf[64 * 1024];
 	uint32_t crc = 0xffffffff;
-	size_t   l;
 
 	rewind(fp);
-	for (l = 0; (len == 0 || l < len) && !feof(fp); l++) {
-		if ((ch = fgetc(fp)) == EOF)
+	for (;;) {
+		size_t count = sizeof(buf);
+
+		if (len != 0 && len < count)
+			count = len;
+		count = fread(buf, sizeof(*buf), count, fp);
+		if (count == 0)
 			break;
-		crc = ucrc32(ch, crc);
+		crc = crc32_update(crc, buf, count);
+		if (len != 0) {
+			len -= count;
+			if (len == 0)
+				break;
+		}
 	}
 	return ~crc;
 }
