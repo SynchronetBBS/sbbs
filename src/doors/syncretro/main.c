@@ -15,6 +15,7 @@
 #include "syncretro_binds.h"
 #include "syncretro_audio.h"
 #include "syncretro_profile.h"
+#include "syncretro_games.h"
 #include "syncretro_plat.h"
 
 #include "charset.h"    /* termgfx: client charset + box-drawing glyphs */
@@ -461,6 +462,12 @@ int main(int argc, char **argv)
 	 * it is loaded, and its sample rate only once a game is (the NES is 48000, the
 	 * Intellivision 44100 -- and the door hardcoded 44100 until M3). */
 	sr_profile_select(sr_door_profile(), core.si.library_name);
+
+	/* The cabinet's own facts, for the help screen. AFTER sr_profile_select()
+	 * because only the arcade profile has anything to label, and it takes the
+	 * LAUNCH dir explicitly: sr_config_apply() has already chdir'd into the
+	 * per-user sandbox, so a relative open would look in the wrong place. */
+	sr_games_load(sr_config_launch_dir(), sr_config_rom_path());
 
 	/* Select a controller type, if this install pinned one. AFTER load_game --
 	 * a core builds its port/device tables while loading content, and MAME
