@@ -260,7 +260,7 @@ typedef struct {
 
 	int receive_32bit_data;
 	int use_crc16;
-	int32_t ack_file_pos;               /* file position used in acknowledgement of correctly */
+	uint32_t ack_file_pos;              /* file position used in acknowledgement of correctly */
 	                                    /* received data subpackets */
 
 	int last_sent;
@@ -276,7 +276,7 @@ typedef struct {
 	BOOL no_streaming;
 	BOOL frame_in_transit;
 	unsigned recv_bufsize;      /* Receiver specified buffer size */
-	int32_t crc_request;
+	uint32_t crc_request;
 	unsigned errors;
 	unsigned consecutive_errors;
 	int64_t current_window_size;        /* "current transmitter file offset - last reported receiver file offset" */
@@ -325,11 +325,11 @@ const char* zmodem_source(void);
 int         zmodem_rx(zmodem_t* zm);
 int         zmodem_tx(zmodem_t* zm, BYTE ch);
 int         zmodem_send_zabort(zmodem_t*);
-int         zmodem_send_ack(zmodem_t*, int32_t pos);
+int         zmodem_send_ack(zmodem_t*, uint32_t pos);
 int         zmodem_send_nak(zmodem_t*);
 int         zmodem_send_zskip(zmodem_t* zm);
 int         zmodem_send_zrinit(zmodem_t*);
-int         zmodem_send_pos_header(zmodem_t* zm, int type, int32_t pos, BOOL hex);
+int         zmodem_send_pos_header(zmodem_t* zm, int type, uint32_t pos, BOOL hex);
 int         zmodem_get_zrinit(zmodem_t*);
 int         zmodem_get_zfin(zmodem_t* zm);
 BOOL        zmodem_get_crc(zmodem_t*, int32_t length, uint32_t* crc);

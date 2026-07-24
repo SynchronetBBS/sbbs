@@ -633,7 +633,7 @@ int zmodem_send_data(zmodem_t* zm, uchar subpkt_type, unsigned char* data, size_
 	return zmodem_send_data_subpkt(zm, subpkt_type, data, len);
 }
 
-int zmodem_send_pos_header(zmodem_t* zm, int type, int32_t pos, BOOL hex)
+int zmodem_send_pos_header(zmodem_t* zm, int type, uint32_t pos, BOOL hex)
 {
 	uchar header[5];
 
@@ -650,7 +650,7 @@ int zmodem_send_pos_header(zmodem_t* zm, int type, int32_t pos, BOOL hex)
 		return zmodem_send_bin_header(zm, header);
 }
 
-int zmodem_send_ack(zmodem_t* zm, int32_t pos)
+int zmodem_send_ack(zmodem_t* zm, uint32_t pos)
 {
 	return zmodem_send_pos_header(zm, ZACK, pos, /* Hex? */ TRUE);
 }
@@ -684,7 +684,7 @@ int zmodem_send_zskip(zmodem_t* zm)
 int zmodem_send_zeof(zmodem_t* zm)
 {
 	lprintf(zm, LOG_INFO, "%lu Sending End-of-File (ZEOF) frame", (ulong)zm->current_file_pos);
-	return zmodem_send_pos_header(zm, ZEOF, (int32_t)zm->current_file_pos, /* Hex? */ TRUE);
+	return zmodem_send_pos_header(zm, ZEOF, (uint32_t)zm->current_file_pos, /* Hex? */ TRUE);
 }
 
 
@@ -1559,7 +1559,7 @@ BOOL zmodem_handle_zrpos(zmodem_t* zm, uint64_t* pos)
 	if (zm->rxd_header_pos < zm->current_file_size) {
 		if (*pos != zm->rxd_header_pos) {
 			*pos = zm->rxd_header_pos;
-			zm->ack_file_pos = (int32_t)*pos;
+			zm->ack_file_pos = (uint32_t)*pos;
 			lprintf(zm, LOG_INFO, "%lu Resuming transfer from offset: %" PRIu64
 			        , (ulong)zm->current_file_pos, *pos);
 		}
