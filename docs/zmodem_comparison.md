@@ -15,6 +15,28 @@ Chuck Forsberg's final `rzsz` (3.73, 2003-01-30).
 > startup, which deflated and distorted the rates; the values below supersede
 > them. The *mechanism* findings (futex storm, ~84-byte writes, ring-per-byte)
 > were unaffected — only the magnitudes changed.
+>
+> **Correction (per Deuce, SyncTERM's author):** three framings below are wrong
+> and are retained only with this caveat.
+> 1. **`ztx_buf` is NOT a faithful SyncTERM model, and "SyncTERM ≈85 MB/s" is
+>    wrong.** Real SyncTERM is ~3× that; `ztx_buf` under-measures (Python-relay
+>    harness overhead + poll-per-subpacket). SyncTERM's speed is a *deliberate
+>    BDP / socket-buffer choice* (tuned to ~75% of a 1 Gb LAN; bump the buffer
+>    for 10 Gb), not an emergent send-path fact. Read the ~85 figure as "a naive
+>    buffered sender on `zmodem.c`, through this harness" — a floor, not SyncTERM.
+> 2. **These are localhost CPU microbenchmarks, not the real-world regime.**
+>    Below ~8 ms RTT the socket buffer / bandwidth-delay product dominates, not
+>    the send loop. Real transfers live over the network; optimizing the send
+>    loop for localhost is largely beside the point.
+> 3. **The "recall stale bytes / abort-aware purge on ZRPOS" theory (bench
+>    README) was a wrong garden path.** You can't recall bytes once they hit
+>    socket/network buffers — lrz doesn't either, yet recovers. The batched-sender
+>    error-recovery failures were *implementation bugs*, not something inherent to
+>    batching.
+>
+> Still valid: `sexyz.c`'s ring-per-byte send *is* a real cap (consistent with
+> SyncTERM, same `zmodem.c`, being multiples faster) — but it bites only on fast
+> LANs; on typical/WAN links the network dominates.
 
 - **Throughput:** the Synchronet **`sexyz` *sender* was ~18× slower than `lsz`**
   (≈11 vs ≈204 MB/s). This is **two stacked overheads**, isolated by linking the
@@ -26,10 +48,12 @@ Chuck Forsberg's final `rzsz` (3.73, 2003-01-30).
     was REVERTED — it regressed error recovery** (starves the back-channel during
     retransmit storms; §6). Still open. **SyncTERM never had this layer**
     (buffered single-threaded send).
-  - **`zmodem.c` per-byte design (~2.4×, 204→85 MB/s): SHARED — affects
-    SyncTERM.** Its `send_byte`-callback-per-byte + ZDLE-escape + CRC pipeline is
-    the ceiling for any sender on `zmodem.c` (~85 MB/s buffered). SyncTERM's
-    upload runs at this ~85 MB/s tier. Still to be addressed (§6).
+  - **`zmodem.c` per-byte send design: SHARED — affects SyncTERM.** Its
+    `send_byte`-callback-per-byte + ZDLE-escape + CRC pipeline is a real per-byte
+    cost. A naive buffered sender on it measured ~85 MB/s *through this harness*
+    (vs 204 for lrzsz's inlined path) — but treat that as a localhost floor, **not
+    SyncTERM's throughput** (correction banner above; SyncTERM is BDP-tuned and
+    faster). Worth reducing only if the target link outruns it (§6).
 - **sexyz *receiver* is fine** (~130 MB/s), including past 2 GB.
 - **Forsberg** (modern branch) *sender* runs at **~107 MB/s** (below lrzsz —
   1 KB block cap). Its *receiver* won't complete headlessly (serial-tty
@@ -48,8 +72,8 @@ Which component each finding lives in:
 
 | Finding | `sexyz.c` | shared `zmodem.c` | SyncTERM `term.c` |
 |---|:--:|:--:|:--:|
-| Ring-buffer/per-byte send (85→11, futex/tiny-writes) — **fixed** | ✗ (was here) | — | OK (immune) |
-| Per-byte send cost (204→85, callback+escape+CRC) | — | ✗ (weakness) | ✗ (inherits, ~85 MB/s) |
+| Ring-buffer/per-byte send (85→11, futex/tiny-writes) — prototype **reverted**, open | ✗ (here) | — | OK (immune) |
+| Per-byte send cost (204→85 harness floor, callback+escape+CRC) | — | ✗ (weakness) | ✗ (inherits the cost) |
 | `int32_t` >2 GB window/ACK corruption — **fixed** | — | ✗ (was here) | ✗ (inherited) |
 | Non-adaptive block-size ramp | — | ✗ (weakness) | ✗ (inherits) |
 | 4 GB wire-field ceiling | — | inherent to protocol | inherent |
@@ -128,7 +152,7 @@ the 2 GB fix #1196.
 | lsz → lrz (lrzsz baseline) | **203.9 MB/s** | 8 KB adaptive blocks |
 | lsz → **sexyz** (sexyz *receives*) | **133.0 MB/s** | sexyz receiver OK |
 | **Forsberg sz** → lrz | **106.6 MB/s** | 1 KB blocks (no ZedZap); single-threaded |
-| SyncTERM model (`zmodem.c` + buffered) → lrz | **84.7 MB/s** | the `zmodem.c` per-byte ceiling |
+| buffered floor (`zmodem.c` + naive buffered send, **through this harness**) → lrz | **84.7 MB/s** | a localhost floor — **NOT SyncTERM** (correction banner) |
 | **sexyz** → lrz — **shipped** (ring per-byte) | **11.4 MB/s** | the current sender |
 | **sexyz** → lrz — batched prototype (**reverted**, §6) | **65.9 MB/s** | reverted: regressed error recovery |
 
@@ -136,12 +160,13 @@ Wire overhead is identical (~2.8 %, +2.55 % for Forsberg's 1 KB blocks) —
 protocol efficiency is the same; the difference is purely implementation.
 
 **Sender ranking (with the reverted prototype shown for reference):** lrzsz (204)
-> Forsberg (107) > SyncTERM-model (85) > sexyz-batched-prototype (66) >
+> Forsberg (107) > buffered-floor (85, harness) > sexyz-batched-prototype (66) >
 sexyz-shipped (11). Two things stand out: (1) batching sexyz's send recovers most
 of the deficit (11→66) but the prototype regressed error recovery and was
-reverted (§6); (2) everything on `zmodem.c` (SyncTERM ~85, batched ~66) sits below
-lrzsz because of the shared per-byte send cost (§3.2). Forsberg's ~107 with only
-1 KB blocks shows how much a
+reverted (§6); (2) everything on `zmodem.c` (buffered-floor ~85, batched ~66)
+sits below lrzsz because of the shared per-byte send cost — but ~85 is a localhost
+harness figure, **not SyncTERM's real throughput** (which is BDP/socket-buffer
+tuned; correction banner). Forsberg's ~107 with only 1 KB blocks shows how much a
 clean single-threaded buffered send matters.
 
 ### 3.0 Forsberg's receiver could not be benchmarked headlessly
@@ -196,13 +221,15 @@ To separate "how much is `zmodem.c`" from "how much is `sexyz.c`", a ~150-line
 test sender (`ztx_buf.c`) was linked against the **real, unmodified
 `zmodem.o`** — the same object sexyz uses — but with a **SyncTERM-style buffered
 `send_byte`** (accumulate into an array, bulk `write()` per subpacket; no ring
-buffer, no thread). This is a faithful model of SyncTERM's own sender. Sending
-256 MB to `lrz` (steady-state), identical wire bytes in every case:
+buffer, no thread). This models the *shape* of SyncTERM's send path (buffered, no
+ring/thread) but **not its throughput** — through this harness it under-measures
+real SyncTERM by ~3× (harness overhead + poll-per-subpacket; correction banner).
+Sending 256 MB to `lrz` (steady-state), identical wire bytes in every case:
 
 | Sender | Send path (all drive the same `zmodem.c` except `lsz`) | Goodput |
 |---|---|--:|
 | `lsz` | lrzsz's own inlined `zm.c` | **204 MB/s** |
-| `ztx_buf` = **SyncTERM model** | `zmodem.c` + **buffered** send | **~85 MB/s** |
+| `ztx_buf` = **buffered floor** (harness) | `zmodem.c` + **buffered** send | **~85 MB/s** |
 | `sexyz` (batched prototype, **reverted**) | `zmodem.c` + **batched ring** + drain thread | **~66 MB/s** |
 | `sexyz` (**shipped**) | `zmodem.c` + **ring per-byte** + drain thread | **~11 MB/s** |
 
@@ -210,8 +237,9 @@ buffer, no thread). This is a faithful model of SyncTERM's own sender. Sending
 `strace` of the batched prototype: **12 K futex**, 4 K writes of ~8 KB. The
 buffered `ztx_buf` is **CPU-bound inside `zmodem.c`** (negligible syscall time),
 on the `send_byte`-callback-per-byte + ZDLE-escape + CRC-32 pipeline — that
-per-byte cost is the ~85 MB/s ceiling, and block size barely moves it (per-byte,
-not per-block). The batched prototype (~66) sat just under that ceiling but
+per-byte cost sets a ~85 MB/s floor *in this harness* (a floor, not SyncTERM's
+real number), and block size barely moves it (per-byte, not per-block). The
+batched prototype (~66) sat just under that floor but
 **regressed error recovery** and was reverted (§6): under heavy injected errors
 it starved the back-channel and stalled, where the shipped per-byte sender
 recovers. A correct batched sender must keep servicing the back-channel while
@@ -219,9 +247,11 @@ sending.
 
 **Conclusion:** the ~18× sexyz-vs-lrzsz gap is **~7.5× `sexyz.c`** (ring
 per-byte, sexyz-only — batching prototype reverted, still open) **× ~2.4×
-`zmodem.c`** (per-byte send design, shared with SyncTERM, ~85 MB/s ceiling, open).
-SyncTERM's upload runs at that ~85 MB/s tier. Closing the residual gap to lrzsz
-needs the `zmodem.c` change: batch the escape/CRC inner loop and hand `send_byte`
+`zmodem.c`** (per-byte send design, shared with SyncTERM, ~85 MB/s *harness
+floor*, open). That ~85 is a localhost harness figure, **not SyncTERM's real
+throughput** (which is BDP/socket-buffer tuned and faster — correction banner).
+Closing the residual gap to lrzsz needs the `zmodem.c` change: batch the
+escape/CRC inner loop and hand `send_byte`
 a span instead of a byte (§6, "Fix B").
 
 ---
@@ -379,9 +409,11 @@ exactly where a modern BBS file transfer runs.
    prototypes here. The measured ~66/~88 figures below are from those reverted
    prototypes, kept for reference. Patches saved out-of-tree. GitLab #1195.
 
-3. **○ OPEN — per-byte `zmodem.c` send cost.** Even a correct batched sender is
-   capped at ~85 MB/s by the `send_byte`-callback-per-byte + escape + CRC
-   pipeline (§3.2), shared with SyncTERM. Folds into the redesign above.
+3. **○ OPEN — per-byte `zmodem.c` send cost.** A buffered sender on `zmodem.c`
+   measured ~85 MB/s *in this harness* (§3.2) — a real per-byte cost shared with
+   SyncTERM, though ~85 is a localhost floor, not SyncTERM's real (BDP-tuned)
+   throughput. Whether it's worth reducing depends on the target link; folds into
+   the redesign above if so.
 
 4. **○ OPEN — adaptive block-length cost model** (lrzsz-style `calc_blklen`) to
    replace the ×2/÷2 ramp. Largest lever on lossy/variable links; sexyz + SyncTERM.

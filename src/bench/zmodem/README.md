@@ -13,7 +13,7 @@ gate** that the first attempt skipped.
 | `zbench_sock.py` | **Main harness.** Wires a sender + receiver (each speaking ZMODEM on stdin/stdout) through a userspace relay that can inject one-way latency, a bandwidth cap (`--rate-bps`, `--rate-back-bps` for asymmetry), and forward **bit-corruption** (`--corrupt-rate`). No root/`netem` needed. Each endpoint gets one bidirectional socket duped to both fds (works for sexyz, lrzsz, and Forsberg `sz`). |
 | `zbench_pty.py` | Same idea over raw ptys — for serial-era tools that assume a tty. |
 | `zbench.py` | Original two-pipe variant (separate stdin/stdout). Superseded by `zbench_sock.py`. |
-| `ztx_buf.c` | A ~150-line ZMODEM sender that links the **real `zmodem.o`** behind a SyncTERM-style **buffered** `send_byte` (no ring, no thread). A faithful model of SyncTERM's sender, used to isolate "how much is `zmodem.c`" from "how much is `sexyz.c`". |
+| `ztx_buf.c` | A ~150-line ZMODEM sender that links the **real `zmodem.o`** behind a SyncTERM-style **buffered** `send_byte` (no ring, no thread). Models the *shape* of SyncTERM's send path to isolate "how much is `zmodem.c`" from "how much is `sexyz.c`" — **not** a throughput model of SyncTERM (it under-measures the real thing ~3× via harness overhead; SyncTERM is BDP/socket-buffer tuned). |
 | `matrix.sh` | Driver for the block-size / CRC / latency / bandwidth / error sweeps. |
 | `fixA.patch` | **Reverted.** Batch a subpacket span into the ring per flush (`sexyz.c`). ~11→66 MB/s but regressed error recovery. |
 | `fixB.patch` | **Reverted.** Add a `send_buf` span callback to `zmodem.c` so the escape/CRC loop hands whole spans to the transport. ~66→88 MB/s; would benefit SyncTERM too. Same error-recovery regression. |
@@ -79,40 +79,37 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
      `flush()` that never drops. Still failed 0/3 — it sent ZFIN at 4.9 MB of an
      8 MB file, i.e. the sender's position accounting desynced from the wire.
 
-   **Root cause (the real design constraint):** batching decouples *what zmodem
-   believes it has sent* (`send_byte` returned success) from *what is actually on
-   the wire* (still in the transport buffer). ZMODEM error recovery (ZRPOS →
-   seek → resend) assumes those track. On a reposition, the buffered-but-unsent
-   bytes are stale and must be reconciled — dropped, kept, and re-based against
-   the new position — which the decoupled `send_byte` sink cannot do on its own.
-   lrzsz batches *and* recovers because its buffering is integrated with the
-   protocol and it purges/repositions its output buffer on ZRPOS.
+   **Correction (Deuce, SyncTERM's author): the "recall stale bytes" framing was
+   wrong.** You cannot recall bytes once they hit the socket/network buffers — lrz
+   can't either, yet it recovers. So "a batched sender has more un-recallable
+   stale data queued" was never the real differentiator, and the abort-aware
+   `purge_output` detour (a `zmodem.c` callback from `zmodem_handle_zrpos` that
+   cleared `txbuf`, the ring via `RingBufReInit`, and the output thread's linear
+   buffer on every reposition, plus a bounded 2 KB read) was solving a
+   non-problem. It fired correctly and got the transfer further (~1.3 MB →
+   ~2.7 MB before failing) but still failed the gate. The right conclusion: these
+   five failures were **implementation bugs** in the batched path (silent drops,
+   blocking-flush back-channel starvation, position accounting) — *not* something
+   inherent to batching. lrz proves a batched, buffered sender is both fast and
+   error-robust.
 
-   **Abort-aware purge was tried — it helps but is not sufficient.** A
-   `purge_output` callback was added to `zmodem.c` (called from
-   `zmodem_handle_zrpos`) and implemented in `sexyz.c` to clear `txbuf`, the ring
-   (`RingBufReInit`), and the output thread's linear buffer on every reposition;
-   the output-thread read was also bounded (2 KB) so the in-flight chunk a purge
-   cannot recall stays small. The purge fires correctly (confirmed) and the
-   transfer gets noticeably further under errors (~1.3 MB → ~2.7 MB before
-   failing) — but it **still failed the error gate**: under heavy corruption the
-   block size collapses to 128 B, retransmit storms fill the ring, the receiver
-   eventually gives up, and the sender stalls (`waiting for output buffer to
-   flush, 16384 bytes`). Five distinct batched-transport variants now fail while
-   the per-byte sender passes 3/3.
+   **Recommended path:** rewrite sexyz's *sender* the lrz way — single-threaded,
+   the protocol thread owning its output buffer and flushing it in step with
+   protocol state, so there is no second thread to coordinate and the back-channel
+   is serviced between subpackets. That, not a purge hook, is what makes lrz
+   robust. A real rewrite, not a patch.
 
-   **Recommended path (untried here):** stop fighting the two-thread ring for the
-   *sender*. The provably-fast-AND-robust reference is lrzsz: single-threaded,
-   the protocol thread owns its output buffer, and it flushes/repositions that
-   buffer *synchronously* with protocol state (so there is never a second thread
-   holding stale bytes it can't recall, and the back-channel is serviced between
-   subpackets). Re-architecting sexyz's sender that way — a buffered,
-   single-threaded send path integrated with the protocol, rather than a
-   ring + `output_thread` — is the change most likely to be both fast and
-   error-robust. It is a real rewrite, not a patch.
+   **But first ask whether it's worth it (Deuce):** this whole exercise measured
+   **localhost**, which is largely beside the point — below ~8 ms RTT the socket
+   buffer / bandwidth-delay product dominates the send loop, not the CPU. On real
+   (network) transfers the link usually dominates; the send-loop rewrite only pays
+   off on fast LANs. SyncTERM's throughput is itself a deliberate socket-buffer
+   (BDP) choice, tuned to ~75% of a 1 Gb LAN — not an emergent send-path fact.
 
-5. **`zmodem.c`'s own share (~2.4×, 204→85).** Even a correct batched sender is
-   capped ~85 MB/s by the per-byte `send_byte`-callback + escape + CRC pipeline,
-   shared with SyncTERM. Reducing that (batch the escape/CRC inner loop, hand the
-   transport spans) is the second, shared lever — but only worth doing once the
-   send architecture above makes batching safe.
+5. **`zmodem.c`'s own share (~2.4×, 204→85 *harness floor*).** A buffered sender
+   on `zmodem.c` measured ~85 MB/s in this harness — a real per-byte
+   `send_byte`-callback + escape + CRC cost shared with SyncTERM, but ~85 is a
+   localhost floor, **not** SyncTERM's real (BDP-tuned) throughput. Reducing it
+   (batch the escape/CRC inner loop, hand the transport spans) is the second,
+   shared lever — but only worth doing once the send architecture above makes
+   batching safe, and only if the target link outruns it.
