@@ -45,6 +45,7 @@
 #include "wren_menu_host.h"
 #include "wren_bind_xfer.h"
 #include "xfer_queue.h"
+#include "xfer_recv.h"
 
 #define ANSI_REPLY_BUFSIZE 2048
 static char ansi_replybuf[2048];
@@ -1062,6 +1063,18 @@ recv_byte_ms(void *unused, unsigned timeout /* milliseconds */)
 	}
 
 	return -1;
+}
+
+#define XMODEM_ABORT_POLL_INTERVAL 100
+
+static BOOL xfer_xmodem_check_abort(void *cbdata);
+
+static int
+xfer_xmodem_recv_byte(void *cbdata, unsigned timeout)
+{
+	return xfer_recv_byte_interruptible(cbdata, timeout,
+	    XMODEM_ABORT_POLL_INTERVAL, recv_byte_ms,
+	    xfer_xmodem_check_abort);
 }
 
 #if defined(__BORLANDC__)
@@ -2341,7 +2354,7 @@ recv_g(void *cbdata, unsigned timeout)
 {
 	xmodem_t *xm = (xmodem_t *)cbdata;
 
-	xm->recv_byte = recv_byte;
+	xm->recv_byte = xfer_xmodem_recv_byte;
 	return 'G';
 }
 
@@ -2350,7 +2363,7 @@ recv_c(void *cbdata, unsigned timeout)
 {
 	xmodem_t *xm = (xmodem_t *)cbdata;
 
-	xm->recv_byte = recv_byte;
+	xm->recv_byte = xfer_xmodem_recv_byte;
 	return 'C';
 }
 
@@ -2359,7 +2372,7 @@ recv_nak(void *cbdata, unsigned timeout)
 {
 	xmodem_t *xm = (xmodem_t *)cbdata;
 
-	xm->recv_byte = recv_byte;
+	xm->recv_byte = xfer_xmodem_recv_byte;
 	return NAK;
 }
 
@@ -2385,7 +2398,7 @@ xmodem_send_worker_setup_(xmodem_t *xm, struct xmodem_send_arg *a)
 	    lputs,
 	    xfer_xmodem_progress_cb,
 	    send_byte,
-	    recv_byte,
+	    xfer_xmodem_recv_byte,
 	    is_connected,
 	    xfer_xmodem_check_abort,
 	    flush_send);
@@ -2596,7 +2609,7 @@ xmodem_recv_worker(void *arg)
 	    lputs,
 	    xfer_xmodem_progress_cb,
 	    send_byte,
-	    recv_byte,
+	    xfer_xmodem_recv_byte,
 	    is_connected,
 	    xfer_xmodem_check_abort,
 	    flush_send);

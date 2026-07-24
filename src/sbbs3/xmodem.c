@@ -180,7 +180,7 @@ int xmodem_get_block(xmodem_t* xm, uchar* block, unsigned expected_block_num)
 	uint16_t crc = 0, calc_crc;
 
 	lprintf(xm, LOG_DEBUG, "Requesting data block %u", expected_block_num);
-	for (errors = 0; errors <= xm->max_errors && is_connected(xm); errors++) {
+	for (errors = 0; errors <= xm->max_errors && is_connected(xm) && !is_cancelled(xm); errors++) {
 
 		i = getcom(expected_block_num <= 1 ? 3 : 10);
 		if (eot && i != EOT && i != NOINP)
@@ -344,7 +344,7 @@ int xmodem_get_ack(xmodem_t* xm, unsigned tries, unsigned block_num)
 	int      i = NOINP, can = 0;
 	unsigned errors;
 
-	for (errors = 0; errors < tries && is_connected(xm);) {
+	for (errors = 0; errors < tries && is_connected(xm) && !is_cancelled(xm);) {
 
 		if ((*xm->mode) & GMODE) {     /* Don't wait for ACK on X/Ymodem-G */
 			SLEEP(xm->g_delay);
@@ -391,7 +391,7 @@ BOOL xmodem_get_mode(xmodem_t* xm)
 	lprintf(xm, LOG_INFO, "Waiting for transfer mode request...");
 
 	*(xm->mode) &= ~(GMODE | CRC);
-	for (errors = can = 0; errors <= xm->max_errors && is_connected(xm); errors++) {
+	for (errors = can = 0; errors <= xm->max_errors && is_connected(xm) && !is_cancelled(xm); errors++) {
 		i = getcom(xm->recv_timeout);
 		if (can && i != CAN)
 			can = 0;
@@ -427,7 +427,8 @@ BOOL xmodem_get_mode(xmodem_t* xm)
 		}
 	}
 
-	lprintf(xm, LOG_ERR, "Failed to get transfer mode request from receiver");
+	if (!xm->cancelled)
+		lprintf(xm, LOG_ERR, "Failed to get transfer mode request from receiver");
 	return FALSE;
 }
 

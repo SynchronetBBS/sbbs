@@ -298,6 +298,7 @@ set(SOURCE
 	telnet_io.c
 	term.c
 	xfer_queue.c
+	xfer_recv.c
 	webget.c
 	window.c
 	wren_host.c
@@ -659,6 +660,13 @@ target_compile_definitions(theme_test PRIVATE
 add_test(NAME theme_test COMMAND theme_test)
 add_executable(xfer_queue_test xfer_queue_test.c xfer_queue.c)
 add_test(NAME xfer_queue_test COMMAND xfer_queue_test)
+add_executable(xmodem_cancel_test
+	xmodem_cancel_test.c
+	xfer_recv.c
+	../sbbs3/xmodem.c)
+require_libs(xmodem_cancel_test hash xpdev)
+target_include_directories(xmodem_cancel_test PRIVATE ../sbbs3)
+add_test(NAME xmodem_cancel_test COMMAND xmodem_cancel_test)
 if(UNIX AND NOT WITHOUT_SDL)
 	add_executable(termtest termtest.c)
 	add_test(NAME termtest

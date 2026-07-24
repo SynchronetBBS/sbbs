@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sftp", "..\sftp\sftp.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xfer_queue_test", "xfer_queue_test.vcxproj", "{406C997C-D462-4850-BE8A-E76A37F85694}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xmodem_cancel_test", "xmodem_cancel_test.vcxproj", "{A4B1DE07-80C6-4C8F-9D2D-A1F5C8E47320}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -45,6 +47,10 @@ Global
 		{406C997C-D462-4850-BE8A-E76A37F85694}.Debug|Win32.Build.0 = Debug|Win32
 		{406C997C-D462-4850-BE8A-E76A37F85694}.Release|Win32.ActiveCfg = Release|Win32
 		{406C997C-D462-4850-BE8A-E76A37F85694}.Release|Win32.Build.0 = Release|Win32
+		{A4B1DE07-80C6-4C8F-9D2D-A1F5C8E47320}.Debug|Win32.ActiveCfg = Debug|Win32
+		{A4B1DE07-80C6-4C8F-9D2D-A1F5C8E47320}.Debug|Win32.Build.0 = Debug|Win32
+		{A4B1DE07-80C6-4C8F-9D2D-A1F5C8E47320}.Release|Win32.ActiveCfg = Release|Win32
+		{A4B1DE07-80C6-4C8F-9D2D-A1F5C8E47320}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

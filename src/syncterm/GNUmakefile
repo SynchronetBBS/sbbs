@@ -769,6 +769,15 @@ $(XFER_QUEUE_TEST): xfer_queue_test.c xfer_queue.c xfer_queue.h | $(EXEODIR)
 	@echo Compiling xfer_queue_test
 	${QUIET}$(CC) $(CFLAGS) -o $@ xfer_queue_test.c xfer_queue.c
 
+XMODEM_CANCEL_TEST = $(EXEODIR)$(DIRSEP)xmodem_cancel_test
+
+$(XMODEM_CANCEL_TEST): xmodem_cancel_test.c xfer_recv.c xfer_recv.h \
+		../sbbs3/xmodem.c ../sbbs3/xmodem.h $(XPDEV-MT_LIB) $(HASH_LIB) | $(EXEODIR)
+	@echo Compiling xmodem_cancel_test
+	${QUIET}$(CC) $(CFLAGS) $(MT_CFLAGS) $(LDFLAGS) $(MT_LDFLAGS) \
+		-o $@ xmodem_cancel_test.c xfer_recv.c ../sbbs3/xmodem.c \
+		$(XPDEV-MT_LIBS) $(HASH_LIBS)
+
 ifndef WITHOUT_SDL
 TERMTEST = $(EXEODIR)$(DIRSEP)termtest
 
@@ -776,13 +785,15 @@ $(TERMTEST): termtest.c | $(EXEODIR)
 	@echo Compiling termtest
 	${QUIET}$(CC) -o $@ $<
 
-.PHONY: termtest xfer_queue_test test parser_vectors
+.PHONY: termtest xfer_queue_test xmodem_cancel_test test parser_vectors
 termtest: $(TERMTEST)
 xfer_queue_test: $(XFER_QUEUE_TEST)
+xmodem_cancel_test: $(XMODEM_CANCEL_TEST)
 
-test: $(SYNCTERM) $(TERMTEST) $(XFER_QUEUE_TEST)
+test: $(SYNCTERM) $(TERMTEST) $(XFER_QUEUE_TEST) $(XMODEM_CANCEL_TEST)
 	./run_termtest.sh $(SYNCTERM) $(TERMTEST)
 	$(XFER_QUEUE_TEST)
+	$(XMODEM_CANCEL_TEST)
 
 # M1 RIP parser vectors.  Drives rip_test/parser_vectors/* through the
 # running harness on $RIP_HARNESS_HOST:$RIP_HARNESS_PORT (default
@@ -792,13 +803,15 @@ parser_vectors:
 	@echo Running RIP parser_vectors against harness
 	${QUIET}python3 rip_test/parser_vectors/run_vectors.py
 else
-.PHONY: termtest xfer_queue_test test parser_vectors
+.PHONY: termtest xfer_queue_test xmodem_cancel_test test parser_vectors
 termtest:
 	@echo "termtest requires SDL (skipped)"
 xfer_queue_test: $(XFER_QUEUE_TEST)
-test: $(XFER_QUEUE_TEST)
+xmodem_cancel_test: $(XMODEM_CANCEL_TEST)
+test: $(XFER_QUEUE_TEST) $(XMODEM_CANCEL_TEST)
 	@echo "termtest requires SDL (skipped)"
 	$(XFER_QUEUE_TEST)
+	$(XMODEM_CANCEL_TEST)
 parser_vectors:
 	@echo "parser_vectors requires SDL (skipped)"
 endif

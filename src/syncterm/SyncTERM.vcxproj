@@ -138,6 +138,7 @@
     <ClCompile Include="telnet_io.c" />
     <ClCompile Include="term.c" />
     <ClCompile Include="xfer_queue.c" />
+    <ClCompile Include="xfer_recv.c" />
     <ClCompile Include="window.c" />
     <ClCompile Include="webget.c" />
   </ItemGroup>
