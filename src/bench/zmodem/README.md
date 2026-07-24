@@ -55,6 +55,14 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
    **113.3**; Forsberg `sz` **96.9**; `ztx_buf` on rev 2.2 **91.9**; sexyz
    *sending* **11.5**.
 
+   **Always record CPU as well as goodput** (`wait4` rusage; `rusage.py`-style
+   wrapper). Goodput alone misled this investigation for a day: `ztx_buf` at
+   115.8 MB/s uses **0.69 CPU-seconds and runs at 30 % CPU**, while `lsz` at
+   203.9 uses **0.98 s at 77 %**. So `zmodem.c` rev 2.3 is *cheaper per byte
+   than lrzsz* and 115.8 is where `ztx_buf`'s own I/O pattern stalls — a
+   property of this tool, not of the engine. A number with no CPU figure beside
+   it cannot distinguish "fast code" from "idle code".
+
 2. **Gate on error recovery, with MULTIPLE runs.** A batching attempt was once
    committed on a *single* passing error run and later shown to fail. The
    injected-error model is chaotic (a retransmit shifts where later corruption
@@ -80,9 +88,11 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
 
 4. **Producer batching is trivially fast and repeatedly wrong. Six attempts.**
    Buffering the producer removes the *entire* sexyz-specific penalty — a
-   prototype hit **115.8 MB/s at 1.0 CPU-second**, exactly the `ztx_buf` ceiling,
-   i.e. no residual transport cost at all. Every one of them then failed the
-   error gate, where the shipped per-byte sender passes 3/3:
+   prototype reached **115.8 MB/s at 1.0 CPU-second**. Note that 115.8 is the
+   same I/O-stalled plateau `ztx_buf` hits (lesson 1), and these prototypes ran
+   at only 30–36 % CPU, so their real headroom was never measured — none used
+   non-blocking output. Every one of them then failed the error gate, where the
+   shipped per-byte sender passes 3/3:
 
    | Attempt | Clean | Gate |
    |---|--:|:--:|
@@ -116,7 +126,7 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
    solving a non-problem.
 
    **Recommended path — and v7 says what's missing.** Dropping to a single
-   thread with a buffered `send_byte` kept the full 115.8 MB/s, cut voluntary
+   thread with a buffered `send_byte` held 115.8 MB/s, cut voluntary
    context switches from 1,464,130 to **1,585** (`lsz` does 1,402), and lifted
    the gate from 0–1/3 to **2/3**. What still fails is the **blocking**
    `sendbuf()`: when the socket fills while the receiver is trying to send a
@@ -132,13 +142,18 @@ Output line: `rc(s/r) elapsed size recv name INTEGRITY goodput wire overhead`.
    off on fast LANs. SyncTERM's throughput is itself a deliberate socket-buffer
    (BDP) choice, tuned to ~75% of a 1 Gb LAN — not an emergent send-path fact.
 
-5. **`zmodem.c`'s own share is now ~1.8× (203.9 → 115.8), down from ~2.2×.**
+5. **`zmodem.c` is no longer the lever — it already beats lrzsz on CPU.**
    Deuce reworked the shared send path on 2026-07-24 — class-table byte
    classifier, slicing-by-4 CRC-32, hoisted escape mask with `noinline` cold
-   paths, buffered `fcrc32()` — moving the buffered floor **91.9 → 115.8 MB/s**.
-   SyncTERM inherits it. The rest of the gap to lrzsz is its fully inlined
-   escape/CRC loop; closing it means handing `send_byte` a span instead of a
-   byte, and is only worth it if the target link outruns 115 MB/s.
+   paths, buffered `fcrc32()` — moving the buffered path **91.9 → 115.8 MB/s**.
+   SyncTERM inherits it. But the engine costs **0.69 CPU-s per 256 MB against
+   lrzsz's 0.98**, so handing `send_byte` a span instead of a byte would shave
+   CPU that isn't being spent. **Do not read the 115.8-vs-203.9 goodput gap as
+   evidence for more engine work** — that gap is I/O shape. `ztx_buf` itself is
+   the thing that needs fixing before it can be used as a reference: it does a
+   blocking `write()` per `zmodem_flush` (per subpacket) and a `poll()` per
+   subpacket in `data_waiting`, and under `strace -w` 93 % of its in-syscall
+   wall time lands in those polls (exact mechanism not isolated).
 
 6. **A single-stream localhost benchmark cannot see per-byte CPU wins above
    ~100 MB/s.** Two of Deuce's optimizations measured **exactly zero** here
