@@ -180,3 +180,17 @@ index 1697a05b6f..a467b8269b 100644
  	lprintf(LOG_DEBUG, "Waiting for output buffer to empty... ");
  	if (RingBufFull(&outbuf)) {
  #if !defined(RINGBUF_EVENT)
+diff --git a/src/sbbs3/zmodem.c b/src/sbbs3/zmodem.c
+index 754e56d353..a0a430ed44 100644
+--- a/src/sbbs3/zmodem.c
++++ b/src/sbbs3/zmodem.c
+@@ -1720,6 +1720,9 @@ int zmodem_send_from(zmodem_t* zm, FILE* fp, uint64_t pos, uint64_t* sent)
+ 		if (zm->max_window_size && zm->current_window_size >= zm->max_window_size) {
+ 			lprintf(zm, LOG_WARNING, "%lu Transmit-Window management: %lu >= %lu"
+ 			        , (ulong)zm->current_file_pos, (ulong)zm->current_window_size, (ulong)zm->max_window_size);
++			/* About to block for an ACK: a buffered transport must not be
++			   holding the subpacket that would elicit it. */
++			zmodem_flush(zm);
+ 			backchannel_wait = 1;
+ 			continue;
+ 		}
