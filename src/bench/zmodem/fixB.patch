@@ -1,0 +1,140 @@
+diff --git a/src/sbbs3/sexyz.c b/src/sbbs3/sexyz.c
+index a100fdda12..76cff15b24 100644
+--- a/src/sbbs3/sexyz.c
++++ b/src/sbbs3/sexyz.c
+@@ -629,13 +629,10 @@ static uchar    txbuf[MAX_OUTBUF_SIZE];
+ static size_t   txbuf_len = 0;
+ static unsigned txbuf_timeout = 10;
+ 
+-/* Push the accumulated txbuf span into the output ring buffer (drained
+-   asynchronously by output_thread), waiting for ring space as needed. */
+-static int send_flush(unsigned timeout)
++/* Write a span into the output ring buffer (drained asynchronously by
++   output_thread), waiting for ring space as needed. */
++static int ringbuf_write(const uchar* p, size_t remain, unsigned timeout)
+ {
+-	uchar* p = txbuf;
+-	size_t remain = txbuf_len;
+-
+ 	while (remain) {
+ 		unsigned avail = RingBufFree(&outbuf);
+ 		if (avail == 0) {
+@@ -649,7 +646,6 @@ static int send_flush(unsigned timeout)
+ 					lprintf(LOG_WARNING, "TIMEOUT (%u seconds) waiting for output buffer to flush (%u bytes)"
+ 					        , timeout, RingBufFull(&outbuf));
+ 					fprintf(statfp, "\b\b\b\b    \b\b\b\b");
+-					txbuf_len = 0;
+ 					return -1;
+ 				}
+ 				fprintf(statfp, "\b\b\b\b    \b\b\b\b");
+@@ -658,14 +654,41 @@ static int send_flush(unsigned timeout)
+ 		}
+ 		if (avail > remain)
+ 			avail = remain;
+-		RingBufWrite(&outbuf, p, avail);
++		RingBufWrite(&outbuf, (uchar*)p, avail);
+ 		p += avail;
+ 		remain -= avail;
+ 	}
+-	txbuf_len = 0;
+ 	return 0;
+ }
+ 
++/* Flush the send_byte accumulation buffer (fallback path when send_buf unused). */
++static int send_flush(unsigned timeout)
++{
++	int result = ringbuf_write(txbuf, txbuf_len, timeout);
++	txbuf_len = 0;
++	return result;
++}
++
++/* Bulk-send callback (zm.send_buf): send a whole span, doubling any Telnet IAC
++   bytes when in Telnet mode (as send_byte does for the per-byte path). */
++int send_buf(void* unused, const uchar* buf, size_t len, unsigned timeout)
++{
++	if (telnet) {
++		size_t start = 0, i;
++		for (i = 0; i < len; i++) {
++			if (buf[i] == TELNET_IAC) {
++				if (ringbuf_write(buf + start, (i + 1) - start, timeout) != 0)
++					return -1;
++				if (ringbuf_write(buf + i, 1, timeout) != 0)   /* doubled IAC */
++					return -1;
++				start = i + 1;
++			}
++		}
++		return ringbuf_write(buf + start, len - start, timeout);
++	}
++	return ringbuf_write(buf, len, timeout);
++}
++
+ int send_byte(void* unused, uchar ch, unsigned timeout)
+ {
+ 	uchar    buf[2] = { TELNET_IAC, TELNET_IAC };
+@@ -1565,6 +1588,7 @@ int main(int argc, char **argv)
+ 
+ 	xmodem_init(&xm, NULL, &mode, lputs, xmodem_progress, send_byte, recv_byte, is_connected, NULL, flush);
+ 	zmodem_init(&zm, NULL, lputs, zmodem_progress, send_byte, recv_byte, is_connected, NULL, data_waiting, flush);
++	zm.send_buf = send_buf;
+ 	xm.log_level = &log_level;
+ 	zm.log_level = &log_level;
+ 
+diff --git a/src/sbbs3/zmodem.c b/src/sbbs3/zmodem.c
+index 31fbd6d4e1..8a2f2c8b8a 100644
+--- a/src/sbbs3/zmodem.c
++++ b/src/sbbs3/zmodem.c
+@@ -231,6 +231,10 @@ void zmodem_recv_purge(zmodem_t* zm, unsigned timeout)
+  */
+ void zmodem_flush(zmodem_t* zm)
+ {
++	if (zm->send_buf != NULL && zm->tx_buf_len > 0) {
++		zm->send_buf(zm->cbdata, zm->tx_buf, zm->tx_buf_len, zm->send_timeout);
++		zm->tx_buf_len = 0;
++	}
+ 	if (zm->flush != NULL)
+ 		zm->flush(zm);
+ }
+@@ -244,6 +248,20 @@ int zmodem_send_raw(zmodem_t* zm, unsigned char ch)
+ {
+ 	int result;
+ 
++	if (zm->send_buf != NULL) {
++		if (zm->tx_buf_len >= sizeof(zm->tx_buf)) {
++			result = zm->send_buf(zm->cbdata, zm->tx_buf, zm->tx_buf_len, zm->send_timeout);
++			zm->tx_buf_len = 0;
++			if (result != SEND_SUCCESS) {
++				lprintf(zm, LOG_ERR, "%s ERROR: %d", __FUNCTION__, result);
++				return result;
++			}
++		}
++		zm->tx_buf[zm->tx_buf_len++] = ch;
++		zm->last_sent = ch;
++		return SEND_SUCCESS;
++	}
++
+ 	if ((result = zm->send_byte(zm->cbdata, ch, zm->send_timeout)) != SEND_SUCCESS)
+ 		lprintf(zm, LOG_ERR, "%s ERROR: %d", __FUNCTION__, result);
+ 	else
+diff --git a/src/sbbs3/zmodem.h b/src/sbbs3/zmodem.h
+index 1345d2eac8..2f0b22e572 100644
+--- a/src/sbbs3/zmodem.h
++++ b/src/sbbs3/zmodem.h
+@@ -245,6 +245,8 @@ typedef struct {
+ 
+ 	BYTE tx_data_subpacket[8192];
+ 	BYTE rx_data_subpacket[8192];                           /* zzap = 8192 */
++	BYTE tx_buf[0x8000];            /* accumulated raw output for send_buf (holds a full escaped subpacket) */
++	size_t tx_buf_len;
+ 
+ 	char current_file_name[MAX_PATH + 1];
+ 	int64_t current_file_size;
+@@ -300,6 +302,9 @@ typedef struct {
+ 	void* cbdata;
+ 	int (*lputs)(void*, int level, const char* str);
+ 	int (*send_byte)(void*, BYTE ch, unsigned timeout /* seconds */);
++	/* Optional bulk-send callback: when set, raw output is batched and sent in
++	   spans instead of one send_byte() call per byte. NULL = use send_byte. */
++	int (*send_buf)(void*, const BYTE* buf, size_t len, unsigned timeout);
+ 	int (*recv_byte)(void*, unsigned timeout /* seconds */);
+ 	void (*progress)(void*, int64_t current_pos);
+ 	BOOL (*is_connected)(void*);
