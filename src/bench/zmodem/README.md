@@ -18,6 +18,7 @@ gate** that the first attempt skipped.
 | `zdecode.py` | Decodes a `--tap` wire capture into a frame trace (`ZRPOS pos=…`, `ZACK pos=…`, subpacket lengths). Resynchronises on ZPAD/ZDLE like a receiver, so it survives corrupted stretches. Diff a passing run against a failing one to see recovery behaviour directly. |
 | `fixA.patch` | **Reverted.** Batch a subpacket span into the ring per flush (`sexyz.c`). Fast, but regressed error recovery. |
 | `fixB.patch` | **Reverted.** Add a `send_buf` span callback to `zmodem.c` so the escape/CRC loop hands whole spans to the transport. Same error-recovery regression. |
+| `fixC-buffered-producer.patch` | **Not applied — one blocker left.** The full shipping-shape fix for `sexyz.c`: buffered `send_byte` (transient errors, never drops), a `flush()` that actually reaches the ring, a `tx_flush()` before every back-channel wait, and `SO_SNDBUF` bounded to `OutbufSize` to cap in-flight backlog. **Passes everything except `-w`:** 11.5 → **115.8 MB/s** clean, error gate **3/3** (+32…38 % wire overhead), receive path unchanged (111 MB/s), and *better* than shipped at 25 ms latency (1.01 vs 0.73 MB/s). But windowed mode regresses badly — `-w32768` goes from 4.74 MB/s to a crawl, one ~1 s stall per window (`Transmit-Window management: 32768 >= 32768` then `Receive timeout`). `zmodem.c`'s window-full path (`zmodem.c:1720-1724`) does `continue` back to the back-channel wait **without** a `zmodem_flush()`, which the per-byte producer never needed. Resolve that before applying. |
 
 ## Building the comparison tools
 

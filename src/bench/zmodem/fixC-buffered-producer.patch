@@ -1,0 +1,182 @@
+diff --git a/src/sbbs3/sexyz.c b/src/sbbs3/sexyz.c
+index 1697a05b6f..a467b8269b 100644
+--- a/src/sbbs3/sexyz.c
++++ b/src/sbbs3/sexyz.c
+@@ -82,6 +82,7 @@
+ #include "sexyz.h"
+ 
+ #define SINGLE_THREADED     FALSE
++#define TXBUF_SIZE          4096
+ #define MIN_OUTBUF_SIZE     1024
+ #define MAX_OUTBUF_SIZE     (64 * 1024)
+ #define INBUF_SIZE          (64 * 1024)
+@@ -426,6 +427,10 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
+  * Returns -1 on disconnect, 0 on timeout, or the number of bytes read.
+  * Does not muck around with SOCKET_ERRNO (hopefully)
+  */
++#if !SINGLE_THREADED
++int tx_flush(unsigned timeout);
++#endif
++
+ static int recv_buffer(int timeout /* seconds */)
+ {
+ 	int            i;
+@@ -437,6 +442,10 @@ static int recv_buffer(int timeout /* seconds */)
+ #endif
+ 	int            magic_errno;
+ 
++#if !SINGLE_THREADED
++	/* Never wait on the back-channel with untransmitted output pending. */
++	tx_flush(10);
++#endif
+ 	for (;;) {
+ 		if (inbuf_len > inbuf_pos)
+ 			return inbuf_len - inbuf_pos;
+@@ -622,55 +631,75 @@ int recv_byte(void* unused, unsigned timeout /* seconds */)
+ }
+ 
+ #if !SINGLE_THREADED
+-/*************************/
+-/* Send a byte to remote */
+-/*************************/
+-int send_byte(void* unused, uchar ch, unsigned timeout)
+-{
+-	uchar    buf[2] = { TELNET_IAC, TELNET_IAC };
+-	unsigned len = 1;
+-	DWORD    result;
+ 
+-	if (telnet && ch == TELNET_IAC)    /* escape IAC char */
+-		len = 2;
+-	else
+-		buf[0] = ch;
++static uchar  txbuf[TXBUF_SIZE];
++static size_t txbuf_len;
+ 
+-	if (RingBufFree(&outbuf) < len) {
+-#if !defined(RINGBUF_EVENT)
+-		ResetEvent(outbuf_empty);
+-#endif
+-		fprintf(statfp, "FLOW");
+-		flows++;
+-		result = WaitForEvent(outbuf_empty, timeout * 1000);
+-		fprintf(statfp, "\b\b\b\b    \b\b\b\b");
+-		if (result != WAIT_OBJECT_0) {
+-			lprintf(LOG_WARNING
+-			        , "TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)"
+-			        , result, timeout, RingBufFull(&outbuf));
+-			fprintf(statfp
+-			        , "\n!TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)\n"
+-			        , result, timeout, RingBufFull(&outbuf));
+-			newline = TRUE;
+-			if ((result = RingBufFree(&outbuf)) < len) {
+-				lprintf(LOG_ERR, "Still not enough space in ring buffer (need %d, avail=%d)", len, result);
++/* Write as much of the span into the ring as it will take, reporting how much
++   went in.  A failure is transient: the caller keeps the remainder buffered. */
++static int tx_write_span(const uchar* p, size_t len, unsigned timeout, size_t* written)
++{
++	DWORD  result;
++	size_t avail;
++
++	*written = 0;
++	while (len) {
++		size_t chunk = len;
++
++		if ((avail = RingBufFree(&outbuf)) == 0) {
++			fprintf(statfp, "FLOW");
++			flows++;
++			result = WaitForEvent(outbuf_empty, timeout * 1000);
++			fprintf(statfp, "\b\b\b\b    \b\b\b\b");
++			if ((avail = RingBufFree(&outbuf)) == 0) {
++				lprintf(LOG_WARNING
++				        , "TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)"
++				        , result, timeout, RingBufFull(&outbuf));
+ 				return -1;
+ 			}
+ 		}
+-		if ((result = RingBufFree(&outbuf)) < len) {
+-			lprintf(LOG_ERR, "Not enough space in ring buffer (need %d, avail=%d) although empty event is set!", len, result);
++		if (chunk > avail)
++			chunk = avail;
++		if (RingBufWrite(&outbuf, (uchar*)p, chunk) != chunk) {
++			lprintf(LOG_ERR, "RingBufWrite() short write");
+ 			return -1;
+ 		}
++		p += chunk;
++		len -= chunk;
++		*written += chunk;
+ 	}
++	return 0;
++}
+ 
+-	if ((result = RingBufWrite(&outbuf, buf, len)) != len) {
+-		lprintf(LOG_ERR, "RingBufWrite() returned %d, expected %d", result, len);
+-	}
++/* Move everything send_byte() has accumulated into the ring.  Bytes that could
++   not be written stay buffered for the next attempt; nothing is ever dropped. */
++int tx_flush(unsigned timeout)
++{
++	size_t written;
++	int    result;
+ 
+-#if 0
+-	if (debug_tx)
+-		lprintf(LOG_DEBUG, "TX: %s", chr(ch));
+-#endif
++	if (txbuf_len == 0)
++		return 0;
++	result = tx_write_span(txbuf, txbuf_len, timeout, &written);
++	if (written != 0 && written < txbuf_len)
++		memmove(txbuf, txbuf + written, txbuf_len - written);
++	txbuf_len -= written;
++	return result;
++}
++
++/*************************/
++/* Send a byte to remote */
++/*************************/
++int send_byte(void* unused, uchar ch, unsigned timeout)
++{
++	if (txbuf_len + 2 > sizeof(txbuf)) {
++		tx_flush(timeout);
++		if (txbuf_len + 2 > sizeof(txbuf))
++			return -1;
++	}
++	if (telnet && ch == TELNET_IAC)    /* escape IAC char */
++		txbuf[txbuf_len++] = TELNET_IAC;
++	txbuf[txbuf_len++] = ch;
+ 	return 0;
+ }
+ 
+@@ -780,6 +809,9 @@ static void output_thread(void* arg)
+ /* Flush output buffer */
+ void flush(void* unused)
+ {
++#if !SINGLE_THREADED
++	tx_flush(10);
++#endif
+ #ifdef __unix__
+ 	if (stdio)
+ 		fflush(stdout);
+@@ -1894,6 +1926,14 @@ int main(int argc, char **argv)
+ 	if (!winsock_startup())
+ 		bail(-1);
+ 
++	/* Bound the bytes queued ahead of the protocol: a ZRPOS costs one
++	   retransmission of everything already in flight, so an autotuned
++	   multi-megabyte send buffer turns one line error into many. Size for the
++	   link's bandwidth-delay product via [sockopts] to override. */
++	int sndbuf = (int)outbuf_size;
++	if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&sndbuf, sizeof(sndbuf)) != 0)
++		lprintf(LOG_DEBUG, "Could not bound socket send buffer (error %d)", SOCKET_ERRNO);
++
+ 	/* Enable the Nagle Algorithm */
+ #ifdef __unix__
+ 	if (!stdio) {
+@@ -1975,6 +2015,7 @@ int main(int argc, char **argv)
+ 		retval = send_files(fname_list, fnames);
+ 
+ #if !SINGLE_THREADED
++	tx_flush(10);
+ 	lprintf(LOG_DEBUG, "Waiting for output buffer to empty... ");
+ 	if (RingBufFull(&outbuf)) {
+ #if !defined(RINGBUF_EVENT)
