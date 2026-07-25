@@ -8,7 +8,7 @@
  * the non-blocking staged output buffer, the DSR-ACK + AIMD pipeline-depth
  * pacing model (termgfx/pace.h), and the sticky per-user flag-file pattern.
  * Diverges from SyncDuke per DESIGN.md: full-res sixel ONLY (no half-res
- * mode), and a second SyncTERM-only APC tier (PPM) alongside JXL and sixel.
+ * mode), and the SyncTERM-only APC image tier (JXL) alongside sixel.
  *
  * Sink selection (checked once, at first use):
  *   SYNCALERT_SIXELOUT=<path>  capture mode -- every door_io_present() call
@@ -1845,7 +1845,7 @@ static int             g_is_syncterm; /* CTDA '<'/'=' marker, or a JXL-query ans
 static int             g_have_sixel; /* DA1/CTDA param 4 */
 static int             g_jxl_supported; /* Q;JXL answered 1 */
 static int             g_jxl_answered; /* Q;JXL answered at all, either way */
-static int             g_img_blob_ok; /* CTerm >= 1.329: draw JXL/PPM inline (no cache file) */
+static int             g_img_blob_ok; /* CTerm >= 1.329: draw JXL inline (no cache file) */
 static int             g_grid_rows, g_grid_cols; /* text grid, from the 999;999 cursor-report fallback */
 static int             g_canvas_w, g_canvas_h; /* pixel canvas -- exact (ESC[14t) or grid*8x16 estimate */
 static int             g_px_exact;     /* g_canvas_w/h came from an exact ESC[4;h;wt reply */
@@ -1858,18 +1858,18 @@ static termgfx_mouse_t g_mouse;        /* SGR-Pixels mouse (DEC 1016) latch (ter
                                         * SyncTERM does not -> stays cells) */
 
 /* --- graphics tiers (F4 cycles) --------------------------------------------
- * SIXEL/JXL/PPM are pixel tiers (PPM via SyncTERM's APC cache, for a client
+ * SIXEL/JXL are the pixel tiers (JXL via SyncTERM's APC cache, for a client
  * with neither sixel nor JXL); HALF/QUADRANT/SEXTANT are termgfx text/block
  * tiers -- a SyncTERM-independent fallback. Full-res sixel ONLY (DESIGN.md):
  * no half-res + terminal-upscale mode, unlike SyncDuke/SyncDOOM. */
-enum sa_tier { SA_SIXEL = 0, SA_JXL, SA_PPM, SA_HALF, SA_QUADRANT, SA_SEXTANT, SA_NTIERS };
+enum sa_tier { SA_SIXEL = 0, SA_JXL, SA_HALF, SA_QUADRANT, SA_SEXTANT, SA_NTIERS };
 
 static int sa_is_text_tier(int t) { return t >= SA_HALF; }
 
 static const char *sa_tier_name(int t)
 {
 	static const char *const names[SA_NTIERS] = {
-		"sixel", "jxl", "ppm", "half", "quadrant", "sextant"
+		"sixel", "jxl", "half", "quadrant", "sextant"
 	};
 	return (t >= 0 && t < SA_NTIERS) ? names[t] : "?";
 }
@@ -1953,7 +1953,7 @@ static int sa_auto_tier(void)
 	 * because the gate holds the first frames until the probe answers. A
 	 * terminal that answers without pixel operations never reaches here --
 	 * it is turned away rather than auto-dropped into a tier the game is
-	 * unplayable in. PPM and the block-glyph tiers remain reachable through
+	 * unplayable in. The block-glyph tiers remain reachable through
 	 * the F4 cycle. */
 	return SA_SIXEL;
 }
@@ -1972,24 +1972,14 @@ static int g_dsr_h, g_dsr_t;
 
 static void door_tier_cycle(void)
 {
-	int avail[8], n = 0, i, eff, cur = 0, jxl_ok = 0;
+	int avail[8], n = 0, i, eff, cur = 0;
 
 #ifdef WITH_JXL
-	if (g_jxl_supported) {
+	if (g_jxl_supported)
 		avail[n++] = SA_JXL;
-		jxl_ok     = 1;
-	}
 #endif
 	if (g_have_sixel || !g_probe_replied)
 		avail[n++] = SA_SIXEL;
-	/* PPM is a huge UNCOMPRESSED tier and, being a raw P6 with no colorspace
-	 * tag, SyncTERM decodes it as BT.709 rather than our sRGB (the colors look
-	 * off). It only earns its place as the SyncTERM fallback when JXL isn't
-	 * available -- real SyncTERM has JXL -- so keep it OUT of the manual F4
-	 * cycle whenever JXL is. sa_auto_tier() still selects it for a no-JXL
-	 * SyncTERM, so that niche keeps working. */
-	if (g_is_syncterm && !jxl_ok)
-		avail[n++] = SA_PPM;
 	avail[n++] = SA_HALF;   /* half-block glyph exists in BOTH charsets (U+2580 / 0xDF) */
 	/* Quadrant/sextant glyphs are UTF-8 only -- no CP437 equivalent, so on a
 	 * CP437 (or US-ASCII) client they'd emit raw UTF-8 as mojibake. Offer them
@@ -2179,7 +2169,6 @@ static uint8_t *g_sixel_buf; static size_t g_sixel_cap;
 static uint8_t *g_jxl_buf;   static size_t g_jxl_cap;
 #endif
 static uint8_t *g_apc_buf;   static size_t g_apc_cap;
-static uint8_t *g_ppm_buf;   static size_t g_ppm_cap;
 
 /* Full-res sixel only (pan=1;pad=1, DESIGN.md) -- clamp to whole 6-row sixel
  * bands: a partial final band garbles under SyncTERM's decoder (the proven
@@ -2220,29 +2209,6 @@ static size_t door_emit_jxl(const uint8_t *fb, const uint8_t *pal8, int ew, int 
 }
 #endif
 
-/* SyncTERM-only fallback for a client with neither sixel nor JXL: the APC
- * cache Store+Draw wraps a plain uncompressed PPM (P6) payload. */
-static size_t door_emit_ppm(const uint8_t *fb, const uint8_t *pal8, int ew, int eh, int dx, int dy)
-{
-	const uint8_t *rgb = door_pack_rgb(fb, pal8, ew, eh);
-	char           hdr[32];
-	int            hlen;
-	size_t         need;
-
-	if (rgb == NULL)
-		return 0;
-	hlen = snprintf(hdr, sizeof hdr, "P6\n%d %d\n255\n", ew, eh);
-	need = (size_t)hlen + (size_t)ew * eh * 3;
-	if (!ensure_cap(&g_ppm_buf, &g_ppm_cap, need))
-		return 0;
-	memcpy(g_ppm_buf, hdr, hlen);
-	memcpy(g_ppm_buf + hlen, rgb, (size_t)ew * eh * 3);
-	static char name[32];   /* per-session cache name (SF syncterm #256) */
-	if (name[0] == '\0')
-		snprintf(name, sizeof name, "syncalert_%08x.ppm", termgfx_session_salt());
-	return termgfx_apc_image(&g_apc_buf, &g_apc_cap, name, "DrawPPM",
-	                         g_ppm_buf, need, dx, dy, g_img_blob_ok);
-}
 
 static int g_rt_mode = -1, g_rt_cols, g_rt_rows;
 
@@ -2429,7 +2395,7 @@ static void door_cell_size(int *cw, int *ch)
  * reserve_bottom: leave one text-cell row free at the bottom. ONLY the SIXEL
  * tier needs this -- a terminal that ignores DECSDM ?80l (Windows Terminal,
  * some SyncTERM builds) scrolls a bottom-touching sixel, making the image
- * "bounce" (the fix syncduke/syncdoom use, commit 07a345e987). JXL and PPM are
+ * "bounce" (the fix syncduke/syncdoom use, commit 07a345e987). JXL is
  * positioned by an absolute APC pixel offset, never a text cursor, so they do
  * NOT scroll and MUST use the full canvas -- reserving there just shrinks them
  * needlessly (live-test finding: JXL looked scaled/letterboxed instead of the
@@ -2449,7 +2415,7 @@ static void door_calc_rect(int vw, int vh, int reserve_bottom, int *ew, int *eh,
 	 * cterm_resize_rows -> 640x400), FIRST saving the client's current setting
 	 * with DECRQSS (DCS $ q $ ~ ST) so door_term_restore() can put it back on
 	 * exit. The sixel bottom-row reserve below is a SEPARATE, smaller loss (one
-	 * row, sixel only -- JXL/PPM pass reserve_bottom=false and fill the canvas). */
+	 * row, sixel only -- JXL passes reserve_bottom=false and fills the canvas). */
 	fitvh = reserve_bottom ? vh - cellh : vh;
 	if (fitvh < cellh)   /* degenerate (sub-one-cell) canvas: don't reserve */
 		fitvh = vh;
@@ -2464,7 +2430,7 @@ static void door_calc_rect(int vw, int vh, int reserve_bottom, int *ew, int *eh,
 	 * guard). Fill sets *ew = vw uncapped, so on a canvas wider than the cap the
 	 * center below would place a full-width image but the sixel is actually
 	 * narrower -> it lands flush-left with a lopsided right margin. Apply the same
-	 * cap HERE (sixel only -- reserve_bottom marks the sixel tier; JXL/PPM emit at
+	 * cap HERE (sixel only -- reserve_bottom marks the sixel tier; JXL emits at
 	 * full width) so the image is centered symmetrically. The aspect branch already
 	 * caps inside termgfx_geom_fit_ex, so this only bites Fill. */
 	if (reserve_bottom && *ew > DOOR_SCALE_MAX)
@@ -2588,7 +2554,7 @@ static void door_fps_tick(int emitted)
  *
  * The bottom row is the one placement that works across every tier: SIXEL can't
  * paint over it (the fit RESERVES that row, door_calc_rect), and for a layered
- * APC image (JXL/PPM) or the text tiers a text overlay drawn after the frame
+ * APC image (JXL) or the text tiers a text overlay drawn after the frame
  * sits on top of it. (A top overlay was unreadable under sixel, which shares the
  * text plane and repaints with a slow progressive pass.)
  *
@@ -2649,7 +2615,7 @@ static void door_stats_draw(int force)
 		         : door_input_kitty_active() ? "kitty" : "legacy",
 		         termgfx_mouse_pixels(&g_mouse) ? "pixel" : "cell",
 		         sa_is_text_tier(tier) ? (door_term_is_utf8() ? " utf8" : " cp437") : "",   /* charset only matters in text tiers */
-		         (g_img_blob_ok && (tier == SA_JXL || tier == SA_PPM)) ? " blob" : "",   /* frames shipping inline (Draw*Blob), no cache */
+		         (g_img_blob_ok && tier == SA_JXL) ? " blob" : "",   /* frames shipping inline (DrawJXLBlob), no cache */
 		         g_fit_fill ? " fill" : "",   /* Ctrl-F Fill (stretch-to-canvas); absent = Aspect (default, true ratio) */
 		         (unsigned)g_rtt_ms,
 		         g_canvas_w, g_canvas_h, geo, g_grid_cols, g_grid_rows);
@@ -3157,7 +3123,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 	 * repaint while the overlay is counting down or capturing typed text --
 	 * bypass the dedupe for as long as it's showing. The Ctrl-S stats overlay
 	 * does NOT bypass it (that re-encoded the whole image every tick and made
-	 * the strip flicker under sixel/JXL/PPM); instead, on the deduped path it
+	 * the strip flicker under sixel/JXL); instead, on the deduped path it
 	 * refreshes JUST the overlay text below, leaving the image untouched. */
 	if (!fit_changed && !geom_changed && g_have_last && g_last_tier == tier
 	    && !pal_dirty && !door_node_overlay_active() && !g_repaint_req
@@ -3214,7 +3180,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 		int ew, eh, dx = 0, dy = 0, icol = 1, irow = 1;
 		int emit_pal;
 
-		/* Only sixel reserves the bottom row (see door_calc_rect); JXL/PPM
+		/* Only sixel reserves the bottom row (see door_calc_rect); JXL
 		 * are pixel-positioned and fill the full canvas. */
 		door_calc_rect(vw, vh, tier == SA_SIXEL, &ew, &eh, &dx, &dy, &icol, &irow);
 
@@ -3274,11 +3240,8 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 			}
 		}
 #endif
-		else {   /* SA_PPM */
-			n = door_emit_ppm(fb, pal8, ew, eh, dx, dy);
-			if (n != 0)
-				door_out_put(g_apc_buf, n);
-		}
+		/* sixel and JXL are the only pixel tiers; sa_is_text_tier() took the
+		 * rest above, and a JXL-less build remaps SA_JXL to sixel earlier. */
 	}
 
 	door_stat_record(tier, n);   /* per-tier bandwidth accounting (JXL vs sixel) */
@@ -3407,7 +3370,7 @@ static void door_csi_final(char fin)
 			 * chunks skip the C;S cache entirely (no-op on older SyncTERM). */
 			if (termgfx_caps_cterm_version(p, np, (char)g_csi_par[0]) >= TERMGFX_CTERM_VER_BLOB) {
 				termgfx_audio_set_blob_ok(g_audio, 1);
-				g_img_blob_ok = 1;   /* DrawJXLBlob/DrawPPMBlob: inline video frames */
+				g_img_blob_ok = 1;   /* DrawJXLBlob: inline video frames */
 			}
 			return;
 		case 'n':   /* CTerm state report: our Q;JXL reply is ESC[=1;{0,1}n */

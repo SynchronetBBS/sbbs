@@ -35,7 +35,7 @@
 //
 // Door-owned keys (intercepted by door_io.c's input parser, never reach the
 // engine): F4 (SS3/CSI 'S', or the legacy Ctrl-D byte on a terminal with
-// neither) cycles the graphics tier (sixel/JXL/PPM-APC/text); Ctrl-F (0x06)
+// neither) cycles the graphics tier (sixel/JXL/text); Ctrl-F (0x06)
 // toggles the display-fit mode (Aspect <-> Fill), sticky per session via a
 // flag file under -home; Ctrl-U (0x15) shows a who's-online overlay; Ctrl-P
 // (0x10) opens a page-a-node compose line (Task 5, sbbs_node.h).
@@ -59,7 +59,7 @@ extern "C" {
 // RGB triples, each component a 6-bit VGA value (0-63); door_present scales
 // it (<<2) to 8-bit RGB itself before handing it to termgfx's sixel
 // encoder, so the engine shim stays a plain copy-out with no color math.
-// Implemented (door_io.c): tiered (sixel/JXL/PPM-APC/text), paced (DSR-ACK +
+// Implemented (door_io.c): tiered (sixel/JXL/text), paced (DSR-ACK +
 // AIMD pipeline depth) and whole-frame de-duped -- the engine may call this
 // as fast as it renders (~115Hz at the menu); door_present decides whether
 // there's anything new to send and whether the pipeline has room.
