@@ -5,9 +5,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "dirwrap.h"     /* xpdev: getfname(), PATH_MAX */
+#include "dirwrap.h"     /* xpdev: getfname() */
 #include "genwrap.h"     /* xpdev: strnicmp()/stricmp() -- ini keys fold case */
 #include "ini_file.h"    /* xpdev: the reader both this and syncretro.ini use */
+
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
 
 /* The RetroPad buttons a cabinet can label, and the spelling games.ini uses for
  * each. Only these six: the d-pad is the stick, and SELECT / START are the coin

@@ -3,10 +3,18 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{665EC4C1-9676-4C46-99AA-0CFD2008BEAD}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+  </PropertyGroup>
   <Import Project="clans.props" />
-  <Import Project="clanslib.props" />
+  <!-- langcomp generates mstrings.h, which clanslib's own sources include, so
+       it cannot link clanslib: it compiles the handful of sources it needs.
+       Same set as LANGCOMP_OBJS in GNUmakefile, and for the same reason. -->
   <ItemGroup>
     <ClCompile Include="langcomp.c" />
+    <ClCompile Include="platform.c" />
+    <ClCompile Include="serialize.c" />
+    <ClCompile Include="u8cp437.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="defines.h" />
