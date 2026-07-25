@@ -220,6 +220,124 @@ include:
     paths:
       - "src/syncterm/msvc.build/Release/*.exe"
 
+################
+# Win32 doors  #
+################
+# The doors with an MSVC build, one job each -- the same set src\doors\build.bat
+# calls buildable on Windows.  Every remaining door under src\doors is a make(1)
+# + libODoors tree with no MSVC project; those are covered by the *nix jobs.
+#
+# Seven of the eight are driven through the door's OWN build.bat, which is the
+# documented entry point and encodes that door's CMake flags (e.g. syncconquer's
+# second Tiberian Dawn binary).  Driving CMake directly here would silently drop
+# them.  Each is a self-contained CMake project that builds its dependencies
+# (xpdev, termgfx, the vendored engine) as sub-targets, so these need nothing
+# from the library jobs -- hence `needs: []`, letting them start immediately.
+# Building never touches an install: deploying is a separate `jsexec deploy.js`.
+#
+# VS 2022 is the only hard requirement -- each build.bat falls back to the cmake
+# bundled with VS when none is on PATH.  libjxl and libsndfile (vcpkg, triplet
+# x86-windows-static-md) are OPTIONAL and detected at configure time: without
+# them a door still builds but degrades to the sixel + raw-PCM tiers, so their
+# absence on the runner is a silent change in the artifact, not a red job.
+#
+# Win32 only, deliberately: a Win32 door runs on a Win32 and a Win64 Synchronet
+# host alike, and three of these doors refuse x64 outright.
+".windows-door":
+  tags: [Windows]
+  stage: build
+  extends: .rules
+  needs: []
+
+"windows-x86 [syncconquer]":
+  extends: .windows-door
+  script:
+    - cd src/doors/syncconquer
+    - .\build.bat
+  artifacts:
+    name: syncconquer-win32
+    paths:
+      - "src/doors/syncconquer/build-msvc/Release/syncalert.exe"
+      - "src/doors/syncconquer/build-msvc/Release/syncdawn.exe"
+
+"windows-x86 [syncdoom]":
+  extends: .windows-door
+  script:
+    - cd src/doors/syncdoom
+    - .\build.bat
+  artifacts:
+    name: syncdoom-win32
+    paths:
+      - "src/doors/syncdoom/build-msvc/Release/syncdoom.exe"
+
+"windows-x86 [syncduke]":
+  extends: .windows-door
+  script:
+    - cd src/doors/syncduke
+    - .\build.bat
+  artifacts:
+    name: syncduke-win32
+    paths:
+      - "src/doors/syncduke/build-msvc/Release/syncduke.exe"
+
+"windows-x86 [syncmoo1]":
+  extends: .windows-door
+  script:
+    - cd src/doors/syncmoo1
+    - .\build.bat
+  artifacts:
+    name: syncmoo1-win32
+    paths:
+      - "src/doors/syncmoo1/build-msvc/Release/syncmoo1.exe"
+
+"windows-x86 [syncretro]":
+  extends: .windows-door
+  script:
+    - cd src/doors/syncretro
+    - .\build.bat
+  artifacts:
+    name: syncretro-win32
+    paths:
+      - "src/doors/syncretro/build-msvc/Release/syncretro.exe"
+
+"windows-x86 [syncrpg]":
+  extends: .windows-door
+  script:
+    - cd src/doors/syncrpg
+    - .\build.bat
+  artifacts:
+    name: syncrpg-win32
+    paths:
+      - "src/doors/syncrpg/build-msvc/Release/syncrpg.exe"
+
+# This door's build.bat replaces the tracked POSIX symlink at
+# scummvm\backends\platform\termgfx with a junction to door\ (Windows checks the
+# symlink out as a plain text file, and create_project needs a real directory),
+# then marks the path skip-worktree so the runner's checkout does not report it.
+# `build.bat clean` is what undoes both.
+"windows-x86 [syncscumm]":
+  extends: .windows-door
+  script:
+    - cd src/doors/syncscumm
+    - .\build.bat
+  artifacts:
+    name: syncscumm-win32
+    paths:
+      - "src/doors/syncscumm/build-msvc/Release/syncscumm.exe"
+
+# The Clans is the one door with an MSVC solution instead of a build.bat, so it
+# goes through the umbrella script, which already carries the MSBuild probe and
+# the Release/Win32 arguments.  Builds the game and its fifteen devkit tools.
+"windows-x86 [clans]":
+  extends: .windows-door
+  script:
+    - cd src/doors
+    - .\build.bat clans
+  artifacts:
+    name: clans-win32
+    paths:
+      - "src/doors/clans-src/bin/*.Win32.Release.exe"
+
 "freebsd-amd64 [sbbs-noskeeters]":
   extends:
     - .freebsd-build
