@@ -76,13 +76,24 @@ Chuck Forsberg's final `rzsz` (3.73, 2003-01-30).
   assumptions; segfaults under some transports).
 - **>2 GB:** the shared `zmodem.c` narrowed several file positions to
   **signed `int32_t`**, corrupting the sender's transmit-window/ACK arithmetic
-  above 2 GB (windowed sends hung at 2³¹). Because SyncTERM shares `zmodem.c`,
-  it was affected too. **Fixed** (widened to `uint32_t`, GitLab #1196).
+  above 2 GB (windowed sends hung at 2³¹). Only the windowed path triggers it,
+  and **SyncTERM never sets a transmit window**, so in practice only sexyz could
+  hit it. **Fixed** in shared `zmodem.c` (widened to `uint32_t`, GitLab #1196).
 - **4 GB** is a hard ceiling for all three (the ZMODEM header position field is
   32-bit on the wire).
 - **Adaptivity:** `lrzsz` continuously tunes its block length to the measured
   error rate (`calc_blklen`); `zmodem.c` (sexyz + SyncTERM) only does a blind
   ×2-up / ÷2-down ramp. Feature flags (`-8`, `-w`) are at parity.
+- **Transmit window (`-w`):** two defects, both **fixed** in sexyz. (1) A
+  window smaller than 4× the block size hit a divide-by-zero (SIGFPE) at the
+  first data subpacket — the quarter-window ACK interval `window/block/4`
+  reached 0 (GitLab #1197, `zmodem.c` rev 2.4). (2) A window *at or below* the
+  block size then stalled to ~1 window/second: only one block can be unacked at
+  a time, and the window-full wait misses the opening ACK. `lsz`/`sz` forbid
+  this by construction — `-w` forces the block down to window/4 — so sexyz now
+  does the same (block clamped to window/4 when `-w` is set; sexyz.c 3.4). Both
+  are sexyz-reachable only; **SyncTERM never sets a transmit window**, so it hit
+  neither. Windowed *throughput* remains far below lrzsz — see §1195 / below.
 
 Which component each finding lives in:
 
@@ -90,7 +101,8 @@ Which component each finding lives in:
 |---|:--:|:--:|:--:|
 | Ring-buffer/per-byte send (115.8→11.5, futex/tiny-writes) — **open**, 6 prototypes failed the error gate | ✗ (here) | — | OK (immune) |
 | Per-byte send cost (callback+escape+CRC) — **addressed** 2026-07-24; engine now cheaper per byte than lrzsz | — | was a weakness | inherits the fix |
-| `int32_t` >2 GB window/ACK corruption — **fixed** | — | ✗ (was here) | ✗ (inherited) |
+| `-w` window ≤ block stall / window < 4×block SIGFPE — **fixed** (#1197) | ✗ (clamp, 3.4) | ✗ (divzero guard, 2.4) | OK (no `-w`) |
+| `int32_t` >2 GB window/ACK corruption — **fixed** (#1196) | — | ✗ (was here) | OK (no `-w`) |
 | Non-adaptive block-size ramp | — | ✗ (weakness) | ✗ (inherits) |
 | 4 GB wire-field ceiling | — | inherent to protocol | inherent |
 | Receiver >2 GB correctness | OK | OK | OK |
@@ -119,8 +131,8 @@ a component version. sexyz reports its version via `const char* revision`
 
 | Component | Baseline | Shipped |
 |---|---|---|
-| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time | **3.3** (unchanged) — every batching prototype regressed error recovery (§3.3, §6); throughput still open |
-| **zmodem.c** | **rev 2.2** — window/ACK positions `int32_t`; switch-based byte classifier; byte-at-a-time CRC-32 | **rev 2.3** — 2 GB fix (`uint32_t`, #1196) *plus* Deuce's 2026-07-24 send-path work: class-table classifier, slicing-by-4 CRC-32, hoisted escape mask + `noinline` cold paths, buffered `fcrc32()` |
+| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time; `-w` sets the window without touching the block size | **3.4** — `-w` now clamps the block to window/4 like `lsz`/`sz`, so `window ≤ block` no longer stalls (#1197). Send throughput still open (§3.3, §6) |
+| **zmodem.c** | **rev 2.2** — window/ACK positions `int32_t`; switch-based byte classifier; byte-at-a-time CRC-32; quarter-window ACK interval divides by zero when window < 4×block | **rev 2.4** — 2 GB fix (`uint32_t`, #1196); Deuce's 2026-07-24 send-path work (class-table classifier, slicing-by-4 CRC-32, hoisted escape mask + `noinline` cold paths, buffered `fcrc32()`); window-interval divide-by-zero guarded (#1197) |
 
 - **SyncTERM:** its `term.c` send path is **unchanged** by this work; a SyncTERM
   throughput figure here is *modeled* by `ztx_buf` (the real `zmodem.o` behind a
@@ -472,8 +484,10 @@ Above 2 GB, `ack_file_pos` goes negative, so `current_window_size` (int64 −
 negative int32) balloons to ~2 GB, permanently exceeding any configured
 `max_window_size` and forcing the sender into transmit-window throttling. The
 *wire encoding* survives (byte masking), so the data path itself is intact — but
-a windowed (`-w`) send past 2 GB throttles/stalls. **Shared → SyncTERM
-inherits this on uploads.**
+a windowed (`-w`) send past 2 GB throttles/stalls. The narrowed field is in
+shared `zmodem.c`, but the fault only fires on the windowed path; **SyncTERM
+never sets a transmit window, so its uploads never reached it.** Fixed for
+everyone in rev 2.3 regardless (#1196).
 
 Note: sexyz's *file I/O* uses `fseeko`/`ftello` + `int64_t` counters
 (`zmodem.h:250-251`), so the data path is 64-bit clean; only the protocol-
@@ -494,7 +508,7 @@ cause (native `long` width vs. deliberate `int32_t` narrowing).
 | lrzsz → lrzsz, `-w1M` | **MATCH** (full 2.36 GB) | 186.9 MB/s |
 | lsz → **sexyz** (receiver), `-w1M` | **MATCH** | 100.9 MB/s |
 | **sexyz** → lrz, no window (control) | **MATCH** (full 2.36 GB) | 6.98 MB/s |
-| **sexyz** → lrz, **`-w1M` (windowed)** | **HANG at 2³¹** | — |
+| **sexyz** → lrz, **`-w1M` (windowed)** | **HANG at 2³¹** *(before #1196; now MATCH to 2.36 GB)* | — |
 
 The windowed sexyz sender **stalls permanently the instant the offset crosses
 2³¹**, at 2,147,713,024 bytes (~229 KB past 2 GB). Its log shows the exact
@@ -515,9 +529,12 @@ Confirmed conclusions:
 - sexyz **receiver** is correct past 2 GB (int64/`fseeko` data path).
 - sexyz **sender without a window** is correct past 2 GB (window check is
   short-circuited when `max_window_size == 0`) — only slow.
-- sexyz/SyncTERM **sender *with* a window** (`-w`) hangs at 2 GB. Since the bug
-  is in shared `zmodem.c`, **a SyncTERM upload with a transmit window would hang
-  identically.**
+- sexyz **sender *with* a window** (`-w`) hung at 2 GB. **Fixed** in `zmodem.c`
+  rev 2.3 (positions widened to `uint32_t`, #1196); re-tested to 2.36 GB → MATCH.
+  The bug lived in shared `zmodem.c`, but only the windowed code path triggers
+  it, and **SyncTERM never sets a transmit window** (`max_window_size` stays 0 —
+  there is no UI or code path to enable one), so SyncTERM could not reach this
+  hang in practice. Fixing it in the shared engine was still correct.
 - lrzsz handles a windowed >2 GB transfer cleanly (64-bit LP64 build).
 
 ---

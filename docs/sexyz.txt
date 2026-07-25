@@ -75,6 +75,8 @@ opts   = -y  allow overwriting of existing files when receiving
          -4  set maximum ZMODEM block size to 4K
          -8  set maximum ZMODEM block size to 8K (ZedZap)
          -w# set maximum ZMODEM transmit window size (default=0, unlimited)
+             (the block size is reduced to a quarter of the window if
+             needed, so the window is always at least 4 blocks)
          -m# set maximum receive file size to # bytes (default=0, unlimited)
          -l  lowercase received filenames
          -!  to pause after abnormal exit (error)
@@ -311,6 +313,7 @@ Example .ini file (with default values given):
     Escape8thBit=FALSE      ; ZDLE-escape all bytes with bit-7 set
     EscapeCtrlChars=FALSE   ; ZDLE-escape all control characters (< 20h)
     MaxWindowSize=0     ; Non-zero number of bytes for window management
+                        ; (block size is capped at a quarter of this)
     TargetWindowSize=0  ; Duration (secs) to enable auto-adjusting window size
 
     [DSZLOG]
@@ -354,9 +357,9 @@ CRC-16 error detection.
 
 As of this writing, the current version of SEXYZ and the X/ZMODEM modules are:
 
-    sexyz.c  3.1
+    sexyz.c  3.4
     xmodem.c 2.0   <-- Includes YMODEM
-    zmodem.c 2.1
+    zmodem.c 2.4
 
 SEXYZ for Win32 has been tested successfully with the following Telnet clients
 /terminal programs:
