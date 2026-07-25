@@ -70,13 +70,14 @@ opts   = -y  allow overwriting of existing files when receiving
          -c  enable XMODEM-CRC receive mode
          -g  enable X/YMODEM-G receive mode (no error recovery)
          -o  disable ZMODEM CRC-32 mode (use CRC-16)
-         -s  use segmented ZMODEM (disable streaming)
+         -s  use segmented ZMODEM (disable streaming, both directions)
          -2  set maximum ZMODEM block size to 2K
          -4  set maximum ZMODEM block size to 4K
          -8  set maximum ZMODEM block size to 8K (ZedZap)
          -w# set maximum ZMODEM transmit window size (default=0, unlimited)
-             (the block size is reduced to a quarter of the window if
-             needed, so the window is always at least 4 blocks)
+             (applies when sending only; the block size is reduced to a
+             quarter of the window if needed, so the window is always at
+             least 4 blocks)
          -m# set maximum receive file size to # bytes (default=0, unlimited)
          -l  lowercase received filenames
          -!  to pause after abnormal exit (error)
@@ -108,20 +109,35 @@ NOTE: SEXYZ also supports "rz/sz style" command-line syntax for some commands.
                 "sexyz -g rx" to recv XMODEM-G
 
 
-Installation for Synchronet v3.12-Win32
----------------------------------------
-Copy sexyz.exe into your Synchronet "exec" directory.
+Installation
+------------
+Copy sexyz[.exe] into your Synchronet "exec" directory, if it's not already.
+Installation for other uses/systems likely just means copying the executable
+file somewhere that may be invoked from the application or server as needed.
 
 
-Example configuration for Synchronet v3.12-Win32
-------------------------------------------------
+Example configuration for Synchronet
+------------------------------------
 
-SCFG:File Options->Transfer Protocols:
+In Synchronet v3.14+ SCFG:File Options->Transfer Protocols:
 
 [File Transfer Protocol]
  1: Mnemonic (Command Key)        X
- 2: Protocol Name                 XMODEM (SEXYZ)
- 3: Access Requirements           
+ 2: Protocol Name                 XMODEM-Original (SEXYZ)
+ 3: Access Requirements
+ 4: Upload Command Line           %!sexyz%. %h -%p rx %f
+ 5: Download Command Line         %!sexyz%. %h -%p sx %f
+ 6: Batch Upload Command Line
+ 7: Batch Download Command Line
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               Yes
+11: Socket I/O                    Yes
+
+[File Transfer Protocol]
+ 1: Mnemonic (Command Key)        1
+ 2: Protocol Name                 XMODEM-1K/CRC (SEXYZ)
+ 3: Access Requirements
  4: Upload Command Line           %!sexyz%. %h -%p rC %f
  5: Download Command Line         %!sexyz%. %h -%p sX %f
  6: Batch Upload Command Line
@@ -180,6 +196,19 @@ Optional/Advanced:
  5: Download Command Line         %!sexyz%. %h -%p -8 sz %f
  6: Batch Upload Command Line     %!sexyz%. %h -%p rz %g
  7: Batch Download Command Line   %!sexyz%. %h -%p -8 sz @%f
+ 8: Bi-dir Command Line
+ 9: Native (32-bit) Executable    Yes
+10: Supports DSZLOG               Yes
+11: Socket I/O                    Yes
+
+[File Transfer Protocol]
+ 1: Mnemonic (Command Key)        S
+ 2: Protocol Name                 ZMODEM-Synchronous (SEXYZ)
+ 3: Access Requirements
+ 4: Upload Command Line           %!sexyz%. %h -%p rz %f
+ 5: Download Command Line         %!sexyz%. %h -%p -s sz %f
+ 6: Batch Upload Command Line     %!sexyz%. %h -%p rz %g
+ 7: Batch Download Command Line   %!sexyz%. %h -%p -s sz @%f
  8: Bi-dir Command Line
  9: Native (32-bit) Executable    Yes
 10: Supports DSZLOG               Yes
@@ -269,8 +298,8 @@ in the filename. The filenames are *not* case sensitive. Examples:
 Example .ini file (with default values given):
 
     Telnet=TRUE                 ; set to FALSE to change the default mode
-    TCP_NoDelay=TRUE            ; disable the TCP Nagle algorithm
     LogLevel=INFO               ; set display/log output level
+    SysLog=FALSE                ; log to syslog (*nix only)
     Debug=FALSE                 ; enable debug logging (overrides LogLevel)
     DebugTx=FALSE               ; debug transmitted characters
     DebugRx=FALSE               ; debug received characters
@@ -283,7 +312,8 @@ Example .ini file (with default values given):
     OutbufHighwaterMark=1100    ; bytes before auto-flush
     OutbufDrainTimeout=10       ; milliseconds before auto-flush
     ProgressInterval=1          ; interval (in seconds) of progress display
-    MaxFileSize=0               ; maximum receive file size in bytes (0=unlimited)
+    MaxFileSize=0               ; maximum receive file size in bytes
+                                ; (0=unlimited)
 
     [XMODEM]
     SendTimeout=10      ; seconds
@@ -308,11 +338,13 @@ Example .ini file (with default values given):
     BlockSize=1024      ; 1024 is usually best to start with
     MaxBlockSize=1024   ; 1024 is "true" ZMODEM, 8192 for ZMODEM-8K (ZedZap)
     MaxErrors=9         ; maximum number of consecutive errors
-    RecvBufSize=0       ; specify non-zero for partial streaming receives
-    Streaming=TRUE      ; set to FALSE to disable streaming (block-at-a-time)
+    RecvBufSize=0       ; specify non-zero for segmented receives
+    Streaming=TRUE      ; set to FALSE to disable streaming in both directions
+                        ; (segmented sends and segmented receives);
                         ; streaming sends are buffered for high throughput;
                         ; windowed (-w) and segmented sends are byte-at-a-time
     CRC32=TRUE          ; set to FALSE to force CRC-16 instead
+    FullDuplex=TRUE     ; set to FALSE to disable window support (on receive)
     EscapeTelnetIAC=TRUE    ; send ZDLE/ZRUB1 instead of 0xff with -telnet
     Escape8thBit=FALSE      ; ZDLE-escape all bytes with bit-7 set
     EscapeCtrlChars=FALSE   ; ZDLE-escape all control characters (< 20h)
@@ -326,6 +358,19 @@ Example .ini file (with default values given):
     Quotes=false        ; enclose filename in "quotes" (for EleBBS)
 
     [SOCKOPTS]          ; See https://wiki.synchro.net/config:sockopts.ini
+
+Notes:
+
+    o The defaults and sexyz.ini specified values can be over-ridden via
+      command-line options.
+    o Older versions of SEXYZ did not support comments on some of the
+      sexyz.ini lines shown above.
+    o See ctrl/sockopts.ini for the socket options that can be set in the
+      [SOCKOPTS] section (https://wiki.synchro.net/config:sockopts.ini).
+    o Versions of SEXYZ prior to 3.0 recognized a global TCP_NODELAY key.
+      Now that key, if it is to be set, must be in the optional [SOCKOPTS]
+      section (for advanced uses only).
+
 
 Compatibility
 -------------
@@ -371,7 +416,8 @@ SEXYZ for Win32 has been tested successfully with the following Telnet clients
 [ztelnet]
 OS: Linux
 Version: 1.2.2
-URL: ftp://ibiblio.org/pub/Linux/system/network/telnet/
+URL: http://www.ibiblio.org/pub/Linux/system/network/telnet/
+     (defunct - an archived copy is available via web.archive.org)
 Tested: ZMODEM uploads and downloads
 Failed: none
 
@@ -425,9 +471,38 @@ ZMODEM: CRC-32
 Failed: None
 
 
+ZMODEM Streaming
+----------------
+The ZMODEM protocol supports multiple methods of data streaming and error
+recovery. SEXYZ supports the following ZMODEM streaming modes, in order of
+decreasing successful data transfer assurance:
+
+    o Segmented: a "block at a time" mode, each data subpacket acknowledged
+      by the receiver (whom can request this mode). The -s option (or
+      Streaming=false in sexyz.ini) applies in both directions: when
+      sending, SEXYZ waits for an acknowledgment of each data subpacket;
+      when receiving, SEXYZ requests this mode of the remote sender.
+    o Window Management: limiting the amount of data "in-flight" between the
+      sender and receiver using asynchronous status reporting by the
+      receiver. Controlled via the -w option or by setting MaxWindowSize
+      (and optionally TargetWindowSize) in sexyz.ini - these apply when
+      sending only. The receive-side counterpart is FullDuplex, which
+      determines whether SEXYZ advertises its willingness to have a remote
+      sender manage a window when sending to us.
+    o Full Streaming: the default. As of SEXYZ v3.4 the send path is
+      buffered for high throughput, and its in-flight data is bounded (to
+      OutbufSize) so a single transmission error no longer risks a large
+      retransmission or completion-acknowledgment timeout.
+
+Window Management mode was added in SEXYZ v3.0 to support very asymmetric
+send-operations where the sender is a modern system, potentially with
+multiple-megabyte send-buffers, sending to a receiver that can only consume
+data at a rate of 115200bps (about 10KBytes/second) or less.
+
+
 Support
 -------
-For technical support (including bug reports), see 
+For technical support (including bug reports), see
 https://wiki.synchro.net/howto:support for details.
 
 When submitting problem/bug reports, please include the version output from
