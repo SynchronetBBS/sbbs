@@ -66,6 +66,7 @@ include:
       has_valgrind: "yes"
       build_doors: "yes"
       build_termgfx_doors: "yes"
+      build_more_doors: "yes"
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: "alpine-linux"

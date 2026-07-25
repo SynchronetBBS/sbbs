@@ -33,6 +33,14 @@ spec:
     # cross-build -- are unverified, so platforms opt in as each is confirmed.
     build_termgfx_doors:
       default: 'no'
+    # The remaining make(1) doors and the key generators.  Same opt-in policy
+    # as build_termgfx_doors, and for the same reason: unlike the doors under
+    # build_doors, these have only been confirmed to build on Linux.  Several
+    # cannot build everywhere -- timeport links -lcurses (so nothing with
+    # has_curses: 'no'), and sde, top and vbbs name an odoors library directory
+    # by `uname`, which a cross-build does not have.
+    build_more_doors:
+      default: 'no'
     slow_system:
       default: 'no'
     valgrind_pre_exec:
@@ -1238,6 +1246,186 @@ spec:
       when: never
     - !reference [.rules, rules]
 
+# The rest of what src/doors/build.sh calls buildable: the make(1) doors that
+# predate ../build/Common.gmake and drop their output straight into the source
+# directory, plus the three key generators.  They are gated on
+# build_more_doors rather than build_doors so a platform opts in once its
+# build is confirmed, instead of turning a pipeline red to find out.
+#
+# None of these has a `depend`/`xpdev`/`odoors` stamp target of its own except
+# where noted, so most need no touching before make -- they either link
+# ../../odoors/libs-`uname` directly or compile the xpdev sources they want
+# straight out of the checkout.
+
+".$[[ inputs.os ]]-more-door":
+  extends:
+    - .$[[ inputs.os ]]-build
+  variables:
+    GIT_STRATEGY: fetch
+  rules:
+    - if: '"$[[ inputs.build_more_doors ]]" == "no"'
+      when: never
+    - !reference [.rules, rules]
+
+# Kannons & Katapults registration key generator -- a single C file with no
+# dependency on anything else in the tree, as are [oxgen] and [ytgen] below.
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [knkgen]":
+  extends:
+    - .$[[ inputs.os ]]-more-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/knkgen
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "knkgen-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/knkgen/knkgen"
+  needs: []
+
+# Iron Ox registration key generator.
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [oxgen]":
+  extends:
+    - .$[[ inputs.os ]]-more-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/oxgen
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "oxgen-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/oxgen/oxgen"
+  needs: []
+
+# Space Dynasty Elite.  The job is named for the directory; the binary the
+# makefile builds is "dynasty".
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [sde]":
+  extends:
+    - .$[[ inputs.os ]]-more-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
+    - cd src/doors/sde
+    - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "sde-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/sde/dynasty"
+      - "src/doors/sde/*.doc"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
+
+# The one door here that does build through ../build/Common.gmake, so it wants
+# the same stamp touching as [freevote]: its "all" target lists the xpdev-mt
+# and ciolib-mt phony targets, which would otherwise recurse into those trees
+# and rebuild what the library jobs already produced.
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [smurfcombat]":
+  extends:
+    - .$[[ inputs.os ]]-more-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/ciolib.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/xpdev.tgz"
+    - cd src/doors/smurfcombat
+    - touch ciolib-mt
+    - touch depend
+    - touch xpdev-mt
+    - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "smurfcombat-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/smurfcombat/*.exe.*/smurf"
+      - "src/doors/smurfcombat/*.d0*"
+      - "src/doors/smurfcombat/*.doc"
+      - "src/doors/smurfcombat/install.sh"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [ciolib]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [xpdev]"
+
+# The Time Port builds eight binaries and a shared library, and links -lcurses
+# rather than ciolib, so it cannot go anywhere has_curses is 'no'.
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [timeport]":
+  extends:
+    - .$[[ inputs.os ]]-more-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/timeport
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "timeport-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/timeport/badtimes"
+      - "src/doors/timeport/install"
+      - "src/doors/timeport/libtp.so*"
+      - "src/doors/timeport/makemod"
+      - "src/doors/timeport/outside"
+      - "src/doors/timeport/stoneage"
+      - "src/doors/timeport/timeport"
+      - "src/doors/timeport/tp-event"
+      - "src/doors/timeport/twenties"
+  needs: []
+
+# The Online Pub.  Its output is suffixed with `uname` (top.Linux,
+# top.FreeBSD, ...), so the globs below also pick up the tracked top.cfg and
+# top.h -- harmless, and the alternative is a per-OS artifact path.
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [top]":
+  extends:
+    - .$[[ inputs.os ]]-more-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
+    - cd src/doors/top
+    - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "top-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/top/top.*"
+      - "src/doors/top/topact.*"
+      - "src/doors/top/topmaint.*"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
+
+# Virtual BBS.  Builds in src/, and its link rule also copies the binary up to
+# vbbs/build; the artifact takes the one in src/bin.
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [vbbs]":
+  extends:
+    - .$[[ inputs.os ]]-more-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - echo -e "\e[0Ksection_start:`date +%s`:extract_depends[collapsed=true]\r\e[0KPreparing for build"
+    - tar -xvzf "/tmp/gitlab-runner/$[[ inputs.os ]]-$[[ inputs.platform ]]-${CI_PIPELINE_ID}/odoors.tgz"
+    - cd src/doors/vbbs/src
+    - echo -e "\e[0Ksection_end:`date +%s`:extract_depends\r\e[0K"
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "vbbs-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/vbbs/src/bin/vbbs"
+      - "src/doors/vbbs/data"
+  needs:
+    - job: "$[[ inputs.os ]]-$[[ inputs.platform ]] [odoors]"
+
+# Yankee Trader registration key generator.
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [ytgen]":
+  extends:
+    - .$[[ inputs.os ]]-more-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/ytgen
+    - $[[ inputs.gnu_make ]] $[[ inputs.build_flags ]] $BUILD_ARGS
+  artifacts:
+    name: "ytgen-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/ytgen/ytgen"
+  needs: []
+
 ##################
 # termgfx  doors #
 ##################
@@ -1378,6 +1566,42 @@ spec:
     paths:
       - "src/doors/syncconquer/build/syncalert"
       - "src/doors/syncconquer/build/syncdawn"
+
+# The two doors that vendor a whole interpreter rather than a small engine, so
+# their build.sh is a two-stage script -- CMake for termgfx + xpdev, then the
+# vendored project's own build system -- and only the first stage goes through
+# the ccache launcher variables above.  Both want more wall-clock than any
+# other door here: SyncSCUMM is a full ScummVM configure + make across seven
+# engines, and SyncRPG builds EasyRPG Player and liblcf.
+#
+# Their dependencies are also the heaviest: SyncSCUMM needs ScummVM's -dev
+# packages, with libmad REQUIRED (build.sh forces --enable-mad so a missing
+# MP3 decoder fails here instead of shipping a talkie door with silent
+# speech), and SyncRPG needs EasyRPG's (pixman, fmt, harfbuzz, icu, ...).
+# Each door's COMPILING.md carries the package list.
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncrpg]":
+  extends:
+    - .$[[ inputs.os ]]-termgfx-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/syncrpg
+    - ./build.sh
+  artifacts:
+    name: "syncrpg-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/syncrpg/build/syncrpg"
+
+"$[[ inputs.os ]]-$[[ inputs.platform ]] [syncscumm]":
+  extends:
+    - .$[[ inputs.os ]]-termgfx-door
+  script:
+    - touch ${CI_PIPELINE_ID}.ci
+    - cd src/doors/syncscumm
+    - ./build.sh
+  artifacts:
+    name: "syncscumm-$[[ inputs.os ]]-$[[ inputs.platform ]]"
+    paths:
+      - "src/doors/syncscumm/build/syncscumm"
 
 #########
 # Tests #

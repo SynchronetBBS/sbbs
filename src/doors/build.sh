@@ -20,7 +20,9 @@
 #   * The legacy doors are plain make(1) trees that link ../odoors, so
 #     libODoors is built first whenever any of them is selected. GAC's three
 #     games additionally need its gamesdk art tools, so gac-sdk is ordered
-#     ahead of them below.
+#     ahead of them below. The registration key generators (knkgen, oxgen,
+#     ytgen) are make(1) trees too, but stand-alone single-file ones -- the
+#     libODoors build they trigger is not something they link.
 #
 # Building does NOT touch any live install -- the doors that ship a deploy.js
 # still need `jsexec deploy.js` run in their own directory afterwards. Keeping
@@ -63,6 +65,7 @@ targets() {
 	gac_bj       make   gac/gac_bj/src
 	gac_fc       make   gac/gac_fc/src
 	gac_wh       make   gac/gac_wh/src
+	knkgen       make   knkgen
 	ny2008       make   ny2008/src
 	oxgen        make   oxgen
 	sde          make   sde
@@ -70,6 +73,7 @@ targets() {
 	timeport     make   timeport
 	top          make   top
 	vbbs         make   vbbs/src
+	ytgen        make   ytgen
 	EOF
 }
 

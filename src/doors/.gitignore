@@ -8,11 +8,14 @@
 # Most doors here need no entry: the modern ones keep their own .gitignore,
 # clans-src has one too, and dgnlance/freevote/gac/ny2008/smurfcombat build
 # into the gcc.<platform>.<kind>.<config> directories that ../build/Common.gmake
-# creates, which the root .gitignore already covers via "gcc.*". The five below
-# predate that scheme and drop objects and binaries straight into the source
+# creates, which the root .gitignore already covers via "gcc.*". The ones below
+# predate that scheme (or, for the key generators, are a single .c file with a
+# makefile of two lines) and drop objects and binaries straight into the source
 # directory, so they are listed by name.
 
+/knkgen/knkgen
 /oxgen/oxgen
+/ytgen/ytgen
 
 /sde/*.o
 /sde/dynasty
