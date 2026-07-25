@@ -93,16 +93,20 @@ rem Built through devtools\create_project\cmake\CMakeLists.txt rather than
 rem upstream's devtools\create_project\msvc\create_project.sln: ScummVM's
 rem .gitignore blanket-ignores *.sln and *.vcxproj*, so that solution is not in
 rem the vendored copy and a fresh checkout has no way to bootstrap from it. The
-rem CMake project is tracked, builds the same sources (ours, with the
-rem --synchronet patch), and lands the tool in our own build tree.
+rem CMake project is tracked, builds the same sources (ours, with the --termgfx
+rem patch), and lands the tool in our own build tree.
+rem
+rem Built every run, not cached on the .exe already existing: create_project is
+rem generated FROM the vendored sources, so a copy left by an earlier build goes
+rem stale the moment the local patch changes, and the failure it produces names
+rem the flag rather than the tool ('ERROR: Unknown parameter "--termgfx"').
+rem CMake's own dependency check makes the no-op case cheap.
 set "CP=%BUILDDIR%\create_project\Debug\create_project.exe"
-if not exist "%CP%" (
-    echo [build] Building create_project.exe ...
-    "%CMAKE%" -S "%SVM%\devtools\create_project\cmake" -B "%BUILDDIR%\create_project" -A %PLATFORM%
-    if errorlevel 1 goto error
-    "%CMAKE%" --build "%BUILDDIR%\create_project" --config Debug
-    if errorlevel 1 goto error
-)
+echo [build] Building create_project.exe ...
+"%CMAKE%" -S "%SVM%\devtools\create_project\cmake" -B "%BUILDDIR%\create_project" -A %PLATFORM%
+if errorlevel 1 goto error
+"%CMAKE%" --build "%BUILDDIR%\create_project" --config Debug
+if errorlevel 1 goto error
 
 rem --- 3. Build termgfx + xpdev static libs (door/CMakeLists.txt) -------------
 rem Point CMake at the classic vcpkg prefix so termgfx finds libjxl (JPEG-XL
