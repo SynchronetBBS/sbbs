@@ -34,15 +34,26 @@ enum {
 	TERMGFX_GFXGATE_REJECT        /* neither tier: show the notice and quit */
 };
 
-/* The verdict. `jxl_answered` means the JXL query came back at all (either
- * way), not that JXL is supported.
+/* The verdict.
+ *
+ * `have_graphics` is the door's own answer to "can I draw for this terminal
+ * at all" -- the OR of whichever tiers it actually implements. Which those
+ * are is not this module's business and differs between doors: most mean
+ * sixel or JXL, while SyncConquer also serves an APC PPM tier to any
+ * SyncTERM. Deciding that here instead would mean this file enumerating
+ * every door's tier ladder and going stale each time one gains a tier.
+ *
+ * `jxl_answered` means the JXL query came back at all (either way), not that
+ * JXL is supported. It is the late reply: a terminal answers device-
+ * attributes promptly but its JXL capability separately, so a door with no
+ * other tier must wait out the window before concluding anything.
  *
  * A terminal that never answered device-attributes is PROCEED, not REJECT:
  * silence is not a denial, and a graphics terminal that simply doesn't
  * implement DA1 must not be locked out. Only a terminal that answered, and
- * whose answer claimed neither tier, is rejected. */
-int termgfx_gfxgate(int have_sixel, int have_jxl, int probe_replied,
-                    int jxl_answered, uint32_t probe_start_ms, uint32_t now_ms);
+ * whose answer left the door with nothing to draw with, is rejected. */
+int termgfx_gfxgate(int have_graphics, int probe_replied, int jxl_answered,
+                    uint32_t probe_start_ms, uint32_t now_ms);
 
 /* The notice text, resolved ONCE per process and cached; later calls return
  * the first result and ignore their arguments. Ready to write to the terminal
@@ -77,6 +88,11 @@ extern const char termgfx_gfxgate_prompt[];
  * the sysop has expressed no preference. A dead or unattended client must not
  * hold a node open indefinitely. */
 #define TERMGFX_GFXGATE_PAUSE_SECS  15
+
+/* The notice file a door looks for when [text] no_graphics_file is unset.
+ * Shared so that "drop this file next to the ini" means the same thing at
+ * every door, rather than each inventing its own name. */
+#define TERMGFX_GFXGATE_FILE  "nographics.txt"
 
 #ifdef __cplusplus
 }

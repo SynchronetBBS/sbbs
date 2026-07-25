@@ -945,7 +945,7 @@ static int sm_io_gfx_gated(void)
     if (!sm_input_probe_replied() && (int32_t)(now - first_ms) < SM_GFX_GRACE_MS)
         return 1;
 
-    switch (termgfx_gfxgate(sm_input_have_sixel(), sm_input_jxl(),
+    switch (termgfx_gfxgate(sm_input_have_sixel() || sm_input_jxl(),
                             sm_input_probe_replied(), sm_input_jxl_answered(),
                             g_probe_sent_ms, now)) {
         case TERMGFX_GFXGATE_WAIT:

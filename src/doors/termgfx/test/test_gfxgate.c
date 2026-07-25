@@ -27,32 +27,31 @@ static void verdicts(void)
 	/* A terminal that never answered device-attributes draws: silence is not
 	 * a denial, and a graphics terminal that doesn't implement DA1 must not
 	 * be locked out. True however long ago the probe went out. */
-	assert(termgfx_gfxgate(0, 0, 0, 0, t0, t0) == TERMGFX_GFXGATE_PROCEED);
-	assert(termgfx_gfxgate(0, 0, 0, 0, t0, t0 + 60000) == TERMGFX_GFXGATE_PROCEED);
+	assert(termgfx_gfxgate(0, 0, 0, t0, t0) == TERMGFX_GFXGATE_PROCEED);
+	assert(termgfx_gfxgate(0, 0, 0, t0, t0 + 60000) == TERMGFX_GFXGATE_PROCEED);
 
-	/* Either tier is enough, settled or not. */
-	assert(termgfx_gfxgate(1, 0, 1, 0, t0, t0) == TERMGFX_GFXGATE_PROCEED);
-	assert(termgfx_gfxgate(0, 1, 1, 0, t0, t0) == TERMGFX_GFXGATE_PROCEED);
-	assert(termgfx_gfxgate(1, 1, 1, 1, t0, t0 + 60000) == TERMGFX_GFXGATE_PROCEED);
+	/* Anything the door can draw with is enough, settled or not. */
+	assert(termgfx_gfxgate(1, 1, 0, t0, t0) == TERMGFX_GFXGATE_PROCEED);
+	assert(termgfx_gfxgate(1, 1, 1, t0, t0 + 60000) == TERMGFX_GFXGATE_PROCEED);
 
 	/* Answered, claimed neither, JXL query still outstanding: hold. This is
 	 * the JXL-but-no-sixel SyncTERM that would otherwise be turned away in
 	 * the gap between its two replies. */
-	assert(termgfx_gfxgate(0, 0, 1, 0, t0, t0) == TERMGFX_GFXGATE_WAIT);
-	assert(termgfx_gfxgate(0, 0, 1, 0, t0, t0 + TERMGFX_GFX_SETTLE_MS)
+	assert(termgfx_gfxgate(0, 1, 0, t0, t0) == TERMGFX_GFXGATE_WAIT);
+	assert(termgfx_gfxgate(0, 1, 0, t0, t0 + TERMGFX_GFX_SETTLE_MS)
 	       == TERMGFX_GFXGATE_WAIT);
 
 	/* One millisecond past the window, or a JXL reply that came back
 	 * negative: reject. */
-	assert(termgfx_gfxgate(0, 0, 1, 0, t0, t0 + TERMGFX_GFX_SETTLE_MS + 1)
+	assert(termgfx_gfxgate(0, 1, 0, t0, t0 + TERMGFX_GFX_SETTLE_MS + 1)
 	       == TERMGFX_GFXGATE_REJECT);
-	assert(termgfx_gfxgate(0, 0, 1, 1, t0, t0) == TERMGFX_GFXGATE_REJECT);
+	assert(termgfx_gfxgate(0, 1, 1, t0, t0) == TERMGFX_GFXGATE_REJECT);
 
 	/* The elapsed test is signed-difference, so it survives a millisecond
 	 * counter wrapping between the probe and the check. */
-	assert(termgfx_gfxgate(0, 0, 1, 0, 0xfffffff0u, 0x00000010u)
+	assert(termgfx_gfxgate(0, 1, 0, 0xfffffff0u, 0x00000010u)
 	       == TERMGFX_GFXGATE_WAIT);
-	assert(termgfx_gfxgate(0, 0, 1, 0, 0xfffffff0u, 0x00000010u + TERMGFX_GFX_SETTLE_MS)
+	assert(termgfx_gfxgate(0, 1, 0, 0xfffffff0u, 0x00000010u + TERMGFX_GFX_SETTLE_MS)
 	       == TERMGFX_GFXGATE_REJECT);
 }
 

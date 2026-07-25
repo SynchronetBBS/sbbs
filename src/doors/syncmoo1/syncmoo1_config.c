@@ -85,9 +85,7 @@ unsigned sm_config_idle_warn(void)    { return sm_idle_warn; }
  * is told on its way out (termgfx/gfxgate.h resolves file > string > built-in).
  * The default file name is searched for whether or not the key is set, so the
  * wording can be replaced by dropping a file beside the ini and nothing else. */
-#define SM_NOGFX_FILE "nographics.txt"
-
-static char     sm_nogfx_file[INI_MAX_VALUE_LEN] = SM_NOGFX_FILE;
+static char     sm_nogfx_file[INI_MAX_VALUE_LEN] = TERMGFX_GFXGATE_FILE;
 static char     sm_nogfx_text[INI_MAX_VALUE_LEN];
 static unsigned sm_nogfx_pause = TERMGFX_GFXGATE_PAUSE_SECS;
 
@@ -193,7 +191,7 @@ static void sm_config_read_ini(void)
     sm_idle_timeout = (unsigned)iniGetDuration(ini, "idle", "timeout",
                                                SM_IDLE_DEFAULT);
     sm_idle_warn    = (unsigned)iniGetDuration(ini, "idle", "warn", 60);
-    iniGetString(ini, "text", "no_graphics_file", SM_NOGFX_FILE, sm_nogfx_file);
+    iniGetString(ini, "text", "no_graphics_file", TERMGFX_GFXGATE_FILE, sm_nogfx_file);
     iniGetString(ini, "text", "no_graphics", "", sm_nogfx_text);
     /* iniGetDuration() so "30s"/"1m"/"30" all parse, as in [idle]. */
     sm_nogfx_pause = (unsigned)iniGetDuration(ini, "text", "no_graphics_pause",

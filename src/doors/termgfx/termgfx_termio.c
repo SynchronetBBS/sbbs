@@ -234,8 +234,7 @@ static int g_no_gfx_notified;   /* one-shot: unsupported-terminal notice sent */
 /* Sysop overrides for that notice ([text] in <door>.ini, see gfxgate.h). Both
  * default to "unset" -- an absent file and an empty string -- which resolves
  * to the built-in wording. */
-#define TERMGFX_NOGFX_FILE  "nographics.txt"
-static char g_nogfx_file[INI_MAX_VALUE_LEN] = TERMGFX_NOGFX_FILE;
+static char g_nogfx_file[INI_MAX_VALUE_LEN] = TERMGFX_GFXGATE_FILE;
 static char g_nogfx_text[INI_MAX_VALUE_LEN];
 static int g_cterm_ver;
 #ifdef WITH_JXL
@@ -1550,7 +1549,7 @@ static void termgfx_read_ini(void)
 	 * The default file name is looked for whether or not the key is set, so a
 	 * sysop can override the wording by dropping a file beside the ini with no
 	 * config at all; gfxgate falls through quietly when it isn't there. */
-	iniGetString(ini, "text", "no_graphics_file", TERMGFX_NOGFX_FILE,
+	iniGetString(ini, "text", "no_graphics_file", TERMGFX_GFXGATE_FILE,
 	             g_nogfx_file);
 	iniGetString(ini, "text", "no_graphics", "", g_nogfx_text);
 	strListFree(&ini);
@@ -4081,8 +4080,8 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * so and quit, rather than sprayed with DCS termgfx_tier() would otherwise
 	 * default to. Verdict and notice are shared with the doors that run their
 	 * own present loop -- see gfxgate.h. */
-	switch (termgfx_gfxgate(g_have_sixel, g_jxl, g_probe_replied, g_jxl_done,
-	                        g_probe_start_ms, now_ms())) {
+	switch (termgfx_gfxgate(g_have_sixel || g_jxl, g_probe_replied,
+	                        g_jxl_done, g_probe_start_ms, now_ms())) {
 		case TERMGFX_GFXGATE_WAIT:
 			termgfx_trace("gated-grace", termgfx_tier_name(termgfx_tier()), 0);
 			return;
@@ -4483,8 +4482,8 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 
 	/* Non-graphics-terminal gate: neither sixel nor JXL advertised (see
 	 * present()) -- notify once and quit rather than spray unrenderable DCS. */
-	switch (termgfx_gfxgate(g_have_sixel, g_jxl, g_probe_replied, g_jxl_done,
-	                        g_probe_start_ms, now_ms())) {
+	switch (termgfx_gfxgate(g_have_sixel || g_jxl, g_probe_replied,
+	                        g_jxl_done, g_probe_start_ms, now_ms())) {
 		case TERMGFX_GFXGATE_WAIT:
 			return;
 		case TERMGFX_GFXGATE_REJECT:

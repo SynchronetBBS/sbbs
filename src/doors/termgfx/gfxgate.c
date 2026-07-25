@@ -21,12 +21,12 @@ static const char gfxgate_tail[] = "\r\n\r\n";
 
 const char        termgfx_gfxgate_prompt[] = "  Press any key to return to the BBS...";
 
-int termgfx_gfxgate(int have_sixel, int have_jxl, int probe_replied,
-                    int jxl_answered, uint32_t probe_start_ms, uint32_t now_ms)
+int termgfx_gfxgate(int have_graphics, int probe_replied, int jxl_answered,
+                    uint32_t probe_start_ms, uint32_t now_ms)
 {
 	if (!probe_replied)
 		return TERMGFX_GFXGATE_PROCEED;
-	if (have_sixel || have_jxl)
+	if (have_graphics)
 		return TERMGFX_GFXGATE_PROCEED;
 	if (!jxl_answered
 	    && (int32_t)(now_ms - probe_start_ms) <= TERMGFX_GFX_SETTLE_MS)
