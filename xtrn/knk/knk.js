@@ -74,6 +74,57 @@ function getkeys(str)
 	return(key);
 }
 
+function flushkeys()
+{
+	var key;
+
+	while(dk.console.waitkey(0)) {
+		key=dk.console.getkey();
+		if(key === undefined)
+			break;
+		if(key === 'CONNECTION_CLOSED')
+			exit(0);
+	}
+}
+
+/*
+ * The original timer wait returns early when a key arrives, then discards
+ * all pending input.
+ */
+function delay_or_key(milliseconds)
+{
+	dk.console.waitkey(milliseconds);
+	flushkeys();
+	if(dk.console.remote_screen !== undefined)
+		dk.console.remote_screen.new_lines = 0;
+}
+
+function press_any_key()
+{
+	var attr;
+	var auto_pause;
+
+	flushkeys();
+	attr=dk.console.attr.value;
+	auto_pause=dk.console.auto_pause;
+	dk.console.auto_pause=false;
+	/*
+	 * The original prints the prompt in high-intensity green.  Its output
+	 * wrapper clears the intensity flag afterward, so the erasure is sent
+	 * in normal green before the caller's colour is restored.
+	 */
+	dk.console.attr='HG';
+	dk.console.print("*[ Press any Key ]*");
+	dk.console.waitkey(33000);
+	flushkeys();
+	dk.console.attr='G';
+	dk.console.print("\r                   \r");
+	dk.console.attr.value=attr;
+	if(dk.console.remote_screen !== undefined)
+		dk.console.remote_screen.new_lines = 0;
+	dk.console.auto_pause=auto_pause;
+}
+
 function playmusic(str)
 {
 	if(music) {
@@ -262,6 +313,7 @@ function Player_produce(other)
 {
 	var result;
 
+	delay_or_key(500);
 	dk.console.println("");
 	dk.console.attr='HW';
 	dk.console.center("* Monthly Update *");
@@ -301,6 +353,7 @@ function Player_produce(other)
 	if(result.civilian_food > 0)
 		dk.console.println("* "+result.civilian_food+" sacks of food were consumed by "+this.refer_posessive+" citizens.");
 	dk.console.println("");
+	press_any_key();
 }
 
 function Player_powerbar()
@@ -332,7 +385,13 @@ function Player_powerbar()
 
 function Player_drawscreen(month)
 {
+	var auto_pause;
+
+	flushkeys();
+	auto_pause=dk.console.auto_pause;
+	dk.console.auto_pause=false;
 	dk.console.clear();
+	dk.console.auto_pause=auto_pause;
 	dk.console.println("");
 	if(this.isplayer) {
 		dk.console.aprint("\1h\1w*  Your Turn  *            \1h\1r*  Month # "+month+"  *\1n\r\n");
@@ -601,6 +660,8 @@ function Player_katapultattack(other, men)
 function show_scoreboard(thismonth)
 {
 	var f=new File(game_dir+(thismonth?"knk-best.asc":"knk-last.asc"));
+	var i;
+	var auto_pause;
 
 	if(!file_exists(f.name)) {
 		dk.console.println("");
@@ -627,8 +688,17 @@ function show_scoreboard(thismonth)
 	var lines=f.readAll();
 	f.close();
 	Unlock(f.name);
+	auto_pause=dk.console.auto_pause;
+	dk.console.auto_pause=false;
 	dk.console.attr="G"
-	dk.console.println(lines.join("\r\n"));
+	for(i=0; i<lines.length; i++) {
+		dk.console.println(lines[i]);
+		if((i+1)%22==0)
+			press_any_key();
+	}
+	dk.console.println("");
+	press_any_key();
+	dk.console.auto_pause=auto_pause;
 }
 
 function Player_playermove(month, other)
@@ -863,6 +933,8 @@ function Player_playermove(month, other)
 					show_scoreboard(false);
 				else
 					show_scoreboard(true);
+				this.drawscreen(month);
+				dk.console.println("");
 				loop=true;
 				break;
 			case '\r':
@@ -887,9 +959,7 @@ function Player_computermove(month, other)
 	var i;
 
 	dk.console.aprint("\1n\1h\1c                      * \1h\1i\1rT\1gh\1yi\1bn\1mk\1ci\1wn\1yg\1c\1n\1h\1c *\1n\1c");
-	mswait(2000);
-	if (dk.console.remote_screen !== undefined)
-		dk.console.remote_screen.new_lines = 0;
+	delay_or_key(6000);
 	dk.console.println("");
 	dk.console.println("");
 
@@ -1288,21 +1358,18 @@ function play_game()
 		losses++;
 		loser=player;
 	}
+	delay_or_key(500);
 	dk.console.println("");
-	if(dk.console.pos.y > dk.console.rows/2)
-		dk.console.pause();
+	press_any_key();
 	winner.drawscreen(month);
 	dk.console.println("");
 	dk.console.attr="HW"
 	loser.score=0;
 	dk.console.println(computer.full_name+" got "+computer.score+" points and you got "+player.score+" points for this game.");
 	dk.console.println('');
-	if(dk.console.pos.y > dk.console.rows/2)
-		dk.console.pause();
+	press_any_key();
 	update_userfile(player, computer, winner.isplayer);
 	show_scoreboard(true);
-	if(dk.console.pos.y > dk.console.rows/2)
-		dk.console.pause();
 	var dat_file=read_dat();
 	if(dat_file===undefined || dat_file.shortestgame === undefined || dat_file.shortestgame.months === undefined || dat_file.shortestgame.months >= month) {
 		dk.console.attr="HIY"
