@@ -32,7 +32,11 @@ rem Win32 (x86) is the only target, deliberately.  A Win32 door runs on a Win32
 rem and a Win64 Synchronet host alike -- the DOOR32.SYS comm handle is 32-bit-
 rem significant -- which is why each door's own build.bat defaults to, and in
 rem three cases accepts nothing but, Win32.  "x64" is refused here rather than
-rem passed down.  Release-only for the same reason: no per-door build.bat takes
+rem passed down.  That is the target, not the compiler: the doors with enough
+rem code to need it (SyncRPG, SyncSCUMM, The Clans) build their Win32 output
+rem with the x64-hosted cl.exe, the 32-bit one having too little address space
+rem to survive a parallel build.
+rem Release-only for the same reason: no per-door build.bat takes
 rem a "debug" argument.  (clans.sln does carry a Debug configuration, but one
 rem target out of eight is not enough to make "debug" mean anything here.)
 rem
@@ -262,9 +266,20 @@ if exist "!CD_!" (
 )
 exit /b 0
 
-rem --- Locate MSBuild (same probe order the per-door scripts use) ------------
+rem --- Locate MSBuild (edition probe order as elsewhere in this script) ------
+rem Bin\amd64 (the 64-bit MSBuild) is preferred over Bin (the 32-bit one) for
+rem the sake of the x64-hosted compiler clans.props selects: only a 64-bit
+rem MSBuild can drive it through FileTracker, so only there do the Clans
+rem projects get incremental builds. The 32-bit MSBuild is a working fallback,
+rem it just recompiles everything every time.
 :find_msbuild
 set "MSBUILD="
+for %%E in (Professional Enterprise Community BuildTools) do (
+    if not defined MSBUILD (
+        set "_M=C:\Program Files\Microsoft Visual Studio\2022\%%E\MSBuild\Current\Bin\amd64\MSBuild.exe"
+        if exist "!_M!" set "MSBUILD=!_M!"
+    )
+)
 for %%E in (Professional Enterprise Community BuildTools) do (
     if not defined MSBUILD (
         set "_M=C:\Program Files\Microsoft Visual Studio\2022\%%E\MSBuild\Current\Bin\MSBuild.exe"
