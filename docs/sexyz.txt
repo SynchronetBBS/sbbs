@@ -278,6 +278,8 @@ Example .ini file (with default values given):
     PauseOnExit=FALSE           ; wait for key-press on exit
     PauseOnAbend=FALSE          ; wait for key-press on abnormal exit
     OutbufSize=16384            ; bytes (between 1024 and 65536)
+                                ; also caps the streaming send socket buffer,
+                                ; bounding how much a single error retransmits
     OutbufHighwaterMark=1100    ; bytes before auto-flush
     OutbufDrainTimeout=10       ; milliseconds before auto-flush
     ProgressInterval=1          ; interval (in seconds) of progress display
@@ -308,6 +310,8 @@ Example .ini file (with default values given):
     MaxErrors=9         ; maximum number of consecutive errors
     RecvBufSize=0       ; specify non-zero for partial streaming receives
     Streaming=TRUE      ; set to FALSE to disable streaming (block-at-a-time)
+                        ; streaming sends are buffered for high throughput;
+                        ; windowed (-w) and segmented sends are byte-at-a-time
     CRC32=TRUE          ; set to FALSE to force CRC-16 instead
     EscapeTelnetIAC=TRUE    ; send ZDLE/ZRUB1 instead of 0xff with -telnet
     Escape8thBit=FALSE      ; ZDLE-escape all bytes with bit-7 set
