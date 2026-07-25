@@ -397,6 +397,12 @@
 
 ## sexyz (X/Y/ZMODEM file transfer)
 
+- Much faster ZMODEM streaming sends. The send path now buffers
+  its output instead of feeding the transmit ring one byte at a
+  time, roughly a 10x throughput increase on fast/local links
+  (and far less CPU) with no change to slower/real-world links,
+  where the connection speed dominates either way. Windowed
+  (`-w`) and segmented (`-s`) sends are unchanged
 - Fixed a hang on windowed (`-w`) ZMODEM sends of files larger
   than 2 GB — the transmit-window and ACK positions were signed
   32-bit and went negative past 2 GB (issue #1196). Validated to

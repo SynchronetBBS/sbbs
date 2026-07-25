@@ -47,9 +47,20 @@ Chuck Forsberg's final `rzsz` (3.73, 2003-01-30).
 >    doesn't either, yet recovers. An early "abort-aware purge on ZRPOS" theory
 >    in the bench README was a wrong garden path and has been retracted.
 
-- **Throughput:** the **`sexyz` sender runs at 11.5 MB/s vs `lsz`'s 203.9** —
-  ~18×. Two stacked overheads, isolated by linking the real `zmodem.c` behind
-  each send architecture (§3.2):
+> **RESOLVED (sexyz.c 3.4):** the sexyz-specific gap below is fixed. The
+> streaming send path now buffers the producer (accumulate, hand whole spans to
+> the ring) instead of writing the ring one byte at a time, taking a 256 MB
+> localhost send from 11.5 MB/s / 44 CPU-s to **~115 MB/s / 0.85 CPU-s**, error
+> gate 5/5. It keeps the two-thread architecture — the threads were never the
+> problem, per-byte *feeding* was — so it is a small, low-risk change, not the
+> single-threaded rewrite this doc earlier recommended. Buffering is streaming
+> only; `-w`/`-s` keep the byte-at-a-time path (they need acks flowing back as
+> data is sent). The analysis below is the original investigation, kept for the
+> record; §3.2/§3.3/§6 note where its "open" framing has since shipped.
+
+- **Throughput:** the **`sexyz` sender was 11.5 MB/s vs `lsz`'s 203.9** (before
+  the 3.4 fix above) — ~18×. Two stacked overheads, isolated by linking the real
+  `zmodem.c` behind each send architecture (§3.2):
   - **`sexyz.c` ring-buffer + per-byte writes (10×, 115.8→11.5 MB/s):
     sexyz-only, and it is the whole sexyz-specific gap.** `send_byte` takes the
     ring mutex **twice per byte** (`RingBufFree` then `RingBufWrite`) while the
@@ -93,13 +104,13 @@ Chuck Forsberg's final `rzsz` (3.73, 2003-01-30).
   this by construction — `-w` forces the block down to window/4 — so sexyz now
   does the same (block clamped to window/4 when `-w` is set; sexyz.c 3.4). Both
   are sexyz-reachable only; **SyncTERM never sets a transmit window**, so it hit
-  neither. Windowed *throughput* remains far below lrzsz — see §1195 / below.
+  neither. Windowed *throughput* remains far below lrzsz — see below.
 
 Which component each finding lives in:
 
 | Finding | `sexyz.c` | shared `zmodem.c` | SyncTERM `term.c` |
 |---|:--:|:--:|:--:|
-| Ring-buffer/per-byte send (115.8→11.5, futex/tiny-writes) — **open**, 6 prototypes failed the error gate | ✗ (here) | — | OK (immune) |
+| Ring-buffer/per-byte send (was 115.8→11.5, futex/tiny-writes) — **FIXED** (sexyz.c 3.4: buffered streaming producer, ~115 MB/s, gate 5/5) | ✗ (was here) | — | OK (immune) |
 | Per-byte send cost (callback+escape+CRC) — **addressed** 2026-07-24; engine now cheaper per byte than lrzsz | — | was a weakness | inherits the fix |
 | `-w` window ≤ block stall / window < 4×block SIGFPE — **fixed** (#1197) | ✗ (clamp, 3.4) | ✗ (divzero guard, 2.4) | OK (no `-w`) |
 | `int32_t` >2 GB window/ACK corruption — **fixed** (#1196) | — | ✗ (was here) | OK (no `-w`) |
@@ -131,7 +142,7 @@ a component version. sexyz reports its version via `const char* revision`
 
 | Component | Baseline | Shipped |
 |---|---|---|
-| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time; `-w` sets the window without touching the block size | **3.4** — `-w` now clamps the block to window/4 like `lsz`/`sz`, so `window ≤ block` no longer stalls (#1197). Send throughput still open (§3.3, §6) |
+| **sexyz.c** | **3.3** — `send_byte` writes the ring one byte at a time; `-w` sets the window without touching the block size | **3.4** — buffered streaming send path (~11 → ~115 MB/s, #1195); `-w` clamps the block to window/4 like `lsz`/`sz` so `window ≤ block` no longer stalls (#1197) |
 | **zmodem.c** | **rev 2.2** — window/ACK positions `int32_t`; switch-based byte classifier; byte-at-a-time CRC-32; quarter-window ACK interval divides by zero when window < 4×block | **rev 2.4** — 2 GB fix (`uint32_t`, #1196); Deuce's 2026-07-24 send-path work (class-table classifier, slicing-by-4 CRC-32, hoisted escape mask + `noinline` cold paths, buffered `fcrc32()`); window-interval divide-by-zero guarded (#1197) |
 
 - **SyncTERM:** its `term.c` send path is **unchanged** by this work; a SyncTERM
@@ -603,7 +614,7 @@ exactly where a modern BBS file transfer runs.
    sends complete (validated to 2.36 GB); fixes sexyz and SyncTERM. GitLab #1196.
    This is the only shipped code fix; sexyz.c is otherwise unchanged (stays 3.3).
 
-2. **⚠ OPEN — sender throughput. Rewrite the sender the way `lrz` does it.**
+2. **✅ DONE (sexyz.c 3.4) — sender throughput.** Shipped as a buffered streaming producer that keeps the two-thread architecture (the threads were never the bottleneck — per-byte *feeding* of the ring was): ~11 → ~115 MB/s, 44 → 0.85 CPU-s, error gate 5/5, `-w`/`-s`/receive unchanged. The single-threaded rewrite described below was **not** needed. Original analysis retained:
    Six prototypes now (§3.3) confirm the shape of the answer:
    - The entire sexyz-specific penalty is the **per-byte ring traffic**, and
      buffering the producer removes **all** of it — a prototype reached
