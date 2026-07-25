@@ -96,6 +96,7 @@
 #include "text.h"
 #include "term.h"
 #include "geometry.h"
+#include "gfxgate.h"    /* termgfx: the shared no-graphics verdict + notice */
 #include "pace.h"
 #include "audio_mgr.h"   /* termgfx: SyncTERM audio-APC manager (Task 4, digital SFX/music) */
 
@@ -861,6 +862,24 @@ static unsigned door_config_duration(const char *section, const char *key, unsig
 	return val;
 }
 
+/* Read a string <door>.ini setting into `out` (INI_MAX_VALUE_LEN bytes);
+ * leaves `def` there when the file or key is absent. */
+static void door_config_str(const char *section, const char *key,
+                            const char *def, char *out)
+{
+	char  path[700];
+	FILE *f;
+
+	snprintf(out, INI_MAX_VALUE_LEN, "%s", def);
+	if (!door_ini_path(path, sizeof path))
+		return;
+	f = iniOpenFile(path, FALSE);   /* read-only; do NOT create */
+	if (f != NULL) {
+		iniReadString(f, section, key, def, out);
+		fclose(f);
+	}
+}
+
 /* Tri-state <door>.ini bool: 1 (true), 0 (false), or -1 when the key is absent
  * -- the caller's "auto"/default state. Distinguishes absent from an explicit
  * value by reading with both defaults: they differ only when the key is gone. */
@@ -1305,6 +1324,67 @@ static void door_check_shutdown(void)
 		return;
 	fprintf(stderr, DOOR_SHORT_NAME ": shutdown requested (SIGTERM/SIGHUP) -- exiting cleanly\n");
 	exit(0);
+}
+
+/* One non-blocking read, purely to answer "has the client pressed anything?".
+ * Nothing is parsed: this runs after the terminal has been restored, when the
+ * only thing left to decide is whether the player has finished reading. */
+static int door_any_input(void)
+{
+	uint8_t buf[64];
+	int     n;
+
+	if (g_file_mode)
+		return 0;
+#ifdef _WIN32
+	if (!g_use_sock)
+		return 0;
+	n = recv(g_iosock, (char *)buf, (int)sizeof buf, 0);
+	return n > 0;
+#else
+	n = (int)read(g_fd_in, buf, sizeof buf);
+	return n > 0;
+#endif
+}
+
+/* The terminal cannot draw the game: say so and leave.
+ *
+ * Restore the terminal first, so the notice prints as ordinary text with the
+ * cursor and autowrap back, then hold it long enough to be read -- Synchronet
+ * repaints its own menu the instant the door returns, which would otherwise
+ * wipe the explanation before the player sees it. A keypress or the configured
+ * wait ends it, whichever is first; an unattended or dead client must not hold
+ * the node for the whole window. Never returns. */
+static void door_no_graphics(void)
+{
+	char     file[INI_MAX_VALUE_LEN], text[INI_MAX_VALUE_LEN];
+	char     dflt[700];
+	unsigned secs;
+	uint32_t start;
+
+	snprintf(dflt, sizeof dflt, "%s/%s", g_bindir, TERMGFX_GFXGATE_FILE);
+	door_config_str("text", "no_graphics_file", dflt, file);
+	door_config_str("text", "no_graphics", "", text);
+	secs = door_config_duration("text", "no_graphics_pause",
+	                            TERMGFX_GFXGATE_PAUSE_SECS);
+
+	door_term_restore();   /* mouse/kitty/evdev off, cursor + autowrap back */
+	door_out_puts(termgfx_gfxgate_notice(file, text));
+	if (secs > 0)
+		door_out_puts(termgfx_gfxgate_prompt);
+	door_out_drain_blocking(2000);
+
+	start = door_now_ms();
+	while (secs > 0 && (uint32_t)(door_now_ms() - start) < secs * 1000u) {
+		if (door_any_input())
+			break;
+		door_sleep_ms(50);
+	}
+
+	fprintf(stderr, DOOR_SHORT_NAME ": terminal reports no pixel-graphics"
+	        " capability -- exiting\n");
+	fflush(stderr);
+	exit(0);   /* atexit(door_term_restore) is idempotent */
 }
 
 /* --- Task 5: DOOR32.SYS time-left awareness (v1: warn only, no forced exit,
@@ -1764,6 +1844,7 @@ static int             g_probe_replied; /* any 'c' (DA1/CTDA) reply seen */
 static int             g_is_syncterm; /* CTDA '<'/'=' marker, or a JXL-query answer */
 static int             g_have_sixel; /* DA1/CTDA param 4 */
 static int             g_jxl_supported; /* Q;JXL answered 1 */
+static int             g_jxl_answered; /* Q;JXL answered at all, either way */
 static int             g_img_blob_ok; /* CTerm >= 1.329: draw JXL/PPM inline (no cache file) */
 static int             g_grid_rows, g_grid_cols; /* text grid, from the 999;999 cursor-report fallback */
 static int             g_canvas_w, g_canvas_h; /* pixel canvas -- exact (ESC[14t) or grid*8x16 estimate */
@@ -1846,19 +1927,35 @@ static int  g_stats_overlay;         /* Ctrl-S: live debug stats strip (session-
 static int  g_help_painted;          /* Ctrl-K/F1 help card currently on screen (freeze the frame under it) */
 static char g_stats_last[512];       /* last emitted overlay bytes, for change-detection */
 
+/* Anything to draw the game with? CTDA capability 4 is a single bit meaning
+ * "pixel operations", covering sixel AND PPM together (cterm.adoc), so a
+ * SyncTERM can never offer PPM without also offering sixel -- there is no
+ * PPM-only terminal to keep a tier for. A SyncTERM too old to report cap 4
+ * predates cterm's PPM support by years and could not decode DrawPPM either.
+ * Read by the no-graphics gate below. */
+static int sa_have_graphics(void)
+{
+#ifdef WITH_JXL
+	if (g_jxl_supported)
+		return 1;
+#endif
+	return g_have_sixel;
+}
+
 static int sa_auto_tier(void)
 {
 #ifdef WITH_JXL
 	if (g_jxl_supported)
 		return SA_JXL;
 #endif
-	if (g_have_sixel)
-		return SA_SIXEL;
-	if (g_is_syncterm)
-		return SA_PPM;         /* SyncTERM without sixel/JXL: still gets the APC PPM tier */
-	if (g_probe_replied)
-		return SA_HALF;        /* answered DA1 but no sixel, not SyncTERM: text tier */
-	return SA_SIXEL;           /* no reply yet: optimistic default (most BBS clients are SyncTERM) */
+	/* Sixel both when the terminal advertised it and when nothing has come
+	 * back yet: the optimistic default costs a rejected terminal nothing,
+	 * because the gate holds the first frames until the probe answers. A
+	 * terminal that answers without pixel operations never reaches here --
+	 * it is turned away rather than auto-dropped into a tier the game is
+	 * unplayable in. PPM and the block-glyph tiers remain reachable through
+	 * the F4 cycle. */
+	return SA_SIXEL;
 }
 
 /* forward decls used by door_tier_cycle()/door_fit_toggle() to force a repaint */
@@ -2977,6 +3074,26 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 		return;
 	}
 
+	/* Non-graphics-terminal gate (termgfx/gfxgate.h). The game is a picture;
+	 * the block-glyph tiers exist for a look at it, not to play in. Rather
+	 * than auto-dropping a terminal without pixel operations into one and
+	 * leaving the player to work out why it is unusable, say so and leave.
+	 * Skipped once F4 has forced a tier -- an explicit choice is the
+	 * player's to make. */
+	if (g_tier_force < 0) {
+		switch (termgfx_gfxgate(sa_have_graphics(), g_probe_replied,
+		                        g_jxl_answered, cleared_ms, door_now_ms())) {
+			case TERMGFX_GFXGATE_WAIT:
+				door_out_flush();
+				return;
+			case TERMGFX_GFXGATE_REJECT:
+				door_no_graphics();   /* does not return */
+				break;
+			default:
+				break;
+		}
+	}
+
 	door_out_flush();   /* drain whatever's left of the previous frame first */
 
 	/* DSR-ACK pacing gate: don't get ahead of what the terminal has drawn. */
@@ -3306,6 +3423,7 @@ static void door_csi_final(char fin)
 				if (r >= 0) {
 					g_is_syncterm   = 1;
 					g_jxl_supported = (r == 1);
+					g_jxl_answered  = 1;
 				}
 			}
 			return;
