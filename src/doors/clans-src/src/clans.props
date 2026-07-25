@@ -20,18 +20,6 @@
   </ItemGroup>
 
   <PropertyGroup Label="Globals">
-    <!-- The x64-hosted cross-compiler (HostX64\x86\cl.exe) emits the same x86
-         code as the 32-bit hosted one, but has the address space to survive
-         sixteen projects compiling at once: cl.exe otherwise dies with an
-         intermittent C1001 (in a UCRT header, on a different file each run).
-         Only under a 64-bit MSBuild (Bin\amd64, as the VS IDE and the doors
-         build.bat use): a 32-bit MSBuild's FileTracker cannot launch that
-         cl.exe at all ("TRK0002 ... The parameter is incorrect"), and the only
-         way around that, TrackFileAccess=false, would cost the whole solution
-         its header-dependency data and with it incremental builds. Putting the
-         condition on the compiler rather than on the tracking leaves a 32-bit
-         MSBuild exactly as it was: incremental, and exposed to the C1001 only
-         when it is also asked to build in parallel. -->
     <PreferredToolArchitecture Condition="'$([System.Environment]::Is64BitProcess)'=='true'">x64</PreferredToolArchitecture>
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
