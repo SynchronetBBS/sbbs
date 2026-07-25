@@ -110,7 +110,7 @@ FILE*       errfp;
 FILE*       statfp;
 FILE*       logfp = NULL;
 
-const char* revision = "3.3";
+const char* revision = "3.4";
 
 SOCKET      sock = INVALID_SOCKET;
 
@@ -1839,6 +1839,24 @@ int main(int argc, char **argv)
 			}
 			strListAppend(&fname_list, argv[i], fnames++);
 		}
+	}
+
+	/* Keep the transmit window at least 4x the block size, the way lsz/sz do
+	   (they force blklen down to window/4): the ZMODEM ack-every-quarter-window
+	   scheme needs several blocks in flight, and window <= block leaves only one
+	   block unacked at a time, which stalls (GitLab #1197). */
+	if (zm.max_window_size > 0) {
+		if (zm.max_window_size < 256)
+			zm.max_window_size = 256;
+		zm.max_window_size = (zm.max_window_size / 64) * 64;
+		unsigned window_block = (unsigned)(zm.max_window_size / 4);
+		if (zm.max_block_size > window_block) {
+			fprintf(statfp, "Reducing ZMODEM block size from %u to %u for a %" PRId64 "-byte window\n"
+			        , zm.max_block_size, window_block, zm.max_window_size);
+			zm.max_block_size = window_block;
+		}
+		if (zm.block_size > zm.max_block_size)
+			zm.block_size = zm.max_block_size;
 	}
 
 	if (max_file_size)

@@ -405,6 +405,9 @@
   the transmit window is smaller than four times the block size,
   e.g. `-8 -w8192` or a comparable `MaxWindowSize` in
   `sexyz.ini` (issue #1197)
+- `-w` (transmit window) now reduces the block size to a quarter of
+  the window when needed, the way `lsz`/`sz` do, so a window at or
+  below the block size no longer stalls the transfer (issue #1197)
 - ZMODEM send-path speedups (table-driven byte classification,
   slicing-by-4 CRC-32, buffered whole-file CRC), shared with
   SyncTERM's built-in transfers
