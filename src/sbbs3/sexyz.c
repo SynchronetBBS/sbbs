@@ -82,6 +82,7 @@
 #include "sexyz.h"
 
 #define SINGLE_THREADED     FALSE
+#define TXBUF_SIZE          4096
 #define MIN_OUTBUF_SIZE     1024
 #define MAX_OUTBUF_SIZE     (64 * 1024)
 #define INBUF_SIZE          (64 * 1024)
@@ -426,6 +427,10 @@ void send_telnet_cmd(SOCKET sock, uchar cmd, uchar opt)
  * Returns -1 on disconnect, 0 on timeout, or the number of bytes read.
  * Does not muck around with SOCKET_ERRNO (hopefully)
  */
+#if !SINGLE_THREADED
+int tx_flush(unsigned timeout);
+#endif
+
 static int recv_buffer(int timeout /* seconds */)
 {
 	int            i;
@@ -437,6 +442,10 @@ static int recv_buffer(int timeout /* seconds */)
 #endif
 	int            magic_errno;
 
+#if !SINGLE_THREADED
+	/* Don't wait on the back-channel with buffered output still unsent. */
+	tx_flush(10);
+#endif
 	for (;;) {
 		if (inbuf_len > inbuf_pos)
 			return inbuf_len - inbuf_pos;
@@ -622,11 +631,84 @@ int recv_byte(void* unused, unsigned timeout /* seconds */)
 }
 
 #if !SINGLE_THREADED
+
+static uchar  txbuf[TXBUF_SIZE];
+static size_t txbuf_len;
+static BOOL   send_buffered = FALSE;  /* accumulate into txbuf (streaming) vs. per-byte (windowed) */
+
+/* Write as much of the span into the ring as it will take, reporting how much
+   went in.  A short write here is transient: the caller keeps the remainder
+   buffered and retries; nothing is ever dropped. */
+static int tx_write_span(const uchar* p, size_t len, unsigned timeout, size_t* written)
+{
+	DWORD  result;
+	size_t avail;
+
+	*written = 0;
+	while (len) {
+		size_t chunk = len;
+
+		if ((avail = RingBufFree(&outbuf)) == 0) {
+			fprintf(statfp, "FLOW");
+			flows++;
+			result = WaitForEvent(outbuf_empty, timeout * 1000);
+			fprintf(statfp, "\b\b\b\b    \b\b\b\b");
+			if ((avail = RingBufFree(&outbuf)) == 0) {
+				lprintf(LOG_WARNING
+				        , "TIMEOUT (%d) waiting for output buffer to flush (%u seconds, %u bytes)"
+				        , result, timeout, RingBufFull(&outbuf));
+				return -1;
+			}
+		}
+		if (chunk > avail)
+			chunk = avail;
+		if (RingBufWrite(&outbuf, (uchar*)p, chunk) != chunk) {
+			lprintf(LOG_ERR, "RingBufWrite() short write");
+			return -1;
+		}
+		p += chunk;
+		len -= chunk;
+		*written += chunk;
+	}
+	return 0;
+}
+
+/* Push everything send_byte() has accumulated into the ring. */
+int tx_flush(unsigned timeout)
+{
+	size_t written;
+	int    result;
+
+	if (txbuf_len == 0)
+		return 0;
+	result = tx_write_span(txbuf, txbuf_len, timeout, &written);
+	if (written != 0 && written < txbuf_len)
+		memmove(txbuf, txbuf + written, txbuf_len - written);
+	txbuf_len -= written;
+	return result;
+}
+
 /*************************/
 /* Send a byte to remote */
 /*************************/
 int send_byte(void* unused, uchar ch, unsigned timeout)
 {
+	/* Streaming: accumulate and hand whole spans to the ring, so the producer
+	   is not the bottleneck.  A transmit window or segmented mode instead falls
+	   through to the per-byte path below, which keeps acks flowing back as data
+	   is sent (buffering would burst the output and stall the window). */
+	if (send_buffered) {
+		if (txbuf_len + 2 > sizeof(txbuf)) {
+			tx_flush(timeout);
+			if (txbuf_len + 2 > sizeof(txbuf))
+				return -1;
+		}
+		if (telnet && ch == TELNET_IAC)    /* escape IAC char */
+			txbuf[txbuf_len++] = TELNET_IAC;
+		txbuf[txbuf_len++] = ch;
+		return 0;
+	}
+
 	uchar    buf[2] = { TELNET_IAC, TELNET_IAC };
 	unsigned len = 1;
 	DWORD    result;
@@ -780,6 +862,9 @@ static void output_thread(void* arg)
 /* Flush output buffer */
 void flush(void* unused)
 {
+#if !SINGLE_THREADED
+	tx_flush(10);
+#endif
 #ifdef __unix__
 	if (stdio)
 		fflush(stdout);
@@ -1859,6 +1944,13 @@ int main(int argc, char **argv)
 			zm.block_size = zm.max_block_size;
 	}
 
+#if !SINGLE_THREADED
+	/* Buffer the producer only for full ZMODEM streaming.  A transmit window or
+	   segmented mode depends on acks flowing back as data is sent (GitLab
+	   #1195). */
+	send_buffered = (zm.max_window_size == 0) && !zm.no_streaming;
+#endif
+
 	if (max_file_size)
 		fprintf(statfp, "Maximum receive file size: %" PRIi64 "\n", max_file_size);
 
@@ -1936,6 +2028,19 @@ int main(int argc, char **argv)
 #ifdef __unix__
 }
 #endif
+
+	/* With the producer buffered, a fast streaming send fills the socket's
+	   auto-tuned (multi-megabyte) send buffer, so a single line error costs a
+	   ZRPOS retransmission of everything in flight and breaks error recovery.
+	   Bound the in-flight backlog to the ring size.  A transmit window already
+	   bounds in-flight data, and a socket buffer smaller than the window fights
+	   it, so only when streaming.  Applies in stdio mode too (harmless on a
+	   non-socket); [sockopts] can override for a high bandwidth-delay link. */
+	if (send_buffered) {
+		int sndbuf = (int)outbuf_size;
+		if (setsockopt(sock, SOL_SOCKET, SO_SNDBUF, (char*)&sndbuf, sizeof(sndbuf)) != 0)
+			lprintf(LOG_DEBUG, "Could not bound socket send buffer (error %d)", SOCKET_ERRNO);
+	}
 
 	/* Set non-blocking mode */
 #ifdef __unix__
