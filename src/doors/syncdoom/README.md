@@ -11,9 +11,9 @@ protocol, and **full audio** — digital sound effects plus OPL-rendered music �
 via its audio channel (**SyncTERM v1.10 or later**; see [Audio](#audio)).
 
 Co-op and deathmatch are supported, played between BBS nodes (or against a
-detached dedicated server). The companion JavaScript lobby that browses and
+detached dedicated server). The companion lobby that browses and
 creates network games is host-specific and lives elsewhere; this directory is
-the portable C door and its two build systems.
+the portable door program and its two build systems.
 
 ---
 
@@ -155,7 +155,8 @@ the full option list below.
 | `-home <dir>` | **Per-user storage** directory. The door `chdir`s here so DOOM's config, savegames and screenshots are written per user. Created if absent. |
 | `-name <handle>` | Player name shown in multiplayer (chat, scoreboard). Default `Player`. |
 | `-eventlog <path>` | Append game events (level start, deaths/frags) as JSONL to `<path>`; the lobby's activity feed reads it. The directory is created if absent. |
-| `-log <path>` | Write the door's diagnostics **and any fatal error** to a durable file (also `syncdoom.ini [debug] log`, or the `SYNCDOOM_LOG` env). A bare filename goes in `<data>/syncdoom/` (node-tagged, e.g. `syncdoom_n3.log`); a path with a separator is used as-is. Off by default. See [Fatal errors & diagnostics](#fatal-errors--diagnostics). |
+| `-log <path>` | Write the door's diagnostics **and any fatal error** to a durable file (also `syncdoom.ini [debug] log`, or the `SYNCDOOM_LOG` env). A bare filename goes in `<data>/syncdoom/` (node-tagged, e.g. `syncdoom_n3.log`); a path with a separator is used as-is. On by default (`syncdoom.log`); blank the ini key to disable. See [Fatal errors & diagnostics](#fatal-errors--diagnostics). |
+| `-showconsole` / `-hideconsole` | **Windows:** keep or close the door's own console window (the one a BBS spawning with `CREATE_NEW_CONSOLE` pops up on the BBS machine). Closing is the default; overrides `syncdoom.ini [debug] hide_console`. Only a console the door owns is closed — running it by hand from a command prompt keeps your shell's output. |
 
 ### Video
 
@@ -233,7 +234,7 @@ them by hand only for a direct connect or an engine test:
 | `-warp <n>` \| `<e> <m>` | Start directly on the given map (Doom II) or episode+map (Doom). |
 | `-deathmatch` | Deathmatch (else co-op). Set on the *creating* client; joiners inherit it over the net. |
 | `-altdeath` | Deathmatch 2.0 (weapons **and** items respawn). |
-| `-mustered` | Skip the C waiting room: the JS lobby already gathered every player (deferred connect), so the client drops straight into the game with no splash/beep. |
+| `-mustered` | Skip the door's own waiting room: the lobby already gathered every player (deferred connect), so the client drops straight into the game with no splash/beep. |
 
 ### Multiplayer — dedicated server
 
@@ -247,7 +248,7 @@ Spawned automatically by the lobby; run by hand only to test.
 | `-maxplayers <n>` | Match size the server waits for before starting (2–4). |
 | `-bindaddr <addr>` | Local address the server's UDP socket listens on. Default **`127.0.0.1`** (loopback only — same-host clients). Use `0.0.0.0` for all interfaces, or a specific local IP/hostname, for cross-host play. (The lobby derives this from `[net] bind`, defaulting to `[net] advertise`.) |
 | `-advertise <addr>` | Address cross-host joiners dial, recorded in the browse registry (the lobby's `[net] advertise`). |
-| `-gamesdir <dir>` | Directory where the server writes its registry entry so the lobby's Browse can discover it. (Omitted on the muster path, where the JS lobby owns discovery instead.) |
+| `-gamesdir <dir>` | Directory where the server writes its registry entry so the lobby's Browse can discover it. (Omitted on the muster path, where the lobby owns discovery instead.) |
 | `-host <alias>` | Host name recorded in the registry entry (shown in the lobby game list). |
 | `-wadset <id>` | WAD-set id recorded in the registry entry. |
 | `-gamemode <mode>` | Game mode recorded in the registry entry. |
@@ -350,7 +351,11 @@ goes to **stderr**, to the **`-log` file** if configured, and (on Windows) to
 On **\*nix** the BBS captures a door's stderr into its node/system log, so the
 error is already there. On **Windows** a native socket door's stderr is *not*
 captured by the BBS, so set `syncdoom.ini [debug] log` (or pass `-log`) to get a
-durable record there — recommended for any Windows install.
+durable record there — recommended for any Windows install. The Windows console
+window is gone by default anyway: Synchronet suppresses it before it appears
+(`XTRN_NODISPLAY` on the xtrn entry, `[lobby] nodisplay` for a lobby-launched
+game), and on any other BBS the door closes its own at startup
+(`[debug] hide_console`, or `-showconsole` to keep it).
 
 The door also writes two diagnostic lines to **stderr** (and the `-log` file):
 
@@ -434,7 +439,7 @@ reporting it's simply inert.
 
 An optional `syncdoom.ini`, read from the directory of the executable, provides
 defaults for the video and input options above plus a `[game]` section, and the
-networking and WAD-set definitions used by the JavaScript lobby. All keys are
+networking and WAD-set definitions used by the lobby. All keys are
 optional; an absent key keeps the auto-detected value or built-in default. The
 documented template ships with the lobby as `xtrn/syncdoom/syncdoom.example.ini`
 and is copied to `syncdoom.ini` on install; see it for the full key list. Notable

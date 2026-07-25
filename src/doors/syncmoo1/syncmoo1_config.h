@@ -17,6 +17,12 @@
  * this (see sm_io_wiredump_open()); the ini is the sysop-facing switch. */
 int sm_config_wire_enabled(void);
 
+/* syncmoo1.ini [debug] hide_console -- nonzero (the default) to close the
+ * door's own console window at startup on Windows. Read from the ini on its
+ * own, so it is available during sm_door_setup(), long before
+ * sm_config_apply(); -showconsole/-hideconsole override it. */
+int sm_config_hide_console(void);
+
 /* syncmoo1.ini [video] hand_cursor -- nonzero to draw 1oom's own hand-shaped
  * mouse cursor. Default off: the terminal shows its own pointer, which the
  * game's hand doesn't align with. See hw_video_get_buf() in hw_term.c. */

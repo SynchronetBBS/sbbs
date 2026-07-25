@@ -113,6 +113,28 @@ static void sm_config_pin_nogfx_file(void)
     snprintf(sm_nogfx_file, sizeof sm_nogfx_file, "%s/%s", cwd, rel);
 }
 
+/* Read on its own, not with the rest of syncmoo1.ini: the console has to be
+ * gone before sm_door_capture_diagnostics() freopen()s stderr onto the log
+ * (see sm_plat_console_detach), and that happens inside sm_door_setup() --
+ * before sm_config_apply() reads the ini. cwd is still the launch dir at both
+ * points, so the same relative fopen works. */
+int sm_config_hide_console(void)
+{
+    FILE      *f = fopen("syncmoo1.ini", "r");
+    str_list_t ini;
+    int        hide = 1;                 /* no ini / unreadable: the default */
+
+    if (f == NULL)
+        return hide;
+    ini = iniReadFile(f);
+    fclose(f);
+    if (ini == NULL)
+        return hide;
+    hide = iniGetBool(ini, "debug", "hide_console", TRUE) ? 1 : 0;
+    strListFree(&ini);
+    return hide;
+}
+
 int sm_config_wire_enabled(void)
 {
     return sm_wire_enabled;

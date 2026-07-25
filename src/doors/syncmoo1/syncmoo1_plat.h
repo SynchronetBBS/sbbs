@@ -111,4 +111,21 @@ int sm_plat_redirect_stderr(const char *path);
  * launch never makes an empty log directory. */
 int sm_plat_captures_stderr(void);
 
+/* Close the door's own console window, so a session leaves nothing on the BBS
+ * machine's desktop. Returns 0 if a console was closed, -1 otherwise (POSIX,
+ * where there is no such window; no console; or one shared with a shell).
+ *
+ * WHY it's a platform call: a BBS that spawns a native door with
+ * CREATE_NEW_CONSOLE pops up one window per session -- the door draws to the
+ * CLIENT's terminal and prints nothing there, so it is pure noise. Synchronet
+ * can suppress it host-side (XTRN_NODISPLAY -> CREATE_NO_WINDOW, which also
+ * avoids the brief flash before we get here); this is the equivalent for a BBS
+ * with no such setting. The two compose: CREATE_NO_WINDOW still gives the
+ * process a console, so this just frees an already-invisible one.
+ *
+ * Call BEFORE sm_plat_redirect_stderr(): FreeConsole() invalidates stderr even
+ * when it has already been freopen()ed onto a file, so the reverse order
+ * silently discards every captured diagnostic. */
+int sm_plat_console_detach(void);
+
 #endif /* SYNCMOO1_PLAT_H_ */

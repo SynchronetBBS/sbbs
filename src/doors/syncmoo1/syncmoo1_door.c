@@ -80,6 +80,7 @@ static int      g_deadline_armed;
  * pacing makes the terminal answer ~10x/second on its own. See ../termgfx/idle.h. */
 static termgfx_idle_t g_idle;
 static int            g_idle_arg = -1;   /* -i<seconds>; -1 = not given */
+static int            g_console_arg = -1; /* -show/-hideconsole; -1 = [debug] decides */
 static int            g_idle_warning;    /* the countdown is on screen right now */
 static char     g_alias[SM_DOOR_ALIAS_MAX];
 static int      g_alias_authoritative;   /* set only by read_door32(): the BBS named the user */
@@ -225,6 +226,10 @@ static void sm_door_resolve(int argc, char **argv)
             g_time_limit_ms = (uint32_t)atoi(a + 2) * 1000u;    /* -t<seconds>   */
         } else if (is_idle_arg(a)) {
             g_idle_arg = atoi(a + 2);                          /* -i<seconds>   */
+        } else if (strcmp(a, "-showconsole") == 0) {
+            g_console_arg = 0;         /* keep the door's own console window */
+        } else if (strcmp(a, "-hideconsole") == 0) {
+            g_console_arg = 1;         /* close it (the default) */
         } else if (strcmp(a, "-stdio") == 0) {
             if (sm_plat_stdio_ok())
                 g_stdio = 1;
@@ -322,6 +327,8 @@ static void sm_door_usage(const char *argv0)
         "  -s<fd>             client socket descriptor directly (no drop file)\n"
         "  -t<seconds>        session time limit; the door exits when it elapses\n"
         "  -name <handle>     player name\n"
+        "  -showconsole       keep the door's own console window open (Windows)\n"
+        "  -hideconsole       close it (the default; [debug] hide_console)\n"
         "\n"
         "  -help, --help, -?  show this help\n",
         prog);
@@ -409,6 +416,13 @@ int sm_door_setup(int argc, char **argv)
     sm_plat_net_init();
 
     sm_door_resolve(argc, argv);
+
+    /* Under a real BBS session only (a dev/tty run's console is real and
+     * wanted), and BEFORE the stderr capture below -- FreeConsole() invalidates
+     * stderr even when it already points at a file. */
+    if (g_socket >= 0
+        && (g_console_arg >= 0 ? g_console_arg : sm_config_hide_console()))
+        (void)sm_plat_console_detach();
 
     /* Right after resolve (g_socket is now known) and before the first
      * fprintf(stderr) the rest of setup could produce, so nothing is lost on a
@@ -648,6 +662,9 @@ void sm_door_sanitize_argv(int *argc, char **argv)
          * args) -- digit-suffix-only so -sfx/-skipintro/-savequit et al pass
          * through to 1oom untouched (see is_socket_arg()/is_time_arg()). */
         if (is_socket_arg(a) || is_time_arg(a) || is_idle_arg(a))
+            continue;
+        /* -showconsole / -hideconsole: ours, value-less */
+        if (strcmp(a, "-showconsole") == 0 || strcmp(a, "-hideconsole") == 0)
             continue;
         /* -name <alias> / -home <dir>: drop flag + value */
         if (strcmp(a, "-name") == 0 || strcmp(a, "-home") == 0) {

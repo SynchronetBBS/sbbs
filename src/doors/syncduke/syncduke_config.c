@@ -29,6 +29,8 @@
 #include <limits.h>     /* PATH_MAX */
 
 #ifdef _WIN32
+  #define WIN32_LEAN_AND_MEAN   /* keep winsock.h out: sockwrap.h needs winsock2.h */
+  #include <windows.h>  /* FreeConsole, GetConsoleProcessList */
   #include <direct.h>   /* chdir / _fullpath */
   #include <io.h>       /* dup2 */
   #define strcasecmp _stricmp
@@ -188,6 +190,48 @@ static int syncduke_is_door(int argc, char **argv)
 	return 0;
 }
 
+/* Close the door's own console window (Windows). A BBS that spawns a native door
+ * with CREATE_NEW_CONSOLE gets one console window per session on the BBS machine;
+ * the door draws to the CLIENT's terminal and prints nothing there, so the window
+ * is pure noise. Synchronet can suppress it host-side (the xtrn's XTRN_NODISPLAY
+ * setting -> CREATE_NO_WINDOW, which also avoids the brief flash before we get
+ * here) -- this is the equivalent for a BBS with no such setting. The two compose:
+ * CREATE_NO_WINDOW still gives the process a console, so the test below holds and
+ * this just frees an already-invisible one.
+ *
+ * Only detach from a console we OWN: GetConsoleProcessList() reporting exactly 1
+ * means the console was created for this process and freeing it closes the window;
+ * more means we inherited a shell's console (a developer running the door by hand)
+ * and detaching would silently discard their output. Socket doors only -- on a
+ * stdio door fd 0/1 ARE the player, and pointing them at NUL would cut the
+ * session off.
+ *
+ * FreeConsole() invalidates all three std streams, so re-point them at NUL: the
+ * vendored engine printf()s on plenty of paths. Must run before the stdout->stderr
+ * dup2() below, whose descriptors would otherwise be closed underneath it; the
+ * file log is a plain file handle and survives. No-op on *nix, which has no such
+ * window. */
+static void syncduke_console_detach(int hide)
+{
+#ifdef _WIN32
+	DWORD pids[2];
+
+	if (!hide || syncduke_door_socket() < 0)
+		return;                     /* opted out, or no door socket (stdio / dev launch) */
+	if (GetConsoleProcessList(pids, (DWORD)(sizeof pids / sizeof pids[0])) != 1)
+		return;                     /* no console (0), or shared with a shell (>1) */
+	fflush(stdout);
+	fflush(stderr);
+	if (!FreeConsole())
+		return;
+	(void)freopen("NUL", "r", stdin);
+	(void)freopen("NUL", "w", stdout);
+	(void)freopen("NUL", "w", stderr);
+#else
+	(void)hide;
+#endif
+}
+
 /* The pre-main initializer body; registered as a constructor below (portably). */
 static void syncduke_config_init(int argc, char **argv)
 {
@@ -198,7 +242,18 @@ static void syncduke_config_init(int argc, char **argv)
 	char  abs[PATH_MAX];
 	int   i;
 	int   charset_force = -1;                                /* -1 = auto (terminal.ini); 0 = cp437; 1 = utf8 */
+	int   console_arg = -1;                                  /* -show/-hideconsole; -1 = unset ([debug] decides) */
+	int   hide_console = 1;                                  /* [debug] hide_console, default on */
 	FILE *f;
+
+	/* Value-less flags: scanned separately from the flag/value pairs below, whose
+	 * loop stops one short of the end. */
+	for (i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-showconsole") == 0)
+			console_arg = 0;
+		else if (strcmp(argv[i], "-hideconsole") == 0)
+			console_arg = 1;
+	}
 
 	/* --- GRP dir (-grpdir <path> / [grp] dir), per-user -home <path>, debug -log <path> --- */
 	for (i = 1; i + 1 < argc; i++) {
@@ -254,6 +309,9 @@ static void syncduke_config_init(int argc, char **argv)
 		 * that should get the default. */
 		if (!logpath[0] && iniGetExistingString(ini, "debug", "log", "", logpath) == NULL)
 			strncpy(logpath, "syncduke.log", sizeof(logpath) - 1);
+		/* [debug] hide_console -- close the door's own console window on Windows
+		 * (syncduke_console_detach). Default on; -show/-hideconsole override it. */
+		hide_console = iniGetBool(ini, "debug", "hide_console", TRUE);
 		syncduke_allow_record = iniGetBool(ini, "game", "record", FALSE);   /* demos off by default */
 		/* [idle] -- iniGetDuration() so "15m"/"900"/"1h" all parse, and so a bare
 		 * number means SECONDS here exactly as it does in the sibling doors. */
@@ -358,6 +416,13 @@ static void syncduke_config_init(int argc, char **argv)
 	syncduke_log_init();
 	syncduke_log("start: argc=%d socket=%d grpdir='%s' home='%s'",
 	             argc, syncduke_door_socket(), syncduke_grpdir, home[0] ? home : ".");
+
+	/* Both sources are known now (ini, then the overriding args), the log file is
+	 * open, and the std streams have not been rearranged yet -- see
+	 * syncduke_console_detach() on that ordering. */
+	if (console_arg >= 0)
+		hide_console = console_arg;
+	syncduke_console_detach(hide_console);
 
 	/* --- route the engine's stdout diagnostics to stderr (Synchronet logs it) --- */
 	if (syncduke_is_door(argc, argv)) {

@@ -211,3 +211,30 @@ int sm_plat_captures_stderr(void)
     return 0;
 #endif
 }
+
+int sm_plat_console_detach(void)
+{
+#ifdef _WIN32
+    DWORD pids[2];
+
+    /* Only a console this process OWNS: exactly one attached process means it
+     * was created for us and freeing it closes the window; more means we
+     * inherited a shell's console (a developer running the door by hand) and
+     * detaching would silently discard their output. */
+    if (GetConsoleProcessList(pids, (DWORD)(sizeof pids / sizeof pids[0])) != 1)
+        return -1;
+    fflush(stdout);
+    fflush(stderr);
+    if (!FreeConsole())
+        return -1;
+    /* FreeConsole() invalidates all three std streams; 1oom logs to stdout and
+     * stderr on plenty of paths, so give them somewhere valid to land. The
+     * caller re-points stderr at the diagnostics file afterwards. */
+    (void)freopen("NUL", "r", stdin);
+    (void)freopen("NUL", "w", stdout);
+    (void)freopen("NUL", "w", stderr);
+    return 0;
+#else
+    return -1;
+#endif
+}

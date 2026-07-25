@@ -256,6 +256,7 @@ No `-name` is needed: DOOR32.SYS line 7 already carries the user's alias.
 | `-t<seconds>` | Session time limit in seconds; the door exits cleanly (restoring the terminal) when it elapses. Same digit-suffix-only rule as `-s<fd>`. |
 | `-name <handle>` | The player's alias, for the **drop-file-less** dev path (`-s<fd>`/`SYNCMOO1_SOCK`). A DOOR32.SYS drop file always wins: its line 7 is the BBS's own statement of who the user is, and `-name` cannot override it whatever the argument order. The alias pre-fills the new-game emperor name (truncated to the 11 characters that screen lets the player edit); with no alias, 1oom invents one as usual. |
 | `-home <dir>` | Per-user sandbox directory: the door `mkpath`s and `chdir`s into it and points 1oom's config/save path at it (`os_set_path_user()`), so saves and settings don't collide across BBS nodes/users. Created if it doesn't exist. |
+| `-showconsole` / `-hideconsole` | **Windows:** keep or close the door's own console window (the one a BBS spawning with `CREATE_NEW_CONSOLE` pops up on the BBS machine). Closing is the default; overrides `syncmoo1.ini [debug] hide_console`. Only a console the door owns is closed — running it by hand from a command prompt keeps your shell's output. |
 | `-help`, `--help`, `-?` | Print the door's own option summary and exit (checked before any session resolution, so it wins even given a well-formed drop file). |
 
 DOOR32.SYS does not carry the screen row/pixel geometry; the door probes the
@@ -314,6 +315,7 @@ file or key falls back to its default.
 |---------|-----|---------|
 | `[audio]` | `music_quality` | Ogg/Vorbis VBR quality (`0.0`..`1.0`) for encoded music tracks. Lower = smaller upload, softer sound. Default: the termgfx-wide default. |
 | `[debug]` | `wire` | Record both directions of the terminal conversation to `data/syncmoo1/syncmoo1_n<node>.wire` -- multi-MB per session, per node. Decode with `tools/wiredump.py`. Default `false`; only turn this on while actively debugging the door. |
+| `[debug]` | `hide_console` | **Windows only:** close the door's own console window as the session starts, so a BBS that spawns the door with `CREATE_NEW_CONSOLE` doesn't leave one window per player on the BBS machine. Default `true`. Under Synchronet the window is normally suppressed before it appears (`XTRN_NODISPLAY` on the xtrn entry); this covers any other BBS. Only a console the door owns is closed. Set `false`, or pass `-showconsole`, to watch its output while troubleshooting. |
 | `[text]` | `no_graphics` | One line replacing the wording shown to a caller whose terminal can draw neither sixel nor JXL, before the door exits. Default: the built-in notice. |
 | `[text]` | `no_graphics_file` | A file whose contents are sent instead, verbatim -- so the notice can run to several lines, or be ANSI art. Bare LF is rewritten to CRLF for you. A relative path is read from the door's own directory. Default `nographics.txt`, which is used if it exists and ignored if it doesn't, so you can override the wording by dropping the file in and changing nothing else. |
 | `[text]` | `no_graphics_pause` | Seconds to hold that notice on screen before returning to the BBS, which repaints its own menu over it. A keypress ends the wait early, so this is only the ceiling for a caller who walked away. `"30s"`/`"1m"`/`"30"` all parse; `0` leaves at once and the notice will very likely go unread. Default 15 seconds. |
@@ -329,8 +331,10 @@ enables it.
 ## Logging & diagnostics
 
 The door records diagnostics to two files, so nothing is lost even with the
-local console hidden (`XTRN_NODISPLAY`, which `install-xtrn.ini` sets -- see
-its comments):
+local console hidden -- which it is by default: Synchronet suppresses the window
+before it appears (`XTRN_NODISPLAY`, which `install-xtrn.ini` sets -- see its
+comments), and on any other BBS the door closes its own at startup
+(`[debug] hide_console`):
 
 - **`<-home>/1oom_log.txt`** -- the **1oom engine's** own log (LBX search,
   config load, the version banner, engine errors). Opened unconditionally by

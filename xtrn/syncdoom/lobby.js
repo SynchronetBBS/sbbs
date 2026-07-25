@@ -19,6 +19,16 @@ var cfg = sd_load_config();
 // Launch helpers
 // ---------------------------------------------------------------------------
 
+// EX_NODISPLAY is the bbs.exec() spelling of the door's own XTRN_NODISPLAY xtrn
+// setting: CREATE_NO_WINDOW on Windows, so a lobby-launched session pops up no
+// console window on the BBS machine (no-op on *nix). Default on -- the door's
+// diagnostics go to data/syncdoom/syncdoom_n<node>.log, not that console.
+function sd_display_flags()
+{
+	return (cfg.lobby.nodisplay === false || cfg.lobby.nodisplay === "false")
+	    ? 0 : EX_NODISPLAY;
+}
+
 // Build and run the door for a play session. 'connect' is "host:port" to join
 // (or null for single-player); extra is an array of extra flags and ws is the
 // picked WAD set. bbs.cmdstr() expands the % specifiers before exec.
@@ -54,7 +64,7 @@ function sd_play(connect, extra, ws)
 	for (i = 0; i < wsargs.length; i++)
 		cmd += " " + wsargs[i];
 
-	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN, SD_DIR);
+	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN | sd_display_flags(), SD_DIR);
 
 	// The door writes frames straight to the socket, bypassing Synchronet's
 	// console line counter. That leaves the counter stale, so the next screen
@@ -106,7 +116,7 @@ function sd_spawn_server(port, maxplayers, ws, mode, register)
 	if (bind)
 		cmd += " -bindaddr " + bind;
 
-	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE, SD_DIR);
+	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | sd_display_flags(), SD_DIR);
 }
 
 // ---------------------------------------------------------------------------

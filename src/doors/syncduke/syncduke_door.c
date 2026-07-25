@@ -155,6 +155,8 @@ static void syncduke_usage(const char *argv0)
 		"                     set it explicitly on non-Synchronet BBSes)\n"
 		"  -log <path>        door debug log (else syncduke.ini [debug] log, else off)\n"
 		"  -eventlog <path>   append game events (JSONL) for the lobby activity feed\n"
+		"  -showconsole       keep the door's own console window open (Windows)\n"
+		"  -hideconsole       close it (the default; [debug] hide_console)\n"
 		"\n"
 		"Multiplayer (co-op / dukematch -- the lobby sets these):\n"
 		"  -netrole <role>       master | join\n"
@@ -444,6 +446,9 @@ void syncduke_sanitize_cmdline(int *argc, char **argv)
 				i++;           /* also skip the value */
 			continue;
 		}
+		/* -showconsole / -hideconsole: ours, value-less (see syncduke_config.c) */
+		if (strcmp(a, "-showconsole") == 0 || strcmp(a, "-hideconsole") == 0)
+			continue;
 		/* -s<fd> socket descriptor / -t<seconds> time limit (attached door args) */
 		if (a[0] == '-' && (a[1] == 's' || a[1] == 't') && a[2] != '\0')
 			continue;

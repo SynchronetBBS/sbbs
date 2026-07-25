@@ -158,6 +158,7 @@ static char     g_home[PATH_MAX] = ""; // -home: full path to the user's storage
 static FILE    *g_logf;                // durable file log (see sd_log_open): -log / [debug] log / SYNCDOOM_LOG
 static char     g_logpath[PATH_MAX] = ""; // configured log dest (-log arg or [debug] log ini), opened lazily
 static int      g_log_tried;           // attempted to open g_logf (success or not)
+static int      g_hide_console = 1;    // [debug] hide_console / -showconsole (see sd_console_detach)
 static char     g_term_path[PATH_MAX] = ""; // -term: terminal.ini file or its dir (override)
 static char     g_player_name[64] = ""; // -name: network player handle (multiplayer)
 static char     g_wadname[64] = "";     // -wadname: friendly WAD-set name for the who's-online
@@ -3524,6 +3525,10 @@ static void read_syncdoom_ini(const char *argv0)
 	if (g_logpath[0] == '\0' && iniGetExistingString(ini, "debug", "log", "", g_logpath) == NULL)
 		snprintf(g_logpath, sizeof(g_logpath), "syncdoom.log");
 
+	// [debug] hide_console -- close the door's own console window on Windows
+	// (sd_console_detach). Default on; -showconsole/-hideconsole override it.
+	g_hide_console = iniGetBool(ini, "debug", "hide_console", TRUE);
+
 	// [wads] dir -- point Doom's IWAD search at the configured WAD directory so a
 	// bare "-iwad freedoom1.wad" (e.g. the direct-exec install) resolves there,
 	// the same dir the lobby uses. Resolve to ABSOLUTE (we chdir into -home before
@@ -4807,6 +4812,43 @@ void sd_waitroom_run(void)
 // fills 640x400, and pass everything else (e.g. -iwad) through to doomgeneric.
 // ---------------------------------------------------------------------------
 
+// Close the door's own console window (Windows). A BBS that spawns a native
+// door with CREATE_NEW_CONSOLE gets one console window per session on the BBS
+// machine; the door draws to the CLIENT's terminal and prints nothing there, so
+// the window is pure noise. Synchronet can suppress it host-side (the xtrn's
+// XTRN_NODISPLAY setting -> CREATE_NO_WINDOW, which also avoids the brief flash
+// before we get here) -- this is the equivalent for a BBS with no such setting.
+// The two compose: CREATE_NO_WINDOW still gives the process a console, so the
+// test below holds and this just frees an already-invisible one.
+//
+// Only detach from a console we OWN: GetConsoleProcessList() reporting exactly 1
+// means the console was created for this process and freeing it closes the
+// window; more means we inherited a shell's console (a developer running the
+// door by hand) and detaching would silently discard their output.
+//
+// FreeConsole() invalidates all three std streams, so re-point them at NUL --
+// dlog() writes stderr on every call, and the DOOM engine printf()s on some
+// paths. The -log file is unaffected: g_logf is a plain file handle. No-op on
+// *nix, which has no such window.
+static void sd_console_detach(void)
+{
+#ifdef _WIN32
+	DWORD pids[2];
+
+	if (!g_hide_console || !g_sock)
+		return;                     // opted out, or a dev launch with no door socket
+	if (GetConsoleProcessList(pids, (DWORD)(sizeof pids / sizeof pids[0])) != 1)
+		return;                     // no console (0), or shared with a shell (>1)
+	fflush(stdout);
+	fflush(stderr);
+	if (!FreeConsole())
+		return;
+	(void)freopen("NUL", "r", stdin);
+	(void)freopen("NUL", "w", stdout);
+	(void)freopen("NUL", "w", stderr);
+#endif
+}
+
 // Command-line usage. Lists the door's own options; any switch it doesn't
 // recognize passes through to the DOOM engine. Printed on -help/--help/-?//? or
 // a bare launch (no args -> nothing to do but explain how to run it).
@@ -4831,6 +4873,8 @@ static void sd_usage(const char *argv0)
 		"  -home <dir>       per-user dir for config, savegames, screenshots\n"
 		"  -name <handle>    multiplayer player name (default Player)\n"
 		"  -eventlog <path>  append game events (JSONL) for the lobby activity feed\n"
+		"  -showconsole      keep the door's own console window open (Windows)\n"
+		"  -hideconsole      close it (the default; [debug] hide_console)\n"
 		"\n"
 		"Video (else auto-probed):\n"
 		"  -jxl [0|1|auto]   JPEG-XL tier: force off/on, or auto (JXL builds)\n"
@@ -4861,7 +4905,7 @@ static void sd_usage(const char *argv0)
 		"  -deathmatch           deathmatch (else co-op)\n"
 		"  -altdeath             deathmatch 2.0 (weapons + items respawn)\n"
 		"  -warp <n> | <e> <m>   start on this map/level directly\n"
-		"  -mustered             skip the C waiting room (lobby already mustered)\n"
+		"  -mustered             skip the door's own waiting room (lobby already mustered)\n"
 		"\n"
 		"Multiplayer -- dedicated server (spawned by the lobby; run by hand to test):\n"
 		"  -dedicated            run headless as a match's tic relay (needs -port)\n"
@@ -5014,6 +5058,10 @@ int main(int argc, char **argv)
 			else
 				g_jxl_pref = -1;    // auto
 			g_force_text = 0;       // an explicit -jxl overrides an ini "tier=text"
+		} else if (strcmp(argv[i], "-showconsole") == 0) {  // before -s (prefix-matched): keep
+			g_hide_console = 0;                             // the door's own console window
+		} else if (strcmp(argv[i], "-hideconsole") == 0) {  // close it (the default)
+			g_hide_console = 1;
 		} else if (strcmp(argv[i], "-sixel") == 0) {        // before -s (which is prefix-matched)
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
 			if      (!strcmp(v, "0") || !strcmp(v, "off"))
@@ -5126,6 +5174,10 @@ int main(int argc, char **argv)
 #endif
 		}
 	}
+	// Both sources of hide_console are known now (ini, then the overriding args),
+	// and nothing has logged yet -- see sd_console_detach() on that ordering.
+	sd_console_detach();
+
 	// Arm the idle clock now that BOTH sources are known: read_syncdoom_ini()
 	// ran before this loop (its [idle] keys), and -i was parsed inside it. The
 	// argument wins when given, so a launcher can pass -i0 to excuse an exempt
@@ -5183,8 +5235,9 @@ int main(int argc, char **argv)
 		}
 		if (argv[i][0] != '-' && is_door32_path(argv[i]))
 			continue;                          // drop-file path, not for doomgeneric
-		if (strcmp(argv[i], "-text") == 0)
-			continue;                                      // boolean: no value to skip
+		if (strcmp(argv[i], "-text") == 0 || strcmp(argv[i], "-hideconsole") == 0
+		    || strcmp(argv[i], "-showconsole") == 0)
+			continue;                                      // booleans: no value to skip
 		if (strcmp(argv[i], "-jxl")         == 0 || strcmp(argv[i], "-sixel")   == 0 ||
 		    strcmp(argv[i], "-charset")     == 0 || strcmp(argv[i], "-mode")    == 0 ||
 		    strcmp(argv[i], "-colors")      == 0 || strcmp(argv[i], "-home")    == 0 ||

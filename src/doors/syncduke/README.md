@@ -17,7 +17,7 @@ who's-online/paging) lives in a shared library, **[termgfx](../termgfx/)**, that
 SyncDuke and its sibling [SyncDOOM](../syncdoom/) both build on.
 
 The core is **shareware Episode 1**, 64-bit. Beyond single-player it now has
-**co-op and dukematch multiplayer** through a **JS lobby** waiting room, and
+**co-op and dukematch multiplayer** through a **lobby** waiting room, and
 **full audio** — digital sound effects plus OPL/MIDI music — which requires
 **SyncTERM v1.10 or later** (its audio channel); on any other terminal the game
 simply plays silent.
@@ -241,6 +241,12 @@ syncduke <path>/door32.sys -home <per-user-dir>/duke/
   run. Without it, config/saves would be shared in the GRP directory and collide
   across nodes. (The base GRP stays read-only and shared.)
 
+On **Windows** a session leaves no console window on the BBS machine: Synchronet
+suppresses it before it appears (`XTRN_NODISPLAY` on the xtrn entry, and
+`[lobby] nodisplay` for a lobby-launched game — both on by default), and on any
+other BBS the door closes its own at startup (`[debug] hide_console`, or
+`-showconsole` to keep it while troubleshooting).
+
 ### Command-line arguments
 
 The DOOR32.SYS path or `-s<fd>` supplies the client socket; everything else
@@ -258,8 +264,9 @@ arguments) to print this list.
 | `-home <dir>` | Per-user writable dir for `duke3d.cfg` + savegames (see above). |
 | `-grpdir <dir>` | Where to find `DUKE3D.GRP` (else beside the binary; also `syncduke.ini [grp] dir`). |
 | `-charset utf8\|cp437\|auto` | Client character set for the block/text tiers. `auto` (default) detects it from Synchronet's `<node>/terminal.ini`; pass `utf8` or `cp437` explicitly on **non-Synchronet BBSes** (DOOR32.SYS installs with no `terminal.ini`), where auto-detection can't work. `utf8` makes the block tiers emit native Unicode and adds the higher-res **quadrant/sextant** tiers to the F4 cycle. Overrides `syncduke.ini [video] charset`. |
-| `-log <path>` | Write a door debug log to `<path>` (else `syncduke.ini [debug] log`, else off). |
+| `-log <path>` | Write a door debug log to `<path>` (else `syncduke.ini [debug] log`, which defaults to `syncduke.log` in `<data>/syncduke/` — blank the key to disable). |
 | `-eventlog <path>` | Append game events (level start, deaths/frags) as JSONL to `<path>` for the lobby's activity feed. |
+| `-showconsole` / `-hideconsole` | **Windows:** keep or close the door's own console window (the one a BBS spawning with `CREATE_NEW_CONSOLE` pops up on the BBS machine). Closing is the default; overrides `syncduke.ini [debug] hide_console`. Only a console the door owns is closed — running it by hand from a command prompt keeps your shell's output. |
 | `-map <file>` | Play a third-party **user map** (`.map`) instead of the stock levels (single-player and net games); **requires a non-shareware base GRP**. The engine's `/g<grp>` / `/x<con>` options load **add-on GRPs** (official expansions) on top of the base GRP. See [Third-party user maps & add-on GRPs](#third-party-user-maps--add-on-grps). |
 
 **Multiplayer** (co-op and dukematch) — the lobby sets these itself, so you
@@ -337,7 +344,7 @@ Setup:
 - **Plays** end-to-end: boot → menu → new game → Episode 1, with rendering,
   movement / turn / strafe / fire / weapon-switch / jump / crouch / use / look,
   and **save / load**, all over the terminal.
-- **Multiplayer** — co-op and dukematch through the JS lobby's waiting room
+- **Multiplayer** — co-op and dukematch through the lobby's waiting room
   (`-netrole`/`-netport`/`-netpeer`), alongside single-player.
 - **Audio** — full sound: digital SFX and OPL/MIDI music (with 3-D positional
   panning) over SyncTERM's audio channel. **Requires SyncTERM v1.10+**; on a

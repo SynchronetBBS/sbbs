@@ -21,6 +21,15 @@ var cfg = sd_load_config();
 // Launch
 // ---------------------------------------------------------------------------
 
+// EX_NODISPLAY is the bbs.exec() spelling of the door's own XTRN_NODISPLAY xtrn
+// setting: CREATE_NO_WINDOW on Windows, so a lobby-launched session pops up no
+// console window on the BBS machine (no-op on *nix). Default on -- the door's
+// diagnostics go to data/syncduke/syncduke_n<node>.log, not that console.
+function sd_display_flags() {
+	return (cfg.lobby.nodisplay === false || cfg.lobby.nodisplay === "false")
+	    ? 0 : EX_NODISPLAY;
+}
+
 // Run the door for a play session. `cmd` is sd_cmd()'s pre-cmdstr string;
 // bbs.cmdstr() expands the %-specifiers (socket, time, alias, ".exe") before exec.
 // `map` is the picked [map:*] entry (null = stock Duke), logged so the node log
@@ -29,7 +38,7 @@ var cfg = sd_load_config();
 // Blocks until the door exits.
 function sd_play(cmd, map) {
 	bbs.logline("X-", "Playing Duke Nukem 3D: " + (map ? map.key : "stock content"));
-	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN, SD_DIR);
+	bbs.exec(bbs.cmdstr(cmd), EX_NATIVE | EX_BIN | sd_display_flags(), SD_DIR);
 	// The door writes frames straight to the socket, bypassing Synchronet's console
 	// line counter, leaving it stale -- the next screen would fire an errant
 	// [Hit a key]. Reset it so the menu repaints cleanly.
