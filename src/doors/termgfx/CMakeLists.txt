@@ -33,6 +33,7 @@ add_library(termgfx STATIC
     pace.c
     idle.c
     stats.c
+    gfxgate.c
     termgfx_plat.c
     termgfx_termio.c
     termgfx_quant.c

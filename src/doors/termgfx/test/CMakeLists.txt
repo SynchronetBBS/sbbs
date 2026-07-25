@@ -65,6 +65,26 @@ set_target_properties(test_stats PROPERTIES C_STANDARD 11)
 target_compile_options(test_stats PRIVATE -UNDEBUG)
 add_test(NAME stats COMMAND test_stats)
 
+# Unit test for gfxgate.c -- the shared "this terminal can't display the game"
+# verdict plus the sysop-overridable notice. Bare SOURCE like the three above:
+# the verdict is arithmetic and the notice resolver only reads a file.
+#
+# Built THREE times from one source. termgfx_gfxgate_notice() resolves once per
+# process and caches (it is asked on the way out of a door, so re-reading a
+# file on every call would be waste), which means a single binary can exercise
+# exactly one of its three tiers. GFXGATE_CASE picks which; the stateless
+# verdict half runs in all three.
+foreach(case_n RANGE 2)
+    add_executable(test_gfxgate${case_n}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../gfxgate.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/test_gfxgate.c)
+    target_include_directories(test_gfxgate${case_n} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    target_compile_definitions(test_gfxgate${case_n} PRIVATE GFXGATE_CASE=${case_n})
+    set_target_properties(test_gfxgate${case_n} PROPERTIES C_STANDARD 11)
+    target_compile_options(test_gfxgate${case_n} PRIVATE -UNDEBUG)
+    add_test(NAME gfxgate${case_n} COMMAND test_gfxgate${case_n})
+endforeach()
+
 # The rest of this directory's tests -- termgfx_termio (23 binaries), the
 # quantizer, present_rgbx, the sixel palette test and the repro_fade harness --
 # are driven by the unit_termgfx_*.sh scripts here rather than by CTest: they

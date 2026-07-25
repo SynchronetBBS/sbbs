@@ -27,6 +27,7 @@
 #include "idle.h"
 #include "door32.h"
 #include "geometry.h"
+#include "gfxgate.h"
 #include "sixel.h"
 #include "termgfx_quant.h"   /* termgfx_quant_rgb(): RGB888 -> 256-color, for
                               * present_rgbx()'s sixel tier (Task 1's shared lib) */
@@ -229,6 +230,13 @@ static int      g_deadline_logged;
 static unsigned char g_menu_letter;   /* Ctrl+<letter> opens the GMM; 0 = disabled */
 static int g_have_sixel, g_is_syncterm, g_jxl, g_probe_replied;
 static int g_no_gfx_notified;   /* one-shot: unsupported-terminal notice sent */
+
+/* Sysop overrides for that notice ([text] in <door>.ini, see gfxgate.h). Both
+ * default to "unset" -- an absent file and an empty string -- which resolves
+ * to the built-in wording. */
+#define TERMGFX_NOGFX_FILE  "nographics.txt"
+static char g_nogfx_file[INI_MAX_VALUE_LEN] = TERMGFX_NOGFX_FILE;
+static char g_nogfx_text[INI_MAX_VALUE_LEN];
 static int g_cterm_ver;
 #ifdef WITH_JXL
 /* CTerm >= 1.329 (TERMGFX_CTERM_VER_BLOB): DrawJXLBlob draws inline, no C;S
@@ -1260,10 +1268,10 @@ static int g_opus_seen;         /* the Opus reply actually landed (vs. the
  * session that never reads an ini at all all behave as they always have. */
 static int g_audio_enabled = 1;
 
-/* The graphics settle window (the JXL reply's deadline), hoisted here from
- * the present-path constants below: termgfx_termio_audio_available()'s bounded wait
- * is defined in terms of the same window and is defined above them. */
-#define TERMGFX_GFX_SETTLE_MS  2000   /* JXL reply window (matches jxl_scan_feed) */
+/* TERMGFX_GFX_SETTLE_MS -- the graphics settle window (the JXL reply's
+ * deadline) -- comes from gfxgate.h, which owns the gate that window belongs
+ * to. termgfx_termio_audio_available()'s bounded wait is defined in terms of
+ * the same window. */
 
 /* Append raw input to the shared scan accumulator. Split out of
  * jxl_scan_feed() for M4, when the audio replies became a second scanner
@@ -1538,6 +1546,13 @@ static void termgfx_read_ini(void)
 	 * the session state. audio_stream_open() takes its cfg.enabled from
 	 * g_audio_enabled -- see the note there. */
 	g_audio_enabled = iniGetBool(ini, "audio", "enabled", g_audio_enabled);
+	/* [text] -- what a terminal without sixel or JXL is told on its way out.
+	 * The default file name is looked for whether or not the key is set, so a
+	 * sysop can override the wording by dropping a file beside the ini with no
+	 * config at all; gfxgate falls through quietly when it isn't there. */
+	iniGetString(ini, "text", "no_graphics_file", TERMGFX_NOGFX_FILE,
+	             g_nogfx_file);
+	iniGetString(ini, "text", "no_graphics", "", g_nogfx_text);
 	strListFree(&ini);
 }
 
@@ -4061,33 +4076,26 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		return;
 	}
 
-	/* Non-graphics-terminal gate (deferred here from Task 7). syncscumm renders
-	 * only via sixel or JXL. If the terminal ANSWERED the capability probe but
-	 * has advertised neither tier, wait out the JXL reply window (a sixel DA1
-	 * would already have set g_have_sixel) and then conclude it cannot display
-	 * the game: emit a one-time plain-text notice and request quit, rather than
-	 * spraying unrenderable sixel DCS at it (termgfx_tier() otherwise defaults to
-	 * sixel). A terminal that stayed *silent* (no DA1 at all) is left to the
-	 * historical default-to-sixel path -- a graphics terminal that simply
-	 * doesn't answer device-attributes shouldn't be turned away. */
-	if (!g_have_sixel && !g_jxl && g_probe_replied) {
-		if (!g_jxl_done
-		    && (int32_t)(now_ms() - g_probe_start_ms) <= TERMGFX_GFX_SETTLE_MS) {
+	/* Non-graphics-terminal gate: this path renders only via sixel or JXL, so
+	 * a terminal that answered the capability probe claiming neither is told
+	 * so and quit, rather than sprayed with DCS termgfx_tier() would otherwise
+	 * default to. Verdict and notice are shared with the doors that run their
+	 * own present loop -- see gfxgate.h. */
+	switch (termgfx_gfxgate(g_have_sixel, g_jxl, g_probe_replied, g_jxl_done,
+	                        g_probe_start_ms, now_ms())) {
+		case TERMGFX_GFXGATE_WAIT:
 			termgfx_trace("gated-grace", termgfx_tier_name(termgfx_tier()), 0);
-			return;   /* JXL cap may still be in flight -- keep holding */
-		}
-		if (!g_no_gfx_notified) {
-			out_puts("\r\n\x1b[0m\r\n"
-			         "  This game requires a terminal with sixel or JXL graphics"
-			         " support\r\n"
-			         "  (such as SyncTERM). This terminal reports neither, so the"
-			         " game\r\n"
-			         "  cannot be displayed.\r\n\r\n");
-			termgfx_termio_flush();
-			g_no_gfx_notified = 1;
-		}
-		g_quit = 1;
-		return;
+			return;
+		case TERMGFX_GFXGATE_REJECT:
+			if (!g_no_gfx_notified) {
+				out_puts(termgfx_gfxgate_notice(g_nogfx_file, g_nogfx_text));
+				termgfx_termio_flush();
+				g_no_gfx_notified = 1;
+			}
+			g_quit = 1;
+			return;
+		default:
+			break;
 	}
 
 	/* Canvas-size hold (reached only with a graphics tier -- the gate above
@@ -4475,22 +4483,20 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 
 	/* Non-graphics-terminal gate: neither sixel nor JXL advertised (see
 	 * present()) -- notify once and quit rather than spray unrenderable DCS. */
-	if (!g_have_sixel && !g_jxl && g_probe_replied) {
-		if (!g_jxl_done
-		    && (int32_t)(now_ms() - g_probe_start_ms) <= TERMGFX_GFX_SETTLE_MS)
-			return;   /* JXL cap may still be in flight -- keep holding */
-		if (!g_no_gfx_notified) {
-			out_puts("\r\n\x1b[0m\r\n"
-			         "  This game requires a terminal with sixel or JXL graphics"
-			         " support\r\n"
-			         "  (such as SyncTERM). This terminal reports neither, so the"
-			         " game\r\n"
-			         "  cannot be displayed.\r\n\r\n");
-			termgfx_termio_flush();
-			g_no_gfx_notified = 1;
-		}
-		g_quit = 1;
-		return;
+	switch (termgfx_gfxgate(g_have_sixel, g_jxl, g_probe_replied, g_jxl_done,
+	                        g_probe_start_ms, now_ms())) {
+		case TERMGFX_GFXGATE_WAIT:
+			return;
+		case TERMGFX_GFXGATE_REJECT:
+			if (!g_no_gfx_notified) {
+				out_puts(termgfx_gfxgate_notice(g_nogfx_file, g_nogfx_text));
+				termgfx_termio_flush();
+				g_no_gfx_notified = 1;
+			}
+			g_quit = 1;
+			return;
+		default:
+			break;
 	}
 
 	/* Canvas-size hold: wait for the real pixel canvas (see present()). */
