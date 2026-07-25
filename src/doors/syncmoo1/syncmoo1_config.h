@@ -47,4 +47,17 @@ void sm_config_prune_user_cfg(void);
 unsigned sm_config_idle_timeout(void);
 unsigned sm_config_idle_warn(void);
 
+/* [text] no_graphics_file / no_graphics -- the sysop's replacement for what a
+ * terminal that can render neither sixel nor JXL is told before the door exits.
+ * Fed straight to termgfx_gfxgate_notice(), which picks file > string >
+ * built-in. The path is absolute by the time it is returned (pinned to the
+ * launch dir before the per-user chdir); the string may be empty. Never NULL. */
+const char *sm_config_nogfx_file(void);
+const char *sm_config_nogfx_text(void);
+
+/* [text] no_graphics_pause -- seconds to hold that notice on screen before
+ * returning to the BBS, which repaints over it. A keypress ends the wait
+ * early; 0 disables it. Default TERMGFX_GFXGATE_PAUSE_SECS. */
+unsigned sm_config_nogfx_pause(void);
+
 #endif /* SYNCMOO1_CONFIG_H */

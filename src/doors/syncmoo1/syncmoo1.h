@@ -144,6 +144,12 @@ void sm_io_wiredump_in(const void *buf, size_t len);
 void sm_io_set_gfx_canvas(int w, int h);   /* XTSMGRAPHICS canvas: the max sixel the terminal draws */
 int sm_input_have_sixel(void);       /* 1 if the terminal advertised sixel (DA1 param 4 / CTDA cap 4) */
 int sm_input_is_syncterm(void);
+/* The three the no-graphics gate reads (termgfx/gfxgate.h). "answered" is
+ * whether the Q;JXL query came back at all, which is what separates "no JXL"
+ * from "not yet"; sm_input_jxl() is whether the answer was yes. */
+int sm_input_probe_replied(void);    /* 1 once the terminal answered device-attributes */
+int sm_input_jxl(void);              /* 1 if the terminal advertised the JXL tier */
+int sm_input_jxl_answered(void);
 void sm_input_vscale_arm(void);      /* arm the sixel vertical-scaling probe's CPR collector */
 int  sm_input_vscale_done(void);     /* 1 once the probe has answered */
 int  sm_input_sixel_vscale(void);    /* 1 if the terminal honors the sixel raster pan (vertical scale) */

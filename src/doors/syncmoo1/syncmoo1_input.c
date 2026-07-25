@@ -174,14 +174,15 @@ static void sm_mouse_event(int button, int col, int row, int release)
  * sm_io_take_grid_probe) so a malformed/lost grid reply can't cause a later
  * genuine pace-ack to be mis-latched as the grid -- see the 'R' case below. */
 
-/* Capability flags recorded from the 'c'/'n' probe replies. Not yet consumed
- * anywhere (M1 is sixel-only per DESIGN.md Sec10 -- tier selection is a later
- * task) but parsed now, alongside the geometry replies, per the brief; kept
- * as module state rather than dropped so a later task has them ready. */
+/* Capability flags recorded from the 'c'/'n' probe replies. The sixel and
+ * SyncTERM flags drive the present path's palette policy; all four feed the
+ * no-graphics gate (termgfx/gfxgate.h), which turns a terminal that can render
+ * neither tier away instead of spraying it with sixel. */
 static int g_probe_replied;
 static int g_is_syncterm;
 static int g_have_sixel;
 static int g_jxl_supported;
+static int g_jxl_answered;   /* the Q;JXL query came back, either way */
 
 /* Did the terminal identify itself as SyncTERM (CTDA '<'/'=' marker, or a CTerm
  * state report)? Read by syncmoo1_io.c's present path to decide whether the
@@ -236,6 +237,21 @@ int sm_input_have_sixel(void)
 int sm_input_is_syncterm(void)
 {
     return g_is_syncterm;
+}
+
+int sm_input_probe_replied(void)
+{
+    return g_probe_replied;
+}
+
+int sm_input_jxl(void)
+{
+    return g_jxl_supported;
+}
+
+int sm_input_jxl_answered(void)
+{
+    return g_jxl_answered;
 }
 
 
@@ -326,6 +342,7 @@ static void sm_csi_final(char fin)
             if (r >= 0) {
                 g_is_syncterm   = 1;
                 g_jxl_supported = (r == 1);
+                g_jxl_answered  = 1;
             }
         }
         return;

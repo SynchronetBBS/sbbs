@@ -47,6 +47,7 @@
                         * lib_malloc'd (util_concat()); free it accordingly */
 #include "ini_file.h"    /* xpdev: iniReadFile / iniGetBool / iniGetFloat */
 #include "audio_mgr.h"   /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
+#include "gfxgate.h"     /* termgfx: TERMGFX_GFXGATE_PAUSE_SECS */
 #include "syncmoo1_cfgprune.h"
 
 #ifndef PATH_MAX
@@ -79,6 +80,40 @@ static unsigned sm_idle_warn    = 60;                /* [idle] warn */
 
 unsigned sm_config_idle_timeout(void) { return sm_idle_timeout; }
 unsigned sm_config_idle_warn(void)    { return sm_idle_warn; }
+
+/* syncmoo1.ini [text] -- what a terminal that can render neither sixel nor JXL
+ * is told on its way out (termgfx/gfxgate.h resolves file > string > built-in).
+ * The default file name is searched for whether or not the key is set, so the
+ * wording can be replaced by dropping a file beside the ini and nothing else. */
+#define SM_NOGFX_FILE "nographics.txt"
+
+static char     sm_nogfx_file[INI_MAX_VALUE_LEN] = SM_NOGFX_FILE;
+static char     sm_nogfx_text[INI_MAX_VALUE_LEN];
+static unsigned sm_nogfx_pause = TERMGFX_GFXGATE_PAUSE_SECS;
+
+const char *sm_config_nogfx_file(void)  { return sm_nogfx_file; }
+const char *sm_config_nogfx_text(void)  { return sm_nogfx_text; }
+unsigned    sm_config_nogfx_pause(void) { return sm_nogfx_pause; }
+
+/* Pin a relative notice path to the LAUNCH directory. The gate opens this file
+ * when it turns a terminal away, which is long after sm_config_apply()'s chdir
+ * into the per-user -home sandbox -- so a bare "nographics.txt" would be looked
+ * for beside that player's saves rather than beside the ini that named it. Same
+ * resolve-before-the-chdir reason as sm_lbx_dir, but by string rather than
+ * FULLPATH(): the file usually does not exist, and realpath() fails on a path
+ * that doesn't. */
+static void sm_config_pin_nogfx_file(void)
+{
+    char cwd[PATH_MAX];
+    char rel[INI_MAX_VALUE_LEN];
+
+    if (sm_nogfx_file[0] == '\0' || isabspath(sm_nogfx_file))
+        return;
+    if (getcwd(cwd, sizeof cwd) == NULL)
+        return;
+    snprintf(rel, sizeof rel, "%s", sm_nogfx_file);
+    snprintf(sm_nogfx_file, sizeof sm_nogfx_file, "%s/%s", cwd, rel);
+}
 
 int sm_config_wire_enabled(void)
 {
@@ -158,6 +193,11 @@ static void sm_config_read_ini(void)
     sm_idle_timeout = (unsigned)iniGetDuration(ini, "idle", "timeout",
                                                SM_IDLE_DEFAULT);
     sm_idle_warn    = (unsigned)iniGetDuration(ini, "idle", "warn", 60);
+    iniGetString(ini, "text", "no_graphics_file", SM_NOGFX_FILE, sm_nogfx_file);
+    iniGetString(ini, "text", "no_graphics", "", sm_nogfx_text);
+    /* iniGetDuration() so "30s"/"1m"/"30" all parse, as in [idle]. */
+    sm_nogfx_pause = (unsigned)iniGetDuration(ini, "text", "no_graphics_pause",
+                                              TERMGFX_GFXGATE_PAUSE_SECS);
     sm_config_capture_1oom(ini);
     strListFree(&ini);
 }
@@ -344,7 +384,8 @@ int sm_config_apply(void)
     int         rc   = 0;
     char        cwd[PATH_MAX];
 
-    sm_config_read_ini();   /* before the chdir: cwd is still the launch dir */
+    sm_config_read_ini();       /* before the chdir: cwd is still the launch dir */
+    sm_config_pin_nogfx_file(); /* likewise -- and needed even with no ini at all */
 
     /* --- 1. shared, read-only LBX data dir --------------------------------
      * RESOLVED here (before the step-2 chdir), APPLIED later, from hw_init()

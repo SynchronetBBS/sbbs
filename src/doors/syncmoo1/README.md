@@ -314,6 +314,9 @@ file or key falls back to its default.
 |---------|-----|---------|
 | `[audio]` | `music_quality` | Ogg/Vorbis VBR quality (`0.0`..`1.0`) for encoded music tracks. Lower = smaller upload, softer sound. Default: the termgfx-wide default. |
 | `[debug]` | `wire` | Record both directions of the terminal conversation to `data/syncmoo1/syncmoo1_n<node>.wire` -- multi-MB per session, per node. Decode with `tools/wiredump.py`. Default `false`; only turn this on while actively debugging the door. |
+| `[text]` | `no_graphics` | One line replacing the wording shown to a caller whose terminal can draw neither sixel nor JXL, before the door exits. Default: the built-in notice. |
+| `[text]` | `no_graphics_file` | A file whose contents are sent instead, verbatim -- so the notice can run to several lines, or be ANSI art. Bare LF is rewritten to CRLF for you. A relative path is read from the door's own directory. Default `nographics.txt`, which is used if it exists and ignored if it doesn't, so you can override the wording by dropping the file in and changing nothing else. |
+| `[text]` | `no_graphics_pause` | Seconds to hold that notice on screen before returning to the BBS, which repaints its own menu over it. A keypress ends the wait early, so this is only the ceiling for a caller who walked away. `"30s"`/`"1m"`/`"30"` all parse; `0` leaves at once and the notice will very likely go unread. Default 15 seconds. |
 | `[1oom]` | `<module>.<item>` | Defaults for the engine's own options, keyed by 1oom's cfg names (modules: `opt`, `opta`, `game`, `hw`, `hwx`, `ui`). Applied through 1oom's own parser, so its per-item range checks validate them. These are **defaults, not overrides**: a player who changes one in the in-game options menu keeps their choice; a player who never touches it follows whatever you set, even if you change it later. |
 
 `SYNCMOO1_WIREDUMP=<path>` forces the wire dump on (writing to `<path>`

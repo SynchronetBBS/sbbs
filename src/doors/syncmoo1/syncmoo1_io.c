@@ -48,6 +48,7 @@
 #include "term.h"       /* termgfx: termgfx_term_enter/probe/leave */
 #include "caps.h"       /* termgfx: termgfx_query_jxl */
 #include "geometry.h"   /* termgfx: termgfx_geom_center_ex */
+#include "gfxgate.h"    /* termgfx: the shared no-graphics verdict + notice */
 #include "syncmoo1_geom.h"   /* sm_geom_fit_page / sm_geom_encode_dims (+ SM_FB_*, SM_SIXEL_*) */
 #include "sbbs_node.h" /* termgfx: sbbs_my_node() -- node-tag the capture */
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller (termgfx_rtt_sample/termgfx_aimd_update) */
@@ -411,6 +412,11 @@ int sm_io_pace_depth(void)    { return g_pace_depth; }
  * mis-latched as the grid. */
 static int g_grid_probe_pending;
 
+/* When sm_io_enter() sent the capability probes. The no-graphics gate's JXL
+ * settle window is measured from here, not from the first frame: a SyncTERM
+ * with JXL but no sixel answers the two probes separately. */
+static uint32_t g_probe_sent_ms;
+
 int sm_io_take_grid_probe(void)
 {
     if (!g_grid_probe_pending)
@@ -656,6 +662,7 @@ void sm_io_enter(void)
 
     sm_out_puts(termgfx_term_probe);    /* learn the terminal's pixel canvas; its ESC[999;999H+ESC[6n is the grid query */
     g_grid_probe_pending = 1;           /* arm the first-R-is-grid flag at probe-SEND time (Task 9 fix; see sm_io_take_grid_probe) */
+    g_probe_sent_ms      = sm_io_now_ms();   /* the no-graphics gate's settle window starts here */
     sm_out_puts("\x1b[c");              /* DA1: sixel support (param 4) */
     sm_out_puts("\x1b[<c");             /* CTDA: SyncTERM detect */
     sm_out_puts(termgfx_query_jxl);     /* Q;JXL: JXL-tier detect (a later task consumes the reply) */
@@ -858,6 +865,100 @@ static void sm_io_vscale_probe(void)
         sm_input_pump(sm_io_get_fd());
 }
 
+/* --- no-graphics gate ------------------------------------------------------
+ * MoO1 is a picture; there is no text tier to fall back to. A terminal that
+ * can render neither sixel nor JXL used to get the sixel stream anyway and sit
+ * on a black screen the player could not even abort out of. The verdict and
+ * the notice are shared with the sibling doors (termgfx/gfxgate.h); what is
+ * local is when we may ask, and how this door exits.
+ *
+ * Returns 1 while the caller must not draw. Does not return at all when the
+ * terminal is turned away.
+ */
+#define SM_GFX_GRACE_MS 500   /* bounded hold for the DA1 reply, then draw anyway */
+
+/* Hold the notice on screen long enough to be read. Synchronet repaints its
+ * own menu the moment the door returns, so a notice we exit on immediately is
+ * wiped before the player can take it in. Ends on the first byte from the
+ * client or when the wait runs out, whichever comes first -- an unattended or
+ * already-dead client must not hold the node for the full window. */
+static void sm_io_pause_notice(unsigned secs)
+{
+    uint32_t start;
+    uint8_t  b[64];
+
+    if (secs == 0)
+        return;   /* [text] no_graphics_pause = 0: leave at once */
+
+    sm_out_puts(termgfx_gfxgate_prompt);
+    sm_io_drain_blocking(SM_LEAVE_DRAIN_MS);
+
+    start = sm_io_now_ms();
+    while ((uint32_t)(sm_io_now_ms() - start) < secs * 1000u) {
+        int n = sm_plat_read(sm_io_in_fd(), b, sizeof b);
+
+        if (n > 0)
+            return;                       /* a keypress: go now */
+        if (n == 0 || n == SM_IO_ERROR)
+            return;                       /* hung up: no one left to read it */
+        sm_io_sleep_ms(50);               /* SM_IO_AGAIN / SM_IO_INTR */
+    }
+}
+
+static void sm_io_no_graphics(void)
+{
+    sm_io_leave();   /* mouse tracking off, BBS terminal modes back, drain */
+    sm_out_puts(termgfx_gfxgate_notice(sm_config_nogfx_file(),
+                                       sm_config_nogfx_text()));
+    sm_io_drain_blocking(SM_LEAVE_DRAIN_MS);
+    sm_io_pause_notice(sm_config_nogfx_pause());
+
+    fprintf(stderr, "syncmoo1: terminal reports neither sixel nor JXL"
+            " -- exiting\n");
+    fflush(stderr);
+    exit(0);   /* clean exit, like the idle timeout: atexit runs */
+}
+
+static int sm_io_gfx_gated(void)
+{
+    static uint32_t first_ms;
+    static int      settled;   /* latched once the terminal has a tier */
+    uint32_t        now;
+
+    if (settled || g_file_mode)
+        return 0;              /* capture mode has no terminal to ask */
+
+    now = sm_io_now_ms();
+    if (first_ms == 0)
+        first_ms = now;
+
+    /* Safe to pump here only because nothing has been SENT yet: this runs
+     * before the first frame is emitted and returns 1 until it is, so there is
+     * no in-flight DSR for these reads to mis-claim -- the race that cost
+     * sm_io_vscale_probe() its explicit drain. Once a tier is known the latch
+     * above retires this function and the frame path is untouched. */
+    sm_input_pump(sm_io_get_fd());
+
+    /* A silent terminal is not a refusal, but give its device-attributes reply
+     * a moment to land before drawing: a text terminal that answers a beat
+     * late would otherwise take a screenful of sixel first. */
+    if (!sm_input_probe_replied() && (int32_t)(now - first_ms) < SM_GFX_GRACE_MS)
+        return 1;
+
+    switch (termgfx_gfxgate(sm_input_have_sixel(), sm_input_jxl(),
+                            sm_input_probe_replied(), sm_input_jxl_answered(),
+                            g_probe_sent_ms, now)) {
+        case TERMGFX_GFXGATE_WAIT:
+            return 1;
+        case TERMGFX_GFXGATE_REJECT:
+            sm_io_no_graphics();   /* does not return */
+            return 1;
+        default:
+            settled = 1;
+            return 0;
+    }
+}
+
 void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
 {
     sm_io_vscale_probe();
@@ -881,6 +982,11 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
         sm_io_init(-1);
 
     sm_io_enter();
+
+    /* After enter() (the probes have to be out before their replies can be
+     * waited on) and before any encode. */
+    if (sm_io_gfx_gated())
+        return;
 
     if (g_file_mode) {
         /* Capture mode: always a self-contained frame (palette included),
