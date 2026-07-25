@@ -40,10 +40,15 @@
  * looked fine on games with a fixed color set, and flickered at ~12 Hz on
  * 4-TRIS's title screen, whose animation cycles between 8 and 11 colors.
  *
- * The register map is per session and only ever grows. When a frame's new colors
- * cannot fit in what remains of the 256 registers, the map is rebuilt from that
- * frame alone -- one unavoidable recolor, in exchange for continuing. A console
- * with a small fixed palette (Intellivision: 16) never reaches that.
+ * The register map is per session. A console with a small fixed palette
+ * (Intellivision: 16, NES: 64) never fills it. A console whose games fade or
+ * cycle their palette fills it in seconds -- Street Fighter II's attract mode
+ * re-tints every color of a ~150-color screen every frame -- so what happens
+ * when the 256 registers run out is not an edge case there, it is the steady
+ * state. A color new to a full map takes the LEAST RECENTLY USED register:
+ * the frame the terminal is displaying is the youngest, so its registers are
+ * the last to go, and only when it and the incoming frame together need more
+ * than 256 colors does anything on screen get recolored at all.
  */
 #ifndef SYNCRETRO_QUANT_H_
 #define SYNCRETRO_QUANT_H_

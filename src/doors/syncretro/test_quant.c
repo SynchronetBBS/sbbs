@@ -119,6 +119,91 @@ int main(void)
 		CHECK(idx[0] == 0 && idx[3] == 0);
 	}
 
+	/* --- a FULL register map ------------------------------------------------
+	 *
+	 * Street Fighter II's attract-mode fades re-tint every colour every frame,
+	 * so the map saturates within seconds and every frame after that needs
+	 * registers it cannot get. What happens then decides whether the screen
+	 * flickers: taking the registers the OLDEST frames used costs nothing,
+	 * because nothing on screen is drawn with them any more. */
+	{
+		uint8_t full[256 * 3];        /* 256 distinct colours, none pure black */
+		uint8_t fidx[256];
+		uint8_t pal_full[768], pal_evict[768], pal_third[768];
+		uint8_t few[4 * 3];
+		int     i, changed, r10, r11, r12, r_new, r_newer;
+
+		sr_quant_reset();
+		for (i = 0; i < 256; i++) {
+			full[i * 3]     = (uint8_t)i;
+			full[i * 3 + 1] = 1;
+			full[i * 3 + 2] = 2;
+		}
+		CHECK(sr_quant_rgb_to_indexed(full, 16, 16, fidx, pal) == 1);
+		memcpy(pal_full, pal, sizeof pal);
+
+		/* Every register is now taken. This frame keeps three of the colours and
+		 * introduces one more, so exactly one register has to be taken away. */
+		memcpy(few + 0, full + 10 * 3, 3);
+		memcpy(few + 3, full + 11 * 3, 3);
+		memcpy(few + 6, full + 12 * 3, 3);
+		few[9] = 0; few[10] = 0xff; few[11] = 0;                /* GREEN, new */
+
+		CHECK(sr_quant_rgb_to_indexed(few, 2, 2, idx, pal) == 1);
+		memcpy(pal_evict, pal, sizeof pal);
+
+		r10 = reg_of(pal, full[30], full[31], full[32], 256);
+		r11 = reg_of(pal, full[33], full[34], full[35], 256);
+		r12 = reg_of(pal, full[36], full[37], full[38], 256);
+		CHECK(r10 >= 0 && r11 >= 0 && r12 >= 0);
+		CHECK(idx[0] == r10 && idx[1] == r11 && idx[2] == r12);
+
+		/* A carried-over colour keeps its register even when the map is full. */
+		CHECK(reg_of(pal_full, full[30], full[31], full[32], 256) == r10);
+		CHECK(reg_of(pal_full, full[33], full[34], full[35], 256) == r11);
+		CHECK(reg_of(pal_full, full[36], full[37], full[38], 256) == r12);
+
+		/* ONE register redefined, not all 256. Rebuilding the map from this frame
+		 * -- what this module used to do when it ran out -- recolours everything
+		 * the terminal is still holding, which IS the flicker. */
+		changed = 0;
+		for (i = 0; i < 256; i++)
+			if (memcmp(pal_full + 3 * i, pal_evict + 3 * i, 3) != 0)
+				changed++;
+		CHECK(changed == 1);
+
+		r_new = reg_of(pal, GREEN, 256);
+		CHECK(r_new >= 0);
+		CHECK(r_new != r10 && r_new != r11 && r_new != r12);
+
+		/* Another new colour, with the map still full. The registers the PREVIOUS
+		 * frame drew with are the ones the terminal is displaying right now, so
+		 * they are the last that may be taken -- an older one always goes first. */
+		few[9] = 0; few[10] = 0; few[11] = 0xff;                /* BLUE, new */
+		CHECK(sr_quant_rgb_to_indexed(few, 2, 2, idx, pal) == 1);
+		memcpy(pal_third, pal, sizeof pal);
+
+		r_newer = reg_of(pal, BLUE, 256);
+		CHECK(r_newer >= 0);
+		CHECK(r_newer != r10 && r_newer != r11 && r_newer != r12 && r_newer != r_new);
+		CHECK(memcmp(pal_evict + 3 * r10,   pal_third + 3 * r10,   3) == 0);
+		CHECK(memcmp(pal_evict + 3 * r11,   pal_third + 3 * r11,   3) == 0);
+		CHECK(memcmp(pal_evict + 3 * r12,   pal_third + 3 * r12,   3) == 0);
+		CHECK(memcmp(pal_evict + 3 * r_new, pal_third + 3 * r_new, 3) == 0);
+
+		/* A frame of 256 colours none of which are mapped has to take every
+		 * register there is. It must still reproduce exactly. */
+		for (i = 0; i < 256; i++) {
+			full[i * 3]     = 3;
+			full[i * 3 + 1] = (uint8_t)i;
+			full[i * 3 + 2] = 4;
+		}
+		CHECK(sr_quant_rgb_to_indexed(full, 16, 16, fidx, pal) == 1);
+		for (i = 0; i < 256; i++)
+			CHECK(pal[fidx[i] * 3] == 3 && pal[fidx[i] * 3 + 1] == (uint8_t)i
+			      && pal[fidx[i] * 3 + 2] == 4);
+	}
+
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "ok", failures);
 	return failures != 0;
 }

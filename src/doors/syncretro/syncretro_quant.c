@@ -1,7 +1,6 @@
 /* syncretro_quant.c -- RGB24 -> 256-color indexed. See syncretro_quant.h. */
 #include "syncretro_quant.h"
 
-#include <stdlib.h>
 #include <string.h>
 
 /* Open-addressed color set / color->index map. Capacity is a power of two well
@@ -53,27 +52,23 @@ static int sr_collect_colors(const uint8_t *rgb, long npx, uint32_t *colors)
 	return n;
 }
 
-static int sr_cmp_u32(const void *a, const void *b)
-{
-	uint32_t x = *(const uint32_t *)a, y = *(const uint32_t *)b;
-
-	return (x > y) - (x < y);
-}
-
 /* --- the persistent color -> register map (EXACT mode) ----------------------
  *
  * Registers are shared with whatever is already on the terminal's screen, so a
  * register's meaning must not change while pixels are drawn with it. See
- * syncretro_quant.h. The map only grows; it is rebuilt only when a frame's new
- * colors cannot fit in what is left. */
+ * syncretro_quant.h. Once every register is taken, a color new to this frame
+ * takes the LEAST RECENTLY USED one -- `g_reg_gen` records the frame that last
+ * drew with each. */
 static uint32_t g_reg_color[SR_MAX_COLORS];   /* register -> color */
 static uint8_t  g_reg_taken[SR_MAX_COLORS];
-static int      g_reg_count;                  /* registers handed out so far */
+static uint32_t g_reg_gen[SR_MAX_COLORS];     /* frame that last used it */
+static uint32_t g_gen;                        /* frames quantized in EXACT mode */
 
 void sr_quant_reset(void)
 {
 	memset(g_reg_taken, 0, sizeof(g_reg_taken));
-	g_reg_count = 0;
+	memset(g_reg_gen, 0, sizeof(g_reg_gen));
+	g_gen = 0;
 }
 
 /* The register holding `c`, or -1. Linear over the registers handed out: at most
@@ -88,44 +83,47 @@ static int sr_reg_find(uint32_t c)
 	return -1;
 }
 
+/* A free register, else the least recently used one. Never returns a register
+ * this frame has already been given: those carry `g_gen`, and a frame holds at
+ * most SR_MAX_COLORS colors, so one older register always remains. */
 static int sr_reg_alloc(uint32_t c)
 {
-	int k;
+	int k, oldest = 0;
 
 	for (k = 0; k < SR_MAX_COLORS; k++)
 		if (!g_reg_taken[k]) {
-			g_reg_taken[k] = 1;
-			g_reg_color[k] = c;
-			g_reg_count++;
-			return k;
+			oldest = k;
+			break;
+		} else if (g_reg_gen[k] < g_reg_gen[oldest]) {
+			oldest = k;
 		}
-	return -1;                       /* caller rebuilds */
+
+	g_reg_taken[oldest] = 1;
+	g_reg_color[oldest] = c;
+	g_reg_gen[oldest]   = g_gen;
+	return oldest;
 }
 
 /* Give every color of this frame a register, preserving the ones it already had.
- * Returns 0 if the map had to be rebuilt from this frame alone (registers
- * exhausted) -- the caller does not care, but the distinction is real: a rebuild
- * is the one case where a live register changes meaning. */
-static int sr_reg_assign_frame(const uint32_t *colors, int n)
+ *
+ * The carried-over colors are stamped BEFORE any allocation, so a color still on
+ * screen can never lose its register to a color of the same frame. What is left
+ * to evict is then ordered by age, and the frame the terminal is displaying is
+ * the youngest of those -- so its registers go last, and only when this frame
+ * and that one together need more than SR_MAX_COLORS. */
+static void sr_reg_assign_frame(const uint32_t *colors, int n)
 {
-	int i, rebuilt = 1;
+	int i, k;
 
+	g_gen++;
+	for (i = 0; i < n; i++) {
+		k = sr_reg_find(colors[i]);
+		if (k >= 0)
+			g_reg_gen[k] = g_gen;
+	}
 	for (i = 0; i < n; i++)
-		if (sr_reg_find(colors[i]) < 0 && sr_reg_alloc(colors[i]) < 0) {
-			/* No room. Start over from this frame's colors: sorted, so the
-			 * rebuild is at least deterministic. */
-			uint32_t sorted[SR_MAX_COLORS];
-			int      j;
-
-			memcpy(sorted, colors, (size_t)n * sizeof(*sorted));
-			qsort(sorted, (size_t)n, sizeof(sorted[0]), sr_cmp_u32);
-			sr_quant_reset();
-			for (j = 0; j < n; j++)
-				(void)sr_reg_alloc(sorted[j]);
-			rebuilt = 0;
-			break;
-		}
-	return rebuilt;
+		if (sr_reg_find(colors[i]) < 0)
+			(void)sr_reg_alloc(colors[i]);
 }
 
 /* EXACT: the palette is the register map, and every pixel maps through it. */
@@ -137,7 +135,7 @@ static void sr_map_exact(const uint8_t *rgb, long npx, uint8_t *idx, uint8_t *pa
 	int      i, k;
 	long     p;
 
-	(void)sr_reg_assign_frame(colors, n);
+	sr_reg_assign_frame(colors, n);
 
 	memset(key, 0xff, sizeof(key));
 	memset(pal, 0, SR_MAX_COLORS * 3);
