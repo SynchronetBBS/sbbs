@@ -45,10 +45,20 @@
  * cycle their palette fills it in seconds -- Street Fighter II's attract mode
  * re-tints every color of a ~150-color screen every frame -- so what happens
  * when the 256 registers run out is not an edge case there, it is the steady
- * state. A color new to a full map takes the LEAST RECENTLY USED register:
- * the frame the terminal is displaying is the youngest, so its registers are
- * the last to go, and only when it and the incoming frame together need more
- * than 256 colors does anything on screen get recolored at all.
+ * state. A color new to a full map takes the LEAST RECENTLY USED register,
+ * and never one belonging to this frame or to the frame the terminal is
+ * displaying.
+ *
+ * When a fade leaves nothing else to take -- the displayed frame's colors and
+ * the incoming frame's together outnumber the registers -- the incoming color
+ * is DRAWN WITH ITS NEAREST NEIGHBOR instead. The frame is then no longer
+ * pixel-exact, and that is the deliberate trade: an approximated color is a
+ * couple of percent of the pixels a few RGB steps off, where redefining a
+ * register the terminal is displaying recolors the whole picture until the
+ * repaint catches up -- and the repaint is tens of kilobytes, so the bottom of
+ * the image stays wrong the longest. Accuracy is the cheaper thing to give up.
+ * It is also self-limiting: once the palette settles, the registers the fade
+ * abandoned age out and the colors come back exact.
  */
 #ifndef SYNCRETRO_QUANT_H_
 #define SYNCRETRO_QUANT_H_
@@ -58,8 +68,10 @@
 /* Quantize `rgb` (w*h*3, top-down, 8 bits per channel) into `idx` (w*h palette
  * indices) and `pal` (256 RGB triples = 768 bytes). Caller owns both outputs.
  *
- * Returns 1 if the frame was reproduced EXACTLY (<= 256 distinct colors), 0 if
- * it was approximated onto the fixed cube. Both outputs are always valid.
+ * Returns 1 if the palette is this frame's own colors (<= 256 distinct), 0 if
+ * the frame was mapped onto the fixed cube. Both outputs are always valid. A 1
+ * is NOT a promise of a pixel-exact frame: see the register map above for the
+ * one case (a saturated map) where some colors are drawn with a neighbor.
  *
  * EXACT mode carries PER-SESSION STATE: a color keeps the register it was first
  * assigned, for as long as the session lives. See the header comment above for

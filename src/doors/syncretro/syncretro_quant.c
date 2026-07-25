@@ -52,13 +52,21 @@ static int sr_collect_colors(const uint8_t *rgb, long npx, uint32_t *colors)
 	return n;
 }
 
+static int sr_sqdist(int r1, int g1, int b1, int r2, int g2, int b2)
+{
+	int dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
+
+	return dr * dr + dg * dg + db * db;
+}
+
 /* --- the persistent color -> register map (EXACT mode) ----------------------
  *
  * Registers are shared with whatever is already on the terminal's screen, so a
  * register's meaning must not change while pixels are drawn with it. See
- * syncretro_quant.h. Once every register is taken, a color new to this frame
- * takes the LEAST RECENTLY USED one -- `g_reg_gen` records the frame that last
- * drew with each. */
+ * syncretro_quant.h. `g_reg_gen` records the frame that last drew with each
+ * register, which is what tells a color new to this frame which register it may
+ * take: the oldest, and never one of the two youngest generations -- this
+ * frame's, or the frame the terminal is still displaying. */
 static uint32_t g_reg_color[SR_MAX_COLORS];   /* register -> color */
 static uint8_t  g_reg_taken[SR_MAX_COLORS];
 static uint32_t g_reg_gen[SR_MAX_COLORS];     /* frame that last used it */
@@ -83,20 +91,29 @@ static int sr_reg_find(uint32_t c)
 	return -1;
 }
 
-/* A free register, else the least recently used one. Never returns a register
- * this frame has already been given: those carry `g_gen`, and a frame holds at
- * most SR_MAX_COLORS colors, so one older register always remains. */
-static int sr_reg_alloc(uint32_t c)
+/* Take a register for `c`: a free one, else the least recently used whose
+ * generation is BELOW `keep`. Returns -1 when nothing qualifies.
+ *
+ * `keep` is the whole policy. Normally it is `g_gen - 1`, which spares both this
+ * frame's colors and those of the frame the terminal is displaying, so taking a
+ * register never recolors what is on screen. Where that leaves nothing to take,
+ * the caller retries with `g_gen`, sparing only this frame. */
+static int sr_reg_take(uint32_t c, uint32_t keep)
 {
-	int k, oldest = 0;
+	int k, oldest = -1;
 
-	for (k = 0; k < SR_MAX_COLORS; k++)
+	for (k = 0; k < SR_MAX_COLORS; k++) {
 		if (!g_reg_taken[k]) {
 			oldest = k;
 			break;
-		} else if (g_reg_gen[k] < g_reg_gen[oldest]) {
-			oldest = k;
 		}
+		if (g_reg_gen[k] >= keep)
+			continue;
+		if (oldest < 0 || g_reg_gen[k] < g_reg_gen[oldest])
+			oldest = k;
+	}
+	if (oldest < 0)
+		return -1;
 
 	g_reg_taken[oldest] = 1;
 	g_reg_color[oldest] = c;
@@ -104,26 +121,68 @@ static int sr_reg_alloc(uint32_t c)
 	return oldest;
 }
 
-/* Give every color of this frame a register, preserving the ones it already had.
+/* The defined register nearest `c`, with its squared RGB distance in *dist. */
+static int sr_reg_nearest(uint32_t c, int *dist)
+{
+	int k, best = -1, bestd = 0;
+
+	for (k = 0; k < SR_MAX_COLORS; k++) {
+		int d;
+
+		if (!g_reg_taken[k])
+			continue;
+		d = sr_sqdist((int)((c >> 16) & 0xff), (int)((c >> 8) & 0xff), (int)(c & 0xff),
+		              (int)((g_reg_color[k] >> 16) & 0xff),
+		              (int)((g_reg_color[k] >> 8) & 0xff),
+		              (int)(g_reg_color[k] & 0xff));
+		if (best < 0 || d < bestd) {
+			best  = k;
+			bestd = d;
+		}
+	}
+	*dist = bestd;
+	return best;
+}
+
+/* Give every color of this frame a register, and record it in `reg`.
  *
- * The carried-over colors are stamped BEFORE any allocation, so a color still on
- * screen can never lose its register to a color of the same frame. What is left
- * to evict is then ordered by age, and the frame the terminal is displaying is
- * the youngest of those -- so its registers go last, and only when this frame
- * and that one together need more than SR_MAX_COLORS. */
-static void sr_reg_assign_frame(const uint32_t *colors, int n)
+ * The carried-over colors are stamped BEFORE anything is taken, so a color still
+ * on screen can never lose its register to a color of the same frame.
+ *
+ * A color that cannot have a register without recoloring the screen is DRAWN
+ * WITH ITS NEAREST NEIGHBOR -- but only while that neighbor still passes for it.
+ * Borrowing has to mark the register as drawn-with, or the next frame would
+ * redefine it under those very pixels; that also makes it un-takeable, so a
+ * fade left to borrow indefinitely walks its colors further from the registers
+ * they are stuck on with every step. SR_BORROW_MAX_D2 is where that stops being
+ * a good trade and one recolor becomes the lesser evil. */
+#define SR_BORROW_MAX_D2 1024        /* RGB distance 32 of a 441 maximum */
+
+static void sr_reg_assign_frame(const uint32_t *colors, int n, int *reg)
 {
 	int i, k;
 
 	g_gen++;
 	for (i = 0; i < n; i++) {
-		k = sr_reg_find(colors[i]);
-		if (k >= 0)
-			g_reg_gen[k] = g_gen;
+		reg[i] = sr_reg_find(colors[i]);
+		if (reg[i] >= 0)
+			g_reg_gen[reg[i]] = g_gen;
 	}
-	for (i = 0; i < n; i++)
-		if (sr_reg_find(colors[i]) < 0)
-			(void)sr_reg_alloc(colors[i]);
+	for (i = 0; i < n; i++) {
+		int d;
+
+		if (reg[i] >= 0)
+			continue;
+		k = sr_reg_take(colors[i], g_gen - 1);
+		if (k < 0) {
+			k = sr_reg_nearest(colors[i], &d);
+			if (k >= 0 && d <= SR_BORROW_MAX_D2)
+				g_reg_gen[k] = g_gen;           /* borrowed: it is on screen now */
+			else
+				k = sr_reg_take(colors[i], g_gen);
+		}
+		reg[i] = k;
+	}
 }
 
 /* EXACT: the palette is the register map, and every pixel maps through it. */
@@ -132,10 +191,11 @@ static void sr_map_exact(const uint8_t *rgb, long npx, uint8_t *idx, uint8_t *pa
 {
 	uint32_t key[SR_HASH_SIZE];
 	uint8_t  val[SR_HASH_SIZE];
+	int      reg[SR_MAX_COLORS];
 	int      i, k;
 	long     p;
 
-	sr_reg_assign_frame(colors, n);
+	sr_reg_assign_frame(colors, n, reg);
 
 	memset(key, 0xff, sizeof(key));
 	memset(pal, 0, SR_MAX_COLORS * 3);
@@ -153,12 +213,11 @@ static void sr_map_exact(const uint8_t *rgb, long npx, uint8_t *idx, uint8_t *pa
 
 	for (i = 0; i < n; i++) {
 		unsigned h = sr_hash(colors[i]);
-		int      r = sr_reg_find(colors[i]);
 
 		while (key[h] != SR_HASH_EMPTY)
 			h = (h + 1) & SR_HASH_MASK;
 		key[h] = colors[i];
-		val[h] = (uint8_t)r;         /* always >= 0: assign_frame placed them all */
+		val[h] = (uint8_t)(reg[i] < 0 ? 0 : reg[i]);
 	}
 
 	for (p = 0; p < npx; p++) {
@@ -200,13 +259,6 @@ static void sr_build_cube_palette(uint8_t *pal)
 		pal[(SR_CUBE_SIZE + i) * 3 + 1] = (uint8_t)v;
 		pal[(SR_CUBE_SIZE + i) * 3 + 2] = (uint8_t)v;
 	}
-}
-
-static int sr_sqdist(int r1, int g1, int b1, int r2, int g2, int b2)
-{
-	int dr = r1 - r2, dg = g1 - g2, db = b1 - b2;
-
-	return dr * dr + dg * dg + db * db;
 }
 
 /* CUBE: map each pixel to the nearer of its cube cell and its gray-ramp step.
