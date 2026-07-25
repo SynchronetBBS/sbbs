@@ -1,12 +1,13 @@
 load("dorkit.js");
 load("lockfile.js");
+load(js.exec_dir + "knk_math.js");
 var game_dir='.';
 try { throw barfitty.barf(barf) } catch(e) { game_dir=e.fileName }
 game_dir=game_dir.replace(/[\/\\][^\/\\]*$/,'');
 game_dir=backslash(game_dir);
 
-var version="5.0js";
-var updated="01/04/09";
+var version="5.1js";
+var updated="07/24/26";
 var music=true;
 var cterm_major=0;
 var cterm_minor=0;
@@ -207,17 +208,17 @@ function Player(t, n, p)
 		this.refer_singular=this.full_name;
 	}
 	this.score=0;
-	this.kastle=12500+random(10000);
-	this.soldiers=1750+random(3500);
-	this.civilians=12500+random(5000);
-	this.kannons=200+random(100);
-	this.katapults=random(2);
-	this.assassins=1+random(4);
-	this.guards=8+random(15);
-	this.gold=17500+random(2500);
-	this.food=200000+random(100000);
+	this.kastle=0;
+	this.soldiers=0;
+	this.civilians=0;
+	this.kannons=0;
+	this.katapults=0;
+	this.assassins=0;
+	this.guards=0;
+	this.gold=0;
+	this.food=0;
 	this.__defineGetter__("power",  function() { var p=((this.kastle/500)|0)+((this.soldiers/750)|0); if(p>46) return(46); return(p); });
-	this.__defineGetter__("mfood", function() { if(this.soldiers==0 && this.civilians==0) return(0); if(this.food==0) return(0); var f=this.food/(this.soldiers*2+this.civilians); if(f<0.1) return(0); return(f); });
+	this.__defineGetter__("mfood", function() { return(KNKMath.displayedFoodMonths(this)); });
 	this.__defineGetter__("mfoodstr", function() { return(format("%-6.3f", this.mfood).substr(0,6).replace(/\.$/,'')); });
 	this.produce=Player_produce;
 	this.powerbar=Player_powerbar;
@@ -257,9 +258,9 @@ function Player_loadwagons(propname, count)
 		playmusic("MFT80O5L64FP64CFP64F");
 }
 
-function Player_produce()
+function Player_produce(other)
 {
-	var tmp;
+	var result;
 
 	dk.console.println("");
 	dk.console.attr='HW';
@@ -269,62 +270,36 @@ function Player_produce()
 		dk.console.attr='G';
 	else
 		dk.console.attr='C';
-	tmp=(this.kastle/100)|0;
-	if(tmp > 0)
-		dk.console.println("* "+tmp+" civilians have immigrated to "+this.refer_posessive+" kastle.");
-	this.civilians += tmp;
-	tmp=0;
-	if(this.civilians > 0)
-		dk.console.println("* "+this.civilians+" gold was collected in taxes!");
-	this.gold += this.civilians;
-	tmp += this.civilians;
-
-	if(this.soldiers) {
-		if(this.gold < this.soldiers) {
-			dk.console.attr.bright = true;;
-			dk.console.println("* "+(this.soldiers-this.gold)+" of "+this.refer_posessive+" men defected from not being paid!!");
-			this.soldiers=this.gold;
-			dk.console.attr.bright = false;
-		}
+	result=KNKMath.updateMonth(this, other);
+	if(result.immigrants > 0)
+		dk.console.println("* "+result.immigrants+" civilians have immigrated to "+this.refer_posessive+" kastle.");
+	if(result.taxes > 0)
+		dk.console.println("* "+result.taxes+" gold was collected in taxes!");
+	if(result.defectors > 0) {
+		dk.console.attr.bright = true;
+		dk.console.println("* "+result.defectors+" of "+this.refer_posessive+" men defected from not being paid!!");
+		dk.console.attr.bright = false;
 	}
-	if(this.soldiers) {
-		dk.console.println("* "+this.soldiers+" gold was paid to "+this.refer_posessive+" soldiers.");
-		this.gold -= this.soldiers;
-		tmp -= this.soldiers;
+	if(result.payroll > 0)
+		dk.console.println("* "+result.payroll+" gold was paid to "+this.refer_posessive+" soldiers.");
+	if(result.treasury_change > 0)
+		dk.console.println("* Treasury increased by "+result.treasury_change+" gold pieces!");
+	else if(result.treasury_change < 0)
+		dk.console.println("* Treasury DECREASED by "+(-result.treasury_change)+" gold pieces!");
+	if(result.soldiers_starved > 0) {
+		dk.console.attr.bright = true;
+		dk.console.println("* "+result.soldiers_starved+" of "+this.refer_posessive+" soldiers have starved to death!!");
+		dk.console.attr.bright = false;
 	}
-	if(tmp > 0) {
-		dk.console.println("* Treasury increased by "+tmp+" gold pieces!");
+	if(result.army_food > 0)
+		dk.console.println("* "+result.army_food+" sacks of food were consumed by "+this.refer_posessive+" army.");
+	if(result.civilians_starved > 0) {
+		dk.console.attr.bright = true;
+		dk.console.println("* "+result.civilians_starved+" of "+this.refer_posessive+" citizens have starved to death!!");
+		dk.console.attr.bright = false;
 	}
-	else {
-		if(tmp < 0)
-			dk.console.println("* Treasury DECREASED by "+(0-tmp)+" gold pieces!");
-	}
-
-	if(this.soldiers) {
-		var canfeed=(this.food/2)|0;
-		if(canfeed < this.soldiers) {
-			dk.console.attr.bright = true;
-			dk.console.println("* "+(this.soldiers-canfeed)+" of "+this.refer_posessive+" soldiers have starved to death!!");
-			this.soldiers=canfeed;
-			dk.console.attr.bright = false;
-		}
-	}
-	tmp=this.soldiers*2;
-	if(tmp > 0)
-		dk.console.println("* "+tmp+" sacks of food were consumed by "+this.refer_posessive+" army.");
-	this.food -= tmp;
-
-	if(this.civilians) {
-		if(this.food < this.civilians) {
-			dk.console.attr.bright = true;
-			dk.console.println("* "+(this.civilians-this.food)+" of "+this.refer_posessive+" citizens have starved to death!!");
-			this.civilians=this.food;
-			dk.console.attr.bright = false;
-		}
-	}
-	if(this.civilians)
-		dk.console.println("* "+this.civilians+" sacks of food were consumed by "+this.refer_posessive+" citizens.");
-	this.food -= this.civilians;
+	if(result.civilian_food > 0)
+		dk.console.println("* "+result.civilian_food+" sacks of food were consumed by "+this.refer_posessive+" citizens.");
 	dk.console.println("");
 }
 
@@ -395,11 +370,11 @@ function Player_drawscreen(month)
 
 function Player_assassinate(other)
 {
-	var passed=0;
-	var killed=0;
+	var result;
 	var i;
+	var killed=0;
+	var passed=0;
 
-	this.assassins--;
 	dk.console.println("");
 	dk.console.attr='HG';
 	dk.console.println("Attempting infiltration!");
@@ -407,29 +382,27 @@ function Player_assassinate(other)
 	dk.console.println("");
 	dk.console.attr='HR';
 	dk.console.println("He has to pass "+other.guards+" guards.");
-	while(other.guards && passed < other.guards) {
-		switch(random(5)) {
-			case 0: // Failed
+	result=KNKMath.assassinate(this, other);
+	for(i=0; i<result.events.length; i++) {
+		switch(result.events[i]) {
+			case "assassin_killed":
 				dk.console.attr="HIR";
 				dk.console.println(this.refer_posessive+" assassin was killed!");
 				playmusic("MFT32L2O1L8dL4C");
 				dk.console.attr.blink = false;
 				return(false);
-			case 1:	// Killed
-				dk.console.attr="HIR"
+			case "killed":
+				dk.console.attr="HIR";
 				dk.console.println("KILLED "+(++killed));
-				passed++;
-				other.guards--;
-				for(i=0; i<5; i++)
-					playmusic("MFO1T128L64CEB");
+				playmusic("MFO1T128L64CEB");
 				break;
-			default:
-				dk.console.attr="HR"
+			case "passed":
+				dk.console.attr="HR";
 				dk.console.println("Passed "+(++passed)+"!");
 				playmusic("MFO1T128L64CEB");
+				break;
 		}
 	}
-	this.score += 1000*passed;
 	playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
 	if(this.isplayer) {
 		dk.console.attr="HG"
@@ -497,11 +470,7 @@ function Player_purchase(name, propname, cost)
 
 function Player_soldierattack(other)
 {
-	var i;
-	var this_lost=0;
-	var oth_lost=0;
-	var orig_soldiers=this.soldiers;
-	var clashes=0;
+	var result;
 
 	dk.console.println("");
 	dk.console.println("You have "+player.soldiers+" soldiers and "+computer.full_name+" has "+computer.soldiers+".");
@@ -510,197 +479,40 @@ function Player_soldierattack(other)
 	playmusic("MFT32O3L16CL8FL16CL8FL64CP64CP64CP64L8F");
 	dk.console.println("");
 	dk.console.attr="HG"
-	for(i=0; i<orig_soldiers && other.soldiers > 0; i++) {
-		if(i%1000==0) {
-			switch(random(3)) {
-				case 0:
-					dk.console.print(" * SMASH! *");
-					break;
-				case 1:
-					dk.console.print(" * CLASH! *");
-					break;
-				case 2:
-					dk.console.print(" * CRASH! *");
-					break;
-			}
-			playmusic("MFO1T128L64CEB");
-			clashes++;
-			if(clashes%7==0)
-				dk.console.println("");
-		}
-		switch(random(3)) {
-			case 0:
-				if(random(10)) {
-					oth_lost++;
-					other.soldiers--;
-					this.score++;
-				}
-				break;
-			case 1:
-			case 2:
-				if(random(10)) {
-					this_lost++;
-					this.soldiers--;
-				}
-				break;
-		}
-	}
-
-	if(clashes%7)
-		dk.console.println("");
+	result=KNKMath.melee(this, other);
+	dk.console.println(" * SMASH! *  * CLASH! *  * CRASH! *");
+	playmusic("MFO1T128L64CEB");
 	dk.console.println("");
 	dk.console.attr="G"
 	if(this.isplayer) {
-		dk.console.println("You lost "+this_lost+" men and have "+this.soldiers+" left!");
-		dk.console.println(other.full_name+" lost "+oth_lost+" men and has "+other.soldiers+" left!");
+		dk.console.println("You lost "+result.attacker_killed+" men and have "+this.soldiers+" left!");
+		dk.console.println(other.full_name+" lost "+result.target_killed+" men and has "+other.soldiers+" left!");
 	}
 	else {
-		dk.console.println("You lost "+oth_lost+" men and have "+other.soldiers+" left!");
-		dk.console.println(this.full_name+" lost "+this_lost+" men and has "+this.soldiers+" left!");
+		dk.console.println("You lost "+result.target_killed+" men and have "+other.soldiers+" left!");
+		dk.console.println(this.full_name+" lost "+result.attacker_killed+" men and has "+this.soldiers+" left!");
 	}
 	dk.console.println("");
 	return(this.checkresults(other));
 }
 
-function Player_dodamage(other, damage, men)
+function Player_dodamage(other, damage)
 {
-	var i;
-	var j;
-	var bad;
-	var rnd;
-	var loss={soldiers:0, kastle:0, guards:0, assassins:0, kannons:0, katapults:0, civilians:0};
-	var total_cost=0;
-	var nodamage=true;
-	var booms=0;
+	var loss=KNKMath.applyDamage(this, other, damage);
+	var nodamage=loss.soldiers==0 && loss.kastle==0
+		&& loss.guards==0 && loss.assassins==0
+		&& loss.kannons==0 && loss.katapults==0
+		&& loss.civilians==0;
 
 	if(this.isplayer)
 		dk.console.attr="HY"
 	else
 		dk.console.attr="HC"
 
-	for(i=0; i<damage; i++) {
-		bad=random(7);	// Each damage does 0-7 points of "bad"
-		for(j=0; j<bad; j++) {
-			rnd=other.soldiers+other.kastle+other.guards+other.assassins+other.kannons+other.katapults+other.civilians;
-			if(men)
-				rnd += other.soldiers;
-			else
-				rnd += other.kastle;
-
-			if(other.kastle==0 || other.soldiers==0 || rnd==0) {
-				if(nodamage=false)
-					continue;
-			}
-			nodamage=false;
-
-			rnd=random(rnd);
-
-			if(rnd < other.soldiers) {
-				loss.soldiers++;
-				other.soldiers--;
-				this.score++;
-				total_cost+=1000;
-				continue;
-			}
-			rnd -= other.soldiers;
-
-			if(rnd < other.kastle) {
-				loss.kastle++;
-				other.kastle--;
-				this.score++;
-				total_cost+=1000;
-				continue;
-			}
-			rnd -= other.kastle;
-
-			if(rnd < other.guards) {
-				loss.guards++;
-				other.guards--;
-				total_cost+=10000;
-				continue;
-			}
-			rnd -= other.guards;
-
-			if(rnd < other.assassins) {
-				loss.assassins++;
-				other.assassins--;
-				total_cost+=10000;
-				continue;
-			}
-			rnd -= other.assassins;
-
-			if(rnd < other.kannons) {
-				loss.kannons++;
-				other.kannons--;
-				total_cost+=1000;
-				continue;
-			}
-			rnd -= other.kannons;
-
-			if(rnd < other.katapults) {
-				loss.katapults++;
-				other.katapults--;
-				total_cost+=100000;
-				continue;
-			}
-			rnd -= other.katapults;
-
-			if(rnd < other.civilians) {
-				loss.civilians++;
-				other.civilians--;
-				total_cost+=4;
-				continue;
-			}
-			rnd -= other.civilians;
-
-			if(men) {
-				if(rnd < other.soldiers) {
-					this.score++;
-					loss.soldiers++;
-					other.soldiers--;
-					total_cost+=1000;
-				}
-			}
-			if(rnd < other.kastle) {
-				this.score++;
-				loss.kastle++;
-				other.kastle--;
-				total_cost+=1000;
-			}
-		}
-		while(total_cost > 100000) {
-			switch(random(2)) {
-				case 0:
-					dk.console.print("**BANG!** ");
-					break;
-				case 1:
-					dk.console.print("**BOOM!** ");
-					break;
-			}
-			playmusic("MFO1T128L64CEB");
-			booms++;
-			if(booms%7==0)
-				dk.console.println("");
-			total_cost -= 100000;
-		}
+	if(!nodamage) {
+		dk.console.println("**BANG!**  **BOOM!**");
+		playmusic("MFO1T128L64CEB");
 	}
-
-	if(total_cost) {
-			switch(random(2)) {
-				case 0:
-					dk.console.print("**BANG!** ");
-					break;
-				case 1:
-					dk.console.print("**BOOM!** ");
-					break;
-			}
-			playmusic("MFO1T128L64CEB");
-			booms++;
-			if(booms%7==0)
-				dk.console.println("");
-	}
-	if(booms%7)
-		dk.console.println("");
 
 	if(nodamage) {
 		if(this.isplayer)
@@ -748,6 +560,8 @@ function Player_dodamage(other, damage, men)
 
 function Player_kannonattack(other, men)
 {
+	var aim=men?"men":"castle";
+
 	dk.console.println("");
 	dk.console.attr="Y"
 	if(this.isplayer)
@@ -761,18 +575,12 @@ function Player_kannonattack(other, men)
 	}
 	playmusic("MFO1L64T128BAAGGFFEEDDCP4");
 	dk.console.println("");
-	return(this.dodamage(other, random(this.kannons+1), men));
+	return(this.dodamage(other, KNKMath.cannonDamage(this, other, aim)));
 }
 
 function Player_katapultattack(other, men)
 {
-	var damage=0;
-	var	i;
-
-	for(i=0; i<this.katapults; i++) {
-		if(random(2))
-			damage += random(1500)+1;
-	}
+	var aim=men?"men":"castle";
 
 	dk.console.println("");
 	dk.console.attr="Y"
@@ -787,7 +595,7 @@ function Player_katapultattack(other, men)
 	}
 	playmusic("MFT76L64O2CDEFGABAGFEDCP4");
 	dk.console.println("");
-	return(this.dodamage(other, damage, men));
+	return(this.dodamage(other, KNKMath.catapultDamage(this, other, aim)));
 }
 
 function show_scoreboard(thismonth)
@@ -1067,15 +875,16 @@ function Player_playermove(month, other)
 	} while(loop);
 }
 
+/*
+ * Statement-ordered lift of the original King's 12-candidate selector.
+ */
 function Player_computermove(month, other)
 {
-	var weight={loss_soldiers:0, loss_kastle:0, loss_guards:0, loss_food:0
-				,win_soldiers:0, win_kastle:0, win_assassins:0
-				,need_assassins:0, need_weapons:0, need_food:0
-				,need_soldiers:0, need_guards:0, need_kastle:0
-				,need_release:0};
-	var names=[];
-	var name;
+	var selection;
+	var candidate;
+	var action;
+	var amount;
+	var i;
 
 	dk.console.aprint("\1n\1h\1c                      * \1h\1i\1rT\1gh\1yi\1bn\1mk\1ci\1wn\1yg\1c\1n\1h\1c *\1n\1c");
 	mswait(2000);
@@ -1084,253 +893,105 @@ function Player_computermove(month, other)
 	dk.console.println("");
 	dk.console.println("");
 
-	for(name in weight)
-		names.push(name);
-
-	/* First, we do absolutes... */
-	if(other.guards==0) {
-		if(this.assassins > 0)
-			return(this.assassinate(other));
-		else
-			weight.need_assassins = 1;
-	}
-	if(other.guards < 20) {
-		if(this.assassins > 0)
-			weight.win_assassins += 1-other.guards/15;
-		else
-			weight.need_assassins += 1-other.guards/20;
-	}
-
-	if(other.soldiers==0) {
-		if(this.soldiers > 0)
-			return(this.soldierattack(other));
-		weight.need_soldiers=1;
-		if(this.kannons > 50)
-			return(this.kannonattack(other, true));
-		if(this.katapults > 1)
-			return(this.katapultattack(other, true));
-		weight.need_weapons=1;
-	}
-	else {
-		if(other.soldiers < this.soldiers * .66)
-			weight.win_soldiers += 1 - this.soldiers/other.soldiers;
-		if(other.soldiers < this.soldiers * .33)
-			weight.win_soldiers = 1;
-	}
-
-	if(this.soldiers==0)
-		weight.loss_soldiers=1;
-	else {
-		if(this.soldiers < other.soldiers * .66)
-			weight.need_soldiers += 1 - other.soldiers/this.soldiers;
-		if(this.soldiers < 3000) {
-			weight.need_soldiers += 1 - this.soldiers/3000;
-			if(weight.need_soldiers > 1)
-				weight.need_soldiers = 1;
-		}
-		if(this.soldiers < other.soldiers * .50)
-			weight.loss_soldiers += 1 - weight.loss_soldiers/this.soldiers;
-	}
-
-	if(this.kastle==0)
-		weight.loss_kastle=1;
-	else {
-		if(this.kastle < 10000)
-			weight.need_kastle += 1 - this.kastle/10000;
-	}
-
-	if(this.mfood<.5)
-		weight.loss_food=1;
-	else {
-		if(this.mfood < 2)
-			weight.need_food += 1 - ((this.mfood-.5)/2+.25);
-	}
-
-	if(this.guards==0)
-		weight.loss_guards=1;
-	else {
-		if(this.guards < 20)
-			weight.need_guards += 1 - this.guards/20;
-	}
-
-	if(other.kastle==0) {
-		if(this.kannons > 50)
-			return(this.kannonattack(other, true));
-		if(this.katapults > 1)
-			return(this.katapultattack(other, true));
-		weight.need_weapons=1;
-	}
-	else {
-		if(other.kastle < 10000)
-			weight.win_kastle += 1-other.kastle/10000;
-	}
-	if(weight.need_weapons==0)
-		weight.need_weapons=0.05;
-
-	if(weight.win_kastle==0)
-		weight.win_kastle=0.01;
-
-	if(other.mfood < .9 && this.mfood > 2) {
-		if(this.soldiers + this.civilians > other.soldiers * 3)
-			weight.need_soldiers =  1-(other.mfood/3);
-	}
-
-	if(this.gold + this.civilians - this.soldiers <= 0) {
-		need_release=1;
-	}
-	else if(this.soldiers > other.soldiers * 1.66) {
-		/* If we don't have enough tax revenue to pay for our soldiers
-			this is vital */
-		if(this.civilans - this.soldiers <= 0) {
-			/* If we will lose gold, this is merely very important */
-			need_release=0.75;
-		}
-		else {
-			/* Just a thought... */
-			need_release=0.1;
-		}
-	}
-
-	/* Now, we choose the highest of the three objects */
-	names = names.sort(function(a,b) {
-							return(weight[b]-weight[a]);
-						});
-
-	while((name=names.shift())!==undefined) {
-		var amount=0;
-		switch(name) {
-			case 'loss_soldiers':
-			case 'need_soldiers':
-				if(this.civilians > 1000) {
-					amount=(other.soldiers * 1.25)|0;
-					if(other.mfood < .9 && (this.soldiers + this.civilians > other.soldiers * 3))
-						amount=this.civilians;
-					else {
-						if(amount > this.civilians/2)
-							amount=(this.civilians/2)|0;
-						if(amount < other.soldiers * .5)
-							amount=(other.soldiers * .5)|0;
-						amount -= this.soldiers;
-						if(amount > this.civilians*.8)
-							amount=(this.civilians*.75)|0;
-						if(amount < 1000)
-							break;
-					}
-					dk.console.println("Drafting "+amount+" civilians into the army.");
-					dk.console.println("");
-					this.civilians -= amount;
-					this.soldiers += amount;
-					for(amount=0;amount<4;amount++)
-						playmusic("MFT64L64O5CDP32CDP32CDP16");
-					return(false);
-				}
-				break;
-			case 'loss_kastle':
-			case 'need_kastle':
-				amount=(this.gold/10)|0;
-				if(this.kastle + amount > other.kastle * 2)
-					amount = (other.kastle*2)-this.kastle;
-				if(amount < 2000)
-					break;
-				dk.console.println("Kastle reinforced by "+amount+" points!");
-				this.loadwagons('kastle',amount);
-				return(false);
-			case 'loss_guards':
-			case 'need_guards':
-				amount=20-this.guards;
-				if(amount*1000 > this.gold)
-					amount=(this.gold/1000)|0;
-				if(amount < 5)
-					break;
-				dk.console.println("Hiring "+amount+" guards for "+amount*1000);
-				dk.console.println("");
-				dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
-				this.loadwagons('guards',amount);
-				return(false);
-			case 'loss_food':
-			case 'need_food':
-				amount=this.gold*5;
-				if(amount < 100)
+	selection=KNKMath.aiPriorities(other, this);
+	for(i=0; i<selection.priorities.length; i++) {
+		candidate=selection.priorities[i];
+		action=candidate.action;
+		amount=KNKMath.aiQuantity(action, other, this);
+		switch(action) {
+			case "buy_food":
+				if(amount <= 0)
 					break;
 				dk.console.println("Buying "+amount+" sacks of food for "+amount/5+" gold!");
 				dk.console.println("");
 				dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
-				this.loadwagons('food',amount);
+				this.loadwagons("food", amount);
 				return(false);
-			case 'win_soldiers':
-				if(this.soldiers > other.soldiers * 1.7)
-					return(this.soldierattack(other));
-				if(this.kannons > this.katapults * 500)
-					return(this.kannonattack(other, true));
-				if(this.katapults > 0)
-					return(this.katapultattack(other, true));
-				break;
-			case 'win_kastle':
-				if(this.kannons > this.katapults * 500)
-					return(this.kannonattack(other, false));
-				if(this.katapults > 0)
-					return(this.katapultattack(other, false));
-				break;
-			case 'win_assassins':
+
+			case "attack":
+				if(this.soldiers < 1
+						|| this.soldiers < 1.5 * other.soldiers)
+					break;
+				return(this.soldierattack(other));
+
+			case "hire_guards":
+				if(amount <= 0)
+					break;
+				dk.console.println("Hiring "+amount+" guards for "+amount*1000);
+				dk.console.println("");
+				dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+				this.loadwagons("guards", amount);
+				return(false);
+
+			case "draft":
+				if(amount <= 0)
+					break;
+				dk.console.println("Drafting "+amount+" civilians into the army.");
+				dk.console.println("");
+				this.civilians -= amount;
+				this.soldiers += amount;
+				playmusic("MFT64L64O5CDP32CDP32CDP16");
+				return(false);
+
+			case "fortify_castle":
+				if(amount <= 0)
+					break;
+				dk.console.println("Kastle reinforced by "+amount+" points!");
+				this.loadwagons("kastle", amount);
+				return(false);
+
+			case "assassinate":
+				if(this.assassins < 1)
+					break;
 				return(this.assassinate(other));
-			case 'need_assassins':
-				amount=4-this.assassins;
-				if(amount*7500 > this.gold)
-					amount=(this.gold/7500)|0;
-				if(amount < 1)
+
+			case "hire_assassins":
+				if(amount <= 0)
 					break;
 				dk.console.println("Hiring "+amount+" assassins for "+amount*7500+" gold!");
 				dk.console.println("");
 				dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
-				this.loadwagons('assassins',amount);
+				this.loadwagons("assassins", amount);
 				return(false);
-			case 'need_weapons':
-				if(this.kannons > this.katapults * 500 && (this.kannons > 500 || this.gold < 25000)) {
-					amount=(this.gold/100)|0;
-					if(this.mfood < 2)
-						amount=amount>>1;
-					if(this.kannons > 2 && amount < this.kannons/2)
-						break;
-					if(amount < 20)
-						break;
-					dk.console.println("Buying "+amount+" kannons for "+amount*100+" gold!");
-					dk.console.println("");
-					dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
-					this.loadwagons('kannons',amount);
-					return(false);
-				}
-				else {
-					amount=(this.gold/25000)|0;
-					if(this.mfood < 2)
-						amount=(amount/2)|0;
-					if(this.katapults > 2 && amount < this.katapults/2)
-						break;
-					if(amount < 1)
-						break;
-					dk.console.println("Buying "+amount+" katapults for "+amount*25000+" gold!");
-					dk.console.println("");
-					dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
-					this.loadwagons('katapults',amount);
-					return(false);
-				}
-				break;
-			case 'need_release':
-				if(this.gold + this.civilians - this.soldiers <= 0)
-					amount=this.soldiers-(this.gold+this.civilians);
-				else if(this.soldiers > other.soldiers * 1.66)
-					amount=this.soldiers-(other.soldiers * 1.66);
-				if(amount < this.civilians / 10)
+
+			case "buy_catapults":
+				if(amount <= 0)
 					break;
-				if(amount > this.soldiers)
-					amount=this.soldiers / 2;
-				if(amount < 1)
+				dk.console.println("Buying "+amount+" katapults for "+amount*25000+" gold!");
+				dk.console.println("");
+				dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+				this.loadwagons("katapults", amount);
+				return(false);
+
+			case "buy_cannons":
+				if(amount <= 0)
+					break;
+				dk.console.println("Buying "+amount+" kannons for "+amount*100+" gold!");
+				dk.console.println("");
+				dk.console.println("The draft animals strain to haul the heavy wagons to "+this.refer_posessive+" kastle!");
+				this.loadwagons("kannons", amount);
+				return(false);
+
+			case "retire_soldiers":
+				if(amount <= 0)
 					break;
 				dk.console.println("Retiring "+amount+" soldiers from service.");
 				this.soldiers -= amount;
 				this.civilians += amount;
 				playmusic("MFT96O4L32P32CP64CP64CP64L16EP64L32CP64L12E");
 				return(false);
-				
+
+			case "fire_cannons":
+				if(this.kannons < 1)
+					break;
+				return(this.kannonattack(other,
+					selection.aim === "men"));
+
+			case "fire_catapults":
+				if(this.katapults < 1)
+					break;
+				return(this.katapultattack(other,
+					selection.aim === "men"));
 		}
 	}
 	dk.console.attr="C"
@@ -1593,13 +1254,14 @@ function play_game()
 	month=1;
 	player=new Player(title, name, true);
 	computer=new Player("King", "Computer", false);
+	KNKMath.initializeKingdoms(player, computer);
 	turn_order=random(2)?([player,computer]):([computer,player]);
 	while(winner===false) {
 		turn_order[turn].drawscreen(month);
 		dk.console.println("");
 		winner=turn_order[turn].move(month, turn_order[1-turn]);
 		if(winner===false) {
-			turn_order[turn].produce();
+			turn_order[turn].produce(turn_order[1-turn]);
 			turn++;
 			month++;
 			if(turn==2)
