@@ -3629,6 +3629,7 @@ static void termgfx_stats_draw(void)
 	char               buf[160];
 	char               drtxt[16];
 	char               tier[24];
+	char               mstxt[16];
 	int                off, brow;
 	unsigned long long bpf;
 
@@ -3663,6 +3664,11 @@ static void termgfx_stats_draw(void)
 	/* The share of frames PATCHED rather than repainted. Formatted by
 	 * termgfx_stats_dr() rather than here, so it reads identically in every
 	 * door -- this field had already drifted apart once. */
+	/* Only where the door actually reads a mouse -- and in the one spelling
+	 * every door uses, so "is this terminal pixel-granular?" is answerable
+	 * without opening a different door to find out. */
+	termgfx_stats_mouse(mstxt, sizeof mstxt, g_mouse_wanted,
+	                    termgfx_mouse_pixels(&g_mouse));
 	termgfx_stats_dr(drtxt, sizeof drtxt,
 	                 (g_cell_w <= 0 || g_cell_h <= 0) ? TERMGFX_STATS_DR_NA
 	                 : (g_dr_pct >= 0 ? g_dr_pct : TERMGFX_STATS_DR_NONE));
@@ -3673,14 +3679,14 @@ static void termgfx_stats_draw(void)
 	 * byte-for-byte unchanged for doors that never call set_stats_extra(). */
 	if (g_fps_have)
 		off = snprintf(buf, sizeof buf,
-		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums%s%s%s\x1b[K\x1b[0m\x1b[?25l",
+		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums%s%s%s%s\x1b[K\x1b[0m\x1b[?25l",
 		              brow, tier, g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms,
-		              drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
+		              mstxt, drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
 	else
 		off = snprintf(buf, sizeof buf,
-		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums%s%s%s\x1b[K\x1b[0m\x1b[?25l",
+		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums%s%s%s%s\x1b[K\x1b[0m\x1b[?25l",
 		              brow, tier, g_auto_depth, (unsigned)g_rtt_ms,
-		              drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
+		              mstxt, drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
 	if (off < 0 || off >= (int)sizeof buf)
 		return;
 	out_put(buf, (size_t)off);

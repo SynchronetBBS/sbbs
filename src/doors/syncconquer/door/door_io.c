@@ -91,6 +91,7 @@
                                     * are searched before termgfx's) */
 #include "sixel.h"
 #include "dirty.h"      /* termgfx: the shared grid-domain dirty diff */
+#include "stats.h"      /* termgfx: the shared Ctrl-S row tokens */
 #include "jxl.h"
 #include "apc.h"
 #include "caps.h"
@@ -2625,16 +2626,19 @@ static void door_stats_draw(int force)
 	 * the safe sixel ceiling). */
 	{
 		char geo[8];
+		char mousetxt[16];
 		snprintf(geo, sizeof geo, "%c%c%c%c",
 		         g_is_syncterm ? 'S' : '-',
 		         g_px_exact ? 'X' : 'e',
 		         g_canvas_is_gfx ? 'G' : '-',
 		         g_is_xterm ? 'x' : '-');
-		snprintf(t, sizeof t, " %s %dfps %s %lluKB/f d%d %s/%s%s%s%s %ums %dx%d/%s %dx%d",
+		termgfx_stats_mouse(mousetxt, sizeof mousetxt, 1,
+		                    termgfx_mouse_pixels(&g_mouse));
+		snprintf(t, sizeof t, " %s %dfps %s %lluKB/f d%d %s%s%s%s%s %ums %dx%d/%s %dx%d",
 		         sa_tier_name(tier), g_fps, rate, bpf, g_auto_depth,
 		         door_io_evdev_active()      ? "evdev"
 		         : door_input_kitty_active() ? "kitty" : "legacy",
-		         termgfx_mouse_pixels(&g_mouse) ? "pixel" : "cell",
+		         mousetxt,
 		         sa_is_text_tier(tier) ? (door_term_is_utf8() ? " utf8" : " cp437") : "",   /* charset only matters in text tiers */
 		         (g_img_blob_ok && tier == SA_JXL) ? " blob" : "",   /* frames shipping inline (DrawJXLBlob), no cache */
 		         g_fit_fill ? " fill" : "",   /* Ctrl-F Fill (stretch-to-canvas); absent = Aspect (default, true ratio) */

@@ -76,10 +76,24 @@ int termgfx_stats_head(char *buf, size_t bufsz, const char *tier,
                        uint32_t rtt_ms, uint32_t rtt_min_ms,
                        int depth, int depth_auto);
 
-/* " evdev/nat", " kitty/syn", or "" when active is 0 (neither protocol up, the
- * byte path): the keyboard protocol plus its turn-key model (native key-up vs
- * synthetic repeat) in one token. Shared by the doors that hold a key down. */
+/* " evdev turn=nat", " kitty turn=syn", or "" when active is 0 (neither
+ * protocol up, the byte path): the keyboard protocol, plus how the door drives
+ * TURNING on a laggy link -- native (the held key) or synthetic (a constant
+ * injected turn, once the release edge arrives too late to stop on target).
+ * Shared by the doors that hold a key down.
+ *
+ * The turn model is spelled out rather than left as a bare second field: it
+ * used to read " kitty/nat", one character away from another door's
+ * " kitty/cell", which is the MOUSE mode. Two unrelated facts in the same
+ * shape and the same place on the row is a readout nobody can trust. */
 int termgfx_stats_kbd(char *buf, size_t bufsz, int active, int kitty, int native);
+
+/* " mouse=px" (SGR-Pixels/DEC 1016 live: reports are canvas pixels) or
+ * " mouse=cell" (the terminal can only name a text cell, so a click is
+ * quantised to one -- ~10 game pixels on a 20px cell). "" when the door
+ * asked for no mouse at all, so a keyboard-only door does not carry a field
+ * about an input it never reads. */
+int termgfx_stats_mouse(char *buf, size_t bufsz, int enabled, int pixels);
 
 /* " x2" / " x2x3" for terminal-side upscale (APC ZX/ZY), "" at 1:1. */
 int termgfx_stats_zoom(char *buf, size_t bufsz, int zoom_x, int zoom_y);

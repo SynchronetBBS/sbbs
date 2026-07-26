@@ -82,9 +82,16 @@ int main(void) {
 
 	assert(termgfx_stats_kbd(buf, sizeof buf, 0, 0, 0) == 0 && buf[0] == '\0');
 	termgfx_stats_kbd(buf, sizeof buf, 1, 0, 1);
-	assert(strcmp(buf, " evdev/nat") == 0);
+	assert(strcmp(buf, " evdev turn=nat") == 0);
 	termgfx_stats_kbd(buf, sizeof buf, 1, 1, 0);
-	assert(strcmp(buf, " kitty/syn") == 0);
+	assert(strcmp(buf, " kitty turn=syn") == 0);
+
+	/* A keyboard-only door carries no mouse field at all. */
+	assert(termgfx_stats_mouse(buf, sizeof buf, 0, 0) == 0 && buf[0] == '\0');
+	termgfx_stats_mouse(buf, sizeof buf, 1, 0);
+	assert(strcmp(buf, " mouse=cell") == 0);
+	termgfx_stats_mouse(buf, sizeof buf, 1, 1);
+	assert(strcmp(buf, " mouse=px") == 0);
 
 	assert(termgfx_stats_zoom(buf, sizeof buf, 1, 1) == 0 && buf[0] == '\0');
 	termgfx_stats_zoom(buf, sizeof buf, 2, 2);

@@ -91,9 +91,20 @@ int termgfx_stats_kbd(char *buf, size_t bufsz, int active, int kitty, int native
 		buf[0] = '\0';
 		return 0;
 	}
-	return snprintf(buf, bufsz, " %s/%s",
+	return snprintf(buf, bufsz, " %s turn=%s",
 	                kitty ? "kitty" : "evdev",
 	                native ? "nat" : "syn");
+}
+
+int termgfx_stats_mouse(char *buf, size_t bufsz, int enabled, int pixels)
+{
+	if (buf == NULL || bufsz == 0)
+		return 0;
+	if (!enabled) {
+		buf[0] = '\0';
+		return 0;
+	}
+	return snprintf(buf, bufsz, " mouse=%s", pixels ? "px" : "cell");
 }
 
 int termgfx_stats_zoom(char *buf, size_t bufsz, int zoom_x, int zoom_y)
