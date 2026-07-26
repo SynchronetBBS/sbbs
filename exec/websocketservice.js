@@ -129,7 +129,8 @@ try {
                     // null ClientData means the client socket is no longer connected, or a close frame was received
                     break;
                 } else if (ClientData.length > 0) {
-                    SendToServer(ClientData);
+                    // false means the server socket is no longer connected
+                    if (!SendToServer(ClientData)) break;
                     DoYield = false;
                 }
                 
@@ -139,9 +140,10 @@ try {
                     // null ServerData means the server socket is no longer connected
                     break;
                 } else if (ServerData.length > 0) {
-                    SendToWebSocketClient(ServerData);
+                    // false means the client socket is no longer connected
+                    if (!SendToWebSocketClient(ServerData)) break;
                     DoYield = false;
-                }    
+                }
             
                 // Yield if we didn't transfer any data
                 if (DoYield) {
@@ -416,29 +418,31 @@ function ParsePathHeader() {
 }
 
 function SendToServer(AStr) {
-    if (!FServerSocket.is_connected) return;
-    if (AStr.length == 0) return;
+    if (!FServerSocket.is_connected) return false;
+    if (AStr.length == 0) return true;
 
     var bytesSent = FServerSocket.send(AStr);
     if (bytesSent != AStr.length) {
-        throw new Error('SendToServer only sent ' + bytesSent + ' of ' + AStr.length + ' bytes');
+        log(LOG_DEBUG, 'Server socket closed after sending ' + bytesSent + ' of ' + AStr.length + ' bytes');
+        return false;
     }
+    return true;
 }
 
 function SendToWebSocketClient(AData) {
-    if (!client.socket.is_connected) return;
-    if (AData.length == 0) return;
+    if (!client.socket.is_connected) return false;
+    if (AData.length == 0) return true;
 
     switch (FWebSocketHeader['Version']) {
-        case 0: 
-			SendToWebSocketClientDraft0(AData); 
+        case 0:
+			SendToWebSocketClientDraft0(AData);
 			break;
-		case 7: 
-		case 8: 
+		case 7:
+		case 8:
         case 13:
-			SendToWebSocketClientVersion7(AData); 
-			break;
+			return SendToWebSocketClientVersion7(AData);
     }
+    return true;
 }
 
 function SendToWebSocketClientDraft0(AData) {
@@ -502,8 +506,10 @@ function SendToWebSocketClientVersion7(AData) {
 
     var bytesSent = client.socket.send(ToSend);
     if (bytesSent != ToSend.length) {
-        throw new Error('SendToWebSocketClientVersion7 only sent ' + bytesSent + ' of ' + ToSend.length + ' bytes');
+        log(LOG_DEBUG, 'Client socket closed after sending ' + bytesSent + ' of ' + ToSend.length + ' bytes');
+        return false;
     }
+    return true;
 }
 
 function ShakeHands() {
