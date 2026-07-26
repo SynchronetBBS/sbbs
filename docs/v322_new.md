@@ -43,9 +43,9 @@
   `AND` / `OR` / `NOT` operators (symbol or keyword form),
   parenthesised grouping, and `"quoted phrase"` whole-word match
   (issue #1139)
-  - Available for the four "Text to search for" prompts:
-    message-base scan / F)ind, mail search, file-list search, and
-    the file pager
+  - Available for the five "Text to search for" prompts:
+    message-base scan / F)ind, mail search, file-list search, the
+    file pager, and the sysop user editor's T)ext search
   - `?` at any search prompt shows quick-reference help
   - Bare-word queries keep their substring behavior, so existing
     usage is unaffected
@@ -234,6 +234,7 @@
   - `SeekHelp` (less-style pager help text)
   - `FindStringNotFound`
   - `InvalidSearchExpression` (boolean-search parse errors)
+  - `UeditARSearchPrompt` (user editor's `/` AR-string search prompt)
 - Changed text.dat strings:
   - `SeekPrompt` restyled to `<filename> (?=Help)` form (the key
     list moved into `SeekHelp`)

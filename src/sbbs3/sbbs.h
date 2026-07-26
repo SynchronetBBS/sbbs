@@ -1334,8 +1334,8 @@ public:
 
 	/* useredit.cpp */
 	void	useredit(int usernumber);
-	int		searchup(char *search,int usernum);
-	int		searchdn(char *search,int usernum);
+	int		searchup(const struct bool_expr*, int usernum);
+	int		searchdn(const struct bool_expr*, int usernum);
 	void	user_config(user_t* user);
 	bool	purgeuser(int usernumber);
 
