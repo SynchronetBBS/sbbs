@@ -960,32 +960,24 @@ static void sr_io_stats_emit(int force)
 	 * cycles it, and which one you are looking at is exactly the thing you want to
 	 * know while comparing them. */
 	{
-		/* "dr N%" -- what share of emitted frames were PATCHED rather than
-		 * repainted. The interesting number while comparing tiers or games: a
-		 * static screen approaches 100, an every-pixel-moving one sits at 0 and
-		 * says so, rather than the reader wondering whether the feature is on.
+		/* What share of emitted frames were PATCHED rather than repainted --
+		 * the interesting number while comparing tiers or games: a static
+		 * screen approaches 100, an every-pixel-moving one sits at 0 and says
+		 * so, rather than leaving the reader wondering whether the feature is
+		 * on. The non-numeric states and the exact spelling belong to
+		 * termgfx_stats_dr(), so this field reads the same in every door.
 		 *
-		 * That last argument only holds where patching is POSSIBLE, which is
-		 * why "n/a" exists. Patching needs a known cell grid to place a
-		 * rectangle in (see the preconditions at the dirty-rect emit); a
-		 * client with no cell geometry yet cannot patch at all, and a bare
-		 * "dr 0%" there would be indistinguishable from a busy screen on a
-		 * client that COULD patch. Three states, three labels: off (the
-		 * sysop disabled it), n/a (no usable cell grid), N% (this is how it
-		 * is doing) -- the N% is a rolling ~2s window (g_recent_dr_pct, kept by
+		 * The percentage is a rolling ~2s window (g_recent_dr_pct, kept by
 		 * sr_stats_window() the same way g_stats.fps/g_stats.kbps are), not a
-		 * lifetime average: a session's early frames (before dirty-rect has a
-		 * previous frame to diff against) would otherwise drag a long
-		 * session's number down forever, and a later static screen could
-		 * never move it. */
-		if (!sr_config_dirty_rect())
-			snprintf(drtxt, sizeof drtxt, " dr off");
-		else if (g_cell_w <= 0 || g_cell_h <= 0)
-			snprintf(drtxt, sizeof drtxt, " dr n/a");   /* no cell grid: cannot place patches */
-		else if (g_recent_dr_have)
-			snprintf(drtxt, sizeof drtxt, " dr %u%%", g_recent_dr_pct);
-		else
-			drtxt[0] = '\0';
+		 * lifetime average: a session's early frames -- before dirty-rect has
+		 * a previous frame to diff against -- would otherwise drag a long
+		 * session's number down forever, and a later static screen could never
+		 * move it. */
+		termgfx_stats_dr(drtxt, sizeof drtxt,
+		                 !sr_config_dirty_rect() ? TERMGFX_STATS_DR_OFF
+		                 : (g_cell_w <= 0 || g_cell_h <= 0) ? TERMGFX_STATS_DR_NA
+		                 : g_recent_dr_have ? (int)g_recent_dr_pct
+		                 : TERMGFX_STATS_DR_NONE);
 	}
 	{
 		/* The head -- tier, fps, throughput, lag, depth -- is termgfx's, so it

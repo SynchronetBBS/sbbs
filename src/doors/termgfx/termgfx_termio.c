@@ -25,6 +25,7 @@
 #include "caps.h"
 #include "pace.h"
 #include "idle.h"
+#include "stats.h"      /* the shared Ctrl-S field formatting */
 #include "door32.h"
 #include "geometry.h"
 #include "gfxgate.h"
@@ -3620,17 +3621,12 @@ static void termgfx_stats_draw(void)
 	if (!g_stats)
 		return;
 	bpf = g_fps > 0 ? ((uint64_t)g_bps / 8 / (unsigned)g_fps + 512) / 1024 : 0;
-	/* "dr N%" -- the share of frames PATCHED rather than repainted, the number
-	 * that says whether the dirty path is doing anything on this content. Three
-	 * states like syncretro's, because a bare "dr 0%" cannot be told from "this
-	 * client cannot patch at all": n/a means no usable cell grid (patching needs
-	 * one to place a box in), - means no window has closed yet. */
-	if (g_dr_pct >= 0)
-		snprintf(drtxt, sizeof drtxt, " dr%d%%", g_dr_pct);
-	else if (g_cell_w <= 0 || g_cell_h <= 0)
-		snprintf(drtxt, sizeof drtxt, " dr n/a");
-	else
-		snprintf(drtxt, sizeof drtxt, " dr-");
+	/* The share of frames PATCHED rather than repainted. Formatted by
+	 * termgfx_stats_dr() rather than here, so it reads identically in every
+	 * door -- this field had already drifted apart once. */
+	termgfx_stats_dr(drtxt, sizeof drtxt,
+	                 (g_cell_w <= 0 || g_cell_h <= 0) ? TERMGFX_STATS_DR_NA
+	                 : (g_dr_pct >= 0 ? g_dr_pct : TERMGFX_STATS_DR_NONE));
 	/* No present completed in the last window (e.g. a paused game, or -- before
 	 * the palette-storm fix -- a fade's dark gap): show '-' rather than a
 	 * misleading "0fps 0KB/f". */

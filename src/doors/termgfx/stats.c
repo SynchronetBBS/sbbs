@@ -104,3 +104,16 @@ int termgfx_stats_zoom(char *buf, size_t bufsz, int zoom_x, int zoom_y)
 		return snprintf(buf, bufsz, " x%d", zoom_x);
 	return snprintf(buf, bufsz, " x%dx%d", zoom_x, zoom_y);
 }
+
+int termgfx_stats_dr(char *buf, size_t bufsz, int pct)
+{
+	if (pct == TERMGFX_STATS_DR_OFF)
+		return snprintf(buf, bufsz, " dr off");
+	if (pct == TERMGFX_STATS_DR_NA)
+		return snprintf(buf, bufsz, " dr n/a");
+	if (pct < 0)
+		return snprintf(buf, bufsz, "%s", "");   /* nothing to say yet */
+	if (pct > 100)
+		pct = 100;
+	return snprintf(buf, bufsz, " dr %d%%", pct);
+}
