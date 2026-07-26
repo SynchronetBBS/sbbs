@@ -132,6 +132,15 @@ cc -o /tmp/test_termgfx_termio_bottom_dirty $JXL_DEFINE -I"$TERMGFX" $XPDEV_INC 
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_termgfx_termio_bottom_dirty
 
+# Palette fade: a palette change is patched rather than repainted, and the
+# moved registers ride the first box on a SyncTERM. Own binary for the same
+# file-static-session reason as the bottom-strand test above.
+cc -o /tmp/test_termgfx_termio_palfade $JXL_DEFINE -I"$TERMGFX" $XPDEV_INC \
+   "$HERE/test_termgfx_termio_palfade.c" "$TERMGFX/termgfx_termio.c" \
+   "$LIBS/termgfx/libtermgfx.a" "$LIBS/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_termgfx_termio_palfade
+
 # The audio probe needs a fresh termgfx_termio session (file-static tier/settle
 # state, no reset), so it's its own binary rather than another case above.
 cc -o /tmp/test_termgfx_termio_audio $JXL_DEFINE -I"$TERMGFX" $XPDEV_INC \

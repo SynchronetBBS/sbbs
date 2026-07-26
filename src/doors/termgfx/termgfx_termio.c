@@ -2682,6 +2682,14 @@ static int termgfx_coalesce(struct termgfx_box *box)
 	return (nb > TERMGFX_MAX_BOXES) ? -1 : nb;
 }
 
+/* Palette entries whose COLOR moved since the last sent frame, indexed by
+ * palette index; NULL-equivalent when g_pal_stale_any is 0. A tile drawn with
+ * one of these has changed on screen even if its indices did not, on BOTH
+ * tiers and for different reasons: JXL bakes the palette into each frame's RGB
+ * pixels, and sixel color registers are shared with what is already drawn. */
+static uint8_t g_pal_stale[256];
+static int     g_pal_stale_any;
+
 static int termgfx_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct termgfx_box *box)
 {
 	const int tiles = TERMGFX_TX * TERMGFX_TY;
@@ -2695,6 +2703,13 @@ static int termgfx_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct 
 				size_t off = (size_t)(ty * TERMGFX_TILE + r) * TERMGFX_FB_W + (size_t)tx * TERMGFX_TILE;
 				if (memcmp(fb + off, last + off, TERMGFX_TILE) != 0)
 					ch = 1;
+				else if (g_pal_stale_any) {
+					int c;   /* same indices, but one of them means a new color */
+
+					for (c = 0; c < TERMGFX_TILE && !ch; c++)
+						if (g_pal_stale[last[off + c]])
+							ch = 1;
+				}
 			}
 			termgfx_grid[ty][tx] = (uint8_t)ch;
 			if (ch)
@@ -2916,6 +2931,7 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 	/* SyncTERM: registers persist, box carries no palette (NONE). Every other
 	 * terminal resets per image, so the box self-describes its used colors. */
 	int             emit_pal = g_is_syncterm ? SIXEL_PAL_NONE : SIXEL_PAL_USED;
+	int             sent_pal = 0;   /* SyncTERM: has the delta gone out yet? */
 	size_t          total = 0;
 
 	g_dirty_why = "-";
@@ -2986,7 +3002,19 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 			g_dirty_why = "oom";
 			return 0;                               /* fall back to a full frame */
 		}
-		sn = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, rw, rh, pal8, emit_pal);
+		/* A moved palette has to reach a SyncTERM somehow: its boxes carry no
+		 * registers, and all 256 would dwarf them, so the FIRST box of such a
+		 * frame carries exactly the entries that moved. The tiles those recolor
+		 * are inside these boxes by construction -- that is what g_pal_stale
+		 * put there. Every other terminal resets registers per image, so its
+		 * used-color subset already covers this. */
+		if (g_is_syncterm && g_pal_stale_any && !sent_pal) {
+			sn = sixel_encode_delta(&g_sixel_buf, &g_sixel_cap, idx, rw, rh,
+			                        pal8, g_pal_stale);
+			sent_pal = 1;
+		} else {
+			sn = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, rw, rh, pal8, emit_pal);
+		}
 		if (sn == 0) {
 			g_dirty_why = "encode";
 			return 0;
@@ -3130,12 +3158,7 @@ static size_t termgfx_emit_jxl_rgb(const uint8_t *rgb, int ew, int eh, int dx, i
  * partial total (and forces a full-frame resync next present via
  * g_dropped_frames) so the caller never stacks a full frame on top of partial
  * rects. Caller guarantees
- * g_have_last, an unchanged palette (a pure palette fade can leave the INDEX
- * buffer termgfx_diff_coalesce() diffs completely unchanged while every pixel's
- * displayed color moves -- unlike sixel's separate palette registers, JXL
- * bakes the palette into each frame's RGB pixels, so a fade MUST force a
- * full re-encode, exactly like the sixel path's own pal_dirty gate), and
- * that the client currently holds the previous JXL frame in blob mode
+ * g_have_last and that the client currently holds the previous JXL frame in blob mode
  * (g_img_blob_ok -- a non-blob dirty box would need its own unique cache
  * file per box, which this task doesn't build). */
 static size_t termgfx_dirty_jxl_present(const uint8_t *fb, const uint8_t *last,
@@ -4258,6 +4281,24 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * stable palette), and a storm of those is what this fix paces. */
 	pal_dirty = !g_have_last || memcmp(g_last_pal, pal768, 768) != 0;
 
+	/* WHICH entries moved, not just whether any did: that is what lets the
+	 * dirty paths find the tiles a palette change actually altered, instead of
+	 * repainting the frame because SOMETHING in the palette moved. A fade
+	 * touches a handful of entries and a scene's worth of pixels are drawn with
+	 * the rest. No previous palette to diff against (first frame) means every
+	 * tile is new anyway, so leave the mask clear. */
+	g_pal_stale_any = 0;
+	memset(g_pal_stale, 0, sizeof g_pal_stale);
+	if (pal_dirty && g_have_last) {
+		int c;
+
+		for (c = 0; c < 256; c++)
+			if (memcmp(g_last_pal + c * 3, pal768 + c * 3, 3) != 0) {
+				g_pal_stale[c] = 1;
+				g_pal_stale_any = 1;
+			}
+	}
+
 	/* DSR-ACK pacing gate: don't get ahead of what the terminal has drawn.
 	 *
 	 * The unstick deadline is the crux of the fade fix. A palette fade repaints
@@ -4503,7 +4544,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		int cdh = g_cell_h > 0 ? g_cell_h
 		        : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 0);
 
-		if (cdw > 0 && cdh > 0 && g_have_last && !pal_dirty && !geom_changed && !tier_changed)
+		if (cdw > 0 && cdh > 0 && g_have_last && !geom_changed && !tier_changed)
 			dn = termgfx_dirty_sixel_present(idx, g_last_fb, pal768, ew, eh,
 			                             icol, irow, cdw, cdh);
 
@@ -4520,7 +4561,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	}
 #ifdef WITH_JXL
 	else {   /* TERMGFX_TIER_JXL */
-		if (g_have_last && !pal_dirty && !geom_changed && !tier_changed && g_img_blob_ok)
+		if (g_have_last && !geom_changed && !tier_changed && g_img_blob_ok)
 			dn = termgfx_dirty_jxl_present(idx, g_last_fb, pal768, ew, eh, dx, dy);
 
 		termgfx_count_dirty(dn != 0);
