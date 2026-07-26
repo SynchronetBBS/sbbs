@@ -3313,6 +3313,15 @@ static int     g_trace_dx, g_trace_dy;         /* JXL pixel offset; stay 0 witho
 static int     g_trace_cellh;                  /* cell height used for the sixel row-reserve */
 static int     g_trace_icol, g_trace_irow;     /* text-grid column/row the image is centered at */
 
+/* Where the last frame was ACTUALLY drawn, in canvas pixels, and how big it
+ * was. Not the same as termgfx_image_rect()'s answer on the sixel tier: that
+ * rect is what the centering asked for, while a sixel is placed by CUP at a
+ * cell and the vstep trim may since have shrunk and re-centred it. The mouse
+ * mapper has to invert what was drawn, not what was requested -- a gap between
+ * the two is a constant bias on every click. 0 until the first present, where
+ * the mapper falls back to the requested rect. */
+static int     g_draw_ew, g_draw_eh, g_draw_dx, g_draw_dy, g_draw_have;
+
 /* Emit one present-path trace line (<DOOR>_TRACE); see g_trace, above. */
 static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 {
@@ -4078,7 +4087,17 @@ static void termgfx_termio_mouse_report(int b, int col, int row, int release)
 	    && ((g_term_cols > 0 && col > g_term_cols) || (g_term_rows > 0 && row > g_term_rows)))
 		termgfx_mouse_note_pixel_report(&g_mouse);
 
-	termgfx_image_rect(&ew, &eh, &dx, &dy);
+	/* The rect the last frame was DRAWN in, not the one the fit asked for --
+	 * see g_draw_ew. Before the first present there is nothing to invert, so
+	 * fall back to the requested rect. */
+	if (g_draw_have) {
+		ew = g_draw_ew;
+		eh = g_draw_eh;
+		dx = g_draw_dx;
+		dy = g_draw_dy;
+	} else {
+		termgfx_image_rect(&ew, &eh, &dx, &dy);
+	}
 	cw = g_cell_w > 0 ? g_cell_w : 8;
 	ch = g_cell_h > 0 ? g_cell_h : 16;
 	if (ew <= 0)
@@ -4544,16 +4563,29 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 			double chd = (double)g_canvas_h / g_term_rows;
 			icol = 1 + (int)(rdx / cw);
 			irow = 1 + (int)(rdy / chd);
+			g_draw_dx = (int)((icol - 1) * cw);
+			g_draw_dy = (int)((irow - 1) * chd);
 		} else {
 			/* dx/dy (pixel offset) feed the pixel-addressed JXL APC; sixel
 			 * (no CPR grid) falls back here and uses icol/irow only. */
 			icol = 1 + rdx / 8;
 			irow = 1 + rdy / 16;
+			if (tier == TERMGFX_TIER_SIXEL) {
+				g_draw_dx = (icol - 1) * 8;
+				g_draw_dy = (irow - 1) * 16;
+			} else {
+				g_draw_dx = rdx;
+				g_draw_dy = rdy;
+			}
 #ifdef WITH_JXL
 			dx = rdx;
 			dy = rdy;
 #endif
 		}
+
+		g_draw_ew   = ew;
+		g_draw_eh   = eh;
+		g_draw_have = 1;
 
 		/* Stash for termgfx_trace() -- see g_trace_ew's doc comment, above. */
 		g_trace_ew = ew;
@@ -4862,14 +4894,26 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 			double chd = (double)g_canvas_h / g_term_rows;
 			icol = 1 + (int)(rdx / cw);
 			irow = 1 + (int)(rdy / chd);
+			g_draw_dx = (int)((icol - 1) * cw);
+			g_draw_dy = (int)((irow - 1) * chd);
 		} else {
 			icol = 1 + rdx / 8;
 			irow = 1 + rdy / 16;
+			if (tier == TERMGFX_TIER_SIXEL) {
+				g_draw_dx = (icol - 1) * 8;
+				g_draw_dy = (irow - 1) * 16;
+			} else {
+				g_draw_dx = rdx;
+				g_draw_dy = rdy;
+			}
 #ifdef WITH_JXL
 			dx = rdx;
 			dy = rdy;
 #endif
 		}
+		g_draw_ew   = ew;
+		g_draw_eh   = eh;
+		g_draw_have = 1;
 
 		/* Stash for termgfx_trace() -- same geometry fields present() records. */
 		g_trace_ew    = ew;

@@ -132,6 +132,16 @@ cc -o /tmp/test_termgfx_termio_bottom_dirty $JXL_DEFINE -I"$TERMGFX" $XPDEV_INC 
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_termgfx_termio_bottom_dirty
 
+# The mouse maps against the rect the frame was DRAWN in, not the one the fit
+# asked for -- on the sixel tier a CUP-placed image sits at a cell boundary,
+# which is up to a cell above/left of the centering offset. Own binary: needs a
+# fresh session at a specific canvas geometry.
+cc -o /tmp/test_termgfx_termio_mouse_drawn $JXL_DEFINE -DTERMGFX_TEST -I"$TERMGFX" $XPDEV_INC \
+   "$HERE/test_termgfx_termio_mouse_drawn.c" "$TERMGFX/termgfx_termio.c" \
+   "$LIBS/termgfx/libtermgfx.a" "$LIBS/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_termgfx_termio_mouse_drawn
+
 # Palette fade: a palette change is patched rather than repainted, and the
 # moved registers ride the first box on a SyncTERM. Own binary for the same
 # file-static-session reason as the bottom-strand test above.
