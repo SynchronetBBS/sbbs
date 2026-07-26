@@ -2832,12 +2832,31 @@ static void termgfx_box_display_rect(const struct termgfx_box *b, int ew, int eh
 	 * no partial band at the bottom) rather than ship a box that silently
 	 * drops those rows. */
 	rh  = (ry2 - ry + vstep - 1) / vstep * vstep;
-	if (ry + rh > ehc)
-		rh = (ehc - ry) / vstep * vstep;   /* stay vstep-aligned at the frame bottom */
+	/* Too tall for what is left below it: keep the height and take the room
+	 * ABOVE instead. Shrinking rh to fit was the old answer and it is what
+	 * stranded -- against the frame bottom there is often no whole vstep left,
+	 * so rh went to zero and the box could not cover its own changed rows.
+	 * Growing upward always can: ehc is a whole number of vstep (see the trim
+	 * in termgfx_termio_present()), so ehc - rh lands on a cell corner, which
+	 * is the only thing CUP can address. */
+	if (ry + rh > ehc) {
+		ry = ehc - rh;
+		if (ry < 0) {                      /* box taller than the image itself */
+			ry = 0;
+			rh = ehc / vstep * vstep;
+		}
+	}
 	rw  = rx2 - rx;
 
 	*rx_out = rx; *ry_out = ry; *rw_out = rw; *rh_out = rh; *ry2_out = ry2;
 }
+
+/* WHY the last termgfx_dirty_sixel_present() declined to patch, for the trace.
+ * A file-static rather than an out-parameter, for the same reason syncretro's
+ * sr_dirty_last_reason() is one: every caller would have to thread it through
+ * and none of them acts on it -- only the diagnostic reads it. "strand" is the
+ * one worth naming: it means the geometry, not the content, refused. */
+static const char *g_dirty_why = "-";
 
 static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
                                       const uint8_t *pal8, int ew, int eh,
@@ -2851,13 +2870,21 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 	int             emit_pal = g_is_syncterm ? SIXEL_PAL_NONE : SIXEL_PAL_USED;
 	size_t          total = 0;
 
-	ehc = eh - eh % 6;                           /* the client's actual sixel height */
-	if (ehc < 6)
+	g_dirty_why = "-";
+	/* The whole image: present() already trimmed it to a whole number of vstep
+	 * for this tier, so the cell grid tiles it exactly and no row falls outside
+	 * every box. */
+	ehc = eh;
+	if (ehc < 6) {
+		g_dirty_why = "height";
 		return 0;
+	}
 
 	nb = termgfx_diff_coalesce(fb, last, box);
-	if (nb <= 0)
+	if (nb <= 0) {
+		g_dirty_why = (nb == 0) ? "nothing" : "boxes";
 		return 0;
+	}
 
 	/* Stranding pre-pass: a bottom-clamped box that can't cover its own
 	 * changed rows forces a full-frame fallback (see termgfx_box_display_rect()'s
@@ -2875,8 +2902,10 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 		termgfx_box_display_rect(&box[k], ew, ehc, cw, ch, vstep, &rx, &ry, &rw, &rh, &ry2);
 		if (rw <= 0)
 			continue;                               /* empty box: not stranding */
-		if (ry + rh < ry2)
+		if (ry + rh < ry2) {
+			g_dirty_why = "strand";
 			return 0;                               /* fall back to a full frame */
+		}
 	}
 
 	for (k = 0; k < nb; k++) {
@@ -2905,11 +2934,15 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 		 * SyncTERM's sixel decoder, and SyncTERM uses the JXL tier, never this
 		 * sixel-dirty path. */
 		idx = termgfx_pack_idx_rect(fb, ew, ehc, rx, ry, rw, rh);
-		if (idx == NULL)
+		if (idx == NULL) {
+			g_dirty_why = "oom";
 			return 0;                               /* fall back to a full frame */
+		}
 		sn = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, rw, rh, pal8, emit_pal);
-		if (sn == 0)
+		if (sn == 0) {
+			g_dirty_why = "encode";
 			return 0;
+		}
 		wn = snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow + cy, icol + cx);
 		out_put(wrap, (size_t)wn);
 		out_put(g_sixel_buf, sn);
@@ -3214,7 +3247,7 @@ static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 	 * runs this call. */
 	fprintf(g_trace, "%u %-13s %-5s %7zu inflight=%d depth=%d dropped=%u"
 	        " canvas=%dx%d%s replied=%d sixel=%d jxl=%d audio=%d/%u/%u/%u"
-	        " abacklog=%zu/%u/%u emit=%dx%d@%d,%d cell=%d rc=%d,%d\n",
+	        " abacklog=%zu/%u/%u emit=%dx%d@%d,%d cell=%d rc=%d,%d dirty=%s\n",
 	        (unsigned)now_ms(), outcome, tier, bytes,
 	        g_inflight, g_auto_depth, (unsigned)g_dropped_frames,
 	        g_canvas_w, g_canvas_h, g_canvas_exact ? "!" : "?",
@@ -3222,7 +3255,7 @@ static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 	        g_audio_tier, ch, ur, dr,
 	        termgfx_termio_audio_backlog(), (unsigned)g_audio_dropped, g_aseg_merges,
 	        g_trace_ew, g_trace_eh, g_trace_dx, g_trace_dy, g_trace_cellh,
-	        g_trace_irow, g_trace_icol);
+	        g_trace_irow, g_trace_icol, g_dirty_why);
 }
 
 /* Dump raw terminal input (<DOOR>_TRACE only): the exact reply bytes the
@@ -4230,6 +4263,47 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		                 * from the other is exact, not an approximation. */
 
 		termgfx_image_rect(&ew, &eh, &rdx, &rdy);
+
+		/* SIXEL ONLY: trim the image to a whole number of vstep = LCM(cellh,6),
+		 * so the dirty grid TILES it exactly.
+		 *
+		 * Both alignments are forced, which is why it is their LCM and not just
+		 * the cell: a box is PLACED by CUP at a cell, and is DRAWN as whole 6px
+		 * sixel bands (termgfx_emit_sixel() band-rounds the frame for the same
+		 * reason -- a partial trailing band leaves a black strip on foot). A
+		 * remainder below the last aligned row belongs to no box, so either it
+		 * renders stale, or a box reaching it overruns the image, or -- what
+		 * actually happened -- the box gets clamped short of its own changed
+		 * rows and the whole frame falls back to a repaint. On a played Queen
+		 * session that fallback was 98.3% of all full frames and two thirds of
+		 * every byte sent.
+		 *
+		 * The JXL tier is pixel-addressed, not cell-addressed, so it neither
+		 * needs this nor should pay for it. */
+		if (tier == TERMGFX_TIER_SIXEL && cellh > 0) {
+			int vstep = cellh / termgfx_gcd(cellh, 6) * 6;
+			int eh2   = (eh >= vstep) ? eh / vstep * vstep : eh;
+
+			if (eh2 != eh && eh > 0) {
+				/* Take the WIDTH down with the height, or the picture is
+				 * simply squashed: termgfx_image_rect() fitted these two to
+				 * the source's shape, and trimming one axis alone throws that
+				 * away (a 1330x831 fit became 1330x780 -- 1.71 where the
+				 * source is 1.60). Rounding to the NEXT vstep instead is not
+				 * an option: eh is normally width-limited, so a taller image
+				 * needs a wider one than the canvas has. */
+				int ew2 = (int)((double)ew * eh2 / eh + 0.5);
+
+				/* Re-center on both axes. rdx/rdy were computed for the
+				 * untrimmed rect, so keeping them would pin the smaller image
+				 * to the old top-left and put the whole difference at the
+				 * right and bottom. */
+				rdx += (ew - ew2) / 2;
+				rdy += (eh - eh2) / 2;
+				ew   = ew2 > 0 ? ew2 : 1;
+				eh   = eh2;
+			}
+		}
 
 		if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0) {
 			double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;

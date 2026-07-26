@@ -209,14 +209,14 @@ int main(void)
 {
 	int         sv[2];
 	char        fdarg[32];
-	char       *argv[3];
+	char *      argv[3];
 	int         bufsz = 8192;
 	size_t      video_backlog;
 	size_t      with_audio;
 	size_t      audio_bytes;
 	char        errpath[] = "/tmp/test_termgfx_termio_audio_backlog_err.XXXXXX";
 	int         errfd;
-	FILE       *errf;
+	FILE *      errf;
 	static char errbuf[65536];
 	size_t      errn;
 
@@ -312,9 +312,29 @@ int main(void)
 	{
 		int i;
 
-		for (i = 0; i < 200 && termgfx_termio_out_backlog() > audio_bytes + 8192; i++) {
+		/* The margin has to be the wire's WRITE granularity, not the sip size.
+		 * Reading 8192 out of the socket does not mean the next flush writes
+		 * 8192: several sips can be refused outright and then one flush writes
+		 * a whole socket buffer's worth (36544 bytes was what a Linux
+		 * socketpair actually did here). Guarding on `+ 8192` therefore lets
+		 * the loop start an iteration that jumps clean past the audio boundary,
+		 * and the assertion below then fires on a backlog that has legitimately
+		 * reached audio -- a failure of the guard, not of the accounting.
+		 * Whether it happens at all depends on where the jumps land, i.e. on
+		 * the frame's size, so it stayed hidden until a video frame changed
+		 * size. Learn the granularity from the drops instead of assuming it. */
+		size_t margin = 8192;
+
+		for (i = 0; i < 200; i++) {
+			size_t before = termgfx_termio_out_backlog(), after;
+
+			if (before <= audio_bytes + margin)
+				break;                        /* one more write could reach audio */
 			sip(sv[0], 8192);
 			termgfx_termio_flush();
+			after = termgfx_termio_out_backlog();
+			if (before - after > margin)
+				margin = before - after;
 			assert(termgfx_termio_audio_backlog() == audio_bytes);
 		}
 		assert(termgfx_termio_out_backlog() < with_audio);   /* the wire really did take video */
