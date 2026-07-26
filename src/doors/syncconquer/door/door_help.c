@@ -23,6 +23,8 @@
   #define HELP_TITLE "SyncAlert -- Key Commands"
 #endif
 
+#define HELP_CLOSE "ESC to Close"
+
 /* Inner text width of the panel (chars between the 1-space side margins). The
  * column format below sums to this. */
 #define HELP_W 46
@@ -157,9 +159,16 @@ void door_help_draw(int cols, int rows)
 		n++;
 	}
 
-	line[n].attr = body_attr; snprintf(line[n].text, sizeof line[n].text, "  + / -      Music volume"); n++;
+	line[n].attr = body_attr; snprintf(line[n].text, sizeof line[n].text, " + / -      Music volume"); n++;
 	line[n].attr = body_attr; line[n].text[0] = '\0'; n++;
-	line[n].attr = title_attr; snprintf(line[n].text, sizeof line[n].text, "     F1 / ^K / Esc to close"); n++;
+
+	/* Centered in the inner width, the same way the title bar is. */
+	pad = (HELP_W - (int)strlen(HELP_CLOSE)) / 2;
+	if (pad < 0)
+		pad = 0;
+	line[n].attr = title_attr;
+	snprintf(line[n].text, sizeof line[n].text, "%*s%s", pad, "", HELP_CLOSE);
+	n++;
 
 	/* Center the assembled panel. */
 	boxw = HELP_W + 2;
