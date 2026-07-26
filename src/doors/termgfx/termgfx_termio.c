@@ -2690,6 +2690,10 @@ static int termgfx_coalesce(struct termgfx_box *box)
 static uint8_t g_pal_stale[256];
 static int     g_pal_stale_any;
 
+/* Does the pending palette change reach anything the client is DISPLAYING?
+ * Defined beside g_last_fb, which it scans. */
+static int termgfx_pal_change_visible(void);
+
 static int termgfx_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct termgfx_box *box)
 {
 	const int tiles = TERMGFX_TX * TERMGFX_TY;
@@ -4137,6 +4141,23 @@ static void termgfx_invalidate_last(void)
 	g_have_last = 0;
 }
 
+/* Does the pending palette change reach anything the client is DISPLAYING?
+ * Scans the last SENT frame for an index whose colour moved. Only asked when
+ * the palette moved and the incoming frame is otherwise identical, so it costs
+ * a scan on exactly the frames it can save a whole repaint on, and it stops at
+ * the first hit. */
+static int termgfx_pal_change_visible(void)
+{
+	size_t i, npx = (size_t)TERMGFX_FB_W * TERMGFX_FB_H;
+
+	if (!g_pal_stale_any)
+		return 0;
+	for (i = 0; i < npx; i++)
+		if (g_pal_stale[g_last_fb[i]])
+			return 1;
+	return 0;
+}
+
 /* A frame that a DEFER gate (pacing or backpressure, below) held back
  * instead of sending -- retained here so termgfx_termio_tick() can retry it once the
  * gate clears, even with no further engine-side present() call. Without
@@ -4486,8 +4507,18 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * in practice only change once per session (termgfx_tier() settles as soon
 	 * as the startup probe answers, before any frame has gone out), but
 	 * checking it here costs nothing and keeps this correct if that ever
-	 * stops being true. */
-	if (g_have_last && !pal_dirty && !geom_changed && !tier_changed
+	 * stops being true.
+	 *
+	 * A palette change counts as "unchanged" when it does not reach a single
+	 * pixel on screen. An engine rewrites the whole palette freely, and a
+	 * scene draws with a fraction of it -- Queen's opening sequence spends a
+	 * quarter of its frames moving entries the visible picture never uses. The
+	 * frame really is identical to what the client is showing, so sending
+	 * anything at all is waste. The change is NOT forgotten: this path updates
+	 * no state, so g_last_pal still holds the last SENT palette and the entries
+	 * stay pending for the first frame that actually draws with them. */
+	if (g_have_last && !geom_changed && !tier_changed
+	    && (!pal_dirty || !termgfx_pal_change_visible())
 	    && memcmp(g_last_fb, idx, TERMGFX_FB_W * TERMGFX_FB_H) == 0) {
 		termgfx_fps_tick(0);
 		if (g_stats) {

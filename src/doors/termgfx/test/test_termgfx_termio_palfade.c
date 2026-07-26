@@ -62,12 +62,30 @@ int main(void){
 	 * and it must be smaller than the frame, or nothing was gained. */
 	assert(c >= 1);
 	assert(pv < full_pv);
-	/* the delta must be on the wire so the terminal learns the new colour */
 	/* SyncTERM boxes carry no palette, so the mover has to ride the first one. */
 	assert(strstr(out, "#3;2;") != NULL);
 	/* ...and only the movers: an untouched register must not be re-sent. */
 	assert(strstr(out, "#7;2;") == NULL);
-	printf("TERMGFX_TERMIO_PALFADE fade patched (%d px tall vs %d full), delta sent OK\n",
-	       pv, full_pv);
+
+	/* An INVISIBLE palette change -- an entry the scene never draws with --
+	 * must send nothing at all. An engine rewrites the whole palette freely
+	 * and a scene uses a fraction of it; repainting for an entry no pixel
+	 * references is pure waste (a quarter of the frames in Queen's opening
+	 * sequence). */
+	pal[200*3+0]^=0x55; pal[200*3+1]^=0x55; pal[200*3+2]^=0x55;
+	termgfx_termio_present(idx,pal); termgfx_termio_flush(); n=drain(sv[0]);
+	c=rasters(out,n,&pv);
+	assert(c == 0);                        /* nothing on the wire at all */
+
+	/* ...but it must not be FORGOTTEN. Draw with that entry now: the colour
+	 * the terminal is handed has to be the NEW one, or deferring lost it. */
+	memset(idx + 100*320, 200, 320);       /* one row, in the deferred colour */
+	termgfx_termio_present(idx,pal); termgfx_termio_flush(); n=drain(sv[0]);
+	c=rasters(out,n,&pv);
+	assert(c >= 1);
+	assert(strstr(out, "#200;2;") != NULL);
+
+	printf("TERMGFX_TERMIO_PALFADE fade patched, invisible change silent,"
+	       " deferred entry not lost OK\n");
 	return 0;
 }
