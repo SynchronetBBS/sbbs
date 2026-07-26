@@ -2687,6 +2687,14 @@ static int termgfx_coalesce(struct termgfx_box *box)
  * one of these has changed on screen even if its indices did not, on BOTH
  * tiers and for different reasons: JXL bakes the palette into each frame's RGB
  * pixels, and sixel color registers are shared with what is already drawn. */
+/* WHY the last dirty pass declined to patch, for the trace. A file-static
+ * rather than an out-parameter, for the same reason syncretro's
+ * sr_dirty_last_reason() is one: every caller would have to thread it through
+ * and none of them acts on it -- only the diagnostic reads it. The names are
+ * worth keeping apart: "strand" means the GEOMETRY refused, "toobig" means the
+ * content genuinely deserves a repaint, "nothing" means the frame was waste. */
+static const char *g_dirty_why = "-";
+
 static uint8_t g_pal_stale[256];
 static int     g_pal_stale_any;
 
@@ -2720,10 +2728,24 @@ static int termgfx_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct 
 				dirty++;
 		}
 	}
-	if (dirty == 0 || dirty * 100 / tiles >= TERMGFX_FALLBACK_PCT)
-		return 0;                                   /* nothing / big change -> full frame */
+	/* Three different answers, all "send a full frame" -- but only one of them
+	 * is waste, so a diagnostic that cannot tell them apart is worse than none.
+	 * Reading "toobig" as "nothing" once cost a wrong conclusion about where a
+	 * session's bytes were going. */
+	if (dirty == 0) {
+		g_dirty_why = "nothing";                     /* identical: sending is waste */
+		return 0;
+	}
+	if (dirty * 100 / tiles >= TERMGFX_FALLBACK_PCT) {
+		g_dirty_why = "toobig";                      /* a repaint is genuinely cheaper */
+		return 0;
+	}
 	nb = termgfx_coalesce(box);
-	return (nb <= 0) ? 0 : nb;                       /* too fragmented -> full frame */
+	if (nb <= 0) {
+		g_dirty_why = "frag";                        /* too scattered to describe */
+		return 0;
+	}
+	return nb;
 }
 
 /* --- piece 3 (scale half): nearest-neighbor scale/pack helpers
@@ -2918,13 +2940,6 @@ static void termgfx_box_display_rect(const struct termgfx_box *b, int ew, int eh
 	*rx_out = rx; *ry_out = ry; *rw_out = rw; *rh_out = rh; *ry2_out = ry2;
 }
 
-/* WHY the last termgfx_dirty_sixel_present() declined to patch, for the trace.
- * A file-static rather than an out-parameter, for the same reason syncretro's
- * sr_dirty_last_reason() is one: every caller would have to thread it through
- * and none of them acts on it -- only the diagnostic reads it. "strand" is the
- * one worth naming: it means the geometry, not the content, refused. */
-static const char *g_dirty_why = "-";
-
 static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
                                       const uint8_t *pal8, int ew, int eh,
                                       int icol, int irow, int cw, int ch)
@@ -2949,10 +2964,8 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 	}
 
 	nb = termgfx_diff_coalesce(fb, last, box);
-	if (nb <= 0) {
-		g_dirty_why = (nb == 0) ? "nothing" : "boxes";
-		return 0;
-	}
+	if (nb <= 0)
+		return 0;                                    /* it named the reason itself */
 
 	/* Stranding pre-pass: a bottom-clamped box that can't cover its own
 	 * changed rows forces a full-frame fallback (see termgfx_box_display_rect()'s
