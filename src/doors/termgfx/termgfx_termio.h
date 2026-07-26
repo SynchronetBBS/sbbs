@@ -142,6 +142,11 @@ void termgfx_termio_fit_cycle(void);
 /* Is FILL currently in effect? For a door's help card or status line. */
 int  termgfx_termio_fit_fill(void);
 
+/* Set the fit mode outright, for a door restoring a remembered preference at
+ * startup. Unlike the cycle above it neither invalidates nor clears, because
+ * there is nothing on screen yet -- call it before the first present. */
+void termgfx_termio_set_fit_fill(int fill);
+
 /* Stage raw bytes to the terminal through the door's own output path -- for a
  * door drawing its own text over the picture (a help card, a notice).
  *

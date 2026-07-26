@@ -299,6 +299,24 @@ void OSystem_Termgfx::initBackend() {
 	BaseBackend::initBackend();
 }
 
+/* Where the caller's letterbox/fill choice is remembered: a flag file beside
+ * their saves, present = fill. Same shape as syncconquer's, which is what makes
+ * the preference survive a hang-up rather than being retyped every session.
+ * Empty until --savepath is seen; a run without one simply does not persist. */
+static char g_fit_flag[600];
+
+static void syncscumm_fit_save(void)
+{
+	if (g_fit_flag[0] == '\0')
+		return;
+	if (termgfx_termio_fit_fill()) {
+		FILE *f = fopen(g_fit_flag, "w");
+		if (f != NULL)
+			fclose(f);
+	} else
+		remove(g_fit_flag);
+}
+
 bool OSystem_Termgfx::pollEvent(Common::Event &event) {
 	((DefaultTimerManager *)getTimerManager())->checkTimers();
 	((SyncscummMixerManager *)_mixerManager)->tick();
@@ -396,8 +414,10 @@ bool OSystem_Termgfx::pollEvent(Common::Event &event) {
 			 * floods the wire -- not something a door wants offered anyway, and
 			 * its Ctrl-G sibling is already spent on the menu key. */
 			if (iev.keycode == 'f' && (iev.mods & TERMGFX_MOD_CTRL)) {
-				if (iev.type == TERMGFX_EV_KEY_DOWN)
+				if (iev.type == TERMGFX_EV_KEY_DOWN) {
 					termgfx_termio_fit_cycle();
+					syncscumm_fit_save();
+				}
 				return false;
 			}
 
@@ -572,6 +592,8 @@ int main(int argc, char *argv[]) {
 	for (int i = 1; i < filteredArgc; i++) {
 		if (strncmp(filteredArgv[i], "--savepath=", 11) == 0) {
 			mkpath(filteredArgv[i] + 11);
+			snprintf(g_fit_flag, sizeof g_fit_flag, "%s/syncscumm.fill",
+			         filteredArgv[i] + 11);
 		} else if (strcmp(filteredArgv[i], "-c") == 0 && i + 1 < filteredArgc) {
 			char  dir[512];
 			char *sep;
@@ -590,6 +612,9 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
+
+	if (g_fit_flag[0] != '\0' && fexist(g_fit_flag))
+		termgfx_termio_set_fit_fill(1);
 
 	g_system = new OSystem_Termgfx();
 	assert(g_system);

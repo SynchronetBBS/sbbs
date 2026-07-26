@@ -3075,6 +3075,11 @@ int termgfx_termio_fit_fill(void)
 	return g_fit_fill;
 }
 
+void termgfx_termio_set_fit_fill(int fill)
+{
+	g_fit_fill = fill ? 1 : 0;
+}
+
 static const char *termgfx_tier_name(int t)
 {
 #ifdef WITH_JXL

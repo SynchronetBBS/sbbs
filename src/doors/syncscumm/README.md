@@ -176,7 +176,8 @@ you are hosting. It has no effect on SyncTERM, which applies a shape of its own
 
 Players get a say too, on a different question: **Ctrl-F** switches between the
 default picture, drawn at true proportions with bars down the sides, and one
-stretched to fill the screen. It lasts the session, and unlike `aspect` above it
+stretched to fill the screen. The door remembers each caller's choice alongside
+their saves, so it carries over to their next call, and unlike `aspect` above it
 works on every terminal, SyncTERM included. The door's help card (**Ctrl-K**)
 lists it alongside the other keys.
 
