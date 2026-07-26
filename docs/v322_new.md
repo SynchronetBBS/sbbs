@@ -245,6 +245,13 @@
   now searched across all extensions before the stock dir, and
   mods width-variant files (e.g. `.40col.ans`) no longer require
   a plain same-extension mods file to exist (issue #1182)
+- Fixed: the Unicode @-codes (`@U+XXXX@`, `@CHECKMARK@`,
+  `@ELLIPSIS@`, `@COPY@`, `@SOUNDCOPY@`, `@REGISTERED@`,
+  `@TRADEMARK@`, `@DEGREE_C@`, `@DEGREE_F@`, `@WIDE:text@`) now
+  expand to a value instead of printing immediately, so format
+  modifiers (alignment, width, truncation) work on them and
+  `bbs.atcode()` / `bbs.expand_atcodes()` return them rather
+  than emitting stray output (issue #1198)
 
 ## Stock Modules
 
