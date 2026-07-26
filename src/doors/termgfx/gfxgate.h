@@ -38,10 +38,11 @@ enum {
  *
  * `have_graphics` is the door's own answer to "can I draw for this terminal
  * at all" -- the OR of whichever tiers it actually implements. Which those
- * are is not this module's business and differs between doors: most mean
- * sixel or JXL, while SyncConquer also serves an APC PPM tier to any
- * SyncTERM. Deciding that here instead would mean this file enumerating
- * every door's tier ladder and going stale each time one gains a tier.
+ * are is not this module's business and differs between doors: today they all
+ * mean sixel or JXL, but that has changed before and will again. Deciding it
+ * here instead would mean this file enumerating every door's tier ladder and
+ * going stale each time one gains or loses a tier -- as this very comment did,
+ * by naming a PPM tier that no longer exists anywhere.
  *
  * `jxl_answered` means the JXL query came back at all (either way), not that
  * JXL is supported. It is the late reply: a terminal answers device-

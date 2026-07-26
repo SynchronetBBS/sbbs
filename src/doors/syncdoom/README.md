@@ -25,12 +25,11 @@ richest to most compatible:
 | Tier | Wire format | Terminals |
 |------|-------------|-----------|
 | **JXL** | JPEG-XL still, sent as a cached APC image | SyncTERM 1.4+ (smallest, fastest) |
-| **PPM** | uncompressed RGB APC image | SyncTERM without JXL (opt-in; LAN/localhost only) |
 | **Sixel** | DECSIXEL raster | xterm, mlterm, foot, WezTerm, recent Windows Terminal, … |
 | **Text** | half/quadrant/sextant block glyphs in ANSI color | any ANSI/UTF-8 or CP437 terminal |
 
-Auto-selection order is **JXL → Sixel → Text** (PPM is opt-in only). Any tier can
-be forced from the command line (`-jxl`, `-sixel`, `-text`) or the config file.
+Auto-selection order is **JXL → Sixel → Text**. Any tier can be forced from the
+command line (`-jxl`, `-sixel`, `-text`) or the config file.
 
 JXL support is a compile-time option; a build without libjxl still serves the
 sixel and text tiers.
@@ -162,7 +161,7 @@ the full option list below.
 
 | Option | Meaning |
 |--------|---------|
-| `-jxl [0\|1\|auto]` | Force the JXL tier on (`1`), force PPM (`0`), or auto. |
+| `-jxl [0\|1\|auto]` | Force the JXL tier on (`1`), off (`0`, leaving sixel or text), or auto. |
 | `-sixel [0\|1\|auto]` | Force sixel on (`1`), off (`0`), or auto. |
 | `-text` | Force the text/block-glyph tier. |
 | `-mode <m>` | Text-tier glyph mode: `half` (default), `quadrant`, `sextant`, or `space`. |

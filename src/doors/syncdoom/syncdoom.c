@@ -3,9 +3,7 @@
 // Renders each frame as a raster image pushed to SyncTERM via its APC cache
 // protocol (see src/syncterm/term.c apc_handler):
 //     Store: ESC _ SyncTERM:C;S;<file>;<base64> ST
-//     Draw : ESC _ SyncTERM:C;DrawPPM;DX=..;DY=..;<file> ST
-// PPM (P6) is the first-light encoder; the emit_frame() seam is where JXL
-// drops in later (DrawJXL, same Store mechanism).
+//     Draw : ESC _ SyncTERM:C;DrawJXL;DX=..;DY=..;<file> ST
 //
 // Geometry contract: the launching BBS passes the user's screen LINE count on
 // the command line as -l<N> (== DOOR.SYS line 21 == term->rows). We derive the
@@ -22,7 +20,7 @@
 #include "doomgeneric.h"
 #include "text.h"                 // termgfx: text/block render tiers (rt_*)
 #include "sixel.h"
-#include "apc.h"                 // termgfx: SyncTERM APC cached-image transport (JXL/PPM)
+#include "apc.h"                 // termgfx: SyncTERM APC cached-image transport (JXL)
 #include "jxl.h"                 // termgfx: JPEG XL frame encoder (RGB888 -> JXL)
 #include "caps.h"                // termgfx: cap-probe query + reply parsing (JXL)
 #include "term.h"                // termgfx: status-line (DECSSDT) hide/restore + reply parse
@@ -353,13 +351,12 @@ static int cell_height(int lines)
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Frame encoder: PPM always, JXL when SyncTERM supports it (auto-probed). Both
-// go through the same C;S Store + Draw{PPM,JXL} cache path, and the payload is
-// base64 either way -> telnet-safe.
+// Frame encoder: JXL when SyncTERM supports it (auto-probed), through the
+// C;S Store + DrawJXL cache path; the payload is base64 -> telnet-safe.
 // ---------------------------------------------------------------------------
 
-enum frame_mode { MODE_PPM = 0, MODE_JXL = 1, MODE_TEXT = 2, MODE_SIXEL = 3 };
-static enum frame_mode g_mode = MODE_PPM;
+enum frame_mode { MODE_JXL = 0, MODE_TEXT = 1, MODE_SIXEL = 2 };
+static enum frame_mode g_mode = MODE_TEXT;
 static int             g_sixel_fullres = 0; // full-res sixel (vsc=1, no terminal scaling) for pan-
                                             // ignoring terminals (WezTerm); per-user persisted
 static int             g_force_text = 0; // -text: force the block-char tier
@@ -421,7 +418,7 @@ static unsigned g_evdev_mods = 0;        // held modifiers, TERMGFX_MOD_*
 static const char *mode_name(enum frame_mode m);   // defined later; used by the overlay
 
 static uint8_t * s_rgb = NULL;   static size_t s_rgb_cap = 0;      // packed RGB888
-static uint8_t * s_img = NULL;   static size_t s_img_cap = 0;      // encoded bytes (PPM/JXL)
+static uint8_t * s_img = NULL;   static size_t s_img_cap = 0;      // encoded bytes (JXL)
 static uint8_t * s_apc = NULL;   static size_t s_apc_cap = 0;      // built APC Store+Draw sequence
 
 // Send a small control string in full (cursor hide, JXL probe) at startup.
@@ -754,7 +751,7 @@ static int g_cterm_version = 0; // CTerm/SyncTERM version maj*1000+min (DA1 repl
 static int g_status_type = -1;  // pre-door DECSSDT status-line type (DECRQSS reply); -1 = not captured / unsupported
 
 // base64 `bytes` and push: Store(<file>) then <drawverb>(<file>) -- or, on
-// CTerm >= 1.329, DrawJXLBlob/DrawPPMBlob inline (no cache file) -- via termgfx/apc.c.
+// CTerm >= 1.329, DrawJXLBlob inline (no cache file) -- via termgfx/apc.c.
 static void emit_cached_image(const char *file, const char *drawverb,
                               const uint8_t *bytes, size_t n, int zx, int zy)
 {
@@ -789,25 +786,8 @@ static bool frame_zoom(int w, int h, int *ew, int *eh, int *zx, int *zy)
 static int g_last_zoom_x = 1;
 static int g_last_zoom_y = 1;
 
-static void emit_frame_ppm(int w, int h, int zx, int zy)
-{
-	char   hdr[32];
-	int    hlen = snprintf(hdr, sizeof(hdr), "P6\n%d %d\n255\n", w, h);
-	size_t need = (size_t)hlen + (size_t)w * h * 3;
-
-	ensure(&s_img, &s_img_cap, need);
-	memcpy(s_img, hdr, hlen);
-	memcpy(s_img + hlen, s_rgb, (size_t)w * h * 3);
-	{
-		static char name[32];   // per-session cache name (SF syncterm #256)
-		if (name[0] == '\0')
-			snprintf(name, sizeof name, "syncdoom_%08x.ppm", termgfx_session_salt());
-		emit_cached_image(name, "DrawPPM", s_img, need, zx, zy);
-	}
-}
-
 // Sixel tier: a complete DECSIXEL image drawn at the home position so each frame
-// overdraws the last in place. Unlike PPM/JXL this isn't a SyncTERM APC cache
+// overdraws the last in place. Unlike JXL this isn't a SyncTERM APC cache
 // entry -- it's standard sixel that any sixel-capable terminal renders directly.
 //
 // We encode from Doom's native 8-bit palette indices (scaled to the emit size)
@@ -914,7 +894,7 @@ static float g_jxl_distance = 2.0f;
 static int   g_jxl_effort   = 1;
 
 // Encode s_rgb (w*h RGB888) as JXL via termgfx; emit as a DrawJXL. Returns false on any
-// failure (caller falls back to PPM).
+// failure (caller falls back to sixel).
 static bool emit_frame_jxl(int w, int h, int zx, int zy)
 {
 	size_t n = termgfx_jxl_encode(&s_img, &s_img_cap, s_rgb, w, h, g_jxl_distance, g_jxl_effort);
@@ -951,7 +931,7 @@ static int overlay_cols(void)
 // The persistent stats strip's terminal row: the very last one. In the sixel tier
 // that row is already reserved empty (recompute_geom() fits the image into vh-cellh
 // so a sixel never reaches the last text row -- the Windows-Terminal scroll guard);
-// the JXL/PPM APC tiers place the image by pixel offset and use no text cells there
+// the JXL APC tier places the image by pixel offset and uses no text cells there
 // either. So the bottom row is free for a status line, mirroring SyncRetro. Falls
 // back to 25 before the terminal size is known.
 static int sd_overlay_row(void)
@@ -1006,15 +986,15 @@ static void emit_overlay(int force)
 		if (enc > 999)
 			enc = 999;
 		termgfx_stats_zoom(zm, sizeof(zm),
-		                   (g_mode == MODE_JXL || g_mode == MODE_PPM) ? g_last_zoom_x : 1,
-		                   (g_mode == MODE_JXL || g_mode == MODE_PPM) ? g_last_zoom_y : 1);
+		                   (g_mode == MODE_JXL) ? g_last_zoom_x : 1,
+		                   (g_mode == MODE_JXL) ? g_last_zoom_y : 1);
 		termgfx_stats_kbd(kbd, sizeof(kbd), g_evdev_active || g_kitty_active,
 		                  !g_evdev_active, sd_turn_native());
 		tn = snprintf(txt, sizeof(txt), "%s %uKB enc %2ums%s%s%s ",
 		              head,
 		              kb, enc,
 		              kbd,
-		              ((g_mode == MODE_JXL || g_mode == MODE_PPM)
+		              (g_mode == MODE_JXL
 		               && g_cterm_version >= TERMGFX_CTERM_VER_BLOB) ? " blob" : "",   // frames inline (Draw*Blob)
 		              zm);                                                              // " x2" = terminal upscales
 	}
@@ -1190,7 +1170,7 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 		int ew, eh, zx, zy;
 
 		// The sixel tier does its own client-side scaling (half-res + raster
-		// aspect), so the APC zoom only applies to the JXL/PPM tiers.
+		// aspect), so the APC zoom only applies to the JXL tier.
 		if (g_mode == MODE_SIXEL) {
 			pack_rgb(fb, w, h);
 			emit_frame_sixel(w, h);
@@ -1205,8 +1185,15 @@ static void emit_frame(const uint32_t *fb, int w, int h)
 			if (g_mode == MODE_JXL)
 				built = emit_frame_jxl(ew, eh, zx, zy);
 #endif
-			if (!built)
-				emit_frame_ppm(ew, eh, zx, zy);
+			if (!built) {
+				// The encoder failed. Sixel is the fallback, permanently:
+				// re-entering an encoder that just failed, once per frame, is
+				// no better the second time. Any terminal that reached the JXL
+				// tier speaks sixel -- CTerm gained it at 1189, years before
+				// JXL -- so there is nothing below this worth arranging for.
+				g_mode = MODE_SIXEL;
+				emit_frame_sixel(ew, eh);
+			}
 		}
 	}
 	g_last_enc_us = (uint32_t)((xp_timer() - enc_t0) * 1000000.0L);   // encode done; g_out_len is the payload
@@ -2342,7 +2329,7 @@ static void raw_input_off(void)
 }
 
 // ---------------------------------------------------------------------------
-// JXL support: -1 auto-probe, 0 force PPM, 1 force JXL.
+// JXL support: -1 auto-probe, 0 off (sixel or text), 1 force JXL.
 // ---------------------------------------------------------------------------
 
 static int g_jxl_pref = -1;
@@ -2694,7 +2681,7 @@ static void build_video_states(void)
 		g_vstates[g_vstate_n].mode    = g_mode;
 		g_vstates[g_vstate_n].fullres = (g_mode == MODE_SIXEL) ? g_sixel_fullres : 0;
 		g_vstates[g_vstate_n].label   = (g_mode == MODE_SIXEL && g_sixel_fullres) ? "sixel-full"
-		                                : mode_name(g_mode);   // "jxl" / "sixel" / "ppm"
+		                                : mode_name(g_mode);   // "jxl" / "sixel" / "text"
 		g_vstate_n++;
 		// Sixel: offer the OTHER vertical-scaling variant as an F4 stop. The default (pan=2
 		// half-res) is the leaner payload; "sixel-full" (1:1, no half-res downscale + 2x
@@ -2790,8 +2777,7 @@ static const char *mode_name(enum frame_mode m)
 	switch (m) {
 		case MODE_JXL:   return "jxl";
 		case MODE_SIXEL: return "sixel";
-		case MODE_TEXT:  return "text";
-		default:         return "ppm";
+		default:         return "text";
 	}
 }
 
@@ -2951,7 +2937,7 @@ void DG_Init(void)
 	probe_geometry();                // learn the terminal's real pixel size (ESC[14t/16t/?2;1S)
 
 	// Graphics-tier auto-selection order: JXL (SyncTERM, cached, tiny) > Sixel
-	// (any sixel-capable terminal) > PPM (SyncTERM APC when it has neither) > text.
+	// (any sixel-capable terminal) > text.
 	// Explicit -jxl/-sixel flags short-circuit the probes.
 	if (g_force_text)
 		setup_text_mode();                                      // -text: forced block-char tier
@@ -2962,18 +2948,14 @@ void DG_Init(void)
 	else if (g_sixel_pref == 1)
 		g_mode = MODE_SIXEL;                                   // force sixel
 #ifdef WITH_JXL
-	else if (g_jxl_pref == 0)
-		g_mode = MODE_PPM;                                     // explicit opt-in to slow PPM
-	else if (probe_jxl())
+	else if (g_jxl_pref != 0 && probe_jxl())
 		g_mode = MODE_JXL;                                     // auto: JXL (sets g_is_syncterm)
 #endif
 	else if (g_sixel_pref != 0 && probe_sixel())
 		g_mode = MODE_SIXEL;                                           // auto: sixel
 	else
-		setup_text_mode();              // otherwise text -- PPM is never auto-selected (it's
-	                                    // unusable over a real link, even at 320x200; a SyncTERM
-	                                    // 1.2-1.3 lands here -> playable text. PPM is opt-in via
-	                                    // -jxl 0 above, for the localhost/LAN case only.
+		setup_text_mode();              // otherwise text: a SyncTERM too old for
+	                                    // either graphics tier lands here, playable.
 
 	// F4 cycle: when JXL is the chosen tier, also learn whether the terminal speaks
 	// sixel so the player can A/B JXL vs sixel with F4. The JXL ladder short-circuits
@@ -3431,7 +3413,7 @@ static void read_syncdoom_ini(const char *argv0)
 		g_rt_mode_set = 1;
 	}
 
-	// tier = auto|text|jxl|sixel|ppm -- force the render tier (else auto-probe)
+	// tier = auto|text|jxl|sixel -- force the render tier (else auto-probe)
 	iniGetString(ini, "video", "tier", "", val);
 	if (val[0]) {
 		if (stricmp(val, "text") == 0)
@@ -3441,7 +3423,8 @@ static void read_syncdoom_ini(const char *argv0)
 		else if (stricmp(val, "sixel") == 0)
 			g_sixel_pref = 1;
 		else if (stricmp(val, "ppm") == 0)
-			g_jxl_pref = 0;
+			fprintf(stderr, "syncdoom: [video] tier=ppm no longer exists"
+			        " -- using auto (sixel covers every terminal PPM did)\n");
 		/* "auto" -> leave the auto-probe defaults */
 	}
 
@@ -3864,10 +3847,7 @@ static void compute_geometry(void)
 
 	fitvh = vh;                         // height the image is fit+centered into; the sixel-fill
 	                                    // branch reserves a bottom row below (see there)
-	if (g_mode == MODE_PPM) {           // PPM is uncompressed, so emit Doom's native
-		s_pxW = 320;                    // 320x200 -- the 640x400 framebuffer is a lossless
-		s_pxH = 200;                    // 2x of it, so this is ~1/4 the bytes (and centered,
-	} else if (!g_scale_fit) {          // drawn small, since SyncTERM can't scale on draw).
+	if (!g_scale_fit) {
 		s_pxW = 640;                    // native: doomgeneric's 640x400 (vh-squished if shorter)
 		s_pxH = (vh < 400) ? vh : 400;
 	} else {
@@ -3877,8 +3857,8 @@ static void compute_geometry(void)
 		// reserve below keeps the terminal from mis-rendering a sixel that reaches its LAST
 		// text row -- Windows Terminal (and others that ignore ?80l) scroll white lines in
 		// below such a sixel. The old hard 640 cap sidestepped that only by never filling.
-		// JXL/PPM keep the full g_scale_max (real compression / drawn small via APC -- they
-		// position by pixel offset, not a text cell, so they have no last-row quirk).
+		// JXL keeps the full g_scale_max (real compression / drawn small via APC -- it
+		// positions by pixel offset, not a text cell, so it has no last-row quirk).
 		int cap  = (g_mode == MODE_SIXEL && (g_scale_max == 0 || g_scale_max > 1024))
 		           ? 1024 : g_scale_max;
 		// The area we may DRAW into is not the area we CENTER in. A sixel bigger than
@@ -3911,7 +3891,7 @@ static void compute_geometry(void)
 
 	// Center the image in the REAL window (not in the draw-limited box above), so a
 	// capped image still sits in the middle of a big terminal: pixel offset for the
-	// APC DX/DY (SyncTERM JXL/PPM), cell offset for the sixel text cursor.
+	// APC DX/DY (SyncTERM JXL), cell offset for the sixel text cursor.
 	termgfx_geom_center(vw, (g_mode == MODE_SIXEL && vh > ch * 4) ? vh - ch : vh,
 	                    s_pxW, s_pxH, cw, ch,
 	                    &g_img_x, &g_img_y, &g_img_col, &g_img_row);
@@ -3920,7 +3900,7 @@ static void compute_geometry(void)
 	// the terminal's real cell-pixel size (geom_known) the centered cell is a
 	// guess -- the assumed 16px cell height rarely matches (xterm's is shorter),
 	// so the centered row lands too low and the image looks bottom-anchored.
-	// Anchor it top-left instead: predictable, and what a user expects. JXL/PPM
+	// Anchor it top-left instead: predictable, and what a user expects. JXL
 	// (real pixel geometry, centered via the APC DX/DY above) are unaffected.
 	if (g_mode == MODE_SIXEL && !geom_known) {
 		g_img_col = 1;
@@ -5051,7 +5031,7 @@ int main(int argc, char **argv)
 	for (i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "-jxl") == 0) {
 			const char *v = (i + 1 < argc) ? argv[++i] : "";
-			if      (!strcmp(v, "0") || !strcmp(v, "off") || !strcmp(v, "ppm"))
+			if      (!strcmp(v, "0") || !strcmp(v, "off"))
 				g_jxl_pref = 0;
 			else if (!strcmp(v, "1") || !strcmp(v, "on")  || !strcmp(v, "jxl"))
 				g_jxl_pref = 1;
