@@ -243,7 +243,9 @@ if(SYNCRETRO_TESTS)
     # test_dirty pins the rectangle geometry: that the rects COVER every changed
     # pixel (a miss leaves stale pixels on screen until the next full frame) and
     # stay cell-aligned (a sixel can only be drawn at a cell corner).
-    add_executable(test_dirty test_dirty.c syncretro_dirty.c)
+    add_executable(test_dirty test_dirty.c syncretro_dirty.c
+        ${CMAKE_CURRENT_SOURCE_DIR}/../termgfx/dirty.c)
+    target_include_directories(test_dirty PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../termgfx)
     target_include_directories(test_dirty PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME dirty COMMAND test_dirty)
 

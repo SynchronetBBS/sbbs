@@ -26,6 +26,7 @@
 #include "pace.h"
 #include "idle.h"
 #include "stats.h"      /* the shared Ctrl-S field formatting */
+#include "dirty.h"      /* the shared grid-domain diff */
 #include "door32.h"
 #include "geometry.h"
 #include "gfxgate.h"
@@ -2611,91 +2612,19 @@ void termgfx_termio_audio_stop(void)
  * dr_diff_coalesce(), TERMGFX_ constants). The bottom tile row is only 8px tall
  * (200 isn't a multiple of 16), so the memcmp span per tile row is TERMGFX_TILE
  * except for ty == TERMGFX_TY-1, where it's TERMGFX_FB_H - ty*TERMGFX_TILE. ---------- */
-struct termgfx_box { int x1, y1, x2, y2; };
-static uint8_t termgfx_grid[TERMGFX_TY][TERMGFX_TX];
-
-static int termgfx_coalesce(struct termgfx_box *box)
-{
-	static uint8_t   vis[TERMGFX_TY][TERMGFX_TX];
-	static int       st[TERMGFX_TY * TERMGFX_TX];
-	static const int ox[4] = { -1, 1, 0, 0 };
-	static const int oy[4] = { 0, 0, -1, 1 };
-	int              nb = 0, tx, ty, i, j, merged;
-
-	memset(vis, 0, sizeof vis);
-	for (ty = 0; ty < TERMGFX_TY; ty++) {
-		for (tx = 0; tx < TERMGFX_TX; tx++) {
-			int sp, x1, y1, x2, y2;
-			if (!termgfx_grid[ty][tx] || vis[ty][tx])
-				continue;
-			if (nb >= TERMGFX_MAX_COMPONENTS)
-				return -1;
-			sp          = 0;
-			st[sp++]    = ty * TERMGFX_TX + tx;
-			vis[ty][tx] = 1;
-			x1          = x2 = tx;
-			y1          = y2 = ty;
-			while (sp) {
-				int idx = st[--sp], cx = idx % TERMGFX_TX, cy = idx / TERMGFX_TX, k;
-				if (cx < x1)
-					x1 = cx;
-				if (cx > x2)
-					x2 = cx;
-				if (cy < y1)
-					y1 = cy;
-				if (cy > y2)
-					y2 = cy;
-				for (k = 0; k < 4; k++) {
-					int nx = cx + ox[k], ny = cy + oy[k];
-					if (nx >= 0 && nx < TERMGFX_TX && ny >= 0 && ny < TERMGFX_TY
-					    && termgfx_grid[ny][nx] && !vis[ny][nx]) {
-						vis[ny][nx] = 1;
-						st[sp++]    = ny * TERMGFX_TX + nx;
-					}
-				}
-			}
-			box[nb].x1 = x1; box[nb].y1 = y1;
-			box[nb].x2 = x2; box[nb].y2 = y2;
-			nb++;
-		}
-	}
-	merged = 1;
-	while (merged) {
-		merged = 0;
-		for (i = 0; i < nb; i++)
-			for (j = i + 1; j < nb; j++)
-				if (box[i].x1 <= box[j].x2 + TERMGFX_MERGE_GAP && box[j].x1 <= box[i].x2 + TERMGFX_MERGE_GAP
-				    && box[i].y1 <= box[j].y2 + TERMGFX_MERGE_GAP && box[j].y1 <= box[i].y2 + TERMGFX_MERGE_GAP) {
-					if (box[j].x1 < box[i].x1)
-						box[i].x1 = box[j].x1;
-					if (box[j].y1 < box[i].y1)
-						box[i].y1 = box[j].y1;
-					if (box[j].x2 > box[i].x2)
-						box[i].x2 = box[j].x2;
-					if (box[j].y2 > box[i].y2)
-						box[i].y2 = box[j].y2;
-					box[j] = box[nb - 1];
-					nb--;
-					j--;
-					merged = 1;
-				}
-	}
-	return (nb > TERMGFX_MAX_BOXES) ? -1 : nb;
-}
-
-/* Palette entries whose COLOR moved since the last sent frame, indexed by
- * palette index; NULL-equivalent when g_pal_stale_any is 0. A tile drawn with
- * one of these has changed on screen even if its indices did not, on BOTH
- * tiers and for different reasons: JXL bakes the palette into each frame's RGB
- * pixels, and sixel color registers are shared with what is already drawn. */
 /* WHY the last dirty pass declined to patch, for the trace. A file-static
- * rather than an out-parameter, for the same reason syncretro's
- * sr_dirty_last_reason() is one: every caller would have to thread it through
- * and none of them acts on it -- only the diagnostic reads it. The names are
- * worth keeping apart: "strand" means the GEOMETRY refused, "toobig" means the
- * content genuinely deserves a repaint, "nothing" means the frame was waste. */
+ * rather than an out-parameter, for the same reason the shared finder keeps
+ * its own: every caller would have to thread it through and none of them acts
+ * on it. The names are worth keeping apart -- "strand" means the GEOMETRY
+ * refused (decided below, in this file), "toobig" means the content genuinely
+ * deserves a repaint, "nothing" means the frame was waste. */
 static const char *g_dirty_why = "-";
 
+/* Palette entries whose COLOR moved since the last sent frame, indexed by
+ * palette index; unused when g_pal_stale_any is 0. A tile drawn with one of
+ * these has changed on screen even if its indices did not, on BOTH tiers and
+ * for different reasons: JXL bakes the palette into each frame's RGB pixels,
+ * and sixel color registers are shared with what is already drawn. */
 static uint8_t g_pal_stale[256];
 static int     g_pal_stale_any;
 
@@ -2703,49 +2632,37 @@ static int     g_pal_stale_any;
  * Defined beside g_last_fb, which it scans. */
 static int termgfx_pal_change_visible(void);
 
-static int termgfx_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct termgfx_box *box)
+/* The grid-domain diff -- marking, labelling, merging, budgets -- is shared
+ * with syncretro through dirty.h; see that header for why the split falls
+ * where it does. What stays in this file is the half the two doors genuinely
+ * disagree about: mapping cell boxes onto the scaled image
+ * (termgfx_box_display_rect, below).
+ *
+ * The bottom tile row is only 8px tall (200 is not a multiple of 16). The
+ * shared finder clamps a partial edge cell against plane_w/plane_h, so that
+ * needs no special case here the way it did when this was open-coded. */
+static int termgfx_diff_coalesce(const uint8_t *fb, const uint8_t *last,
+                                 termgfx_dirty_box_t *box)
 {
-	const int tiles = TERMGFX_TX * TERMGFX_TY;
-	int       tx, ty, r, nb, dirty = 0;
+	termgfx_dirty_cfg_t cfg;
+	int                 nb;
 
-	for (ty = 0; ty < TERMGFX_TY; ty++) {
-		int rows = (ty == TERMGFX_TY - 1) ? (TERMGFX_FB_H - ty * TERMGFX_TILE) : TERMGFX_TILE;
-		for (tx = 0; tx < TERMGFX_TX; tx++) {
-			int ch = 0;
-			for (r = 0; r < rows && !ch; r++) {
-				size_t off = (size_t)(ty * TERMGFX_TILE + r) * TERMGFX_FB_W + (size_t)tx * TERMGFX_TILE;
-				if (memcmp(fb + off, last + off, TERMGFX_TILE) != 0)
-					ch = 1;
-				else if (g_pal_stale_any) {
-					int c;   /* same indices, but one of them means a new color */
+	memset(&cfg, 0, sizeof cfg);
+	cfg.cols           = TERMGFX_TX;
+	cfg.rows           = TERMGFX_TY;
+	cfg.cell_w         = TERMGFX_TILE;
+	cfg.cell_h         = TERMGFX_TILE;
+	cfg.plane_w        = TERMGFX_FB_W;
+	cfg.plane_h        = TERMGFX_FB_H;
+	cfg.merge_gap      = TERMGFX_MERGE_GAP;
+	cfg.full_pct       = TERMGFX_FALLBACK_PCT;
+	cfg.max_components = TERMGFX_MAX_COMPONENTS;
+	cfg.max_boxes      = 0;                      /* no cap past the merge */
 
-					for (c = 0; c < TERMGFX_TILE && !ch; c++)
-						if (g_pal_stale[last[off + c]])
-							ch = 1;
-				}
-			}
-			termgfx_grid[ty][tx] = (uint8_t)ch;
-			if (ch)
-				dirty++;
-		}
-	}
-	/* Three different answers, all "send a full frame" -- but only one of them
-	 * is waste, so a diagnostic that cannot tell them apart is worse than none.
-	 * Reading "toobig" as "nothing" once cost a wrong conclusion about where a
-	 * session's bytes were going. */
-	if (dirty == 0) {
-		g_dirty_why = "nothing";                     /* identical: sending is waste */
-		return 0;
-	}
-	if (dirty * 100 / tiles >= TERMGFX_FALLBACK_PCT) {
-		g_dirty_why = "toobig";                      /* a repaint is genuinely cheaper */
-		return 0;
-	}
-	nb = termgfx_coalesce(box);
-	if (nb <= 0) {
-		g_dirty_why = "frag";                        /* too scattered to describe */
-		return 0;
-	}
+	nb = termgfx_dirty_find(&cfg, fb, last,
+	                        g_pal_stale_any ? g_pal_stale : NULL, box);
+	if (nb <= 0)
+		g_dirty_why = termgfx_dirty_reason_name(termgfx_dirty_last_reason());
 	return nb;
 }
 
@@ -2881,7 +2798,7 @@ static int termgfx_gcd(int a, int b) { while (b) { int t = a % b; a = b; b = t; 
  * computes geometry -- callers decide what an empty (*rw<=0) or short
  * (*ry+*rh < *ry2, i.e. stranded) result means. *ry2_out is the box's own
  * unclamped bottom row, needed by the stranding test. */
-static void termgfx_box_display_rect(const struct termgfx_box *b, int ew, int ehc,
+static void termgfx_box_display_rect(const termgfx_dirty_box_t *b, int ew, int ehc,
                                  int cw, int ch, int vstep,
                                  int *rx_out, int *ry_out, int *rw_out, int *rh_out,
                                  int *ry2_out)
@@ -2945,7 +2862,7 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
                                       const uint8_t *pal8, int ew, int eh,
                                       int icol, int irow, int cw, int ch)
 {
-	struct termgfx_box box[TERMGFX_MAX_COMPONENTS];
+	termgfx_dirty_box_t box[TERMGFX_MAX_COMPONENTS];
 	int             ehc, nb, k;
 	int             vstep = ch / termgfx_gcd(ch, 6) * 6;   /* LCM(ch,6): cell & band */
 	/* SyncTERM: registers persist, box carries no palette (NONE). Every other
@@ -3182,7 +3099,7 @@ static size_t termgfx_emit_jxl_rgb(const uint8_t *rgb, int ew, int eh, int dx, i
 static size_t termgfx_dirty_jxl_present(const uint8_t *fb, const uint8_t *last,
                                     const uint8_t *pal8, int ew, int eh, int dx, int dy)
 {
-	struct termgfx_box box[TERMGFX_MAX_COMPONENTS];
+	termgfx_dirty_box_t box[TERMGFX_MAX_COMPONENTS];
 	int             k, nb;
 	size_t          total = 0;
 

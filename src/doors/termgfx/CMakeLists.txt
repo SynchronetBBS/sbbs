@@ -13,6 +13,7 @@
 
 add_library(termgfx STATIC
     sixel.c
+    dirty.c
     apc.c
     jxl.c
     caps.c
