@@ -113,14 +113,27 @@ MainMenuDialog::MainMenuDialog(Engine *engine)
 
 	new GUI::ButtonWidget(this, "GlobalMenu.About", _("~A~bout"), Common::U32String(), kAboutCmd);
 
-	if (g_gui.getGUIWidth() > 320)
-		_returnToLauncherButton = new GUI::ButtonWidget(this, "GlobalMenu.ReturnToLauncher", _("~R~eturn to Launcher"), Common::U32String(), kLauncherCmd);
-	else
-		_returnToLauncherButton = new GUI::ButtonWidget(this, "GlobalMenu.ReturnToLauncher", _c("~R~eturn to Launcher", "lowres"), Common::U32String(), kLauncherCmd);
-	_returnToLauncherButton->setEnabled(_engine->hasFeature(Engine::kSupportsReturnToLauncher));
+	/* SYNCSCUMM: no "Return to Launcher" button, and the remaining one says
+	 * where it actually goes. A door has no launcher to return to -- the
+	 * launcher and file browser are compiled out (SYNCSCUMM_NO_LAUNCHER) --
+	 * so RETURN_TO_LAUNCHER and QUIT both end the session and drop the caller
+	 * back at the BBS. Two buttons that look like a choice but are not is
+	 * worse than one: a caller who wanted to keep playing picked the
+	 * innocuous-sounding one and lost the session anyway.
+	 *
+	 * The ReturnToLauncher slot is removed from the built-in theme's GlobalMenu
+	 * layout too (scummclassic/classic_layout*.stx, regenerated into
+	 * default.inc), because this layout engine reserves a widget's space
+	 * whether or not the widget is created -- dropping only the code would
+	 * leave a hole in the menu.
+	 *
+	 * Quit is created unconditionally where upstream makes it depend on
+	 * gui_return_to_launcher_at_exit: with no launcher, that setting could
+	 * otherwise leave the menu with no way out at all. */
+	_returnToLauncherButton = nullptr;
 
-	if (!g_system->hasFeature(OSystem::kFeatureNoQuit) && (!(ConfMan.getBool("gui_return_to_launcher_at_exit")) || !_engine->hasFeature(Engine::kSupportsReturnToLauncher)))
-		new GUI::ButtonWidget(this, "GlobalMenu.Quit", _("~Q~uit"), Common::U32String(), kQuitCmd);
+	if (!g_system->hasFeature(OSystem::kFeatureNoQuit))
+		new GUI::ButtonWidget(this, "GlobalMenu.Quit", _("~Q~uit to BBS"), Common::U32String(), kQuitCmd);
 
 	_aboutDialog = new GUI::AboutDialog(true);
 	_loadDialog = new GUI::SaveLoadChooser(false);
@@ -189,10 +202,8 @@ void MainMenuDialog::reflowLayout() {
 	// Update labels when it might be needed
 	// FIXME: it might be better to declare GUI::StaticTextWidget::setLabel() virtual
 	// and to reimplement it in GUI::ButtonWidget to handle the hotkey.
-	if (g_gui.getGUIWidth() > 320)
-		_returnToLauncherButton->setLabel(_returnToLauncherButton->cleanupHotkey(_("~R~eturn to Launcher")));
-	else
-		_returnToLauncherButton->setLabel(_returnToLauncherButton->cleanupHotkey(_c("~R~eturn to Launcher", "lowres")));
+	/* SYNCSCUMM: the button is never created here, so there is no label to
+	 * re-fit on a resolution change. */
 
 #ifndef DISABLE_FANCY_THEMES
 	if (g_gui.xmlEval()->getVar("Globals.ShowGlobalMenuLogo", 0) == 1 && g_gui.theme()->supportsImages()) {

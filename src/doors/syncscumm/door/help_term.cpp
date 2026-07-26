@@ -69,11 +69,6 @@ void help_term_show()
 	help_row(r++, col, TITLE, "SyncSCUMM -- keys");
 	help_row(r++, col, BODY,  "");
 	help_row(r++, col, KEYC,  menu);
-	/* Spelling out where Quit goes: a door has no launcher to return to, so
-	 * ScummVM's "Return to Launcher" and "Quit" both end the session. That
-	 * surprised the first caller who tried it. */
-	help_row(r++, col, BODY,  "         (Quit and Return to Launcher both");
-	help_row(r++, col, BODY,  "          leave the game and return to the BBS)");
 	help_row(r++, col, BODY,  "");
 	/* The blunt exit, and the one a caller hunting for the way out most needs:
 	 * consumed before the engine sees it, ending the session at once with no

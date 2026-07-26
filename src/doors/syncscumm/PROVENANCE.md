@@ -40,7 +40,8 @@ directories: `find dists/engine-data -mindepth 1 -type d -empty -delete`.
 
 ## Modified upstream files
 
-Six upstream files are modified; everything else is deletions only.
+Seven upstream files (plus one generated theme file) are modified; everything
+else is deletions only.
 
 - configure: one added case in the backend switch (search "termgfx") --
   the *nix (gcc/make) build's backend selection.
@@ -77,6 +78,23 @@ Six upstream files are modified; everything else is deletions only.
   shared Synchronet stamp (build.sh runs build/gitinfo.cmake into build/
   git_hash.h), so a dirty tree reads "~hash" plus the build time rather than
   naming a commit the binary does not contain. Search "SYNCSCUMM" in the file.
+  The same file also drops the GMM's "Return to Launcher" button and renames
+  "Quit" to "Quit to BBS". A door has no launcher to return to (it is compiled
+  out, above), so both buttons ended the session and dropped the caller back at
+  the BBS -- two buttons that looked like a choice but were not. Quit is now
+  created unconditionally, where upstream makes it depend on
+  gui_return_to_launcher_at_exit: with no launcher, that setting could
+  otherwise leave the menu with no way out at all.
+- gui/themes/scummclassic/classic_layout.stx + classic_layout_lowres.stx: the
+  ReturnToLauncher widget is removed from the GlobalMenu dialog, to match the
+  above. Necessary, not cosmetic-only: the layout engine reserves a widget's
+  space whether or not the widget is instantiated, so removing just the code
+  would leave a hole in the menu.
+- gui/themes/default.inc: GENERATED, not hand-edited -- regenerate with
+  `python3 scummtheme.py default scummclassic` from gui/themes/ after any
+  change to the two .stx files above. This is the theme the door actually
+  renders with: no theme .zip is deployed, so ScummVM falls back to the
+  built-in one compiled from this file.
 
 ## Restored for the Windows build (from the pinned tarball)
 

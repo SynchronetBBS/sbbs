@@ -1552,10 +1552,6 @@
 					height = 'Globals.Button.Height'
 			/>
 			<space size = '10'/>
-			<widget name = 'ReturnToLauncher'
-					width = '150'
-					height = 'Globals.Button.Height'
-			/>
 			<widget name = 'Quit'
 					width = '150'
 					height = 'Globals.Button.Height'
