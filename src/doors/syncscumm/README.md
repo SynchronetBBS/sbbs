@@ -174,6 +174,12 @@ Queen*, compared side by side, looked better square), so try both on whatever
 you are hosting. It has no effect on SyncTERM, which applies a shape of its own
 — a SyncTERM player who wants a different one changes it in SyncTERM.
 
+Players get a say too, on a different question: **Ctrl-F** switches between the
+default picture, drawn at true proportions with bars down the sides, and one
+stretched to fill the screen. It lasts the session, and unlike `aspect` above it
+works on every terminal, SyncTERM included. The door's help card (**Ctrl-K**)
+lists it alongside the other keys.
+
 ### Environment variables (optional)
 
 | Variable | Purpose |

@@ -304,6 +304,13 @@ static int g_sixel_max_override;
  * JXL still lands on the sixel tier, which is why the gate is the terminal's
  * identity and not the tier. */
 static double g_aspect;
+
+/* Ctrl-F style ASPECT <-> FILL toggle (termgfx_termio_fit_cycle), off = aspect.
+ * Orthogonal to g_aspect above: that one corrects the shape of the SOURCE's
+ * pixels and stands down on SyncTERM, this one decides whether the letterbox
+ * bars the fit leaves are traded for a stretch to the full canvas, which is a
+ * question on every terminal. */
+static int g_fit_fill;
 /* Set once the DCS XTVERSION reply (ESC[>0q -> DCS >|<name>(<ver>) ST) has
  * been parsed and its payload starts with "xterm" (case-insensitive; parsed
  * in parse_bytes()'s P_APC_ESC handling, below). A terminal that stays
@@ -3056,6 +3063,18 @@ void termgfx_termio_tier_cycle(void)
 	out_puts("\x1b[2J");             /* the other tier's leftovers are not ours */
 }
 
+void termgfx_termio_fit_cycle(void)
+{
+	g_fit_fill = !g_fit_fill;
+	termgfx_invalidate_last();
+	out_puts("\x1b[2J");            /* fill -> aspect uncovers the side margins */
+}
+
+int termgfx_termio_fit_fill(void)
+{
+	return g_fit_fill;
+}
+
 static const char *termgfx_tier_name(int t)
 {
 #ifdef WITH_JXL
@@ -3595,6 +3614,7 @@ static void termgfx_stats_draw(void)
 {
 	char               buf[160];
 	char               drtxt[16];
+	char               tier[24];
 	int                off, brow;
 	unsigned long long bpf;
 
@@ -3622,6 +3642,10 @@ static void termgfx_stats_draw(void)
 	if (!g_stats)
 		return;
 	bpf = g_bpf;
+	/* Fill rides on the tier token, the spelling the sibling door already
+	 * uses ("sixel fill"); aspect is the default and stays unmarked. */
+	snprintf(tier, sizeof tier, "%s%s", termgfx_tier_name(termgfx_tier()),
+	         g_fit_fill ? " fill" : "");
 	/* The share of frames PATCHED rather than repainted. Formatted by
 	 * termgfx_stats_dr() rather than here, so it reads identically in every
 	 * door -- this field had already drifted apart once. */
@@ -3636,12 +3660,12 @@ static void termgfx_stats_draw(void)
 	if (g_fps_have)
 		off = snprintf(buf, sizeof buf,
 		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums%s%s%s\x1b[K\x1b[0m\x1b[?25l",
-		              brow, termgfx_tier_name(termgfx_tier()), g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms,
+		              brow, tier, g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms,
 		              drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
 	else
 		off = snprintf(buf, sizeof buf,
 		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums%s%s%s\x1b[K\x1b[0m\x1b[?25l",
-		              brow, termgfx_tier_name(termgfx_tier()), g_auto_depth, (unsigned)g_rtt_ms,
+		              brow, tier, g_auto_depth, (unsigned)g_rtt_ms,
 		              drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
 	if (off < 0 || off >= (int)sizeof buf)
 		return;
@@ -3954,8 +3978,23 @@ static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, in
 	 * same game is the tell.
 	 *
 	 * Letterboxing 13px a side is the cheaper mistake, and it is what the
-	 * sibling door already chose. */
-	termgfx_geom_fit_ex(g_canvas_w, fit_h, sw, sh, TERMGFX_SCALE_MAX, 0, ew, eh);
+	 * sibling door already chose. FILL is the caller's way of saying they would
+	 * rather have the stretch than the bars. */
+	if (g_fit_fill) {
+		*ew = g_canvas_w;
+		*eh = fit_h;
+		/* The scaler and the sixel encoder both stop at TERMGFX_SCALE_MAX, and
+		 * the centering below has to agree with them: an uncapped full-canvas
+		 * width would be centered as if it were wider than what is actually
+		 * emitted, landing the image flush left with a lopsided right margin.
+		 * The aspect branch is already capped inside termgfx_geom_fit_ex(). */
+		if (*ew > TERMGFX_SCALE_MAX)
+			*ew = TERMGFX_SCALE_MAX;
+		if (*eh > TERMGFX_SCALE_MAX)
+			*eh = TERMGFX_SCALE_MAX;
+	} else {
+		termgfx_geom_fit_ex(g_canvas_w, fit_h, sw, sh, TERMGFX_SCALE_MAX, 0, ew, eh);
+	}
 	/* Effective sixel ceiling -- SIXEL tier only (see g_gfx_max_w's doc
 	 * comment, above, for the full precedence rationale). JXL/APC frames
 	 * aren't subject to xterm's declared-raster discard (a different wire

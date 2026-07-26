@@ -127,6 +127,21 @@ int  termgfx_termio_stats_visible(void);
  * specifically for SyncTERM's persistent colour registers. */
 void termgfx_termio_tier_cycle(void);
 
+/* Toggle how the frame is fitted to the canvas: ASPECT (the default -- true
+ * ratio, letterboxed) <-> FILL (stretched to the canvas, ratio ignored).
+ * Invalidates the frame cache and clears, because the two geometries differ:
+ * going back to aspect uncovers side margins the wider image had painted.
+ *
+ * For the DOOR to bind, like the tier step above. This is a DIFFERENT knob from
+ * the sysop's "aspect" ini key, which corrects the SHAPE of the source's pixels
+ * (square vs 4:3) and is suppressed on SyncTERM because SyncTERM already does
+ * that itself. This one only decides whether the letterbox bars are traded for
+ * a stretch, so it is meaningful on every terminal, SyncTERM included. */
+void termgfx_termio_fit_cycle(void);
+
+/* Is FILL currently in effect? For a door's help card or status line. */
+int  termgfx_termio_fit_fill(void);
+
 /* Stage raw bytes to the terminal through the door's own output path -- for a
  * door drawing its own text over the picture (a help card, a notice).
  *

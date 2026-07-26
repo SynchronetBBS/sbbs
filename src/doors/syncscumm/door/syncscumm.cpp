@@ -391,6 +391,15 @@ bool OSystem_Termgfx::pollEvent(Common::Event &event) {
 					termgfx_termio_tier_cycle();
 				return false;   /* consumed: no ScummVM event from it */
 			}
+			/* Ctrl-F: letterbox <-> fill, the key syncconquer already uses for
+			 * it. Costs SCUMM's Ctrl-F "fast mode", which un-paces the game and
+			 * floods the wire -- not something a door wants offered anyway, and
+			 * its Ctrl-G sibling is already spent on the menu key. */
+			if (iev.keycode == 'f' && (iev.mods & TERMGFX_MOD_CTRL)) {
+				if (iev.type == TERMGFX_EV_KEY_DOWN)
+					termgfx_termio_fit_cycle();
+				return false;
+			}
 
 			switch (iev.keycode) {
 			case TERMGFX_KEY_UP: kc = Common::KEYCODE_UP; break;

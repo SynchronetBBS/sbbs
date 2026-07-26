@@ -93,6 +93,7 @@ void help_term_show()
 	help_row(r++, col, BODY,  "");
 	help_row(r++, col, KEYC,  "F5       the game's own menu, where it has one");
 	help_row(r++, col, KEYC,  "F4       graphics tier (JXL / sixel)");
+	help_row(r++, col, KEYC,  "Ctrl-F   letterbox or fill the screen");
 	help_row(r++, col, KEYC,  "Ctrl-S   live stats on the bottom row");
 	help_row(r++, col, KEYC,  "Ctrl-K   this card");
 	help_row(r++, col, BODY,  "");

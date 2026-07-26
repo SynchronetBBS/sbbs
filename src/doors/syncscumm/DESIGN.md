@@ -93,7 +93,11 @@ dirty-rect coalescing + the existing AIMD pacing carry the remote case.
 
 termgfx keymode negotiation (kitty / SyncTERM-evdev) as in the siblings;
 ScummVM keys (F5 menu, Esc skip) pass through; family meta-keys (Ctrl-T /
-Ctrl-S stats, Ctrl-P) stay consistent. Mouse is a three-rung ladder, probed
+Ctrl-S stats, Ctrl-P) stay consistent. The door consumes three of its own:
+Ctrl-K / F1 (help card), F4 (graphics tier) and Ctrl-F (letterbox vs fill,
+termgfx_termio_fit_cycle -- the sibling doors' key for the same choice).
+Ctrl-F costs SCUMM's "fast mode", which un-paces the game and floods the
+wire; its Ctrl-G sibling is already spent on the menu key. Mouse is a three-rung ladder, probed
 in-door (there is no mouse ARS — the user MOUSE flag only governs text
 hotspots):
 
