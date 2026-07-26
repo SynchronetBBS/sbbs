@@ -283,6 +283,25 @@ static int g_gfx_max_w, g_gfx_max_h;
  * override (the default), else the pixel ceiling applied to BOTH axes,
  * ahead of every other source above. */
 static int g_sixel_max_override;
+
+/* Sysop "aspect" ini key: the SHAPE the 320x200 source is drawn at, as a
+ * width/height ratio. 0 = unset, meaning square pixels (320/200 = 1.6), which
+ * is what this module has always done and stays the default.
+ *
+ * The alternative is 4:3 (1.333). VGA mode-13h art was drawn for a 4:3 CRT, so
+ * its pixels were never square -- that is what ScummVM's own "aspect ratio
+ * correction" undoes. Whether a given title looks RIGHT that way is a
+ * judgement, not a fact: Flight of the Amazon Queen was compared side by side
+ * and looked better square, and no one has checked the rest. Hence a knob with
+ * the old behaviour as its default, rather than a silent change.
+ *
+ * Only applied to terminals that are NOT SyncTERM. SyncTERM does this itself,
+ * per video mode (conio/vidmodes.c aspect_width/aspect_height, and the
+ * CustomAspectWidth/Height settings), and the door has no way to ask which way
+ * it is set -- so correcting here too would double-correct. A SyncTERM without
+ * JXL still lands on the sixel tier, which is why the gate is the terminal's
+ * identity and not the tier. */
+static double g_aspect;
 /* Set once the DCS XTVERSION reply (ESC[>0q -> DCS >|<name>(<ver>) ST) has
  * been parsed and its payload starts with "xterm" (case-insensitive; parsed
  * in parse_bytes()'s P_APC_ESC handling, below). A terminal that stays
@@ -397,6 +416,7 @@ static FILE *g_trace;
 static FILE *g_tee;
 static void  termgfx_trace_in(const uint8_t *buf, int n);   /* defined past pacing globals */
 static void  termgfx_stats_draw(void);                      /* defined past pacing globals */
+static void  termgfx_invalidate_last(void);                 /* defined past the frame cache */
 static void  termgfx_idle_draw(void);                       /* idle countdown; drawn atop the frame */
 static void  idle_poll(void);                               /* idle clock; driven by the pump */
 static void  deadline_poll(void);                           /* BBS session limit; likewise */
@@ -1404,12 +1424,21 @@ static void termgfx_toggle_stats(void)
 		termgfx_stats_draw();
 		termgfx_termio_flush();
 	} else {
-		/* Erase the bar we last drew; it sits on the reserved bottom row,
-		 * so clearing the line is enough. */
 		char e[32];
 		int  en = snprintf(e, sizeof e, "\x1b[%d;1H\x1b[0m\x1b[K\x1b[?25l",
 		                   termgfx_bottom_row());
+
 		out_put(e, (size_t)en);
+		/* Erasing the row is only half of it. The bottom row is RESERVED for
+		 * the bar on the sixel tier (see the fit in present()), but the JXL
+		 * tier reserves nothing -- there the bar is drawn straight over the
+		 * picture, so erasing it leaves a black band where game pixels were.
+		 * Nothing would repaint it for a long time either: an unchanged frame
+		 * is deduped, and the dirty path only patches cells the GAME changed,
+		 * which those are not. So force the next present() to be a whole
+		 * frame. Costs one repaint per toggle; on the sixel tier the row is
+		 * outside the image and simply stays blank, which is correct there. */
+		termgfx_invalidate_last();
 		termgfx_termio_flush();
 	}
 }
@@ -1528,6 +1557,25 @@ static void termgfx_read_ini(void)
 	if (ini == NULL)
 		return;
 	g_sixel_max_override = iniGetInteger(ini, ROOT_SECTION, "sixel_max", 0);
+	/* "aspect": square (default) | 4:3 | a decimal width/height ratio. */
+	{
+		char buf[32];
+
+		iniGetString(ini, ROOT_SECTION, "aspect", "", buf);
+		if (buf[0] != '\0') {
+			if (stricmp(buf, "square") == 0) {
+				g_aspect = 0.0;
+			} else if (strchr(buf, ':') != NULL) {
+				double w = atof(buf), h = atof(strchr(buf, ':') + 1);
+
+				g_aspect = (w > 0.0 && h > 0.0) ? w / h : 0.0;
+			} else {
+				double v = atof(buf);
+
+				g_aspect = (v > 0.0) ? v : 0.0;
+			}
+		}
+	}
 	/* [idle] -- iniGetDuration() so "15m"/"900"/"1h" all parse, and so a bare
 	 * number means SECONDS here exactly as it does in the sibling doors and in
 	 * the JS lobby that may pass -i. Read at init, well before the clock is
@@ -3290,6 +3338,22 @@ static int      g_fps, g_fps_frames;
 static uint32_t g_fps_win_ms, g_bps;
 static uint64_t g_tx_bytes_at;
 
+/* dr%: the share of EMITTED frames that were patched rather than repainted,
+ * over the same rolling window as fps/KB-f. A lifetime average is the wrong
+ * readout here -- a session's early frames (before there is a previous frame to
+ * diff against) drag it down forever and a later static screen can never move
+ * it -- which is the same conclusion syncretro reached for its own dr field. */
+static unsigned g_dr_win_dirty, g_dr_win_full;
+static int      g_dr_pct = -1;        /* -1 until a window with a frame closes */
+
+static void termgfx_count_dirty(int patched)
+{
+	if (patched)
+		g_dr_win_dirty++;
+	else
+		g_dr_win_full++;
+}
+
 static void termgfx_fps_tick(int emitted)
 {
 	uint32_t fnow = now_ms();
@@ -3308,9 +3372,15 @@ static void termgfx_fps_tick(int emitted)
 		 * which otherwise flashed "-fps -KB/f" constantly. So "-" now means
 		 * only "no frame has been drawn yet" (startup), not "idle right now". */
 		if (g_fps_frames > 0) {
+			unsigned drtot = g_dr_win_dirty + g_dr_win_full;
+
 			g_fps = (int)((uint64_t)g_fps_frames * 1000 / el);
 			g_bps = (uint32_t)((g_tx_bytes - g_tx_bytes_at) * 8000 / el);
+			if (drtot > 0)
+				g_dr_pct = (int)(g_dr_win_dirty * 100 / drtot);
 		}
+		g_dr_win_dirty = 0;
+		g_dr_win_full  = 0;
 		g_fps_frames  = 0;
 		g_fps_win_ms  = fnow;
 		g_tx_bytes_at = g_tx_bytes;
@@ -3482,6 +3552,7 @@ static void termgfx_idle_draw(void)
 static void termgfx_stats_draw(void)
 {
 	char               buf[160];
+	char               drtxt[16];
 	int                off, brow;
 	unsigned long long bpf;
 
@@ -3509,6 +3580,17 @@ static void termgfx_stats_draw(void)
 	if (!g_stats)
 		return;
 	bpf = g_fps > 0 ? ((uint64_t)g_bps / 8 / (unsigned)g_fps + 512) / 1024 : 0;
+	/* "dr N%" -- the share of frames PATCHED rather than repainted, the number
+	 * that says whether the dirty path is doing anything on this content. Three
+	 * states like syncretro's, because a bare "dr 0%" cannot be told from "this
+	 * client cannot patch at all": n/a means no usable cell grid (patching needs
+	 * one to place a box in), - means no window has closed yet. */
+	if (g_dr_pct >= 0)
+		snprintf(drtxt, sizeof drtxt, " dr%d%%", g_dr_pct);
+	else if (g_cell_w <= 0 || g_cell_h <= 0)
+		snprintf(drtxt, sizeof drtxt, " dr n/a");
+	else
+		snprintf(drtxt, sizeof drtxt, " dr-");
 	/* No present completed in the last window (e.g. a paused game, or -- before
 	 * the palette-storm fix -- a fade's dark gap): show '-' rather than a
 	 * misleading "0fps 0KB/f". */
@@ -3516,14 +3598,14 @@ static void termgfx_stats_draw(void)
 	 * byte-for-byte unchanged for doors that never call set_stats_extra(). */
 	if (g_fps > 0)
 		off = snprintf(buf, sizeof buf,
-		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums%s%s\x1b[K\x1b[0m\x1b[?25l",
+		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums%s%s%s\x1b[K\x1b[0m\x1b[?25l",
 		              brow, termgfx_tier_name(termgfx_tier()), g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms,
-		              g_stats_extra[0] ? " " : "", g_stats_extra);
+		              drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
 	else
 		off = snprintf(buf, sizeof buf,
-		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums%s%s\x1b[K\x1b[0m\x1b[?25l",
+		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums%s%s%s\x1b[K\x1b[0m\x1b[?25l",
 		              brow, termgfx_tier_name(termgfx_tier()), g_auto_depth, (unsigned)g_rtt_ms,
-		              g_stats_extra[0] ? " " : "", g_stats_extra);
+		              drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
 	if (off < 0 || off >= (int)sizeof buf)
 		return;
 	out_put(buf, (size_t)off);
@@ -3860,7 +3942,18 @@ static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, in
 
 static void termgfx_image_rect(int *ew, int *eh, int *dx, int *dy)
 {
-	termgfx_image_rect_src(TERMGFX_FB_W, TERMGFX_FB_H, ew, eh, dx, dy);
+	int sw = TERMGFX_FB_W;
+
+	/* Draw the source at the sysop's shape by widening/narrowing what we ask
+	 * to fit -- the scaler resamples to whatever rect comes back, so changing
+	 * the REQUESTED width is all it takes. See g_aspect for why SyncTERM is
+	 * excluded. */
+	if (g_aspect > 0.0 && !g_is_syncterm) {
+		sw = (int)(TERMGFX_FB_H * g_aspect + 0.5);
+		if (sw < 1)
+			sw = 1;
+	}
+	termgfx_image_rect_src(sw, TERMGFX_FB_H, ew, eh, dx, dy);
 }
 
 static void termgfx_termio_mouse_report(int b, int col, int row, int release)
@@ -4010,6 +4103,16 @@ static unsigned g_capture_frames;
  * present() must both close the dangling DCS (this flag) and skip the dirty
  * path (g_have_last is cleared alongside it, below). */
 static int g_need_st;
+
+/* Make the next present() send a WHOLE frame: forget what the client is
+ * holding, so neither the de-dupe nor the dirty diff can decide a region is
+ * already correct. For anything that changes the screen behind termgfx's back
+ * -- see termgfx_toggle_stats(), which erases a bar drawn over the picture on
+ * a tier that reserves no row for it. */
+static void termgfx_invalidate_last(void)
+{
+	g_have_last = 0;
+}
 
 /* A frame that a DEFER gate (pacing or backpressure, below) held back
  * instead of sending -- retained here so termgfx_termio_tick() can retry it once the
@@ -4404,6 +4507,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 			dn = termgfx_dirty_sixel_present(idx, g_last_fb, pal768, ew, eh,
 			                             icol, irow, cdw, cdh);
 
+		termgfx_count_dirty(dn != 0);
 		if (dn != 0) {
 			n = dn;   /* dirty rects already sent */
 		} else {
@@ -4419,6 +4523,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		if (g_have_last && !pal_dirty && !geom_changed && !tier_changed && g_img_blob_ok)
 			dn = termgfx_dirty_jxl_present(idx, g_last_fb, pal768, ew, eh, dx, dy);
 
+		termgfx_count_dirty(dn != 0);
 		if (dn != 0) {
 			n = dn;   /* dirty rects already sent */
 		} else {
