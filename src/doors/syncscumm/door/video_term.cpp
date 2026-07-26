@@ -4,9 +4,6 @@
 #define FORBIDDEN_SYMBOL_EXCEPTION_fclose
 #define FORBIDDEN_SYMBOL_EXCEPTION_fwrite
 #define FORBIDDEN_SYMBOL_EXCEPTION_setvbuf
-#define FORBIDDEN_SYMBOL_EXCEPTION_access
-#define FORBIDDEN_SYMBOL_EXCEPTION_getpid
-#define FORBIDDEN_SYMBOL_EXCEPTION_unistd_h
 
 #include "common/scummsys.h"
 
@@ -14,7 +11,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 
 #include "video_term.h"
@@ -22,6 +18,9 @@
 #include "audio_term.h"
 #include "help_term.h"
 #include "termgfx_quant.h"
+/* The door's platform seam, for the framedump gate below: MSVC has no
+ * <unistd.h>, no access()/F_OK and no getpid(). */
+#include "../../termgfx/termgfx_plat.h"
 
 /* Frame capture: append every (indices, palette) pair handed to
  * termgfx_termio_present(), so a REAL play session can be replayed exactly
@@ -64,8 +63,8 @@ static void syncscumm_framedump(const byte *idx, const byte *pal, int w, int h)
 			snprintf(touch, sizeof touch, "./syncscumm-framedump");
 		if (forced && *forced) {
 			g_framedump = fopen(forced, "wb");
-		} else if (!access(touch, F_OK)) {
-			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.frames", (long)getpid());
+		} else if (termgfx_plat_file_exists(touch)) {
+			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.frames", termgfx_plat_getpid());
 			g_framedump = fopen(path, "wb");
 		}
 		{
