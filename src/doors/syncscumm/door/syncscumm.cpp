@@ -352,6 +352,27 @@ bool OSystem_Termgfx::pollEvent(Common::Event &event) {
 		case TERMGFX_EV_KEY_UP: {
 			Common::KeyCode kc;
 			uint16 ascii = (iev.ascii != 0) ? (uint16)iev.ascii : 0;
+
+			/* F4 belongs to the door, not the game: it steps the graphics tier,
+			 * matching the key the sibling termgfx doors already use for it.
+			 *
+			 * Worth spending a key on because SyncTERM is the only terminal
+			 * that reaches the JXL tier, so without this it is also the only
+			 * one that never draws a sixel -- including the sixel code written
+			 * specifically for SyncTERM, whose colour registers persist across
+			 * images. That path had no way to be exercised on the terminal it
+			 * was written for.
+			 *
+			 * Swallowed on BOTH edges so a release cannot reach the engine on
+			 * its own. F4 is not a ScummVM global (F5 is the menu); if a game
+			 * ever turns out to want it, move this to another key rather than
+			 * forwarding, or the tier becomes unreachable again. */
+			if (iev.keycode == TERMGFX_KEY_F4) {
+				if (iev.type == TERMGFX_EV_KEY_DOWN)
+					termgfx_termio_tier_cycle();
+				return false;   /* consumed: no ScummVM event from it */
+			}
+
 			switch (iev.keycode) {
 			case TERMGFX_KEY_UP: kc = Common::KEYCODE_UP; break;
 			case TERMGFX_KEY_DOWN: kc = Common::KEYCODE_DOWN; break;

@@ -2977,13 +2977,63 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 #define TERMGFX_TIER_SIXEL 0
 #define TERMGFX_TIER_JXL   1
 
-static int termgfx_tier(void)
+/* -1 = auto (whatever the terminal can do); else the tier F4 pinned.
+ *
+ * Auto is right for a player, but it makes one path untestable: SyncTERM is
+ * the only terminal that reaches JXL, so it is also the only one that never
+ * exercises the SIXEL path -- including the parts written specifically FOR it
+ * (a box carries no palette there, so a palette change rides a delta on the
+ * first one). That code could only ever run on a SyncTERM that had been talked
+ * out of JXL, which nothing could do. F4 is what does it, matching the cycle
+ * the sibling doors already have. */
+static int g_tier_force = -1;
+
+static int termgfx_tier_auto(void)
 {
 #ifdef WITH_JXL
 	if (g_jxl)
 		return TERMGFX_TIER_JXL;
 #endif
 	return TERMGFX_TIER_SIXEL;   /* also the pre-reply default */
+}
+
+static int termgfx_tier(void)
+{
+	if (g_tier_force >= 0)
+		return g_tier_force;
+	return termgfx_tier_auto();
+}
+
+/* F4: step through the tiers this client can actually do. Sixel is always in
+ * the list (every client that gets this far can draw pixels -- there is no text
+ * fallback here, a point-and-click game is meaningless as block glyphs), JXL
+ * only where the terminal offers it. With one tier available F4 is a no-op
+ * rather than a confusing reset.
+ *
+ * Invalidates the frame cache: the client is holding a picture drawn by the
+ * OTHER encoder, and the two do not share the state a dirty patch assumes.
+ *
+ * Exposed for the DOOR to bind rather than grabbed as a hotkey here, because
+ * the key is not termgfx's to take: syncrpg already spends F4 on its
+ * resolution toggle and puts it on its help card. Ctrl-S can be global -- no
+ * door wants it -- but this one has an owner already. */
+void termgfx_termio_tier_cycle(void)
+{
+	int avail[2], n = 0, i, cur = termgfx_tier(), at = 0;
+
+#ifdef WITH_JXL
+	if (g_jxl)
+		avail[n++] = TERMGFX_TIER_JXL;
+#endif
+	avail[n++] = TERMGFX_TIER_SIXEL;
+	if (n < 2)
+		return;                       /* nothing to cycle to */
+	for (i = 0; i < n; i++)
+		if (avail[i] == cur)
+			at = i;
+	g_tier_force = avail[(at + 1) % n];
+	termgfx_invalidate_last();
+	out_puts("\x1b[2J");             /* the other tier's leftovers are not ours */
 }
 
 static const char *termgfx_tier_name(int t)

@@ -115,6 +115,18 @@ int  termgfx_termio_is_syncterm(void);
 int  termgfx_termio_jxl_supported(void);
 int  termgfx_termio_stats_visible(void);
 
+/* Step to the next graphics tier the client can actually draw (JXL <-> sixel),
+ * invalidating the frame cache so the new encoder starts from a whole frame.
+ * A no-op where only one tier is available.
+ *
+ * For the DOOR to bind to a key of its choosing -- termgfx does not grab one,
+ * because F4 (the obvious candidate, and what the sibling doors use) is already
+ * spent in syncrpg on its resolution toggle. Worth binding somewhere: SyncTERM
+ * is the only terminal that reaches JXL, so without this it is also the only
+ * one that never exercises the sixel path -- including the code written
+ * specifically for SyncTERM's persistent colour registers. */
+void termgfx_termio_tier_cycle(void);
+
 // Will this session's player actually HEAR audio? A door drives its
 // subtitles-auto decision off this. It is a property of the SESSION, not just
 // the terminal: a sysop who disabled sound ("[audio] enabled = false") reads 0
