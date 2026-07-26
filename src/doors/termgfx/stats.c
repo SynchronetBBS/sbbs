@@ -37,8 +37,12 @@ int termgfx_stats_roll(termgfx_stats_t *st, uint32_t now_ms)
 		return 0;
 
 	span       = now_ms - st->at_ms;
-	st->fps    = (uint32_t)(st->frames * 1000u / span);
-	st->kbps   = (uint32_t)(st->bytes * 1000u / 1024u / span);
+	/* Rounded, not truncated. A window is ~1s, so a scene drawing ONE frame in
+	 * it truncates to zero -- and a door that renders 0 as "nothing yet" then
+	 * reports a working slow scene as no data at all. Anything at or above
+	 * half a frame per second now reads as 1. */
+	st->fps    = (uint32_t)((st->frames * 1000u + span / 2) / span);
+	st->kbps   = (uint32_t)((st->bytes * 1000u / 1024u * 2 + span) / (span * 2));
 	st->frames = 0;
 	st->bytes  = 0;
 	st->at_ms  = now_ms;

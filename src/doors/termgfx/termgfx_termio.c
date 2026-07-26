@@ -3352,6 +3352,9 @@ static uint64_t g_tx_bytes_at;
  * diff against) drag it down forever and a later static screen can never move
  * it -- which is the same conclusion syncretro reached for its own dr field. */
 static unsigned g_dr_win_dirty, g_dr_win_full;
+static unsigned g_bpf;          /* KiB per emitted frame, straight from the window */
+static int      g_fps_have;     /* a window has closed WITH frames: "-" means only
+                                 * "nothing drawn yet", never "drawing slowly" */
 static int      g_dr_pct = -1;        /* -1 until a window with a frame closes */
 
 static void termgfx_count_dirty(int patched)
@@ -3382,8 +3385,19 @@ static void termgfx_fps_tick(int emitted)
 		if (g_fps_frames > 0) {
 			unsigned drtot = g_dr_win_dirty + g_dr_win_full;
 
-			g_fps = (int)((uint64_t)g_fps_frames * 1000 / el);
+			/* Rounded, not truncated: a window is ~1s, so a scene drawing one
+			 * frame in it truncated to 0 and the readout below renders 0 as
+			 * "nothing yet" -- a slow but perfectly working scene (an
+			 * adventure sitting on a static room with one banner animating)
+			 * reported itself as dead. */
+			g_fps = (int)(((uint64_t)g_fps_frames * 1000 + el / 2) / el);
 			g_bps = (uint32_t)((g_tx_bytes - g_tx_bytes_at) * 8000 / el);
+			/* Bytes per frame straight from the window, rather than derived
+			 * from bps/fps: two rounded quantities divided by each other lose
+			 * accuracy exactly where the numbers are small, which is the case
+			 * this readout is for. */
+			g_bpf = (unsigned)(((g_tx_bytes - g_tx_bytes_at) / g_fps_frames + 512) / 1024);
+			g_fps_have = 1;
 			if (drtot > 0)
 				g_dr_pct = (int)(g_dr_win_dirty * 100 / drtot);
 		}
@@ -3587,7 +3601,7 @@ static void termgfx_stats_draw(void)
 	}
 	if (!g_stats)
 		return;
-	bpf = g_fps > 0 ? ((uint64_t)g_bps / 8 / (unsigned)g_fps + 512) / 1024 : 0;
+	bpf = g_bpf;
 	/* The share of frames PATCHED rather than repainted. Formatted by
 	 * termgfx_stats_dr() rather than here, so it reads identically in every
 	 * door -- this field had already drifted apart once. */
@@ -3599,7 +3613,7 @@ static void termgfx_stats_draw(void)
 	 * misleading "0fps 0KB/f". */
 	/* A leading space only when the door set an extra token, so the strip is
 	 * byte-for-byte unchanged for doors that never call set_stats_extra(). */
-	if (g_fps > 0)
+	if (g_fps_have)
 		off = snprintf(buf, sizeof buf,
 		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums%s%s%s\x1b[K\x1b[0m\x1b[?25l",
 		              brow, termgfx_tier_name(termgfx_tier()), g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms,
@@ -3906,7 +3920,22 @@ static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, in
 	if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0 && g_canvas_h > cellh)
 		fit_h = g_canvas_h - cellh;   /* keep the image off the last row */
 
-	termgfx_geom_fit(g_canvas_w, fit_h, sw, sh, TERMGFX_SCALE_MAX, ew, eh);
+	/* TRUE ASPECT -- max_stretch_pct 0, matching syncconquer's own fit.
+	 *
+	 * termgfx_geom_fit()'s 8% allowance exists to swallow a thin leftover bar so
+	 * a near-fit fills the canvas, and that is fine where the bar is an accident
+	 * of the canvas. It is not fine here, because the SIXEL tier manufactures
+	 * its own bar: it reserves the bottom text row for the stats/idle strip, so
+	 * a canvas that fitted exactly becomes height-limited, leaves a side bar,
+	 * and the allowance then stretches the picture back out to hide it. At
+	 * SyncTERM's 80x25 that is a 4% vertical squash -- 640x384 where the source
+	 * wants 614x384 -- while the JXL tier, which reserves nothing, fits 640x400
+	 * exactly and stays true. The two tiers disagreeing about the shape of the
+	 * same game is the tell.
+	 *
+	 * Letterboxing 13px a side is the cheaper mistake, and it is what the
+	 * sibling door already chose. */
+	termgfx_geom_fit_ex(g_canvas_w, fit_h, sw, sh, TERMGFX_SCALE_MAX, 0, ew, eh);
 	/* Effective sixel ceiling -- SIXEL tier only (see g_gfx_max_w's doc
 	 * comment, above, for the full precedence rationale). JXL/APC frames
 	 * aren't subject to xterm's declared-raster discard (a different wire
