@@ -69,6 +69,9 @@
 - More than 255 QWK network hubs are now supported
 - Removed unnecessary terminal color-change codes (regression
   from v3.21)
+- Fixed double-counting of terminal columns for Unicode output on
+  UTF-8 terminals, which made word-wrap, right-margin truncation
+  and centering wrap early (regression from v3.21, issue #1200)
 - Goodbye messages and pre-login banners no longer log noisy
   "send failed" warnings when the client disconnects mid-message
 - Fix line-wrap divide-by-zero crash when an SFTP-only client

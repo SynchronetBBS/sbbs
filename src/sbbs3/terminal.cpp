@@ -392,7 +392,7 @@ bool Terminal::utf8_increment(unsigned char ch)
 				codepoint |= (ch & 0x3f);
 				if (utf8_remain)
 					return true;
-				inc_column(unicode_width(static_cast<enum unicode_codepoint>(codepoint), 0));
+				inc_column(unicode_width(static_cast<enum unicode_codepoint>(codepoint), sbbs->unicode_zerowidth));
 				codepoint = 0;
 				return true;
 			}
