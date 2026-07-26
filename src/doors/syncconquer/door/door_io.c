@@ -2483,6 +2483,26 @@ void door_io_get_rect(int *ew, int *eh, int *dx, int *dy)
 	/* Match the rect to the CURRENT image tier: only sixel reserves the bottom
 	 * row, so the mouse maps against the same geometry the frame was drawn in. */
 	door_calc_rect(vw, vh, eff == SA_SIXEL, ew, eh, dx, dy, &icol, &irow);
+
+	/* A sixel is placed by CURSOR ADDRESS (door_cursor_save_to(irow, icol)), so
+	 * its true top-left is that cell's pixel, i.e. dx/dy rounded DOWN to the
+	 * cell grid -- up to a cell higher and further left than the centering math
+	 * asked for. The mapper must invert what was actually drawn, not what was
+	 * requested, or every click lands short by the remainder: a 1330x1480
+	 * canvas with 20px cells centres a 1330x831 image at y=314 but draws it at
+	 * y=300, and the 14px gap is ~7 game pixels of upward bias on every click --
+	 * enough that the top of a sidebar button does not respond. JXL is placed by
+	 * pixel offset (door_emit_jxl(..., dx, dy)) and needs no such correction,
+	 * which is why this only ever showed on sixel terminals. */
+	if (eff == SA_SIXEL) {
+		int cellw, cellh;
+
+		door_cell_size(&cellw, &cellh);
+		if (cellw > 0 && cellh > 0) {
+			*dx = (icol - 1) * cellw;
+			*dy = (irow - 1) * cellh;
+		}
+	}
 }
 
 /* The terminal's real cell pixel size (canvas/grid derived) -- door_input.c's
@@ -3076,6 +3096,17 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 			        termgfx_mouse_pixels(&g_mouse) ? "pixels(1016)" : "cells",
 			        (g_tier_force >= 0) ? g_tier_force : sa_auto_tier(),
 			        g_fit_fill ? "fill" : "aspect", ew, eh, dx, dy, icol, irow);
+			/* Where the MOUSE mapper believes the image starts. It must equal
+			 * the placement above -- the pixel offset for JXL, the addressed
+			 * cell's pixel for sixel. A gap here is a constant bias on every
+			 * click, and nothing else on this line would show it. */
+			{
+				int mew, meh, mdx, mdy;
+
+				door_io_get_rect(&mew, &meh, &mdx, &mdy);
+				fprintf(stderr, DOOR_SHORT_NAME ": mouse maps against %dx%d @px(%d,%d)\n",
+				        mew, meh, mdx, mdy);
+			}
 			geom_logged = 1;
 		}
 	}
