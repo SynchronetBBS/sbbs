@@ -20,6 +20,27 @@ Before committing, read the message as if you had never seen this session.
 If any sentence only makes sense to someone who watched the work happen,
 rewrite it or cut it.
 
+# Referencing a previous commit — give the date
+
+When you cite an earlier commit — in a commit message, or in a code comment
+where one has earned its place — give its date alongside the SHA:
+
+    a1b2c3d (2026-07-25)
+
+A SHA on its own says nothing about *when*. The reader cannot tell whether the
+commit you named comes before or after the code in front of them, nor line it
+up against a release, a bug report, or anything else they already know the date
+of — and that ordering is usually the whole reason the commit was worth naming.
+The date is also the part that still helps after a SHA stops resolving, in a
+mirror, a tarball, or a rewritten branch.
+
+Use the commit's own author date, not the date you are writing:
+
+    git show -s --format=%as <sha>      # YYYY-MM-DD
+
+Read it from the repo rather than guessing. A wrong date is worse than none: it
+is confidently checkable, and it will be checked.
+
 # Comment discipline for C/C++ source and headers
 
 Comments explain what the code cannot: the non-obvious, the edge case, the
