@@ -1,8 +1,20 @@
+#define FORBIDDEN_SYMBOL_EXCEPTION_getenv
+#define FORBIDDEN_SYMBOL_EXCEPTION_FILE
+#define FORBIDDEN_SYMBOL_EXCEPTION_fopen
+#define FORBIDDEN_SYMBOL_EXCEPTION_fclose
+#define FORBIDDEN_SYMBOL_EXCEPTION_fwrite
+#define FORBIDDEN_SYMBOL_EXCEPTION_setvbuf
+#define FORBIDDEN_SYMBOL_EXCEPTION_access
+#define FORBIDDEN_SYMBOL_EXCEPTION_getpid
+#define FORBIDDEN_SYMBOL_EXCEPTION_unistd_h
+
 #include "common/scummsys.h"
 
 #if defined(USE_TERMGFX_DRIVER)
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 
 #include "video_term.h"
@@ -10,14 +22,75 @@
 #include "audio_term.h"
 #include "termgfx_quant.h"
 
+/* Frame capture: append every (indices, palette) pair handed to
+ * termgfx_termio_present(), so a REAL play session can be replayed exactly
+ * through a different build of the encode path.
+ *
+ * This is the only way to compare two versions on GAMEPLAY. A cutscene is
+ * deterministic and can simply be replayed, but a point-and-click game does
+ * nothing without a human in it, and no human walks the same route twice
+ * closely enough to measure a ten-percent difference. Capturing the frames the
+ * encoder actually saw makes the comparison exact and costs one session.
+ *
+ * Deliberately the pair passed to present(), not the raw game surface: the
+ * quantized overlay path substitutes its own indices and palette, and a
+ * measurement of the encoder wants precisely what the encoder was given.
+ *
+ * Touch-file gated, like termgfx_termio.c's trace and wirecap and for the same
+ * reason: the BBS execvp()s the door with no shell, so an env var set before
+ * launch never arrives. Create <SBBSDATA>/<door>/framedump (or ./<door>-
+ * framedump on a dev run with no SBBSDATA) and the next session writes
+ * /tmp/<door>.<pid>.frames; absent, this opens nothing and costs nothing.
+ *
+ * Format: "SSFD", int32 w, int32 h, then per frame 768 palette bytes and w*h
+ * index bytes. Uncompressed on purpose -- the reader should be trivial, and
+ * 320x200 is ~65KB a frame, so a few minutes is a few hundred MB on disk.
+ * Buffered, so the capture never turns present() into a synchronous write. */
+static FILE *g_framedump;
+static int   g_framedump_tried;
+
+static void syncscumm_framedump(const byte *idx, const byte *pal, int w, int h)
+{
+	if (!g_framedump_tried) {
+		const char *data_dir = getenv("SBBSDATA");
+		const char *forced   = getenv("SYNCSCUMM_FRAMEDUMP");   /* dev/test override */
+		char        touch[512], path[64];
+
+		g_framedump_tried = 1;
+		if (data_dir && *data_dir)
+			snprintf(touch, sizeof touch, "%s/syncscumm/framedump", data_dir);
+		else
+			snprintf(touch, sizeof touch, "./syncscumm-framedump");
+		if (forced && *forced) {
+			g_framedump = fopen(forced, "wb");
+		} else if (!access(touch, F_OK)) {
+			snprintf(path, sizeof path, "/tmp/syncscumm.%ld.frames", (long)getpid());
+			g_framedump = fopen(path, "wb");
+		}
+		{
+			if (g_framedump) {
+				setvbuf(g_framedump, NULL, _IOFBF, 1 << 20);
+				int32 d[2] = { (int32)w, (int32)h };
+
+				fwrite("SSFD", 1, 4, g_framedump);
+				fwrite(d, sizeof d, 1, g_framedump);
+			}
+		}
+	}
+	if (!g_framedump || !idx || !pal)
+		return;
+	fwrite(pal, 1, 768, g_framedump);
+	fwrite(idx, 1, (size_t)w * h, g_framedump);
+}
+
 SyncscummTermGraphicsManager::SyncscummTermGraphicsManager()
 	: _cursorBuf(NULL), _cursorW(0), _cursorH(0),
-	  _cursorHotX(0), _cursorHotY(0), _cursorKey(0),
-	  _cursorVisible(false), _cursorUsePal(false),
-	  _cursorX(0), _cursorY(0),
-	  _lastCursorX(0), _lastCursorY(0), _lastCursorShown(false),
-	  _cursorSpriteDirty(false),
-	  _lastOverlayShown(false), _overlayContentDirty(false) {
+	_cursorHotX(0), _cursorHotY(0), _cursorKey(0),
+	_cursorVisible(false), _cursorUsePal(false),
+	_cursorX(0), _cursorY(0),
+	_lastCursorX(0), _lastCursorY(0), _lastCursorShown(false),
+	_cursorSpriteDirty(false),
+	_lastOverlayShown(false), _overlayContentDirty(false) {
 	memset(_cursorPal, 0, sizeof(_cursorPal));
 	memset(_quantIdx, 0, sizeof(_quantIdx));
 	memset(_quantPal, 0, sizeof(_quantPal));
@@ -30,9 +103,9 @@ SyncscummTermGraphicsManager::~SyncscummTermGraphicsManager() {
 }
 
 void SyncscummTermGraphicsManager::setMouseCursor(const void *buf, uint w, uint h,
-                                                   int hotspotX, int hotspotY, uint32 keycolor,
-                                                   bool dontScale, const Graphics::PixelFormat *format,
-                                                   const byte *mask) {
+                                                  int hotspotX, int hotspotY, uint32 keycolor,
+                                                  bool dontScale, const Graphics::PixelFormat *format,
+                                                  const byte *mask) {
 	/* All cursor features (kFeatureCursorPalette et al.) report false, so
 	 * no engine should ever hand us a non-CLUT8 cursor or a mask -- both
 	 * are asserted/ignored rather than handled. May be called before
@@ -112,7 +185,7 @@ void SyncscummTermGraphicsManager::grabOverlay(Graphics::Surface &surface) const
 	assert(surface.h >= _overlay.h);
 	assert(surface.format.bytesPerPixel == _overlay.format.bytesPerPixel);
 	const byte *src = (const byte *)_overlay.getPixels();
-	byte *dst = (byte *)surface.getPixels();
+	byte *      dst = (byte *)surface.getPixels();
 	for (int row = 0; row < _overlay.h; row++)
 		memcpy(dst + row * surface.pitch, src + row * _overlay.pitch,
 		       (size_t)_overlay.w * _overlay.format.bytesPerPixel);
@@ -140,7 +213,7 @@ void SyncscummTermGraphicsManager::compose() {
 		memcpy(_composed.getPixels(), _screen.getPixels(), (size_t)TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H);
 
 	bool cursorOn = _cursorVisible && _cursorBuf;
-	int ox = _cursorX - _cursorHotX, oy = _cursorY - _cursorHotY;
+	int  ox = _cursorX - _cursorHotX, oy = _cursorY - _cursorHotY;
 
 	if (!isOverlayVisible()) {
 		/* Task 4-5 CLUT8 path, unchanged: composite the cursor straight
@@ -149,11 +222,11 @@ void SyncscummTermGraphicsManager::compose() {
 		if (!cursorOn)
 			return;
 		for (uint cy = 0; cy < _cursorH; cy++) {
-			int ty = oy + (int)cy;
+			int         ty = oy + (int)cy;
 			if (ty < 0 || ty >= TERMGFX_TERMIO_FB_H)
 				continue;
 			const byte *src = _cursorBuf + cy * _cursorW;
-			byte *dst = (byte *)_composed.getBasePtr(0, ty);
+			byte *      dst = (byte *)_composed.getBasePtr(0, ty);
 			for (uint cx = 0; cx < _cursorW; cx++) {
 				int tx = ox + (int)cx;
 				if (tx < 0 || tx >= TERMGFX_TERMIO_FB_W)
@@ -171,7 +244,7 @@ void SyncscummTermGraphicsManager::compose() {
 	 * v1) -- blit the cursor in RGB too, then quantize to 256 colors for
 	 * presentation. _composed/_palette themselves are not presented while
 	 * the overlay is up; _quantIdx/_quantPal are. */
-	byte *rgb = _composeRgb;   /* member scratch, not a 192KB automatic */
+	byte *      rgb = _composeRgb; /* member scratch, not a 192KB automatic */
 	const byte *game = (const byte *)_composed.getPixels();
 	for (int i = 0; i < TERMGFX_TERMIO_FB_W * TERMGFX_TERMIO_FB_H; i++) {
 		const byte *p = _palette + game[i] * 3;
@@ -183,10 +256,10 @@ void SyncscummTermGraphicsManager::compose() {
 	if (_overlay.getPixels()) {
 		for (int y = 0; y < TERMGFX_TERMIO_FB_H; y++) {
 			const byte *srow = (const byte *)_overlay.getBasePtr(0, y);
-			byte *drow = rgb + (size_t)y * TERMGFX_TERMIO_FB_W * 3;
+			byte *      drow = rgb + (size_t)y * TERMGFX_TERMIO_FB_W * 3;
 			for (int x = 0; x < TERMGFX_TERMIO_FB_W; x++) {
 				uint16 px = *(const uint16 *)(srow + x * 2);
-				byte r, g, b;
+				byte   r, g, b;
 				_overlay.format.colorToRGB(px, r, g, b);
 				drow[x * 3 + 0] = r;
 				drow[x * 3 + 1] = g;
@@ -197,11 +270,11 @@ void SyncscummTermGraphicsManager::compose() {
 
 	if (cursorOn) {
 		for (uint cy = 0; cy < _cursorH; cy++) {
-			int ty = oy + (int)cy;
+			int         ty = oy + (int)cy;
 			if (ty < 0 || ty >= TERMGFX_TERMIO_FB_H)
 				continue;
 			const byte *src = _cursorBuf + cy * _cursorW;
-			byte *drow = rgb + (size_t)ty * TERMGFX_TERMIO_FB_W * 3;
+			byte *      drow = rgb + (size_t)ty * TERMGFX_TERMIO_FB_W * 3;
 			for (uint cx = 0; cx < _cursorW; cx++) {
 				int tx = ox + (int)cx;
 				if (tx < 0 || tx >= TERMGFX_TERMIO_FB_W)
@@ -243,7 +316,7 @@ void SyncscummTermGraphicsManager::updateScreen() {
 	/* Gate sprite/position terms on visibility; _last* still tracks even
 	 * when hidden so a later showMouse(true) presents at the right spot. */
 	bool cursorChanged = (_cursorVisible != _lastCursorShown)
-		|| (_cursorVisible && (_cursorSpriteDirty || _cursorX != _lastCursorX || _cursorY != _lastCursorY));
+	                     || (_cursorVisible && (_cursorSpriteDirty || _cursorX != _lastCursorX || _cursorY != _lastCursorY));
 	/* Same idea for the overlay: a show/hide toggle or a content redraw
 	 * (copyRectToOverlay/clearOverlay) must trigger a present even when
 	 * the game surface hasn't changed -- see the _lastOverlayShown /
@@ -251,7 +324,7 @@ void SyncscummTermGraphicsManager::updateScreen() {
 	 * own tracked pair rather than reusing _dirty. */
 	bool overlayVisible = isOverlayVisible();
 	bool overlayChanged = (overlayVisible != _lastOverlayShown)
-		|| (overlayVisible && _overlayContentDirty);
+	                      || (overlayVisible && _overlayContentDirty);
 
 	if (screenDirty)
 		SyncscummDumpGraphicsManager::updateScreen();   /* clears _dirty, dumps PPM if enabled */
@@ -269,8 +342,11 @@ void SyncscummTermGraphicsManager::updateScreen() {
 			 * really do look identical to the client, so skipping the
 			 * palette re-emit for them is the right call, not a bug to
 			 * work around. */
+			syncscumm_framedump(_quantIdx, _quantPal, getWidth(), getHeight());
 			termgfx_termio_present(_quantIdx, _quantPal);
 		} else if (_composed.getPixels()) {
+			syncscumm_framedump((const byte *)_composed.getPixels(), _palette,
+			                    getWidth(), getHeight());
 			termgfx_termio_present((const byte *)_composed.getPixels(), _palette);
 		}
 	}
