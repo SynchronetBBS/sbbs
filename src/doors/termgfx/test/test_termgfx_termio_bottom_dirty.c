@@ -106,6 +106,48 @@ static void sixel_raster_max(const char *s, int n, int *max_ph_out, int *max_pv_
 	*count_out = count;
 }
 
+/* The BOTTOM edge, in display pixels, that the boxes on the wire actually
+ * cover: for each raster, the CUP row that placed it times the cell height,
+ * plus the raster's own Pv. That is the number the stale-bottom bug is about
+ * -- a box that stops short leaves the rows below it holding the previous
+ * frame forever. Returns the lowest edge reached by any box, and the CUP row
+ * of the first one (the image's top row, when the frame is a full one). */
+static void covered_bottom(const char *s, int n, int cellh, int *bottom_out, int *first_row_out)
+{
+	int i, row = -1, first_row = -1, bottom = -1;
+
+	for (i = 0; i < n; i++) {
+		if (s[i] == 0x1b && i + 1 < n && s[i + 1] == '[') {   /* CUP: ESC [ r ; c H */
+			int r = 0, j = i + 2, any = 0;
+			while (j < n && s[j] >= '0' && s[j] <= '9') { r = r * 10 + (s[j] - '0'); j++; any = 1; }
+			if (any && j < n && s[j] == ';') {
+				while (++j < n && s[j] >= '0' && s[j] <= '9') ;
+				if (j < n && s[j] == 'H') {
+					row = r;
+					if (first_row < 0)
+						first_row = r;
+				}
+			}
+		} else if (s[i] == '"' && row > 0) {                  /* the raster that follows it */
+			int field = 0, pv = 0, j = i + 1;
+			while (j < n && ((s[j] >= '0' && s[j] <= '9') || s[j] == ';')) {
+				if (s[j] == ';')
+					field++;
+				else if (field == 3)
+					pv = pv * 10 + (s[j] - '0');
+				j++;
+			}
+			if (field >= 3) {
+				int edge = (row - 1) * cellh + pv;
+				if (edge > bottom)
+					bottom = edge;
+			}
+		}
+	}
+	*bottom_out = bottom;
+	*first_row_out = first_row;
+}
+
 /* Set a 16x16 (or shorter, at the fb bottom) tile to a fill value -- tx/ty
  * are tile coordinates (TERMGFX_TILE == 16, checked against termgfx_termio.c). */
 static void fill_tile(uint8_t *fb, int tx, int ty, int tile, int fb_w, int fb_h, uint8_t val)
@@ -130,7 +172,9 @@ int main(void)
 	static uint8_t pal[768];
 	char           fdarg[32];
 	char *         argv[3];
-	int            n, ph, pv, cnt;
+	int            n, ph, pv, cnt, bottom, row0, img_bottom, img_top_row;
+
+	(void)row0;
 	const int      TILE = 16;
 
 	assert(socketpair(AF_UNIX, SOCK_STREAM, 0, sv) == 0);
@@ -160,7 +204,12 @@ int main(void)
 	memset(pal, 0x30, sizeof pal);
 	termgfx_termio_present(idx1, pal);
 	termgfx_termio_flush();
-	drain(sv[0], out, sizeof out);
+	n = drain(sv[0], out, sizeof out);
+	assert(n > 0);
+	/* Take the image's own extent from the wire rather than recomputing the
+	 * fit here: this is a whole frame, so its raster IS the image. */
+	covered_bottom(out, n, 20, &img_bottom, &img_top_row);
+	assert(img_bottom > 0 && img_top_row > 0);
 
 	/* Second frame: dirty a mid-screen tile (tx=2,ty=2 -> fb rows 32..47)
 	 * AND a bottom-row tile (tx=8,ty=12 -> fb rows 192..199, tile row 12 is
@@ -178,18 +227,29 @@ int main(void)
 	assert(n > 0);
 
 	sixel_raster_max(out, n, &ph, &pv, &cnt);
-	/* THE FIX (atomic): a bottom-row change that the height snap can't
-	 * fully cover must force a full frame, and ONLY the full frame -- no
-	 * partial dirty box may have already reached the wire ahead of it.
-	 * That means exactly ONE sixel raster header total, at (or very near)
-	 * the full ehc height (576). Pre-fix (no pre-pass) this fails two ways:
-	 * either no full-height header appears at all (pv stays under 500,
-	 * the mid-screen box's own small height), or -- once the inner check
-	 * alone forced the fallback -- TWO headers appear (the mid-screen
-	 * box's small one plus the full frame), i.e. cnt > 1. */
-	assert(cnt == 1);
-	assert(pv >= 500);
-	printf("TERMGFX_TERMIO_BOTTOM_DIRTY bottom-strand forces full frame OK (Ph=%d Pv=%d cnt=%d)\n", ph, pv, cnt);
+	covered_bottom(out, n, 20, &bottom, &row0);
+
+	/* THE INVARIANT: the changed rows at the very bottom of the image must be
+	 * PAINTED. What may not happen is a box that stops short of them, leaving
+	 * the rows below holding the previous frame until something else happens
+	 * to dirty them -- the stale cursor this test was written for.
+	 *
+	 * How that is satisfied has changed. It used to be by refusing to patch at
+	 * all: a bottom box the height snap could not cover forced a whole-frame
+	 * repaint. Now the box itself reaches the bottom -- it takes the room
+	 * ABOVE it rather than being clamped short (termgfx_box_display_rect()),
+	 * and the image is trimmed to whole cells so that is always possible. So
+	 * the frame stays a cheap patch AND the bottom is covered, where before it
+	 * could only be one or the other. On a played Queen session the old answer
+	 * cost 98.3% of all full frames and two thirds of the bytes.
+	 *
+	 * Hence: boxes, not a full frame (no raster at the image's full height),
+	 * and their coverage still reaches the image's bottom edge. */
+	assert(cnt >= 1);
+	assert(pv < img_bottom - (img_top_row - 1) * 20);   /* no full-height raster */
+	assert(bottom == img_bottom);                       /* ...yet the bottom is covered */
+	printf("TERMGFX_TERMIO_BOTTOM_DIRTY bottom box covers the bottom, no full frame"
+	       " OK (Ph=%d Pv=%d cnt=%d bottom=%d)\n", ph, pv, cnt, bottom);
 
 	/* Third frame: dirty ONLY another mid-screen tile (tx=5,ty=5 -> fb rows
 	 * 80..95), nothing in the bottom row. This must NOT force a full frame

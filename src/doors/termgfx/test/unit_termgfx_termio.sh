@@ -132,6 +132,28 @@ cc -o /tmp/test_termgfx_termio_bottom_dirty $JXL_DEFINE -I"$TERMGFX" $XPDEV_INC 
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_termgfx_termio_bottom_dirty
 
+# Palette fade: a palette change is patched rather than repainted, and the
+# moved registers ride the first box on a SyncTERM. Own binary for the same
+# file-static-session reason as the bottom-strand test above.
+cc -o /tmp/test_termgfx_termio_palfade $JXL_DEFINE -I"$TERMGFX" $XPDEV_INC \
+   "$HERE/test_termgfx_termio_palfade.c" "$TERMGFX/termgfx_termio.c" \
+   "$LIBS/termgfx/libtermgfx.a" "$LIBS/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_termgfx_termio_palfade
+
+# F4 tier cycle. Needs the JXL define to have two tiers to cycle BETWEEN, so it
+# self-skips on a build without libjxl rather than asserting something that
+# cannot hold there.
+if [ -n "$JXL_DEFINE" ]; then
+cc -o /tmp/test_termgfx_termio_tiercycle $JXL_DEFINE -I"$TERMGFX" $XPDEV_INC \
+   "$HERE/test_termgfx_termio_tiercycle.c" "$TERMGFX/termgfx_termio.c" \
+   "$LIBS/termgfx/libtermgfx.a" "$LIBS/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_termgfx_termio_tiercycle
+else
+echo "TERMGFX_TERMIO_TIERCYCLE skipped (no libjxl: only one tier to cycle)"
+fi
+
 # The audio probe needs a fresh termgfx_termio session (file-static tier/settle
 # state, no reset), so it's its own binary rather than another case above.
 cc -o /tmp/test_termgfx_termio_audio $JXL_DEFINE -I"$TERMGFX" $XPDEV_INC \

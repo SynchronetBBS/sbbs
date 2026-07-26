@@ -90,6 +90,7 @@
                                     * that wins a bare quoted #include here (their dirs
                                     * are searched before termgfx's) */
 #include "sixel.h"
+#include "dirty.h"      /* termgfx: the shared grid-domain dirty diff */
 #include "jxl.h"
 #include "apc.h"
 #include "caps.h"
@@ -2661,113 +2662,71 @@ static int door_dirtyrect_enabled(void)
 	return cached;
 }
 
-static uint8_t dr_grid[DR_TY][DR_TX];
-
 struct dr_box {
 	int x1, y1, x2, y2;   /* tile coords, inclusive */
 };
 
-/* Coalesce dr_grid into a small set of tight bounding boxes: label 4-connected
- * dirty-tile components, then merge boxes that overlap or lie within
- * DR_MERGE_GAP tiles. This keeps spatially-separated activity (map vs sidebar,
- * scattered units) as distinct boxes instead of one wide row-band, while still
- * fusing nearby tiles. Returns the box count (1..DR_MAX_BOXES) or -1 if too
- * fragmented (caller should send a full frame). */
-static int dr_coalesce(struct dr_box *box)
-{
-	static uint8_t   vis[DR_TY][DR_TX];
-	static int       st[DR_TY * DR_TX];
-	static const int ox[4] = { -1, 1, 0, 0 };
-	static const int oy[4] = { 0, 0, -1, 1 };
-	int              nb = 0, tx, ty, i, j, merged;
+/* Palette entries whose COLOR moved since the last sent frame; unused when
+ * g_pal_stale_any is 0. A tile drawn with one of these has changed on screen
+ * even if its indices did not -- sixel color registers are shared with what is
+ * already drawn, and the JXL backend bakes the palette into each frame's RGB
+ * pixels. Without this a palette change has to repaint the whole frame. */
+static uint8_t g_pal_stale[256];
+static int     g_pal_stale_any;
 
-	memset(vis, 0, sizeof vis);
-	for (ty = 0; ty < DR_TY; ty++) {
-		for (tx = 0; tx < DR_TX; tx++) {
-			int sp, x1, y1, x2, y2;
-			if (!dr_grid[ty][tx] || vis[ty][tx])
-				continue;
-			if (nb >= DR_MAX_COMPONENTS)
-				return -1;
-			sp          = 0;
-			st[sp++]    = ty * DR_TX + tx;
-			vis[ty][tx] = 1;
-			x1          = x2 = tx;
-			y1          = y2 = ty;
-			while (sp) {
-				int idx = st[--sp], cx = idx % DR_TX, cy = idx / DR_TX, k;
-				if (cx < x1)
-					x1 = cx;
-				if (cx > x2)
-					x2 = cx;
-				if (cy < y1)
-					y1 = cy;
-				if (cy > y2)
-					y2 = cy;
-				for (k = 0; k < 4; k++) {
-					int nx = cx + ox[k], ny = cy + oy[k];
-					if (nx >= 0 && nx < DR_TX && ny >= 0 && ny < DR_TY
-					    && dr_grid[ny][nx] && !vis[ny][nx]) {
-						vis[ny][nx] = 1;
-						st[sp++]    = ny * DR_TX + nx;
-					}
-				}
-			}
-			box[nb].x1 = x1; box[nb].y1 = y1;
-			box[nb].x2 = x2; box[nb].y2 = y2;
-			nb++;
-		}
-	}
-	merged = 1;
-	while (merged) {
-		merged = 0;
-		for (i = 0; i < nb; i++)
-			for (j = i + 1; j < nb; j++)
-				if (box[i].x1 <= box[j].x2 + DR_MERGE_GAP && box[j].x1 <= box[i].x2 + DR_MERGE_GAP
-				    && box[i].y1 <= box[j].y2 + DR_MERGE_GAP && box[j].y1 <= box[i].y2 + DR_MERGE_GAP) {
-					if (box[j].x1 < box[i].x1)
-						box[i].x1 = box[j].x1;
-					if (box[j].y1 < box[i].y1)
-						box[i].y1 = box[j].y1;
-					if (box[j].x2 > box[i].x2)
-						box[i].x2 = box[j].x2;
-					if (box[j].y2 > box[i].y2)
-						box[i].y2 = box[j].y2;
-					box[j] = box[nb - 1];
-					nb--;
-					j--;
-					merged = 1;
-				}
-	}
-	return (nb > DR_MAX_BOXES) ? -1 : nb;
+/* Does the pending palette change reach anything the client is DISPLAYING?
+ * Scans the last sent frame for an index whose colour moved; asked only when
+ * the palette moved and the incoming frame is otherwise identical, so it costs
+ * a scan exactly where it can save a repaint, and stops at the first hit. */
+static int dr_pal_change_visible(const uint8_t *last)
+{
+	size_t i;
+
+	if (!g_pal_stale_any)
+		return 0;
+	for (i = 0; i < DOOR_FB_BYTES; i++)
+		if (g_pal_stale[last[i]])
+			return 1;
+	return 0;
 }
 
-/* Diff fb vs the previous frame at 16x16-tile granularity into dr_grid, then
- * coalesce. Returns the box count (1..DR_MAX_BOXES), or 0 to tell the caller to
- * send a full frame (nothing changed / >= DR_FALLBACK_PCT changed / too
- * fragmented). Shared by the JXL and sixel dirty-rect backends. */
+/* The grid-domain diff -- marking dirty tiles, labelling 4-connected
+ * components, merging boxes that nearly touch, and the budgets that decide
+ * patching has stopped paying -- lives in ../../termgfx/dirty.h, shared with
+ * syncretro and termgfx_termio. This door had the third copy of it; the three
+ * agreed on shape and on every constant that mattered, and disagreed only
+ * about what a tile is, which is exactly what that header parameterises.
+ *
+ * What stays here is what the doors genuinely do differently: turning tile
+ * boxes into something to draw, which for this file means two different
+ * backends (JXL blobs pixel-exact, sixel snapped to character cells). */
 static int dr_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct dr_box *box)
 {
-	const int tiles = DR_TX * DR_TY;
-	int       tx, ty, r, nb, dirty = 0;
+	termgfx_dirty_cfg_t cfg;
+	termgfx_dirty_box_t out[DR_MAX_COMPONENTS];
+	int                 nb, i;
 
-	for (ty = 0; ty < DR_TY; ty++) {
-		for (tx = 0; tx < DR_TX; tx++) {
-			int ch = 0;
-			for (r = 0; r < DR_TILE && !ch; r++) {
-				size_t off = (size_t)(ty * DR_TILE + r) * DOOR_FB_WIDTH + (size_t)tx * DR_TILE;
-				if (memcmp(fb + off, last + off, DR_TILE) != 0)
-					ch = 1;
-			}
-			dr_grid[ty][tx] = (uint8_t)ch;
-			if (ch)
-				dirty++;
-		}
+	memset(&cfg, 0, sizeof cfg);
+	cfg.cols           = DR_TX;
+	cfg.rows           = DR_TY;
+	cfg.cell_w         = DR_TILE;
+	cfg.cell_h         = DR_TILE;
+	cfg.plane_w        = DOOR_FB_WIDTH;
+	cfg.plane_h        = DOOR_FB_HEIGHT;
+	cfg.merge_gap      = DR_MERGE_GAP;
+	cfg.full_pct       = DR_FALLBACK_PCT;
+	cfg.max_components = DR_MAX_COMPONENTS;
+	cfg.max_boxes      = DR_MAX_BOXES;
+
+	nb = termgfx_dirty_find(&cfg, fb, last,
+	                        g_pal_stale_any ? g_pal_stale : NULL, out);
+	for (i = 0; i < nb; i++) {
+		box[i].x1 = out[i].x1;
+		box[i].y1 = out[i].y1;
+		box[i].x2 = out[i].x2;
+		box[i].y2 = out[i].y2;
 	}
-	if (dirty == 0 || dirty * 100 / tiles >= DR_FALLBACK_PCT)
-		return 0;                                   /* nothing / big change -> full frame */
-	nb = dr_coalesce(box);
-	return (nb <= 0) ? 0 : nb;                          /* too fragmented -> full frame */
+	return nb;
 }
 
 /* Pack a display sub-rect [rx,ry,rw,rh] (in ew x eh scaled-image space) into
@@ -2810,6 +2769,7 @@ static size_t door_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 	/* SyncTERM: registers persist, box carries no palette. Others self-
 	 * describe, subset to the box's used colors. */
 	int           emit_pal = g_is_syncterm ? SIXEL_PAL_NONE : SIXEL_PAL_USED;
+	int           sent_pal = 0;   /* SyncTERM: has the palette delta gone out? */
 	size_t        total = 0;
 
 	door_cell_size(&cw, &ch);
@@ -2866,7 +2826,20 @@ static size_t door_dirty_sixel_present(const uint8_t *fb, const uint8_t *last,
 		idx = dr_pack_idx_rect(fb, ew, ehc, rx, ry, rw, rh6);
 		if (idx == NULL)
 			return 0;                               /* fall back to a full frame */
-		sn = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, rw, rh6, pal8, emit_pal);
+		/* A moved palette has to reach a SyncTERM somehow: its boxes carry no
+		 * registers at all, and re-sending 256 would dwarf them, so the FIRST
+		 * box of such a frame carries exactly the entries that moved. The tiles
+		 * those recolor are inside these boxes by construction -- that is what
+		 * the stale mask handed to dr_diff_coalesce() put there. Every other
+		 * terminal resets registers per image, so its used-colour subset
+		 * already covers this. */
+		if (g_is_syncterm && g_pal_stale_any && !sent_pal) {
+			sn = sixel_encode_delta(&g_sixel_buf, &g_sixel_cap, idx, rw, rh6,
+			                        pal8, g_pal_stale);
+			sent_pal = 1;
+		} else {
+			sn = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, rw, rh6, pal8, emit_pal);
+		}
 		if (sn == 0)
 			return 0;
 		door_cursor_save_to(irow + cy, icol + cx);
@@ -3111,6 +3084,22 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 	geom_changed = (g_last_canvas_w != vw || g_last_canvas_h != vh);
 	pal_dirty    = !g_have_last || memcmp(g_last_pal, pal8, 768) != 0;
 
+	/* WHICH entries moved, not just whether any did: that is what lets the
+	 * dirty pass find the tiles a palette change actually altered instead of
+	 * repainting because SOMETHING in the palette moved. No previous palette to
+	 * diff against means every tile is new anyway, so leave the mask clear. */
+	g_pal_stale_any = 0;
+	memset(g_pal_stale, 0, sizeof g_pal_stale);
+	if (pal_dirty && g_have_last) {
+		int c;
+
+		for (c = 0; c < 256; c++)
+			if (memcmp(g_last_pal + c * 3, pal8 + c * 3, 3) != 0) {
+				g_pal_stale[c] = 1;
+				g_pal_stale_any = 1;
+			}
+	}
+
 	/* Whole-frame de-dupe: fb + palette + tier + fit-mode + canvas geometry
 	 * all unchanged since the last SENT frame -> nothing new to draw. Canvas
 	 * geometry (vw/vh, which size/center every emitted frame) is included
@@ -3126,7 +3115,8 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 	 * the strip flicker under sixel/JXL); instead, on the deduped path it
 	 * refreshes JUST the overlay text below, leaving the image untouched. */
 	if (!fit_changed && !geom_changed && g_have_last && g_last_tier == tier
-	    && !pal_dirty && !door_node_overlay_active() && !g_repaint_req
+	    && (!pal_dirty || !dr_pal_change_visible(g_last_fb))
+	    && !door_node_overlay_active() && !g_repaint_req
 	    && memcmp(g_last_fb, fb, DOOR_FB_BYTES) == 0) {
 		door_fps_tick(0);   /* keep the window ticking so a still scene reads ~0 */
 		if (g_stats_overlay) {
@@ -3200,7 +3190,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 			 * holds the previous sixel frame to composite over -- same tier, no
 			 * palette/fit/geometry change. Otherwise a full frame. */
 			if (door_dirtyrect_enabled() && g_have_last && !full_repaint
-			    && g_last_tier == SA_SIXEL && !pal_dirty && !fit_changed && !geom_changed)
+			    && g_last_tier == SA_SIXEL && !fit_changed && !geom_changed)
 				dn = door_dirty_sixel_present(fb, g_last_fb, pal8, ew, eh, icol, irow);
 
 			if (dn != 0) {
@@ -3221,7 +3211,7 @@ void door_io_present(const uint8_t *fb, const uint8_t *pal768)
 			 * palette/fit/geometry change, blob verbs available. Otherwise a
 			 * full frame. */
 			if (door_dirtyrect_enabled() && g_have_last && g_img_blob_ok && !full_repaint
-			    && g_last_tier == SA_JXL && !pal_dirty && !fit_changed && !geom_changed)
+			    && g_last_tier == SA_JXL && !fit_changed && !geom_changed)
 				dn = door_dirty_jxl_present(fb, g_last_fb, pal8, ew, eh, dx, dy);
 
 			if (dn != 0) {

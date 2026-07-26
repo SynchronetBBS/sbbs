@@ -1575,10 +1575,6 @@
 						width = '120'
 						height = '12'
 				/>
-				<widget name = 'ReturnToLauncher'
-						width = '120'
-						height = '12'
-				/>
 				<widget name = 'Quit'
 						width = '120'
 						height = '12'

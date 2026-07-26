@@ -85,12 +85,21 @@ foreach(case_n RANGE 2)
     add_test(NAME gfxgate${case_n} COMMAND test_gfxgate${case_n})
 endforeach()
 
+# The sixel encoder's palette modes. Compiles sixel.c and nothing else, so
+# unlike its neighbours below it needs no door build and runs under CTest.
+add_executable(test_sixel_palette
+    ${CMAKE_CURRENT_SOURCE_DIR}/../sixel.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_sixel_palette_used.c)
+target_include_directories(test_sixel_palette PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+set_target_properties(test_sixel_palette PROPERTIES C_STANDARD 11)
+target_compile_options(test_sixel_palette PRIVATE -UNDEBUG)
+add_test(NAME sixel_palette COMMAND test_sixel_palette)
+
 # The rest of this directory's tests -- termgfx_termio (23 binaries), the
-# quantizer, present_rgbx, the sixel palette test and the repro_fade harness --
-# are driven by the unit_termgfx_*.sh scripts here rather than by CTest: they
-# are POSIX-only (socketpair(2) terminals, __wrap_fopen link tricks) and they
-# link against a door's already-built stage-1 libraries. Run them after any
-# door's build.sh:
+# quantizer, present_rgbx and the repro_fade harness -- are driven by the
+# unit_termgfx_*.sh scripts here rather than by CTest: they are POSIX-only
+# (socketpair(2) terminals, __wrap_fopen link tricks) and they link against a
+# door's already-built stage-1 libraries. Run them after any door's build.sh:
 #
 #     ./unit_termgfx_termio.sh        # or TERMGFX_LIBS=<door>/build/libs ...
 #     ./unit_termgfx_quant.sh

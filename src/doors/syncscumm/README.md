@@ -160,9 +160,19 @@ optional tuning. The door's own CLI contract:
 | `-c <file>` | A per-user ScummVM config (`scummvm.ini`), so two nodes never race one config; the door creates its parent dir if missing. |
 | Any other ScummVM option (`--subtitles`, `--music-volume=`, `--no-fullscreen`, …) | Passed straight through to `scummvm_main()`. See <https://docs.scummvm.org/en/latest/advanced_topics/command_line.html>. |
 
-Sysop-facing door-wide settings (subtitles policy, sixel ceiling, audio tuning)
-live in an optional `syncscumm.ini` the door reads from its startup dir — see
-`syncscumm.example.ini`.
+Sysop-facing door-wide settings (subtitles policy, sixel ceiling, audio tuning,
+picture shape) live in an optional `syncscumm.ini` the door reads from its
+startup dir — see `syncscumm.example.ini`.
+
+One of those is worth knowing about even if you change nothing else:
+**`aspect`** picks the shape the picture is drawn at. The default, `square`,
+draws the game's 320×200 frame with square pixels. `4:3` draws it the way a
+period monitor did — these are VGA mode 13h games, whose art was made on a
+320×200 grid for a 4:3 screen, so its pixels were never square. Which one looks
+right is a matter of taste and of the individual game (*Flight of the Amazon
+Queen*, compared side by side, looked better square), so try both on whatever
+you are hosting. It has no effect on SyncTERM, which applies a shape of its own
+— a SyncTERM player who wants a different one changes it in SyncTERM.
 
 ### Environment variables (optional)
 

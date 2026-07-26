@@ -108,13 +108,13 @@ int main(void)
 	reset();
 	blit(cur, 0, 0, W, H, 3);
 	blit(prev, 0, 0, W, H, 3);
-	CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, 0, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, 0, NULL, r) == 0);
 
 	/* --- one small sprite moves: one tight rectangle ----------------------- */
 	reset();
 	blit(prev, 40, 32, 8, 8, 1);
 	blit(cur,  48, 32, 8, 8, 1);
-	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, r);
+	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, NULL, r);
 	CHECK(n >= 1);
 	CHECK(uncovered(r, n) == 0);
 	check_aligned(r, n);
@@ -128,7 +128,7 @@ int main(void)
 	reset();
 	blit(prev, 15, 20, 2, 2, 1);
 	blit(cur,  17, 20, 2, 2, 1);
-	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, r);
+	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, NULL, r);
 	CHECK(n == 1);
 	CHECK(uncovered(r, n) == 0);
 
@@ -144,7 +144,7 @@ int main(void)
 	blit(cur,  4, H - 12, 6, 6, 2);
 	blit(prev, W - 12, H - 12, 6, 6, 1);
 	blit(cur,  W - 12, H - 12, 6, 6, 2);
-	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, r);
+	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, NULL, r);
 	CHECK(n == 4);
 	CHECK(uncovered(r, n) == 0);
 	check_aligned(r, n);
@@ -153,7 +153,7 @@ int main(void)
 	/* --- a full-screen change asks for a full frame ------------------------ */
 	reset();
 	blit(cur, 0, 0, W, H, 7);
-	CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, 0, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, 0, NULL, r) == 0);
 
 	/* --- scattered single pixels everywhere ask for a full frame -----------
 	 * Too fragmented to describe cheaply: the answer must be 0 (repaint), not
@@ -166,7 +166,7 @@ int main(void)
 			for (x = 4; x < W; x += 12)
 				cur[y * W + x] = 9;
 	}
-	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, r);
+	n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, NULL, r);
 	CHECK(n == 0 || n <= SR_DIRTY_MAX_RECTS);
 	if (n > 0)
 		CHECK(uncovered(r, n) == 0);
@@ -179,7 +179,7 @@ int main(void)
 		const int ocw = 7, och = 13;   /* neither divides W or H */
 		int       x, y, i, miss = 0;
 
-		n = sr_dirty_find(cur, prev, W, H, ocw, och, 0, r);
+		n = sr_dirty_find(cur, prev, W, H, ocw, och, 0, NULL, r);
 		CHECK(n >= 1);
 		for (y = 0; y < H; y++)
 			for (x = 0; x < W; x++) {
@@ -209,7 +209,7 @@ int main(void)
 
 		/* dirty a small patch near the top so its natural height < 78 */
 		memset(cur + (size_t)10 * w + 4, 0xAB, 20);
-		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, NULL, r);
 		CHECK(n > 0);
 		for (i = 0; i < n; i++)
 			CHECK(r[i].h % 78 == 0);           /* whole LCM(ch,6) bands */
@@ -239,10 +239,10 @@ int main(void)
 		for (y = 0; y < h; y++)
 			cur[y * w + 0] = 0xAB;   /* one column, dirty top-to-bottom */
 
-		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, NULL, r);
 		CHECK(n == 0);   /* stranded -> full frame, not a partial rect */
 
-		n = sr_dirty_find(cur, prev, w, h, cw, ch, 0, r);
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 0, NULL, r);
 		CHECK(n == 1);   /* same geometry, band_align=0: a normal rect */
 		CHECK(r[0].x == 0 && r[0].y == 0 && r[0].w == cw && r[0].h == h);
 
@@ -268,7 +268,7 @@ int main(void)
 		for (y = 65; y <= 90; y++)
 			cur[y * w + 0] = 0xAB;   /* one narrow column, rows 65..90 only */
 
-		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, NULL, r);
 		CHECK(n >= 1);                                  /* patches, not stranded */
 		if (n >= 1) {
 			CHECK(r[0].h % 78 == 0);                    /* vstep-aligned height */
@@ -307,7 +307,7 @@ int main(void)
 			for (x = 4; x < 8; x++)
 				cur[y * w + x] = 0xAB;   /* inside the 793..799 remainder */
 
-		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, NULL, r);
 		if (n == 0) {
 			CHECK(n == 0);   /* full-frame fallback: never loses rows */
 		} else {
@@ -339,7 +339,7 @@ int main(void)
 			for (x = 8; x < 16; x++)
 				cur[y * w + x] = 5;
 
-		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, r);
+		n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, NULL, r);
 		CHECK(n >= 1);
 		for (y = 8; y < 16 && n >= 1; y++)
 			for (x = 8; x < 16; x++) {
@@ -359,13 +359,64 @@ int main(void)
 		free(cur); free(prev);
 	}
 
+	/* --- a REDEFINED colour register makes its cells dirty -----------------
+	 *
+	 * On a shared-register terminal, changing what register k means recolours
+	 * every pixel already on screen drawn with k. Those cells have to be
+	 * repainted even though not one of their pixels changed -- otherwise they
+	 * keep the new colour under the old picture, permanently. */
+	{
+		uint8_t stale[256];
+
+		memset(stale, 0, sizeof stale);
+		stale[5] = 1;
+
+		/* Identical frames, one cell painted with the register that moved. */
+		reset();
+		blit(cur,  0, 0, W, H, 3);
+		blit(prev, 0, 0, W, H, 3);
+		blit(cur,  24, 32, 4, 4, 5);
+		blit(prev, 24, 32, 4, 4, 5);
+		CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, 0, NULL, r) == 0);   /* no pixel moved */
+
+		n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, stale, r);
+		CHECK(n == 1);
+		if (n == 1) {
+			CHECK(24 >= r[0].x && 27 < r[0].x + r[0].w);
+			CHECK(32 >= r[0].y && 35 < r[0].y + r[0].h);
+		}
+		check_aligned(r, n);
+
+		/* A register nothing on screen uses costs nothing. */
+		memset(stale, 0, sizeof stale);
+		stale[9] = 1;
+		CHECK(sr_dirty_find(cur, prev, W, H, CW, CH, 0, stale, r) == 0);
+
+		/* Stale cells and moved pixels are the same dirt: both get covered. */
+		memset(stale, 0, sizeof stale);
+		stale[5] = 1;
+		blit(cur, 100, 8, 4, 4, 7);
+		n = sr_dirty_find(cur, prev, W, H, CW, CH, 0, stale, r);
+		CHECK(n >= 1);
+		CHECK(uncovered(r, n) == 0);
+		{   /* and the stale cell is in there too, though it did not change */
+			int i, found = 0;
+
+			for (i = 0; i < n; i++)
+				if (24 >= r[i].x && 27 < r[i].x + r[i].w
+				    && 32 >= r[i].y && 35 < r[i].y + r[i].h)
+					found = 1;
+			CHECK(found);
+		}
+	}
+
 	/* --- degenerate inputs are refusals, not crashes ----------------------- */
-	CHECK(sr_dirty_find(NULL, prev, W, H, CW, CH, 0, r) == 0);
-	CHECK(sr_dirty_find(cur, NULL, W, H, CW, CH, 0, r) == 0);
-	CHECK(sr_dirty_find(cur, prev, 0, H, CW, CH, 0, r) == 0);
-	CHECK(sr_dirty_find(cur, prev, W, H, 0, CH, 0, r) == 0);
-	CHECK(sr_dirty_find(cur, prev, W, H, CW, 0, 0, r) == 0);
-	CHECK(sr_dirty_find(cur, prev, 100000, 100000, 1, 1, 0, r) == 0);  /* over the grid */
+	CHECK(sr_dirty_find(NULL, prev, W, H, CW, CH, 0, NULL, r) == 0);
+	CHECK(sr_dirty_find(cur, NULL, W, H, CW, CH, 0, NULL, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, 0, H, CW, CH, 0, NULL, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, W, H, 0, CH, 0, NULL, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, W, H, CW, 0, 0, NULL, r) == 0);
+	CHECK(sr_dirty_find(cur, prev, 100000, 100000, 1, 1, 0, NULL, r) == 0);  /* over the grid */
 
 	printf(failures ? "\n%d FAILURE(S)\n" : "\nall dirty-rect tests passed\n",
 	       failures);

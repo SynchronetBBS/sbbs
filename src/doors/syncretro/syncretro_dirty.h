@@ -58,9 +58,18 @@ typedef struct {
  * (foot) has no partial trailing band to backfill as a black strip, and return
  * 0 (caller repaints a full frame) if a bottom-clamped rect cannot cover its
  * own changed rows. Pass 0 for terminals that don't need it (SyncTERM), which
- * keeps the cell-only geometry unchanged. */
+ * keeps the cell-only geometry unchanged.
+ *
+ * stale: 256 bytes, nonzero for each palette index whose COLOR is about to be
+ * redefined, or NULL for none. Sixel color registers are shared with what is
+ * already on screen, so redefining index k recolors every pixel drawn with it
+ * -- a cell of `prev` using a stale index is therefore dirty even when not one
+ * of its pixels changed. Passing this is what lets a caller patch across a
+ * palette change instead of repainting the whole frame; a caller that repaints
+ * on any palette change passes NULL. */
 int sr_dirty_find(const uint8_t *cur, const uint8_t *prev, int w, int h,
-                  int cw, int ch, int band_align, sr_dirty_rect_t *out);
+                  int cw, int ch, int band_align, const uint8_t *stale,
+                  sr_dirty_rect_t *out);
 
 /* Percentage of the frame's cells that must change before sr_dirty_find() gives
  * up and asks for a full frame. Exposed for the test. */

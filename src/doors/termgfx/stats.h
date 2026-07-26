@@ -84,6 +84,20 @@ int termgfx_stats_kbd(char *buf, size_t bufsz, int active, int kitty, int native
 /* " x2" / " x2x3" for terminal-side upscale (APC ZX/ZY), "" at 1:1. */
 int termgfx_stats_zoom(char *buf, size_t bufsz, int zoom_x, int zoom_y);
 
+/* The dirty-rect share: " dr 84%", " dr n/a" when the client has no cell grid
+ * to place a patch in, " dr off" where the door lets a sysop disable patching,
+ * and "" before the first window has closed.
+ *
+ * Here rather than in each door for the reason this file exists: the states
+ * have to read the SAME everywhere or the field is worse than useless, and
+ * they had already drifted -- one door printed "dr84%" against another's
+ * "dr 84%" for the same quantity. Pass state < 0 for "no window yet", and
+ * TERMGFX_STATS_DR_NA / _OFF for the two non-numeric ones. */
+#define TERMGFX_STATS_DR_NONE (-1)      /* no window has closed yet */
+#define TERMGFX_STATS_DR_NA   (-2)      /* no cell grid: cannot patch at all */
+#define TERMGFX_STATS_DR_OFF  (-3)      /* the sysop turned patching off */
+int termgfx_stats_dr(char *buf, size_t bufsz, int pct_or_state);
+
 #ifdef __cplusplus
 }
 #endif

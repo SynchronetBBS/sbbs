@@ -25,6 +25,8 @@
 #include "caps.h"
 #include "pace.h"
 #include "idle.h"
+#include "stats.h"      /* the shared Ctrl-S field formatting */
+#include "dirty.h"      /* the shared grid-domain diff */
 #include "door32.h"
 #include "geometry.h"
 #include "gfxgate.h"
@@ -283,6 +285,25 @@ static int g_gfx_max_w, g_gfx_max_h;
  * override (the default), else the pixel ceiling applied to BOTH axes,
  * ahead of every other source above. */
 static int g_sixel_max_override;
+
+/* Sysop "aspect" ini key: the SHAPE the 320x200 source is drawn at, as a
+ * width/height ratio. 0 = unset, meaning square pixels (320/200 = 1.6), which
+ * is what this module has always done and stays the default.
+ *
+ * The alternative is 4:3 (1.333). VGA mode-13h art was drawn for a 4:3 CRT, so
+ * its pixels were never square -- that is what ScummVM's own "aspect ratio
+ * correction" undoes. Whether a given title looks RIGHT that way is a
+ * judgement, not a fact: Flight of the Amazon Queen was compared side by side
+ * and looked better square, and no one has checked the rest. Hence a knob with
+ * the old behaviour as its default, rather than a silent change.
+ *
+ * Only applied to terminals that are NOT SyncTERM. SyncTERM does this itself,
+ * per video mode (conio/vidmodes.c aspect_width/aspect_height, and the
+ * CustomAspectWidth/Height settings), and the door has no way to ask which way
+ * it is set -- so correcting here too would double-correct. A SyncTERM without
+ * JXL still lands on the sixel tier, which is why the gate is the terminal's
+ * identity and not the tier. */
+static double g_aspect;
 /* Set once the DCS XTVERSION reply (ESC[>0q -> DCS >|<name>(<ver>) ST) has
  * been parsed and its payload starts with "xterm" (case-insensitive; parsed
  * in parse_bytes()'s P_APC_ESC handling, below). A terminal that stays
@@ -397,6 +418,7 @@ static FILE *g_trace;
 static FILE *g_tee;
 static void  termgfx_trace_in(const uint8_t *buf, int n);   /* defined past pacing globals */
 static void  termgfx_stats_draw(void);                      /* defined past pacing globals */
+static void  termgfx_invalidate_last(void);                 /* defined past the frame cache */
 static void  termgfx_idle_draw(void);                       /* idle countdown; drawn atop the frame */
 static void  idle_poll(void);                               /* idle clock; driven by the pump */
 static void  deadline_poll(void);                           /* BBS session limit; likewise */
@@ -1404,12 +1426,21 @@ static void termgfx_toggle_stats(void)
 		termgfx_stats_draw();
 		termgfx_termio_flush();
 	} else {
-		/* Erase the bar we last drew; it sits on the reserved bottom row,
-		 * so clearing the line is enough. */
 		char e[32];
 		int  en = snprintf(e, sizeof e, "\x1b[%d;1H\x1b[0m\x1b[K\x1b[?25l",
 		                   termgfx_bottom_row());
+
 		out_put(e, (size_t)en);
+		/* Erasing the row is only half of it. The bottom row is RESERVED for
+		 * the bar on the sixel tier (see the fit in present()), but the JXL
+		 * tier reserves nothing -- there the bar is drawn straight over the
+		 * picture, so erasing it leaves a black band where game pixels were.
+		 * Nothing would repaint it for a long time either: an unchanged frame
+		 * is deduped, and the dirty path only patches cells the GAME changed,
+		 * which those are not. So force the next present() to be a whole
+		 * frame. Costs one repaint per toggle; on the sixel tier the row is
+		 * outside the image and simply stays blank, which is correct there. */
+		termgfx_invalidate_last();
 		termgfx_termio_flush();
 	}
 }
@@ -1528,6 +1559,25 @@ static void termgfx_read_ini(void)
 	if (ini == NULL)
 		return;
 	g_sixel_max_override = iniGetInteger(ini, ROOT_SECTION, "sixel_max", 0);
+	/* "aspect": square (default) | 4:3 | a decimal width/height ratio. */
+	{
+		char buf[32];
+
+		iniGetString(ini, ROOT_SECTION, "aspect", "", buf);
+		if (buf[0] != '\0') {
+			if (stricmp(buf, "square") == 0) {
+				g_aspect = 0.0;
+			} else if (strchr(buf, ':') != NULL) {
+				double w = atof(buf), h = atof(strchr(buf, ':') + 1);
+
+				g_aspect = (w > 0.0 && h > 0.0) ? w / h : 0.0;
+			} else {
+				double v = atof(buf);
+
+				g_aspect = (v > 0.0) ? v : 0.0;
+			}
+		}
+	}
 	/* [idle] -- iniGetDuration() so "15m"/"900"/"1h" all parse, and so a bare
 	 * number means SECONDS here exactly as it does in the sibling doors and in
 	 * the JS lobby that may pass -i. Read at init, well before the clock is
@@ -1899,6 +1949,26 @@ int termgfx_termio_have_sixel(void)     { return g_have_sixel; }
 int termgfx_termio_is_syncterm(void)    { return g_is_syncterm; }
 int termgfx_termio_jxl_supported(void)  { return g_jxl; }
 int termgfx_termio_stats_visible(void)  { return g_stats; }
+
+/* Raw bytes into the same staged stream the frames go through, so a door can
+ * paint its own text over the picture (a help card, a notice) without a second
+ * writer racing the frame path -- and so out_put()'s stage-full guard and the
+ * wire tee see them like everything else.
+ *
+ * A door that draws over the image is expected to stop presenting frames while
+ * its overlay is up, then call termgfx_termio_invalidate() when it comes down:
+ * nothing else repaints what the overlay covered, because an unchanged frame
+ * de-dupes and the dirty path only repaints what the GAME changed. */
+void termgfx_termio_write(const char *s, size_t n)
+{
+	if (s != NULL && n > 0)
+		out_put(s, n);
+}
+
+void termgfx_termio_invalidate(void)
+{
+	termgfx_invalidate_last();
+}
 unsigned termgfx_termio_frames_dropped(void) { return g_dropped_frames; }
 
 unsigned termgfx_termio_audio_dropped(void) { return g_audio_dropped; }
@@ -2562,101 +2632,58 @@ void termgfx_termio_audio_stop(void)
  * dr_diff_coalesce(), TERMGFX_ constants). The bottom tile row is only 8px tall
  * (200 isn't a multiple of 16), so the memcmp span per tile row is TERMGFX_TILE
  * except for ty == TERMGFX_TY-1, where it's TERMGFX_FB_H - ty*TERMGFX_TILE. ---------- */
-struct termgfx_box { int x1, y1, x2, y2; };
-static uint8_t termgfx_grid[TERMGFX_TY][TERMGFX_TX];
+/* WHY the last dirty pass declined to patch, for the trace. A file-static
+ * rather than an out-parameter, for the same reason the shared finder keeps
+ * its own: every caller would have to thread it through and none of them acts
+ * on it. The names are worth keeping apart -- "strand" means the GEOMETRY
+ * refused (decided below, in this file), "toobig" means the content genuinely
+ * deserves a repaint, "nothing" means the frame was waste. */
+static const char *g_dirty_why = "-";
 
-static int termgfx_coalesce(struct termgfx_box *box)
+/* Palette entries whose COLOR moved since the last sent frame, indexed by
+ * palette index; unused when g_pal_stale_any is 0. A tile drawn with one of
+ * these has changed on screen even if its indices did not, on BOTH tiers and
+ * for different reasons: JXL bakes the palette into each frame's RGB pixels,
+ * and sixel color registers are shared with what is already drawn. */
+static uint8_t g_pal_stale[256];
+static int     g_pal_stale_any;
+
+/* Does the pending palette change reach anything the client is DISPLAYING?
+ * Defined beside g_last_fb, which it scans. */
+static int termgfx_pal_change_visible(void);
+
+/* The grid-domain diff -- marking, labelling, merging, budgets -- is shared
+ * with syncretro through dirty.h; see that header for why the split falls
+ * where it does. What stays in this file is the half the two doors genuinely
+ * disagree about: mapping cell boxes onto the scaled image
+ * (termgfx_box_display_rect, below).
+ *
+ * The bottom tile row is only 8px tall (200 is not a multiple of 16). The
+ * shared finder clamps a partial edge cell against plane_w/plane_h, so that
+ * needs no special case here the way it did when this was open-coded. */
+static int termgfx_diff_coalesce(const uint8_t *fb, const uint8_t *last,
+                                 termgfx_dirty_box_t *box)
 {
-	static uint8_t   vis[TERMGFX_TY][TERMGFX_TX];
-	static int       st[TERMGFX_TY * TERMGFX_TX];
-	static const int ox[4] = { -1, 1, 0, 0 };
-	static const int oy[4] = { 0, 0, -1, 1 };
-	int              nb = 0, tx, ty, i, j, merged;
+	termgfx_dirty_cfg_t cfg;
+	int                 nb;
 
-	memset(vis, 0, sizeof vis);
-	for (ty = 0; ty < TERMGFX_TY; ty++) {
-		for (tx = 0; tx < TERMGFX_TX; tx++) {
-			int sp, x1, y1, x2, y2;
-			if (!termgfx_grid[ty][tx] || vis[ty][tx])
-				continue;
-			if (nb >= TERMGFX_MAX_COMPONENTS)
-				return -1;
-			sp          = 0;
-			st[sp++]    = ty * TERMGFX_TX + tx;
-			vis[ty][tx] = 1;
-			x1          = x2 = tx;
-			y1          = y2 = ty;
-			while (sp) {
-				int idx = st[--sp], cx = idx % TERMGFX_TX, cy = idx / TERMGFX_TX, k;
-				if (cx < x1)
-					x1 = cx;
-				if (cx > x2)
-					x2 = cx;
-				if (cy < y1)
-					y1 = cy;
-				if (cy > y2)
-					y2 = cy;
-				for (k = 0; k < 4; k++) {
-					int nx = cx + ox[k], ny = cy + oy[k];
-					if (nx >= 0 && nx < TERMGFX_TX && ny >= 0 && ny < TERMGFX_TY
-					    && termgfx_grid[ny][nx] && !vis[ny][nx]) {
-						vis[ny][nx] = 1;
-						st[sp++]    = ny * TERMGFX_TX + nx;
-					}
-				}
-			}
-			box[nb].x1 = x1; box[nb].y1 = y1;
-			box[nb].x2 = x2; box[nb].y2 = y2;
-			nb++;
-		}
-	}
-	merged = 1;
-	while (merged) {
-		merged = 0;
-		for (i = 0; i < nb; i++)
-			for (j = i + 1; j < nb; j++)
-				if (box[i].x1 <= box[j].x2 + TERMGFX_MERGE_GAP && box[j].x1 <= box[i].x2 + TERMGFX_MERGE_GAP
-				    && box[i].y1 <= box[j].y2 + TERMGFX_MERGE_GAP && box[j].y1 <= box[i].y2 + TERMGFX_MERGE_GAP) {
-					if (box[j].x1 < box[i].x1)
-						box[i].x1 = box[j].x1;
-					if (box[j].y1 < box[i].y1)
-						box[i].y1 = box[j].y1;
-					if (box[j].x2 > box[i].x2)
-						box[i].x2 = box[j].x2;
-					if (box[j].y2 > box[i].y2)
-						box[i].y2 = box[j].y2;
-					box[j] = box[nb - 1];
-					nb--;
-					j--;
-					merged = 1;
-				}
-	}
-	return (nb > TERMGFX_MAX_BOXES) ? -1 : nb;
-}
+	memset(&cfg, 0, sizeof cfg);
+	cfg.cols           = TERMGFX_TX;
+	cfg.rows           = TERMGFX_TY;
+	cfg.cell_w         = TERMGFX_TILE;
+	cfg.cell_h         = TERMGFX_TILE;
+	cfg.plane_w        = TERMGFX_FB_W;
+	cfg.plane_h        = TERMGFX_FB_H;
+	cfg.merge_gap      = TERMGFX_MERGE_GAP;
+	cfg.full_pct       = TERMGFX_FALLBACK_PCT;
+	cfg.max_components = TERMGFX_MAX_COMPONENTS;
+	cfg.max_boxes      = 0;                      /* no cap past the merge */
 
-static int termgfx_diff_coalesce(const uint8_t *fb, const uint8_t *last, struct termgfx_box *box)
-{
-	const int tiles = TERMGFX_TX * TERMGFX_TY;
-	int       tx, ty, r, nb, dirty = 0;
-
-	for (ty = 0; ty < TERMGFX_TY; ty++) {
-		int rows = (ty == TERMGFX_TY - 1) ? (TERMGFX_FB_H - ty * TERMGFX_TILE) : TERMGFX_TILE;
-		for (tx = 0; tx < TERMGFX_TX; tx++) {
-			int ch = 0;
-			for (r = 0; r < rows && !ch; r++) {
-				size_t off = (size_t)(ty * TERMGFX_TILE + r) * TERMGFX_FB_W + (size_t)tx * TERMGFX_TILE;
-				if (memcmp(fb + off, last + off, TERMGFX_TILE) != 0)
-					ch = 1;
-			}
-			termgfx_grid[ty][tx] = (uint8_t)ch;
-			if (ch)
-				dirty++;
-		}
-	}
-	if (dirty == 0 || dirty * 100 / tiles >= TERMGFX_FALLBACK_PCT)
-		return 0;                                   /* nothing / big change -> full frame */
-	nb = termgfx_coalesce(box);
-	return (nb <= 0) ? 0 : nb;                       /* too fragmented -> full frame */
+	nb = termgfx_dirty_find(&cfg, fb, last,
+	                        g_pal_stale_any ? g_pal_stale : NULL, box);
+	if (nb <= 0)
+		g_dirty_why = termgfx_dirty_reason_name(termgfx_dirty_last_reason());
+	return nb;
 }
 
 /* --- piece 3 (scale half): nearest-neighbor scale/pack helpers
@@ -2791,7 +2818,7 @@ static int termgfx_gcd(int a, int b) { while (b) { int t = a % b; a = b; b = t; 
  * computes geometry -- callers decide what an empty (*rw<=0) or short
  * (*ry+*rh < *ry2, i.e. stranded) result means. *ry2_out is the box's own
  * unclamped bottom row, needed by the stranding test. */
-static void termgfx_box_display_rect(const struct termgfx_box *b, int ew, int ehc,
+static void termgfx_box_display_rect(const termgfx_dirty_box_t *b, int ew, int ehc,
                                  int cw, int ch, int vstep,
                                  int *rx_out, int *ry_out, int *rw_out, int *rh_out,
                                  int *ry2_out)
@@ -2832,8 +2859,20 @@ static void termgfx_box_display_rect(const struct termgfx_box *b, int ew, int eh
 	 * no partial band at the bottom) rather than ship a box that silently
 	 * drops those rows. */
 	rh  = (ry2 - ry + vstep - 1) / vstep * vstep;
-	if (ry + rh > ehc)
-		rh = (ehc - ry) / vstep * vstep;   /* stay vstep-aligned at the frame bottom */
+	/* Too tall for what is left below it: keep the height and take the room
+	 * ABOVE instead. Shrinking rh to fit was the old answer and it is what
+	 * stranded -- against the frame bottom there is often no whole vstep left,
+	 * so rh went to zero and the box could not cover its own changed rows.
+	 * Growing upward always can: ehc is a whole number of vstep (see the trim
+	 * in termgfx_termio_present()), so ehc - rh lands on a cell corner, which
+	 * is the only thing CUP can address. */
+	if (ry + rh > ehc) {
+		ry = ehc - rh;
+		if (ry < 0) {                      /* box taller than the image itself */
+			ry = 0;
+			rh = ehc / vstep * vstep;
+		}
+	}
 	rw  = rx2 - rx;
 
 	*rx_out = rx; *ry_out = ry; *rw_out = rw; *rh_out = rh; *ry2_out = ry2;
@@ -2843,21 +2882,28 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
                                       const uint8_t *pal8, int ew, int eh,
                                       int icol, int irow, int cw, int ch)
 {
-	struct termgfx_box box[TERMGFX_MAX_COMPONENTS];
+	termgfx_dirty_box_t box[TERMGFX_MAX_COMPONENTS];
 	int             ehc, nb, k;
 	int             vstep = ch / termgfx_gcd(ch, 6) * 6;   /* LCM(ch,6): cell & band */
 	/* SyncTERM: registers persist, box carries no palette (NONE). Every other
 	 * terminal resets per image, so the box self-describes its used colors. */
 	int             emit_pal = g_is_syncterm ? SIXEL_PAL_NONE : SIXEL_PAL_USED;
+	int             sent_pal = 0;   /* SyncTERM: has the delta gone out yet? */
 	size_t          total = 0;
 
-	ehc = eh - eh % 6;                           /* the client's actual sixel height */
-	if (ehc < 6)
+	g_dirty_why = "-";
+	/* The whole image: present() already trimmed it to a whole number of vstep
+	 * for this tier, so the cell grid tiles it exactly and no row falls outside
+	 * every box. */
+	ehc = eh;
+	if (ehc < 6) {
+		g_dirty_why = "height";
 		return 0;
+	}
 
 	nb = termgfx_diff_coalesce(fb, last, box);
 	if (nb <= 0)
-		return 0;
+		return 0;                                    /* it named the reason itself */
 
 	/* Stranding pre-pass: a bottom-clamped box that can't cover its own
 	 * changed rows forces a full-frame fallback (see termgfx_box_display_rect()'s
@@ -2875,8 +2921,10 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 		termgfx_box_display_rect(&box[k], ew, ehc, cw, ch, vstep, &rx, &ry, &rw, &rh, &ry2);
 		if (rw <= 0)
 			continue;                               /* empty box: not stranding */
-		if (ry + rh < ry2)
+		if (ry + rh < ry2) {
+			g_dirty_why = "strand";
 			return 0;                               /* fall back to a full frame */
+		}
 	}
 
 	for (k = 0; k < nb; k++) {
@@ -2905,11 +2953,27 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 		 * SyncTERM's sixel decoder, and SyncTERM uses the JXL tier, never this
 		 * sixel-dirty path. */
 		idx = termgfx_pack_idx_rect(fb, ew, ehc, rx, ry, rw, rh);
-		if (idx == NULL)
+		if (idx == NULL) {
+			g_dirty_why = "oom";
 			return 0;                               /* fall back to a full frame */
-		sn = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, rw, rh, pal8, emit_pal);
-		if (sn == 0)
+		}
+		/* A moved palette has to reach a SyncTERM somehow: its boxes carry no
+		 * registers, and all 256 would dwarf them, so the FIRST box of such a
+		 * frame carries exactly the entries that moved. The tiles those recolor
+		 * are inside these boxes by construction -- that is what g_pal_stale
+		 * put there. Every other terminal resets registers per image, so its
+		 * used-color subset already covers this. */
+		if (g_is_syncterm && g_pal_stale_any && !sent_pal) {
+			sn = sixel_encode_delta(&g_sixel_buf, &g_sixel_cap, idx, rw, rh,
+			                        pal8, g_pal_stale);
+			sent_pal = 1;
+		} else {
+			sn = sixel_encode(&g_sixel_buf, &g_sixel_cap, idx, rw, rh, pal8, emit_pal);
+		}
+		if (sn == 0) {
+			g_dirty_why = "encode";
 			return 0;
+		}
 		wn = snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow + cy, icol + cx);
 		out_put(wrap, (size_t)wn);
 		out_put(g_sixel_buf, sn);
@@ -2933,13 +2997,63 @@ static size_t termgfx_dirty_sixel_present(const uint8_t *fb, const uint8_t *last
 #define TERMGFX_TIER_SIXEL 0
 #define TERMGFX_TIER_JXL   1
 
-static int termgfx_tier(void)
+/* -1 = auto (whatever the terminal can do); else the tier F4 pinned.
+ *
+ * Auto is right for a player, but it makes one path untestable: SyncTERM is
+ * the only terminal that reaches JXL, so it is also the only one that never
+ * exercises the SIXEL path -- including the parts written specifically FOR it
+ * (a box carries no palette there, so a palette change rides a delta on the
+ * first one). That code could only ever run on a SyncTERM that had been talked
+ * out of JXL, which nothing could do. F4 is what does it, matching the cycle
+ * the sibling doors already have. */
+static int g_tier_force = -1;
+
+static int termgfx_tier_auto(void)
 {
 #ifdef WITH_JXL
 	if (g_jxl)
 		return TERMGFX_TIER_JXL;
 #endif
 	return TERMGFX_TIER_SIXEL;   /* also the pre-reply default */
+}
+
+static int termgfx_tier(void)
+{
+	if (g_tier_force >= 0)
+		return g_tier_force;
+	return termgfx_tier_auto();
+}
+
+/* F4: step through the tiers this client can actually do. Sixel is always in
+ * the list (every client that gets this far can draw pixels -- there is no text
+ * fallback here, a point-and-click game is meaningless as block glyphs), JXL
+ * only where the terminal offers it. With one tier available F4 is a no-op
+ * rather than a confusing reset.
+ *
+ * Invalidates the frame cache: the client is holding a picture drawn by the
+ * OTHER encoder, and the two do not share the state a dirty patch assumes.
+ *
+ * Exposed for the DOOR to bind rather than grabbed as a hotkey here, because
+ * the key is not termgfx's to take: syncrpg already spends F4 on its
+ * resolution toggle and puts it on its help card. Ctrl-S can be global -- no
+ * door wants it -- but this one has an owner already. */
+void termgfx_termio_tier_cycle(void)
+{
+	int avail[2], n = 0, i, cur = termgfx_tier(), at = 0;
+
+#ifdef WITH_JXL
+	if (g_jxl)
+		avail[n++] = TERMGFX_TIER_JXL;
+#endif
+	avail[n++] = TERMGFX_TIER_SIXEL;
+	if (n < 2)
+		return;                       /* nothing to cycle to */
+	for (i = 0; i < n; i++)
+		if (avail[i] == cur)
+			at = i;
+	g_tier_force = avail[(at + 1) % n];
+	termgfx_invalidate_last();
+	out_puts("\x1b[2J");             /* the other tier's leftovers are not ours */
 }
 
 static const char *termgfx_tier_name(int t)
@@ -3049,18 +3163,13 @@ static size_t termgfx_emit_jxl_rgb(const uint8_t *rgb, int ew, int eh, int dx, i
  * partial total (and forces a full-frame resync next present via
  * g_dropped_frames) so the caller never stacks a full frame on top of partial
  * rects. Caller guarantees
- * g_have_last, an unchanged palette (a pure palette fade can leave the INDEX
- * buffer termgfx_diff_coalesce() diffs completely unchanged while every pixel's
- * displayed color moves -- unlike sixel's separate palette registers, JXL
- * bakes the palette into each frame's RGB pixels, so a fade MUST force a
- * full re-encode, exactly like the sixel path's own pal_dirty gate), and
- * that the client currently holds the previous JXL frame in blob mode
+ * g_have_last and that the client currently holds the previous JXL frame in blob mode
  * (g_img_blob_ok -- a non-blob dirty box would need its own unique cache
  * file per box, which this task doesn't build). */
 static size_t termgfx_dirty_jxl_present(const uint8_t *fb, const uint8_t *last,
                                     const uint8_t *pal8, int ew, int eh, int dx, int dy)
 {
-	struct termgfx_box box[TERMGFX_MAX_COMPONENTS];
+	termgfx_dirty_box_t box[TERMGFX_MAX_COMPONENTS];
 	int             k, nb;
 	size_t          total = 0;
 
@@ -3214,7 +3323,7 @@ static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 	 * runs this call. */
 	fprintf(g_trace, "%u %-13s %-5s %7zu inflight=%d depth=%d dropped=%u"
 	        " canvas=%dx%d%s replied=%d sixel=%d jxl=%d audio=%d/%u/%u/%u"
-	        " abacklog=%zu/%u/%u emit=%dx%d@%d,%d cell=%d rc=%d,%d\n",
+	        " abacklog=%zu/%u/%u emit=%dx%d@%d,%d cell=%d rc=%d,%d dirty=%s\n",
 	        (unsigned)now_ms(), outcome, tier, bytes,
 	        g_inflight, g_auto_depth, (unsigned)g_dropped_frames,
 	        g_canvas_w, g_canvas_h, g_canvas_exact ? "!" : "?",
@@ -3222,7 +3331,7 @@ static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 	        g_audio_tier, ch, ur, dr,
 	        termgfx_termio_audio_backlog(), (unsigned)g_audio_dropped, g_aseg_merges,
 	        g_trace_ew, g_trace_eh, g_trace_dx, g_trace_dy, g_trace_cellh,
-	        g_trace_irow, g_trace_icol);
+	        g_trace_irow, g_trace_icol, g_dirty_why);
 }
 
 /* Dump raw terminal input (<DOOR>_TRACE only): the exact reply bytes the
@@ -3257,6 +3366,25 @@ static int      g_fps, g_fps_frames;
 static uint32_t g_fps_win_ms, g_bps;
 static uint64_t g_tx_bytes_at;
 
+/* dr%: the share of EMITTED frames that were patched rather than repainted,
+ * over the same rolling window as fps/KB-f. A lifetime average is the wrong
+ * readout here -- a session's early frames (before there is a previous frame to
+ * diff against) drag it down forever and a later static screen can never move
+ * it -- which is the same conclusion syncretro reached for its own dr field. */
+static unsigned g_dr_win_dirty, g_dr_win_full;
+static unsigned g_bpf;          /* KiB per emitted frame, straight from the window */
+static int      g_fps_have;     /* a window has closed WITH frames: "-" means only
+                                 * "nothing drawn yet", never "drawing slowly" */
+static int      g_dr_pct = -1;        /* -1 until a window with a frame closes */
+
+static void termgfx_count_dirty(int patched)
+{
+	if (patched)
+		g_dr_win_dirty++;
+	else
+		g_dr_win_full++;
+}
+
 static void termgfx_fps_tick(int emitted)
 {
 	uint32_t fnow = now_ms();
@@ -3275,9 +3403,26 @@ static void termgfx_fps_tick(int emitted)
 		 * which otherwise flashed "-fps -KB/f" constantly. So "-" now means
 		 * only "no frame has been drawn yet" (startup), not "idle right now". */
 		if (g_fps_frames > 0) {
-			g_fps = (int)((uint64_t)g_fps_frames * 1000 / el);
+			unsigned drtot = g_dr_win_dirty + g_dr_win_full;
+
+			/* Rounded, not truncated: a window is ~1s, so a scene drawing one
+			 * frame in it truncated to 0 and the readout below renders 0 as
+			 * "nothing yet" -- a slow but perfectly working scene (an
+			 * adventure sitting on a static room with one banner animating)
+			 * reported itself as dead. */
+			g_fps = (int)(((uint64_t)g_fps_frames * 1000 + el / 2) / el);
 			g_bps = (uint32_t)((g_tx_bytes - g_tx_bytes_at) * 8000 / el);
+			/* Bytes per frame straight from the window, rather than derived
+			 * from bps/fps: two rounded quantities divided by each other lose
+			 * accuracy exactly where the numbers are small, which is the case
+			 * this readout is for. */
+			g_bpf = (unsigned)(((g_tx_bytes - g_tx_bytes_at) / g_fps_frames + 512) / 1024);
+			g_fps_have = 1;
+			if (drtot > 0)
+				g_dr_pct = (int)(g_dr_win_dirty * 100 / drtot);
 		}
+		g_dr_win_dirty = 0;
+		g_dr_win_full  = 0;
 		g_fps_frames  = 0;
 		g_fps_win_ms  = fnow;
 		g_tx_bytes_at = g_tx_bytes;
@@ -3449,6 +3594,7 @@ static void termgfx_idle_draw(void)
 static void termgfx_stats_draw(void)
 {
 	char               buf[160];
+	char               drtxt[16];
 	int                off, brow;
 	unsigned long long bpf;
 
@@ -3475,22 +3621,28 @@ static void termgfx_stats_draw(void)
 	}
 	if (!g_stats)
 		return;
-	bpf = g_fps > 0 ? ((uint64_t)g_bps / 8 / (unsigned)g_fps + 512) / 1024 : 0;
+	bpf = g_bpf;
+	/* The share of frames PATCHED rather than repainted. Formatted by
+	 * termgfx_stats_dr() rather than here, so it reads identically in every
+	 * door -- this field had already drifted apart once. */
+	termgfx_stats_dr(drtxt, sizeof drtxt,
+	                 (g_cell_w <= 0 || g_cell_h <= 0) ? TERMGFX_STATS_DR_NA
+	                 : (g_dr_pct >= 0 ? g_dr_pct : TERMGFX_STATS_DR_NONE));
 	/* No present completed in the last window (e.g. a paused game, or -- before
 	 * the palette-storm fix -- a fade's dark gap): show '-' rather than a
 	 * misleading "0fps 0KB/f". */
 	/* A leading space only when the door set an extra token, so the strip is
 	 * byte-for-byte unchanged for doors that never call set_stats_extra(). */
-	if (g_fps > 0)
+	if (g_fps_have)
 		off = snprintf(buf, sizeof buf,
-		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums%s%s\x1b[K\x1b[0m\x1b[?25l",
+		              "\x1b[%d;1H\x1b[30;46m%s %dfps %lluKB/f d%d %ums%s%s%s\x1b[K\x1b[0m\x1b[?25l",
 		              brow, termgfx_tier_name(termgfx_tier()), g_fps, bpf, g_auto_depth, (unsigned)g_rtt_ms,
-		              g_stats_extra[0] ? " " : "", g_stats_extra);
+		              drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
 	else
 		off = snprintf(buf, sizeof buf,
-		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums%s%s\x1b[K\x1b[0m\x1b[?25l",
+		              "\x1b[%d;1H\x1b[30;46m%s -fps -KB/f d%d %ums%s%s%s\x1b[K\x1b[0m\x1b[?25l",
 		              brow, termgfx_tier_name(termgfx_tier()), g_auto_depth, (unsigned)g_rtt_ms,
-		              g_stats_extra[0] ? " " : "", g_stats_extra);
+		              drtxt, g_stats_extra[0] ? " " : "", g_stats_extra);
 	if (off < 0 || off >= (int)sizeof buf)
 		return;
 	out_put(buf, (size_t)off);
@@ -3788,7 +3940,22 @@ static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, in
 	if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0 && g_canvas_h > cellh)
 		fit_h = g_canvas_h - cellh;   /* keep the image off the last row */
 
-	termgfx_geom_fit(g_canvas_w, fit_h, sw, sh, TERMGFX_SCALE_MAX, ew, eh);
+	/* TRUE ASPECT -- max_stretch_pct 0, matching syncconquer's own fit.
+	 *
+	 * termgfx_geom_fit()'s 8% allowance exists to swallow a thin leftover bar so
+	 * a near-fit fills the canvas, and that is fine where the bar is an accident
+	 * of the canvas. It is not fine here, because the SIXEL tier manufactures
+	 * its own bar: it reserves the bottom text row for the stats/idle strip, so
+	 * a canvas that fitted exactly becomes height-limited, leaves a side bar,
+	 * and the allowance then stretches the picture back out to hide it. At
+	 * SyncTERM's 80x25 that is a 4% vertical squash -- 640x384 where the source
+	 * wants 614x384 -- while the JXL tier, which reserves nothing, fits 640x400
+	 * exactly and stays true. The two tiers disagreeing about the shape of the
+	 * same game is the tell.
+	 *
+	 * Letterboxing 13px a side is the cheaper mistake, and it is what the
+	 * sibling door already chose. */
+	termgfx_geom_fit_ex(g_canvas_w, fit_h, sw, sh, TERMGFX_SCALE_MAX, 0, ew, eh);
 	/* Effective sixel ceiling -- SIXEL tier only (see g_gfx_max_w's doc
 	 * comment, above, for the full precedence rationale). JXL/APC frames
 	 * aren't subject to xterm's declared-raster discard (a different wire
@@ -3827,7 +3994,18 @@ static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, in
 
 static void termgfx_image_rect(int *ew, int *eh, int *dx, int *dy)
 {
-	termgfx_image_rect_src(TERMGFX_FB_W, TERMGFX_FB_H, ew, eh, dx, dy);
+	int sw = TERMGFX_FB_W;
+
+	/* Draw the source at the sysop's shape by widening/narrowing what we ask
+	 * to fit -- the scaler resamples to whatever rect comes back, so changing
+	 * the REQUESTED width is all it takes. See g_aspect for why SyncTERM is
+	 * excluded. */
+	if (g_aspect > 0.0 && !g_is_syncterm) {
+		sw = (int)(TERMGFX_FB_H * g_aspect + 0.5);
+		if (sw < 1)
+			sw = 1;
+	}
+	termgfx_image_rect_src(sw, TERMGFX_FB_H, ew, eh, dx, dy);
 }
 
 static void termgfx_termio_mouse_report(int b, int col, int row, int release)
@@ -3978,6 +4156,33 @@ static unsigned g_capture_frames;
  * path (g_have_last is cleared alongside it, below). */
 static int g_need_st;
 
+/* Make the next present() send a WHOLE frame: forget what the client is
+ * holding, so neither the de-dupe nor the dirty diff can decide a region is
+ * already correct. For anything that changes the screen behind termgfx's back
+ * -- see termgfx_toggle_stats(), which erases a bar drawn over the picture on
+ * a tier that reserves no row for it. */
+static void termgfx_invalidate_last(void)
+{
+	g_have_last = 0;
+}
+
+/* Does the pending palette change reach anything the client is DISPLAYING?
+ * Scans the last SENT frame for an index whose colour moved. Only asked when
+ * the palette moved and the incoming frame is otherwise identical, so it costs
+ * a scan on exactly the frames it can save a whole repaint on, and it stops at
+ * the first hit. */
+static int termgfx_pal_change_visible(void)
+{
+	size_t i, npx = (size_t)TERMGFX_FB_W * TERMGFX_FB_H;
+
+	if (!g_pal_stale_any)
+		return 0;
+	for (i = 0; i < npx; i++)
+		if (g_pal_stale[g_last_fb[i]])
+			return 1;
+	return 0;
+}
+
 /* A frame that a DEFER gate (pacing or backpressure, below) held back
  * instead of sending -- retained here so termgfx_termio_tick() can retry it once the
  * gate clears, even with no further engine-side present() call. Without
@@ -4122,6 +4327,24 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * stable palette), and a storm of those is what this fix paces. */
 	pal_dirty = !g_have_last || memcmp(g_last_pal, pal768, 768) != 0;
 
+	/* WHICH entries moved, not just whether any did: that is what lets the
+	 * dirty paths find the tiles a palette change actually altered, instead of
+	 * repainting the frame because SOMETHING in the palette moved. A fade
+	 * touches a handful of entries and a scene's worth of pixels are drawn with
+	 * the rest. No previous palette to diff against (first frame) means every
+	 * tile is new anyway, so leave the mask clear. */
+	g_pal_stale_any = 0;
+	memset(g_pal_stale, 0, sizeof g_pal_stale);
+	if (pal_dirty && g_have_last) {
+		int c;
+
+		for (c = 0; c < 256; c++)
+			if (memcmp(g_last_pal + c * 3, pal768 + c * 3, 3) != 0) {
+				g_pal_stale[c] = 1;
+				g_pal_stale_any = 1;
+			}
+	}
+
 	/* DSR-ACK pacing gate: don't get ahead of what the terminal has drawn.
 	 *
 	 * The unstick deadline is the crux of the fade fix. A palette fade repaints
@@ -4231,6 +4454,47 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 
 		termgfx_image_rect(&ew, &eh, &rdx, &rdy);
 
+		/* SIXEL ONLY: trim the image to a whole number of vstep = LCM(cellh,6),
+		 * so the dirty grid TILES it exactly.
+		 *
+		 * Both alignments are forced, which is why it is their LCM and not just
+		 * the cell: a box is PLACED by CUP at a cell, and is DRAWN as whole 6px
+		 * sixel bands (termgfx_emit_sixel() band-rounds the frame for the same
+		 * reason -- a partial trailing band leaves a black strip on foot). A
+		 * remainder below the last aligned row belongs to no box, so either it
+		 * renders stale, or a box reaching it overruns the image, or -- what
+		 * actually happened -- the box gets clamped short of its own changed
+		 * rows and the whole frame falls back to a repaint. On a played Queen
+		 * session that fallback was 98.3% of all full frames and two thirds of
+		 * every byte sent.
+		 *
+		 * The JXL tier is pixel-addressed, not cell-addressed, so it neither
+		 * needs this nor should pay for it. */
+		if (tier == TERMGFX_TIER_SIXEL && cellh > 0) {
+			int vstep = cellh / termgfx_gcd(cellh, 6) * 6;
+			int eh2   = (eh >= vstep) ? eh / vstep * vstep : eh;
+
+			if (eh2 != eh && eh > 0) {
+				/* Take the WIDTH down with the height, or the picture is
+				 * simply squashed: termgfx_image_rect() fitted these two to
+				 * the source's shape, and trimming one axis alone throws that
+				 * away (a 1330x831 fit became 1330x780 -- 1.71 where the
+				 * source is 1.60). Rounding to the NEXT vstep instead is not
+				 * an option: eh is normally width-limited, so a taller image
+				 * needs a wider one than the canvas has. */
+				int ew2 = (int)((double)ew * eh2 / eh + 0.5);
+
+				/* Re-center on both axes. rdx/rdy were computed for the
+				 * untrimmed rect, so keeping them would pin the smaller image
+				 * to the old top-left and put the whole difference at the
+				 * right and bottom. */
+				rdx += (ew - ew2) / 2;
+				rdy += (eh - eh2) / 2;
+				ew   = ew2 > 0 ? ew2 : 1;
+				eh   = eh2;
+			}
+		}
+
 		if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0) {
 			double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
 			double chd = (double)g_canvas_h / g_term_rows;
@@ -4268,8 +4532,18 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * in practice only change once per session (termgfx_tier() settles as soon
 	 * as the startup probe answers, before any frame has gone out), but
 	 * checking it here costs nothing and keeps this correct if that ever
-	 * stops being true. */
-	if (g_have_last && !pal_dirty && !geom_changed && !tier_changed
+	 * stops being true.
+	 *
+	 * A palette change counts as "unchanged" when it does not reach a single
+	 * pixel on screen. An engine rewrites the whole palette freely, and a
+	 * scene draws with a fraction of it -- Queen's opening sequence spends a
+	 * quarter of its frames moving entries the visible picture never uses. The
+	 * frame really is identical to what the client is showing, so sending
+	 * anything at all is waste. The change is NOT forgotten: this path updates
+	 * no state, so g_last_pal still holds the last SENT palette and the entries
+	 * stay pending for the first frame that actually draws with them. */
+	if (g_have_last && !geom_changed && !tier_changed
+	    && (!pal_dirty || !termgfx_pal_change_visible())
 	    && memcmp(g_last_fb, idx, TERMGFX_FB_W * TERMGFX_FB_H) == 0) {
 		termgfx_fps_tick(0);
 		if (g_stats) {
@@ -4326,10 +4600,11 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		int cdh = g_cell_h > 0 ? g_cell_h
 		        : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 0);
 
-		if (cdw > 0 && cdh > 0 && g_have_last && !pal_dirty && !geom_changed && !tier_changed)
+		if (cdw > 0 && cdh > 0 && g_have_last && !geom_changed && !tier_changed)
 			dn = termgfx_dirty_sixel_present(idx, g_last_fb, pal768, ew, eh,
 			                             icol, irow, cdw, cdh);
 
+		termgfx_count_dirty(dn != 0);
 		if (dn != 0) {
 			n = dn;   /* dirty rects already sent */
 		} else {
@@ -4342,9 +4617,10 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	}
 #ifdef WITH_JXL
 	else {   /* TERMGFX_TIER_JXL */
-		if (g_have_last && !pal_dirty && !geom_changed && !tier_changed && g_img_blob_ok)
+		if (g_have_last && !geom_changed && !tier_changed && g_img_blob_ok)
 			dn = termgfx_dirty_jxl_present(idx, g_last_fb, pal768, ew, eh, dx, dy);
 
+		termgfx_count_dirty(dn != 0);
 		if (dn != 0) {
 			n = dn;   /* dirty rects already sent */
 		} else {
