@@ -68,10 +68,12 @@ though `curl` fetches them fine).
 
 ### Shipping a default config: `<name>.example.ini` → `[copy:]`
 
-Version-control the **template**, never the live config a sysop edits. Any
-git-tracked `.ini` a sysop is *meant* to edit — a JSONdb `host`/`port`, colour
-scheme, game-balance knobs — must be shipped this way, otherwise the sysop's
-edits show up forever as a dirty working tree. Three parts, all required:
+Version-control the **template**, never the live config a sysop edits — a
+git-tracked `.ini` a sysop is *meant* to edit (a JSONdb `host`/`port`, colour
+scheme, game-balance knobs) leaves their edits showing forever as a dirty
+working tree. Get this right when the door is **new**; see the warning below
+before retrofitting it onto a door that already ships a tracked `.ini`. Three
+parts, all required:
 
 1. Track `<name>.example.ini`; the live `<name>.ini` is never added.
 2. Seed the live file from the installer:
@@ -110,6 +112,36 @@ lobby is better than two half-configs. Point any docs at the one template.
 `synchess-dist.ini`; it serves the same purpose, so leave it as-is rather than
 renaming. A door with **no** `install-xtrn.ini` at all is unsupported — don't
 invent one just to introduce this pattern.
+
+#### ⚠️ Don't retrofit this onto a door whose `.ini` is already tracked
+
+Renaming a tracked `<name>.ini` to `<name>.example.ini` is a delete + add, and
+git **cannot untrack a file without deleting it from every working tree**. For a
+sysop who has edited that file — i.e. exactly the sysop this convention is meant
+to help — `git pull` refuses:
+
+```
+error: Your local changes to the following files would be overwritten by merge:
+        xtrn/gooble/server.ini
+Please commit your changes or stash them before you merge.
+Aborting
+```
+
+That aborts the **entire pull**, so they can't take *any* Synchronet update until
+they resolve it by hand. A sysop with an unedited copy gets no error at all —
+git just deletes their config, and the door then fails (`starstocks/stars.js`,
+`synchronetris/service.js` `return_error` on a missing `server.ini`) or silently
+changes behaviour (`chess`, `seabattle` read its absence as "local-only"). And
+`jsexec install-xtrn` with no argument won't repair it: it skips any door already
+registered in `xtrn.ini` (`install-xtrn.js:550`).
+
+This was attempted in `0aa214f366` across 24 doors and reverted the same day. It
+is **not** fixable by anything shipped in the repo, because every in-repo remedy
+is downstream of a pull the affected sysop cannot complete. Timing doesn't help
+either — the same sysops break whenever it lands. If it's ever worth doing, it
+needs an out-of-band announcement first (SYNC sub-board + IRC) telling sysops to
+back up their door configs, a release cycle of lead time, and a `docs/v3*_new`
+entry — not a quiet re-land.
 
 Minimal door example:
 
