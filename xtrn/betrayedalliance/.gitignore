@@ -14,3 +14,9 @@
 !/README.md
 !/scummvm.example.ini
 !/syncscumm.example.ini
+
+# Live sysop-edited config, seeded from scummvm.example.ini by install-xtrn.
+/scummvm.ini
+
+# Live sysop-edited config, seeded from syncscumm.example.ini by install-xtrn.
+/syncscumm.ini

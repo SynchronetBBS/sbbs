@@ -1,6 +1,4 @@
 # Locally built door binary (not tracked; built via build.sh / build.bat).
-# Note: the live syncduke.ini (seeded from syncduke.example.ini) is intentionally
-# NOT ignored here -- leave it untracked so a sysop's edited config is visible.
 /syncduke
 /syncduke.exe
 
@@ -18,3 +16,6 @@ duke3d.cfg
 *.dmo
 *.DMO
 syncduke.log
+
+# Live sysop-edited config, seeded from syncduke.example.ini by install-xtrn.
+/syncduke.ini

@@ -79,6 +79,9 @@
 //
 // [copy:<filename>]
 //      dest            = filename to copy to
+//      overwrite       = if true, replace an existing dest without prompting
+//                        (otherwise the sysop is asked, and an unattended
+//                        install keeps the existing file)
 
 // Additionally, each section can have the following optional keys that are
 // only used by this script (i.e. not written to any configuration files):
@@ -367,6 +370,45 @@ function install(ini_fname)
 		}
 	}
 	
+	// Copy sections are processed before ini sections: a [copy:] often seeds the
+	// very file a following [ini:] customizes, and an [ini:] whose target does not
+	// exist in the startup_dir silently falls back to ctrl/<filename>.
+	var list = ini_file.iniGetAllObjects("filename", "copy:");
+	for (var i = 0; i < list.length && !done; i++) {
+		var item = list[i];
+		var result = false;
+		var src = file_getcase(startup_dir + item.filename);
+		if (!src)
+			alert("Copy source file does not exist: " + startup_dir + item.filename);
+		else {
+			var dest = file_getcase(startup_dir + item.dest);
+			var keep = false;
+			if (dest && !item.overwrite) {
+				var msg = "Copy destination file already exists: " + dest;
+				// Unattended: keep the sysop's existing file and carry on. Aborting
+				// here would discard every program staged so far, since xtrn.ini
+				// isn't written until the end.
+				if (options.auto) {
+					print(msg + " (keeping it)");
+					keep = true;
+				} else if (deny(msg + ", continue"))
+					return msg;
+			}
+			if (keep)
+				result = true;
+			else {
+				if (!dest)
+					dest = startup_dir + item.dest;
+				result = file_copy(src, dest);
+			}
+		}
+		if(item.required && result !== true)
+			return false;
+		if(item.last === true)
+			break;
+		done = Boolean(item.done);
+	}
+
 	var list = ini_file.iniGetAllObjects("filename", "ini:");
 	for (var i = 0; i < list.length && !done; i++) {
 		var item = list[i];
@@ -401,33 +443,7 @@ function install(ini_fname)
 			result = file.iniSetValue(item.section, item.keys[k], value);
 		}
 		file.close();
-		if(required && result !== true)
-			return false;
-		if(item.last === true)
-			break;
-		done = Boolean(item.done);
-	}
-
-	var list = ini_file.iniGetAllObjects("filename", "copy:");
-	for (var i = 0; i < list.length && !done; i++) {
-		var item = list[i];
-		var result = false;
-		var src = file_getcase(startup_dir + item.filename);
-		if (!src)
-			alert("Copy source file does not exist: " + startup_dir + item.filename);
-		else {
-			var dest = file_getcase(startup_dir + item.dest);
-			if (dest) {
-				if (!item.overwrite) {
-					var msg = "Copy destination file already exists: " + dest;
-					if(options.auto || deny(msg + ", continue"))
-						return msg;
-				}
-			} else
-				dest = startup_dir + item.dest
-			result = file_copy(src, dest);
-		}
-		if(required && result !== true)
+		if(item.required && result !== true)
 			return false;
 		if(item.last === true)
 			break;

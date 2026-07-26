@@ -11,3 +11,6 @@ assets/
 # -home (the live door uses a per-user -home dir instead).
 syncdawn.fill
 CONQUER.INI
+
+# Live sysop-edited config, seeded from syncdawn.example.ini by install-xtrn.
+/syncdawn.ini
