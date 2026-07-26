@@ -66,6 +66,8 @@
   auto-detection (issue #1106)
 - Progress percentages no longer exceed "100%" during long
   operations like `finduserstr`
+- Sysop user editor: the `~`, `+`, `*`, `$` and `/` prompts no
+  longer run on the same line as the "User edit" command prompt
 - More than 255 QWK network hubs are now supported
 - Removed unnecessary terminal color-change codes (regression
   from v3.21)

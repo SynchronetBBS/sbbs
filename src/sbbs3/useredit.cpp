@@ -167,7 +167,7 @@ void sbbs_t::useredit(int usernumber)
 			user.number = (ushort)(l & ~0x80000000L);
 			continue;
 		}
-		if (IS_ALPHA(l))
+		if (IS_ALPHA(l) || strchr("~+*$/", l) != NULL)   // non-alpha commands that prompt
 			term->newline();
 		switch (l) {
 			case 'A':
