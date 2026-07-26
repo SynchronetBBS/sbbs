@@ -197,7 +197,7 @@ void sbbs_t::mnemonics(const char *instr, int mode)
 	mneattr_cmd = cfg.color[clr_mnecmd];
 
 	char str[256];
-	expand_atcodes(instr, str, sizeof str);
+	expand_atcodes(instr, str, sizeof str, /* msg: */ NULL, &mode);
 	l = 0L;
 	attr(mneattr_low);
 
@@ -248,6 +248,11 @@ void sbbs_t::mnemonics(const char *instr, int mode)
 				if (str[l] == 'Z')   /* EOF (uppercase 'Z') */
 					break;
 				ctrl_a(str[l++]);
+			} else if ((str[l] & 0x80) && (mode & P_UTF8)) {
+				if (term->charset() == CHARSET_UTF8)
+					term_out(str[l++]);
+				else
+					l += print_utf8_as_cp437(str + l, strlen(str + l));
 			} else {
 				outchar(str[l++]);
 			}

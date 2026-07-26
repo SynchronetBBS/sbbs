@@ -949,4 +949,5 @@ const char* const text_id[]={
 	,"FindStringNotFound"
 	,"SeekHelp"
 	,"InvalidSearchExpression"
+	,"UeditARSearchPrompt"
 };

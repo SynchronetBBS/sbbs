@@ -26,6 +26,7 @@
 #include "sbbs.h"
 #include "petdefs.h"
 #include "filedat.h"
+#include "boolsrch.h"
 
 #define SEARCH_TXT 0
 #define SEARCH_ARS 1
@@ -48,6 +49,7 @@ void sbbs_t::useredit(int usernumber)
 	int64_t    adj;
 	user_t     user;
 	struct  tm tm;
+	bool_expr_t* find_expr = NULL;
 
 	if (!chksyspass())
 		return;
@@ -426,6 +428,7 @@ void sbbs_t::useredit(int usernumber)
 				term->lncntr = 0;
 				cls();
 				free(ar);   /* assertion here */
+				bool_expr_free(find_expr);
 				return;
 			case 'R':
 				bputs(text[EnterYourRealName]);
@@ -440,9 +443,14 @@ void sbbs_t::useredit(int usernumber)
 					putuserstr(user.number, USER_GENDER, str);
 				break;
 			case 'T':   /* Text Search */
-				bputs(text[SearchStringPrompt]);
-				if (getstr(search, 30, K_UPPER | K_LINE))
+				{
+					bool_expr_t* new_expr = get_search_string(search, 120, K_LINE | K_UPPER | K_EDIT | K_AUTODEL);
+					if (new_expr == NULL)
+						break;
+					bool_expr_free(find_expr);
+					find_expr = new_expr;
 					stype = SEARCH_TXT;
+				}
 				break;
 			case 'U':
 				bputs(text[UeditUlBytes]);
@@ -597,15 +605,17 @@ void sbbs_t::useredit(int usernumber)
 				}
 				break;
 			case '/':
-				bputs(text[SearchStringPrompt]);
-				if (getstr(artxt, 40, K_UPPER | K_LINE))
+				bputs(text[UeditARSearchPrompt]);
+				if (getstr(artxt, 40, K_UPPER | K_LINE | K_EDIT | K_AUTODEL)) {
+					free(ar);
+					ar = arstr(NULL, artxt, &cfg, NULL);
 					stype = SEARCH_ARS;
-				ar = arstr(NULL, artxt, &cfg, NULL);
+				}
 				break;
 			case '{':
 			case '(':
 				if (stype == SEARCH_TXT)
-					user.number = searchdn(search, user.number);
+					user.number = searchdn(find_expr, user.number);
 				else {
 					if (!ar)
 						break;
@@ -624,7 +634,7 @@ void sbbs_t::useredit(int usernumber)
 			case '}':
 			case ')':
 				if (stype == SEARCH_TXT)
-					user.number = searchup(search, user.number);
+					user.number = searchup(find_expr, user.number);
 				else {
 					if (!ar)
 						break;
@@ -663,29 +673,29 @@ void sbbs_t::useredit(int usernumber)
 				break;
 		} /* switch */
 	} /* while */
+	free(ar);
+	bool_expr_free(find_expr);
 }
 
 /****************************************************************************/
-/* Seaches forward through the user.tab file for the ocurrance of 'search'  */
+/* Seaches forward through the user.tab file for a record matching 'expr',	*/
 /* starting at the offset for usernum+1 and returning the usernumber of the */
-/* record where the string was found or the original usernumber if the 		*/
-/* string wasn't found														*/
+/* matching record or the original usernumber if no match was found			*/
 /* Called from the function useredit										*/
 /****************************************************************************/
-int sbbs_t::searchup(char *search, int usernum)
+int sbbs_t::searchup(const struct bool_expr* expr, int usernum)
 {
 	char userdat[USER_RECORD_LEN + 1];
 	int  file;
 	uint i = usernum + 1;
 
-	if (!search[0])
+	if (expr == NULL)
 		return usernum;
 	if ((file = openuserdat(&cfg, /* for_modify: */ FALSE)) < 0)
 		return usernum;
 
 	while (readuserdat(&cfg, i, userdat, sizeof(userdat), file, /* leave_locked: */ FALSE) == 0) {
-		strupr(userdat);
-		if (strstr(userdat, search)) {
+		if (bool_expr_match(expr, userdat)) {
 			close(file);
 			return i;
 		}
@@ -696,26 +706,24 @@ int sbbs_t::searchup(char *search, int usernum)
 }
 
 /****************************************************************************/
-/* Seaches backward through the user.tab file for the ocurrance of 'search' */
+/* Seaches backward through the user.tab file for a record matching 'expr',	*/
 /* starting at the offset for usernum-1 and returning the usernumber of the */
-/* record where the string was found or the original usernumber if the 		*/
-/* string wasn't found														*/
+/* matching record or the original usernumber if no match was found			*/
 /* Called from the function useredit										*/
 /****************************************************************************/
-int sbbs_t::searchdn(char *search, int usernum)
+int sbbs_t::searchdn(const struct bool_expr* expr, int usernum)
 {
 	char userdat[USER_RECORD_LEN + 1];
 	int  file;
 	uint i = usernum - 1;
 
-	if (!search[0])
+	if (expr == NULL)
 		return usernum;
 	if ((file = openuserdat(&cfg, /* for_modify: */ FALSE)) < 0)
 		return usernum;
 
 	while (i > 0 && readuserdat(&cfg, i, userdat, sizeof(userdat), file, /* leave_locked: */ FALSE) == 0) {
-		strupr(userdat);
-		if (strstr(userdat, search)) {
+		if (bool_expr_match(expr, userdat)) {
 			close(file);
 			return i;
 		}

@@ -805,7 +805,6 @@ int sbbs_t::outcp(enum unicode_codepoint codepoint, const char* cp437_fallback)
 		if (len < 1)
 			return len;
 		term_out(str, len);
-		term->inc_column(unicode_width(codepoint, unicode_zerowidth));
 		return 0;
 	}
 	if (cp437_fallback == NULL)

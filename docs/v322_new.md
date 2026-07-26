@@ -43,9 +43,9 @@
   `AND` / `OR` / `NOT` operators (symbol or keyword form),
   parenthesised grouping, and `"quoted phrase"` whole-word match
   (issue #1139)
-  - Available for the four "Text to search for" prompts:
-    message-base scan / F)ind, mail search, file-list search, and
-    the file pager
+  - Available for the five "Text to search for" prompts:
+    message-base scan / F)ind, mail search, file-list search, the
+    file pager, and the sysop user editor's T)ext search
   - `?` at any search prompt shows quick-reference help
   - Bare-word queries keep their substring behavior, so existing
     usage is unaffected
@@ -69,6 +69,9 @@
 - More than 255 QWK network hubs are now supported
 - Removed unnecessary terminal color-change codes (regression
   from v3.21)
+- Fixed double-counting of terminal columns for Unicode output on
+  UTF-8 terminals, which made word-wrap, right-margin truncation
+  and centering wrap early (regression from v3.21, issue #1200)
 - Goodbye messages and pre-login banners no longer log noisy
   "send failed" warnings when the client disconnects mid-message
 - Fix line-wrap divide-by-zero crash when an SFTP-only client
@@ -231,6 +234,7 @@
   - `SeekHelp` (less-style pager help text)
   - `FindStringNotFound`
   - `InvalidSearchExpression` (boolean-search parse errors)
+  - `UeditARSearchPrompt` (user editor's `/` AR-string search prompt)
 - Changed text.dat strings:
   - `SeekPrompt` restyled to `<filename> (?=Help)` form (the key
     list moved into `SeekHelp`)
@@ -245,6 +249,13 @@
   now searched across all extensions before the stock dir, and
   mods width-variant files (e.g. `.40col.ans`) no longer require
   a plain same-extension mods file to exist (issue #1182)
+- Fixed: the Unicode @-codes (`@U+XXXX@`, `@CHECKMARK@`,
+  `@ELLIPSIS@`, `@COPY@`, `@SOUNDCOPY@`, `@REGISTERED@`,
+  `@TRADEMARK@`, `@DEGREE_C@`, `@DEGREE_F@`, `@WIDE:text@`) now
+  expand to a value instead of printing immediately, so format
+  modifiers (alignment, width, truncation) work on them and
+  `bbs.atcode()` / `bbs.expand_atcodes()` return them rather
+  than emitting stray output (issue #1198)
 
 ## Stock Modules
 

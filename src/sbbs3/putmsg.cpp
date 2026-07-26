@@ -473,7 +473,9 @@ char sbbs_t::putmsgfrag(const char* buf, int& mode, unsigned org_cols, JSObject*
 						tmp[i++] = str[l++];
 					tmp[i] = 0;
 					truncsp(tmp);
-					term->center(expand_atcodes(tmp, tmp2, sizeof tmp2), mode);
+					int cmode = mode;
+					const char* cstr = expand_atcodes(tmp, tmp2, sizeof tmp2, /* msg: */ NULL, &cmode);
+					term->center(cstr, cmode);
 					if (str[l] == '\r')
 						l++;
 					if (str[l] == '\n')

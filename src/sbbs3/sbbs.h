@@ -1066,8 +1066,8 @@ public:
 	/* atcodes.cpp */
 	int		show_atcode(const char *code, uint cols = 0, JSObject* obj = NULL);
 	const char*	atcode(const char* sp, char* str, size_t maxlen, int* pmode = NULL, bool centered = false, uint cols = 0, JSObject* obj = NULL);
-	const char* formatted_atcode(const char* sp, char* str, size_t maxlen);
-	char* expand_atcodes(const char* src, char* buf, size_t size, const smbmsg_t* msg = NULL);
+	const char* formatted_atcode(const char* sp, char* str, size_t maxlen, int* pmode = NULL);
+	char* expand_atcodes(const char* src, char* buf, size_t size, const smbmsg_t* msg = NULL, int* pmode = NULL);
 
 	/* getnode.cpp */
 	bool	getsmsg(int usernumber, bool clearline = false);
@@ -1334,8 +1334,8 @@ public:
 
 	/* useredit.cpp */
 	void	useredit(int usernumber);
-	int		searchup(char *search,int usernum);
-	int		searchdn(char *search,int usernum);
+	int		searchup(const struct bool_expr*, int usernum);
+	int		searchdn(const struct bool_expr*, int usernum);
 	void	user_config(user_t* user);
 	bool	purgeuser(int usernumber);
 

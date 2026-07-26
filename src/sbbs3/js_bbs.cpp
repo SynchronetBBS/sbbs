@@ -1756,7 +1756,7 @@ js_atcode(JSContext *cx, uintN argc, jsval *arglist)
 {
 	jsval *     argv = JS_ARGV(cx, arglist);
 	sbbs_t*     sbbs;
-	char        str[128];
+	char        str[512];
 	char *      instr;
 	const char *cp;
 	jsrefcount  rc;

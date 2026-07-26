@@ -965,6 +965,7 @@ enum text {
 	,FindStringNotFound
 	,SeekHelp
 	,InvalidSearchExpression
+	,UeditARSearchPrompt
 
 	,TOTAL_TEXT
 };

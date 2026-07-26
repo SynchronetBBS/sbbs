@@ -325,7 +325,9 @@ public:
 		uint cols = print_cols(mode);
 		char *str = strdup(instr);
 		truncsp(str);
-		size_t len = bstrlen(str);
+		// Only P_UTF8 affects the width of what bputs() prints here: the
+		// xattr code sets bstrlen() knows about are consumed by putmsg(), not bputs()
+		size_t len = bstrlen(str, mode & P_UTF8);
 		carriage_return();
 		if (len < cols)
 			cursor_right((cols - len) / 2);
