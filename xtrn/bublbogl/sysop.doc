@@ -42,7 +42,8 @@ Sample configuration in SCFG -> external programs:
 	
 *****CONFIGURING THE GAME HOST******
 
-There is a SERVER.INI file included with every inter-BBS JavaScript game.
+Every inter-BBS JavaScript game ships a SERVER.EXAMPLE.INI template; install-xtrn
+copies it to SERVER.INI for you (an existing SERVER.INI is left untouched).
 If you wish to connect your BBS to an existing network, edit the file and 
 put the appropriate hostname or IP address, and the port on which the network is 
 operating (default: 10088)

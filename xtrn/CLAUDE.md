@@ -68,22 +68,48 @@ though `curl` fetches them fine).
 
 ### Shipping a default config: `<name>.example.ini` → `[copy:]`
 
-Version-control the **template**, never the live config a sysop edits. Track
-`<name>.example.ini` and have the installer seed the live file from it:
+Version-control the **template**, never the live config a sysop edits. Any
+git-tracked `.ini` a sysop is *meant* to edit — a JSONdb `host`/`port`, colour
+scheme, game-balance knobs — must be shipped this way, otherwise the sysop's
+edits show up forever as a dirty working tree. Three parts, all required:
+
+1. Track `<name>.example.ini`; the live `<name>.ini` is never added.
+2. Seed the live file from the installer:
 
 ```ini
 [copy:<name>.example.ini]
 dest = <name>.ini
 ```
 
-`[copy:]` does not overwrite an existing `dest` without confirmation (it prompts,
-and aborts under `--auto`), so a sysop's edited `<name>.ini` survives a
-re-install. Leave the live `<name>.ini` **untracked** — don't `git add` it and
-don't `.gitignore` it (the other `*.example.ini` doors all follow this). Keep the
-config in **one place**: a second copy elsewhere in the tree (e.g. a sample
-beside the C source under `src/`) silently drifts out of sync — a single combined
-`xtrn/<dir>/<name>.example.ini` read by both the door binary and its JS lobby is
-better than two half-configs. Point any docs at the one template.
+3. `.gitignore` the live file in the door's own `xtrn/<dir>/.gitignore`
+   (create it if absent) so it doesn't show up as untracked noise:
+
+```gitignore
+# Live sysop-edited config, seeded from <name>.example.ini by install-xtrn.
+/<name>.ini
+```
+
+If `dest` already exists, `[copy:]` asks before replacing it (`deny()`, so the
+default answer is "no" and declining aborts the install); an unattended
+(`-auto`) run isn't asked and keeps the existing file. Add `overwrite = true`
+only if the template really should win every time — for a sysop-edited config it
+shouldn't.
+
+`[copy:]` sections are processed **before** `[ini:]` sections, regardless of
+their order in the file — so a `[copy:]` that seeds `<name>.ini` and an
+`[ini:<name>.ini]` that then customizes a key work together. Don't rely on the
+reverse: an `[ini:<file>]` whose target doesn't exist in the door's
+`startup_dir` silently falls back to writing `ctrl/<file>`.
+
+Keep the config in **one place**: a second copy elsewhere in the tree (e.g. a
+sample beside the C source under `src/`) silently drifts out of sync — a single
+combined `xtrn/<dir>/<name>.example.ini` read by both the door binary and its JS
+lobby is better than two half-configs. Point any docs at the one template.
+
+`xtrn/synchess` predates the convention and names its template
+`synchess-dist.ini`; it serves the same purpose, so leave it as-is rather than
+renaming. A door with **no** `install-xtrn.ini` at all is unsupported — don't
+invent one just to introduce this pattern.
 
 Minimal door example:
 

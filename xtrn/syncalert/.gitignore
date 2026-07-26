@@ -10,3 +10,6 @@ assets/
 # -home (the live door uses a per-user -home dir instead).
 syncalert.fill
 REDALERT.INI
+
+# Live sysop-edited config, seeded from syncalert.example.ini by install-xtrn.
+/syncalert.ini
