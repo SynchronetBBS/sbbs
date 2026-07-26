@@ -38,6 +38,8 @@
 #include "common/vqaloader.h"
 #include "common/settings.h"
 
+extern "C" int door_movies_suppressed(void);   // SyncConquer: play-time movie gate (door_io.c)
+
 #ifndef DEMO
 // From conquer.cpp
 int MixFileHandler(VQAHandle* vqa, int action, void* buffer, int nbytes);
@@ -313,7 +315,24 @@ void Choose_Side(void)
     }
 
     /* play the scenario 1 briefing movie */
-    if (Whom == HOUSE_GOOD) {
+    /*
+    ** SyncConquer: these two briefings play through VQA_Play directly rather
+    ** than Play_Movie(), so the door's gate in Play_Movie() never saw them --
+    ** this was the one cutscene that still played on a terminal with no audio.
+    ** Free both without playing. The movies stay OPEN above on purpose: the
+    ** interpolated palettes the side-pick screen needs are loaded from these
+    ** same files.
+    */
+    if (door_movies_suppressed()) {
+        if (nodbrief) {
+            VQA_Close(nodbrief);
+            VQA_Free(nodbrief);
+        }
+        if (gdibrief) {
+            VQA_Close(gdibrief);
+            VQA_Free(gdibrief);
+        }
+    } else if (Whom == HOUSE_GOOD) {
         if (nodbrief) {
             VQA_Close(nodbrief);
             VQA_Free(nodbrief);

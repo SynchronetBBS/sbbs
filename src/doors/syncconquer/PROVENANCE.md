@@ -662,6 +662,20 @@ rest; these are the local edits on top of it (plus a couple of shared
     on screen. RA (`redalert/audio.cpp`, a larger/different `VoxType`) is a
     follow-up.
 
+40. **Gate the side-pick briefing movies too (`tiberiandawn/intro.cpp`).**
+    Entry 36 put the door's movie gate in `Play_Movie()`, on the assumption that
+    every cutscene goes through it. Two do not: `Choose_Side()` plays the
+    scenario-1 briefings (`GDI1.VQA` / `NOD1PRE.VQA`) with `VQA_Play()`
+    directly, so on a terminal with no audio -- where every other FMV is
+    correctly skipped -- picking a side still played a full-motion briefing.
+    Reported as "GDI-side new game intro"; it affects both sides equally, GDI
+    being simply the one usually picked. The patch adds a
+    `door_movies_suppressed()` branch ahead of the existing GOOD/BAD split that
+    closes and frees both handles without playing either. The movies are still
+    OPENED above it on purpose: `Load_Interpolated_Palettes()` reads the
+    side-pick screen's palettes out of those same files, so skipping the open
+    would break the screen that leads INTO the briefing.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching
