@@ -52,14 +52,31 @@ static void ob_run(obuf_t *o, int ch, int len)
 	else         { while (len-- > 0) ob_putc(o, ch); }
 }
 
+static size_t sixel_encode_impl(uint8_t **buf, size_t *cap, const uint8_t *idx,
+                                int w, int h, int pan, int pad, const uint8_t *pal,
+                                int emit_palette, const uint8_t *mask);
+
 size_t sixel_encode(uint8_t **buf, size_t *cap, const uint8_t *idx, int w, int h,
                     const uint8_t *pal, int emit_palette)
 {
-	return sixel_encode_aspect(buf, cap, idx, w, h, 1, 1, pal, emit_palette);
+	return sixel_encode_impl(buf, cap, idx, w, h, 1, 1, pal, emit_palette, NULL);
 }
 
 size_t sixel_encode_aspect(uint8_t **buf, size_t *cap, const uint8_t *idx, int w, int h,
                            int pan, int pad, const uint8_t *pal, int emit_palette)
+{
+	return sixel_encode_impl(buf, cap, idx, w, h, pan, pad, pal, emit_palette, NULL);
+}
+
+size_t sixel_encode_delta(uint8_t **buf, size_t *cap, const uint8_t *idx, int w, int h,
+                          const uint8_t *pal, const uint8_t *changed)
+{
+	return sixel_encode_impl(buf, cap, idx, w, h, 1, 1, pal, SIXEL_PAL_DELTA, changed);
+}
+
+static size_t sixel_encode_impl(uint8_t **buf, size_t *cap, const uint8_t *idx,
+                                int w, int h, int pan, int pad, const uint8_t *pal,
+                                int emit_palette, const uint8_t *mask)
 {
 	obuf_t  o;
 	int     x, y, band, bands, c;
@@ -91,6 +108,8 @@ size_t sixel_encode_aspect(uint8_t **buf, size_t *cap, const uint8_t *idx, int w
 			memset(used, 0, sizeof(used));
 			for (i = 0; i < npx; i++)
 				used[idx[i]] = 1;
+		} else if (emit_palette == SIXEL_PAL_DELTA) {
+			memcpy(used, mask, sizeof(used));
 		} else {
 			memset(used, 1, sizeof(used));   // SIXEL_PAL_FULL: all 256
 		}

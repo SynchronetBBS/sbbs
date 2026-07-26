@@ -96,13 +96,13 @@ static int dirty_ensure_int(int **buf, size_t *cap, size_t need)
  * first difference -- an unchanged cell is the common case and costs a full
  * scan, so the inner loop is a memcmp per row rather than per pixel. */
 static int cell_differs(const uint8_t *cur, const uint8_t *prev, int w, int h,
-                        int cw, int ch, int cx, int cy)
+                        int cw, int ch, int cx, int cy, const uint8_t *stale)
 {
 	int x0 = cx * cw;
 	int y0 = cy * ch;
 	int x1 = x0 + cw;
 	int y1 = y0 + ch;
-	int y;
+	int x, y;
 
 	if (x1 > w)
 		x1 = w;                    /* the last column of cells is usually partial */
@@ -113,6 +113,11 @@ static int cell_differs(const uint8_t *cur, const uint8_t *prev, int w, int h,
 
 		if (memcmp(cur + off, prev + off, (size_t)(x1 - x0)) != 0)
 			return 1;
+		/* Same pixels, but about to mean a different color. */
+		if (stale != NULL)
+			for (x = x0; x < x1; x++)
+				if (stale[prev[(size_t)y * w + x]])
+					return 1;
 	}
 	return 0;
 }
@@ -257,7 +262,8 @@ const char *sr_dirty_reason_name(int reason)
 }
 
 int sr_dirty_find(const uint8_t *cur, const uint8_t *prev, int w, int h,
-                  int cw, int ch, int band_align, sr_dirty_rect_t *out)
+                  int cw, int ch, int band_align, const uint8_t *stale,
+                  sr_dirty_rect_t *out)
 {
 	sr_cellbox_t box[SR_DIRTY_MAX_COMPONENTS];
 	int          cols, rows, cx, cy, nb, i, dirty = 0, total;
@@ -290,7 +296,7 @@ int sr_dirty_find(const uint8_t *cur, const uint8_t *prev, int w, int h,
 
 	for (cy = 0; cy < rows; cy++) {
 		for (cx = 0; cx < cols; cx++) {
-			int d = cell_differs(cur, prev, w, h, cw, ch, cx, cy);
+			int d = cell_differs(cur, prev, w, h, cw, ch, cx, cy, stale);
 
 			g_grid[(size_t)cy * (size_t)cols + (size_t)cx] = (uint8_t)d;
 			dirty += d;

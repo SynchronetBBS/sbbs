@@ -12,9 +12,10 @@
 // original index -- for register-resetting terminals (xterm/foot/WT), where
 // every image must self-describe its palette and all 256 is wasted bytes.
 // Never pass USED where a later palette-less image will reuse these registers.
-#define SIXEL_PAL_NONE 0
-#define SIXEL_PAL_FULL 1
-#define SIXEL_PAL_USED 2
+#define SIXEL_PAL_NONE  0
+#define SIXEL_PAL_FULL  1
+#define SIXEL_PAL_USED  2
+#define SIXEL_PAL_DELTA 3        // sixel_encode_delta() only -- takes a mask
 
 // Encode a w*h PALETTED image as a complete DECSIXEL sequence. `idx` is w*h
 // palette indices (0-255); `pal` is 256 RGB triples (768 bytes) giving each
@@ -35,6 +36,22 @@
 // Bytes go into *buf (grown via realloc, *cap updated); returns the length.
 size_t sixel_encode(uint8_t **buf, size_t *cap, const uint8_t *idx, int w, int h,
                     const uint8_t *pal, int emit_palette);
+
+// As sixel_encode, but (re)defines exactly the registers flagged in `changed`
+// (256 bytes, nonzero = emit), whatever this image happens to reference.
+//
+// For a PERSISTENT-register terminal (SyncTERM) that is being sent a dirty box
+// rather than a whole frame: the box itself carries no palette, so when the
+// palette moves, the registers it moved have to reach the terminal somehow, and
+// all 256 is most of a small box's cost. NONE/FULL/USED cannot express this --
+// USED is driven by the image's own pixels, and the registers that CHANGED are
+// not the same set.
+//
+// The caller owes the other half of the contract: a register redefined here
+// recolors every pixel already on screen drawn with it, so every such cell must
+// be inside the boxes being painted. See syncretro_dirty.h's `stale` argument.
+size_t sixel_encode_delta(uint8_t **buf, size_t *cap, const uint8_t *idx, int w, int h,
+                          const uint8_t *pal, const uint8_t *changed);
 
 // As sixel_encode, but writes the raster pixel-aspect attribute "pan;pad instead
 // of "1;1. SyncTERM/cterm renders each sixel pixel as a pan(tall) x pad(wide) block

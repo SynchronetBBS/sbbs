@@ -83,7 +83,8 @@
 #define SR_PACE_DEPTH_MAX   8     /* beyond this we'd only buffer display lag */
 #define SR_DSR_RING         16
 
-#define SR_PAL_BYTES 768
+#define SR_PAL_COLORS 256
+#define SR_PAL_BYTES  (SR_PAL_COLORS * 3)
 
 /* --- staged output buffer + sink ------------------------------------------- */
 static uint8_t *   g_out;
@@ -1307,6 +1308,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	static int      last_icol = -1, last_irow = -1;
 	static int      last_ew = -1, last_eh = -1;
 	uint8_t         pal[SR_PAL_BYTES];
+	uint8_t         pal_moved[SR_PAL_COLORS];   /* registers whose color changed */
 	size_t          npx, nrgb, n, frame_start = 0;
 	int             pal_changed, emit_pal, force;
 	sr_dirty_rect_t rect[SR_DIRTY_MAX_RECTS];
@@ -1475,6 +1477,19 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 
 	pal_changed = force || !have_pal || memcmp(last_pal, pal, sizeof last_pal) != 0;
 
+	/* WHICH registers moved, not just whether any did: the dirty pass needs them
+	 * to find the cells they recolor, and a SyncTERM patch needs them to carry
+	 * their definitions. A forced repaint or a first frame has no previous
+	 * palette to diff, and repaints everything anyway. */
+	memset(pal_moved, 0, sizeof pal_moved);
+	if (pal_changed && have_pal && !force) {
+		int c;
+
+		for (c = 0; c < SR_PAL_COLORS; c++)
+			if (memcmp(last_pal + c * 3, pal + c * 3, 3) != 0)
+				pal_moved[c] = 1;
+	}
+
 	/* Palette (re)definition. SyncTERM persists sixel color registers across
 	 * images, and re-defining all 256 every frame is what garbles its decoder
 	 * (sixel.h's emit_palette doc) -- so there, define-on-change only.
@@ -1508,8 +1523,6 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	 *
 	 *   force         something painted OVER the game (pause/help), so the parts
 	 *                 we would NOT repaint are the parts that are wrong.
-	 *   pal_changed   the client's colour registers are about to be redefined, so
-	 *                 the pixels it is still holding no longer mean what they did.
 	 *   geometry      the image moved or resized since the frame the client has;
 	 *                 our rectangle coordinates would land somewhere else.
 	 *   !have_prev    no previous scaled frame to diff against (first frame after
@@ -1520,6 +1533,13 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	 * register persistence, and band_align makes its geometry safe on a
 	 * cell-anchored terminal (foot). SyncTERM keeps zero-palette patches and
 	 * cell-only geometry.
+	 *
+	 * A PALETTE CHANGE no longer forces a whole frame. It used to, because a
+	 * redefined register recolours the pixels the client is still holding --
+	 * but which cells those are is computable, so they are handed to the dirty
+	 * pass as `pal_moved` and come back as rectangles like any other change.
+	 * The frames this saves are the expensive ones: a transition repaints
+	 * ~75KB where the movement that provoked it is a fraction of that.
 	 */
 	nrect = 0;
 	{
@@ -1528,12 +1548,13 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		int gate_cell_ok  = (g_cell_w > 0 && g_cell_h > 0);
 		int gate_geom_ok  = (last_ew == g_ew && last_eh == g_eh
 		                     && last_icol == g_icol && last_irow == g_irow);
-		int gate_pass = gate_cfg && !force && !pal_changed && gate_haveprev
+		int gate_pass = gate_cfg && !force && gate_haveprev
 		                && gate_cell_ok && gate_geom_ok;
 
 		if (gate_pass)
 			nrect = sr_dirty_find(g_scaled, g_prev_scaled, g_ew, g_eh,
-			                      g_cell_w, g_cell_h, !sr_input_is_syncterm(), rect);
+			                      g_cell_w, g_cell_h, !sr_input_is_syncterm(),
+			                      pal_changed ? pal_moved : NULL, rect);
 
 		/* [debug] dirty_log's per-frame trace. Only ever reached for a frame that
 		 * is actually being presented (the de-dupe/pace/backpressure returns
@@ -1567,7 +1588,6 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 			} else if (!gate_pass) {
 				const char *gate = !gate_cfg ? "cfg"
 				                   : force ? "force"
-				                   : pal_changed ? "palchg"
 				                   : !gate_haveprev ? "haveprev"
 				                   : !gate_cell_ok ? "cell"
 				                   : "geom";
@@ -1604,13 +1624,26 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 			              g_irow + rect[i].row, g_icol + rect[i].col);
 			if (pn > 0)
 				sr_out_put(pos, (size_t)pn);
-			/* SyncTERM: registers persist, patch carries no palette. Every
-			 * other terminal resets per image, so each patch self-describes
-			 * with the used-colour subset -- correct regardless of whether the
-			 * client honours the ?1070l request term_enter sent. */
-			n = sixel_encode(&g_sx, &g_sx_cap, g_rect_px, rect[i].w, rect[i].h,
-			                 pal, sr_input_is_syncterm() ? SIXEL_PAL_NONE
-			                 : (sr_config_palette_subset() ? SIXEL_PAL_USED : SIXEL_PAL_FULL));
+			/* SyncTERM: registers persist, patch carries no palette -- except
+			 * when the palette moved, and then the FIRST patch carries exactly
+			 * the registers that moved. It has to come from somewhere, all 256
+			 * would dwarf the box, and the cells those registers recolour are
+			 * inside these rectangles by construction (pal_moved above).
+			 *
+			 * Every other terminal resets per image, so each patch
+			 * self-describes with the used-colour subset -- correct regardless
+			 * of whether the client honours the ?1070l request term_enter sent,
+			 * and already correct across a palette change. */
+			if (sr_input_is_syncterm())
+				n = (pal_changed && i == 0)
+				    ? sixel_encode_delta(&g_sx, &g_sx_cap, g_rect_px,
+				                         rect[i].w, rect[i].h, pal, pal_moved)
+				    : sixel_encode(&g_sx, &g_sx_cap, g_rect_px,
+				                   rect[i].w, rect[i].h, pal, SIXEL_PAL_NONE);
+			else
+				n = sixel_encode(&g_sx, &g_sx_cap, g_rect_px, rect[i].w, rect[i].h,
+				                 pal, sr_config_palette_subset() ? SIXEL_PAL_USED
+				                 : SIXEL_PAL_FULL);
 			sr_out_put(g_sx, n);
 			g_dirty_rects_sent++;
 		}

@@ -68,6 +68,31 @@ int main(void)
 	n = sixel_encode(&buf, &cap, idx, 4, 2, pal, SIXEL_PAL_NONE);
 	assert(count_defs(buf, n) == 0);
 
+	/* DELTA: exactly the flagged registers, whatever the image references.
+	 * The point is that the two sets are DIFFERENT -- register 7 is not in the
+	 * image at all and must still be defined, and register 200 is all over it
+	 * and must not be, because its color did not move. */
+	{
+		uint8_t changed[256];
+
+		memset(changed, 0, sizeof changed);
+		changed[5] = changed[7] = changed[9] = 1;
+
+		n = sixel_encode_delta(&buf, &cap, idx, 4, 2, pal, changed);
+		assert(count_defs(buf, n) == 3);
+		assert(has_reg(buf, n, 5));
+		assert(has_reg(buf, n, 7));
+		assert(has_reg(buf, n, 9));
+		assert(!has_reg(buf, n, 0));
+		assert(!has_reg(buf, n, 200));
+
+		/* An empty mask degrades to NONE rather than to FULL: a frame whose
+		 * palette did not move must not pay for one. */
+		memset(changed, 0, sizeof changed);
+		n = sixel_encode_delta(&buf, &cap, idx, 4, 2, pal, changed);
+		assert(count_defs(buf, n) == 0);
+	}
+
 	free(buf);
 	printf("test_sixel_palette_used: PASS\n");
 	return 0;
