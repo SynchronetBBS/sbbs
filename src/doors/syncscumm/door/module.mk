@@ -4,7 +4,8 @@ MODULE_OBJS := \
 	syncscumm.o \
 	video_dump.o \
 	video_term.o \
-	audio_term.o
+	audio_term.o \
+	help_term.o
 
 # We don't use rules.mk but rather manually update OBJS and MODULE_DIRS.
 # MODULE_OBJS is deliberately left as the bare .o list above (not reassigned

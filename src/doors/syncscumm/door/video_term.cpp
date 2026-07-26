@@ -20,6 +20,7 @@
 #include "video_term.h"
 
 #include "audio_term.h"
+#include "help_term.h"
 #include "termgfx_quant.h"
 
 /* Frame capture: append every (indices, palette) pair handed to
@@ -331,6 +332,12 @@ void SyncscummTermGraphicsManager::updateScreen() {
 
 	if (!screenDirty && !cursorChanged && !overlayChanged)
 		return;   /* nothing changed at all -- keep the no-change path fast */
+
+	/* The help card owns the screen while it is up: presenting would paint the
+	 * picture straight over it. Dismissal invalidates the frame cache, so the
+	 * next present after it comes down is a whole frame. */
+	if (help_term_active())
+		return;
 
 	if (termgfx_termio_active()) {
 		compose();

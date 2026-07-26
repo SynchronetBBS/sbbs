@@ -127,6 +127,20 @@ int  termgfx_termio_stats_visible(void);
  * specifically for SyncTERM's persistent colour registers. */
 void termgfx_termio_tier_cycle(void);
 
+/* Stage raw bytes to the terminal through the door's own output path -- for a
+ * door drawing its own text over the picture (a help card, a notice).
+ *
+ * The caller owns the consequences: stop presenting frames while the overlay is
+ * up, and call termgfx_termio_invalidate() when it comes down. Nothing else
+ * repaints the covered region -- an unchanged frame de-dupes, and the dirty
+ * path only repaints what the GAME changed, not what the door drew over. */
+void termgfx_termio_write(const char *s, size_t n);
+
+/* Forget what the client is holding, so the next present() sends a whole frame.
+ * The companion to the above, and to anything else that changes the screen
+ * behind termgfx's back. */
+void termgfx_termio_invalidate(void);
+
 // Will this session's player actually HEAR audio? A door drives its
 // subtitles-auto decision off this. It is a property of the SESSION, not just
 // the terminal: a sysop who disabled sound ("[audio] enabled = false") reads 0

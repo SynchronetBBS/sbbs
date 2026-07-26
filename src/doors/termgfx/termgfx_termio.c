@@ -1949,6 +1949,26 @@ int termgfx_termio_have_sixel(void)     { return g_have_sixel; }
 int termgfx_termio_is_syncterm(void)    { return g_is_syncterm; }
 int termgfx_termio_jxl_supported(void)  { return g_jxl; }
 int termgfx_termio_stats_visible(void)  { return g_stats; }
+
+/* Raw bytes into the same staged stream the frames go through, so a door can
+ * paint its own text over the picture (a help card, a notice) without a second
+ * writer racing the frame path -- and so out_put()'s stage-full guard and the
+ * wire tee see them like everything else.
+ *
+ * A door that draws over the image is expected to stop presenting frames while
+ * its overlay is up, then call termgfx_termio_invalidate() when it comes down:
+ * nothing else repaints what the overlay covered, because an unchanged frame
+ * de-dupes and the dirty path only repaints what the GAME changed. */
+void termgfx_termio_write(const char *s, size_t n)
+{
+	if (s != NULL && n > 0)
+		out_put(s, n);
+}
+
+void termgfx_termio_invalidate(void)
+{
+	termgfx_invalidate_last();
+}
 unsigned termgfx_termio_frames_dropped(void) { return g_dropped_frames; }
 
 unsigned termgfx_termio_audio_dropped(void) { return g_audio_dropped; }
