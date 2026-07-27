@@ -3669,9 +3669,15 @@ static void termgfx_stats_draw(void)
 	 * without opening a different door to find out. */
 	termgfx_stats_mouse(mstxt, sizeof mstxt, g_mouse_wanted,
 	                    termgfx_mouse_pixels(&g_mouse));
+	/* Not gated on the terminal having REPORTED a pixel cell size. The diff runs
+	 * on a fixed tile grid in framebuffer space and the patch placement derives
+	 * its cell from canvas/grid, so neither needs it -- while SyncTERM never
+	 * reports one at all (CTerm has no xterm window ops; it uses CSI t as a
+	 * private palette command, so ESC[16t is silently dropped). Keying the
+	 * readout on it meant every SyncTERM session showed "dr n/a" while patching
+	 * was in fact running, which is worse than showing nothing. */
 	termgfx_stats_dr(drtxt, sizeof drtxt,
-	                 (g_cell_w <= 0 || g_cell_h <= 0) ? TERMGFX_STATS_DR_NA
-	                 : (g_dr_pct >= 0 ? g_dr_pct : TERMGFX_STATS_DR_NONE));
+	                 g_dr_pct >= 0 ? g_dr_pct : TERMGFX_STATS_DR_NONE);
 	/* No present completed in the last window (e.g. a paused game, or -- before
 	 * the palette-storm fix -- a fade's dark gap): show '-' rather than a
 	 * misleading "0fps 0KB/f". */
