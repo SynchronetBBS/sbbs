@@ -19,6 +19,12 @@
 - `getHostNameByAddr()` now supports IPv6
 - Stability and resource-leak fixes across all servers from a
   thorough Coverity scan
+- Unix-like systems: copying a file (the JavaScript `file_copy()`
+  and Synchronet's internal file copies) now preserves the source
+  file's permissions. Previously the copy was created with default
+  permissions, so copying an executable produced a file that could
+  not be run — a long-standing bug, present in v3.21 and earlier
+  (issue #1202)
 - Windows: `sbbs.exe`, `sbbsNTsvcs.exe`, `jsexec.exe`, and
   `sbbsctrl.exe` are now large-address-aware, so they can use up to
   ~4GB (rather than 2GB) of address space on 64-bit Windows
