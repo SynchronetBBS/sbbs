@@ -268,6 +268,28 @@ function str_cmds(str)
 			return;
 		}
 
+		help["XTRN [code]"] = "Run a pre-configured external program";
+		if(word=="XTRN") {
+			if(bbs.check_syspass()) {
+				str = str.substr(5);
+				if(str)
+					str = get_arg(str);
+				else {
+					var codes = [];
+					for(var i in xtrn_area.prog) {
+						console.uselect(codes.length, "Program", i);
+						codes.push(i);
+					}
+					var selection = console.uselect();
+					if(selection >= 0)
+						str = codes[selection];
+					alert(str);
+				}
+				if(str)
+					bbs.exec_xtrn(str);
+			}
+			return;
+		}
 
 		help["NODE [parameters]"] = "Executes the node utility with the passed parameters";
 		if(word=="NODE") {
