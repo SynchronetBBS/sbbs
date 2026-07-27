@@ -257,9 +257,9 @@ for example) still falls back to full frames.
 `[debug] dirty_log = true` in `syncretro.ini` turns on a per-frame trace of
 the dirty-rect decision -- why a given frame took the patch path or the full
 repaint path. Unlike this file's other diagnostic lines, it does NOT go to
-stderr: a native door is launched `EX_BIN`, and the BBS eats its stderr
-outright, so an `fprintf(stderr, ...)` here would be invisible under a real
-session. Instead it is its own `fopen(..., "a")`'d file (mirrors
+stderr: a stdio door's stderr is eaten by the BBS outright, and a socket
+door's is relayed line-by-line into the server log -- no place for a per-frame
+trace. Instead it is its own `fopen(..., "a")`'d file (mirrors
 `../syncduke/syncduke_log.c`), fflush'd after every line so a killed/hung
 session still leaves a readable tail, at:
 

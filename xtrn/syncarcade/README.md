@@ -96,8 +96,17 @@ loaded in testing — and the failures split roughly evenly between two causes:
   a clone does not.
 
 When a romset is refused, the door tells the player it is the **content** that is
-wrong for this core, rather than blaming the core. The reason is in the door log
-(`data/syncretro/syncretro_n<node>.log`), which names the files MAME wanted.
+wrong for this core, rather than blaming the core. The reason — which files MAME
+wanted — is in the door's diagnostics, and where those land depends on the host:
+
+- **\*nix**: in the Synchronet log, relayed there by the Terminal Server, each
+  line prefixed with the door's name (`syncretro: ...`), and the core's own
+  lines tagged `[MAME 2003+]` — the `Opening ROM file: <name>` sequence is the
+  one that names what it wanted. That is wherever `sbbscon` logs: the system log
+  (`journalctl -u sbbs`, `/var/log/syslog`) on a typical daemon install.
+- **Windows**: in `data/syncretro/syncretro_n<node>.log`. A door there is
+  launched with its console hidden, so it captures its own diagnostics to that
+  file per node instead.
 
 ## Playing
 

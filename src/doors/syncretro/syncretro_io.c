@@ -498,13 +498,12 @@ void sr_io_cycle_tier(void)
 
 /* --- [debug] dirty_log's OWN file, independent of stderr --------------------
  *
- * NOT fprintf(stderr, ...): a native door is launched EX_BIN, and the BBS EATS
- * its stderr outright (src/sbbs3/xtrn.cpp, "Eat stderr if mode is EX_BIN") --
- * verified empirically on this host (a live session left nothing in the
- * server log, journalctl, or any recently-touched file). So every OTHER
- * "syncretro: ..." fprintf(stderr, ...) in this file is likewise invisible
- * under a real BBS session; dirty_log cannot make that mistake too, since the
- * whole point is a sysop/dev being able to actually read the trace.
+ * NOT fprintf(stderr, ...): where a door's stderr ends up depends on how it was
+ * launched. A STDIO door's is eaten outright (src/sbbs3/xtrn.cpp, "Eat stderr
+ * if mode is EX_BIN"); a socket door's is drained a line at a time by the node
+ * thread and lprintf'd into the server log -- which a per-frame trace has no
+ * business flooding, at a syscall per line inside the frame loop. Its own file
+ * is readable in either mode and costs the server log nothing.
  *
  * This mirrors ../syncduke/syncduke_log.c exactly: our own fopen()'d file,
  * opened lazily on first write, appended (never truncated, so a rerun doesn't

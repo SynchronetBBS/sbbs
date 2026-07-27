@@ -212,7 +212,8 @@ always agree on the location.
 **`EX_NODISPLAY`** spawns the native door with `CREATE_NO_WINDOW` on Windows, so
 no per-session console window pops up on the BBS machine (the door draws to the
 client's terminal; its own diagnostics go to
-`data/syncretro/syncretro_n<node>.log`). No-op on \*nix.
+`data/syncretro/syncretro_n<node>.log`, rather than to the server log a \*nix
+launch relays its stderr to). No-op on \*nix.
 
 **The quotes matter.** `xtrn.cpp`'s `external()` splits the command line on bare
 spaces, and every real Intellivision filename has them. A `"` (or `<>|;`) in the
