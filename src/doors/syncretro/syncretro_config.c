@@ -70,6 +70,7 @@ static char g_launch_dir[PATH_MAX];   /* where the door was started: cwd BEFORE 
 static char g_system_dir[PATH_MAX];   /* BIOS: shared, read-only, per-install */
 static char g_save_dir[PATH_MAX];     /* per-user SRAM + save states */
 static int  g_dirty_rect = 1;   /* [video] dirty_rect */
+static int  g_pace_depth;       /* [video] pace_depth, 0 = auto (AIMD) */
 static int  g_palette_subset = 1;   /* [video] palette_subset */
 static int  g_dirty_log;        /* [debug] dirty_log, default FALSE */
 static int  g_input_device;     /* [input] device: 0 = leave the core's default */
@@ -195,6 +196,12 @@ static void sr_config_read_ini(void)
 		g_audio_chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", 100);
 		g_audio_prebuffer = iniGetInteger(ini, "audio", "prebuffer", 3);
 		g_dirty_rect      = iniGetBool(ini, "video", "dirty_rect", TRUE);
+		/* pace_depth -- how many frames may be in flight at once. 0 (the
+		 * default) lets the AIMD pacer choose from the measured round-trip.
+		 * Pinning it to 1 is a diagnostic: on the sixel tier a terminal draws
+		 * a frame progressively, so a second frame arriving mid-draw composites
+		 * two frames on screen -- which reads as tearing on scrolling content. */
+		g_pace_depth      = iniGetInteger(ini, "video", "pace_depth", 0);
 		g_palette_subset  = iniGetBool(ini, "video", "palette_subset", TRUE);
 		/* [idle] -- iniGetDuration() so "15m"/"900"/"1h" all work, and so a bare
 		 * number means SECONDS here exactly as it does in the lobby (which passes
@@ -265,6 +272,7 @@ static void sr_config_read_ini(void)
 }
 
 int    sr_config_dirty_rect(void)      { return g_dirty_rect; }
+int    sr_config_pace_depth(void)      { return g_pace_depth; }
 int    sr_config_palette_subset(void)  { return g_palette_subset; }
 unsigned sr_config_idle_timeout(void)  { return g_idle_timeout; }
 unsigned sr_config_idle_warn(void)     { return g_idle_warn; }

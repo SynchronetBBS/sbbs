@@ -99,6 +99,8 @@ int    sr_config_audio_prebuffer(void);   /* prebuffer, 2..8,      default 3 */
  * changed, instead of re-sending the whole picture every time. Off falls back to
  * whole frames, which is always correct and is what the door did before. */
 int    sr_config_dirty_rect(void);
+/* [video] pace_depth: frames allowed in flight; 0 = auto (the AIMD pacer). */
+int    sr_config_pace_depth(void);
 /* [video] palette_subset (default true) -- on a non-SyncTERM terminal, emit
  * only the sixel colors actually used by the frame instead of the whole
  * palette. Off restores the pre-feature behavior of always emitting the

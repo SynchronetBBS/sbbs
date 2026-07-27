@@ -276,6 +276,15 @@ int sr_io_get_fd(void)
  * permanently leak one in-flight slot). Same reasoning as syncmoo1_io.c. */
 static int      g_pace_inflight;
 static int      g_pace_depth = 3;   /* starting point until the first RTT sample lands */
+/* [video] pace_depth pins it instead, and the AIMD update below stands down.
+ * See sr_config_pace_depth(): 1 keeps a single frame in flight, so a terminal
+ * that draws sixel progressively never has a second frame arriving mid-draw. */
+static int      sr_pace_pinned(void)
+{
+	int d = sr_config_pace_depth();
+
+	return (d >= 1 && d <= SR_PACE_DEPTH_MAX) ? d : 0;
+}
 static uint32_t g_pace_adj_at;
 static uint32_t g_pace_progress_ms;
 static uint32_t g_rtt_ms, g_rtt_min, g_rtt_min_at;
@@ -313,7 +322,8 @@ void sr_io_pace_ack(void)
 
 		g_dsr_t = (g_dsr_t + 1) % SR_DSR_RING;
 		if (termgfx_rtt_sample(&g_rtt_ms, &g_rtt_min, &g_rtt_min_at, &g_rtt_high,
-		                       rtt, now, 0, 0))
+		                       rtt, now, 0, 0)
+		    && !sr_pace_pinned())
 			termgfx_aimd_update(1, &g_pace_depth, &g_pace_adj_at,
 			                    g_rtt_ms, g_rtt_min, g_rtt_high, SR_PACE_DEPTH_MAX, now);
 	}
@@ -1360,7 +1370,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		 * `depth` frames are in flight, DROP this present -- unless the terminal
 		 * has gone quiet past the deadline, in which case reclaim the pipeline so
 		 * a silent client can't wedge the door into a permanent freeze. */
-		if (g_pace_inflight >= g_pace_depth) {
+		if (g_pace_inflight >= (sr_pace_pinned() ? sr_pace_pinned() : g_pace_depth)) {
 			if ((int32_t)(sr_io_now_ms() - g_pace_progress_ms) > SR_PACE_DEADLINE_MS) {
 				sr_trace("pace reclaim inflight=%d depth=%d", g_pace_inflight, g_pace_depth);
 				g_pace_inflight = 0;
