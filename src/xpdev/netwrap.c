@@ -93,11 +93,11 @@ const char* getHostNameByAddr(const char* addr, char* buf, size_t size)
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
 	if (addr != NULL) {
-		if (xp_inet_pton(AF_INET, addr, &in.sin_addr) != -1) {
+		if (xp_inet_pton(AF_INET, addr, &in.sin_addr) == 1) {
 			if (getnameinfo((SOCKADDR*)&in, sizeof in, buf, size, NULL, 0, NI_NAMEREQD) == 0)
 				result = buf;
 		}
-		else if (xp_inet_pton(AF_INET6, addr, &in6.sin6_addr) != -1) {
+		else if (xp_inet_pton(AF_INET6, addr, &in6.sin6_addr) == 1) {
 			if (getnameinfo((SOCKADDR*)&in6, sizeof in6, buf, size, NULL, 0, NI_NAMEREQD) == 0)
 				result = buf;
 		}
@@ -255,9 +255,9 @@ isValidAddressString(const char *str)
 	/*
 	 * Per RFC-1123, we need to check for valid IP address first
 	 */
-	if (xp_inet_pton(AF_INET, str, addr) != -1)
+	if (xp_inet_pton(AF_INET, str, addr) == 1)
 		result = true;
-	else if (xp_inet_pton(AF_INET6, str, addr) != -1)
+	else if (xp_inet_pton(AF_INET6, str, addr) == 1)
 		result = true;
 
 #ifdef _WIN32
@@ -320,7 +320,7 @@ int main(int argc, char** argv)
 	if (argc > 1) {
 		printf("isValidAddressString(%s) = %d\n", argv[1], isValidAddressString(argv[1]));
 		printf("isValidHostname(%s) = %d\n", argv[1], isValidHostname(argv[1]));
-		char* p = getHostNameByAddr(argv[1], buf, sizeof buf);
+		const char* p = getHostNameByAddr(argv[1], buf, sizeof buf);
 		printf("%s\n", p == NULL ? "(null)" : p);
 	}
 
