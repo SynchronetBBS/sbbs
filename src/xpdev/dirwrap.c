@@ -1266,10 +1266,11 @@ BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
 	fprintf(stderr, "%s not implemented\n", __func__);
 	return FALSE;
 #else
-	uint8_t buf[256 * 1024];
-	FILE*   in;
-	FILE*   out;
-	BOOL    success = TRUE;
+	uint8_t     buf[256 * 1024];
+	FILE*       in;
+	FILE*       out;
+	BOOL        success = TRUE;
+	struct stat st;
 
 	if (failIfExists && fexist(dest))
 		return FALSE;
@@ -1281,6 +1282,10 @@ BOOL CopyFile(const char* src, const char* dest, BOOL failIfExists)
 	}
 
 	time_t ftime = filetime(fileno(in));
+	/* fopen() created the destination with 0666 & ~umask, losing (among others)
+	   the execute bits. The set-user/group-ID bits are deliberately not copied. */
+	if (fstat(fileno(in), &st) == 0)
+		fchmod(fileno(out), st.st_mode & 0777);
 	while (!feof(in)) {
 		size_t rd = fread(buf, sizeof(uint8_t), sizeof(buf), in);
 		if (rd < 1)
