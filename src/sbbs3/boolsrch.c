@@ -514,9 +514,10 @@ bool bool_expr_match_fields(const bool_expr_t* expr, const char* const* fields, 
 }
 
 /* ------------------------------------------------------------------------ */
-/* Diagnostic helpers (file-local; reachable from unit tests that include   */
-/* this translation unit directly).                                         */
+/* Diagnostic helpers, compiled only into the unit-test driver (which        */
+/* includes this translation unit directly and defines the guard macro).     */
 /* ------------------------------------------------------------------------ */
+#ifdef BOOLSRCH_UNIT_TEST
 
 static bool bool_expr_is_simple(const bool_expr_t* expr)
 {
@@ -587,3 +588,5 @@ static size_t bool_expr_describe(const bool_expr_t* expr, char* out, size_t outs
 	out[pos] = '\0';
 	return pos;
 }
+
+#endif /* BOOLSRCH_UNIT_TEST */

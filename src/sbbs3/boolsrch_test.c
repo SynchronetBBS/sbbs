@@ -20,9 +20,13 @@
 /* Pull in the compiled implementation as a translation-unit include so the
  * test driver can reach file-local helpers (bool_expr_describe,
  * bool_expr_is_simple, bool_expr_simple_text) without exposing them in the
- * public boolsrch.h header. Build this test as a single source file:
+ * public boolsrch.h header. Those helpers exist only for these tests, so
+ * boolsrch.c compiles them only when BOOLSRCH_UNIT_TEST is defined; the
+ * regular build would otherwise warn that they're unused. Build this test as
+ * a single source file:
  *   cl /Fe:boolsrch_test.exe boolsrch_test.c       (MSVC; see notes in file)
  * — do NOT also pass boolsrch.c on the command line. */
+#define BOOLSRCH_UNIT_TEST
 #include "boolsrch.c"
 
 /* Standalone build provides its own strcasestr and safe_snprintf so the test
@@ -303,6 +307,9 @@ int main(void)
 		bool_expr_t* e   = bool_expr_compile("just one phrase", &err);
 		CHECK(e != NULL && bool_expr_is_simple(e),
 		    "is_simple: a bare phrase should report simple");
+		CHECK(e != NULL && bool_expr_simple_text(e) != NULL
+		    && strcmp(bool_expr_simple_text(e), "just one phrase") == 0,
+		    "simple_text: a bare phrase should yield its term");
 		bool_expr_free(e);
 		free(err);
 
@@ -310,6 +317,8 @@ int main(void)
 		e   = bool_expr_compile("a & b", &err);
 		CHECK(e != NULL && !bool_expr_is_simple(e),
 		    "is_simple: an AND expr should not report simple");
+		CHECK(e != NULL && bool_expr_simple_text(e) == NULL,
+		    "simple_text: an AND expr should yield no term");
 		bool_expr_free(e);
 		free(err);
 	}
