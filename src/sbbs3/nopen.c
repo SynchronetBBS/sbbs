@@ -255,9 +255,10 @@ bool fcompare(const char* fn1, const char* fn2)
 /****************************************************************************/
 /* Copies a file, opening the source and destination DENYNONE, so that a		*/
 /* copy in progress never blocks other openers (local or over a network		*/
-/* file system) from writing to either file.								*/
+/* file system) from writing to either file.  This is the nopen() flavor of	*/
+/* xpdev's CopyFile(), which does neither the share mode nor the retries.	*/
 /****************************************************************************/
-bool fcopy(const char* src, const char* dest)
+bool nfcopy(const char* src, const char* dest)
 {
 	int      in;
 	int      out;
@@ -342,7 +343,7 @@ bool backup(const char *fname, int backup_level, bool ren)
 				/* preserve the original time stamp */
 				ut.modtime = fdate(fname);
 
-				if (!fcopy(fname, newname))
+				if (!nfcopy(fname, newname))
 					return false;
 
 				ut.actime = time(NULL);

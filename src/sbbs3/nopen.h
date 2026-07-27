@@ -50,7 +50,7 @@ fmutex_t fmutex_init(void);
 bool    fmutex_open(fmutex_t*, const char* text, long max_age);
 bool    fmutex_close(fmutex_t*);
 bool    fcompare(const char* fn1, const char* fn2);
-bool    fcopy(const char* src, const char* dest);
+bool    nfcopy(const char* src, const char* dest);
 bool    backup(const char* org, int backup_level, bool ren);
 
 #ifdef __cplusplus
