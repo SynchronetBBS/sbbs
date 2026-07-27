@@ -18,7 +18,7 @@
  *
  * load('dns.js');
  * dns = new DNS(true);
- * log(LOG_ERROR, dns.resolve('example.com').toSource());
+ * log(LOG_ERROR, JSON.stringify(dns.resolve('example.com')));
  *
  */
 
@@ -610,15 +610,15 @@ DNS.prototype.synchronous_query = function(queries, callback, thisObj, recursive
 };
 
 DNS.prototype.resolveIPv4 = function(host, callback, thisObj) {
-	this.resolveProcess(host, callback, [{query:host, type:'A'}], thisObj);
+	return this.resolveProcess(host, callback, [{query:host, type:'A'}], thisObj);
 }
 
 DNS.prototype.resolveIPv6 = function(host, callback, thisObj) {
-	this.resolveProcess(host, callback, [{query:host, type:'AAAA'}], thisObj);
+	return this.resolveProcess(host, callback, [{query:host, type:'AAAA'}], thisObj);
 }
 
 DNS.prototype.resolve = function(host, callback, thisObj) {
-	this.resolveProcess(host, callback, [{query:host, type:'AAAA'},{query:host, type:'A'}], thisObj);
+	return this.resolveProcess(host, callback, [{query:host, type:'AAAA'},{query:host, type:'A'}], thisObj);
 }
 
 DNS.prototype.resolveProcess = function(host, callback, dnstype, thisObj)
