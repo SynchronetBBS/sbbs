@@ -6,8 +6,6 @@
 // door binary against a different libretro core. Adding a console is adding one of
 // these files, not forking a lobby.
 //
-// See src/doors/syncretro/M3_MULTICORE.md.
-//
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
@@ -20,7 +18,7 @@ syncretro_lobby({
 	short:    "NES",                     /* -> id "nes": the save dir and ROM cache */
 	core:     "fceumm_libretro",         /* no extension: .so / .dll / .dylib */
 	/* A NES controller IS a plain RetroPad -- d-pad, B, A, Select, Start -- so it
-	 * needs no console-specific C at all. See M3_MULTICORE.md sec 4. */
+	 * needs no console-specific C at all. */
 	profile:  "pad",
 
 	/* What a NES cartridge looks like. fceumm's own valid_extensions are

@@ -12,8 +12,8 @@ the game data (`yumenikki/`), and the fetched-data helper live here. The
 **source** (the vendored EasyRPG Player engine plus the Synchronet backend that
 drives it) lives in `src/doors/syncrpg/` of the Synchronet source tree; that one
 binary can play any RPG Maker 2000/2003 game — this directory just points it at
-Yume Nikki. See `src/doors/syncrpg/README.md` for the door's full, BBS-agnostic
-documentation (DOOR32.SYS contract, terminal tiers, architecture).
+Yume Nikki. The door's full, BBS-agnostic documentation (DOOR32.SYS contract,
+terminal tiers, architecture) ships alongside that source.
 
 > **Note:** Yume Nikki contains occasional flashing imagery. Players sensitive
 > to flashing graphics should take care.

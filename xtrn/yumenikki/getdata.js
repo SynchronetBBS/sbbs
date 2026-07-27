@@ -6,11 +6,9 @@
 // download id 4174) -- a plain ZIP containing a ready RM2003 tree under
 // yumenikki/ with ASCII asset filenames, so Synchronet's native Archive
 // (libarchive) can unpack it directly with no transcode. This is the
-// EasyRPG-community's own recommended source; see
-// src/doors/syncrpg/PROVENANCE.md /
-// docs/superpowers/specs/2026-07-19-syncrpg-door-design.md for why the
-// archive.org copy (an LZH-in-ZIP with Shift-JIS names) was rejected --
-// Synchronet's Archive class does ZIP but not LHA.
+// EasyRPG-community's own recommended source; the archive.org copy (an
+// LZH-in-ZIP with Shift-JIS names) was rejected because Synchronet's Archive
+// class does ZIP but not LHA.
 //
 // This is the INSTALLED-PACKAGE twin of src/doors/syncrpg/getdata.js (the
 // source tree's own copy, which drops the same data into test/games/ for the

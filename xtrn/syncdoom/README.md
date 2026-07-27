@@ -61,7 +61,8 @@ at configure time.
 - **Linux / Unix-like** with GCC or Clang — supported.
 - **Windows / MSVC** — supported (Visual Studio 2022). Build with the
   `build.bat` helper, or CMake directly; the JPEG-XL graphics tier uses
-  libjxl via vcpkg. See `src/doors/syncdoom/COMPILING.md` for the steps.
+  libjxl via vcpkg. Step-by-step build instructions ship with the source in
+  `src/doors/syncdoom` of the Synchronet source tree.
 
 ## Installing into Synchronet
 
@@ -123,7 +124,7 @@ internet). You can also run it later by hand: `jsexec ../xtrn/syncdoom/getwads.j
 - **Multiplayer reach** — out of the box a match server binds loopback
   (`127.0.0.1`), so play is **same-host only**. For cross-host (multi-machine
   LAN) play set `[net] advertise` to this host's LAN IP/DNS name (`bind` follows
-  it); see the `[net]` comments and `src/doors/syncdoom/MULTIPLAYER.md`.
+  it); see the `[net]` comments in `syncdoom.example.ini`.
 - **`wads/`** — put your IWADs and PWADs here (the directory is set by
   `[wads] dir`). Freedoom (`freedoom1.wad`, `freedoom2.wad`) is free to
   redistribute; the commercial `doom.wad`/`doom2.wad` you must supply yourself.

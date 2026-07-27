@@ -42,7 +42,8 @@ Windows host and a \*nix one needs each host's own binary *and* its own core
 `deploy.js` and `getcore.js` once on each.
 
 Full build instructions — prerequisites, configure options, the unit tests and
-the `probe_core` diagnostic — are in `src/doors/syncretro/COMPILING.md`.
+the `probe_core` diagnostic — ship with the SyncRetro source in
+`src/doors/syncretro` of the Synchronet source tree.
 
 ## Installing into Synchronet
 
@@ -172,8 +173,8 @@ cabinet's second stick — the one reached only via `I`/`K` (see
 `I K -- Right tread` instead of numbering six buttons the driver may not even
 have and showing a second-stick row on cabinets that have no second stick.
 Those values are measured with `probe_core -hold`, never guessed, and a
-cabinet is labelled completely or not at all. See
-[GAMES_INI.md](../../src/doors/syncretro/GAMES_INI.md).
+cabinet is labelled completely or not at all. `games.ini` itself documents the
+full key set in its own comments.
 
 **`names.json` is no longer read.** An install that had one keeps its file, and
 the picker ignores it; re-enter any hand-added titles as `games.ini` sections.

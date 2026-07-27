@@ -4,9 +4,9 @@
 //
 // 1oom is only the engine; the MoO1 data files are commercial content
 // (c) Simtex / MicroProse, NOT shipped with this door -- supplying a
-// legally-owned copy is the sysop's responsibility (see README.md and
-// DESIGN.md section 15).  This script only extracts/copies from what the sysop
-// provides, looking (in the door directory) for:
+// legally-owned copy is the sysop's responsibility (see README.md).  This
+// script only extracts/copies from what the sysop provides, looking (in the
+// door directory) for:
 //
 //   * loose *.lbx files already dropped in the door dir (nothing to do), or
 //     *.lbx found in a subdirectory -- e.g. an extracted GOG/DOS game folder --

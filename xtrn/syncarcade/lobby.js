@@ -11,8 +11,6 @@
 // `ext`), and the high-score table belongs to the MACHINE rather than to each
 // player (see `shared_saves`).
 //
-// See src/doors/syncretro/M3_MULTICORE.md.
-//
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.

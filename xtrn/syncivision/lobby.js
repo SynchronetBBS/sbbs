@@ -6,8 +6,6 @@
 // door binary against a different libretro core. Adding a console is adding one of
 // these files, not forking a lobby.
 //
-// See src/doors/syncretro/M3_MULTICORE.md and LAUNCHER.md.
-//
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
 // Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
@@ -22,7 +20,7 @@ syncretro_lobby({
 	 * and save states are orphaned under data/user/####/intv. */
 	short:    "Intv",
 	core:     "freeintv_libretro",       /* no extension: .so / .dll / .dylib */
-	profile:  "intv",                    /* keypad on the disc angle; see M2_INPUT.md */
+	profile:  "intv",                    /* keypad on the disc angle */
 
 	/* What an Intellivision cartridge looks like. The size band is the whole
 	 * cartridge range -- anything outside it is metadata litter, not a game. */
