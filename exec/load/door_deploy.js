@@ -218,6 +218,41 @@ function door_deploy_busy_note(dst)
 	    + " runs. Re-run this deploy once the door is idle.");
 }
 
+// Give the deployed binary its execute permission back. file_copy() creates the
+// destination with fopen(dest, "wb") -- mode 0666 & ~umask -- and carries the
+// source's modification time across but NOT its permissions, so a door binary
+// arrives non-executable and the BBS refuses to launch it:
+//
+//   !ERROR 13 (Permission denied) executing: /sbbs/xtrn/syncalert/syncalert
+//
+// This only ever bit a FIRST deploy: copying over an existing binary keeps the
+// mode that file already had, so every development install -- where the door had
+// been deployed at least once, or the destination is a symlink to the build tree
+// -- looked fine, and only a sysop installing fresh ever saw it.
+//
+// Only the execute bits are added, and only where read is already granted, so a
+// deliberately group-only or otherwise restricted install is never widened. A
+// destination that can already be executed is left alone entirely -- otherwise
+// every deploy onto a file owned by the BBS user (or reached over a mount that
+// forbids chmod) would print a warning about a mode that is in fact correct.
+// Modes are written in hex with an octal comment, the spelling stock scripts use
+// (exec/letsyncrypt.js).
+function door_deploy_exec_bit(dst)
+{
+	var mode, want;
+
+	if (/^win/i.test(String(system.platform)))   // no execute bit to lose
+		return;
+	mode = file_attrib(dst) & 0x1ff;             // 0777
+	want = (mode & 0x124) >> 2;                  // 0444 -> 0111: x wherever r
+	if ((mode & want) == want)                   // already executable -- nothing to do
+		return;
+	if (!file_chmod(dst, mode | want))
+		print("[deploy] WARNING: could not set permissions on " + fullpath(dst)
+		    + " -- if it is not executable the BBS will fail to launch this door"
+		    + " with a permission error (chmod 755 fixes it).");
+}
+
 function door_deploy_file(exe, dst)
 {
 	var was = file_size(exe);
@@ -226,6 +261,10 @@ function door_deploy_file(exe, dst)
 		// fullpath() for the same reason "Deployed:" uses it: a destination composed
 		// as <ctrl_dir>/../xtrn/... is unreadable verbatim, and the sysop is reading
 		// this line to decide whether their build landed.
+		// Still fix the permissions: a binary deployed before this was corrected is
+		// byte-identical and non-executable, and re-running the deploy is exactly
+		// what a sysop hitting the permission error will try.
+		door_deploy_exec_bit(dst);
 		print("[deploy] " + fullpath(dst) + " is already this build -- nothing to copy");
 		return true;
 	}
@@ -247,6 +286,7 @@ function door_deploy_file(exe, dst)
 		    + " -- REBUILD before running this door.");
 		return false;
 	}
+	door_deploy_exec_bit(dst);
 	print("[deploy] Deployed: " + fullpath(dst));
 	return true;
 }
