@@ -17,6 +17,9 @@
   server(s) to clear their in-memory login-attempts list; matching
   `ctrl/clear` and `ctrl/clear.<svc>` semaphore files also added
 - `getHostNameByAddr()` now supports IPv6
+- Windows: `system.name_servers` now includes the system's IPv6 name servers —
+  on a host with IPv6-only DNS the list was empty, which broke `dns.js` (and
+  so `ircd.js`, which won't start without it)
 - Stability and resource-leak fixes across all servers from a
   thorough Coverity scan
 - Unix-like systems: copying a file (the JavaScript `file_copy()`
@@ -166,6 +169,8 @@
 - Fixed `system.filter_ip()` ignoring a duration argument that followed
   the filename (its documented position), which had produced permanent
   (never-expiring) filter entries instead of timed ones
+- Auto-detected DNS server addresses are now restricted to IPv4, since
+  the MX look-up only speaks IPv4
 
 ## Services
 
@@ -348,6 +353,8 @@
   `[debug] hide_console`, or the `-showconsole`/`-hideconsole`
   arguments) — which covers non-Synchronet BBSes, where there is
   no `XTRN_NODISPLAY` setting to suppress it
+- `dns.js`: `resolve()`, `resolveIPv4()` and `resolveIPv6()` return the
+  resolved addresses again when used in synchronous mode
 
 ## JavaScript
 
