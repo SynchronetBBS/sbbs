@@ -1018,7 +1018,7 @@ static void syncduke_emit_overlay(int force)
 		termgfx_stats_zoom(zm, sizeof(zm),
 		                   syncduke_last_tier == 1 ? syncduke_last_zoom_x : 1,
 		                   syncduke_last_tier == 1 ? syncduke_last_zoom_y : 1);
-		tn = snprintf(txt, sizeof(txt), "%s %uKB enc %2ums%s%s%s ",
+		tn = snprintf(txt, sizeof(txt), "%s %uKB enc %2ums%s%s%s",
 		              head, kb, enc,
 		              kbd,
 		              (syncduke_last_tier == 1 && syncduke_img_blob_ok()) ? " blob" : "",   /* JXL inline (DrawJXLBlob) */
@@ -1026,6 +1026,7 @@ static void syncduke_emit_overlay(int force)
 	}
 	if (tn < 0)
 		return;
+	tn = (int)termgfx_stats_clip(txt, syncduke_term_cols());
 	if (!force && strcmp(txt, syncduke_ov_last) == 0)
 		return;                                          /* unchanged + frame didn't repaint it */
 	if (tn < (int)sizeof(syncduke_ov_last))

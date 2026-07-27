@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 
 #include "stats.h"
 
@@ -75,7 +76,7 @@ int termgfx_stats_head(char *buf, size_t bufsz, const char *tier,
 
 	if (buf == NULL || bufsz == 0)
 		return 0;
-	return snprintf(buf, bufsz, " %s %ufps %s lag %u/%ums depth %d%s",
+	return snprintf(buf, bufsz, " %s %ufps %s lag %u/%ums d%d%s",
 	                tier != NULL ? tier : "?",
 	                stats_clamp(fps),
 	                termgfx_stats_rate(rate, sizeof rate, kbps),
@@ -118,6 +119,30 @@ int termgfx_stats_zoom(char *buf, size_t bufsz, int zoom_x, int zoom_y)
 	if (zoom_x == zoom_y)
 		return snprintf(buf, bufsz, " x%d", zoom_x);
 	return snprintf(buf, bufsz, " x%dx%d", zoom_x, zoom_y);
+}
+
+size_t termgfx_stats_clip(char *buf, int cols)
+{
+	size_t len;
+	int    i;
+
+	if (buf == NULL)
+		return 0;
+	len = strlen(buf);
+	if (cols <= 0 || len <= (size_t)cols)
+		return len;
+	/* Cut at a token boundary if there is one: every field begins with a
+	 * space, so backing up to the last one drops whole fields. Cutting at the
+	 * column would leave "kitty turn=n", which reads as a value rather than as
+	 * a field that did not fit. */
+	for (i = cols; i > 0; i--) {
+		if (buf[i] == ' ') {
+			buf[i] = '\0';
+			return (size_t)i;
+		}
+	}
+	buf[cols] = '\0';
+	return (size_t)cols;
 }
 
 int termgfx_stats_dr(char *buf, size_t bufsz, int pct)

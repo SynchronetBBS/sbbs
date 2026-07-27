@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include "stats.h"
 
@@ -27,15 +28,35 @@ int main(void) {
 	/* --- the shared head ------------------------------------------------- */
 
 	termgfx_stats_head(buf, sizeof buf, "sixel", 30, 412, 42, 12, 3, 0);
-	assert(strcmp(buf, " sixel 30fps 412KB/s lag 42/12ms depth 3") == 0);
+	assert(strcmp(buf, " sixel 30fps 412KB/s lag 42/12ms d3") == 0);
 
 	termgfx_stats_head(buf, sizeof buf, "jxl", 35, 1382, 42, 12, 4, 1);
-	assert(strcmp(buf, " jxl 35fps 1.3MB/s lag 42/12ms depth 4/auto") == 0);
+	assert(strcmp(buf, " jxl 35fps 1.3MB/s lag 42/12ms d4/auto") == 0);
 
 	/* Clamped at four digits: a garbage sample must not widen the row past
 	 * the terminal and wrap the strip onto the game view. */
 	termgfx_stats_head(buf, sizeof buf, "text", 123456, 0, 999999, 70000, 1, 0);
-	assert(strcmp(buf, " text 9999fps 0KB/s lag 9999/9999ms depth 1") == 0);
+	assert(strcmp(buf, " text 9999fps 0KB/s lag 9999/9999ms d1") == 0);
+
+	/* The whole strip a door assembles -- this head plus its own fields --
+	 * has to fit an 80-column terminal, which is the width that overflowed
+	 * and the reason the depth reads "d3" rather than "depth 3". The two
+	 * shapes SyncDuke and SyncDOOM can actually reach: the widest tier name
+	 * (a text tier, so no inline-blob or upscale field), and the JXL tier,
+	 * which is where those two fields appear. */
+	{
+		char strip[160], kbd[16];
+
+		termgfx_stats_kbd(kbd, sizeof kbd, 1, 1, 1);
+
+		termgfx_stats_head(buf, sizeof buf, "blocks+shades", 30, 412, 42, 12, 3, 1);
+		snprintf(strip, sizeof strip, "%s %uKB enc %2ums%s", buf, 128u, 12u, kbd);
+		assert(strlen(strip) <= 80);
+
+		termgfx_stats_head(buf, sizeof buf, "jxl", 30, 412, 42, 12, 3, 1);
+		snprintf(strip, sizeof strip, "%s %uKB enc %2ums%s blob x2", buf, 128u, 12u, kbd);
+		assert(strlen(strip) <= 80);
+	}
 
 	/* --- the rolling window ---------------------------------------------- */
 
@@ -98,6 +119,24 @@ int main(void) {
 	assert(strcmp(buf, " x2") == 0);
 	termgfx_stats_zoom(buf, sizeof buf, 2, 3);
 	assert(strcmp(buf, " x2x3") == 0);
+
+	/* --- the width guard -------------------------------------------------- */
+
+	strcpy(buf, " sixel 30fps 412KB/s");
+	assert(termgfx_stats_clip(buf, 0) == 20);            /* width unknown: untouched */
+	assert(termgfx_stats_clip(buf, 20) == 20);           /* exactly the row */
+	assert(strcmp(buf, " sixel 30fps 412KB/s") == 0);
+
+	/* One column too narrow drops the whole field, not its first characters:
+	 * a half-printed "412KB" would read as a value. */
+	assert(termgfx_stats_clip(buf, 19) == 12);
+	assert(strcmp(buf, " sixel 30fps") == 0);
+
+	/* A row too narrow for even the first field still leaves something, and
+	 * still leaves it within the row. */
+	strcpy(buf, " sixel 30fps");
+	assert(termgfx_stats_clip(buf, 4) == 4);
+	assert(strcmp(buf, " six") == 0);
 
 	return 0;
 }

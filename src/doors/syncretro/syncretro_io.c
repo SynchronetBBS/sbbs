@@ -1000,9 +1000,10 @@ static void sr_io_stats_emit(int force)
 		termgfx_stats_head(head, sizeof head, sr_io_tier_name(),
 		                   g_stats.fps, g_stats.kbps, g_rtt_ms, g_rtt_min,
 		                   g_pace_depth, 0);
-		tn = snprintf(txt, sizeof txt, "%s %s%s%s ",
+		tn = snprintf(txt, sizeof txt, "%s %s%s%s",
 		              head, sr_input_keymode_name(), drtxt,
 		              sr_audio_blob_active() ? " a-blob" : "");   /* audio streaming inline (A;LoadBlob) */
+		tn = (int)termgfx_stats_clip(txt, g_grid_cols);   /* never wider than the row */
 	}
 
 	if (g_toast_drawn)

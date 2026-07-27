@@ -990,7 +990,7 @@ static void emit_overlay(int force)
 		                   (g_mode == MODE_JXL) ? g_last_zoom_y : 1);
 		termgfx_stats_kbd(kbd, sizeof(kbd), g_evdev_active || g_kitty_active,
 		                  !g_evdev_active, sd_turn_native());
-		tn = snprintf(txt, sizeof(txt), "%s %uKB enc %2ums%s%s%s ",
+		tn = snprintf(txt, sizeof(txt), "%s %uKB enc %2ums%s%s%s",
 		              head,
 		              kb, enc,
 		              kbd,
@@ -1005,6 +1005,9 @@ static void emit_overlay(int force)
 	// It also inherits the post-frame redraw below for free.
 	if (g_idle_showing)
 		snprintf(txt, sizeof(txt), "%s", g_idle_msg);
+
+	// Never wider than the row it sits on -- see termgfx_stats_clip().
+	tn = (int)termgfx_stats_clip(txt, overlay_cols());
 
 	if (!force && strcmp(txt, g_ov_last) == 0)
 		return;                         // unchanged and the frame didn't repaint it -> nothing to send

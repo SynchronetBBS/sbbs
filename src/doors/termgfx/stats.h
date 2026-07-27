@@ -10,7 +10,7 @@
  * the bottom row, and all three grew their own copy of it: a rolling ~2s
  * window over emitted frames and wire bytes, and a readout that starts
  *
- *     " <tier> <fps>fps <rate> lag <cur>/<min>ms depth <n>[/auto]"
+ *     " <tier> <fps>fps <rate> lag <cur>/<min>ms d<n>[/auto]"
  *
  * before each door appends its own fields. Three copies meant three chances
  * to drift, and they had: SyncRetro printed raw KB/s, so a fast link showed
@@ -66,11 +66,14 @@ const char *termgfx_stats_rate(char *buf, size_t bufsz, uint32_t kbps);
 
 /* The head every door's strip shares, with a leading and no trailing space:
  *
- *     " sixel 30fps 412KB/s lag 42/12ms depth 3/auto"
+ *     " sixel 30fps 412KB/s lag 42/12ms d3/auto"
  *
  * depth_auto appends "/auto" (the AIMD pipeline depth); pass 0 where the door
- * has no auto mode. fps and both round-trips are clamped to 9999 so a garbage
- * sample cannot widen the row. Returns the snprintf length. */
+ * has no auto mode. The depth is spelled "d3" rather than "depth 3" to match
+ * termgfx_termio's row and to leave the tail fields room on an 80-column
+ * terminal, which the long spelling did not. fps and both round-trips are
+ * clamped to 9999 so a garbage sample cannot widen the row. Returns the
+ * snprintf length. */
 int termgfx_stats_head(char *buf, size_t bufsz, const char *tier,
                        uint32_t fps, uint32_t kbps,
                        uint32_t rtt_ms, uint32_t rtt_min_ms,
@@ -111,6 +114,18 @@ int termgfx_stats_zoom(char *buf, size_t bufsz, int zoom_x, int zoom_y);
 #define TERMGFX_STATS_DR_NA   (-2)      /* no cell grid: cannot patch at all */
 #define TERMGFX_STATS_DR_OFF  (-3)      /* the sysop turned patching off */
 int termgfx_stats_dr(char *buf, size_t bufsz, int pct_or_state);
+
+/* Clip an assembled strip to `cols` columns in place, returning its new length;
+ * cols <= 0 (width not known yet) leaves it alone. The last thing a door does
+ * before painting, because the strip sits on the LAST row of the screen: one
+ * column too wide and it either loses its tail to the margin or wraps and
+ * scrolls the game view up, and which of the two happens is the terminal's
+ * choice, not ours. Clamping the individual numbers is not enough -- the
+ * fields accumulate, and an 80-column SyncTERM overflowed by gaining one.
+ *
+ * Cuts at a field boundary (fields begin with a space) so a survivor is never a
+ * half-printed value. The strip is ASCII, so a column is a byte. */
+size_t termgfx_stats_clip(char *buf, int cols);
 
 #ifdef __cplusplus
 }
