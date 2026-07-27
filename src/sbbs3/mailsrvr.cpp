@@ -1587,8 +1587,8 @@ static bool pop3_client_thread(pop3_t* pop3)
 				if (IS_DIGIT(*p)) {
 					msgnum = strtoul(p, NULL, 10);
 					if (msgnum < 1 || msgnum > msgs) {
-						lprintf(LOG_NOTICE, "%04d %-5s <%s> !INVALID message #%" PRIu32
-						        , socket, client.protocol, user.alias, msgnum);
+						lprintf(LOG_NOTICE, "%04d %-5s <%s> !INVALID message #%" PRIu32 " of %" PRIu32 " with command: %s"
+						        , socket, client.protocol, user.alias, msgnum, msgs, buf);
 						sockprintf(socket, client.protocol, session, "-ERR no such message");
 						continue;
 					}
@@ -1678,8 +1678,8 @@ static bool pop3_client_thread(pop3_t* pop3)
 					lines = atol(p);
 				}
 				if (msgnum < 1 || msgnum > msgs) {
-					lprintf(LOG_NOTICE, "%04d %-5s <%s> !ATTEMPTED to retrieve an INVALID message #%" PRIu32
-					        , socket, client.protocol, user.alias, msgnum);
+					lprintf(LOG_NOTICE, "%04d %-5s <%s> !ATTEMPTED to retrieve an INVALID message #%" PRIu32 " of %" PRIu32 " with command: %s"
+					        , socket, client.protocol, user.alias, msgnum, msgs, buf);
 					sockprintf(socket, client.protocol, session, "-ERR no such message");
 					continue;
 				}
@@ -1774,8 +1774,8 @@ static bool pop3_client_thread(pop3_t* pop3)
 				msgnum = strtoul(p, NULL, 10);
 
 				if (msgnum < 1 || msgnum > msgs) {
-					lprintf(LOG_NOTICE, "%04d %-5s <%s> !ATTEMPTED to delete an INVALID message #%" PRIu32
-					        , socket, client.protocol, user.alias, msgnum);
+					lprintf(LOG_NOTICE, "%04d %-5s <%s> !ATTEMPTED to delete an INVALID message #%" PRIu32 " of %" PRIu32 " with command: %s"
+					        , socket, client.protocol, user.alias, msgnum, msgs, buf);
 					sockprintf(socket, client.protocol, session, "-ERR no such message");
 					continue;
 				}
