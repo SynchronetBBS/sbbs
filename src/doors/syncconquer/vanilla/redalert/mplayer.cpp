@@ -89,6 +89,9 @@ GameType Select_MPlayer_Game(void)
     int d_cancel_h = 9 * RESFACTOR;
     int d_cancel_x = d_dialog_cx - d_cancel_w / 2;
     int d_cancel_y = d_ipx_y + d_ipx_h + d_margin;
+#ifdef SYNCCONQUER_NO_NETGAME
+    d_cancel_y = d_ipx_y; // no network button to sit above it
+#endif
 
     GraphicBufferClass seen_buff_save(VisiblePage.Get_Width(), VisiblePage.Get_Height(), (void*)NULL);
 
@@ -105,7 +108,7 @@ GameType Select_MPlayer_Game(void)
 
     bool ipx_avail = false;
 
-#ifdef NETWORKING
+#if defined(NETWORKING) && !defined(SYNCCONQUER_NO_NETGAME)
     //
     // If neither IPX or winsock are active then do only the modem serial dialog
     //

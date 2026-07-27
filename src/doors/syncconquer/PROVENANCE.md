@@ -676,6 +676,21 @@ rest; these are the local edits on top of it (plus a couple of shared
     side-pick screen's palettes out of those same files, so skipping the open
     would break the screen that leads INTO the briefing.
 
+41. **Suppress the Network entry in the multiplayer menu
+    (`redalert/mplayer.cpp` + `tiberiandawn/mplayer.cpp`).** `Select_MPlayer_Game()`
+    offers Skirmish, Network and Cancel; the door defines `SYNCCONQUER_NO_NETGAME`
+    (CMakeLists.txt) and the patch widens the existing `#ifdef NETWORKING` gate on
+    `ipx_avail` to `#if defined(NETWORKING) && !defined(SYNCCONQUER_NO_NETGAME)`,
+    which drops the button through the engine's own two-button path. Network play
+    cannot work in a door as the engine ships it: `UDPInterfaceClass` binds one
+    fixed global port (`common/wspudp.cpp:197`) and finds peers by broadcast
+    (`:180`, `:273`), so two nodes cannot share a host and no node can reach one on
+    another host. Rather than leave callers an option that only fails, it is hidden
+    until the door supplies its own peer addressing --
+    `docs/superpowers/plans/2026-07-26-syncconquer-multiplayer.md`. Second line
+    moves Cancel into the vacated slot so the dialog has no hole where the button
+    was; both edits are inert without the define.
+
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
 Things that needed changing for the door but were solved WITHOUT touching

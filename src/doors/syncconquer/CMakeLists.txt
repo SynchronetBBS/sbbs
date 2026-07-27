@@ -132,6 +132,15 @@ target_sources(VanillaRA PRIVATE
 target_include_directories(VanillaRA PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/door)
 target_link_libraries(VanillaRA termgfx)
 
+# Drop the Network entry from the multiplayer menu, leaving Skirmish (which
+# lives in that same menu and is the lone caller's game). The engine finds
+# peers by broadcasting to a single fixed UDP port, which neither reaches a
+# node on another host nor lets two nodes share one host -- so the option can
+# only disappoint until the door supplies its own peer addressing. Delete the
+# two definitions below to restore it.
+# Plan: docs/superpowers/plans/2026-07-26-syncconquer-multiplayer.md
+target_compile_definitions(VanillaRA PRIVATE SYNCCONQUER_NO_NETGAME)
+
 # Windows: keep the argv our pre-main constructor rewrote.
 #
 # door_io.c's constructor neuters the door's own tokens out of argv (-s<fd>,
@@ -289,7 +298,7 @@ if(TARGET VanillaTD)
     target_link_libraries(VanillaTD termgfx)
     # Select the Tiberian Dawn branding + MIX manifest + data/log basename in the
     # shared door code (door_io.c). RA is the default (no define needed).
-    target_compile_definitions(VanillaTD PRIVATE SYNCCONQUER_TD)
+    target_compile_definitions(VanillaTD PRIVATE SYNCCONQUER_TD SYNCCONQUER_NO_NETGAME)
     if(WIN32)
         target_compile_definitions(VanillaTD PRIVATE SYNCALERT_KEEP_CRT_ARGV)
     endif()

@@ -36,13 +36,16 @@ milestone (first playable, v1 ship, each subsequent release).
   cross-host determinism validation, drop/timeout policy hardening.
 - **Reevaluate**: after v1 multiplayer has real usage.
 
-## Tiberian Dawn title (`syncdawn`)
+## Tiberian Dawn title (`syncdawn`) — SHIPPED
 
-- **Why deferred**: RA first (8-player MP, built-in skirmish computer
-  opponents, Aftermath). TD is the same shared codebase — mostly
-  asset/content work,
-  plus classic TD has no skirmish mode (campaign-only for solo callers).
-- **Reevaluate**: after v1 ships.
+- Deferred behind Red Alert originally (8-player MP, Aftermath), on the
+  assumption that a lone TD caller would have campaign only. That was
+  wrong: the vendored engine carries a Skirmish mode for TD as well, so
+  syncdawn gives a lone caller a full game exactly like syncalert.
+- TD's skirmish opponents are the Red Alert AI: the vendored engine
+  defines `USE_RA_AI` unconditionally, so the computer houses build and
+  expand rather than falling back to TD's original hold-and-hunt
+  behavior. Nothing has to be turned on in the door's build for this.
 
 ## Tiberian Sun / Red Alert 2 — recorded as NOT FEASIBLE
 

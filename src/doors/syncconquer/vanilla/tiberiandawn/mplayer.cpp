@@ -110,6 +110,9 @@ GameType Select_MPlayer_Game(void)
     int d_cancel_h = 9 * factor;
     int d_cancel_x = d_dialog_cx - d_cancel_w / 2;
     int d_cancel_y = d_ipx_y + d_ipx_h + d_margin;
+#ifdef SYNCCONQUER_NO_NETGAME
+    d_cancel_y = d_ipx_y; // no network button to sit above it
+#endif
 
     CountDownTimerClass delay;
 
@@ -155,7 +158,7 @@ GameType Select_MPlayer_Game(void)
     ........................................................................*/
     ControlClass* commands = NULL; // the button list
 
-#ifdef NETWORKING
+#if defined(NETWORKING) && !defined(SYNCCONQUER_NO_NETGAME)
     //
     // If neither IPX or winsock are active then do only the modem serial dialog
     //
