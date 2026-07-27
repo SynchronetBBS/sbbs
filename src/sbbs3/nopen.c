@@ -278,6 +278,18 @@ bool fcopy(const char* src, const char* dest)
 		return false;
 	}
 
+#if !defined _WIN32
+	{
+		struct stat st;
+
+		/* nopen() created the destination with DEFFILEMODE & ~umask, which can
+		   be *wider* than the source: a backup of a 0600 file would be
+		   world-readable. The set-user/group-ID bits are not copied. */
+		if (fstat(in, &st) == 0)
+			fchmod(out, st.st_mode & 0777);
+	}
+#endif
+
 	while ((rd = read(in, buf, FCOPY_BUF_SIZE)) > 0) {
 		if (write(out, buf, rd) != rd) {
 			success = false;
