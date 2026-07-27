@@ -5397,15 +5397,29 @@ static int remove_msg_intransit(smb_t* smb, smbmsg_t* msg)
 void get_dns_server(char* dns_server, size_t len)
 {
 	str_list_t list;
+	str_list_t ipv4;
 	size_t     count;
 
 	sprintf(dns_server, "%.*s", (int)len - 1, startup->dns_server);
 	if (!IS_ALPHANUMERIC(dns_server[0])) {
 		if ((list = getNameServerList()) != NULL) {
-			if ((count = strListCount(list)) > 0) {
-				sprintf(dns_server, "%.*s", (int)len, list[xp_random(count)]);
-				lprintf(LOG_DEBUG, "0000 SEND using auto-detected DNS server address: %s"
-				        , dns_server);
+			if ((ipv4 = strListInit()) != NULL) {
+				struct in_addr addr;
+				// dns_getmx() speaks IPv4 only
+				for (size_t i = 0; list[i] != NULL; i++) {
+					if (xp_inet_pton(AF_INET, list[i], &addr) == 1)
+						strListPush(&ipv4, list[i]);
+				}
+				if ((count = strListCount(ipv4)) > 0) {
+					sprintf(dns_server, "%.*s", (int)len - 1, ipv4[xp_random(count)]);
+					lprintf(LOG_DEBUG, "0000 SEND using auto-detected DNS server address: %s"
+					        , dns_server);
+				}
+				else if (strListCount(list) > 0) {
+					lprintf(LOG_WARNING, "0000 !SEND none of the auto-detected DNS server "
+					        "addresses are IPv4");
+				}
+				strListFree(&ipv4);
 			}
 			freeNameServerList(list);
 		}
