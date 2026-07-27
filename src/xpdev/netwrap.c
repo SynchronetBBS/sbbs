@@ -26,7 +26,7 @@
 #include <stdlib.h>     /* malloc() */
 
 #if defined(_WIN32)
-	#include <iphlpapi.h>   /* GetNetworkParams */
+	#include <iphlpapi.h>   /* GetAdaptersAddresses */
 #endif
 
 str_list_t getNameServerList(void)
@@ -57,25 +57,64 @@ str_list_t getNameServerList(void)
 	return list;
 
 #elif defined(_WIN32)
-	FIXED_INFO*     FixedInfo = NULL;
-	ULONG           FixedInfoLen = 0;
-	IP_ADDR_STRING* ip;
-	str_list_t      list;
+	/* Windows assigns these well-known site-local addresses to any interface
+	 * that has no IPv6 name server of its own; they never answer queries. */
+	static const char* const unconfigured[] = {
+		"fec0:0:0:ffff::1",
+		"fec0:0:0:ffff::2",
+		"fec0:0:0:ffff::3",
+		NULL
+	};
+	const ULONG           flags = GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST
+	                            | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_FRIENDLY_NAME;
+	IP_ADAPTER_ADDRESSES* adapters = NULL;
+	ULONG                 result = ERROR_BUFFER_OVERFLOW;
+	ULONG                 len = 15 * 1024;  /* size recommended by Microsoft */
+	int                   attempt;
+	str_list_t            list;
+	WSADATA               wsaData;
 
 	if ((list = strListInit()) == NULL)
 		return NULL;
-	if (GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_BUFFER_OVERFLOW) {
-		FixedInfo = (FIXED_INFO*)malloc(FixedInfoLen);
-		if (FixedInfo != NULL && GetNetworkParams(FixedInfo, &FixedInfoLen) == ERROR_SUCCESS) {
-			ip = &FixedInfo->DnsServerList;
-			for (; ip != NULL; ip = ip->Next) {
-				if (ip->IpAddress.String[0] != '\0')
-					strListPush(&list, ip->IpAddress.String);
-			}
+	WSAStartup(MAKEWORD(2, 2), &wsaData);   /* req'd for getnameinfo() */
+	/* the adapter set can grow between the sizing call and the real one */
+	for (attempt = 0; attempt < 3 && result == ERROR_BUFFER_OVERFLOW; attempt++) {
+		if ((adapters = (IP_ADAPTER_ADDRESSES*)malloc(len)) == NULL)
+			break;
+		if ((result = GetAdaptersAddresses(AF_UNSPEC, flags, NULL, adapters, &len)) != ERROR_SUCCESS) {
+			free(adapters);
+			adapters = NULL;
 		}
-		if (FixedInfo != NULL)
-			free(FixedInfo);
 	}
+	for (IP_ADAPTER_ADDRESSES* adapter = adapters; adapter != NULL; adapter = adapter->Next) {
+		if (adapter->OperStatus != IfOperStatusUp)
+			continue;
+		if (adapter->IfType == IF_TYPE_SOFTWARE_LOOPBACK)
+			continue;
+		for (IP_ADAPTER_DNS_SERVER_ADDRESS* dns = adapter->FirstDnsServerAddress
+		     ; dns != NULL; dns = dns->Next) {
+			char   str[128];
+			int    i;
+			size_t addrlen;
+
+			if (getnameinfo(dns->Address.lpSockaddr, dns->Address.iSockaddrLength
+			                , str, sizeof str, NULL, 0, NI_NUMERICHOST) != 0)
+				continue;
+			for (i = 0; unconfigured[i] != NULL; i++) {
+				addrlen = strlen(unconfigured[i]);
+				/* the address may carry a "%<scope-id>" suffix */
+				if (strnicmp(str, unconfigured[i], addrlen) == 0
+				    && (str[addrlen] == '\0' || str[addrlen] == '%'))
+					break;
+			}
+			if (unconfigured[i] != NULL)
+				continue;
+			if (strListFind(list, str, /* case_sensitive: */ false) < 0)
+				strListPush(&list, str);
+		}
+	}
+	free(adapters);
+	WSACleanup();
 	return list;
 #else
 	#error "Need a get_nameserver() implementation for this platform"
