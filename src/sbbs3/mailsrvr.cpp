@@ -2060,7 +2060,10 @@ static void parse_mail_address(const char* p
 		SAFECOPY(tmp, p);
 		p = tmp;
 		/* Get the "name" (if possible) */
-		if ((tp = (char*)strchr(p, '"')) != NULL) {  /* name in quotes? */
+		// A quote at or after '<' is quoting the address's local part, not a name
+		char* lt = (char*)strchr(p, '<');
+		tp = (char*)strchr(p, '"');
+		if (tp != NULL && (lt == NULL || tp < lt)) {  /* name in quotes? */
 			p = tp + 1;
 			tp = (char*)strchr(p, '"');
 		} else if ((tp = (char*)strchr(p, '(')) != NULL) {   /* name in parenthesis? */
@@ -4062,6 +4065,9 @@ static bool smtp_client_thread(smtp_t* smtp)
 							truncstr(rcpt_name, "@");
 						}
 					}
+					// The envelope, not the To: header, names the user on the QWKnet system
+					else if (nettype == NET_QWK)
+						SAFECOPY(rcpt_name, rcpt_to);
 					smb_hfield_str(&newmsg, RECIPIENT, rcpt_name);
 					if (forward_path[0] != 0)
 						smb_hfield_str(&newmsg, SMTPFORWARDPATH, forward_path);
