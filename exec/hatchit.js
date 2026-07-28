@@ -178,6 +178,7 @@ function hatch_file(file, area, origin, replaces)
 	var tic = {path:[], seenby:[]};
 	var lfile;
 	var ldesc;
+	var success = true;
 
 	defzone = get_zone(system.fido_addr_list[0]);
 	if (defzone === undefined) {
@@ -223,6 +224,7 @@ function hatch_file(file, area, origin, replaces)
 
 		if (addr.zone === undefined || addr.net === undefined || addr.node === undefined) {
 			log(LOG_ERROR, "Address '"+link+"' is invalid!");
+			success = false;
 			continue;
 		}
 
@@ -243,6 +245,7 @@ function hatch_file(file, area, origin, replaces)
 		tf = new File(outb+tickit.get_next_tic_filename());
 		if(!tf.open("wb")) {
 			log(LOG_ERROR, "Unable to create TIC file for "+link+".  He will not get file '"+file.name+"'!");
+			success = false;
 			continue;
 		}
 		tf.write('Area '+area+'\r\n');
@@ -260,8 +263,9 @@ function hatch_file(file, area, origin, replaces)
 		if (dosfname != file.name) {
 			tf.write('Lfile '+file.name+'\r\n');
 		}
+		// A 'replaces' value of true means "replaces the same file name"
 		if (replaces)
-			tf.write('Replaces ' + replaces + '\r\n');
+			tf.write('Replaces ' + (replaces === true ? dosfname : replaces) + '\r\n');
 		tf.write('Size '+file_size(file.path)+'\r\n');
 		tf.write('Date '+file_date(file.path)+'\r\n');
 		tf.write('Desc '+file.desc+'\r\n');
@@ -301,6 +305,7 @@ function hatch_file(file, area, origin, replaces)
 			log(LOG_ERROR, "Unable to append to '"+ff.name+"' for "+link+".  He will not get file '"+file.name+"'!");
 			bf.close();
 			bf.remove();
+			success = false;
 			continue;
 		}
 		ff.writeln(file.path);
@@ -310,7 +315,7 @@ function hatch_file(file, area, origin, replaces)
 		bf.remove();
 	}
 
-	return true;
+	return success;
 }
 
 function interactive() {
@@ -323,16 +328,16 @@ function interactive() {
 	js.on_exit('uifc.bail()');
 	file = pick_file();
 	if (file === undefined || file.path === undefined)
-		return;
+		return true;
 	area = pick_area();
 	if (area === undefined)
-		return;
+		return true;
 	origin = pick_origin();
 	if (origin === undefined)
-		return;
+		return true;
 	replaces = uifc.input(WIN_ORG|WIN_MID, "Replaces (ENTER=none)");
 	if(replaces === undefined)
-		return;
+		return true;
 	var msg = 'Hatch file `'+file.name+'` into `'+area+'` from `'+origin+'`\r\n\r\n'+
 		'Desc: `'+file.desc+'`';
 	if (file.extdesc)
@@ -343,9 +348,9 @@ function interactive() {
 		uifc.help_text = msg;
 		uifc.showhelp();
 	}
-	if (uifc.list(WIN_ORG|WIN_MID, "Proceed?", ["No", "Yes"]) == 1) {
-		hatch_file(file, area, origin, replaces);
-	}
+	if (uifc.list(WIN_ORG|WIN_MID, "Proceed?", ["No", "Yes"]) == 1)
+		return hatch_file(file, area, origin, replaces);
+	return true;
 }
 
 function main() {
@@ -357,83 +362,100 @@ function main() {
 
 	for(var i = 0; i < argc; i++) {
 		var arg = argv[i];
-		if(arg[0] == '-') {
-			var opt = arg;
-			while(opt[0] == '-')
-				opt = opt.slice(1);
-			if(opt == "help" || opt == "?" || opt == "h") {
-				writeln("usage: hatchit.js [option]");
-				writeln("options:");
-				writeln("  -dir=<filedir>    File directory Internal Code");
-				writeln("  -file=<filename>  Name of file to hatch");
-				writeln("  -area=<areatag>   File area of file to hatch");
-				writeln("  -origin=<FTN AKA> Origin FTN AKA");
-				writeln("  -replace          File replaces older version");
-				writeln("");
-				writeln("If no option is given, HatchIT will start in interactive mode.");
-				exit(0);
-			}
-			if(opt.indexOf("dir=") == 0) {
-				var indir = opt.slice(4);
-				dir = file_area.dir[indir.toLowerCase()];
-				if (!dir) {
-					alert("File directory not found: " + indir);
-					exit(1);
-				}
-				continue;
-			}
-			if(opt.indexOf("area=") == 0) {
-				var inarea = opt.slice(5);
-				area = inarea.toUpperCase();
-				if (!tickit.acfg[inarea.toLowerCase()]) {
-					alert("File area not found: " + area);
-					exit(1);
-				}
-				continue;
-			}
-			if(opt.indexOf("file=") == 0) {
-				infile = opt.slice(5);
-				var fb = new OldFileBase(dir.code.toLowerCase());
-				fb.forEach(function(f) {
-					if (f.name == infile) {
-						file = f;
-					}
-				});
-				if (!file) {
-					alert("Cannot open file: " + infile);
-					exit(1);
-				}
-				continue;
-			}
-			if(opt.indexOf("origin=") == 0) {
-				origin = opt.slice(7);
-				if (system.fido_addr_list.indexOf(origin) == -1) {
-					alert("Origin is not in list of AKAs: " + origin);
-					exit(1);
-				}
-				continue;
-			}
-			if(opt.indexOf("replace") == 0) {
-				replace = true;
-			} else {
-				replace = false;
+		if(arg[0] != '-')
+			continue;
+		var opt = arg;
+		while(opt[0] == '-')
+			opt = opt.slice(1);
+		if(opt == "help" || opt == "?" || opt == "h") {
+			writeln("usage: hatchit.js [option]");
+			writeln("options:");
+			writeln("  -dir=<filedir>    File directory Internal Code");
+			writeln("  -file=<filename>  Name of file to hatch");
+			writeln("  -area=<areatag>   File area of file to hatch");
+			writeln("  -origin=<FTN AKA> Origin FTN AKA");
+			writeln("  -replace[=<mask>] File replaces older version (default mask");
+			writeln("                    is the hatched file's own name)");
+			writeln("");
+			writeln("If no option is given, HatchIT will start in interactive mode.");
+			writeln("Exit status is 0 on success, 1 on error.");
+			exit(0);
+		}
+		if(opt.indexOf("dir=") == 0) {
+			var indir = opt.slice(4);
+			dir = file_area.dir[indir.toLowerCase()];
+			if (!dir) {
+				alert("File directory not found: " + indir);
+				exit(1);
 			}
 			continue;
 		}
+		if(opt.indexOf("area=") == 0) {
+			var inarea = opt.slice(5);
+			area = inarea.toUpperCase();
+			if (!tickit.acfg[inarea.toLowerCase()]) {
+				alert("File area not found: " + area);
+				exit(1);
+			}
+			continue;
+		}
+		if(opt.indexOf("file=") == 0) {
+			var infile = opt.slice(5);
+			if (dir === undefined) {
+				alert("-dir=<filedir> must be specified before -file=" + infile);
+				exit(1);
+			}
+			var fb = new OldFileBase(dir.code.toLowerCase());
+			fb.forEach(function(f) {
+				if (f.name == infile) {
+					file = f;
+				}
+			});
+			if (!file) {
+				alert("Cannot open file: " + infile);
+				exit(1);
+			}
+			continue;
+		}
+		if(opt.indexOf("origin=") == 0) {
+			origin = opt.slice(7);
+			if (system.fido_addr_list.indexOf(origin) == -1) {
+				alert("Origin is not in list of AKAs: " + origin);
+				exit(1);
+			}
+			continue;
+		}
+		if(opt == "replace") {
+			replace = true;
+			continue;
+		}
+		if(opt.indexOf("replace=") == 0) {
+			replace = opt.slice(8);
+			continue;
+		}
+		alert("Unrecognized option: " + arg);
+		exit(1);
 	}
 
-	if (dir == undefined && area == undefined && file == undefined && origin == undefined && replace == undefined)
-		interactive()
+	if (dir === undefined && area === undefined && file === undefined
+		&& origin === undefined && replace === undefined)
+		exit(interactive() ? 0 : 1);
+
+	if (file === undefined || area === undefined || origin === undefined) {
+		alert("-dir, -file, -area and -origin are all required in non-interactive mode");
+		exit(1);
+	}
 
 	writeln("File   : " + file.name);
 	writeln("Area   : " + area);
 	writeln("Origin : " + origin);
 	writeln("Desc   : " + file.desc);
-	if (replace) writeln("Replace: yes");
+	if (replace === true) writeln("Replace: yes");
+	else if (replace) writeln("Replace: " + replace);
 	else writeln("Replace: no");
-	if (file.extdesc) writeln("LDesc : " + file.extdesc);
+	if (file.extdesc) writeln("LDesc  : " + file.extdesc);
 
-	hatch_file(file, area, origin, replace);
+	exit(hatch_file(file, area, origin, replace) ? 0 : 1);
 }
 
 main();

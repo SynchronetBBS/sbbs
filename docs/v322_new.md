@@ -355,6 +355,17 @@
   no `XTRN_NODISPLAY` setting to suppress it
 - `dns.js`: `resolve()`, `resolveIPv4()` and `resolveIPv6()` return the
   resolved addresses again when used in synchronous mode
+- HatchIT (`hatchit.js`) now exits with a meaningful status (0 =
+  success, 1 = error), so a script or timed event can tell
+  whether a hatch worked. Previously every run — successful
+  hatch, cancelled menu, or missing option — ended in an error
+  and exit status 1
+- HatchIT reports unrecognized and incomplete command-line
+  options instead of crashing, and its `-replace` option now
+  writes a usable TIC `Replaces` line: the hatched file's own
+  name, or an explicit mask with the new `-replace=<mask>` form
+  (it previously wrote the literal text `Replaces true`, which
+  matched nothing)
 
 ## JavaScript
 
