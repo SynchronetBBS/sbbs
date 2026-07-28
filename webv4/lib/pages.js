@@ -103,15 +103,17 @@ function getCtrlLine(file) {
 
 }
 
+// Returns the target URL of a .link page, or null if there isn't a usable one
 function getExternalLink(fn) {
 	const p = getPagePath(fn);
-	if (p === null) throw new Error('Invalid page ' + fn + ',,,' + settings.web_mods_pages);
+	if (p === null) return null;
 	const f = new File(p);
-	f.open('r');
-	const c = f.read().split(',');
+	if (!f.open('r')) return null;
+	const c = f.read().split(/[\r\n]/)[0].split(',');	// first line only, as in _getPageList()
 	f.close();
-	if (c.length < 2) throw new Error('Invalid page ' + fn + ',,,' + settings.web_mods_pages);
-	return c[0];
+	if (c.length < 2) return null;
+	const url = truncsp(skipsp(c[0]));
+	return url === '' ? null : url;
 }
 
 function _getPageList(dir) {
