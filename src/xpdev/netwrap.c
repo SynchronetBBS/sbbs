@@ -27,6 +27,9 @@
 
 #if defined(_WIN32)
 	#include <iphlpapi.h>   /* GetAdaptersAddresses */
+	#ifndef GAA_FLAG_SKIP_FRIENDLY_NAME /* absent from the Borland C++ Builder SDK */
+		#define GAA_FLAG_SKIP_FRIENDLY_NAME 0x0020
+	#endif
 #endif
 
 str_list_t getNameServerList(void)
@@ -68,6 +71,7 @@ str_list_t getNameServerList(void)
 	const ULONG           flags = GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST
 	                            | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_FRIENDLY_NAME;
 	IP_ADAPTER_ADDRESSES* adapters = NULL;
+	IP_ADAPTER_ADDRESSES* adapter;
 	ULONG                 result = ERROR_BUFFER_OVERFLOW;
 	ULONG                 len = 15 * 1024;  /* size recommended by Microsoft */
 	int                   attempt;
@@ -86,13 +90,14 @@ str_list_t getNameServerList(void)
 			adapters = NULL;
 		}
 	}
-	for (IP_ADAPTER_ADDRESSES* adapter = adapters; adapter != NULL; adapter = adapter->Next) {
+	for (adapter = adapters; adapter != NULL; adapter = adapter->Next) {
+		IP_ADAPTER_DNS_SERVER_ADDRESS* dns;
+
 		if (adapter->OperStatus != IfOperStatusUp)
 			continue;
 		if (adapter->IfType == IF_TYPE_SOFTWARE_LOOPBACK)
 			continue;
-		for (IP_ADAPTER_DNS_SERVER_ADDRESS* dns = adapter->FirstDnsServerAddress
-		     ; dns != NULL; dns = dns->Next) {
+		for (dns = adapter->FirstDnsServerAddress; dns != NULL; dns = dns->Next) {
 			char   str[128];
 			int    i;
 			size_t addrlen;
