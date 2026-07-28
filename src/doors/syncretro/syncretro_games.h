@@ -38,4 +38,15 @@ const char *sr_games_stick2(void);
  * anything is asserting the rest do nothing -- see GAMES_INI.md sec 6. */
 int sr_games_labelled(void);
 
+/* How many frames to run UNPACED before the player is shown anything: the
+ * cabinet's power-on self-test, which he can neither act on nor skip. 0 (the
+ * default) runs the boot in real time, as the door always has.
+ *
+ * A root-level `boot_frames` -- one written before any [section] -- is the
+ * install-wide default, and a section's own key overrides it. Unlike the button
+ * labels this needs no per-romset measurement to be useful: warming up PAST a
+ * short boot only lands the player further into the attract loop, which is
+ * where they would have been sitting anyway. See GAMES_INI.md sec 13. */
+int sr_games_boot_frames(void);
+
 #endif /* SYNCRETRO_GAMES_H_ */

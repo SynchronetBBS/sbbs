@@ -33,6 +33,14 @@ static const struct {
 static char g_label[SR_GAMES_IDS][INI_MAX_VALUE_LEN];
 static char g_stick2[INI_MAX_VALUE_LEN];
 static int  g_labelled;
+static int  g_boot_frames;
+
+/* A ceiling on boot_frames, in frames. Warming up costs the host real CPU --
+ * it is emulation with the pacing taken off, not a shortcut -- and it happens
+ * with the player watching a blank screen, so a slipped digit must not turn a
+ * launch into a stall on every node at once. Five emulated minutes is far past
+ * any cabinet's self-test. */
+#define SR_BOOT_FRAMES_MAX 18000
 
 /* The romset name: the ROM's filename without directory or extension, which is
  * the section key. MAME identifies a driver by exactly this string, which is
@@ -50,6 +58,25 @@ static void sr_games_romset(const char *rom_path, char *out, size_t len)
 		*dot = '\0';
 }
 
+/* Clamp a boot_frames value and say so when it was out of range: a warm-up the
+ * sysop asked for and did not get is otherwise indistinguishable from one the
+ * reader never saw. `where` names the section for the message. */
+static int sr_games_clamp_boot(int frames, const char *where)
+{
+	if (frames < 0) {
+		fprintf(stderr, "syncretro: games.ini [%s]: boot_frames %d is negative"
+		        " -- treated as 0 (no warm-up)\n", where, frames);
+		return 0;
+	}
+	if (frames > SR_BOOT_FRAMES_MAX) {
+		fprintf(stderr, "syncretro: games.ini [%s]: boot_frames %d exceeds the"
+		        " %d-frame maximum -- clamped\n", where, frames,
+		        SR_BOOT_FRAMES_MAX);
+		return SR_BOOT_FRAMES_MAX;
+	}
+	return frames;
+}
+
 void sr_games_load(const char *dir, const char *rom_path)
 {
 	char        path[PATH_MAX];
@@ -61,6 +88,7 @@ void sr_games_load(const char *dir, const char *rom_path)
 	FILE *      f;
 	int         i;
 	int         buttons;
+	int         rootboot;
 	const char *reportdir;
 
 	/* Clear FIRST and unconditionally: every early return below leaves a console
@@ -68,9 +96,10 @@ void sr_games_load(const char *dir, const char *rom_path)
 	 * of whatever was loaded last. */
 	for (i = 0; i < SR_GAMES_IDS; i++)
 		g_label[i][0] = '\0';
-	g_stick2[0] = '\0';
-	g_labelled  = 0;
-	reportdir   = dir != NULL ? dir : ".";
+	g_stick2[0]   = '\0';
+	g_labelled    = 0;
+	g_boot_frames = 0;
+	reportdir     = dir != NULL ? dir : ".";
 
 	sr_games_romset(rom_path, romset, sizeof romset);
 	if (romset[0] == '\0')
@@ -93,11 +122,22 @@ void sr_games_load(const char *dir, const char *rom_path)
 		return;
 	}
 
+	/* The install-wide warm-up, read BEFORE the section check: a romset with no
+	 * section of its own is the common case (most cabinets need no button
+	 * labels), and it is exactly the one that should still get the default. */
+	rootboot      = sr_games_clamp_boot(iniGetInteger(ini, ROOT_SECTION,
+	                                                  "boot_frames", 0), "root");
+	g_boot_frames = rootboot;
+
 	if (!iniSectionExists(ini, romset)) {
-		fprintf(stderr, "syncretro: games.ini: no section for \"%s\"\n", romset);
+		fprintf(stderr, "syncretro: games.ini: no section for \"%s\"%s\n", romset,
+		        rootboot > 0 ? " (install-wide boot_frames still applies)" : "");
 		iniFreeStringList(ini);
 		return;
 	}
+
+	g_boot_frames = sr_games_clamp_boot(iniGetInteger(ini, romset, "boot_frames",
+	                                                  rootboot), romset);
 
 	buttons = 0;
 	for (i = 0; i < SR_GAMES_IDS; i++) {
@@ -137,12 +177,19 @@ void sr_games_load(const char *dir, const char *rom_path)
 		iniFreeStringList(keys);
 	}
 
-	if (g_stick2[0] != '\0')
-		fprintf(stderr, "syncretro: games.ini: [%s] %d button%s, stick2 \"%s\"\n",
-		        romset, buttons, buttons == 1 ? "" : "s", g_stick2);
-	else
-		fprintf(stderr, "syncretro: games.ini: [%s] %d button%s\n",
-		        romset, buttons, buttons == 1 ? "" : "s");
+	{
+		char stick[INI_MAX_VALUE_LEN + 16];
+		char boot[64];
+
+		stick[0] = '\0';
+		boot[0]  = '\0';
+		if (g_stick2[0] != '\0')
+			snprintf(stick, sizeof stick, ", stick2 \"%s\"", g_stick2);
+		if (g_boot_frames > 0)
+			snprintf(boot, sizeof boot, ", boot_frames %d", g_boot_frames);
+		fprintf(stderr, "syncretro: games.ini: [%s] %d button%s%s%s\n",
+		        romset, buttons, buttons == 1 ? "" : "s", stick, boot);
+	}
 
 	iniFreeStringList(ini);
 }
@@ -165,4 +212,9 @@ const char *sr_games_stick2(void)
 int sr_games_labelled(void)
 {
 	return g_labelled;
+}
+
+int sr_games_boot_frames(void)
+{
+	return g_boot_frames;
 }

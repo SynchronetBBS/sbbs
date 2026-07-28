@@ -518,6 +518,44 @@ int main(int argc, char **argv)
 	 * a map, does not change mid-session. */
 	sr_door_node_playing(sr_config_rom_path());
 
+	/* The cabinet's power-on self-test, run UNPACED.
+	 *
+	 * Nothing here is emulated differently: the same instructions run on the same
+	 * emulated cycle counts, and the driver cannot tell -- MAME's timing is in
+	 * cycles, not host time. What is dropped is the 16.7 ms of WAITING that
+	 * sr_pace_to_rate() puts around each frame, which during a self-test buys the
+	 * player nothing they can act on. Measured on MAME 2003-Plus: 68-149x
+	 * realtime, so a 15-second boot costs a fifth of a second of CPU.
+	 *
+	 * Deliberately NOT a save state: this is the real boot, so the driver's
+	 * self-tests and its NVRAM load happen exactly as they always have, and there
+	 * is no cached artifact to go stale against a core or option change. */
+	{
+		int boot = sr_games_boot_frames();
+
+		if (boot > 0) {
+			int64_t t0 = sr_plat_now_us();
+			int     i;
+
+			sr_bridge_set_warmup(1);
+			/* A key struck against a screen the player cannot see is not the
+			 * game's input -- the same reason the pause screen suspends. The
+			 * pump itself keeps running underneath (the core calls it every
+			 * frame), so the terminal's probe replies still land. */
+			sr_input_set_suspended(1);
+			for (i = 0; i < boot && !sr_door_should_exit(); i++)
+				core.run();
+			sr_input_set_suspended(0);
+			sr_bridge_set_warmup(0);
+			sr_io_invalidate();     /* the first frame the player sees is a full one */
+
+			fprintf(stderr, "syncretro: warm-up %d frames (%.1f emulated s)"
+			        " in %.2f s\n", i, i / (core.av.timing.fps > 0.0
+			                                ? core.av.timing.fps : 60.0),
+			        (double)(sr_plat_now_us() - t0) / 1000000.0);
+		}
+	}
+
 	{
 		int paused  = 0;   /* Space: the core is not being run */
 		int helping = 0;   /* the key legend is up ('?', or an unbound key) */

@@ -176,6 +176,17 @@ Those values are measured with `probe_core -hold`, never guessed, and a
 cabinet is labelled completely or not at all. `games.ini` itself documents the
 full key set in its own comments.
 
+A third key, `boot_frames`, decides how much of a cabinet's power-on self-test
+the player has to sit through. A real cabinet spends its first seconds checking
+its RAM and ROMs behind a test pattern, and nothing on a coin-op answers input
+until a credit is in, so those seconds are pure waiting. `boot_frames` runs
+them at full speed instead — the game is emulated exactly as before, only
+without the pause between frames — and the player arrives at the attract loop.
+Written at the top of `games.ini`, before any section, it applies to every
+romset; a section may override it for a cabinet with a longer self-test. The
+shipped value is 900 frames, fifteen seconds of cabinet time for roughly a
+third of a second of CPU. Set it to 0 to watch every cabinet boot in real time.
+
 **`names.json` is no longer read.** An install that had one keeps its file, and
 the picker ignores it; re-enter any hand-added titles as `games.ini` sections.
 

@@ -112,6 +112,23 @@ name = Pac-Man
 | `name` | lobby | display title for the picker |
 | `button.<id>` | door | what RetroPad `<id>` is on this cabinet. `<id>` is a RetroPad button name: `B` `A` `Y` `X` `L` `R` |
 | `stick2` | door | this cabinet has a second stick; the value labels it |
+| `boot_frames` | door | frames of power-on self-test to run before the player is shown anything (sec 13). Also valid at the **root**, where it is the install-wide default |
+
+### The root section
+
+A key written **before any `[section]`** applies to every romset, and a section's
+own key overrides it. Only `boot_frames` uses this: a button label is a fact
+about one cabinet and can have no sensible default, but a warm-up is a policy
+for the install, and the romsets that most need it are exactly the ones nobody
+has written a section for.
+
+```ini
+boot_frames = 900          ; install-wide: every cabinet skips its self-test
+
+[sf2]
+name        = Street Fighter II
+boot_frames = 1200         ; ...this one's runs longer
+```
 
 Comments in the shipped file carry **no relative-time language** -- no "today",
 "now", "currently", "as before". The file outlives the change that introduced
@@ -300,3 +317,69 @@ facts do not interact.
 
 `stick2` should be measured for twin-stick cabinets during the measurement pass
 (§8), the same as the buttons.
+
+## 13. `boot_frames`: the power-on self-test
+
+A cabinet does not start playable. A driver spends its first seconds on a RAM
+and ROM check, a colour bar, a licence screen -- and the door runs all of it at
+the emulated 60 fps, because `sr_pace_to_rate()` paces the core to its native
+rate whether or not the player can act on what is on screen. They can't --
+nothing on a coin-op responds to input before a credit is in.
+
+`boot_frames = N` runs the first N frames **unpaced** -- back-to-back
+`retro_run()` with the core's video and audio discarded
+(`sr_bridge_set_warmup()`) -- then arms the pacer and starts drawing. Measured
+against MAME 2003-Plus:
+
+| | |
+|---|---|
+| emulation speed, this core | 68-149x realtime standalone; ~47x inside the door |
+| a 900-frame (15 s) warm-up | ~0.3 s of CPU |
+| `retro_load_game()`, which this does **not** touch | 4-142 ms depending on romset |
+
+### Why not a save state
+
+`retro_serialize()` after the boot, cached and restored on later launches, is
+the obvious alternative, and MAME 2003-Plus supports it -- measured on seven
+romsets, all round-tripping byte-identically at 32-324 KB in under a
+millisecond, with no `SET_SERIALIZATION_QUIRKS` declared. It was still the wrong
+trade here:
+
+- It **cannot** speed up loading the ROM. `retro_unserialize()` requires a
+  loaded game, so the zip decode and ROM decrypt happen either way. A save state
+  only ever skips *emulated* time -- the same thing the warm-up skips, for
+  tenths of a second less.
+- The blob carries no version stamp, so the cache has to be keyed on the core
+  binary, the romset **and** the resolved option values, and a miss on any of
+  those restores garbage into the emulator.
+- Save-state support in this lineage is **per-driver** across some 5000 drivers.
+  A driver with partial support can restore a subtly broken machine, which
+  fails as a wrong-looking game rather than as an error.
+- The core loads NVRAM at start and writes it at unload. A boot snapshot
+  restored on every launch can roll back or clobber high scores -- for an arcade
+  door, the state players care most about.
+
+The warm-up has none of these properties because it is not a shortcut: the same
+instructions execute on the same emulated cycle counts, self-tests and NVRAM
+load included. MAME's timing is in cycles, not host time, so the driver cannot
+tell. Only the waiting is gone.
+
+### Choosing a value
+
+Unlike `button.*`, this needs no per-romset measurement to be useful. Warming
+up **past** a short boot only lands the player further into the attract loop --
+where they would have been sitting anyway -- so one install-wide root value is a
+complete answer, and a section's own key is for the outliers. `900` (15
+emulated seconds) covers the self-test of every romset measured; `sf2`, one of
+the longest, finishes between frames 600 and 900.
+
+Values are clamped to `SR_BOOT_FRAMES_MAX` (18000 frames, five emulated
+minutes) with a warning. The warm-up is real CPU spent on every node with the
+player looking at a static screen, so a slipped digit must not be obeyed.
+
+### What the player sees
+
+The door's own "Loading SyncRetro..." splash, which is already up: the warm-up
+sits between `rc_core_load_game()` and the first `sr_io_present()`, so no new
+screen is needed. A session limit (`-t`) or a dropped carrier still ends the
+door mid-warm-up -- the loop polls `sr_door_should_exit()` every frame.

@@ -260,6 +260,10 @@ struct rc_core;                                     /* fwd (retro_core.h) */
 void sr_bridge_install(struct rc_core *c);
 /* Set the libretro pixel format (from retro_env.c's SET_PIXEL_FORMAT). */
 void sr_bridge_set_pixfmt(int retro_pixel_format);
+/* Discard the core's video and audio while set. main.c holds this over the
+ * boot warm-up, where the core is run unpaced and its output is not the
+ * player's to see or hear. */
+void sr_bridge_set_warmup(int on);
 /* The core's PCM stream: syncretro_audio.c owns it (M4). Declared there. */
 
 /* --- retro_env.c -----------------------------------------------------------
