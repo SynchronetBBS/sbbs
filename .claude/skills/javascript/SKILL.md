@@ -693,6 +693,44 @@ Consequences for JS callers:
 - Inline comments after bool/enum/numeric keys are fine (and appear throughout
   stock `.ini` files) — that's exactly what the type-specific stripping is for.
 
+### `key : value` — string literals with C escapes (never hand-roll an unescaper)
+
+A key/value line may be separated by **`:` instead of `=`**, which makes the
+value a **C string literal**: `xpdev/ini_file.c`'s `key_name()` runs it through
+`c_unescape_str()`. So an `.ini` can carry Ctrl-A attributes, CP437 bytes and
+control characters directly, and **no JS-side unescape function is needed** —
+reach for this before writing one.
+
+```ini
+[text]
+title    : \1h\1cSyncRetro \1n\1c-- %s     ; \1h -> 0x01 'h', exactly as in text.dat
+cell_fmt : \1h\1c%3u \xb3 \1n\1c%s\1n      ; \xb3 -> CP437 box-drawing byte
+search   : "Search: "                       ; quotes stripped, trailing space KEPT
+plain    = no escapes \1h here              ; '=' keeps the backslash literally
+```
+
+The escape set is `c_unescape_char_ptr()` (`xpdev/genwrap.c`): `\xNN` hex,
+`\NNN` **decimal** (octal only if built with `C_UNESCAPE_OCTAL_SUPPORT`), plus
+`\e \a \b \f \n \r \t \v`. The decimal form is what makes `\1h` mean the same
+thing here as in `ctrl/text.dat` — the convention a sysop already knows.
+
+- **Reads that unescape:** `iniGetString`/`iniReadString` and the named-string-
+  list readers behind **`File.iniGetObject()`** / `iniGetAllObjects()` all pass
+  `literals_supported: true`. `File.iniGetValue(s, k, "")` (string default) is
+  on that path too.
+- **The separator is whichever of `=` / `:` comes FIRST on the line.** So
+  `dir = C:\roms` is unaffected — the `=` wins — and `=` and `:` keys mix freely
+  in one file (one section, even).
+- Typed reads (`iniGetBool`/`iniGetInteger`/…) pass `literals_supported: false`,
+  but `:` still *separates* — `flag : true` and `num : 42` parse fine, they just
+  skip the unescape step.
+- `=` applies `truncsp` (all trailing whitespace); `:` applies only `truncnl`,
+  so **trailing spaces survive** — which is how a prompt string keeps its
+  trailing space without a quoting trick. A value that begins with `"` is
+  treated as quoted and its outer quotes are stripped.
+- The trailing-comment trap above still applies: a `; comment` after a *string*
+  value is not stripped under either separator.
+
 ### The root (unnamed) section = global defaults
 
 Keys that appear **before any `[section]` tag** live in the **root (unnamed)
