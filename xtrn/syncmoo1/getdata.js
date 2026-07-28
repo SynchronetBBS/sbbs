@@ -200,7 +200,8 @@ function main()
 
 	if (!file_exists(dir + "syncmoo1") && !file_exists(dir + "syncmoo1.exe"))
 		print("  note: the syncmoo1 binary is not here yet -- build & deploy it "
-		    + "(build.sh then deploy.sh) so the door can run once data is in place.");
+		    + "(build.sh, then jsexec src/doors/syncmoo1/deploy.js) so the door can "
+		    + "run once data is in place.");
 
 	var have    = present_lbx(dir);
 	var missing = missing_of(have);

@@ -1,5 +1,5 @@
 # Locally built door binary (not tracked; built via src/doors/syncconquer/
-# build.sh, deployed here via deploy.sh).
+# build.sh, deployed here via deploy.js).
 /syncalert
 /syncalert.exe
 

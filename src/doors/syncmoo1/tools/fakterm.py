@@ -38,7 +38,7 @@ Options:
                      cwd and its "-data"-equivalent launch-dir fallback (see
                      syncmoo1_config.c's "-data > SYNCMOO1_LBX > launch dir"
                      precedence comment); default: ../../../xtrn/syncmoo1,
-                     the in-tree door bundle deploy.sh also targets
+                     the in-tree door bundle deploy.js also targets
   --home PATH       door "-home" directory (default: a fresh temp dir,
                      removed only on request -- see --keep-home)
   --keep-home       don't delete the temp --home dir on exit (default: kept
