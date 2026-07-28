@@ -121,6 +121,11 @@ the built-in defaults.
   win/lose). The default is **auto**: play them only when the caller's client
   can actually play audio, because a silent FMV is a poor experience and it's
   the heaviest thing the door sends. Set `true` or `false` to force it.
+- **`[game] captions`** — on-screen captions for the spoken EVA callouts
+  ("construction complete", "unit ready", "our base is under attack"). The
+  default is **auto**: show them only when the caller's client has no usable
+  audio. Set `true` to show them always — worth considering as an
+  accessibility default rather than leaving it to the audio probe.
 - **`[video] dirty_rect`** — on by default: each frame re-sends only the parts
   of the screen that actually changed, rather than re-encoding the whole frame.
   It cuts bandwidth substantially and never sends more than a full frame. Set

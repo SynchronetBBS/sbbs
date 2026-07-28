@@ -622,6 +622,164 @@ int Sound_Effect(VocType voc, fixed volume, int variation, signed short pan_valu
     "LOAD1"     //	VOX_MISSION_LOADED
 };
 
+// SyncConquer: on-screen captions for the EVA announcements, positionally
+// aligned to Speech[] / the VoxType enum. Surfaced via the game's own message
+// list when door_captions_enabled() is true (auto = the client has no usable
+// audio), so the spoken combat/economy callouts aren't lost on a deaf player or
+// a no-audio terminal. Mirrors the same feature in tiberiandawn/audio.cpp.
+// A NULL entry is simply not captioned -- the unused VOX_noneN slots, and any
+// line whose wording isn't recoverable from upstream's own comments.
+extern "C" int door_captions_enabled(void);
+
+static char const* const VoxCaption[VOX_COUNT] = {
+    "Mission accomplished",                   // VOX_ACCOMPLISHED
+    "Your mission has failed",                // VOX_FAIL
+    "Unable to comply, building in progress", // VOX_NO_FACTORY
+    "Construction complete",                  // VOX_CONSTRUCTION
+    "Unit ready",                             // VOX_UNIT_READY
+    "New construction options",               // VOX_NEW_CONSTRUCT
+    "Cannot deploy here",                     // VOX_DEPLOY
+    "Structure destroyed",                    // VOX_STRUCTURE_DESTROYED
+    "Insufficient power",                     // VOX_INSUFFICIENT_POWER
+    "Insufficient funds",                     // VOX_NO_CASH
+    "Battle control terminated",              // VOX_CONTROL_EXIT
+    "Reinforcements have arrived",            // VOX_REINFORCEMENTS
+    "Canceled",                               // VOX_CANCELED
+    "Building",                               // VOX_BUILDING
+    "Low power",                              // VOX_LOW_POWER
+    "Insufficient funds",                     // VOX_NEED_MO_MONEY
+    "Our base is under attack",               // VOX_BASE_UNDER_ATTACK
+    "Unable to build more",                   // VOX_UNABLE_TO_BUILD
+    "Primary building selected",              // VOX_PRIMARY_SELECTED
+#ifdef ENGLISH
+    "M.A.D. Tank deployed", // VOX_MADTANK_DEPLOYED
+#else
+    NULL, // VOX_none3
+#endif
+    NULL,                                 // VOX_none4
+    "Unit lost",                          // VOX_UNIT_LOST
+    "Select target",                      // VOX_SELECT_TARGET
+    "Enemy approaching",                  // VOX_PREPARE
+    "Silos needed",                       // VOX_NEED_MO_CAPACITY
+    "On hold",                            // VOX_SUSPENDED
+    "Repairing",                          // VOX_REPAIRING
+    NULL,                                 // VOX_none5
+    NULL,                                 // VOX_none6
+    "Airborne unit lost",                 // VOX_AIRCRAFT_LOST
+    NULL,                                 // VOX_none7
+    "Allied forces approaching",          // VOX_ALLIED_FORCES_APPROACHING
+    "Allied reinforcements have arrived", // VOX_ALLIED_APPROACHING
+    NULL,                                 // VOX_none8
+    NULL,                                 // VOX_none9
+    "Building infiltrated",               // VOX_BUILDING_INFILTRATED
+    "Chronosphere charging",              // VOX_CHRONO_CHARGING
+    "Chronosphere ready",                 // VOX_CHRONO_READY
+    "Chronosphere test successful",       // VOX_CHRONO_TEST
+    "Command center under attack",        // VOX_HQ_UNDER_ATTACK
+    "Control center deactivated",         // VOX_CENTER_DEACTIVATED
+    "Convoy approaching",                 // VOX_CONVOY_APPROACHING
+    "Convoy unit lost",                   // VOX_CONVOY_UNIT_LOST
+    "Explosive charge placed",            // VOX_EXPLOSIVE_PLACED
+    "Credits stolen",                     // VOX_MONEY_STOLEN
+    "Naval unit lost",                    // VOX_SHIP_LOST
+    "Satellite launched",                 // VOX_SATALITE_LAUNCHED
+    "Sonar pulse available",              // VOX_SONAR_AVAILABLE
+    NULL,                                 // VOX_none10
+    "Soviet forces approaching",          // VOX_SOVIET_FORCES_APPROACHING
+    "Soviet reinforcements have arrived", // VOX_SOVIET_REINFORCEMENTS
+    "Training",                           // VOX_TRAINING
+    "Atom bomb ready",                    // VOX_ABOMB_READY
+    "Atom bomb launch detected",          // VOX_ABOMB_LAUNCH
+    "Allied reinforcements, north",       // VOX_ALLIES_N
+    "Allied reinforcements, south",       // VOX_ALLIES_S
+    "Allied reinforcements, east",        // VOX_ALLIES_E
+    "Allied reinforcements, west",        // VOX_ALLIES_W
+    "First objective met",                // VOX_OBJECTIVE1
+    "Second objective met",               // VOX_OBJECTIVE2
+    "Third objective met",                // VOX_OBJECTIVE3
+    "Iron Curtain charging",              // VOX_IRON_CHARGING
+    "Iron Curtain ready",                 // VOX_IRON_READY
+    "Kosygin rescued",                    // VOX_RESCUED
+    "Objective not met",                  // VOX_OBJECTIVE_NOT
+    "Signal flare, north",                // VOX_SIGNAL_N
+    "Signal flare, south",                // VOX_SIGNAL_S
+    "Signal flare, east",                 // VOX_SIGNAL_E
+    "Signal flare, west",                 // VOX_SIGNAL_W
+    "Spy plane ready",                    // VOX_SPY_PLANE
+    "Tanya freed",                        // VOX_FREED
+    "Unit armor upgraded",                // VOX_UPGRADE_ARMOR
+    "Unit firepower upgraded",            // VOX_UPGRADE_FIREPOWER
+    "Unit speed upgraded",                // VOX_UPGRADE_SPEED
+    "Mission timer initialized",          // VOX_MISSION_TIMER
+    "Unit full",                          // VOX_UNIT_FULL
+    "Unit repaired",                      // VOX_UNIT_REPAIRED
+    "40 minutes remaining",               // VOX_TIME_40
+    "30 minutes remaining",               // VOX_TIME_30
+    "20 minutes remaining",               // VOX_TIME_20
+    "10 minutes remaining",               // VOX_TIME_10
+    "5 minutes remaining",                // VOX_TIME_5
+    "4 minutes remaining",                // VOX_TIME_4
+    "3 minutes remaining",                // VOX_TIME_3
+    "2 minutes remaining",                // VOX_TIME_2
+    "1 minute remaining",                 // VOX_TIME_1
+    "Timer stopped",                      // VOX_TIME_STOP
+    "Unit sold",                          // VOX_UNIT_SOLD
+    "Timer started",                      // VOX_TIMER_STARTED
+    "Target rescued",                     // VOX_TARGET_RESCUED
+    "Target freed",                       // VOX_TARGET_FREED
+    "Tanya rescued",                      // VOX_TANYA_RESCUED
+    "Structure sold",                     // VOX_STRUCTURE_SOLD
+    "Soviet forces have fallen",          // VOX_SOVIET_FORCES_FALLEN
+    "Soviet empire selected",             // VOX_SOVIET_SELECTED
+    "Soviet empire has fallen",           // VOX_SOVIET_EMPIRE_FALLEN
+    "Operation terminated",               // VOX_OPERATION_TERMINATED
+    "Objective reached",                  // VOX_OBJECTIVE_REACHED
+    "Objective not reached",              // VOX_OBJECTIVE_NOT_REACHED
+    "Objective met",                      // VOX_OBJECTIVE_MET
+    "Mercenary rescued",                  // VOX_MERCENARY_RESCUED
+    "Mercenary freed",                    // VOX_MERCENARY_FREED
+    "Kosygin freed",                      // VOX_KOSOYGEN_FREED
+    "Signal flare detected",              // VOX_FLARE_DETECTED
+    "Commando rescued",                   // VOX_COMMANDO_RESCUED
+    "Commando freed",                     // VOX_COMMANDO_FREED
+    "Building in progress",               // VOX_BUILDING_IN_PROGRESS
+    "Atom bomb prepping",                 // VOX_ATOM_PREPPING
+    "Allied forces selected",             // VOX_ALLIED_SELECTED
+    "Atom bomb prepping",                 // VOX_ABOMB_PREPPING
+    "Atom bomb launched",                 // VOX_ATOM_LAUNCHED
+    "Allied forces have fallen",          // VOX_ALLIED_FORCES_FALLEN
+    "Atom bomb available",                // VOX_ABOMB_AVAILABLE
+    "Allied reinforcements have arrived", // VOX_ALLIED_REINFORCEMENTS
+    "Mission saved",                      // VOX_SAVE1
+    "Mission loaded"                      // VOX_LOAD1
+};
+
+// Caption message IDs live in their own range so a caption can never be mistaken
+// for a TutorialText/TXT_ message that happens to share a small numeric id.
+#define VOX_CAPTION_ID(voice) (0x5C00 + (int)(voice))
+
+static void EVA_Caption(VoxType voice)
+{
+    if (voice <= VOX_NONE || voice >= VOX_COUNT) {
+        return;
+    }
+    char const* cap = VoxCaption[voice];
+    if (cap == NULL || cap[0] == '\0') {
+        return;
+    }
+    // Don't stack a repeated announcement while the previous one is still up.
+    if (Session.Messages.Get_Message(VOX_CAPTION_ID(voice)) != NULL) {
+        return;
+    }
+    Session.Messages.Add_Message(NULL,
+                                 VOX_CAPTION_ID(voice),
+                                 cap,
+                                 PCOLOR_GREEN,
+                                 TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW,
+                                 Rule.MessageDelay * TICKS_PER_MINUTE);
+    Map.Flag_To_Redraw(false);
+}
+
 static VoxType CurrentVoice = VOX_NONE;
 
 /***********************************************************************************************
@@ -680,6 +838,12 @@ void Speak(VoxType voice, HouseClass* house, COORDINATE coord)
         On_Ping(house, coord);
     }
 #else
+    // SyncConquer: caption the EVA announcement on-screen (gated -- auto when the
+    // client has no usable audio) so the callout isn't lost. Independent of the
+    // audio queue below, which no-ops on a no-audio client.
+    if (voice != VOX_NONE && door_captions_enabled()) {
+        EVA_Caption(voice);
+    }
     if (!Debug_Quiet && Options.Volume != 0 && SampleType != 0 && voice != VOX_NONE && voice != SpeakQueue
         && voice != CurrentVoice && SpeakQueue == VOX_NONE) {
         SpeakQueue = voice;

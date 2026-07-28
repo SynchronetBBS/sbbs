@@ -659,8 +659,8 @@ rest; these are the local edits on top of it (plus a couple of shared
     true. That gate is the `<door>.ini [game] captions` tri-state: `true` always,
     `false` never, absent/auto = on only when the client has no usable audio
     (`termgfx_audio_tier() != 1`). Dedup by voice so a repeat doesn't stack while
-    on screen. RA (`redalert/audio.cpp`, a larger/different `VoxType`) is a
-    follow-up.
+    on screen. RA (`redalert/audio.cpp`, a larger/different `VoxType`) landed
+    later as entry 42.
 
 40. **Gate the side-pick briefing movies too (`tiberiandawn/intro.cpp`).**
     Entry 36 put the door's movie gate in `Play_Movie()`, on the assumption that
@@ -690,6 +690,30 @@ rest; these are the local edits on top of it (plus a couple of shared
     `docs/superpowers/plans/2026-07-26-syncconquer-multiplayer.md`. Second line
     moves Cancel into the vacated slot so the dialog has no hole where the button
     was; both edits are inert without the define.
+
+42. **On-screen EVA-announcement captions for Red Alert (`redalert/audio.cpp`).**
+    The follow-up entry 39 left open, so the accessibility feature is not a
+    Tiberian-Dawn-only quirk. Same shape as 39 -- a `VoxCaption[VOX_COUNT]` table
+    positionally aligned to `Speech[]`, captioned from `Speak()` when
+    `door_captions_enabled()` is true -- but RA's engine differs in three ways
+    that the TD code could not simply be copied across. Its `VoxType` is 116
+    entries rather than 40 and carries unused `VOX_noneN` slots (captioned
+    `NULL`, which `EVA_Caption()` skips) plus one `#ifdef ENGLISH` slot, so the
+    table reproduces that conditional to stay aligned in a non-English build.
+    Its message list lives on `Session.Messages`, and `Add_Message()` takes
+    `(name, id, txt, PlayerColorType, style, timeout)` -- so captions pass
+    `name = NULL` (which preserves the id), `PCOLOR_GREEN` and
+    `Rule.MessageDelay * TICKS_PER_MINUTE`, following RA's own system-message
+    call sites (`house.cpp`, `taction.cpp`) rather than TD's player-remap color
+    and literal timeout. And RA's `Add_Message()` does not dedup by id, so the
+    "don't stack a repeat while it's on screen" behavior TD gets from its
+    magic/crc argument is done explicitly here with a `Get_Message()` check
+    first. Caption ids are offset (`0x5C00 + voice`) to stay out of the
+    `TutorialText`/`TXT_` id space those same call sites use, so an unrelated
+    on-screen message can never be mistaken for a caption already showing.
+    The caption is emitted ahead of, and independently of, RA's audio gate
+    (`!Debug_Quiet && Options.Volume != 0 && SampleType != 0`), which would
+    otherwise suppress it in exactly the no-audio case captions exist for.
 
 ## Deliberate non-patches (worked around outside `vanilla/`)
 
