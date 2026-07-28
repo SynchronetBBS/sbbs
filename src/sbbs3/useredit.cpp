@@ -68,7 +68,7 @@ void sbbs_t::useredit(int usernumber)
 			if (!user.number) {
 				bputs(text[NoUserData]);
 				getkey(0);
-				return;
+				break;
 			}
 		}
 		if (!dates_are_same(time(NULL), user.laston) && user.ltoday) {
@@ -105,7 +105,7 @@ void sbbs_t::useredit(int usernumber)
 		else
 			term->newline();
 		if (localtime32(&user.laston, &tm) == NULL)
-			return;
+			break;
 		bprintf(text[UserDates]
 		        , datestr(user.firston, str), datestr(user.expire, tmp)
 		        , datestr(user.laston, tmp2), tm.tm_hour, tm.tm_min);
