@@ -371,13 +371,60 @@ This only matters for a real TTY. Reading **piped / redirected** input
 (`echo … | jsexec foo.js`, `jsexec foo.js < input`) has no terminal and no
 echo concern, so reading lines off the `stdin` File is fine there.
 
+## Exit status
+
+jsexec's process exit status has exactly **two** sources:
+
+1. The `exit_code` global, which `exit(N)` sets — status is then `N`.
+2. An **uncaught exception**, which yields status **1**.
+
+A script that does neither exits **0**, no matter what it did or failed to do.
+
+**The script's return value is NOT the exit status.** This is the single most
+common wrong assumption about jsexec, and it is wrong in the direction that
+hides bugs — people read a status of 1 and conclude "the script returned true."
+Measured:
+
+| module's last statement | exit status |
+|---|---|
+| `f()` returning `true`  | 0 |
+| bare `true;`            | 0 |
+| `f()` returning `7`     | 0 |
+
+The return value is only ever *displayed* (as `Result (type): value`), and only
+in inline `-r` mode. It never reaches the status.
+
+Other verified behavior:
+
+- `exit(N)` works from **anywhere in the call stack**, including nested
+  functions — it unwinds immediately, so no statement after it runs.
+- `js.on_exit()` handlers still run on both paths: after `exit(N)` and after an
+  uncaught exception. Useful for cleanup that must happen either way (e.g.
+  `js.on_exit('uifc.bail()')` to restore the terminal).
+- An uncaught exception prints `!JavaScript <file> line N: <error>` to
+  **stderr** before the status is set.
+
+**Consequences worth internalizing:**
+
+- **Status 1 does not mean the work didn't happen.** A script that completes its
+  real work and *then* throws — e.g. falls through into code whose variables are
+  undefined — leaves correct side effects behind and still reports failure.
+  When a status contradicts the observed side effects, read stderr before
+  theorizing; the `!JavaScript … line N` line names the failing line directly.
+- A crash and a deliberate `exit(1)` are **indistinguishable by status alone**.
+  Distinguish them by that same stderr line.
+- A module that needs to signal failure to a caller (timed event, shell script,
+  cron) **must** call `exit(N)`. Returning `false` from `main()` reports success.
+
 ## Pitfalls
 
 - `-e` is **not** the inline-expression flag — that's `-r`. `-e<filename>` means
   "send error messages to file."
 - Quoting: bash single-quotes beat escaping double-quotes inside `-r`. If the
   expression itself contains single quotes, write a temp `.js`.
-- An inline `exit(N)` returns N as the process exit status — handy for pipelines.
+- `exit(N)` sets the process exit status — handy for pipelines. It is one of
+  only two things that can; see [Exit status](#exit-status) before assuming a
+  script's return value means anything to the shell.
 - Running as a non-`sbbs` user can create log/data files with wrong ownership;
   prefer `sudo -u sbbs jsexec ...` or stick to read-only probes.
 
