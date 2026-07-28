@@ -202,6 +202,18 @@ Two are worth knowing about here:
   200k/frame budget), and its controls are two digital joysticks, which this
   console's own key bindings already reach (see [Playing](#playing)). Hide
   unwanted romsets by name.
+- **`[lobby] header` / `footer`** — optional art for the picker. Drop a
+  `lobby_header.ans` (or `.msg`) in this door's directory and it is drawn above
+  the game list on every page, in place of the built-in title line; a
+  `lobby_footer.*` is drawn below it. The extension is picked to suit each
+  caller's terminal, the way Synchronet picks among a menu file's `.rip` /
+  `.ans` / `.msg` / `.asc` variants. Keep it short — every row of art is a
+  row fewer for games.
+- **`[text]`** — every string the lobby displays. One lobby serves every console,
+  so its built-in wording says "cartridge" even here; re-word it (or re-color or
+  translate it) with these keys. Write them with a **colon** (`title : ...`)
+  rather than an `=`, which is what lets the value carry `\1h`-style color codes
+  and keep a trailing space. Each key's default is listed in the ini.
 
 ### Hide unwanted romsets — do not move or delete them
 

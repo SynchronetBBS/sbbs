@@ -158,6 +158,19 @@ there — it is in `lobby.js`, because it doesn't vary from BBS to BBS.
   its sound chip as the game runs, so it is nowhere in the ROM as data. Prefer
   OGG or WAV, and keep it short: the file is uploaded to the terminal on every
   entry, so a few KB is the right size.
+- **`[lobby] header` / `footer`** — optional art for the picker. Drop a
+  `lobby_header.ans` (or `.msg`) in this door's directory and it is drawn above
+  the cartridge list on every page, in place of the built-in title line; a
+  `lobby_footer.*` is drawn below it. The extension is picked to suit each
+  caller's terminal, the way Synchronet picks among a menu file's `.rip` /
+  `.ans` / `.msg` / `.asc` variants. Nothing to configure unless you want to
+  point the keys at a different file, or blank one to ignore art that is
+  already there. Keep it
+  short — every row of art is a row fewer for cartridges.
+- **`[text]`** — every string the lobby displays, if you want to re-word,
+  re-color or translate it. Write these keys with a **colon** (`title : ...`)
+  rather than an `=`, which is what lets the value carry `\1h`-style color codes
+  and keep a trailing space. Each key's default is listed in the ini.
 
 Per-user save data (SRAM) is written under `data/user/<num>/nes/`, which
 Synchronet auto-cleans with the user account.

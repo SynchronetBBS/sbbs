@@ -851,19 +851,33 @@ function syncretro_paginate(items, per_page)
 	return pages;
 }
 
-// One list cell, in xtrn_sec.js's look (XtrnProgLstFmt): a bright-cyan 3-digit
-// number, a \xb3 (CP437 vertical bar), then the cyan title (+year). `width` is
-// the cell's VISIBLE width; "%N.Ns" pads/clips the name to a fixed column count
-// so the grid lines up even though the returned string carries \1x attribute
-// codes (which take no column). The number+bar prefix is 6 visible columns.
-function syncretro_cell(index, rom, width)
+// The shipped cell format: a bright-cyan 3-digit number, a \xb3 (CP437 vertical
+// bar), then the cyan title. xtrn_sec.js's look (XtrnProgLstFmt). Takes the
+// cartridge number (%u) and the already-padded title (%s).
+var SYNCRETRO_CELL_FMT = "\1h\1c%3u \xb3 \1n\1c%s\1n";
+
+// One list cell. `width` is the cell's VISIBLE width; the title is padded and
+// clipped to fill whatever columns the format's prefix leaves, so the grid lines
+// up even though the returned string carries \1x attribute codes (which take no
+// column).
+//
+// `fmt` (optional) replaces SYNCRETRO_CELL_FMT -- it is how the lobby hands in
+// the sysop's [text] cell_fmt. The title's column count is MEASURED from the
+// format rather than assumed, so changing the separator, widening the number or
+// dropping either one does not silently break the column grid. Measuring with
+// THIS cell's number also gets a >999 cartridge list right, where a hardcoded
+// prefix width would not: "%3u" pads 7 to 3 columns but spends 4 on 1000.
+function syncretro_cell(index, rom, width, fmt)
 {
 	var label = (rom.label || rom.title) + (rom.year ? " (" + rom.year + ")" : "");
-	var namew = width - 6;
+	var namew;
 
+	if (!fmt)
+		fmt = SYNCRETRO_CELL_FMT;
+	namew = width - strip_ctrl_a(format(fmt, index, "")).length;
 	if (namew < 1)
 		namew = 1;
-	return format("\1h\1c%3u \xb3 \1n\1c%-" + namew + "." + namew + "s\1n", index, label);
+	return format(fmt, index, format("%-" + namew + "." + namew + "s", label));
 }
 
 // --- platform / target token ------------------------------------------------

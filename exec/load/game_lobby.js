@@ -416,6 +416,81 @@ function attract_files(door_dir, cfg_dir) {
 }
 
 // ---------------------------------------------------------------------------
+// Optional sysop display files (header/footer art dropped in the door's dir)
+// ---------------------------------------------------------------------------
+
+// Resolve an optional display file, the door-side equivalent of xtrn_sec.js's
+// xtrn_head / xtrn_tail menu files. Two deliberate differences: it is found in
+// the DOOR's own directory rather than text/menu -- an external's decoration is
+// part of the external, not of the BBS's menu tree, and a door install has to
+// stay self-contained enough to be copied to another BBS -- and it is resolved
+// here rather than by bbs.menu(), which would search text/menu and mods/text/menu.
+//
+// `name` is a basename (extension chosen below) or a path, absolute or relative
+// to the door dir. An explicit extension is honored as given. Otherwise the
+// extension is picked by what the terminal can actually render, in the order
+// Synchronet's own display-file lookup uses (sbbs_t::menu(), prntfile.cpp):
+//
+//     .rip   RIPscrip terminal only
+//     .mon   ANSI terminal without color
+//     .ans   ANSI terminal
+//     .seq   PETSCII (Commodore) terminal
+//     .msg   Ctrl-A attributes + CP437/UTF-8 characters
+//     .asc   plain ASCII, no high characters
+//
+// THE LAST TWO SWAP for an ASCII-only terminal, which is the whole point of
+// having both: a terminal that can render CP437 or UTF-8 prefers .msg and falls
+// back to .asc, while one that cannot prefers .asc and takes .msg only if that
+// is all the sysop installed. Getting this backwards would send box-drawing
+// characters to a terminal that asked not to receive them.
+//
+// Returns the resolved path, or "" when nothing is installed. Session-bound: it
+// asks the terminal what it supports.
+function display_file(door_dir, name) {
+	if (!name)
+		return "";
+	var path = (name.charAt(0) == "/" || name.charAt(0) == "\\" || name.charAt(1) == ":")
+	    ? String(name) : door_dir + String(name);
+	if (file_getext(path))
+		return file_exists(path) ? path : "";
+	var term = (typeof console == "object" && console) ? console : null;
+	var ascii = term && term.charset == "US-ASCII";
+	var ext = [], i;
+	if (term && term.term_supports(USER_RIP))
+		ext.push(".rip");
+	if (term && term.term_supports(USER_ANSI)) {
+		if (!term.term_supports(USER_COLOR))
+			ext.push(".mon");
+		ext.push(".ans");
+	}
+	if (term && term.charset == "CBM-ASCII")
+		ext.push(".seq");
+	ext = ext.concat(ascii ? [".asc", ".msg"] : [".msg", ".asc"]);
+	for (i = 0; i < ext.length; i++)
+		if (file_exists(path + ext[i]))
+			return path + ext[i];
+	return "";
+}
+
+// Rows a display file will occupy, counted from the file itself. Only an
+// ESTIMATE -- a line longer than the terminal is wide wraps to two rows, and art
+// that positions the cursor absolutely occupies rows this cannot see -- so a
+// caller that needs the true height must measure the drawn output
+// (console.line_counter). It is here to make that measurement's FIRST guess
+// right for the ordinary case of sequential lines, so the common install never
+// pays a corrective redraw. Returns 0 for a missing/unreadable file.
+function display_file_rows(path) {
+	if (!path)
+		return 0;
+	var f = new File(path);
+	if (!f.open("r"))
+		return 0;
+	var lines = f.readAll();
+	f.close();
+	return lines.length;
+}
+
+// ---------------------------------------------------------------------------
 // Live who's-online panel  (Terminal Server context)
 //
 // presence_lib.js is Synchronet's canonical node-status formatter (the BBS's own

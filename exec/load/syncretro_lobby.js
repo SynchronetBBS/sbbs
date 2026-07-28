@@ -30,8 +30,10 @@
 // separate key is a thing to get out of step.
 //
 // The sysop's syncretro.ini is still read, for the keys that are genuinely a
-// sysop's business rather than the console's: [roms] exclude= and dir=. The
-// console's identity is code, not configuration -- it does not vary per install.
+// sysop's business rather than the console's: [roms] exclude= and dir=, every
+// string this lobby displays ([text]), and the optional header/footer display
+// files ([lobby]). The console's identity is code, not configuration -- it does
+// not vary per install.
 //
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
@@ -54,8 +56,82 @@ var SYNCRETRO_LOBBY_HEADER_ROWS = 3;                   /* title, top-played, bla
 var SYNCRETRO_LOBBY_FOOTER_ROWS = 3;                   /* blank, prompt, +1 kept empty so a full
                                             * page never trips the terminal more-prompt */
 
+/* Every string this lobby displays, with the string it has always displayed as
+ * its default. The sysop's syncretro.ini [text] section overrides any of them,
+ * so an install with no [text] section draws exactly what it drew before this
+ * existed.
+ *
+ * WRITE [text] KEYS WITH A COLON, NOT AN EQUALS SIGN:
+ *
+ *     title : \1h\1cSyncRetro \1n\1c-- %s\1n
+ *
+ * A colon makes Synchronet's ini parser treat the value as a C string literal
+ * and unescape it (xpdev/ini_file.c key_name() -> c_unescape_str()), so "\1h" is
+ * the Ctrl-A attribute code and "\xb3" the CP437 byte -- the same spelling
+ * ctrl/text.dat uses, which is the point: a sysop already knows it, and nothing
+ * here has to decode anything. A colon also preserves a TRAILING SPACE, which
+ * several of these strings need. An `=` line is taken literally, backslashes and
+ * all.
+ *
+ * A BLANK value means "draw nothing here", including any CRLF the default
+ * carries: the section is read with blanks enabled, so present-but-empty is
+ * distinguishable from absent. That is how the "Top played" row is turned off.
+ *
+ * The %-arguments each key is handed are fixed, listed beside it here and
+ * documented in syncretro.example.ini. A string that ignores its arguments is
+ * fine; one that asks for an argument never passed prints rubbish. */
+var SYNCRETRO_LOBBY_TEXT = {
+	/* header block */
+	title:          "\1h\1cSyncRetro \1n\1c-- %s\1n",       /* console name */
+	top_played:     "\1hTop played:\1n ",                   /* (no args) row label */
+	top_played_fmt: "\1c%s \1h(%d)\1n  ",                   /* cartridge title, play count */
+	/* the cartridge grid */
+	cell_fmt:       SYNCRETRO_CELL_FMT,                     /* number, title */
+	/* footer */
+	prompt:         "\1h\1c#\1n play   \1h\1cF\1nind   \1h\1cN\1next \1h\1cP\1nrev   "
+	              + "\1h\1cQ\1nuit   \1cPage \1h%d\1n\1c of \1h%d\1n: ",   /* page, page count */
+	search:         "\r\nSearch: ",
+	/* messages */
+	no_match:       "\r\n\1hNothing matches. \1n",
+	scanning:       "\r\n\1hScanning cartridges (first run, this takes a moment)...\1n",
+	scanned:        " \1h\1c%d\1n\1h found.\1n\r\n",        /* cartridges found */
+	no_roms:        "\r\n\1h\1rNo cartridges found in %s/.\1n\r\n",       /* ROM directory */
+	bios_missing:   "\r\n\1h\1rThe %s BIOS is missing from %s: %s\r\n"     /* console, dir, files */
+	              + "Without it no cartridge will run. Ask the sysop.\1n\r\n",
+	unsafe_name:    "\r\n\1h\1rThat cartridge's filename contains a quote, backslash, "
+	              + "backtick or dollar sign, which the door's command line cannot "
+	              + "carry. Ask the sysop to rename it.\1n\r\n",
+	rom_gone:       "\r\n\1h\1rThat cartridge is gone. Rescanning.\1n\r\n"
+};
+
 /* Set once, by syncretro_lobby(). */
 var syncretro_lobby_dir, syncretro_lobby_con, syncretro_lobby_rules, syncretro_lobby_bios, syncretro_lobby_binary, syncretro_lobby_core, syncretro_lobby_stdio, syncretro_lobby_cfg;
+var syncretro_lobby_cellw;                             /* [lobby] cell_width, or the default above */
+var syncretro_lobby_header, syncretro_lobby_footer;    /* optional display files ("" = none) */
+var syncretro_lobby_hrows, syncretro_lobby_frows;      /* rows those blocks occupy; see the draw */
+
+/* One display string: the sysop's when the key appears in [text], else the
+ * shipped default. Present-but-blank is a legitimate override meaning "draw
+ * nothing", so absence is tested rather than truthiness. */
+function syncretro_lobby_text(key)
+{
+	var t = syncretro_lobby_cfg.text;
+
+	if (t && t[key] !== undefined)
+		return String(t[key]);
+	return SYNCRETRO_LOBBY_TEXT[key];
+}
+
+/* Print one of those strings, formatted with `args`. A blank string prints
+ * nothing at all -- not even the CRLFs its default carries. */
+function syncretro_lobby_print(key, args)
+{
+	var s = syncretro_lobby_text(key);
+
+	if (s === "")
+		return;
+	console.putmsg(args && args.length ? format.apply(null, [s].concat(args)) : s);
+}
 
 function syncretro_lobby_init(spec)
 {
@@ -76,11 +152,17 @@ function syncretro_lobby_init(spec)
 	/* The sysop's half of syncretro.ini. The console's half is the spec above:
 	 * a sysop hides a ROM or moves the roms dir; a sysop does not redefine what
 	 * an NES cartridge is. */
-	syncretro_lobby_cfg = { lobby: {} };   /* game_lobby.js's shape; never null */
+	syncretro_lobby_cfg = { lobby: {}, text: {} };   /* game_lobby.js's shape; never null */
 	f = new File(syncretro_lobby_dir + "syncretro.ini");
 	if (f.open("r")) {
 		ini = f.iniGetObject("roms");
-		syncretro_lobby_cfg.lobby = f.iniGetObject("lobby") || {};
+		/* blanks: true -- a key present but EMPTY is a real override in these two
+		 * sections ("draw nothing", "no display file"), and iniGetObject drops
+		 * blank values otherwise, making it indistinguishable from an absent key.
+		 * [roms] and [idle] keep the plain read: neither has that convention, and
+		 * both already treat a blank value as unset. */
+		syncretro_lobby_cfg.lobby = f.iniGetObject("lobby", false, true) || {};
+		syncretro_lobby_cfg.text = f.iniGetObject("text", false, true) || {};
 		syncretro_lobby_cfg.idle = f.iniGetObject("idle") || {};
 		f.close();
 		if (ini) {
@@ -90,6 +172,46 @@ function syncretro_lobby_init(spec)
 				syncretro_lobby_rules.exclude = syncretro_list(ini.exclude);
 		}
 	}
+
+	/* A cell_fmt that lost its %s would draw a grid of numbers with no cartridge
+	 * titles -- which reads as a broken door rather than as a bad setting. Say so
+	 * and fall back, rather than obey it. */
+	if (syncretro_lobby_cfg.text.cell_fmt !== undefined
+	    && String(syncretro_lobby_cfg.text.cell_fmt).indexOf("%s") < 0) {
+		log(LOG_WARNING, "syncretro: [text] cell_fmt has no %s (the cartridge title) "
+		    + "-- using the built-in format");
+		delete syncretro_lobby_cfg.text.cell_fmt;
+	}
+
+	syncretro_lobby_cellw = parseInt(syncretro_lobby_cfg.lobby.cell_width, 10);
+	if (!(syncretro_lobby_cellw > 0))
+		syncretro_lobby_cellw = SYNCRETRO_LOBBY_CELL_W;
+
+	/* The optional display files: art the sysop drops in the door's own directory
+	 * to head or foot the picker, the way xtrn_sec.js takes an xtrn_head/xtrn_tail
+	 * menu file. An absent [lobby] header/footer key auto-detects lobby_header.*
+	 * and lobby_footer.* here; a key names some other file (relative to this dir,
+	 * or absolute); a key present but BLANK turns the file off.
+	 *
+	 * A header REPLACES the built-in title line, which is what xtrn_sec.js does
+	 * when an xtrn_head file exists. The live "Top played" row is independent of
+	 * it -- that row is data, not decoration -- and is turned off on its own by
+	 * blanking [text] top_played.
+	 *
+	 * The row counts are only the FIRST guess at the page geometry; the draw
+	 * measures what it actually printed and corrects them. See syncretro_lobby_draw(). */
+	syncretro_lobby_header = syncretro_lobby_display_file("header", "lobby_header");
+	syncretro_lobby_footer = syncretro_lobby_display_file("footer", "lobby_footer");
+	syncretro_lobby_hrows = SYNCRETRO_LOBBY_HEADER_ROWS;
+	syncretro_lobby_frows = SYNCRETRO_LOBBY_FOOTER_ROWS;
+	if (syncretro_lobby_header)   /* replaces the title's one row with its own */
+		syncretro_lobby_hrows += syncretro_lobby_gl.display_file_rows(syncretro_lobby_header) - 1;
+	else if (syncretro_lobby_text("title") === "")
+		syncretro_lobby_hrows--;
+	if (syncretro_lobby_text("top_played") === "")
+		syncretro_lobby_hrows--;
+	if (syncretro_lobby_footer)
+		syncretro_lobby_frows += syncretro_lobby_gl.display_file_rows(syncretro_lobby_footer);
 
 	/* games.ini -- per-cabinet facts for a console whose ROM filenames are
 	 * identifiers the emulator matches on and so cannot be renamed (arcade).
@@ -152,6 +274,20 @@ function syncretro_lobby_init(spec)
 	syncretro_lobby_core   = cpfx + cname;                     /* relative to the door's cwd */
 }
 
+/* Resolve one [lobby] display-file key. Absent -> the auto-detected default name;
+ * blank -> off; otherwise the sysop's own path. game_lobby.js picks the extension
+ * from what the terminal can render (.ans / .asc / .msg) and returns "" when
+ * nothing is installed, so the ordinary install configures nothing and gets
+ * nothing extra drawn. */
+function syncretro_lobby_display_file(key, dflt)
+{
+	var name = syncretro_lobby_cfg.lobby[key];
+
+	if (name === undefined)
+		name = dflt;
+	return syncretro_lobby_gl.display_file(syncretro_lobby_dir, name);
+}
+
 /* The BIOS is what a player actually trips over: without it FreeIntv paints its
  * own LOAD EXEC FAIL screen and the door looks broken. Say so here instead. A
  * console with no BIOS (the NES) lists none, and this never fires. */
@@ -166,38 +302,69 @@ function syncretro_lobby_bios_missing()
 	return missing;
 }
 
-function syncretro_lobby_draw(roms, page, pages, board, cols, per_col)
+/* The "Top played" row: the live board, built to a fixed VISIBLE width -- the
+ * formatted entry is measured with its \1x codes stripped, since those take no
+ * column -- so the row is always exactly ONE line however the sysop colors it.
+ * That keeps the header height constant; a line that wrapped past the screen
+ * width would grow the header, push the page over an 80x24 screen, and trip the
+ * terminal's pause. Nothing played yet -> an empty row, as before. */
+function syncretro_lobby_top_played(board)
 {
-	var i, j, line, idx, rom, t, plain, mp, mpv;
+	var fmt = syncretro_lobby_text("top_played_fmt");
+	var row = syncretro_lobby_text("top_played");
+	var vis = syncretro_lobby_gl.plain(row).length;
+	var i, t, entry, w;
+
+	if (!board.length)
+		return "";
+	for (i = 0; i < board.length && i < 5 && fmt !== ""; i++) {
+		t     = syncretro_lobby_gl.clip(board[i].label || board[i].title, 14);
+		entry = format(fmt, t, board[i].count);   /* no rank -- order shows it */
+		w     = syncretro_lobby_gl.plain(entry).length;
+		if (vis + w > console.screen_columns - 1)
+			break;
+		row += entry;
+		vis += w;
+	}
+	return row;
+}
+
+/* Draw one page. Returns the rows the header and footer blocks actually took, so
+ * the caller can correct a page geometry computed from the wrong guess: a sysop's
+ * header/footer display file is of unknown height until it has been printed (a
+ * line longer than the screen wraps to two rows, art may position the cursor
+ * itself), and the file's own line count is only an estimate.
+ *
+ * Measured with console.row, the cursor row the terminal layer tracks, which
+ * console.clear() homes to 0. NOT with console.line_counter: that one exists to
+ * drive the pause prompt and deliberately does not count a blank line printed at
+ * column 0 while it is still zero, so a header that opens with a blank line
+ * would measure short -- and a geometry corrected to a short measurement is
+ * worse than no correction at all. */
+function syncretro_lobby_draw(page, pages, board, cols, per_col)
+{
+	var i, j, line, idx, rom, hrows, frows;
 
 	console.clear();
 	console.line_counter = 0;   /* we page ourselves (N/P); don't let the terminal
 	                             * insert a more-prompt in the middle of a page */
 
-	console.putmsg("\1h\1cSyncRetro \1n\1c-- " + syncretro_lobby_con.name + "\1n");
-	console.crlf();
-
-	/* "Top played" is built to a fixed VISIBLE width -- tracked in the plain-text
-	 * `mpv`, since the colored `mp` carries \1x codes that take no column -- so it
-	 * is always exactly ONE line. That keeps the header height constant; a line
-	 * that wrapped past 80 cols would grow the header, push the page over an 80x24
-	 * screen, and trip the terminal's pause. */
-	mp = "";
-	if (board.length) {
-		mp  = "\1hTop played:\1n ";
-		mpv = "Top played: ";
-		for (i = 0; i < board.length && i < 5; i++) {
-			t     = syncretro_lobby_gl.clip(board[i].label || board[i].title, 14);
-			plain = format("%s (%d)  ", t, board[i].count);   /* no rank -- order shows it */
-			if (mpv.length + plain.length > console.screen_columns - 1)
-				break;
-			mp  += format("\1c%s \1h(%d)\1n  ", t, board[i].count);
-			mpv += plain;
-		}
+	/* Header: the sysop's display file if there is one, else the title line.
+	 * P_NOCRLF because printfile() otherwise prepends a line break whenever the
+	 * cursor is not already at the top of the screen -- which would put a blank
+	 * row above the footer file on top of the separator drawn here. */
+	if (syncretro_lobby_header)
+		console.printfile(syncretro_lobby_header, P_NOPAUSE | P_NOCRLF);
+	else if (syncretro_lobby_text("title") !== "") {
+		syncretro_lobby_print("title", [syncretro_lobby_con.name]);
+		console.crlf();
 	}
-	console.putmsg(mp);
+	if (syncretro_lobby_text("top_played") !== "") {
+		console.putmsg(syncretro_lobby_top_played(board));
+		console.crlf();
+	}
 	console.crlf();
-	console.crlf();
+	hrows = console.row;
 
 	for (i = 0; i < per_col; i++) {
 		line = "";
@@ -206,22 +373,29 @@ function syncretro_lobby_draw(roms, page, pages, board, cols, per_col)
 			if (idx >= pages[page].length)
 				break;
 			rom   = pages[page][idx];
-			line += syncretro_cell(rom.num, rom, SYNCRETRO_LOBBY_CELL_W) + " ";   /* fixed-width; no rpad */
+			line += syncretro_cell(rom.num, rom, syncretro_lobby_cellw,
+			                       syncretro_lobby_text("cell_fmt")) + " ";   /* fixed-width; no rpad */
 		}
 		if (line !== "")
 			console.putmsg(line + "\r\n");
 	}
 
+	frows = console.row;
 	console.crlf();
+	if (syncretro_lobby_footer)
+		console.printfile(syncretro_lobby_footer, P_NOPAUSE | P_NOCRLF);
 	/* Condensed prompt, hotkeys in bright cyan: any number plays that cartridge,
 	 * F searches, N/P page, Q quits. The unprompted aliases ('/' for F, '+'/'-'
 	 * and Enter/PgUp/PgDn/Home/End for paging) are left off -- the row has to stay
 	 * inside 80 columns, and every key it does name spells out its own word. No
 	 * trailing CRLF -- the cursor rests on the bottom row, which is never scrolled,
 	 * so the terminal never pauses. */
-	console.putmsg(format(
-	    "\1h\1c#\1n play   \1h\1cF\1nind   \1h\1cN\1next \1h\1cP\1nrev   \1h\1cQ\1nuit"
-	    + "   \1cPage \1h%d\1n\1c of \1h%d\1n: ", page + 1, pages.length));
+	syncretro_lobby_print("prompt", [page + 1, pages.length]);
+
+	/* +1 for the prompt's own row (ending without a line break, it never advances
+	 * the cursor off that row) and +1 kept empty so a full page never trips the
+	 * terminal's more-prompt. */
+	return { hrows: hrows, frows: console.row - frows + 2 };
 }
 
 /* Returns true when the caller needs to rescan (the picked cartridge is no
@@ -242,14 +416,12 @@ function syncretro_lobby_play(rom)
 	var cmd, started, secs, label;
 
 	if (!syncretro_quote_safe(rom.name)) {
-		console.putmsg("\r\n\1h\1rThat cartridge's filename contains a quote, "
-		    + "backslash, backtick or dollar sign, which the door's command line "
-		    + "cannot carry. Ask the sysop to rename it.\1n\r\n");
+		syncretro_lobby_print("unsafe_name");
 		console.pause();
 		return false;
 	}
 	if (!file_exists(rom.path)) {
-		console.putmsg("\r\n\1h\1rThat cartridge is gone. Rescanning.\1n\r\n");
+		syncretro_lobby_print("rom_gone");
 		console.pause();
 		return true;
 	}
@@ -382,11 +554,11 @@ function syncretro_lobby_discover()
 	var roms;
 
 	if (cold)
-		console.putmsg("\r\n\1hScanning cartridges (first run, this takes a moment)...\1n");
+		syncretro_lobby_print("scanning");
 	roms = syncretro_discover(syncretro_lobby_dir + backslash(syncretro_lobby_rules.dir), syncretro_lobby_rules, cache);
 	syncretro_cache_flush(cache);
 	if (cold)
-		console.putmsg(" \1h\1c" + roms.length + "\1n\1h found.\1n\r\n");
+		syncretro_lobby_print("scanned", [roms.length]);
 	return roms;
 }
 
@@ -402,22 +574,21 @@ function syncretro_lobby_number(roms)
 function syncretro_lobby(spec)
 {
 	var roms, plays, board, cols, per_col, per_page, pages, page, key, i, filter;
-	var missing;
+	var missing, drawn, regeom;
 
 	syncretro_lobby_init(spec);
 
 	missing = syncretro_lobby_bios_missing();
 	if (missing.length) {
-		console.putmsg("\r\n\1h\1rThe " + syncretro_lobby_con.name + " BIOS is missing from "
-		    + syncretro_lobby_dir + ": " + missing.join(" and ") + "\r\n"
-		    + "Without it no cartridge will run. Ask the sysop.\1n\r\n");
+		syncretro_lobby_print("bios_missing",
+		    [syncretro_lobby_con.name, syncretro_lobby_dir, missing.join(" and ")]);
 		console.pause();
 		return;
 	}
 
 	roms = syncretro_lobby_discover();
 	if (!roms.length) {
-		console.putmsg("\r\n\1h\1rNo cartridges found in " + syncretro_lobby_rules.dir + "/.\1n\r\n");
+		syncretro_lobby_print("no_roms", [syncretro_lobby_rules.dir]);
 		console.pause();
 		return;
 	}
@@ -431,23 +602,46 @@ function syncretro_lobby(spec)
 
 	filter = roms;
 	page   = 0;
+	regeom = 0;
 	while (!js.terminated && bbs.online) {
 		plays    = syncretro_read_plays(syncretro_plays_path(system.data_dir), syncretro_lobby_con.id);
 		board    = syncretro_top_played(plays, 5);
-		cols     = syncretro_columns(console.screen_columns, SYNCRETRO_LOBBY_CELL_W);
-		per_col  = syncretro_page_rows(console.screen_rows, SYNCRETRO_LOBBY_HEADER_ROWS, SYNCRETRO_LOBBY_FOOTER_ROWS);
+		cols     = syncretro_columns(console.screen_columns, syncretro_lobby_cellw);
+		per_col  = syncretro_page_rows(console.screen_rows, syncretro_lobby_hrows, syncretro_lobby_frows);
 		per_page = cols * per_col;
 		pages    = syncretro_paginate(filter, per_page);
 		if (page >= pages.length)
 			page = pages.length ? pages.length - 1 : 0;
 		if (!pages.length) {
-			console.putmsg("\r\n\1hNothing matches. \1n");
+			syncretro_lobby_print("no_match");
 			console.pause();
 			filter = roms;
 			continue;
 		}
 
-		syncretro_lobby_draw(roms, page, pages, board, cols, per_col);
+		drawn = syncretro_lobby_draw(page, pages, board, cols, per_col);
+
+		/* A display file turned out to be a different height than the page geometry
+		 * above assumed, so that geometry was wrong: adopt what was measured and
+		 * draw the page again before anyone is asked for a key. It happens once,
+		 * on the first page of a session (the measurement then sticks), and is
+		 * bounded rather than trusted to converge -- a redraw loop would be worse
+		 * than a page one row short.
+		 *
+		 * ONLY when a display file is installed. Without one the block heights are
+		 * the constants this lobby has always drawn to, arrived at by counting the
+		 * lines it prints; there is nothing for a measurement to discover, and
+		 * letting one overrule them would put every stock install at the mercy of
+		 * this arithmetic for no gain. */
+		if ((syncretro_lobby_header || syncretro_lobby_footer)
+		    && (drawn.hrows != syncretro_lobby_hrows || drawn.frows != syncretro_lobby_frows)
+		    && regeom < 2) {
+			syncretro_lobby_hrows = drawn.hrows;
+			syncretro_lobby_frows = drawn.frows;
+			regeom++;
+			continue;
+		}
+		regeom = 0;
 
 		key = console.getkey(K_UPPER);
 		if (key === "Q")
@@ -476,7 +670,7 @@ function syncretro_lobby(spec)
 		/* 'F'ind is the prompted key -- it names itself the way Next/Prev/Quit do.
 		 * '/' stays bound as the unprompted alias for the fingers that expect it. */
 		if (key === "F" || key === "/") {
-			console.putmsg("\r\nSearch: ");
+			syncretro_lobby_print("search");
 			var term = console.getstr(30, K_LINE).toLowerCase();
 			filter = term === "" ? roms : roms.filter(function (r) {
 				return r.title.toLowerCase().indexOf(term) >= 0;
@@ -491,8 +685,7 @@ function syncretro_lobby(spec)
 				if (syncretro_lobby_play(roms[n - 1])) {    /* numbers index the FULL list */
 					roms = syncretro_lobby_discover();
 					if (!roms.length) {
-						console.putmsg("\r\n\1h\1rNo cartridges found in "
-						    + syncretro_lobby_rules.dir + "/.\1n\r\n");
+						syncretro_lobby_print("no_roms", [syncretro_lobby_rules.dir]);
 						console.pause();
 						return;
 					}

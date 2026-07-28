@@ -406,6 +406,22 @@ eq(vislen(longcell), 30, "an over-long title is clipped to width, not wrapped");
 var noyear = syncretro_cell(1, {title: "4tris", year: 0}, 36);
 check(noyear.indexOf("(0)") < 0, "a missing year is omitted, not printed as 0");
 
+// A sysop's [text] cell_fmt: the title column is measured from the format, so a
+// custom prefix still fills exactly `width` visible columns.
+var custom = syncretro_cell(7, {title: "Astrosmash", year: 1981}, 36, "\1w%u) %s");
+eq(vislen(custom), 36, "a custom cell format still fills the cell width");
+check(custom.indexOf("7) Astrosmash") >= 0, "the custom format's own punctuation survives");
+// The format takes the number FIRST and the title SECOND (printf positional
+// args, exactly like text.dat's XtrnProgLstFmt); a wide number field is measured,
+// not assumed.
+var wide = syncretro_cell(7, {title: "Astrosmash"}, 36, "\1c%5u \1n%s");
+eq(vislen(wide), 36, "a wider number field takes its columns from the title");
+check(/ {4}7 Astrosmash/.test(strip_ctrl_a(wide)), "the number is padded to the field width");
+// >999 cartridges: "%3u" spends 4 columns on a 4-digit number, and the title
+// column has to shrink by one to match -- a hardcoded prefix width would not.
+eq(vislen(syncretro_cell(1000, {title: "Astrosmash"}, 36)), 36,
+   "a 4-digit cartridge number does not push the cell over its width");
+
 writeln("N. platform token (native-artifact subdir)");
 // Windows is Win32-only by design: both a 32- and a 64-bit Synchronet host
 // resolve to the one "win32" subdir, so a Win64 host finds the Win32 door.
