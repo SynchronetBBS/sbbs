@@ -145,10 +145,9 @@ DLLEXPORT named_string_t** iniFreeNamedStringList(named_string_t** list);
  *     <dir>/<name>.<platform><ext>
  *     <dir>/<name>.local<ext>
  *     <dir>/<name><ext>
- * The `.local` variation names THIS INSTALLATION rather than a machine or an
- * OS, which is what a sysop wants when the plain file is one Synchronet ships
- * and an upgrade would overwrite. `dest` receives the plain name when none of
- * the variations exist, so a caller that creates the file writes that one. */
+ * `.local` names the installation rather than a machine or an OS. `dest`
+ * receives the plain name when no variation exists, so a caller that creates
+ * the file writes that one. */
 DLLEXPORT char* 		iniFileName(char* dest, size_t maxlen, const char* dir, const char* fname);
 DLLEXPORT FILE* 		iniOpenFile(const char* fname, bool for_modify);
 DLLEXPORT str_list_t 	iniReadFile(FILE*);

@@ -5098,8 +5098,8 @@ static jsSyncMethodSpec js_global_functions[] = {
 		        "<tt>path/file.<i>host</i>.ext</tt>, "
 		        "<tt>path/file.<i>platform</i>.ext</tt>, then "
 		        "<tt>path/file.local.ext</tt> - the last naming this installation "
-		        "rather than a machine, for a sysop's copy of a file Synchronet ships "
-		        "and an upgrade would overwrite. Falls back to <tt>path/file.ext</tt>")
+		        "rather than a machine, for a sysop's own version of a file that "
+		        "Synchronet distributes. Falls back to <tt>path/file.ext</tt>")
 	 , 312},
 	{"file_getdosname", js_dosfname,        1,  JSTYPE_STRING,  JSDOCSTR("path/filename")
 	 , JSDOCSTR("Return DOS-compatible (Micros~1 shortened) version of specified <i>path/filename</i>"
