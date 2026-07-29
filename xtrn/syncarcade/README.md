@@ -163,8 +163,26 @@ and it needs a busy BBS and one popular game to happen at all.
 
 Because a romset cannot be renamed, `games.ini` maps romset names to readable
 titles for the picker — `[puckman] name = Pac-Man (Japan)`. A romset with no
-section is listed under its raw name, which is ugly but harmless. **Extend that
-file rather than renaming a zip.**
+section is listed under its raw name, which is ugly but harmless. **Add an entry
+rather than renaming a zip.**
+
+**Put your entries in `games.local.ini`, not `games.ini`.** The shipped
+`games.ini` is replaced wholesale by an upgrade, so anything you write there is
+lost the next time the door is updated. `games.local.ini`, beside it, is yours:
+it is read over the top of the shipped file, key by key, and nothing upstream
+ever touches it. Write only the lines you want to change —
+
+```ini
+[pacman]
+name = Pac-Man (the good one)
+
+[myrom]
+name = House Cabinet
+```
+
+— and everything you left out keeps coming from `games.ini`, so the titles and
+measurements added in later releases still reach you. A romset that appears only
+in your file works exactly like one shipped in ours. Either file may be absent.
 
 It also carries what MAME will not tell the door: `button.<id>` names what a
 RetroPad button actually is on that cabinet, and `stick2` labels a twin-stick
@@ -182,13 +200,14 @@ its RAM and ROMs behind a test pattern, and nothing on a coin-op answers input
 until a credit is in, so those seconds are pure waiting. `boot_frames` runs
 them at full speed instead — the game is emulated exactly as before, only
 without the pause between frames — and the player arrives at the attract loop.
-Written at the top of `games.ini`, before any section, it applies to every
-romset; a section may override it for a cabinet with a longer self-test. The
+Written at the top of the file, before any section, it applies to every romset;
+a section may override it for a cabinet with a longer self-test. The
 shipped value is 900 frames, fifteen seconds of cabinet time for roughly a
 third of a second of CPU. Set it to 0 to watch every cabinet boot in real time.
 
 **`names.json` is no longer read.** An install that had one keeps its file, and
-the picker ignores it; re-enter any hand-added titles as `games.ini` sections.
+the picker ignores it; re-enter any hand-added titles as `games.local.ini`
+sections.
 
 ## Configuration
 

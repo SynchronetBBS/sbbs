@@ -315,6 +315,43 @@ eq(drawn.hrows, 3, "a full Top played board still occupies one row");
 var row = plain(out.split("\r\n")[1]);
 check(row.length < console.screen_columns, "the Top played row fits the screen width  (" + row.length + " cols)");
 
+// --- games.local.ini, the sysop's overlay -----------------------------------
+//
+// games.ini is shipped, so anything a sysop writes into it is lost to the next
+// pull. games.local.ini holds only what differs and is read over the top, which
+// is what lets a retitled cabinet survive an upgrade WITHOUT freezing the rest
+// of the file: the titles upstream adds keep arriving underneath.
+
+writeln("games.local.ini overlay");
+
+reset_dir();
+write_file("games.ini", "[puckman]\nname = Pac-Man (Japan)\n\n"
+	+ "[bzone]\nname = Battlezone\n");
+syncretro_lobby_init(SPEC);
+eq(syncretro_parse_title("puckman.zip").title, "Pac-Man (Japan)",
+	"the shipped file titles a cabinet on its own");
+
+reset_dir();
+write_file("games.ini", "[puckman]\nname = Pac-Man (Japan)\n\n"
+	+ "[bzone]\nname = Battlezone\n");
+write_file("games.local.ini", "[puckman]\nname = PAC-MAN!\n\n"
+	+ "[myrom]\nname = House Cabinet\n");
+syncretro_lobby_init(SPEC);
+eq(syncretro_parse_title("puckman.zip").title, "PAC-MAN!",
+	"the sysop's title wins over the shipped one");
+eq(syncretro_parse_title("bzone.zip").title, "Battlezone",
+	"a romset the sysop did not touch keeps the shipped title");
+eq(syncretro_parse_title("myrom.zip").title, "House Cabinet",
+	"the sysop can title a romset the shipped file has never heard of");
+
+// The local file alone is a working install: a sysop who deleted or never
+// received games.ini still gets their own titles.
+reset_dir();
+write_file("games.local.ini", "[myrom]\nname = House Cabinet\n");
+syncretro_lobby_init(SPEC);
+eq(syncretro_parse_title("myrom.zip").title, "House Cabinet",
+	"games.local.ini works with no games.ini beside it");
+
 reset_dir();
 if (file_isdir(dir))
 	rmdir(dir);

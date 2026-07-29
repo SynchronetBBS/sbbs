@@ -90,6 +90,10 @@ An ini also degrades better. A stray comma makes `JSON.parse()` throw, and
 `syncretro_lobby.js` can only respond by discarding **the whole file**; the ini
 reader yields nothing for a bad line and keeps the rest.
 
+The **sysop edits `games.local.ini`, not this file** -- same format, read over
+the top, not tracked. See sec 14; everything below describes the format both
+files share.
+
 ```ini
 ; games.ini -- what MAME 2003-Plus never tells the frontend.
 ; Keyed by ROMSET NAME (the zip's basename). Everything but `name` is optional.
@@ -383,3 +387,62 @@ The door's own "Loading SyncRetro..." splash, which is already up: the warm-up
 sits between `rc_core_load_game()` and the first `sr_io_present()`, so no new
 screen is needed. A session limit (`-t`) or a dropped carrier still ends the
 door mid-warm-up -- the loop polls `sr_door_should_exit()` every frame.
+
+## 14. `games.local.ini`: the file a sysop should actually edit
+
+`games.ini` is shipped in the Synchronet package and tracked in git, so an
+upgrade replaces it wholesale and a `git pull` on a source install either
+overwrites the sysop's edits or drops a merge conflict into a data file. Every
+other door config avoids this by not being tracked at all -- `syncdoom.ini`,
+`syncduke.ini`, `syncretro.ini` and the rest are gitignored copies the
+installer seeds from a tracked `<name>.example.ini`. `games.ini` cannot use
+that pattern: it is not a template with defaults to copy, it is ~200 curated
+sections that keep growing, and a sysop who copied it once would never see a
+title added later.
+
+So it takes an overlay instead. `games.local.ini`, beside it, is read **second
+and wins**, and is gitignored. It holds only the differences:
+
+```ini
+[pacman]
+name = Pac-Man (the good one)
+
+[myrom]                       ; a romset games.ini has never heard of
+name     = House Cabinet
+button.A = Launch
+```
+
+Everything not mentioned keeps coming from `games.ini`, which is the property
+that matters: the sysop's retitle survives every upgrade, *and* the hundred
+titles added upstream next year still arrive.
+
+### Resolution
+
+The two files resolve as if the local file's lines were **appended** to the
+shipped one -- a key present in the local file wins **at the same scope**:
+
+| | wins |
+|---|---|
+| local `[sf2] boot_frames` vs shipped `[sf2] boot_frames` | local |
+| local root `boot_frames` vs shipped root `boot_frames` | local |
+| local **root** `boot_frames` vs shipped **`[sf2]`** `boot_frames` | **shipped `[sf2]`** |
+
+The last row is the one worth stating out loud: specificity is decided before
+locality, so a local root default does not reach past a shipped section key. A
+sysop who means to change one cabinet writes that cabinet's section -- exactly
+what they would do inside a single file. Anything else would make the local
+file's behavior depend on which keys the shipped file happens to carry this
+release.
+
+A section present in only one file resolves from that file; either file may be
+absent, and an install with neither is a working install (`sr_games_load()`
+reports it and every getter answers "nothing known"). Both files get the same
+unknown-`button.*` validation, and the warning names which file carried the bad
+key -- a typo is likelier in the one just hand-edited.
+
+### Both readers
+
+The door (`syncretro_games.c`) and the lobby (`syncretro_lobby.js`, which reads
+`name` for the picker) each layer the two files. They must agree: a title
+overridden for the picker but not the door would put one name on the menu and
+another on the who's-online line.

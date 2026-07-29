@@ -85,6 +85,43 @@ static void write_fixture(void)
 	fclose(f);
 }
 
+/* A third fixture for the sysop's overlay. games.ini is shipped, so anything
+ * written into it is lost to the next pull; games.local.ini holds only what
+ * differs and is read over the top. Its own directory, so the fixtures above
+ * keep reading the files they expect. */
+#define LOCAL_DIR "gamesfx_local"
+
+static void write_local_fixture(void)
+{
+	FILE *f;
+
+	mkpath(LOCAL_DIR);
+	f = fopen(LOCAL_DIR "/games.ini", "w");
+	fputs("boot_frames = 900\n"
+	      "\n"
+	      "[bzone]\n"
+	      "name     = Battlezone\n"
+	      "button.Y = Fire\n"
+	      "stick2   = Right tread\n"
+	      "\n"
+	      "[centiped]\n"
+	      "name     = Centipede\n"
+	      "button.B = Fire\n", f);
+	fclose(f);
+
+	f = fopen(LOCAL_DIR "/games.local.ini", "w");
+	fputs("boot_frames = 300\n"
+	      "\n"
+	      "[bzone]\n"
+	      "button.Y = Zap\n"
+	      "\n"
+	      "[myrom]\n"
+	      "name        = House Cabinet\n"
+	      "button.A    = Launch\n"
+	      "boot_frames = 60\n", f);
+	fclose(f);
+}
+
 /* A second fixture with no root-level boot_frames: the install that never asked
  * for a warm-up must not get one. Its own directory, so the root-default tests
  * above keep reading the file they expect. */
@@ -106,6 +143,7 @@ int main(void)
 {
 	write_fixture();
 	write_noroot_fixture();
+	write_local_fixture();
 
 	/* A twin-stick cabinet: one labelled button, and a second stick. */
 	sr_games_load(FIXTURE_DIR, "/some/where/bzone.zip");
@@ -220,6 +258,38 @@ int main(void)
 	sr_games_load(FIXTURE_DIR, NULL);
 	CHECK(sr_games_boot_frames() == 0);
 
+	/* games.local.ini -- the sysop's overlay. It wins key by key, and everything
+	 * it does not mention keeps coming from the shipped file: that is what makes
+	 * it safe to keep across an upgrade, where a whole-file copy would freeze
+	 * the sysop's install at the version they copied. */
+	sr_games_load(LOCAL_DIR, "bzone.zip");
+	CHECK_STR(sr_games_button_label(RETRO_DEVICE_ID_JOYPAD_Y), "Zap");
+	CHECK_STR(sr_games_stick2(), "Right tread");   /* untouched: still shipped */
+
+	/* A section only the local file has. */
+	sr_games_load(LOCAL_DIR, "myrom.zip");
+	CHECK(sr_games_labelled());
+	CHECK_STR(sr_games_button_label(RETRO_DEVICE_ID_JOYPAD_A), "Launch");
+	CHECK(sr_games_boot_frames() == 60);
+
+	/* A section only the SHIPPED file has still resolves. */
+	sr_games_load(LOCAL_DIR, "centiped.zip");
+	CHECK_STR(sr_games_button_label(RETRO_DEVICE_ID_JOYPAD_B), "Fire");
+
+	/* Root keys overlay at the root: the local default wins for a romset with
+	 * no boot_frames of its own... */
+	sr_games_load(LOCAL_DIR, "bzone.zip");
+	CHECK(sr_games_boot_frames() == 300);
+	sr_games_load(LOCAL_DIR, "nosuchgame.zip");
+	CHECK(sr_games_boot_frames() == 300);
+
+	/* ...and the shipped file alone still answers when there is no overlay
+	 * beside it, which is every install that has not been customized. */
+	sr_games_load(FIXTURE_DIR, "bzone.zip");
+	CHECK(sr_games_boot_frames() == 900);
+
+	remove(LOCAL_DIR "/games.local.ini");
+	remove(LOCAL_DIR "/games.ini");
 	remove(NOROOT_DIR "/games.ini");
 	remove(FIXTURE_DIR "/stderr.txt");
 	remove(FIXTURE_DIR "/games.ini");
