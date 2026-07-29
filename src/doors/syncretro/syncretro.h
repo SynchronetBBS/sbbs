@@ -197,8 +197,8 @@ void sr_door_idle_activity(void);
 void sr_door_idle_tick(void);
 /* Feed the clock and report whether this input answered an on-screen countdown.
  * A caller that gets 1 back must CONSUME the keystroke rather than dispatch it:
- * "press any key" has to mean any key, and every profile binds the likeliest
- * one (Space) to pause. */
+ * "press any key" has to mean any key, and the likeliest one is bound: Space
+ * fires button 1 on a cabinet. */
 int  sr_door_idle_wake(void);
 
 /* The render tier the player is looking at, and F4's step to the next one.

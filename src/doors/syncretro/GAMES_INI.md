@@ -61,7 +61,7 @@ door's remap invalidates. That objection does not apply here: there are no
 strings to be invalidated, because this core sends none. A hand-curated table is
 not a worse version of the descriptors -- it is the only version.
 
-A second, newer reason: the arcade profile now binds `I` / `K` to the RetroPad's
+A second, newer reason: the arcade profile now binds `P` / `;` to the RetroPad's
 right stick, because MAME puts a twin-stick cabinet's second stick there and
 nowhere else. The binding is per profile, so the help screen offers those keys
 on every cabinet -- including the ~46 that have one stick. The door cannot tell
@@ -142,7 +142,8 @@ Temporal framing belongs in this document or a commit message.
 ### Why ids and not keys
 
 `button.Y = Fire`, not `fire = C`. Which *key* reaches RetroPad Y is the binding
-table's business, and the table can change -- it did when `I` / `K` were added.
+table's business, and the table can change -- it did when the second stick moved
+to `P` / `;` to make room for player 2's panel.
 Data that named keys would rot silently the next time it does. The file records
 what the door cannot derive; everything derivable stays derived.
 
@@ -177,6 +178,12 @@ A key whose id has no label is omitted rather than shown unlabelled -- on a
 one-button cabinet the other five do nothing, and listing them is the confusion
 this file exists to remove. The `stick2` line appears only when `stick2` is set.
 
+**Player 2's buttons are the same ids under different keys**, so a labelled
+cabinet names them once and lists player 2's keys once -- one row, trimmed by
+the same rule (a key whose id has no label is not listed). Naming them twice
+would say nothing new at the price of six rows, and twelve named button lines
+do not fit an 80x24 help screen.
+
 That omission makes labelling a game an **all-or-nothing contract**: a section
 that labels any button is asserting that the buttons it does *not* label do
 nothing on that cabinet. Half-labelling a six-button game hides four working
@@ -190,9 +197,11 @@ Battlezone, fully populated:
 ```
 W A S D <-> arrows   joystick
 C                    Fire
-I K                  Right tread
-Bksp                 INSERT COIN
-Enter                1-player start (after a coin)
+I J K L              player 2 joystick
+.                    player 2, the same buttons
+P ;                  Right tread
+Bksp | 5             INSERT COIN (6 = player 2's slot)
+Enter | 1            start 1 player (2 = two players)
 ```
 
 Pac-Man, title only, is unchanged from the current grouped rendering.
@@ -299,12 +308,12 @@ generic numbering (§6) rather than guess -- a wrong label is worse than a vague
 one (§8).
 
 For `stick2`, absent means the inverse: "this cabinet has one stick," and the
-door suppresses the `I` / `K` help line rather than falling back to a vague
+door suppresses the `P` / `;` help line rather than falling back to a vague
 label for a control that is not there. Sections with one stick vastly outnumber
 the twin-stick ones, so the fallback that is right for a sparse field (buttons)
 would be noise for this one.
 
-The honest reason `I` / `K` can only ever label half a control: the arcade
+The honest reason `P` / `;` can only ever label half a control: the arcade
 profile binds the RetroPad's right stick's **Y axis only**
 (`SR_AXIS_RIGHT_Y_NEG` / `SR_AXIS_RIGHT_Y_POS`, see `syncretro_binds.h`) -- it
 does not bind the X axis. A genuinely 8-way twin-stick cabinet -- Robotron,

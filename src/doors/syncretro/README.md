@@ -183,8 +183,15 @@ terminal's key mode on exit.
 
 ## Keys
 
-Both Intellivision hand controllers are driven at once: use whichever one a cart
-reads, or play two-up on one keyboard.
+Every profile drives both controller ports, so two people can play on one
+keyboard. What differs is player 2's half: the Intellivision's is a hand
+controller (below), a cabinet's or a gamepad console's is a second panel
+(further down).
+
+### Intellivision
+
+Both hand controllers are driven at once: use whichever one a cart reads, or
+play two-up on one keyboard.
 
 | Player 1 | Player 2 | Action |
 |---|---|---|
@@ -194,12 +201,47 @@ reads, or play two-up on one keyboard.
 | `Backspace` | numpad `Del` | keypad Clear |
 | `Enter` | numpad `Enter` | keypad Enter |
 
-Door keys (either player): `Tab` swap the two controllers · `Space` pause · `?`
+Door keys (either player): `Tab` swap the two controllers · `Ctrl-P` pause · `?`
 help · `Ctrl-S` stats overlay · `Ctrl-R` reset · `Ctrl-Q` quit.
 
 Player 2's arrows and numpad have no ASCII form, so they need SyncTERM or a
 kitty-keyboard terminal; on a plain client player 2's *keypad* falls back to
 player 1's (disc + buttons still work). Press `?` in-game for this same list.
+
+### Cartridge consoles (NES and friends)
+
+| Player 1 | Player 2 | Action |
+|---|---|---|
+| `W A S D`, arrow keys | `I J K L` | d-pad |
+| `Z` `X` | `M` `,` | B, A |
+| `C V`, `Q E` | `. /`, `U O` | Y X, L R (4- and 6-button consoles) |
+| `Enter` | `;` | Start |
+| `Backspace` | `'` | Select |
+
+The arrows are player 1's here, not a phantom second player's -- usually there
+is one player at one keyboard. A solo player whose cartridge reads port 2 can
+press `Tab` to swap the ports rather than move to player 2's keys.
+
+### Arcade cabinets
+
+A cabinet has two players, and both panels are live -- player 2's is player 1's
+slid five columns right:
+
+| Player 1 | Player 2 | Action |
+|---|---|---|
+| `W A S D`, arrow keys | `I J K L` | joystick |
+| `Z X C V` | `M , . /` | buttons 1-4 |
+| `Q E` | `U O` | buttons 5-6 |
+| `Backspace` or `5` | `6` | insert coin |
+| `Enter` or `1` | `2` | start |
+
+Nothing on a cabinet answers until a coin goes in; two credits and `2` start a
+two-player game. Most cabinets alternate turns on one set of controls and read
+player 1's keys for both players, which is why player 2's panel takes nothing
+away from his -- the arrows included. `P` / `;` work a twin-stick cabinet's
+second stick (Battlezone's right tread), the one control MAME reads off the
+analog stick and nowhere else. There is no `Tab` here: both controller ports
+are bound, so there is nothing to swap.
 
 ## Audio
 

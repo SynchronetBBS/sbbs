@@ -384,8 +384,9 @@ static void sr_key_apply(int c, int down, int tap)
 	 *
 	 * If it answered the idle countdown, that is ALL it does: the press is
 	 * consumed here rather than dispatched below. Otherwise "press any key"
-	 * would pause the game, Space being bound to pause in every profile. The
-	 * release edge still falls through, so nothing is left stuck down. */
+	 * would also reach the game -- on a cabinet the likeliest key, Space, fires
+	 * button 1. The release edge still falls through, so nothing is left stuck
+	 * down. */
 	if (sr_door_idle_wake() && down)
 		return;
 

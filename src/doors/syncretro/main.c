@@ -224,8 +224,8 @@ static int sr_sep_expand(char *dst, size_t cap, const char *src, const char *sep
  * the three wants the same thing -- the list of keys. The core is stopped behind
  * all three of them -- the door never runs it while a screen is up -- so the
  * PAUSED badge is unconditional: it reports the core's state, not which key got
- * the player here. Only the closing prompt differs, because only the Space pause
- * needs a specific key to leave.
+ * the player here. Only the closing prompt differs, because only the pause
+ * screen needs a specific key to leave.
  *
  * PLAIN TEXT, NOT PIXELS, and drawn with box-drawing glyphs in the CLIENT'S
  * charset (termgfx_client_charset): it has to render on a graphics-less terminal
@@ -265,11 +265,15 @@ static void sr_screen_keys(int from_pause)
 		note[2] = "keyboard; solo, use whichever set the game reads (or Tab to swap).";
 		note[3] = "Most games start on a keypad digit, not an action button.";
 		nnote   = 4;
-	} else {
-		note[0] = "Most games start at Enter (Start).  If nothing responds at all, the";
-		note[1] = "game may be reading the second controller port: press Tab and try";
-		note[2] = "again.";
+	} else if (sr_profile() == SR_PROFILE_ARCADE) {
+		note[0] = "A cabinet answers nothing until a coin goes in: Bksp (or 5), then";
+		note[1] = "Enter to start.  Two can play on one keyboard -- a second coin (6)";
+		note[2] = "and 2-player start (2) bring player 2's half of it into the game.";
 		nnote   = 3;
+	} else {
+		note[0] = "Most games start at Enter (Start).  Two can play on one keyboard --";
+		note[1] = "player 2 has I J K L and M , . /  U O.  Tab swaps the two ports.";
+		nnote   = 2;
 	}
 
 	for (nkeys = 0; sr_bind_help_line(nkeys, &key, &desc); nkeys++)
@@ -369,7 +373,7 @@ static void sr_screen_keys(int from_pause)
 	sr_puts(A_OFF);
 
 	{
-		const char *leave = from_pause ? "Space to resume" : "any key to return";
+		const char *leave = from_pause ? "Ctrl-P to resume" : "any key to return";
 		char        ver[80];
 		int         vn;
 
@@ -557,7 +561,7 @@ int main(int argc, char **argv)
 	}
 
 	{
-		int paused  = 0;   /* Space: the core is not being run */
+		int paused  = 0;   /* Ctrl-P: the core is not being run */
 		int helping = 0;   /* the key legend is up ('?', or an unbound key) */
 
 		for (;;) {

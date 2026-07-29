@@ -101,7 +101,9 @@ also answer `id == RETRO_DEVICE_ID_JOYPAD_MASK`.
 ## 3. The binding table
 
 Bare keys play the game; Ctrl keys drive the door. Function keys are avoided --
-too many terminals mangle them. The two controllers get two key groups:
+too many terminals mangle them. Every profile drives both controller ports;
+what differs is what player 2 is holding. The Intellivision's two hand
+controllers get two key groups:
 
 | Player 1 (controller 0) | Player 2 (controller 1) | Action |
 |---|---|---|
@@ -111,16 +113,56 @@ too many terminals mangle them. The two controllers get two key groups:
 | `Backspace` (`0x08` **and** `0x7F`) | numpad `Del` | keypad Clear |
 | `Enter` (`\r` and `\n`) | numpad `Enter` | keypad Enter |
 
-Door keys (either player): `Tab` swap the two controllers · `Space` pause · `?`
+Door keys (either player): `Tab` swap the two controllers · `Ctrl-P` pause · `?`
 key legend / help · `Ctrl-R` reset (`retro_reset()`) · `Ctrl-Q` quit.
 
-**The arcade profile only:** `I` / `K`, action `SR_ACT_AXIS`, bound to the
+**Not `Space`.** MAME's own keyboard map makes Space player 1's button 3, so a
+player reaching for it expects to fire, not to stop the game -- and a bare key
+driving a door action is the one exception to the rule at the top of this
+section. Pause is `Ctrl-P` on every profile, and on a cabinet Space fires
+button 1 (the arcade table aliases it to `Z`). It stays unbound on the two
+cartridge profiles: nothing on those consoles corresponds, and a guess is worse
+than a key legend.
+
+**The gamepad profile** (`g_binds_pad`) gives port 1 the arcade table's second
+panel key for key -- `I` `J` `K` `L` d-pad, `M` `,` `.` `/` and `U` `O`
+buttons, `;` Start, `'` Select -- so the layout is learned once and works on
+both. A console has two ports because two people play Contra on one couch. The
+arrows stay PLAYER 1's, unlike the Intellivision's: there is usually one player
+at one keyboard, and `Tab` is there for the solo player whose cartridge reads
+port 2.
+
+**The arcade profile** carries its own table (`g_binds_arcade`), because a
+cabinet's words are not a console's and because a cabinet has two players:
+
+| Player 1 (port 0) | Player 2 (port 1) | Action |
+|---|---|---|
+| `W` `A` `S` `D`, arrow keys | `I` `J` `K` `L` | joystick |
+| `Z` `X` `C` `V` | `M` `,` `.` `/` | buttons 1-4 |
+| `Q` `E` | `U` `O` | buttons 5-6 |
+| `Backspace`, `5` | `6` | INSERT COIN |
+| `Enter`, `1` | `2` | start |
+
+Coin and start are per-player inputs -- MAME 2003-Plus reads coin *n* and
+*n*-player start off port *n-1*'s SELECT and START -- so a table that binds one
+port can start one player and no more. Player 2's panel is player 1's slid five
+columns right, and player 1 loses nothing to it: a cabinet that alternates
+turns on one set of controls (most of them) reads port 0 for both players and
+plays on player 1's keys either way. The number row spells MAME's own
+convention; `Backspace` and `Enter` are what the help screen could name before
+the digits were bound. There is no `Tab`: both ports are bound, so there is
+nothing to swap, and swapping under a player mid-game would move his coin and
+start buttons to inputs the machine is not reading.
+
+**Also the arcade profile only:** `P` / `;`, action `SR_ACT_AXIS`, bound to the
 RetroPad's right analog stick (up/down). MAME 2003-Plus reads a twin-stick
 cabinet's second stick off that axis and nowhere else -- no button, no d-pad,
 no core option reaches it (measured: `mame_remapping`, `input_interface`, and
-`digital_joy_centering` each changed nothing). This binding table's Intellivision
-and NES profiles have no analog stick to give it and do not carry these two
-rows; see `syncretro_binds.c`'s `g_binds_arcade` table.
+`digital_joy_centering` each changed nothing). They sit at the far right,
+clear of player 2's panel: a solo player's second stick and a second player's
+first stick both want the space under the right hand, and only one of them can
+have it. The Intellivision and NES profiles have no analog stick to give it and
+do not carry these two rows.
 
 Player 2's arrows and numpad have no ASCII byte form, so they reach the door
 only on the CSI / evdev / kitty paths. On a plain byte terminal the numpad is
