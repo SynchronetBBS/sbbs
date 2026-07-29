@@ -888,8 +888,10 @@ const char* fmt_col_widths(char* buf, size_t buflen, const char* fmt, va_list ap
 				goto unsupported;
 		}
 
+		/* Ctrl-A codes are ASCII but occupy no columns, so they need measuring too */
 		if (conv != 's' || str == NULL || width_star || prec_star
-		    || (width < 1 && !has_prec) || str_is_ascii(str)) {
+		    || (width < 1 && !has_prec)
+		    || (str_is_ascii(str) && strchr(str, CTRL_A) == NULL)) {
 			size_t n = p - spec;
 			if (outlen + n >= buflen)
 				goto unsupported;
