@@ -2,6 +2,20 @@
 
 For any C or C++ source modifications in this tree, follow the dominant coding style defined in [../uncrustify.cfg](../uncrustify.cfg). When in doubt about formatting (indentation, brace placement, spacing, alignment, line wrapping, etc.), defer to that configuration rather than inventing a new convention or matching nearby code that may already be out of compliance.
 
+**Don't run uncrustify over a whole file that predates the config.** It is a
+reformatter, not a linter: pointed at `sbbs.h` it re-indents the entire
+`sbbs_t` class body (~2500 lines of pure whitespace churn) and mangles the
+compact one-line inline methods — `rainbow_len()`, `timeon()`, `timeused()`,
+`current_subnum()` — into broken-looking multi-line forms. It also re-aligns
+unrelated declaration blocks in `.cpp` files, burying a small change in noise
+and making the diff unreviewable. Header files and long-lived `.cpp` files in
+this tree are generally **not** uncrustify-clean.
+
+Format the lines you actually touched to match `../uncrustify.cfg` by hand
+instead. If you do run the tool, run it on a copy and transplant only the hunks
+that cover your own edit; verify with `git diff -w` that the substantive change
+and the total change are the same size before committing.
+
 An uncrustify pass (or `--check` PASS) is **not** proof of conformance — the config deliberately leaves some constructs alone that are still non-conformant. In particular, **single-line compound blocks** like `{ found = true; break; }` are not house style and must be expanded into properly-braced multi-line blocks, even though uncrustify tolerates them (its only knobs that would catch them, `nl_after_semicolon`/`nl_after_brace_open`, would also shred wanted idioms — evaluated and rejected, see below). The sanctioned exception is the compact, column-aligned **`case X: stmt; break;` switch-table idiom** (e.g. `zmodem.c`, `con_out.cpp`) — leave those tables one-row-per-case. Don't enable `nl_after_semicolon` or `nl_after_brace_open` in `uncrustify.cfg` to enforce the compound-block rule: measured across `src/sbbs3` they'd reformat ~822 lines in 57 files, almost all of it those case tables and one-line `enum {...}` declarations, and uncrustify has no case-body exemption.
 
 ## Prefer consolidation when the same lines repeat
