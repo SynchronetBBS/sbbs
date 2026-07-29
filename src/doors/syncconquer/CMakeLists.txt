@@ -261,7 +261,7 @@ endif()
 target_include_directories(VanillaRA PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
 target_link_libraries(VanillaRA xpdev)
 
-# Match the door's binary name (build.sh/deploy.sh expect build/syncalert
+# Match the door's binary name (build.sh/deploy.js expect build/syncalert
 # regardless of how the vendored redalert/CMakeLists.txt names its own
 # vanillara executable).
 set_target_properties(VanillaRA PROPERTIES OUTPUT_NAME syncalert)

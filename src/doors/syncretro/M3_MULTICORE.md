@@ -224,7 +224,7 @@ The `pad` table:
 | Bksp / Del | `JOYPAD_SELECT` (id 2) | same physical key as `intv`'s Clear |
 | Tab | swap ports | NES port 2 is rare, but it is free |
 
-Door keys are untouched: Space (pause), `?` (help), Ctrl-S/R/Q.
+Door keys are untouched: `Ctrl-P` (pause), `?` (help), Ctrl-S/R/Q.
 
 `Z`=B / `X`=A is not a guess. fceumm's `SET_INPUT_DESCRIPTORS` names them:
 `port 0 id 0 : B`, `port 0 id 8 : A`. The physical NES layout puts B on the left

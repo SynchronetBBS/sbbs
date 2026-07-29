@@ -1,2 +1,7 @@
 # Live sysop-edited config, seeded from syncretro.example.ini by install-xtrn.
 /syncretro.ini
+
+# games.local.ini -- the sysop's per-cabinet overrides, read over the top of the
+# shipped games.ini (which IS tracked, and so is overwritten by a pull). This is
+# the file to edit; it holds only what differs, so upstream's new titles keep
+# arriving underneath. Ignored by the tree-wide *.local.ini rule, not here.

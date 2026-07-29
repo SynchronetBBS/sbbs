@@ -5093,8 +5093,13 @@ static jsSyncMethodSpec js_global_functions[] = {
 	 , 311},
 	{"file_cfgname",    js_cfgfname,        2,  JSTYPE_STRING,  JSDOCSTR("path, filename")
 	 , JSDOCSTR("Return completed configuration filename from supplied <i>path</i> and <i>filename</i>, "
-		        "optionally including the local hostname (e.g. <tt>path/file.<i>host</i>.<i>domain</i>.ext</tt> "
-		        "or <tt>path/file.<i>host</i>.ext</tt>) if such a variation of the filename exists")
+		        "preferring the most specific variation that exists: "
+		        "<tt>path/file.<i>host</i>.<i>domain</i>.ext</tt>, "
+		        "<tt>path/file.<i>host</i>.ext</tt>, "
+		        "<tt>path/file.<i>platform</i>.ext</tt>, then "
+		        "<tt>path/file.local.ext</tt> - the last naming this installation "
+		        "rather than a machine, for a sysop's own version of a file that "
+		        "Synchronet distributes. Falls back to <tt>path/file.ext</tt>")
 	 , 312},
 	{"file_getdosname", js_dosfname,        1,  JSTYPE_STRING,  JSDOCSTR("path/filename")
 	 , JSDOCSTR("Return DOS-compatible (Micros~1 shortened) version of specified <i>path/filename</i>"

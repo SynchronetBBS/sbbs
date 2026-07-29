@@ -14,12 +14,20 @@
 #ifndef SYNCRETRO_GAMES_H_
 #define SYNCRETRO_GAMES_H_
 
-/* Read <dir>/games.ini and select the section named by rom_path's basename,
- * minus its extension. Replaces whatever was loaded before -- including on
- * failure, so a console with no file cannot inherit the previous cabinet's
- * labels. `dir` is passed explicitly because the door chdirs into the per-user
- * sandbox before play (main.c); callers pass sr_config_launch_dir(). A NULL or
- * empty rom_path selects nothing and is not an error. */
+/* Read <dir>/games.ini, then <dir>/games.local.ini over the top of it, and
+ * select the section named by rom_path's basename minus its extension.
+ *
+ * games.local.ini is the SYSOP'S file and the one to edit: games.ini is
+ * shipped, so a pull or a merge overwrites anything put there. It holds only
+ * what differs -- a key present in it wins at the same scope, everything else
+ * keeps coming from the shipped file, so new titles upstream adds still arrive.
+ * Both are optional; an install with neither is a working install.
+ *
+ * Replaces whatever was loaded before -- including on failure, so a console
+ * with no file cannot inherit the previous cabinet's labels. `dir` is passed
+ * explicitly because the door chdirs into the per-user sandbox before play
+ * (main.c); callers pass sr_config_launch_dir(). A NULL or empty rom_path
+ * selects nothing and is not an error. */
 void sr_games_load(const char *dir, const char *rom_path);
 
 /* What RetroPad `id` (RETRO_DEVICE_ID_JOYPAD_B / _A / _Y / _X / _L / _R) is on
@@ -37,5 +45,16 @@ const char *sr_games_stick2(void);
  * renders one line per key and OMITS unlabelled ids, so a section that labels
  * anything is asserting the rest do nothing -- see GAMES_INI.md sec 6. */
 int sr_games_labelled(void);
+
+/* How many frames to run UNPACED before the player is shown anything: the
+ * cabinet's power-on self-test, which he can neither act on nor skip. 0 (the
+ * default) runs the boot in real time, as the door always has.
+ *
+ * A root-level `boot_frames` -- one written before any [section] -- is the
+ * install-wide default, and a section's own key overrides it. Unlike the button
+ * labels this needs no per-romset measurement to be useful: warming up PAST a
+ * short boot only lands the player further into the attract loop, which is
+ * where they would have been sitting anyway. See GAMES_INI.md sec 13. */
+int sr_games_boot_frames(void);
 
 #endif /* SYNCRETRO_GAMES_H_ */

@@ -5,6 +5,7 @@
 #include "libretro.h"    /* RETRO_DEVICE_ID_JOYPAD_* */
 
 #include <stddef.h>
+#include <string.h>
 
 /* `chars` is the set of folded ASCII keys that trigger this row. `port` is the
  * controller for SR_ACT_PAD / SR_ACT_DIGIT (0 = player 1, 1 = player 2); it is
@@ -70,7 +71,7 @@ static const sr_bind_row_t g_binds[] = {
 	{ "+=",       SR_ACT_DOOR,  SR_DOOR_VOL_UP,                0, "+ -",              "volume up / down (0 = off)" },
 	{ "-_",       SR_ACT_DOOR,  SR_DOOR_VOL_DOWN,              0, NULL,               NULL },
 	{ "\t",       SR_ACT_SWAP,  0,                             0, "Tab",              "swap the two controllers" },
-	{ " ",        SR_ACT_DOOR,  SR_DOOR_PAUSE,                 0, "Space",            "pause / resume" },
+	{ "\020",     SR_ACT_DOOR,  SR_DOOR_PAUSE,                 0, "Ctrl-P",           "pause / resume" },
 	{ "?",        SR_ACT_DOOR,  SR_DOOR_HELP,                  0, "?",                "this help" },
 	{ "\023",     SR_ACT_DOOR,  SR_DOOR_STATS,                 0, "Ctrl-S",           "stats overlay" },
 	{ "\022",     SR_ACT_DOOR,  SR_DOOR_RESET,                 0, "Ctrl-R",           "reset the console" },
@@ -99,9 +100,14 @@ static const sr_bind_row_t g_binds[] = {
  * Clear: the same physical key keeps the same *role* (the odd one out) across
  * consoles, so muscle memory does not fight.
  *
- * ONE controller, not two. There is one player at one keyboard, so the arrows
- * are HIS d-pad (port 0 -- see sr_profile_arrow_port()), not a phantom second
- * player's. Tab still swaps ports, for the rare cartridge that reads port 2. */
+ * TWO controllers, and the arrows are still PLAYER 1'S. A console has two
+ * ports because two people play Contra on one couch, so port 1 gets the same
+ * second panel the arcade table gives it -- I J K L, M , . / , U O -- and a
+ * player who learns it on a cabinet already knows it on a cartridge. What it
+ * does NOT get is the arrows: there is usually one player at one keyboard, and
+ * they are HIS d-pad (port 0 -- see sr_profile_arrow_port()), not a phantom
+ * second player's. Tab still swaps ports, for the solo player whose cartridge
+ * reads port 2. */
 static const sr_bind_row_t g_binds_pad[] = {
 	{ "w",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_UP,     0, "W A S D \1 arrows", "d-pad" },
 	{ "a",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_LEFT,   0, NULL,               NULL },
@@ -116,15 +122,34 @@ static const sr_bind_row_t g_binds_pad[] = {
 	{ "q",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_L,      0, "Q E",              "L R (if the console has them)" },
 	{ "e",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_R,      0, NULL,               NULL },
 
-	{ "\r\n",     SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_START,  0, "Enter",            "Start" },
+	{ "\r\n",     SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_START,  0, "Enter",            "Start (; = player 2)" },
 	/* Terminals disagree: some send BS (0x08) for Backspace, some DEL (0x7f). */
-	{ "\010\177", SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_SELECT, 0, "Bksp",             "Select" },
+	{ "\010\177", SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_SELECT, 0, "Bksp",             "Select (' = player 2)" },
+
+	/* --- PLAYER 2, on port 1: the arcade table's second panel, key for key,
+	 * so the layout is learned once. Start and Select lead no help group of
+	 * their own -- naming them in player 1's two rows costs nothing, and the
+	 * rows it saves are rows the 80x24 screen has nowhere else to find. --- */
+	{ "i",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_UP,     1, "I J K L",          "player 2 d-pad" },
+	{ "j",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_LEFT,   1, NULL,               NULL },
+	{ "k",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_DOWN,   1, NULL,               NULL },
+	{ "l",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_RIGHT,  1, NULL,               NULL },
+
+	{ "m",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_B,      1, "M , . /  U O",     "player 2 B A Y X L R" },
+	{ ",",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_A,      1, NULL,               NULL },
+	{ ".",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_Y,      1, NULL,               NULL },
+	{ "/",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_X,      1, NULL,               NULL },
+	{ "u",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_L,      1, NULL,               NULL },
+	{ "o",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_R,      1, NULL,               NULL },
+
+	{ ";",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_START,  1, NULL,               NULL },
+	{ "'",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_SELECT, 1, NULL,               NULL },
 
 	/* --- door --- */
 	{ "+=",       SR_ACT_DOOR, SR_DOOR_VOL_UP,                0, "+ -",              "volume up / down (0 = off)" },
 	{ "-_",       SR_ACT_DOOR, SR_DOOR_VOL_DOWN,              0, NULL,               NULL },
 	{ "\t",       SR_ACT_SWAP, 0,                             0, "Tab",              "swap the two controller ports" },
-	{ " ",        SR_ACT_DOOR, SR_DOOR_PAUSE,                 0, "Space",            "pause / resume" },
+	{ "\020",     SR_ACT_DOOR, SR_DOOR_PAUSE,                 0, "Ctrl-P",           "pause / resume" },
 	{ "?",        SR_ACT_DOOR, SR_DOOR_HELP,                  0, "?",                "this help" },
 	{ "\023",     SR_ACT_DOOR, SR_DOOR_STATS,                 0, "Ctrl-S",           "stats overlay" },
 	{ "\022",     SR_ACT_DOOR, SR_DOOR_RESET,                 0, "Ctrl-R",           "reset the console" },
@@ -154,22 +179,53 @@ static const sr_bind_row_t g_binds_pad[] = {
  * "kick" would be a guess, and a wrong guess on a help screen is worse than a
  * vague one. A game that uses fewer simply ignores the rest.
  *
+ * TWO PLAYERS, AND NOTHING TAKEN FROM THE FIRST. A cabinet's coin and start
+ * buttons are per-player inputs -- MAME 2003-Plus reads coin 1 and 1-player
+ * start off port 0's SELECT and START, coin 2 and 2-player start off port 1's
+ * -- so a door that binds one port can start one player and no more. Player 2
+ * is therefore the same shape as player 1, five columns to the right, and
+ * player 1 keeps every key he had (the arrows included): a game that runs both
+ * players off port 0 and alternates turns -- most of them -- plays exactly as
+ * it did, on player 1's keys, whether one person or two are at the keyboard.
+ *
+ * The number row spells the cabinet's own convention, the one every MAME
+ * player already has in his fingers: 5 and 6 are the coin slots, 1 and 2 the
+ * start buttons. Bksp and Enter stay, because they are what the help screen
+ * could name before the digits existed.
+ *
  * No Tab. `pad` swaps the two controller ports for the rare cartridge that
- * reads port 2; on a cabinet that silently moves the player onto player two's
- * controls, where his coin and start buttons are different inputs again -- a
- * dead game and no clue why. */
+ * reads port 2; a cabinet has no use for it now that both ports are bound, and
+ * swapping under a player mid-game moves his coin and start buttons to inputs
+ * the machine is not reading -- a dead game and no clue why. */
 static const sr_bind_row_t g_binds_arcade[] = {
 	{ "w",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_UP,     0, "W A S D \1 arrows", "joystick" },
 	{ "a",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_LEFT,   0, NULL,               NULL },
 	{ "s",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_DOWN,   0, NULL,               NULL },
 	{ "d",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_RIGHT,  0, NULL,               NULL },
 
-	{ "z",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_B,      0, "Z X",              "buttons 1 and 2",  "Z" },
+	{ "z ",       SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_B,      0, "Z X",              "buttons 1 and 2 (Space = button 1)", "Z \1 Space" },
 	{ "x",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_A,      0, NULL,               NULL,               "X" },
 	{ "c",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_Y,      0, "C V",              "buttons 3 and 4",  "C" },
 	{ "v",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_X,      0, NULL,               NULL,               "V" },
 	{ "q",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_L,      0, "Q E",              "buttons 5 and 6",  "Q" },
 	{ "e",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_R,      0, NULL,               NULL,               "E" },
+
+	/* --- PLAYER 2, on port 1: the same four shapes, five columns right. Two
+	 * people at one keyboard sit left half and right half, so the second panel
+	 * is the first one slid across -- I J K L is W A S D, M , . / is Z X C V,
+	 * U O is Q E -- and neither player has to learn a layout the other isn't
+	 * using. These rows are silent in the help below the group they lead. --- */
+	{ "i",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_UP,     1, "I J K L",          "player 2 joystick" },
+	{ "j",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_LEFT,   1, NULL,               NULL },
+	{ "k",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_DOWN,   1, NULL,               NULL },
+	{ "l",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_RIGHT,  1, NULL,               NULL },
+
+	{ "m",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_B,      1, "M , . /  U O",     "player 2 buttons 1-6", "M" },
+	{ ",",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_A,      1, NULL,               NULL,               "," },
+	{ ".",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_Y,      1, NULL,               NULL,               "." },
+	{ "/",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_X,      1, NULL,               NULL,               "/" },
+	{ "u",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_L,      1, NULL,               NULL,               "U" },
+	{ "o",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_R,      1, NULL,               NULL,               "O" },
 
 	/* THE SECOND STICK, and the one binding here that is not a button.
 	 *
@@ -181,23 +237,31 @@ static const sr_bind_row_t g_binds_arcade[] = {
 	 * digital_joy_centering) leaves it exactly where it is. Battlezone without
 	 * these two keys answers on one tread only, which pivots but never drives.
 	 *
-	 * W/S is the left stick, I/K the right -- the same two fingers each hand
-	 * would use on the cabinet. The help says "twin-stick" rather than naming
-	 * treads: the core sends no SET_INPUT_DESCRIPTORS, so the door cannot tell
-	 * WHICH game it is running, and a game with one stick simply ignores these
-	 * (its driver never reads the axis). Same reason the buttons are numbered. */
-	{ "i",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_NEG,           0, "I K",              "2nd stick up / down (twin-stick cabinets)", NULL },
-	{ "k",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_POS,           0, NULL,               NULL,               NULL },
+	 * W/S is the left stick, P/; the right: the far right of the keyboard,
+	 * clear of player 2's panel, because a solo player's second stick and a
+	 * second player's first stick both want the space under the right hand and
+	 * only one of them can have it. The help says "twin-stick" rather than
+	 * naming treads: the core sends no SET_INPUT_DESCRIPTORS, so the door cannot
+	 * tell WHICH game it is running, and a game with one stick simply ignores
+	 * these (its driver never reads the axis). Same reason the buttons are
+	 * numbered. */
+	{ "p",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_NEG,           0, "P ;",              "2nd stick up / down (twin-stick cabinets)", NULL },
+	{ ";",        SR_ACT_AXIS, SR_AXIS_RIGHT_Y_POS,           0, NULL,               NULL,               NULL },
 
-	/* The two that actually start a game, named as the cabinet names them.
-	 * Terminals disagree about Backspace (BS 0x08 vs DEL 0x7f), so both. */
-	{ "\010\177", SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_SELECT, 0, "Bksp",             "INSERT COIN" },
-	{ "\r\n",     SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_START,  0, "Enter",            "1-player start (after a coin)" },
+	/* The four that actually start a game, named as the cabinet names them.
+	 * Terminals disagree about Backspace (BS 0x08 vs DEL 0x7f), so both. Player
+	 * 2's coin and start lead no help group: naming them in player 1's line
+	 * costs nothing, and the two rows it saves are two the 80x24 screen has
+	 * nowhere else to find. */
+	{ "\010\177" "5", SR_ACT_PAD, RETRO_DEVICE_ID_JOYPAD_SELECT, 0, "Bksp \1 5",  "INSERT COIN (6 = player 2's slot)" },
+	{ "\r\n1",    SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_START,  0, "Enter \1 1",       "start 1 player (2 = two players)" },
+	{ "6",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_SELECT, 1, NULL,               NULL },
+	{ "2",        SR_ACT_PAD,  RETRO_DEVICE_ID_JOYPAD_START,  1, NULL,               NULL },
 
 	/* --- door --- */
 	{ "+=",       SR_ACT_DOOR, SR_DOOR_VOL_UP,                0, "+ -",              "volume up / down (0 = off)" },
 	{ "-_",       SR_ACT_DOOR, SR_DOOR_VOL_DOWN,              0, NULL,               NULL },
-	{ " ",        SR_ACT_DOOR, SR_DOOR_PAUSE,                 0, "Space",            "pause / resume" },
+	{ "\020",     SR_ACT_DOOR, SR_DOOR_PAUSE,                 0, "Ctrl-P",           "pause / resume" },
 	{ "?",        SR_ACT_DOOR, SR_DOOR_HELP,                  0, "?",                "this help" },
 	{ "\023",     SR_ACT_DOOR, SR_DOOR_STATS,                 0, "Ctrl-S",           "stats overlay" },
 	{ "\022",     SR_ACT_DOOR, SR_DOOR_RESET,                 0, "Ctrl-R",           "reset the machine" },
@@ -255,10 +319,52 @@ sr_act_t sr_bind_lookup(int c, int *id, int *port)
 }
 
 /* Is this row one of the six cabinet buttons -- the rows a labelled cabinet
- * re-renders one-per-key? The axis and door rows are not. */
+ * re-renders one-per-key? The axis and door rows are not, and neither are
+ * player 2's: they are the same six ids under different keys, so naming them
+ * again would say nothing twice at the price of six rows an 80x24 screen does
+ * not have. Player 2 gets one row from sr_bind_p2_buttons() instead. */
 static int sr_bind_is_button(const sr_bind_row_t *r)
 {
-	return r->act == SR_ACT_PAD && r->solo != NULL;
+	return r->act == SR_ACT_PAD && r->port == 0 && r->solo != NULL;
+}
+
+/* The row that leads player 2's button group -- the one carrying the key list
+ * the help screen prints. The five rows below it are silent. */
+static int sr_bind_is_p2_buttons(const sr_bind_row_t *r)
+{
+	return r->act == SR_ACT_PAD && r->port == 1 && r->solo != NULL
+	       && r->keyname != NULL;
+}
+
+/* Player 2's button keys, trimmed to the ids this cabinet uses. Same rule as
+ * player 1's rows (GAMES_INI.md sec 6): a key whose id has no label works
+ * nothing on this cabinet, and listing it is the confusion games.ini exists to
+ * remove. Returns "" when the cabinet labels no button player 2 can reach. */
+static const char *sr_bind_p2_buttons(void)
+{
+	static char          buf[32];
+	const sr_bind_row_t *t;
+	int                  n, m;
+	size_t               len = 0;
+
+	t      = sr_bind_table(&n);
+	buf[0] = '\0';
+	for (m = 0; m < n; m++) {
+		size_t k;
+
+		if (!(t[m].act == SR_ACT_PAD && t[m].port == 1 && t[m].solo != NULL))
+			continue;
+		if (sr_games_button_label(t[m].id) == NULL)
+			continue;
+		k = strlen(t[m].solo);
+		if (len + k + 2 > sizeof buf)
+			break;
+		if (len > 0)
+			buf[len++] = ' ';
+		memcpy(buf + len, t[m].solo, k + 1);
+		len += k;
+	}
+	return buf;
 }
 
 int sr_bind_help_line(int i, const char **key, const char **desc)
@@ -281,6 +387,12 @@ int sr_bind_help_line(int i, const char **key, const char **desc)
 			if (d == NULL)
 				continue;
 			k = t[m].solo;
+		} else if (sr_bind_is_p2_buttons(&t[m]) && named) {
+			/* One row, listing only the keys that do something here. */
+			k = sr_bind_p2_buttons();
+			if (k[0] == '\0')
+				continue;
+			d = "player 2, the same buttons";
 		} else if (t[m].act == SR_ACT_AXIS) {
 			/* The second stick is bound on every cabinet, because the door
 			 * cannot know which have one. Only a cabinet that says so gets the

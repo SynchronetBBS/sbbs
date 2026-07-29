@@ -20,8 +20,16 @@ bool sr_environment(unsigned cmd, void *data);
 static int      g_pixfmt = RETRO_PIXEL_FORMAT_0RGB1555;   /* libretro default */
 static uint8_t *g_rgb;                                    /* RGB24 scratch */
 static size_t   g_rgb_cap;
+static int      g_warmup;                                 /* boot, running unpaced */
 
 void sr_bridge_set_pixfmt(int fmt) { g_pixfmt = fmt; }
+
+/* During the warm-up the core runs at whatever rate the host manages -- tens of
+ * emulated seconds per real one -- so its output has to go nowhere. Both halves
+ * matter: a frame handed to termgfx would be encoded and pushed at that rate,
+ * and the PCM is produced just as fast, so feeding it would queue the whole
+ * self-test's audio in front of the game the player came for. */
+void sr_bridge_set_warmup(int on) { g_warmup = on; }
 
 /* Convert one libretro framebuffer row-by-row to top-down RGB24 in g_rgb.
  *
@@ -104,6 +112,8 @@ static void video_refresh(const void *data, unsigned w, unsigned h, size_t pitch
 {
 	uint8_t *rgb;
 
+	if (g_warmup)
+		return;
 	if (data == NULL)                       /* "dup previous frame" -> nothing new */
 		return;
 	rgb = sr_fb_to_rgb(data, g_pixfmt, w, h, pitch);
@@ -115,11 +125,15 @@ static void audio_sample(int16_t l, int16_t r)
 {
 	int16_t f[2] = { l, r };
 
+	if (g_warmup)
+		return;
 	sr_audio_feed(f, 1);
 }
 
 static size_t audio_sample_batch(const int16_t *data, size_t frames)
 {
+	if (g_warmup)
+		return frames;          /* consumed, as far as the core is concerned */
 	return sr_audio_feed(data, frames);
 }
 

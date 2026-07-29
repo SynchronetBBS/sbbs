@@ -61,7 +61,7 @@ door's remap invalidates. That objection does not apply here: there are no
 strings to be invalidated, because this core sends none. A hand-curated table is
 not a worse version of the descriptors -- it is the only version.
 
-A second, newer reason: the arcade profile now binds `I` / `K` to the RetroPad's
+A second, newer reason: the arcade profile now binds `P` / `;` to the RetroPad's
 right stick, because MAME puts a twin-stick cabinet's second stick there and
 nowhere else. The binding is per profile, so the help screen offers those keys
 on every cabinet -- including the ~46 that have one stick. The door cannot tell
@@ -90,6 +90,10 @@ An ini also degrades better. A stray comma makes `JSON.parse()` throw, and
 `syncretro_lobby.js` can only respond by discarding **the whole file**; the ini
 reader yields nothing for a bad line and keeps the rest.
 
+The **sysop edits `games.local.ini`, not this file** -- same format, read over
+the top, not tracked. See sec 14; everything below describes the format both
+files share.
+
 ```ini
 ; games.ini -- what MAME 2003-Plus never tells the frontend.
 ; Keyed by ROMSET NAME (the zip's basename). Everything but `name` is optional.
@@ -112,6 +116,23 @@ name = Pac-Man
 | `name` | lobby | display title for the picker |
 | `button.<id>` | door | what RetroPad `<id>` is on this cabinet. `<id>` is a RetroPad button name: `B` `A` `Y` `X` `L` `R` |
 | `stick2` | door | this cabinet has a second stick; the value labels it |
+| `boot_frames` | door | frames of power-on self-test to run before the player is shown anything (sec 13). Also valid at the **root**, where it is the install-wide default |
+
+### The root section
+
+A key written **before any `[section]`** applies to every romset, and a section's
+own key overrides it. Only `boot_frames` uses this: a button label is a fact
+about one cabinet and can have no sensible default, but a warm-up is a policy
+for the install, and the romsets that most need it are exactly the ones nobody
+has written a section for.
+
+```ini
+boot_frames = 900          ; install-wide: every cabinet skips its self-test
+
+[sf2]
+name        = Street Fighter II
+boot_frames = 1200         ; ...this one's runs longer
+```
 
 Comments in the shipped file carry **no relative-time language** -- no "today",
 "now", "currently", "as before". The file outlives the change that introduced
@@ -121,7 +142,8 @@ Temporal framing belongs in this document or a commit message.
 ### Why ids and not keys
 
 `button.Y = Fire`, not `fire = C`. Which *key* reaches RetroPad Y is the binding
-table's business, and the table can change -- it did when `I` / `K` were added.
+table's business, and the table can change -- it did when the second stick moved
+to `P` / `;` to make room for player 2's panel.
 Data that named keys would rot silently the next time it does. The file records
 what the door cannot derive; everything derivable stays derived.
 
@@ -156,6 +178,12 @@ A key whose id has no label is omitted rather than shown unlabelled -- on a
 one-button cabinet the other five do nothing, and listing them is the confusion
 this file exists to remove. The `stick2` line appears only when `stick2` is set.
 
+**Player 2's buttons are the same ids under different keys**, so a labelled
+cabinet names them once and lists player 2's keys once -- one row, trimmed by
+the same rule (a key whose id has no label is not listed). Naming them twice
+would say nothing new at the price of six rows, and twelve named button lines
+do not fit an 80x24 help screen.
+
 That omission makes labelling a game an **all-or-nothing contract**: a section
 that labels any button is asserting that the buttons it does *not* label do
 nothing on that cabinet. Half-labelling a six-button game hides four working
@@ -169,9 +197,11 @@ Battlezone, fully populated:
 ```
 W A S D <-> arrows   joystick
 C                    Fire
-I K                  Right tread
-Bksp                 INSERT COIN
-Enter                1-player start (after a coin)
+I J K L              player 2 joystick
+.                    player 2, the same buttons
+P ;                  Right tread
+Bksp | 5             INSERT COIN (6 = player 2's slot)
+Enter | 1            start 1 player (2 = two players)
 ```
 
 Pac-Man, title only, is unchanged from the current grouped rendering.
@@ -278,12 +308,12 @@ generic numbering (§6) rather than guess -- a wrong label is worse than a vague
 one (§8).
 
 For `stick2`, absent means the inverse: "this cabinet has one stick," and the
-door suppresses the `I` / `K` help line rather than falling back to a vague
+door suppresses the `P` / `;` help line rather than falling back to a vague
 label for a control that is not there. Sections with one stick vastly outnumber
 the twin-stick ones, so the fallback that is right for a sparse field (buttons)
 would be noise for this one.
 
-The honest reason `I` / `K` can only ever label half a control: the arcade
+The honest reason `P` / `;` can only ever label half a control: the arcade
 profile binds the RetroPad's right stick's **Y axis only**
 (`SR_AXIS_RIGHT_Y_NEG` / `SR_AXIS_RIGHT_Y_POS`, see `syncretro_binds.h`) -- it
 does not bind the X axis. A genuinely 8-way twin-stick cabinet -- Robotron,
@@ -300,3 +330,128 @@ facts do not interact.
 
 `stick2` should be measured for twin-stick cabinets during the measurement pass
 (§8), the same as the buttons.
+
+## 13. `boot_frames`: the power-on self-test
+
+A cabinet does not start playable. A driver spends its first seconds on a RAM
+and ROM check, a colour bar, a licence screen -- and the door runs all of it at
+the emulated 60 fps, because `sr_pace_to_rate()` paces the core to its native
+rate whether or not the player can act on what is on screen. They can't --
+nothing on a coin-op responds to input before a credit is in.
+
+`boot_frames = N` runs the first N frames **unpaced** -- back-to-back
+`retro_run()` with the core's video and audio discarded
+(`sr_bridge_set_warmup()`) -- then arms the pacer and starts drawing. Measured
+against MAME 2003-Plus:
+
+| | |
+|---|---|
+| emulation speed, this core | 68-149x realtime standalone; ~47x inside the door |
+| a 900-frame (15 s) warm-up | ~0.3 s of CPU |
+| `retro_load_game()`, which this does **not** touch | 4-142 ms depending on romset |
+
+### Why not a save state
+
+`retro_serialize()` after the boot, cached and restored on later launches, is
+the obvious alternative, and MAME 2003-Plus supports it -- measured on seven
+romsets, all round-tripping byte-identically at 32-324 KB in under a
+millisecond, with no `SET_SERIALIZATION_QUIRKS` declared. It was still the wrong
+trade here:
+
+- It **cannot** speed up loading the ROM. `retro_unserialize()` requires a
+  loaded game, so the zip decode and ROM decrypt happen either way. A save state
+  only ever skips *emulated* time -- the same thing the warm-up skips, for
+  tenths of a second less.
+- The blob carries no version stamp, so the cache has to be keyed on the core
+  binary, the romset **and** the resolved option values, and a miss on any of
+  those restores garbage into the emulator.
+- Save-state support in this lineage is **per-driver** across some 5000 drivers.
+  A driver with partial support can restore a subtly broken machine, which
+  fails as a wrong-looking game rather than as an error.
+- The core loads NVRAM at start and writes it at unload. A boot snapshot
+  restored on every launch can roll back or clobber high scores -- for an arcade
+  door, the state players care most about.
+
+The warm-up has none of these properties because it is not a shortcut: the same
+instructions execute on the same emulated cycle counts, self-tests and NVRAM
+load included. MAME's timing is in cycles, not host time, so the driver cannot
+tell. Only the waiting is gone.
+
+### Choosing a value
+
+Unlike `button.*`, this needs no per-romset measurement to be useful. Warming
+up **past** a short boot only lands the player further into the attract loop --
+where they would have been sitting anyway -- so one install-wide root value is a
+complete answer, and a section's own key is for the outliers. `900` (15
+emulated seconds) covers the self-test of every romset measured; `sf2`, one of
+the longest, finishes between frames 600 and 900.
+
+Values are clamped to `SR_BOOT_FRAMES_MAX` (18000 frames, five emulated
+minutes) with a warning. The warm-up is real CPU spent on every node with the
+player looking at a static screen, so a slipped digit must not be obeyed.
+
+### What the player sees
+
+The door's own "Loading SyncRetro..." splash, which is already up: the warm-up
+sits between `rc_core_load_game()` and the first `sr_io_present()`, so no new
+screen is needed. A session limit (`-t`) or a dropped carrier still ends the
+door mid-warm-up -- the loop polls `sr_door_should_exit()` every frame.
+
+## 14. `games.local.ini`: the file a sysop should actually edit
+
+`games.ini` is shipped in the Synchronet package and tracked in git, so an
+upgrade replaces it wholesale and a `git pull` on a source install either
+overwrites the sysop's edits or drops a merge conflict into a data file. Every
+other door config avoids this by not being tracked at all -- `syncdoom.ini`,
+`syncduke.ini`, `syncretro.ini` and the rest are gitignored copies the
+installer seeds from a tracked `<name>.example.ini`. `games.ini` cannot use
+that pattern: it is not a template with defaults to copy, it is ~200 curated
+sections that keep growing, and a sysop who copied it once would never see a
+title added later.
+
+So it takes an overlay instead. `games.local.ini`, beside it, is read **second
+and wins**, and is gitignored. It holds only the differences:
+
+```ini
+[pacman]
+name = Pac-Man (the good one)
+
+[myrom]                       ; a romset games.ini has never heard of
+name     = House Cabinet
+button.A = Launch
+```
+
+Everything not mentioned keeps coming from `games.ini`, which is the property
+that matters: the sysop's retitle survives every upgrade, *and* the hundred
+titles added upstream next year still arrive.
+
+### Resolution
+
+The two files resolve as if the local file's lines were **appended** to the
+shipped one -- a key present in the local file wins **at the same scope**:
+
+| | wins |
+|---|---|
+| local `[sf2] boot_frames` vs shipped `[sf2] boot_frames` | local |
+| local root `boot_frames` vs shipped root `boot_frames` | local |
+| local **root** `boot_frames` vs shipped **`[sf2]`** `boot_frames` | **shipped `[sf2]`** |
+
+The last row is the one worth stating out loud: specificity is decided before
+locality, so a local root default does not reach past a shipped section key. A
+sysop who means to change one cabinet writes that cabinet's section -- exactly
+what they would do inside a single file. Anything else would make the local
+file's behavior depend on which keys the shipped file happens to carry this
+release.
+
+A section present in only one file resolves from that file; either file may be
+absent, and an install with neither is a working install (`sr_games_load()`
+reports it and every getter answers "nothing known"). Both files get the same
+unknown-`button.*` validation, and the warning names which file carried the bad
+key -- a typo is likelier in the one just hand-edited.
+
+### Both readers
+
+The door (`syncretro_games.c`) and the lobby (`syncretro_lobby.js`, which reads
+`name` for the picker) each layer the two files. They must agree: a title
+overridden for the picker but not the door would put one name on the menu and
+another on the who's-online line.

@@ -45,6 +45,8 @@ static void write_fixture(void)
 
 	fputs("; a comment, which the JSON this replaced could not have\n"
 	      "\n"
+	      "boot_frames = 900\n"
+	      "\n"
 	      "[bzone]\n"
 	      "name     = Battlezone\n"
 	      "button.Y = Fire\n"
@@ -63,13 +65,85 @@ static void write_fixture(void)
 	      "\n"
 	      "[lc]\n"
 	      "name     = Lowercase\n"
-	      "button.y = Fire\n", f);
+	      "button.y = Fire\n"
+	      "\n"
+	      "[slowboot]\n"
+	      "name        = Long Self-Test\n"
+	      "boot_frames = 1800\n"
+	      "\n"
+	      "[noboot]\n"
+	      "name        = Warm-Up Off\n"
+	      "boot_frames = 0\n"
+	      "\n"
+	      "[silly]\n"
+	      "name        = Slipped Digit\n"
+	      "boot_frames = 900000\n"
+	      "\n"
+	      "[negative]\n"
+	      "name        = Backwards\n"
+	      "boot_frames = -1\n", f);
+	fclose(f);
+}
+
+/* A third fixture for the sysop's overlay. games.ini is shipped, so anything
+ * written into it is lost to the next pull; games.local.ini holds only what
+ * differs and is read over the top. Its own directory, so the fixtures above
+ * keep reading the files they expect. */
+#define LOCAL_DIR "gamesfx_local"
+
+static void write_local_fixture(void)
+{
+	FILE *f;
+
+	mkpath(LOCAL_DIR);
+	f = fopen(LOCAL_DIR "/games.ini", "w");
+	fputs("boot_frames = 900\n"
+	      "\n"
+	      "[bzone]\n"
+	      "name     = Battlezone\n"
+	      "button.Y = Fire\n"
+	      "stick2   = Right tread\n"
+	      "\n"
+	      "[centiped]\n"
+	      "name     = Centipede\n"
+	      "button.B = Fire\n", f);
+	fclose(f);
+
+	f = fopen(LOCAL_DIR "/games.local.ini", "w");
+	fputs("boot_frames = 300\n"
+	      "\n"
+	      "[bzone]\n"
+	      "button.Y = Zap\n"
+	      "\n"
+	      "[myrom]\n"
+	      "name        = House Cabinet\n"
+	      "button.A    = Launch\n"
+	      "boot_frames = 60\n", f);
+	fclose(f);
+}
+
+/* A second fixture with no root-level boot_frames: the install that never asked
+ * for a warm-up must not get one. Its own directory, so the root-default tests
+ * above keep reading the file they expect. */
+#define NOROOT_DIR "gamesfx_noroot"
+
+static void write_noroot_fixture(void)
+{
+	FILE *f;
+
+	mkpath(NOROOT_DIR);
+	f = fopen(NOROOT_DIR "/games.ini", "w");
+	fputs("[bzone]\n"
+	      "name     = Battlezone\n"
+	      "button.Y = Fire\n", f);
 	fclose(f);
 }
 
 int main(void)
 {
 	write_fixture();
+	write_noroot_fixture();
+	write_local_fixture();
 
 	/* A twin-stick cabinet: one labelled button, and a second stick. */
 	sr_games_load(FIXTURE_DIR, "/some/where/bzone.zip");
@@ -150,6 +224,73 @@ int main(void)
 		CHECK(strstr(buf, "is not a RetroPad button") == NULL);
 	}
 
+	/* boot_frames: the warm-up count, which unlike the button labels has an
+	 * install-wide default. A section with no key of its own inherits the
+	 * root-level value -- the common case, since most cabinets have no section
+	 * at all and every one of them should still skip its self-test. */
+	sr_games_load(FIXTURE_DIR, "bzone.zip");
+	CHECK(sr_games_boot_frames() == 900);
+	sr_games_load(FIXTURE_DIR, "nosuchgame.zip");   /* no section: still the default */
+	CHECK(sr_games_boot_frames() == 900);
+
+	/* A section's own key overrides the default, in both directions: a cabinet
+	 * with a longer self-test asks for more, and one that should not be warmed
+	 * up at all says 0 -- which must not be mistaken for "unset" and silently
+	 * replaced by the root value. */
+	sr_games_load(FIXTURE_DIR, "slowboot.zip");
+	CHECK(sr_games_boot_frames() == 1800);
+	sr_games_load(FIXTURE_DIR, "noboot.zip");
+	CHECK(sr_games_boot_frames() == 0);
+
+	/* A slipped digit is clamped rather than obeyed: the warm-up is real CPU
+	 * spent with the player looking at nothing. */
+	sr_games_load(FIXTURE_DIR, "silly.zip");
+	CHECK(sr_games_boot_frames() == 18000);
+	sr_games_load(FIXTURE_DIR, "negative.zip");
+	CHECK(sr_games_boot_frames() == 0);
+
+	/* No root key, and no file at all: no warm-up. An install that never asked
+	 * for one runs the boot in real time, as the door always has. */
+	sr_games_load(NOROOT_DIR, "bzone.zip");
+	CHECK(sr_games_boot_frames() == 0);
+	sr_games_load("/nonexistent-directory", "bzone.zip");
+	CHECK(sr_games_boot_frames() == 0);
+	sr_games_load(FIXTURE_DIR, NULL);
+	CHECK(sr_games_boot_frames() == 0);
+
+	/* games.local.ini -- the sysop's overlay. It wins key by key, and everything
+	 * it does not mention keeps coming from the shipped file: that is what makes
+	 * it safe to keep across an upgrade, where a whole-file copy would freeze
+	 * the sysop's install at the version they copied. */
+	sr_games_load(LOCAL_DIR, "bzone.zip");
+	CHECK_STR(sr_games_button_label(RETRO_DEVICE_ID_JOYPAD_Y), "Zap");
+	CHECK_STR(sr_games_stick2(), "Right tread");   /* untouched: still shipped */
+
+	/* A section only the local file has. */
+	sr_games_load(LOCAL_DIR, "myrom.zip");
+	CHECK(sr_games_labelled());
+	CHECK_STR(sr_games_button_label(RETRO_DEVICE_ID_JOYPAD_A), "Launch");
+	CHECK(sr_games_boot_frames() == 60);
+
+	/* A section only the SHIPPED file has still resolves. */
+	sr_games_load(LOCAL_DIR, "centiped.zip");
+	CHECK_STR(sr_games_button_label(RETRO_DEVICE_ID_JOYPAD_B), "Fire");
+
+	/* Root keys overlay at the root: the local default wins for a romset with
+	 * no boot_frames of its own... */
+	sr_games_load(LOCAL_DIR, "bzone.zip");
+	CHECK(sr_games_boot_frames() == 300);
+	sr_games_load(LOCAL_DIR, "nosuchgame.zip");
+	CHECK(sr_games_boot_frames() == 300);
+
+	/* ...and the shipped file alone still answers when there is no overlay
+	 * beside it, which is every install that has not been customized. */
+	sr_games_load(FIXTURE_DIR, "bzone.zip");
+	CHECK(sr_games_boot_frames() == 900);
+
+	remove(LOCAL_DIR "/games.local.ini");
+	remove(LOCAL_DIR "/games.ini");
+	remove(NOROOT_DIR "/games.ini");
 	remove(FIXTURE_DIR "/stderr.txt");
 	remove(FIXTURE_DIR "/games.ini");
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "ok", failures);

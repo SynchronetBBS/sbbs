@@ -103,10 +103,10 @@ int main(void)
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_Y) == 0);
 
-	/* I deflects the right stick UP. Negative, because libretro's Y axis is
+	/* P deflects the right stick UP. Negative, because libretro's Y axis is
 	 * DOWN-positive -- and up is the tread going FORWARD, which is the whole
 	 * point: it is what Battlezone could not do. */
-	type("i");
+	type("p");
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_Y) < 0);
 
@@ -114,7 +114,7 @@ int main(void)
 	 * stick, not onto the LEFT stick (which on the Intellivision is the disc),
 	 * and above all not as a BUTTON. The axis ids live in pad-array slots above
 	 * the last RetroPad id; if sr_pad_get() ever passed one through as a button,
-	 * pressing I would press R3 at the core. */
+	 * pressing P would press R3 at the core. */
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_X) == 0);
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
@@ -130,14 +130,14 @@ int main(void)
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_Y) == 0);
 
-	/* K deflects the other way: the same tread in reverse. */
-	type("k");
+	/* ; deflects the other way: the same tread in reverse. */
+	type(";");
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_Y) > 0);
 
 	/* Both at once is a stick pulled two ways -- centred, not one side winning.
 	 * On the cabinet it is both tread levers held against each other. */
-	type("i");
+	type("p");
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_Y) == 0);
 
@@ -150,18 +150,48 @@ int main(void)
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_Y) == 0);
 
+	/* --- the second player ---------------------------------------------------
+	 * A cabinet's coin and start buttons are per-player inputs: 2-player start is
+	 * START on port 1, and no key on port 0 reaches it. Same path, same pump --
+	 * what changes is which controller the core reads it off. */
+	g_now_ms += 5000;
+	sr_input_pump();
+	type("2");
+	CHECK(sr_pad_get(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START) == 1);
+	CHECK(sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START) == 0);
+
+	/* Player 2's stick is player 1's five columns right, and lands on port 1
+	 * alone: a key that moved both players would be worse than one that moved
+	 * neither. */
+	g_now_ms += 5000;
+	sr_input_pump();
+	type("i");
+	CHECK(sr_pad_get(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP) == 1);
+	CHECK(sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP) == 0);
+
+	/* ...and player 1 keeps his, the arrows included -- most cabinets alternate
+	 * turns on one set of controls, and those play on port 0 whoever is holding
+	 * them. */
+	g_now_ms += 5000;
+	sr_input_pump();
+	type("w");
+	CHECK(sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP) == 1);
+	CHECK(sr_pad_get(1, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP) == 0);
+	g_now_ms += 5000;
+	sr_input_pump();
+
 	/* --- a cartridge console ------------------------------------------------
-	 * The other two consoles ship the SAME binary. On a gamepad profile I and K
+	 * The other two consoles ship the SAME binary. On a gamepad profile P and ;
 	 * are unbound and the analog stick is dead, so a core that polls it reads a
 	 * centred stick -- byte for byte what it read before the cabinet grew a
 	 * second one. */
 	g_now_ms += 5000;
 	sr_input_pump();
 	sr_profile_select("pad", NULL);
-	type("i");
+	type("p");
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_Y) == 0);
-	type("k");
+	type(";");
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_Y) == 0);
 

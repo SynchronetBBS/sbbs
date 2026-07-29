@@ -2333,6 +2333,13 @@ char* iniFileName(char* dest, size_t maxlen, const char* indir, const char* infn
 	if (fexistcase(dest))    /* path/file.platform.ini */
 		return dest;
 
+	/* Below the host and platform variants, which are more specific, and above
+	 * the plain name: this one says "this installation", not "this machine", so
+	 * a multi-host install's per-host file still wins where one exists. */
+	safe_snprintf(dest, maxlen, "%s%s.local%s", dir, fname, ext);
+	if (fexistcase(dest))    /* path/file.local.ini */
+		return dest;
+
 	safe_snprintf(dest, maxlen, "%s%s%s", dir, fname, ext);
 	fexistcase(dest);   /* path/file.ini */
 	return dest;

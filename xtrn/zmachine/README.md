@@ -9,7 +9,9 @@ This repository is the **Synchronet** build: an ES5 / SpiderMonkey-1.8.5 port of
 - `jszm.js` — the Z-machine interpreter engine
 - `quetzal.js` — Quetzal save-file codec
 - `zmachine.js` — the Synchronet door front-end
-- `games.ini` — curated game catalog (for the provisioner)
+- `games.ini` — curated game catalog (for the provisioner). Add your own
+  games in `games.local.ini` beside it: it is merged over the catalog by game
+  id and is never replaced by an upgrade.
 - `getgames.js` — story-file provisioner script (fetches and installs games)
 - `test/` — the test suite
 

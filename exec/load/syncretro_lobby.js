@@ -228,20 +228,31 @@ function syncretro_lobby_init(spec)
 	syncretro_names_set(null);
 	if (file_exists(syncretro_lobby_dir + "names.json"))
 		log(LOG_WARNING, "syncretro: names.json is no longer read -- "
-			+ "re-enter any custom titles as games.ini sections");
-	f = new File(syncretro_lobby_dir + "games.ini");
-	if (f.open("r")) {
-		var rows = f.iniGetAllObjects("romset");
-		var map  = {};
-		var i;
+			+ "re-enter any custom titles as games.local.ini sections");
 
+	/* games.local.ini is read SECOND and wins, romset by romset: it is the
+	 * sysop's file, where a retitled cabinet survives the pull that overwrites
+	 * the shipped games.ini. Holding only the differences is the point -- the
+	 * titles upstream adds keep arriving underneath. */
+	var files = ["games.ini", "games.local.ini"];
+	var map   = {};
+	var found = false;
+	var n, rows, i;
+
+	for (n = 0; n < files.length; n++) {
+		f = new File(syncretro_lobby_dir + files[n]);
+		if (!f.open("r"))
+			continue;
+		found = true;
+		rows  = f.iniGetAllObjects("romset");
 		f.close();
 		for (i = 0; i < rows.length; i++) {
 			if (rows[i].romset && rows[i].name)
 				map[rows[i].romset] = rows[i].name;
 		}
-		syncretro_names_set(map);
 	}
+	if (found)
+		syncretro_names_set(map);
 
 	/* The native artifacts -- the door binary and the libretro core -- live in a
 	 * per-target sub-directory (syncretro_target(): win32, linux-x64, linux-arm64,

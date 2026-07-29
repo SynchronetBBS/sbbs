@@ -197,8 +197,8 @@ void sr_door_idle_activity(void);
 void sr_door_idle_tick(void);
 /* Feed the clock and report whether this input answered an on-screen countdown.
  * A caller that gets 1 back must CONSUME the keystroke rather than dispatch it:
- * "press any key" has to mean any key, and every profile binds the likeliest
- * one (Space) to pause. */
+ * "press any key" has to mean any key, and the likeliest one is bound: Space
+ * fires button 1 on a cabinet. */
 int  sr_door_idle_wake(void);
 
 /* The render tier the player is looking at, and F4's step to the next one.
@@ -260,6 +260,10 @@ struct rc_core;                                     /* fwd (retro_core.h) */
 void sr_bridge_install(struct rc_core *c);
 /* Set the libretro pixel format (from retro_env.c's SET_PIXEL_FORMAT). */
 void sr_bridge_set_pixfmt(int retro_pixel_format);
+/* Discard the core's video and audio while set. main.c holds this over the
+ * boot warm-up, where the core is run unpaced and its output is not the
+ * player's to see or hear. */
+void sr_bridge_set_warmup(int on);
 /* The core's PCM stream: syncretro_audio.c owns it (M4). Declared there. */
 
 /* --- retro_env.c -----------------------------------------------------------

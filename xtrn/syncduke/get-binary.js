@@ -8,8 +8,8 @@
 //
 //   - Windows: if syncduke.exe is missing, download it from a well-known URL on Vertrauen
 //     (an alias to the current versioned build) and extract it here.
-//   - *nix: the binary is produced by build.sh and placed/symlinked here by deploy.sh; this
-//     script does not auto-download it, it just verifies it's present.
+//   - *nix: the binary is produced by build.sh and placed/symlinked here by deploy.js;
+//     this script does not auto-download it, it just verifies it's present.
 //
 // Run by hand:  jsexec ../xtrn/syncduke/get-binary.js
 //
@@ -40,7 +40,8 @@ function main()
 
 	if (!win) {
 		print("SyncDuke: '" + exe + "' is missing. Build it (./build.sh in src/doors/syncduke) "
-		    + "and install it here (./deploy.sh), then re-run the installer.");
+		    + "and install it here (jsexec src/doors/syncduke/deploy.js), then re-run "
+		    + "the installer.");
 		return 1;
 	}
 

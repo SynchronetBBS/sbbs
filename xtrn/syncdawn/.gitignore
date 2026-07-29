@@ -1,5 +1,5 @@
 # Locally built door binary (not tracked; built via src/doors/syncconquer/
-# build.sh with the Tiberian Dawn target, deployed here via deploy.sh).
+# build.sh with the Tiberian Dawn target, deployed here via deploy.js).
 /syncdawn
 /syncdawn.exe
 

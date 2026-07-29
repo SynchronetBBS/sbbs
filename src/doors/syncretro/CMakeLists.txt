@@ -236,6 +236,15 @@ if(SYNCRETRO_TESTS)
     target_link_libraries(test_games xpdev)
     add_test(NAME games COMMAND test_games)
 
+    # test_warmup -- the boot warm-up's output gate. Links retro_bridge.c
+    # against stubs for the door modules it feeds, so it needs neither a core
+    # nor a terminal.
+    add_executable(test_warmup test_warmup.c retro_bridge.c)
+    target_include_directories(test_warmup PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../termgfx
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+    add_test(NAME warmup COMMAND test_warmup)
+
     add_executable(test_quant test_quant.c syncretro_quant.c)
     target_include_directories(test_quant PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     add_test(NAME quant COMMAND test_quant)
