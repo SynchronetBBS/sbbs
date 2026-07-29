@@ -17,13 +17,67 @@ function gg_dir() {
 	return d;
 }
 
-function gg_loadManifest(path) {
+// "<dir>/games.ini" -> "<dir>/games.local.ini".
+function gg_localName(path) {
+	var dot = String(path).lastIndexOf(".");
+
+	if (dot < 0)
+		return path + ".local";
+	return path.substr(0, dot) + ".local" + path.substr(dot);
+}
+
+function gg_readManifest(path) {
 	var f = new File(path);
+
 	if (!f.open("r"))
 		return null;
 	var list = f.iniGetAllObjects("id", "game:");
 	f.close();
 	return list;
+}
+
+// The catalog, with the sysop's own entries layered over it.
+//
+// games.ini ships with the door and is replaced by an upgrade, so a sysop who
+// added a game they own would lose it. games.local.ini beside it is theirs, and
+// is merged by game id rather than replacing the catalog: their entries survive,
+// and the games added upstream still arrive. An id in both files takes the
+// sysop's version -- that is how a shipped entry gets corrected locally.
+//
+// Returns null only when NEITHER file can be read.
+function gg_loadManifest(path) {
+	var base  = gg_readManifest(path);
+	var local = gg_readManifest(gg_localName(path));
+	var out   = [];
+	var seen  = {};
+	var i, id;
+
+	if (!base && !local)
+		return null;
+	base  = base || [];
+	local = local || [];
+
+	for (i = 0; i < local.length; i++)
+		seen[String(local[i].id).toLowerCase()] = local[i];
+
+	// Shipped order first, so the catalog reads the same as it always has, with
+	// any locally-corrected entry substituted in place.
+	for (i = 0; i < base.length; i++) {
+		id = String(base[i].id).toLowerCase();
+		if (seen[id] !== undefined) {
+			out.push(seen[id]);
+			seen[id] = undefined;
+		} else {
+			out.push(base[i]);
+		}
+	}
+	// Then whatever the sysop added that the catalog has never heard of.
+	for (i = 0; i < local.length; i++) {
+		id = String(local[i].id).toLowerCase();
+		if (seen[id] !== undefined)
+			out.push(local[i]);
+	}
+	return out;
 }
 
 function gg_targetPath(dir, game) {

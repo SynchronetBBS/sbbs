@@ -67,6 +67,7 @@ If you prefer to set up the door manually:
    xtrn/zmachine/quetzal.js     <- the save codec
    xtrn/zmachine/zmachine.js    <- the door (run this)
    xtrn/zmachine/games.ini      <- curated game catalog (for provisioning)
+   xtrn/zmachine/games.local.ini <- YOUR additions to it (optional, never overwritten)
    xtrn/zmachine/getgames.js    <- story-file provisioner script
    ```
 
