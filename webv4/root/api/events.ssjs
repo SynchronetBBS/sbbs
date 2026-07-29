@@ -29,13 +29,18 @@ function emit(obj) {
 }
 
 const callbacks = {};
+const failures = {};
+const max_failures = 5;
 if (file_isdir(settings.web_lib + 'events')) {
     if (Array.isArray(http_request.query.subscribe)) {
         http_request.query.subscribe.forEach(function (e) {
             const base = file_getname(e).replace(file_getext(e), '');
             const script = settings.web_lib + 'events/' + base + '.js';
             try {
-                if (file_exists(script)) callbacks[e] = load({}, script);
+                if (file_exists(script)) {
+                    callbacks[e] = load({}, script);
+                    failures[e] = 0;
+                }
             } catch (err) {
                 log(LOG_ERR, 'Failed to load event module ' + e + ': ' + err);
             }
@@ -48,9 +53,16 @@ while (client.socket.is_connected) {
     Object.keys(callbacks).forEach(function (e) {
         try {
             callbacks[e].cycle();
+            failures[e] = 0;
         } catch (err) {
+            /* A cycle can fail transiently (e.g. a locked user record under
+               load), so don't disable the callback on a single error. */
             log(LOG_ERR, 'Callback ' + e + ' failed: ' + err);
-            delete callbacks[e];
+            if (++failures[e] >= max_failures) {
+                log(LOG_ERR, 'Callback ' + e + ' disabled after '
+                    + failures[e] + ' consecutive failures');
+                delete callbacks[e];
+            }
         }
     });
     js.gc();
