@@ -141,6 +141,21 @@ Comments in the shipped file carry **no relative-time language** -- no "today",
 it, and a sysop reading it cold has no reference point for when "today" was.
 Temporal framing belongs in this document or a commit message.
 
+### Ordering
+
+Sections are sorted by romset name, and the shipped file is kept that way. It
+is not tidiness: a **duplicate section is silent**. xpdev's reader answers out
+of the first one and never sees the second, so every key in the second is lost
+with no warning -- and in a file grouped by hand, or one grown by appending a
+block to the end, the two can sit a hundred lines apart. Sorted, a duplicate
+lands next to what it duplicates.
+
+Two dead sections had survived in the shipped file: `burgtime` beside a `btime`
+that was already there, and `millipedes` for `milliped`. Neither named a
+driver. Both were caught by checking every section against the core's own
+driver table -- but sorted, each would have sat directly beside the thing it
+duplicated, which is the cheaper check and the one a contributor gets for free.
+
 ### Why ids and not keys
 
 `button.Y = Fire`, not `fire = C`. Which *key* reaches RetroPad Y is the binding
