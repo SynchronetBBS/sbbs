@@ -930,10 +930,13 @@ public:
 	void	show_msghdr(smb_t*, const smbmsg_t*, const char *subj = NULL, const char* from = NULL, const char* to = NULL);
 	bool	show_msg(smb_t*, smbmsg_t*, int p_mode = 0, post_t* post = NULL);
 	bool	msgtotxt(smb_t*, smbmsg_t*, const char *fname, bool header = true, uint gettxt_mode = GETMSGTXT_ALL);
-	const char* msghdr_text(const smbmsg_t*, uint index);
+	const char* msghdr_text(const smbmsg_t*, uint index, bool can_utf8 = true);
 	char	msghdr_utf8_text[128]{};
+	const char* msghdr_field(const smbmsg_t*, const char* str, char* buf, size_t buflen, bool can_utf8);
 	const char* msghdr_field(const smbmsg_t*, const char* str, char* buf = NULL, bool can_utf8 = false);
 	char	msgghdr_field_cp437_str[128]{};
+	void	list_msg(const smbmsg_t*, uint fmt, uint num, const char* from, const char* to
+			, char flag, bool anonymous = false);
 	uint	getlastmsg(int subnum, uint32_t *ptr, time_t *t);
 	time_t	getmsgtime(int subnum, uint ptr);
 	int		getmsgnum(int subnum, time_t t);

@@ -131,9 +131,9 @@ void sbbs_t::show_msgattr(const smbmsg_t* msg)
 }
 
 /* Returns a CP437 text.dat string converted to UTF-8, when appropriate */
-const char* sbbs_t::msghdr_text(const smbmsg_t* msg, uint index)
+const char* sbbs_t::msghdr_text(const smbmsg_t* msg, uint index, bool can_utf8)
 {
-	if (msg == NULL || !(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
+	if (msg == NULL || !can_utf8 || !(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
 		return text[index];
 
 	if (cp437_to_utf8_str(text[index], msghdr_utf8_text, sizeof(msghdr_utf8_text), /* min-char-val: */ '\x80') < 1)
@@ -144,7 +144,7 @@ const char* sbbs_t::msghdr_text(const smbmsg_t* msg, uint index)
 
 // Returns a CP437 version of a message header field or UTF-8 if can_utf8 is true
 // Doesn't do CP437->UTF-8 conversion
-const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf, bool can_utf8)
+const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf, size_t buflen, bool can_utf8)
 {
 	if (msg == NULL || !(msg->hdr.auxattr & MSG_HFIELDS_UTF8))
 		return str;
@@ -152,13 +152,47 @@ const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf
 	if (can_utf8)
 		return str;
 
-	if (buf == NULL)
-		buf = msgghdr_field_cp437_str;
-
-	strncpy(buf, str, sizeof(msgghdr_field_cp437_str) - 1);
+	utf8_strlcpy(buf, str, buflen);
 	utf8_to_cp437_inplace(buf);
 
 	return buf;
+}
+
+const char* sbbs_t::msghdr_field(const smbmsg_t* msg, const char* str, char* buf, bool can_utf8)
+{
+	if (buf == NULL)
+		buf = msgghdr_field_cp437_str;
+
+	return msghdr_field(msg, str, buf, sizeof(msgghdr_field_cp437_str), can_utf8);
+}
+
+/****************************************************************************/
+/* Displays one line of a message listing, using the text.dat format string  */
+/* specified by 'fmt'. A NULL 'to' selects the single-name format.           */
+/* The header fields are converted to the terminal's character set before    */
+/* they're formatted, so that the format string's byte-counted field widths  */
+/* match the number of columns the fields occupy on screen.                  */
+/****************************************************************************/
+void sbbs_t::list_msg(const smbmsg_t* msg, uint fmt, uint num, const char* from, const char* to
+	, char flag, bool anonymous)
+{
+	char from_buf[128];
+	char to_buf[128];
+	char subj_buf[256];
+	bool can_utf8 = (term->charset() == CHARSET_UTF8);
+	int  mode = P_TRUNCATE | (can_utf8 && (msg->hdr.auxattr & MSG_HFIELDS_UTF8) ? P_UTF8 : 0);
+
+	if (anonymous)
+		from = text[Anonymous];
+	else
+		from = msghdr_field(msg, from, from_buf, sizeof from_buf, can_utf8);
+	const char* subj = msghdr_field(msg, msg->subj, subj_buf, sizeof subj_buf, can_utf8);
+
+	if (to == NULL)
+		bprintf(mode, msghdr_text(msg, fmt, can_utf8), num, from, flag, subj);
+	else
+		bprintf(mode, msghdr_text(msg, fmt, can_utf8), num, from
+			, msghdr_field(msg, to, to_buf, sizeof to_buf, can_utf8), flag, subj);
 }
 
 /****************************************************************************/

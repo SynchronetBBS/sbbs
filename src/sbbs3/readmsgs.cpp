@@ -81,13 +81,10 @@ int sbbs_t::listmsgs(int subnum, int mode, post_t *post, int start, int posts, b
 		smb_unlockmsghdr(&smb, &msg);
 		if (listed == 0)
 			bputs(text[MailOnSystemLstHdr]);
-		bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-		        , msghdr_text(&msg, SubMsgLstFmt), reading ? (i + 1) : post[i].num
-		        , msg.hdr.attr & MSG_ANONYMOUS && !sub_op(subnum)
-		    ? text[Anonymous] : msg.from
-		        , msg.to
-		        , msg_listing_flag(subnum, &msg, &post[i])
-		        , msg.subj);
+		list_msg(&msg, SubMsgLstFmt, reading ? (i + 1) : post[i].num
+		         , msg.from, msg.to
+		         , msg_listing_flag(subnum, &msg, &post[i])
+		         , (msg.hdr.attr & MSG_ANONYMOUS) && !sub_op(subnum));
 		smb_freemsgmem(&msg);
 		msg.total_hfields = 0;
 		listed++;
@@ -1769,13 +1766,10 @@ int sbbs_t::searchposts(int subnum, post_t *post, int start, int posts
 		if (expr != NULL && bool_expr_match_fields(expr, fields, 3)) {
 			if (!found)
 				bputs(text[MailOnSystemLstHdr]);
-			bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-			        , msghdr_text(&msg, SubMsgLstFmt), l + 1
-			        , (msg.hdr.attr & MSG_ANONYMOUS) && !sub_op(subnum) ? text[Anonymous]
-			    : msg.from
-			        , msg.to
-			        , msg_listing_flag(subnum, &msg, &post[l])
-			        , msg.subj);
+			list_msg(&msg, SubMsgLstFmt, l + 1
+			         , msg.from, msg.to
+			         , msg_listing_flag(subnum, &msg, &post[l])
+			         , (msg.hdr.attr & MSG_ANONYMOUS) && !sub_op(subnum));
 			found++;
 		}
 		free(buf);
@@ -1826,13 +1820,10 @@ int sbbs_t::showposts_toyou(int subnum, post_t *post, uint start, int posts, int
 			if (!found)
 				bputs(text[MailOnSystemLstHdr]);
 			found++;
-			bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-			        , msghdr_text(&msg, SubMsgLstFmt), l + 1
-			        , (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop()
-			    ? text[Anonymous] : msg.from
-			        , msg.to
-			        , msg_listing_flag(subnum, &msg, &post[l])
-			        , msg.subj);
+			list_msg(&msg, SubMsgLstFmt, l + 1
+			         , msg.from, msg.to
+			         , msg_listing_flag(subnum, &msg, &post[l])
+			         , (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop());
 		}
 	}
 

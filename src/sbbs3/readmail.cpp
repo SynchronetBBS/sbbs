@@ -160,11 +160,10 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 			if (loadmsg(&msg, mail[smb.curmsg].number) < 1)
 				continue;
 			smb_unlockmsghdr(&smb, &msg);
-			bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-			        , msghdr_text(&msg, MailWaitingLstFmt), smb.curmsg + 1
-			        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop() ? text[Anonymous] : msg.from
-			        , mail_listing_flag(&msg)
-			        , msg.subj);
+			list_msg(&msg, MailWaitingLstFmt, smb.curmsg + 1
+			         , which == MAIL_SENT ? msg_to(&msg) : msg.from, NULL
+			         , mail_listing_flag(&msg)
+			         , which != MAIL_SENT && (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop());
 			smb_freemsgmem(&msg);
 			msg.total_hfields = 0;
 			if (msgabort())
@@ -522,17 +521,14 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 						continue;
 					smb_unlockmsghdr(&smb, &msg);
 					if (which == MAIL_ALL)
-						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-						        , msghdr_text(&msg, MailOnSystemLstFmt)
-						        , u + 1, msg.from, msg_to(&msg)
-						        , mail_listing_flag(&msg)
-						        , msg.subj);
+						list_msg(&msg, MailOnSystemLstFmt
+						         , u + 1, msg.from, msg_to(&msg)
+						         , mail_listing_flag(&msg));
 					else
-						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-						        , msghdr_text(&msg, MailWaitingLstFmt), u + 1
-						        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop() ? text[Anonymous] : msg.from
-						        , mail_listing_flag(&msg)
-						        , msg.subj);
+						list_msg(&msg, MailWaitingLstFmt, u + 1
+						         , which == MAIL_SENT ? msg_to(&msg) : msg.from, NULL
+						         , mail_listing_flag(&msg)
+						         , which != MAIL_SENT && (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop());
 					smb_freemsgmem(&msg);
 					msg.total_hfields = 0;
 				}
@@ -738,17 +734,14 @@ int sbbs_t::readmail(uint usernumber, int which, int lm_mode, bool listmsgs)
 						continue;
 					smb_unlockmsghdr(&smb, &msg);
 					if (which == MAIL_ALL)
-						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-						        , msghdr_text(&msg, MailOnSystemLstFmt)
-						        , u + 1, msg.from, msg_to(&msg)
-						        , mail_listing_flag(&msg)
-						        , msg.subj);
+						list_msg(&msg, MailOnSystemLstFmt
+						         , u + 1, msg.from, msg_to(&msg)
+						         , mail_listing_flag(&msg));
 					else
-						bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-						        , msghdr_text(&msg, MailWaitingLstFmt), u + 1
-						        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop() ? text[Anonymous] : msg.from
-						        , mail_listing_flag(&msg)
-						        , msg.subj);
+						list_msg(&msg, MailWaitingLstFmt, u + 1
+						         , which == MAIL_SENT ? msg_to(&msg) : msg.from, NULL
+						         , mail_listing_flag(&msg)
+						         , which != MAIL_SENT && (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop());
 					smb_freemsgmem(&msg);
 					msg.total_hfields = 0;
 				}
@@ -919,17 +912,14 @@ int sbbs_t::searchmail(mail_t *mail, int start, int msgs, int which, const char 
 					bprintf(text[MailWaitingLstHdr], order);
 			}
 			if (which == MAIL_ALL)
-				bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-				        , msghdr_text(&msg, MailOnSystemLstFmt)
-				        , l + 1, msg.from, msg_to(&msg)
-				        , mail_listing_flag(&msg)
-				        , msg.subj);
+				list_msg(&msg, MailOnSystemLstFmt
+				         , l + 1, msg.from, msg_to(&msg)
+				         , mail_listing_flag(&msg));
 			else
-				bprintf(P_TRUNCATE | (msg.hdr.auxattr & MSG_HFIELDS_UTF8)
-				        , msghdr_text(&msg, MailWaitingLstFmt), l + 1
-				        , which == MAIL_SENT ? msg_to(&msg) : (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop() ? text[Anonymous] : msg.from
-				        , mail_listing_flag(&msg)
-				        , msg.subj);
+				list_msg(&msg, MailWaitingLstFmt, l + 1
+				         , which == MAIL_SENT ? msg_to(&msg) : msg.from, NULL
+				         , mail_listing_flag(&msg)
+				         , which != MAIL_SENT && (msg.hdr.attr & MSG_ANONYMOUS) && !useron_is_sysop());
 			found++;
 		}
 		free(buf);
