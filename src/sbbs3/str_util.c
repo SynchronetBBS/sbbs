@@ -19,6 +19,7 @@
  * Note: If this box doesn't appear square, then you need to fix your tabs.	*
  ****************************************************************************/
 
+#include <stddef.h>
 #include "genwrap.h"
 #include "dirwrap.h"
 #include "str_util.h"
@@ -762,6 +763,171 @@ char* utf8_to_cp437_inplace(char* str)
 	                          , /* unsupported char: */ CP437_INVERTED_QUESTION_MARK
 	                          , /* unsupported zero-width ch: */ 0
 	                          , /* decode error char: */ CP437_INVERTED_EXCLAMATION_MARK);
+}
+
+/****************************************************************************/
+/* Rewrites the field width and precision of the %s conversions in 'fmt'		*/
+/* from byte counts into terminal column counts: printf() measures a field	*/
+/* in bytes, but a UTF-8 argument occupies fewer columns than it does bytes,	*/
+/* so a byte-counted field comes up short and the columns to its right slide.*/
+/* A '*' width or precision is left alone - the caller calculated that one	*/
+/* itself and already knows the difference (see atcode()).					*/
+/* 'width_fn' measures a string: it returns the printed columns of at most	*/
+/* 'max_cols' columns' worth of it, reporting the bytes consumed in 'bytes'.	*/
+/* Returns 'fmt' unmodified when nothing needs rewriting, or when the format	*/
+/* uses a conversion this function doesn't recognize.						*/
+/****************************************************************************/
+const char* fmt_col_widths(char* buf, size_t buflen, const char* fmt, va_list ap
+                           , str_width_t width_fn, void* cbdata)
+{
+	va_list argptr;
+	size_t  outlen = 0;
+	bool    rewrote = false;
+
+	va_copy(argptr, ap);
+	for (const char* p = fmt; *p != '\0'; ) {
+		if (*p != '%') {
+			if (outlen + 1 >= buflen)
+				goto unsupported;
+			buf[outlen++] = *p++;
+			continue;
+		}
+		const char* spec = p++;
+		if (*p == '%') {
+			if (outlen + 2 >= buflen)
+				goto unsupported;
+			buf[outlen++] = '%';
+			buf[outlen++] = *p++;
+			continue;
+		}
+		const char* flags = p;
+		while (*p != '\0' && strchr("-+ #0'", *p) != NULL)
+			p++;
+		size_t flags_len = p - flags;
+		long   width = -1;
+		bool   width_star = false;
+		if (*p == '*') {
+			width_star = true;
+			p++;
+		} else if (IS_DIGIT(*p))
+			width = strtol(p, (char**)&p, 10);
+		long prec = -1;
+		bool prec_star = false;
+		bool has_prec = false;
+		if (*p == '.') {
+			p++;
+			has_prec = true;
+			prec = 0;
+			if (*p == '*') {
+				prec_star = true;
+				p++;
+			} else if (IS_DIGIT(*p))
+				prec = strtol(p, (char**)&p, 10);
+		}
+		const char* lenmod = p;
+		while (*p == 'h' || *p == 'l' || *p == 'L' || *p == 'z' || *p == 'j' || *p == 't')
+			p++;
+		size_t lenmod_len = p - lenmod;
+		char   conv = *p;
+		if (conv == '\0')
+			goto unsupported;
+		p++;
+
+		if (width_star)
+			(void)va_arg(argptr, int);
+		if (prec_star)
+			(void)va_arg(argptr, int);
+
+		const char* str = NULL;
+		switch (conv) {
+			case 'c':
+				(void)va_arg(argptr, int);
+				break;
+			case 'd':
+			case 'i':
+			case 'o':
+			case 'u':
+			case 'x':
+			case 'X':
+				if (lenmod_len == 2 && lenmod[0] == 'l')
+					(void)va_arg(argptr, long long);
+				else if (lenmod_len == 1 && *lenmod == 'l')
+					(void)va_arg(argptr, long);
+				else if (lenmod_len == 1 && *lenmod == 'z')
+					(void)va_arg(argptr, size_t);
+				else if (lenmod_len == 1 && *lenmod == 'j')
+					(void)va_arg(argptr, intmax_t);
+				else if (lenmod_len == 1 && *lenmod == 't')
+					(void)va_arg(argptr, ptrdiff_t);
+				else
+					(void)va_arg(argptr, int);
+				break;
+			case 'e':
+			case 'E':
+			case 'f':
+			case 'F':
+			case 'g':
+			case 'G':
+			case 'a':
+			case 'A':
+				if (lenmod_len == 1 && *lenmod == 'L')
+					(void)va_arg(argptr, long double);
+				else
+					(void)va_arg(argptr, double);
+				break;
+			case 'p':
+			case 'n':
+				(void)va_arg(argptr, void*);
+				break;
+			case 's':
+				str = va_arg(argptr, const char*);
+				if (lenmod_len != 0)     /* %ls is a wide-char string, not UTF-8 */
+					goto unsupported;
+				break;
+			default:
+				goto unsupported;
+		}
+
+		if (conv != 's' || str == NULL || width_star || prec_star
+		    || (width < 1 && !has_prec) || str_is_ascii(str)) {
+			size_t n = p - spec;
+			if (outlen + n >= buflen)
+				goto unsupported;
+			memcpy(buf + outlen, spec, n);
+			outlen += n;
+			continue;
+		}
+
+		size_t bytes = 0;
+		size_t cols = width_fn(cbdata, str, has_prec ? (size_t)prec : SIZE_MAX, &bytes);
+		long new_width = width;
+		if (width > 0) {
+			new_width = width + (long)(bytes - cols);
+			if (new_width < 0)
+				new_width = 0;
+		}
+		char newspec[64];
+		int  n = snprintf(newspec, sizeof newspec, "%%%.*s", (int)flags_len, flags);
+		if (width > 0)
+			n += snprintf(newspec + n, sizeof newspec - n, "%ld", new_width);
+		if (has_prec)
+			n += snprintf(newspec + n, sizeof newspec - n, ".%lu", (ulong)bytes);
+		n += snprintf(newspec + n, sizeof newspec - n, "s");
+		if (n < 1 || (size_t)n >= sizeof newspec || outlen + n >= buflen)
+			goto unsupported;
+		memcpy(buf + outlen, newspec, n);
+		outlen += n;
+		rewrote = true;
+	}
+	va_end(argptr);
+	if (!rewrote)
+		return fmt;
+	buf[outlen] = '\0';
+	return buf;
+
+unsupported:
+	va_end(argptr);
+	return fmt;
 }
 
 char* separate_thousands(const char* src, char *dest, size_t maxlen, char sep)

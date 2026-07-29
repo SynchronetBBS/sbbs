@@ -22,6 +22,7 @@
 #ifndef _STR_UTIL_H_
 #define _STR_UTIL_H_
 
+#include <stdarg.h>
 #include "gen_defs.h"
 #include "dllexport.h"
 
@@ -70,6 +71,12 @@ DLLEXPORT char *    utf8_to_cp437_inplace(char* str);
 DLLEXPORT char *    separate_thousands(const char* src, char *dest, size_t maxlen, char sep);
 DLLEXPORT char *    make_newsgroup_name(char* str);
 DLLEXPORT size_t	widest_line(const char* str);
+
+/* Measures 'str': returns the printed columns of no more than 'max_cols'
+   columns' worth of it, reporting the bytes consumed through 'bytes' */
+typedef size_t (*str_width_t)(void* cbdata, const char* str, size_t max_cols, size_t* bytes);
+DLLEXPORT const char* fmt_col_widths(char* buf, size_t buflen, const char* fmt, va_list
+                                     , str_width_t, void* cbdata);
 
 #ifdef __cplusplus
 }

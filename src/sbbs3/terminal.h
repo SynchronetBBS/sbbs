@@ -338,9 +338,13 @@ public:
 
 	/****************************************************************************/
 	/* Returns the printed columns from 'str' accounting for Ctrl-A codes       */
+	/* Stops before exceeding 'max_cols' printed columns, never splitting a     */
+	/* multi-byte sequence; the number of bytes consumed is returned through    */
+	/* 'bytes' (when not NULL).                                                 */
 	/****************************************************************************/
-	virtual size_t bstrlen(const char *str, int mode = 0)
+	virtual size_t bstrlen(const char *str, int mode = 0, size_t max_cols = SIZE_MAX, size_t* bytes = NULL)
 	{
+		const char* org = str;
 		str = sbbs->auto_utf8(str, mode);
 		size_t      count = 0;
 		const char* end = str + strlen(str);
@@ -377,7 +381,10 @@ public:
 				len = utf8_getc(str, end - str, &codepoint);
 				if (len < 1)
 					break;
-				count += unicode_width(codepoint, sbbs->unicode_zerowidth);
+				size_t width = unicode_width(codepoint, sbbs->unicode_zerowidth);
+				if (count + width > max_cols)
+					break;
+				count += width;
 			} else if (*str == '\b') {
 				if (count)
 					count--;
@@ -388,10 +395,15 @@ public:
 				break;
 			} else if (*str == '\n')
 				break;
-			else
+			else {
+				if (count + 1 > max_cols)
+					break;
 				count++;
+			}
 			str += len;
 		}
+		if (bytes != NULL)
+			*bytes = str - org;
 		return count;
 	}
 

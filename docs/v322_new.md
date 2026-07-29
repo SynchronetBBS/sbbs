@@ -101,6 +101,10 @@
   `systemctl reload`, or a console recycle command), active nodes
   are flagged to re-read their configuration on their next logon
   (the full server recycle still waits until all nodes are idle)
+- Mail and message listings keep their columns aligned when a
+  sender, recipient, or subject contains non-ASCII characters —
+  field widths are now measured in screen columns rather than
+  bytes (issue #1204)
 
 ## Web Server
 

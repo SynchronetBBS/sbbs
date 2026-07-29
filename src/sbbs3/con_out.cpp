@@ -339,6 +339,7 @@ size_t sbbs_t::print_utf8_as_cp437(const char* str, size_t len)
 	return len;
 }
 
+
 /****************************************************************************/
 /* Raw put string (remotely)												*/
 /* Performs Telnet IAC escaping												*/
@@ -532,14 +533,22 @@ int sbbs_t::bprintf(const char *fmt, ...)
 /****************************************************************************/
 /* Performs printf() using bbs bputs function (with mode)					*/
 /****************************************************************************/
+static size_t bstrlen_cb(void* cbdata, const char* str, size_t max_cols, size_t* bytes)
+{
+	return ((Terminal*)cbdata)->bstrlen(str, P_UTF8, max_cols, bytes);
+}
+
 int sbbs_t::bprintf(int mode, const char *fmt, ...)
 {
 	va_list argptr;
 	char    sbuf[4096];
+	char    fbuf[512];
 
 	if (strchr(fmt, '%') == NULL)
 		return bputs(fmt, mode);
 	va_start(argptr, fmt);
+	if (mode & P_UTF8)
+		fmt = fmt_col_widths(fbuf, sizeof fbuf, fmt, argptr, bstrlen_cb, term);
 	vsnprintf(sbuf, sizeof(sbuf), fmt, argptr);
 	sbuf[sizeof(sbuf) - 1] = 0; /* force termination */
 	va_end(argptr);
