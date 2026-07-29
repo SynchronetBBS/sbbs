@@ -36,7 +36,10 @@ if ((http_request.method === 'GET' || http_request.method === 'POST') && http_re
 		switch (http_request.query.call[0]) {
 
 			case 'node-list':
-				var usr = new User(1);
+				/* No user number: the record is selected by assigning
+				   usr.number below, and new User(<n>) would read (and
+				   lock) record <n> on every request. */
+				var usr = new User();
 				reply = system.node_list.reduce(function (a, c, i) {
 					if (c.status !== 3) return a;
 					usr.number = c.useron;

@@ -23,7 +23,7 @@ if(typeof http_request.query.action != "undefined" && http_request.query.action 
 		else
 				print("<td style=font-style:italic;>" + NodeStatus[system.node_list[n].status] + "</td></tr>");
 	}
-	var u=new User(1);
+	var u=new User();	/* record selected by u.number below */
 	for(n = 1; n <= system.lastuser; n++) {
 		u.number = n;
 		if(u.compare_ars('REST G'))

@@ -69,7 +69,11 @@ function scan_web() {
 
 function scan() {
     var out = [];
-    var usr = new User(1);
+    /* Placeholder only - the record is selected by assigning usr.number below.
+       Don't pass a user number here: the User constructor reads (and locks) that
+       record, so new User(1) read-locks the sysop's user.tab record on every
+       cycle of every connected event stream. */
+    var usr = new User();
     const node_change = scan_nodes();
     const web_change = scan_web();
     if (node_change) {

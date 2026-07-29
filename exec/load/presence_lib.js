@@ -160,19 +160,29 @@ function node_status(node, is_sysop, options, num)
 			/* Fall-through */
 		case NODE_INUSE:
 		{
-			var user = new User(node.useron);
+			/* Reading a user record locks it in user.tab, so only construct a
+			   User object when a field other than the alias is wanted: the
+			   name index (system.username) needs no lock.  Called for every
+			   in-use node, this is the difference between one locked read per
+			   node and none at all. */
+			var user;
+			if(options.include_age || options.include_gender)
+				user = new User(node.useron);
 
 			if (!options.exclude_username) {
 				if(options.username_prefix)
 					output += options.username_prefix;
 				if(js.global.bbs && (misc&NODE_ANON) && !is_sysop)
 					output += bbs.text(bbs.text.UNKNOWN_USER);
+				else if(user == undefined)
+					output += system.username(node.useron);
 				else
 					output += user.alias;
 			}
 			if(options.status_prefix)
 				output += options.status_prefix;
-			output += user_age_and_gender(user, options);
+			if(user != undefined)
+				output += user_age_and_gender(user, options);
 			output += " ";
 			if(node.activity)
 				output += node.activity;
