@@ -57,4 +57,20 @@ int sr_games_labelled(void);
  * where they would have been sitting anyway. See GAMES_INI.md sec 13. */
 int sr_games_boot_frames(void);
 
+/* Where this cabinet's stick SITS when nobody is touching it, as a percentage
+ * of the stick's own travel on each axis: -100 is hard left / fully up, 0 is the
+ * middle, +100 hard right / fully down. Returns 1 when the section declared it
+ * and fills both; 0 otherwise, with both set to 0.
+ *
+ * A control panel whose stick is a set of switches -- nearly all of them -- has
+ * no rest position to declare and must not have one invented, so absence is the
+ * normal answer and it means "leave the analog stick centred". The key exists
+ * for the panels whose control is a POTENTIOMETER: a handlebar, a wheel, a
+ * throttle. MAME centres those on its own declared middle, and that middle is
+ * not where the real control rests -- Paperboy's bars read 45% of travel at rest
+ * and its speed axis 57%, so a centred stick is a machine steering left at full
+ * speed. There is no default and no root-level form: it is measured per cabinet
+ * (GAMES_INI.md sec 15), and a guess drives the game on its own. */
+int sr_games_analog_rest(int *x_pct, int *y_pct);
+
 #endif /* SYNCRETRO_GAMES_H_ */

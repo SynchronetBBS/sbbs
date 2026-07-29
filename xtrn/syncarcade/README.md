@@ -207,6 +207,17 @@ a section may override it for a cabinet with a longer self-test. The
 shipped value is 900 frames, fifteen seconds of cabinet time for roughly a
 third of a second of CPU. Set it to 0 to watch every cabinet boot in real time.
 
+A fourth key, `analog_rest`, is for the handful of cabinets whose control is a
+knob rather than a set of switches — Paperboy's handlebars, a driving game's
+wheel. MAME parks such a control in the middle of its range whenever nobody is
+touching it, and the middle is not where the real one rests, so the machine
+plays itself: Paperboy at rest is a hard left turn with the throttle open, and
+the bike rides into the curb within a couple of seconds. `analog_rest` says
+where the control actually sits, as a percentage of its travel on each axis
+(`45,57` for Paperboy — steering, then speed). Holding a direction key still
+swings the control to its stop; letting go returns it to rest. Only cabinets
+with an entry are affected; everything else keeps the plain stick it had.
+
 **`names.json` is no longer read.** An install that had one keeps its file, and
 the picker ignores it; re-enter any hand-added titles as `games.local.ini`
 sections.

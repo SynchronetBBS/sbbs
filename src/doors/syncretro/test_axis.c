@@ -22,9 +22,11 @@
  */
 #include "syncretro.h"
 #include "syncretro_binds.h"
+#include "syncretro_games.h"
 #include "syncretro_profile.h"
 #include "syncretro_plat.h"
 #include "libretro.h"
+#include "dirwrap.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -93,8 +95,31 @@ const char *sr_config_launch_dir(void)      { return "."; }
 static uint32_t g_now_ms = 1000;
 uint32_t sr_plat_now_ms(void)               { return g_now_ms; }
 
+/* An analog control panel, for the second half of this file. Its own directory,
+ * so a parallel ctest run cannot race test_games.c over a shared games.ini. */
+#define AXIS_DIR "axisfx"
+
+#define REST_PCT(p) ((int16_t)((p) * 32767 / 100))
+
+static void write_fixture(void)
+{
+	FILE *f;
+
+	mkpath(AXIS_DIR);
+	f = fopen(AXIS_DIR "/games.ini", "w");
+	fputs("[paperboy]\n"
+	      "name        = Paperboy\n"
+	      "analog_rest = 45,57\n"
+	      "\n"
+	      "[bzone]\n"
+	      "name        = Battlezone\n", f);
+	fclose(f);
+}
+
 int main(void)
 {
+	write_fixture();
+
 	/* --- a cabinet ---------------------------------------------------------- */
 	sr_profile_select("arcade", NULL);
 
@@ -180,6 +205,92 @@ int main(void)
 	g_now_ms += 5000;
 	sr_input_pump();
 
+	/* --- an ANALOG control panel ---------------------------------------------
+	 * A handlebar is not a switch. Paperboy reads its bars through the cabinet's
+	 * ADC, and the value it reads when nobody is touching them is NOT the middle
+	 * of the converter's range -- measured at 45% of the stick's travel, with the
+	 * speed axis at 57%. A frontend that answers "centred" hands the driver a
+	 * handlebar turned left and pushed flat out, which is the bug this reads on:
+	 * the bike rode itself into the curb before the player touched a key.
+	 *
+	 * games.ini carries the measurement, so the door needs no per-game C. */
+	sr_games_load(AXIS_DIR, "paperboy.zip");
+
+	/* Nothing held: the stick sits where the cabinet's handlebar sits. */
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) == REST_PCT(45));
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_Y) == REST_PCT(57));
+
+	/* A steering key deflects that axis fully -- a keyboard has no half-press,
+	 * and the cabinet's stops are where the bars actually go -- and leaves the
+	 * other axis alone. Turning must not also change gear. */
+	type("a");
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) < 0);
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_Y) == REST_PCT(57));
+
+	/* Released, the bars spring back to REST -- not to centre. Centre is where
+	 * the door used to leave them, and it is a turn. */
+	g_now_ms += 5000;
+	sr_input_pump();
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) == REST_PCT(45));
+
+	type("d");
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) > REST_PCT(45));
+
+	/* Both ways at once is a handlebar held against itself: rest, not a winner. */
+	type("a");
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) == REST_PCT(45));
+	g_now_ms += 5000;
+	sr_input_pump();
+
+	/* The d-pad bits keep going out unchanged. A cabinet can read both, and the
+	 * ones that read only the stick ignore them exactly as they always have. */
+	type("w");
+	CHECK(sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_UP) == 1);
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_Y) < REST_PCT(57));
+	g_now_ms += 5000;
+	sr_input_pump();
+
+	/* Player 2's panel is the same machine: his port rests in the same place, so
+	 * a two-player analog cabinet does not drive one player into the curb. */
+	CHECK(sr_pad_get(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) == REST_PCT(45));
+	type("j");
+	CHECK(sr_pad_get(1, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) < 0);
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) == REST_PCT(45));
+	g_now_ms += 5000;
+	sr_input_pump();
+
+	/* The second stick is untouched by any of it: a twin-stick cabinet and an
+	 * analog one are different machines, and the right stick answers only P/;. */
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
+	                 RETRO_DEVICE_ID_ANALOG_Y) == 0);
+
+	/* --- and every OTHER cabinet is byte for byte what it was ----------------
+	 * A section with no analog_rest is a digital control panel, which is nearly
+	 * all of them. Its left stick must read dead centre whatever the player
+	 * holds, or a driver that polls an axis it does not use starts drifting. */
+	sr_games_load(AXIS_DIR, "bzone.zip");
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) == 0);
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_Y) == 0);
+	type("a");
+	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+	                 RETRO_DEVICE_ID_ANALOG_X) == 0);
+	CHECK(sr_pad_get(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT) == 1);
+	g_now_ms += 5000;
+	sr_input_pump();
+
 	/* --- a cartridge console ------------------------------------------------
 	 * The other two consoles ship the SAME binary. On a gamepad profile P and ;
 	 * are unbound and the analog stick is dead, so a core that polls it reads a
@@ -195,6 +306,7 @@ int main(void)
 	CHECK(sr_pad_get(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_RIGHT,
 	                 RETRO_DEVICE_ID_ANALOG_Y) == 0);
 
+	remove(AXIS_DIR "/games.ini");
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "ok", failures);
 	return failures != 0;
 }

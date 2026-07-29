@@ -81,7 +81,23 @@ static void write_fixture(void)
 	      "\n"
 	      "[negative]\n"
 	      "name        = Backwards\n"
-	      "boot_frames = -1\n", f);
+	      "boot_frames = -1\n"
+	      "\n"
+	      "[paperboy]\n"
+	      "name        = Paperboy\n"
+	      "analog_rest = 45,57\n"
+	      "\n"
+	      "[restwide]\n"
+	      "name        = Slipped Digit Again\n"
+	      "analog_rest = 300,-999\n"
+	      "\n"
+	      "[restjunk]\n"
+	      "name        = Not A Pair\n"
+	      "analog_rest = sideways\n"
+	      "\n"
+	      "[resthalf]\n"
+	      "name        = One Number\n"
+	      "analog_rest = 43\n", f);
 	fclose(f);
 }
 
@@ -118,7 +134,8 @@ static void write_local_fixture(void)
 	      "[myrom]\n"
 	      "name        = House Cabinet\n"
 	      "button.A    = Launch\n"
-	      "boot_frames = 60\n", f);
+	      "boot_frames = 60\n"
+	      "analog_rest = 20,30\n", f);
 	fclose(f);
 }
 
@@ -287,6 +304,59 @@ int main(void)
 	 * beside it, which is every install that has not been customized. */
 	sr_games_load(FIXTURE_DIR, "bzone.zip");
 	CHECK(sr_games_boot_frames() == 900);
+
+	/* analog_rest: where a cabinet's stick SITS when nobody is touching it.
+	 * Unlike boot_frames this has no install-wide default -- it is a measured
+	 * fact about one control panel, and a wrong one steers the machine on its
+	 * own -- so a cabinet that never declares it reads "no analog control". */
+	{
+		int x = -1, y = -1;
+
+		sr_games_load(FIXTURE_DIR, "paperboy.zip");
+		CHECK(sr_games_analog_rest(&x, &y) == 1);
+		CHECK(x == 45);
+		CHECK(y == 57);
+
+		/* A digital control panel -- almost all of them. Both out-params are
+		 * cleared, so a caller that ignores the return value still centres the
+		 * stick rather than reusing the last cabinet's handlebar. */
+		x = y = -1;
+		sr_games_load(FIXTURE_DIR, "bzone.zip");
+		CHECK(sr_games_analog_rest(&x, &y) == 0);
+		CHECK(x == 0);
+		CHECK(y == 0);
+
+		/* Out of range is clamped, not obeyed: the value is a percentage of the
+		 * stick's own travel, and there is nothing past the stops. */
+		sr_games_load(FIXTURE_DIR, "restwide.zip");
+		CHECK(sr_games_analog_rest(&x, &y) == 1);
+		CHECK(x == 100);
+		CHECK(y == -100);
+
+		/* Unparseable is ABSENT, not zero: "sideways" and "43" are typos, and a
+		 * typo that silently means "centred" is the very bug this key exists to
+		 * fix -- it would look exactly like the cabinet had never been measured. */
+		x = y = -1;
+		sr_games_load(FIXTURE_DIR, "restjunk.zip");
+		CHECK(sr_games_analog_rest(&x, &y) == 0);
+		CHECK(x == 0 && y == 0);
+		sr_games_load(FIXTURE_DIR, "resthalf.zip");
+		CHECK(sr_games_analog_rest(&x, &y) == 0);
+
+		/* A section that declares one must not leak into the next cabinet
+		 * loaded, which is how a Pac-Man cabinet would inherit a handlebar. */
+		sr_games_load(FIXTURE_DIR, "paperboy.zip");
+		CHECK(sr_games_analog_rest(&x, &y) == 1);
+		sr_games_load(FIXTURE_DIR, "pacman.zip");
+		CHECK(sr_games_analog_rest(&x, &y) == 0);
+
+		/* The sysop's overlay reaches it like every other key: a handlebar that
+		 * measures differently on his ROM set is one line in games.local.ini. */
+		sr_games_load(LOCAL_DIR, "myrom.zip");
+		CHECK(sr_games_analog_rest(&x, &y) == 1);
+		CHECK(x == 20);
+		CHECK(y == 30);
+	}
 
 	remove(LOCAL_DIR "/games.local.ini");
 	remove(LOCAL_DIR "/games.ini");

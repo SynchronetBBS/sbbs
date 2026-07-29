@@ -67,7 +67,9 @@ static struct {
 	int quiet_env;                 /* tally env calls, don't log each first-time */
 	int hold;                      /* JOYPAD id to hold down, or -1 */
 	int hold_from;                 /* first frame to hold it on */
-} opt = { NULL, NULL, ".", ".", NULL, NULL, 300, 0, -1, 0, 0, 1, 0, -1, 500 };
+	int analog;                    /* hold the left stick here? */
+	int analog_x, analog_y;        /* ...at this % of travel on each axis */
+} opt = { NULL, NULL, ".", ".", NULL, NULL, 300, 0, -1, 0, 0, 1, 0, -1, 500, 0, 0, 0 };
 
 static void usage(void)
 {
@@ -94,6 +96,12 @@ static void usage(void)
 		"                     find out is to press one and look at the frame\n"
 		"  -hold-from N       first frame to hold it on (default 500). Must be\n"
 		"                     after -coin's start, or you measure attract mode\n"
+		"  -analog X,Y        hold the LEFT stick at X,Y percent of travel for the\n"
+		"                     whole run (-100..100, 0 = centred). This is how a\n"
+		"                     games.ini analog_rest is measured: a cabinet whose\n"
+		"                     control is a pot does not rest where MAME centres\n"
+		"                     it, so sweep this until the machine stops driving\n"
+		"                     itself and record what you swept to\n"
 		"  -ppm <file>        write the last frame as a binary PPM\n"
 		"  -wav <file>        capture the core's PCM as a 16-bit stereo WAV --\n"
 		"                     what the door would encode and stream\n"
@@ -719,6 +727,19 @@ static int16_t probe_input(unsigned port, unsigned device, unsigned index, unsig
 {
 	long f = (long)obs.video_frames;
 
+	/* -analog: a stick held off-centre for the whole run. A cabinet whose
+	 * control is a potentiometer rests somewhere MAME's centre is not, and the
+	 * only way to find where is to hold the stick at a value and watch whether
+	 * the machine still drives itself -- the same measure-don't-guess the button
+	 * labels get from -hold. */
+	if (opt.analog && port == 0 && device == RETRO_DEVICE_ANALOG
+	    && index == RETRO_DEVICE_INDEX_ANALOG_LEFT) {
+		if (id == RETRO_DEVICE_ID_ANALOG_X)
+			return (int16_t)(opt.analog_x * 32767 / 100);
+		if (id == RETRO_DEVICE_ID_ANALOG_Y)
+			return (int16_t)(opt.analog_y * 32767 / 100);
+		return 0;
+	}
 	(void)index;
 	if (port != 0 || device != RETRO_DEVICE_JOYPAD)
 		return 0;
@@ -892,6 +913,10 @@ static int parse_args(int argc, char **argv)
 			opt.hold = atoi(argv[++i]);
 		} else if (strcmp(a, "-hold-from") == 0 && i + 1 < argc) {
 			opt.hold_from = atoi(argv[++i]);
+		} else if (strcmp(a, "-analog") == 0 && i + 1 < argc) {
+			if (sscanf(argv[++i], "%d,%d", &opt.analog_x, &opt.analog_y) != 2)
+				return -1;
+			opt.analog = 1;
 		} else if (strcmp(a, "-no-thumb") == 0) {
 			opt.thumb = 0;
 		} else if (strcmp(a, "-quiet-env") == 0) {

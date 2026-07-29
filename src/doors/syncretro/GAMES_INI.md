@@ -2,8 +2,9 @@
 
 Status: implemented. The reader (`syncretro_games.c`), the help-screen
 integration (`syncretro_binds.c`), the lobby's title lookup
-(`syncretro_lobby.js`), and the `probe_core -hold` measurement tool described
-in sec 8 are all in the tree; sec 10 lists the tests that pin the contract.
+(`syncretro_lobby.js`), and the `probe_core -hold` / `-analog` measurement
+tools described in sec 8 and sec 15 are all in the tree; sec 10 lists the tests
+that pin the contract.
 Scope: the arcade console (`xtrn/syncarcade`), its lobby, and the door's help
 screen. See [M2_INPUT.md](M2_INPUT.md) §3 for the binding table this labels, and
 [DESIGN.md](DESIGN.md) §15 for where the milestones sit.
@@ -117,6 +118,7 @@ name = Pac-Man
 | `button.<id>` | door | what RetroPad `<id>` is on this cabinet. `<id>` is a RetroPad button name: `B` `A` `Y` `X` `L` `R` |
 | `stick2` | door | this cabinet has a second stick; the value labels it |
 | `boot_frames` | door | frames of power-on self-test to run before the player is shown anything (sec 13). Also valid at the **root**, where it is the install-wide default |
+| `analog_rest` | door | this cabinet's control is a potentiometer, and it rests at `x,y` percent of travel rather than in the middle (sec 15) |
 
 ### The root section
 
@@ -455,3 +457,79 @@ The door (`syncretro_games.c`) and the lobby (`syncretro_lobby.js`, which reads
 `name` for the picker) each layer the two files. They must agree: a title
 overridden for the picker but not the door would put one name on the menu and
 another on the who's-online line.
+
+## 15. `analog_rest`: the control that is not a switch
+
+A control panel is usually a set of switches, and the door has always answered
+the core accordingly: the stick is a d-pad, a key is down or it is not. Some
+cabinets are wired the other way. Paperboy's handlebars are two potentiometers
+on the machine's ADC; 720°, Super Sprint and APB, Marble Madness and Road
+Blasters are the same family. For those the driver reads a *position*, and the
+frontend has to supply one.
+
+The trap is what "no input" means. MAME parks an analog port at the middle of
+the range the driver declares, and **the middle of the range is not where the
+real control rests.** Measured on Paperboy, whose ports declare `0x80` of
+`0x10..0xf0`:
+
+| handlebar value | what the game does |
+|---|---|
+| `0x80` -- MAME's centre, what an idle stick produces | rides into the oncoming lane, and at **full speed**: `0x10`, `0x40` and `0x80` are indistinguishable, all flat out |
+| `0xa8`-`0xb8` | **straight**, the zero-drift band; `0xb0` is its middle |
+| `0xd0`+ | steers the other way |
+| `0xf0` | stopped |
+
+So an idle keyboard hands Paperboy a machine turned left with the throttle
+open, which it obeys until it hits something -- about two seconds. This is not
+a door bug and not a mame2003-plus bug: current MAME declares the same `0x80`,
+and any frontend with a centred controller does the same thing.
+
+`analog_rest = <x>,<y>` is where the cabinet's control sits, as a percentage of
+each axis's own travel: `-100` hard left / fully up, `0` the middle, `+100` hard
+right / fully down. The door answers the LEFT analog stick with it while no
+direction key is held, and drives the axis to the **stop** while one is -- a
+keyboard has no half-press, and the ends of the travel are where the bars
+physically go. Releasing returns to rest, which is what a sprung control does.
+
+There is no default and no root-level form. A rest position is a measured fact
+about one machine, and a guessed one drives the game on its own; a cabinet that
+declares nothing gets a centred stick, byte for byte what the door sent before
+this key existed. A value that does not parse as two numbers is treated as
+**absent**, not as zero -- zero is a real setting, and silently meaning it would
+reproduce the exact bug this key exists to fix.
+
+### Measuring one
+
+`probe_core -analog <x>,<y>` holds the left stick at a fixed percentage for a
+whole run, the analog counterpart of `-hold`. Sweep it and watch whether the
+machine still drives itself:
+
+```
+probe_core <core> roms/paperboy.zip -system system -save mame2003-plus \
+    -coin 900 -hold 0 -hold-from 1550 -frames 2500 -analog 45,57 -ppm out.ppm
+```
+
+Paperboy was measured by tracking the player sprite's position across a run at
+each value. That bounds the answer rather than choosing it: below about `+34%`
+the bike walks steadily into the oncoming lane, above about `+50%` it walks the
+other way, and in between it holds its line.
+
+**Measure over a long window** if you are going to lean on the numbers at all.
+The first pass sampled 120 frames, which is short enough that a slow creep is
+indistinguishable from a dead band. Re-sampled over 900 frames the drift
+thresholds move, and the band the short pass reported was wider than the real
+one.
+
+**Then play it.** The shipped `45%` was settled at a terminal, not by a sprite
+centroid: anywhere inside the band tracks straight by the measurement, and which
+part of it feels like a released handlebar is a judgement the measurement cannot
+make. The sweep's job is to rule out the values that are visibly wrong.
+
+The speed axis has no band at all -- it is proportional the whole way -- so it
+was anchored instead to the pace the game itself rides at during the scripted
+level entry, where it ignores input entirely: `57%`.
+
+Both numbers are a starting point a sysop can overrule in `games.local.ini`
+(§14) without touching the shipped file, which is the point: a rest position is
+a judgement about feel as much as a measurement, and the person playing it is a
+better instrument than a sprite centroid.

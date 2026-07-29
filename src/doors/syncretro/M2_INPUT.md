@@ -164,6 +164,18 @@ first stick both want the space under the right hand, and only one of them can
 have it. The Intellivision and NES profiles have no analog stick to give it and
 do not carry these two rows.
 
+**The arcade profile's LEFT stick has no keys of its own** -- it is the same
+`W A S D` / arrows, answered a second way. A cabinet whose control is a
+potentiometer rather than a set of switches (Paperboy's handlebars) needs a
+*position*, and the position an idle keyboard implies is not the centre of the
+range MAME declares: measured on Paperboy, the centre is a hard left turn at
+full throttle, which the machine obeys with nobody playing. So when the
+cabinet's `games.ini` section carries an `analog_rest` (see
+[GAMES_INI.md](GAMES_INI.md) §15) `sr_pad_get()` answers the left stick with
+that resting value, and with a full deflection while a direction key is held.
+Cabinets that declare nothing -- nearly all of them -- keep reading a centred
+left stick, so this is invisible to every switched control panel.
+
 Player 2's arrows and numpad have no ASCII byte form, so they reach the door
 only on the CSI / evdev / kitty paths. On a plain byte terminal the numpad is
 indistinguishable from the number row, so there player 2's *keypad* falls back

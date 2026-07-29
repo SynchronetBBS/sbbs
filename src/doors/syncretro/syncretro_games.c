@@ -34,6 +34,9 @@ static char g_label[SR_GAMES_IDS][INI_MAX_VALUE_LEN];
 static char g_stick2[INI_MAX_VALUE_LEN];
 static int  g_labelled;
 static int  g_boot_frames;
+static int  g_rest_have;
+static int  g_rest_x;
+static int  g_rest_y;
 
 /* A ceiling on boot_frames, in frames. Warming up costs the host real CPU --
  * it is emulation with the pacing taken off, not a shortcut -- and it happens
@@ -75,6 +78,31 @@ static int sr_games_clamp_boot(int frames, const char *where)
 		return SR_BOOT_FRAMES_MAX;
 	}
 	return frames;
+}
+
+/* Parse `analog_rest = <x>,<y>` -- two percentages of stick travel. Returns 1
+ * and fills both on success.
+ *
+ * A malformed value is ABSENT, not zero. Zero is a real, meaningful setting (a
+ * control that does rest in the middle), so accepting a typo as zero would hand
+ * back the very answer this key exists to correct, and it would look exactly
+ * like a cabinet nobody had measured yet. Say so instead. */
+static int sr_games_parse_rest(const char *val, int *x, int *y, const char *where)
+{
+	int a, b, n = 0;
+
+	if (sscanf(val, "%d , %d %n", &a, &b, &n) != 2 || val[n] != '\0') {
+		fprintf(stderr, "syncretro: games.ini [%s]: analog_rest \"%s\" is not"
+		        " two percentages (\"x,y\") -- ignored, stick left centred\n",
+		        where, val);
+		return 0;
+	}
+	if (a < -100 || a > 100 || b < -100 || b > 100)
+		fprintf(stderr, "syncretro: games.ini [%s]: analog_rest %d,%d is outside"
+		        " -100..100 -- clamped\n", where, a, b);
+	*x = a < -100 ? -100 : (a > 100 ? 100 : a);
+	*y = b < -100 ? -100 : (b > 100 ? 100 : b);
+	return 1;
 }
 
 /* Read one ini beside the door, or NULL if it is not there. Absence is normal
@@ -180,6 +208,9 @@ void sr_games_load(const char *dir, const char *rom_path)
 	g_stick2[0]   = '\0';
 	g_labelled    = 0;
 	g_boot_frames = 0;
+	g_rest_have   = 0;
+	g_rest_x      = 0;
+	g_rest_y      = 0;
 	reportdir     = dir != NULL ? dir : ".";
 
 	sr_games_romset(rom_path, romset, sizeof romset);
@@ -233,6 +264,9 @@ void sr_games_load(const char *dir, const char *rom_path)
 	sr_games_str(ini, local, romset, "stick2", val);
 	snprintf(g_stick2, sizeof g_stick2, "%s", val);
 
+	if (sr_games_str(ini, local, romset, "analog_rest", val))
+		g_rest_have = sr_games_parse_rest(val, &g_rest_x, &g_rest_y, romset);
+
 	/* A misspelt id is silent data loss otherwise: the sysop believes a button
 	 * is labelled, the help screen omits it as unlabelled, and the player is
 	 * told the cabinet has fewer controls than it has. Say so. */
@@ -242,15 +276,19 @@ void sr_games_load(const char *dir, const char *rom_path)
 	{
 		char stick[INI_MAX_VALUE_LEN + 16];
 		char boot[64];
+		char rest[64];
 
 		stick[0] = '\0';
 		boot[0]  = '\0';
+		rest[0]  = '\0';
 		if (g_stick2[0] != '\0')
 			snprintf(stick, sizeof stick, ", stick2 \"%s\"", g_stick2);
 		if (g_boot_frames > 0)
 			snprintf(boot, sizeof boot, ", boot_frames %d", g_boot_frames);
-		fprintf(stderr, "syncretro: games.ini: [%s] %d button%s%s%s%s\n",
-		        romset, buttons, buttons == 1 ? "" : "s", stick, boot,
+		if (g_rest_have)
+			snprintf(rest, sizeof rest, ", analog_rest %d,%d", g_rest_x, g_rest_y);
+		fprintf(stderr, "syncretro: games.ini: [%s] %d button%s%s%s%s%s\n",
+		        romset, buttons, buttons == 1 ? "" : "s", stick, boot, rest,
 		        local != NULL ? " (+ games.local.ini)" : "");
 	}
 
@@ -281,4 +319,11 @@ int sr_games_labelled(void)
 int sr_games_boot_frames(void)
 {
 	return g_boot_frames;
+}
+
+int sr_games_analog_rest(int *x_pct, int *y_pct)
+{
+	*x_pct = g_rest_have ? g_rest_x : 0;
+	*y_pct = g_rest_have ? g_rest_y : 0;
+	return g_rest_have;
 }

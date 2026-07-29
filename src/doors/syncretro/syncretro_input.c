@@ -80,6 +80,7 @@
 #include "keymode.h"     /* termgfx: key-mode negotiation + kitty/evdev decode */
 #include "term.h"        /* termgfx: termgfx_term_parse_status (DECSSDT reply scan) */
 #include "syncretro_binds.h"
+#include "syncretro_games.h"
 #include "syncretro_profile.h"
 #include "syncretro_keypad.h"
 #include "syncretro_audio.h"
@@ -257,6 +258,48 @@ static void sr_disc_tick(void)
 		sr_disc_tick_port(port);
 }
 
+/* The cabinet's own stick, for a control panel whose stick is a POTENTIOMETER
+ * rather than a set of switches: a handlebar, a wheel, a throttle.
+ *
+ * MAME parks such a control at the middle of the port's declared range whenever
+ * the frontend reports a centred stick, and that middle is not where the real
+ * control rests. Paperboy's handlebars read 45% of travel at rest and its speed
+ * axis 57%; answering 0 hands the driver a machine turned left at full speed,
+ * which it obeys with nobody at the keyboard. games.ini carries the measurement
+ * per cabinet, so a new one needs no C here.
+ *
+ * A held direction goes to the STOP. A keyboard has no half-press, and the ends
+ * of the travel are where the bars physically go -- the same "all or nothing"
+ * the d-pad has always given a switched panel.
+ *
+ * Returns 0 -- a centred stick, byte for byte what the door sent before this
+ * existed -- for the cabinets that declare nothing, which is nearly all of
+ * them. That matters: a driver polling an axis it does not use must see no
+ * deflection at all. */
+static int16_t sr_arcade_stick(unsigned p, unsigned id)
+{
+	int rest_x, rest_y, rest, neg, pos;
+
+	if (!sr_games_analog_rest(&rest_x, &rest_y))
+		return 0;
+	if (id == RETRO_DEVICE_ID_ANALOG_X) {
+		neg  = g_joypad[p][RETRO_DEVICE_ID_JOYPAD_LEFT];
+		pos  = g_joypad[p][RETRO_DEVICE_ID_JOYPAD_RIGHT];
+		rest = rest_x;
+	} else if (id == RETRO_DEVICE_ID_ANALOG_Y) {
+		neg  = g_joypad[p][RETRO_DEVICE_ID_JOYPAD_UP];
+		pos  = g_joypad[p][RETRO_DEVICE_ID_JOYPAD_DOWN];
+		rest = rest_y;
+	} else {
+		return 0;
+	}
+	if (neg && !pos)
+		return -SR_AXIS_FULL;
+	if (pos && !neg)
+		return SR_AXIS_FULL;
+	return (int16_t)(rest * SR_AXIS_FULL / 100);   /* both, or neither: rest */
+}
+
 int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 {
 	unsigned p;
@@ -280,6 +323,10 @@ int16_t sr_pad_get(unsigned port, unsigned device, unsigned index, unsigned id)
 		 * still reads a CENTRED stick -- byte for byte what the core got here
 		 * before this existed. Both keys down is a stick pulled two ways: 0. */
 		if (sr_profile() == SR_PROFILE_ARCADE) {
+			/* ...and except a cabinet whose stick is a potentiometer, which
+			 * rests somewhere MAME's centre is not. See sr_arcade_stick(). */
+			if (index == RETRO_DEVICE_INDEX_ANALOG_LEFT)
+				return sr_arcade_stick(p, id);
 			if (index != RETRO_DEVICE_INDEX_ANALOG_RIGHT
 			    || id != RETRO_DEVICE_ID_ANALOG_Y)
 				return 0;
