@@ -226,6 +226,11 @@
 
 ## Customization
 
+- Configuration files now support a `<name>.local.<ext>` variation, preferred
+  over the shipped `<name>.<ext>` wherever `file_cfgname()` is used - so a
+  sysop's customizations of a file Synchronet ships are not overwritten by an
+  upgrade. A per-host (`<name>.<hostname>.<ext>`) or per-platform variation
+  still wins over it where one exists.
 - New PCBoard @-code aliases (issue #940):
   - `CARRIER` (= `CONN`)
   - `PROLTR` (= `PROT`)

@@ -27,6 +27,13 @@ node2
 node3
 node4
 *.?.ini
+
+# A sysop's own copy of a configuration file Synchronet ships. file_cfgname()
+# (C: iniFileName()) prefers <name>.local.<ext> over the plain <name>.<ext>, so
+# customizations go in the .local file and survive the upgrade that replaces
+# ours. Never tracked, anywhere in the tree.
+*.local.ini
+
 ctrl/recycle
 exec/*.bin
 exec/*.so

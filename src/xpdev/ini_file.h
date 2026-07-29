@@ -137,6 +137,18 @@ DLLEXPORT named_string_t** iniFreeNamedStringList(named_string_t** list);
 
 
 /* File I/O Functions */
+
+/* Complete a configuration filename, preferring the most specific variation
+ * that exists, in this order:
+ *     <dir>/<name>.<host>.<domain><ext>
+ *     <dir>/<name>.<host><ext>
+ *     <dir>/<name>.<platform><ext>
+ *     <dir>/<name>.local<ext>
+ *     <dir>/<name><ext>
+ * The `.local` variation names THIS INSTALLATION rather than a machine or an
+ * OS, which is what a sysop wants when the plain file is one Synchronet ships
+ * and an upgrade would overwrite. `dest` receives the plain name when none of
+ * the variations exist, so a caller that creates the file writes that one. */
 DLLEXPORT char* 		iniFileName(char* dest, size_t maxlen, const char* dir, const char* fname);
 DLLEXPORT FILE* 		iniOpenFile(const char* fname, bool for_modify);
 DLLEXPORT str_list_t 	iniReadFile(FILE*);
