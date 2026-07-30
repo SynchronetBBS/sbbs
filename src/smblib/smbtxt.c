@@ -473,18 +473,34 @@ static const char* mime_getpart(const char* buf, const char* content_type, const
 	    && ((len = strStartsWith_i(content_type, "multipart/")) < 1))
 		return NULL;
 	content_type += len;
+	/* A nested part's Content-Type is parsed out of the message body rather than
+	 * from a header field of its own, so it is only terminated by the end of the
+	 * (possibly folded) header line. */
+	const char* ct_end = content_type;
+	while ((ct_end = strstr(ct_end, "\r\n")) != NULL) {
+		if (ct_end[2] != ' ' && ct_end[2] != '\t')  /* not a folded continuation */
+			break;
+		ct_end += 2;
+	}
+	if (ct_end == NULL)
+		ct_end = content_type + strlen(content_type);
 	p = strcasestr(content_type, "boundary=");
-	if (p == NULL)
+	if (p == NULL || p >= ct_end)
 		return NULL;
 	p += 9;
+	while (*p == ' ' || *p == '\t')  /* RFC822 white space is allowed around the '=' */
+		p++;
 	if (*p == '"') {
 		p++;
 		quoted_boundary = true;
 	}
 	SAFEPRINTF(boundary, "--%s", p);
-	if ((p = strchr(boundary, quoted_boundary ? '"' : ';')) != NULL)
-		*p = 0;
-	truncsp(boundary); // RC2046: "NOT ending with white space"
+	p = boundary + 2;
+	FIND_CHARSET(p, quoted_boundary ? "\"\r\n" : "; \t\r\n");
+	*p = 0;
+	truncsp(boundary); // RFC2046: "NOT ending with white space"
+	if (boundary[2] == '\0')  /* An empty boundary would match every delimiter */
+		return NULL;
 	txt = buf;
 	while ((p = (char*)strstr(txt, boundary)) != NULL) {
 		txt = p + strlen(boundary);
