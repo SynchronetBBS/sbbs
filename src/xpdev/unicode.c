@@ -519,6 +519,11 @@ char unicode_to_cp437(enum unicode_codepoint codepoint)
 		case UNICODE_GREEK_SMALL_LETTER_ZETA:                   return 'z';
 		case UNICODE_GREEK_SMALL_LETTER_ETA:                    return 'n';
 
+		case UNICODE_HYPHEN:
+		case UNICODE_NON_BREAKING_HYPHEN:
+		case UNICODE_FIGURE_DASH:
+		case UNICODE_EN_DASH:                                   return '-';
+
 		case UNICODE_EM_DASH:
 			return '\xC4';
 
