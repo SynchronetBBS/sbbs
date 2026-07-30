@@ -57,16 +57,17 @@ char* utf8_normalize_str(char* str);
 // 'error_ch' is the character used to replace invalid UTF-8 sequence bytes (optional)
 char* utf8_replace_chars(char* str, char (*lookup)(enum unicode_codepoint), char unsupported_ch, char unsupported_zwch, char error_ch);
 
-// Convert a CP437 char string (src) to UTF-8 string (dest) up to 'maxlen' chars long (sans NUL-terminator)
+// Convert a CP437 char string (src) to UTF-8 string (dest) of 'size' bytes, NUL-terminator included
+// (as with snprintf/strlcpy), so at most 'size' - 1 bytes of converted text are written
 // 'minval' can be used to limit the range of converted chars
-int cp437_to_utf8_str(const char* src, char* dest, size_t maxlen, unsigned char minval);
-int utf8_to_cp437_str(const char *src, char *dest, size_t maxlen, unsigned char minval, size_t *outlen);
+int cp437_to_utf8_str(const char* src, char* dest, size_t size, unsigned char minval);
+int utf8_to_cp437_str(const char *src, char *dest, size_t size, unsigned char minval, size_t *outlen);
 
-// Convert a Latin1 char string (src) to UTF-8 string (dest) up to 'maxlen' bytes long (sans NUL-terminator)
+// Convert a Latin1 char string (src) to UTF-8 string (dest) of 'size' bytes, NUL-terminator included
 // 'minval' can be used to limit the range of converted chars.  On return, *outlen is set to the number
-// of bytes written to dest unless it is NULL
-int latin1_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char minval, size_t *outlen);
-int utf8_to_latin1_str(const char *src, char *dest, size_t maxlen, unsigned char minval, size_t *outlen);
+// of bytes written to dest (sans NUL-terminator) unless it is NULL
+int latin1_to_utf8_str(const char* str, char* dest, size_t size, unsigned char minval, size_t *outlen);
+int utf8_to_latin1_str(const char *src, char *dest, size_t size, unsigned char minval, size_t *outlen);
 
 // Decode a UTF-8 sequence to a UNICODE code point
 int utf8_getc(const char* str, size_t len, enum unicode_codepoint* codepoint);

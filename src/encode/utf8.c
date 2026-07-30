@@ -260,10 +260,13 @@ size_t utf8_strlcpy(char* dst, const char* src, size_t size)
 	return i;
 }
 
-int cp437_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char minval)
+int cp437_to_utf8_str(const char* str, char* dest, size_t size, unsigned char minval)
 {
 	int    retval = 0;
 	size_t outlen = 0;
+	if (size < 1)
+		return -1;
+	size_t maxlen = size - 1; // reserve room for the NUL-terminator
 	for (const unsigned char* p = (const unsigned char*)str; *p != 0; p++) {
 		if (outlen >= maxlen) {
 			retval = -1;
@@ -286,7 +289,7 @@ int cp437_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char 
 	return retval;
 }
 
-int utf8_to_cp437_str(const char *src, char *dest, size_t maxlen, unsigned char minval, size_t *outlen)
+int utf8_to_cp437_str(const char *src, char *dest, size_t size, unsigned char minval, size_t *outlen)
 {
 	int           retval = 0;
 	size_t        lcl_outlen;
@@ -294,6 +297,9 @@ int utf8_to_cp437_str(const char *src, char *dest, size_t maxlen, unsigned char 
 	if (outlen == NULL)
 		outlen = &lcl_outlen;
 	*outlen = 0;
+	if (size < 1)
+		return -1;
+	size_t maxlen = size - 1; // reserve room for the NUL-terminator
 	for (const char* p = src; *p != 0; p += retval) {
 		if (*outlen >= maxlen) {
 			retval = -1;
@@ -313,13 +319,16 @@ int utf8_to_cp437_str(const char *src, char *dest, size_t maxlen, unsigned char 
 	return retval;
 }
 
-int latin1_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char minval, size_t *outlen)
+int latin1_to_utf8_str(const char* str, char* dest, size_t size, unsigned char minval, size_t *outlen)
 {
 	int    retval = 0;
 	size_t lcl_outlen;
 	if (outlen == NULL)
 		outlen = &lcl_outlen;
 	*outlen = 0;
+	if (size < 1)
+		return -1;
+	size_t maxlen = size - 1; // reserve room for the NUL-terminator
 	for (const unsigned char* p = (const unsigned char *)str; *p != 0; p++) {
 		if (*outlen >= maxlen) {
 			retval = -1;
@@ -342,7 +351,7 @@ int latin1_to_utf8_str(const char* str, char* dest, size_t maxlen, unsigned char
 	return retval;
 }
 
-int utf8_to_latin1_str(const char *src, char *dest, size_t maxlen, unsigned char minval, size_t *outlen)
+int utf8_to_latin1_str(const char *src, char *dest, size_t size, unsigned char minval, size_t *outlen)
 {
 	int           retval = 0;
 	size_t        lcl_outlen;
@@ -350,6 +359,9 @@ int utf8_to_latin1_str(const char *src, char *dest, size_t maxlen, unsigned char
 	if (outlen == NULL)
 		outlen = &lcl_outlen;
 	*outlen = 0;
+	if (size < 1)
+		return -1;
+	size_t maxlen = size - 1; // reserve room for the NUL-terminator
 	for (const char* p = src; *p != 0; p += retval) {
 		if (*outlen >= maxlen) {
 			retval = -1;
