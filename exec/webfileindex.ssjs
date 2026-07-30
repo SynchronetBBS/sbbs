@@ -142,9 +142,9 @@ function dir_index(dir)
 		write("<td>");
 		var view_icon = viewable_file(f.name);
 		if(view_icon)
-			write("<a href=?view=\"" + encodeURIComponent(f.name) + "\" title='View'>" + view_icon + "</a>");
+			write("<a href=\"?view=" + encodeURIComponent(f.name) + "\" title='View'>" + view_icon + "</a>");
 		write("</td>");
-		write("<td><a title='Download' href=" + encodeURIComponent(f.name) + ">" + f.name.bold() + "</a></td>");
+		write("<td><a title='Download' href=\"" + encodeURIComponent(f.name) + "\">" + f.name.bold() + "</a></td>");
 		write("<td align=right>" + file_size(f) + "</td>");
 		write("<td align=right>" + file_date(f) + "</td>");
 		write('<td class="desc" onclick="showExtDesc(event)">');
@@ -347,8 +347,8 @@ function view_archive(filename)
 function view_image(filename)
 {
 	writeln('<div style="width: 100%;">');
-	writeln('<img style="object-fit: contain; width:50%" src=' +
-		encodeURIComponent(file_getname(filename)) + ' />');
+	writeln('<img style="object-fit: contain; width:50%" src="' +
+		encodeURIComponent(file_getname(filename)) + '" />');
 	writeln('</div>');
 }
 
