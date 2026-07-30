@@ -67,6 +67,11 @@ char* utf8_normalize_str(char* str)
 						src += 2;
 						*dest++ = '-';
 						continue;
+					case '\x94': // EM DASH -> ASCII hyphens (2)
+						src += 2;
+						*dest++ = '-';
+						*dest++ = '-';
+						continue;
 					case '\x98': // LEFT SINGLE QUOTATION MARK
 						src += 2;
 						*dest++ = '`';
