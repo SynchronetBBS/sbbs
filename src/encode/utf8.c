@@ -21,6 +21,7 @@
 
 #include "utf8.h"
 #include "unicode.h"
+#include "cp437defs.h"
 #include <string.h>
 
 int utf8_decode_firstbyte(char ch)
@@ -300,20 +301,39 @@ int utf8_to_cp437_str(const char *src, char *dest, size_t size, unsigned char mi
 	if (size < 1)
 		return -1;
 	size_t maxlen = size - 1; // reserve room for the NUL-terminator
-	for (const char* p = src; *p != 0; p += retval) {
+	size_t srclen = strlen(src);
+	for (const char* p = src; *p != 0; p += retval, srclen -= retval) {
 		if (*outlen >= maxlen) {
 			retval = -1;
 			break;
 		}
+		if ((*p & 0x80) == 0) {  // CP437 and ASCII are identical below 0x80
+			*(dest + *outlen) = *p;
+			(*outlen)++;
+			retval = 1;
+			continue;
+		}
 		enum unicode_codepoint codepoint;
-		retval = utf8_getc(p, maxlen - *outlen, &codepoint);
+		retval = utf8_getc(p, srclen, &codepoint);
 		if (retval < 1)
 			break;
-		ch = unicode_to_cp437(codepoint);
-		if (ch) {
-			*(dest + *outlen) = ch;
-			(*outlen)++;
+		ch = 0;
+		if (codepoint >= minval) {
+			for (int i = 1; i < 0x100; i++) {   // an exact match is preferred
+				if (cp437_unicode_tbl[i] && cp437_unicode_tbl[i] == codepoint) {
+					ch = i;
+					break;
+				}
+			}
+			if (ch == 0)
+				ch = unicode_to_cp437(codepoint);   // else the closest approximation
 		}
+		else if (codepoint < 0x100)  // not translated, as in cp437_to_utf8_str()
+			ch = (unsigned char)codepoint;
+		if (ch == 0)
+			ch = CP437_INVERTED_QUESTION_MARK;
+		*(dest + *outlen) = ch;
+		(*outlen)++;
 	}
 	*(dest + *outlen) = 0;
 	return retval;
