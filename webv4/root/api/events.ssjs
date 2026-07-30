@@ -13,6 +13,16 @@ http_reply.header['X-Accel-Buffering'] = 'no'; // probably not needed by everyon
 const keepalive = 15;
 var last_send = 0;
 
+/* Bound the stream's lifetime.  A client that goes away without closing the
+   socket leaves this script looping forever: it never returns to the request
+   read path, so the web server's MaxInactivity timeout can't reach it, and the
+   session holds a client slot, two threads and a JS runtime indefinitely.
+   Closing cleanly is safe - EventSource reconnects on its own. */
+var max_duration = parseInt(settings.event_stream_duration, 10);
+if (isNaN(max_duration) || max_duration < 0)
+    max_duration = 3600;
+var started = time();
+
 function ping() {
     if (time() - last_send > keepalive) {
         write(': ping\n\n');
@@ -49,7 +59,8 @@ if (file_isdir(settings.web_lib + 'events')) {
 }
 
 ping();
-while (client.socket.is_connected) {
+while (client.socket.is_connected
+    && (max_duration == 0 || time() - started < max_duration)) {
     Object.keys(callbacks).forEach(function (e) {
         try {
             callbacks[e].cycle();
