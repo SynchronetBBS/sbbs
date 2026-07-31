@@ -56,6 +56,7 @@ var type = {
 	'resolve_ip("")'		: 'object', // null
 	'rot13_translate("")'	: 'string',
 	'sha1_calc("")'			: 'string',
+	'sha256_calc("")'		: 'string',
 	'str_has_ctrl("")'		: 'boolean',
 	'str_is_ascii("")'		: 'boolean',
 	'str_is_utf16("")'		: 'boolean',

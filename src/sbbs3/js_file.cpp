@@ -22,6 +22,7 @@
 #include "sbbs.h"
 #include "xpendian.h"
 #include "md5.h"
+#include "sha256.h"
 #include "base64.h"
 #include "uucode.h"
 #include "yenc.h"
@@ -2377,6 +2378,8 @@ enum {
 	, FILE_PROP_MD5_B64
 	, FILE_PROP_SHA1_HEX
 	, FILE_PROP_SHA1_B64
+	, FILE_PROP_SHA256_HEX
+	, FILE_PROP_SHA256_B64
 	/* ini style */
 	, FILE_INI_KEY_LEN
 	, FILE_INI_KEY_PREFIX
@@ -2531,8 +2534,9 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 	uint32     c32 = ~0;
 	MD5        md5_ctx;
 	SHA1_CTX   sha1_ctx;
+	SHA256_CTX sha256_ctx;
 	BYTE       block[4096];
-	BYTE       digest[SHA1_DIGEST_SIZE];
+	BYTE       digest[SHA256_DIGEST_SIZE];
 	jsint      tiny;
 	JSString*  js_str = NULL;
 	private_t* p;
@@ -2653,6 +2657,8 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 		case FILE_PROP_MD5_B64:
 		case FILE_PROP_SHA1_HEX:
 		case FILE_PROP_SHA1_B64:
+		case FILE_PROP_SHA256_HEX:
+		case FILE_PROP_SHA256_B64:
 			*vp = JSVAL_VOID;
 			if (p->fp == NULL)
 				break;
@@ -2669,6 +2675,10 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 				case FILE_PROP_SHA1_HEX:
 				case FILE_PROP_SHA1_B64:
 					SHA1Init(&sha1_ctx);
+					break;
+				case FILE_PROP_SHA256_HEX:
+				case FILE_PROP_SHA256_B64:
+					SHA256Init(&sha256_ctx);
 					break;
 			}
 
@@ -2697,6 +2707,10 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					case FILE_PROP_SHA1_B64:
 						SHA1Update(&sha1_ctx, block, rd);
 						break;
+					case FILE_PROP_SHA256_HEX:
+					case FILE_PROP_SHA256_B64:
+						SHA256Update(&sha256_ctx, block, rd);
+						break;
 				}
 			}
 			JS_RESUMEREQUEST(cx, rc);
@@ -2718,7 +2732,7 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					if (tiny == FILE_PROP_MD5_HEX)
 						MD5_hex(str, digest);
 					else
-						b64_encode(str, sizeof(str) - 1, (char *)digest, sizeof(digest));
+						b64_encode(str, sizeof(str) - 1, (char *)digest, MD5_DIGEST_SIZE);
 					js_str = JS_NewStringCopyZ(cx, str);
 					break;
 				case FILE_PROP_SHA1_HEX:
@@ -2727,7 +2741,16 @@ static JSBool js_file_get(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
 					if (tiny == FILE_PROP_SHA1_HEX)
 						SHA1_hex(str, digest);
 					else
-						b64_encode(str, sizeof(str) - 1, (char *)digest, sizeof(digest));
+						b64_encode(str, sizeof(str) - 1, (char *)digest, SHA1_DIGEST_SIZE);
+					js_str = JS_NewStringCopyZ(cx, str);
+					break;
+				case FILE_PROP_SHA256_HEX:
+				case FILE_PROP_SHA256_B64:
+					SHA256Final(&sha256_ctx, digest);
+					if (tiny == FILE_PROP_SHA256_HEX)
+						SHA256_hex(str, digest);
+					else
+						b64_encode(str, sizeof(str) - 1, (char *)digest, SHA256_DIGEST_SIZE);
 					js_str = JS_NewStringCopyZ(cx, str);
 					break;
 			}
@@ -2807,6 +2830,8 @@ static jsSyncPropertySpec js_file_properties[] = {
 	{   "md5_base64", FILE_PROP_MD5_B64, FILE_PROP_FLAGS,   311},
 	{   "sha1_hex", FILE_PROP_SHA1_HEX, FILE_PROP_FLAGS,   31900},
 	{   "sha1_base64", FILE_PROP_SHA1_B64, FILE_PROP_FLAGS,   31900},
+	{   "sha256_hex", FILE_PROP_SHA256_HEX, FILE_PROP_FLAGS,   32200},
+	{   "sha256_base64", FILE_PROP_SHA256_B64, FILE_PROP_FLAGS,   32200},
 	/* ini style elements */
 	{   "ini_key_len", FILE_INI_KEY_LEN, JSPROP_ENUMERATE,  317},
 	{   "ini_key_prefix", FILE_INI_KEY_PREFIX, JSPROP_ENUMERATE,  317},
@@ -2844,6 +2869,8 @@ static const char*      file_prop_desc[] = {
 	, "Calculated 128-bit MD5 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
 	, "Calculated 160-bit SHA1 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
 	, "Calculated 160-bit SHA1 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
+	, "Calculated 256-bit SHA-256 digest of file contents as hexadecimal string - <small>READ ONLY</small>"
+	, "Calculated 256-bit SHA-256 digest of file contents as base64-encoded string - <small>READ ONLY</small>"
 	, "Ini style: minimum key length (for left-justified white-space padded keys)"
 	, "Ini style: key prefix (e.g. '\\t', null = default prefix)"
 	, "Ini style: section separator (e.g. '\\n', null = default separator)"

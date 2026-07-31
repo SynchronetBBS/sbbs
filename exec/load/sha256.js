@@ -1,24 +1,25 @@
 // sha256.js -- SHA-256 of a file's contents, streamed.
 //
 // Synchronet hashes files natively through File.md5_hex / File.md5_base64
-// (3.11) and File.sha1_hex / File.sha1_base64 (3.19). Both stream the file
-// rather than loading it, which is what makes them usable on a 600 MB disc
-// image. There is no SHA-256 equivalent at either level -- not on File, and not
-// among the md5_calc()/sha1_calc() globals, which take a string and so would
-// need the whole file in memory anyway.
+// (3.11), File.sha1_hex / File.sha1_base64 (3.19), and File.sha256_hex /
+// File.sha256_base64 (3.22). All of them stream the file rather than loading
+// it, which is what makes them usable on a 600 MB disc image.
 //
-// This fills that gap with cryptlib's CryptContext, which every build already
-// links in for TLS. Ten xtrn/ fetchers had grown their own copy of this
-// function; it lives here once instead.
+// This is the SHA-256 shim for builds older than 3.22, which have no such
+// property -- and no sha256_calc() global either, which in any case takes a
+// string and so would need the whole file in memory anyway. It fills the gap
+// with cryptlib's CryptContext, which every build already links in for TLS.
+// Ten xtrn/ fetchers had grown their own copy of this function; it lives here
+// once instead.
 //
 // It is a POLYFILL in the load/*.js sense (cf. array.js's Array.prototype
 // shims): loading it installs a File.sha256_hex GETTER shaped EXACTLY like the
 // native md5_hex / sha1_hex, so a script written against `file.sha256_hex`
-// today keeps working unchanged the day a build ships the property natively --
-// at which point this installs nothing and the C getter is used instead. The
-// guard is `"sha256_hex" in File.prototype`: the native hash getters live on
-// File.prototype (js_file.cpp's property table), so its arrival there is what
-// silently retires the shim.
+// works unchanged on either side of 3.22. On 3.22 and later this installs
+// nothing and the C getter is used instead. The guard is `"sha256_hex" in
+// File.prototype`: the native hash getters live on File.prototype (js_file.cpp's
+// property table), so their presence there is what silently retires the shim.
+// Only sha256_hex is shimmed; sha256_base64 is native-only.
 //
 //     load("sha256.js");
 //     var f = new File(path);

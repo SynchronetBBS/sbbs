@@ -62,6 +62,7 @@ var func_list = {
 	'rot13_translate': 0,
 	'skipsp': 0,
 	'sha1_calc': 1,
+	'sha256_calc': 1,
 	'socket_strerror': 1,
 	'str_has_ctrl': 0,
 	'str_is_ascii': 0,

@@ -21,6 +21,7 @@
 
 #include "sbbs.h"
 #include "md5.h"
+#include "sha256.h"
 #include "base64.h"
 #include "htmlansi.h"
 #include "ini_file.h"
@@ -2851,6 +2852,49 @@ js_sha1_calc(JSContext* cx, uintN argc, jsval* arglist)
 }
 
 static JSBool
+js_sha256_calc(JSContext* cx, uintN argc, jsval* arglist)
+{
+	jsval *    argv = JS_ARGV(cx, arglist);
+	BYTE       digest[SHA256_DIGEST_SIZE];
+	JSBool     hex = JS_FALSE;
+	size_t     inbuf_len;
+	char*      inbuf = NULL;
+	char       outbuf[128];
+	JSString*  js_str;
+	jsrefcount rc;
+
+	if (js_argcIsInsufficient(cx, argc, 1))
+		return JS_FALSE;
+	if (js_argvIsNullOrVoid(cx, argv, 0))
+		return JS_FALSE;
+
+	JSVALUE_TO_MSTRING(cx, argv[0], inbuf, &inbuf_len);
+	HANDLE_PENDING(cx, inbuf);
+	if (inbuf == NULL)
+		return JS_TRUE;
+
+	if (argc > 1 && JSVAL_IS_BOOLEAN(argv[1]))
+		hex = JSVAL_TO_BOOLEAN(argv[1]);
+
+	rc = JS_SUSPENDREQUEST(cx);
+	SHA256_calc(digest, inbuf, inbuf_len);
+	free(inbuf);
+
+	if (hex)
+		SHA256_hex(outbuf, digest);
+	else
+		b64_encode(outbuf, sizeof(outbuf), (char*)digest, sizeof(digest));
+	JS_RESUMEREQUEST(cx, rc);
+
+	js_str = JS_NewStringCopyZ(cx, outbuf);
+	if (js_str == NULL)
+		return JS_FALSE;
+
+	JS_SET_RVAL(cx, arglist, STRING_TO_JSVAL(js_str));
+	return JS_TRUE;
+}
+
+static JSBool
 js_internal_charfunc(JSContext *cx, uintN argc, jsval *arglist, char *(*func)(char *), unsigned extra_bytes)
 {
 	jsval *   argv = JS_ARGV(cx, arglist);
@@ -5265,6 +5309,9 @@ static jsSyncMethodSpec js_global_functions[] = {
 	{"sha1_calc",       js_sha1_calc,       1,  JSTYPE_STRING,  JSDOCSTR("text [,<i>bool</i> hex=false]")
 	 , JSDOCSTR("Calculate and return 160-bit SHA-1 digest of text string, result encoded in base64 (default) or hexadecimal (40 hex digits)")
 	 , 31900},
+	{"sha256_calc",     js_sha256_calc,     1,  JSTYPE_STRING,  JSDOCSTR("text [,<i>bool</i> hex=false]")
+	 , JSDOCSTR("Calculate and return 256-bit SHA-256 digest of text string, result encoded in base64 (default) or hexadecimal (64 hex digits)")
+	 , 32200},
 	{"gethostbyname",   js_resolve_ip,      1,  JSTYPE_ALIAS },
 	{"resolve_ip",      js_resolve_ip,      1,  JSTYPE_STRING,  JSDOCSTR("<i>string</i> hostname [,<i>bool</i> array=false]")
 	 , JSDOCSTR("Resolve IP address of specified hostname (AKA gethostbyname).  If <i>array</i> is <tt>true</tt>, will return "

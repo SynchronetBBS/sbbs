@@ -427,11 +427,15 @@
 - `jsexec` and `jsdoor` now ship with auto-generated object/API
   documentation; `jsexec`-only globals no longer leak into
   `jsobjs.html`
-- New `load("sha256.js")` library provides `sha256_of_file()`,
-  streaming a file through cryptlib so large archives are never
-  held in memory. Synchronet has native `File.md5_hex` and
-  `File.sha1_hex` but no SHA-256 equivalent; the library uses one
-  automatically if a future release adds it
+- `File.md5_base64` fix: was encoding 20 bytes instead of 16 (a
+  28-character result with 4 bytes of uninitialized memory appended)
+  since v3.19
+- New SHA-256 support: `sha256_calc()` global and `File.sha256_hex`
+  / `File.sha256_base64` properties, matching the existing MD5 and
+  SHA-1 equivalents (the `File` properties stream the file, so
+  large archives are never held in memory)
+- New `load("sha256.js")` library provides `sha256_of_file()`, and
+  back-fills `File.sha256_hex` (via cryptlib) on pre-3.22 builds
 
 ## JSexec
 
