@@ -435,9 +435,6 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 	execute_process(COMMAND uname -m OUTPUT_VARIABLE ARCHITECTURE_TYPE OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
-if(NOT WITHOUT_DEUCESSH)
-	list(APPEND SOURCE ssh.c)
-endif()
 # ini_crypt.c + xp_crypt/xp_tls backend shim are always built, even
 # with WITHOUT_CRYPTO — bbslist.c and syncterm.c reference the
 # encrypted-INI API unconditionally (iniWriteEncryptedFile is the
@@ -567,6 +564,7 @@ if(WITHOUT_DEUCESSH)
 	target_compile_definitions(syncterm PRIVATE WITHOUT_DEUCESSH)
 else()
 	# DeuceSSH sub-build — src/ssh/ ships a CMake build system.
+	target_sources(syncterm PRIVATE ssh.c)
 	add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../ssh deucessh EXCLUDE_FROM_ALL)
 	target_include_directories(syncterm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../ssh)
 	target_link_libraries(syncterm deucessh_static sftp)
