@@ -42,6 +42,10 @@ var VECTORS = [
 	}
 ];
 
+// system.temp_dir is not guaranteed to exist yet (it does not on a fresh CI
+// checkout), and File.open() will not create the intervening directory.
+mkpath(system.temp_dir);
+
 var path = system.temp_dir + "test_file_hashes_" + Date.now() + ".bin";
 
 function check(what, got, want)
