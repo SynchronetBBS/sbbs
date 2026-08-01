@@ -51,7 +51,8 @@
   #include <unistd.h>   /* getcwd, chdir */
 #endif
 
-#include "dirwrap.h"   /* xpdev: mkpath() recursive mkdir, FULLPATH(), fexist() */
+#include "dirwrap.h"   /* xpdev: mkpath(), FULLPATH(), fexist(), globi() */
+#include "retro_core.h"      /* rc_core_ext(): the platform's core extension */
 #include "ini_file.h"        /* xpdev: iniReadFile / iniGet* / strListFree */
 #include "audio_mgr.h"       /* termgfx: TERMGFX_MUSIC_QUALITY_DEFAULT */
 
@@ -77,6 +78,23 @@ static int  g_input_device;     /* [input] device: 0 = leave the core's default 
 static char g_aspect[32] = "core";    /* [video] aspect: core|square|4:3|<decimal> */
 static char g_core_path[PATH_MAX];    /* the .so to dlopen, absolute */
 static char g_rom_path[PATH_MAX];     /* the cartridge, absolute */
+
+/* console.ini [console] -- what console this install IS. A SHIPPED file, not the
+ * sysop's syncretro.ini, and read by the lobby too: these are the facts both
+ * halves of the door need, which is exactly why they cannot travel on the
+ * command line (260 bytes on Windows, truncated in silence). Empty means the
+ * file or the key is absent, and each caller falls back on its own. */
+static char g_con_name[64];           /* [console] name:    "Intellivision" */
+static char g_con_short[32];          /* [console] short:   "Intv" / "NES" */
+static char g_con_core[128];          /* [console] core:    "freeintv_libretro" */
+static char g_con_profile[32];        /* [console] profile: "intv" */
+
+/* Widest console name a who's-online column will take before the short name
+ * reads better: "Intellivision" fits, "Nintendo Entertainment System" does not.
+ * exec/load/syncretro_lobby.js applies the SAME rule to the same two keys for
+ * the line it logs -- the two must agree, or a cartridge is logged under one
+ * console name and shown online under another. Change both together. */
+#define SR_CONSOLE_LABEL_MAX 20
 
 /* syncretro.ini, [idle] -- the idle-USER timeout and its countdown, in seconds.
  * Its own declaration group rather than joined to the block above: `unsigned` is
@@ -172,6 +190,29 @@ static int sr_disc_matches(const char *path, const char *list)
 		p = q;
 	}
 	return 0;
+}
+
+/* console.ini -- shipped, and deliberately a separate file from the sysop's
+ * syncretro.ini so an upgrade can replace it without touching his settings. */
+static void sr_config_read_console_ini(void)
+{
+	FILE *f = fopen("console.ini", "r");
+
+	if (f != NULL) {
+		str_list_t ini = iniReadFile(f);
+		char       v[INI_MAX_VALUE_LEN];   /* iniGetString()'s contract, not ours */
+
+		fclose(f);
+		iniGetString(ini, "console", "name", "", v);
+		snprintf(g_con_name, sizeof g_con_name, "%s", v);
+		iniGetString(ini, "console", "short", "", v);
+		snprintf(g_con_short, sizeof g_con_short, "%s", v);
+		iniGetString(ini, "console", "core", "", v);
+		snprintf(g_con_core, sizeof g_con_core, "%s", v);
+		iniGetString(ini, "console", "profile", "", v);
+		snprintf(g_con_profile, sizeof g_con_profile, "%s", v);
+		strListFree(&ini);
+	}
 }
 
 static void sr_config_read_ini(void)
@@ -373,6 +414,66 @@ static void sr_resolve_file(char *dst, size_t sz, const char *name,
 	sr_absolutize(dst, sz, name);   /* not found: let the open() report it by name */
 }
 
+/* The core to load when nobody named one: the single "*_libretro<ext>" sitting
+ * in the door's own directory.
+ *
+ * Every SyncRetro install is one console, and a console install holds exactly
+ * one core -- which is why the lobby had been spending 28 characters of command
+ * line naming a file the door is standing next to. That line is assembled by
+ * Synchronet into a 260-byte buffer on Windows and truncated there in silence,
+ * and the ROM argument, being last, is what falls off the end.
+ *
+ * Exactly one match is required. Zero leaves the core unset, and main.c reports
+ * that as it always has. Two or more is a genuinely ambiguous install, so it
+ * names them and leaves the core unset rather than picking: guessing wrong here
+ * boots the wrong console. -core overrides all of this and is still the answer
+ * for an install that keeps several. */
+static int sr_glob_one(char *dst, size_t sz, const char *pattern, int complain)
+{
+	glob_t g;
+	size_t i;
+	int    found = 0;
+
+	memset(&g, 0, sizeof g);
+	if (globi(pattern, 0, NULL, &g) != 0)
+		return 0;
+	if (g.gl_pathc == 1) {
+		snprintf(dst, sz, "%s", g.gl_pathv[0]);
+		found = 1;
+	} else if (g.gl_pathc > 1 && complain) {
+		fprintf(stderr, "syncretro: %u libretro cores match %s -- name one with"
+		        " [console] core in console.ini, or pass -core:\n",
+		        (unsigned)g.gl_pathc, pattern);
+		for (i = 0; i < g.gl_pathc; i++)
+			fprintf(stderr, "syncretro:   %s\n", g.gl_pathv[i]);
+	}
+	globfree(&g);
+	return found;
+}
+
+/* Find the core when the command line did not name one. `stem` is console.ini's
+ * core name, or the wildcard "*_libretro" when it has none either -- a console
+ * install holds exactly one core, which is why the lobby had been spending 28
+ * characters of a 260-character command line naming a file the door is standing
+ * next to.
+ *
+ * Both layouts are searched, because deploy.js and getcore.js may put the core
+ * at the door root OR in the per-target "<os>-<arch>" sub-dir beside the binary,
+ * and the door has no way to know which target string was used. Ambiguity is
+ * only reported for the wildcard: an explicitly named core matching twice is not
+ * a question anyone needs asking. */
+static int sr_find_core(char *dst, size_t sz, const char *dir, const char *stem)
+{
+	char pattern[PATH_MAX];
+	int  wild = (strchr(stem, '*') != NULL);
+
+	snprintf(pattern, sizeof pattern, "%s/%s%s", dir, stem, rc_core_ext());
+	if (sr_glob_one(dst, sz, pattern, wild))
+		return 1;
+	snprintf(pattern, sizeof pattern, "%s/*/%s%s", dir, stem, rc_core_ext());
+	return sr_glob_one(dst, sz, pattern, wild);
+}
+
 int sr_config_apply(void)
 {
 	const char *sys  = getenv("SYNCRETRO_SYSTEM");
@@ -381,6 +482,7 @@ int sr_config_apply(void)
 	const char *rom  = sr_door_rom_path();
 	int         rc   = 0;
 	char        cwd[PATH_MAX];
+	char        corebuf[160];   /* console.ini's core name + the platform extension */
 	/* cwd + '/' + "roms" + NUL: sized so the join below cannot truncate (and so
 	 * GCC can see that, rather than warning about it under -Werror). */
 	char        romdir[PATH_MAX + sizeof(SR_ROM_SUBDIR) + 1];
@@ -393,6 +495,7 @@ int sr_config_apply(void)
 	/* syncretro.ini lives in the launch directory, not the per-user sandbox --
 	 * must run before the chdir() in step 3 below moves cwd there. */
 	sr_config_read_ini();
+	sr_config_read_console_ini();
 
 	/* --- 1. system (BIOS) dir: shared, read-only, per-install ---------------
 	 * Answered to the core as GET_SYSTEM_DIRECTORY. A core that can't find its
@@ -411,10 +514,27 @@ int sr_config_apply(void)
 	/* --- 2. the core .so and the ROM ---------------------------------------
 	 * Absolutized against the launch dir NOW, before the chdir below. The ROM
 	 * additionally searches <launch>/roms/, the conventional cartridge dir. */
+	/* -core wins, then console.ini's core name (spelled WITHOUT an extension, so
+	 * one shipped file serves every platform), then the lone core in the install.
+	 * The command line used to be the only source, at 28 characters a launch. */
 	if (core != NULL) {
 		const char *const dirs[] = { cwd, NULL };
 
 		sr_resolve_file(g_core_path, sizeof g_core_path, core, dirs);
+	} else {
+		char        found[PATH_MAX];
+		const char *stem = g_con_core[0] != '\0' ? g_con_core : "*_libretro";
+
+		if (sr_find_core(found, sizeof found, cwd, stem)) {
+			sr_absolutize(g_core_path, sizeof g_core_path, found);
+		} else if (g_con_core[0] != '\0') {
+			/* Named, but not installed. Record it anyway so the load failure
+			 * names the file the sysop is missing rather than saying nothing. */
+			const char *const dirs[] = { cwd, NULL };
+
+			snprintf(corebuf, sizeof corebuf, "%s%s", g_con_core, rc_core_ext());
+			sr_resolve_file(g_core_path, sizeof g_core_path, corebuf, dirs);
+		}
 	}
 	if (rom != NULL) {
 		const char *const dirs[] = { romdir, cwd, NULL };
@@ -475,6 +595,20 @@ const char *sr_config_save_dir(void)
 const char *sr_config_core_path(void)
 {
 	return g_core_path[0] ? g_core_path : NULL;
+}
+
+const char *sr_config_console_name(void)
+{
+	if (g_con_name[0] != '\0' && strlen(g_con_name) <= SR_CONSOLE_LABEL_MAX)
+		return g_con_name;
+	if (g_con_short[0] != '\0')
+		return g_con_short;
+	return g_con_name[0] ? g_con_name : NULL;
+}
+
+const char *sr_config_profile(void)
+{
+	return g_con_profile[0] ? g_con_profile : NULL;
 }
 
 const char *sr_config_rom_path(void)

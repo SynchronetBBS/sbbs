@@ -25,6 +25,16 @@
 //       stdio:    false                             // true = run as a STDIO door
 //   });
 //
+// FOUR OF THOSE KEYS NOW LIVE IN console.ini, WHICH OVERRIDES THEM: name, short,
+// core and profile. They are the facts the native DOOR needs as well as this
+// lobby, and a file is how both halves read one copy of them -- they used to be
+// handed to the door on its command line, which Synchronet assembles into a
+// 260-byte buffer on Windows and truncates there in silence, so a long cartridge
+// name pushed the ROM argument off the end of the line. The spec keys above
+// remain as the fallback, so a console install with no console.ini still works;
+// where the file exists, IT is the one to edit. console.ini is shipped and an
+// upgrade will replace it, which is exactly why it is not syncretro.ini.
+//
 // `id` is derived from `short` (lower-cased, alphanumerics only) and names the
 // per-user save directory and the ROM cache. It is NOT a separate key, because a
 // separate key is a thing to get out of step.
@@ -105,7 +115,7 @@ var SYNCRETRO_LOBBY_TEXT = {
 };
 
 /* Set once, by syncretro_lobby(). */
-var syncretro_lobby_dir, syncretro_lobby_con, syncretro_lobby_rules, syncretro_lobby_bios, syncretro_lobby_binary, syncretro_lobby_core, syncretro_lobby_stdio, syncretro_lobby_cfg;
+var syncretro_lobby_dir, syncretro_lobby_con, syncretro_lobby_rules, syncretro_lobby_bios, syncretro_lobby_binary, syncretro_lobby_stdio, syncretro_lobby_cfg;
 var syncretro_lobby_cellw;                             /* [lobby] cell_width, or the default above */
 var syncretro_lobby_header, syncretro_lobby_footer;    /* optional display files ("" = none) */
 var syncretro_lobby_hrows, syncretro_lobby_frows;      /* rows those blocks occupy; see the draw */
@@ -133,13 +143,60 @@ function syncretro_lobby_print(key, args)
 	console.putmsg(args && args.length ? format.apply(null, [s].concat(args)) : s);
 }
 
+/* console.ini [console] -- what console this install IS: name, short, core and
+ * profile. Shipped beside lobby.js and read by the DOOR TOO, which is the whole
+ * point of it being a file: these are the facts both halves need, and they used
+ * to travel from here to the door on the command line. Synchronet assembles that
+ * line into a 260-byte buffer on Windows and truncates it there in silence, so a
+ * long cartridge name pushed the ROM argument -- the last thing on the line --
+ * off the end, and the door reported "(no ROM)" for content the BBS had just
+ * logged the full path of.
+ *
+ * Deliberately NOT syncretro.ini: that file is the sysop's, is not shipped, and
+ * an upgrade must never write over it. This one is ours and will be.
+ *
+ * The spec in lobby.js remains the fallback for every key, so a console install
+ * that predates this file keeps working unchanged. */
+function syncretro_lobby_console_ini(dir, con)
+{
+	var f = new File(dir + "console.ini");
+	var ini;
+
+	if (!f.open("r"))
+		return con;
+	ini = f.iniGetObject("console");
+	f.close();
+	if (!ini)
+		return con;
+
+	if (ini.name)
+		con.name = String(ini.name);
+	if (ini.short)
+		con.short = String(ini.short);
+	if (ini.profile)
+		con.profile = String(ini.profile).toLowerCase();
+	if (ini.core)
+		con.core = String(ini.core);
+
+	/* Same derivations syncretro_console() makes, re-run because the values they
+	 * derive from may just have changed. `id` in particular names the per-user
+	 * save directory, so it must not be left describing the spec's `short`. */
+	if (con.short === "")
+		con.short = con.name;
+	if (con.name === "")
+		con.name = con.short;
+	con.id = con.short.toLowerCase().replace(/[^a-z0-9]+/g, "");
+	return con;
+}
+
 function syncretro_lobby_init(spec)
 {
 	var f, ini;
 	var target, sep, sub, exe, cname, bpfx, cpfx;
 
 	syncretro_lobby_dir   = backslash(spec.dir);
-	syncretro_lobby_con   = syncretro_console(spec);
+	syncretro_lobby_con   = syncretro_lobby_console_ini(syncretro_lobby_dir,
+	                                                    syncretro_console(spec));
 	syncretro_lobby_rules = syncretro_rules(spec);
 	syncretro_lobby_bios  = spec.bios || [];
 	/* How the door gets the player's connection. Default: a SOCKET (Synchronet
@@ -277,12 +334,13 @@ function syncretro_lobby_init(spec)
 	sep    = syncretro_lobby_dir.charAt(syncretro_lobby_dir.length - 1);
 	sub    = target ? target + sep : "";
 	exe    = "syncretro" + (/^win/i.test(system.platform) ? ".exe" : "");
-	cname  = syncretro_lobby_con.core + "." + syncretro_core_ext(syncretro_platform(system.platform));
 	bpfx   = file_exists(syncretro_lobby_dir + sub + exe)   ? sub : "";
-	cpfx   = file_exists(syncretro_lobby_dir + sub + cname) ? sub : "";
 
 	syncretro_lobby_binary = syncretro_lobby_dir + bpfx + "syncretro%.";   /* "%." -> .exe on Windows */
-	syncretro_lobby_core   = cpfx + cname;                     /* relative to the door's cwd */
+	/* Only the BINARY is probed here. The core is the door's own business now:
+	 * it searches the door directory and the per-target sub-dir for the name in
+	 * console.ini, or for the one "*_libretro" it can find. Naming the core to
+	 * the door cost 28 characters of a 260-character command line. */
 }
 
 /* Resolve one [lobby] display-file key. Absent -> the auto-detected default name;
@@ -411,6 +469,95 @@ function syncretro_lobby_draw(page, pages, board, cols, per_col)
 
 /* Returns true when the caller needs to rescan (the picked cartridge is no
  * longer on disk), false otherwise. */
+/* The command line Synchronet will actually carry, and the ceiling it has.
+ *
+ * xtrn.cpp assembles an external's command line into `fullcmdline[MAX_PATH + 1]`
+ * and SAFECOPY-truncates it there. MAX_PATH is 4096 on *nix but 260 on Windows,
+ * and it is a PATH limit standing in for a command-line limit, so a door whose
+ * arguments are longer than any one path in them overruns it. Truncation is
+ * silent, and the argument lost is the LAST one -- the ROM. Worse, the BBS logs
+ * the string it MEANT to run, so the log shows a cartridge's full path while the
+ * door reports it has no ROM.
+ *
+ * Checked here rather than trusted, because everything that shortened this line
+ * (console.ini, the drop file, the door-side title parse) can be undone by one
+ * innocent-looking addition, and because a sysop with a longer ROM filename than
+ * anything we ship will meet the ceiling before we do. A door that says why it
+ * broke costs one comparison.
+ *
+ * v3.22's xtrn.cpp logs its own error when this happens; this one fires on
+ * v3.21 too, names the cartridge, and reaches the sysop's log rather than
+ * needing him to be watching the terminal server's. */
+var SYNCRETRO_CMDLINE_MAX = 260;   /* xtrn.cpp fullcmdline[MAX_PATH + 1], Windows */
+
+function syncretro_lobby_check_cmdlen(cmd, rom)
+{
+	/* What the BBS assembles, not what is written here: %-specifiers expand
+	 * (%a -> the alias, %H -> the socket) and the startup directory is NOT
+	 * prepended, because the binary path is absolute. bbs.cmdstr() does that
+	 * expansion with this session's own values, so the length measured is the
+	 * length that will be truncated. */
+	var full = bbs.cmdstr(cmd);
+
+	if (full.length <= SYNCRETRO_CMDLINE_MAX)
+		return;
+	log(LOG_ERR, "SyncRetro: command line is " + full.length + " characters, over the "
+	    + SYNCRETRO_CMDLINE_MAX + "-character limit Synchronet truncates at on Windows -- "
+	    + "the cartridge argument will be cut off. Cartridge: " + rom.name);
+}
+
+/* DOOR32.SYS, written into THIS NODE's directory for the door to find.
+ *
+ * The connection, the alias and the session time reached the door as -s%H /
+ * -name %a / -t%T until this existed. The ALIAS is the reason it now exists: it
+ * is user-controlled text of up to 25 characters on a command line Synchronet
+ * truncates at 260 on Windows, so whose account launched a cartridge decided
+ * whether that cartridge's ROM argument survived the trip. Carried in the drop
+ * file, none of it costs the line anything, and the length of the line stops
+ * varying per player.
+ *
+ * The door needs no argument to find this: it looks in $SBBSNODE, which
+ * external() exports on both platforms before spawning us. Synchronet writes
+ * this same file for a REGISTERED external (xtrn_sec.cpp); the lobby writes its
+ * own because it spawns the door itself, and because line 1 has to describe how
+ * THE DOOR was launched, which is not necessarily how the lobby was.
+ *
+ * Returns false if the file could not be written, and the caller then puts the
+ * arguments back on the command line -- a longer line is still better than a
+ * door that cannot reach the player. */
+function syncretro_lobby_dropfile(stdio)
+{
+	var path = system.node_dir + "door32.sys";
+	var f    = new File(path);
+
+	if (!f.open("w")) {
+		log(LOG_WARNING, "SyncRetro: cannot write " + path
+		    + " -- passing the connection on the command line instead");
+		return false;
+	}
+	/* Line order is the DOOR32.SYS standard (src/doors/termgfx/door32.h). Comm
+	 * type 0 means "no socket -- the BBS redirected the door's stdin/stdout",
+	 * which is exactly what EX_STDIO does, so this line alone selects the door's
+	 * stdio path and -stdio becomes unnecessary. */
+	f.writeln(stdio ? "0" : "2");                        /* 1  comm type */
+	f.writeln(stdio ? "-1" : bbs.cmdstr("%H"));          /* 2  socket handle */
+	f.writeln("0");                                      /* 3  baud: DOS-era, unused */
+	f.writeln(system.version_notice);                    /* 4  BBS software */
+	f.writeln(String(user.number));                      /* 5  user number */
+	f.writeln(user.name);                                /* 6  real name */
+	f.writeln(user.alias);                               /* 7  alias */
+	f.writeln(String(user.security.level));              /* 8  security level */
+	/* MINUTES -- the format has no finer unit. It rounds DOWN, so the door can
+	 * only ever under-estimate the time left, never over-grant it. -t%T stays on
+	 * the command line anyway (7 characters) and wins, so this is the value a
+	 * door run without one would use. */
+	f.writeln(String(Math.floor(bbs.time_left / 60)));   /* 9  minutes left */
+	f.writeln("1");                                      /* 10 emulation: ANSI */
+	f.writeln(String(bbs.node_num));                     /* 11 node number */
+	f.close();
+	return true;
+}
+
 function syncretro_lobby_play(rom)
 {
 	/* The door's -home: its cwd sandbox, and the save directory the core is
@@ -424,7 +571,7 @@ function syncretro_lobby_play(rom)
 	var home = syncretro_lobby_con.shared_saves
 	    ? system.data_dir + "syncretro/" + syncretro_lobby_con.id + "/shared"
 	    : system.data_dir + "user/" + format("%04d", user.number) + "/" + syncretro_lobby_con.id;
-	var cmd, started, secs, label;
+	var cmd, started, secs, label, drop, pass_title;
 
 	if (!syncretro_quote_safe(rom.name)) {
 		syncretro_lobby_print("unsafe_name");
@@ -442,41 +589,45 @@ function syncretro_lobby_play(rom)
 	 * on bare spaces, and every real cartridge name (and a user's -home path) has
 	 * them, so those are quoted -- which also routes external() through the shell
 	 * on *nix, reassembling the argument. But syncretro_lobby_binary (the leading program
-	 * token) is deliberately NOT quoted; see syncretro_lobby_init(). -name %a is NOT quoted
+	 * token) is deliberately NOT quoted; see syncretro_lobby_init(). -name %a, on
+	 * the fallback path where the drop file could not be written, is NOT quoted
 	 * either: cmdstr() already quotes the alias, and doubling it would hand the
-	 * door literal quote characters.
+	 * door literal quote characters. */
+	/* The who's-online line -- "playing Astrosmash (Intellivision)", the way
+	 * SyncDOOM names its WAD and map -- is the DOOR's to publish, from
+	 * console.ini and the cartridge's filename. Neither the title nor the console
+	 * is sent to it any more, except for a curated title it could not derive.
 	 *
-	 * -profile tells the door which console's key bindings to use (pad, intv).
-	 * The door can infer it from the core's library_name when run bare from a
-	 * command line, but the lobby KNOWS, so it says so. */
-	/* -title / -console are the who's-online line: the door publishes
-	 * "playing Astrosmash (Intellivision)" as this node's status, the way SyncDOOM
-	 * names its WAD and map. We pass the PARSED title (syncretro_parse_title already
-	 * stripped "(1981) (Mattel)" and any dump marker off the filename), because
-	 * the door would otherwise have to re-implement that parsing in C.
-	 *
-	 * The console label is the long name when it fits a status line, else the
-	 * short one: "Intellivision" reads better than "Intv", but "Nintendo
-	 * Entertainment System" is too long to sit in a who's-online column. */
+	 * This label is for the line LOGGED below, and it applies the same rule the
+	 * door applies to the same two console.ini keys (SR_CONSOLE_LABEL_MAX in
+	 * syncretro_config.c): the long name when it fits a status column, else the
+	 * short one. "Intellivision" reads better than "Intv"; "Nintendo
+	 * Entertainment System" is too wide. The two must agree, or a cartridge is
+	 * logged under one console name and shown online under another. */
 	label = syncretro_lobby_con.name.length <= 20 ? syncretro_lobby_con.name : syncretro_lobby_con.short;
 
-	/* A SOCKET door is handed the connection (-s%H). A STDIO door is handed
-	 * nothing: Synchronet forks it on a pty and relays fd 0/1 itself, so the
-	 * socket argument must be ABSENT, not empty. EX_BIN is what makes that pty
-	 * raw (cfmakeraw) and stops the LF->CRLF and CP437->UTF8 translation that
-	 * would otherwise mangle a sixel frame. */
+	/* How the door reaches the player is in the DROP FILE now, not here -- comm
+	 * type 2 with the socket handle, or comm type 0 for a STDIO door, which
+	 * Synchronet forks on a pty and relays fd 0/1 for itself. EX_BIN is what
+	 * makes that pty raw (cfmakeraw) and stops the LF->CRLF and CP437->UTF8
+	 * translation that would otherwise mangle a sixel frame. */
 	/* NO -option HERE, and it is a hard constraint rather than a preference: the
 	 * BBS assembles this command line into xtrn.cpp's `fullcmdline[MAX_PATH + 1]`
-	 * and truncates it there SILENTLY at 260 characters. The line below already
-	 * runs to ~240 for one arcade game, so a couple of pinned core options pushed
-	 * it to 334 and the ROM argument -- the last thing on the line -- was simply
-	 * cut off, giving a door that reported "(no ROM)" for a file the BBS had just
-	 * logged the full path of. Core options are pinned in the console's
-	 * syncretro.ini [options] section instead; see retro_options.h.
+	 * and truncates it there SILENTLY at 260 characters -- a PATH limit standing
+	 * in for a command-line limit. Two pinned core options once pushed the line
+	 * to 334 and the ROM argument -- the last thing on it -- was simply cut off,
+	 * giving a door that reported "(no ROM)" for a file the BBS had just logged
+	 * the full path of. Core options are pinned in the console's syncretro.ini
+	 * [options] section instead; see retro_options.h.
 	 *
-	 * That 240 is not comfortable either. A longer game title or a longer user
-	 * alias eats the remaining ~20 characters, so anything added to this line
-	 * from here on has to buy its space from something else on it.
+	 * What is left on the line is what cannot be anywhere else: the binary, the
+	 * session limits, the per-user sandbox and the cartridge. Everything the
+	 * console knows about itself moved to console.ini, everything about the
+	 * player and his connection moved to the drop file, and the title the door
+	 * can parse from the cartridge's own filename is no longer sent at all --
+	 * between them, from ~335 characters to ~150. Anything added here from now
+	 * on still has to buy its space from something else on the line, and
+	 * syncretro_lobby_check_cmdlen() is what notices when it doesn't.
 	 *
 	 * Which is why the ROM is passed RELATIVE to the door's directory rather than
 	 * as the absolute path discovery found it at: "roms\pacman.zip" instead of
@@ -511,12 +662,28 @@ function syncretro_lobby_play(rom)
 	else
 		idle_secs = syncretro_lobby_gl.parse_duration(idle_cfg.timeout, "s");
 
-	cmd = syncretro_lobby_binary + (syncretro_lobby_stdio ? " -stdio" : " -s%H")
-	    + " -t%T -i" + idle_secs + " -name %a -core " + syncretro_lobby_core
-	    + " -profile " + syncretro_lobby_con.profile
-	    + ' -title "' + (rom.label || rom.title) + '" -console "' + label + '"'
+	/* -core, -profile and -console are gone from the line: the door reads all
+	 * three from console.ini, which is shipped beside this lobby precisely so
+	 * they need not be carried. -s%H / -name %a are gone into the drop file. */
+	drop = syncretro_lobby_dropfile(syncretro_lobby_stdio);
+
+	/* -title only when the door could not arrive at the same string itself.
+	 * It can parse "Astrosmash" out of "Astrosmash (1981) (Mattel).int" -- that
+	 * is sr_title_from_rom() in src/doors/syncretro/syncretro_title.c, and those
+	 * are exactly the consoles whose filenames are long enough to overflow the
+	 * line. It cannot invent "Pac-Man" from "puckman.zip", nor reproduce the
+	 * publisher this lobby appends to tell two identical titles apart -- and
+	 * those are the short filenames, with room to spare. */
+	pass_title = syncretro_is_mapped(rom.name) || rom.label !== rom.title;
+
+	cmd = syncretro_lobby_binary
+	    + (drop ? "" : (syncretro_lobby_stdio ? " -stdio" : " -s%H") + " -name %a")
+	    + " -t%T -i" + idle_secs
+	    + (pass_title ? ' -title "' + (rom.label || rom.title) + '"' : "")
 	    + ' -home "' + home + '" "'
 	    + backslash(syncretro_lobby_rules.dir) + rom.name + '"';
+
+	syncretro_lobby_check_cmdlen(cmd, rom);
 
 	/* The Terminal Server logs "Executing external program: <console>" when it
 	 * spawns the lobby; the cartridge is picked in here, so the node log would

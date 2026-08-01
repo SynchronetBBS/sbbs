@@ -70,6 +70,11 @@ int rc_core_open(rc_core_t *c, const char *path);
  * that dies before the terminal is up dies invisibly otherwise. */
 const char *rc_core_error(void);
 
+/* The extension a libretro core carries on this platform, leading dot included
+ * (".so", ".dll", ".dylib"). Exposed from the core-load seam because that is
+ * one of the only two files permitted a Windows-vs-POSIX #ifdef. */
+const char *rc_core_ext(void);
+
 /* Wire the six callbacks (from retro_bridge.c), retro_init(), load the ROM, and
  * capture av_info. `rom_path` may be NULL for cores that need no content.
  * Returns 0 on success, -1 on failure. Call AFTER rc_core_open(). */

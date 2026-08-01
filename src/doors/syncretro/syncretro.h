@@ -78,6 +78,13 @@ const char *sr_config_save_dir(void);               /* per-user SRAM/save-state 
  * moves cwd into the sandbox. Use these, not the sr_door_*_path() raw values.
  * NULL when none was given. */
 const char *sr_config_core_path(void);
+
+/* console.ini [console] -- what console this install IS, or NULL when the file
+ * or the key is absent. Shipped with the door and read by the lobby too, which
+ * is what keeps these off a command line Windows truncates at 260 bytes.
+ * -console / -profile still override, for a door run by hand. */
+const char *sr_config_console_name(void);
+const char *sr_config_profile(void);
 const char *sr_config_rom_path(void);
 
 /* syncretro.ini, [audio] -- read from the launch directory by sr_config_apply().

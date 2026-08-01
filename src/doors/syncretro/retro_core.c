@@ -33,6 +33,7 @@ static void  rc_dlclose(void *h) { FreeLibrary((HMODULE)h); }
  * path, and GetLastError()'s text adds nothing a sysop can act on that "cannot
  * load core '<path>'" doesn't already say. */
 static const char *rc_dlerror(void) { return "LoadLibrary failed"; }
+  #define RC_CORE_EXT ".dll"
 #else
   #include <dlfcn.h>
 
@@ -40,7 +41,20 @@ static void *rc_dlopen(const char *path) { return dlopen(path, RTLD_NOW | RTLD_L
 static void *rc_dlsym(void *h, const char *sym) { return dlsym(h, sym); }
 static void  rc_dlclose(void *h) { dlclose(h); }
 static const char *rc_dlerror(void) { return dlerror(); }
+  #if defined(__APPLE__)
+    #define RC_CORE_EXT ".dylib"
+  #else
+    #define RC_CORE_EXT ".so"
+  #endif
 #endif
+
+/* Exported so the core-discovery scan in syncretro_config.c can build its
+ * pattern without a #ifdef of its own -- this file is one of the only two
+ * allowed to know the difference (CLAUDE.md). */
+const char *rc_core_ext(void)
+{
+	return RC_CORE_EXT;
+}
 
 /* The last failure, in words, kept for the PLAYER -- not just for stderr.
  *

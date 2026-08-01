@@ -14,6 +14,9 @@ load("syncretro_lobby.js");
 
 syncretro_lobby({
 	dir:      js.exec_dir,               /* this door dir: core, BIOS, roms/ */
+	/* name / short / core / profile are OVERRIDDEN by console.ini in this
+	 * directory, which the native door reads too -- edit them THERE. These
+	 * stay as the fallback for an install that has no console.ini. */
 	name:     "Intellivision",
 	/* `short` derives the id ("intv") that names the per-user save dir and the
 	 * ROM cache. It must STAY "Intv": change it and every existing player's SRAM

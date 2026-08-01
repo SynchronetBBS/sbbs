@@ -33,6 +33,7 @@
 #include "idle.h"              /* termgfx: the shared idle-USER clock */
 #include "sbbs_node.h"         /* termgfx: node number, who's-online status */
 #include "syncretro_profile.h" /* sr_profile_name(): the console fallback */
+#include "syncretro_title.h"   /* sr_title_from_rom(): the -title fallback */
 #include "syncretro_binds.h"   /* sr_bind_help_line(): drives the usage key list */
 
 #define SR_ALIAS_MAX 64
@@ -201,35 +202,50 @@ static void copy_arg(char *dst, size_t sz, const char *src)
 /* The drop file is parsed by termgfx (door32.c), shared with the sibling doors:
  * five copies of these twenty lines had already drifted apart -- four different
  * ways to copy the alias, one door that never read it, and only one that knew
- * that a comm type of 0 means "no socket; I redirected your stdio". */
-static void read_door32(const char *path)
+ * that a comm type of 0 means "no socket; I redirected your stdio".
+ *
+ * `named` separates a path the sysop put on the command line from one this door
+ * guessed at from $SBBSNODE, and it decides two things. A named file WINS over
+ * whatever the other arguments said, exactly as it always has; a guessed one
+ * only fills the gaps, so an explicit -s/-stdio/-t is never overridden by a file
+ * nobody asked for. And a named file that will not open is worth complaining
+ * about -- someone asked for it by name -- where a guessed one that is not there
+ * is an ordinary outcome (a door run by hand, or a lobby predating the drop
+ * file), and on a stdio door stderr IS the player's screen. */
+static void read_door32(const char *path, int named)
 {
 	termgfx_door32_t d;
 
 	const char *     why;
+	int              had_conn = (g_socket >= 0 || g_stdio);
 
 	if (termgfx_door32_read(path, &d) != 0) {
-		fprintf(stderr, "syncretro: cannot read %s\n", path);
+		if (named)
+			fprintf(stderr, "syncretro: cannot read %s\n", path);
 		return;
 	}
 
-	if (d.socket >= 0)
-		g_socket = d.socket;
-	else if (d.stdio && sr_plat_stdio_ok())
-		g_stdio = 1;            /* comm type 0: the BBS redirected our stdin/stdout */
+	if (named || !had_conn) {
+		if (d.socket >= 0)
+			g_socket = d.socket;
+		else if (d.stdio && sr_plat_stdio_ok())
+			g_stdio = 1;    /* comm type 0: the BBS redirected our stdin/stdout */
 
-	/* A drop file we cannot use is worth SAYING so. Falling back to the dev sink
-	 * silently -- drawing to fd 1 and reading a descriptor nobody is typing into
-	 * -- gives the sysop a door that starts, paints nothing he can see, and
-	 * ignores every key, with no clue anywhere as to why. */
-	if ((why = termgfx_door32_why_unusable(&d)) != NULL)
-		fprintf(stderr, "syncretro: %s is no use to this door: %s\n", path, why);
-	else if (d.stdio && !sr_plat_stdio_ok())
-		fprintf(stderr, "syncretro: %s says stdio (comm type 0), which is POSIX-only.\n",
-		        path);
-	if (d.alias[0] != '\0')
+		/* A drop file we cannot use is worth SAYING so. Falling back to the dev
+		 * sink silently -- drawing to fd 1 and reading a descriptor nobody is
+		 * typing into -- gives the sysop a door that starts, paints nothing he
+		 * can see, and ignores every key, with no clue anywhere as to why.
+		 * Suppressed when the connection came from elsewhere: a stale file in
+		 * the node dir is then no use to anyone and no cause for alarm. */
+		if ((why = termgfx_door32_why_unusable(&d)) != NULL)
+			fprintf(stderr, "syncretro: %s is no use to this door: %s\n", path, why);
+		else if (d.stdio && !sr_plat_stdio_ok())
+			fprintf(stderr, "syncretro: %s says stdio (comm type 0), which is POSIX-only.\n",
+			        path);
+	}
+	if (d.alias[0] != '\0' && (named || g_alias[0] == '\0'))
 		copy_arg(g_alias, sizeof(g_alias), d.alias);
-	if (d.time_limit_ms > 0)
+	if (d.time_limit_ms > 0 && (named || g_time_limit_ms == 0))
 		g_time_limit_ms = d.time_limit_ms;
 }
 
@@ -239,6 +255,7 @@ static void read_door32(const char *path)
 static void sr_door_resolve(int argc, char **argv)
 {
 	int         i;
+	int         d32_seen = 0;
 	const char *s;
 
 	for (i = 1; i < argc; i++) {
@@ -278,10 +295,30 @@ static void sr_door_resolve(int argc, char **argv)
 		} else if (strcmp(a, "-rom") == 0 && i + 1 < argc) {
 			copy_arg(g_rom, sizeof(g_rom), argv[++i]);
 		} else if (is_door32_path(a)) {
-			read_door32(a);
+			read_door32(a, /* named: */ 1);
+			d32_seen = 1;
 		} else if (a[0] != '-' && g_rom[0] == '\0') {
 			copy_arg(g_rom, sizeof(g_rom), a);   /* bare positional: the ROM */
 		}
+	}
+
+	/* No drop file named on the command line: look for the one the BBS wrote in
+	 * this node's directory. That is where the socket, the alias and the time
+	 * limit come from when the lobby launches us, and taking them from the file
+	 * is what keeps them OFF the command line -- which Synchronet assembles into
+	 * a 260-byte buffer on Windows and truncates there without a word.
+	 *
+	 * $SBBSNODE only, never the cwd: our cwd is the door's own install directory,
+	 * so a door32.sys left lying there is some other session's, and reading it
+	 * would hand this player a stale socket. Absent or empty means we were not
+	 * launched by a BBS at all -- open nothing, say nothing. */
+	if (!d32_seen && (s = getenv("SBBSNODE")) != NULL && *s != '\0') {
+		char        path[SR_PATH_MAX];
+		size_t      n = strlen(s);
+		const char *sep = (n > 0 && (s[n - 1] == '/' || s[n - 1] == '\\')) ? "" : "/";
+
+		snprintf(path, sizeof path, "%s%s%s", s, sep, "door32.sys");
+		read_door32(path, /* named: */ 0);
 	}
 
 	if (g_socket < 0 && (s = getenv("SYNCRETRO_SOCK")) != NULL && *s != '\0')
@@ -612,31 +649,6 @@ static void sr_door_node_atexit(void)
 		sbbs_node_set_ext("");    /* clear our NODE_EXT flag on exit */
 }
 
-/* "<rom>/Astrosmash (1981) (Mattel).int" -> "Astrosmash (1981) (Mattel)". The
- * fallback for a bare command-line run: the lobby's -title is already the parsed
- * title, which is nicer, but a door run by hand should still say something. */
-static void sr_door_rom_basename(char *out, size_t cap, const char *path)
-{
-	const char *base = path;
-	const char *p, *dot;
-	size_t      n;
-
-	if (path == NULL || *path == '\0') {
-		snprintf(out, cap, "%s", "a cartridge");
-		return;
-	}
-	for (p = path; *p != '\0'; p++)
-		if (*p == '/' || *p == '\\')
-			base = p + 1;
-
-	dot = strrchr(base, '.');
-	n   = (dot != NULL && dot != base) ? (size_t)(dot - base) : strlen(base);
-	if (n >= cap)
-		n = cap - 1;
-	memcpy(out, base, n);
-	out[n] = '\0';
-}
-
 /* Publish "playing <title> (<console>)". Call once, after the core has loaded the
  * ROM and the profile is resolved (the profile's name is the console fallback). */
 void sr_door_node_playing(const char *rom_path)
@@ -644,7 +656,13 @@ void sr_door_node_playing(const char *rom_path)
 	char        status[128];
 	char        fallback[64];
 	const char *title   = g_title;
-	const char *console = g_console[0] ? g_console : sr_profile_name();
+	/* -console, else console.ini's name, else the profile's -- which is only a
+	 * console name by coincidence ("Intellivision" is, "gamepad" is not), so it
+	 * stays the last resort. */
+	const char *console = g_console[0] ? g_console : sr_config_console_name();
+
+	if (console == NULL)
+		console = sr_profile_name();
 
 	/* $SBBSCTRL locates node.dab; the data dir comes from $SBBSDATA, or -- when a
 	 * door is run by hand without it -- is derived by popping user/####/<console>
@@ -657,7 +675,7 @@ void sr_door_node_playing(const char *rom_path)
 	atexit(sr_door_node_atexit);
 
 	if (title[0] == '\0') {
-		sr_door_rom_basename(fallback, sizeof fallback, rom_path);
+		sr_title_from_rom(fallback, sizeof fallback, rom_path);
 		title = fallback;
 	}
 	snprintf(status, sizeof status, "playing %s (%s)", title, console);

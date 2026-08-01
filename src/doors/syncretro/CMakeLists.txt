@@ -22,6 +22,7 @@ add_executable(syncretro
     syncretro_keypad.c  # Intellivision keypad digits -> RetroPad analog vector
     syncretro_audio.c   # the core's PCM stream -> SyncTERM's audio APC (M4)
     syncretro_door.c    # DOOR32.SYS / -s<fd> / -name / -home / -t / -core
+    syncretro_title.c   # a display title from a ROM filename (the -title fallback)
     syncretro_config.c  # per-user sandbox + system/save dirs
     syncretro_quant.c   # truecolor frame -> 256-color indexed, for the sixel tier
     syncretro_dirty.c   # which cells changed: patch the frame instead of repainting
@@ -227,6 +228,13 @@ if(SYNCRETRO_TESTS)
         target_link_libraries(test_axis m pthread)
     endif()
     add_test(NAME axis COMMAND test_axis)
+
+    # test_title -- the ROM-filename title parser. Pure: no xpdev, no termgfx,
+    # no core. It is the gate on the door's who's-online line now that the
+    # lobby leaves -title off the command line for most cartridges.
+    add_executable(test_title test_title.c syncretro_title.c)
+    target_include_directories(test_title PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME title COMMAND test_title)
 
     # test_games -- the per-cabinet table. Links xpdev for the ini reader; no
     # termgfx and no core, so it runs anywhere.

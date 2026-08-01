@@ -151,6 +151,20 @@ function syncretro_names_set(map)
 	}
 }
 
+// Does a curated games.ini name apply to this filename?
+//
+// It decides whether the lobby has to spend command line on -title. The door can
+// derive a title from a filename that CARRIES one ("Astrosmash (1981)
+// (Mattel).int" -> "Astrosmash"); it cannot invent "Pac-Man" from "puckman.zip",
+// because that fact lives only in games.ini. Conveniently the consoles that need
+// a curated name are the ones with eight-letter filenames and room on the line
+// to spare, and the ones with no games.ini are the ones whose filenames are long
+// enough to overflow it.
+function syncretro_is_mapped(filename)
+{
+	return syncretro_names[syncretro_strip_ext(String(filename)).toLowerCase()] !== undefined;
+}
+
 function syncretro_parse_title(filename)
 {
 	var name = syncretro_strip_ext(String(filename));

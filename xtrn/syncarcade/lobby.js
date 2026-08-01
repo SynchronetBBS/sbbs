@@ -19,6 +19,9 @@ load("syncretro_lobby.js");
 
 syncretro_lobby({
 	dir:      js.exec_dir,               /* this door dir: core, roms/ */
+	/* name / short / core / profile are OVERRIDDEN by console.ini in this
+	 * directory, which the native door reads too -- edit them THERE. These
+	 * stay as the fallback for an install that has no console.ini. */
 	name:     "Arcade",
 	short:    "Arcade",                  /* -> id "arcade": the save dir and ROM cache */
 	core:     "mame2003_plus_libretro",  /* no extension: .so / .dll / .dylib */
