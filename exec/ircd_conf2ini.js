@@ -239,7 +239,7 @@ function harvest_class_comments(fn) {
 /* Anything the .conf could express that the .ini deliberately cannot. */
 function collect_notes() {
 	var notes = [];
-	var i;
+	var i, j, shadowed;
 
 	function warn(str) {
 		notes.push(str);
@@ -278,6 +278,30 @@ function collect_notes() {
 				+ "[Allow] section has a single Mask that is matched against "
 				+ "both.  The hostname mask '%s' was kept.",
 				ILines[i].ipmask, ILines[i].hostmask));
+		}
+	}
+	/* Client authorization is first-match in file order, so a broad entry
+	   makes every narrower one below it unreachable. */
+	for (i = 0; i < ILines.length; i++) {
+		if (!live_mask(ILines[i].hostmask))
+			continue;
+		shadowed = [];
+		for (j = i + 1; j < ILines.length; j++) {
+			if (!live_mask(ILines[j].hostmask))
+				continue;
+			/* A port-restricted entry only shadows that same port */
+			if (ILines[i].port && ILines[i].port != ILines[j].port)
+				continue;
+			if (!wildmatch(ILines[j].hostmask, ILines[i].hostmask))
+				continue;
+			shadowed.push(ILines[j].hostmask);
+		}
+		if (shadowed.length) {
+			warn(format("[Allow] sections are tried in file order and the "
+				+ "first match wins, so the mask '%s' leaves these later "
+				+ "entries unreachable: %s.  Move the broader entry below "
+				+ "the more specific ones if that is not intended.",
+				ILines[i].hostmask, shadowed.join(", ")));
 		}
 	}
 	for (i in HLines) {
