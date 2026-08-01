@@ -157,6 +157,14 @@ function remove_kline(kl_hm) {
 function Automatic_Server_Connect() {
 	var sock;
 
+	if (this.servername.toLowerCase() == ServerName.toLowerCase()) {
+		/* Don't reschedule: a C:Line naming us can never become valid. */
+		log(LOG_WARNING, format(
+			"!WARNING Ignoring C:Line for %s: a server cannot link to itself.",
+			this.servername
+		));
+		return false;
+	}
 	if (Servers[this.servername.toLowerCase()]) {
 		/* Already connected - silently reschedule without flooding opers */
 		this.next_connect = js.setTimeout(
@@ -364,7 +372,10 @@ function IRCClient_netsplit(ns_reason) {
 	}
 
 	for (i in Servers) {
-		if (Servers[i] && (Servers[i].linkparent == this.nick)) {
+		if (   Servers[i]
+			&& (Servers[i] !== this)
+			&& (Servers[i].linkparent == this.nick)
+		) {
 			Servers[i].quit(ns_reason,true,true);
 		}
 	}
@@ -1705,6 +1716,11 @@ function IRCClient_do_connect(con_server,con_port) {
 
 	if (!con_cline) {
 		this.numeric402(con_server);
+		return false;
+	}
+
+	if (con_cline.servername.toLowerCase() == ServerName.toLowerCase()) {
+		this.server_notice("Cannot CONNECT to myself.");
 		return false;
 	}
 

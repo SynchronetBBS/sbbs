@@ -282,6 +282,15 @@ function Unregistered_Commands(cmdline) {
 				this.numeric461("SERVER");
 				break;
 			}
+			if (p[0].toLowerCase() == ServerName.toLowerCase()) {
+				umode_notice(USERMODE_ROUTING,"Routing",format(
+					"Refusing link from %s: server name %s matches my own.",
+					this.hostname,
+					p[0]
+				));
+				this.quit("Server name matches my own.");
+				return 0;
+			}
 			if (Servers[p[0].toLowerCase()]) {
 				this.quit("Server already exists.");
 				return 0;

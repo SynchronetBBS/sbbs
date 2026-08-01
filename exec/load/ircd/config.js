@@ -324,6 +324,15 @@ function Read_Config_File() {
 	Scan_For_Banned_Clients();
 	for (i in CLines) {
 		c = CLines[i];
+		if (c.servername.toLowerCase() == ServerName.toLowerCase()) {
+			log(LOG_WARNING, format(
+				"!WARNING Server %s is configured to link to itself. "
+				+ "Remove its own [Server] section from %s.",
+				c.servername,
+				Config_Filename
+			));
+			continue;
+		}
 		if (!YLines[c.ircclass]) {
 			log(LOG_WARNING, format(
 				"!WARNING IRC Class %u defined for server %s doesn't exist. Using Class 0.",

@@ -26,6 +26,7 @@ function IRC_Server() {
 	this.hub = false;	// are we a hub?
 	this.local = true;	// are we a local socket?
 	this.pinged = false;	// have we sent a PING?
+	this.quitting = false;	// are we already inside quit()?
 	this.server = true;	// yep, we're a server.
 	this.uline = false;	// are we services?
 	// Variables containing user/server information as we receive it.
@@ -1451,6 +1452,14 @@ function Reset_Autoconnect(cline, freq) {
 
 function Server_Quit(str,suppress_bcast,is_netsplit,origin) {
 	var cline;
+
+	/* netsplit() quits every server whose linkparent is us, and those quits
+	   netsplit() in turn.  A loop anywhere in the linkparent graph would
+	   otherwise recurse until the JS engine aborts the IRCd with "too much
+	   recursion", so never descend into a server that's already quitting. */
+	if (this.quitting)
+		return;
+	this.quitting = true;
 
 	if (!str)
 		str = this.nick;
