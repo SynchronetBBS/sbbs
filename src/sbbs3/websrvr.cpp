@@ -2046,6 +2046,17 @@ static void badlogin(SOCKET sock, const char* user, const char* passwd, client_t
 		mswait(startup->login_attempt.delay);
 }
 
+static bool check_file_download(http_session_t * session, uint* reason)
+{
+	if (!download_is_free(&scfg, session->file.dir, &session->user, &session->client)
+	    && user_available_credits(&session->user) < session->file.cost) {
+		if (reason != NULL)
+			*reason = NotEnoughCredits;
+		return false;
+	}
+	return user_can_download(&scfg, session->file.dir, &session->user, &session->client, reason);
+}
+
 static bool check_ars(http_session_t * session)
 {
 	uchar *   ar;
@@ -2084,7 +2095,15 @@ static bool check_ars(http_session_t * session)
 		if (session->user.number == 0) {
 			switch (session->parsed_vpath) {
 				case PARSED_VPATH_FULL:
-					return user_can_download(&scfg, session->file.dir, &session->user, &session->client, NULL);
+				{
+					uint reason = CantDownloadFromDir;
+					if (check_file_download(session, &reason))
+						return true;
+					lprintf(LOG_DEBUG, "%04d %-5s [%s] !Unauthenticated download denied (reason: %u) for request: %s"
+					        , session->socket, session->client.protocol, session->host_ip
+					        , reason + 1, session->req.request_line);
+					return false;
+				}
 				case PARSED_VPATH_ROOT:
 					return user_can_access_all_libs(&scfg, &session->user, &session->client);
 				case PARSED_VPATH_LIB:
@@ -2209,11 +2228,7 @@ static bool check_ars(http_session_t * session)
 
 	uint reason = CantDownloadFromDir;
 	if (session->parsed_vpath == PARSED_VPATH_FULL) {
-		if (download_is_free(&scfg, session->file.dir, &session->user, &session->client)
-		    || session->user.cdt >= session->file.cost)
-			authorized = user_can_download(&scfg, session->file.dir, &session->user, &session->client, &reason);
-		else
-			authorized = false;
+		authorized = check_file_download(session, &reason);
 	} else {
 		ar = arstr(NULL, session->req.ars, &scfg, NULL);
 		authorized = chk_ar(&scfg, ar, &session->user, &session->client);

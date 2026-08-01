@@ -118,6 +118,15 @@
   protocol, IP, requested URL, and ARS
 - Anonymous (no-auth) sessions skip the user-database lookup
   (small startup latency improvement)
+- Fix: unauthenticated downloads via the file-area virtual path
+  (`FileVPathPrefix`) ignored file credit costs — enabling the
+  file vpath made costed files free to anyone. Credits are now
+  enforced as they always were for authenticated users and for
+  the FTP server (issue #1192)
+- Fix: a user's free credits (renewed daily) now count toward
+  file download costs, as they already did on the Terminal and
+  FTP servers — the web server checked regular credits only,
+  though free credits were spent first when charging
 
 ## FTP Server
 
