@@ -337,6 +337,14 @@
   announce the real operator's IP/hostname so `/whois` and
   K-lines target the real user instead of the gateway. CTCP
   request and reply handling fixed
+- New: `ircd_conf2ini.js` — converts a legacy `ctrl/ircd.conf`
+  to the `ircd.ini` format, keeping the original as a backup and
+  verifying that nothing was lost in translation
+- IRCd config-file writing (`ircdcfg.js` "Save") no longer drops
+  bans, `/RESTART` and `/DIE` operator privileges, hubs without a
+  server link, or `[Allow]` passwords
+- IRCd `[Class]` sections honor `Maximum=0` (unlimited) again
+  instead of silently substituting a limit of 100
 - SlyEdit: messages uploaded via `/UPLOAD` (or `/UL`) are used
   as-is, with no attribute-code interpretation. Guest users get
   default settings; per-user settings are no longer saved for
