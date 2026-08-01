@@ -1,0 +1,3 @@
+system.platform == "Win32" ||
+!file_exists(js.exec_dir + "../ircd.js") ||
+!file_exists(js.exec_dir + "../jsexec")
