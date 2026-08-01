@@ -67,8 +67,10 @@ class Renderer implements IRenderer {
   init(): void {
     // Try to load frame.js
     try {
-      load("frame.js");
+      if (typeof Frame === 'undefined') load("frame.js");
+      scene3d.installFrameDepth();
       this.frame = new Frame(1, 1, this.width, this.height, BG_BLACK);
+      scene3d.tagFrameDepth(this.frame, 'content');
       this.frame.open();
       this.useFrame = true;
       logInfo("Renderer: Using frame.js");
@@ -78,6 +80,7 @@ class Renderer implements IRenderer {
     }
 
     // Clear screen
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
   }
 
@@ -164,6 +167,7 @@ class Renderer implements IRenderer {
       this.frame.draw();
     } else {
       // Direct console output (slower, but works without frame.js)
+      scene3d.selectRawDepth('content');
       console.home();
       for (var y = 0; y < this.height; y++) {
         var line = '';
@@ -175,6 +179,7 @@ class Renderer implements IRenderer {
           console.print("\r\n");
         }
       }
+      scene3d.selectRawDepth('glass');
     }
   }
 
@@ -196,6 +201,7 @@ class Renderer implements IRenderer {
 
     // Restore terminal state
     console.attributes = LIGHTGRAY;
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
   }
 }

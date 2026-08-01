@@ -11,6 +11,7 @@ Race through neon-lit highways, collect power-ups, and compete for high scores�
 ## Features
 
 - **Pseudo-3D Racing** — Classic road rendering with horizon, curves, and hills
+- **Nintendo 3DS Stereo** — Native layered depth on detected 3dBBS protocol 0.3+ clients
 - **Synthwave Aesthetics** — Neon colors, palm trees, sunset skies in CP437
 - **Kart Items** — Mushroom boosts, shells, bananas, and more
 - **AI Opponents** — CPU drivers with different personalities

@@ -132,6 +132,7 @@ function showTrackSelector(highScoreManager?: HighScoreManager): TrackSelectionR
   };
 
   // Initial draw
+  scene3d.selectRawDepth('glass');
   console.clear(LIGHTGRAY, false);
   drawSelectorUI(state, highScoreManager);
 
@@ -266,6 +267,7 @@ function showTrackSelector(highScoreManager?: HighScoreManager): TrackSelectionR
     }
 
     if (needsRedraw) {
+      scene3d.selectRawDepth('glass');
       console.clear(LIGHTGRAY, false);
       drawSelectorUI(state, highScoreManager);
     }
@@ -307,7 +309,9 @@ function showSecretTracksMenu(): TrackSelectionResult {
   
   if (secretTracks.length === 0) {
     // No secrets yet - show a teaser
+    scene3d.selectRawDepth('glass');
     console.clear(LIGHTGRAY, false);
+    scene3d.selectRawDepth('title');
     console.gotoxy(1, 10);
     console.attributes = LIGHTMAGENTA;
     console.print('       ' + GLYPH.DBOX_TL + repeatChar(GLYPH.DBOX_H, 44) + GLYPH.DBOX_TR + '\r\n');
@@ -317,7 +321,9 @@ function showSecretTracksMenu(): TrackSelectionResult {
     console.print('       ' + GLYPH.DBOX_BL + repeatChar(GLYPH.DBOX_H, 44) + GLYPH.DBOX_BR + '\r\n');
     console.print('\r\n');
     console.attributes = DARKGRAY;
+    scene3d.selectRawDepth('prompt');
     console.print('                 Press any key to return...\r\n');
+    scene3d.selectRawDepth('glass');
     console.inkey(K_NONE, 5000);
     return { selected: false, track: null };
   }
@@ -326,9 +332,11 @@ function showSecretTracksMenu(): TrackSelectionResult {
   
   while (true) {
     // Draw secret tracks menu
+    scene3d.selectRawDepth('glass');
     console.clear(LIGHTGRAY, false);
     
     // Header with CP437 ASCII art
+    scene3d.selectRawDepth('title');
     console.gotoxy(1, 1);
     console.attributes = LIGHTRED;
     console.print(repeatChar(GLYPH.DBOX_H, 79) + '\r\n');
@@ -342,6 +350,7 @@ function showSecretTracksMenu(): TrackSelectionResult {
     console.print('  These tracks are hidden from the main menu. Shh, it\'s a secret!\r\n\r\n');
     
     // List secret tracks
+    scene3d.selectRawDepth('content');
     for (var i = 0; i < secretTracks.length; i++) {
       var track = secretTracks[i];
       console.gotoxy(5, 9 + i * 2);
@@ -368,6 +377,7 @@ function showSecretTracksMenu(): TrackSelectionResult {
     }
     
     // Controls
+    scene3d.selectRawDepth('prompt');
     console.gotoxy(5, 20);
     console.attributes = DARKGRAY;
     console.print(repeatChar(GLYPH.BOX_H, 68) + '\r\n');
@@ -388,6 +398,7 @@ function showSecretTracksMenu(): TrackSelectionResult {
     console.print('] Back');
     
     // Handle input
+    scene3d.selectRawDepth('glass');
     var key = console.inkey(K_UPPER, 100);
     if (key === '') continue;
     
@@ -429,17 +440,20 @@ function drawSelectorUI(state: SelectorState, highScoreManager?: HighScoreManage
  * Draw the header.
  */
 function drawHeader(): void {
+  scene3d.selectRawDepth('chrome');
   console.gotoxy(1, 1);
   console.attributes = LIGHTMAGENTA;
   console.print(repeatChar(GLYPH.BOX_H, SCREEN_WIDTH));
   
   console.gotoxy(1, 2);
+  scene3d.selectRawDepth('title');
   console.attributes = LIGHTCYAN;
   var title = '  SELECT YOUR RACE  ';
   var padding = Math.floor((SCREEN_WIDTH - title.length) / 2);
   console.print(repeatChar(' ', padding) + title);
   
   console.gotoxy(1, 3);
+  scene3d.selectRawDepth('chrome');
   console.attributes = LIGHTMAGENTA;
   console.print(repeatChar(GLYPH.BOX_H, SCREEN_WIDTH));
 }
@@ -448,6 +462,7 @@ function drawHeader(): void {
  * Draw the left panel - circuit and track selection.
  */
 function drawLeftPanel(state: SelectorState): void {
+  scene3d.selectRawDepth('content');
   var y = 5;
   
   // Draw vertical separator
@@ -579,6 +594,7 @@ function drawTrackList(state: SelectorState, startY: number): void {
  * Draw the right panel - track info and route visualization.
  */
 function drawRightPanel(state: SelectorState, highScoreManager?: HighScoreManager): void {
+  scene3d.selectRawDepth('content');
   var circuit = CIRCUITS[state.circuitIndex];
   
   // Panel header
@@ -1315,6 +1331,7 @@ function drawTrackRoute(_track: TrackDefinition): void {
  * Draw controls at the bottom.
  */
 function drawControls(state: SelectorState): void {
+  scene3d.selectRawDepth('prompt');
   console.gotoxy(1, 23);
   console.attributes = LIGHTMAGENTA;
   console.print(repeatChar(GLYPH.BOX_H, SCREEN_WIDTH));
@@ -1375,6 +1392,7 @@ function drawControls(state: SelectorState): void {
   console.gotoxy(1, 25);
   console.attributes = LIGHTMAGENTA;
   console.print(repeatChar(GLYPH.BOX_H, SCREEN_WIDTH));
+  scene3d.selectRawDepth('glass');
 }
 
 // ============================================================

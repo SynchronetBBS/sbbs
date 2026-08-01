@@ -250,16 +250,23 @@ var CarSelector = {
    * Output the SceneComposer buffer to the console.
    */
   outputToConsole: function(composer: SceneComposer): void {
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
     var buffer = composer.getBuffer();
     for (var y = 0; y < buffer.length; y++) {
+      var rowBand = y <= 2 ? 'title' : (y >= 21 ? 'prompt' : 'content');
+      scene3d.selectRawDepth(rowBand);
       console.gotoxy(1, y + 1);
       for (var x = 0; x < buffer[y].length; x++) {
+        // The selected car preview occupies the lower-right card. Give the
+        // vehicle its own near plane while the lists remain on the menu deck.
+        if (y >= 15 && y <= 18 && x === 38) scene3d.selectRawDepth('vehicleNear');
         var cell = buffer[y][x];
         console.attributes = cell.attr;
         console.print(cell.char);
       }
     }
+    scene3d.selectRawDepth('glass');
   },
   
   /**

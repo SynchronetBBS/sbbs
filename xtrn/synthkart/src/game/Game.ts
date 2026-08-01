@@ -504,6 +504,7 @@ class Game {
     bestLap: number
   ): void {
     // Clear the entire screen first
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
     
     // Colors
@@ -522,6 +523,7 @@ class Game {
     var topY = Math.floor((viewHeight - boxHeight) / 2);
     
     // Draw box border using gotoxy for precise positioning
+    scene3d.selectRawDepth('chrome');
     console.gotoxy(boxX + 1, topY + 1);
     console.attributes = boxAttr;
     console.print(GLYPH.DBOX_TL);
@@ -548,12 +550,14 @@ class Game {
     console.print(GLYPH.DBOX_BR);
     
     // Title
+    scene3d.selectRawDepth('title');
     var title = "=== RACE COMPLETE ===";
     console.gotoxy(boxX + 1 + Math.floor((boxWidth - title.length) / 2), topY + 3);
     console.attributes = titleAttr;
     console.print(title);
     
     // Position
+    scene3d.selectRawDepth('content');
     var posSuffix = PositionIndicator.getOrdinalSuffix(position);
     console.gotoxy(boxX + 5, topY + 5);
     console.attributes = labelAttr;
@@ -587,10 +591,12 @@ class Game {
     console.print(this.state!.track.name);
     
     // Prompt
+    scene3d.selectRawDepth('prompt');
     var prompt = "Press ENTER to continue";
     console.gotoxy(boxX + 1 + Math.floor((boxWidth - prompt.length) / 2), topY + 11);
     console.attributes = promptAttr;
     console.print(prompt);
+    scene3d.selectRawDepth('glass');
   }
 
   /**
