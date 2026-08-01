@@ -4,12 +4,13 @@
 **Revised:** 2026-08-01, following review by Deuce
 **Status:** Design, not yet approved for implementation
 
-The 2026-08-01 revision restated the threat model as two testable properties,
-recorded the decision that the change is mandatory rather than optional,
-corrected two factual errors in the first draft (browser support for HTTP
-authentication, and the claim that HTTP Basic could be moved onto session
-tokens), completed the audit of password sinks, and promoted the crypto-library
-choice and the IMAP transport work to prerequisites.
+The 2026-08-01 revision restated the threat model as two named assets and three
+testable properties, recorded the decision that the change is mandatory rather
+than optional, corrected two factual errors in the first draft (browser support
+for HTTP authentication, and the claim that HTTP Basic could be moved onto
+session tokens), completed the audit of password sinks, settled the `pass.tab`
+record format, and promoted the crypto-library choice and the IMAP transport
+work to prerequisites.
 
 ## Problem
 
@@ -22,15 +23,59 @@ record in `data/user/user.tab` (parsed at `userdat.c:545`, written at
 The adversary is **possession of the user database**, by whatever route: a copy
 taken by anyone with read access to `data/`, a backup, one of the rotated
 copies the BBS makes itself, a co-sysop, a resold drive, a breach. The
-adversary is the file, not a person with a job title. The asset being protected
-is not the user's access to *this* BBS — it is the user's password *as reused
-on other systems*. BBS users reuse passwords; a leaked user database burns
-accounts elsewhere.
+adversary is the file, not a person with a job title.
 
-The goal reduces to two properties of the stored data. They are the acceptance
-test for every proposal in this document, and nothing below is justified by
-assertion where it can be justified by these:
+Two assets are at stake, and both are real:
 
+1. **The user's password as reused on other systems.** This is the primary
+   asset, because the harm is unbounded and unfixable from here: BBS users
+   reuse passwords, the accounts burned are on systems this BBS has no
+   relationship with, and neither the sysop nor the user has any way to learn
+   it happened.
+2. **Every account on this BBS.** A leaked `user.tab` today is directly usable
+   to log in as any user on every server the BBS runs — with the partial
+   exception of sysop accounts, which have a second factor; see below. This is
+   secondary only because it is bounded and recoverable — the damage stops at
+   one system and a mass password reset ends it — not because it is small.
+
+The second asset is easy to argue away by imagining the holder of the file is a
+sysop, who could set a password anyway. Most holders are not: someone with read
+access to `data/`, whoever ends up with a backup, whoever buys the drive. For
+them the file is a complete account takeover, and hashing takes that away
+outright rather than merely making it expensive.
+
+### The system password already mitigates part of asset 2
+
+Sysop accounts have a second factor that ordinary accounts do not: the
+**system password** (`cfg.sys_pass`), stored separately from the user database
+as the root `password=` key in `ctrl/main.ini` (`scfgsave.c:171`). It gates
+sysop login when the sysop enables it — `login.cpp:115`, conditional on
+`SM_SYSPASSLOGIN` and `SM_R_SYSOP` — and it gates the issuing of sysop commands
+unconditionally, through `chksyspass()` (`con_hi.cpp:145`), subject to a
+`sys_pass_timeout` re-prompt window.
+
+The consequence for this design is worth stating: on a system that requires it,
+a copy of `user.tab` yields the sysop's *user account* but not the sysop's
+*authority*. That is a genuine mitigation and it exists today.
+
+It is bounded, though, in three ways that keep it from displacing anything
+here. It is a single shared secret rather than a per-account credential, so it
+protects nothing once it is itself disclosed — and it is cleartext too, in a
+file that travels in the same backups. It does nothing for asset 1, the reused
+password. And it does nothing for the other 1,456 accounts.
+
+**The system password's storage and use are out of scope for this design.**
+Nothing below changes where it lives, how it is compared, or when it is
+demanded. It is recorded here because it changes the honest description of what
+a leaked `user.tab` costs a sysop, not because it is being touched.
+
+The goal reduces to three properties of the stored data. They are the
+acceptance test for every proposal in this document, and nothing below is
+justified by assertion where it can be justified by these:
+
+- **P0 — non-usability.** The stored record must not itself authenticate. This
+  is the one that protects asset 2, it is satisfied by any one-way function,
+  and today's format fails it completely.
 - **P1 — indistinguishability.** Two users with the same password must not
   produce the same stored record. A file that answers "which of these accounts
   share a password" is a map of which accounts to attack together, and it leaks
@@ -40,15 +85,30 @@ assertion where it can be justified by these:
   This is what stops a copy of the database from being turned into working
   credentials elsewhere. This requires a deliberately slow KDF.
 
+P0 is free once P1 and P2 are met, which is why the rest of this document
+argues about the latter two. It is stated separately because it is the property
+that decides asset 2, and because it is possible to satisfy it and still have
+achieved nothing: an unsalted fast hash meets P0 and fails both P1 and P2.
+
 Explicitly **out** of scope, and the design must not claim otherwise:
 
-- A sysop impersonating a user on this BBS. They can simply set a new password.
-- A **malicious** sysop generally. Anyone who can instrument the running system
+- A **sysop** impersonating a user on this BBS. They can simply set a new
+  password. This does not generalize to other holders of the file, per asset 2
+  above.
+- A malicious sysop generally. Anyone who can instrument the running system
   captures passwords as they arrive, and no storage design prevents it. What
   this design addresses is the *careless* handling of a database that a
   malicious party later obtains — which is how these files actually escape.
+
+  This limit belongs to **password** authentication, not to authentication.
+  Client-held-secret schemes really do defeat a malicious sysop: an SSH host
+  never sees the private key, and a TLS client certificate is the same
+  arrangement. SCRAM is the weaker member of that family — the password still
+  exists, but the server never receives it. Saying "a malicious sysop cannot be
+  mitigated" is therefore true only inside the scope of this design, and must
+  not be quoted as a general claim.
 - The live authentication path. The server necessarily sees the password at
-  login. P1 and P2 are properties of data at rest.
+  login. P0, P1 and P2 are properties of data at rest.
 
 ### Transport is a separate problem
 
@@ -71,11 +131,61 @@ sharing the installation, which means it lives in the same directory tree, on
 the same disk, in the same backup. Whatever takes the database takes the key
 with it.
 
-Encryption also fails P1 outright: under any deterministic scheme, two users
-with the same password encrypt to the same ciphertext, so the file still
+Encryption also fails P0 by definition — the whole point of it is that the
+plaintext comes back — and fails P1 under any deterministic scheme, since two
+users with the same password encrypt to the same ciphertext and the file still
 answers "who shares a password" without decrypting anything.
 
-Only a slow, salted, one-way hash satisfies both properties.
+Only a slow, salted, one-way hash satisfies all three properties.
+
+### The strongest version of the encryption argument
+
+The rejection above must not rest on "a sysop holds the key", because that
+argument proves too much and is not applied consistently elsewhere in this
+document. There is a version of encrypted storage that the argument does not
+touch: **hold the key off disk** — entered by an operator at startup, or kept
+in a TPM or an external key service — and randomize the ciphertext per record.
+That construction defeats a pure file-copy adversary, fixes P1, and is a real
+pattern in other software. It deserves an answer rather than a dismissal.
+
+Three answers, in increasing order of weight:
+
+1. **It still fails P0.** Whatever unwraps the record hands back a working
+   password. The stored record remains directly usable to anyone who has both
+   halves, where a hash is not usable to anyone.
+2. **Failure is total and retroactive.** One key disclosure exposes every
+   password ever stored, instantly and at once. Hashing degrades gracefully
+   instead: a weak password falls, a strong one does not, and the attacker pays
+   per account. When the threat is a file that may leak years from now, the
+   difference between "graceful" and "total" is the whole question.
+3. **The key has nowhere to live.** A BBS runs unattended, restarts by itself,
+   and may run several servers across several hosts against one installation.
+   A secret that every one of those processes must have at every start, without
+   a human present, ends up on the same disk as the data — which is where this
+   section began. TPMs and key services are not a general answer for software
+   installed by hobbyist sysops on whatever they have.
+
+And the decisive one: encryption buys nothing here that hashing does not, while
+costing key management. The BBS never needs to *recover* a password — only to
+answer yes or no about one. Choosing the reversible primitive for an
+irreversible problem is what created the situation this document exists to fix.
+
+### What would actually defeat a malicious sysop
+
+Nothing in this section, and nothing in this design. That is a property of
+password authentication: the user sends the secret and the server checks it, so
+the server sees it.
+
+The escape is to stop sending it. Public-key authentication — SSH's model, or
+TLS client certificates — leaves the private key on the user's machine, and no
+sysop, careless or malicious, can obtain what the server was never given.
+SCRAM is the intermediate case: the password still exists in the user's head,
+but the server receives a proof rather than the secret.
+
+That is a larger change than storage, and it is not scoped here. It is recorded
+because it is the honest answer to "then what *would* work", and because the
+rejection of encryption should be understood as choosing the better of two
+server-side options — not as a claim that server-side is the only option.
 
 ## Mandatory, not optional
 
@@ -83,10 +193,11 @@ Hashed storage is **not** a sysop-selectable mode. There is no configuration
 item that turns it off, and no supported path back to cleartext.
 
 The argument is about who bears the cost and who makes the choice. The party
-who benefits from P1 and P2 is the user with a reused password, and that user
-cannot tell a BBS that hashes from one that does not — there is no banner, no
-protocol signal, nothing observable at login. Making it optional therefore
-assigns the decision to the one party that bears none of the consequence.
+who benefits is the user — the one with a reused password, and the one whose
+account on this BBS is in the leaked file — and that user cannot tell a BBS
+that hashes from one that does not. There is no banner, no protocol signal,
+nothing observable at login. Making it optional therefore assigns the decision
+to the one party that bears none of the consequence.
 
 Two supporting arguments:
 
@@ -94,15 +205,17 @@ Two supporting arguments:
   codebase, stays wired into every server, and stays something that has to be
   tested and kept working indefinitely. The deprecations below buy nothing if
   the code they remove has to be retained behind a flag.
-- P1 and P2 are properties of a **file**, and user databases circulate between
-  systems and across time — backups, host migrations, sysop-to-sysop transfers.
-  A per-system opt-out is a per-system hole that travels with the copy.
+- P0, P1 and P2 are properties of a **file**, and user databases circulate
+  between systems and across time — backups, host migrations, sysop-to-sysop
+  transfers. A per-system opt-out is a per-system hole that travels with the
+  copy.
 
 The consequences are real and belong in the same breath as the decision:
 
-- **The per-system switch disappears.** The digest mechanisms are removed
-  outright rather than gated, which simplifies the work but removes the escape
-  hatch a cautious sysop would reach for.
+- **No hashing switch gets built.** An earlier draft of this design proposed
+  one; nothing like it exists in the tree today, and none is added. The digest
+  mechanisms are removed outright rather than gated, which is less work than
+  gating them, but it means there is no escape hatch for a cautious sysop.
 - **IMAP on port 143 breaks at upgrade** for CRAM-MD5 clients. That promotes
   STARTTLS or IMAPS from an open question to a hard prerequisite: it must ship
   before the deprecation, not alongside it.
@@ -156,20 +269,26 @@ CRAM-MD5 scheme is those 32 bytes). It is also genuinely better than cleartext:
 a leak does not directly hand over the password.
 
 The disagreement is not about whether the intermediates exist. It is about
-whether they satisfy P1 and P2. They satisfy neither.
+whether they satisfy P0, P1 and P2. They satisfy none of them.
 
-1. **They fail P1 outright.** The midstate is a deterministic, unsalted
+1. **They fail P0 for their own mechanism.** The midstate is *by construction*
+   sufficient to answer any CRAM-MD5 challenge. Whoever holds the file can
+   authenticate to the SMTP, POP3 or IMAP endpoint as any user immediately,
+   with no cracking at all. Storing a verifier removes the ability to reuse the
+   credential elsewhere; it does not remove the ability to log in here, which
+   is asset 2.
+2. **They fail P1 outright.** The midstate is a deterministic, unsalted
    function of the password alone. Two users with the same password have
    byte-identical records, so the file answers "which accounts share a
    password" by inspection, with no computation at all. That is the specific
    property the exercise is meant to eliminate.
-2. **They fail P2 by four orders of magnitude.** Testing a candidate costs two
+3. **They fail P2 by four orders of magnitude.** Testing a candidate costs two
    MD5 compressions — GPU-speed, and with no salt one precomputed table attacks
    every account at once. Worse, storing *several* verifiers leaves you with the
    security of the weakest: an attacker holding the file does not attack the
    PBKDF2 record, they attack the CRAM record and recover the same password.
    The expensive hash becomes decorative.
-3. **It does not generalize.** APOP is `MD5(timestamp || password)`: the
+4. **It does not generalize.** APOP is `MD5(timestamp || password)`: the
    password is a suffix and the timestamp changes per session, so nothing is
    precomputable and the literal password is required. Hotline derives session
    and ECC keys from the password (`hotline.js:1018-1020`), which is key
@@ -234,86 +353,195 @@ Credentials move out of `user.tab` entirely, into a new fixed-record file
 indexed by user number, using the same seek-and-byte-range-lock idiom
 (`userdatoffset()` at `userdat.c:332`).
 
+The fixed-length record is deliberate and is kept: it is what makes a user
+record addressable by arithmetic instead of a scan, and what lets a single
+record be byte-range locked without locking the file. `pass.tab` needs both
+properties for exactly the same reasons `user.tab` does, and adopts them
+unchanged.
+
 Rationale, in order of importance:
 
-1. **`user.tab` is the artifact that circulates.** It is mode 0644, exported
-   over SMB to the other hosts, opened by the web server on the scrape-heavy
-   paths, read by sysop scripts, and present in every backup. Removing
-   credentials from it makes a copy of it worthless for the stated attack.
-   `pass.tab` is touched only by the authentication path and can be 0600.
-2. **No record-length change**, so `user.tab`'s 1000-byte stride is untouched
-   and there is no multi-host flag day (see Constraints).
-3. Room to grow into Argon2id later without revisiting the decision.
+1. **`user.tab` is the artifact that circulates.** It is world-readable, opened
+   by every server on nearly every request, read by sysop scripts and
+   third-party utilities, copied by the BBS's own rotation, and present in
+   every backup. Removing credentials from it makes a copy of it worthless for
+   the stated attack. `pass.tab` is touched only by the authentication path and
+   can be mode 0600.
+2. **`user.tab`'s stride is not disturbed.** The record is nearly full: on a
+   sample live file, the longest observed value of every field summed together
+   came to 984 of the 999 available content bytes. A PBKDF2-SHA512 credential
+   runs to roughly 145 bytes against today's 40, so growing `LEN_PASS` would mean
+   widening `USER_RECORD_LINE_LEN` — a format change every reader of the file
+   must make at once, or compute wrong offsets against every record. A separate
+   file avoids the question entirely.
+3. **It gives space back.** The vacated `USER_PASS` field holds a one-byte
+   sentinel rather than up to `LEN_PASS` bytes of password, so the change
+   returns up to 39 bytes of the record to other fields instead of consuming
+   more. See "The `user.tab` password field".
+4. Room to grow the credential record later without revisiting any of this.
 
-### The record length lives in the file, not in a header file
+### The record length is measured, not stored
 
-`user.tab`'s record length is a compile-time constant (`USER_RECORD_LINE_LEN`,
-`userdat.h:36`), and Constraints below describes what that costs: the stride
-cannot be changed without every host that shares the file changing at the same
-instant. `pass.tab` must not repeat that mistake, and it is the file most
-likely to need a longer record later — a move from PBKDF2 to Argon2id, or a
-larger salt, changes the record size.
+No code path may use a compile-time record length for `pass.tab`. This is not a
+criticism of `USER_RECORD_LINE_LEN` (`userdat.h:36`), which has been a fine
+choice for a record whose fields are all human-scale, and which has been
+changed before by a strided rewrite (`upgrade_to_v320.c`). `pass.tab` differs
+in one respect that matters: its record size is set by a *cryptographic*
+parameter, so it moves whenever the algorithm does — a switch to Argon2id, a
+longer salt, a wider digest. It is the file most likely to need a new stride,
+and least able to predict when.
 
-So the length is **self-describing**:
+The length is obtained by **measuring the first record**: read from offset 0 to
+the first LF, and that byte count is the stride. There is no header record and
+no stored length field.
 
-- **Record 0 is a header**, occupying one full record slot. User *N*'s record
-  is therefore at offset `N * reclen`, and the offset arithmetic remains a
-  single multiply — the header costs one slot, not a special case.
-- The header carries a magic, a format version, and the record length, in the
-  file's own tab-separated convention.
-- Readers take `reclen` from the header on open. No code path may use a
-  compile-time record length.
-- A missing, truncated or unparseable header **fails closed**: the file is
-  unusable and authentication is denied, rather than being read at a guessed
-  stride against records that do not start where the reader thinks.
+That is worth stating as a deliberate choice rather than an obvious one,
+because a header was the alternative and is worse here:
+
+- **The offset arithmetic is unchanged.** Records stay at `(N - 1) * reclen`,
+  exactly as `userdatoffset()` computes it. A header would have consumed a slot
+  and forced every record to shift.
+- **Nothing has to be written for it to work.** The geometry is a property the
+  file already has, by virtue of being fixed-length and LF-terminated. A file
+  written by code that never heard of this convention is still measurable.
+- **There is nothing to keep in sync.** A stored length is a second copy of a
+  fact, and second copies go stale — a rewrite that changes the stride and
+  forgets the header field yields a file that lies about itself, which is worse
+  than one that says nothing.
+- **No file-level version is needed**, because versioning lives one level down:
+  each record names its own algorithm and carries its own cost and salt. There
+  is nothing a file header would have to say.
+
+What it requires, and what must therefore be enforced:
+
+- **No field may contain an LF.** The measurement assumes the first LF in the
+  file is the record terminator. This holds today by construction — fields are
+  text, padding is tabs — but it becomes an invariant the write path must
+  guarantee rather than an accident.
+- **Sanity-check the result before trusting it.** The measured length must fall
+  within a plausible range, and the file size must be an exact multiple of it.
+  A file that fails either check is refused rather than read at a guessed
+  stride, and authentication fails closed.
+- **An empty or absent file has nothing to measure**, so the compile-time
+  default applies at creation only — the one place a constant is legitimate.
 
 Initial record length: 256 bytes, LF-terminated, tab-padded, matching the
-existing convention. Growing it later rewrites `pass.tab` at the new stride and
-updates the header. Because every release from the first one takes the length
-from the file, a host running older code still lands on record boundaries — and
-if the *format* version has moved past what it understands, it fails closed on
-a version check rather than silently misreading.
+existing convention. Growing it later is a rewrite of `pass.tab` at the new
+stride and nothing else; every reader, old or new, measures the new length on
+its next open.
+
+#### This is a convention, not a `pass.tab` feature
+
+`user.tab` may want the same treatment whenever its own record has to grow, and
+measuring costs it nothing to adopt:
+
+- **It is a code-only change there.** Every `user.tab` in existence already
+  answers 1000 to this measurement, so a reader that measures instead of
+  assuming is compatible with every file that exists, immediately, with no
+  conversion and no format bump. The stride can then be widened later by a
+  rewrite alone — which is what makes this worth doing *before* it is needed
+  rather than during the emergency.
+- **The measurement belongs in a shared helper** rather than in the password
+  code — measure, range-check, verify the file size divides evenly, return the
+  length or fail. Both files then get identical behavior from one
+  implementation, and a third fixed-record file gets it for free.
+
+`user.tab` is not touched by this design. This is recorded so the `pass.tab`
+implementation is shaped as something reusable from the start.
 
 ### Record format
 
-Self-describing, PHC-style, so the cost factor can be raised later and records
-upgraded opportunistically:
+The record is **tab-separated**, like every other `.tab` file in the tree. The
+credential inside it is **one opaque field**:
 
 ```
-$pbkdf2-sha512$i=<iterations>$<salt-b64>$<digest-b64>
+<normalization>\t<verifier>
 ```
 
-A record must carry its own algorithm, cost and salt. Mystic BBS's
-documentation notes that changing its iteration count does not re-hash existing
-passwords; that is the direct consequence of a non-self-describing field, and
-it is permanent in a way the algorithm choice is not.
+Tab-separated, tab-padded, LF-terminated — the same conventions as `user.tab`,
+which is what the extension claims. That much follows from the filename, and it
+buys three things: the parse and write idiom already in `userdat.c` is reused
+rather than a second string grammar being added to the tree; it composes with
+the measured record length above, which depends on tab padding and LF
+termination; and trailing fields can be appended later for free, because
+padding is the separator itself — which is how `pwmod` could move here without
+a format change.
 
-Two algorithm identifiers are defined:
+#### Why the verifier is opaque and not split into fields
 
-- `pbkdf2-sha512` — input hashed as typed; passwords are case-sensitive.
-- `pbkdf2-sha512-uc` — input uppercased before hashing; passwords are
-  case-insensitive. Used only by migrated records (see Migration).
+The obvious alternative is to break the credential into `algorithm`,
+`parameters`, `salt` and `digest` as four real fields. It reads better and it
+is wrong.
 
-`pbkdf2-sha512` is written here as the concrete example, not as a settled
-choice — see "The crypto library has to be chosen before anything is built on
-it" under Constraints. The point of the format is that the identifier is *in
-the record*, so an `argon2id` identifier can be added later without touching
-anything that already exists.
+**Password libraries verify from the encoded string, not from its parts.**
+`argon2id_verify(encoded, pwd, len)`, `crypto_pwhash_str_verify(str, ...)` and
+every equivalent take the whole crypt-format string and parse it themselves.
+Storing the parts means reassembling the string before every verification, and
+reassembling it *byte-exactly* — including which base64 alphabet and padding
+convention that library uses. That is a subtle, security-relevant bug waiting
+to happen, in exchange for legibility.
 
-Iteration count is configurable, defaulting far above Mystic's 1000 (their wiki
-recommends "3000 or lower for performance reasons"; current OWASP guidance for
-PBKDF2-HMAC-SHA512 is on the order of 210,000).
+**The four-field schema is not universal.** bcrypt already breaks it: its salt
+and digest are a single fused radix-64 run in a nonstandard alphabet, not two
+values. Splitting asserts a structure that the algorithms do not actually
+share, so every future algorithm risks not fitting.
+
+**You can never re-hash on import.** If a user base is ever migrated in from
+other software, the plaintexts are gone by definition, so the only way to carry
+those accounts is to store the foreign verifier verbatim and let the library
+that understands it do the checking. An opaque field can hold a `$2b$`, a
+`$argon2id$` or a `{SSHA512}` string unchanged. A schema of our own devising
+cannot.
+
+So the BBS does not parse the verifier at all. It reads a string, hands it and
+the typed password to a verify function, and gets a yes or no.
+
+What survives from the split-field version is the property that actually
+mattered: **every record carries its own algorithm, cost and salt**, because
+the crypt format carries them. Mystic BBS's documentation notes that changing
+its iteration count does not re-hash existing passwords; that is what a fixed,
+non-self-describing field costs, and it is permanent in a way the algorithm
+choice is not. Raising the cost applies to new records without invalidating old
+ones.
+
+**One verifier per record, not several.** The format could obviously hold a
+list, and there is exactly one use for that: per-mechanism verifiers, so
+CRAM-MD5 keeps working. That is the thing this design refuses, for the reasons
+under "Per-mechanism verifiers were considered and rejected". A schema that
+makes it convenient is a schema arguing against the design it belongs to.
+
+#### The other field
+
+`<normalization>` is how the typed password is preprocessed before it reaches
+the verifier — `none`, or `upper` for migrated records (see Migration).
+
+This is deliberately *not* folded into the algorithm identifier as a
+`pbkdf2-sha512-uc` pseudo-algorithm. Uppercasing is Synchronet's behavior, not
+the KDF's; a crypt string produced elsewhere would never carry such a marker,
+and inventing one would be the first step toward a private format again. It is
+our field, so it is our column.
+
+#### Sizing and special cases
+
+A PBKDF2-SHA512 verifier in crypt form runs to roughly 140 characters — a
+16-byte salt is 24 base64 characters, a SHA-512 digest is 88, plus the
+identifier and cost. With the normalization field that is about 145 of the 255
+available content bytes. Argon2id with a 32-byte digest is smaller. The initial
+256-byte record is comfortable, and the length is measured rather than assumed,
+so it is not a ceiling.
 
 Two values need explicit representation, and conflating them reintroduces the
 bug described under "The `user.tab` password field" below:
 
-- **No password required** (guest, anonymous FTP) — an explicit marker.
-- **Record missing or unparseable** — denies authentication. Fails closed.
+- **No password required** (guest, anonymous FTP) — a reserved token in the
+  verifier field. It is a stated value, not an empty one.
+- **Record missing, empty or unparseable** — denies authentication. Fails
+  closed. In particular an all-padding record is *not* "no password required".
 
 ### The `user.tab` password field
 
-`USER_PASS` is **not** blanked. It is set to a fixed, unmatchable 40-character
-sentinel.
+`USER_PASS` is **not** blanked. It is set to a **single-byte** sentinel that no
+typed password can equal.
 
 This is a safety requirement, not cosmetics. `login.cpp:88` reads:
 
@@ -322,11 +550,36 @@ if (useron.pass[0] || user_is_sysop(&useron)) {   /* prompt for password */
 ```
 
 An empty password field means *no password is requested at all* for
-non-sysops, and `ftpsrvr.cpp:2595` treats empty as the anonymous convention. The
-three hosts sharing `/sbbs` do not upgrade atomically, so a stale or
-rolled-back binary reading a blanked field would authenticate every user with
-no password. A sentinel makes that host prompt and reject instead: the stale
-failure becomes "nobody gets in" rather than "everybody gets in".
+non-sysops, and `ftpsrvr.cpp:2595` treats empty as the anonymous convention. A
+blanked field is therefore read by any code that predates this change — a
+downgrade, a rolled-back binary, an unupgraded utility, or another installation
+sharing the same user base — as "this account needs no password", and it
+authenticates everyone. A sentinel makes that reader prompt and reject instead:
+the stale failure becomes "nobody gets in" rather than "everybody gets in".
+
+Note that this is also why the field cannot simply be dropped from the record:
+padding is the field separator itself, so an absent trailing field parses as
+empty, which is the failure above.
+
+**One byte, not forty.** The field must be non-empty and unequal to anything a
+user can type; nothing about it needs to be long. Since after migration *every*
+record carries it, the field's worst-case contribution to the record drops from
+`LEN_PASS` (40, `sbbsdefs.h:537`) to one byte, returning up to 39 bytes of the
+999 to the rest of the record — which matters, given how little headroom the
+format has left.
+
+**What makes it unmatchable** is that `getstr()` only accepts bytes at or above
+`' '` (`getstr.cpp:568`), so no control character can be entered at any
+password prompt. The sentinel is therefore a control byte, avoiding the three
+that carry meaning in this context — tab (the field separator), LF (the record
+terminator), CR — and avoiding `0x01`, which Synchronet uses for attribute
+codes and which would be interpreted by anything that renders the field. `0x1F`
+is the suggested value: outside the enterable range, semantically apt as a
+separator-class byte, and inert everywhere else.
+
+A printable sentinel such as `*` would *not* do. It is enterable, so on a
+downgraded binary — the exact scenario the sentinel exists for — it would
+become a universal password.
 
 ## API
 
@@ -340,8 +593,8 @@ through:
 
 `pass.tab` is **not** read by `getuserdat()`. It is opened only on the
 authentication path. Folding it into the general user lookup would double the
-per-page `user.tab` open/close traffic that is already the bottleneck during
-web-scrape storms.
+`user.tab` open/close traffic, which the web server already generates per page
+render and which a crawler can drive hard.
 
 In JavaScript, `user.security.password` becomes compare-only
 (`js_user.cpp:226` get, `:730` set). Third-party breakage is accepted; this is
@@ -362,16 +615,16 @@ original-case, `:1930` lowercased) and why `imapservice.js:982-1006` and
 `hotline.js:982-987` each try three case variants — they compensate for not
 knowing the stored case.
 
-Measured across all 1457 records of the live Vertrauen `user.tab` (aggregate
-counts only): **1402 all-uppercase, 7 all-lowercase, 47 containing no letters,
-1 empty, and zero mixed-case.**
+Measured across all 1457 records of one long-running system's `user.tab`
+(aggregate counts only): **1402 all-uppercase, 7 all-lowercase, 47 containing
+no letters, 1 empty, and zero mixed-case.**
 
 Two consequences:
 
 1. The case entropy is already gone from stored data. Hashing the uppercased
    form loses nothing that is not already lost.
 2. Case sensitivity matters for this threat model and cannot be skipped
-   long-term. A cracked `pbkdf2-sha512-uc` record yields `TR0UB4DOR`;
+   long-term. A cracked `upper`-normalized record yields `TR0UB4DOR`;
    converting that to the user's real password on another system costs 2^k case
    guesses, roughly 256 tries for an eight-letter password. That is negligible,
    so uppercase-normalized hashing surrenders most of the benefit.
@@ -390,13 +643,13 @@ as the rest.
 **Strategy B-prime: bulk-convert immediately, upgrade only at deliberate
 password entry.**
 
-1. **Day one.** Every password is converted to `$pbkdf2-sha512-uc$...` in
+1. **Day one.** Every password is converted to an `upper`-normalized record in
    `pass.tab`, and `user.tab`'s `USER_PASS` field is replaced with the
    sentinel. Cleartext leaves the user database immediately. This step depends
    on no user action, which is what makes it address the threat.
 2. **Legacy records verify case-insensitively**, indistinguishable from today's
    behavior. Nobody is locked out and nobody has to type uppercase.
-3. **Upgrade to `$pbkdf2-sha512$` only where the user deliberately enters a
+3. **Re-normalize to `none` only where the user deliberately enters a
    password** and types it twice: an expiry-driven change, a voluntary change,
    or a one-time prompt.
 4. Records never upgraded remain legacy indefinitely, which is acceptable.
@@ -421,14 +674,15 @@ full cycle.
 
 ### Scrubbing existing copies
 
-Migration is incomplete until the existing cleartext copies are dealt with.
-On the live Vertrauen system today there are **seven** additional full copies of
-the cleartext password database:
+Migration is incomplete until the existing cleartext copies are dealt with. A
+BBS keeps several of its own, without the sysop doing anything: on one system
+surveyed there were **seven** additional full copies of the cleartext password
+database beside the live one.
 
 ```
 data/user/user.0.tab  ...  data/user/user.4.tab   (daily rotation)
 data/user/back/user.tab
-data/back08/user.tab
+data/back<N>/user.tab                             (version-upgrade backup)
 ```
 
 Conversion must scrub the `USER_PASS` field in the rotated and backup copies,
@@ -437,8 +691,8 @@ threat model is a copy of the file, and these *are* copies of the file.
 
 ## Other cleartext sinks
 
-Hashing `user.tab` is necessary but not sufficient. Every remaining path that
-hands cleartext to an insider is in scope:
+Moving credentials into `pass.tab` is necessary but not sufficient. Every
+remaining path that hands cleartext to an insider is in scope:
 
 | Path | Site | Disposition |
 |---|---|---|
@@ -449,7 +703,7 @@ hands cleartext to an insider is in scope:
 | MQTT PSK table (JS broker) | `broker.js:2665` | breaks with hashing |
 | MQTT PSK table (built-in broker) | `mqtt_broker.cpp:86-116` | breaks with hashing |
 | qtmonitor PSK key | `qtmonitor/settingsdialog.cpp:60-62`, `main.cpp:22` | off-box copy; see below |
-| `SM_ECHO_PW` logging | `login.cpp:106`, `ftpsrvr.cpp:2686`, `websrvr.cpp:5888` | see below |
+| `SM_ECHO_PW` logging | `login.cpp:106`, `ftpsrvr.cpp:2686`, `websrvr.cpp:5888`, `con_hi.cpp:166` | see below |
 | Door dropfiles | `xtrn_sec.cpp:392,648,744,778,831,925` | hardest; see below |
 
 This list is a snapshot taken during one pass over the tree, and should be
@@ -513,29 +767,13 @@ public keys, generated tokens and derived per-service keys are the right fit
 for most of what currently reaches for `user.pass`.** Every site that stops
 using the password stops being blocked by this design.
 
+The same pattern shows up outside this design's scope, which is some evidence
+it is a pattern and not a coincidence: `cfg.sys_pass` — a typed human password
+— is what encrypts the server's private key in the cryptlib keyset
+(`ssl.c:482`, `:549`). Out of scope here, noted so it is not rediscovered as
+news.
+
 ## Constraints
-
-### `user.tab` record geometry
-
-Records are fixed-length: `USER_RECORD_LINE_LEN 1000` (`userdat.h:36`), 999
-content bytes plus LF. Random access depends on it (`userdat.c:332`), as does
-`lastuser()` (`:1928`) and 1000-byte byte-range locking (`:349,367,379`).
-Padding uses the field separator itself, a tab (`userdat.c:45`), so trailing
-empty fields and padding are indistinguishable — appending trailing fields is
-free. Overflow **fails** rather than truncating (`userdat.c:844`).
-
-Measured on the live file (1457 users): content ranges 434 to 671 bytes, median
-543. But summing each field's longest observed value gives 917 content bytes
-plus 67 separators — **984 of 999**. The format has roughly 15 bytes of
-headroom for a maximally-populated record.
-
-This is why credentials go in a separate file rather than growing `LEN_PASS`.
-A full PBKDF2-SHA512 PHC string is about 132 characters against today's 40,
-which a maximally-populated record cannot absorb. Raising
-`USER_RECORD_LINE_LEN` would work, and `upgrade_to_v320.c` is precedent for a
-strided rewrite, but it changes the offset stride: VERT, BBS and GIT all read
-the same file through smbd, so every host would have to upgrade simultaneously
-or compute wrong offsets against every record.
 
 ### Cost of verification, and the DoS it creates
 
@@ -615,14 +853,20 @@ carries the loser.
 
 ## What this delivers
 
-Against the two properties the threat model is stated in:
+Against the properties the threat model is stated in:
 
+- **P0 — and this is the part that lands immediately and completely.** A leaked
+  file stops being a set of working credentials. Today, anyone who obtains
+  `user.tab` can log in as any user on any of the BBS's servers, sysops
+  included; afterwards they can log in as nobody. That is asset 2, protected in
+  full, on day one of the migration, with no dependence on password strength.
 - **P1.** Per-user salts mean a copy of the database no longer reveals which
   accounts share a password, which is information the current file gives away
   by inspection and which is useful to an attacker before any cracking starts.
 - **P2.** Offline recovery of a plaintext password from a copied file becomes
   computationally expensive rather than free, and weak passwords — where reuse
-  hurts most — get a meaningful cost applied.
+  hurts most — get a meaningful cost applied. Unlike P0 this is a matter of
+  degree: a bad password still falls, it just costs something.
 
 And:
 
@@ -645,8 +889,8 @@ reaches a sysop, not alongside it.
 2. **Choose the crypto library** against the linkage constraint in Constraints,
    and land whatever build work it implies — including the MSVC `sha256.c` gap
    if `src/hash/` wins.
-3. Settle the `pass.tab` header, record format, sentinel value, and no-password
-   marker.
+3. Settle the `pass.tab` record format, the sentinel value, and the no-password
+   marker; add the shared record-length measurement helper.
 4. Add `verify_password()` / `set_password()`; convert all in-tree consumers to
    them. Make `user.security.password` compare-only.
 5. Add the verification cache, the rate limiting, and the concurrency cap on
