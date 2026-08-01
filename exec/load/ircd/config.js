@@ -367,10 +367,6 @@ function OLine_Flags_String(bits) {
 	} else {
 		if (bits&OLINE_CAN_REHASH)
 			str += "r";
-		if (bits&OLINE_CAN_RESTART)
-			str += "R";
-		if (bits&OLINE_CAN_DIE)
-			str += "D";
 		if (bits&OLINE_CAN_GLOBOPS)
 			str += "g";
 		if (bits&OLINE_CAN_WALLOPS)
@@ -396,6 +392,11 @@ function OLine_Flags_String(bits) {
 		if (bits&OLINE_CAN_CHATOPS)
 			str += "s";
 	}
+	/* Not covered by either shorthand */
+	if (bits&OLINE_CAN_RESTART)
+		str += "R";
+	if (bits&OLINE_CAN_DIE)
+		str += "D";
 	if (bits&OLINE_IS_ADMIN)
 		str += "A";
 	if (bits&OLINE_CAN_EVAL)
@@ -405,9 +406,38 @@ function OLine_Flags_String(bits) {
 	return str;
 }
 
+function Find_NLine(servername) {
+	var i;
+
+	for (i in NLines) {
+		if (NLines[i].servername.toLowerCase() == servername.toLowerCase())
+			return NLines[i];
+	}
+	return null;
+}
+
+function Find_CLine(servername) {
+	var i;
+
+	for (i in CLines) {
+		if (CLines[i].servername.toLowerCase() == servername.toLowerCase())
+			return CLines[i];
+	}
+	return null;
+}
+
 function Write_Config_File(fn) {
 	var f = new File(fn);
-	var c, i;
+	var c, i, n, hub, linked, seen;
+
+	/* Config files routinely accumulate the same entry twice - once from the
+	   compiled-in defaults and once from the sysop.  Emit each only once. */
+	function first_time(str) {
+		if (seen.indexOf(str.toLowerCase()) >= 0)
+			return false;
+		seen.push(str.toLowerCase());
+		return true;
+	}
 
 	if (!f.open('w'))
 		return false;
@@ -450,6 +480,8 @@ function Write_Config_File(fn) {
 		c++;
 		f.writeln(format("[Allow:%lu]", c));
 		f.writeln(format("Mask=%s", ILines[i].hostmask));
+		if (ILines[i].password)
+			f.writeln(format("Password=%s", ILines[i].password));
 		f.writeln(format("Class=%lu", ILines[i].ircclass));
 		if (ILines[i].port)
 			f.writeln(format("Port=%lu", ILines[i].port));
@@ -471,7 +503,10 @@ function Write_Config_File(fn) {
 
 	/* [Services] */
 	c = 0;
+	seen = [];
 	for (i in ULines) {
+		if (!first_time(ULines[i]))
+			continue;
 		c++;
 		f.writeln(format("[Services:%lu]", c));
 		f.writeln(format("Servername=%s", ULines[i]));
@@ -480,36 +515,95 @@ function Write_Config_File(fn) {
 
 	/* [Ban] */
 	c = 0;
+	seen = [];
 	for (i in KLines) {
 		if (KLines[i].type != "K")
 			continue;
+		if (!first_time(KLines[i].hostmask))
+			continue;
 		c++;
 		f.writeln(format("[Ban:%lu]", c));
-		f.writeln(format("Hostmask=%s", KLines[i].hostmask));
+		f.writeln(format("Mask=%s", KLines[i].hostmask));
 		f.writeln(format("Reason=%s", KLines[i].reason));
+		f.writeln("");
+	}
+	/* Z:Lines have no [section] of their own; the nearest equivalent is a
+	   ban on any user at the offending address. */
+	for (i in ZLines) {
+		if (!first_time("*@" + ZLines[i].ipmask))
+			continue;
+		c++;
+		f.writeln(format("[Ban:%lu]", c));
+		f.writeln(format("Mask=*@%s", ZLines[i].ipmask));
+		f.writeln(format("Reason=%s", ZLines[i].reason));
 		f.writeln("");
 	}
 
 	/* [Server] */
 	c = 0;
+	linked = [];
+	seen = [];
 	for (i in CLines) {
+		if (!first_time(CLines[i].servername))
+			continue;
+		n = Find_NLine(CLines[i].servername);
+		hub = HLine_Exists(CLines[i].servername);
 		c++;
 		f.writeln(format("[Server:%lu]", c));
 		f.writeln(format("Servername=%s", CLines[i].servername));
 		f.writeln(format("Hostname=%s", CLines[i].host));
 		f.writeln(format("Port=%lu", CLines[i].port));
-		f.writeln(format("InboundPassword=%s", NLines[i].password));
+		if (n)
+			f.writeln(format("InboundPassword=%s", n.password));
 		f.writeln(format("OutboundPassword=%s", CLines[i].password));
 		f.writeln(format("Class=%lu", CLines[i].ircclass));
+		if (n && n.flags)
+			f.writeln(format("Flags=%s", NLine_Flags_String(n.flags)));
+		f.writeln(format("Hub=%s", hub ? true : false));
+		f.writeln("");
+		if (hub)
+			linked.push(CLines[i].servername.toLowerCase());
+	}
+	/* Servers we only accept inbound connections from: Port=0 */
+	for (i in NLines) {
+		if (Find_CLine(NLines[i].servername))
+			continue;
+		if (!first_time(NLines[i].servername))
+			continue;
+		hub = HLine_Exists(NLines[i].servername);
+		c++;
+		f.writeln(format("[Server:%lu]", c));
+		f.writeln(format("Servername=%s", NLines[i].servername));
+		f.writeln(format("Hostname=%s", NLines[i].host));
+		f.writeln("Port=0");
+		f.writeln(format("InboundPassword=%s", NLines[i].password));
+		f.writeln(format("Class=%lu", NLines[i].ircclass));
 		if (NLines[i].flags)
 			f.writeln(format("Flags=%s", NLine_Flags_String(NLines[i].flags)));
-		f.writeln(format("Hub=%s",HLine_Exists(CLines[i].servername) ? true : false));
+		f.writeln(format("Hub=%s", hub ? true : false));
 		f.writeln("");
+		if (hub)
+			linked.push(NLines[i].servername.toLowerCase());
+	}
+
+	/* [Hub] - hubs not already declared by a [Server] section above */
+	c = 0;
+	for (i in HLines) {
+		if (linked.indexOf(HLines[i].servername.toLowerCase()) >= 0)
+			continue;
+		c++;
+		f.writeln(format("[Hub:%lu]", c));
+		f.writeln(format("Servername=%s", HLines[i].servername));
+		f.writeln("");
+		linked.push(HLines[i].servername.toLowerCase());
 	}
 
 	/* [Restrict] */
 	c = 0;
+	seen = [];
 	for (i in QLines) {
+		if (!first_time(QLines[i].nick))
+			continue;
 		c++;
 		f.writeln(format("[Restrict:%lu]", c));
 		f.writeln(format("Mask=%s", QLines[i].nick));
@@ -650,7 +744,8 @@ function ini_Class(arg, ini) {
 	YLines[ircclass] = new YLine(
 		ini_int_min_max(ini.PingFrequency, 1, 999, 60, format("PingFrequency IRC class %u",ircclass)),
 		ini_int_min_max(ini.ConnectFrequency, 0, 9999, 60, format("ConnectFrequency IRC class %u",ircclass)),
-		ini_int_min_max(ini.Maximum, 1, 99999, 100, format("Maximum IRC class %u",ircclass)),
+		/* Maximum of 0 means unlimited */
+		ini_int_min_max(ini.Maximum, 0, 99999, 100, format("Maximum IRC class %u",ircclass)),
 		ini_int_min_max(ini.SendQ, 2048, 999999999, 1000000, format("SendQ IRC class %u",ircclass))
 	);
 	if (ini.Comment)
@@ -699,7 +794,7 @@ function ini_Allow(arg, ini) {
 		}
 		ILines.push(new ILine(
 			masks[i],
-			null, /* password */
+			ini.Password ? ini.Password : null,
 			masks[i], /* hostmask */
 			port,     /* 0 = any port */
 			ircclass
@@ -803,6 +898,13 @@ function ini_Ban(arg, ini) {
 /* Former H:Line */
 /* Servermasks are deprecated */
 function ini_Hub(arg, ini) {
+	if (!ini.Servername) {
+		log(LOG_WARNING,format(
+			"!WARNING No Servername in [Hub:%s]. Section ignored.",
+			arg
+		));
+		return;
+	}
 	if (HLine_Exists(ini.Servername))
 		return;
 	HLines.push(new HLine(
