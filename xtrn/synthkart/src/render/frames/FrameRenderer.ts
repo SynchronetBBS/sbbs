@@ -124,7 +124,8 @@ class FrameRenderer implements IRenderer {
    */
   init(): void {
     // Load frame.js
-    load('frame.js');
+    if (typeof Frame === 'undefined') load('frame.js');
+    scene3d.installFrameDepth();
     
     // Initialize frame manager
     this.frameManager.init();

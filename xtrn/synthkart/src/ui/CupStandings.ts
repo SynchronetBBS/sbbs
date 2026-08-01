@@ -19,16 +19,19 @@ function showCupStandings(
   var screenHeight = 24;
   
   // Clear screen
+  scene3d.selectRawDepth('glass');
   console.clear(BG_BLACK, false);
   console.attributes = WHITE | BG_BLACK;
   
   // Title
+  scene3d.selectRawDepth('title');
   var title = "=== " + state.definition.name.toUpperCase() + " ===";
   console.gotoxy(Math.floor((screenWidth - title.length) / 2), 2);
   console.attributes = YELLOW | BG_BLACK;
   console.print(title);
   
   // Race info
+  scene3d.selectRawDepth('content');
   var raceInfo: string;
   if (isPreRace) {
     if (cupManager.getCurrentRaceNumber() === 1) {
@@ -78,6 +81,7 @@ function showCupStandings(
     var s = standings[i];
     var row = tableTop + 2 + i;
     
+    scene3d.selectRawDepth(s.isPlayer ? 'vehicleNear' : 'content');
     console.gotoxy(tableLeft, row);
     
     // Position
@@ -136,12 +140,14 @@ function showCupStandings(
   }
   
   // Points system reference
+  scene3d.selectRawDepth('content');
   var refRow = tableTop + 2 + standings.length + 2;
   console.gotoxy(tableLeft, refRow);
   console.attributes = DARKGRAY | BG_BLACK;
   console.print("Points: 1st=15 2nd=12 3rd=10 4th=8 5th=6...");
   
   // Prompt
+  scene3d.selectRawDepth('prompt');
   var prompt = isPreRace ? "Press ENTER to start race" : "Press ENTER to continue";
   if (state.isComplete) {
     prompt = "Press ENTER to see results";
@@ -173,6 +179,7 @@ function getTrackDisplayName(trackId: string): string {
  * Wait for user to press Enter.
  */
 function waitForEnter(): void {
+  scene3d.selectRawDepth('glass');
   while (true) {
     var key = console.inkey(K_NONE, 100);
     if (key === '\r' || key === '\n') break;
@@ -194,11 +201,13 @@ function showWinnersCircle(cupManager: CupManager): void {
   var playerPos = cupManager.getPlayerCupPosition();
   
   // Clear screen
+  scene3d.selectRawDepth('glass');
   console.clear(BG_BLACK, false);
   
   // Different display for winner vs loser
   if (playerWon) {
     // Winner celebration!
+    scene3d.selectRawDepth('vehicleNear');
     console.attributes = YELLOW | BG_BLACK;
     var trophy = [
       "    ___________",
@@ -220,6 +229,7 @@ function showWinnersCircle(cupManager: CupManager): void {
     }
     
     var winTitle = "=== CHAMPION! ===";
+    scene3d.selectRawDepth('title');
     console.gotoxy(Math.floor((screenWidth - winTitle.length) / 2), trophyTop + trophy.length + 2);
     console.attributes = LIGHTGREEN | BG_BLACK;
     console.print(winTitle);
@@ -230,6 +240,7 @@ function showWinnersCircle(cupManager: CupManager): void {
     console.print(cupName);
   } else {
     // Not first - show position
+    scene3d.selectRawDepth('title');
     var posStr = playerPos + PositionIndicator.getOrdinalSuffix(playerPos);
     var resultTitle = "=== " + posStr + " PLACE ===";
     
@@ -260,6 +271,7 @@ function showWinnersCircle(cupManager: CupManager): void {
   }
   
   // Stats - positioned right after trophy/title area
+  scene3d.selectRawDepth('content');
   var statsTop = 16;
   console.gotoxy(Math.floor((screenWidth - 30) / 2), statsTop);
   console.attributes = LIGHTGRAY | BG_BLACK;
@@ -272,6 +284,7 @@ function showWinnersCircle(cupManager: CupManager): void {
   console.print("Best Laps Sum: " + formatCupTime(state.totalBestLaps));
   
   // Prompt - at bottom of screen, well below stats
+  scene3d.selectRawDepth('prompt');
   var prompt = "Press ENTER to continue";
   console.gotoxy(Math.floor((screenWidth - prompt.length) / 2), 22);
   console.attributes = LIGHTMAGENTA | BG_BLACK;

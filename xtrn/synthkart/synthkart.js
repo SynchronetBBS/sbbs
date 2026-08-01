@@ -3926,6 +3926,7 @@ var HighScoreManager = (function () {
 }());
 "use strict";
 function displayHighScores(scores, title, trackOrCircuitName, playerPosition) {
+    scene3d.selectRawDepth('glass');
     console.clear(LIGHTGRAY, false);
     var screenWidth = 80;
     var screenHeight = 24;
@@ -3943,6 +3944,7 @@ function displayHighScores(scores, title, trackOrCircuitName, playerPosition) {
     var boxHeight = 18;
     var boxX = Math.floor((screenWidth - boxWidth) / 2);
     var topY = Math.floor((screenHeight - boxHeight) / 2);
+    scene3d.selectRawDepth('chrome');
     console.gotoxy(boxX, topY);
     console.attributes = boxAttr;
     console.print(GLYPH.DBOX_TL);
@@ -3962,9 +3964,11 @@ function displayHighScores(scores, title, trackOrCircuitName, playerPosition) {
         console.print(GLYPH.DBOX_H);
     }
     console.print(GLYPH.DBOX_BR + "\r\n");
+    scene3d.selectRawDepth('title');
     console.gotoxy(boxX + Math.floor((boxWidth - title.length) / 2), topY + 2);
     console.attributes = titleAttr;
     console.print(title);
+    scene3d.selectRawDepth('content');
     console.gotoxy(boxX + Math.floor((boxWidth - trackOrCircuitName.length) / 2), topY + 3);
     console.attributes = headerAttr;
     console.print(trackOrCircuitName);
@@ -3973,8 +3977,9 @@ function displayHighScores(scores, title, trackOrCircuitName, playerPosition) {
     console.print("RANK  PLAYER NAME           TIME        DATE");
     var startY = topY + 6;
     for (var i = 0; i < 10; i++) {
-        console.gotoxy(boxX + 3, startY + i);
         var isHighlighted = (playerPosition !== undefined && playerPosition === i + 1);
+        scene3d.selectRawDepth(isHighlighted ? 'vehicleNear' : 'content');
+        console.gotoxy(boxX + 3, startY + i);
         if (i < scores.length) {
             var score = scores[i];
             var rank = (i + 1) + ".";
@@ -4015,6 +4020,7 @@ function displayHighScores(scores, title, trackOrCircuitName, playerPosition) {
             console.print(rank + "   ---");
         }
     }
+    scene3d.selectRawDepth('prompt');
     console.gotoxy(boxX + Math.floor((boxWidth - 24) / 2), topY + boxHeight - 2);
     console.attributes = headerAttr;
     console.print("Press any key to continue");
@@ -4022,6 +4028,7 @@ function displayHighScores(scores, title, trackOrCircuitName, playerPosition) {
 function showHighScoreList(type, identifier, title, trackOrCircuitName, highScoreManager, playerPosition) {
     var scores = highScoreManager.getScores(type, identifier);
     displayHighScores(scores, title, trackOrCircuitName, playerPosition);
+    scene3d.selectRawDepth('glass');
     console.line_counter = 0;
     console.inkey(K_NONE, 300000);
 }
@@ -4038,6 +4045,7 @@ function displayTopScoreLine(label, score, x, y, labelAttr, valueAttr) {
     }
 }
 function showTwoColumnHighScores(trackId, trackName, highScoreManager, trackTimePosition, lapTimePosition) {
+    scene3d.selectRawDepth('glass');
     console.clear(LIGHTGRAY, false);
     var viewWidth = 80;
     var viewHeight = 24;
@@ -4058,6 +4066,7 @@ function showTwoColumnHighScores(trackId, trackName, highScoreManager, trackTime
     var boxHeight = 20;
     var boxX = Math.floor((viewWidth - boxWidth) / 2);
     var topY = Math.floor((viewHeight - boxHeight) / 2);
+    scene3d.selectRawDepth('chrome');
     console.gotoxy(boxX, topY);
     console.attributes = boxAttr;
     console.print(GLYPH.DBOX_TL);
@@ -4077,10 +4086,12 @@ function showTwoColumnHighScores(trackId, trackName, highScoreManager, trackTime
         console.print(GLYPH.DBOX_H);
     }
     console.print(GLYPH.DBOX_BR);
+    scene3d.selectRawDepth('title');
     var title = "=== HIGH SCORES ===";
     console.gotoxy(boxX + Math.floor((boxWidth - title.length) / 2), topY + 1);
     console.attributes = titleAttr;
     console.print(title);
+    scene3d.selectRawDepth('content');
     console.gotoxy(boxX + Math.floor((boxWidth - trackName.length) / 2), topY + 2);
     console.attributes = headerAttr;
     console.print(trackName);
@@ -4100,8 +4111,9 @@ function showTwoColumnHighScores(trackId, trackName, highScoreManager, trackTime
     }
     var startY = topY + 5;
     for (var i = 0; i < 10; i++) {
-        console.gotoxy(leftColX, startY + i);
         var trackHighlighted = (trackTimePosition > 0 && trackTimePosition === i + 1);
+        scene3d.selectRawDepth(trackHighlighted ? 'vehicleNear' : 'content');
+        console.gotoxy(leftColX, startY + i);
         if (i < trackScores.length) {
             var score = trackScores[i];
             var rank = (i + 1) + ".";
@@ -4134,8 +4146,9 @@ function showTwoColumnHighScores(trackId, trackName, highScoreManager, trackTime
                 rank = " " + rank;
             console.print(rank + " ---");
         }
-        console.gotoxy(rightColX, startY + i);
         var lapHighlighted = (lapTimePosition > 0 && lapTimePosition === i + 1);
+        scene3d.selectRawDepth(lapHighlighted ? 'vehicleNear' : 'content');
+        console.gotoxy(rightColX, startY + i);
         if (i < lapScores.length) {
             var score = lapScores[i];
             var rank = (i + 1) + ".";
@@ -4169,15 +4182,18 @@ function showTwoColumnHighScores(trackId, trackName, highScoreManager, trackTime
             console.print(rank + " ---");
         }
     }
+    scene3d.selectRawDepth('content');
     if (trackTimePosition > 0 || lapTimePosition > 0) {
         console.gotoxy(boxX + 3, topY + boxHeight - 3);
         console.attributes = newScoreAttr;
         console.print("* = Your new high score!");
     }
+    scene3d.selectRawDepth('prompt');
     var prompt = "Press any key to continue";
     console.gotoxy(boxX + Math.floor((boxWidth - prompt.length) / 2), topY + boxHeight - 2);
     console.attributes = promptAttr;
     console.print(prompt);
+    scene3d.selectRawDepth('glass');
     console.line_counter = 0;
     console.inkey(K_NONE, 300000);
 }
@@ -11721,6 +11737,190 @@ function getANSITunnelRenderer() {
     return ansiTunnelRenderer;
 }
 "use strict";
+var SynthKartScene3dRuntime = (function () {
+    function SynthKartScene3dRuntime() {
+        this.mod = null;
+        this.version = null;
+        this.enabled = false;
+        this.attempted = false;
+        this.depthLayers = null;
+        this.currentLayer = 0;
+        this.spread = 4.2;
+        this.order = [
+            'glass', 'hud', 'title',
+            'vehicleNear', 'roadsideNear',
+            'vehicleMid', 'roadsideMid',
+            'vehicleFar', 'roadsideFar',
+            'content', 'road', 'ground',
+            'mountains', 'celestial', 'sky', 'backdrop'
+        ];
+        this.depths = {
+            glass: 0.0,
+            hud: 0.03,
+            title: 0.07,
+            vehicleNear: 0.11,
+            roadsideNear: 0.16,
+            vehicleMid: 0.24,
+            roadsideMid: 0.31,
+            vehicleFar: 0.40,
+            roadsideFar: 0.48,
+            content: 0.54,
+            road: 0.60,
+            ground: 0.70,
+            mountains: 0.80,
+            celestial: 0.88,
+            sky: 0.95,
+            backdrop: 1.0
+        };
+        this.indices = {};
+        for (var i = 0; i < this.order.length; i++) {
+            this.indices[this.order[i]] = i;
+        }
+        this.indices.prompt = this.indices.hud;
+        this.indices.chrome = this.indices.ground;
+    }
+    SynthKartScene3dRuntime.prototype.initialize = function () {
+        if (this.attempted)
+            return;
+        this.attempted = true;
+        try {
+            this.mod = load('/sbbs/mods/load/scene3d.js');
+            this.version = this.mod.probe(500);
+            if (!this.mod.supportsTextLayers(this.version))
+                return;
+            this.enabled = true;
+            this.currentLayer = 0;
+            this.writeDepthTable();
+            logInfo('SynthKart: 3dBBS text depth enabled');
+        }
+        catch (e) {
+            this.mod = null;
+            this.enabled = false;
+            logWarning('SynthKart: scene3d unavailable: ' + e);
+        }
+    };
+    SynthKartScene3dRuntime.prototype.isEnabled = function () {
+        return this.enabled;
+    };
+    SynthKartScene3dRuntime.prototype.installFrameDepth = function () {
+        if (!this.enabled || !this.mod)
+            return;
+        var currentDisplay = js && js.global ? js.global.Display : null;
+        if (this.depthLayers && currentDisplay && this.depthLayers._ctor !== currentDisplay) {
+            try {
+                this.depthLayers.dispose();
+            }
+            catch (e) { }
+            this.depthLayers = null;
+        }
+        if (this.depthLayers)
+            return;
+        var self = this;
+        try {
+            var DepthCtor = this.mod.TextDepthLayers;
+            var layers = new DepthCtor({
+                spread: this.spread,
+                order: this.order,
+                depths: this.depths,
+                bandFor: function (frame) {
+                    return self.bandForFrame(frame);
+                },
+                log: function (message) {
+                    logInfo('SynthKart: ' + message);
+                }
+            });
+            if (layers.install(null)) {
+                this.depthLayers = layers;
+                this.currentLayer = 0;
+            }
+        }
+        catch (e) {
+            logWarning('SynthKart: could not install Frame.js depth: ' + e);
+        }
+    };
+    SynthKartScene3dRuntime.prototype.tagFrameDepth = function (frame, band) {
+        if (!this.enabled || !frame)
+            return;
+        if (frame._scene3dBand === band)
+            return;
+        frame._scene3dBand = band;
+        if (this.depthLayers)
+            this.depthLayers.invalidate();
+    };
+    SynthKartScene3dRuntime.prototype.selectRawDepth = function (band) {
+        if (!this.enabled || !this.mod)
+            return;
+        var layer = this.indices[band];
+        if (layer === undefined)
+            layer = 0;
+        if (this.depthLayers)
+            this.currentLayer = this.depthLayers._curLayer;
+        if (layer === this.currentLayer)
+            return;
+        try {
+            console.write(this.mod.selectTextLayerSeq(layer));
+            this.currentLayer = layer;
+            if (this.depthLayers)
+                this.depthLayers._curLayer = layer;
+        }
+        catch (e) {
+        }
+    };
+    SynthKartScene3dRuntime.prototype.dispose = function () {
+        if (!this.enabled || !this.mod)
+            return;
+        if (this.depthLayers) {
+            try {
+                this.depthLayers.dispose();
+            }
+            catch (e) { }
+            this.depthLayers = null;
+        }
+        else {
+            var out = this.mod.selectTextLayerSeq(0);
+            for (var i = 0; i < this.mod.MAX_TEXT_LAYERS; i++) {
+                out += this.mod.defineTextLayerSeq(i, 0);
+            }
+            try {
+                console.write(out);
+            }
+            catch (e) { }
+        }
+        this.currentLayer = 0;
+        this.enabled = false;
+    };
+    SynthKartScene3dRuntime.prototype.bandForFrame = function (frame) {
+        var node = frame;
+        for (var hops = 0; node && hops < 8; hops++) {
+            if (node._scene3dBand)
+                return node._scene3dBand;
+            try {
+                node = node.parent || null;
+            }
+            catch (e) {
+                return 'glass';
+            }
+        }
+        return 'glass';
+    };
+    SynthKartScene3dRuntime.prototype.writeDepthTable = function () {
+        if (!this.mod)
+            return;
+        var out = this.mod.selectTextLayerSeq(0);
+        for (var i = 0; i < this.mod.MAX_TEXT_LAYERS; i++) {
+            var band = this.order[i];
+            var fraction = band === undefined ? 0 : this.depths[band];
+            out += this.mod.defineTextLayerSeq(i, this.spread * (fraction === undefined ? 0 : fraction));
+        }
+        try {
+            console.write(out);
+        }
+        catch (e) { }
+    };
+    return SynthKartScene3dRuntime;
+}());
+var scene3d = new SynthKartScene3dRuntime();
+"use strict";
 var FrameManager = (function () {
     function FrameManager(width, height, horizonY) {
         this.width = width;
@@ -11739,27 +11939,34 @@ var FrameManager = (function () {
     }
     FrameManager.prototype.init = function () {
         this.rootFrame = new Frame(1, 1, this.width, this.height, BG_BLACK);
+        scene3d.tagFrameDepth(this.rootFrame, 'backdrop');
         this.rootFrame.open();
         this.skyGridFrame = new Frame(1, 1, this.width, this.horizonY, BG_BLACK, this.rootFrame);
+        scene3d.tagFrameDepth(this.skyGridFrame, 'sky');
         this.skyGridFrame.open();
         this.addLayer(this.skyGridFrame, 'skyGrid', 1);
         this.sunFrame = new Frame(1, 1, this.width, this.horizonY, BG_BLACK, this.rootFrame);
+        scene3d.tagFrameDepth(this.sunFrame, 'celestial');
         this.sunFrame.transparent = true;
         this.sunFrame.open();
         this.addLayer(this.sunFrame, 'sun', 2);
         this.mountainsFrame = new Frame(1, 1, this.width, this.horizonY, BG_BLACK, this.rootFrame);
+        scene3d.tagFrameDepth(this.mountainsFrame, 'mountains');
         this.mountainsFrame.transparent = true;
         this.mountainsFrame.open();
         this.addLayer(this.mountainsFrame, 'mountains', 3);
         var roadHeight = this.height - this.horizonY;
         this.groundGridFrame = new Frame(1, this.horizonY + 1, this.width, roadHeight, BG_BLACK, this.rootFrame);
+        scene3d.tagFrameDepth(this.groundGridFrame, 'ground');
         this.groundGridFrame.open();
         this.addLayer(this.groundGridFrame, 'groundGrid', 4);
         this.roadFrame = new Frame(1, this.horizonY + 1, this.width, roadHeight, BG_BLACK, this.rootFrame);
+        scene3d.tagFrameDepth(this.roadFrame, 'road');
         this.roadFrame.transparent = true;
         this.roadFrame.open();
         this.addLayer(this.roadFrame, 'road', 5);
         this.hudFrame = new Frame(1, 1, this.width, this.height, BG_BLACK, this.rootFrame);
+        scene3d.tagFrameDepth(this.hudFrame, 'hud');
         this.hudFrame.transparent = true;
         this.hudFrame.open();
         this.addLayer(this.hudFrame, 'hud', 100);
@@ -11773,6 +11980,7 @@ var FrameManager = (function () {
         for (var i = 0; i < count; i++) {
             var spriteFrame = new Frame(1, 1, 8, 6, BG_BLACK, this.rootFrame);
             spriteFrame.transparent = true;
+            scene3d.tagFrameDepth(spriteFrame, 'roadsideFar');
             this.roadsidePool.push(spriteFrame);
         }
     };
@@ -11780,6 +11988,7 @@ var FrameManager = (function () {
         for (var i = 0; i < count; i++) {
             var vehicleFrame = new Frame(1, 1, 7, 4, BG_BLACK, this.rootFrame);
             vehicleFrame.transparent = true;
+            scene3d.tagFrameDepth(vehicleFrame, i === 0 ? 'vehicleNear' : 'vehicleFar');
             this.vehicleFrames.push(vehicleFrame);
         }
     };
@@ -11821,6 +12030,7 @@ var FrameManager = (function () {
         if (!frame)
             return;
         if (visible) {
+            scene3d.tagFrameDepth(frame, this.roadsideBandForY(y));
             frame.moveTo(x, y);
             if (!frame.is_open) {
                 frame.open();
@@ -11837,6 +12047,7 @@ var FrameManager = (function () {
         if (!frame)
             return;
         if (visible) {
+            scene3d.tagFrameDepth(frame, index === 0 ? 'vehicleNear' : this.vehicleBandForY(y));
             frame.moveTo(x, y);
             if (!frame.is_open) {
                 frame.open();
@@ -11851,6 +12062,20 @@ var FrameManager = (function () {
     };
     FrameManager.prototype.cycle = function () {
         this.rootFrame.cycle();
+    };
+    FrameManager.prototype.roadsideBandForY = function (y) {
+        if (y >= this.height - 7)
+            return 'roadsideNear';
+        if (y >= this.horizonY + Math.floor((this.height - this.horizonY) * 0.48))
+            return 'roadsideMid';
+        return 'roadsideFar';
+    };
+    FrameManager.prototype.vehicleBandForY = function (y) {
+        if (y >= this.height - 7)
+            return 'vehicleNear';
+        if (y >= this.horizonY + Math.floor((this.height - this.horizonY) * 0.48))
+            return 'vehicleMid';
+        return 'vehicleFar';
     };
     FrameManager.prototype.clearFrame = function (frame) {
         if (frame) {
@@ -11875,6 +12100,8 @@ var FrameManager = (function () {
         }
         if (this.roadFrame)
             this.roadFrame.close();
+        if (this.groundGridFrame)
+            this.groundGridFrame.close();
         if (this.sunFrame)
             this.sunFrame.close();
         if (this.mountainsFrame)
@@ -12103,7 +12330,9 @@ var FrameRenderer = (function () {
         return getThemeNames();
     };
     FrameRenderer.prototype.init = function () {
-        load('frame.js');
+        if (typeof Frame === 'undefined')
+            load('frame.js');
+        scene3d.installFrameDepth();
         this.frameManager.init();
         this.rebuildSpriteCache();
         this.renderStaticElements();
@@ -15703,8 +15932,11 @@ var Renderer = (function () {
     }
     Renderer.prototype.init = function () {
         try {
-            load("frame.js");
+            if (typeof Frame === 'undefined')
+                load("frame.js");
+            scene3d.installFrameDepth();
             this.frame = new Frame(1, 1, this.width, this.height, BG_BLACK);
+            scene3d.tagFrameDepth(this.frame, 'content');
             this.frame.open();
             this.useFrame = true;
             logInfo("Renderer: Using frame.js");
@@ -15713,6 +15945,7 @@ var Renderer = (function () {
             logWarning("Renderer: frame.js not available, using direct console");
             this.useFrame = false;
         }
+        scene3d.selectRawDepth('glass');
         console.clear(BG_BLACK, false);
     };
     Renderer.prototype.beginFrame = function () {
@@ -15765,6 +15998,7 @@ var Renderer = (function () {
             this.frame.draw();
         }
         else {
+            scene3d.selectRawDepth('content');
             console.home();
             for (var y = 0; y < this.height; y++) {
                 var line = '';
@@ -15776,6 +16010,7 @@ var Renderer = (function () {
                     console.print("\r\n");
                 }
             }
+            scene3d.selectRawDepth('glass');
         }
     };
     Renderer.prototype.getRootFrame = function () {
@@ -15787,6 +16022,7 @@ var Renderer = (function () {
             this.frame = null;
         }
         console.attributes = LIGHTGRAY;
+        scene3d.selectRawDepth('glass');
         console.clear(BG_BLACK, false);
     };
     return Renderer;
@@ -16334,6 +16570,7 @@ var Game = (function () {
         }
     };
     Game.prototype.renderResultsScreen = function (position, totalTime, bestLap) {
+        scene3d.selectRawDepth('glass');
         console.clear(BG_BLACK, false);
         var titleAttr = colorToAttr({ fg: YELLOW, bg: BG_BLACK });
         var labelAttr = colorToAttr({ fg: WHITE, bg: BG_BLACK });
@@ -16346,6 +16583,7 @@ var Game = (function () {
         var boxHeight = 12;
         var boxX = Math.floor((viewWidth - boxWidth) / 2);
         var topY = Math.floor((viewHeight - boxHeight) / 2);
+        scene3d.selectRawDepth('chrome');
         console.gotoxy(boxX + 1, topY + 1);
         console.attributes = boxAttr;
         console.print(GLYPH.DBOX_TL);
@@ -16367,10 +16605,12 @@ var Game = (function () {
             console.print(GLYPH.DBOX_H);
         }
         console.print(GLYPH.DBOX_BR);
+        scene3d.selectRawDepth('title');
         var title = "=== RACE COMPLETE ===";
         console.gotoxy(boxX + 1 + Math.floor((boxWidth - title.length) / 2), topY + 3);
         console.attributes = titleAttr;
         console.print(title);
+        scene3d.selectRawDepth('content');
         var posSuffix = PositionIndicator.getOrdinalSuffix(position);
         console.gotoxy(boxX + 5, topY + 5);
         console.attributes = labelAttr;
@@ -16396,10 +16636,12 @@ var Game = (function () {
         console.gotoxy(boxX + 23, topY + 9);
         console.attributes = valueAttr;
         console.print(this.state.track.name);
+        scene3d.selectRawDepth('prompt');
         var prompt = "Press ENTER to continue";
         console.gotoxy(boxX + 1 + Math.floor((boxWidth - prompt.length) / 2), topY + 11);
         console.attributes = promptAttr;
         console.print(prompt);
+        scene3d.selectRawDepth('glass');
     };
     Game.prototype.activateDormantNPCs = function () {
         if (!this.state)
@@ -16772,6 +17014,7 @@ function showTrackSelector(highScoreManager) {
         circuitIndex: 0,
         trackIndex: 0
     };
+    scene3d.selectRawDepth('glass');
     console.clear(LIGHTGRAY, false);
     drawSelectorUI(state, highScoreManager);
     while (true) {
@@ -16877,6 +17120,7 @@ function showTrackSelector(highScoreManager) {
             }
         }
         if (needsRedraw) {
+            scene3d.selectRawDepth('glass');
             console.clear(LIGHTGRAY, false);
             drawSelectorUI(state, highScoreManager);
         }
@@ -16904,7 +17148,9 @@ function getSecretTracks() {
 function showSecretTracksMenu() {
     var secretTracks = getSecretTracks();
     if (secretTracks.length === 0) {
+        scene3d.selectRawDepth('glass');
         console.clear(LIGHTGRAY, false);
+        scene3d.selectRawDepth('title');
         console.gotoxy(1, 10);
         console.attributes = LIGHTMAGENTA;
         console.print('       ' + GLYPH.DBOX_TL + repeatChar(GLYPH.DBOX_H, 44) + GLYPH.DBOX_TR + '\r\n');
@@ -16914,13 +17160,17 @@ function showSecretTracksMenu() {
         console.print('       ' + GLYPH.DBOX_BL + repeatChar(GLYPH.DBOX_H, 44) + GLYPH.DBOX_BR + '\r\n');
         console.print('\r\n');
         console.attributes = DARKGRAY;
+        scene3d.selectRawDepth('prompt');
         console.print('                 Press any key to return...\r\n');
+        scene3d.selectRawDepth('glass');
         console.inkey(K_NONE, 5000);
         return { selected: false, track: null };
     }
     var selectedIndex = 0;
     while (true) {
+        scene3d.selectRawDepth('glass');
         console.clear(LIGHTGRAY, false);
+        scene3d.selectRawDepth('title');
         console.gotoxy(1, 1);
         console.attributes = LIGHTRED;
         console.print(repeatChar(GLYPH.DBOX_H, 79) + '\r\n');
@@ -16931,6 +17181,7 @@ function showSecretTracksMenu() {
         console.print('\r\n');
         console.attributes = DARKGRAY;
         console.print('  These tracks are hidden from the main menu. Shh, it\'s a secret!\r\n\r\n');
+        scene3d.selectRawDepth('content');
         for (var i = 0; i < secretTracks.length; i++) {
             var track = secretTracks[i];
             console.gotoxy(5, 9 + i * 2);
@@ -16951,6 +17202,7 @@ function showSecretTracksMenu() {
             console.attributes = YELLOW;
             console.print(renderDifficultyStars(track.difficulty));
         }
+        scene3d.selectRawDepth('prompt');
         console.gotoxy(5, 20);
         console.attributes = DARKGRAY;
         console.print(repeatChar(GLYPH.BOX_H, 68) + '\r\n');
@@ -16969,6 +17221,7 @@ function showSecretTracksMenu() {
         console.print('ESC/Q');
         console.attributes = CYAN;
         console.print('] Back');
+        scene3d.selectRawDepth('glass');
         var key = console.inkey(K_UPPER, 100);
         if (key === '')
             continue;
@@ -16998,19 +17251,23 @@ function drawSelectorUI(state, highScoreManager) {
     drawControls(state);
 }
 function drawHeader() {
+    scene3d.selectRawDepth('chrome');
     console.gotoxy(1, 1);
     console.attributes = LIGHTMAGENTA;
     console.print(repeatChar(GLYPH.BOX_H, SCREEN_WIDTH));
     console.gotoxy(1, 2);
+    scene3d.selectRawDepth('title');
     console.attributes = LIGHTCYAN;
     var title = '  SELECT YOUR RACE  ';
     var padding = Math.floor((SCREEN_WIDTH - title.length) / 2);
     console.print(repeatChar(' ', padding) + title);
     console.gotoxy(1, 3);
+    scene3d.selectRawDepth('chrome');
     console.attributes = LIGHTMAGENTA;
     console.print(repeatChar(GLYPH.BOX_H, SCREEN_WIDTH));
 }
 function drawLeftPanel(state) {
+    scene3d.selectRawDepth('content');
     var y = 5;
     for (var sy = 4; sy <= 22; sy++) {
         console.gotoxy(LEFT_PANEL_WIDTH, sy);
@@ -17102,6 +17359,7 @@ function drawTrackList(state, startY) {
     console.print(GLYPH.TRIANGLE_RIGHT + ' PLAY CUP');
 }
 function drawRightPanel(state, highScoreManager) {
+    scene3d.selectRawDepth('content');
     var circuit = CIRCUITS[state.circuitIndex];
     console.gotoxy(RIGHT_PANEL_START, 5);
     console.attributes = WHITE;
@@ -17621,6 +17879,7 @@ function drawStartFinish(_points, _x, _y, _width, _height, _theme) {
 function drawTrackRoute(_track) {
 }
 function drawControls(state) {
+    scene3d.selectRawDepth('prompt');
     console.gotoxy(1, 23);
     console.attributes = LIGHTMAGENTA;
     console.print(repeatChar(GLYPH.BOX_H, SCREEN_WIDTH));
@@ -17679,6 +17938,7 @@ function drawControls(state) {
     console.gotoxy(1, 25);
     console.attributes = LIGHTMAGENTA;
     console.print(repeatChar(GLYPH.BOX_H, SCREEN_WIDTH));
+    scene3d.selectRawDepth('glass');
 }
 function repeatChar(char, count) {
     var result = '';
@@ -17863,16 +18123,22 @@ var CarSelector = {
         this.outputToConsole(composer);
     },
     outputToConsole: function (composer) {
+        scene3d.selectRawDepth('glass');
         console.clear(BG_BLACK, false);
         var buffer = composer.getBuffer();
         for (var y = 0; y < buffer.length; y++) {
+            var rowBand = y <= 2 ? 'title' : (y >= 21 ? 'prompt' : 'content');
+            scene3d.selectRawDepth(rowBand);
             console.gotoxy(1, y + 1);
             for (var x = 0; x < buffer[y].length; x++) {
+                if (y >= 15 && y <= 18 && x === 38)
+                    scene3d.selectRawDepth('vehicleNear');
                 var cell = buffer[y][x];
                 console.attributes = cell.attr;
                 console.print(cell.char);
             }
         }
+        scene3d.selectRawDepth('glass');
     },
     renderStatBar: function (composer, x, y, value, filledAttr, emptyAttr) {
         var filled = Math.round(value * 5);
@@ -17905,12 +18171,15 @@ function showCupStandings(cupManager, isPreRace) {
         return;
     var screenWidth = 80;
     var screenHeight = 24;
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
     console.attributes = WHITE | BG_BLACK;
+    scene3d.selectRawDepth('title');
     var title = "=== " + state.definition.name.toUpperCase() + " ===";
     console.gotoxy(Math.floor((screenWidth - title.length) / 2), 2);
     console.attributes = YELLOW | BG_BLACK;
     console.print(title);
+    scene3d.selectRawDepth('content');
     var raceInfo;
     if (isPreRace) {
         if (cupManager.getCurrentRaceNumber() === 1) {
@@ -17952,6 +18221,7 @@ function showCupStandings(cupManager, isPreRace) {
     for (var i = 0; i < standings.length; i++) {
         var s = standings[i];
         var row = tableTop + 2 + i;
+        scene3d.selectRawDepth(s.isPlayer ? 'vehicleNear' : 'content');
         console.gotoxy(tableLeft, row);
         var posStr = PositionIndicator.getOrdinalSuffix(i + 1);
         posStr = (i + 1) + posStr;
@@ -18007,10 +18277,12 @@ function showCupStandings(cupManager, isPreRace) {
             console.print("]");
         }
     }
+    scene3d.selectRawDepth('content');
     var refRow = tableTop + 2 + standings.length + 2;
     console.gotoxy(tableLeft, refRow);
     console.attributes = DARKGRAY | BG_BLACK;
     console.print("Points: 1st=15 2nd=12 3rd=10 4th=8 5th=6...");
+    scene3d.selectRawDepth('prompt');
     var prompt = isPreRace ? "Press ENTER to start race" : "Press ENTER to continue";
     if (state.isComplete) {
         prompt = "Press ENTER to see results";
@@ -18032,6 +18304,7 @@ function getTrackDisplayName(trackId) {
     return name;
 }
 function waitForEnter() {
+    scene3d.selectRawDepth('glass');
     while (true) {
         var key = console.inkey(K_NONE, 100);
         if (key === '\r' || key === '\n')
@@ -18047,8 +18320,10 @@ function showWinnersCircle(cupManager) {
     var screenWidth = 80;
     var playerWon = cupManager.didPlayerWin();
     var playerPos = cupManager.getPlayerCupPosition();
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
     if (playerWon) {
+        scene3d.selectRawDepth('vehicleNear');
         console.attributes = YELLOW | BG_BLACK;
         var trophy = [
             "    ___________",
@@ -18068,6 +18343,7 @@ function showWinnersCircle(cupManager) {
             console.print(trophy[t]);
         }
         var winTitle = "=== CHAMPION! ===";
+        scene3d.selectRawDepth('title');
         console.gotoxy(Math.floor((screenWidth - winTitle.length) / 2), trophyTop + trophy.length + 2);
         console.attributes = LIGHTGREEN | BG_BLACK;
         console.print(winTitle);
@@ -18077,6 +18353,7 @@ function showWinnersCircle(cupManager) {
         console.print(cupName);
     }
     else {
+        scene3d.selectRawDepth('title');
         var posStr = playerPos + PositionIndicator.getOrdinalSuffix(playerPos);
         var resultTitle = "=== " + posStr + " PLACE ===";
         console.gotoxy(Math.floor((screenWidth - resultTitle.length) / 2), 5);
@@ -18104,6 +18381,7 @@ function showWinnersCircle(cupManager) {
             console.print(tryAgain);
         }
     }
+    scene3d.selectRawDepth('content');
     var statsTop = 16;
     console.gotoxy(Math.floor((screenWidth - 30) / 2), statsTop);
     console.attributes = LIGHTGRAY | BG_BLACK;
@@ -18112,6 +18390,7 @@ function showWinnersCircle(cupManager) {
     console.print("Circuit Time: " + formatCupTime(state.totalTime));
     console.gotoxy(Math.floor((screenWidth - 30) / 2), statsTop + 2);
     console.print("Best Laps Sum: " + formatCupTime(state.totalBestLaps));
+    scene3d.selectRawDepth('prompt');
     var prompt = "Press ENTER to continue";
     console.gotoxy(Math.floor((screenWidth - prompt.length) / 2), 22);
     console.attributes = LIGHTMAGENTA | BG_BLACK;
@@ -18137,7 +18416,9 @@ if (typeof console === 'undefined' || console === null) {
     print("  2. Use a terminal emulator that connects to your BBS");
     exit(1);
 }
+scene3d.initialize();
 function showTitleScreen() {
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
     var titleFile = "";
     var assetsDir = js.exec_dir + "assets/";
@@ -18153,8 +18434,11 @@ function showTitleScreen() {
     }
     if (titleFile !== "") {
         try {
-            load('frame.js');
+            if (typeof Frame === 'undefined')
+                load('frame.js');
+            scene3d.installFrameDepth();
             var titleFrame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK);
+            scene3d.tagFrameDepth(titleFrame, 'title');
             titleFrame.open();
             titleFrame.load(titleFile);
             titleFrame.draw();
@@ -18165,6 +18449,7 @@ function showTitleScreen() {
         }
     }
     else {
+        scene3d.selectRawDepth('title');
         console.attributes = LIGHTMAGENTA;
         var title = [
             "",
@@ -18187,6 +18472,7 @@ function showTitleScreen() {
         console.attributes = CYAN;
         console.print("              =========================================\r\n");
         console.print("\r\n");
+        scene3d.selectRawDepth('ground');
         console.attributes = DARKGRAY;
         console.print("         /     |     \\         /     |     \\\r\n");
         console.print("        /      |      \\       /      |      \\\r\n");
@@ -18195,6 +18481,7 @@ function showTitleScreen() {
         console.attributes = DARKGRAY;
         console.print("      /        |        \\   /        |        \\\r\n");
         console.print("\r\n");
+        scene3d.selectRawDepth('content');
         console.attributes = WHITE;
         console.print("                    Controls:\r\n");
         console.attributes = LIGHTGRAY;
@@ -18202,6 +18489,7 @@ function showTitleScreen() {
         console.print("        S/Dn = Brake        D/Right = Steer Right\r\n");
         console.print("        SPACE = Use Item    P = Pause\r\n");
         console.print("\r\n");
+        scene3d.selectRawDepth('prompt');
         console.attributes = YELLOW;
         console.print("              Press any key to start racing...\r\n");
         console.print("                     Q to quit\r\n");
@@ -18210,8 +18498,10 @@ function showTitleScreen() {
         console.print("     Version 0.1.0 (Iteration 0) - Bootstrap Build\r\n");
         console.attributes = LIGHTGRAY;
     }
+    scene3d.selectRawDepth('glass');
 }
 function showExitScreen() {
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
     var exitFile = "";
     var assetsDir = js.exec_dir + "assets/";
@@ -18227,8 +18517,11 @@ function showExitScreen() {
     }
     if (exitFile !== "") {
         try {
-            load('frame.js');
+            if (typeof Frame === 'undefined')
+                load('frame.js');
+            scene3d.installFrameDepth();
             var exitFrame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK);
+            scene3d.tagFrameDepth(exitFrame, 'title');
             exitFrame.open();
             exitFrame.load(exitFile);
             exitFrame.draw();
@@ -18236,14 +18529,17 @@ function showExitScreen() {
         }
         catch (e) {
             logError("Error loading custom exit screen: " + e);
+            scene3d.selectRawDepth('title');
             console.attributes = LIGHTGRAY;
             console.print("Thanks for playing SynthKart!\r\n");
         }
     }
     else {
+        scene3d.selectRawDepth('title');
         console.attributes = LIGHTGRAY;
         console.print("Thanks for playing SynthKart!\r\n");
     }
+    scene3d.selectRawDepth('glass');
     console.pause();
 }
 function waitForTitleInput() {
@@ -18258,22 +18554,28 @@ function waitForTitleInput() {
     }
 }
 function showRaceEndScreen() {
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
+    scene3d.selectRawDepth('chrome');
     console.attributes = LIGHTMAGENTA;
     console.print("\r\n\r\n");
     console.print("  ========================================\r\n");
+    scene3d.selectRawDepth('title');
     console.attributes = LIGHTCYAN;
     console.print("             RACE COMPLETE!\r\n");
     console.attributes = LIGHTMAGENTA;
     console.print("  ========================================\r\n");
     console.print("\r\n");
+    scene3d.selectRawDepth('content');
     console.attributes = LIGHTGRAY;
     console.print("         Thanks for racing!\r\n");
     console.print("\r\n");
+    scene3d.selectRawDepth('prompt');
     console.attributes = YELLOW;
     console.print("    Press any key to continue...\r\n");
     console.print("\r\n");
     console.attributes = LIGHTGRAY;
+    scene3d.selectRawDepth('glass');
     console.inkey(K_NONE, 30000);
 }
 function main() {
@@ -18320,16 +18622,21 @@ function main() {
     catch (e) {
         debugLog.separator("FATAL ERROR");
         debugLog.exception("Uncaught exception in main()", e);
+        scene3d.selectRawDepth('glass');
         console.clear(BG_BLACK, false);
+        scene3d.selectRawDepth('title');
         console.attributes = LIGHTRED;
         console.print("An error occurred: " + e + "\r\n");
+        scene3d.selectRawDepth('content');
         console.attributes = LIGHTGRAY;
         console.print("\r\nError details written to: outrun_debug.log\r\n");
         console.print("Press any key to exit...\r\n");
+        scene3d.selectRawDepth('glass');
         console.inkey(K_NONE);
     }
     finally {
         console.attributes = LIGHTGRAY;
+        scene3d.dispose();
     }
 }
 function runSingleRace(track, highScoreManager, carSelection) {

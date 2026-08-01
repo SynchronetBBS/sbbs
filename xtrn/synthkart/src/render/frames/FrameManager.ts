@@ -64,21 +64,25 @@ class FrameManager {
   init(): void {
     // Root frame - full screen, black background
     this.rootFrame = new Frame(1, 1, this.width, this.height, BG_BLACK);
+    scene3d.tagFrameDepth(this.rootFrame, 'backdrop');
     this.rootFrame.open();
     
     // Sky grid layer (covers sky area, will be drawn with grid pattern)
     this.skyGridFrame = new Frame(1, 1, this.width, this.horizonY, BG_BLACK, this.rootFrame);
+    scene3d.tagFrameDepth(this.skyGridFrame, 'sky');
     this.skyGridFrame.open();
     this.addLayer(this.skyGridFrame, 'skyGrid', 1);
     
     // Sun layer (transparent, for celestial bodies - behind scenery)
     this.sunFrame = new Frame(1, 1, this.width, this.horizonY, BG_BLACK, this.rootFrame);
+    scene3d.tagFrameDepth(this.sunFrame, 'celestial');
     this.sunFrame.transparent = true;
     this.sunFrame.open();
     this.addLayer(this.sunFrame, 'sun', 2);
     
     // Mountains layer (transparent, for parallax scrolling scenery - in front of celestials)
     this.mountainsFrame = new Frame(1, 1, this.width, this.horizonY, BG_BLACK, this.rootFrame);
+    scene3d.tagFrameDepth(this.mountainsFrame, 'mountains');
     this.mountainsFrame.transparent = true;
     this.mountainsFrame.open();
     this.addLayer(this.mountainsFrame, 'mountains', 3);
@@ -87,17 +91,20 @@ class FrameManager {
     // Covers same area as road, but renders the grid pattern
     var roadHeight = this.height - this.horizonY;
     this.groundGridFrame = new Frame(1, this.horizonY + 1, this.width, roadHeight, BG_BLACK, this.rootFrame);
+    scene3d.tagFrameDepth(this.groundGridFrame, 'ground');
     this.groundGridFrame.open();
     this.addLayer(this.groundGridFrame, 'groundGrid', 4);
     
     // Road layer (covers road area from horizon to bottom, transparent for off-road)
     this.roadFrame = new Frame(1, this.horizonY + 1, this.width, roadHeight, BG_BLACK, this.rootFrame);
+    scene3d.tagFrameDepth(this.roadFrame, 'road');
     this.roadFrame.transparent = true;  // Road is transparent so ground grid shows through off-road
     this.roadFrame.open();
     this.addLayer(this.roadFrame, 'road', 5);
     
     // HUD layer (transparent overlay, full screen)
     this.hudFrame = new Frame(1, 1, this.width, this.height, BG_BLACK, this.rootFrame);
+    scene3d.tagFrameDepth(this.hudFrame, 'hud');
     this.hudFrame.transparent = true;
     this.hudFrame.open();
     this.addLayer(this.hudFrame, 'hud', 100);
@@ -124,6 +131,7 @@ class FrameManager {
       // Max size for a roadside sprite: 8 wide x 6 tall
       var spriteFrame = new Frame(1, 1, 8, 6, BG_BLACK, this.rootFrame);
       spriteFrame.transparent = true;
+      scene3d.tagFrameDepth(spriteFrame, 'roadsideFar');
       // Don't open yet - will open when assigned to a sprite
       this.roadsidePool.push(spriteFrame);
     }
@@ -137,6 +145,7 @@ class FrameManager {
       // Vehicles are about 5 wide x 3 tall max
       var vehicleFrame = new Frame(1, 1, 7, 4, BG_BLACK, this.rootFrame);
       vehicleFrame.transparent = true;
+      scene3d.tagFrameDepth(vehicleFrame, i === 0 ? 'vehicleNear' : 'vehicleFar');
       this.vehicleFrames.push(vehicleFrame);
     }
   }
@@ -219,6 +228,7 @@ class FrameManager {
     if (!frame) return;
     
     if (visible) {
+      scene3d.tagFrameDepth(frame, this.roadsideBandForY(y));
       frame.moveTo(x, y);
       if (!frame.is_open) {
         frame.open();
@@ -238,6 +248,7 @@ class FrameManager {
     if (!frame) return;
     
     if (visible) {
+      scene3d.tagFrameDepth(frame, index === 0 ? 'vehicleNear' : this.vehicleBandForY(y));
       frame.moveTo(x, y);
       if (!frame.is_open) {
         frame.open();
@@ -257,6 +268,20 @@ class FrameManager {
   cycle(): void {
     // Cycling the root frame cycles all children
     this.rootFrame.cycle();
+  }
+
+  /** Roadside props advance toward the viewer as their projected Y descends. */
+  private roadsideBandForY(y: number): string {
+    if (y >= this.height - 7) return 'roadsideNear';
+    if (y >= this.horizonY + Math.floor((this.height - this.horizonY) * 0.48)) return 'roadsideMid';
+    return 'roadsideFar';
+  }
+
+  /** AI vehicles use the same three-stage approach; the player always stays near. */
+  private vehicleBandForY(y: number): string {
+    if (y >= this.height - 7) return 'vehicleNear';
+    if (y >= this.horizonY + Math.floor((this.height - this.horizonY) * 0.48)) return 'vehicleMid';
+    return 'vehicleFar';
   }
   
   /**
@@ -295,6 +320,7 @@ class FrameManager {
     }
     
     if (this.roadFrame) this.roadFrame.close();
+    if (this.groundGridFrame) this.groundGridFrame.close();
     if (this.sunFrame) this.sunFrame.close();
     if (this.mountainsFrame) this.mountainsFrame.close();
     if (this.skyGridFrame) this.skyGridFrame.close();

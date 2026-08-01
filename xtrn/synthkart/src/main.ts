@@ -87,6 +87,10 @@ if (typeof console === 'undefined' || console === null) {
   exit(1);
 }
 
+// The probe is instant on 3dBBS and a no-op on every ordinary terminal.
+// Run it before the title screen so no art is painted before the layer table.
+scene3d.initialize();
+
 // ============================================================
 // SYNCHRONET LIBRARY LOADING
 // ============================================================
@@ -105,6 +109,7 @@ if (typeof console === 'undefined' || console === null) {
  * Tries to load custom ANSI art from title.ans, falls back to built-in ASCII art.
  */
 function showTitleScreen(): void {
+  scene3d.selectRawDepth('glass');
   console.clear(BG_BLACK, false);
   
   // Try to load custom title screen (.bin preferred, .ans fallback)
@@ -124,10 +129,12 @@ function showTitleScreen(): void {
   if (titleFile !== "") {
     try {
       // Load frame.js library
-      load('frame.js');
+      if (typeof Frame === 'undefined') load('frame.js');
+      scene3d.installFrameDepth();
       
       // Display custom art using Frame
       var titleFrame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK);
+      scene3d.tagFrameDepth(titleFrame, 'title');
       titleFrame.open();
       titleFrame.load(titleFile);
       titleFrame.draw();
@@ -138,6 +145,7 @@ function showTitleScreen(): void {
     }
   } else {
     // Fallback to built-in ASCII art
+    scene3d.selectRawDepth('title');
     console.attributes = LIGHTMAGENTA;
 
     var title = [
@@ -165,6 +173,7 @@ function showTitleScreen(): void {
     console.print("\r\n");
 
     // Synthwave grid decoration
+    scene3d.selectRawDepth('ground');
     console.attributes = DARKGRAY;
     console.print("         /     |     \\         /     |     \\\r\n");
     console.print("        /      |      \\       /      |      \\\r\n");
@@ -175,6 +184,7 @@ function showTitleScreen(): void {
     console.print("\r\n");
 
     // Instructions
+    scene3d.selectRawDepth('content');
     console.attributes = WHITE;
     console.print("                    Controls:\r\n");
     console.attributes = LIGHTGRAY;
@@ -183,6 +193,7 @@ function showTitleScreen(): void {
     console.print("        SPACE = Use Item    P = Pause\r\n");
     console.print("\r\n");
 
+    scene3d.selectRawDepth('prompt');
     console.attributes = YELLOW;
     console.print("              Press any key to start racing...\r\n");
     console.print("                     Q to quit\r\n");
@@ -193,6 +204,7 @@ function showTitleScreen(): void {
 
     console.attributes = LIGHTGRAY;
   }
+  scene3d.selectRawDepth('glass');
 }
 
 /**
@@ -200,6 +212,7 @@ function showTitleScreen(): void {
  * Tries to load custom ANSI art from exit.bin, falls back to simple text message.
  */
 function showExitScreen(): void {
+  scene3d.selectRawDepth('glass');
   console.clear(BG_BLACK, false);
   
   // Try to load custom exit screen (.bin preferred, .ans fallback)
@@ -219,10 +232,12 @@ function showExitScreen(): void {
   if (exitFile !== "") {
     try {
       // Load frame.js library
-      load('frame.js');
+      if (typeof Frame === 'undefined') load('frame.js');
+      scene3d.installFrameDepth();
       
       // Display custom art using Frame
       var exitFrame = new Frame(1, 1, console.screen_columns, console.screen_rows, BG_BLACK);
+      scene3d.tagFrameDepth(exitFrame, 'title');
       exitFrame.open();
       exitFrame.load(exitFile);
       exitFrame.draw();
@@ -230,16 +245,19 @@ function showExitScreen(): void {
     } catch (e) {
       logError("Error loading custom exit screen: " + e);
       // Fall through to built-in message
+      scene3d.selectRawDepth('title');
       console.attributes = LIGHTGRAY;
       console.print("Thanks for playing SynthKart!\r\n");
     }
   } else {
     // Fallback to simple text message
+    scene3d.selectRawDepth('title');
     console.attributes = LIGHTGRAY;
     console.print("Thanks for playing SynthKart!\r\n");
   }
   
   // Wait for a keystroke before exiting
+  scene3d.selectRawDepth('glass');
   console.pause();
 }
 
@@ -265,26 +283,32 @@ function waitForTitleInput(): boolean {
  * Waits for user to press a key before returning.
  */
 function showRaceEndScreen(): void {
+  scene3d.selectRawDepth('glass');
   console.clear(BG_BLACK, false);
   
+  scene3d.selectRawDepth('chrome');
   console.attributes = LIGHTMAGENTA;
   console.print("\r\n\r\n");
   console.print("  ========================================\r\n");
+  scene3d.selectRawDepth('title');
   console.attributes = LIGHTCYAN;
   console.print("             RACE COMPLETE!\r\n");
   console.attributes = LIGHTMAGENTA;
   console.print("  ========================================\r\n");
   console.print("\r\n");
   
+  scene3d.selectRawDepth('content');
   console.attributes = LIGHTGRAY;
   console.print("         Thanks for racing!\r\n");
   console.print("\r\n");
   
+  scene3d.selectRawDepth('prompt');
   console.attributes = YELLOW;
   console.print("    Press any key to continue...\r\n");
   console.print("\r\n");
   
   console.attributes = LIGHTGRAY;
+  scene3d.selectRawDepth('glass');
   console.inkey(K_NONE, 30000);  // Wait up to 30 seconds
 }
 
@@ -378,16 +402,21 @@ function main(): void {
     debugLog.separator("FATAL ERROR");
     debugLog.exception("Uncaught exception in main()", e);
     
+    scene3d.selectRawDepth('glass');
     console.clear(BG_BLACK, false);
+    scene3d.selectRawDepth('title');
     console.attributes = LIGHTRED;
     console.print("An error occurred: " + e + "\r\n");
+    scene3d.selectRawDepth('content');
     console.attributes = LIGHTGRAY;
     console.print("\r\nError details written to: outrun_debug.log\r\n");
     console.print("Press any key to exit...\r\n");
+    scene3d.selectRawDepth('glass');
     console.inkey(K_NONE);
   } finally {
     // Always restore terminal state and close log
     console.attributes = LIGHTGRAY;
+    scene3d.dispose();
     // debugLog.separator("LOG END");
     // debugLog.close();
   }

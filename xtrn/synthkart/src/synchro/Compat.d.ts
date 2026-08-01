@@ -11,9 +11,18 @@
 
 declare function print(text: string): void;
 declare function exit(code?: number): void;
-declare function load(filename: string): void;
+declare function load(filename: string): any;
 declare function log(level: number, text: string): void;
 declare function require(filename: string, symbol?: string): any;
+
+/**
+ * Resolve a configuration filename, preferring the most specific variation
+ * that exists: <name>.<host>.<domain>.<ext>, <name>.<host>.<ext>,
+ * <name>.<platform>.<ext>, then <name>.local.<ext> -- the last naming this
+ * installation rather than a machine, for a sysop's own version of a file
+ * that Synchronet distributes. Falls back to <path>/<filename>.
+ */
+declare function file_cfgname(path: string, filename: string): string;
 
 // ============================================================
 // KEY CONSTANTS (from key_defs.js)
@@ -37,6 +46,7 @@ declare var KEY_ESC: string;
 
 interface SynchronetConsole {
   print(text: string): void;
+  write(text: string): void;
   writeln(text: string): void;
   clear(attribute?: number | string, autopause?: boolean): void;
   gotoxy(x: number, y: number): void;
@@ -52,6 +62,9 @@ interface SynchronetConsole {
   pause(): void;
   center(text: string): void;
   line_counter: number;
+  cterm_version: number;
+  getbyte(timeout?: number): number | null;
+  ungetstr(text: string): void;
 }
 
 declare var console: SynchronetConsole;
@@ -172,7 +185,7 @@ declare var SS_PAUSEOFF: number;
 // UTILITY FUNCTIONS
 // ============================================================
 
-declare function load(filename: string): void;
+declare function load(filename: string): any;
 declare function mswait(ms: number): void;
 declare function log(level: number, message: string): void;
 declare function sleep(seconds: number): void;
@@ -241,4 +254,5 @@ declare class Frame {
   getData(x: number, y: number): { ch: string; attr: number };
   clearData(x: number, y: number): void;
   is_open: boolean;
+  _scene3dBand?: string;
 }

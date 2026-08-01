@@ -16,6 +16,7 @@ function displayHighScores(
   trackOrCircuitName: string,
   playerPosition?: number
 ): void {
+  scene3d.selectRawDepth('glass');
   console.clear(LIGHTGRAY, false);
   
   // Fixed 80x24 viewport
@@ -41,6 +42,7 @@ function displayHighScores(
   var topY = Math.floor((screenHeight - boxHeight) / 2);
   
   // Draw box border
+  scene3d.selectRawDepth('chrome');
   console.gotoxy(boxX, topY);
   console.attributes = boxAttr;
   console.print(GLYPH.DBOX_TL);
@@ -64,11 +66,13 @@ function displayHighScores(
   console.print(GLYPH.DBOX_BR + "\r\n");
   
   // Title
+  scene3d.selectRawDepth('title');
   console.gotoxy(boxX + Math.floor((boxWidth - title.length) / 2), topY + 2);
   console.attributes = titleAttr;
   console.print(title);
   
   // Track/Circuit name
+  scene3d.selectRawDepth('content');
   console.gotoxy(boxX + Math.floor((boxWidth - trackOrCircuitName.length) / 2), topY + 3);
   console.attributes = headerAttr;
   console.print(trackOrCircuitName);
@@ -81,10 +85,11 @@ function displayHighScores(
   // Scores
   var startY = topY + 6;
   for (var i = 0; i < 10; i++) {
+    var isHighlighted = (playerPosition !== undefined && playerPosition === i + 1);
+    scene3d.selectRawDepth(isHighlighted ? 'vehicleNear' : 'content');
     console.gotoxy(boxX + 3, startY + i);
     
     // Check if this is the player's highlighted position
-    var isHighlighted = (playerPosition !== undefined && playerPosition === i + 1);
     
     if (i < scores.length) {
       var score = scores[i];
@@ -136,6 +141,7 @@ function displayHighScores(
   }
   
   // Footer
+  scene3d.selectRawDepth('prompt');
   console.gotoxy(boxX + Math.floor((boxWidth - 24) / 2), topY + boxHeight - 2);
   console.attributes = headerAttr;
   console.print("Press any key to continue");
@@ -161,6 +167,7 @@ function showHighScoreList(
   var scores = highScoreManager.getScores(type, identifier);
   displayHighScores(scores, title, trackOrCircuitName, playerPosition);
   // Reset line counter to prevent auto-pause, then wait for key with long timeout
+  scene3d.selectRawDepth('glass');
   console.line_counter = 0;
   console.inkey(K_NONE, 300000);  // Wait up to 5 minutes
 }
@@ -204,6 +211,7 @@ function showTwoColumnHighScores(
   trackTimePosition: number,
   lapTimePosition: number
 ): void {
+  scene3d.selectRawDepth('glass');
   console.clear(LIGHTGRAY, false);
   
   // Fixed 80x24 viewport
@@ -234,6 +242,7 @@ function showTwoColumnHighScores(
   var topY = Math.floor((viewHeight - boxHeight) / 2);
   
   // Draw box border
+  scene3d.selectRawDepth('chrome');
   console.gotoxy(boxX, topY);
   console.attributes = boxAttr;
   console.print(GLYPH.DBOX_TL);
@@ -257,12 +266,14 @@ function showTwoColumnHighScores(
   console.print(GLYPH.DBOX_BR);
   
   // Title
+  scene3d.selectRawDepth('title');
   var title = "=== HIGH SCORES ===";
   console.gotoxy(boxX + Math.floor((boxWidth - title.length) / 2), topY + 1);
   console.attributes = titleAttr;
   console.print(title);
   
   // Track name
+  scene3d.selectRawDepth('content');
   console.gotoxy(boxX + Math.floor((boxWidth - trackName.length) / 2), topY + 2);
   console.attributes = headerAttr;
   console.print(trackName);
@@ -291,8 +302,9 @@ function showTwoColumnHighScores(
   var startY = topY + 5;
   for (var i = 0; i < 10; i++) {
     // Left column - Track Time
-    console.gotoxy(leftColX, startY + i);
     var trackHighlighted = (trackTimePosition > 0 && trackTimePosition === i + 1);
+    scene3d.selectRawDepth(trackHighlighted ? 'vehicleNear' : 'content');
+    console.gotoxy(leftColX, startY + i);
     
     if (i < trackScores.length) {
       var score = trackScores[i];
@@ -331,8 +343,9 @@ function showTwoColumnHighScores(
     }
     
     // Right column - Lap Time
-    console.gotoxy(rightColX, startY + i);
     var lapHighlighted = (lapTimePosition > 0 && lapTimePosition === i + 1);
+    scene3d.selectRawDepth(lapHighlighted ? 'vehicleNear' : 'content');
+    console.gotoxy(rightColX, startY + i);
     
     if (i < lapScores.length) {
       var score = lapScores[i];
@@ -372,6 +385,7 @@ function showTwoColumnHighScores(
   }
   
   // Legend for new scores
+  scene3d.selectRawDepth('content');
   if (trackTimePosition > 0 || lapTimePosition > 0) {
     console.gotoxy(boxX + 3, topY + boxHeight - 3);
     console.attributes = newScoreAttr;
@@ -379,12 +393,14 @@ function showTwoColumnHighScores(
   }
   
   // Footer prompt
+  scene3d.selectRawDepth('prompt');
   var prompt = "Press any key to continue";
   console.gotoxy(boxX + Math.floor((boxWidth - prompt.length) / 2), topY + boxHeight - 2);
   console.attributes = promptAttr;
   console.print(prompt);
   
   // Reset line counter to prevent auto-pause, then wait for key with long timeout
+  scene3d.selectRawDepth('glass');
   console.line_counter = 0;
   console.inkey(K_NONE, 300000);  // Wait up to 5 minutes
 }

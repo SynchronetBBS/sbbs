@@ -98,6 +98,7 @@ cat dist/bootstrap.js \
     dist/render/themes/UnderwaterTheme.js \
     dist/render/themes/ANSITunnelSprites.js \
     dist/render/themes/ANSITunnelTheme.js \
+    dist/render/frames/Scene3d.js \
     dist/render/frames/FrameManager.js \
     dist/render/frames/Sprite.js \
     dist/render/frames/FrameRenderer.js \

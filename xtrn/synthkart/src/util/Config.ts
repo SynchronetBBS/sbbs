@@ -24,9 +24,13 @@ interface OutrunConfig {
 
 /**
  * Load and parse synthkart.ini configuration
+ *
+ * file_cfgname() prefers the sysop's own synthkart.local.ini when one exists
+ * and falls back to the distributed synthkart.ini, so an upgrade never
+ * replaces a customized config.
  */
 function loadConfig(): OutrunConfig {
-  var configPath = js.exec_dir + 'synthkart.ini';
+  var configPath = file_cfgname(js.exec_dir, 'synthkart.ini');
   
   // Default configuration
   var config: OutrunConfig = {
