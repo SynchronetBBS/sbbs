@@ -39,7 +39,7 @@ var dataInit = function() {
 	try {
 		console.clear();
 
-		var fileName = js.exec_dir + "game.ini";
+		var fileName = file_cfgname(js.exec_dir, "game.ini");
 		if(!file_exists(fileName))
 			throw "game.ini not present.";
 		var fileHandle = new File(fileName);

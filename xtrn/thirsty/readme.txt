@@ -52,10 +52,16 @@ I highly recommend that you configure Thirstyville to connect to my JSON DB
 server for interBBS play.  The more people we have playing from multiple BBSs,
 the more fun it will be for everyone.  To do so:
 
-Open 'game.ini', and edit the 'server' and 'port' values at the top to read:
+Open 'game.local.ini', and edit the 'server' and 'port' values at the top to
+read:
 
 server = bbs.electronicchicken.com
 port = 10088
+
+('game.local.ini' is created by the installer as a copy of the distributed
+'game.ini'.  Thirstyville reads it in preference to 'game.ini' whenever it
+exists, and Synchronet upgrades never replace it, so your settings survive an
+update.  If it is missing, just copy 'game.ini' to that name.)
 
 If you chose to go this route, you can skip over the "OPTIONAL" section below.
 
@@ -71,7 +77,8 @@ Options=STATIC | LOOP
 Command=json-service.js
 
 (If you set the port for your JSON DB server to something other than 10088 in
-ctrl/services.ini, sure to edit the corresponding 'port' value in game.ini.)
+ctrl/services.ini, sure to edit the corresponding 'port' value in
+game.local.ini.)
 
 And that you have the following section in ctrl/json-service.ini:
 

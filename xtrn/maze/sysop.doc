@@ -52,6 +52,12 @@ operating (default: 10088)
 		host=localhost
 		port=10088
 
+Rather than editing SERVER.INI itself, you may create a SERVER.LOCAL.INI file
+beside it and put your settings there.  The game reads SERVER.LOCAL.INI in
+preference to SERVER.INI whenever it exists, and Synchronet upgrades never
+replace it, so your host and port survive an update.  The installer creates
+this file for you.
+
 
 *****SETTING UP THE GAME SERVICE WITH SYNCHRONET*****
 

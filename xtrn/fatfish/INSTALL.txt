@@ -93,7 +93,7 @@ If you want to host your own JSON service, follow these steps:
        var USING_JSON = true;
        var USING_GLOBAL_SERVER = false;
 
-5. Edit "server.ini" in the FatFish path to tweak your settings, if you wish to use another InterBBS server other than localhost. You can set "host" and "port" values in this INI file.
+5. Edit "server.ini" in the FatFish path to tweak your settings, if you wish to use another InterBBS server other than localhost. You can set "host" and "port" values in this INI file. Better still, put those values in a "server.local.ini" file beside it: FatFish prefers that file whenever it exists, and Synchronet upgrades never replace it. The installer creates it for you.
 
 ---------------
 Troubleshooting

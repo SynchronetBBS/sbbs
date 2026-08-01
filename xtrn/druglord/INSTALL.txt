@@ -87,6 +87,9 @@ If you want to host your own JSON service, follow these steps:
 3. Restart the Synchronet Services service.
 
 4. Edit 'server.ini' to set the host and port to the desired JSON service.
+   Better still, put those values in a 'server.local.ini' file beside it: the
+   game prefers that file whenever it exists, and Synchronet upgrades never
+   replace it.  The installer creates it for you.
 
 5. Edit 'druglord.js' and change the settings to:
 
