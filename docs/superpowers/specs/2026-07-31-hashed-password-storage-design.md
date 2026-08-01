@@ -1,22 +1,68 @@
-# Hashed password storage
+# Password storage
 
 **Date:** 2026-07-31
 **Revised:** 2026-08-01, following review by Deuce
-**Status:** Design, not yet approved for implementation
+**Status:** Design, not approved for implementation. **Hashing versus
+encryption is an open decision** — see "Hashing or encryption".
 
-The 2026-08-01 revision restated the threat model as two named assets and three
-testable properties, recorded the decision that the change is mandatory rather
-than optional, corrected two factual errors in the first draft (browser support
-for HTTP authentication, and the claim that HTTP Basic could be moved onto
-session tokens), completed the audit of password sinks, settled the `pass.tab`
-record format, and promoted the crypto-library choice and the IMAP transport
-work to prerequisites.
+The filename says "hashed password storage" because that is where the first
+draft started. It is kept for continuity, but it overstates the state of the
+discussion: the question was opened as *encrypted* password storage, encryption
+remains under advocacy, and this document's preference for hashing is a
+recommendation with an argument attached, not a settled decision.
+
+The 2026-08-01 revisions restated the threat model as two named assets and
+three testable properties, recorded the decision that the change is mandatory
+rather than optional, corrected several errors and withdrew several bad
+arguments against encryption, completed the audit of password sinks, settled
+the `pass.tab` record format, and promoted the crypto-library choice and the
+IMAP transport work to prerequisites.
 
 ## Problem
 
 Synchronet stores every user's password in cleartext, as field 47 of each
 record in `data/user/user.tab` (parsed at `userdat.c:545`, written at
 `userdat.c:822`).
+
+Everything below concerns that file. It does **not** concern the password's
+existence in memory during authentication, which no storage design changes and
+which is described next, because confusing the two is how a storage fix comes
+to be described as something it is not.
+
+## The password exists in cleartext during authentication regardless
+
+This bounds every option in this document.
+
+Most of the protocols Synchronet speaks transmit the password itself and ask
+the server to check it: terminal login over Telnet or SSH, FTP `PASS`, HTTP
+Basic, and SMTP/POP3/IMAP `PLAIN` and `LOGIN`. For those, the server receives
+the cleartext by definition of the protocol. In the terminal case it lands in a
+stack buffer — `char str[128]` in `sbbs_t::login()` (`login.cpp:31`), filled by
+`getstr()` at `:63` and `:95` — and equivalents exist on every other
+authentication path.
+
+So at some instant, on every login, the plaintext password is in the process's
+memory. Consequences that follow, none of which hashing or encryption alters:
+
+- **A core dump can contain a live password.** This is not hypothetical for
+  this project: crashes are captured deliberately, and cores are large. Any
+  core from a server that was handling a login may hold one.
+- **It can reach swap**, and from there the disk, outliving the process.
+- **Zeroizing the buffer after use is hygiene, not a solution.** The window
+  can be shortened, not closed.
+- **This is what makes a malicious sysop unmitigable** for password
+  authentication, as recorded under the threat model. It is the same fact
+  stated from the other end.
+
+The only real escape is to stop transmitting the password: SCRAM sends a proof
+instead, and FIDO2 and public-key authentication never involve one. That is the
+subject of "What would actually defeat a malicious sysop", and it is out of
+scope here.
+
+None of this weakens the case for changing storage. The two are independent: a
+password that exists for microseconds in RAM during one login is a different
+exposure from one that sits in a world-readable file forever, in every backup,
+for every account at once.
 
 ## Threat model
 
@@ -54,9 +100,9 @@ sysop login when the sysop enables it — `login.cpp:115`, conditional on
 unconditionally, through `chksyspass()` (`con_hi.cpp:145`), subject to a
 `sys_pass_timeout` re-prompt window.
 
-The consequence for this design is worth stating: on a system that requires it,
-a copy of `user.tab` yields the sysop's *user account* but not the sysop's
-*authority*. That is a genuine mitigation and it exists today.
+On a system that requires it, a copy of `user.tab` yields the sysop's *user
+account* but not the sysop's *authority*. That is a genuine mitigation and it
+exists today.
 
 It is bounded, though, in three ways that keep it from displacing anything
 here. It is a single shared secret rather than a per-account credential, so it
@@ -66,8 +112,8 @@ password. And it does nothing for the other 1,456 accounts.
 
 **The system password's storage and use are out of scope for this design.**
 Nothing below changes where it lives, how it is compared, or when it is
-demanded. It is recorded here because it changes the honest description of what
-a leaked `user.tab` costs a sysop, not because it is being touched.
+demanded. It appears here because it changes what a leaked `user.tab` costs a
+sysop, not because it is being touched.
 
 The goal reduces to three properties of the stored data. They are the
 acceptance test for every proposal in this document, and nothing below is
@@ -128,12 +174,11 @@ blocked by this design.
 
 ## What this design is, and the fair criticism of it
 
-A criticism worth putting in the document rather than answering off to one
-side: **an analysis that meets every existing use of passwords with "passwords,
-but stored more carefully" is a narrow answer to a broad problem, and pairing
-it with the removal of working features makes the narrowness harder to excuse.**
+**An analysis that meets every existing use of passwords with "passwords, but
+stored more carefully" is a narrow answer to a broad problem, and pairing it
+with the removal of working features makes the narrowness harder to excuse.**
 
-Most of that is correct, and the document should not pretend otherwise.
+Most of that is correct.
 
 A large share of the sites catalogued below should not be using a password at
 all, and no amount of care in storing one fixes that. The MQTT broker wants an
@@ -162,18 +207,36 @@ What defends doing this anyway is that it is the **floor, not the ceiling**:
 What the criticism should change, and does:
 
 - **The removals are a cost, not a benefit.** CRAM-MD5, APOP and HTTP Digest
-  are not being "cleaned up"; they are being paid. The document does not get to
-  present a shorter feature list as an achievement.
+  are not being "cleaned up"; they are being paid. A shorter feature list is
+  not an achievement here.
 - **No mechanism is removed without a replacement path.** That rule is already
   applied to IMAP, where the transport work is a hard prerequisite rather than
   a follow-up. It is a general rule, not a special case.
 
-And the honest ordering, if resources allowed only one: the post-password work
+The ordering, if resources allowed only one: the post-password work
 reduces how many accounts the storage question applies to. It never reduces it
 to zero, and it does not begin until the first user enrols. This design is what
 covers the interval, which for a BBS is likely to be the rest of its life.
 
-## Why encryption was rejected
+## Hashing or encryption
+
+**This is the open decision in this document, not a settled one.** The question
+was raised as encrypted password storage; encryption is still argued for; the
+recommendation below is hashing, with the argument attached so it can be
+attacked. Everything downstream — `pass.tab`, the record format, the migration
+— is compatible with either, since both store an opaque per-user credential
+that only the authentication path interprets. What changes is what that
+credential is and whether a key exists.
+
+There is also a **hard constraint from the sysop side**, recorded here as a
+requirement rather than a preference: any encryption scheme that requires an
+operator to type a key at startup is infeasible. A BBS restarts when the
+machine does, unattended, at three in the morning. A design that will not come
+back up on its own is not a candidate, however good its cryptography. That
+rules out the passphrase-at-startup variant immediately and leaves the key in
+an OS facility or a file — see "Where the key would actually live".
+
+### Bad arguments against encryption, withdrawn
 
 Earlier versions of this section made the same mistake four times, and all four
 claims are **withdrawn**: that a sysop necessarily holds the key; that the key
@@ -199,12 +262,15 @@ implements it will misuse it is an argument available against anything,
 hashing included — an unsalted single-round SHA-256 is "hashing" too, and it
 would fail every property in this document.
 
-The rejection has to stand on properties of the primitive as competently built,
-so what follows does.
+The comparison has to be against the primitive as competently built, so what
+follows is.
 
-Assume it is done properly: the key is held off disk — entered at startup, or
-kept in a TPM or an external key service — and the ciphertext is randomized per
-record. Give it full credit, because it earns some:
+### Encryption, done properly
+
+Assume the key is held outside the data file — in an OS secret facility or
+sealed to a TPM, and *not* typed by a human, per the constraint above — and
+the ciphertext is randomized per record. Give it full credit, because it earns
+some:
 
 - **It satisfies P0.** A ciphertext record is not a credential: it cannot be
   presented to any login prompt, and without the key it authenticates nothing.
@@ -220,8 +286,8 @@ record. Give it full credit, because it earns some:
   does not survive a stolen hash.
 
 So encryption, competently built, meets every property this document asks for,
-and beats hashing on one of them. The rejection is therefore narrow, and rests
-on two things only.
+and beats hashing on one of them. The case for hashing is therefore narrow, and
+rests on two things only.
 
 1. **Its failure mode is total and retroactive.** One key disclosure exposes
    every password ever stored, at once, including those of users who chose
@@ -237,35 +303,60 @@ on two things only.
    Hashing needs no secret at all. That is not a claim about implementer skill;
    it is a difference in how many things must go right.
 
-### The key-storage objection, and why it does not dissolve reason 2
+### Where the key would actually live
 
-Every operating system Synchronet runs on does have secret storage — DPAPI and
-the Credential Manager on Windows, the kernel keyring, TPM2 and `systemd-creds`
-on Linux, Keychain on macOS. It is fair to say a sysop is not being asked to
-invent one.
+**First, a correction of scale that matters.** Encrypted storage does not put
+thousands of user credentials into an OS secret facility. It puts **one** key
+there — the master key — and the thousands of encrypted records stay in
+`pass.tab` as ordinary file data. This is the difference between a use these
+facilities are designed for and one they are hopeless at. The requirement is a
+single secret of perhaps 32 bytes, readable by an unattended service at boot.
 
-The difficulty is not availability, and it is not shared storage either — the
-answer to a multi-host installation is to **provision the same secret into each
-host**, not to federate their key stores. That is an ordinary setup step, of
-the same kind as installing a TLS private key on each host, which sysops
-already do.
+What each platform actually offers, and its limits:
 
-So the cost here is smaller than an earlier draft of this section implied. What
-remains of it is real but modest: it is a manual step per host at install, it
-must be repeated on every rotation, and the secret exists outside any key store
-while in transit. Those facilities are also per-host and mutually
-unintelligible — a DPAPI blob means nothing to a Linux node — so "use the OS
-key store" is a per-host answer to a per-host problem, and the provisioning
-happens regardless.
+| Platform | Facility | Unattended? | Fit for one service key |
+|---|---|---|---|
+| Windows | DPAPI (`CryptProtectData`, machine scope) | yes | Good. Not a store — it returns a blob you save yourself. Machine scope means *any* local process can unprotect it, so it defends a stolen file, not a local attacker. |
+| Windows | Credential Manager (`CredWrite`) | per-account | Workable. A real store, per-user, with a per-item blob limit of a few kilobytes. Fine for one key, useless in bulk. |
+| Windows | CNG / DPAPI-NG (`NCryptProtectSecret`) | yes | Good, and scriptable to SID-based descriptors. Newer, less familiar. |
+| Linux | `systemd-creds` + `LoadCredentialEncrypted=` | yes | **Best fit.** Host-bound, optionally TPM2-sealed, delivered into `$CREDENTIALS_DIRECTORY` at unit start with no operator. Needs systemd 250+. |
+| Linux | TPM2 sealing directly | yes | Good, with a caveat: sealed data is bound to the machine, so restoring a backup onto new hardware loses the key and every password with it. |
+| Linux | kernel keyring (`add_key`/`keyctl`) | **no** | **Wrong tool.** In-memory and does not survive a reboot, so something must re-provision it at every boot — which is the original problem. Quotas are small besides. |
+| macOS | System Keychain | yes | Good. Daemons can read system-keychain items without a login session. |
+| BSDs | — | — | **Nothing standard.** No OS secret facility comparable to the above, so the key ends up in a mode-0600 file. |
+
+Measured on one Debian 13 host while writing this: `systemd 257`,
+`systemd-creds` present, `/dev/tpm0` and `/dev/tpmrm0` available — so the best
+Linux option is available in practice, not just on paper. The kernel keyring's
+per-user quotas on that same host are `maxkeys` **200** and `maxbytes` **20000**
+(`/proc/sys/kernel/keys/`), which is ample for one key and confirms it could
+never hold per-user secrets — but its lack of persistence across reboot is what
+disqualifies it, not its size. The Windows and macOS rows are from
+documentation rather than measurement and should be confirmed by someone on
+those platforms before anything is built.
+
+So availability is not the obstacle it was earlier made out to be — on Windows,
+Linux and macOS a sysop is not being asked to invent anything. Two real costs
+remain:
+
+- **The BSDs have no answer**, so a portable design has to tolerate the key
+  living in a file, which is the weakest configuration and would be the one
+  some installations actually run.
+- **Multi-host installations provision, they do not federate.** The answer to
+  several hosts sharing one user database is to install the same secret on each
+  — an ordinary step, of the same kind as installing a TLS private key, which
+  sysops already do. It is a manual step per host, repeated on rotation, with
+  the secret outside any facility while in transit. Those facilities are also
+  mutually unintelligible: a DPAPI blob means nothing to a Linux node, so
+  "use the OS key store" is a per-host answer applied per host.
 
 None of this is an argument against encryption. It is the cost side of reason 2
-stated at its true size, which is: some. Reason 1 is what actually decides the
-question.
+at its true size, which is: some, and less than this document once claimed.
+Reason 1 — the failure mode — is what actually decides the recommendation.
 
-The honest summary is not that encryption is weak, or badly implementable. It
-is that it solves a harder problem than the one at hand, fails less gracefully
-when it does fail, and charges for a capability this design would rather not
-possess.
+Encryption is neither weak nor badly implementable. It solves a harder problem
+than the one at hand, fails less gracefully when it does fail, and charges for
+a capability this design would rather not possess.
 
 ### What would actually defeat a malicious sysop
 
@@ -296,10 +387,10 @@ mail protocols. Each is optional and each is additive — none of them removes
 the need to store the passwords of the users who do not use them, which is what
 this document is about.
 
-That is a larger change than storage, and it is not scoped here. It is recorded
-because it is the honest answer to "then what *would* work", and because the
-rejection of encryption should be understood as choosing the better of two
-server-side options — not as a claim that server-side is the only option.
+That is a larger change than storage, and it is not scoped here. It answers
+"then what *would* work", and it places the hashing-versus-encryption question
+above as a choice between two server-side options rather than a claim that
+server-side is the only option.
 
 ## Mandatory, not optional
 
@@ -509,8 +600,7 @@ The length is obtained by **measuring the first record**: read from offset 0 to
 the first LF, and that byte count is the stride. There is no header record and
 no stored length field.
 
-That is worth stating as a deliberate choice rather than an obvious one,
-because a header was the alternative and is worse here:
+A header was the alternative, and is worse here:
 
 - **The offset arithmetic is unchanged.** Records stay at `(N - 1) * reclen`,
   exactly as `userdatoffset()` computes it. A header would have consumed a slot
@@ -553,7 +643,7 @@ measuring costs it nothing to adopt:
   answers 1000 to this measurement, so a reader that measures instead of
   assuming is compatible with every file that exists, immediately, with no
   conversion and no format bump. The stride can then be widened later by a
-  rewrite alone — which is what makes this worth doing *before* it is needed
+  rewrite alone — which is why this belongs in place *before* it is needed
   rather than during the emergency.
 - **The measurement belongs in a shared helper** rather than in the password
   code — measure, range-check, verify the file size divides evenly, return the
@@ -654,8 +744,8 @@ bug described under "The `user.tab` password field" below:
 
 ### The `user.tab` password field
 
-`USER_PASS` is **not** blanked. It is set to a **single-byte** sentinel that no
-typed password can equal.
+`USER_PASS` is **not** blanked. It is set to a short sentinel that cannot be a
+legal password.
 
 This is a safety requirement, not cosmetics. `login.cpp:88` reads:
 
@@ -675,25 +765,52 @@ Note that this is also why the field cannot simply be dropped from the record:
 padding is the field separator itself, so an absent trailing field parses as
 empty, which is the failure above.
 
-**One byte, not forty.** The field must be non-empty and unequal to anything a
-user can type; nothing about it needs to be long. Since after migration *every*
-record carries it, the field's worst-case contribution to the record drops from
-`LEN_PASS` (40, `sbbsdefs.h:537`) to one byte, returning up to 39 bytes of the
-999 to the rest of the record — which matters, given how little headroom the
-format has left.
+**Short, not forty bytes.** Since after migration *every* record carries it,
+the field's worst-case contribution to the record drops from `LEN_PASS` (40,
+`sbbsdefs.h:537`) to the sentinel's length, returning most of those bytes to
+the rest of the record — which matters, given how little headroom the format
+has left.
 
-**What makes it unmatchable** is that `getstr()` only accepts bytes at or above
-`' '` (`getstr.cpp:568`), so no control character can be entered at any
-password prompt. The sentinel is therefore a control byte, avoiding the three
-that carry meaning in this context — tab (the field separator), LF (the record
-terminator), CR — and avoiding `0x01`, which Synchronet uses for attribute
-codes and which would be interpreted by anything that renders the field. `0x1F`
-is the suggested value: outside the enterable range, semantically apt as a
-separator-class byte, and inert everywhere else.
+**What guarantees no user's password can equal it** is `check_pass()`
+(`userdat.c:4302`), the shared validator every password-setting path goes
+through. It rejects anything shorter than `MIN_PASS_LEN` (4, `sbbsdefs.h:538`)
+or than the sysop's configured `min_pwlen`, whichever is greater, along with
+several other classes of unacceptable password. A sentinel of one to three
+bytes is therefore something no account can ever legitimately hold, which is
+what makes it safe to treat as a marker when reading the file.
 
-A printable sentinel such as `*` would *not* do. It is enterable, so on a
-downgraded binary — the exact scenario the sentinel exists for — it would
-become a universal password.
+**An earlier draft argued this from `getstr()` instead, and that was wrong.**
+It claimed the sentinel was unmatchable because `getstr()` accepts nothing
+below `' '` (`getstr.cpp:568`), so a control byte could never be entered. But
+not every password arrives through `getstr()`: HTTP Basic and SMTP/IMAP
+`PLAIN`/`LOGIN` carry base64 that decodes to arbitrary bytes, `makeuser` takes
+one from `argv` (`makeuser.c:175`), and the JavaScript comparison path takes
+whatever it is given. A control byte is deliverable on several paths, so
+"cannot be typed" was never the same as "cannot be presented".
+
+**And unmatchability is not achievable at all** against the adversary this
+document is about. A comparison against the stored field is a comparison
+against a value that adversary has *read*, so whatever the sentinel is —
+control byte, random string, anything — they can present it back. Choosing an
+exotic value does not fix this.
+
+So the sentinel's job is narrower than "unmatchable". It converts the failure
+from **"nobody is asked for a password, so everybody gets
+in"** into **"an attacker needs both a copy of the file and a reader that
+predates the change"**. The first is universal and requires no knowledge or
+access at all; the second requires the file, which is the very thing this
+design assumes has leaked, *plus* a downgraded binary. That is a large
+reduction, not a guarantee, and it should not be described as one.
+
+One consequence for the choice of value: it should be **randomly generated per
+installation at migration** rather than a fixed constant compiled into the
+tree. Neither survives someone reading the file, but a constant is defeated by
+someone reading the *source*, which is a much lower bar.
+
+Concretely: three random printable bytes, recorded once at migration. Under
+`MIN_PASS_LEN`, so no account can hold it; non-empty, so the prompt still
+happens; unguessable without the file; and three bytes rather than forty in
+every record.
 
 ## API
 
@@ -823,7 +940,7 @@ remaining path that hands cleartext to an insider is in scope:
 This list is a snapshot taken during one pass over the tree, and should be
 treated as such — the durable fix for the class is "Passwords used where a key
 or token belongs", below, not chasing individual call sites. Two entries were
-missed on the first pass and are worth naming for what they show:
+missed on the first pass, and they show what the rest of the list looks like:
 
 **The built-in broker duplicates `broker.js`.** `mqtt_broker.cpp:86` walks every
 sysop and stores `m_psk_table[alias] = tolower(user.pass)`, the same enumeration
@@ -889,15 +1006,15 @@ that matters here:
 - **It never has to be typed or remembered**, which is what makes generating a
   strong one free.
 
-Worth being honest about the residue: TLS-PSK is symmetric, so the broker must
-still hold usable key material at rest. API keys fix the *reuse* and
+The residue: TLS-PSK is symmetric, so the broker must still hold usable key
+material at rest. API keys fix the *reuse* and
 *revocation* problems completely and the at-rest problem only partly. The clean
 version is client certificates for MQTT, which is the same principle one step
 further and needs no shared secret at all — consistent with the general rule
 below.
 
 None of this waits on hashing. It removes a live cleartext BBS password from
-sysop workstations now, and it is worth doing on its own schedule.
+sysop workstations now, and can proceed on its own schedule.
 
 The general principle, which should outlast this document: **certificates,
 public keys, generated tokens and derived per-service keys are the right fit
@@ -907,8 +1024,7 @@ using the password stops being blocked by this design.
 The same pattern shows up outside this design's scope, which is some evidence
 it is a pattern and not a coincidence: `cfg.sys_pass` — a typed human password
 — is what encrypts the server's private key in the cryptlib keyset
-(`ssl.c:482`, `:549`). Out of scope here, noted so it is not rediscovered as
-news.
+(`ssl.c:482`, `:549`). Out of scope here.
 
 ## Constraints
 
@@ -1015,9 +1131,9 @@ stop a sysop impersonating a user on this BBS, it does not stop a sysop who
 instruments the running system, and it does nothing about a password captured
 in transit.
 
-And what it costs, which belongs in the same list rather than further down:
-CRAM-MD5, APOP and HTTP Digest stop working. That is not a tidier feature list,
-it is the price. See "What this design is, and the fair criticism of it".
+And what it costs: CRAM-MD5, APOP and HTTP Digest stop working. That is not a
+tidier feature list, it is the price. See "What this design is, and the fair
+criticism of it".
 
 ## Sequencing
 
@@ -1048,6 +1164,15 @@ reaches a sysop, not alongside it.
 
 ## Open questions
 
+- **Hashing or encryption.** The first and largest. This document recommends
+  hashing and gives its reasons, but the question was raised as encrypted
+  storage and encryption is still argued for. Everything else here is
+  compatible with either. Settling it needs agreement on two things: whether a
+  total, retroactive failure on key disclosure is acceptable in exchange for
+  being immune to offline attack in the meantime; and whether a portable design
+  can accept that on the BSDs the key would live in a file. The one thing
+  already settled is that no scheme may require a human to type a key at
+  startup.
 - **HTTP Digest disposition.** Remove it, or pin the realm to `sys_name` and
   store an HA1 verifier? The case for removing it is that HA1 is unsalted MD5
   and so fails P1 and P2 exactly as the CRAM-MD5 midstates do, and that its only
