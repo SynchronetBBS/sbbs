@@ -88,11 +88,19 @@ Display lines now use `username @ bbs-name` instead of `-- You! --`.
 
 Classic world `.HI` files are still read as fallback and written as compatibility mirrors.
 
-### Optional `ZZT.INI` Overrides
+### Optional `zzt.ini` Overrides
 
-Create `/sbbs/xtrn/zzt/ZZT.INI` (or `zzt.ini`) to override defaults:
+The installer copies the distributed `zzt.example.ini` to
+`/sbbs/xtrn/zzt/zzt.ini` and writes your answers there. Edit that file to
+override defaults; it is git-ignored, so your changes survive a Synchronet
+upgrade and never leave the tree dirty. Installing by hand? Copy
+`zzt.example.ini` to `zzt.ini` yourself.
+
+The game reads `zzt.ini` (or `ZZT.INI`) from the door directory only — keys
+live at the root of the file, and there are no sections:
 
 ```ini
+SERVER=futureland.today
 HIGH_SCORE_JSON=/path/to/shared/highscores.json
 HIGH_SCORE_BBS=My BBS Name
 SAVE_ROOT=/path/to/save/root
@@ -105,9 +113,9 @@ ANSI_MUSIC_FOREGROUND=OFF
 
 `ANSI_MUSIC` values:
 
-- `AUTO` (default): emit only when a CTerm-compatible client is detected (`console.cterm_version` present, e.g. SyncTERM).
+- `AUTO` (default): emit ANSI music for terminal sessions. There is **no** CTerm/`cterm_version` autodetection -- it proved unreliable (not every music-capable terminal answers the Device Attributes query, so detection silently muted real music terminals). Web/custom-bridge sessions are the only ones auto-suppressed, via the reliable bridge handshake.
 - `OFF`: never emit ANSI music escapes.
-- `ON`: always emit ANSI music escapes.
+- `ON`: always emit ANSI music escapes (same as `AUTO` for terminals, but also forces it on for bridge sessions).
 
 `ANSI_MUSIC_INTRODUCER` values:
 
@@ -120,7 +128,15 @@ ANSI_MUSIC_FOREGROUND=OFF
 - `OFF` (default): emit background ANSI music (`B` mode for `CSI |`/`CSI M`) to avoid blocking gameplay.
 - `ON`: emit foreground ANSI music (`F` mode), which may block until notes complete.
 
-ANSI music is emitted for queued ZZT sound patterns (including OOP `#PLAY` and built-in sound effects). Keep this in `AUTO` unless your terminal/client mix requires a forced mode.
+ANSI music is emitted for queued ZZT sound patterns (including OOP `#PLAY` and built-in sound effects).
+
+### In-game music test (per-player)
+
+ANSI music is **on by default** for terminal sessions -- no prompt, no detection. For the rare terminal that renders the escapes as garbage instead of playing them, players can turn it off themselves:
+
+- The title screen has an **`M` key** ("Music test"): it plays a short tune and asks **"Did you hear music?"**. `Y` keeps music on, `N` turns it off. The choice is stored per user (`music.ini` in the player's save dir) and applied on every future visit.
+- Sessions on the custom-sound web bridge (the `web/` fTelnet page) already have reliable sampled audio, so ANSI music is left off for them automatically.
+- A sysop who sets `ANSI_MUSIC=ON` or `OFF` explicitly in the ini overrides everything (the per-player default only applies in `AUTO`).
 
 ## Help Resource Data (`ZZT.DAT`)
 
@@ -155,6 +171,6 @@ The unregistered shutdown message (`END1.MSG` .. `END4.MSG`) is also read from p
 - Board switching (`B`) and board info (`I`) now use text-window driven selection/edit flows (max shots, darkness, neighbors, re-enter flag, time limit) closer to Pascal behavior.
 - Editor sidebar visuals are now closer to Pascal layout (pattern/color bars, active pointers, color name, copied-tile preview).
 - Sound runtime supports ZZT note/drum playback via the FLWEB bridge.
-- Optional ANSI music emission for OOP `#PLAY` is available via `ZZT.INI`.
+- Optional ANSI music emission for OOP `#PLAY` is available via `zzt.ini`.
 - Optional world-pack `.mp3` files are detected and staged for web playback from `mods/flweb/assets/zzt_worlds/...` when available.
 - Remaining work is parity refinement (behavior/timing/UI edge cases), not first-pass unit bring-up.

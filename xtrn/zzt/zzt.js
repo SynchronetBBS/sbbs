@@ -3563,20 +3563,26 @@ var ZZT;
         }
         return false;
     }
+    // No terminal autodetection. cterm_version-based detection is unreliable:
+    // not every music-capable terminal answers the Device Attributes query (many
+    // report 0), so gating on it silently suppressed real music terminals. ANSI
+    // music is emitted for any terminal session unless explicitly turned OFF.
+    // Web/custom-bridge sessions are turned OFF up front (they have sampled audio
+    // and would only render the escapes as garbage), and players can toggle it
+    // from the title screen with the Music test.
     function detectAnsiMusicSupportForTerminal() {
-        var ctermVersion;
         if (typeof console === "undefined" ||
             (typeof console.write !== "function" && typeof console.print !== "function")) {
             return false;
         }
-        if (ZZT.AnsiMusicMode === "ON") {
+        return ZZT.AnsiMusicMode !== "OFF";
+    }
+    function ansiMusicEnabledNow() {
+        if (AnsiMusicActive) {
             return true;
         }
-        if (ZZT.AnsiMusicMode !== "AUTO") {
-            return false;
-        }
-        ctermVersion = (typeof console.cterm_version === "number" ? console.cterm_version : -1);
-        return ctermVersion >= 0;
+        AnsiMusicActive = detectAnsiMusicSupportForTerminal();
+        return AnsiMusicActive;
     }
     function ansiMusicLengthFromDuration(durationCode) {
         var denom;
@@ -3696,7 +3702,7 @@ var ZZT;
         var prefix;
         var intro;
         var music;
-        if (!AnsiMusicActive || !ZZT.SoundEnabled) {
+        if (!ansiMusicEnabledNow() || !ZZT.SoundEnabled) {
             return;
         }
         music = buildAnsiMusicFromPattern(pattern);
@@ -3710,6 +3716,47 @@ var ZZT;
         }
         writeBridgeRaw("\x1b[" + intro + prefix + music + "\x0E");
     }
+    // True when the custom-sound web bridge (flweb fTelnet) answered the probe
+    // handshake. That path plays sampled audio and is reliably self-detecting, so
+    // the ANSI-music questionnaire is only for plain terminal sessions.
+    function SoundCustomBridgeActive() {
+        return ensureBridgeDetected();
+    }
+    ZZT.SoundCustomBridgeActive = SoundCustomBridgeActive;
+    // Explicit player choice from the in-game music test. Bypasses terminal
+    // autodetection entirely: ON always emits ANSI music, OFF never does.
+    function SoundSetAnsiMusicEnabled(on) {
+        ZZT.AnsiMusicMode = on ? "ON" : "OFF";
+        AnsiMusicActive = on;
+    }
+    ZZT.SoundSetAnsiMusicEnabled = SoundSetAnsiMusicEnabled;
+    function SoundAnsiMusicEnabled() {
+        return ZZT.AnsiMusicMode === "ON" || (ZZT.AnsiMusicMode === "AUTO" && AnsiMusicActive);
+    }
+    ZZT.SoundAnsiMusicEnabled = SoundAnsiMusicEnabled;
+    function SoundAnsiMusicModeIsAuto() {
+        return ZZT.AnsiMusicMode === "AUTO";
+    }
+    ZZT.SoundAnsiMusicModeIsAuto = SoundAnsiMusicModeIsAuto;
+    // Play a short, unmistakable melody so the player can decide whether their
+    // terminal renders ANSI music. Forced ON + foreground for the test, then the
+    // prior sound state is restored.
+    function SoundPlayAnsiTestTune() {
+        var savedMode = ZZT.AnsiMusicMode;
+        var savedActive = AnsiMusicActive;
+        var savedForeground = ZZT.AnsiMusicForeground;
+        var savedEnabled = ZZT.SoundEnabled;
+        ZZT.AnsiMusicMode = "ON";
+        AnsiMusicActive = true;
+        ZZT.AnsiMusicForeground = true;
+        ZZT.SoundEnabled = true;
+        emitAnsiMusicFromPattern(SoundParse("ICDEFGAB+C"));
+        ZZT.AnsiMusicMode = savedMode;
+        AnsiMusicActive = savedActive;
+        ZZT.AnsiMusicForeground = savedForeground;
+        ZZT.SoundEnabled = savedEnabled;
+    }
+    ZZT.SoundPlayAnsiTestTune = SoundPlayAnsiTestTune;
     function emitBridgePacket(action, payload) {
         var packet = {};
         var key;
@@ -7832,6 +7879,116 @@ var ZZT;
         return defaultReturn;
     }
     ZZT.SidebarPromptYesNo = SidebarPromptYesNo;
+    function musicPrefFilePath() {
+        return pathJoin(currentUserSaveDir(), "music.ini");
+    }
+    // Returns true if a stored ANSI-music choice was found and applied.
+    function MusicPrefLoad() {
+        var lines = ZZT.runtime.readTextFileLines(musicPrefFilePath());
+        var i;
+        var line;
+        var eq;
+        var key;
+        var value;
+        for (i = 0; i < lines.length; i += 1) {
+            line = trimSpaces(lines[i]);
+            eq = line.indexOf("=");
+            if (eq <= 0) {
+                continue;
+            }
+            key = trimSpaces(line.slice(0, eq)).toUpperCase();
+            value = trimSpaces(line.slice(eq + 1)).toUpperCase();
+            if (key === "ANSI_MUSIC") {
+                ZZT.SoundSetAnsiMusicEnabled(value === "ON" || value === "1" || value === "YES");
+                return true;
+            }
+        }
+        return false;
+    }
+    function MusicPrefSave(on) {
+        var path = musicPrefFilePath();
+        if (!ensureParentDirectory(path)) {
+            return;
+        }
+        ZZT.runtime.writeBinaryFile(path, stringToBytes("ANSI_MUSIC=" + (on ? "ON" : "OFF") + "\n"));
+    }
+    function musicPlayTestTuneOffscreen() {
+        if (typeof console !== "undefined" && typeof console.gotoxy === "function") {
+            console.gotoxy(1, 25);
+        }
+        ZZT.SoundPlayAnsiTestTune();
+    }
+    function musicWaitChoiceKey() {
+        var key;
+        while (!ZZT.runtime.isTerminated()) {
+            ZZT.InputReadWaitKey();
+            key = upperCase(ZZT.InputKeyPressed.length > 0 ? ZZT.InputKeyPressed.charAt(0) : String.fromCharCode(0));
+            if (key === "Y" || key === "N" || key === "R" || key === ZZT.KEY_ESCAPE) {
+                return key;
+            }
+        }
+        return "N";
+    }
+    // ANSI-music test: play a tune, ask if the player heard it, store the answer
+    // per user. Web/custom-bridge sessions already have reliable sampled sound,
+    // so ANSI music is simply disabled there (it would only send garbage).
+    function MusicRunQuestionnaire(force) {
+        var key;
+        var heard;
+        if (ZZT.SoundCustomBridgeActive()) {
+            ZZT.SoundSetAnsiMusicEnabled(false);
+            if (force) {
+                ZZT.runtime.clearScreen();
+                ZZT.VideoWriteText(18, 11, 0x1f, " Sound is handled by your web client. ");
+                ZZT.VideoWriteText(18, 13, 0x1e, " Press any key to continue. ");
+                ZZT.InputReadWaitKey();
+                ZZT.runtime.clearScreen();
+            }
+            return;
+        }
+        ZZT.runtime.clearScreen();
+        ZZT.VideoWriteText(15, 8, 0x1f, " ZZT can play music through ANSI music sequences. ");
+        ZZT.VideoWriteText(15, 10, 0x1e, " A short test tune is playing now... ");
+        ZZT.VideoWriteText(15, 12, 0x1f, " Did you hear music? ");
+        ZZT.VideoWriteText(15, 14, 0x1b, " Y) Yes - turn music on    N) No - keep it off ");
+        ZZT.VideoWriteText(15, 15, 0x1b, " R) Replay the tune ");
+        // Park the cursor on the bottom row: terminals that don't support ANSI
+        // music render the sequence body as visible text, so keep it off the prompt.
+        musicPlayTestTuneOffscreen();
+        while (true) {
+            key = musicWaitChoiceKey();
+            if (key === "R") {
+                musicPlayTestTuneOffscreen();
+                continue;
+            }
+            break;
+        }
+        heard = (key === "Y");
+        ZZT.SoundSetAnsiMusicEnabled(heard);
+        MusicPrefSave(heard);
+        ZZT.runtime.clearScreen();
+    }
+    ZZT.MusicRunQuestionnaire = MusicRunQuestionnaire;
+    // Called once at door startup, before the title screen. No prompt and no
+    // terminal detection: ANSI music just defaults ON for terminal sessions (the
+    // behavior that always worked). The only suppressors are an explicit choice
+    // the player saved via the Music test, a sysop ON/OFF in zzt.ini, or a
+    // web/custom-bridge session (which has its own sampled audio).
+    function MusicSetupOnStart() {
+        if (ZZT.SoundCustomBridgeActive()) {
+            ZZT.SoundSetAnsiMusicEnabled(false);
+            return;
+        }
+        if (MusicPrefLoad()) {
+            return;
+        }
+        if (!ZZT.SoundAnsiMusicModeIsAuto()) {
+            // Sysop forced ON/OFF in zzt.ini -- honor it.
+            return;
+        }
+        ZZT.SoundSetAnsiMusicEnabled(true);
+    }
+    ZZT.MusicSetupOnStart = MusicSetupOnStart;
     function HighScoresLoad() {
         var worldKey = getCurrentScoreWorldKey();
         var store = readSharedHighScoreStore();
@@ -10391,11 +10548,13 @@ var ZZT;
             ZZT.VideoWriteText(62, 11, 0x70, " P ");
             ZZT.VideoWriteText(62, 12, 0x30, " R ");
             ZZT.VideoWriteText(62, 13, 0x70, " Q ");
+            ZZT.VideoWriteText(62, 14, 0x30, " M ");
             ZZT.VideoWriteText(62, 16, 0x30, " A ");
             ZZT.VideoWriteText(62, 17, 0x70, " H ");
             ZZT.VideoWriteText(65, 11, 0x1f, " Play");
             ZZT.VideoWriteText(65, 12, 0x1e, " Restore game");
             ZZT.VideoWriteText(65, 13, 0x1e, " Quit");
+            ZZT.VideoWriteText(65, 14, 0x1e, " Music test");
             ZZT.VideoWriteText(65, 16, 0x1f, " About ZZT!");
             ZZT.VideoWriteText(65, 17, 0x1e, " High Scores");
             if (ZZT.EditorEnabled) {
@@ -10550,8 +10709,9 @@ var ZZT;
                 }
             }
             if (ZZT.GameStateElement === ZZT.E_MONITOR &&
-                (key === ZZT.KEY_ESCAPE || key === "A" || key === "E" || key === "H" || key === "N" ||
-                    key === "P" || key === "Q" || key === "R" || key === "S" || key === "W" || key === "|")) {
+                (key === ZZT.KEY_ESCAPE || key === "A" || key === "E" || key === "H" || key === "M" ||
+                    key === "N" || key === "P" || key === "Q" || key === "R" || key === "S" ||
+                    key === "W" || key === "|")) {
                 ZZT.GamePlayExitRequested = true;
             }
             if (ShowInputDebugOverlay) {
@@ -10651,6 +10811,10 @@ var ZZT;
                         ZZT.ReturnBoardId = ZZT.World.Info.CurrentBoard;
                         boardChanged = true;
                     }
+                }
+                else if (key === "M") {
+                    MusicRunQuestionnaire(true);
+                    boardChanged = true;
                 }
                 else if (key === "|") {
                     GameDebugPrompt();
@@ -10892,6 +11056,7 @@ var ZZT;
         ZZT.SavedBoardFileName = "TEMP";
         ZZT.GenerateTransitionTable();
         ZZT.WorldCreate();
+        ZZT.MusicSetupOnStart();
         ZZT.GameTitleLoop();
     }
     function cleanupAndExitMessage() {

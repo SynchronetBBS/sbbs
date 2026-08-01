@@ -112,22 +112,27 @@ namespace ZZT {
     return false;
   }
 
+  // No terminal autodetection. cterm_version-based detection is unreliable:
+  // not every music-capable terminal answers the Device Attributes query (many
+  // report 0), so gating on it silently suppressed real music terminals. ANSI
+  // music is emitted for any terminal session unless explicitly turned OFF.
+  // Web/custom-bridge sessions are turned OFF up front (they have sampled audio
+  // and would only render the escapes as garbage), and players can toggle it
+  // from the title screen with the Music test.
   function detectAnsiMusicSupportForTerminal(): boolean {
-    var ctermVersion: number;
     if (typeof console === "undefined" ||
         (typeof console.write !== "function" && typeof console.print !== "function")) {
       return false;
     }
+    return AnsiMusicMode !== "OFF";
+  }
 
-    if (AnsiMusicMode === "ON") {
+  function ansiMusicEnabledNow(): boolean {
+    if (AnsiMusicActive) {
       return true;
     }
-    if (AnsiMusicMode !== "AUTO") {
-      return false;
-    }
-
-    ctermVersion = (typeof console.cterm_version === "number" ? console.cterm_version : -1);
-    return ctermVersion >= 0;
+    AnsiMusicActive = detectAnsiMusicSupportForTerminal();
+    return AnsiMusicActive;
   }
 
   function ansiMusicLengthFromDuration(durationCode: number): number {
@@ -262,7 +267,8 @@ namespace ZZT {
     var prefix: string;
     var intro: string;
     var music: string;
-    if (!AnsiMusicActive || !SoundEnabled) {
+
+    if (!ansiMusicEnabledNow() || !SoundEnabled) {
       return;
     }
 
@@ -277,6 +283,50 @@ namespace ZZT {
       prefix = (AnsiMusicForeground ? "F" : "B");
     }
     writeBridgeRaw("\x1b[" + intro + prefix + music + "\x0E");
+  }
+
+  // True when the custom-sound web bridge (flweb fTelnet) answered the probe
+  // handshake. That path plays sampled audio and is reliably self-detecting, so
+  // the ANSI-music questionnaire is only for plain terminal sessions.
+  export function SoundCustomBridgeActive(): boolean {
+    return ensureBridgeDetected();
+  }
+
+  // Explicit player choice from the in-game music test. Bypasses terminal
+  // autodetection entirely: ON always emits ANSI music, OFF never does.
+  export function SoundSetAnsiMusicEnabled(on: boolean): void {
+    AnsiMusicMode = on ? "ON" : "OFF";
+    AnsiMusicActive = on;
+  }
+
+  export function SoundAnsiMusicEnabled(): boolean {
+    return AnsiMusicMode === "ON" || (AnsiMusicMode === "AUTO" && AnsiMusicActive);
+  }
+
+  export function SoundAnsiMusicModeIsAuto(): boolean {
+    return AnsiMusicMode === "AUTO";
+  }
+
+  // Play a short, unmistakable melody so the player can decide whether their
+  // terminal renders ANSI music. Forced ON + foreground for the test, then the
+  // prior sound state is restored.
+  export function SoundPlayAnsiTestTune(): void {
+    var savedMode: string = AnsiMusicMode;
+    var savedActive: boolean = AnsiMusicActive;
+    var savedForeground: boolean = AnsiMusicForeground;
+    var savedEnabled: boolean = SoundEnabled;
+
+    AnsiMusicMode = "ON";
+    AnsiMusicActive = true;
+    AnsiMusicForeground = true;
+    SoundEnabled = true;
+
+    emitAnsiMusicFromPattern(SoundParse("ICDEFGAB+C"));
+
+    AnsiMusicMode = savedMode;
+    AnsiMusicActive = savedActive;
+    AnsiMusicForeground = savedForeground;
+    SoundEnabled = savedEnabled;
   }
 
   function emitBridgePacket(action: string, payload: { [name: string]: unknown }): boolean {
