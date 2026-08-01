@@ -19,6 +19,8 @@ gcc.*
 *.drc
 *.tds
 src/sbbs3/ctrl/sbbsctrl.mak
+/src/hash/fnv1a_test
+/src/hash/fnv1a_test.d
 src/cscope.files
 3rdp/src
 localdefs.mk

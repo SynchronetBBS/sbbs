@@ -95,6 +95,20 @@ set_target_properties(test_sixel_palette PROPERTIES C_STANDARD 11)
 target_compile_options(test_sixel_palette PRIVATE -UNDEBUG)
 add_test(NAME sixel_palette COMMAND test_sixel_palette)
 
+# FNV-1a -- the hash the doors content-address their client-cache names with.
+# The code and the test both live in the project hash library (src/hash, which
+# has its own `gmake fnv1a_test` rule); this target exists so the door builds
+# run it too, because a constant that drifts here invalidates every door's cache
+# at once, silently. Bare SOURCE like test_chunk/test_idle: the TU is pure
+# arithmetic over a byte buffer, no I/O and no dependencies.
+add_executable(test_fnv1a
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../hash/fnv1a.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../hash/fnv1a_test.c)
+target_include_directories(test_fnv1a PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../../hash)
+set_target_properties(test_fnv1a PROPERTIES C_STANDARD 11)
+target_compile_options(test_fnv1a PRIVATE -UNDEBUG)
+add_test(NAME fnv1a COMMAND test_fnv1a)
+
 # The rest of this directory's tests -- termgfx_termio (23 binaries), the
 # quantizer, present_rgbx and the repro_fade harness -- are driven by the
 # unit_termgfx_*.sh scripts here rather than by CTest: they are POSIX-only

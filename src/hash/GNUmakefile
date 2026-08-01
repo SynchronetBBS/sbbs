@@ -18,3 +18,8 @@ endif
 	$(QUIET)$(AR) rc $@ $(OBJS)
 	$(QUIET)$(RANLIB) $@
 
+# Unit test (assert()-based, so build it without -DNDEBUG): gmake fnv1a_test
+fnv1a_test: fnv1a_test.c fnv1a.c
+	@echo Linking $@
+	$(QUIET)$(CC) $(CFLAGS) -UNDEBUG $^ -o $@
+

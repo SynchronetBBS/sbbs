@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.11)
 set(SOURCE
 	crc16.c
 	crc32.c
+	fnv1a.c
 	md5.c
 	sha1.c
 	sha256.c
@@ -14,6 +15,7 @@ set(SOURCE
 set(HEADER
 	crc16.h
 	crc32.h
+	fnv1a.h
 	md5.h
 	sha1.h
 	sha256.h

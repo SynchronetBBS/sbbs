@@ -15,6 +15,7 @@
 #include <limits.h>
 
 #include "text.h"
+#include "fnv1a.h"       // fnv1a32_str: the per-cell glyph signature
 
 // mempcpy/stpcpy are glibc extensions; MSVC's CRT lacks them. Provide the
 // trivial equivalents (each returns a pointer to the byte past what it wrote).
@@ -454,13 +455,6 @@ static int       rt_xstride = 1, rt_ystride = 1;
 static int       rt_force = 1;                       // full repaint pending
 static int       rt_cur_row = -1, rt_cur_col = -1;   // tracked cursor (1-based; -1 = unknown)
 
-static uint32_t rt_glyph_hash(const char *g) {
-    uint32_t h = 2166136261u;
-    while (*g)
-        h = (h ^ (uint8_t)*g++) * 16777619u;
-    return h;
-}
-
 // HUD exclusion: cells a text-HUD layer (the door's stats overlay, and later the
 // message line / chat) owns. The game diff must NOT emit them, so the game never
 // repaints under the HUD -> no flicker. The door registers the active rectangles
@@ -504,7 +498,7 @@ static void put_cell(int x, int y,
     char     fp[24], bp[24];
     long     fk = rt_color_params(fp, fr, fg, fb, false);
     long     bk = rt_color_params(bp, br, bg, bb, true);
-    uint32_t gh = rt_glyph_hash(glyph);
+    uint32_t gh = fnv1a32_str(glyph);   // whole glyph (maybe multi-byte) as one word
     rt_sig_t *cell = &rt_shadow[trow * rt_grid_cols + tcol];
 
     if (rt_excluded(trow, tcol)) { cell->fg = -1; return; }   // HUD owns this cell

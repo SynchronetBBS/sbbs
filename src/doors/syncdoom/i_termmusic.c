@@ -23,6 +23,7 @@
 
 #include "audio_mgr.h"      // termgfx audio manager
 #include "audio_midi.h"     // termgfx_midi_render (MIDI/MUS/XMI -> PCM)
+#include "fnv1a.h"          // hash lib: fnv1a32 (the cache-name content hash)
 
 // Owned by syncdoom.c: the per-session audio manager (NULL until created).
 extern termgfx_audio_t *sd_audio;
@@ -54,19 +55,6 @@ typedef struct {
 
 static term_song_t *term_current;   // song handed to PlaySong (for volume/resume/query)
 static term_song_t *term_pending;   // registered+played while tier < 1 (replay when ready)
-
-// 32-bit FNV-1a over the lump -> a stable "d_<hex>" cache name.
-static unsigned term_hash(const unsigned char *p, int n)
-{
-	unsigned h = 2166136261u;
-	int      i;
-
-	for (i = 0; i < n; i++) {
-		h ^= p[i];
-		h *= 16777619u;
-	}
-	return h;
-}
 
 // Play the song (tier known >= 1): a cache hit ships instantly; a cold miss is handed to termgfx's
 // worker thread (render + encode off the game thread) and shipped later by the DG_DrawFrame poll.
@@ -150,7 +138,9 @@ static void *I_Term_RegisterSong(void *data, int len)
 	}
 	memcpy(s->data, data, (size_t)len);
 	s->len = len;
-	snprintf(s->name, sizeof(s->name), "d_%08x", term_hash(s->data, len));
+	// Content-address the lump -> a stable "d_<hex>" client-cache name.
+	snprintf(s->name, sizeof(s->name), "d_%08x",
+	         fnv1a32(s->data, (size_t)len));
 	return s;
 }
 

@@ -17,6 +17,7 @@
 #include "audiolib/music.h"
 #include "audio_mgr.h"          /* termgfx: SyncTERM audio-APC manager */
 #include "audio_midi.h"         /* termgfx: MIDI/MUS -> PCM via libADLMIDI (OPL3) */
+#include "fnv1a.h"              /* hash lib: fnv1a32 (the cache-name content hash) */
 
 /* Engine file API (Engine/src/filesystem.h) -- read the .MID from the GRP. */
 extern int32_t kopen4load(const char *filename, int openOnlyFromGRP);
@@ -293,7 +294,6 @@ void PlayMusic(char *filename)
 	void *   mid;
 	char     id[24];            /* content-addressed cache name "<trackname>_<hash>" */
 	uint32_t h;
-	int32_t  i;
 
 	if (sd_audio == NULL || filename == NULL || filename[0] == '\0') {
 		syncduke_log("music: PlayMusic('%s') ignored (null/empty filename)",
@@ -340,9 +340,7 @@ void PlayMusic(char *filename)
 	 * keeps it stable across sessions and collision-free across GRPs (a reused name with
 	 * different bytes still differs); the name just makes the cache files readable. Try
 	 * the cache first -- a hit ships it without the expensive OPL render. */
-	h = 2166136261u;
-	for (i = 0; i < len; i++)
-		h = (h ^ ((const uint8_t *)mid)[i]) * 16777619u;
+	h = fnv1a32(mid, (size_t)len);
 	{
 		const char *b = filename, *p, *dot;
 		char        stem[14];

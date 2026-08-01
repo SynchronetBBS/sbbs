@@ -244,6 +244,7 @@
 
 extern "C" {
 #include "audio_mgr.h"   /* termgfx: audio_mgr.c is a plain-C translation unit */
+#include "fnv1a.h"       /* hash lib: FNV-1a -- cache name + PCM fingerprint */
 }
 
 #include "door_io.h"     /* door_io_audio() -- the manager door_io.c owns/creates */
@@ -357,19 +358,6 @@ struct SampleTrackerTypeImp {
 
 static uint32_t g_sfx_hash[SA_SFX_SLOTS];
 static bool     g_sfx_used[SA_SFX_SLOTS];
-
-static uint32_t sa_fnv1a(const void *data, size_t len)
-{
-	const uint8_t *p = static_cast<const uint8_t *>(data);
-	uint32_t       h = 2166136261u;
-	size_t         i;
-
-	for (i = 0; i < len; i++) {
-		h ^= p[i];
-		h *= 16777619u;
-	}
-	return h;
-}
 
 static int sa_sfx_id_for(uint32_t hash)
 {
@@ -602,7 +590,7 @@ static void sa_commit_sfx(SampleTrackerTypeImp *st)
 
 	if (m == NULL || st->len == 0)
 		return;
-	hash = sa_fnv1a(st->pcm, st->len);
+	hash = fnv1a32(st->pcm, st->len);
 	id   = sa_sfx_id_for(hash);
 	termgfx_audio_sfx(m, id, st->pcm, st->len, st->bits, st->channels, st->rate,
 	                  termgfx_db_from_pct(st->vol_pct), 0 /* pan: never reaches this seam, see file header */);
@@ -628,7 +616,7 @@ static void sa_commit_music_named(SampleTrackerTypeImp *st, char *name_out, size
 		name_out[0] = '\0';
 	if (m == NULL || st->len == 0)
 		return;
-	hash = sa_fnv1a(st->pcm, st->len);
+	hash = fnv1a32(st->pcm, st->len);
 	snprintf(name, sizeof name, "d_%08x", hash);
 	// loop=1: the terminal loops the score forever, while RA's theme manager is
 	// told when the song "ended" by SoundImp_Sample_Status()'s own duration model.
@@ -888,7 +876,7 @@ void SoundImp_Buffer_Sample_Data(SampleTrackerTypeImp *st, const void *data, siz
 	// for a one-shot SFX's own pre-Start_Sample accumulation (fp/fp_done get
 	// reset right after by Start_Sample(), before any stream data exists).
 	if (!st->fp_done && st->len >= SA_FP_BYTES) {
-		st->fp = sa_fnv1a(st->pcm, SA_FP_BYTES);
+		st->fp = fnv1a32(st->pcm, SA_FP_BYTES);
 		st->fp_done = true;
 	}
 }
@@ -1091,7 +1079,7 @@ bool SoundImp_Sample_Status(SampleTrackerTypeImp *st)
 		// finding 4: a whole-file score fingerprints during pre-Start
 		// delivery, but recompute defensively if it hadn't reached SA_FP_BYTES.
 		if (!st->fp_done && st->len >= SA_FP_BYTES) {
-			st->fp = sa_fnv1a(st->pcm, SA_FP_BYTES);
+			st->fp = fnv1a32(st->pcm, SA_FP_BYTES);
 			st->fp_done = true;
 		}
 		if (st->fp_done && sa_map_read(st->fp, cached_name, sizeof cached_name, NULL)) {

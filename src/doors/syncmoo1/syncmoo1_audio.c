@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "hash.h"   /* termgfx: termgfx_fnv1a */
+#include "fnv1a.h"  /* hash lib: fnv1a32 */
 
 /* 1oom's global SFX id space: NUM_SOUNDS (0x29) gameplay sounds, plus the
  * intro's three at NUM_SOUNDS+0..2 (uiintro.c). Sized generously and
@@ -56,7 +56,7 @@ static int                g_vol = 128;   /* 1oom's default full scale */
 
 void sm_audio_leaf(const void *data, size_t len, char out[16])
 {
-    snprintf(out, SM_LEAF_LEN, "%08x", termgfx_fnv1a(data, len));
+    snprintf(out, SM_LEAF_LEN, "%08x", fnv1a32(data, len));
 }
 
 /* Big-endian 0xafde0200 at offset 0 (1oom/src/fmt_id.h HDRID_LBXVOC) plus the

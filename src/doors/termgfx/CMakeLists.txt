@@ -25,7 +25,6 @@ add_library(termgfx STATIC
     text.c
     term.c
     geometry.c
-    hash.c
     door32.c
     charset.c
     sgrmouse.c
@@ -38,10 +37,19 @@ add_library(termgfx STATIC
     termgfx_plat.c
     termgfx_termio.c
     termgfx_quant.c
-    sbbs_node.c)
+    sbbs_node.c
+    # FNV-1a lives in the project hash library (src/hash) -- every door's
+    # client-cache names are content-addressed with it, and so is the text
+    # renderer's per-cell signature. Compiled in directly (the TU has no
+    # dependencies at all) rather than add_subdirectory()ing the hash lib,
+    # which would drag crc/md5/sha and their xpdev link into every door.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../hash/fnv1a.c)
 
-# Public: consumers that #include "sixel.h" / "sbbs_node.h" get this dir.
-target_include_directories(termgfx PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+# Public: consumers that #include "sixel.h" / "sbbs_node.h" get this dir, and
+# the hash lib's dir so a door can #include "fnv1a.h" the same way.
+target_include_directories(termgfx PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../hash)
 
 # Private: sbbs_node.c needs nodedefs.h (BBS source) + xpdev headers
 # (dirwrap/filewrap). Headers only -- the xpdev *symbols* resolve when the door

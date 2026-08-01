@@ -50,6 +50,7 @@
 #include "pace.h"       /* termgfx: shared AIMD pipeline-depth controller */
 #include "stats.h"      /* termgfx: shared Ctrl-S strip window + fields */
 #include "audio_mgr.h"  /* termgfx: SyncTERM audio-APC manager (digital SFX) */
+#include "fnv1a.h"      /* hash lib: FNV-1a (the HUD-line change signature) */
 #include <dirwrap.h>    /* xpdev: mkpath (recursive mkdir) for the audio cache dir */
 
 /* emit a NUL-terminated control string (no embedded NULs) without hand-counting */
@@ -577,15 +578,12 @@ static size_t syncduke_emit_text(const uint8_t *fb, const uint8_t *pal, rt_mode_
 static uint32_t sd_hud_signature(void)
 {
 	const syncduke_hud_line_t *hud;
-	int         hn = syncduke_hud_lines(&hud), i;
-	uint32_t    h  = 2166136261u;
-	const char *p;
+	int      hn = syncduke_hud_lines(&hud), i;
+	uint32_t h  = fnv1a32_update(FNV1A32_INIT, &hn, sizeof hn);
 
-	h = (h ^ (uint32_t)hn) * 16777619u;
 	for (i = 0; i < hn; i++) {
-		h = (h ^ (uint32_t)hud[i].y) * 16777619u;
-		for (p = hud[i].text; *p != '\0'; p++)
-			h = (h ^ (uint8_t)(unsigned char)*p) * 16777619u;
+		h = fnv1a32_update(h, &hud[i].y, sizeof hud[i].y);
+		h = fnv1a32_update(h, hud[i].text, strlen(hud[i].text));
 	}
 	return h;
 }
