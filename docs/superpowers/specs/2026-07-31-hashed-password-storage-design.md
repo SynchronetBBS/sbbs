@@ -73,9 +73,12 @@ The goal reduces to three properties of the stored data. They are the
 acceptance test for every proposal in this document, and nothing below is
 justified by assertion where it can be justified by these:
 
-- **P0 — non-usability.** The stored record must not itself authenticate. This
-  is the one that protects asset 2, it is satisfied by any one-way function,
-  and today's format fails it completely.
+- **P0 — non-usability.** The stored record must not itself be presentable as
+  a credential. This is the one that protects asset 2, and today's format fails
+  it completely: the field *is* the password. Note what it does and does not
+  say — it is about the record alone, not about the record plus a secret the
+  server holds, so a one-way function satisfies it but so does an encrypted
+  record. It rules out cleartext and the CRAM-MD5 midstate, and nothing more.
 - **P1 — indistinguishability.** Two users with the same password must not
   produce the same stored record. A file that answers "which of these accounts
   share a password" is a map of which accounts to attack together, and it leaks
@@ -123,52 +126,146 @@ The mechanisms that genuinely resist an inspecting proxy are SCRAM with channel
 binding, and client certificates. Neither changes P1 or P2, and neither is
 blocked by this design.
 
+## What this design is, and the fair criticism of it
+
+A criticism worth putting in the document rather than answering off to one
+side: **an analysis that meets every existing use of passwords with "passwords,
+but stored more carefully" is a narrow answer to a broad problem, and pairing
+it with the removal of working features makes the narrowness harder to excuse.**
+
+Most of that is correct, and the document should not pretend otherwise.
+
+A large share of the sites catalogued below should not be using a password at
+all, and no amount of care in storing one fixes that. The MQTT broker wants an
+issued API key. qtmonitor wants the key it was issued, not a human's login.
+Door dropfiles want a per-session token or nothing. Hotline wants key material
+that was never a password. The human-facing surfaces want FIDO2 on the web,
+public keys at the terminal, client certificates for mail. Those are the better
+analysis, they are written up under "Passwords used where a key or token
+belongs" and "What would actually defeat a malicious sysop", and every one of
+them is a larger improvement than this design is.
+
+What defends doing this anyway is that it is the **floor, not the ceiling**:
+
+- **None of the better answers retires an existing password.** A BBS with a
+  thousand user records has a thousand passwords on the day FIDO2 ships, and
+  most of those users will never enrol a security key. Storage remains the only
+  measure that reaches every account.
+- **It is the only piece that needs no user action.** Every post-password
+  mechanism requires each user to do something. The threat model is a file that
+  leaks; a mitigation that waits on a thousand individual decisions does not
+  address it.
+- **It is a precondition, not a competitor.** SCRAM stores a salted iterated
+  verifier — the same primitive this design builds. Doing this work is doing
+  part of that work.
+
+What the criticism should change, and does:
+
+- **The removals are a cost, not a benefit.** CRAM-MD5, APOP and HTTP Digest
+  are not being "cleaned up"; they are being paid. The document does not get to
+  present a shorter feature list as an achievement.
+- **No mechanism is removed without a replacement path.** That rule is already
+  applied to IMAP, where the transport work is a hard prerequisite rather than
+  a follow-up. It is a general rule, not a special case.
+
+And the honest ordering, if resources allowed only one: the post-password work
+reduces how many accounts the storage question applies to. It never reduces it
+to zero, and it does not begin until the first user enrols. This design is what
+covers the interval, which for a BBS is likely to be the rest of its life.
+
 ## Why encryption was rejected
 
-Encryption at rest protects against an attacker who obtains the data but not
-the key. Here the key must be readable by every server process on every host
-sharing the installation, which means it lives in the same directory tree, on
-the same disk, in the same backup. Whatever takes the database takes the key
-with it.
+Earlier versions of this section made the same mistake four times, and all four
+claims are **withdrawn**: that a sysop necessarily holds the key; that the key
+would sit on the same disk, in the same backup, as the data; that two users
+with the same password would encrypt to the same ciphertext; and that
+encryption fails P0 by definition.
 
-Encryption also fails P0 by definition — the whole point of it is that the
-plaintext comes back — and fails P1 under any deterministic scheme, since two
-users with the same password encrypt to the same ciphertext and the file still
-answers "who shares a password" without decrypting anything.
+The last of those was hedged with "under any deterministic scheme", which makes
+it true — deterministic encryption really does leak equality, which is why it
+is a named category with known leakage — but it had no business being the
+default assumption. Any competent implementation uses a fresh IV or nonce per
+record, and then it does not hold at all.
 
-Only a slow, salted, one-way hash satisfies all three properties.
+The P0 claim failed differently, and worse. It was circular: it read the
+property as "is a one-way function", then noted that encryption is not one.
+That is not an argument, it is the conclusion restated as a premise.
 
-### The strongest version of the encryption argument
+The first three share a pattern: each evaluated encryption at its *worst*
+instantiation and then rejected the primitive for the result. A key kept beside
+the ciphertext with matching permissions is encryption done wrong, not
+encryption; so is ECB. Rejecting a primitive on the assumption that whoever
+implements it will misuse it is an argument available against anything,
+hashing included — an unsalted single-round SHA-256 is "hashing" too, and it
+would fail every property in this document.
 
-The rejection above must not rest on "a sysop holds the key", because that
-argument proves too much and is not applied consistently elsewhere in this
-document. There is a version of encrypted storage that the argument does not
-touch: **hold the key off disk** — entered by an operator at startup, or kept
-in a TPM or an external key service — and randomize the ciphertext per record.
-That construction defeats a pure file-copy adversary, fixes P1, and is a real
-pattern in other software. It deserves an answer rather than a dismissal.
+The rejection has to stand on properties of the primitive as competently built,
+so what follows does.
 
-Three answers, in increasing order of weight:
+Assume it is done properly: the key is held off disk — entered at startup, or
+kept in a TPM or an external key service — and the ciphertext is randomized per
+record. Give it full credit, because it earns some:
 
-1. **It still fails P0.** Whatever unwraps the record hands back a working
-   password. The stored record remains directly usable to anyone who has both
-   halves, where a hash is not usable to anyone.
-2. **Failure is total and retroactive.** One key disclosure exposes every
-   password ever stored, instantly and at once. Hashing degrades gracefully
-   instead: a weak password falls, a strong one does not, and the attacker pays
-   per account. When the threat is a file that may leak years from now, the
-   difference between "graceful" and "total" is the whole question.
-3. **The key has nowhere to live.** A BBS runs unattended, restarts by itself,
-   and may run several servers across several hosts against one installation.
-   A secret that every one of those processes must have at every start, without
-   a human present, ends up on the same disk as the data — which is where this
-   section began. TPMs and key services are not a general answer for software
-   installed by hobbyist sysops on whatever they have.
+- **It satisfies P0.** A ciphertext record is not a credential: it cannot be
+  presented to any login prompt, and without the key it authenticates nothing.
+  P0 remains a real property doing real work elsewhere in this document — it is
+  what kills cleartext storage, and what kills the CRAM-MD5 midstate, which
+  *is* directly presentable as a credential with no key at all. Encryption is
+  simply not in that class.
+- **It satisfies P1.** Randomized ciphertext means equal passwords do not
+  produce equal records.
+- Against a **file-only adversary it is stronger than hashing on P2**, not
+  weaker. Without the key there is no offline attack at all, where a hash
+  merely makes one expensive. A weak password survives a stolen ciphertext and
+  does not survive a stolen hash.
 
-And the decisive one: encryption buys nothing here that hashing does not, while
-costing key management. The BBS never needs to *recover* a password — only to
-answer yes or no about one. Choosing the reversible primitive for an
-irreversible problem is what created the situation this document exists to fix.
+So encryption, competently built, meets every property this document asks for,
+and beats hashing on one of them. The rejection is therefore narrow, and rests
+on two things only.
+
+1. **Its failure mode is total and retroactive.** One key disclosure exposes
+   every password ever stored, at once, including those of users who chose
+   well. Hashing has no such mode — there is no single secret whose loss does
+   that — and it degrades per account instead: the attacker pays for each one,
+   and strong passwords never fall. When the asset is a file that may leak
+   years from now, the difference between "graceful" and "total" is the whole
+   question, and it is why being stronger on P2 does not settle it.
+2. **The BBS never needs to recover a password.** It only needs to answer yes
+   or no about one. Encryption buys reversibility, a capability that will never
+   be used, and charges key management for it: a secret to generate, protect,
+   rotate, back up without destroying the backup's value, and never lose.
+   Hashing needs no secret at all. That is not a claim about implementer skill;
+   it is a difference in how many things must go right.
+
+### The key-storage objection, and why it does not dissolve reason 2
+
+Every operating system Synchronet runs on does have secret storage — DPAPI and
+the Credential Manager on Windows, the kernel keyring, TPM2 and `systemd-creds`
+on Linux, Keychain on macOS. It is fair to say a sysop is not being asked to
+invent one.
+
+The difficulty is not availability, and it is not shared storage either — the
+answer to a multi-host installation is to **provision the same secret into each
+host**, not to federate their key stores. That is an ordinary setup step, of
+the same kind as installing a TLS private key on each host, which sysops
+already do.
+
+So the cost here is smaller than an earlier draft of this section implied. What
+remains of it is real but modest: it is a manual step per host at install, it
+must be repeated on every rotation, and the secret exists outside any key store
+while in transit. Those facilities are also per-host and mutually
+unintelligible — a DPAPI blob means nothing to a Linux node — so "use the OS
+key store" is a per-host answer to a per-host problem, and the provisioning
+happens regardless.
+
+None of this is an argument against encryption. It is the cost side of reason 2
+stated at its true size, which is: some. Reason 1 is what actually decides the
+question.
+
+The honest summary is not that encryption is weak, or badly implementable. It
+is that it solves a harder problem than the one at hand, fails less gracefully
+when it does fail, and charges for a capability this design would rather not
+possess.
 
 ### What would actually defeat a malicious sysop
 
@@ -181,6 +278,23 @@ TLS client certificates — leaves the private key on the user's machine, and no
 sysop, careless or malicious, can obtain what the server was never given.
 SCRAM is the intermediate case: the password still exists in the user's head,
 but the server receives a proof rather than the secret.
+
+**FIDO2 is the version of this that users will actually adopt**, and it is the
+strongest of the set. The private key lives in an authenticator — a security
+key, or the platform's own TPM or secure enclave — and is not extractable even
+by the user. The server stores a *public* key, so a leaked credential file is
+not merely expensive to attack, it is inert: there is nothing in it to crack,
+and no amount of offline compute converts it into a login. It is also
+origin-bound, so it cannot be phished or replayed against another system, which
+addresses the reused-credential asset by construction rather than by cost.
+
+Its limit is transport, not merit. WebAuthn is a browser API, so FIDO2 covers
+the **web** surface and nothing else on its own. The post-password map for a
+BBS is therefore three protocols, not one: FIDO2 for the web, public-key
+authentication for terminal access, client certificates for the TLS-wrapped
+mail protocols. Each is optional and each is additive — none of them removes
+the need to store the passwords of the users who do not use them, which is what
+this document is about.
 
 That is a larger change than storage, and it is not scoped here. It is recorded
 because it is the honest answer to "then what *would* work", and because the
@@ -724,8 +838,8 @@ sysop password as `--psk-key` (`main.cpp:22`) and persists it through
 `QSettings` (`settingsdialog.cpp:60-62`), whose placeholder text is literally
 "sysop password (lowercased)". That is a cleartext copy of a live credential in
 a per-user config file on a machine outside the BBS entirely, and no amount of
-work on `user.tab` touches it. It is fixed by giving qtmonitor a generated PSK
-instead of a password.
+work on `user.tab` touches it. It is fixed by issuing qtmonitor an API key
+instead of handing it a password — see "The MQTT case" below.
 
 **`SM_ECHO_PW`** logs both the attempted *and* the stored password into
 `data/logs/` (`"FAILED Password attempt: '%s' expected '%s'"`). It is off by
@@ -750,17 +864,40 @@ was never in a user's head and is never typed.
 
 | Site | Uses the password as | Should be |
 |---|---|---|
-| MQTT broker PSK (`mqtt_broker.cpp:86`, `broker.js:2665`) | a TLS-PSK key | a generated per-identity PSK in configuration |
-| qtmonitor (`settingsdialog.cpp:60`) | the same TLS-PSK key, stored off-box | the same generated PSK |
+| MQTT broker PSK (`mqtt_broker.cpp:86`, `broker.js:2665`) | a TLS-PSK key | an issued API key |
+| qtmonitor (`settingsdialog.cpp:60`) | the same TLS-PSK key, stored off-box | the API key it was issued |
 | Hotline (`hotline.js:1018-1020`) | ECC and session key material | protocol-fixed; no in-band fix |
 | Door dropfiles (`xtrn_sec.cpp`) | a secret passed to arbitrary third-party code | a per-session token, or nothing |
 | IRC door `PASS` (`irc.js:94,140`) | a secret passed to an IRC server | a generated service credential |
 
-The MQTT rows are the clear win: a generated PSK is strictly better than a
-password even today, because it is high-entropy, revocable per identity,
-scoped to one service, and not reused on any other system. That change is worth
-making on its own schedule and does not depend on when hashing lands — it
-removes a live cleartext credential from a sysop's workstation now.
+### The MQTT case: API keys
+
+The MQTT rows are the clear win, and the standard answer to them is **API key
+generation** — the server issues a random credential to a client, records it,
+and can withdraw it. That is a different object from a password in every way
+that matters here:
+
+- **It is issued to a client, not to a person.** qtmonitor on the sysop's
+  laptop and qtmonitor on their desktop hold different keys, so losing one
+  laptop revokes one key.
+- **It is revocable and rotatable independently.** Today, revoking a sysop's
+  MQTT access means changing the password they log into the BBS with, and it
+  changes it for every other sysop's broker access at once, since
+  `authenticate_psk()` compares against `cfg->sys_pass`.
+- **It is high-entropy, so it needs no KDF** — there is nothing to guess — and
+  it exists on exactly one system, so it cannot burn an account anywhere else.
+- **It never has to be typed or remembered**, which is what makes generating a
+  strong one free.
+
+Worth being honest about the residue: TLS-PSK is symmetric, so the broker must
+still hold usable key material at rest. API keys fix the *reuse* and
+*revocation* problems completely and the at-rest problem only partly. The clean
+version is client certificates for MQTT, which is the same principle one step
+further and needs no shared secret at all — consistent with the general rule
+below.
+
+None of this waits on hashing. It removes a live cleartext BBS password from
+sysop workstations now, and it is worth doing on its own schedule.
 
 The general principle, which should outlast this document: **certificates,
 public keys, generated tokens and derived per-service keys are the right fit
@@ -878,6 +1015,10 @@ stop a sysop impersonating a user on this BBS, it does not stop a sysop who
 instruments the running system, and it does nothing about a password captured
 in transit.
 
+And what it costs, which belongs in the same list rather than further down:
+CRAM-MD5, APOP and HTTP Digest stop working. That is not a tidier feature list,
+it is the price. See "What this design is, and the fair criticism of it".
+
 ## Sequencing
 
 Steps 1 and 2 are prerequisites in the strict sense: because the change is
@@ -898,9 +1039,9 @@ reaches a sysop, not alongside it.
    **with or before** step 6; enabling an expensive KDF on a per-request
    authentication path without it introduces a denial-of-service vector.
 6. Remove CRAM-MD5, APOP and HTTP Digest.
-7. Convert the cleartext sinks, and move the MQTT/qtmonitor PSK onto a
-   generated key (see "Passwords used where a key or token belongs"). The PSK
-   work can be pulled ahead of everything else; it is independently worthwhile.
+7. Convert the cleartext sinks, and move MQTT and qtmonitor onto issued API
+   keys (see "The MQTT case"). That work can be pulled ahead of everything
+   else; it is independently worthwhile.
 8. Implement migration, including scrubbing the rotated and backup copies.
 9. Add the case-sensitivity upgrade prompt and remove `K_UPPER` from the
    password entry paths.
