@@ -616,6 +616,27 @@ static int errprintf(int level, int line, const char* function, const char* file
 	return lputs(level, sbuf);
 }
 
+/* TLS-PSK cannot be performed by this server (the supporting code is
+ * compiled-out), so an Authentication list that names it yields a location
+ * nobody can authenticate to. */
+static void warn_unsupported_auth(const char* auth_list)
+{
+	unsigned* list;
+	unsigned  count;
+	unsigned  i;
+
+	if ((list = parseEnumList(auth_list, ",", (str_list_t)auth_type_names, &count)) == NULL)
+		return;
+	for (i = 0; i < count; i++) {
+		if (list[i] == AUTHENTICATION_TLS_PSK) {
+			lprintf(LOG_WARNING, "!Ignoring unsupported authentication type (TLS-PSK) in list: %s"
+			        , auth_list);
+			break;
+		}
+	}
+	free(list);
+}
+
 static int writebuf(http_session_t  *session, const char *buf, size_t len)
 {
 	size_t sent = 0;
@@ -7608,6 +7629,7 @@ void web_server(void* arg)
 		SAFECOPY(root_dir, startup->root_dir);
 		SAFECOPY(error_dir, startup->error_dir);
 		SAFECOPY(default_auth_list, startup->default_auth_list);
+		warn_unsupported_auth(default_auth_list);
 		SAFECOPY(cgi_dir, startup->cgi_dir);
 
 		/* Change to absolute path */

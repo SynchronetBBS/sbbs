@@ -132,7 +132,7 @@ static ini_bitdesc_t web_options[] = {
 #define WEB_DEFAULT_ROOT_DIR        "../web/root"
 #define WEB_DEFAULT_ERROR_DIR       "error"
 #define WEB_DEFAULT_CGI_DIR         "cgi-bin"
-#define WEB_DEFAULT_AUTH_LIST       "Basic,Digest,TLS-PSK"
+#define WEB_DEFAULT_AUTH_LIST       "Basic,Digest"
 #define WEB_DEFAULT_CGI_CONTENT     "text/plain"
 
 #ifdef DLLEXPORT

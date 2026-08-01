@@ -316,7 +316,7 @@ new function() {
 	this.web.root_dir = f.iniGetValue(sect, "RootDirectory", "../web/root" /* WEB_DEFAULT_ROOT_DIR */);
 	this.web.error_dir = f.iniGetValue(sect, "ErrorDirectory", "error" /* WEB_DEFAULT_ERROR_DIR */);
 	this.web.cgi_dir = f.iniGetValue(sect, "CGIDirectory", "cgi-bin" /* WEB_DEFAULT_CGI_DIR */);
-	this.web.default_auth_list = split_array(f.iniGetValue(sect, "Authentication", "Basic,Digest,TLS-PSK" /* WEB_DEFAULT_AUTH_LIST */));
+	this.web.default_auth_list = split_array(f.iniGetValue(sect, "Authentication", "Basic,Digest" /* WEB_DEFAULT_AUTH_LIST */));
 	this.web.logfile_base = f.iniGetValue(sect, "HttpLogFile", "");
 	this.web.default_cgi_content = f.iniGetValue(sect, "DefaultCGIContent", "text/plain");
 	this.web.index_file_name = split_array(f.iniGetValue(sect, "IndexFileNames", "index.html,index.ssjs"));

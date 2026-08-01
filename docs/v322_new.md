@@ -127,6 +127,11 @@
   file download costs, as they already did on the Terminal and
   FTP servers — the web server checked regular credits only,
   though free credits were spent first when charging
+- Fix: the default `Authentication` list no longer advertises
+  `TLS-PSK`, which the server has never been able to perform — a
+  location configured to require it could not be authenticated by
+  anyone. A warning is now logged at startup if the configured
+  list still names it (issue #1206)
 
 ## FTP Server
 
