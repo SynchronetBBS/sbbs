@@ -399,6 +399,64 @@ try {
 				throw new Error("attacker did not appear in channel at all: " + names_line);
 		},
 
+		/* --- +s channel burst catch-up --- */
+
+		/*
+		 * A user on leaf1a is in a +s channel.  When leaf1a disconnects and
+		 * reconnects, the hub must deliver the +s channel member list to the
+		 * leaf after the burst completes (the hub's initial burst fires before
+		 * it knows the leaf's users, so catch-up happens on BURST 0).
+		 */
+		"+s channel user list is burst to a leaf that has a member in it": function() {
+			var member, observer, names_line;
+
+			/* Create a +s channel on hub1 so sobsrvr1 is the creator/op. */
+			observer = net.client(NET_HUB1, "sobsrvr1");
+			observer.send("JOIN #secret-test");
+			observer.expect(" 366 ", 3);
+			observer.send("MODE #secret-test +s");
+			observer.expect(" MODE ", 3);
+			observer.drain(300);
+
+			/* Join from leaf1a — smember1 stays alive on leaf1a throughout the
+			   netsplit; only the server-server link is broken by SQUIT. */
+			member = net.client(NET_LEAF1A, "smember1");
+			member.send("JOIN #secret-test");
+			member.expect(" 366 ", 3);
+			member.drain(300);
+
+			/* Oper up on hub1 and SQUIT leaf1a.  SQUIT severs the hub-leaf
+			   link; leaf1a auto-reconnects after ConnectFrequency=3 seconds.
+			   The hub's initial outbound burst fires before it has seen leaf1a's
+			   NICKs, so without the BURST 0 catch-up the leaf never learns about
+			   sobsrvr1.  member's socket to leaf1a stays alive. */
+			observer.send("OPER testop testpass");
+			observer.expect(" 381 ", 3);
+			observer.send("SQUIT " + NET_LEAF1A.sname + " :test reconnect");
+			mswait(500);
+
+			/* Drain member's buffer (remote user quits flood during netsplit). */
+			member.drain(1000);
+
+			/* Wait for leaf1a to auto-reconnect (ConnectFrequency=3). */
+			if (!net._wait_links(NET_HUB1.port, 6, 15))
+				throw new Error("leaf1a did not reconnect");
+			mswait(800);
+
+			/* Drain catch-up burst notifications (sobsrvr1 rejoining the ch). */
+			member.drain(500);
+
+			/* Ask for the NAMES list — sobsrvr1 (on hub1) must appear. */
+			member.send("NAMES #secret-test");
+			names_line = member.expect(" 353 ", 5);
+
+			observer.quit();
+			member.quit();
+
+			if (names_line.indexOf("sobsrvr1") < 0)
+				throw new Error("+s catch-up burst missing hub user: " + names_line);
+		},
+
 		/* --- Netsplit / SQUIT --- */
 
 		/*
