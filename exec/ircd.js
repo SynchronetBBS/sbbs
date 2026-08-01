@@ -44,7 +44,9 @@ var VERSION_STR = format(
 	system.platform, system.beta_version
 );
 /* This will be replaced with a dynamic CAPAB system */
-var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE";
+/* TSJOIN signals support for the TS-bearing JOIN burst wire format.
+   Replace this token (not append) when the next network-breaking change lands. */
+var SERVER_CAPAB = "TS3 NOQUIT SSJOIN BURST UNCONNECT NICKIP NICKIPSTR TSMODE TSJOIN";
 /* This will be in the configuration for 2.0 */
 var SUMMON = true;
 
@@ -103,6 +105,9 @@ var Outbound_Connect_in_Progress = false;
 /* Will this server try to enforce good network behaviour? */
 /* Setting to "true" results in bouncing bad modes, KILLing bogus NICKs, etc. */
 var Enforcement = true;
+
+/* Reject server links missing required CAPAB tokens when true; warn-only when false */
+var CapabEnforce = false;
 
 /* Highest Connection Count ("HCC") tracking */
 var HCC_Total = 0;

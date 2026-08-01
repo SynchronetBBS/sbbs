@@ -103,6 +103,10 @@ function IRC_User(id) {
 	this.away = "";
 	this.channels = {};
 	this.connecttime = Epoch();
+	this.sent_msgs = 0;
+	this.sent_bytes = 0;
+	this.recv_msgs = 0;
+	this.recv_bytes = 0;
 	this.created = 0;
 	this.flags = 0;
 	this.hops = 0;
@@ -224,6 +228,8 @@ function User_Work(cmdline) {
 	var tmp, i, j, k; /* Temp vars used during command processing */
 
 	this.idletime = system.timer;
+	this.recv_msgs++;
+	this.recv_bytes += cmdline.length;
 
 	cmdline = cmdline.slice(0,512); /* 512 bytes per RFC1459 */
 
@@ -479,10 +485,12 @@ function User_Work(cmdline) {
 					":%s WHOIS %s :%s",
 					this.nick,
 					tmp.nick,
-					p[0]
+					p[1]
 				));
 				break;
 			}
+			/* Local server is target; look up the nick in p[1] */
+			p[0] = p[1];
 		}
 		tmp = p[0].split(",");
 		for (i in tmp) {
@@ -832,7 +840,7 @@ function User_Work(cmdline) {
 				));
 			}
 		} else if (Users[p[0].toUpperCase()]) {
-			if (!this.mode&USERMODE_OPER) {
+			if (!(this.mode&USERMODE_OPER)) {
 				this.numeric481();
 				break;
 			}
@@ -1058,6 +1066,7 @@ function User_Work(cmdline) {
 		this.numeric462();
 		break;
 	case "PONG":
+		this.pinged = false;
 		if (p[1]) {
 			tmp = searchbyserver(p[1]);
 			if (!tmp) {
@@ -1071,10 +1080,8 @@ function User_Work(cmdline) {
 					p[0],
 					tmp.nick
 				));
-				break;
 			}
 		}
-		this.pinged = false;
 		break;
 	case "QUIT":
 		this.quit(p[0]);
@@ -1480,7 +1487,7 @@ function User_Quit(str,suppress_bcast,is_netsplit,origin) {
 		this.rmchan(this.channels[i]);
 	}
 
-	if (this.parent)
+	if (this.parent && Servers[this.servername.toLowerCase()])
 		ww_serverdesc = Servers[this.servername.toLowerCase()].info;
 
 	var nick_uc = this.nick.toUpperCase();

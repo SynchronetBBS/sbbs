@@ -78,7 +78,7 @@ function ChanMode_tweaktmpmode(tmp_bit,add) {
 	if (   !this.chan.modelist[CHANMODE_OP][this.user.id]
 		&& !this.user.server
 		&& !this.user.uline
-		&& !(this.mode&USERMODE_ADMIN)
+		&& !(this.user.mode&USERMODE_ADMIN)
 	) {
 		this.user.numeric482(this.chan.nam);
 		return 0;
@@ -98,7 +98,7 @@ function ChanMode_tweaktmpmodelist(bit,add,arg) {
 	if (   !this.chan.modelist[CHANMODE_OP][this.user.id]
 		&& !this.user.server
 		&& !this.user.uline
-		&& !(this.mode&USERMODE_ADMIN)
+		&& !(this.user.mode&USERMODE_ADMIN)
 	) {
 		this.user.numeric482(this.chan.nam);
 		return 0;
@@ -245,7 +245,7 @@ function ChanMode(chan,user) {
 	this.affect_mode_list = ChanMode_affect_mode_list;
 }
 
-function IRCClient_set_chanmode(chan,cm_args) {
+function IRCClient_set_chanmode(chan,cm_args,ts) {
 	var c, i, j;
 	var add;
 	var final_modestr = "";
@@ -253,6 +253,35 @@ function IRCClient_set_chanmode(chan,cm_args) {
 	if (!chan || !cm_args) {
 		throw "set_chanmode() called without chan or cm_args";
 		return;
+	}
+
+	/* TS-based conflict resolution for server bursts.
+	   ts == 0 means "no timestamp provided" (not a real epoch 0).
+	   If the incoming side is newer (higher ts), reject its ops/modes.
+	   If the incoming side is older (lower ts), wipe local ops/modes first. */
+	if (ts && ts > 0) {
+		if (ts > chan.created) {
+			/* Incoming side is newer - our side wins, reject their modes */
+			log(LOG_DEBUG, format(
+				"[TS] set_chanmode: rejecting modes for %s: remote ts %d > local ts %d",
+				chan.nam, ts, chan.created
+			));
+			return 2; /* distinct sentinel: TS rejected (not "no net change") */
+		} else if (ts < chan.created) {
+			/* Incoming side is older - their side wins, wipe our ops/modes */
+			log(LOG_DEBUG, format(
+				"[TS] set_chanmode: wiping local ops/modes for %s: remote ts %d < local ts %d",
+				chan.nam, ts, chan.created
+			));
+			chan.created = ts;
+			chan.mode = CHANMODE_NONE;
+			chan.arg[CHANMODE_KEY] = "";
+			chan.arg[CHANMODE_LIMIT] = 0;
+			chan.modelist[CHANMODE_OP] = {};
+			chan.modelist[CHANMODE_VOICE] = {};
+			/* Bans are kept - standard TS protocol keeps ban lists from both sides */
+		}
+		/* ts == chan.created: no conflict, fall through to apply normally */
 	}
 
 	c = new ChanMode(chan,this);
@@ -407,7 +436,7 @@ function IRCClient_set_chanmode(chan,cm_args) {
 	/* Bans are a specialized case */
 	for (i in c.list[CHANMODE_BAN][true]) { // +b
 		var set_ban = create_ban_mask(
-			c.list[CHANMODE_BAN][add][i]);
+			c.list[CHANMODE_BAN][true][i]);
 		if (   (chan.count_modelist(CHANMODE_BAN) >= MAX_BANS)
 			&& !this.server
 			&& !this.parent
@@ -529,12 +558,12 @@ function Channel_is_str_member_of_chanmode_list(modebit,str) {
 
 	if (MODE[modebit].isnick) {
 		for (i in this.modelist[modebit]) {
-			if (this.modelist[modebit].nick.toUpperCase() == str)
+			if (this.modelist[modebit][i].nick.toUpperCase() == str)
 				return true;
 		}
 	} else {
 		for (i in this.modelist[modebit]) {
-			if (this.modelist[modebit].toUpperCase() == str)
+			if (this.modelist[modebit][i].toUpperCase() == str)
 				return true;
 		}
 	}
@@ -542,11 +571,13 @@ function Channel_is_str_member_of_chanmode_list(modebit,str) {
 	return false;
 }
 
-function IRCClient_do_join(chan_name,join_key) {
+function IRCClient_do_join(chan_name,join_key,join_ts) {
 	chan_name = chan_name.slice(0,MAX_CHANLEN)
 
 	if (!join_key)
 		join_key = "";
+	if (!join_ts)
+		join_ts = 0;
 
 	var uc_chan_name = chan_name.toUpperCase();
 
@@ -594,6 +625,22 @@ function IRCClient_do_join(chan_name,join_key) {
 			}
 		}
 		// add to existing channel
+		/* TS-based conflict resolution: if the joining user's side has a
+		   different channel creation time, the older side wins.
+		   Older incoming ts -> wipe our local ops/modes (they lose).
+		   Newer incoming ts -> nothing to do, our state stands. */
+		if (join_ts > 0 && join_ts < chan.created) {
+			log(LOG_DEBUG, format(
+				"[TS] do_join: remote ts %d older than local %d for %s - wiping local ops/modes",
+				join_ts, chan.created, chan.nam
+			));
+			chan.created = join_ts;
+			chan.mode = CHANMODE_NONE;
+			chan.arg[CHANMODE_KEY] = "";
+			chan.arg[CHANMODE_LIMIT] = 0;
+			chan.modelist[CHANMODE_OP] = {};
+			chan.modelist[CHANMODE_VOICE] = {};
+		}
 		chan.users[this.id] = this;
 		var str="JOIN :" + chan.nam;
 		if (!this.local) {
@@ -619,6 +666,10 @@ function IRCClient_do_join(chan_name,join_key) {
 		// create a new channel
 		Channels[uc_chan_name] = new Channel(chan_name);
 		chan=Channels[uc_chan_name];
+		/* Use the provided timestamp if given (from a server burst),
+		   otherwise the Channel constructor already stamped Epoch(). */
+		if (join_ts > 0)
+			chan.created = join_ts;
 		chan.users[this.id] = this;
 		var str="JOIN :" + chan.nam;
 		var create_op = "";

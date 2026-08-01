@@ -451,6 +451,8 @@ function Write_Config_File(fn) {
 		f.writeln(format("[Allow:%lu]", c));
 		f.writeln(format("Mask=%s", ILines[i].hostmask));
 		f.writeln(format("Class=%lu", ILines[i].ircclass));
+		if (ILines[i].port)
+			f.writeln(format("Port=%lu", ILines[i].port));
 		f.writeln("");
 	}
 
@@ -538,6 +540,11 @@ function Write_Config_File(fn) {
 		f.writeln("");
 	}
 
+	/* [Capab] */
+	f.writeln("[Capab]");
+	f.writeln(format("Enforce=%s", CapabEnforce ? "true" : "false"));
+	f.writeln("");
+
 	f.close();
 
 	return true;
@@ -586,6 +593,12 @@ function ini_sections() {
 	this.WebIRC = ini_WebIRC;
 	this.Server = ini_Server;
 	this.Hub = ini_Hub;
+	this.Capab = ini_Capab;
+}
+
+function ini_Capab(arg, ini) {
+	if (ini.Enforce !== undefined)
+		CapabEnforce = ini_false_true(ini.Enforce);
 }
 
 function ini_Info(arg, ini) {
@@ -646,7 +659,7 @@ function ini_Class(arg, ini) {
 
 /* Former I:Line */
 function ini_Allow(arg, ini) {
-	var ircclass, masks, i;
+	var ircclass, masks, port, i;
 
 	if (!ini.Mask) {
 		log(LOG_WARNING,format(
@@ -665,6 +678,14 @@ function ini_Allow(arg, ini) {
 		ircclass = 0;
 	}
 
+	/* Optional Port=N restricts this I:line to connections arriving on that port */
+	port = 0;
+	if (ini.Port) {
+		port = parseInt(ini.Port);
+		if (port != ini.Port || port <= 0)
+			port = 0;
+	}
+
 	masks = ini.Mask.split(",");
 
 	for (i in masks) {
@@ -680,7 +701,7 @@ function ini_Allow(arg, ini) {
 			masks[i],
 			null, /* password */
 			masks[i], /* hostmask */
-			null, /* port */
+			port,     /* 0 = any port */
 			ircclass
 		));
 	}
@@ -916,6 +937,8 @@ function load_config_defaults() {
 	HLines.push(new HLine("*", "cvs.synchro.net"));
 	HLines.push(new HLine("*", "hub.synchro.net"));
 	/*** P:Line *** deliberately empty by default */
+	/*** Capab ***/
+	CapabEnforce = false;
 }
 
 function read_ini_config(conf) {
@@ -1002,7 +1025,7 @@ function ini_true_false(str) {
 
 
 function read_conf_config(conf) {
-	var conf_line, arg, i;
+	var conf_line, arg, i, y_sendq;
 
 	load_config_defaults();
 
@@ -1075,7 +1098,10 @@ function read_conf_config(conf) {
 				case "I":
 					if (!arg[5] || !parseInt(arg[5]))
 						break;
-					ILines.push(new ILine(arg[1],arg[2],arg[3],arg[4],parseInt(arg[5])));
+					/* Normalize port: "", "0", "*" all mean any port (stored as 0) */
+					ILines.push(new ILine(arg[1],arg[2],arg[3],
+						(parseInt(arg[4]) > 0 ? parseInt(arg[4]) : 0),
+						parseInt(arg[5])));
 					break;
 				case "K":
 					if (!arg[2])
@@ -1092,7 +1118,8 @@ function read_conf_config(conf) {
 						break;
 					ServerName = arg[1];
 					ServerDesc = arg[3];
-					Default_Port = parseInt(arg[4]);
+					if (parseInt(arg[4]) > 0)
+						Default_Port = parseInt(arg[4]);
 					break;
 				case "N":
 					if (!arg[5])
@@ -1107,7 +1134,13 @@ function read_conf_config(conf) {
 						parse_oline_flags(arg[4]),parseInt(arg[5]) ));
 					break;
 				case "P":
-					PLines.push(parseInt(arg[4]));
+					if (parseInt(arg[4]) > 0)
+						PLines.push(parseInt(arg[4]));
+					else
+						log(LOG_WARNING, format(
+							"!WARNING Malformed or missing port in P:Line: %s",
+							conf_line
+						));
 					break;
 				case "Q":
 					if (!arg[3])
@@ -1131,8 +1164,13 @@ function read_conf_config(conf) {
 				case "Y":
 					if (!arg[5])
 						break;
+					y_sendq = parseInt(arg[5]);
+					if (!y_sendq || y_sendq < 2048) {
+						log(LOG_WARNING, format("Y:line class %s: sendq %s too small, clamped to 1000000", arg[1], arg[5]));
+						y_sendq = 1000000;
+					}
 					YLines[parseInt(arg[1])] = new YLine(parseInt(arg[2]),
-						parseInt(arg[3]),parseInt(arg[4]),parseInt(arg[5]));
+						parseInt(arg[3]),parseInt(arg[4]),y_sendq);
 					break;
 				case "Z":
 					if (!arg[2])
