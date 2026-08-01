@@ -277,6 +277,27 @@ function Clear_Config_Globals() {
 	Restart_Password = "";
 }
 
+/*
+ * A configuration file names the local system with these macros rather than
+ * hard-coding it, so the file shipped with Synchronet works unedited and
+ * stays portable between hosts sharing a ctrl directory.
+ *
+ * Deliberately NOT expanded for ircdcfg.js or the .conf-to-.ini converter:
+ * they write the file back out, and an expanded macro would freeze whichever
+ * host happened to run them into the result.  system.host_name in particular
+ * is set per-process by jsexec's -h, so there is no correct value to freeze.
+ */
+function expand_config_macros(str) {
+	if (IRCDCFG_Editor)
+		return str;
+	str = str.replace(/SYSTEM_HOST_NAME/g, system.host_name);
+	str = str.replace(/SYSTEM_NAME/g, system.name);
+	str = str.replace(/VERSION_NOTICE/g, system.version_notice);
+	if (typeof system.qwk_id !== 'undefined')
+		str = str.replace(/SYSTEM_QWKID/g, system.qwk_id.toLowerCase());
+	return str;
+}
+
 function Read_Config_File() {
 	var file_handle, i, c;
 
@@ -1068,11 +1089,17 @@ function load_config_defaults() {
 function read_ini_config(conf) {
 	var ini = conf.iniGetAllObjects();
 	var Sections = new ini_sections();
-	var i, s;
+	var i, k, s;
 
 	load_config_defaults();
 
 	for (i in ini) {
+		/* .ini files carry the same SYSTEM_* macros a .conf does, so a
+		   converted file stays as portable as the .conf it came from. */
+		for (k in ini[i]) {
+			if (k != "name" && typeof ini[i][k] == "string")
+				ini[i][k] = expand_config_macros(ini[i][k]);
+		}
 		if (ini_false_true(ini[i].disabled) || ini_false_true(ini[i].Disabled))
 			continue;
 		if (!ini_true_false(ini[i].enabled) || !ini_true_false(ini[i].Enabled))
@@ -1195,11 +1222,7 @@ function read_conf_config(conf) {
 		if ((conf_line != null) && conf_line.match("[:]")) {
 			arg = fancy_split(conf_line);
 			for (i in arg) {
-				arg[i]=arg[i].replace(/SYSTEM_HOST_NAME/g,system.host_name);
-				arg[i]=arg[i].replace(/SYSTEM_NAME/g,system.name);
-				arg[i]=arg[i].replace(/VERSION_NOTICE/g,system.version_notice);
-				if (typeof system.qwk_id !== 'undefined')
-					arg[i]=arg[i].replace(/SYSTEM_QWKID/g,system.qwk_id.toLowerCase());
+				arg[i] = expand_config_macros(arg[i]);
 			}
 		switch (conf_line[0].toUpperCase()) {
 				case "A":
