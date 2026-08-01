@@ -8,3 +8,8 @@ zzt_files/*/
 *.HI
 *.hi
 data/
+
+# The sysop's own configuration, seeded from zzt.example.ini by the installer.
+# Kept untracked so a sysop's edits survive an upgrade and never dirty the tree.
+zzt.ini
+ZZT.INI

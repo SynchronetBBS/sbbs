@@ -214,6 +214,7 @@ namespace ZZT {
     SavedBoardFileName = "TEMP";
     GenerateTransitionTable();
     WorldCreate();
+    MusicSetupOnStart();
     GameTitleLoop();
   }
 

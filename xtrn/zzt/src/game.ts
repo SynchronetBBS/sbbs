@@ -1903,6 +1903,127 @@ namespace ZZT {
     return defaultReturn;
   }
 
+  function musicPrefFilePath(): string {
+    return pathJoin(currentUserSaveDir(), "music.ini");
+  }
+
+  // Returns true if a stored ANSI-music choice was found and applied.
+  function MusicPrefLoad(): boolean {
+    var lines: string[] = runtime.readTextFileLines(musicPrefFilePath());
+    var i: number;
+    var line: string;
+    var eq: number;
+    var key: string;
+    var value: string;
+
+    for (i = 0; i < lines.length; i += 1) {
+      line = trimSpaces(lines[i]);
+      eq = line.indexOf("=");
+      if (eq <= 0) {
+        continue;
+      }
+      key = trimSpaces(line.slice(0, eq)).toUpperCase();
+      value = trimSpaces(line.slice(eq + 1)).toUpperCase();
+      if (key === "ANSI_MUSIC") {
+        SoundSetAnsiMusicEnabled(value === "ON" || value === "1" || value === "YES");
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function MusicPrefSave(on: boolean): void {
+    var path: string = musicPrefFilePath();
+    if (!ensureParentDirectory(path)) {
+      return;
+    }
+    runtime.writeBinaryFile(path, stringToBytes("ANSI_MUSIC=" + (on ? "ON" : "OFF") + "\n"));
+  }
+
+  function musicPlayTestTuneOffscreen(): void {
+    if (typeof console !== "undefined" && typeof console.gotoxy === "function") {
+      console.gotoxy(1, 25);
+    }
+    SoundPlayAnsiTestTune();
+  }
+
+  function musicWaitChoiceKey(): string {
+    var key: string;
+    while (!runtime.isTerminated()) {
+      InputReadWaitKey();
+      key = upperCase(InputKeyPressed.length > 0 ? InputKeyPressed.charAt(0) : String.fromCharCode(0));
+      if (key === "Y" || key === "N" || key === "R" || key === KEY_ESCAPE) {
+        return key;
+      }
+    }
+    return "N";
+  }
+
+  // ANSI-music test: play a tune, ask if the player heard it, store the answer
+  // per user. Web/custom-bridge sessions already have reliable sampled sound,
+  // so ANSI music is simply disabled there (it would only send garbage).
+  export function MusicRunQuestionnaire(force: boolean): void {
+    var key: string;
+    var heard: boolean;
+
+    if (SoundCustomBridgeActive()) {
+      SoundSetAnsiMusicEnabled(false);
+      if (force) {
+        runtime.clearScreen();
+        VideoWriteText(18, 11, 0x1f, " Sound is handled by your web client. ");
+        VideoWriteText(18, 13, 0x1e, " Press any key to continue. ");
+        InputReadWaitKey();
+        runtime.clearScreen();
+      }
+      return;
+    }
+
+    runtime.clearScreen();
+    VideoWriteText(15, 8,  0x1f, " ZZT can play music through ANSI music sequences. ");
+    VideoWriteText(15, 10, 0x1e, " A short test tune is playing now... ");
+    VideoWriteText(15, 12, 0x1f, " Did you hear music? ");
+    VideoWriteText(15, 14, 0x1b, " Y) Yes - turn music on    N) No - keep it off ");
+    VideoWriteText(15, 15, 0x1b, " R) Replay the tune ");
+
+    // Park the cursor on the bottom row: terminals that don't support ANSI
+    // music render the sequence body as visible text, so keep it off the prompt.
+    musicPlayTestTuneOffscreen();
+
+    while (true) {
+      key = musicWaitChoiceKey();
+      if (key === "R") {
+        musicPlayTestTuneOffscreen();
+        continue;
+      }
+      break;
+    }
+
+    heard = (key === "Y");
+    SoundSetAnsiMusicEnabled(heard);
+    MusicPrefSave(heard);
+    runtime.clearScreen();
+  }
+
+  // Called once at door startup, before the title screen. No prompt and no
+  // terminal detection: ANSI music just defaults ON for terminal sessions (the
+  // behavior that always worked). The only suppressors are an explicit choice
+  // the player saved via the Music test, a sysop ON/OFF in zzt.ini, or a
+  // web/custom-bridge session (which has its own sampled audio).
+  export function MusicSetupOnStart(): void {
+    if (SoundCustomBridgeActive()) {
+      SoundSetAnsiMusicEnabled(false);
+      return;
+    }
+    if (MusicPrefLoad()) {
+      return;
+    }
+    if (!SoundAnsiMusicModeIsAuto()) {
+      // Sysop forced ON/OFF in zzt.ini -- honor it.
+      return;
+    }
+    SoundSetAnsiMusicEnabled(true);
+  }
+
   export function HighScoresLoad(): void {
     var worldKey: string = getCurrentScoreWorldKey();
     var store: SharedHighScoreStore = readSharedHighScoreStore();
@@ -4748,11 +4869,13 @@ namespace ZZT {
       VideoWriteText(62, 11, 0x70, " P ");
       VideoWriteText(62, 12, 0x30, " R ");
       VideoWriteText(62, 13, 0x70, " Q ");
+      VideoWriteText(62, 14, 0x30, " M ");
       VideoWriteText(62, 16, 0x30, " A ");
       VideoWriteText(62, 17, 0x70, " H ");
       VideoWriteText(65, 11, 0x1f, " Play");
       VideoWriteText(65, 12, 0x1e, " Restore game");
       VideoWriteText(65, 13, 0x1e, " Quit");
+      VideoWriteText(65, 14, 0x1e, " Music test");
       VideoWriteText(65, 16, 0x1f, " About ZZT!");
       VideoWriteText(65, 17, 0x1e, " High Scores");
       if (EditorEnabled) {
@@ -4925,8 +5048,9 @@ namespace ZZT {
       }
 
       if (GameStateElement === E_MONITOR &&
-          (key === KEY_ESCAPE || key === "A" || key === "E" || key === "H" || key === "N" ||
-            key === "P" || key === "Q" || key === "R" || key === "S" || key === "W" || key === "|")) {
+          (key === KEY_ESCAPE || key === "A" || key === "E" || key === "H" || key === "M" ||
+            key === "N" || key === "P" || key === "Q" || key === "R" || key === "S" ||
+            key === "W" || key === "|")) {
         GamePlayExitRequested = true;
       }
 
@@ -5032,6 +5156,9 @@ namespace ZZT {
             ReturnBoardId = World.Info.CurrentBoard;
             boardChanged = true;
           }
+        } else if (key === "M") {
+          MusicRunQuestionnaire(true);
+          boardChanged = true;
         } else if (key === "|") {
           GameDebugPrompt();
         }
