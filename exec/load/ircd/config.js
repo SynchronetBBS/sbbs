@@ -804,11 +804,24 @@ function ini_Allow(arg, ini) {
 
 /* Former O:Line */
 function ini_Operator(arg, ini) {
-	var ircclass, masks, i;
+	var ircclass, masks, i, oline_flags;
 
-	if (!ini.Nick || !ini.Mask || !ini.Password || !ini.Flags || !ini.Class) {
+	if (!ini.Nick || !ini.Mask || !ini.Flags || !ini.Class) {
 		log(LOG_WARNING,format(
 			"!WARNING Missing information from Operator:%s. Section ignored.",
+			arg
+		));
+		return;
+	}
+
+	oline_flags = parse_oline_flags(ini.Flags);
+
+	/* The S flag authenticates against the BBS system password, so Password
+	   is unused and expected to be absent. */
+	if (!ini.Password && !(oline_flags&OLINE_CHECK_SYSPASSWD)) {
+		log(LOG_WARNING,format(
+			"!WARNING No Password in Operator:%s, and no S flag to check the "
+			+ "system password instead. Section ignored.",
 			arg
 		));
 		return;
@@ -844,9 +857,9 @@ function ini_Operator(arg, ini) {
 		}
 		OLines.push(new OLine(
 			masks[i],
-			ini.Password,
+			ini.Password ? ini.Password : "",
 			ini.Nick,
-			parse_oline_flags(ini.Flags),
+			oline_flags,
 			ircclass
 		));
 	}

@@ -350,6 +350,14 @@
   server link, or `[Allow]` passwords
 - IRCd `[Class]` sections honor `Maximum=0` (unlimited) again
   instead of silently substituting a limit of 100
+- An IRCd `[Operator]` section using the `S` flag (authenticate
+  with the BBS system password) no longer needs a placeholder
+  `Password=` value in order to load
+- The stock `ctrl/ircd.ini` no longer ships with active server
+  links to vert and cvs, which made a fresh install dial out to
+  both every few minutes with a placeholder password. Its
+  `[Allow]` example now shows the catch-all mask last, where
+  first-match ordering requires it
 - SlyEdit: messages uploaded via `/UPLOAD` (or `/UL`) are used
   as-is, with no attribute-code interpretation. Guest users get
   default settings; per-user settings are no longer saved for
