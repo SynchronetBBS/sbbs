@@ -160,7 +160,7 @@ function Unregistered_Commands(cmdline) {
 	log(LOG_DEBUG,"[UNREG]: " + cmdline);
 
 	var clockticks = system.timer;
-	var i, cmd, p;
+	var i, cmd, p, err_peer, err_str;
 
 	cmd = IRC_parse(cmdline);
 
@@ -255,6 +255,23 @@ function Unregistered_Commands(cmdline) {
 			break;
 		case "PONG":
 			this.pinged = false;
+			break;
+		case "ERROR":
+			/* A peer refusing our handshake says why with ERROR; answering
+			   it with a numeric is meaningless and the link is going away. */
+			err_peer = this.cline ? this.cline.servername : this.hostname;
+			err_str = p[0] ? p[0] : "No error message received.";
+			log(LOG_WARNING, format(
+				"[UNREG] %04u ERROR from %s: %s",
+				this.socket.descriptor,
+				err_peer,
+				err_str
+			));
+			umode_notice(USERMODE_ROUTING, "Routing", format(
+				"ERROR from %s: %s",
+				err_peer,
+				err_str
+			));
 			break;
 		case "SERVER":
 			if (this.nick != "*") {

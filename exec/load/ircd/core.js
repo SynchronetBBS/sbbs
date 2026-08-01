@@ -1743,8 +1743,10 @@ function IRCClient_do_connect(con_server,con_port) {
 	if (con_cline.next_connect)
 		js.clearTimeout(con_cline.next_connect);
 
+	Outbound_Connect_in_Progress = true;
+
 	sock = new Socket();
-	
+
 	sock.array_buffer = false; /* JS78, we want strings */
 	sock.cline = con_cline;
 	sock.outbound = true;

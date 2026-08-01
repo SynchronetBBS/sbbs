@@ -353,6 +353,12 @@
 - An IRCd `[Operator]` section using the `S` flag (authenticate
   with the BBS system password) no longer needs a placeholder
   `Password=` value in order to load
+- An operator's `/CONNECT` no longer bypasses the IRCd's
+  one-outbound-link-at-a-time guard, which allowed a scheduled
+  auto-connect to dial a second server at the same time
+- When a remote server refuses a link, its `ERROR` reply is now
+  logged and reported to opers with the reason, rather than being
+  answered with "You have not registered"
 - The stock `ctrl/ircd.ini` no longer ships with active server
   links to vert and cvs, which made a fresh install dial out to
   both every few minutes with a placeholder password. Its
