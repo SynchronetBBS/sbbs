@@ -42,8 +42,9 @@ Wordem
  ¦BBS Drop File Type         None                     
  ¦Place Drop File In         Node Directory           
 
-I recommend that you edit the server.ini file in this directory to read as
-follows:
+I recommend that you edit the server.local.ini file in this directory to read
+as follows (server.local.ini overrides the distributed server.ini, and a
+Synchronet upgrade never replaces it; the installer creates it for you):
 
 host=bbs.electronicchicken.com
 port=10088

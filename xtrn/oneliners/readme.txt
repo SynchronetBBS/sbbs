@@ -20,8 +20,9 @@ Connecting to a remote service means accessing a shared, inter-BBS oneliners
 wall.  Most sysops will likely want to go this route, as it will mean more
 activity and "fun" for everybody.
 
-Edit the 'settings.ini' file in your 'xtrn/oneliners/' directory to read as
-follows:
+Edit the 'settings.local.ini' file in your 'xtrn/oneliners/' directory to read
+as follows ('settings.local.ini' overrides the distributed 'settings.ini', and
+a Synchronet upgrade never replaces it; the installer creates it for you):
 
 server=bbs.electronicchicken.com
 port=10088

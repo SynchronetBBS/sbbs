@@ -4717,7 +4717,7 @@ load("json-chat.js");
     };
   }
   function loadConfig() {
-    var configPath = js.exec_dir + "avatar_chat.ini";
+    var configPath = file_cfgname(js.exec_dir, "avatar_chat.ini");
     var file = new File(configPath);
     var config = {
       host: DEFAULT_CONFIG.host,

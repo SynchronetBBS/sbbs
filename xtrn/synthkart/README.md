@@ -38,7 +38,7 @@ Race through neon-lit highways, collect power-ups, and compete for high scores�
 
 1. Extract the SynthKart archive to your Synchronet `xtrn/` directory (e.g., `/sbbs/xtrn/synthkart/`)
 2. Configure the external program in SCFG
-3. Edit `synthkart.ini` to customize settings
+3. Edit `synthkart.local.ini` to customize settings
 4. Test it out on your BBS
 
 ## SCFG Configuration
@@ -66,9 +66,12 @@ Add SynthKart as an external program in Synchronet's SCFG:
 
 > **Note:** The `?` prefix tells Synchronet to run the file with `jsexec`.
 
-## Configuration File (synthkart.ini)
+## Configuration File (synthkart.local.ini)
 
-The `synthkart.ini` file controls game behavior. Edit it with any text editor.
+The `synthkart.ini` file controls game behavior. Put your changes in a
+`synthkart.local.ini` beside it rather than editing `synthkart.ini` directly:
+SynthKart reads `synthkart.local.ini` in preference whenever it exists, and a
+Synchronet upgrade never replaces it. The installer creates it for you.
 
 ### [highscores] Section
 
@@ -168,7 +171,7 @@ Allow other BBSes to submit scores to your system:
 The "Data Highway" track displays scrolling ANSI art during gameplay. To customize:
 
 1. Create a directory with `.ans` files (e.g., `/sbbs/text/coolansi/`)
-2. Update `synthkart.ini`:
+2. Update `synthkart.local.ini`:
    ```ini
    [ansi_tunnel]
    directory = /sbbs/text/coolansi
@@ -277,7 +280,8 @@ synthkart/
 ├── dist/                # Compiled JS (intermediate)
 ├── build.sh             # Build script
 ├── synthkart.js         # Final distributable
-├── synthkart.ini        # Runtime configuration
+├── synthkart.ini        # Distributed configuration (do not edit)
+├── synthkart.local.ini  # Your overrides, never replaced by an upgrade
 └── tsconfig.json        # TypeScript config
 ```
 

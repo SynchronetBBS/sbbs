@@ -75,8 +75,10 @@ Multiple Concurrent Users: Yes
 	----------------------------------------
 
 	You're welcome to connect your local game to the networked scoreboard that
-	I host.  To do so, Create a file called 'server.ini' in the Lemons game
-	directory, and put the following two lines in it:
+	I host.  To do so, Create a file called 'server.local.ini' in the Lemons
+	game directory, and put the following two lines in it ('server.local.ini'
+	overrides the distributed 'server.ini', and a Synchronet upgrade never
+	replaces it; the installer creates it for you):
 
 		host = bbs.electronicchicken.com
 		port = 10088

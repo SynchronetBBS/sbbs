@@ -25,7 +25,7 @@ function offline() {
 	return !bbs.online || js.terminated;
 }
 
-var f = new File(js.exec_dir + "server.ini");
+var f = new File(file_cfgname(js.exec_dir, "server.ini"));
 f.open("r");
 var serverIni = f.iniGetObject();
 f.close();

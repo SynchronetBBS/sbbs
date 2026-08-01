@@ -146,8 +146,9 @@ function pushLevels() {
 function init() {
 
 	// Load the server config if it exists, or fake it if not
-	if (file_exists(root + "server.ini")) {
-		var f = new File(root + "server.ini");
+	var server_fname = file_cfgname(root, "server.ini");
+	if (file_exists(server_fname)) {
+		var f = new File(server_fname);
 		f.open("r");
 		var ini = f.iniGetObject();
 		f.close();

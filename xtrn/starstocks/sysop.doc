@@ -53,6 +53,11 @@ files so that you connect to your service).
 		Port = 10088
 		Options = STATIC | LOOP
 		Command = json-service.js
+
+When pointing the game at a service, put your settings in SERVER.LOCAL.INI
+rather than editing SERVER.INI itself.  The game reads SERVER.LOCAL.INI in
+preference to SERVER.INI whenever it exists, and Synchronet upgrades never
+replace it.  The installer creates this file for you.
 		
 You must also edit the file JSON-SERVICE.INI in your relative 'ctrl/' path and either 
 uncomment the [starstocks] section, or add it yourself. 

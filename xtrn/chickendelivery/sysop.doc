@@ -7,11 +7,14 @@ by echicken -at- bbs.electronicchicken.com
 
 1) JSON Database Setup
 
-To connect to the inter-BBS scoreboard, create a 'server.ini' file in your
-'xtrn/chickendelivery/' directory containing the following:
+To connect to the inter-BBS scoreboard, create a 'server.local.ini' file in
+your 'xtrn/chickendelivery/' directory containing the following:
 
 host = bbs.electronicchicken.com
 port = 10088
+
+('server.local.ini' overrides the distributed 'server.ini', and a Synchronet
+upgrade never replaces it.  The installer creates it for you.)
 
 Or, if you wish to host your own scoreboard, you must add the following to
 your 'ctrl/json-service.ini' file:

@@ -34,7 +34,7 @@ If you want to run your own backend instead of using the default Futureland serv
 1. Enable the `[JSON]` service in `ctrl/services.ini`.
 2. Make sure it runs `json-service.js` on the port you want, typically `10088`.
 3. Restart Synchronet services.
-4. Edit `avatar_chat.ini` and set:
+4. Edit `avatar_chat.local.ini` and set:
 
 ```ini
 host = 127.0.0.1
@@ -58,7 +58,9 @@ To install it into the stock Synchronet web interface, copy those files into the
 - `root/api/avatarchat.ssjs`
 - `lib/events/avatarchat.js`
 
-The web bundle reads the same `avatar_chat.ini` as the terminal client, so both clients use the same host, port, and default channel.
+The web bundle resolves its configuration the same way as the terminal client, so both use the same host, port, and default channel.
+
+Put your settings in `avatar_chat.local.ini` rather than editing `avatar_chat.ini`. Both clients read `avatar_chat.local.ini` in preference whenever it exists, and a Synchronet upgrade never replaces it. The installer creates it for you.
 
 The page depends on stock `webv4` assets that are already present in Synchronet:
 
@@ -127,7 +129,7 @@ The example local/self-hosted configuration is in:
 The installer currently does two things:
 
 1. Installs the `AVTCHAT` external program entry.
-2. Prompts for Avatar Chat connection settings.
+2. Seeds `avatar_chat.local.ini` from `avatar_chat.ini` and prompts for Avatar Chat connection settings, which are written to that local copy.
 
 It also offers to enable the Synchronet `[JSON]` service for self-hosting. That step is optional if you are only testing against the default Futureland server.
 

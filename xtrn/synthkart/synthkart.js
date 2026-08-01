@@ -295,7 +295,7 @@ function logError(message) {
 }
 "use strict";
 function loadConfig() {
-    var configPath = js.exec_dir + 'synthkart.ini';
+    var configPath = file_cfgname(js.exec_dir, 'synthkart.ini');
     var config = {
         general: {
             gameName: 'OUTRUN'

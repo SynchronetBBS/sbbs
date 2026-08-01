@@ -22,10 +22,13 @@ all over settings at their default values:
 
 Star Trek features an interBBS scoreboard.  To use the scoreboard on my JSON
 DB server, which may contain adult/innappropriate ship names, open 
-'server.ini', and edit the 'host' and 'port' values at the top to read:
+'server.local.ini', and edit the 'host' and 'port' values at the top to read:
 
 host = bbs.electronicchicken.com
 port = 10088
+
+('server.local.ini' overrides the distributed 'server.ini', and a Synchronet
+upgrade never replaces it.  The installer creates it for you.)
 
 If you would rather host your own scoreboard, ensure that you are running the
 JSON DB service (you should have something like the following in your

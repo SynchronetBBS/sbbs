@@ -41,8 +41,10 @@ follows:
 
 1.2) Connecting to the global scoreboard
 
-In your 'xtrn/gooble/' directory, create a 'server.ini' file containing the
-following two lines:
+In your 'xtrn/gooble/' directory, create a 'server.local.ini' file containing
+the following two lines ('server.local.ini' overrides the distributed
+'server.ini', and a Synchronet upgrade never replaces it; the installer
+creates it for you):
 
 host = bbs.electronicchicken.com
 port = 10088

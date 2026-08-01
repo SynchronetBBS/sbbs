@@ -7,11 +7,12 @@
 load("json-client.js");
 var root = js.exec_dir;
 
-if(!file_exists(root + "server.ini")) {
+var server_fname = file_cfgname(root, "server.ini");
+if(!file_exists(server_fname)) {
 	throw("server initialization file missing");
 }
 
-var server_file = new File(root + "server.ini");
+var server_file = new File(server_fname);
 server_file.open('r',true);
 //var autoUpdate=server_file.iniGetValue(null,"autoUpdate");
 var serverAddr=server_file.iniGetValue(null,"host","localhost");

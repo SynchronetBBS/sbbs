@@ -934,8 +934,9 @@ var initDisplay = function() {
 }
 
 var initJSON = function() {
-	if(file_exists(js.exec_dir + "server.ini")) {
-		var f = new File(js.exec_dir + "server.ini");
+	var server_fname = file_cfgname(js.exec_dir, "server.ini");
+	if(file_exists(server_fname)) {
+		var f = new File(server_fname);
 		f.open("r");
 		var ini = f.iniGetObject();
 		f.close();

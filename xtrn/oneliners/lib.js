@@ -1,7 +1,7 @@
 load("json-client.js");
 
 var initSettings = function(path) {
-	var f = new File(path + "settings.ini");
+	var f = new File(file_cfgname(path, "settings.ini"));
 	f.open("r");
 	var o = f.iniGetObject();
 	f.close();

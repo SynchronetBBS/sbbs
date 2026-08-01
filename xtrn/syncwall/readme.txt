@@ -26,8 +26,10 @@ Requirements:
 
 Installation procedure:
 
-	Create a 'server.ini' file in your xtrn/syncwall/ directory containing
-	the following:
+	Create a 'server.local.ini' file in your xtrn/syncwall/ directory
+	containing the following ('server.local.ini' overrides the distributed
+	'server.ini', and a Synchronet upgrade never replaces it; the installer
+	creates it for you):
 
 		host = bbs.electronicchicken.com
 		port = 10088

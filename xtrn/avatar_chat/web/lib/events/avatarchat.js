@@ -3,7 +3,7 @@
 load('json-client.js');
 
 function loadAvatarChatConfig() {
-    var path = js.exec_dir + '../../../xtrn/avatar_chat/avatar_chat.ini';
+    var path = file_cfgname(js.exec_dir + '../../../xtrn/avatar_chat/', 'avatar_chat.ini');
     var file = new File(path);
     var config = {
         host: '127.0.0.1',
