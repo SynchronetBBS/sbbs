@@ -359,6 +359,10 @@
 - When a remote server refuses a link, its `ERROR` reply is now
   logged and reported to opers with the reason, rather than being
   answered with "You have not registered"
+- The IRCd reports itself as `SynchronetIRCd-2.1` in `/VERSION`,
+  `/TRACE` and on connect, covering the changes made during the
+  3.22 cycle — notably the TS-bearing JOIN burst announced by the
+  `TSJOIN` capability
 - The IRCd refuses a server link that uses its own server name, and
   reports (rather than dials) a `[Server]` section naming itself.
   Such a link exhausted the JavaScript stack and terminated the
