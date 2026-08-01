@@ -39,6 +39,11 @@ function IRC_Server() {
 	this.parent = 0;
 	this.info = "";
 	this.idletime = system.timer;
+	this.connecttime = Epoch();
+	this.sent_msgs = 0;
+	this.sent_bytes = 0;
+	this.recv_msgs = 0;
+	this.recv_bytes = 0;
 	// Variables (consts, really) that point to various state information
 	this.socket = "";
 	////////// FUNCTIONS
@@ -79,6 +84,8 @@ function Server_Work(cmdline) {
 	var cmd, p;
 	var tmp, i, j, k, n; /* Temp vars used during command processing */
 	var origin;
+	var join_ts, join_chans_str;
+	var sjoin_ts, ts_rejected, valid_nicks, now, mode_ts;
 
 	log(LOG_DEBUG,format("[%s<-%s]: %s",ServerName,this.nick,cmdline));
 
@@ -119,6 +126,8 @@ function Server_Work(cmdline) {
 	}
 
 	this.idletime = system.timer;
+	this.recv_msgs++;
+	this.recv_bytes += cmdline.length;
 
 	p = cmd.params;
 
@@ -295,9 +304,9 @@ function Server_Work(cmdline) {
 		));
 		break;
 	case "INVITE":
-		if (!p[1] || p[2] === undefined || origin.server)
+		if (!p[0] || !p[1] || origin.server)
 			break;
-		tmp = Channels[p[2].toUpperCase()];
+		tmp = Channels[p[1].toUpperCase()];
 		if (!tmp)
 			break;
 		if (!tmp.modelist[CHANMODE_OP][origin.id])
@@ -305,7 +314,7 @@ function Server_Work(cmdline) {
 		j = Users[p[0].toUpperCase()];
 		if (!j)
 			break;
-		if (!j.channels[tmp.nam.toUpperCase()])
+		if (j.channels[tmp.nam.toUpperCase()])
 			break;
 		j.originatorout(format(
 			"INVITE %s :%s",
@@ -317,11 +326,28 @@ function Server_Work(cmdline) {
 	case "JOIN":
 		if (!p[0] || origin.server)
 			break;
-		k = p[0].split(",");
+		/* Burst JOIN may include a channel timestamp as the first argument:
+		     :nick JOIN <ts> <channel>
+		   Traditional JOIN has no ts:
+		     :nick JOIN <channel>[,<channel>...]
+		   Detect by checking if p[0] looks like a numeric timestamp. */
+		join_ts = 0;
+		join_chans_str = p[0];
+		if (p[1] && p[0].match(/^[0-9]+$/)) {
+			join_ts = parseInt(p[0]);
+			now = Epoch();
+			/* Untrusted leaves never provide a trustworthy timestamp; always
+			   replace with the local clock.  Hubs are trusted but still
+			   clamped for extreme clock skew (same rationale as SJOIN). */
+			if (!this.hub || !join_ts || join_ts > now + 60 || join_ts < 100000000)
+				join_ts = now;
+			join_chans_str = p[1];
+		}
+		k = join_chans_str.split(",");
 		for (i in k) {
 			if (k[i][0] != "#")
 				continue;
-			origin.do_join(k[i].slice(0,MAX_CHANLEN),"");
+			origin.do_join(k[i].slice(0,MAX_CHANLEN),"",join_ts);
 		}
 		break;
 	case "KICK":
@@ -345,16 +371,25 @@ function Server_Work(cmdline) {
 			log(LOG_WARNING, format("KICK: %s not in %s", j.nick, tmp.nam));
 			break;
 		}
-		log(LOG_DEBUG, format("KICK: %s kicked %s from %s (origin=%s local=%s, target local=%s, from server=%s)",
-			origin ? origin.nick : "(null)",
-			j.nick, tmp.nam,
-			origin ? (origin.local ? "yes" : "no") : "N/A",
-			j.local ? "yes" : "no",
-			this.nick));
 		if (!origin) {
 			log(LOG_ERR, format("KICK: origin is null for %s from %s", p[1], this.nick));
 			break;
 		}
+		if (!this.hub && !origin.uline && !tmp.modelist[CHANMODE_OP][origin.id]) {
+			log(LOG_WARNING, format("KICK: %s is not opped in %s (from non-hub %s); rejecting.",
+				origin.nick, tmp.nam, this.nick));
+			umode_notice(USERMODE_OPER, "Notice", format(
+				"%s attempted KICK of %s from %s without ops (via %s)",
+				origin.nick, j.nick, tmp.nam, this.nick
+			));
+			break;
+		}
+		log(LOG_DEBUG, format("KICK: %s kicked %s from %s (origin=%s local=%s, target local=%s, from server=%s)",
+			origin.nick,
+			j.nick, tmp.nam,
+			origin.local ? "yes" : "no",
+			j.local ? "yes" : "no",
+			this.nick));
 		origin.bcast_to_channel(tmp, format(
 			"KICK %s %s :%s",
 			tmp.nam,
@@ -434,14 +469,15 @@ function Server_Work(cmdline) {
 		));
 		break;
 	case "MODE":
-		if (typeof p[1] === undefined) {
+		if (!p[1]) {
 			umode_notice(USERMODE_OPER,"Notice",format(
 				"Origin %s sent MODE without enough arguments.",
 				this.nick
 			));
 			break;
 		}
-		if (parseInt(p[1]) == p[1])
+		mode_ts = (parseInt(p[1]) == p[1]) ? parseInt(p[1]) : 0;
+		if (mode_ts)
 			p.splice(1,1);
 		if (p[0][0] == "#") {
 			/* Setting a channel mode */
@@ -454,8 +490,24 @@ function Server_Work(cmdline) {
 				));
 				break;
 			}
+			/* Authenticity check for untrusted leaves: origin must be opped
+			   in the channel.  U:lined services are exempt (they set modes
+			   on behalf of NickServ/ChanServ).  On mismatch, bounce the
+			   correct channel modes back to the leaf so it re-syncs. */
+			if (!this.hub && !origin.uline && !tmp.modelist[CHANMODE_OP][origin.id]) {
+				umode_notice(USERMODE_OPER,"Notice",format(
+					"Leaf %s: %s attempted MODE %s without ops - bouncing",
+					this.nick, origin.nick, tmp.nam
+				));
+				this.rawout(format(":%s MODE %s %s",
+					ServerName,
+					tmp.nam,
+					tmp.chanmode(true /* pass args */)
+				));
+				break;
+			}
 			p.shift();
-			origin.set_chanmode(tmp,p);
+			origin.set_chanmode(tmp, p, mode_ts);
 			break;
 		}
 		/* Setting a user mode */
@@ -521,6 +573,11 @@ function Server_Work(cmdline) {
 						tmp.nick
 					));
 					tmp.quit("Nickname Collision",true);
+					/* Kill the incoming nick too - both sides lose */
+					this.ircout(format(
+						"KILL %s :Nickname Collision.",
+						p[0]
+					));
 				}
 				break;
 			}
@@ -766,6 +823,7 @@ function Server_Work(cmdline) {
 		this.rawout(":" + ServerName + " PASS " + result + " :" + cmd[2] + " QWK " + ThisOrigin.nick);
 		break;
 	case "PONG":
+		this.pinged = false;
 		if (p[1]) {
 			tmp = searchbyserver(p[1]);
 			if (!tmp)
@@ -787,10 +845,8 @@ function Server_Work(cmdline) {
 					p[0],
 					p[1]
 				));
-				break;
 			}
 		}
-		this.pinged = false;
 		break;
 	case "PRIVMSG":
 		if (!p[1] || origin.server)
@@ -921,20 +977,47 @@ function Server_Work(cmdline) {
 			origin.local ? "yes" : "no",
 			this.nick));
 
+		/* Timestamp handling for SJOIN:
+		   Untrusted (non-hub) leaves cannot be relied on for channel creation
+		   times.  A leaf operator who backdates their clock can win every TS
+		   race and silently de-op the entire network.  Replace any leaf-sourced
+		   TS with the local hub clock unconditionally.
+		   Hubs are trusted; clamp only for extreme clock skew.
+		   CONFLICT WITH MR !711 REVIEW: reviewer requested a symmetric clamp
+		   for all servers to avoid "desync" (leaf keeps its ops, hub strips
+		   them).  Per project spec: leaf timestamps are always ignored; the
+		   resulting desync is intentional - the leaf loses ops and must
+		   re-earn them via legitimate means. */
+		sjoin_ts = parseInt(p[0]);
+		now = Epoch();
+		if (!this.hub) {
+			sjoin_ts = now;
+		} else if (!sjoin_ts || sjoin_ts > now + 60 || sjoin_ts < 100000000) {
+			log(LOG_DEBUG, format(
+				"[SJOIN] %s: clamping out-of-range TS %d for %s to local TS %d",
+				this.nick, sjoin_ts, p[1], now
+			));
+			sjoin_ts = now;
+		}
+
 		tmp = Channels[p[1].toUpperCase()];
 		if (!tmp) {
 			Channels[p[1].toUpperCase()] = new Channel(p[1].toUpperCase());
 			tmp = Channels[p[1].toUpperCase()];
 			tmp.nam = p[1];
-			tmp.created = parseInt(p[0]);
+			tmp.created = sjoin_ts;
 		}
 
 		if (p[2]) {
-			this.set_chanmode(
+			/* ts_rejected == true means the incoming side is newer (higher ts)
+			   and lost the TS race.  Channel modes were already rejected inside
+			   set_chanmode (returns 2 for TS-rejected, 0 for no net change);
+			   we must also suppress op/voice for those members. */
+			ts_rejected = (this.set_chanmode(
 				tmp, /* channel */
 				p.splice(2,p.length-3), /* modeline and arguments */
-				parseInt(p[0]) /* ts */
-			);
+				sjoin_ts
+			) === 2);
 
 			j = p[p.length-1].split(" "); /* Channel members */
 
@@ -947,7 +1030,7 @@ function Server_Work(cmdline) {
 				break;
 			}
 
-			var valid_nicks = "";
+			valid_nicks = "";
 			for (i in j) {
 				k = new SJOIN_Nick(j[i]);
 				n = Users[k.nick.toUpperCase()];
@@ -960,6 +1043,31 @@ function Server_Work(cmdline) {
 					continue;
 				}
 
+				/* Origin/membership validation: verify the named user belongs to
+				   the server that sent this SJOIN (or a server behind it).
+				   A non-hub server can only SJOIN users directly connected to it.
+				   Hubs may relay SJOINs on behalf of downstream servers and are
+				   trusted to relay only their own users. */
+				if (!this.hub && (k.isop || k.isvoice) && n.parent !== this.nick) {
+					log(LOG_WARNING, format(
+						"[SJOIN] %s tried to grant op/voice to %s in %s but %s's parent is %s - rejecting",
+						this.nick, n.nick, tmp.nam, n.nick, n.parent
+					));
+					umode_notice(USERMODE_OPER,"Notice",format(
+						"WARNING: %s tried to grant op/voice to %s (parent=%s) in %s via SJOIN - rejected (forged op attempt?)",
+						this.nick, n.nick, n.parent, tmp.nam
+					));
+					/* Still allow the join, just strip the status */
+					k.isop = false;
+					k.isvoice = false;
+				}
+
+				/* TS race: incoming side is newer - strip member ops/voices too */
+				if (ts_rejected) {
+					k.isop = false;
+					k.isvoice = false;
+				}
+
 				if (!n.channels[tmp.nam.toUpperCase()]) {
 					tmp.users[n.id] = n;
 					n.channels[tmp.nam.toUpperCase()] = tmp;
@@ -970,9 +1078,9 @@ function Server_Work(cmdline) {
 				}
 
 				if (k.isop)
-					tmp.modelist[CHANMODE_OP][n.id] = n.id;
+					tmp.modelist[CHANMODE_OP][n.id] = n;
 				if (k.isvoice)
-					tmp.modelist[CHANMODE_VOICE][n.id] = n.id;
+					tmp.modelist[CHANMODE_VOICE][n.id] = n;
 				if (k.isop || k.isvoice) {
 					origin.bcast_to_channel(tmp, format(
 						"MODE %s +%s%s %s",
@@ -1003,8 +1111,10 @@ function Server_Work(cmdline) {
 				break;
 			}
 
-			if (tmp.created > parseInt(p[0]))
-				tmp.created = parseInt(p[0]);
+			/* Use sjoin_ts (not p[0]) so a leaf's backdated clock cannot
+			   corrupt our channel TS through this path. */
+			if (tmp.created > sjoin_ts)
+				tmp.created = sjoin_ts;
 
 			this.bcast_to_servers_raw(
 				format(":%s SJOIN %lu %s %s :%s",
@@ -1033,7 +1143,7 @@ function Server_Work(cmdline) {
 			), false /*bcast*/);
 			this.bcast_to_servers_raw(
 				format(":%s SJOIN %lu %s",
-					origin.nick,
+					this.nick,
 					tmp.created,
 					tmp.nam
 				)
@@ -1154,6 +1264,9 @@ function Server_Work(cmdline) {
 			log(LOG_ERR, format("TOPIC: origin is null for %s from %s", p[0], this.nick));
 			break;
 		}
+		/* Reject stale topics: incoming topictime must be newer than stored */
+		if (this.hub && tmp.topictime && parseInt(p[2]) <= tmp.topictime)
+			break;
 		log(LOG_DEBUG, format("TOPIC: %s set topic on %s (origin local=%s, from server=%s)",
 			origin.nick, tmp.nam,
 			origin.local ? "yes" : "no",
@@ -1498,27 +1611,57 @@ function IRCClient_server_nick_info(sni_client) {
 }
 
 function IRCClient_server_chan_info(sni_chan) {
-	var i, u;
+	var i, u, has_leaf_user;
+
+	/* Private (+p) and secret (+s) channels are not revealed to untrusted
+	   leaf servers unless at least one user in the channel is directly
+	   connected to that leaf.  Hubs receive the full channel state. */
+	if (!this.hub && (sni_chan.mode & CHANMODE_PRIVATE || sni_chan.mode & CHANMODE_SECRET)) {
+		has_leaf_user = false;
+		for (i in sni_chan.users) {
+			if (sni_chan.users[i].parent === this.nick) {
+				has_leaf_user = true;
+				break;
+			}
+		}
+		if (!has_leaf_user)
+			return;
+	}
 
 	for (i in sni_chan.users) {
 		u = sni_chan.users[i];
-		this.rawout(format(":%s JOIN %s",
-			u.nick,
-			sni_chan.nam
-		));
-		if (sni_chan.modelist[CHANMODE_OP][u.id]) {
-			this.rawout(format(":%s MODE %s +o %s",
-				ServerName,
-				sni_chan.nam,
-				u.nick
+		/* Include the channel creation timestamp only for TSJOIN-capable
+		   receivers.  Old servers treat a numeric first token as the channel
+		   name and silently drop the entire JOIN. */
+		if (this.their_capab && this.their_capab.indexOf("TSJOIN") >= 0) {
+			this.rawout(format(":%s JOIN %lu %s",
+				u.nick,
+				sni_chan.created,
+				sni_chan.nam
+			));
+		} else {
+			this.rawout(format(":%s JOIN %s",
+				u.nick,
+				sni_chan.nam
 			));
 		}
+		if (sni_chan.modelist[CHANMODE_OP][u.id]) {
+			if (this.their_capab && this.their_capab.indexOf("TSJOIN") >= 0) {
+				this.rawout(format(":%s MODE %s %lu +o %s",
+					ServerName, sni_chan.nam, sni_chan.created, u.nick));
+			} else {
+				this.rawout(format(":%s MODE %s +o %s",
+					ServerName, sni_chan.nam, u.nick));
+			}
+		}
 		if (sni_chan.modelist[CHANMODE_VOICE][u.id]) {
-			this.rawout(format(":%s MODE %s +v %s",
-				ServerName,
-				sni_chan.nam,
-				u.nick
-			));
+			if (this.their_capab && this.their_capab.indexOf("TSJOIN") >= 0) {
+				this.rawout(format(":%s MODE %s %lu +v %s",
+					ServerName, sni_chan.nam, sni_chan.created, u.nick));
+			} else {
+				this.rawout(format(":%s MODE %s +v %s",
+					ServerName, sni_chan.nam, u.nick));
+			}
 		}
 	}
 	var modecounter=0;

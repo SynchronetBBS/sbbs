@@ -33,6 +33,11 @@ function Unregistered_Client(id,socket) {
 	this.password = "";
 	this.ircclass = 0;
 	this.idletime = system.timer;
+	this.connecttime = Epoch();
+	this.sent_msgs = 0;
+	this.sent_bytes = 0;
+	this.recv_msgs = 0;
+	this.recv_bytes = 0;
 	this.ip = socket.remote_ip_address;
 	/* Render IPv4 in IPv6 addresses as IPv4 */
 	if (this.ip.toUpperCase().slice(0,7) == "::FFFF:") {
@@ -176,8 +181,11 @@ function Unregistered_Commands(cmdline) {
 			this.rawout("PONG " + ServerName + " :" + p[0]);
 			break;
 		case "CAP":
+			break;
 		case "CAPAB":
-			break; /* Silently ignore, for now. */
+			if (!this.their_capab) this.their_capab = [];
+			this.their_capab = this.their_capab.concat(p.slice());
+			break;
 		case "NICK":
 			if (!p[0]) {
 				this.numeric(431, ":No nickname given.");
@@ -274,6 +282,10 @@ function Unregistered_Commands(cmdline) {
 							&& YLines[NLines[i].ircclass].active
 							   >= YLines[NLines[i].ircclass].maxlinks
 						) {
+							umode_notice(USERMODE_ROUTING, "Routing", format(
+								"Too many links for server %s on class %s; dropping connection.",
+								p[0], NLines[i].ircclass
+							));
 							this.quit("Too many links on this IRC class.");
 							return 0;
 						}
@@ -296,6 +308,10 @@ function Unregistered_Commands(cmdline) {
 							&& YLines[NLines[i].ircclass].active
 							   >= YLines[NLines[i].ircclass].maxlinks
 						) {
+							umode_notice(USERMODE_ROUTING, "Routing", format(
+								"Too many links for server %s on class %s; dropping connection.",
+								p[0], NLines[i].ircclass
+							));
 							this.quit("Too many links on this IRC class.");
 							return 0;
 						}
@@ -348,6 +364,7 @@ function Unregistered_Check_User_Registration() {
 					this.uprefix = parse_username(bbsuser.handle);
 					bbsuser.connection = "IRC";
 					bbsuser.logontime = Epoch();
+					this.bbs_usernum = usernum;
 				}
 			}
 		}
@@ -393,10 +410,10 @@ function Unregistered_Welcome() {
 		this.quit("You've been K:Lined from this server.");
 		return 0;
 	}
-	/* FIXME: We don't compare connecting port. */
 	for (i in ILines) {
 		if (   (wildmatch(this.uprefix + "@" + this.ip, ILines[i].ipmask))
 			&& (wildmatch(this.uprefix + "@" + this.hostname, ILines[i].hostmask))
+			&& (!ILines[i].port || ILines[i].port == this.socket.local_port)
 		) {
 			my_iline = ILines[i];
 			break;
@@ -412,8 +429,23 @@ function Unregistered_Welcome() {
 		this.quit("Denied.");
 		return 0;
 	}
+	/* TOCTOU: another connection may have claimed this nick during DNS/auth */
+	if (Users[this.nick.toUpperCase()]) {
+		/* Disconnect any existing IRC session for the same BBS account */
+		if (   this.bbs_usernum
+			&& Users[this.nick.toUpperCase()].bbs_usernum == this.bbs_usernum
+		) {
+			Users[this.nick.toUpperCase()].quit("Replaced by new connection.");
+		} else {
+			this.numeric(433, this.nick + " :Nickname is already in use.");
+			this.quit("Nickname already in use.");
+			return 0;
+		}
+	}
 	Users[this.nick.toUpperCase()] = new IRC_User(this.id);
 	var new_user = Users[this.nick.toUpperCase()];
+	if (this.bbs_usernum)
+		new_user.bbs_usernum = this.bbs_usernum;
 	Local_Users[this.id] = new_user;
 	new_user.socket = this.socket;
 	new_user.socket.irc = new_user;
@@ -522,6 +554,31 @@ function QWK_Master_Authentication(qwkid) {
 
 function Register_Unregistered_Local_Server(unreg, p, nline) {
 	var i, s;
+	var is_uline = false;
+
+	for (i in ULines) {
+		if (ULines[i] == p[0]) {
+			is_uline = true;
+			break;
+		}
+	}
+
+	if (!is_uline) {
+		if (!unreg.their_capab || unreg.their_capab.indexOf("TSJOIN") < 0) {
+			log(LOG_WARNING, format(
+				"[IRCD] %s linked without TSJOIN capability",
+				p[0]
+			));
+			umode_notice(USERMODE_OPER, "Notice", format(
+				"WARNING: %s linked without TSJOIN; it may be running outdated code",
+				p[0]
+			));
+			if (CapabEnforce) {
+				unreg.quit("Missing required TSJOIN capability; upgrade to a current build.");
+				return false;
+			}
+		}
+	}
 
 	if (typeof Servers[p[0].toLowerCase()] !== 'undefined')
 		throw "Trying to overwrite existing server in Register_Unregistered_Local_Server()";
@@ -541,6 +598,7 @@ function Register_Unregistered_Local_Server(unreg, p, nline) {
 	s.id = p[0].toLowerCase();
 	s.flags = nline.flags;
 	s.nick = p[0];
+	s.their_capab = unreg.their_capab || [];
 	s.hostname = unreg.hostname;
 	s.recvq = unreg.recvq;
 	s.sendq = unreg.sendq;
@@ -554,12 +612,7 @@ function Register_Unregistered_Local_Server(unreg, p, nline) {
 			break;
 		}
 	}
-	for (i in ULines) {
-		if (ULines[i] == p[0]) {
-			s.uline = true;
-			break;
-		}
-	}
+	s.uline = is_uline;
 
 	/* Remove the unregistered ping interval and install a new on based on Y:Line */
 	js.clearInterval(unreg.pinginterval);

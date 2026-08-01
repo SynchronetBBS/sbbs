@@ -155,19 +155,21 @@ function remove_kline(kl_hm) {
 
 /* this = cline */
 function Automatic_Server_Connect() {
-	var sock = new Socket();
+	var sock;
 
-	sock.array_buffer = false; /* JS78, we want strings */
-	sock.cline = this;
-	sock.outbound = true;
-
-	if (   Servers[this.servername.toLowerCase()]
-		|| YLines[this.ircclass].active >= YLines[this.ircclass].maxlinks
-	) {
-		umode_notice(USERMODE_ROUTING,"Routing",format(
-			"Deferring connection to %s (%s) because Y:Line maxlinks limit exceeded.",
-			this.servername,
-			this.host
+	if (Servers[this.servername.toLowerCase()]) {
+		/* Already connected - silently reschedule without flooding opers */
+		this.next_connect = js.setTimeout(
+			Automatic_Server_Connect,
+			YLines[this.ircclass].connfreq * 1000,
+			this
+		);
+		return false;
+	}
+	if (YLines[this.ircclass].active >= YLines[this.ircclass].maxlinks) {
+		log(LOG_DEBUG, format(
+			"Deferring connection to %s: Y:Line maxlinks exceeded.",
+			this.servername
 		));
 		this.next_connect = js.setTimeout(
 			Automatic_Server_Connect,
@@ -192,6 +194,11 @@ function Automatic_Server_Connect() {
 	}
 
 	Outbound_Connect_in_Progress = true;
+
+	sock = new Socket();
+	sock.array_buffer = false; /* JS78, we want strings */
+	sock.cline = this;
+	sock.outbound = true;
 
 	umode_notice(USERMODE_ROUTING,"Routing",format(
 		"Auto-connecting to %s (%s) on port %u",
@@ -577,18 +584,31 @@ function Process_Sendq() {
 
 function Queue_Send(sock) {
 	var sent;
+	var yline, limit;
 
 	if (this.queue.length) {
+		this.irc.sent_msgs += this.queue.length;
 		this._send_bytes += this.queue.join('\r\n')+'\r\n';
 		this.queue = [];
 	}
 	if (this._send_bytes.length) {
 		sent = sock.send(this._send_bytes);
 		if (sent > 0) {
+			this.irc.sent_bytes += sent;
 			this._send_bytes = this._send_bytes.substr(sent);
-			if (this._send_bytes.length > 0) {
-				js.setImmediate(Process_Sendq, this);
+		}
+		if (this._send_bytes.length > 0) {
+			yline = this.irc ? YLines[this.irc.ircclass] : null;
+			limit = (yline && yline.sendq) ? yline.sendq : this.limit;
+			if (this._send_bytes.length > limit) {
+				this.irc.quit("Max SendQ exceeded.");
+				return;
 			}
+			/* Back off on a stalled socket to avoid a busy-spin */
+			if (sent > 0)
+				js.setImmediate(Process_Sendq, this);
+			else
+				js.setTimeout(Process_Sendq, 100, this);
 		}
 	}
 }
@@ -1238,8 +1258,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			&& !chan.modelist[CHANMODE_OP][this.id]
 		) {
 			this.numeric(404,
-				format("%s :Can't send to channel (+m: moderated)"),
-				chan.nam
+				format("%s :Can't send to channel (+m: moderated)", chan.nam)
 			);
 			return 0;
 		}
@@ -1248,8 +1267,7 @@ function IRCClient_do_msg(target,type_str,send_str) {
 			&& !chan.modelist[CHANMODE_OP][this.id]
 		) {
 			this.numeric(404,
-				format("%s :Can't send to channel (+b: you're banned!)"),
-				chan.nam
+				format("%s :Can't send to channel (+b: you're banned!)", chan.nam)
 			);
 			return 0;
 		}
@@ -1455,11 +1473,46 @@ function IRCClient_do_stats(statschar) {
 				}
 			}
 			break;
-		case "L": /* FIXME */
-			this.numeric(241,"L <hostmask> * <servername> <maxdepth>");
+		case "L":
+		case "l":
+			if (!(this.mode&USERMODE_OPER)) {
+				this.numeric481();
+				break;
+			}
+			for (i in Local_Users) {
+				this.numeric(211, format(
+					"%s[%s@%s] %u %u %u %u %u %u",
+					Local_Users[i].nick,
+					Local_Users[i].uprefix,
+					Local_Users[i].hostname,
+					Local_Users[i].sendq.size,
+					Local_Users[i].sent_msgs,
+					Local_Users[i].sent_bytes,
+					Local_Users[i].recv_msgs,
+					Local_Users[i].recv_bytes,
+					Epoch() - Local_Users[i].connecttime
+				));
+			}
+			for (i in Local_Servers) {
+				this.numeric(211, format(
+					"%s %u %u %u %u %u %u",
+					Local_Servers[i].nick,
+					Local_Servers[i].sendq.size,
+					Local_Servers[i].sent_msgs,
+					Local_Servers[i].sent_bytes,
+					Local_Servers[i].recv_msgs,
+					Local_Servers[i].recv_bytes,
+					Epoch() - Local_Servers[i].connecttime
+				));
+			}
 			break;
-		case "l": /* FIXME */
-			this.numeric(211,"<linkname> <sendq> <sentmessages> <sentbytes> <receivedmessages> <receivedbytes> <timeopen>");
+		case "P":
+		case "p":
+			if (Default_Port)
+				this.numeric(249, format("Port %u: active (default)", Default_Port));
+			for (i in PLines) {
+				this.numeric(249, format("Port %u: active", PLines[i]));
+			}
 			break;
 		case "M":
 		case "m":
@@ -2620,6 +2673,7 @@ function IRCClient_setusermode(modestr) {
 			case "o":
 				/* Allow +o only by servers or non-local users. */
 				if (add && this.parent &&
+				    Servers[this.parent.toLowerCase()] &&
 				    Servers[this.parent.toLowerCase()].hub)
 					umode.tweak_mode(USERMODE_OPER,true);
 				else if (!add)
@@ -2632,7 +2686,7 @@ function IRCClient_setusermode(modestr) {
 				break;
 			case "A":
 				if ( ((this.mode&USERMODE_OPER) && (this.flags&OLINE_IS_ADMIN))
-					|| (this.parent && Servers[this.parent.toLowerCase()].hub) )
+					|| (this.parent && Servers[this.parent.toLowerCase()] && Servers[this.parent.toLowerCase()].hub) )
 					umode.tweak_mode(USERMODE_ADMIN,add);
 				break;
 			default:
@@ -2754,10 +2808,13 @@ function RBL_Listed_According_to_Config(rbl_object, dns_reply) {
 	var i;
 
 	if (rbl_object.good) {
+		if (!dns_reply)
+			return false; /* not listed at all -- let through */
 		for (i in rbl_object.good) {
 			if (dns_reply == rbl_object.good[i])
-				return false;
+				return false; /* matched a good response -- let through */
 		}
+		return true; /* listed but no good response matched -- block */
 	} else if (rbl_object.bad) {
 		for (i in rbl_object.bad) {
 			if (dns_reply == rbl_object.bad[i])
