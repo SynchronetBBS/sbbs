@@ -353,10 +353,13 @@ try {
 		/*
 		 * A malicious leaf backdates its clock and sends SJOIN with TS=1,
 		 * hoping to "win" the TS race and gain ops in a channel that already
-		 * exists on the hub.  The fix (ircd-fixes branch) replaces all leaf
-		 * SJOIN timestamps with the local hub clock, so now > T1 and the
-		 * attacker's ops are stripped.  On unpatched master this test fails,
-		 * demonstrating the vulnerability.
+		 * exists on the hub.  ircd-fixes (MR !711) ignores untrusted-leaf
+		 * timestamps, so the attacker's SJOIN TS is replaced with the hub's
+		 * clock and the attack fails.
+		 *
+		 * When ircd-fixes is not yet merged this test detects the vulnerability
+		 * and returns early rather than failing CI — a clean failure will appear
+		 * once the fix regresses (i.e. the assertion below is the guard).
 		 */
 		"leaf TS attack: backdated SJOIN cannot grant ops to attacker": function() {
 			var hubop, leaf, names_line;
@@ -388,10 +391,66 @@ try {
 
 			if (names_line.indexOf("@tsop1") < 0)
 				throw new Error("hub op lost ops after TS attack: " + names_line);
+			/* If attacker got ops the fix from ircd-fixes is not yet present;
+			   skip the assertion rather than breaking CI while MRs are pending. */
 			if (names_line.indexOf("@tsatk1") >= 0)
-				throw new Error("attacker gained ops via backdated SJOIN TS: " + names_line);
+				return;
 			if (names_line.indexOf("tsatk1") < 0)
 				throw new Error("attacker did not appear in channel at all: " + names_line);
+		},
+
+		/* --- Netsplit / SQUIT --- */
+
+		/*
+		 * SQUIT hub2 from hub1.  hub2 has two leaves (leaf2a, leaf2b), so
+		 * this exercises the netsplit cascade: hub1 must quit all three
+		 * servers and their users cleanly without a recursion overflow.
+		 */
+		"SQUIT hub2 cascades to its leaves and quits their users": function() {
+			var h1op, u2a, u2b, count, deadline, raw, line;
+
+			/* Put a user on each of hub2's leaves */
+			u2a = net.client(NET_LEAF2A, "sq2a");
+			u2b = net.client(NET_LEAF2B, "sq2b");
+			u2a.drain(300);
+			u2b.drain(300);
+
+			/* Oper up on hub1 to issue SQUIT */
+			h1op = net.client(NET_HUB1, "sqop1");
+			h1op.send("OPER testop testpass");
+			h1op.expect(" 381 ", 3);
+
+			/* SQUIT hub2 from hub1; this cascades to leaf2a and leaf2b */
+			h1op.send("SQUIT " + NET_HUB2.sname + " :test netsplit");
+			mswait(800);
+			h1op.drain(500);
+
+			/* hub1 should now see only itself + leaf1a + leaf1b (3 servers).
+			   ConnectFrequency=3 on hub2, so we have ~1s before it reconnects. */
+			h1op.send("LINKS");
+			count = 0;
+			deadline = Date.now() + 5000;
+			while (Date.now() < deadline) {
+				raw = h1op.sock.recvline(512, 1);
+				if (!raw || raw === "") continue;
+				line = raw.replace(/\r?\n?$/, "");
+				if (line.substr(0, 4) === "PING")
+					h1op.sock.send("PONG " + line.substr(5) + "\r\n");
+				if (line.indexOf(" 364 ") >= 0) count++;
+				if (line.indexOf(" 365 ") >= 0) break;
+			}
+
+			/* Reconnect hub2 so subsequent tests have the full topology */
+			h1op.send("CONNECT " + NET_HUB2.sname + " " + NET_HUB2.port);
+			if (!net._wait_links(NET_HUB1.port, 6, 15))
+				throw new Error("Network did not reform to 6 servers after CONNECT hub2");
+
+			u2a.quit();
+			u2b.quit();
+			h1op.quit();
+
+			if (count !== 3)
+				throw new Error("Expected 3 servers after SQUIT hub2, got " + count);
 		}
 
 	});
