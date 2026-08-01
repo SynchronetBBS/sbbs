@@ -359,6 +359,16 @@
 - When a remote server refuses a link, its `ERROR` reply is now
   logged and reported to opers with the reason, rather than being
   answered with "You have not registered"
+- The IRCd refuses a server link that uses its own server name, and
+  reports (rather than dials) a `[Server]` section naming itself.
+  Such a link exhausted the JavaScript stack and terminated the
+  IRCd the moment it dropped
+- `ircd.ini` supports the same `SYSTEM_HOST_NAME`, `SYSTEM_NAME`,
+  `SYSTEM_QWKID` and `VERSION_NOTICE` macros as `ircd.conf`, and
+  `ircd_conf2ini.js` and `ircdcfg.js` preserve them. Previously a
+  conversion or a save replaced them with the running host's
+  values, renaming the server on any host that sets its own with
+  `jsexec -h`
 - The stock `ctrl/ircd.ini` no longer ships with active server
   links to vert and cvs, which made a fresh install dial out to
   both every few minutes with a placeholder password. Its
