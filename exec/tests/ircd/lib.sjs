@@ -80,10 +80,16 @@ IrcdTestServer.prototype.start = function() {
 	 * and returns captured stdout lines.  The trailing "& echo $!" makes the
 	 * shell return immediately after printing the child PID.
 	 */
+	/*
+	 * -a is required: without it the IRCd binds both 0.0.0.0 and ::, which
+	 * collide (EADDRINUSE) wherever net.ipv6.bindv6only is 0 -- the default
+	 * on Linux.  Tests only ever talk to IRCD_TEST_HOST anyway.
+	 */
 	var cmd = jsexec
 		+ " -c " + ctrl
 		+ " " + ircd
 		+ " -f " + this.config_path
+		+ " -a " + IRCD_TEST_HOST
 		+ " </dev/null >>" + this.log_path + " 2>&1"
 		+ " & echo $!";
 
@@ -355,6 +361,7 @@ IrcdTestNetwork.prototype._start_one = function(srv, server_sections) {
 	var ctrl   = system.ctrl_dir;
 	cmd = jsexec + " -c " + ctrl + " " + ircd
 		+ " -f " + cfg
+		+ " -a " + IRCD_TEST_HOST	/* see IrcdTestServer.start() */
 		+ " </dev/null >>" + log + " 2>&1"
 		+ " & echo $!";
 
