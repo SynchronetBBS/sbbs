@@ -1,0 +1,10 @@
+# Toolchain output. The shipped bundle HERMedIT.js at the door root IS
+# tracked, so installing needs no Node; these are only produced when a sysop
+# rebuilds from src/, and should never dirty the Synchronet working tree.
+node_modules/
+build/
+dist/
+
+# editor/OS noise
+.DS_Store
+*.swp

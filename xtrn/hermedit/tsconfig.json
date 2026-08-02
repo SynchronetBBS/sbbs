@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    /* --- Target: Synchronet's SpiderMonkey 1.8.5 (ES5, verified via jsexec) --- */
+    "target": "ES5",
+    /* TS 6/7 deprecate ES5 emit; typescript is pinned to ~5.9 (package.json).
+       Same rationale as fshell_ts: if the toolchain must move past 5.x, switch
+       target to ES2015+ and add an ES5-lowering stage in scripts/bundle.mjs. */
+    /* lib ES5 only: the type-checker rejects Map/Set/Promise/Object.assign etc.
+       that don't exist in the BBS runtime. */
+    "lib": ["ES5"],
+
+    "module": "ES2015",
+    "moduleResolution": "bundler",
+    "importHelpers": true,
+    "skipLibCheck": true,
+
+    "strict": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["src/**/*.ts", "types/**/*.d.ts", "test/**/*.ts"]
+}
