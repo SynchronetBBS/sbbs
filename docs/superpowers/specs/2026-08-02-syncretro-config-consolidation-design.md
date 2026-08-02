@@ -258,7 +258,7 @@ An existing install's `syncretro.ini` is untracked **and ignored**. The commit
 that lands this both removes the ignore line and adds a tracked file of that
 name, which is the first row of the §2 table: **silently overwritten, exit 0**.
 
-So the instruction, in the release notes and in each package's `README.md`:
+So the instruction, in each package's `README.md`:
 
 > Before pulling, rename your `xtrn/<console>/syncretro.ini` to
 > `syncretro.local.ini`. It keeps working unchanged — a full config as an
@@ -304,7 +304,9 @@ acceptable; it would not be at a hundred.
   migration line
 - `src/doors/syncretro/GAMES_INI.md` — §14 restated in terms of the now-uniform
   rule
-- `docs/v322_new.md` — sysop-visible config change plus the migration step
+
+No `docs/v322_new.md` entry: SyncRetro did not ship in v3.21, so the release
+notes cover its debut, not a change to a scheme no released version had.
 
 ## Follow-on
 
