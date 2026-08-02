@@ -512,23 +512,33 @@ FreeBSD box without a TPM are in the same position.
 
 | Facility | Where it comes from | Unattended? | Fit for one service key |
 |---|---|---|---|
-| DPAPI (`CryptProtectData`, machine scope) | Windows, base | yes | Good. Not a store — it returns a blob you save yourself. Machine scope means *any* local process can unprotect it, so it defends a stolen file, not a local attacker. |
-| Credential Manager (`CredWrite`) | Windows, base | per-account | Workable. A real store, per-user, with a per-item blob limit of a few kilobytes. Fine for one key, useless in bulk. |
-| CNG / DPAPI-NG (`NCryptProtectSecret`) | Windows, base | yes | Good, and scriptable to SID-based descriptors. Newer, less familiar. |
+| DPAPI (`CryptProtectData`, machine scope) | Windows XP / Server 2003 and later | yes | Good. Not a store — it returns a blob you save yourself. Machine scope means *any* local process can unprotect it, so it defends a stolen file, not a local attacker. |
+| Credential Manager (`CredWrite`) | Windows XP / Server 2003 and later | per-account | Workable. A real store, per-user, with a small per-item blob limit — ample for one key, useless in bulk. |
+| CNG / DPAPI-NG (`NCryptProtectSecret`) | Windows 8 / Server 2012 and later | yes | Good, and scriptable to SID-based descriptors. Desktop apps only, and the newest of the three. |
 | System Keychain | macOS, base | yes | Good. Daemons can read system-keychain items without a login session. |
 | `systemd-creds` + `LoadCredentialEncrypted=` | systemd (preinstalled on mainstream Linux) | yes | **Best fit where present.** Host-bound, optionally TPM2-sealed, delivered into `$CREDENTIALS_DIRECTORY` at unit start with no operator. systemd 250+. |
 | TPM2 sealing | hardware + `tpm2-tss`, a package or port on Linux **and** the BSDs | yes | Good, with a caveat: sealed data is bound to the machine, so restoring a backup onto new hardware loses the key and every password with it. |
 | Kernel keyring (`add_key`/`keyctl`) | Linux kernel | **no** | **Wrong tool.** In-memory and does not survive a reboot, so something must re-provision it at every boot — which is the original problem. Quotas are small besides. |
 | A key file, variously protected | anywhere | yes | Not one option but a range — see "Between a plain file and a TPM". |
 
+The Windows minimums above are from the API documentation:
+`CryptProtectData` and `CredWriteW` are Windows XP / Server 2003, and
+`NCryptProtectSecret` is Windows 8 / Server 2012, desktop apps only. Since the
+MSVC project targets the Windows 10 SDK (`WindowsTargetPlatformVersion 10.0`,
+toolset v143), all three are available on any Windows a current Synchronet
+build runs on, and the choice between them is not a version question. One
+caveat that is not one here: DPAPI's interactive `CRYPTPROTECT_PROMPTSTRUCT`
+flow is deprecated for removal in February 2027, but an unattended service
+passes `NULL` and takes the non-interactive path, which is unaffected.
+
 Measured on one Debian 13 host while writing this: `systemd 257`,
 `systemd-creds` present, `/dev/tpm0` and `/dev/tpmrm0` available. The kernel
 keyring's per-user quotas on that same host are `maxkeys` **200** and
 `maxbytes` **20000** (`/proc/sys/kernel/keys/`), ample for one key — but its
 lack of persistence across reboot is what disqualifies it, not its size. Every
-other row is from documentation rather than measurement, and the Windows,
-macOS and BSD entries should be confirmed by someone running those systems
-before anything is built.
+other row is from documentation rather than measurement, and the macOS and BSD
+entries should be confirmed by someone running those systems before anything is
+built.
 
 **The portable design does not name any of them.** Synchronet reads the key
 from a location the sysop configures; how that location is protected is the
