@@ -611,7 +611,11 @@ disabled by default.
 Those are host types BBSes actually run on, so the fallback is not
 hypothetical — but it is a minority, not the default, and the strongest
 configuration is available to more sysops than this document previously
-implied.
+implied. How small a minority is contested: the view that essentially every
+sysop has a TPM, and that the Raspberry-Pi-and-stranger-hardware population is
+a special case rather than a design constraint, is a reasonable reading of the
+same facts. It would make the file fallback a compatibility path rather than
+something the design has to be shaped around.
 
 Several of these get cheaper depending on a decision this design already has to
 make. **A new or additional crypto library is likely part of this work** — the
@@ -695,6 +699,13 @@ account on this BBS is in the leaked file — and that user cannot tell a BBS
 that hashes from one that does not. There is no banner, no protocol signal,
 nothing observable at login. Making it optional therefore assigns the decision
 to the one party that bears none of the consequence.
+
+The invisibility is not a gap to be filled, and no protocol signal should be
+invented for it. A user who cared about this already uses a distinct password
+per system and is unaffected either way. The design exists for the users who do
+not — who reuse a password across a dozen systems and will never think about
+it — and telling them which BBS hashes would change nothing about what they
+type.
 
 Two supporting arguments:
 
@@ -1282,10 +1293,13 @@ full cycle.
 
 ### Scrubbing existing copies
 
-Migration is incomplete until the existing cleartext copies are dealt with. A
-BBS keeps several of its own, without the sysop doing anything: on one system
-surveyed there were **seven** additional full copies of the cleartext password
-database beside the live one.
+Migration is incomplete until the existing cleartext copies are dealt with.
+
+This is also why the threat model does not depend on the sysop keeping
+backups, and it would survive the observation that many do not. **The BBS makes
+the copies itself, daily, without being asked.** On one system surveyed there
+were **seven** additional full copies of the cleartext password database beside
+the live one, none of them a deliberate backup.
 
 ```
 data/user/user.0.tab  ...  data/user/user.4.tab   (daily rotation)
@@ -1461,9 +1475,47 @@ sets a password from the command line (`makeuser.c:175`), so it must be able to
 run the KDF. Putting the KDF behind cryptlib drags cryptlib into every utility
 that touches the user database, on all three toolchains.
 
-**Judge candidates on more than the KDF.** A library added for this work also
+**Most of this question is already answered in the tree.** An earlier draft
+posed it as a choice to be made from scratch, which it is not.
+
+`src/xptls/` provides **`xp_crypt`**, a portable crypto abstraction with three
+backends — Botan 3 (`xp_crypt_botan3.cpp`), OpenSSL (`xp_crypt_openssl.c`) and
+a null one — whose outputs are byte-compatible with each other by design.
+`xp_crypt.h:66` already declares a KDF interface:
+
+```c
+enum xp_crypt_kdf {
+    XP_CRYPT_KDF_PBKDF2_HMAC_SHA256 = 1,
+    XP_CRYPT_KDF_SCRYPT             = 2,
+    /* XP_CRYPT_KDF_ARGON2ID future — gated on OpenSSL 3.2+ / Botan support */
+```
+
+So a password KDF, a memory-hard alternative in scrypt, and a placeholder for
+Argon2id all exist, behind an interface that is already portable across the
+compilers this project ships on.
+
+The libraries are in place too. **Botan 3 is vendored** as
+`3rdp/dist/Botan.tar.xz`, built only when the probe in `Common.gmake` finds
+neither system Botan 3.6+ nor OpenSSL 3.0+ (`3rdp/build/GNUmakefile:61-70`), so
+a build already resolves to one of Botan or OpenSSL on every platform. Neither
+is a new dependency to argue for.
+
+What is left is therefore narrower than "choose a library":
+
+- **Adding Argon2id** to the enum and both backends, or deciding that scrypt is
+  sufficient. The comment already names the gate: OpenSSL 3.2+ or Botan
+  support.
+- **Linking `xp_crypt` where the user database is touched.** It is consumed by
+  SyncTERM and the SSH code today, not by sbbs3, so the linkage constraint
+  above is the real work: `sbbsecho` and `makeuser` must be able to run the
+  KDF.
+- **Deciding what covers the other three criteria** below, since `xp_crypt`
+  today is KDF and symmetric encryption — not key wrapping, memory hygiene or
+  a hardware path.
+
+**Judge candidates on more than the KDF.** Whatever supplies the remainder also
 determines how cheaply the key-protection rungs under "Between a plain file and
-a TPM" can be climbed, so the selection criteria are at least four:
+a TPM" can be climbed, so the criteria are at least four:
 
 1. A modern password KDF — Argon2id, or PBKDF2 at minimum.
 2. **Authenticated key wrapping**, so the master key can be stored encrypted
@@ -1489,14 +1541,20 @@ The candidates, against those and against the linkage constraint:
   `sbbsdefs.mk`), provides PBKDF2, and already implements criterion 2 in the
   form this tree uses for the TLS private key (`ssl.c:480-482`). See the
   linkage problem above.
-- **libsodium.** Argon2id, authenticated wrapping, and the memory-hygiene
-  primitives as first-class API (locked and guarded allocation, zeroization).
-  Small, portable to MSVC, GCC and Clang, and linkable into the utilities. No
-  hardware path.
-- **OpenSSL.** Everything including criterion 4 through its provider interface,
-  at the cost of a large dependency and the `SHA256_CTX` clash noted above.
-- **A vendored Argon2.** The KDF alone, nothing else. New third-party code in
-  `3rdp/`, buildable everywhere and linkable into the utilities.
+- **Botan 3, through `xp_crypt`.** Already vendored and already wrapped.
+  Provides KDFs, authenticated ciphers for criterion 2, and
+  `Botan::secure_vector` for criterion 3. PKCS#11 support exists in the
+  library.
+- **OpenSSL, through `xp_crypt`.** The other existing backend, and the one the
+  build prefers when the system has 3.0+. Covers criterion 4 through its
+  provider interface — the route by which a TPM or token becomes configuration
+  rather than code — at the cost of the `SHA256_CTX` clash noted above.
+- **libsodium.** Argon2id and the memory-hygiene primitives as first-class API,
+  small and portable. Would be a *third* crypto library in a tree that already
+  carries two, which is the argument against it rather than any technical
+  shortcoming.
+- **A vendored Argon2.** The KDF alone, nothing else, and redundant if Argon2id
+  reaches `xp_crypt` through either existing backend.
 
 Whichever is chosen, the self-describing record format means the choice is not
 permanent for *existing* records — it is permanent only for how long the tree
