@@ -480,6 +480,9 @@
 - `jsexec` and `jsdoor` now ship with auto-generated object/API
   documentation; `jsexec`-only globals no longer leak into
   `jsobjs.html`
+- `File.iniGetAllObjects()` is much faster on a file with many
+  sections — it no longer re-scans the whole file once per
+  section (30x faster on a 4700-section `.ini`)
 - `File.md5_base64` fix: was encoding 20 bytes instead of 16 (a
   28-character result with 4 bytes of uninitialized memory appended)
   since v3.19

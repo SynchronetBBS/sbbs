@@ -1421,23 +1421,24 @@ js_iniSetObject(JSContext *cx, uintN argc, jsval *arglist)
 static JSBool
 js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 {
-	JSObject *       obj = JS_THIS_OBJECT(cx, arglist);
-	jsval *          argv = JS_ARGV(cx, arglist);
-	const char *     name_def = "name";
-	char*            name = (char *)name_def;
-	char*            sec_name;
-	char*            prefix = NULL;
-	char**           sec_list;
-	str_list_t       ini;
-	jsint            i, k;
-	jsval            val;
-	JSObject*        array;
-	JSObject*        object;
-	private_t*       p;
-	named_string_t** key_list;
-	jsrefcount       rc;
-	bool             lowercase = false;
-	bool             blanks = false;
+	JSObject *         obj = JS_THIS_OBJECT(cx, arglist);
+	jsval *            argv = JS_ARGV(cx, arglist);
+	const char *       name_def = "name";
+	char*              name = (char *)name_def;
+	char*              sec_name;
+	char*              prefix = NULL;
+	char**             sec_list;
+	str_list_t         ini;
+	jsint              i, k;
+	jsval              val;
+	JSObject*          array;
+	JSObject*          object;
+	private_t*         p;
+	named_string_t**   key_list;
+	named_str_list_t** parsed;
+	jsrefcount         rc;
+	bool               lowercase = false;
+	bool               blanks = false;
 
 	JS_SET_RVAL(cx, arglist, JSVAL_NULL);
 
@@ -1482,6 +1483,10 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 
 	rc = JS_SUSPENDREQUEST(cx);
 	ini = iniReadFiles(p->fp, /* includes: */ true);
+	/* Parsed once into per-section lists, rather than looking each section up in
+	 * the whole file: that lookup is a scan from the top, so doing it per section
+	 * costs O(sections * lines) -- two seconds on a 4700-section file. */
+	parsed = iniParseSections(ini);
 	sec_list = iniGetSectionList(ini, prefix);
 	JS_RESUMEREQUEST(cx, rc);
 	for (i = 0; sec_list && sec_list[i]; i++) {
@@ -1496,7 +1501,10 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 		                  , NULL, NULL, JSPROP_ENUMERATE);
 
 		rc = JS_SUSPENDREQUEST(cx);
-		key_list = iniGetNamedStringList(ini, sec_list[i]);
+		/* cut: the section is wanted once, and removing it shortens every
+		 * remaining lookup. */
+		key_list = iniGetNamedStringList(iniGetParsedSection(parsed, sec_list[i], /* cut: */ true)
+		                                 , ROOT_SECTION);
 		JS_RESUMEREQUEST(cx, rc);
 		for (k = 0; key_list && key_list[k]; k++) {
 			if (lowercase)
@@ -1518,6 +1526,7 @@ js_iniGetAllObjects(JSContext *cx, uintN argc, jsval *arglist)
 	if (name != name_def)
 		free(name);
 	iniFreeStringList(sec_list);
+	iniFreeParsedSections(parsed);
 	iniFreeStringList(ini);
 	JS_RESUMEREQUEST(cx, rc);
 
