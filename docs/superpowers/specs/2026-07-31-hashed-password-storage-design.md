@@ -330,10 +330,13 @@ credential is and whether a key exists.
 There is also a **hard constraint from the sysop side**, recorded here as a
 requirement rather than a preference: any encryption scheme that requires an
 operator to type a key at startup is infeasible. A BBS restarts when the
-machine does, unattended, at three in the morning. A design that will not come
-back up on its own is not a candidate, however good its cryptography. That
-rules out the passphrase-at-startup variant immediately and leaves the key in
-an OS facility or a file — see "Where the key would actually live".
+machine does, unattended, at three in the morning, and every sysop wants that.
+Note what this does *not* conflict with — a TPM is read by the machine, so
+unattended startup and hardware-backed key protection are compatible, not
+opposed. What it rules out is the passphrase-at-startup variant, and only that:
+a design that will not come back up on its own is not a candidate however good
+its cryptography. The key therefore lives in an OS facility, a TPM, or a file
+— see "Where the key would actually live".
 
 ### The two sides, side by side
 
@@ -516,7 +519,7 @@ FreeBSD box without a TPM are in the same position.
 | `systemd-creds` + `LoadCredentialEncrypted=` | systemd (preinstalled on mainstream Linux) | yes | **Best fit where present.** Host-bound, optionally TPM2-sealed, delivered into `$CREDENTIALS_DIRECTORY` at unit start with no operator. systemd 250+. |
 | TPM2 sealing | hardware + `tpm2-tss`, a package or port on Linux **and** the BSDs | yes | Good, with a caveat: sealed data is bound to the machine, so restoring a backup onto new hardware loses the key and every password with it. |
 | Kernel keyring (`add_key`/`keyctl`) | Linux kernel | **no** | **Wrong tool.** In-memory and does not survive a reboot, so something must re-provision it at every boot — which is the original problem. Quotas are small besides. |
-| A mode-0600 file | anywhere | yes | The floor, and the honest default. Protects against a stolen backup or a wrongly-permissioned share; not against a local attacker who can read it. |
+| A key file, variously protected | anywhere | yes | Not one option but a range — see "Between a plain file and a TPM". |
 
 Measured on one Debian 13 host while writing this: `systemd 257`,
 `systemd-creds` present, `/dev/tpm0` and `/dev/tpmrm0` available. The kernel
@@ -529,18 +532,98 @@ before anything is built.
 
 **The portable design does not name any of them.** Synchronet reads the key
 from a location the sysop configures; how that location is protected is the
-sysop's decision and their platform's business. A file is the floor and works
-everywhere; a sysop who wants DPAPI, a Keychain item, `systemd-creds` or a
-TPM-sealed blob supplies the key through that mechanism instead. Writing the
-design against one platform's facility is what produced the false asymmetry in
-the first place.
+sysop's decision and their platform's business. A sysop who wants DPAPI, a
+Keychain item, `systemd-creds` or a TPM-sealed blob supplies the key through
+that mechanism instead. Writing the design against one platform's facility is
+what produced the false asymmetry in the first place.
+
+### Between a plain file and a TPM
+
+An earlier draft described the fallback as "a mode-0600 file" and treated it as
+the floor, as though the only alternative to a TPM were a secret sitting in the
+open. That is a false binary. There is a wide range in between, most of it
+portable, cheap, and available to Synchronet today.
+
+The rungs are not degrees of cryptographic strength. They are about **which
+adversary each one defeats**, and the three that matter here are different
+people: someone holding a backup, a compromised BBS process, and someone with
+the machine in front of them.
+
+| Measure | Defeats | Cost |
+|---|---|---|
+| Mode-0600 file owned by the BBS user | a wrongly-permissioned share | none — and it stops nothing else, since anything running as that user reads it |
+| **Have the supervisor hand the key over** | **anything running as the BBS user that is not the BBS itself** | none; `LoadCredential=` on systemd, service-account ACLs on Windows |
+| Store it outside the installation tree | **a backup or a copy of `data/`** | none; orthogonal to permissions |
+| Passphrase-protected cryptlib keyset | offline use of a stolen key file | small; already done in-tree for the TLS key (`ssl.c:480-482`, `:548-549`) |
+| Mix in a machine-bound value (system UUID, disk serial) | **a backup restored onto other hardware** | small; does not stop someone with the machine |
+| `mlock()` the key in memory | the key reaching swap and then the disk | small |
+| OS facility, then TPM sealing | a local attacker, then physical access | package, or hardware |
+
+Two of those deserve emphasis because they cost nothing and are the largest
+steps available:
+
+- **Having the supervisor hand the key over** keeps it out of the filesystem
+  the BBS user can read at all. Synchronet does not usually run as root on
+  Linux: the packaged unit runs `User=sbbs` with
+  `AmbientCapabilities=CAP_NET_BIND_SERVICE` (`install/systemd/sbbs.service`),
+  so there is no privilege to drop and no window in which a root-owned file
+  could be read. `do_setuid()`/`do_seteuid()` (`sbbscon.c:378`, `:336`) exist
+  for the case where it *is* started as root, which is the older arrangement
+  and still current on systems without ambient capabilities — there, reading
+  the key before the drop achieves the same thing.
+
+  Under the capabilities model the equivalent comes from outside the process:
+  systemd's `LoadCredential=` / `LoadCredentialEncrypted=` has *systemd* read
+  the key as root and place it in a tmpfs readable only by this service,
+  exposed as `$CREDENTIALS_DIRECTORY`. The BBS never needs privilege, and the
+  source file stays unreadable to the `sbbs` user. Windows has the same shape
+  through a service account and an ACL, or a DPAPI blob protected to it.
+
+  Be precise about what this buys: it does not stop a live compromise of the
+  process holding the key, which has the key by definition. It stops offline
+  reading — a backup, a stolen disk, a file-disclosure bug, or any *other*
+  process running as `sbbs`.
+- **Keeping the key out of the installation tree** aims directly at this
+  document's threat model, which is a *copy of the file*. Backups take the BBS
+  directory; a key elsewhere is not in them.
+
+**How often does the no-TPM case actually arise?** Less often than an earlier
+draft assumed, and unattended startup does not conflict with having one — a
+TPM is read by the machine, not by a person, so the two requirements are
+compatible rather than opposed. Windows 11 requires TPM 2.0 outright, most x86
+hardware since roughly 2016 ships a firmware TPM (Intel PTT, AMD fTPM) even
+where no discrete chip exists, and macOS has the Secure Enclave behind the
+Keychain. The genuine gaps are narrower and specific: single-board computers
+such as the Raspberry Pi, many small VPS instances where the provider exposes
+no virtual TPM, older hardware, and machines whose firmware TPM is present but
+disabled by default.
+
+Those are host types BBSes actually run on, so the fallback is not
+hypothetical — but it is a minority, not the default, and the strongest
+configuration is available to more sysops than this document previously
+implied.
+
+Several of these get cheaper depending on a decision this design already has to
+make. **A new or additional crypto library is likely part of this work** — the
+KDF has to come from somewhere — and the libraries under consideration bring
+key-wrapping, memory-locking and zeroization, and in some cases a PKCS#11 or
+provider path that turns "use a TPM or a token" into configuration rather than
+per-platform code. So the library should be chosen partly on what it offers
+*here*, not only on which KDF it exposes. That is folded into the selection
+criteria under "The crypto library has to be chosen before anything is built on
+it".
+
+The chain does terminate somewhere in something an unattended process can read
+— that is what the no-operator-at-startup constraint means, and no arrangement
+escapes it. The question is not whether a final secret exists but how much an
+attacker must already have in order to reach it, and these rungs separate
+adversaries that a plain file lumps together.
 
 What remains a real cost:
 
-- **The floor is a file**, and some installations will run on it, because that
-  is what happens when the better option needs hardware or a package the sysop
-  does not have. A design has to be honest that this is the common case, not
-  the fallback nobody uses.
+- **Some installations will run on a key file**, because the better option
+  needs hardware or a package the sysop does not have. How many is addressed
+  below, and it is fewer than an earlier draft claimed.
 - **Multi-host installations provision, they do not federate.** The answer to
   several hosts sharing one user database is to install the same secret on each
   — an ordinary step, of the same kind as installing a TLS private key, which
@@ -620,9 +703,12 @@ The consequences are real and belong in the same breath as the decision:
   one; nothing like it exists in the tree today, and none is added. The digest
   mechanisms are removed outright rather than gated, which is less work than
   gating them, but it means there is no escape hatch for a cautious sysop.
-- **IMAP on port 143 breaks at upgrade** for CRAM-MD5 clients. That promotes
-  STARTTLS or IMAPS from an open question to a hard prerequisite: it must ship
-  before the deprecation, not alongside it.
+- **CRAM-MD5 clients break at upgrade** and must move to a TLS port. The
+  server-side work for that is largely done — `[IMAPS]` on 993, `TLSPOP3Port`
+  995 and `TLSSubmissionPort` 465 all ship — so the prerequisite is enabling
+  and documenting them rather than building them. What does not follow is that
+  every affected client can *use* them; see "Removing a mechanism can lower a
+  user's security".
 - **There is no rollback.** A sysop who upgrades and finds a mail client broken
   cannot revert, because the cleartext is gone by then. That is precisely why
   the transport prerequisite is not negotiable, and why migration has to be
@@ -653,11 +739,36 @@ offline. The affected mechanisms:
 |---|---|---|
 | SMTP CRAM-MD5 | `mailsrvr.cpp:4472` | removed |
 | POP3 APOP | `mailsrvr.cpp:1397` | removed |
-| IMAP CRAM-MD5 | `imapservice.js:961-1007` | removed; needs the transport work first |
+| IMAP CRAM-MD5 | `imapservice.js:961-1007` | removed; users move to the `[IMAPS]` listener that already ships |
 | HTTP Digest | `websrvr.cpp:1918` | removed (see Open questions) |
 | Hotline | `hotline.js:982-1020` | breaks; password is used as key material |
 | MQTT broker PSK | `broker.js:2665`, `mqtt_broker.cpp:86-116` | breaks; enumerates sysop passwords |
 | IRC door `PASS` | `irc.js:94,140` | breaks; hands password to the IRC server |
+
+### The precedent: this is the choice Google made
+
+The question that started this analysis was how large providers support digest
+authentication without holding cleartext. The answer is that **they do not
+support it.** Gmail's IMAP, POP3 and SMTP servers offer `XOAUTH2` and plain
+credentials over TLS; CRAM-MD5, DIGEST-MD5 and APOP are absent. Faced with the
+same theorem — a server that verifies an HMAC keyed by the password must be
+able to produce the password — the largest mail provider in the world dropped
+the mechanisms rather than keep the passwords recoverable.
+
+Their replacement for the clients that cannot do OAuth is worth noting, because
+this document proposes the same shape elsewhere. An **app password** is a
+16-character credential that Google generates, scoped to one application or
+device, revocable individually, and automatically invalidated when the account
+password changes. It is not the user's password, it is never typed as one, and
+it exists on exactly one system. That is the API-key pattern recommended under
+"The MQTT case", arrived at independently by someone with the same constraint.
+
+Two honest limits on the precedent. Google can require 2-Step Verification as a
+precondition for app passwords and can afford to break clients that do not
+comply, which a hobby BBS cannot. And their scale makes an at-rest breach a
+different kind of event, so their weighing of the trade under "Which threat is
+worse" is not automatically Synchronet's. It remains the case that the industry
+answer to "keep digest auth or hash the passwords" was to hash the passwords.
 
 A **hybrid** — hashed storage generally, with an encrypted copy kept "for
 sysops who still want CRAM-MD5" — was considered and rejected. Any user whose
@@ -1340,7 +1451,19 @@ sets a password from the command line (`makeuser.c:175`), so it must be able to
 run the KDF. Putting the KDF behind cryptlib drags cryptlib into every utility
 that touches the user database, on all three toolchains.
 
-The candidates, against that constraint:
+**Judge candidates on more than the KDF.** A library added for this work also
+determines how cheaply the key-protection rungs under "Between a plain file and
+a TPM" can be climbed, so the selection criteria are at least four:
+
+1. A modern password KDF — Argon2id, or PBKDF2 at minimum.
+2. **Authenticated key wrapping**, so the master key can be stored encrypted
+   under something else rather than in the open.
+3. **Memory hygiene primitives** — locking a buffer out of swap, guaranteed
+   zeroization that the optimizer cannot remove, guarded allocation.
+4. **A path to hardware**, via PKCS#11 or a provider interface, so "use a TPM
+   or a token" becomes configuration rather than per-platform code.
+
+The candidates, against those and against the linkage constraint:
 
 - **Extend `src/hash/`.** No new dependency, and it is already linked exactly
   where it is needed. `md5.c`, `sha1.c` and `sha256.c` are public-domain
@@ -1350,16 +1473,25 @@ The candidates, against that constraint:
   consumers individually, and `smblib.vcxproj` compiles only `md5.c` (`:222`)
   and `sha1.c` (`:223`) — and `mail_dkim.c:34` documents a `SHA256_CTX` type
   clash between this `sha256.h` and OpenSSL's, which any password code sharing
-  a translation unit with libcrypto will hit. Gets PBKDF2 and nothing stronger.
+  a translation unit with libcrypto will hit. Satisfies criterion 1 at PBKDF2
+  and none of the others.
 - **cryptlib.** Mandatory for the servers already (`-DUSE_CRYPTLIB` in
-  `sbbsdefs.mk`) and provides PBKDF2, but see the linkage problem above.
-- **A vendored Argon2.** The only route to a memory-hard KDF, which is the
-  meaningful upgrade over PBKDF2 for P2. New third-party code in `3rdp/`,
-  buildable on MSVC, GCC and Clang, and linkable into the utilities.
+  `sbbsdefs.mk`), provides PBKDF2, and already implements criterion 2 in the
+  form this tree uses for the TLS private key (`ssl.c:480-482`). See the
+  linkage problem above.
+- **libsodium.** Argon2id, authenticated wrapping, and the memory-hygiene
+  primitives as first-class API (locked and guarded allocation, zeroization).
+  Small, portable to MSVC, GCC and Clang, and linkable into the utilities. No
+  hardware path.
+- **OpenSSL.** Everything including criterion 4 through its provider interface,
+  at the cost of a large dependency and the `SHA256_CTX` clash noted above.
+- **A vendored Argon2.** The KDF alone, nothing else. New third-party code in
+  `3rdp/`, buildable everywhere and linkable into the utilities.
 
 Whichever is chosen, the self-describing record format means the choice is not
 permanent for *existing* records — it is permanent only for how long the tree
-carries the loser.
+carries the loser. The key-protection facilities are the part that is harder to
+revisit, which is why they belong in the decision rather than after it.
 
 ## What this delivers
 
@@ -1402,10 +1534,15 @@ Steps 1 and 2 are prerequisites in the strict sense: because the change is
 mandatory and there is no rollback, they must ship *before* the storage change
 reaches a sysop, not alongside it.
 
-1. **Transport.** Add STARTTLS to `imapservice.js`, or an IMAPS listener, so
-   port 143 has a usable authentication path once CRAM-MD5 is gone. This is
-   necessary and not sufficient — see "Removing a mechanism can lower a user's
-   security" for what it does not cover.
+1. **Transport.** Smaller than an earlier draft claimed: the TLS listeners
+   already ship. `ctrl/services.ini` defines `[IMAPS]` on 993 with
+   `Options=TLS`, and `ctrl/sbbs.ini` defines `TLSSubmissionPort = 465` and
+   `TLSPOP3Port = 995`. What remains is to enable and document them —
+   `[IMAP]` and `[IMAPS]` both ship `Enabled=false` — and to decide what the
+   cleartext ports do afterwards. STARTTLS on 143 still does not exist and is
+   optional if 993 is the answer. This is necessary and not sufficient either
+   way; see "Removing a mechanism can lower a user's security" for what no
+   amount of server-side transport work covers.
 2. **Choose the crypto library** against the linkage constraint in Constraints,
    and land whatever build work it implies — including the MSVC `sha256.c` gap
    if `src/hash/` wins.
@@ -1433,8 +1570,8 @@ reaches a sysop, not alongside it.
   compatible with either. Settling it needs agreement on two things: whether a
   total, retroactive failure on key disclosure is acceptable in exchange for
   being immune to offline attack in the meantime; and whether it is acceptable
-  that on a machine with no TPM and no OS keystore in use — which is the common
-  case, on every platform — the key sits in a file beside the data it protects.
+  that on a host with no TPM and no OS keystore in use, the key sits in a file
+  — protected as well as "Between a plain file and a TPM" allows, but a file.
   The one thing already settled is that no scheme may require a human to type a
   key at startup.
 - **HTTP Digest disposition.** Remove it, or pin the realm to `sys_name` and
@@ -1488,6 +1625,11 @@ Not blockers, but found during this analysis:
 - [RFC 5802](https://datatracker.ietf.org/doc/html/rfc5802) /
   [RFC 7677](https://datatracker.ietf.org/doc/html/rfc7677) — SCRAM,
   SCRAM-SHA-256.
+- [Gmail IMAP/SMTP authentication](https://developers.google.com/workspace/gmail/imap/imap-smtp)
+  — `XOAUTH2` and credentials over TLS. No CRAM-MD5, DIGEST-MD5 or APOP.
+- [Google app passwords](https://support.google.com/accounts/answer/185833)
+  — 16-character generated credentials, per application or device, revocable
+  individually, invalidated when the account password changes.
 - [Mystic BBS password policy](https://wiki.mysticbbs.com/doku.php?id=config_user_password_policy)
   — PBKDF2-SHA512, three storage modes, iteration count not applied
   retroactively.
