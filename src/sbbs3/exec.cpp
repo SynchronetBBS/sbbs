@@ -588,7 +588,7 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 		}
 	} else {
 		SAFECOPY(path, fname);
-		if (getfext(fname) == NULL && !fexistcase(path))
+		if (getfext(fname) == NULL)
 			SAFEPRINTF(path, "%s.js", fname);
 	}
 
