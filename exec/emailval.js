@@ -137,7 +137,7 @@ function ChangeEmailAddress() {
 
 	while (bbs.online && !js.terminated) {
 		prompts.get_netmail(user);
-		if (system.check_netmail_addr(user.netmail))
+		if (netaddr_type(user.netmail) == NET_INTERNET || system.check_netmail_addr(user.netmail))
 			break;
 		alert("Sorry, that is an unsupported netmail address");
 	}
