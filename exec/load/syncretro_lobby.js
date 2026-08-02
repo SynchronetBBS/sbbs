@@ -189,6 +189,65 @@ function syncretro_lobby_console_ini(dir, con)
 	return con;
 }
 
+/* One section, shipped then overlaid. `blanks` keeps a key that is present but
+ * EMPTY -- a real override in [lobby] and [text] ("draw nothing", "no display
+ * file"), where iniGetObject would otherwise drop it and make it
+ * indistinguishable from an absent key. */
+function syncretro_lobby_ini_section(base, local, section, blanks)
+{
+	var out = {};
+	var b, l, k;
+
+	b = base ? base.iniGetObject(section, false, blanks) : null;
+	l = local ? local.iniGetObject(section, false, blanks) : null;
+	if (b) {
+		for (k in b)
+			out[k] = b[k];
+	}
+	if (l) {
+		for (k in l)
+			out[k] = l[k];
+	}
+	return out;
+}
+
+/* syncretro.ini is SHIPPED and read first; syncretro.local.ini is the SYSOP'S
+ * and read over the top, winning key by key. The shipped file is also read by
+ * the DOOR, which is the whole point of it being a file: these are the facts
+ * both halves need, and they used to travel from here to the door on the
+ * command line. Synchronet assembles that line into a 260-byte buffer on
+ * Windows and truncates it there in silence, so a long cartridge name pushed
+ * the ROM argument -- the last thing on the line -- off the end, and the door
+ * reported "(no ROM)" for content the BBS had just logged the full path of.
+ *
+ * Every section is an object, never null: a caller may index it without
+ * guarding. Both files are optional. */
+function syncretro_lobby_ini(dir)
+{
+	var base  = new File(backslash(dir) + "syncretro.ini");
+	var local = new File(backslash(dir) + "syncretro.local.ini");
+	var out;
+
+	if (!base.open("r"))
+		base = null;
+	if (!local.open("r"))
+		local = null;
+
+	out = {
+		console: syncretro_lobby_ini_section(base, local, "console", false),
+		roms:    syncretro_lobby_ini_section(base, local, "roms", false),
+		lobby:   syncretro_lobby_ini_section(base, local, "lobby", true),
+		text:    syncretro_lobby_ini_section(base, local, "text", true),
+		idle:    syncretro_lobby_ini_section(base, local, "idle", false)
+	};
+
+	if (base)
+		base.close();
+	if (local)
+		local.close();
+	return out;
+}
+
 function syncretro_lobby_init(spec)
 {
 	var f, ini;
