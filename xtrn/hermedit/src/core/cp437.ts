@@ -1,0 +1,152 @@
+/**
+ * CP437 glyph identity and its two output boundaries:
+ *   - a CP437 byte value 0-255 is the stable identity of an art cell / message
+ *     character inside the document (JS string chars 0x00-0xFF);
+ *   - CP437_UNICODE maps that identity to the Unicode codepoint used for
+ *     display on UTF-8 terminals and for UTF-8 message transport;
+ *   - encodeUtf8() turns codepoints into actual UTF-8 bytes (as a JS "binary
+ *     string", one char per byte) for File.write in "wb" mode.
+ *
+ * The runtime's utf8_encode() global would also work on the BBS, but a pure
+ * implementation keeps the codec unit-testable under Node and byte-exact.
+ */
+
+/** CP437 -> Unicode, all 256 entries. 0x00 maps to space; 0x01-0x1F use the
+ * IBM display glyphs (only reachable from the glyph picker, never typed). */
+export var CP437_UNICODE: number[] = [
+  0x0020, 0x263a, 0x263b, 0x2665, 0x2666, 0x2663, 0x2660, 0x2022,
+  0x25d8, 0x25cb, 0x25d9, 0x2642, 0x2640, 0x266a, 0x266b, 0x263c,
+  0x25ba, 0x25c4, 0x2195, 0x203c, 0x00b6, 0x00a7, 0x25ac, 0x21a8,
+  0x2191, 0x2193, 0x2192, 0x2190, 0x221f, 0x2194, 0x25b2, 0x25bc,
+  0x0020, 0x0021, 0x0022, 0x0023, 0x0024, 0x0025, 0x0026, 0x0027,
+  0x0028, 0x0029, 0x002a, 0x002b, 0x002c, 0x002d, 0x002e, 0x002f,
+  0x0030, 0x0031, 0x0032, 0x0033, 0x0034, 0x0035, 0x0036, 0x0037,
+  0x0038, 0x0039, 0x003a, 0x003b, 0x003c, 0x003d, 0x003e, 0x003f,
+  0x0040, 0x0041, 0x0042, 0x0043, 0x0044, 0x0045, 0x0046, 0x0047,
+  0x0048, 0x0049, 0x004a, 0x004b, 0x004c, 0x004d, 0x004e, 0x004f,
+  0x0050, 0x0051, 0x0052, 0x0053, 0x0054, 0x0055, 0x0056, 0x0057,
+  0x0058, 0x0059, 0x005a, 0x005b, 0x005c, 0x005d, 0x005e, 0x005f,
+  0x0060, 0x0061, 0x0062, 0x0063, 0x0064, 0x0065, 0x0066, 0x0067,
+  0x0068, 0x0069, 0x006a, 0x006b, 0x006c, 0x006d, 0x006e, 0x006f,
+  0x0070, 0x0071, 0x0072, 0x0073, 0x0074, 0x0075, 0x0076, 0x0077,
+  0x0078, 0x0079, 0x007a, 0x007b, 0x007c, 0x007d, 0x007e, 0x2302,
+  0x00c7, 0x00fc, 0x00e9, 0x00e2, 0x00e4, 0x00e0, 0x00e5, 0x00e7,
+  0x00ea, 0x00eb, 0x00e8, 0x00ef, 0x00ee, 0x00ec, 0x00c4, 0x00c5,
+  0x00c9, 0x00e6, 0x00c6, 0x00f4, 0x00f6, 0x00f2, 0x00fb, 0x00f9,
+  0x00ff, 0x00d6, 0x00dc, 0x00a2, 0x00a3, 0x00a5, 0x20a7, 0x0192,
+  0x00e1, 0x00ed, 0x00f3, 0x00fa, 0x00f1, 0x00d1, 0x00aa, 0x00ba,
+  0x00bf, 0x2310, 0x00ac, 0x00bd, 0x00bc, 0x00a1, 0x00ab, 0x00bb,
+  0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556,
+  0x2555, 0x2563, 0x2551, 0x2557, 0x255d, 0x255c, 0x255b, 0x2510,
+  0x2514, 0x2534, 0x252c, 0x251c, 0x2500, 0x253c, 0x255e, 0x255f,
+  0x255a, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256c, 0x2567,
+  0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256b,
+  0x256a, 0x2518, 0x250c, 0x2588, 0x2584, 0x258c, 0x2590, 0x2580,
+  0x03b1, 0x00df, 0x0393, 0x03c0, 0x03a3, 0x03c3, 0x00b5, 0x03c4,
+  0x03a6, 0x0398, 0x03a9, 0x03b4, 0x221e, 0x03c6, 0x03b5, 0x2229,
+  0x2261, 0x00b1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00f7, 0x2248,
+  0x00b0, 0x2219, 0x00b7, 0x221a, 0x207f, 0x00b2, 0x25a0, 0x00a0
+];
+
+/** Encode one Unicode codepoint as UTF-8 bytes (binary string). */
+export function encodeUtf8(cp: number): string {
+  if (cp < 0x80) return String.fromCharCode(cp);
+  if (cp < 0x800) {
+    return String.fromCharCode(0xc0 | (cp >> 6), 0x80 | (cp & 0x3f));
+  }
+  if (cp < 0x10000) {
+    return String.fromCharCode(
+      0xe0 | (cp >> 12),
+      0x80 | ((cp >> 6) & 0x3f),
+      0x80 | (cp & 0x3f)
+    );
+  }
+  return String.fromCharCode(
+    0xf0 | (cp >> 18),
+    0x80 | ((cp >> 12) & 0x3f),
+    0x80 | ((cp >> 6) & 0x3f),
+    0x80 | (cp & 0x3f)
+  );
+}
+
+/**
+ * Transcode a CP437 binary string to UTF-8 bytes. Chars < 0x20 (Ctrl-A color
+ * codes, CR, LF) pass through untouched so an already-attributed message body
+ * can be converted whole.
+ */
+export function cp437ToUtf8(s: string): string {
+  var out = '';
+  for (var i = 0; i < s.length; i++) {
+    var b = s.charCodeAt(i) & 0xff;
+    if (b < 0x20) out += s.charAt(i);
+    else out += encodeUtf8(CP437_UNICODE[b] as number);
+  }
+  return out;
+}
+
+/**
+ * Decode UTF-8 bytes to CP437 where possible; codepoints with no CP437 glyph
+ * become `fallback` (default '?') and are counted in the result. Used when a
+ * UTF-8 session hands us quote/source text.
+ */
+export function utf8ToCp437(s: string, fallback?: string): { text: string; lost: number } {
+  var fb = fallback === undefined ? '?' : fallback;
+  var out = '';
+  var lost = 0;
+  var i = 0;
+  while (i < s.length) {
+    var b = s.charCodeAt(i) & 0xff;
+    var cp = -1;
+    var len = 1;
+    if (b < 0x80) {
+      cp = b;
+    } else if (b >= 0xc0 && b < 0xe0 && i + 1 < s.length) {
+      cp = ((b & 0x1f) << 6) | (s.charCodeAt(i + 1) & 0x3f);
+      len = 2;
+    } else if (b >= 0xe0 && b < 0xf0 && i + 2 < s.length) {
+      cp = ((b & 0x0f) << 12) | ((s.charCodeAt(i + 1) & 0x3f) << 6) | (s.charCodeAt(i + 2) & 0x3f);
+      len = 3;
+    } else if (b >= 0xf0 && i + 3 < s.length) {
+      cp = ((b & 0x07) << 18) | ((s.charCodeAt(i + 1) & 0x3f) << 12) |
+        ((s.charCodeAt(i + 2) & 0x3f) << 6) | (s.charCodeAt(i + 3) & 0x3f);
+      len = 4;
+    }
+    i += len;
+    if (cp < 0) {
+      out += fb;
+      lost++;
+      continue;
+    }
+    if (cp < 0x80) {
+      out += String.fromCharCode(cp);
+      continue;
+    }
+    var mapped = -1;
+    for (var c = 128; c < 256; c++) {
+      if (CP437_UNICODE[c] === cp) {
+        mapped = c;
+        break;
+      }
+    }
+    if (mapped < 0) {
+      out += fb;
+      lost++;
+    } else {
+      out += String.fromCharCode(mapped);
+    }
+  }
+  return { text: out, lost: lost };
+}
+
+/**
+ * String to hand to console.write() so a cell with CP437 identity `code`
+ * displays correctly: UTF-8 bytes on a UTF-8 terminal, the raw byte on a
+ * CP437 terminal.
+ */
+export function displayChar(code: number, utf8Terminal: boolean): string {
+  var b = code & 0xff;
+  if (utf8Terminal) return encodeUtf8(CP437_UNICODE[b] as number);
+  // On a raw CP437 terminal the control range would execute, not display.
+  if (b < 0x20 || b === 0x7f) b = 0x20;
+  return String.fromCharCode(b);
+}
