@@ -106,5 +106,32 @@ var copied = syncretro_lobby_ini(copydir);
 check_str(copied.console.short, "Intv", "full-copy overlay: console.short");
 check_str(copied.roms.ext, "int, bin, rom", "full-copy overlay: roms.ext");
 
+// The console and rules objects now come from the ini, not a JS literal.
+var con = syncretro_console(ini.console);
+check_str(con.name, "Intellivision", "console name from ini");
+check_str(con.short, "Intellivision", "console short from ini (local wins)");
+check_str(con.profile, "intv", "console profile from ini");
+check_str(con.core, "freeintv_libretro", "console core from ini");
+check_str(con.id, "intellivision", "console id derived from short");
+check(con.shared_saves === false, "shared_saves false from ini");
+
+var rules = syncretro_rules(ini.roms);
+check_str(rules.dir, "roms", "rules dir from ini");
+check_str(rules.ext.join(","), "int,bin,rom", "rules ext parsed from ini");
+check_str(rules.exclude.join(","), "BIOS", "rules exclude from ini");
+check(rules.min_size === 2048, "rules min_size from ini");
+check(rules.max_size === 65536, "rules max_size from ini");
+
+// shared_saves is a string in an ini, not a boolean. "true" must mean true and
+// "false" must mean false -- the naive truthiness test makes both true.
+check(syncretro_console({ shared_saves: "true" }).shared_saves === true,
+      "shared_saves \"true\" is true");
+check(syncretro_console({ shared_saves: "false" }).shared_saves === false,
+      "shared_saves \"false\" is false");
+
+// dir_name was the spec's key for the roms sub-directory; the ini spells it
+// `dir`, which is what [roms] already used. Both must reach rules.dir.
+check_str(syncretro_rules({ dir: "carts" }).dir, "carts", "roms dir key");
+
 print(failures ? "FAILED: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);

@@ -143,52 +143,6 @@ function syncretro_lobby_print(key, args)
 	console.putmsg(args && args.length ? format.apply(null, [s].concat(args)) : s);
 }
 
-/* console.ini [console] -- what console this install IS: name, short, core and
- * profile. Shipped beside lobby.js and read by the DOOR TOO, which is the whole
- * point of it being a file: these are the facts both halves need, and they used
- * to travel from here to the door on the command line. Synchronet assembles that
- * line into a 260-byte buffer on Windows and truncates it there in silence, so a
- * long cartridge name pushed the ROM argument -- the last thing on the line --
- * off the end, and the door reported "(no ROM)" for content the BBS had just
- * logged the full path of.
- *
- * Deliberately NOT syncretro.ini: that file is the sysop's, is not shipped, and
- * an upgrade must never write over it. This one is ours and will be.
- *
- * The spec in lobby.js remains the fallback for every key, so a console install
- * that predates this file keeps working unchanged. */
-function syncretro_lobby_console_ini(dir, con)
-{
-	var f = new File(dir + "console.ini");
-	var ini;
-
-	if (!f.open("r"))
-		return con;
-	ini = f.iniGetObject("console");
-	f.close();
-	if (!ini)
-		return con;
-
-	if (ini.name)
-		con.name = String(ini.name);
-	if (ini.short)
-		con.short = String(ini.short);
-	if (ini.profile)
-		con.profile = String(ini.profile).toLowerCase();
-	if (ini.core)
-		con.core = String(ini.core);
-
-	/* Same derivations syncretro_console() makes, re-run because the values they
-	 * derive from may just have changed. `id` in particular names the per-user
-	 * save directory, so it must not be left describing the spec's `short`. */
-	if (con.short === "")
-		con.short = con.name;
-	if (con.name === "")
-		con.name = con.short;
-	con.id = con.short.toLowerCase().replace(/[^a-z0-9]+/g, "");
-	return con;
-}
-
 /* One section, shipped then overlaid. `blanks` keeps a key that is present but
  * EMPTY -- a real override in [lobby] and [text] ("draw nothing", "no display
  * file"), where iniGetObject would otherwise drop it and make it
@@ -253,41 +207,22 @@ function syncretro_lobby_init(spec)
 	var f, ini;
 	var target, sep, sub, exe, cname, bpfx, cpfx;
 
-	syncretro_lobby_dir   = backslash(spec.dir);
-	syncretro_lobby_con   = syncretro_lobby_console_ini(syncretro_lobby_dir,
-	                                                    syncretro_console(spec));
-	syncretro_lobby_rules = syncretro_rules(spec);
-	syncretro_lobby_bios  = spec.bios || [];
-	/* How the door gets the player's connection. Default: a SOCKET (Synchronet
-	 * hands the door one end of a loopback socketpair and pumps it). `stdio: true`
-	 * instead has Synchronet fork the door on a raw pty (EX_STDIO|EX_BIN) and
-	 * relay it -- the same shape Mystic uses on *nix, and so the way to exercise
-	 * the door's -stdio path against a real session. */
-	syncretro_lobby_stdio = spec.stdio ? true : false;
+	if (!spec)
+		spec = {};
+	syncretro_lobby_dir = backslash(spec.dir || js.exec_dir);
+	ini = syncretro_lobby_ini(syncretro_lobby_dir);
 
-	/* The sysop's half of syncretro.ini. The console's half is the spec above:
-	 * a sysop hides a ROM or moves the roms dir; a sysop does not redefine what
-	 * an NES cartridge is. */
-	syncretro_lobby_cfg = { lobby: {}, text: {} };   /* game_lobby.js's shape; never null */
-	f = new File(syncretro_lobby_dir + "syncretro.ini");
-	if (f.open("r")) {
-		ini = f.iniGetObject("roms");
-		/* blanks: true -- a key present but EMPTY is a real override in these two
-		 * sections ("draw nothing", "no display file"), and iniGetObject drops
-		 * blank values otherwise, making it indistinguishable from an absent key.
-		 * [roms] and [idle] keep the plain read: neither has that convention, and
-		 * both already treat a blank value as unset. */
-		syncretro_lobby_cfg.lobby = f.iniGetObject("lobby", false, true) || {};
-		syncretro_lobby_cfg.text = f.iniGetObject("text", false, true) || {};
-		syncretro_lobby_cfg.idle = f.iniGetObject("idle") || {};
-		f.close();
-		if (ini) {
-			if (ini.dir)
-				syncretro_lobby_rules.dir = String(ini.dir);
-			if (ini.exclude != null)
-				syncretro_lobby_rules.exclude = syncretro_list(ini.exclude);
-		}
-	}
+	syncretro_lobby_con   = syncretro_console(ini.console);
+	syncretro_lobby_rules = syncretro_rules(ini.roms);
+	syncretro_lobby_bios  = syncretro_list(ini.console.bios);
+	/* How the door gets the player's connection. Default: a SOCKET (Synchronet
+	 * hands the door one end of a loopback socketpair and pumps it). `stdio`
+	 * instead has Synchronet fork the door on a raw pty (EX_STDIO|EX_BIN) and
+	 * relay it -- the same shape Mystic uses on *nix, and so the way to
+	 * exercise the door's -stdio path against a real session. */
+	syncretro_lobby_stdio = String(ini.console.stdio).toLowerCase() === "true";
+
+	syncretro_lobby_cfg = { lobby: ini.lobby, text: ini.text, idle: ini.idle };
 
 	/* A cell_fmt that lost its %s would draw a grid of numbers with no cartridge
 	 * titles -- which reads as a broken door rather than as a bad setting. Say so
@@ -808,12 +743,16 @@ function syncretro_lobby_number(roms)
 	return roms;
 }
 
+/* The whole of a console package's lobby.js is `syncretro_lobby()`: what the
+ * console IS now lives in the shipped syncretro.ini beside it, read by this
+ * function and by the door. `spec` remains only for a door run from an
+ * unusual directory (`{dir: "/some/where/"}`). */
 function syncretro_lobby(spec)
 {
 	var roms, plays, board, cols, per_col, per_page, pages, page, key, i, filter;
 	var missing, drawn, regeom;
 
-	syncretro_lobby_init(spec);
+	syncretro_lobby_init(spec || {});
 
 	missing = syncretro_lobby_bios_missing();
 	if (missing.length) {

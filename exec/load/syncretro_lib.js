@@ -283,7 +283,9 @@ function syncretro_rules(spec)
 
 	if (!spec)
 		return r;
-	if (spec.dir_name)
+	if (spec.dir)
+		r.dir = String(spec.dir);
+	else if (spec.dir_name)
 		r.dir = String(spec.dir_name);
 	/* [".nes", "unf"] and ".nes, unf" must mean the same thing. */
 	r.ext = syncretro_list(spec.ext).map(function (e) {
@@ -356,11 +358,17 @@ function syncretro_console(spec)
 			c.core = String(spec.core);
 		// Where the core's saves go. Default: PER-USER, which is right for a
 		// cartridge console -- one player's battery save is not another's.
-		// `shared_saves: true` points every player at one directory instead,
+		// `shared_saves = true` points every player at one directory instead,
 		// which is right for an ARCADE cabinet: the high-score table is the
 		// whole point of the machine, and there is no per-player save to keep
 		// apart. See the home path in syncretro_lobby.js.
-		c.shared_saves = spec.shared_saves ? true : false;
+		//
+		// An ini value is a STRING, so the naive truthiness test makes "false"
+		// true. Compare the text.
+		if (spec.shared_saves !== undefined && spec.shared_saves !== null) {
+			c.shared_saves = String(spec.shared_saves).toLowerCase() === "true"
+			    || String(spec.shared_saves) === "1";
+		}
 	}
 	if (c.short === "")
 		c.short = c.name;
