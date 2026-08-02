@@ -525,7 +525,7 @@ void sr_io_cycle_tier(void)
  *     with (or be silently overwritten by) that unrelated capture file.
  *   <the dir syncretro.ini was read from>/syncretro_dirty.log
  *     Falls back here when $SBBSDATA is unset (a dev/direct run with no BBS
- *     session -- sr_config_apply() calls sr_config_read_ini() before doing
+ *     session -- sr_config_apply() calls sr_config_read() before doing
  *     anything else, so the door had to already resolve this directory to
  *     have found syncretro.ini at all: sr_config_launch_dir() reports it,
  *     guaranteed known by the time a frame is ever presented). No node tag:

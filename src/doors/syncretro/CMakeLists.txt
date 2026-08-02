@@ -244,6 +244,17 @@ if(SYNCRETRO_TESTS)
     target_link_libraries(test_games xpdev)
     add_test(NAME games COMMAND test_games)
 
+    # test_config -- the shipped ini + the sysop's overlay. Links xpdev for the
+    # ini reader and stubs the option/core seams, so it needs neither a core nor
+    # termgfx. termgfx's include dir only: audio_mgr.h supplies the quality
+    # default the reader falls back to.
+    add_executable(test_config test_config.c syncretro_config.c)
+    target_include_directories(test_config PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../termgfx
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+    target_link_libraries(test_config xpdev)
+    add_test(NAME config COMMAND test_config)
+
     # test_warmup -- the boot warm-up's output gate. Links retro_bridge.c
     # against stubs for the door modules it feeds, so it needs neither a core
     # nor a terminal.

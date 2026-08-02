@@ -79,11 +79,12 @@ static char g_aspect[32] = "core";    /* [video] aspect: core|square|4:3|<decima
 static char g_core_path[PATH_MAX];    /* the .so to dlopen, absolute */
 static char g_rom_path[PATH_MAX];     /* the cartridge, absolute */
 
-/* console.ini [console] -- what console this install IS. A SHIPPED file, not the
- * sysop's syncretro.ini, and read by the lobby too: these are the facts both
- * halves of the door need, which is exactly why they cannot travel on the
- * command line (260 bytes on Windows, truncated in silence). Empty means the
- * file or the key is absent, and each caller falls back on its own. */
+/* [console] -- what console this install IS, read from syncretro.ini (or the
+ * sysop's syncretro.local.ini overlay) by sr_config_read(). Read by the lobby
+ * too: these are the facts both halves of the door need, which is exactly why
+ * they cannot travel on the command line (260 bytes on Windows, truncated in
+ * silence). Empty means the key is absent from both files, and each caller
+ * falls back on its own. */
 static char g_con_name[64];           /* [console] name:    "Intellivision" */
 static char g_con_short[32];          /* [console] short:   "Intv" / "NES" */
 static char g_con_core[128];          /* [console] core:    "freeintv_libretro" */
@@ -192,116 +193,162 @@ static int sr_disc_matches(const char *path, const char *list)
 	return 0;
 }
 
-/* console.ini -- shipped, and deliberately a separate file from the sysop's
- * syncretro.ini so an upgrade can replace it without touching his settings. */
-static void sr_config_read_console_ini(void)
+/* The shipped file and the sysop's overlay resolve as if the local file's lines
+ * were APPENDED to the shipped one: a key present in the local file wins at the
+ * SAME SCOPE. So a local [video] key overrides the shipped [video] key -- but a
+ * local root key does not reach past a shipped section key, because specificity
+ * is decided before locality. Same rule, and the same reason, as
+ * games.ini/games.local.ini; see sr_games_str() in syncretro_games.c. */
+static str_list_t sr_config_read_one(const char *dir, const char *name)
 {
-	FILE *f = fopen("console.ini", "r");
+	char       path[PATH_MAX];
+	str_list_t ini;
+	FILE *     f;
 
-	if (f != NULL) {
-		str_list_t ini = iniReadFile(f);
-		char       v[INI_MAX_VALUE_LEN];   /* iniGetString()'s contract, not ours */
-
-		fclose(f);
-		iniGetString(ini, "console", "name", "", v);
-		snprintf(g_con_name, sizeof g_con_name, "%s", v);
-		iniGetString(ini, "console", "short", "", v);
-		snprintf(g_con_short, sizeof g_con_short, "%s", v);
-		iniGetString(ini, "console", "core", "", v);
-		snprintf(g_con_core, sizeof g_con_core, "%s", v);
-		iniGetString(ini, "console", "profile", "", v);
-		snprintf(g_con_profile, sizeof g_con_profile, "%s", v);
-		strListFree(&ini);
-	}
+	snprintf(path, sizeof path, "%s/%s", dir, name);
+	f = fopen(path, "r");
+	if (f == NULL)
+		return NULL;
+	ini = iniReadFile(f);
+	fclose(f);
+	return ini;
 }
 
-static void sr_config_read_ini(void)
+static const char *sr_cfg_str(str_list_t base, str_list_t local,
+                              const char *section, const char *key,
+                              const char *deflt, char *val)
 {
-	FILE *f = fopen("syncretro.ini", "r");
+	if (local != NULL && iniKeyExists(local, section, key))
+		return iniGetString(local, section, key, deflt, val);
+	if (base != NULL)
+		return iniGetString(base, section, key, deflt, val);
+	snprintf(val, INI_MAX_VALUE_LEN, "%s", deflt);
+	return val;
+}
 
-	if (f != NULL) {
-		str_list_t ini = iniReadFile(f);
-		char       rotate[INI_MAX_VALUE_LEN];   /* iniGetString()'s contract, not ours */
+static int sr_cfg_bool(str_list_t base, str_list_t local, const char *section,
+                       const char *key, int deflt)
+{
+	if (local != NULL && iniKeyExists(local, section, key))
+		return iniGetBool(local, section, key, deflt);
+	if (base != NULL)
+		return iniGetBool(base, section, key, deflt);
+	return deflt;
+}
 
-		fclose(f);
-		char       aspect[INI_MAX_VALUE_LEN];
+static long sr_cfg_int(str_list_t base, str_list_t local, const char *section,
+                       const char *key, long deflt)
+{
+	if (local != NULL && iniKeyExists(local, section, key))
+		return iniGetInteger(local, section, key, deflt);
+	if (base != NULL)
+		return iniGetInteger(base, section, key, deflt);
+	return deflt;
+}
 
-		iniGetString(ini, "disc", "rotate", "", rotate);
-		snprintf(g_disc_rotate, sizeof g_disc_rotate, "%s", rotate);
-		iniGetString(ini, "video", "aspect", "core", aspect);
-		snprintf(g_aspect, sizeof g_aspect, "%s", aspect);
-		g_audio_enabled   = iniGetBool(ini, "audio", "enabled", TRUE);
-		g_audio_quality   = iniGetFloat(ini, "audio", "quality",
-		                                TERMGFX_MUSIC_QUALITY_DEFAULT);
-		g_audio_volume    = iniGetInteger(ini, "audio", "volume", 100);
-		g_audio_chunk_ms  = iniGetInteger(ini, "audio", "chunk_ms", 100);
-		g_audio_prebuffer = iniGetInteger(ini, "audio", "prebuffer", 3);
-		g_dirty_rect      = iniGetBool(ini, "video", "dirty_rect", TRUE);
-		/* pace_depth -- how many frames may be in flight at once. 0 (the
-		 * default) lets the AIMD pacer choose from the measured round-trip.
-		 * Pinning it to 1 is a diagnostic: on the sixel tier a terminal draws
-		 * a frame progressively, so a second frame arriving mid-draw composites
-		 * two frames on screen -- which reads as tearing on scrolling content. */
-		g_pace_depth      = iniGetInteger(ini, "video", "pace_depth", 0);
-		g_palette_subset  = iniGetBool(ini, "video", "palette_subset", TRUE);
-		/* [idle] -- iniGetDuration() so "15m"/"900"/"1h" all work, and so a bare
-		 * number means SECONDS here exactly as it does in the lobby (which passes
-		 * "s" to its own parse_duration for these same keys). */
-		g_idle_timeout    = (unsigned)iniGetDuration(ini, "idle", "timeout",
-		                                             SR_IDLE_DEFAULT);
-		g_idle_warn       = (unsigned)iniGetDuration(ini, "idle", "warn", 60);
-		/* [debug] dirty_log -- a per-frame trace of the dirty-rect decision (why
-		 * a frame took the patch path or the full-repaint path), plus one
-		 * startup line with the geometry that governs band alignment. Off by
-		 * default: it is real per-frame stderr traffic, meant for a short
-		 * diagnostic session (see README.md's Diagnostics section), not to run
-		 * continuously. */
-		g_dirty_log       = iniGetBool(ini, "debug", "dirty_log", FALSE);
-		/* [input] device -- a RETRO_DEVICE id to hand the core for both ports.
-		 * 0 (the default) means say NOTHING, leaving whatever the core chose:
-		 * that is the behaviour the door has always had, and the safe one, since
-		 * a wrong device id silently rewires every button. A core advertises the
-		 * ids it accepts through SET_CONTROLLER_INFO, which probe_core dumps. */
-		g_input_device    = iniGetInteger(ini, "input", "device", 0);
+static double sr_cfg_float(str_list_t base, str_list_t local,
+                           const char *section, const char *key, double deflt)
+{
+	if (local != NULL && iniKeyExists(local, section, key))
+		return iniGetFloat(local, section, key, deflt);
+	if (base != NULL)
+		return iniGetFloat(base, section, key, deflt);
+	return deflt;
+}
 
-		/* [options] -- libretro core options this install pins.
-		 *
-		 * THIS IS WHY THEY ARE NOT ON THE COMMAND LINE. A door's command line is
-		 * assembled by the BBS into a fixed buffer -- xtrn.cpp's
-		 * `fullcmdline[MAX_PATH + 1]`, i.e. 260 usable characters -- and it is
-		 * TRUNCATED there without a word. The lobby's line for one arcade game
-		 * already runs to ~240 characters (binary path, socket, time, alias,
-		 * core, profile, title, console, home, ROM path), so two pinned options
-		 * pushed it to 334 and the tail simply vanished: the ROM argument fell
-		 * off the end and the door reported "(no ROM)" for content that was
-		 * plainly there in the log the BBS printed -- because the BBS logs the
-		 * untruncated string and passes the truncated one.
-		 *
-		 * The ini has no such limit and is already per-install, so a console
-		 * pins its options here. `-option` still exists for a door run by hand.
-		 *
-		 * iniGetNamedStringList(), NOT iniGetSection(): the latter hands back the
-		 * section's RAW LINES, comments and all, and does not trim around the
-		 * '='. Feeding those to sr_option_pin() pinned "; libretro core options,
-		 * passed to MAME..." as a key and left the real ones unmatched (their
-		 * names kept a trailing space). The named list is already parsed and
-		 * trimmed, which is the whole reason it exists. */
-		{
-			named_string_t **opts = iniGetNamedStringList(ini, "options");
-			char             kv[INI_MAX_VALUE_LEN * 2];
-			size_t           i;
+static double sr_cfg_duration(str_list_t base, str_list_t local,
+                              const char *section, const char *key,
+                              double deflt)
+{
+	if (local != NULL && iniKeyExists(local, section, key))
+		return iniGetDuration(local, section, key, deflt);
+	if (base != NULL)
+		return iniGetDuration(base, section, key, deflt);
+	return deflt;
+}
 
-			if (opts != NULL) {
-				for (i = 0; opts[i] != NULL; i++) {
-					snprintf(kv, sizeof kv, "%s=%s", opts[i]->name,
-					         opts[i]->value != NULL ? opts[i]->value : "");
-					sr_option_pin(kv);
-				}
-				iniFreeNamedStringList(opts);
-			}
-		}
-		strListFree(&ini);
+/* [options] merges BY NAME: a name in the local file wins, names only in the
+ * shipped file survive. sr_option_apply() keeps the LAST matching pin
+ * (retro_options.c), so appending the local file's options after the shipped
+ * file's is what makes the local one win -- the order here is load-bearing. */
+static void sr_config_pin_options(str_list_t ini)
+{
+	named_string_t **opts;
+	char             kv[INI_MAX_VALUE_LEN * 2];
+	size_t           i;
+
+	if (ini == NULL)
+		return;
+	opts = iniGetNamedStringList(ini, "options");
+	if (opts == NULL)
+		return;
+	for (i = 0; opts[i] != NULL; i++) {
+		snprintf(kv, sizeof kv, "%s=%s", opts[i]->name,
+		         opts[i]->value != NULL ? opts[i]->value : "");
+		sr_option_pin(kv);
 	}
+	iniFreeNamedStringList(opts);
+}
+
+void sr_config_read(const char *dir)
+{
+	str_list_t base;
+	str_list_t local;
+	char       val[INI_MAX_VALUE_LEN];
+
+	if (dir == NULL)
+		dir = ".";
+	base  = sr_config_read_one(dir, "syncretro.ini");
+	local = sr_config_read_one(dir, "syncretro.local.ini");
+
+	sr_cfg_str(base, local, "console", "name", "", val);
+	snprintf(g_con_name, sizeof g_con_name, "%s", val);
+	sr_cfg_str(base, local, "console", "short", "", val);
+	snprintf(g_con_short, sizeof g_con_short, "%s", val);
+	sr_cfg_str(base, local, "console", "core", "", val);
+	snprintf(g_con_core, sizeof g_con_core, "%s", val);
+	sr_cfg_str(base, local, "console", "profile", "", val);
+	snprintf(g_con_profile, sizeof g_con_profile, "%s", val);
+
+	sr_cfg_str(base, local, "disc", "rotate", "", val);
+	snprintf(g_disc_rotate, sizeof g_disc_rotate, "%s", val);
+	sr_cfg_str(base, local, "video", "aspect", "core", val);
+	snprintf(g_aspect, sizeof g_aspect, "%s", val);
+
+	g_audio_enabled   = sr_cfg_bool(base, local, "audio", "enabled", TRUE);
+	g_audio_quality   = sr_cfg_float(base, local, "audio", "quality",
+	                                 TERMGFX_MUSIC_QUALITY_DEFAULT);
+	g_audio_volume    = (int)sr_cfg_int(base, local, "audio", "volume", 100);
+	g_audio_chunk_ms  = (int)sr_cfg_int(base, local, "audio", "chunk_ms", 100);
+	g_audio_prebuffer = (int)sr_cfg_int(base, local, "audio", "prebuffer", 3);
+
+	g_dirty_rect     = sr_cfg_bool(base, local, "video", "dirty_rect", TRUE);
+	/* pace_depth -- how many frames may be in flight at once. 0 (the default)
+	 * lets the AIMD pacer choose from the measured round-trip. Pinning it to 1
+	 * is a diagnostic: on the sixel tier a terminal draws a frame
+	 * progressively, so a second frame arriving mid-draw composites two frames
+	 * on screen -- which reads as tearing on scrolling content. */
+	g_pace_depth     = (int)sr_cfg_int(base, local, "video", "pace_depth", 0);
+	g_palette_subset = sr_cfg_bool(base, local, "video", "palette_subset", TRUE);
+
+	/* iniGetDuration() so "15m"/"900"/"1h" all work, and so a bare number means
+	 * SECONDS here exactly as it does in the lobby. */
+	g_idle_timeout = (unsigned)sr_cfg_duration(base, local, "idle", "timeout",
+	                                           SR_IDLE_DEFAULT);
+	g_idle_warn    = (unsigned)sr_cfg_duration(base, local, "idle", "warn", 60);
+
+	g_dirty_log    = sr_cfg_bool(base, local, "debug", "dirty_log", FALSE);
+	/* [input] device -- a RETRO_DEVICE id to hand the core for both ports. 0
+	 * (the default) means say NOTHING, leaving whatever the core chose: a wrong
+	 * device id silently rewires every button. */
+	g_input_device = (int)sr_cfg_int(base, local, "input", "device", 0);
+
+	sr_config_pin_options(base);
+	sr_config_pin_options(local);
+
+	strListFree(&base);
+	strListFree(&local);
+
 	/* Positive test, not two one-sided comparisons: NaN compares false under
 	 * both < and >, and iniGetFloat() is atof()-backed, so `quality = nan`
 	 * would otherwise sail through unclamped and into the encoder. */
@@ -494,8 +541,7 @@ int sr_config_apply(void)
 
 	/* syncretro.ini lives in the launch directory, not the per-user sandbox --
 	 * must run before the chdir() in step 3 below moves cwd there. */
-	sr_config_read_ini();
-	sr_config_read_console_ini();
+	sr_config_read(cwd);
 
 	/* --- 1. system (BIOS) dir: shared, read-only, per-install ---------------
 	 * Answered to the core as GET_SYSTEM_DIRECTORY. A core that can't find its

@@ -79,10 +79,21 @@ const char *sr_config_save_dir(void);               /* per-user SRAM/save-state 
  * NULL when none was given. */
 const char *sr_config_core_path(void);
 
-/* console.ini [console] -- what console this install IS, or NULL when the file
- * or the key is absent. Shipped with the door and read by the lobby too, which
- * is what keeps these off a command line Windows truncates at 260 bytes.
- * -console / -profile still override, for a door run by hand. */
+/* Read <dir>/syncretro.ini, then <dir>/syncretro.local.ini over the top of it,
+ * and populate every sr_config_*() getter below. Both files are optional and
+ * every key has a compiled default, so a door directory with neither behaves
+ * exactly as one with both at their defaults.
+ *
+ * syncretro.ini is SHIPPED and syncretro.local.ini is the SYSOP'S: a pull
+ * overwrites the first and never the second, so the second is the one to edit.
+ * A key present in the local file wins at the SAME SCOPE -- the same rule
+ * games.ini/games.local.ini already uses (syncretro_games.c). */
+void        sr_config_read(const char *dir);
+
+/* [console] -- what console this install IS, or NULL when the key is absent.
+ * Read by the lobby from the same file, which is what keeps these off a command
+ * line Windows truncates at 260 bytes. -console / -profile still override, for
+ * a door run by hand. */
 const char *sr_config_console_name(void);
 const char *sr_config_profile(void);
 const char *sr_config_rom_path(void);
