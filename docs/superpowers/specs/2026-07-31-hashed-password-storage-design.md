@@ -206,9 +206,11 @@ What defends doing this anyway is that it is the **floor, not the ceiling**:
 
 What the criticism should change, and does:
 
-- **The removals are a cost, not a benefit.** CRAM-MD5, APOP and HTTP Digest
-  are not being "cleaned up"; they are being paid. A shorter feature list is
-  not an achievement here.
+- **The removals are a cost, not a benefit.** CRAM-MD5, APOP, HTTP Digest,
+  password-by-email and retroactive password auditing are not being "cleaned
+  up"; they are being paid. A shorter feature list is not an achievement here.
+  They are also the price of *hashing* specifically, not of moving credentials
+  into a separate file — see "What reversibility is actually worth".
 - **No mechanism is removed without a replacement path.** That rule is already
   applied to IMAP, where the transport work is a hard prerequisite rather than
   a follow-up. It is a general rule, not a special case.
@@ -286,8 +288,54 @@ some:
   does not survive a stolen hash.
 
 So encryption, competently built, meets every property this document asks for,
-and beats hashing on one of them. The case for hashing is therefore narrow, and
-rests on two things only.
+and beats hashing on one of them.
+
+### What reversibility is actually worth
+
+An earlier draft asserted that reversibility is "a capability that will never
+be used". That is false. Synchronet uses the ability to recover a password in
+at least four places today, and every one of them survives under encryption and
+dies under hashing:
+
+| Capability | Site | Under hashing |
+|---|---|---|
+| CRAM-MD5, APOP, HTTP Digest | `mailsrvr.cpp:4472`, `:1397`, `websrvr.cpp:1918` | removed |
+| Mail the user their forgotten password | `login.js:90-134` (`options.email_passwords`, default **true**) | reset only |
+| Audit every account against `password.can` | `badpasswords.js:15` | set-time only |
+| Audit every account for weak, obvious or **shared** passwords | `chksetup.js:126-165` | set-time only, and sharing becomes unanswerable |
+
+`chksetup.js` builds `password_list[password]` across every account precisely
+to find users who share a password. Making that question unanswerable is
+**P1** — the stated goal, not a side effect. One of this document's own
+properties exists to destroy a capability a sysop has today and may reasonably
+value.
+
+The argument for hashing is therefore not that reversibility is unused, but
+that each of these capabilities is one Synchronet is better off without:
+
+- **Digest authentication** is the subject of its own section below. Its
+  verifiers are unsalted MD5 and it is why the password must be recoverable in
+  the first place — keeping it is the thing being argued against, not an
+  independent benefit.
+- **Mailing a user their password** transmits a live credential in cleartext
+  over a store-and-forward network to a mailbox the BBS does not control, and
+  leaves it there. A reset link or a new random password does the same job
+  without that. This is a practice worth ending on its own merits, and it is on
+  by default today.
+- **Retroactive password auditing** answers a real question, and answers it by
+  keeping every password readable forever so that the sysop can occasionally
+  inspect them. The same protection comes from enforcing quality *at set time*,
+  which `check_pass()` already does on the interactive paths, and from
+  rejecting `password.can` entries when a password is chosen rather than
+  discovering violations later.
+- **Detecting shared passwords across accounts** has no replacement. It goes
+  deliberately, as P1.
+
+That is a value judgment about which features should exist, not a fact about
+what the code does, and a sysop who disagrees about any of the four has a real
+argument for encryption.
+
+The rest of the case for hashing does not depend on that judgment:
 
 1. **Its failure mode is total and retroactive.** One key disclosure exposes
    every password ever stored, at once, including those of users who chose
@@ -296,21 +344,20 @@ rests on two things only.
    and strong passwords never fall. When the asset is a file that may leak
    years from now, the difference between "graceful" and "total" is the whole
    question, and it is why being stronger on P2 does not settle it.
-2. **The BBS never needs to recover a password.** It only needs to answer yes
-   or no about one. Encryption buys reversibility, a capability that will never
-   be used, and charges key management for it: a secret to generate, protect,
-   rotate, back up without destroying the backup's value, and never lose.
-   Hashing needs no secret at all. That is not a claim about implementer skill;
-   it is a difference in how many things must go right.
+2. **Key management is work that hashing does not require at all**: a secret to
+   generate, protect, rotate, back up without destroying the backup's value,
+   and never lose. That is not a claim about implementer skill; it is a
+   difference in how many things must go right. Its true size is in the next
+   section, and it is smaller than this document once made it.
 
 ### Where the key would actually live
 
-**First, a correction of scale that matters.** Encrypted storage does not put
-thousands of user credentials into an OS secret facility. It puts **one** key
-there — the master key — and the thousands of encrypted records stay in
-`pass.tab` as ordinary file data. This is the difference between a use these
-facilities are designed for and one they are hopeless at. The requirement is a
-single secret of perhaps 32 bytes, readable by an unattended service at boot.
+Encrypted storage puts **one** key into an OS secret facility — the master key
+— not thousands of user credentials. The encrypted records stay in `pass.tab`
+as ordinary file data. So the requirement is a single secret of perhaps 32
+bytes, readable by an unattended service at boot, which is a use these
+facilities are designed for; storing a credential per user is one they would be
+hopeless at.
 
 What each platform actually offers, and its limits:
 
@@ -744,8 +791,9 @@ bug described under "The `user.tab` password field" below:
 
 ### The `user.tab` password field
 
-`USER_PASS` is **not** blanked. It is set to a short sentinel that cannot be a
-legal password.
+`USER_PASS` is **not** blanked. It is set to a sentinel: a value chosen so that
+no account plausibly holds it, and verified at migration to be one that none
+actually does.
 
 This is a safety requirement, not cosmetics. `login.cpp:88` reads:
 
@@ -765,52 +813,93 @@ Note that this is also why the field cannot simply be dropped from the record:
 padding is the field separator itself, so an absent trailing field parses as
 empty, which is the failure above.
 
-**Short, not forty bytes.** Since after migration *every* record carries it,
-the field's worst-case contribution to the record drops from `LEN_PASS` (40,
+**Shorter than forty bytes.** Since after migration *every* record carries it,
+the field's worst-case contribution drops from `LEN_PASS` (40,
 `sbbsdefs.h:537`) to the sentinel's length, returning most of those bytes to
 the rest of the record — which matters, given how little headroom the format
-has left.
+has left. How much shorter is settled below, and it is not as short as an
+earlier draft assumed.
 
-**What guarantees no user's password can equal it** is `check_pass()`
-(`userdat.c:4302`), the shared validator every password-setting path goes
-through. It rejects anything shorter than `MIN_PASS_LEN` (4, `sbbsdefs.h:538`)
-or than the sysop's configured `min_pwlen`, whichever is greater, along with
-several other classes of unacceptable password. A sentinel of one to three
-bytes is therefore something no account can ever legitimately hold, which is
-what makes it safe to treat as a marker when reading the file.
+**Two earlier drafts justified the choice of value badly, and both arguments
+are withdrawn.**
 
-**An earlier draft argued this from `getstr()` instead, and that was wrong.**
-It claimed the sentinel was unmatchable because `getstr()` accepts nothing
-below `' '` (`getstr.cpp:568`), so a control byte could never be entered. But
-not every password arrives through `getstr()`: HTTP Basic and SMTP/IMAP
-`PLAIN`/`LOGIN` carry base64 that decodes to arbitrary bytes, `makeuser` takes
-one from `argv` (`makeuser.c:175`), and the JavaScript comparison path takes
-whatever it is given. A control byte is deliverable on several paths, so
-"cannot be typed" was never the same as "cannot be presented".
+The first claimed the sentinel was unmatchable because `getstr()` accepts
+nothing below `' '` (`getstr.cpp:568`), so a control byte could never be
+entered. Not every password arrives through `getstr()`: HTTP Basic and
+SMTP/IMAP `PLAIN`/`LOGIN` carry base64 that decodes to arbitrary bytes,
+`makeuser` takes one from `argv` (`makeuser.c:175`), and the JavaScript path
+takes whatever it is given. "Cannot be typed" was never "cannot be presented".
 
-**And unmatchability is not achievable at all** against the adversary this
+The second claimed `check_pass()` (`userdat.c:4302`) guarantees no account can
+hold a value shorter than `MIN_PASS_LEN` (4, `sbbsdefs.h:538`). It does not.
+`check_pass()` is policy applied on three paths — new-user signup
+(`newuser.cpp:183`), the change-password flow (`str.cpp:890`), and an advisory
+`system.check_pass()` offered to scripts (`js_system.cpp:2196`). It is not an
+invariant of the file, and the sysop-facing tools are exactly where it is
+absent:
+
+| Write path | `getstr()` filter | `check_pass()` |
+|---|---|---|
+| Terminal user editor (`useredit.cpp:517`) | yes | **no** — any length, including one byte |
+| Standalone UserEdit GUI (`useredit/MainFormUnit.cpp:157`) | **no** — a plain text field | **no** — any bytes, any length |
+| `user.security.password =` (`js_user.cpp:729`) | **no** | **no** — `SAFECOPY` and write |
+| `makeuser` (`makeuser.c:175`) | **no** — from `argv` | **no** |
+| `makeuser.js` (`:204`) | **no** | **no** — only a `password.can` check |
+| Third-party tools, imports, a text editor | — | — |
+
+So neither "short" nor "unprintable" is enforced anywhere near the whole
+surface. There are several user-editor programs, and the GUI one accepts
+arbitrary characters at arbitrary length by construction.
+
+**There is no enforceable invariant here, so the design must not rest on one.**
+
+What makes a collision tolerable rather than impossible: the new code never
+reads `USER_PASS` at all. A record whose stored value happens to equal the
+sentinel affects exactly one account, and only on a reader that predates the
+change. That is a bounded accident, not a systemic failure.
+
+Migration therefore **verifies instead of assuming**: the conversion pass scans
+every record for the chosen sentinel before writing any, and picks a different
+one if it collides. That turns an unenforceable assumption into a checked fact
+at the one moment it can be checked cheaply.
+
+**Choose a value that is implausible on every path, not impossible on some.**
+Two properties, for two different reasons:
+
+- **Non-printable.** Not because control bytes cannot be entered — the GUI
+  editor above accepts them — but because no human types one into a password
+  field, no import from other software carries one as a password, and they
+  render as a visible marker rather than as data when a sysop looks at the
+  file. Draw from a safe control range such as `0x0E`–`0x1F`: clear of tab, LF
+  and CR, which delimit the format, and clear of `0x01`, which Synchronet reads
+  as an attribute code.
+- **Randomized per installation, and long enough to resist guessing.** A fixed
+  constant compiled into the tree is the dangerous case: on any reader that
+  predates the change, *anyone* could present the published byte and
+  authenticate as *any* user, with no access to the file at all. That is the
+  universal-password failure the sentinel exists to prevent, reintroduced. A
+  per-installation random value closes it, because an attacker without the file
+  does not know what to present.
+
+Those two pull against the record-space argument, and the space argument loses.
+A single random byte has 256 possibilities; several random control bytes are
+what actually resist an online guess. Eight of them is ample — the
+login-attempt and rate-limit machinery applies on the old reader too, since it
+is still Synchronet — and eight bytes against `LEN_PASS`'s forty still returns
+most of the field to the rest of the record.
+
+**And none of this achieves unmatchability** against the adversary this
 document is about. A comparison against the stored field is a comparison
-against a value that adversary has *read*, so whatever the sentinel is —
-control byte, random string, anything — they can present it back. Choosing an
-exotic value does not fix this.
+against a value that adversary has *read*, so they can present it back
+regardless. Randomization defeats the attacker who read the *source*; nothing
+defeats the one holding the file.
 
 So the sentinel's job is narrower than "unmatchable". It converts the failure
-from **"nobody is asked for a password, so everybody gets
-in"** into **"an attacker needs both a copy of the file and a reader that
-predates the change"**. The first is universal and requires no knowledge or
-access at all; the second requires the file, which is the very thing this
-design assumes has leaked, *plus* a downgraded binary. That is a large
-reduction, not a guarantee, and it should not be described as one.
-
-One consequence for the choice of value: it should be **randomly generated per
-installation at migration** rather than a fixed constant compiled into the
-tree. Neither survives someone reading the file, but a constant is defeated by
-someone reading the *source*, which is a much lower bar.
-
-Concretely: three random printable bytes, recorded once at migration. Under
-`MIN_PASS_LEN`, so no account can hold it; non-empty, so the prompt still
-happens; unguessable without the file; and three bytes rather than forty in
-every record.
+from **"nobody is asked for a password, so everybody gets in"** into **"an
+attacker needs both a copy of the file and a reader that predates the
+change"**. The first is universal and requires no access at all; the second
+requires the file — the very thing this design assumes has leaked — *plus* a
+downgraded binary. A large reduction, not a guarantee.
 
 ## API
 
@@ -928,8 +1017,9 @@ remaining path that hands cleartext to an insider is in scope:
 | Path | Site | Disposition |
 |---|---|---|
 | User editor displays password | `useredit.cpp:78-81` | remove |
+| **Mails the user their password** | `login.js:90-134` | **remove; on by default today** |
 | Prints every user's password | `badpasswords.js:15` | redesign; it audits against `password.can` |
-| Setup checker | `chksetup.js:138` | remove |
+| Setup checker audits every password | `chksetup.js:126-165` | redesign; enforce at set time |
 | Baja `%pass` | `exec.cpp:62` | remove |
 | MQTT PSK table (JS broker) | `broker.js:2665` | breaks with hashing |
 | MQTT PSK table (built-in broker) | `mqtt_broker.cpp:86-116` | breaks with hashing |
@@ -1131,9 +1221,13 @@ stop a sysop impersonating a user on this BBS, it does not stop a sysop who
 instruments the running system, and it does nothing about a password captured
 in transit.
 
-And what it costs: CRAM-MD5, APOP and HTTP Digest stop working. That is not a
-tidier feature list, it is the price. See "What this design is, and the fair
-criticism of it".
+And what it costs, all of it a consequence of choosing **hashing** rather than
+of moving credentials out of `user.tab`: CRAM-MD5, APOP and HTTP Digest stop
+working; the BBS can no longer mail a user their forgotten password, only reset
+it; and password auditing becomes a set-time check rather than something a
+sysop can run across the existing user base. Encryption would keep all of them.
+That is not a tidier feature list, it is the price. See "What reversibility is
+actually worth".
 
 ## Sequencing
 
