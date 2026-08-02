@@ -360,24 +360,41 @@ function Check_QWK_Password(qwkid,password) {
 }
 
 function IRCClient_netsplit(ns_reason) {
-	var i;
+	var i, j, queue, seen, srv;
 
 	if (!ns_reason)
 		ns_reason = "net.split.net.split net.split.net.split";
 
-	for (i in Users) {
-		if (Users[i] && (Users[i].servername == this.nick)) {
-			Users[i].quit(ns_reason,true,true);
+	/* BFS walk of the server subtree to avoid call-stack overflow on
+	   deep topologies.  Quit each server's users as we visit it, then
+	   remove all child servers directly without recursing back through
+	   Server_Quit (which would call netsplit again).
+	   seen guards against a server whose linkparent equals its own nick
+	   (misconfigured self-link), which would otherwise loop forever. */
+	queue = [this.nick];
+	seen = {};
+	seen[this.nick.toLowerCase()] = true;
+	for (j = 0; j < queue.length; j++) {
+		srv = queue[j];
+		for (i in Users) {
+			if (Users[i] && Users[i].servername == srv)
+				Users[i].quit(ns_reason, true, true);
+		}
+		for (i in Servers) {
+			if (   Servers[i]
+				&& Servers[i].linkparent == srv
+				&& !seen[Servers[i].nick.toLowerCase()]
+			) {
+				seen[Servers[i].nick.toLowerCase()] = true;
+				queue.push(Servers[i].nick);
+			}
 		}
 	}
-
-	for (i in Servers) {
-		if (   Servers[i]
-			&& (Servers[i] !== this)
-			&& (Servers[i].linkparent == this.nick)
-		) {
-			Servers[i].quit(ns_reason,true,true);
-		}
+	/* Remove child servers leaves-first (skip index 0 = this server,
+	   Server_Quit deletes it after we return). */
+	for (j = queue.length - 1; j >= 1; j--) {
+		delete Local_Servers[queue[j].toLowerCase()];
+		delete Servers[queue[j].toLowerCase()];
 	}
 }
 
