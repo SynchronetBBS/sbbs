@@ -586,8 +586,11 @@ int sbbs_t::js_execfile(const char *cmd, const char* startup_dir, JSObject* scop
 			if (cfg.mods_dir[0] == 0 || !fexistcase(path))
 				SAFEPRINTF3(path, "%s%s%s", cfg.exec_dir, fname, js_ext);
 		}
-	} else
+	} else {
 		SAFECOPY(path, fname);
+		if (getfext(fname) == NULL && !fexistcase(path))
+			SAFEPRINTF(path, "%s.js", fname);
+	}
 
 	if (!fexistcase(path)) {
 		errormsg(WHERE, ERR_OPEN, path, O_RDONLY);
