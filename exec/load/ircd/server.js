@@ -1370,9 +1370,26 @@ function Server_Work(cmdline) {
 		));
 		break;
 	case "CAPAB":
-	case "BURST":
 	case "SVSMODE":
 		return 0; /* Silently ignore these commands */
+	case "BURST":
+		/* BURST 0 marks the end of the peer's user/channel burst.  Now that
+		   we know which users belong to this server, catch-up-burst any +p/+s
+		   channels that have members on this leaf — those were suppressed in
+		   our outbound burst because we hadn't received the leaf's NICKs yet. */
+		if (p[0] !== "0" || this.hub)
+			return 0;
+		for (i in Channels) {
+			if (i[0] !== "#") continue;
+			if (!(Channels[i].mode & (CHANMODE_PRIVATE|CHANMODE_SECRET))) continue;
+			for (j in Channels[i].users) {
+				if (Channels[i].users[j].parent === this.nick) {
+					this.server_chan_info(Channels[i]);
+					break;
+				}
+			}
+		}
+		return 0;
 	default:
 		umode_notice(USERMODE_OPER,"Notice",format(
 			"Server %s sent unrecognized command: %s %s",
