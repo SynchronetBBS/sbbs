@@ -3464,7 +3464,9 @@ static enum parsed_vpath resolve_vpath(http_session_t* session, char* vpath)
 	safe_snprintf(path, sizeof(path), "%s%s", scfg.dir[session->file.dir]->path, filename);
 	if (!fexistcase(path))
 		return PARSED_VPATH_NONE;
-	if (!loadfile(&scfg, session->file.dir, filename, &session->file, file_detail_index, NULL))
+	// loadfile() discards the cost of a file in a free directory, so don't read its header record
+	enum file_detail detail = (scfg.dir[session->file.dir]->misc & DIR_FREE) ? file_detail_index : file_detail_normal;
+	if (!loadfile(&scfg, session->file.dir, filename, &session->file, detail, NULL))
 		return PARSED_VPATH_NONE;
 	strlcpy(vpath, path, MAX_PATH + 1);
 	return PARSED_VPATH_FULL;
