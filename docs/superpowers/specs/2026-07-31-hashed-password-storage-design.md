@@ -196,10 +196,16 @@ What defends doing this anyway is that it is the **floor, not the ceiling**:
   thousand user records has a thousand passwords on the day FIDO2 ships, and
   most of those users will never enrol a security key. Storage remains the only
   measure that reaches every account.
-- **It is the only piece that needs no user action.** Every post-password
-  mechanism requires each user to do something. The threat model is a file that
-  leaks; a mitigation that waits on a thousand individual decisions does not
-  address it.
+- **It needs no user action where nothing about the login changes.** For
+  terminal, FTP, HTTP Basic and any client already sending plain credentials
+  over TLS, the swap is invisible. This is most accounts on most systems, and
+  no post-password mechanism can say the same — each of those waits on a
+  thousand individual enrolments.
+
+  It is **not** true across the board, and an earlier draft claimed it was.
+  Anyone whose mail client is configured for CRAM-MD5 or APOP must reconfigure
+  it, and some cannot. The deprecations below are user-visible work, so the
+  advantage holds for the storage swap, not for the whole package.
 - **It is a precondition, not a competitor.** SCRAM stores a salted iterated
   verifier — the same primitive this design builds. Doing this work is doing
   part of that work.
@@ -211,9 +217,100 @@ What the criticism should change, and does:
   up"; they are being paid. A shorter feature list is not an achievement here.
   They are also the price of *hashing* specifically, not of moving credentials
   into a separate file — see "What reversibility is actually worth".
-- **No mechanism is removed without a replacement path.** That rule is already
-  applied to IMAP, where the transport work is a hard prerequisite rather than
-  a follow-up. It is a general rule, not a special case.
+- **A server-side replacement is not the same as a replacement.** An earlier
+  draft asserted that no mechanism is removed without a replacement path, with
+  IMAP's transport work as the example. That rule is weaker than it sounds and
+  is qualified below.
+
+### Removing a mechanism can lower a user's security
+
+The replacement for CRAM-MD5 and APOP is plain authentication over TLS. That is
+a replacement only if the *client* can do TLS, and there is no audit of what
+clients this software's users actually run. For a BBS the population skews
+toward old software — which is frequently exactly the software that implements
+APOP and CRAM-MD5 and has weak or absent TLS.
+
+The concrete regression: a POP3 client with CRAM-MD5 and no TLS support. Today
+it sends a digest over the wire and never transmits the password. After
+removal it either stops working or sends the password in cleartext across the
+network. **That is a transport-security loss inflicted on a subset of users in
+exchange for an at-rest-security gain shared by all of them.** The trade may
+still be right, but it is a trade, and calling the server-side work a
+"replacement path" hides it.
+
+Three things follow:
+
+- **The claim is narrowed.** A server-side replacement is necessary, not
+  sufficient. Whether a mechanism has a replacement is a question about
+  deployed clients, and this document cannot answer it.
+- **Refuse rather than downgrade.** If plaintext authentication is not offered
+  on unencrypted connections, an affected client fails visibly instead of
+  quietly sending a password in the clear. That converts a silent security
+  regression into a support ticket, which is the better failure.
+- **SCRAM does not rescue this population.** It gives a non-plaintext mechanism
+  compatible with hashed storage, so a supporting client needs no TLS to avoid
+  sending its password — but vintage mail clients do not implement SCRAM either.
+  It helps modern clients, not the ones this problem is about.
+
+Encryption avoids all of it, because CRAM-MD5 and APOP keep working and nobody
+reconfigures anything. That belongs on the encryption side of the ledger.
+
+### Which threat is worse
+
+The trade above only resolves by comparing two threats directly: interception
+during authentication, which CRAM-MD5 and APOP defend against, versus cleartext
+passwords sitting on a sysop's consumer-grade storage. This is a judgment, not
+a measurement, and it is the judgment this design rests on: **at-rest is both
+the more likely and the more severe of the two.**
+
+**Likelihood.** The at-rest exposure is not contingent on anything. It is
+present on every Synchronet system right now, has been since each account was
+created, and is in every backup. Interception requires an attacker positioned
+on a network path, and the realistic adversary for a hobby BBS is not one. The
+dominant credential-theft vector of the era is commodity infostealer malware on
+consumer machines — precisely what a sysop's box is — and it works by scraping
+files at rest. A file of `alias<TAB>password` pairs needs no positioning, no
+timing, and no interest in this BBS specifically.
+
+**Severity.** One interception yields one credential, for one user, for one
+session. One copy of `user.tab` yields every user, every reused password,
+retroactively to whenever the system was founded, with no detection and no
+expiry.
+
+**And the protection being defended is narrower than it appears.** CRAM-MD5 and
+APOP cover SMTP, POP3 and IMAP. Terminal login, FTP and HTTP Basic transmit the
+password in the clear today and those mechanisms do nothing for them
+(`login.cpp:102`, `ftpsrvr.cpp:2684`, `websrvr.cpp:2142` are all direct
+comparisons). For a BBS, terminal login is the main event. For a telnet user
+the entire session is cleartext regardless, and the password is the least of
+what is on the wire.
+
+Two qualifications that cut the other way, and are not enough to reverse it:
+
+- **CRAM-MD5 is weaker than "protects against interception" suggests.** An
+  intercepted challenge and response is an unsalted MD5 HMAC over a known
+  challenge, so it is offline-crackable. It defends against passive replay and
+  casual snooping, not against an attacker with a wordlist.
+- **The affected users currently have both exposures.** Their passwords are
+  already in cleartext in `user.tab` *and* they have transit protection on
+  mail. Hashing removes the first for everyone and worsens the second for some.
+
+That is the trade in one sentence, and it is worth taking: it converts a
+certain, permanent, every-account exposure into a contingent, per-session one
+affecting a subset.
+
+Two things follow, and the second is not negotiable:
+
+- If the comparison came out the other way for a particular system — a sysop
+  who is confident in their storage and whose users are on hostile networks —
+  that is a real argument for encryption, which keeps both protections.
+- **Refuse rather than downgrade.** A client that cannot do TLS must fail to
+  authenticate, not be quietly handed a cleartext path. Silently moving
+  CRAM-MD5 users to `PLAIN` on port 110 is the worst outcome available and is
+  the default if nobody decides otherwise.
+
+SCRAM is the answer that gives both, and the obstacle to it is purely client
+support.
 
 The ordering, if resources allowed only one: the post-password work
 reduces how many accounts the storage question applies to. It never reduces it
@@ -237,6 +334,33 @@ machine does, unattended, at three in the morning. A design that will not come
 back up on its own is not a candidate, however good its cryptography. That
 rules out the passphrase-at-startup variant immediately and leaves the key in
 an OS facility or a file — see "Where the key would actually live".
+
+### The two sides, side by side
+
+Both branches cost something, and the costs are of different kinds — one is a
+tail risk, the other is certain and immediate. The sections that follow argue
+each in detail; this is the ledger they add up to.
+
+| | **Hashing** | **Encryption** |
+|---|---|---|
+| P0 — record not presentable | satisfied | satisfied |
+| P1 — equal passwords differ | satisfied (per-user salt) | satisfied (randomized ciphertext) |
+| P2 — offline attack | expensive, but possible; weak passwords fall | **impossible without the key** |
+| Failure on key disclosure | no key exists | **total and retroactive: every password, at once, including strong ones** |
+| CRAM-MD5, APOP, HTTP Digest | **removed** | keep working, unchanged |
+| Mail a user their password | **reset only** | keeps working |
+| Audit accounts for weak/shared passwords | **set-time only; sharing unanswerable** | keeps working |
+| Users must reconfigure a client | **yes, for CRAM-MD5/APOP users** | no |
+| Transit security for a no-TLS mail client | **worse — cleartext or refuse** | unchanged |
+| Key management | none | generate, protect, rotate, back up, never lose |
+| Portable floor on a host with no TPM or keystore | nothing to protect | **key in a file beside the data** |
+
+Neither column is empty, and the choice is not obvious from the table. It turns
+on how the two kinds of cost are weighed: hashing's are certain, immediate and
+felt by identifiable users; encryption's is a low-probability event with an
+unbounded blast radius. This design weighs them under "Which threat is worse"
+and comes out on the hashing side — but that is the judgment being made, and it
+is the thing to argue with.
 
 ### Bad arguments against encryption, withdrawn
 
@@ -316,7 +440,10 @@ that each of these capabilities is one Synchronet is better off without:
 - **Digest authentication** is the subject of its own section below. Its
   verifiers are unsalted MD5 and it is why the password must be recoverable in
   the first place — keeping it is the thing being argued against, not an
-  independent benefit.
+  independent benefit. This is the weakest of the four to dismiss, though: for
+  a client with CRAM-MD5 and no TLS, removing it means sending the password in
+  the clear instead, which is a loss for that user. See "Removing a mechanism
+  can lower a user's security".
 - **Mailing a user their password** transmits a live credential in cleartext
   over a store-and-forward network to a mailbox the BBS does not control, and
   leaves it there. A reset link or a new random password does the same job
@@ -359,36 +486,61 @@ bytes, readable by an unattended service at boot, which is a use these
 facilities are designed for; storing a credential per user is one they would be
 hopeless at.
 
-What each platform actually offers, and its limits:
+**Only two of these are actually part of an operating system.** An earlier
+version of this section listed `systemd-creds` as what "Linux" offers and the
+BSDs as having "nothing standard", which compares a package that happens to be
+preinstalled against one that happens not to be, and calls the difference an OS
+capability gap. It is not one.
 
-| Platform | Facility | Unattended? | Fit for one service key |
+- **DPAPI and the macOS Keychain are OS facilities**, present on every
+  installation, usable with no additional software.
+- **The Linux kernel keyring is a kernel facility**, and is disqualified on its
+  own merits below.
+- **`systemd-creds` is systemd**, which is not Linux — Alpine, Void, Devuan and
+  OpenRC systems do not have it. It is preinstalled on the mainstream
+  distributions, which is a packaging convenience, not a property of the OS.
+- **TPM2 sealing is hardware plus `tpm2-tss`**, which is a port or package
+  everywhere, the BSDs included.
+
+So the real axis is *default availability*, not standardness, and the genuine
+capability question is whether the machine has a TPM — which is a hardware and
+firmware question that cuts across OS families. A Linux box without a TPM and a
+FreeBSD box without a TPM are in the same position.
+
+| Facility | Where it comes from | Unattended? | Fit for one service key |
 |---|---|---|---|
-| Windows | DPAPI (`CryptProtectData`, machine scope) | yes | Good. Not a store — it returns a blob you save yourself. Machine scope means *any* local process can unprotect it, so it defends a stolen file, not a local attacker. |
-| Windows | Credential Manager (`CredWrite`) | per-account | Workable. A real store, per-user, with a per-item blob limit of a few kilobytes. Fine for one key, useless in bulk. |
-| Windows | CNG / DPAPI-NG (`NCryptProtectSecret`) | yes | Good, and scriptable to SID-based descriptors. Newer, less familiar. |
-| Linux | `systemd-creds` + `LoadCredentialEncrypted=` | yes | **Best fit.** Host-bound, optionally TPM2-sealed, delivered into `$CREDENTIALS_DIRECTORY` at unit start with no operator. Needs systemd 250+. |
-| Linux | TPM2 sealing directly | yes | Good, with a caveat: sealed data is bound to the machine, so restoring a backup onto new hardware loses the key and every password with it. |
-| Linux | kernel keyring (`add_key`/`keyctl`) | **no** | **Wrong tool.** In-memory and does not survive a reboot, so something must re-provision it at every boot — which is the original problem. Quotas are small besides. |
-| macOS | System Keychain | yes | Good. Daemons can read system-keychain items without a login session. |
-| BSDs | — | — | **Nothing standard.** No OS secret facility comparable to the above, so the key ends up in a mode-0600 file. |
+| DPAPI (`CryptProtectData`, machine scope) | Windows, base | yes | Good. Not a store — it returns a blob you save yourself. Machine scope means *any* local process can unprotect it, so it defends a stolen file, not a local attacker. |
+| Credential Manager (`CredWrite`) | Windows, base | per-account | Workable. A real store, per-user, with a per-item blob limit of a few kilobytes. Fine for one key, useless in bulk. |
+| CNG / DPAPI-NG (`NCryptProtectSecret`) | Windows, base | yes | Good, and scriptable to SID-based descriptors. Newer, less familiar. |
+| System Keychain | macOS, base | yes | Good. Daemons can read system-keychain items without a login session. |
+| `systemd-creds` + `LoadCredentialEncrypted=` | systemd (preinstalled on mainstream Linux) | yes | **Best fit where present.** Host-bound, optionally TPM2-sealed, delivered into `$CREDENTIALS_DIRECTORY` at unit start with no operator. systemd 250+. |
+| TPM2 sealing | hardware + `tpm2-tss`, a package or port on Linux **and** the BSDs | yes | Good, with a caveat: sealed data is bound to the machine, so restoring a backup onto new hardware loses the key and every password with it. |
+| Kernel keyring (`add_key`/`keyctl`) | Linux kernel | **no** | **Wrong tool.** In-memory and does not survive a reboot, so something must re-provision it at every boot — which is the original problem. Quotas are small besides. |
+| A mode-0600 file | anywhere | yes | The floor, and the honest default. Protects against a stolen backup or a wrongly-permissioned share; not against a local attacker who can read it. |
 
 Measured on one Debian 13 host while writing this: `systemd 257`,
-`systemd-creds` present, `/dev/tpm0` and `/dev/tpmrm0` available — so the best
-Linux option is available in practice, not just on paper. The kernel keyring's
-per-user quotas on that same host are `maxkeys` **200** and `maxbytes` **20000**
-(`/proc/sys/kernel/keys/`), which is ample for one key and confirms it could
-never hold per-user secrets — but its lack of persistence across reboot is what
-disqualifies it, not its size. The Windows and macOS rows are from
-documentation rather than measurement and should be confirmed by someone on
-those platforms before anything is built.
+`systemd-creds` present, `/dev/tpm0` and `/dev/tpmrm0` available. The kernel
+keyring's per-user quotas on that same host are `maxkeys` **200** and
+`maxbytes` **20000** (`/proc/sys/kernel/keys/`), ample for one key — but its
+lack of persistence across reboot is what disqualifies it, not its size. Every
+other row is from documentation rather than measurement, and the Windows,
+macOS and BSD entries should be confirmed by someone running those systems
+before anything is built.
 
-So availability is not the obstacle it was earlier made out to be — on Windows,
-Linux and macOS a sysop is not being asked to invent anything. Two real costs
-remain:
+**The portable design does not name any of them.** Synchronet reads the key
+from a location the sysop configures; how that location is protected is the
+sysop's decision and their platform's business. A file is the floor and works
+everywhere; a sysop who wants DPAPI, a Keychain item, `systemd-creds` or a
+TPM-sealed blob supplies the key through that mechanism instead. Writing the
+design against one platform's facility is what produced the false asymmetry in
+the first place.
 
-- **The BSDs have no answer**, so a portable design has to tolerate the key
-  living in a file, which is the weakest configuration and would be the one
-  some installations actually run.
+What remains a real cost:
+
+- **The floor is a file**, and some installations will run on it, because that
+  is what happens when the better option needs hardware or a package the sysop
+  does not have. A design has to be honest that this is the common case, not
+  the fallback nobody uses.
 - **Multi-host installations provision, they do not federate.** The answer to
   several hosts sharing one user database is to install the same secret on each
   — an ordinary step, of the same kind as installing a TLS private key, which
@@ -476,16 +628,28 @@ The consequences are real and belong in the same breath as the decision:
   the transport prerequisite is not negotiable, and why migration has to be
   boring.
 
-## Why the digest authentication schemes must go
+## Why the digest authentication schemes must go — under hashing
+
+**This section is conditional on hashing being chosen. Under encryption every
+mechanism in it keeps working, unchanged.** An earlier draft stated the
+argument unconditionally, which was wrong and made the deprecations look like
+an inherent consequence of moving credentials out of `user.tab`. They are not.
+They are the price of the hashing branch specifically, and they are the main
+entry on that side of the ledger under "Hashing or encryption".
 
 Any challenge-response scheme in which the *server* verifies an HMAC or digest
-keyed by the password requires the server to hold something password-equivalent.
-No storage format changes this: the stored material may be a *substitute* for
-the password rather than the password itself (see "Per-mechanism verifiers"
-below), but it is always sufficient to authenticate, and always cheap to attack
+keyed by the password requires the server to hold something password-equivalent
+at the moment of verification. A one-way hash cannot supply it. **Encryption
+can** — it holds the password and can recover it, which is exactly the
+reversibility the trade is about. So the constraint below is a constraint of
+hashing, not of storage.
+
+Within the hashing branch, the stored material may be a *substitute* for the
+password rather than the password itself (see "Per-mechanism verifiers" below),
+but it is always sufficient to authenticate, and always cheap to attack
 offline. The affected mechanisms:
 
-| Mechanism | Site | Fate |
+| Mechanism | Site | Fate under hashing |
 |---|---|---|
 | SMTP CRAM-MD5 | `mailsrvr.cpp:4472` | removed |
 | POP3 APOP | `mailsrvr.cpp:1397` | removed |
@@ -495,12 +659,15 @@ offline. The affected mechanisms:
 | MQTT broker PSK | `broker.js:2665`, `mqtt_broker.cpp:86-116` | breaks; enumerates sysop passwords |
 | IRC door `PASS` | `irc.js:94,140` | breaks; hands password to the IRC server |
 
-A transitional encrypted store "for sysops who still want CRAM-MD5" was
-considered and **rejected**: under this threat model any user whose password
-remains recoverable receives none of the protection. The deprecation is not
-cleanup accompanying the real work; it *is* the mitigation. Since the storage
-change is mandatory, these removals are unconditional — there is no mode in
-which the mechanisms still function.
+A **hybrid** — hashed storage generally, with an encrypted copy kept "for
+sysops who still want CRAM-MD5" — was considered and rejected. Any user whose
+password remains recoverable receives none of the protection, so the hybrid
+buys the failure mode of encryption and the deprecations of neither. Choosing
+encryption outright is the coherent version of that preference.
+
+Within the hashing branch these removals are unconditional: since hashed
+storage is mandatory when chosen, there is no per-system mode in which the
+mechanisms still function.
 
 The bottom three rows are a different case and are treated separately under
 "Passwords used where a key or token belongs": those sites are not using the
@@ -1236,7 +1403,9 @@ mandatory and there is no rollback, they must ship *before* the storage change
 reaches a sysop, not alongside it.
 
 1. **Transport.** Add STARTTLS to `imapservice.js`, or an IMAPS listener, so
-   port 143 has a usable authentication path once CRAM-MD5 is gone.
+   port 143 has a usable authentication path once CRAM-MD5 is gone. This is
+   necessary and not sufficient — see "Removing a mechanism can lower a user's
+   security" for what it does not cover.
 2. **Choose the crypto library** against the linkage constraint in Constraints,
    and land whatever build work it implies — including the MSVC `sha256.c` gap
    if `src/hash/` wins.
@@ -1263,10 +1432,11 @@ reaches a sysop, not alongside it.
   storage and encryption is still argued for. Everything else here is
   compatible with either. Settling it needs agreement on two things: whether a
   total, retroactive failure on key disclosure is acceptable in exchange for
-  being immune to offline attack in the meantime; and whether a portable design
-  can accept that on the BSDs the key would live in a file. The one thing
-  already settled is that no scheme may require a human to type a key at
-  startup.
+  being immune to offline attack in the meantime; and whether it is acceptable
+  that on a machine with no TPM and no OS keystore in use — which is the common
+  case, on every platform — the key sits in a file beside the data it protects.
+  The one thing already settled is that no scheme may require a human to type a
+  key at startup.
 - **HTTP Digest disposition.** Remove it, or pin the realm to `sys_name` and
   store an HA1 verifier? The case for removing it is that HA1 is unsalted MD5
   and so fails P1 and P2 exactly as the CRAM-MD5 midstates do, and that its only
@@ -1284,7 +1454,15 @@ reaches a sysop, not alongside it.
   never happened.
 - **Whether SCRAM-SHA-256 is scoped into this work or scheduled after it.** The
   design assumes plain authentication over TLS and does not depend on SCRAM.
-  Sequencing step 1 is required either way.
+  Sequencing step 1 is required either way, and SCRAM does not help the clients
+  most affected by the deprecations, which do not implement it.
+- **Whether plaintext authentication should be refused on unencrypted
+  connections.** Refusing makes an affected client fail visibly; permitting it
+  lets that client silently downgrade from CRAM-MD5 to a password sent in the
+  clear. This design takes a position — refuse — under "Which threat is worse";
+  what remains open is whether a sysop may override it.
+- **What clients are actually in use.** The deprecations' cost cannot be
+  estimated without this, and no audit exists.
 - Whether `pwmod` should move to `pass.tab` as password metadata.
 
 ## Related
