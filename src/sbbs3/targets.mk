@@ -100,32 +100,35 @@ mono:	xpdev-mt smblib \
 		$(MTOBJODIR) $(EXEODIR) \
 		$(SBBSMONO)
 
+# These sub-makes compile sources of ours that include text.h, which the
+# official-tree rule regenerates.  Order them after it so a parallel build
+# cannot compile them while textgen is rewriting the header.
 .PHONY: scfg
-scfg:
+scfg: | text.h
 	$(MAKE) -C scfg
 
 .PHONY: uedit
-uedit: uifc-mt
+uedit: uifc-mt | text.h
 	$(MAKE) -C uedit
 
 .PHONY: umonitor
-umonitor: uifc-mt
+umonitor: uifc-mt | text.h
 	$(MAKE) -C umonitor
 
 .PHONY: gtkmonitor
-gtkmonitor:
+gtkmonitor: | text.h
 	$(MAKE) -C gtkmonitor
 
 .PHONY: gtkchat
-gtkchat:
+gtkchat: | text.h
 	$(MAKE) -C gtkchat
 
 .PHONY: gtkuseredit
-gtkuseredit:
+gtkuseredit: | text.h
 	$(MAKE) -C gtkuseredit
 
 .PHONY: gtkuserlist
-gtkuserlist:
+gtkuserlist: | text.h
 	$(MAKE) -C gtkuserlist
 
 ifdef SBBSEXEC
