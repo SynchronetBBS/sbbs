@@ -883,7 +883,11 @@ function syncretro_paginate(items, per_page)
 // The shipped cell format: a bright-cyan 3-digit number, a \xb3 (CP437 vertical
 // bar), then the cyan title. xtrn_sec.js's look (XtrnProgLstFmt). Takes the
 // cartridge number (%u) and the already-padded title (%s).
-var SYNCRETRO_CELL_FMT = "\1h\1c%3u \xb3 \1n\1c%s\1n";
+/* No space after the separator: syncretro_cell() reserves that column for the
+ * resume marker, so a marked cartridge reads "  1 \xb3*Title" and an unmarked one
+ * "  1 \xb3 Title" -- the same width either way, and the title starts in the
+ * same column it always did. */
+var SYNCRETRO_CELL_FMT = "\1h\1c%3u \xb3\1n\1c%s\1n";
 
 // One list cell. `width` is the cell's VISIBLE width; the title is padded and
 // clipped to fill whatever columns the format's prefix leaves, so the grid lines
@@ -907,19 +911,25 @@ function syncretro_cell(index, rom, width, fmt)
 	 * here. Absent on any caller that never set it, which is why this is an
 	 * `if`, not a default in the object literal above.
 	 *
-	 * The marker is reserved BEFORE the %-Ns.Ns clip below, not appended after
-	 * it: appending first would let a title at or over namew columns push the
-	 * marker off the end of the clip, so a resumable cartridge would silently
-	 * stop showing as resumable. */
-	if (rom.resumed)
-		mark = " *";
+	 * The marker leads the title rather than trailing it. Trailing put it hard
+	 * against the NEXT column's number in the grid, where it read as belonging
+	 * to that cell. Its column is reserved whether or not this cartridge is
+	 * marked, so every title starts at the same column and the grid still lines
+	 * up -- and reserving it before the %-Ns.Ns clip is also what stops a long
+	 * title pushing the marker off the end of the clip.
+	 *
+	 * It goes in the title field, not into the format's prefix, because
+	 * `cell_fmt` is overridable by the sysop ([text], see syncretro_lobby.js)
+	 * and takes exactly two substitutions -- the number and the title. A third
+	 * one here would feed the marker to an existing two-argument override. */
+	mark = rom.resumed ? "*" : " ";
 	if (!fmt)
 		fmt = SYNCRETRO_CELL_FMT;
 	namew = width - strip_ctrl_a(format(fmt, index, "")).length - mark.length;
 	if (namew < 1)
 		namew = 1;
 	return format(fmt, index,
-	              format("%-" + namew + "." + namew + "s", label) + mark);
+	              mark + format("%-" + namew + "." + namew + "s", label));
 }
 
 // --- platform / target token ------------------------------------------------

@@ -410,13 +410,18 @@ check(noyear.indexOf("(0)") < 0, "a missing year is omitted, not printed as 0");
 // custom prefix still fills exactly `width` visible columns.
 var custom = syncretro_cell(7, {title: "Astrosmash", year: 1981}, 36, "\1w%u) %s");
 eq(vislen(custom), 36, "a custom cell format still fills the cell width");
-check(custom.indexOf("7) Astrosmash") >= 0, "the custom format's own punctuation survives");
+// Two spaces, not one: the format supplies its own, and syncretro_cell() always
+// reserves the column immediately before the title for the resume marker,
+// whether or not this cartridge is marked. The shipped SYNCRETRO_CELL_FMT ends
+// at its separator so that column is the space it already had; a custom format
+// keeping its own trailing space simply gets both.
+check(custom.indexOf("7)  Astrosmash") >= 0, "the custom format's own punctuation survives");
 // The format takes the number FIRST and the title SECOND (printf positional
 // args, exactly like text.dat's XtrnProgLstFmt); a wide number field is measured,
 // not assumed.
 var wide = syncretro_cell(7, {title: "Astrosmash"}, 36, "\1c%5u \1n%s");
 eq(vislen(wide), 36, "a wider number field takes its columns from the title");
-check(/ {4}7 Astrosmash/.test(strip_ctrl_a(wide)), "the number is padded to the field width");
+check(/ {4}7  Astrosmash/.test(strip_ctrl_a(wide)), "the number is padded to the field width");
 // >999 cartridges: "%3u" spends 4 columns on a 4-digit number, and the title
 // column has to shrink by one to match -- a hardcoded prefix width would not.
 eq(vislen(syncretro_cell(1000, {title: "Astrosmash"}, 36)), 36,

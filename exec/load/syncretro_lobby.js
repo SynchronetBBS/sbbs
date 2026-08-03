@@ -110,11 +110,11 @@ var SYNCRETRO_LOBBY_TEXT = {
 	 * ambiguous on a fast read -- it can parse as "none saved yet" rather than
 	 * "you cannot save here", and that misreading costs a player the game they
 	 * believed was saved. */
-	cabinet_public:  "\1h\1cCabinet:\1n  [Public]  Private%s\r\n"
-	              + "\1n          Scores count.  Games cannot be saved here.",
-	cabinet_private: "\1h\1cCabinet:\1n   Public  [Private]%s\r\n"
-	              + "\1n           Scores are private.  Games save and resume.",
-	cabinet_hint:    "       (%s to switch)",               /* the toggle key */
+	cabinet_public:  "\1h\1cCabinet:\1n \1c[\1hPublic\1n\1c] Private\1n  "
+	              + "\1cScores count, no saving.%s",
+	cabinet_private: "\1h\1cCabinet:\1n \1c Public [\1hPrivate\1n\1c]\1n  "
+	              + "\1cScores yours, games resume.%s",
+	cabinet_hint:    "  \1n(%s to switch)",                 /* the toggle key */
 	/* the cartridge grid */
 	cell_fmt:       SYNCRETRO_CELL_FMT,                     /* number, title */
 	/* footer */
@@ -307,7 +307,7 @@ function syncretro_lobby_init(spec)
 	if (syncretro_lobby_text("top_played") === "")
 		syncretro_lobby_hrows--;
 	if (syncretro_lobby_con.shared_saves)   /* the cabinet line -- see syncretro_lobby_draw() */
-		syncretro_lobby_hrows += 2;
+		syncretro_lobby_hrows += 1;
 	if (syncretro_lobby_footer)
 		syncretro_lobby_frows += syncretro_lobby_gl.display_file_rows(syncretro_lobby_footer);
 
