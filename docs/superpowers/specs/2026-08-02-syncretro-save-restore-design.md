@@ -158,14 +158,24 @@ costs, because a player needs to know before starting a game — discovering it
 afterwards is how someone loses a high-score run they believed counted.
 
 ```
-Cabinet:  [Public]  Private        (P to switch)
-          High scores shared with everyone.  No saved games.
+Cabinet:  [Public]  Private        (C to switch)
+          Scores count.  Games cannot be saved here.
 ```
 
 ```
-Cabinet:   Public  [Private]       (P to switch)
-           Your own machine.  Scores are yours; games resume where you left off.
+Cabinet:   Public  [Private]       (C to switch)
+           Scores are private.  Games save and resume.
 ```
+
+`C`, not `P`: `P` is the lobby's existing Prev-page hotkey
+(`syncretro_lobby.js`'s paging block in `syncretro_lobby()`), and binding it
+to the cabinet toggle too would have silently broken paging on every
+shared-saves console.
+
+Both description lines read as a **rule**, not a status. "No saved games."
+parses on a fast read as "none saved yet" rather than "you cannot save
+here", and that misreading costs a player the game they believed was
+saved.
 
 ### 5. Where the preference lives
 
@@ -208,12 +218,24 @@ Permission is explicit, on the command line:
 |---|---|
 | `-state <key8>` present | snapshots permitted; name the file with this key, in `-home` |
 | `-state` absent | no snapshot written, none looked for |
-| `-state auto` | compute the key from the core, ROM and options (a door run by hand) |
 
 The lobby decides, because it is the only half that knows all three inputs —
 the capability claim, the sysop's switch, and this player's cabinet — and it
 expresses the whole decision as one flag. On the shared cabinet it omits
 `-state`, and the door has no way to form an opinion.
+
+`syncretro_door.c`'s usage text once also promised a bare `-state auto` that
+derives the key by itself, for a door run by hand. It does not, and it
+cannot where the flag is read: `sr_door_state_key()` is populated during
+argv parsing, before `sr_config_apply()`, `rc_core_open()` and option
+resolution run, so none of the three key inputs (core hash, ROM hash, the
+resolved options) exist yet. Deriving the key there would mean restructuring
+door setup ordering the rest of `main.c` depends on, for a path the lobby
+never takes. A bare `-state auto` still works exactly as any other
+`-state <key>` does — it permits snapshots and names the file with the
+literal key `auto`, producing an inert `<rom>.auto.state` the lobby never
+looks for — so nothing breaks; only the promise that it derives anything is
+gone.
 
 Passing the key rather than having the door recompute it also avoids re-hashing
 a ROM the discovery cache already hashed, and costs about 14 characters of a

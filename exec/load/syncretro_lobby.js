@@ -37,8 +37,11 @@
 //
 // `spec` survives as an escape hatch for a lobby run from an unusual
 // directory: syncretro_lobby_init() below reads ONLY spec.dir (default
-// js.exec_dir) and ignores every other key -- there is no console-describing
-// spec key left to read.
+// js.exec_dir) and spec.data_dir (default system.data_dir -- an override
+// point for tests, so a headless run never writes the derived core-hash
+// cache or a shared-cabinet home directory into a live install's data/)
+// and ignores every other key -- there is no console-describing spec key
+// left to read.
 //
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
@@ -101,11 +104,16 @@ var SYNCRETRO_LOBBY_TEXT = {
 	top_played_fmt: "\1c%s \1h(%d)\1n  ",                   /* cartridge title, play count */
 	/* the cabinet line -- drawn only on a shared-saves console (today only the
 	 * arcade). %s is the "(C to switch)" hint (cabinet_hint below), already
-	 * formatted and blank for a guest, whose choice cannot persist. */
+	 * formatted and blank for a guest, whose choice cannot persist.
+	 *
+	 * Both lines below read as a RULE, not a status: "No saved games." was
+	 * ambiguous on a fast read -- it can parse as "none saved yet" rather than
+	 * "you cannot save here", and that misreading costs a player the game they
+	 * believed was saved. */
 	cabinet_public:  "\1h\1cCabinet:\1n  [Public]  Private%s\r\n"
-	              + "\1n          High scores shared with everyone.  No saved games.",
+	              + "\1n          Scores count.  Games cannot be saved here.",
 	cabinet_private: "\1h\1cCabinet:\1n   Public  [Private]%s\r\n"
-	              + "\1n           Your own machine.  Scores are yours; games resume where you left off.",
+	              + "\1n           Scores are private.  Games save and resume.",
 	cabinet_hint:    "       (%s to switch)",               /* the toggle key */
 	/* the cartridge grid */
 	cell_fmt:       SYNCRETRO_CELL_FMT,                     /* number, title */
@@ -126,8 +134,13 @@ var SYNCRETRO_LOBBY_TEXT = {
 	rom_gone:       "\r\n\1h\1rThat cartridge is gone. Rescanning.\1n\r\n"
 };
 
-/* Set once, by syncretro_lobby(). */
+/* Set once, by syncretro_lobby(). syncretro_lobby_data_dir is spec.data_dir
+ * (default system.data_dir) -- see the spec comment above; every data_dir-
+ * derived path in this file (the core-hash cache, the shared/private -home)
+ * reads it rather than system.data_dir directly, so a test pointing it at
+ * system.temp_dir never touches the live install's data/. */
 var syncretro_lobby_dir, syncretro_lobby_con, syncretro_lobby_rules, syncretro_lobby_bios, syncretro_lobby_binary, syncretro_lobby_stdio, syncretro_lobby_cfg;
+var syncretro_lobby_data_dir;
 /* The whole merged ini (syncretro_lobby_ini()'s return), the console's
  * libretro core hash, and games.ini/games.local.ini's rows keyed by romset --
  * all resolved ONCE in syncretro_lobby_init() and read per cartridge from
@@ -233,6 +246,7 @@ function syncretro_lobby_init(spec)
 	if (!spec)
 		spec = {};
 	syncretro_lobby_dir = backslash(spec.dir || js.exec_dir);
+	syncretro_lobby_data_dir = spec.data_dir || system.data_dir;
 	ini = syncretro_lobby_ini(syncretro_lobby_dir);
 	syncretro_lobby_ini_cache = ini;
 
@@ -379,7 +393,7 @@ function syncretro_lobby_init(spec)
 	syncretro_lobby_core_md5 = syncretro_core_md5(
 	    syncretro_core_path(syncretro_lobby_dir, syncretro_lobby_con.core,
 	                        syncretro_core_ext(syncretro_platform(system.platform))),
-	    syncretro_core_cache_path(system.data_dir, syncretro_lobby_con.id));
+	    syncretro_core_cache_path(syncretro_lobby_data_dir, syncretro_lobby_con.id));
 }
 
 /* Resolve one [lobby] display-file key. Absent -> the auto-detected default name;
@@ -621,8 +635,8 @@ function syncretro_lobby_dropfile(stdio)
 function syncretro_lobby_home()
 {
 	return syncretro_lobby_con.shared_saves
-	    ? system.data_dir + "syncretro/" + syncretro_lobby_con.id + "/shared"
-	    : system.data_dir + "user/" + format("%04d", user.number) + "/" + syncretro_lobby_con.id;
+	    ? syncretro_lobby_data_dir + "syncretro/" + syncretro_lobby_con.id + "/shared"
+	    : syncretro_lobby_data_dir + "user/" + format("%04d", user.number) + "/" + syncretro_lobby_con.id;
 }
 
 /* True when nobody else's session can compete for this player's game on this
@@ -914,7 +928,7 @@ function syncretro_lobby_play(rom)
 	/* Logged whatever the door's exit status: a crash is still a play. The console
 	 * rides along, so one append-only log serves every console and the board can
 	 * still show only this one's. */
-	syncretro_log_play(syncretro_plays_path(system.data_dir), {
+	syncretro_log_play(syncretro_plays_path(syncretro_lobby_data_dir), {
 		t:       time(),
 		user:    user.number,
 		alias:   user.alias,
@@ -934,7 +948,7 @@ function syncretro_lobby_play(rom)
  * hang -- on a big ROM set that first scan is genuinely slow. */
 function syncretro_lobby_discover()
 {
-	var cache = syncretro_cache_open(syncretro_cache_path(system.data_dir, syncretro_lobby_con.id));
+	var cache = syncretro_cache_open(syncretro_cache_path(syncretro_lobby_data_dir, syncretro_lobby_con.id));
 	var cold  = !Object.keys(cache.entries).length;
 	var roms;
 
@@ -994,7 +1008,7 @@ function syncretro_lobby(spec)
 	page   = 0;
 	regeom = 0;
 	while (!js.terminated && bbs.online) {
-		plays    = syncretro_read_plays(syncretro_plays_path(system.data_dir), syncretro_lobby_con.id);
+		plays    = syncretro_read_plays(syncretro_plays_path(syncretro_lobby_data_dir), syncretro_lobby_con.id);
 		board    = syncretro_top_played(plays, 5);
 		cols     = syncretro_columns(console.screen_columns, syncretro_lobby_cellw);
 		per_col  = syncretro_page_rows(console.screen_rows, syncretro_lobby_hrows, syncretro_lobby_frows);

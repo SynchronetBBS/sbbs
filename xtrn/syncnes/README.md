@@ -133,6 +133,12 @@ when, for how long), and launches the door. In-game:
 A **SyncTERM**-class terminal gets graphics and sound; the door degrades rather
 than failing on a terminal without them.
 
+## Your game resumes where you left off
+
+Leaving a cartridge — quitting, hanging up, or a dropped connection — saves
+it. Play it again and it picks up right there instead of starting over.
+`Ctrl-R` still resets the console for a fresh start whenever you want one.
+
 ## Configuration
 
 `syncretro.ini` ships with the door and holds every setting, fully commented

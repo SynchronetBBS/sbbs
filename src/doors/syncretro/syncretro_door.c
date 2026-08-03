@@ -402,7 +402,7 @@ static void sr_door_usage(const char *argv0)
 		"  -t<seconds>        session time limit; the door exits when it elapses\n"
 		"  -name <handle>     player name\n"
 		"  -home <dir>        per-user sandbox: save states + SRAM land here\n"
-		"  -state <key>       permit save states; <key> names the file (\"auto\" to derive)\n"
+		"  -state <key>       permit save states; <key> names the file\n"
 		"\n"
 		"  -help, --help, -?  show this help\n"
 		"\n",

@@ -162,8 +162,22 @@ syncretro <path>/door32.sys -name "<user>" -home <dir> -core freeintv_libretro.s
 ```
 
 DOOR32.SYS supplies the socket + time left; the door probes terminal geometry at
-connect. `-home` is the per-user sandbox that SRAM and save states land in. Run
-`syncretro -help` for the full option list.
+connect. `-home` is the per-user sandbox that SRAM and save states land in.
+
+`-state <key>` is what actually permits a save state, separately from
+`-home`. Its **absence** is what disables suspend/resume — a session with no
+`-state` writes no snapshot on exit and looks for none on entry, whatever
+`-home` was given. The door never infers permission from the shape of
+`-home` itself: that would couple it to the lobby's own path conventions
+(shared vs. per-user) and misbehave the moment either changes, or the door
+is run by hand with an arbitrary `-home`. A caller that wants snapshots has
+to say so explicitly with `-state`; the lobby is the one that decides
+whether to, from the console's `save_state` claim, the sysop's
+`auto_resume` switch, and (on a shared-saves console) which cabinet this
+player is on — see
+[../../../docs/superpowers/specs/2026-08-02-syncretro-save-restore-design.md](../../../docs/superpowers/specs/2026-08-02-syncretro-save-restore-design.md).
+
+Run `syncretro -help` for the full option list.
 
 ### Controls
 

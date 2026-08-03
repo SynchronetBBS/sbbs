@@ -162,6 +162,37 @@ that game's scores in memory and write them at exit, so the second one out wins
 and the first one's scores are lost. It is a lost update, not a corrupt file,
 and it needs a busy BBS and one popular game to happen at all.
 
+## Your own cabinet, or the shared one
+
+The picker offers a choice, `C` to switch:
+
+```
+Cabinet:  [Public]  Private        (C to switch)
+          Scores count.  Games cannot be saved here.
+```
+
+- **Public** — the machine everyone competes on. Your high score counts
+  against every other player's. Nothing is ever saved: quitting or dropping
+  carrier starts the next visit from a blank machine, because a restore here
+  would roll back scores other players set in between.
+- **Private** — a cabinet that is yours alone. Its high scores are yours, not
+  shared, and its game **resumes where you left off**, including after a
+  dropped connection. `Ctrl-R` still starts that machine over, keeping your
+  accumulated scores.
+
+A guest account always lands on the public cabinet — a shared login can't
+hold a private preference — and sees the line with no `(C to switch)` hint.
+
+**Saved games are off for every romset at ship**, on the private cabinet as
+much as the public one, whatever a player chooses. MAME 2003-Plus's
+save-state support is per-driver across roughly 5,000 drivers, and none have
+been verified here: a partially-supporting driver would restore a subtly
+broken machine that plays wrong rather than failing with an error. Turning
+`save_state` on for a romset once it's been played through a resume and
+confirmed correct is a one-line change to `games.local.ini` — see
+[`GAMES_INI.md`](../../src/doors/syncretro/GAMES_INI.md) sec 4 and sec 14 —
+not a code change, and it is entirely at the sysop's own risk until then.
+
 ## Per-game facts
 
 Because a romset cannot be renamed, `games.ini` maps romset names to readable

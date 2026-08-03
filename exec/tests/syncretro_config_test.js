@@ -28,6 +28,13 @@ var f;
 
 mkpath(dir);
 
+// Every syncretro_lobby_init() call below passes this as spec.data_dir, so
+// the derived core-hash cache and (for the gate console) the shared-cabinet
+// home directory land here instead of the live install's data/ -- see the
+// spec.data_dir comment at the top of syncretro_lobby.js. Nothing needs to
+// mkpath it ahead of time: syncretro_core_cache_path() creates it lazily.
+var data_dir = system.temp_dir + "syncretro_cfgtest_data/";
+
 f = new File(dir + "syncretro.ini");
 f.open("w");
 f.write("[console]\n"
@@ -177,7 +184,7 @@ f.open("wb"); f.write("core-bytes"); f.close();
 f = new File(sdir + "roms/test.rom");
 f.open("wb"); f.write("rom-bytes"); f.close();
 
-syncretro_lobby_init({ dir: sdir });
+syncretro_lobby_init({ dir: sdir, data_dir: data_dir });
 var probe_roms = syncretro_discover(sdir + "roms/", syncretro_lobby_rules, null);
 var probe_rom  = probe_roms[0];
 
@@ -196,21 +203,21 @@ check_str(got, want, "the lobby's key matches syncretro_state_key() on the same 
 // `ini.state.auto_resume || "true"` would silently ignore this and never
 // disable anything. This is the regression test for that trap.
 write_ini("syncretro.local.ini", "[state]\nauto_resume = false\n");
-syncretro_lobby_init({ dir: sdir });
+syncretro_lobby_init({ dir: sdir, data_dir: data_dir });
 check_str(syncretro_lobby_state_key(probe_rom), "",
           "auto_resume = false disables suspend/resume");
 file_remove(sdir + "syncretro.local.ini");
 
 // [console] save_state = false disables it, with no per-romset override.
 write_ini("syncretro.local.ini", "[console]\nsave_state = false\n");
-syncretro_lobby_init({ dir: sdir });
+syncretro_lobby_init({ dir: sdir, data_dir: data_dir });
 check_str(syncretro_lobby_state_key(probe_rom), "",
           "console save_state = false disables suspend/resume");
 
 // ...but a per-romset games.local.ini override of true wins over the
 // console-level false. The romset key is the ROM's stem, lower-cased.
 write_ini("games.local.ini", "[test]\nname = Test\nsave_state = true\n");
-syncretro_lobby_init({ dir: sdir });
+syncretro_lobby_init({ dir: sdir, data_dir: data_dir });
 check_str(syncretro_lobby_games_save_state("test.rom"), "true",
           "per-romset save_state override reads back");
 check(syncretro_lobby_state_key(probe_rom) !== "",
@@ -222,14 +229,13 @@ file_remove(sdir + "syncretro.local.ini");
 // stored preference (jsexec's own unauthenticated user, #0, has none),
 // syncretro_lobby_private() answers "not private" for a shared console.
 write_ini("syncretro.local.ini", "[console]\nshared_saves = true\n");
-syncretro_lobby_init({ dir: sdir });
+syncretro_lobby_init({ dir: sdir, data_dir: data_dir });
 check_str(syncretro_lobby_state_key(probe_rom), "",
           "a shared cabinet never gets a snapshot key");
 file_remove(sdir + "syncretro.local.ini");
 
-// Fresh install's derived core-hash cache: nothing above should leave a real
-// artifact behind in the live install's data_dir under this fake console id.
-file_remove(system.data_dir + "syncretro/core." + syncretro_lobby_con.id + ".json");
+// The derived core-hash cache landed under data_dir (above), not the live
+// install's data/ -- see the comment on that var's declaration.
 
 // --- withheld permission must never look like a dead snapshot -----------------
 //
@@ -276,7 +282,7 @@ f.open("wb"); f.write("core-bytes"); f.close();
 f = new File(gdir + "roms/gatetest.rom");
 f.open("wb"); f.write("rom-bytes"); f.close();
 
-syncretro_lobby_init({ dir: gdir });
+syncretro_lobby_init({ dir: gdir, data_dir: data_dir });
 var gate_roms = syncretro_discover(gdir + "roms/", syncretro_lobby_rules, null);
 var gate_home = syncretro_lobby_home();
 var gate_opts = syncretro_state_opts(syncretro_lobby_ini_cache.options);
@@ -292,7 +298,7 @@ f.open("wb"); f.write("snapshot bytes"); f.close();
 // delete the snapshot -- and per syncretro_lobby_auto_resume(), must not
 // even run.
 write_gate_ini("syncretro.local.ini", "[state]\nauto_resume = false\n");
-syncretro_lobby_init({ dir: gdir });
+syncretro_lobby_init({ dir: gdir, data_dir: data_dir });
 check(!syncretro_lobby_auto_resume(), "auto_resume = false reads back off");
 syncretro_lobby_mark_resumable(gate_roms);
 check(file_exists(gate_snapshot),
@@ -304,7 +310,7 @@ file_remove(gdir + "syncretro.local.ini");
 // still use the RAW key -- a snapshot that key matches must survive even
 // though no ROM on this console is currently granted a key.
 write_gate_ini("syncretro.local.ini", "[console]\nsave_state = false\n");
-syncretro_lobby_init({ dir: gdir });
+syncretro_lobby_init({ dir: gdir, data_dir: data_dir });
 check(syncretro_lobby_auto_resume(), "auto_resume stays on for this case");
 check_str(syncretro_lobby_state_key(gate_roms[0]), "",
           "no ROM is permitted a key while save_state = false");
@@ -319,19 +325,17 @@ file_remove(gdir + "syncretro.local.ini");
 var dead_snapshot = backslash(gate_home) + gate_stem + ".deadbeef.state";
 f = new File(dead_snapshot);
 f.open("wb"); f.write("stale snapshot bytes"); f.close();
-syncretro_lobby_init({ dir: gdir });
+syncretro_lobby_init({ dir: gdir, data_dir: data_dir });
 syncretro_lobby_mark_resumable(gate_roms);
 check(!file_exists(dead_snapshot),
       "a snapshot with the wrong key is still swept once permission returns");
 check(file_exists(gate_snapshot),
       "and the matching snapshot is still kept alongside it");
 
-// Clean up: syncretro_lobby_home()/syncretro_core_cache_path() write under
-// system.data_dir -- the live install's data directory -- via a fake console
-// id ("probegate"). Both are DERIVED/regenerable, but nothing from this test
-// should linger there.
-file_remove(gate_snapshot);
-file_remove(system.data_dir + "syncretro/core." + syncretro_lobby_con.id + ".json");
+// syncretro_lobby_home() and syncretro_core_cache_path() wrote under this
+// test's own data_dir (system.temp_dir), not the live install's data/, so
+// there is nothing to clean up there -- see the data_dir comment near the
+// top of this file.
 
 print(failures ? "FAILED: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);

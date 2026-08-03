@@ -59,6 +59,9 @@ syncretro_io.c      terminal I/O: enter/probe/leave + the present path (termgfx 
 syncretro_input.c   BBS socket decode (ESC/CSI/APC/kitty/evdev) -> a cached RetroPad state
 syncretro_door.c    DOOR32.SYS / -s<fd> / -name / -home / -t session setup
 syncretro_config.c  per-user sandbox + core/system/save/ROM path resolution
+syncretro_state.c/.h  suspend/resume: the snapshot staleness key, its path
+                    under -home, and the retro_serialize()/retro_unserialize()
+                    wrappers main.c calls at session end/start (sec 11)
 syncretro_quant.c/.h  truecolor frame -> 256 colors + palette, for the sixel tier
 syncretro.h         cross-module contract shared by every syncretro_*.c (peer of retro_core.h)
 libretro.h          VENDORED MIT-licensed libretro API header (see PROVENANCE.md)
@@ -326,6 +329,16 @@ Identical contract to the other doors: a `door32.sys` path argument
 `-name <handle>`, `-home <dir>`, `-t<seconds>`. The door probes the live
 terminal geometry at connect (DOOR32.SYS carries no screen size). Reuses
 `../termgfx/sbbs_node` for node status / who's-online where applicable.
+
+`-state <key>` permits a suspend/resume snapshot and names the file with
+`key`; its absence is what disables the feature for the session, whatever
+`-home` was given. The door never inspects `-home` itself to decide this --
+that would couple it to the lobby's path conventions and misbehave for a
+door run by hand or a moved `data_dir`. The lobby is the only half that
+knows the three inputs to that decision (the console's `save_state` claim,
+the sysop's `auto_resume` switch, and -- on a shared-saves console -- which
+cabinet the player is on) and expresses it as this one flag; full design in
+[../../../docs/superpowers/specs/2026-08-02-syncretro-save-restore-design.md](../../../docs/superpowers/specs/2026-08-02-syncretro-save-restore-design.md).
 
 ---
 
