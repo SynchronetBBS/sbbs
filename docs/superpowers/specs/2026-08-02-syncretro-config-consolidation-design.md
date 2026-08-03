@@ -1,7 +1,7 @@
 # SyncRetro configuration consolidation — design
 
 Date: 2026-08-02
-Status: design approved; not yet implemented
+Status: implemented 2026-08-02; not yet deployed to a live install
 
 ## Problem
 
