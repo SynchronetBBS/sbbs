@@ -1,3 +1,9 @@
+/* xp_ca_file.h includes <windows.h>, whose min macro breaks Botan 3.12's
+ * x509_ext.h.  Suppress it before either header can be included. */
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <algorithm>
 #include <chrono>
 #include <cctype>
@@ -13,6 +19,7 @@
 #include "xp_ca.h"
 #include "xp_ca_file.h"
 #include "xp_ca_policy.h"
+#include "xp_sign.h"
 
 #include <botan/auto_rng.h>
 #include <botan/ber_dec.h>
@@ -20,10 +27,14 @@
 #include <botan/data_src.h>
 #include <botan/der_enc.h>
 #include <botan/ed25519.h>
+#include <botan/ecdsa.h>
+#include <botan/ec_group.h>
 #include <botan/pkcs10.h>
 #include <botan/pkcs8.h>
+#include <botan/pem.h>
 #include <botan/pkix_types.h>
 #include <botan/pubkey.h>
+#include <botan/rsa.h>
 #include <botan/x509_ca.h>
 #include <botan/x509_ext.h>
 #include <botan/x509_key.h>
@@ -32,6 +43,7 @@
 
 struct xp_ca_key {
 	std::unique_ptr<Botan::Private_Key> native;
+	std::unique_ptr<Botan::Public_Key> public_native;
 };
 
 struct xp_ca_csr {
@@ -94,6 +106,48 @@ private:
 };
 
 static thread_local std::string error_text;
+
+static Botan::Public_Key *
+public_key(xp_ca_key_t key)
+{
+	if (key == nullptr)
+		return nullptr;
+	return key->native != nullptr ? key->native.get() : key->public_native.get();
+}
+
+static const char *
+key_hash(const Botan::Public_Key& key)
+{
+	if (key.algo_name() == "ECDSA") {
+		auto& ec = dynamic_cast<const Botan::ECDSA_PublicKey&>(key);
+		size_t bits = ec.domain().get_p_bits();
+		return bits <= 256 ? "SHA-256" : bits <= 384 ? "SHA-384" : "SHA-512";
+	}
+	return key.algo_name() == "Ed25519" ? "SHA-512" : "SHA-256";
+}
+
+static const char *
+key_padding(const Botan::Public_Key& key)
+{
+	return key.algo_name() == "Ed25519" ? "Pure" : "";
+}
+
+static std::string
+signing_scheme(const Botan::Public_Key& key)
+{
+	if (key.algo_name() == "RSA")
+		return std::string("EMSA3(") + key_hash(key) + ")";
+	if (key.algo_name() == "ECDSA")
+		return key_hash(key);
+	return "Pure";
+}
+
+static bool
+supported_key(const Botan::Public_Key *key)
+{
+	return key != nullptr && (key->algo_name() == "Ed25519"
+		|| key->algo_name() == "RSA" || key->algo_name() == "ECDSA");
+}
 
 static const Botan::Cert_Extension::CRL_Distribution_Points *
 crl_distribution_points(const Botan::X509_Certificate& certificate)
@@ -191,12 +245,36 @@ xp_ca_key_generate(xp_ca_key_t *out, enum xp_ca_key_algorithm algorithm)
 	if (out == nullptr)
 		return XP_CA_ERR;
 	*out = nullptr;
-	if (algorithm != XP_CA_KEY_ED25519)
-		return XP_CA_ERR_POLICY;
 	try {
 		Botan::AutoSeeded_RNG rng;
 		auto                  key = std::make_unique<xp_ca_key>();
-		key->native = std::make_unique<Botan::Ed25519_PrivateKey>(rng);
+		switch (algorithm) {
+			case XP_CA_KEY_ED25519:
+				key->native = std::make_unique<Botan::Ed25519_PrivateKey>(rng);
+				break;
+			case XP_CA_KEY_RSA_2048:
+				key->native = std::make_unique<Botan::RSA_PrivateKey>(rng, 2048);
+				break;
+			case XP_CA_KEY_RSA_3072:
+				key->native = std::make_unique<Botan::RSA_PrivateKey>(rng, 3072);
+				break;
+			case XP_CA_KEY_RSA_4096:
+				key->native = std::make_unique<Botan::RSA_PrivateKey>(rng, 4096);
+				break;
+			case XP_CA_KEY_ECDSA_P256:
+				key->native = std::make_unique<Botan::ECDSA_PrivateKey>(
+					rng, Botan::EC_Group::from_name("secp256r1"));
+				break;
+			case XP_CA_KEY_ECDSA_P384:
+				key->native = std::make_unique<Botan::ECDSA_PrivateKey>(
+					rng, Botan::EC_Group::from_name("secp384r1"));
+				break;
+			case XP_CA_KEY_ECDSA_P521:
+				key->native = std::make_unique<Botan::ECDSA_PrivateKey>(
+					rng, Botan::EC_Group::from_name("secp521r1"));
+				break;
+			default: return XP_CA_ERR_POLICY;
+		}
 		*out = key.release();
 		return XP_CA_OK;
 	} catch (const std::exception& e) {
@@ -259,9 +337,273 @@ xp_ca_key_load_pem(xp_ca_key_t *out, const char *path, const char *password)
 		Botan::DataSource_Stream source(path);
 		auto                     key = std::make_unique<xp_ca_key>();
 		key->native = Botan::PKCS8::load_key(source, password);
-		if (key->native->algo_name() != "Ed25519")
+		if (!supported_key(key->native.get()))
 			return fail(XP_CA_ERR_FORMAT, "unsupported private key algorithm");
 		*out = key.release();
+		return XP_CA_OK;
+	} catch (const std::exception& e) {
+		return fail(XP_CA_ERR, e.what());
+	}
+}
+
+static int
+password_value(xp_ca_password_callback_t callback, void *context,
+	           std::string& value)
+{
+	value.clear();
+	if (callback == nullptr)
+		return XP_CA_OK;
+	size_t length = 0;
+	if (callback(context, nullptr, 0, &length) != 0 || length == 0)
+		return XP_CA_ERR;
+	value.resize(length);
+	size_t actual = length;
+	if (callback(context, value.data(), value.size(), &actual) != 0
+	    || actual != length) {
+		xp_ca_scrub_memory(value.data(), value.size());
+		value.clear();
+		return XP_CA_ERR;
+	}
+	return XP_CA_OK;
+}
+
+struct scrubbed_string {
+	std::string value;
+	~scrubbed_string()
+	{
+		if (!value.empty())
+			xp_ca_scrub_memory(value.data(), value.size());
+	}
+};
+
+extern "C" int
+xp_ca_key_get_info(xp_ca_key_t key, struct xp_ca_key_info *info)
+{
+	auto *native = public_key(key);
+	if (!supported_key(native) || info == nullptr)
+		return XP_CA_ERR;
+	*info = {};
+	info->has_private = key->native != nullptr;
+	if (native->algo_name() == "Ed25519") {
+		info->family = XP_CA_KEY_FAMILY_ED25519;
+		info->bits = 256;
+	} else if (native->algo_name() == "RSA") {
+		info->family = XP_CA_KEY_FAMILY_RSA;
+		info->bits = static_cast<unsigned>(
+			dynamic_cast<const Botan::RSA_PublicKey&>(*native).get_n().bits());
+	} else {
+		auto& ec = dynamic_cast<const Botan::ECDSA_PublicKey&>(*native);
+		info->family = XP_CA_KEY_FAMILY_ECDSA;
+		info->bits = static_cast<unsigned>(ec.domain().get_p_bits());
+		info->curve = info->bits == 256 ? XP_CA_EC_P256
+			: info->bits == 384 ? XP_CA_EC_P384
+			: info->bits == 521 ? XP_CA_EC_P521 : XP_CA_EC_NONE;
+		if (info->curve == XP_CA_EC_NONE)
+			return XP_CA_ERR_FORMAT;
+	}
+	return XP_CA_OK;
+}
+
+extern "C" int
+xp_ca_key_import_pem(xp_ca_key_t *out, const void *pem, size_t len,
+	                 xp_ca_password_callback_t password, void *context)
+{
+	if (out == nullptr)
+		return XP_CA_ERR;
+	*out = nullptr;
+	if (pem == nullptr || len == 0)
+		return XP_CA_ERR;
+	try {
+		scrubbed_string pass;
+		if (password_value(password, context, pass.value) != XP_CA_OK)
+			return XP_CA_ERR;
+		Botan::DataSource_Memory source(static_cast<const uint8_t *>(pem), len);
+		std::unique_ptr<Botan::Private_Key> native;
+		try {
+			native = password == nullptr ? Botan::PKCS8::load_key(source)
+				: Botan::PKCS8::load_key(source, pass.value);
+		} catch (...) {
+			if (password != nullptr)
+				throw;
+			std::string label;
+			auto decoded = Botan::PEM_Code::decode(
+				std::string_view(static_cast<const char *>(pem), len), label);
+			if (label != "RSA PRIVATE KEY")
+				throw;
+			native = std::make_unique<Botan::RSA_PrivateKey>(
+				Botan::AlgorithmIdentifier("RSA", Botan::AlgorithmIdentifier::USE_NULL_PARAM),
+				std::span<const uint8_t>(decoded.data(), decoded.size()));
+		}
+		if (!supported_key(native.get()))
+			return XP_CA_ERR_FORMAT;
+		auto result = std::make_unique<xp_ca_key>();
+		result->native = std::move(native);
+		*out = result.release();
+		return XP_CA_OK;
+	} catch (const std::exception& e) {
+		return fail(XP_CA_ERR_FORMAT, e.what());
+	}
+}
+
+extern "C" int
+xp_ca_key_export_pem(xp_ca_key_t key, xp_ca_password_callback_t password,
+	                 void *context, void *out, size_t *len)
+{
+	if (key == nullptr || len == nullptr)
+		return XP_CA_ERR;
+	if (key->native == nullptr)
+		return XP_CA_ERR_POLICY;
+	try {
+		scrubbed_string pass;
+		if (password_value(password, context, pass.value) != XP_CA_OK)
+			return XP_CA_ERR;
+		scrubbed_string encoded;
+		if (password == nullptr)
+			encoded.value = Botan::PKCS8::PEM_encode(*key->native);
+		else {
+			Botan::AutoSeeded_RNG rng;
+			encoded.value = Botan::PKCS8::PEM_encode(*key->native, rng, pass.value);
+		}
+		if (out == nullptr) {
+			*len = encoded.value.size();
+			return XP_CA_OK;
+		}
+		if (*len < encoded.value.size()) {
+			*len = encoded.value.size();
+			return XP_CA_ERR;
+		}
+		std::memcpy(out, encoded.value.data(), encoded.value.size());
+		*len = encoded.value.size();
+		return XP_CA_OK;
+	} catch (const std::exception& e) {
+		return fail(XP_CA_ERR, e.what());
+	}
+}
+
+extern "C" int
+xp_ca_key_import_spki_der(xp_ca_key_t *out, const void *der, size_t len)
+{
+	if (out == nullptr)
+		return XP_CA_ERR;
+	*out = nullptr;
+	if (der == nullptr || len == 0)
+		return XP_CA_ERR;
+	try {
+		auto native = Botan::X509::load_key(
+			std::span<const uint8_t>(static_cast<const uint8_t *>(der), len));
+		if (!supported_key(native.get()))
+			return XP_CA_ERR_FORMAT;
+		auto result = std::make_unique<xp_ca_key>();
+		result->public_native = std::move(native);
+		*out = result.release();
+		return XP_CA_OK;
+	} catch (const std::exception& e) {
+		return fail(XP_CA_ERR_FORMAT, e.what());
+	}
+}
+
+extern "C" int
+xp_ca_key_export_spki_der(xp_ca_key_t key, void *out, size_t *len)
+{
+	if (!supported_key(public_key(key)) || len == nullptr)
+		return XP_CA_ERR;
+	try {
+		auto encoded = Botan::X509::BER_encode(*public_key(key));
+		if (out == nullptr) { *len = encoded.size(); return XP_CA_OK; }
+		if (*len < encoded.size()) { *len = encoded.size(); return XP_CA_ERR; }
+		std::memcpy(out, encoded.data(), encoded.size());
+		*len = encoded.size();
+		return XP_CA_OK;
+	} catch (const std::exception& e) { return fail(XP_CA_ERR, e.what()); }
+}
+
+static int copy_bytes(const std::vector<uint8_t>& value, void *out, size_t *len)
+{
+	if (len == nullptr) return XP_CA_ERR;
+	if (out == nullptr) { *len = value.size(); return XP_CA_OK; }
+	if (*len < value.size()) { *len = value.size(); return XP_CA_ERR; }
+	std::memcpy(out, value.data(), value.size()); *len = value.size(); return XP_CA_OK;
+}
+
+extern "C" int
+xp_ca_key_get_rsa_public(xp_ca_key_t key, void *modulus, size_t *modulus_len,
+	                     void *exponent, size_t *exponent_len)
+{
+	auto *rsa = dynamic_cast<Botan::RSA_PublicKey *>(public_key(key));
+	if (rsa == nullptr) return XP_CA_ERR_POLICY;
+	auto n = rsa->get_n().serialize<std::vector<uint8_t>>();
+	auto e = rsa->get_e().serialize<std::vector<uint8_t>>();
+	return copy_bytes(n, modulus, modulus_len) != XP_CA_OK ? XP_CA_ERR
+		: copy_bytes(e, exponent, exponent_len);
+}
+
+extern "C" int
+xp_ca_key_get_ec_public(xp_ca_key_t key, void *x, size_t *x_len,
+	                    void *y, size_t *y_len)
+{
+	auto *ec = dynamic_cast<Botan::ECDSA_PublicKey *>(public_key(key));
+	if (ec == nullptr) return XP_CA_ERR_POLICY;
+	auto x_value = ec->_public_ec_point().x_bytes<std::vector<uint8_t>>();
+	auto y_value = ec->_public_ec_point().y_bytes<std::vector<uint8_t>>();
+	return copy_bytes(x_value, x, x_len) != XP_CA_OK ? XP_CA_ERR
+		: copy_bytes(y_value, y, y_len);
+}
+
+static bool
+csr_identity_valid(const struct xp_ca_identity *identity)
+{
+	if (identity == nullptr || identity->common_name == nullptr
+	    || identity->common_name[0] == '\0'
+	    || (identity->dns_name_count != 0 && identity->dns_names == nullptr))
+		return false;
+	for (const unsigned char *value =
+	         reinterpret_cast<const unsigned char *>(identity->common_name);
+	     *value != '\0'; value++)
+		if (*value < 0x20 || *value == 0x7f)
+			return false;
+	for (size_t i = 0; i < identity->dns_name_count; i++) {
+		if (identity->dns_names[i] == nullptr || identity->dns_names[i][0] == '\0')
+			return false;
+		for (const unsigned char *value = reinterpret_cast<const unsigned char *>(
+		         identity->dns_names[i]); *value != '\0'; value++)
+			if (*value <= 0x20 || *value >= 0x7f || *value == ',')
+				return false;
+		for (size_t j = 0; j < i; j++)
+			if (xp_ca_dns_names_equal(identity->dns_names[i], identity->dns_names[j]))
+				return false;
+	}
+	return true;
+}
+
+static int
+csr_create(xp_ca_csr_t *out, xp_ca_key_t key,
+	       const struct xp_ca_identity *identity)
+{
+	if (out == nullptr)
+		return XP_CA_ERR;
+	*out = nullptr;
+	if (key == nullptr || key->native == nullptr)
+		return XP_CA_ERR;
+	if (identity != nullptr && !csr_identity_valid(identity))
+		return XP_CA_ERR_POLICY;
+	try {
+		Botan::AutoSeeded_RNG rng;
+		Botan::X509_DN        subject = identity == nullptr ? Botan::X509_DN()
+			: Botan::X509_DN({ { "X520.CommonName", identity->common_name } });
+		Botan::Extensions     extensions;
+		if (identity != nullptr && identity->dns_name_count != 0) {
+			Botan::AlternativeName names;
+			for (size_t i = 0; i < identity->dns_name_count; i++)
+				names.add_dns(identity->dns_names[i]);
+			extensions.add(std::make_unique<
+				Botan::Cert_Extension::Subject_Alternative_Name>(names));
+		}
+		auto                  csr = std::make_unique<xp_ca_csr>();
+		csr->native = std::make_unique<Botan::PKCS10_Request>(
+			Botan::PKCS10_Request::create(*key->native, subject, extensions,
+			                              key_hash(*key->native), rng,
+			                              key_padding(*key->native)));
+		*out = csr.release();
 		return XP_CA_OK;
 	} catch (const std::exception& e) {
 		return fail(XP_CA_ERR, e.what());
@@ -271,24 +613,14 @@ xp_ca_key_load_pem(xp_ca_key_t *out, const char *path, const char *password)
 extern "C" int
 xp_ca_csr_create(xp_ca_csr_t *out, xp_ca_key_t key)
 {
-	if (out == nullptr)
-		return XP_CA_ERR;
-	*out = nullptr;
-	if (key == nullptr)
-		return XP_CA_ERR;
-	try {
-		Botan::AutoSeeded_RNG rng;
-		Botan::X509_DN        subject;
-		Botan::Extensions     extensions;
-		auto                  csr = std::make_unique<xp_ca_csr>();
-		csr->native = std::make_unique<Botan::PKCS10_Request>(
-			Botan::PKCS10_Request::create(*key->native, subject, extensions,
-			                              "SHA-512", rng, "Pure"));
-		*out = csr.release();
-		return XP_CA_OK;
-	} catch (const std::exception& e) {
-		return fail(XP_CA_ERR, e.what());
-	}
+	return csr_create(out, key, nullptr);
+}
+
+extern "C" int
+xp_ca_csr_create_with_identity(xp_ca_csr_t *out, xp_ca_key_t key,
+	                           const struct xp_ca_identity *identity)
+{
+	return csr_create(out, key, identity);
 }
 
 extern "C" int
@@ -298,7 +630,7 @@ xp_ca_csr_verify(xp_ca_csr_t csr)
 		return XP_CA_ERR;
 	try {
 		auto key = csr->native->subject_public_key();
-		return key->algo_name() == "Ed25519" && csr->native->check_signature(*key)
+		return supported_key(key.get()) && csr->native->check_signature(*key)
 			? XP_CA_OK : XP_CA_ERR_VERIFY;
 	} catch (...) {
 		return XP_CA_ERR_VERIFY;
@@ -392,13 +724,13 @@ xp_ca_cert_create_self_signed(xp_ca_cert_t *out, xp_ca_key_t key,
 	if (out == nullptr)
 		return XP_CA_ERR;
 	*out = nullptr;
-	if (key == nullptr)
+	if (key == nullptr || key->native == nullptr)
 		return XP_CA_ERR;
 	if (!xp_ca_issue_request_is_valid(request))
 		return XP_CA_ERR_POLICY;
 	try {
 		Botan::AutoSeeded_RNG rng;
-		Botan::PK_Signer      signer(*key->native, rng, "Pure");
+		Botan::PK_Signer      signer(*key->native, rng, signing_scheme(*key->native));
 		auto                  public_key = Botan::X509::BER_encode(*key->native);
 		auto                  not_before = Botan::ASN1_Time(
 			std::chrono::system_clock::from_time_t(request->not_before));
@@ -432,7 +764,8 @@ xp_ca_cert_issue(xp_ca_cert_t *out, xp_ca_key_t issuer_key, xp_ca_cert_t issuer,
 	if (out == nullptr)
 		return XP_CA_ERR;
 	*out = nullptr;
-	if (issuer_key == nullptr || issuer == nullptr || csr == nullptr)
+	if (issuer_key == nullptr || issuer_key->native == nullptr
+	    || issuer == nullptr || csr == nullptr)
 		return XP_CA_ERR;
 	if (!xp_ca_issue_request_is_valid(request))
 		return XP_CA_ERR_POLICY;
@@ -448,7 +781,9 @@ xp_ca_cert_issue(xp_ca_cert_t *out, xp_ca_key_t issuer_key, xp_ca_cert_t issuer,
 		    > issuer->native->not_after().to_std_timepoint())
 			return XP_CA_ERR_POLICY;
 		Botan::AutoSeeded_RNG rng;
-		Botan::X509_CA        ca(*issuer->native, *issuer_key->native, "SHA-512", "Pure", rng);
+		Botan::X509_CA        ca(*issuer->native, *issuer_key->native,
+		                         key_hash(*issuer_key->native),
+		                         key_padding(*issuer_key->native), rng);
 		auto                  public_key = csr->native->raw_public_key();
 		auto                  not_before = Botan::ASN1_Time(
 			std::chrono::system_clock::from_time_t(request->not_before));
@@ -532,6 +867,119 @@ xp_ca_cert_export_der(xp_ca_cert_t cert, void *out, size_t *len)
 	} catch (const std::exception& e) {
 		return fail(XP_CA_ERR, e.what());
 	}
+}
+
+extern "C" int
+xp_ca_cert_chain_import_pem(xp_ca_cert_t **out, size_t *count,
+	                        const void *pem, size_t len)
+{
+	if (out == nullptr || count == nullptr)
+		return XP_CA_ERR;
+	*out = nullptr;
+	*count = 0;
+	if (pem == nullptr || len == 0)
+		return XP_CA_ERR;
+	try {
+		std::string input(static_cast<const char *>(pem), len);
+		const std::string begin = "-----BEGIN CERTIFICATE-----";
+		const std::string end = "-----END CERTIFICATE-----";
+		std::vector<std::unique_ptr<xp_ca_cert>> items;
+		size_t position = 0;
+		while (position < input.size()) {
+			while (position < input.size()
+			       && std::isspace(static_cast<unsigned char>(input[position])))
+				position++;
+			if (position == input.size())
+				break;
+			if (input.compare(position, begin.size(), begin) != 0)
+				throw std::runtime_error("unexpected PEM object");
+			size_t finish = input.find(end, position + begin.size());
+			if (finish == std::string::npos)
+				throw std::runtime_error("unterminated certificate PEM");
+			finish += end.size();
+			auto item = std::make_unique<xp_ca_cert>();
+			Botan::DataSource_Memory source(
+				reinterpret_cast<const uint8_t *>(input.data() + position),
+				finish - position);
+			item->native = std::make_unique<Botan::X509_Certificate>(source);
+			items.push_back(std::move(item));
+			position = finish;
+		}
+		if (items.empty())
+			return XP_CA_ERR_FORMAT;
+		auto result = std::make_unique<xp_ca_cert_t[]>(items.size());
+		for (size_t i = 0; i < items.size(); i++)
+			result[i] = items[i].release();
+		*count = items.size();
+		*out = result.release();
+		return XP_CA_OK;
+	} catch (const std::exception& e) {
+		return fail(XP_CA_ERR_FORMAT, e.what());
+	}
+}
+
+extern "C" int
+xp_ca_cert_chain_export_pem(const xp_ca_cert_t *certs, size_t count,
+	                        void *out, size_t *len)
+{
+	if (certs == nullptr || count == 0 || len == nullptr)
+		return XP_CA_ERR;
+	try {
+		std::string encoded;
+		for (size_t i = 0; i < count; i++) {
+			if (certs[i] == nullptr)
+				return XP_CA_ERR;
+			encoded += certs[i]->native->PEM_encode();
+		}
+		if (out == nullptr) {
+			*len = encoded.size();
+			return XP_CA_OK;
+		}
+		if (*len < encoded.size()) {
+			*len = encoded.size();
+			return XP_CA_ERR;
+		}
+		std::memcpy(out, encoded.data(), encoded.size());
+		*len = encoded.size();
+		return XP_CA_OK;
+	} catch (const std::exception& e) {
+		return fail(XP_CA_ERR, e.what());
+	}
+}
+
+extern "C" void
+xp_ca_cert_chain_free(xp_ca_cert_t *certs, size_t count)
+{
+	if (certs != nullptr) {
+		for (size_t i = 0; i < count; i++) delete certs[i];
+		delete[] certs;
+	}
+}
+
+extern "C" int
+xp_ca_cert_get_validity(xp_ca_cert_t cert, time_t *not_before, time_t *not_after)
+{
+	if (cert == nullptr || not_before == nullptr || not_after == nullptr)
+		return XP_CA_ERR;
+	*not_before = std::chrono::system_clock::to_time_t(
+		cert->native->not_before().to_std_timepoint());
+	*not_after = std::chrono::system_clock::to_time_t(
+		cert->native->not_after().to_std_timepoint());
+	return XP_CA_OK;
+}
+
+extern "C" int
+xp_ca_cert_get_public_key(xp_ca_key_t *out, xp_ca_cert_t cert)
+{
+	if (out == nullptr) return XP_CA_ERR;
+	*out = nullptr;
+	if (cert == nullptr) return XP_CA_ERR;
+	try {
+		auto result = std::make_unique<xp_ca_key>();
+		result->public_native = cert->native->subject_public_key();
+		if (!supported_key(result->public_native.get())) return XP_CA_ERR_FORMAT;
+		*out = result.release(); return XP_CA_OK;
+	} catch (const std::exception& e) { return fail(XP_CA_ERR, e.what()); }
 }
 
 extern "C" void
@@ -625,7 +1073,7 @@ xp_ca_crl_create(xp_ca_crl_t *out, xp_ca_key_t issuer_key, xp_ca_cert_t issuer,
 	if (out == nullptr)
 		return XP_CA_ERR;
 	*out = nullptr;
-	if (issuer_key == nullptr || issuer == nullptr)
+	if (issuer_key == nullptr || issuer_key->native == nullptr || issuer == nullptr)
 		return XP_CA_ERR;
 	if (!xp_ca_crl_request_is_valid(request))
 		return XP_CA_ERR_POLICY;
@@ -643,7 +1091,9 @@ xp_ca_crl_create(xp_ca_crl_t *out, xp_ca_key_t issuer_key, xp_ca_cert_t issuer,
 		        || !previous->native->check_signature(*issuer_public_key)))
 			return XP_CA_ERR_VERIFY;
 		Botan::AutoSeeded_RNG         rng;
-		Botan::X509_CA                ca(*issuer->native, *issuer_key->native, "SHA-512", "Pure", rng);
+		Botan::X509_CA                ca(*issuer->native, *issuer_key->native,
+		                                         key_hash(*issuer_key->native),
+		                                         key_padding(*issuer_key->native), rng);
 		std::vector<Botan::CRL_Entry> entries = previous == nullptr
 			? std::vector<Botan::CRL_Entry>()
 			: previous->native->get_revoked();
@@ -968,6 +1418,111 @@ xp_ca_cert_validate(xp_ca_cert_t leaf, const xp_ca_cert_t *chain, size_t chain_c
 		return validate_crls(
 			result.cert_path(), crls, crl_count,
 			policy != nullptr && policy->require_crl, when);
+	} catch (const std::exception& e) {
+		return fail(XP_CA_ERR_VERIFY, e.what());
+	}
+}
+
+static const char *
+signature_scheme(enum xp_sign_algorithm algorithm)
+{
+	switch (algorithm) {
+		case XP_SIGN_RSA_PKCS1_SHA256: return "EMSA3(SHA-256)";
+		case XP_SIGN_RSA_PKCS1_SHA384: return "EMSA3(SHA-384)";
+		case XP_SIGN_RSA_PKCS1_SHA512: return "EMSA3(SHA-512)";
+		case XP_SIGN_ECDSA_SHA256: return "SHA-256";
+		case XP_SIGN_ECDSA_SHA384: return "SHA-384";
+		case XP_SIGN_ECDSA_SHA512: return "SHA-512";
+		case XP_SIGN_ED25519: return "Pure";
+		default: return nullptr;
+	}
+}
+
+static enum xp_ca_key_family
+signature_family(enum xp_sign_algorithm algorithm)
+{
+	if (algorithm >= XP_SIGN_RSA_PKCS1_SHA256
+	    && algorithm <= XP_SIGN_RSA_PKCS1_SHA512)
+		return XP_CA_KEY_FAMILY_RSA;
+	if (algorithm >= XP_SIGN_ECDSA_SHA256
+	    && algorithm <= XP_SIGN_ECDSA_SHA512)
+		return XP_CA_KEY_FAMILY_ECDSA;
+	return XP_CA_KEY_FAMILY_ED25519;
+}
+
+static Botan::Signature_Format
+signature_format(enum xp_sign_algorithm algorithm, enum xp_signature_encoding format)
+{
+	return signature_family(algorithm) == XP_CA_KEY_FAMILY_ECDSA
+	    && format == XP_SIGNATURE_ENCODING_STANDARD
+		? Botan::Signature_Format::DerSequence
+		: Botan::Signature_Format::Standard;
+}
+
+extern "C" int
+xp_sign(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+	enum xp_signature_encoding format, const void *data, size_t data_len,
+	void *signature, size_t *signature_len)
+{
+	if (key == nullptr || key->native == nullptr || signature_len == nullptr
+	    || (data == nullptr && data_len != 0)
+	    || signature_scheme(algorithm) == nullptr
+	    || (format != XP_SIGNATURE_ENCODING_STANDARD && format != XP_SIGNATURE_ENCODING_P1363)
+	    || (format == XP_SIGNATURE_ENCODING_P1363
+	        && signature_family(algorithm) != XP_CA_KEY_FAMILY_ECDSA))
+		return XP_CA_ERR_POLICY;
+	struct xp_ca_key_info info;
+	if (xp_ca_key_get_info(key, &info) != XP_CA_OK
+	    || info.family != signature_family(algorithm))
+		return XP_CA_ERR_POLICY;
+	try {
+		Botan::AutoSeeded_RNG rng;
+		Botan::PK_Signer signer(*key->native, rng, signature_scheme(algorithm),
+		                        signature_format(algorithm, format));
+		if (signature == nullptr) {
+			*signature_len = signer.signature_length();
+			return XP_CA_OK;
+		}
+		auto encoded = signer.sign_message(
+			static_cast<const uint8_t *>(data), data_len, rng);
+		if (*signature_len < encoded.size()) {
+			*signature_len = encoded.size();
+			return XP_CA_ERR;
+		}
+		std::memcpy(signature, encoded.data(), encoded.size());
+		*signature_len = encoded.size();
+		return XP_CA_OK;
+	} catch (const std::exception& e) {
+		return fail(XP_CA_ERR, e.what());
+	}
+}
+
+extern "C" int
+xp_verify(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+	enum xp_signature_encoding format, const void *data, size_t data_len,
+	const void *signature, size_t signature_len)
+{
+	auto *native = public_key(key);
+	if (!supported_key(native) || signature == nullptr
+	    || (data == nullptr && data_len != 0)
+	    || signature_scheme(algorithm) == nullptr
+	    || (format != XP_SIGNATURE_ENCODING_STANDARD && format != XP_SIGNATURE_ENCODING_P1363)
+	    || (format == XP_SIGNATURE_ENCODING_P1363
+	        && signature_family(algorithm) != XP_CA_KEY_FAMILY_ECDSA))
+		return XP_CA_ERR_POLICY;
+	struct xp_ca_key_info info;
+	if (xp_ca_key_get_info(key, &info) != XP_CA_OK
+	    || info.family != signature_family(algorithm))
+		return XP_CA_ERR_POLICY;
+	if (format == XP_SIGNATURE_ENCODING_P1363
+	    && signature_len != 2u * ((info.bits + 7u) / 8u))
+		return XP_CA_ERR_FORMAT;
+	try {
+		Botan::PK_Verifier verifier(*native, signature_scheme(algorithm),
+		                            signature_format(algorithm, format));
+		return verifier.verify_message(static_cast<const uint8_t *>(data), data_len,
+			static_cast<const uint8_t *>(signature), signature_len)
+			? XP_CA_OK : XP_CA_ERR_VERIFY;
 	} catch (const std::exception& e) {
 		return fail(XP_CA_ERR_VERIFY, e.what());
 	}

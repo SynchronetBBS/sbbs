@@ -1,13 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include "datewrap.h"
 #include "xp_ca.h"
 #include "xp_ca_file.h"
 #include "xp_ca_policy.h"
+#include "xp_sign.h"
+#include <openssl/core_names.h>
+#include <openssl/buffer.h>
+#include <openssl/ec.h>
+#include <openssl/ecdsa.h>
+#include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
 #include <openssl/rand.h>
+#include <openssl/rsa.h>
 #include <openssl/x509v3.h>
 
 struct xp_ca_key {
@@ -51,6 +59,26 @@ der(int n, unsigned char *p, void *out, size_t * len)
 	memcpy(out, p, n);
 	*len = n;
 	return XP_CA_OK;
+}
+
+static const EVP_MD *
+key_md(EVP_PKEY *key)
+{
+	int type = EVP_PKEY_base_id(key);
+	if (type == EVP_PKEY_ED25519)
+		return NULL;
+	if (type == EVP_PKEY_EC) {
+		int bits = EVP_PKEY_get_bits(key);
+		return bits <= 256 ? EVP_sha256() : bits <= 384 ? EVP_sha384() : EVP_sha512();
+	}
+	return EVP_sha256();
+}
+
+static bool
+supported_key(EVP_PKEY *key)
+{
+	int type = key == NULL ? EVP_PKEY_NONE : EVP_PKEY_base_id(key);
+	return type == EVP_PKEY_ED25519 || type == EVP_PKEY_RSA || type == EVP_PKEY_EC;
 }
 static int
 add(X509 * x, X509 * i, int nid, const char *v)
@@ -299,13 +327,29 @@ xp_ca_key_generate(xp_ca_key_t * out, enum xp_ca_key_algorithm a)
 	if (!out)
 		return XP_CA_ERR;
 	*out = NULL;
-	if (a != XP_CA_KEY_ED25519)
-		return XP_CA_ERR_POLICY;
-	EVP_PKEY_CTX *c = EVP_PKEY_CTX_new_id(EVP_PKEY_ED25519, 0);
+	int id = EVP_PKEY_ED25519;
+	int bits = 0;
+	int curve = NID_undef;
+	switch (a) {
+		case XP_CA_KEY_ED25519: break;
+		case XP_CA_KEY_RSA_2048: id = EVP_PKEY_RSA; bits = 2048; break;
+		case XP_CA_KEY_RSA_3072: id = EVP_PKEY_RSA; bits = 3072; break;
+		case XP_CA_KEY_RSA_4096: id = EVP_PKEY_RSA; bits = 4096; break;
+		case XP_CA_KEY_ECDSA_P256: id = EVP_PKEY_EC; curve = NID_X9_62_prime256v1; break;
+		case XP_CA_KEY_ECDSA_P384: id = EVP_PKEY_EC; curve = NID_secp384r1; break;
+		case XP_CA_KEY_ECDSA_P521: id = EVP_PKEY_EC; curve = NID_secp521r1; break;
+		default: return XP_CA_ERR_POLICY;
+	}
+	EVP_PKEY_CTX *c = EVP_PKEY_CTX_new_id(id, 0);
 	EVP_PKEY *    p = 0;
-	if (!c || EVP_PKEY_keygen_init(c) <= 0 || EVP_PKEY_keygen(c, &p) <= 0) {
+	int ok = c != NULL && EVP_PKEY_keygen_init(c) > 0;
+	if (ok && bits != 0)
+		ok = EVP_PKEY_CTX_set_rsa_keygen_bits(c, bits) > 0;
+	if (ok && curve != NID_undef)
+		ok = EVP_PKEY_CTX_set_ec_paramgen_curve_nid(c, curve) > 0;
+	if (!ok || EVP_PKEY_keygen(c, &p) <= 0) {
 		EVP_PKEY_CTX_free(c);
-		return fail(XP_CA_ERR, "Ed25519 key generation failed");
+		return fail(XP_CA_ERR, "key generation failed");
 	}
 	EVP_PKEY_CTX_free(c);
 	xp_ca_key_t result = calloc(1, sizeof(*result));
@@ -332,7 +376,7 @@ xp_ca_key_load_pem(xp_ca_key_t * out, const char *path, const char *pass)
 	if (f) {
 		fclose(f);
 	}
-	if (!p || EVP_PKEY_base_id(p) != EVP_PKEY_ED25519) {
+	if (!supported_key(p)) {
 		EVP_PKEY_free(p);
 		return fail(XP_CA_ERR, "private key load failed");
 	}
@@ -344,6 +388,240 @@ xp_ca_key_load_pem(xp_ca_key_t * out, const char *path, const char *pass)
 	result->native = p;
 	*out = result;
 	return XP_CA_OK;
+}
+
+static int
+password_value(xp_ca_password_callback_t callback, void *context,
+               unsigned char **out, size_t *len)
+{
+	*out = NULL;
+	*len = 0;
+	if (callback == NULL)
+		return XP_CA_OK;
+	if (callback(context, NULL, 0, len) != 0 || *len == 0 || *len > INT_MAX)
+		return XP_CA_ERR;
+	*out = malloc(*len + 1);
+	if (*out == NULL)
+		return XP_CA_ERR;
+	size_t actual = *len;
+	if (callback(context, *out, *len, &actual) != 0 || actual != *len) {
+		xp_ca_scrub_memory(*out, *len + 1);
+		free(*out);
+		*out = NULL;
+		return XP_CA_ERR;
+	}
+	(*out)[*len] = 0;
+	return XP_CA_OK;
+}
+
+int
+xp_ca_key_get_info(xp_ca_key_t key, struct xp_ca_key_info *info)
+{
+	if (key == NULL || info == NULL || !supported_key(key->native))
+		return XP_CA_ERR;
+	memset(info, 0, sizeof(*info));
+	int type = EVP_PKEY_base_id(key->native);
+	info->family = type == EVP_PKEY_RSA ? XP_CA_KEY_FAMILY_RSA
+		: type == EVP_PKEY_EC ? XP_CA_KEY_FAMILY_ECDSA
+		: XP_CA_KEY_FAMILY_ED25519;
+	info->bits = (unsigned)EVP_PKEY_get_bits(key->native);
+	if (type == EVP_PKEY_EC) {
+		char group[64];
+		size_t group_len = 0;
+		if (EVP_PKEY_get_utf8_string_param(key->native, OSSL_PKEY_PARAM_GROUP_NAME,
+		                                  group, sizeof(group), &group_len) != 1)
+			return XP_CA_ERR;
+		int nid = OBJ_txt2nid(group);
+		info->curve = nid == NID_X9_62_prime256v1 ? XP_CA_EC_P256
+			: nid == NID_secp384r1 ? XP_CA_EC_P384
+			: nid == NID_secp521r1 ? XP_CA_EC_P521 : XP_CA_EC_NONE;
+		if (info->curve == XP_CA_EC_NONE)
+			return XP_CA_ERR_FORMAT;
+	}
+	EVP_PKEY_CTX *check = EVP_PKEY_CTX_new(key->native, NULL);
+	info->has_private = check != NULL && EVP_PKEY_private_check(check) == 1;
+	EVP_PKEY_CTX_free(check);
+	return XP_CA_OK;
+}
+
+int
+xp_ca_key_import_pem(xp_ca_key_t *out, const void *pem, size_t len,
+                     xp_ca_password_callback_t password, void *context)
+{
+	if (out == NULL)
+		return XP_CA_ERR;
+	*out = NULL;
+	if (pem == NULL || len == 0 || len > INT_MAX)
+		return XP_CA_ERR;
+	unsigned char *pass = NULL;
+	size_t pass_len = 0;
+	if (password_value(password, context, &pass, &pass_len) != XP_CA_OK)
+		return XP_CA_ERR;
+	BIO *bio = BIO_new_mem_buf(pem, (int)len);
+	EVP_PKEY *native = bio == NULL ? NULL
+		: PEM_read_bio_PrivateKey(bio, NULL, NULL, pass);
+	BIO_free(bio);
+	if (pass != NULL) {
+		xp_ca_scrub_memory(pass, pass_len + 1);
+		free(pass);
+	}
+	if (!supported_key(native)) {
+		EVP_PKEY_free(native);
+		return fail(XP_CA_ERR_FORMAT, "private key PEM import failed");
+	}
+	xp_ca_key_t result = calloc(1, sizeof(*result));
+	if (result == NULL) {
+		EVP_PKEY_free(native);
+		return fail(XP_CA_ERR, "out of memory");
+	}
+	result->native = native;
+	*out = result;
+	return XP_CA_OK;
+}
+
+int
+xp_ca_key_export_pem(xp_ca_key_t key, xp_ca_password_callback_t password,
+                     void *context, void *out, size_t *len)
+{
+	if (key == NULL || len == NULL)
+		return XP_CA_ERR;
+	struct xp_ca_key_info info;
+	if (xp_ca_key_get_info(key, &info) != XP_CA_OK || !info.has_private)
+		return XP_CA_ERR_POLICY;
+	unsigned char *pass = NULL;
+	size_t pass_len = 0;
+	if (password_value(password, context, &pass, &pass_len) != XP_CA_OK)
+		return XP_CA_ERR;
+	BIO *bio = BIO_new(BIO_s_mem());
+	const EVP_CIPHER *cipher = pass == NULL ? NULL : EVP_aes_256_cbc();
+	int ok = bio != NULL && PEM_write_bio_PKCS8PrivateKey(
+		bio, key->native, cipher, (char *)pass, (int)pass_len, NULL, NULL) == 1;
+	if (pass != NULL) {
+		xp_ca_scrub_memory(pass, pass_len + 1);
+		free(pass);
+	}
+	BUF_MEM *memory = NULL;
+	if (ok)
+		BIO_get_mem_ptr(bio, &memory);
+	if (!ok || memory == NULL) {
+		BIO_free(bio);
+		return fail(XP_CA_ERR, "private key PEM export failed");
+	}
+	size_t required = memory->length;
+	if (out == NULL) {
+		*len = required;
+		xp_ca_scrub_memory(memory->data, memory->length);
+		BIO_free(bio);
+		return XP_CA_OK;
+	}
+	if (*len < required) {
+		*len = required;
+		xp_ca_scrub_memory(memory->data, memory->length);
+		BIO_free(bio);
+		return XP_CA_ERR;
+	}
+	memcpy(out, memory->data, required);
+	*len = required;
+	xp_ca_scrub_memory(memory->data, memory->length);
+	BIO_free(bio);
+	return XP_CA_OK;
+}
+
+int
+xp_ca_key_import_spki_der(xp_ca_key_t *out, const void *data, size_t len)
+{
+	if (out == NULL)
+		return XP_CA_ERR;
+	*out = NULL;
+	if (data == NULL || len == 0)
+		return XP_CA_ERR;
+	const unsigned char *cursor = data;
+	EVP_PKEY *native = d2i_PUBKEY(NULL, &cursor, (long)len);
+	if (!supported_key(native) || cursor != (const unsigned char *)data + len) {
+		EVP_PKEY_free(native);
+		return XP_CA_ERR_FORMAT;
+	}
+	xp_ca_key_t result = calloc(1, sizeof(*result));
+	if (result == NULL) {
+		EVP_PKEY_free(native);
+		return XP_CA_ERR;
+	}
+	result->native = native;
+	*out = result;
+	return XP_CA_OK;
+}
+
+int
+xp_ca_key_export_spki_der(xp_ca_key_t key, void *out, size_t *len)
+{
+	if (key == NULL)
+		return XP_CA_ERR;
+	int size = i2d_PUBKEY(key->native, NULL);
+	if (size <= 0)
+		return XP_CA_ERR;
+	unsigned char *encoded = malloc((size_t)size), *cursor = encoded;
+	if (encoded == NULL || i2d_PUBKEY(key->native, &cursor) != size) {
+		free(encoded);
+		return XP_CA_ERR;
+	}
+	int status = der(size, encoded, out, len);
+	free(encoded);
+	return status;
+}
+
+static int
+copy_bn(const BIGNUM *value, void *out, size_t *len, size_t width)
+{
+	if (value == NULL || len == NULL)
+		return XP_CA_ERR;
+	size_t required = width == 0 ? (size_t)BN_num_bytes(value) : width;
+	if (out == NULL) {
+		*len = required;
+		return XP_CA_OK;
+	}
+	if (*len < required) {
+		*len = required;
+		return XP_CA_ERR;
+	}
+	if (BN_bn2binpad(value, out, (int)required) != (int)required)
+		return XP_CA_ERR;
+	*len = required;
+	return XP_CA_OK;
+}
+
+int
+xp_ca_key_get_rsa_public(xp_ca_key_t key, void *modulus, size_t *modulus_len,
+                         void *exponent, size_t *exponent_len)
+{
+	if (key == NULL || EVP_PKEY_base_id(key->native) != EVP_PKEY_RSA)
+		return XP_CA_ERR_POLICY;
+	BIGNUM *n = NULL, *e = NULL;
+	int ok = EVP_PKEY_get_bn_param(key->native, OSSL_PKEY_PARAM_RSA_N, &n)
+		&& EVP_PKEY_get_bn_param(key->native, OSSL_PKEY_PARAM_RSA_E, &e);
+	int status = !ok ? XP_CA_ERR
+		: copy_bn(n, modulus, modulus_len, 0) != XP_CA_OK ? XP_CA_ERR
+		: copy_bn(e, exponent, exponent_len, 0);
+	BN_free(n);
+	BN_free(e);
+	return status;
+}
+
+int
+xp_ca_key_get_ec_public(xp_ca_key_t key, void *x, size_t *x_len,
+                        void *y, size_t *y_len)
+{
+	if (key == NULL || EVP_PKEY_base_id(key->native) != EVP_PKEY_EC)
+		return XP_CA_ERR_POLICY;
+	BIGNUM *bx = NULL, *by = NULL;
+	int ok = EVP_PKEY_get_bn_param(key->native, OSSL_PKEY_PARAM_EC_PUB_X, &bx)
+		&& EVP_PKEY_get_bn_param(key->native, OSSL_PKEY_PARAM_EC_PUB_Y, &by);
+	size_t width = (EVP_PKEY_get_bits(key->native) + 7u) / 8u;
+	int status = !ok ? XP_CA_ERR
+		: copy_bn(bx, x, x_len, width) != XP_CA_OK ? XP_CA_ERR
+		: copy_bn(by, y, y_len, width);
+	BN_free(bx);
+	BN_free(by);
+	return status;
 }
 int
 xp_ca_key_save_pem(xp_ca_key_t k, const char *path, const char *pass)
@@ -376,8 +654,36 @@ xp_ca_key_free(xp_ca_key_t k)
 		free(k);
 	}
 }
-int
-xp_ca_csr_create(xp_ca_csr_t * out, xp_ca_key_t k)
+static bool
+csr_identity_valid(const struct xp_ca_identity *identity)
+{
+	if (identity == NULL || identity->common_name == NULL
+	    || identity->common_name[0] == '\0'
+	    || (identity->dns_name_count != 0 && identity->dns_names == NULL))
+		return false;
+	for (const unsigned char *value =
+	         (const unsigned char *)identity->common_name;
+	     *value != '\0'; value++)
+		if (*value < 0x20 || *value == 0x7f)
+			return false;
+	for (size_t i = 0; i < identity->dns_name_count; i++) {
+		if (identity->dns_names[i] == NULL || identity->dns_names[i][0] == '\0')
+			return false;
+		for (const unsigned char *value =
+		         (const unsigned char *)identity->dns_names[i];
+		     *value != '\0'; value++)
+			if (*value <= 0x20 || *value >= 0x7f || *value == ',')
+				return false;
+		for (size_t j = 0; j < i; j++)
+			if (xp_ca_dns_names_equal(identity->dns_names[i], identity->dns_names[j]))
+				return false;
+	}
+	return true;
+}
+
+static int
+csr_create(xp_ca_csr_t *out, xp_ca_key_t k,
+           const struct xp_ca_identity *identity)
 {
 	if (!out) {
 		return XP_CA_ERR;
@@ -386,8 +692,47 @@ xp_ca_csr_create(xp_ca_csr_t * out, xp_ca_key_t k)
 	if (!k) {
 		return XP_CA_ERR;
 	}
+	if (identity != NULL && !csr_identity_valid(identity))
+		return XP_CA_ERR_POLICY;
+	struct xp_ca_key_info info;
+	if (xp_ca_key_get_info(k, &info) != XP_CA_OK || !info.has_private)
+		return XP_CA_ERR_POLICY;
 	X509_REQ *r = X509_REQ_new();
-	if (!r || !X509_REQ_set_pubkey(r, k->native) || !X509_REQ_sign(r, k->native, 0)) {
+	X509_NAME *subject = r == NULL ? NULL : X509_REQ_get_subject_name(r);
+	int ok = r != NULL && X509_REQ_set_version(r, 0) == 1
+		&& X509_REQ_set_pubkey(r, k->native) == 1;
+	if (ok && identity != NULL)
+		ok = X509_NAME_add_entry_by_NID(subject, NID_commonName, MBSTRING_UTF8,
+			(const unsigned char *)identity->common_name, -1, -1, 0) == 1;
+	if (ok && identity != NULL && identity->dns_name_count != 0) {
+		GENERAL_NAMES *names = sk_GENERAL_NAME_new_null();
+		ok = names != NULL;
+		for (size_t i = 0; ok && i < identity->dns_name_count; i++) {
+			GENERAL_NAME *name = make_general_name(GEN_DNS, identity->dns_names[i]);
+			if (name == NULL || !sk_GENERAL_NAME_push(names, name)) {
+				GENERAL_NAME_free(name);
+				ok = 0;
+			}
+		}
+		X509_EXTENSION *extension = ok
+			? X509V3_EXT_i2d(NID_subject_alt_name, 0, names) : NULL;
+		STACK_OF(X509_EXTENSION) *extensions = sk_X509_EXTENSION_new_null();
+		if (extension == NULL || extensions == NULL)
+			ok = 0;
+		else if (!sk_X509_EXTENSION_push(extensions, extension))
+			ok = 0;
+		else {
+			extension = NULL;
+			if (X509_REQ_add_extensions(r, extensions) != 1)
+				ok = 0;
+		}
+		X509_EXTENSION_free(extension);
+		sk_X509_EXTENSION_pop_free(extensions, X509_EXTENSION_free);
+		GENERAL_NAMES_free(names);
+	}
+	if (ok)
+		ok = X509_REQ_sign(r, k->native, key_md(k->native)) > 0;
+	if (!ok) {
 		X509_REQ_free(r);
 		return fail(XP_CA_ERR, "CSR creation failed");
 	}
@@ -399,6 +744,19 @@ xp_ca_csr_create(xp_ca_csr_t * out, xp_ca_key_t k)
 	result->native = r;
 	*out = result;
 	return XP_CA_OK;
+}
+
+int
+xp_ca_csr_create(xp_ca_csr_t *out, xp_ca_key_t key)
+{
+	return csr_create(out, key, NULL);
+}
+
+int
+xp_ca_csr_create_with_identity(xp_ca_csr_t *out, xp_ca_key_t key,
+                               const struct xp_ca_identity *identity)
+{
+	return csr_create(out, key, identity);
 }
 int
 xp_ca_csr_import_der(xp_ca_csr_t * out, const void *d, size_t n)
@@ -448,8 +806,8 @@ int
 xp_ca_csr_verify(xp_ca_csr_t c)
 {
 	EVP_PKEY *p = c ? X509_REQ_get_pubkey(c->native) : 0;
-	int r = p && EVP_PKEY_base_id(p) == EVP_PKEY_ED25519
-		&& X509_REQ_verify(c->native, p) == 1 ? XP_CA_OK : XP_CA_ERR_VERIFY;
+	int r = p && supported_key(p) && X509_REQ_verify(c->native, p) == 1
+		? XP_CA_OK : XP_CA_ERR_VERIFY;
 	EVP_PKEY_free(p);
 	return r;
 }
@@ -525,7 +883,7 @@ issue(
 	    || !apply(x, issuer ? issuer->native : x, request)
 	    || !X509_set_issuer_name(x, issuer ? X509_get_subject_name(issuer->native)
 	        : X509_get_subject_name(x))
-	    || !X509_sign(x, key->native, 0)) {
+	    || !X509_sign(x, key->native, key_md(key->native))) {
 		if (csr) {
 			EVP_PKEY_free(p);
 		}
@@ -611,6 +969,155 @@ xp_ca_cert_export_der(xp_ca_cert_t c, void *out, size_t * n)
 	free(p);
 	return r;
 }
+
+int
+xp_ca_cert_chain_import_pem(xp_ca_cert_t **out, size_t *count,
+                            const void *pem, size_t len)
+{
+	if (out == NULL || count == NULL)
+		return XP_CA_ERR;
+	*out = NULL;
+	*count = 0;
+	if (pem == NULL || len == 0 || len > INT_MAX)
+		return XP_CA_ERR;
+	xp_ca_cert_t *items = NULL;
+	size_t used = 0;
+	const char *input = pem;
+	const char begin[] = "-----BEGIN CERTIFICATE-----";
+	const char end[] = "-----END CERTIFICATE-----";
+	size_t position = 0;
+	while (position < len) {
+		while (position < len && isspace((unsigned char)input[position]))
+			position++;
+		if (position == len)
+			break;
+		if (len - position < sizeof(begin) - 1
+		    || memcmp(input + position, begin, sizeof(begin) - 1) != 0) {
+			xp_ca_cert_chain_free(items, used);
+			return XP_CA_ERR_FORMAT;
+		}
+		const char *finish = NULL;
+		for (size_t scan = position + sizeof(begin) - 1;
+		     scan + sizeof(end) - 1 <= len; scan++) {
+			if (memcmp(input + scan, end, sizeof(end) - 1) == 0) {
+				finish = input + scan;
+				break;
+			}
+		}
+		if (finish == NULL) {
+			xp_ca_cert_chain_free(items, used);
+			return XP_CA_ERR_FORMAT;
+		}
+		size_t object_len = (size_t)(finish - (input + position)) + sizeof(end) - 1;
+		BIO *bio = BIO_new_mem_buf(input + position, (int)object_len);
+		X509 *native = bio == NULL ? NULL : PEM_read_bio_X509(bio, NULL, NULL, NULL);
+		BIO_free(bio);
+		if (native == NULL) {
+			xp_ca_cert_chain_free(items, used);
+			return XP_CA_ERR_FORMAT;
+		}
+		xp_ca_cert_t item = calloc(1, sizeof(*item));
+		xp_ca_cert_t *grown = realloc(items, (used + 1) * sizeof(*items));
+		if (item == NULL || grown == NULL) {
+			free(item);
+			X509_free(native);
+			xp_ca_cert_chain_free(items, used);
+			return XP_CA_ERR;
+		}
+		items = grown;
+		item->native = native;
+		items[used++] = item;
+		position += object_len;
+	}
+	ERR_clear_error();
+	if (used == 0) {
+		xp_ca_cert_chain_free(items, used);
+		return XP_CA_ERR_FORMAT;
+	}
+	*out = items;
+	*count = used;
+	return XP_CA_OK;
+}
+
+int
+xp_ca_cert_chain_export_pem(const xp_ca_cert_t *certs, size_t count,
+                            void *out, size_t *len)
+{
+	if (certs == NULL || count == 0 || len == NULL)
+		return XP_CA_ERR;
+	BIO *bio = BIO_new(BIO_s_mem());
+	int ok = bio != NULL;
+	for (size_t i = 0; ok && i < count; i++)
+		ok = certs[i] != NULL && PEM_write_bio_X509(bio, certs[i]->native) == 1;
+	BUF_MEM *memory = NULL;
+	if (ok)
+		BIO_get_mem_ptr(bio, &memory);
+	if (!ok || memory == NULL) {
+		BIO_free(bio);
+		return XP_CA_ERR;
+	}
+	if (out == NULL) {
+		*len = memory->length;
+		BIO_free(bio);
+		return XP_CA_OK;
+	}
+	if (*len < memory->length) {
+		*len = memory->length;
+		BIO_free(bio);
+		return XP_CA_ERR;
+	}
+	memcpy(out, memory->data, memory->length);
+	*len = memory->length;
+	BIO_free(bio);
+	return XP_CA_OK;
+}
+
+void
+xp_ca_cert_chain_free(xp_ca_cert_t *certs, size_t count)
+{
+	if (certs != NULL) {
+		for (size_t i = 0; i < count; i++)
+			xp_ca_cert_free(certs[i]);
+		free(certs);
+	}
+}
+
+int
+xp_ca_cert_get_validity(xp_ca_cert_t cert, time_t *not_before, time_t *not_after)
+{
+	if (cert == NULL || not_before == NULL || not_after == NULL)
+		return XP_CA_ERR;
+	struct tm first = { 0 }, last = { 0 };
+	if (!ASN1_TIME_to_tm(X509_get0_notBefore(cert->native), &first)
+	    || !ASN1_TIME_to_tm(X509_get0_notAfter(cert->native), &last))
+		return XP_CA_ERR_FORMAT;
+	*not_before = timegm(&first);
+	*not_after = timegm(&last);
+	return XP_CA_OK;
+}
+
+int
+xp_ca_cert_get_public_key(xp_ca_key_t *out, xp_ca_cert_t cert)
+{
+	if (out == NULL)
+		return XP_CA_ERR;
+	*out = NULL;
+	if (cert == NULL)
+		return XP_CA_ERR;
+	EVP_PKEY *native = X509_get_pubkey(cert->native);
+	if (!supported_key(native)) {
+		EVP_PKEY_free(native);
+		return XP_CA_ERR_FORMAT;
+	}
+	xp_ca_key_t result = calloc(1, sizeof(*result));
+	if (result == NULL) {
+		EVP_PKEY_free(native);
+		return XP_CA_ERR;
+	}
+	result->native = native;
+	*out = result;
+	return XP_CA_OK;
+}
 void
 xp_ca_cert_free(xp_ca_cert_t c)
 {
@@ -618,6 +1125,180 @@ xp_ca_cert_free(xp_ca_cert_t c)
 		X509_free(c->native);
 		free(c);
 	}
+}
+
+static const EVP_MD *
+sign_md(enum xp_sign_algorithm algorithm)
+{
+	switch (algorithm) {
+		case XP_SIGN_RSA_PKCS1_SHA256:
+		case XP_SIGN_ECDSA_SHA256: return EVP_sha256();
+		case XP_SIGN_RSA_PKCS1_SHA384:
+		case XP_SIGN_ECDSA_SHA384: return EVP_sha384();
+		case XP_SIGN_RSA_PKCS1_SHA512:
+		case XP_SIGN_ECDSA_SHA512: return EVP_sha512();
+		case XP_SIGN_ED25519: return NULL;
+		default: return NULL;
+	}
+}
+
+static int
+sign_family(enum xp_sign_algorithm algorithm)
+{
+	if (algorithm >= XP_SIGN_RSA_PKCS1_SHA256
+	    && algorithm <= XP_SIGN_RSA_PKCS1_SHA512)
+		return EVP_PKEY_RSA;
+	if (algorithm >= XP_SIGN_ECDSA_SHA256
+	    && algorithm <= XP_SIGN_ECDSA_SHA512)
+		return EVP_PKEY_EC;
+	return algorithm == XP_SIGN_ED25519 ? EVP_PKEY_ED25519 : EVP_PKEY_NONE;
+}
+
+static int
+ecdsa_der_to_p1363(EVP_PKEY *key, const unsigned char *der_signature,
+	               size_t der_len, unsigned char **out, size_t *out_len)
+{
+	const unsigned char *cursor = der_signature;
+	ECDSA_SIG *decoded = d2i_ECDSA_SIG(NULL, &cursor, (long)der_len);
+	if (decoded == NULL || cursor != der_signature + der_len) {
+		ECDSA_SIG_free(decoded);
+		return XP_CA_ERR_FORMAT;
+	}
+	const BIGNUM *r, *s;
+	ECDSA_SIG_get0(decoded, &r, &s);
+	size_t width = (EVP_PKEY_get_bits(key) + 7u) / 8u;
+	unsigned char *encoded = malloc(width * 2);
+	if (encoded == NULL || BN_bn2binpad(r, encoded, (int)width) != (int)width
+	    || BN_bn2binpad(s, encoded + width, (int)width) != (int)width) {
+		free(encoded);
+		ECDSA_SIG_free(decoded);
+		return XP_CA_ERR;
+	}
+	ECDSA_SIG_free(decoded);
+	*out = encoded;
+	*out_len = width * 2;
+	return XP_CA_OK;
+}
+
+static int
+ecdsa_p1363_to_der(EVP_PKEY *key, const unsigned char *signature, size_t len,
+	               unsigned char **out, size_t *out_len)
+{
+	size_t width = (EVP_PKEY_get_bits(key) + 7u) / 8u;
+	if (len != width * 2)
+		return XP_CA_ERR_FORMAT;
+	ECDSA_SIG *value = ECDSA_SIG_new();
+	BIGNUM *r = BN_bin2bn(signature, (int)width, NULL);
+	BIGNUM *s = BN_bin2bn(signature + width, (int)width, NULL);
+	if (value == NULL || r == NULL || s == NULL || !ECDSA_SIG_set0(value, r, s)) {
+		ECDSA_SIG_free(value);
+		BN_free(r);
+		BN_free(s);
+		return XP_CA_ERR;
+	}
+	int required = i2d_ECDSA_SIG(value, NULL);
+	unsigned char *encoded = required <= 0 ? NULL : malloc((size_t)required);
+	unsigned char *cursor = encoded;
+	if (encoded == NULL || i2d_ECDSA_SIG(value, &cursor) != required) {
+		free(encoded);
+		ECDSA_SIG_free(value);
+		return XP_CA_ERR;
+	}
+	ECDSA_SIG_free(value);
+	*out = encoded;
+	*out_len = (size_t)required;
+	return XP_CA_OK;
+}
+
+int
+xp_sign(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+	    enum xp_signature_encoding format, const void *data, size_t data_len,
+	    void *signature, size_t *signature_len)
+{
+	if (key == NULL || signature_len == NULL || (data == NULL && data_len != 0)
+	    || sign_family(algorithm) != EVP_PKEY_base_id(key->native)
+	    || (format == XP_SIGNATURE_ENCODING_P1363
+	        && sign_family(algorithm) != EVP_PKEY_EC)
+	    || (format != XP_SIGNATURE_ENCODING_STANDARD && format != XP_SIGNATURE_ENCODING_P1363))
+		return XP_CA_ERR_POLICY;
+	struct xp_ca_key_info info;
+	if (xp_ca_key_get_info(key, &info) != XP_CA_OK || !info.has_private)
+		return XP_CA_ERR_POLICY;
+	if (signature == NULL) {
+		*signature_len = format == XP_SIGNATURE_ENCODING_P1363
+			? 2u * ((EVP_PKEY_get_bits(key->native) + 7u) / 8u)
+			: (size_t)EVP_PKEY_get_size(key->native);
+		return XP_CA_OK;
+	}
+	EVP_MD_CTX *context = EVP_MD_CTX_new();
+	EVP_PKEY_CTX *parameters = NULL;
+	int ok = context != NULL && EVP_DigestSignInit(
+		context, &parameters, sign_md(algorithm), NULL, key->native) == 1;
+	if (ok && sign_family(algorithm) == EVP_PKEY_RSA)
+		ok = EVP_PKEY_CTX_set_rsa_padding(parameters, RSA_PKCS1_PADDING) == 1;
+	size_t native_len = (size_t)EVP_PKEY_get_size(key->native);
+	unsigned char *native = ok && native_len != 0 ? malloc(native_len) : NULL;
+	if (native == NULL)
+		ok = 0;
+	if (ok)
+		ok = EVP_DigestSign(context, native, &native_len, data, data_len) == 1;
+	EVP_MD_CTX_free(context);
+	if (!ok) {
+		free(native);
+		return fail(XP_CA_ERR, "signature creation failed");
+	}
+	unsigned char *encoded = native;
+	size_t encoded_len = native_len;
+	if (format == XP_SIGNATURE_ENCODING_P1363) {
+		if (ecdsa_der_to_p1363(key->native, native, native_len,
+		                         &encoded, &encoded_len) != XP_CA_OK) {
+			free(native);
+			return XP_CA_ERR;
+		}
+		free(native);
+	}
+	if (*signature_len < encoded_len) {
+		*signature_len = encoded_len;
+		free(encoded);
+		return XP_CA_ERR;
+	}
+	memcpy(signature, encoded, encoded_len);
+	*signature_len = encoded_len;
+	free(encoded);
+	return XP_CA_OK;
+}
+
+int
+xp_verify(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+	      enum xp_signature_encoding format, const void *data, size_t data_len,
+	      const void *signature, size_t signature_len)
+{
+	if (key == NULL || signature == NULL || (data == NULL && data_len != 0)
+	    || sign_family(algorithm) != EVP_PKEY_base_id(key->native)
+	    || (format == XP_SIGNATURE_ENCODING_P1363
+	        && sign_family(algorithm) != EVP_PKEY_EC)
+	    || (format != XP_SIGNATURE_ENCODING_STANDARD && format != XP_SIGNATURE_ENCODING_P1363))
+		return XP_CA_ERR_POLICY;
+	const unsigned char *native = signature;
+	size_t native_len = signature_len;
+	unsigned char *converted = NULL;
+	if (format == XP_SIGNATURE_ENCODING_P1363
+	    && ecdsa_p1363_to_der(key->native, signature, signature_len,
+	                         &converted, &native_len) != XP_CA_OK)
+		return XP_CA_ERR_FORMAT;
+	if (converted != NULL)
+		native = converted;
+	EVP_MD_CTX *context = EVP_MD_CTX_new();
+	EVP_PKEY_CTX *parameters = NULL;
+	int ok = context != NULL && EVP_DigestVerifyInit(
+		context, &parameters, sign_md(algorithm), NULL, key->native) == 1;
+	if (ok && sign_family(algorithm) == EVP_PKEY_RSA)
+		ok = EVP_PKEY_CTX_set_rsa_padding(parameters, RSA_PKCS1_PADDING) == 1;
+	if (ok)
+		ok = EVP_DigestVerify(context, native, native_len, data, data_len) == 1;
+	EVP_MD_CTX_free(context);
+	free(converted);
+	return ok ? XP_CA_OK : XP_CA_ERR_VERIFY;
 }
 
 static bool
@@ -779,7 +1460,7 @@ xp_ca_crl_create(xp_ca_crl_t *out, xp_ca_key_t key, xp_ca_cert_t issuer,
 		}
 		ASN1_TIME_free(revocation_time);
 	}
-	if (!X509_CRL_sort(c) || !X509_CRL_sign(c, key->native, 0)) {
+	if (!X509_CRL_sort(c) || !X509_CRL_sign(c, key->native, key_md(key->native))) {
 		X509_CRL_free(c);
 		return XP_CA_ERR;
 	}
