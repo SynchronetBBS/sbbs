@@ -305,8 +305,8 @@ Cache entry: `{path, size, mtime, md5, title}`. The dedupe and dump-quality rule
 (§6 of [LAUNCHER.md](LAUNCHER.md)) are unchanged and now run off cached hashes --
 including the full-file (never 4 KB prefix) hash, for the reason recorded there.
 
-**Concurrency.** `data_dir` is an SMB mount shared with a second host, which is
-why `plays.jsonl` is append-only. The cache does **not** need that treatment: it
+**Concurrency.** `plays.jsonl` is append-only because an install can be shared
+by more than one host, and `data_dir` can sit on a network filesystem. The cache does **not** need that treatment: it
 is *derived*, so a lost update costs a re-hash and never a wrong answer. Write
 via temp-file + rename; treat any parse failure, or a missing file, as a cold
 cache.

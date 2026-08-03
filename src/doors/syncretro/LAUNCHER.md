@@ -75,9 +75,9 @@ door directory.
 {"t":1783000000,"user":1,"alias":"Digital Man","rom":"Utopia (1981) (Mattel).int","secs":1320}
 ```
 
-No aggregate counts file. `<data_dir>` is an SMB mount shared with a second host,
-so a read-modify-write of a counts file across two hosts is a lost-update race
-waiting to happen. Each play appends one line under a brief exclusive
+No aggregate counts file. A Synchronet install can be shared by more than one
+host, and `<data_dir>` can sit on a network filesystem, so a read-modify-write
+of a counts file is a lost-update race wherever that is so. Each play appends one line under a brief exclusive
 `File.open("a")`. Most Played, Your Last Game and per-title counts are all derived
 by scanning, which at BBS scale is a few thousand lines. Rotation is a later
 problem; do not pre-solve it.
@@ -92,9 +92,10 @@ the lobby keeps the books.
 
 **Hashes are cached.** Discovery originally opened, read and hashed every
 candidate on every lobby entry. The arithmetic was never the cost; the round
-trips were -- the install is an SMB mount, so a remote node paid one open + read
-+ close per cartridge just to draw the menu, which is a startup delay a sysop can
-feel (observed on a remote Windows node reading this dir). The hash is now cached
+trips were -- where an install is reached over a network filesystem, a node pays
+one open + read + close per cartridge just to draw the menu, which is a startup
+delay a sysop can feel (measured on a remote Windows node reading such an
+install). The hash is now cached
 in `<data_dir>/syncretro/roms.<id>.json`, keyed by name + size + mtime, so a warm
 run opens exactly **one** file instead of one per ROM (measured on the live
 198-cartridge set: 212 opens -> 0, 62 ms -> 13 ms even locally, where an open is

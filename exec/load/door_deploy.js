@@ -160,9 +160,10 @@ function door_find_built(srcdir, exename, built)
 //
 //   * fullpath(dst) == fullpath(exe) -- fullpath() NORMALIZES a path, it does not
 //     RESOLVE it, so a symlink and its target never compare equal.
-//   * size + mtime -- correct on one filesystem, and wrong across the SMB mount a
-//     live install is usually reached through: CIFS reported the same file's mtime
-//     one second off from the local view, so the guard missed and the copy ran.
+//   * size + mtime -- correct on one filesystem, and wrong across a network
+//     filesystem, which is how some installs are reached: CIFS reported the same
+//     file's mtime one second off from the local view, so the guard missed and
+//     the copy ran.
 //
 // The shell scripts this replaced got it right with `[ "$EXE" -ef "$DST" ]` -- a
 // device+inode identity test. Synchronet's JS has no stat(), but a content hash
@@ -204,9 +205,9 @@ function door_deploy_current(exe, dst)
 //
 // SAY SO, AND CHANGE NOTHING. The tempting trick -- copy alongside, rename over the
 // top, the way a package manager replaces a running binary -- is WRONG here, and
-// not theoretically: the door directory is reached over an SMB mount, where
-// rename() onto a file another process is executing DELETES THE TARGET AND THEN
-// FAILS. This function tried exactly that on its first outing and left the live
+// not theoretically: where the door directory is reached over a network
+// filesystem, rename() onto a file another process is executing DELETES THE
+// TARGET AND THEN FAILS (observed on CIFS). This function tried exactly that on its first outing and left the live
 // install with a deleted-but-still-open phantom where the door binary had been.
 //
 // A failed deploy must leave the working binary working.

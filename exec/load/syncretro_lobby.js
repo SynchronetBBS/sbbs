@@ -710,8 +710,8 @@ function syncretro_lobby_play(rom)
 /* Discovery, through the on-disk hash cache (syncretro_lib.js).
  *
  * Without it, drawing this menu opened, read and hashed every cartridge -- and
- * the install is typically an SMB mount, so a remote node paid that as one round
- * trip per ROM, every single time. With it, a warm run opens exactly one file. A
+ * where an install is reached over a network filesystem, a node pays that as one
+ * round trip per ROM, every single time. With it, a warm run opens exactly one file. A
  * cold run still pays the full scan, so it says so rather than appearing to
  * hang -- on a big ROM set that first scan is genuinely slow. */
 function syncretro_lobby_discover()

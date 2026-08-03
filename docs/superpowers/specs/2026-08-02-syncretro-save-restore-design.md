@@ -13,11 +13,11 @@ and a snapshot restored later rolls that table back to whenever the snapshot
 was taken — erasing scores other players set in between.
 
 That objection is about *degree*, not kind. The shared cabinet already loses
-scores. `data_dir` is an SMB mount shared with a second host
-(`M3_MULTICORE.md` §6), and MAME loads NVRAM at start and writes it at unload
-(`GAMES_INI.md`). Two players on different nodes therefore both read the same
-NVRAM at launch and both write it at exit: last one out wins, and the first
-player's high score is gone. No save/restore involved. Suspend/resume widens a
+scores, on any install. MAME loads NVRAM at start and writes it at unload
+(`GAMES_INI.md`), so two players on two nodes both read the same NVRAM at
+launch and both write it at exit: last one out wins, and the first player's
+high score is gone. No save/restore involved, and no network filesystem
+needed — two nodes on one machine are enough. Suspend/resume widens a
 window that is already open, from "another player's session" to "however long
 I leave my snapshot sitting".
 
@@ -130,9 +130,10 @@ key:
   which discovery already caches per cartridge (`LAUNCHER.md` §6);
 - the **core binary's hash** is cached the same way and for the same reason —
   keyed on the core file's size and mtime, so a warm run reads no bytes of it.
-  Hashing it per lobby entry would be a real cost, not a notional one: the MAME
-  2003-Plus core is multi-megabyte and the install is commonly a network mount,
-  which is precisely the pattern the ROM cache exists to avoid;
+  Hashing it per lobby entry would be a real cost rather than a notional one —
+  the MAME 2003-Plus core is multi-megabyte, and re-reading it on every entry is
+  precisely the pattern the ROM cache exists to avoid, the more so on an install
+  reached over a network filesystem;
 - the **resolved options** come from `syncretro.ini` + `syncretro.local.ini`,
   which the lobby reads anyway.
 

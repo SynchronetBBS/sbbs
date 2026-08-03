@@ -404,10 +404,10 @@ function syncretro_file_md5(path, bytes)
 // --- the discovery cache ------------------------------------------------------
 //
 // Discovery used to open, read and hash EVERY candidate on EVERY lobby entry.
-// The arithmetic was never the problem: the round trips were. The install is an
-// SMB mount, so a remote node paid one open + read + close per cartridge across
-// the wire just to draw a menu -- a visible startup delay on a 200-ROM set, and
-// unusable on the thousands a larger console's ROM set carries.
+// The arithmetic was never the problem: the round trips were. Where an install
+// is reached over a network filesystem, a node pays one open + read + close per
+// cartridge across the wire just to draw a menu -- a visible startup delay on a
+// 200-ROM set, and unusable on the thousands a larger console's ROM set carries.
 //
 // So the hash is cached, keyed by the file's name + size + mtime. A warm run
 // opens exactly ONE file (this cache) instead of one per ROM. cache.hashed is
@@ -415,8 +415,8 @@ function syncretro_file_md5(path, bytes)
 //
 // The cache is DERIVED: every entry can be recomputed from the ROM it describes.
 // That is what lets it be written with none of the care plays.jsonl needs -- a
-// lost update (data_dir is shared with a second host) costs a re-hash, never a
-// wrong answer. A torn, stale, hand-edited or missing cache reads as empty, and
+// lost update (data_dir may be shared by a second host) costs a re-hash, never
+// a wrong answer. A torn, stale, hand-edited or missing cache reads as empty, and
 // discovery simply does what it did before.
 
 var SYNCRETRO_CACHE_VERSION = 1;
@@ -735,8 +735,9 @@ function syncretro_discover(roms_dir, rules, cache)
 // --- the activity store ------------------------------------------------------
 //
 // Append-only, one JSON object per completed play. No aggregate counts file:
-// data_dir is an SMB mount that a second host also writes, so a read-modify-write
-// of a counts file is a lost-update race. Everything is derived by scanning,
+// an install can be shared by more than one host, and data_dir can sit on a
+// network filesystem, so a read-modify-write of a counts file is a lost-update
+// race wherever that is so. Everything is derived by scanning,
 // which at BBS scale is a few thousand lines.
 
 function syncretro_plays_path(data_dir)
