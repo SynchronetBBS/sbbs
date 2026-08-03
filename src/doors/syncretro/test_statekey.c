@@ -6,7 +6,7 @@
  *
  * Copyright(C) 2026 Rob Swindell / SyncRetro.  GPL-2.0.
  */
-#include "syncretro_state.h"
+#include "syncretro_statekey.h"
 
 #include <stdio.h>
 #include <string.h>
