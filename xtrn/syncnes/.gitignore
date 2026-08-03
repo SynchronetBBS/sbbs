@@ -7,10 +7,6 @@
 # linux-x64/, linux-arm64/, darwin-arm64/, ... -- or flat on Windows, so these
 # patterns have NO leading slash and match at any depth.
 
-# The live syncretro.ini (seeded from syncretro.example.ini by the installer) is
-# intentionally NOT ignored here -- leave it untracked so a sysop's edited config
-# is visible in `git status` rather than silently invisible.
-
 # The deployed door binary (built by src/doors/syncretro's build.sh/build.bat)
 syncretro
 syncretro.exe
@@ -22,11 +18,8 @@ syncretro.exe
 *_libretro.dylib
 
 # The Famicom Disk System BIOS -- copyrighted, sysop-supplied, and needed ONLY
-# if you enable .fds in syncretro.ini.
+# if you enable .fds in syncretro.local.ini.
 disksys.rom
 
 # Cartridges -- copyrighted, sysop-supplied
 /roms/
-
-# Live sysop-edited config, seeded from syncretro.example.ini by install-xtrn.
-/syncretro.ini
