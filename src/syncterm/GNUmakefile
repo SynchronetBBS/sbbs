@@ -275,9 +275,11 @@ ifdef NEED_BOTAN
  # handles thread-library linkage per-platform (Common.gmake adds
  # -pthread / -lwinpthread where appropriate), and on MinGW a bare
  # -pthread here trips "cannot find -lpthread".
- # Append to TRAILING_LIBS — xpdev and deucessh both reference Botan
- # symbols, so Botan must appear after both static archives.
- TRAILING_LIBS += $(filter-out -pthread,$(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --libs botan-3))
+ # Append Botan and its static dependencies to TRAILING_LIBS — xpdev
+ # and deucessh both reference Botan symbols, so they must follow both
+ # static archives.  In particular, Botan's Windows certificate-store
+ # module declares Crypt32 in Libs.private.
+ TRAILING_LIBS += $(filter-out -pthread,$(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --static --libs botan-3))
 endif
 
 # ini_crypt.c + xp_crypt/xp_tls backend shim are always built, even
