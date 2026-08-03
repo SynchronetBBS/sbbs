@@ -957,3 +957,46 @@ function syncretro_core_ext(plat)
 {
 	return plat == "win32" ? "dll" : plat == "darwin" ? "dylib" : "so";
 }
+
+// --- the snapshot staleness key ---------------------------------------------
+//
+// The snapshot staleness key. A libretro save-state blob carries no version
+// stamp, so a snapshot must not be restored into a core, romset or option set
+// it was not taken from. This derives an 8-hex-digit key from all three, and it
+// goes in the FILENAME so the picker can tell live from stale with one
+// directory read instead of a probe per cartridge.
+//
+// src/doors/syncretro/syncretro_state.c's sr_state_key() implements the
+// IDENTICAL recipe, and both are pinned to one golden value by
+// exec/tests/syncretro_state_test.js and test_statekey.c. If these two ever
+// disagree, the picker marks games the door then refuses to resume and nothing
+// reports an error -- which is the whole reason for the golden value.
+//
+// `opts` is the resolved [options] flattened to sorted "name=value" lines
+// joined with newlines. md5_calc() returns base64 unless asked for hex.
+function syncretro_state_key(core_md5, rom_md5, opts)
+{
+	var s = String(core_md5 || "") + "\n"
+	    + String(rom_md5 || "") + "\n"
+	    + String(opts || "");
+
+	return md5_calc(s, true).substr(0, 8).toLowerCase();
+}
+
+// The [options] section, flattened the way syncretro_state_key() requires:
+// "name=value" per option, sorted by name in byte order, joined with newlines.
+function syncretro_state_opts(options)
+{
+	var names = [];
+	var out = [];
+	var k, i;
+
+	if (!options)
+		return "";
+	for (k in options)
+		names.push(String(k));
+	names.sort();
+	for (i = 0; i < names.length; i++)
+		out.push(names[i] + "=" + String(options[names[i]]));
+	return out.join("\n");
+}

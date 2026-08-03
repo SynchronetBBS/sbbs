@@ -26,7 +26,9 @@ add_executable(syncretro
     syncretro_config.c  # per-user sandbox + system/save dirs
     syncretro_quant.c   # truecolor frame -> 256-color indexed, for the sixel tier
     syncretro_dirty.c   # which cells changed: patch the frame instead of repainting
-    syncretro_plat.c)   # the door's Windows-vs-POSIX seam (clock/sleep/socket/stderr)
+    syncretro_plat.c    # the door's Windows-vs-POSIX seam (clock/sleep/socket/stderr)
+    syncretro_state.c   # the suspend/resume snapshot staleness key
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../hash/md5.c)
 
 # libretro.h lives in this dir (vendored). Our own code is house-style tabs.
 target_include_directories(syncretro PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -254,6 +256,17 @@ if(SYNCRETRO_TESTS)
                                ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
     target_link_libraries(test_config xpdev)
     add_test(NAME config COMMAND test_config)
+
+    # test_statekey -- the snapshot staleness key. md5.c is compiled in
+    # directly (one dependency-free TU) rather than add_subdirectory()ing the
+    # hash lib, the same way termgfx compiles in fnv1a.c; termgfx already puts
+    # src/hash on the include path.
+    add_executable(test_statekey test_statekey.c syncretro_state.c
+                   ${CMAKE_CURRENT_SOURCE_DIR}/../../hash/md5.c)
+    target_include_directories(test_statekey PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../../hash
+                               ${CMAKE_CURRENT_SOURCE_DIR}/../../xpdev)
+    add_test(NAME statekey COMMAND test_statekey)
 
     # test_warmup -- the boot warm-up's output gate. Links retro_bridge.c
     # against stubs for the door modules it feeds, so it needs neither a core
