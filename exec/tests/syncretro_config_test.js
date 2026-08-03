@@ -227,5 +227,111 @@ check_str(syncretro_lobby_state_key(probe_rom), "",
           "a shared cabinet never gets a snapshot key");
 file_remove(sdir + "syncretro.local.ini");
 
+// Fresh install's derived core-hash cache: nothing above should leave a real
+// artifact behind in the live install's data_dir under this fake console id.
+file_remove(system.data_dir + "syncretro/core." + syncretro_lobby_con.id + ".json");
+
+// --- withheld permission must never look like a dead snapshot -----------------
+//
+// syncretro_lobby_mark_resumable()'s sweep must survive a sysop toggling
+// auto_resume or save_state off and back on: those are POLICY, not a fact
+// about whether a given snapshot can still be restored. A snapshot is dead
+// only when the cartridge is gone or its core/ROM/options changed. This is
+// the regression test for the sweep keying off the PERMISSION-gated
+// syncretro_lobby_state_key() instead of the raw syncretro_state_key().
+//
+// shared_saves = true here only so syncretro_lobby_home() needs no `user`
+// object (unavailable under headless jsexec) -- the shared-cabinet gate
+// affects the PERMITTED key alone, never the raw one the sweep must use, so
+// it does not interfere with what this proves.
+var gdir = system.temp_dir + "syncretro_cfgtest_gate/";
+mkpath(gdir);
+mkpath(gdir + "roms/");
+
+function write_gate_ini(name, text)
+{
+	var wf = new File(gdir + name);
+	wf.open("w");
+	wf.write(text);
+	wf.close();
+}
+
+write_gate_ini("syncretro.ini",
+    "[console]\n"
+    + "name = ProbeGate\n"
+    + "short = ProbeGate\n"
+    + "core = probegate_libretro\n"
+    + "shared_saves = true\n"
+    + "save_state = true\n"
+    + "\n"
+    + "[roms]\n"
+    + "dir = roms\n"
+    + "ext = rom\n"
+    + "\n"
+    + "[state]\n"
+    + "auto_resume = true\n");
+
+f = new File(gdir + "probegate_libretro.so");
+f.open("wb"); f.write("core-bytes"); f.close();
+f = new File(gdir + "roms/gatetest.rom");
+f.open("wb"); f.write("rom-bytes"); f.close();
+
+syncretro_lobby_init({ dir: gdir });
+var gate_roms = syncretro_discover(gdir + "roms/", syncretro_lobby_rules, null);
+var gate_home = syncretro_lobby_home();
+var gate_opts = syncretro_state_opts(syncretro_lobby_ini_cache.options);
+var gate_raw  = syncretro_state_key(syncretro_lobby_core_md5, gate_roms[0].md5, gate_opts);
+var gate_stem = gate_roms[0].name.replace(/\.[^.]*$/, "");
+var gate_snapshot = backslash(gate_home) + gate_stem + "." + gate_raw + ".state";
+
+mkpath(gate_home);
+f = new File(gate_snapshot);
+f.open("wb"); f.write("snapshot bytes"); f.close();
+
+// auto_resume = false: the raw key still matches, so the sweep must not
+// delete the snapshot -- and per syncretro_lobby_auto_resume(), must not
+// even run.
+write_gate_ini("syncretro.local.ini", "[state]\nauto_resume = false\n");
+syncretro_lobby_init({ dir: gdir });
+check(!syncretro_lobby_auto_resume(), "auto_resume = false reads back off");
+syncretro_lobby_mark_resumable(gate_roms);
+check(file_exists(gate_snapshot),
+      "a matching snapshot survives the sweep while auto_resume is off");
+file_remove(gdir + "syncretro.local.ini");
+
+// [console] save_state = false, auto_resume still true: the sweep DOES run
+// (auto_resume is the only thing gating whether it runs at all), but it must
+// still use the RAW key -- a snapshot that key matches must survive even
+// though no ROM on this console is currently granted a key.
+write_gate_ini("syncretro.local.ini", "[console]\nsave_state = false\n");
+syncretro_lobby_init({ dir: gdir });
+check(syncretro_lobby_auto_resume(), "auto_resume stays on for this case");
+check_str(syncretro_lobby_state_key(gate_roms[0]), "",
+          "no ROM is permitted a key while save_state = false");
+syncretro_lobby_mark_resumable(gate_roms);
+check(file_exists(gate_snapshot),
+      "a matching snapshot survives the sweep even though save_state is false");
+
+// Control: once permitted again, an ACTUALLY dead snapshot (wrong key --
+// the "core was upgraded" case) is still swept, so the fix above did not
+// disable the sweep altogether.
+file_remove(gdir + "syncretro.local.ini");
+var dead_snapshot = backslash(gate_home) + gate_stem + ".deadbeef.state";
+f = new File(dead_snapshot);
+f.open("wb"); f.write("stale snapshot bytes"); f.close();
+syncretro_lobby_init({ dir: gdir });
+syncretro_lobby_mark_resumable(gate_roms);
+check(!file_exists(dead_snapshot),
+      "a snapshot with the wrong key is still swept once permission returns");
+check(file_exists(gate_snapshot),
+      "and the matching snapshot is still kept alongside it");
+
+// Clean up: syncretro_lobby_home()/syncretro_core_cache_path() write under
+// system.data_dir -- the live install's data directory -- via a fake console
+// id ("probegate"). Both are DERIVED/regenerable, but nothing from this test
+// should linger there.
+file_remove(gate_snapshot);
+file_remove(system.data_dir + "syncretro/core." + syncretro_lobby_con.id + ".json");
+
 print(failures ? "FAILED: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);

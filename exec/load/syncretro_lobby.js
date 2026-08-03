@@ -609,6 +609,25 @@ function syncretro_lobby_private()
 	return !syncretro_lobby_con.shared_saves;
 }
 
+/* The sysop's install-wide kill switch -- "Turning it off disables
+ * suspend/resume install-wide" (the design doc's own words for
+ * [state] auto_resume). Shipped default is permitted (true).
+ *
+ * String() FIRST, then compare -- never `ini.state.auto_resume || "true"`.
+ * Synchronet's iniGetObject() auto-types an ini value of "false" into the JS
+ * BOOLEAN false, which is falsy, so that `||` would silently replace an
+ * explicit `false` with the "true" fallback and the switch could never
+ * actually turn suspend/resume off.
+ *
+ * Split out from syncretro_lobby_state_key() so a caller that must not run
+ * AT ALL while the feature is off (syncretro_lobby_mark_resumable()'s sweep)
+ * can ask the same question without going through a per-ROM, permission-
+ * gated key. */
+function syncretro_lobby_auto_resume()
+{
+	return String(syncretro_lobby_ini_cache.state.auto_resume).toLowerCase() !== "false";
+}
+
 /* The whole suspend/resume decision, in one place, expressed as the key the
  * door is handed -- or "" for "not permitted", which the caller turns into an
  * absent -state flag.
@@ -621,20 +640,18 @@ function syncretro_lobby_state_key(rom)
 	var ini = syncretro_lobby_ini_cache;
 	var cap, per_rom;
 
-	/* The sysop's switch. Shipped default is permitted (true), but that default
-	 * must not be reached with `||`: Synchronet's iniGetObject() auto-types an
-	 * ini value of "false" into the JS BOOLEAN false, which is falsy -- so
-	 * `ini.state.auto_resume || "true"` would silently replace an explicit
-	 * `false` with the "true" fallback and the switch could never actually
-	 * turn suspend/resume off. String() first, compare directly instead. */
-	if (String(ini.state.auto_resume).toLowerCase() === "false")
+	if (!syncretro_lobby_auto_resume())
 		return "";
 	/* No snapshots on a shared cabinet, ever: a restore there would roll back
 	 * the machine's high-score table to whenever the snapshot was taken. */
 	if (syncretro_lobby_con.shared_saves && !syncretro_lobby_private())
 		return "";
-	/* The capability claim: per-console default, per-romset override. */
-	cap = String(ini.console.save_state || "false").toLowerCase() === "true";
+	/* The capability claim: per-console default, per-romset override. Same
+	 * `||`-is-a-trap reasoning as syncretro_lobby_auto_resume() above: an
+	 * explicit `save_state = false` auto-types to the boolean false, and
+	 * `false || "false"` happens to still read as "false" -- by luck, not by
+	 * design -- so this is written the same direct way regardless. */
+	cap = String(ini.console.save_state).toLowerCase() === "true";
 	per_rom = syncretro_lobby_games_save_state(rom.name);   /* "", "true", "false" */
 	if (per_rom !== "")
 		cap = per_rom === "true";
@@ -663,26 +680,42 @@ function syncretro_lobby_games_save_state(rom_name)
 }
 
 /* Marks each ROM object `resumed` when a snapshot exists that would restore
- * with THIS core/rom/options combination right now, and sweeps out every
- * snapshot in the same directory that would not -- a core upgrade unmarks and
- * cleans up in the same pass it draws from (see syncretro_state_sweep()).
+ * with THIS core/rom/options combination right now, and -- only while the
+ * feature is switched on for this console -- sweeps out every snapshot in
+ * the same directory that can never be restored again (see
+ * syncretro_state_sweep()).
+ *
+ * The sweep's own idea of "current key" must NOT be syncretro_lobby_state_key():
+ * that answers "is a snapshot PERMITTED", which is policy (the sysop's
+ * auto_resume/save_state, a games.local.ini override, the player's cabinet)
+ * and not a fact about the snapshot. A snapshot is dead when the cartridge is
+ * gone, or its core/ROM/options changed -- never merely because permission is
+ * currently withheld. Keying the sweep on the permission-gated key would
+ * delete every valid snapshot the instant a sysop flips a switch they might
+ * flip right back -- so this uses the RAW derivation, syncretro_state_key(),
+ * which knows nothing about permission at all.
+ *
+ * The sweep call itself is also skipped outright while syncretro_lobby_auto_resume()
+ * is false: a disabled install performs no file operations on anyone's
+ * snapshots, full stop, rather than relying solely on the raw key above.
  *
  * One directory() read (inside syncretro_state_list()) regardless of how many
- * cartridges are listed; syncretro_lobby_state_key() per ROM below is pure
- * computation over the already-cached ini and core hash -- no file I/O. */
+ * cartridges are listed; every key derivation below is pure computation over
+ * the already-cached ini and core hash -- no file I/O. */
 function syncretro_lobby_mark_resumable(roms)
 {
 	var list = syncretro_state_list(syncretro_lobby_home());
-	var current_keys = {};
-	var i, r, key;
+	var raw_keys = {};
+	var opts = syncretro_state_opts(syncretro_lobby_ini_cache.options);
+	var i, r;
 
 	for (i = 0; i < roms.length; i++) {
-		r   = roms[i];
-		key = syncretro_lobby_state_key(r);
-		current_keys[r.name] = key;
-		r.resumed = syncretro_state_marked(list, r.name, key);
+		r = roms[i];
+		raw_keys[r.name] = syncretro_state_key(syncretro_lobby_core_md5, r.md5, opts);
+		r.resumed = syncretro_state_marked(list, r.name, syncretro_lobby_state_key(r));
 	}
-	syncretro_state_sweep(list, roms, current_keys);
+	if (syncretro_lobby_auto_resume())
+		syncretro_state_sweep(list, roms, raw_keys);
 }
 
 function syncretro_lobby_play(rom)
