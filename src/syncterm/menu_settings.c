@@ -89,6 +89,10 @@ set_ini_values(str_list_t *ini, const struct syncterm_settings *set)
 	    &ini_style);
 	iniSetString(ini, "SyncTERM", "ListPath", set->stored_list_path,
 	    &ini_style);
+	iniSetString(ini, "SyncTERM", "TLSClientCertificate",
+	    set->tls_client_cert, &ini_style);
+	iniSetString(ini, "SyncTERM", "TLSClientKey",
+	    set->tls_client_key, &ini_style);
 	iniSetString(ini, "SyncTERM", "TERM", set->TERM, &ini_style);
 	iniSetBool(ini, "SyncTERM", "BlockyScaling", set->blocky,
 	    &ini_style);

@@ -23,6 +23,8 @@
 #define MAX_USER_LEN 30
 #define MAX_PASSWD_LEN 128
 #define MAX_SYSPASS_LEN 128
+#define MAX_TLS_PSK_ID_LEN 128
+#define MAX_TLS_PSK_LEN 256
 
 enum {
 	USER_BBSLIST
@@ -130,6 +132,12 @@ enum {
 	SYNCTERM_PARITY_ODD,
 };
 
+enum syncterm_tls_version {
+	SYNCTERM_TLS_VERSION_UNKNOWN,
+	SYNCTERM_TLS_VERSION_1_2,
+	SYNCTERM_TLS_VERSION_1_3,
+};
+
 /* NOTE: changing this may require updating sort_order in bbslist.c */
 struct bbslist {
 	char               name[LIST_NAME_MAX + 1];
@@ -175,6 +183,14 @@ struct bbslist {
 	bool               ssh_accept_early_data;
 	bool               telnet_no_binary;
 	bool               defer_telnet_negotiation;
+	bool               tls_trust_web_pki;
+	char               tls_trusted_cert[MAX_PATH + 1];
+	char               tls_client_cert[MAX_PATH + 1];
+	char               tls_client_key[MAX_PATH + 1];
+	char               tls_psk_identity[MAX_TLS_PSK_ID_LEN + 1];
+	char               tls_psk[MAX_TLS_PSK_LEN + 1];
+	int                tls_psk_version;
+	int                tls_version_floor;
 	// No way to get a uint8_t from an ini file.
 	short unsigned int stop_bits;
 	short unsigned int data_bits;

@@ -205,6 +205,10 @@ foreign class Settings {
   foreign listPath=(value)
   foreign shellTerm
   foreign shellTerm=(value)
+  foreign tlsClientCert
+  foreign tlsClientCert=(value)
+  foreign tlsClientKey
+  foreign tlsClientKey=(value)
   foreign startupMode
   foreign startupMode=(value)
   foreign outputMode
@@ -324,6 +328,22 @@ foreign class BBS {
   foreign telnetNoBinary=(value)
   foreign deferTelnetNegotiation
   foreign deferTelnetNegotiation=(value)
+  foreign tlsTrustWebPki
+  foreign tlsTrustWebPki=(value)
+  foreign tlsTrustedCert
+  foreign tlsTrustedCert=(value)
+  foreign tlsClientCert
+  foreign tlsClientCert=(value)
+  foreign tlsClientKey
+  foreign tlsClientKey=(value)
+  foreign tlsPskIdentity
+  foreign tlsPskIdentity=(value)
+  foreign tlsPsk
+  foreign tlsPsk=(value)
+  foreign tlsPskVersion
+  foreign tlsPskVersion=(value)
+  foreign tlsVersionFloor
+  foreign tlsVersionFloor=(value)
   foreign ghostProgram
   foreign ghostProgram=(value)
   foreign sftpPublicKey

@@ -295,6 +295,7 @@ char music_helpbuf[] = "`ANSI Music Setup`\n\n"
 static char *address_families[] = {"PerDNS", "IPv4", "IPv6", NULL};
 
 static char *parity_enum[] = {"None", "Even", "Odd", NULL};
+static char *tls_versions[] = {"Unknown", "TLS1.2", "TLS1.3", NULL};
 
 char *scaling_names[] = {"Blocky", "Pointy", "External", NULL};
 
@@ -958,6 +959,28 @@ read_item(ini_fp_list_t *listfile, struct bbslist *entry, ini_lv_string_t *bbsna
 	entry->parity = iniGetEnum(section, NULL, "Parity", parity_enum, SYNCTERM_PARITY_NONE);
 	entry->telnet_no_binary = iniGetBool(section, NULL, "TelnetBrokenTextmode", false);
 	entry->defer_telnet_negotiation = iniGetBool(section, NULL, "TelnetDeferNegotiate", false);
+	entry->tls_trust_web_pki = iniGetBool(sys ? NULL : section, NULL,
+	    "TLSTrustWebPKI", true);
+	iniGetSString(sys ? NULL : section, NULL, "TLSTrustedCertificate", "",
+	    entry->tls_trusted_cert, sizeof(entry->tls_trusted_cert));
+	iniGetSString(sys ? NULL : section, NULL, "TLSClientCertificate", "",
+	    entry->tls_client_cert, sizeof(entry->tls_client_cert));
+	iniGetSString(sys ? NULL : section, NULL, "TLSClientKey", "",
+	    entry->tls_client_key, sizeof(entry->tls_client_key));
+	iniGetSString(sys ? NULL : section, NULL, "TLSPSKIdentity", "",
+	    entry->tls_psk_identity, sizeof(entry->tls_psk_identity));
+	iniGetSString(sys ? NULL : section, NULL, "TLSPSK", "",
+	    entry->tls_psk, sizeof(entry->tls_psk));
+	entry->tls_psk_version = iniGetEnum(sys ? NULL : section, NULL,
+	    "TLSPSKVersion", tls_versions, SYNCTERM_TLS_VERSION_1_3);
+	if (entry->tls_psk_version != SYNCTERM_TLS_VERSION_1_2 &&
+	    entry->tls_psk_version != SYNCTERM_TLS_VERSION_1_3)
+		entry->tls_psk_version = SYNCTERM_TLS_VERSION_1_3;
+	entry->tls_version_floor = iniGetEnum(sys ? NULL : section, NULL,
+	    "TLSVersionFloor", tls_versions, SYNCTERM_TLS_VERSION_UNKNOWN);
+	if (entry->tls_version_floor < SYNCTERM_TLS_VERSION_UNKNOWN ||
+	    entry->tls_version_floor > SYNCTERM_TLS_VERSION_1_3)
+		entry->tls_version_floor = SYNCTERM_TLS_VERSION_UNKNOWN;
 	// TODO: Make this not suck.
 	int *pal = iniGetIntList(section, NULL, "Palette", &entry->palette_size, ",", NULL);
 	if (pal == NULL)
@@ -1432,6 +1455,21 @@ update_bbs_ini(str_list_t *inifile, struct bbslist *bbs, bool new_entry)
 	    bbs->telnet_no_binary, &ini_style);
 	iniSetBool(inifile, section, "TelnetDeferNegotiate",
 	    bbs->defer_telnet_negotiation, &ini_style);
+	iniSetBool(inifile, section, "TLSTrustWebPKI",
+	    bbs->tls_trust_web_pki, &ini_style);
+	iniSetString(inifile, section, "TLSTrustedCertificate",
+	    bbs->tls_trusted_cert, &ini_style);
+	iniSetString(inifile, section, "TLSClientCertificate",
+	    bbs->tls_client_cert, &ini_style);
+	iniSetString(inifile, section, "TLSClientKey",
+	    bbs->tls_client_key, &ini_style);
+	iniSetString(inifile, section, "TLSPSKIdentity",
+	    bbs->tls_psk_identity, &ini_style);
+	iniSetString(inifile, section, "TLSPSK", bbs->tls_psk, &ini_style);
+	iniSetEnum(inifile, section, "TLSPSKVersion", tls_versions,
+	    bbs->tls_psk_version, &ini_style);
+	iniSetEnum(inifile, section, "TLSVersionFloor", tls_versions,
+	    bbs->tls_version_floor, &ini_style);
 	if (section != NULL && bbs->ssh_fingerprint_len > 0) {
 		char fp[65];	/* up to 64 hex chars (SHA-256) + NUL */
 		for (int i = 0; i < bbs->ssh_fingerprint_len; i++)

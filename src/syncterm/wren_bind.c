@@ -195,6 +195,14 @@ fn_BBS_flowControl(WrenVM *vm)
 
 static void fn_BBS_telnetNoBinary(WrenVM *vm){ BBS_FIELD_BOOL(telnet_no_binary); }
 static void fn_BBS_deferTelnetNegotiation(WrenVM *vm){ BBS_FIELD_BOOL(defer_telnet_negotiation); }
+static void fn_BBS_tlsTrustWebPki(WrenVM *vm){ BBS_FIELD_BOOL(tls_trust_web_pki); }
+static void fn_BBS_tlsTrustedCert(WrenVM *vm){ BBS_FIELD_STR(tls_trusted_cert); }
+static void fn_BBS_tlsClientCert(WrenVM *vm){ BBS_FIELD_STR(tls_client_cert); }
+static void fn_BBS_tlsClientKey(WrenVM *vm){ BBS_FIELD_STR(tls_client_key); }
+static void fn_BBS_tlsPskIdentity(WrenVM *vm){ BBS_FIELD_STR(tls_psk_identity); }
+static void fn_BBS_tlsPsk(WrenVM *vm){ BBS_FIELD_STR(tls_psk); }
+static void fn_BBS_tlsPskVersion(WrenVM *vm){ BBS_FIELD_NUM(tls_psk_version); }
+static void fn_BBS_tlsVersionFloor(WrenVM *vm){ BBS_FIELD_NUM(tls_version_floor); }
 
 static void fn_BBS_ghostProgram(WrenVM *vm) { BBS_FIELD_STR(ghost_program); }
 static void fn_BBS_sftpPublicKey(WrenVM *vm){ BBS_FIELD_BOOL(sftp_public_key); }
@@ -1264,6 +1272,14 @@ static const struct binding BINDINGS[] = {
 	{ "FlowControl", false, "xonOff",            fn_FlowControl_xonOff       },
 	{ "BBS",   true, "telnetNoBinary",          fn_BBS_telnetNoBinary        },
 	{ "BBS",   true, "deferTelnetNegotiation",  fn_BBS_deferTelnetNegotiation},
+	{ "BBS",   true, "tlsTrustWebPki",          fn_BBS_tlsTrustWebPki        },
+	{ "BBS",   true, "tlsTrustedCert",          fn_BBS_tlsTrustedCert        },
+	{ "BBS",   true, "tlsClientCert",           fn_BBS_tlsClientCert         },
+	{ "BBS",   true, "tlsClientKey",            fn_BBS_tlsClientKey          },
+	{ "BBS",   true, "tlsPskIdentity",          fn_BBS_tlsPskIdentity        },
+	{ "BBS",   true, "tlsPsk",                  fn_BBS_tlsPsk                },
+	{ "BBS",   true, "tlsPskVersion",           fn_BBS_tlsPskVersion         },
+	{ "BBS",   true, "tlsVersionFloor",         fn_BBS_tlsVersionFloor       },
 	{ "BBS",   true, "ghostProgram",            fn_BBS_ghostProgram          },
 	{ "BBS",   true, "sftpPublicKey",           fn_BBS_sftpPublicKey         },
 	{ "BBS",   true, "sshFingerprint",          fn_BBS_sshFingerprint        },

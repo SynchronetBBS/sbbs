@@ -1270,6 +1270,14 @@ foreign class BBS {
   foreign static flowControl
   foreign static telnetNoBinary
   foreign static deferTelnetNegotiation
+  foreign static tlsTrustWebPki
+  foreign static tlsTrustedCert
+  foreign static tlsClientCert
+  foreign static tlsClientKey
+  foreign static tlsPskIdentity
+  foreign static tlsPsk
+  foreign static tlsPskVersion
+  foreign static tlsVersionFloor
   foreign static ghostProgram
   foreign static sftpPublicKey
   foreign static sshFingerprint
@@ -1277,6 +1285,11 @@ foreign class BBS {
   foreign static palette
   foreign static paletteSize
   foreign static sortOrder
+}
+class TLSVersion {
+  static unknown { 0 }
+  static tls12   { 1 }
+  static tls13   { 2 }
 }
 class ConnType {
   static unknown        { 0 }

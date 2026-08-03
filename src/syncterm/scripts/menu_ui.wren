@@ -1,21 +1,139 @@
-import "syncterm" for Key, KeyEvent, Mouse, Screen
+import "syncterm" for Key, KeyEvent, Mouse, MouseEvent, Screen
 import "ui_app" for App
-import "ui_widget" for Rect
+import "ui_draw" for Painter
+import "ui_widget" for Rect, Widget
 import "ui_pane" for Pane
 import "ui_list" for ListView
 import "ui_popup" for Alert, Confirm, Prompt, LinePrompt, Popup
 
+class ChoiceMessage is Widget {
+  construct new(message) {
+    super()
+    focusable = false
+    _message = message == null ? "" : message
+    _lines = []
+    _layoutW = -1
+    _layoutH = -1
+    _scrollTop = 0
+  }
+
+  scrollTop { _scrollTop }
+
+  bounds=(value) {
+    super.bounds = value
+    _layoutW = -1
+  }
+
+  ensureLayout_() {
+    if (bounds == null) return
+    if (_layoutW == bounds.w && _layoutH == bounds.h) return
+    _layoutW = bounds.w
+    _layoutH = bounds.h
+    var width = bounds.w.max(1)
+    var lines = Popup.wrap_(_message, width)
+    if (lines.count > bounds.h && width > 2) {
+      lines = Popup.wrap_(_message, width - 2)
+    }
+    _lines = lines
+    setScrollTop_(_scrollTop)
+  }
+
+  setScrollTop_(value) {
+    var maxTop = (_lines.count - (bounds == null ? 0 : bounds.h)).max(0)
+    var next = value.max(0).min(maxTop)
+    if (next == _scrollTop) return
+    _scrollTop = next
+    markDirty()
+  }
+
+  overflowing_ { _lines.count > bounds.h }
+
+  onPaint_() {
+    ensureLayout_()
+    var sf = surface
+    var st = style("default")
+    Painter.fill(sf, Rect.new(0, 0, bounds.w, bounds.h), " ", st)
+    var width = bounds.w - (overflowing_ ? 2 : 0)
+    var row = 0
+    while (row < bounds.h && _scrollTop + row < _lines.count) {
+      Painter.text(sf, 0, row, _lines[_scrollTop + row], st, width)
+      row = row + 1
+    }
+    if (!overflowing_) return
+    var glyphs = effectiveTheme.glyphs
+    Painter.scrollbar(sf, bounds.w - 1, 0, bounds.h, _scrollTop,
+        _lines.count, bounds.h, glyphs, style("scrollbar.track"),
+        style("scrollbar.thumb"))
+    var sep = glyph("scrollbar.separator")
+    for (y in 0...bounds.h) {
+      Painter.fill(sf, Rect.new(bounds.w - 2, y, 1, 1), sep, st)
+    }
+  }
+
+  handle(event) {
+    ensureLayout_()
+    if (event is KeyEvent) {
+      var code = event.code
+      if (code == Key.up) {
+        setScrollTop_(_scrollTop - 1)
+      } else if (code == Key.down) {
+        setScrollTop_(_scrollTop + 1)
+      } else if (code == Key.pageUp) {
+        setScrollTop_(_scrollTop - bounds.h.max(1))
+      } else if (code == Key.pageDown) {
+        setScrollTop_(_scrollTop + bounds.h.max(1))
+      } else if (code == Key.home) {
+        setScrollTop_(0)
+      } else if (code == Key.end) {
+        setScrollTop_(_lines.count)
+      } else {
+        return false
+      }
+      return true
+    }
+    if (!(event is MouseEvent) || !bounds.contains(event.startX, event.startY)) {
+      return false
+    }
+    if (event.event == Mouse.wheelUpPress ||
+        event.event == Mouse.wheelUpClick) {
+      setScrollTop_(_scrollTop - 1)
+      return true
+    }
+    if (event.event == Mouse.wheelDownPress ||
+        event.event == Mouse.wheelDownClick) {
+      setScrollTop_(_scrollTop + 1)
+      return true
+    }
+    if (event.event == Mouse.button1Click && overflowing_ &&
+        event.startX == bounds.right) {
+      setScrollTop_(Painter.scrollbarClick(event.endY - bounds.y,
+          bounds.h, _lines.count, bounds.h, _scrollTop))
+      return true
+    }
+    return false
+  }
+}
+
 class StandaloneChoice is Popup {
   construct new(message, labels) {
-    super(message)
-    keyHints = [["Enter", "Select"], ["Esc", "Close"]]
+    super(null)
+    keyHints = [["PgUp/PgDn", "Scroll"], ["Enter", "Select"],
+        ["Esc", "Close"]]
+    _message = message == null ? "" : message
+    _messageView = ChoiceMessage.new(_message)
+    _messageView.visible = _message.count > 0
+    add(_messageView)
     _list = ListView.new()
     _list.items = labels
     _list.onSelect = Fn.new {|index, item| dismissWith_(index) }
     add(_list)
+    focusedIndex = 1
   }
 
   selected=(value) { _list.selected = value }
+  messageScrollTop { _messageView.scrollTop }
+  messageBounds { _messageView.bounds }
+  listBounds { _list.bounds }
   closesOnOutsideClick(event) {
     return event == Mouse.button1Click || event == Mouse.button3Click
   }
@@ -24,15 +142,24 @@ class StandaloneChoice is Popup {
     super.bounds = value
     var cb = contentBounds
     if (cb == null) return
-    var top = cb.y + msgRows
-    var height = (bounds.y + bounds.h - 1 - top).max(1)
-    _list.bounds = Rect.new(cb.x, top, cb.w, height)
+    var listHeight = _list.count.min(cb.h).max(1)
+    var gap = _message.count > 0 && cb.h > listHeight ? 1 : 0
+    var messageHeight = (cb.h - listHeight - gap).max(0)
+    _messageView.bounds = Rect.new(cb.x, cb.y, cb.w, messageHeight)
+    _messageView.visible = messageHeight > 0 && _message.count > 0
+    _list.bounds = Rect.new(cb.x, cb.y + messageHeight + gap, cb.w,
+        listHeight)
   }
 
   handle(event) {
     if (event is KeyEvent && event.code == Key.escape) {
       dismissWith_(null)
       return true
+    }
+    if (event is KeyEvent &&
+        (event.code == Key.pageUp || event.code == Key.pageDown) &&
+        _messageView.visible) {
+      return _messageView.handle(event)
     }
     return super.handle(event)
   }
@@ -105,6 +232,7 @@ class MenuUi {
     if (name == "edit") return "Edit"
     if (name == "insert") return "Add"
     if (name == "delete") return "Delete"
+    if (name == "clear") return "Clear"
     if (name == "rename") return "Rename"
     if (name == "copy") return "Copy"
     if (name == "cut") return "Cut"

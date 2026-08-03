@@ -217,6 +217,8 @@ SETTINGS_STRING_PROPERTY(modemInit, mdm.init_string)
 SETTINGS_STRING_PROPERTY(modemDial, mdm.dial_string)
 SETTINGS_STRING_PROPERTY(listPath, stored_list_path)
 SETTINGS_STRING_PROPERTY(shellTerm, TERM)
+SETTINGS_STRING_PROPERTY(tlsClientCert, tls_client_cert)
+SETTINGS_STRING_PROPERTY(tlsClientKey, tls_client_key)
 SETTINGS_NUM_PROPERTY(startupMode, startup_mode, SCREEN_MODE_CURRENT,
     SCREEN_MODE_TERMINATOR - 1)
 SETTINGS_NUM_PROPERTY(cursorStyle, defaultCursor, ST_CT_DEFAULT,
@@ -1678,6 +1680,8 @@ static const struct binding bindings[] = {
 	SETTINGS_GETSET(modemDial),
 	SETTINGS_GETSET(listPath),
 	SETTINGS_GETSET(shellTerm),
+	SETTINGS_GETSET(tlsClientCert),
+	SETTINGS_GETSET(tlsClientKey),
 	SETTINGS_GETSET(startupMode),
 	SETTINGS_GETSET(outputMode),
 	SETTINGS_GETSET(cursorStyle),

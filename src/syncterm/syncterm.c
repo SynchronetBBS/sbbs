@@ -1889,6 +1889,10 @@ load_settings(struct syncterm_settings *set)
 	set->custom_ah = iniReadInteger(inifile, "SyncTERM", "CustomAspectHeight", 3);
 	get_syncterm_filename(set->stored_list_path, sizeof(set->stored_list_path), SYNCTERM_PATH_LIST, false);
 	iniReadSString(inifile, "SyncTERM", "ListPath", set->stored_list_path, set->stored_list_path, sizeof(set->stored_list_path));
+	iniReadSString(inifile, "SyncTERM", "TLSClientCertificate", "",
+	    set->tls_client_cert, sizeof(set->tls_client_cert));
+	iniReadSString(inifile, "SyncTERM", "TLSClientKey", "",
+	    set->tls_client_key, sizeof(set->tls_client_key));
 	resolve_list_path(set);
 	set->scaling_factor = iniReadFloat(inifile, "SyncTERM", "ScalingFactor", 0);
 	set->blocky = iniReadBool(inifile, "SyncTERM", "BlockyScaling", true);

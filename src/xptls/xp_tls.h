@@ -19,11 +19,10 @@
  * OpenSSL libssl or Botan3, selected at build time.
  *
  * The API mirrors what the consumers actually need — push/pop/flush +
- * SNI + read timeout + ownership clearing. Certificate verification
- * follows the backend's default trust store with peer-verify disabled,
- * matching the Cryptlib era's permissive posture; a future iteration
- * should gate on a per-session opt-in (SyncTERM wants lax verify for
- * self-signed BBS certs; Synchronet server wants strict).
+ * SNI + read timeout + ownership clearing. Certificate verification is
+ * selected per client session so legacy callers can remain permissive while
+ * callers with an authentication policy can opt into either system trust or
+ * a connection-specific trust anchor.
  */
 
 #ifndef _XP_TLS_H
@@ -40,6 +39,74 @@ extern "C" {
 #endif
 
 typedef struct xp_tls_ctx *xp_tls_t;
+
+enum xp_tls_server_auth {
+	XP_TLS_SERVER_AUTH_NONE,
+	XP_TLS_SERVER_AUTH_WEB_PKI,
+	XP_TLS_SERVER_AUTH_CERTIFICATE,
+	XP_TLS_SERVER_AUTH_UNTRUSTED,
+};
+
+enum xp_tls_version {
+	XP_TLS_VERSION_UNKNOWN,
+	XP_TLS_VERSION_1_2,
+	XP_TLS_VERSION_1_3,
+};
+
+/*
+ * A certificate from the peer's presented chain. The strings are owned by
+ * the TLS backend and remain valid only for the duration of the callback.
+ * pem contains one complete PEM-encoded certificate; fingerprint_sha256 is
+ * printable hexadecimal with separators chosen by the backend.
+ */
+struct xp_tls_peer_certificate {
+	const char *subject;
+	const char *issuer;
+	const char *not_before;
+	const char *not_after;
+	const char *fingerprint_sha256;
+	const char *pem;
+};
+
+typedef void (*xp_tls_peer_chain_cb)(void *arg,
+    const struct xp_tls_peer_certificate *certificates, size_t count);
+
+/*
+ * Optional client-session policy. All pointed-to data remains owned by the
+ * caller and only needs to remain valid until xp_tls_client_open_config()
+ * returns.
+ *
+ * server_auth       — select Web PKI, a connection-specific certificate,
+ *                     or validation with no trust anchors. UNTRUSTED
+ *                     intentionally rejects certificate sessions while
+ *                     still reporting the presented chain. NONE is reserved
+ *                     for the legacy xp_tls_client_open() wrapper and is
+ *                     rejected by this configured interface.
+ * trusted_cert_file — PEM trust anchor for CERTIFICATE mode. A leaf
+ *                     certificate is accepted as the explicit trust anchor.
+ * client_cert_file  — PEM certificate or chain presented to the server.
+ * client_key_file   — matching unencrypted PEM private key.
+ * psk_identity/psk  — when supplied, use a PSK-only handshake at the exact
+ *                     version selected by psk_version; certificate trust and
+ *                     client identity are ignored.
+ * peer_chain_cb     — optional diagnostic callback invoked with the
+ *                     certificate chain presented by the peer when
+ *                     certificate verification rejects the handshake.
+ */
+struct xp_tls_client_config {
+	const char *server_name;
+	int         read_timeout;
+	enum xp_tls_server_auth server_auth;
+	const char *trusted_cert_file;
+	const char *client_cert_file;
+	const char *client_key_file;
+	const char *psk_identity;
+	const void *psk;
+	size_t      psk_len;
+	enum xp_tls_version psk_version;
+	xp_tls_peer_chain_cb peer_chain_cb;
+	void       *peer_chain_cb_arg;
+};
 
 /*
  * Return codes from push/pop/flush. Non-negative values are success;
@@ -70,6 +137,13 @@ typedef struct xp_tls_ctx *xp_tls_t;
  * produced.
  */
 DLLEXPORT xp_tls_t xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout);
+
+/* Open a TLS client session using the supplied authentication policy. */
+DLLEXPORT xp_tls_t xp_tls_client_open_config(SOCKET sock,
+                                              const struct xp_tls_client_config *config);
+
+/* Return the protocol version negotiated by an open TLS session. */
+DLLEXPORT enum xp_tls_version xp_tls_protocol_version(xp_tls_t ctx);
 
 /*
  * Open a TLS-PSK 1.2 client session.  Identical to xp_tls_client_open()
@@ -116,11 +190,8 @@ DLLEXPORT int xp_tls_pop(xp_tls_t ctx, void *buf, size_t n, size_t *copied);
 DLLEXPORT bool xp_tls_has_pending(xp_tls_t ctx);
 
 /*
- * Returns true if the active session negotiated a PSK key-exchange
- * (TLS_PSK_WITH_*, DHE_PSK, ECDHE_PSK, RSA_PSK).  Lets a caller that
- * opens with both PSK and cert kex methods enabled learn which path
- * actually authenticated the peer, so it can pick MQTT-level (or
- * other application-level) credentials accordingly.
+ * Returns true if the active session authenticated with a configured PSK,
+ * including a TLS 1.3 external PSK or a TLS 1.2 PSK cipher suite.
  */
 DLLEXPORT bool xp_tls_used_psk(xp_tls_t ctx);
 

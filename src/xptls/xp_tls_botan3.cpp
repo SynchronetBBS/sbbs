@@ -20,10 +20,10 @@
  * socket from inside xp_tls_push / xp_tls_pop and buffering plaintext
  * between calls.
  *
- * Peer-certificate verification is disabled (custom Credentials_Manager
- * returns no trusted CAs and the default verify callback accepts any
- * chain).  Matches the Cryptlib-era posture that the OpenSSL backend
- * also preserves — BBSes commonly serve self-signed certs.
+ * Legacy callers retain the Cryptlib-era permissive posture. Configured
+ * callers can require hostname-checked certificate verification using either
+ * system Web-PKI roots or an explicit trust anchor, and can present a
+ * client certificate.
  */
 
 /* sockwrap.h pulls in <windows.h> on Win32, which #defines `max` and
@@ -34,14 +34,18 @@
 #define NOMINMAX
 #endif
 
+#include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <deque>
 #include <memory>
+#include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -51,15 +55,22 @@
 #include "xp_tls.h"
 
 #include <botan/auto_rng.h>
+#include <botan/certstor.h>
+#include <botan/certstor_system.h>
 #include <botan/credentials_manager.h>
+#include <botan/data_src.h>
+#include <botan/pkcs8.h>
+#include <botan/pem.h>
 #include <botan/secmem.h>
 #include <botan/tls_alert.h>
 #include <botan/tls_callbacks.h>
 #include <botan/tls_client.h>
+#include <botan/tls_external_psk.h>
 #include <botan/tls_policy.h>
 #include <botan/tls_server_info.h>
 #include <botan/tls_session.h>
 #include <botan/tls_session_manager_noop.h>
+#include <botan/x509path.h>
 
 /* ---------------------------------------------------------------- errors */
 
@@ -80,6 +91,17 @@ set_last_err(const char *fmt, ...)
 	va_end(ap);
 }
 
+static std::string
+readable_time(const Botan::ASN1_Time &time)
+{
+	std::string ret = time.readable_string();
+	if (ret.size() >= 10 && ret[4] == '/' && ret[7] == '/') {
+		ret[4] = '-';
+		ret[7] = '-';
+	}
+	return ret;
+}
+
 /* ----------------------------------------------------- Credentials */
 
 /*
@@ -90,16 +112,72 @@ set_last_err(const char *fmt, ...)
  * Optionally also supplies a PSK for TLS-PSK clients.  When psk_secret_ is
  * empty, behaves as a pure cert-mode credentials manager (no PSK offered).
  */
-class PermissiveCredentials : public Botan::Credentials_Manager {
+class ClientCredentials : public Botan::Credentials_Manager {
 public:
-	PermissiveCredentials() = default;
-	PermissiveCredentials(std::string identity, Botan::secure_vector<uint8_t> psk)
+	ClientCredentials() = default;
+	ClientCredentials(std::string identity, Botan::secure_vector<uint8_t> psk)
 	    : psk_identity_(std::move(identity)), psk_secret_(std::move(psk)) {}
+	ClientCredentials(enum xp_tls_server_auth server_auth,
+	                  const char *trusted_cert_file,
+	                  const char *client_cert_file,
+	                  const char *client_key_file)
+	{
+		if (server_auth == XP_TLS_SERVER_AUTH_WEB_PKI)
+			system_store_ = std::make_unique<Botan::System_Certificate_Store>();
+		else if (server_auth == XP_TLS_SERVER_AUTH_CERTIFICATE) {
+			custom_trust_cert_.emplace(trusted_cert_file);
+			custom_store_ =
+			    std::make_unique<Botan::Certificate_Store_In_Memory>(
+			        *custom_trust_cert_);
+		}
+		if (client_cert_file != nullptr && client_cert_file[0] != 0) {
+			Botan::DataSource_Stream cert_source(client_cert_file);
+			while (Botan::PEM_Code::matches(cert_source))
+				client_chain_.emplace_back(cert_source);
+			if (client_chain_.empty())
+				throw std::runtime_error(
+				    "TLS client certificate file contains no PEM certificate");
+			Botan::DataSource_Stream key_source(client_key_file);
+			client_key_ = Botan::PKCS8::load_key(key_source);
+		}
+	}
+
+	const Botan::X509_Certificate *custom_trust_certificate() const
+	{
+		return custom_trust_cert_ ? &*custom_trust_cert_ : nullptr;
+	}
 
 	std::vector<Botan::Certificate_Store *>
 	trusted_certificate_authorities(const std::string &, const std::string &) override
 	{
-		return {};
+		std::vector<Botan::Certificate_Store *> stores;
+		if (system_store_ != nullptr)
+			stores.push_back(system_store_.get());
+		if (custom_store_ != nullptr)
+			stores.push_back(custom_store_.get());
+		return stores;
+	}
+
+	std::vector<Botan::X509_Certificate>
+	find_cert_chain(const std::vector<std::string> &,
+	                const std::vector<Botan::AlgorithmIdentifier> &,
+	                const std::vector<Botan::X509_DN> &,
+	                const std::string &type,
+	                const std::string &) override
+	{
+		if (type != "tls-client")
+			return {};
+		return client_chain_;
+	}
+
+	std::shared_ptr<Botan::Private_Key>
+	private_key_for(const Botan::X509_Certificate &,
+	                const std::string &type,
+	                const std::string &) override
+	{
+		if (type != "tls-client")
+			return nullptr;
+		return client_key_;
 	}
 
 	std::string psk_identity(const std::string &type, const std::string &context,
@@ -118,51 +196,83 @@ public:
 		return Botan::SymmetricKey(psk_secret_.data(), psk_secret_.size());
 	}
 
+	std::vector<Botan::TLS::ExternalPSK>
+	find_preshared_keys(std::string_view,
+	                    Botan::TLS::Connection_Side whoami,
+	                    const std::vector<std::string> &identities,
+	                    const std::optional<std::string> &prf) override
+	{
+		if (psk_secret_.empty() ||
+		    whoami != Botan::TLS::Connection_Side::Client ||
+		    (prf && *prf != "SHA-256") ||
+		    (!identities.empty() && std::find(identities.begin(),
+		    identities.end(), psk_identity_) == identities.end()))
+			return {};
+		Botan::secure_vector<uint8_t> secret(psk_secret_.begin(),
+		    psk_secret_.end());
+		std::vector<Botan::TLS::ExternalPSK> result;
+		result.emplace_back(psk_identity_, "SHA-256", std::move(secret));
+		return result;
+	}
+
 private:
 	/* secure_vector wipes its backing storage on destruction via Botan's
 	   secure_allocator — std::vector<uint8_t> would leave the password
 	   bytes in freed heap. */
 	std::string                   psk_identity_;
 	Botan::secure_vector<uint8_t> psk_secret_;
+	std::unique_ptr<Botan::System_Certificate_Store> system_store_;
+	std::unique_ptr<Botan::Certificate_Store_In_Memory> custom_store_;
+	std::optional<Botan::X509_Certificate> custom_trust_cert_;
+	std::vector<Botan::X509_Certificate> client_chain_;
+	std::shared_ptr<Botan::Private_Key> client_key_;
 };
 
-/*
- * Policy for the PSK leg of the MQTT spy connection.  Pinned to
- * TLS 1.2 with PSK-only kex.  We deliberately do NOT mix in cert
- * kex: cryptlib's TLS server (Synchronet internal broker) prefers
- * cert suites whenever they're offered, even with PSK ahead in the
- * client's list, and TLS 1.2 cipher-suite selection is server-driven
- * so client ordering is just a hint.  conn_mqtt.c therefore tries a
- * PSK-only handshake first; if that fails (external broker without
- * PSK identities), it reconnects and retries with the default policy
- * (cert auth).
- *
- * latest_supported_version() must also be overridden: Botan's
- * default computes it from allow_tls13(), but the Client
- * constructor's protocol-version check has been observed to ignore
- * allow_tls13() alone and throw with TLS_V13 as the offered version.
- */
-class Tls12PskPolicy : public Botan::TLS::Policy {
+/* Web-PKI clients normally soft-fail unavailable revocation information.
+   Botan's base policy requires CRL/OCSP proof, which rejects many otherwise
+   valid public sites, so retain signature/path/hostname checking without
+   making revocation information mandatory. */
+class CertificatePolicy : public Botan::TLS::Policy {
 public:
-	bool allow_tls12() const override { return true; }
-	bool allow_tls13() const override { return false; }
+	bool require_cert_revocation_info() const override { return false; }
+};
+
+/* A configured external PSK is bound to one exact protocol version. The new
+   configuration API restricts TLS 1.2 to ephemeral PSK exchanges, and
+   Botan's TLS 1.3 client offers only the forward-secret psk_dhe_ke mode. The
+   legacy wrapper retains plain-PSK compatibility for existing MQTT users. */
+class PskPolicy : public Botan::TLS::Policy {
+public:
+	PskPolicy(enum xp_tls_version version, bool legacy_psk)
+	    : version_(version), legacy_psk_(legacy_psk) {}
+	bool allow_tls12() const override { return version_ == XP_TLS_VERSION_1_2; }
+	bool allow_tls13() const override { return version_ == XP_TLS_VERSION_1_3; }
 	Botan::TLS::Protocol_Version
 	latest_supported_version(bool datagram) const override
 	{
-		if (datagram)
-			return Botan::TLS::Protocol_Version::DTLS_V12;
-		return Botan::TLS::Protocol_Version::TLS_V12;
+		if (version_ == XP_TLS_VERSION_1_3)
+			return datagram ? Botan::TLS::Protocol_Version::DTLS_V13
+			                : Botan::TLS::Protocol_Version::TLS_V13;
+		return datagram ? Botan::TLS::Protocol_Version::DTLS_V12
+		                : Botan::TLS::Protocol_Version::TLS_V12;
 	}
 	std::vector<std::string> allowed_key_exchange_methods() const override
 	{
-		return { "DHE_PSK", "ECDHE_PSK", "PSK" };
+		if (legacy_psk_)
+			return { "DHE_PSK", "ECDHE_PSK", "PSK" };
+		return { "DHE_PSK", "ECDHE_PSK" };
 	}
 	std::vector<std::string> allowed_signature_methods() const override
 	{
-		return {};
+		/* TLS 1.2 PSK suites authenticate implicitly through the key
+		   exchange rather than with a certificate signature. */
+		return { "IMPLICIT" };
 	}
 	std::vector<std::string> allowed_ciphers() const override
 	{
+		if (!legacy_psk_)
+			return { "AES-128/GCM", "AES-256/GCM",
+			         "ChaCha20Poly1305" };
 		return {
 		    "AES-128",
 		    "AES-256",
@@ -172,8 +282,14 @@ public:
 	}
 	std::vector<std::string> allowed_macs() const override
 	{
+		if (!legacy_psk_)
+			return { "AEAD" };
 		return { "SHA-256", "SHA-384", "AEAD", "SHA-1" };
 	}
+
+private:
+	enum xp_tls_version version_;
+	bool legacy_psk_;
 };
 
 /* ------------------------------------------------------- Callbacks */
@@ -187,12 +303,15 @@ struct xp_tls_ctx {
 	std::vector<uint8_t>                     pending_tx;	/* ciphertext waiting to go out */
 	bool                                     peer_closed;
 	bool                                     fatal_alert;
-	std::string                              kex_algo;	/* "PSK", "DHE_PSK", "ECDH", "RSA", ... */
+	bool                                     psk_used;
+	enum xp_tls_version                      protocol_version;
+	xp_tls_peer_chain_cb                     peer_chain_cb;
+	void                                    *peer_chain_cb_arg;
 	/* Botan 3's TLS::Client takes shared_ptrs for its dependencies, so
 	   the surrounding objects have to be shared_ptr too. */
 	std::shared_ptr<Botan::AutoSeeded_RNG>       rng;
 	std::shared_ptr<Botan::TLS::Session_Manager> sess_mgr;
-	std::shared_ptr<PermissiveCredentials>       creds;
+	std::shared_ptr<ClientCredentials>           creds;
 	std::shared_ptr<Botan::TLS::Policy>          policy;
 	std::shared_ptr<Botan::TLS::Callbacks>       callbacks;
 	std::unique_ptr<Botan::TLS::Client>          client;
@@ -200,11 +319,19 @@ struct xp_tls_ctx {
 
 class XpTlsCallbacks : public Botan::TLS::Callbacks {
 public:
-	explicit XpTlsCallbacks(xp_tls_ctx *c) : ctx(c) {}
+	XpTlsCallbacks(xp_tls_ctx *c, bool verify,
+	               const Botan::X509_Certificate *pinned)
+	    : ctx(c), verify_peer(verify), pinned_cert(pinned) {}
 
 	void tls_session_established(const Botan::TLS::Session_Summary &s) override
 	{
-		ctx->kex_algo = s.kex_algo();
+		ctx->psk_used = s.psk_used();
+		if (s.version() == Botan::TLS::Protocol_Version::TLS_V12)
+			ctx->protocol_version = XP_TLS_VERSION_1_2;
+		else if (s.version() == Botan::TLS::Protocol_Version::TLS_V13)
+			ctx->protocol_version = XP_TLS_VERSION_1_3;
+		else
+			ctx->protocol_version = XP_TLS_VERSION_UNKNOWN;
 	}
 
 	void tls_emit_data(std::span<const uint8_t> data) override
@@ -225,24 +352,92 @@ public:
 			ctx->fatal_alert = true;
 	}
 
-	void tls_verify_cert_chain(const std::vector<Botan::X509_Certificate> &,
-	                           const std::vector<std::optional<Botan::OCSP::Response>> &,
-	                           const std::vector<Botan::Certificate_Store *> &,
-	                           Botan::Usage_Type,
-	                           std::string_view,
-	                           const Botan::TLS::Policy &) override
+	void tls_verify_cert_chain(
+	    const std::vector<Botan::X509_Certificate> &cert_chain,
+	    const std::vector<std::optional<Botan::OCSP::Response>> &ocsp_responses,
+	    const std::vector<Botan::Certificate_Store *> &trusted_roots,
+	    Botan::Usage_Type usage, std::string_view hostname,
+	    const Botan::TLS::Policy &policy) override
 	{
-		/* Accept any chain — matches the OpenSSL backend's
-		   SSL_VERIFY_NONE.  See the TODO in xp_tls_openssl.c
-		   client_open_inner(): the eventual cert-pinning path needs
-		   to surface a yes/no/cancel modal on validation failure
-		   (accept once / accept and update / abort), the same way
-		   SyncTERM's SSH layer handles host-key changes — never
-		   silently accept or reject; the user owns the trust call. */
+		if (verify_peer) {
+			try {
+			if (pinned_cert != nullptr) {
+				/* Explicit per-connection trust deliberately permits a leaf or
+				   intermediate as the terminal anchor, matching OpenSSL's
+				   X509_V_FLAG_PARTIAL_CHAIN. All certificates below the anchor,
+				   plus leaf hostname, usage, validity, and strength, are still
+				   validated normally. */
+				Botan::Path_Validation_Restrictions restrictions(
+				    policy.require_cert_revocation_info(),
+				    policy.minimum_signature_strength(), false,
+				    std::chrono::seconds::zero(),
+				    std::make_unique<Botan::Certificate_Store_In_Memory>(),
+				    false, false);
+				auto result = Botan::x509_path_validate(cert_chain,
+				    restrictions, trusted_roots, hostname, usage,
+				    std::chrono::system_clock::now(),
+				    std::chrono::milliseconds(0), ocsp_responses);
+				if (!result.successful_validation())
+					throw std::runtime_error(result.result_string());
+				return;
+			}
+			Botan::TLS::Callbacks::tls_verify_cert_chain(cert_chain,
+			    ocsp_responses, trusted_roots, usage, hostname, policy);
+			}
+			catch (...) {
+				report_peer_chain(cert_chain);
+				throw;
+			}
+		}
 	}
 
 private:
+	struct CertificateStrings {
+		std::string subject;
+		std::string issuer;
+		std::string not_before;
+		std::string not_after;
+		std::string fingerprint;
+		std::string pem;
+	};
+
+	void report_peer_chain(
+	    const std::vector<Botan::X509_Certificate> &cert_chain)
+	{
+		if (ctx->peer_chain_cb == nullptr || cert_chain.empty())
+			return;
+		try {
+			std::vector<CertificateStrings> strings;
+			strings.reserve(cert_chain.size());
+			for (const auto &cert : cert_chain) {
+				CertificateStrings item;
+				item.subject = cert.subject_dn().to_string();
+				item.issuer = cert.issuer_dn().to_string();
+				item.not_before = readable_time(cert.not_before());
+				item.not_after = readable_time(cert.not_after());
+				item.fingerprint = cert.fingerprint("SHA-256");
+				item.pem = cert.PEM_encode();
+				strings.push_back(std::move(item));
+			}
+			std::vector<xp_tls_peer_certificate> certificates;
+			certificates.reserve(strings.size());
+			for (const auto &item : strings) {
+				certificates.push_back({
+				    item.subject.c_str(), item.issuer.c_str(),
+				    item.not_before.c_str(), item.not_after.c_str(),
+				    item.fingerprint.c_str(), item.pem.c_str()});
+			}
+			ctx->peer_chain_cb(ctx->peer_chain_cb_arg,
+			    certificates.data(), certificates.size());
+		}
+		catch (...) {
+			/* Diagnostics must never change handshake success or failure. */
+		}
+	}
+
 	xp_tls_ctx *ctx;
+	bool verify_peer;
+	const Botan::X509_Certificate *pinned_cert;
 };
 
 /* --------------------------------------------------- socket helpers */
@@ -339,10 +534,13 @@ pump_recv(xp_tls_ctx *ctx)
 /* ---------------------------------------------------------- open */
 
 static xp_tls_t
-client_open_inner(SOCKET sock, const char *sni, int read_timeout,
-                  const char *psk_identity,
-                  const void *psk, size_t psk_len)
+client_open_inner(SOCKET sock, const struct xp_tls_client_config *config,
+                  bool legacy_psk)
 {
+	const char *sni = config->server_name;
+	const char *psk_identity = config->psk_identity;
+	const void *psk = config->psk;
+	size_t psk_len = config->psk_len;
 	last_err_buf[0] = 0;
 	auto *ctx = new (std::nothrow) xp_tls_ctx{};
 	if (ctx == nullptr) {
@@ -350,9 +548,13 @@ client_open_inner(SOCKET sock, const char *sni, int read_timeout,
 		return nullptr;
 	}
 	ctx->sock               = sock;
-	ctx->read_timeout_sec   = read_timeout;
+	ctx->read_timeout_sec   = config->read_timeout;
 	ctx->peer_closed        = false;
 	ctx->fatal_alert        = false;
+	ctx->psk_used           = false;
+	ctx->protocol_version   = XP_TLS_VERSION_UNKNOWN;
+	ctx->peer_chain_cb      = config->peer_chain_cb;
+	ctx->peer_chain_cb_arg  = config->peer_chain_cb_arg;
 	if (sni != nullptr && sni[0] != 0)
 		ctx->sni = sni;
 
@@ -363,27 +565,29 @@ client_open_inner(SOCKET sock, const char *sni, int read_timeout,
 			Botan::secure_vector<uint8_t> secret(
 			    static_cast<const uint8_t *>(psk),
 			    static_cast<const uint8_t *>(psk) + psk_len);
-			ctx->creds = std::make_shared<PermissiveCredentials>(
+			ctx->creds = std::make_shared<ClientCredentials>(
 			    std::string(psk_identity), std::move(secret));
-			ctx->policy = std::make_shared<Tls12PskPolicy>();
+			ctx->policy = std::make_shared<PskPolicy>(config->psk_version,
+			    legacy_psk);
 		}
 		else {
-			ctx->creds  = std::make_shared<PermissiveCredentials>();
-			ctx->policy = std::make_shared<Botan::TLS::Policy>();
+			ctx->creds = std::make_shared<ClientCredentials>(
+			    config->server_auth, config->trusted_cert_file,
+			    config->client_cert_file, config->client_key_file);
+			ctx->policy = std::make_shared<CertificatePolicy>();
 		}
-		ctx->callbacks = std::make_shared<XpTlsCallbacks>(ctx);
+		ctx->callbacks = std::make_shared<XpTlsCallbacks>(ctx,
+		    psk_identity == nullptr &&
+		        config->server_auth != XP_TLS_SERVER_AUTH_NONE,
+		    ctx->creds->custom_trust_certificate());
 
 		Botan::TLS::Server_Information server_info(ctx->sni);
-		/* Pass an explicit offer_version when running PSK: the Client
-		   constructor's default is the compile-time latest_tls_version()
-		   (TLS 1.3 when Botan was built with HAS_TLS_13), and the
-		   constructor validates that against the policy *before*
-		   consulting policy->latest_supported_version().  Passing
-		   TLS_V12 directly sidesteps the contradiction. */
 		Botan::TLS::Protocol_Version offer =
-		    (psk_identity != nullptr && psk != nullptr && psk_len > 0)
-		    ? Botan::TLS::Protocol_Version(Botan::TLS::Protocol_Version::TLS_V12)
-		    : Botan::TLS::Protocol_Version::latest_tls_version();
+		    psk_identity == nullptr
+		    ? Botan::TLS::Protocol_Version::latest_tls_version()
+		    : (config->psk_version == XP_TLS_VERSION_1_3
+		        ? Botan::TLS::Protocol_Version::TLS_V13
+		        : Botan::TLS::Protocol_Version::TLS_V12);
 		ctx->client = std::make_unique<Botan::TLS::Client>(
 		    ctx->callbacks, ctx->sess_mgr, ctx->creds, ctx->policy, ctx->rng,
 		    server_info, offer);
@@ -394,7 +598,7 @@ client_open_inner(SOCKET sock, const char *sni, int read_timeout,
 		return nullptr;
 	}
 
-	if (set_recv_timeout(sock, read_timeout) != 0) {
+	if (set_recv_timeout(sock, config->read_timeout) != 0) {
 		set_last_err("setsockopt SO_RCVTIMEO failed (errno=%d)", errno);
 		delete ctx;
 		return nullptr;
@@ -431,6 +635,11 @@ client_open_inner(SOCKET sock, const char *sni, int read_timeout,
 		}
 		attempts = 0;
 	}
+	if (psk_identity != nullptr && !ctx->psk_used) {
+		set_last_err("TLS handshake did not select the configured PSK");
+		delete ctx;
+		return nullptr;
+	}
 
 	/* The server might have queued session-ticket messages etc after
 	   handshake completion; flush anything still pending. */
@@ -442,7 +651,66 @@ client_open_inner(SOCKET sock, const char *sni, int read_timeout,
 extern "C" xp_tls_t
 xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
 {
-	return client_open_inner(sock, sni, read_timeout, nullptr, nullptr, 0);
+	struct xp_tls_client_config config{};
+	config.server_name = sni;
+	config.read_timeout = read_timeout;
+	return client_open_inner(sock, &config, false);
+}
+
+extern "C" xp_tls_t
+xp_tls_client_open_config(SOCKET sock,
+                          const struct xp_tls_client_config *config)
+{
+	if (config == nullptr) {
+		set_last_err("xp_tls_client_open_config: missing configuration");
+		return nullptr;
+	}
+	bool have_psk_identity = config->psk_identity != nullptr &&
+	    config->psk_identity[0] != 0;
+	bool have_psk = config->psk != nullptr && config->psk_len > 0;
+	if (have_psk_identity != have_psk) {
+		set_last_err("xp_tls_client_open_config: incomplete PSK configuration");
+		return nullptr;
+	}
+	if (have_psk && config->psk_version != XP_TLS_VERSION_1_2 &&
+	    config->psk_version != XP_TLS_VERSION_1_3) {
+		set_last_err("xp_tls_client_open_config: PSK protocol version must be TLS 1.2 or TLS 1.3");
+		return nullptr;
+	}
+	if (!have_psk && config->psk_version != XP_TLS_VERSION_UNKNOWN) {
+		set_last_err("xp_tls_client_open_config: PSK protocol version set without a PSK");
+		return nullptr;
+	}
+	bool have_client_cert = config->client_cert_file != nullptr &&
+	    config->client_cert_file[0] != 0;
+	bool have_client_key = config->client_key_file != nullptr &&
+	    config->client_key_file[0] != 0;
+	if (!have_psk && have_client_cert != have_client_key) {
+		set_last_err("xp_tls_client_open_config: client certificate and key must both be set");
+		return nullptr;
+	}
+	if (!have_psk && (config->server_auth <= XP_TLS_SERVER_AUTH_NONE ||
+	    config->server_auth > XP_TLS_SERVER_AUTH_UNTRUSTED)) {
+		set_last_err("xp_tls_client_open_config: invalid server authentication mode");
+		return nullptr;
+	}
+	if (!have_psk && config->server_auth == XP_TLS_SERVER_AUTH_CERTIFICATE &&
+	    (config->trusted_cert_file == nullptr ||
+	     config->trusted_cert_file[0] == 0)) {
+		set_last_err("xp_tls_client_open_config: certificate authentication has no trust anchor");
+		return nullptr;
+	}
+	if (!have_psk && config->server_auth != XP_TLS_SERVER_AUTH_CERTIFICATE &&
+	    config->trusted_cert_file != nullptr && config->trusted_cert_file[0] != 0) {
+		set_last_err("xp_tls_client_open_config: trusted certificate set for the wrong authentication mode");
+		return nullptr;
+	}
+	if (!have_psk && config->server_auth != XP_TLS_SERVER_AUTH_NONE &&
+	    (config->server_name == nullptr || config->server_name[0] == 0)) {
+		set_last_err("xp_tls_client_open_config: authenticated TLS requires a server name");
+		return nullptr;
+	}
+	return client_open_inner(sock, config, false);
 }
 
 extern "C" xp_tls_t
@@ -453,7 +721,20 @@ xp_tls_client_open_psk(SOCKET sock, const char *sni, int read_timeout,
 		set_last_err("xp_tls_client_open_psk: missing identity or PSK");
 		return nullptr;
 	}
-	return client_open_inner(sock, sni, read_timeout, identity, psk, psk_len);
+	struct xp_tls_client_config config{};
+	config.server_name = sni;
+	config.read_timeout = read_timeout;
+	config.psk_identity = identity;
+	config.psk = psk;
+	config.psk_len = psk_len;
+	config.psk_version = XP_TLS_VERSION_1_2;
+	return client_open_inner(sock, &config, true);
+}
+
+extern "C" enum xp_tls_version
+xp_tls_protocol_version(xp_tls_t ctx)
+{
+	return ctx == nullptr ? XP_TLS_VERSION_UNKNOWN : ctx->protocol_version;
 }
 
 /* ---------------------------------------------------------- push */
@@ -535,13 +816,7 @@ xp_tls_has_pending(xp_tls_t ctx)
 extern "C" bool
 xp_tls_used_psk(xp_tls_t ctx)
 {
-	if (ctx == nullptr)
-		return false;
-	/* kex_algo is captured in tls_session_established (the
-	   negotiation-complete callback).  Botan reports the PSK family as
-	   "PSK", "DHE_PSK", "ECDHE_PSK", "RSA_PSK"; non-PSK kex algorithms
-	   don't contain "PSK". */
-	return ctx->kex_algo.find("PSK") != std::string::npos;
+	return ctx != nullptr && ctx->psk_used;
 }
 
 /* --------------------------------------------------------- close */

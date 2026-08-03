@@ -489,6 +489,10 @@ class SettingsMenu {
         helpItem_("Modem Dial String", "The command prefix used to dial a modem") +
         helpItem_("List Path", "The path or URI of the personal directory") +
         helpItem_("TERM For Shell", "The TERM value supplied to local shells") +
+        helpItem_("TLS Client Certificate",
+            "Select the default TelnetS client certificate; Delete clears it") +
+        helpItem_("TLS Client Key",
+            "Select its unencrypted private key; Delete clears it") +
         helpItem_("Scaling", "Cycle the display scaling algorithm") +
         helpItem_("Invert Mouse Wheel", "Reverse wheel-up and wheel-down") +
         helpItem_("Key Derivation Shift", "The scrypt cost used for list encryption") +
@@ -697,6 +701,17 @@ class SettingsMenu {
     return MenuUi.choice(app, title, rows, current, settingHelp_(title))
   }
 
+  static pickTlsFile_(app, title, current) {
+    var initial = current.count > 0 ? current :
+        Menu.fileLocations["configuration"]
+    app.releaseFocus()
+    var file = Host.pickFile(initial, "*",
+        FilePickerOptions.allowEntry | FilePickerOptions.fileMustExist |
+            FilePickerOptions.maskLocked, title)
+    app.restoreFocus()
+    return file == null ? null : file.path
+  }
+
   static program_(app, connected) {
     var s = Menu.settings
     var changed = false
@@ -723,11 +738,20 @@ class SettingsMenu {
       rows.add([16, settingsLine_("Key Derivation Shift", s.kdfShift)])
       rows.add([17, "Classic Theme Colours"])
       if (!connected) rows.add([18, "Custom Screen Mode"])
+      rows.add([19, settingsLine_("TLS Client Certificate", s.tlsClientCert)])
+      rows.add([20, settingsLine_("TLS Client Key", s.tlsClientKey)])
 
-      var picked = MenuUi.choice(app, "Program Settings", rows, selected,
-          programHelp_(connected), Fn.new {|value|
+      var commands = {}
+      commands[Key.delete] = ["clear", false]
+      var picked = MenuUi.commandChoice(app, "Program Settings", rows,
+          selected, programHelp_(connected), commands, Fn.new {|result|
+        var command = result[0]
+        var value = result[1]
         selected = value
-        if (value == 1) {
+        if (command == "clear") {
+          if (value == 19) s.tlsClientCert = ""
+          if (value == 20) s.tlsClientKey = ""
+        } else if (value == 1) {
           s.confirmClose = !s.confirmClose
         } else if (value == 2) {
           s.promptSave = !s.promptSave
@@ -788,6 +812,13 @@ class SettingsMenu {
           if (colors_(app, s)) changed = true
         } else if (value == 18 && !connected) {
           if (customMode_(app, s)) changed = true
+        } else if (value == 19) {
+          var next = pickTlsFile_(app, "TLS Client Certificate",
+              s.tlsClientCert)
+          if (next != null) s.tlsClientCert = next
+        } else if (value == 20) {
+          var next = pickTlsFile_(app, "TLS Client Key", s.tlsClientKey)
+          if (next != null) s.tlsClientKey = next
         }
         if (s.dirty && applySettings_(app, s)) changed = true
       }, view)

@@ -28,6 +28,21 @@ xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
 }
 
 xp_tls_t
+xp_tls_client_open_config(SOCKET sock, const struct xp_tls_client_config *config)
+{
+	(void)sock;
+	(void)config;
+	return NULL;
+}
+
+enum xp_tls_version
+xp_tls_protocol_version(xp_tls_t ctx)
+{
+	(void)ctx;
+	return XP_TLS_VERSION_UNKNOWN;
+}
+
+xp_tls_t
 xp_tls_client_open_psk(SOCKET sock, const char *sni, int read_timeout,
                        const char *identity, const void *psk, size_t psk_len)
 {

@@ -113,6 +113,8 @@ class UiPopupTest {
     testMenuPromptKeepsMinimumWidth_()
     testMenuPromptUsesFieldLength_()
     testStandaloneChoiceEscReturnsNull_()
+    testStandaloneChoiceKeepsActionsVisible_()
+    testStandaloneChoiceScrollsMessage_()
     testModalPaneEscDismisses_()
 
     var total = __pass + __fail
@@ -519,6 +521,28 @@ class UiPopupTest {
     var consumed = popup.handle(KeyEvent.new(Key.escape))
     check_(consumed && popup.result == null && app.modalStack.count == 0,
            "StandaloneChoice: Esc returns null and dismisses")
+  }
+
+  static testStandaloneChoiceKeepsActionsVisible_() {
+    var lines = []
+    for (i in 0...20) lines.add("Certificate detail row %(i)")
+    var popup = StandaloneChoice.new(lines.join("\n"), ["Back",
+        "Trust for This Connection"])
+    popup.bounds = Rect.new(1, 1, 50, 14)
+    check_(popup.listBounds.h == 2 && popup.messageBounds.h > 0 &&
+           popup.listBounds.y > popup.messageBounds.bottom,
+           "StandaloneChoice: long messages leave all actions visible")
+  }
+
+  static testStandaloneChoiceScrollsMessage_() {
+    var lines = []
+    for (i in 0...20) lines.add("Certificate detail row %(i)")
+    var popup = StandaloneChoice.new(lines.join("\n"), ["Back", "Trust"])
+    popup.bounds = Rect.new(1, 1, 50, 14)
+    var surface = popup.draw()
+    var consumed = popup.handle(KeyEvent.new(Key.pageDown))
+    check_(surface != null && consumed && popup.messageScrollTop > 0,
+           "StandaloneChoice: PageDown scrolls the message viewport")
   }
 
   static testModalPaneEscDismisses_() {

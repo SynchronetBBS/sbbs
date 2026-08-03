@@ -1,4 +1,5 @@
-import "syncterm" for Host, Key, KeyEvent, MouseEvent
+import "syncterm" for ConnType, FilePickerOptions, Host, Key, KeyEvent,
+    MouseEvent, TLSVersion
 import "syncterm_menu" for Menu
 import "menu_ui" for ChoiceViewState, MenuUi
 import "ui_app" for App
@@ -11,11 +12,16 @@ class EditorPane is Pane {
   construct new() {
     super()
     shadow = true
+    _onClear = null
     _onSort = null
     _onNavigate = null
     updateHints_()
   }
 
+  onClear=(fn) {
+    _onClear = fn
+    updateHints_()
+  }
   onSort=(fn) {
     _onSort = fn
     updateHints_()
@@ -27,6 +33,7 @@ class EditorPane is Pane {
 
   updateHints_() {
     var hints = [["F1", "Help"], ["Enter", "Edit"]]
+    if (_onClear != null) hints.add(["DEL", "Clear"])
     if (_onSort != null) hints.add(["Ctrl-S", "Sort Order"])
     if (_onNavigate != null) {
       hints.add(["[", "Previous"])
@@ -44,6 +51,11 @@ class EditorPane is Pane {
       }
       if (event.code == Key.ctrlS && _onSort != null) {
         _onSort.call()
+        return true
+      }
+      if ((event.code == Key.delete || event.code == Key.delChar) &&
+          _onClear != null) {
+        _onClear.call()
         return true
       }
       if (_onNavigate != null && event.codepoint == 0x5B) {
@@ -361,19 +373,38 @@ class BbsEditor {
     }
 
     var list = ListView.new()
+    var currentRows = []
+    var rebuild = null
+    var updateClear = Fn.new {
+      var index = state["selected"]
+      if (index >= 0 && index < currentRows.count &&
+          currentRows[index].count > 2) {
+        pane.onClear = Fn.new {
+          currentRows[state["selected"]][2].call()
+          update_(app, bbs, draft, isDefaults)
+          rebuild.call()
+        }
+      } else {
+        pane.onClear = null
+      }
+    }
     list.onChange = Fn.new {|index, item|
-      if (index != null) state["selected"] = index
+      if (index != null) {
+        state["selected"] = index
+        updateClear.call()
+      }
     }
     pane.add(list)
 
-    var rebuild = null
     rebuild = Fn.new {
       var selected = state["selected"]
       var rows = rows_(app, bbs, draft, isDefaults)
+      currentRows = rows
       pane.helpText = editorHelp_(draft, isDefaults)
       list.items = rows.map {|row| row[0] }.toList
       pane.fitContentToScreen()
       list.selected = selected.min(rows.count - 1).max(0)
+      updateClear.call()
       list.onSelect = Fn.new {|i, item|
         rows[i][1].call()
         update_(app, bbs, draft, isDefaults)
@@ -433,6 +464,14 @@ class BbsEditor {
       "flowControl": b.flowControl,
       "telnetNoBinary": b.telnetNoBinary,
       "deferTelnetNegotiation": b.deferTelnetNegotiation,
+      "tlsTrustWebPki": b.tlsTrustWebPki,
+      "tlsTrustedCert": b.tlsTrustedCert,
+      "tlsClientCert": b.tlsClientCert,
+      "tlsClientKey": b.tlsClientKey,
+      "tlsPskIdentity": b.tlsPskIdentity,
+      "tlsPsk": b.tlsPsk,
+      "tlsPskVersion": b.tlsPskVersion,
+      "tlsVersionFloor": b.tlsVersionFloor,
       "ghostProgram": b.ghostProgram,
       "sftpPublicKey": b.sftpPublicKey,
       "sshAllowAes128Cbc": b.sshAllowAes128Cbc,
@@ -460,6 +499,27 @@ class BbsEditor {
 
   static row_(label, value, action) {
     return [line_(label, value), action]
+  }
+
+  static fileRow_(app, d, key, label) {
+    return fileRow_(app, d, key, label, null)
+  }
+
+  static fileRow_(app, d, key, label, onChange) {
+    var changed = Fn.new {|value|
+      d[key] = value
+      if (onChange != null) onChange.call(value)
+    }
+    return [line_(label, d[key]), Fn.new {
+      var initial = d[key].count > 0 ? d[key] :
+          Menu.fileLocations["configuration"]
+      app.releaseFocus()
+      var file = Host.pickFile(initial, "*",
+          FilePickerOptions.allowEntry | FilePickerOptions.fileMustExist |
+              FilePickerOptions.maskLocked, label)
+      app.restoreFocus()
+      if (file != null) changed.call(file.path)
+    }, Fn.new { changed.call("") }]
   }
 
   static textRow_(app, d, key, label, maxLen, masked) {
@@ -596,6 +656,22 @@ class BbsEditor {
           "Wait for a remote Telnet command before negotiating, for systems " +
           "whose initial mailer ignores or rejects Telnet commands")
     }
+    if (d["connType"] == ConnType.telnets) {
+      text = text + helpItem_("Trust Web PKI",
+          "Verify the server name and certificate using public CA roots") +
+          helpItem_("Trusted Certificate",
+          "Select a PEM certificate for this connection; Delete clears it") +
+          helpItem_("TLS Client Certificate",
+          "Select an override client certificate; Delete clears it") +
+          helpItem_("TLS Client Key",
+          "Select its private key; Delete clears it") +
+          helpItem_("TLS PSK Identity",
+          "Identity sent by a PSK-only connection") +
+          helpItem_("TLS PSK (Text)",
+          "Literal text bytes used as the shared secret") +
+          helpItem_("TLS PSK Version",
+          "Exact TLS version used for PSK authentication")
+    }
     text = text + helpItem_("Screen Mode", "The display mode to use")
     if (ssh_(d["connType"]) || telnet_(d["connType"]) ||
         d["connType"] == 1 || d["connType"] == 2 ||
@@ -683,6 +759,41 @@ class BbsEditor {
     if (key == "logFile") return logFileHelp_()
     if (key == "xferLogLevel") return logLevelHelp_("File Transfer")
     if (key == "telnetLogLevel") return logLevelHelp_("Telnet Command")
+    if (key == "tlsTrustedCert") {
+      return "# Trusted TLS Certificate\n\nSelect a PEM certificate file " +
+          "to trust for this connection. The certificate may be a CA or " +
+          "the specific server certificate. When set, the server name is " +
+          "also verified."
+    }
+    if (key == "tlsClientCert") {
+      return "# TLS Client Certificate\n\nSelect a PEM client certificate " +
+          "file. Also set the matching TLS Client Key. Leave both fields " +
+          "empty to use the global client certificate."
+    }
+    if (key == "tlsClientKey") {
+      return "# TLS Client Key\n\nSelect the unencrypted PEM private-key " +
+          "file matching TLS Client Certificate. Leave both fields empty " +
+          "to use the global client certificate."
+    }
+    if (key == "tlsPskIdentity") {
+      return "# TLS PSK Identity\n\nEnter the identity sent to a TLS-PSK " +
+          "server. When either PSK field is set, both are required and " +
+          "TelnetS uses the selected exact TLS version without automatic " +
+          "fallback."
+    }
+    if (key == "tlsPsk") {
+      return "# TLS PSK (Text)\n\nEnter the shared secret as literal text. " +
+          "SyncTERM does not decode hex or Base64. For example, `deadbeef` " +
+          "is sent as eight ASCII bytes. It is protected at rest only when " +
+          "list encryption is enabled. When either PSK field is set, both " +
+          "are required."
+    }
+    if (key == "tlsPskVersion") {
+      return "# TLS PSK Version\n\nTLS 1.3 is the default. Select TLS " +
+          "1.2 only for a server explicitly configured with a separate " +
+          "TLS 1.2 PSK. TLS 1.3 uses a SHA-256 PSK. SyncTERM will not " +
+          "retry using another version."
+    }
     return null
   }
 
@@ -1086,6 +1197,25 @@ class BbsEditor {
       rows.add(boolRow_(d, "telnetNoBinary", "Binmode Broken"))
       rows.add(boolRow_(d, "deferTelnetNegotiation", "Defer Negotiate"))
     }
+    if (d["connType"] == ConnType.telnets) {
+      rows.add(row_("Trust Web PKI", yesNo_(d["tlsTrustWebPki"]), Fn.new {
+        d["tlsTrustWebPki"] = !d["tlsTrustWebPki"]
+        if (d["tlsTrustWebPki"]) d["tlsTrustedCert"] = ""
+      }))
+      rows.add(fileRow_(app, d, "tlsTrustedCert", "Trusted Certificate",
+          Fn.new {|value|
+        if (value.count > 0) d["tlsTrustWebPki"] = false
+      }))
+      rows.add(fileRow_(app, d, "tlsClientCert", "TLS Client Cert."))
+      rows.add(fileRow_(app, d, "tlsClientKey", "TLS Client Key"))
+      rows.add(textRow_(app, d, "tlsPskIdentity", "TLS PSK Identity",
+          128, false))
+      rows.add(textRow_(app, d, "tlsPsk", "TLS PSK (Text)", 256, true,
+          false))
+      rows.add(choiceRow_(app, d, "tlsPskVersion", "TLS PSK Version",
+          [[TLSVersion.tls13, "TLS 1.3"],
+           [TLSVersion.tls12, "TLS 1.2 (compatibility)"]]))
+    }
 
     rows.add(row_("Screen Mode", Menu.screenModes[d["screenMode"]],
         Fn.new {
@@ -1186,6 +1316,36 @@ class BbsEditor {
 
   static update_(app, b, d, defaults) {
     if (sameDraft_(draft_(b), d)) return true
+    if (d["connType"] == ConnType.telnets) {
+      if ((d["tlsPskIdentity"].count == 0) !=
+          (d["tlsPsk"].count == 0)) {
+        Alert.show(app, "TLS Configuration",
+            "TLS PSK Identity and TLS PSK must either both be set or both be empty.")
+        return false
+      }
+      if ((d["tlsClientCert"].count == 0) !=
+          (d["tlsClientKey"].count == 0)) {
+        Alert.show(app, "TLS Configuration",
+            "TLS Client Certificate and TLS Client Key must either both be set or both be empty.")
+        return false
+      }
+      if (d["tlsTrustWebPki"] && d["tlsTrustedCert"].count > 0) {
+        Alert.show(app, "TLS Configuration",
+            "Web PKI and a connection-specific trusted certificate are mutually exclusive.")
+        return false
+      }
+      if (d["tlsPskVersion"] != TLSVersion.tls12 &&
+          d["tlsPskVersion"] != TLSVersion.tls13) {
+        Alert.show(app, "TLS Configuration", "Invalid TLS PSK version.")
+        return false
+      }
+    }
+
+    var tlsIdentityChanged = d["addr"] != b.addr || d["port"] != b.port ||
+        d["connType"] != b.connType ||
+        d["tlsTrustWebPki"] != b.tlsTrustWebPki ||
+        d["tlsTrustedCert"] != b.tlsTrustedCert
+    if (tlsIdentityChanged) d["tlsVersionFloor"] = TLSVersion.unknown
     if (!defaults && d["name"] != b.name && !b.rename(d["name"])) {
       showNameError(app, "Entry Name", d["name"])
       d["name"] = b.name
@@ -1222,6 +1382,14 @@ class BbsEditor {
     b.flowControl = d["flowControl"]
     b.telnetNoBinary = d["telnetNoBinary"]
     b.deferTelnetNegotiation = d["deferTelnetNegotiation"]
+    b.tlsTrustWebPki = d["tlsTrustWebPki"]
+    b.tlsTrustedCert = d["tlsTrustedCert"]
+    b.tlsClientCert = d["tlsClientCert"]
+    b.tlsClientKey = d["tlsClientKey"]
+    b.tlsPskIdentity = d["tlsPskIdentity"]
+    b.tlsPsk = d["tlsPsk"]
+    b.tlsPskVersion = d["tlsPskVersion"]
+    b.tlsVersionFloor = d["tlsVersionFloor"]
     b.ghostProgram = d["ghostProgram"]
     b.sftpPublicKey = d["sftpPublicKey"]
     b.sshAllowAes128Cbc = d["sshAllowAes128Cbc"]

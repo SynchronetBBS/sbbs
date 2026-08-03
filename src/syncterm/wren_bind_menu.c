@@ -273,6 +273,11 @@ BBS_STRING_PROPERTY(dlDir, dldir)
 BBS_STRING_PROPERTY(ulDir, uldir)
 BBS_STRING_PROPERTY(logFile, logfile)
 BBS_STRING_PROPERTY(ghostProgram, ghost_program)
+BBS_STRING_PROPERTY(tlsTrustedCert, tls_trusted_cert)
+BBS_STRING_PROPERTY(tlsClientCert, tls_client_cert)
+BBS_STRING_PROPERTY(tlsClientKey, tls_client_key)
+BBS_STRING_PROPERTY(tlsPskIdentity, tls_psk_identity)
+BBS_STRING_PROPERTY(tlsPsk, tls_psk)
 
 BBS_NUM_PROPERTY(port, port, 0, 65535)
 BBS_NUM_PROPERTY(connType, conn_type, CONN_TYPE_UNKNOWN,
@@ -292,6 +297,10 @@ BBS_NUM_PROPERTY(parity, parity, SYNCTERM_PARITY_NONE,
     SYNCTERM_PARITY_ODD)
 BBS_NUM_PROPERTY(flowControl, flow_control, 0, 7)
 BBS_NUM_PROPERTY(sortOrder, sort_order, INT32_MIN, INT32_MAX)
+BBS_NUM_PROPERTY(tlsPskVersion, tls_psk_version,
+    SYNCTERM_TLS_VERSION_1_2, SYNCTERM_TLS_VERSION_1_3)
+BBS_NUM_PROPERTY(tlsVersionFloor, tls_version_floor,
+    SYNCTERM_TLS_VERSION_UNKNOWN, SYNCTERM_TLS_VERSION_1_3)
 
 BBS_BOOL_PROPERTY(noStatus, nostatus)
 BBS_BOOL_PROPERTY(hidePopups, hidepopups)
@@ -300,6 +309,7 @@ BBS_BOOL_PROPERTY(forceLcf, force_lcf)
 BBS_BOOL_PROPERTY(appendLogFile, append_logfile)
 BBS_BOOL_PROPERTY(telnetNoBinary, telnet_no_binary)
 BBS_BOOL_PROPERTY(deferTelnetNegotiation, defer_telnet_negotiation)
+BBS_BOOL_PROPERTY(tlsTrustWebPki, tls_trust_web_pki)
 
 static void
 push_wren_scripts(WrenVM *vm, const struct bbslist *bbs)
@@ -1428,6 +1438,14 @@ static const struct binding bindings[] = {
 	BBS_GETSET(appendLogFile),
 	BBS_GETSET(telnetNoBinary),
 	BBS_GETSET(deferTelnetNegotiation),
+	BBS_GETSET(tlsTrustWebPki),
+	BBS_GETSET(tlsTrustedCert),
+	BBS_GETSET(tlsClientCert),
+	BBS_GETSET(tlsClientKey),
+	BBS_GETSET(tlsPskIdentity),
+	BBS_GETSET(tlsPsk),
+	BBS_GETSET(tlsPskVersion),
+	BBS_GETSET(tlsVersionFloor),
 	BBS_GETSET(sftpPublicKey),
 	BBS_GETSET(sshAllowAes128Cbc),
 	BBS_GETSET(sshAcceptEarlyData),

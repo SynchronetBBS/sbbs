@@ -1,8 +1,8 @@
 // Menu-VM self-tests for per-entry Wren script configuration.
 
-import "syncterm" for Key, KeyEvent
+import "syncterm" for Key, KeyEvent, TLSVersion
 import "syncterm_menu" for Menu, MenuReadStatus
-import "menu_bbs_editor" for ScriptListPane
+import "menu_bbs_editor" for EditorPane, ScriptListPane
 
 class FakeApp {
   construct new() { _popped = 0 }
@@ -19,6 +19,7 @@ class MenuTest {
     testMoveCommit_()
     testMoveCancel_()
     testDelete_()
+    testEditorClear_()
     testDiscovery_()
     testDefaultsRejectScripts_()
     testPersistence_()
@@ -92,6 +93,15 @@ class MenuTest {
            "ScriptListPane: Delete removes the script and refits the pane")
   }
 
+  static testEditorClear_() {
+    var clears = [0]
+    var pane = EditorPane.new()
+    pane.onClear = Fn.new { clears[0] = clears[0] + 1 }
+    var handled = pane.handle(KeyEvent.new(Key.delete))
+    check_(handled && clears[0] == 1,
+           "EditorPane: Delete invokes the selected row's clear action")
+  }
+
   static testDiscovery_() {
     var modules = Menu.scriptModules
     var available = pane_([], [0]).available_()
@@ -123,7 +133,22 @@ class MenuTest {
     var saved = false
     if (created) {
       entry.wrenScripts = ["ui_list", "menu_bbs_editor", "ui_list"]
-      assigned = same_(entry.wrenScripts, ["ui_list", "menu_bbs_editor"])
+      entry.tlsTrustWebPki = false
+      entry.tlsTrustedCert = "/tls/bbs.pem"
+      entry.tlsClientCert = "/tls/client.pem"
+      entry.tlsClientKey = "/tls/client.key"
+      entry.tlsPskIdentity = "test identity"
+      entry.tlsPsk = "test shared secret"
+      entry.tlsPskVersion = TLSVersion.tls12
+      entry.tlsVersionFloor = TLSVersion.tls13
+      assigned = same_(entry.wrenScripts, ["ui_list", "menu_bbs_editor"]) &&
+          entry.tlsTrustedCert == "/tls/bbs.pem" &&
+          entry.tlsClientCert == "/tls/client.pem" &&
+          entry.tlsClientKey == "/tls/client.key" &&
+          entry.tlsPskIdentity == "test identity" &&
+          entry.tlsPsk == "test shared secret" &&
+          entry.tlsPskVersion == TLSVersion.tls12 &&
+          entry.tlsVersionFloor == TLSVersion.tls13
       saved = entry.save()
     }
 
@@ -136,7 +161,14 @@ class MenuTest {
       }
     }
     var retained = found != null && same_(found.wrenScripts,
-        ["ui_list", "menu_bbs_editor"])
+        ["ui_list", "menu_bbs_editor"]) && !found.tlsTrustWebPki &&
+        found.tlsTrustedCert == "/tls/bbs.pem" &&
+        found.tlsClientCert == "/tls/client.pem" &&
+        found.tlsClientKey == "/tls/client.key" &&
+        found.tlsPskIdentity == "test identity" &&
+        found.tlsPsk == "test shared secret" &&
+        found.tlsPskVersion == TLSVersion.tls12 &&
+        found.tlsVersionFloor == TLSVersion.tls13
     if (!(loaded && created && assigned && saved && reloaded && retained)) {
       System.print("  persistence state: loaded=%(loaded), " +
           "created=%(created), assigned=%(assigned), saved=%(saved), " +
@@ -145,6 +177,6 @@ class MenuTest {
     }
     if (found != null) found.delete()
     check_(loaded && created && assigned && saved && reloaded && retained,
-           "BBS.wrenScripts: ordered modules survive save and reload")
+           "BBS TLS and Wren settings survive save and reload")
   }
 }

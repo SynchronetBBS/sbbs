@@ -74,6 +74,8 @@ struct syncterm_settings {
 	char                  TERM[INI_MAX_VALUE_LEN + 1];
 	char                  list_path[MAX_PATH + 1];
 	char                  stored_list_path[MAX_PATH + 1];
+	char                  tls_client_cert[MAX_PATH + 1];
+	char                  tls_client_key[MAX_PATH + 1];
 	double                scaling_factor;
 	int                   xfer_failure_keypress_timeout; /* wait for user acknowledgement via keypress, in seconds
                                                               */

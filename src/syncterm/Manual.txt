@@ -608,7 +608,13 @@ The <<_mbbs_ghost,MajorBBS 'GHost' protocol>>.
 
 TelnetS::
 Telnet over TLS.  All the drawbacks of the telnet protocol, but
-at least it's encrypted.
+at least it's encrypted.  By default, SyncTERM authenticates the server using
+the public Web PKI.  An entry can instead authenticate using one explicitly
+trusted certificate, or a TLS 1.3 or TLS 1.2 pre-shared key.  Web-PKI trust and
+the explicitly trusted certificate are alternatives; their trust stores are
+never combined.  After a certificate-authenticated connection, SyncTERM
+remembers the negotiated TLS version.  A later downgrade requires user
+approval before any Telnet data is exchanged.
 
 SBBS MQTT Spy::
 A sysop-spy connection to a Synchronet BBS's internal MQTT broker.
@@ -716,6 +722,42 @@ connection, and will either disconnect or just ignore telnet negotiations
 at the start of the session.  When this option is enabled, SyncTERM will
 wait until it receives a telnet command from the remote before starting
 telnet negotiation.
+
+Trust Web PKI (TelnetS only)::
+Verify the server name and certificate using the operating system's public
+CA roots.  This is enabled by default.  Enabling it clears the Trusted
+Certificate setting.  If certificate verification fails, SyncTERM allows the
+presented chain to be inspected.  Any certificate in that chain may be saved
+beside the SyncTERM configuration file and trusted for that connection only.
+Installed filenames are derived from the dialing-directory entry name; a
+numeric parenthesized suffix is added rather than replacing an existing file.
+
+Trusted Certificate (TelnetS only)::
+Select a PEM certificate to trust only for this connection.  It may be a CA
+certificate or the specific server certificate.  The server name is also
+verified.  Setting this disables Web-PKI trust; the two trust sources are
+not additive.  Press Delete on this menu item to clear the path.
+
+TLS Client Certificate / TLS Client Key (TelnetS only)::
+Select a PEM client certificate or chain and its matching unencrypted PEM
+private key.  Both fields must be set together.  A per-entry pair overrides
+the global pair; leave both empty to use the global client certificate.
+Press Delete on either menu item to clear that path.
+
+TLS PSK Identity / TLS PSK (Text) (TelnetS only)::
+The identity and literal text shared secret for PSK authentication.  SyncTERM
+does not decode the secret as hexadecimal or Base64; for example, `deadbeef`
+is sent as eight ASCII bytes.  Both fields must be set together.  PSK mode is
+certificate-free, so the server trust and client-certificate settings do not
+apply to that connection.  The secret is protected at rest only when
+dialing-directory encryption is enabled.
+
+TLS PSK Version (TelnetS only)::
+The exact TLS version used for PSK authentication.  TLS 1.3 is the default.
+TLS 1.2 must be selected explicitly for a compatible server and should use a
+separately provisioned secret.  SyncTERM does not retry the PSK using another
+TLS version.  TLS 1.3 PSKs use SHA-256 as their provisioned hash.  Both
+versions require an ephemeral PSK key exchange.
 
 Screen Mode::
 Selects the format of the window when connected.
@@ -1081,6 +1123,12 @@ The path to load the personal dialing directory from.
 TERM For Shell::
 The value that the TERM variable is set to for shell
 type connections.
+
+TLS Client Certificate / TLS Client Key::
+Select the default PEM client certificate or chain and matching unencrypted
+PEM private key presented by TelnetS connections.  Both fields must be set
+together.  An entry with its own client-certificate pair overrides these
+global values.  Press Delete on either menu item to clear that path.
 
 Scaling::
 Select to cycle through the values "Blocky", "Pointy", and

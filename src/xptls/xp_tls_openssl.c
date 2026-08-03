@@ -19,11 +19,10 @@
  * CRYPT_OPTION_NET_READTIMEOUT + CRYPT_ERROR_TIMEOUT pattern that the
  * telnets.c / webget.c consumers already loop on.
  *
- * Peer-certificate verification is disabled to match the Cryptlib-era
- * posture (SyncTERM connects to BBSes with self-signed certs, Synchronet
- * server doesn't verify client certs by default either). This is a
- * temporary carry-over; the caller should opt in to verification once
- * the consumer code is ready to prompt users on mismatch.
+ * Legacy callers retain the Cryptlib-era permissive posture. Configured
+ * callers can require hostname-checked certificate verification using either
+ * the default Web-PKI roots or an explicit trust anchor, and can present
+ * a client certificate.
  */
 
 #include <errno.h>
@@ -31,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /* xp_tls.h pulls in sockwrap.h, which lands the OS socket + timeval
  * headers in the right order (winsock2 + ws2tcpip + wspiapi on Win32,
@@ -38,6 +38,7 @@
 #include "xp_tls.h"
 
 #include <openssl/err.h>
+#include <openssl/pem.h>
 #include <openssl/ssl.h>
 
 /* ------------------------------------------------------------ last-err */
@@ -93,7 +94,149 @@ struct xp_tls_ctx {
 	char          *psk_identity;
 	unsigned char *psk;
 	size_t         psk_len;
+	xp_tls_peer_chain_cb peer_chain_cb;
+	void          *peer_chain_cb_arg;
 };
+
+struct certificate_strings {
+	char *subject;
+	char *issuer;
+	char *not_before;
+	char *not_after;
+	char *fingerprint;
+	char *pem;
+};
+
+static char *
+bio_text(BIO *bio)
+{
+	BUF_MEM *mem = NULL;
+	BIO_get_mem_ptr(bio, &mem);
+	if (mem == NULL)
+		return NULL;
+	char *ret = malloc(mem->length + 1);
+	if (ret != NULL) {
+		memcpy(ret, mem->data, mem->length);
+		ret[mem->length] = 0;
+	}
+	return ret;
+}
+
+static char *
+name_text(X509_NAME *name)
+{
+	BIO *bio = BIO_new(BIO_s_mem());
+	if (bio == NULL)
+		return NULL;
+	if (name != NULL)
+		X509_NAME_print_ex(bio, name, 0, XN_FLAG_RFC2253);
+	char *ret = bio_text(bio);
+	BIO_free(bio);
+	return ret;
+}
+
+static char *
+time_text(const ASN1_TIME *time)
+{
+	struct tm tm;
+	if (time != NULL && ASN1_TIME_to_tm(time, &tm) == 1) {
+		char *ret = malloc(24);
+		if (ret != NULL)
+			snprintf(ret, 24, "%04d-%02d-%02d %02d:%02d:%02d UTC",
+			    tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+			    tm.tm_hour, tm.tm_min, tm.tm_sec);
+		return ret;
+	}
+	BIO *bio = BIO_new(BIO_s_mem());
+	if (bio == NULL)
+		return NULL;
+	if (time != NULL)
+		ASN1_TIME_print(bio, time);
+	char *ret = bio_text(bio);
+	BIO_free(bio);
+	return ret;
+}
+
+static char *
+fingerprint_text(X509 *cert)
+{
+	unsigned char digest[EVP_MAX_MD_SIZE];
+	unsigned int length = 0;
+	if (X509_digest(cert, EVP_sha256(), digest, &length) != 1)
+		return NULL;
+	char *ret = malloc(length * 3);
+	if (ret == NULL)
+		return NULL;
+	for (unsigned int i = 0; i < length; i++)
+		snprintf(ret + i * 3, 4, i + 1 == length ? "%02X" : "%02X:",
+		    digest[i]);
+	return ret;
+}
+
+static char *
+pem_text(X509 *cert)
+{
+	BIO *bio = BIO_new(BIO_s_mem());
+	if (bio == NULL)
+		return NULL;
+	char *ret = NULL;
+	if (PEM_write_bio_X509(bio, cert) == 1)
+		ret = bio_text(bio);
+	BIO_free(bio);
+	return ret;
+}
+
+static void
+free_certificate_strings(struct certificate_strings *item)
+{
+	free(item->subject);
+	free(item->issuer);
+	free(item->not_before);
+	free(item->not_after);
+	free(item->fingerprint);
+	free(item->pem);
+}
+
+static void
+report_peer_chain(struct xp_tls_ctx *ctx)
+{
+	if (ctx->peer_chain_cb == NULL || ctx->ssl == NULL)
+		return;
+	STACK_OF(X509) *chain = SSL_get_peer_cert_chain(ctx->ssl);
+	int count = chain == NULL ? 0 : sk_X509_num(chain);
+	if (count <= 0)
+		return;
+	struct certificate_strings *strings = calloc((size_t)count,
+	    sizeof(*strings));
+	struct xp_tls_peer_certificate *certificates = calloc((size_t)count,
+	    sizeof(*certificates));
+	if (strings == NULL || certificates == NULL)
+		goto cleanup;
+	for (int i = 0; i < count; i++) {
+		X509 *cert = sk_X509_value(chain, i);
+		strings[i].subject = name_text(X509_get_subject_name(cert));
+		strings[i].issuer = name_text(X509_get_issuer_name(cert));
+		strings[i].not_before = time_text(X509_get0_notBefore(cert));
+		strings[i].not_after = time_text(X509_get0_notAfter(cert));
+		strings[i].fingerprint = fingerprint_text(cert);
+		strings[i].pem = pem_text(cert);
+		certificates[i].subject = strings[i].subject;
+		certificates[i].issuer = strings[i].issuer;
+		certificates[i].not_before = strings[i].not_before;
+		certificates[i].not_after = strings[i].not_after;
+		certificates[i].fingerprint_sha256 = strings[i].fingerprint;
+		certificates[i].pem = strings[i].pem;
+	}
+	ctx->peer_chain_cb(ctx->peer_chain_cb_arg, certificates, (size_t)count);
+
+cleanup:
+	if (strings != NULL) {
+		for (int i = 0; i < count; i++)
+			free_certificate_strings(&strings[i]);
+	}
+	free(strings);
+	free(certificates);
+}
 
 /* --------------------------------------------------------- socket timeout */
 
@@ -130,6 +273,17 @@ ensure_ssl_init(void)
 	                      OPENSSL_INIT_LOAD_CRYPTO_STRINGS, NULL);
 }
 
+static int
+set_expected_peer_name(SSL *ssl, const char *name)
+{
+	unsigned char address[16];
+	X509_VERIFY_PARAM *param = SSL_get0_param(ssl);
+	if (inet_pton(AF_INET, name, address) == 1 ||
+	    inet_pton(AF_INET6, name, address) == 1)
+		return X509_VERIFY_PARAM_set1_ip_asc(param, name);
+	return SSL_set1_host(ssl, name);
+}
+
 /* ----------------------------------------------------------- PSK cb */
 
 /*
@@ -158,18 +312,21 @@ psk_client_cb(SSL *ssl, const char *hint, char *id, unsigned int max_id_len,
 /* ------------------------------------------------------------- open */
 
 /*
- * Common open path for cert and PSK clients.  When identity/psk are both
- * NULL, runs as a normal cert client (peer-verify disabled).  When PSK is
- * supplied, configures the PSK client callback and pins the protocol
- * version to TLS 1.2 — TLS 1.3 PSK uses a different exchange that the
- * broker doesn't speak.
+ * Common open path for certificate and PSK clients. Certificate sessions
+ * negotiate TLS 1.2 or newer. PSK sessions use one exact configured version;
+ * OpenSSL's legacy client callback supplies both TLS 1.2 PSKs and TLS 1.3
+ * external PSKs (with SHA-256 as the TLS 1.3 callback's default digest).
  */
 static xp_tls_t
-client_open_inner(SOCKET sock, const char *sni, int read_timeout,
-                  const char *psk_identity, const void *psk, size_t psk_len)
+client_open_inner(SOCKET sock, const struct xp_tls_client_config *config,
+                  bool legacy_psk)
 {
 	struct xp_tls_ctx *ctx;
 	int rc;
+	const char *sni = config->server_name;
+	const char *psk_identity = config->psk_identity;
+	const void *psk = config->psk;
+	size_t psk_len = config->psk_len;
 
 	last_err_buf[0] = 0;
 	ensure_ssl_init();
@@ -180,7 +337,9 @@ client_open_inner(SOCKET sock, const char *sni, int read_timeout,
 		return NULL;
 	}
 	ctx->sock = sock;
-	ctx->read_timeout_sec = read_timeout;
+	ctx->read_timeout_sec = config->read_timeout;
+	ctx->peer_chain_cb = config->peer_chain_cb;
+	ctx->peer_chain_cb_arg = config->peer_chain_cb_arg;
 
 	if (psk_identity != NULL && psk != NULL && psk_len > 0) {
 		ctx->psk_identity = strdup(psk_identity);
@@ -198,43 +357,89 @@ client_open_inner(SOCKET sock, const char *sni, int read_timeout,
 		format_ssl_err(last_err_buf, sizeof(last_err_buf), "SSL_CTX_new");
 		goto fail;
 	}
-	/* TLS 1.2 floor; stay at the OpenSSL default ceiling.  PSK pins
-	   both ends to 1.2 — TLS 1.3 PSK is a different exchange that the
-	   server side doesn't implement. */
+	/* TLS 1.2 floor; stay at the OpenSSL default ceiling for certificate
+	   sessions. PSK sessions select one exact protocol version so the same
+	   external key is never reused by an automatic cross-version fallback. */
 	SSL_CTX_set_min_proto_version(ctx->sslctx, TLS1_2_VERSION);
 	if (ctx->psk != NULL) {
-		SSL_CTX_set_max_proto_version(ctx->sslctx, TLS1_2_VERSION);
-		SSL_CTX_set_psk_client_callback(ctx->sslctx, psk_client_cb);
-		/* PSK-only.  cryptlib's server-side prefers cert suites
-		   when both PSK and cert are offered (TLS 1.2 cipher
-		   selection is server-driven, so client ordering can't
-		   force PSK), and a non-PSK negotiation puts the broker's
-		   MQTT layer into a username/password path that expects a
-		   different password format.  conn_mqtt.c handles fallback
-		   to a cert-only second handshake when this PSK-only attempt
-		   doesn't go through. */
-		if (SSL_CTX_set_cipher_list(ctx->sslctx, "PSK") != 1) {
+		int version = config->psk_version == XP_TLS_VERSION_1_3
+		    ? TLS1_3_VERSION : TLS1_2_VERSION;
+		if (SSL_CTX_set_min_proto_version(ctx->sslctx, version) != 1 ||
+		    SSL_CTX_set_max_proto_version(ctx->sslctx, version) != 1) {
 			format_ssl_err(last_err_buf, sizeof(last_err_buf),
-			              "SSL_CTX_set_cipher_list(PSK)");
+			              "setting TLS-PSK protocol version");
+			goto fail;
+		}
+		SSL_CTX_set_psk_client_callback(ctx->sslctx, psk_client_cb);
+		/* Installing the legacy PSK callback can enable TLS 1.3 psk_ke.
+		   Require psk_dhe_ke so compromise of the shared secret does not
+		   retrospectively expose captured sessions. */
+#ifdef SSL_OP_ALLOW_NO_DHE_KEX
+		SSL_CTX_clear_options(ctx->sslctx, SSL_OP_ALLOW_NO_DHE_KEX);
+#endif
+		/* TLS 1.2 encodes authentication in the cipher suite. Require an
+		   ephemeral PSK exchange rather than permitting plain PSK. TLS 1.3
+		   cipher suites are configured separately and are unaffected. */
+		if (!legacy_psk && config->psk_version == XP_TLS_VERSION_1_2 &&
+		    SSL_CTX_set_cipher_list(ctx->sslctx,
+		    "kECDHEPSK:kDHEPSK:!CBC:!eNULL") != 1) {
+			format_ssl_err(last_err_buf, sizeof(last_err_buf),
+			              "setting ephemeral TLS 1.2 PSK cipher list");
 			goto fail;
 		}
 	}
-	/* TODO: when ctx->psk and a hybrid PSK kex (ECDHE_PSK, DHE_PSK,
-	   RSA_PSK) is negotiated the server still presents a certificate
-	   that we currently accept blindly.  PSK alone authenticates the
-	   peer for MITM purposes (an attacker without the PSK can't derive
-	   session keys regardless of cert) so the connection is still
-	   private, but pinning a server cert fingerprint per BBS entry
-	   would catch unintended-server-swap.  Wire this once bbslist has
-	   a fingerprint slot, similar to ssh_fingerprint.
+	if (ctx->psk == NULL &&
+	    config->server_auth != XP_TLS_SERVER_AUTH_NONE) {
+		if (config->server_auth == XP_TLS_SERVER_AUTH_WEB_PKI &&
+		    SSL_CTX_set_default_verify_paths(ctx->sslctx) != 1) {
+			format_ssl_err(last_err_buf, sizeof(last_err_buf),
+			              "SSL_CTX_set_default_verify_paths");
+			goto fail;
+		}
+		else if (config->server_auth == XP_TLS_SERVER_AUTH_CERTIFICATE &&
+		    config->trusted_cert_file != NULL &&
+		    config->trusted_cert_file[0] != 0) {
+			if (SSL_CTX_load_verify_locations(ctx->sslctx,
+			    config->trusted_cert_file, NULL) != 1) {
+				format_ssl_err(last_err_buf, sizeof(last_err_buf),
+				              "SSL_CTX_load_verify_locations");
+				goto fail;
+			}
+			/* An explicitly trusted leaf is a valid trust anchor too; it
+			   need not be a self-signed CA certificate. */
+			if (X509_VERIFY_PARAM_set_flags(
+			    SSL_CTX_get0_param(ctx->sslctx),
+			    X509_V_FLAG_PARTIAL_CHAIN) != 1) {
+				format_ssl_err(last_err_buf, sizeof(last_err_buf),
+				              "X509_VERIFY_PARAM_set_flags");
+				goto fail;
+			}
+		}
+		SSL_CTX_set_verify(ctx->sslctx, SSL_VERIFY_PEER, NULL);
+	}
+	else
+		SSL_CTX_set_verify(ctx->sslctx, SSL_VERIFY_NONE, NULL);
 
-	   Validation must surface a prompt similar to SSH host-key changes:
-	   on first connect, store the fingerprint; on subsequent connects,
-	   if the cert fails to validate (mismatched fingerprint or bad
-	   signature) the user gets a yes/no/cancel modal — accept once,
-	   accept and update stored fingerprint, or abort.  Don't ever
-	   silently fail validation; the user owns the trust decision. */
-	SSL_CTX_set_verify(ctx->sslctx, SSL_VERIFY_NONE, NULL);
+	if (ctx->psk == NULL && config->client_cert_file != NULL &&
+	    config->client_cert_file[0] != 0) {
+		if (SSL_CTX_use_certificate_chain_file(ctx->sslctx,
+		    config->client_cert_file) != 1) {
+			format_ssl_err(last_err_buf, sizeof(last_err_buf),
+			              "SSL_CTX_use_certificate_chain_file");
+			goto fail;
+		}
+		if (SSL_CTX_use_PrivateKey_file(ctx->sslctx,
+		    config->client_key_file, SSL_FILETYPE_PEM) != 1) {
+			format_ssl_err(last_err_buf, sizeof(last_err_buf),
+			              "SSL_CTX_use_PrivateKey_file");
+			goto fail;
+		}
+		if (SSL_CTX_check_private_key(ctx->sslctx) != 1) {
+			format_ssl_err(last_err_buf, sizeof(last_err_buf),
+			              "SSL_CTX_check_private_key");
+			goto fail;
+		}
+	}
 
 	ctx->ssl = SSL_new(ctx->sslctx);
 	if (ctx->ssl == NULL) {
@@ -249,12 +454,15 @@ client_open_inner(SOCKET sock, const char *sni, int read_timeout,
 			              "SSL_set_tlsext_host_name");
 			goto fail;
 		}
-		/* SNI is informational; hostname binding is separate and would
-		   matter if verification were on. Wire it for future-proofing. */
-		(void)SSL_set1_host(ctx->ssl, sni);
+		if (config->server_auth != XP_TLS_SERVER_AUTH_NONE &&
+		    set_expected_peer_name(ctx->ssl, sni) != 1) {
+			format_ssl_err(last_err_buf, sizeof(last_err_buf),
+			              "setting expected TLS peer name");
+			goto fail;
+		}
 	}
 
-	if (set_recv_timeout(sock, read_timeout) != 0) {
+	if (set_recv_timeout(sock, config->read_timeout) != 0) {
 		set_last_err("xp_tls_client_open: setsockopt SO_RCVTIMEO failed (%d)", errno);
 		goto fail;
 	}
@@ -265,12 +473,24 @@ client_open_inner(SOCKET sock, const char *sni, int read_timeout,
 
 	rc = SSL_connect(ctx->ssl);
 	if (rc != 1) {
+		if (ctx->psk == NULL &&
+		    SSL_get_verify_result(ctx->ssl) != X509_V_OK)
+			report_peer_chain(ctx);
 		int e = SSL_get_error(ctx->ssl, rc);
 		if (e == SSL_ERROR_WANT_READ || e == SSL_ERROR_WANT_WRITE)
 			set_last_err("SSL_connect: handshake would block");
 		else
 			format_ssl_err(last_err_buf, sizeof(last_err_buf), "SSL_connect");
 		goto fail;
+	}
+	if (ctx->psk != NULL) {
+		bool psk_selected = SSL_version(ctx->ssl) >= TLS1_3_VERSION
+		    ? SSL_session_reused(ctx->ssl) == 1
+		    : SSL_get_psk_identity(ctx->ssl) != NULL;
+		if (!psk_selected) {
+			set_last_err("TLS handshake did not select the configured PSK");
+			goto fail;
+		}
 	}
 
 	return ctx;
@@ -283,7 +503,67 @@ fail:
 xp_tls_t
 xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
 {
-	return client_open_inner(sock, sni, read_timeout, NULL, NULL, 0);
+	const struct xp_tls_client_config config = {
+		.server_name = sni,
+		.read_timeout = read_timeout,
+	};
+	return client_open_inner(sock, &config, false);
+}
+
+xp_tls_t
+xp_tls_client_open_config(SOCKET sock,
+                          const struct xp_tls_client_config *config)
+{
+	if (config == NULL) {
+		set_last_err("xp_tls_client_open_config: missing configuration");
+		return NULL;
+	}
+	bool have_psk_identity = config->psk_identity != NULL &&
+	    config->psk_identity[0] != 0;
+	bool have_psk = config->psk != NULL && config->psk_len > 0;
+	if (have_psk_identity != have_psk) {
+		set_last_err("xp_tls_client_open_config: incomplete PSK configuration");
+		return NULL;
+	}
+	if (have_psk && config->psk_version != XP_TLS_VERSION_1_2 &&
+	    config->psk_version != XP_TLS_VERSION_1_3) {
+		set_last_err("xp_tls_client_open_config: PSK protocol version must be TLS 1.2 or TLS 1.3");
+		return NULL;
+	}
+	if (!have_psk && config->psk_version != XP_TLS_VERSION_UNKNOWN) {
+		set_last_err("xp_tls_client_open_config: PSK protocol version set without a PSK");
+		return NULL;
+	}
+	bool have_client_cert = config->client_cert_file != NULL &&
+	    config->client_cert_file[0] != 0;
+	bool have_client_key = config->client_key_file != NULL &&
+	    config->client_key_file[0] != 0;
+	if (!have_psk && have_client_cert != have_client_key) {
+		set_last_err("xp_tls_client_open_config: client certificate and key must both be set");
+		return NULL;
+	}
+	if (!have_psk && (config->server_auth <= XP_TLS_SERVER_AUTH_NONE ||
+	    config->server_auth > XP_TLS_SERVER_AUTH_UNTRUSTED)) {
+		set_last_err("xp_tls_client_open_config: invalid server authentication mode");
+		return NULL;
+	}
+	if (!have_psk && config->server_auth == XP_TLS_SERVER_AUTH_CERTIFICATE &&
+	    (config->trusted_cert_file == NULL ||
+	     config->trusted_cert_file[0] == 0)) {
+		set_last_err("xp_tls_client_open_config: certificate authentication has no trust anchor");
+		return NULL;
+	}
+	if (!have_psk && config->server_auth != XP_TLS_SERVER_AUTH_CERTIFICATE &&
+	    config->trusted_cert_file != NULL && config->trusted_cert_file[0] != 0) {
+		set_last_err("xp_tls_client_open_config: trusted certificate set for the wrong authentication mode");
+		return NULL;
+	}
+	if (!have_psk && config->server_auth != XP_TLS_SERVER_AUTH_NONE &&
+	    (config->server_name == NULL || config->server_name[0] == 0)) {
+		set_last_err("xp_tls_client_open_config: authenticated TLS requires a server name");
+		return NULL;
+	}
+	return client_open_inner(sock, config, false);
 }
 
 xp_tls_t
@@ -294,7 +574,29 @@ xp_tls_client_open_psk(SOCKET sock, const char *sni, int read_timeout,
 		set_last_err("xp_tls_client_open_psk: missing identity or PSK");
 		return NULL;
 	}
-	return client_open_inner(sock, sni, read_timeout, identity, psk, psk_len);
+	const struct xp_tls_client_config config = {
+		.server_name = sni,
+		.read_timeout = read_timeout,
+		.psk_identity = identity,
+		.psk = psk,
+		.psk_len = psk_len,
+		.psk_version = XP_TLS_VERSION_1_2,
+	};
+	return client_open_inner(sock, &config, true);
+}
+
+enum xp_tls_version
+xp_tls_protocol_version(xp_tls_t ctx)
+{
+	if (ctx == NULL || ctx->ssl == NULL)
+		return XP_TLS_VERSION_UNKNOWN;
+	switch (SSL_version(ctx->ssl)) {
+		case TLS1_2_VERSION:
+			return XP_TLS_VERSION_1_2;
+		case TLS1_3_VERSION:
+			return XP_TLS_VERSION_1_3;
+	}
+	return XP_TLS_VERSION_UNKNOWN;
 }
 
 /* ------------------------------------------------------------- push */
@@ -408,16 +710,10 @@ xp_tls_has_pending(xp_tls_t ctx)
 bool
 xp_tls_used_psk(xp_tls_t ctx)
 {
-	if (ctx == NULL || ctx->ssl == NULL)
-		return false;
-	const SSL_CIPHER *cipher = SSL_get_current_cipher(ctx->ssl);
-	if (cipher == NULL)
-		return false;
-	int kx = SSL_CIPHER_get_kx_nid(cipher);
-	return kx == NID_kx_psk
-	    || kx == NID_kx_dhe_psk
-	    || kx == NID_kx_ecdhe_psk
-	    || kx == NID_kx_rsa_psk;
+	/* TLS 1.3 cipher-suite names and key-exchange NIDs do not identify
+	   external-PSK authentication. A PSK-configured context is returned only
+	   after client_open_inner() has verified that the handshake selected it. */
+	return ctx != NULL && ctx->ssl != NULL && ctx->psk != NULL;
 }
 
 int
