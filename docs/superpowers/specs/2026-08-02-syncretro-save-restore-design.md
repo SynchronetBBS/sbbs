@@ -1,7 +1,7 @@
 # SyncRetro suspend and resume — design
 
 Date: 2026-08-02
-Status: design approved; not yet implemented
+Status: implemented 2026-08-02
 Depends on: `2026-08-02-syncretro-config-consolidation-design.md` (implemented)
 
 ## Problem
