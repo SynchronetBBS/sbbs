@@ -12,8 +12,9 @@ source tree.
 **One door, many consoles.** SyncArcade is not its own program: it is the
 SyncRetro door pointed at a different [libretro](https://www.libretro.com/)
 core. The same binary runs `xtrn/syncivision` (Intellivision) and `xtrn/syncnes`
-(NES) from the same source. What makes *this* one an arcade is `lobby.js` — it
-names the machine, its core, its key bindings and what a romset looks like.
+(NES) from the same source. What makes *this* one an arcade is `syncretro.ini`
+— it names the machine, its core, its key bindings and what a romset looks
+like, and both halves of the door read it.
 
 An arcade cabinet differs from a cartridge console in two ways this door had to
 learn: the ROM's **filename is data** (see [Romsets](#romsets)), and the
@@ -55,10 +56,10 @@ for you — no manual SCFG entry needed:
 - **Command line** — `jsexec install-xtrn ../xtrn/syncarcade`.
 - **Terminal sysop command** — `;exec ?install-xtrn ../xtrn/syncarcade`.
 
-The installer seeds `syncretro.ini` from `syncretro.example.ini` and offers
-(prompted) to download the **MAME 2003-Plus** core from the libretro buildbot.
-Note that core's licence differs from the sibling consoles' — see
-[Legal](#legal). You can also run it later:
+`syncretro.ini` ships with the package, so there is nothing to seed. The
+installer offers (prompted) to download the **MAME 2003-Plus** core from the
+libretro buildbot. Note that core's licence differs from the sibling
+consoles' — see [Legal](#legal). You can also run it later:
 `jsexec ../xtrn/syncarcade/getcore.js`.
 
 `xtrn.ini` is not re-read automatically — `touch ctrl/recycle.term` afterwards.
@@ -152,9 +153,9 @@ labelled example: its help reads `C  Fire` and `P ;  Right tread` in place of
 Unlike the cartridge consoles, **every player shares one save directory**
 (`data/syncretro/arcade/shared`), so the score you set is the score the next
 caller has to beat. That is the point of a cabinet, and it is why this console
-sets `shared_saves: true` in its `lobby.js` instead of taking the per-user
-sandbox a cartridge console wants. MAME 2003-Plus writes its hiscore files (and
-its input config) under the save directory the frontend hands it.
+sets `shared_saves = true` in its `syncretro.ini` instead of taking the
+per-user sandbox a cartridge console wants. MAME 2003-Plus writes its hiscore
+files (and its input config) under the save directory the frontend hands it.
 
 **Known limitation:** two nodes playing the *same* game simultaneously each hold
 that game's scores in memory and write them at exit, so the second one out wins
@@ -224,8 +225,20 @@ sections.
 
 ## Configuration
 
-`syncretro.ini` (seeded from `syncretro.example.ini`) holds the sysop's knobs.
-Two are worth knowing about here:
+`syncretro.ini` ships with the door and holds every setting, fully commented
+in-file — including what this console *is* (name, core, key bindings, what a
+romset looks like), which both the lobby and the native binary read from it.
+**It is ours: an upgrade replaces it.** Put your own settings in
+`syncretro.local.ini` beside it, which is read second and wins key by key, so
+it need hold only what you changed and upstream's new defaults keep arriving
+underneath it.
+
+> **Upgrading from a release before this one:** rename your
+> `syncretro.ini` to `syncretro.local.ini` **before** pulling. It keeps
+> working unchanged — a full config as an overlay simply wins on every key —
+> and you can trim it to just your differences whenever you like.
+
+Two settings are worth knowing about here:
 
 - **`[options]`** — libretro core options, as `key = value`. This console pins
   `mame2003-plus_skip_disclaimer` and `mame2003-plus_skip_warnings` so a player
@@ -284,7 +297,7 @@ exclude = puckman
 ```
 
 `[audio]` and `[video]` behave as they do for the other consoles; see
-`syncretro.example.ini`, which documents every key.
+`syncretro.ini`, which documents every key.
 
 ### Bandwidth: only the changed cells are sent
 
