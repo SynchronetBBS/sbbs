@@ -2,8 +2,7 @@
 
 **Date:** 2026-08-02
 
-**Revised:** 2026-08-03, after the provider-neutral CA API landed in
-`src/xptls`.
+**Revised:** 2026-08-03
 
 **Status:** Design, not approved for implementation.
 
@@ -13,16 +12,21 @@ Provide an automated private certificate authority (CA) for Synchronet QWK
 networks.  A QWK node authenticates to its direct hub using its existing QWK
 account and password, submits a certificate-signing request (CSR) in its REP
 packet, and receives a signed delegated CA certificate in the hub's QWK
-packet.
+packet.  Every delegated CA certificate contains a critical X.509
+`nameConstraints` extension which confines its valid descendants to that
+node's canonical DNS subtree.
 
-The result is a certificate hierarchy which follows the QWK tree.  A BBS may
-issue certificates for its direct child BBSes, for its own TLS services, and
-for its local users' TLS clients.  It may not use that authority outside its
-DNS subtree.
+The resulting certificate hierarchy follows the QWK tree.  Within its
+constrained namespace, QWK issuance policy permits a BBS to issue certificates
+for its direct child BBSes, its own TLS services, and its local users' TLS
+clients.  PKIX name-constraint validation and QWK certificate-profile
+validation are both mandatory.
 
 This is a private PKI.  Its DNS names are real Internet DNS names, but its root
-is not a public Web PKI trust anchor.  A general-purpose TLS client may use a
-certificate only after it has been configured to trust the applicable QWK root.
+is not a public Web PKI trust anchor.  Use by a general-purpose TLS client is
+permitted only when the client is configured to trust the applicable QWK root,
+enforces critical DNS name constraints, requires a DNS SAN for DNS identity,
+and does not fall back to a CN-only identity.
 
 ## Non-goals
 
@@ -31,6 +35,7 @@ certificate only after it has been configured to trust the applicable QWK root.
 - Providing automatic recovery from compromise of the offline root key.
 - Providing an online revocation protocol such as OCSP.
 - Transporting a user's private key in QWK packets.
+- Protecting a node from a CA ancestor authorized for that node's DNS subtree.
 - Compatibility with legacy TLS implementations.
 - Creating browser-public HTTPS certificates.
 
@@ -38,10 +43,13 @@ certificate only after it has been configured to trust the applicable QWK root.
 
 - **Root** is the offline, long-lived trust anchor for one QWK DNS domain.
 - **Root-signed intermediate** is the online CA directly signed by the root.
-  It has a thirteen-month lifetime and is an explicit exception to the
-  seven-day lifetime policy.
-- **BBS CA** is a seven-day delegated CA belonging to one QWK node.  It signs
-  direct-child BBS CAs and local end-entity certificates.
+  Its certificate constrains all descendants to the configured QWK network
+  DNS suffix.  It has a thirteen-month lifetime and is an explicit exception
+  to the seven-day lifetime policy.
+- **BBS CA** is a seven-day delegated CA belonging to one QWK node.  Its
+  certificate constrains all descendants to the node's canonical DNS subtree.
+  QWK policy permits it to sign direct-child BBS CAs and local end-entity
+  certificates.
 - **Service certificate** is a non-CA TLS certificate for a BBS service,
   including IRC server-to-server links.
 - **User certificate** is a non-CA TLS client-authentication certificate for
@@ -50,6 +58,8 @@ certificate only after it has been configured to trust the applicable QWK root.
   a routed NetMail path.
 - **Canonical node name** is the lower-case DNS name derived from a node's QWK
   ID and its parent node's canonical name.
+- **Permitted DNS subtree** is the exact canonical DNS base name and every name
+  formed by adding one or more labels to its left.
 
 ## Trust and topology
 
@@ -64,27 +74,49 @@ mybbs.syncnix.synchro.net
 
 The parent derives this name from the authenticated QWK account and local QWK
 link configuration.  A CSR never authorizes its own subject name, SAN, issuer,
-or certificate type.
+certificate type, or permitted DNS subtree.
 
 The certificate chain is:
 
 ```text
 offline root
-  -> 13-month root-signed intermediate
-    -> 7-day BBS CA for a QWK node
-      -> 7-day child BBS CA, service certificate, or user certificate
+  -> 13-month root-signed intermediate [DNS constraint: synchro.net]
+    -> 7-day BBS CA [DNS constraint: syncnix.synchro.net]
+      -> 7-day child BBS CA [DNS constraint: mybbs.syncnix.synchro.net]
+      -> 7-day service or user certificate
 ```
 
-There is deliberately no policy maximum QWK-tree depth and no
-`pathLenConstraint` on BBS CA certificates.  A BBS CA may issue another BBS
-CA for any direct configured child, and that child may do likewise.  Validators
-must enforce the DNS-subtree relationship at every BBS-CA edge: a child BBS
-CA name is exactly one DNS label below its issuer BBS CA name.
+PKIX namespace authorization is encoded at every non-root CA level.  The
+root-signed intermediate's critical `nameConstraints` extension has exactly
+one permitted `dNSName` subtree: the configured QWK network DNS suffix.  Each
+BBS CA's critical extension has exactly one permitted `dNSName` subtree: its
+canonical node name.  The effective permitted namespace is the intersection
+of all constraints in the path.  A relying party must process every critical
+constraint or reject the path.
 
-A BBS CA may also issue a service or user certificate immediately below its
-own canonical name.  The certificate profile and Extended Key Usage (EKU), not
-the syntactic name alone, distinguish an end-user identity from a BBS node
-whose QWK ID happens to be the same label.
+QWK profile authorization further restricts issuance within the permitted
+namespace.  A BBS CA may issue a BBS CA only for a configured direct child, a
+service certificate only at its own canonical name, and a user certificate
+only one label below its own canonical name.  There is no policy maximum QWK
+tree depth and no `pathLenConstraint` on BBS CA certificates.
+
+Both authorization layers are required.  X.509 name constraints do not encode
+the single-CN/single-SAN profile, CN/SAN equality, the exact one-label child
+relationship, or certificate-role rules.  Synchronet consumers therefore walk
+the complete validated path and enforce those QWK rules separately.  They
+reject a missing DNS SAN rather than falling back to the CN, and reject every
+additional SAN name or name form.  The certificate profile and Extended Key
+Usage (EKU), not the syntactic name alone, distinguish a user identity from a
+BBS node whose QWK ID happens to be the same label.
+
+### Delegation trust boundary
+
+Each CA is trusted for its complete permitted DNS subtree.  Every ancestor CA
+can therefore impersonate any descendant, including by enrolling an
+attacker-controlled CA key for a direct child.  Protection of descendants from
+their ancestors is not a security property of this design.  The enforced
+isolation property is branch containment: a compromised BBS CA cannot produce
+a valid path for an ancestor, a sibling branch, or an unrelated domain.
 
 ### Root and intermediate compromise
 
@@ -93,10 +125,12 @@ and reconfiguration of trust anchors; QWK does not attempt to automate it.
 
 The root signs online intermediates valid for one year and one month.  A
 compromise of one is serious because it permits continuous creation of fresh
-seven-day certificates.  It is the intended operational use of the emergency
-revocation mechanism described below.  The root-signed intermediate is thus a
-high-value online key and must receive stronger storage and operational
-protection than an ordinary BBS CA.
+seven-day certificates anywhere in the QWK network DNS suffix.  Its critical
+name constraint prevents valid issuance outside that suffix.  Intermediate
+compromise is the intended operational use of the emergency revocation
+mechanism described below.  The root-signed intermediate is thus a high-value
+online key and must receive stronger storage and operational protection than
+an ordinary BBS CA.
 
 ## Naming and certificate profiles
 
@@ -120,21 +154,24 @@ but it is not received through normal QWK issuance.
 
 | Profile | Subject CN and sole DNS SAN | Constraints and use |
 | --- | --- | --- |
-| Root-signed intermediate | configured root-domain CA name | `CA:TRUE`, critical `keyCertSign` and `cRLSign`; root-controlled online issuance |
-| BBS CA | canonical node name | `CA:TRUE`, critical `keyCertSign` and `cRLSign`; issue direct child BBS CAs and local leaves |
+| Root-signed intermediate | configured root-domain CA name | `CA:TRUE`, critical `keyCertSign` and `cRLSign`; critical DNS `nameConstraints` for the configured QWK network suffix; root-controlled online issuance |
+| BBS CA | canonical node name | `CA:TRUE`, critical `keyCertSign` and `cRLSign`; critical DNS `nameConstraints` for its canonical name and subtree; issue direct child BBS CAs and local leaves |
 | BBS service | canonical node name of the local BBS | `CA:FALSE`, `digitalSignature`, `serverAuth` and/or `clientAuth` as the service requires |
 | User client | `<local-account-id>.<canonical-bbs-name>` | `CA:FALSE`, `digitalSignature`, `clientAuth` only; maps to one local account |
 
 CA certificates have critical `basicConstraints` and critical `keyUsage`.
-End-entity certificates have critical `basicConstraints = CA:FALSE` and the
-profile's critical `keyUsage`.  CA certificates do not carry a TLS EKU.
+Every non-root CA certificate also has a critical `nameConstraints` extension
+containing exactly the one permitted DNS subtree specified by its profile and
+no excluded subtree.  End-entity certificates have critical
+`basicConstraints = CA:FALSE` and the profile's critical `keyUsage`, and do not
+carry `nameConstraints`.  CA certificates do not carry a TLS EKU.
 
-Every issuer constructs subjects and SANs itself.  A parent issues a BBS CA
-only for the direct QWK node configured under it.  A BBS constructs a user
-certificate identity only from its own local account identifier and canonical
-BBS name.  No caller may request aliases or arbitrary DNS names through this
-mechanism.  Issuing another DNS name requires separate domain-control proof
-and is outside this design.
+Every issuer constructs subjects, SANs, and permitted DNS subtrees itself.  A
+parent issues a BBS CA only for the direct QWK node configured under it.  A BBS
+constructs a user certificate identity only from its own local account
+identifier and canonical BBS name.  No caller may request aliases, arbitrary
+DNS names, or a broader constraint through this mechanism.  Issuing another
+DNS name requires separate domain-control proof and is outside this design.
 
 ## Cryptography and keys
 
@@ -193,13 +230,24 @@ TLS-version reporting, and a diagnostic callback containing the rejected
 peer chain.  These are useful pieces for QWK TLS clients and TelnetS client
 authentication, but they are not the complete TLS surface required here.
 
-### What remains outside xptls today
+### Remaining implementation work and boundaries
 
-The QWK layer still owns the seven-day and five-minute rules, hierarchical
-name construction, the single-CN/single-SAN profile, direct-child
+The CA feature requires the following additions to `xp_ca` before
+implementation:
+
+- provider-neutral issuance and inspection of a critical `nameConstraints`
+  extension containing one permitted DNS subtree;
+- access to every certificate in the validated path so the QWK layer can
+  inspect each constraint, identity, and profile; and
+- common OpenSSL and Botan 3 tests which demonstrate enforcement of
+  accumulated constraints and rejection of out-of-subtree certificates.
+
+The QWK layer supplies the policy values to those mechanisms.  It owns the
+seven-day and five-minute rules, hierarchical name construction, selection of
+the permitted DNS subtree, the single-CN/single-SAN profile, direct-child
 authorization, request replay state, packet envelopes, atomic active-set
-selection, and CRL-bundle distribution.  `xp_ca` intentionally supplies
-mechanism rather than QWK policy.
+selection, and CRL-bundle distribution.  `xp_ca` supplies provider-neutral
+certificate mechanism rather than QWK policy.
 
 The TLS wrapper still needs a server-session interface, a TLS-1.3-only policy
 with the selected group and cipher suite, mutual-authentication policy, and a
@@ -273,7 +321,7 @@ and reject unknown critical fields.  Version 1 contains at least:
 The CSR's proof of possession proves control of its new public key.  It does
 not identify the requester.  The authenticated QWK account and the parent's
 direct-link configuration identify the requester and select the only permitted
-BBS CA subject/SAN.
+BBS CA subject, SAN, profile, and DNS subtree constraint.
 
 No private key is present in either file.  A BBS creates its own service
 certificate locally after installing its BBS CA.  A user client generates its
@@ -289,11 +337,12 @@ return the original success or failure result, never issue a second
 certificate.  The child persists pending request state and retries the exact
 same CSR and request ID until it receives the matching response.
 
-The recipient verifies the entire returned chain, subject/SAN, profile,
-validity, and request-ID match before installation.  Installation is atomic:
-write the new key/certificate/chain set durably, validate it from the
-configured root, then make it available to new TLS handshakes.  A failed
-installation leaves the previously working set active.
+The recipient verifies the entire returned chain, accumulated name
+constraints, subject/SAN, profile, validity, and request-ID match before
+installation.  Installation is atomic: write the new key/certificate/chain set
+durably, validate it from the configured root, then make it available to new
+TLS handshakes.  A failed installation leaves the previously working set
+active.
 
 Initial and recovery issuance relies on QWK account authentication only when
 the transport and hub ingest path protect the authenticated upload's
@@ -311,10 +360,20 @@ All Synchronet consumers must validate:
    trusted CA.
 2. Every certificate signature, CA constraint, key usage, critical extension,
    validity interval, and applicable CRL is valid.
-3. Each BBS-CA descendant name is exactly one label beneath the issuer BBS CA
+3. The root-signed intermediate has exactly the configured network-suffix DNS
+   constraint, every BBS CA has exactly its canonical-name DNS constraint, and
+   every DNS SAN is within all accumulated constraints.
+4. Each child BBS CA name is exactly one label beneath its issuer BBS CA's
    canonical name.
-4. The expected DNS identity equals both the sole SAN and sole CN.
-5. The leaf EKU is appropriate for the connection role.
+5. Every non-root certificate has exactly one CN and exactly one SAN of type
+   `dNSName`, those values are equal after canonicalization, and no other
+   subject attribute or SAN name is present.  Absence of a DNS SAN is an error;
+   validation never falls back to the CN.
+6. A service leaf's name equals its direct issuing BBS CA's canonical name.  A
+   user leaf's name is exactly one label beneath its direct issuing BBS CA's
+   canonical name.
+7. The expected DNS identity equals both the sole SAN and sole CN.
+8. The leaf profile and EKU are appropriate for the connection role.
 
 For an IRC server-to-server link, both peers present service certificates and
 each side performs this validation against the same configured root.  A
@@ -400,12 +459,14 @@ outside this implementation.
 ## Acceptance criteria
 
 - A fresh QWK node receives a correctly named, seven-day BBS CA certificate
-  after an authenticated direct QWK request; the returned certificate is
-  usable to issue its own service and child certificates.
+  with the correct critical DNS name constraint after an authenticated direct
+  QWK request; the returned certificate is usable to issue its own service and
+  child certificates.
 - A node offline beyond certificate expiry re-enrolls with a newly generated
   BBS CA key using only its authenticated QWK account.
-- A parent rejects a CSR that attempts a different name, SAN, profile, or
-  issuer from the account/configuration-derived BBS CA request.
+- A parent rejects a CSR that attempts a different name, SAN, profile, issuer,
+  or permitted DNS subtree from the account/configuration-derived BBS CA
+  request.
 - A duplicate `CERTREQ.DAT` returns the original response and creates no
   additional certificate.
 - A user private key never appears in a QWK packet, server-side user record,
@@ -416,6 +477,15 @@ outside this implementation.
 - An IRC peer rejects a chain rooted elsewhere, an incorrect peer name, a
   CA certificate presented as a service leaf, or a leaf lacking the required
   mutual-TLS EKUs.
+- Both CA backends reject a path in which a BBS CA signs a certificate for an
+  ancestor, sibling branch, or unrelated domain, even when the forged leaf's
+  CN, SAN, key usage, and EKU otherwise match the expected peer identity.
+- Both CA backends accept a valid multi-level path whose intermediate and BBS
+  CA constraints progressively narrow to the presented leaf's DNS name.
+- QWK-profile validation rejects a non-root CA with a missing, non-critical,
+  broader, additional, or otherwise incorrect name constraint.  It also
+  rejects a certificate with no DNS SAN, a mismatched CN and SAN, or any
+  additional SAN name or name form.
 - A certificate-authenticated connection cannot continue past the prescribed
   certificate-expiry deadline.
 - A verified root CRL revoking an intermediate causes all chains through that
