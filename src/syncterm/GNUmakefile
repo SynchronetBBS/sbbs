@@ -299,28 +299,40 @@ ifeq ($(XP_CRYPTO_BACKEND),Botan)
  BOTAN_CXXFLAGS = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --cflags botan-3)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)xp_ca_botan3$(OFILE)
  $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE): $(XPTLS_SRC)/xp_crypt_botan3.cpp | botan $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
  $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE): $(XPTLS_SRC)/xp_tls_botan3.cpp | botan $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
+ $(MTOBJODIR)$(DIRSEP)xp_ca_botan3$(OFILE): $(XPTLS_SRC)/xp_ca_botan3.cpp | botan $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
 else ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)xp_ca_openssl$(OFILE)
  $(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE): $(XPTLS_SRC)/xp_crypt_openssl.c | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
  $(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE): $(XPTLS_SRC)/xp_tls_openssl.c | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
+ $(MTOBJODIR)$(DIRSEP)xp_ca_openssl$(OFILE): $(XPTLS_SRC)/xp_ca_openssl.c | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
 else
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_none$(OFILE)
  OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_none$(OFILE)
+ OBJS += $(MTOBJODIR)$(DIRSEP)xp_ca_none$(OFILE)
  $(MTOBJODIR)$(DIRSEP)xp_crypt_none$(OFILE): $(XPTLS_SRC)/xp_crypt_none.c | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
  $(MTOBJODIR)$(DIRSEP)xp_tls_none$(OFILE): $(XPTLS_SRC)/xp_tls_none.c | $(MTOBJODIR)
+	@echo $(COMPILE_MSG) $<
+	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
+ $(MTOBJODIR)$(DIRSEP)xp_ca_none$(OFILE): $(XPTLS_SRC)/xp_ca_none.c | $(MTOBJODIR)
 	@echo $(COMPILE_MSG) $<
 	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
 endif

@@ -111,7 +111,7 @@ if(USE_VENDORED_BOTAN)
 	endif()
 	set(_botan_modules
 	    "tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305"
-	    ",rc4,des,cast128,hmac,pbkdf2,scrypt"
+	    ",rc4,des,cast128,hmac,pbkdf2,scrypt,pbes2"
 	    ",sha1,sha2_32,sha2_64,rsa,ed25519,x25519,dh,ecdsa,ecdh,ml_kem"
 	    ",pcurves_secp256r1,pcurves_secp384r1,pcurves_secp521r1"
 	    ",x509${_botan_certstor_modules},system_rng,auto_rng")

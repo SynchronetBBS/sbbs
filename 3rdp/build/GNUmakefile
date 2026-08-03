@@ -298,7 +298,7 @@ endif
 # aes,cbc,ctr               — xp_crypt encrypted-INI + DeuceSSH AES-256/CTR
 # chacha,chacha20poly1305   — xp_crypt ChaCha20 + TLS 1.3 AEAD
 # rc4,des,cast128           — legacy decrypt-only paths in xp_crypt
-# hmac,pbkdf2,scrypt        — xp_crypt KDF + SSH MAC
+# hmac,pbkdf2,scrypt,pbes2  — xp_crypt KDF + SSH MAC + encrypted CA keys
 # sha1,sha2_32,sha2_64      — legacy fingerprints + current SHA-256/-512
 # rsa,ed25519,x25519,dh     — SSH host/user keys + TLS sig/kex
 # ecdsa,ecdh                — TLS 1.2/1.3 cert + kex
@@ -321,7 +321,7 @@ else
 endif
 
 BOTAN_MODULES := $(subst $() ,,tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305,\
-rc4,des,cast128,hmac,pbkdf2,scrypt,sha1,sha2_32,sha2_64,rsa,ed25519,\
+rc4,des,cast128,hmac,pbkdf2,scrypt,pbes2,sha1,sha2_32,sha2_64,rsa,ed25519,\
 x25519,dh,ecdsa,ecdh,ml_kem,pcurves_secp256r1,pcurves_secp384r1,\
 pcurves_secp521r1,x509,$(BOTAN_CERTSTOR_MODULES),system_rng,auto_rng)
 
