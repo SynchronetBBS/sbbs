@@ -6,45 +6,39 @@
 // console/bbs/user; the model layer it stands on (syncretro_lib.js) is UI-free
 // and tested headless under jsexec.
 //
-// A console install (xtrn/syncivision, xtrn/syncnes, ...) ships a three-line
-// lobby.js that describes ITS console and calls syncretro_lobby(spec). Nothing
-// here knows which console it is running -- that is what lets a new console be
-// an install directory rather than a fork of this code.
+// A console install (xtrn/syncivision, xtrn/syncnes, ...) ships a two-line
+// lobby.js:
 //
 //   load("syncretro_lobby.js");
-//   syncretro_lobby({
-//       dir:      js.exec_dir,                      // the door dir. REQUIRED.
-//       name:     "Nintendo Entertainment System",  // what the player is shown
-//       short:    "NES",                            // where a column is tight
-//       core:     "fceumm_libretro",                // no extension: .so/.dll/.dylib
-//       profile:  "pad",                            // the C door's key bindings
-//       ext:      ["nes", "unf", "unif"],           // what a cartridge looks like
-//       min_size: 8 * 1024,
-//       max_size: 4 * 1024 * 1024,
-//       bios:     [],                               // files the console needs
-//       stdio:    false                             // true = run as a STDIO door
-//   });
+//   syncretro_lobby();
 //
-// FOUR OF THOSE KEYS NOW LIVE IN syncretro.ini, WHICH OVERRIDES THEM: name,
-// short, core and profile. They are the facts the native DOOR needs as well as
-// this lobby, and a file is how both halves read one copy of them -- they used
-// to be handed to the door on its command line, which Synchronet assembles into
-// a 260-byte buffer on Windows and truncates there in silence, so a long
-// cartridge name pushed the ROM argument off the end of the line. The spec keys
-// above remain as the fallback, so a console install with no syncretro.ini
-// still works; where the file exists, IT is the one to edit. syncretro.ini is
-// shipped and an upgrade replaces it -- a sysop's own changes belong in
-// syncretro.local.ini, read second, beside it.
+// Nothing here knows which console it is running -- that is what lets a new
+// console be an install directory rather than a fork of this code. The
+// console's identity (name, short, core, profile, shared_saves), its ROM
+// rules ([roms] ext/min_size/max_size/exclude/bios_*) and everything else
+// this lobby needs -- [text], [lobby], [idle] -- come from that install's
+// syncretro.ini, read by syncretro_lobby_ini() below.
+//
+// syncretro.ini is SHIPPED, beside the package's lobby.js, and an upgrade
+// replaces it. A sysop's own changes belong in syncretro.local.ini, beside
+// it, read second and winning key by key -- so it holds only what they
+// changed, and every new default added upstream still arrives underneath it.
+//
+// BOTH HALVES OF THE DOOR READ THE SAME SHIPPED FILE: this lobby, and the
+// native binary. That is the whole reason it is a file rather than either
+// one's code -- these facts used to travel from the lobby to the door on the
+// COMMAND LINE, which Synchronet assembles into a 260-byte buffer on Windows
+// and truncates there in silence, so a long cartridge name pushed the ROM
+// argument off the end of the line.
 //
 // `id` is derived from `short` (lower-cased, alphanumerics only) and names the
 // per-user save directory and the ROM cache. It is NOT a separate key, because a
 // separate key is a thing to get out of step.
 //
-// syncretro.ini is also read for the keys that are genuinely a sysop's
-// business rather than the console's: [roms] exclude= and dir=, every string
-// this lobby displays ([text]), and the optional header/footer display files
-// ([lobby]). The console's identity is code, not configuration -- it does not
-// vary per install.
+// `spec` survives as an escape hatch for a lobby run from an unusual
+// directory: syncretro_lobby_init() below reads ONLY spec.dir (default
+// js.exec_dir) and ignores every other key -- there is no console-describing
+// spec key left to read.
 //
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
@@ -206,7 +200,7 @@ function syncretro_lobby_ini(dir)
 function syncretro_lobby_init(spec)
 {
 	var f, ini;
-	var target, sep, sub, exe, cname, bpfx, cpfx;
+	var target, sep, sub, exe, bpfx;
 
 	if (!spec)
 		spec = {};

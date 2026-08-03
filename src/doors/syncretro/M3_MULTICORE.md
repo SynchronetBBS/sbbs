@@ -98,6 +98,16 @@ but it is the first core to prove that path.
 
 ## 3. Architecture -- what becomes data, what stays code
 
+> **Superseded 2026-08-02.** The premise below -- console identity as a
+> `lobby.js` spec object, overridden only in `[audio]`/`[disc]`/`[roms]
+> dir=`/`exclude=` -- was replaced by the shipped-`syncretro.ini` /
+> sysop-`syncretro.local.ini` model. Every console fact (`name`, `short`,
+> `core`, `profile`, `shared_saves`, `bios`, and all of `[roms]`) now lives in
+> `syncretro.ini`, and `lobby.js` collapses to two lines. Kept here as
+> milestone history; see
+> [../../../docs/superpowers/specs/2026-08-02-syncretro-config-consolidation-design.md](../../../docs/superpowers/specs/2026-08-02-syncretro-config-consolidation-design.md)
+> for the current model.
+
 **The console is CODE, not configuration.** Its identity does not vary from
 install to install -- an NES is an NES on every BBS -- so it is not a sysop's
 knob. Each console install is a *three-line* `lobby.js` that declares itself and
@@ -309,6 +319,13 @@ never pays for it.
 ---
 
 ## 7. The console spec -- `xtrn/<console>/lobby.js`
+
+> **Superseded 2026-08-02.** The `syncretro_lobby(spec)` object below no
+> longer exists; every key it shows now lives in the console's shipped
+> `syncretro.ini`, and `xtrn/syncnes/lobby.js` is `load("syncretro_lobby.js");
+> syncretro_lobby();`. Kept here as milestone history; see
+> [../../../docs/superpowers/specs/2026-08-02-syncretro-config-consolidation-design.md](../../../docs/superpowers/specs/2026-08-02-syncretro-config-consolidation-design.md)
+> for the current model.
 
 The whole of `xtrn/syncnes/lobby.js`, minus its comments:
 

@@ -164,7 +164,8 @@ JS. The `[console]` section grows from four keys to nine:
 | `name`, `short`, `core`, `profile` | `lobby.js` spec **and** `console.ini` | `syncretro.ini` `[console]`, once |
 | `shared_saves` | `lobby.js` spec only | `syncretro.ini` `[console]` |
 | `ext` | `lobby.js` spec, overridable via `[roms] ext` | `syncretro.ini` `[roms] ext` |
-| `min_size`, `max_size`, `bios` | `lobby.js` spec only | `syncretro.ini` `[roms]` |
+| `bios` | `lobby.js` spec only | `syncretro.ini` `[console]` |
+| `min_size`, `max_size` | `lobby.js` spec only | `syncretro.ini` `[roms]` |
 | `[video]`, `[audio]`, `[disc]`, `[idle]`, `[debug]`, `[input]`, `[options]` | `syncretro.example.ini`, copied | `syncretro.ini`, shipped |
 
 Two things fall out for free. Keys that were previously unreachable from any

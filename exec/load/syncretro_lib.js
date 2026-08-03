@@ -15,10 +15,11 @@
 //
 // NOTHING HERE KNOWS WHICH CONSOLE IT IS. The console's identity (name, id) and
 // its ROM rules (extensions, size band, BIOS images to reject) arrive as data,
-// from that install's lobby.js -- which IS the console definition, and which also
-// passes the same facts to the C door on its command line, so the two halves
-// cannot disagree. Only [roms] dir/exclude comes from syncretro.ini: a sysop
-// hides a ROM, but a sysop does not redefine what an NES cartridge is.
+// read from that install's syncretro.ini (shipped, tracked, beside its
+// lobby.js) overlaid by its syncretro.local.ini (the sysop's) -- see
+// syncretro_lobby_ini() in syncretro_lobby.js. The SAME shipped file is also
+// read by the C door, which is the whole reason it is a file: these facts
+// used to travel from the lobby to the door on its command line instead.
 //
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
@@ -263,11 +264,11 @@ function syncretro_list(v)
 	        .filter(function (s) { return s !== ""; });
 }
 
-// The discovery rules: what a cartridge looks like ON THIS CONSOLE. They come
-// from the console's spec (its lobby.js), not from configuration -- a sysop
-// hides a ROM or moves the roms dir, but a sysop does not redefine what an NES
-// cartridge is. Only `dir` and `exclude` are overridable from syncretro.ini,
-// which the lobby does after calling this.
+// The discovery rules: what a cartridge looks like ON THIS CONSOLE. `spec` is
+// the merged [roms] section syncretro_lobby_ini() builds -- shipped
+// syncretro.ini overlaid by the sysop's syncretro.local.ini -- so every key
+// here, dir and exclude included, is whatever that install's ini currently
+// says, not a value compiled into this file.
 function syncretro_rules(spec)
 {
 	var r = {

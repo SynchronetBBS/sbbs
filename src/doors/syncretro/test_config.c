@@ -224,10 +224,29 @@ static void test_no_files(void)
 	CHECK(stub_npin == 0);
 }
 
-/* An overlay that is a byte-for-byte copy of the shipped file resolves
- * identically to no overlay at all. This is the property that makes the
- * migration in the spec safe: a sysop renames their whole config to
- * syncretro.local.ini and nothing changes. */
+/* Byte-for-byte copy a fixture file, for test_full_copy_equivalence() below. */
+static void copy_file(const char *src_path, const char *dst_path)
+{
+	FILE *src = fopen(src_path, "r");
+	FILE *dst = fopen(dst_path, "w");
+	int   c;
+
+	CHECK(src != NULL && dst != NULL);
+	if (src != NULL && dst != NULL) {
+		while ((c = fgetc(src)) != EOF)
+			fputc(c, dst);
+	}
+	if (src != NULL)
+		fclose(src);
+	if (dst != NULL)
+		fclose(dst);
+}
+
+/* An install whose syncretro.local.ini is a byte-for-byte copy of its
+ * syncretro.ini resolves identically to an install with no overlay at all.
+ * This is the property that makes the migration in the spec safe: a sysop
+ * renaming their whole config to syncretro.local.ini changes nothing, because
+ * the shipped file underneath it still reads the same either way. */
 static void test_full_copy_equivalence(void)
 {
 	char aspect[64];
@@ -239,21 +258,8 @@ static void test_full_copy_equivalence(void)
 	volume = sr_config_audio_volume();
 
 	mkpath("cfgfx_copy");
-	{
-		FILE *src = fopen(BASE_DIR "/syncretro.ini", "r");
-		FILE *dst = fopen("cfgfx_copy/syncretro.local.ini", "w");
-		int   c;
-
-		CHECK(src != NULL && dst != NULL);
-		if (src != NULL && dst != NULL) {
-			while ((c = fgetc(src)) != EOF)
-				fputc(c, dst);
-		}
-		if (src != NULL)
-			fclose(src);
-		if (dst != NULL)
-			fclose(dst);
-	}
+	copy_file(BASE_DIR "/syncretro.ini", "cfgfx_copy/syncretro.ini");
+	copy_file(BASE_DIR "/syncretro.ini", "cfgfx_copy/syncretro.local.ini");
 
 	stub_npin = 0;
 	sr_config_read("cfgfx_copy");

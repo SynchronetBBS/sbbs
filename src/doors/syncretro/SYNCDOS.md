@@ -19,6 +19,13 @@ opposite: 320x200, slow-paced, generous-target games (§1a). Do not read MOO2 as
 
 ## 1. What `syncdos` is -- and is not
 
+> **Note (2026-08-02):** the `syncretro_lobby(spec)` call in the sketch below
+> predates the shipped-`syncretro.ini` / sysop-`syncretro.local.ini` model --
+> a `syncdos` console dir would declare itself in `syncretro.ini` instead, and
+> its `lobby.js` would be the same two lines every other console's is. See
+> [../../../docs/superpowers/specs/2026-08-02-syncretro-config-consolidation-design.md](../../../docs/superpowers/specs/2026-08-02-syncretro-config-consolidation-design.md).
+> This sketch's content-shape and profile questions (§4, §5) are unaffected.
+
 It is **not a new binary.** SyncRetro is one frontend (`syncretro`) that hosts
 any libretro core; a "console" is a directory under `xtrn/` with a `lobby.js`
 spec, a `getcore.js`, and config -- exactly the model M3 established. So there is
