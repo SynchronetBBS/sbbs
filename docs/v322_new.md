@@ -449,6 +449,9 @@
   `replyto_list`, `to_list`, `cc_list`, `summary`, `tags`,
   `from_org`, ...) no longer return `undefined` when the same
   header object's first read of that field happened to be NULL
+- Windows: scripts using socket callbacks (`Socket.on()`,
+  e.g. the IRC daemon) no longer stop accepting new connections
+  once the process reaches 64 open sockets
 - New methods: `FileBase.lock()` and `FileBase.unlock()` for
   maintenance scripts that want to keep external writers (e.g.
   the FTP server) out during a lengthy operation

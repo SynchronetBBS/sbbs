@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto-imported by MSBuild before every vcxproj's body, for all projects under
+  src/ that don't have a nearer Directory.Build.props.
+
+  FD_SETSIZE must be identical in every translation unit: fd_set is
+  { u_int fd_count; SOCKET fd_array[FD_SETSIZE]; }, and sbbs.h exports
+  js_socket_add()/js_socket_isset(), which take fd_set* across the sbbs.dll
+  boundary. Setting it here rather than per-project keeps xpdev (built by
+  sbbs3.sln, sexpots.sln, vdmodem.sln and SyncTERM.sln) in agreement too.
+
+  Winsock's default of 64 is a real ceiling, not a hint: FD_SET() silently
+  discards every socket past the 64th, and select() then never reports it.
+-->
+<Project>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>FD_SETSIZE=1024;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>
