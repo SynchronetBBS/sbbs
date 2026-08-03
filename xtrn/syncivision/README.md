@@ -98,6 +98,10 @@ Leaving a cartridge — quitting, hanging up, or a dropped connection — saves
 it. Play it again and it picks up right there instead of starting over.
 `Ctrl-R` still resets the console for a fresh start whenever you want one.
 
+A cartridge holding a saved game carries a `*` beside its number in the
+picker — `  1*│ Astrosmash` — so you can see at a glance where you left
+one. The footer spells the mark out too.
+
 ## Configuration
 
 `syncretro.ini` ships with the door and holds every setting, fully commented

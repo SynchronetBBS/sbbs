@@ -167,31 +167,66 @@ and it needs a busy BBS and one popular game to happen at all.
 The picker offers a choice, `C` to switch:
 
 ```
-Cabinet:  [Public]  Private        (C to switch)
-          Scores count.  Games cannot be saved here.
+Cabinet: [Public] Private  Scores count, no saving.  (C to switch)
+Cabinet:  Public [Private]  Scores are yours.  (C to switch)
 ```
 
 - **Public** — the machine everyone competes on. Your high score counts
-  against every other player's. Nothing is ever saved: quitting or dropping
-  carrier starts the next visit from a blank machine, because a restore here
-  would roll back scores other players set in between.
-- **Private** — a cabinet that is yours alone. Its high scores are yours, not
-  shared, and its game **resumes where you left off**, including after a
-  dropped connection. `Ctrl-R` still starts that machine over, keeping your
-  accumulated scores.
+  against every other player's, and theirs against yours: each session loads
+  the machine's score table at start and writes it at exit, so a player
+  finishing after you overwrites what you set. Nothing is ever saved here,
+  because a restore would roll the shared table back to whenever the snapshot
+  was taken.
+- **Private** — a cabinet that is yours alone. **Its high scores are yours**:
+  they persist and accumulate, and no other player can overwrite them. That
+  works on every romset, today. `Ctrl-R` starts the machine over and keeps
+  those scores.
 
 A guest account always lands on the public cabinet — a shared login can't
 hold a private preference — and sees the line with no `(C to switch)` hint.
 
-**Saved games are off for every romset at ship**, on the private cabinet as
-much as the public one, whatever a player chooses. MAME 2003-Plus's
-save-state support is per-driver across roughly 5,000 drivers, and none have
-been verified here: a partially-supporting driver would restore a subtly
-broken machine that plays wrong rather than failing with an error. Turning
-`save_state` on for a romset once it's been played through a resume and
-confirmed correct is a one-line change to `games.local.ini` — see
-[`GAMES_INI.md`](../../src/doors/syncretro/GAMES_INI.md) sec 4 and sec 14 —
-not a code change, and it is entirely at the sysop's own risk until then.
+Saved games are the *second* thing a private cabinet can offer, and they are
+off until you enable a romset yourself.
+
+### Enabling saved games, one romset at a time
+
+**Every romset ships with saving off**, private cabinet or not. MAME
+2003-Plus's save-state support is per-driver across roughly 5,000 drivers and
+none have been verified here — a partially-supporting driver restores a
+machine that looks right and plays wrong, rather than failing with an error.
+So the door claims nothing it has not been told.
+
+To enable one, add it to `games.local.ini` beside `games.ini` (that file is
+yours; `games.ini` is ours and an upgrade replaces it):
+
+```ini
+[digdug]
+save_state = true
+```
+
+It takes effect on the next lobby entry — no rebuild, no restart.
+
+Then **verify it**, which is what enabling is supposed to mean:
+
+1. Switch to the private cabinet, play the game, and quit with `Ctrl-Q`.
+2. Re-enter the lobby. The cartridge now carries a `*` beside its number —
+   `  1*│ Dig Dug` — meaning it has a saved game waiting.
+3. Play it again. It should continue exactly where you left it, not restart.
+4. Keep playing for a few minutes and watch the machine itself: sprites,
+   sound, the score, the attract loop when you finish. This is the step that
+   matters, because a broken restore does not announce itself.
+
+If anything is off, set `save_state = false` for that romset again. The
+snapshot is discarded and the game starts fresh.
+
+Until at least one romset is enabled, the private cabinet's line says only
+"Scores are yours" and the picker shows no `*` legend — the lobby does not
+advertise a resume it cannot deliver. Both appear on their own once you
+enable one.
+
+Per-romset keys are documented in
+[`GAMES_INI.md`](../../src/doors/syncretro/GAMES_INI.md) sec 4, and sec 14
+explains why `games.ini` holds only cabinets someone here has actually run.
 
 ## Per-game facts
 
