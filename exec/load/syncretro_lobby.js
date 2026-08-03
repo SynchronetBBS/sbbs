@@ -49,6 +49,8 @@ load("key_defs.js");                       /* KEY_PAGEUP/PAGEDN/HOME/END */
 load("syncretro_lib.js");
 
 var syncretro_lobby_gl = load({}, "game_lobby.js");    /* rpad/clip/ago + live_nodes */
+var syncretro_lobby_up = load({}, "userprops.js");     /* the cabinet preference; scoped for the
+                                            * same reason as game_lobby.js above */
 
 /* Idle timeout used when syncretro.ini has no [idle] timeout. This lobby always
  * passes -i, so THIS is the shipped policy on a lobby install -- and it must
@@ -60,6 +62,13 @@ var SYNCRETRO_LOBBY_CELL_W      = 38;                  /* colored cell visible w
 var SYNCRETRO_LOBBY_HEADER_ROWS = 3;                   /* title, top-played, blank */
 var SYNCRETRO_LOBBY_FOOTER_ROWS = 3;                   /* blank, prompt, +1 kept empty so a full
                                             * page never trips the terminal more-prompt */
+
+/* Toggles the cabinet line on a shared-saves console. NOT "P": that letter is
+ * already the prompt's own Prev-page hotkey (see the "prompt" text below and
+ * the paging block in syncretro_lobby()), so binding it here too would make
+ * one keypress do two different things depending on which the player meant.
+ * "C" for Cabinet is free. */
+var SYNCRETRO_LOBBY_CABINET_KEY = "C";
 
 /* Every string this lobby displays, with the string it has always displayed as
  * its default. The sysop's syncretro.ini [text] section overrides any of them,
@@ -90,6 +99,14 @@ var SYNCRETRO_LOBBY_TEXT = {
 	title:          "\1h\1cSyncRetro \1n\1c-- %s\1n",       /* console name */
 	top_played:     "\1hTop played:\1n ",                   /* (no args) row label */
 	top_played_fmt: "\1c%s \1h(%d)\1n  ",                   /* cartridge title, play count */
+	/* the cabinet line -- drawn only on a shared-saves console (today only the
+	 * arcade). %s is the "(C to switch)" hint (cabinet_hint below), already
+	 * formatted and blank for a guest, whose choice cannot persist. */
+	cabinet_public:  "\1h\1cCabinet:\1n  [Public]  Private%s\r\n"
+	              + "\1n          High scores shared with everyone.  No saved games.",
+	cabinet_private: "\1h\1cCabinet:\1n   Public  [Private]%s\r\n"
+	              + "\1n           Your own machine.  Scores are yours; games resume where you left off.",
+	cabinet_hint:    "       (%s to switch)",               /* the toggle key */
 	/* the cartridge grid */
 	cell_fmt:       SYNCRETRO_CELL_FMT,                     /* number, title */
 	/* footer */
@@ -268,6 +285,8 @@ function syncretro_lobby_init(spec)
 		syncretro_lobby_hrows--;
 	if (syncretro_lobby_text("top_played") === "")
 		syncretro_lobby_hrows--;
+	if (syncretro_lobby_con.shared_saves)   /* the cabinet line -- see syncretro_lobby_draw() */
+		syncretro_lobby_hrows += 2;
 	if (syncretro_lobby_footer)
 		syncretro_lobby_frows += syncretro_lobby_gl.display_file_rows(syncretro_lobby_footer);
 
@@ -452,6 +471,17 @@ function syncretro_lobby_draw(page, pages, board, cols, per_col)
 		console.putmsg(syncretro_lobby_top_played(board));
 		console.crlf();
 	}
+	/* The cabinet line: only on a shared-saves console, where there is a
+	 * choice to draw at all (see syncretro_lobby_private()). A guest gets the
+	 * line with no "(C to switch)" hint -- the key does nothing for them,
+	 * since userprops.js silently no-ops a guest's set(). */
+	if (syncretro_lobby_con.shared_saves) {
+		var cabinet_hint = user.is_guest ? ""
+		    : format(syncretro_lobby_text("cabinet_hint"), SYNCRETRO_LOBBY_CABINET_KEY);
+		syncretro_lobby_print(syncretro_lobby_private() ? "cabinet_private" : "cabinet_public",
+		                      [cabinet_hint]);
+		console.crlf();
+	}
 	console.crlf();
 	hrows = console.row;
 
@@ -597,16 +627,37 @@ function syncretro_lobby_home()
 
 /* True when nobody else's session can compete for this player's game on this
  * console. Every console that is not a shared cabinet already is one, per
- * player, by construction (syncretro_lobby_home() above). The TOGGLE that
- * lets a player choose privacy ON TOP OF a shared cabinet is a separate
- * feature (a per-player preference, keyed and stored via userprops.js) not
- * yet built; until it exists a shared-saves console -- today only
- * xtrn/syncarcade -- is never private, which is the safe default: no
- * snapshot is offered there rather than one that might roll back the shared
- * high-score table. */
+ * player, by construction (syncretro_lobby_home() above). On a shared
+ * cabinet (today only xtrn/syncarcade) it is this player's own choice: the
+ * "cabinet" preference, one key per console (syncretro_cabinet_key(),
+ * syncretro_lib.js), held in the stock per-user properties file through
+ * userprops.js. Absent, unreadable, or a guest (userprops.js short-circuits
+ * a guest's get() to the default, since a guest account is shared and a
+ * "private" cabinet keyed to it would be private in name only) all resolve
+ * to public -- the safe default: no snapshot is offered rather than one
+ * that might roll back the shared high-score table. */
 function syncretro_lobby_private()
 {
-	return !syncretro_lobby_con.shared_saves;
+	var v;
+
+	if (!syncretro_lobby_con.shared_saves)
+		return true;    /* already a private machine; nothing to choose */
+	v = syncretro_lobby_up.get("syncretro", syncretro_cabinet_key(syncretro_lobby_con.id),
+	                           syncretro_cabinet_default());
+	return String(v).toLowerCase() === "private";
+}
+
+/* Flips this player's cabinet preference for the current console. A no-op
+ * off a shared cabinet, where there is nothing to choose, and -- through
+ * userprops.js's own UFLAG_G guard -- a no-op for a guest: its set() there
+ * returns true without writing anything, so the toggle key harmlessly does
+ * nothing rather than offering a preference that could never persist. */
+function syncretro_lobby_cabinet_toggle()
+{
+	if (!syncretro_lobby_con.shared_saves)
+		return;
+	syncretro_lobby_up.set("syncretro", syncretro_cabinet_key(syncretro_lobby_con.id),
+	                       syncretro_lobby_private() ? "public" : "private");
 }
 
 /* The sysop's install-wide kill switch -- "Turning it off disables
@@ -1006,6 +1057,16 @@ function syncretro_lobby(spec)
 		if (key === "P" || key === "-" || key === KEY_PAGEUP) { if (page > 0) page--; continue; }
 		if (key === KEY_HOME) { page = 0; continue; }
 		if (key === KEY_END) { page = pages.length - 1; continue; }
+		/* The cabinet toggle -- only where syncretro_lobby_draw() drew the line
+		 * to explain it, and only for a player who could hold the preference.
+		 * Re-marking is the reason for the redraw, not merely the toggle line:
+		 * a private cabinet's snapshots are invisible from the public one and
+		 * back, so the " *" marks on the grid change with the cabinet. */
+		if (key === SYNCRETRO_LOBBY_CABINET_KEY && syncretro_lobby_con.shared_saves && !user.is_guest) {
+			syncretro_lobby_cabinet_toggle();
+			syncretro_lobby_mark_resumable(roms);
+			continue;
+		}
 		/* 'F'ind is the prompted key -- it names itself the way Next/Prev/Quit do.
 		 * '/' stays bound as the unprompted alias for the fingers that expect it. */
 		if (key === "F" || key === "/") {

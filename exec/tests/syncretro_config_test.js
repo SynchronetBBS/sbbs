@@ -218,9 +218,9 @@ check(syncretro_lobby_state_key(probe_rom) !== "",
 file_remove(sdir + "games.local.ini");
 file_remove(sdir + "syncretro.local.ini");
 
-// A shared cabinet never gets a key, whatever else is enabled -- until the
-// per-player cabinet toggle exists, syncretro_lobby_private() answers "not
-// private" for every shared console.
+// A shared cabinet never gets a key, whatever else is enabled -- with no
+// stored preference (jsexec's own unauthenticated user, #0, has none),
+// syncretro_lobby_private() answers "not private" for a shared console.
 write_ini("syncretro.local.ini", "[console]\nshared_saves = true\n");
 syncretro_lobby_init({ dir: sdir });
 check_str(syncretro_lobby_state_key(probe_rom), "",

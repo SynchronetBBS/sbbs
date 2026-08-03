@@ -184,5 +184,14 @@ f = new File(coreresdir + "linux-x64/bar_libretro.so"); f.open("wb"); f.write("x
 check_str(syncretro_core_path(coreresdir, "", "so"), "",
           "two \"*_libretro\" candidates resolve to \"\" rather than guessing");
 
+// --- the cabinet preference --------------------------------------------------
+//
+// The pure key/default only -- syncretro_lobby_private() (a live session
+// answer, in syncretro_lobby.js) is what a player actually sees.
+check_str(syncretro_cabinet_key("arcade"), "cabinet.arcade",
+          "preference key is per console");
+check(syncretro_cabinet_default() === "public",
+      "an absent preference means the shared cabinet");
+
 print(failures ? "FAILED: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);

@@ -1075,6 +1075,36 @@ function syncretro_state_sweep(list, roms, current_keys)
 	return n;
 }
 
+// --- the cabinet preference --------------------------------------------------
+//
+// The per-player, per-console cabinet choice a shared-saves console (today
+// only xtrn/syncarcade) offers: public, the machine everyone competes on, or
+// private, one of their own. Pure key/default only -- the preference itself
+// is read and written through userprops.js, and the console/session context
+// that turns this into a live answer is syncretro_lobby_private() in
+// syncretro_lobby.js.
+
+// One key per console, in the stock per-user properties file
+// (data/user/<####>.ini, [syncretro] section) -- NOT inside
+// data/user/<####>/<id>/, which is the private -home handed to the emulator
+// core and what a sysop deletes to reclaim space from a dormant player. A
+// preference stored there would sit among files an emulator writes, and
+// would vanish when the sysop discards them.
+function syncretro_cabinet_key(id)
+{
+	return "cabinet." + String(id);
+}
+
+// Absent, unreadable, or a guest (userprops.js short-circuits under
+// UFLAG_G: set() no-ops, get() returns this default) all mean PUBLIC -- the
+// safe default, since a player whose preference is lost should compete on
+// the shared table rather than practise alone while believing their scores
+// count.
+function syncretro_cabinet_default()
+{
+	return "public";
+}
+
 // The core cache lives beside the ROM cache -- same directory, same
 // derived/re-buildable contract -- keyed by the same sanitized console id.
 function syncretro_core_cache_path(data_dir, id)
