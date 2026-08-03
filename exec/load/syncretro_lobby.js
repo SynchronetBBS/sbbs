@@ -116,7 +116,7 @@ var SYNCRETRO_LOBBY_TEXT = {
 	              + "\1cScores yours, games resume.%s",
 	cabinet_hint:    "  \1n(%s to switch)",                 /* the toggle key */
 	/* the cartridge grid */
-	cell_fmt:       SYNCRETRO_CELL_FMT,                     /* number, title */
+	cell_fmt:       SYNCRETRO_CELL_FMT,                     /* number, marker, title */
 	/* footer */
 	/* Everything before the page counter is a KEY THE PLAYER PRESSES, so the
 	 * resume marker's legend must not sit among them looking like one. It was
