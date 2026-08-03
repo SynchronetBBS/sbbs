@@ -269,6 +269,7 @@ ifdef win
  WIN32_IE ?= 0x0800
  NTDDI ?= 0x06010000
 else
+ # Win32 stays on select(): WSAPoll semantics differ (GitLab #1212)
  CFLAGS +=	-DPREFER_POLL
  machine_uname	:=	$(shell if uname -m | grep -Ev "(i[3456789]*|x)86" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; fi)
  machine_uname	:=	$(shell if uname -m | grep "64" > /dev/null; then uname -m | tr "[A-Z]" "[a-z]" | tr " " "_" ; else echo $(machine_uname) ; fi)
