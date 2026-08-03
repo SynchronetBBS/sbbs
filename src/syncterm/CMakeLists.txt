@@ -196,6 +196,10 @@ if(USE_VENDORED_BOTAN)
 	    IMPORTED_LOCATION "${VENDORED_BOTAN_LIB}"
 	    INTERFACE_INCLUDE_DIRECTORIES
 	        "${VENDORED_BOTAN_PREFIX}/include/botan-3")
+	if(WIN32)
+		# Botan's Windows certificate-store module uses CryptoAPI.
+		target_link_libraries(vendored-botan-3 INTERFACE Crypt32)
+	endif()
 	add_dependencies(vendored-botan-3 vendored-botan)
 	# Cache hints picked up by xpdev and DeuceSSH CMakeLists to avoid
 	# running pkg-config entirely.
