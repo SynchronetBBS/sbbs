@@ -15,6 +15,7 @@
 #include "telnet_io.h"
 #include "threadwrap.h"
 #include "window.h"
+#include "xpprintf.h"
 #include "xp_tls.h"
 
 static SOCKET telnets_sock;
