@@ -42,9 +42,9 @@ static void *rc_dlsym(void *h, const char *sym) { return dlsym(h, sym); }
 static void  rc_dlclose(void *h) { dlclose(h); }
 static const char *rc_dlerror(void) { return dlerror(); }
   #if defined(__APPLE__)
-    #define RC_CORE_EXT ".dylib"
+	#define RC_CORE_EXT ".dylib"
   #else
-    #define RC_CORE_EXT ".so"
+	#define RC_CORE_EXT ".so"
   #endif
 #endif
 
@@ -90,6 +90,15 @@ static void rc_fail(const char *fmt, ...)
 			}                                                                 \
 		} while (0)
 
+/* Optional entry points: a core that exports none of these still loads and
+ * plays, it just cannot suspend. Save states are not required by the libretro
+ * API, and refusing to run a core over a missing one would trade a feature for
+ * the whole game. */
+#define RC_RESOLVE_OPT(field, sym)                                        \
+		do {                                                                  \
+			*(void **)(&c->field) = rc_dlsym(c->dl, sym);                     \
+		} while (0)
+
 int rc_core_open(rc_core_t *c, const char *path)
 {
 	memset(c, 0, sizeof(*c));
@@ -116,6 +125,9 @@ int rc_core_open(rc_core_t *c, const char *path)
 	RC_RESOLVE(run,                    "retro_run");
 	RC_RESOLVE(reset,                  "retro_reset");
 	RC_RESOLVE(set_controller_port_device, "retro_set_controller_port_device");
+	RC_RESOLVE_OPT(serialize_size,     "retro_serialize_size");
+	RC_RESOLVE_OPT(serialize,          "retro_serialize");
+	RC_RESOLVE_OPT(unserialize,        "retro_unserialize");
 
 	if (c->api_version() != RETRO_API_VERSION) {
 		rc_fail("core libretro API %u != frontend %u",

@@ -45,6 +45,12 @@ typedef struct rc_core {
 	 * otherwise -- which the door could not do at all until this was resolved. */
 	void (*set_controller_port_device)(unsigned port, unsigned device);
 
+	/* Save states. OPTIONAL -- see rc_core_open(). NULL when the core exports
+	 * no save-state API, which callers must tolerate. */
+	size_t (*serialize_size)(void);
+	bool (*serialize)(void *data, size_t len);
+	bool (*unserialize)(const void *data, size_t len);
+
 	struct retro_system_av_info av;         /* captured after load_game() */
 	/* Captured in load_game(). library_name is what identifies the console when
 	 * no -profile was given -- and FreeIntv spells its own "freeintv", lower

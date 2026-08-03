@@ -14,11 +14,28 @@
 
 #include <stddef.h>
 
+#include "retro_core.h"   /* rc_core_t */
+
 /* 8 lowercase hex digits + NUL. `opts` is the resolved [options] flattened to
  * sorted "name=value" lines joined with '\n'. exec/load/syncretro_lib.js's
  * syncretro_state_key() implements the identical recipe; the two are pinned to
  * one golden value by test_statekey.c and exec/tests/syncretro_state_test.js. */
 void sr_state_key(char out[9], const char *core_md5, const char *rom_md5,
                   const char *opts);
+
+/* <home>/<rom-basename-sans-extension>.<key8>.state. Returns 0 on success. */
+int sr_state_path(char *out, size_t max, const char *home,
+                  const char *rom_path, const char *key8);
+
+/* Write the core's current state to `path`. 0 on success. Non-fatal to the
+ * caller: -1 covers everything from "this core cannot snapshot" (no
+ * serialize entry points, or a zero serialize_size) to a write failure. */
+int sr_state_save(rc_core_t *core, const char *path);
+
+/* Restore the core's state from `path`. 0 on success, negative on a failure
+ * the caller should report and recover from (start fresh rather than continue
+ * into a half-restored machine). A missing file is the ordinary case, not an
+ * error, and is folded into the same negative return. */
+int sr_state_load(rc_core_t *core, const char *path);
 
 #endif /* SYNCRETRO_STATE_H_ */

@@ -19,6 +19,10 @@ int         sr_door_setup(int argc, char **argv);
 int         sr_door_socket(void);                   /* client socket fd, or -1 (dev: stdout) */
 const char *sr_door_name(void);                     /* player alias, or NULL */
 const char *sr_door_home(void);                     /* -home sandbox dir, or NULL */
+/* -state <key>: permission to snapshot, and the key to name the file with.
+ * NULL when -state was not given -- the door then neither writes nor looks
+ * for a snapshot. Never inferred from -home or anything else. */
+const char *sr_door_state_key(void);
 const char *sr_door_core_path(void);                /* -core <path> / config, or NULL */
 const char *sr_door_profile(void);                  /* -profile <name>, or NULL */
 const char *sr_door_console(void);                  /* -console <name>, or NULL */

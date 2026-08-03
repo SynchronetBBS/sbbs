@@ -58,6 +58,7 @@ static char     g_profile[32];         /* "" = infer from the core */
  * and the profile's name. */
 static char g_title[64];               /* -title:   "Astrosmash" */
 static char g_console[32];             /* -console: "Intellivision" / "NES" */
+static char g_state_key[16];           /* -state <key>: "" = save states not permitted */
 /* -stdio: the BBS redirected our stdin/stdout instead of handing us a socket.
  * Mystic on *nix forks the door and pipes it -- and does the telnet (and SSH)
  * itself, so what arrives is already a clean 8-bit stream, exactly as
@@ -180,7 +181,8 @@ static int is_valued_flag(const char *a)
 	return strcmp(a, "-name") == 0 || strcmp(a, "-home") == 0
 	       || strcmp(a, "-core") == 0 || strcmp(a, "-rom") == 0
 	       || strcmp(a, "-profile") == 0 || strcmp(a, "-title") == 0
-	       || strcmp(a, "-console") == 0 || strcmp(a, "-option") == 0;
+	       || strcmp(a, "-console") == 0 || strcmp(a, "-option") == 0
+	       || strcmp(a, "-state") == 0;
 }
 
 /* Bounded copy into a fixed buffer: NUL-terminates, truncates silently. Spelled
@@ -282,6 +284,13 @@ static void sr_door_resolve(int argc, char **argv)
 			copy_arg(g_title, sizeof(g_title), argv[++i]);
 		} else if (strcmp(a, "-console") == 0 && i + 1 < argc) {
 			copy_arg(g_console, sizeof(g_console), argv[++i]);
+		} else if (strcmp(a, "-state") == 0 && i + 1 < argc) {
+			/* The lobby's decision, arriving as one flag: present means
+			 * snapshots are permitted and this is the key to name the file
+			 * with; absent means neither write nor look for one. The door
+			 * forms no opinion of its own -- in particular it never inspects
+			 * -home to guess whether this player is on a private machine. */
+			snprintf(g_state_key, sizeof g_state_key, "%s", argv[++i]);
 		} else if (strcmp(a, "-option") == 0 && i + 1 < argc) {
 			/* Handed straight to the option store rather than copied into a
 			 * g_* buffer like the flags above: it is repeatable, and the store
@@ -393,6 +402,7 @@ static void sr_door_usage(const char *argv0)
 		"  -t<seconds>        session time limit; the door exits when it elapses\n"
 		"  -name <handle>     player name\n"
 		"  -home <dir>        per-user sandbox: save states + SRAM land here\n"
+		"  -state <key>       permit save states; <key> names the file (\"auto\" to derive)\n"
 		"\n"
 		"  -help, --help, -?  show this help\n"
 		"\n",
@@ -612,6 +622,7 @@ void sr_door_idle_tick(void)
 int         sr_door_socket(void)    { return g_socket; }
 const char *sr_door_name(void)      { return g_alias[0] ? g_alias : NULL; }
 const char *sr_door_home(void)      { return g_home[0] ? g_home : NULL; }
+const char *sr_door_state_key(void) { return g_state_key[0] ? g_state_key : NULL; }
 const char *sr_door_core_path(void) { return g_core[0] ? g_core : NULL; }
 const char *sr_door_profile(void)   { return g_profile[0] ? g_profile : NULL; }
 
