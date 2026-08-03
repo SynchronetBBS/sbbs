@@ -2,6 +2,9 @@
 
 **Date:** 2026-08-02
 
+**Revised:** 2026-08-03, after the provider-neutral CA API landed in
+`src/xptls`.
+
 **Status:** Design, not approved for implementation.
 
 ## Goal
@@ -152,12 +155,66 @@ Each BBS uses separate key pairs for separate roles:
 3. A user client key, generated and retained by the user's client device.  The
    BBS receives only its CSR and signed public certificate.
 
-The xptls-style wrapper is the sole application interface to OpenSSL and Botan
-3 key operations.  It exposes provider-neutral key handles for generation,
-signing, TLS use, persistence, and deletion.  It must preserve opaque or
-provider-backed keys where available, avoid exporting private material through
-ordinary application buffers, and use restricted local storage and memory
-cleansing where an exportable software key is unavoidable.
+### What xptls already provides
+
+The provider abstraction required by this design is no longer hypothetical.
+`src/xptls/xp_ca.h` provides a C API implemented by both OpenSSL and Botan 3,
+with a disabled stub for builds without either backend.  Provider objects do
+not cross the interface.  Its opaque handles and current operations cover:
+
+- Ed25519 key generation, encrypted private-key PEM load/save, and deletion;
+- atomic private-key file replacement, mode `0600` on Unix, a mandatory
+  non-empty encryption password, and best-effort cleansing of temporary
+  encoded key material;
+- creation of a deliberately identity-free PKCS#10 CSR, DER import/export,
+  and proof-of-possession verification;
+- self-signed root creation and issuer-supplied certificate issuance;
+- issuer-supplied subject, complete DNS SAN set, CA status, critical basic
+  constraints and key usage, EKUs, optional path-length constraint, validity,
+  and CRL distribution point;
+- DER certificate import/export;
+- complete CRL creation and update, preservation of prior revoked entries,
+  increasing CRL numbers, critical issuing-distribution-point scope, DER
+  import/export, and CRL metadata inspection; and
+- certificate-path validation against one explicit root, with an exact
+  expected identity and certificate policy, explicit validation time, and
+  optional required full-CRL coverage throughout the chain.
+
+`src/xptls/test_xp_ca.c` exercises that common contract against the selected
+OpenSSL or Botan 3 backend.  It includes encrypted-key replacement, malformed
+DER and CSR-signature rejection, issuer/key and validity enforcement, exact
+identity and policy matching, wrong-root rejection, required and stale CRLs,
+leaf revocation, and root revocation of an intermediate.
+
+The existing `src/xptls/xp_tls.h` is a client-session wrapper.  Its configured
+client API already supports Web PKI or one connection-specific trust anchor,
+hostname checking, a PEM client certificate chain and matching private key,
+TLS-version reporting, and a diagnostic callback containing the rejected
+peer chain.  These are useful pieces for QWK TLS clients and TelnetS client
+authentication, but they are not the complete TLS surface required here.
+
+### What remains outside xptls today
+
+The QWK layer still owns the seven-day and five-minute rules, hierarchical
+name construction, the single-CN/single-SAN profile, direct-child
+authorization, request replay state, packet envelopes, atomic active-set
+selection, and CRL-bundle distribution.  `xp_ca` intentionally supplies
+mechanism rather than QWK policy.
+
+The TLS wrapper still needs a server-session interface, a TLS-1.3-only policy
+with the selected group and cipher suite, mutual-authentication policy, and a
+way to use the CA key abstraction without forcing an unencrypted PEM private
+key through the current `xp_tls_client_config`.  Its present configured client
+API accepts an unencrypted PEM key filename and its general certificate mode
+allows TLS 1.2 or 1.3.
+
+Current `xp_ca` persistence is a secure software-file baseline, not an opaque
+hardware/provider key store.  A later key-store extension should retain the
+same provider-neutral application boundary while adding non-exportable keys
+where a backend and platform support them.  Private material must not be
+exported through ordinary application buffers.  File-backed keys remain
+encrypted, atomically replaced, and access-restricted; deletion makes no
+physical-erasure guarantee.
 
 On successful BBS CA renewal, the BBS generates a new CA key.  The previous
 CA private key is retired immediately from signing and should be deleted or
