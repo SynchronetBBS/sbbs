@@ -444,6 +444,39 @@ Everything not mentioned keeps coming from `games.ini`, which is the property
 that matters: the sysop's retitle survives every upgrade, *and* the hundred
 titles added upstream next year still arrive.
 
+### What a section in `games.ini` means
+
+**A section here means someone on this project has run that cabinet.** Not that
+the romset exists, not that MAME has a driver for it -- that a person launched
+it through the door, on a terminal, and put the entry here deliberately.
+
+That is what makes this file a sane home for the per-cabinet settings. A button
+label is a claim about what a key does on a machine somebody played. `stick2`
+is a claim about a cabinet somebody looked at. `boot_frames` is a measurement.
+None of them can be derived from a romset's existence, and a file where most
+sections were machine-generated would make each of those claims unverifiable by
+inspection -- you could no longer tell a measured entry from a guessed one.
+
+This was tested once. `079b5fb887` (spec-11-bytes, 2026-07-31) imported 4,559
+romset names derived from MAME 0.78, taking the file from 181 sections to 4,740
+and from 9 KB to 204 KB. Of those 4,740 sections, every one carried a `name`
+and **five lines in the entire file were anything else**. It was reverted for
+that reason rather than for its size.
+
+Those names are not lost, and they are worth having if you own the romsets:
+
+```
+git show 079b5fb887:xtrn/syncarcade/games.ini
+```
+
+recovers all 4,740 entries, and that commit records where they came from. Pull
+what you want out of it into your own `games.local.ini` -- which is exactly
+where entries nobody here has run belong, and why the local file exists.
+
+The same rule bounds anything that verifies romsets in bulk: a tool that
+decides a per-romset setting runs against `games.ini`, so its verdicts cover
+only cabinets that have actually been played.
+
 ### Resolution
 
 The two files resolve as if the local file's lines were **appended** to the

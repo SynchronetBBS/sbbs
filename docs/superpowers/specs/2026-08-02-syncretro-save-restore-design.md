@@ -59,6 +59,9 @@ already private per user; only `xtrn/syncarcade` is shared.
 - Periodic autosave. The exit path covers every ordinary session end (§2).
 - Sharing or transferring snapshots between users.
 - Bounding snapshot growth. Deliberately deferred; see "Deferred".
+- **Verifying which MAME romsets snapshot reliably.** A separate deliverable;
+  the arcade ships with every romset's `save_state` off, and turning them on
+  later is a data change (§7).
 - Anything for the sibling doors (`syncscumm`, `syncrpg`, …). They are separate
   programs, not SyncRetro consoles.
 
@@ -226,10 +229,40 @@ snapshot reliably.* Ours to state, shipped in `syncretro.ini`, with a
 per-romset override in `games.ini` / `games.local.ini`.
 
 - `syncnes`, `syncivision`: `true`. One core, one driver, reliable.
-- `syncarcade`: **`false`**, turned on per romset as they are verified.
-  Save-state support in the MAME 2003-Plus lineage is **per-driver across some
-  5000 drivers**, and a partially-supporting driver restores a subtly broken
-  machine that fails as a wrong-looking game rather than as an error.
+- `syncarcade`: **`false`**, for every romset, at ship. Save-state support in
+  the MAME 2003-Plus lineage is **per-driver across some 5000 drivers**, and a
+  partially-supporting driver restores a subtly broken machine that fails as a
+  wrong-looking game rather than as an error. Nothing here has been verified,
+  so nothing here claims to be.
+
+**What the arcade gets at ship, and why that is still the feature that was
+asked for.** The request was for saved games *and* a way out of the shared
+high-score table. The cabinet toggle delivers the second on its own: on a
+private cabinet the NVRAM is the player's, so their scores persist and are
+their own, with no snapshot involved. Suspend/resume then arrives per romset
+as entries are verified, which is a **data** change to `games.ini` and not a
+code change — so deferring verification locks in nothing and costs no rework.
+A sysop who wants to enable a romset before anyone has verified it can do so in
+`games.local.ini`, which is what that file is for.
+
+**Verification, when it happens, is bounded by `games.ini`.** A tool that
+decides `save_state` in bulk runs against the sections already in that file,
+because a section there means someone has actually run that cabinet through the
+door on a terminal (`GAMES_INI.md` §14). Probing a whole romset collection
+would produce verdicts for games nobody can play well anyway, and shipping
+`save_state = true` for them would assert an endorsement the project has not
+made.
+
+The probe itself is a separate deliverable and deliberately not specified here.
+The one thing worth recording so it is not got wrong later: the obvious test is
+the wrong one. `retro_serialize()` -> `retro_unserialize()` -> `retro_serialize()`
+inside one live process proves almost nothing, because the machine is already
+in the state being restored — a driver that ignores half its state still
+round-trips byte-identically, which is exactly what `GAMES_INI.md`'s
+seven-romset measurement shows. What matters is a **cold** restore into a
+freshly loaded machine, compared by video output over a long run, with a
+control that runs the continuous path twice to prove the core is deterministic
+before any verdict is trusted.
 
 **`[state] auto_resume`** — the sysop's switch, shipped `true` in
 `syncretro.ini` and overridable in `syncretro.local.ini` like every other
