@@ -416,18 +416,20 @@ door mid-warm-up -- the loop polls `sr_door_should_exit()` every frame.
 
 ## 14. `games.local.ini`: the file a sysop should actually edit
 
+`games.ini` is ours and `games.local.ini` is yours, exactly as `syncretro.ini`
+is ours and `syncretro.local.ini` is yours. Every configuration file in this
+door works that way: the shipped file holds the documented defaults, your
+`.local` twin holds only what you changed, and yours is read second.
+
 `games.ini` is shipped in the Synchronet package and tracked in git, so an
 upgrade replaces it wholesale and a `git pull` on a source install either
-overwrites the sysop's edits or drops a merge conflict into a data file. Every
-other door config avoids this by not being tracked at all -- `syncdoom.ini`,
-`syncduke.ini`, `syncretro.ini` and the rest are gitignored copies the
-installer seeds from a tracked `<name>.example.ini`. `games.ini` cannot use
-that pattern: it is not a template with defaults to copy, it is ~200 curated
-sections that keep growing, and a sysop who copied it once would never see a
-title added later.
+overwrites the sysop's edits or drops a merge conflict into a data file. It
+needs the overlay more than most files here: it is not a small file with
+defaults to copy once, it is ~200 curated sections that keep growing, and a
+sysop who edited a snapshot of it would never see a title added later.
 
-So it takes an overlay instead. `games.local.ini`, beside it, is read **second
-and wins**, and is gitignored. It holds only the differences:
+`games.local.ini`, beside it, is read **second and wins**, and is gitignored.
+It holds only the differences:
 
 ```ini
 [pacman]

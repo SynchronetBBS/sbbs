@@ -656,7 +656,7 @@ void sr_door_node_playing(const char *rom_path)
 	char        status[128];
 	char        fallback[64];
 	const char *title   = g_title;
-	/* -console, else console.ini's name, else the profile's -- which is only a
+	/* -console, else syncretro.ini's name, else the profile's -- which is only a
 	 * console name by coincidence ("Intellivision" is, "gamepad" is not), so it
 	 * stays the last resort. */
 	const char *console = g_console[0] ? g_console : sr_config_console_name();

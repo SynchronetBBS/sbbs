@@ -25,25 +25,26 @@
 //       stdio:    false                             // true = run as a STDIO door
 //   });
 //
-// FOUR OF THOSE KEYS NOW LIVE IN console.ini, WHICH OVERRIDES THEM: name, short,
-// core and profile. They are the facts the native DOOR needs as well as this
-// lobby, and a file is how both halves read one copy of them -- they used to be
-// handed to the door on its command line, which Synchronet assembles into a
-// 260-byte buffer on Windows and truncates there in silence, so a long cartridge
-// name pushed the ROM argument off the end of the line. The spec keys above
-// remain as the fallback, so a console install with no console.ini still works;
-// where the file exists, IT is the one to edit. console.ini is shipped and an
-// upgrade will replace it, which is exactly why it is not syncretro.ini.
+// FOUR OF THOSE KEYS NOW LIVE IN syncretro.ini, WHICH OVERRIDES THEM: name,
+// short, core and profile. They are the facts the native DOOR needs as well as
+// this lobby, and a file is how both halves read one copy of them -- they used
+// to be handed to the door on its command line, which Synchronet assembles into
+// a 260-byte buffer on Windows and truncates there in silence, so a long
+// cartridge name pushed the ROM argument off the end of the line. The spec keys
+// above remain as the fallback, so a console install with no syncretro.ini
+// still works; where the file exists, IT is the one to edit. syncretro.ini is
+// shipped and an upgrade replaces it -- a sysop's own changes belong in
+// syncretro.local.ini, read second, beside it.
 //
 // `id` is derived from `short` (lower-cased, alphanumerics only) and names the
 // per-user save directory and the ROM cache. It is NOT a separate key, because a
 // separate key is a thing to get out of step.
 //
-// The sysop's syncretro.ini is still read, for the keys that are genuinely a
-// sysop's business rather than the console's: [roms] exclude= and dir=, every
-// string this lobby displays ([text]), and the optional header/footer display
-// files ([lobby]). The console's identity is code, not configuration -- it does
-// not vary per install.
+// syncretro.ini is also read for the keys that are genuinely a sysop's
+// business rather than the console's: [roms] exclude= and dir=, every string
+// this lobby displays ([text]), and the optional header/footer display files
+// ([lobby]). The console's identity is code, not configuration -- it does not
+// vary per install.
 //
 // SpiderMonkey 1.8.5: no let/const/arrows/template literals.
 //
@@ -88,7 +89,7 @@ var SYNCRETRO_LOBBY_FOOTER_ROWS = 3;                   /* blank, prompt, +1 kept
  * distinguishable from absent. That is how the "Top played" row is turned off.
  *
  * The %-arguments each key is handed are fixed, listed beside it here and
- * documented in syncretro.example.ini. A string that ignores its arguments is
+ * documented in syncretro.ini. A string that ignores its arguments is
  * fine; one that asks for an argument never passed prints rubbish. */
 var SYNCRETRO_LOBBY_TEXT = {
 	/* header block */
@@ -333,7 +334,7 @@ function syncretro_lobby_init(spec)
 	syncretro_lobby_binary = syncretro_lobby_dir + bpfx + "syncretro%.";   /* "%." -> .exe on Windows */
 	/* Only the BINARY is probed here. The core is the door's own business now:
 	 * it searches the door directory and the per-target sub-dir for the name in
-	 * console.ini, or for the one "*_libretro" it can find. Naming the core to
+	 * syncretro.ini, or for the one "*_libretro" it can find. Naming the core to
 	 * the door cost 28 characters of a 260-character command line. */
 }
 
@@ -474,7 +475,7 @@ function syncretro_lobby_draw(page, pages, board, cols, per_col)
  * door reports it has no ROM.
  *
  * Checked here rather than trusted, because everything that shortened this line
- * (console.ini, the drop file, the door-side title parse) can be undone by one
+ * (syncretro.ini, the drop file, the door-side title parse) can be undone by one
  * innocent-looking addition, and because a sysop with a longer ROM filename than
  * anything we ship will meet the ceiling before we do. A door that says why it
  * broke costs one comparison.
@@ -589,11 +590,11 @@ function syncretro_lobby_play(rom)
 	 * door literal quote characters. */
 	/* The who's-online line -- "playing Astrosmash (Intellivision)", the way
 	 * SyncDOOM names its WAD and map -- is the DOOR's to publish, from
-	 * console.ini and the cartridge's filename. Neither the title nor the console
+	 * syncretro.ini and the cartridge's filename. Neither the title nor the console
 	 * is sent to it any more, except for a curated title it could not derive.
 	 *
 	 * This label is for the line LOGGED below, and it applies the same rule the
-	 * door applies to the same two console.ini keys (SR_CONSOLE_LABEL_MAX in
+	 * door applies to the same two syncretro.ini keys (SR_CONSOLE_LABEL_MAX in
 	 * syncretro_config.c): the long name when it fits a status column, else the
 	 * short one. "Intellivision" reads better than "Intv"; "Nintendo
 	 * Entertainment System" is too wide. The two must agree, or a cartridge is
@@ -616,7 +617,7 @@ function syncretro_lobby_play(rom)
 	 *
 	 * What is left on the line is what cannot be anywhere else: the binary, the
 	 * session limits, the per-user sandbox and the cartridge. Everything the
-	 * console knows about itself moved to console.ini, everything about the
+	 * console knows about itself moved to syncretro.ini, everything about the
 	 * player and his connection moved to the drop file, and the title the door
 	 * can parse from the cartridge's own filename is no longer sent at all --
 	 * between them, from ~335 characters to ~150. Anything added here from now
@@ -657,7 +658,7 @@ function syncretro_lobby_play(rom)
 		idle_secs = syncretro_lobby_gl.parse_duration(idle_cfg.timeout, "s");
 
 	/* -core, -profile and -console are gone from the line: the door reads all
-	 * three from console.ini, which is shipped beside this lobby precisely so
+	 * three from syncretro.ini, which is shipped beside this lobby precisely so
 	 * they need not be carried. -s%H / -name %a are gone into the drop file. */
 	drop = syncretro_lobby_dropfile(syncretro_lobby_stdio);
 

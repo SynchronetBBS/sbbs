@@ -465,7 +465,7 @@ int main(int argc, char **argv)
 	 * these facts exists any earlier. The core's library_name is only defined once
 	 * it is loaded, and its sample rate only once a game is (the NES is 48000, the
 	 * Intellivision 44100 -- and the door hardcoded 44100 until M3). */
-	/* -profile, else console.ini's, else inferred from the core's library_name.
+	/* -profile, else syncretro.ini's, else inferred from the core's library_name.
 	 * The ini is what an install states about itself, and it is the reliable one:
 	 * the library_name inference has to recognize a core by name, which does not
 	 * scale to a frontend that will host any core anyone builds. */

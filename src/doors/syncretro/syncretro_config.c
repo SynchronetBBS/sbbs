@@ -489,7 +489,7 @@ static int sr_glob_one(char *dst, size_t sz, const char *pattern, int complain)
 		found = 1;
 	} else if (g.gl_pathc > 1 && complain) {
 		fprintf(stderr, "syncretro: %u libretro cores match %s -- name one with"
-		        " [console] core in console.ini, or pass -core:\n",
+		        " [console] core in syncretro.ini, or pass -core:\n",
 		        (unsigned)g.gl_pathc, pattern);
 		for (i = 0; i < g.gl_pathc; i++)
 			fprintf(stderr, "syncretro:   %s\n", g.gl_pathv[i]);
@@ -498,7 +498,7 @@ static int sr_glob_one(char *dst, size_t sz, const char *pattern, int complain)
 	return found;
 }
 
-/* Find the core when the command line did not name one. `stem` is console.ini's
+/* Find the core when the command line did not name one. `stem` is syncretro.ini's
  * core name, or the wildcard "*_libretro" when it has none either -- a console
  * install holds exactly one core, which is why the lobby had been spending 28
  * characters of a 260-character command line naming a file the door is standing
@@ -529,7 +529,7 @@ int sr_config_apply(void)
 	const char *rom  = sr_door_rom_path();
 	int         rc   = 0;
 	char        cwd[PATH_MAX];
-	char        corebuf[160];   /* console.ini's core name + the platform extension */
+	char        corebuf[160];   /* syncretro.ini's core name + the platform extension */
 	/* cwd + '/' + "roms" + NUL: sized so the join below cannot truncate (and so
 	 * GCC can see that, rather than warning about it under -Werror). */
 	char        romdir[PATH_MAX + sizeof(SR_ROM_SUBDIR) + 1];
@@ -560,7 +560,7 @@ int sr_config_apply(void)
 	/* --- 2. the core .so and the ROM ---------------------------------------
 	 * Absolutized against the launch dir NOW, before the chdir below. The ROM
 	 * additionally searches <launch>/roms/, the conventional cartridge dir. */
-	/* -core wins, then console.ini's core name (spelled WITHOUT an extension, so
+	/* -core wins, then syncretro.ini's core name (spelled WITHOUT an extension, so
 	 * one shipped file serves every platform), then the lone core in the install.
 	 * The command line used to be the only source, at 28 characters a launch. */
 	if (core != NULL) {
