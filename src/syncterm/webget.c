@@ -348,7 +348,15 @@ recv_line(struct http_session *sess, int timeout, size_t *len)
 		goto error_return;
 	}
 	for (;;) {
-		if (!socket_readable(sess->sock, timeout)) {
+		/* TLS providers may already hold decrypted bytes after reading a
+		   complete record. In that case the network socket itself need not be
+		   readable for the next byte to be available. */
+		bool pending = false;
+#ifndef WITHOUT_CRYPTO
+		if (sess->is_tls)
+			pending = xp_tls_has_pending(sess->tls);
+#endif
+		if (!pending && !socket_readable(sess->sock, timeout)) {
 			set_msg(sess->req, "Socket not readable.");
 			goto error_return;
 		}
@@ -361,7 +369,8 @@ recv_line(struct http_session *sess, int timeout, size_t *len)
 		}
 		if (rc == 0 || eof) {
 			if (retpos == 0) {
-				*len = 1;
+				if (len)
+					*len = 1;
 				goto special_return;
 			}
 			set_msg(sess->req, "Unexpected EOF.");
@@ -943,7 +952,7 @@ error_return:
 static bool
 read_chunked(struct http_session *sess, FILE *out)
 {
-	char *line;
+	char *line = NULL;
 	size_t bufsz = 0;
 	size_t total = 0;
 	void *buf = NULL;

@@ -1,17 +1,20 @@
 #include "xp_ca.h"
 #include "xp_sign.h"
+#include "xp_key_internal.h"
+
+#include <string.h>
 
 int
-xp_ca_key_generate(xp_ca_key_t *out, enum xp_ca_key_algorithm algorithm)
+xp_key_generate(xp_key_t *out, const struct xp_key_spec *spec)
 {
 	if (out != NULL)
 		*out = NULL;
-	(void)algorithm;
+	(void)spec;
 	return XP_CA_ERR_DISABLED;
 }
 
 int
-xp_ca_key_load_pem(xp_ca_key_t *out, const char *path, const char *password)
+xp_key_load_private_pem_file(xp_key_t *out, const char *path, const char *password)
 {
 	if (out != NULL)
 		*out = NULL;
@@ -21,7 +24,7 @@ xp_ca_key_load_pem(xp_ca_key_t *out, const char *path, const char *password)
 }
 
 int
-xp_ca_key_save_pem(xp_ca_key_t key, const char *path, const char *password)
+xp_key_save_private_pem_file(xp_key_t key, const char *path, const char *password)
 {
 	(void)key;
 	(void)path;
@@ -30,20 +33,107 @@ xp_ca_key_save_pem(xp_ca_key_t key, const char *path, const char *password)
 }
 
 int
-xp_ca_key_delete_pem(const char *path)
+xp_key_delete_private_pem_file(const char *path)
 {
 	(void)path;
 	return XP_CA_ERR_DISABLED;
 }
 
 void
-xp_ca_key_free(xp_ca_key_t key)
+xp_key_release(xp_key_t key)
 {
 	(void)key;
 }
 
+void
+xp_key_retain(xp_key_t key)
+{
+	(void)key;
+}
+
+const char *
+xp_key_errstr(xp_key_t key)
+{
+	(void)key;
+	return "crypto support disabled";
+}
+
+void
+xp_key_set_storage_metadata(
+	xp_key_t key, enum xp_key_store_kind storage, bool exportable)
+{
+	(void)key;
+	(void)storage;
+	(void)exportable;
+}
+
+void *xp_key_native_private(xp_key_t key) { (void)key; return NULL; }
+
+int xp_key_set_reference(xp_key_t key, const void *reference, size_t len)
+{
+	(void)key; (void)reference; (void)len;
+	return XP_CRYPTO_ERR_DISABLED;
+}
+
+int xp_key_reference(xp_key_t key, void *out, size_t *len)
+{
+	(void)key; (void)out;
+	if (len != NULL) *len = 0;
+	return XP_CRYPTO_ERR_DISABLED;
+}
+
+int xp_key_provider_store_query(const struct xp_key_store_config *store,
+	const struct xp_key_spec *spec, struct xp_key_store_capabilities *capabilities)
+{
+	(void)store; (void)spec;
+	if (capabilities != NULL) {
+		memset(capabilities, 0, sizeof(*capabilities));
+		capabilities->kind = store != NULL && store->store != NULL
+			&& strcmp(store->store, "pkcs11") == 0 ? XP_KEY_STORE_PKCS11
+			: store != NULL && store->store != NULL
+			&& strcmp(store->store, "tpm2") == 0 ? XP_KEY_STORE_TPM2
+			: XP_KEY_STORE_PLATFORM;
+		capabilities->availability_status = XP_CRYPTO_ERR_DISABLED;
+	}
+	return XP_CRYPTO_OK;
+}
+
+int xp_key_provider_generate_stored(xp_key_t *out, void *locator,
+	size_t *locator_len, const struct xp_key_store_config *store,
+	const struct xp_key_spec *spec)
+{
+	if (out != NULL) *out = NULL;
+	(void)locator; (void)locator_len; (void)store; (void)spec;
+	return XP_CRYPTO_ERR_DISABLED;
+}
+
+int xp_key_provider_import_stored(xp_key_t *out, void *locator,
+	size_t *locator_len, const struct xp_key_store_config *store, xp_key_t source)
+{
+	if (out != NULL) *out = NULL;
+	(void)locator; (void)locator_len; (void)store; (void)source;
+	return XP_CRYPTO_ERR_DISABLED;
+}
+
+int xp_key_provider_open_stored(xp_key_t *out,
+	const struct xp_key_store_config *store, const void *locator, size_t locator_len)
+{
+	if (out != NULL) *out = NULL;
+	(void)store; (void)locator; (void)locator_len;
+	return XP_CRYPTO_ERR_DISABLED;
+}
+
+int xp_key_provider_destroy_stored(const struct xp_key_store_config *store,
+	const void *locator, size_t locator_len,
+	const void *expected_fingerprint, size_t fingerprint_len)
+{
+	(void)store; (void)locator; (void)locator_len;
+	(void)expected_fingerprint; (void)fingerprint_len;
+	return XP_CRYPTO_ERR_DISABLED;
+}
+
 int
-xp_ca_key_get_info(xp_ca_key_t key, struct xp_ca_key_info *info)
+xp_key_get_info(xp_key_t key, struct xp_key_info *info)
 {
 	(void)key;
 	(void)info;
@@ -51,7 +141,7 @@ xp_ca_key_get_info(xp_ca_key_t key, struct xp_ca_key_info *info)
 }
 
 int
-xp_ca_key_import_pem(xp_ca_key_t *out, const void *pem, size_t len,
+xp_key_import_private_pem(xp_key_t *out, const void *pem, size_t len,
 	xp_ca_password_callback_t callback, void *context)
 {
 	if (out != NULL)
@@ -64,7 +154,7 @@ xp_ca_key_import_pem(xp_ca_key_t *out, const void *pem, size_t len,
 }
 
 int
-xp_ca_key_export_pem(xp_ca_key_t key, xp_ca_password_callback_t callback,
+xp_key_export_private_pem(xp_key_t key, xp_ca_password_callback_t callback,
 	void *context, void *out, size_t *len)
 {
 	(void)key;
@@ -76,7 +166,7 @@ xp_ca_key_export_pem(xp_ca_key_t key, xp_ca_password_callback_t callback,
 }
 
 int
-xp_ca_key_import_spki_der(xp_ca_key_t *out, const void *der, size_t len)
+xp_key_import_spki_der(xp_key_t *out, const void *der, size_t len)
 {
 	if (out != NULL)
 		*out = NULL;
@@ -86,7 +176,7 @@ xp_ca_key_import_spki_der(xp_ca_key_t *out, const void *der, size_t len)
 }
 
 int
-xp_ca_key_export_spki_der(xp_ca_key_t key, void *out, size_t *len)
+xp_key_export_spki_der(xp_key_t key, void *out, size_t *len)
 {
 	(void)key;
 	(void)out;
@@ -95,7 +185,7 @@ xp_ca_key_export_spki_der(xp_ca_key_t key, void *out, size_t *len)
 }
 
 int
-xp_ca_key_get_rsa_public(xp_ca_key_t key, void *modulus, size_t *modulus_len,
+xp_key_get_rsa_public(xp_key_t key, void *modulus, size_t *modulus_len,
 	void *exponent, size_t *exponent_len)
 {
 	(void)key;
@@ -107,7 +197,7 @@ xp_ca_key_get_rsa_public(xp_ca_key_t key, void *modulus, size_t *modulus_len,
 }
 
 int
-xp_ca_key_get_ec_public(xp_ca_key_t key, void *x, size_t *x_len,
+xp_key_get_ec_public(xp_key_t key, void *x, size_t *x_len,
 	void *y, size_t *y_len)
 {
 	(void)key;
@@ -119,7 +209,16 @@ xp_ca_key_get_ec_public(xp_ca_key_t key, void *x, size_t *x_len,
 }
 
 int
-xp_ca_csr_create(xp_ca_csr_t *out, xp_ca_key_t key)
+xp_key_fingerprint_sha256(xp_key_t key, void *out, size_t *len)
+{
+	(void)key;
+	(void)out;
+	(void)len;
+	return XP_CA_ERR_DISABLED;
+}
+
+int
+xp_ca_csr_create(xp_ca_csr_t *out, xp_key_t key)
 {
 	if (out != NULL)
 		*out = NULL;
@@ -128,7 +227,7 @@ xp_ca_csr_create(xp_ca_csr_t *out, xp_ca_key_t key)
 }
 
 int
-xp_ca_csr_create_with_identity(xp_ca_csr_t *out, xp_ca_key_t key,
+xp_ca_csr_create_with_identity(xp_ca_csr_t *out, xp_key_t key,
 	const struct xp_ca_identity *identity)
 {
 	if (out != NULL)
@@ -173,7 +272,7 @@ xp_ca_csr_free(xp_ca_csr_t csr)
 int
 xp_ca_cert_create_self_signed(
 	xp_ca_cert_t *out,
-	xp_ca_key_t key,
+	xp_key_t key,
 	const struct xp_ca_issue_request *request)
 {
 	if (out != NULL)
@@ -186,7 +285,7 @@ xp_ca_cert_create_self_signed(
 int
 xp_ca_cert_issue(
 	xp_ca_cert_t *out,
-	xp_ca_key_t issuer_key,
+	xp_key_t issuer_key,
 	xp_ca_cert_t issuer,
 	xp_ca_csr_t csr,
 	const struct xp_ca_issue_request *request)
@@ -267,7 +366,7 @@ xp_ca_cert_get_validity(xp_ca_cert_t cert, time_t *not_before,
 }
 
 int
-xp_ca_cert_get_public_key(xp_ca_key_t *out, xp_ca_cert_t cert)
+xp_ca_cert_get_public_key(xp_key_t *out, xp_ca_cert_t cert)
 {
 	if (out != NULL)
 		*out = NULL;
@@ -276,7 +375,7 @@ xp_ca_cert_get_public_key(xp_ca_key_t *out, xp_ca_cert_t cert)
 }
 
 int
-xp_sign(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+xp_sign(xp_key_t key, enum xp_sign_algorithm algorithm,
 	enum xp_signature_encoding format, const void *data, size_t data_len,
 	void *signature, size_t *signature_len)
 {
@@ -291,7 +390,7 @@ xp_sign(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
 }
 
 int
-xp_verify(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+xp_verify(xp_key_t key, enum xp_sign_algorithm algorithm,
 	enum xp_signature_encoding format, const void *data, size_t data_len,
 	const void *signature, size_t signature_len)
 {
@@ -308,7 +407,7 @@ xp_verify(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
 int
 xp_ca_crl_create(
 	xp_ca_crl_t *out,
-	xp_ca_key_t issuer_key,
+	xp_key_t issuer_key,
 	xp_ca_cert_t issuer,
 	xp_ca_crl_t previous,
 	const struct xp_ca_crl_request *request)
@@ -379,4 +478,11 @@ const char *
 xp_ca_last_error(void)
 {
 	return "certificate authority support disabled";
+}
+
+int
+xp_ca_cert_tls_server_usable(xp_ca_cert_t certificate)
+{
+	(void)certificate;
+	return XP_CRYPTO_ERR_DISABLED;
 }

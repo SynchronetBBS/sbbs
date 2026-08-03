@@ -2,7 +2,7 @@
 #define _XP_SIGN_H
 
 #include <stddef.h>
-#include "xp_ca.h"
+#include "xp_key.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -31,11 +31,11 @@ enum xp_signature_encoding {
  */
 
 DLLEXPORT int xp_sign(
-	xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+	xp_key_t key, enum xp_sign_algorithm algorithm,
 	enum xp_signature_encoding format, const void *data, size_t data_len,
 	void *signature, size_t *signature_len);
 DLLEXPORT int xp_verify(
-	xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+	xp_key_t key, enum xp_sign_algorithm algorithm,
 	enum xp_signature_encoding format, const void *data, size_t data_len,
 	const void *signature, size_t signature_len);
 

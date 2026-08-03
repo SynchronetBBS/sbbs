@@ -5,6 +5,7 @@
 #endif
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cctype>
 #include <cstdio>
@@ -18,6 +19,7 @@
 
 #include "xp_ca.h"
 #include "xp_ca_file.h"
+#include "xp_key_internal.h"
 #include "xp_ca_policy.h"
 #include "xp_sign.h"
 
@@ -29,6 +31,7 @@
 #include <botan/ed25519.h>
 #include <botan/ecdsa.h>
 #include <botan/ec_group.h>
+#include <botan/hash.h>
 #include <botan/pkcs10.h>
 #include <botan/pkcs8.h>
 #include <botan/pem.h>
@@ -40,10 +43,39 @@
 #include <botan/x509_key.h>
 #include <botan/x509_obj.h>
 #include <botan/x509path.h>
+#include <botan/build.h>
 
-struct xp_ca_key {
+/* Botan's build configuration can advertise PKCS#11 while its public p11.h
+ * still requires a separately discoverable <pkcs11.h>.  Keep the optional
+ * adapter out of direct-source consumers unless that complete public-header
+ * dependency is actually available on their include path. */
+#if defined(BOTAN_HAS_PKCS11) && defined(__has_include)
+#if __has_include(<pkcs11.h>)
+#define XPTLS_BOTAN_HAS_PKCS11 1
+#endif
+#endif
+
+#if defined(XPTLS_BOTAN_HAS_PKCS11)
+#include <botan/ec_group.h>
+#include <botan/p11_ecdsa.h>
+#include <botan/p11_object.h>
+#include <botan/p11_rsa.h>
+#include <botan/p11_types.h>
+#endif
+
+struct xp_key {
+	std::atomic_size_t references{1};
 	std::unique_ptr<Botan::Private_Key> native;
 	std::unique_ptr<Botan::Public_Key> public_native;
+#if defined(XPTLS_BOTAN_HAS_PKCS11)
+	std::shared_ptr<Botan::PKCS11::Module> pkcs11_module;
+	std::shared_ptr<Botan::PKCS11::Slot> pkcs11_slot;
+	std::shared_ptr<Botan::PKCS11::Session> pkcs11_session;
+#endif
+	bool exportable{true};
+	enum xp_key_store_kind storage{XP_KEY_STORE_MEMORY};
+	std::vector<uint8_t> reference;
+	std::string err;
 };
 
 struct xp_ca_csr {
@@ -108,7 +140,7 @@ private:
 static thread_local std::string error_text;
 
 static Botan::Public_Key *
-public_key(xp_ca_key_t key)
+public_key(xp_key_t key)
 {
 	if (key == nullptr)
 		return nullptr;
@@ -240,39 +272,56 @@ xp_ca_last_error(void)
 }
 
 extern "C" int
-xp_ca_key_generate(xp_ca_key_t *out, enum xp_ca_key_algorithm algorithm)
+xp_ca_cert_tls_server_usable(xp_ca_cert_t certificate)
+{
+	if (certificate == nullptr || certificate->native == nullptr)
+		return XP_CRYPTO_ERR_INVALID;
+	try {
+		return !certificate->native->is_CA_cert() &&
+		    certificate->native->allowed_usage(Botan::Usage_Type::TLS_SERVER_AUTH)
+		    ? XP_CRYPTO_OK : XP_CRYPTO_ERR_POLICY;
+	}
+	catch (...) {
+		return XP_CRYPTO_ERR_POLICY;
+	}
+}
+
+extern "C" int
+xp_key_generate(xp_key_t *out, const struct xp_key_spec *spec)
 {
 	if (out == nullptr)
 		return XP_CA_ERR;
 	*out = nullptr;
+	if (spec == nullptr)
+		return XP_CRYPTO_ERR_INVALID;
 	try {
 		Botan::AutoSeeded_RNG rng;
-		auto                  key = std::make_unique<xp_ca_key>();
-		switch (algorithm) {
-			case XP_CA_KEY_ED25519:
+		auto                  key = std::make_unique<xp_key>();
+		switch (spec->algorithm) {
+			case XP_KEY_ED25519:
+				if (spec->bits != 0 || spec->curve != XP_KEY_CURVE_NONE)
+					return XP_CA_ERR_POLICY;
 				key->native = std::make_unique<Botan::Ed25519_PrivateKey>(rng);
 				break;
-			case XP_CA_KEY_RSA_2048:
-				key->native = std::make_unique<Botan::RSA_PrivateKey>(rng, 2048);
+			case XP_KEY_RSA:
+				if ((spec->bits != 2048 && spec->bits != 3072
+				     && spec->bits != 4096)
+				    || spec->curve != XP_KEY_CURVE_NONE)
+					return XP_CA_ERR_POLICY;
+				key->native = std::make_unique<Botan::RSA_PrivateKey>(rng, spec->bits);
 				break;
-			case XP_CA_KEY_RSA_3072:
-				key->native = std::make_unique<Botan::RSA_PrivateKey>(rng, 3072);
-				break;
-			case XP_CA_KEY_RSA_4096:
-				key->native = std::make_unique<Botan::RSA_PrivateKey>(rng, 4096);
-				break;
-			case XP_CA_KEY_ECDSA_P256:
+			case XP_KEY_ECDSA: {
+				if (spec->bits != 0)
+					return XP_CA_ERR_POLICY;
+				const char *curve = spec->curve == XP_KEY_CURVE_P256 ? "secp256r1"
+					: spec->curve == XP_KEY_CURVE_P384 ? "secp384r1"
+					: spec->curve == XP_KEY_CURVE_P521 ? "secp521r1" : nullptr;
+				if (curve == nullptr)
+					return XP_CA_ERR_POLICY;
 				key->native = std::make_unique<Botan::ECDSA_PrivateKey>(
-					rng, Botan::EC_Group::from_name("secp256r1"));
+					rng, Botan::EC_Group::from_name(curve));
 				break;
-			case XP_CA_KEY_ECDSA_P384:
-				key->native = std::make_unique<Botan::ECDSA_PrivateKey>(
-					rng, Botan::EC_Group::from_name("secp384r1"));
-				break;
-			case XP_CA_KEY_ECDSA_P521:
-				key->native = std::make_unique<Botan::ECDSA_PrivateKey>(
-					rng, Botan::EC_Group::from_name("secp521r1"));
-				break;
+			}
 			default: return XP_CA_ERR_POLICY;
 		}
 		*out = key.release();
@@ -283,13 +332,83 @@ xp_ca_key_generate(xp_ca_key_t *out, enum xp_ca_key_algorithm algorithm)
 }
 
 extern "C" void
-xp_ca_key_free(xp_ca_key_t key)
+xp_key_release(xp_key_t key)
 {
-	delete key;
+	if (key != nullptr && key->references.fetch_sub(1, std::memory_order_acq_rel) == 1)
+		delete key;
+}
+
+extern "C" void
+xp_key_retain(xp_key_t key)
+{
+	if (key != nullptr)
+		key->references.fetch_add(1, std::memory_order_relaxed);
+}
+
+extern "C" const char *
+xp_key_errstr(xp_key_t key)
+{
+	return key == nullptr ? "(null xp_key_t)"
+		: key->err.empty() ? "no error" : key->err.c_str();
+}
+
+extern "C" void
+xp_key_set_storage_metadata(
+	xp_key_t key, enum xp_key_store_kind storage, bool exportable)
+{
+	if (key != nullptr) {
+		key->storage = storage;
+		key->exportable = exportable;
+	}
 }
 
 extern "C" int
-xp_ca_key_save_pem(xp_ca_key_t key, const char *path, const char *password)
+xp_key_set_reference(xp_key_t key, const void *reference, size_t len)
+{
+	if (key == nullptr || (reference == nullptr && len != 0))
+		return XP_CRYPTO_ERR_INVALID;
+	try {
+		key->reference.clear();
+		if (len != 0) {
+			const auto *bytes = static_cast<const uint8_t *>(reference);
+			key->reference.assign(bytes, bytes + len);
+		}
+		return XP_CRYPTO_OK;
+	}
+	catch (...) {
+		return XP_CRYPTO_ERR;
+	}
+}
+
+extern "C" int
+xp_key_reference(xp_key_t key, void *out, size_t *len)
+{
+	if (key == nullptr || len == nullptr)
+		return XP_CRYPTO_ERR_INVALID;
+	if (key->reference.empty()) {
+		*len = 0;
+		return XP_CRYPTO_ERR_NOT_FOUND;
+	}
+	if (out == nullptr) {
+		*len = key->reference.size();
+		return XP_CRYPTO_OK;
+	}
+	if (*len < key->reference.size()) {
+		*len = key->reference.size();
+		return XP_CRYPTO_ERR_BUFFER_TOO_SMALL;
+	}
+	std::memcpy(out, key->reference.data(), key->reference.size());
+	*len = key->reference.size();
+	return XP_CRYPTO_OK;
+}
+
+extern "C" void *xp_key_native_private(xp_key_t key)
+{
+	return key == nullptr ? nullptr : key->native.get();
+}
+
+extern "C" int
+xp_key_save_private_pem_file(xp_key_t key, const char *path, const char *password)
 {
 	if (key == nullptr || path == nullptr || password == nullptr
 	    || password[0] == '\0')
@@ -318,7 +437,7 @@ xp_ca_key_save_pem(xp_ca_key_t key, const char *path, const char *password)
 }
 
 extern "C" int
-xp_ca_key_delete_pem(const char *path)
+xp_key_delete_private_pem_file(const char *path)
 {
 	if (path == nullptr || std::remove(path) != 0)
 		return fail(XP_CA_ERR, "private key deletion failed");
@@ -326,7 +445,7 @@ xp_ca_key_delete_pem(const char *path)
 }
 
 extern "C" int
-xp_ca_key_load_pem(xp_ca_key_t *out, const char *path, const char *password)
+xp_key_load_private_pem_file(xp_key_t *out, const char *path, const char *password)
 {
 	if (out == nullptr)
 		return XP_CA_ERR;
@@ -335,7 +454,7 @@ xp_ca_key_load_pem(xp_ca_key_t *out, const char *path, const char *password)
 		return XP_CA_ERR;
 	try {
 		Botan::DataSource_Stream source(path);
-		auto                     key = std::make_unique<xp_ca_key>();
+		auto                     key = std::make_unique<xp_key>();
 		key->native = Botan::PKCS8::load_key(source, password);
 		if (!supported_key(key->native.get()))
 			return fail(XP_CA_ERR_FORMAT, "unsupported private key algorithm");
@@ -377,35 +496,37 @@ struct scrubbed_string {
 };
 
 extern "C" int
-xp_ca_key_get_info(xp_ca_key_t key, struct xp_ca_key_info *info)
+xp_key_get_info(xp_key_t key, struct xp_key_info *info)
 {
 	auto *native = public_key(key);
 	if (!supported_key(native) || info == nullptr)
 		return XP_CA_ERR;
 	*info = {};
 	info->has_private = key->native != nullptr;
+	info->exportable = key->exportable;
+	info->storage = key->storage;
 	if (native->algo_name() == "Ed25519") {
-		info->family = XP_CA_KEY_FAMILY_ED25519;
-		info->bits = 256;
+		info->spec.algorithm = XP_KEY_ED25519;
+		info->spec.bits = 256;
 	} else if (native->algo_name() == "RSA") {
-		info->family = XP_CA_KEY_FAMILY_RSA;
-		info->bits = static_cast<unsigned>(
+		info->spec.algorithm = XP_KEY_RSA;
+		info->spec.bits = static_cast<unsigned>(
 			dynamic_cast<const Botan::RSA_PublicKey&>(*native).get_n().bits());
 	} else {
 		auto& ec = dynamic_cast<const Botan::ECDSA_PublicKey&>(*native);
-		info->family = XP_CA_KEY_FAMILY_ECDSA;
-		info->bits = static_cast<unsigned>(ec.domain().get_p_bits());
-		info->curve = info->bits == 256 ? XP_CA_EC_P256
-			: info->bits == 384 ? XP_CA_EC_P384
-			: info->bits == 521 ? XP_CA_EC_P521 : XP_CA_EC_NONE;
-		if (info->curve == XP_CA_EC_NONE)
+		info->spec.algorithm = XP_KEY_ECDSA;
+		info->spec.bits = static_cast<unsigned>(ec.domain().get_p_bits());
+		info->spec.curve = info->spec.bits == 256 ? XP_KEY_CURVE_P256
+			: info->spec.bits == 384 ? XP_KEY_CURVE_P384
+			: info->spec.bits == 521 ? XP_KEY_CURVE_P521 : XP_KEY_CURVE_NONE;
+		if (info->spec.curve == XP_KEY_CURVE_NONE)
 			return XP_CA_ERR_FORMAT;
 	}
 	return XP_CA_OK;
 }
 
 extern "C" int
-xp_ca_key_import_pem(xp_ca_key_t *out, const void *pem, size_t len,
+xp_key_import_private_pem(xp_key_t *out, const void *pem, size_t len,
 	                 xp_ca_password_callback_t password, void *context)
 {
 	if (out == nullptr)
@@ -436,7 +557,7 @@ xp_ca_key_import_pem(xp_ca_key_t *out, const void *pem, size_t len,
 		}
 		if (!supported_key(native.get()))
 			return XP_CA_ERR_FORMAT;
-		auto result = std::make_unique<xp_ca_key>();
+		auto result = std::make_unique<xp_key>();
 		result->native = std::move(native);
 		*out = result.release();
 		return XP_CA_OK;
@@ -446,13 +567,15 @@ xp_ca_key_import_pem(xp_ca_key_t *out, const void *pem, size_t len,
 }
 
 extern "C" int
-xp_ca_key_export_pem(xp_ca_key_t key, xp_ca_password_callback_t password,
+xp_key_export_private_pem(xp_key_t key, xp_ca_password_callback_t password,
 	                 void *context, void *out, size_t *len)
 {
 	if (key == nullptr || len == nullptr)
 		return XP_CA_ERR;
 	if (key->native == nullptr)
 		return XP_CA_ERR_POLICY;
+	if (!key->exportable)
+		return XP_CRYPTO_ERR_NOT_EXPORTABLE;
 	try {
 		scrubbed_string pass;
 		if (password_value(password, context, pass.value) != XP_CA_OK)
@@ -481,7 +604,7 @@ xp_ca_key_export_pem(xp_ca_key_t key, xp_ca_password_callback_t password,
 }
 
 extern "C" int
-xp_ca_key_import_spki_der(xp_ca_key_t *out, const void *der, size_t len)
+xp_key_import_spki_der(xp_key_t *out, const void *der, size_t len)
 {
 	if (out == nullptr)
 		return XP_CA_ERR;
@@ -493,7 +616,7 @@ xp_ca_key_import_spki_der(xp_ca_key_t *out, const void *der, size_t len)
 			std::span<const uint8_t>(static_cast<const uint8_t *>(der), len));
 		if (!supported_key(native.get()))
 			return XP_CA_ERR_FORMAT;
-		auto result = std::make_unique<xp_ca_key>();
+		auto result = std::make_unique<xp_key>();
 		result->public_native = std::move(native);
 		*out = result.release();
 		return XP_CA_OK;
@@ -503,7 +626,7 @@ xp_ca_key_import_spki_der(xp_ca_key_t *out, const void *der, size_t len)
 }
 
 extern "C" int
-xp_ca_key_export_spki_der(xp_ca_key_t key, void *out, size_t *len)
+xp_key_export_spki_der(xp_key_t key, void *out, size_t *len)
 {
 	if (!supported_key(public_key(key)) || len == nullptr)
 		return XP_CA_ERR;
@@ -517,6 +640,31 @@ xp_ca_key_export_spki_der(xp_ca_key_t key, void *out, size_t *len)
 	} catch (const std::exception& e) { return fail(XP_CA_ERR, e.what()); }
 }
 
+extern "C" int
+xp_key_fingerprint_sha256(xp_key_t key, void *out, size_t *len)
+{
+	if (!supported_key(public_key(key)) || len == nullptr)
+		return XP_CRYPTO_ERR_INVALID;
+	if (out == nullptr) {
+		*len = 32;
+		return XP_CRYPTO_OK;
+	}
+	if (*len < 32) {
+		*len = 32;
+		return XP_CRYPTO_ERR_BUFFER_TOO_SMALL;
+	}
+	try {
+		auto encoded = Botan::X509::BER_encode(*public_key(key));
+		auto hash = Botan::HashFunction::create_or_throw("SHA-256");
+		hash->update(encoded);
+		hash->final(static_cast<uint8_t *>(out));
+		*len = 32;
+		return XP_CRYPTO_OK;
+	} catch (const std::exception& e) {
+		return fail(XP_CRYPTO_ERR, e.what());
+	}
+}
+
 static int copy_bytes(const std::vector<uint8_t>& value, void *out, size_t *len)
 {
 	if (len == nullptr) return XP_CA_ERR;
@@ -526,7 +674,7 @@ static int copy_bytes(const std::vector<uint8_t>& value, void *out, size_t *len)
 }
 
 extern "C" int
-xp_ca_key_get_rsa_public(xp_ca_key_t key, void *modulus, size_t *modulus_len,
+xp_key_get_rsa_public(xp_key_t key, void *modulus, size_t *modulus_len,
 	                     void *exponent, size_t *exponent_len)
 {
 	auto *rsa = dynamic_cast<Botan::RSA_PublicKey *>(public_key(key));
@@ -538,7 +686,7 @@ xp_ca_key_get_rsa_public(xp_ca_key_t key, void *modulus, size_t *modulus_len,
 }
 
 extern "C" int
-xp_ca_key_get_ec_public(xp_ca_key_t key, void *x, size_t *x_len,
+xp_key_get_ec_public(xp_key_t key, void *x, size_t *x_len,
 	                    void *y, size_t *y_len)
 {
 	auto *ec = dynamic_cast<Botan::ECDSA_PublicKey *>(public_key(key));
@@ -576,7 +724,7 @@ csr_identity_valid(const struct xp_ca_identity *identity)
 }
 
 static int
-csr_create(xp_ca_csr_t *out, xp_ca_key_t key,
+csr_create(xp_ca_csr_t *out, xp_key_t key,
 	       const struct xp_ca_identity *identity)
 {
 	if (out == nullptr)
@@ -611,13 +759,13 @@ csr_create(xp_ca_csr_t *out, xp_ca_key_t key,
 }
 
 extern "C" int
-xp_ca_csr_create(xp_ca_csr_t *out, xp_ca_key_t key)
+xp_ca_csr_create(xp_ca_csr_t *out, xp_key_t key)
 {
 	return csr_create(out, key, nullptr);
 }
 
 extern "C" int
-xp_ca_csr_create_with_identity(xp_ca_csr_t *out, xp_ca_key_t key,
+xp_ca_csr_create_with_identity(xp_ca_csr_t *out, xp_key_t key,
 	                           const struct xp_ca_identity *identity)
 {
 	return csr_create(out, key, identity);
@@ -718,7 +866,7 @@ issuer_can_sign(
 }
 
 extern "C" int
-xp_ca_cert_create_self_signed(xp_ca_cert_t *out, xp_ca_key_t key,
+xp_ca_cert_create_self_signed(xp_ca_cert_t *out, xp_key_t key,
                               const struct xp_ca_issue_request *request)
 {
 	if (out == nullptr)
@@ -758,7 +906,7 @@ xp_ca_cert_create_self_signed(xp_ca_cert_t *out, xp_ca_key_t key,
 }
 
 extern "C" int
-xp_ca_cert_issue(xp_ca_cert_t *out, xp_ca_key_t issuer_key, xp_ca_cert_t issuer,
+xp_ca_cert_issue(xp_ca_cert_t *out, xp_key_t issuer_key, xp_ca_cert_t issuer,
                  xp_ca_csr_t csr, const struct xp_ca_issue_request *request)
 {
 	if (out == nullptr)
@@ -969,13 +1117,13 @@ xp_ca_cert_get_validity(xp_ca_cert_t cert, time_t *not_before, time_t *not_after
 }
 
 extern "C" int
-xp_ca_cert_get_public_key(xp_ca_key_t *out, xp_ca_cert_t cert)
+xp_ca_cert_get_public_key(xp_key_t *out, xp_ca_cert_t cert)
 {
 	if (out == nullptr) return XP_CA_ERR;
 	*out = nullptr;
 	if (cert == nullptr) return XP_CA_ERR;
 	try {
-		auto result = std::make_unique<xp_ca_key>();
+		auto result = std::make_unique<xp_key>();
 		result->public_native = cert->native->subject_public_key();
 		if (!supported_key(result->public_native.get())) return XP_CA_ERR_FORMAT;
 		*out = result.release(); return XP_CA_OK;
@@ -1066,7 +1214,7 @@ make_scoped_crl(
 }
 
 extern "C" int
-xp_ca_crl_create(xp_ca_crl_t *out, xp_ca_key_t issuer_key, xp_ca_cert_t issuer,
+xp_ca_crl_create(xp_ca_crl_t *out, xp_key_t issuer_key, xp_ca_cert_t issuer,
 	             xp_ca_crl_t previous,
 	             const struct xp_ca_crl_request *request)
 {
@@ -1438,29 +1586,29 @@ signature_scheme(enum xp_sign_algorithm algorithm)
 	}
 }
 
-static enum xp_ca_key_family
+static enum xp_key_algorithm
 signature_family(enum xp_sign_algorithm algorithm)
 {
 	if (algorithm >= XP_SIGN_RSA_PKCS1_SHA256
 	    && algorithm <= XP_SIGN_RSA_PKCS1_SHA512)
-		return XP_CA_KEY_FAMILY_RSA;
+		return XP_KEY_RSA;
 	if (algorithm >= XP_SIGN_ECDSA_SHA256
 	    && algorithm <= XP_SIGN_ECDSA_SHA512)
-		return XP_CA_KEY_FAMILY_ECDSA;
-	return XP_CA_KEY_FAMILY_ED25519;
+		return XP_KEY_ECDSA;
+	return XP_KEY_ED25519;
 }
 
 static Botan::Signature_Format
 signature_format(enum xp_sign_algorithm algorithm, enum xp_signature_encoding format)
 {
-	return signature_family(algorithm) == XP_CA_KEY_FAMILY_ECDSA
+	return signature_family(algorithm) == XP_KEY_ECDSA
 	    && format == XP_SIGNATURE_ENCODING_STANDARD
 		? Botan::Signature_Format::DerSequence
 		: Botan::Signature_Format::Standard;
 }
 
 extern "C" int
-xp_sign(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+xp_sign(xp_key_t key, enum xp_sign_algorithm algorithm,
 	enum xp_signature_encoding format, const void *data, size_t data_len,
 	void *signature, size_t *signature_len)
 {
@@ -1469,11 +1617,11 @@ xp_sign(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
 	    || signature_scheme(algorithm) == nullptr
 	    || (format != XP_SIGNATURE_ENCODING_STANDARD && format != XP_SIGNATURE_ENCODING_P1363)
 	    || (format == XP_SIGNATURE_ENCODING_P1363
-	        && signature_family(algorithm) != XP_CA_KEY_FAMILY_ECDSA))
+	        && signature_family(algorithm) != XP_KEY_ECDSA))
 		return XP_CA_ERR_POLICY;
-	struct xp_ca_key_info info;
-	if (xp_ca_key_get_info(key, &info) != XP_CA_OK
-	    || info.family != signature_family(algorithm))
+	struct xp_key_info info;
+	if (xp_key_get_info(key, &info) != XP_CA_OK
+	    || info.spec.algorithm != signature_family(algorithm))
 		return XP_CA_ERR_POLICY;
 	try {
 		Botan::AutoSeeded_RNG rng;
@@ -1498,7 +1646,7 @@ xp_sign(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
 }
 
 extern "C" int
-xp_verify(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
+xp_verify(xp_key_t key, enum xp_sign_algorithm algorithm,
 	enum xp_signature_encoding format, const void *data, size_t data_len,
 	const void *signature, size_t signature_len)
 {
@@ -1508,14 +1656,14 @@ xp_verify(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
 	    || signature_scheme(algorithm) == nullptr
 	    || (format != XP_SIGNATURE_ENCODING_STANDARD && format != XP_SIGNATURE_ENCODING_P1363)
 	    || (format == XP_SIGNATURE_ENCODING_P1363
-	        && signature_family(algorithm) != XP_CA_KEY_FAMILY_ECDSA))
+	        && signature_family(algorithm) != XP_KEY_ECDSA))
 		return XP_CA_ERR_POLICY;
-	struct xp_ca_key_info info;
-	if (xp_ca_key_get_info(key, &info) != XP_CA_OK
-	    || info.family != signature_family(algorithm))
+	struct xp_key_info info;
+	if (xp_key_get_info(key, &info) != XP_CA_OK
+	    || info.spec.algorithm != signature_family(algorithm))
 		return XP_CA_ERR_POLICY;
 	if (format == XP_SIGNATURE_ENCODING_P1363
-	    && signature_len != 2u * ((info.bits + 7u) / 8u))
+	    && signature_len != 2u * ((info.spec.bits + 7u) / 8u))
 		return XP_CA_ERR_FORMAT;
 	try {
 		Botan::PK_Verifier verifier(*native, signature_scheme(algorithm),
@@ -1526,4 +1674,466 @@ xp_verify(xp_ca_key_t key, enum xp_sign_algorithm algorithm,
 	} catch (const std::exception& e) {
 		return fail(XP_CA_ERR_VERIFY, e.what());
 	}
+}
+
+#if defined(XPTLS_BOTAN_HAS_PKCS11)
+static int
+p11_status(Botan::PKCS11::ReturnValue value)
+{
+	using ReturnValue = Botan::PKCS11::ReturnValue;
+	switch (value) {
+		case ReturnValue::PinIncorrect:
+		case ReturnValue::PinInvalid:
+		case ReturnValue::PinExpired:
+		case ReturnValue::PinLocked:
+		case ReturnValue::UserNotLoggedIn:
+		case ReturnValue::UserPinNotInitialized:
+			return XP_CRYPTO_ERR_AUTHORIZATION;
+		case ReturnValue::TokenNotPresent:
+		case ReturnValue::DeviceRemoved:
+		case ReturnValue::ObjectHandleInvalid:
+		case ReturnValue::KeyHandleInvalid:
+			return XP_CRYPTO_ERR_NOT_FOUND;
+		case ReturnValue::SessionReadOnly:
+		case ReturnValue::TokenWriteProtected:
+		case ReturnValue::AttributeReadOnly:
+		case ReturnValue::ActionProhibited:
+			return XP_CRYPTO_ERR_READ_ONLY;
+		case ReturnValue::MechanismInvalid:
+		case ReturnValue::MechanismParamInvalid:
+		case ReturnValue::KeyTypeInconsistent:
+		case ReturnValue::KeySizeRange:
+		case ReturnValue::TemplateInconsistent:
+		case ReturnValue::FunctionNotSupported:
+			return XP_CRYPTO_ERR_UNSUPPORTED;
+		case ReturnValue::SessionCount:
+		case ReturnValue::DeviceMemory:
+			return XP_CRYPTO_ERR_BUSY;
+		default:
+			return XP_CRYPTO_ERR;
+	}
+}
+#endif
+
+extern "C" int
+xp_key_provider_store_query(const struct xp_key_store_config *store,
+	const struct xp_key_spec *spec, struct xp_key_store_capabilities *capabilities)
+{
+	if (store == nullptr || capabilities == nullptr)
+		return XP_CRYPTO_ERR_INVALID;
+	std::memset(capabilities, 0, sizeof(*capabilities));
+	capabilities->kind = store->store != nullptr && std::strcmp(store->store, "pkcs11") == 0
+		? XP_KEY_STORE_PKCS11
+		: store->store != nullptr && std::strcmp(store->store, "tpm2") == 0
+		? XP_KEY_STORE_TPM2 : XP_KEY_STORE_PLATFORM;
+	capabilities->availability_status = XP_CRYPTO_ERR_UNAVAILABLE;
+	if (capabilities->kind != XP_KEY_STORE_PKCS11)
+		return XP_CRYPTO_OK;
+#if defined(XPTLS_BOTAN_HAS_PKCS11)
+	try {
+		if (store->store_uri == nullptr
+		    || std::strstr(store->store_uri, "pin-value=") != nullptr)
+			return XP_CRYPTO_OK;
+		auto uri_value = [](const char *uri, const char *name) -> std::string {
+			const size_t name_len = std::strlen(name);
+			for (const char *p = uri; (p = std::strstr(p, name)) != nullptr; ++p) {
+				if ((p == uri || p[-1] == ':' || p[-1] == ';' || p[-1] == '?'
+				    || p[-1] == '&') && p[name_len] == '=') {
+					const char *begin = p + name_len + 1;
+					const char *end = begin;
+					while (*end != 0 && *end != ';' && *end != '&') ++end;
+					return std::string(begin, end);
+				}
+			}
+			return {};
+		};
+		std::string module_path = uri_value(store->store_uri, "module-path");
+		if (module_path.empty())
+			return XP_CRYPTO_OK;
+		Botan::PKCS11::Module module(module_path);
+		auto slots = Botan::PKCS11::Slot::get_available_slots(module, true);
+		if (slots.empty())
+			return XP_CRYPTO_OK;
+		std::string slot_text = uri_value(store->store_uri, "slot-id");
+		Botan::PKCS11::SlotId selected = slots.front();
+		if (!slot_text.empty()) {
+			selected = static_cast<Botan::PKCS11::SlotId>(std::stoul(slot_text));
+			if (std::find(slots.begin(), slots.end(), selected) == slots.end())
+				return XP_CRYPTO_OK;
+		}
+		Botan::PKCS11::Slot slot(module, selected);
+		auto mechanisms = slot.get_mechanism_list();
+		Botan::PKCS11::MechanismType generate;
+		Botan::PKCS11::MechanismType sign;
+		if (spec->algorithm == XP_KEY_RSA) {
+			generate = Botan::PKCS11::MechanismType::RsaPkcsKeyPairGen;
+			sign = Botan::PKCS11::MechanismType::RsaPkcs;
+		}
+		else if (spec->algorithm == XP_KEY_ECDSA) {
+			generate = Botan::PKCS11::MechanismType::EcKeyPairGen;
+			sign = Botan::PKCS11::MechanismType::Ecdsa;
+		}
+		else {
+			capabilities->availability_status = XP_CRYPTO_ERR_UNSUPPORTED;
+			return XP_CRYPTO_OK;
+		}
+		if (std::find(mechanisms.begin(), mechanisms.end(), generate)
+		        == mechanisms.end()
+		    || std::find(mechanisms.begin(), mechanisms.end(), sign)
+		        == mechanisms.end()) {
+			capabilities->availability_status = XP_CRYPTO_ERR_UNSUPPORTED;
+			return XP_CRYPTO_OK;
+		}
+		capabilities->available = true;
+		capabilities->availability_status = XP_CRYPTO_OK;
+		capabilities->operations = XP_KEY_STORE_CAN_GENERATE
+			| XP_KEY_STORE_CAN_OPEN | XP_KEY_STORE_CAN_SIGN
+			| XP_KEY_STORE_CAN_DESTROY;
+	}
+	catch (const Botan::PKCS11::PKCS11_ReturnError& e) {
+		capabilities->availability_status = p11_status(e.get_return_value());
+		fail(capabilities->availability_status, e.what());
+	}
+	catch (const std::exception& e) {
+		fail(XP_CRYPTO_ERR_UNAVAILABLE, e.what());
+	}
+#else
+	(void)spec;
+#endif
+	return XP_CRYPTO_OK;
+}
+
+#if defined(XPTLS_BOTAN_HAS_PKCS11)
+namespace {
+
+std::string p11_uri_value(const char *uri, const char *name)
+{
+	if (uri == nullptr)
+		return {};
+	const size_t name_len = std::strlen(name);
+	for (const char *p = uri; (p = std::strstr(p, name)) != nullptr; ++p) {
+		if ((p == uri || p[-1] == ':' || p[-1] == ';' || p[-1] == '?'
+		    || p[-1] == '&') && p[name_len] == '=') {
+			const char *begin = p + name_len + 1;
+			const char *end = begin;
+			while (*end != 0 && *end != ';' && *end != '&') ++end;
+			return std::string(begin, end);
+		}
+	}
+	return {};
+}
+
+std::string p11_trim(const Botan::PKCS11::Utf8Char *value, size_t len)
+{
+	while (len != 0 && (value[len - 1] == ' ' || value[len - 1] == 0)) --len;
+	return std::string(reinterpret_cast<const char *>(value), len);
+}
+
+struct P11Context {
+	std::shared_ptr<Botan::PKCS11::Module> module;
+	std::shared_ptr<Botan::PKCS11::Slot> slot;
+	std::shared_ptr<Botan::PKCS11::Session> session;
+	std::string serial;
+};
+
+int p11_context(P11Context& context, const struct xp_key_store_config *store,
+	bool write, const std::string& required_serial)
+{
+	if (store == nullptr || store->store_uri == nullptr
+	    || std::strstr(store->store_uri, "pin-value=") != nullptr)
+		return XP_CRYPTO_ERR_INVALID;
+	std::string module_path = p11_uri_value(store->store_uri, "module-path");
+	if (module_path.empty())
+		return XP_CRYPTO_ERR_INVALID;
+	context.module = std::make_shared<Botan::PKCS11::Module>(module_path);
+	auto slots = Botan::PKCS11::Slot::get_available_slots(*context.module, true);
+	if (slots.empty())
+		return XP_CRYPTO_ERR_UNAVAILABLE;
+	std::string configured_slot = p11_uri_value(store->store_uri, "slot-id");
+	std::string configured_token = p11_uri_value(store->store_uri, "token");
+	for (auto slot_id : slots) {
+		if (!configured_slot.empty()
+		    && slot_id != static_cast<Botan::PKCS11::SlotId>(std::stoul(configured_slot)))
+			continue;
+		auto slot = std::make_shared<Botan::PKCS11::Slot>(*context.module, slot_id);
+		auto info = slot->get_token_info();
+		std::string serial = p11_trim(info.serialNumber, sizeof(info.serialNumber));
+		std::string label = p11_trim(info.label, sizeof(info.label));
+		if ((!required_serial.empty() && serial != required_serial)
+		    || (!configured_token.empty() && label != configured_token))
+			continue;
+		context.slot = std::move(slot);
+		context.serial = std::move(serial);
+		break;
+	}
+	if (context.slot == nullptr)
+		return XP_CRYPTO_ERR_NOT_FOUND;
+	context.session = std::make_shared<Botan::PKCS11::Session>(*context.slot, !write);
+	if (store->authorize == nullptr)
+		return XP_CRYPTO_ERR_AUTHORIZATION;
+	size_t pin_len = 0;
+	if (store->authorize(store->authorize_context, nullptr, 0, &pin_len) != 0)
+		return XP_CRYPTO_ERR_AUTHORIZATION;
+	Botan::PKCS11::secure_string pin(pin_len, 0);
+	size_t actual = pin_len;
+	if (store->authorize(store->authorize_context, pin.data(), pin.size(), &actual) != 0
+	    || actual != pin_len)
+		return XP_CRYPTO_ERR_AUTHORIZATION;
+	try {
+		context.session->login(Botan::PKCS11::UserType::User, pin);
+	}
+	catch (const Botan::PKCS11::PKCS11_ReturnError& e) {
+		if (e.get_return_value() != Botan::PKCS11::ReturnValue::UserAlreadyLoggedIn)
+			throw;
+	}
+	return XP_CRYPTO_OK;
+}
+
+std::string hex_id(const std::vector<uint8_t>& id)
+{
+	static const char digits[] = "0123456789abcdef";
+	std::string value(id.size() * 2, '0');
+	for (size_t i = 0; i < id.size(); ++i) {
+		value[i * 2] = digits[id[i] >> 4];
+		value[i * 2 + 1] = digits[id[i] & 15];
+	}
+	return value;
+}
+
+bool parse_hex_id(const std::string& value, std::vector<uint8_t>& id)
+{
+	if (value.empty() || value.size() % 2 != 0)
+		return false;
+	id.resize(value.size() / 2);
+	for (size_t i = 0; i < id.size(); ++i) {
+		auto nibble = [](char c) -> int {
+			if (c >= '0' && c <= '9') return c - '0';
+			if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+			if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+			return -1;
+		};
+		int high = nibble(value[i * 2]);
+		int low = nibble(value[i * 2 + 1]);
+		if (high < 0 || low < 0)
+			return false;
+		id[i] = static_cast<uint8_t>((high << 4) | low);
+	}
+	return true;
+}
+
+bool parse_p11_locator(const void *locator, size_t locator_len,
+	std::string& serial, std::vector<uint8_t>& id,
+	enum xp_key_algorithm& algorithm)
+{
+	if (locator == nullptr || locator_len == 0
+	    || std::memchr(locator, 0, locator_len) != nullptr)
+		return false;
+	std::string value(static_cast<const char *>(locator), locator_len);
+	if (value.rfind("pkcs11:", 0) != 0)
+		return false;
+	serial = p11_uri_value(value.c_str(), "serial");
+	std::string encoded_id = p11_uri_value(value.c_str(), "id");
+	std::string alg = p11_uri_value(value.c_str(), "alg");
+	if (alg == "rsa")
+		algorithm = XP_KEY_RSA;
+	else if (alg == "ecdsa")
+		algorithm = XP_KEY_ECDSA;
+	else
+		return false;
+	return !serial.empty() && parse_hex_id(encoded_id, id);
+}
+
+std::string curve_name(enum xp_key_curve curve)
+{
+	switch (curve) {
+		case XP_KEY_CURVE_P256: return "secp256r1";
+		case XP_KEY_CURVE_P384: return "secp384r1";
+		case XP_KEY_CURVE_P521: return "secp521r1";
+		default: return {};
+	}
+}
+
+void set_private_properties(Botan::PKCS11::PrivateKeyProperties& properties,
+	const std::vector<uint8_t>& id, const std::string& label)
+{
+	properties.set_id(id);
+	properties.set_label(label);
+	properties.set_token(true);
+	properties.set_private(true);
+	properties.set_sensitive(true);
+	properties.set_extractable(false);
+	properties.set_sign(true);
+	properties.set_destroyable(true);
+}
+
+} // namespace
+#endif
+
+extern "C" int
+xp_key_provider_generate_stored(xp_key_t *out, void *locator,
+	size_t *locator_len, const struct xp_key_store_config *store,
+	const struct xp_key_spec *spec)
+{
+	if (out != nullptr) *out = nullptr;
+#if !defined(XPTLS_BOTAN_HAS_PKCS11)
+	(void)locator; (void)locator_len; (void)store; (void)spec;
+	return XP_CRYPTO_ERR_UNAVAILABLE;
+#else
+	if (out == nullptr || locator_len == nullptr || store == nullptr || spec == nullptr
+	    || store->store == nullptr || std::strcmp(store->store, "pkcs11") != 0)
+		return XP_CRYPTO_ERR_INVALID;
+	try {
+		P11Context context;
+		int status = p11_context(context, store, true, {});
+		if (status != XP_CRYPTO_OK)
+			return status;
+		Botan::AutoSeeded_RNG rng;
+		std::vector<uint8_t> id(20);
+		rng.randomize(id.data(), id.size());
+		std::string label = "xptls-" + hex_id(id);
+		std::string value = "pkcs11:serial=" + context.serial + ";id="
+			+ hex_id(id) + ";alg="
+			+ (spec->algorithm == XP_KEY_RSA ? "rsa" : "ecdsa");
+		if (locator == nullptr || *locator_len < value.size()) {
+			*locator_len = value.size();
+			return XP_CRYPTO_ERR_BUFFER_TOO_SMALL;
+		}
+		auto key = std::make_unique<xp_key>();
+		if (spec->algorithm == XP_KEY_RSA) {
+			Botan::PKCS11::RSA_PrivateKeyGenerationProperties properties;
+			set_private_properties(properties, id, label);
+			key->native = std::make_unique<Botan::PKCS11::PKCS11_RSA_PrivateKey>(
+				*context.session, spec->bits, properties);
+		}
+		else if (spec->algorithm == XP_KEY_ECDSA) {
+			Botan::PKCS11::EC_PrivateKeyGenerationProperties properties;
+			set_private_properties(properties, id, label);
+			auto parameters = Botan::EC_Group::from_name(curve_name(spec->curve)).DER_encode();
+			key->native = std::make_unique<Botan::PKCS11::PKCS11_ECDSA_PrivateKey>(
+				*context.session, parameters, properties);
+		}
+		else
+			return XP_CRYPTO_ERR_UNSUPPORTED;
+		key->pkcs11_module = std::move(context.module);
+		key->pkcs11_slot = std::move(context.slot);
+		key->pkcs11_session = std::move(context.session);
+		key->storage = XP_KEY_STORE_PKCS11;
+		key->exportable = false;
+		std::memcpy(locator, value.data(), value.size());
+		*locator_len = value.size();
+		*out = key.release();
+		return XP_CRYPTO_OK;
+	}
+	catch (const Botan::PKCS11::PKCS11_ReturnError& e) {
+		return fail(p11_status(e.get_return_value()), e.what());
+	}
+	catch (const std::exception& e) {
+		return fail(XP_CRYPTO_ERR, e.what());
+	}
+#endif
+}
+
+extern "C" int
+xp_key_provider_import_stored(xp_key_t *out, void *locator,
+	size_t *locator_len, const struct xp_key_store_config *store, xp_key_t source)
+{
+	if (out != nullptr) *out = nullptr;
+	(void)locator; (void)locator_len; (void)store; (void)source;
+	return XP_CRYPTO_ERR_UNSUPPORTED;
+}
+
+extern "C" int
+xp_key_provider_open_stored(xp_key_t *out,
+	const struct xp_key_store_config *store, const void *locator, size_t locator_len)
+{
+	if (out != nullptr) *out = nullptr;
+#if !defined(XPTLS_BOTAN_HAS_PKCS11)
+	(void)store; (void)locator; (void)locator_len;
+	return XP_CRYPTO_ERR_UNAVAILABLE;
+#else
+	if (out == nullptr || store == nullptr || store->store == nullptr
+	    || std::strcmp(store->store, "pkcs11") != 0)
+		return XP_CRYPTO_ERR_INVALID;
+	std::string serial;
+	std::vector<uint8_t> id;
+	enum xp_key_algorithm algorithm;
+	if (!parse_p11_locator(locator, locator_len, serial, id, algorithm))
+		return XP_CRYPTO_ERR_FORMAT;
+	try {
+		P11Context context;
+		int status = p11_context(context, store, false, serial);
+		if (status != XP_CRYPTO_OK)
+			return status;
+		auto key = std::make_unique<xp_key>();
+		if (algorithm == XP_KEY_RSA) {
+			auto matches = Botan::PKCS11::Object::search<
+				Botan::PKCS11::PKCS11_RSA_PrivateKey>(*context.session, id);
+			if (matches.size() != 1)
+				return matches.empty() ? XP_CRYPTO_ERR_NOT_FOUND
+					: XP_CRYPTO_ERR_CONFLICT;
+			key->native = std::make_unique<Botan::PKCS11::PKCS11_RSA_PrivateKey>(
+				std::move(matches.front()));
+		}
+		else {
+			auto matches = Botan::PKCS11::Object::search<
+				Botan::PKCS11::PKCS11_ECDSA_PrivateKey>(*context.session, id);
+			if (matches.size() != 1)
+				return matches.empty() ? XP_CRYPTO_ERR_NOT_FOUND
+					: XP_CRYPTO_ERR_CONFLICT;
+			key->native = std::make_unique<Botan::PKCS11::PKCS11_ECDSA_PrivateKey>(
+				std::move(matches.front()));
+		}
+		key->pkcs11_module = std::move(context.module);
+		key->pkcs11_slot = std::move(context.slot);
+		key->pkcs11_session = std::move(context.session);
+		key->storage = XP_KEY_STORE_PKCS11;
+		key->exportable = false;
+		*out = key.release();
+		return XP_CRYPTO_OK;
+	}
+	catch (const Botan::PKCS11::PKCS11_ReturnError& e) {
+		return fail(p11_status(e.get_return_value()), e.what());
+	}
+	catch (const std::exception& e) {
+		return fail(XP_CRYPTO_ERR, e.what());
+	}
+#endif
+}
+
+extern "C" int
+xp_key_provider_destroy_stored(const struct xp_key_store_config *store,
+	const void *locator, size_t locator_len,
+	const void *expected_fingerprint, size_t fingerprint_len)
+{
+	if (expected_fingerprint == nullptr || fingerprint_len != 32)
+		return XP_CRYPTO_ERR_INVALID;
+	xp_key_t key = nullptr;
+	int status = xp_key_provider_open_stored(
+		&key, store, locator, locator_len);
+	unsigned char actual[32];
+	size_t actual_len = sizeof(actual);
+	if (status == XP_CRYPTO_OK)
+		status = xp_key_fingerprint_sha256(key, actual, &actual_len);
+	if (status == XP_CRYPTO_OK
+	    && std::memcmp(actual, expected_fingerprint, sizeof(actual)) != 0)
+		status = XP_CRYPTO_ERR_CONFLICT;
+#if defined(XPTLS_BOTAN_HAS_PKCS11)
+	if (status == XP_CRYPTO_OK) {
+		auto *object = dynamic_cast<Botan::PKCS11::Object *>(key->native.get());
+		if (object == nullptr)
+			status = XP_CRYPTO_ERR;
+		else {
+			try { object->destroy(); }
+			catch (const Botan::PKCS11::PKCS11_ReturnError& e) {
+				status = fail(p11_status(e.get_return_value()), e.what());
+			}
+			catch (const std::exception& e) {
+				status = fail(XP_CRYPTO_ERR, e.what());
+			}
+		}
+	}
+#endif
+	xp_ca_scrub_memory(actual, sizeof(actual));
+	xp_key_release(key);
+	return status;
 }

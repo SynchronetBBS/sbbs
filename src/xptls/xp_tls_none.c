@@ -35,6 +35,15 @@ xp_tls_client_open_config(SOCKET sock, const struct xp_tls_client_config *config
 	return NULL;
 }
 
+xp_tls_t
+xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
+	size_t chain_pem_length, xp_key_t private_key,
+	const struct xp_tls_server_config *config)
+{
+	(void)socket; (void)chain_pem; (void)chain_pem_length;
+	(void)private_key; (void)config; return NULL;
+}
+
 enum xp_tls_version
 xp_tls_protocol_version(xp_tls_t ctx)
 {
@@ -74,6 +83,37 @@ xp_tls_flush(xp_tls_t ctx)
 {
 	(void)ctx;
 	return XP_TLS_ERR;
+}
+
+int xp_tls_pop_timeout(xp_tls_t ctx, void *buf, size_t n, size_t *copied, int timeout_ms)
+{
+	(void)timeout_ms; return xp_tls_pop(ctx, buf, n, copied);
+}
+int xp_tls_push_timeout(xp_tls_t ctx, const void *buf, size_t n, size_t *copied, int timeout_ms)
+{
+	(void)timeout_ms; return xp_tls_push(ctx, buf, n, copied);
+}
+int xp_tls_flush_timeout(xp_tls_t ctx, int timeout_ms)
+{
+	(void)timeout_ms; return xp_tls_flush(ctx);
+}
+const char *xp_tls_cipher_name(xp_tls_t ctx) { (void)ctx; return NULL; }
+enum xp_tls_auth_method xp_tls_authentication_method(xp_tls_t ctx)
+{
+	(void)ctx; return XP_TLS_AUTH_NONE;
+}
+int xp_tls_psk_identity(xp_tls_t ctx, void *out, size_t *len)
+{
+	(void)ctx; (void)out; if (len != NULL) *len = 0; return XP_CRYPTO_ERR_DISABLED;
+}
+size_t xp_tls_peer_certificate_count(xp_tls_t ctx) { (void)ctx; return 0; }
+int xp_tls_peer_certificate_der(xp_tls_t ctx, size_t index, void *out, size_t *len)
+{
+	(void)ctx; (void)index; (void)out; (void)len; return XP_CRYPTO_ERR_DISABLED;
+}
+int xp_tls_terminate(xp_tls_t ctx)
+{
+	(void)ctx; return XP_TLS_ERR;
 }
 
 bool

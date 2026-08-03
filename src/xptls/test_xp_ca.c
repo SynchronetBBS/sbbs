@@ -17,6 +17,9 @@
 int
 main(void)
 {
+	static const struct xp_key_spec ed25519 = {
+		XP_KEY_ED25519, 0, XP_KEY_CURVE_NONE
+	};
 	const char *root_names[] = { "ca.example.test" };
 	const char *intermediate_names[] = { "issuer.ca.example.test" };
 	const char *child_names[] = { "node.ca.example.test" };
@@ -52,11 +55,11 @@ main(void)
 	struct xp_ca_crl_info imported_crl_info;
 	struct xp_ca_crl_request root_crl_request;
 	struct xp_ca_crl_request intermediate_crl_request;
-	xp_ca_key_t root_key = NULL;
-	xp_ca_key_t alternate_root_key = NULL;
-	xp_ca_key_t intermediate_key = NULL;
-	xp_ca_key_t child_key = NULL;
-	xp_ca_key_t reloaded = NULL;
+	xp_key_t root_key = NULL;
+	xp_key_t alternate_root_key = NULL;
+	xp_key_t intermediate_key = NULL;
+	xp_key_t child_key = NULL;
+	xp_key_t reloaded = NULL;
 	xp_ca_cert_t root = NULL;
 	xp_ca_cert_t alternate_root = NULL;
 	xp_ca_cert_t intermediate = NULL;
@@ -84,20 +87,20 @@ main(void)
 	request.not_before = now - 60;
 	request.not_after = now + 3600;
 
-	CHECK(xp_ca_key_generate(&root_key, XP_CA_KEY_ED25519) == XP_CA_OK);
-	CHECK(xp_ca_key_save_pem(root_key, key_path, "") == XP_CA_ERR);
-	CHECK(xp_ca_key_save_pem(root_key, key_path, "test-password") == XP_CA_OK);
+	CHECK(xp_key_generate(&root_key, &ed25519) == XP_CA_OK);
+	CHECK(xp_key_save_private_pem_file(root_key, key_path, "") == XP_CA_ERR);
+	CHECK(xp_key_save_private_pem_file(root_key, key_path, "test-password") == XP_CA_OK);
 	reloaded = root_key;
-	CHECK(xp_ca_key_load_pem(&reloaded, key_path, "wrong-password") != XP_CA_OK);
+	CHECK(xp_key_load_private_pem_file(&reloaded, key_path, "wrong-password") != XP_CA_OK);
 	CHECK(reloaded == NULL);
-	CHECK(xp_ca_key_load_pem(&reloaded, key_path, "test-password") == XP_CA_OK);
-	xp_ca_key_free(reloaded);
+	CHECK(xp_key_load_private_pem_file(&reloaded, key_path, "test-password") == XP_CA_OK);
+	xp_key_release(reloaded);
 	reloaded = NULL;
-	CHECK(xp_ca_key_save_pem(root_key, key_path, "replacement-password") == XP_CA_OK);
-	CHECK(xp_ca_key_load_pem(&reloaded, key_path, "test-password") != XP_CA_OK);
+	CHECK(xp_key_save_private_pem_file(root_key, key_path, "replacement-password") == XP_CA_OK);
+	CHECK(xp_key_load_private_pem_file(&reloaded, key_path, "test-password") != XP_CA_OK);
 	CHECK(reloaded == NULL);
-	CHECK(xp_ca_key_load_pem(&reloaded, key_path, "replacement-password") == XP_CA_OK);
-	xp_ca_key_free(reloaded);
+	CHECK(xp_key_load_private_pem_file(&reloaded, key_path, "replacement-password") == XP_CA_OK);
+	xp_key_release(reloaded);
 	reloaded = NULL;
 #if defined(__unix__)
 	struct stat key_stat;
@@ -105,14 +108,14 @@ main(void)
 	CHECK(stat(key_path, &key_stat) == 0);
 	CHECK((key_stat.st_mode & 0777) == 0600);
 #endif
-	CHECK(xp_ca_key_delete_pem(key_path) == XP_CA_OK);
+	CHECK(xp_key_delete_private_pem_file(key_path) == XP_CA_OK);
 
 	CHECK(xp_ca_cert_create_self_signed(&root, root_key, &request) == XP_CA_OK);
-	CHECK(xp_ca_key_generate(&alternate_root_key, XP_CA_KEY_ED25519) == XP_CA_OK);
+	CHECK(xp_key_generate(&alternate_root_key, &ed25519) == XP_CA_OK);
 	CHECK(xp_ca_cert_create_self_signed(
 		&alternate_root, alternate_root_key, &request) == XP_CA_OK);
 
-	CHECK(xp_ca_key_generate(&intermediate_key, XP_CA_KEY_ED25519) == XP_CA_OK);
+	CHECK(xp_key_generate(&intermediate_key, &ed25519) == XP_CA_OK);
 	CHECK(xp_ca_csr_create(&intermediate_csr, intermediate_key) == XP_CA_OK);
 	request.subject.common_name = intermediate_names[0];
 	request.subject.dns_names = intermediate_names;
@@ -120,7 +123,7 @@ main(void)
 	CHECK(xp_ca_cert_issue(&intermediate, root_key, root, intermediate_csr,
 	                       &request) == XP_CA_OK);
 
-	CHECK(xp_ca_key_generate(&child_key, XP_CA_KEY_ED25519) == XP_CA_OK);
+	CHECK(xp_key_generate(&child_key, &ed25519) == XP_CA_OK);
 	CHECK(xp_ca_csr_create(&csr, child_key) == XP_CA_OK);
 	der_len = sizeof(der);
 	CHECK(xp_ca_csr_export_der(csr, der, &der_len) == XP_CA_OK);
@@ -326,13 +329,13 @@ main(void)
 	xp_ca_crl_free(root_crl);
 	xp_ca_cert_free(child);
 	xp_ca_csr_free(csr);
-	xp_ca_key_free(child_key);
+	xp_key_release(child_key);
 	xp_ca_cert_free(intermediate);
 	xp_ca_csr_free(intermediate_csr);
-	xp_ca_key_free(intermediate_key);
+	xp_key_release(intermediate_key);
 	xp_ca_cert_free(alternate_root);
-	xp_ca_key_free(alternate_root_key);
+	xp_key_release(alternate_root_key);
 	xp_ca_cert_free(root);
-	xp_ca_key_free(root_key);
+	xp_key_release(root_key);
 	return 0;
 }
