@@ -114,6 +114,11 @@ var SYNCRETRO_LOBBY_TEXT = {
 	              + "\1cScores count, no saving.%s",
 	cabinet_private: "\1h\1cCabinet:\1n \1c Public [\1hPrivate\1n\1c]\1n  "
 	              + "\1cScores yours, games resume.%s",
+	/* The same line for a console where no game can be saved -- the arcade,
+	 * until a sysop enables a romset. Promising a resume there would be a
+	 * promise no cartridge on it can keep. */
+	cabinet_private_nosave: "\1h\1cCabinet:\1n \1c Public [\1hPrivate\1n\1c]\1n  "
+	              + "\1cScores are yours.%s",
 	cabinet_hint:    "  \1n(%s to switch)",                 /* the toggle key */
 	/* the cartridge grid */
 	cell_fmt:       SYNCRETRO_CELL_FMT,                     /* number, marker, title */
@@ -126,6 +131,11 @@ var SYNCRETRO_LOBBY_TEXT = {
 	 * is: a key to the mark in the grid above. */
 	prompt:         "\1h\1c#\1n play   \1h\1cF\1nind   \1h\1cN\1next \1h\1cP\1nrev   "
 	              + "\1h\1cQ\1nuit   \1n\1c(* = saved game)   "
+	              + "\1cPage \1h%d\1n\1c of \1h%d\1n: ",   /* page, page count */
+	/* The same prompt for a console where no game can be saved: the marker's
+	 * legend goes, because no cartridge there will ever carry one. */
+	prompt_nosave:  "\1h\1c#\1n play   \1h\1cF\1nind   \1h\1cN\1next \1h\1cP\1nrev   "
+	              + "\1h\1cQ\1nuit   "
 	              + "\1cPage \1h%d\1n\1c of \1h%d\1n: ",   /* page, page count */
 	search:         "\r\nSearch: ",
 	/* messages */
@@ -153,6 +163,9 @@ var syncretro_lobby_data_dir;
  * all resolved ONCE in syncretro_lobby_init() and read per cartridge from
  * here rather than re-read or re-hashed. See syncretro_lobby_state_key(). */
 var syncretro_lobby_ini_cache, syncretro_lobby_core_md5, syncretro_lobby_games;
+/* True when this console can save ANY game -- its own [console] save_state, or
+ * one romset overriding it. Gates every claim the lobby makes about resuming. */
+var syncretro_lobby_savable;
 var syncretro_lobby_cellw;                             /* [lobby] cell_width, or the default above */
 var syncretro_lobby_header, syncretro_lobby_footer;    /* optional display files ("" = none) */
 var syncretro_lobby_hrows, syncretro_lobby_frows;      /* rows those blocks occupy; see the draw */
@@ -359,6 +372,20 @@ function syncretro_lobby_init(spec)
 	if (found)
 		syncretro_names_set(map);
 
+	/* Can ANYTHING on this console be saved? The console's own claim, or any one
+	 * romset overriding it to true.
+	 *
+	 * It decides whether the lobby may promise a resume. The arcade ships
+	 * save_state = false for every romset -- nothing there has been verified --
+	 * so a private cabinet that advertised "games resume" would promise
+	 * something no cartridge on it can do until a sysop enables one, and a
+	 * player who switched cabinets on the strength of that would quit their game
+	 * and find nothing waiting. Say only what is true, and let the promise
+	 * appear on its own the moment a romset is enabled. */
+	syncretro_lobby_savable =
+	    syncretro_savable(syncretro_lobby_ini_cache.console.save_state,
+	                      syncretro_lobby_games);
+
 	/* The native artifacts -- the door binary and the libretro core -- live in a
 	 * per-target sub-directory (syncretro_target(): win32, linux-x64, linux-arm64,
 	 * darwin-arm64, freebsd-x64, ...) so one shared install can serve several
@@ -499,7 +526,9 @@ function syncretro_lobby_draw(page, pages, board, cols, per_col)
 	if (syncretro_lobby_con.shared_saves) {
 		var cabinet_hint = user.is_guest ? ""
 		    : format(syncretro_lobby_text("cabinet_hint"), SYNCRETRO_LOBBY_CABINET_KEY);
-		syncretro_lobby_print(syncretro_lobby_private() ? "cabinet_private" : "cabinet_public",
+		syncretro_lobby_print(!syncretro_lobby_private() ? "cabinet_public"
+		                      : syncretro_lobby_savable ? "cabinet_private"
+		                      : "cabinet_private_nosave",
 		                      [cabinet_hint]);
 		console.crlf();
 	}
@@ -532,7 +561,8 @@ function syncretro_lobby_draw(page, pages, board, cols, per_col)
 	 * key it does name spells out its own word. No trailing CRLF -- the cursor
 	 * rests on the bottom row, which is never scrolled, so the terminal never
 	 * pauses. */
-	syncretro_lobby_print("prompt", [page + 1, pages.length]);
+	syncretro_lobby_print(syncretro_lobby_savable ? "prompt" : "prompt_nosave",
+	                      [page + 1, pages.length]);
 
 	/* +1 for the prompt's own row (ending without a line break, it never advances
 	 * the cursor off that row) and +1 kept empty so a full page never trips the

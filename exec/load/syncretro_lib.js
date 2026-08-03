@@ -1063,6 +1063,30 @@ function syncretro_state_list(home)
 	return out;
 }
 
+// Can ANY game on this console be saved -- the console's own [console]
+// save_state claim, or one romset in games.ini/games.local.ini overriding it?
+//
+// It gates every claim the lobby makes about resuming. The arcade ships
+// save_state = false for every romset, nothing there having been verified, so a
+// lobby that advertised "games resume" would promise something no cartridge on
+// it can do until a sysop enables one -- and a player who switched cabinets on
+// the strength of that would quit their game and find nothing waiting.
+//
+// `rows` is games.ini keyed by romset (syncretro_lobby_games). An ini value is
+// auto-typed, so a `false` arrives as the boolean and is compared as text.
+function syncretro_savable(console_save_state, rows)
+{
+	var k;
+
+	if (String(console_save_state).toLowerCase() === "true")
+		return true;
+	for (k in rows) {
+		if (String(rows[k].save_state).toLowerCase() === "true")
+			return true;
+	}
+	return false;
+}
+
 // Is this cartridge resumable RIGHT NOW? Only when a snapshot exists whose key
 // matches the one the door would use, so a core upgrade unmarks everything
 // rather than offering a restore that would feed the emulator garbage.

@@ -193,5 +193,27 @@ check_str(syncretro_cabinet_key("arcade"), "cabinet.arcade",
 check(syncretro_cabinet_default() === "public",
       "an absent preference means the shared cabinet");
 
+// Whether the lobby may PROMISE a resume. The arcade ships save_state = false
+// for every romset, so a private cabinet there must not advertise "games
+// resume" -- a player who switched on the strength of that would quit their
+// game and find nothing waiting. The promise appears only once something can
+// actually be saved.
+check(syncretro_savable("false", {}) === false,
+      "console off, no romset: nothing can be saved");
+check(syncretro_savable("true", {}) === true,
+      "console on: the console's own claim is enough");
+check(syncretro_savable("false", { digdug: { save_state: "true" } }) === true,
+      "console off, one romset enabled: that is enough");
+check(syncretro_savable("false", { digdug: { save_state: "false" } }) === false,
+      "console off, a romset explicitly disabled: still nothing");
+check(syncretro_savable("false", { digdug: { name: "Dig Dug" } }) === false,
+      "a romset with no save_state key does not enable anything");
+// An ini value is auto-typed, so these arrive as booleans, not strings -- the
+// same trap that inverted auto_resume and save_state earlier.
+check(syncretro_savable(false, {}) === false, "boolean false reads as false");
+check(syncretro_savable(true, {}) === true, "boolean true reads as true");
+check(syncretro_savable(false, { digdug: { save_state: true } }) === true,
+      "a romset's boolean true reads as true");
+
 print(failures ? "FAILED: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);
