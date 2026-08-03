@@ -111,6 +111,11 @@ var SYNCRETRO_LOBBY_TEXT = {
 
 /* Set once, by syncretro_lobby(). */
 var syncretro_lobby_dir, syncretro_lobby_con, syncretro_lobby_rules, syncretro_lobby_bios, syncretro_lobby_binary, syncretro_lobby_stdio, syncretro_lobby_cfg;
+/* The whole merged ini (syncretro_lobby_ini()'s return), the console's
+ * libretro core hash, and games.ini/games.local.ini's rows keyed by romset --
+ * all resolved ONCE in syncretro_lobby_init() and read per cartridge from
+ * here rather than re-read or re-hashed. See syncretro_lobby_state_key(). */
+var syncretro_lobby_ini_cache, syncretro_lobby_core_md5, syncretro_lobby_games;
 var syncretro_lobby_cellw;                             /* [lobby] cell_width, or the default above */
 var syncretro_lobby_header, syncretro_lobby_footer;    /* optional display files ("" = none) */
 var syncretro_lobby_hrows, syncretro_lobby_frows;      /* rows those blocks occupy; see the draw */
@@ -187,7 +192,13 @@ function syncretro_lobby_ini(dir)
 		roms:    syncretro_lobby_ini_section(base, local, "roms", false),
 		lobby:   syncretro_lobby_ini_section(base, local, "lobby", true),
 		text:    syncretro_lobby_ini_section(base, local, "text", true),
-		idle:    syncretro_lobby_ini_section(base, local, "idle", false)
+		idle:    syncretro_lobby_ini_section(base, local, "idle", false),
+		/* [options]: the core options pinned in syncretro.ini/local (retro_options.h)
+		 * -- resolved here only so syncretro_lobby_state_key() can flatten them into
+		 * the snapshot staleness key; never sent to the door on the command line.
+		 * [state]: the sysop's suspend/resume switch (auto_resume). */
+		options: syncretro_lobby_ini_section(base, local, "options", false),
+		state:   syncretro_lobby_ini_section(base, local, "state", false)
 	};
 
 	if (base)
@@ -206,6 +217,7 @@ function syncretro_lobby_init(spec)
 		spec = {};
 	syncretro_lobby_dir = backslash(spec.dir || js.exec_dir);
 	ini = syncretro_lobby_ini(syncretro_lobby_dir);
+	syncretro_lobby_ini_cache = ini;
 
 	syncretro_lobby_con   = syncretro_console(ini.console);
 	syncretro_lobby_rules = syncretro_rules(ini.roms);
@@ -285,6 +297,11 @@ function syncretro_lobby_init(spec)
 	var found = false;
 	var n, rows, i;
 
+	/* Every parsed row, keyed by LOWERCASED romset -- reused by
+	 * syncretro_lobby_games_save_state() so it need not read either file a
+	 * second time. Lower-cased for the same reason syncretro_names_set() lower-
+	 * cases its own keys: a romset's case is not guaranteed across platforms. */
+	syncretro_lobby_games = {};
 	for (n = 0; n < files.length; n++) {
 		f = new File(syncretro_lobby_dir + files[n]);
 		if (!f.open("r"))
@@ -295,6 +312,8 @@ function syncretro_lobby_init(spec)
 		for (i = 0; i < rows.length; i++) {
 			if (rows[i].romset && rows[i].name)
 				map[rows[i].romset] = rows[i].name;
+			if (rows[i].romset)
+				syncretro_lobby_games[String(rows[i].romset).toLowerCase()] = rows[i];
 		}
 	}
 	if (found)
@@ -330,6 +349,18 @@ function syncretro_lobby_init(spec)
 	 * it searches the door directory and the per-target sub-dir for the name in
 	 * syncretro.ini, or for the one "*_libretro" it can find. Naming the core to
 	 * the door cost 28 characters of a 260-character command line. */
+
+	/* The core's hash is resolved once here rather than per cartridge -- it is
+	 * one of the three inputs to the snapshot staleness key
+	 * (syncretro_lobby_state_key()), and re-finding or re-hashing a
+	 * multi-megabyte core on every lobby entry is exactly the cost
+	 * syncretro_core_md5()'s own cache exists to avoid. syncretro_core_path()
+	 * has to find the SAME file the door will load without being told -- see
+	 * its own comment -- since the lobby never passes -core. */
+	syncretro_lobby_core_md5 = syncretro_core_md5(
+	    syncretro_core_path(syncretro_lobby_dir, syncretro_lobby_con.core,
+	                        syncretro_core_ext(syncretro_platform(system.platform))),
+	    syncretro_core_cache_path(system.data_dir, syncretro_lobby_con.id));
 }
 
 /* Resolve one [lobby] display-file key. Absent -> the auto-detected default name;
@@ -547,19 +578,116 @@ function syncretro_lobby_dropfile(stdio)
 	return true;
 }
 
-function syncretro_lobby_play(rom)
+/* The door's -home: its cwd sandbox, and the save directory the core is
+ * handed. Per-user for a cartridge console; ONE directory for every player on
+ * an arcade console, so the high-score table is the machine's and not each
+ * player's own private copy of it.
+ *
+ * Both live under data_dir, not in the door's own xtrn dir: these are
+ * generated run-time state, and the shared one is no less generated for being
+ * shared (CLAUDE.md, "Directory hierarchy"). Also where snapshots live -- the
+ * door writes <rom-stem>.<key8>.state into this same directory -- which is
+ * why syncretro_lobby_mark_resumable() calls this too. */
+function syncretro_lobby_home()
 {
-	/* The door's -home: its cwd sandbox, and the save directory the core is
-	 * handed. Per-user for a cartridge console; ONE directory for every player
-	 * on an arcade console, so the high-score table is the machine's and not
-	 * each player's own private copy of it.
-	 *
-	 * Both live under data_dir, not in the door's own xtrn dir: these are
-	 * generated run-time state, and the shared one is no less generated for
-	 * being shared (CLAUDE.md, "Directory hierarchy"). */
-	var home = syncretro_lobby_con.shared_saves
+	return syncretro_lobby_con.shared_saves
 	    ? system.data_dir + "syncretro/" + syncretro_lobby_con.id + "/shared"
 	    : system.data_dir + "user/" + format("%04d", user.number) + "/" + syncretro_lobby_con.id;
+}
+
+/* True when nobody else's session can compete for this player's game on this
+ * console. Every console that is not a shared cabinet already is one, per
+ * player, by construction (syncretro_lobby_home() above). The TOGGLE that
+ * lets a player choose privacy ON TOP OF a shared cabinet is a separate
+ * feature (a per-player preference, keyed and stored via userprops.js) not
+ * yet built; until it exists a shared-saves console -- today only
+ * xtrn/syncarcade -- is never private, which is the safe default: no
+ * snapshot is offered there rather than one that might roll back the shared
+ * high-score table. */
+function syncretro_lobby_private()
+{
+	return !syncretro_lobby_con.shared_saves;
+}
+
+/* The whole suspend/resume decision, in one place, expressed as the key the
+ * door is handed -- or "" for "not permitted", which the caller turns into an
+ * absent -state flag.
+ *
+ * Three things must all hold, and each is owned by whoever knows the answer:
+ * the console/romset capability (ours), the sysop's auto_resume switch, and
+ * this player's cabinet. The door is told the outcome and never infers it. */
+function syncretro_lobby_state_key(rom)
+{
+	var ini = syncretro_lobby_ini_cache;
+	var cap, per_rom;
+
+	/* The sysop's switch. Shipped default is permitted (true), but that default
+	 * must not be reached with `||`: Synchronet's iniGetObject() auto-types an
+	 * ini value of "false" into the JS BOOLEAN false, which is falsy -- so
+	 * `ini.state.auto_resume || "true"` would silently replace an explicit
+	 * `false` with the "true" fallback and the switch could never actually
+	 * turn suspend/resume off. String() first, compare directly instead. */
+	if (String(ini.state.auto_resume).toLowerCase() === "false")
+		return "";
+	/* No snapshots on a shared cabinet, ever: a restore there would roll back
+	 * the machine's high-score table to whenever the snapshot was taken. */
+	if (syncretro_lobby_con.shared_saves && !syncretro_lobby_private())
+		return "";
+	/* The capability claim: per-console default, per-romset override. */
+	cap = String(ini.console.save_state || "false").toLowerCase() === "true";
+	per_rom = syncretro_lobby_games_save_state(rom.name);   /* "", "true", "false" */
+	if (per_rom !== "")
+		cap = per_rom === "true";
+	if (!cap)
+		return "";
+
+	return syncretro_state_key(syncretro_lobby_core_md5,
+	                           rom.md5,
+	                           syncretro_state_opts(ini.options));
+}
+
+/* The per-romset override, from games.ini with games.local.ini over the top --
+ * the same two-file pair and the same precedence the picker's display titles
+ * already use. Returns "" when neither file mentions save_state for this
+ * romset, which leaves the [console] default in force. */
+function syncretro_lobby_games_save_state(rom_name)
+{
+	var romset = String(rom_name).replace(/\.[^.]*$/, "").toLowerCase();
+	var rows = syncretro_lobby_games;      /* already loaded for display titles */
+	var v;
+
+	if (!rows || !rows[romset] || rows[romset].save_state === undefined)
+		return "";
+	v = String(rows[romset].save_state).toLowerCase();
+	return (v === "true" || v === "false") ? v : "";
+}
+
+/* Marks each ROM object `resumed` when a snapshot exists that would restore
+ * with THIS core/rom/options combination right now, and sweeps out every
+ * snapshot in the same directory that would not -- a core upgrade unmarks and
+ * cleans up in the same pass it draws from (see syncretro_state_sweep()).
+ *
+ * One directory() read (inside syncretro_state_list()) regardless of how many
+ * cartridges are listed; syncretro_lobby_state_key() per ROM below is pure
+ * computation over the already-cached ini and core hash -- no file I/O. */
+function syncretro_lobby_mark_resumable(roms)
+{
+	var list = syncretro_state_list(syncretro_lobby_home());
+	var current_keys = {};
+	var i, r, key;
+
+	for (i = 0; i < roms.length; i++) {
+		r   = roms[i];
+		key = syncretro_lobby_state_key(r);
+		current_keys[r.name] = key;
+		r.resumed = syncretro_state_marked(list, r.name, key);
+	}
+	syncretro_state_sweep(list, roms, current_keys);
+}
+
+function syncretro_lobby_play(rom)
+{
+	var home = syncretro_lobby_home();
 	var cmd, started, secs, label, drop, pass_title;
 
 	if (!syncretro_quote_safe(rom.name)) {
@@ -665,10 +793,16 @@ function syncretro_lobby_play(rom)
 	 * those are the short filenames, with room to spare. */
 	pass_title = syncretro_is_mapped(rom.name) || rom.label !== rom.title;
 
+	/* "" (not permitted) or an 8-hex-digit key -- see syncretro_lobby_state_key().
+	 * -state's ABSENCE is what tells the door no snapshot is wanted; it never
+	 * infers that from -home. 15 characters at most ( -state 12345678 ). */
+	var state_key = syncretro_lobby_state_key(rom);
+
 	cmd = syncretro_lobby_binary
 	    + (drop ? "" : (syncretro_lobby_stdio ? " -stdio" : " -s%H") + " -name %a")
 	    + " -t%T -i" + idle_secs
 	    + (pass_title ? ' -title "' + (rom.label || rom.title) + '"' : "")
+	    + (state_key ? " -state " + state_key : "")
 	    + ' -home "' + home + '" "'
 	    + backslash(syncretro_lobby_rules.dir) + rom.name + '"';
 
@@ -764,6 +898,7 @@ function syncretro_lobby(spec)
 		return;
 	}
 	syncretro_lobby_number(roms);
+	syncretro_lobby_mark_resumable(roms);
 
 	/* One-shot entry sound, if the sysop configured one -- the same helper and the
 	 * same [lobby] enter_sound key SyncDuke and SyncDOOM use. Silent unless the
@@ -864,6 +999,10 @@ function syncretro_lobby(spec)
 					filter = roms;
 					page = 0;
 				}
+				/* Refresh the marks whether or not a rescan happened: the game
+				 * just played may have written or updated its own snapshot, and
+				 * this is one directory() read, not a rediscovery. */
+				syncretro_lobby_mark_resumable(roms);
 			}
 			continue;
 		}

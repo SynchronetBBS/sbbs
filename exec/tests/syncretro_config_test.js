@@ -133,5 +133,99 @@ check(syncretro_console({ shared_saves: "false" }).shared_saves === false,
 // `dir`, which is what [roms] already used. Both must reach rules.dir.
 check_str(syncretro_rules({ dir: "carts" }).dir, "carts", "roms dir key");
 
+// syncretro_lobby_ini() must also merge [options] and [state] -- the state
+// key needs the former flattened, and syncretro_lobby_state_key() reads
+// auto_resume from the latter.
+check(ini.options && typeof ini.options === "object", "options object merges");
+check(ini.state && typeof ini.state === "object", "state object merges");
+
+// --- the whole suspend/resume decision, end to end ----------------------------
+//
+// A real console dir: a core file to hash, a cartridge to discover, and every
+// combination of [console] save_state / [state] auto_resume / the per-romset
+// games.ini override that syncretro_lobby_state_key() has to get right.
+var sdir = system.temp_dir + "syncretro_cfgtest_state/";
+mkpath(sdir);
+mkpath(sdir + "roms/");
+
+function write_ini(name, text)
+{
+	var wf = new File(sdir + name);
+	wf.open("w");
+	wf.write(text);
+	wf.close();
+}
+
+write_ini("syncretro.ini",
+    "[console]\n"
+    + "name = Probe\n"
+    + "short = Probe\n"
+    + "core = probe_libretro\n"
+    + "shared_saves = false\n"
+    + "save_state = true\n"
+    + "\n"
+    + "[roms]\n"
+    + "dir = roms\n"
+    + "ext = rom\n"
+    + "\n"
+    + "[state]\n"
+    + "auto_resume = true\n");
+
+f = new File(sdir + "probe_libretro.so");
+f.open("wb"); f.write("core-bytes"); f.close();
+
+f = new File(sdir + "roms/test.rom");
+f.open("wb"); f.write("rom-bytes"); f.close();
+
+syncretro_lobby_init({ dir: sdir });
+var probe_roms = syncretro_discover(sdir + "roms/", syncretro_lobby_rules, null);
+var probe_rom  = probe_roms[0];
+
+// Capability true + auto_resume true (the default) -> a real key, and it must
+// be exactly what syncretro_state_key() computes from the same three inputs --
+// this is the property the whole feature depends on (the lobby and the door
+// must derive the identical key).
+var got = syncretro_lobby_state_key(probe_rom);
+var want = syncretro_state_key(syncretro_lobby_core_md5, probe_rom.md5,
+                               syncretro_state_opts(syncretro_lobby_ini_cache.options));
+check(got !== "", "capability + enablement together permit a snapshot");
+check_str(got, want, "the lobby's key matches syncretro_state_key() on the same inputs");
+
+// auto_resume = false must ACTUALLY disable it. iniGetObject() auto-types
+// "false" to the JS boolean false, which is falsy -- a naive
+// `ini.state.auto_resume || "true"` would silently ignore this and never
+// disable anything. This is the regression test for that trap.
+write_ini("syncretro.local.ini", "[state]\nauto_resume = false\n");
+syncretro_lobby_init({ dir: sdir });
+check_str(syncretro_lobby_state_key(probe_rom), "",
+          "auto_resume = false disables suspend/resume");
+file_remove(sdir + "syncretro.local.ini");
+
+// [console] save_state = false disables it, with no per-romset override.
+write_ini("syncretro.local.ini", "[console]\nsave_state = false\n");
+syncretro_lobby_init({ dir: sdir });
+check_str(syncretro_lobby_state_key(probe_rom), "",
+          "console save_state = false disables suspend/resume");
+
+// ...but a per-romset games.local.ini override of true wins over the
+// console-level false. The romset key is the ROM's stem, lower-cased.
+write_ini("games.local.ini", "[test]\nname = Test\nsave_state = true\n");
+syncretro_lobby_init({ dir: sdir });
+check_str(syncretro_lobby_games_save_state("test.rom"), "true",
+          "per-romset save_state override reads back");
+check(syncretro_lobby_state_key(probe_rom) !== "",
+      "a per-romset save_state = true overrides the console default");
+file_remove(sdir + "games.local.ini");
+file_remove(sdir + "syncretro.local.ini");
+
+// A shared cabinet never gets a key, whatever else is enabled -- until the
+// per-player cabinet toggle exists, syncretro_lobby_private() answers "not
+// private" for every shared console.
+write_ini("syncretro.local.ini", "[console]\nshared_saves = true\n");
+syncretro_lobby_init({ dir: sdir });
+check_str(syncretro_lobby_state_key(probe_rom), "",
+          "a shared cabinet never gets a snapshot key");
+file_remove(sdir + "syncretro.local.ini");
+
 print(failures ? "FAILED: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);

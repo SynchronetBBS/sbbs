@@ -707,7 +707,12 @@ function syncretro_discover(roms_dir, rules, cache)
 				year:      parsed.year,
 				publisher: parsed.publisher,
 				tags:      parsed.tags,
-				size:      size
+				size:      size,
+				/* The full-file hash discovery already computed for dedupe.
+				 * It is one of the three inputs to the snapshot key, and
+				 * recomputing it in the lobby would re-read every cartridge --
+				 * exactly what the cache above exists to prevent. */
+				md5:       full
 			});
 		});
 	});
@@ -896,6 +901,12 @@ function syncretro_cell(index, rom, width, fmt)
 	var label = (rom.label || rom.title) + (rom.year ? " (" + rom.year + ")" : "");
 	var namew;
 
+	/* rom.resumed is set by syncretro_lobby_mark_resumable() (syncretro_lobby.js)
+	 * from one directory() read, never per-cell -- so this costs nothing extra
+	 * here. Absent on any caller that never set it, which is why this is an
+	 * `if`, not a default in the object literal above. */
+	if (rom.resumed)
+		label += " *";
 	if (!fmt)
 		fmt = SYNCRETRO_CELL_FMT;
 	namew = width - strip_ctrl_a(format(fmt, index, "")).length;
@@ -999,4 +1010,150 @@ function syncretro_state_opts(options)
 	for (i = 0; i < names.length; i++)
 		out.push(names[i] + "=" + String(options[names[i]]));
 	return out.join("\n");
+}
+
+// --- the snapshot listing and the core-hash cache ---------------------------
+//
+// The picker needs to know which cartridges have a resumable game, and the
+// naive way to answer -- probe for a snapshot per cartridge -- is a file
+// operation per ROM on every lobby entry, which is the cost the ROM hash cache
+// above exists to avoid. Because the key is in the NAME, one directory() call
+// answers it for every cartridge at once.
+//
+// Returns { "<rom stem>": { key: "<key8>", path: "<full path>" } }.
+function syncretro_state_list(home)
+{
+	var out = {};
+	var files, i, base, m;
+
+	if (!home)
+		return out;
+	files = directory(backslash(home) + "*.state");
+	for (i = 0; i < files.length; i++) {
+		base = file_getname(files[i]);
+		m = /^(.+)\.([0-9a-f]{8})\.state$/.exec(base);
+		if (m)
+			out[m[1]] = { key: m[2], path: files[i] };
+	}
+	return out;
+}
+
+// Is this cartridge resumable RIGHT NOW? Only when a snapshot exists whose key
+// matches the one the door would use, so a core upgrade unmarks everything
+// rather than offering a restore that would feed the emulator garbage.
+function syncretro_state_marked(list, rom_name, key8)
+{
+	var stem = String(rom_name).replace(/\.[^.]*$/, "");
+
+	return !!(key8 && list && list[stem] && list[stem].key === key8);
+}
+
+// Delete snapshots that can no longer be restored.
+//
+// A snapshot is dead when its stem names no cartridge we can see, or when its
+// key is not the key that cartridge would restore with now -- which is what
+// happens to every snapshot on the console when the core is upgraded. Deleting
+// them here costs nothing: the directory has just been read for the picker's
+// marks, so this is the same pass.
+//
+// `current_keys` maps a ROM name to the key8 that ROM would use now.
+function syncretro_state_sweep(list, roms, current_keys)
+{
+	var stems = {};
+	var i, stem, n = 0;
+
+	for (i = 0; i < roms.length; i++) {
+		stem = String(roms[i].name).replace(/\.[^.]*$/, "");
+		stems[stem] = current_keys[roms[i].name] || "";
+	}
+	for (stem in list) {
+		if (stems[stem] !== undefined && stems[stem] === list[stem].key)
+			continue;
+		if (file_remove(list[stem].path))
+			n++;
+	}
+	return n;
+}
+
+// The core cache lives beside the ROM cache -- same directory, same
+// derived/re-buildable contract -- keyed by the same sanitized console id.
+function syncretro_core_cache_path(data_dir, id)
+{
+	var dir = String(data_dir).replace(/[\\\/]+$/, "") + "/syncretro/";
+
+	if (!file_isdir(dir))
+		mkpath(dir);
+	return dir + "core." + String(id).toLowerCase().replace(/[^a-z0-9]+/g, "") + ".json";
+}
+
+// The core binary's hash, cached on size + mtime.
+//
+// It is one of the three inputs to the snapshot key, and hashing it on every
+// lobby entry would be a real cost rather than a notional one: the MAME
+// 2003-Plus core is multi-megabyte. Same argument and same shape as the ROM
+// hash cache above. Derived, so a lost update costs a re-hash and never a
+// wrong answer; a torn, stale or missing cache reads as cold.
+function syncretro_core_md5(core_path, cache_path)
+{
+	var cache = null;
+	var size, date, f, tmp, hash;
+
+	if (!core_path || !file_exists(core_path))
+		return "";
+	size = file_size(core_path);
+	date = file_date(core_path);
+
+	f = new File(cache_path);
+	if (f.open("r")) {
+		try { cache = JSON.parse(f.readAll().join("\n")); }
+		catch (e) { cache = null; }
+		f.close();
+	}
+	if (cache && cache.path === core_path && cache.size === size
+	    && cache.date === date && /^[0-9a-f]{32}$/.test(String(cache.md5)))
+		return String(cache.md5);
+
+	hash = syncretro_file_md5(core_path, 0);
+	if (!hash)
+		return "";
+
+	/* temp + rename, like the ROM cache: a torn write must read as cold rather
+	 * than as a wrong hash, which would silently orphan every snapshot. */
+	tmp = cache_path + ".tmp";
+	f = new File(tmp);
+	if (f.open("w")) {
+		f.write(JSON.stringify({ path: core_path, size: size, date: date,
+		                         md5: hash }));
+		f.close();
+		file_rename(tmp, cache_path);
+	}
+	return hash;
+}
+
+// Resolve the installed libretro core file -- the same search
+// syncretro_config.c's sr_find_core() does when the door is given no -core:
+// the named core (or, absent a name, the lone "*_libretro" match) at the door
+// root, or one level down in any sub-directory (the door has no way to know
+// which per-target sub-dir a shared install's deploy used, so this doesn't
+// assume it either). Needed only so syncretro_core_md5() can hash the exact
+// file the door will load -- the lobby never passes -core; see
+// syncretro_lobby_binary in syncretro_lobby.js.
+//
+// Zero or more than one match resolves to "", same as the door: an ambiguous
+// or missing core is a broken install the door already reports on its own,
+// and this function's only consumer (the state key) degrades to no key, no
+// snapshot offered -- never a wrong one.
+function syncretro_core_path(dir, core_name, ext)
+{
+	var stem = core_name || "*_libretro";
+	var base = backslash(dir);
+	var hits;
+
+	hits = directory(base + stem + "." + ext);
+	if (hits.length === 1)
+		return hits[0];
+	hits = directory(base + "*/" + stem + "." + ext);
+	if (hits.length === 1)
+		return hits[0];
+	return "";
 }
