@@ -119,6 +119,7 @@ name = Pac-Man
 | `stick2` | door | this cabinet has a second stick; the value labels it |
 | `boot_frames` | door | frames of power-on self-test to run before the player is shown anything (sec 13). Also valid at the **root**, where it is the install-wide default |
 | `analog_rest` | door | this cabinet's control is a potentiometer, and it rests at `x,y` percent of travel rather than in the middle (sec 15) |
+| `save_state` | lobby | `true`/`false`: overrides `[console] save_state` (in `syncretro.ini`) for this one romset. See sec 14 -- this is a per-cabinet claim, held to the same "someone here ran it" rule as everything else in this file |
 
 ### The root section
 
@@ -476,6 +477,16 @@ where entries nobody here has run belong, and why the local file exists.
 The same rule bounds anything that verifies romsets in bulk: a tool that
 decides a per-romset setting runs against `games.ini`, so its verdicts cover
 only cabinets that have actually been played.
+
+`save_state` is that per-romset setting for suspend/resume. `[console]
+save_state` in `syncretro.ini` defaults to `false` for this console -- see
+that file for why -- and a section here that sets `save_state = true`
+overrides it for one romset, on the same footing as a `button.*` label: a
+claim that someone launched that cabinet, suspended it, and confirmed the
+resume came back right, not that its driver family is assumed to support it.
+A bulk pass that flipped `save_state = true` across a driver family without
+playing each one would be exactly the kind of unverified entry this file
+exists to keep out.
 
 ### Resolution
 
