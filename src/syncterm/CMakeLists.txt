@@ -98,12 +98,23 @@ if(USE_VENDORED_BOTAN)
 	# Minimal module set — keep synchronised with BOTAN_MODULES in
 	# 3rdp/build/GNUmakefile.  Botan pulls transitive deps under
 	# --minimized-build, so this is the top-level "what we call" list.
+	set(_botan_certstor_modules ",certstor_system")
+	if(APPLE)
+		string(APPEND _botan_certstor_modules
+		    ",certstor_system_macos")
+	elseif(WIN32)
+		string(APPEND _botan_certstor_modules
+		    ",certstor_system_windows")
+	else()
+		string(APPEND _botan_certstor_modules
+		    ",certstor_flatfile")
+	endif()
 	set(_botan_modules
 	    "tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305"
 	    ",rc4,des,cast128,hmac,pbkdf2,scrypt"
 	    ",sha1,sha2_32,sha2_64,rsa,ed25519,x25519,dh,ecdsa,ecdh,ml_kem"
 	    ",pcurves_secp256r1,pcurves_secp384r1,pcurves_secp521r1"
-	    ",x509,system_rng,auto_rng")
+	    ",x509${_botan_certstor_modules},system_rng,auto_rng")
 	string(REPLACE ";" "" _botan_modules "${_botan_modules}")
 	set(_botan_configure_args
 	    --prefix=${VENDORED_BOTAN_PREFIX}

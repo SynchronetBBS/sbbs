@@ -305,14 +305,25 @@ endif
 # ml_kem                    — SSH mlkem768x25519-sha256 post-quantum kex
 # pcurves_secp{256,384,521} — NIST curves for TLS ECDSA
 # x509                      — TLS cert chain parsing
+# certstor_system           — TLS Web-PKI system trust facade
+# certstor_flatfile         — Unix system CA bundle backend
 # system_rng,auto_rng       — RNG stack
 # Line continuations in a := assignment fold to a single space
 # between segments — the space confuses Botan's configure.py
 # ("Unhandled option(s): ..."), so strip it back out after the join.
+BOTAN_CERTSTOR_MODULES := certstor_system
+ifeq ($(os),darwin)
+ BOTAN_CERTSTOR_MODULES := $(BOTAN_CERTSTOR_MODULES),certstor_system_macos
+else ifneq ($(filter win32 win64,$(os)),)
+ BOTAN_CERTSTOR_MODULES := $(BOTAN_CERTSTOR_MODULES),certstor_system_windows
+else
+ BOTAN_CERTSTOR_MODULES := $(BOTAN_CERTSTOR_MODULES),certstor_flatfile
+endif
+
 BOTAN_MODULES := $(subst $() ,,tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305,\
 rc4,des,cast128,hmac,pbkdf2,scrypt,sha1,sha2_32,sha2_64,rsa,ed25519,\
 x25519,dh,ecdsa,ecdh,ml_kem,pcurves_secp256r1,pcurves_secp384r1,\
-pcurves_secp521r1,x509,system_rng,auto_rng)
+pcurves_secp521r1,x509,$(BOTAN_CERTSTOR_MODULES),system_rng,auto_rng)
 
 # Botan's generated Makefile doesn't use a jobserver, so -j has to be
 # passed explicitly.  Detect a sane default; user can override with
