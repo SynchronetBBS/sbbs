@@ -118,8 +118,14 @@ var SYNCRETRO_LOBBY_TEXT = {
 	/* the cartridge grid */
 	cell_fmt:       SYNCRETRO_CELL_FMT,                     /* number, title */
 	/* footer */
+	/* Everything before the page counter is a KEY THE PLAYER PRESSES, so the
+	 * resume marker's legend must not sit among them looking like one. It was
+	 * first written "*=resumes", styled exactly like the hotkeys beside it
+	 * (highlighted character, then a verb) -- and read as "press * to resume".
+	 * Parenthesised, unhighlighted and phrased as a noun, it reads as what it
+	 * is: a key to the mark in the grid above. */
 	prompt:         "\1h\1c#\1n play   \1h\1cF\1nind   \1h\1cN\1next \1h\1cP\1nrev   "
-	              + "\1h\1cQ\1nuit   \1h\1c*\1n\1c=resumes   "
+	              + "\1h\1cQ\1nuit   \1n\1c(* = saved game)   "
 	              + "\1cPage \1h%d\1n\1c of \1h%d\1n: ",   /* page, page count */
 	search:         "\r\nSearch: ",
 	/* messages */
