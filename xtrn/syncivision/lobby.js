@@ -1,51 +1,10 @@
-// lobby.js -- xtrn/syncivision: SyncRetro's Intellivision install.
-//
-// This file IS the console definition. Everything else -- discovery, the picker,
-// the activity board, the door command line -- lives in exec/load/syncretro_lobby.js
-// and is shared with every other SyncRetro console, because they all run the one
-// door binary against a different libretro core. Adding a console is adding one of
-// these files, not forking a lobby.
-//
-// SpiderMonkey 1.8.5: no let/const/arrows/template literals.
-//
-// Copyright(C) 2026 Rob Swindell / SyncRetro. GPL-2.0.
-
+/* SyncRetro -- Intellivision lobby.
+ *
+ * What this console IS -- its name, core, key-binding profile, what a cartridge
+ * looks like, which BIOS images it needs -- lives in syncretro.ini beside this
+ * file, which the native door reads too. Your own settings go in
+ * syncretro.local.ini.
+ */
 load("syncretro_lobby.js");
 
-syncretro_lobby({
-	dir:      js.exec_dir,               /* this door dir: core, BIOS, roms/ */
-	/* name / short / core / profile are OVERRIDDEN by console.ini in this
-	 * directory, which the native door reads too -- edit them THERE. These
-	 * stay as the fallback for an install that has no console.ini. */
-	name:     "Intellivision",
-	/* `short` derives the id ("intv") that names the per-user save dir and the
-	 * ROM cache. It must STAY "Intv": change it and every existing player's SRAM
-	 * and save states are orphaned under data/user/####/intv. */
-	short:    "Intv",
-	core:     "freeintv_libretro",       /* no extension: .so / .dll / .dylib */
-	profile:  "intv",                    /* keypad on the disc angle */
-
-	/* What an Intellivision cartridge looks like. The size band is the whole
-	 * cartridge range -- anything outside it is metadata litter, not a game. */
-	ext:      ["int", "bin", "rom"],
-	min_size: 2 * 1024,
-	max_size: 64 * 1024,
-
-	/* The console BIOS, in this door dir (FreeIntv's system dir). Rejected from
-	 * the picker by name AND by content, so a re-dropped ROM set cannot smuggle
-	 * one back in under a cartridge's name. */
-	bios:       ["exec.bin", "grom.bin"],
-	bios_names: ["exec.bin", "grom.bin"],
-	bios_md5:   ["62e761035cb657903761800f4437b8af",    /* exec.bin, 8192 bytes */
-	             "0cd5946c6473e42e8e4c2137785e427f",    /* grom.bin, 2048 bytes */
-	             /* The other system ROMs a dumped set ships IN roms/, named like
-	              * cartridges. They are cartridge-sized and not called exec.bin, so
-	              * only their content gives them away. */
-	             "d5530f74681ec6e0f282dab42e6b1c5f",    /* IntelliVoice, 2048 bytes */
-	             "8590d338a1bb5e0feed3e8a8cd493035"],   /* Sears exec, 8192 bytes */
-
-	/* ...and the net for the ones whose hash we do not know: an alternate exec, an
-	 * ECS ROM, a redump. Every set titles them the same way, and no Intellivision
-	 * cartridge has the word in its name. */
-	bios_words: ["bios"]
-});
+syncretro_lobby();

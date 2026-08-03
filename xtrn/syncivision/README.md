@@ -12,8 +12,8 @@ source tree.
 **One door, many consoles.** SyncIvision is not its own program: it is the
 SyncRetro door pointed at a [libretro](https://www.libretro.com/) core. The same
 binary runs `xtrn/syncnes` (NES) from the same source. What makes *this* one an
-Intellivision is `lobby.js` — it names the console, its core, its key bindings
-and what a cartridge looks like, in about a dozen lines.
+Intellivision is `syncretro.ini` — it names the console, its core, its key
+bindings and what a cartridge looks like, and both halves of the door read it.
 
 ## Building the door binary
 
@@ -40,10 +40,10 @@ for you — no manual SCFG entry needed:
 - **Command line** — `jsexec install-xtrn ../xtrn/syncivision`.
 - **Terminal sysop command** — `;exec ?install-xtrn ../xtrn/syncivision`.
 
-The installer seeds `syncretro.ini` from `syncretro.example.ini` and offers
-(prompted) to download the **FreeIntv** core, which is GPLv2+ and freely
-redistributable, from the libretro buildbot. You can also run it later:
-`jsexec ../xtrn/syncivision/getcore.js`.
+`syncretro.ini` ships with the package, so there is nothing to seed. The
+installer offers (prompted) to download the **FreeIntv** core, which is GPLv2+
+and freely redistributable, from the libretro buildbot. You can also run it
+later: `jsexec ../xtrn/syncivision/getcore.js`.
 
 `xtrn.ini` is not re-read automatically — `touch ctrl/recycle.term` afterwards.
 
@@ -94,9 +94,18 @@ than failing on a terminal without them.
 
 ## Configuration
 
-`syncretro.ini` holds this install's settings, fully commented in-file. The
-console itself (name, core, key bindings, what a cartridge is) is **not** in
-there — it is in `lobby.js`, because it doesn't vary from BBS to BBS.
+`syncretro.ini` ships with the door and holds every setting, fully commented
+in-file — including what this console *is* (name, core, key bindings, what a
+cartridge looks like), which both the lobby and the native binary read from it.
+**It is ours: an upgrade replaces it.** Put your own settings in
+`syncretro.local.ini` beside it, which is read second and wins key by key, so it
+need hold only what you changed and upstream's new defaults keep arriving
+underneath it.
+
+> **Upgrading from a release before this one:** rename your
+> `syncretro.ini` to `syncretro.local.ini` **before** pulling. It keeps working
+> unchanged — a full config as an overlay simply wins on every key — and you can
+> trim it to just your differences whenever you like.
 
 - **`[disc] rotate`** — cartridges whose paddle follows disc *rotation* rather
   than a held direction (Brickout! and friends). On these, holding Left/Right

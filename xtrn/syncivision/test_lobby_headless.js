@@ -44,6 +44,12 @@ function check(cond, msg)
 		failures++;
 }
 
+function check_str(got, want, msg)
+{
+	check(String(got) === String(want),
+	      msg + "  (got [" + got + "] want [" + want + "])");
+}
+
 var fake_console = {
 	screen_columns: 80,
 	screen_rows: 24,
@@ -259,6 +265,27 @@ probe = [];                                        // silence: the probe times o
 var gl9 = load({}, "game_lobby.js");
 gl9.enter_sound(snd_dir, { lobby: { enter_sound: snd_name } });
 check(wrote.join("").indexOf("A;Queue") < 0, "queued nothing");
+
+// The shipped syncretro.ini must reproduce exactly what the deleted lobby.js
+// spec and console.ini declared. These are the values a player's save
+// directory, cartridge picker and key bindings all derive from, so a typo here
+// is silent: the door still runs, against the wrong console.
+writeln("10. the shipped syncretro.ini declares the console");
+var shipped = syncretro_lobby_ini(js.exec_dir);
+var con = syncretro_console(shipped.console);
+var rules = syncretro_rules(shipped.roms);
+
+check_str(con.name, "Intellivision", "shipped ini: name");
+check_str(con.short, "Intv", "shipped ini: short");
+check_str(con.id, "intv", "shipped ini: id (names the save dir)");
+check_str(con.core, "freeintv_libretro", "shipped ini: core");
+check_str(con.profile, "intv", "shipped ini: profile");
+check(con.shared_saves === false, "shipped ini: shared_saves false");
+check_str(rules.ext.join(","), "int,bin,rom", "shipped ini: ext");
+check(rules.min_size === 2048, "shipped ini: min_size");
+check(rules.max_size === 65536, "shipped ini: max_size");
+check_str(rules.bios_names.join(","), "exec.bin,grom.bin", "shipped ini: bios_names");
+check_str(rules.bios_words.join(","), "bios", "shipped ini: bios_words");
 
 if (LIVE_PLAYS !== "" && file_exists(LIVE_PLAYS))
 	file_remove(LIVE_PLAYS);           /* leave the live data dir as we found it */
