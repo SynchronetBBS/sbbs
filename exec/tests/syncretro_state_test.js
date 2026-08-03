@@ -61,7 +61,7 @@ check_str(syncretro_state_opts(null), "", "absent options is the empty string");
 // not re-read every cartridge just to key one about to be played.
 var romdir = system.temp_dir + "syncretro_statetest_roms/";
 mkpath(romdir);
-f = new File(romdir + "Foo (2000) (Acme).rom"); f.open("wb"); f.write("cartridge bytes"); f.close();
+var f = new File(romdir + "Foo (2000) (Acme).rom"); f.open("wb"); f.write("cartridge bytes"); f.close();
 var rules = syncretro_rules({ dir: "roms", ext: "rom" });
 var discovered = syncretro_discover(romdir, rules, null);
 check(discovered.length === 1, "discovery finds the test cartridge");

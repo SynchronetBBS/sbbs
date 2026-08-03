@@ -337,5 +337,62 @@ check(file_exists(gate_snapshot),
 // there is nothing to clean up there -- see the data_dir comment near the
 // top of this file.
 
+// --- an unresolvable core must never look like "no core option" ---------------
+//
+// syncretro_core_path() can legitimately resolve to "" against a real install
+// -- e.g. a [console] core whose case does not match the file on disk:
+// syncretro_core_path() resolves via case-sensitive directory(), while the
+// door's own sr_find_core() uses case-insensitive globi(), so the door loads
+// the core fine while the lobby cannot find it to hash. (Not reproduced here
+// with an actual case mismatch: system.temp_dir lands on this test runner's
+// /sbbs CIFS mount, whose case-insensitive directory() would match the "wrong"
+// case and defeat the point; a name with no match at all reproduces the same
+// "" -- the input syncretro_lobby_state_key() must guard against -- without
+// depending on filesystem case sensitivity.) That leaves syncretro_lobby_core_md5
+// empty even though every other capability check (save_state, auto_resume,
+// shared cabinet) permits a snapshot. The key must still come back "" in that
+// case: keying on romset + options alone (no core hash) would stop
+// invalidating snapshots across a core upgrade, exactly the garbage-restore
+// this feature is meant to make unreachable.
+var mdir = system.temp_dir + "syncretro_cfgtest_mismatch/";
+mkpath(mdir);
+mkpath(mdir + "roms/");
+
+function write_mismatch_ini(name, text)
+{
+	var wf = new File(mdir + name);
+	wf.open("w");
+	wf.write(text);
+	wf.close();
+}
+
+write_mismatch_ini("syncretro.ini",
+    "[console]\n"
+    + "name = Mismatch\n"
+    + "short = Mismatch\n"
+    + "core = no_such_core\n"            // resolves to zero matches
+    + "shared_saves = false\n"
+    + "save_state = true\n"
+    + "\n"
+    + "[roms]\n"
+    + "dir = roms\n"
+    + "ext = rom\n"
+    + "\n"
+    + "[state]\n"
+    + "auto_resume = true\n");
+
+f = new File(mdir + "probe_libretro.so");   // present, but not the configured name
+f.open("wb"); f.write("core-bytes"); f.close();
+
+f = new File(mdir + "roms/test.rom");
+f.open("wb"); f.write("rom-bytes"); f.close();
+
+syncretro_lobby_init({ dir: mdir, data_dir: data_dir });
+check_str(syncretro_lobby_core_md5, "",
+          "an unresolvable [console] core resolves to no hash");
+var mismatch_roms = syncretro_discover(mdir + "roms/", syncretro_lobby_rules, null);
+check_str(syncretro_lobby_state_key(mismatch_roms[0]), "",
+          "an empty core hash yields no state key, not a romset+options-only one");
+
 print(failures ? "FAILED: " + failures + " failure(s)" : "ok: 0 failures");
 exit(failures ? 1 : 0);

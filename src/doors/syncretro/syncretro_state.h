@@ -1,11 +1,6 @@
-/* syncretro_state.h -- the suspend/resume snapshot: its staleness key, its
- * path, and the write/restore pair.
- *
- * A libretro save-state blob carries NO version stamp, so restoring one into a
- * core, romset or option set it was not taken from feeds the emulator garbage.
- * Everything here exists to make that unreachable rather than unlikely: the key
- * derives from all three, and it is carried in the FILENAME so the lobby can
- * tell a live snapshot from a stale one with a single directory read.
+/* syncretro_state.h -- the suspend/resume snapshot: its path under -home
+ * (keyed by the staleness key from syncretro_statekey.h) and the
+ * write/restore pair.
  *
  * Copyright(C) 2026 Rob Swindell / SyncRetro.  GPL-2.0.
  */

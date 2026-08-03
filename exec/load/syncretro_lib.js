@@ -899,20 +899,27 @@ var SYNCRETRO_CELL_FMT = "\1h\1c%3u \xb3 \1n\1c%s\1n";
 function syncretro_cell(index, rom, width, fmt)
 {
 	var label = (rom.label || rom.title) + (rom.year ? " (" + rom.year + ")" : "");
+	var mark = "";
 	var namew;
 
 	/* rom.resumed is set by syncretro_lobby_mark_resumable() (syncretro_lobby.js)
 	 * from one directory() read, never per-cell -- so this costs nothing extra
 	 * here. Absent on any caller that never set it, which is why this is an
-	 * `if`, not a default in the object literal above. */
+	 * `if`, not a default in the object literal above.
+	 *
+	 * The marker is reserved BEFORE the %-Ns.Ns clip below, not appended after
+	 * it: appending first would let a title at or over namew columns push the
+	 * marker off the end of the clip, so a resumable cartridge would silently
+	 * stop showing as resumable. */
 	if (rom.resumed)
-		label += " *";
+		mark = " *";
 	if (!fmt)
 		fmt = SYNCRETRO_CELL_FMT;
-	namew = width - strip_ctrl_a(format(fmt, index, "")).length;
+	namew = width - strip_ctrl_a(format(fmt, index, "")).length - mark.length;
 	if (namew < 1)
 		namew = 1;
-	return format(fmt, index, format("%-" + namew + "." + namew + "s", label));
+	return format(fmt, index,
+	              format("%-" + namew + "." + namew + "s", label) + mark);
 }
 
 // --- platform / target token ------------------------------------------------

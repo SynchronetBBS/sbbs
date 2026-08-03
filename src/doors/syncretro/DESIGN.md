@@ -59,9 +59,13 @@ syncretro_io.c      terminal I/O: enter/probe/leave + the present path (termgfx 
 syncretro_input.c   BBS socket decode (ESC/CSI/APC/kitty/evdev) -> a cached RetroPad state
 syncretro_door.c    DOOR32.SYS / -s<fd> / -name / -home / -t session setup
 syncretro_config.c  per-user sandbox + core/system/save/ROM path resolution
-syncretro_state.c/.h  suspend/resume: the snapshot staleness key, its path
-                    under -home, and the retro_serialize()/retro_unserialize()
-                    wrappers main.c calls at session end/start (sec 11)
+syncretro_state.c/.h  suspend/resume: the snapshot path under -home, and the
+                    retro_serialize()/retro_unserialize() wrappers main.c
+                    calls at session end/start (sec 11)
+syncretro_statekey.c/.h  the snapshot staleness key (sr_state_key()), split
+                    out of syncretro_state.c so the door's link never pulls
+                    in md5.c -- the door is only ever HANDED a key, never
+                    computes one itself
 syncretro_quant.c/.h  truecolor frame -> 256 colors + palette, for the sixel tier
 syncretro.h         cross-module contract shared by every syncretro_*.c (peer of retro_core.h)
 libretro.h          VENDORED MIT-licensed libretro API header (see PROVENANCE.md)
@@ -377,6 +381,15 @@ No vendored-engine source list -- just `libretro.h` and our `*.c`. `deploy.js`
 looks for it -- flat at the door root on Windows, or in an `<os>-<arch>` sub-dir
 on *nix (`linux-x64`, ...); it is a jsexec script so it shares the lobby's
 `sv_target()` and can't disagree about that location.
+
+**Deploy ordering.** The lobby (`syncretro_lobby.js`) is live the instant it
+is saved -- an install reaches it by symlink -- while the door binary only
+changes on an explicit rebuild + deploy. Deploy the door binary *before* the
+lobby starts emitting a new command-line flag. An older binary does not
+reject an unknown flag; the door's argument loop treats the first token that
+doesn't start with `-` and isn't yet consumed as the ROM path, so a flag the
+binary predates has its VALUE silently misread as the ROM, and the real ROM
+argument is dropped.
 
 ---
 

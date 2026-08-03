@@ -119,7 +119,8 @@ var SYNCRETRO_LOBBY_TEXT = {
 	cell_fmt:       SYNCRETRO_CELL_FMT,                     /* number, title */
 	/* footer */
 	prompt:         "\1h\1c#\1n play   \1h\1cF\1nind   \1h\1cN\1next \1h\1cP\1nrev   "
-	              + "\1h\1cQ\1nuit   \1cPage \1h%d\1n\1c of \1h%d\1n: ",   /* page, page count */
+	              + "\1h\1cQ\1nuit   \1h\1c*\1n\1c=resumes   "
+	              + "\1cPage \1h%d\1n\1c of \1h%d\1n: ",   /* page, page count */
 	search:         "\r\nSearch: ",
 	/* messages */
 	no_match:       "\r\n\1hNothing matches. \1n",
@@ -518,11 +519,13 @@ function syncretro_lobby_draw(page, pages, board, cols, per_col)
 	if (syncretro_lobby_footer)
 		console.printfile(syncretro_lobby_footer, P_NOPAUSE | P_NOCRLF);
 	/* Condensed prompt, hotkeys in bright cyan: any number plays that cartridge,
-	 * F searches, N/P page, Q quits. The unprompted aliases ('/' for F, '+'/'-'
-	 * and Enter/PgUp/PgDn/Home/End for paging) are left off -- the row has to stay
-	 * inside 80 columns, and every key it does name spells out its own word. No
-	 * trailing CRLF -- the cursor rests on the bottom row, which is never scrolled,
-	 * so the terminal never pauses. */
+	 * F searches, N/P page, Q quits, and a legend for the resumable-cartridge
+	 * marker syncretro_cell() appends to a title (see SYNCRETRO_CELL_FMT). The
+	 * unprompted aliases ('/' for F, '+'/'-' and Enter/PgUp/PgDn/Home/End for
+	 * paging) are left off -- the row has to stay inside 80 columns, and every
+	 * key it does name spells out its own word. No trailing CRLF -- the cursor
+	 * rests on the bottom row, which is never scrolled, so the terminal never
+	 * pauses. */
 	syncretro_lobby_print("prompt", [page + 1, pages.length]);
 
 	/* +1 for the prompt's own row (ending without a line break, it never advances
@@ -721,6 +724,18 @@ function syncretro_lobby_state_key(rom)
 	if (per_rom !== "")
 		cap = per_rom === "true";
 	if (!cap)
+		return "";
+
+	/* An empty core hash means syncretro_core_path() could not find the file
+	 * the door will actually load -- reachable in practice, not just in
+	 * theory: syncretro_core_path() resolves via case-sensitive directory(),
+	 * while the door's own sr_find_core() uses case-insensitive globi(), so a
+	 * [console] core whose case does not match the file on disk loads fine in
+	 * the door but resolves to "" here. Falling through would key the
+	 * snapshot on romset and options alone, so a core upgrade would silently
+	 * stop invalidating it -- exactly the garbage-restore this feature exists
+	 * to make unreachable. */
+	if (!syncretro_lobby_core_md5)
 		return "";
 
 	return syncretro_state_key(syncretro_lobby_core_md5,

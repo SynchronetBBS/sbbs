@@ -1,8 +1,9 @@
 /* test_statekey.c -- the snapshot staleness key. The lobby computes it to
- * decide which cartridges show as suspended; the door computes or is handed it
- * to name the file. If the two ever disagree the lobby marks games the door
- * then refuses to resume, and nothing reports an error -- so both halves pin
- * the same golden value here and in exec/tests/syncretro_state_test.js.
+ * decide which cartridges show as suspended, and hands it to the door on the
+ * command line (`-state <key8>`) to name the file; the door never computes
+ * one itself. If the two ever disagree the lobby marks games the door then
+ * refuses to resume, and nothing reports an error -- so both halves pin the
+ * same golden value here and in exec/tests/syncretro_state_test.js.
  *
  * Copyright(C) 2026 Rob Swindell / SyncRetro.  GPL-2.0.
  */
@@ -35,9 +36,12 @@ static void test_golden(void)
 	char key[9];
 
 	sr_state_key(key, CORE_MD5, ROM_MD5, OPTS);
-	/* Golden. Fill this in from the first run (Step 3) and never adjust it to
-	 * match a changed implementation -- if it moves, the recipe changed and
-	 * every existing snapshot on every install just became unreachable. */
+	/* Golden: pins the CORE_MD5/ROM_MD5/OPTS recipe above to this exact
+	 * output. exec/tests/syncretro_state_test.js asserts the identical
+	 * constant against the JS implementation of the same recipe. Never adjust
+	 * this value to match a changed implementation -- if it moves, the recipe
+	 * changed and every existing snapshot on every install just became
+	 * unreachable. */
 	CHECK_STR(key, "38ed1f37");
 }
 
