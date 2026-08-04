@@ -165,11 +165,15 @@ endif()
 target_compile_options(xptls_static PRIVATE
 	${XPTLS_XPDEV_COMPILE_OPTIONS})
 if(MSVC)
-	# xptls itself uses C11 atomics, independently of xpdev.  MSVC requires
-	# the experimental switch and otherwise advertises atomics as unavailable.
-	target_compile_options(xptls_static PRIVATE
-		$<$<COMPILE_LANGUAGE:C>:/experimental:c11atomics>
-		$<$<COMPILE_LANGUAGE:C>:/U__STDC_NO_ATOMICS__>)
+	# Visual Studio generators evaluate target-wide COMPILE_LANGUAGE
+	# expressions as CXX for mixed C/C++ targets.  Apply these directly to
+	# the C sources that use <stdatomic.h>, so Botan builds do not lose them.
+	set_property(SOURCE xp_tls_credentials.c APPEND PROPERTY COMPILE_OPTIONS
+		/experimental:c11atomics /U__STDC_NO_ATOMICS__)
+	if(XP_CRYPTO_BACKEND STREQUAL "OpenSSL")
+		set_property(SOURCE xp_ca_openssl.c APPEND PROPERTY COMPILE_OPTIONS
+			/experimental:c11atomics /U__STDC_NO_ATOMICS__)
+	endif()
 endif()
 if(XPTLS_HAS_XPDEV_OBJECTS)
 	target_link_libraries(xptls_static INTERFACE xpdev)
