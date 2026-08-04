@@ -4348,6 +4348,7 @@ static void ctrl_thread(void* arg)
 			getdate = false;
 			getsize = false;
 			delecmd = false;
+			filedat = false;
 			file_date = 0;
 			file_size = -1;
 			if (!strnicmp(cmd, "SIZE ", 5))
