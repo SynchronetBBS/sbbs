@@ -1478,21 +1478,19 @@ that touches the user database, on all three toolchains.
 **Most of this question is already answered in the tree.** An earlier draft
 posed it as a choice to be made from scratch, which it is not.
 
-`src/xptls/` provides **`xp_crypt`**, a portable crypto abstraction with three
-backends — Botan 3 (`xp_crypt_botan3.cpp`), OpenSSL (`xp_crypt_openssl.c`) and
-a null one — whose outputs are byte-compatible with each other by design.
-`xp_crypt.h:66` already declares a KDF interface:
+`src/xptls/` provides **`xp_kdf`**, a portable KDF abstraction with Botan 3,
+OpenSSL, and disabled backends whose outputs are byte-compatible by design.
+`xp_kdf.h` declares the algorithms explicitly:
 
 ```c
-enum xp_crypt_kdf {
-    XP_CRYPT_KDF_PBKDF2_HMAC_SHA256 = 1,
-    XP_CRYPT_KDF_SCRYPT             = 2,
-    /* XP_CRYPT_KDF_ARGON2ID future — gated on OpenSSL 3.2+ / Botan support */
+enum xp_kdf_algorithm {
+    XP_KDF_PBKDF2 = 1,
+    XP_KDF_SCRYPT,
 ```
 
-So a password KDF, a memory-hard alternative in scrypt, and a placeholder for
-Argon2id all exist, behind an interface that is already portable across the
-compilers this project ships on.
+So PBKDF2 and the memory-hard scrypt alternative exist behind an interface
+that is already portable across the compilers this project ships on. Argon2id
+remains a possible future extension rather than a declared placeholder.
 
 The libraries are in place too. **Botan 3 is vendored** as
 `3rdp/dist/Botan.tar.xz`, built only when the probe in `Common.gmake` finds
@@ -1503,14 +1501,13 @@ is a new dependency to argue for.
 What is left is therefore narrower than "choose a library":
 
 - **Adding Argon2id** to the enum and both backends, or deciding that scrypt is
-  sufficient. The comment already names the gate: OpenSSL 3.2+ or Botan
-  support.
-- **Linking `xp_crypt` where the user database is touched.** It is consumed by
+  sufficient, subject to the selected OpenSSL and Botan versions.
+- **Linking `xp_kdf` where the user database is touched.** It is consumed by
   SyncTERM and the SSH code today, not by sbbs3, so the linkage constraint
   above is the real work: `sbbsecho` and `makeuser` must be able to run the
   KDF.
-- **Deciding what covers the other three criteria** below, since `xp_crypt`
-  today is KDF and symmetric encryption — not key wrapping, memory hygiene or
+- **Deciding what covers the other three criteria** below, since `xp_kdf` and
+  `xp_cipher` do not themselves provide key wrapping, memory hygiene or
   a hardware path.
 
 **Judge candidates on more than the KDF.** Whatever supplies the remainder also
@@ -1541,11 +1538,11 @@ The candidates, against those and against the linkage constraint:
   `sbbsdefs.mk`), provides PBKDF2, and already implements criterion 2 in the
   form this tree uses for the TLS private key (`ssl.c:480-482`). See the
   linkage problem above.
-- **Botan 3, through `xp_crypt`.** Already vendored and already wrapped.
+- **Botan 3, through xptls.** Already vendored and already wrapped.
   Provides KDFs, authenticated ciphers for criterion 2, and
   `Botan::secure_vector` for criterion 3. PKCS#11 support exists in the
   library.
-- **OpenSSL, through `xp_crypt`.** The other existing backend, and the one the
+- **OpenSSL, through xptls.** The other existing backend, and the one the
   build prefers when the system has 3.0+. Covers criterion 4 through its
   provider interface — the route by which a TPM or token becomes configuration
   rather than code — at the cost of the `SHA256_CTX` clash noted above.
@@ -1554,7 +1551,7 @@ The candidates, against those and against the linkage constraint:
   carries two, which is the argument against it rather than any technical
   shortcoming.
 - **A vendored Argon2.** The KDF alone, nothing else, and redundant if Argon2id
-  reaches `xp_crypt` through either existing backend.
+  reaches `xp_kdf` through either existing backend.
 
 Whichever is chosen, the self-describing record format means the choice is not
 permanent for *existing* records — it is permanent only for how long the tree

@@ -288,11 +288,13 @@ private:
 class ServerPolicy : public CertificatePolicy {
 public:
 	ServerPolicy(enum xp_tls_version minimum, enum xp_tls_version maximum,
-	             enum xp_tls_client_auth client_auth, bool psk)
+	             enum xp_tls_client_auth client_auth, bool psk,
+	             enum xp_tls_psk_policy psk_policy)
 	    : CertificatePolicy(minimum, maximum), client_auth_(client_auth),
 	      tls12_(minimum <= XP_TLS_VERSION_1_2 &&
 	          (maximum == XP_TLS_VERSION_UNKNOWN ||
-	           maximum >= XP_TLS_VERSION_1_2)), psk_(psk) {}
+	           maximum >= XP_TLS_VERSION_1_2)), psk_(psk),
+	      psk_policy_(psk_policy) {}
 	bool require_client_certificate_authentication() const override
 	{
 		return client_auth_ == XP_TLS_CLIENT_AUTH_REQUIRE_VALID;
@@ -307,14 +309,27 @@ public:
 		if (tls12_) {
 			methods.push_back("ECDHE_PSK");
 			methods.push_back("DHE_PSK");
+			if (psk_policy_ == XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY)
+				methods.push_back("PSK");
 		}
 		return methods;
 	}
 	std::vector<std::string> allowed_ciphers() const override
 	{
+		if (psk_ && psk_policy_ == XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY)
+			return {"AES-128", "AES-256", "AES-128/GCM",
+			        "AES-256/GCM", "ChaCha20Poly1305"};
 		if (psk_)
-			return {"AES-128/GCM", "ChaCha20Poly1305"};
+			return {"AES-128/GCM", "AES-256/GCM", "ChaCha20Poly1305"};
 		return CertificatePolicy::allowed_ciphers();
+	}
+	std::vector<std::string> allowed_macs() const override
+	{
+		if (!psk_)
+			return CertificatePolicy::allowed_macs();
+		if (psk_policy_ == XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY)
+			return {"SHA-256", "SHA-384", "AEAD", "SHA-1"};
+		return {"AEAD"};
 	}
 	std::vector<std::string> allowed_signature_methods() const override
 	{
@@ -340,6 +355,7 @@ private:
 	enum xp_tls_client_auth client_auth_;
 	bool tls12_;
 	bool psk_;
+	enum xp_tls_psk_policy psk_policy_;
 };
 
 class ServerCredentials : public Botan::Credentials_Manager {
@@ -453,14 +469,14 @@ private:
 	std::string *selected_identity_;
 };
 
-/* A configured external PSK is bound to one exact protocol version. The new
-   configuration API restricts TLS 1.2 to ephemeral PSK exchanges, and
-   Botan's TLS 1.3 client offers only the forward-secret psk_dhe_ke mode. The
-   legacy wrapper retains plain-PSK compatibility for existing MQTT users. */
+/* A configured external PSK is bound to one exact protocol version. The
+   modern policy restricts TLS 1.2 to ephemeral PSK exchanges, while the
+   explicit compatibility policy permits plain PSK for older brokers. Botan's
+   TLS 1.3 client offers only the forward-secret psk_dhe_ke mode. */
 class PskPolicy : public Botan::TLS::Policy {
 public:
-	PskPolicy(enum xp_tls_version version, bool legacy_psk)
-	    : version_(version), legacy_psk_(legacy_psk) {}
+	PskPolicy(enum xp_tls_version version, enum xp_tls_psk_policy policy)
+	    : version_(version), policy_(policy) {}
 	bool allow_tls12() const override { return version_ == XP_TLS_VERSION_1_2; }
 	bool allow_tls13() const override { return version_ == XP_TLS_VERSION_1_3; }
 	Botan::TLS::Protocol_Version
@@ -476,7 +492,7 @@ public:
 	{
 		if (version_ == XP_TLS_VERSION_1_3)
 			return Botan::TLS::Policy::allowed_key_exchange_methods();
-		if (legacy_psk_)
+		if (policy_ == XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY)
 			return { "DHE_PSK", "ECDHE_PSK", "PSK" };
 		return { "DHE_PSK", "ECDHE_PSK" };
 	}
@@ -497,7 +513,7 @@ public:
 	}
 	std::vector<std::string> allowed_ciphers() const override
 	{
-		if (!legacy_psk_)
+		if (policy_ == XP_TLS_PSK_POLICY_MODERN)
 			return { "AES-128/GCM", "AES-256/GCM",
 			         "ChaCha20Poly1305" };
 		return {
@@ -505,25 +521,25 @@ public:
 		    "AES-256",
 		    "AES-128/GCM",
 		    "AES-256/GCM",
+		    "ChaCha20Poly1305",
 		};
 	}
 	std::vector<std::string> allowed_macs() const override
 	{
-		if (!legacy_psk_)
+		if (policy_ == XP_TLS_PSK_POLICY_MODERN)
 			return { "AEAD" };
 		return { "SHA-256", "SHA-384", "AEAD", "SHA-1" };
 	}
 
 private:
 	enum xp_tls_version version_;
-	bool legacy_psk_;
+	enum xp_tls_psk_policy policy_;
 };
 
 /* ------------------------------------------------------- Callbacks */
 
 struct xp_tls_ctx {
 	SOCKET                                   sock;
-	int                                      read_timeout_sec;
 	std::string                              sni;
 	char                                     err[256];
 	std::deque<uint8_t>                      plaintext;	/* decrypted data awaiting pop() */
@@ -808,8 +824,7 @@ pump_recv(xp_tls_ctx *ctx, OperationDeadline& deadline)
 /* ---------------------------------------------------------- open */
 
 static xp_tls_t
-client_open_inner(SOCKET sock, const struct xp_tls_client_config *config,
-                  bool legacy_psk)
+client_open_inner(SOCKET sock, const struct xp_tls_client_config *config)
 {
 	const char *sni = config->server_name;
 	const char *psk_identity = config->psk_identity;
@@ -822,7 +837,6 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config,
 		return nullptr;
 	}
 	ctx->sock               = sock;
-	ctx->read_timeout_sec   = config->read_timeout;
 	ctx->peer_closed        = false;
 	ctx->fatal_alert        = false;
 	ctx->psk_used           = false;
@@ -849,7 +863,7 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config,
 				    XP_TLS_VERSION_1_3, XP_TLS_VERSION_1_3);
 			else
 				ctx->policy = std::make_shared<PskPolicy>(config->psk_version,
-				    legacy_psk);
+				    config->psk_policy);
 		}
 		else {
 			auto client_creds = std::make_shared<ClientCredentials>(
@@ -934,15 +948,6 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config,
 }
 
 extern "C" xp_tls_t
-xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
-{
-	struct xp_tls_client_config config{};
-	config.server_name = sni;
-	config.read_timeout = read_timeout;
-	return client_open_inner(sock, &config, false);
-}
-
-extern "C" xp_tls_t
 xp_tls_client_open_config(SOCKET sock,
                           const struct xp_tls_client_config *config)
 {
@@ -953,6 +958,11 @@ xp_tls_client_open_config(SOCKET sock,
 	bool have_psk_identity = config->psk_identity != nullptr &&
 	    config->psk_identity[0] != 0;
 	bool have_psk = config->psk != nullptr && config->psk_len > 0;
+	if (static_cast<unsigned>(config->psk_policy) >
+	    XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY) {
+		set_last_err("xp_tls_client_open_config: invalid PSK policy");
+		return nullptr;
+	}
 	if (have_psk_identity != have_psk) {
 		set_last_err("xp_tls_client_open_config: incomplete PSK configuration");
 		return nullptr;
@@ -1007,25 +1017,7 @@ xp_tls_client_open_config(SOCKET sock,
 			return nullptr;
 		}
 	}
-	return client_open_inner(sock, config, false);
-}
-
-extern "C" xp_tls_t
-xp_tls_client_open_psk(SOCKET sock, const char *sni, int read_timeout,
-                       const char *identity, const void *psk, size_t psk_len)
-{
-	if (identity == nullptr || psk == nullptr || psk_len == 0) {
-		set_last_err("xp_tls_client_open_psk: missing identity or PSK");
-		return nullptr;
-	}
-	struct xp_tls_client_config config{};
-	config.server_name = sni;
-	config.read_timeout = read_timeout;
-	config.psk_identity = identity;
-	config.psk = psk;
-	config.psk_len = psk_len;
-	config.psk_version = XP_TLS_VERSION_1_2;
-	return client_open_inner(sock, &config, true);
+	return client_open_inner(sock, config);
 }
 
 extern "C" enum xp_tls_version
@@ -1042,6 +1034,8 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 	if (config == nullptr
 	    || ((chain_pem == nullptr) != (private_key == nullptr))
 	    || (private_key == nullptr && config->psk_lookup == nullptr)
+	    || static_cast<unsigned>(config->psk_policy) >
+	       XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY
 	    || static_cast<unsigned>(config->client_auth) >
 	       XP_TLS_CLIENT_AUTH_REQUIRE_VALID
 	    || (config->client_auth == XP_TLS_CLIENT_AUTH_REQUIRE_VALID
@@ -1080,7 +1074,7 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 		    &ctx->selected_psk_identity);
 		ctx->policy = std::make_shared<ServerPolicy>(minimum,
 		    config->max_version, config->client_auth,
-		    config->psk_lookup != nullptr);
+		    config->psk_lookup != nullptr, config->psk_policy);
 		ctx->callbacks = std::make_shared<XpTlsCallbacks>(ctx,
 		    config->client_auth == XP_TLS_CLIENT_AUTH_REQUIRE_VALID, nullptr);
 		ctx->channel = std::make_unique<Botan::TLS::Server>(
@@ -1125,36 +1119,6 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 }
 
 /* ---------------------------------------------------------- push */
-
-extern "C" int
-xp_tls_push(xp_tls_t ctx, const void *buf, size_t n, size_t *copied)
-{
-	return xp_tls_push_timeout(ctx, buf, n, copied, -1);
-}
-
-/* ---------------------------------------------------------- pop */
-
-extern "C" int
-xp_tls_pop(xp_tls_t ctx, void *buf, size_t n, size_t *copied)
-{
-	if (copied != nullptr)
-		*copied = 0;
-	if (ctx == nullptr || buf == nullptr)
-		return XP_TLS_ERR;
-	if (n == 0)
-		return XP_TLS_OK;
-
-	return xp_tls_pop_timeout(ctx, buf, n, copied,
-	    ctx->read_timeout_sec <= 0 ? -1 : ctx->read_timeout_sec * 1000);
-}
-
-/* --------------------------------------------------------- flush */
-
-extern "C" int
-xp_tls_flush(xp_tls_t ctx)
-{
-	return ctx == nullptr ? XP_TLS_OK : xp_tls_flush_timeout(ctx, -1);
-}
 
 extern "C" int
 xp_tls_pop_timeout(xp_tls_t ctx, void *buf, size_t n, size_t *copied,

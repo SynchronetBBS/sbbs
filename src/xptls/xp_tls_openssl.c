@@ -49,7 +49,7 @@
 
 /*
  * A thread-local string buffer that receives formatted errors from
- * xp_tls_client_open() when it fails before returning a ctx.
+ * xp_tls_client_open_config() when it fails before returning a ctx.
  */
 static _Thread_local char last_err_buf[256];
 
@@ -90,7 +90,6 @@ struct xp_tls_ctx {
 	SOCKET         sock;
 	SSL_CTX       *sslctx;
 	SSL           *ssl;
-	int            read_timeout_sec;
 	char           err[256];
 	/* PSK config: copies owned by the ctx so the OpenSSL callback can
 	   read them at handshake time without holding pointers into the
@@ -572,7 +571,7 @@ server_tls13_psk_callback(SSL *ssl, const unsigned char *identity,
 /*
  * OpenSSL invokes this during the ClientKeyExchange to fetch the PSK
  * identity and shared key.  We pull both from the ctx that was attached
- * via SSL_set_app_data() in xp_tls_client_open_psk().
+ * via SSL_set_app_data() in xp_tls_client_open_config().
  */
 static unsigned int
 psk_client_cb(SSL *ssl, const char *hint, char *id, unsigned int max_id_len,
@@ -632,8 +631,7 @@ private_key_password_cb(char *buffer, int capacity, int writing, void *arg)
  * external PSKs (with SHA-256 as the TLS 1.3 callback's default digest).
  */
 static xp_tls_t
-client_open_inner(SOCKET sock, const struct xp_tls_client_config *config,
-                  bool legacy_psk)
+client_open_inner(SOCKET sock, const struct xp_tls_client_config *config)
 {
 	struct xp_tls_ctx *ctx;
 	int rc;
@@ -659,7 +657,6 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config,
 		return NULL;
 	}
 	ctx->sock = sock;
-	ctx->read_timeout_sec = config->read_timeout;
 	ctx->peer_chain_cb = config->peer_chain_cb;
 	ctx->peer_chain_cb_arg = config->peer_chain_cb_arg;
 
@@ -713,9 +710,11 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config,
 		/* TLS 1.2 encodes authentication in the cipher suite. Require an
 		   ephemeral PSK exchange rather than permitting plain PSK. TLS 1.3
 		   cipher suites are configured separately and are unaffected. */
-		if (!legacy_psk && config->psk_version == XP_TLS_VERSION_1_2 &&
+		if (config->psk_version == XP_TLS_VERSION_1_2 &&
 		    SSL_CTX_set_cipher_list(ctx->sslctx,
-		    "kECDHEPSK:kDHEPSK:!CBC:!eNULL") != 1) {
+		    config->psk_policy == XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY
+		        ? "PSK:DHE-PSK:ECDHE-PSK:!eNULL:!RC4:!3DES:!DES"
+		        : "kECDHEPSK:kDHEPSK:!CBC:!eNULL:!RC4:!3DES:!DES") != 1) {
 			format_ssl_err(last_err_buf, sizeof(last_err_buf),
 			              "setting ephemeral TLS 1.2 PSK cipher list");
 			goto fail;
@@ -836,16 +835,6 @@ fail:
 }
 
 xp_tls_t
-xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout)
-{
-	const struct xp_tls_client_config config = {
-		.server_name = sni,
-		.read_timeout = read_timeout,
-	};
-	return client_open_inner(sock, &config, false);
-}
-
-xp_tls_t
 xp_tls_client_open_config(SOCKET sock,
                           const struct xp_tls_client_config *config)
 {
@@ -856,6 +845,11 @@ xp_tls_client_open_config(SOCKET sock,
 	bool have_psk_identity = config->psk_identity != NULL &&
 	    config->psk_identity[0] != 0;
 	bool have_psk = config->psk != NULL && config->psk_len > 0;
+	if ((unsigned)config->psk_policy >
+	    XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY) {
+		set_last_err("xp_tls_client_open_config: invalid PSK policy");
+		return NULL;
+	}
 	if (have_psk_identity != have_psk) {
 		set_last_err("xp_tls_client_open_config: incomplete PSK configuration");
 		return NULL;
@@ -898,26 +892,7 @@ xp_tls_client_open_config(SOCKET sock,
 		set_last_err("xp_tls_client_open_config: authenticated TLS requires a server name");
 		return NULL;
 	}
-	return client_open_inner(sock, config, false);
-}
-
-xp_tls_t
-xp_tls_client_open_psk(SOCKET sock, const char *sni, int read_timeout,
-                       const char *identity, const void *psk, size_t psk_len)
-{
-	if (identity == NULL || psk == NULL || psk_len == 0) {
-		set_last_err("xp_tls_client_open_psk: missing identity or PSK");
-		return NULL;
-	}
-	const struct xp_tls_client_config config = {
-		.server_name = sni,
-		.read_timeout = read_timeout,
-		.psk_identity = identity,
-		.psk = psk,
-		.psk_len = psk_len,
-		.psk_version = XP_TLS_VERSION_1_2,
-	};
-	return client_open_inner(sock, &config, true);
+	return client_open_inner(sock, config);
 }
 
 static int
@@ -955,6 +930,8 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 	    || ((chain_pem == NULL) != (private_key == NULL))
 	    || (private_key == NULL && config->psk_lookup == NULL)
 	    || (unsigned)config->client_auth > XP_TLS_CLIENT_AUTH_REQUIRE_VALID
+	    || (unsigned)config->psk_policy >
+	       XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY
 	    || (config->client_auth == XP_TLS_CLIENT_AUTH_REQUIRE_VALID
 	        && (config->client_ca_file == NULL || config->client_ca_file[0] == 0))) {
 		set_last_err("xp_tls_server_open: invalid configuration");
@@ -1019,8 +996,13 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 			goto fail;
 		}
 		if (SSL_CTX_set_cipher_list(context->sslctx,
-		    private_key == NULL ? "PSK:DHE-PSK:ECDHE-PSK"
-		                        : "DEFAULT:PSK:DHE-PSK:ECDHE-PSK") != 1) {
+		    config->psk_policy == XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY
+		        ? (private_key == NULL
+		            ? "PSK:DHE-PSK:ECDHE-PSK:!eNULL:!RC4:!3DES:!DES"
+		            : "DEFAULT:PSK:DHE-PSK:ECDHE-PSK:!eNULL:!RC4:!3DES:!DES")
+		        : (private_key == NULL
+		            ? "kECDHEPSK:kDHEPSK:!CBC:!eNULL:!RC4:!3DES:!DES"
+		            : "DEFAULT:kECDHEPSK:kDHEPSK:!CBC:!eNULL:!RC4:!3DES:!DES")) != 1) {
 			format_ssl_err(last_err_buf, sizeof(last_err_buf), "TLS PSK suites");
 			goto fail;
 		}
@@ -1090,24 +1072,6 @@ tls_io_error_locked(struct xp_tls_ctx *ctx, int result, const char *operation,
 	return XP_TLS_ERR;
 }
 
-int
-xp_tls_push(xp_tls_t ctx, const void *buf, size_t n, size_t *copied)
-{
-	return xp_tls_push_timeout(ctx, buf, n, copied, -1);
-}
-
-/* ------------------------------------------------------------- pop */
-
-int
-xp_tls_pop(xp_tls_t ctx, void *buf, size_t n, size_t *copied)
-{
-	return xp_tls_pop_timeout(ctx, buf, n, copied,
-	    ctx == NULL || ctx->read_timeout_sec <= 0
-	    ? -1 : ctx->read_timeout_sec * 1000);
-}
-
-/* ------------------------------------------------------------- flush */
-
 bool
 xp_tls_has_pending(xp_tls_t ctx)
 {
@@ -1129,12 +1093,6 @@ xp_tls_used_psk(xp_tls_t ctx)
 	   external-PSK authentication. A PSK-configured context is returned only
 	   after client_open_inner() has verified that the handshake selected it. */
 	return ctx != NULL && ctx->ssl != NULL && (ctx->psk != NULL || ctx->psk_used);
-}
-
-int
-xp_tls_flush(xp_tls_t ctx)
-{
-	return ctx == NULL ? XP_TLS_OK : xp_tls_flush_timeout(ctx, -1);
 }
 
 int

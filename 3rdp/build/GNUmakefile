@@ -292,13 +292,13 @@ endif
 # Only build the Botan modules SyncTERM (+ DeuceSSH) actually touches.
 # Botan pulls transitive deps automatically under --minimized-build;
 # this list names the top-level algorithms / protocols we CALL.  Keep
-# synchronised with the matching block in src/syncterm/CMakeLists.txt.
+# synchronised with the matching block in src/build/SynchronetCrypto.cmake.
 #
 # tls12,tls13               — xp_tls (TelnetS, HTTPS)
-# aes,cbc,ctr               — xp_crypt encrypted-INI + DeuceSSH AES-256/CTR
-# chacha,chacha20poly1305   — xp_crypt ChaCha20 + TLS 1.3 AEAD
-# rc4,des,cast128           — legacy decrypt-only paths in xp_crypt
-# hmac,pbkdf2,scrypt,pbes2  — xp_crypt KDF + SSH MAC + encrypted CA keys
+# aes,cbc,ctr               — xp_cipher encrypted-INI + DeuceSSH AES-256/CTR
+# chacha,chacha20poly1305   — xp_cipher ChaCha20 + TLS 1.3 AEAD
+# rc4,des,cast128           — xp_cipher legacy decrypt-only paths
+# hmac,pbkdf2,scrypt,pbes2  — xp_kdf + SSH MAC + encrypted CA keys
 # sha1,sha2_32,sha2_64      — legacy fingerprints + current SHA-256/-512
 # rsa,ed25519,x25519,dh     — SSH host/user keys + TLS sig/kex
 # ecdsa,ecdh                — TLS 1.2/1.3 cert + kex

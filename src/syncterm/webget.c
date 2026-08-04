@@ -161,7 +161,8 @@ recv_nbytes(struct http_session *sess, uint8_t *buf, const size_t chunk_size, bo
 #ifndef WITHOUT_CRYPTO
 		if (sess->is_tls) {
 			size_t copied = 0;
-			int status = xp_tls_pop(sess->tls, &buf[received], chunk_size - received, &copied);
+			int status = xp_tls_pop_timeout(sess->tls, &buf[received],
+			    chunk_size - received, &copied, 5000);
 			if (status == XP_TLS_ERR) {
 				set_msgf(sess->req, "TLS read error: %s", xp_tls_errstr(sess->tls));
 				goto error_return;
@@ -306,14 +307,19 @@ send_request(struct http_session *sess)
 	ssize_t sent;
 #ifndef WITHOUT_CRYPTO
 	if (sess->is_tls) {
-		size_t copied;
-		int ret = xp_tls_push(sess->tls, reqstr, len, &copied);
-		if (ret < 0)
-			sent = -1;
-		else
-			sent = (ssize_t)copied;
-		if (xp_tls_flush(sess->tls) < 0)
-			sent = -1;
+		size_t total = 0;
+		while (total < (size_t)len) {
+			size_t copied = 0;
+			int ret = xp_tls_push_timeout(sess->tls, reqstr + total,
+			    (size_t)len - total, &copied, -1);
+			if (ret < 0 || copied == 0) {
+				total = 0;
+				break;
+			}
+			total += copied;
+		}
+		sent = total == (size_t)len
+		    && xp_tls_flush_timeout(sess->tls, -1) >= 0 ? len : -1;
 	}
 	else
 #endif
@@ -1075,7 +1081,10 @@ tls_setup(struct http_session *sess)
 	/* 5-second read timeout matches the Cryptlib-era behaviour; the
 	   consumer's recv loop treats timeout as "try again" (per
 	   XP_TLS_TIMEOUT). */
-	sess->tls = xp_tls_client_open(sess->sock, sess->hostname, 5);
+	const struct xp_tls_client_config config = {
+		.server_name = sess->hostname,
+	};
+	sess->tls = xp_tls_client_open_config(sess->sock, &config);
 	if (sess->tls == NULL) {
 		set_msgf(sess->req, "Unable to open TLS session: %s", xp_tls_last_err());
 		return false;

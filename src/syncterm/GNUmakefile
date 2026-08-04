@@ -4,6 +4,7 @@ WINNT ?= 0xA00
 WIN32_IE ?= 0xA00
 NTDDI ?= 0x0A000006
 include ${SRC_ROOT}/build/Common.gmake
+include ${SRC_ROOT}/build/CMakeSubproject.gmake
 
 ifdef NEED_BITMAP
  OBJS += $(CIOLIB_INTERPOLATE_OBJS)
@@ -24,8 +25,8 @@ ifeq ($(os),sunos)    # Solaris
  CFLAGS	+=	-DNEED_CFMAKERAW
 endif
 
-# SSH (DeuceSSH) and crypto (TLS + encrypted-INI via xpdev's
-# xp_tls / xp_crypt, backed by OpenSSL or Botan 3) are independently
+# SSH (DeuceSSH) and crypto (TLS + encrypted INI through xptls,
+# backed by OpenSSL or Botan 3) are independently
 # optional; the default is both enabled.
 #
 #   WITHOUT_DEUCESSH — drops ssh.c, CONN_TYPE_SSH / _SSHNA, the SFTP
@@ -36,12 +37,10 @@ endif
 #                      decrypt-only reference ciphers in legacy_ciphers/.
 #                      webget.c still compiles; its HTTPS paths no-op.
 
-# Two independent decisions: which xp_crypt shim xpdev compiles
-# (XP_CRYPTO_BACKEND) and which crypto runtime we link against at
-# program-link time.  They usually match, but DeuceSSH needs its
-# backend at link time even when WITHOUT_CRYPTO pins xpdev to the
-# "none" shim.  NEED_OPENSSL / NEED_BOTAN are set by each side that
-# needs those libs; ifdef at the bottom pulls them in exactly once.
+# One neutral decision selects the crypto provider for both independent
+# libraries.  XP_CRYPTO_BACKEND may still be "none" when WITHOUT_CRYPTO is
+# set, while DeuceSSH continues to use CRYPTO_BACKEND.  NEED_OPENSSL /
+# NEED_BOTAN collect final-link requirements exactly once.
 
 # XP_CRYPTO_BACKEND, DEUCESSH_BACKEND, USE_VENDORED_BOTAN are resolved
 # once in build/Common.gmake.  Keeping the decision there ensures every
@@ -59,7 +58,7 @@ ifndef WITHOUT_DEUCESSH
  # layout.  The build step is a no-op when libdeucessh.a is already
  # current.
  DEUCESSH_DIR    := $(SRC_ROOT)/ssh
- DEUCESSH_BUILD  := $(3RDPODIR)/deucessh-build
+ DEUCESSH_BUILD  := $(3RDPODIR)/deucessh-$(DEUCESSH_BACKEND)-build
  DEUCESSH_LIB    := $(DEUCESSH_BUILD)/libdeucessh.a
  DEUCESSH_PC     := $(DEUCESSH_BUILD)/deucessh.pc
 
@@ -69,72 +68,6 @@ ifndef WITHOUT_DEUCESSH
  # different (e.g. preferring system OpenSSL when vendored Botan
  # hasn't been built yet at parse time).
  DEUCESSH_CMAKE_BACKEND_ARG := -DDEUCESSH_CRYPTO_BACKEND=$(DEUCESSH_BACKEND)
-
- # For Win32/Win64 cross-compile, point cmake at the MinGW toolchain
- # and tell it we're cross-compiling to Windows.  cmake caches toolchain
- # decisions, so $(DEUCESSH_BUILD) must be wiped whenever the compiler
- # changes — the deucessh rule below handles that.
- ifdef win
-  # Split ccache out of $(CC)/$(CXX) into CMAKE_*_COMPILER_LAUNCHER —
-  # cmake wants a single-binary CMAKE_*_COMPILER and treats a two-
-  # word value ("ccache /path/to/gcc") as a compiler path + stray arg
-  # ("Ignoring extra path from command line" warning, then the test
-  # compile runs ccache with no compiler and fails).
-  DEUCESSH_CC_WORDS  := $(CC)
-  DEUCESSH_CXX_WORDS := $(CXX)
-  ifeq ($(firstword $(DEUCESSH_CC_WORDS)),ccache)
-   DEUCESSH_CMAKE_LAUNCHER_ARGS := \
-       -DCMAKE_C_COMPILER_LAUNCHER=ccache \
-       -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-   DEUCESSH_CC_BIN  := $(wordlist 2,$(words $(DEUCESSH_CC_WORDS)),$(DEUCESSH_CC_WORDS))
-   DEUCESSH_CXX_BIN := $(wordlist 2,$(words $(DEUCESSH_CXX_WORDS)),$(DEUCESSH_CXX_WORDS))
-  else
-   DEUCESSH_CMAKE_LAUNCHER_ARGS :=
-   DEUCESSH_CC_BIN  := $(CC)
-   DEUCESSH_CXX_BIN := $(CXX)
-  endif
-  DEUCESSH_CMAKE_TOOLCHAIN_ARGS := \
-      -DCMAKE_SYSTEM_NAME=Windows \
-      -DCMAKE_C_COMPILER=$(DEUCESSH_CC_BIN) \
-      -DCMAKE_CXX_COMPILER=$(DEUCESSH_CXX_BIN) \
-      $(DEUCESSH_CMAKE_LAUNCHER_ARGS) \
-      -DCMAKE_AR=$(shell command -v $(AR)) \
-      -DCMAKE_RANLIB=$(shell command -v $(RANLIB)) \
-      -DCMAKE_RC_COMPILER=$(shell command -v $(WINDRES))
- else ifeq ($(os),darwin)
-  # FAT cascades to SyncTERM's CFLAGS/LDFLAGS via Common.gmake but
-  # DeuceSSH is a CMake subproject and doesn't see those — set
-  # CMAKE_OSX_ARCHITECTURES so its libraries match the SyncTERM
-  # binary's slice list.  MACOS_PORTABLE adds per-slice microarch
-  # floors (-Xarch_<arch> ...) plus the deployment target so
-  # DeuceSSH's archive matches SyncTERM's redistributable floor.
-  DEUCESSH_CMAKE_TOOLCHAIN_ARGS :=
-  ifdef FAT
-   # Quote the value: the recipe's shell would otherwise split on the
-   # `;` in x86_64;arm64 and treat everything after as a separate
-   # command, dropping the rest of the cmake args (deployment-target,
-   # CXX_FLAGS, ...) on the floor.
-   DEUCESSH_CMAKE_TOOLCHAIN_ARGS += "-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64"
-   ifdef MACOS_PORTABLE
-    DSSH_FAT_FLAGS := -Xarch_x86_64 -march=skylake -Xarch_arm64 -mcpu=apple-m1
-    DEUCESSH_CMAKE_TOOLCHAIN_ARGS += "-DCMAKE_C_FLAGS=$(DSSH_FAT_FLAGS)" \
-                                     "-DCMAKE_CXX_FLAGS=$(DSSH_FAT_FLAGS)"
-   endif
-  else ifdef MACOS_PORTABLE
-   ifeq ($(machine_uname),x86_64)
-    DEUCESSH_CMAKE_TOOLCHAIN_ARGS += -DCMAKE_C_FLAGS=-march=skylake \
-                                     -DCMAKE_CXX_FLAGS=-march=skylake
-   else ifeq ($(machine_uname),arm64)
-    DEUCESSH_CMAKE_TOOLCHAIN_ARGS += -DCMAKE_C_FLAGS=-mcpu=apple-m1 \
-                                     -DCMAKE_CXX_FLAGS=-mcpu=apple-m1
-   endif
-  endif
-  ifdef MIN_MAC_OSX_VERSION
-   DEUCESSH_CMAKE_TOOLCHAIN_ARGS += -DCMAKE_OSX_DEPLOYMENT_TARGET=$(MIN_MAC_OSX_VERSION)
-  endif
- else
-  DEUCESSH_CMAKE_TOOLCHAIN_ARGS :=
- endif
 
  ifeq ($(DEUCESSH_BACKEND),Botan)
   NEED_BOTAN := 1
@@ -186,7 +119,7 @@ ifndef WITHOUT_DEUCESSH
        export PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" && \
        cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
        -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
-       $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) >$(DEUCESSH_BUILD).log 2>&1; echo $$?)
+       $(CMAKE_SUBPROJECT_TOOLCHAIN_ARGS) >$(DEUCESSH_BUILD).log 2>&1; echo $$?)
    DSSH_READY := $(DSSH_BUILD_READY)
    ifneq ($(DSSH_READY),YES)
     WITHOUT_DEUCESSH := 1
@@ -210,24 +143,23 @@ ifndef WITHOUT_DEUCESSH
  EXTRA_LIBS += $(SFTP-MT_LIBS) $(DEUCESSH_LIB)
  DEPS       += $(DEUCESSH_LIB)
 
- # Build step — configure normally ran at parse time, but the probe at
- # line 127 skips configure when no system crypto is on disk (intent was
- # for the build-order's `botan` recipe to provide vendored Botan first,
- # then leave the recipe to handle it).  Bootstrap configure here if the
- # parse-time probe didn't, so the unprobed path actually works.
+ # Backend-specific build directories prevent a cached Botan configuration
+ # from being reused for OpenSSL (or the reverse).  CMake's generated build
+ # system handles source/CMakeLists changes after the initial configure.
+ # DeuceSSH itself remains untouched.
  .PHONY: deucessh
- deucessh $(DEUCESSH_LIB):
+ deucessh:
 	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
-	@if [ ! -f $(DEUCESSH_PC) ] \
-	    || { [ ! -f $(DEUCESSH_BUILD)/Makefile ] \
-	         && [ ! -f $(DEUCESSH_BUILD)/build.ninja ]; }; then \
-	    echo "Configuring DeuceSSH..."; \
+	@if [ ! -f $(DEUCESSH_BUILD)/Makefile ] \
+	    && [ ! -f $(DEUCESSH_BUILD)/build.ninja ]; then \
 	    PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" \
 	    cmake -S $(DEUCESSH_DIR) -B $(DEUCESSH_BUILD) \
 	        -DCMAKE_BUILD_TYPE=Release $(DEUCESSH_CMAKE_BACKEND_ARG) \
-	        $(DEUCESSH_CMAKE_TOOLCHAIN_ARGS) || exit 1; \
+	        $(CMAKE_SUBPROJECT_TOOLCHAIN_ARGS) || exit 1; \
 	fi
 	cmake --build $(DEUCESSH_BUILD) --target deucessh_static
+ $(DEUCESSH_LIB): deucessh
+	@test -f $@
 else
  CFLAGS += -DWITHOUT_DEUCESSH
  # targets.mk captured "deucessh" as a prereq of `all:` before our
@@ -260,7 +192,7 @@ else
 endif
 
 ifdef NEED_OPENSSL
- # syncterm's xp_tls_openssl.c / xp_crypt_openssl.c and libdeucessh.a
+# libxptls.a and libdeucessh.a
  # both reference OpenSSL symbols; append to TRAILING_LIBS so they land
  # after the static libraries on the link line (static archives resolve
  # in order).  Also pick up include paths via pkg-config so non-default
@@ -276,65 +208,48 @@ ifdef NEED_BOTAN
  # -pthread / -lwinpthread where appropriate), and on MinGW a bare
  # -pthread here trips "cannot find -lpthread".
  # Append Botan and its static dependencies to TRAILING_LIBS — xpdev
- # and deucessh both reference Botan symbols, so they must follow both
+# xptls, xpdev, and DeuceSSH reference Botan symbols, so Botan must follow
  # static archives.  In particular, Botan's Windows certificate-store
  # module declares Crypt32 in Libs.private.
  TRAILING_LIBS += $(filter-out -pthread,$(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --static --libs botan-3))
 endif
 
-# ini_crypt.c + xp_crypt/xp_tls backend shim are always built, even
-# with WITHOUT_CRYPTO — bbslist.c and syncterm.c reference the
-# encrypted-INI API unconditionally (iniWriteEncryptedFile is the
-# general write path; with INI_CRYPT_ALGO_NONE it falls through to
-# plain iniWriteFile).  The "none" backend provides no-op xp_crypt
-# and xp_tls so nothing drags in OpenSSL / Botan.
-#
-# xp_crypt / xp_tls sources live in ../xptls/ (standalone library).
-XPTLS_SRC = ../xptls
+# xptls is an independent CMake library, just like DeuceSSH.  It remains
+# present with WITHOUT_CRYPTO because the none backend supplies the APIs used
+# by the normal encrypted-INI write path.
+XPTLS_SRC   := $(SRC_ROOT)/xptls
+XPTLS_BUILD := $(3RDPODIR)/xptls-$(XP_CRYPTO_BACKEND)-build
+XPTLS_LIB   := $(XPTLS_BUILD)/libxptls.a
+XPTLS_CMAKE_BACKEND_ARG := -DCRYPTO_BACKEND=$(CRYPTO_BACKEND) \
+    -DXP_CRYPTO_BACKEND=$(XP_CRYPTO_BACKEND)
+
 CFLAGS += -I$(XPTLS_SRC)
 OBJS += $(MTOBJODIR)$(DIRSEP)ini_crypt$(OFILE)
+EXTRA_LIBS += $(XPTLS_LIB)
+DEPS += $(XPTLS_LIB)
+all: xptls
+
+.PHONY: xptls
+xptls:
+	@echo "Building xptls ($(XP_CRYPTO_BACKEND) backend)"
+	@if [ ! -f $(XPTLS_BUILD)/Makefile ] \
+	    && [ ! -f $(XPTLS_BUILD)/build.ninja ]; then \
+	    PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" \
+	    cmake -S $(XPTLS_SRC) -B $(XPTLS_BUILD) \
+	        -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF \
+	        -DXPTLS_BUILD_XPDEV=OFF \
+	        $(XPTLS_CMAKE_BACKEND_ARG) \
+	        $(CMAKE_SUBPROJECT_TOOLCHAIN_ARGS) || exit 1; \
+	fi
+	cmake --build $(XPTLS_BUILD) --target xptls_static
+
+# Make final links wait for the always-current CMake sub-build without
+# copying the provider sources into SyncTERM's own object list.
+$(XPTLS_LIB): xptls
+	@test -f $@
+
 ifeq ($(XP_CRYPTO_BACKEND),Botan)
- # Botan 3 public headers require C++20 (std::span).  Override the
- # tree-default -std=c++11 for just the Botan shim objects.
- BOTAN_CXXFLAGS = $(shell PKG_CONFIG_PATH="$(PKG_CONFIG_PATH)" pkg-config --cflags botan-3)
- OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE)
- OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE)
- OBJS += $(MTOBJODIR)$(DIRSEP)xp_ca_botan3$(OFILE)
- $(MTOBJODIR)$(DIRSEP)xp_crypt_botan3$(OFILE): $(XPTLS_SRC)/xp_crypt_botan3.cpp | botan $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
- $(MTOBJODIR)$(DIRSEP)xp_tls_botan3$(OFILE): $(XPTLS_SRC)/xp_tls_botan3.cpp | botan $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
- $(MTOBJODIR)$(DIRSEP)xp_ca_botan3$(OFILE): $(XPTLS_SRC)/xp_ca_botan3.cpp | botan $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CXX) -std=c++20 $(CFLAGS) $(CXXFLAGS) $(MT_CFLAGS) $(BOTAN_CXXFLAGS) -o $@ -c $<
-else ifeq ($(XP_CRYPTO_BACKEND),OpenSSL)
- OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE)
- OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE)
- OBJS += $(MTOBJODIR)$(DIRSEP)xp_ca_openssl$(OFILE)
- $(MTOBJODIR)$(DIRSEP)xp_crypt_openssl$(OFILE): $(XPTLS_SRC)/xp_crypt_openssl.c | $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
- $(MTOBJODIR)$(DIRSEP)xp_tls_openssl$(OFILE): $(XPTLS_SRC)/xp_tls_openssl.c | $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
- $(MTOBJODIR)$(DIRSEP)xp_ca_openssl$(OFILE): $(XPTLS_SRC)/xp_ca_openssl.c | $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
-else
- OBJS += $(MTOBJODIR)$(DIRSEP)xp_crypt_none$(OFILE)
- OBJS += $(MTOBJODIR)$(DIRSEP)xp_tls_none$(OFILE)
- OBJS += $(MTOBJODIR)$(DIRSEP)xp_ca_none$(OFILE)
- $(MTOBJODIR)$(DIRSEP)xp_crypt_none$(OFILE): $(XPTLS_SRC)/xp_crypt_none.c | $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
- $(MTOBJODIR)$(DIRSEP)xp_tls_none$(OFILE): $(XPTLS_SRC)/xp_tls_none.c | $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
- $(MTOBJODIR)$(DIRSEP)xp_ca_none$(OFILE): $(XPTLS_SRC)/xp_ca_none.c | $(MTOBJODIR)
-	@echo $(COMPILE_MSG) $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -o $@ -c $<
+xptls: botan
 endif
 
 ifndef WITHOUT_CRYPTO
@@ -343,13 +258,9 @@ ifndef WITHOUT_CRYPTO
 
  # Bundled decrypt-only reference implementations of legacy ciphers
  # (IDEA, RC2) that neither OpenSSL (modern, w/o legacy provider) nor
- # Botan3 carry.  Registered with xp_crypt at startup so encrypted
- # bbslist.ini files written by older builds still decrypt.  Only
- # meaningful when a real xp_crypt backend is linked — the "none"
- # backend can't decrypt anything anyway.
+ # Botan3 carry. These remain private migration decoders for old lists.
  OBJS   += $(MTOBJODIR)$(DIRSEP)legacy_idea$(OFILE)
  OBJS   += $(MTOBJODIR)$(DIRSEP)legacy_rc2$(OFILE)
- OBJS   += $(MTOBJODIR)$(DIRSEP)legacy_ciphers_register$(OFILE)
  CFLAGS += -Ilegacy_ciphers
 
  $(MTOBJODIR)$(DIRSEP)legacy_idea$(OFILE): legacy_ciphers/idea.c
@@ -360,9 +271,6 @@ ifndef WITHOUT_CRYPTO
 	@echo Compiling $<
 	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
 
- $(MTOBJODIR)$(DIRSEP)legacy_ciphers_register$(OFILE): legacy_ciphers/register.c
-	@echo Compiling $<
-	$(QUIET)$(CC) $(CFLAGS) $(MT_CFLAGS) -c $< -o $@
 endif
 
 ifeq ($(os),freebsd)

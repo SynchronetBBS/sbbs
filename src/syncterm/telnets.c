@@ -401,7 +401,7 @@ xp_tls_error_message(xp_tls_t sess, const char *doing)
 static int
 FlushData(xp_tls_t sess)
 {
-	int ret = xp_tls_flush(sess);
+	int ret = xp_tls_flush_timeout(sess, -1);
 	if (ret == XP_TLS_ERR_CLOSED) {
 		conn_api.terminate = true;
 		shutdown(telnets_sock, SHUT_RDWR);
@@ -412,7 +412,7 @@ FlushData(xp_tls_t sess)
 static int
 PopData(xp_tls_t sess, void *buf, size_t len, size_t *copied)
 {
-	int ret = xp_tls_pop(sess, buf, len, copied);
+	int ret = xp_tls_pop_timeout(sess, buf, len, copied, 1000);
 	if (ret == XP_TLS_ERR_CLOSED) {
 		conn_api.terminate = true;
 		shutdown(telnets_sock, SHUT_RDWR);
@@ -423,7 +423,7 @@ PopData(xp_tls_t sess, void *buf, size_t len, size_t *copied)
 static int
 PushData(xp_tls_t sess, const void *buf, size_t len, size_t *copied)
 {
-	int ret = xp_tls_push(sess, buf, len, copied);
+	int ret = xp_tls_push_timeout(sess, buf, len, copied, -1);
 	if (ret == XP_TLS_ERR_CLOSED) {
 		conn_api.terminate = true;
 		shutdown(telnets_sock, SHUT_RDWR);
@@ -530,7 +530,6 @@ telnets_connect(struct bbslist *bbs)
 	struct captured_chain failed_chain = {0};
 	struct xp_tls_client_config tls_config = {
 		.server_name = bbs->addr,
-		.read_timeout = 1,
 	};
 	bool have_per_connection_client_cert = bbs->tls_client_cert[0] != 0 ||
 	    bbs->tls_client_key[0] != 0;

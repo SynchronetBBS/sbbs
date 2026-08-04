@@ -1,7 +1,9 @@
 #include <stddef.h>
 #include <string.h>
 #include "xp_ca.h"
+#include "xp_cipher.h"
 #include "xp_digest.h"
+#include "xp_kdf.h"
 #include "xp_sign.h"
 #include "xp_tls.h"
 
@@ -38,13 +40,17 @@ int main(void)
 		return 1;
 	struct xp_tls_client_config client = {0};
 	struct xp_tls_server_config server = {0};
-	static const unsigned char psk[] = {1, 2, 3, 4};
-	if (xp_tls_client_open(INVALID_SOCKET, "disabled", 1) != NULL
-	    || xp_tls_client_open_config(INVALID_SOCKET, &client) != NULL
-	    || xp_tls_client_open_psk(INVALID_SOCKET, "disabled", 1,
-	        "identity", psk, sizeof(psk)) != NULL
+	if (xp_tls_client_open_config(INVALID_SOCKET, &client) != NULL
 	    || xp_tls_server_open(INVALID_SOCKET, NULL, &server) != NULL
 	    || strstr(xp_tls_last_err(), "disabled") == NULL)
+		return 1;
+	unsigned char output[32];
+	if (xp_kdf_pbkdf2(XP_DIGEST_SHA256, "x", 1, "y", 1, 1,
+	    output, sizeof(output)) != XP_CRYPTO_ERR_DISABLED
+	    || xp_kdf_scrypt("x", 1, "y", 1, 2, 1, 1,
+	    output, sizeof(output)) != XP_CRYPTO_ERR_DISABLED
+	    || xp_cipher_supported(XP_CIPHER_AES, XP_CIPHER_MODE_CBC,
+	    XP_CIPHER_ENCRYPT))
 		return 1;
 	xp_tls_server_credentials_t credentials = (xp_tls_server_credentials_t)1;
 	struct xp_tls_server_credentials_config credential_config = {

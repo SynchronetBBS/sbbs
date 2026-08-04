@@ -1,0 +1,52 @@
+# Toolchain arguments shared by CMake-only libraries built from a GNUmake
+# parent.  Each library still has its own build directory and cache.
+
+CMAKE_SUBPROJECT_TOOLCHAIN_ARGS :=
+
+ifdef win
+ CMAKE_SUBPROJECT_CC_WORDS  := $(CC)
+ CMAKE_SUBPROJECT_CXX_WORDS := $(CXX)
+ ifeq ($(firstword $(CMAKE_SUBPROJECT_CC_WORDS)),ccache)
+  CMAKE_SUBPROJECT_LAUNCHER_ARGS := \
+      -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+      -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+  CMAKE_SUBPROJECT_CC_BIN := $(wordlist 2,$(words $(CMAKE_SUBPROJECT_CC_WORDS)),$(CMAKE_SUBPROJECT_CC_WORDS))
+  CMAKE_SUBPROJECT_CXX_BIN := $(wordlist 2,$(words $(CMAKE_SUBPROJECT_CXX_WORDS)),$(CMAKE_SUBPROJECT_CXX_WORDS))
+ else
+  CMAKE_SUBPROJECT_LAUNCHER_ARGS :=
+  CMAKE_SUBPROJECT_CC_BIN := $(CC)
+  CMAKE_SUBPROJECT_CXX_BIN := $(CXX)
+ endif
+ CMAKE_SUBPROJECT_TOOLCHAIN_ARGS += \
+     -DCMAKE_SYSTEM_NAME=Windows \
+     -DCMAKE_C_COMPILER=$(CMAKE_SUBPROJECT_CC_BIN) \
+     -DCMAKE_CXX_COMPILER=$(CMAKE_SUBPROJECT_CXX_BIN) \
+     $(CMAKE_SUBPROJECT_LAUNCHER_ARGS) \
+     -DCMAKE_AR=$(shell command -v $(AR)) \
+     -DCMAKE_RANLIB=$(shell command -v $(RANLIB)) \
+     -DCMAKE_RC_COMPILER=$(shell command -v $(WINDRES))
+else ifeq ($(os),darwin)
+ ifdef FAT
+  CMAKE_SUBPROJECT_TOOLCHAIN_ARGS += "-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64"
+  ifdef MACOS_PORTABLE
+   CMAKE_SUBPROJECT_FAT_FLAGS := -Xarch_x86_64 -march=skylake -Xarch_arm64 -mcpu=apple-m1
+   CMAKE_SUBPROJECT_TOOLCHAIN_ARGS += \
+       "-DCMAKE_C_FLAGS=$(CMAKE_SUBPROJECT_FAT_FLAGS)" \
+       "-DCMAKE_CXX_FLAGS=$(CMAKE_SUBPROJECT_FAT_FLAGS)"
+  endif
+ else ifdef MACOS_PORTABLE
+  ifeq ($(machine_uname),x86_64)
+   CMAKE_SUBPROJECT_TOOLCHAIN_ARGS += \
+       -DCMAKE_C_FLAGS=-march=skylake \
+       -DCMAKE_CXX_FLAGS=-march=skylake
+  else ifeq ($(machine_uname),arm64)
+   CMAKE_SUBPROJECT_TOOLCHAIN_ARGS += \
+       -DCMAKE_C_FLAGS=-mcpu=apple-m1 \
+       -DCMAKE_CXX_FLAGS=-mcpu=apple-m1
+  endif
+ endif
+ ifdef MIN_MAC_OSX_VERSION
+  CMAKE_SUBPROJECT_TOOLCHAIN_ARGS += \
+      -DCMAKE_OSX_DEPLOYMENT_TARGET=$(MIN_MAC_OSX_VERSION)
+ endif
+endif

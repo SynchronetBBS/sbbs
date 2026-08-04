@@ -4267,7 +4267,7 @@ when `Menu.encryptionAvailable` is false.
 
 | `kdfShift`
 | The exponent in the persisted `scrypt-Nn` key-derivation setting;
-  accepted range is 8 through 24.  Changing it rewrites an encrypted
+  accepted range is 8 through 20.  Changing it rewrites an encrypted
   personal list using the current password when the setting is applied.
   An older persisted KDF specification is preserved when another setting
   changes; assigning `kdfShift` replaces it with `scrypt-Nn`.

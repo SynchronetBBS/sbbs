@@ -84,9 +84,6 @@ enum {
 #ifndef WITHOUT_DEUCESSH
 #include "ssh.h"
 #endif
-#ifndef WITHOUT_CRYPTO
-#include "legacy_ciphers/legacy_ciphers.h"
-#endif
 #include "fonts.h"
 #include "host_ui.h"
 #include "syncterm.h"
@@ -2241,13 +2238,6 @@ main(int argc, char **argv)
            anything that calls into it (i.e. any SSH connection). */
         init_crypt();
 #endif
-#ifndef WITHOUT_CRYPTO
-        /* Register decrypt-only reference impls for ciphers the active
-           crypto backend doesn't carry (IDEA, RC2). Needed before
-           iniReadEncryptedFile can be called. */
-        legacy_ciphers_init();
-#endif
-
 	url[0] = 0;
 
 	/*

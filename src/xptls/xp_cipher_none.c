@@ -1,8 +1,9 @@
 #include "xp_cipher.h"
 
-bool xp_cipher_supported(enum xp_cipher_algorithm algorithm, enum xp_cipher_mode mode)
+bool xp_cipher_supported(enum xp_cipher_algorithm algorithm,
+	enum xp_cipher_mode mode, enum xp_cipher_direction direction)
 {
-	(void)algorithm; (void)mode; return false;
+	(void)algorithm; (void)mode; (void)direction; return false;
 }
 int xp_cipher_create(xp_cipher_t *out, const struct xp_cipher_config *config)
 {

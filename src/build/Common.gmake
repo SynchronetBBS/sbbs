@@ -380,10 +380,11 @@ LDFLAGS	+=	-L$(LIBODIR)
 # Common.gmake is the only file every subproject already includes, so
 # making the decision here guarantees that `make -C xpdev`,
 # `make -C syncterm`, and any sbbs3 consumer arrive at the same
-# XP_CRYPTO_BACKEND / DEUCESSH_BACKEND / USE_VENDORED_BOTAN for a given
+# CRYPTO_BACKEND / XP_CRYPTO_BACKEND / DEUCESSH_BACKEND /
+# USE_VENDORED_BOTAN for a given
 # host + command-line override set.
 #
-# Decision order (first match wins; user can pre-set DEUCESSH_BACKEND
+# Decision order (first match wins; user can pre-set CRYPTO_BACKEND
 # or USE_VENDORED_BOTAN on the command line to skip the probe).
 #   1. USE_VENDORED_BOTAN set, or Windows cross-build → Botan, vendored.
 #   2. System Botan 3.6+ available → Botan, system.
@@ -393,31 +394,64 @@ LDFLAGS	+=	-L$(LIBODIR)
 # USE_VENDORED_BOTAN is a pure boolean: defined = use vendored.  Never
 # assign it to "0" — leave it unset to mean "don't use vendored".
 #
-# DeuceSSH and xp_crypt share the backend by default.  WITHOUT_CRYPTO
-# only affects xp_crypt (which is DeuceSSH-independent); DeuceSSH itself
-# still needs its chosen crypto runtime even when xp_crypt is stubbed.
-ifndef DEUCESSH_BACKEND
+# CRYPTO_BACKEND is the provider-neutral selection.  The old component
+# variables remain accepted as inputs, but two enabled consumers may not
+# silently select different providers.  XP_CRYPTO_BACKEND=none is the one
+# intentional exception: xptls may be stubbed while DeuceSSH still uses the
+# selected provider.
+ifndef CRYPTO_BACKEND
+ ifdef DEUCESSH_BACKEND
+  CRYPTO_BACKEND := $(DEUCESSH_BACKEND)
+ else ifneq ($(filter Botan OpenSSL,$(XP_CRYPTO_BACKEND)),)
+  CRYPTO_BACKEND := $(XP_CRYPTO_BACKEND)
+ endif
+endif
+
+ifndef CRYPTO_BACKEND
  ifdef win
-  DEUCESSH_BACKEND   := Botan
+  CRYPTO_BACKEND     := Botan
   USE_VENDORED_BOTAN := 1
  else ifdef USE_VENDORED_BOTAN
-  DEUCESSH_BACKEND   := Botan
+  CRYPTO_BACKEND     := Botan
  else ifeq ($(shell pkg-config --atleast-version=3.6 botan-3 2>/dev/null && echo Y),Y)
-  DEUCESSH_BACKEND   := Botan
+  CRYPTO_BACKEND     := Botan
  else ifeq ($(shell pkg-config --atleast-version=3.0 libcrypto 2>/dev/null && echo Y),Y)
-  DEUCESSH_BACKEND   := OpenSSL
+  CRYPTO_BACKEND     := OpenSSL
  else
-  DEUCESSH_BACKEND   := Botan
+  CRYPTO_BACKEND     := Botan
   USE_VENDORED_BOTAN := 1
  endif
 endif
 
-# xp_crypt follows DeuceSSH's backend unless WITHOUT_CRYPTO stubs it.
-ifdef WITHOUT_CRYPTO
- XP_CRYPTO_BACKEND ?= none
+ifeq ($(filter $(CRYPTO_BACKEND),Botan OpenSSL),)
+ $(error Unknown CRYPTO_BACKEND: $(CRYPTO_BACKEND) (expected Botan or OpenSSL))
 endif
-XP_CRYPTO_BACKEND ?= $(DEUCESSH_BACKEND)
+ifdef USE_VENDORED_BOTAN
+ ifneq ($(CRYPTO_BACKEND),Botan)
+  $(error USE_VENDORED_BOTAN requires CRYPTO_BACKEND=Botan)
+ endif
+endif
+ifdef DEUCESSH_BACKEND
+ ifneq ($(DEUCESSH_BACKEND),$(CRYPTO_BACKEND))
+  $(error Conflicting CRYPTO_BACKEND=$(CRYPTO_BACKEND) and DEUCESSH_BACKEND=$(DEUCESSH_BACKEND))
+ endif
+endif
+ifneq ($(filter Botan OpenSSL,$(XP_CRYPTO_BACKEND)),)
+ ifneq ($(XP_CRYPTO_BACKEND),$(CRYPTO_BACKEND))
+  $(error Conflicting CRYPTO_BACKEND=$(CRYPTO_BACKEND) and XP_CRYPTO_BACKEND=$(XP_CRYPTO_BACKEND))
+ endif
+endif
 
+override DEUCESSH_BACKEND := $(CRYPTO_BACKEND)
+
+# xptls follows the shared provider unless it is explicitly stubbed.
+ifdef WITHOUT_CRYPTO
+ override XP_CRYPTO_BACKEND := none
+else ifneq ($(XP_CRYPTO_BACKEND),none)
+ override XP_CRYPTO_BACKEND := $(CRYPTO_BACKEND)
+endif
+
+export CRYPTO_BACKEND
 export XP_CRYPTO_BACKEND
 export DEUCESSH_BACKEND
 export USE_VENDORED_BOTAN

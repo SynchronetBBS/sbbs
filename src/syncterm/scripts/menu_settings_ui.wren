@@ -593,8 +593,9 @@ class SettingsMenu {
         "of scrypt's N parameter: `N = 2^value`. Higher values make " +
         "offline dictionary attacks more expensive, but also increase " +
         "the time and memory needed to unlock the list.\n\n" +
-        "The default `15` uses N=32768 and about 16 MiB. The supported " +
-        "range is 8 through 24; each step doubles CPU and memory cost."
+        "The default `15` uses N=32768 and about 32 MiB. The supported " +
+        "range is 8 through 20; each step doubles CPU and memory cost. " +
+        "The upper bound uses about 1 GiB, the xptls per-derivation limit."
   }
 
   static customColumnsHelp_() {
@@ -806,7 +807,7 @@ class SettingsMenu {
           s.invertWheel = !s.invertWheel
         } else if (value == 16) {
           var next = MenuUi.integer(app, "Key Derivation Work Factor",
-              "Exponent N for scrypt-Nn", s.kdfShift, 8, 24, kdfHelp_())
+              "Exponent N for scrypt-Nn", s.kdfShift, 8, 20, kdfHelp_())
           if (next != null) s.kdfShift = next
         } else if (value == 17) {
           if (colors_(app, s)) changed = true

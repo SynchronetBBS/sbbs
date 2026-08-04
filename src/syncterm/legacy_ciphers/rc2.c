@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "xp_crypt.h"
+#include "legacy_ciphers.h"
 
 /* PITABLE: 256-entry byte permutation from RFC 2268 s2. */
 static const uint8_t PITABLE[256] = {
@@ -112,18 +112,16 @@ rc2_decrypt_block(const uint16_t K[64], uint8_t buf[8])
 }
 
 /*
- * xp_crypt legacy entry point for RC2-CBC decrypt.  Cryptlib stored
+ * SyncTERM-private RC2-CBC migration entry point. Cryptlib stored
  * RC2-encrypted bbslist.ini files with effective_bits = 8 * keylen.
  */
-static int
-legacy_rc2_decrypt_cbc(int key_bits, const void *key, size_t key_len,
-                      const void *iv_in, size_t iv_len,
-                      void *buf, size_t n)
+int
+legacy_rc2_decrypt_cbc(const void *key, size_t key_len,
+                      const void *iv_in, void *buf, size_t n)
 {
-	(void)key_bits;
 	if (key == NULL || iv_in == NULL || buf == NULL)
 		return -1;
-	if (key_len == 0 || key_len > 128 || iv_len != 8)
+	if (key_len == 0 || key_len > 128)
 		return -1;
 	if (n % 8 != 0)
 		return -1;
@@ -144,10 +142,4 @@ legacy_rc2_decrypt_cbc(int key_bits, const void *key, size_t key_len,
 		memcpy(prev, save, 8);
 	}
 	return 0;
-}
-
-void
-legacy_rc2_register(void)
-{
-	xp_crypt_register_legacy_decrypt(XP_CRYPT_ALGO_RC2, legacy_rc2_decrypt_cbc);
 }

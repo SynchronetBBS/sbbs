@@ -14,7 +14,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "xp_crypt.h"
+#include "legacy_ciphers.h"
 
 /* Multiplication in (Z/65537)^*; 0 denotes 2^16. */
 static inline uint16_t
@@ -179,16 +179,14 @@ idea_crypt_block(const uint16_t K[52], uint8_t buf[8])
 	buf[6] = (uint8_t)(x4 >> 8); buf[7] = (uint8_t)(x4 & 0xff);
 }
 
-/* xp_crypt legacy entry point for IDEA-CBC decrypt. */
-static int
-legacy_idea_decrypt_cbc(int key_bits, const void *key, size_t key_len,
-                        const void *iv_in, size_t iv_len,
-                        void *buf, size_t n)
+/* SyncTERM-private IDEA-CBC migration entry point. */
+int
+legacy_idea_decrypt_cbc(const void *key, size_t key_len,
+                        const void *iv_in, void *buf, size_t n)
 {
-	(void)key_bits;
 	if (key == NULL || iv_in == NULL || buf == NULL)
 		return -1;
-	if (key_len != 16 || iv_len != 8)
+	if (key_len != 16)
 		return -1;
 	if (n % 8 != 0)
 		return -1;
@@ -209,10 +207,4 @@ legacy_idea_decrypt_cbc(int key_bits, const void *key, size_t key_len,
 		memcpy(prev, save, 8);
 	}
 	return 0;
-}
-
-void
-legacy_idea_register(void)
-{
-	xp_crypt_register_legacy_decrypt(XP_CRYPT_ALGO_IDEA, legacy_idea_decrypt_cbc);
 }

@@ -129,9 +129,10 @@ tls_send_all(const void *buf, size_t len)
 	while (total < len) {
 		size_t copied = 0;
 		assert_pthread_mutex_lock(&mqtt_io_mutex);
-		int rc = xp_tls_push(mqtt_tls, p + total, len - total, &copied);
+		int rc = xp_tls_push_timeout(mqtt_tls, p + total, len - total,
+		    &copied, -1);
 		if (rc == XP_TLS_OK)
-			(void)xp_tls_flush(mqtt_tls);
+			(void)xp_tls_flush_timeout(mqtt_tls, -1);
 		assert_pthread_mutex_unlock(&mqtt_io_mutex);
 		if (rc < 0)
 			return -1;
@@ -169,7 +170,8 @@ tls_pull(uint8_t *rx_buf, size_t rx_len, size_t rx_cap, int wait_ms)
 		return rx_len;	/* nothing pending — caller can do other work */
 	size_t got = 0;
 	assert_pthread_mutex_lock(&mqtt_io_mutex);
-	int rc = xp_tls_pop(mqtt_tls, rx_buf + rx_len, rx_cap - rx_len, &got);
+	int rc = xp_tls_pop_timeout(mqtt_tls, rx_buf + rx_len,
+	    rx_cap - rx_len, &got, 1000);
 	assert_pthread_mutex_unlock(&mqtt_io_mutex);
 	if (rc == XP_TLS_TIMEOUT)
 		return rx_len;	/* no progress, but not an error */
@@ -819,10 +821,16 @@ mqtt_connect(struct bbslist *bbs)
 
 	lower_copy(id_buf, sizeof(id_buf), bbs->user);
 	lower_copy(psk_buf, sizeof(psk_buf), bbs->password);
-	mqtt_tls = xp_tls_client_open_psk(mqtt_sock, bbs->addr, 1,
-	                                  id_buf,
-	                                  psk_buf, strlen(psk_buf));
-	/* psk_buf is a stack copy; xp_tls_client_open_psk made an internal
+	struct xp_tls_client_config tls_config = {
+		.server_name = bbs->addr,
+		.psk_identity = id_buf,
+		.psk = psk_buf,
+		.psk_len = strlen(psk_buf),
+		.psk_version = XP_TLS_VERSION_1_2,
+		.psk_policy = XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY,
+	};
+	mqtt_tls = xp_tls_client_open_config(mqtt_sock, &tls_config);
+	/* psk_buf is a stack copy; xp_tls_client_open_config made an internal
 	   secure copy.  Wipe ours before it goes out of scope. */
 	memset(psk_buf, 0, sizeof(psk_buf));
 
@@ -865,7 +873,10 @@ mqtt_connect(struct bbslist *bbs)
 			fprintf(stderr, "%s:%d: setsockopt TCP_NODELAY failed (%d)\n",
 			    __FILE__, __LINE__, errno);
 		}
-		mqtt_tls = xp_tls_client_open(mqtt_sock, bbs->addr, 1);
+		const struct xp_tls_client_config cert_config = {
+			.server_name = bbs->addr,
+		};
+		mqtt_tls = xp_tls_client_open_config(mqtt_sock, &cert_config);
 	}
 
 	if (mqtt_tls == NULL) {

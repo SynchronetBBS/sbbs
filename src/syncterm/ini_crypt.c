@@ -19,8 +19,8 @@
  * Encrypted INI file format — read/write, header parsing, KDF spec, and
  * the iniCryptGetAlgoName/iniCryptGetAlgoFromName helpers.  Kept in its
  * own compilation unit so consumers that only call plain iniReadFile /
- * iniGetString / etc. don't transitively pull xp_crypt (and with it the
- * OpenSSL or Botan backend) into the link.  Only SyncTERM and anyone
+ * iniGetString / etc. don't transitively pull the crypto APIs (and with them the
+ * selected xptls backend) into the link.  Only SyncTERM and anyone
  * else that actually reads/writes encrypted bbslist.ini needs to pull
  * ini_crypt.o.
  *
@@ -48,12 +48,16 @@
 #include <string.h>
 
 #include "gen_defs.h"   /* SKIP_WHITESPACE */
-#include "genwrap.h"    /* xp_random */
 #include "ini_crypt.h"
 #include "ini_file.h"
+#ifndef WITHOUT_CRYPTO
+#include "legacy_ciphers/legacy_ciphers.h"
+#endif
 #include "netwrap.h"    /* htons, ntohs */
 #include "strwrap.h"    /* truncnl, truncsp */
-#include "xp_crypt.h"
+#include "xp_cipher.h"
+#include "xp_crypto.h"
+#include "xp_kdf.h"
 
 /* Mirrors the private definitions in ini_file.c. */
 #define INI_MAX_LINE_LEN   (INI_MAX_VALUE_LEN * 2)
@@ -83,6 +87,14 @@ iniCryptDefaultKDFSpec(void)
 /* Matches the maximum salt length historically allowed by Cryptlib
    (CRYPT_MAX_HASHSIZE = 64); preserved for on-disk compatibility. */
 #define INI_MAX_SALT_SIZE 64
+
+struct ini_kdf_params {
+	enum xp_kdf_algorithm kdf;
+	uint64_t iterations;
+	unsigned cost_log2;
+	uint32_t block_size;
+	uint32_t parallelism;
+};
 
 const char *
 iniCryptGetAlgoName(enum iniCryptAlgo a)
@@ -148,7 +160,7 @@ hex_encode(const uint8_t *in, size_t in_len, char *out)
  * is tolerated.
  */
 static bool
-parse_kdf_spec(const char *spec, struct xp_crypt_kdf_params *out)
+parse_kdf_spec(const char *spec, struct ini_kdf_params *out)
 {
 	while (*spec == ' ')
 		spec++;
@@ -157,7 +169,7 @@ parse_kdf_spec(const char *spec, struct xp_crypt_kdf_params *out)
 		len--;
 	memset(out, 0, sizeof(*out));
 	if (len >= 7 && strncmp(spec, "scrypt-", 7) == 0) {
-		out->kdf = XP_CRYPT_KDF_SCRYPT;
+		out->kdf = XP_KDF_SCRYPT;
 		out->cost_log2  = INI_SCRYPT_COST_LOG2;
 		out->block_size = INI_SCRYPT_R;
 		out->parallelism = INI_SCRYPT_P;
@@ -182,7 +194,7 @@ parse_kdf_spec(const char *spec, struct xp_crypt_kdf_params *out)
 		return out->cost_log2 > 0 && out->block_size > 0 && out->parallelism > 0;
 	}
 	if (len >= 14 && strncmp(spec, "PBKDF2-SHA256-", 14) == 0) {
-		out->kdf = XP_CRYPT_KDF_PBKDF2_HMAC_SHA256;
+		out->kdf = XP_KDF_PBKDF2;
 		const char *p = spec + 13;
 		while (p < spec + len && *p == '-') {
 			p++;
@@ -206,15 +218,16 @@ parse_kdf_spec(const char *spec, struct xp_crypt_kdf_params *out)
 
 /* Emit a v2 KDF spec for the given params into buf.  Returns true on success. */
 static bool
-format_kdf_spec(const struct xp_crypt_kdf_params *kdf, char *buf, size_t buflen)
+format_kdf_spec(const struct ini_kdf_params *kdf, char *buf, size_t buflen)
 {
 	int n = 0;
 	switch (kdf->kdf) {
-		case XP_CRYPT_KDF_PBKDF2_HMAC_SHA256:
-			n = snprintf(buf, buflen, "PBKDF2-SHA256-i%d", kdf->iterations);
+		case XP_KDF_PBKDF2:
+			n = snprintf(buf, buflen, "PBKDF2-SHA256-i%llu",
+			    (unsigned long long)kdf->iterations);
 			break;
-		case XP_CRYPT_KDF_SCRYPT:
-			n = snprintf(buf, buflen, "scrypt-N%d-r%d-p%d",
+		case XP_KDF_SCRYPT:
+			n = snprintf(buf, buflen, "scrypt-N%u-r%u-p%u",
 			    kdf->cost_log2, kdf->block_size, kdf->parallelism);
 			break;
 		default:
@@ -234,7 +247,7 @@ static bool
 parse_encrypted_header(char *str, int v1_pbkdf2_iters,
                        enum iniCryptAlgo *algo_out, size_t *keySize_out,
                        uint8_t *salt, size_t salt_cap, size_t *salt_len_out,
-                       struct xp_crypt_kdf_params *kdf_out)
+                       struct ini_kdf_params *kdf_out)
 {
 	char *start = NULL;
 	const size_t v1_len = strlen(encryptedHeaderPrefix);
@@ -340,7 +353,7 @@ parse_encrypted_header(char *str, int v1_pbkdf2_iters,
 	 * Fall back to the historical Cryptlib default of 50000 if the
 	 * caller didn't supply a positive value. */
 	memset(kdf_out, 0, sizeof(*kdf_out));
-	kdf_out->kdf = XP_CRYPT_KDF_PBKDF2_HMAC_SHA256;
+	kdf_out->kdf = XP_KDF_PBKDF2;
 	kdf_out->iterations = v1_pbkdf2_iters > 0 ? v1_pbkdf2_iters : 50000;
 	return true;
 }
@@ -371,8 +384,241 @@ kdf_spec_to_pbkdf2_iters(const char *spec)
 	return (int)v;
 }
 
+struct ini_cipher_context {
+	enum iniCryptAlgo algorithm;
+	bool encrypt;
+	uint8_t key[32];
+	size_t key_len;
+	uint8_t iv[16];
+	size_t iv_len;
+	xp_cipher_t cipher;
+};
+
+typedef struct ini_cipher_context *ini_cipher_t;
+
+static void
+cleanse(void *data, size_t length)
+{
+	volatile uint8_t *p = data;
+	while (length-- != 0)
+		*p++ = 0;
+}
+
+static size_t
+default_key_size(enum iniCryptAlgo algorithm)
+{
+	switch (algorithm) {
+		case INI_CRYPT_ALGO_AES:
+		case INI_CRYPT_ALGO_CHACHA20: return 32;
+		case INI_CRYPT_ALGO_3DES: return 24;
+		default: return 16;
+	}
+}
+
+static size_t
+cipher_iv_size(enum iniCryptAlgo algorithm)
+{
+	switch (algorithm) {
+		case INI_CRYPT_ALGO_AES: return 16;
+		case INI_CRYPT_ALGO_CHACHA20: return 16; /* counter + IETF nonce */
+		case INI_CRYPT_ALGO_3DES:
+		case INI_CRYPT_ALGO_IDEA:
+		case INI_CRYPT_ALGO_CAST:
+		case INI_CRYPT_ALGO_RC2: return 8;
+		case INI_CRYPT_ALGO_RC4: return 0;
+		default: return SIZE_MAX;
+	}
+}
+
+static size_t
+cipher_block_size(enum iniCryptAlgo algorithm)
+{
+	return algorithm == INI_CRYPT_ALGO_AES ? 16
+	    : algorithm == INI_CRYPT_ALGO_CHACHA20
+	      || algorithm == INI_CRYPT_ALGO_RC4 ? 1 : 8;
+}
+
+static int
+derive_key(const struct ini_kdf_params *kdf, const void *password,
+	size_t password_len, const void *salt, size_t salt_len,
+	void *out, size_t out_len)
+{
+	if (kdf->kdf == XP_KDF_PBKDF2)
+		return xp_kdf_pbkdf2(XP_DIGEST_SHA256, password, password_len,
+		    salt, salt_len, kdf->iterations, out, out_len);
+	if (kdf->kdf == XP_KDF_SCRYPT && kdf->cost_log2 < 64)
+		return xp_kdf_scrypt(password, password_len, salt, salt_len,
+		    UINT64_C(1) << kdf->cost_log2, kdf->block_size,
+		    kdf->parallelism, out, out_len);
+	return XP_CRYPTO_ERR_INVALID;
+}
+
+static int
+create_provider_cipher(ini_cipher_t context)
+{
+	struct xp_cipher_config config = {
+		.direction = context->encrypt ? XP_CIPHER_ENCRYPT : XP_CIPHER_DECRYPT,
+		.padding = XP_CIPHER_PADDING_NONE,
+		.key = context->key,
+		.key_len = context->key_len,
+	};
+	switch (context->algorithm) {
+		case INI_CRYPT_ALGO_AES:
+			config.algorithm = XP_CIPHER_AES;
+			config.mode = XP_CIPHER_MODE_CBC;
+			config.iv = context->iv;
+			config.iv_len = 16;
+			break;
+		case INI_CRYPT_ALGO_CHACHA20:
+			config.algorithm = XP_CIPHER_CHACHA20;
+			config.mode = XP_CIPHER_MODE_STREAM;
+			config.initial_counter = (uint32_t)context->iv[0]
+			    | (uint32_t)context->iv[1] << 8
+			    | (uint32_t)context->iv[2] << 16
+			    | (uint32_t)context->iv[3] << 24;
+			config.iv = context->iv + 4;
+			config.iv_len = 12;
+			break;
+		case INI_CRYPT_ALGO_3DES:
+			config.algorithm = XP_CIPHER_3DES;
+			config.mode = XP_CIPHER_MODE_CBC;
+			config.iv = context->iv;
+			config.iv_len = 8;
+			break;
+		case INI_CRYPT_ALGO_CAST:
+			config.algorithm = XP_CIPHER_CAST128;
+			config.mode = XP_CIPHER_MODE_CBC;
+			config.iv = context->iv;
+			config.iv_len = 8;
+			break;
+		case INI_CRYPT_ALGO_RC4:
+			config.algorithm = XP_CIPHER_RC4;
+			config.mode = XP_CIPHER_MODE_STREAM;
+			break;
+		default:
+			return XP_CRYPTO_ERR_UNSUPPORTED;
+	}
+	return xp_cipher_create(&context->cipher, &config);
+}
+
+static ini_cipher_t
+ini_cipher_open(enum iniCryptAlgo algorithm, int key_bits,
+	const void *salt, size_t salt_len, const struct ini_kdf_params *kdf,
+	const void *password, size_t password_len, bool encrypt)
+{
+	if (encrypt && algorithm != INI_CRYPT_ALGO_AES
+	    && algorithm != INI_CRYPT_ALGO_CHACHA20)
+		return NULL;
+	if (key_bits > 0 && key_bits % 8 != 0)
+		return NULL;
+	size_t key_len = key_bits > 0
+	    ? (size_t)key_bits / 8 : default_key_size(algorithm);
+	if (key_len == 0 || key_len > 32 || cipher_iv_size(algorithm) == SIZE_MAX)
+		return NULL;
+	ini_cipher_t context = calloc(1, sizeof(*context));
+	if (context == NULL)
+		return NULL;
+	context->algorithm = algorithm;
+	context->encrypt = encrypt;
+	context->key_len = key_len;
+	context->iv_len = cipher_iv_size(algorithm);
+	if (derive_key(kdf, password, password_len, salt, salt_len,
+	    context->key, key_len) != XP_CRYPTO_OK) {
+		cleanse(context, sizeof(*context));
+		free(context);
+		return NULL;
+	}
+	if (context->iv_len == 0 && create_provider_cipher(context) != XP_CRYPTO_OK) {
+		cleanse(context, sizeof(*context));
+		free(context);
+		return NULL;
+	}
+	return context;
+}
+
+static int
+ini_cipher_set_iv(ini_cipher_t context, const void *iv, size_t iv_len)
+{
+	if (context == NULL || iv == NULL || iv_len != context->iv_len)
+		return -1;
+	memcpy(context->iv, iv, iv_len);
+	if (context->algorithm == INI_CRYPT_ALGO_IDEA
+	    || context->algorithm == INI_CRYPT_ALGO_RC2)
+		return 0;
+	return create_provider_cipher(context) == XP_CRYPTO_OK ? 0 : -1;
+}
+
+static int
+ini_cipher_gen_iv(ini_cipher_t context, void *iv, size_t iv_len)
+{
+	if (context == NULL || iv == NULL || iv_len != context->iv_len
+	    || xp_crypto_random(iv, iv_len) != XP_CRYPTO_OK)
+		return -1;
+	return ini_cipher_set_iv(context, iv, iv_len);
+}
+
+static int
+ini_cipher_process(ini_cipher_t context, void *buffer, size_t length)
+{
+	if (context == NULL || buffer == NULL)
+		return -1;
+	if (context->algorithm == INI_CRYPT_ALGO_IDEA
+	    || context->algorithm == INI_CRYPT_ALGO_RC2) {
+#ifdef WITHOUT_CRYPTO
+		return -1;
+#else
+		uint8_t last[8];
+		if (length < 8 || length % 8 != 0)
+			return -1;
+		memcpy(last, (uint8_t *)buffer + length - 8, 8);
+		int result = context->algorithm == INI_CRYPT_ALGO_IDEA
+		    ? legacy_idea_decrypt_cbc(context->key, context->key_len,
+		        context->iv, buffer, length)
+		    : legacy_rc2_decrypt_cbc(context->key, context->key_len,
+		        context->iv, buffer, length);
+		if (result == 0)
+			memcpy(context->iv, last, 8);
+		cleanse(last, sizeof(last));
+		return result;
+#endif
+	}
+	if (context->cipher == NULL)
+		return -1;
+	if (length > SIZE_MAX - 16)
+		return -1;
+	uint8_t *output = malloc(length + 16);
+	if (output == NULL)
+		return -1;
+	size_t output_len = length + 16;
+	int result = xp_cipher_update(context->cipher, buffer, length,
+	    output, &output_len);
+	if (result == XP_CRYPTO_OK && output_len == length)
+		memcpy(buffer, output, length);
+	else
+		result = XP_CRYPTO_ERR;
+	cleanse(output, length + 16);
+	free(output);
+	return result == XP_CRYPTO_OK ? 0 : -1;
+}
+
+static void
+ini_cipher_close(ini_cipher_t context)
+{
+	if (context == NULL)
+		return;
+	if (context->cipher != NULL) {
+		uint8_t tail[16];
+		size_t tail_len = sizeof(tail);
+		(void)xp_cipher_final(context->cipher, tail, &tail_len);
+		cleanse(tail, sizeof(tail));
+	}
+	xp_cipher_free(context->cipher);
+	cleanse(context, sizeof(*context));
+	free(context);
+}
+
 str_list_t
-iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const char *kdf_spec, enum iniCryptAlgo *algoPtr, int *ks, enum xp_crypt_kdf *kdfPtr)
+iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const char *kdf_spec, enum iniCryptAlgo *algoPtr, int *ks, enum xp_kdf_algorithm *kdfPtr)
 {
 	char keyData[1024];
 	size_t keyDataSize;
@@ -384,9 +630,9 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const c
 	size_t bufferSize = 0;
 	size_t keySize = 0;
 	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
-	struct xp_crypt_kdf_params kdf_params = {0};
+	struct ini_kdf_params kdf_params = {0};
 	str_list_t ret = NULL;
-	xp_crypt_t ctx = NULL;
+	ini_cipher_t ctx = NULL;
 	int blocksize;
 	int ivsize;
 	bool streamCipher = false;
@@ -416,12 +662,12 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const c
 	if (!get_key(keyData, &keyDataSize))
 		goto done;
 
-	ctx = xp_crypt_open((int)algo, (int)keySize, salt, saltLength,
+	ctx = ini_cipher_open(algo, (int)keySize, salt, saltLength,
 	                    &kdf_params, keyData, keyDataSize, /*encrypt=*/false);
 	if (ctx == NULL)
 		goto done;
 
-	blocksize = xp_crypt_blocksize(ctx);
+	blocksize = (int)cipher_block_size(algo);
 	if (blocksize <= 1) {
 		bufferSize = INI_MAX_LINE_LEN - 1;
 		streamCipher = true;
@@ -429,9 +675,9 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const c
 		bufferSize = (size_t)blocksize;
 	}
 
-	ivsize = xp_crypt_ivsize(ctx);
+	ivsize = (int)cipher_iv_size(algo);
 	if (ivsize > 0) {
-		unsigned char iv[XP_CRYPT_MAX_IVSIZE];
+		unsigned char iv[16];
 		uint16_t ivs;
 		int iv_file_size;
 		if (fread(&ivs, 1, sizeof(ivs), fp) != sizeof(ivs))
@@ -441,7 +687,7 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const c
 			goto done;
 		if (fread(iv, 1, iv_file_size, fp) != (size_t)iv_file_size)
 			goto done;
-		if (xp_crypt_set_iv(ctx, iv, iv_file_size) != 0)
+		if (ini_cipher_set_iv(ctx, iv, iv_file_size) != 0)
 			goto done;
 	}
 
@@ -458,7 +704,7 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const c
 		}
 		if ((streamCipher && rret > 0) || rret == bufferSize) {
 			size_t bufpos = 0;
-			if (xp_crypt_process(ctx, buffer, rret) != 0)
+			if (ini_cipher_process(ctx, buffer, rret) != 0)
 				goto done;
 			while (bufpos < rret) {
 				if (buffer[bufpos] == '\n' || strpos == sizeof(str) - 2) {
@@ -517,7 +763,8 @@ iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const c
 
 done:
 	free(buffer);
-	xp_crypt_close(ctx);
+	cleanse(keyData, sizeof(keyData));
+	ini_cipher_close(ctx);
 	if (algoPtr)
 		*algoPtr = algo;
 	if (ks)
@@ -535,11 +782,11 @@ done:
  * in the caller.
  */
 static bool
-addEncrpytedChar(xp_crypt_t ctx, const char ch, char *buffer, size_t blockSize, size_t *bufferPos, FILE *fp)
+addEncrpytedChar(ini_cipher_t ctx, const char ch, char *buffer, size_t blockSize, size_t *bufferPos, FILE *fp)
 {
 	buffer[(*bufferPos)++] = ch;
 	if (*bufferPos == blockSize) {
-		if (xp_crypt_process(ctx, buffer, blockSize) != 0)
+		if (ini_cipher_process(ctx, buffer, blockSize) != 0)
 			return false;
 		if (fwrite(buffer, 1, blockSize, fp) != blockSize)
 			return false;
@@ -564,13 +811,13 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 {
 	uint8_t salt_bin[INI_V2_SALT_BYTES];
 	char    salt_hex[2 * INI_V2_SALT_BYTES + 1];
-	struct xp_crypt_kdf_params kdf = {
-		.kdf         = XP_CRYPT_KDF_SCRYPT,
+	struct ini_kdf_params kdf = {
+		.kdf         = XP_KDF_SCRYPT,
 		.cost_log2   = INI_SCRYPT_COST_LOG2,
 		.block_size  = INI_SCRYPT_R,
 		.parallelism = INI_SCRYPT_P,
 	};
-	xp_crypt_t ctx = NULL;
+	ini_cipher_t ctx = NULL;
 	char *buffer = NULL;
 	size_t bufferSize = 0;
 	size_t bufferPos = 0;
@@ -586,31 +833,42 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	 * exactly what we want, since a PBKDF2 iteration count can't
 	 * sensibly be reinterpreted as scrypt cost_log2. */
 	if (kdf_spec != NULL && *kdf_spec != '\0') {
-		struct xp_crypt_kdf_params parsed;
+		struct ini_kdf_params parsed;
 		if (parse_kdf_spec(kdf_spec, &parsed))
 			kdf = parsed;
 	}
-	/* Clamp scrypt cost_log2 to a sane range.  Below 8 is pointlessly
-	 * weak; above 24 pushes memory into GB territory. */
-	if (kdf.kdf == XP_CRYPT_KDF_SCRYPT) {
+	/* Clamp scrypt cost_log2 to the fixed per-derivation xptls limit.
+	 * Below 8 is pointlessly weak. */
+	if (kdf.kdf == XP_KDF_SCRYPT) {
 		if (kdf.cost_log2 < 8)
 			kdf.cost_log2 = 8;
-		else if (kdf.cost_log2 > 24)
-			kdf.cost_log2 = 24;
+		else if (kdf.cost_log2 > 63)
+			kdf.cost_log2 = 63;
+		while (kdf.cost_log2 > 8) {
+			uint64_t n = UINT64_C(1) << kdf.cost_log2;
+			uint64_t unit = UINT64_C(128) * kdf.block_size;
+			uint64_t blocks = XP_KDF_SCRYPT_MAX_MEMORY / unit;
+			if (n <= blocks && blocks - n >= 2
+			    && kdf.parallelism <= blocks - n - 2)
+				break;
+			kdf.cost_log2--;
+		}
 	}
 
 	if (fp == NULL)
 		return false;
 	if (algo == INI_CRYPT_ALGO_NONE)
 		return iniWriteFile(fp, list);
+	if (algo != INI_CRYPT_ALGO_AES && algo != INI_CRYPT_ALGO_CHACHA20)
+		return false;
 	if (key == NULL)
 		return false;
 
-	for (size_t i = 0; i < sizeof(salt_bin); i++)
-		salt_bin[i] = (uint8_t)xp_random(256);
+	if (xp_crypto_random(salt_bin, sizeof(salt_bin)) != XP_CRYPTO_OK)
+		return false;
 	hex_encode(salt_bin, sizeof(salt_bin), salt_hex);
 
-	ctx = xp_crypt_open((int)algo, keySize, salt_bin, sizeof(salt_bin),
+	ctx = ini_cipher_open(algo, keySize, salt_bin, sizeof(salt_bin),
 	                    &kdf, key, strlen(key), /*encrypt=*/true);
 	if (ctx == NULL)
 		return false;
@@ -624,7 +882,7 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 		}
 	}
 
-	blocksize = xp_crypt_blocksize(ctx);
+	blocksize = (int)cipher_block_size(algo);
 	if (blocksize <= 1) {
 		bufferSize = INI_MAX_LINE_LEN - 1;
 		streamCipher = true;
@@ -646,13 +904,13 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	/* Emit the IV header if the cipher carries one, before any
 	   ciphertext. Matches the on-disk layout produced by the old
 	   Cryptlib-backed writer: uint16_t be_ivsize + iv bytes. */
-	ivsize = xp_crypt_ivsize(ctx);
+	ivsize = (int)cipher_iv_size(algo);
 	if (ivsize > 0) {
-		unsigned char iv[XP_CRYPT_MAX_IVSIZE];
+		unsigned char iv[16];
 		uint16_t ivs;
 		if ((size_t)ivsize > sizeof(iv))
 			goto done;
-		if (xp_crypt_gen_iv(ctx, iv, ivsize) != 0)
+		if (ini_cipher_gen_iv(ctx, iv, ivsize) != 0)
 			goto done;
 		ivs = htons((uint16_t)ivsize);
 		if (fwrite(&ivs, 1, sizeof(ivs), fp) != sizeof(ivs))
@@ -674,7 +932,7 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 	}
 	if (bufferPos) {
 		if (streamCipher) {
-			if (xp_crypt_process(ctx, buffer, bufferPos) != 0)
+			if (ini_cipher_process(ctx, buffer, bufferPos) != 0)
 				goto done;
 			if (fwrite(buffer, 1, bufferPos, fp) != bufferPos)
 				goto done;
@@ -694,7 +952,7 @@ bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo al
 
 done:
 	free(buffer);
-	xp_crypt_close(ctx);
+	ini_cipher_close(ctx);
 	if (!ok)
 		return false;
 	return line == strListCount(list);

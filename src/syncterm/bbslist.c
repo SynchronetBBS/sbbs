@@ -1086,10 +1086,10 @@ bbslist_read_status_string(enum bbslist_read_status status)
 
 static enum bbslist_read_status
 migrate_bbslist(str_list_t inifile, enum iniCryptAlgo algo, int keysize,
-    enum xp_crypt_kdf kdf, const char *password)
+    enum xp_kdf_algorithm kdf, const char *password)
 {
 	bool kdf_legacy = algo != INI_CRYPT_ALGO_NONE &&
-	    kdf != XP_CRYPT_KDF_SCRYPT;
+	    kdf != XP_KDF_SCRYPT;
 	bool cipher_legacy = algo != INI_CRYPT_ALGO_NONE &&
 	    algo != INI_CRYPT_ALGO_AES && algo != INI_CRYPT_ALGO_CHACHA20;
 
@@ -1163,7 +1163,7 @@ iniReadBBSListPassword(FILE *fp, bool userList, const char *password,
 	enum bbslist_read_status result = BBSLIST_READ_OK;
 	enum iniCryptAlgo algo = INI_CRYPT_ALGO_NONE;
 	int keysize = 0;
-	enum xp_crypt_kdf kdf = 0;
+	enum xp_kdf_algorithm kdf = 0;
 
 	supplied_list_password = password;
 	str_list_t inifile = iniReadEncryptedFile(fp, use_supplied_password,

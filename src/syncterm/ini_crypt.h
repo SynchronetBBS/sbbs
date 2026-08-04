@@ -2,7 +2,7 @@
 
 /*
  * Encrypted INI file API — a layer on top of xpdev's plain iniReadFile /
- * iniWriteFile, backed by xp_crypt (OpenSSL or Botan 3) and a KDF over a
+ * iniWriteFile, backed by the provider-neutral xptls cipher and KDF APIs
  * user-supplied passphrase.  Used by SyncTERM for the bbslist.ini
  * optional encryption feature.
  *
@@ -20,7 +20,7 @@
 
 #include "str_list.h"  /* str_list_t */
 #include "wrapdll.h"
-#include "xp_crypt.h"  /* enum xp_crypt_kdf */
+#include "xp_kdf.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -29,14 +29,11 @@ extern "C" {
 /*
  * Symmetric ciphers supported for encrypted INI files.
  *
- * Values are stable and match enum xp_crypt_algo in xp_crypt.h — the
- * numeric value is used only at runtime; the on-disk format encodes the
+ * Values are stable for the existing caller ABI. The on-disk format encodes the
  * algorithm as its ASCII name (iniCryptGetAlgoName), so these integers
  * are not part of the file format.
  *
- * Read-only legacy ciphers (IDEA, RC2 when the backend lacks them) are
- * served by xp_crypt's legacy-decrypt registry; consumers register
- * handlers at init time. See syncterm/legacy_ciphers/ for an example.
+ * IDEA and RC2 are handled by SyncTERM-private migration decoders.
  */
 enum iniCryptAlgo {
 	INI_CRYPT_ALGO_NONE     = 0,
@@ -74,9 +71,9 @@ DLLEXPORT const char *iniCryptDefaultKDFSpec(void);
  *
  * kdfPtr (optional) reports the KDF the file actually used — callers
  * that care about v1 vs v2 provenance can compare against
- * XP_CRYPT_KDF_SCRYPT.
+ * XP_KDF_SCRYPT.
  */
-DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const char *kdf_spec, enum iniCryptAlgo *algoPtr, int *ks, enum xp_crypt_kdf *kdfPtr);
+DLLEXPORT str_list_t iniReadEncryptedFile(FILE* fp, bool(*get_key)(char *keybuf, size_t *sz), const char *kdf_spec, enum iniCryptAlgo *algoPtr, int *ks, enum xp_kdf_algorithm *kdfPtr);
 DLLEXPORT bool iniWriteEncryptedFile(FILE* fp, const str_list_t list, enum iniCryptAlgo algo, int keySize, const char *kdf_spec, const char *key);
 DLLEXPORT const char *iniCryptGetAlgoName(enum iniCryptAlgo a);
 DLLEXPORT enum iniCryptAlgo iniCryptGetAlgoFromName(const char *n);

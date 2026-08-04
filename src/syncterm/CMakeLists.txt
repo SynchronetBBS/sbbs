@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the build type")
-# CXX is conditionally needed for the Botan backend (xp_tls_botan3.cpp,
-# xp_crypt_botan3.cpp, src/ssh/crypto/botan.cpp and a handful of Botan
+# CXX is conditionally needed for the Botan backend (xptls provider sources,
+# src/ssh/crypto/botan.cpp and a handful of Botan
 # key-algo/KEX wrappers).  Declaring it up-front primes CMAKE_CXX_*
 # variables so LINKER_LANGUAGE CXX works at generate time.
 if(APPLE)
@@ -19,206 +19,15 @@ if(APPLE AND NOT WITHOUT_QUARTZ)
 endif()
 
 set(WITHOUT_DEUCESSH OFF CACHE BOOL "Disable SSH support (DeuceSSH)")
-set(WITHOUT_CRYPTO   OFF CACHE BOOL "Disable TLS + encrypted bbslist.ini (xp_tls, xp_crypt)")
+set(WITHOUT_CRYPTO   OFF CACHE BOOL "Disable TLS + encrypted bbslist.ini (xptls)")
 set(WITHOUT_OOII OFF CACHE BOOL "Disable Operation Overkill ][ Terminal")
 set(WITHOUT_JPEG_XL OFF CACHE BOOL "Disable JPEG XL")
 set(WITHOUT_RETRO ON CACHE BOOL "Disable libretro")
-set(USE_VENDORED_BOTAN "" CACHE STRING
-    "Force vendored Botan build (1=force, 0=never, empty=auto-detect)")
 
-# Decide whether we need the vendored Botan (from 3rdp/dist/Botan.tar.xz).
-# Auto-detect unless the user pinned USE_VENDORED_BOTAN to 0 or 1:
-#   - MinGW / Windows cross-compile always uses vendored.
-#   - Otherwise: require system Botan 3.9+ or OpenSSL 3.0+; fall back
-#     to vendored when neither is available.
-if(USE_VENDORED_BOTAN STREQUAL "")
-	find_package(PkgConfig QUIET)
-	set(_botan_ok FALSE)
-	set(_openssl_ok FALSE)
-	if(WIN32 AND NOT CMAKE_HOST_WIN32)
-		set(USE_VENDORED_BOTAN 1)
-	else()
-		if(PkgConfig_FOUND)
-			pkg_check_modules(SYS_BOTAN3 QUIET "botan-3>=3.6")
-			if(SYS_BOTAN3_FOUND)
-				set(_botan_ok TRUE)
-			endif()
-			pkg_check_modules(SYS_OPENSSL QUIET "libcrypto>=3.0")
-			if(SYS_OPENSSL_FOUND)
-				set(_openssl_ok TRUE)
-			endif()
-		endif()
-		if(_botan_ok OR _openssl_ok)
-			set(USE_VENDORED_BOTAN 0)
-		else()
-			set(USE_VENDORED_BOTAN 1)
-		endif()
-	endif()
-endif()
-
-if(USE_VENDORED_BOTAN)
-	# Botan's configure.py needs a Python 3 interpreter.  On Windows CI
-	# only `python.exe` is on PATH (no `python3.exe`); find_package
-	# handles both layouts.  If Python 3 isn't present at all, we
-	# can't build vendored Botan — drop all the way to WITHOUT_CRYPTO
-	# so the build still completes (no TLS / encrypted-bbslist) rather
-	# than failing with an opaque cmake error later.
-	find_package(Python3 COMPONENTS Interpreter QUIET)
-	if(NOT Python3_Interpreter_FOUND)
-		message(WARNING
-		    "Python 3 not found; can't build vendored Botan.  "
-		    "Disabling crypto (WITHOUT_CRYPTO + WITHOUT_DEUCESSH).")
-		set(WITHOUT_CRYPTO ON CACHE BOOL
-		    "Disable TLS + encrypted bbslist.ini (xp_tls, xp_crypt)" FORCE)
-		set(WITHOUT_DEUCESSH ON CACHE BOOL
-		    "Disable SSH support (DeuceSSH)" FORCE)
-		set(USE_VENDORED_BOTAN 0)
-		# Pin xpdev to the stub backends; otherwise xpdev's default
-		# of "OpenSSL" tries find_package(OpenSSL REQUIRED) and fails
-		# on hosts that also don't have OpenSSL (Windows MSVC CI).
-		set(XP_CRYPTO_BACKEND "none" CACHE STRING
-		    "xpdev crypto backend: OpenSSL, Botan, or none" FORCE)
-		message(STATUS
-		    "Crypto fallback: XP_CRYPTO_BACKEND=none, "
-		    "WITHOUT_CRYPTO=ON, WITHOUT_DEUCESSH=ON")
-	endif()
-endif()
-
-if(USE_VENDORED_BOTAN)
-	# Build Botan from 3rdp/dist/Botan.tar.xz as an ExternalProject.
-	# DeuceSSH's pkg_check_modules(BOTAN3 REQUIRED botan-3) picks it up
-	# once PKG_CONFIG_PATH includes the vendored install's pkgconfig/.
-	include(ExternalProject)
-	set(VENDORED_BOTAN_PREFIX
-	    "${CMAKE_BINARY_DIR}/vendored-botan" CACHE INTERNAL "")
-	set(VENDORED_BOTAN_LIB
-	    "${VENDORED_BOTAN_PREFIX}/lib/libbotan-3.a" CACHE INTERNAL "")
-	set(VENDORED_BOTAN_PKGCONFIG
-	    "${VENDORED_BOTAN_PREFIX}/lib/pkgconfig" CACHE INTERNAL "")
-	# Minimal module set — keep synchronised with BOTAN_MODULES in
-	# 3rdp/build/GNUmakefile.  Botan pulls transitive deps under
-	# --minimized-build, so this is the top-level "what we call" list.
-	set(_botan_certstor_modules ",certstor_system")
-	if(APPLE)
-		string(APPEND _botan_certstor_modules
-		    ",certstor_system_macos")
-	elseif(WIN32)
-		string(APPEND _botan_certstor_modules
-		    ",certstor_system_windows")
-	else()
-		string(APPEND _botan_certstor_modules
-		    ",certstor_flatfile")
-	endif()
-	set(_botan_modules
-	    "tls12,tls13,aes,cbc,ctr,chacha,chacha20poly1305"
-	    ",rc4,des,cast128,hmac,pbkdf2,scrypt,pbes2"
-	    ",sha1,sha2_32,sha2_64,rsa,ed25519,x25519,dh,ecdsa,ecdh,ml_kem"
-	    ",pcurves_secp256r1,pcurves_secp384r1,pcurves_secp521r1"
-	    ",x509${_botan_certstor_modules},system_rng,auto_rng")
-	string(REPLACE ";" "" _botan_modules "${_botan_modules}")
-	set(_botan_configure_args
-	    --prefix=${VENDORED_BOTAN_PREFIX}
-	    --disable-shared-library
-	    --without-documentation
-	    --build-targets=static
-	    --minimized-build
-	    --enable-modules=${_botan_modules})
-	if(MSVC)
-		# MSVC: Botan's configure.py picks --cc=msvc + nmake Makefile.
-		# Output is botan-3.lib (Botan 3.x uses the major-version
-		# suffix on Windows just like libbotan-3.a on POSIX).
-		list(APPEND _botan_configure_args
-		    --cc=msvc --build-tool=make)
-		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-			list(APPEND _botan_configure_args --cpu=x86_64)
-		else()
-			list(APPEND _botan_configure_args --cpu=x86)
-		endif()
-		set(VENDORED_BOTAN_LIB
-		    "${VENDORED_BOTAN_PREFIX}/lib/botan-3.lib" CACHE INTERNAL "")
-		set(_botan_build_cmd    nmake)
-		set(_botan_install_cmd  nmake install)
-	elseif(CMAKE_CROSSCOMPILING AND WIN32)
-		list(APPEND _botan_configure_args --build-tool=make)
-		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-			list(APPEND _botan_configure_args
-			    --os=mingw --cpu=x86_64
-			    --cc-bin=${CMAKE_CXX_COMPILER}
-			    --ar-command=${CMAKE_AR})
-		else()
-			list(APPEND _botan_configure_args
-			    --os=mingw --cpu=x86
-			    --cc-bin=${CMAKE_CXX_COMPILER}
-			    --ar-command=${CMAKE_AR})
-		endif()
-		# Probe parallel build width; Botan's generated Makefile doesn't
-		# use GNU make's jobserver, and inheriting parent MAKEFLAGS with
-		# "-j" but no count produces "illegal argument to -j".  Clear
-		# MAKEFLAGS and pass an explicit -jN to the sub-make.
-		include(ProcessorCount)
-		ProcessorCount(_n_cpus)
-		if(_n_cpus EQUAL 0)
-			set(_n_cpus 2)
-		endif()
-		set(_botan_build_cmd
-		    ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS make -j${_n_cpus})
-		set(_botan_install_cmd
-		    ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS make install)
-	else()
-		list(APPEND _botan_configure_args --build-tool=make)
-		include(ProcessorCount)
-		ProcessorCount(_n_cpus)
-		if(_n_cpus EQUAL 0)
-			set(_n_cpus 2)
-		endif()
-		set(_botan_build_cmd
-		    ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS make -j${_n_cpus})
-		set(_botan_install_cmd
-		    ${CMAKE_COMMAND} -E env --unset=MAKEFLAGS make install)
-	endif()
-	ExternalProject_Add(vendored-botan
-	    URL "${CMAKE_CURRENT_SOURCE_DIR}/../../3rdp/dist/Botan.tar.xz"
-	    PREFIX "${CMAKE_BINARY_DIR}/vendored-botan-src"
-	    CONFIGURE_COMMAND ${Python3_EXECUTABLE} <SOURCE_DIR>/configure.py ${_botan_configure_args}
-	    BUILD_COMMAND ${_botan_build_cmd}
-	    INSTALL_COMMAND ${_botan_install_cmd}
-	    BUILD_BYPRODUCTS ${VENDORED_BOTAN_LIB}
-	    BUILD_IN_SOURCE TRUE)
-	# ExternalProject runs at build time, so the .pc file doesn't exist
-	# yet when sub-projects run pkg_check_modules at configure time.
-	# Set up a manually-defined IMPORTED target + BYPASS hint so xpdev
-	# and DeuceSSH use the baked-in paths instead of consulting pkg-
-	# config.  The target's OUTPUT file is listed in BUILD_BYPRODUCTS so
-	# it works with both make and Ninja.
-	file(MAKE_DIRECTORY "${VENDORED_BOTAN_PREFIX}/include/botan-3")
-	add_library(vendored-botan-3 STATIC IMPORTED GLOBAL)
-	set_target_properties(vendored-botan-3 PROPERTIES
-	    IMPORTED_LOCATION "${VENDORED_BOTAN_LIB}"
-	    INTERFACE_INCLUDE_DIRECTORIES
-	        "${VENDORED_BOTAN_PREFIX}/include/botan-3")
-	if(WIN32)
-		# Botan's Windows certificate-store module uses CryptoAPI.
-		target_link_libraries(vendored-botan-3 INTERFACE Crypt32)
-	endif()
-	add_dependencies(vendored-botan-3 vendored-botan)
-	# Cache hints picked up by xpdev and DeuceSSH CMakeLists to avoid
-	# running pkg-config entirely.
-	set(BOTAN3_VENDORED_TARGET "vendored-botan-3" CACHE INTERNAL "")
-	# Force DeuceSSH + xpdev to pick Botan (vendored is Botan, not OpenSSL).
-	set(DEUCESSH_CRYPTO_BACKEND "Botan" CACHE STRING "" FORCE)
-	set(XP_CRYPTO_BACKEND       "Botan" CACHE STRING "" FORCE)
-else()
-	# Not using the vendored build — force xpdev + DeuceSSH onto whichever
-	# system library we already probed.  Botan first (matches the vendored
-	# case so switching doesn't change behaviour), OpenSSL otherwise.
-	if(_botan_ok)
-		set(DEUCESSH_CRYPTO_BACKEND "Botan"   CACHE STRING "" FORCE)
-		set(XP_CRYPTO_BACKEND       "Botan"   CACHE STRING "" FORCE)
-	elseif(_openssl_ok)
-		set(DEUCESSH_CRYPTO_BACKEND "OpenSSL" CACHE STRING "" FORCE)
-		set(XP_CRYPTO_BACKEND       "OpenSSL" CACHE STRING "" FORCE)
-	endif()
-endif()
+# Resolve/build the provider once, then pin both independent libraries to it.
+# The shared module owns vendored Botan; DeuceSSH itself remains unchanged.
+include(../build/SynchronetCrypto.cmake)
+synchronet_configure_crypto()
 
 # CPack stuff...
 set(CPACK_PACKAGE_NAME SyncTERM)
@@ -450,12 +259,12 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 	execute_process(COMMAND uname -m OUTPUT_VARIABLE ARCHITECTURE_TYPE OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
-# ini_crypt.c + xp_crypt/xp_tls backend shim are always built, even
+# ini_crypt.c and the xptls disabled backend are always built, even
 # with WITHOUT_CRYPTO — bbslist.c and syncterm.c reference the
 # encrypted-INI API unconditionally (iniWriteEncryptedFile is the
 # general write path; with INI_CRYPT_ALGO_NONE it falls through to
-# plain iniWriteFile).  The "none" backend provides no-op xp_crypt
-# and xp_tls so nothing drags in OpenSSL / Botan.
+# plain iniWriteFile). The "none" backend supplies linkable stubs, so
+# nothing drags in OpenSSL or Botan.
 list(APPEND SOURCE ini_crypt.c)
 
 if(NOT WITHOUT_CRYPTO)
@@ -466,8 +275,7 @@ if(NOT WITHOUT_CRYPTO)
 		telnets.c
 		conn_mqtt.c
 		legacy_ciphers/idea.c
-		legacy_ciphers/rc2.c
-		legacy_ciphers/register.c)
+		legacy_ciphers/rc2.c)
 endif()
 
 if(WIN32)
@@ -501,7 +309,7 @@ set_target_properties(syncterm PROPERTIES
 )
 set_property(TARGET syncterm PROPERTY C_STANDARD 17)
 set_property(TARGET syncterm PROPERTY C_STANDARD_REQUIRED ON)
-# Botan 3 requires C++20 (xp_crypt_botan3.cpp, xp_tls_botan3.cpp).
+# Botan 3 requires C++20 in the provider libraries.
 # Setting CXX_STANDARD on the target is harmless when no .cpp sources
 # are present (OpenSSL / none backends).
 set_property(TARGET syncterm PROPERTY CXX_STANDARD 20)
@@ -514,9 +322,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	set_source_files_properties(SyncTERM.icns PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 endif()
 require_libs(syncterm ciolib comio encode hash sftp xpdev)
-# Add xptls AFTER require_libs() so the xpdev target already exists —
-# xptls links xpdev to inherit its PUBLIC platform / HAS_STDINT_H
-# defines.
+# Add xptls after xpdev.  The xptls archive contains only xptls objects;
+# xpdev remains a separate final-link dependency.
 add_subdirectory(../xptls xptls EXCLUDE_FROM_ALL)
 target_link_libraries(syncterm wrenvm re1)
 target_compile_definitions(syncterm PRIVATE TELNET_NO_DLL)
@@ -588,11 +395,12 @@ else()
 	endif()
 endif()
 
-# xp_tls / xp_crypt are now in the standalone xptls library.
-target_link_libraries(syncterm xptls)
+# TLS, ciphers, KDFs, and random generation are in the independent xptls
+# library.  It and DeuceSSH share only the selected crypto provider.
+target_link_libraries(syncterm xptls::static)
 
 # Botan backend pulls C++ translation units into libdeucessh.a and into
-# syncterm (xp_tls_botan3.cpp, xp_crypt_botan3.cpp); the final link needs
+# syncterm (the Botan xptls backend); the final link needs
 # the C++ driver to resolve libc++/libsupc++ (operator new, __cxa_throw,
 # vtables, typeinfo, ...).
 if(XP_CRYPTO_BACKEND STREQUAL "Botan" OR DEUCESSH_CRYPTO_BACKEND STREQUAL "Botan")
@@ -618,9 +426,6 @@ else()
 endif()
 
 target_include_directories(syncterm PRIVATE ../sbbs3)
-# Own-source-dir include: legacy_ciphers/*.c reaches xp_crypt.h via
-# #include "xp_crypt.h" — when the .c sits one level below the syncterm/
-# directory, that relative include only resolves with an explicit -I.
 target_include_directories(syncterm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "NetBSD")
@@ -687,6 +492,18 @@ require_libs(conn_buffer_test xpdev)
 target_include_directories(conn_buffer_test PRIVATE ../conio)
 target_compile_definitions(conn_buffer_test PRIVATE SDL_MAIN_HANDLED)
 add_test(NAME conn_buffer_test COMMAND conn_buffer_test)
+if(NOT WITHOUT_CRYPTO)
+	add_executable(ini_crypt_test
+		ini_crypt_test.c ini_crypt.c
+		legacy_ciphers/idea.c legacy_ciphers/rc2.c)
+	target_link_libraries(ini_crypt_test PRIVATE xptls::static xpdev)
+	target_include_directories(ini_crypt_test PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../xpdev)
+	if(XP_CRYPTO_BACKEND STREQUAL "Botan")
+		set_target_properties(ini_crypt_test PROPERTIES LINKER_LANGUAGE CXX)
+	endif()
+	add_test(NAME ini_crypt_test COMMAND ini_crypt_test)
+endif()
 if(UNIX AND NOT WITHOUT_SDL)
 	add_executable(termtest termtest.c)
 	add_test(NAME termtest

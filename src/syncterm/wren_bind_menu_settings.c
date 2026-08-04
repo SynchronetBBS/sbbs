@@ -357,7 +357,7 @@ fn_Settings_kdfShift_set(WrenVM *vm)
 {
 	struct wren_menu_settings *ws = settings_check(vm);
 	uint64_t value;
-	if (ws != NULL && slot_integer(vm, 1, 8, 24, &value)) {
+	if (ws != NULL && slot_integer(vm, 1, 8, 20, &value)) {
 		snprintf(ws->settings.keyDerivationIterations,
 		    sizeof(ws->settings.keyDerivationIterations), "scrypt-N%u",
 		    (unsigned)value);

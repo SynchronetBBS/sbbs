@@ -4,7 +4,9 @@
 #include <time.h>
 
 #include "xp_ca.h"
+#include "xp_cipher.h"
 #include "xp_digest.h"
+#include "xp_kdf.h"
 #include "xp_sign.h"
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "%s:%d: %s: %s\n", __FILE__, __LINE__, #x, xp_ca_last_error()); return 1; } } while (0)
@@ -81,6 +83,258 @@ static int check_digest(void)
 		"ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a"
 		"2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f"));
 	xp_digest_free(context);
+	return 0;
+}
+
+static int check_kdf(void)
+{
+	unsigned char output[64];
+	CHECK(xp_kdf_pbkdf2(XP_DIGEST_SHA256, "password", 8, "salt", 4,
+		1, output, 32) == XP_CRYPTO_OK);
+	CHECK(matches_hex(output, 32,
+		"120fb6cffcf8b32c43e7225256c4f837a86548c92ccc35480805987cb70be17b"));
+	CHECK(xp_kdf_scrypt("", 0, "", 0, 16, 1, 1,
+		output, sizeof(output)) == XP_CRYPTO_OK);
+	CHECK(matches_hex(output, sizeof(output),
+		"77d6576238657b203b19ca42c18a0497f16b4844e3074ae8dfdffa3fede21442"
+		"fcd0069ded0948f8326a753a0fc81f17e8d3e0fb2e0d3628cf35e20c38d18906"));
+	CHECK(xp_kdf_scrypt("", 0, "", 0, UINT64_C(1) << 21, 8, 1,
+		output, sizeof(output)) == XP_CRYPTO_ERR_POLICY);
+	return 0;
+}
+
+static int
+check_legacy_decrypt(enum xp_cipher_algorithm algorithm,
+	enum xp_cipher_mode mode, const void *key, size_t key_len,
+	const void *iv, size_t iv_len, const void *ciphertext,
+	const void *plaintext, size_t length)
+{
+	CHECK(!xp_cipher_supported(algorithm, mode, XP_CIPHER_ENCRYPT));
+	if (!xp_cipher_supported(algorithm, mode, XP_CIPHER_DECRYPT))
+		return 0;
+	struct xp_cipher_config config = {
+		.algorithm = algorithm,
+		.mode = mode,
+		.direction = XP_CIPHER_DECRYPT,
+		.padding = XP_CIPHER_PADDING_NONE,
+		.key = key,
+		.key_len = key_len,
+		.iv = iv,
+		.iv_len = iv_len,
+	};
+	xp_cipher_t cipher = NULL;
+	unsigned char output[64];
+	size_t output_len = sizeof(output);
+	CHECK(length <= sizeof(output));
+	CHECK(xp_cipher_create(&cipher, &config) == XP_CRYPTO_OK);
+	CHECK(xp_cipher_update(cipher, ciphertext, length, output,
+		&output_len) == XP_CRYPTO_OK);
+	size_t tail_len = sizeof(output) - output_len;
+	CHECK(xp_cipher_final(cipher, output + output_len, &tail_len)
+		== XP_CRYPTO_OK);
+	output_len += tail_len;
+	CHECK(output_len == length && memcmp(output, plaintext, length) == 0);
+	xp_cipher_free(cipher);
+	return 0;
+}
+
+static int
+check_legacy_ciphers(void)
+{
+	static const unsigned char plaintext[8] = {
+		0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef
+	};
+	static const unsigned char iv[8] = {0};
+	static const unsigned char des3_key[24] = {
+		0x01,0x23,0x45,0x67,0x89,0xab,0xcd,0xef,
+		0xfe,0xdc,0xba,0x98,0x76,0x54,0x32,0x10,
+		0x89,0xab,0xcd,0xef,0x01,0x23,0x45,0x67
+	};
+	static const unsigned char des3_ciphertext[8] = {
+		0x69,0x17,0x47,0xfd,0x88,0xb6,0xd2,0x28
+	};
+	static const unsigned char cast_key[16] = {
+		0x01,0x23,0x45,0x67,0x12,0x34,0x56,0x78,
+		0x23,0x45,0x67,0x89,0x34,0x56,0x78,0x9a
+	};
+	static const unsigned char cast_ciphertext[8] = {
+		0x23,0x8b,0x4f,0xe5,0x84,0x7e,0x44,0xb2
+	};
+	static const unsigned char rc4_key[16] = {'K', 'e', 'y'};
+	static const unsigned char rc4_plaintext[9] = "Plaintext";
+	static const unsigned char rc4_ciphertext[9] = {
+		0x25,0x28,0x47,0xe2,0xd8,0x44,0xd2,0xf1,0x0e
+	};
+	CHECK(check_legacy_decrypt(XP_CIPHER_3DES, XP_CIPHER_MODE_CBC,
+		des3_key, sizeof(des3_key), iv, sizeof(iv), des3_ciphertext,
+		plaintext, sizeof(plaintext)) == 0);
+	CHECK(check_legacy_decrypt(XP_CIPHER_CAST128, XP_CIPHER_MODE_CBC,
+		cast_key, sizeof(cast_key), iv, sizeof(iv), cast_ciphertext,
+		plaintext, sizeof(plaintext)) == 0);
+	CHECK(check_legacy_decrypt(XP_CIPHER_RC4, XP_CIPHER_MODE_STREAM,
+		rc4_key, sizeof(rc4_key), NULL, 0, rc4_ciphertext,
+		rc4_plaintext, sizeof(rc4_plaintext)) == 0);
+	return 0;
+}
+
+static int check_cipher(void)
+{
+	static const unsigned char key[16] = {
+		0x2b,0x7e,0x15,0x16,0x28,0xae,0xd2,0xa6,
+		0xab,0xf7,0x15,0x88,0x09,0xcf,0x4f,0x3c
+	};
+	static const unsigned char iv[16] = {
+		0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,
+		0x08,0x09,0x0a,0x0b,0x0c,0x0d,0x0e,0x0f
+	};
+	static const unsigned char plaintext[16] = {
+		0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,
+		0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a
+	};
+	static const unsigned char expected[16] = {
+		0x76,0x49,0xab,0xac,0x81,0x19,0xb2,0x46,
+		0xce,0xe9,0x8e,0x9b,0x12,0xe9,0x19,0x7d
+	};
+	CHECK(xp_cipher_supported(XP_CIPHER_AES, XP_CIPHER_MODE_CBC,
+		XP_CIPHER_ENCRYPT));
+	CHECK(!xp_cipher_supported(XP_CIPHER_3DES, XP_CIPHER_MODE_CBC,
+		XP_CIPHER_ENCRYPT));
+	struct xp_cipher_config config = {
+		.algorithm = XP_CIPHER_AES,
+		.mode = XP_CIPHER_MODE_CBC,
+		.direction = XP_CIPHER_ENCRYPT,
+		.padding = XP_CIPHER_PADDING_NONE,
+		.key = key,
+		.key_len = sizeof(key),
+		.iv = iv,
+		.iv_len = sizeof(iv),
+	};
+	xp_cipher_t cipher = NULL;
+	unsigned char output[64];
+	size_t length = 1;
+	CHECK(xp_cipher_create(&cipher, &config) == XP_CRYPTO_OK);
+	CHECK(xp_cipher_update(cipher, plaintext, sizeof(plaintext), output,
+		&length) == XP_CRYPTO_ERR_BUFFER_TOO_SMALL);
+	length = sizeof(output);
+	CHECK(xp_cipher_update(cipher, plaintext, sizeof(plaintext), output,
+		&length) == XP_CRYPTO_OK);
+	CHECK(length == sizeof(expected) && memcmp(output, expected, length) == 0);
+	length = sizeof(output);
+	CHECK(xp_cipher_final(cipher, output, &length) == XP_CRYPTO_OK && length == 0);
+	xp_cipher_free(cipher);
+
+	static const unsigned char cfb_expected[16] = {
+		0x3b,0x3f,0xd9,0x2e,0xb7,0x2d,0xad,0x20,
+		0x33,0x34,0x49,0xf8,0xe8,0x3c,0xfb,0x4a
+	};
+	config.mode = XP_CIPHER_MODE_CFB;
+	CHECK(xp_cipher_create(&cipher, &config) == XP_CRYPTO_OK);
+	length = sizeof(plaintext);
+	CHECK(xp_cipher_update(cipher, plaintext, sizeof(plaintext), output,
+		&length) == XP_CRYPTO_OK && length == sizeof(cfb_expected));
+	CHECK(memcmp(output, cfb_expected, sizeof(cfb_expected)) == 0);
+	xp_cipher_free(cipher);
+
+	static const unsigned char chacha_key[32] = {0};
+	static const unsigned char nonce[12] = {0};
+	unsigned char message[37], encrypted[37], decrypted[37];
+	for (size_t i = 0; i < sizeof(message); i++) message[i] = (unsigned char)i;
+	config.algorithm = XP_CIPHER_CHACHA20;
+	config.mode = XP_CIPHER_MODE_STREAM;
+	config.key = chacha_key;
+	config.key_len = sizeof(chacha_key);
+	config.iv = nonce;
+	config.iv_len = sizeof(nonce);
+	config.initial_counter = 7;
+	CHECK(xp_cipher_create(&cipher, &config) == XP_CRYPTO_OK);
+	length = 13;
+	CHECK(xp_cipher_update(cipher, message, 13, encrypted, &length) == XP_CRYPTO_OK
+		&& length == 13);
+	length = sizeof(encrypted) - 13;
+	CHECK(xp_cipher_update(cipher, message + 13, sizeof(message) - 13,
+		encrypted + 13, &length) == XP_CRYPTO_OK && length == sizeof(message) - 13);
+	xp_cipher_free(cipher);
+	config.direction = XP_CIPHER_DECRYPT;
+	CHECK(xp_cipher_create(&cipher, &config) == XP_CRYPTO_OK);
+	length = sizeof(decrypted);
+	CHECK(xp_cipher_update(cipher, encrypted, sizeof(encrypted), decrypted,
+		&length) == XP_CRYPTO_OK && length == sizeof(decrypted));
+	CHECK(memcmp(message, decrypted, sizeof(message)) == 0);
+	xp_cipher_free(cipher);
+
+	static const unsigned char chacha_zero_expected[64] = {
+		0x76,0xb8,0xe0,0xad,0xa0,0xf1,0x3d,0x90,0x40,0x5d,0x6a,0xe5,0x53,0x86,0xbd,0x28,
+		0xbd,0xd2,0x19,0xb8,0xa0,0x8d,0xed,0x1a,0xa8,0x36,0xef,0xcc,0x8b,0x77,0x0d,0xc7,
+		0xda,0x41,0x59,0x7c,0x51,0x57,0x48,0x8d,0x77,0x24,0xe0,0x3f,0xb8,0xd8,0x4a,0x37,
+		0x6a,0x43,0xb8,0xf4,0x15,0x18,0xa1,0x1c,0xc3,0x87,0xb6,0x69,0xb2,0xee,0x65,0x86
+	};
+	unsigned char zeros[64] = {0};
+	config.direction = XP_CIPHER_ENCRYPT;
+	config.initial_counter = 0;
+	CHECK(xp_cipher_create(&cipher, &config) == XP_CRYPTO_OK);
+	length = sizeof(output);
+	CHECK(xp_cipher_update(cipher, zeros, sizeof(zeros), output, &length)
+		== XP_CRYPTO_OK && length == sizeof(zeros));
+	CHECK(memcmp(output, chacha_zero_expected, sizeof(zeros)) == 0);
+	xp_cipher_free(cipher);
+
+	unsigned char gcm_iv[12] = {0};
+	unsigned char gcm_plaintext[23] = "authenticated plaintext";
+	unsigned char gcm_ciphertext[64], gcm_tag[16], gcm_result[64];
+	static const unsigned char gcm_aad[] = "associated data";
+	config.algorithm = XP_CIPHER_AES;
+	config.mode = XP_CIPHER_MODE_GCM;
+	config.direction = XP_CIPHER_ENCRYPT;
+	config.key = key;
+	config.key_len = sizeof(key);
+	config.iv = gcm_iv;
+	config.iv_len = sizeof(gcm_iv);
+	config.tag_len = sizeof(gcm_tag);
+	CHECK(xp_cipher_create(&cipher, &config) == XP_CRYPTO_OK);
+	CHECK(xp_cipher_aad(cipher, gcm_aad, sizeof(gcm_aad) - 1)
+		== XP_CRYPTO_OK);
+	length = sizeof(gcm_ciphertext);
+	CHECK(xp_cipher_update(cipher, gcm_plaintext, sizeof(gcm_plaintext),
+		gcm_ciphertext, &length) == XP_CRYPTO_OK);
+	CHECK(xp_cipher_aad(cipher, gcm_aad, sizeof(gcm_aad) - 1)
+		== XP_CRYPTO_ERR_POLICY);
+	size_t ciphertext_len = length;
+	length = sizeof(gcm_ciphertext) - ciphertext_len;
+	CHECK(xp_cipher_final(cipher, gcm_ciphertext + ciphertext_len, &length)
+		== XP_CRYPTO_OK);
+	ciphertext_len += length;
+	length = sizeof(gcm_tag);
+	CHECK(xp_cipher_get_tag(cipher, gcm_tag, &length) == XP_CRYPTO_OK
+		&& length == sizeof(gcm_tag));
+	xp_cipher_free(cipher);
+	config.direction = XP_CIPHER_DECRYPT;
+	CHECK(xp_cipher_create(&cipher, &config) == XP_CRYPTO_OK);
+	CHECK(xp_cipher_aad(cipher, gcm_aad, sizeof(gcm_aad) - 1)
+		== XP_CRYPTO_OK);
+	length = sizeof(gcm_result);
+	CHECK(xp_cipher_update(cipher, gcm_ciphertext, ciphertext_len,
+		gcm_result, &length) == XP_CRYPTO_OK && length == 0);
+	CHECK(xp_cipher_set_tag(cipher, gcm_tag, sizeof(gcm_tag)) == XP_CRYPTO_OK);
+	length = 1;
+	CHECK(xp_cipher_final(cipher, gcm_result, &length)
+		== XP_CRYPTO_ERR_BUFFER_TOO_SMALL);
+	CHECK(length >= sizeof(gcm_plaintext));
+	length = sizeof(gcm_result);
+	CHECK(xp_cipher_final(cipher, gcm_result, &length) == XP_CRYPTO_OK
+		&& length == sizeof(gcm_plaintext)
+		&& memcmp(gcm_result, gcm_plaintext, length) == 0);
+	xp_cipher_free(cipher);
+	gcm_tag[0] ^= 1;
+	CHECK(xp_cipher_create(&cipher, &config) == XP_CRYPTO_OK);
+	CHECK(xp_cipher_aad(cipher, gcm_aad, sizeof(gcm_aad) - 1)
+		== XP_CRYPTO_OK);
+	length = sizeof(gcm_result);
+	CHECK(xp_cipher_update(cipher, gcm_ciphertext, ciphertext_len,
+		gcm_result, &length) == XP_CRYPTO_OK && length == 0);
+	CHECK(xp_cipher_set_tag(cipher, gcm_tag, sizeof(gcm_tag)) == XP_CRYPTO_OK);
+	length = sizeof(gcm_result);
+	CHECK(xp_cipher_final(cipher, gcm_result, &length) == XP_CRYPTO_ERR_VERIFY);
+	xp_cipher_free(cipher);
 	return 0;
 }
 
@@ -483,6 +737,9 @@ int main(void)
 	static const struct xp_key_spec p384 = { XP_KEY_ECDSA, 0, XP_KEY_CURVE_P384 };
 	static const struct xp_key_spec p521 = { XP_KEY_ECDSA, 0, XP_KEY_CURVE_P521 };
 	CHECK(check_digest() == 0);
+	CHECK(check_kdf() == 0);
+	CHECK(check_cipher() == 0);
+	CHECK(check_legacy_ciphers() == 0);
 	CHECK(check_legacy_rsa() == 0);
 	CHECK(check_key_storage() == 0);
 	CHECK(check_pkcs11_fixture() == 0);

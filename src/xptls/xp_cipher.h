@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #include "xp_crypto.h"
 
@@ -15,6 +16,9 @@ typedef struct xp_cipher_context *xp_cipher_t;
 enum xp_cipher_algorithm {
 	XP_CIPHER_AES = 1,
 	XP_CIPHER_CHACHA20,
+	XP_CIPHER_3DES,
+	XP_CIPHER_CAST128,
+	XP_CIPHER_RC4,
 };
 
 enum xp_cipher_mode {
@@ -43,18 +47,22 @@ struct xp_cipher_config {
 	size_t key_len;
 	const void *iv;
 	size_t iv_len;
+	/* ChaCha20 only: IETF 64-byte block counter. */
+	uint32_t initial_counter;
 	size_t tag_len; /* GCM only; 12 through 16, default 16. */
 };
 
 DLLEXPORT bool xp_cipher_supported(
-	enum xp_cipher_algorithm algorithm, enum xp_cipher_mode mode);
+	enum xp_cipher_algorithm algorithm, enum xp_cipher_mode mode,
+	enum xp_cipher_direction direction);
 DLLEXPORT int xp_cipher_create(
 	xp_cipher_t *out, const struct xp_cipher_config *config);
 DLLEXPORT int xp_cipher_aad(xp_cipher_t context, const void *data, size_t len);
 
-/*
- * Input may be supplied in arbitrary fragments.  This authenticated-safe
- * interface buffers until final(), so update always reports *out_len == 0.
+/* Input may be supplied in arbitrary fragments. *out_len is the output
+ * capacity on entry and bytes produced on success. If the buffer is too
+ * small, input is not consumed and *out_len receives a safe required bound.
+ * Authenticated decryption deliberately produces no plaintext before final.
  */
 DLLEXPORT int xp_cipher_update(
 	xp_cipher_t context, const void *input, size_t input_len,

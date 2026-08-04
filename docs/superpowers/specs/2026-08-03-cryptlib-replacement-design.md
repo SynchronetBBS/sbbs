@@ -24,11 +24,10 @@ they include those headers.
 The replacement libraries already exist, but neither is by itself a drop-in
 replacement:
 
-- `src/xptls` has provider-neutral TLS **client** sessions, encrypted PEM key
-  handling, X.509/CSR/CRL primitives, digests, signatures, and symmetric
-  encryption.  It does not yet have a TLS server API, shared server
-  credentials, server PSK lookup, peer-certificate access after a successful
-  handshake, or per-operation I/O deadlines.
+- `src/xptls` has provider-neutral TLS client/server sessions, shared server
+  credentials, encrypted PEM key handling, X.509/CSR/CRL primitives, digests,
+  signatures, KDFs, and streaming symmetric encryption. The remaining work is
+  application migration, not a provider API bypass.
 - `src/ssh` (DeuceSSH) has server transport, password/public-key
   authentication callbacks, shell/subsystem channels, stream I/O, terminal
   metadata and window-change events.  It is not wired into the terminal
@@ -349,6 +348,7 @@ struct xp_tls_server_config {
     const char *client_ca_file;      /* required only for REQUIRE_VALID */
     xp_tls_psk_lookup_cb psk_lookup;
     void *psk_lookup_arg;
+    enum xp_tls_psk_policy psk_policy;
 };
 
 xp_tls_t xp_tls_server_open(
@@ -387,7 +387,8 @@ int xp_tls_push_timeout(
     int timeout_ms);
 int xp_tls_flush_timeout(xp_tls_t session, int timeout_ms);
 const char *xp_tls_cipher_name(xp_tls_t session);
-const char *xp_tls_psk_identity(xp_tls_t session); /* NULL unless PSK */
+int xp_tls_psk_identity(
+    xp_tls_t session, void *identity, size_t *identity_len);
 size_t xp_tls_peer_certificate_count(xp_tls_t session);
 int xp_tls_peer_certificate_der(
     xp_tls_t session, size_t index, void *out, size_t *len);
@@ -400,9 +401,9 @@ the initiating operation's one deadline still applies.  RX work never reads
 or changes a TX deadline and vice versa.  Backends use monotonic elapsed time
 so retrying provider `WANT_READ`/`WANT_WRITE` states cannot restart the bound.
 
-The legacy `xp_tls_pop()`, `xp_tls_push()`, and `xp_tls_flush()` remain for
-existing xptls clients and use their constructor-configured defaults.  New
-sbbs3 code uses the timeout variants and never changes session timeout state.
+The old constructor-configured `xp_tls_pop()`, `xp_tls_push()`, and
+`xp_tls_flush()` calls are removed after migrating SyncTERM. All callers use
+the timeout variants, and sessions contain no mutable default I/O timeout.
 xptls must not set or temporarily modify `SO_RCVTIMEO` or `SO_SNDTIMEO` on the
 caller-owned socket.  Backend readiness waits or I/O callbacks implement the
 deadline without exposing direction-coupled socket state to another thread.
@@ -417,12 +418,33 @@ direction (for example post-handshake messages) runs under the initiating
 call's deadline and wakes the other side as necessary.  Close/termination
 wakes both directions according to the socket-ownership sequence above.
 
-Extend `xp_tls_client_config` with `min_version`, `max_version`, and a private
+`xp_tls_client_config` includes `min_version`, `max_version`, and a private
 key password callback.  The configured interface accepts
 `XP_TLS_SERVER_AUTH_NONE`; that is required for deliberately opportunistic
 SMTP and for compatibility with a JavaScript socket whose verification flag
-is false.  The legacy `xp_tls_client_open()` remains permissive for its
-existing callers.
+is false. All clients use `xp_tls_client_open_config()`; the permissive legacy
+constructor is removed.
+
+TLS PSK configuration also carries an explicit policy. The default modern
+policy permits ephemeral TLS 1.2 PSK exchange with AEAD ciphers. The TLS 1.2
+compatibility policy additionally permits plain PSK and AES-CBC/SHA for older
+brokers. TLS 1.3 remains forward-secret under both policies.
+
+### KDF and streaming cipher primitives
+
+`xp_kdf` exposes PBKDF2 with an explicit digest and scrypt with explicit
+`N`, `r`, and `p`. Both providers enforce a fixed 1025 MiB per-derivation
+scrypt limit. It is not a process-wide pool and concurrent derivations each
+have their own limit.
+
+`xp_cipher` exposes typed algorithm, mode, direction, padding, key, IV, and
+tag configuration. AES-CBC/CFB/GCM and IETF ChaCha20 are available for normal
+use. 3DES-CBC, CAST128-CBC, and RC4 are capability-queried decrypt-only
+migration algorithms. ChaCha20 takes a 12-byte nonce and a separate 32-bit
+initial block counter; provider-specific packed IV layouts are never public.
+Unauthenticated modes produce incremental output, while authenticated
+decryption withholds plaintext until tag verification. A too-small output
+buffer does not consume input.
 
 Add TLS 1.0 and 1.1 values to `enum xp_tls_version` so the JavaScript property
 has an exact representation.  xptls does not weaken provider policy to make
@@ -841,7 +863,7 @@ The required cross-provider baseline is:
 | RSA-2048/3072/4096 and P-256/P-384/P-521 key generation/import/export | `xp_ca_key` |
 | RSA PKCS#1 SHA-2 and ECDSA SHA-2 signatures | `xp_sign` |
 | RSA and EC JWK public components | typed `xp_ca_key_get_*_public` getters |
-| AES and ChaCha20 contexts used by supported scripts | expanded `xp_crypt` streaming/context API |
+| AES and ChaCha20 contexts used by supported scripts | `xp_cipher` streaming/context API |
 | CSR and X.509 import/export/signing | `xp_ca` additions below |
 | PKCS#12 and labelled key/certificate persistence | new `xp_keyset` API |
 

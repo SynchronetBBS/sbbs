@@ -70,6 +70,15 @@ enum xp_tls_auth_method {
 	XP_TLS_AUTH_PSK,
 };
 
+/* Controls TLS 1.2 PSK interoperability. MODERN permits only ephemeral
+ * key exchange with AEAD ciphers. TLS12_COMPATIBILITY additionally permits
+ * plain PSK and AES-CBC/SHA suites used by older brokers. TLS 1.3 always
+ * retains forward-secret PSK key exchange regardless of this setting. */
+enum xp_tls_psk_policy {
+	XP_TLS_PSK_POLICY_MODERN,
+	XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY,
+};
+
 struct xp_tls_server_credentials_config {
 	const char *certificate_chain_file;
 	xp_key_t private_key;
@@ -92,6 +101,7 @@ struct xp_tls_server_config {
 	const char *client_ca_file;
 	xp_tls_psk_lookup_cb psk_lookup;
 	void *psk_lookup_arg;
+	enum xp_tls_psk_policy psk_policy;
 };
 
 /*
@@ -137,7 +147,6 @@ typedef void (*xp_tls_peer_chain_cb)(void *arg,
  */
 struct xp_tls_client_config {
 	const char *server_name;
-	int         read_timeout;
 	enum xp_tls_server_auth server_auth;
 	const char *trusted_cert_file;
 	const char *client_cert_file;
@@ -146,6 +155,7 @@ struct xp_tls_client_config {
 	const void *psk;
 	size_t      psk_len;
 	enum xp_tls_version psk_version;
+	enum xp_tls_psk_policy psk_policy;
 	xp_tls_peer_chain_cb peer_chain_cb;
 	void       *peer_chain_cb_arg;
 	enum xp_tls_version min_version;
@@ -155,11 +165,11 @@ struct xp_tls_client_config {
 };
 
 /*
- * Return codes from push/pop/flush. XP_TLS_OK is success, XP_TLS_TIMEOUT is a
+ * Return codes from timed I/O. XP_TLS_OK is success, XP_TLS_TIMEOUT is a
  * no-progress deadline result, and negative values are errors.
  *
  * XP_TLS_TIMEOUT is distinct from XP_TLS_OK so callers can batch — e.g.
- * keep polling instead of flushing a buffer to the next layer when the
+ * keep polling instead of forwarding a buffer to the next layer when the
  * underlying read timed out. Matches Cryptlib's CRYPT_ERROR_TIMEOUT
  * semantics that the existing telnets.c/webget.c loops already handle.
  */
@@ -167,22 +177,6 @@ struct xp_tls_client_config {
 #define XP_TLS_TIMEOUT     1   /* operation deadline elapsed; *copied is 0 */
 #define XP_TLS_ERR        -1   /* generic error — see xp_tls_errstr */
 #define XP_TLS_ERR_CLOSED -2   /* peer closed cleanly or connection reset */
-
-/*
- * Open a TLS 1.2/1.3 client session over an already-connected socket.
- *
- * sock          — connected SOCKET (caller retains ownership; it is
- *                 referenced by the TLS layer and must outlive the ctx).
- * sni           — server name for SNI + (optional) hostname binding.
- *                 NULL to skip (some BBS servers don't use SNI).
- * read_timeout  — seconds to block on a single pop() before returning
- *                 0 copied. 0 means blocking-forever; not recommended.
- *
- * Performs handshake before returning. On failure, returns NULL; call
- * xp_tls_last_err() for a human-readable reason if a fresh ctx wasn't
- * produced.
- */
-DLLEXPORT xp_tls_t xp_tls_client_open(SOCKET sock, const char *sni, int read_timeout);
 
 /* Open a TLS client session using the supplied authentication policy. */
 DLLEXPORT xp_tls_t xp_tls_client_open_config(SOCKET sock,
@@ -203,40 +197,7 @@ DLLEXPORT xp_tls_t xp_tls_server_open(
 DLLEXPORT enum xp_tls_version xp_tls_protocol_version(xp_tls_t ctx);
 
 /*
- * Open a TLS-PSK 1.2 client session.  Identical to xp_tls_client_open()
- * except authentication uses a pre-shared key instead of certificates.
- *
- * identity      — PSK identity string (NUL-terminated).  Sent in the clear
- *                 in the ClientKeyExchange.
- * psk           — raw PSK bytes (not hex-encoded).  Caller retains ownership.
- * psk_len       — length of psk in bytes.
- *
- * TLS 1.3 is not negotiated for PSK sessions: the handshake floor is pinned
- * to TLS 1.2 so the wire format matches the broker's PSK expectations.
- */
-DLLEXPORT xp_tls_t xp_tls_client_open_psk(SOCKET sock, const char *sni,
-                                          int read_timeout,
-                                          const char *identity,
-                                          const void *psk, size_t psk_len);
-
-/*
- * Push up to n bytes. On return, *copied holds bytes actually written
- * (may be less than n if the peer's TLS flow-control kicks in).
- * Returns XP_TLS_OK on progress (including partial), XP_TLS_ERR_CLOSED
- * if the peer closed mid-write, XP_TLS_ERR otherwise.
- */
-DLLEXPORT int xp_tls_push(xp_tls_t ctx, const void *buf, size_t n, size_t *copied);
-
-/*
- * Pop up to n bytes. On return, *copied holds bytes actually read.
- * If the read blocks until the context's read_timeout expires, returns
- * XP_TLS_TIMEOUT with *copied = 0. Returns XP_TLS_ERR_CLOSED on clean close,
- * XP_TLS_ERR on protocol error.
- */
-DLLEXPORT int xp_tls_pop(xp_tls_t ctx, void *buf, size_t n, size_t *copied);
-
-/*
- * Returns true if the next xp_tls_pop() can return application data
+ * Returns true if the next xp_tls_pop_timeout() can return application data
  * without performing a socket read.  TLS records can decode into more
  * plaintext than the caller asked for, so a previous pop may have
  * left bytes buffered inside the TLS layer; a caller that gates pops
@@ -252,11 +213,6 @@ DLLEXPORT bool xp_tls_has_pending(xp_tls_t ctx);
  */
 DLLEXPORT bool xp_tls_used_psk(xp_tls_t ctx);
 
-/*
- * Ensure any buffered plaintext/ciphertext is sent on the wire.
- * Always safe to call; no-op if there's nothing queued.
- */
-DLLEXPORT int xp_tls_flush(xp_tls_t ctx);
 /* timeout_ms: zero polls, positive bounds the whole call, negative waits
  * indefinitely. These calls never change socket timeout options. */
 DLLEXPORT int xp_tls_pop_timeout(
@@ -295,7 +251,7 @@ DLLEXPORT const char *xp_tls_errstr(xp_tls_t ctx);
 
 /*
  * Human-readable description of the last error from a failed
- * xp_tls_client_open() (the ctx couldn't be constructed, so no errstr
+ * xp_tls_client_open_config() (the ctx couldn't be constructed, so no errstr
  * slot exists). Backed by thread-local storage.
  */
 DLLEXPORT const char *xp_tls_last_err(void);

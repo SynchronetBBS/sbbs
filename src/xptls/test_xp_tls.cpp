@@ -438,7 +438,6 @@ bool certificate_session(enum xp_tls_version version, bool permissive)
 
 	struct xp_tls_client_config client_config{};
 	client_config.server_name = "localhost";
-	client_config.read_timeout = 1;
 	client_config.server_auth = permissive ? XP_TLS_SERVER_AUTH_NONE
 	                                     : XP_TLS_SERVER_AUTH_CERTIFICATE;
 	client_config.trusted_cert_file = permissive ? nullptr
@@ -506,7 +505,8 @@ int find_psk(void *arg, const void *identity, size_t identity_len,
 	return 0;
 }
 
-bool psk_session(enum xp_tls_version version, bool coexist_with_certificate)
+bool psk_session(enum xp_tls_version version, bool coexist_with_certificate,
+                 enum xp_tls_psk_policy policy)
 {
 	PskState state;
 	for (size_t i = 0; i < state.key.size(); ++i)
@@ -534,16 +534,17 @@ bool psk_session(enum xp_tls_version version, bool coexist_with_certificate)
 	server_config.handshake_timeout_ms = 3000;
 	server_config.psk_lookup = find_psk;
 	server_config.psk_lookup_arg = &state;
+	server_config.psk_policy = policy;
 	ServerResult server;
 	std::thread thread([&] {
 		server = start_server(sockets.server, credentials, server_config);
 	});
 	struct xp_tls_client_config client_config{};
-	client_config.read_timeout = 1;
 	client_config.psk_identity = state.identity.c_str();
 	client_config.psk = state.key.data();
 	client_config.psk_len = state.key.size();
 	client_config.psk_version = version;
+	client_config.psk_policy = policy;
 	Session client;
 	client.value = xp_tls_client_open_config(sockets.client, &client_config);
 	std::string client_error = client.value == nullptr ? xp_tls_last_err() : "";
@@ -756,7 +757,6 @@ bool client_certificate_session(enum xp_tls_client_auth auth_mode)
 	});
 	struct xp_tls_client_config client_config{};
 	client_config.server_name = "localhost";
-	client_config.read_timeout = 1;
 	client_config.server_auth = XP_TLS_SERVER_AUTH_CERTIFICATE;
 	client_config.trusted_cert_file = server_file.path();
 	client_config.client_cert_file = client_file.path();
@@ -834,8 +834,12 @@ int main()
 #endif
 	bool ok = certificate_session(XP_TLS_VERSION_1_2, false) &&
 	          certificate_session(XP_TLS_VERSION_1_3, true) &&
-	          psk_session(XP_TLS_VERSION_1_2, false) &&
-	          psk_session(XP_TLS_VERSION_1_3, true) &&
+	          psk_session(XP_TLS_VERSION_1_2, false,
+	                      XP_TLS_PSK_POLICY_MODERN) &&
+	          psk_session(XP_TLS_VERSION_1_2, false,
+	                      XP_TLS_PSK_POLICY_TLS12_COMPATIBILITY) &&
+	          psk_session(XP_TLS_VERSION_1_3, true,
+	                      XP_TLS_PSK_POLICY_MODERN) &&
 	          unknown_psk_is_rejected() &&
 	          version_range_is_rejected() &&
 	          close_during_handshake_is_bounded() &&
