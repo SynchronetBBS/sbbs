@@ -108,6 +108,11 @@ int sm_io_pace_depth(void);
  * (sixel-scroll/autowrap/cursor, mouse tracking off) even if nothing else
  * calls it explicitly. */
 void sm_io_enter(void);
+/* The peer's CTerm revision (major*1000+minor) from its DA1 reply. It settles
+ * which of the two DECSDM (mode 80) sequences asks for sixel-at-cursor -- cterm
+ * reversed their sense in 1.328 -- so the door can correct the one it had to
+ * guess at entry. Harmless (and ignored) for a non-CTerm terminal. */
+void sm_io_set_cterm_ver(int ver);
 void sm_io_leave(void);
 
 /* Append `len` bytes to the staged, grow-only out-buffer (no I/O). */

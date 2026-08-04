@@ -862,25 +862,41 @@ static void emit_frame_sixel(int w, int h)
 	out_put("\x1b" "8", 2);        // restore cursor (terminals differ post-sixel)
 }
 
-// DECSDM (DEC private mode 80, "sixel scrolling") defaults to SET, which scrolls
-// the page up and appends a newline whenever a sixel reaches the bottom -- so a
-// full-screen sixel every frame visibly scrolls/stutters (the old SyncTERM sixel
-// problem). Reset it while the sixel tier is active: the sixel origin pins to the
-// page's top-left, frames overdraw in place, and nothing scrolls. Restore the
-// default when leaving sixel or on exit. A no-op on terminals without mode 80.
-// (Under reset-80 cterm ignores the cursor and draws at 0,0, so the sixel image
-// anchors top-left rather than at emit_frame_sixel's centered cell.)
-static int g_sixel_scroll_off = 0;
-static void apply_sixel_scroll(void)
+// DECSDM (DEC private mode 80) decides WHERE a sixel lands: at the text cursor,
+// or at the screen origin with the cursor ignored. emit_frame_sixel() addresses a
+// centered cell, so this door wants the cursor -- and which of the two sequences asks
+// for it depends on the peer, because cterm reversed the mode's set/reset sense
+// in revision 1.328 while SyncTERM 1.8, the current release, ships 1.327. That is
+// what termgfx_term_sixel_at_cursor() answers, off the version probe_sixel()
+// already captured (it runs first, so nothing is ever drawn under the wrong one).
+//
+// It used to send a bare ?80l, for the OTHER half of mode 80: a sixel reaching
+// the last text row scrolls the page, and a full-height frame every tic made that
+// a visible stutter. The bottom-cell reserve in compute_geometry() prevents it
+// now, on every terminal rather than only those that implement mode 80 -- so the
+// sequence is free to mean what it says, and no longer costs a released SyncTERM its
+// centering by anchoring the picture in the top-left corner (GitLab #1214).
+//
+// Only ever sends the at-cursor sequence. Draw-at-cursor is every terminal's own
+// default, so leaving the sixel tier has nothing to undo.
+static const char *g_sdm_sent;       // the mode-80 sequence the terminal was given, NULL = none
+static int g_sixel_tier_up = 0;
+static void apply_sixel_at_cursor(void)
 {
-	int want = (g_mode == MODE_SIXEL);
-	if (want == g_sixel_scroll_off)
+	const char *want = termgfx_term_sixel_at_cursor(g_cterm_version);
+	int         up   = (g_mode == MODE_SIXEL);
+
+	if (up == g_sixel_tier_up)
 		return;
-	emit_all(want ? "\x1b[?80l" : "\x1b[?80h", 6);
-	g_sixel_scroll_off = want;
-	if (want)
-		g_sx_pal_seq = -1;   // (re)entering sixel: the cleared screen drops the color
-	                         // registers, so force a palette re-definition next frame
+	g_sixel_tier_up = up;
+	if (!up)
+		return;
+	if (g_sdm_sent == NULL || strcmp(want, g_sdm_sent) != 0) {
+		emit_all(want, (int)strlen(want));
+		g_sdm_sent = want;
+	}
+	g_sx_pal_seq = -1;   // (re)entering sixel: the cleared screen drops the color
+	                     // registers, so force a palette re-definition next frame
 }
 
 #ifdef WITH_JXL
@@ -1694,7 +1710,7 @@ static enum { ST_NORMAL, ST_ESC, ST_CSI, ST_APC, ST_APC_ESC } s_pstate = ST_NORM
 // Without this, ST_ESC just sits there and Escape only registers when the NEXT key
 // is pressed -- and if that next key is also Escape, both land at once and the menu
 // opens and instantly closes. SyncTERM never showed it (its evdev/kitty key reports
-// deliver Escape as a key event, never a bare 0x1b); xterm, on the legacy byte path,
+// deliver Escape as a key event, never a bare 0x1b); xterm, on the legacy sequence path,
 // shows it every time. SyncDuke already does exactly this (SYNCDUKE_ESC_MS).
 #define SD_ESC_MS 50
 static uint32_t s_esc_at_ms;
@@ -2403,7 +2419,7 @@ static int g_have_sixel = 0;    // sixel available (probed) -- for the F4 graphi
 // sixel is supported.
 //
 // SyncTERM renders sixel fine once DECSDM (private mode 80) scrolling is disabled
-// (see apply_sixel_scroll) -- before that fix the per-frame page-scroll made it
+// (see apply_sixel_at_cursor) -- before that fix the per-frame page-scroll made it
 // look broken, which is why this CTDA probe used to be left out. SyncTERM 1.4+
 // still prefers JXL: the tier ladder probes JXL first, so cap-4 here only
 // auto-selects sixel on the older, no-JXL SyncTERM versions (and on xterm/WT).
@@ -2530,7 +2546,7 @@ static void probe_sixel_vscale(void)
 
 	if (!g_have_sixel || g_is_syncterm)
 		return;
-	pn = termgfx_sixel_vscale_probe(probe, sizeof(probe));
+	pn = termgfx_sixel_vscale_probe(probe, sizeof(probe), g_cterm_version);
 	if (pn == 0)
 		return;
 	emit_all(probe, pn);
@@ -2615,8 +2631,6 @@ static void terminal_restore(void)
 	}
 	if (g_mouse_enabled)
 		emit_all("\x1b[?1003l\x1b[?1006l", 16);
-	if (g_sixel_scroll_off)
-		emit_all("\x1b[?80h", 6);        // restore default sixel scrolling for the BBS
 	{   // undo whichever key mode was negotiated (termgfx); nothing if none was
 		char   ks[TERMGFX_KEYMODE_SEQ_MAX];
 		size_t kn = termgfx_keymode_restore(&g_km, ks, sizeof ks);
@@ -2760,7 +2774,7 @@ static void cycle_video(void)
 		}
 	}
 	compute_geometry();
-	apply_sixel_scroll();                // toggle DECSDM (mode 80) for the sixel tier
+	apply_sixel_at_cursor();             // DECSDM (mode 80): sixel drawn at the centered cell
 	g_dsr_tail = g_dsr_head;             // clear the pipeline -> let the next frame emit immediately
 
 	// Clear (drop the prior tier's bitmap/glyphs) and dwell on a readable label.
@@ -3002,7 +3016,7 @@ void DG_Init(void)
 	joybspeed = g_always_run ? 31 : 2;   // apply always-run default ('R' toggles at runtime;
 	                                     // 31 >= MAX_JOY_BUTTONS, the always-run hack)
 
-	apply_sixel_scroll();                // disable DECSDM scrolling if we start in the sixel tier
+	apply_sixel_at_cursor();             // DECSDM (mode 80), if we start in the sixel tier
 
 	// Enable xterm mouse reporting (any-event tracking + SGR coordinates) when a
 	// mouse model is selected. Harmless on terminals that don't support it -- they

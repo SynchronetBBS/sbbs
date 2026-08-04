@@ -683,6 +683,27 @@ static size_t out_put(const void *p, size_t n)
 }
 static void out_puts(const char *s) { out_put(s, strlen(s)); }
 
+/* Ask the terminal to draw sixels at the text CURSOR, which of the two DECSDM
+ * (mode 80) sequences that takes depending on its CTerm revision -- cterm reversed
+ * their sense in 1.328, so the ?80l term_enter has to commit to before anyone
+ * has identified themselves asks a 1.327-and-below client (SyncTERM 1.8, the
+ * current release) for the opposite: the cursor ignored and the image anchored
+ * at the screen origin, which puts a centered frame hard against the top-left
+ * corner. Called at entry and again whenever the revision lands; a change
+ * repaints, since whatever is on the terminal was drawn under the other rule. */
+static const char *g_sdm_sent;   /* the mode-80 sequence the terminal was last given */
+
+static void apply_sixel_at_cursor(void)
+{
+	const char *want = termgfx_term_sixel_at_cursor(g_cterm_ver);
+
+	if (g_sdm_sent == NULL || strcmp(want, g_sdm_sent) == 0)
+		return;   /* term_enter has not gone out, or the terminal is already right */
+	out_puts(want);
+	termgfx_invalidate_last();
+	g_sdm_sent = want;
+}
+
 /* door_io.c:1567-1577 pattern: EAGAIN/EWOULDBLOCK is backpressure, not an
  * error -- defer (stop for now, keep the unwritten tail buffered for the
  * next call) rather than busy-looping or discarding it. EINTR retries the
@@ -981,8 +1002,10 @@ static void csi_final(char fin)
 				}
 			}
 			k = termgfx_caps_cterm_version(p, np, g_csi_par[0]);
-			if (k > 0)
+			if (k > 0) {
 				g_cterm_ver = k;                   /* CTDA: maj*1000+min */
+				apply_sixel_at_cursor();           /* which mode-80 sequence this peer needs */
+			}
 #ifdef WITH_JXL
 			if (k >= TERMGFX_CTERM_VER_BLOB)
 				g_img_blob_ok = 1;   /* DrawJXLBlob: inline JXL frames, no cache file */
@@ -1738,6 +1761,8 @@ int termgfx_termio_init(int argc, char **argv)
 	 * canvas report it demotes; a terminal that never answers (WT, Foot)
 	 * is unaffected either way. */
 	out_puts(termgfx_term_enter);
+	g_sdm_sent = termgfx_term_sixel_at_cursor(0);   /* the ?80l term_enter carries */
+	apply_sixel_at_cursor();                        /* correct it if the peer is already known */
 	out_puts(termgfx_term_status_off);
 	out_puts("\x1b[>0q");   /* XTVERSION; DCS >|<name>(<ver>) ST, or silence */
 	out_puts(termgfx_term_probe);

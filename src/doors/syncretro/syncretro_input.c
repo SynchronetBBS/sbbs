@@ -959,10 +959,18 @@ static void sr_csi_final(char fin)
 					}
 				}
 			}
-			/* CTerm >= 1.329: stream game audio inline via A;LoadBlob (no cache
-			 * ring). Version is in the DA1 reply "ESC[=67;...;MAJ;MIN;...c". */
-			if (termgfx_caps_cterm_version(p, np, (char)csi_par[0]) >= TERMGFX_CTERM_VER_BLOB)
-				sr_audio_set_blob_ok(1);
+			/* The CTerm revision, from the DA1 reply "ESC[=67;...;MAJ;MIN;...c".
+			 * >= 1.329: stream game audio inline via A;LoadBlob (no cache ring).
+			 * It also settles which mode-80 sequence draws a sixel at the cursor,
+			 * which the door had to guess before this reply -- see
+			 * sr_io_set_cterm_ver(). */
+			{
+				int cv = termgfx_caps_cterm_version(p, np, (char)csi_par[0]);
+
+				if (cv >= TERMGFX_CTERM_VER_BLOB)
+					sr_audio_set_blob_ok(1);
+				sr_io_set_cterm_ver(cv);
+			}
 			return;
 
 		case 'n':   /* CTerm state report: JXL cap, audio cap, audio channel state */

@@ -11,15 +11,27 @@
 //
 // term_enter sets DECSDM (DEC private mode 80, "sixel scrolling") via ?80l.
 // Despite the name, its load-bearing effect for us is POSITIONING: under ?80l a
-// non-SyncTERM sixel terminal (e.g. Windows Terminal) draws the image at the TEXT
-// CURSOR, so a door centers it by parking the cursor at the centered cell -- drop
-// ?80l and those terminals draw at the origin (top-left). (SyncTERM's cterm instead
-// ignores the cursor under ?80l and anchors top-left, which the door accounts for
-// separately.) Scroll-prevention -- a sixel reaching the bottom row scrolling the
-// page -- is now handled by keeping the image off the LAST text row (the bottom-cell
-// reserve in the image fit), not by ?80. NB cterm reversed mode 80's set/reset sense
-// in rev 1.328 (2026); moot here since SyncTERM uses JXL and the reserve covers
-// scrolling regardless. termgfx_term_leave restores ?80h for the BBS.
+// sixel terminal draws the image at the TEXT CURSOR, so a door centers it by
+// parking the cursor at the centered cell, and paints a dirty-rect patch by
+// addressing the cell it belongs over -- drop ?80l and the terminal draws at the
+// origin (top-left) instead, ignoring the cursor entirely. Scroll-prevention -- a
+// sixel reaching the bottom row scrolling the page -- is handled by keeping the
+// image off the LAST text row (the bottom-cell reserve in the image fit), not by ?80.
+//
+// WHICH SEQUENCE MEANS "AT THE CURSOR" DEPENDS ON THE PEER. cterm reversed mode 80's
+// set/reset sense in revision 1.328, so on 1.327 and below -- which includes
+// SyncTERM 1.8, the current release -- ?80l is what selects origin-anchored
+// drawing and ?80h selects the cursor. term_enter has to commit to one before the
+// terminal has identified itself, and picks the DEC/xterm/foot-correct ?80l; a
+// door that learns the peer's cterm revision (from its DA1 reply) then sends
+// termgfx_term_sixel_at_cursor() to correct it.
+//
+// Nothing is sent on the way out, and termgfx_term_leave carries no mode-80
+// sequence of its own: the correction above already leaves the terminal drawing at the
+// cursor, which is every terminal's own power-on default (cterm_reset() sets
+// SXSCROLL; DECSDM defaults to reset), so there is nothing left to hand back.
+// The ?80h term_leave used to carry was the old polarity's idea of that default,
+// and on a cterm >= 1.328 it set origin-anchored drawing on the way out instead.
 
 // term_enter also sends DECSET 1070 RESET (?1070l) to select SHARED sixel colour
 // registers. This is load-bearing for every door here, because they all re-send the
@@ -56,9 +68,22 @@ extern const char *const termgfx_term_enter;
 extern const char *const termgfx_term_probe;
 
 // Leave graphics mode: restore private sixel colour registers (?1070h, the
-// default), sixel scrolling (?80h), autowrap (?7h), and the cursor (?25h) so the
-// BBS prompt behaves normally after the door exits.
+// default), autowrap (?7h), and the cursor (?25h) so the BBS prompt behaves
+// normally after the door exits. Mode 80 is deliberately NOT in here -- see the
+// note above: the terminal is already at its default by then.
 extern const char *const termgfx_term_leave;
+
+// The DECSDM sequence that makes THIS peer draw a sixel at the text cursor
+// rather than at the screen origin, given the cterm revision its DA1 reply
+// carried (termgfx_caps_cterm_version(); <= 0 for "not cterm, or not answered").
+// "\x1b[?80h" below TERMGFX_CTERM_VER_SDM, "\x1b[?80l" at or above it and for
+// every non-cterm terminal. Never NULL, always safe to re-send.
+//
+// Send it once the DA1 reply lands, and repaint if it differs from what
+// term_enter sent, since everything drawn until then went to the wrong place.
+// That also settles the exit: draw-at-cursor IS every terminal's default, so a
+// door that has corrected the mode has nothing to restore on the way out.
+const char *termgfx_term_sixel_at_cursor(int cterm_ver);
 
 // Status line (DECSSDT). A terminal that shows a status line reserves its
 // bottom text row for it (SyncTERM's default: an 80x25 terminal draws to an

@@ -102,9 +102,18 @@ size_t sixel_encode_aspect(uint8_t **buf, size_t *cap, const uint8_t *idx, int w
 // what it does with pan -- which is precisely why that manual override earns its keep
 // alongside the auto-detection.
 //
+// The probe needs the terminal drawing sixels AT THE CURSOR, or the cursor never
+// advances and it reads "does not scale" on a terminal that does -- so it leads
+// with the mode-80 sequence that asks this peer for that (termgfx_term_sixel_at_cursor(),
+// which is why cterm_ver is a parameter: the two sequences swapped meaning in cterm
+// 1.328). Pass the peer's CTerm revision, or 0 if it is unknown / not cterm. A
+// bare ?80l here would leave a 1.327-and-below SyncTERM anchoring every later
+// image in the top-left corner, undoing what the door set at entry -- and no door
+// re-asserts the mode on exit, so nothing downstream would catch it.
+//
 // Writes the probe into buf (needs ~128 bytes); returns its length, 0 if cap is
 // too small.
-size_t termgfx_sixel_vscale_probe(char *buf, size_t cap);
+size_t termgfx_sixel_vscale_probe(char *buf, size_t cap, int cterm_ver);
 
 // Feed the accumulated input bytes. Returns 1 if the terminal scales vertically,
 // 0 if it does not, and -1 while the three cursor reports have not all arrived yet

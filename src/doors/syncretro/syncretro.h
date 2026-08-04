@@ -185,6 +185,12 @@ void sr_io_set_canvas(int w, int h);
 void sr_io_set_gfx_canvas(int w, int h);   /* XTSMGRAPHICS: max sixel the terminal draws */
 void sr_io_set_grid(int rows, int cols);
 
+/* The peer's CTerm revision (major*1000+minor) from its DA1 reply. It settles
+ * which of the two DECSDM (mode 80) sequences asks for sixel-at-cursor -- cterm
+ * reversed their sense in 1.328 -- so the door can correct the one it had to
+ * guess at entry. Harmless (and ignored) for a non-CTerm terminal. */
+void sr_io_set_cterm_ver(int ver);
+
 /* DSR-ACK frame pacing. sr_io_take_grid_probe() is a one-shot armed when the
  * startup grid probe is SENT, so the first ESC[r;cR after it is the grid reply
  * and every later one acks an in-flight frame (-> sr_io_pace_ack()). */

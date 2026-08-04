@@ -3,6 +3,7 @@
 // colour-register sharing).
 
 #include "term.h"
+#include "caps.h"
 #include <stddef.h>
 
 //             clear+home  hide cursor  no autowrap  sixel-at-cursor  shared colour regs
@@ -19,9 +20,18 @@ const char *const termgfx_term_enter = "\x1b[2J\x1b[H" "\x1b[?25l" "\x1b[?7l" "\
 // into.  Terminals that don't support a query simply don't reply -- harmless.
 const char *const termgfx_term_probe = "\x1b[14t" "\x1b[16t" "\x1b[?2;1S" "\x1b" "7" "\x1b[999;999H" "\x1b[6n" "\x1b" "8";
 
-//             private colour regs  sixel scroll  autowrap  cursor
-//             ------------------   ------------  --------  ------
-const char *const termgfx_term_leave = "\x1b[?1070h" "\x1b[?80h" "\x1b[?7h" "\x1b[?25h";
+//             private colour regs  autowrap  cursor
+//             ------------------   --------  ------
+const char *const termgfx_term_leave = "\x1b[?1070h" "\x1b[?7h" "\x1b[?25h";
+
+// See term.h: which of the two mode-80 sequences asks for sixel-at-cursor depends on
+// the peer's cterm revision. An unknown peer (ver <= 0) gets the DEC-correct
+// ?80l, the same choice term_enter makes.
+const char *termgfx_term_sixel_at_cursor(int cterm_ver)
+{
+	return (cterm_ver > 0 && cterm_ver < TERMGFX_CTERM_VER_SDM)
+	       ? "\x1b[?80h" : "\x1b[?80l";
+}
 
 // --- status line (DECSSDT) --------------------------------------------------
 // A terminal with a status line (SyncTERM's default) reserves its bottom text

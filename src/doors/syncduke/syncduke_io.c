@@ -70,6 +70,8 @@ static size_t      g_out_len, g_out_cap, g_out_off;
 /* --- sink --- */
 static int         g_inited;
 static int         g_file_mode;        /* SYNCDUKE_SIXELOUT capture mode */
+static int         g_cterm_ver;        /* peer's CTerm revision (maj*1000+min), 0 = unknown */
+static const char *g_sdm_sent;         /* mode-80 sequence last given -- see syncduke_apply_sdm() */
 static const char *g_file;
 #ifdef _WIN32
 static SOCKET      g_iosock = INVALID_SOCKET;   /* door client socket */
@@ -363,9 +365,8 @@ static void syncduke_update_outsize(void)
 /* The displayed image's horizontal placement (center column + half-width in cells),
  * recorded by present() each frame for the mouse-steer -- which maps a pointer column
  * to a turn rate around the image center.  Where the image actually lands depends on
- * the tier AND terminal (a SyncTERM sixel anchors top-left because the cursor is
- * ignored under ?80l, while JXL and non-SyncTERM sixel are centered), so present()
- * computes it where it places the image rather than re-deriving it here. */
+ * the tier (a sixel is placed by the text cursor, a JXL by the APC pixel offset), so
+ * present() computes it where it places the image rather than re-deriving it here. */
 static int g_hsteer_center = 40;   /* image center column (1-based); sane 80-col default */
 static int g_hsteer_half   = 40;   /* image half-width in cells (deflection scale) */
 
@@ -596,6 +597,34 @@ static uint32_t syncduke_node_last_sig;   /* last-drawn syncduke_node_overlay_si
 static uint8_t syncduke_last_fb[SYNCDUKE_SCREEN_W * SYNCDUKE_SCREEN_H];
 static int     syncduke_have_last, syncduke_last_w, syncduke_last_h, syncduke_last_hsc;
 static int     syncduke_last_tier;   /* tier of the last sent frame (0=sixel, 1=jxl); a flip forces a repaint */
+
+/* Ask the terminal to draw sixels at the text CURSOR, which of the two DECSDM
+ * (mode 80) sequences that takes depending on its CTerm revision -- cterm reversed
+ * their sense in 1.328, so the ?80l termgfx_term_enter has to commit to before
+ * the terminal has identified itself asks a 1.327-and-below client (SyncTERM
+ * 1.8, the current release) for the opposite: the cursor ignored and the image
+ * anchored at the screen origin, which puts a centered frame hard against the
+ * corner. Corrected once the DA1 reply carries a revision. */
+static void syncduke_apply_sdm(void)
+{
+	const char *want = termgfx_term_sixel_at_cursor(g_cterm_ver);
+
+	if (g_sdm_sent == NULL || strcmp(want, g_sdm_sent) == 0)
+		return;   /* term_enter has not gone out, or the terminal is already right */
+	syncduke_out_puts(want);
+	syncduke_out_puts("\x1b[2J\x1b[H");   /* wipe what was drawn at the other anchor */
+	syncduke_have_last = 0;               /* ...and repaint past the de-dupe */
+	rt_invalidate();                      /* the text tier's cell shadow is stale too */
+	g_sdm_sent = want;
+}
+
+void syncduke_set_cterm_ver(int ver)
+{
+	if (ver <= 0 || ver == g_cterm_ver)
+		return;
+	g_cterm_ver = ver;
+	syncduke_apply_sdm();
+}
 
 /* Graphics-tier override (F4 cycles it, ala SyncDOOM): -1 = auto (jxl when the
  * terminal supports it, else sixel), 0 = force sixel, 1 = force jxl. Lets the player
@@ -1095,7 +1124,9 @@ void syncduke_present(void)
 	 * position fallback (ESC[999;999H ESC[6n -> ESC[r;cR). syncduke_input parses the
 	 * replies. */
 	if (!cleared) {
-		syncduke_out_puts(termgfx_term_enter);   /* clear+home, hide cursor, no autowrap, no sixel scroll (DECSDM ?80l) */
+		syncduke_out_puts(termgfx_term_enter);   /* clear+home, hide cursor, no autowrap, sixel-at-cursor (DECSDM ?80l) */
+		g_sdm_sent = termgfx_term_sixel_at_cursor(0);   /* the ?80l term_enter carries */
+		syncduke_apply_sdm();                           /* correct it if the peer is already known */
 		syncduke_out_puts(termgfx_term_status_off);   /* hide the client status line -> reclaim the 25th row (640x400); BEFORE the probe so it reports the reclaimed size (syncduke_input captures the DECRQSS reply for restore) */
 		syncduke_out_puts(termgfx_term_probe);   /* learn the terminal's pixel canvas */
 		syncduke_out_puts("\x1b[c\x1b[<c");      /* DA1 + CTDA: detect sixel (DA1 param 4 / CTDA cap 4) + SyncTERM; a no-sixel reply (conhost) -> text tier */
@@ -1122,7 +1153,7 @@ void syncduke_present(void)
 	if (!vscale_sent && syncduke_probe_replied() && syncduke_have_sixel()
 	    && !syncduke_is_syncterm()) {
 		char   pb[192];
-		size_t pn = termgfx_sixel_vscale_probe(pb, sizeof(pb));
+		size_t pn = termgfx_sixel_vscale_probe(pb, sizeof(pb), g_cterm_ver);
 
 		if (pn > 0) {
 			syncduke_vscale_arm();
@@ -1280,9 +1311,10 @@ void syncduke_present(void)
 		 * preserving aspect (letter-boxed, NOT stretched to the 4:3 text canvas like
 		 * before) and center it -- shared with SyncDOOM via termgfx_geom_fit/center.
 		 * The sixel display is capped at 640 wide (it's RLE -- a wide one floods the
-		 * wire) and positioned by the text cursor (SyncTERM ignores it under ?80l and
-		 * draws at 0,0; Windows Terminal honors it).  Canvas unknown (pre-probe) ->
-		 * fall back to the on-screen out size. */
+		 * wire) and positioned by the text cursor, which every sixel terminal honors
+		 * once syncduke_apply_sdm() has asked for the mode-80 sense that peer reads as
+		 * draw-at-cursor.  Canvas unknown (pre-probe) -> fall back to the on-screen
+		 * out size. */
 		int  vw = syncduke_canvas_w(), vh = syncduke_canvas_h();
 		int  sdw, sdh, irow = 1, icol = 1;
 		int  dispw, displeft;                 /* displayed image width + left cell (mouse steer) */

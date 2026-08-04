@@ -323,10 +323,17 @@ static void sm_csi_final(char fin)
                     g_have_sixel = 1;   /* DA1 param 4 / CTDA cap 4 = sixel */
             }
         }
-        /* CTerm >= 1.329: enable inline A;LoadBlob audio (version is in the DA1
-         * reply "ESC[=67;84;101;114;109;MAJ;MIN;...c"). */
-        if (termgfx_caps_cterm_version(p, np, (char)csi_par[0]) >= TERMGFX_CTERM_VER_BLOB)
-            termgfx_audio_set_blob_ok(sm_io_audio(), 1);
+        /* The CTerm revision, from the DA1 reply
+         * "ESC[=67;84;101;114;109;MAJ;MIN;...c". >= 1.329 enables inline
+         * A;LoadBlob audio; it also settles the mode-80 polarity the door had to
+         * guess at entry (see sm_io_set_cterm_ver). */
+        {
+            int cv = termgfx_caps_cterm_version(p, np, (char)csi_par[0]);
+
+            if (cv >= TERMGFX_CTERM_VER_BLOB)
+                termgfx_audio_set_blob_ok(sm_io_audio(), 1);
+            sm_io_set_cterm_ver(cv);
+        }
         return;
     case 'n':   /* CTerm state report: our Q;JXL query's reply is ESC[=1;{0,1}n */
         if (csi_len > 0 && csi_par[0] == '=') {

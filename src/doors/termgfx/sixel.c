@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include "sixel.h"
+#include "term.h"   // termgfx_term_sixel_at_cursor(): the peer's mode-80 sequence
 #include <stdlib.h>
 #include <string.h>
 
@@ -186,18 +187,20 @@ static size_t vscale_sliver(char *p, size_t room, int pan)
 	return n;
 }
 
-size_t termgfx_sixel_vscale_probe(char *buf, size_t cap)
+size_t termgfx_sixel_vscale_probe(char *buf, size_t cap, int cterm_ver)
 {
 	size_t n = 0;
 
 	if (cap < 128)
 		return 0;
 
-	// Sixel scrolling ON (DECSDM reset) or the cursor never moves and the probe
-	// would read "does not scale" on a terminal that does.  This is the doors'
-	// normal state (termgfx_term_enter), so it is a no-op there -- but the probe
-	// must not depend on the caller having got there first.
-	n += (size_t)snprintf(buf + n, cap - n, "\x1b[?80l\x1b[H\x1b[6n");
+	// Sixel drawn at the CURSOR, or the cursor never moves and the probe would
+	// read "does not scale" on a terminal that does.  Normally already the case
+	// (the door asks for it at entry), but the probe must not depend on the caller
+	// having got there first -- and must not undo it either, hence the peer's
+	// revision rather than a bare ?80l.  See sixel.h.
+	n += (size_t)snprintf(buf + n, cap - n, "%s\x1b[H\x1b[6n",
+	                      termgfx_term_sixel_at_cursor(cterm_ver));
 	n += vscale_sliver(buf + n, cap - n, 1);                    // unscaled reference
 	n += (size_t)snprintf(buf + n, cap - n, "\x1b[6n");         // row after it
 	n += vscale_sliver(buf + n, cap - n, 2);                    // ask for 2x vertical

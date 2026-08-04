@@ -78,6 +78,7 @@ int  sr_io_out_flush(void)                  { return 0; }
 void sr_io_set_canvas(int w, int h)         { (void)w; (void)h; }
 void sr_io_set_gfx_canvas(int w, int h)     { (void)w; (void)h; }
 void sr_io_set_grid(int c, int r)           { (void)c; (void)r; }
+void sr_io_set_cterm_ver(int ver)           { (void)ver; }
 int  sr_io_take_grid_probe(void)            { return 0; }
 void sr_io_pace_ack(void)                   { }
 void sr_out_put(const void *buf, size_t n)  { (void)buf; (void)n; }

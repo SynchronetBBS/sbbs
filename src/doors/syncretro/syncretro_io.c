@@ -1083,9 +1083,44 @@ void sr_io_stats_tick(void)
 }
 
 /* --- terminal setup / teardown ---------------------------------------------- */
-static int      g_entered;
-static int      g_left;
-static uint32_t g_enter_ms;
+static int         g_entered;
+static int         g_left;
+static uint32_t    g_enter_ms;
+static int         g_cterm_ver;   /* peer's CTerm revision (maj*1000+min), 0 = unknown */
+static const char *g_sdm_sent;    /* the mode-80 sequence the terminal was last given */
+
+/* Put the terminal in draw-sixel-at-the-cursor mode, which of the two mode-80
+ * sequences that takes depending on its CTerm revision (see term.h). NULL g_sdm_sent
+ * means sr_io_enter() has not run (or never will, in capture mode), so there is
+ * no terminal to tell. Repaints when the sequence CHANGES, because everything drawn
+ * under the previous one went somewhere else. */
+static void sr_io_apply_sdm(void)
+{
+	const char *want = termgfx_term_sixel_at_cursor(g_cterm_ver);
+
+	if (g_sdm_sent == NULL || strcmp(want, g_sdm_sent) == 0)
+		return;
+	sr_out_puts(want);
+	sr_io_invalidate();   /* -> ESC[2J + a full frame, in the right place */
+	g_sdm_sent = want;
+}
+
+/* The peer's CTerm revision, from its DA1 reply (syncretro_input.c's 'c' case).
+ *
+ * Mode 80 decides whether a sixel lands at the text cursor or at the screen
+ * origin, and cterm reversed the mode's set/reset sense in 1.328 -- so the ?80l
+ * sr_io_enter() sent, before anyone had identified themselves, asks a 1.327-and-
+ * below client (SyncTERM 1.8, the current release) for exactly the wrong one. It
+ * then ignores the cursor: the centered frame is drawn hard against the top-left
+ * corner, and every dirty-rect patch -- positioned by nothing but the ESC[r;cH in
+ * front of it -- piles up in that corner instead of over the cells it belongs to. */
+void sr_io_set_cterm_ver(int ver)
+{
+	if (ver <= 0 || ver == g_cterm_ver)
+		return;
+	g_cterm_ver = ver;
+	sr_io_apply_sdm();
+}
 
 /* How long to hold the FIRST frame while the terminal's probe replies come back.
  *
@@ -1111,6 +1146,8 @@ static void sr_io_enter(void)
 	 * registers (?1070l -- without which foot/xterm reset the palette per image
 	 * and our define-on-change frames render transparent). */
 	sr_out_puts(termgfx_term_enter);
+	g_sdm_sent = termgfx_term_sixel_at_cursor(0);   /* the ?80l term_enter carries */
+	sr_io_apply_sdm();                              /* correct it if the peer is already known */
 
 	/* Hide the client's status line (DECSSDT Ps=0) to reclaim the row it
 	 * reserves: SyncTERM's default turns an 80x25 / 640x400 terminal into an
@@ -1167,7 +1204,7 @@ void sr_io_leave(void)
 		if (sn > 0)
 			sr_out_put(sb, sn);
 	}
-	sr_out_puts(termgfx_term_leave);          /* restore ?1070h/?80h/?7h/?25h for the BBS */
+	sr_out_puts(termgfx_term_leave);          /* restore ?1070h/?7h/?25h for the BBS */
 	sr_io_drain_blocking(SR_LEAVE_DRAIN_MS);  /* bounded: never hang the exit path */
 	sr_io_drain_input(SR_LEAVE_INPUT_MS);     /* keystrokes must not echo at the BBS prompt */
 }

@@ -617,8 +617,38 @@ int sm_io_in_fd(void)
 }
 
 /* --- terminal setup / teardown (Step 3) ------------------------------------ */
-static int g_entered;
-static int g_left;
+static int         g_entered;
+static int         g_left;
+static int         g_cterm_ver;   /* peer's CTerm revision (maj*1000+min), 0 = unknown */
+static const char *g_sdm_sent;    /* the mode-80 sequence the terminal was last given */
+static int         g_sdm_repaint; /* the sequence changed: wipe and redraw (consumed by present) */
+
+/* Ask the terminal to draw sixels at the text CURSOR, which of the two DECSDM
+ * (mode 80) sequences that takes depending on its CTerm revision -- see term.h, and
+ * sm_io_set_cterm_ver() below for why it matters here. */
+static void sm_io_apply_sdm(void)
+{
+    const char *want = termgfx_term_sixel_at_cursor(g_cterm_ver);
+
+    if (g_sdm_sent == NULL || strcmp(want, g_sdm_sent) == 0)
+        return;              /* enter() has not run, or the terminal is already right */
+    sm_out_puts(want);
+    g_sdm_repaint = 1;       /* what is on the terminal was drawn under the other rule */
+    g_sdm_sent    = want;
+}
+
+/* The peer's CTerm revision, from its DA1 reply (syncmoo1_input.c's 'c' case).
+ * It settles the mode-80 polarity term_enter had to guess at: below cterm 1.328
+ * -- SyncTERM 1.8, the current release -- the ?80l it sent anchors every sixel
+ * at the screen origin with the cursor ignored, so the centered frame lands hard
+ * against the top-left corner. */
+void sm_io_set_cterm_ver(int ver)
+{
+    if (ver <= 0 || ver == g_cterm_ver)
+        return;
+    g_cterm_ver = ver;
+    sm_io_apply_sdm();
+}
 
 void sm_io_enter(void)
 {
@@ -628,12 +658,12 @@ void sm_io_enter(void)
 
     sm_io_ensure_geom();
 
-    /* clear+home, hide cursor, no autowrap, DECSDM ?80l. That ?80l is termgfx's
-     * (shared with SyncDOOM/SyncDuke, so not ours to change here): on a current
-     * SyncTERM it ENABLES sixel scrolling rather than disabling it -- see the
-     * rev-1.328 polarity note in sm_io_present(). Harmless for us only because
-     * the bottom-row reserve keeps the image off the last row either way. */
+    /* clear+home, hide cursor, no autowrap, DECSDM ?80l -- termgfx's, and the
+     * best guess available before the terminal has identified itself. Corrected
+     * by sm_io_apply_sdm() once its DA1 reply carries a CTerm revision. */
     sm_out_puts(termgfx_term_enter);
+    g_sdm_sent = termgfx_term_sixel_at_cursor(0);   /* the ?80l term_enter carries */
+    sm_io_apply_sdm();                              /* correct it if the peer is already known */
 
     /* Audio: create the manager and probe before any sample is registered.
      * The reply lands ~50 ms later; sm_audio_pump() drains the pending Stores
@@ -685,7 +715,7 @@ void sm_io_leave(void)
         return;   /* capture mode: no terminal on the other end */
 
     sm_out_puts("\x1b[?1003l\x1b[?1006l\x1b[?1016l");   /* mouse tracking off */
-    sm_out_puts(termgfx_term_leave);                    /* restore ?80h/?7h/?25h for the BBS */
+    sm_out_puts(termgfx_term_leave);                    /* restore ?1070h/?7h/?25h for the BBS */
     sm_io_drain_blocking(SM_LEAVE_DRAIN_MS);             /* bounded: never hang the exit path */
 }
 
@@ -825,7 +855,7 @@ static void sm_io_vscale_probe(void)
 
     if (sent || !sm_input_have_sixel() || sm_input_is_syncterm())
         return;
-    pn = termgfx_sixel_vscale_probe(pb, sizeof(pb));
+    pn = termgfx_sixel_vscale_probe(pb, sizeof(pb), g_cterm_ver);
     if (pn == 0)
         return;
 
@@ -988,6 +1018,15 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
     if (sm_io_gfx_gated())
         return;
 
+    /* The mode-80 polarity was corrected under us (sm_io_apply_sdm): whatever is
+     * on the terminal was drawn at the other anchor. Wipe it and force a full
+     * frame past the de-dupe, the way the geometry-change path below does. */
+    if (g_sdm_repaint) {
+        g_sdm_repaint = 0;
+        have_fb       = 0;
+        sm_out_puts("\x1b[2J\x1b[H");
+    }
+
     if (g_file_mode) {
         /* Capture mode: always a self-contained frame (palette included),
          * no cursor wrap (nothing to preserve -- there's no live terminal
@@ -1075,18 +1114,14 @@ void sm_io_present(const uint8_t *idx320x200, const uint8_t *pal768)
 
     {   /* Save cursor, position at the centered cell, restore after -- the sixel
          * is drawn at the text cursor, so this is what centers it without
-         * disturbing whatever the real cursor position was.
+         * disturbing whatever the real cursor position was. Centering only
+         * works while the terminal is in the draw-at-cursor mode 80 -- which of
+         * the two sequences selects it depends on the peer's cterm revision, so it
+         * is sm_io_apply_sdm() that keeps this true.
          *
-         * Do NOT reach for DECSDM (?80) to suppress the bottom-row scroll.
-         * cterm does implement mode 80 (cterm_cterm.c's CTerm private-mode
-         * handler, which chains to the DEC/XTerm one), but it REVERSED THE
-         * MODE'S POLARITY in cterm rev 1.328 -- commit 117de27530, 2026-06-28,
-         * "Reverse DECSDM meaning" -- which is master-only, in no release tag.
-         * So one ?80l means "scrolling disabled, sixel anchored top-left" on a
-         * released SyncTERM and "scrolling ENABLED, sixel drawn at the cursor"
-         * on a current one, with no way to tell them apart short of sniffing
-         * cterm's revision. The bottom-row reserve in sm_io_recompute_geom()
-         * holds either way (and on non-SyncTERM sixel terminals besides). */
+         * Do NOT reach for DECSDM (?80) to suppress the bottom-row scroll: the
+         * bottom-row reserve in sm_io_recompute_geom() holds either way (and on
+         * non-SyncTERM sixel terminals besides). */
         char wrap[24];
         int  wn = snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", g_irow, g_icol);
         if (wn > 0)

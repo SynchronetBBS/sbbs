@@ -1425,6 +1425,9 @@ static void csi_final(char fin, int gameplay, int now)
 				/* CTerm >= 1.329: enable inline A;LoadBlob audio (the DA1 reply
 				 * "ESC[=67;84;101;114;109;MAJ;MIN;...c" carries the version). */
 				int cv = termgfx_caps_cterm_version(p, np, (char)csi_par[0]);
+				/* The same revision settles the mode-80 polarity the door had to
+				 * guess at entry -- see syncduke_set_cterm_ver(). */
+				syncduke_set_cterm_ver(cv);
 				if (cv >= TERMGFX_CTERM_VER_BLOB) {
 					termgfx_audio_set_blob_ok(sd_audio, 1);
 					g_img_blob_ok = 1;   /* DrawJXLBlob: inline video frames */

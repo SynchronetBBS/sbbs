@@ -30,6 +30,9 @@ int termgfx_caps_parse_jxl(const uint8_t *acc, int len);
 #define TERMGFX_CTERM_VER_PPM  1316   // APC PPM media: C;LoadPPM + copy buffers (CTerm 1.316;
                                       // bare DrawPPM landed 1.315). Both newer than Sixel (1189),
                                       // so any PPM-capable SyncTERM also has Sixel.
+#define TERMGFX_CTERM_VER_SDM  1328   // DECSDM (mode 80) set/reset sense REVERSED here: from this
+                                      // revision on "?80l" asks for sixel-at-cursor, below it
+                                      // "?80h" does. See termgfx_term_sixel_at_cursor().
 #define TERMGFX_CTERM_VER_BLOB 1329   // APC blob media verbs: A;LoadBlob, Draw*Blob, Load*Blob
 #define TERMGFX_CTERM_VER_ZOOM 1332   // Graphics-APC ZX/ZY integer zoom (also FX/FY mirroring and
                                       // negative DX/DY). Lets a door ship the NATIVE-res frame and

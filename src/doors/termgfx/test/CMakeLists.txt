@@ -85,10 +85,13 @@ foreach(case_n RANGE 2)
     add_test(NAME gfxgate${case_n} COMMAND test_gfxgate${case_n})
 endforeach()
 
-# The sixel encoder's palette modes. Compiles sixel.c and nothing else, so
-# unlike its neighbours below it needs no door build and runs under CTest.
+# The sixel encoder's palette modes. Compiles sixel.c and the control strings it
+# reaches for (term.c, whose termgfx_term_sixel_at_cursor() the vscale probe asks
+# for the peer's mode-80 sequence) and nothing else, so unlike its neighbours below
+# it needs no door build and runs under CTest.
 add_executable(test_sixel_palette
     ${CMAKE_CURRENT_SOURCE_DIR}/../sixel.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../term.c
     ${CMAKE_CURRENT_SOURCE_DIR}/test_sixel_palette_used.c)
 target_include_directories(test_sixel_palette PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set_target_properties(test_sixel_palette PROPERTIES C_STANDARD 11)
@@ -108,6 +111,18 @@ target_include_directories(test_fnv1a PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../
 set_target_properties(test_fnv1a PROPERTIES C_STANDARD 11)
 target_compile_options(test_fnv1a PRIVATE -UNDEBUG)
 add_test(NAME fnv1a COMMAND test_fnv1a)
+
+# Unit test for term.c's DECSDM (mode 80) polarity table -- which of the two
+# sequences asks a given peer to draw its sixels at the text cursor. cterm reversed
+# the mode's sense in revision 1.328 and SyncTERM 1.8 ships 1.327, so both
+# answers are live in the field at once; getting it backwards anchors every
+# image (and every dirty-rect patch) at the screen origin. GitLab #1214. Links
+# the full termgfx library, like test_mouse, for term.c and its include dir.
+add_executable(test_term_sdm ${CMAKE_CURRENT_SOURCE_DIR}/test_term_sdm.c)
+target_link_libraries(test_term_sdm termgfx)
+set_target_properties(test_term_sdm PROPERTIES C_STANDARD 11)
+target_compile_options(test_term_sdm PRIVATE -UNDEBUG)
+add_test(NAME term_sdm COMMAND test_term_sdm)
 
 # The rest of this directory's tests -- termgfx_termio (23 binaries), the
 # quantizer, present_rgbx and the repro_fade harness -- are driven by the

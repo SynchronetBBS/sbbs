@@ -90,6 +90,11 @@ int  syncduke_vscale_done(void);                    /* 1 once the probe has answ
 int  syncduke_sixel_vscale(void);                   /* 1 if the terminal honors the sixel raster pan (vertical scale) */
 int  syncduke_status_type(void);                    /* pre-door DECSSDT status-line type captured for restore, -1 if none */
 int  syncduke_have_sixel(void);                     /* 1 if the terminal advertised sixel (DA1/CTDA cap 4 or SyncTERM) */
+/* The peer's CTerm revision (major*1000+minor) from its DA1 reply. It settles
+ * which of the two DECSDM (mode 80) sequences asks for sixel-at-cursor -- cterm
+ * reversed their sense in 1.328 -- so the door can correct the one it had to
+ * guess at entry. Harmless (and ignored) for a non-CTerm terminal. */
+void syncduke_set_cterm_ver(int ver);
 int  syncduke_probe_replied(void);                  /* 1 once the terminal answered the DA capability probe */
 int  syncduke_term_px_w(void);                      /* terminal pixel-canvas width from probe, 0 if unknown */
 int  syncduke_term_px_h(void);                      /* terminal pixel-canvas height from probe, 0 if unknown */
