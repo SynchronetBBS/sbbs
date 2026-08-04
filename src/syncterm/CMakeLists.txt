@@ -499,6 +499,7 @@ if(NOT WITHOUT_CRYPTO)
 	target_link_libraries(ini_crypt_test PRIVATE xptls::static xpdev)
 	target_include_directories(ini_crypt_test PRIVATE
 		${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../xpdev)
+	target_compile_definitions(ini_crypt_test PRIVATE SDL_MAIN_HANDLED)
 	if(XP_CRYPTO_BACKEND STREQUAL "Botan")
 		set_target_properties(ini_crypt_test PROPERTIES LINKER_LANGUAGE CXX)
 	endif()
