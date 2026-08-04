@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#ifdef _MSC_VER
+/* MSVC leaves this defined even with /experimental:c11atomics enabled. */
+#undef __STDC_NO_ATOMICS__
+#endif
 #include <stdatomic.h>
 #include "datewrap.h"
 #include "xp_ca.h"

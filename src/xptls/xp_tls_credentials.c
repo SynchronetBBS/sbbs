@@ -1,5 +1,9 @@
 #include "xp_tls_internal.h"
 
+#ifdef _MSC_VER
+/* MSVC leaves this defined even with /experimental:c11atomics enabled. */
+#undef __STDC_NO_ATOMICS__
+#endif
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>

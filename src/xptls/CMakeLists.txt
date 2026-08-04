@@ -32,8 +32,8 @@ else()
 		${CMAKE_CURRENT_SOURCE_DIR}/../xpdev)
 	if(WIN32)
 		target_compile_definitions(xptls_xpdev_usage INTERFACE
-			_WIN32 _WIN32_WINNT=0x0501 WINVER=0x0501
-			MSVCRT_VERSION=0x0501 _WIN32_IE=0x0500)
+			_WIN32 _WIN32_WINNT=0x0600 WINVER=0x0600
+			MSVCRT_VERSION=0x0800 _WIN32_IE=0x0600)
 	elseif(CMAKE_SYSTEM_NAME STREQUAL "Haiku")
 		target_compile_definitions(xptls_xpdev_usage INTERFACE
 			__unix__ USE_SNPRINTF)
@@ -127,7 +127,7 @@ add_library(xptls::static ALIAS xptls_static)
 add_library(xptls ALIAS xptls_static)
 set_target_properties(xptls_static PROPERTIES
 	OUTPUT_NAME xptls
-	C_STANDARD 17
+	C_STANDARD 11
 	C_STANDARD_REQUIRED ON)
 
 target_include_directories(xptls_static
@@ -139,10 +139,38 @@ target_include_directories(xptls_static
 # xpdev is an OBJECT library.  Linking it PRIVATE/PUBLIC here would copy every
 # xpdev object into libxptls.a.  Copy only its compile usage requirements into
 # xptls, then expose xpdev solely at the final-consumer interface.
+get_target_property(XPTLS_XPDEV_COMPILE_DEFINITIONS
+	${XPTLS_XPDEV_TARGET} INTERFACE_COMPILE_DEFINITIONS)
+if(NOT XPTLS_XPDEV_COMPILE_DEFINITIONS)
+	set(XPTLS_XPDEV_COMPILE_DEFINITIONS "")
+endif()
+if(WIN32)
+	# xpdev still supports an XP-era Windows API floor, but MinGW's C++
+	# std::mutex implementation exposes its condition-variable primitives only
+	# for Vista or newer.  The Botan TLS backend uses those primitives.  Keep
+	# xpdev's other feature definitions while setting xptls's own floor.
+	list(FILTER XPTLS_XPDEV_COMPILE_DEFINITIONS EXCLUDE REGEX
+		"^(_WIN32|_WIN32_WINNT=.*|WINVER=.*|MSVCRT_VERSION=.*|_WIN32_IE=.*)$")
+	list(APPEND XPTLS_XPDEV_COMPILE_DEFINITIONS
+		_WIN32 _WIN32_WINNT=0x0600 WINVER=0x0600
+		MSVCRT_VERSION=0x0800 _WIN32_IE=0x0600)
+endif()
 target_compile_definitions(xptls_static PRIVATE
-	$<TARGET_PROPERTY:${XPTLS_XPDEV_TARGET},INTERFACE_COMPILE_DEFINITIONS>)
+	${XPTLS_XPDEV_COMPILE_DEFINITIONS})
+get_target_property(XPTLS_XPDEV_COMPILE_OPTIONS
+	${XPTLS_XPDEV_TARGET} INTERFACE_COMPILE_OPTIONS)
+if(NOT XPTLS_XPDEV_COMPILE_OPTIONS)
+	set(XPTLS_XPDEV_COMPILE_OPTIONS "")
+endif()
 target_compile_options(xptls_static PRIVATE
-	$<TARGET_PROPERTY:${XPTLS_XPDEV_TARGET},INTERFACE_COMPILE_OPTIONS>)
+	${XPTLS_XPDEV_COMPILE_OPTIONS})
+if(MSVC)
+	# xptls itself uses C11 atomics, independently of xpdev.  MSVC requires
+	# the experimental switch and otherwise advertises atomics as unavailable.
+	target_compile_options(xptls_static PRIVATE
+		$<$<COMPILE_LANGUAGE:C>:/experimental:c11atomics>
+		$<$<COMPILE_LANGUAGE:C>:/U__STDC_NO_ATOMICS__>)
+endif()
 if(XPTLS_HAS_XPDEV_OBJECTS)
 	target_link_libraries(xptls_static INTERFACE xpdev)
 	target_sources(xptls_static INTERFACE $<TARGET_OBJECTS:xpdev>)
@@ -187,7 +215,7 @@ if(BUILD_TESTING AND NOT XP_CRYPTO_BACKEND STREQUAL "none")
 	find_package(Threads REQUIRED)
 	add_executable(xptls_ca_test test_xp_ca.c)
 	target_link_libraries(xptls_ca_test PRIVATE xptls::static)
-	set_property(TARGET xptls_ca_test PROPERTY C_STANDARD 17)
+	set_property(TARGET xptls_ca_test PROPERTY C_STANDARD 11)
 	set_property(TARGET xptls_ca_test PROPERTY C_STANDARD_REQUIRED ON)
 	if(XP_CRYPTO_BACKEND STREQUAL "Botan")
 		set_property(TARGET xptls_ca_test PROPERTY LINKER_LANGUAGE CXX)
@@ -196,7 +224,7 @@ if(BUILD_TESTING AND NOT XP_CRYPTO_BACKEND STREQUAL "none")
 
 	add_executable(xptls_crypto_test test_xp_crypto.c)
 	target_link_libraries(xptls_crypto_test PRIVATE xptls::static)
-	set_property(TARGET xptls_crypto_test PROPERTY C_STANDARD 17)
+	set_property(TARGET xptls_crypto_test PROPERTY C_STANDARD 11)
 	set_property(TARGET xptls_crypto_test PROPERTY C_STANDARD_REQUIRED ON)
 	target_compile_definitions(xptls_crypto_test PRIVATE
 		TEST_PKCS1_PEM="${CMAKE_CURRENT_SOURCE_DIR}/test_rsa_pkcs1.pem")
@@ -213,6 +241,6 @@ if(BUILD_TESTING AND NOT XP_CRYPTO_BACKEND STREQUAL "none")
 elseif(BUILD_TESTING)
 	add_executable(xptls_crypto_none_test test_xp_crypto_none.c)
 	target_link_libraries(xptls_crypto_none_test PRIVATE xptls::static)
-	set_property(TARGET xptls_crypto_none_test PROPERTY C_STANDARD 17)
+	set_property(TARGET xptls_crypto_none_test PROPERTY C_STANDARD 11)
 	add_test(NAME xptls_crypto_none_test COMMAND xptls_crypto_none_test)
 endif()
