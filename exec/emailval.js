@@ -30,6 +30,7 @@ post-validation security levels.
 		restrictions_after_validation (default: no change)
 		expiration_after_validation (default: false)
 		expiration_days_after_validation (default: no change)
+		check_netmail_addr (default: true)
 		valid_chars=ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*
 		code_length=16
 
@@ -62,6 +63,8 @@ if(options.level_before_validation === undefined)
 	options.level_before_validation = 50;
 if(options.level_after_validation === undefined)
 	options.level_after_validation = 60;
+if(options.check_netmail_addr === undefined)
+	options.check_netmail_addr = true;
 options.valid_chars = load("modopts.js", module, "valid_chars", '') || 'ACDEFHJKLMNPQRTUVWXY23456789!@#$%&*';
 
 prompts.operation = "";
@@ -137,7 +140,7 @@ function ChangeEmailAddress() {
 
 	while (bbs.online && !js.terminated) {
 		prompts.get_netmail(user);
-		if (netaddr_type(user.netmail) == NET_INTERNET || system.check_netmail_addr(user.netmail))
+		if (!options.check_netmail_addr || system.check_netmail_addr(user.netmail))
 			break;
 		alert("Sorry, that is an unsupported netmail address");
 	}
@@ -198,7 +201,7 @@ function CheckValidation() {
 			console.print("\1h\1bEmail validation for \1h\1w" + user.alias + " #" + user.number + "\r\n\r\n");
 			console.print("\1nYou have created an account with an email address that must be validated.\r\n");
 		}
-		if (!system.check_netmail_addr(user.netmail)) {
+		if (options.check_netmail_addr && !system.check_netmail_addr(user.netmail)) {
 			console.print(format(bbs.text(bbs.text.InvalidNetMailAddr), user.netmail));
 			console.newline();
 		} else {
