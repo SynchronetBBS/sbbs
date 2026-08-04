@@ -5077,12 +5077,12 @@ doterm(struct bbslist *bbs)
 							 * SftpApp drives the degraded modal and
 							 * keeps is_connected true until the queue
 							 * drains, so we go straight to teardown. */
+							finish_scrollback();
 							if (!bbs->hidepopups) {
 								host_ui_alert("Disconnected",
 								    "Remote host dropped connection");
 							}
 							check_exit(false);
-							finish_scrollback();
 							audio_apc_cleanup();
 							cterm_end(cterm, 0);
 							cterm = NULL;
