@@ -4650,15 +4650,24 @@ static void ctrl_thread(void* arg)
 				}
 				if (delecmd && !user_is_dirop(&scfg, dir, &user, &client) && !(user.exempt & FLAG('R'))) {
 					file_t f {};
-					if (filedat)
-						loadfile(&scfg, dir, p, &f, file_detail_normal, NULL);
-					if (stricmp(f.from, user.alias)) {
+					if (!loadfile(&scfg, dir, p, &f, file_detail_normal, NULL)) {
+						lprintf(LOG_WARNING, "%04d <%s> !ERROR loading file (%s) in /%s/%s for %.4s command"
+						        , sock, user.alias
+						        , p
+						        , scfg.lib[scfg.dir[dir]->lib]->vdir
+						        , scfg.dir[dir]->vdir, cmd);
+						sockprintf(sock, sess, "550 Insufficient access.");
+						filepos = 0;
+						smb_freefilemem(&f);
+						continue;
+					}
+					if (f.from == NULL || stricmp(f.from, user.alias)) {
 						lprintf(LOG_WARNING, "%04d <%s> has insufficient access to delete file (%s) uploaded by %s in /%s/%s"
-								, sock, user.alias
-								, p
-								, f.from[0] == 0 ? STR_UNKNOWN_USER : f.from
-								, scfg.lib[scfg.dir[dir]->lib]->vdir
-								, scfg.dir[dir]->vdir);
+						        , sock, user.alias
+						        , p
+						        , f.from == NULL || f.from[0] == 0 ? STR_UNKNOWN_USER : f.from
+						        , scfg.lib[scfg.dir[dir]->lib]->vdir
+						        , scfg.dir[dir]->vdir);
 						sockprintf(sock, sess, "550 Insufficient access.");
 						filepos = 0;
 						smb_freefilemem(&f);
@@ -4671,11 +4680,18 @@ static void ctrl_thread(void* arg)
 				/* Verify credits */
 				if (!getsize && !getdate && !delecmd
 				    && !download_is_free(&scfg, dir, &user, &client)) {
-					file_t f;
-					if (filedat)
-						loadfile(&scfg, dir, p, &f, file_detail_normal, NULL);
-					else
-						f.cost = (uint32_t)flength(fname);
+					file_t f {};
+					if (!loadfile(&scfg, dir, p, &f, file_detail_normal, NULL)) {
+						lprintf(LOG_WARNING, "%04d <%s> !ERROR loading file (%s) in /%s/%s to determine its cost"
+						        , sock, user.alias
+						        , p
+						        , scfg.lib[scfg.dir[dir]->lib]->vdir
+						        , scfg.dir[dir]->vdir);
+						sockprintf(sock, sess, "451 Requested action aborted: unable to read the file record.");
+						filepos = 0;
+						smb_freefilemem(&f);
+						continue;
+					}
 					if (f.cost > user_available_credits(&user)) {
 						lprintf(LOG_WARNING, "%04d <%s> has insufficient credit to download /%s/%s/%s (%lu credits)"
 						        , sock, user.alias, scfg.lib[scfg.dir[dir]->lib]->vdir
@@ -4900,20 +4916,22 @@ static void ctrl_thread(void* arg)
 					continue;
 				}
 				if (append || filepos) { /* RESUME */
-					file_t f;
+					file_t f {};
 					if (!loadfile(&scfg, dir, p, &f, file_detail_normal, NULL)) {
 						if (filepos) {
 							lprintf(LOG_WARNING, "%04d <%s> file (%s) not in database for %.4s command"
 							        , sock, user.alias, fname, cmd);
 							sockprintf(sock, sess, "550 File not found: %s", p);
+							smb_freefilemem(&f);
 							continue;
 						}
 						append = false;
 					}
 					/* Verify user is original uploader */
-					if ((append || filepos) && stricmp(f.from, user.alias)) {
+					if ((append || filepos) && (f.from == NULL || stricmp(f.from, user.alias))) {
 						lprintf(LOG_WARNING, "%04d <%s> !cannot resume upload of %s, uploaded by %s"
-						        , sock, user.alias, fname, f.from);
+						        , sock, user.alias, fname
+						        , f.from == NULL ? STR_UNKNOWN_USER : f.from);
 						sockprintf(sock, sess, "553 Insufficient access (can't resume upload from different user).");
 						smb_freefilemem(&f);
 						continue;
