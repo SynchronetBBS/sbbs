@@ -1313,7 +1313,7 @@ draw_transfer_window(char *title)
 	if (twh > tww)
 		twh = tww;
 	char outline[TRANSFER_WIN_WIDTH * 2];
-	char shadow[TRANSFER_WIN_HEIGHT * 2]; /* Assumes that width*2 > height * 2 */
+	char shadow[TRANSFER_WIN_WIDTH * 2];
 	int  i, top, left, old_hold;
 
 	old_hold = hold_update;
@@ -1390,7 +1390,7 @@ draw_transfer_window(char *title)
 		    left + tww + 1,
 		    top + (twh - 1),
 		    shadow);
-		for (i = 1; i < tww * 2; i += 2)
+		for (i = 1; i < 4 * (twh - 1); i += 2)
 			shadow[i] = DARKGRAY;
 		puttext(left + tww,
 		    top + 1,
