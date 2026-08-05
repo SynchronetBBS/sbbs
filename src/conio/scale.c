@@ -877,24 +877,25 @@ interpolate_height(uint32_t const* src, uint32_t* dst, const int width, const in
 	static size_t nsz = 0;
 	static size_t tsz = 0;
 	uint32_t *stmp;
+	const size_t stride = width * sizeof(uint32_t);
 
-	if (nsz < width * 4) {
-		stmp = realloc(nline, width * 4);
+	if (nsz < stride) {
+		stmp = realloc(nline, stride);
 		if (stmp == NULL)
 			goto fail;
 		nline = stmp;
-		nsz = width * 4;
+		nsz = stride;
 	}
-	if (tsz < width * 4) {
-		stmp = realloc(tline, width * 4);
+	if (tsz < stride) {
+		stmp = realloc(tline, stride);
 		if (stmp == NULL)
 			goto fail;
 		tline = stmp;
-		tsz = width * 4;
+		tsz = stride;
 	}
 
-	memcpy(tline, src, width * sizeof(*tline));
-	memcpy(nline, src + width, width * sizeof(*tline));
+	memcpy(tline, src, stride);
+	memcpy(nline, src + width, stride);
 	for (y = 0; y < newheight; y++) {
 		const int yposi = ypos >> 16;
 		const uint16_t weight = ypos & 0xffff;
@@ -904,10 +905,10 @@ interpolate_height(uint32_t const* src, uint32_t* dst, const int width, const in
 			stmp = tline;
 			tline = nline;
 			nline = stmp;
-			memcpy(nline, &src[ywn], nsz);
+			memcpy(nline, &src[ywn], stride);
 		}
 		if (weight == 0 || yposi >= height - 1) {
-			memcpy(dst, tline, tsz);
+			memcpy(dst, tline, stride);
 			dst += width;
 		}
 		else {
