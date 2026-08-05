@@ -84,6 +84,7 @@
 #include "syncretro_profile.h"
 #include "syncretro_keypad.h"
 #include "syncretro_audio.h"
+#include "sixel.h"       /* termgfx: termgfx_sixel_sdm_verdict + TERMGFX_SIXEL_PROBE_ROWS */
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096   /* MSVC's <limits.h> has no PATH_MAX (it uses _MAX_PATH) */
@@ -132,6 +133,17 @@ static int      g_quit;
  * from the DECRQSS reply; -1 = not answered yet, or the terminal has no status
  * line at all. sr_io_leave() restores it. */
 static int      g_status_type = -1;
+
+/* The mode-80 probe's cursor reports (termgfx_sixel_vscale_probe). -1 = not
+ * armed; the 'R' case below claims exactly TERMGFX_SIXEL_PROBE_ROWS of them and
+ * then disarms, so later reports go back to being frame pace-acks. Armed only
+ * before the first frame is sent, so no genuine ack can be in flight. */
+static int      g_sdm_rows[TERMGFX_SIXEL_PROBE_ROWS];
+static int      g_sdm_n = -1;
+static int      g_sdm_done;
+
+void sr_input_sdm_arm(void)  { g_sdm_n = 0; g_sdm_done = 0; }
+int  sr_input_sdm_done(void) { return g_sdm_done; }
 
 #define sr_in_now_ms()   sr_plat_now_ms()
 
@@ -920,6 +932,21 @@ static void sr_csi_final(char fin)
 
 		case 'R':   /* ESC[rows;colsR: cursor-position report */
 			np = sr_csi_params(p, 2);
+			if (g_sdm_n >= 0 && g_sdm_n < TERMGFX_SIXEL_PROBE_ROWS && np >= 1) {
+				/* The mode-80 probe's reports. Claimed BEFORE the pace-ack path
+				 * below: they retire no frame, and counting them would leak
+				 * pipeline slots. Armed only before the first frame is sent, so
+				 * no genuine ack can be in flight to be mis-claimed here. */
+				g_sdm_rows[g_sdm_n++] = p[0];
+				if (g_sdm_n == TERMGFX_SIXEL_PROBE_ROWS) {
+					g_sdm_n = -1;                  /* disarm: later Rs are acks */
+					g_sdm_done = 1;
+					sr_io_set_sdm_probed(
+						termgfx_sixel_sdm_verdict(g_sdm_rows,
+						                          TERMGFX_SIXEL_PROBE_ROWS));
+				}
+				return;
+			}
 			if (sr_io_take_grid_probe()) {
 				/* The reply to the startup 999;999 grid probe -- NOT a pace-ack:
 				 * no present()-sent frame exists to retire. The one-shot flag has

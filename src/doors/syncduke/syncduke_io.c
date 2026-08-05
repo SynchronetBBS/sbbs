@@ -71,6 +71,7 @@ static size_t      g_out_len, g_out_cap, g_out_off;
 static int         g_inited;
 static int         g_file_mode;        /* SYNCDUKE_SIXELOUT capture mode */
 static int         g_cterm_ver;        /* peer's CTerm revision (maj*1000+min), 0 = unknown */
+static int         g_sdm_probed = -1;  /* MEASURED mode-80 polarity (sixel probe); -1 = not measured */
 static const char *g_sdm_sent;         /* mode-80 sequence last given -- see syncduke_apply_sdm() */
 static const char *g_file;
 #ifdef _WIN32
@@ -607,7 +608,7 @@ static int     syncduke_last_tier;   /* tier of the last sent frame (0=sixel, 1=
  * corner. Corrected once the DA1 reply carries a revision. */
 static void syncduke_apply_sdm(void)
 {
-	const char *want = termgfx_term_sixel_at_cursor(g_cterm_ver);
+	const char *want = termgfx_term_sixel_at_cursor_probed(g_sdm_probed, g_cterm_ver);
 
 	if (g_sdm_sent == NULL || strcmp(want, g_sdm_sent) == 0)
 		return;   /* term_enter has not gone out, or the terminal is already right */
@@ -623,6 +624,14 @@ void syncduke_set_cterm_ver(int ver)
 	if (ver <= 0 || ver == g_cterm_ver)
 		return;
 	g_cterm_ver = ver;
+	syncduke_apply_sdm();
+}
+
+void syncduke_set_sdm_probed(int probed)
+{
+	if (probed < 0 || probed == g_sdm_probed)
+		return;
+	g_sdm_probed = probed;
 	syncduke_apply_sdm();
 }
 
@@ -1152,10 +1161,14 @@ void syncduke_present(void)
 	 * the DSR frame pacing. No answer = "does not scale", the safe read. */
 	if (!vscale_sent && syncduke_probe_replied() && syncduke_have_sixel()
 	    && !syncduke_is_syncterm()) {
-		char   pb[192];
-		size_t pn = termgfx_sixel_vscale_probe(pb, sizeof(pb), g_cterm_ver);
+		char   pb[512];
+		size_t pn = termgfx_sixel_vscale_probe(pb, sizeof(pb));
 
 		if (pn > 0) {
+			/* The probe asserts mode 80 twice and leaves the terminal in the
+			 * second one; record that, or syncduke_apply_sdm()'s "already sent"
+			 * check believes a value the probe has overwritten. */
+			g_sdm_sent = termgfx_sixel_probe_trailing_sdm();
 			syncduke_vscale_arm();
 			syncduke_out_put(pb, pn);
 			syncduke_out_flush();

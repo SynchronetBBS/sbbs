@@ -18,6 +18,7 @@
  */
 #include "term.h"
 #include "caps.h"
+#include "sixel.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -72,6 +73,58 @@ int main(void)
 	 * before is what left a current SyncTERM origin-anchored after every door
 	 * exit, since that sequence means the opposite from cterm 1.328 on. */
 	CHECK(strstr(termgfx_term_leave, "\x1b[?80") == NULL);
+
+	/* --- the BEHAVIOURAL verdict ------------------------------------------
+	 * Six cursor rows: [0..2] measured under ?80h, [3..5] under ?80l, each half
+	 * being baseline / after a pan=1 sliver / after a pan=2 sliver. A half whose
+	 * rows do not move is one where the terminal drew at the screen origin and
+	 * ignored the cursor; the half that moves is the draw-at-cursor one. */
+	{
+		/* Genuine VT340, and cterm >= 1.328: ?80l draws at the cursor. */
+		static const int modern[] = { 1, 1, 1,  1, 4, 10 };
+		/* The VT340 MANUAL's (backwards) reading, and cterm <= 1.327. */
+		static const int legacy[] = { 1, 4, 10,  1, 1, 1 };
+		/* No mode 80 at all: it drew at the cursor under both. */
+		static const int nomode[] = { 1, 4, 10,  1, 4, 10 };
+		/* Never at the cursor under either -- nothing to choose between them. */
+		static const int neither[] = { 1, 1, 1,  1, 1, 1 };
+		/* Draws at the cursor under ?80l but ignores the pan: equal advances. */
+		static const int nopan[] = { 1, 1, 1,  1, 4, 7 };
+
+		CHECK(termgfx_sixel_sdm_verdict(modern, 6) == 0);
+		CHECK(termgfx_sixel_sdm_verdict(legacy, 6) == 1);
+		CHECK(termgfx_sixel_sdm_verdict(nomode, 6) == -1);
+		CHECK(termgfx_sixel_sdm_verdict(neither, 6) == -1);
+
+		/* Short of a full set, no verdict -- never a guess. */
+		CHECK(termgfx_sixel_sdm_verdict(modern, 5) == -1);
+		CHECK(termgfx_sixel_sdm_verdict(NULL, 6) == -1);
+
+		/* The pan answer is read off whichever half actually drew at the cursor,
+		 * so it survives the door having guessed the mode wrong -- which is the
+		 * whole reason the probe now runs both halves. */
+		CHECK(termgfx_sixel_vscale_verdict(modern, 6) == 1);
+		CHECK(termgfx_sixel_vscale_verdict(legacy, 6) == 1);
+		CHECK(termgfx_sixel_vscale_verdict(nopan, 6) == 0);
+		CHECK(termgfx_sixel_vscale_verdict(neither, 6) == 0);
+		CHECK(termgfx_sixel_vscale_verdict(modern, 5) == -1);
+	}
+
+	/* --- precedence: measurement outranks the revision --------------------
+	 * The revision is an inference, the probe is an observation. A terminal that
+	 * reports no version at all (0 below) can only be served by the probe, and
+	 * that is the case the version gate cannot reach: the VT340 manual documents
+	 * mode 80 backwards, so a terminal built from it behaves like cterm 1.327
+	 * while saying nothing about itself. */
+	CHECK(strcmp(termgfx_term_sixel_at_cursor_probed(1, 0), "\x1b[?80h") == 0);
+	CHECK(strcmp(termgfx_term_sixel_at_cursor_probed(0, 0), "\x1b[?80l") == 0);
+	CHECK(strcmp(termgfx_term_sixel_at_cursor_probed(1, 1332), "\x1b[?80h") == 0);
+	CHECK(strcmp(termgfx_term_sixel_at_cursor_probed(0, 1327), "\x1b[?80l") == 0);
+
+	/* Not measured: fall back to the revision, unchanged. */
+	CHECK(strcmp(termgfx_term_sixel_at_cursor_probed(-1, 1327), "\x1b[?80h") == 0);
+	CHECK(strcmp(termgfx_term_sixel_at_cursor_probed(-1, 1332), "\x1b[?80l") == 0);
+	CHECK(strcmp(termgfx_term_sixel_at_cursor_probed(-1, 0), "\x1b[?80l") == 0);
 
 	printf("%s: %d failure(s)\n", failures ? "FAIL" : "PASS", failures);
 	return failures != 0;

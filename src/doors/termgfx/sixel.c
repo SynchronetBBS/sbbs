@@ -187,35 +187,53 @@ static size_t vscale_sliver(char *p, size_t room, int pan)
 	return n;
 }
 
-size_t termgfx_sixel_vscale_probe(char *buf, size_t cap, int cterm_ver)
+// One half of the probe: assert `mode` (an "h"/"l" mode-80 sequence), home the
+// cursor, then report the row before the slivers, after the pan=1 sliver, and
+// after the pan=2 sliver. Three reports per half; see sixel.h for their order.
+static size_t vscale_half(char *p, size_t room, const char *mode)
 {
 	size_t n = 0;
 
-	if (cap < 128)
-		return 0;
-
-	// Sixel drawn at the CURSOR, or the cursor never moves and the probe would
-	// read "does not scale" on a terminal that does.  Normally already the case
-	// (the door asks for it at entry), but the probe must not depend on the caller
-	// having got there first -- and must not undo it either, hence the peer's
-	// revision rather than a bare ?80l.  See sixel.h.
-	n += (size_t)snprintf(buf + n, cap - n, "%s\x1b[H\x1b[6n",
-	                      termgfx_term_sixel_at_cursor(cterm_ver));
-	n += vscale_sliver(buf + n, cap - n, 1);                    // unscaled reference
-	n += (size_t)snprintf(buf + n, cap - n, "\x1b[6n");         // row after it
-	n += vscale_sliver(buf + n, cap - n, 2);                    // ask for 2x vertical
-	n += (size_t)snprintf(buf + n, cap - n, "\x1b[6n\x1b[H");   // row after that; tidy up
+	n += (size_t)snprintf(p + n, room - n, "%s\x1b[H\x1b[6n", mode);
+	n += vscale_sliver(p + n, room - n, 1);                    // unscaled reference
+	n += (size_t)snprintf(p + n, room - n, "\x1b[6n");         // row after it
+	n += vscale_sliver(p + n, room - n, 2);                    // ask for 2x vertical
+	n += (size_t)snprintf(p + n, room - n, "\x1b[6n");         // row after that
 	return n;
 }
 
-int termgfx_sixel_vscale_parse(const char *acc, size_t len)
+size_t termgfx_sixel_vscale_probe(char *buf, size_t cap)
 {
-	int    row[3];
+	size_t n = 0;
+
+	if (cap < 384)
+		return 0;
+
+	// Both halves, because which sequence means draw-at-cursor is exactly what is
+	// not known here (see sixel.h). The half that moves the cursor is the one that
+	// drew at it -- that half answers the mode-80 polarity, and its own two
+	// advances answer the pan question. Ends homed; the caller repaints over the
+	// slivers either way.
+	n += vscale_half(buf + n, cap - n, "\x1b[?80h");
+	n += vscale_half(buf + n, cap - n, "\x1b[?80l");
+	n += (size_t)snprintf(buf + n, cap - n, "\x1b[H");
+	return n;
+}
+
+const char *termgfx_sixel_probe_trailing_sdm(void)
+{
+	return "\x1b[?80l";   // the second half above; keep the two in step
+}
+
+// Pick out the leading cursor-position reports -- ESC [ <row> ; <col> R -- into
+// `row`, up to `want` of them; returns how many were found. Shared by the two
+// verdicts below so the wire format is parsed in exactly one place.
+static int vscale_rows(const char *acc, size_t len, int *row, int want)
+{
 	int    found = 0;
 	size_t i = 0;
 
-	// Pick out the first three cursor-position reports: ESC [ <row> ; <col> R.
-	while (i + 3 < len && found < 3) {
+	while (i + 3 < len && found < want) {
 		if (acc[i] == '\x1b' && acc[i + 1] == '[') {
 			size_t j = i + 2;
 			int    r = 0, digits = 0;
@@ -238,14 +256,60 @@ int termgfx_sixel_vscale_parse(const char *acc, size_t len)
 		}
 		i++;
 	}
-	return termgfx_sixel_vscale_verdict(row, found);
+	return found;
 }
+
+int termgfx_sixel_vscale_parse(const char *acc, size_t len)
+{
+	int row[TERMGFX_SIXEL_PROBE_ROWS];
+
+	return termgfx_sixel_vscale_verdict(row, vscale_rows(acc, len, row,
+	                                                     TERMGFX_SIXEL_PROBE_ROWS));
+}
+
+int termgfx_sixel_sdm_parse(const char *acc, size_t len)
+{
+	int row[TERMGFX_SIXEL_PROBE_ROWS];
+
+	return termgfx_sixel_sdm_verdict(row, vscale_rows(acc, len, row,
+	                                                  TERMGFX_SIXEL_PROBE_ROWS));
+}
+
+// Total cursor advance across one half's three reports: 0 means the terminal drew
+// the slivers somewhere other than the cursor (or refused them outright).
+static int vscale_advance(const int *rows) { return rows[2] - rows[0]; }
 
 int termgfx_sixel_vscale_verdict(const int *rows, int nrows)
 {
-	if (rows == NULL || nrows < 3)
-		return -1;                       // not all three reports are in hand yet
+	const int *half;
+
+	if (rows == NULL || nrows < TERMGFX_SIXEL_PROBE_ROWS)
+		return -1;                       // not every report is in hand yet
+
+	// Read the pan answer off whichever half actually drew at the cursor; in the
+	// other half nothing moved and the comparison would be 0 > 0. With both halves
+	// live (a terminal with no mode 80 at all) either one will do.
+	half = vscale_advance(rows) > 0 ? rows : rows + 3;
+	if (vscale_advance(half) <= 0)
+		return 0;                        // never drew at the cursor: nothing measured
 
 	// The pan=2 copy advanced the cursor further than the pan=1 copy => pan honored.
-	return (rows[2] - rows[1]) > (rows[1] - rows[0]) ? 1 : 0;
+	return (half[2] - half[1]) > (half[1] - half[0]) ? 1 : 0;
+}
+
+int termgfx_sixel_sdm_verdict(const int *rows, int nrows)
+{
+	int high, low;
+
+	if (rows == NULL || nrows < TERMGFX_SIXEL_PROBE_ROWS)
+		return -1;                       // not every report is in hand yet
+
+	high = vscale_advance(rows);         // cursor moved under ?80h
+	low  = vscale_advance(rows + 3);     // cursor moved under ?80l
+
+	if (high > 0 && low == 0)
+		return 1;                        // ?80h is this terminal's draw-at-cursor
+	if (low > 0 && high == 0)
+		return 0;                        // ?80l is -- a genuine VT340, cterm >= 1.328
+	return -1;                           // both (no mode 80) or neither: nothing to pick
 }

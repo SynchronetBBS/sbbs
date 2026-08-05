@@ -85,6 +85,16 @@ extern const char *const termgfx_term_leave;
 // door that has corrected the mode has nothing to restore on the way out.
 const char *termgfx_term_sixel_at_cursor(int cterm_ver);
 
+// The same answer, preferring what the terminal was MEASURED to do over what its
+// version implies. `probed` is termgfx_sixel_sdm_verdict()'s verdict (1 = ?80h,
+// 0 = ?80l, -1 = not measured / does not matter); `cterm_ver` is the fallback.
+//
+// Measurement wins because it covers what a revision number cannot: a terminal
+// that reports no CTerm version at all, and one built from the VT340 manual,
+// which documents mode 80 backwards -- those read the two sequences the way
+// cterm <= 1.327 does, and nothing in their DA1 reply says so.
+const char *termgfx_term_sixel_at_cursor_probed(int probed, int cterm_ver);
+
 // Status line (DECSSDT). A terminal that shows a status line reserves its
 // bottom text row for it (SyncTERM's default: an 80x25 terminal draws to an
 // 80x24 / 640x384 canvas), so a 640x400 game fractionally downscales and loses

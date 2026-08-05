@@ -1087,6 +1087,7 @@ static int         g_entered;
 static int         g_left;
 static uint32_t    g_enter_ms;
 static int         g_cterm_ver;   /* peer's CTerm revision (maj*1000+min), 0 = unknown */
+static int         g_sdm_probed = -1;   /* MEASURED mode-80 polarity; -1 = not measured */
 static const char *g_sdm_sent;    /* the mode-80 sequence the terminal was last given */
 
 /* Put the terminal in draw-sixel-at-the-cursor mode, which of the two mode-80
@@ -1096,7 +1097,7 @@ static const char *g_sdm_sent;    /* the mode-80 sequence the terminal was last 
  * under the previous one went somewhere else. */
 static void sr_io_apply_sdm(void)
 {
-	const char *want = termgfx_term_sixel_at_cursor(g_cterm_ver);
+	const char *want = termgfx_term_sixel_at_cursor_probed(g_sdm_probed, g_cterm_ver);
 
 	if (g_sdm_sent == NULL || strcmp(want, g_sdm_sent) == 0)
 		return;
@@ -1120,6 +1121,59 @@ void sr_io_set_cterm_ver(int ver)
 		return;
 	g_cterm_ver = ver;
 	sr_io_apply_sdm();
+}
+
+void sr_io_set_sdm_probed(int probed)
+{
+	if (probed < 0 || probed == g_sdm_probed)
+		return;
+	g_sdm_probed = probed;
+	sr_io_apply_sdm();
+}
+
+/* How long to hold the first frame while the mode-80 probe answers. Same shape
+ * as SR_GEOM_SETTLE_MS above and for the same reason: a terminal that never
+ * replies must not freeze the door, it just keeps the inferred answer. */
+#define SR_SDM_SETTLE_MS 400
+
+/* Measure which mode-80 sequence THIS terminal draws at the cursor under, for a
+ * terminal that reports no CTerm revision to infer it from -- which includes any
+ * built from the VT340 manual, since that documents the mode backwards.
+ *
+ * Returns 1 while the answer is outstanding, and the caller must not paint: the
+ * whole point is that the first frame goes out under the right sequence. Run
+ * before any frame has been sent, so the probe's six cursor reports cannot be
+ * confused with a frame's DSR pace-ack -- there is none in flight yet.
+ *
+ * SyncTERM never comes here: its DA1 reply carries the revision, which settles
+ * the question without painting probe slivers on the player's screen. */
+static int sr_io_sdm_probe(void)
+{
+	static int      sent;
+	static uint32_t sent_ms;
+	char            pb[512];
+	size_t          pn;
+
+	if (g_file_mode || sent)
+		return sent && !sr_input_sdm_done()
+		       && (uint32_t)(sr_io_now_ms() - sent_ms) < SR_SDM_SETTLE_MS;
+	if (!sr_input_has_sixel() || sr_input_is_syncterm() || g_ntiers == 0
+	    || g_tiers[g_tier_i].text != 0)
+		return 0;                     /* no sixel to place, or the revision answers it */
+
+	pn = termgfx_sixel_vscale_probe(pb, sizeof pb);
+	if (pn == 0)
+		return 0;
+	sent    = 1;
+	sent_ms = sr_io_now_ms();
+	sr_input_sdm_arm();
+	sr_out_put(pb, pn);
+	/* The probe asserts mode 80 twice and leaves the terminal in the second one;
+	 * record that, or sr_io_apply_sdm()'s "already sent" check believes a value
+	 * the probe has overwritten. */
+	g_sdm_sent = termgfx_sixel_probe_trailing_sdm();
+	sr_io_out_flush();
+	return 1;
 }
 
 /* How long to hold the FIRST frame while the terminal's probe replies come back.
@@ -1376,6 +1430,12 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 		return;
 
 	sr_tiers_build();
+
+	/* Hold the first frame while the mode-80 polarity is measured (a terminal
+	 * that reports no CTerm revision). The probe paints two thin slivers at the
+	 * top-left; the first real frame covers them. */
+	if (sr_io_sdm_probe())
+		return;
 
 	/* one-shot: a door screen overwrote the game area. NOT cleared here --
 	 * several paths below DROP this frame without sending anything (pace

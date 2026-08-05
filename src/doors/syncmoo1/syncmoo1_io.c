@@ -620,6 +620,7 @@ int sm_io_in_fd(void)
 static int         g_entered;
 static int         g_left;
 static int         g_cterm_ver;   /* peer's CTerm revision (maj*1000+min), 0 = unknown */
+static int         g_sdm_probed = -1;  /* MEASURED mode-80 polarity (sixel probe); -1 = not measured */
 static const char *g_sdm_sent;    /* the mode-80 sequence the terminal was last given */
 static int         g_sdm_repaint; /* the sequence changed: wipe and redraw (consumed by present) */
 
@@ -628,7 +629,7 @@ static int         g_sdm_repaint; /* the sequence changed: wipe and redraw (cons
  * sm_io_set_cterm_ver() below for why it matters here. */
 static void sm_io_apply_sdm(void)
 {
-    const char *want = termgfx_term_sixel_at_cursor(g_cterm_ver);
+    const char *want = termgfx_term_sixel_at_cursor_probed(g_sdm_probed, g_cterm_ver);
 
     if (g_sdm_sent == NULL || strcmp(want, g_sdm_sent) == 0)
         return;              /* enter() has not run, or the terminal is already right */
@@ -647,6 +648,14 @@ void sm_io_set_cterm_ver(int ver)
     if (ver <= 0 || ver == g_cterm_ver)
         return;
     g_cterm_ver = ver;
+    sm_io_apply_sdm();
+}
+
+void sm_io_set_sdm_probed(int probed)
+{
+    if (probed < 0 || probed == g_sdm_probed)
+        return;
+    g_sdm_probed = probed;
     sm_io_apply_sdm();
 }
 
@@ -850,12 +859,12 @@ static void sm_io_vscale_probe(void)
 {
     static int      sent;
     static uint32_t sent_ms;
-    char            pb[192];
+    char            pb[512];
     size_t          pn;
 
     if (sent || !sm_input_have_sixel() || sm_input_is_syncterm())
         return;
-    pn = termgfx_sixel_vscale_probe(pb, sizeof(pb), g_cterm_ver);
+    pn = termgfx_sixel_vscale_probe(pb, sizeof(pb));
     if (pn == 0)
         return;
 
@@ -882,6 +891,10 @@ static void sm_io_vscale_probe(void)
             sm_input_pump(sm_io_get_fd());
     }
 
+    /* The probe asserts mode 80 twice and leaves the terminal in the second one;
+     * record that, or sm_io_apply_sdm()'s "already sent" check believes a value
+     * the probe has overwritten. */
+    g_sdm_sent = termgfx_sixel_probe_trailing_sdm();
     sm_input_vscale_arm();
     sm_out_put(pb, pn);
     sm_io_out_flush();

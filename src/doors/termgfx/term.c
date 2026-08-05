@@ -33,6 +33,15 @@ const char *termgfx_term_sixel_at_cursor(int cterm_ver)
 	       ? "\x1b[?80h" : "\x1b[?80l";
 }
 
+const char *termgfx_term_sixel_at_cursor_probed(int probed, int cterm_ver)
+{
+	if (probed == 1)
+		return "\x1b[?80h";
+	if (probed == 0)
+		return "\x1b[?80l";
+	return termgfx_term_sixel_at_cursor(cterm_ver);
+}
+
 // --- status line (DECSSDT) --------------------------------------------------
 // A terminal with a status line (SyncTERM's default) reserves its bottom text
 // row for it, shrinking the drawing area -- an 80x25 SyncTERM becomes an 80x24

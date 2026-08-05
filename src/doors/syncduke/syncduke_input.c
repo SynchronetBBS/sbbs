@@ -475,8 +475,8 @@ int syncduke_img_zoom_ok(void) { return g_img_zoom_ok; }
  * with pan=1 then pan=2 and we compare how far the cursor advanced. Armed only for
  * a non-SyncTERM sixel terminal -- SyncTERM scales both axes anyway. The rows come
  * from the CPR handler below, which already parses them for the size probe. */
-static int g_vscale_rows[3];
-static int g_vscale_n     = -1;   /* -1 = not armed; 0..3 = reports collected */
+static int g_vscale_rows[TERMGFX_SIXEL_PROBE_ROWS];
+static int g_vscale_n     = -1;   /* -1 = not armed; 0..N = reports collected */
 static int g_vscale_ok    = 0;    /* verdict: terminal honors pan */
 static int g_vscale_done  = 0;
 
@@ -1383,13 +1383,21 @@ static void csi_final(char fin, int gameplay, int now)
 				g_grid_rows = p[0]; g_grid_cols = p[1];
 				syncduke_estimate_px();
 			}
-			else if (g_vscale_n >= 0 && g_vscale_n < 3 && csi_params(p, 2) >= 1) {
-				g_vscale_rows[g_vscale_n++] = p[0];    /* the vertical-scaling probe's reports */
-				if (g_vscale_n == 3) {
-					int v = termgfx_sixel_vscale_verdict(g_vscale_rows, 3);
+			else if (g_vscale_n >= 0 && g_vscale_n < TERMGFX_SIXEL_PROBE_ROWS
+			         && csi_params(p, 2) >= 1) {
+				g_vscale_rows[g_vscale_n++] = p[0];    /* the sixel probe's reports */
+				if (g_vscale_n == TERMGFX_SIXEL_PROBE_ROWS) {
+					int v = termgfx_sixel_vscale_verdict(g_vscale_rows,
+					                                     TERMGFX_SIXEL_PROBE_ROWS);
 					g_vscale_ok   = (v == 1);
 					g_vscale_done = 1;
 					g_vscale_n    = -1;                /* disarm: later CPRs are frame acks */
+					/* The same reports say which mode-80 sequence THIS terminal
+					 * reads as draw-at-cursor -- the only way to know on a
+					 * terminal that reports no CTerm revision. */
+					syncduke_set_sdm_probed(
+						termgfx_sixel_sdm_verdict(g_vscale_rows,
+						                          TERMGFX_SIXEL_PROBE_ROWS));
 				}
 			}
 			syncduke_pace_ack();

@@ -113,6 +113,12 @@ void sm_io_enter(void);
  * reversed their sense in 1.328 -- so the door can correct the one it had to
  * guess at entry. Harmless (and ignored) for a non-CTerm terminal. */
 void sm_io_set_cterm_ver(int ver);
+/* What the sixel probe MEASURED this terminal to do with mode 80 (1 = it draws
+ * at the cursor under ?80h, 0 = under ?80l, -1 = not measured / immaterial).
+ * Outranks the CTerm revision above: it is the only answer available for a
+ * terminal that reports no version, including one built from the VT340 manual,
+ * which documents the mode backwards. */
+void sm_io_set_sdm_probed(int probed);
 void sm_io_leave(void);
 
 /* Append `len` bytes to the staged, grow-only out-buffer (no I/O). */

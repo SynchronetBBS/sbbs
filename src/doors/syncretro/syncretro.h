@@ -190,6 +190,18 @@ void sr_io_set_grid(int rows, int cols);
  * reversed their sense in 1.328 -- so the door can correct the one it had to
  * guess at entry. Harmless (and ignored) for a non-CTerm terminal. */
 void sr_io_set_cterm_ver(int ver);
+/* What the sixel probe MEASURED this terminal to do with mode 80 (1 = it draws
+ * at the cursor under ?80h, 0 = under ?80l, -1 = not measured / immaterial).
+ * Outranks the CTerm revision above: it is the only answer available for a
+ * terminal that reports no version, including one built from the VT340 manual,
+ * which documents the mode backwards. */
+void sr_io_set_sdm_probed(int probed);
+
+/* The mode-80 probe's CPR collector, in syncretro_input.c. Armed by
+ * sr_io_present() the moment it emits the probe -- before any frame, so the
+ * probe's cursor reports cannot be mistaken for a frame pace-ack. */
+void sr_input_sdm_arm(void);
+int  sr_input_sdm_done(void);
 
 /* DSR-ACK frame pacing. sr_io_take_grid_probe() is a one-shot armed when the
  * startup grid probe is SENT, so the first ESC[r;cR after it is the grid reply

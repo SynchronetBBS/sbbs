@@ -880,10 +880,11 @@ static void emit_frame_sixel(int w, int h)
 // Only ever sends the at-cursor sequence. Draw-at-cursor is every terminal's own
 // default, so leaving the sixel tier has nothing to undo.
 static const char *g_sdm_sent;       // the mode-80 sequence the terminal was given, NULL = none
+static int g_sdm_probed = -1;        // MEASURED polarity (probe_sixel_vscale); -1 = not measured
 static int g_sixel_tier_up = 0;
 static void apply_sixel_at_cursor(void)
 {
-	const char *want = termgfx_term_sixel_at_cursor(g_cterm_version);
+	const char *want = termgfx_term_sixel_at_cursor_probed(g_sdm_probed, g_cterm_version);
 	int         up   = (g_mode == MODE_SIXEL);
 
 	if (up == g_sixel_tier_up)
@@ -2538,7 +2539,7 @@ static int probe_sixel(void)
 // a full-size encode is correct everywhere, merely fatter.
 static void probe_sixel_vscale(void)
 {
-	char          probe[192];
+	char          probe[512];
 	unsigned char acc[256];
 	int           al = 0, result = -1;
 	uint32_t      deadline;
@@ -2546,10 +2547,15 @@ static void probe_sixel_vscale(void)
 
 	if (!g_have_sixel || g_is_syncterm)
 		return;
-	pn = termgfx_sixel_vscale_probe(probe, sizeof(probe), g_cterm_version);
+	pn = termgfx_sixel_vscale_probe(probe, sizeof(probe));
 	if (pn == 0)
 		return;
 	emit_all(probe, pn);
+	// The probe asserts mode 80 itself, twice, and leaves the terminal in the
+	// second one -- so the bookkeeping apply_sixel_at_cursor() skips re-asserts
+	// on has to follow it here, or that check would believe a value the probe has
+	// since overwritten and leave the session in the wrong mode.
+	g_sdm_sent = termgfx_sixel_probe_trailing_sdm();
 	deadline = now_ms() + 600;
 	while (result < 0) {
 		int32_t       rem = (int32_t)(deadline - now_ms());
@@ -2582,7 +2588,15 @@ static void probe_sixel_vscale(void)
 		result = termgfx_sixel_vscale_parse((const char *)acc, (size_t)al);
 	}
 	g_sixel_vscale = (result == 1);
-	// The two slivers the probe painted are covered by the first full frame.
+	// The same reports say which mode-80 sequence THIS terminal reads as
+	// draw-at-cursor, measured rather than inferred from a version it may not
+	// report. Feed it in before the tier is applied, so the first sixel goes out
+	// under the right one. -1 (no answer, or a terminal with no mode 80 at all)
+	// leaves apply_sixel_at_cursor() on the CTerm-revision fallback.
+	g_sdm_probed = termgfx_sixel_sdm_parse((const char *)acc, (size_t)al);
+	g_sixel_tier_up = 0;              // let apply_ re-run: the probe moved the mode
+	apply_sixel_at_cursor();          // put it back where this terminal wants it
+	// The probe's slivers are covered by the first full frame.
 }
 
 // ---------------------------------------------------------------------------

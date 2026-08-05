@@ -103,29 +103,76 @@ size_t sixel_encode_aspect(uint8_t **buf, size_t *cap, const uint8_t *idx, int w
 // alongside the auto-detection.
 //
 // The probe needs the terminal drawing sixels AT THE CURSOR, or the cursor never
-// advances and it reads "does not scale" on a terminal that does -- so it leads
-// with the mode-80 sequence that asks this peer for that (termgfx_term_sixel_at_cursor(),
-// which is why cterm_ver is a parameter: the two sequences swapped meaning in cterm
-// 1.328). Pass the peer's CTerm revision, or 0 if it is unknown / not cterm. A
-// bare ?80l here would leave a 1.327-and-below SyncTERM anchoring every later
-// image in the top-left corner, undoing what the door set at entry -- and no door
-// re-asserts the mode on exit, so nothing downstream would catch it.
+// advances and it reads "does not scale" on a terminal that does. Which mode-80
+// sequence asks for that is itself unknown for a terminal we cannot identify, so
+// the probe DOES NOT ASSUME one: it runs the whole measurement twice, once under
+// ?80h and once under ?80l, and reports which half moved the cursor. That answers
+// both questions from one burst -- see termgfx_sixel_sdm_parse() below.
 //
-// Writes the probe into buf (needs ~128 bytes); returns its length, 0 if cap is
+// The technique is hackerb9's testdecsdm.sh (github.com/hackerb9/vt340test),
+// pointed out by Deuce: a terminal drawing at the cursor leaves it at the bottom
+// of the image, one anchoring at the screen origin leaves it untouched, and that
+// difference is visible over the wire where the mode's polarity is not. It matters
+// beyond cterm, whose revision we can read: the VT340 manual documents mode 80
+// backwards, so ANY terminal built from those specs reads the two sequences the
+// way cterm <= 1.327 does, with no version to gate on.
+//
+// Six cursor reports come back, in this order:
+//   [0] baseline under ?80h   [1] after a pan=1 sliver   [2] after a pan=2 sliver
+//   [3] baseline under ?80l   [4] after a pan=1 sliver   [5] after a pan=2 sliver
+// They pipeline: one write, one round trip, six replies.
+//
+// Writes the probe into buf (needs ~384 bytes); returns its length, 0 if cap is
 // too small.
-size_t termgfx_sixel_vscale_probe(char *buf, size_t cap, int cterm_ver);
+size_t termgfx_sixel_vscale_probe(char *buf, size_t cap);
+
+// WHICH DOORS RUN THIS. SyncRetro, SyncDOOM, SyncDuke and SyncMOO1 do; the
+// termgfx_termio doors (SyncSCUMM, SyncRPG) deliberately do NOT, and stay on the
+// CTerm-revision inference alone (termgfx_term_sixel_at_cursor()). The probe is a
+// SIXEL, so its slivers necessarily reach the wire ahead of the first frame, and
+// this module's test suite pins "the first DCS on the wire is the frame" in five
+// separate raster parsers plus an image count. That is a decision, not an
+// oversight: those two doors are correct on every CTerm client and on every
+// terminal that reads DECSDM the modern way, and wrong only on a NON-CTerm one
+// built from the VT340 manual -- for which no named example is known.
+//
+// The mode-80 sequence the probe LEAVES the terminal in, being the last one its
+// two halves assert. A door that remembers what it last sent (so it can re-assert
+// the mode only when it changes) MUST record this the moment it emits the probe:
+// the probe sets the mode behind that bookkeeping's back, and a door still
+// believing its own older value will skip the very re-assert the probe made
+// necessary -- and sit in the wrong mode for the rest of the session.
+const char *termgfx_sixel_probe_trailing_sdm(void);
+
+// Which mode-80 sequence this terminal reads as draw-at-cursor, from the probe
+// replies accumulated so far. Returns 1 for "\x1b[?80h" (the backwards-from-VT340
+// reading: cterm <= 1.327, and anything built from the VT340 manual), 0 for
+// "\x1b[?80l" (a genuine VT340, and cterm >= 1.328), and -1 when the answer is not
+// in hand or does not matter -- fewer than six reports so far, or a terminal that
+// drew at the cursor under BOTH sequences (mode 80 unimplemented, so either one is
+// safe) or under NEITHER (it will not draw at the cursor at all; nothing to pick).
+// A door treats -1 as "keep what termgfx_term_sixel_at_cursor() already chose".
+int termgfx_sixel_sdm_parse(const char *acc, size_t len);
+
+// The verdict half of the above, over rows already extracted (unit-testable).
+int termgfx_sixel_sdm_verdict(const int *rows, int nrows);
+
+// How many cursor reports the probe produces (two halves of three). A door sizing
+// its own row buffer, or deciding it has heard enough, uses this.
+#define TERMGFX_SIXEL_PROBE_ROWS 6
 
 // Feed the accumulated input bytes. Returns 1 if the terminal scales vertically,
-// 0 if it does not, and -1 while the three cursor reports have not all arrived yet
+// 0 if it does not, and -1 while the cursor reports have not all arrived yet
 // (keep reading until your deadline; on timeout treat it as 0 -- the safe answer,
 // since a full-size encode is correct on every terminal, merely fatter).
-// Idempotent over a growing buffer.
+// Idempotent over a growing buffer. Read off whichever probe half drew at the
+// cursor, so it no longer depends on the caller having guessed the mode right.
 int termgfx_sixel_vscale_parse(const char *acc, size_t len);
 
 // The same verdict, for a door whose input state machine has already parsed the
 // cursor reports into row numbers (SyncDuke, SyncMOO1) rather than handing us raw
-// bytes. `rows` are the three reported rows in order; returns 1/0 as above, or -1
-// if fewer than three are in hand yet.
+// bytes. `rows` are the reported rows in order; returns 1/0 as above, or -1 if
+// fewer than TERMGFX_SIXEL_PROBE_ROWS are in hand yet.
 int termgfx_sixel_vscale_verdict(const int *rows, int nrows);
 
 #endif // SIXEL_H_

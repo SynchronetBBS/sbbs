@@ -194,7 +194,7 @@ static int g_jxl_answered;   /* the Q;JXL query came back, either way */
  * further for the second. Armed only for a non-SyncTERM sixel terminal. The three
  * reports MUST be consumed here rather than falling through to sm_io_pace_ack() --
  * they ack no frame, and counting them would corrupt the DSR pipeline. */
-static int g_vscale_rows[3];
+static int g_vscale_rows[TERMGFX_SIXEL_PROBE_ROWS];
 static int g_vscale_n    = -1;    /* -1 = not armed */
 static int g_vscale_ok;
 static int g_vscale_done;
@@ -218,13 +218,19 @@ int sm_input_sixel_vscale(void)
 /* Returns 1 if `row` was one of the probe's reports (and is now consumed). */
 static int sm_input_vscale_collect(int row)
 {
-    if (g_vscale_n < 0 || g_vscale_n >= 3 || row < 0)
+    if (g_vscale_n < 0 || g_vscale_n >= TERMGFX_SIXEL_PROBE_ROWS || row < 0)
         return 0;
     g_vscale_rows[g_vscale_n++] = row;
-    if (g_vscale_n == 3) {
-        g_vscale_ok   = (termgfx_sixel_vscale_verdict(g_vscale_rows, 3) == 1);
+    if (g_vscale_n == TERMGFX_SIXEL_PROBE_ROWS) {
+        g_vscale_ok   = (termgfx_sixel_vscale_verdict(g_vscale_rows,
+                                                      TERMGFX_SIXEL_PROBE_ROWS) == 1);
         g_vscale_done = 1;
         g_vscale_n    = -1;           /* disarm: later reports are genuine pace-acks */
+        /* The same reports say which mode-80 sequence THIS terminal reads as
+         * draw-at-cursor -- the only way to know on one that reports no CTerm
+         * revision. */
+        sm_io_set_sdm_probed(termgfx_sixel_sdm_verdict(g_vscale_rows,
+                                                       TERMGFX_SIXEL_PROBE_ROWS));
     }
     return 1;
 }
