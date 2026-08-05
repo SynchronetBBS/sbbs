@@ -3467,8 +3467,17 @@ iniGetFastParsedSectionLV(ini_fp_list_t *fp, ini_lv_string_t* name, bool cut)
 	adjustUncuts(fp);
 	if (fp->firstUncut > fp->lastUncut)
 		return NULL;
+	// Looking for root section...
+	if (name == NULL) {
+		// Which must be first if it's present
+		if (fp->sections[fp->firstUncut].name.str == NULL)
+			found = &fp->sections[fp->firstUncut];
+		else
+			found = NULL;
+	}
+	else
+		found = bsearch(name, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
 
-	found = bsearch(name, &fp->sections[fp->firstUncut], fp->lastUncut - fp->firstUncut + 1, sizeof(fp->sections[0]), iniGetFastParsedSectionCmp);
 	return iniHandleFoundSection(found, fp, cut);
 }
 
