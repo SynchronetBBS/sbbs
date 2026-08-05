@@ -148,7 +148,7 @@ static const struct key_mapping prestel_keys[] = {
 	{10,                       "\x0d",        1},	/* LF sends CR */
 	{12,                       "\x0c",        1},   /* CTRL-L for "Clear Screen" -- nelgin */
 	{13,                       "_",           1},	/* CR sends _ */
-	{24,                       "\x18",        1},   /* CTRL-T for "Delete Line" -- nelgin */
+	{20,                       "\x18",        1},   /* CTRL-T sends CAN for "Delete Line" -- nelgin */
 	{27,                       "\x1b",        1},   /* Pass ESC through */
 	{'#',                      "_",           1},
 	{'_',                      "`",           1},
