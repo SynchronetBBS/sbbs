@@ -12,6 +12,7 @@
 #include <cstring>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -32,6 +33,8 @@
 #include <botan/ecdsa.h>
 #include <botan/ec_group.h>
 #include <botan/hash.h>
+#include <botan/ipv4_address.h>
+#include <botan/ipv6_address.h>
 #include <botan/pkcs10.h>
 #include <botan/pkcs8.h>
 #include <botan/pem.h>
@@ -700,44 +703,57 @@ xp_key_get_ec_public(xp_key_t key, void *x, size_t *x_len,
 static bool
 csr_identity_valid(const struct xp_ca_identity *identity)
 {
-	if (identity == nullptr || identity->common_name == nullptr
-	    || identity->common_name[0] == '\0'
-	    || (identity->dns_name_count != 0 && identity->dns_names == nullptr))
-		return false;
-	for (const unsigned char *value =
-	         reinterpret_cast<const unsigned char *>(identity->common_name);
-	     *value != '\0'; value++)
-		if (*value < 0x20 || *value == 0x7f)
-			return false;
-	for (size_t i = 0; i < identity->dns_name_count; i++) {
-		if (identity->dns_names[i] == nullptr || identity->dns_names[i][0] == '\0')
-			return false;
-		for (const unsigned char *value = reinterpret_cast<const unsigned char *>(
-		         identity->dns_names[i]); *value != '\0'; value++)
-			if (*value <= 0x20 || *value >= 0x7f || *value == ',')
-				return false;
-		for (size_t j = 0; j < i; j++)
-			if (xp_ca_dns_names_equal(identity->dns_names[i], identity->dns_names[j]))
-				return false;
-	}
-	return true;
+	return xp_ca_identity_is_valid(identity, true);
 }
+
+static Botan::X509_DN
+identity_dn(const struct xp_ca_identity& identity)
+{
+	Botan::X509_DN name;
+	if (identity.country) name.add_attribute("X520.Country", identity.country);
+	if (identity.state_or_province) name.add_attribute("X520.State", identity.state_or_province);
+	if (identity.locality) name.add_attribute("X520.Locality", identity.locality);
+	if (identity.organization) name.add_attribute("X520.Organization", identity.organization);
+	if (identity.organizational_unit) name.add_attribute("X520.OrganizationalUnit", identity.organizational_unit);
+	if (identity.common_name) name.add_attribute("X520.CommonName", identity.common_name);
+	if (identity.email_address) name.add_attribute(Botan::OID::from_string("1.2.840.113549.1.9.1"), identity.email_address);
+	return name;
+}
+
+class Raw_CSR_Extension final : public Botan::Certificate_Extension {
+public:
+	Raw_CSR_Extension(Botan::OID oid, std::vector<uint8_t> value)
+		: oid_(std::move(oid)), value_(std::move(value)) {}
+	Botan::OID oid_of() const override { return oid_; }
+	std::string oid_name() const override { return ""; }
+	std::unique_ptr<Botan::Certificate_Extension> copy() const override {
+		return std::make_unique<Raw_CSR_Extension>(oid_, value_);
+	}
+protected:
+	std::vector<uint8_t> encode_inner() const override { return value_; }
+	void decode_inner(const std::vector<uint8_t>& value) override { value_ = value; }
+private:
+	Botan::OID oid_;
+	std::vector<uint8_t> value_;
+};
 
 static int
 csr_create(xp_ca_csr_t *out, xp_key_t key,
-	       const struct xp_ca_identity *identity)
+	       const struct xp_ca_identity *identity,
+	       const struct xp_ca_extension *requested, size_t requested_count)
 {
 	if (out == nullptr)
 		return XP_CA_ERR;
 	*out = nullptr;
 	if (key == nullptr || key->native == nullptr)
 		return XP_CA_ERR;
-	if (identity != nullptr && !csr_identity_valid(identity))
+	if ((identity != nullptr && !csr_identity_valid(identity))
+	    || (requested_count != 0 && requested == nullptr))
 		return XP_CA_ERR_POLICY;
 	try {
 		Botan::AutoSeeded_RNG rng;
 		Botan::X509_DN        subject = identity == nullptr ? Botan::X509_DN()
-			: Botan::X509_DN({ { "X520.CommonName", identity->common_name } });
+			: identity_dn(*identity);
 		Botan::Extensions     extensions;
 		if (identity != nullptr && identity->dns_name_count != 0) {
 			Botan::AlternativeName names;
@@ -745,6 +761,18 @@ csr_create(xp_ca_csr_t *out, xp_key_t key,
 				names.add_dns(identity->dns_names[i]);
 			extensions.add(std::make_unique<
 				Botan::Cert_Extension::Subject_Alternative_Name>(names));
+		}
+		for (size_t i = 0; i < requested_count; i++) {
+			if (requested[i].oid == nullptr || requested[i].value_der == nullptr
+			    || requested[i].value_der_len == 0)
+				return XP_CRYPTO_ERR_INVALID;
+			std::vector<uint8_t> value(
+				static_cast<const uint8_t *>(requested[i].value_der),
+				static_cast<const uint8_t *>(requested[i].value_der)
+					+ requested[i].value_der_len);
+			extensions.add(std::make_unique<Raw_CSR_Extension>(
+				Botan::OID::from_string(requested[i].oid), std::move(value)),
+				requested[i].critical);
 		}
 		auto                  csr = std::make_unique<xp_ca_csr>();
 		csr->native = std::make_unique<Botan::PKCS10_Request>(
@@ -761,14 +789,24 @@ csr_create(xp_ca_csr_t *out, xp_key_t key,
 extern "C" int
 xp_ca_csr_create(xp_ca_csr_t *out, xp_key_t key)
 {
-	return csr_create(out, key, nullptr);
+	return csr_create(out, key, nullptr, nullptr, 0);
 }
 
 extern "C" int
 xp_ca_csr_create_with_identity(xp_ca_csr_t *out, xp_key_t key,
 	                           const struct xp_ca_identity *identity)
 {
-	return csr_create(out, key, identity);
+	return csr_create(out, key, identity, nullptr, 0);
+}
+
+extern "C" int
+xp_ca_csr_create_request(xp_ca_csr_t *out, xp_key_t key,
+	const struct xp_ca_csr_request *request)
+{
+	if (request == nullptr)
+		return XP_CRYPTO_ERR_INVALID;
+	return csr_create(out, key, &request->subject,
+		request->extensions, request->extension_count);
 }
 
 extern "C" int
@@ -804,6 +842,18 @@ make_extensions(const struct xp_ca_issue_request *request,
 		key_usage |= Botan::Key_Constraints::KeyCertSign;
 	if (request->policy.key_usage & XP_CA_KEY_USE_CRL_SIGN)
 		key_usage |= Botan::Key_Constraints::CrlSign;
+	if (request->policy.key_usage & XP_CA_KEY_USE_KEY_ENCIPHERMENT)
+		key_usage |= Botan::Key_Constraints::KeyEncipherment;
+	if (request->policy.key_usage & XP_CA_KEY_USE_DATA_ENCIPHERMENT)
+		key_usage |= Botan::Key_Constraints::DataEncipherment;
+	if (request->policy.key_usage & XP_CA_KEY_USE_KEY_AGREEMENT)
+		key_usage |= Botan::Key_Constraints::KeyAgreement;
+	if (request->policy.key_usage & XP_CA_KEY_USE_NON_REPUDIATION)
+		key_usage |= Botan::Key_Constraints::NonRepudiation;
+	if (request->policy.key_usage & XP_CA_KEY_USE_ENCIPHER_ONLY)
+		key_usage |= Botan::Key_Constraints::EncipherOnly;
+	if (request->policy.key_usage & XP_CA_KEY_USE_DECIPHER_ONLY)
+		key_usage |= Botan::Key_Constraints::DecipherOnly;
 	std::optional<size_t> path_length;
 	if (request->policy.path_length >= 0)
 		path_length = (size_t)request->policy.path_length;
@@ -831,6 +881,14 @@ make_extensions(const struct xp_ca_issue_request *request,
 		eku.push_back(Botan::OID::from_string("PKIX.ServerAuth"));
 	if (request->policy.extended_key_usage & XP_CA_EKU_CLIENT_AUTH)
 		eku.push_back(Botan::OID::from_string("PKIX.ClientAuth"));
+	if (request->policy.extended_key_usage & XP_CA_EKU_CODE_SIGNING)
+		eku.push_back(Botan::OID::from_string("PKIX.CodeSigning"));
+	if (request->policy.extended_key_usage & XP_CA_EKU_EMAIL_PROTECTION)
+		eku.push_back(Botan::OID::from_string("1.3.6.1.5.5.7.3.4"));
+	if (request->policy.extended_key_usage & XP_CA_EKU_TIME_STAMPING)
+		eku.push_back(Botan::OID::from_string("1.3.6.1.5.5.7.3.8"));
+	if (request->policy.extended_key_usage & XP_CA_EKU_OCSP_SIGNING)
+		eku.push_back(Botan::OID::from_string("PKIX.OCSPSigning"));
 	if (!eku.empty())
 		extensions.add(std::make_unique<Botan::Cert_Extension::Extended_Key_Usage>(eku));
 	if (request->policy.crl_distribution_point != nullptr) {
@@ -846,7 +904,7 @@ make_extensions(const struct xp_ca_issue_request *request,
 static Botan::X509_DN
 subject_dn(const struct xp_ca_issue_request *request)
 {
-	return Botan::X509_DN { { "X520.CommonName", request->subject.common_name } };
+	return identity_dn(request->subject);
 }
 
 static bool
@@ -1104,6 +1162,130 @@ xp_ca_cert_chain_free(xp_ca_cert_t *certs, size_t count)
 	}
 }
 
+static std::vector<uint8_t>
+pkcs7_encode(const xp_ca_cert_t *certs, size_t count)
+{
+	std::vector<uint8_t> encoded;
+	Botan::DER_Encoder encoder(encoded);
+	encoder.start_sequence()
+		.encode(Botan::OID::from_string("1.2.840.113549.1.7.2"))
+		.start_explicit(0)
+			.start_sequence()
+				.encode((size_t)1)
+				.start_set().end_cons()
+				.start_sequence()
+					.encode(Botan::OID::from_string("1.2.840.113549.1.7.1"))
+				.end_cons()
+				.start_context_specific(0);
+	for (size_t i = 0; i < count; i++) {
+		if (certs[i] == nullptr) throw std::invalid_argument("null certificate");
+		auto der = certs[i]->native->BER_encode();
+		encoder.raw_bytes(der);
+	}
+	encoder.end_cons().start_set().end_cons().end_cons().end_explicit().end_cons();
+	return encoded;
+}
+
+static std::vector<std::vector<uint8_t>>
+pkcs7_decode(std::span<const uint8_t> encoded)
+{
+	std::vector<std::vector<uint8_t>> certs;
+	Botan::BER_Decoder input(encoded, Botan::BER_Decoder::Limits::DER());
+	auto outer = input.start_sequence();
+	Botan::OID content_type;
+	outer.decode(content_type);
+	if (content_type.to_string() != "1.2.840.113549.1.7.2")
+		throw std::invalid_argument("not PKCS7 SignedData");
+	auto explicit_data = outer.start_explicit_context_specific(0);
+	auto signed_data = explicit_data.start_sequence();
+	size_t version = 0; signed_data.decode(version);
+	if (version < 1) throw std::invalid_argument("invalid SignedData version");
+	signed_data.start_set().discard_remaining().end_cons();
+	signed_data.start_sequence().discard_remaining().end_cons();
+	if (!signed_data.more_items())
+		throw std::invalid_argument("PKCS7 has no certificates");
+	auto certificate_set = signed_data.start_context_specific(0);
+	while (certificate_set.more_items()) {
+		auto object = certificate_set.get_next_object();
+		object.assert_is_a(Botan::ASN1_Type::Sequence, Botan::ASN1_Class::Constructed,
+			"certificate");
+		std::vector<uint8_t> certificate;
+		Botan::DER_Encoder(certificate).start_sequence()
+			.raw_bytes(object.bits(), object.length()).end_cons();
+		certs.push_back(std::move(certificate));
+	}
+	certificate_set.end_cons();
+	signed_data.discard_remaining().end_cons();
+	explicit_data.end_cons(); outer.end_cons(); input.verify_end();
+	if (certs.empty()) throw std::invalid_argument("empty PKCS7 certificate set");
+	return certs;
+}
+
+extern "C" int
+xp_ca_cert_bundle_import(xp_ca_cert_t **out, size_t *count,
+	enum xp_ca_encoding encoding, const void *data, size_t len)
+{
+	if (out == nullptr || count == nullptr) return XP_CRYPTO_ERR_INVALID;
+	*out = nullptr; *count = 0;
+	if (encoding == XP_CA_ENCODING_PEM)
+		return xp_ca_cert_chain_import_pem(out, count, data, len);
+	if (encoding == XP_CA_ENCODING_DER) {
+		xp_ca_cert_t cert = nullptr; int status = xp_ca_cert_import_der(&cert, data, len);
+		if (status != XP_CA_OK) return status;
+		auto result = new (std::nothrow) xp_ca_cert_t[1];
+		if (result == nullptr) { xp_ca_cert_free(cert); return XP_CA_ERR; }
+		result[0] = cert; *out = result; *count = 1; return XP_CA_OK;
+	}
+	if ((encoding != XP_CA_ENCODING_PKCS7_DER
+	    && encoding != XP_CA_ENCODING_PKCS7_PEM) || data == nullptr || len == 0)
+		return XP_CRYPTO_ERR_INVALID;
+	try {
+		std::vector<uint8_t> der;
+		if (encoding == XP_CA_ENCODING_PKCS7_PEM) {
+			auto decoded = Botan::PEM_Code::decode_check_label(
+				std::string_view(static_cast<const char *>(data), len), "PKCS7");
+			der.assign(decoded.begin(), decoded.end());
+		}
+		else der.assign(static_cast<const uint8_t *>(data),
+			static_cast<const uint8_t *>(data) + len);
+		auto values = pkcs7_decode(der);
+		auto result = std::make_unique<xp_ca_cert_t[]>(values.size());
+		std::fill(result.get(), result.get() + values.size(), nullptr);
+		for (size_t i = 0; i < values.size(); i++) {
+			int status = xp_ca_cert_import_der(&result[i], values[i].data(), values[i].size());
+			if (status != XP_CA_OK) {
+				for (size_t j = 0; j < values.size(); j++) delete result[j];
+				return status;
+			}
+		}
+		*out = result.release(); *count = values.size(); return XP_CA_OK;
+	} catch (const std::exception& e) { return fail(XP_CA_ERR_FORMAT, e.what()); }
+}
+
+extern "C" int
+xp_ca_cert_bundle_export(const xp_ca_cert_t *certs, size_t count,
+	enum xp_ca_encoding encoding, void *out, size_t *len)
+{
+	if (encoding == XP_CA_ENCODING_PEM)
+		return xp_ca_cert_chain_export_pem(certs, count, out, len);
+	if (encoding == XP_CA_ENCODING_DER)
+		return count == 1 ? xp_ca_cert_export_der(certs[0], out, len)
+			: XP_CRYPTO_ERR_INVALID;
+	if (certs == nullptr || count == 0 || len == nullptr
+	    || (encoding != XP_CA_ENCODING_PKCS7_DER
+	        && encoding != XP_CA_ENCODING_PKCS7_PEM))
+		return XP_CRYPTO_ERR_INVALID;
+	try {
+		auto der = pkcs7_encode(certs, count);
+		if (encoding == XP_CA_ENCODING_PKCS7_PEM) {
+			auto pem = Botan::PEM_Code::encode(der, "PKCS7");
+			std::vector<uint8_t> bytes(pem.begin(), pem.end());
+			return copy_bytes(bytes, out, len);
+		}
+		return copy_bytes(der, out, len);
+	} catch (const std::exception& e) { return fail(XP_CA_ERR, e.what()); }
+}
+
 extern "C" int
 xp_ca_cert_get_validity(xp_ca_cert_t cert, time_t *not_before, time_t *not_after)
 {
@@ -1128,6 +1310,160 @@ xp_ca_cert_get_public_key(xp_key_t *out, xp_ca_cert_t cert)
 		if (!supported_key(result->public_native.get())) return XP_CA_ERR_FORMAT;
 		*out = result.release(); return XP_CA_OK;
 	} catch (const std::exception& e) { return fail(XP_CA_ERR, e.what()); }
+}
+
+extern "C" int
+xp_ca_cert_verify_signature(xp_ca_cert_t cert, xp_ca_cert_t issuer)
+{
+	if (cert == nullptr) return XP_CRYPTO_ERR_INVALID;
+	try {
+		auto key = (issuer == nullptr ? cert : issuer)->native->subject_public_key();
+		return cert->native->check_signature(*key) ? XP_CA_OK : XP_CA_ERR_VERIFY;
+	} catch (...) { return XP_CA_ERR_VERIFY; }
+}
+
+extern "C" int
+xp_ca_cert_get_info(xp_ca_cert_t cert, struct xp_ca_cert_info *info)
+{
+	if (cert == nullptr || info == nullptr) return XP_CRYPTO_ERR_INVALID;
+	std::memset(info, 0, sizeof(*info));
+	try {
+		info->version = cert->native->x509_version();
+		info->self_signed = cert->native->is_self_signed();
+		info->is_ca = cert->native->is_CA_cert();
+		auto path = cert->native->path_length_constraint();
+		info->has_path_length = path.has_value();
+		if (path) info->path_length = static_cast<int>(*path);
+		auto usage = cert->native->constraints();
+		if (usage.includes(Botan::Key_Constraints::DigitalSignature)) info->key_usage |= XP_CA_KEY_USE_SIGN;
+		if (usage.includes(Botan::Key_Constraints::KeyCertSign)) info->key_usage |= XP_CA_KEY_USE_CERT_SIGN;
+		if (usage.includes(Botan::Key_Constraints::CrlSign)) info->key_usage |= XP_CA_KEY_USE_CRL_SIGN;
+		if (usage.includes(Botan::Key_Constraints::KeyEncipherment)) info->key_usage |= XP_CA_KEY_USE_KEY_ENCIPHERMENT;
+		if (usage.includes(Botan::Key_Constraints::DataEncipherment)) info->key_usage |= XP_CA_KEY_USE_DATA_ENCIPHERMENT;
+		if (usage.includes(Botan::Key_Constraints::KeyAgreement)) info->key_usage |= XP_CA_KEY_USE_KEY_AGREEMENT;
+		if (usage.includes(Botan::Key_Constraints::NonRepudiation)) info->key_usage |= XP_CA_KEY_USE_NON_REPUDIATION;
+		if (usage.includes(Botan::Key_Constraints::EncipherOnly)) info->key_usage |= XP_CA_KEY_USE_ENCIPHER_ONLY;
+		if (usage.includes(Botan::Key_Constraints::DecipherOnly)) info->key_usage |= XP_CA_KEY_USE_DECIPHER_ONLY;
+		for (const auto& oid : cert->native->extended_key_usage()) {
+			auto value = oid.to_string();
+			if (value == "1.3.6.1.5.5.7.3.1") info->extended_key_usage |= XP_CA_EKU_SERVER_AUTH;
+			else if (value == "1.3.6.1.5.5.7.3.2") info->extended_key_usage |= XP_CA_EKU_CLIENT_AUTH;
+			else if (value == "1.3.6.1.5.5.7.3.3") info->extended_key_usage |= XP_CA_EKU_CODE_SIGNING;
+			else if (value == "1.3.6.1.5.5.7.3.4") info->extended_key_usage |= XP_CA_EKU_EMAIL_PROTECTION;
+			else if (value == "1.3.6.1.5.5.7.3.8") info->extended_key_usage |= XP_CA_EKU_TIME_STAMPING;
+			else if (value == "1.3.6.1.5.5.7.3.9") info->extended_key_usage |= XP_CA_EKU_OCSP_SIGNING;
+		}
+		return XP_CA_OK;
+	} catch (const std::exception& e) { return fail(XP_CA_ERR, e.what()); }
+}
+
+extern "C" int
+xp_ca_cert_get_serial(xp_ca_cert_t cert, void *out, size_t *len)
+{
+	if (cert == nullptr) return XP_CRYPTO_ERR_INVALID;
+	return copy_bytes(cert->native->serial_number(), out, len);
+}
+
+extern "C" int
+xp_ca_cert_get_fingerprint(xp_ca_cert_t cert,
+	enum xp_digest_algorithm digest, void *out, size_t *len)
+{
+	if (cert == nullptr) return XP_CRYPTO_ERR_INVALID;
+	try {
+		auto encoded = cert->native->BER_encode();
+		return xp_digest(digest, encoded.data(), encoded.size(), out, len);
+	} catch (const std::exception& e) { return fail(XP_CA_ERR, e.what()); }
+}
+
+static const char *
+botan_name_field(enum xp_ca_name_field field)
+{
+	switch (field) {
+		case XP_CA_NAME_COUNTRY: return "X520.Country";
+		case XP_CA_NAME_STATE_OR_PROVINCE: return "X520.State";
+		case XP_CA_NAME_LOCALITY: return "X520.Locality";
+		case XP_CA_NAME_ORGANIZATION: return "X520.Organization";
+		case XP_CA_NAME_ORGANIZATIONAL_UNIT: return "X520.OrganizationalUnit";
+		case XP_CA_NAME_COMMON_NAME: return "X520.CommonName";
+		case XP_CA_NAME_EMAIL_ADDRESS: return "1.2.840.113549.1.9.1";
+		default: return nullptr;
+	}
+}
+
+static const Botan::X509_DN *
+botan_certificate_name(xp_ca_cert_t cert, enum xp_ca_name_kind kind)
+{
+	if (cert == nullptr) return nullptr;
+	return kind == XP_CA_NAME_SUBJECT ? &cert->native->subject_dn()
+		: kind == XP_CA_NAME_ISSUER ? &cert->native->issuer_dn() : nullptr;
+}
+
+extern "C" int
+xp_ca_cert_get_name_count(xp_ca_cert_t cert, enum xp_ca_name_kind kind,
+	enum xp_ca_name_field field, size_t *count)
+{
+	auto name = botan_certificate_name(cert, kind); auto attribute = botan_name_field(field);
+	if (name == nullptr || attribute == nullptr || count == nullptr) return XP_CRYPTO_ERR_INVALID;
+	try { *count = name->get_attribute(attribute).size(); return XP_CA_OK; }
+	catch (...) { return XP_CA_ERR_FORMAT; }
+}
+
+extern "C" int
+xp_ca_cert_get_name(xp_ca_cert_t cert, enum xp_ca_name_kind kind,
+	enum xp_ca_name_field field, size_t index, void *out, size_t *len)
+{
+	auto name = botan_certificate_name(cert, kind); auto attribute = botan_name_field(field);
+	if (name == nullptr || attribute == nullptr) return XP_CRYPTO_ERR_INVALID;
+	try {
+		auto values = name->get_attribute(attribute);
+		if (index >= values.size()) return XP_CRYPTO_ERR_NOT_FOUND;
+		std::vector<uint8_t> value(values[index].begin(), values[index].end());
+		return copy_bytes(value, out, len);
+	} catch (...) { return XP_CA_ERR_FORMAT; }
+}
+
+static const std::set<std::string> *
+botan_string_sans(const Botan::AlternativeName& names, enum xp_ca_san_type type)
+{
+	return type == XP_CA_SAN_DNS ? &names.dns() : type == XP_CA_SAN_EMAIL ? &names.email()
+		: type == XP_CA_SAN_URI ? &names.uris() : nullptr;
+}
+
+extern "C" int
+xp_ca_cert_get_san_count(xp_ca_cert_t cert, enum xp_ca_san_type type,
+	size_t *count)
+{
+	if (cert == nullptr || count == nullptr) return XP_CRYPTO_ERR_INVALID;
+	const auto& names = cert->native->subject_alt_name();
+	if (auto values = botan_string_sans(names, type)) *count = values->size();
+	else if (type == XP_CA_SAN_IP_ADDRESS)
+		*count = names.ipv4_address().size() + names.ipv6_address().size();
+	else return XP_CRYPTO_ERR_INVALID;
+	return XP_CA_OK;
+}
+
+extern "C" int
+xp_ca_cert_get_san(xp_ca_cert_t cert, enum xp_ca_san_type type,
+	size_t index, void *out, size_t *len)
+{
+	if (cert == nullptr) return XP_CRYPTO_ERR_INVALID;
+	const auto& names = cert->native->subject_alt_name();
+	if (auto values = botan_string_sans(names, type)) {
+		if (index >= values->size()) return XP_CRYPTO_ERR_NOT_FOUND;
+		auto item = values->begin(); std::advance(item, index);
+		std::vector<uint8_t> value(item->begin(), item->end()); return copy_bytes(value, out, len);
+	}
+	if (type != XP_CA_SAN_IP_ADDRESS) return XP_CRYPTO_ERR_INVALID;
+	if (index < names.ipv4_address().size()) {
+		auto item = names.ipv4_address().begin(); std::advance(item, index);
+		Botan::IPv4Address address(*item); auto bytes = address.to_bytes();
+		std::vector<uint8_t> value(bytes.begin(), bytes.end()); return copy_bytes(value, out, len);
+	}
+	index -= names.ipv4_address().size();
+	if (index >= names.ipv6_address().size()) return XP_CRYPTO_ERR_NOT_FOUND;
+	auto item = names.ipv6_address().begin(); std::advance(item, index);
+	auto bytes = item->address(); std::vector<uint8_t> value(bytes.begin(), bytes.end());
+	return copy_bytes(value, out, len);
 }
 
 extern "C" void
@@ -1167,6 +1503,56 @@ xp_ca_csr_export_der(xp_ca_csr_t csr, void *out, size_t *len)
 	} catch (const std::exception& e) {
 		return fail(XP_CA_ERR, e.what());
 	}
+}
+
+extern "C" int
+xp_ca_csr_get_public_key(xp_key_t *out, xp_ca_csr_t csr)
+{
+	if (out == nullptr) return XP_CRYPTO_ERR_INVALID;
+	*out = nullptr;
+	if (csr == nullptr) return XP_CRYPTO_ERR_INVALID;
+	try {
+		auto result = std::make_unique<xp_key>();
+		result->public_native = csr->native->subject_public_key();
+		if (!supported_key(result->public_native.get())) return XP_CA_ERR_FORMAT;
+		*out = result.release(); return XP_CA_OK;
+	} catch (const std::exception& e) { return fail(XP_CA_ERR, e.what()); }
+}
+
+extern "C" int
+xp_ca_csr_import(xp_ca_csr_t *out, enum xp_ca_encoding encoding,
+	const void *data, size_t len)
+{
+	if (encoding == XP_CA_ENCODING_DER)
+		return xp_ca_csr_import_der(out, data, len);
+	if (out == nullptr || encoding != XP_CA_ENCODING_PEM || data == nullptr
+	    || len == 0) return XP_CRYPTO_ERR_INVALID;
+	*out = nullptr;
+	try {
+		auto decoded = Botan::PEM_Code::decode_check_label(
+			std::string_view(static_cast<const char *>(data), len),
+			"CERTIFICATE REQUEST");
+		auto result = std::make_unique<xp_ca_csr>();
+		result->native = std::make_unique<Botan::PKCS10_Request>(
+			std::vector<uint8_t>(decoded.begin(), decoded.end()));
+		*out = result.release(); return XP_CA_OK;
+	} catch (...) { return XP_CA_ERR_FORMAT; }
+}
+
+extern "C" int
+xp_ca_csr_export(xp_ca_csr_t csr, enum xp_ca_encoding encoding,
+	void *out, size_t *len)
+{
+	if (encoding == XP_CA_ENCODING_DER)
+		return xp_ca_csr_export_der(csr, out, len);
+	if (csr == nullptr || encoding != XP_CA_ENCODING_PEM || len == nullptr)
+		return XP_CRYPTO_ERR_INVALID;
+	try {
+		auto value = csr->native->PEM_encode();
+		if (out == nullptr) { *len = value.size(); return XP_CA_OK; }
+		if (*len < value.size()) { *len = value.size(); return XP_CRYPTO_ERR_BUFFER_TOO_SMALL; }
+		std::memcpy(out, value.data(), value.size()); *len = value.size(); return XP_CA_OK;
+	} catch (const std::exception& e) { return fail(XP_CA_ERR, e.what()); }
 }
 
 static Botan::X509_CRL

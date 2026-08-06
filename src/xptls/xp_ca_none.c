@@ -237,6 +237,26 @@ xp_ca_csr_create_with_identity(xp_ca_csr_t *out, xp_key_t key,
 	return XP_CA_ERR_DISABLED;
 }
 
+int xp_ca_csr_create_request(xp_ca_csr_t *out, xp_key_t key,
+	const struct xp_ca_csr_request *request)
+{
+	if (out != NULL) *out = NULL;
+	(void)key; (void)request; return XP_CA_ERR_DISABLED;
+}
+
+int xp_ca_csr_import(xp_ca_csr_t *out, enum xp_ca_encoding encoding,
+	const void *data, size_t len)
+{
+	if (out != NULL) *out = NULL;
+	(void)encoding; (void)data; (void)len; return XP_CA_ERR_DISABLED;
+}
+
+int xp_ca_csr_export(xp_ca_csr_t csr, enum xp_ca_encoding encoding,
+	void *out, size_t *len)
+{
+	(void)csr; (void)encoding; (void)out; (void)len; return XP_CA_ERR_DISABLED;
+}
+
 int
 xp_ca_csr_import_der(xp_ca_csr_t *out, const void *der, size_t len)
 {
@@ -261,6 +281,12 @@ xp_ca_csr_verify(xp_ca_csr_t csr)
 {
 	(void)csr;
 	return XP_CA_ERR_DISABLED;
+}
+
+int xp_ca_csr_get_public_key(xp_key_t *out, xp_ca_csr_t csr)
+{
+	if (out != NULL) *out = NULL;
+	(void)csr; return XP_CA_ERR_DISABLED;
 }
 
 void
@@ -348,6 +374,20 @@ xp_ca_cert_chain_export_pem(const xp_ca_cert_t *certs, size_t count,
 	return XP_CA_ERR_DISABLED;
 }
 
+int xp_ca_cert_bundle_import(xp_ca_cert_t **out, size_t *count,
+	enum xp_ca_encoding encoding, const void *data, size_t len)
+{
+	if (out != NULL) *out = NULL; if (count != NULL) *count = 0;
+	(void)encoding; (void)data; (void)len; return XP_CA_ERR_DISABLED;
+}
+
+int xp_ca_cert_bundle_export(const xp_ca_cert_t *certs, size_t count,
+	enum xp_ca_encoding encoding, void *out, size_t *len)
+{
+	(void)certs; (void)count; (void)encoding; (void)out; (void)len;
+	return XP_CA_ERR_DISABLED;
+}
+
 void
 xp_ca_cert_chain_free(xp_ca_cert_t *certs, size_t count)
 {
@@ -373,6 +413,28 @@ xp_ca_cert_get_public_key(xp_key_t *out, xp_ca_cert_t cert)
 	(void)cert;
 	return XP_CA_ERR_DISABLED;
 }
+
+int xp_ca_cert_get_info(xp_ca_cert_t cert, struct xp_ca_cert_info *info)
+{ (void)cert; (void)info; return XP_CA_ERR_DISABLED; }
+int xp_ca_cert_get_serial(xp_ca_cert_t cert, void *out, size_t *len)
+{ (void)cert; (void)out; (void)len; return XP_CA_ERR_DISABLED; }
+int xp_ca_cert_get_fingerprint(xp_ca_cert_t cert,
+	enum xp_digest_algorithm digest, void *out, size_t *len)
+{ (void)cert; (void)digest; (void)out; (void)len; return XP_CA_ERR_DISABLED; }
+int xp_ca_cert_get_name_count(xp_ca_cert_t cert, enum xp_ca_name_kind kind,
+	enum xp_ca_name_field field, size_t *count)
+{ (void)cert; (void)kind; (void)field; (void)count; return XP_CA_ERR_DISABLED; }
+int xp_ca_cert_get_name(xp_ca_cert_t cert, enum xp_ca_name_kind kind,
+	enum xp_ca_name_field field, size_t index, void *out, size_t *len)
+{ (void)cert; (void)kind; (void)field; (void)index; (void)out; (void)len; return XP_CA_ERR_DISABLED; }
+int xp_ca_cert_get_san_count(xp_ca_cert_t cert, enum xp_ca_san_type type,
+	size_t *count)
+{ (void)cert; (void)type; (void)count; return XP_CA_ERR_DISABLED; }
+int xp_ca_cert_get_san(xp_ca_cert_t cert, enum xp_ca_san_type type,
+	size_t index, void *out, size_t *len)
+{ (void)cert; (void)type; (void)index; (void)out; (void)len; return XP_CA_ERR_DISABLED; }
+int xp_ca_cert_verify_signature(xp_ca_cert_t cert, xp_ca_cert_t issuer)
+{ (void)cert; (void)issuer; return XP_CA_ERR_DISABLED; }
 
 int
 xp_sign(xp_key_t key, enum xp_sign_algorithm algorithm,

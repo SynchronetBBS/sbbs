@@ -84,6 +84,15 @@ struct xp_tls_server_credentials_config {
 	xp_key_t private_key;
 };
 
+/* Counted standard-PEM certificate chain plus an opaque private-key handle.
+ * The chain is borrowed only for xp_tls_client_open_config(); the resulting
+ * session retains private_key for its lifetime. */
+struct xp_tls_client_identity {
+	const void *certificate_chain_pem;
+	size_t certificate_chain_pem_len;
+	xp_key_t private_key;
+};
+
 typedef int (*xp_tls_psk_lookup_cb)(
 	void *arg, const void *identity, size_t identity_len,
 	void *key, size_t *key_len);
@@ -137,6 +146,8 @@ typedef void (*xp_tls_peer_chain_cb)(void *arg,
  *                     certificate is accepted as the explicit trust anchor.
  * client_cert_file  — PEM certificate or chain presented to the server.
  * client_key_file   — matching unencrypted PEM private key.
+ * client_identity   — storage-backed identity. Mutually exclusive with the
+ *                     two filename fields; supports non-exportable keys.
  * psk_identity/psk  — when supplied, use a PSK-only handshake at the exact
  *                     version selected by psk_version; certificate trust and
  *                     client identity are ignored. TLS 1.3 uses the common
@@ -162,6 +173,7 @@ struct xp_tls_client_config {
 	enum xp_tls_version max_version;
 	xp_crypto_secret_callback_t private_key_password;
 	void       *private_key_password_arg;
+	const struct xp_tls_client_identity *client_identity;
 };
 
 /*

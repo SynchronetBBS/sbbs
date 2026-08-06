@@ -734,6 +734,13 @@ bool client_certificate_session(enum xp_tls_client_auth auth_mode)
 	                         &client_request) == XP_CA_OK);
 	const xp_ca_cert_t client_chain[] = {client_cert, root_cert};
 	REQUIRE(write_certificates(client_file.path(), client_chain, 2));
+	size_t client_chain_pem_len = 0;
+	REQUIRE(xp_ca_cert_chain_export_pem(client_chain, 2, nullptr,
+	                                    &client_chain_pem_len) == XP_CA_OK);
+	std::vector<unsigned char> client_chain_pem(client_chain_pem_len);
+	REQUIRE(xp_ca_cert_chain_export_pem(client_chain, 2,
+	                                    client_chain_pem.data(),
+	                                    &client_chain_pem_len) == XP_CA_OK);
 	REQUIRE(write_private_key(client_key_file.path(), client_key, password));
 
 	xp_tls_server_credentials_t credentials = nullptr;
@@ -782,6 +789,49 @@ bool client_certificate_session(enum xp_tls_client_auth auth_mode)
 	                                    &peer_der_len) == XP_CRYPTO_OK);
 	REQUIRE(peer_der_len > 0);
 	REQUIRE(transfer_and_inspect(client.value, server_session.value));
+
+	/* The provider-neutral identity path must use the opaque key directly,
+	   retain it for the session, and reject a mismatched key before I/O. */
+	struct xp_tls_client_identity stored_identity {
+		client_chain_pem.data(), client_chain_pem_len, client_key
+	};
+	struct xp_tls_client_config stored_config = client_config;
+	stored_config.client_cert_file = nullptr;
+	stored_config.client_key_file = nullptr;
+	stored_config.client_identity = &stored_identity;
+	stored_config.private_key_password = nullptr;
+	stored_config.private_key_password_arg = nullptr;
+	struct xp_tls_client_identity mismatched_identity = stored_identity;
+	mismatched_identity.private_key = server_key;
+	struct xp_tls_client_config mismatched_config = stored_config;
+	mismatched_config.client_identity = &mismatched_identity;
+	REQUIRE(xp_tls_client_open_config(INVALID_SOCKET, &mismatched_config) ==
+	        nullptr);
+	SocketPair stored_sockets;
+	REQUIRE(connected_sockets(stored_sockets));
+	ServerResult stored_server;
+	std::thread stored_thread([&] {
+		stored_server = start_server(stored_sockets.server, credentials,
+		                             server_config);
+	});
+	Session stored_client;
+	stored_client.value = xp_tls_client_open_config(stored_sockets.client,
+	                                                &stored_config);
+	std::string stored_error = stored_client.value == nullptr
+	    ? xp_tls_last_err() : "";
+	stored_thread.join();
+	if (stored_client.value == nullptr || stored_server.session == nullptr) {
+		std::fprintf(stderr,
+		    "stored client identity handshake: client=%s server=%s\n",
+		    stored_error.c_str(), stored_server.error.c_str());
+		xp_tls_close(stored_server.session, false);
+		return false;
+	}
+	Session stored_server_session{stored_server.session};
+	xp_key_release(client_key);
+	client_key = nullptr;
+	REQUIRE(transfer_and_inspect(stored_client.value,
+	                            stored_server_session.value));
 
 	if (auth_mode == XP_TLS_CLIENT_AUTH_REQUIRE_VALID) {
 		SocketPair rejected_sockets;

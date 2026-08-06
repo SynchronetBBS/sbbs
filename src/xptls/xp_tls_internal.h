@@ -15,6 +15,8 @@ xp_tls_t xp_tls_provider_server_open(
 	SOCKET socket, const void *chain_pem, size_t chain_pem_length,
 	xp_key_t private_key, const struct xp_tls_server_config *config);
 int xp_ca_cert_tls_server_usable(xp_ca_cert_t certificate);
+int xp_tls_client_identity_validate(
+	const struct xp_tls_client_identity *identity);
 
 #if defined(__cplusplus)
 }

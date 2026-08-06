@@ -118,7 +118,7 @@ endif()
 
 set(XPTLS_SOURCES
 	${XPTLS_PROVIDER_SOURCES}
-	xp_crypto_common.c xp_key_store.c xp_tls_credentials.c)
+	xp_crypto_common.c xp_key_store.c xp_keyset.c xp_tls_credentials.c)
 
 add_library(xptls_static STATIC ${XPTLS_SOURCES})
 add_library(xptls::static ALIAS xptls_static)
@@ -236,6 +236,15 @@ if(BUILD_TESTING AND NOT XP_CRYPTO_BACKEND STREQUAL "none")
 		set_property(TARGET xptls_crypto_test PROPERTY LINKER_LANGUAGE CXX)
 	endif()
 	add_test(NAME xptls_crypto_test COMMAND xptls_crypto_test)
+
+	add_executable(xptls_keyset_test test_xp_keyset.c)
+	target_link_libraries(xptls_keyset_test PRIVATE xptls::static)
+	set_property(TARGET xptls_keyset_test PROPERTY C_STANDARD 11)
+	set_property(TARGET xptls_keyset_test PROPERTY C_STANDARD_REQUIRED ON)
+	if(XP_CRYPTO_BACKEND STREQUAL "Botan")
+		set_property(TARGET xptls_keyset_test PROPERTY LINKER_LANGUAGE CXX)
+	endif()
+	add_test(NAME xptls_keyset_test COMMAND xptls_keyset_test)
 
 	add_executable(xptls_tls_test test_xp_tls.cpp)
 	target_link_libraries(xptls_tls_test PRIVATE xptls::static Threads::Threads)

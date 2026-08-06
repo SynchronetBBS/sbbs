@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #include "dirwrap.h"
@@ -93,6 +94,33 @@ xp_ca_replace_file(const char *temporary, const char *path)
 #endif
 }
 
+static void
+xp_ca_sync_parent_directory(const char *path)
+{
+#if !defined(_WIN32)
+	char directory[MAX_PATH + 1];
+	size_t length = strlen(path);
+	if (length > MAX_PATH)
+		return;
+	memcpy(directory, path, length + 1);
+	char *separator = strrchr(directory, '/');
+	if (separator == NULL)
+		strcpy(directory, ".");
+	else if (separator == directory)
+		separator[1] = 0;
+	else
+		*separator = 0;
+	int descriptor = open(directory, O_RDONLY);
+	if (descriptor >= 0) {
+		/* Some otherwise-supported filesystems reject directory fsync. */
+		(void)fsync(descriptor);
+		close(descriptor);
+	}
+#else
+	(void)path;
+#endif
+}
+
 static int
 xp_ca_commit_private_temporary(FILE *file, const char *temporary,
                                const char *path)
@@ -102,6 +130,8 @@ xp_ca_commit_private_temporary(FILE *file, const char *temporary,
 		result = -1;
 	if (result == 0)
 		result = xp_ca_replace_file(temporary, path);
+	if (result == 0)
+		xp_ca_sync_parent_directory(path);
 	if (result != 0)
 		remove(temporary);
 	return result;

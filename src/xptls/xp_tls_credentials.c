@@ -19,6 +19,51 @@ struct xp_tls_server_credentials {
 	xp_key_t key;
 };
 
+int
+xp_tls_client_identity_validate(const struct xp_tls_client_identity *identity)
+{
+	if (identity == NULL || identity->certificate_chain_pem == NULL
+	    || identity->certificate_chain_pem_len == 0
+	    || identity->private_key == NULL)
+		return XP_CRYPTO_ERR_INVALID;
+	struct xp_key_info key_info;
+	int status = xp_key_get_info(identity->private_key, &key_info);
+	if (status != XP_CRYPTO_OK)
+		return status;
+	if (!key_info.has_private)
+		return XP_CRYPTO_ERR_POLICY;
+	xp_ca_cert_t *chain = NULL;
+	size_t count = 0;
+	status = xp_ca_cert_chain_import_pem(&chain, &count,
+		identity->certificate_chain_pem, identity->certificate_chain_pem_len);
+	xp_key_t public_key = NULL;
+	unsigned char certificate_fingerprint[32];
+	unsigned char key_fingerprint[32];
+	size_t certificate_fingerprint_len = sizeof(certificate_fingerprint);
+	size_t key_fingerprint_len = sizeof(key_fingerprint);
+	if (status == XP_CRYPTO_OK && count == 0)
+		status = XP_CRYPTO_ERR_FORMAT;
+	if (status == XP_CRYPTO_OK)
+		status = xp_ca_cert_get_public_key(&public_key, chain[0]);
+	if (status == XP_CRYPTO_OK)
+		status = xp_key_fingerprint_sha256(public_key,
+			certificate_fingerprint, &certificate_fingerprint_len);
+	if (status == XP_CRYPTO_OK)
+		status = xp_key_fingerprint_sha256(identity->private_key,
+			key_fingerprint, &key_fingerprint_len);
+	if (status == XP_CRYPTO_OK
+	    && (certificate_fingerprint_len != sizeof(certificate_fingerprint)
+	        || key_fingerprint_len != sizeof(key_fingerprint)
+	        || memcmp(certificate_fingerprint, key_fingerprint,
+	                  sizeof(key_fingerprint)) != 0))
+		status = XP_CRYPTO_ERR_CONFLICT;
+	xp_key_release(public_key);
+	xp_ca_cert_chain_free(chain, count);
+	memset(certificate_fingerprint, 0, sizeof(certificate_fingerprint));
+	memset(key_fingerprint, 0, sizeof(key_fingerprint));
+	return status;
+}
+
 static int
 read_file(const char *path, unsigned char **out, size_t *len)
 {

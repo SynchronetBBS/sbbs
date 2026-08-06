@@ -126,6 +126,7 @@ public:
 	                  const char *trusted_cert_file,
 	                  const char *client_cert_file,
 	                  const char *client_key_file,
+	                  const struct xp_tls_client_identity *client_identity,
 	                  xp_crypto_secret_callback_t key_password,
 	                  void *key_password_arg)
 	{
@@ -168,6 +169,28 @@ public:
 				std::fill(password.begin(), password.end(), '\0');
 			}
 		}
+		else if (client_identity != nullptr) {
+			const auto *pem = static_cast<const uint8_t *>(
+				client_identity->certificate_chain_pem);
+			Botan::DataSource_Memory source(pem,
+				client_identity->certificate_chain_pem_len);
+			while (Botan::PEM_Code::matches(source))
+				client_chain_.emplace_back(source);
+			auto *native = static_cast<Botan::Private_Key *>(
+				xp_key_native_private(client_identity->private_key));
+			if (client_chain_.empty() || native == nullptr)
+				throw std::runtime_error("invalid TLS client identity");
+			client_key_ = std::shared_ptr<Botan::Private_Key>(
+				native, [](Botan::Private_Key *) {});
+			client_key_handle_ = client_identity->private_key;
+			xp_key_retain(client_key_handle_);
+		}
+	}
+	~ClientCredentials() override
+	{
+		client_key_.reset();
+		if (client_key_handle_ != nullptr)
+			xp_key_release(client_key_handle_);
 	}
 
 	const Botan::X509_Certificate *custom_trust_certificate() const
@@ -257,6 +280,7 @@ private:
 	std::optional<Botan::X509_Certificate> custom_trust_cert_;
 	std::vector<Botan::X509_Certificate> client_chain_;
 	std::shared_ptr<Botan::Private_Key> client_key_;
+	xp_key_t client_key_handle_ = nullptr;
 };
 
 /* Web-PKI clients normally soft-fail unavailable revocation information.
@@ -869,6 +893,7 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config)
 			auto client_creds = std::make_shared<ClientCredentials>(
 			    config->server_auth, config->trusted_cert_file,
 			    config->client_cert_file, config->client_key_file,
+			    config->client_identity,
 			    config->private_key_password,
 			    config->private_key_password_arg);
 			pinned = client_creds->custom_trust_certificate();
@@ -980,9 +1005,23 @@ xp_tls_client_open_config(SOCKET sock,
 	    config->client_cert_file[0] != 0;
 	bool have_client_key = config->client_key_file != nullptr &&
 	    config->client_key_file[0] != 0;
+	bool have_client_identity = config->client_identity != nullptr;
 	if (!have_psk && have_client_cert != have_client_key) {
 		set_last_err("xp_tls_client_open_config: client certificate and key must both be set");
 		return nullptr;
+	}
+	if (!have_psk && have_client_identity
+	    && (have_client_cert || have_client_key)) {
+		set_last_err("xp_tls_client_open_config: client identity and client identity files are mutually exclusive");
+		return nullptr;
+	}
+	if (!have_psk && have_client_identity) {
+		int status = xp_tls_client_identity_validate(config->client_identity);
+		if (status != XP_CRYPTO_OK) {
+			set_last_err("xp_tls_client_open_config: invalid client identity: %s",
+			             xp_crypto_status_string(status));
+			return nullptr;
+		}
 	}
 	if (!have_psk &&
 	    static_cast<unsigned>(config->server_auth) > XP_TLS_SERVER_AUTH_UNTRUSTED) {

@@ -84,6 +84,9 @@ format_ssl_err(char *buf, size_t bufsz, const char *op)
 	snprintf(buf, bufsz, "%s: %s", op, oerr);
 }
 
+static int use_certificate_chain(
+	SSL_CTX *context, const void *pem, size_t pem_length);
+
 /* --------------------------------------------------------- context */
 
 struct xp_tls_ctx {
@@ -103,6 +106,7 @@ struct xp_tls_ctx {
 	bool           psk_used;
 	xp_tls_psk_lookup_cb server_psk_lookup;
 	void          *server_psk_lookup_arg;
+	xp_key_t       client_key;
 	xp_key_t       server_key;
 	pthread_mutex_t read_lock;
 	pthread_mutex_t write_lock;
@@ -777,6 +781,22 @@ client_open_inner(SOCKET sock, const struct xp_tls_client_config *config)
 		}
 		SSL_CTX_set_default_passwd_cb_userdata(ctx->sslctx, NULL);
 	}
+	else if (ctx->psk == NULL && config->client_identity != NULL) {
+		EVP_PKEY *key = xp_key_native_private(
+			config->client_identity->private_key);
+		if (key == NULL
+		    || !use_certificate_chain(ctx->sslctx,
+		        config->client_identity->certificate_chain_pem,
+		        config->client_identity->certificate_chain_pem_len)
+		    || SSL_CTX_use_PrivateKey(ctx->sslctx, key) != 1
+		    || SSL_CTX_check_private_key(ctx->sslctx) != 1) {
+			format_ssl_err(last_err_buf, sizeof(last_err_buf),
+			              "TLS client identity");
+			goto fail;
+		}
+		ctx->client_key = config->client_identity->private_key;
+		xp_key_retain(ctx->client_key);
+	}
 
 	ctx->ssl = SSL_new(ctx->sslctx);
 	if (ctx->ssl == NULL) {
@@ -867,9 +887,23 @@ xp_tls_client_open_config(SOCKET sock,
 	    config->client_cert_file[0] != 0;
 	bool have_client_key = config->client_key_file != NULL &&
 	    config->client_key_file[0] != 0;
+	bool have_client_identity = config->client_identity != NULL;
 	if (!have_psk && have_client_cert != have_client_key) {
 		set_last_err("xp_tls_client_open_config: client certificate and key must both be set");
 		return NULL;
+	}
+	if (!have_psk && have_client_identity
+	    && (have_client_cert || have_client_key)) {
+		set_last_err("xp_tls_client_open_config: client identity and client identity files are mutually exclusive");
+		return NULL;
+	}
+	if (!have_psk && have_client_identity) {
+		int status = xp_tls_client_identity_validate(config->client_identity);
+		if (status != XP_CRYPTO_OK) {
+			set_last_err("xp_tls_client_open_config: invalid client identity: %s",
+			             xp_crypto_status_string(status));
+			return NULL;
+		}
 	}
 	if (!have_psk &&
 	    (unsigned)config->server_auth > XP_TLS_SERVER_AUTH_UNTRUSTED) {
@@ -896,7 +930,7 @@ xp_tls_client_open_config(SOCKET sock,
 }
 
 static int
-use_server_certificate_chain(SSL_CTX *context,
+use_certificate_chain(SSL_CTX *context,
 	const void *pem, size_t pem_length)
 {
 	BIO *source = BIO_new_mem_buf(pem, (int)pem_length);
@@ -966,7 +1000,7 @@ xp_tls_provider_server_open(SOCKET socket, const void *chain_pem,
 	if (private_key != NULL) {
 		EVP_PKEY *key = xp_key_native_private(private_key);
 		if (key == NULL
-		    || !use_server_certificate_chain(context->sslctx,
+		    || !use_certificate_chain(context->sslctx,
 		        chain_pem, chain_pem_length)
 		    || SSL_CTX_use_PrivateKey(context->sslctx, key) != 1
 		    || SSL_CTX_check_private_key(context->sslctx) != 1) {
@@ -1315,6 +1349,8 @@ xp_tls_close(xp_tls_t ctx, bool close_socket)
 	}
 	if (ctx->sslctx != NULL)
 		SSL_CTX_free(ctx->sslctx);
+	if (ctx->client_key != NULL)
+		xp_key_release(ctx->client_key);
 	if (ctx->server_key != NULL)
 		xp_key_release(ctx->server_key);
 	if (close_socket && ctx->sock != INVALID_SOCKET)

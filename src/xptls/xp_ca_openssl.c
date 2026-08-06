@@ -20,6 +20,7 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/pem.h>
+#include <openssl/pkcs7.h>
 #include <openssl/rand.h>
 #include <openssl/rsa.h>
 #include <openssl/x509v3.h>
@@ -159,6 +160,9 @@ make_general_name(int type, const char *value)
 	return name;
 }
 
+static int add_identity_name(
+	X509_NAME *name, const struct xp_ca_identity *identity);
+
 static int
 add_subject_alt_names(X509 *certificate, const struct xp_ca_identity *identity)
 {
@@ -294,10 +298,7 @@ apply(X509 * x, X509 * i, const struct xp_ca_issue_request *r)
 	if (!n) {
 		return 0;
 	}
-	int        ok = X509_NAME_add_entry_by_NID(n, NID_commonName,
-	                                           MBSTRING_UTF8,
-	                                           (const unsigned char *)r->subject.common_name,
-	                                           -1, -1, 0)
+	int        ok = add_identity_name(n, &r->subject)
 	                && X509_set_subject_name(x, n);
 	X509_NAME_free(n);
 	if (!ok) {
@@ -333,6 +334,25 @@ apply(X509 * x, X509 * i, const struct xp_ca_issue_request *r)
 	if (r->policy.key_usage & XP_CA_KEY_USE_CRL_SIGN) {
 		strcat(ku, sep);
 		strcat(ku, "cRLSign");
+		sep = ",";
+	}
+	if (r->policy.key_usage & XP_CA_KEY_USE_KEY_ENCIPHERMENT) {
+		strcat(ku, sep); strcat(ku, "keyEncipherment"); sep = ",";
+	}
+	if (r->policy.key_usage & XP_CA_KEY_USE_DATA_ENCIPHERMENT) {
+		strcat(ku, sep); strcat(ku, "dataEncipherment"); sep = ",";
+	}
+	if (r->policy.key_usage & XP_CA_KEY_USE_KEY_AGREEMENT) {
+		strcat(ku, sep); strcat(ku, "keyAgreement"); sep = ",";
+	}
+	if (r->policy.key_usage & XP_CA_KEY_USE_NON_REPUDIATION) {
+		strcat(ku, sep); strcat(ku, "nonRepudiation"); sep = ",";
+	}
+	if (r->policy.key_usage & XP_CA_KEY_USE_ENCIPHER_ONLY) {
+		strcat(ku, sep); strcat(ku, "encipherOnly"); sep = ",";
+	}
+	if (r->policy.key_usage & XP_CA_KEY_USE_DECIPHER_ONLY) {
+		strcat(ku, sep); strcat(ku, "decipherOnly");
 	}
 	if (r->policy.extended_key_usage & XP_CA_EKU_SERVER_AUTH)
 		strcat(eku, "serverAuth");
@@ -341,6 +361,14 @@ apply(X509 * x, X509 * i, const struct xp_ca_issue_request *r)
 			strcat(eku, ",");
 		strcat(eku, "clientAuth");
 	}
+	if (r->policy.extended_key_usage & XP_CA_EKU_CODE_SIGNING)
+		strcat(eku, eku[0] ? ",codeSigning" : "codeSigning");
+	if (r->policy.extended_key_usage & XP_CA_EKU_EMAIL_PROTECTION)
+		strcat(eku, eku[0] ? ",emailProtection" : "emailProtection");
+	if (r->policy.extended_key_usage & XP_CA_EKU_TIME_STAMPING)
+		strcat(eku, eku[0] ? ",timeStamping" : "timeStamping");
+	if (r->policy.extended_key_usage & XP_CA_EKU_OCSP_SIGNING)
+		strcat(eku, eku[0] ? ",OCSPSigning" : "OCSPSigning");
 	if (!ku[0] || !add(x, i, NID_basic_constraints, bc)
 	    || !add(x, i, NID_key_usage, ku)
 	    || !add(x, i, NID_subject_key_identifier, "hash")
@@ -823,33 +851,35 @@ xp_key_reference(xp_key_t key, void *out, size_t *len)
 static bool
 csr_identity_valid(const struct xp_ca_identity *identity)
 {
-	if (identity == NULL || identity->common_name == NULL
-	    || identity->common_name[0] == '\0'
-	    || (identity->dns_name_count != 0 && identity->dns_names == NULL))
-		return false;
-	for (const unsigned char *value =
-	         (const unsigned char *)identity->common_name;
-	     *value != '\0'; value++)
-		if (*value < 0x20 || *value == 0x7f)
-			return false;
-	for (size_t i = 0; i < identity->dns_name_count; i++) {
-		if (identity->dns_names[i] == NULL || identity->dns_names[i][0] == '\0')
-			return false;
-		for (const unsigned char *value =
-		         (const unsigned char *)identity->dns_names[i];
-		     *value != '\0'; value++)
-			if (*value <= 0x20 || *value >= 0x7f || *value == ',')
-				return false;
-		for (size_t j = 0; j < i; j++)
-			if (xp_ca_dns_names_equal(identity->dns_names[i], identity->dns_names[j]))
-				return false;
-	}
-	return true;
+	return xp_ca_identity_is_valid(identity, true);
+}
+
+static int
+add_name_value(X509_NAME *name, int nid, const char *value)
+{
+	return value == NULL || X509_NAME_add_entry_by_NID(name, nid, MBSTRING_UTF8,
+		(const unsigned char *)value, -1, -1, 0) == 1;
+}
+
+static int
+add_identity_name(X509_NAME *name, const struct xp_ca_identity *identity)
+{
+	return add_name_value(name, NID_countryName, identity->country)
+		&& add_name_value(name, NID_stateOrProvinceName,
+			identity->state_or_province)
+		&& add_name_value(name, NID_localityName, identity->locality)
+		&& add_name_value(name, NID_organizationName, identity->organization)
+		&& add_name_value(name, NID_organizationalUnitName,
+			identity->organizational_unit)
+		&& add_name_value(name, NID_commonName, identity->common_name)
+		&& add_name_value(name, NID_pkcs9_emailAddress,
+			identity->email_address);
 }
 
 static int
 csr_create(xp_ca_csr_t *out, xp_key_t k,
-           const struct xp_ca_identity *identity)
+           const struct xp_ca_identity *identity,
+	       const struct xp_ca_extension *requested, size_t requested_count)
 {
 	if (!out) {
 		return XP_CA_ERR;
@@ -858,7 +888,8 @@ csr_create(xp_ca_csr_t *out, xp_key_t k,
 	if (!k) {
 		return XP_CA_ERR;
 	}
-	if (identity != NULL && !csr_identity_valid(identity))
+	if ((identity != NULL && !csr_identity_valid(identity))
+	    || (requested_count != 0 && requested == NULL))
 		return XP_CA_ERR_POLICY;
 	struct xp_key_info info;
 	if (xp_key_get_info(k, &info) != XP_CA_OK || !info.has_private)
@@ -868,8 +899,14 @@ csr_create(xp_ca_csr_t *out, xp_key_t k,
 	int ok = r != NULL && X509_REQ_set_version(r, 0) == 1
 		&& X509_REQ_set_pubkey(r, k->native) == 1;
 	if (ok && identity != NULL)
-		ok = X509_NAME_add_entry_by_NID(subject, NID_commonName, MBSTRING_UTF8,
-			(const unsigned char *)identity->common_name, -1, -1, 0) == 1;
+		ok = add_identity_name(subject, identity);
+	STACK_OF(X509_EXTENSION) *extensions = NULL;
+	if (ok && ((identity != NULL && identity->dns_name_count != 0)
+	    || requested_count != 0))
+		extensions = sk_X509_EXTENSION_new_null();
+	if (ok && ((identity != NULL && identity->dns_name_count != 0)
+	    || requested_count != 0) && extensions == NULL)
+		ok = 0;
 	if (ok && identity != NULL && identity->dns_name_count != 0) {
 		GENERAL_NAMES *names = sk_GENERAL_NAME_new_null();
 		ok = names != NULL;
@@ -882,20 +919,40 @@ csr_create(xp_ca_csr_t *out, xp_key_t k,
 		}
 		X509_EXTENSION *extension = ok
 			? X509V3_EXT_i2d(NID_subject_alt_name, 0, names) : NULL;
-		STACK_OF(X509_EXTENSION) *extensions = sk_X509_EXTENSION_new_null();
-		if (extension == NULL || extensions == NULL)
+		if (extension == NULL)
 			ok = 0;
 		else if (!sk_X509_EXTENSION_push(extensions, extension))
 			ok = 0;
-		else {
+		else
 			extension = NULL;
-			if (X509_REQ_add_extensions(r, extensions) != 1)
-				ok = 0;
-		}
 		X509_EXTENSION_free(extension);
-		sk_X509_EXTENSION_pop_free(extensions, X509_EXTENSION_free);
 		GENERAL_NAMES_free(names);
 	}
+	for (size_t i = 0; ok && i < requested_count; i++) {
+		const struct xp_ca_extension *item = &requested[i];
+		ASN1_OBJECT *object = item->oid == NULL ? NULL : OBJ_txt2obj(item->oid, 1);
+		ASN1_OCTET_STRING *value = ASN1_OCTET_STRING_new();
+		X509_EXTENSION *extension = NULL;
+		if (object == NULL || value == NULL || item->value_der == NULL
+		    || item->value_der_len == 0 || item->value_der_len > INT_MAX
+		    || ASN1_OCTET_STRING_set(value, item->value_der,
+			(int)item->value_der_len) != 1)
+			ok = 0;
+		if (ok)
+			extension = X509_EXTENSION_create_by_OBJ(NULL, object,
+				item->critical ? 1 : 0, value);
+		if (ok && (extension == NULL
+		    || !sk_X509_EXTENSION_push(extensions, extension)))
+			ok = 0;
+		else
+			extension = NULL;
+		X509_EXTENSION_free(extension);
+		ASN1_OCTET_STRING_free(value);
+		ASN1_OBJECT_free(object);
+	}
+	if (ok && extensions != NULL && X509_REQ_add_extensions(r, extensions) != 1)
+		ok = 0;
+	sk_X509_EXTENSION_pop_free(extensions, X509_EXTENSION_free);
 	if (ok)
 		ok = X509_REQ_sign(r, k->native, key_md(k->native)) > 0;
 	if (!ok) {
@@ -915,14 +972,24 @@ csr_create(xp_ca_csr_t *out, xp_key_t k,
 int
 xp_ca_csr_create(xp_ca_csr_t *out, xp_key_t key)
 {
-	return csr_create(out, key, NULL);
+	return csr_create(out, key, NULL, NULL, 0);
 }
 
 int
 xp_ca_csr_create_with_identity(xp_ca_csr_t *out, xp_key_t key,
                                const struct xp_ca_identity *identity)
 {
-	return csr_create(out, key, identity);
+	return csr_create(out, key, identity, NULL, 0);
+}
+
+int
+xp_ca_csr_create_request(xp_ca_csr_t *out, xp_key_t key,
+	const struct xp_ca_csr_request *request)
+{
+	if (request == NULL)
+		return XP_CRYPTO_ERR_INVALID;
+	return csr_create(out, key, &request->subject,
+		request->extensions, request->extension_count);
 }
 int
 xp_ca_csr_import_der(xp_ca_csr_t * out, const void *d, size_t n)
@@ -967,6 +1034,82 @@ xp_ca_csr_export_der(xp_ca_csr_t c, void *out, size_t * n)
 	int            r = der(z, p, out, n);
 	free(p);
 	return r;
+}
+
+int
+xp_ca_csr_get_public_key(xp_key_t *out, xp_ca_csr_t csr)
+{
+	if (out == NULL)
+		return XP_CRYPTO_ERR_INVALID;
+	*out = NULL;
+	EVP_PKEY *native = csr == NULL ? NULL : X509_REQ_get_pubkey(csr->native);
+	if (native == NULL || !supported_key(native)) {
+		EVP_PKEY_free(native);
+		return XP_CA_ERR_FORMAT;
+	}
+	*out = key_new(native);
+	if (*out == NULL) {
+		EVP_PKEY_free(native);
+		return XP_CA_ERR;
+	}
+	return XP_CA_OK;
+}
+
+int
+xp_ca_csr_import(xp_ca_csr_t *out, enum xp_ca_encoding encoding,
+	const void *data, size_t len)
+{
+	if (encoding == XP_CA_ENCODING_DER)
+		return xp_ca_csr_import_der(out, data, len);
+	if (out == NULL || encoding != XP_CA_ENCODING_PEM || data == NULL
+	    || len == 0 || len > INT_MAX)
+		return XP_CRYPTO_ERR_INVALID;
+	*out = NULL;
+	BIO *bio = BIO_new_mem_buf(data, (int)len);
+	X509_REQ *native = bio == NULL ? NULL
+		: PEM_read_bio_X509_REQ(bio, NULL, NULL, NULL);
+	char trailing[64];
+	int got;
+	int clean = native != NULL;
+	while (clean && (got = BIO_read(bio, trailing, sizeof(trailing))) > 0)
+		for (int i = 0; i < got; i++)
+			if (!isspace((unsigned char)trailing[i])) clean = 0;
+	BIO_free(bio);
+	if (!clean) {
+		X509_REQ_free(native);
+		return XP_CA_ERR_FORMAT;
+	}
+	xp_ca_csr_t result = calloc(1, sizeof(*result));
+	if (result == NULL) {
+		X509_REQ_free(native);
+		return XP_CA_ERR;
+	}
+	result->native = native;
+	*out = result;
+	return XP_CA_OK;
+}
+
+int
+xp_ca_csr_export(xp_ca_csr_t csr, enum xp_ca_encoding encoding,
+	void *out, size_t *len)
+{
+	if (encoding == XP_CA_ENCODING_DER)
+		return xp_ca_csr_export_der(csr, out, len);
+	if (csr == NULL || encoding != XP_CA_ENCODING_PEM || len == NULL)
+		return XP_CRYPTO_ERR_INVALID;
+	BIO *bio = BIO_new(BIO_s_mem());
+	BUF_MEM *memory = NULL;
+	if (bio == NULL || PEM_write_bio_X509_REQ(bio, csr->native) != 1) {
+		BIO_free(bio);
+		return XP_CA_ERR;
+	}
+	BIO_get_mem_ptr(bio, &memory);
+	size_t required = memory == NULL ? 0 : memory->length;
+	if (out == NULL) *len = required;
+	else if (*len < required) { *len = required; BIO_free(bio); return XP_CRYPTO_ERR_BUFFER_TOO_SMALL; }
+	else { memcpy(out, memory->data, required); *len = required; }
+	BIO_free(bio);
+	return required == 0 ? XP_CA_ERR : XP_CA_OK;
 }
 int
 xp_ca_csr_verify(xp_ca_csr_t c)
@@ -1249,6 +1392,91 @@ xp_ca_cert_chain_free(xp_ca_cert_t *certs, size_t count)
 }
 
 int
+xp_ca_cert_bundle_import(xp_ca_cert_t **out, size_t *count,
+	enum xp_ca_encoding encoding, const void *data, size_t len)
+{
+	if (out == NULL || count == NULL)
+		return XP_CRYPTO_ERR_INVALID;
+	*out = NULL;
+	*count = 0;
+	if (encoding == XP_CA_ENCODING_PEM)
+		return xp_ca_cert_chain_import_pem(out, count, data, len);
+	if (encoding == XP_CA_ENCODING_DER) {
+		xp_ca_cert_t cert = NULL;
+		int status = xp_ca_cert_import_der(&cert, data, len);
+		if (status != XP_CA_OK) return status;
+		*out = malloc(sizeof(**out));
+		if (*out == NULL) { xp_ca_cert_free(cert); return XP_CA_ERR; }
+		(*out)[0] = cert; *count = 1; return XP_CA_OK;
+	}
+	if ((encoding != XP_CA_ENCODING_PKCS7_DER
+	    && encoding != XP_CA_ENCODING_PKCS7_PEM) || data == NULL
+	    || len == 0 || len > INT_MAX)
+		return XP_CRYPTO_ERR_INVALID;
+	PKCS7 *p7 = NULL;
+	if (encoding == XP_CA_ENCODING_PKCS7_DER) {
+		const unsigned char *cursor = data;
+		p7 = d2i_PKCS7(NULL, &cursor, (long)len);
+		if (p7 != NULL && cursor != (const unsigned char *)data + len) {
+			PKCS7_free(p7); p7 = NULL;
+		}
+	}
+	else {
+		BIO *bio = BIO_new_mem_buf(data, (int)len);
+		p7 = bio == NULL ? NULL : PEM_read_bio_PKCS7(bio, NULL, NULL, NULL);
+		BIO_free(bio);
+	}
+	STACK_OF(X509) *native = p7 != NULL && PKCS7_type_is_signed(p7)
+		? p7->d.sign->cert : NULL;
+	int total = native == NULL ? 0 : sk_X509_num(native);
+	if (total <= 0) { PKCS7_free(p7); return XP_CA_ERR_FORMAT; }
+	xp_ca_cert_t *items = calloc((size_t)total, sizeof(*items));
+	int status = items == NULL ? XP_CA_ERR : XP_CA_OK;
+	for (int i = 0; status == XP_CA_OK && i < total; i++) {
+		items[i] = calloc(1, sizeof(*items[i]));
+		if (items[i] == NULL || X509_up_ref(sk_X509_value(native, i)) != 1)
+			status = XP_CA_ERR;
+		else items[i]->native = sk_X509_value(native, i);
+	}
+	PKCS7_free(p7);
+	if (status != XP_CA_OK) { xp_ca_cert_chain_free(items, (size_t)total); return status; }
+	*out = items; *count = (size_t)total; return XP_CA_OK;
+}
+
+int
+xp_ca_cert_bundle_export(const xp_ca_cert_t *certs, size_t count,
+	enum xp_ca_encoding encoding, void *out, size_t *len)
+{
+	if (encoding == XP_CA_ENCODING_PEM)
+		return xp_ca_cert_chain_export_pem(certs, count, out, len);
+	if (encoding == XP_CA_ENCODING_DER)
+		return count == 1 ? xp_ca_cert_export_der(certs[0], out, len)
+			: XP_CRYPTO_ERR_INVALID;
+	if (certs == NULL || count == 0 || len == NULL
+	    || (encoding != XP_CA_ENCODING_PKCS7_DER
+	        && encoding != XP_CA_ENCODING_PKCS7_PEM))
+		return XP_CRYPTO_ERR_INVALID;
+	PKCS7 *p7 = PKCS7_new();
+	int ok = p7 != NULL && PKCS7_set_type(p7, NID_pkcs7_signed) == 1
+		&& PKCS7_content_new(p7, NID_pkcs7_data) == 1;
+	for (size_t i = 0; ok && i < count; i++)
+		ok = certs[i] != NULL && PKCS7_add_certificate(p7, certs[i]->native) == 1;
+	BIO *bio = ok ? BIO_new(BIO_s_mem()) : NULL;
+	if (bio != NULL)
+		ok = encoding == XP_CA_ENCODING_PKCS7_DER
+			? i2d_PKCS7_bio(bio, p7) == 1 : PEM_write_bio_PKCS7(bio, p7) == 1;
+	BUF_MEM *memory = NULL;
+	if (ok) BIO_get_mem_ptr(bio, &memory);
+	if (!ok || memory == NULL) { BIO_free(bio); PKCS7_free(p7); return XP_CA_ERR; }
+	size_t required = memory->length;
+	int status = XP_CA_OK;
+	if (out == NULL) *len = required;
+	else if (*len < required) { *len = required; status = XP_CRYPTO_ERR_BUFFER_TOO_SMALL; }
+	else { memcpy(out, memory->data, required); *len = required; }
+	BIO_free(bio); PKCS7_free(p7); return status;
+}
+
+int
 xp_ca_cert_get_validity(xp_ca_cert_t cert, time_t *not_before, time_t *not_after)
 {
 	if (cert == NULL || not_before == NULL || not_after == NULL)
@@ -1282,6 +1510,182 @@ xp_ca_cert_get_public_key(xp_key_t *out, xp_ca_cert_t cert)
 	}
 	*out = result;
 	return XP_CA_OK;
+}
+
+int
+xp_ca_cert_verify_signature(xp_ca_cert_t cert, xp_ca_cert_t issuer)
+{
+	if (cert == NULL)
+		return XP_CRYPTO_ERR_INVALID;
+	EVP_PKEY *key = X509_get_pubkey(issuer == NULL ? cert->native : issuer->native);
+	int result = key != NULL && X509_verify(cert->native, key) == 1
+		? XP_CA_OK : XP_CA_ERR_VERIFY;
+	EVP_PKEY_free(key);
+	return result;
+}
+
+int
+xp_ca_cert_get_info(xp_ca_cert_t cert, struct xp_ca_cert_info *info)
+{
+	if (cert == NULL || info == NULL)
+		return XP_CRYPTO_ERR_INVALID;
+	memset(info, 0, sizeof(*info));
+	info->version = (unsigned)X509_get_version(cert->native) + 1;
+	info->self_signed = X509_NAME_cmp(X509_get_subject_name(cert->native),
+		X509_get_issuer_name(cert->native)) == 0
+		&& xp_ca_cert_verify_signature(cert, NULL) == XP_CA_OK;
+	BASIC_CONSTRAINTS *bc = X509_get_ext_d2i(cert->native,
+		NID_basic_constraints, NULL, NULL);
+	if (bc != NULL) {
+		info->is_ca = bc->ca != 0;
+		info->has_path_length = bc->pathlen != NULL;
+		if (bc->pathlen != NULL) info->path_length = (int)ASN1_INTEGER_get(bc->pathlen);
+		BASIC_CONSTRAINTS_free(bc);
+	}
+	uint32_t usage = X509_get_key_usage(cert->native);
+	if (usage & KU_DIGITAL_SIGNATURE) info->key_usage |= XP_CA_KEY_USE_SIGN;
+	if (usage & KU_KEY_CERT_SIGN) info->key_usage |= XP_CA_KEY_USE_CERT_SIGN;
+	if (usage & KU_CRL_SIGN) info->key_usage |= XP_CA_KEY_USE_CRL_SIGN;
+	if (usage & KU_KEY_ENCIPHERMENT) info->key_usage |= XP_CA_KEY_USE_KEY_ENCIPHERMENT;
+	if (usage & KU_DATA_ENCIPHERMENT) info->key_usage |= XP_CA_KEY_USE_DATA_ENCIPHERMENT;
+	if (usage & KU_KEY_AGREEMENT) info->key_usage |= XP_CA_KEY_USE_KEY_AGREEMENT;
+	if (usage & KU_NON_REPUDIATION) info->key_usage |= XP_CA_KEY_USE_NON_REPUDIATION;
+	if (usage & KU_ENCIPHER_ONLY) info->key_usage |= XP_CA_KEY_USE_ENCIPHER_ONLY;
+	if (usage & KU_DECIPHER_ONLY) info->key_usage |= XP_CA_KEY_USE_DECIPHER_ONLY;
+	uint32_t eku = X509_get_extended_key_usage(cert->native);
+	if (eku & XKU_SSL_SERVER) info->extended_key_usage |= XP_CA_EKU_SERVER_AUTH;
+	if (eku & XKU_SSL_CLIENT) info->extended_key_usage |= XP_CA_EKU_CLIENT_AUTH;
+	if (eku & XKU_CODE_SIGN) info->extended_key_usage |= XP_CA_EKU_CODE_SIGNING;
+	if (eku & XKU_SMIME) info->extended_key_usage |= XP_CA_EKU_EMAIL_PROTECTION;
+	if (eku & XKU_TIMESTAMP) info->extended_key_usage |= XP_CA_EKU_TIME_STAMPING;
+	if (eku & XKU_OCSP_SIGN) info->extended_key_usage |= XP_CA_EKU_OCSP_SIGNING;
+	return XP_CA_OK;
+}
+
+static int
+copy_result(const void *data, size_t size, void *out, size_t *len)
+{
+	if (len == NULL) return XP_CRYPTO_ERR_INVALID;
+	if (out == NULL) { *len = size; return XP_CA_OK; }
+	if (*len < size) { *len = size; return XP_CRYPTO_ERR_BUFFER_TOO_SMALL; }
+	memcpy(out, data, size); *len = size; return XP_CA_OK;
+}
+
+int
+xp_ca_cert_get_serial(xp_ca_cert_t cert, void *out, size_t *len)
+{
+	if (cert == NULL) return XP_CRYPTO_ERR_INVALID;
+	const ASN1_INTEGER *serial = X509_get0_serialNumber(cert->native);
+	const unsigned char *data = ASN1_STRING_get0_data(serial);
+	size_t size = (size_t)ASN1_STRING_length(serial);
+	while (size > 1 && *data == 0) { data++; size--; }
+	return copy_result(data, size, out, len);
+}
+
+int
+xp_ca_cert_get_fingerprint(xp_ca_cert_t cert,
+	enum xp_digest_algorithm digest, void *out, size_t *len)
+{
+	if (cert == NULL || len == NULL) return XP_CRYPTO_ERR_INVALID;
+	const EVP_MD *md = digest == XP_DIGEST_SHA256 ? EVP_sha256()
+		: digest == XP_DIGEST_SHA384 ? EVP_sha384()
+		: digest == XP_DIGEST_SHA512 ? EVP_sha512() : NULL;
+	if (md == NULL) return XP_CRYPTO_ERR_UNSUPPORTED;
+	unsigned char value[EVP_MAX_MD_SIZE]; unsigned int size = 0;
+	if (X509_digest(cert->native, md, value, &size) != 1) return XP_CA_ERR;
+	return copy_result(value, size, out, len);
+}
+
+static int
+name_field_nid(enum xp_ca_name_field field)
+{
+	switch (field) {
+		case XP_CA_NAME_COUNTRY: return NID_countryName;
+		case XP_CA_NAME_STATE_OR_PROVINCE: return NID_stateOrProvinceName;
+		case XP_CA_NAME_LOCALITY: return NID_localityName;
+		case XP_CA_NAME_ORGANIZATION: return NID_organizationName;
+		case XP_CA_NAME_ORGANIZATIONAL_UNIT: return NID_organizationalUnitName;
+		case XP_CA_NAME_COMMON_NAME: return NID_commonName;
+		case XP_CA_NAME_EMAIL_ADDRESS: return NID_pkcs9_emailAddress;
+		default: return NID_undef;
+	}
+}
+
+static X509_NAME *
+certificate_name(xp_ca_cert_t cert, enum xp_ca_name_kind kind)
+{
+	if (cert == NULL) return NULL;
+	return kind == XP_CA_NAME_SUBJECT ? X509_get_subject_name(cert->native)
+		: kind == XP_CA_NAME_ISSUER ? X509_get_issuer_name(cert->native) : NULL;
+}
+
+int
+xp_ca_cert_get_name_count(xp_ca_cert_t cert, enum xp_ca_name_kind kind,
+	enum xp_ca_name_field field, size_t *count)
+{
+	X509_NAME *name = certificate_name(cert, kind); int nid = name_field_nid(field);
+	if (name == NULL || nid == NID_undef || count == NULL) return XP_CRYPTO_ERR_INVALID;
+	*count = 0; int position = -1;
+	while ((position = X509_NAME_get_index_by_NID(name, nid, position)) >= 0) (*count)++;
+	return XP_CA_OK;
+}
+
+int
+xp_ca_cert_get_name(xp_ca_cert_t cert, enum xp_ca_name_kind kind,
+	enum xp_ca_name_field field, size_t index, void *out, size_t *len)
+{
+	X509_NAME *name = certificate_name(cert, kind); int nid = name_field_nid(field);
+	if (name == NULL || nid == NID_undef) return XP_CRYPTO_ERR_INVALID;
+	int position = -1;
+	for (size_t i = 0; i <= index; i++) {
+		position = X509_NAME_get_index_by_NID(name, nid, position);
+		if (position < 0) return XP_CRYPTO_ERR_NOT_FOUND;
+	}
+	ASN1_STRING *value = X509_NAME_ENTRY_get_data(X509_NAME_get_entry(name, position));
+	unsigned char *utf8 = NULL; int size = ASN1_STRING_to_UTF8(&utf8, value);
+	if (size < 0) return XP_CA_ERR_FORMAT;
+	int status = copy_result(utf8, (size_t)size, out, len); OPENSSL_free(utf8); return status;
+}
+
+static int
+san_general_type(enum xp_ca_san_type type)
+{
+	return type == XP_CA_SAN_DNS ? GEN_DNS : type == XP_CA_SAN_EMAIL ? GEN_EMAIL
+		: type == XP_CA_SAN_URI ? GEN_URI : type == XP_CA_SAN_IP_ADDRESS ? GEN_IPADD : -1;
+}
+
+int
+xp_ca_cert_get_san_count(xp_ca_cert_t cert, enum xp_ca_san_type type,
+	size_t *count)
+{
+	if (cert == NULL || count == NULL || san_general_type(type) < 0)
+		return XP_CRYPTO_ERR_INVALID;
+	GENERAL_NAMES *names = X509_get_ext_d2i(cert->native, NID_subject_alt_name, NULL, NULL);
+	*count = 0;
+	for (int i = 0; names != NULL && i < sk_GENERAL_NAME_num(names); i++)
+		if (sk_GENERAL_NAME_value(names, i)->type == san_general_type(type)) (*count)++;
+	GENERAL_NAMES_free(names); return XP_CA_OK;
+}
+
+int
+xp_ca_cert_get_san(xp_ca_cert_t cert, enum xp_ca_san_type type,
+	size_t index, void *out, size_t *len)
+{
+	if (cert == NULL || san_general_type(type) < 0) return XP_CRYPTO_ERR_INVALID;
+	GENERAL_NAMES *names = X509_get_ext_d2i(cert->native, NID_subject_alt_name, NULL, NULL);
+	GENERAL_NAME *found = NULL; size_t current = 0;
+	for (int i = 0; names != NULL && i < sk_GENERAL_NAME_num(names); i++) {
+		GENERAL_NAME *name = sk_GENERAL_NAME_value(names, i);
+		if (name->type == san_general_type(type) && current++ == index) { found = name; break; }
+	}
+	if (found == NULL) { GENERAL_NAMES_free(names); return XP_CRYPTO_ERR_NOT_FOUND; }
+	ASN1_STRING *value = type == XP_CA_SAN_IP_ADDRESS ? found->d.iPAddress
+		: type == XP_CA_SAN_DNS ? found->d.dNSName
+		: type == XP_CA_SAN_EMAIL ? found->d.rfc822Name
+		: found->d.uniformResourceIdentifier;
+	int status = copy_result(ASN1_STRING_get0_data(value),
+		(size_t)ASN1_STRING_length(value), out, len);
+	GENERAL_NAMES_free(names); return status;
 }
 void
 xp_ca_cert_free(xp_ca_cert_t c)

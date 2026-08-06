@@ -4,6 +4,7 @@
 #include "xp_cipher.h"
 #include "xp_digest.h"
 #include "xp_kdf.h"
+#include "xp_keyset.h"
 #include "xp_sign.h"
 #include "xp_tls.h"
 
@@ -59,6 +60,15 @@ int main(void)
 	};
 	if (xp_tls_server_credentials_load(&credentials, &credential_config)
 	    != XP_CRYPTO_ERR_DISABLED || credentials != NULL)
+		return 1;
+	xp_keyset_t keyset = (xp_keyset_t)1;
+	const struct xp_keyset_config keyset_config = {
+		.path = "disabled.manifest",
+		.mode = XP_KEYSET_CREATE,
+		.format = XP_KEYSET_FORMAT_MANIFEST,
+	};
+	if (xp_keyset_open(&keyset, &keyset_config) != XP_CRYPTO_ERR_DISABLED
+	    || keyset != NULL)
 		return 1;
 	return 0;
 }

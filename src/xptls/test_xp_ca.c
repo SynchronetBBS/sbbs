@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <time.h>
 
@@ -69,6 +71,7 @@ main(void)
 	xp_ca_csr_t csr = NULL;
 	xp_ca_csr_t imported_csr = NULL;
 	xp_ca_csr_t intermediate_csr = NULL;
+	xp_ca_csr_t rich_csr = NULL;
 	xp_ca_crl_t root_crl = NULL;
 	xp_ca_crl_t crl = NULL;
 	xp_ca_crl_t imported_crl = NULL;
@@ -124,6 +127,31 @@ main(void)
 	                       &request) == XP_CA_OK);
 
 	CHECK(xp_key_generate(&child_key, &ed25519) == XP_CA_OK);
+	const unsigned char extension_value[] = { 0x05, 0x00 };
+	const struct xp_ca_extension extension = {
+		"1.2.3.4", true, extension_value, sizeof(extension_value)
+	};
+	struct xp_ca_csr_request rich_request = {
+		.subject = { child_names[0], child_names, 1,
+			"Synchronet", "Testing", "US", "Michigan", "Detroit",
+			"test@example.test" },
+		.extensions = &extension,
+		.extension_count = 1,
+	};
+	CHECK(xp_ca_csr_create_request(&rich_csr, child_key, &rich_request) == XP_CA_OK);
+	CHECK(xp_ca_csr_verify(rich_csr) == XP_CA_OK);
+	xp_key_t csr_public = NULL;
+	CHECK(xp_ca_csr_get_public_key(&csr_public, rich_csr) == XP_CA_OK);
+	xp_key_release(csr_public);
+	encoded_len = 0;
+	CHECK(xp_ca_csr_export(rich_csr, XP_CA_ENCODING_PEM, NULL, &encoded_len) == XP_CA_OK);
+	unsigned char *csr_pem = malloc(encoded_len);
+	CHECK(csr_pem != NULL);
+	CHECK(xp_ca_csr_export(rich_csr, XP_CA_ENCODING_PEM, csr_pem, &encoded_len) == XP_CA_OK);
+	CHECK(xp_ca_csr_import(&imported_csr, XP_CA_ENCODING_PEM, csr_pem, encoded_len) == XP_CA_OK);
+	free(csr_pem);
+	CHECK(xp_ca_csr_verify(imported_csr) == XP_CA_OK);
+	xp_ca_csr_free(imported_csr); imported_csr = NULL;
 	CHECK(xp_ca_csr_create(&csr, child_key) == XP_CA_OK);
 	der_len = sizeof(der);
 	CHECK(xp_ca_csr_export_der(csr, der, &der_len) == XP_CA_OK);
@@ -151,6 +179,12 @@ main(void)
 
 	request.subject.common_name = child_names[0];
 	request.subject.dns_names = child_names;
+	request.subject.organization = "Synchronet";
+	request.subject.organizational_unit = "Testing";
+	request.subject.country = "US";
+	request.subject.state_or_province = "Michigan";
+	request.subject.locality = "Detroit";
+	request.subject.email_address = "test@example.test";
 	request.policy.is_ca = false;
 	request.policy.key_usage = XP_CA_KEY_USE_SIGN;
 	request.policy.extended_key_usage = XP_CA_EKU_SERVER_AUTH;
@@ -182,8 +216,42 @@ main(void)
 	request.policy.crl_distribution_point = intermediate_crl_url;
 	CHECK(xp_ca_cert_issue(&child, intermediate_key, intermediate, csr,
 	                       &request) == XP_CA_OK);
+	struct xp_ca_cert_info cert_info;
+	CHECK(xp_ca_cert_get_info(child, &cert_info) == XP_CA_OK);
+	CHECK(cert_info.version == 3 && !cert_info.is_ca
+	      && (cert_info.key_usage & XP_CA_KEY_USE_SIGN)
+	      && (cert_info.extended_key_usage & XP_CA_EKU_SERVER_AUTH));
+	size_t value_count = 0, value_len = 0;
+	CHECK(xp_ca_cert_get_name_count(child, XP_CA_NAME_SUBJECT,
+		XP_CA_NAME_ORGANIZATION, &value_count) == XP_CA_OK && value_count == 1);
+	CHECK(xp_ca_cert_get_name(child, XP_CA_NAME_SUBJECT,
+		XP_CA_NAME_ORGANIZATION, 0, NULL, &value_len) == XP_CA_OK);
+	char name_value[64]; size_t name_len = sizeof(name_value);
+	CHECK(xp_ca_cert_get_name(child, XP_CA_NAME_SUBJECT,
+		XP_CA_NAME_ORGANIZATION, 0, name_value, &name_len) == XP_CA_OK);
+	CHECK(name_len == strlen("Synchronet") && memcmp(name_value, "Synchronet", name_len) == 0);
+	CHECK(xp_ca_cert_get_san_count(child, XP_CA_SAN_DNS, &value_count) == XP_CA_OK && value_count == 1);
+	CHECK(xp_ca_cert_verify_signature(child, intermediate) == XP_CA_OK);
+	CHECK(xp_ca_cert_verify_signature(child, root) == XP_CA_ERR_VERIFY);
+	unsigned char fingerprint[64]; size_t fingerprint_len = sizeof(fingerprint);
+	CHECK(xp_ca_cert_get_fingerprint(child, XP_DIGEST_SHA512,
+		fingerprint, &fingerprint_len) == XP_CA_OK && fingerprint_len == 64);
 
 	const xp_ca_cert_t chain[] = { intermediate };
+	const xp_ca_cert_t bundle[] = { child, intermediate, root };
+	encoded_len = 0;
+	CHECK(xp_ca_cert_bundle_export(bundle, 3, XP_CA_ENCODING_PKCS7_DER,
+		NULL, &encoded_len) == XP_CA_OK);
+	unsigned char *pkcs7 = malloc(encoded_len);
+	CHECK(pkcs7 != NULL);
+	CHECK(xp_ca_cert_bundle_export(bundle, 3, XP_CA_ENCODING_PKCS7_DER,
+		pkcs7, &encoded_len) == XP_CA_OK);
+	xp_ca_cert_t *imported_bundle = NULL; size_t imported_bundle_count = 0;
+	CHECK(xp_ca_cert_bundle_import(&imported_bundle, &imported_bundle_count,
+		XP_CA_ENCODING_PKCS7_DER, pkcs7, encoded_len) == XP_CA_OK);
+	free(pkcs7);
+	CHECK(imported_bundle_count == 3);
+	xp_ca_cert_chain_free(imported_bundle, imported_bundle_count);
 
 	CHECK(xp_ca_cert_validate(child, chain, 1, root, NULL, 0, NULL) == XP_CA_OK);
 	CHECK(xp_ca_cert_validate(child, chain, 1, alternate_root, NULL, 0, NULL)
@@ -329,6 +397,7 @@ main(void)
 	xp_ca_crl_free(root_crl);
 	xp_ca_cert_free(child);
 	xp_ca_csr_free(csr);
+	xp_ca_csr_free(rich_csr);
 	xp_key_release(child_key);
 	xp_ca_cert_free(intermediate);
 	xp_ca_csr_free(intermediate_csr);
