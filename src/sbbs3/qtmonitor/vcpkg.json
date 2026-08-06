@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "$comment": "Qt is supplied by vcpkg only on Windows and macOS. Linux and other Unix builds use their system Qt packages.",
+  "name": "qtmonitor",
+  "version-string": "0.1.0",
+  "description": "Synchronet BBS monitor and control panel",
+  "homepage": "https://gitlab.synchro.net/main/sbbs",
+  "license": "BSD-2-Clause",
+  "dependencies": [
+    {
+      "name": "qtbase",
+      "default-features": false,
+      "features": [
+        "gui",
+        "network",
+        "openssl",
+        "testlib",
+        "thread",
+        "widgets"
+      ],
+      "platform": "windows | osx"
+    },
+    {
+      "name": "qtmqtt",
+      "platform": "windows | osx"
+    },
+    {
+      "name": "qtwebsockets",
+      "platform": "windows | osx"
+    }
+  ],
+  "builtin-baseline": "f3e10653cc27d62a37a3763cd84b38bca07c6075"
+}

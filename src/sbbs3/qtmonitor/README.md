@@ -21,17 +21,42 @@ built with Qt6 (Widgets + MQTT). Connects to Synchronet's built-in
 
 ## Requirements
 
-- Qt6 (Core, Gui, Widgets, Network, Mqtt)
 - CMake 3.22+
 - C++17 compiler
+- Linux and other Unix systems: Qt6 development packages from the operating
+  system (Core, Gui, Widgets, Network, WebSockets, and Mqtt)
+- Windows and macOS: vcpkg with `VCPKG_ROOT` set; the supplied presets install
+  the required Qt modules from `vcpkg.json`
 
 ## Build
+
+Linux and other Unix systems use the Qt packages supplied by the operating
+system:
 
 ```sh
 cd src/sbbs3/qtmonitor
 cmake -S . -B build
 cmake --build build
 ```
+
+On Windows or macOS, first clone and bootstrap
+[vcpkg](https://github.com/microsoft/vcpkg), then set `VCPKG_ROOT` to that
+checkout. Configure, build, and test with the matching preset:
+
+```sh
+# Windows
+cmake --preset windows-vcpkg
+cmake --build --preset windows-vcpkg
+ctest --preset windows-vcpkg
+
+# macOS
+cmake --preset macos-vcpkg
+cmake --build --preset macos-vcpkg
+ctest --preset macos-vcpkg
+```
+
+The first vcpkg build may compile Qt. Set `VCPKG_BINARY_SOURCES` to a shared
+binary cache to reuse compiled packages across machines and CI jobs.
 
 ## Usage
 
