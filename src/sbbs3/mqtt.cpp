@@ -1054,16 +1054,17 @@ int mqtt_startup(struct mqtt* mqtt, scfg_t* cfg, struct startup* startup, const 
 		return MQTT_SUCCESS;
 
 	if (cfg->mqtt.internal_broker) {
-		char hostname[128];
-		gethostname(hostname, sizeof(hostname));
+		char hostname[128] = "";
+		if (gethostname(hostname, sizeof(hostname)) == 0)
+			hostname[sizeof(hostname) - 1] = '\0';
 		const char *addr = cfg->mqtt.broker_addr;
-		const char *configured_host = (startup != NULL && startup->host_name[0])
-		                              ? startup->host_name : hostname;
 		bool local = (addr[0] == '\0'
 		              || stricmp(addr, "localhost") == 0
 		              || strcmp(addr, "127.0.0.1") == 0
 		              || strcmp(addr, "::1") == 0
-		              || stricmp(addr, configured_host) == 0);
+		              || (hostname[0] != '\0' && stricmp(addr, hostname) == 0)
+		              || (startup != NULL && startup->host_name[0] != '\0'
+		                  && stricmp(addr, startup->host_name) == 0));
 
 		if (local) {
 			mqtt->cfg = cfg;
