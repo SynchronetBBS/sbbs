@@ -67,9 +67,14 @@ if(BUILD_TESTING)
         )
         add_test(NAME qtmonitor_dock_behavior COMMAND qtmonitor_dock_test)
         # The vcpkg Qt builds contain only their native platform plugin on
-        # Windows and macOS. Distro Qt builds normally provide offscreen for
-        # headless Unix CI runners.
-        if(NOT WIN32 AND NOT APPLE)
+        # Windows and macOS. The Windows plugin is not deployed beside test
+        # executables, so point Qt at the imported plugin directly. Distro Qt
+        # builds normally provide offscreen for headless Unix CI runners.
+        if(WIN32 AND TARGET Qt6::QWindowsIntegrationPlugin)
+            set_tests_properties(qtmonitor_dock_behavior PROPERTIES
+                ENVIRONMENT "QT_QPA_PLATFORM_PLUGIN_PATH=$<TARGET_FILE_DIR:Qt6::QWindowsIntegrationPlugin>"
+            )
+        elseif(NOT APPLE)
             set_tests_properties(qtmonitor_dock_behavior PROPERTIES
                 ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
             )
