@@ -1,13 +1,15 @@
 #include "mainwindow.h"
 #include "settingsdialog.h"
+#include "defaults.h"
 #include <QToolBar>
 #include <QMenuBar>
 #include <QStatusBar>
-#include <QTabBar>
+#include <QLayout>
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QSslError>
 #include <QTimer>
+#include <QPointer>
 #include <QRegularExpression>
 #include <QApplication>
 
@@ -16,6 +18,12 @@ static const QHash<QString, QString> ServerLabels = {
 	{"term", "Terminal"}, {"mail", "Mail"}, {"ftp", "FTP"},
 	{"web", "Web"}, {"srvc", "Services"},
 };
+
+static quint16 configuredMqttPort(const QSettings &settings)
+{
+	uint port = settings.value("mqtt/port", DefaultMqttPort).toUInt();
+	return port > 0 && port <= 65535 ? static_cast<quint16>(port) : DefaultMqttPort;
+}
 
 static const QString DarkStyle = QStringLiteral(
 	"QMainWindow { background-color: #2b2b2b; }"
@@ -42,7 +50,7 @@ MainWindow::MainWindow(const QString &mqttHost, quint16 mqttPort,
                        const QString &keyFile,
                        QWidget *parent)
 	: QMainWindow(parent)
-	, m_settings("Synchronet", "Monitor")
+	, m_settings("Synchronet", "qtmonitor")
 	, m_mqtt(new MqttClient(this))
 {
 	setWindowTitle("Synchronet Monitor");
@@ -51,10 +59,10 @@ MainWindow::MainWindow(const QString &mqttHost, quint16 mqttPort,
 	setupCentral();
 	setupDocks();
 	setupMenus();
+	setupToolbar();
 	setupStatusbar();
 	connectMqttSignals();
-	restoreState();
-	setupToolbar();
+	loadWindowSettings();
 	applyGlobalStyle();
 	applyLogMaxLines();
 	m_mqtt->setPublishQos(m_settings.value("mqtt/publish_qos", 0).toInt());
@@ -71,9 +79,9 @@ MainWindow::MainWindow(const QString &mqttHost, quint16 mqttPort,
 	if (!keyFile.isEmpty())  m_settings.setValue("mqtt/key_file", keyFile);
 
 	QString host = m_settings.value("mqtt/host").toString();
-	quint16 port = m_settings.value("mqtt/port", 0).toUInt();
-	if (host.isEmpty() || !port) {
-		statusBar()->showMessage("MQTT not configured — use File > Settings or pass -m HOST -p PORT", 10000);
+	quint16 port = configuredMqttPort(m_settings);
+	if (host.isEmpty()) {
+		statusBar()->showMessage("MQTT not configured — use File > Settings or pass -m HOST", 10000);
 		return;
 	}
 
@@ -206,7 +214,7 @@ void MainWindow::setupMenus()
 			m_mqtt->disconnectFromBroker();
 			m_mqtt->configure(
 				m_settings.value("mqtt/host").toString(),
-				m_settings.value("mqtt/port", 0).toUInt(),
+				configuredMqttPort(m_settings),
 				m_settings.value("mqtt/bbs_id").toString(),
 				m_settings.value("mqtt/username").toString(),
 				m_settings.value("mqtt/password").toString(),
@@ -227,51 +235,26 @@ void MainWindow::setupMenus()
 	connect(quitAct, &QAction::triggered, this, &QWidget::close);
 
 	// View
-	auto *viewMenu = menubar->addMenu("&View");
-	int shortcutNum = 1;
-	auto addDockToggle = [&](QDockWidget *dock) {
-		auto *act = dock->toggleViewAction();
-		if (shortcutNum <= 9)
-			act->setShortcut(QKeySequence(QStringLiteral("Alt+%1").arg(shortcutNum++)));
-		viewMenu->addAction(act);
-	};
-	addDockToggle(m_nodeDock);
-	addDockToggle(m_statsDock);
-	addDockToggle(m_clientDock);
-	addDockToggle(m_loginAttemptsDock);
-	addDockToggle(m_actionDock);
-	addDockToggle(m_maxConcurrentDock);
-	viewMenu->addSeparator();
+	m_viewMenu = menubar->addMenu("&View");
+	addDockViewAction(m_nodeDock);
+	addDockViewAction(m_statsDock);
+	addDockViewAction(m_clientDock);
+	addDockViewAction(m_loginAttemptsDock);
+	addDockViewAction(m_actionDock);
+	addDockViewAction(m_maxConcurrentDock);
+	m_viewMenu->addSeparator();
 	for (const auto &key : Servers + QStringList{"bbs", "events"})
 		if (auto *dock = m_logDocks.value(key))
-			addDockToggle(dock);
-	viewMenu->addSeparator();
-	m_darkAction = viewMenu->addAction("&Dark Mode");
+			addDockViewAction(dock);
+	m_viewLogEndMarker = m_viewMenu->addSeparator();
+	m_darkAction = m_viewMenu->addAction("&Dark Mode");
 	m_darkAction->setCheckable(true);
 	m_darkAction->setChecked(m_settings.value("ui/dark_mode", true).toBool());
 	connect(m_darkAction, &QAction::toggled, this, &MainWindow::setDarkMode);
-	viewMenu->addSeparator();
-	auto *resetAct = viewMenu->addAction("&Reset Layout");
+	m_viewMenu->addSeparator();
+	auto *resetAct = m_viewMenu->addAction("&Reset Layout");
 	resetAct->setShortcut(QKeySequence("Ctrl+Shift+R"));
-	connect(resetAct, &QAction::triggered, this, [this] {
-		m_settings.remove("window/state");
-		QTimer::singleShot(0, this, [this] {
-			for (auto *dock : findChildren<QDockWidget *>()) {
-				dock->setFloating(false);
-				dock->setVisible(true);
-			}
-			QList<QDockWidget *> logDockList;
-			for (const auto &key : Servers + QStringList{"bbs", "events"})
-				if (auto *d = m_logDocks.value(key))
-					logDockList.append(d);
-			for (int i = 1; i < logDockList.size(); ++i)
-				tabifyDockWidget(logDockList[0], logDockList[i]);
-			tabifyDockWidget(m_clientDock, m_loginAttemptsDock);
-			tabifyDockWidget(m_loginAttemptsDock, m_maxConcurrentDock);
-			tabifyDockWidget(m_maxConcurrentDock, m_actionDock);
-			if (!logDockList.isEmpty()) logDockList[0]->raise();
-		});
-	});
+	connect(resetAct, &QAction::triggered, this, &MainWindow::scheduleLayoutReset);
 
 	// BBS (host-level)
 	auto *globalMenu = menubar->addMenu("&BBS");
@@ -313,10 +296,10 @@ void MainWindow::setupMenus()
 
 void MainWindow::setupToolbar()
 {
-	auto *toolbar = new QToolBar("Main");
-	toolbar->setObjectName("toolbar_main");
-	toolbar->setMovable(false);
-	addToolBar(toolbar);
+	m_toolbar = new QToolBar("Main");
+	m_toolbar->setObjectName("toolbar_main");
+	m_toolbar->setMovable(false);
+	addToolBar(m_toolbar);
 
 	for (auto &[name, dock] : std::initializer_list<std::pair<const char *, QDockWidget *>>{
 		{"Nodes", m_nodeDock}, {"Stats", m_statsDock}, {"Clients", m_clientDock},
@@ -325,22 +308,17 @@ void MainWindow::setupToolbar()
 	}) {
 		auto *act = new QAction(name, this);
 		connect(act, &QAction::triggered, this, [this, d = dock] { showDock(d); });
-		toolbar->addAction(act);
+		m_toolbar->addAction(act);
 	}
 
-	toolbar->addSeparator();
+	m_toolbar->addSeparator();
 	for (const auto &key : Servers + QStringList{"bbs", "events"}) {
 		static const QHash<QString, QString> extraLabels = {{"bbs", "BBS"}, {"events", "Events"}};
 		QString label = ServerLabels.value(key, extraLabels.value(key, key));
-		auto *act = new QAction(label, this);
-		connect(act, &QAction::triggered, this, [this, key] {
-			if (auto *dock = m_logDocks.value(key))
-				showDock(dock);
-		});
-		toolbar->addAction(act);
+		addLogToolbarAction(key, label);
 	}
 
-	toolbar->addSeparator();
+	m_toolbarLogEndMarker = m_toolbar->addSeparator();
 	m_hostCombo = new QComboBox;
 	m_hostCombo->addItem("All Hosts");
 	m_hostCombo->setToolTip("Filter display and target host for control actions");
@@ -349,10 +327,10 @@ void MainWindow::setupToolbar()
 		for (auto *pane : m_logPanes)
 			pane->setHostFilter(host);
 	});
-	toolbar->addWidget(m_hostCombo);
+	m_toolbar->addWidget(m_hostCombo);
 
-	toolbar->addSeparator();
-	m_connectBtn = toolbar->addAction("Connect");
+	m_toolbar->addSeparator();
+	m_connectBtn = m_toolbar->addAction("Connect");
 	connect(m_connectBtn, &QAction::triggered, this, [this] {
 		if (m_mqtt->isConnected()) {
 			m_mqtt->disconnectFromBroker();
@@ -427,10 +405,13 @@ void MainWindow::connectMqttSignals()
 		m_logPanes["broker"] = brokerLog;
 		auto *brokerDock = makeDock("Broker", brokerLog);
 		m_logDocks["broker"] = brokerDock;
-		addDockWidget(Qt::BottomDockWidgetArea, brokerDock);
-		if (auto *firstLogDock = m_logDocks.value(Servers.first()))
-			tabifyDockWidget(firstLogDock, brokerDock);
-		brokerDock->toggleViewAction()->setShortcut(QKeySequence());
+		if (!restoreDockWidget(brokerDock)) {
+			addDockWidget(Qt::BottomDockWidgetArea, brokerDock);
+			if (auto *firstLogDock = m_logDocks.value(Servers.first()))
+				tabifyDockWidget(firstLogDock, brokerDock);
+		}
+		addDockViewAction(brokerDock);
+		addLogToolbarAction("broker", "Broker");
 		applyLogMaxLines();
 		setDarkMode(m_dark);
 	});
@@ -590,16 +571,116 @@ void MainWindow::connectMqttSignals()
 
 void MainWindow::showDock(QDockWidget *dock)
 {
-	if (!dock->isVisible())
-		dock->setVisible(true);
+	if (!dock)
+		return;
+
+	// QMainWindow may not have rebuilt the tab bar yet when a closed dock is
+	// shown.  Raise it now for the common case, then once more after pending
+	// layout work so the dock also becomes the selected tab.
+	dock->show();
 	dock->raise();
-	QString title = dock->windowTitle();
-	for (auto *tabBar : findChildren<QTabBar *>())
-		for (int i = 0; i < tabBar->count(); ++i)
-			if (tabBar->tabText(i) == title) {
-				tabBar->setCurrentIndex(i);
-				return;
-			}
+	QPointer<QDockWidget> guardedDock(dock);
+	QTimer::singleShot(0, this, [guardedDock] {
+		if (!guardedDock)
+			return;
+		guardedDock->show();
+		guardedDock->raise();
+	});
+}
+
+void MainWindow::addDockViewAction(QDockWidget *dock)
+{
+	auto *action = dock->toggleViewAction();
+	if (m_nextDockShortcut <= 9)
+		action->setShortcut(QKeySequence(QStringLiteral("Alt+%1").arg(m_nextDockShortcut++)));
+	else
+		action->setShortcut(QKeySequence());
+
+	if (m_viewLogEndMarker)
+		m_viewMenu->insertAction(m_viewLogEndMarker, action);
+	else
+		m_viewMenu->addAction(action);
+
+	// toggleViewAction owns the open/closed state.  When it opens a dock,
+	// select that dock after QMainWindow has refreshed its tab bar.
+	connect(action, &QAction::triggered, this, [this, dock](bool checked) {
+		if (checked)
+			showDock(dock);
+	});
+}
+
+void MainWindow::addLogToolbarAction(const QString &key, const QString &label)
+{
+	auto *action = new QAction(label, this);
+	action->setObjectName("toolbar_log_" + key);
+	connect(action, &QAction::triggered, this, [this, key] {
+		showDock(m_logDocks.value(key));
+	});
+	if (m_toolbarLogEndMarker)
+		m_toolbar->insertAction(m_toolbarLogEndMarker, action);
+	else
+		m_toolbar->addAction(action);
+}
+
+void MainWindow::scheduleLayoutReset()
+{
+	m_settings.remove("window/state");
+	if (m_layoutResetPending)
+		return;
+	m_layoutResetPending = true;
+	QTimer::singleShot(0, this, &MainWindow::resetLayoutWhenIdle);
+}
+
+void MainWindow::resetLayoutWhenIdle()
+{
+	// Rebuilding a dock layout while QTabBar is handling a drag leaves Qt's
+	// old tab bar connected to a layout that no longer owns it.  Wait for the
+	// mouse release so QTabBar can finish the drag before changing the layout.
+	if (QApplication::mouseButtons() != Qt::NoButton) {
+		QTimer::singleShot(50, this, &MainWindow::resetLayoutWhenIdle);
+		return;
+	}
+
+	m_layoutResetPending = false;
+	rebuildDefaultLayout();
+}
+
+void MainWindow::rebuildDefaultLayout()
+{
+	const QStringList defaultLogKeys = Servers + QStringList{"bbs", "events"};
+	QList<QDockWidget *> dynamicLogDocks;
+	for (auto it = m_logDocks.cbegin(); it != m_logDocks.cend(); ++it)
+		if (!defaultLogKeys.contains(it.key()))
+			dynamicLogDocks.append(it.value());
+
+	const bool wasAnimated = isAnimated();
+	setAnimated(false);
+	setUpdatesEnabled(false);
+
+	// Dynamic docks were not present in the startup snapshot.  Remove them,
+	// restore the exact serialized startup layout, then attach them to the
+	// default log stack.
+	for (auto *dock : dynamicLogDocks) {
+		dock->hide();
+		removeDockWidget(dock);
+	}
+	QMainWindow::restoreState(m_defaultWindowState);
+
+	auto *firstLogDock = m_logDocks.value(Servers.first());
+	for (auto *dock : dynamicLogDocks) {
+		addDockWidget(Qt::BottomDockWidgetArea, dock);
+		dock->setFloating(false);
+		if (firstLogDock)
+			tabifyDockWidget(firstLogDock, dock);
+		dock->show();
+	}
+
+	setUpdatesEnabled(true);
+	setAnimated(wasAnimated);
+	update();
+
+	if (firstLogDock)
+		showDock(firstLogDock);
 }
 
 void MainWindow::applyGlobalStyle()
@@ -661,12 +742,26 @@ void MainWindow::setDarkMode(bool dark)
 	m_settings.setValue("ui/dark_mode", dark);
 }
 
-void MainWindow::restoreState()
+void MainWindow::loadWindowSettings()
 {
 	auto geom = m_settings.value("window/geometry").toByteArray();
 	if (!geom.isEmpty()) restoreGeometry(geom);
-	auto state = m_settings.value("window/state").toByteArray();
-	if (!state.isEmpty()) QMainWindow::restoreState(state);
+	m_initialWindowState = m_settings.value("window/state").toByteArray();
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+	QMainWindow::showEvent(event);
+	if (m_initialStateApplied)
+		return;
+
+	// The final dock extents are not known until the first show event.  Capture
+	// the fully-laid-out default, then apply the user's state before painting.
+	layout()->activate();
+	m_defaultWindowState = saveState();
+	if (!m_initialWindowState.isEmpty())
+		QMainWindow::restoreState(m_initialWindowState);
+	m_initialStateApplied = true;
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

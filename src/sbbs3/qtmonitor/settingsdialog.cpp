@@ -1,5 +1,6 @@
 #include "settingsdialog.h"
 #include "logwidget.h"
+#include "defaults.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QFormLayout>
@@ -23,9 +24,10 @@ SettingsDialog::SettingsDialog(QSettings *settings, QWidget *parent)
 	form->addRow("Host:", m_host);
 
 	m_port = new QSpinBox;
-	m_port->setRange(0, 65535);
-	m_port->setSpecialValueText("(required)");
-	m_port->setValue(m_settings->value("mqtt/port", 0).toInt());
+	m_port->setObjectName("mqtt_port");
+	m_port->setRange(1, 65535);
+	int savedPort = m_settings->value("mqtt/port", DefaultMqttPort).toInt();
+	m_port->setValue(savedPort > 0 && savedPort <= 65535 ? savedPort : DefaultMqttPort);
 	form->addRow("Port:", m_port);
 
 	m_bbsId = new QLineEdit(m_settings->value("mqtt/bbs_id").toString());

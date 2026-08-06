@@ -18,9 +18,8 @@ if(NOT Qt6Mqtt_FOUND)
     FetchContent_MakeAvailable(qtmqtt)
 endif()
 
-add_executable(qtmonitor WIN32
+set(QTMONITOR_SOURCES
     resources.qrc
-    main.cpp
     mainwindow.cpp
     mqttclient.cpp
     logwidget.cpp
@@ -33,6 +32,11 @@ add_executable(qtmonitor WIN32
     settingsdialog.cpp
 )
 
+add_executable(qtmonitor WIN32
+    main.cpp
+    ${QTMONITOR_SOURCES}
+)
+
 target_link_libraries(qtmonitor PRIVATE
     Qt6::Core
     Qt6::Gui
@@ -43,3 +47,28 @@ target_link_libraries(qtmonitor PRIVATE
 
 qt_finalize_target(qtmonitor)
 install(TARGETS qtmonitor DESTINATION bin)
+
+include(CTest)
+if(BUILD_TESTING)
+    find_package(Qt6 COMPONENTS Test QUIET)
+    if(Qt6Test_FOUND)
+        add_executable(qtmonitor_dock_test
+            tests/dock_behavior_test.cpp
+            ${QTMONITOR_SOURCES}
+        )
+        target_include_directories(qtmonitor_dock_test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+        target_link_libraries(qtmonitor_dock_test PRIVATE
+            Qt6::Core
+            Qt6::Gui
+            Qt6::Widgets
+            Qt6::Network
+            Qt6::Mqtt
+            Qt6::Test
+        )
+        add_test(NAME qtmonitor_dock_behavior COMMAND qtmonitor_dock_test)
+        set_tests_properties(qtmonitor_dock_behavior PROPERTIES
+            ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+        )
+        qt_finalize_target(qtmonitor_dock_test)
+    endif()
+endif()

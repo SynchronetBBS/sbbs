@@ -6,7 +6,7 @@
 int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
-	app.setApplicationName("Synchronet Monitor");
+	app.setApplicationName("qtmonitor");
 	app.setOrganizationName("Synchronet");
 	app.setWindowIcon(QIcon(":/sync.ico"));
 
@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 	parser.setApplicationDescription("Synchronet BBS Monitor");
 	parser.addHelpOption();
 	parser.addOption({{"m", "mqtt-host"}, "MQTT broker hostname", "HOST"});
-	parser.addOption({{"p", "mqtt-port"}, "MQTT broker port", "PORT"});
+	parser.addOption({{"p", "mqtt-port"}, "MQTT broker port (default: 8883)", "PORT"});
 	parser.addOption({{"i", "bbs-id"}, "BBS system ID for MQTT topics", "ID"});
 	parser.addOption({{"u", "mqtt-user"}, "MQTT broker username", "USER"});
 	parser.addOption({{"P", "mqtt-pass"}, "MQTT password (system password for broker.js)", "PASS"});

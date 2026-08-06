@@ -15,6 +15,9 @@
 #include "actionwidget.h"
 #include "maxconcurrentwidget.h"
 
+class QMenu;
+class QToolBar;
+
 class MainWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -30,6 +33,7 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent *event) override;
+	void showEvent(QShowEvent *event) override;
 
 private:
 	void setupCentral();
@@ -38,9 +42,14 @@ private:
 	void setupToolbar();
 	void setupStatusbar();
 	void connectMqttSignals();
-	void restoreState();
+	void loadWindowSettings();
 	void applyGlobalStyle();
 	void applyLogMaxLines();
+	void addDockViewAction(QDockWidget *dock);
+	void addLogToolbarAction(const QString &key, const QString &label);
+	void scheduleLayoutReset();
+	void resetLayoutWhenIdle();
+	void rebuildDefaultLayout();
 	QString selectedHost() const;
 	bool hostMatches(const QString &host) const;
 	bool multiHost() const;
@@ -81,6 +90,15 @@ private:
 	QLabel *m_mqttLabel;
 	QHash<QString, QHash<QString, int>> m_statPerServer;
 	QAction *m_darkAction;
+	QMenu *m_viewMenu = nullptr;
+	QAction *m_viewLogEndMarker = nullptr;
+	QToolBar *m_toolbar = nullptr;
+	QAction *m_toolbarLogEndMarker = nullptr;
+	QByteArray m_defaultWindowState;
+	QByteArray m_initialWindowState;
+	bool m_initialStateApplied = false;
+	int m_nextDockShortcut = 1;
+	bool m_layoutResetPending = false;
 	QComboBox *m_hostCombo;
 	QAction *m_connectBtn;
 };

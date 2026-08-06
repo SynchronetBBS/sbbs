@@ -36,13 +36,13 @@ cmake --build build
 ## Usage
 
 ```
-qtmonitor -m BROKER_HOST -p 8883 --psk-id ALIAS --psk-key PASSWORD -P SYSPASS
+qtmonitor -m BROKER_HOST --psk-id ALIAS --psk-key PASSWORD -P SYSPASS
 ```
 
 | Option | Description |
 |--------|-------------|
 | `-m HOST` | MQTT broker hostname |
-| `-p PORT` | MQTT broker port (8883 for TLS) |
+| `-p PORT` | MQTT broker port (defaults to 8883) |
 | `-i ID` | BBS system ID for topic prefix (auto-detected if omitted) |
 | `-u USER` | MQTT username (not needed for TLS-PSK) |
 | `-P PASS` | MQTT password (system password for broker.js) |
@@ -50,6 +50,10 @@ qtmonitor -m BROKER_HOST -p 8883 --psk-id ALIAS --psk-key PASSWORD -P SYSPASS
 | `--psk-key KEY` | TLS-PSK key (sysop BBS password, lowercased) |
 
 Settings are saved after first use. Subsequent runs need no arguments.
+
+On FreeBSD and Linux, qtmonitor stores these settings in
+`~/.config/Synchronet/qtmonitor.conf`. Window geometry and dock layout are
+written when qtmonitor closes cleanly.
 
 ## Broker Setup
 
