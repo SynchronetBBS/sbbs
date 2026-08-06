@@ -120,11 +120,12 @@ spec:
         export VCPKG_ROOT="$CI_PROJECT_DIR/.vcpkg"
         export VCPKG_DOWNLOADS="$CI_PROJECT_DIR/.cache/vcpkg/downloads"
         export VCPKG_DEFAULT_BINARY_CACHE="$CI_PROJECT_DIR/.cache/vcpkg/binaries"
+        HOMEBREW_NO_AUTO_UPDATE=1 brew install autoconf autoconf-archive automake libtool ninja
         mkdir -p "$VCPKG_DOWNLOADS" "$VCPKG_DEFAULT_BINARY_CACHE"
         git clone --depth 1 --branch "$QTMONITOR_VCPKG_REF" https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
         "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
         cd src/sbbs3/qtmonitor
-        cmake --preset macos-vcpkg
+        cmake --preset macos-vcpkg -G Ninja
         cmake --build --preset macos-vcpkg
         ctest --preset macos-vcpkg
       else

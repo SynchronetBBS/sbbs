@@ -67,7 +67,6 @@ include:
       build_doors: "yes"
       build_termgfx_doors: "yes"
       build_more_doors: "yes"
-      build_qtmonitor: "yes"
   - local: '.gitlab-ci-unix.yml'
     inputs:
       os: "alpine-linux"
@@ -165,6 +164,14 @@ include:
     - New-Item -ItemType Directory -Force $env:VCPKG_DOWNLOADS, $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
     - git clone --depth 1 --branch $env:QTMONITOR_VCPKG_REF https://github.com/microsoft/vcpkg.git $env:VCPKG_ROOT
     - '& (Join-Path $env:VCPKG_ROOT "bootstrap-vcpkg.bat") -disableMetrics'
+    - |
+      if (-not (Get-Command cmake.exe -ErrorAction SilentlyContinue)) {
+        $cmake = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $cmake) {
+          throw 'cmake.exe not found; install the Visual Studio "C++ CMake tools for Windows" component'
+        }
+        $env:PATH = $cmake.DirectoryName + ";" + $env:PATH
+      }
     - cd src/sbbs3/qtmonitor
     - cmake --preset windows-vcpkg
     - cmake --build --preset windows-vcpkg
