@@ -182,6 +182,25 @@ include:
     - cmake --preset windows-vcpkg
     - cmake --build --preset windows-vcpkg
     - ctest --preset windows-vcpkg
+    - |
+      $deployDir = Join-Path $env:CI_PROJECT_DIR "qtmonitor-windows-x64"
+      $vcpkgInstalled = Join-Path (Get-Location) "build\windows-vcpkg\vcpkg_installed\x64-windows"
+      $qtBin = Join-Path $vcpkgInstalled "tools\Qt6\bin"
+      $deployedExe = Join-Path $deployDir "qtmonitor.exe"
+      New-Item -ItemType Directory -Force $deployDir | Out-Null
+      Copy-Item "build\windows-vcpkg\Release\qtmonitor.exe" $deployedExe
+      $env:PATH = (Join-Path $vcpkgInstalled "bin") + ";" + $qtBin + ";" + $env:PATH
+      & (Join-Path $qtBin "windeployqt.exe") --release --no-translations --force-openssl --openssl-root $vcpkgInstalled --dir $deployDir $deployedExe
+      if ($LASTEXITCODE -ne 0) {
+        throw "windeployqt failed with exit code $LASTEXITCODE"
+      }
+      $deployedFiles = Get-ChildItem $deployDir -File -Recurse
+      $deployedBytes = ($deployedFiles | Measure-Object Length -Sum).Sum
+      Write-Host ("Deployed {0} files ({1:N1} MiB)" -f $deployedFiles.Count, ($deployedBytes / 1MB))
+  artifacts:
+    name: qtmonitor-windows-x64
+    paths:
+      - qtmonitor-windows-x64/
 
 "windows-x86 [sbbs]":
   tags: [Windows]
