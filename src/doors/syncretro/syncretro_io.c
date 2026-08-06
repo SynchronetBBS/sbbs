@@ -676,11 +676,9 @@ static void sr_io_recompute_geom(void)
 	g_cell_w = (int)(cw + 0.5);
 	g_cell_h = (int)(ch + 0.5);
 
-	/* Round the sixel canvas height DOWN to a whole number of text cells for
-	 * every client that will walk sr_dirty_find()'s band_align path -- i.e.
-	 * every NON-SyncTERM client (SyncTERM itself passes band_align=0 and
-	 * clamps to the full height already, so leave its geometry untouched).
-	 * That path's "hcell" clamp exists so patch boxes stay cell-aligned, but
+	/* Round the sixel canvas height DOWN to a whole number of text cells: every
+	 * client walks sr_dirty_find()'s band_align path now, and that path's
+	 * "hcell" clamp exists so patch boxes stay cell-aligned, but
 	 * it means a sub-cell remainder at the bottom of the image can never be
 	 * covered by any patch: the dirty grid must TILE the image exactly, or
 	 * whatever lands in that remainder renders stale forever. This went
@@ -690,7 +688,7 @@ static void sr_io_recompute_geom(void)
 	 * it here, at the source, keeps hcell == g_eh always, so the clamp in
 	 * syncretro_dirty.c becomes a no-op instead of something that can ever
 	 * discard real rows. */
-	if (!sr_input_is_syncterm() && g_cell_h > 0) {
+	if (g_cell_h > 0) {
 		int eh_aligned = g_eh / g_cell_h * g_cell_h;
 
 		if (eh_aligned >= g_cell_h)
@@ -1627,11 +1625,20 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 	 *   !have_prev    no previous scaled frame to diff against (first frame after
 	 *                 a resize, a tier change, or a de-duped run).
 	 *
-	 * Dirty patching now runs off SyncTERM too: a non-SyncTERM patch carries
-	 * its own used-colour subset (emit_pal below), so it does not depend on
-	 * register persistence, and band_align makes its geometry safe on a
-	 * cell-anchored terminal (foot). SyncTERM keeps zero-palette patches and
-	 * cell-only geometry.
+	 * Dirty patching runs off every sixel client. What still differs by client
+	 * is the PALETTE: a non-SyncTERM patch carries its own used-colour subset
+	 * (emit_pal below), because those terminals reset their registers per image,
+	 * while SyncTERM's persist and its patches carry none.
+	 *
+	 * The GEOMETRY does not differ. Every patch is band_align'd, so its height is
+	 * a whole number of 6-row sixel bands as well as of text cells. A partial
+	 * final band is legal sixel and current SyncTERM draws it correctly, but
+	 * cterm did not clear its band mask between bands until 1.328
+	 * (d65cb83886, 2026-06-28), so on SyncTERM 1.8 the uncovered columns of a
+	 * partial last band keep the PREVIOUS band's pixels -- a stale sliver left
+	 * at the foot of every patch, which is what a moving sprite smears into a
+	 * dotted trail (SourceForge #258, GitLab #1214). Whole bands cannot express
+	 * the bug: there are no uncovered columns left to inherit anything.
 	 *
 	 * A PALETTE CHANGE no longer forces a whole frame. It used to, because a
 	 * redefined register recolours the pixels the client is still holding --
@@ -1652,7 +1659,7 @@ void sr_io_present(const uint8_t *rgb, int w, int h)
 
 		if (gate_pass)
 			nrect = sr_dirty_find(g_scaled, g_prev_scaled, g_ew, g_eh,
-			                      g_cell_w, g_cell_h, !sr_input_is_syncterm(),
+			                      g_cell_w, g_cell_h, 1,
 			                      pal_changed ? pal_moved : NULL, rect);
 
 		/* [debug] dirty_log's per-frame trace. Only ever reached for a frame that

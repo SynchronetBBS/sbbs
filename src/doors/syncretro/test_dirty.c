@@ -216,6 +216,45 @@ int main(void)
 		free(cur); free(prev);
 	}
 
+	/* Whatever the cell height, a rect's height comes out a multiple of SIX.
+	 * That is the property the terminals actually depend on, and it is not
+	 * implied by cell alignment: SyncTERM's 8x16 cell gives 16, 32, 80 -- none
+	 * of them a whole number of 6-row sixel bands. cterm did not clear its band
+	 * mask between bands until 1.328 (d65cb83886, 2026-06-28), so on SyncTERM
+	 * 1.8 a partial final band keeps the previous band's pixels and every patch
+	 * leaves a stale sliver at its foot (SourceForge #258, GitLab #1214). ch=16
+	 * is the live case; the odd and coprime ones are here so the LCM is
+	 * exercised rather than a lucky multiple. */
+	{
+		static const int cells[] = { 16, 8, 13, 7, 6, 5 };
+		size_t           k;
+
+		for (k = 0; k < sizeof cells / sizeof cells[0]; k++) {
+			int             ch = cells[k], cw = 8;
+			int             vstep = ch;               /* LCM(ch,6), the long way */
+			int             w = 64, h, n, i;
+			uint8_t *       cur, *prev;
+			sr_dirty_rect_t r[SR_DIRTY_MAX_RECTS];
+
+			while (vstep % 6)
+				vstep += ch;
+			h    = vstep * 3;                         /* whole vsteps AND whole cells */
+			cur  = calloc((size_t)w * h, 1);
+			prev = calloc((size_t)w * h, 1);
+			memset(cur + (size_t)(ch + 1) * w + 4, 0xAB, 20);   /* one small box, near the top */
+			n = sr_dirty_find(cur, prev, w, h, cw, ch, 1, NULL, r);
+			CHECK(n > 0);
+			for (i = 0; i < n; i++) {
+				CHECK(r[i].h % 6 == 0);               /* whole sixel bands */
+				CHECK(r[i].h % ch == 0);              /* ...and whole text cells */
+				CHECK(r[i].y % ch == 0);              /* top still lands on a cell */
+				CHECK(r[i].y + r[i].h <= h);
+			}
+			free(cur);
+			free(prev);
+		}
+	}
+
 	/* band_align=1 STRANDING: a bottom-clamped rect that can't cover its
 	 * own changed rows must fall back to a full frame (return 0), not
 	 * ship a rect that silently misses the stranded rows.
