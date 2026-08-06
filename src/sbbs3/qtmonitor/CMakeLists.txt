@@ -66,9 +66,14 @@ if(BUILD_TESTING)
             Qt6::Test
         )
         add_test(NAME qtmonitor_dock_behavior COMMAND qtmonitor_dock_test)
-        set_tests_properties(qtmonitor_dock_behavior PROPERTIES
-            ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
-        )
+        # The vcpkg Qt builds contain only their native platform plugin on
+        # Windows and macOS. Distro Qt builds normally provide offscreen for
+        # headless Unix CI runners.
+        if(NOT WIN32 AND NOT APPLE)
+            set_tests_properties(qtmonitor_dock_behavior PROPERTIES
+                ENVIRONMENT "QT_QPA_PLATFORM=offscreen"
+            )
+        endif()
         qt_finalize_target(qtmonitor_dock_test)
     endif()
 endif()
