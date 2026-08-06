@@ -1,7 +1,8 @@
 # Cryptlib removal from sbbs3 — design
 
 Date: 2026-08-03
-Status: draft; implementation-ready
+Last updated: 2026-08-06
+Status: draft; implementation prerequisite: Botan 3.13.0 release
 
 ## Problem
 
@@ -99,7 +100,7 @@ and those architectural assumptions.
 Integrated builds select one `CRYPTO_BACKEND` for xptls and DeuceSSH:
 
 1. explicitly configured Botan or OpenSSL;
-2. system Botan 3.6 or newer;
+2. system Botan 3.13.0 or newer;
 3. system OpenSSL 3.0 or newer; or
 4. vendored Botan where the existing build permits it.
 
@@ -116,6 +117,59 @@ compile.  `WITHOUT_DEUCESSH` independently removes SSH.  DeuceSSH still needs
 a real crypto backend when SSH is enabled, even if xptls is stubbed.  A server
 configured for a disabled feature logs that fact and does not open the
 corresponding listener; a nominal TLS port must never fall back to plaintext.
+
+### Botan version boundary
+
+The release of Botan 3.13.0 is a prerequisite for implementing this design.
+The shared build logic requires Botan 3.13.0 or newer, and the provider uses
+the 3.13 interfaces directly.  An unreleased master snapshot does not satisfy
+this prerequisite and is not an ordinary build dependency.
+
+On 2026-08-05, Botan master revision
+`a8f6c6a59e850016f77dd2a1d3d10991d2610eba`, identifying itself as unreleased
+3.13.0, was built on FreeBSD and tested with xptls.  Focused probes verified
+all of the capabilities currently hidden behind compatibility code:
+
+- `BER_Decoder::Limits::DER()` rejects non-canonical BER input;
+- the typed `AlternativeName` IPv4 and IPv6 accessors preserve the raw
+  address bytes;
+- the native `CRL_Issuing_Distribution_Point` encoder and decoder round trip;
+  and
+- a complete, same-issuer CRL without `issuingDistributionPoint` matches a
+  certificate containing `CRLDistributionPoints`, as required by RFC 5280
+  section 6.3.3 and tracked by
+  [Botan issue 5784](https://github.com/randombit/botan/issues/5784).
+
+A temporary xptls provider converted to the 3.13 interfaces built successfully
+and passed all four xptls test programs.  Adopting 3.13 is nevertheless a
+source migration, not only a version-check change:
+
+- replace the raw subjectAltName IP decoder with `ipv4_addresses()` and
+  `ipv6_addresses()`;
+- replace the local issuing-distribution-point encoder and raw decoder with
+  `CRL_Issuing_Distribution_Point` and `DistributionPointName`;
+- restore strict DER limits when decoding externally supplied PKCS#7 bundles;
+- use `dns_names()`, `email_addresses()`, and `uri_names()` and their typed
+  values instead of retaining references to the deprecated string accessors;
+- implement `Certificate_Extension::is_appropriate_context()` for the custom
+  requested-certificate extension used to carry arbitrary CSR extensions;
+  and
+- move to the non-deprecated distribution-point, subject-key-ID, and CRL-number
+  accessors.
+
+The first three changes remove xptls workarounds.  The remaining changes adapt
+to Botan 3.13's public API.  `AlternativeName` and `Certificate_Extension` were
+already declared public before their incompatible 3.13 changes, so this is
+also a source and potential ABI boundary for external subclasses and callers.
+All xptls and downstream Botan consumer objects must be rebuilt together; a
+build must not mix objects compiled against 3.12 headers with a 3.13 shared
+library.
+
+Implement these provider changes together with the 3.13.0 minimum and retain
+the focused interoperability cases as permanent tests.  A supported platform
+without a suitable system package must use the vendored 3.13.0 provider,
+select another supported provider, or explicitly disable the dependent
+feature.  Do not carry a parallel pre-3.13 implementation.
 
 ### No application provider objects
 
@@ -529,7 +583,13 @@ IETF ChaCha20, decrypt-only migration ciphers, RSA/ECDSA/Ed25519 signatures,
 standard key encodings and public components, encrypted file storage, stable
 references, and capability-gated PKCS#11 fixtures.  The CA suite covers CSR
 proof of possession, certificate issuance and validation, exact identity and
-profile matching, certificate-chain PEM, CRLs, and revocation.
+profile matching, certificate-chain PEM, CRLs, and revocation.  Its Botan
+coverage additionally includes IPv4 and IPv6 subjectAltName extraction,
+native issuing-distribution-point encode/decode, and the RFC 5280
+implicit-distribution-point case in which a complete same-issuer CRL has no
+`issuingDistributionPoint` but the certificate has
+`CRLDistributionPoints`.  Negative controls retain mismatched scoped and
+indirect-CRL cases.
 
 ### Remaining xptls extensions
 
@@ -1405,6 +1465,11 @@ Sanitizer builds run the handshake-failure, wrong-password, concurrent close,
 and migration tests because those paths carry the highest ownership risk.
 Hardware-store jobs are capability-gated rather than OS-name-gated and cover
 each provider/store combination that the build claims to support.
+
+At least one Botan job uses 3.13.0, the oldest version the design supports,
+and another uses the newest released version.  A supported platform whose
+packages lag uses the vendored 3.13.0 provider rather than retaining a pre-3.13
+compatibility job.
 
 ## Expected files touched
 
