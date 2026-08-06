@@ -148,6 +148,9 @@ ifndef WITHOUT_DEUCESSH
  # system handles source/CMakeLists changes after the initial configure.
  # DeuceSSH itself remains untouched.
  .PHONY: deucessh
+ ifeq ($(DEUCESSH_BACKEND),Botan)
+ deucessh: botan
+ endif
  deucessh:
 	@echo "Building DeuceSSH ($(DEUCESSH_BACKEND) backend)"
 	@if [ ! -f $(DEUCESSH_BUILD)/Makefile ] \
@@ -170,8 +173,9 @@ else
 	@true
 endif
 
-# `botan` delegation target lives in build/botan.gmake; targets.mk
-# wires it in as a prerequisite ahead of xpdev-mt and deucessh.
+# The `botan` delegation target lives in build/botan.gmake.  DeuceSSH
+# above and xptls below declare their own dependency on it when needed;
+# prerequisite order in targets.mk does not impose build order.
 
 # XP_CRYPTO_BACKEND is decided in Common.gmake (shared with xpdev so
 # the cached libxpdev_mt.a agrees with this build's link line).
