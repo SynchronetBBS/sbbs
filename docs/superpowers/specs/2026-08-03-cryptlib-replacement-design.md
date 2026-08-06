@@ -21,19 +21,19 @@ publishes Cryptlib handle types, `sbbs.h` stores a `CRYPT_SESSION`, and
 otherwise-unrelated translation units as Cryptlib consumers merely because
 they include those headers.
 
-The replacement libraries already exist, but neither is by itself a drop-in
-replacement:
+The replacement architecture uses two typed libraries:
 
-- `src/xptls` has provider-neutral TLS client/server sessions, shared server
+- `src/xptls` supplies provider-neutral TLS client/server sessions, shared server
   credentials, encrypted PEM key handling, X.509/CSR/CRL primitives, digests,
-  signatures, KDFs, and streaming symmetric encryption. The remaining work is
-  application migration, not a provider API bypass.
-- `src/ssh` (DeuceSSH) has server transport, password/public-key
+  signatures, KDFs, streaming symmetric encryption, and opaque storage-backed
+  asymmetric keys.
+- `src/ssh` (DeuceSSH) supplies server transport, password/public-key
   authentication callbacks, shell/subsystem channels, stream I/O, terminal
-  metadata and window-change events.  It is not wired into the terminal
-  server's ownership, authentication, channel, or SFTP lifecycles.
-- Neither library currently implements Cryptlib's JavaScript object model or
-  reads Cryptlib's proprietary keyset files.
+  metadata, and window-change events.
+
+The sbbs3 integration owns TLS identity management, endpoint policy, terminal
+server ownership, authentication, channel and SFTP lifecycles, JavaScript
+compatibility objects, and migration from Cryptlib's proprietary keysets.
 
 Simply changing function names would preserve Cryptlib's attribute-driven
 architecture and its ambiguous ownership rules.  Simply deleting the three
@@ -59,9 +59,9 @@ and those architectural assumptions.
 - Private keys are opaque storage-backed handles.  New installations prefer
   a TPM, PKCS#11 token, or supported platform hardware keystore; encrypted
   PKCS#8 files remain a configurable and fully-supported backend.
-- Key-storage selection is explicit and observable.  Loss of a previously
-  selected hardware store fails closed and never causes an unnoticed fallback
-  to a new file key or a changed public identity.
+- Key-storage selection is explicit and observable.  Loss of a bound hardware
+  store fails closed and never causes an unnoticed fallback to a new file key
+  or a changed public identity.
 - An operator can move through a transition release without an unexpected TLS
   or SSH host-key change.
 - The port is divided into independently testable commits.  Cryptlib is
@@ -77,10 +77,9 @@ and those architectural assumptions.
   SyncTERM concern.
 - Adding SSH forwarding, arbitrary `exec` channels, an SCP server, or more
   than one shell and one SFTP channel per terminal-server connection.
-- Changing BBS account policy.  Password comparison must call the common
-  account-authentication helper in effect when this work lands, including the
-  password-storage design if it has landed; this work must not create a
-  second verifier.
+- Changing BBS account policy.  Password comparison calls the common
+  account-authentication helper, including its hashed-password policy; this
+  work does not create a second verifier.
 - Requiring TLS authentication for opportunistic outbound SMTP.  That is a
   separate mail-policy change.
 - Preserving TLS 1.0 or 1.1 as a default.  The JavaScript compatibility
@@ -97,16 +96,18 @@ and those architectural assumptions.
 
 ### One crypto provider per build
 
-xptls and DeuceSSH use the same backend selection:
+Integrated builds select one `CRYPTO_BACKEND` for xptls and DeuceSSH:
 
 1. explicitly configured Botan or OpenSSL;
 2. system Botan 3.6 or newer;
 3. system OpenSSL 3.0 or newer; or
 4. vendored Botan where the existing build permits it.
 
-`XP_CRYPTO_BACKEND` and `DEUCESSH_BACKEND` may still be overridden for
-standalone library testing, but the integrated `sbbs3` configure step rejects
-different values.  Loading both providers into one server gains no useful
+The shared CMake configuration pins `XP_CRYPTO_BACKEND` and
+`DEUCESSH_CRYPTO_BACKEND` to that selection.  GNU make pins
+`XP_CRYPTO_BACKEND` and `DEUCESSH_BACKEND` in the same way.  Component-specific
+selectors exist only for standalone library builds; an integrated build
+rejects conflicts.  Loading both providers into one server gains no useful
 fallback: provider objects cannot cross either API, behavior becomes
 build-order dependent, and the security surface doubles.
 
@@ -124,21 +125,22 @@ libraries.  `sbbs3` sees opaque xptls and DeuceSSH handles only.  This applies
 to the JavaScript bindings too: their private data stores xptls handles rather
 than provider handles.
 
-### Private keys are storage-backed handles
+### Asymmetric keys are opaque storage-backed handles
 
-Add a provider-neutral `xp_private_key_t` in the common xptls/xp_ca layer.
-It represents an asymmetric private key whose operation may occur in process,
-in a TPM 2.0 device, through PKCS#11, or in a supported operating-system
-hardware keystore.  Callers can retain/release it, obtain its algorithm and
-public SPKI/fingerprint, and request typed signing operations.  They cannot
-extract provider objects.  Export returns `XP_CA_ERR_NOT_EXPORTABLE` for a
-non-exportable key; no caller treats that result as permission to generate a
-replacement.
+`xp_key_t` is the provider-neutral asymmetric-key handle shared by `xp_key`,
+`xp_sign`, `xp_ca`, and TLS credentials.  A handle may contain a public or
+private Ed25519, RSA, or ECDSA key in memory, in an encrypted file, or in a
+supported hardware store.  Callers retain and release the handle, query its
+algorithm, storage kind, private/exportable status, export its public SPKI and
+SHA-256 fingerprint, and request typed signing operations.  Provider objects
+never cross the interface.  Private export of a non-exportable key returns
+`XP_CRYPTO_ERR_NOT_EXPORTABLE`; no caller treats that result as permission to
+generate a replacement.
 
-The minimum provider-neutral contract is:
+The storage contract is:
 
 ```c
-typedef struct xp_private_key *xp_private_key_t;
+typedef struct xp_key *xp_key_t;
 
 enum xp_key_storage_policy {
     XP_KEY_STORAGE_AUTO,
@@ -149,39 +151,50 @@ enum xp_key_storage_policy {
 
 struct xp_key_store_config {
     enum xp_key_storage_policy policy;
-    const char *store;       /* tpm2, pkcs11, platform, or file */
-    const char *store_uri;   /* module/token/device; never a PIN */
-    xp_ca_password_callback_t authorize;
+    const char *store;       /* file, pkcs11, tpm2, or platform */
+    const char *store_uri;   /* non-secret store locator */
+    const char *file_path;   /* file destination or auto fallback */
+    xp_crypto_secret_callback_t authorize;
     void *authorize_context;
 };
 
-int xp_private_key_generate(
-    xp_private_key_t *out, char *reference, size_t *reference_len,
+int xp_key_store_query(
     const struct xp_key_store_config *store,
-    const struct xp_ca_key_spec *key);
-int xp_private_key_open(
-    xp_private_key_t *out, const struct xp_key_store_config *store,
-    const char *reference);
-void xp_private_key_retain(xp_private_key_t key);
-void xp_private_key_release(xp_private_key_t key);
-int xp_private_key_public_spki(
-    xp_private_key_t key, void *der, size_t *der_len);
-int xp_private_key_export_pkcs8(
-    xp_private_key_t key, void *der, size_t *der_len);
+    const struct xp_key_spec *spec,
+    struct xp_key_store_capabilities *capabilities);
+int xp_key_generate_stored(
+    xp_key_t *out, const struct xp_key_store_config *store,
+    const struct xp_key_spec *spec);
+int xp_key_import_stored(
+    xp_key_t *out, const struct xp_key_store_config *store, xp_key_t source);
+int xp_key_reference(xp_key_t key, void *out, size_t *len);
+int xp_key_open_stored(
+    xp_key_t *out, const struct xp_key_store_config *store,
+    const void *reference, size_t reference_len);
+int xp_key_destroy_stored(
+    const struct xp_key_store_config *store,
+    const void *reference, size_t reference_len,
+    const void *expected_fingerprint, size_t fingerprint_len);
 ```
 
-The versioned reference returned by generation identifies the selected store
-and object but contains no authorization secret.  `xp_sign`, CSR/certificate
-creation, TLS credentials, and the DeuceSSH signer adapter all accept the
-handle.  Import and destruction have corresponding typed APIs and report
-whether the store can perform them transactionally.  Destruction always
-requires both an exact reference and expected public fingerprint.
+The counted, versioned reference identifies the selected store and object but
+contains no authorization secret.  Import, generation, open, signing, export,
+and destruction capabilities are queried independently.  Destruction requires
+both the exact reference and expected SHA-256 public-key fingerprint.
+
+The file store supports transactional generation, import, open, export, and
+fingerprint-guarded destruction using encrypted private-key PEM.  Both crypto
+providers support PKCS#11 generation, open, signing, and destruction for RSA
+and ECDSA when their optional PKCS#11 dependencies are available; unsupported
+import or algorithm combinations are reported through the capability mask.
+TPM 2.0 and platform-store names are reserved by the common contract and must
+report unavailable until their adapters implement the requested operation.
 
 The storage API has four operator-facing policies:
 
 | Policy | Behavior |
 |---|---|
-| `auto` | For a newly-created key, prefer an available supported hardware store, then use encrypted PKCS#8 only when no hardware backend is usable. |
+| `auto` | For a newly-created key, use the configured supported hardware store when available, then use the configured encrypted file destination. |
 | `hardware` | Select the configured TPM, PKCS#11, or platform store and fail if it cannot be used.  There is no file fallback. |
 | `file` | Generate or load encrypted PKCS#8 using the Synchronet system password. |
 | named store | Require `tpm2`, `pkcs11`, or a supported platform store explicitly and fail if unavailable. |
@@ -221,15 +234,15 @@ not falsely describe such PSKs as non-exportable hardware operations.
 
 Both provider implementations expose the same capability query and storage
 errors.  OpenSSL or Botan may use different native mechanisms internally,
-but the application sees only an `xp_private_key_t` and a stable key
-reference.  Hardware integration is compiled and tested only where its SDK
-or provider module is supported; lack of it is a reported capability, not a
-reason to bypass an explicitly selected hardware policy.
+but the application sees only an `xp_key_t` and a stable key reference.
+Hardware integration is compiled and tested only where its SDK or provider
+module is supported; lack of it is a reported capability, not a reason to
+bypass an explicitly selected hardware policy.
 
 ### The socket owner remains the application
 
-TLS and SSH sessions refer to an already-connected `SOCKET`; they do not own
-it.  Every close path follows this order:
+TLS and SSH sessions refer to a pre-connected `SOCKET`; they do not own it.
+Every close path follows this order:
 
 1. tell the protocol session to terminate;
 2. `shutdown()` the socket when a blocked protocol I/O callback must wake;
@@ -290,21 +303,24 @@ for Cryptlib-based servers, not server behavior.  DeuceSSH's own termination,
 rekey, transport, and channel synchronization remains library-owned and is
 not deleted merely because it lives in `src/ssh/ssh.c`.
 
-## xptls work required first
+## xptls capability boundary
 
-The server port must not start by reaching into the OpenSSL or Botan backend.
-The following provider-neutral contract is a prerequisite.
+The server port uses the provider-neutral contracts in `src/xptls`; it never
+reaches into the OpenSSL or Botan backend.  Application migration may begin
+from the TLS server, key, signing, digest, KDF, cipher, and CA APIs defined
+here.  The remaining xptls extensions are listed explicitly below.
 
 ### Shared server credentials
 
-Add an opaque, immutable, reference-counted credential object:
+The TLS server identity is an opaque, immutable, reference-counted credential
+object:
 
 ```c
 typedef struct xp_tls_server_credentials *xp_tls_server_credentials_t;
 
 struct xp_tls_server_credentials_config {
     const char *certificate_chain_file; /* PEM, leaf first */
-    xp_private_key_t private_key;        /* retained on success */
+    xp_key_t private_key;                /* retained on success */
 };
 
 int xp_tls_server_credentials_load(
@@ -319,7 +335,8 @@ Loading verifies all of the following before returning success:
 - the complete PEM chain parses;
 - the private-key handle is usable for the certificate's signature scheme;
 - the leaf certificate matches the private key;
-- the leaf is currently usable as a TLS server certificate; and
+- the leaf is within its validity interval and usable as a TLS server
+  certificate; and
 - no trailing non-certificate PEM object is silently ignored.
 
 A TLS session retains its credentials.  Reloading and releasing the manager's
@@ -327,7 +344,8 @@ old reference therefore cannot invalidate established sessions.
 
 ### Server sessions
 
-Add a synchronous server handshake over an existing socket:
+`xp_tls_server_open()` performs a synchronous server handshake over an
+existing socket:
 
 ```c
 enum xp_tls_client_auth {
@@ -374,9 +392,9 @@ current manual-client-certificate behavior.  Built-in listeners do not use
 it.  `REQUIRE_VALID` validates to the explicit CA file and fails the handshake
 when the peer has no acceptable certificate.
 
-### Complete common session operations
+### Common session operations
 
-The common session API gains:
+The common session API provides:
 
 ```c
 int xp_tls_pop_timeout(
@@ -392,6 +410,10 @@ int xp_tls_psk_identity(
 size_t xp_tls_peer_certificate_count(xp_tls_t session);
 int xp_tls_peer_certificate_der(
     xp_tls_t session, size_t index, void *out, size_t *len);
+enum xp_tls_version xp_tls_protocol_version(xp_tls_t session);
+enum xp_tls_auth_method xp_tls_authentication_method(xp_tls_t session);
+int xp_tls_terminate(xp_tls_t session);
+void xp_tls_close(xp_tls_t session, bool close_socket);
 ```
 
 `timeout_ms` belongs to that high-level operation: zero means do not wait,
@@ -401,12 +423,12 @@ the initiating operation's one deadline still applies.  RX work never reads
 or changes a TX deadline and vice versa.  Backends use monotonic elapsed time
 so retrying provider `WANT_READ`/`WANT_WRITE` states cannot restart the bound.
 
-The old constructor-configured `xp_tls_pop()`, `xp_tls_push()`, and
-`xp_tls_flush()` calls are removed after migrating SyncTERM. All callers use
-the timeout variants, and sessions contain no mutable default I/O timeout.
-xptls must not set or temporarily modify `SO_RCVTIMEO` or `SO_SNDTIMEO` on the
-caller-owned socket.  Backend readiness waits or I/O callbacks implement the
-deadline without exposing direction-coupled socket state to another thread.
+All callers use the timeout variants; sessions contain no mutable default I/O
+timeout and expose no constructor-configured `xp_tls_pop()`, `xp_tls_push()`,
+or `xp_tls_flush()` calls.  xptls must not set or temporarily modify
+`SO_RCVTIMEO` or `SO_SNDTIMEO` on the caller-owned socket.  Backend readiness
+waits or I/O callbacks implement the deadline without exposing
+direction-coupled socket state to another thread.
 
 A session supports one application reader and one application writer at the
 same time.  Calls on the same direction remain caller-serialized, including
@@ -418,38 +440,44 @@ direction (for example post-handshake messages) runs under the initiating
 call's deadline and wakes the other side as necessary.  Close/termination
 wakes both directions according to the socket-ownership sequence above.
 
-`xp_tls_client_config` includes `min_version`, `max_version`, and a private
-key password callback.  The configured interface accepts
+`xp_tls_client_config` includes `min_version`, `max_version`, an explicit PSK
+policy, and a private-key password callback.  The configured interface accepts
 `XP_TLS_SERVER_AUTH_NONE`; that is required for deliberately opportunistic
 SMTP and for compatibility with a JavaScript socket whose verification flag
-is false. All clients use `xp_tls_client_open_config()`; the permissive legacy
-constructor is removed.
+is false.  All sbbs3 clients use `xp_tls_client_open_config()`.
 
-TLS PSK configuration also carries an explicit policy. The default modern
-policy permits ephemeral TLS 1.2 PSK exchange with AEAD ciphers. The TLS 1.2
+TLS PSK configuration also carries an explicit policy.  The default modern
+policy permits ephemeral TLS 1.2 PSK exchange with AEAD ciphers.  The TLS 1.2
 compatibility policy additionally permits plain PSK and AES-CBC/SHA for older
-brokers. TLS 1.3 remains forward-secret under both policies.
+brokers.  TLS 1.3 remains forward-secret under both policies.
 
-### KDF and streaming cipher primitives
+### Core crypto, KDF, and streaming cipher primitives
+
+`xp_crypto` defines the shared status domain, counted secret-callback contract,
+provider name and version, cryptographic random generation, stable status text,
+and thread-local diagnostics for constructors which cannot return a handle.
+`xp_digest` supplies one-shot and streaming SHA-256/384/512.  `xp_sign` and
+`xp_verify` operate on complete messages using RSA PKCS#1 SHA-2, ECDSA SHA-2
+with DER or P1363 encoding, and Ed25519.
 
 `xp_kdf` exposes PBKDF2 with an explicit digest and scrypt with explicit
-`N`, `r`, and `p`. Both providers enforce a fixed 1025 MiB per-derivation
-scrypt limit. It is not a process-wide pool and concurrent derivations each
+`N`, `r`, and `p`.  Both providers enforce a fixed 1025 MiB per-derivation
+scrypt limit.  It is not a process-wide pool and concurrent derivations each
 have their own limit.
 
 `xp_cipher` exposes typed algorithm, mode, direction, padding, key, IV, and
-tag configuration. AES-CBC/CFB/GCM and IETF ChaCha20 are available for normal
-use. 3DES-CBC, CAST128-CBC, and RC4 are capability-queried decrypt-only
-migration algorithms. ChaCha20 takes a 12-byte nonce and a separate 32-bit
+tag configuration.  AES-CBC/CFB/GCM and IETF ChaCha20 are available for normal
+use.  3DES-CBC, CAST128-CBC, and RC4 are capability-queried decrypt-only
+migration algorithms.  ChaCha20 takes a 12-byte nonce and a separate 32-bit
 initial block counter; provider-specific packed IV layouts are never public.
 Unauthenticated modes produce incremental output, while authenticated
-decryption withholds plaintext until tag verification. A too-small output
+decryption withholds plaintext until tag verification.  A too-small output
 buffer does not consume input.
 
-Add TLS 1.0 and 1.1 values to `enum xp_tls_version` so the JavaScript property
-has an exact representation.  xptls does not weaken provider policy to make
-those versions work.  Failure because a backend disables an obsolete version
-is a normal, explicit handshake error.
+`enum xp_tls_version` includes TLS 1.0 and 1.1 so the JavaScript property has an
+exact representation.  xptls does not weaken provider policy to make those
+versions work.  Failure because a backend disables an obsolete version is a
+normal, explicit handshake error.
 
 The read contract is made unambiguous and both backends must match it:
 
@@ -468,10 +496,10 @@ The read contract is made unambiguous and both backends must match it:
 addition to socket readability because decrypted plaintext can remain inside
 the provider after the kernel receive queue is empty.
 
-### xptls server tests
+### xptls tests
 
-The OpenSSL and Botan implementations share the same tests.  A loopback or
-socket-pair harness covers:
+The OpenSSL and Botan implementations use the same provider-independent test
+programs.  The TLS loopback/socket-pair suite must cover:
 
 - certificate server to permissive and Web-PKI/explicit-anchor clients;
 - wrong key/certificate pairs and malformed or extra PEM objects;
@@ -495,6 +523,32 @@ socket-pair harness covers:
 The disabled backend receives matching linkable stubs and a test that every
 constructor fails with `XP_CA_ERR_DISABLED` or the xptls equivalent and a
 useful diagnostic.
+
+The common crypto suite covers SHA-2, PBKDF2, bounded scrypt, AES-CBC/CFB/GCM,
+IETF ChaCha20, decrypt-only migration ciphers, RSA/ECDSA/Ed25519 signatures,
+standard key encodings and public components, encrypted file storage, stable
+references, and capability-gated PKCS#11 fixtures.  The CA suite covers CSR
+proof of possession, certificate issuance and validation, exact identity and
+profile matching, certificate-chain PEM, CRLs, and revocation.
+
+### Remaining xptls extensions
+
+The Cryptlib replacement requires these additions beyond the available xptls
+contracts:
+
+- a TLS client-identity configuration which accepts an `xp_key_t` and
+  certificate chain, so a client certificate can use a non-exportable stored
+  key without an unencrypted private-key filename;
+- the additional CSR and certificate import, export, extension, and metadata
+  operations specified for `CryptCert` compatibility;
+- the `xp_keyset` persistence API specified below; and
+- TPM 2.0 and platform-keystore adapters for every store the build claims to
+  support, plus any hardware import operation advertised by a store's
+  capability mask.
+
+Each extension remains provider-neutral, has matching Botan, OpenSSL, and
+disabled-stub behavior, and is added to the shared xptls tests before an sbbs3
+consumer depends on it.
 
 ## TLS identity and persistence
 
@@ -528,10 +582,9 @@ which provider produced the files.
 
 ### `ssl.c` becomes the identity manager
 
-Keep the filename because it is already the shared server-security module,
-but replace its contents and public surface.  `ssl.h` publishes xptls types
-only.  The old Cryptlib error translation, context pool, session list, and
-certificate epoch lists are deleted.
+`ssl.c` remains the shared server-security module, with a public surface based
+only on xptls types.  Cryptlib error translation, the context pool, session
+list, and certificate epoch lists are deleted.
 
 The manager owns one reference to the current
 `xp_tls_server_credentials_t`.  It records file identity for `ssl.crt`, the
@@ -560,7 +613,7 @@ void sbbs_tls_credentials_release(xp_tls_server_credentials_t);
 ```
 
 Callers acquire credentials, call `xp_tls_server_open()`, and release their
-caller reference.  The session has already retained its own reference.
+caller reference.  The session retains its own reference.
 
 ### TLS endpoint conversion
 
@@ -584,9 +637,9 @@ single operation; they do not save, set, or restore session timeout state.
 | MQTT client (`mqtt_client.cpp`) | configured PSK for PSK modes; Web PKI plus hostname and optional client identity for certificate mode |
 | JavaScript `Socket` (`js_socket.cpp`) | configuration described below |
 
-The currently disabled user-password PSK loops in `websrvr.cpp` and
-`services.cpp` stay deleted rather than being revived.  User passwords are not
-bulk-loaded as TLS PSKs.  MQTT's explicit PSK table remains supported.
+The deleted user-password PSK loops in `websrvr.cpp` and `services.cpp` are not
+restored.  User passwords are not bulk-loaded as TLS PSKs.  MQTT's explicit
+PSK table remains supported.
 
 No endpoint tests `do_cryptInit()` to decide whether to advertise an upgrade.
 It tests whether `sbbs_tls_credentials_acquire()` succeeds.  STARTTLS/STLS
@@ -631,10 +684,10 @@ object closes the xptls session before replacing/closing the socket.
 
 ### Small API additions
 
-DeuceSSH already exposes the typed handshake, authentication, channel, event,
-and I/O operations needed by sbbs3.  Add only the information currently lost
-by pointer-returning constructors/acceptors and the hardware signer described
-below:
+The integration uses DeuceSSH's typed handshake, authentication, channel,
+event, and I/O operations.  Required DeuceSSH additions are limited to explicit
+status reporting for pointer-returning constructors/acceptors and the hardware
+signer described below:
 
 ```c
 const char *dssh_strerror(int status); /* static text for DSSH_ERROR_* */
@@ -685,11 +738,11 @@ Host keys use these logical references and public files:
 | `ctrl/ssh_host_rsa_key.pub` | OpenSSH public-key line |
 | `ctrl/ssh_host_rsa_key` | encrypted PKCS#8 PEM only for the file backend |
 
-Missing keys are generated through the configured `xp_private_key` store.
+Missing keys are generated through the configured `xp_key` store.
 Extend DeuceSSH with an opaque host-signer registration containing public-key
 bytes, a typed signing callback, and retain/release callbacks.  The sbbs
-adapter implements it with `xp_private_key_t`, so DeuceSSH never asks to
-export a hardware key.  The two RSA signature algorithms use the same key
+adapter implements it with `xp_key_t`, so DeuceSSH never asks to export a
+hardware key.  The two RSA signature algorithms use the same key
 handle.  Startup logs storage kind and SHA-256 fingerprints in OpenSSH
 notation.  Host-key reload requires terminal-server restart because DeuceSSH
 intentionally freezes global signer contexts after its first session.
@@ -844,8 +897,8 @@ classes stay public but become compatibility facades over typed xptls APIs.
 
 ### Constants and availability
 
-Copy the currently-published numeric algorithm, mode, certificate type,
-format, cursor, keyset option, and attribute values into a Synchronet-owned
+Copy the published numeric algorithm, mode, certificate type, format, cursor,
+keyset option, and attribute values into a Synchronet-owned
 `js_crypto_constants.h`.  Existing property names and numbers do not change
 merely because the provider changed.
 
@@ -860,9 +913,9 @@ The required cross-provider baseline is:
 | JavaScript need | xptls mechanism |
 |---|---|
 | SHA-256/384/512 streaming digest and `hashvalue` | `xp_digest` |
-| RSA-2048/3072/4096 and P-256/P-384/P-521 key generation/import/export | `xp_ca_key` |
+| RSA-2048/3072/4096 and P-256/P-384/P-521 key generation/import/export | `xp_key` |
 | RSA PKCS#1 SHA-2 and ECDSA SHA-2 signatures | `xp_sign` |
-| RSA and EC JWK public components | typed `xp_ca_key_get_*_public` getters |
+| RSA and EC JWK public components | `xp_key_get_rsa_public()` and `xp_key_get_ec_public()` |
 | AES and ChaCha20 contexts used by supported scripts | `xp_cipher` streaming/context API |
 | CSR and X.509 import/export/signing | `xp_ca` additions below |
 | PKCS#12 and labelled key/certificate persistence | new `xp_keyset` API |
@@ -873,11 +926,10 @@ They may be enabled only when both providers implement the operation safely
 or when a separately-audited legacy module is explicitly compiled.  New
 repository code must not use them.
 
-`hotline.js` currently refers to `CryptContext.ALGO.Blowfish` and
-`CryptContext.MODE.OFB`, neither of which the current class publishes.  This
-port does not pretend that path works.  A separate Hotline compatibility fix
-must either carry an audited Blowfish/OFB implementation or negotiate an
-actually-supported mode.
+The `hotline.js` Blowfish/OFB path uses constants outside the published
+`CryptContext` surface and is not part of this compatibility baseline.  A
+separate Hotline compatibility fix must either carry an audited Blowfish/OFB
+implementation or negotiate a supported mode.
 
 ### `CryptContext`
 
@@ -903,11 +955,14 @@ Cryptlib implementation detail, not a behavior to reproduce in xptls.
 
 ### `CryptCert`
 
-Expand `xp_ca` with typed CSR subject fields, DNS SANs, arbitrary extension
-DER for CSR construction, PEM/text export, certificate-chain import, and the
-certificate getters needed by the published JavaScript properties.  Draft
-attributes are stored until `sign()`; parsed certificate attributes are
-read-only provider data.
+`xp_ca` supplies RSA/ECDSA CSR signing, common-name and DNS-SAN identities,
+DER CSR and certificate import/export, PEM certificate-chain import/export,
+validity access, public-key extraction, certificate issuance, and certificate
+path validation.  Extend it with organization and the remaining typed CSR
+subject fields, arbitrary extension DER for CSR construction, PEM/text and
+PKCS#7 forms, and the certificate getters needed by the published JavaScript
+properties.  Draft attributes are stored until `sign()`; parsed certificate
+attributes are read-only provider data.
 
 The mandatory compatibility set is the behavior exercised by
 `certtool.js`, `letsyncrypt.js`, `acmev2.js`, the JavaScript docs generator,
@@ -934,10 +989,10 @@ lookups.
 Add an xptls `xp_keyset` abstraction backed by PKCS#12 for portable import and
 export and by an atomic Synchronet manifest for multi-label working keysets.
 The manifest is a documented UTF-8 file containing a version, labels, object
-kind, DER certificate bytes, and either encrypted PKCS#8 or an
-`xp_private_key` storage reference.  File private-key records remain
-individually encrypted by the supplied non-empty password; the manifest is
-not treated as encryption.  Hardware locators contain no PIN or other
+kind, DER certificate bytes, and either encrypted PKCS#8 or a versioned
+`xp_key_t` storage reference.  File private-key records remain individually
+encrypted by the supplied non-empty password; the manifest is not treated as
+encryption.  Hardware locators contain no PIN or other
 authorization secret.
 
 The API supports the existing operations: create/read-write/read-only open,
@@ -993,7 +1048,7 @@ private keys.
 Ship one transition release that carries Cryptlib solely for a native
 migration executable and contains:
 
-- the new xptls key/certificate/keyset APIs;
+- the standard xptls key/certificate/keyset APIs;
 - a native `cryptmigrate` utility able to open known Cryptlib labels with the
   system password and export standard PKCS#12;
 - xptls import of that PKCS#12 into the configured key store plus PEM chains;
@@ -1011,13 +1066,13 @@ not required.  They are:
 
 ### Native migration isolation
 
-In the transition release the existing JavaScript names `CryptContext`,
-`CryptCert`, and `CryptKeyset` already refer only to their xptls
+In the transition release the JavaScript names `CryptContext`, `CryptCert`,
+and `CryptKeyset` refer only to their xptls
 implementations.  They do not select an implementation by file contents,
 expose a legacy mode, or load Cryptlib and xptls objects in the same
 SpiderMonkey runtime.  Attempting to open a legacy Cryptlib keyset through the
-new `CryptKeyset` produces a specific error directing the operator to the
-native migration utility.
+xptls-backed `CryptKeyset` produces a specific error directing the operator to
+the native migration utility.
 
 `cryptmigrate` is a separately-linked, temporary native executable with no
 SpiderMonkey or JSAPI dependency.  It is the only published transition target
@@ -1053,8 +1108,8 @@ apply:
 5. validate key/certificate matches, certificate chain parsing, SSH public
    blob equality, and ACME key label/account mapping;
 6. print old and new TLS and SSH public fingerprints;
-7. atomically install only the validated new key references and files that did
-   not already exist; and
+7. atomically install only the validated new key references and files without
+   overwriting an existing destination; and
 8. write `ctrl/cryptmigrate.ini` recording source file identity, installed
    paths, fingerprints, time, and per-item result.
 
@@ -1121,6 +1176,13 @@ floor.  It combines `xp_tls_errstr()` or `dssh_session_errstr()` with the
 stable text for the status.  It does not allocate an expanded message that a
 caller must free and does not accept an unevaluated function call.
 
+Non-session crypto code uses `xp_crypto_status_string()` for stable status
+text, the applicable object diagnostic such as `xp_key_errstr()` or
+`xp_cipher_errstr()`, and `xp_crypto_last_error()` or `xp_ca_last_error()` only
+when a failed constructor could not return an object.  Diagnostics are copied
+or logged before another operation on the same object or thread can replace
+them.
+
 Timeout, would-block, clean EOF, authentication rejection, and channel close
 are control-flow results at the relevant I/O/auth boundary, not generic
 errors.  Callers decide whether and at what level to log them.  Provider or
@@ -1149,36 +1211,39 @@ to exclude any provider-specific authentication query fields.
 
 Borrowed object error text remains valid until that object's next operation
 and is logged or copied immediately.  Static status text needs no release.
-Thread-local `last_error` is used only for constructors that could not return
-an object.  No replacement has an equivalent of `free_crypt_attrstr()`.
+Thread-local constructor diagnostics are used only when no object was
+returned.  No replacement has an equivalent of `free_crypt_attrstr()`.
 
 ## Build-system changes
 
 ### CMake
 
-- Add `src/xptls` after `xpdev` and link `xptls` to every sbbs3 target that
-  owns TLS or JavaScript crypto.
+- Call `synchronet_configure_crypto()` from
+  `src/build/SynchronetCrypto.cmake` before adding xptls or DeuceSSH.  Add the
+  independent `src/xptls` static library and link `xptls::static` to every
+  sbbs3 target that owns TLS or JavaScript crypto.
 - In the transition release only, build `cryptmigrate` as a standalone target
   from isolated Cryptlib-export and xptls-import translation units.  Do not
   propagate its Cryptlib include directories, definitions, or libraries to
   any server, JavaScript, or common-library target.
 - Add `src/ssh` with only the static target for integrated builds and link it,
   plus the existing SFTP library, to the terminal server library/executable.
-- Force `XP_CRYPTO_BACKEND == DEUCESSH_CRYPTO_BACKEND` for integrated sbbs3.
+- Select the provider with `CRYPTO_BACKEND`; the shared configuration pins
+  `XP_CRYPTO_BACKEND` and `DEUCESSH_CRYPTO_BACKEND` to the same value for an
+  integrated sbbs3 build.
 - Reuse the vendored Botan target when selected; do not build a second Botan.
 - Detect TPM 2.0, PKCS#11, and supported platform-keystore adapters
   independently and publish their capabilities through xptls.  A missing
   optional SDK/module must not disable the file backend.
 - Remove `3RDP_CRYPTLIB_LIB`, Cryptlib include paths, version defines, and
   patch-hash checks from sbbs3 targets.
-- When Botan supplies C++ objects to a nominally C target, select the C++
-  linker exactly as SyncTERM already does.
 
 ### GNU make
 
-Reuse SyncTERM's proven xptls object and DeuceSSH CMake-subbuild pattern rather
-than inventing a second backend probe.  Add explicit xptls/DeuceSSH library
-prerequisites and backend libraries to final link order.  Replace the broad
+Use the shared `CRYPTO_BACKEND` selection in `src/build/Common.gmake` and the
+CMake-subproject rules in `src/build/CMakeSubproject.gmake` to build the
+independent xptls and DeuceSSH static libraries.  Add explicit library
+prerequisites and provider libraries to final link order.  Replace the broad
 `$(CRYPT_LIB)` dependencies in `extdeps.mk` with the actual xptls dependency
 only on objects whose headers or code use xptls.
 
@@ -1209,12 +1274,11 @@ old server consumers while their milestone is in progress, but converted code
 must not call back through a compatibility shim.  In the published transition
 release, only the standalone migration utility still links Cryptlib.
 
-1. **Complete xptls server/common APIs.** Implement shared credentials,
-   server handshake, PSK lookup, client certificate modes, per-operation
-   deadlines without socket timeout mutation,
-   peer DER access, version/cipher accessors, opaque storage-backed keys,
-   hardware capability/error reporting, disabled stubs, and cross-backend
-   tests.
+1. **Complete the remaining xptls surface.** Implement storage-backed TLS
+   client identities, the certificate operations required by `CryptCert`,
+   `xp_keyset`, claimed TPM/platform store adapters, and any advertised
+   hardware import operations.  Add Botan, OpenSSL, and disabled-backend tests
+   for each contract before its sbbs3 consumer depends on it.
 2. **Replace TLS identity persistence.** Implement standard files, the new
    key-reference registry, the new `ssl.c` manager, storage-policy-aware
    self-signed creation, reload tests, and the isolated native transition
@@ -1329,8 +1393,8 @@ At least one TLS test must exercise TLS 1.2 and one TLS 1.3.
 
 ### Build matrix
 
-The gate covers GNU make and CMake on Linux, FreeBSD, macOS, MinGW, and Visual
-Studio where those builds are currently supported, with:
+The gate covers GNU make and CMake on the supported Linux, FreeBSD, macOS,
+MinGW, and Visual Studio configurations, with:
 
 - Botan;
 - OpenSSL where supported;
@@ -1346,7 +1410,7 @@ each provider/store combination that the build claims to support.
 
 | Area | Principal files |
 |---|---|
-| xptls API/backends/tests | `src/xptls/xp_tls.h`, both TLS backends and stub, `xp_ca.*`, opaque key/storage adapters, new keyset code, CMake tests |
+| xptls API/backends/tests | `xp_tls.h` and both TLS backends for storage-backed client identity; `xp_ca.*` compatibility additions; new `xp_keyset.*` and claimed TPM/platform adapters; common tests and CMake wiring |
 | TLS identity/common errors | `src/sbbs3/ssl.{h,c}` and a small common TLS I/O helper |
 | TLS consumers | `ftpsrvr.cpp`, `mailsrvr.cpp`, `websrvr.cpp`, `services.cpp`, `mqtt_{client,broker}.{h,cpp}`, `js_socket.{h,cpp}`, and structs that carry TLS handles |
 | SSH/SFTP | new `ssh_session.{h,cpp}`, `main.cpp`, `answer.cpp`, `sbbs.h`, `sftp.cpp` |
