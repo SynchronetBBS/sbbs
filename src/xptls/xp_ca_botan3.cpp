@@ -33,8 +33,6 @@
 #include <botan/ecdsa.h>
 #include <botan/ec_group.h>
 #include <botan/hash.h>
-#include <botan/ipv4_address.h>
-#include <botan/ipv6_address.h>
 #include <botan/pkcs10.h>
 #include <botan/pkcs8.h>
 #include <botan/pem.h>
@@ -1190,7 +1188,8 @@ static std::vector<std::vector<uint8_t>>
 pkcs7_decode(std::span<const uint8_t> encoded)
 {
 	std::vector<std::vector<uint8_t>> certs;
-	Botan::BER_Decoder input(encoded, Botan::BER_Decoder::Limits::DER());
+	/* Botan 3.11 has no public strict-DER decoder limits. */
+	Botan::BER_Decoder input(encoded);
 	auto outer = input.start_sequence();
 	Botan::OID content_type;
 	outer.decode(content_type);
@@ -1429,6 +1428,30 @@ botan_string_sans(const Botan::AlternativeName& names, enum xp_ca_san_type type)
 		: type == XP_CA_SAN_URI ? &names.uris() : nullptr;
 }
 
+static std::vector<std::vector<uint8_t>>
+botan_ip_sans(xp_ca_cert_t cert)
+{
+	std::vector<std::vector<uint8_t>> addresses;
+	try {
+		auto encoded = cert->native->v3_extensions().get_extension_bits(
+			Botan::OID::from_string("2.5.29.17"));
+		Botan::BER_Decoder decoder(encoded);
+		auto names = decoder.start_sequence();
+		while (names.more_items()) {
+			auto name = names.get_next_object();
+			if (name.is_a(static_cast<Botan::ASN1_Type>(7),
+			    Botan::ASN1_Class::ContextSpecific)
+			    && (name.length() == 4 || name.length() == 16))
+				addresses.emplace_back(name.bits(), name.bits() + name.length());
+		}
+		names.end_cons();
+		decoder.verify_end();
+	} catch (...) {
+		addresses.clear();
+	}
+	return addresses;
+}
+
 extern "C" int
 xp_ca_cert_get_san_count(xp_ca_cert_t cert, enum xp_ca_san_type type,
 	size_t *count)
@@ -1437,7 +1460,7 @@ xp_ca_cert_get_san_count(xp_ca_cert_t cert, enum xp_ca_san_type type,
 	const auto& names = cert->native->subject_alt_name();
 	if (auto values = botan_string_sans(names, type)) *count = values->size();
 	else if (type == XP_CA_SAN_IP_ADDRESS)
-		*count = names.ipv4_address().size() + names.ipv6_address().size();
+		*count = botan_ip_sans(cert).size();
 	else return XP_CRYPTO_ERR_INVALID;
 	return XP_CA_OK;
 }
@@ -1454,16 +1477,9 @@ xp_ca_cert_get_san(xp_ca_cert_t cert, enum xp_ca_san_type type,
 		std::vector<uint8_t> value(item->begin(), item->end()); return copy_bytes(value, out, len);
 	}
 	if (type != XP_CA_SAN_IP_ADDRESS) return XP_CRYPTO_ERR_INVALID;
-	if (index < names.ipv4_address().size()) {
-		auto item = names.ipv4_address().begin(); std::advance(item, index);
-		Botan::IPv4Address address(*item); auto bytes = address.to_bytes();
-		std::vector<uint8_t> value(bytes.begin(), bytes.end()); return copy_bytes(value, out, len);
-	}
-	index -= names.ipv4_address().size();
-	if (index >= names.ipv6_address().size()) return XP_CRYPTO_ERR_NOT_FOUND;
-	auto item = names.ipv6_address().begin(); std::advance(item, index);
-	auto bytes = item->address(); std::vector<uint8_t> value(bytes.begin(), bytes.end());
-	return copy_bytes(value, out, len);
+	auto addresses = botan_ip_sans(cert);
+	if (index >= addresses.size()) return XP_CRYPTO_ERR_NOT_FOUND;
+	return copy_bytes(addresses[index], out, len);
 }
 
 extern "C" void
