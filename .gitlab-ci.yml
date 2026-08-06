@@ -145,6 +145,11 @@ include:
   needs: []
   variables:
     QTMONITOR_VCPKG_REF: "2026.06.01"
+    # OpenSSL 3.6.2's generated AVX-512 sources do not assemble correctly
+    # with NASM 3.01. Keep vcpkg on the stable 2.x assembler until that
+    # upstream combination is fixed.
+    QTMONITOR_NASM_VERSION: "2.16.03"
+    QTMONITOR_NASM_SHA256: "3ee4782247bcb874378d02f7eab4e294a84d3d15f3f6ee2de2f47a46aa7226e6"
   cache:
     key: "qtmonitor-vcpkg-$CI_JOB_NAME_SLUG"
     paths:
@@ -164,6 +169,25 @@ include:
     - New-Item -ItemType Directory -Force $env:VCPKG_DOWNLOADS, $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
     - git clone --depth 1 --branch $env:QTMONITOR_VCPKG_REF https://github.com/microsoft/vcpkg.git $env:VCPKG_ROOT
     - '& (Join-Path $env:VCPKG_ROOT "bootstrap-vcpkg.bat") -disableMetrics'
+    - |
+      $nasmTools = Join-Path $env:VCPKG_DOWNLOADS "qtmonitor-tools"
+      $nasmRoot = Join-Path $nasmTools "nasm-$env:QTMONITOR_NASM_VERSION"
+      $nasmArchive = Join-Path $nasmTools "nasm-$env:QTMONITOR_NASM_VERSION-win64.zip"
+      New-Item -ItemType Directory -Force $nasmTools | Out-Null
+      if ((Test-Path $nasmArchive) -and
+          ((Get-FileHash -Algorithm SHA256 $nasmArchive).Hash.ToLowerInvariant() -ne $env:QTMONITOR_NASM_SHA256)) {
+        Remove-Item -Force $nasmArchive
+      }
+      if (-not (Test-Path $nasmArchive)) {
+        Invoke-WebRequest -UseBasicParsing "https://www.nasm.us/pub/nasm/releasebuilds/$env:QTMONITOR_NASM_VERSION/win64/nasm-$env:QTMONITOR_NASM_VERSION-win64.zip" -OutFile $nasmArchive
+      }
+      if ((Get-FileHash -Algorithm SHA256 $nasmArchive).Hash.ToLowerInvariant() -ne $env:QTMONITOR_NASM_SHA256) {
+        throw "NASM archive checksum mismatch"
+      }
+      Expand-Archive -Force $nasmArchive $nasmTools
+      Remove-Item -Recurse -Force (Join-Path $env:VCPKG_DOWNLOADS "tools\nasm\nasm-3.01") -ErrorAction SilentlyContinue
+      $env:PATH = $nasmRoot + ";" + $env:PATH
+      & (Join-Path $nasmRoot "nasm.exe") -v
     - |
       if (-not (Get-Command cmake.exe -ErrorAction SilentlyContinue)) {
         $cmake = Get-ChildItem "C:\Program Files\Microsoft Visual Studio\2022\*\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -ErrorAction SilentlyContinue | Select-Object -First 1

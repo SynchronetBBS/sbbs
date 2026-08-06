@@ -32,6 +32,9 @@
       "description": "Build qtmonitor with Qt supplied by vcpkg",
       "inherits": "vcpkg-base",
       "binaryDir": "${sourceDir}/build/macos-vcpkg",
+      "cacheVariables": {
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/vcpkg-triplets"
+      },
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",

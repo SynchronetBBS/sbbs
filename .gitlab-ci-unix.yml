@@ -113,6 +113,11 @@ spec:
     key: "qtmonitor-vcpkg-$CI_JOB_NAME_SLUG"
     paths:
       - .cache/vcpkg/
+  artifacts:
+    when: on_failure
+    expire_in: 1 week
+    paths:
+      - qtmonitor-vcpkg-configure.log
   script:
     - touch ${CI_PIPELINE_ID}.ci
     - |
@@ -125,7 +130,16 @@ spec:
         git clone --depth 1 --branch "$QTMONITOR_VCPKG_REF" https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
         "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
         cd src/sbbs3/qtmonitor
-        cmake --preset macos-vcpkg -G Ninja
+        configure_log="$CI_PROJECT_DIR/qtmonitor-vcpkg-configure.log"
+        if cmake --preset macos-vcpkg -G Ninja >"$configure_log" 2>&1; then
+          tail -n 80 "$configure_log"
+        else
+          # vcpkg appends multi-megabyte diagnostic attachments to its output.
+          # Keep the complete log as an artifact, but show enough of the start
+          # to include its package summary and first underlying failure.
+          sed -n '1,800p' "$configure_log"
+          exit 1
+        fi
         cmake --build --preset macos-vcpkg
         ctest --preset macos-vcpkg
       else
