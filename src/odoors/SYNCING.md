@@ -33,10 +33,16 @@ repository deletes or ignores them. This includes:
 - `ODoors62.dll`
 - `exe-*`, `libs-*`, and `objs-*` directories
 
-The bundled copy also carries one integration adaptation in `odoors.props`:
-Win32 builds prefer the retained root `ODoorW.lib` when it exists, before
-falling back to the standalone repository's CMake output directory. Preserve
-that conditional when importing future changes to the property sheet.
+The bundled copy also carries these integration adaptations:
+
+- In `odoors.props`, Win32 builds prefer the retained root `ODoorW.lib` when
+  it exists, before falling back to the standalone repository's CMake output
+  directory.
+- `GNUmakefile` includes `ODFormat`, `ODFmtFB`, and `ODSafe` in legacy builds,
+  defaults its supported platforms to their native `vsnprintf`, and declares
+  the unversioned shared-library symlink as an explicit make target.
+
+Preserve these adaptations when importing future changes to those files.
 
 Do not use a mirroring command with deletion enabled. In particular, an
 unqualified `rsync --delete` would remove files that belong only to the
@@ -79,8 +85,8 @@ Synchronet copy.
    checkout.
 
 5. Compare the imported files with their standalone blobs. Except for the
-   documented `odoors.props` adaptation, these two hashes should match for
-   each imported path:
+   documented integration adaptations, these two hashes should match for each
+   imported path:
 
    ```sh
    git hash-object src/odoors/<path>

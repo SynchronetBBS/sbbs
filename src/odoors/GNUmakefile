@@ -109,6 +109,13 @@ ifeq ($(shell if [ -f /usr/include/inttypes.h ] ; then echo YES ; fi),YES)
  CFLAGS	+=	-DHAS_INTTYPES_H
 endif
 
+# The platforms supported by this GNU makefile provide C99 vsnprintf().
+# Set OPENDOORS_HAVE_VSNPRINTF=0 to build the bundled Trio fallback instead.
+OPENDOORS_HAVE_VSNPRINTF ?= 1
+ifneq ($(OPENDOORS_HAVE_VSNPRINTF),0)
+ CFLAGS += -DOPENDOORS_HAVE_VSNPRINTF=1
+endif
+
 # /MTd /Zi - for debug
 #
 #------------------------------------------------------------------------------
@@ -130,6 +137,9 @@ SHLIB_PREFIX	:=	lib
 LIB_SUFFIX	:=	.6.3
 EXTRA_LIBS	:=
 EXE_SUFFIX	:=
+ifeq ($(OPENDOORS_HAVE_VSNPRINTF),0)
+ EXTRA_LIBS += -lm
+endif
 ifeq ($(os),darwin)
  SHLIB		?=	.dylib
 else
@@ -186,12 +196,14 @@ endif
 #
 HEADERS= ${HEADERDIR}ODCom.h\
          ${HEADERDIR}ODCore.h\
+         ${HEADERDIR}ODFormat.h\
          ${HEADERDIR}ODGen.h\
          ${HEADERDIR}ODInEx.h\
          ${HEADERDIR}ODInQue.h\
          ${HEADERDIR}ODKrnl.h\
          ${HEADERDIR}ODPlat.h\
          ${HEADERDIR}ODRes.h\
+         ${HEADERDIR}ODSafe.h\
          ${HEADERDIR}ODScrn.h\
          ${HEADERDIR}ODStat.h\
          ${HEADERDIR}ODSwap.h\
@@ -213,6 +225,8 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
          ${OBJDIR}ODEdit${OBJFILE}\
          ${OBJDIR}ODEdStr${OBJFILE}\
          ${OBJDIR}ODEmu${OBJFILE}\
+         ${OBJDIR}ODFormat${OBJFILE}\
+         ${OBJDIR}ODFmtFB${OBJFILE}\
          ${OBJDIR}ODGetIn${OBJFILE}\
          ${OBJDIR}ODGraph${OBJFILE}\
          ${OBJDIR}ODInEx1${OBJFILE}\
@@ -227,6 +241,7 @@ OBJECTS := ${OBJDIR}ODAuto${OBJFILE}\
          ${OBJDIR}ODPopup${OBJFILE}\
          ${OBJDIR}ODPrntf${OBJFILE}\
          ${OBJDIR}ODRA${OBJFILE}\
+         ${OBJDIR}ODSafe${OBJFILE}\
          ${OBJDIR}ODScrn${OBJFILE}\
          ${OBJDIR}ODSpawn${OBJFILE}\
          ${OBJDIR}ODStand${OBJFILE}\
@@ -258,7 +273,9 @@ $(LIBDIR)ODoor.res : ODRes.rc | ${LIBDIR}
 
 ${ODOORS_SHLIB}${LIB_SUFFIX} : ${OBJECTS} | ${LIBDIR}
 	$(CC) $(SHFLAGS) -o ${ODOORS_SHLIB}${LIB_SUFFIX} ${OBJECTS} ${EXTRA_LIBS}
+
 ifndef win
+${ODOORS_SHLIB}: ${ODOORS_SHLIB}${LIB_SUFFIX}
 	ln -fs ${SHLIB_PREFIX}ODoors${SHLIB}${LIB_SUFFIX} ${ODOORS_SHLIB}
 endif
 
