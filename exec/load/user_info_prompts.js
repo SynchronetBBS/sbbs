@@ -364,7 +364,7 @@ function get_handle(user)
 			|| handle.indexOf(0xff) >= 0
 			|| ((system.newuser_questions & UQ_DUPHAND)
 				&& bbs.matchuserdata(U_HANDLE, handle))
-			|| bbs.trashcan(handle, "name")) {
+			|| bbs.trashcan("name", handle)) {
 			bbs.logline(LOG_NOTICE, "N!", format("Invalid or duplicate user handle: '%s'", handle));
 			ask_to_cancel(bbs.text(bbs.text.YouCantUseThatName));
 		} else {
@@ -480,7 +480,7 @@ function get_phone(user)
 				continue;
 			}
 		}
-		if (!bbs.trashcan(phone, "phone")) {
+		if (!bbs.trashcan("phone", phone)) {
 			user.phone = phone;
 			break;
 		}
@@ -559,7 +559,7 @@ function get_netmail(user)
 			continue;
 		}
 		if (!netmail
-			|| bbs.trashcan(netmail, "email")
+			|| bbs.trashcan("email", netmail)
 			|| ((system.newuser_questions & UQ_DUPNETMAIL) && bbs.matchuserdata(U_NETMAIL, netmail)))
 			ask_to_cancel(bbs.text(bbs.text.YouCantUseThatNetmail));
 		else {
