@@ -2639,7 +2639,7 @@ test_self_chan_send_break(void)
 struct server_getter_arg {
 	struct selftest_ctx *ctx;
 	enum dssh_chan_type type;
-	const char *command;
+	bool command_matches;
 	bool has_pty;
 	int result;
 };
@@ -2662,7 +2662,8 @@ server_getter_thread(void *arg)
 		return 0;
 
 	a->type = dssh_chan_get_type(ch);
-	a->command = dssh_chan_get_command(ch);
+	const char *command = dssh_chan_get_command(ch);
+	a->command_matches = command != NULL && strcmp(command, "my-command") == 0;
 	a->has_pty = dssh_chan_has_pty(ch);
 
 	dssh_chan_close(ch, 0);
@@ -2701,8 +2702,7 @@ test_self_chan_getters_after_accept(void)
 
 	ASSERT_EQ(sarg.result, 0);
 	ASSERT_EQ(sarg.type, DSSH_CHAN_EXEC);
-	ASSERT_NOT_NULL(sarg.command);
-	ASSERT_STR_EQ(sarg.command, "my-command");
+	ASSERT_TRUE(sarg.command_matches);
 	ASSERT_FALSE(sarg.has_pty);
 
 	selftest_cleanup(&ctx);

@@ -24,6 +24,8 @@
 #include "deucessh-crypto.h"
 #include "deucessh.h"
 
+struct dssh_key_algo_ctx;
+
 #define RSA_SHA2_256_NAME     "rsa-sha2-256"
 #define RSA_SHA2_256_NAME_LEN 12
 
@@ -189,10 +191,11 @@ pubkey_impl(const uint8_t **out, size_t *outlen, struct cbdata *cbd)
 /* --- extern "C" wrappers for function pointer vtable --- */
 
 extern "C" int
-dssh_botan_rsa256_sign(uint8_t **out, size_t *outlen, const uint8_t *data, size_t data_len, void *ctx)
+dssh_botan_rsa256_sign(uint8_t **out, size_t *outlen, const uint8_t *data, size_t data_len,
+    dssh_key_algo_ctx *ctx)
 {
 	try {
-		return sign_impl(out, outlen, data, data_len, static_cast<struct cbdata *>(ctx));
+		return sign_impl(out, outlen, data, data_len, reinterpret_cast<struct cbdata *>(ctx));
 	}
 	catch (...) {
 		return DSSH_ERROR_INIT;
@@ -277,10 +280,10 @@ dssh_botan_rsa256_verify(const uint8_t *key_blob, size_t key_blob_len, const uin
 }
 
 extern "C" int
-dssh_botan_rsa256_pubkey(const uint8_t **out, size_t *outlen, void *ctx)
+dssh_botan_rsa256_pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 {
 	try {
-		return pubkey_impl(out, outlen, static_cast<struct cbdata *>(ctx));
+		return pubkey_impl(out, outlen, reinterpret_cast<struct cbdata *>(ctx));
 	}
 	catch (...) {
 		return DSSH_ERROR_INIT;
@@ -288,9 +291,9 @@ dssh_botan_rsa256_pubkey(const uint8_t **out, size_t *outlen, void *ctx)
 }
 
 extern "C" int
-dssh_botan_rsa256_haskey(void *ctx)
+dssh_botan_rsa256_haskey(dssh_key_algo_ctx *ctx)
 {
-	struct cbdata *cbd = static_cast<struct cbdata *>(ctx);
+	struct cbdata *cbd = reinterpret_cast<struct cbdata *>(ctx);
 	if (cbd == NULL || cbd->privkey == NULL)
 		return 0;
 	try {
@@ -302,9 +305,9 @@ dssh_botan_rsa256_haskey(void *ctx)
 }
 
 extern "C" void
-dssh_botan_rsa256_cleanup(void *ctx)
+dssh_botan_rsa256_cleanup(dssh_key_algo_ctx *ctx)
 {
-	struct cbdata *cbd = static_cast<struct cbdata *>(ctx);
+	struct cbdata *cbd = reinterpret_cast<struct cbdata *>(ctx);
 
 	if (cbd == rsa_ctx)
 		rsa_ctx = NULL;
