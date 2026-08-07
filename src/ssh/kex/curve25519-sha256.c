@@ -190,8 +190,9 @@ curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_
 		size_t   rpos = 1;
 		uint32_t ks_len;
 
-		if ((dssh_parse_uint32(&reply[rpos], reply_len - rpos, &ks_len) < 4)
-		    || (rpos + 4 + ks_len > reply_len)) {
+		if (!dssh_buffer_has(reply_len, rpos, 4)
+		    || dssh_parse_uint32(&reply[rpos], reply_len - rpos, &ks_len) < 4
+		    || !dssh_buffer_has(reply_len, rpos + 4, ks_len)) {
 			ops->free_priv(priv_ctx);
 			return DSSH_ERROR_PARSE;
 		}
@@ -204,7 +205,7 @@ curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_
 
 		uint32_t qs_len;
 
-		if (rpos + 4 > reply_len) {
+		if (!dssh_buffer_has(reply_len, rpos, 4)) {
 			ops->free_priv(priv_ctx);
 			return DSSH_ERROR_PARSE;
 		}
@@ -212,7 +213,7 @@ curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_
 			ops->free_priv(priv_ctx);
 			return DSSH_ERROR_PARSE;
 		}
-		if ((qs_len != X25519_KEY_LEN) || (rpos + 4 + qs_len > reply_len)) {
+		if ((qs_len != X25519_KEY_LEN) || !dssh_buffer_has(reply_len, rpos + 4, qs_len)) {
 			ops->free_priv(priv_ctx);
 			return DSSH_ERROR_PARSE;
 		}
@@ -222,7 +223,7 @@ curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_
 
 		uint32_t sig_len;
 
-		if (rpos + 4 > reply_len) {
+		if (!dssh_buffer_has(reply_len, rpos, 4)) {
 			ops->free_priv(priv_ctx);
 			return DSSH_ERROR_PARSE;
 		}
@@ -230,7 +231,7 @@ curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_
 			ops->free_priv(priv_ctx);
 			return DSSH_ERROR_PARSE;
 		}
-		if (rpos + 4 + sig_len > reply_len) {
+		if (!dssh_buffer_has(reply_len, rpos + 4, sig_len)) {
 			ops->free_priv(priv_ctx);
 			return DSSH_ERROR_PARSE;
 		}
@@ -334,8 +335,9 @@ curve25519_handler_impl(struct dssh_kex_context *kctx, const struct dssh_c25519_
 		size_t   rpos = 1;
 		uint32_t qc_len;
 
-		if ((dssh_parse_uint32(&init_payload[rpos], init_len - rpos, &qc_len) < 4)
-		    || (qc_len != X25519_KEY_LEN) || (rpos + 4 + qc_len > init_len))
+		if (!dssh_buffer_has(init_len, rpos, 4)
+		    || dssh_parse_uint32(&init_payload[rpos], init_len - rpos, &qc_len) < 4
+		    || (qc_len != X25519_KEY_LEN) || !dssh_buffer_has(init_len, rpos + 4, qc_len))
 			return DSSH_ERROR_PARSE;
 		rpos += 4;
 		memcpy(q_c, &init_payload[rpos], X25519_KEY_LEN);

@@ -150,7 +150,8 @@ version_tx(struct dssh_session_s *sess)
 
 	size_t asz = strlen(gconf.software_version);
 
-	if (sz + asz + 2 > DSSH_VERSION_STRING_MAX)
+	if (!dssh_buffer_has(DSSH_VERSION_STRING_MAX, sz, asz)
+	    || !dssh_buffer_has(DSSH_VERSION_STRING_MAX, sz + asz, 2))
 		return DSSH_ERROR_TOOLONG;
 	memcpy(&sess->trans.tx_packet[sz], gconf.software_version, asz);
 	sz += asz;
@@ -158,7 +159,8 @@ version_tx(struct dssh_session_s *sess)
 		memcpy(&sess->trans.tx_packet[sz], " ", 1);
 		sz += 1;
 		asz = strlen(gconf.version_comment);
-		if (sz + asz + 2 > DSSH_VERSION_STRING_MAX)
+		if (!dssh_buffer_has(DSSH_VERSION_STRING_MAX, sz, asz)
+		    || !dssh_buffer_has(DSSH_VERSION_STRING_MAX, sz + asz, 2))
 			return DSSH_ERROR_TOOLONG;
 		memcpy(&sess->trans.tx_packet[sz], gconf.version_comment, asz);
 		sz += asz;
@@ -667,7 +669,7 @@ tx_finalize_prepare(struct dssh_session_s *sess, uint8_t *buf, size_t payload_le
 	size_t   total   = 4 + packet_length;
 	uint16_t mac_len = tx_mac_size(sess);
 
-	if (total + mac_len > sess->trans.packet_buf_sz) {
+	if (!dssh_buffer_has(sess->trans.packet_buf_sz, total, mac_len)) {
 		ret = DSSH_ERROR_TOOLONG;
 		goto done;
 	}
@@ -1303,17 +1305,18 @@ recv_packet_raw(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payloa
 		ret = DSSH_ERROR_PARSE;
 		goto rx_done;
 	}
-	if (packet_length + 4 > sess->trans.packet_buf_sz) {
+	if (!dssh_buffer_has(sess->trans.packet_buf_sz, 4, packet_length)) {
 		ret = DSSH_ERROR_TOOLONG;
 		goto rx_done;
 	}
+	size_t packet_total = 4 + (size_t)packet_length;
 
-	if (packet_length + 4 < bs) {
+	if (packet_total < bs) {
 		ret = DSSH_ERROR_PARSE;
 		goto rx_done;
 	}
 
-	size_t remaining = packet_length + 4 - bs;
+	size_t remaining = packet_total - bs;
 	if (remaining > 0) {
 		ret = gconf.rx(&sess->trans.rx_packet[4 + bs], remaining, sess, sess->rx_cbdata);
 		if (ret < 0)
@@ -1491,10 +1494,10 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 					size_t   dpos    = 2;
 					uint32_t msg_len = 0;
 
-					if (dpos + 4 <= *payload_len) {
+					if (dssh_buffer_has(*payload_len, dpos, 4)) {
 						msg_len = DSSH_GET_U32(&(*payload)[dpos]);
 						dpos += 4;
-						if (dpos + msg_len > *payload_len)
+						if (!dssh_buffer_has(*payload_len, dpos, msg_len))
 							msg_len = 0;
 					}
 					dcb(always_display, msg_len > 0 ? &(*payload)[dpos] : NULL, msg_len,
@@ -1522,7 +1525,7 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 					size_t   gpos = 1;
 					uint32_t gname_len;
 
-					if (gpos + 4 > *payload_len) {
+					if (!dssh_buffer_has(*payload_len, gpos, 4)) {
 						uint8_t fail = SSH_MSG_REQUEST_FAILURE;
 						send_to_slot(sess, &sess->trans.global_reply_slot, &fail, 1);
 						dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
@@ -1531,7 +1534,8 @@ recv_packet(struct dssh_session_s *sess, uint8_t *msg_type, uint8_t **payload, s
 					}
 					gname_len = DSSH_GET_U32(&(*payload)[gpos]);
 					gpos += 4;
-					if (gpos + gname_len + 1 > *payload_len) {
+					if (!dssh_buffer_has(*payload_len, gpos, gname_len)
+					    || !dssh_buffer_has(*payload_len, gpos + gname_len, 1)) {
 						uint8_t fail = SSH_MSG_REQUEST_FAILURE;
 						send_to_slot(sess, &sess->trans.global_reply_slot, &fail, 1);
 						dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR,
@@ -1763,7 +1767,8 @@ serialize_namelist_from_str(const char *str, uint8_t *buf, size_t bufsz, size_t 
 
 	uint32_t len = (uint32_t)slen;
 
-	if (*pos > bufsz || bufsz - *pos < 4 + len)
+	if (!dssh_buffer_has(bufsz, *pos, 4)
+	    || !dssh_buffer_has(bufsz, *pos + 4, len))
 		return DSSH_ERROR_TOOLONG;
 	DSSH_PUT_U32(len, buf, pos);
 	memcpy(&buf[*pos], str, len);
@@ -1829,9 +1834,9 @@ build_kexinit_packet(struct dssh_session_s *sess, uint8_t **buf_out, size_t *pos
 			    && !name_in_filter(ka->name, nlen, sess->key_algo_filter))
 				continue;
 
-			if (!nlfirst && (nlpos + 1 < sizeof(namelist)))
+			if (!nlfirst && nlpos < sizeof(namelist) - 1)
 				namelist[nlpos++] = ',';
-			if (nlpos + nlen < sizeof(namelist)) {
+			if (dssh_buffer_has(sizeof(namelist) - 1, nlpos, nlen)) {
 				memcpy(&namelist[nlpos], ka->name, nlen);
 				nlpos += nlen;
 			}
@@ -1980,7 +1985,7 @@ parse_peer_kexinit(const uint8_t *buf, size_t bufsz, char lists[][DSSH_NAMELIST_
 		uint32_t nlen = DSSH_GET_U32(&buf[ppos]);
 		ppos += 4;
 
-		if (ppos + nlen > bufsz)
+		if (!dssh_buffer_has(bufsz, ppos, nlen))
 			return DSSH_ERROR_PARSE;
 
 		/* RFC 4251 s6: reject control characters and DEL */
@@ -2946,7 +2951,12 @@ dssh_transport_set_version(const char *software_version, const char *comment)
 		return DSSH_ERROR_INVALID;
 
 	/* ssh_version_prefix + version + " " + comment + CR LF <= DSSH_VERSION_STRING_MAX */
-	size_t total = DSSH_STRLEN(ssh_version_prefix) + sv_len + 2;
+	size_t prefix_len = DSSH_STRLEN(ssh_version_prefix);
+
+	if (!dssh_buffer_has(DSSH_VERSION_STRING_MAX, prefix_len, sv_len)
+	    || !dssh_buffer_has(DSSH_VERSION_STRING_MAX, prefix_len + sv_len, 2))
+		return DSSH_ERROR_TOOLONG;
+	size_t total = prefix_len + sv_len + 2;
 
 	if (comment != NULL) {
 		size_t cm_len = strlen(comment);
@@ -2955,6 +2965,9 @@ dssh_transport_set_version(const char *software_version, const char *comment)
 			return DSSH_ERROR_PARSE;
 		if (!is_valid_comment(comment, cm_len))
 			return DSSH_ERROR_INVALID;
+		if (!dssh_buffer_has(DSSH_VERSION_STRING_MAX, total, 1)
+		    || !dssh_buffer_has(DSSH_VERSION_STRING_MAX, total + 1, cm_len))
+			return DSSH_ERROR_TOOLONG;
 		total += 1 + cm_len; /* SP + comment */
 	}
 	if (total > DSSH_VERSION_STRING_MAX)

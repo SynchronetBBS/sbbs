@@ -54,11 +54,11 @@ handle_banner(struct dssh_session_s *sess, uint8_t *payload, size_t payload_len)
 	size_t   rpos = 1;
 	uint32_t msg_len;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	msg_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + msg_len > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, msg_len))
 		return DSSH_ERROR_PARSE;
 
 	const uint8_t *message = &payload[rpos];
@@ -68,10 +68,10 @@ handle_banner(struct dssh_session_s *sess, uint8_t *payload, size_t payload_len)
 	uint32_t       lang_len = 0;
 	const uint8_t *language = NULL;
 
-	if (rpos + 4 <= payload_len) {
+	if (dssh_buffer_has(payload_len, rpos, 4)) {
 		lang_len = DSSH_GET_U32(&payload[rpos]);
 		rpos += 4;
-		if (rpos + lang_len <= payload_len)
+		if (dssh_buffer_has(payload_len, rpos, lang_len))
 			language = &payload[rpos];
 		else
 			lang_len = 0;
@@ -285,11 +285,11 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len, const uint8_t 
 	size_t   rpos = 1; /* skip msg_type */
 	uint32_t ulen;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	ulen = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + ulen > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, ulen))
 		return DSSH_ERROR_PARSE;
 	*username     = &payload[rpos];
 	*username_len = ulen;
@@ -298,22 +298,22 @@ parse_userauth_prefix(const uint8_t *payload, size_t payload_len, const uint8_t 
 	/* service name (skip) */
 	uint32_t slen;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	slen = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + slen > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, slen))
 		return DSSH_ERROR_PARSE;
 	rpos += slen;
 
 	/* method name */
 	uint32_t mlen;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	mlen = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + mlen > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, mlen))
 		return DSSH_ERROR_PARSE;
 	*method     = &payload[rpos];
 	*method_len = mlen;
@@ -461,7 +461,7 @@ handle_auth_password(struct dssh_session_s *sess, const struct dssh_auth_server_
 	}
 
 	/* Parse: boolean change, string password [, string new_password] */
-	if (rpos + 1 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 1))
 		return DSSH_ERROR_PARSE;
 
 	bool change = (payload[rpos] != 0);
@@ -470,11 +470,11 @@ handle_auth_password(struct dssh_session_s *sess, const struct dssh_auth_server_
 
 	uint32_t pw_len;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	pw_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + pw_len > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, pw_len))
 		return DSSH_ERROR_PARSE;
 
 	const uint8_t *pw = &payload[rpos];
@@ -485,11 +485,11 @@ handle_auth_password(struct dssh_session_s *sess, const struct dssh_auth_server_
 		/* Password change request */
 		uint32_t new_pw_len;
 
-		if (rpos + 4 > payload_len)
+		if (!dssh_buffer_has(payload_len, rpos, 4))
 			return DSSH_ERROR_PARSE;
 		new_pw_len = DSSH_GET_U32(&payload[rpos]);
 		rpos += 4;
-		if (rpos + new_pw_len > payload_len)
+		if (!dssh_buffer_has(payload_len, rpos, new_pw_len))
 			return DSSH_ERROR_PARSE;
 
 		const uint8_t *new_pw     = &payload[rpos];
@@ -532,19 +532,19 @@ handle_auth_kbi(struct dssh_session_s *sess, const struct dssh_auth_server_cbs *
 	/* Parse language + submethods (both ignored) */
 	uint32_t skip_len;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	skip_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + skip_len > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, skip_len))
 		return DSSH_ERROR_PARSE;
 	rpos += skip_len; /* language */
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	skip_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + skip_len > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, skip_len))
 		return DSSH_ERROR_PARSE;
 	rpos += skip_len; /* submethods */
 
@@ -633,7 +633,7 @@ handle_auth_kbi(struct dssh_session_s *sess, const struct dssh_auth_server_cbs *
 		/* Parse INFO_RESPONSE */
 		size_t rp = 1; /* skip msg_type */
 
-		if (rp + 4 > resp_len)
+		if (!dssh_buffer_has(resp_len, rp, 4))
 			return DSSH_ERROR_PARSE;
 		num_responses = DSSH_GET_U32(&resp_payload[rp]);
 		rp += 4;
@@ -656,14 +656,14 @@ handle_auth_kbi(struct dssh_session_s *sess, const struct dssh_auth_server_cbs *
 		for (uint32_t i = 0; i < num_responses; i++) {
 			uint32_t rlen;
 
-			if (rp + 4 > resp_len) {
+			if (!dssh_buffer_has(resp_len, rp, 4)) {
 				free(responses);
 				free(response_lens);
 				return DSSH_ERROR_PARSE;
 			}
 			rlen = DSSH_GET_U32(&resp_payload[rp]);
 			rp += 4;
-			if (rp + rlen > resp_len) {
+			if (!dssh_buffer_has(resp_len, rp, rlen)) {
 				free(responses);
 				free(response_lens);
 				return DSSH_ERROR_PARSE;
@@ -692,7 +692,7 @@ handle_auth_publickey(struct dssh_session_s *sess, const struct dssh_auth_server
 	}
 
 	/* Parse: boolean has_sig, string algo, string pubkey [, string sig] */
-	if (rpos + 1 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 1))
 		return DSSH_ERROR_PARSE;
 
 	bool has_sig = (payload[rpos] != 0);
@@ -701,11 +701,11 @@ handle_auth_publickey(struct dssh_session_s *sess, const struct dssh_auth_server
 
 	uint32_t algo_len;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	algo_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + algo_len > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, algo_len))
 		return DSSH_ERROR_PARSE;
 
 	const uint8_t *algo = &payload[rpos];
@@ -714,11 +714,11 @@ handle_auth_publickey(struct dssh_session_s *sess, const struct dssh_auth_server
 
 	uint32_t pk_len;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	pk_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + pk_len > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, pk_len))
 		return DSSH_ERROR_PARSE;
 
 	const uint8_t *pk_blob = &payload[rpos];
@@ -752,11 +752,11 @@ handle_auth_publickey(struct dssh_session_s *sess, const struct dssh_auth_server
 	/* Has signature -- verify it */
 	uint32_t sig_len;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	sig_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + sig_len > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, sig_len))
 		return DSSH_ERROR_PARSE;
 
 	const uint8_t *sig_blob = &payload[rpos];
@@ -856,7 +856,7 @@ auth_server_impl(struct dssh_session_s *sess, const struct dssh_auth_server_cbs 
 
 		if (payload_len > 5) {
 			slen = DSSH_GET_U32(&payload[1]);
-			if (5 + slen <= payload_len) {
+			if (dssh_buffer_has(payload_len, 5, slen)) {
 #if SIZE_MAX < UINT32_MAX + 5ULL
 				if (slen > SIZE_MAX - 5)
 					return DSSH_ERROR_INVALID;
@@ -1161,7 +1161,7 @@ get_methods_impl(struct dssh_session_s *sess, const char *username, char *method
 
 		uint32_t mlen = DSSH_GET_U32(&payload[1]);
 
-		if (1 + 4 + mlen > payload_len)
+		if (!dssh_buffer_has(payload_len, 5, mlen))
 			return DSSH_ERROR_PARSE;
 
 		/* RFC 4251 s6: names MUST NOT contain control chars or DEL */
@@ -1285,11 +1285,11 @@ auth_password_impl(struct dssh_session_s *sess, const char *username, const char
 			size_t   rpos = 1;
 			uint32_t prompt_len;
 
-			if (rpos + 4 > payload_len)
+			if (!dssh_buffer_has(payload_len, rpos, 4))
 				return DSSH_ERROR_PARSE;
 			prompt_len = DSSH_GET_U32(&payload[rpos]);
 			rpos += 4;
-			if (rpos + prompt_len > payload_len)
+			if (!dssh_buffer_has(payload_len, rpos, prompt_len))
 				return DSSH_ERROR_PARSE;
 
 			const uint8_t *prompt = &payload[rpos];
@@ -1299,10 +1299,10 @@ auth_password_impl(struct dssh_session_s *sess, const char *username, const char
 			uint32_t       lang_len = 0;
 			const uint8_t *language = NULL;
 
-			if (rpos + 4 <= payload_len) {
+			if (dssh_buffer_has(payload_len, rpos, 4)) {
 				lang_len = DSSH_GET_U32(&payload[rpos]);
 				rpos += 4;
-				if (rpos + lang_len <= payload_len)
+				if (dssh_buffer_has(payload_len, rpos, lang_len))
 					language = &payload[rpos];
 				else
 					lang_len = 0;
@@ -1407,11 +1407,11 @@ auth_kbi_impl(struct dssh_session_s *sess, const char *username, dssh_auth_kbi_p
 			uint32_t slen;
 
 			/* Parse name string */
-			if (rpos + 4 > payload_len)
+			if (!dssh_buffer_has(payload_len, rpos, 4))
 				return DSSH_ERROR_PARSE;
 			slen = DSSH_GET_U32(&payload[rpos]);
 			rpos += 4;
-			if (rpos + slen > payload_len)
+			if (!dssh_buffer_has(payload_len, rpos, slen))
 				return DSSH_ERROR_PARSE;
 
 			const uint8_t *name     = &payload[rpos];
@@ -1420,11 +1420,11 @@ auth_kbi_impl(struct dssh_session_s *sess, const char *username, dssh_auth_kbi_p
 			rpos += slen;
 
 			/* Parse instruction string */
-			if (rpos + 4 > payload_len)
+			if (!dssh_buffer_has(payload_len, rpos, 4))
 				return DSSH_ERROR_PARSE;
 			slen = DSSH_GET_U32(&payload[rpos]);
 			rpos += 4;
-			if (rpos + slen > payload_len)
+			if (!dssh_buffer_has(payload_len, rpos, slen))
 				return DSSH_ERROR_PARSE;
 
 			const uint8_t *instruction     = &payload[rpos];
@@ -1433,16 +1433,16 @@ auth_kbi_impl(struct dssh_session_s *sess, const char *username, dssh_auth_kbi_p
 			rpos += slen;
 
 			/* Parse language string (ignored) */
-			if (rpos + 4 > payload_len)
+			if (!dssh_buffer_has(payload_len, rpos, 4))
 				return DSSH_ERROR_PARSE;
 			slen = DSSH_GET_U32(&payload[rpos]);
 			rpos += 4;
-			if (rpos + slen > payload_len)
+			if (!dssh_buffer_has(payload_len, rpos, slen))
 				return DSSH_ERROR_PARSE;
 			rpos += slen;
 
 			/* num_prompts */
-			if (rpos + 4 > payload_len)
+			if (!dssh_buffer_has(payload_len, rpos, 4))
 				return DSSH_ERROR_PARSE;
 
 			uint32_t num_prompts = DSSH_GET_U32(&payload[rpos]);
@@ -1471,13 +1471,14 @@ auth_kbi_impl(struct dssh_session_s *sess, const char *username, dssh_auth_kbi_p
 				}
 
 				for (uint32_t i = 0; i < num_prompts; i++) {
-					if (rpos + 4 > payload_len) {
+					if (!dssh_buffer_has(payload_len, rpos, 4)) {
 						res = DSSH_ERROR_PARSE;
 						goto kbi_cleanup;
 					}
 					slen = DSSH_GET_U32(&payload[rpos]);
 					rpos += 4;
-					if (rpos + slen + 1 > payload_len) {
+					if (!dssh_buffer_has(payload_len, rpos, slen)
+					    || !dssh_buffer_has(payload_len, rpos + slen, 1)) {
 						res = DSSH_ERROR_PARSE;
 						goto kbi_cleanup;
 					}

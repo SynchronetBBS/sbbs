@@ -364,7 +364,11 @@ dssh_chan_params_set_mode(struct dssh_chan_params *p, uint8_t opcode, uint32_t v
 		}
 	}
 	if (p->mode_count >= p->mode_capacity) {
+		if (p->mode_capacity > SIZE_MAX / 2)
+			return DSSH_ERROR_ALLOC;
 		size_t                       new_cap = p->mode_capacity == 0 ? 8 : p->mode_capacity * 2;
+		if (new_cap > SIZE_MAX / sizeof(*p->modes))
+			return DSSH_ERROR_ALLOC;
 		struct dssh_chan_mode_entry *nm      = realloc(p->modes, new_cap * sizeof(*nm));
 
 		if (nm == NULL)
@@ -408,7 +412,11 @@ dssh_chan_params_add_env(struct dssh_chan_params *p, const char *name, const cha
 	if (p == NULL || name == NULL || value == NULL)
 		return DSSH_ERROR_INVALID;
 	if (p->env_count >= p->env_capacity) {
+		if (p->env_capacity > SIZE_MAX / 2)
+			return DSSH_ERROR_ALLOC;
 		size_t                new_cap = p->env_capacity == 0 ? 4 : p->env_capacity * 2;
+		if (new_cap > SIZE_MAX / sizeof(*p->env))
+			return DSSH_ERROR_ALLOC;
 		struct dssh_chan_env *ne      = realloc(p->env, new_cap * sizeof(*ne));
 
 		if (ne == NULL)
@@ -494,11 +502,12 @@ parse_pty_req_data(const uint8_t *data, size_t data_len, struct pty_req *pty)
 	size_t   pos = 0;
 	uint32_t tlen;
 
-	if (pos + 4 > data_len)
+	if (!dssh_buffer_has(data_len, pos, 4))
 		return DSSH_ERROR_PARSE;
 	tlen = DSSH_GET_U32(&data[pos]);
 	pos += 4;
-	if (pos + tlen + 16 > data_len)
+	if (!dssh_buffer_has(data_len, pos, tlen)
+	    || !dssh_buffer_has(data_len, pos + tlen, 16))
 		return DSSH_ERROR_PARSE;
 	pty->term = (const char *)&data[pos];
 	pos += tlen;
@@ -507,11 +516,11 @@ parse_pty_req_data(const uint8_t *data, size_t data_len, struct pty_req *pty)
 	pty->wpx  = DSSH_GET_U32(&data[pos + 8]);
 	pty->hpx  = DSSH_GET_U32(&data[pos + 12]);
 	pos += 16;
-	if (pos + 4 <= data_len) {
+	if (dssh_buffer_has(data_len, pos, 4)) {
 		uint32_t mlen = DSSH_GET_U32(&data[pos]);
 
 		pos += 4;
-		if (pos + mlen <= data_len) {
+		if (dssh_buffer_has(data_len, pos, mlen)) {
 			pty->modes     = &data[pos];
 			pty->modes_len = mlen;
 		}
@@ -534,11 +543,11 @@ parse_env_data(const uint8_t *data, size_t data_len, const uint8_t **name, size_
 	size_t   pos = 0;
 	uint32_t nlen;
 
-	if (pos + 4 > data_len)
+	if (!dssh_buffer_has(data_len, pos, 4))
 		return DSSH_ERROR_PARSE;
 	nlen = DSSH_GET_U32(&data[pos]);
 	pos += 4;
-	if (pos + nlen > data_len)
+	if (!dssh_buffer_has(data_len, pos, nlen))
 		return DSSH_ERROR_PARSE;
 	*name     = &data[pos];
 	*name_len = nlen;
@@ -546,11 +555,11 @@ parse_env_data(const uint8_t *data, size_t data_len, const uint8_t **name, size_
 
 	uint32_t vlen;
 
-	if (pos + 4 > data_len)
+	if (!dssh_buffer_has(data_len, pos, 4))
 		return DSSH_ERROR_PARSE;
 	vlen = DSSH_GET_U32(&data[pos]);
 	pos += 4;
-	if (pos + vlen > data_len)
+	if (!dssh_buffer_has(data_len, pos, vlen))
 		return DSSH_ERROR_PARSE;
 	*value     = &data[pos];
 	*value_len = vlen;
@@ -967,11 +976,12 @@ parse_channel_request(const uint8_t *payload, size_t payload_len, const uint8_t 
 {
 	size_t rpos = 5;
 
-	if (rpos + 4 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, 4))
 		return DSSH_ERROR_PARSE;
 	*rtype_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + *rtype_len + 1 > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, *rtype_len)
+	    || !dssh_buffer_has(payload_len, rpos + *rtype_len, 1))
 		return DSSH_ERROR_PARSE;
 
 	*rtype = &payload[rpos];
@@ -1021,7 +1031,7 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch, c
 			if (rdata_len >= 4) {
 				uint32_t sname_len = DSSH_GET_U32(rdata);
 
-				if (4 + sname_len <= rdata_len) {
+				if (dssh_buffer_has(rdata_len, 4, sname_len)) {
 					struct dssh_event_entry ev = {.type = DSSH_EVENT_SIGNAL,
 					    .stdout_pos                     = ch->buf.stdout_buf.total,
 					    .stderr_pos                     = ch->buf.stderr_buf.total};
@@ -1076,22 +1086,22 @@ handle_channel_request(struct dssh_session_s *sess, struct dssh_channel_s *ch, c
 				uint32_t snlen = DSSH_GET_U32(rdata);
 				size_t   off   = 4;
 
-				if (off + snlen <= rdata_len) {
+					if (dssh_buffer_has(rdata_len, off, snlen)) {
 					size_t cl = snlen < sizeof(ev.str_a) - 1 ? snlen : sizeof(ev.str_a) - 1;
 
 					memcpy(ev.str_a, &rdata[off], cl);
 					ev.str_a[cl] = '\0';
 					off += snlen;
 				}
-				if (off + 1 <= rdata_len) {
+					if (dssh_buffer_has(rdata_len, off, 1)) {
 					ev.flag_a = rdata[off] != 0;
 					off++;
 				}
-				if (off + 4 <= rdata_len) {
+					if (dssh_buffer_has(rdata_len, off, 4)) {
 					uint32_t emlen = DSSH_GET_U32(&rdata[off]);
 
 					off += 4;
-					if (off + emlen <= rdata_len) {
+						if (dssh_buffer_has(rdata_len, off, emlen)) {
 						size_t cl =
 						    emlen < sizeof(ev.str_b) - 1 ? emlen : sizeof(ev.str_b) - 1;
 
@@ -1160,9 +1170,7 @@ handle_channel_data(struct dssh_session_s *sess, struct dssh_channel_s *ch, cons
 
 	uint32_t dlen = DSSH_GET_U32(&payload[5]);
 
-	/* Check by subtraction: 9 + UINT32_MAX wraps in uint32_t
-	 * arithmetic before comparison on platforms where int is 32-bit. */
-	if (dlen > payload_len - 9)
+	if (!dssh_buffer_has(payload_len, 9, dlen))
 		return 0;
 
 	const uint8_t *data = &payload[9];
@@ -1232,7 +1240,7 @@ handle_channel_extended_data(struct dssh_session_s *sess, struct dssh_channel_s 
 	uint32_t data_type = DSSH_GET_U32(&payload[5]);
 	uint32_t dlen      = DSSH_GET_U32(&payload[9]);
 
-	if (dlen > payload_len - 13)
+	if (!dssh_buffer_has(payload_len, 13, dlen))
 		return 0;
 
 	const uint8_t *data = &payload[13];
@@ -1458,13 +1466,13 @@ demux_channel_open(struct dssh_session_s *sess, uint8_t *payload, size_t payload
 	size_t   rpos = 1;
 	uint32_t type_len;
 
-	if (rpos + 4 > payload_len) {
+	if (!dssh_buffer_has(payload_len, rpos, 4)) {
 		dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR, "malformed CHANNEL_OPEN");
 		return DSSH_ERROR_TERMINATED;
 	}
 	type_len = DSSH_GET_U32(&payload[rpos]);
 	rpos += 4;
-	if (rpos + type_len > payload_len) {
+	if (!dssh_buffer_has(payload_len, rpos, type_len)) {
 		dssh_transport_disconnect(sess, SSH_DISCONNECT_PROTOCOL_ERROR, "malformed CHANNEL_OPEN");
 		return DSSH_ERROR_TERMINATED;
 	}
@@ -1473,8 +1481,8 @@ demux_channel_open(struct dssh_session_s *sess, uint8_t *payload, size_t payload
 
 	rpos += type_len;
 
-	if (rpos + 12 > payload_len) {
-		if (rpos + 4 <= payload_len) {
+	if (!dssh_buffer_has(payload_len, rpos, 12)) {
+		if (dssh_buffer_has(payload_len, rpos, 4)) {
 			uint32_t pc = DSSH_GET_U32(&payload[rpos]);
 			uint8_t  fail[64];
 			size_t   fp = 0;
@@ -2241,6 +2249,8 @@ stream_zc_cb(dssh_channel ch, int stream, const uint8_t *data, size_t len, void 
 static int
 encode_modes(const struct dssh_chan_params *p, uint8_t **out, size_t *out_len)
 {
+	if (p->mode_count > (SIZE_MAX - 1) / 5)
+		return DSSH_ERROR_ALLOC;
 	size_t   len = p->mode_count * 5 + 1;
 	uint8_t *buf = malloc(len);
 
@@ -2285,6 +2295,10 @@ chan_send_pty_req(struct dssh_session_s *sess, struct dssh_channel_s *ch, const 
 		return DSSH_ERROR_INVALID;
 	}
 
+	if (tlen > SIZE_MAX - PTY_REQ_FIXED || mlen > SIZE_MAX - PTY_REQ_FIXED - tlen) {
+		free(modes);
+		return DSSH_ERROR_INVALID;
+	}
 	size_t   extra_len = PTY_REQ_FIXED + tlen + mlen;
 	uint8_t *extra     = malloc(extra_len);
 
@@ -2323,6 +2337,8 @@ chan_send_env(struct dssh_session_s *sess, struct dssh_channel_s *ch, const stru
 		if (nlen > UINT32_MAX || vlen > UINT32_MAX)
 			return DSSH_ERROR_INVALID;
 
+		if (nlen > SIZE_MAX - 8 || vlen > SIZE_MAX - 8 - nlen)
+			return DSSH_ERROR_INVALID;
 		size_t   extra_len = 4 + nlen + 4 + vlen;
 		uint8_t *extra     = malloc(extra_len);
 
@@ -3074,7 +3090,7 @@ accept_parse_pty(const uint8_t *data, size_t data_len, struct dssh_chan_params *
 			if (opcode == 0 || opcode >= 160)
 				break;
 			mpos++;
-			if (mpos + 4 > pty.modes_len)
+			if (!dssh_buffer_has(pty.modes_len, mpos, 4))
 				break;
 			uint32_t val = DSSH_GET_U32(&pty.modes[mpos]);
 			mpos += 4;
@@ -3116,7 +3132,7 @@ accept_parse_exec(const uint8_t *data, size_t data_len, struct dssh_chan_params 
 	if (data_len < 4)
 		return DSSH_ERROR_PARSE;
 	uint32_t cmdlen = DSSH_GET_U32(data);
-	if (4 + cmdlen > data_len)
+	if (!dssh_buffer_has(data_len, 4, cmdlen))
 		return DSSH_ERROR_PARSE;
 	char *cstr = malloc(cmdlen + 1);
 	if (cstr == NULL)
@@ -3134,7 +3150,7 @@ accept_parse_subsystem(const uint8_t *data, size_t data_len, struct dssh_chan_pa
 	if (data_len < 4)
 		return DSSH_ERROR_PARSE;
 	uint32_t namelen = DSSH_GET_U32(data);
-	if (4 + namelen > data_len)
+	if (!dssh_buffer_has(data_len, 4, namelen))
 		return DSSH_ERROR_PARSE;
 	char *nstr = malloc(namelen + 1);
 	if (nstr == NULL)

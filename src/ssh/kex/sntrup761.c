@@ -669,6 +669,8 @@ Hash_prefix(unsigned char *out, int b, const unsigned char *in, int inlen)
 {
 	unsigned char x[crypto_kem_sntrup761_PUBLICKEYBYTES + 1], h[64];
 	int           i;
+	if (inlen < 0 || (size_t)inlen > sizeof(x) - 1)
+		return -1;
 	x[0] = (unsigned char)b;
 	for (i = 0; i < inlen; ++i)
 		x[i + 1] = in[i];

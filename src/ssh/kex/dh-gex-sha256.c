@@ -258,7 +258,7 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	size_t   rpos = 1;
 	uint32_t ks_len;
 
-	if (rpos + 4 > payload_len) {
+	if (!dssh_buffer_has(payload_len, rpos, 4)) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
@@ -266,7 +266,7 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
-	if (rpos + 4 + ks_len > payload_len) {
+	if (!dssh_buffer_has(payload_len, rpos + 4, ks_len)) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
@@ -294,7 +294,7 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 	/* Parse signature */
 	uint32_t sig_len;
 
-	if (rpos + 4 > payload_len) {
+	if (!dssh_buffer_has(payload_len, rpos, 4)) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
@@ -302,7 +302,7 @@ dhgex_client(struct dssh_kex_context *kctx, const struct dhgex_ops *ops)
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
-	if (rpos + 4 + sig_len > payload_len) {
+	if (!dssh_buffer_has(payload_len, rpos + 4, sig_len)) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}

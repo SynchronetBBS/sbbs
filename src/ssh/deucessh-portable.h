@@ -2,7 +2,15 @@
 #define DSSH_PORTABLE_H
 
 #include <assert.h>
+#include <stdbool.h>
 #include <stddef.h>
+
+/* Overflow-safe bounds check for a field within a buffer. */
+static inline bool
+dssh_buffer_has(size_t buffer_len, size_t offset, size_t field_len)
+{
+	return offset <= buffer_len && field_len <= buffer_len - offset;
+}
 
 /*
  * This file is here to hold all the ugly compiler and platform

@@ -216,12 +216,13 @@ hybrid_pq_client(struct dssh_kex_context *kctx, const struct hybrid_pq_params *p
 	size_t   rpos = 1;
 	uint32_t ks_len;
 
-	if (dssh_parse_uint32(&reply[rpos], reply_len - rpos, &ks_len) < 4) {
+	if (!dssh_buffer_has(reply_len, rpos, 4)
+	    || dssh_parse_uint32(&reply[rpos], reply_len - rpos, &ks_len) < 4) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
 	rpos += 4;
-	if (rpos + ks_len > reply_len) {
+	if (!dssh_buffer_has(reply_len, rpos, ks_len)) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
@@ -233,7 +234,8 @@ hybrid_pq_client(struct dssh_kex_context *kctx, const struct hybrid_pq_params *p
 	/* Parse Q_S */
 	uint32_t qs_len;
 
-	if (dssh_parse_uint32(&reply[rpos], reply_len - rpos, &qs_len) < 4) {
+	if (!dssh_buffer_has(reply_len, rpos, 4)
+	    || dssh_parse_uint32(&reply[rpos], reply_len - rpos, &qs_len) < 4) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
@@ -242,7 +244,7 @@ hybrid_pq_client(struct dssh_kex_context *kctx, const struct hybrid_pq_params *p
 		goto cleanup;
 	}
 	rpos += 4;
-	if (rpos + qs_len > reply_len) {
+	if (!dssh_buffer_has(reply_len, rpos, qs_len)) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
@@ -254,12 +256,13 @@ hybrid_pq_client(struct dssh_kex_context *kctx, const struct hybrid_pq_params *p
 	/* Parse signature */
 	uint32_t sig_len;
 
-	if (dssh_parse_uint32(&reply[rpos], reply_len - rpos, &sig_len) < 4) {
+	if (!dssh_buffer_has(reply_len, rpos, 4)
+	    || dssh_parse_uint32(&reply[rpos], reply_len - rpos, &sig_len) < 4) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
 	rpos += 4;
-	if (rpos + sig_len > reply_len) {
+	if (!dssh_buffer_has(reply_len, rpos, sig_len)) {
 		res = DSSH_ERROR_PARSE;
 		goto cleanup;
 	}
@@ -417,12 +420,13 @@ hybrid_pq_server(struct dssh_kex_context *kctx, const struct hybrid_pq_params *p
 	size_t   rpos = 1;
 	uint32_t qc_len;
 
-	if (dssh_parse_uint32(&payload[rpos], payload_len - rpos, &qc_len) < 4)
+	if (!dssh_buffer_has(payload_len, rpos, 4)
+	    || dssh_parse_uint32(&payload[rpos], payload_len - rpos, &qc_len) < 4)
 		return DSSH_ERROR_PARSE;
 	if (qc_len != (uint32_t)p->q_c_len)
 		return DSSH_ERROR_PARSE;
 	rpos += 4;
-	if (rpos + qc_len > payload_len)
+	if (!dssh_buffer_has(payload_len, rpos, qc_len))
 		return DSSH_ERROR_PARSE;
 
 	const uint8_t *client_pq_pk     = &payload[rpos];

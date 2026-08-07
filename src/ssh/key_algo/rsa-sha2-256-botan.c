@@ -32,17 +32,20 @@ key_bits(const uint8_t *key_blob, size_t key_blob_len)
 	uint32_t slen;
 
 	/* Skip algorithm name */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return 0;
 	kp += 4 + slen;
 
 	/* Skip e (public exponent) */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return 0;
 	kp += 4 + slen;
 
 	/* Parse n (modulus) length */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return 0;
 	kp += 4;
 

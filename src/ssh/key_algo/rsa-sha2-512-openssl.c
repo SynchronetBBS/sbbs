@@ -63,7 +63,8 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	uint32_t slen;
 
 	/* Validate algorithm name ("ssh-rsa") */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return DSSH_ERROR_PARSE;
 	kp += 4;
 	if (slen != RSA_KEY_TYPE_NAME_LEN || memcmp(&key_blob[kp], RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN) != 0)
@@ -71,7 +72,8 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	kp += slen;
 
 	/* e (public exponent) */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return DSSH_ERROR_PARSE;
 	kp += 4;
 	if (slen > INT_MAX)
@@ -81,7 +83,8 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	kp += slen;
 
 	/* n (modulus) */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len) {
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen)) {
 		result = DSSH_ERROR_PARSE;
 		goto done;
 	}
@@ -122,7 +125,8 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	size_t sp = 0;
 
 	/* Validate algorithm name ("rsa-sha2-512") */
-	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &slen) < 4 || sp + 4 + slen > sig_blob_len) {
+	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &slen) < 4
+	    || !dssh_buffer_has(sig_blob_len, sp + 4, slen)) {
 		result = DSSH_ERROR_PARSE;
 		goto done;
 	}
@@ -137,7 +141,7 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	/* Raw signature bytes */
 	uint32_t raw_sig_len;
 	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &raw_sig_len) < 4
-	    || sp + 4 + raw_sig_len > sig_blob_len) {
+	    || !dssh_buffer_has(sig_blob_len, sp + 4, raw_sig_len)) {
 		result = DSSH_ERROR_PARSE;
 		goto done;
 	}
@@ -358,7 +362,7 @@ pubkey(const uint8_t **out, size_t *outlen, dssh_key_algo_ctx *ctx)
 	uint32_t e_wire = e_u32 + (e_pad ? 1 : 0);
 	uint32_t n_wire = n_u32 + (n_pad ? 1 : 0);
 
-	if ((size_t)e_wire + n_wire > SIZE_MAX - 19) {
+	if (!dssh_buffer_has(SIZE_MAX - 19, e_wire, n_wire)) {
 		free(e_buf);
 		free(n_buf);
 		BN_free(e_bn);
@@ -429,17 +433,20 @@ key_bits(const uint8_t *key_blob, size_t key_blob_len)
 	uint32_t slen;
 
 	/* Skip algorithm name ("ssh-rsa") */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return 0;
 	kp += 4 + slen;
 
 	/* Skip e (public exponent) */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return 0;
 	kp += 4 + slen;
 
 	/* Parse n (modulus) */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return 0;
 	kp += 4;
 	if (slen > INT_MAX)

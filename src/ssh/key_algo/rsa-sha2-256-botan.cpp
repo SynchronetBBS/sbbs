@@ -136,7 +136,7 @@ pubkey_impl(const uint8_t **out, size_t *outlen, struct cbdata *cbd)
 		uint32_t e_wire = e_u32 + (e_pad ? 1 : 0);
 		uint32_t n_wire = n_u32 + (n_pad ? 1 : 0);
 
-		if (static_cast<size_t>(e_wire) + n_wire > SIZE_MAX - 19)
+		if (!dssh_buffer_has(SIZE_MAX - 19, e_wire, n_wire))
 			return DSSH_ERROR_INVALID;
 		size_t needed = 19 + e_wire + n_wire;
 
@@ -208,7 +208,8 @@ dssh_botan_rsa256_verify(const uint8_t *key_blob, size_t key_blob_len, const uin
 	uint32_t slen;
 
 	/* Validate algorithm name ("ssh-rsa") */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return DSSH_ERROR_PARSE;
 	kp += 4;
 	if (slen != RSA_KEY_TYPE_NAME_LEN || memcmp(&key_blob[kp], RSA_KEY_TYPE_NAME, RSA_KEY_TYPE_NAME_LEN) != 0)
@@ -216,7 +217,8 @@ dssh_botan_rsa256_verify(const uint8_t *key_blob, size_t key_blob_len, const uin
 	kp += slen;
 
 	/* e (public exponent) */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return DSSH_ERROR_PARSE;
 	kp += 4;
 	const uint8_t *e_bytes = &key_blob[kp];
@@ -224,7 +226,8 @@ dssh_botan_rsa256_verify(const uint8_t *key_blob, size_t key_blob_len, const uin
 	kp += slen;
 
 	/* n (modulus) */
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4 || kp + 4 + slen > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &slen) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, slen))
 		return DSSH_ERROR_PARSE;
 	kp += 4;
 	const uint8_t *n_bytes = &key_blob[kp];
@@ -238,7 +241,8 @@ dssh_botan_rsa256_verify(const uint8_t *key_blob, size_t key_blob_len, const uin
 	size_t sp = 0;
 
 	/* Validate algorithm name ("rsa-sha2-256") */
-	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &slen) < 4 || sp + 4 + slen > sig_blob_len)
+	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &slen) < 4
+	    || !dssh_buffer_has(sig_blob_len, sp + 4, slen))
 		return DSSH_ERROR_PARSE;
 	sp += 4;
 	if (slen != RSA_SHA2_256_NAME_LEN || memcmp(&sig_blob[sp], RSA_SHA2_256_NAME, RSA_SHA2_256_NAME_LEN) != 0)
@@ -248,7 +252,7 @@ dssh_botan_rsa256_verify(const uint8_t *key_blob, size_t key_blob_len, const uin
 	/* Raw signature bytes */
 	uint32_t raw_sig_len;
 	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &raw_sig_len) < 4
-	    || sp + 4 + raw_sig_len > sig_blob_len)
+	    || !dssh_buffer_has(sig_blob_len, sp + 4, raw_sig_len))
 		return DSSH_ERROR_PARSE;
 	sp += 4;
 	const uint8_t *raw_sig = &sig_blob[sp];

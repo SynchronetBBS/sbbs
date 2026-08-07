@@ -155,7 +155,8 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	 * string algo_name, string raw_public_key */
 	size_t   kp = 0;
 	uint32_t algo_len;
-	if (dssh_parse_uint32(&key_blob[kp], key_blob_len, &algo_len) < 4 || kp + 4 + algo_len > key_blob_len)
+	if (dssh_parse_uint32(&key_blob[kp], key_blob_len, &algo_len) < 4
+	    || !dssh_buffer_has(key_blob_len, kp + 4, algo_len))
 		return DSSH_ERROR_PARSE;
 	kp += 4;
 	if (algo_len != ED25519_NAME_LEN || memcmp(&key_blob[kp], ED25519_NAME, ED25519_NAME_LEN) != 0)
@@ -163,7 +164,7 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	kp += algo_len;
 	uint32_t raw_pub_len;
 	if (dssh_parse_uint32(&key_blob[kp], key_blob_len - kp, &raw_pub_len) < 4
-	    || kp + 4 + raw_pub_len > key_blob_len)
+	    || !dssh_buffer_has(key_blob_len, kp + 4, raw_pub_len))
 		return DSSH_ERROR_PARSE;
 	kp += 4;
 	const uint8_t *raw_pub = &key_blob[kp];
@@ -179,7 +180,7 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	size_t   sp = 0;
 	uint32_t sig_algo_len;
 	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len, &sig_algo_len) < 4
-	    || sp + 4 + sig_algo_len > sig_blob_len)
+	    || !dssh_buffer_has(sig_blob_len, sp + 4, sig_algo_len))
 		return DSSH_ERROR_PARSE;
 	sp += 4;
 	if (sig_algo_len != ED25519_NAME_LEN || memcmp(&sig_blob[sp], ED25519_NAME, ED25519_NAME_LEN) != 0)
@@ -187,7 +188,7 @@ verify(const uint8_t *key_blob, size_t key_blob_len, const uint8_t *sig_blob, si
 	sp += sig_algo_len;
 	uint32_t raw_sig_len;
 	if (dssh_parse_uint32(&sig_blob[sp], sig_blob_len - sp, &raw_sig_len) < 4
-	    || sp + 4 + raw_sig_len > sig_blob_len)
+	    || !dssh_buffer_has(sig_blob_len, sp + 4, raw_sig_len))
 		return DSSH_ERROR_PARSE;
 	sp += 4;
 	const uint8_t *raw_sig = &sig_blob[sp];

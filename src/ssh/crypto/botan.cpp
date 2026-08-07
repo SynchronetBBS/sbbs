@@ -189,9 +189,7 @@ dssh_base64_encode(const uint8_t *in, size_t len, char *out, size_t outlen)
 
 	if (count > INT_MAX)
 		return DSSH_ERROR_TOOLONG;
-	if (count > SIZE_MAX - 1)
-		return DSSH_ERROR_TOOLONG;
-	if (count + 1 > outlen)
+	if (!dssh_buffer_has(outlen, count, 1))
 		return DSSH_ERROR_TOOLONG;
 
 	memcpy(out, encoded.c_str(), count + 1);
