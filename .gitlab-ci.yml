@@ -169,7 +169,7 @@ include:
     # dependency serially into the binary cache, then let the manifest restore
     # it while building Qt and the remaining dependencies in parallel.
     - $env:VCPKG_MAX_CONCURRENCY = "1"
-    - '& (Join-Path $env:VCPKG_ROOT "vcpkg.exe") install "openssl:x64-windows-static-release" --host-triplet=x64-windows-release --disable-metrics'
+    - '& (Join-Path $env:VCPKG_ROOT "vcpkg.exe") install "openssl:x64-windows-static-release" "openssl:x64-windows-release" --host-triplet=x64-windows-release --disable-metrics'
     - Remove-Item Env:VCPKG_MAX_CONCURRENCY
     - |
       if (-not (Get-Command cmake.exe -ErrorAction SilentlyContinue)) {
