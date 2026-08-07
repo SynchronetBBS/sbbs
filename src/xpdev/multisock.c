@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
+#include <fcntl.h>          /* fcntl, FD_CLOEXEC */
+#endif
 #include "gen_defs.h"
 #include "sockwrap.h"
 #include "dirwrap.h"
@@ -136,6 +139,20 @@ bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		   exit, so an orphaned child can hold every server's ports open.  See
 		   GitLab #1151. */
 		SetHandleInformation((HANDLE)xpms_set->socks[xpms_set->sock_count].sock, HANDLE_FLAG_INHERIT, 0);
+#else
+		/* Same hazard on POSIX, where a fork()ed child inherits every open
+		   descriptor: an external that outlives a recycle keeps this port
+		   bound and the rebind fails with EADDRINUSE.  GitLab #1174. */
+		{
+			int fdflags = fcntl(xpms_set->socks[xpms_set->sock_count].sock, F_GETFD);
+			if (fdflags == -1
+			    || fcntl(xpms_set->socks[xpms_set->sock_count].sock, F_SETFD, fdflags | FD_CLOEXEC) == -1) {
+				if (xpms_set->lprintf)
+					xpms_set->lprintf(LOG_WARNING, "%04d !%s ERROR %d setting close-on-exec on port %d: %s"
+					                  , xpms_set->socks[xpms_set->sock_count].sock, prot, errno
+					                  , port, strerror(errno));
+			}
+		}
 #endif
 		if (sock_init)
 			sock_init(xpms_set->socks[xpms_set->sock_count].sock, cbdata);
