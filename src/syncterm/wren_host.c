@@ -1260,8 +1260,6 @@ wren_host_shutdown(void)
 		wrenReleaseHandle(state.vm, state.cell_class);
 	if (state.surface_class != NULL)
 		wrenReleaseHandle(state.vm, state.surface_class);
-	if (state.scrollback_class != NULL)
-		wrenReleaseHandle(state.vm, state.scrollback_class);
 	if (state.key_event_class != NULL)
 		wrenReleaseHandle(state.vm, state.key_event_class);
 	if (state.physical_key_event_class != NULL)

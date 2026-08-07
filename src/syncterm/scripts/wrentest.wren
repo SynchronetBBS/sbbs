@@ -313,9 +313,6 @@ class WrenTest {
     // ------ Surface.urlAt / Scrollback -----------------------------
     testSurfaceUrlAt_()
     testScrollbackContract_()
-    testScrollbackPushPop_()
-    testScrollbackUrlAt_()
-    testScrollbackAsSurfaceSource_()
 
     // ------ inject a sentinel key for async onKey filter test ------
     // Filter key must have low byte 0x00 (or 0xe0) - ciolib's
@@ -1067,136 +1064,31 @@ class WrenTest {
 
   // ===== Scrollback ================================================
 
-  // Scrollback presents the Surface contract via linearize-and-
-  // dispatch.  Verify the basic shape: width/height/count are
-  // numeric and consistent, `is` reports Surface/Sequence/Object/
-  // Scrollback, putRect/fill/rows/cols methods exist (we don't blit
-  // here, just smoke-check accessor existence), cellAt returns Cell
-  // or null, [i] roundtrips with cellAt.
+  // Scrollback exposes a read-only logical ring.  copyRowsTo copies a
+  // clipped range into an owned Surface and never changes ring state.
   static testScrollbackContract_() {
     var w = Scrollback.width
     var h = Scrollback.height
     check_(w is Num && w >= 0, "Scrollback.width is non-negative Num")
     check_(h is Num && h >= 0, "Scrollback.height is non-negative Num")
-    check_(Scrollback.count == w * h, "Scrollback.count == width * height")
-
-    // is(_) override claims Surface / Sequence ancestry without
-    // actually inheriting (Wren forbids foreign-from-foreign).
-    check_(Scrollback is Surface,    "Scrollback is Surface")
-    check_(Scrollback is Sequence,   "Scrollback is Sequence")
-    check_(Scrollback is Scrollback, "Scrollback is Scrollback")
-    check_(Scrollback is Object,     "Scrollback is Object")
-    check_(!(Scrollback is Cell),    "Scrollback is not Cell")
-
-    // Out-of-bounds cellAt returns null for both axes.
-    check_(Scrollback.cellAt(-1, 0) == null,
-           "Scrollback.cellAt(-1, 0) == null")
-    check_(Scrollback.cellAt(0, h + 1) == null,
-           "Scrollback.cellAt(0, height+1) == null")
-
-    // Wren-side rows/cols wrappers - non-null, lengths match.
-    if (h > 0) {
-      check_(Scrollback.rows.count == h, "Scrollback.rows.count == height")
-    }
-    if (w > 0) {
-      check_(Scrollback.cols.count == w, "Scrollback.cols.count == width")
-    }
-  }
-
-  // pushScreen / popScreen bracket a synthetic modal: push grows
-  // height by exactly screenheight rows (clamped at backlines), pop
-  // restores it.  Reads the cterm screen size from CTerm.height.
-  static testScrollbackPushPop_() {
-    var w = Scrollback.width
     if (w == 0) {
-      // No ring allocated yet - push/pop are no-ops; just smoke.
-      Scrollback.pushScreen()
-      Scrollback.popScreen(0)
-      check_(true, "Scrollback push/pop with no ring is a no-op")
+      check_(Scrollback.copyRowsTo(Surface.new(1, 1), 0, 1, 0) == 0,
+             "Scrollback.copyRowsTo with no ring is a no-op")
       return
     }
-    var hBefore = Scrollback.height
-    var screenH = CTerm.height
-    Scrollback.pushScreen()
-    var hAfter = Scrollback.height
-    var grew   = hAfter - hBefore
-    // Ring grows by min(screenH, capacity-remaining).  In the
-    // typical fresh-session case capacity is plenty; the count
-    // either grew by screenH or hit the cap.
-    check_(grew == screenH || hAfter <= w * 1000, // sanity bound
-           "Scrollback.pushScreen grew height by ~screenH (was %(hBefore), now %(hAfter), screenH=%(screenH))")
-    Scrollback.popScreen(screenH)
-    check_(Scrollback.height == hBefore,
-           "Scrollback.popScreen restored height")
-  }
-
-  // urlAt on the live ring - push the screen so we have rows to
-  // write into, write a known URL directly into scrollback cells,
-  // and verify urlAt detects it.  Avoids depending on exact
-  // pushScreen row counts (which use gettextinfo().screenheight,
-  // not CTerm.height).
-  static testScrollbackUrlAt_() {
-    if (Scrollback.width == 0) {
-      check_(true, "Scrollback.urlAt skipped (no ring)")
-      return
-    }
-    Scrollback.pushScreen()
-    var pushed = Scrollback.height
-    if (pushed == 0) {
-      Scrollback.popScreen(0)
-      check_(true, "Scrollback.urlAt skipped (no rows after push)")
-      return
-    }
-    // Write into the most-recently-pushed row.
-    var row = pushed - 1
-    var w   = Scrollback.width
-    for (i in 0...w) Scrollback.cellAt(i, row).ch = " "
-    var url = "https://example.com/sb"
-    for (i in 0...url.count) Scrollback.cellAt(i, row).ch = url[i]
-
-    var hit = Scrollback.urlAt(0, row)
-    check_(hit is String && hit.contains("example.com"),
-           "Scrollback.urlAt: written URL is detected")
-    var midHit = Scrollback.urlAt(8, row)
-    check_(midHit is String && midHit.contains("example.com"),
-           "Scrollback.urlAt: mid-URL click finds it")
-    var miss = Scrollback.urlAt(w - 1, row)
-    check_(miss == null,
-           "Scrollback.urlAt: blank cell returns null")
-    Scrollback.popScreen(CTerm.height)
-  }
-
-  // Scrollback as a SOURCE for Surface.putRect_ - exercises the
-  // slot_to_surface_ extension that recognizes the Scrollback class
-  // and linearizes the ring before reading.  Push rows into the ring,
-  // write a marker into the pushed row, blit that row into a fresh
-  // Surface, and verify the cells landed.
-  static testScrollbackAsSurfaceSource_() {
-    if (Scrollback.width == 0) {
-      check_(true, "Scrollback as source skipped (no ring)")
-      return
-    }
-    var marker = "SB_BLIT"
-    if (Scrollback.width < marker.count) {
-      check_(true, "Scrollback as source skipped (narrow ring)")
-      return
-    }
-    Scrollback.pushScreen()
-    var screenH = CTerm.height
-    var row = Scrollback.height - 1
-    for (i in 0...Scrollback.width) Scrollback.cellAt(i, row).ch = " "
-    for (i in 0...marker.count) Scrollback.cellAt(i, row).ch = marker[i]
-    // Copy one row from Scrollback into a fresh Surface and check
-    // the marker text comes through.  putRect_ is the 7-arg foreign
-    // (src, srcX, srcY, srcW, srcH, dstX, dstY) on the dst Surface;
-    // src is the Scrollback class, recognized by slot_to_surface_.
-    var dst = Surface.new(Scrollback.width, 1)
-    dst.putRect_(Scrollback, 0, row, Scrollback.width, 1, 0, 0)
-    var s = ""
-    for (i in 0...Scrollback.width) s = s + dst[i].ch
-    var ok = s.contains(marker)
-    Scrollback.popScreen(screenH)
-    check_(ok, "Scrollback as Surface source for putRect_ blits cells")
+    var dst = Surface.new(w, 2)
+    var sourceRow = (h > 0) ? h - 1 : 0
+    var startBefore = CTerm.scrollbackStart
+    var posBefore = CTerm.scrollbackPos
+    var copied = Scrollback.copyRowsTo(dst, sourceRow, 10, 1)
+    var expected = (h > 0) ? 1 : 0
+    check_(copied == expected,
+           "Scrollback.copyRowsTo clips logical and destination rows")
+    check_(Scrollback.height == h,
+           "Scrollback.copyRowsTo leaves ring height unchanged")
+    check_(CTerm.scrollbackStart == startBefore &&
+           CTerm.scrollbackPos == posBefore,
+           "Scrollback.copyRowsTo leaves ring indices unchanged")
   }
 
   // ===== Hook.onMatch validation ===================================

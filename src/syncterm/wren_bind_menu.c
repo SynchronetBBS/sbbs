@@ -675,7 +675,6 @@ fn_Menu_offlineScrollback(WrenVM *vm)
 	surface->buf = copy;
 	surface->width = (int)scrollback_cols;
 	surface->height = (int)scrollback_lines;
-	surface->borrowed = false;
 }
 
 static void

@@ -931,61 +931,14 @@ class SurfaceCols is Sequence {
   iteratorValue(it) { SurfaceCol.new(_surface, it) }
 }
 
-// Scrollback - process-wide scrollback ring presented as a
-// Surface-shaped, static-only foreign class.  Wren forbids foreign
-// classes from inheriting other foreign classes, so Scrollback can't
-// literally `is Surface` in the declaration; instead each foreign
-// static linearizes the ring (in-place rotate when `backstart != 0`,
-// no-op otherwise) and dispatches to the regular Surface foreign
-// body.  An `is(_)` override on the Wren side reports
-// `Scrollback is Surface == true` for ad-hoc type checks.
-//
-// pushScreen / popScreen bracket modal usage: pushScreen() walks the
-// live screen rows into the ring (oldest evicted on overflow);
-// popScreen(n) restores the ring counters to the snapshot pushScreen
-// captured.  `n` is the number of rows the caller pushed - currently
-// informational, but kept in the signature for symmetry / future
-// stack support.
+// Scrollback - read-only logical access to cterm's process-wide
+// scrollback ring.  copyRowsTo copies only the requested logical rows
+// into an ordinary owned Surface, translating across the physical ring
+// wrap without rotating or otherwise changing the ring.
 class Scrollback {
-  // Surface-contract foreigns - uniform linearize-and-dispatch.
   foreign static width
   foreign static height
-  foreign static count
-  foreign static [i]
-  foreign static iterate(it)
-  foreign static iteratorValue(it)
-  foreign static cellAt(x, y)
-  foreign static urlAt(x, y)
-  foreign static putRect(src, dstX, dstY)
-  foreign static putRect_(src, srcX, srcY, srcW, srcH, dstX, dstY)
-  foreign static fill_(x, y, w, h, cell)
-  foreign static toString
-
-  // Ring management.
-  foreign static pushScreen()
-  foreign static popScreen(n)
-
-  // Wren-side wrappers that mirror Surface's Rect-aware overloads
-  // and rows / cols views.  These delegate to the foreign statics
-  // (or to the synthetic Surface installed in slot 0 by them).
-  static putRect(src, srcRect, dstX, dstY) {
-    putRect_(src, srcRect.x, srcRect.y, srcRect.w, srcRect.h, dstX, dstY)
-  }
-  static fill(rect, cell) {
-    fill_(rect.x, rect.y, rect.w, rect.h, cell)
-  }
-  static rows { SurfaceRows.new(this) }
-  static cols { SurfaceCols.new(this) }
-
-  // Wren forbids foreign-from-foreign inheritance, so override `is`
-  // on the metaclass to report Scrollback as a Surface (and a
-  // Sequence, transitively) at runtime.  We enumerate the matches
-  // explicitly because `super.is(_)` doesn't parse - `is` is a
-  // reserved token in Wren.
-  static is(other) {
-    return other == Surface  || other == Sequence ||
-           other == Scrollback || other == Object
-  }
+  foreign static copyRowsTo(destination, sourceRow, rowCount, destRow)
 }
 
 class Font {

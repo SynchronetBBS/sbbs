@@ -3258,6 +3258,31 @@ a cell through `surf.rows[y][x]` mutates the underlying Surface.
   change.
 |===
 
+=== Scrollback [[scrollback]]
+
+Read-only logical access to the active cterm scrollback ring.  The ring stays
+in its native wrapped representation: these methods do not append rows,
+rotate storage, or change `CTerm.scrollbackStart` / `scrollbackPos`.
+
+[options="header",cols="2,3"]
+|===
+| Member | Description
+
+| `width`
+| Number of cells in each history row, or zero when no ring exists.
+
+| `height`
+| Number of retained logical history rows, or zero when no ring exists.
+
+| `copyRowsTo(destination, sourceRow, rowCount, destRow)`
+| Copy whole logical history rows, oldest-first, into an owned
+  <<surface,`Surface`>>.  Source and destination row ranges are clipped;
+  the return value is the number of rows copied.  Physical ring wrap is
+  translated per row without allocating memory or changing the ring.  Work
+  and memory usage therefore depend on the requested viewport, not the
+  configured scrollback capacity.
+|===
+
 === Font [[font]]
 
 A "font" in SyncTERM is one of 257 indexed slots, each a complete
@@ -3527,11 +3552,13 @@ Connection-level send and receive.
 
 | `Conn.scrollback()`
 | Invoke `ScrollbackView.run()` in the connected VM.  The Wren view
-  temporarily presents cterm's scrollback ring, supports keyboard,
-  mouse, selection, URL, and help interaction, then restores the live
-  terminal and exact previous mouse-event mask on exit.  While active,
-  the viewer replaces remote tracking subscriptions with only its drag
-  and wheel events.  This is the default Alt+B path.
+  composes each terminal-sized viewport from read-only logical ring
+  rows plus a terminal-sized capture of the live screen.  It supports
+  keyboard, mouse, selection, URL, and help interaction, then restores
+  the live terminal and exact previous mouse-event mask on exit.  The
+  history ring is never appended, rotated, or copied in full.  While
+  active, the viewer replaces remote tracking subscriptions with only
+  its drag and wheel events.  This is the default Alt+B path.
 
 | `Conn.upload()`
 | Open the upload picker or dialog.  This is the operation bound to

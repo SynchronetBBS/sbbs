@@ -1,12 +1,10 @@
 // scrollback_view.wren - in-terminal scrollback browser, reached via
 // Alt-B, the wheel-up hook below, or Conn.scrollback() from any
-// script.  Pushes the live cterm rows into the scrollback ring (only
-// the cterm region, not the status bar - otherwise the status row
-// duplicates as the most-recently-pushed row).  Then runs a tight
-// Input.next() loop that blits Scrollback row windows to the screen
-// and walks `top` in response to keys, mouse wheel, drag-select.
-// popScreen on exit rewinds the ring counters; modalRun handles
-// screen save/restore.
+// script.  Captures only the terminal-sized live screen, then runs a
+// tight Input.next() loop that composes each viewport from logical
+// scrollback ring rows plus the captured live rows.  The history ring
+// is never appended to, rotated, or otherwise changed.  modalRun
+// handles screen save/restore.
 //
 // No App for the main pan loop -- it's just a blocking-getch loop.
 // F1 brings up a Pane help dialog via App.runSync() (sync variant
@@ -17,8 +15,7 @@
 // timer is paused for the duration because doterm() is parked
 // inside our blocking Input.next() loop.
 
-import "syncterm" for Scrollback, Screen, Input, Key, Mouse, KeyEvent, MouseEvent, CTerm, Hook
-import "ui_widget" for Rect
+import "syncterm" for Scrollback, Surface, Screen, Input, Key, Mouse, KeyEvent, MouseEvent, CTerm, Hook
 import "ui_app"   for App
 import "ui_help"  for Help
 
@@ -42,12 +39,17 @@ class ScrollbackView {
       // without drag-move/end would strand the C selection loop.
       var savedMouse = setupMouse_()
       Screen.modalRun(Fn.new {
-        Scrollback.pushScreen()
+        var w = Scrollback.width
+        var visH = CTerm.height
+        var x = CTerm.originX
+        var y = CTerm.originY
+        if (w <= 0 || visH <= 0) return
+        var live = Screen.readRect(x, y, x + w - 1, y + visH - 1)
+        if (live == null) return
+        var viewport = Surface.new(w, visH)
+        var historyH = Scrollback.height
         blankSurroundings_()
-        viewLoop_()
-        // popScreen rewinds via the saved snapshot; the n argument is
-        // informational so the value here doesn't matter.
-        Scrollback.popScreen(0)
+        viewLoop_(viewport, live, historyH)
       })
       Input.mouseEvents = savedMouse
     }.call()
@@ -69,16 +71,16 @@ class ScrollbackView {
   // [0, totalRows - cterm.height]; capped each iteration.  Initial
   // top = visibleRowsFromTheBottom so the first paint matches what
   // the user was just looking at.
-  static viewLoop_() {
-    var w       = Scrollback.width
+  static viewLoop_(viewport, live, historyH) {
+    var w       = viewport.width
     var visH    = CTerm.height
-    var totalH  = Scrollback.height
+    var totalH  = historyH + live.height
     var maxTop  = totalH - visH
     if (maxTop < 0) maxTop = 0
     var top = maxTop
 
     while (true) {
-      paint_(top, visH, w)
+      paint_(viewport, live, historyH, top, visH, w)
       var ev = Input.next()
       if (ev is KeyEvent) {
         var c = ev.code
@@ -141,16 +143,27 @@ class ScrollbackView {
     }
   }
 
-  // Blit `visH` rows from Scrollback starting at logical row `top`
-  // onto the screen at (1, 1).  Then stamp "Scrollback" labels in
+  // Compose `visH` rows starting at logical row `top` into the reusable
+  // viewport Surface.  Rows before historyH come from the wrapped
+  // scrollback ring; later rows come from the captured live terminal.
+  // Then blit the viewport and stamp "Scrollback" labels in
   // the top-left and top-right of the cterm area as visual
   // indicators that we're not in live terminal mode.  Window stays
   // at the full-screen bounds blankSurroundings_ set; if we shrunk
   // it to a 1-row strip the second print would scroll the strip
   // (cursor advances past right edge -> wrap -> 1-row scroll
   // clears the row) and the labels would vanish.
-  static paint_(top, visH, w) {
-    Screen.putRect(Scrollback, Rect.new(0, top, w, visH), 1, 1)
+  static paint_(viewport, live, historyH, top, visH, w) {
+    var copied = 0
+    if (top < historyH) {
+      copied = Scrollback.copyRowsTo(viewport, top,
+          (historyH - top).min(visH), 0)
+    }
+    if (copied < visH) {
+      var liveRow = top + copied - historyH
+      viewport.putRect_(live, 0, liveRow, w, visH - copied, 0, copied)
+    }
+    Screen.putRect(viewport, 1, 1)
     Screen.attr = 0x9e   // blink + yellow on blue
     Screen.window.position = [1, 1]
     Screen.window.print("Scrollback")

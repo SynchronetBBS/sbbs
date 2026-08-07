@@ -24,11 +24,6 @@ struct wren_surface {
 	struct vmem_cell *buf;               /* malloc'd; freed at finalize */
 	int               width;
 	int               height;
-	/* When true, `buf` is borrowed (e.g. points at cterm->scrollback)
-	 * and the finalizer must NOT free it.  Used by the synthetic
-	 * Surface that Scrollback's static methods install in slot 0
-	 * before delegating to the regular Surface foreign body. */
-	bool              borrowed;
 };
 void fnColor_fromAttr(WrenVM *vm);
 void fnColor_fromRgb(WrenVM *vm);
@@ -164,24 +159,10 @@ void fn_Surface_putRect_3(WrenVM *vm);
 void fn_Surface_putRect_7(WrenVM *vm);
 void fn_Surface_fill_(WrenVM *vm);
 
-/* Scrollback foreign - static-only class that mirrors Surface's
- * read-side contract by linearizing the ring then dispatching to the
- * regular Surface foreign body.  pushScreen / popScreen manage the
- * ring counters around modal usage. */
+/* Read-only logical access to the active cterm scrollback ring. */
 void fn_Scrollback_width(WrenVM *vm);
 void fn_Scrollback_height(WrenVM *vm);
-void fn_Scrollback_count(WrenVM *vm);
-void fn_Scrollback_subscript(WrenVM *vm);
-void fn_Scrollback_iterate(WrenVM *vm);
-void fn_Scrollback_iteratorValue(WrenVM *vm);
-void fn_Scrollback_cellAt(WrenVM *vm);
-void fn_Scrollback_urlAt(WrenVM *vm);
-void fn_Scrollback_putRect_3(WrenVM *vm);
-void fn_Scrollback_putRect_7(WrenVM *vm);
-void fn_Scrollback_fill_(WrenVM *vm);
-void fn_Scrollback_toString(WrenVM *vm);
-void fn_Scrollback_pushScreen(WrenVM *vm);
-void fn_Scrollback_popScreen(WrenVM *vm);
+void fn_Scrollback_copyRowsTo(WrenVM *vm);
 void fn_Surface_toString(WrenVM *vm);
 void wren_cell_allocate(WrenVM *vm);
 void wren_cell_finalize(void *data);

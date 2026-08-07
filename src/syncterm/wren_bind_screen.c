@@ -1139,11 +1139,6 @@ fn_Screen_restore(WrenVM *vm)
 static bool slot_to_surface_(WrenVM *vm, int slot,
     struct vmem_cell **buf_out, int *w_out, int *h_out);
 
-/* Forward decl: Scrollback ring linearizer (rotates cterm->scrollback in
- * place when backstart != 0).  Defined further down with the rest of
- * the Scrollback foreigns. */
-static void scrollback_linearize_(void);
-
 struct wren_cell {
 	enum syncterm_wren_foreign type;
 	struct vmem_cell   c;             /* used when standalone */
@@ -1292,7 +1287,6 @@ wren_surface_allocate(WrenVM *vm)
 	sf->height   = h;
 	sf->count    = w * h;
 	sf->buf      = NULL;
-	sf->borrowed = false;
 	if (sf->count == 0)
 		return;
 
@@ -1321,8 +1315,7 @@ void
 wren_surface_finalize(void *data)
 {
 	struct wren_surface *sf = data;
-	if (!sf->borrowed)
-		free(sf->buf);
+	free(sf->buf);
 	sf->buf    = NULL;
 	sf->count  = 0;
 	sf->width  = 0;
@@ -1868,7 +1861,6 @@ fn_Screen_readRect(WrenVM *vm)
 	sf->height   = h;
 	sf->count    = (int)n;
 	sf->buf      = buf;
-	sf->borrowed = false;
 }
 
 /* Screen.putRect(src, dstX, dstY): blit a Surface to the screen at
@@ -2494,47 +2486,18 @@ clip_rect_(struct wren_surface *dst,
 	return true;
 }
 
-/* Resolve slot to a Surface and surface its (buf, width, height) for
- * the rect-blit primitives.  Accepts:
- *   - a regular `Surface` foreign, OR
- *   - the `Scrollback` class object, in which case the live ring is
- *     linearized and surfaced as if it were a borrowed Surface.
- * Returns false on type mismatch. */
+/* Resolve slot to a Surface and expose its (buf, width, height) for
+ * the rect-blit primitives.  Returns false on type mismatch. */
 static bool
 slot_to_surface_(WrenVM *vm, int slot,
     struct vmem_cell **buf_out, int *w_out, int *h_out)
 {
-	if (slot_foreign_type(vm, slot) == SWF_SURFACE) {
-		struct wren_surface *sf = wrenGetSlotForeign(vm, slot);
-		*buf_out = sf->buf;
-		*w_out   = sf->width;
-		*h_out   = sf->height;
-		return true;
-	}
-
-	/* Scrollback class object → linearized ring view. */
-	struct wren_host_state *st = wren_host_state();
-	if (st == NULL)
+	if (slot_foreign_type(vm, slot) != SWF_SURFACE)
 		return false;
-	if (st->scrollback_class == NULL) {
-		/* Lazy load: use a slot beyond any expected arg. */
-		wrenEnsureSlots(vm, 16);
-		wrenGetVariable(vm, "syncterm", "Scrollback", 15);
-		st->scrollback_class = wrenGetSlotHandle(vm, 15);
-		if (st->scrollback_class == NULL)
-			return false;
-	}
-	Value v = vm->apiStack[slot];
-	if (!IS_CLASS(v))
-		return false;
-	if (AS_CLASS(v) != AS_CLASS(st->scrollback_class->value))
-		return false;
-	if (cterm == NULL || cterm->scrollback == NULL)
-		return false;
-	scrollback_linearize_();
-	*buf_out = cterm->scrollback;
-	*w_out   = cterm->backwidth;
-	*h_out   = cterm->backfilled;
+	struct wren_surface *sf = wrenGetSlotForeign(vm, slot);
+	*buf_out = sf->buf;
+	*w_out   = sf->width;
+	*h_out   = sf->height;
 	return true;
 }
 
@@ -2769,224 +2732,83 @@ fn_Hyperlinks_params(WrenVM *vm)
 }
 
 
-/* ----- Scrollback ------------------------------------------------- */
-
-/* Scrollback presents the process-wide scrollback ring as a
- * Surface-shaped, static-only foreign class.  The ring lives in
- * `cterm->scrollback` (a `vmem_cell *` of `backwidth × backlines`).
- * `backstart` marks the oldest valid row; `backfilled` is the count
- * of valid rows.  When the ring hasn't wrapped (`backstart == 0`)
- * the cell layout is already linear and Wren-side reads / writes
- * map to the buffer directly.  When it HAS wrapped, an in-place
- * row-wise rotation runs at the moment Wren first asks for a
- * range-spanning view, normalizing `backstart` back to 0.
+/* ----- Scrollback -------------------------------------------------
  *
- * `Scrollback.pushScreen()` walks the live screen rows into the
- * ring (just like cterm's own line-to-scrollback path); the oldest
- * rows are evicted on overflow.  `popScreen(_)` restores the ring
- * counters from a saved snapshot taken at push time, so the modal
- * scrollback viewer can hand the ring back unchanged on exit
- * (modulo the few rows that got clobbered when overflow evicted
- * them - same outcome as the equivalent count of natural
- * scrollback writes).
- *
- * Wren can't inherit from a foreign class, so Scrollback is its own
- * foreign class with linearize-and-dispatch wrappers for the
- * Surface contract; an `is(_)` override on the Wren side reports
- * `Scrollback is Surface == true` for ad-hoc type checks. */
+ * The active history stays a ring.  `backstart` is the physical row
+ * containing logical row zero (the oldest retained row), and
+ * `backfilled` is the number of logical rows.  The viewer copies only
+ * the rows in its current terminal-sized viewport; it never rotates,
+ * appends to, or otherwise mutates this ring. */
 
-/* Rotate the ring in-place so `backstart` becomes 0.  No-op when
- * already linear (the typical case once data has been written).
- * Three-reverses: reverse [0..k) rows, reverse [k..N) rows, reverse
- * [0..N) rows - each "reverse" swaps rows pairwise via a single-row
- * temp buffer. */
-static void
-scrollback_linearize_(void)
-{
-	if (cterm == NULL || cterm->scrollback == NULL)
-		return;
-	int k = cterm->backstart;
-	if (k == 0)
-		return;
-
-	int rows = cterm->backlines;
-	int cols = cterm->backwidth;
-	struct vmem_cell *buf = cterm->scrollback;
-	struct vmem_cell *tmp = malloc((size_t)cols * sizeof(*tmp));
-	if (tmp == NULL)
-		return;
-
-	#define SWAP_ROW(a, b) do {                                          \
-		memcpy(tmp,                buf + (size_t)(a) * cols,             \
-		    (size_t)cols * sizeof(*buf));                                \
-		memcpy(buf + (size_t)(a) * cols, buf + (size_t)(b) * cols,       \
-		    (size_t)cols * sizeof(*buf));                                \
-		memcpy(buf + (size_t)(b) * cols, tmp,                            \
-		    (size_t)cols * sizeof(*buf));                                \
-	} while (0)
-
-	for (int i = 0, j = k - 1; i < j; i++, j--)
-		SWAP_ROW(i, j);
-	for (int i = k, j = rows - 1; i < j; i++, j--)
-		SWAP_ROW(i, j);
-	for (int i = 0, j = rows - 1; i < j; i++, j--)
-		SWAP_ROW(i, j);
-	#undef SWAP_ROW
-
-	free(tmp);
-
-	/* After rotation, backstart=0 and the next write head sits past
-	 * the valid data (or wraps to 0 when the ring was already full). */
-	cterm->backstart = 0;
-	cterm->backpos   = (cterm->backfilled == cterm->backlines)
-	    ? 0 : cterm->backfilled;
-}
-
-/* Linearize the ring, then install a borrowed wren_surface foreign
- * in slot 0 (overwriting the Scrollback class object that was the
- * receiver).  Every subsequent slot-0 Surface foreign method body
- * sees the ring as a normal Surface - same buf / width / height
- * shape - and the borrowed flag prevents the eventual finalizer
- * from freeing cterm->scrollback.  Returns false if there's no
- * ring; the caller should set slot 0 to a sentinel and return.
- *
- * This is the linearize-and-dispatch shim every Scrollback static
- * method shares: the wrappers are uniform two-liners, so the entire
- * read-side Surface contract passes through without per-method
- * duplication. */
-static bool
-scrollback_install_(WrenVM *vm)
-{
-	if (cterm == NULL || cterm->scrollback == NULL)
-		return false;
-	struct wren_host_state *st = wren_host_state();
-	if (st == NULL)
-		return false;
-
-	scrollback_linearize_();
-
-	int w = cterm->backwidth;
-	int h = cterm->backfilled;
-
-	/* Use a scratch slot ABOVE every method arg the dispatched
-	 * Surface foreign might read.  The widest Surface method is
-	 * putRect_(7 args), so slots 1..7 are live; pick slot 8.
-	 * Clobbering slot 1 here would silently replace `x` in
-	 * cellAt(x, y) etc. with the Surface class object, which
-	 * wrenGetSlotDouble then reads as garbage and the bounds check
-	 * trips. */
-	wrenEnsureSlots(vm, 9);
-	load_class_into_slot(vm, &st->surface_class, "Surface", 8);
-	struct wren_surface *sf =
-	    wrenSetSlotNewForeign(vm, 0, 8, sizeof(*sf));
-	sf->type     = SWF_SURFACE;
-	sf->buf      = cterm->scrollback;
-	sf->width    = w;
-	sf->height   = h;
-	sf->count    = w * h;
-	sf->borrowed = true;
-	return true;
-}
-
-/* Each Scrollback read method is two lines: install the synthetic
- * Surface in slot 0, dispatch to the regular Surface foreign body.
- * Failure path (no cterm / no ring) sets a method-appropriate
- * sentinel - null for cell / view / string returns, 0 for numeric
- * accessors. */
-#define SCROLLBACK_DISPATCH_NULL(name, fn_surface)                   \
-	void fn_Scrollback_##name(WrenVM *vm) {                          \
-		if (!scrollback_install_(vm)) { wrenSetSlotNull(vm, 0); return; } \
-		fn_surface(vm);                                              \
-	}
-
-#define SCROLLBACK_DISPATCH_NUM(name, fn_surface)                    \
-	void fn_Scrollback_##name(WrenVM *vm) {                          \
-		if (!scrollback_install_(vm)) { wrenSetSlotDouble(vm, 0, 0.0); return; } \
-		fn_surface(vm);                                              \
-	}
-
-SCROLLBACK_DISPATCH_NUM (width,         fn_Surface_width)
-SCROLLBACK_DISPATCH_NUM (height,        fn_Surface_height)
-SCROLLBACK_DISPATCH_NUM (count,         fn_Surface_count)
-SCROLLBACK_DISPATCH_NULL(subscript,     fn_Surface_subscript)
-SCROLLBACK_DISPATCH_NULL(iterate,       fn_Surface_iterate)
-SCROLLBACK_DISPATCH_NULL(iteratorValue, fn_Surface_iteratorValue)
-SCROLLBACK_DISPATCH_NULL(cellAt,        fn_Surface_cellAt)
-SCROLLBACK_DISPATCH_NULL(urlAt,         fn_Surface_urlAt)
-SCROLLBACK_DISPATCH_NULL(putRect_3,     fn_Surface_putRect_3)
-SCROLLBACK_DISPATCH_NULL(putRect_7,     fn_Surface_putRect_7)
-SCROLLBACK_DISPATCH_NULL(fill_,         fn_Surface_fill_)
-SCROLLBACK_DISPATCH_NULL(toString,      fn_Surface_toString)
-
-#undef SCROLLBACK_DISPATCH_NULL
-#undef SCROLLBACK_DISPATCH_NUM
-
-/* Push the cterm region's visible rows into the ring, row by row.
- * Only the cterm area itself - the status bar (which sits below
- * cterm at term.y + term.height) is excluded, otherwise the viewer
- * sees a duplicated copy of it as the most recently pushed row.
- * Per-row logic mirrors cterm_line_to_scrollback (which is static
- * inside cterm.c, so we replicate rather than expose it).  The
- * ring's pre-push counters are stashed on wren_host_state so
- * popScreen can restore them. */
 void
-fn_Scrollback_pushScreen(WrenVM *vm)
+fn_Scrollback_width(WrenVM *vm)
 {
-	(void)vm;
-	struct wren_host_state *st = wren_host_state();
-	if (st == NULL || cterm == NULL || cterm->scrollback == NULL)
-		return;
-
-	st->scrollback_save_valid  = true;
-	st->scrollback_save_start  = cterm->backstart;
-	st->scrollback_save_pos    = cterm->backpos;
-	st->scrollback_save_filled = cterm->backfilled;
-
-	int copy_w = cterm->backwidth;
-	if (copy_w > cterm->width)
-		copy_w = cterm->width;
-
-	for (int i = 0; i < cterm->height; i++) {
-		int row = cterm->y + i;
-		cterm->backfilled++;
-		if (cterm->backfilled > cterm->backlines) {
-			cterm->backfilled--;
-			cterm->backstart++;
-			if (cterm->backstart == cterm->backlines)
-				cterm->backstart = 0;
-		}
-		struct vmem_cell *dst =
-		    cterm->scrollback +
-		    (size_t)cterm->backpos * cterm->backwidth;
-		ciolib_vmem_gettext(cterm->x, row,
-		    cterm->x + copy_w - 1, row, dst);
-		if (copy_w < cterm->backwidth) {
-			memset(dst + copy_w, 0,
-			    (size_t)(cterm->backwidth - copy_w) *
-			    sizeof(*dst));
-		}
-		cterm->backpos++;
-		if (cterm->backpos == cterm->backlines)
-			cterm->backpos = 0;
-	}
+	int width = cterm != NULL && cterm->scrollback != NULL
+	    ? cterm->backwidth : 0;
+	wrenSetSlotDouble(vm, 0, (double)width);
 }
 
-/* popScreen(_) restores the ring counters to the snapshot taken by
- * the matching pushScreen().  The argument exists for symmetry /
- * documentation - the caller passes the row count it pushed - but
- * the actual restore is unconditional, since we have the saved
- * values.  No-op when no save is live. */
 void
-fn_Scrollback_popScreen(WrenVM *vm)
+fn_Scrollback_height(WrenVM *vm)
 {
-	(void)vm;
-	struct wren_host_state *st = wren_host_state();
-	if (st == NULL || !st->scrollback_save_valid ||
-	    cterm == NULL || cterm->scrollback == NULL)
-		return;
+	int height = cterm != NULL && cterm->scrollback != NULL
+	    ? cterm->backfilled : 0;
+	wrenSetSlotDouble(vm, 0, (double)height);
+}
 
-	cterm->backstart  = st->scrollback_save_start;
-	cterm->backpos    = st->scrollback_save_pos;
-	cterm->backfilled = st->scrollback_save_filled;
-	st->scrollback_save_valid = false;
+/* Copy whole logical rows from the ring into an owned Surface:
+ *
+ *   Scrollback.copyRowsTo(destination, sourceRow, rowCount, destRow)
+ *
+ * Both source and destination ranges are clipped.  Columns are copied
+ * from zero through min(ring width, destination width).  The return
+ * value is the number of rows copied. */
+void
+fn_Scrollback_copyRowsTo(WrenVM *vm)
+{
+	if (slot_foreign_type(vm, 1) != SWF_SURFACE) {
+		wren_throw(vm,
+		    "Scrollback.copyRowsTo: destination must be a Surface");
+		return;
+	}
+	if (cterm == NULL || cterm->scrollback == NULL ||
+	    cterm->backlines <= 0 || cterm->backwidth <= 0) {
+		wrenSetSlotDouble(vm, 0, 0.0);
+		return;
+	}
+
+	struct wren_surface *dst = wrenGetSlotForeign(vm, 1);
+	int src_y = (int)wrenGetSlotDouble(vm, 2);
+	int rows  = (int)wrenGetSlotDouble(vm, 3);
+	int dst_y = (int)wrenGetSlotDouble(vm, 4);
+
+	if (src_y < 0) {
+		rows += src_y;
+		dst_y -= src_y;
+		src_y = 0;
+	}
+	if (dst_y < 0) {
+		rows += dst_y;
+		src_y -= dst_y;
+		dst_y = 0;
+	}
+	if (src_y + rows > cterm->backfilled)
+		rows = cterm->backfilled - src_y;
+	if (dst_y + rows > dst->height)
+		rows = dst->height - dst_y;
+	int cols = cterm->backwidth < dst->width
+	    ? cterm->backwidth : dst->width;
+	if (rows <= 0 || cols <= 0) {
+		wrenSetSlotDouble(vm, 0, 0.0);
+		return;
+	}
+
+	for (int row = 0; row < rows; row++) {
+		int physical = (cterm->backstart + src_y + row) %
+		    cterm->backlines;
+		memcpy(dst->buf + (size_t)(dst_y + row) * dst->width,
+		    cterm->scrollback + (size_t)physical * cterm->backwidth,
+		    (size_t)cols * sizeof(*dst->buf));
+	}
+	wrenSetSlotDouble(vm, 0, (double)rows);
 }

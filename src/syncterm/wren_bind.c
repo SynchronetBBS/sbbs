@@ -1033,23 +1033,10 @@ static const struct binding BINDINGS[] = {
 	{ "Hyperlinks", true, "add(_,_)",       fn_Hyperlinks_add         },
 	{ "Hyperlinks", true, "params(_)",      fn_Hyperlinks_params      },
 
-	/* Scrollback (all static) - uniform linearize-and-dispatch
-	 * wrappers over the Surface read-side contract, plus the two
-	 * genuinely new verbs (pushScreen / popScreen). */
-	{ "Scrollback", true, "width",                       fn_Scrollback_width         },
-	{ "Scrollback", true, "height",                      fn_Scrollback_height        },
-	{ "Scrollback", true, "count",                       fn_Scrollback_count         },
-	{ "Scrollback", true, "[_]",                         fn_Scrollback_subscript     },
-	{ "Scrollback", true, "iterate(_)",                  fn_Scrollback_iterate       },
-	{ "Scrollback", true, "iteratorValue(_)",            fn_Scrollback_iteratorValue },
-	{ "Scrollback", true, "cellAt(_,_)",                 fn_Scrollback_cellAt        },
-	{ "Scrollback", true, "urlAt(_,_)",                  fn_Scrollback_urlAt         },
-	{ "Scrollback", true, "putRect(_,_,_)",              fn_Scrollback_putRect_3     },
-	{ "Scrollback", true, "putRect_(_,_,_,_,_,_,_)",     fn_Scrollback_putRect_7     },
-	{ "Scrollback", true, "fill_(_,_,_,_,_)",            fn_Scrollback_fill_         },
-	{ "Scrollback", true, "toString",                    fn_Scrollback_toString      },
-	{ "Scrollback", true, "pushScreen()",                fn_Scrollback_pushScreen    },
-	{ "Scrollback", true, "popScreen(_)",                fn_Scrollback_popScreen     },
+	/* Scrollback (all static) - read-only logical ring access. */
+	{ "Scrollback", true, "width",                   fn_Scrollback_width      },
+	{ "Scrollback", true, "height",                  fn_Scrollback_height     },
+	{ "Scrollback", true, "copyRowsTo(_,_,_,_)",     fn_Scrollback_copyRowsTo },
 
 	{ "Host", true, "cacheDirectory",       fn_Host_cacheDirectory    },
 	{ "Host", true, "downloadDir",          fn_Host_downloadDir       },
