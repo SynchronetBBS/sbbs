@@ -961,9 +961,10 @@ static void sr_csi_final(char fin)
 
 		case 'c':   /* device-attributes reply: DA1 (ESC[c) / CTDA (ESC[<c) */
 			g_probe_replied = 1;
-			if (csi_len > 0 && (csi_par[0] == '<' || csi_par[0] == '='))
+			if (csi_len > 0 && (csi_par[0] == '<' || csi_par[0] == '=')) {
 				g_is_syncterm = 1;   /* '<'/'=' marker: SyncTERM-flavored reply */
 				sr_io_note_syncterm();   /* re-fit: this lands AFTER the probes */
+			}
 			np = sr_csi_params(p, 16);
 			{
 				int k;
