@@ -22,7 +22,8 @@
       "binaryDir": "${sourceDir}/build/windows-vcpkg",
       "cacheVariables": {
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>",
-        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+        "VCPKG_HOST_TRIPLET": "x64-windows-release",
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static-release"
       },
       "condition": {
         "type": "equals",
