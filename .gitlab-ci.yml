@@ -195,7 +195,7 @@ include:
       New-Item -ItemType Directory -Force $deployDir | Out-Null
       Copy-Item "build\windows-vcpkg\Release\qtmonitor.exe" $deployedExe
       $env:PATH = (Join-Path $vcpkgInstalled "bin") + ";" + $qtBin + ";" + $env:PATH
-      & $winDeployQt --release --no-translations --openssl-root $vcpkgInstalled --dir $deployDir $deployedExe
+      & $winDeployQt --release --no-translations --no-system-dxc-compiler --openssl-root $vcpkgInstalled --dir $deployDir $deployedExe
       if ($LASTEXITCODE -ne 0) {
         throw "windeployqt failed with exit code $LASTEXITCODE"
       }
