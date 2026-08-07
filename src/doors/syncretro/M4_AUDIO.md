@@ -169,8 +169,9 @@ Changed:
 - **`syncretro_io.c`** -- the audio capability probe joins the existing enter/
   probe handshake; the `CSI = 7 ; ch ; 0 n` underrun report is routed to the
   audio module, alongside the existing `CSI = 7 ; 100 ; ...` libsndfile reply.
-- **`syncretro_input.c`** -- the CSI `n` arm already handles `CSI = ... n`
-  reports for the JXL cap; it gains the audio-state report.
+- **`syncretro_input.c`** -- the CSI `n` arm handles `CSI = ... n` reports; it
+  gains the audio-state report. (It once also parsed the JXL cap reply; that
+  was removed with the unused probe -- see `DESIGN.md` §15a.)
 - **`main.c`** -- flush the audio channel on the way out.
 - **`syncretro_config.c`** -- read `syncretro.ini` (§5.1). This is the door's
   first INI; the file is optional and every key has a default, so a door dir

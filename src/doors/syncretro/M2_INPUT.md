@@ -251,8 +251,8 @@ invalidates the frame cache so the next frame is a full repaint rather than a
 diff against a frame the user never saw.
 
 **Help** is drawn as plain ANSI text over a cleared screen, not into the
-framebuffer. That works on every tier -- sixel, JXL, and the future CP437 text
-tier -- and on clients with no graphics at all. Dismissing it triggers the same
+framebuffer. That works on every tier -- sixel and the CP437/UTF-8 text
+tiers -- and on clients with no graphics at all. Dismissing it triggers the same
 full-repaint invalidation as resuming from pause.
 
 **Reset** (`Ctrl-R`) releases all input first, then calls `retro_reset()`, then

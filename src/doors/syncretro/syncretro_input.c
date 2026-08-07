@@ -75,7 +75,7 @@
 #include <string.h>
 
 #include "dirwrap.h"     /* xpdev: fexist() -- the keytrace.on switch check */
-#include "caps.h"        /* termgfx: termgfx_caps_parse_jxl */
+#include "caps.h"        /* termgfx: termgfx_caps_cterm_version */
 #include "audio.h"       /* termgfx: termgfx_audio_parse_caps */
 #include "keymode.h"     /* termgfx: key-mode negotiation + kitty/evdev decode */
 #include "term.h"        /* termgfx: termgfx_term_parse_status (DECSSDT reply scan) */
@@ -563,7 +563,6 @@ static unsigned          apc_len;  /* bytes swallowed in the current string seq 
 static int               g_probe_replied;
 static int               g_is_syncterm;
 static int               g_have_sixel;
-static int               g_jxl_supported;
 
 static termgfx_keymode_t g_km;     /* which key mode is in force (termgfx) */
 static unsigned          g_evdev_mods; /* held modifiers, TERMGFX_MOD_* */
@@ -1002,7 +1001,7 @@ static void sr_csi_final(char fin)
 			}
 			return;
 
-		case 'n':   /* CTerm state report: JXL cap, audio cap, audio channel state */
+		case 'n':   /* CTerm state report: audio cap, audio channel state */
 			if (csi_len > 0 && csi_par[0] == '=') {
 				uint8_t seq[48];
 				int     sl = 0, k, r, p[8], np;
@@ -1012,12 +1011,6 @@ static void sr_csi_final(char fin)
 				for (k = 0; k < csi_len && sl < (int)sizeof(seq) - 1; k++)
 					seq[sl++] = (uint8_t)csi_par[k];
 				seq[sl++] = (uint8_t)fin;
-
-				r = termgfx_caps_parse_jxl(seq, sl);
-				if (r >= 0) {
-					g_is_syncterm   = 1;
-					g_jxl_supported = (r == 1);
-				}
 
 				/* `CSI = 7 ; 100 ; {0,1} n` -- libsndfile present? Matches only
 				 * feature id 100, so it never eats the channel report below. */

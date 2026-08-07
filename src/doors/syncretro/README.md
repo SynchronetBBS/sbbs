@@ -8,7 +8,8 @@ core and rendering it to the terminal through the shared
 
 **One door, many consoles:** SyncRetro is a minimal libretro *frontend*. It
 vendors no emulator -- you point it at a libretro core `.so` and it drives the
-core's run loop, converting each video frame to sixel/JXL and mapping BBS input
+core's run loop, converting each video frame to sixel or block-character text
+and mapping BBS input
 to a RetroPad. Swap the core, get a different console.
 
 > **Status: video, input, multi-core, audio, and the Windows build are all
@@ -102,8 +103,8 @@ so the two can never disagree (see Installing).
 
 Links `../termgfx` + `xpdev`; loads the core at runtime (`dlopen` on *nix,
 `LoadLibrary` on Windows -- the core is a `.so` or a `.dll` to match). `libjxl`
-is optional (absence degrades to sixel/text); on Windows it comes from a
-classic-mode vcpkg prefix (`vcpkg install libjxl:x86-windows-static-md`).
+is detected but unused: this door renders sixel and text tiers only, and never
+calls the JPEG-XL encoder -- see `DESIGN.md` §15a.
 
 **Win32 is the one supported Windows target**, deliberately: a Win32 door runs
 on both a Win32 and a future Win64 Synchronet host (the DOOR32.SYS comm handle

@@ -30,7 +30,7 @@ the surface termgfx needs, as stable C callbacks:
 
 | libretro callback            | termgfx / door side                                   |
 |------------------------------|-------------------------------------------------------|
-| `retro_video_refresh_t`      | convert framebuffer -> `syncretro_io` present (sixel/JXL/text, paced) |
+| `retro_video_refresh_t`      | convert framebuffer -> `syncretro_io` present (sixel/text, paced) |
 | `retro_audio_sample_batch_t` | -> termgfx audio (see §9 -- the hard part)             |
 | `retro_input_poll_t`         | drain the BBS socket, refresh the cached pad state     |
 | `retro_input_state_t`        | return the cached RetroPad bit/axis                    |
@@ -141,8 +141,8 @@ static int16_t input_state(unsigned port, unsigned dev, unsigned i, unsigned id)
 
 The pixel format (`g_pixfmt`) is negotiated once via
 `RETRO_ENVIRONMENT_SET_PIXEL_FORMAT`; `sr_fb_to_rgb()` is the only format-aware
-code. termgfx owns tiering (JXL -> sixel -> text) and pacing, so the bridge is
-just *convert + hand off*.
+code. `syncretro_io.c` owns tiering (sixel -> text) and pacing, so the bridge is
+just *convert + hand off*. See §15a for why this door renders no JXL.
 
 ---
 
@@ -183,7 +183,7 @@ Mirrors `../syncmoo1/syncmoo1_io.c`. Owns:
 - **`sr_io_present(rgb, w, h)`** -- the door's own present function (termgfx has
   no single `present()`): quantize (below), fit/center the frame to the probed
   terminal geometry (`termgfx_geom_fit` / `termgfx_geom_center`), encode via the
-  active tier (`termgfx_jxl_encode` / sixel / `text.c`), and emit to the socket
+  active tier (sixel / `text.c`), and emit to the socket
   under DSR-ACK pacing. A `SYNCRETRO_SIXELOUT=<path>` capture mode (as in
   syncmoo1) writes one self-contained frame per call for offline verification
   with no live terminal.
@@ -373,9 +373,9 @@ the committed copy. Everything else in this directory is ours (house-style
 
 Out-of-source CMake, same shape as the sibling doors. **POSIX:** `./build.sh`,
 `./build.sh debug`, `./build.sh clean`; links `../termgfx` and `xpdev`, adds
-`${CMAKE_DL_LIBS}` for `dlopen`, `libjxl` optional. **Windows:** `build.bat` /
-`build.bat clean` (Win32/MSVC/Release, static libjxl via a classic-mode vcpkg
-prefix; `ws2_32` for Winsock) -- see M6 in sec 15 and [CLAUDE.md](CLAUDE.md).
+`${CMAKE_DL_LIBS}` for `dlopen`; `libjxl` is detected but unused (§15a).
+**Windows:** `build.bat` / `build.bat clean` (Win32/MSVC/Release; `ws2_32` for
+Winsock) -- see M6 in sec 15 and [CLAUDE.md](CLAUDE.md).
 No vendored-engine source list -- just `libretro.h` and our `*.c`. `deploy.js`
 (run via `jsexec`, both platforms) installs the built binary where the lobby
 looks for it -- flat at the door root on Windows, or in an `<os>-<arch>` sub-dir
@@ -392,6 +392,33 @@ binary predates has its VALUE silently misread as the ROM, and the real ROM
 argument is dropped.
 
 ---
+
+## 15a. Why this door renders no JXL
+
+termgfx carries a JPEG-XL encoder and the sibling doors use it: SyncDOOM
+negotiates `mode=jxl` with any SyncTERM that answers the `Q;JXL` cap-probe, and
+falls back to sixel elsewhere. **SyncRetro does not.** Its presenter
+(`syncretro_io.c`) builds its tier list from sixel plus the block-character text
+modes, and `F4` cycles between them; the JXL encoder is never called.
+
+That is a deliberate fit to what a libretro core actually emits. The consoles
+shipped here -- Intellivision (FreeIntv), NES (FCEUmm) and arcade (MAME
+2003-Plus) -- produce small, palette-limited framebuffers. Sixel renders that
+kind of picture well and cheaply, and JXL's advantage is photographic detail
+these cores do not have. On the shipped consoles sixel simply looks and behaves
+better, which is why the tier was never wired in.
+
+It is not foreclosed. The encoder, its build detection and the cap-probe all
+remain in termgfx, so a future core with a large, detailed or photographic
+framebuffer could be given the tier -- on SyncTERM, which is the only client
+that speaks it. What that would take is a JXL entry in `sr_tier_add()`'s list
+and the encoder call in the present path; nothing about the current design
+prevents it.
+
+Until then this door does not probe for a capability it cannot use: the
+`Q;JXL` query and its reply parser were removed from SyncRetro (they stay in
+termgfx for the doors that do use them). SyncTERM is still detected, by the
+CTDA `<`/`=` marker and the audio-caps reply.
 
 ## 15. Milestones
 
@@ -412,7 +439,8 @@ argument is dropped.
   overlay ART is deferred (sysop-supplied, needs a pointer device);
   `SET_INPUT_DESCRIPTORS`-driven help moves to M3, where cores are unknown.
 - **M3 -- multi-core.** Config-selected cores; dynamic core discovery; the
-  `getdata.js`/`install-xtrn` content flow; JXL + text tiers verified.
+  `getdata.js`/`install-xtrn` content flow; sixel + text tiers verified.
+  (The JXL tier was never wired into this door's presenter -- see §15a.)
 - **M4 -- audio. DONE.** The core's PCM streamed to SyncTERM's audio APC as
   100 ms Opus chunks on one mixer channel's FIFO, with a three-chunk (~300 ms)
   cushion, silent chunks replayed from a single cached sample, and `A;Update`
@@ -447,8 +475,8 @@ argument is dropped.
       `fexist()`; `getcwd`/`chdir` from `<direct.h>` under
       `_CRT_NONSTDC_NO_DEPRECATE`.
     * Build: `CMakeLists.txt`'s MSVC branch pulls the static libjxl from a
-      classic-mode vcpkg prefix (`x86-windows-static-md`); absent it the door
-      degrades to the sixel/text tiers. libsndfile (Ogg audio) is likewise
+      classic-mode vcpkg prefix (`x86-windows-static-md`) when one is present.
+      Nothing here needs it (§15a); the door renders sixel/text regardless. libsndfile (Ogg audio) is likewise
       optional -- without it `termgfx_audio_have_ogg() == 0` and the door is
       simply silent, a state the audio module already handles as first-class.
   Win32 (x86) is the one supported Windows target: a Win32 door runs on both a

@@ -220,7 +220,7 @@ Gated on §2 confirming dosbox_pure actually reads those devices.
 ## 6. Rendering tier: pixels by default, text when it can
 
 For a graphics-mode game the frame is pixels, full stop -- the existing pixel tier
-(sixel/JXL, resampled to terminal cells) handles it, no change. A 320x200 game
+(sixel, resampled to terminal cells) handles it, no change. A 320x200 game
 doubles onto the canvas cleanly (§1a); a 640x480 SVGA game (MOO2) overshoots it
 and is the hard case, which is the whole reason MOO2 is the stress-test. The
 interesting addition is a **text tier** for the large

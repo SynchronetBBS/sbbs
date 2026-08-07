@@ -53,7 +53,6 @@
 #include "geometry.h"   /* termgfx: termgfx_geom_fit / _center */
 #include "pace.h"       /* termgfx: termgfx_aimd_update / _rtt_sample */
 #include "stats.h"      /* termgfx: the shared Ctrl-S strip window + fields */
-#include "caps.h"       /* termgfx: termgfx_query_jxl */
 #include "text.h"       /* termgfx: rt_config / rt_render_frame -- the text tiers */
 #include "charset.h"    /* termgfx: the client's charset (CP437 vs UTF-8) */
 #include "sbbs_node.h"  /* termgfx: sbbs_my_node() -- the dirty_log file's node tag */
@@ -1250,7 +1249,6 @@ static void sr_io_enter(void)
 	g_grid_probe_pending = 1;          /* arm the first-R-is-grid flag at probe-SEND time */
 	sr_out_puts("\x1b[c");             /* DA1: sixel support (param 4) */
 	sr_out_puts("\x1b[<c");            /* CTDA: SyncTERM detect, and cap 8 -> physical key reports */
-	sr_out_puts(termgfx_query_jxl);    /* Q;JXL: JXL-tier detect (M3 consumes the reply) */
 	sr_out_puts("\x1b[?u");            /* kitty keyboard query: a CSI?<flags>u reply -> true key-up */
 	sr_audio_probe();                  /* SyncTERM:Q;libsndfile -> sr_audio_caps() */
 	sr_io_out_flush();

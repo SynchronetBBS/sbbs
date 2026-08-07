@@ -12,7 +12,7 @@ core is a separate, per-platform artifact installed by `getcore.js` (see
 | Linux / \*BSD / macOS | CMake + the native toolchain | `build.sh` | `build/syncretro` |
 | Windows | CMake + MSBuild (Visual Studio 2022, Win32) | `build.bat` | `build-msvc\Release\syncretro.exe` |
 
-The binary links `../termgfx` (sixel/JXL encode, APC transport, audio
+The binary links `../termgfx` (sixel encode, APC transport, audio
 streaming) and `../../xpdev` (sockets, `.ini` parsing); both are built as
 CMake sub-targets from this tree, so a binary-only Synchronet install is not
 enough — you need the source tree. `DESIGN.md` covers the architecture and
@@ -26,9 +26,11 @@ enough — you need the source tree. `DESIGN.md` covers the architecture and
 
 - **CMake** 3.13+ and **C *and* C++** compilers (GCC or Clang) — termgfx is
   C++.
-- For the **JPEG-XL** graphics tier: `libjxl` development package plus
-  `pkg-config`. Optional — without it the door still serves the sixel and
-  text/block tiers.
+- **Not needed: `libjxl`.** This door renders sixel and text tiers only; it
+  never calls the JPEG-XL encoder, so the library buys it nothing. termgfx
+  still carries the encoder for the sibling doors that do use it, and the
+  configure step below still detects it — see `DESIGN.md` §15a for why the
+  tier is unused here and what wiring it up would take.
 - For **Opus/Ogg** audio streaming: `libsndfile` development package plus
   `pkg-config`. Optional in the build sense, but a door built without it cannot
   stream the core's audio.
@@ -36,7 +38,7 @@ enough — you need the source tree. `DESIGN.md` covers the architecture and
 On Debian/Ubuntu:
 
 ```sh
-sudo apt install cmake g++ pkg-config libjxl-dev libsndfile1-dev
+sudo apt install cmake g++ pkg-config libsndfile1-dev
 ```
 
 No libretro package is needed: `libretro.h` is vendored, and cores are loaded
@@ -65,7 +67,9 @@ rather than discovering a missing library at run time:
 -- syncretro: JPEG XL graphics tier ENABLED
 ```
 
-(Absent libjxl the second becomes a warning and the JXL tier is dropped.)
+The second line reports only that the encoder *built*; this door does not
+render JXL either way (`DESIGN.md` §15a). The libsndfile line is the one that
+matters — without it the door cannot stream the core's audio.
 A `Package 'portaudio-2.0' ... not found` note from the xpdev sub-build is
 expected and harmless — this tree pins xpdev's audio and crypto backends off,
 because a door never plays sound locally.
@@ -74,7 +78,8 @@ because a door never plays sound locally.
 
 Pass to the `cmake` *configure* step:
 
-- `-DWITHOUT_JPEG_XL=ON` — build without the JPEG-XL tier (sixel/text only).
+- `-DWITHOUT_JPEG_XL=ON` — skip the JPEG-XL encoder entirely. Costs this door
+  nothing, since it renders no JXL; it drops the libjxl detection and link.
 - `-DSYNCRETRO_TESTS=ON` — also build the unit tests (see below).
 - `-DSYNCRETRO_PROBE=ON` — also build `probe_core`, the core diagnostic.
 
@@ -166,8 +171,9 @@ build.bat             :: Win32/Release -> build-msvc\Release\syncretro.exe
 build.bat clean
 ```
 
-Needs Visual Studio 2022 (any edition) and, for the JXL tier, libjxl from a
-classic-mode vcpkg prefix (`vcpkg install libjxl:x86-windows-static-md`).
+Needs Visual Studio 2022 (any edition). libjxl is **not** required — this door
+renders no JXL (`DESIGN.md` §15a); `build.bat` will use a static libjxl from a
+classic-mode vcpkg prefix if one is present, but nothing here needs it.
 Then `jsexec deploy.js` and the console's `getcore.js`, exactly as above —
 both scripts are shared by the two platforms.
 
