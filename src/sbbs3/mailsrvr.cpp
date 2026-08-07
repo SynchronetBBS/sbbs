@@ -3747,9 +3747,11 @@ static bool smtp_client_thread(smtp_t* smtp)
 				} else {
 					safe_snprintf(sender_info, sizeof(sender_info), "'%s' %s", sender, angle_bracket(tmp, sizeof(tmp), sender_addr));
 				}
-				if (relay_user.number && subnum != INVALID_SUB) {
+				if (relay_user.number) {
 					nettype = NET_NONE;
 					smb_hfield_str(&msg, SENDER, relay_user.alias);
+					/* The sender's net address is added per-recipient, below, since it
+					 * only applies to the copies destined for another system. */
 				} else {
 					nettype = NET_INTERNET;
 					smb_hfield_str(&msg, SENDER, sender);
@@ -4018,6 +4020,15 @@ static bool smtp_client_thread(smtp_t* smtp)
 						errprintf(LOG_ERR, WHERE, "%04d %-5s %s !ERROR %d (%s) copying message from %s"
 						          , socket, client.protocol, client_id, i, smb.last_error, sender_info);
 						break;
+					}
+
+					/* An authenticated user's mail to a local recipient is local mail:
+					 * only the copies leaving this system carry a sender net address
+					 * (needed for the reverse-path and any bounce back to the sender). */
+					if (relay_user.number && nettype != NET_NONE) {
+						uint16_t sender_nettype = NET_INTERNET;
+						smb_hfield(&newmsg, SENDERNETTYPE, sizeof(sender_nettype), &sender_nettype);
+						smb_hfield_str(&newmsg, SENDERNETADDR, sender_addr);
 					}
 
 					with_val = 0;
