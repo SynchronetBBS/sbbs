@@ -1569,8 +1569,11 @@ static void parse_bytes(const uint8_t *buf, int n)
 				}
 				else if (c == 0x13)                     /* Ctrl-S: toggle stats bar */
 					termgfx_toggle_stats();
-				else if (c == 'q' || c == 0x03)          /* q / Ctrl-C: request quit */
+				else if (c == 0x11 || c == 0x03)         /* Ctrl-Q / Ctrl-C: quit */
 					g_quit = 1;
+				/* NOT a bare 'q' -- it has to reach the game as a letter (a
+				 * save name may contain one). The kitty and evdev paths
+				 * reserve the CTRL form alone for the same reason. */
 				else if (g_menu_letter && c == (uint8_t)(g_menu_letter - 'a' + 1))
 					g_menu = 1;                          /* Ctrl+<menu_letter>: open GMM */
 				else

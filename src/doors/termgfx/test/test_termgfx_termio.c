@@ -79,7 +79,13 @@ int main(void)
 		assert(strstr(out, "\x1b[30;46m") != NULL);   /* bar's color attribute, unprompted */
 	}
 
+	/* Ctrl-Q (0x11), the key both doors' help screens advertise. A bare 'q'
+	 * is NOT a hotkey on any key path -- it has to reach the game as a letter,
+	 * since a save name may contain one. */
 	assert(send(sv[0], "q", 1, 0) == 1);
+	termgfx_termio_pump();
+	assert(termgfx_termio_quit_requested() == 0);
+	assert(send(sv[0], "\x11", 1, 0) == 1);
 	termgfx_termio_pump();
 	assert(termgfx_termio_quit_requested() == 1);
 

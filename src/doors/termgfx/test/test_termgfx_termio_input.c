@@ -154,14 +154,14 @@ int main(void) {
 	assert(!termgfx_termio_next_event(&ev));
 	assert(termgfx_termio_quit_requested());
 
-	/* legacy P_NORMAL quit ('q', unmodified) also stays door-reserved --
-	 * NOT forwarded. Out of scope for the kitty/evdev review fix (P_NORMAL
-	 * is the brief-scoped legacy behavior), so it stays as-is; ordered
-	 * last because g_quit is a one-way latch and every check above this
-	 * point depends on quit NOT having fired yet. */
+	/* legacy P_NORMAL: a bare 'q' is FORWARDED as a letter, not swallowed as
+	 * a quit hotkey -- a save name may contain one, and the kitty and evdev
+	 * paths above already leave it alone. Ctrl-Q (0x11) is the reserved key
+	 * on this path; it is asserted in test_termgfx_termio.c, which starts
+	 * from a clean session (g_quit is a one-way latch, already fired above). */
 	while (termgfx_termio_next_event(&ev)) {}   /* drain */
 	termgfx_termio_test_feed("q", 1);
-	assert(!termgfx_termio_next_event(&ev));
+	assert(termgfx_termio_next_event(&ev));
 
 	return 0;
 }

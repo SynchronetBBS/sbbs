@@ -74,12 +74,9 @@ void help_term_show()
 	 * consumed before the engine sees it, ending the session at once with no
 	 * confirmation and no save.
 	 *
-	 * Ctrl-Q, not a bare 'q'. On a terminal in a native key mode -- which is
-	 * what SyncTERM negotiates, so what a caller here almost always has -- the
-	 * letter is deliberately left alone so it can reach ScummVM's text entry,
-	 * and only the CTRL form quits. A terminal with neither key protocol falls
-	 * back to a raw byte path where a bare 'q' does quit, but naming that on
-	 * the card would be wrong for nearly everyone reading it. */
+	 * Ctrl-Q, not a bare 'q': the letter is deliberately left alone on every
+	 * key path so it can reach ScummVM's text entry, and only the CTRL form
+	 * quits. */
 	help_row(r++, col, KEYC,  "Ctrl-Q   quit NOW -- no prompt, no save");
 	help_row(r++, col, KEYC,  "Ctrl-C   the same");
 	/* Not the whole truth without this: quitting saves nothing (ScummVM's

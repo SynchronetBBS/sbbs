@@ -97,11 +97,8 @@ void help_term_draw(Bitmap &surface)
 	surface.TextDraw(Rect(tx, y, tw, line_h), dim_col, syncrpg_version_line(), Text::AlignCenter);
 }
 
-/* Not listed on the page: a bare 'q'. termgfx's LEGACY byte path reserves it
- * as a quit hotkey (termgfx_termio.c's P_NORMAL case), but the kitty CSI-u and
- * SyncTERM evdev paths deliberately do NOT -- there it reaches the game as an
- * ordinary letter. Advertising a key that quits on some clients and types on
- * others would be worse than saying nothing; Ctrl-Q and Ctrl-C are reserved on
- * all three paths and are what the page recommends. Worth resolving in termgfx
- * one day so the three agree.
+/* Not listed on the page: a bare 'q'. It reaches the game as an ordinary
+ * letter on every key path -- kitty CSI-u, SyncTERM evdev and the legacy raw
+ * bytes alike -- because a save name may contain one. Ctrl-Q and Ctrl-C are
+ * the reserved quit keys on all three, which is what the page recommends.
  */
