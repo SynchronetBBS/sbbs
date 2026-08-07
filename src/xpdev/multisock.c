@@ -126,7 +126,8 @@ bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 		xpms_set->socks[xpms_set->sock_count].protocol = protocol;
 		xpms_set->socks[xpms_set->sock_count].port = port;
 		xpms_set->socks[xpms_set->sock_count].prot = strdup(prot);
-		xpms_set->socks[xpms_set->sock_count].sock = socket(cur->ai_family, cur->ai_socktype, protocol);
+		xpms_set->socks[xpms_set->sock_count].sock
+		    = socket(cur->ai_family, cur->ai_socktype | XP_SOCK_CLOEXEC, protocol);
 		if (xpms_set->socks[xpms_set->sock_count].sock == INVALID_SOCKET) {
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].address);
 			FREE_AND_NULL(xpms_set->socks[xpms_set->sock_count].prot);
@@ -142,7 +143,10 @@ bool xpms_add(struct xpms_set *xpms_set, int domain, int type,
 #else
 		/* Same hazard on POSIX, where a fork()ed child inherits every open
 		   descriptor: an external that outlives a recycle keeps this port
-		   bound and the rebind fails with EADDRINUSE.  GitLab #1174. */
+		   bound and the rebind fails with EADDRINUSE.  GitLab #1174.
+		   XP_SOCK_CLOEXEC above already did this, atomically, wherever the
+		   platform offers the creation flag; this covers the platforms that
+		   don't. */
 		{
 			int fdflags = fcntl(xpms_set->socks[xpms_set->sock_count].sock, F_GETFD);
 			if (fdflags == -1

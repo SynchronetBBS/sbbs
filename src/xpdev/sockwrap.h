@@ -83,6 +83,15 @@ typedef int* socket_ioctl_ptr_t;
 #include <errno.h>		/* errno */
 #include "wrapdll.h"	/* DLLEXPORT */
 
+/* OR into the socket() type argument to create the descriptor close-on-exec.
+ * Zero where the platform has no such creation flag (macOS, Windows), leaving
+ * an fcntl(FD_CLOEXEC) after creation as the only - and racy - option there. */
+#ifdef SOCK_CLOEXEC
+	#define XP_SOCK_CLOEXEC SOCK_CLOEXEC
+#else
+	#define XP_SOCK_CLOEXEC 0
+#endif
+
 typedef struct {
 	char*	name;
 	int		type;		/* Supported socket types (or 0 for unspecified) */
