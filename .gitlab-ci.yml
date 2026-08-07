@@ -150,6 +150,7 @@ include:
     paths:
       - .cache/vcpkg/
   rules:
+    - if: '$CI_COMMIT_BRANCH == "dailybuild_win32"'
     - changes:
       - src/sbbs3/qtmonitor/**/*
       - .gitlab-ci*.yml
