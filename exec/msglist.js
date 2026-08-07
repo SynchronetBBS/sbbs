@@ -697,14 +697,22 @@ function mail_reply(msg, reply_all)
 {
 	console.clear();
 	var success = false;
-	if(msg.from_net_type || msg.replyto_net_type) {
-		var addr;
-		if(msg.replyto_net_type)
-			addr = msg.replyto_net_addr;
-		else if(msg.from_net_addr.indexOf('@') < 0)
+	var addr;
+	if(msg.replyto_net_type)
+		addr = msg.replyto_net_addr;
+	else if(msg.from_net_type) {
+		if(msg.from_net_addr.indexOf('@') < 0)
 			addr = msg.from + '@' + msg.from_net_addr;
 		else
 			addr = msg.from_net_addr;
+	}
+	/* An address this system won't route as NetMail (e.g. one of our own domains,
+	   as used by a sender who submitted via authenticated SMTP) is replied-to as
+	   local e-mail, addressed by the sender's user number - the same fallback the
+	   built-in mail reader performs (src/sbbs3/readmail.cpp, be05f55db5 2026-02-11) */
+	if(addr !== undefined && msg.from_ext && !system.check_netmail_addr(addr))
+		addr = undefined;
+	if(addr !== undefined) {
 		if(reply_all) {
 			if(msg.to_list && msg.to_list != msg.to)
 				addr += "," + msg.to_list;
