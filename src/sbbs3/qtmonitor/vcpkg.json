@@ -21,14 +21,6 @@
       "platform": "windows | osx"
     },
     {
-      "name": "qtbase",
-      "default-features": false,
-      "features": [
-        "windeployqt"
-      ],
-      "platform": "windows"
-    },
-    {
       "name": "qtmqtt",
       "platform": "windows | osx"
     },

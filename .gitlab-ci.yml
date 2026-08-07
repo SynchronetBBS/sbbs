@@ -169,7 +169,7 @@ include:
     # dependency serially into the binary cache, then let the manifest restore
     # it while building Qt and the remaining dependencies in parallel.
     - $env:VCPKG_MAX_CONCURRENCY = "1"
-    - '& (Join-Path $env:VCPKG_ROOT "vcpkg.exe") install "openssl:x64-windows" --disable-metrics'
+    - '& (Join-Path $env:VCPKG_ROOT "vcpkg.exe") install "openssl:x64-windows-static" --disable-metrics'
     - Remove-Item Env:VCPKG_MAX_CONCURRENCY
     - |
       if (-not (Get-Command cmake.exe -ErrorAction SilentlyContinue)) {
@@ -185,23 +185,18 @@ include:
     - ctest --preset windows-vcpkg
     - |
       $deployDir = Join-Path $env:CI_PROJECT_DIR "qtmonitor-windows-x64"
-      $vcpkgInstalled = Join-Path (Get-Location) "build\windows-vcpkg\vcpkg_installed\x64-windows"
-      $qtBin = Join-Path $vcpkgInstalled "tools\Qt6\bin"
-      $winDeployQt = Join-Path $qtBin "windeployqt.exe"
       $deployedExe = Join-Path $deployDir "qtmonitor.exe"
-      if (-not (Test-Path -LiteralPath $winDeployQt -PathType Leaf)) {
-        throw "windeployqt not found at $winDeployQt"
+      if (Test-Path -LiteralPath $deployDir) {
+        Remove-Item -LiteralPath $deployDir -Recurse -Force
       }
       New-Item -ItemType Directory -Force $deployDir | Out-Null
       Copy-Item "build\windows-vcpkg\Release\qtmonitor.exe" $deployedExe
-      $env:PATH = (Join-Path $vcpkgInstalled "bin") + ";" + $qtBin + ";" + $env:PATH
-      & $winDeployQt --release --no-translations --no-system-dxc-compiler --openssl-root $vcpkgInstalled --dir $deployDir $deployedExe
-      if ($LASTEXITCODE -ne 0) {
-        throw "windeployqt failed with exit code $LASTEXITCODE"
-      }
       $deployedFiles = Get-ChildItem $deployDir -File -Recurse
+      if ($deployedFiles.Count -ne 1) {
+        throw "Static qtmonitor artifact unexpectedly contains $($deployedFiles.Count) files"
+      }
       $deployedBytes = ($deployedFiles | Measure-Object Length -Sum).Sum
-      Write-Host ("Deployed {0} files ({1:N1} MiB)" -f $deployedFiles.Count, ($deployedBytes / 1MB))
+      Write-Host ("Packaged {0} static executable ({1:N1} MiB)" -f $deployedFiles.Count, ($deployedBytes / 1MB))
   artifacts:
     name: qtmonitor-windows-x64
     paths:

@@ -16,10 +16,13 @@
     },
     {
       "name": "windows-vcpkg",
-      "displayName": "Windows Release (vcpkg)",
-      "description": "Build qtmonitor with Qt supplied by vcpkg",
+      "displayName": "Windows Static Release (vcpkg)",
+      "description": "Build qtmonitor with static Qt supplied by vcpkg",
       "inherits": "vcpkg-base",
       "binaryDir": "${sourceDir}/build/windows-vcpkg",
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-windows-static"
+      },
       "condition": {
         "type": "equals",
         "lhs": "${hostSystemName}",
