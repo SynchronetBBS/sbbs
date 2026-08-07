@@ -85,6 +85,7 @@ tODKeySequence aKeySequences[] =
    {"\033[H\x1b[2J", OD_KEY_PGDN, FALSE},
    {"\033[H", OD_KEY_HOME, FALSE},
    {"\033[K", OD_KEY_END, FALSE},
+   {"\033[F", OD_KEY_END, FALSE},
    {"\033OP", OD_KEY_F1, FALSE},
    {"\033OQ", OD_KEY_F2, FALSE},
    {"\033OR", OD_KEY_F3, FALSE},
@@ -123,6 +124,10 @@ tODKeySequence aKeySequences[] =
    {"\033Oq", OD_KEY_F7, FALSE},
    {"\033Or", OD_KEY_F8, FALSE},
    {"\033Op", OD_KEY_F9, FALSE},
+
+   /* ECMA-48-specific control sequences. */
+   {"\033[V", OD_KEY_PGUP, FALSE},
+   {"\033[U", OD_KEY_PGDN, FALSE},
 
    /* PROCOMM-specific control sequences (non-keypad alternatives). */
    {"\033OA", OD_KEY_UP, FALSE},

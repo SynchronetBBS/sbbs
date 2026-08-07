@@ -1,7 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <OpenDoorsLibraryDir Condition="'$(OpenDoorsLibraryDir)' == '' and '$(Platform)' == 'Win32'">$(MSBuildThisFileDirectory)build\msvc\x86\lib\$(Configuration)</OpenDoorsLibraryDir>
+    <OpenDoorsLibraryDir Condition="'$(OpenDoorsLibraryDir)' == '' and '$(Platform)' == 'x64'">$(MSBuildThisFileDirectory)build\msvc\x64\lib\$(Configuration)</OpenDoorsLibraryDir>
+    <OpenDoorsLibraryDir Condition="'$(OpenDoorsLibraryDir)' == ''">$(MSBuildThisFileDirectory)</OpenDoorsLibraryDir>
+  </PropertyGroup>
   <PropertyGroup>
     <_PropertySheetDisplayName>OpenDoors Library</_PropertySheetDisplayName>
   </PropertyGroup>
@@ -9,9 +13,9 @@
     <ClCompile>
       <AdditionalIncludeDirectories>$(MSBuildThisFileDirectory);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-	<Link>
-	  <AdditionalLibraryDirectories>$(MSBuildThisFileDirectory);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-	</Link>
+    <Link>
+      <AdditionalLibraryDirectories>$(OpenDoorsLibraryDir);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>
