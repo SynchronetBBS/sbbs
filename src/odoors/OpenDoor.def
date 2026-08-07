@@ -1,101 +1,139 @@
-;  OpenDoors Online Software Programming Toolkit
-;  (C) Copyright 1991 - 1999 by Brian Pirie.
+; SPDX-License-Identifier: LGPL-2.0-or-later
+; OpenDoors 32-bit Windows DLL exports.
 ;
-; Oct-2001 door32.sys/socket modifications by Rob Swindell (www.synchro.net)
-;
-;  This library is free software; you can redistribute it and/or
-;  modify it under the terms of the GNU Lesser General Public
-;  License as published by the Free Software Foundation; either
-;  version 2 of the License, or (at your option) any later version.
-;
-;  This library is distributed in the hope that it will be useful,
-;  but WITHOUT ANY WARRANTY; without even the implied warranty of
-;  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-;  Lesser General Public License for more details.
-;
-;  You should have received a copy of the GNU Lesser General Public
-;  License along with this library; if not, write to the Free Software
-;  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-;
-;
-;         File: OpenDoors.def
-;
-;  Description: Module definition file for the OpenDoors Win32 DLL.
-;
-;    Revisions: Date          Ver   Who  Change
-;               ---------------------------------------------------------------
-;               Dec 12, 1995  6.00  BP   Created.
-;               Jan 11, 1996  6.00  BP   Added exports for undecorated names.
-;               Feb 19, 1996  6.00  BP   Changed version number to 6.00.
-;               Mar 03, 1996  6.10  BP   Begin version 6.10.
-;               Mar 03, 1996  6.10  BP   Added od_get_cursor.
-;               Mar 21, 1996  6.10  BP   Added od_control_get().
-;               Oct 19, 2001  6.20  RS   Added door32.sys and socket support.
+; Keep every historical decorated and undecorated ordinal stable.  New
+; exports must be appended after ordinal 125.
 LIBRARY ODOORS62
 VERSION 6.3
 EXPORTS
-   ; Untested... these next three need the @s added
-   ; I just hacked in the size of the parameters for 32-bit systems
-   od_split_cmd_line=_od_split_cmd_line@8
-   od_free_split_cmd_line=_od_free_split_cmd_line@4
-   ; Presumably tested stuff
-   ODConfigInit=_ODConfigInit@0
-   ODLogEnable=_ODLogEnable@0
-   ODMPSEnable=_ODMPSEnable@0
-   od_add_personality=_od_add_personality@16
-   od_autodetect=_od_autodetect@4
-   od_carrier=_od_carrier@0
-   od_chat=_od_chat@0
-   od_clear_keybuffer=_od_clear_keybuffer@0
-   od_clr_line=_od_clr_line@0
-   od_clr_scr=_od_clr_scr@0
-   od_color_config=_od_color_config@4
-   od_control_get=_od_control_get@0
-   od_disp=_od_disp@12
-   od_disp_emu=_od_disp_emu@8
-   od_disp_str=_od_disp_str@4
-   od_draw_box=_od_draw_box@16
-   od_edit_str=_od_edit_str@32
-   od_emulate=_od_emulate@4
-   od_exit=_od_exit@8
-   od_get_answer=_od_get_answer@4
-   od_get_cursor=_od_get_cursor@8
-   od_get_input=_od_get_input@12
-   od_get_key=_od_get_key@4
-   od_gettext=_od_gettext@20
-   od_hotkey_menu=_od_hotkey_menu@12
-   od_init=_od_init@0
-   od_input_str=_od_input_str@16
-   od_kernel=_od_kernel@0
-   od_key_pending=_od_key_pending@0
-   od_list_files=_od_list_files@4
-   od_log_open=_od_log_open@0
-   od_log_write=_od_log_write@4
-   od_multiline_edit=_od_multiline_edit@12
-   od_page=_od_page@0
-   od_parse_cmd_line=_od_parse_cmd_line@4
-   od_popup_menu=_od_popup_menu@24
-   od_printf=od_printf
-   od_putch=_od_putch@4
-   od_puttext=_od_puttext@20
-   od_repeat=_od_repeat@8
-   od_restore_screen=_od_restore_screen@4
-   od_save_screen=_od_save_screen@4
-   od_scroll=_od_scroll@24
-   od_send_file=_od_send_file@4
-   od_set_attrib=_od_set_attrib@4
-   od_set_color=_od_set_color@8
-   od_set_cursor=_od_set_cursor@8
-   od_set_dtr=_od_set_dtr@4
-   od_set_personality=_od_set_personality@4
-   od_set_statusline=_od_set_statusline@4
-   od_sleep=_od_sleep@4
-   od_spawn=_od_spawn@4
-   od_spawnvpe=_od_spawnvpe@16
-   od_window_create=_od_window_create@36
-   od_window_remove=_od_window_remove@4
-   pdef_opendoors=_pdef_opendoors@4
-   pdef_pcboard=_pdef_pcboard@4
-   pdef_ra=_pdef_ra@4
-   pdef_wildcat=_pdef_wildcat@4
-   od_control=od_control DATA
+   ODConfigInit=_ODConfigInit@0 @1
+   ODLogEnable=_ODLogEnable@0 @2
+   ODMPSEnable=_ODMPSEnable@0 @3
+   _ODConfigInit@0=_ODConfigInit@0 @4
+   _ODLogEnable@0=_ODLogEnable@0 @5
+   _ODMPSEnable@0=_ODMPSEnable@0 @6
+   _od_control=od_control @7 DATA
+   _od_printf=od_printf @8
+   _od_add_personality@16=_od_add_personality@16 @9
+   _od_autodetect@4=_od_autodetect@4 @10
+   _od_carrier@0=_od_carrier@0 @11
+   _od_chat@0=_od_chat@0 @12
+   _od_clear_keybuffer@0=_od_clear_keybuffer@0 @13
+   _od_clr_line@0=_od_clr_line@0 @14
+   _od_clr_scr@0=_od_clr_scr@0 @15
+   _od_color_config@4=_od_color_config@4 @16
+   od_control=od_control @17 DATA
+   _od_control_get@0=_od_control_get@0 @18
+   _od_disp@12=_od_disp@12 @19
+   _od_disp_emu@8=_od_disp_emu@8 @20
+   _od_disp_str@4=_od_disp_str@4 @21
+   _od_draw_box@16=_od_draw_box@16 @22
+   _od_edit_str@32=_od_edit_str@32 @23
+   _od_emulate@4=_od_emulate@4 @24
+   _od_exit@8=_od_exit@8 @25
+   _od_free_split_cmd_line@4=_od_free_split_cmd_line@4 @26
+   _od_get_answer@4=_od_get_answer@4 @27
+   _od_get_cursor@8=_od_get_cursor@8 @28
+   _od_get_input@12=_od_get_input@12 @29
+   _od_get_key@4=_od_get_key@4 @30
+   _od_gettext@20=_od_gettext@20 @31
+   _od_hotkey_menu@12=_od_hotkey_menu@12 @32
+   _od_init@0=_od_init@0 @33
+   _od_input_str@16=_od_input_str@16 @34
+   _od_kernel@0=_od_kernel@0 @35
+   _od_key_pending@0=_od_key_pending@0 @36
+   _od_list_files@4=_od_list_files@4 @37
+   _od_log_open@0=_od_log_open@0 @38
+   _od_log_write@4=_od_log_write@4 @39
+   _od_multiline_edit@12=_od_multiline_edit@12 @40
+   _od_page@0=_od_page@0 @41
+   _od_parse_cmd_line@4=_od_parse_cmd_line@4 @42
+   _od_popup_menu@24=_od_popup_menu@24 @43
+   od_printf=od_printf @44
+   _od_putch@4=_od_putch@4 @45
+   _od_puttext@20=_od_puttext@20 @46
+   _od_repeat@8=_od_repeat@8 @47
+   _od_restore_screen@4=_od_restore_screen@4 @48
+   _od_save_screen@4=_od_save_screen@4 @49
+   _od_scroll@24=_od_scroll@24 @50
+   _od_send_file@4=_od_send_file@4 @51
+   _od_send_file_section@8=_od_send_file_section@8 @52
+   _od_set_attrib@4=_od_set_attrib@4 @53
+   _od_set_color@8=_od_set_color@8 @54
+   _od_set_cursor@8=_od_set_cursor@8 @55
+   _od_set_dtr@4=_od_set_dtr@4 @56
+   _od_set_personality@4=_od_set_personality@4 @57
+   _od_set_statusline@4=_od_set_statusline@4 @58
+   _od_sleep@4=_od_sleep@4 @59
+   _od_spawn@4=_od_spawn@4 @60
+   _od_spawnvpe@16=_od_spawnvpe@16 @61
+   _od_split_cmd_line@8=_od_split_cmd_line@8 @62
+   _od_window_create@36=_od_window_create@36 @63
+   _od_window_remove@4=_od_window_remove@4 @64
+   _pdef_opendoors@4=_pdef_opendoors@4 @65
+   _pdef_pcboard@4=_pdef_pcboard@4 @66
+   _pdef_ra@4=_pdef_ra@4 @67
+   _pdef_wildcat@4=_pdef_wildcat@4 @68
+   od_add_personality=_od_add_personality@16 @69
+   od_autodetect=_od_autodetect@4 @70
+   od_carrier=_od_carrier@0 @71
+   od_chat=_od_chat@0 @72
+   od_clear_keybuffer=_od_clear_keybuffer@0 @73
+   od_clr_line=_od_clr_line@0 @74
+   od_clr_scr=_od_clr_scr@0 @75
+   od_color_config=_od_color_config@4 @76
+   od_control_get=_od_control_get@0 @77
+   od_disp=_od_disp@12 @78
+   od_disp_emu=_od_disp_emu@8 @79
+   od_disp_str=_od_disp_str@4 @80
+   od_draw_box=_od_draw_box@16 @81
+   od_edit_str=_od_edit_str@32 @82
+   od_emulate=_od_emulate@4 @83
+   od_exit=_od_exit@8 @84
+   od_free_split_cmd_line=_od_free_split_cmd_line@4 @85
+   od_get_answer=_od_get_answer@4 @86
+   od_get_cursor=_od_get_cursor@8 @87
+   od_get_input=_od_get_input@12 @88
+   od_get_key=_od_get_key@4 @89
+   od_gettext=_od_gettext@20 @90
+   od_hotkey_menu=_od_hotkey_menu@12 @91
+   od_init=_od_init@0 @92
+   od_input_str=_od_input_str@16 @93
+   od_kernel=_od_kernel@0 @94
+   od_key_pending=_od_key_pending@0 @95
+   od_list_files=_od_list_files@4 @96
+   od_log_open=_od_log_open@0 @97
+   od_log_write=_od_log_write@4 @98
+   od_multiline_edit=_od_multiline_edit@12 @99
+   od_page=_od_page@0 @100
+   od_parse_cmd_line=_od_parse_cmd_line@4 @101
+   od_popup_menu=_od_popup_menu@24 @102
+   od_putch=_od_putch@4 @103
+   od_puttext=_od_puttext@20 @104
+   od_repeat=_od_repeat@8 @105
+   od_restore_screen=_od_restore_screen@4 @106
+   od_save_screen=_od_save_screen@4 @107
+   od_scroll=_od_scroll@24 @108
+   od_send_file=_od_send_file@4 @109
+   od_set_attrib=_od_set_attrib@4 @110
+   od_set_color=_od_set_color@8 @111
+   od_set_cursor=_od_set_cursor@8 @112
+   od_set_dtr=_od_set_dtr@4 @113
+   od_set_personality=_od_set_personality@4 @114
+   od_set_statusline=_od_set_statusline@4 @115
+   od_sleep=_od_sleep@4 @116
+   od_spawn=_od_spawn@4 @117
+   od_spawnvpe=_od_spawnvpe@16 @118
+   od_split_cmd_line=_od_split_cmd_line@8 @119
+   od_window_create=_od_window_create@36 @120
+   od_window_remove=_od_window_remove@4 @121
+   pdef_opendoors=_pdef_opendoors@4 @122
+   pdef_pcboard=_pdef_pcboard@4 @123
+   pdef_ra=_pdef_ra@4 @124
+   pdef_wildcat=_pdef_wildcat@4 @125
+   _od_restore_screen_ex@8=_od_restore_screen_ex@8 @126
+   _od_save_screen_ex@8=_od_save_screen_ex@8 @127
+   _od_save_screen_size@0=_od_save_screen_size@0 @128
+   od_restore_screen_ex=_od_restore_screen_ex@8 @129
+   od_save_screen_ex=_od_save_screen_ex@8 @130
+   od_save_screen_size=_od_save_screen_size@0 @131

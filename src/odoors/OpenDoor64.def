@@ -1,0 +1,76 @@
+; SPDX-License-Identifier: LGPL-2.0-or-later
+; OpenDoors 64-bit Windows DLL exports.
+;
+; Keep every ordinal from the first 64-bit release stable. New exports must
+; be appended after ordinal 65.
+LIBRARY ODOORS62
+VERSION 6.3
+EXPORTS
+   ODConfigInit @1
+   ODLogEnable @2
+   ODMPSEnable @3
+   _od_control=od_control @4 DATA
+   _od_printf=od_printf @5
+   od_add_personality @6
+   od_autodetect @7
+   od_carrier @8
+   od_chat @9
+   od_clear_keybuffer @10
+   od_clr_line @11
+   od_clr_scr @12
+   od_color_config @13
+   od_control @14 DATA
+   od_control_get @15
+   od_disp @16
+   od_disp_emu @17
+   od_disp_str @18
+   od_draw_box @19
+   od_edit_str @20
+   od_emulate @21
+   od_exit @22
+   od_free_split_cmd_line @23
+   od_get_answer @24
+   od_get_cursor @25
+   od_get_input @26
+   od_get_key @27
+   od_gettext @28
+   od_hotkey_menu @29
+   od_init @30
+   od_input_str @31
+   od_kernel @32
+   od_key_pending @33
+   od_list_files @34
+   od_log_open @35
+   od_log_write @36
+   od_multiline_edit @37
+   od_page @38
+   od_parse_cmd_line @39
+   od_popup_menu @40
+   od_printf @41
+   od_putch @42
+   od_puttext @43
+   od_repeat @44
+   od_restore_screen @45
+   od_save_screen @46
+   od_scroll @47
+   od_send_file @48
+   od_send_file_section @49
+   od_set_attrib @50
+   od_set_color @51
+   od_set_cursor @52
+   od_set_dtr @53
+   od_set_personality @54
+   od_set_statusline @55
+   od_sleep @56
+   od_spawn @57
+   od_spawnvpe @58
+   od_split_cmd_line @59
+   od_window_create @60
+   od_window_remove @61
+   pdef_opendoors @62
+   pdef_pcboard @63
+   pdef_ra @64
+   pdef_wildcat @65
+   od_restore_screen_ex @66
+   od_save_screen_ex @67
+   od_save_screen_size @68

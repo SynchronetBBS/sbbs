@@ -10,6 +10,7 @@
 #include "ODInQue.h"
 #include "ODSafe.h"
 #include "ODSwap.h"
+#include "ODVScreen.h"
 
 static int Fail(int line)
 {
@@ -49,6 +50,8 @@ int main(void)
    size_t maximum = (size_t)-1;
    BYTE *large_input;
    BYTE *converted;
+   BYTE *screen_snapshot;
+   DWORD screen_snapshot_size;
    int input_size = 21846;
    tODInQueueHandle queue;
    FILE *sentinel;
@@ -76,6 +79,28 @@ int main(void)
    CHECK(ODInQueueAlloc(&queue, INT_MAX) == kODRCNoMemory);
    CHECK(ODInQueueAlloc(&queue, 2) == kODRCSuccess);
    ODInQueueFree(queue);
+
+   od_control.baud = 1;
+   od_control.user_screenwidth = 132;
+   od_control.user_screen_length = 50;
+   ODSessionScreenInitialize(80, 25);
+   CHECK(ODSessionScreenAvailable());
+   CHECK(ODSessionScreenWidth() == 132);
+   CHECK(ODSessionScreenHeight() == 50);
+   screen_snapshot_size = ODSessionScreenSnapshotSize();
+   CHECK(screen_snapshot_size == 48UL + 132UL * 50UL * 2UL);
+   screen_snapshot = (BYTE *)malloc((size_t)screen_snapshot_size);
+   CHECK(screen_snapshot != NULL);
+   CHECK(ODSessionScreenSave(screen_snapshot, screen_snapshot_size));
+   free(screen_snapshot);
+   ODSessionScreenShutdown();
+
+   od_control.user_screenwidth = 255;
+   od_control.user_screen_length = 129;
+   ODSessionScreenInitialize(80, 25);
+   CHECK(!ODSessionScreenAvailable());
+   CHECK(ODSessionScreenError() == ERR_LIMIT);
+   ODSessionScreenShutdown();
 
    sentinel = fopen("DOSPASS.OK", "w");
    CHECK(sentinel != NULL);

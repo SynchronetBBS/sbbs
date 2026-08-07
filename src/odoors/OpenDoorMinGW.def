@@ -1,0 +1,72 @@
+; SPDX-License-Identifier: LGPL-2.0-or-later
+; OpenDoors 32-bit MinGW DLL exports. Keep existing ordinals stable and append
+; new exports after ordinal 63.
+LIBRARY ODOORS62
+VERSION 6.3
+EXPORTS
+   ODConfigInit=ODConfigInit@0 @1
+   ODLogEnable=ODLogEnable@0 @2
+   ODMPSEnable=ODMPSEnable@0 @3
+   od_add_personality=od_add_personality@16 @4
+   od_autodetect=od_autodetect@4 @5
+   od_carrier=od_carrier@0 @6
+   od_chat=od_chat@0 @7
+   od_clear_keybuffer=od_clear_keybuffer@0 @8
+   od_clr_line=od_clr_line@0 @9
+   od_clr_scr=od_clr_scr@0 @10
+   od_color_config=od_color_config@4 @11
+   od_control=od_control @12 DATA
+   od_control_get=od_control_get@0 @13
+   od_disp=od_disp@12 @14
+   od_disp_emu=od_disp_emu@8 @15
+   od_disp_str=od_disp_str@4 @16
+   od_draw_box=od_draw_box@16 @17
+   od_edit_str=od_edit_str@32 @18
+   od_emulate=od_emulate@4 @19
+   od_exit=od_exit@8 @20
+   od_free_split_cmd_line=od_free_split_cmd_line@4 @21
+   od_get_answer=od_get_answer@4 @22
+   od_get_cursor=od_get_cursor@8 @23
+   od_get_input=od_get_input@12 @24
+   od_get_key=od_get_key@4 @25
+   od_gettext=od_gettext@20 @26
+   od_hotkey_menu=od_hotkey_menu@12 @27
+   od_init=od_init@0 @28
+   od_input_str=od_input_str@16 @29
+   od_kernel=od_kernel@0 @30
+   od_key_pending=od_key_pending@0 @31
+   od_list_files=od_list_files@4 @32
+   od_log_open=od_log_open@0 @33
+   od_log_write=od_log_write@4 @34
+   od_multiline_edit=od_multiline_edit@12 @35
+   od_page=od_page@0 @36
+   od_parse_cmd_line=od_parse_cmd_line@4 @37
+   od_popup_menu=od_popup_menu@24 @38
+   od_printf=od_printf @39
+   od_putch=od_putch@4 @40
+   od_puttext=od_puttext@20 @41
+   od_repeat=od_repeat@8 @42
+   od_restore_screen=od_restore_screen@4 @43
+   od_save_screen=od_save_screen@4 @44
+   od_scroll=od_scroll@24 @45
+   od_send_file=od_send_file@4 @46
+   od_send_file_section=od_send_file_section@8 @47
+   od_set_attrib=od_set_attrib@4 @48
+   od_set_color=od_set_color@8 @49
+   od_set_cursor=od_set_cursor@8 @50
+   od_set_dtr=od_set_dtr@4 @51
+   od_set_personality=od_set_personality@4 @52
+   od_set_statusline=od_set_statusline@4 @53
+   od_sleep=od_sleep@4 @54
+   od_spawn=od_spawn@4 @55
+   od_spawnvpe=od_spawnvpe@16 @56
+   od_split_cmd_line=od_split_cmd_line@8 @57
+   od_window_create=od_window_create@36 @58
+   od_window_remove=od_window_remove@4 @59
+   pdef_opendoors=pdef_opendoors@4 @60
+   pdef_pcboard=pdef_pcboard@4 @61
+   pdef_ra=pdef_ra@4 @62
+   pdef_wildcat=pdef_wildcat@4 @63
+   od_restore_screen_ex=od_restore_screen_ex@8 @64
+   od_save_screen_ex=od_save_screen_ex@8 @65
+   od_save_screen_size=od_save_screen_size@0 @66

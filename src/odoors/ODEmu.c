@@ -62,6 +62,7 @@
 #include "ODCom.h"
 #include "ODTypes.h"
 #include "ODScrn.h"
+#include "ODVScreen.h"
 #include "ODKrnl.h"
 #include "ODUtil.h"
 
@@ -77,7 +78,12 @@
 
 
 /* Local helper function prototypes. */
-static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho);
+static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho,
+   BOOL bSessionEcho);
+static void ODEmulateGetTextInfo(tODVScreenInfo *pInfo);
+static void ODEmulateSetCursorPos(INT nColumn, INT nRow);
+static void ODEmulateCopyText(INT nLeft, INT nTop, INT nRight, INT nBottom,
+   INT nDestColumn, INT nDestRow);
 static FILE *ODEmulateFindCompatFile(const char *pszBaseName, INT *pnLevel);
 static void ODEmulateFillArea(BYTE btLeft, BYTE btTop, BYTE btRight,
    BYTE btBottom, char chToFillWith);
@@ -86,10 +92,10 @@ static void ODEmulateFillArea(BYTE btLeft, BYTE btTop, BYTE btRight,
 /* Current terminal emulator state variables. */
 static BYTE btANSISeqLevel = 0;
 static INT anANSIParams[10];
-static char szCurrentParam[4] = "";
+static char szCurrentParam[6] = "";
 static BYTE btCurrentParamLength;
-static BYTE btSavedColumn=1;
-static BYTE btSavedRow = 1;
+static INT nSavedColumn=1;
+static INT nSavedRow = 1;
 static char szToRepeat[129];
 static BYTE btRepeatCount;
 static BYTE btAvatarSeqLevel = 0;
@@ -106,6 +112,46 @@ static char chHotkeyPressed;
 
 /* Lookup table to map colors from ANSI values to PC color values. */
 static BYTE abtANSIToPCColorTable[8] = {0, 4, 2, 6, 1, 5, 3, 7};
+
+
+static void ODEmulateGetTextInfo(tODVScreenInfo *pInfo)
+{
+   tODScrnTextInfo LocalInfo;
+
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenGetInfo(pInfo);
+      return;
+   }
+   ODScrnGetTextInfo(&LocalInfo);
+   pInfo->winleft = LocalInfo.winleft;
+   pInfo->wintop = LocalInfo.wintop;
+   pInfo->winright = LocalInfo.winright;
+   pInfo->winbottom = LocalInfo.winbottom;
+   pInfo->attribute = LocalInfo.attribute;
+   pInfo->curx = LocalInfo.curx;
+   pInfo->cury = LocalInfo.cury;
+   pInfo->scrolling = TRUE;
+}
+
+static void ODEmulateSetCursorPos(INT nColumn, INT nRow)
+{
+   if(ODSessionScreenIsEmulating())
+      ODSessionScreenSetCursorPos(nColumn, nRow);
+   else
+      ODScrnSetCursorPos((BYTE)nColumn, (BYTE)nRow);
+}
+
+static void ODEmulateCopyText(INT nLeft, INT nTop, INT nRight, INT nBottom,
+   INT nDestColumn, INT nDestRow)
+{
+   if(ODSessionScreenIsEmulating())
+      ODSessionScreenCopyText(nLeft, nTop, nRight, nBottom,
+         nDestColumn, nDestRow);
+   else
+      ODScrnCopyText((BYTE)nLeft, (BYTE)nTop, (BYTE)nRight, (BYTE)nBottom,
+         (BYTE)nDestColumn, (BYTE)nDestRow);
+}
 
 
 /* ----------------------------------------------------------------------------
@@ -426,7 +472,7 @@ abort_send:
             while(fgets(szODWorkString, OD_GLOBAL_WORK_STRING_SIZE-1, pfLocalFile))
             {
                 /* Pass each line to terminal emulator. */
-               ODEmulateFromBuffer(szODWorkString, FALSE);
+               ODEmulateFromBuffer(szODWorkString, FALSE, FALSE);
             }
          }
 
@@ -475,7 +521,7 @@ abort_send:
                goto end_transmission;
             }
 
-            ODEmulateFromBuffer(szODWorkString, FALSE);
+            ODEmulateFromBuffer(szODWorkString, FALSE, FALSE);
          }
          else
          {
@@ -483,12 +529,12 @@ abort_send:
             /* system, and send a copy to the remote system.        */
             if(od_control.od_no_ra_codes)
             {
-               ODEmulateFromBuffer(szODWorkString, FALSE);
+               ODEmulateFromBuffer(szODWorkString, FALSE, TRUE);
                od_disp(szODWorkString, strlen(szODWorkString), FALSE);
             }
             else
             {
-               ODEmulateFromBuffer(szODWorkString,TRUE);
+               ODEmulateFromBuffer(szODWorkString, TRUE, TRUE);
             }
          }
       }
@@ -789,7 +835,7 @@ abort_send:
                   goto end_transmission;
                }
                 /* Pass each line to terminal emulator. */
-               ODEmulateFromBuffer(szODWorkString, FALSE);
+               ODEmulateFromBuffer(szODWorkString, FALSE, FALSE);
             }
          }
 
@@ -857,7 +903,7 @@ abort_send:
                goto end_transmission;
             }
 
-            ODEmulateFromBuffer(szODWorkString, FALSE);
+            ODEmulateFromBuffer(szODWorkString, FALSE, FALSE);
          }
          else
          {
@@ -865,12 +911,12 @@ abort_send:
             /* system, and send a copy to the remote system.        */
             if(od_control.od_no_ra_codes)
             {
-               ODEmulateFromBuffer(szODWorkString, FALSE);
+               ODEmulateFromBuffer(szODWorkString, FALSE, TRUE);
                od_disp(szODWorkString, strlen(szODWorkString), FALSE);
             }
             else
             {
-               ODEmulateFromBuffer(szODWorkString,TRUE);
+               ODEmulateFromBuffer(szODWorkString, TRUE, TRUE);
             }
          }
       }
@@ -1033,7 +1079,7 @@ ODAPIDEF void ODCALL od_disp_emu(const char *pszToDisplay, BOOL bRemoteEcho)
    }
 
    /* Pass string to be emulated to local terminal emulation function. */
-   ODEmulateFromBuffer(pszToDisplay, bTranslateRemote);
+   ODEmulateFromBuffer(pszToDisplay, bTranslateRemote, bRemoteEcho);
 
    OD_API_EXIT();
 }
@@ -1066,7 +1112,7 @@ ODAPIDEF void ODCALL od_emulate(char chToEmulate)
    OD_API_ENTRY();
 
    /* Pass character to be emulated to local terminal emulation function. */
-   ODEmulateFromBuffer(szBuffer, TRUE);
+   ODEmulateFromBuffer(szBuffer, TRUE, TRUE);
 
    OD_API_EXIT();
 }
@@ -1084,19 +1130,29 @@ ODAPIDEF void ODCALL od_emulate(char chToEmulate)
  *             bRemoteEcho - TRUE if string should also be sent to the remote
  *                           system, FALSE if it should not be.
  *
+ *             bSessionEcho - TRUE if the interpreted output should update the
+ *                            authoritative session screen. This remains TRUE
+ *                            when a raw buffer was already transmitted.
+ *
  *     Return: void
  */
-static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
+static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho,
+   BOOL bSessionEcho)
 {
    char chCurrent;
-   static tODScrnTextInfo TextInfo;
+   static tODVScreenInfo TextInfo;
    INT nTemp;
    BOOL bEchoThisChar;
    INT nCharsPerTick = 0;
    INT nCharsThisTick;
    tODTimer ModemSimTimer;
+   BOOL bUseSessionScreen;
 
    ASSERT(pszBuffer != NULL);
+
+   bUseSessionScreen = bSessionEcho && ODSessionScreenAvailable();
+   if(bUseSessionScreen)
+      ODSessionScreenBeginEmulation();
 
    /* If we should simulate modem transmission speed. */
    if(od_control.od_emu_simulate_modem)
@@ -1235,11 +1291,13 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                               /* Output next character. */
                               if(bAvatarInsertMode)
                               {
-                                 ODScrnGetTextInfo(&TextInfo);
-                                 if(TextInfo.curx < 80)
+                                 ODEmulateGetTextInfo(&TextInfo);
+                                 if(TextInfo.curx < TextInfo.winright)
                                  {
-                                    ODScrnCopyText(TextInfo.curx,
-                                       TextInfo.cury, 79, TextInfo.cury,
+                                    ODEmulateCopyText(TextInfo.curx,
+                                       TextInfo.cury,
+                                       (BYTE)(TextInfo.winright - 1),
+                                       TextInfo.cury,
                                        (BYTE)(TextInfo.curx + 1),
                                        TextInfo.cury);
                                  }
@@ -1278,7 +1336,7 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
 
                            case 0x02:
                               bAvatarInsertMode = FALSE;
-                              ODScrnGetTextInfo(&TextInfo);
+                              ODEmulateGetTextInfo(&TextInfo);
                               ODScrnSetAttribute((BYTE)
                                  (od_control.od_cur_attrib =
                                  TextInfo.attribute | 0x80));
@@ -1287,32 +1345,32 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
 
                            case 0x03:
                               bAvatarInsertMode = FALSE;
-                              ODScrnGetTextInfo(&TextInfo);
+                              ODEmulateGetTextInfo(&TextInfo);
                               if(TextInfo.cury > 1)
                               {
-                                 ODScrnSetCursorPos(TextInfo.curx,
-                                    (BYTE)(TextInfo.cury - 1));
+                                 ODEmulateSetCursorPos(TextInfo.curx,
+                                    TextInfo.cury - 1);
                               }
                               btAvatarSeqLevel = 0;
                               break;
 
                            case 0x04:
                               bAvatarInsertMode = FALSE;
-                              ODScrnGetTextInfo(&TextInfo);
-                              if(TextInfo.cury < 25)
+                              ODEmulateGetTextInfo(&TextInfo);
+                              if(TextInfo.cury < TextInfo.winbottom)
                               {
-                                 ODScrnSetCursorPos(TextInfo.curx,
-                                    (BYTE)(TextInfo.cury + 1));
+                                 ODEmulateSetCursorPos(TextInfo.curx,
+                                    TextInfo.cury + 1);
                               }
                               btAvatarSeqLevel = 0;
                               break;
 
                            case 0x05:
                               bAvatarInsertMode = FALSE;
-                              ODScrnGetTextInfo(&TextInfo);
+                              ODEmulateGetTextInfo(&TextInfo);
                               if(TextInfo.curx > 1)
                               {
-                                 ODScrnSetCursorPos((BYTE)(TextInfo.curx - 1),
+                                 ODEmulateSetCursorPos(TextInfo.curx - 1,
                                     TextInfo.cury);
                               }
                               btAvatarSeqLevel = 0;
@@ -1320,10 +1378,10 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
 
                            case 0x06:
                               bAvatarInsertMode = FALSE;
-                              ODScrnGetTextInfo(&TextInfo);
-                              if(TextInfo.curx < 80)
+                              ODEmulateGetTextInfo(&TextInfo);
+                              if(TextInfo.curx < TextInfo.winright)
                               {
-                                 ODScrnSetCursorPos((BYTE)(TextInfo.curx + 1),
+                                 ODEmulateSetCursorPos(TextInfo.curx + 1,
                                     TextInfo.cury);
                               }
                               btAvatarSeqLevel = 0;
@@ -1364,19 +1422,22 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                               break;
 
                            case 0x0e:   /* ^N */
-                              ODScrnGetTextInfo(&TextInfo);
-                              if(TextInfo.curx < 80)
+                              ODEmulateGetTextInfo(&TextInfo);
+                              if(TextInfo.curx < TextInfo.winright)
                               {
-                                 ODScrnCopyText((BYTE)(TextInfo.curx + 1),
-                                    TextInfo.cury, 80, TextInfo.cury,
+                                 ODEmulateCopyText(TextInfo.curx + 1,
+                                    TextInfo.cury, TextInfo.winright,
+                                    TextInfo.cury,
                                     TextInfo.curx, TextInfo.cury);
                               }
 
                               ODScrnEnableScrolling(FALSE);
-                              ODScrnSetCursorPos(80, TextInfo.cury);
+                              ODEmulateSetCursorPos(TextInfo.winright,
+                                 TextInfo.cury);
                               ODScrnDisplayChar(' ');
                               ODScrnEnableScrolling(TRUE);
-                              ODScrnSetCursorPos(TextInfo.curx, TextInfo.cury);
+                              ODEmulateSetCursorPos(TextInfo.curx,
+                                 TextInfo.cury);
 
                               btAvatarSeqLevel = 0;
                               break;
@@ -1402,7 +1463,8 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                         break;
 
                      case 6:
-                        ODScrnSetCursorPos(chCurrent, chPrevParam);
+                        ODEmulateSetCursorPos((BYTE)chCurrent,
+                           (BYTE)chPrevParam);
                         btAvatarSeqLevel = 0;
                         break;
 
@@ -1449,7 +1511,7 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
 
                         else if(btScrollLines < 0)
                         {
-                           ODScrnCopyText(btScrollLeft, btScrollTop,
+                           ODEmulateCopyText(btScrollLeft, btScrollTop,
                               btScrollRight,
                               (BYTE)(btScrollBottom + btScrollLines),
                               btScrollLeft,
@@ -1461,7 +1523,7 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
 
                         else
                         {
-                           ODScrnCopyText(btScrollLeft,
+                           ODEmulateCopyText(btScrollLeft,
                               (BYTE)(btScrollTop + btScrollLines),
                               btScrollRight, btScrollBottom,
                               btScrollLeft, btScrollTop);
@@ -1494,7 +1556,7 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                         break;
 
                      case 18:
-                        ODScrnGetTextInfo(&TextInfo);
+                        ODEmulateGetTextInfo(&TextInfo);
                         ODScrnSetAttribute((BYTE)(od_control.od_cur_attrib
                            = btScrollLines));
                         ODEmulateFillArea(TextInfo.curx, TextInfo.cury,
@@ -1853,7 +1915,7 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
          default:
             if((chCurrent >= '0' && chCurrent <= '9') || chCurrent == '?')
             {
-               if(btCurrentParamLength < 3)
+               if(btCurrentParamLength < 5)
                {
                   szCurrentParam[btCurrentParamLength] = chCurrent;
                   szCurrentParam[++btCurrentParamLength] = '\0';
@@ -1912,7 +1974,7 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                   ++btNumParams;
                }
 
-               ODScrnGetTextInfo(&TextInfo);
+               ODEmulateGetTextInfo(&TextInfo);
 
                switch(chCurrent)
                {
@@ -1922,28 +1984,31 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                      {
                         nTemp = 1;
                      }
-                     if(nTemp > 25) nTemp=25;
-                     ODScrnSetCursorPos(TextInfo.curx, (BYTE)nTemp);
+                     if(nTemp > TextInfo.winbottom)
+                        nTemp = TextInfo.winbottom;
+                     ODEmulateSetCursorPos(TextInfo.curx, nTemp);
                      break;
 
                   case 'B':
                      if(btNumParams == 0) anANSIParams[0] = 1;
-                     if((nTemp = TextInfo.cury + anANSIParams[0]) > 25)
+                     if((nTemp = TextInfo.cury + anANSIParams[0])
+                        > TextInfo.winbottom)
                      {
-                        nTemp = 25;
+                        nTemp = TextInfo.winbottom;
                      }
                      if(nTemp < 1) nTemp = 1;
-                     ODScrnSetCursorPos(TextInfo.curx, (BYTE)nTemp);
+                     ODEmulateSetCursorPos(TextInfo.curx, nTemp);
                      break;
 
                   case 'C':
                      if(btNumParams == 0) anANSIParams[0] = 1;
-                     if((nTemp=TextInfo.curx + anANSIParams[0]) > 80)
+                     if((nTemp=TextInfo.curx + anANSIParams[0])
+                        > TextInfo.winright)
                      {
-                        nTemp = 80;
+                        nTemp = TextInfo.winright;
                      }
                      if(nTemp < 1) nTemp = 1;
-                     ODScrnSetCursorPos((BYTE)nTemp, TextInfo.cury);
+                     ODEmulateSetCursorPos(nTemp, TextInfo.cury);
                      break;
 
                   case 'D':
@@ -1952,8 +2017,9 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                      {
                         nTemp = 1;
                      }
-                     if(nTemp > 80) nTemp = 80;
-                     ODScrnSetCursorPos((BYTE)nTemp, TextInfo.cury);
+                     if(nTemp > TextInfo.winright)
+                        nTemp = TextInfo.winright;
+                     ODEmulateSetCursorPos(nTemp, TextInfo.cury);
                      break;
 
                   case 'H':
@@ -1962,28 +2028,28 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                      {
                         if(anANSIParams[0] == -1)
                         {
-                           ODScrnSetCursorPos((BYTE)anANSIParams[1], 1);
+                           ODEmulateSetCursorPos(anANSIParams[1], 1);
                         }
                         else
                         {
-                           ODScrnSetCursorPos((BYTE)anANSIParams[1],
-                              (BYTE)anANSIParams[0]);
+                           ODEmulateSetCursorPos(anANSIParams[1],
+                              anANSIParams[0]);
                         }
                      }
                      else if(btNumParams == 1)
                      {
                         if(anANSIParams[0] <= 0)
                         {
-                           ODScrnSetCursorPos(1, TextInfo.cury);
+                           ODEmulateSetCursorPos(1, TextInfo.cury);
                         }
                         else
                         {
-                           ODScrnSetCursorPos(1, (BYTE)anANSIParams[0]);
+                           ODEmulateSetCursorPos(1, anANSIParams[0]);
                         }
                      }
                      else /* if(num_params==0) */
                      {
-                        ODScrnSetCursorPos(1, 1);
+                        ODEmulateSetCursorPos(1, 1);
                      }
                      break;
 
@@ -2089,12 +2155,12 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                      break;
 
                   case 's':
-                     btSavedColumn = TextInfo.curx;
-                     btSavedRow = TextInfo.cury;
+                     nSavedColumn = TextInfo.curx;
+                     nSavedRow = TextInfo.cury;
                      break;
 
                   case 'u':
-                     ODScrnSetCursorPos(btSavedColumn, btSavedRow);
+                     ODEmulateSetCursorPos(nSavedColumn, nSavedRow);
                      break;
 
                   case '@':
@@ -2129,7 +2195,7 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
                      else if(btNumParams >= 1 && anANSIParams[0] == -2)
                      {
                         /* Home cursor. */
-                        ODScrnSetCursorPos(1, 1);
+                        ODEmulateSetCursorPos(1, 1);
                      }
                      break;
 
@@ -2160,6 +2226,9 @@ static void ODEmulateFromBuffer(const char *pszBuffer, BOOL bRemoteEcho)
 
       ++pszBuffer;
    }
+
+   if(bUseSessionScreen)
+      ODSessionScreenEndEmulation();
 }
 
 
@@ -2187,9 +2256,9 @@ static void ODEmulateFillArea(BYTE btLeft, BYTE btTop, BYTE btRight,
    BYTE btCount;
    BYTE btLast;
    static char szTemp[81];
-   static tODScrnTextInfo TextInfo;
+   static tODVScreenInfo TextInfo;
 
-   ODScrnGetTextInfo(&TextInfo);
+   ODEmulateGetTextInfo(&TextInfo);
 
    btLast = btRight - btLeft;
 
@@ -2203,11 +2272,11 @@ static void ODEmulateFillArea(BYTE btLeft, BYTE btTop, BYTE btRight,
 
    for(btCount = btTop; btCount <= btBottom; ++btCount)
    {
-      ODScrnSetCursorPos(btLeft, btCount);
+      ODEmulateSetCursorPos(btLeft, btCount);
       ODScrnDisplayString(szTemp);
    }
 
-   ODScrnSetCursorPos(TextInfo.curx, TextInfo.cury);
+   ODEmulateSetCursorPos(TextInfo.curx, TextInfo.cury);
 
    ODScrnEnableScrolling(TRUE);
 }

@@ -46,6 +46,8 @@
 #include "ODGen.h"
 #include "ODScrn.h"
 #include "ODKrnl.h"
+#include "ODSafe.h"
+#include "ODVScreen.h"
 
 
 /* Set to TRUE when od_puttext() should leave the cursor in its original */
@@ -80,8 +82,9 @@ static BOOL bScrollAction = TRUE;
 ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
    void *pBlock)
 {
-   INT nRowLength = nRight - nLeft +1;
-   INT nRowBytes = nRowLength * 2;
+   INT nRowLength;
+   INT nRowBytes;
+   size_t nBlockBytes;
    char *pchTest;
    char *pchMemory;
    char *pBuffer=NULL;
@@ -92,7 +95,12 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
    INT nOutColumn, nCheckColumn;
    char *pchMemBlock;
    INT nMoveCost = od_control.user_avatar ? 4 : 7;
-   BYTE btMaxRight, btMaxBottom;
+   INT nMaxRight;
+   INT nMaxBottom;
+   INT nSavedCursorRow;
+   INT nSavedCursorColumn;
+   BYTE btSavedAttribute;
+   tODVScreenInfo SessionInfo;
 
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_puttext()");
@@ -102,18 +110,47 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
 
    OD_API_ENTRY();
 
-   /* Get current display setting profile. */
-   ODScrnGetTextInfo(&ODTextInfo);
-
-   /* Calculate the maximum values for bottom and right of block. */
-   btMaxRight=ODTextInfo.winright-ODTextInfo.winleft+1;
-   btMaxBottom=ODTextInfo.winbottom-ODTextInfo.wintop+1;
+   if(ODSessionScreenAvailable())
+   {
+      ODSessionScreenGetInfo(&SessionInfo);
+      nMaxRight = SessionInfo.winright - SessionInfo.winleft + 1;
+      nMaxBottom = SessionInfo.winbottom - SessionInfo.wintop + 1;
+      nSavedCursorRow = SessionInfo.cury;
+      nSavedCursorColumn = SessionInfo.curx;
+      btSavedAttribute = SessionInfo.attribute;
+   }
+   else
+   {
+      ODScrnGetTextInfo(&ODTextInfo);
+      nMaxRight = ODTextInfo.winright - ODTextInfo.winleft + 1;
+      nMaxBottom = ODTextInfo.winbottom - ODTextInfo.wintop + 1;
+      nSavedCursorRow = ODTextInfo.cury;
+      nSavedCursorColumn = ODTextInfo.curx;
+      btSavedAttribute = ODTextInfo.attribute;
+   }
 
    /* Check that parameters seem reasonable. */
-   if(nLeft<1 || nTop<1 || nRight>btMaxRight || nBottom>btMaxBottom
+   if(nLeft<1 || nTop<1 || nRight>nMaxRight || nBottom>nMaxBottom
       || nTop > nBottom || nLeft > nRight || pBlock==NULL)
    {
       od_control.od_error = ERR_PARAMETER;
+      OD_API_EXIT();
+      return(FALSE);
+   }
+
+   if(od_control.user_avatar && (nRight > 255 || nBottom > 255))
+   {
+      od_control.od_error = ERR_LIMIT;
+      OD_API_EXIT();
+      return(FALSE);
+   }
+
+   nRowLength = nRight - nLeft + 1;
+   nRowBytes = nRowLength * 2;
+   if(!ODSizeMultiply((size_t)nRowBytes,
+      (size_t)(nBottom - nTop + 1), &nBlockBytes))
+   {
+      od_control.od_error = ERR_LIMIT;
       OD_API_EXIT();
       return(FALSE);
    }
@@ -131,7 +168,7 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
    {
       /* Allocate temporary buffer to store original screen contents while */
       /* buffer paste is being performed.                                  */
-      if((pBuffer=malloc(nRowBytes*(nBottom-nTop+1)))==NULL)
+      if((pBuffer=malloc(nBlockBytes))==NULL)
       {
          od_control.od_error = ERR_MEMORY;
          OD_API_EXIT();
@@ -140,8 +177,10 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
 
       /* Get current screen contents of area to be pasted into, storing */
       /* into the temporary buffer.                                     */
-      if(!ODScrnGetText((BYTE)nLeft, (BYTE)nTop, (BYTE)nRight, (BYTE)nBottom,
-         pBuffer))
+      if(ODSessionScreenAvailable()
+         ? !ODSessionScreenGetText(nLeft, nTop, nRight, nBottom, pBuffer)
+         : !ODScrnGetText((BYTE)nLeft, (BYTE)nTop, (BYTE)nRight,
+            (BYTE)nBottom, pBuffer))
       {
          od_control.od_error = ERR_PARAMETER;
          free(pBuffer);
@@ -151,8 +190,10 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
    }
 
    /* Display the block to be pasted on the local screen. */
-   if(!ODScrnPutText((BYTE)nLeft, (BYTE)nTop, (BYTE)nRight, (BYTE)nBottom,
-      pBlock))
+   if(ODSessionScreenAvailable()
+      ? !ODSessionScreenPutText(nLeft, nTop, nRight, nBottom, pBlock)
+      : !ODScrnPutText((BYTE)nLeft, (BYTE)nTop, (BYTE)nRight,
+         (BYTE)nBottom, pBlock))
    {
       od_control.od_error = ERR_PARAMETER;
       if(pBuffer)
@@ -160,6 +201,8 @@ ODAPIDEF BOOL ODCALL od_puttext(INT nLeft, INT nTop, INT nRight, INT nBottom,
       OD_API_EXIT();
       return(FALSE);
    }
+   if(ODSessionScreenAvailable())
+      ODSessionScreenPresent();
 
    /* If operating in remote mode. */
    if(od_control.baud != 0)
@@ -288,7 +331,7 @@ next_line:
       /* If not disabled, update cursor position. */
       if(bScrollAction)
       {
-         od_set_cursor(ODTextInfo.cury,ODTextInfo.curx);
+         od_set_cursor(nSavedCursorRow,nSavedCursorColumn);
       }
 
       /* Deallocate temporary buffer. */
@@ -296,7 +339,7 @@ next_line:
    }
 
    /* Restore the original display attribute. */
-   od_set_attrib(ODTextInfo.attribute);
+   od_set_attrib(btSavedAttribute);
 
    /* Return with success. */
    OD_API_EXIT();
@@ -329,7 +372,9 @@ next_line:
 ODAPIDEF BOOL ODCALL od_gettext(INT nLeft, INT nTop, INT nRight, INT nBottom,
    void *pBlock)
 {
-   BYTE btMaxRight, btMaxBottom;
+   INT nMaxRight;
+   INT nMaxBottom;
+   tODVScreenInfo SessionInfo;
 
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_gettext()");
@@ -339,11 +384,20 @@ ODAPIDEF BOOL ODCALL od_gettext(INT nLeft, INT nTop, INT nRight, INT nBottom,
 
    OD_API_ENTRY();
 
-   ODScrnGetTextInfo(&ODTextInfo);
+   if(ODSessionScreenAvailable())
+   {
+      ODSessionScreenGetInfo(&SessionInfo);
+      nMaxRight = SessionInfo.winright - SessionInfo.winleft + 1;
+      nMaxBottom = SessionInfo.winbottom - SessionInfo.wintop + 1;
+   }
+   else
+   {
+      ODScrnGetTextInfo(&ODTextInfo);
+      nMaxRight = ODTextInfo.winright - ODTextInfo.winleft + 1;
+      nMaxBottom = ODTextInfo.winbottom - ODTextInfo.wintop + 1;
+   }
 
-   btMaxRight=ODTextInfo.winright-ODTextInfo.winleft+1;
-   btMaxBottom=ODTextInfo.winbottom-ODTextInfo.wintop+1;
-   if(nLeft<1 || nTop<1 || nRight>btMaxRight || nBottom>btMaxBottom || !pBlock)
+   if(nLeft<1 || nTop<1 || nRight>nMaxRight || nBottom>nMaxBottom || !pBlock)
    {
       od_control.od_error = ERR_PARAMETER;
       OD_API_EXIT();
@@ -358,8 +412,10 @@ ODAPIDEF BOOL ODCALL od_gettext(INT nLeft, INT nTop, INT nRight, INT nBottom,
    }
 
    OD_API_EXIT();
-   return(ODScrnGetText((BYTE)nLeft, (BYTE)nTop, (BYTE)nRight, (BYTE)nBottom,
-      pBlock));
+   if(ODSessionScreenAvailable())
+      return(ODSessionScreenGetText(nLeft, nTop, nRight, nBottom, pBlock));
+   return(ODScrnGetText((BYTE)nLeft, (BYTE)nTop, (BYTE)nRight,
+      (BYTE)nBottom, pBlock));
 }
 
 
@@ -399,16 +455,22 @@ ODAPIDEF BOOL ODCALL od_gettext(INT nLeft, INT nTop, INT nRight, INT nBottom,
 ODAPIDEF BOOL ODCALL od_scroll(INT nLeft, INT nTop, INT nRight, INT nBottom,
    INT nDistance, WORD nFlags)
 {
-   BYTE btWidth, btHeight;
-   BYTE btCount;
-   BYTE btFirst, btLast;
+   INT nWidth;
+   INT nHeight;
+   INT nCount;
+   INT nFirst;
+   INT nLast;
    char szAVTSeq[7];
    void *pBlock;
-   char szBlank[81];
-   BYTE btKeepHeight;
-   BYTE btMaxRight;
-   BYTE btMaxBottom;
+   char *pszBlank;
+   INT nKeepHeight;
+   INT nMaxRight;
+   INT nMaxBottom;
+   INT nSavedCursorRow;
+   INT nSavedCursorColumn;
    tODScrnTextInfo TextState;
+   tODVScreenInfo SessionInfo;
+   size_t nBlockBytes;
 
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_scroll()");
@@ -419,29 +481,41 @@ ODAPIDEF BOOL ODCALL od_scroll(INT nLeft, INT nTop, INT nRight, INT nBottom,
    OD_API_ENTRY();
 
    /* Get current display setting information. */
-   ODScrnGetTextInfo(&TextState);
-
-   /* Determine the height and width of the area to be scrolled. */
-   btWidth=nRight-nLeft+1;
-   btHeight=nBottom-nTop+1;
-
-   /* Determine the number of lines currently in the area that will still */
-   /* be visible after scrolling.                                         */
-   btKeepHeight=btHeight-((nDistance>=0) ? nDistance : -nDistance);
-
-   /* Determine the maximum bottom and left coordinates of an area to be */
-   /* scrolled.                                                          */
-   btMaxRight=TextState.winright-TextState.winleft+1;
-   btMaxBottom=TextState.winbottom-TextState.wintop+1;
+   if(ODSessionScreenAvailable())
+   {
+      ODSessionScreenGetInfo(&SessionInfo);
+      nMaxRight = SessionInfo.winright - SessionInfo.winleft + 1;
+      nMaxBottom = SessionInfo.winbottom - SessionInfo.wintop + 1;
+      nSavedCursorRow = SessionInfo.cury;
+      nSavedCursorColumn = SessionInfo.curx;
+   }
+   else
+   {
+      ODScrnGetTextInfo(&TextState);
+      nMaxRight = TextState.winright - TextState.winleft + 1;
+      nMaxBottom = TextState.winbottom - TextState.wintop + 1;
+      nSavedCursorRow = TextState.cury;
+      nSavedCursorColumn = TextState.curx;
+   }
 
    /* Check that parameters are valid. */
-   if(nLeft<1 || nTop<1 || nRight>btMaxRight || nBottom>btMaxBottom ||
+   if(nLeft<1 || nTop<1 || nRight>nMaxRight || nBottom>nMaxBottom ||
       nLeft > nRight || nTop > nBottom)
    {
       od_control.od_error = ERR_PARAMETER;
       OD_API_EXIT();
       return(FALSE);
    }
+
+   if(od_control.user_avatar && (nRight > 255 || nBottom > 255))
+   {
+      od_control.od_error = ERR_LIMIT;
+      OD_API_EXIT();
+      return(FALSE);
+   }
+
+   nWidth = nRight - nLeft + 1;
+   nHeight = nBottom - nTop + 1;
 
    /* Check that ANSI or AVATAR graphics mode is available. */
    if(!od_control.user_ansi && !od_control.user_avatar)
@@ -463,29 +537,31 @@ ODAPIDEF BOOL ODCALL od_scroll(INT nLeft, INT nTop, INT nRight, INT nBottom,
    if(nDistance>0)
    {
       /* Ensure that distance is not greater than size of scrolled area. */
-      if(nDistance>btHeight)
+      if(nDistance>nHeight)
       {
-         nDistance=btHeight;
+         nDistance=nHeight;
       }
 
       /* Calculate first and last line to be moved. */
-      btFirst=nBottom-(nDistance-1);
-      btLast=nBottom;
+      nFirst=nBottom-(nDistance-1);
+      nLast=nBottom;
    }
 
    /* If distance is negative, then we are moving text downwards. */
    else /* if(nDistance<0) */
    {
       /* Ensure that distance is not greater than size of scrolled area. */
-      if(nDistance<-btHeight)
+      if(nDistance<-nHeight)
       {
-         nDistance=-btHeight;
+         nDistance=-nHeight;
       }
 
       /* Calculate first and last line to be moved. */
-      btFirst=nTop;
-      btLast=nTop-nDistance-1;
+      nFirst=nTop;
+      nLast=nTop-nDistance-1;
    }
+
+   nKeepHeight = nHeight - ((nDistance >= 0) ? nDistance : -nDistance);
 
    /* If AVATAR mode is available */
    if(od_control.user_avatar)
@@ -502,8 +578,12 @@ ODAPIDEF BOOL ODCALL od_scroll(INT nLeft, INT nTop, INT nRight, INT nBottom,
          szAVTSeq[2]=nDistance;
 
          /* Move text appropriate direction on local screen. */
-         ODScrnCopyText((BYTE)nLeft, (BYTE)(nTop + nDistance), (BYTE)nRight,
-            (BYTE)nBottom, (BYTE)nLeft, (BYTE)nTop);
+         if(ODSessionScreenAvailable())
+            ODSessionScreenCopyText(nLeft, nTop + nDistance, nRight,
+               nBottom, nLeft, nTop);
+         else
+            ODScrnCopyText((BYTE)nLeft, (BYTE)(nTop + nDistance),
+               (BYTE)nRight, (BYTE)nBottom, (BYTE)nLeft, (BYTE)nTop);
       }
       /* If scrolling text downwards. */
       else /* if(disatnce<0) */
@@ -513,8 +593,13 @@ ODAPIDEF BOOL ODCALL od_scroll(INT nLeft, INT nTop, INT nRight, INT nBottom,
          szAVTSeq[2]=-nDistance;
 
          /* Move text appropriate direction on local screen. */
-         ODScrnCopyText((BYTE)nLeft, (BYTE)nTop, (BYTE)nRight,
-            (BYTE)(nBottom + nDistance), (BYTE)nLeft, (BYTE)(nTop - nDistance));
+         if(ODSessionScreenAvailable())
+            ODSessionScreenCopyText(nLeft, nTop, nRight,
+               nBottom + nDistance, nLeft, nTop - nDistance);
+         else
+            ODScrnCopyText((BYTE)nLeft, (BYTE)nTop, (BYTE)nRight,
+               (BYTE)(nBottom + nDistance), (BYTE)nLeft,
+               (BYTE)(nTop - nDistance));
       }
 
       /* Specify area to be scrolled to the AVATAR terminal. */
@@ -526,19 +611,42 @@ ODAPIDEF BOOL ODCALL od_scroll(INT nLeft, INT nTop, INT nRight, INT nBottom,
       /* Send the control sequence to the AVATAR terminal. */
       od_disp(szAVTSeq,7,FALSE);
 
-      /* Generate string containing a blank line of text. */
-      for(btCount=0;btCount<btWidth;++btCount) szBlank[btCount]=' ';
-      szBlank[btCount]='\0';
+      pszBlank = (char *)malloc((size_t)nWidth + 1U);
+      if(pszBlank == NULL)
+      {
+         od_control.od_error = ERR_MEMORY;
+         OD_API_EXIT();
+         return(FALSE);
+      }
+      for(nCount=0;nCount<nWidth;++nCount) pszBlank[nCount]=' ';
+      pszBlank[nCount]='\0';
 
       /* Blank-out lines that will no longer be visiable. */
-      for(;btFirst<=btLast;++btFirst)
+      for(;nFirst<=nLast;++nFirst)
       {
-         ODScrnSetCursorPos((BYTE)nLeft, btFirst);
-         ODScrnDisplayString(szBlank);
+         if(ODSessionScreenAvailable())
+         {
+            ODSessionScreenSetCursorPos(nLeft, nFirst);
+            ODSessionScreenDisplayString(pszBlank);
+         }
+         else
+         {
+            ODScrnSetCursorPos((BYTE)nLeft, (BYTE)nFirst);
+            ODScrnDisplayString(pszBlank);
+         }
       }
+      free(pszBlank);
 
-      /* Reset cursor position on local display. */
-      ODScrnSetCursorPos(TextState.curx,TextState.cury);
+      if(ODSessionScreenAvailable())
+      {
+         ODSessionScreenSetCursorPos(nSavedCursorColumn, nSavedCursorRow);
+         ODSessionScreenPresent();
+      }
+      else
+      {
+         ODScrnSetCursorPos((BYTE)nSavedCursorColumn,
+            (BYTE)nSavedCursorRow);
+      }
    }
 
    /* Otherwise, we are using ANSI mode. */
@@ -546,10 +654,17 @@ ODAPIDEF BOOL ODCALL od_scroll(INT nLeft, INT nTop, INT nRight, INT nBottom,
    {
       /* If any of the original text will still be available after */
       /* scrolling.                                                */
-      if(btKeepHeight>0)
+      if(nKeepHeight>0)
       {
          /* Allocate some temporary memory to hold text to be "got". */
-         if((pBlock=malloc(btKeepHeight*btWidth*2))==NULL)
+         if(!ODSizeMultiply((size_t)nKeepHeight, (size_t)nWidth * 2U,
+            &nBlockBytes))
+         {
+            od_control.od_error = ERR_LIMIT;
+            OD_API_EXIT();
+            return(FALSE);
+         }
+         if((pBlock=malloc(nBlockBytes))==NULL)
          {
             /* If memory allocation failed, then scrolling fails. */
             od_control.od_error = ERR_MEMORY;
@@ -587,15 +702,15 @@ ODAPIDEF BOOL ODCALL od_scroll(INT nLeft, INT nTop, INT nRight, INT nBottom,
       if(!(nFlags&SCROLL_NO_CLEAR))
       {
          /* Loop for lines that should be blank. */
-         for(;btFirst<=btLast;++btFirst)
+         for(;nFirst<=nLast;++nFirst)
          {
             /* Move cursor to the beginning of this line. */
-            od_set_cursor(btFirst,nLeft);
+            od_set_cursor(nFirst,nLeft);
 
             /* If right boarder of area to be scrolled is the edge of the */
             /* screen, then we can use a quick control sequence to clear  */
             /* the rest of the line. Call od_clr_line() to do this.       */
-            if(nRight == 80)
+            if(nRight == nMaxRight)
             {
                od_clr_line();
             }
@@ -605,13 +720,20 @@ ODAPIDEF BOOL ODCALL od_scroll(INT nLeft, INT nTop, INT nRight, INT nBottom,
             /* sending the appropriate number of blanks (spaces).         */
             else /* if(right != 80) */
             {
-               od_repeat(' ',btWidth);
+               nCount = nWidth;
+               while(nCount > 255)
+               {
+                  od_repeat(' ', 255);
+                  nCount -= 255;
+               }
+               if(nCount > 0)
+                  od_repeat(' ', (BYTE)nCount);
             }
          }
       }
 
       /* Reset the cursor to its original position. */
-      od_set_cursor(TextState.cury,TextState.curx);
+      od_set_cursor(nSavedCursorRow,nSavedCursorColumn);
    }
 
    /* Return with success */
@@ -829,4 +951,66 @@ ODAPIDEF BOOL ODCALL od_restore_screen(void *pBuffer)
    /* Return with the appropriate success/failure status. */
    OD_API_EXIT();
    return(nToReturn);
+}
+
+
+/* ----------------------------------------------------------------------------
+ * Size-aware screen snapshots.  These additive APIs preserve the fixed-size
+ * format and behavior of od_save_screen()/od_restore_screen().
+ */
+ODAPIDEF DWORD ODCALL od_save_screen_size(void)
+{
+   DWORD dwSize;
+
+   TRACE(TRACE_API, "od_save_screen_size()");
+   if(!bODInitialized) od_init();
+   OD_API_ENTRY();
+   dwSize = ODSessionScreenSnapshotSize();
+   if(dwSize == 0)
+   {
+      od_control.od_error = ODSessionScreenError();
+      if(od_control.od_error == ERR_NONE)
+         od_control.od_error = ERR_LIMIT;
+   }
+   OD_API_EXIT();
+   return(dwSize);
+}
+
+ODAPIDEF BOOL ODCALL od_save_screen_ex(void *pBuffer, DWORD dwBufferSize)
+{
+   BOOL bResult;
+
+   TRACE(TRACE_API, "od_save_screen_ex()");
+   if(!bODInitialized) od_init();
+   OD_API_ENTRY();
+   bResult = ODSessionScreenSave(pBuffer, dwBufferSize);
+   if(!bResult)
+   {
+      od_control.od_error = ODSessionScreenSnapshotSize() == 0
+         ? ODSessionScreenError() : ERR_PARAMETER;
+      if(od_control.od_error == ERR_NONE)
+         od_control.od_error = ERR_LIMIT;
+   }
+   OD_API_EXIT();
+   return(bResult);
+}
+
+ODAPIDEF BOOL ODCALL od_restore_screen_ex(const void *pBuffer,
+   DWORD dwBufferSize)
+{
+   BOOL bResult;
+
+   TRACE(TRACE_API, "od_restore_screen_ex()");
+   if(!bODInitialized) od_init();
+   OD_API_ENTRY();
+   bResult = ODSessionScreenRestore(pBuffer, dwBufferSize);
+   if(!bResult)
+   {
+      od_control.od_error = ODSessionScreenSnapshotSize() == 0
+         ? ODSessionScreenError() : ERR_PARAMETER;
+      if(od_control.od_error == ERR_NONE)
+         od_control.od_error = ERR_LIMIT;
+   }
+   OD_API_EXIT();
+   return(bResult);
 }

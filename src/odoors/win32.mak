@@ -84,7 +84,7 @@ RC=rc
 #
 # /c /W3 /D "WIN32" /D "_WINDOWS"  - For Microsoft compilers
 #
-CFLAGS=/nologo /MT /W3 /GX /O2 /D "WIN32" /D "_WINDOWS" /c /D "_CRT_NONSTDC_NO_WARNINGS"
+CFLAGS=/nologo /MT /W3 /GX /O2 /D "WIN32" /D "_WINDOWS" /c /D "_CRT_NONSTDC_NO_WARNINGS" /D "OPENDOORS_USE_DEF_EXPORTS"
 # /MTd /Zi - for debug
 #
 #------------------------------------------------------------------------------
@@ -142,6 +142,7 @@ HEADERS= $(HEADERDIR)ODCom.h\
          $(HEADERDIR)ODSwap.h\
          $(HEADERDIR)ODTypes.h\
          $(HEADERDIR)ODUtil.h\
+         $(HEADERDIR)ODVScreen.h\
          $(HEADERDIR)OpenDoor.h
 #
 #------------------------------------------------------------------------------

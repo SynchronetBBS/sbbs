@@ -86,6 +86,7 @@
 #include "ODCom.h"
 #include "ODKrnl.h"
 #include "ODScrn.h"
+#include "ODVScreen.h"
 #include "ODCore.h"
 #include "ODInQue.h"
 #ifdef ODPLAT_WIN32
@@ -251,8 +252,16 @@ ODAPIDEF void ODCALL od_clr_scr(void)
 	   od_disp(szClearScreen, 1, FALSE);
    }
 
-   /* Clear local window. */
-   ODScrnClear();
+   /* Clear the authoritative screen and update its local presentation. */
+   if(ODSessionScreenAvailable())
+   {
+      ODSessionScreenClear();
+      ODSessionScreenPresent();
+   }
+   else
+   {
+      ODScrnClear();
+   }
 
    /* Get color set prior to screen clear. */
    nOriginalAttrib = od_control.od_cur_attrib;
@@ -583,8 +592,16 @@ ODAPIDEF void ODCALL od_repeat(char chValue, BYTE btTimes)
    }
    *pchCurStringPos = '\0';
 
-   /* Display repeated string on local screen. */
-   ODScrnDisplayString(szODWorkString);
+   /* Display repeated string on the authoritative screen. */
+   if(ODSessionScreenAvailable())
+   {
+      ODSessionScreenDisplayString(szODWorkString);
+      ODSessionScreenPresent();
+   }
+   else
+   {
+      ODScrnDisplayString(szODWorkString);
+   }
 
    /* If we are operating in AVATAR mode. */
    if(od_control.user_avatar)
@@ -835,7 +852,15 @@ ODAPIDEF void ODCALL od_disp(const char *pachBuffer, INT nSize, BOOL bLocalEcho)
    /* display the buffer on the local screen.                           */
    if(bLocalEcho)
    {
-      ODScrnDisplayBuffer(pachBuffer, nSize);
+      if(ODSessionScreenAvailable())
+      {
+         ODSessionScreenDisplayBuffer(pachBuffer, nSize);
+         ODSessionScreenPresent();
+      }
+      else
+      {
+         ODScrnDisplayBuffer(pachBuffer, nSize);
+      }
    }
 
    OD_API_EXIT();
@@ -875,8 +900,16 @@ ODAPIDEF void ODCALL od_disp_str(const char *pszToDisplay)
       ODComSendBuffer(hSerialPort, (BYTE *)pszToDisplay, strlen(pszToDisplay));
    }
 
-   /* Display the screen on the local screen. */
-   ODScrnDisplayString(pszToDisplay);
+   /* Update the authoritative screen and its local presentation. */
+   if(ODSessionScreenAvailable())
+   {
+      ODSessionScreenDisplayString(pszToDisplay);
+      ODSessionScreenPresent();
+   }
+   else
+   {
+      ODScrnDisplayString(pszToDisplay);
+   }
 
    OD_API_EXIT();
 }
@@ -1145,7 +1178,16 @@ ODAPIDEF void ODCALL od_set_attrib(INT nColor)
       if(od_control.od_cur_attrib != nColor || od_control.od_full_color)
       {
          /* Change local text color. */
-         ODScrnSetAttribute((BYTE)(od_control.od_cur_attrib = nColor));
+         od_control.od_cur_attrib = nColor;
+         if(ODSessionScreenAvailable())
+         {
+            ODSessionScreenSetAttribute((BYTE)nColor);
+            ODSessionScreenPresent();
+         }
+         else
+         {
+            ODScrnSetAttribute((BYTE)nColor);
+         }
 
          /* Generate AVATAR control sequence. */
          szControlSequence[0] = 22;
@@ -1242,7 +1284,16 @@ ansi_reset:
       }
 
       /* Change local text color. */
-      ODScrnSetAttribute((BYTE)(od_control.od_cur_attrib = nColor));
+      od_control.od_cur_attrib = nColor;
+      if(ODSessionScreenAvailable())
+      {
+         ODSessionScreenSetAttribute((BYTE)nColor);
+         ODSessionScreenPresent();
+      }
+      else
+      {
+         ODScrnSetAttribute((BYTE)nColor);
+      }
    }
    else
    {
@@ -1302,8 +1353,16 @@ ODAPIDEF void ODCALL od_putch(char chToDisplay)
 
    OD_API_ENTRY();
 
-   /* Display the character on the local screen. */
-   ODScrnDisplayChar(chToDisplay);
+   /* Display the character on the authoritative screen. */
+   if(ODSessionScreenAvailable())
+   {
+      ODSessionScreenDisplayChar((unsigned char)chToDisplay);
+      ODSessionScreenPresent();
+   }
+   else
+   {
+      ODScrnDisplayChar((unsigned char)chToDisplay);
+   }
 
    /* If not operating in local mode, then send the character to the */
    /* serial port.                                                   */

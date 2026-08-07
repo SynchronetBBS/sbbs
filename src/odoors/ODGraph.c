@@ -47,6 +47,7 @@
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODScrn.h"
+#include "ODVScreen.h"
 #include "ODKrnl.h"
 
 
@@ -71,6 +72,7 @@ ODAPIDEF void ODCALL od_clr_line(void)
    char *pchLine;
    INT nCharsLeft;
    INT nCount;
+   tODVScreenInfo SessionInfo;
 
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_clr_line()");
@@ -81,23 +83,40 @@ ODAPIDEF void ODCALL od_clr_line(void)
    OD_API_ENTRY();
 
    /* Obtain the current cursor position. */
-   ODScrnGetTextInfo(&ODTextInfo);
+   if(ODSessionScreenAvailable())
+   {
+      ODSessionScreenGetInfo(&SessionInfo);
+      nCharsLeft = SessionInfo.winright - SessionInfo.winleft + 1
+         - SessionInfo.curx;
+   }
+   else
+   {
+      ODScrnGetTextInfo(&ODTextInfo);
+      nCharsLeft = 80 - ODTextInfo.curx;
+   }
 
    /* Calculate the number of columns that are to be erased. */
-   nCharsLeft = 80 - ODTextInfo.curx;
 
    /* If either ANSI or AVATAR mode is available, then we first */
    /* clear the line on the local screen without affecting the  */
    /* remote screen.                                            */
    if(od_control.user_avatar || od_control.user_ansi)
    {
-      pchLine = (char *)szODWorkString;
-      for(nCount = 0; nCount <= nCharsLeft; ++nCount) *pchLine++ = ' ';
-      *pchLine = '\0';
-      ODScrnEnableScrolling(0);
-      ODScrnDisplayString(szODWorkString);
-      ODScrnEnableScrolling(1);
-      ODScrnSetCursorPos(ODTextInfo.curx, ODTextInfo.cury);
+      if(ODSessionScreenAvailable())
+      {
+         ODSessionScreenClearToEndOfLine();
+         ODSessionScreenPresent();
+      }
+      else
+      {
+         pchLine = (char *)szODWorkString;
+         for(nCount = 0; nCount <= nCharsLeft; ++nCount) *pchLine++ = ' ';
+         *pchLine = '\0';
+         ODScrnEnableScrolling(0);
+         ODScrnDisplayString(szODWorkString);
+         ODScrnEnableScrolling(1);
+         ODScrnSetCursorPos(ODTextInfo.curx, ODTextInfo.cury);
+      }
    }
 
    /* If AVATAR mode is active. */
@@ -166,8 +185,15 @@ ODAPIDEF void ODCALL od_set_cursor(INT nRow, INT nColumn)
    /* If AVATAR mode is on. */
    if(od_control.user_avatar)
    {
-      /* Position the local cursor. */
-      ODScrnSetCursorPos((BYTE)nColumn, (BYTE)nRow);
+      if(ODSessionScreenAvailable())
+      {
+         ODSessionScreenSetCursorPos(nColumn, nRow);
+         ODSessionScreenPresent();
+      }
+      else
+      {
+         ODScrnSetCursorPos((BYTE)nColumn, (BYTE)nRow);
+      }
 
       /* Generate the AVATAR control sequence to position the remote cursor. */
       szControlSequence[0] = 22;
@@ -189,8 +215,15 @@ ODAPIDEF void ODCALL od_set_cursor(INT nRow, INT nColumn)
       /* Transmit the ANSI control seequence to the remote terminal. */
       od_disp(szControlSequence, strlen(szControlSequence), FALSE);
 
-      /* Position the cursor on the local screen. */
-      ODScrnSetCursorPos((BYTE)nColumn, (BYTE)nRow);
+      if(ODSessionScreenAvailable())
+      {
+         ODSessionScreenSetCursorPos(nColumn, nRow);
+         ODSessionScreenPresent();
+      }
+      else
+      {
+         ODScrnSetCursorPos((BYTE)nColumn, (BYTE)nRow);
+      }
    }
    else
    {
@@ -218,6 +251,7 @@ ODAPIDEF void ODCALL od_set_cursor(INT nRow, INT nColumn)
 ODAPIDEF void ODCALL od_get_cursor(INT *pnRow, INT *pnColumn)
 {
    tODScrnTextInfo TextInfo;
+   tODVScreenInfo SessionInfo;
 
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_get_cursor()");
@@ -235,13 +269,18 @@ ODAPIDEF void ODCALL od_get_cursor(INT *pnRow, INT *pnColumn)
       return;
    }
 
-   /* Obtain current state of local screen. */
-   ODScrnGetTextInfo(&TextInfo);
-
-   /* Set the caller's parameters to the current row and column, if each */
-   /* of these parameters were supplied.                                 */
-   if(pnRow != NULL) *pnRow = (INT)TextInfo.cury;
-   if(pnColumn != NULL) *pnColumn = (INT)TextInfo.curx;
+   if(ODSessionScreenAvailable())
+   {
+      ODSessionScreenGetInfo(&SessionInfo);
+      if(pnRow != NULL) *pnRow = SessionInfo.cury;
+      if(pnColumn != NULL) *pnColumn = SessionInfo.curx;
+   }
+   else
+   {
+      ODScrnGetTextInfo(&TextInfo);
+      if(pnRow != NULL) *pnRow = (INT)TextInfo.cury;
+      if(pnColumn != NULL) *pnColumn = (INT)TextInfo.curx;
+   }
 
    OD_API_EXIT();
 }

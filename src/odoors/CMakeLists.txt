@@ -135,8 +135,18 @@ if(WIN32)
         ARCHIVE_OUTPUT_NAME ODoors-static)
     target_compile_definitions(opendoors_static PUBLIC OD_WIN32_STATIC)
 
-    if(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 4)
-        target_sources(opendoors_shared PRIVATE OpenDoor.def)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        if(MSVC)
+            target_sources(opendoors_shared PRIVATE OpenDoor.def)
+            target_compile_definitions(opendoors_shared PRIVATE
+                OPENDOORS_USE_DEF_EXPORTS)
+        elseif(MINGW)
+            target_sources(opendoors_shared PRIVATE OpenDoorMinGW.def)
+        endif()
+    else()
+        target_sources(opendoors_shared PRIVATE OpenDoor64.def)
+        target_compile_definitions(opendoors_shared PRIVATE
+            OPENDOORS_USE_DEF_EXPORTS)
     endif()
 else()
     set_target_properties(opendoors_shared PROPERTIES
@@ -230,6 +240,12 @@ if(BUILD_TESTING)
     add_executable(opendoors_safety_test tests/safety_test.c)
     target_link_libraries(opendoors_safety_test PRIVATE OpenDoors::Static)
     add_test(NAME safety COMMAND opendoors_safety_test)
+
+    add_executable(opendoors_virtual_screen_test
+        tests/virtual_screen_test.c)
+    target_link_libraries(opendoors_virtual_screen_test
+        PRIVATE OpenDoors::Static)
+    add_test(NAME virtual_screen COMMAND opendoors_virtual_screen_test)
 
     if(NOT WIN32)
         add_executable(opendoors_fallback_format_test

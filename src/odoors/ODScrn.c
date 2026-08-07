@@ -78,6 +78,7 @@
 #include "ODInEx.h"
 #include "ODFormat.h"
 #include "ODSafe.h"
+#include "ODVScreen.h"
 #ifdef ODPLAT_WIN32
 #include "ODKrnl.h"
 #include "ODRes.h"
@@ -131,6 +132,11 @@ static BYTE btDisplayPage;
 /* Is cursor currently on. */
 static BYTE bCaretOn;
 
+/* The presenter may temporarily hide an off-screen session cursor. Keep the
+ * caller's requested local-caret state separate from that temporary state. */
+static BOOL bRequestedCaretOn;
+static BOOL bCaretPresentationChange;
+
 /* Static temporary working buffer. */
 static char szBuffer[LINE_BUFFER_SIZE];
 
@@ -138,6 +144,7 @@ static char szBuffer[LINE_BUFFER_SIZE];
 /* Private function prototypes. */
 static void ODScrnGetCursorPos(void);
 static void ODScrnUpdateCaretPos(void);
+static void ODScrnRingBell(void);
 static void ODScrnScrollUpOneLine(void);
 static void ODScrnScrollUpAndInvalidate(void);
 
@@ -1169,6 +1176,11 @@ void ODScrnShutdown(void)
  */
 void ODScrnSetBoundary(BYTE btLeft, BYTE btTop, BYTE btRight, BYTE btBottom)
 {
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenSetBoundary(btLeft, btTop, btRight, btBottom);
+      return;
+   }
    /* Set internal window location variables. */
    btLeftBoundary = btLeft - 1;
    btRightBoundary = btRight - 1;
@@ -1216,6 +1228,11 @@ void ODScrnSetBoundary(BYTE btLeft, BYTE btTop, BYTE btRight, BYTE btBottom)
  */
 void ODScrnSetCursorPos(BYTE btColumn, BYTE btRow)
 {
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenSetCursorPos(btColumn, btRow);
+      return;
+   }
    /* Set internal cursor position values. */
    btCursorColumn = btColumn - 1;
    btCursorRow = btRow - 1;
@@ -1249,6 +1266,11 @@ void ODScrnSetCursorPos(BYTE btColumn, BYTE btRow)
  */
 void ODScrnSetAttribute(BYTE btAttribute)
 {
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenSetAttribute(btAttribute);
+      return;
+   }
    /* Set internal display colour attribute. */
    btCurrentAttribute = btAttribute;
 }
@@ -1267,6 +1289,11 @@ void ODScrnSetAttribute(BYTE btAttribute)
  */
 void ODScrnEnableScrolling(BOOL bEnable)
 {
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenEnableScrolling(bEnable);
+      return;
+   }
    /* Stores the current scrolling setting. */
    bScrollEnabled = bEnable;
 }
@@ -1287,6 +1314,9 @@ void ODScrnEnableScrolling(BOOL bEnable)
  */
 void ODScrnEnableCaret(BOOL bEnable)
 {
+   if(!bCaretPresentationChange)
+      bRequestedCaretOn = bEnable;
+
 #ifdef ODPLAT_DOS
    if(bCaretOn == bEnable) return;
 
@@ -1375,6 +1405,19 @@ set_cursor:
  */
 void ODScrnGetTextInfo(tODScrnTextInfo *pTextInfo)
 {
+   if(ODSessionScreenIsEmulating())
+   {
+      tODVScreenInfo Info;
+      ODSessionScreenGetInfo(&Info);
+      pTextInfo->wintop = (BYTE)(Info.wintop > 255 ? 255 : Info.wintop);
+      pTextInfo->winleft = (BYTE)(Info.winleft > 255 ? 255 : Info.winleft);
+      pTextInfo->winright = (BYTE)(Info.winright > 255 ? 255 : Info.winright);
+      pTextInfo->winbottom = (BYTE)(Info.winbottom > 255 ? 255 : Info.winbottom);
+      pTextInfo->attribute = Info.attribute;
+      pTextInfo->curx = (BYTE)(Info.curx > 255 ? 255 : Info.curx);
+      pTextInfo->cury = (BYTE)(Info.cury > 255 ? 255 : Info.cury);
+      return;
+   }
    pTextInfo->wintop = btTopBoundary + 1;
    pTextInfo->winleft = btLeftBoundary + 1;
    pTextInfo->winright = btRightBoundary + 1;
@@ -1458,6 +1501,12 @@ INT ODScrnPrintf(char *pszFormat, ...)
 void ODScrnDisplayChar(unsigned char chToOutput)
 {
    BYTE ODFAR *pbtDest;
+
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenDisplayChar(chToOutput);
+      return;
+   }
    
    ODScrnGetCursorPos();
 
@@ -1520,17 +1569,7 @@ void ODScrnDisplayChar(unsigned char chToOutput)
 
       case '\a':
          /* If bell. */
-         if(!od_control.od_silent_mode)
-         {
-#ifdef ODPLAT_DOS
-            ASM    mov ah, 0x02
-            ASM    mov dl, 7
-            ASM    int 0x21
-#endif /* ODPLAT_DOS */
-#ifdef ODPLAT_WIN32
-            MessageBeep(0xffffffff);
-#endif /* ODPLAT_WIN32 */
-         }
+         ODScrnRingBell();
          break;
 
       /* If character is not a control character. */
@@ -1645,6 +1684,21 @@ static void ODScrnUpdateCaretPos(void)
 }
 
 
+static void ODScrnRingBell(void)
+{
+   if(od_control.od_silent_mode)
+      return;
+#ifdef ODPLAT_DOS
+   ASM    mov ah, 0x02
+   ASM    mov dl, 7
+   ASM    int 0x21
+#endif /* ODPLAT_DOS */
+#ifdef ODPLAT_WIN32
+   MessageBeep(0xffffffff);
+#endif /* ODPLAT_WIN32 */
+}
+
+
 /* ----------------------------------------------------------------------------
  * ODScrnClear()
  *
@@ -1658,13 +1712,24 @@ static void ODScrnUpdateCaretPos(void)
  */
 void ODScrnClear(void)
 {
-   WORD ODFAR *pDest = (WORD ODFAR *)pScrnBuffer +
-      ((btTopBoundary * OD_SCREEN_WIDTH) + btLeftBoundary);
-   WORD wBlank = (((WORD)btCurrentAttribute) << 8) | 32;
+   WORD ODFAR *pDest;
+   WORD wBlank;
    BYTE btCurColumn;
-   BYTE btCurLine = (btBottomBoundary - btTopBoundary) + 1;
-   BYTE btColumnStart = (btRightBoundary - btLeftBoundary) + 1;
-   BYTE btSkip = OD_SCREEN_WIDTH - btColumnStart;
+   BYTE btCurLine;
+   BYTE btColumnStart;
+   BYTE btSkip;
+
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenClear();
+      return;
+   }
+   pDest = (WORD ODFAR *)pScrnBuffer
+      + ((btTopBoundary * OD_SCREEN_WIDTH) + btLeftBoundary);
+   wBlank = (((WORD)btCurrentAttribute) << 8) | 32;
+   btCurLine = (btBottomBoundary - btTopBoundary) + 1;
+   btColumnStart = (btRightBoundary - btLeftBoundary) + 1;
+   btSkip = OD_SCREEN_WIDTH - btColumnStart;
 
    /* Clear contents of current window. */
    do
@@ -1801,14 +1866,23 @@ static void ODScrnScrollUpOneLine(void)
 BOOL ODScrnGetText(BYTE btLeft, BYTE btTop, BYTE btRight, BYTE btBottom,
    void *pbtBuffer)
 {
-   WORD *pwBuffer = (WORD *)pbtBuffer;
-   WORD ODFAR *pSource = (WORD ODFAR *)pScrnBuffer
+   WORD *pwBuffer;
+   WORD ODFAR *pSource;
+   BYTE btCurColumn;
+   BYTE btCurLine;
+   BYTE btColumnStart;
+   BYTE btSkip;
+
+   if(ODSessionScreenIsEmulating())
+      return(ODSessionScreenGetText(btLeft, btTop, btRight, btBottom,
+         pbtBuffer));
+   pwBuffer = (WORD *)pbtBuffer;
+   pSource = (WORD ODFAR *)pScrnBuffer
       + ((((--btTop) + btTopBoundary)
       * OD_SCREEN_WIDTH) + btLeftBoundary + (--btLeft));
-   BYTE btCurColumn;
-   BYTE btCurLine = (--btBottom) - btTop + 1;
-   BYTE btColumnStart = (--btRight) - btLeft + 1;
-   BYTE btSkip = OD_SCREEN_WIDTH - btColumnStart;
+   btCurLine = (--btBottom) - btTop + 1;
+   btColumnStart = (--btRight) - btLeft + 1;
+   btSkip = OD_SCREEN_WIDTH - btColumnStart;
 
    ASSERT(btLeft >= 0);
    ASSERT(btTop >= 0);
@@ -1860,14 +1934,23 @@ BOOL ODScrnGetText(BYTE btLeft, BYTE btTop, BYTE btRight, BYTE btBottom,
 BOOL ODScrnPutText(BYTE btLeft, BYTE btTop, BYTE btRight, BYTE btBottom,
    void *pbtBuffer)
 {
-   WORD *pwBuffer = (WORD *)pbtBuffer;
-   WORD ODFAR *pDest = (WORD ODFAR *)pScrnBuffer
+   WORD *pwBuffer;
+   WORD ODFAR *pDest;
+   BYTE btCurColumn;
+   BYTE btCurLine;
+   BYTE btColumnStart;
+   BYTE btSkip;
+
+   if(ODSessionScreenIsEmulating())
+      return(ODSessionScreenPutText(btLeft, btTop, btRight, btBottom,
+         pbtBuffer));
+   pwBuffer = (WORD *)pbtBuffer;
+   pDest = (WORD ODFAR *)pScrnBuffer
       + ((((--btTop) + btTopBoundary)
       * OD_SCREEN_WIDTH) + btLeftBoundary + (--btLeft));
-   BYTE btCurColumn;
-   BYTE btCurLine = (--btBottom) - btTop + 1;
-   BYTE btColumnStart = (--btRight) - btLeft + 1;
-   BYTE btSkip = OD_SCREEN_WIDTH - btColumnStart;
+   btCurLine = (--btBottom) - btTop + 1;
+   btColumnStart = (--btRight) - btLeft + 1;
+   btSkip = OD_SCREEN_WIDTH - btColumnStart;
 
    ASSERT(btLeft >= 0 && btTop >= 0);
    ASSERT(btLeft <= btRightBoundary - btLeftBoundary);
@@ -1917,6 +2000,11 @@ BOOL ODScrnPutText(BYTE btLeft, BYTE btTop, BYTE btRight, BYTE btBottom,
  */
 void ODScrnDisplayString(const char *pszString)
 {
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenDisplayString(pszString);
+      return;
+   }
    ODScrnDisplayBuffer(pszString, strlen(pszString));
 }
 
@@ -1938,13 +2026,13 @@ void ODScrnDisplayString(const char *pszString)
  */
 void ODScrnDisplayBuffer(const char *pBuffer, INT nCharsToDisplay)
 {
-   const char *pchCurrentChar = pBuffer;
-   INT nCharsLeft = nCharsToDisplay;
+   const char *pchCurrentChar;
+   INT nCharsLeft;
    BYTE ODFAR *pDest;
    BYTE btLeftColumn;
-   BYTE btAttribute = btCurrentAttribute;
+   BYTE btAttribute;
    BYTE btCurrentColumn;
-   BYTE btBottom = btBottomBoundary - btTopBoundary;
+   BYTE btBottom;
 #ifdef ODPLAT_WIN32
    BOOL bAnythingInvalid = FALSE;
    BYTE btLeftMost;
@@ -1952,6 +2040,16 @@ void ODScrnDisplayBuffer(const char *pBuffer, INT nCharsToDisplay)
    BYTE btTopMost;
    BYTE btBottomMost;
 #endif /* ODPLAT_WIN32 */
+
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenDisplayBuffer(pBuffer, nCharsToDisplay);
+      return;
+   }
+   pchCurrentChar = pBuffer;
+   nCharsLeft = nCharsToDisplay;
+   btAttribute = btCurrentAttribute;
+   btBottom = btBottomBoundary - btTopBoundary;
 
    ASSERT(pBuffer != NULL);
    ASSERT(nCharsToDisplay >= 0);
@@ -2178,6 +2276,9 @@ BOOL ODScrnCopyText(BYTE btLeft, BYTE btTop, BYTE btRight, BYTE btBottom,
 {
    void *pScrnBuffer;
 
+   if(ODSessionScreenIsEmulating())
+      return(ODSessionScreenCopyText(btLeft, btTop, btRight, btBottom,
+         btDestColumn, btDestRow));
    ASSERT(btLeft >= 0 && btTop >= 0);
    ASSERT(btLeft <= btRightBoundary - btLeftBoundary);
    ASSERT(btTop <= btBottomBoundary - btTopBoundary);
@@ -2228,12 +2329,20 @@ BOOL ODScrnCopyText(BYTE btLeft, BYTE btTop, BYTE btRight, BYTE btBottom,
  */
 void ODScrnClearToEndOfLine(void)
 {
-   unsigned char btCharsToDelete = btRightBoundary
-      - (btLeftBoundary + btCursorColumn);
-   BYTE ODFAR *pDest = (BYTE ODFAR *) pScrnBuffer
+   unsigned char btCharsToDelete;
+   BYTE ODFAR *pDest;
+   BYTE btAttribute;
+
+   if(ODSessionScreenIsEmulating())
+   {
+      ODSessionScreenClearToEndOfLine();
+      return;
+   }
+   btCharsToDelete = btRightBoundary - (btLeftBoundary + btCursorColumn);
+   pDest = (BYTE ODFAR *) pScrnBuffer
       + (((btTopBoundary + btCursorRow) * BUFFER_LINE_BYTES)
       + (btLeftBoundary + btCursorColumn) * BYTES_PER_CHAR);
-   BYTE btAttribute = btCurrentAttribute;
+   btAttribute = btCurrentAttribute;
 
    while(btCharsToDelete--)
    {
@@ -2611,4 +2720,821 @@ void ODScrnRemoveMessage(void *pMessageInfo)
    ODRestoreTextInfo();
    ODScrnEnableCaret(TRUE);
 #endif /* !ODPLAT_WIN32 */
+}
+
+
+/* ========================================================================= */
+/* Private, dynamically-sized session screen.                                */
+/*                                                                           */
+/* ODScrn remains the fixed local-screen compatibility interface.  Remote     */
+/* semantic output is tracked here and is painted into ODScrn only through    */
+/* ODSessionScreenPresent().                                                  */
+/* ========================================================================= */
+
+typedef struct
+{
+   BYTE ODFAR *pCells;
+   INT nWidth;
+   INT nHeight;
+   INT nLeft;
+   INT nTop;
+   INT nRight;
+   INT nBottom;
+   INT nCursorColumn;
+   INT nCursorRow;
+   BYTE btAttribute;
+   BOOL bScrolling;
+   BOOL bDirty;
+   INT nDirtyLeft;
+   INT nDirtyTop;
+   INT nDirtyRight;
+   INT nDirtyBottom;
+} tODSessionScreen;
+
+static tODSessionScreen SessionScreen;
+static BOOL bSessionScreenAvailable;
+static BOOL bSessionScreenEmulating;
+static INT nSessionScreenError = ERR_NONE;
+
+static BOOL ODSessionScreenRectValid(INT nLeft, INT nTop, INT nRight,
+   INT nBottom)
+{
+   INT nWindowWidth;
+   INT nWindowHeight;
+
+   nWindowWidth = SessionScreen.nRight - SessionScreen.nLeft + 1;
+   nWindowHeight = SessionScreen.nBottom - SessionScreen.nTop + 1;
+   return(nLeft >= 1 && nTop >= 1 && nLeft <= nRight && nTop <= nBottom
+      && nRight <= nWindowWidth && nBottom <= nWindowHeight);
+}
+
+static BYTE ODFAR *ODSessionScreenCell(INT nColumn, INT nRow)
+{
+   unsigned long ulCell;
+
+   ulCell = ((unsigned long)nRow * (unsigned long)SessionScreen.nWidth)
+      + (unsigned long)nColumn;
+   return(SessionScreen.pCells + ulCell * 2UL);
+}
+
+static void ODSessionScreenMarkDirty(INT nLeft, INT nTop, INT nRight,
+   INT nBottom)
+{
+   if(!SessionScreen.bDirty)
+   {
+      SessionScreen.bDirty = TRUE;
+      SessionScreen.nDirtyLeft = nLeft;
+      SessionScreen.nDirtyTop = nTop;
+      SessionScreen.nDirtyRight = nRight;
+      SessionScreen.nDirtyBottom = nBottom;
+      return;
+   }
+   if(nLeft < SessionScreen.nDirtyLeft)
+      SessionScreen.nDirtyLeft = nLeft;
+   if(nTop < SessionScreen.nDirtyTop)
+      SessionScreen.nDirtyTop = nTop;
+   if(nRight > SessionScreen.nDirtyRight)
+      SessionScreen.nDirtyRight = nRight;
+   if(nBottom > SessionScreen.nDirtyBottom)
+      SessionScreen.nDirtyBottom = nBottom;
+}
+
+void ODSessionScreenInitialize(INT nMinimumWidth, INT nMinimumHeight)
+{
+   INT nWidth;
+   INT nHeight;
+   unsigned long ulCells;
+   unsigned long ulBytes;
+   size_t nBytes;
+   BYTE ODFAR *pCurrent;
+   unsigned long ulCount;
+
+   memset(&SessionScreen, 0, sizeof(SessionScreen));
+   bSessionScreenAvailable = FALSE;
+   bSessionScreenEmulating = FALSE;
+   nSessionScreenError = ERR_NONE;
+
+   if(od_control.baud == 0)
+      return;
+
+   nWidth = od_control.user_screenwidth;
+   nHeight = od_control.user_screen_length;
+   if(nWidth < nMinimumWidth)
+      nWidth = nMinimumWidth;
+   if(nHeight < nMinimumHeight)
+      nHeight = nMinimumHeight;
+   if(nWidth < 1 || nHeight < 1)
+   {
+      nSessionScreenError = ERR_LIMIT;
+      return;
+   }
+
+   ulCells = (unsigned long)nWidth * (unsigned long)nHeight;
+   if(ulCells > 0xffffffffUL / 2UL)
+   {
+      nSessionScreenError = ERR_LIMIT;
+      return;
+   }
+   ulBytes = ulCells * 2UL;
+#ifdef ODPLAT_DOS
+   /* Leave room for the extended snapshot header in one DOS object. */
+   if(ulBytes > 65486UL)
+   {
+      nSessionScreenError = ERR_LIMIT;
+      return;
+   }
+#endif
+   nBytes = (size_t)ulBytes;
+   if((unsigned long)nBytes != ulBytes)
+   {
+      nSessionScreenError = ERR_LIMIT;
+      return;
+   }
+
+   SessionScreen.pCells = (BYTE ODFAR *)malloc(nBytes);
+   if(SessionScreen.pCells == NULL)
+   {
+      nSessionScreenError = ERR_MEMORY;
+      return;
+   }
+
+   SessionScreen.nWidth = nWidth;
+   SessionScreen.nHeight = nHeight;
+   SessionScreen.nLeft = 0;
+   SessionScreen.nTop = 0;
+   SessionScreen.nRight = nWidth - 1;
+   SessionScreen.nBottom = nHeight - 1;
+   SessionScreen.btAttribute = 0x07;
+   SessionScreen.bScrolling = TRUE;
+
+   pCurrent = SessionScreen.pCells;
+   for(ulCount = 0; ulCount < ulCells; ++ulCount)
+   {
+      *pCurrent++ = ' ';
+      *pCurrent++ = 0x07;
+   }
+   bSessionScreenAvailable = TRUE;
+}
+
+void ODSessionScreenShutdown(void)
+{
+   if(SessionScreen.pCells != NULL)
+      free(SessionScreen.pCells);
+   memset(&SessionScreen, 0, sizeof(SessionScreen));
+   bSessionScreenAvailable = FALSE;
+   bSessionScreenEmulating = FALSE;
+}
+
+BOOL ODSessionScreenAvailable(void)
+{
+   return(bSessionScreenAvailable);
+}
+
+INT ODSessionScreenError(void)
+{
+   return(nSessionScreenError);
+}
+
+INT ODSessionScreenWidth(void)
+{
+   return(SessionScreen.nWidth);
+}
+
+INT ODSessionScreenHeight(void)
+{
+   return(SessionScreen.nHeight);
+}
+
+void ODSessionScreenGetInfo(tODVScreenInfo *pInfo)
+{
+   if(pInfo == NULL || !bSessionScreenAvailable)
+      return;
+   pInfo->winleft = SessionScreen.nLeft + 1;
+   pInfo->wintop = SessionScreen.nTop + 1;
+   pInfo->winright = SessionScreen.nRight + 1;
+   pInfo->winbottom = SessionScreen.nBottom + 1;
+   pInfo->attribute = SessionScreen.btAttribute;
+   pInfo->curx = SessionScreen.nCursorColumn + 1;
+   pInfo->cury = SessionScreen.nCursorRow + 1;
+   pInfo->scrolling = SessionScreen.bScrolling;
+}
+
+void ODSessionScreenSetBoundary(INT nLeft, INT nTop, INT nRight, INT nBottom)
+{
+   if(!bSessionScreenAvailable || nLeft < 1 || nTop < 1
+      || nLeft > nRight || nTop > nBottom
+      || nRight > SessionScreen.nWidth || nBottom > SessionScreen.nHeight)
+      return;
+   SessionScreen.nLeft = nLeft - 1;
+   SessionScreen.nTop = nTop - 1;
+   SessionScreen.nRight = nRight - 1;
+   SessionScreen.nBottom = nBottom - 1;
+   if(SessionScreen.nCursorColumn > nRight - nLeft)
+      SessionScreen.nCursorColumn = nRight - nLeft;
+   if(SessionScreen.nCursorRow > nBottom - nTop)
+      SessionScreen.nCursorRow = nBottom - nTop;
+}
+
+void ODSessionScreenSetCursorPos(INT nColumn, INT nRow)
+{
+   INT nWidth;
+   INT nHeight;
+
+   if(!bSessionScreenAvailable)
+      return;
+   nWidth = SessionScreen.nRight - SessionScreen.nLeft + 1;
+   nHeight = SessionScreen.nBottom - SessionScreen.nTop + 1;
+   if(nColumn < 1)
+      nColumn = 1;
+   if(nRow < 1)
+      nRow = 1;
+   if(nColumn > nWidth)
+      nColumn = nWidth;
+   if(nRow > nHeight)
+      nRow = nHeight;
+   SessionScreen.nCursorColumn = nColumn - 1;
+   SessionScreen.nCursorRow = nRow - 1;
+}
+
+void ODSessionScreenSetAttribute(BYTE btAttribute)
+{
+   if(bSessionScreenAvailable)
+      SessionScreen.btAttribute = btAttribute;
+}
+
+void ODSessionScreenEnableScrolling(BOOL bEnable)
+{
+   if(bSessionScreenAvailable)
+      SessionScreen.bScrolling = bEnable;
+}
+
+static void ODSessionScreenScrollUpOneLine(void)
+{
+   INT nRow;
+   INT nWidth;
+   BYTE ODFAR *pDest;
+   BYTE ODFAR *pSource;
+   INT nColumn;
+
+   if(!SessionScreen.bScrolling)
+      return;
+   nWidth = SessionScreen.nRight - SessionScreen.nLeft + 1;
+   for(nRow = SessionScreen.nTop; nRow < SessionScreen.nBottom; ++nRow)
+   {
+      pDest = ODSessionScreenCell(SessionScreen.nLeft, nRow);
+      pSource = ODSessionScreenCell(SessionScreen.nLeft, nRow + 1);
+      memmove(pDest, pSource, (size_t)nWidth * 2U);
+   }
+   pDest = ODSessionScreenCell(SessionScreen.nLeft, SessionScreen.nBottom);
+   for(nColumn = 0; nColumn < nWidth; ++nColumn)
+   {
+      *pDest++ = ' ';
+      *pDest++ = SessionScreen.btAttribute;
+   }
+   ODSessionScreenMarkDirty(SessionScreen.nLeft, SessionScreen.nTop,
+      SessionScreen.nRight, SessionScreen.nBottom);
+}
+
+void ODSessionScreenDisplayChar(unsigned char chToOutput)
+{
+   BYTE ODFAR *pDest;
+   INT nWidth;
+   INT nHeight;
+
+   if(!bSessionScreenAvailable)
+      return;
+   nWidth = SessionScreen.nRight - SessionScreen.nLeft + 1;
+   nHeight = SessionScreen.nBottom - SessionScreen.nTop + 1;
+   switch(chToOutput)
+   {
+      case '\r':
+         SessionScreen.nCursorColumn = 0;
+         break;
+      case '\n':
+         if(SessionScreen.nCursorRow == nHeight - 1)
+            ODSessionScreenScrollUpOneLine();
+         else
+            ++SessionScreen.nCursorRow;
+         break;
+      case '\b':
+         if(SessionScreen.nCursorColumn != 0)
+            --SessionScreen.nCursorColumn;
+         break;
+      case '\t':
+         SessionScreen.nCursorColumn =
+            ((SessionScreen.nCursorColumn / 8) + 1) * 8;
+         if(SessionScreen.nCursorColumn >= nWidth)
+         {
+            SessionScreen.nCursorColumn = 0;
+            if(++SessionScreen.nCursorRow >= nHeight)
+            {
+               SessionScreen.nCursorRow = nHeight - 1;
+               ODSessionScreenScrollUpOneLine();
+            }
+         }
+         break;
+      case '\a':
+         ODScrnRingBell();
+         break;
+      default:
+         pDest = ODSessionScreenCell(
+            SessionScreen.nLeft + SessionScreen.nCursorColumn,
+            SessionScreen.nTop + SessionScreen.nCursorRow);
+         *pDest++ = chToOutput;
+         *pDest = SessionScreen.btAttribute;
+         ODSessionScreenMarkDirty(
+            SessionScreen.nLeft + SessionScreen.nCursorColumn,
+            SessionScreen.nTop + SessionScreen.nCursorRow,
+            SessionScreen.nLeft + SessionScreen.nCursorColumn,
+            SessionScreen.nTop + SessionScreen.nCursorRow);
+         if(++SessionScreen.nCursorColumn >= nWidth)
+         {
+            SessionScreen.nCursorColumn = 0;
+            if(++SessionScreen.nCursorRow >= nHeight)
+            {
+               SessionScreen.nCursorRow = nHeight - 1;
+               ODSessionScreenScrollUpOneLine();
+            }
+         }
+         break;
+   }
+}
+
+void ODSessionScreenDisplayBuffer(const char *pBuffer, INT nCharsToDisplay)
+{
+   while(nCharsToDisplay-- > 0)
+      ODSessionScreenDisplayChar((unsigned char)*pBuffer++);
+}
+
+void ODSessionScreenDisplayString(const char *pszString)
+{
+   if(pszString != NULL)
+      ODSessionScreenDisplayBuffer(pszString, (INT)strlen(pszString));
+}
+
+void ODSessionScreenClear(void)
+{
+   INT nRow;
+   INT nColumn;
+   BYTE ODFAR *pDest;
+
+   if(!bSessionScreenAvailable)
+      return;
+   for(nRow = SessionScreen.nTop; nRow <= SessionScreen.nBottom; ++nRow)
+   {
+      pDest = ODSessionScreenCell(SessionScreen.nLeft, nRow);
+      for(nColumn = SessionScreen.nLeft;
+         nColumn <= SessionScreen.nRight; ++nColumn)
+      {
+         *pDest++ = ' ';
+         *pDest++ = SessionScreen.btAttribute;
+      }
+   }
+   SessionScreen.nCursorColumn = 0;
+   SessionScreen.nCursorRow = 0;
+   ODSessionScreenMarkDirty(SessionScreen.nLeft, SessionScreen.nTop,
+      SessionScreen.nRight, SessionScreen.nBottom);
+}
+
+void ODSessionScreenClearToEndOfLine(void)
+{
+   INT nColumn;
+   BYTE ODFAR *pDest;
+
+   if(!bSessionScreenAvailable)
+      return;
+   pDest = ODSessionScreenCell(SessionScreen.nLeft
+      + SessionScreen.nCursorColumn,
+      SessionScreen.nTop + SessionScreen.nCursorRow);
+   for(nColumn = SessionScreen.nLeft + SessionScreen.nCursorColumn;
+      nColumn <= SessionScreen.nRight; ++nColumn)
+   {
+      *pDest++ = ' ';
+      *pDest++ = SessionScreen.btAttribute;
+   }
+   ODSessionScreenMarkDirty(
+      SessionScreen.nLeft + SessionScreen.nCursorColumn,
+      SessionScreen.nTop + SessionScreen.nCursorRow,
+      SessionScreen.nRight,
+      SessionScreen.nTop + SessionScreen.nCursorRow);
+}
+
+BOOL ODSessionScreenGetText(INT nLeft, INT nTop, INT nRight, INT nBottom,
+   void *pBuffer)
+{
+   INT nRow;
+   INT nWidth;
+   BYTE *pDest;
+   BYTE ODFAR *pSource;
+
+   if(!bSessionScreenAvailable || pBuffer == NULL
+      || !ODSessionScreenRectValid(nLeft, nTop, nRight, nBottom))
+      return(FALSE);
+   nWidth = nRight - nLeft + 1;
+   pDest = (BYTE *)pBuffer;
+   for(nRow = nTop - 1; nRow < nBottom; ++nRow)
+   {
+      pSource = ODSessionScreenCell(SessionScreen.nLeft + nLeft - 1,
+         SessionScreen.nTop + nRow);
+      memcpy(pDest, pSource, (size_t)nWidth * 2U);
+      pDest += nWidth * 2;
+   }
+   return(TRUE);
+}
+
+BOOL ODSessionScreenPutText(INT nLeft, INT nTop, INT nRight, INT nBottom,
+   const void *pBuffer)
+{
+   INT nRow;
+   INT nWidth;
+   const BYTE *pSource;
+   BYTE ODFAR *pDest;
+
+   if(!bSessionScreenAvailable || pBuffer == NULL
+      || !ODSessionScreenRectValid(nLeft, nTop, nRight, nBottom))
+      return(FALSE);
+   nWidth = nRight - nLeft + 1;
+   pSource = (const BYTE *)pBuffer;
+   for(nRow = nTop - 1; nRow < nBottom; ++nRow)
+   {
+      pDest = ODSessionScreenCell(SessionScreen.nLeft + nLeft - 1,
+         SessionScreen.nTop + nRow);
+      memcpy(pDest, pSource, (size_t)nWidth * 2U);
+      pSource += nWidth * 2;
+   }
+   ODSessionScreenMarkDirty(SessionScreen.nLeft + nLeft - 1,
+      SessionScreen.nTop + nTop - 1,
+      SessionScreen.nLeft + nRight - 1,
+      SessionScreen.nTop + nBottom - 1);
+   return(TRUE);
+}
+
+BOOL ODSessionScreenCopyText(INT nLeft, INT nTop, INT nRight, INT nBottom,
+   INT nDestColumn, INT nDestRow)
+{
+   INT nWidth;
+   INT nHeight;
+   INT nRow;
+   INT nStep;
+   INT nStart;
+   INT nEnd;
+   BYTE ODFAR *pSource;
+   BYTE ODFAR *pDest;
+
+   if(!ODSessionScreenRectValid(nLeft, nTop, nRight, nBottom))
+      return(FALSE);
+   nWidth = nRight - nLeft + 1;
+   nHeight = nBottom - nTop + 1;
+   if(!ODSessionScreenRectValid(nDestColumn, nDestRow,
+      nDestColumn + nWidth - 1, nDestRow + nHeight - 1))
+      return(FALSE);
+   if(nDestRow > nTop)
+   {
+      nStart = nHeight - 1;
+      nEnd = -1;
+      nStep = -1;
+   }
+   else
+   {
+      nStart = 0;
+      nEnd = nHeight;
+      nStep = 1;
+   }
+   for(nRow = nStart; nRow != nEnd; nRow += nStep)
+   {
+      pSource = ODSessionScreenCell(SessionScreen.nLeft + nLeft - 1,
+         SessionScreen.nTop + nTop - 1 + nRow);
+      pDest = ODSessionScreenCell(SessionScreen.nLeft + nDestColumn - 1,
+         SessionScreen.nTop + nDestRow - 1 + nRow);
+      memmove(pDest, pSource, (size_t)nWidth * 2U);
+   }
+   ODSessionScreenMarkDirty(SessionScreen.nLeft + nDestColumn - 1,
+      SessionScreen.nTop + nDestRow - 1,
+      SessionScreen.nLeft + nDestColumn + nWidth - 2,
+      SessionScreen.nTop + nDestRow + nHeight - 2);
+   return(TRUE);
+}
+
+void ODSessionScreenPresent(void)
+{
+   tODScrnTextInfo LocalInfo;
+   BYTE abtRow[OD_SCREEN_WIDTH * 2];
+   INT nWidth;
+   INT nHeight;
+   INT nLeft;
+   INT nRight;
+   INT nTop;
+   INT nBottom;
+   INT nRow;
+
+   if(!bSessionScreenAvailable || bSessionScreenEmulating)
+      return;
+   ODScrnGetTextInfo(&LocalInfo);
+   nWidth = LocalInfo.winright - LocalInfo.winleft + 1;
+   nHeight = LocalInfo.winbottom - LocalInfo.wintop + 1;
+   if(nWidth > SessionScreen.nWidth)
+      nWidth = SessionScreen.nWidth;
+   if(nHeight > SessionScreen.nHeight)
+      nHeight = SessionScreen.nHeight;
+   if(nWidth > OD_SCREEN_WIDTH)
+      nWidth = OD_SCREEN_WIDTH;
+   nLeft = SessionScreen.nDirtyLeft;
+   nRight = SessionScreen.nDirtyRight;
+   nTop = SessionScreen.nDirtyTop;
+   nBottom = SessionScreen.nDirtyBottom;
+   if(nLeft < 0)
+      nLeft = 0;
+   if(nTop < 0)
+      nTop = 0;
+   if(nRight >= nWidth)
+      nRight = nWidth - 1;
+   if(nBottom >= nHeight)
+      nBottom = nHeight - 1;
+   if(SessionScreen.bDirty && nLeft <= nRight && nTop <= nBottom)
+   {
+      for(nRow = nTop; nRow <= nBottom; ++nRow)
+      {
+         memcpy(abtRow, ODSessionScreenCell(nLeft, nRow),
+            (size_t)(nRight - nLeft + 1) * 2U);
+         ODScrnPutText((BYTE)(nLeft + 1), (BYTE)(nRow + 1),
+            (BYTE)(nRight + 1), (BYTE)(nRow + 1), abtRow);
+      }
+   }
+   SessionScreen.bDirty = FALSE;
+   ODScrnSetAttribute(SessionScreen.btAttribute);
+   if(SessionScreen.nCursorColumn < nWidth
+      && SessionScreen.nCursorRow < nHeight)
+   {
+      ODScrnSetCursorPos((BYTE)(SessionScreen.nCursorColumn + 1),
+         (BYTE)(SessionScreen.nCursorRow + 1));
+      bCaretPresentationChange = TRUE;
+      ODScrnEnableCaret(bRequestedCaretOn);
+      bCaretPresentationChange = FALSE;
+   }
+   else
+   {
+      bCaretPresentationChange = TRUE;
+      ODScrnEnableCaret(FALSE);
+      bCaretPresentationChange = FALSE;
+   }
+}
+
+void ODSessionScreenBeginEmulation(void)
+{
+   if(bSessionScreenAvailable)
+      bSessionScreenEmulating = TRUE;
+}
+
+void ODSessionScreenEndEmulation(void)
+{
+   if(bSessionScreenAvailable)
+   {
+      bSessionScreenEmulating = FALSE;
+      ODSessionScreenPresent();
+   }
+}
+
+BOOL ODSessionScreenIsEmulating(void)
+{
+   return(bSessionScreenEmulating);
+}
+
+#define OD_SESSION_SNAPSHOT_HEADER_SIZE 48UL
+
+static void ODSessionSnapshotPutDWORD(BYTE *pDest, DWORD dwValue)
+{
+   pDest[0] = (BYTE)(dwValue & 0xffUL);
+   pDest[1] = (BYTE)((dwValue >> 8) & 0xffUL);
+   pDest[2] = (BYTE)((dwValue >> 16) & 0xffUL);
+   pDest[3] = (BYTE)((dwValue >> 24) & 0xffUL);
+}
+
+static DWORD ODSessionSnapshotGetDWORD(const BYTE *pSource)
+{
+   return((DWORD)pSource[0] | ((DWORD)pSource[1] << 8)
+      | ((DWORD)pSource[2] << 16) | ((DWORD)pSource[3] << 24));
+}
+
+static BOOL ODSessionSnapshotDimensions(INT *pnWidth, INT *pnHeight)
+{
+   tODScrnTextInfo Info;
+
+   if(bSessionScreenAvailable)
+   {
+      *pnWidth = SessionScreen.nWidth;
+      *pnHeight = SessionScreen.nHeight;
+      return(TRUE);
+   }
+   if(od_control.baud != 0 && nSessionScreenError != ERR_NONE)
+      return(FALSE);
+   ODScrnGetTextInfo(&Info);
+   *pnWidth = Info.winright - Info.winleft + 1;
+   *pnHeight = Info.winbottom - Info.wintop + 1;
+   return(TRUE);
+}
+
+DWORD ODSessionScreenSnapshotSize(void)
+{
+   INT nWidth;
+   INT nHeight;
+   unsigned long ulPayload;
+
+   if(!ODSessionSnapshotDimensions(&nWidth, &nHeight))
+      return(0);
+   ulPayload = (unsigned long)nWidth * (unsigned long)nHeight * 2UL;
+   if(ulPayload > 0xffffffffUL - OD_SESSION_SNAPSHOT_HEADER_SIZE)
+      return(0);
+   return((DWORD)(OD_SESSION_SNAPSHOT_HEADER_SIZE + ulPayload));
+}
+
+BOOL ODSessionScreenSave(void *pBuffer, DWORD dwBufferSize)
+{
+   BYTE *pBytes;
+   DWORD dwRequired;
+   INT nWidth;
+   INT nHeight;
+   INT nLeft;
+   INT nTop;
+   INT nRight;
+   INT nBottom;
+   INT nCursorColumn;
+   INT nCursorRow;
+   BYTE btAttribute;
+   BOOL bScrolling;
+   tODScrnTextInfo LocalInfo;
+
+   dwRequired = ODSessionScreenSnapshotSize();
+   if(dwRequired == 0 || pBuffer == NULL || dwBufferSize < dwRequired)
+      return(FALSE);
+   pBytes = (BYTE *)pBuffer;
+   if(bSessionScreenAvailable)
+   {
+      nWidth = SessionScreen.nWidth;
+      nHeight = SessionScreen.nHeight;
+      nLeft = SessionScreen.nLeft + 1;
+      nTop = SessionScreen.nTop + 1;
+      nRight = SessionScreen.nRight + 1;
+      nBottom = SessionScreen.nBottom + 1;
+      nCursorColumn = SessionScreen.nCursorColumn + 1;
+      nCursorRow = SessionScreen.nCursorRow + 1;
+      btAttribute = SessionScreen.btAttribute;
+      bScrolling = SessionScreen.bScrolling;
+   }
+   else
+   {
+      ODScrnGetTextInfo(&LocalInfo);
+      nWidth = LocalInfo.winright - LocalInfo.winleft + 1;
+      nHeight = LocalInfo.winbottom - LocalInfo.wintop + 1;
+      nLeft = 1;
+      nTop = 1;
+      nRight = nWidth;
+      nBottom = nHeight;
+      nCursorColumn = LocalInfo.curx;
+      nCursorRow = LocalInfo.cury;
+      btAttribute = LocalInfo.attribute;
+      bScrolling = TRUE;
+   }
+
+   pBytes[0] = 'O';
+   pBytes[1] = 'D';
+   pBytes[2] = 'S';
+   pBytes[3] = '1';
+   ODSessionSnapshotPutDWORD(pBytes + 4, 1UL);
+   ODSessionSnapshotPutDWORD(pBytes + 8, dwRequired);
+   ODSessionSnapshotPutDWORD(pBytes + 12, (DWORD)nWidth);
+   ODSessionSnapshotPutDWORD(pBytes + 16, (DWORD)nHeight);
+   ODSessionSnapshotPutDWORD(pBytes + 20, (DWORD)nLeft);
+   ODSessionSnapshotPutDWORD(pBytes + 24, (DWORD)nTop);
+   ODSessionSnapshotPutDWORD(pBytes + 28, (DWORD)nRight);
+   ODSessionSnapshotPutDWORD(pBytes + 32, (DWORD)nBottom);
+   ODSessionSnapshotPutDWORD(pBytes + 36, (DWORD)nCursorColumn);
+   ODSessionSnapshotPutDWORD(pBytes + 40, (DWORD)nCursorRow);
+   pBytes[44] = btAttribute;
+   pBytes[45] = (BYTE)(bScrolling ? 1 : 0);
+   pBytes[46] = 0;
+   pBytes[47] = 0;
+
+   if(bSessionScreenAvailable)
+   {
+      memcpy(pBytes + OD_SESSION_SNAPSHOT_HEADER_SIZE,
+         SessionScreen.pCells, (size_t)(dwRequired
+         - OD_SESSION_SNAPSHOT_HEADER_SIZE));
+      return(TRUE);
+   }
+   return(ODScrnGetText(1, 1, (BYTE)nWidth, (BYTE)nHeight,
+      pBytes + OD_SESSION_SNAPSHOT_HEADER_SIZE));
+}
+
+BOOL ODSessionScreenRestore(const void *pBuffer, DWORD dwBufferSize)
+{
+   const BYTE *pBytes;
+   DWORD dwTotal;
+   DWORD dwWidth;
+   DWORD dwHeight;
+   DWORD dwLeft;
+   DWORD dwTop;
+   DWORD dwRight;
+   DWORD dwBottom;
+   DWORD dwCursorColumn;
+   DWORD dwCursorRow;
+   DWORD dwExpected;
+   INT nCurrentWidth;
+   INT nCurrentHeight;
+   INT nRow;
+   INT nColumn;
+   INT nLastColumn;
+   const BYTE *pRow;
+
+   if(pBuffer == NULL || dwBufferSize < OD_SESSION_SNAPSHOT_HEADER_SIZE)
+      return(FALSE);
+   pBytes = (const BYTE *)pBuffer;
+   if(pBytes[0] != 'O' || pBytes[1] != 'D' || pBytes[2] != 'S'
+      || pBytes[3] != '1' || ODSessionSnapshotGetDWORD(pBytes + 4) != 1UL)
+      return(FALSE);
+   dwTotal = ODSessionSnapshotGetDWORD(pBytes + 8);
+   dwWidth = ODSessionSnapshotGetDWORD(pBytes + 12);
+   dwHeight = ODSessionSnapshotGetDWORD(pBytes + 16);
+   dwLeft = ODSessionSnapshotGetDWORD(pBytes + 20);
+   dwTop = ODSessionSnapshotGetDWORD(pBytes + 24);
+   dwRight = ODSessionSnapshotGetDWORD(pBytes + 28);
+   dwBottom = ODSessionSnapshotGetDWORD(pBytes + 32);
+   dwCursorColumn = ODSessionSnapshotGetDWORD(pBytes + 36);
+   dwCursorRow = ODSessionSnapshotGetDWORD(pBytes + 40);
+   if(dwWidth == 0 || dwHeight == 0 || dwWidth > 0xffffffffUL / dwHeight
+      || dwWidth * dwHeight >
+         (0xffffffffUL - OD_SESSION_SNAPSHOT_HEADER_SIZE) / 2UL)
+      return(FALSE);
+   dwExpected = OD_SESSION_SNAPSHOT_HEADER_SIZE + dwWidth * dwHeight * 2UL;
+   if(dwTotal != dwExpected || dwBufferSize < dwTotal
+      || !ODSessionSnapshotDimensions(&nCurrentWidth, &nCurrentHeight)
+      || dwWidth != (DWORD)nCurrentWidth || dwHeight != (DWORD)nCurrentHeight
+      || dwLeft < 1 || dwTop < 1 || dwLeft > dwRight || dwTop > dwBottom
+      || dwRight > dwWidth || dwBottom > dwHeight
+      || dwCursorColumn < 1 || dwCursorColumn > dwRight - dwLeft + 1
+      || dwCursorRow < 1 || dwCursorRow > dwBottom - dwTop + 1
+      || pBytes[45] > 1 || pBytes[46] != 0 || pBytes[47] != 0)
+      return(FALSE);
+
+   if(bSessionScreenAvailable)
+   {
+      if(od_control.user_ansi || od_control.user_avatar)
+      {
+         if(!od_puttext(1, 1, nCurrentWidth, nCurrentHeight,
+            (void *)(pBytes + OD_SESSION_SNAPSHOT_HEADER_SIZE)))
+            return(FALSE);
+      }
+      else
+      {
+         od_clr_scr();
+         pRow = pBytes + OD_SESSION_SNAPSHOT_HEADER_SIZE;
+         for(nRow = 1; nRow <= nCurrentHeight; ++nRow)
+         {
+            nLastColumn = nCurrentWidth;
+            while(nLastColumn > 1
+               && (pRow[(nLastColumn - 1) * 2] == ' '
+                  || pRow[(nLastColumn - 1) * 2] == 0))
+               --nLastColumn;
+            if(nRow == (INT)dwCursorRow
+               && nLastColumn >= (INT)dwCursorColumn)
+               nLastColumn = (INT)dwCursorColumn - 1;
+            for(nColumn = 0; nColumn < nLastColumn; ++nColumn)
+               od_putch((char)pRow[nColumn * 2]);
+            if(nRow == (INT)dwCursorRow)
+               break;
+            if(nLastColumn != nCurrentWidth)
+               od_disp_str("\n\r");
+            pRow += (size_t)nCurrentWidth * 2U;
+         }
+      }
+      memcpy(SessionScreen.pCells,
+         pBytes + OD_SESSION_SNAPSHOT_HEADER_SIZE,
+         (size_t)(dwTotal - OD_SESSION_SNAPSHOT_HEADER_SIZE));
+      SessionScreen.nLeft = (INT)dwLeft - 1;
+      SessionScreen.nTop = (INT)dwTop - 1;
+      SessionScreen.nRight = (INT)dwRight - 1;
+      SessionScreen.nBottom = (INT)dwBottom - 1;
+      SessionScreen.nCursorColumn = (INT)dwCursorColumn - 1;
+      SessionScreen.nCursorRow = (INT)dwCursorRow - 1;
+      SessionScreen.btAttribute = pBytes[44];
+      SessionScreen.bScrolling = pBytes[45] != 0;
+      ODSessionScreenMarkDirty(0, 0, SessionScreen.nWidth - 1,
+         SessionScreen.nHeight - 1);
+      ODSessionScreenPresent();
+      if(od_control.user_ansi || od_control.user_avatar)
+      {
+         od_set_cursor((INT)dwCursorRow, (INT)dwCursorColumn);
+         od_set_attrib(pBytes[44]);
+      }
+      return(TRUE);
+   }
+
+   if(!ODScrnPutText(1, 1, (BYTE)nCurrentWidth, (BYTE)nCurrentHeight,
+      (void *)(pBytes + OD_SESSION_SNAPSHOT_HEADER_SIZE)))
+      return(FALSE);
+   ODScrnSetBoundary((BYTE)dwLeft, (BYTE)dwTop, (BYTE)dwRight,
+      (BYTE)dwBottom);
+   ODScrnSetCursorPos((BYTE)dwCursorColumn, (BYTE)dwCursorRow);
+   ODScrnSetAttribute(pBytes[44]);
+   ODScrnEnableScrolling(pBytes[45] != 0);
+   return(TRUE);
 }

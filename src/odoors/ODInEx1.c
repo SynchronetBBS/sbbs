@@ -98,6 +98,7 @@
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODScrn.h"
+#include "ODVScreen.h"
 #include "ODInQue.h"
 #include "ODKrnl.h"
 #include "ODInEx.h"
@@ -2287,8 +2288,10 @@ malloc_error:
    ODScrnInitialize();
 #ifdef OD_TEXTMODE
    ODScrnSetBoundary(1, 1, 80, 23);
+   ODSessionScreenInitialize(80, 23);
 #else /* !OD_TEXTMODE */
    ODScrnSetBoundary(1, 1, 80, 25);
+   ODSessionScreenInitialize(80, 25);
 #endif /* !OD_TEXTMODE */
 
 #ifndef ODPLAT_WIN32

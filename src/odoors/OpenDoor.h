@@ -93,9 +93,7 @@
 # define ODPLAT_WIN32
 # undef ODPLAT_DOS
 # ifdef OD_WIN32_STATIC
-#  pragma message("Compiling for Win32 static version of OpenDoors")
 # else /* !OD_WIN32_STATIC */
-#  pragma message("Compiling for Win32 DLL version of OpenDoors")
 #  define OD_DLL
 # endif /* !OD_WIN32_STATIC */
 #else /* !WIN32 */
@@ -109,7 +107,6 @@
 # else
 #  define ODPLAT_DOS
 #  undef ODPLAT_WIN32
-#  pragma message("Compiling for DOS version of OpenDoors")
 # endif /* !NIX */
 #endif /* !WIN32 */
 
@@ -123,7 +120,9 @@
 /* For DLL versions, definitions of function or data that is exported from */
 /* a module or imported into a module.                                     */
 #ifdef OD_DLL
-# if defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__)
+# if defined(BUILDING_OPENDOORS) && defined(OPENDOORS_USE_DEF_EXPORTS)
+#  define OD_EXPORT
+# elif defined(_MSC_VER) || defined(__BORLANDC__) || defined(__MINGW32__)
 #  define OD_EXPORT __declspec(dllexport)
 # else /* !_MSC_VER || __BORLANDC__ */
 #  define OD_EXPORT _export
@@ -936,6 +935,9 @@ od_control;
  *    od_clr_scr()            - Clears the screen
  *    od_save_screen()        - Saves the contents of entire screen
  *    od_restore_screen()     - Restores the contents of entire screen
+ *    od_save_screen_size()   - Gets size for an extended screen snapshot
+ *    od_save_screen_ex()     - Saves a size-aware extended screen snapshot
+ *    od_restore_screen_ex()  - Restores a size-aware extended snapshot
  *
  * OUTPUT FUNCTIONS - BLOCK MANIPULATION
  *    od_clr_line()           - Clears the remainder of the current line
@@ -1041,6 +1043,10 @@ ODAPIDEF BOOL ODCALL   od_puttext(INT nLeft, INT nTop, INT nRight,
 ODAPIDEF void ODCALL   od_repeat(char chValue, BYTE btTimes);
 ODAPIDEF BOOL ODCALL   od_restore_screen(void *pBuffer);
 ODAPIDEF BOOL ODCALL   od_save_screen(void *pBuffer);
+ODAPIDEF DWORD ODCALL  od_save_screen_size(void);
+ODAPIDEF BOOL ODCALL   od_save_screen_ex(void *pBuffer, DWORD dwBufferSize);
+ODAPIDEF BOOL ODCALL   od_restore_screen_ex(const void *pBuffer,
+                          DWORD dwBufferSize);
 ODAPIDEF BOOL ODCALL   od_scroll(INT nLeft, INT nTop, INT nRight,
                           INT nBottom, INT nDistance, WORD nFlags);
 ODAPIDEF BOOL ODCALL   od_send_file(const char *pszFileName);

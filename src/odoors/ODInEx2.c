@@ -81,6 +81,7 @@
 #include "ODPlat.h"
 #include "ODTypes.h"
 #include "ODScrn.h"
+#include "ODVScreen.h"
 #include "ODInQue.h"
 #include "ODKrnl.h"
 #include "ODInEx.h"
@@ -726,6 +727,7 @@ ODAPIDEF void ODCALL od_exit(INT nErrorLevel, BOOL bTermCall)
    }
 #endif
    /* Shutdown OpenDoors local screen module. */
+   ODSessionScreenShutdown();
    ODScrnShutdown();
 
 #if defined(OD_DIAGNOSTICS) && defined(ODPLAT_WIN32)
