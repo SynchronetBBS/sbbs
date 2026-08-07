@@ -13,7 +13,8 @@
 /******************/
 /* Wrapper macros */
 /******************/
-#if defined(__unix__)
+#if defined(ODPLAT_NIX)
+	#include <strings.h>
 	#if !defined(stricmp)
 		#define stricmp(x,y)            strcasecmp(x,y)
 		#define strnicmp(x,y,z)         strncasecmp(x,y,z)
