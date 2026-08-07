@@ -186,11 +186,15 @@ include:
       $deployDir = Join-Path $env:CI_PROJECT_DIR "qtmonitor-windows-x64"
       $vcpkgInstalled = Join-Path (Get-Location) "build\windows-vcpkg\vcpkg_installed\x64-windows"
       $qtBin = Join-Path $vcpkgInstalled "tools\Qt6\bin"
+      $winDeployQt = Join-Path $qtBin "windeployqt.exe"
       $deployedExe = Join-Path $deployDir "qtmonitor.exe"
+      if (-not (Test-Path -LiteralPath $winDeployQt -PathType Leaf)) {
+        throw "windeployqt not found at $winDeployQt"
+      }
       New-Item -ItemType Directory -Force $deployDir | Out-Null
       Copy-Item "build\windows-vcpkg\Release\qtmonitor.exe" $deployedExe
       $env:PATH = (Join-Path $vcpkgInstalled "bin") + ";" + $qtBin + ";" + $env:PATH
-      & (Join-Path $qtBin "windeployqt.exe") --release --no-translations --force-openssl --openssl-root $vcpkgInstalled --dir $deployDir $deployedExe
+      & $winDeployQt --release --no-translations --force-openssl --openssl-root $vcpkgInstalled --dir $deployDir $deployedExe
       if ($LASTEXITCODE -ne 0) {
         throw "windeployqt failed with exit code $LASTEXITCODE"
       }
