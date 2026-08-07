@@ -171,6 +171,7 @@ if(DEUCESSH_CRYPTO_BACKEND STREQUAL "OpenSSL")
 		kex/dh-gex-sha256-openssl.c
 		kex/sntrup761x25519-sha512-openssl.c
 		kex/mlkem768x25519-sha256-openssl.c
+		kex/mlkem768.c
 		key_algo/ssh-ed25519-openssl.c
 		key_algo/rsa-sha2-256-openssl.c
 		key_algo/rsa-sha2-512-openssl.c
@@ -215,7 +216,6 @@ set(DEUCESSH_SOURCES
 	kex/dh-gex-groups.c
 	kex/sntrup761.c
 	kex/sntrup761_optblocker.c
-	kex/mlkem768.c
 	${DSSH_ALG_SOURCES}
 	${DSSH_WIN32_THREADS_SOURCES}
 	enc/none.c

@@ -194,6 +194,9 @@ int dssh_botan_mlkem768x25519_handler(struct dssh_kex_context *kctx);
 #define mlkem768x25519_handler   dssh_botan_mlkem768x25519_handler
 #endif
 
+/* Backend-matched ML-KEM fixture generation for packet-replay tests. */
+int dssh_test_mlkem768_public_key(uint8_t *pk_out, size_t pk_len);
+
 /*
  * ssh-auth.c helpers exposed for direct testing.
  */

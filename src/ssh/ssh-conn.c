@@ -1160,7 +1160,9 @@ handle_channel_data(struct dssh_session_s *sess, struct dssh_channel_s *ch, cons
 
 	uint32_t dlen = DSSH_GET_U32(&payload[5]);
 
-	if (9 + dlen > payload_len)
+	/* Check by subtraction: 9 + UINT32_MAX wraps in uint32_t
+	 * arithmetic before comparison on platforms where int is 32-bit. */
+	if (dlen > payload_len - 9)
 		return 0;
 
 	const uint8_t *data = &payload[9];
@@ -1230,7 +1232,7 @@ handle_channel_extended_data(struct dssh_session_s *sess, struct dssh_channel_s 
 	uint32_t data_type = DSSH_GET_U32(&payload[5]);
 	uint32_t dlen      = DSSH_GET_U32(&payload[9]);
 
-	if (13 + dlen > payload_len)
+	if (dlen > payload_len - 13)
 		return 0;
 
 	const uint8_t *data = &payload[13];
@@ -1643,6 +1645,7 @@ dssh_session_start(struct dssh_session_s *sess)
 	sess->demux_running = true;
 	if (thrd_create(&sess->demux_thread, demux_thread_func, sess) != thrd_success) {
 		sess->demux_running = false;
+		sess->conn_initialized = false;
 		cnd_destroy(&sess->accept_cnd);
 		mtx_destroy(&sess->accept_mtx);
 		mtx_destroy(&sess->channel_mtx);
@@ -1657,17 +1660,18 @@ dssh_session_stop(struct dssh_session_s *sess)
 {
 	if (sess == NULL)
 		return;
-	if (!sess->demux_running && (sess->channels == NULL))
+	if (!sess->conn_initialized)
 		return;
 
-	/* Signal termination and join the demux thread */
-	if (sess->demux_running) {
-		session_set_terminate(sess);
+	/* demux_running describes the worker's current state, not whether
+	 * demux_thread is joinable.  Always join a successfully-created
+	 * worker before releasing any session-owned state, including when
+	 * the worker has already stopped itself after an I/O error. */
+	session_set_terminate(sess);
 
-		int demux_res;
+	int demux_res;
 
-		thrd_join(sess->demux_thread, &demux_res);
-	}
+	thrd_join(sess->demux_thread, &demux_res);
 
 	/* Clean up registered channels */
 	if (sess->channels != NULL) {

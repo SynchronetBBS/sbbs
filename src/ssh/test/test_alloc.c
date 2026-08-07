@@ -25,7 +25,6 @@
 #include "mock_alloc.h"
 #include "test_dhgex_provider.h"
 #include "../kex/sntrup761.h"
-#include "../kex/mlkem768.h"
 
 #include "deucessh-crypto.h"
 
@@ -1825,8 +1824,12 @@ test_ossl_kex_server_iterate(void)
 	}
 	else if (test_using_mlkem()) {
 		/* mlkem768x25519: ECDH_INIT with Q_C = pk(1184) || x25519(32) */
-		uint8_t mlkem_pk[1184], mlkem_sk[2400];
-		crypto_kem_mlkem768_keypair(mlkem_pk, mlkem_sk);
+		uint8_t mlkem_pk[1184];
+		if (dssh_test_mlkem768_public_key(mlkem_pk, sizeof(mlkem_pk)) < 0) {
+			dssh_session_cleanup(server);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
 		uint8_t x25519_pk[32];
 		dssh_random(x25519_pk, sizeof(x25519_pk));
 
@@ -2978,8 +2981,12 @@ test_alloc_kex_server_iterate(void)
 	}
 	else if (test_using_mlkem()) {
 		/* mlkem768x25519: ECDH_INIT with Q_C = pk(1184) || x25519(32) */
-		uint8_t mlkem_pk[1184], mlkem_sk[2400];
-		crypto_kem_mlkem768_keypair(mlkem_pk, mlkem_sk);
+		uint8_t mlkem_pk[1184];
+		if (dssh_test_mlkem768_public_key(mlkem_pk, sizeof(mlkem_pk)) < 0) {
+			dssh_session_cleanup(server);
+			dssh_test_reset_global_config();
+			return TEST_FAIL;
+		}
 		uint8_t x25519_pk[32];
 		dssh_random(x25519_pk, sizeof(x25519_pk));
 

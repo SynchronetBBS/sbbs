@@ -163,6 +163,24 @@ mlkem_free_sk(void *sk_ctx)
 	}
 }
 
+#ifdef DSSH_TESTING
+/* Build a valid client fixture through the implementation selected by
+ * this backend.  Allocation tests use this instead of reaching through
+ * the backend boundary to a particular ML-KEM implementation. */
+DSSH_TESTABLE int
+dssh_test_mlkem768_public_key(uint8_t *pk_out, size_t pk_len)
+{
+	if (pk_out == NULL || pk_len != MLKEM_PK_LEN)
+		return DSSH_ERROR_INVALID;
+
+	void *sk_ctx = NULL;
+	int   ret    = mlkem_keygen(pk_out, &sk_ctx);
+
+	mlkem_free_sk(sk_ctx);
+	return ret;
+}
+#endif
+
 static const struct hybrid_pq_ops ossl_mlkem_ops = {
     .x25519_keygen    = ossl_x25519_keygen,
     .x25519_derive    = ossl_x25519_derive,

@@ -212,6 +212,10 @@ struct conn_ctx {
 	dssh_session server;
 };
 
+/* ASSERT_* returns directly, so retain the current resource-owning
+ * context for the runner's after-each cleanup hook. */
+static struct conn_ctx *g_active_ctx;
+
 struct handshake_auth_ctx {
 	struct mock_io_state *io;
 	dssh_session sess;
@@ -346,25 +350,33 @@ conn_setup(struct conn_ctx *ctx)
 		return -1;
 	}
 
+	g_active_ctx = ctx;
 	return 0;
 }
 
 static void
 conn_cleanup(struct conn_ctx *ctx)
 {
+	/* The after-each hook runs just after the test function's stack frame
+	 * has been popped.  Snapshot it before cleanup calls reuse that stack. */
+	struct conn_ctx snap = *ctx;
+
+	if (g_active_ctx == ctx)
+		g_active_ctx = NULL;
+
 	/*
 	 * Close the write-ends of both pipes first so that any demux
 	 * thread blocked in read() gets EOF and can exit.  With
 	 * socketpair-based mock I/O, condvar broadcasts alone cannot
 	 * unblock a blocking read() -- only closing the peer fd does.
 	 */
-	mock_io_close_c2s(&ctx->io);
-	mock_io_close_s2c(&ctx->io);
-	dssh_session_stop(ctx->server);
-	dssh_session_stop(ctx->client);
-	dssh_session_cleanup(ctx->server);
-	dssh_session_cleanup(ctx->client);
-	mock_io_free(&ctx->io);
+	mock_io_close_c2s(&snap.io);
+	mock_io_close_s2c(&snap.io);
+	dssh_session_stop(snap.server);
+	dssh_session_stop(snap.client);
+	dssh_session_cleanup(snap.server);
+	dssh_session_cleanup(snap.client);
+	mock_io_free(&snap.io);
 	dssh_test_reset_global_config();
 }
 
@@ -529,6 +541,7 @@ test_session_stop(void)
 	dssh_session_stop(ctx.server);
 	ASSERT_FALSE(ctx.server->demux_running);
 
+	g_active_ctx = NULL;
 	dssh_session_cleanup(ctx.server);
 	dssh_session_cleanup(ctx.client);
 	mock_io_free(&ctx.io);
@@ -554,6 +567,7 @@ test_session_start_stop(void)
 	ASSERT_FALSE(ctx.client->demux_running);
 	ASSERT_FALSE(ctx.server->demux_running);
 
+	g_active_ctx = NULL;
 	dssh_session_cleanup(ctx.server);
 	dssh_session_cleanup(ctx.client);
 	mock_io_free(&ctx.io);
@@ -2206,6 +2220,7 @@ test_cleanup_after_drop(void)
 	mock_io_close_s2c(&ctx.io);
 
 	/* This must not hang or crash */
+	g_active_ctx = NULL;
 	dssh_session_cleanup(ctx.server);
 	dssh_session_cleanup(ctx.client);
 	ctx.server = NULL;
@@ -2686,11 +2701,29 @@ test_data_exceeds_window(void)
 		size_t pos = 0;
 		msg[pos++] = SSH_MSG_CHANNEL_DATA;
 		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
-		dssh_serialize_uint32(0xFFFFFFFF, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(UINT32_MAX, msg, sizeof(msg), &pos);
 		memcpy(&msg[pos], "x", 1);
 		pos += 1;
 		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
 	}
+
+	/* The extended-data parser has a different fixed header size and
+	 * must reject the same overflow attempt independently. */
+	{
+		uint8_t msg[32];
+		size_t pos = 0;
+		msg[pos++] = SSH_MSG_CHANNEL_EXTENDED_DATA;
+		dssh_serialize_uint32(oc.client_ch->local_id, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(1, msg, sizeof(msg), &pos);
+		dssh_serialize_uint32(UINT32_MAX, msg, sizeof(msg), &pos);
+		msg[pos++] = 'x';
+		ASSERT_OK(send_packet(ctx.server, msg, pos, NULL));
+	}
+
+	/* Malformed packets must not poison the channel. */
+	uint8_t data[] = "still works";
+	int64_t res = dssh_chan_write(oc.server_ch, 0, data, sizeof(data));
+	ASSERT_TRUE(res > 0);
 
 	conn_cleanup(&ctx);
 	return TEST_PASS;
@@ -5592,12 +5625,15 @@ conn_setup_no_start(struct conn_ctx *ctx)
 		return -1;
 	}
 
+	g_active_ctx = ctx;
 	return 0;
 }
 
 static void
 conn_cleanup_no_start(struct conn_ctx *ctx)
 {
+	if (g_active_ctx == ctx)
+		g_active_ctx = NULL;
 	dssh_session_cleanup(ctx->server);
 	dssh_session_cleanup(ctx->client);
 	mock_io_free(&ctx->io);
@@ -6424,5 +6460,12 @@ static struct dssh_test_entry tests[] = {
 	{ "env/roundtrip",                     test_env_roundtrip },
 };
 
-DSSH_TEST_NO_CLEANUP
+static void
+dssh_test_after_each(int result)
+{
+	(void)result;
+	if (g_active_ctx != NULL)
+		conn_cleanup(g_active_ctx);
+}
+
 DSSH_TEST_MAIN(tests)

@@ -153,6 +153,23 @@ mlkem_free_sk_botan(void *sk_ctx)
 	delete static_cast<Botan::ML_KEM_PrivateKey *>(sk_ctx);
 }
 
+#ifdef DSSH_TESTING
+/* Build a valid client fixture through Botan, matching the production
+ * KEX path rather than depending on the vendored OpenSSL-side KEM. */
+extern "C" DSSH_TESTABLE int
+dssh_test_mlkem768_public_key(uint8_t *pk_out, size_t pk_len)
+{
+	if (pk_out == NULL || pk_len != MLKEM_PK_LEN)
+		return DSSH_ERROR_INVALID;
+
+	void *sk_ctx = nullptr;
+	int   ret    = mlkem_keygen_botan(pk_out, &sk_ctx);
+
+	mlkem_free_sk_botan(sk_ctx);
+	return ret;
+}
+#endif
+
 static const struct hybrid_pq_params mlkem_params = {
     .kex_name     = "mlkem768x25519-sha256",
     .kex_name_len = 21,
