@@ -321,6 +321,68 @@ static int g_fit_fill;
 static int g_is_xterm;
 static int g_term_rows, g_term_cols;   /* from the 999;999 CPR (real grid size) */
 static int g_cell_w, g_cell_h;         /* from ESC[16t (real cell pixels), 0=unknown */
+
+/* The canvas to FIT and CENTER against: g_canvas_w/h, clamped to the graphics
+ * ceiling the terminal declared.
+ *
+ * g_canvas_w/h is a GUESS (640x400) on SyncTERM and stays one: SyncTERM never
+ * answers ESC[14t, because its CSI t is the CTerm-private palette setter. It
+ * does answer XTSMGRAPHICS, with charwidth*cols x charheight*rows -- the text
+ * area in pixels, which is exactly its drawable ceiling -- but that landed in
+ * g_gfx_max_w/h and was applied to the SIXEL tier alone, so every fit and every
+ * cell-size derivation went on using 640x400.
+ *
+ * In any mode whose canvas is not 640x400 the door then drew past the end of
+ * it. SyncTERM's 80x43 is 640x350 (43 rows of 8px plus 6 leftover scanlines),
+ * where a captured session shows the door emitting a 640x400 JXL frame and
+ * deriving a 10px cell against a real 8: SyncTERM 1.9 discards the oversized
+ * blob WHOLE (a blank screen), 1.10 clips it (a truncated one), and the wrong
+ * cell size misplaces the sixel tier's CUP origin and its dirty-rect boxes.
+ * 80x28 (640x392) overshoots by 8 lines the same way; 80x30 (640x480) merely
+ * wastes the difference.
+ *
+ * Clamping rather than adopting is what makes this safe for a terminal whose
+ * reply is a true graphics ceiling rather than a text area (xterm's ~1000x1000
+ * when window ops are on): staying inside a declared ceiling is what a ceiling
+ * is for, and such a terminal answers ESC[14t as well, so its real canvas is
+ * already known here. */
+static void termgfx_fit_canvas(int *w, int *h)
+{
+	int cw = g_canvas_w;
+	int ch = g_canvas_h;
+
+	if (g_gfx_max_w > 0 && g_gfx_max_w < cw)
+		cw = g_gfx_max_w;
+	if (g_gfx_max_h > 0 && g_gfx_max_h < ch)
+		ch = g_gfx_max_h;
+	if (w != NULL)
+		*w = cw;
+	if (h != NULL)
+		*h = ch;
+}
+
+/* Cell pixel height: the terminal's own ESC[16t answer when it gave one, else
+ * the fit canvas over the real grid. Deriving it from the GUESSED canvas is
+ * what produced 400/42 = 10 where SyncTERM's 80x43 cell is 8. */
+static int termgfx_fit_cell_h(void)
+{
+	int ch;
+
+	if (g_cell_h > 0)
+		return g_cell_h;
+	termgfx_fit_canvas(NULL, &ch);
+	return g_term_rows > 0 ? (ch + g_term_rows / 2) / g_term_rows : 16;
+}
+
+static double termgfx_fit_cell_w(void)
+{
+	int cw;
+
+	if (g_cell_w > 0)
+		return g_cell_w;
+	termgfx_fit_canvas(&cw, NULL);
+	return g_term_cols > 0 ? (double)cw / g_term_cols : 8.0;
+}
 static FILE *g_capture;                  /* <DOOR>_SIXELOUT mode */
 
 /* SGR-Pixels (DEC 1016) latch: 0 = report coords are 1-based text CELLS
@@ -3351,6 +3413,7 @@ static int     g_draw_ew, g_draw_eh, g_draw_dx, g_draw_dy, g_draw_have;
 static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 {
 	unsigned ch = 0, ur = 0, dr = 0;
+	int      fit_w = 0, fit_h = 0;
 
 	if (g_trace == NULL)
 		return;
@@ -3379,12 +3442,17 @@ static void termgfx_trace(const char *outcome, const char *tier, size_t bytes)
 	 * last computed geometry (g_trace_ew et al, see their doc comment) --
 	 * stale (last frame's) on an early-out line logged before that block
 	 * runs this call. */
+	/* fit=WxH -- the canvas actually fitted against (termgfx_fit_canvas():
+	 * canvas clamped to the terminal's declared graphics ceiling). Logged
+	 * beside canvas= because they DIFFER exactly where the geometry bugs live:
+	 * a SyncTERM 80x43 session traced canvas=640x400? fit=640x336. */
+	termgfx_fit_canvas(&fit_w, &fit_h);
 	fprintf(g_trace, "%u %-13s %-5s %7zu inflight=%d depth=%d dropped=%u"
-	        " canvas=%dx%d%s replied=%d sixel=%d jxl=%d audio=%d/%u/%u/%u"
+	        " canvas=%dx%d%s fit=%dx%d replied=%d sixel=%d jxl=%d audio=%d/%u/%u/%u"
 	        " abacklog=%zu/%u/%u emit=%dx%d@%d,%d cell=%d rc=%d,%d dirty=%s\n",
 	        (unsigned)now_ms(), outcome, tier, bytes,
 	        g_inflight, g_auto_depth, (unsigned)g_dropped_frames,
-	        g_canvas_w, g_canvas_h, g_canvas_exact ? "!" : "?",
+	        g_canvas_w, g_canvas_h, g_canvas_exact ? "!" : "?", fit_w, fit_h,
 	        g_probe_replied, g_have_sixel, g_jxl,
 	        g_audio_tier, ch, ur, dr,
 	        termgfx_termio_audio_backlog(), (unsigned)g_audio_dropped, g_aseg_merges,
@@ -4008,12 +4076,13 @@ static void termgfx_evdev_report(int down)
 static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, int *dy)
 {
 	int tier  = termgfx_tier();
-	int cellh = g_cell_h > 0 ? g_cell_h
-	          : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 16);
-	int fit_h = g_canvas_h;
+	int cellh = termgfx_fit_cell_h();
+	int fit_w, fit_h;
 
-	if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0 && g_canvas_h > cellh)
-		fit_h = g_canvas_h - cellh;   /* keep the image off the last row */
+	termgfx_fit_canvas(&fit_w, &fit_h);
+
+	if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0 && fit_h > cellh)
+		fit_h -= cellh;   /* keep the image off the last row */
 
 	/* TRUE ASPECT -- max_stretch_pct 0, matching syncconquer's own fit.
 	 *
@@ -4032,7 +4101,7 @@ static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, in
 	 * sibling door already chose. FILL is the caller's way of saying they would
 	 * rather have the stretch than the bars. */
 	if (g_fit_fill) {
-		*ew = g_canvas_w;
+		*ew = fit_w;
 		*eh = fit_h;
 		/* The scaler and the sixel encoder both stop at TERMGFX_SCALE_MAX, and
 		 * the centering below has to agree with them: an uncapped full-canvas
@@ -4044,7 +4113,7 @@ static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, in
 		if (*eh > TERMGFX_SCALE_MAX)
 			*eh = TERMGFX_SCALE_MAX;
 	} else {
-		termgfx_geom_fit_ex(g_canvas_w, fit_h, sw, sh, TERMGFX_SCALE_MAX, 0, ew, eh);
+		termgfx_geom_fit_ex(fit_w, fit_h, sw, sh, TERMGFX_SCALE_MAX, 0, ew, eh);
 	}
 	/* Effective sixel ceiling -- SIXEL tier only (see g_gfx_max_w's doc
 	 * comment, above, for the full precedence rationale). JXL/APC frames
@@ -4070,15 +4139,17 @@ static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, in
 	}
 
 	if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0) {
-		double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
-		double chd = (double)g_canvas_h / g_term_rows;
+		double cw  = termgfx_fit_cell_w();
+		double chd = (double)cellh;
 		int    icol, irow;   /* unused here -- present() re-derives them from dx/dy */
 
-		termgfx_geom_center_ex(g_canvas_w, fit_h, *ew, *eh, cw, chd, dx, dy, &icol, &irow);
+		termgfx_geom_center_ex(fit_w, fit_h, *ew, *eh, cw, chd, dx, dy, &icol, &irow);
 	} else {
+		int cfw, cfh;
 		int icol, irow;
 
-		termgfx_geom_center(g_canvas_w, g_canvas_h, *ew, *eh, 8, 16, dx, dy, &icol, &irow);
+		termgfx_fit_canvas(&cfw, &cfh);
+		termgfx_geom_center(cfw, cfh, *ew, *eh, 8, 16, dx, dy, &icol, &irow);
 	}
 }
 
@@ -4135,8 +4206,19 @@ static void termgfx_termio_mouse_report(int b, int col, int row, int release)
 	} else {
 		termgfx_image_rect(&ew, &eh, &dx, &dy);
 	}
-	cw = g_cell_w > 0 ? g_cell_w : 8;
-	ch = g_cell_h > 0 ? g_cell_h : 16;
+	/* The terminal's REAL cell, not an 8x16 guess: this converts a 1-based text
+	 * cell into canvas pixels, so an over-tall guess drifts the pointer by a
+	 * whole cell per row -- exact at the top, worst at the bottom. SyncTERM
+	 * answers neither ESC[16t nor ESC[14t, and its 80x43 cell is 8px, so the
+	 * old fallback was wrong by 2x everywhere except the 80x25 it was chosen
+	 * for. termgfx_fit_cell_*() derive it from the declared drawable area over
+	 * the real grid when the terminal reports no cell size. */
+	cw = (int)(termgfx_fit_cell_w() + 0.5);
+	ch = termgfx_fit_cell_h();
+	if (cw <= 0)
+		cw = 8;
+	if (ch <= 0)
+		ch = 16;
 	if (ew <= 0)
 		ew = TERMGFX_FB_W;
 	if (eh <= 0)
@@ -4543,8 +4625,7 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 	 * to see THAT, or a static scene would dedupe/dirty-diff against a
 	 * last-sent frame that was emitted at the old, unclamped size. */
 	{
-		int cellh = g_cell_h > 0 ? g_cell_h
-		          : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 16);
+		int cellh = termgfx_fit_cell_h();
 		int rdx, rdy;   /* pixel offset from termgfx_image_rect(); rdx/cw, rdy/chd
 		                 * below recovers the SAME icol/irow
 		                 * termgfx_geom_center_ex()/_center() computed inline
@@ -4596,8 +4677,8 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		}
 
 		if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0) {
-			double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
-			double chd = (double)g_canvas_h / g_term_rows;
+			double cw  = termgfx_fit_cell_w();
+			double chd = (double)termgfx_fit_cell_h();
 			icol = 1 + (int)(rdx / cw);
 			irow = 1 + (int)(rdy / chd);
 			g_draw_dx = (int)((icol - 1) * cw);
@@ -4708,10 +4789,14 @@ void termgfx_termio_present(const uint8_t *idx, const uint8_t *pal768)
 		 * instead of a ~half-MB full frame; without it, fall back to a full
 		 * frame rather than mis-place boxes on an 8x16 guess (which tore the
 		 * comic panels on foot's 6x13 cell). */
-		int cdw = g_cell_w > 0 ? g_cell_w
-		        : (g_term_cols > 0 ? (g_canvas_w + g_term_cols / 2) / g_term_cols : 0);
-		int cdh = g_cell_h > 0 ? g_cell_h
-		        : (g_term_rows > 0 ? (g_canvas_h + g_term_rows / 2) / g_term_rows : 0);
+		int cfw, cfh;
+		int cdw, cdh;
+
+		termgfx_fit_canvas(&cfw, &cfh);
+		cdw = g_cell_w > 0 ? g_cell_w
+		    : (g_term_cols > 0 ? (cfw + g_term_cols / 2) / g_term_cols : 0);
+		cdh = g_cell_h > 0 ? g_cell_h
+		    : (g_term_rows > 0 ? (cfh + g_term_rows / 2) / g_term_rows : 0);
 
 		if (cdw > 0 && cdh > 0 && g_have_last && !geom_changed && !tier_changed)
 			dn = termgfx_dirty_sixel_present(idx, g_last_fb, pal768, ew, eh,
@@ -4927,8 +5012,8 @@ void termgfx_termio_present_rgbx(const uint8_t *xrgb, int w, int h)
 
 		termgfx_image_rect_src(w, h, &ew, &eh, &rdx, &rdy);
 		if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0) {
-			double cw  = g_term_cols > 0 ? (double)g_canvas_w / g_term_cols : 8.0;
-			double chd = (double)g_canvas_h / g_term_rows;
+			double cw  = termgfx_fit_cell_w();
+			double chd = (double)termgfx_fit_cell_h();
 			icol = 1 + (int)(rdx / cw);
 			irow = 1 + (int)(rdy / chd);
 			g_draw_dx = (int)((icol - 1) * cw);
@@ -5125,6 +5210,28 @@ int termgfx_termio_test_mouse_report(int b, int col, int row, int release)
 {
 	termgfx_termio_mouse_report(b, col, row, release);
 	return 1;
+}
+
+/* Test-only seam (test/test_termgfx_termio_fitcanvas.c): the SyncTERM shape,
+ * which termgfx_termio_test_set_geom() cannot express because it marks the
+ * canvas exact. SyncTERM never answers ESC[14t (its CSI t is the CTerm palette
+ * setter), so the canvas stays the 640x400 guess and the only truth about the
+ * drawable area arrives as an XTSMGRAPHICS ceiling. */
+void termgfx_termio_test_set_gfx_max(int w, int h, int canvas_exact)
+{
+	g_gfx_max_w    = w;
+	g_gfx_max_h    = h;
+	g_canvas_exact = canvas_exact;
+}
+
+/* Test-only seam: the fit+center block's output for a source of sw x sh, plus
+ * the cell height every CUP/dirty-box derivation keys off. */
+void termgfx_termio_test_image_rect(int sw, int sh, int *ew, int *eh,
+                                    int *dx, int *dy, int *cellh)
+{
+	termgfx_image_rect_src(sw, sh, ew, eh, dx, dy);
+	if (cellh != NULL)
+		*cellh = termgfx_fit_cell_h();
 }
 
 /* Test-only seam (test/test_termgfx_termio_input.c): run raw wire bytes through the

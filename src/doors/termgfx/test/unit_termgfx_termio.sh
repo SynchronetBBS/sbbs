@@ -271,3 +271,14 @@ cc -o /tmp/test_termgfx_termio_datadir $JXL_DEFINE -I"$TERMGFX" $XPDEV_INC \
    "$LIBS/termgfx/libtermgfx.a" "$LIBS/libxpdev_static.a" \
    -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
 /tmp/test_termgfx_termio_datadir
+
+# Fit against the canvas the TERMINAL declared, not the 640x400 guess. Needs
+# the TERMGFX_TEST seams (termgfx_termio_test_set_gfx_max()/_image_rect()) to
+# reproduce the SyncTERM shape -- an assumed canvas with the real drawable area
+# arriving only as an XTSMGRAPHICS ceiling, which _set_geom() cannot express
+# because it marks the canvas exact. Own binary, same reason as the others.
+cc -o /tmp/test_termgfx_termio_fitcanvas $JXL_DEFINE -DTERMGFX_TEST -I"$TERMGFX" $XPDEV_INC \
+   "$HERE/test_termgfx_termio_fitcanvas.c" "$TERMGFX/termgfx_termio.c" \
+   "$LIBS/termgfx/libtermgfx.a" "$LIBS/libxpdev_static.a" \
+   -lpthread -lm $JXL_LIBS $SNDFILE_LIBS
+/tmp/test_termgfx_termio_fitcanvas
