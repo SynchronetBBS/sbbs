@@ -499,7 +499,16 @@ static void sm_io_recompute_geom(void)
     /* Reserve the bottom row and fit the native frame into what's left; the
      * fit keeps the encode at the lossless native width whenever the page is
      * wide enough for it. See sm_geom_fit_page(). */
-    sm_geom_fit_page(pagew, pageh, ch, &ew, &eh, &fith);
+    sm_geom_fit_page(pagew, pageh, ch, sm_input_is_syncterm(), &ew, &eh, &fith);
+
+    /* One line per geometry change, the way syncretro_io.c prints its own. The
+     * canvas-vs-page-vs-cell chain is where every wrong-size bug in these doors
+     * has lived, and reconstructing it from the outside costs a wire capture. */
+    fprintf(stderr, "syncmoo1: geometry canvas %dx%d%s grid %dx%d cell %dx%d"
+            " page %dx%d fit %d st=%d -> %dx%d\n",
+            g_canvas_w, g_canvas_h, g_canvas_is_gfx ? "" : " (assumed)",
+            g_grid_cols, g_grid_rows, cw, ch, pagew, pageh, fith,
+            sm_input_is_syncterm(), ew, eh);
 
     /* Shrink the IMAGE -- never the page -- to the terminal's graphics ceiling. A
      * sixel bigger than that is DISCARDED WHOLE (xterm aborts the parse on an
@@ -579,6 +588,18 @@ void sm_io_set_gfx_canvas(int w, int h)
     g_canvas_w      = w;
     g_canvas_h      = h;
     g_canvas_is_gfx = 1;
+    sm_io_recompute_geom();
+}
+
+/* The SyncTERM identification arrives LAST in the probe burst -- XTSMGRAPHICS
+ * and the CPR grid land first -- and this module CACHES its geometry, so by the
+ * time the flag is latched the fit has already been computed without it. That
+ * left the non-square-pixel correction permanently gated off: a 132x43 session
+ * logged `st=0` and kept the uncorrected size for the whole run. The input
+ * module calls this the moment it decides the peer is SyncTERM. */
+void sm_io_note_syncterm(void)
+{
+    sm_io_ensure_geom();
     sm_io_recompute_geom();
 }
 

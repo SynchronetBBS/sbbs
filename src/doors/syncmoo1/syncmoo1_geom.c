@@ -3,9 +3,10 @@
 #include "syncmoo1_geom.h"
 #include "geometry.h"   /* termgfx: termgfx_geom_fit_ex */
 
-void sm_geom_fit_page(int pagew, int pageh, int ch, int *ew, int *eh, int *fith)
+void sm_geom_fit_page(int pagew, int pageh, int ch, int is_syncterm,
+                      int *ew, int *eh, int *fith)
 {
-    int w, h, usable;
+    int w, h, usable, srcw;
 
     if (ch <= 0)
         ch = 1;
@@ -15,7 +16,26 @@ void sm_geom_fit_page(int pagew, int pageh, int ch, int *ew, int *eh, int *fith)
      * a tiny or bogus probe result can't reserve away most of the screen. */
     usable = (pageh > ch * 4) ? pageh - ch : pageh;
 
-    termgfx_geom_fit_ex(pagew, usable, SM_FB_W, SM_FB_H,
+    /* Widen the SOURCE for the terminal's non-square canvas pixels. SyncTERM
+     * scales its framebuffer to the video mode's display aspect, so a canvas
+     * pixel is 0.833 as wide as it is tall on the classic 640x400 and only
+     * 0.442 on a 132-column 1056x350. MoO1 is drawn to the shape it has on that
+     * 640x400 reference -- see the native-2x note below, which says as much --
+     * so without this the map comes out 14% too tall in 80x43 and 88% in
+     * 132x43. termgfx_geom_par_correct() is exactly 1.0 for any 640x400-shaped
+     * canvas, leaving every mode that already looks right bit-identical.
+     *
+     * SyncTERM only: every other terminal draws its canvas with square pixels,
+     * where this would be the distortion rather than the cure. */
+    srcw = SM_FB_W;
+    if (is_syncterm && pagew > 0 && pageh > 0) {
+        int cw = (int)(SM_FB_W * termgfx_geom_par_correct(pagew, pageh) + 0.5);
+
+        if (cw > 0)
+            srcw = cw;
+    }
+
+    termgfx_geom_fit_ex(pagew, usable, srcw, SM_FB_H,
                         SM_GEOM_SCALE_MAX, SM_GEOM_STRETCH_PCT, &w, &h);
 
     /* Widen a height-limited fit back out to the native 2x.  The fit above

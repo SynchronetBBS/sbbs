@@ -155,6 +155,7 @@ void sm_io_wiredump_in(const void *buf, size_t len);
 void sm_io_set_gfx_canvas(int w, int h);   /* XTSMGRAPHICS canvas: the max sixel the terminal draws */
 int sm_input_have_sixel(void);       /* 1 if the terminal advertised sixel (DA1 param 4 / CTDA cap 4) */
 int sm_input_is_syncterm(void);
+void sm_io_note_syncterm(void);   /* re-fit: the ID lands after the geometry probes */
 /* The three the no-graphics gate reads (termgfx/gfxgate.h). "answered" is
  * whether the Q;JXL query came back at all, which is what separates "no JXL"
  * from "not yet"; sm_input_jxl() is whether the answer was yes. */

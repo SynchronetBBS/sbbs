@@ -963,6 +963,7 @@ static void sr_csi_final(char fin)
 			g_probe_replied = 1;
 			if (csi_len > 0 && (csi_par[0] == '<' || csi_par[0] == '='))
 				g_is_syncterm = 1;   /* '<'/'=' marker: SyncTERM-flavored reply */
+				sr_io_note_syncterm();   /* re-fit: this lands AFTER the probes */
 			np = sr_csi_params(p, 16);
 			{
 				int k;
@@ -1022,6 +1023,7 @@ static void sr_csi_final(char fin)
 				r = termgfx_audio_parse_caps(seq, sl);
 				if (r >= 0) {
 					g_is_syncterm = 1;
+					sr_io_note_syncterm();   /* re-fit: see the DA/CTDA case */
 					sr_audio_caps(r);
 				}
 

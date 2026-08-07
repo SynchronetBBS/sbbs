@@ -658,6 +658,24 @@ static void sr_io_recompute_geom(void)
 			fitw = aw;
 	}
 
+	/* ...and then for the TERMINAL's shape, which is a different question from
+	 * the core's. SyncTERM scales its framebuffer to the video mode's display
+	 * aspect, so its canvas pixels are not square and how non-square varies per
+	 * mode: 0.833 wide/tall on the classic 640x400, 0.442 on a 132-column
+	 * 1056x350. Without this a cartridge is 14% too tall in 80x43 and 88% in
+	 * 132x43. Exactly 1.0 on any 640x400-shaped canvas, so the modes that
+	 * already look right are untouched.
+	 *
+	 * SyncTERM only: every other terminal draws its canvas with square pixels,
+	 * where this would be the distortion rather than the cure. */
+	if (sr_input_is_syncterm()) {
+		double corr = termgfx_geom_par_correct(pagew, pageh);
+		int    cw2  = (int)(fitw * corr + 0.5);
+
+		if (cw2 > 0)
+			fitw = cw2;
+	}
+
 	termgfx_geom_fit(pagew, fith, fitw, g_src_h, 0, &g_ew, &g_eh);
 
 	/* Shrink the IMAGE -- never the page -- to the terminal's graphics ceiling: an
@@ -766,6 +784,19 @@ void sr_io_set_aspect(double aspect)
 	sr_io_invalidate();            /* the image rect moved: repaint in full */
 }
 
+
+/* The SyncTERM identification arrives LAST in the probe burst -- XTSMGRAPHICS
+ * and the CPR grid land first -- and this module CACHES its geometry, so the fit
+ * has already been computed by the time the flag is latched. That would leave
+ * the non-square-pixel correction gated off for the whole session (the same trap
+ * SyncMOO1 fell into). sr_io_set_aspect() happens to re-fit after the probes,
+ * but only when the core's aspect actually CHANGES, so it cannot be relied on.
+ * The input module calls this the moment it decides the peer is SyncTERM. */
+void sr_io_note_syncterm(void)
+{
+	sr_io_recompute_geom();
+	sr_io_invalidate();            /* the image rect may have moved */
+}
 
 void sr_io_set_canvas(int w, int h)
 {

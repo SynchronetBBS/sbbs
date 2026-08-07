@@ -55,7 +55,11 @@
  *
  * Any of ew/eh/fith may be NULL.
  */
-void sm_geom_fit_page(int pagew, int pageh, int ch, int *ew, int *eh, int *fith);
+/* `is_syncterm` widens the source for SyncTERM's non-square canvas pixels, the
+ * same way sm_geom_encode_dims() takes it below -- the caller knows, geometry
+ * does not probe. */
+void sm_geom_fit_page(int pagew, int pageh, int ch, int is_syncterm,
+                      int *ew, int *eh, int *fith);
 
 /* Sixel raster to encode for a displayed image of `ew` x `eh`, and the
  * pixel-aspect the terminal must apply to it: the image displays at

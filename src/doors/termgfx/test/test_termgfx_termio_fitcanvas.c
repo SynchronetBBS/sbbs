@@ -24,6 +24,7 @@
 void termgfx_termio_test_set_geom(int canvas_w, int canvas_h, int cell_w, int cell_h,
                                   int cols, int rows, int pixels);
 int  termgfx_termio_test_mouse_report(int b, int col, int row, int release);
+void termgfx_termio_test_set_syncterm(int is_syncterm);
 void termgfx_termio_test_set_gfx_max(int w, int h, int canvas_exact);
 void termgfx_termio_test_image_rect(int sw, int sh, int *ew, int *eh,
                                     int *dx, int *dy, int *cellh);
@@ -45,6 +46,7 @@ static void syncterm_80x43(void)
 	termgfx_termio_test_set_geom(640, 400, /*cell_w*/ 0, /*cell_h*/ 0,
 	                             /*cols*/ 80, /*rows*/ 42, /*pixels*/ 0);
 	termgfx_termio_test_set_gfx_max(640, 336, /*canvas_exact*/ 0);
+	termgfx_termio_test_set_syncterm(1);
 }
 
 int main(void)
@@ -69,12 +71,53 @@ int main(void)
 	CHECK(dy + eh <= 336);
 	CHECK(cellh == 8);
 
-	/* The aspect must survive the clamp: 320x200 is 1.6, and a fit that
-	 * squashed it to the ceiling would be a different bug wearing this fix's
-	 * clothes. Allow a pixel of integer-rounding slack either way. */
+	/* SHAPE, on the 80x43 canvas. The emitted rect takes the CANVAS's
+	 * proportions, not the source's 1.6: SyncTERM shows 640x336 at 4:3, so its
+	 * pixels are 0.70 wide/tall and a 4:3 source has to be drawn wider to come
+	 * out 4:3 on screen. Uncorrected this was 524x328 (1.60) -- 14% too tall. */
 	syncterm_80x43();
 	termgfx_termio_test_image_rect(320, 200, &ew, &eh, &dx, &dy, &cellh);
-	CHECK(ew * 200 >= (eh * 320) - eh && ew * 200 <= (eh * 320) + eh);
+	printf("80x43 shape -> %dx%d (canvas 640x336 = %.3f, got %.3f)\n",
+	       ew, eh, 640.0 / 336.0, (double)ew / eh);
+	CHECK((double)ew / eh > (640.0 / 336.0) * 0.97);
+	CHECK((double)ew / eh < (640.0 / 336.0) * 1.03);
+
+	/* A WIDE mode: 132x43 is 1056 px across, where the built-in guess is 640.
+	 * The declared area has to be ADOPTED, not just clamped to -- clamping only
+	 * ever shrinks, so the door went on fitting and centering inside a phantom
+	 * 640-wide canvas and the picture sat against the left edge with the right
+	 * half of the screen empty. Captured from a 1.10a session with the status
+	 * line hidden: 132 cols x 43 rows, area 1056x344. */
+	termgfx_termio_test_set_geom(640, 400, 0, 0, /*cols*/ 132, /*rows*/ 43, 0);
+	termgfx_termio_test_set_gfx_max(1056, 344, /*canvas_exact*/ 0);
+	termgfx_termio_test_set_syncterm(1);
+	termgfx_termio_test_image_rect(320, 200, &ew, &eh, &dx, &dy, &cellh);
+	printf("132x43 320x200 -> %dx%d @%d,%d cell=%d\n", ew, eh, dx, dy, cellh);
+	CHECK(cellh == 8);                       /* 344/43, not 400/43 = 9 */
+	/* SHAPE. SyncTERM shows this 1056x344 canvas at 4:3, so its pixels are 0.43
+	 * wide/tall and a 4:3 source drawn to fill it comes out 4:3 on screen. The
+	 * invariant: for a source whose intended shape matches the canvas's display
+	 * aspect, the emitted rect has the CANVAS's proportions -- the 1.6 reference
+	 * cancels. Uncorrected this was 537x336 (1.60), badly too tall. */
+	CHECK((double)ew / eh > (1056.0 / 344.0) * 0.97);
+	CHECK((double)ew / eh < (1056.0 / 344.0) * 1.03);
+	CHECK(ew > 950);                         /* very nearly fills the width */
+	/* Centered in 1056, not in the 640 guess. The image is legitimately
+	 * NARROWER than 640 here (height-limited by the 344-line canvas), so its
+	 * width proves nothing -- the offset is what shows which canvas was used:
+	 * 259 centers in 1056, the old code's 51 centered in 640. */
+	CHECK(dx * 2 + ew >= 1056 - 2 && dx * 2 + ew <= 1056 + 2);
+	CHECK(dx + ew <= 1056);
+
+	/* An EXACT canvas keeps the reply as a ceiling and is clamped DOWN to it --
+	 * the xterm case, where the raster limit is smaller than the window it
+	 * reports. Adopting there would emit past what xterm will accept. */
+	termgfx_termio_test_set_geom(1368, 906, 0, 0, 171, 56, 0);   /* sets exact */
+	termgfx_termio_test_set_gfx_max(1000, 1000, /*canvas_exact*/ 1);
+	termgfx_termio_test_set_syncterm(0);     /* square-pixel terminal: no correction */
+	termgfx_termio_test_image_rect(320, 200, &ew, &eh, &dx, &dy, &cellh);
+	printf("xterm 1368x906 cap 1000 -> %dx%d @%d,%d\n", ew, eh, dx, dy);
+	CHECK(ew <= 1000 && eh <= 1000);
 
 	/* 80x25 -- the mode where the old assumption happened to be right -- must
 	 * be unchanged: 640x400 canvas, 640x400 ceiling, 16px cell. */

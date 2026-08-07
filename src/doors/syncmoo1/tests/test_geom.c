@@ -18,7 +18,7 @@ static int encode_w(int pagew, int pageh, int ch)
 {
     int ew, eh, sxw;
 
-    sm_geom_fit_page(pagew, pageh, ch, &ew, &eh, 0);
+    sm_geom_fit_page(pagew, pageh, ch, /*is_syncterm*/ 0, &ew, &eh, 0);
     sm_geom_encode_dims(ew, eh, 1, 1, &sxw, 0, 0, 0);
     return sxw;
 }
@@ -29,7 +29,7 @@ static void assert_lossless(int pagew, int pageh, int ch)
 {
     int ew, eh, sxw, sxh;
 
-    sm_geom_fit_page(pagew, pageh, ch, &ew, &eh, 0);
+    sm_geom_fit_page(pagew, pageh, ch, /*is_syncterm*/ 0, &ew, &eh, 0);
     sm_geom_encode_dims(ew, eh, 1, 1, &sxw, &sxh, 0, 0);
     assert(sxw >= SM_FB_W);
     assert(sxh >= SM_FB_H);
@@ -42,7 +42,7 @@ int main(void)
     /* 80x25 at an 8x16 font: the 640x400 canvas the door assumes by default.
      * The bottom-row reserve leaves 640x384; the <=8% stretch fills the width
      * back out to an exact 2x. Nothing is resampled horizontally. */
-    sm_geom_fit_page(640, 400, 16, &ew, &eh, &fith);
+    sm_geom_fit_page(640, 400, 16, /*is_syncterm*/ 0, &ew, &eh, &fith);
     assert(fith == 384);
     assert(ew == 640 && eh == 384);
     /* Width affords the 2x aspect (640/2 == the native 320). Height does not:
@@ -57,7 +57,7 @@ int main(void)
      * reserve leaves 368, and a true-aspect fit is 588 wide: an 8.8% leftover
      * bar, just past the 8% stretch allowance. Fitting to 588 encodes 294 px
      * and drops 26 of the 320 source columns. Must widen to the native 2x. */
-    sm_geom_fit_page(640, 384, 16, &ew, &eh, &fith);
+    sm_geom_fit_page(640, 384, 16, /*is_syncterm*/ 0, &ew, &eh, &fith);
     assert(fith == 368);
     assert(ew == SM_GEOM_NATIVE_EW);
     assert(eh == 368);
@@ -78,7 +78,7 @@ int main(void)
      * foot session's probe reply). 348 > 320 is an UPscale -- nearest
      * neighbour duplicates columns there, it never drops one, so it is safe
      * and the picture fills the terminal. */
-    sm_geom_fit_page(696, 468, 13, &ew, &eh, &fith);
+    sm_geom_fit_page(696, 468, 13, /*is_syncterm*/ 0, &ew, &eh, &fith);
     assert(fith == 455);
     assert(ew == 696 && eh == 455);
     /* A page this tall clears the native height at pan=2 (455/2 == 227 >= 200),
@@ -92,7 +92,7 @@ int main(void)
      * the page). The HORIZONTAL then takes pad=1 for the same reason the
      * vertical takes pan=1 -- 480/2 would encode 240 columns and drop 80 of
      * the 320. At pad=1 it upsamples to 480 and stays lossless. */
-    sm_geom_fit_page(480, 400, 16, &ew, &eh, 0);
+    sm_geom_fit_page(480, 400, 16, /*is_syncterm*/ 0, &ew, &eh, 0);
     assert(ew <= 480 && ew > 0);
     assert(ew == 480 && eh == 300);
     sm_geom_encode_dims(ew, eh, 1, 1, &sxw, &sxh, &pad, &pan);
@@ -102,14 +102,14 @@ int main(void)
 
     /* Degenerate short page (10 rows): widening to 640 here would squash the
      * frame below its own native height. Leave the true-aspect fit alone. */
-    sm_geom_fit_page(640, 160, 16, &ew, &eh, 0);
+    sm_geom_fit_page(640, 160, 16, /*is_syncterm*/ 0, &ew, &eh, 0);
     assert(ew < SM_GEOM_NATIVE_EW);
     assert(eh <= 160);
 
     /* A page too small to hold the native frame at all: both axes are already
      * at 1, and the downsample (with its dropped rows/columns) is unavoidable.
      * Nothing to guarantee here except that the encode stays inside the fit. */
-    sm_geom_fit_page(640, 160, 16, &ew, &eh, 0);
+    sm_geom_fit_page(640, 160, 16, /*is_syncterm*/ 0, &ew, &eh, 0);
     sm_geom_encode_dims(ew, eh, 1, 1, &sxw, &sxh, &pad, &pan);
     assert(pad == 1 && pan == 1);
     assert(sxw <= ew && sxh <= eh);
@@ -155,6 +155,48 @@ int main(void)
     sm_geom_encode_dims(640, 384, 0, 1, &sxw, &sxh, &pad, &pan);
     assert(pad == 1 && pan == 1);
     assert(sxw == 640 && sxh == 384);
+
+    /* --- the terminal's non-square canvas pixels -----------------------------
+     *
+     * SyncTERM scales its framebuffer to the video mode's display aspect, so a
+     * 132-column 1056x344 canvas is shown at 4:3 and its pixels are 0.43 as
+     * wide as they are tall. Fitting MoO1's 1.6-shaped frame in PIXELS there
+     * puts a 1.6-shaped picture on a canvas that stretches it 2.3x vertically.
+     *
+     * Corrected, the emitted rect takes the CANVAS's proportions instead: a
+     * source whose intended shape matches the canvas's display aspect fills it,
+     * and the 1.6 reference cancels out. */
+    sm_geom_fit_page(1056, 344, 8, /*is_syncterm*/ 1, &ew, &eh, &fith);
+    {
+        double got = (double)ew / eh, want = 1056.0 / 344.0;
+
+        assert(got > want * 0.97 && got < want * 1.03);
+        assert(ew > 950);                 /* very nearly fills the 1056 width */
+        assert(ew <= 1056);
+    }
+
+    /* Uncorrected on the same canvas, this lands on the NATIVE-WIDTH rule above
+     * rather than on a true-aspect fit: the height-limited fit is 537 wide, and
+     * the rule widens it to 640 so no source column is dropped. So the
+     * uncorrected picture is 640x336 -- still far short of the 1056 the canvas
+     * wants, which is the elongation.
+     *
+     * Corrected, the fit comes out 1031 wide on its own and the native-width
+     * rule no longer has anything to do: the two rules stop interacting once
+     * the canvas is measured honestly. */
+    sm_geom_fit_page(1056, 344, 8, /*is_syncterm*/ 0, &ew, &eh, &fith);
+    assert(ew == SM_GEOM_NATIVE_EW);
+    assert(ew < 950);            /* materially narrower than the corrected fit */
+
+    /* The 640x400 reference canvas is left BIT-IDENTICAL by the correction:
+     * that is the whole point of expressing it relative to 1.6. */
+    {
+        int ew0, eh0, ew1, eh1, f0, f1;
+
+        sm_geom_fit_page(640, 400, 16, /*is_syncterm*/ 0, &ew0, &eh0, &f0);
+        sm_geom_fit_page(640, 400, 16, /*is_syncterm*/ 1, &ew1, &eh1, &f1);
+        assert(ew0 == ew1 && eh0 == eh1 && f0 == f1);
+    }
 
     return 0;
 }

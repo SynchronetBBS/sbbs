@@ -81,6 +81,36 @@ int termgfx_geom_sixel_scale(int displayed, int native, int max_factor, int band
 // instead of a void.
 #define TERMGFX_SIXEL_SAFE_MAX 1000
 
+// --- non-square canvas pixels ------------------------------------------------
+//
+// A door emits PIXELS; whether they are square when they reach the eye is the
+// TERMINAL's decision, and SyncTERM's answer varies per video mode. It scales
+// the framebuffer to the mode's own display aspect (conio/vidmodes.c
+// aspect_width/aspect_height, applied by bitmap_get_scaled_win_size_nomax() ->
+// aspect_fix_wc()), so a 640x400 canvas shown 4:3 has pixels 0.833 as wide as
+// they are tall -- and a 132-column 1056x350 canvas shown 4:3 has pixels 0.442
+// as wide as tall, more than twice as tall as square.
+//
+// Doors were all calibrated on the classic 640x400 canvas, where 320x200
+// mode-13h art lands exactly right because the art was drawn for that same
+// squeeze. Everywhere else the picture comes out stretched: 14% too tall in
+// 80x43, 88% in 132x43.
+//
+// termgfx_geom_par_correct() returns the factor to widen the SOURCE by so it
+// keeps the shape it has in that reference canvas. Feed the terminal's real
+// drawable area (XTSMGRAPHICS ESC[?2;1S, or cols*cell x rows*cell); the result
+// is 1.0 for any 640x400-shaped canvas, so the modes doors already render
+// correctly are left bit-identical.
+//
+// ASSUMES A 4:3 DISPLAY, which is exact for 48 of SyncTERM's 52 modes -- the
+// display aspect cancels out of the ratio, so it only matters that the current
+// mode and the reference mode share it. The four that differ (LCD80X25 8:5, the
+// two ST 16:9 / 5:4 modes, PRESTEL) cannot be told apart from their 4:3 twins
+// by anything a door can query -- C80 and LCD80X25 are both 80x25 with 8x16
+// cells on a 640x400 framebuffer -- so no door-side rule can separate them. A
+// terminal that reports its pixel aspect would retire the assumption.
+double termgfx_geom_par_correct(int canvas_w, int canvas_h);
+
 // Shrink a fitted image to the terminal's graphics ceiling, preserving aspect.
 //
 // Call it on the FIT result, never on the canvas: the canvas is what the image is

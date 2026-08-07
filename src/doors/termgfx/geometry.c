@@ -134,3 +134,20 @@ void termgfx_geom_center(int vw, int vh, int ew, int eh, int cell_w, int cell_h,
 	termgfx_geom_center_ex(vw, vh, ew, eh, (double)cell_w, (double)cell_h,
 	                       dx, dy, col, row);
 }
+
+/* The canvas these doors were calibrated on: 640x400, i.e. a 1.6 framebuffer
+ * ratio. See geometry.h for why the display aspect cancels and what that
+ * assumes. */
+#define TERMGFX_REF_CANVAS_RATIO 1.6
+
+double termgfx_geom_par_correct(int canvas_w, int canvas_h)
+{
+	double ratio;
+
+	if (canvas_w < 1 || canvas_h < 1)
+		return 1.0;
+	ratio = (double)canvas_w / (double)canvas_h;
+	if (ratio <= 0.0)
+		return 1.0;
+	return ratio / TERMGFX_REF_CANVAS_RATIO;
+}

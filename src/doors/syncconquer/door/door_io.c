@@ -2425,7 +2425,24 @@ static void door_calc_rect(int vw, int vh, int reserve_bottom, int *ew, int *eh,
 		*ew = vw;
 		*eh = fitvh;
 	} else {
-		termgfx_geom_fit_ex(vw, fitvh, DOOR_FB_WIDTH, DOOR_FB_HEIGHT,
+		/* Widen the SOURCE for the terminal's non-square canvas pixels. SyncTERM
+		 * scales its framebuffer to the video mode's display aspect, so a canvas
+		 * pixel is 0.833 as wide as tall on the classic 640x400 and only 0.442 on
+		 * a 132-column 1056x350. The game is drawn to the shape it has on that
+		 * 640x400 reference, so without this it is 14% too tall in 80x43 and 88%
+		 * in 132x43. termgfx_geom_par_correct() is exactly 1.0 for any
+		 * 640x400-shaped canvas, so the modes that already look right are left
+		 * bit-identical. SyncTERM only -- every other terminal's canvas pixels
+		 * are square, where this would be the distortion rather than the cure. */
+		int srcw = DOOR_FB_WIDTH;
+
+		if (g_is_syncterm && vw > 0 && vh > 0) {
+			int w = (int)(DOOR_FB_WIDTH * termgfx_geom_par_correct(vw, vh) + 0.5);
+
+			if (w > 0)
+				srcw = w;
+		}
+		termgfx_geom_fit_ex(vw, fitvh, srcw, DOOR_FB_HEIGHT,
 		                    DOOR_SCALE_MAX, 0, ew, eh);
 	}
 	/* Sixel caps its emitted width at DOOR_SCALE_MAX (door_emit_sixel, a bandwidth

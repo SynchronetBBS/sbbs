@@ -321,6 +321,8 @@ static void sm_csi_final(char fin)
         g_probe_replied = 1;
         if (csi_len > 0 && (csi_par[0] == '<' || csi_par[0] == '='))
             g_is_syncterm = 1;   /* '<'/'=' marker: SyncTERM-flavored reply */
+        if (g_is_syncterm)
+            sm_io_note_syncterm();   /* re-fit: this arrives AFTER the geometry probes */
         np = sm_csi_params(p, 16);
         {
             int k;
@@ -356,6 +358,7 @@ static void sm_csi_final(char fin)
                 g_is_syncterm   = 1;
                 g_jxl_supported = (r == 1);
                 g_jxl_answered  = 1;
+                sm_io_note_syncterm();   /* re-fit: see the DA/CTDA case above */
             }
         }
         return;

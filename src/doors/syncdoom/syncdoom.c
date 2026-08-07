@@ -3917,7 +3917,22 @@ static void compute_geometry(void)
 			fitvh = vh - ch;
 		// Fit Doom's native 640x400 into the canvas, capped, aspect-preserving, with the
 		// <=8% letterbox stretch -- shared with SyncDuke (termgfx/geometry.c).
-		termgfx_geom_fit(fitw, fitvh, 640, 400, cap, &s_pxW, &s_pxH);
+		// ...and widen the SOURCE for the terminal's non-square canvas pixels.
+		// SyncTERM scales its framebuffer to the video mode's display aspect, so a
+		// canvas pixel is 0.833 as wide as tall on the classic 640x400 and only
+		// 0.442 on a 132-column 1056x350. Doom is drawn to the shape it has on that
+		// 640x400 reference, so without this it is 14% too tall in 80x43 and 88% in
+		// 132x43. termgfx_geom_par_correct() is exactly 1.0 for a 640x400-shaped
+		// canvas, leaving the modes that already look right bit-identical.
+		// SyncTERM only -- every other terminal's canvas pixels are square, where
+		// this would be the distortion rather than the cure.
+		int srcw = 640;
+		if (g_is_syncterm && vw > 0 && vh > 0) {
+			int w = (int)(640 * termgfx_geom_par_correct(vw, vh) + 0.5);
+			if (w > 0)
+				srcw = w;
+		}
+		termgfx_geom_fit(fitw, fitvh, srcw, 400, cap, &s_pxW, &s_pxH);
 	}
 
 	// Center the image in the REAL window (not in the draw-limited box above), so a

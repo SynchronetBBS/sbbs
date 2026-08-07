@@ -351,10 +351,28 @@ static void termgfx_fit_canvas(int *w, int *h)
 	int cw = g_canvas_w;
 	int ch = g_canvas_h;
 
-	if (g_gfx_max_w > 0 && g_gfx_max_w < cw)
-		cw = g_gfx_max_w;
-	if (g_gfx_max_h > 0 && g_gfx_max_h < ch)
-		ch = g_gfx_max_h;
+	if (g_gfx_max_w > 0 && g_gfx_max_h > 0) {
+		if (!g_canvas_exact) {
+			/* ADOPT, not clamp. With no ESC[14t answer the declared area is
+			 * the only truth we have, and it can be LARGER than the guess as
+			 * easily as smaller: a 132-column mode is 1056 wide against the
+			 * 640 default, and merely clamping leaves the door fitting and
+			 * centering inside a phantom 640-wide canvas -- the picture then
+			 * sits against the left edge with the right half of the screen
+			 * empty. */
+			cw = g_gfx_max_w;
+			ch = g_gfx_max_h;
+		} else {
+			/* The canvas is known for real, so the reply is what it says on
+			 * the tin: a ceiling. Clamp to it and no further -- this is the
+			 * xterm case, where the ~1000x1000 raster limit is smaller than
+			 * the window it reports through ESC[14t. */
+			if (g_gfx_max_w < cw)
+				cw = g_gfx_max_w;
+			if (g_gfx_max_h < ch)
+				ch = g_gfx_max_h;
+		}
+	}
 	if (w != NULL)
 		*w = cw;
 	if (h != NULL)
@@ -4077,9 +4095,28 @@ static void termgfx_image_rect_src(int sw, int sh, int *ew, int *eh, int *dx, in
 {
 	int tier  = termgfx_tier();
 	int cellh = termgfx_fit_cell_h();
-	int fit_w, fit_h;
+	int fit_w, fit_h, canvas_h;
 
 	termgfx_fit_canvas(&fit_w, &fit_h);
+	canvas_h = fit_h;   /* before the row reserve below: the CANVAS shape */
+
+	/* SyncTERM scales its framebuffer to the video mode's display aspect, so its
+	 * canvas pixels are not square -- and how non-square varies per mode: 0.833
+	 * wide/tall in the classic 640x400, 0.442 in a 132-column 1056x350. Widen
+	 * the source to compensate, which is 1.0 (bit-identical) for any
+	 * 640x400-shaped canvas and grows from there. See termgfx_geom_par_correct().
+	 *
+	 * SyncTERM ONLY. Every other terminal here draws its canvas with square
+	 * pixels, so this would be a distortion rather than a correction -- and that
+	 * is also where the sysop's own "aspect" key applies (g_aspect, above),
+	 * which is a statement about the SOURCE's shape and composes with this. */
+	if (g_is_syncterm) {
+		double par = termgfx_geom_par_correct(fit_w, canvas_h);
+
+		sw = (int)(sw * par + 0.5);
+		if (sw < 1)
+			sw = 1;
+	}
 
 	if (tier == TERMGFX_TIER_SIXEL && g_term_rows > 0 && fit_h > cellh)
 		fit_h -= cellh;   /* keep the image off the last row */
@@ -5222,6 +5259,14 @@ void termgfx_termio_test_set_gfx_max(int w, int h, int canvas_exact)
 	g_gfx_max_w    = w;
 	g_gfx_max_h    = h;
 	g_canvas_exact = canvas_exact;
+}
+
+/* Test-only seam: whether the peer identified itself as SyncTERM, which gates
+ * the non-square-pixel correction (every other terminal's canvas pixels are
+ * square, so correcting there would distort). */
+void termgfx_termio_test_set_syncterm(int is_syncterm)
+{
+	g_is_syncterm = is_syncterm ? 1 : 0;
 }
 
 /* Test-only seam: the fit+center block's output for a source of sw x sh, plus

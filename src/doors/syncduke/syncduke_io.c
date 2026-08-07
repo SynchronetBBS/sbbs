@@ -994,6 +994,33 @@ static void syncduke_stats_window(void)
 /* force=1: a fresh frame just painted over the strip, so always repaint it.
  * force=0: standalone refresh -- keep the live numbers moving on a static (all
  * de-duped) screen, but rate-limited to 4Hz so de-dupe churn can't spam the wire. */
+/* The source width to ASK termgfx_geom_fit() for, widened for the terminal's
+ * non-square canvas pixels.
+ *
+ * SyncTERM scales its framebuffer to the video mode's display aspect, so a
+ * canvas pixel is 0.833 as wide as it is tall on the classic 640x400 and only
+ * 0.442 on a 132-column 1056x350 -- more than twice as tall as square. Duke is
+ * drawn to the shape it has on that 640x400 reference, so without this it comes
+ * out 14% too tall in 80x43 and 88% in 132x43. termgfx_geom_par_correct()
+ * returns exactly 1.0 for any 640x400-shaped canvas, so every mode that already
+ * looks right is left bit-identical.
+ *
+ * SyncTERM only: every other terminal draws its canvas with square pixels,
+ * where this would be the distortion rather than the cure. */
+static int syncduke_fit_src_w(void)
+{
+	int    cw = syncduke_canvas_w();
+	int    ch = syncduke_canvas_h();
+	double corr;
+	int    w;
+
+	if (!syncduke_is_syncterm() || cw < 1 || ch < 1)
+		return SYNCDUKE_SCREEN_W;
+	corr = termgfx_geom_par_correct(cw, ch);
+	w    = (int)(SYNCDUKE_SCREEN_W * corr + 0.5);
+	return w > 0 ? w : SYNCDUKE_SCREEN_W;
+}
+
 static void syncduke_emit_overlay(int force)
 {
 	char     txt[96], ov[220], head[80];
@@ -1371,7 +1398,7 @@ void syncduke_present(void)
 
 			if (cfith < SYNCDUKE_SCREEN_H)
 				cfith = cvh;
-			termgfx_geom_fit(fitw, fith, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H, 1024, &sdw, &sdh);
+			termgfx_geom_fit(fitw, fith, syncduke_fit_src_w(), SYNCDUKE_SCREEN_H, 1024, &sdw, &sdh);
 			termgfx_geom_center(cvw, cfith, sdw, sdh, cellw, cellh, NULL, NULL, &icol, &irow);
 		}
 		syncduke_out_put(wrap, snprintf(wrap, sizeof wrap, "\x1b" "7\x1b[%d;%dH", irow, icol));
@@ -1386,7 +1413,7 @@ void syncduke_present(void)
 			 * positions it with the APC DX/DY. */
 			int      ew, eh, dx = 0, dy = 0;
 			uint64_t t0 = syncduke_now_us();
-			termgfx_geom_fit(vw, vh, SYNCDUKE_SCREEN_W, SYNCDUKE_SCREEN_H,
+			termgfx_geom_fit(vw, vh, syncduke_fit_src_w(), SYNCDUKE_SCREEN_H,
 			                 syncduke_jxl_scale_max(), &ew, &eh);
 			termgfx_geom_center(vw, vh, ew, eh, syncduke_term_cell_w(), syncduke_term_cell_h(),
 			                    &dx, &dy, NULL, NULL);
