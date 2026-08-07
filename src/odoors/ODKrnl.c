@@ -72,6 +72,9 @@
 #include <limits.h>
 
 #include "OpenDoor.h"
+#if defined(ODPLAT_DOS) && defined(__WATCOMC__)
+#include <bios.h>
+#endif
 #ifdef ODPLAT_NIX
 #include <sys/types.h>
 #include <unistd.h>
@@ -426,6 +429,12 @@ check_keyboard_again:
       goto after_key_check;
    }
 
+#ifdef __WATCOMC__
+   if(_bios_keybrd(_KEYBRD_READY) == 0)
+      goto after_key_check;
+   wKey = _bios_keybrd(_KEYBRD_READ);
+   btShiftStatus = (BYTE)_bios_keybrd(_KEYBRD_SHIFTSTATUS);
+#else
    ASM    mov ah, 1
    ASM    push si
    ASM    push di
@@ -443,6 +452,7 @@ key_waiting:
    ASM    mov btShiftStatus, al
    ASM    pop di
    ASM    pop si
+#endif
 
       if(nArrowUseCount > 0 && (wKey == 0x4800 || wKey == 0x5000)
          && !(btShiftStatus & 2))

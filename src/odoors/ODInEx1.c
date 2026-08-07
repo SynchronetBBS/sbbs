@@ -698,7 +698,7 @@ read_dorinfox:
           if(fgets(szIFTemp,255,pfDropFile)==NULL) goto DropFileFail;
           od_control.port=szIFTemp[3]-'1';
                                           /* determine BPS rate of connection */
-          if(fgets((char *)apszDropFileInfo[0],255,pfDropFile)==NULL) goto DropFileFail;
+          if(fgets((char *)apszDropFileInfo[0],80,pfDropFile)==NULL) goto DropFileFail;
 #ifdef ODPLAT_NIX
           od_control.baud= (od_control.port == -1) ? 1 : atol((char *)apszDropFileInfo[0]);
 #else
@@ -1048,13 +1048,17 @@ again:
 
                                         /* Beginning of extending DOOR.SYS data */
              /* Read line 32. */
-             fgets((char *)apszDropFileInfo[7],80,pfDropFile);
+             if(fgets((char *)apszDropFileInfo[7],80,pfDropFile)==NULL)
+                apszDropFileInfo[7][0] = '\0';
              /* Read line 33. */
-             fgets((char *)apszDropFileInfo[11],80,pfDropFile);
+             if(fgets((char *)apszDropFileInfo[11],80,pfDropFile)==NULL)
+                apszDropFileInfo[11][0] = '\0';
              /* Read line 34. */
-             fgets((char *)apszDropFileInfo[12],80,pfDropFile);
+             if(fgets((char *)apszDropFileInfo[12],80,pfDropFile)==NULL)
+                apszDropFileInfo[12][0] = '\0';
              /* Read line 35. */
-             fgets((char *)apszDropFileInfo[13],80,pfDropFile);
+             if(fgets((char *)apszDropFileInfo[13],80,pfDropFile)==NULL)
+                apszDropFileInfo[13][0] = '\0';
              /* Read line 36. */
              if(fgets((char *)apszDropFileInfo[14],80,pfDropFile)!=NULL)
              {
@@ -1409,7 +1413,7 @@ finished:
           od_control.od_open_handle	= atoi(szIFTemp);
 
 			 /* Read line 3: Baud rate */
-          if(fgets((char *)apszDropFileInfo[0],255,pfDropFile)==NULL) goto DropFileFail;
+          if(fgets((char *)apszDropFileInfo[0],80,pfDropFile)==NULL) goto DropFileFail;
 #ifdef ODPLAT_NIX
           od_control.baud= (od_control.port == -1) ? 1 : atol((char *)apszDropFileInfo[0]);
 #else
@@ -1517,6 +1521,9 @@ DropFileFail:
 static BOOL ODInitReadSFDoorsDAT(void)
 {
    FILE *pfDropFile;
+   long nLoginMinutes;
+   unsigned int nLoginMinutePart;
+   unsigned int nLoginHourPart;
 
    if((pfDropFile=fopen(szDropFilePath,"r"))==NULL) return(FALSE);
 
@@ -1578,10 +1585,16 @@ static BOOL ODInitReadSFDoorsDAT(void)
    if(fgets((char *)apszDropFileInfo[1],80,pfDropFile)==NULL) return(FALSE);
 
    /* Line 15: User's login time. */
-   if(fgets((char *)apszDropFileInfo[2],255,pfDropFile)==NULL) return(FALSE);
-   sprintf(od_control.user_logintime, "%02d:%02d",
-      atoi((char *)apszDropFileInfo[2]) % 60,
-      atoi((char *)apszDropFileInfo[2]) / 60);
+   if(fgets((char *)apszDropFileInfo[2],80,pfDropFile)==NULL) return(FALSE);
+   nLoginMinutes = atol((char *)apszDropFileInfo[2]);
+   if(nLoginMinutes < 0)
+      nLoginMinutes = 0;
+   else if(nLoginMinutes > 5999)
+      nLoginMinutes = 5999;
+   nLoginMinutePart = (unsigned int)(nLoginMinutes % 60);
+   nLoginHourPart = (unsigned int)(nLoginMinutes / 60);
+   sprintf(od_control.user_logintime, "%02u:%02u",
+      nLoginMinutePart, nLoginHourPart);
 
    /* Line 16: Unused. */
    if(fgets((char *)apszDropFileInfo[3],80,pfDropFile)==NULL) return(FALSE);

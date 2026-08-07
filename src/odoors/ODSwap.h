@@ -34,6 +34,12 @@
 
 #ifdef ODPLAT_DOS
 
+#ifdef __WATCOMC__
+#define ODSWAPCALL __cdecl
+#else
+#define ODSWAPCALL
+#endif
+
 /* Data types. */
 typedef struct _vector
 {
@@ -44,23 +50,25 @@ typedef struct _vector
 } VECTOR;
 
 /* Global variables. */
+#ifndef __WATCOMC__
 extern char **environ;
+#endif
 
 /* Public functions. */
-int _chkems(char *, int *);
-int _create(char *, int *);
-int _dskspace(int, unsigned int *, unsigned int *);
-int _getcd(int, char *);
-int _getdrv(void);
-int _getems(int, int *);
-int _getrc(void);
-void _getvect(int, unsigned int *, unsigned int *);
-int _restmap(char *);
-int _savemap(char *);
-void _setdrvcd(int, char * );
-void _setvect(VECTOR *);
-int _xsize(unsigned int, long *, long *);
-int _xspawn(char *, char *, char *, VECTOR *, int, int, char *, int);
+int ODSWAPCALL _chkems(char *, int *);
+int ODSWAPCALL _create(char *, int *);
+int ODSWAPCALL _dskspace(int, unsigned int *, unsigned int *);
+int ODSWAPCALL _getcd(int, char *);
+int ODSWAPCALL _getdrv(void);
+int ODSWAPCALL _getems(int, int *);
+int ODSWAPCALL _getrc(void);
+void ODSWAPCALL _getvect(int, unsigned int *, unsigned int *);
+int ODSWAPCALL _restmap(char *);
+int ODSWAPCALL _savemap(char *);
+void ODSWAPCALL _setdrvcd(int, char * );
+void ODSWAPCALL _setvect(VECTOR *);
+int ODSWAPCALL _xsize(unsigned int, long *, long *);
+int ODSWAPCALL _xspawn(char *, char *, char *, VECTOR *, int, int, char *, int);
 
 #endif /* ODPLAT_DOS */
 

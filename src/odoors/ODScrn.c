@@ -66,6 +66,9 @@
 #include <time.h>
 
 #include "OpenDoor.h"
+#if defined(ODPLAT_DOS)
+#include <dos.h>
+#endif
 #include "ODCore.h"
 #include "ODGen.h"
 #include "ODPlat.h"
@@ -73,6 +76,8 @@
 #include "ODUtil.h"
 #include "ODFrame.h"
 #include "ODInEx.h"
+#include "ODFormat.h"
+#include "ODSafe.h"
 #ifdef ODPLAT_WIN32
 #include "ODKrnl.h"
 #include "ODRes.h"
@@ -969,7 +974,7 @@ tODResult ODScrnInitialize(void)
    }
    else
    {
-      BYTE btDisplayMode;
+      BYTE btDisplayMode = 0;
 
       /* Get current video mode. */
       ASM    push si
@@ -1041,13 +1046,27 @@ tODResult ODScrnInitialize(void)
       if(btDisplayPage!=0)
       {
          wBufferSegment += (SCREEN_BUFFER_SEGMENT_SIZE * btDisplayPage);
-         ((char ODFAR *)pScrnBuffer) += (SCREEN_BUFFER_SIZE * btDisplayPage);
+         pScrnBuffer = (char ODFAR *)pScrnBuffer
+            + (SCREEN_BUFFER_SIZE * btDisplayPage);
       }
 
       if(ODMultitasker == kMultitaskerDV)
       {
          /* Determine address of DV screen buffer. */
          /* This doesn't check rows, bh = rows, bl = columns. */
+#ifdef __WATCOMC__
+         union REGS Registers;
+
+         Registers.x.ax = 0x2b02;
+         Registers.x.cx = 0x4445;
+         Registers.x.dx = 0x5351;
+         intdos(&Registers, &Registers);
+         if(Registers.x.bx == 0x1950)
+         {
+            wBufferSegment = Registers.x.dx;
+            pScrnBuffer = (void ODFAR *)((unsigned long)wBufferSegment << 16);
+         }
+#else
          ASM    mov ax, 0x2b02
          ASM    mov cx, 0x4445
          ASM    mov dx, 0x5351
@@ -1056,8 +1075,9 @@ tODResult ODScrnInitialize(void)
          ASM    jne no_change
          ASM    mov wBufferSegment, dx
 
-         (long)pScrnBuffer = ODDWordShiftLeft((long)wBufferSegment, 16);
+         pScrnBuffer = MK_FP(wBufferSegment, 0);
    no_change: ;
+#endif
       }
    }
 #endif /* ODPLAT_DOS */
@@ -1273,6 +1293,20 @@ void ODScrnEnableCaret(BOOL bEnable)
    bCaretOn = bEnable;
 
    /* Execute the cursor on / off primitive. */
+#ifdef __WATCOMC__
+   {
+      union REGS Registers;
+
+      Registers.h.ah = 0x03;
+      Registers.h.bh = btDisplayPage;
+      int86(0x10, &Registers, &Registers);
+      Registers.h.ch &= 0x1f;
+      if(!bCaretOn)
+         Registers.h.ch |= 0x20;
+      Registers.h.ah = 0x01;
+      int86(0x10, &Registers, &Registers);
+   }
+#else
    ASM    push si
    ASM    push di
    ASM    mov ah, 0x03
@@ -1302,6 +1336,7 @@ set_cursor:
    ASM    int 0x10
    ASM    pop di
    ASM    pop si
+#endif
 
 
    if(bCaretOn)
@@ -1367,17 +1402,43 @@ INT ODScrnPrintf(char *pszFormat, ...)
 {
    va_list pArgumentList;
    INT nToReturn;
+   INT nWritten;
+   size_t nBufferSize;
+   char *pszBuffer = szBuffer;
+
+   va_start(pArgumentList, pszFormat);
+   nToReturn = ODVsnprintf(szBuffer, 0, pszFormat, pArgumentList);
+   va_end(pArgumentList);
+
+   if(nToReturn < 0 || !ODSizeAdd((size_t)nToReturn, 1, &nBufferSize))
+      return(-1);
+
+   if(nBufferSize > sizeof(szBuffer))
+   {
+      pszBuffer = (char *)malloc(nBufferSize);
+      if(pszBuffer == NULL)
+         return(-1);
+   }
 
    /* Generate string to display. */
    va_start(pArgumentList, pszFormat);
-   nToReturn = vsprintf(szBuffer, pszFormat, pArgumentList);
+   nWritten = ODVsnprintf(pszBuffer,
+      pszBuffer == szBuffer ? sizeof(szBuffer) : nBufferSize,
+      pszFormat, pArgumentList);
    va_end(pArgumentList);
 
-   /* Ensure that we didn't overrun the buffer. */
-   ASSERT(strlen(szBuffer) <= sizeof(szBuffer) - 1);
+   if(nWritten != nToReturn)
+   {
+      if(pszBuffer != szBuffer)
+         free(pszBuffer);
+      return(-1);
+   }
 
    /* Display generated string. */
-   ODScrnDisplayString(szBuffer);
+   ODScrnDisplayString(pszBuffer);
+
+   if(pszBuffer != szBuffer)
+      free(pszBuffer);
 
    /* Return appropriate value. */
    return (nToReturn);
@@ -2551,4 +2612,3 @@ void ODScrnRemoveMessage(void *pMessageInfo)
    ODScrnEnableCaret(TRUE);
 #endif /* !ODPLAT_WIN32 */
 }
-

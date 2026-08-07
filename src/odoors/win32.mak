@@ -129,12 +129,14 @@ all: $(LIBDIR)ODoors62.dll
 HEADERS= $(HEADERDIR)ODCom.h\
          $(HEADERDIR)ODCore.h\
          $(HEADERDIR)ODFrame.h\
+         $(HEADERDIR)ODFormat.h\
          $(HEADERDIR)ODGen.h\
          $(HEADERDIR)ODInEx.h\
          $(HEADERDIR)ODInQue.h\
          $(HEADERDIR)ODKrnl.h\
          $(HEADERDIR)ODPlat.h\
          $(HEADERDIR)ODRes.h\
+         $(HEADERDIR)ODSafe.h\
          $(HEADERDIR)ODScrn.h\
          $(HEADERDIR)ODStat.h\
          $(HEADERDIR)ODSwap.h\
@@ -200,6 +202,16 @@ $(OBJDIR)odemu$(TARGET).obj : $(SOURCEDIR)odemu.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odemu.c
    cmd /c erase $(OBJDIR)odemu$(TARGET).obj
    move odemu.obj $(OBJDIR)odemu$(TARGET).obj
+
+$(OBJDIR)odformat$(TARGET).obj : $(SOURCEDIR)odformat.c $(HEADERS)
+   $(CC) $(CFLAGS) $(SOURCEDIR)odformat.c
+   cmd /c erase $(OBJDIR)odformat$(TARGET).obj
+   move odformat.obj $(OBJDIR)odformat$(TARGET).obj
+
+$(OBJDIR)odfmtfb$(TARGET).obj : $(SOURCEDIR)odfmtfb.c $(HEADERS)
+   $(CC) $(CFLAGS) $(SOURCEDIR)odfmtfb.c
+   cmd /c erase $(OBJDIR)odfmtfb$(TARGET).obj
+   move odfmtfb.obj $(OBJDIR)odfmtfb$(TARGET).obj
 
 $(OBJDIR)odframe$(TARGET).obj : $(SOURCEDIR)odframe.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odframe.c
@@ -276,6 +288,11 @@ $(OBJDIR)odra$(TARGET).obj : $(SOURCEDIR)odra.c $(HEADERS)
    cmd /c erase $(OBJDIR)odra$(TARGET).obj
    move odra.obj $(OBJDIR)odra$(TARGET).obj
 
+$(OBJDIR)odsafe$(TARGET).obj : $(SOURCEDIR)odsafe.c $(HEADERS)
+   $(CC) $(CFLAGS) $(SOURCEDIR)odsafe.c
+   cmd /c erase $(OBJDIR)odsafe$(TARGET).obj
+   move odsafe.obj $(OBJDIR)odsafe$(TARGET).obj
+
 $(OBJDIR)odscrn$(TARGET).obj : $(SOURCEDIR)odscrn.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odscrn.c
    cmd /c erase $(OBJDIR)odscrn$(TARGET).obj
@@ -340,6 +357,8 @@ OBJECTS= $(OBJDIR)odauto$(TARGET).obj\
          $(OBJDIR)odedit$(TARGET).obj\
          $(OBJDIR)odedstr$(TARGET).obj\
          $(OBJDIR)odemu$(TARGET).obj\
+         $(OBJDIR)odformat$(TARGET).obj\
+         $(OBJDIR)odfmtfb$(TARGET).obj\
          $(OBJDIR)odframe$(TARGET).obj\
          $(OBJDIR)odgetin$(TARGET).obj\
          $(OBJDIR)odgraph$(TARGET).obj\
@@ -355,6 +374,7 @@ OBJECTS= $(OBJDIR)odauto$(TARGET).obj\
          $(OBJDIR)odpopup$(TARGET).obj\
          $(OBJDIR)odprntf$(TARGET).obj\
          $(OBJDIR)odra$(TARGET).obj\
+         $(OBJDIR)odsafe$(TARGET).obj\
          $(OBJDIR)odscrn$(TARGET).obj\
          $(OBJDIR)odspawn$(TARGET).obj\
          $(OBJDIR)odstand$(TARGET).obj\

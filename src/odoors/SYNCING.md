@@ -13,7 +13,7 @@ whatever revision is already checked out.
 ## Current synchronization point
 
 The non-excluded content in this directory is synchronized through standalone
-OpenDoors commit `d3a8519ec8fe5960506060a0b2b02b2bb17d0836`.
+OpenDoors commit `b784af760f7437b8fdb84b49ceabbd1673f77545`.
 
 Update this revision whenever another sync is committed.
 
@@ -32,6 +32,11 @@ repository deletes or ignores them. This includes:
 - `ODoorW.lib`
 - `ODoors62.dll`
 - `exe-*`, `libs-*`, and `objs-*` directories
+
+The bundled copy also carries one integration adaptation in `odoors.props`:
+Win32 builds prefer the retained root `ODoorW.lib` when it exists, before
+falling back to the standalone repository's CMake output directory. Preserve
+that conditional when importing future changes to the property sheet.
 
 Do not use a mirroring command with deletion enabled. In particular, an
 unqualified `rsync --delete` would remove files that belong only to the
@@ -73,8 +78,9 @@ Synchronet copy.
    files, ignored build trees, or local generated output from the standalone
    checkout.
 
-5. Compare the imported files with their standalone blobs. For each imported
-   path, these two hashes should match:
+5. Compare the imported files with their standalone blobs. Except for the
+   documented `odoors.props` adaptation, these two hashes should match for
+   each imported path:
 
    ```sh
    git hash-object src/odoors/<path>

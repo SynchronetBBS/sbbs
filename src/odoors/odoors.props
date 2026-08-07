@@ -2,6 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
+    <OpenDoorsLibraryDir Condition="'$(OpenDoorsLibraryDir)' == '' and '$(Platform)' == 'Win32' and Exists('$(MSBuildThisFileDirectory)ODoorW.lib')">$(MSBuildThisFileDirectory)</OpenDoorsLibraryDir>
     <OpenDoorsLibraryDir Condition="'$(OpenDoorsLibraryDir)' == '' and '$(Platform)' == 'Win32'">$(MSBuildThisFileDirectory)build\msvc\x86\lib\$(Configuration)</OpenDoorsLibraryDir>
     <OpenDoorsLibraryDir Condition="'$(OpenDoorsLibraryDir)' == '' and '$(Platform)' == 'x64'">$(MSBuildThisFileDirectory)build\msvc\x64\lib\$(Configuration)</OpenDoorsLibraryDir>
     <OpenDoorsLibraryDir Condition="'$(OpenDoorsLibraryDir)' == ''">$(MSBuildThisFileDirectory)</OpenDoorsLibraryDir>

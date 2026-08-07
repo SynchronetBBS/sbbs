@@ -59,6 +59,7 @@
 #include "ODStat.h"
 #include "ODCom.h"
 #include "ODScrn.h"
+#include "ODSafe.h"
 
 
 /* ========================================================================= */
@@ -242,7 +243,6 @@ ODAPIDEF INT ODCALL od_multiline_edit(char *pszBufferToEdit, UINT unBufferSize,
    /* conforms to the format specified by the client application.       */
    if(!ODEditBufferFormatAndIndex(&EditInstance))
    {
-      od_control.od_error = ERR_MEMORY;
       OD_API_EXIT();
       return(OD_MULTIEDIT_ERROR);
    }
@@ -2193,6 +2193,9 @@ static BOOL ODEditBufferFormatAndIndex(tEditInstance *pEditInstance)
    UINT unProcessingLine;
    BOOL bAtEndOfBuffer = FALSE;
    BOOL bLineEndedByBreak;
+   UINT unNewArraySize;
+   char **papchNewLineArray;
+   size_t nLineArrayBytes;
    BOOL bFTSCMode =
       (pEditInstance->pUserOptions->TextFormat == FORMAT_FTSC_MESSAGE);
 
@@ -2241,16 +2244,29 @@ static BOOL ODEditBufferFormatAndIndex(tEditInstance *pEditInstance)
       if(unProcessingLine == pEditInstance->unLineArraySize)
       {
          /* Determine the size to grow the array to. */
-         UINT unNewArraySize = pEditInstance->unLineArraySize
+         if(pEditInstance->unLineArraySize > (UINT)-1 - LINE_ARRAY_GROW_SIZE)
+         {
+            od_control.od_error = ERR_LIMIT;
+            return(FALSE);
+         }
+         unNewArraySize = pEditInstance->unLineArraySize
             + LINE_ARRAY_GROW_SIZE;
 
+         if(!ODSizeMultiply((size_t)unNewArraySize, sizeof(char *),
+            &nLineArrayBytes))
+         {
+            od_control.od_error = ERR_LIMIT;
+            return(FALSE);
+         }
+
          /* Attempt to reallocate this memory block. */
-         char **papchNewLineArray = (char **)realloc(
-            pEditInstance->papchStartOfLine, unNewArraySize * sizeof(char *));
+         papchNewLineArray = (char **)realloc(
+            pEditInstance->papchStartOfLine, nLineArrayBytes);
 
          /* If reallocation failed, then return with failure. */
          if(papchNewLineArray == NULL)
          {
+            od_control.od_error = ERR_MEMORY;
             return(FALSE);
          }
 
@@ -2516,6 +2532,7 @@ static tODResult ODEditBufferMakeSpace(tEditInstance *pEditInstance,
    UINT unBufferUnused;
    UINT unRemainingBufferBytes;
    UINT unCount;
+   size_t nSizeNeeded;
    char *pchBufferPos;
    tODResult Result;
 
@@ -2533,7 +2550,17 @@ static tODResult ODEditBufferMakeSpace(tEditInstance *pEditInstance,
    {
       UINT unExtendLineBy = unColumn - unLineLength;
       unColumn -= unExtendLineBy;
-      unNumChars += unExtendLineBy;
+      if(!ODSizeAdd((size_t)unNumChars, (size_t)unExtendLineBy,
+         &nSizeNeeded)
+#ifndef ODPLAT_DOS
+         || nSizeNeeded > (UINT)-1
+#endif
+         )
+      {
+         od_control.od_error = ERR_LIMIT;
+         return(kODRCSafeFailure);
+      }
+      unNumChars = (UINT)nSizeNeeded;
    }
 
    /* Now, determine whether the buffer is large enough for the additional */
@@ -2544,7 +2571,17 @@ static tODResult ODEditBufferMakeSpace(tEditInstance *pEditInstance,
    {
       /* There is not currently sufficient room in the buffer for the new */
       /* characters, then attempt to grow the buffer to make more room.   */
-      Result = ODEditTryToGrow(pEditInstance, unBufferUsed + unNumChars);
+      if(!ODSizeAdd((size_t)unBufferUsed, (size_t)unNumChars,
+         &nSizeNeeded)
+#ifndef ODPLAT_DOS
+         || nSizeNeeded > (UINT)-1
+#endif
+         )
+      {
+         od_control.od_error = ERR_LIMIT;
+         return(kODRCSafeFailure);
+      }
+      Result = ODEditTryToGrow(pEditInstance, (UINT)nSizeNeeded);
       if(Result != kODRCSuccess)
       {
          /* On failure, return the result code that indicates the nature */
@@ -2593,6 +2630,9 @@ static tODResult ODEditTryToGrow(tEditInstance *pEditInstance,
    UINT unSizeNeeded)
 {
    BOOL bFullReIndexRequired = FALSE;
+   size_t nGrownSize;
+   UINT unNewBufferSize;
+   char *pszNewBuffer;
 
    ASSERT(pEditInstance != NULL);
    ASSERT(unSizeNeeded > pEditInstance->unBufferSize);
@@ -2601,9 +2641,15 @@ static tODResult ODEditTryToGrow(tEditInstance *pEditInstance,
    {
       /* If the buffer is growable, then attempt to grow it using the */
       /* realloc function provided by the client application.         */
-      UINT unNewBufferSize = MAX(pEditInstance->unBufferSize
-         + BUFFER_GROW_SIZE, unSizeNeeded);
-      char *pszNewBuffer = (char *)((*pEditInstance->pUserOptions->
+      if(!ODSizeAdd((size_t)pEditInstance->unBufferSize, BUFFER_GROW_SIZE,
+         &nGrownSize)
+#ifndef ODPLAT_DOS
+         || nGrownSize > (UINT)-1
+#endif
+         )
+         nGrownSize = unSizeNeeded;
+      unNewBufferSize = MAX((UINT)nGrownSize, unSizeNeeded);
+      pszNewBuffer = (char *)((*pEditInstance->pUserOptions->
          pfBufferRealloc)(pEditInstance->pszEditBuffer, unNewBufferSize));
 
       /* If we were unable to grow the buffer, then fail now. At this */

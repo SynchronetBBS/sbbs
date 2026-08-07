@@ -45,6 +45,7 @@
 #include "ODInQue.h"
 #include "ODPlat.h"
 #include "ODKrnl.h"
+#include "ODSafe.h"
 
 
 /* Input queue handle structure. */
@@ -81,10 +82,18 @@ tODResult ODInQueueAlloc(tODInQueueHandle *phInQueue, INT nInitialQueueSize)
    tInputQueueInfo *pInputQueueInfo = NULL;
    tODInputEvent *pInputQueue = NULL;
    tODResult Result = kODRCNoMemory;
+   size_t nQueueBytes;
 
    ASSERT(phInQueue != NULL);
 
    if(phInQueue == NULL) return(kODRCInvalidCall);
+   *phInQueue = (tODInQueueHandle)0;
+
+   if(nInitialQueueSize < 2)
+      return(kODRCInvalidCall);
+   if(!ODSizeMultiply((size_t)nInitialQueueSize, sizeof(tODInputEvent),
+      &nQueueBytes))
+      return(kODRCNoMemory);
 
    /* Attempt to allocate a serial port information structure. */
    pInputQueueInfo = malloc(sizeof(tInputQueueInfo));
@@ -99,7 +108,7 @@ tODResult ODInQueueAlloc(tODInQueueHandle *phInQueue, INT nInitialQueueSize)
 #endif /* OD_MULTITHREADED */
    
    /* Attempt to allocate space for the queue itself. */
-   pInputQueue = calloc(nInitialQueueSize, sizeof(tODInputEvent));
+   pInputQueue = calloc(1, nQueueBytes);
    if(pInputQueue == NULL) goto CleanUp;
 
    /* Create semaphores if this is a multithreaded platform. */
@@ -367,7 +376,7 @@ tODResult ODInQueueGetNextEvent(tODInQueueHandle hInQueue,
             ODMaxMSToWait = 1;
          else {
             ODMaxMSToWait = ODTimerLeft(&Timer);
-            if (ODMaxMSToWait <= 0)
+            if (ODMaxMSToWait == 0)
                ODMaxMSToWait = 1;
          }
          CALL_KERNEL_IF_NEEDED();

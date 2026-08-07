@@ -141,10 +141,10 @@ static VECTOR vectab1[]=
 static VECTOR vectab2[(sizeof vectab1)/(sizeof vectab1[0])];
 
 /* Location function prototypes. */
-int _spawnvpe(int nModeFlag, char *const pszPath, const char *const papszArgs[],
+int _spawnvpe(int nModeFlag, const char *pszPath, const char *const papszArgs[],
    const char *const papszEnviron[]);
-int _spawnve(int nModeFlag, char *pszPath, char *papszArgs[],
-   char * papszEnviron[]);
+int _spawnve(int nModeFlag, const char *pszPath,
+   const char *const papszArgs[], const char *const papszEnviron[]);
 static void savevect(void);
 
 
@@ -152,7 +152,7 @@ static void savevect(void);
 
 #ifdef ODPLAT_NIX
 /* Location function prototypes. */
-int _spawnvpe(int nModeFlag, char *const pszPath, const char *const papszArgs[],
+int _spawnvpe(int nModeFlag, const char *pszPath, const char *const papszArgs[],
    const char *const papszEnviron[]);
 #endif /* ODPLAT_NIX */
 
@@ -169,7 +169,7 @@ int _spawnvpe(int nModeFlag, char *const pszPath, const char *const papszArgs[],
 ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
 {
 #ifdef ODPLAT_DOS
-   char *const apszArgs[4];
+   const char *apszArgs[4];
    INT16 nReturnCode;
 
    /* Log function entry if running in trace mode. */
@@ -267,7 +267,7 @@ ODAPIDEF BOOL ODCALL od_spawn(const char *pszCommandLine)
  *     Return: -1 on failure or the spawned-to program's return value on
  *             success.
  */
-ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, char *const pszPath,
+ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, const char *pszPath,
    const char *const papszArg[], const char *const papszEnv[])
 {
    INT16 nToReturn;
@@ -453,7 +453,7 @@ ODAPIDEF INT16 ODCALL od_spawnvpe(INT16 nModeFlag, char *const pszPath,
  *     Return: -1 on failure or the spawned-to program's return value on
  *             success.
  */
-int _spawnvpe(int nModeFlag, char *const pszPath, const char *const papszArgs[],
+int _spawnvpe(int nModeFlag, const char *pszPath, const char *const papszArgs[],
    const char *const papszEnviron[])
 {
    char *e;
@@ -742,10 +742,10 @@ static int tempfile(char *file, int *handle)
  *
  *     Return: Environment length.
  */
-static int cmdenv(char **papszArgs, char **papszEnviron, char *command,
-   char **env, char **memory)
+static int cmdenv(const char *const papszArgs[],
+   const char *const papszEnviron[], char *command, char **env, char **memory)
 {
-    char **vp;
+    const char *const *vp;
     unsigned int elen = 0;         /* environment length */
     char *p;
     int cnt;
@@ -755,7 +755,7 @@ static int cmdenv(char **papszArgs, char **papszEnviron, char *command,
 
     if ( papszEnviron == NULL )
     {
-       char far *parent_env;
+       char far *parent_env = NULL;
        char far *env_ptr;
        int nul_count;
 
@@ -881,7 +881,8 @@ static int cmdenv(char **papszArgs, char **papszEnviron, char *command,
  *
  *     Return: 0 on success, or -1 on failure.
  */
-static int doxspawn(char *pszPath, char *papszArgs[], char *papszEnviron[])
+static int doxspawn(const char *pszPath, const char *const papszArgs[],
+   const char *const papszEnviron[])
 {
     int nReturnCode = 0;        /* assume do xspawn */
     int doswap = 0;            /* assume do swap */
@@ -946,7 +947,7 @@ static int doxspawn(char *pszPath, char *papszArgs[], char *papszEnviron[])
     if ( nReturnCode == 0 )
     {
     savevect();            /* save current vectors */
-    nReturnCode = _xspawn( pszPath, command, env, vectab1, doswap, elen, file,
+    nReturnCode = _xspawn( (char *)pszPath, command, env, vectab1, doswap, elen, file,
         handle );
     _setvect( vectab2 );           /* restore saved vectors */
         if ( nReturnCode == 0 )
@@ -989,11 +990,11 @@ static int doxspawn(char *pszPath, char *papszArgs[], char *papszEnviron[])
  *
  *     Return: void
  */
-int _spawnve(int nModeFlag, char *pszPath, char *papszArgs[],
-   char * papszEnviron[])
+int _spawnve(int nModeFlag, const char *pszPath,
+   const char *const papszArgs[], const char *const papszEnviron[])
 {
-    char *p;
-    char *s;
+    const char *p;
+    const char *s;
     int nReturnCode = -1;
     char buf[ 80 ];
 
@@ -1053,7 +1054,7 @@ int _spawnve(int nModeFlag, char *pszPath, char *papszArgs[],
  *     Return: -1 on failure or the spawned-to program's return value on
  *             success.
  */
-int _spawnvpe(int nModeFlag, char *const pszPath, const char *const papszArgs[],
+int _spawnvpe(int nModeFlag, const char *pszPath, const char *const papszArgs[],
    const char *const papszEnviron[])
 {
    pid_t	child;

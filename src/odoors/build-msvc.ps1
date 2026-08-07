@@ -8,6 +8,8 @@ param(
 
     [string]$XpdevDirectory,
 
+    [switch]$WarningsAsErrors,
+
     [switch]$Clean
 )
 
@@ -37,6 +39,10 @@ $configureArguments = @(
 
 if ($PSBoundParameters.ContainsKey('XpdevDirectory')) {
     $configureArguments += "-DOPENDOORS_XPDEV_DIR=$XpdevDirectory"
+}
+
+if ($WarningsAsErrors) {
+    $configureArguments += '-DOPENDOORS_WARNINGS_AS_ERRORS=ON'
 }
 
 Write-Host "Configuring OpenDoors for $Architecture..."

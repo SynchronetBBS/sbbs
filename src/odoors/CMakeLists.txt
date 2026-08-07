@@ -4,8 +4,11 @@ project(OpenDoors VERSION 6.3 LANGUAGES C)
 
 include(CTest)
 include(CheckIncludeFile)
+include(CheckSymbolExists)
 
 option(OPENDOORS_BUILD_EXAMPLES "Build the OpenDoors example programs" ON)
+option(OPENDOORS_WARNINGS_AS_ERRORS
+    "Treat OpenDoors compiler and linker warnings as errors" OFF)
 set(OPENDOORS_XPDEV_DIR "" CACHE PATH
     "Path to xpdev; when empty, only ../xpdev is checked")
 
@@ -20,6 +23,8 @@ set(OPENDOORS_SOURCES
     ODEdit.c
     ODEdStr.c
     ODEmu.c
+    ODFormat.c
+    ODFmtFB.c
     ODGetIn.c
     ODGraph.c
     ODInEx1.c
@@ -34,6 +39,7 @@ set(OPENDOORS_SOURCES
     ODPopup.c
     ODPrntf.c
     ODRA.c
+    ODSafe.c
     ODScrn.c
     ODSpawn.c
     ODStand.c
@@ -66,6 +72,7 @@ set(OPENDOORS_PUBLIC_HEADERS
 )
 
 check_include_file(inttypes.h OPENDOORS_HAVE_INTTYPES_H)
+check_symbol_exists(vsnprintf "stdio.h" OPENDOORS_HAVE_VSNPRINTF)
 if(NOT WIN32)
     find_package(Threads REQUIRED)
 endif()
@@ -76,6 +83,19 @@ function(opendoors_configure_library target)
     target_compile_features(${target} PUBLIC c_std_99)
     if(OPENDOORS_HAVE_INTTYPES_H)
         target_compile_definitions(${target} PRIVATE HAS_INTTYPES_H)
+    endif()
+    if(OPENDOORS_HAVE_VSNPRINTF)
+        target_compile_definitions(${target} PRIVATE
+            OPENDOORS_HAVE_VSNPRINTF=1)
+    endif()
+
+    if(OPENDOORS_WARNINGS_AS_ERRORS)
+        if(MSVC)
+            target_compile_options(${target} PRIVATE /WX)
+            target_link_options(${target} PRIVATE /WX)
+        else()
+            target_compile_options(${target} PRIVATE -Werror)
+        endif()
     endif()
 
     if(APPLE)
@@ -207,6 +227,21 @@ if(OPENDOORS_BUILD_EXAMPLES)
 endif()
 
 if(BUILD_TESTING)
+    add_executable(opendoors_safety_test tests/safety_test.c)
+    target_link_libraries(opendoors_safety_test PRIVATE OpenDoors::Static)
+    add_test(NAME safety COMMAND opendoors_safety_test)
+
+    if(NOT WIN32)
+        add_executable(opendoors_fallback_format_test
+            tests/format_fallback_test.c ODFmtFB.c)
+        target_include_directories(opendoors_fallback_format_test PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}")
+        target_compile_options(opendoors_fallback_format_test PRIVATE
+            -std=c90 -pedantic-errors -Werror)
+        target_link_libraries(opendoors_fallback_format_test PRIVATE m)
+        add_test(NAME fallback_format COMMAND opendoors_fallback_format_test)
+    endif()
+
     add_executable(opendoors_shared_smoke tests/link_smoke.c)
     target_link_libraries(opendoors_shared_smoke PRIVATE OpenDoors::Shared)
     set_target_properties(opendoors_shared_smoke PROPERTIES

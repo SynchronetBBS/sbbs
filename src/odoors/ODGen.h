@@ -84,7 +84,7 @@
 #define INTERRUPT interrupt
 
 /* Inline assembly keyword varies from compiler to compiler. */
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__WATCOMC__)
 #define ASM __asm
 #else
 #define ASM asm

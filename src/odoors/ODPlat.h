@@ -216,6 +216,6 @@ void ODDirGetCurrent(char *pszPath, INT nMaxPathChars);
 /* Miscellaneous Functions.                                                  */
 /* ========================================================================= */
 tODResult ODFileDelete(CONST char *pszPath);
-BOOL ODFileAccessMode(char *pszFilename, int nAccessMode);
+BOOL ODFileAccessMode(const char *pszFilename, int nAccessMode);
 
 #endif /* !_INC_ODPLAT */

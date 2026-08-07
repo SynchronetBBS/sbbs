@@ -58,6 +58,9 @@
 #include <string.h>
 
 #include "OpenDoor.h"
+#if defined(ODPLAT_DOS) && defined(__WATCOMC__)
+#include <dos.h>
+#endif
 #ifdef ODPLAT_NIX
 #include <sys/time.h>
 #include <sys/types.h>
@@ -101,6 +104,39 @@ void ODPlatInit(void)
    /* determine what multitasker we are running under.                */
 
    /* Check whether running under OS/2. */
+#ifdef __WATCOMC__
+   {
+      union REGS Registers;
+
+      Registers.h.ah = 0x30;
+      intdos(&Registers, &Registers);
+      if(Registers.h.al >= 0x0a)
+      {
+         ODMultitasker = kMultitaskerOS2;
+         return;
+      }
+
+      Registers.x.cx = 0x4445;
+      Registers.x.dx = 0x5351;
+      Registers.x.ax = 0x2b01;
+      intdos(&Registers, &Registers);
+      if(Registers.h.al != 0xff)
+      {
+         ODMultitasker = kMultitaskerDV;
+         return;
+      }
+
+      Registers.x.ax = 0x1600;
+      int86(0x2f, &Registers, &Registers);
+      if(Registers.h.al != 0x00 && Registers.h.al != 0x80)
+      {
+         ODMultitasker = kMultitaskerWin;
+         return;
+      }
+
+      ODMultitasker = kMultitaskerNone;
+   }
+#else
    ASM       mov ah, 0x30
    ASM       int 0x21
    ASM       cmp al, 0x0a
@@ -140,6 +176,7 @@ NoDesqView:
 
 NoWindows:
    ODMultitasker = kMultitaskerNone;
+#endif
 #endif /* ODPLAT_DOS */
 }
 
@@ -1347,6 +1384,13 @@ static time_t DOSToCTime(WORD wDate, WORD wTime)
 static int ODDirDOSFindFirst(CONST char *pszPath, tDOSDirEntry *pBlock,
    WORD wAttributes)
 {
+#ifdef __WATCOMC__
+   ASSERT(pszPath != NULL);
+   ASSERT(pBlock != NULL);
+
+   return(_dos_findfirst(pszPath, wAttributes, (struct find_t *)pBlock) == 0
+      ? 0 : -1);
+#else
    int nToReturn;
 
    ASSERT(pszPath != NULL);
@@ -1384,6 +1428,7 @@ after_result:
    ASM     int 0x21                             /* Reset DOS DTA to original */
    ASM     pop ds                   /* Restore DS stored at function startup */
    return(nToReturn);
+#endif
 }
 
 
@@ -1401,6 +1446,11 @@ after_result:
  */
 static int ODDirDOSFindNext(tDOSDirEntry *pBlock)
 {
+#ifdef __WATCOMC__
+   ASSERT(pBlock != NULL);
+
+   return(_dos_findnext((struct find_t *)pBlock) == 0 ? 0 : -1);
+#else
    int nToReturn;
 
    ASSERT(pBlock != NULL);
@@ -1431,6 +1481,7 @@ after_result:
    ASM     int 0x21                             /* Reset DOS DTA to original */
    ASM     pop ds                   /* Restore DS stored at function startup */
    return(nToReturn);
+#endif
 }
 
 #endif /* ODPLAT_DOS */
@@ -1513,7 +1564,8 @@ void ODDirChangeCurrent(char *pszPath)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
-   chdir(pszPath);
+   if(chdir(pszPath) != 0)
+      return;
 #endif
 }
 
@@ -1549,7 +1601,11 @@ void ODDirGetCurrent(char *pszPath, INT nMaxPathChars)
 #endif /* ODPLAT_WIN32 */
 
 #ifdef ODPLAT_NIX
-   getcwd(pszPath,nMaxPathChars);
+   if(getcwd(pszPath,nMaxPathChars) == NULL)
+   {
+      pszPath[0] = '\0';
+      return;
+   }
 #endif
 
    ASSERT((INT)strlen(pszPath) + 1 <= nMaxPathChars);
@@ -1573,6 +1629,9 @@ tODResult ODFileDelete(CONST char *pszPath)
 {
 #ifdef ODPLAT_DOS
    {
+#ifdef __WATCOMC__
+      return(remove(pszPath) == 0 ? kODRCSuccess : kODRCGeneralFailure);
+#else
       tODResult Result;
 
       ASM    push ds
@@ -1594,6 +1653,7 @@ Done:
       ASM    pop ds
 
       return(Result);
+#endif
    }
 #endif /* ODPLAT_DOS */
 
@@ -1622,7 +1682,7 @@ Done:
  *     Return: FALSE if file can be accessed or TRUE if file cannot be
  *             accessed.
  */
-BOOL ODFileAccessMode(char *pszFilename, int nAccessMode)
+BOOL ODFileAccessMode(const char *pszFilename, int nAccessMode)
 {
    FILE *pfFileToTest;
    char *pszModeString;
@@ -1637,6 +1697,11 @@ BOOL ODFileAccessMode(char *pszFilename, int nAccessMode)
    {
       if(nAccessMode == 0)
       {
+#ifdef __WATCOMC__
+         unsigned nAttributes;
+
+         return(_dos_getfileattr(pszFilename, &nAttributes) != 0);
+#else
           int to_return = FALSE;
 
 #ifdef LARGEDATA
@@ -1654,6 +1719,7 @@ done:
          ASM pop ds
 #endif
           return(to_return);
+#endif
       }
       else
       {

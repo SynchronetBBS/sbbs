@@ -135,12 +135,14 @@ all: $(LIBDIR)ODoor$(TARGET).lib
 HEADERS= $(HEADERDIR)ODCom.h\
          $(HEADERDIR)ODCore.h\
          $(HEADERDIR)ODFrame.h\
+         $(HEADERDIR)ODFormat.h\
          $(HEADERDIR)ODGen.h\
          $(HEADERDIR)ODInEx.h\
          $(HEADERDIR)ODInQue.h\
          $(HEADERDIR)ODKrnl.h\
          $(HEADERDIR)ODPlat.h\
          $(HEADERDIR)ODRes.h\
+         $(HEADERDIR)ODSafe.h\
          $(HEADERDIR)ODScrn.h\
          $(HEADERDIR)ODStat.h\
          $(HEADERDIR)ODSwap.h\
@@ -201,6 +203,16 @@ $(OBJDIR)odemu$(TARGET).obj : $(SOURCEDIR)odemu.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odemu.c
    command /c erase $(OBJDIR)odemu$(TARGET).obj
    move odemu.obj $(OBJDIR)odemu$(TARGET).obj
+
+$(OBJDIR)odformat$(TARGET).obj : $(SOURCEDIR)odformat.c $(HEADERS)
+   $(CC) $(CFLAGS) $(SOURCEDIR)odformat.c
+   command /c erase $(OBJDIR)odformat$(TARGET).obj
+   move odformat.obj $(OBJDIR)odformat$(TARGET).obj
+
+$(OBJDIR)odfmtfb$(TARGET).obj : $(SOURCEDIR)odfmtfb.c $(HEADERS)
+   $(CC) $(CFLAGS) $(SOURCEDIR)odfmtfb.c
+   command /c erase $(OBJDIR)odfmtfb$(TARGET).obj
+   move odfmtfb.obj $(OBJDIR)odfmtfb$(TARGET).obj
 
 $(OBJDIR)odgetin$(TARGET).obj : $(SOURCEDIR)odgetin.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odgetin.c
@@ -271,6 +283,11 @@ $(OBJDIR)odra$(TARGET).obj : $(SOURCEDIR)odra.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odra.c
    command /c erase $(OBJDIR)odra$(TARGET).obj
    move odra.obj $(OBJDIR)odra$(TARGET).obj
+
+$(OBJDIR)odsafe$(TARGET).obj : $(SOURCEDIR)odsafe.c $(HEADERS)
+   $(CC) $(CFLAGS) $(SOURCEDIR)odsafe.c
+   command /c erase $(OBJDIR)odsafe$(TARGET).obj
+   move odsafe.obj $(OBJDIR)odsafe$(TARGET).obj
 
 $(OBJDIR)odscrn$(TARGET).obj : $(SOURCEDIR)odscrn.c $(HEADERS)
    $(CC) $(CFLAGS) $(SOURCEDIR)odscrn.c
@@ -360,6 +377,8 @@ OBJECTS= $(OBJDIR)odauto$(TARGET).obj\
          $(OBJDIR)odedit$(TARGET).obj\
          $(OBJDIR)odedstr$(TARGET).obj\
          $(OBJDIR)odemu$(TARGET).obj\
+         $(OBJDIR)odformat$(TARGET).obj\
+         $(OBJDIR)odfmtfb$(TARGET).obj\
          $(OBJDIR)odgetin$(TARGET).obj\
          $(OBJDIR)odgraph$(TARGET).obj\
          $(OBJDIR)odinex1$(TARGET).obj\
@@ -374,6 +393,7 @@ OBJECTS= $(OBJDIR)odauto$(TARGET).obj\
          $(OBJDIR)odpopup$(TARGET).obj\
          $(OBJDIR)odprntf$(TARGET).obj\
          $(OBJDIR)odra$(TARGET).obj\
+         $(OBJDIR)odsafe$(TARGET).obj\
          $(OBJDIR)odscrn$(TARGET).obj\
          $(OBJDIR)odspawn$(TARGET).obj\
          $(OBJDIR)odstand$(TARGET).obj\
@@ -394,6 +414,8 @@ $(LIBDIR)odoor$(TARGET).lib : $(OBJECTS)
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odedit$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odedstr$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odemu$(TARGET).obj
+   $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odformat$(TARGET).obj
+   $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odfmtfb$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odgetin$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odgraph$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odinex1$(TARGET).obj
@@ -408,6 +430,7 @@ $(LIBDIR)odoor$(TARGET).lib : $(OBJECTS)
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odpopup$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odprntf$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odra$(TARGET).obj
+   $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odsafe$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odscrn$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odspawn$(TARGET).obj
    $(LIB) $(LIBDIR)odoor$(TARGET).lib -+$(OBJDIR)odstand$(TARGET).obj

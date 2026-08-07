@@ -45,6 +45,8 @@
 
 #include "OpenDoor.h"
 #include "ODCore.h"
+#include "ODFormat.h"
+#include "ODSafe.h"
 #include "ODGen.h"
 #include "ODKrnl.h"
 
@@ -76,6 +78,11 @@ ODAPIDEF void ODVCALL od_printf(const char *pszFormat,...)
    char *pchStart;
    BOOL bNotFound;
    INT nCharCount;
+   INT nRequired;
+   INT nWritten;
+   size_t nRequiredSize;
+   static size_t nWorkBufferSize = 0;
+   char *pszNewBuffer;
 
    /* Log function entry if running in trace mode. */
    TRACE(TRACE_API, "od_printf()");
@@ -85,23 +92,48 @@ ODAPIDEF void ODVCALL od_printf(const char *pszFormat,...)
 
    OD_API_ENTRY();
 
-   /* Allocate work buffer if none has been allocated yet. */
-   if(pszWorkBuffer == NULL &&
-      (pszWorkBuffer = malloc(WORK_BUFFER_SIZE)) == NULL)
+   /* Determine the exact size required. A non-NULL probe is used for old
+    * bounded-formatting implementations even though its size is zero. */
+   va_start(pArgumentList, pszFormat);
+   nRequired = ODVsnprintf(szODWorkString, 0, pszFormat, pArgumentList);
+   va_end(pArgumentList);
+
+   if(nRequired < 0 || !ODSizeAdd((size_t)nRequired, 1, &nRequiredSize))
    {
-      /* If we are unable to allocate a buffer, return with a memory error. */
-      od_control.od_error = ERR_MEMORY;
+      od_control.od_error = ERR_LIMIT;
       OD_API_EXIT();
       return;
+   }
+
+   if(nRequiredSize > nWorkBufferSize)
+   {
+      pszNewBuffer = (char *)realloc(pszWorkBuffer,
+         MAX(nRequiredSize, (size_t)WORK_BUFFER_SIZE));
+      if(pszNewBuffer == NULL)
+      {
+         od_control.od_error = ERR_MEMORY;
+         OD_API_EXIT();
+         return;
+      }
+      pszWorkBuffer = pszNewBuffer;
+      nWorkBufferSize = MAX(nRequiredSize, (size_t)WORK_BUFFER_SIZE);
    }
 
    /* Copy the arguments after the format string. */
    va_start(pArgumentList, pszFormat);
 
-   /* Perform a string printf to the working buffer. */
-   vsprintf(pszWorkBuffer, pszFormat, pArgumentList);
+   /* Perform a bounded string printf to the working buffer. */
+   nWritten = ODVsnprintf(pszWorkBuffer, nWorkBufferSize, pszFormat,
+      pArgumentList);
 
    va_end(pArgumentList);
+
+   if(nWritten != nRequired)
+   {
+      od_control.od_error = ERR_GENERALFAILURE;
+      OD_API_EXIT();
+      return;
+   }
 
    /* If no color characters are defined, then just display the entire */
    /* buffer in one shot.                                              */

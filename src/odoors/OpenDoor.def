@@ -32,7 +32,6 @@
 ;               Mar 21, 1996  6.10  BP   Added od_control_get().
 ;               Oct 19, 2001  6.20  RS   Added door32.sys and socket support.
 LIBRARY ODOORS62
-DESCRIPTION "OpenDoors"
 VERSION 6.3
 EXPORTS
    ; Untested... these next three need the @s added
@@ -76,7 +75,6 @@ EXPORTS
    od_page=_od_page@0
    od_parse_cmd_line=_od_parse_cmd_line@4
    od_popup_menu=_od_popup_menu@24
-   _od_printf=od_printf
    od_printf=od_printf
    od_putch=_od_putch@4
    od_puttext=_od_puttext@20
@@ -100,5 +98,4 @@ EXPORTS
    pdef_pcboard=_pdef_pcboard@4
    pdef_ra=_pdef_ra@4
    pdef_wildcat=_pdef_wildcat@4
-   _od_control=od_control DATA
    od_control=od_control DATA
