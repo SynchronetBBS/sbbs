@@ -325,6 +325,7 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		lfexpand(str, misc);
 		fwrite(str, strlen(str), 1, fp);
 
+		localtime_r(&logontime, &tm);
 		safe_snprintf(str, sizeof(str), "%u\n%s\n%s\n%s\n%u\n%d\n%s\n%s\n"
 		              "%u\n%u\n%" PRIu64 "\n%u\n%" PRIu64 "\n%u\n%s\n"
 		              , MIN(tleft, INT16_MAX)   /* Time left in seconds */
@@ -335,8 +336,8 @@ void sbbs_t::xtrndat(const char *name, const char *dropdir, uchar type, uint tle
 		              , cfg.com_port            /* COM port number */
 		              , cfg.sys_name            /* System name */
 		              , cfg.sys_op              /* Sysop name */
-		              , 0                       /* Logon time (sec past 12am) */
-		              , 0                       /* Current time (sec past 12am) */
+		              , (tm.tm_hour * 60 * 60) + (tm.tm_min * 60) + tm.tm_sec /* Logon time (seconds past 12am) */
+		              , timeon()                /* Time on this call (in seconds) */
 		              , useron.ulb / 1024UL     /* User uploaded kbytes */
 		              , useron.uls              /* User uploaded files */
 		              , useron.dlb / 1024UL     /* User downloaded kbytes */

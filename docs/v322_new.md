@@ -95,6 +95,8 @@
   emit output already encoded for the remote terminal (its own
   UTF-8 or raw graphics), with no CP437-to-UTF-8 translation or
   bare-LF-to-CRLF expansion applied by the BBS
+- WWIV `CHAIN.TXT` drop file: the time-of-call and time-used fields
+  (lines 24 and 25) are now populated rather than always zero
 - Configuration changes now reach new callers without waiting for
   every node to disconnect: when a recycle is signaled (the
   `ctrl/recycle` semaphore, an MQTT recycle, `SIGHUP` /
